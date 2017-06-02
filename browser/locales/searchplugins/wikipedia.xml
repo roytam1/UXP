@@ -14,6 +14,6 @@
 <Url type="text/html" method="GET" template="https://en.wikipedia.org/wiki/Special:Search"
      resultdomain="wikipedia.org" rel="searchform">
   <Param name="search" value="{searchTerms}"/>
-  <Param name="sourceid" value="Mozilla-search"/>
+  <Param name="sourceid" value="PaleMoon-search"/>
 </Url>
 </SearchPlugin>
