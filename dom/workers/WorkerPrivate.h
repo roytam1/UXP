@@ -386,11 +386,6 @@ public:
   void
   UpdateJSWorkerMemoryParameter(JSGCParamKey key, uint32_t value);
 
-#ifdef JS_GC_ZEAL
-  void
-  UpdateGCZeal(uint8_t aGCZeal, uint32_t aFrequency);
-#endif
-
   void
   GarbageCollect(bool aShrinking);
 

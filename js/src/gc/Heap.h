@@ -1322,22 +1322,6 @@ TenuredCell::writeBarrierPre(TenuredCell* thing)
     if (!thing)
         return;
 
-#ifdef JS_GC_ZEAL
-    // When verifying pre barriers we need to switch on all barriers, even
-    // those on the Atoms Zone. Normally, we never enter a parse task when
-    // collecting in the atoms zone, so will filter out atoms below.
-    // Unfortuantely, If we try that when verifying pre-barriers, we'd never be
-    // able to handle OMT parse tasks at all as we switch on the verifier any
-    // time we're not doing GC. This would cause us to deadlock, as OMT parsing
-    // is meant to resume after GC work completes. Instead we filter out any
-    // OMT barriers that reach us and assert that they would normally not be
-    // possible.
-    if (!CurrentThreadCanAccessRuntime(thing->runtimeFromAnyThread())) {
-        AssertSafeToSkipBarrier(thing);
-        return;
-    }
-#endif
-
     JS::shadow::Zone* shadowZone = thing->shadowZoneFromAnyThread();
     if (shadowZone->needsIncrementalBarrier()) {
         MOZ_ASSERT(!RuntimeFromMainThreadIsHeapMajorCollecting(shadowZone));

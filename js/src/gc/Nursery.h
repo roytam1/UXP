@@ -252,11 +252,6 @@ class Nursery
                (numChunks() - currentChunk_ - 1) * NurseryChunkUsableSize;
     }
 
-#ifdef JS_GC_ZEAL
-    void enterZealMode();
-    void leaveZealMode();
-#endif
-
     /* Print total profile times on shutdown. */
     void printTotalProfileTimes();
 
@@ -373,11 +368,6 @@ class Nursery
 
     using NativeObjectVector = Vector<NativeObject*, 0, SystemAllocPolicy>;
     NativeObjectVector dictionaryModeObjects_;
-
-#ifdef JS_GC_ZEAL
-    struct Canary;
-    Canary* lastCanary_;
-#endif
 
     NurseryChunk* allocChunk();
 

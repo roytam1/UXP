@@ -215,19 +215,6 @@ public:
   void
   UpdateAllWorkerMemoryParameter(JSGCParamKey aKey, uint32_t aValue);
 
-#ifdef JS_GC_ZEAL
-  static void
-  SetDefaultGCZeal(uint8_t aGCZeal, uint32_t aFrequency)
-  {
-    AssertIsOnMainThread();
-    sDefaultJSSettings.gcZeal = aGCZeal;
-    sDefaultJSSettings.gcZealFrequency = aFrequency;
-  }
-
-  void
-  UpdateAllWorkerGCZeal();
-#endif
-
   void
   GarbageCollectAllWorkers(bool aShrinking);
 

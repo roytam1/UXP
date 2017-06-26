@@ -143,15 +143,7 @@ struct JSSettings
   JSGCSettingsArray gcSettings;
   JS::ContextOptions contextOptions;
 
-#ifdef JS_GC_ZEAL
-  uint8_t gcZeal;
-  uint32_t gcZealFrequency;
-#endif
-
   JSSettings()
-#ifdef JS_GC_ZEAL
-  : gcZeal(0), gcZealFrequency(0)
-#endif
   {
     for (uint32_t index = 0; index < ArrayLength(gcSettings); index++) {
       new (gcSettings + index) JSGCSetting();

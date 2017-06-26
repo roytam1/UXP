@@ -44,6 +44,3 @@ WORKER_PREF("intl.accept_languages", PrefLanguagesChanged)
 WORKER_PREF("general.appname.override", AppNameOverrideChanged)
 WORKER_PREF("general.appversion.override", AppVersionOverrideChanged)
 WORKER_PREF("general.platform.override", PlatformOverrideChanged)
-#ifdef JS_GC_ZEAL
-WORKER_PREF("dom.workers.options.gcZeal", LoadGCZealOptions)
-#endif

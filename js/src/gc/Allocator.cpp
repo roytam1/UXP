@@ -190,7 +190,7 @@ GCRuntime::checkAllocatorState(JSContext* cx, AllocKind kind)
             return false;
     }
 
-#if defined(JS_GC_ZEAL) || defined(DEBUG)
+#if defined(DEBUG)
     MOZ_ASSERT_IF(cx->compartment()->isAtomsCompartment(),
                   kind == AllocKind::ATOM ||
                   kind == AllocKind::FAT_INLINE_ATOM ||
@@ -223,11 +223,6 @@ GCRuntime::checkAllocatorState(JSContext* cx, AllocKind kind)
 bool
 GCRuntime::gcIfNeededPerAllocation(JSContext* cx)
 {
-#ifdef JS_GC_ZEAL
-    if (needZealousGC())
-        runDebugGC();
-#endif
-
     // Invoking the interrupt callback can fail and we can't usefully
     // handle that here. Just check in case we need to collect instead.
     if (rt->hasPendingInterrupt())

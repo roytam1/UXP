@@ -1391,30 +1391,6 @@ private:
   }
 };
 
-#ifdef JS_GC_ZEAL
-class UpdateGCZealRunnable final : public WorkerControlRunnable
-{
-  uint8_t mGCZeal;
-  uint32_t mFrequency;
-
-public:
-  UpdateGCZealRunnable(WorkerPrivate* aWorkerPrivate,
-                       uint8_t aGCZeal,
-                       uint32_t aFrequency)
-  : WorkerControlRunnable(aWorkerPrivate, WorkerThreadUnchangedBusyCount),
-    mGCZeal(aGCZeal), mFrequency(aFrequency)
-  { }
-
-private:
-  virtual bool
-  WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate) override
-  {
-    aWorkerPrivate->UpdateGCZealInternal(aCx, mGCZeal, mFrequency);
-    return true;
-  }
-};
-#endif
-
 class GarbageCollectRunnable final : public WorkerControlRunnable
 {
   bool mShrinking;
@@ -3147,27 +3123,6 @@ WorkerPrivateParent<Derived>::UpdateJSWorkerMemoryParameter(JSGCParamKey aKey,
     }
   }
 }
-
-#ifdef JS_GC_ZEAL
-template <class Derived>
-void
-WorkerPrivateParent<Derived>::UpdateGCZeal(uint8_t aGCZeal, uint32_t aFrequency)
-{
-  AssertIsOnParentThread();
-
-  {
-    MutexAutoLock lock(mMutex);
-    mJSSettings.gcZeal = aGCZeal;
-    mJSSettings.gcZealFrequency = aFrequency;
-  }
-
-  RefPtr<UpdateGCZealRunnable> runnable =
-    new UpdateGCZealRunnable(ParentAsWorkerPrivate(), aGCZeal, aFrequency);
-  if (!runnable->Dispatch()) {
-    NS_WARNING("Failed to update worker gczeal!");
-  }
-}
-#endif
 
 template <class Derived>
 void
@@ -6322,21 +6277,6 @@ WorkerPrivate::UpdateJSWorkerMemoryParameterInternal(JSContext* aCx,
     mChildWorkers[index]->UpdateJSWorkerMemoryParameter(aKey, aValue);
   }
 }
-
-#ifdef JS_GC_ZEAL
-void
-WorkerPrivate::UpdateGCZealInternal(JSContext* aCx, uint8_t aGCZeal,
-                                    uint32_t aFrequency)
-{
-  AssertIsOnWorkerThread();
-
-  JS_SetGCZeal(aCx, aGCZeal, aFrequency);
-
-  for (uint32_t index = 0; index < mChildWorkers.Length(); index++) {
-    mChildWorkers[index]->UpdateGCZeal(aGCZeal, aFrequency);
-  }
-}
-#endif
 
 void
 WorkerPrivate::GarbageCollectInternal(JSContext* aCx, bool aShrinking,

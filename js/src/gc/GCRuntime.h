@@ -653,19 +653,6 @@ class GCRuntime
     void onOutOfMallocMemory();
     void onOutOfMallocMemory(const AutoLockGC& lock);
 
-#ifdef JS_GC_ZEAL
-    const void* addressOfZealModeBits() { return &zealModeBits; }
-    void getZealBits(uint32_t* zealBits, uint32_t* frequency, uint32_t* nextScheduled);
-    void setZeal(uint8_t zeal, uint32_t frequency);
-    bool parseAndSetZeal(const char* str);
-    void setNextScheduled(uint32_t count);
-    void verifyPreBarriers();
-    void maybeVerifyPreBarriers(bool always);
-    bool selectForMarking(JSObject* object);
-    void clearSelectedForMarking();
-    void setDeterministic(bool enable);
-#endif
-
     size_t maxMallocBytesAllocated() { return maxMallocBytes; }
 
     uint64_t nextCellUniqueId() {
@@ -851,14 +838,7 @@ class GCRuntime
                            AutoMaybeStartBackgroundAllocation& maybeStartBGAlloc);
     void recycleChunk(Chunk* chunk, const AutoLockGC& lock);
 
-#ifdef JS_GC_ZEAL
-    void startVerifyPreBarriers();
-    void endVerifyPreBarriers();
-    void finishVerifier();
-    bool isVerifyPreBarriersEnabled() const { return !!verifyPreData; }
-#else
     bool isVerifyPreBarriersEnabled() const { return false; }
-#endif
 
     // Free certain LifoAlloc blocks when it is safe to do so.
     void freeUnusedLifoBlocksAfterSweeping(LifoAlloc* lifo);
@@ -1219,10 +1199,6 @@ class GCRuntime
     ZoneList zonesToMaybeCompact;
     Arena* relocatedArenasToRelease;
 
-#ifdef JS_GC_ZEAL
-    MarkingValidator* markingValidator;
-#endif
-
     /*
      * Indicates that a GC slice has taken place in the middle of an animation
      * frame, rather than at the beginning. In this case, the next slice will be
@@ -1273,40 +1249,6 @@ class GCRuntime
     unsigned objectsMarkedInDeadZones;
 
     bool poked;
-
-    /*
-     * These options control the zealousness of the GC. At every allocation,
-     * nextScheduled is decremented. When it reaches zero we do a full GC.
-     *
-     * At this point, if zeal_ is one of the types that trigger periodic
-     * collection, then nextScheduled is reset to the value of zealFrequency.
-     * Otherwise, no additional GCs take place.
-     *
-     * You can control these values in several ways:
-     *   - Set the JS_GC_ZEAL environment variable
-     *   - Call gczeal() or schedulegc() from inside shell-executed JS code
-     *     (see the help for details)
-     *
-     * If gcZeal_ == 1 then we perform GCs in select places (during MaybeGC and
-     * whenever a GC poke happens). This option is mainly useful to embedders.
-     *
-     * We use zeal_ == 4 to enable write barrier verification. See the comment
-     * in jsgc.cpp for more information about this.
-     *
-     * zeal_ values from 8 to 10 periodically run different types of
-     * incremental GC.
-     *
-     * zeal_ value 14 performs periodic shrinking collections.
-     */
-#ifdef JS_GC_ZEAL
-    uint32_t zealModeBits;
-    int zealFrequency;
-    int nextScheduled;
-    bool deterministicOnly;
-    int incrementalLimit;
-
-    Vector<JSObject*, 0, SystemAllocPolicy> selectedForMarking;
-#endif
 
     bool fullCompartmentChecks;
 
@@ -1415,50 +1357,10 @@ class MOZ_RAII AutoMaybeStartBackgroundAllocation
     }
 };
 
-#ifdef JS_GC_ZEAL
-
-inline bool
-GCRuntime::hasZealMode(ZealMode mode)
-{
-    static_assert(size_t(ZealMode::Limit) < sizeof(zealModeBits) * 8,
-                  "Zeal modes must fit in zealModeBits");
-    return zealModeBits & (1 << uint32_t(mode));
-}
-
-inline void
-GCRuntime::clearZealMode(ZealMode mode)
-{
-    zealModeBits &= ~(1 << uint32_t(mode));
-    MOZ_ASSERT(!hasZealMode(mode));
-}
-
-inline bool
-GCRuntime::upcomingZealousGC() {
-    return nextScheduled == 1;
-}
-
-inline bool
-GCRuntime::needZealousGC() {
-    if (nextScheduled > 0 && --nextScheduled == 0) {
-        if (hasZealMode(ZealMode::Alloc) ||
-            hasZealMode(ZealMode::GenerationalGC) ||
-            hasZealMode(ZealMode::IncrementalRootsThenFinish) ||
-            hasZealMode(ZealMode::IncrementalMarkAllThenFinish) ||
-            hasZealMode(ZealMode::IncrementalMultipleSlices) ||
-            hasZealMode(ZealMode::Compact))
-        {
-            nextScheduled = zealFrequency;
-        }
-        return true;
-    }
-    return false;
-}
-#else
 inline bool GCRuntime::hasZealMode(ZealMode mode) { return false; }
 inline void GCRuntime::clearZealMode(ZealMode mode) { }
 inline bool GCRuntime::upcomingZealousGC() { return false; }
 inline bool GCRuntime::needZealousGC() { return false; }
-#endif
 
 } /* namespace gc */
 

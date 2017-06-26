@@ -290,13 +290,6 @@ LoadContextOptions(const char* aPrefName, void* /* aClosure */)
     return;
   }
 
-#ifdef JS_GC_ZEAL
-  if (prefName.EqualsLiteral(PREF_JS_OPTIONS_PREFIX PREF_GCZEAL) ||
-      prefName.EqualsLiteral(PREF_WORKERS_OPTIONS_PREFIX PREF_GCZEAL)) {
-    return;
-  }
-#endif
-
   // Context options.
   JS::ContextOptions contextOptions;
   contextOptions.setAsmJS(GetWorkerPref<bool>(NS_LITERAL_CSTRING("asmjs")))
@@ -316,37 +309,6 @@ LoadContextOptions(const char* aPrefName, void* /* aClosure */)
     rts->UpdateAllWorkerContextOptions();
   }
 }
-
-#ifdef JS_GC_ZEAL
-void
-LoadGCZealOptions(const char* /* aPrefName */, void* /* aClosure */)
-{
-  AssertIsOnMainThread();
-
-  RuntimeService* rts = RuntimeService::GetService();
-  if (!rts) {
-    // May be shutting down, just bail.
-    return;
-  }
-
-  int32_t gczeal = GetWorkerPref<int32_t>(NS_LITERAL_CSTRING(PREF_GCZEAL), -1);
-  if (gczeal < 0) {
-    gczeal = 0;
-  }
-
-  int32_t frequency =
-    GetWorkerPref<int32_t>(NS_LITERAL_CSTRING("gcZeal.frequency"), -1);
-  if (frequency < 0) {
-    frequency = JS_DEFAULT_ZEAL_FREQ;
-  }
-
-  RuntimeService::SetDefaultGCZeal(uint8_t(gczeal), uint32_t(frequency));
-
-  if (rts) {
-    rts->UpdateAllWorkerGCZeal();
-  }
-}
-#endif
 
 void
 UpdateCommonJSGCMemoryOption(RuntimeService* aRuntimeService,
@@ -993,10 +955,6 @@ InitJSContextForWorker(WorkerPrivate* aWorkerPrivate, JSContext* aWorkerCx)
   JS_AddInterruptCallback(aWorkerCx, InterruptCallback);
 
   js::SetCTypesActivityCallback(aWorkerCx, CTypesActivityCallback);
-
-#ifdef JS_GC_ZEAL
-  JS_SetGCZeal(aWorkerCx, settings.gcZeal, settings.gcZealFrequency);
-#endif
 
   return true;
 }
@@ -1981,10 +1939,6 @@ RuntimeService::Init()
     sDefaultJSSettings.chrome.maxScriptRuntime = -1;
     sDefaultJSSettings.chrome.compartmentOptions.behaviors().setVersion(JSVERSION_LATEST);
     sDefaultJSSettings.content.maxScriptRuntime = MAX_SCRIPT_RUN_TIME_SEC;
-#ifdef JS_GC_ZEAL
-    sDefaultJSSettings.gcZealFrequency = JS_DEFAULT_ZEAL_FREQ;
-    sDefaultJSSettings.gcZeal = 0;
-#endif
     SetDefaultJSGCSettings(JSGC_MAX_BYTES, WORKER_DEFAULT_RUNTIME_HEAPSIZE);
     SetDefaultJSGCSettings(JSGC_ALLOCATION_THRESHOLD,
                            WORKER_DEFAULT_ALLOCATION_THRESHOLD);
@@ -2033,12 +1987,6 @@ RuntimeService::Init()
                             LoadJSGCMemoryOptions,
                             PREF_WORKERS_OPTIONS_PREFIX PREF_MEM_OPTIONS_PREFIX,
                             nullptr)) ||
-#ifdef JS_GC_ZEAL
-      NS_FAILED(Preferences::RegisterCallback(
-                                             LoadGCZealOptions,
-                                             PREF_JS_OPTIONS_PREFIX PREF_GCZEAL,
-                                             nullptr)) ||
-#endif
 
 #define WORKER_SIMPLE_PREF(name, getter, NAME)                                \
       NS_FAILED(Preferences::RegisterCallbackAndCall(                         \
@@ -2227,12 +2175,6 @@ RuntimeService::Cleanup()
 #undef WORKER_SIMPLE_PREF
 #undef WORKER_PREF
 
-#ifdef JS_GC_ZEAL
-        NS_FAILED(Preferences::UnregisterCallback(
-                                             LoadGCZealOptions,
-                                             PREF_JS_OPTIONS_PREFIX PREF_GCZEAL,
-                                             nullptr)) ||
-#endif
         NS_FAILED(Preferences::UnregisterCallback(
                                  LoadJSGCMemoryOptions,
                                  PREF_JS_OPTIONS_PREFIX PREF_MEM_OPTIONS_PREFIX,
@@ -2643,15 +2585,6 @@ RuntimeService::UpdateAllWorkerMemoryParameter(JSGCParamKey aKey,
 {
   BROADCAST_ALL_WORKERS(UpdateJSWorkerMemoryParameter, aKey, aValue);
 }
-
-#ifdef JS_GC_ZEAL
-void
-RuntimeService::UpdateAllWorkerGCZeal()
-{
-  BROADCAST_ALL_WORKERS(UpdateGCZeal, sDefaultJSSettings.gcZeal,
-                        sDefaultJSSettings.gcZealFrequency);
-}
-#endif
 
 void
 RuntimeService::GarbageCollectAllWorkers(bool aShrinking)
