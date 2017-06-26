@@ -188,10 +188,6 @@ GetBuildConfiguration(JSContext* cx, unsigned argc, Value* vp)
     if (!JS_SetProperty(cx, info, "tsan", value))
         return false;
 
-    value = BooleanValue(false);
-    if (!JS_SetProperty(cx, info, "has-gczeal", value))
-        return false;
-
 #ifdef JS_MORE_DETERMINISTIC
     value = BooleanValue(true);
 #else
