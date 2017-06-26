@@ -5307,11 +5307,6 @@ AutoGCSlice::~AutoGCSlice()
     }
 }
 
-void
-GCRuntime::pushZealSelectedObjects()
-{
-}
-
 static bool
 IsShutdownGC(JS::gcreason::Reason reason)
 {
@@ -5356,9 +5351,6 @@ GCRuntime::incrementalCollectSlice(SliceBudget& budget, JS::gcreason::Reason rea
             incrementalState = State::NotActive;
             return;
         }
-
-        if (!destroyingRuntime)
-            pushZealSelectedObjects();
 
         incrementalState = State::Mark;
 
