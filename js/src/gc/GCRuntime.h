@@ -600,8 +600,6 @@ class GCRuntime
     void finishRoots();
     void finish();
 
-    inline bool needZealousGC();
-
     MOZ_MUST_USE bool addRoot(Value* vp, const char* name);
     void removeRoot(Value* vp);
     void setMarkStackLimit(size_t limit, AutoLockGC& lock);
@@ -1351,8 +1349,6 @@ class MOZ_RAII AutoMaybeStartBackgroundAllocation
             gc->startBackgroundAllocTaskIfIdle();
     }
 };
-
-inline bool GCRuntime::needZealousGC() { return false; }
 
 } /* namespace gc */
 
