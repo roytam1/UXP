@@ -600,7 +600,6 @@ class GCRuntime
     void finishRoots();
     void finish();
 
-    inline bool hasZealMode(ZealMode mode);
     inline void clearZealMode(ZealMode mode);
     inline bool upcomingZealousGC();
     inline bool needZealousGC();
@@ -1355,7 +1354,6 @@ class MOZ_RAII AutoMaybeStartBackgroundAllocation
     }
 };
 
-inline bool GCRuntime::hasZealMode(ZealMode mode) { return false; }
 inline void GCRuntime::clearZealMode(ZealMode mode) { }
 inline bool GCRuntime::upcomingZealousGC() { return false; }
 inline bool GCRuntime::needZealousGC() { return false; }

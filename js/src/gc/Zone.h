@@ -253,11 +253,7 @@ struct Zone : public JS::shadow::Zone,
     // possibly at other times too.
     uint64_t gcNumber();
 
-    bool compileBarriers() const { return compileBarriers(needsIncrementalBarrier()); }
-    bool compileBarriers(bool needsIncrementalBarrier) const {
-        return needsIncrementalBarrier ||
-               runtimeFromMainThread()->hasZealMode(js::gc::ZealMode::VerifierPre);
-    }
+    bool compileBarriers() const { return needsIncrementalBarrier(); }
 
     enum ShouldUpdateJit { DontUpdateJit, UpdateJit };
     void setNeedsIncrementalBarrier(bool needs, ShouldUpdateJit updateJit);

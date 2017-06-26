@@ -219,11 +219,8 @@ js::Nursery::isEmpty() const
     MOZ_ASSERT(runtime_);
     if (!isEnabled())
         return true;
-
-    if (!runtime_->hasZealMode(ZealMode::GenerationalGC)) {
-        MOZ_ASSERT(currentStartChunk_ == 0);
-        MOZ_ASSERT(currentStartPosition_ == chunk(0).start());
-    }
+    MOZ_ASSERT(currentStartChunk_ == 0);
+    MOZ_ASSERT(currentStartPosition_ == chunk(0).start());
     return position() == currentStartPosition_;
 }
 

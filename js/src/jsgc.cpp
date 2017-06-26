@@ -5359,20 +5359,8 @@ GCRuntime::incrementalCollectSlice(SliceBudget& budget, JS::gcreason::Reason rea
 
     gc::State initialState = incrementalState;
 
-    bool useZeal = false;
-
     MOZ_ASSERT_IF(isIncrementalGCInProgress(), isIncremental);
     isIncremental = !budget.isUnlimited();
-
-    if (useZeal && (hasZealMode(ZealMode::IncrementalRootsThenFinish) ||
-                    hasZealMode(ZealMode::IncrementalMarkAllThenFinish)))
-    {
-        /*
-         * Yields between slices occurs at predetermined points in these modes;
-         * the budget is not used.
-         */
-        budget.makeUnlimited();
-    }
 
     switch (incrementalState) {
       case State::NotActive:
@@ -5395,9 +5383,6 @@ GCRuntime::incrementalCollectSlice(SliceBudget& budget, JS::gcreason::Reason rea
             pushZealSelectedObjects();
 
         incrementalState = State::Mark;
-
-        if (isIncremental && useZeal && hasZealMode(ZealMode::IncrementalRootsThenFinish))
-            break;
 
         MOZ_FALLTHROUGH;
 
@@ -5427,10 +5412,7 @@ GCRuntime::incrementalCollectSlice(SliceBudget& budget, JS::gcreason::Reason rea
          * We will need to mark anything new on the stack when we resume, so
          * we stay in Mark state.
          */
-        if (!lastMarkSlice && isIncremental &&
-            ((initialState == State::Mark &&
-              !(useZeal && hasZealMode(ZealMode::IncrementalRootsThenFinish))) ||
-             (useZeal && hasZealMode(ZealMode::IncrementalMarkAllThenFinish))))
+        if (!lastMarkSlice && isIncremental && initialState == State::Mark)
         {
             lastMarkSlice = true;
             break;
@@ -5444,13 +5426,6 @@ GCRuntime::incrementalCollectSlice(SliceBudget& budget, JS::gcreason::Reason rea
          */
         beginSweepPhase(destroyingRuntime, lock);
         if (budget.isOverBudget())
-            break;
-
-        /*
-         * Always yield here when running in incremental multi-slice zeal
-         * mode, so RunDebugGC can reset the slice buget.
-         */
-        if (isIncremental && useZeal && hasZealMode(ZealMode::IncrementalMultipleSlices))
             break;
 
         MOZ_FALLTHROUGH;

@@ -866,8 +866,6 @@ struct JSRuntime : public JS::shadow::Runtime,
     /* Garbage collector state has been successfully initialized. */
     bool                gcInitialized;
 
-    bool hasZealMode(js::gc::ZealMode mode) { return gc.hasZealMode(mode); }
-
     void lockGC() {
         gc.lockGC();
     }
