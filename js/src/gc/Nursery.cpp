@@ -188,7 +188,6 @@ void
 js::Nursery::enable()
 {
     MOZ_ASSERT(isEmpty());
-    MOZ_ASSERT(!runtime()->gc.isVerifyPreBarriersEnabled());
     if (isEnabled())
         return;
 

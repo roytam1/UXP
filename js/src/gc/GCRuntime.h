@@ -838,8 +838,6 @@ class GCRuntime
                            AutoMaybeStartBackgroundAllocation& maybeStartBGAlloc);
     void recycleChunk(Chunk* chunk, const AutoLockGC& lock);
 
-    bool isVerifyPreBarriersEnabled() const { return false; }
-
     // Free certain LifoAlloc blocks when it is safe to do so.
     void freeUnusedLifoBlocksAfterSweeping(LifoAlloc* lifo);
     void freeAllLifoBlocksAfterSweeping(LifoAlloc* lifo);
