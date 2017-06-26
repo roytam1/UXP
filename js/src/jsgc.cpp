@@ -3885,11 +3885,6 @@ GCRuntime::markAllGrayReferences(gcstats::Phase phase)
     markGrayReferences<GCZonesIter, GCCompartmentsIter>(phase);
 }
 
-void
-GCRuntime::finishMarkingValidation()
-{
-}
-
 static void
 DropStringWrappers(JSRuntime* rt)
 {
@@ -4993,8 +4988,6 @@ GCRuntime::endSweepPhase(bool destroyingRuntime, AutoLockForExclusiveAccess& loc
         if (isFull)
             rt->setGCGrayBitsValid(true);
     }
-
-    finishMarkingValidation();
 
 #ifdef DEBUG
     for (ZonesIter zone(rt, WithAtoms); !zone.done(); zone.next()) {

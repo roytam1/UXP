@@ -977,8 +977,6 @@ class GCRuntime
     void releaseRelocatedArenasWithoutUnlocking(Arena* arenaList, const AutoLockGC& lock);
     void finishCollection(JS::gcreason::Reason reason);
 
-    void finishMarkingValidation();
-
 #ifdef DEBUG
     void checkForCompartmentMismatches();
 #endif
