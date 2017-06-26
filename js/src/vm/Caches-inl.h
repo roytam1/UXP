@@ -57,9 +57,6 @@ NewObjectCache::newObjectFromHit(JSContext* cx, EntryIndex entryIndex, gc::Initi
     if (group->shouldPreTenure())
         heap = gc::TenuredHeap;
 
-    if (cx->runtime()->gc.upcomingZealousGC())
-        return nullptr;
-
     NativeObject* obj = static_cast<NativeObject*>(Allocate<JSObject, NoGC>(cx, entry->kind, 0,
                                                                             heap, group->clasp()));
     if (!obj)
