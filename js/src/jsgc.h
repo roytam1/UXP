@@ -1264,16 +1264,6 @@ enum VerifierType {
     PreBarrierVerifier
 };
 
-static inline void
-VerifyBarriers(JSRuntime* rt, VerifierType type)
-{
-}
-
-static inline void
-MaybeVerifyBarriers(JSContext* cx, bool always = false)
-{
-}
-
 /*
  * Instances of this class set the |JSRuntime::suppressGC| flag for the duration
  * that they are live. Use of this class is highly discouraged. Please carefully

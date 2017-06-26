@@ -135,7 +135,6 @@ CheckOverRecursed(JSContext* cx)
 #else
     JS_CHECK_RECURSION(cx, return false);
 #endif
-    gc::MaybeVerifyBarriers(cx);
     return cx->runtime()->handleInterrupt(cx);
 }
 
@@ -180,7 +179,6 @@ CheckOverRecursedWithExtra(JSContext* cx, BaselineFrame* frame,
     JS_CHECK_RECURSION_WITH_SP(cx, checkSp, return false);
 #endif
 
-    gc::MaybeVerifyBarriers(cx);
     return cx->runtime()->handleInterrupt(cx);
 }
 
@@ -465,8 +463,6 @@ SetProperty(JSContext* cx, HandleObject obj, HandlePropertyName name, HandleValu
 bool
 InterruptCheck(JSContext* cx)
 {
-    gc::MaybeVerifyBarriers(cx);
-
     {
         JSRuntime* rt = cx->runtime();
         JitRuntime::AutoPreventBackedgePatching apbp(rt);
