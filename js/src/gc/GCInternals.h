@@ -61,11 +61,6 @@ class MOZ_RAII AutoPrepareForTracing
 AbortReason
 IsIncrementalGCUnsafe(JSRuntime* rt);
 
-struct MOZ_RAII AutoStopVerifyingBarriers
-{
-    AutoStopVerifyingBarriers(JSRuntime*, bool) {}
-};
-
 #ifdef JSGC_HASH_TABLE_CHECKS
 void CheckHashTablesAfterMovingGC(JSRuntime* rt);
 void CheckHeapAfterGC(JSRuntime* rt);
