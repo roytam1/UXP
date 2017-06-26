@@ -3886,11 +3886,6 @@ GCRuntime::markAllGrayReferences(gcstats::Phase phase)
 }
 
 void
-GCRuntime::computeNonIncrementalMarkingForValidation(AutoLockForExclusiveAccess& lock)
-{
-}
-
-void
 GCRuntime::validateIncrementalMarking()
 {
 }
@@ -4760,8 +4755,6 @@ GCRuntime::beginSweepPhase(bool destroyingRuntime, AutoLockForExclusiveAccess& l
     AutoSetThreadIsSweeping threadIsSweeping;
 
     releaseHeldRelocatedArenas();
-
-    computeNonIncrementalMarkingForValidation(lock);
 
     gcstats::AutoPhase ap(stats, gcstats::PHASE_SWEEP);
 
