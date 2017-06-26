@@ -3886,11 +3886,6 @@ GCRuntime::markAllGrayReferences(gcstats::Phase phase)
 }
 
 void
-GCRuntime::validateIncrementalMarking()
-{
-}
-
-void
 GCRuntime::finishMarkingValidation()
 {
 }
@@ -4528,8 +4523,6 @@ GCRuntime::beginSweepingZoneGroup(AutoLockForExclusiveAccess& lock)
         zone->gcLastZoneGroupIndex = zoneGroupIndex;
 #endif
     }
-
-    validateIncrementalMarking();
 
     FreeOp fop(rt);
     SweepAtomsTask sweepAtomsTask(rt);
