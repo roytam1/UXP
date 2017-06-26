@@ -3007,9 +3007,6 @@ GENERATE_JSCONTEXTOPTION_GETTER_SETTER(Ion, ion, setIon)
 NS_IMETHODIMP
 nsXPCComponents_Utils::SetGCZeal(int32_t aValue, JSContext* cx)
 {
-#ifdef JS_GC_ZEAL
-    JS_SetGCZeal(cx, uint8_t(aValue), JS_DEFAULT_ZEAL_FREQ);
-#endif
     return NS_OK;
 }
 

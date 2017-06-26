@@ -94,36 +94,6 @@ BEGIN_TEST(testGCFinalizeCallback)
     CHECK(checkFinalizeStatus());
     CHECK(checkFinalizeIsZoneGC(true));
 
-#ifdef JS_GC_ZEAL
-
-    /* Full GC with reset due to new zone, becoming zone GC. */
-
-    FinalizeCalls = 0;
-    JS_SetGCZeal(cx, 9, 1000000);
-    JS::PrepareForFullGC(cx);
-    js::SliceBudget budget(js::WorkBudget(1));
-    cx->gc.startDebugGC(GC_NORMAL, budget);
-    CHECK(cx->gc.state() == js::gc::State::Mark);
-    CHECK(cx->gc.isFullGc());
-
-    JS::RootedObject global4(cx, createTestGlobal());
-    budget = js::SliceBudget(js::WorkBudget(1));
-    cx->gc.debugGCSlice(budget);
-    while (cx->gc.isIncrementalGCInProgress())
-        cx->gc.debugGCSlice(budget);
-    CHECK(!cx->gc.isIncrementalGCInProgress());
-    CHECK(!cx->gc.isFullGc());
-    CHECK(checkMultipleGroups());
-    CHECK(checkFinalizeStatus());
-
-    for (unsigned i = 0; i < FinalizeCalls - 1; ++i)
-        CHECK(!IsZoneGCBuffer[i]);
-    CHECK(IsZoneGCBuffer[FinalizeCalls - 1]);
-
-    JS_SetGCZeal(cx, 0, 0);
-
-#endif
-
     /*
      * Make some use of the globals here to ensure the compiler doesn't optimize
      * them away in release builds, causing the zones to be collected and

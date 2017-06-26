@@ -6263,26 +6263,6 @@ JS_AbortIfWrongThread(JSContext* cx)
         MOZ_CRASH();
 }
 
-#ifdef JS_GC_ZEAL
-JS_PUBLIC_API(void)
-JS_GetGCZealBits(JSContext* cx, uint32_t* zealBits, uint32_t* frequency, uint32_t* nextScheduled)
-{
-    cx->runtime()->gc.getZealBits(zealBits, frequency, nextScheduled);
-}
-
-JS_PUBLIC_API(void)
-JS_SetGCZeal(JSContext* cx, uint8_t zeal, uint32_t frequency)
-{
-    cx->gc.setZeal(zeal, frequency);
-}
-
-JS_PUBLIC_API(void)
-JS_ScheduleGC(JSContext* cx, uint32_t count)
-{
-    cx->runtime()->gc.setNextScheduled(count);
-}
-#endif
-
 JS_PUBLIC_API(void)
 JS_SetParallelParsingEnabled(JSContext* cx, bool enabled)
 {

@@ -101,10 +101,6 @@ class CCWTestTracer : public JS::CallbackTracer {
 
 BEGIN_TEST(testTracingIncomingCCWs)
 {
-#ifdef JS_GC_ZEAL
-    // Disable zeal modes because this test needs to control exactly when the GC happens.
-    JS_SetGCZeal(cx, 0, 100);
-#endif
     JS_GC(cx);
 
     JS::RootedObject global1(cx, JS::CurrentGlobalOrNull(cx));
@@ -146,10 +142,6 @@ countWrappers(JSCompartment* comp)
 
 BEGIN_TEST(testDeadNurseryCCW)
 {
-#ifdef JS_GC_ZEAL
-    // Disable zeal modes because this test needs to control exactly when the GC happens.
-    JS_SetGCZeal(cx, 0, 100);
-#endif
     JS_GC(cx);
 
     JS::RootedObject global1(cx, JS::CurrentGlobalOrNull(cx));
@@ -177,10 +169,6 @@ END_TEST(testDeadNurseryCCW)
 
 BEGIN_TEST(testLiveNurseryCCW)
 {
-#ifdef JS_GC_ZEAL
-    // Disable zeal modes because this test needs to control exactly when the GC happens.
-    JS_SetGCZeal(cx, 0, 100);
-#endif
     JS_GC(cx);
 
     JS::RootedObject global1(cx, JS::CurrentGlobalOrNull(cx));
@@ -208,10 +196,6 @@ END_TEST(testLiveNurseryCCW)
 
 BEGIN_TEST(testLiveNurseryWrapperCCW)
 {
-#ifdef JS_GC_ZEAL
-    // Disable zeal modes because this test needs to control exactly when the GC happens.
-    JS_SetGCZeal(cx, 0, 100);
-#endif
     JS_GC(cx);
 
     JS::RootedObject global1(cx, JS::CurrentGlobalOrNull(cx));
@@ -244,10 +228,6 @@ END_TEST(testLiveNurseryWrapperCCW)
 
 BEGIN_TEST(testLiveNurseryWrappeeCCW)
 {
-#ifdef JS_GC_ZEAL
-    // Disable zeal modes because this test needs to control exactly when the GC happens.
-    JS_SetGCZeal(cx, 0, 100);
-#endif
     JS_GC(cx);
 
     JS::RootedObject global1(cx, JS::CurrentGlobalOrNull(cx));
@@ -279,11 +259,6 @@ END_TEST(testLiveNurseryWrappeeCCW)
 BEGIN_TEST(testIncrementalRoots)
 {
     JSRuntime* rt = cx->runtime();
-
-#ifdef JS_GC_ZEAL
-    // Disable zeal modes because this test needs to control exactly when the GC happens.
-    JS_SetGCZeal(cx, 0, 100);
-#endif
 
     // Construct a big object graph to mark. In JS, the resulting object graph
     // is equivalent to:

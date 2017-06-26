@@ -23,10 +23,6 @@ MinimizeHeap(JSContext* cx)
 
 BEGIN_TEST(testGCUID)
 {
-#ifdef JS_GC_ZEAL
-    AutoLeaveZeal nozeal(cx);
-#endif /* JS_GC_ZEAL */
-
     uint64_t uid = 0;
     uint64_t tmp = 0;
 

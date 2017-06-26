@@ -231,21 +231,6 @@ GC(JSContext *cx,
     return true;
 }
 
-#ifdef JS_GC_ZEAL
-static bool
-GCZeal(JSContext *cx, unsigned argc, JS::Value *vp)
-{
-  CallArgs args = CallArgsFromVp(argc, vp);
-
-  uint32_t zeal;
-  if (!ToUint32(cx, args.get(0), &zeal))
-    return false;
-
-  JS_SetGCZeal(cx, uint8_t(zeal), JS_DEFAULT_ZEAL_FREQ);
-  return true;
-}
-#endif
-
 const JSFunctionSpec gGlobalFunctions[] =
 {
     JS_FS("print",           Print,          0,0),
@@ -255,9 +240,6 @@ const JSFunctionSpec gGlobalFunctions[] =
     JS_FS("dumpXPC",         DumpXPC,        1,0),
     JS_FS("dump",            Dump,           1,0),
     JS_FS("gc",              GC,             0,0),
- #ifdef JS_GC_ZEAL
-    JS_FS("gczeal",          GCZeal,         1,0),
- #endif
     JS_FS_END
 };
 

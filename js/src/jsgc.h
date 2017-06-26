@@ -1264,19 +1264,6 @@ enum VerifierType {
     PreBarrierVerifier
 };
 
-#ifdef JS_GC_ZEAL
-
-extern const char* ZealModeHelpText;
-
-/* Check that write barriers have been used correctly. See jsgc.cpp. */
-void
-VerifyBarriers(JSRuntime* rt, VerifierType type);
-
-void
-MaybeVerifyBarriers(JSContext* cx, bool always = false);
-
-#else
-
 static inline void
 VerifyBarriers(JSRuntime* rt, VerifierType type)
 {
@@ -1286,8 +1273,6 @@ static inline void
 MaybeVerifyBarriers(JSContext* cx, bool always = false)
 {
 }
-
-#endif
 
 /*
  * Instances of this class set the |JSRuntime::suppressGC| flag for the duration
