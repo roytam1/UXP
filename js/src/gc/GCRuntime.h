@@ -633,7 +633,6 @@ class GCRuntime
         MOZ_RELEASE_ASSERT(triggerGC(JS::gcreason::ALLOC_TRIGGER));
     }
 
-    void runDebugGC();
     inline void poke();
 
     enum TraceOrMarkRuntime {

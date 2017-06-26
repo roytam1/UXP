@@ -6179,11 +6179,6 @@ gc::MergeCompartments(JSCompartment* source, JSCompartment* target)
 }
 
 void
-GCRuntime::runDebugGC()
-{
-}
-
-void
 GCRuntime::setFullCompartmentChecks(bool enabled)
 {
     MOZ_ASSERT(!rt->isHeapMajorCollecting());
