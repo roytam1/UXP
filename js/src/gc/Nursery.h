@@ -58,8 +58,6 @@ class NativeObject;
 class Nursery;
 class HeapSlot;
 
-void SetGCZeal(JSRuntime*, uint8_t, uint32_t);
-
 namespace gc {
 class AutoMaybeStartBackgroundAllocation;
 struct Cell;

@@ -1264,8 +1264,6 @@ OOMTest(JSContext* cx, unsigned argc, Value* vp)
     MOZ_ASSERT(!cx->isExceptionPending());
     rt->hadOutOfMemory = false;
 
-    JS_SetGCZeal(cx, 0, JS_DEFAULT_ZEAL_FREQ);
-
     for (unsigned thread = threadStart; thread < threadEnd; thread++) {
         if (verbose)
             fprintf(stderr, "thread %d\n", thread);

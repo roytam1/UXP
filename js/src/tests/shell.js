@@ -32,8 +32,6 @@
     // Certain cached functionality only exists (and is only needed) when
     // running in the browser.  Segregate that caching here.
 
-    var SpecialPowersSetGCZeal =
-      global.SpecialPowers ? global.SpecialPowers.setGCZeal : undefined;
   }
 
   var runningInShell = typeof window === "undefined";
@@ -203,19 +201,6 @@
     //     as an integral part of tests in favor of something else.
     quit = function quit() {};
     global.quit = quit;
-  }
-
-  var gczeal = global.gczeal;
-  if (typeof gczeal !== "function") {
-    if (typeof SpecialPowersSetGCZeal === "function") {
-      gczeal = function gczeal(z) {
-        SpecialPowersSetGCZeal(z);
-      };
-    } else {
-      gczeal = function() {}; // no-op if not available
-    }
-
-    global.gczeal = gczeal;
   }
 
   /******************************************************

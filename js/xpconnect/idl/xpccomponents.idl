@@ -123,7 +123,7 @@ interface ScheduledGCCallback : nsISupports
 /**
 * interface of Components.utils
 */
-[scriptable, uuid(86003fe3-ee9a-4620-91dc-eef8b1e58815)]
+[scriptable, uuid(a6e66965-4b9a-4846-8985-985e71aaf549)]
 interface nsIXPCComponents_Utils : nsISupports
 {
 
@@ -528,9 +528,6 @@ interface nsIXPCComponents_Utils : nsISupports
 
     [implicit_jscontext]
     attribute boolean ion;
-
-    [implicit_jscontext]
-    void setGCZeal(in long zeal);
 
     [implicit_jscontext]
     void nukeSandbox(in jsval obj);
