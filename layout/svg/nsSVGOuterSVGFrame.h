@@ -263,6 +263,9 @@ public:
    */
   virtual nsIAtom* GetType() const override;
 
+  bool IsSVGTransformed(Matrix *aOwnTransform,
+                        Matrix *aFromParentTransform) const override;
+ 
   // nsSVGContainerFrame methods:
   virtual gfxMatrix GetCanvasTM() override {
     // GetCanvasTM returns the transform from an SVG frame to the frame's
@@ -270,8 +273,6 @@ public:
     // set on us for any CSS border or padding on our nsSVGOuterSVGFrame.
     return static_cast<nsSVGOuterSVGFrame*>(GetParent())->GetCanvasTM();
   }
-
-  virtual bool HasChildrenOnlyTransform(Matrix *aTransform) const override;
 };
 
 #endif
