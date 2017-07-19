@@ -68,6 +68,14 @@ private:
   nsresult GetAccentColor(nscolor& aColor);
   
   /**
+   * Determines whether the Windows accent color is considered dark
+   * with a threshhold value and formula that are specified in the
+   * UWP guidelines.
+   * See: https://docs.microsoft.com/en-us/windows/uwp/style/color
+   */
+  bool AccentColorIsDark(nscolor aColor);
+  
+  /**
    * If the Windows accent color from the Windows settings is set
    * to apply to the title bar, this computes the color that should
    * be used for text that is to be written over a background that has

@@ -762,6 +762,16 @@ nsLookAndFeel::GetAccentColor(nscolor& aColor)
   return rv;
 }
 
+bool
+nsLookAndFeel::AccentColorIsDark(nscolor aColor)
+{
+  float luminance = (NS_GET_R(aColor) * 2 +
+                     NS_GET_G(aColor) * 5 +
+                     NS_GET_B(aColor)) / 8;
+
+  return luminance <= 128;
+}
+
 /* static */ nsresult
 nsLookAndFeel::GetAccentColorText(nscolor& aColor)
 {
@@ -775,15 +785,9 @@ nsLookAndFeel::GetAccentColorText(nscolor& aColor)
   // a background that has the accent color to have good contrast with
   // the accent color.  Windows itself uses either white or black text
   // depending on how light or dark the accent color is.  We do the same
-  // here based on the luminance of the accent color with a threshhold
-  // value and formula that are specified in the UWP guidelines.
-  // See: https://docs.microsoft.com/en-us/windows/uwp/style/color
+  // here based on the luminance of the accent color.
 
-  float luminance = (NS_GET_R(accentColor) * 2 +
-                     NS_GET_G(accentColor) * 5 +
-                     NS_GET_B(accentColor)) / 8;
-
-  aColor = (luminance <= 128) ? NS_RGB(255, 255, 255) : NS_RGB(0, 0, 0);
+  aColor = AccentColorIsDark(accentColor) ? NS_RGB(255, 255, 255) : NS_RGB(0, 0, 0);
 
   return NS_OK;
 }
