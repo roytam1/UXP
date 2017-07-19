@@ -267,6 +267,23 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor &aColor)
     case eColorID__moz_cellhighlight:
       idx = COLOR_3DFACE;
       break;
+    case eColorID__moz_win_accentcolor:
+      res = GetAccentColor(aColor);
+      if (NS_SUCCEEDED(res)) {
+        return res;
+      }
+      NS_WARNING("Using fallback for accent color - UI code failed to use the "
+                 "-moz-windows-accent-color-applies media query properly");
+      // Seems to be the default color (hardcoded because of bug 1065998)
+      aColor = NS_RGB(158, 158, 158);
+      return NS_OK;
+    case eColorID__moz_win_accentcolortext:
+      res = GetAccentColorText(aColor);
+      if (NS_SUCCEEDED(res)) {
+        return res;
+      }
+      aColor = NS_RGB(0, 0, 0);
+      return NS_OK;
     case eColorID__moz_win_mediatext:
       if (IsVistaOrLater() && IsAppThemed()) {
         res = ::GetColorFromTheme(eUXMediaToolbar,
@@ -705,3 +722,68 @@ nsLookAndFeel::SetIntCacheImpl(const nsTArray<LookAndFeelInt>& aLookAndFeelIntCa
   }
 }
 
+/* static */ nsresult
+nsLookAndFeel::GetAccentColor(nscolor& aColor)
+{
+  nsresult rv;
+
+  if (!mDwmKey) {
+    mDwmKey = do_CreateInstance("@mozilla.org/windows-registry-key;1", &rv);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+  }
+
+  rv = mDwmKey->Open(nsIWindowsRegKey::ROOT_KEY_CURRENT_USER,
+                     NS_LITERAL_STRING("SOFTWARE\\Microsoft\\Windows\\DWM"),
+                     nsIWindowsRegKey::ACCESS_QUERY_VALUE);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  // The ColorPrevalence value is set to 1 when the "Show color on title bar"
+  // setting in the Color section of Window's Personalization settings is
+  // turned on.
+  uint32_t accentColor, colorPrevalence;
+  if (NS_SUCCEEDED(mDwmKey->ReadIntValue(NS_LITERAL_STRING("AccentColor"), &accentColor)) &&
+      NS_SUCCEEDED(mDwmKey->ReadIntValue(NS_LITERAL_STRING("ColorPrevalence"), &colorPrevalence)) &&
+      colorPrevalence == 1) {
+    // The order of the color components in the DWORD stored in the registry
+    // happens to be the same order as we store the components in nscolor
+    // so we can just assign directly here.
+    aColor = accentColor;
+    rv = NS_OK;
+  } else {
+    rv = NS_ERROR_NOT_AVAILABLE;
+  }
+
+  mDwmKey->Close();
+
+  return rv;
+}
+
+/* static */ nsresult
+nsLookAndFeel::GetAccentColorText(nscolor& aColor)
+{
+  nscolor accentColor;
+  nsresult rv = GetAccentColor(accentColor);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  // We want the color that we return for text that will be drawn over
+  // a background that has the accent color to have good contrast with
+  // the accent color.  Windows itself uses either white or black text
+  // depending on how light or dark the accent color is.  We do the same
+  // here based on the luminance of the accent color with a threshhold
+  // value and formula that are specified in the UWP guidelines.
+  // See: https://docs.microsoft.com/en-us/windows/uwp/style/color
+
+  float luminance = (NS_GET_R(accentColor) * 2 +
+                     NS_GET_G(accentColor) * 5 +
+                     NS_GET_B(accentColor)) / 8;
+
+  aColor = (luminance <= 128) ? NS_RGB(255, 255, 255) : NS_RGB(0, 0, 0);
+
+  return NS_OK;
+}

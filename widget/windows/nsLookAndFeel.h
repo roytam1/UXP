@@ -6,6 +6,7 @@
 #ifndef __nsLookAndFeel
 #define __nsLookAndFeel
 #include "nsXPLookAndFeel.h"
+#include "nsIWindowsRegKey.h"
 
 /*
  * Gesture System Metrics
@@ -59,7 +60,25 @@ public:
   virtual void SetIntCacheImpl(const nsTArray<LookAndFeelInt>& aLookAndFeelIntCache);
 
 private:
+  /**
+   * Fetches the Windows accent color from the Windows settings if
+   * the accent color is set to apply to the title bar, otherwise
+   * returns an error code.
+   */
+  nsresult GetAccentColor(nscolor& aColor);
+  
+  /**
+   * If the Windows accent color from the Windows settings is set
+   * to apply to the title bar, this computes the color that should
+   * be used for text that is to be written over a background that has
+   * the accent color.  Otherwise, (if the accent color should not
+   * apply to the title bar) this returns an error code.
+   */
+  nsresult GetAccentColorText(nscolor& aColor);
+
   int32_t mUseAccessibilityTheme;
+  
+  nsCOMPtr<nsIWindowsRegKey> mDwmKey;
 };
 
 #endif
