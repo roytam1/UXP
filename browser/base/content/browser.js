@@ -1055,8 +1055,10 @@ var gBrowserInit = {
         window.matchMedia("(-moz-windows-default-theme)").matches) {
       let windowFrameColor = new Color(...Cu.import("resource:///modules/Windows8WindowFrameColor.jsm", {})
                                             .Windows8WindowFrameColor.get());
-      // Default to black for foreground text.
-      if (!windowFrameColor.isContrastRatioAcceptable(new Color(0, 0, 0))) {
+      // Check if window frame color is dark.
+      if ((windowFrameColor.r * 2 +
+           windowFrameColor.g * 5 +
+           windowFrameColor.b) <= 128 * 8) {
         document.documentElement.setAttribute("darkwindowframe", "true");
       }
     }
