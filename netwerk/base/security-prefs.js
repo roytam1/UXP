@@ -31,11 +31,15 @@ pref("security.ssl3.dhe_rsa_aes_128_sha", true);
 pref("security.ssl3.dhe_rsa_camellia_256_sha", true);
 pref("security.ssl3.dhe_rsa_aes_256_sha", true);
 pref("security.ssl3.dhe_rsa_camellia_128_sha", true);
+pref("security.ssl3.rsa_aes_256_gcm_sha384", true);
+pref("security.ssl3.rsa_aes_256_sha256", true);
 pref("security.ssl3.rsa_camellia_128_sha", true);
 pref("security.ssl3.rsa_camellia_256_sha", true);
 pref("security.ssl3.rsa_aes_128_sha", true);
 pref("security.ssl3.rsa_aes_256_sha", true);
 pref("security.ssl3.rsa_des_ede3_sha", true);
+pref("security.ssl3.rsa_aes_128_gcm_sha256", false);
+pref("security.ssl3.rsa_aes_128_sha256", false);
 
 pref("security.content.signature.root_hash",
      "97:E8:BA:9C:F1:2F:B3:DE:53:CC:42:A4:E6:57:7E:D6:4D:F4:93:C2:47:B4:14:FE:A0:36:81:8D:38:23:56:0E");
