@@ -1344,9 +1344,6 @@ static const CipherPref sCipherPrefs[] = {
  { "security.ssl3.ecdhe_ecdsa_aes_256_sha",
    TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, true },
 
- { "security.ssl3.dhe_rsa_aes_128_sha",
-   TLS_DHE_RSA_WITH_AES_128_CBC_SHA, true },
-
  { "security.ssl3.dhe_rsa_camellia_256_sha", 
    TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA, true},
  { "security.ssl3.dhe_rsa_aes_256_sha",
@@ -1354,6 +1351,9 @@ static const CipherPref sCipherPrefs[] = {
 
  { "security.ssl3.dhe_rsa_camellia_128_sha", 
    TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, true },
+ { "security.ssl3.dhe_rsa_aes_128_sha",
+   TLS_DHE_RSA_WITH_AES_128_CBC_SHA, true },
+
  { "security.tls13.aes_128_gcm_sha256",
    TLS_AES_128_GCM_SHA256, true },
  { "security.tls13.chacha20_poly1305_sha256",
@@ -1361,6 +1361,7 @@ static const CipherPref sCipherPrefs[] = {
  { "security.tls13.aes_256_gcm_sha384",
    TLS_AES_256_GCM_SHA384, true },
 
+ // Deprecated (RSA key exchange):
  { "security.ssl3.rsa_aes_256_gcm_sha384",
    TLS_RSA_WITH_AES_256_GCM_SHA384, true }, 
  { "security.ssl3.rsa_aes_256_sha256",
@@ -1370,15 +1371,17 @@ static const CipherPref sCipherPrefs[] = {
  {"security.ssl3.rsa_camellia_256_sha",
    TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, true },
  { "security.ssl3.rsa_aes_128_sha",
-   TLS_RSA_WITH_AES_128_CBC_SHA, true }, // deprecated (RSA key exchange)
+   TLS_RSA_WITH_AES_128_CBC_SHA, true },
  { "security.ssl3.rsa_aes_256_sha",
-   TLS_RSA_WITH_AES_256_CBC_SHA, true }, // deprecated (RSA key exchange)
+   TLS_RSA_WITH_AES_256_CBC_SHA, true },
+
+// Expensive/deprecated/weak
  { "security.ssl3.rsa_aes_128_gcm_sha256",
    TLS_RSA_WITH_AES_128_GCM_SHA256, false }, // Deprecated
  { "security.ssl3.rsa_aes_128_sha256",
    TLS_RSA_WITH_AES_128_CBC_SHA256, false }, // Deprecated
  { "security.ssl3.rsa_des_ede3_sha",
-   TLS_RSA_WITH_3DES_EDE_CBC_SHA, true }, // deprecated (RSA key exchange, 3DES)
+   TLS_RSA_WITH_3DES_EDE_CBC_SHA, false }, // Weak (3DES)
 
  // All the rest are disabled
 
