@@ -29,9 +29,7 @@ pref("security.ssl3.ecdhe_ecdsa_aes_128_sha", true);
 pref("security.ssl3.ecdhe_rsa_aes_256_sha", true);
 pref("security.ssl3.ecdhe_ecdsa_aes_256_sha", true);
 pref("security.ssl3.dhe_rsa_camellia_256_sha", true);
-pref("security.ssl3.dhe_rsa_aes_256_sha", true);
 pref("security.ssl3.dhe_rsa_camellia_128_sha", true);
-pref("security.ssl3.dhe_rsa_aes_128_sha", true);
 pref("security.ssl3.rsa_aes_256_gcm_sha384", true);
 pref("security.ssl3.rsa_aes_256_sha256", true);
 pref("security.ssl3.rsa_camellia_128_sha", true);
@@ -39,6 +37,8 @@ pref("security.ssl3.rsa_camellia_256_sha", true);
 pref("security.ssl3.rsa_aes_128_sha", true);
 pref("security.ssl3.rsa_aes_256_sha", true);
 // Weak / deprecated
+pref("security.ssl3.dhe_rsa_aes_256_sha", false);
+pref("security.ssl3.dhe_rsa_aes_128_sha", false);
 pref("security.ssl3.rsa_aes_128_gcm_sha256", false);
 pref("security.ssl3.rsa_aes_128_sha256", false);
 pref("security.ssl3.rsa_des_ede3_sha", false);
