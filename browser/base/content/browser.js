@@ -8075,6 +8075,7 @@ var ToolbarIconColor = {
     window.addEventListener("activate", this);
     window.addEventListener("deactivate", this);
     Services.obs.addObserver(this, "lightweight-theme-styling-update", false);
+    gPrefService.addObserver("ui.colorChanged", this, false);
 
     // If the window isn't active now, we assume that it has never been active
     // before and will soon become active such that inferFromText will be
@@ -8089,6 +8090,7 @@ var ToolbarIconColor = {
     window.removeEventListener("activate", this);
     window.removeEventListener("deactivate", this);
     Services.obs.removeObserver(this, "lightweight-theme-styling-update");
+    gPrefService.removeObserver("ui.colorChanged", this);
   },
 
   handleEvent: function (event) {
@@ -8107,6 +8109,18 @@ var ToolbarIconColor = {
         // lightweight-theme-styling-update observer.
         setTimeout(() => { this.inferFromText(); }, 0);
         break;
+      case "nsPref:changed":
+        // system color change
+        var colorChangedPref = false;
+        try {
+          colorChangedPref = gPrefService.getBoolPref("ui.colorChanged");
+        } catch(e) { }
+        // if pref indicates change, call inferFromText() on a small delay
+        if (colorChangedPref == true)
+          setTimeout(() => { this.inferFromText(); }, 300);
+        break;
+      default:
+        console.error("ToolbarIconColor: Uncaught topic " + aTopic);
     }
   },
 
@@ -8140,6 +8154,9 @@ var ToolbarIconColor = {
       else
         toolbar.setAttribute("brighttext", "true");
     }
+    
+    // Clear pref if set, since we're done applying the color changes.
+    gPrefService.clearUserPref("ui.colorChanged");
   }
 }
 
