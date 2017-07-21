@@ -465,11 +465,6 @@
   }
 
   @media (-moz-windows-default-theme) {
-    #toolbar-menubar:not(:-moz-lwtheme),
-    #TabsToolbar:not(:-moz-lwtheme) {
-      color: black;
-    }
-
     #main-menubar > menu:not(:-moz-lwtheme) {
       color: inherit;
     }
