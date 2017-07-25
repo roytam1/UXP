@@ -2078,22 +2078,6 @@ nsPluginHost::AddPluginTag(nsPluginTag* aPluginTag)
   }
 }
 
-static bool
-PluginInfoIsFlash(const nsPluginInfo& info)
-{
-  if (!info.fName || strcmp(info.fName, "Shockwave Flash") != 0) {
-    return false;
-  }
-  for (uint32_t i = 0; i < info.fVariantCount; ++i) {
-    if (info.fMimeTypeArray[i] &&
-        (!strcmp(info.fMimeTypeArray[i], "application/x-shockwave-flash") ||
-         !strcmp(info.fMimeTypeArray[i], "application/x-shockwave-flash-test"))) {
-      return true;
-    }
-  }
-  return false;
-}
-
 typedef NS_NPAPIPLUGIN_CALLBACK(char *, NP_GETMIMEDESCRIPTION)(void);
 
 nsresult nsPluginHost::ScanPluginsDirectory(nsIFile *pluginsDir,
@@ -2113,8 +2097,6 @@ nsresult nsPluginHost::ScanPluginsDirectory(nsIFile *pluginsDir,
   PLUGIN_LOG(PLUGIN_LOG_BASIC,
   ("nsPluginHost::ScanPluginsDirectory dir=%s\n", dirPath.get()));
 #endif
-
-  bool flashOnly = Preferences::GetBool("plugin.load_flash_only", true);
 
   nsCOMPtr<nsISimpleEnumerator> iter;
   rv = pluginsDir->GetDirectoryEntries(getter_AddRefs(iter));
@@ -2218,8 +2200,7 @@ nsresult nsPluginHost::ScanPluginsDirectory(nsIFile *pluginsDir,
         res = pluginFile.GetPluginInfo(info, &library);
       }
       // if we don't have mime type don't proceed, this is not a plugin
-      if (NS_FAILED(res) || !info.fMimeTypeArray ||
-          (flashOnly && !PluginInfoIsFlash(info))) {
+      if (NS_FAILED(res) || !info.fMimeTypeArray) {
         RefPtr<nsInvalidPluginTag> invalidTag = new nsInvalidPluginTag(filePath.get(),
                                                                          fileModTime);
         pluginFile.FreePluginInfo(info);
