@@ -41,7 +41,8 @@ static RedirEntry kRedirMap[] = {
   },
   {
     "buildconfig", "chrome://global/content/buildconfig.html",
-    nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT
+    nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
+      nsIAboutModule::MAKE_LINKABLE
   },
   {
     "checkerboard", "chrome://global/content/aboutCheckerboard.xhtml",
