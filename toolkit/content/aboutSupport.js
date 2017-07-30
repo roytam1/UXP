@@ -968,31 +968,32 @@ function safeModeRestart() {
  * Set up event listeners for buttons.
  */
 function setupEventListeners() {
-  $("show-update-history-button").addEventListener("click", function (event) {
+#ifdef MOZ_UPDATER
+  $("show-update-history-button").addEventListener("click", function(event) {
     var prompter = Cc["@mozilla.org/updates/update-prompt;1"].createInstance(Ci.nsIUpdatePrompt);
       prompter.showUpdateHistory(window);
   });
-  $("reset-box-button").addEventListener("click", function (event) {
+#endif
+  $("reset-box-button").addEventListener("click", function(event) {
     ResetProfile.openConfirmationDialog(window);
   });
-  $("copy-raw-data-to-clipboard").addEventListener("click", function (event) {
+  $("copy-raw-data-to-clipboard").addEventListener("click", function(event) {
     copyRawDataToClipboard(this);
   });
-  $("copy-to-clipboard").addEventListener("click", function (event) {
+  $("copy-to-clipboard").addEventListener("click", function(event) {
     copyContentsToClipboard();
   });
-  $("profile-dir-button").addEventListener("click", function (event) {
+  $("profile-dir-button").addEventListener("click", function(event) {
     openProfileDirectory();
   });
-  $("restart-in-safe-mode-button").addEventListener("click", function (event) {
+  $("restart-in-safe-mode-button").addEventListener("click", function(event) {
     if (Services.obs.enumerateObservers("restart-in-safe-mode").hasMoreElements()) {
       Services.obs.notifyObservers(null, "restart-in-safe-mode", "");
-    }
-    else {
+    } else {
       safeModeRestart();
     }
   });
-  $("verify-place-integrity-button").addEventListener("click", function (event) {
+  $("verify-place-integrity-button").addEventListener("click", function(event) {
     PlacesDBUtils.checkAndFixDatabase(function(aLog) {
       let msg = aLog.join("\n");
       $("verify-place-result").style.display = "block";
