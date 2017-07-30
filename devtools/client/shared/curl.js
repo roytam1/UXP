@@ -107,7 +107,13 @@ const Curl = {
 
     // Add http version.
     if (data.httpVersion && data.httpVersion != DEFAULT_HTTP_VERSION) {
-      command.push("--" + data.httpVersion.split("/")[1]);
+      let version = data.httpVersion.split("/")[1];
+      // curl accepts --http1.0, --http1.1 and --http2 for HTTP/1.0, HTTP/1.1
+      // and HTTP/2 protocols respectively. But the corresponding values in 
+      // data.httpVersion are HTTP/1.0, HTTP/1.1 and HTTP/2.0
+      // So in case of HTTP/2.0 (which should ideally be HTTP/2) we are using
+      // only major version, and full version in other cases
+      command.push("--http" + (version == "2.0" ? version.split(".")[0] : version));
     }
 
     // Add request headers.
