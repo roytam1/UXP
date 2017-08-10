@@ -7,7 +7,21 @@ var {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-// Copied from nsILookAndFeel.h, see comments on eMetric_AlertNotificationOrigin
+/*
+ * This indicates from which corner of the screen alerts slide in,
+ * and from which direction (horizontal/vertical).
+ * 0, the default, represents bottom right, sliding vertically.
+ * Use any bitwise combination of the following constants:
+ * NS_ALERT_HORIZONTAL (1), NS_ALERT_LEFT (2), NS_ALERT_TOP (4).
+ *
+ *       6       4
+ *     +-----------+
+ *    7|           |5
+ *     |           |
+ *    3|           |1
+ *     +-----------+
+ *       2       0
+ */
 const NS_ALERT_HORIZONTAL = 1;
 const NS_ALERT_LEFT = 2;
 const NS_ALERT_TOP = 4;
@@ -40,6 +54,8 @@ function prefillAlertInfo() {
   // arguments[10] --> an optional callback listener (nsIObserver)
   // arguments[11] -> the nsIURI.hostPort of the origin, optional
   // arguments[12] -> the alert icon URL, optional
+
+  document.getElementById('alertTime').setAttribute('value', (new Date).getTime());
 
   switch (window.arguments.length) {
     default:
@@ -235,7 +251,15 @@ function moveWindowToEnd() {
   let windows = Services.wm.getEnumerator("alert:alert");
   while (windows.hasMoreElements()) {
     let alertWindow = windows.getNext();
-    if (alertWindow != window) {
+    let alertWindowTime = Number(
+        alertWindow.document.getElementById('alertTime').getAttribute('value'));
+    let windowTime = Number(
+        window.document.getElementById('alertTime').getAttribute('value'));
+    // The time of window creation.
+    // Otherwise calling the notification twice (and more) in a row
+    // does not work.
+    // See https://bugzilla.mozilla.org/show_bug.cgi?id=1263155
+    if ((alertWindow != window) && (alertWindowTime <= windowTime)) {
       if (gOrigin & NS_ALERT_TOP) {
         y = Math.max(y, alertWindow.screenY + alertWindow.outerHeight - WINDOW_SHADOW_SPREAD);
       } else {

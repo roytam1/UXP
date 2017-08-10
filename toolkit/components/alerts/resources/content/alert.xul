@@ -24,6 +24,7 @@
   <script type="application/javascript" src="chrome://global/content/alerts/alert.js"/>
 
   <vbox id="alertBox" class="alertBox">
+    <label id="alertTime" value="" hidden="true"/>
     <box id="alertTitleBox">
       <image id="alertIcon"/>
       <label id="alertTitleLabel" class="alertTitle plain" crop="end"/>
