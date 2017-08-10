@@ -45,7 +45,7 @@
       <vbox id="leftBox" flex="1"/>
       <vbox id="rightBox" flex="1">
         <hbox align="baseline">
-#expand <label id="version">__MOZ_APP_VERSION_DISPLAY__</label>
+#expand <label id="version"></label>
 #ifndef NIGHTLY_BUILD
        <label id="releasenotes" class="text-link">&releaseNotes.link;</label>
 #endif
