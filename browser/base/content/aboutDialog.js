@@ -47,7 +47,13 @@ function init(aEvent)
   let year = buildID.slice(0, 4);
   let month = buildID.slice(4, 6);
   let day = buildID.slice(6, 8);
-  versionField.textContent = buildID + ` (${year}-${month}-${day})`;
+  let hour = buildID.slice(8, 10);
+  let minute = buildID.slice(10, 12);
+  if (Services.prefs.getBoolPref("general.useragent.appVersionIsBuildID")) {
+    versionField.textContent = `${year}.${month}.${day}.${hour}${minute}`;
+  } else {
+    versionField.textContent = `v` + version + ` (${year}-${month}-${day})`;
+  }
   
   // Display warning if this is an "a#" (nightly or aurora) build
   if (/a\d+$/.test(version)) {
