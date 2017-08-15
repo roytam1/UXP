@@ -256,6 +256,9 @@ class nsCSPHostSrc : public nsCSPBaseSrc {
     void setPort(const nsAString& aPort);
     void appendPath(const nsAString &aPath);
 
+    inline void setWithinFrameAncestorsDir(bool aValue) const
+      { mWithinFrameAncstorsDir = aValue; }
+
     inline void getScheme(nsAString& outStr) const
       { outStr.Assign(mScheme); };
 
@@ -273,6 +276,7 @@ class nsCSPHostSrc : public nsCSPBaseSrc {
     nsString mHost;
     nsString mPort;
     nsString mPath;
+    mutable bool mWithinFrameAncstorsDir;
 };
 
 /* =============== nsCSPKeywordSrc ============ */

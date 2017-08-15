@@ -136,6 +136,7 @@ nsCSPParser::nsCSPParser(cspTokens& aTokens,
  , mUnsafeInlineKeywordSrc(nullptr)
  , mChildSrc(nullptr)
  , mFrameSrc(nullptr)
+ , mParsingFrameAncestorsDir(false)
  , mTokens(aTokens)
  , mSelfURI(aSelfURI)
  , mPolicy(nullptr)
@@ -807,6 +808,7 @@ nsCSPParser::sourceExpression()
   if (nsCSPHostSrc *cspHost = hostSource()) {
     // Do not forget to set the parsed scheme.
     cspHost->setScheme(parsedScheme);
+    cspHost->setWithinFrameAncestorsDir(mParsingFrameAncestorsDir);
     return cspHost;
   }
   // Error was reported in hostSource()
@@ -1208,6 +1210,9 @@ nsCSPParser::directive()
   mHasHashOrNonce = false;
   mStrictDynamic = false;
   mUnsafeInlineKeywordSrc = nullptr;
+
+  mParsingFrameAncestorsDir =
+    CSP_IsDirective(mCurDir[0], nsIContentSecurityPolicy::FRAME_ANCESTORS_DIRECTIVE);
 
   // Try to parse all the srcs by handing the array off to directiveValue
   nsTArray<nsCSPBaseSrc*> srcs;

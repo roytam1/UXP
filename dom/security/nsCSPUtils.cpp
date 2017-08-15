@@ -503,6 +503,7 @@ nsCSPSchemeSrc::toString(nsAString& outStr) const
 
 nsCSPHostSrc::nsCSPHostSrc(const nsAString& aHost)
   : mHost(aHost)
+  , mWithinFrameAncstorsDir(false)
 {
   ToLowerCase(mHost);
 }
@@ -685,6 +686,11 @@ nsCSPHostSrc::permits(nsIURI* aUri, const nsAString& aNonce, bool aWasRedirected
     nsAutoCString uriPath;
     rv = url->GetFilePath(uriPath);
     NS_ENSURE_SUCCESS(rv, false);
+
+    if (mWithinFrameAncstorsDir) {
+      // no path matching for frame-ancestors to not leak any path information.
+      return true;
+    }
 
     nsString decodedUriPath;
     CSP_PercentDecodeStr(NS_ConvertUTF8toUTF16(uriPath), decodedUriPath);
