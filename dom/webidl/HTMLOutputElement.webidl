@@ -33,6 +33,5 @@ interface HTMLOutputElement : HTMLElement {
   boolean reportValidity();
   void setCustomValidity(DOMString error);
 
-// Not yet implemented (bug 556743).
-//  readonly attribute NodeList labels;
+  readonly attribute NodeList labels;
 };
