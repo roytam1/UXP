@@ -64,6 +64,7 @@ XPCOMUtils.defineLazyServiceGetter(this, "AlertsService", "@mozilla.org/alerts-s
   ["Task", "resource://gre/modules/Task.jsm"],
   ["UITour", "resource:///modules/UITour.jsm"],
   ["URLBarZoom", "resource:///modules/URLBarZoom.jsm"],
+  ["UserAgentOverrides", "resource://gre/modules/UserAgentOverrides.jsm"],
   ["WebChannel", "resource://gre/modules/WebChannel.jsm"],
   ["WindowsRegistry", "resource://gre/modules/WindowsRegistry.jsm"],
   ["webrtcUI", "resource:///modules/webrtcUI.jsm"],
@@ -662,6 +663,8 @@ BrowserGlue.prototype = {
       }
     } catch (ex) { /* missing any of the prefs is not critical */ }
 
+    UserAgentOverrides.init();
+    
     PageThumbs.init();
     webrtcUI.init();
     AboutHome.init();
@@ -1042,6 +1045,7 @@ BrowserGlue.prototype = {
 
     BrowserUsageTelemetry.uninit();
     SelfSupportBackend.uninit();
+    UserAgentOverrides.uninit();
     PageThumbs.uninit();
     NewTabMessages.uninit();
     AboutNewTab.uninit();
