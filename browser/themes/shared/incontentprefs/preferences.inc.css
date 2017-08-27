@@ -173,6 +173,11 @@ treecol {
   margin-inline-start: 0;
 }
 
+#browserHomePage:-moz-locale-dir(rtl) input {
+  unicode-bidi: plaintext;
+  direction: rtl;
+}
+
 /* Content pane */
 #playDRMContentLink {
   /* Line up with the buttons in the other grid bits: */
