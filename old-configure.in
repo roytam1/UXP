@@ -3215,15 +3215,20 @@ dnl ==================================
 dnl = Check alsa availability on Linux
 dnl ==================================
 
+dnl If using Linux, enable the alsa library by default
+if test "$OS_TARGET" = "Linux"; then
+    MOZ_ALSA=1
+fi
+
 MOZ_ARG_ENABLE_BOOL(alsa,
-[  --enable-alsa          Enable Alsa support],
+[  --enable-alsa          Enable Alsa support (default on Linux)],
    MOZ_ALSA=1,
    MOZ_ALSA=)
 
 if test -n "$MOZ_ALSA"; then
     PKG_CHECK_MODULES(MOZ_ALSA, alsa, ,
          [echo "$MOZ_ALSA_PKG_ERRORS"
-          AC_MSG_ERROR([Need alsa for audio output on Linux. (On Ubuntu, you might try installing the package libasound2-dev.)])])
+          AC_MSG_ERROR([You need ALSA for audio output on Linux.])])
 fi
 
 AC_SUBST(MOZ_ALSA)
@@ -3251,7 +3256,7 @@ if test -n "$MOZ_PULSEAUDIO"; then
     if test -z "$gonkdir"; then
         PKG_CHECK_MODULES(MOZ_PULSEAUDIO, libpulse, ,
              [echo "$MOZ_PULSEAUDIO_PKG_ERRORS"
-              AC_MSG_ERROR([pulseaudio audio backend requires libpulse development package])])
+              AC_MSG_ERROR([Building pulseaudio audio backend requires libpulse development package])])
     else
         MOZ_PULSEAUDIO_CFLAGS="-I$gonkdir/external/pulseaudio/pulseaudio/src"
     fi
