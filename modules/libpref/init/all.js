@@ -4448,6 +4448,10 @@ pref("image.multithreaded_decoding.limit", -1);
 // cache.
 pref("canvas.image.cache.limit", 0);
 
+// Allow track-fobics to deliberately poison canvas data for
+// toDataURL() and getImageData()
+pref("canvas.poisondata", false);
+
 // WebGL prefs
 #ifdef ANDROID
 // Disable MSAA on mobile.
