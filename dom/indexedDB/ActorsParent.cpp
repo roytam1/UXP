@@ -7,6 +7,7 @@
 #include "ActorsParent.h"
 
 #include <algorithm>
+#include <stdint.h> // UINTPTR_MAX, uintptr_t
 #include "FileInfo.h"
 #include "FileManager.h"
 #include "IDBObjectStore.h"
@@ -859,6 +860,11 @@ ReadCompressedIndexDataValuesFromBlob(const uint8_t* aBlobData,
                  "ReadCompressedIndexDataValuesFromBlob",
                  js::ProfileEntry::Category::STORAGE);
 
+  if (uintptr_t(aBlobData) > UINTPTR_MAX - aBlobDataLength) {
+    IDB_REPORT_INTERNAL_ERR();
+    return NS_ERROR_FILE_CORRUPTED;
+  }
+
   const uint8_t* blobDataIter = aBlobData;
   const uint8_t* blobDataEnd = aBlobData + aBlobDataLength;
 
@@ -878,7 +884,8 @@ ReadCompressedIndexDataValuesFromBlob(const uint8_t* aBlobData,
 
     if (NS_WARN_IF(blobDataIter == blobDataEnd) ||
         NS_WARN_IF(keyBufferLength > uint64_t(UINT32_MAX)) ||
-        NS_WARN_IF(blobDataIter + keyBufferLength > blobDataEnd)) {
+        NS_WARN_IF(keyBufferLength > uintptr_t(blobDataEnd)) ||
+        NS_WARN_IF(blobDataIter > blobDataEnd - keyBufferLength)) {
       IDB_REPORT_INTERNAL_ERR();
       return NS_ERROR_FILE_CORRUPTED;
     }
@@ -896,7 +903,8 @@ ReadCompressedIndexDataValuesFromBlob(const uint8_t* aBlobData,
     if (sortKeyBufferLength > 0) {
       if (NS_WARN_IF(blobDataIter == blobDataEnd) ||
           NS_WARN_IF(sortKeyBufferLength > uint64_t(UINT32_MAX)) ||
-          NS_WARN_IF(blobDataIter + sortKeyBufferLength > blobDataEnd)) {
+          NS_WARN_IF(sortKeyBufferLength > uintptr_t(blobDataEnd)) ||
+          NS_WARN_IF(blobDataIter > blobDataEnd - sortKeyBufferLength)) {
         IDB_REPORT_INTERNAL_ERR();
         return NS_ERROR_FILE_CORRUPTED;
       }
