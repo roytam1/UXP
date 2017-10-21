@@ -50,7 +50,7 @@ function init(aEvent)
   let hour = buildID.slice(8, 10);
   let minute = buildID.slice(10, 12);
   if (Services.prefs.getBoolPref("general.useragent.appVersionIsBuildID")) {
-    versionField.textContent = `${year}.${month}.${day}.${hour}${minute}`;
+    versionField.textContent = `${year}.${month}.${day}`;
   } else {
     versionField.textContent = `v` + version + ` (${year}-${month}-${day})`;
   }
