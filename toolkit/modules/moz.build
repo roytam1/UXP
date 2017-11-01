@@ -57,7 +57,6 @@ EXTRA_JS_MODULES += [
     'Locale.jsm',
     'Log.jsm',
     'Memory.jsm',
-    'NewTabUtils.jsm',
     'NLP.jsm',
     'ObjectUtils.jsm',
     'PageMenu.jsm',
@@ -103,6 +102,8 @@ EXTRA_JS_MODULES += [
 ]
 EXTRA_JS_MODULES.third_party.jsesc += ['third_party/jsesc/jsesc.js']
 EXTRA_JS_MODULES.sessionstore += ['sessionstore/Utils.jsm']
+
+EXTRA_PP_JS_MODULES += ['NewTabUtils.jsm']
 
 if not CONFIG['MOZ_WEBEXTENSIONS']:
   EXTRA_PP_JS_MODULES += ['UpdateChannel.jsm']

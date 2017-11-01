@@ -1061,7 +1061,6 @@ pref("services.sync.prefs.sync.browser.download.useDownloadDir", true);
 pref("services.sync.prefs.sync.browser.formfill.enable", true);
 pref("services.sync.prefs.sync.browser.link.open_newwindow", true);
 pref("services.sync.prefs.sync.browser.newtabpage.enabled", true);
-pref("services.sync.prefs.sync.browser.newtabpage.enhanced", true);
 pref("services.sync.prefs.sync.browser.newtabpage.pinned", true);
 pref("services.sync.prefs.sync.browser.offline-apps.notify", true);
 pref("services.sync.prefs.sync.browser.safebrowsing.phishing.enabled", true);
@@ -1156,7 +1155,7 @@ pref("browser.newtabpage.introShown", false);
 pref("browser.newtabpage.enabled", true);
 
 // Toggles the enhanced content of 'about:newtab'. Shows sponsored tiles.
-sticky_pref("browser.newtabpage.enhanced", true);
+sticky_pref("browser.newtabpage.enhanced", false);
 
 // enables Activity Stream inspired layout
 pref("browser.newtabpage.compact", false);

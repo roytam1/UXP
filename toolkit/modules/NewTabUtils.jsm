@@ -249,10 +249,15 @@ var AllPages = {
    * Returns whether the history tiles are enhanced.
    */
   get enhanced() {
+#ifdef MC_BASILISK
+    // Hard-block the use of sponsored tiles.
+    return false;
+#else
     if (this._enhanced === null)
       this._enhanced = Services.prefs.getBoolPref(PREF_NEWTAB_ENHANCED);
 
     return this._enhanced;
+#endif
   },
 
   /**
