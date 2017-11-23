@@ -1145,7 +1145,7 @@ BookmarkExporter.prototype = {
     if (aItem.charset)
       this._writeAttribute("LAST_CHARSET", escapeHtmlEntities(aItem.charset));
     if (aItem.tags)
-      this._writeAttribute("TAGS", aItem.tags);
+      this._writeAttribute("TAGS", escapeHtmlEntities(aItem.tags));
     this._writeLine(">" + escapeHtmlEntities(aItem.title) + "</A>");
     this._writeDescription(aItem, aIndent);
   },
