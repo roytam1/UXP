@@ -8335,9 +8335,31 @@ nsHttpChannel::ResumeInternal()
     LOG(("nsHttpChannel::ResumeInternal [this=%p]\n", this));
 
     if (--mSuspendCount == 0 && mCallOnResume) {
-        nsresult rv = AsyncCall(mCallOnResume);
+        // Resume the interrupted procedure first, then resume
+        // the pump to continue process the input stream.
+        RefPtr<nsRunnableMethod<nsHttpChannel>> callOnResume=
+            NewRunnableMethod(this, mCallOnResume);
+        // Should not resume pump that created after resumption.
+        RefPtr<nsInputStreamPump> transactionPump = mTransactionPump;
+        RefPtr<nsInputStreamPump> cachePump = mCachePump;
+
+        nsresult rv =
+            NS_DispatchToCurrentThread(NS_NewRunnableFunction(
+                [callOnResume, transactionPump, cachePump]() {
+                    callOnResume->Run();
+
+                    if (transactionPump) {
+                        transactionPump->Resume();
+                    }
+
+                    if (cachePump) {
+                        cachePump->Resume();
+                    }
+                })
+            );
         mCallOnResume = nullptr;
         NS_ENSURE_SUCCESS(rv, rv);
+        return rv;
     }
 
     nsresult rvTransaction = NS_OK;
