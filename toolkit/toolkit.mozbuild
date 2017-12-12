@@ -167,8 +167,12 @@ if CONFIG['ENABLE_MARIONETTE'] or CONFIG['MOZ_WIDGET_TOOLKIT'] not in ('gonk', '
 
 DIRS += [
     '/tools/quitter',
-    '/media/gmp-clearkey/0.1',
 ]
+
+if CONFIG['MOZ_EME']:
+    DIRS += [
+    '/media/gmp-clearkey/0.1',
+    ]
 
 if CONFIG['ENABLE_TESTS']:
     DIRS += [
