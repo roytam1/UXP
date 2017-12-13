@@ -153,6 +153,7 @@ partial interface HTMLMediaElement {
   attribute EventHandler onmozinterruptend;
 };
 
+#ifdef MOZ_EME
 // Encrypted Media Extensions
 partial interface HTMLMediaElement {
   [Pref="media.eme.apiVisible"]
@@ -168,6 +169,7 @@ partial interface HTMLMediaElement {
   [Pref="media.eme.apiVisible"]
   attribute EventHandler onwaitingforkey;
 };
+#endif
 
 // This is just for testing
 partial interface HTMLMediaElement {

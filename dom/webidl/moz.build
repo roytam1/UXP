@@ -9,6 +9,7 @@ GENERATED_WEBIDL_FILES = [
 ]
 
 PREPROCESSED_WEBIDL_FILES = [
+    'HTMLMediaElement.webidl',
     'Navigator.webidl',
     'Node.webidl',
     'Promise.webidl',
@@ -210,7 +211,6 @@ WEBIDL_FILES = [
     'HTMLLIElement.webidl',
     'HTMLLinkElement.webidl',
     'HTMLMapElement.webidl',
-    'HTMLMediaElement.webidl',
     'HTMLMenuElement.webidl',
     'HTMLMenuItemElement.webidl',
     'HTMLMetaElement.webidl',

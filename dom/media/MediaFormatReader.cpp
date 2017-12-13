@@ -346,8 +346,12 @@ MediaFormatReader::DecoderFactory::DoCreateDecoder(TrackType aTrack)
   if (!mOwner->mPlatform) {
     mOwner->mPlatform = new PDMFactory();
     if (mOwner->IsEncrypted()) {
+#ifdef MOZ_EME
       MOZ_ASSERT(mOwner->mCDMProxy);
       mOwner->mPlatform->SetCDMProxy(mOwner->mCDMProxy);
+#else
+      return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR, "EME not supported");
+#endif
     }
   }
 
@@ -577,6 +581,7 @@ MediaFormatReader::InitInternal()
   return NS_OK;
 }
 
+#ifdef MOZ_EME
 class DispatchKeyNeededEvent : public Runnable {
 public:
   DispatchKeyNeededEvent(AbstractMediaDecoder* aDecoder,
@@ -602,6 +607,7 @@ private:
   nsTArray<uint8_t> mInitData;
   nsString mInitDataType;
 };
+#endif
 
 void
 MediaFormatReader::SetCDMProxy(CDMProxy* aProxy)
@@ -618,7 +624,11 @@ MediaFormatReader::SetCDMProxy(CDMProxy* aProxy)
 bool
 MediaFormatReader::IsWaitingOnCDMResource() {
   MOZ_ASSERT(OnTaskQueue());
+#ifdef MOZ_EME
   return IsEncrypted() && !mCDMProxy;
+#else
+  return false;
+#endif
 }
 
 RefPtr<MediaDecoderReader::MetadataPromise>
@@ -725,11 +735,13 @@ MediaFormatReader::OnDemuxerInitDone(nsresult)
 
   UniquePtr<EncryptionInfo> crypto = mDemuxer->GetCrypto();
   if (mDecoder && crypto && crypto->IsEncrypted()) {
+#ifdef MOZ_EME
     // Try and dispatch 'encrypted'. Won't go if ready state still HAVE_NOTHING.
     for (uint32_t i = 0; i < crypto->mInitDatas.Length(); i++) {
       NS_DispatchToMainThread(
         new DispatchKeyNeededEvent(mDecoder, crypto->mInitDatas[i].mInitData, crypto->mInitDatas[i].mType));
     }
+#endif
     mInfo.mCrypto = *crypto;
   }
 
