@@ -1330,20 +1330,21 @@ pref("identity.fxaccounts.migrateToDevEdition", false);
 pref("ui.key.menuAccessKeyFocuses", true);
 #endif
 
+#ifdef MOZ_EME
 // Encrypted media extensions.
-#ifdef XP_LINUX
-// On Linux EME is visible but disabled by default. This is so that the
-// "Play DRM content" checkbox in the Firefox UI is unchecked by default.
+// EME is visible but disabled by default. This is so that the
+// "Play DRM content" checkbox in the browser UI is unchecked by default.
 // DRM requires downloading and installing proprietary binaries, which
-// users on an open source operating systems didn't opt into. The first
-// time a site using EME is encountered, the user will be prompted to
-// enable DRM, whereupon the EME plugin binaries will be downloaded if
-// permission is granted.
+// users didn't necessarily opt-in to by installing the browser.
+// The first time a site using EME is encountered, the user will be
+// prompted to enable DRM, whereupon the EME plugin binaries will be
+// downloaded if permission is granted.
 pref("media.eme.enabled", false);
-#else
-pref("media.eme.enabled", true);
-#endif
 pref("media.eme.apiVisible", true);
+#else
+// Disable redundant interfaces
+pref("media.eme.apiVisible", false);
+#endif
 
 // Decode using Gecko Media Plugins in <video>, if a system decoder is not
 // availble and the preferred GMP is available.

@@ -627,6 +627,12 @@ pref("media.mediasource.enabled", true);
 
 pref("media.mediadrm-widevinecdm.visible", true);
 
+#ifdef MOZ_EME
+// Enable EME(Encrypted media extensions?)
+pref("media.eme.enabled", false);
+pref("media.eme.apiVisible", false);
+#endif
+
 // optimize images memory usage
 pref("image.downscale-during-decode.enabled", true);
 

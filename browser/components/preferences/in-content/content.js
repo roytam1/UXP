@@ -78,6 +78,7 @@ var gContentPane = {
     document.getElementById("notificationsPolicyLearnMore").setAttribute("href",
                                                                          notificationInfoURL);
 
+#ifdef MOZ_EME
     let drmInfoURL =
       Services.urlFormatter.formatURLPref("app.support.baseURL") + "drm-content";
     document.getElementById("playDRMContentLink").setAttribute("href", drmInfoURL);
@@ -91,6 +92,7 @@ var gContentPane = {
       // of the pane hiding/showing code potentially interfering:
       document.getElementById("drmGroup").setAttribute("style", "display: none !important");
     }
+#endif
   },
 
   // UTILITY FUNCTIONS

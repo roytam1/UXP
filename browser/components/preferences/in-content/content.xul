@@ -6,10 +6,12 @@
 
 <preferences id="contentPreferences" hidden="true" data-category="paneContent">
 
+#ifdef MOZ_EME
   <!-- DRM content -->
   <preference id="media.eme.enabled"
               name="media.eme.enabled"
               type="bool"/>
+#endif
 
   <!-- Popups -->
   <preference id="dom.disable_open_during_load"
@@ -40,6 +42,7 @@
   <html:a class="help-button" target="_blank" aria-label="&helpButton.label;"></html:a>
 </hbox>
 
+#ifdef MOZ_EME
 <groupbox id="drmGroup" data-category="paneContent" hidden="true">
   <caption><label>&drmContent.label;</label></caption>
   <grid id="contentGrid2">
@@ -60,6 +63,7 @@
     </rows>
   </grid>
 </groupbox>
+#endif
 
 <groupbox id="notificationsGroup" data-category="paneContent" hidden="true">
   <caption><label>&notificationsPolicy.label;</label></caption>

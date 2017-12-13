@@ -5,12 +5,16 @@
 
 var gEMEHandler = {
   get uiEnabled() {
+#ifdef MOZ_EME
     let emeUIEnabled = Services.prefs.getBoolPref("browser.eme.ui.enabled");
     // Force-disable on WinXP:
     if (navigator.platform.toLowerCase().startsWith("win")) {
       emeUIEnabled = emeUIEnabled && parseFloat(Services.sysinfo.get("version")) >= 6;
     }
     return emeUIEnabled;
+#else
+    return false;
+#endif
   },
   ensureEMEEnabled: function(browser, keySystem) {
     Services.prefs.setBoolPref("media.eme.enabled", true);
