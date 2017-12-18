@@ -2227,11 +2227,12 @@ pref("clipboard.autocopy", false);
 pref("clipboard.plainTextOnly", false);
 
 #ifdef XP_WIN
-// Setting false you can disable 4th button and/or 5th button of your mouse.
-// 4th button is typically mapped to "Back" and 5th button is typically mapped
-// to "Forward" button.
-pref("mousebutton.4th.enabled", true);
-pref("mousebutton.5th.enabled", true);
+// Mouse 4th/5th button handling
+// Setting these to false allows you to disable the 4th and/or 5th button of
+// your mouse. The 4th button is typically mapped to "Back" and the 5th
+// button is typically mapped to "Forward".
+pref("mouse.button4.enabled", true);
+pref("mouse.button5.enabled", true);
 #endif
 
 // mouse wheel scroll transaction period of time (in milliseconds)

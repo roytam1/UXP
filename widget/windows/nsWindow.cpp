@@ -5589,12 +5589,13 @@ nsWindow::ProcessMessage(UINT msg, WPARAM& wParam, LPARAM& lParam,
       DispatchPendingEvents();
       break;
 
-    // Windows doesn't provide to customize the behavior of 4th nor 5th button
-    // of mouse.  If 5-button mouse works with standard mouse deriver of
-    // Windows, users cannot disable 4th button (browser back) nor 5th button
-    // (browser forward).  We should allow to do it with our prefs since we can
-    // prevent Windows to generate WM_APPCOMMAND message if WM_XBUTTONUP
-    // messages are not sent to DefWindowProc.
+    // Windows doesn't provide a way to customize the behavior of 4th or 5th
+    // button of a mouse. If a 5-button mouse works with the standard mouse
+    // driver of Windows, users cannot disable the 4th button (browser back)
+    // nor the 5th button (browser forward).
+    // We can disable it here with our prefs since we can prevent Windows
+    // from generating WM_APPCOMMAND messages if WM_XBUTTONUP messages are
+    // not sent to DefWindowProc.
     case WM_XBUTTONDOWN:
     case WM_XBUTTONUP:
     case WM_NCXBUTTONDOWN:
@@ -5602,10 +5603,10 @@ nsWindow::ProcessMessage(UINT msg, WPARAM& wParam, LPARAM& lParam,
       *aRetValue = TRUE;
       switch (GET_XBUTTON_WPARAM(wParam)) {
         case XBUTTON1:
-          result = !Preferences::GetBool("mousebutton.4th.enabled", true);
+          result = !Preferences::GetBool("mouse.button4.enabled", true);
           break;
         case XBUTTON2:
-          result = !Preferences::GetBool("mousebutton.5th.enabled", true);
+          result = !Preferences::GetBool("mouse.button5.enabled", true);
           break;
         default:
           break;
