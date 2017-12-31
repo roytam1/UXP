@@ -152,7 +152,7 @@ browser.jar:
         content/browser/sync/genericChange.js         (content/sync/genericChange.js)
         content/browser/sync/key.xhtml                (content/sync/key.xhtml)
         content/browser/sync/utils.js                 (content/sync/utils.js)
-*       content/browser/sync/customize.xul            (content/sync/customize.xul)
+        content/browser/sync/customize.xul            (content/sync/customize.xul)
         content/browser/sync/customize.js             (content/sync/customize.js)
         content/browser/sync/customize.css            (content/sync/customize.css)
         content/browser/safeMode.css                  (content/safeMode.css)

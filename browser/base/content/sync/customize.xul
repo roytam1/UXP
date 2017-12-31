@@ -31,12 +31,7 @@
 
     <label id="sync-customize-title" value="&syncCustomize.title;"/>
     <description id="sync-customize-subtitle"
-#ifdef XP_UNIX
-                 value="&syncCustomizeUnix.description;"
-#else
-                 value="&syncCustomize.description;"
-#endif
-                 />
+                 value="&syncCustomize.description;"/>
 
   <vbox align="start">
       <checkbox label="&engine.tabs.label;"

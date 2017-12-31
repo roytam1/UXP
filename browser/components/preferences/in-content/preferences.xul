@@ -55,18 +55,10 @@
 %advancedDTD;
 ]>
 
-#ifdef XP_WIN
-#define USE_WIN_TITLE_STYLE
-#endif
-
 <page xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
       xmlns:html="http://www.w3.org/1999/xhtml"
       disablefastfind="true"
-#ifdef USE_WIN_TITLE_STYLE
-      title="&prefWindow.titleWin;">
-#else
       title="&prefWindow.title;">
-#endif
 
   <html:link rel="shortcut icon"
               href="chrome://browser/skin/preferences/in-content/favicon.ico"/>
