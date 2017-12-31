@@ -351,7 +351,7 @@ Section "Uninstall"
     StrCpy $0 "Software\Microsoft\MediaPlayer\ShimInclusionList\plugin-container.exe"
     DeleteRegKey HKLM "$0"
     DeleteRegKey HKCU "$0"
-    StrCpy $0 "Software\Classes\MIME\Database\Content Type\application/x-xpinstall;app=firefox"
+    StrCpy $0 "Software\Classes\MIME\Database\Content Type\application/x-xpinstall;app=Basilisk"
     DeleteRegKey HKLM "$0"
     DeleteRegKey HKCU "$0"
   ${Else}
@@ -419,8 +419,8 @@ Section "Uninstall"
   ; Remove the installation directory if it is empty
   RmDir "$INSTDIR"
 
-  ; If firefox.exe was successfully deleted yet we still need to restart to
-  ; remove other files create a dummy firefox.exe.moz-delete to prevent the
+  ; If Basilisk.exe was successfully deleted yet we still need to restart to
+  ; remove other files create a dummy Basilisk.exe.moz-delete to prevent the
   ; installer from allowing an install without restart when it is required
   ; to complete an uninstall.
   ${If} ${RebootFlag}
