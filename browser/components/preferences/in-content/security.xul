@@ -45,6 +45,7 @@
 
   <!-- Passwords -->
   <preference id="signon.rememberSignons" name="signon.rememberSignons" type="bool"/>
+  <preference id="signon.autofillForms"   name="signon.autofillForms"   type="bool"/>
 
 </preferences>
 
@@ -103,6 +104,9 @@
             accesskey="&passwordExceptions.accesskey;"
             preference="pref.privacy.disable_button.view_passwords_exceptions"/>
   </hbox>
+  <checkbox id="autofillPasswords" flex="1"
+         label="&autofillPasswords.label;" accesskey="&autofillPasswords.accesskey;"
+         preference="signon.autofillForms"/>
   <grid id="passwordGrid">
     <columns>
       <column flex="1"/>
