@@ -451,7 +451,7 @@ nsGNOMEShellService::SetDesktopBackground(nsIDOMElement* aElement,
 
     // Set the image to an empty string first to force a refresh
     // (since we could be writing a new image on top of an existing
-    // Firefox_wallpaper.png and nautilus doesn't monitor the file for changes)
+    // Basilisk_wallpaper.png and nautilus doesn't monitor the file for changes)
     gconf->SetString(NS_LITERAL_CSTRING(kDesktopImageKey),
                      EmptyCString());
 

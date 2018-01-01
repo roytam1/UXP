@@ -135,7 +135,7 @@ OpenKeyForReading(HKEY aKeyRoot, const nsAString& aKeyName, HKEY* aKey)
 //   The following keys are set to make Basilisk appear in the Start Menu as the
 //   browser:
 //   
-//   HKCU\SOFTWARE\Clients\StartMenuInternet\FIREFOX.EXE\
+//   HKCU\SOFTWARE\Clients\StartMenuInternet\BASILISK.EXE\
 //                                      (default)         REG_SZ     <appname>
 //     DefaultIcon                      (default)         REG_SZ     <apppath>,0
 //     InstallInfo                      HideIconsCommand  REG_SZ     <uninstpath> /HideShortcuts
