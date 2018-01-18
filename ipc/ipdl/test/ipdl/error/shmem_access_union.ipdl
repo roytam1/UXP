@@ -1,0 +1,8 @@
+union Union {
+    [-r-w|+r+w] Shmem;
+};
+
+protocol shmem_access_union {
+child:
+    async Msg(Union u);
+};
