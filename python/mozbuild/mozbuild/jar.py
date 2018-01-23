@@ -460,7 +460,7 @@ class JarMaker(object):
                 pp.setMarker('%')
             pp.out = outf
             pp.do_include(inf)
-            pp.failUnused(realsrc)
+            pp.warnUnused(realsrc)
             outf.close()
             inf.close()
             return
