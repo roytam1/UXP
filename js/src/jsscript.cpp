@@ -75,24 +75,19 @@ js::XDRScriptConst(XDRState<mode>* xdr, MutableHandleValue vp)
 {
     JSContext* cx = xdr->cx();
 
-    /*
-     * A script constant can be an arbitrary primitive value as they are used
-     * to implement JSOP_LOOKUPSWITCH. But they cannot be objects, see
-     * bug 407186.
-     */
     enum ConstTag {
-        SCRIPT_INT     = 0,
-        SCRIPT_DOUBLE  = 1,
-        SCRIPT_ATOM    = 2,
-        SCRIPT_TRUE    = 3,
-        SCRIPT_FALSE   = 4,
-        SCRIPT_NULL    = 5,
-        SCRIPT_OBJECT  = 6,
-        SCRIPT_VOID    = 7,
-        SCRIPT_HOLE    = 8
+        SCRIPT_INT,
+        SCRIPT_DOUBLE,
+        SCRIPT_ATOM,
+        SCRIPT_TRUE,
+        SCRIPT_FALSE,
+        SCRIPT_NULL,
+        SCRIPT_OBJECT,
+        SCRIPT_VOID,
+        SCRIPT_HOLE
     };
 
-    uint32_t tag;
+    ConstTag tag;
     if (mode == XDR_ENCODE) {
         if (vp.isInt32()) {
             tag = SCRIPT_INT;
@@ -116,7 +111,7 @@ js::XDRScriptConst(XDRState<mode>* xdr, MutableHandleValue vp)
         }
     }
 
-    if (!xdr->codeUint32(&tag))
+    if (!xdr->codeEnum32(&tag))
         return false;
 
     switch (tag) {
@@ -182,6 +177,10 @@ js::XDRScriptConst(XDRState<mode>* xdr, MutableHandleValue vp)
         if (mode == XDR_DECODE)
             vp.setMagic(JS_ELEMENTS_HOLE);
         break;
+      default:
+        // Fail in debug, but only soft-fail in release
+        MOZ_ASSERT(false, "Bad XDR value kind");
+        return xdr->fail(JS::TranscodeResult_Failure_BadDecode);
     }
     return true;
 }
@@ -742,11 +741,20 @@ js::XDRScript(XDRState<mode>* xdr, HandleScope scriptEnclosingScope, HandleScrip
               case ScopeKind::Module:
                 MOZ_CRASH("NYI");
                 break;
+              default:
+                // Fail in debug, but only soft-fail in release
+                MOZ_ASSERT(false, "Bad XDR scope kind");
+                return xdr->fail(JS::TranscodeResult_Failure_BadDecode);
             }
 
             if (mode == XDR_DECODE)
                 vector[i].init(scope);
         }
+
+        // Verify marker to detect data corruption after decoding scope data. A
+        // mismatch here indicates we will almost certainly crash in release.
+        if (!xdr->codeMarker(0xF81F7F5A))
+            return false;
     }
 
     /*
@@ -832,11 +840,17 @@ js::XDRScript(XDRState<mode>* xdr, HandleScope scriptEnclosingScope, HandleScrip
           }
 
           default: {
-            MOZ_ASSERT(false, "Unknown class kind.");
-            return xdr->fail(JS::TranscodeResult_Failure_UnknownClassKind);
+            // Fail in debug, but only soft-fail in release
+            MOZ_ASSERT(false, "Bad XDR class kind");
+            return xdr->fail(JS::TranscodeResult_Failure_BadDecode);
           }
         }
     }
+
+    // Verify marker to detect data corruption after decoding object data. A
+    // mismatch here indicates we will almost certainly crash in release.
+    if (!xdr->codeMarker(0x223DB179))
+        return false;
 
     if (ntrynotes != 0) {
         JSTryNote* tnfirst = script->trynotes()->vector;

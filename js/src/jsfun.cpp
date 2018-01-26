@@ -641,6 +641,10 @@ js::XDRInterpretedFunction(XDRState<mode>* xdr, HandleScope enclosingScope,
         objp.set(fun);
     }
 
+    // Verify marker at end of function to detect buffer truncation.
+    if (!xdr->codeMarker(0xA0129CD1))
+        return false;
+
     return true;
 }
 

@@ -5927,7 +5927,7 @@ enum TranscodeResult
     TranscodeResult_Failure_BadBuildId =          TranscodeResult_Failure | 0x1,
     TranscodeResult_Failure_RunOnceNotSupported = TranscodeResult_Failure | 0x2,
     TranscodeResult_Failure_AsmJSNotSupported =   TranscodeResult_Failure | 0x3,
-    TranscodeResult_Failure_UnknownClassKind =    TranscodeResult_Failure | 0x4,
+    TranscodeResult_Failure_BadDecode =           TranscodeResult_Failure | 0x4,
 
     // A error, the JSContext has a pending exception.
     TranscodeResult_Throw = 0x200
