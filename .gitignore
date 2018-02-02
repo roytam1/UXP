@@ -10,6 +10,8 @@ ID
 .DS_Store*
 *.pdb
 *.egg-info
+*.orig
+*.rej
 
 # Vim swap files.
 .*.sw[a-z]
@@ -33,6 +35,7 @@ security/manager/.nss.checkout
 
 # Build directories
 /obj*/
+/build-*/
 
 # Build directories for js shell
 _DBG.OBJ/
@@ -90,8 +93,8 @@ testing/web-platform/sync/
 mobile/android/gradle/.gradle
 
 # XCode project cruft
-embedding/ios/GeckoEmbed/GeckoEmbed.xcodeproj/project.xcworkspace/xcuserdata
-embedding/ios/GeckoEmbed/GeckoEmbed.xcodeproj/xcuserdata
+embedding/ios/GoannaEmbed/GoannaEmbed.xcodeproj/project.xcworkspace/xcuserdata
+embedding/ios/GoannaEmbed/GoannaEmbed.xcodeproj/xcuserdata
 
 # Ignore mozharness execution files
 testing/mozharness/.tox/
