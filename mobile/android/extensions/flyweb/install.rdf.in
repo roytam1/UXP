@@ -18,9 +18,9 @@
         with minimum and maximum supported versions. -->
     <em:targetApplication>
       <Description>
-        <em:id>{aa3c5121-dab2-40e2-81ca-7ea25febc110}</em:id>
-        <em:minVersion>@FIREFOX_VERSION@</em:minVersion>
-        <em:maxVersion>@FIREFOX_VERSION@</em:maxVersion>
+        <em:id>@MOZ_APP_ID@</em:id>
+        <em:minVersion>@MOZ_APP_VERSION@</em:minVersion>
+        <em:maxVersion>@MOZ_APP_VERSION@</em:maxVersion>
       </Description>
     </em:targetApplication>
 
