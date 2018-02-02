@@ -382,6 +382,8 @@
 @RESPATH@/components/DownloadLegacy.js
 @RESPATH@/components/BrowserPageThumbs.manifest
 @RESPATH@/components/crashmonitor.manifest
+@RESPATH@/components/jsconsole-clhandler.manifest
+@RESPATH@/components/jsconsole-clhandler.js
 @RESPATH@/components/nsCrashMonitor.js
 @RESPATH@/components/SiteSpecificUserAgent.js
 @RESPATH@/components/SiteSpecificUserAgent.manifest

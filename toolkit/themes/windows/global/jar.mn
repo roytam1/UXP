@@ -20,6 +20,11 @@ toolkit.jar:
 #endif
   skin/classic/global/colorpicker.css
   skin/classic/global/commonDialog.css
+* skin/classic/global/console/console.css                  (console/console.css)
+  skin/classic/global/console/console-toolbar.png          (console/console-toolbar.png)
+  skin/classic/global/console/console-error-caret.gif      (console/console-error-caret.gif)
+  skin/classic/global/console/console-error-dash.gif       (console/console-error-dash.gif)
+  skin/classic/global/console/itemSelected.png             (console/itemSelected.png)
   skin/classic/global/findBar.css
 * skin/classic/global/global.css
   skin/classic/global/listbox.css

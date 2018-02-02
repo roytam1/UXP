@@ -51,3 +51,7 @@ toolkit.jar:
    skin/classic/global/toolbar/spring.png                      (toolbar/spring.png)
    skin/classic/global/tree/twisty-clsd.png                    (tree/twisty-clsd.png)
    skin/classic/global/tree/twisty-open.png                    (tree/twisty-open.png)
+   
+  skin/classic/global/console/console.css                     (console/console.css)
+  skin/classic/global/console/console.png                     (console/console.png)
+  skin/classic/global/console/console-toolbar.png             (console/console-toolbar.png)

@@ -18,6 +18,7 @@ DIRS += [
     'apppicker',
     'asyncshutdown',
     'commandlines',
+    'console',
     'contentprefs',
     'contextualidentity',
     'cookie',
