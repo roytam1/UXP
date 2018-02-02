@@ -626,6 +626,18 @@ var NodeActor = exports.NodeActor = protocol.ActorClassWithSpec(nodeSpec, {
   },
 
   /**
+   * Get the full CSS path for this node.
+   *
+   * @return {String} A CSS selector with a part for the node and each of its ancestors.
+   */
+  getCssPath: function () {
+    if (Cu.isDeadWrapper(this.rawNode)) {
+      return "";
+    }
+    return CssLogic.getCssPath(this.rawNode);
+  },
+
+  /**
    * Scroll the selected node into view.
    */
   scrollIntoView: function () {
