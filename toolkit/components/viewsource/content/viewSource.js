@@ -13,8 +13,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "Services",
   "resource://gre/modules/Services.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "CharsetMenu",
   "resource://gre/modules/CharsetMenu.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "Deprecated",
-  "resource://gre/modules/Deprecated.jsm");
 
 [
   ["gBrowser",          "content"],
@@ -260,7 +258,7 @@ ViewSourceChrome.prototype = {
    *   lineNumber (optional):
    *     The line number to focus on once the source is loaded.
    *
-   * The deprecated API has the opener pass in a number of arguments:
+   * The original API has the opener pass in a number of arguments:
    *
    * arg[0] - URL string.
    * arg[1] - Charset value string in the form 'charset=xxx'.
@@ -305,8 +303,8 @@ ViewSourceChrome.prototype = {
     }
 
     if (typeof window.arguments[0] == "string") {
-      // We're using the deprecated API
-      return this._loadViewSourceDeprecated(window.arguments);
+      // We're using the original API
+      return this._loadViewSourceOriginal(window.arguments);
     }
 
     // We're using the modern API, which allows us to view the
@@ -322,13 +320,10 @@ ViewSourceChrome.prototype = {
   },
 
   /**
-   * This is the deprecated API for viewSource.xul, for old-timer consumers.
+   * This is the original API for viewSource.xul, for old-timer consumers.
    * This API might eventually go away.
    */
-  _loadViewSourceDeprecated(aArguments) {
-    Deprecated.warning("The arguments you're passing to viewSource.xul " +
-                       "are using an out-of-date API.",
-                       "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
+  _loadViewSourceOriginal(aArguments) {
     // Parse the 'arguments' supplied with the dialog.
     //    arg[0] - URL string.
     //    arg[1] - Charset value in the form 'charset=xxx'.
@@ -344,7 +339,7 @@ ViewSourceChrome.prototype = {
     }
 
     if (this.browser.isRemoteBrowser) {
-      throw new Error("Deprecated view source API should not use a remote browser.");
+      throw new Error("Original view source API should not use a remote browser.");
     }
 
     let forcedCharSet;
@@ -352,7 +347,7 @@ ViewSourceChrome.prototype = {
       forcedCharSet = aArguments[1].split("=")[1];
     }
 
-    this.sendAsyncMessage("ViewSource:LoadSourceDeprecated", {
+    this.sendAsyncMessage("ViewSource:LoadSourceOriginal", {
       URL: aArguments[0],
       lineNumber: aArguments[3],
       forcedCharSet,
@@ -787,49 +782,31 @@ function ViewSourceSavePage()
                gPageLoader);
 }
 
-// Below are old deprecated functions and variables left behind for
+// Below are original functions and variables left behind for
 // compatibility reasons. These will be removed soon via bug 1159293.
 
 this.__defineGetter__("gLastLineFound", function () {
-  Deprecated.warning("gLastLineFound is deprecated - please use " +
-                     "viewSourceChrome.lastLineFound instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   return viewSourceChrome.lastLineFound;
 });
 
 function onLoadViewSource() {
-  Deprecated.warning("onLoadViewSource() is deprecated - please use " +
-                     "viewSourceChrome.onXULLoaded() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.onXULLoaded();
 }
 
 function isHistoryEnabled() {
-  Deprecated.warning("isHistoryEnabled() is deprecated - please use " +
-                     "viewSourceChrome.historyEnabled instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   return viewSourceChrome.historyEnabled;
 }
 
 function ViewSourceClose() {
-  Deprecated.warning("ViewSourceClose() is deprecated - please use " +
-                     "viewSourceChrome.close() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.close();
 }
 
 function ViewSourceReload() {
-  Deprecated.warning("ViewSourceReload() is deprecated - please use " +
-                     "viewSourceChrome.reload() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.reload();
 }
 
 function getWebNavigation()
 {
-  Deprecated.warning("getWebNavigation() is deprecated - please use " +
-                     "viewSourceChrome.webNav instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   // The original implementation returned null if anything threw during
   // the getting of the webNavigation.
   try {
@@ -840,45 +817,27 @@ function getWebNavigation()
 }
 
 function viewSource(url) {
-  Deprecated.warning("viewSource() is deprecated - please use " +
-                     "viewSourceChrome.loadURL() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.loadURL(url);
 }
 
 function ViewSourceGoToLine()
 {
-  Deprecated.warning("ViewSourceGoToLine() is deprecated - please use " +
-                     "viewSourceChrome.promptAndGoToLine() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.promptAndGoToLine();
 }
 
 function goToLine(line)
 {
-  Deprecated.warning("goToLine() is deprecated - please use " +
-                     "viewSourceChrome.goToLine() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.goToLine(line);
 }
 
 function BrowserForward(aEvent) {
-  Deprecated.warning("BrowserForward() is deprecated - please use " +
-                     "viewSourceChrome.goForward() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.goForward();
 }
 
 function BrowserBack(aEvent) {
-  Deprecated.warning("BrowserBack() is deprecated - please use " +
-                     "viewSourceChrome.goBack() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.goBack();
 }
 
 function UpdateBackForwardCommands() {
-  Deprecated.warning("UpdateBackForwardCommands() is deprecated - please use " +
-                     "viewSourceChrome.updateCommands() instead.",
-                     "https://developer.mozilla.org/en-US/Add-ons/Code_snippets/View_Source_for_XUL_Applications");
   viewSourceChrome.updateCommands();
 }

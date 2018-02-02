@@ -15,8 +15,6 @@
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "ViewSourceBrowser",
   "resource://gre/modules/ViewSourceBrowser.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "Deprecated",
-  "resource://gre/modules/Deprecated.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
   "resource://gre/modules/PrivateBrowsingUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Services",
@@ -51,12 +49,12 @@ var gViewSourceUtils = {
    *        lineNumber (optional):
    *          The line number to focus on once the source is loaded.
    *
-   * @param aPageDescriptor (deprecated, optional)
+   * @param aPageDescriptor (optional)
    *        Accepted for compatibility reasons, but is otherwise ignored.
-   * @param aDocument (deprecated, optional)
+   * @param aDocument (optional)
    *        The content document we would like to view the source of. This
    *        function will throw if aDocument is a CPOW.
-   * @param aLineNumber (deprecated, optional)
+   * @param aLineNumber (optional)
    *        The line number to focus on once the source is loaded.
    */
   viewSource: function(aArgsOrURL, aPageDescriptor, aDocument, aLineNumber)
@@ -213,12 +211,12 @@ var gViewSourceUtils = {
    *        lineNumber (optional):
    *          The line number to focus on once the source is loaded.
    *
-   * @param aPageDescriptor (deprecated, optional)
+   * @param aPageDescriptor (optional)
    *        Accepted for compatibility reasons, but is otherwise ignored.
-   * @param aDocument (deprecated, optional)
+   * @param aDocument (optional)
    *        The content document we would like to view the source of. This
    *        function will throw if aDocument is a CPOW.
-   * @param aLineNumber (deprecated, optional)
+   * @param aLineNumber (optional)
    *        The line number to focus on once the source is loaded.
    * @param aCallBack
    *        A function accepting two arguments:
@@ -231,10 +229,6 @@ var gViewSourceUtils = {
                                  aLineNumber, aCallBack) {
     let data;
     if (typeof aArgsOrURL == "string") {
-      Deprecated.warning("The arguments you're passing to " +
-                         "openInExternalEditor are using an out-of-date API.",
-                         "https://developer.mozilla.org/en-US/Add-ons/" +
-                         "Code_snippets/View_Source_for_XUL_Applications");
       if (Components.utils.isCrossProcessWrapper(aDocument)) {
         throw new Error("View Source cannot accept a CPOW as a document.");
       }

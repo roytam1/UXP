@@ -43,7 +43,7 @@ var ViewSourceContent = {
    */
   messages: [
     "ViewSource:LoadSource",
-    "ViewSource:LoadSourceDeprecated",
+    "ViewSource:LoadSourceOriginal",
     "ViewSource:LoadSourceWithSelection",
     "ViewSource:GoToLine",
     "ViewSource:ToggleWrapping",
@@ -131,8 +131,8 @@ var ViewSourceContent = {
         this.viewSource(data.URL, data.outerWindowID, data.lineNumber,
                         data.shouldWrap);
         break;
-      case "ViewSource:LoadSourceDeprecated":
-        this.viewSourceDeprecated(data.URL, objects.pageDescriptor, data.lineNumber,
+      case "ViewSource:LoadSourceOriginal":
+        this.viewSourceOriginal(data.URL, objects.pageDescriptor, data.lineNumber,
                                   data.forcedCharSet);
         break;
       case "ViewSource:LoadSourceWithSelection":
@@ -245,7 +245,7 @@ var ViewSourceContent = {
   },
 
   /**
-   * Called when the parent is using the deprecated API for viewSource.xul.
+   * Called when the parent is using the original API for viewSource.xul.
    * This function will throw if it's called on a remote browser.
    *
    * @param URL (required)
@@ -260,11 +260,11 @@ var ViewSourceContent = {
    * @param forcedCharSet (optional)
    *        The document character set to use instead of the default one.
    */
-  viewSourceDeprecated(URL, pageDescriptor, lineNumber, forcedCharSet) {
+  viewSourceOriginal(URL, pageDescriptor, lineNumber, forcedCharSet) {
     // This should not be called if this frame script is running
     // in a content process!
     if (Services.appinfo.processType != Services.appinfo.PROCESS_TYPE_DEFAULT) {
-      throw new Error("ViewSource deprecated API should not be used with " +
+      throw new Error("ViewSource original API should not be used with " +
                       "remote browsers.");
     }
 
@@ -272,7 +272,7 @@ var ViewSourceContent = {
   },
 
   /**
-   * Common utility function used by both the current and deprecated APIs
+   * Common utility function used by both the current and orginal APIs
    * for loading source.
    *
    * @param URL (required)
