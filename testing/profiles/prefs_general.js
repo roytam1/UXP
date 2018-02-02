@@ -119,8 +119,6 @@ user_pref("extensions.getAddons.get.url", "http://%(server)s/extensions-dummy/re
 user_pref("extensions.getAddons.getWithPerformance.url", "http://%(server)s/extensions-dummy/repositoryGetWithPerformanceURL");
 user_pref("extensions.getAddons.search.browseURL", "http://%(server)s/extensions-dummy/repositoryBrowseURL");
 user_pref("extensions.getAddons.search.url", "http://%(server)s/extensions-dummy/repositorySearchURL");
-// Ensure blocklist updates don't hit the network
-user_pref("services.settings.server", "http://%(server)s/dummy-kinto/v1");
 // Make sure SNTP requests don't hit the network
 user_pref("network.sntp.pools", "%(server)s");
 // We know the SNTP request will fail, since localhost isn't listening on

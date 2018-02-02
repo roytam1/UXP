@@ -627,17 +627,6 @@ Blocklist.prototype = {
     // make sure we have loaded it.
     if (!this._isBlocklistLoaded())
       this._loadBlocklist();
-
-    // If kinto update is enabled, do the kinto update
-    if (gPref.getBoolPref(PREF_BLOCKLIST_UPDATE_ENABLED)) {
-      const updater =
-        Components.utils.import("resource://services-common/blocklist-updater.js",
-                                {});
-      updater.checkVersions().catch(() => {
-        // Before we enable this in release, we want to collect telemetry on
-        // failed kinto updates - see bug 1254099
-      });
-    }
   },
 
   onXMLLoad: Task.async(function*(aEvent) {

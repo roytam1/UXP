@@ -4,8 +4,6 @@ var {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 XPCOMUtils.defineLazyModuleGetter(this, "ExtensionStorage",
                                   "resource://gre/modules/ExtensionStorage.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "ExtensionStorageSync",
-                                  "resource://gre/modules/ExtensionStorageSync.jsm");
 
 Cu.import("resource://gre/modules/ExtensionUtils.jsm");
 var {
@@ -31,34 +29,14 @@ function storageApiFactory(context) {
         },
       },
 
-      sync: {
-        get: function(spec) {
-          return ExtensionStorageSync.get(extension, spec, context);
-        },
-        set: function(items) {
-          return ExtensionStorageSync.set(extension, items, context);
-        },
-        remove: function(keys) {
-          return ExtensionStorageSync.remove(extension, keys, context);
-        },
-        clear: function() {
-          return ExtensionStorageSync.clear(extension, context);
-        },
-      },
-
       onChanged: new EventManager(context, "storage.onChanged", fire => {
         let listenerLocal = changes => {
           fire(changes, "local");
         };
-        let listenerSync = changes => {
-          fire(changes, "sync");
-        };
 
         ExtensionStorage.addOnChangedListener(extension.id, listenerLocal);
-        ExtensionStorageSync.addOnChangedListener(extension, listenerSync, context);
         return () => {
           ExtensionStorage.removeOnChangedListener(extension.id, listenerLocal);
-          ExtensionStorageSync.removeOnChangedListener(extension, listenerSync);
         };
       }).api(),
     },

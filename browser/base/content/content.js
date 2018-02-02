@@ -315,29 +315,26 @@ var AboutNetAndCertErrorListener = {
       case MOZILLA_PKIX_ERROR_NOT_YET_VALID_CERTIFICATE:
       case MOZILLA_PKIX_ERROR_NOT_YET_VALID_ISSUER_CERTIFICATE:
 
-        // use blocklist stats if available
-        if (Services.prefs.getPrefType(PREF_BLOCKLIST_CLOCK_SKEW_SECONDS)) {
-          let difference = Services.prefs.getIntPref(PREF_BLOCKLIST_CLOCK_SKEW_SECONDS);
+        let appBuildId = Services.appinfo.appBuildID;
+        let year = parseInt(appBuildID.substr(0, 4), 10);
+        let month = parseInt(appBuildID.substr(4, 2), 10) - 1;
+        let day = parseInt(appBuildID.substr(6, 2), 10);
+        let buildDate = new Date(year, month, day);
+        let systemDate = new Date();
+        
+        // if the difference is more than a day
+        if (buildDate > systemDate) {
+          let formatter = new Intl.DateTimeFormat();
 
-          // if the difference is more than a day
-          if (Math.abs(difference) > 60 * 60 * 24) {
-            let formatter = new Intl.DateTimeFormat();
-            let systemDate = formatter.format(new Date());
-            // negative difference means local time is behind server time
-            let actualDate = formatter.format(new Date(Date.now() - difference * 1000));
+          content.document.getElementById("wrongSystemTime_URL")
+            .textContent = content.document.location.hostname;
+          content.document.getElementById("wrongSystemTime_systemDate")
+            .textContent = formatter.format(systemDate);
 
-            content.document.getElementById("wrongSystemTime_URL")
-              .textContent = content.document.location.hostname;
-            content.document.getElementById("wrongSystemTime_systemDate")
-              .textContent = systemDate;
-            content.document.getElementById("wrongSystemTime_actualDate")
-              .textContent = actualDate;
-
-            content.document.getElementById("errorShortDesc")
-              .style.display = "none";
-            content.document.getElementById("wrongSystemTimePanel")
-              .style.display = "block";
-          }
+          content.document.getElementById("errorShortDesc")
+            .style.display = "none";
+          content.document.getElementById("wrongSystemTimePanel")
+            .style.display = "block";
         }
         learnMoreLink.href = baseURL  + "time-errors";
         break;
