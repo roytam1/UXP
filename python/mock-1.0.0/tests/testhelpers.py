@@ -41,21 +41,21 @@ class AnyTest(unittest2.TestCase):
 
     def test_any_and_datetime(self):
         mock = Mock()
-        mock(datetime.now(), foo=datetime.now())
+        mock(datetime.utcnow(), foo=datetime.utcnow())
 
         mock.assert_called_with(ANY, foo=ANY)
 
 
     def test_any_mock_calls_comparison_order(self):
         mock = Mock()
-        d = datetime.now()
+        d = datetime.utcnow()
         class Foo(object):
             def __eq__(self, other):
                 return False
             def __ne__(self, other):
                 return True
 
-        for d in datetime.now(), Foo():
+        for d in datetime.utcnow(), Foo():
             mock.reset_mock()
 
             mock(d, foo=d, bar=d)

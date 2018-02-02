@@ -241,8 +241,8 @@ class B2GRemoteAutomation(Automation):
                 self._devicemanager.killProcess('/system/b2g/b2g', sig=signal.SIGABRT)
 
                 timeout = 10 # seconds
-                starttime = datetime.datetime.now()
-                while datetime.datetime.now() - starttime < datetime.timedelta(seconds=timeout):
+                starttime = datetime.datetime.utcnow()
+                while datetime.datetime.utcnow() - starttime < datetime.timedelta(seconds=timeout):
                     if not self._devicemanager.processExist('/system/b2g/b2g'):
                         break
                     time.sleep(1)

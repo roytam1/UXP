@@ -36,7 +36,7 @@ def _do_work(qTasks, qResults, qWatch, prefix, run_skipped, timeout, show_cmd):
         cmd = test.get_command(prefix)
         if show_cmd:
             print(escape_cmdline(cmd))
-        tStart = datetime.now()
+        tStart = datetime.utcnow()
         proc = subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
@@ -49,7 +49,7 @@ def _do_work(qTasks, qResults, qWatch, prefix, run_skipped, timeout, show_cmd):
         qWatch.put(TaskFinishedMarker)
 
         # Create a result record and forward to result processing.
-        dt = datetime.now() - tStart
+        dt = datetime.utcnow() - tStart
         result = TestOutput(test, cmd, out, err, proc.returncode, dt.total_seconds(),
                             dt > timedelta(seconds=timeout))
         qResults.put(result)

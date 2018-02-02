@@ -14,7 +14,7 @@ class Task(object):
         self.pid = pid
         self.stdout = stdout
         self.stderr = stderr
-        self.start = datetime.now()
+        self.start = datetime.utcnow()
         self.out = []
         self.err = []
 
@@ -59,7 +59,7 @@ def get_max_wait(tasks, timeout):
     # If a timeout is supplied, we need to wake up for the first task to
     # timeout if that is sooner.
     if timeout:
-        now = datetime.now()
+        now = datetime.utcnow()
         timeout_delta = timedelta(seconds=timeout)
         for task in tasks:
             remaining = task.start + timeout_delta - now
@@ -136,7 +136,7 @@ def timed_out(task, timeout):
     timed_out always returns False).
     """
     if timeout:
-        now = datetime.now()
+        now = datetime.utcnow()
         return (now - task.start) > timedelta(seconds=timeout)
     return False
 
@@ -175,7 +175,7 @@ def reap_zombies(tasks, timeout):
                 ''.join(ended.out),
                 ''.join(ended.err),
                 returncode,
-                (datetime.now() - ended.start).total_seconds(),
+                (datetime.utcnow() - ended.start).total_seconds(),
                 timed_out(ended, timeout)))
     return tasks, finished
 

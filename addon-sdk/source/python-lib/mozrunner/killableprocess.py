@@ -217,7 +217,7 @@ class Popen(subprocess.Popen):
             # timeout is now in milliseconds
             timeout = timeout * 1000
 
-        starttime = datetime.datetime.now()
+        starttime = datetime.datetime.utcnow()
 
         if mswindows:
             if timeout is None:
@@ -234,7 +234,7 @@ class Popen(subprocess.Popen):
 
                 # Returns 1 if running, 0 if not, -1 if timed out
                 def check():
-                    now = datetime.datetime.now()
+                    now = datetime.datetime.utcnow()
                     diff = now - starttime
                     if (diff.seconds * 1000000 + diff.microseconds) < (timeout * 1000):    # (1000*1000)
                         if self._job:
@@ -302,7 +302,7 @@ class Popen(subprocess.Popen):
 
             returncode = False
 
-            now = datetime.datetime.now()
+            now = datetime.datetime.utcnow()
             diff = now - starttime
             while (diff.seconds * 1000 * 1000 + diff.microseconds) < (timeout * 1000) and ( returncode is False ):
                 if group is True:
@@ -311,7 +311,7 @@ class Popen(subprocess.Popen):
                     if subprocess.poll() is not None:
                         returncode = self.returncode
                 time.sleep(.5)
-                now = datetime.datetime.now()
+                now = datetime.datetime.utcnow()
                 diff = now - starttime
             return self.returncode
 

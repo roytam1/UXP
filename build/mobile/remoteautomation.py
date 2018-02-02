@@ -387,9 +387,9 @@ class RemoteAutomation(Automation):
                 # Get log updates on each interval, but if it is taking
                 # too long, only do it every 60 seconds
                 if (not slowLog) or (timer % 60 == 0):
-                    startRead = datetime.datetime.now()
+                    startRead = datetime.datetime.utcnow()
                     hasOutput = self.read_stdout()
-                    if (datetime.datetime.now() - startRead) > datetime.timedelta(seconds=5):
+                    if (datetime.datetime.utcnow() - startRead) > datetime.timedelta(seconds=5):
                         slowLog = True
                     if hasOutput:
                         noOutputTimer = 0

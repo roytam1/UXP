@@ -18,7 +18,7 @@ import os
 
 PROJECT_NAME = "psutil"
 AUTHOR = "Giampaolo Rodola'"
-THIS_YEAR = str(datetime.datetime.now().year)
+THIS_YEAR = str(datetime.datetime.utcnow().year)
 HERE = os.path.abspath(os.path.dirname(__file__))
 
 

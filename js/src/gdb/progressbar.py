@@ -12,7 +12,7 @@ class ProgressBar(object):
         self.limit = limit
         self.label_width = label_width
         self.cur = 0
-        self.t0 = datetime.datetime.now()
+        self.t0 = datetime.datetime.utcnow()
         self.fullwidth = None
 
         self.barlen = 64 - self.label_width
@@ -23,7 +23,7 @@ class ProgressBar(object):
         pct = int(100.0 * self.cur / self.limit)
         barlen = int(1.0 * self.barlen * self.cur / self.limit) - 1
         bar = '='*barlen + '>'
-        dt = datetime.datetime.now() - self.t0
+        dt = datetime.datetime.utcnow() - self.t0
         dt = dt.seconds + dt.microseconds * 1e-6
         line = self.fmt%(self.label[:self.label_width], pct, bar, dt)
         self.fullwidth = len(line)

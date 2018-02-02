@@ -129,7 +129,7 @@ def getReleaseTag(tag):
 def generateRelbranchName(version, prefix='GECKO'):
     return '%s%s_%s_RELBRANCH' % (
         prefix, version.replace('.', ''),
-        datetime.now().strftime('%Y%m%d%H'))
+        datetime.utcnow().strftime('%Y%m%d%H'))
 
 
 def getReleaseName(product, version, buildNumber):
