@@ -199,7 +199,7 @@ was trying to connect. -->
 
 <!-- LOCALIZATION NOTE (certerror.wrongSystemTime) - The <span id='..' /> tags will be injected with actual values,
      please leave them unchanged. -->
-<!ENTITY certerror.wrongSystemTime "<p>&brandShortName; did not connect to <span id='wrongSystemTimeWithoutReference_URL'/> because your computer’s clock appears to show the wrong time and this is preventing a secure connection.</p> <p>Your computer is set to <span id='wrongSystemTimeWithoutReference_systemDate'/>. To fix this problem, change your date and time settings to match the correct time.</p>">
+<!ENTITY certerror.wrongSystemTime "<p>A secure connection to <span id='wrongSystemTime_URL'/> isn’t possible because your clock appears to show the wrong time.</p> <p>Your computer thinks it is <span id='wrongSystemTime_systemDate'/>. To fix this problem, change your date and time settings to match the correct time.</p>">
 
 <!ENTITY certerror.pagetitle1  "Insecure Connection">
 <!ENTITY certerror.whatShouldIDo.badStsCertExplanation "This site uses HTTP
