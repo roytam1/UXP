@@ -605,10 +605,21 @@ def include_project_configure(project, external_source_dir, build_env, help):
     if external_source_dir:
         base_dir = os.path.join(base_dir, external_source_dir[0])
 
-    path = os.path.join(base_dir, project[0], 'moz.configure')
-    if not exists(path):
-        die('Cannot find project %s', project[0])
-    return path
+    build_app = project[0]
+
+    # Uncomment when browser becomes application/basilisk
+    #if build_app == 'browser':
+        #die('The project "browser" is no longer valid. Perhaps you meant "basilisk" or "palemoon"?')
+    
+    path_project_src_dir_application = os.path.join(base_dir, 'application/' + build_app, 'moz.configure')
+    path_project_src_dir_root = os.path.join(base_dir, build_app, 'moz.configure')
+    
+    if exists(path_project_src_dir_application):
+        return path_project_src_dir_application
+    elif exists(path_project_src_dir_root):
+        return path_project_src_dir_root
+    else:
+        die('Cannot find project %s', build_app)
 
 @depends('--with-external-source-dir')
 def external_source_dir(value):
