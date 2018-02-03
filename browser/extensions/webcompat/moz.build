@@ -14,5 +14,3 @@ FINAL_TARGET_FILES.features['webcompat@mozilla.org'] += [
 FINAL_TARGET_PP_FILES.features['webcompat@mozilla.org'] += [
   'install.rdf.in'
 ]
-
-BROWSER_CHROME_MANIFESTS += ['test/browser/browser.ini']

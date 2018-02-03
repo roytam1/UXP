@@ -14,11 +14,3 @@ EXTRA_JS_MODULES.translation = [
 ]
 
 JAR_MANIFESTS += ['jar.mn']
-
-BROWSER_CHROME_MANIFESTS += [
-    'test/browser.ini'
-]
-
-XPCSHELL_TESTS_MANIFESTS += [
-    'test/unit/xpcshell.ini'
-]

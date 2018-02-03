@@ -8,8 +8,6 @@ DIRS += [
     'content',
 ]
 
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']
-
 EXTRA_JS_MODULES += [
     'CustomizableUI.jsm',
     'CustomizableWidgets.jsm',
@@ -21,6 +19,3 @@ EXTRA_JS_MODULES += [
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('windows', 'cocoa'):
     DEFINES['CAN_DRAW_IN_TITLEBAR'] = 1
-
-with Files('**'):
-    BUG_COMPONENT = ('Firefox', 'Toolbars and Customization')
