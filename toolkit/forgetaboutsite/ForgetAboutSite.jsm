@@ -126,7 +126,7 @@ this.ForgetAboutSite = {
     // XXXehsan: is there a better way to do this rather than this
     // hacky comparison?
     catch (ex) {
-      if (ex.message.indexOf("User canceled Master Password entry") == -1) {
+      if (!ex.message.includes("User canceled Master Password entry")) {
         throw ex;
       }
     }
