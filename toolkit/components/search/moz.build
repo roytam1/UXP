@@ -11,7 +11,7 @@ EXTRA_COMPONENTS += [
     'nsSearchSuggestions.js',
 ]
 
-if CONFIG['MOZ_BUILD_APP'] in ['browser', 'mobile/android', 'xulrunner']:
+if CONFIG['MOZ_BUILD_APP'] in ['mobile/android', 'xulrunner'] or CONFIG['MOZ_PHOENIX']:
     DEFINES['HAVE_SIDEBAR'] = True
     EXTRA_COMPONENTS += [
     'nsSidebar.js',

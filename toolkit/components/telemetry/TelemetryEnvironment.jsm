@@ -784,7 +784,7 @@ function EnvironmentCache() {
 
   this._currentEnvironment.profile = {};
   p.push(this._updateProfile());
-  if (AppConstants.MOZ_BUILD_APP == "browser") {
+  if (AppConstants.MOZ_PHOENIX) {
     p.push(this._updateAttribution());
   }
 

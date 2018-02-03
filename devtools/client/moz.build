@@ -38,7 +38,7 @@ DIRS += [
 ]
 
 # Shim old theme paths used by DevTools add-ons
-if CONFIG['MOZ_BUILD_APP'] == 'browser':
+if CONFIG['MOZ_PHOENIX']:
     DIRS += ['themes/shims']
 
 EXTRA_COMPONENTS += [

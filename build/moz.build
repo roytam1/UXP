@@ -26,7 +26,7 @@ for var in ('GRE_MILESTONE', 'MOZ_APP_VERSION', 'MOZ_APP_BASENAME',
 if CONFIG['MOZ_APP_DISPLAYNAME'] != CONFIG['MOZ_APP_BASENAME']:
     DEFINES['MOZ_APP_DISPLAYNAME'] = CONFIG['MOZ_APP_DISPLAYNAME']
 
-if CONFIG['MOZ_BUILD_APP'] == 'browser':
+if CONFIG['MOZ_PHOENIX']:
     DEFINES['MOZ_BUILD_APP_IS_BROWSER'] = True
 
 if CONFIG['MOZ_APP_PROFILE']:
@@ -37,7 +37,7 @@ for var in ('MOZ_CRASHREPORTER', 'MOZ_PROFILE_MIGRATOR',
     if CONFIG[var]:
         DEFINES[var] = True
 
-if CONFIG['MOZ_BUILD_APP'] == 'browser':
+if CONFIG['MOZ_PHOENIX']:
     PYTHON_UNIT_TESTS += [
         'compare-mozconfig/compare-mozconfigs-wrapper.py',
     ]

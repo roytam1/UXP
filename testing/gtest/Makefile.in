@@ -7,7 +7,7 @@
 
 include $(topsrcdir)/config/rules.mk
 
-ifeq (browser,$(MOZ_BUILD_APP))
+ifdef MOZ_PHOENIX
 ifdef COMPILE_ENVIRONMENT
 gtest::
 	$(MAKE) -C $(DEPTH)/toolkit/library gtestxul

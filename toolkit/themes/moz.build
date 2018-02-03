@@ -17,7 +17,11 @@
 # mobile                  native UIs that do not use XUL for UI
 
 toolkit = CONFIG['MOZ_WIDGET_TOOLKIT']
-app = CONFIG['MOZ_BUILD_APP']
+if CONFIG['MOZ_PHOENIX']:
+    DEFINES['MOZ_PHOENIX'] = 1
+    app = 'browser'
+else:
+    app = CONFIG['MOZ_BUILD_APP']
 
 if toolkit == 'cocoa':
     DIRS += ['osx']

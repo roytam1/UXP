@@ -22,7 +22,7 @@ ifdef MOZ_B2G
 BUILD_GTEST=
 endif
 
-ifneq (browser,$(MOZ_BUILD_APP))
+ifndef MOZ_PHOENIX
 BUILD_GTEST=
 endif
 
