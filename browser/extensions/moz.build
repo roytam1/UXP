@@ -5,11 +5,11 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 DIRS += [
-    'aushelper',
-    'e10srollout',
+#    'aushelper',
+#    'e10srollout',
     'pdfjs',
-    'pocket',
-    'webcompat',
+#    'pocket',
+#    'webcompat',
 ]
 
 # Only include the following system add-ons if building Aurora or Nightly
