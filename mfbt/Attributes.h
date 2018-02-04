@@ -562,9 +562,7 @@
 #  define MOZ_HAVE_REF_QUALIFIERS
 #elif defined(__GNUC__)
 #  include "mozilla/Compiler.h"
-#  if MOZ_GCC_VERSION_AT_LEAST(4, 8, 1)
-#    define MOZ_HAVE_REF_QUALIFIERS
-#  endif
+#  define MOZ_HAVE_REF_QUALIFIERS
 #endif
 
 #endif /* __cplusplus */

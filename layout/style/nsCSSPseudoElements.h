@@ -111,8 +111,7 @@ private:
   // which is a general gcc bug that we seem to have hit only on Android/x86.
 #if defined(ANDROID) && defined(__i386__) && defined(__GNUC__) && \
     !defined(__clang__)
-#if (MOZ_GCC_VERSION_AT_LEAST(4,8,0) && MOZ_GCC_VERSION_AT_MOST(4,8,4)) || \
-    (MOZ_GCC_VERSION_AT_LEAST(4,9,0) && MOZ_GCC_VERSION_AT_MOST(4,9,2))
+#if (MOZ_GCC_VERSION_AT_LEAST(4,9,0) && MOZ_GCC_VERSION_AT_MOST(4,9,2))
    __attribute__((noinline))
 #endif
 #endif
