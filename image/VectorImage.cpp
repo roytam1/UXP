@@ -935,7 +935,7 @@ VectorImage::CreateSurfaceAndShow(const SVGDrawingParameters& aParams, BackendTy
   // x or y > maxDimension, because for vector images this can cause bad perf
   // issues if large sizes are scaled repeatedly (a rather common scenario)
   // that can quickly exhaust the cache.
-  uint32_t maxDimension = 3000;
+  int32_t maxDimension = 3000;
   
   bool bypassCache = bool(aParams.flags & FLAG_BYPASS_SURFACE_CACHE) ||
                      // Refuse to cache animated images:
