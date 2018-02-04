@@ -2281,7 +2281,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_COOK,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "cook",
-        .long_name = NULL_IF_CONFIG_SMALL("Cook / Cooker / Gecko (RealAudio G2)"),
+        .long_name = NULL_IF_CONFIG_SMALL("Cook / Cooker / Goanna (RealAudio G2)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
