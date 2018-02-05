@@ -102,18 +102,18 @@ OpenKeyForReading(HKEY aKeyRoot, const nsAString& aKeyName, HKEY* aKey)
 //    .htm .html .shtml .xht .xhtml 
 //   are mapped like so:
 //
-//   HKCU\SOFTWARE\Classes\.<ext>\      (default)         REG_SZ     FirefoxHTML
+//   HKCU\SOFTWARE\Classes\.<ext>\      (default)         REG_SZ     BasiliskHTML
 //
 //   as aliases to the class:
 //
-//   HKCU\SOFTWARE\Classes\FirefoxHTML\
+//   HKCU\SOFTWARE\Classes\BasiliskHTML\
 //     DefaultIcon                      (default)         REG_SZ     <apppath>,1
 //     shell\open\command               (default)         REG_SZ     <apppath> -osint -url "%1"
 //     shell\open\ddeexec               (default)         REG_SZ     <empty string>
 //
 // - Windows Vista and above Protocol Handler
 //
-//   HKCU\SOFTWARE\Classes\FirefoxURL\  (default)         REG_SZ     <appname> URL
+//   HKCU\SOFTWARE\Classes\BasiliskURL\  (default)         REG_SZ     <appname> URL
 //                                      EditFlags         REG_DWORD  2
 //                                      FriendlyTypeName  REG_SZ     <appname> URL
 //     DefaultIcon                      (default)         REG_SZ     <apppath>,1
@@ -133,7 +133,7 @@ OpenKeyForReading(HKEY aKeyRoot, const nsAString& aKeyName, HKEY* aKey)
 //
 // - Windows Start Menu (XP SP1 and newer)
 //   -------------------------------------------------
-//   The following keys are set to make Firefox appear in the Start Menu as the
+//   The following keys are set to make Basilisk appear in the Start Menu as the
 //   browser:
 //   
 //   HKCU\SOFTWARE\Clients\StartMenuInternet\FIREFOX.EXE\
@@ -157,7 +157,7 @@ typedef struct {
   const char* oldValueData;
 } SETTING;
 
-#define APP_REG_NAME L"Firefox"
+#define APP_REG_NAME L"Basilisk"
 #define VAL_FILE_ICON "%APPPATH%,1"
 #define VAL_OPEN "\"%APPPATH%\" -osint -url \"%1\""
 #define OLD_VAL_OPEN "\"%APPPATH%\" -requestPending -osint -url \"%1\""
@@ -171,11 +171,11 @@ typedef struct {
   PREFIX MID
 
 // The DefaultIcon registry key value should never be used when checking if
-// Firefox is the default browser for file handlers since other applications
+// Basilisk is the default browser for file handlers since other applications
 // (e.g. MS Office) may modify the DefaultIcon registry key value to add Icon
 // Handlers. see http://msdn2.microsoft.com/en-us/library/aa969357.aspx for
 // more info. The FTP protocol is not checked so advanced users can set the FTP
-// handler to another application and still have Firefox check if it is the
+// handler to another application and still have Basilisk check if it is the
 // default HTTP and HTTPS handler.
 // *** Do not add additional checks here unless you skip them when aForAllTypes
 // is false below***.
@@ -183,10 +183,10 @@ static SETTING gSettings[] = {
   // File Handler Class
   // ***keep this as the first entry because when aForAllTypes is not set below
   // it will skip over this check.***
-  { MAKE_KEY_NAME1("FirefoxHTML", SOC), VAL_OPEN, OLD_VAL_OPEN },
+  { MAKE_KEY_NAME1("BasiliskHTML", SOC), VAL_OPEN, OLD_VAL_OPEN },
 
   // Protocol Handler Class - for Vista and above
-  { MAKE_KEY_NAME1("FirefoxURL", SOC), VAL_OPEN, OLD_VAL_OPEN },
+  { MAKE_KEY_NAME1("BasiliskURL", SOC), VAL_OPEN, OLD_VAL_OPEN },
 
   // Protocol Handlers
   { MAKE_KEY_NAME1("HTTP", DI), VAL_FILE_ICON },
@@ -196,14 +196,14 @@ static SETTING gSettings[] = {
 };
 
 // The settings to disable DDE are separate from the default browser settings
-// since they are only checked when Firefox is the default browser and if they
+// since they are only checked when Basilisk is the default browser and if they
 // are incorrect they are fixed without notifying the user.
 static SETTING gDDESettings[] = {
   // File Handler Class
-  { MAKE_KEY_NAME1("Software\\Classes\\FirefoxHTML", SOD) },
+  { MAKE_KEY_NAME1("Software\\Classes\\BasiliskHTML", SOD) },
 
   // Protocol Handler Class - for Vista and above
-  { MAKE_KEY_NAME1("Software\\Classes\\FirefoxURL", SOD) },
+  { MAKE_KEY_NAME1("Software\\Classes\\BasiliskURL", SOD) },
 
   // Protocol Handlers
   { MAKE_KEY_NAME1("Software\\Classes\\FTP", SOD) },
@@ -340,7 +340,7 @@ IsAARDefault(const RefPtr<IApplicationAssociationRegistration>& pAAR,
     return false;
   }
 
-  LPCWSTR progID = isProtocol ? L"FirefoxURL" : L"FirefoxHTML";
+  LPCWSTR progID = isProtocol ? L"BasiliskURL" : L"BasiliskHTML";
   bool isDefault = !wcsicmp(registeredApp, progID);
   CoTaskMemFree(registeredApp);
 
@@ -372,9 +372,9 @@ IsDefaultBrowserWin8(bool aCheckAllTypes, bool* aIsDefaultBrowser)
 
 /*
  * Query's the AAR for the default status.
- * This only checks for FirefoxURL and if aCheckAllTypes is set, then
- * it also checks for FirefoxHTML.  Note that those ProgIDs are shared
- * by all Firefox browsers.
+ * This only checks for BasiliskURL and if aCheckAllTypes is set, then
+ * it also checks for BasiliskHTML.  Note that those ProgIDs are shared
+ * by all Basilisk browsers.
 */
 bool
 nsWindowsShellService::IsDefaultBrowserVista(bool aCheckAllTypes,
@@ -417,7 +417,7 @@ nsWindowsShellService::IsDefaultBrowser(bool aStartupCheck,
     return NS_ERROR_FAILURE;
 
   // Convert the path to a long path since GetModuleFileNameW returns the path
-  // that was used to launch Firefox which is not necessarily a long path.
+  // that was used to launch Basilisk which is not necessarily a long path.
   if (!::GetLongPathNameW(exePath, exePath, MAX_BUF))
     return NS_ERROR_FAILURE;
 
@@ -470,7 +470,7 @@ nsWindowsShellService::IsDefaultBrowser(bool aStartupCheck,
                             0, KEY_SET_VALUE, &theKey);
       if (REG_FAILED(res)) {
         // If updating the open command fails try to update it using the helper
-        // application when setting Firefox as the default browser.
+        // application when setting Basilisk as the default browser.
         *aIsDefaultBrowser = false;
         return NS_OK;
       }
@@ -482,15 +482,15 @@ nsWindowsShellService::IsDefaultBrowser(bool aStartupCheck,
       ::RegCloseKey(theKey);
       if (REG_FAILED(res)) {
         // If updating the open command fails try to update it using the helper
-        // application when setting Firefox as the default browser.
+        // application when setting Basilisk as the default browser.
         *aIsDefaultBrowser = false;
         return NS_OK;
       }
     }
   }
 
-  // Only check if Firefox is the default browser on Vista and above if the
-  // previous checks show that Firefox is the default browser.
+  // Only check if Basilisk is the default browser on Vista and above if the
+  // previous checks show that Basilisk is the default browser.
   if (*aIsDefaultBrowser) {
     IsDefaultBrowserVista(aForAllTypes, aIsDefaultBrowser);
     if (IsWin8OrLater()) {
@@ -499,9 +499,9 @@ nsWindowsShellService::IsDefaultBrowser(bool aStartupCheck,
   }
 
   // To handle the case where DDE isn't disabled due for a user because there
-  // account didn't perform a Firefox update this will check if Firefox is the
+  // account didn't perform a Basilisk update this will check if Basilisk is the
   // default browser and if dde is disabled for each handler
-  // and if it isn't disable it. When Firefox is not the default browser the
+  // and if it isn't disable it. When Basilisk is not the default browser the
   // helper application will disable dde for each handler.
   if (*aIsDefaultBrowser && aForAllTypes) {
     // Check ftp settings
@@ -515,7 +515,7 @@ nsWindowsShellService::IsDefaultBrowser(bool aStartupCheck,
       if (NS_FAILED(rv)) {
         ::RegCloseKey(theKey);
         // If disabling DDE fails try to disable it using the helper
-        // application when setting Firefox as the default browser.
+        // application when setting Basilisk as the default browser.
         *aIsDefaultBrowser = false;
         return NS_OK;
       }
@@ -535,7 +535,7 @@ nsWindowsShellService::IsDefaultBrowser(bool aStartupCheck,
                                 nullptr, &theKey, nullptr);
         if (REG_FAILED(res)) {
           // If disabling DDE fails try to disable it using the helper
-          // application when setting Firefox as the default browser.
+          // application when setting Basilisk as the default browser.
           *aIsDefaultBrowser = false;
           return NS_OK;
         }
@@ -546,7 +546,7 @@ nsWindowsShellService::IsDefaultBrowser(bool aStartupCheck,
         ::RegCloseKey(theKey);
         if (REG_FAILED(res)) {
           // If disabling DDE fails try to disable it using the helper
-          // application when setting Firefox as the default browser.
+          // application when setting Basilisk as the default browser.
           *aIsDefaultBrowser = false;
           return NS_OK;
         }
@@ -588,7 +588,7 @@ nsWindowsShellService::IsDefaultBrowser(bool aStartupCheck,
     // Close the key that was created.
     ::RegCloseKey(theKey);
     // If updating the FTP protocol handlers shell open command fails try to
-    // update it using the helper application when setting Firefox as the
+    // update it using the helper application when setting Basilisk as the
     // default browser.
     if (REG_FAILED(res)) {
       *aIsDefaultBrowser = false;
@@ -1005,7 +1005,7 @@ nsWindowsShellService::SetDesktopBackground(nsIDOMElement* aElement,
                               getter_AddRefs(file));
   NS_ENSURE_SUCCESS(rv, rv);
 
-  // eventually, the path is "%APPDATA%\Mozilla\Firefox\Desktop Background.bmp"
+  // eventually, the path is "%APPDATA%\Mozilla\Basilisk\Desktop Background.bmp"
   rv = file->Append(fileLeafName);
   NS_ENSURE_SUCCESS(rv, rv);
 

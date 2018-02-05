@@ -78,7 +78,7 @@ SetOverwrite on
  "Software\Microsoft\Windows\CurrentVersion\Uninstall\MozillaMaintenanceService"
 
 ; Always install into the 32-bit location even if we have a 64-bit build.
-; This is because we use only 1 service for all Firefox channels.
+; This is because we use only 1 service for all Basilisk channels.
 ; Allow either x86 and x64 builds to exist at this location, depending on
 ; what is the latest build.
 InstallDir "$PROGRAMFILES32\${MaintFullName}\"
