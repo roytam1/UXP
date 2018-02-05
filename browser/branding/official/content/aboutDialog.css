@@ -28,7 +28,13 @@
 #rightBox {
   margin-left: 30px;
   margin-right: 30px;
+  background-image: url("chrome://branding/content/about-wordmark.png");
+  background-repeat: no-repeat;
+  /* padding-top creates room for the wordmark */
+  padding-top: 38px;
+  margin-top:20px;
 }
+
 
 #updateDeck > hbox > label:not([class="text-link"]) {
   color: #909090;
