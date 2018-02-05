@@ -47,7 +47,7 @@
         <hbox align="baseline">
 #expand <label id="version">__MOZ_APP_VERSION_DISPLAY__</label>
 #ifndef NIGHTLY_BUILD
-#expand <label id="releasenotes" class="text-link" href="https://www.mozilla.org/firefox/__MOZ_APP_VERSION__/releasenotes/">&releaseNotes.link;</label>
+       <label id="releasenotes" class="text-link">&releaseNotes.link;</label>
 #endif
         </hbox>
 

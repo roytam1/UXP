@@ -62,6 +62,10 @@ function init(aEvent)
   let arch = bundle.GetStringFromName(archResource);
   versionField.textContent += ` (${arch})`;
 
+  // Get Release Notes URL from Preferences
+  let releaseNotesURL = Services.prefs.getCharPref("app.releaseNotesURL");
+  document.getElementById("releasenotes").setAttribute("href", releaseNotesURL);
+
   if (AppConstants.MOZ_UPDATER) {
     gAppUpdater = new appUpdater();
 
