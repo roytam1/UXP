@@ -85,7 +85,6 @@ EXTRA_JS_MODULES += [
     'SelectContentHelper.jsm',
     'SelectParentHelper.jsm',
     'ServiceRequest.jsm',
-    'Services.jsm',
     'SessionRecorder.jsm',
     'sessionstore/FormData.jsm',
     'sessionstore/ScrollPosition.jsm',
@@ -116,6 +115,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('windows', 'gtk2', 'gtk3', 'cocoa'):
 
 EXTRA_PP_JS_MODULES += [
     'AppConstants.jsm',
+    'Services.jsm',
 ]
 
 if 'Android' != CONFIG['OS_TARGET']:
