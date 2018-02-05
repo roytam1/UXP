@@ -637,7 +637,8 @@ TextConstruct.prototype = {
     else
       return null;
 
-    return this.parserUtils.parseFragment(this.text, 0, isXML,
+    let flags = Ci.nsIParserUtils.SanitizerDropForms;
+    return this.parserUtils.parseFragment(this.text, flags, isXML,
                                           this.base, element);
   },
 
