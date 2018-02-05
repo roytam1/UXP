@@ -2261,6 +2261,7 @@ MOZ_ARG_HEADER(Application)
 ENABLE_SYSTEM_EXTENSION_DIRS=1
 MOZ_BRANDING_DIRECTORY=
 MOZ_OFFICIAL_BRANDING=
+MC_OFFICIAL=1
 MOZ_FEEDS=1
 MOZ_AUTH_EXTENSION=1
 if test "$MOZ_IOS"; then
@@ -2342,6 +2343,15 @@ if test -n "$MOZ_ANDROID_DISTRIBUTION_DIRECTORY"; then
   fi
 fi
 AC_SUBST(MOZ_ANDROID_DISTRIBUTION_DIRECTORY)
+
+dnl ========================================================
+dnl = Vendor override
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(official-vendor,
+[  --disable-official-vendor   Disable the use of official vendor.],
+    MC_OFFICIAL=,
+    MC_OFFICIAL=1)
+
 
 dnl ========================================================
 dnl = Trademarked Branding
@@ -2587,7 +2597,13 @@ if test -n "$MOZ_OFFICIAL_BRANDING"; then
   else
     MOZ_BRANDING_DIRECTORY=${MOZ_OFFICIAL_BRANDING_DIRECTORY}
     AC_DEFINE(MOZ_OFFICIAL_BRANDING)
+    MC_OFFICIAL=1
   fi
+fi
+
+AC_SUBST(MC_OFFICIAL)
+if test -n "$MC_OFFICIAL"; then
+  AC_DEFINE(MC_OFFICIAL)
 fi
 
 MOZ_ARG_WITH_STRING(branding,

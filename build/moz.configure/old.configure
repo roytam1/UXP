@@ -201,6 +201,7 @@ def old_configure_options(*options):
     '--enable-nfc',
     '--enable-nspr-build',
     '--enable-official-branding',
+    '--enable-official-vendor',
     '--enable-omx-plugin',
     '--enable-oom-breakpoint',
     '--enable-optimize',
