@@ -17,14 +17,6 @@
 #include <conio.h>
 #endif
 
-#if defined(__sun) && !defined(SVR4)
-extern int fclose(FILE *);
-extern int fprintf(FILE *, char *, ...);
-extern int isatty(int);
-extern char *sys_errlist[];
-#define strerror(errno) sys_errlist[errno]
-#endif
-
 #include "nspr.h"
 #include "prtypes.h"
 #include "prtime.h"
@@ -52,9 +44,10 @@ static int
 UpdateRNG(void)
 {
     char randbuf[RAND_BUF_SIZE];
-    int fd, count;
+    int fd;
     int c;
     int rv = 0;
+    size_t count;
 #ifdef XP_UNIX
     cc_t orig_cc_min;
     cc_t orig_cc_time;

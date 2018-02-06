@@ -192,7 +192,7 @@ class GTestXMLOutputUnitTest(gtest_xml_test_utils.GTestXMLTestCase):
         day=int(match.group(3)), hour=int(match.group(4)),
         minute=int(match.group(5)), second=int(match.group(6)))
 
-    time_delta = abs(datetime.datetime.utcnow() - date_time_from_xml)
+    time_delta = abs(datetime.datetime.now() - date_time_from_xml)
     # timestamp value should be near the current local time
     self.assertTrue(time_delta < datetime.timedelta(seconds=600),
                     'time_delta is %s' % time_delta)

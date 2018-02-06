@@ -2639,6 +2639,11 @@ NSC_SignInit(CK_SESSION_HANDLE hSession,
 
 #define INIT_HMAC_MECH(mmm)                                               \
     case CKM_##mmm##_HMAC_GENERAL:                                        \
+        PORT_Assert(pMechanism->pParameter);                              \
+        if (!pMechanism->pParameter) {                                    \
+            crv = CKR_MECHANISM_PARAM_INVALID;                            \
+            break;                                                        \
+        }                                                                 \
         crv = sftk_doHMACInit(context, HASH_Alg##mmm, key,                \
                               *(CK_ULONG *)pMechanism->pParameter);       \
         break;                                                            \
@@ -2654,6 +2659,11 @@ NSC_SignInit(CK_SESSION_HANDLE hSession,
             INIT_HMAC_MECH(SHA512)
 
         case CKM_SHA_1_HMAC_GENERAL:
+            PORT_Assert(pMechanism->pParameter);
+            if (!pMechanism->pParameter) {
+                crv = CKR_MECHANISM_PARAM_INVALID;
+                break;
+            }
             crv = sftk_doHMACInit(context, HASH_AlgSHA1, key,
                                   *(CK_ULONG *)pMechanism->pParameter);
             break;
@@ -2662,10 +2672,20 @@ NSC_SignInit(CK_SESSION_HANDLE hSession,
             break;
 
         case CKM_SSL3_MD5_MAC:
+            PORT_Assert(pMechanism->pParameter);
+            if (!pMechanism->pParameter) {
+                crv = CKR_MECHANISM_PARAM_INVALID;
+                break;
+            }
             crv = sftk_doSSLMACInit(context, SEC_OID_MD5, key,
                                     *(CK_ULONG *)pMechanism->pParameter);
             break;
         case CKM_SSL3_SHA1_MAC:
+            PORT_Assert(pMechanism->pParameter);
+            if (!pMechanism->pParameter) {
+                crv = CKR_MECHANISM_PARAM_INVALID;
+                break;
+            }
             crv = sftk_doSSLMACInit(context, SEC_OID_SHA1, key,
                                     *(CK_ULONG *)pMechanism->pParameter);
             break;
@@ -3314,6 +3334,11 @@ NSC_VerifyInit(CK_SESSION_HANDLE hSession,
             INIT_HMAC_MECH(SHA512)
 
         case CKM_SHA_1_HMAC_GENERAL:
+            PORT_Assert(pMechanism->pParameter);
+            if (!pMechanism->pParameter) {
+                crv = CKR_MECHANISM_PARAM_INVALID;
+                break;
+            }
             crv = sftk_doHMACInit(context, HASH_AlgSHA1, key,
                                   *(CK_ULONG *)pMechanism->pParameter);
             break;
@@ -3322,10 +3347,20 @@ NSC_VerifyInit(CK_SESSION_HANDLE hSession,
             break;
 
         case CKM_SSL3_MD5_MAC:
+            PORT_Assert(pMechanism->pParameter);
+            if (!pMechanism->pParameter) {
+                crv = CKR_MECHANISM_PARAM_INVALID;
+                break;
+            }
             crv = sftk_doSSLMACInit(context, SEC_OID_MD5, key,
                                     *(CK_ULONG *)pMechanism->pParameter);
             break;
         case CKM_SSL3_SHA1_MAC:
+            PORT_Assert(pMechanism->pParameter);
+            if (!pMechanism->pParameter) {
+                crv = CKR_MECHANISM_PARAM_INVALID;
+                break;
+            }
             crv = sftk_doSSLMACInit(context, SEC_OID_SHA1, key,
                                     *(CK_ULONG *)pMechanism->pParameter);
             break;
@@ -3971,6 +4006,22 @@ nsc_SetupHMACKeyGen(CK_MECHANISM_PTR pMechanism, NSSPKCS5PBEParameter **pbe)
             params->hashType = HASH_AlgMD2;
             params->keyLen = 16;
             break;
+        case CKM_NSS_PKCS12_PBE_SHA224_HMAC_KEY_GEN:
+            params->hashType = HASH_AlgSHA224;
+            params->keyLen = 28;
+            break;
+        case CKM_NSS_PKCS12_PBE_SHA256_HMAC_KEY_GEN:
+            params->hashType = HASH_AlgSHA256;
+            params->keyLen = 32;
+            break;
+        case CKM_NSS_PKCS12_PBE_SHA384_HMAC_KEY_GEN:
+            params->hashType = HASH_AlgSHA384;
+            params->keyLen = 48;
+            break;
+        case CKM_NSS_PKCS12_PBE_SHA512_HMAC_KEY_GEN:
+            params->hashType = HASH_AlgSHA512;
+            params->keyLen = 64;
+            break;
         default:
             PORT_FreeArena(arena, PR_TRUE);
             return CKR_MECHANISM_INVALID;
@@ -4189,6 +4240,10 @@ NSC_GenerateKey(CK_SESSION_HANDLE hSession,
         case CKM_NETSCAPE_PBE_SHA1_HMAC_KEY_GEN:
         case CKM_NETSCAPE_PBE_MD5_HMAC_KEY_GEN:
         case CKM_NETSCAPE_PBE_MD2_HMAC_KEY_GEN:
+        case CKM_NSS_PKCS12_PBE_SHA224_HMAC_KEY_GEN:
+        case CKM_NSS_PKCS12_PBE_SHA256_HMAC_KEY_GEN:
+        case CKM_NSS_PKCS12_PBE_SHA384_HMAC_KEY_GEN:
+        case CKM_NSS_PKCS12_PBE_SHA512_HMAC_KEY_GEN:
             key_gen_type = nsc_pbe;
             key_type = CKK_GENERIC_SECRET;
             crv = nsc_SetupHMACKeyGen(pMechanism, &pbe_param);
@@ -5571,6 +5626,7 @@ sftk_unwrapPrivateKey(SFTKObject *key, SECItem *bpki)
 
     switch (SECOID_GetAlgorithmTag(&pki->algorithm)) {
         case SEC_OID_PKCS1_RSA_ENCRYPTION:
+        case SEC_OID_PKCS1_RSA_PSS_SIGNATURE:
             keyTemplate = nsslowkey_RSAPrivateKeyTemplate;
             paramTemplate = NULL;
             paramDest = NULL;
@@ -7222,12 +7278,7 @@ NSC_DeriveKey(CK_SESSION_HANDLE hSession,
 
             pubKeyLen = EC_GetPointSize(&privKey->u.ec.ecParams);
 
-            /* if the len is too small, can't be a valid point */
-            if (ecPoint.len < pubKeyLen) {
-                goto ec_loser;
-            }
-            /* if the len is too large, must be an encoded point (length is
-             * equal case just falls through */
+            /* if the len is too large, might be an encoded point */
             if (ecPoint.len > pubKeyLen) {
                 SECItem newPoint;
 
@@ -7247,14 +7298,6 @@ NSC_DeriveKey(CK_SESSION_HANDLE hSession,
 
             if (mechanism == CKM_ECDH1_COFACTOR_DERIVE) {
                 withCofactor = PR_TRUE;
-            } else {
-                /* When not using cofactor derivation, one should
-                 * validate the public key to avoid small subgroup
-                 * attacks.
-                 */
-                if (EC_ValidatePublicKey(&privKey->u.ec.ecParams, &ecPoint) != SECSuccess) {
-                    goto ec_loser;
-                }
             }
 
             rv = ECDH_Derive(&ecPoint, &privKey->u.ec.ecParams, &ecScalar,

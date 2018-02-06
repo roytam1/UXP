@@ -801,8 +801,7 @@ SEED_Decrypt(SEEDContext *cx, unsigned char *output,
 ** Create a new AES context suitable for AES encryption/decryption.
 **  "key" raw key data
 **  "keylen" the number of bytes of key data (16, 24, or 32)
-**      "blocklen" is the blocksize to use (16, 24, or 32)
-**                        XXX currently only blocksize==16 has been tested!
+**  "blocklen" is the blocksize to use. NOTE: only 16 is supported!
 */
 extern AESContext *
 AES_CreateContext(const unsigned char *key, const unsigned char *iv,
@@ -1428,8 +1427,6 @@ extern SECStatus RNG_RandomUpdate(const void *data, size_t bytes);
 ** object.
 */
 extern SECStatus RNG_GenerateGlobalRandomBytes(void *dest, size_t len);
-
-extern SECStatus RNG_ResetForFuzzing(void);
 
 /* Destroy the global RNG context.  After a call to RNG_RNGShutdown()
 ** a call to RNG_RNGInit() is required in order to use the generator again,

@@ -156,8 +156,8 @@ PK11_ReadULongAttribute(PK11SlotInfo *slot, CK_OBJECT_HANDLE id,
  * check to see if a bool has been set.
  */
 CK_BBOOL
-PK11_HasAttributeSet(PK11SlotInfo *slot, CK_OBJECT_HANDLE id,
-                     CK_ATTRIBUTE_TYPE type, PRBool haslock)
+pk11_HasAttributeSet_Lock(PK11SlotInfo *slot, CK_OBJECT_HANDLE id,
+                          CK_ATTRIBUTE_TYPE type, PRBool haslock)
 {
     CK_BBOOL ckvalue = CK_FALSE;
     CK_ATTRIBUTE theTemplate;
@@ -179,6 +179,14 @@ PK11_HasAttributeSet(PK11SlotInfo *slot, CK_OBJECT_HANDLE id,
     }
 
     return ckvalue;
+}
+
+CK_BBOOL
+PK11_HasAttributeSet(PK11SlotInfo *slot, CK_OBJECT_HANDLE id,
+                     CK_ATTRIBUTE_TYPE type, PRBool haslock)
+{
+    PR_ASSERT(haslock == PR_FALSE);
+    return pk11_HasAttributeSet_Lock(slot, id, type, PR_FALSE);
 }
 
 /*
@@ -2020,6 +2028,9 @@ PK11_FindObjectsFromNickname(char *nickname, PK11SlotInfo **slotptr,
     if ((delimit = PORT_Strchr(nickname, ':')) != NULL) {
         int len = delimit - nickname;
         tokenName = (char *)PORT_Alloc(len + 1);
+        if (!tokenName) {
+            return CK_INVALID_HANDLE;
+        }
         PORT_Memcpy(tokenName, nickname, len);
         tokenName[len] = 0;
 

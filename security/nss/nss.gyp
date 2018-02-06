@@ -59,7 +59,8 @@
         'lib/smime/smime.gyp:smime',
         'lib/softoken/softoken.gyp:softokn',
         'lib/ssl/ssl.gyp:ssl',
-        'lib/util/util.gyp:nssutil'
+        'lib/util/util.gyp:nssutil',
+        'lib/libpkix/libpkix.gyp:libpkix',
       ],
       'conditions': [
         [ 'OS=="linux"', {
@@ -71,21 +72,6 @@
           'dependencies': [
             'lib/dbm/src/src.gyp:dbm',
             'lib/softoken/legacydb/legacydb.gyp:nssdbm',
-          ],
-        }],
-        [ 'disable_libpkix==0', {
-          'dependencies': [
-            'lib/libpkix/pkix/certsel/certsel.gyp:pkixcertsel',
-            'lib/libpkix/pkix/checker/checker.gyp:pkixchecker',
-            'lib/libpkix/pkix/crlsel/crlsel.gyp:pkixcrlsel',
-            'lib/libpkix/pkix/params/params.gyp:pkixparams',
-            'lib/libpkix/pkix/results/results.gyp:pkixresults',
-            'lib/libpkix/pkix/store/store.gyp:pkixstore',
-            'lib/libpkix/pkix/top/top.gyp:pkixtop',
-            'lib/libpkix/pkix/util/util.gyp:pkixutil',
-            'lib/libpkix/pkix_pl_nss/module/module.gyp:pkixmodule',
-            'lib/libpkix/pkix_pl_nss/pki/pki.gyp:pkixpki',
-            'lib/libpkix/pkix_pl_nss/system/system.gyp:pkixsystem',
           ],
         }],
         [ 'use_system_sqlite==0', {
@@ -120,6 +106,7 @@
             'cmd/smimetools/smimetools.gyp:cmsutil',
             'cmd/ssltap/ssltap.gyp:ssltap',
             'cmd/symkeyutil/symkeyutil.gyp:symkeyutil',
+            'nss-tool/nss_tool.gyp:nss',
           ],
         }],
       ],
@@ -176,13 +163,14 @@
             'cmd/tstclnt/tstclnt.gyp:tstclnt',
             'cmd/vfychain/vfychain.gyp:vfychain',
             'cmd/vfyserv/vfyserv.gyp:vfyserv',
-            'gtests/google_test/google_test.gyp:gtest1',
-            'gtests/common/common.gyp:gtests',
+            'gtests/certhigh_gtest/certhigh_gtest.gyp:certhigh_gtest',
             'gtests/der_gtest/der_gtest.gyp:der_gtest',
+            'gtests/certdb_gtest/certdb_gtest.gyp:certdb_gtest',
+            'gtests/freebl_gtest/freebl_gtest.gyp:prng_gtest',
             'gtests/pk11_gtest/pk11_gtest.gyp:pk11_gtest',
             'gtests/ssl_gtest/ssl_gtest.gyp:ssl_gtest',
             'gtests/util_gtest/util_gtest.gyp:util_gtest',
-            'gtests/nss_bogo_shim/nss_bogo_shim.gyp:nss_bogo_shim'
+            'gtests/nss_bogo_shim/nss_bogo_shim.gyp:nss_bogo_shim',
           ],
           'conditions': [
             [ 'OS=="linux"', {
@@ -241,7 +229,7 @@
         },
       ],
     }],
-    [ 'fuzz==1', {
+    [ 'fuzz_tls==1', {
       'targets': [
         {
           'target_name': 'fuzz_warning',
@@ -256,12 +244,16 @@
             }
           ],
         },
+      ],
+    }],
+    [ 'fuzz==1', {
+      'targets': [
         {
           'target_name': 'fuzz',
           'type': 'none',
           'dependencies': [
             'fuzz/fuzz.gyp:nssfuzz',
-          ]
+          ],
         },
       ],
     }],

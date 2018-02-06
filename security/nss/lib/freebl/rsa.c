@@ -190,12 +190,12 @@ cleanup:
     }
     return rv;
 }
-static SECStatus
+
+SECStatus
 generate_prime(mp_int *prime, int primeLen)
 {
     mp_err err = MP_OKAY;
     SECStatus rv = SECSuccess;
-    unsigned long counter = 0;
     int piter;
     unsigned char *pb = NULL;
     pb = PORT_Alloc(primeLen);
@@ -208,7 +208,7 @@ generate_prime(mp_int *prime, int primeLen)
         pb[0] |= 0xC0;            /* set two high-order bits */
         pb[primeLen - 1] |= 0x01; /* set low-order bit       */
         CHECK_MPI_OK(mp_read_unsigned_octets(prime, pb, primeLen));
-        err = mpp_make_prime(prime, primeLen * 8, PR_FALSE, &counter);
+        err = mpp_make_prime(prime, primeLen * 8, PR_FALSE);
         if (err != MP_NO)
             goto cleanup;
         /* keep going while err == MP_NO */
@@ -321,7 +321,6 @@ RSA_NewKey(int keySizeInBits, SECItem *publicExponent)
     kiter = 0;
     max_attempts = 5 * (keySizeInBits / 2); /* FIPS 186-4 B.3.3 steps 4.7 and 5.8 */
     do {
-        prerr = 0;
         PORT_SetError(0);
         CHECK_SEC_OK(generate_prime(&p, primeLen));
         CHECK_SEC_OK(generate_prime(&q, primeLen));
@@ -348,8 +347,7 @@ RSA_NewKey(int keySizeInBits, SECItem *publicExponent)
         kiter++;
         /* loop until have primes */
     } while (prerr == SEC_ERROR_NEED_RANDOM && kiter < max_attempts);
-    if (prerr)
-        goto cleanup;
+
 cleanup:
     mp_clear(&p);
     mp_clear(&q);
@@ -1236,7 +1234,10 @@ get_blinding_params(RSAPrivateKey *key, mp_int *n, unsigned int modLen,
          * Now, search its list of ready blinding params for a usable one.
          */
         while (0 != (bp = rsabp->bp)) {
-            if (--(bp->counter) > 0) {
+#ifndef UNSAFE_FUZZER_MODE
+            if (--(bp->counter) > 0)
+#endif
+            {
                 /* Found a match and there are still remaining uses left */
                 /* Return the parameters */
                 CHECK_MPI_OK(mp_copy(&bp->f, f));
@@ -1548,7 +1549,7 @@ cleanup:
     return rv;
 }
 
-static SECStatus
+SECStatus
 RSA_Init(void)
 {
     if (PR_CallOnce(&coBPInit, init_blinding_params_list) != PR_SUCCESS) {
@@ -1556,12 +1557,6 @@ RSA_Init(void)
         return SECFailure;
     }
     return SECSuccess;
-}
-
-SECStatus
-BL_Init(void)
-{
-    return RSA_Init();
 }
 
 /* cleanup at shutdown */
