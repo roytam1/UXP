@@ -113,7 +113,7 @@
 ; [Base Browser Files]
 #ifndef XP_UNIX
 @BINPATH@/@MOZ_APP_NAME@.exe
-@BINPATH@/firefox.VisualElementsManifest.xml
+@BINPATH@/basilisk.VisualElementsManifest.xml
 @BINPATH@/browser/VisualElements/VisualElements_150.png
 @BINPATH@/browser/VisualElements/VisualElements_70.png
 #else
@@ -623,7 +623,6 @@
 @RESPATH@/browser/chrome/icons/default/default32.png
 @RESPATH@/browser/chrome/icons/default/default48.png
 #endif
-@RESPATH@/browser/features/*
 
 ; [Webide Files]
 @RESPATH@/browser/chrome/webide@JAREXT@
