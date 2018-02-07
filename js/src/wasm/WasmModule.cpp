@@ -1007,12 +1007,16 @@ Module::instantiate(JSContext* cx,
         maybeBytecode = bytecode_.get();
 
     auto codeSegment = CodeSegment::create(cx, code_, linkData_, *metadata_, memory);
-    if (!codeSegment)
+    if (!codeSegment) {
+        ReportOutOfMemory(cx);
         return false;
+    }
 
     auto code = cx->make_unique<Code>(Move(codeSegment), *metadata_, maybeBytecode);
-    if (!code)
+    if (!code) {
+        ReportOutOfMemory(cx);
         return false;
+    }
 
     instance.set(WasmInstanceObject::create(cx,
                                             Move(code),
