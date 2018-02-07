@@ -4148,7 +4148,7 @@ nsContentUtils::ConvertStringFromEncoding(const nsACString& aEncoding,
   nsAutoPtr<TextDecoder> decoder(new TextDecoder());
   decoder->InitWithEncoding(encoding, false);
 
-  decoder->Decode(aInput, len.value(), false,,
+  decoder->Decode(aInput, len.value(), false,
                   aOutput, rv);
   return rv.StealNSResult();
 }
