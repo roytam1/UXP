@@ -57,6 +57,7 @@ AddStyleSheetTransaction::AddStyleSheetTransaction()
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(AddStyleSheetTransaction,
                                    EditTransactionBase,
+                                   mEditor,
                                    mSheet)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(AddStyleSheetTransaction)
@@ -111,6 +112,7 @@ RemoveStyleSheetTransaction::RemoveStyleSheetTransaction()
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(RemoveStyleSheetTransaction,
                                    EditTransactionBase,
+                                   mEditor,
                                    mSheet)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(RemoveStyleSheetTransaction)

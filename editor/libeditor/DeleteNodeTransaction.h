@@ -55,7 +55,7 @@ protected:
   nsCOMPtr<nsIContent> mRefNode;
 
   // The editor for this transaction.
-  EditorBase* mEditorBase;
+  RefPtr<EditorBase> mEditorBase;
 
   // Range updater object.
   RangeUpdater* mRangeUpdater;

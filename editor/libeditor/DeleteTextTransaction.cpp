@@ -25,7 +25,7 @@ DeleteTextTransaction::DeleteTextTransaction(
                          uint32_t aOffset,
                          uint32_t aNumCharsToDelete,
                          RangeUpdater* aRangeUpdater)
-  : mEditorBase(aEditorBase)
+  : mEditorBase(&aEditorBase)
   , mCharData(&aCharData)
   , mOffset(aOffset)
   , mNumCharsToDelete(aNumCharsToDelete)
@@ -36,6 +36,7 @@ DeleteTextTransaction::DeleteTextTransaction(
 }
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(DeleteTextTransaction, EditTransactionBase,
+                                   mEditorBase,
                                    mCharData)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(DeleteTextTransaction)
@@ -45,7 +46,7 @@ nsresult
 DeleteTextTransaction::Init()
 {
   // Do nothing if the node is read-only
-  if (!mEditorBase.IsModifiableNode(mCharData)) {
+  if (NS_WARN_IF(!mEditorBase) || !mEditorBase->IsModifiableNode(mCharData)) {
     return NS_ERROR_FAILURE;
   }
 
@@ -55,7 +56,9 @@ DeleteTextTransaction::Init()
 NS_IMETHODIMP
 DeleteTextTransaction::DoTransaction()
 {
-  MOZ_ASSERT(mCharData);
+  if (NS_WARN_IF(!mCharData) || NS_WARN_IF(!mEditorBase)) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
 
   // Get the text that we're about to delete
   nsresult rv = mCharData->SubstringData(mOffset, mNumCharsToDelete,
@@ -69,8 +72,8 @@ DeleteTextTransaction::DoTransaction()
   }
 
   // Only set selection to deletion point if editor gives permission
-  if (mEditorBase.GetShouldTxnSetSelection()) {
-    RefPtr<Selection> selection = mEditorBase.GetSelection();
+  if (mEditorBase->GetShouldTxnSetSelection()) {
+    RefPtr<Selection> selection = mEditorBase->GetSelection();
     NS_ENSURE_TRUE(selection, NS_ERROR_NULL_POINTER);
     rv = selection->Collapse(mCharData, mOffset);
     NS_ASSERTION(NS_SUCCEEDED(rv),
@@ -86,8 +89,9 @@ DeleteTextTransaction::DoTransaction()
 NS_IMETHODIMP
 DeleteTextTransaction::UndoTransaction()
 {
-  MOZ_ASSERT(mCharData);
-
+  if (NS_WARN_IF(!mCharData)) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
   return mCharData->InsertData(mOffset, mDeletedText);
 }
 

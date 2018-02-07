@@ -67,7 +67,7 @@ protected:
   RefPtr<nsRange> mRange;
 
   // The editor for this transaction.
-  EditorBase* mEditorBase;
+  RefPtr<EditorBase> mEditorBase;
 
   // Range updater object.
   RangeUpdater* mRangeUpdater;

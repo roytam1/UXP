@@ -33,6 +33,7 @@ DeleteRangeTransaction::DeleteRangeTransaction()
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(DeleteRangeTransaction,
                                    EditAggregateTransaction,
+                                   mEditorBase,
                                    mRange)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(DeleteRangeTransaction)
@@ -62,7 +63,9 @@ DeleteRangeTransaction::Init(EditorBase* aEditorBase,
 NS_IMETHODIMP
 DeleteRangeTransaction::DoTransaction()
 {
-  MOZ_ASSERT(mRange && mEditorBase);
+  if (NS_WARN_IF(!mRange) || NS_WARN_IF(!mEditorBase)) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
 
   // build the child transactions
   nsCOMPtr<nsINode> startParent = mRange->GetStartParent();
@@ -111,16 +114,18 @@ DeleteRangeTransaction::DoTransaction()
 NS_IMETHODIMP
 DeleteRangeTransaction::UndoTransaction()
 {
-  MOZ_ASSERT(mRange && mEditorBase);
-
+  if (NS_WARN_IF(!mRange) || NS_WARN_IF(!mEditorBase)) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
   return EditAggregateTransaction::UndoTransaction();
 }
 
 NS_IMETHODIMP
 DeleteRangeTransaction::RedoTransaction()
 {
-  MOZ_ASSERT(mRange && mEditorBase);
-
+  if (NS_WARN_IF(!mRange) || NS_WARN_IF(!mEditorBase)) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
   return EditAggregateTransaction::RedoTransaction();
 }
 
@@ -136,6 +141,10 @@ DeleteRangeTransaction::CreateTxnsToDeleteBetween(nsINode* aNode,
                                                   int32_t aStartOffset,
                                                   int32_t aEndOffset)
 {
+  if (NS_WARN_IF(!mEditorBase)) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
+
   // see what kind of node we have
   if (aNode->IsNodeOfType(nsINode::eDATA_NODE)) {
     // if the node is a chardata node, then delete chardata content
@@ -185,6 +194,10 @@ DeleteRangeTransaction::CreateTxnsToDeleteContent(nsINode* aNode,
                                                   int32_t aOffset,
                                                   nsIEditor::EDirection aAction)
 {
+  if (NS_WARN_IF(!mEditorBase)) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
+
   // see what kind of node we have
   if (aNode->IsNodeOfType(nsINode::eDATA_NODE)) {
     // if the node is a chardata node, then delete chardata content
@@ -217,6 +230,10 @@ DeleteRangeTransaction::CreateTxnsToDeleteContent(nsINode* aNode,
 nsresult
 DeleteRangeTransaction::CreateTxnsToDeleteNodesBetween()
 {
+  if (NS_WARN_IF(!mEditorBase)) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
+
   nsCOMPtr<nsIContentIterator> iter = NS_NewContentSubtreeIterator();
 
   nsresult rv = iter->Init(mRange);

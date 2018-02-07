@@ -36,7 +36,7 @@ public:
 
 protected:
   // The editor that created this transaction.
-  nsIEditor* mEditor;
+  nsCOMPtr<nsIEditor> mEditor;
   // The style sheet to add.
   RefPtr<mozilla::StyleSheet> mSheet;
 };
@@ -62,7 +62,7 @@ public:
 
 protected:
   // The editor that created this transaction.
-  nsIEditor* mEditor;
+  nsCOMPtr<nsIEditor> mEditor;
   // The style sheet to remove.
   RefPtr<StyleSheet> mSheet;
 
