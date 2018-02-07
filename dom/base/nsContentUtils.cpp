@@ -4128,9 +4128,15 @@ nsContentUtils::GetSubdocumentWithOuterWindowId(nsIDocument *aDocument,
 /* static */
 nsresult
 nsContentUtils::ConvertStringFromEncoding(const nsACString& aEncoding,
-                                          const nsACString& aInput,
+                                          const char* aInput,
+                                          uint32_t aInputLen,
                                           nsAString& aOutput)
 {
+  CheckedInt32 len = aInputLen;
+  if (!len.isValid()) {
+    return NS_ERROR_OUT_OF_MEMORY;
+  }
+
   nsAutoCString encoding;
   if (aEncoding.IsEmpty()) {
     encoding.AssignLiteral("UTF-8");
@@ -4142,7 +4148,7 @@ nsContentUtils::ConvertStringFromEncoding(const nsACString& aEncoding,
   nsAutoPtr<TextDecoder> decoder(new TextDecoder());
   decoder->InitWithEncoding(encoding, false);
 
-  decoder->Decode(aInput.BeginReading(), aInput.Length(), false,
+  decoder->Decode(aInput, len.value(), false,,
                   aOutput, rv);
   return rv.StealNSResult();
 }
