@@ -697,7 +697,7 @@ this.DownloadIntegration = {
     // to do this check.  The second is that the system-level security prompt
     // would be displayed at launch time in any case.
     if (file.isExecutable() && !isWindowsExe &&
-        !(await this.confirmLaunchExecutable(file.path))) {
+        !(yield this.confirmLaunchExecutable(file.path))) {
       return;
     }
 
