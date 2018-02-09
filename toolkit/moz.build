@@ -9,6 +9,7 @@ DIRS += [
     'content',
     'forgetaboutsite',
     'identity',
+    'jetpack',
     'locales',
     'modules',
     'mozapps/downloads',

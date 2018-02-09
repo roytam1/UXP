@@ -99,7 +99,6 @@ SEARCH_PATHS = [
 
 # Individual files providing mach commands.
 MACH_MODULES = [
-    'addon-sdk/mach_commands.py',
     'build/valgrind/mach_commands.py',
     'devtools/shared/css/generated/mach_commands.py',
     'dom/bindings/mach_commands.py',
@@ -131,6 +130,8 @@ MACH_MODULES = [
     'mobile/android/mach_commands.py',
 ]
 
+if os.path.exists('addon-sdk'):
+    MACH_MODULES += [ 'addon-sdk/mach_commands.py' ]
 
 CATEGORIES = {
     'build': {
