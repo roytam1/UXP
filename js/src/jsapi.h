@@ -5999,7 +5999,6 @@ enum AsmJSCacheResult
     AsmJSCache_Disabled_JitInspector,
     AsmJSCache_InternalError,
     AsmJSCache_Disabled_PrivateBrowsing,
-    AsmJSCache_ESR52,
     AsmJSCache_LIMIT
 };
 
