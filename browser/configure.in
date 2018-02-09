@@ -13,3 +13,16 @@ AC_SUBST(MC_BASILISK)
 
 dnl Optional parts of the build.
 
+dnl ========================================================
+dnl = Disable WebExtensions
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(browser-statusbar,
+[  --disable-webextensions            Disable WebExtensions],
+    MOZ_WEBEXTENSIONS=,
+    MOZ_WEBEXTENSIONS=1)
+
+if test -n "$MOZ_WEBEXTENSIONS"; then
+    AC_DEFINE(MOZ_WEBEXTENSIONS)
+fi
+
+AC_SUBST(MOZ_WEBEXTENSIONS)

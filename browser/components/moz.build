@@ -10,7 +10,6 @@ DIRS += [
     'customizableui',
     'dirprovider',
     'downloads',
-    'extensions',
     'feeds',
     'migration',
     'newtab',
@@ -25,6 +24,9 @@ DIRS += [
     'uitour',
     'translation',
 ]
+
+if CONFIG['MOZ_WEBEXTENSIONS']:
+    DIRS += ['webextensions']
 
 DIRS += ['build']
 

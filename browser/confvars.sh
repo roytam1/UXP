@@ -47,12 +47,15 @@ MOZ_APP_ID={ec8030f7-c20a-464f-9b0e-13a3a9e97384}
 ACCEPTED_MAR_CHANNEL_IDS=basilisk-release
 # The MAR_CHANNEL_ID must not contain the following 3 characters: ",\t "
 MAR_CHANNEL_ID=basilisk-release
+
+# Features
 MOZ_PROFILE_MIGRATOR=1
 MOZ_APP_STATIC_INI=1
 MOZ_WEBGL_CONFORMANT=1
 MOZ_JSDOWNLOADS=1
 MOZ_RUST_MP4PARSE=1
 MOZ_RUST_URLPARSE=1
+MOZ_WEBEXTENSIONS=1
 
 # Disable checking that add-ons are signed by the trusted root
 MOZ_ADDON_SIGNING=0
