@@ -16,7 +16,7 @@ dnl Optional parts of the build.
 dnl ========================================================
 dnl = Disable WebExtensions
 dnl ========================================================
-MOZ_ARG_DISABLE_BOOL(browser-statusbar,
+MOZ_ARG_DISABLE_BOOL(webextensions,
 [  --disable-webextensions            Disable WebExtensions],
     MOZ_WEBEXTENSIONS=,
     MOZ_WEBEXTENSIONS=1)

@@ -25,7 +25,6 @@ DIRS += [
     'crashmonitor',
     'diskspacewatcher',
     'downloads',
-    'extensions',
     'exthelper',
     'filewatcher',
     'finalizationwitness',
@@ -67,6 +66,9 @@ DIRS += [
     'workerloader',
     'xulstore'
 ]
+
+if CONFIG['MOZ_WEBEXTENSIONS']:
+    DIRS += ['webextensions']
 
 if CONFIG['ENABLE_INTL_API']:
     DIRS += ['mozintl']
