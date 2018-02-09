@@ -15,6 +15,7 @@ DIRS += [
     'mozapps/extensions',
     'mozapps/handling',
     'mozapps/preferences',
+    'obsolete',
     'pluginproblem',
     'profile',
     'themes',
