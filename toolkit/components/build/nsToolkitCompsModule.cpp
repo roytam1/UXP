@@ -35,7 +35,9 @@
 #include "nsBrowserStatusFilter.h"
 #include "mozilla/FinalizationWitnessService.h"
 #include "mozilla/NativeOSFileInternals.h"
+#ifdef MOZ_WEBEXTENSIONS
 #include "mozilla/AddonContentPolicy.h"
+#endif
 #include "mozilla/AddonPathService.h"
 
 #if defined(XP_WIN)
@@ -122,7 +124,9 @@ NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(FinalizationWitnessService, Init)
 NS_GENERIC_FACTORY_CONSTRUCTOR(NativeOSFileInternalsService)
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(NativeFileWatcherService, Init)
 
+#ifdef MOZ_WEBEXTENSIONS
 NS_GENERIC_FACTORY_CONSTRUCTOR(AddonContentPolicy)
+#endif
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(AddonPathService, AddonPathService::GetInstance)
 
 NS_DEFINE_NAMED_CID(NS_TOOLKIT_APPSTARTUP_CID);
@@ -155,7 +159,9 @@ NS_DEFINE_NAMED_CID(NS_UPDATEPROCESSOR_CID);
 #endif
 NS_DEFINE_NAMED_CID(FINALIZATIONWITNESSSERVICE_CID);
 NS_DEFINE_NAMED_CID(NATIVE_OSFILE_INTERNALS_SERVICE_CID);
+#ifdef MOZ_WEBEXTENSIONS
 NS_DEFINE_NAMED_CID(NS_ADDONCONTENTPOLICY_CID);
+#endif
 NS_DEFINE_NAMED_CID(NS_ADDON_PATH_SERVICE_CID);
 NS_DEFINE_NAMED_CID(NATIVE_FILEWATCHER_SERVICE_CID);
 
@@ -189,7 +195,9 @@ static const Module::CIDEntry kToolkitCIDs[] = {
 #endif
   { &kFINALIZATIONWITNESSSERVICE_CID, false, nullptr, FinalizationWitnessServiceConstructor },
   { &kNATIVE_OSFILE_INTERNALS_SERVICE_CID, false, nullptr, NativeOSFileInternalsServiceConstructor },
+#ifdef MOZ_WEBEXTENSIONS
   { &kNS_ADDONCONTENTPOLICY_CID, false, nullptr, AddonContentPolicyConstructor },
+#endif
   { &kNS_ADDON_PATH_SERVICE_CID, false, nullptr, AddonPathServiceConstructor },
   { &kNATIVE_FILEWATCHER_SERVICE_CID, false, nullptr, NativeFileWatcherServiceConstructor },
   { nullptr }
@@ -225,14 +233,18 @@ static const Module::ContractIDEntry kToolkitContracts[] = {
 #endif
   { FINALIZATIONWITNESSSERVICE_CONTRACTID, &kFINALIZATIONWITNESSSERVICE_CID },
   { NATIVE_OSFILE_INTERNALS_SERVICE_CONTRACTID, &kNATIVE_OSFILE_INTERNALS_SERVICE_CID },
+#ifdef MOZ_WEBEXTENSIONS
   { NS_ADDONCONTENTPOLICY_CONTRACTID, &kNS_ADDONCONTENTPOLICY_CID },
+#endif
   { NS_ADDONPATHSERVICE_CONTRACTID, &kNS_ADDON_PATH_SERVICE_CID },
   { NATIVE_FILEWATCHER_SERVICE_CONTRACTID, &kNATIVE_FILEWATCHER_SERVICE_CID },
   { nullptr }
 };
 
 static const mozilla::Module::CategoryEntry kToolkitCategories[] = {
+#ifdef MOZ_WEBEXTENSIONS
   { "content-policy", NS_ADDONCONTENTPOLICY_CONTRACTID, NS_ADDONCONTENTPOLICY_CONTRACTID },
+#endif
   { nullptr }
 };
 

@@ -14,11 +14,13 @@
 #include "nsThreadUtils.h"
 #include "nsIIOService.h"
 #include "nsNetUtil.h"
+#include "nsIFileURL.h"
 #include "nsIResProtocolHandler.h"
 #include "nsIChromeRegistry.h"
 #include "nsIJARURI.h"
 #include "nsJSUtils.h"
 #include "mozilla/dom/ScriptSettings.h"
+#include "mozilla/dom/ToJSValue.h"
 #include "mozilla/AddonPathService.h"
 #include "mozilla/Omnijar.h"
 
@@ -64,6 +66,18 @@ AddonPathService::GetInstance()
   return sInstance;
 }
 
+static JSAddonId*
+ConvertAddonId(const nsAString& addonIdString)
+{
+  AutoSafeJSContext cx;
+  JS::RootedValue strv(cx);
+  if (!mozilla::dom::ToJSValue(cx, addonIdString, &strv)) {
+    return nullptr;
+  }
+  JS::RootedString str(cx, strv.toString());
+  return JS::NewAddonId(cx, str);
+}
+
 JSAddonId*
 AddonPathService::Find(const nsAString& path)
 {
@@ -106,11 +120,7 @@ AddonPathService::FindAddonId(const nsAString& path)
 NS_IMETHODIMP
 AddonPathService::InsertPath(const nsAString& path, const nsAString& addonIdString)
 {
-  AutoSafeJSContext cx;
-  JS::RootedString str(cx, JS_NewUCStringCopyN(cx,
-                                               addonIdString.BeginReading(),
-                                               addonIdString.Length()));
-  JSAddonId* addonId = JS::NewAddonId(cx, str);
+  JSAddonId* addonId = ConvertAddonId(addonIdString);
 
   // Add the new path in sorted order.
   PathEntryComparator comparator;
@@ -193,7 +203,7 @@ ResolveURI(nsIURI* aURI, nsAString& out)
 JSAddonId*
 MapURIToAddonID(nsIURI* aURI)
 {
-  if (!NS_IsMainThread() || XRE_GetProcessType() != GoannaProcessType_Default) {
+  if (!NS_IsMainThread() || !XRE_IsParentProcess()) {
     return nullptr;
   }
 
