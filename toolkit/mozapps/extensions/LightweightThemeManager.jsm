@@ -386,7 +386,13 @@ this.LightweightThemeManager = {
       return;
     }
 
-    aCallback([new AddonWrapper(a) for each (a in this.usedThemes)]);
+    // Tycho: aCallback([new AddonWrapper(a) for each (a in this.usedThemes)]);
+    let result = [];
+    for each(let a in this.usedThemes) {
+      result.push(new AddonWrapper(a));
+    }
+    
+    aCallback(result);
   },
 };
 
