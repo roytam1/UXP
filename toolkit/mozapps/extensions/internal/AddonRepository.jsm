@@ -631,7 +631,12 @@ this.AddonRepository = {
       return this._clearCache();
     }
 
-    let ids = [a.id for (a of allAddons)];
+    // Tycho: let ids = [a.id for (a of allAddons)];
+    let ids = [];
+    for (let a of allAddons) {
+      ids.push(a.id);
+    }
+    
     logger.debug("Repopulate add-on cache with " + ids.toSource());
 
     let self = this;
@@ -962,7 +967,12 @@ this.AddonRepository = {
     this._searching = false;
     this._request = null;
     // The callback may want to trigger a new search so clear references early
-    let addons = [result.addon for each(result in aResults)];
+    // Tycho: let addons = [result.addon for each(result in aResults)];
+    let addons = [];
+    for each(let result in aResults) {
+      addons.push(result.addon);
+    }
+    
     let callback = this._callback;
     this._callback = null;
     callback.searchSucceeded(addons, addons.length, aTotalResults);
@@ -1508,7 +1518,13 @@ this.AddonRepository = {
     let localAddonIds = {ids: null, sourceURIs: null};
 
     AddonManager.getAllAddons(function getLocalAddonIds_getAllAddons(aAddons) {
-      localAddonIds.ids = [a.id for each (a in aAddons)];
+      // Tycho: localAddonIds.ids = [a.id for each (a in aAddons)];
+      localAddonIds.ids = [];
+      
+      for each(let a in aAddons) {
+        localAddonIds.ids.push(a.id);
+      }
+      
       if (localAddonIds.sourceURIs)
         aCallback(localAddonIds);
     });
