@@ -987,14 +987,10 @@ function loadManifestFromRDF(aUri, aStream) {
 
   // Generate random GUID used for Sync.
   // This was lifted from util.js:makeGUID() from services-sync.
-  let rng = Cc["@mozilla.org/security/random-generator;1"].
-            createInstance(Ci.nsIRandomGenerator);
-  let bytes = rng.generateRandomBytes(9);
-  let byte_string = [String.fromCharCode(byte) for each (byte in bytes)]
-                    .join("");
-  // Base64 encode
-  addon.syncGUID = btoa(byte_string).replace(/\+/g, '-')
-                                    .replace(/\//g, '_');
+  let guid = Cc["@mozilla.org/uuid-generator;1"]
+             .getService(Ci.nsIUUIDGenerator)
+             .generateUUID().toString();
+  addon.syncGUID = guid;
 
   return addon;
 }
