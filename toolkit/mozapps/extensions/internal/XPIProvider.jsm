@@ -3855,7 +3855,12 @@ this.XPIProvider = {
    */
   getAddonsByTypes: function XPI_getAddonsByTypes(aTypes, aCallback) {
     XPIDatabase.getVisibleAddons(aTypes, function getAddonsByTypes_getVisibleAddons(aAddons) {
-      aCallback([createWrapper(a) for each (a in aAddons)]);
+      // Tycho: aCallback([createWrapper(a) for each (a in aAddons)]);
+      let result = [];
+      for each(let a in aAddons) {
+        result.push(createWrapper(a));
+      }
+      aCallback(result);
     });
   },
 
@@ -3885,7 +3890,12 @@ this.XPIProvider = {
   function XPI_getAddonsWithOperationsByTypes(aTypes, aCallback) {
     XPIDatabase.getVisibleAddonsWithPendingOperations(aTypes,
       function getAddonsWithOpsByTypes_getVisibleAddonsWithPendingOps(aAddons) {
-      let results = [createWrapper(a) for each (a in aAddons)];
+      // Tycho: let results = [createWrapper(a) for each (a in aAddons)];
+      let results = [];
+      for each(let a in aAddons) {
+        results.push(createWrapper(a));
+      }
+      
       XPIProvider.installs.forEach(function(aInstall) {
         if (aInstall.state == AddonManager.STATE_INSTALLED &&
             !(aInstall.addon.inDatabase))
@@ -4809,12 +4819,12 @@ this.XPIProvider = {
 
 function getHashStringForCrypto(aCrypto) {
   // return the two-digit hexadecimal code for a byte
-  function toHexString(charCode)
-    ("0" + charCode.toString(16)).slice(-2);
+  let toHexString = charCode => ("0" + charCode.toString(16)).slice(-2);
 
   // convert the binary hash data to a hex string.
   let binary = aCrypto.finish(false);
-  return [toHexString(binary.charCodeAt(i)) for (i in binary)].join("").toLowerCase()
+  let hash = Array.from(binary, c => toHexString(c.charCodeAt(0)))
+  return hash.join("").toLowerCase();
 }
 
 /**
@@ -6111,7 +6121,13 @@ function AddonInstallWrapper(aInstall) {
   this.__defineGetter__("linkedInstalls", function AIW_linkedInstallsGetter() {
     if (!aInstall.linkedInstalls)
       return null;
-    return [i.wrapper for each (i in aInstall.linkedInstalls)];
+    // Tycho: return [i.wrapper for each (i in aInstall.linkedInstalls)];
+      let result = [];
+    for each (let i in aInstall.linkedInstalls) {
+      result.push(i.wrapper);
+    }
+    
+    return result;
   });
 
   this.install = function AIW_install() {
