@@ -116,6 +116,17 @@
   locale/@AB_CD@/mozapps/extensions/newaddon.dtd                  (%chrome/mozapps/webextensions/newaddon.dtd)
   locale/@AB_CD@/mozapps/extensions/newaddon.properties           (%chrome/mozapps/webextensions/newaddon.properties)
 #endif
+#else
+  locale/@AB_CD@/mozapps/extensions/extensions.dtd                (%chrome/mozapps/extensions/extensions.dtd)
+  locale/@AB_CD@/mozapps/extensions/extensions.properties         (%chrome/mozapps/extensions/extensions.properties)
+  locale/@AB_CD@/mozapps/extensions/blocklist.dtd                 (%chrome/mozapps/extensions/blocklist.dtd)
+  locale/@AB_CD@/mozapps/extensions/about.dtd                     (%chrome/mozapps/extensions/about.dtd)
+  locale/@AB_CD@/mozapps/extensions/selectAddons.dtd              (%chrome/mozapps/extensions/selectAddons.dtd)
+  locale/@AB_CD@/mozapps/extensions/selectAddons.properties       (%chrome/mozapps/extensions/selectAddons.properties)
+  locale/@AB_CD@/mozapps/extensions/update.dtd                    (%chrome/mozapps/extensions/update.dtd)
+  locale/@AB_CD@/mozapps/extensions/update.properties             (%chrome/mozapps/extensions/update.properties)
+  locale/@AB_CD@/mozapps/extensions/newaddon.dtd                  (%chrome/mozapps/extensions/newaddon.dtd)
+  locale/@AB_CD@/mozapps/extensions/newaddon.properties           (%chrome/mozapps/extensions/newaddon.properties)
 #endif
   locale/@AB_CD@/mozapps/handling/handling.dtd                    (%chrome/mozapps/handling/handling.dtd)
   locale/@AB_CD@/mozapps/handling/handling.properties             (%chrome/mozapps/handling/handling.properties)
@@ -133,6 +144,9 @@
 #ifdef MOZ_WEBEXTENSIONS
   locale/@AB_CD@/mozapps/xpinstall/xpinstallConfirm.dtd           (%chrome/mozapps/webextensions/xpinstallConfirm.dtd)
   locale/@AB_CD@/mozapps/xpinstall/xpinstallConfirm.properties    (%chrome/mozapps/webextensions/xpinstallConfirm.properties)
+#else
+  locale/@AB_CD@/mozapps/xpinstall/xpinstallConfirm.dtd           (%chrome/mozapps/extensions/xpinstallConfirm.dtd)
+  locale/@AB_CD@/mozapps/xpinstall/xpinstallConfirm.properties    (%chrome/mozapps/extensions/xpinstallConfirm.properties)
 #endif
 % locale pluginproblem @AB_CD@ %locale/@AB_CD@/pluginproblem/
   locale/@AB_CD@/pluginproblem/pluginproblem.dtd                  (%chrome/pluginproblem/pluginproblem.dtd)

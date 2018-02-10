@@ -18,7 +18,6 @@ PREPROCESSED_WEBIDL_FILES = [
 
 WEBIDL_FILES = [
     'AbstractWorker.webidl',
-    'AddonManager.webidl',
     'AnalyserNode.webidl',
     'Animatable.webidl',
     'Animation.webidl',
@@ -592,6 +591,9 @@ WEBIDL_FILES = [
     'XULElement.webidl',
 ]
 
+if CONFIG['MOZ_WEBEXTENSIONS']:
+  WEBIDL_FILES += ['AddonManager.webidl']
+
 if CONFIG['MOZ_AUDIO_CHANNEL_MANAGER']:
     WEBIDL_FILES += [
         'AudioChannelManager.webidl',
@@ -692,7 +694,6 @@ else:
     ]
 
 GENERATED_EVENTS_WEBIDL_FILES = [
-    'AddonEvent.webidl',
     'AnimationPlaybackEvent.webidl',
     'AutocompleteErrorEvent.webidl',
     'BlobEvent.webidl',
@@ -733,6 +734,9 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'UserProximityEvent.webidl',
     'WebGLContextEvent.webidl',
 ]
+
+if CONFIG['MOZ_WEBEXTENSIONS']:
+  GENERATED_EVENTS_WEBIDL_FILES += ['AddonEvent.webidl']
 
 if CONFIG['MOZ_WEBRTC']:
     GENERATED_EVENTS_WEBIDL_FILES += [

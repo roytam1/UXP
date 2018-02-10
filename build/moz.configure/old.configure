@@ -302,6 +302,9 @@ def old_configure_options(*options):
     '--enable-mapi',
     '--enable-calendar',
     '--enable-incomplete-external-linkage',
+    
+    # Below are configure flags used by Basilisk
+    '--disable-webextensions',
 )
 @imports(_from='__builtin__', _import='compile')
 @imports(_from='__builtin__', _import='open')
