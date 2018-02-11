@@ -41,7 +41,7 @@ const GMP_PLUGINS = [
   {
     id:              OPEN_H264_ID,
     name:            "openH264_name",
-    description:     "openH264_description",
+    description:     "openH264_description2",
     // The following licenseURL is part of an awful hack to include the OpenH264
     // license without having bug 624602 fixed yet, and intentionally ignores
     // localisation.
@@ -62,7 +62,7 @@ const GMP_PLUGINS = [
 XPCOMUtils.defineLazyGetter(this, "pluginsBundle",
   () => Services.strings.createBundle("chrome://global/locale/plugins.properties"));
 XPCOMUtils.defineLazyGetter(this, "gmpService",
-  () => Cc["@mozilla.org/goanna-media-plugin-service;1"].getService(Ci.mozIGoannaMediaPluginService));
+  () => Cc["@mozilla.org/gecko-media-plugin-service;1"].getService(Ci.mozIGeckoMediaPluginChromeService));
 
 let messageManager = Cc["@mozilla.org/globalmessagemanager;1"]
                        .getService(Ci.nsIMessageListenerManager);
@@ -549,8 +549,16 @@ let GMPProvider = {
       return;
     }
 
-    let results = [p.wrapper for ([id, p] of this._plugins)
-                    if (!GMPUtils.isPluginHidden(p))];
+    // Tycho:
+    // let results = [p.wrapper for ([id, p] of this._plugins)
+    //                if (!GMPUtils.isPluginHidden(p))];
+    let results = [];
+    for (let [id, p] of this._plugins) {
+      if (!GMPUtils.isPluginHidden(p)) {
+        results.push(p.wrapper);
+      }
+    }
+    
     aCallback(results);
   },
 
