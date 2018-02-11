@@ -12,8 +12,7 @@ SOURCES += [
     'nsModule.cpp',
 ]
 
-Library('browsercomps')
-FINAL_LIBRARY = 'xul'
+XPCOMBinaryComponent('browsercomps')
 
 LOCAL_INCLUDES += [
     '../about',
@@ -22,3 +21,22 @@ LOCAL_INCLUDES += [
     '../migration',
     '../shell',
 ]
+
+if CONFIG['OS_ARCH'] == 'WINNT':
+    OS_LIBS += [
+        'esent',
+        'netapi32',
+        'ole32',
+        'shell32',
+        'shlwapi',
+        'version',
+    ]
+    DELAYLOAD_DLLS += [
+        'esent.dll',
+        'netapi32.dll',
+    ]
+
+# Mac: Need to link with CoreFoundation for Mac Migrators (PList reading code)
+# GTK2: Need to link with glib for GNOME shell service
+if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('cocoa', 'gtk2', 'gtk3'):
+    OS_LIBS += CONFIG['TK_LIBS']

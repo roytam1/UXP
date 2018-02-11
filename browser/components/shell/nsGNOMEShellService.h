@@ -7,7 +7,7 @@
 #define nsgnomeshellservice_h____
 
 #include "nsIGNOMEShellService.h"
-#include "nsString.h"
+#include "nsStringAPI.h"
 #include "mozilla/Attributes.h"
 
 class nsGNOMEShellService final : public nsIGNOMEShellService

@@ -7,7 +7,7 @@
 #define nswindowsshellservice_h____
 
 #include "nscore.h"
-#include "nsString.h"
+#include "nsStringAPI.h"
 #include "nsIWindowsShellService.h"
 #include "nsITimer.h"
 
