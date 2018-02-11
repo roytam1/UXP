@@ -529,7 +529,6 @@ npnComplete:
     mTransaction->OnTransportStatus(mSocketTransport,
                                     NS_NET_STATUS_TLS_HANDSHAKE_ENDED,
                                     0);
-
     if (mWaitingFor0RTTResponse) {
         // Didn't get 0RTT OK, back out of the "attempting 0RTT" state
         mWaitingFor0RTTResponse = false;
