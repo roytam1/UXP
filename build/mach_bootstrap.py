@@ -130,7 +130,7 @@ MACH_MODULES = [
     'mobile/android/mach_commands.py',
 ]
 
-if os.path.exists('addon-sdk'):
+if os.path.exists('addon-sdk/mach_commands.py'):
     MACH_MODULES += [ 'addon-sdk/mach_commands.py' ]
 
 CATEGORIES = {
