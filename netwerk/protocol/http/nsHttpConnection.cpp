@@ -313,6 +313,13 @@ nsHttpConnection::EnsureNPNComplete(nsresult &aOut0RTTWriteHandshakeValue,
     if (NS_FAILED(rv))
         goto npnComplete;
 
+    if (!m0RTTChecked) {
+        // We reuse m0RTTChecked. We want to send this status only once.
+        mTransaction->OnTransportStatus(mSocketTransport,
+                                        NS_NET_STATUS_TLS_HANDSHAKE_STARTING,
+                                        0);
+    }
+
     rv = ssl->GetNegotiatedNPN(negotiatedNPN);
     if (!m0RTTChecked && (rv == NS_ERROR_NOT_CONNECTED) &&
         !mConnInfo->UsingProxy()) {
@@ -443,6 +450,11 @@ nsHttpConnection::EnsureNPNComplete(nsresult &aOut0RTTWriteHandshakeValue,
 npnComplete:
     LOG(("nsHttpConnection::EnsureNPNComplete setting complete to true"));
     mNPNComplete = true;
+
+    mTransaction->OnTransportStatus(mSocketTransport,
+                                    NS_NET_STATUS_TLS_HANDSHAKE_ENDED,
+                                    0);
+
     if (mWaitingFor0RTTResponse) {
         mWaitingFor0RTTResponse = false;
         if (NS_FAILED(mTransaction->Finish0RTT(true))) {
