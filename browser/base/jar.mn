@@ -99,7 +99,7 @@ browser.jar:
 #endif
         content/browser/browser-thumbnails.js         (content/browser-thumbnails.js)
         content/browser/browser-trackingprotection.js (content/browser-trackingprotection.js)
-        content/browser/tab-content.js                (content/tab-content.js)
+*       content/browser/tab-content.js                (content/tab-content.js)
         content/browser/content.js                    (content/content.js)
         content/browser/social-content.js             (content/social-content.js)
         content/browser/defaultthemes/1.footer.jpg    (content/defaultthemes/1.footer.jpg)
@@ -166,7 +166,7 @@ browser.jar:
         content/browser/contentSearchUI.css           (content/contentSearchUI.css)
         content/browser/tabbrowser.css                (content/tabbrowser.css)
         content/browser/tabbrowser.xml                (content/tabbrowser.xml)
-        content/browser/urlbarBindings.xml            (content/urlbarBindings.xml)
+*       content/browser/urlbarBindings.xml            (content/urlbarBindings.xml)
         content/browser/utilityOverlay.js             (content/utilityOverlay.js)
         content/browser/usercontext.svg               (content/usercontext.svg)
         content/browser/web-panels.js                 (content/web-panels.js)
