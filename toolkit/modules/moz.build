@@ -105,7 +105,7 @@ EXTRA_JS_MODULES.third_party.jsesc += ['third_party/jsesc/jsesc.js']
 EXTRA_JS_MODULES.sessionstore += ['sessionstore/Utils.jsm']
 
 if not CONFIG['MOZ_WEBEXTENSIONS']:
-  EXTRA_JS_PP_MODULES += ['UpdateChannel.jsm']
+  EXTRA_PP_JS_MODULES += ['UpdateChannel.jsm']
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('windows', 'cocoa'):
     DEFINES['CAN_DRAW_IN_TITLEBAR'] = 1
