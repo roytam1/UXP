@@ -417,10 +417,14 @@
 @RESPATH@/components/addonManager.js
 @RESPATH@/components/amContentHandler.js
 @RESPATH@/components/amInstallTrigger.js
+#ifdef MOZ_WEBEXTENSIONS
 @RESPATH@/components/amWebAPI.js
+#endif
 @RESPATH@/components/amWebInstallListener.js
 @RESPATH@/components/nsBlocklistService.js
+#ifdef MOZ_WEBEXTENSIONS
 @RESPATH@/components/nsBlocklistServiceContent.js
+#endif
 #ifdef MOZ_UPDATER
 @RESPATH@/components/nsUpdateService.manifest
 @RESPATH@/components/nsUpdateService.js
@@ -569,9 +573,11 @@
 @RESPATH@/components/TestInterfaceJSMaplike.js
 #endif
 
+#ifdef MOZ_WEBEXTENSIONS
 ; [Extensions]
 @RESPATH@/components/extensions-toolkit.manifest
 @RESPATH@/browser/components/extensions-browser.manifest
+#endif
 
 ; Modules
 @RESPATH@/browser/modules/*
