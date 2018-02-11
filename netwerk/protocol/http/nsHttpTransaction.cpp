@@ -39,6 +39,8 @@
 #include "nsIOService.h"
 #include "nsIRequestContext.h"
 #include "nsIHttpAuthenticator.h"
+#include "NSSErrorsService.h"
+#include "sslerr.h"
 #include <algorithm>
 
 #ifdef MOZ_WIDGET_GONK
@@ -1045,7 +1047,9 @@ nsHttpTransaction::Close(nsresult reason)
     // connection.  It will break that connection and also confuse the channel's
     // auth provider, beliving the cached credentials are wrong and asking for
     // the password mistakenly again from the user.
-    if ((reason == NS_ERROR_NET_RESET || reason == NS_OK) &&
+    if ((reason == NS_ERROR_NET_RESET ||
+         reason == NS_OK ||
+         reason == psm::GetXPCOMFromNSSError(SSL_ERROR_DOWNGRADE_WITH_EARLY_DATA)) &&
         (!(mCaps & NS_HTTP_STICKY_CONNECTION) || (mCaps & NS_HTTP_CONNECTION_RESTARTABLE))) {
 
         if (mForceRestart && NS_SUCCEEDED(Restart())) {
@@ -1074,9 +1078,10 @@ nsHttpTransaction::Close(nsresult reason)
         bool reallySentData =
             mSentData && (!mConnection || mConnection->BytesWritten());
 
-        if (!mReceivedData &&
+        if (reason == psm::GetXPCOMFromNSSError(SSL_ERROR_DOWNGRADE_WITH_EARLY_DATA) ||
+            (!mReceivedData &&
             ((mRequestHead && mRequestHead->IsSafeMethod()) ||
-             !reallySentData || connReused)) {
+             !reallySentData || connReused))) {
             // if restarting fails, then we must proceed to close the pipe,
             // which will notify the channel that the transaction failed.
 
