@@ -40,7 +40,16 @@ function getIDHashForString(aStr) {
 
   // convert the binary hash data to a hex string.
   let binary = hasher.finish(false);
-  let hash = [toHexString(binary.charCodeAt(i)) for (i in binary)].join("").toLowerCase();
+  
+  // Tycho: let hash = [toHexString(binary.charCodeAt(i)) for (i in binary)].join("").toLowerCase();
+  let hash = [];
+  
+  for (let i in binary) {
+    hash.push(toHexString(binary.charCodeAt(i)));
+  }
+  
+  hash = hash.join("").toLowerCase();
+  
   return "{" + hash.substr(0, 8) + "-" +
                hash.substr(8, 4) + "-" +
                hash.substr(12, 4) + "-" +
@@ -228,11 +237,37 @@ var PluginProvider = {
   updatePluginList: function PL_updatePluginList() {
     let newList = this.getPluginList();
 
-    let lostPlugins = [this.buildWrapper(this.plugins[id])
-                       for each (id in Object.keys(this.plugins)) if (!(id in newList))];
-    let newPlugins = [this.buildWrapper(newList[id])
-                      for each (id in Object.keys(newList)) if (!(id in this.plugins))];
-    let matchedIDs = [id for each (id in Object.keys(newList)) if (id in this.plugins)];
+    // Tycho:
+    // let lostPlugins = [this.buildWrapper(this.plugins[id])
+    //                   for each (id in Object.keys(this.plugins)) if (!(id in newList))];
+    
+    // let newPlugins = [this.buildWrapper(newList[id])
+    //                  for each (id in Object.keys(newList)) if (!(id in this.plugins))];
+    
+    // let matchedIDs = [id for each (id in Object.keys(newList)) if (id in this.plugins)];
+
+    let lostPlugins = [];
+    let newPlugins = [];
+    let matchedIDs = [];
+    
+    // lostPlugins
+    for each(let id in Object.keys(this.plugins)) {
+      if (!(id in newList)) {
+        lostPlugins.push(this.buildWrapper(this.plugins[id]));
+      }
+    }
+
+    // newPlugins and matchedIDs
+    for each(let id in Object.keys(newList)) {
+      if (!(id in this.plugins)) {
+        newPlugins.push(this.buildWrapper(newList[id]));
+      }
+      
+      if (id in this.plugins) {
+        matchedIDs.push(id);
+      }
+    }
+
 
     // The plugin host generates new tags for every plugin after a scan and
     // if the plugin's filename has changed then the disabled state won't have
