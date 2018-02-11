@@ -2489,7 +2489,7 @@ nsHttpTransaction::Do0RTT()
 }
 
 nsresult
-nsHttpTransaction::Finish0RTT(bool aRestart)
+nsHttpTransaction::Finish0RTT(bool aRestart, bool aAlpnChanged /* ignored */)
 {
     MOZ_ASSERT(m0RTTInProgress);
     m0RTTInProgress = false;
