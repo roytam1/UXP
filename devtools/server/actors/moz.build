@@ -61,9 +61,12 @@ DevToolsModules(
     'stylesheets.js',
     'timeline.js',
     'webaudio.js',
-    'webbrowser.js',
     'webconsole.js',
     'webextension.js',
     'webgl.js',
     'worker.js',
 )
+
+FINAL_TARGET_PP_FILES.chrome.devtools.modules.devtools.server.actors += [
+    'webbrowser.js',
+]
