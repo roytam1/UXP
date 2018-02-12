@@ -2744,12 +2744,8 @@ var gListView = {
       document.getElementById("signing-dev-info").hidden = true;
     }
 
-    if (Preferences.get("plugin.load_flash_only", true)) {
-      document.getElementById("plugindeprecation-learnmore-link")
-        .setAttribute("href", Services.urlFormatter.formatURLPref("app.support.baseURL") + "npapi");
-    } else {
-      document.getElementById("plugindeprecation-notice").hidden = true;
-    }
+    // To-Do: remove deprecation notice content.
+    document.getElementById("plugindeprecation-notice").hidden = true;
   },
 
   show: function(aType, aRequest) {
