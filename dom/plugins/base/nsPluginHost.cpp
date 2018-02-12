@@ -2848,14 +2848,12 @@ nsPluginHost::WritePluginInfo()
     return rv;
   }
 
-  bool flashOnly = Preferences::GetBool("plugin.load_flash_only", true);
-
   PR_fprintf(fd, "Generated File. Do not edit.\n");
 
   PR_fprintf(fd, "\n[HEADER]\nVersion%c%s%c%c%c\nArch%c%s%c%c\n",
              PLUGIN_REGISTRY_FIELD_DELIMITER,
              kPluginRegistryVersion,
-             flashOnly ? 't' : 'f',
+             'f', //flashOnly
              PLUGIN_REGISTRY_FIELD_DELIMITER,
              PLUGIN_REGISTRY_END_OF_LINE_MARKER,
              PLUGIN_REGISTRY_FIELD_DELIMITER,
@@ -3052,9 +3050,8 @@ nsPluginHost::ReadPluginInfo()
 
   // If we're reading an old registry, ignore it
   // If we flipped the flash-only pref, ignore it
-  bool flashOnly = Preferences::GetBool("plugin.load_flash_only", true);
   nsAutoCString expectedVersion(kPluginRegistryVersion);
-  expectedVersion.Append(flashOnly ? 't' : 'f');
+  expectedVersion.Append('f'); //flashOnly
 
   if (!expectedVersion.Equals(values[1])) {
     return rv;
