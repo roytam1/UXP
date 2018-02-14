@@ -774,6 +774,11 @@ input[type="time"] > xul|datetimebox {
   -moz-binding: url("chrome://global/content/bindings/datetimebox.xml#time-input");
 }
 
+input[type="date"] > xul|datetimebox {
+  display: flex;
+  -moz-binding: url("chrome://global/content/bindings/datetimebox.xml#date-input");
+}
+
 /* details & summary */
 /* Need to revert Bug 1259889 Part 2 when removing details preference. */
 @supports -moz-bool-pref("dom.details_element.enabled") {

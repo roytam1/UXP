@@ -2832,7 +2832,8 @@ HTMLInputElement::GetOwnerDateTimeControl()
       HTMLInputElement::FromContentOrNull(
         GetParent()->GetParent()->GetParent()->GetParent());
     if (ownerDateTimeControl &&
-        ownerDateTimeControl->mType == NS_FORM_INPUT_TIME) {
+        (ownerDateTimeControl->mType == NS_FORM_INPUT_TIME ||
+         ownerDateTimeControl->mType == NS_FORM_INPUT_DATE)) {
       return ownerDateTimeControl;
     }
   }
@@ -3282,7 +3283,8 @@ HTMLInputElement::SetValueInternal(const nsAString& aValue, uint32_t aFlags)
           if (frame) {
             frame->UpdateForValueChange();
           }
-        } else if (mType == NS_FORM_INPUT_TIME &&
+        } else if ((mType == NS_FORM_INPUT_TIME ||
+                    mType == NS_FORM_INPUT_DATE) &&
                    !IsExperimentalMobileType(mType)) {
           nsDateTimeControlFrame* frame = do_QueryFrame(GetPrimaryFrame());
           if (frame) {
@@ -3591,7 +3593,8 @@ HTMLInputElement::Blur(ErrorResult& aError)
     }
   }
 
-  if (mType == NS_FORM_INPUT_TIME && !IsExperimentalMobileType(mType)) {
+  if ((mType == NS_FORM_INPUT_TIME || mType == NS_FORM_INPUT_DATE) &&
+      !IsExperimentalMobileType(mType)) {
     nsDateTimeControlFrame* frame = do_QueryFrame(GetPrimaryFrame());
     if (frame) {
       frame->HandleBlurEvent();
@@ -3618,7 +3621,8 @@ HTMLInputElement::Focus(ErrorResult& aError)
     }
   }
 
-  if (mType == NS_FORM_INPUT_TIME && !IsExperimentalMobileType(mType)) {
+  if ((mType == NS_FORM_INPUT_TIME || mType == NS_FORM_INPUT_DATE) &&
+      !IsExperimentalMobileType(mType)) {
     nsDateTimeControlFrame* frame = do_QueryFrame(GetPrimaryFrame());
     if (frame) {
       frame->HandleFocusEvent();
@@ -3956,7 +3960,7 @@ HTMLInputElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
     }
   }
 
-  if (mType == NS_FORM_INPUT_TIME &&
+  if ((mType == NS_FORM_INPUT_TIME || mType == NS_FORM_INPUT_DATE) &&
       !IsExperimentalMobileType(mType) &&
       aVisitor.mEvent->mMessage == eFocus &&
       aVisitor.mEvent->mOriginalTarget == this) {
@@ -4083,7 +4087,8 @@ HTMLInputElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
   // Stop the event if the related target's first non-native ancestor is the
   // same as the original target's first non-native ancestor (we are moving
   // inside of the same element).
-  if (mType == NS_FORM_INPUT_TIME && !IsExperimentalMobileType(mType) &&
+  if ((mType == NS_FORM_INPUT_TIME || mType == NS_FORM_INPUT_DATE) &&
+      !IsExperimentalMobileType(mType) &&
       (aVisitor.mEvent->mMessage == eFocus ||
        aVisitor.mEvent->mMessage == eFocusIn ||
        aVisitor.mEvent->mMessage == eFocusOut ||
@@ -7161,13 +7166,15 @@ HTMLInputElement::IsHTMLFocusable(bool aWithMouse, bool* aIsFocusable, int32_t* 
 
   if (mType == NS_FORM_INPUT_FILE ||
       mType == NS_FORM_INPUT_NUMBER ||
-      mType == NS_FORM_INPUT_TIME) {
+      mType == NS_FORM_INPUT_TIME ||
+      mType == NS_FORM_INPUT_DATE) {
     if (aTabIndex) {
       // We only want our native anonymous child to be tabable to, not ourself.
       *aTabIndex = -1;
     }
     if (mType == NS_FORM_INPUT_NUMBER ||
-        mType == NS_FORM_INPUT_TIME) {
+        mType == NS_FORM_INPUT_TIME ||
+        mType == NS_FORM_INPUT_DATE) {
       *aIsFocusable = true;
     } else {
       *aIsFocusable = defaultFocusable;
