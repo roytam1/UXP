@@ -268,11 +268,11 @@ function Spinner(props, context) {
      * Attach event listeners to the spinner and buttons.
      */
     _attachEventListeners() {
-      const { spinner } = this.elements;
+      const { spinner, container } = this.elements;
 
       spinner.addEventListener("scroll", this, { passive: true });
-      document.addEventListener("mouseup", this, { passive: true });
-      document.addEventListener("mousedown", this);
+      container.addEventListener("mouseup", this, { passive: true });
+      container.addEventListener("mousedown", this, { passive: true });
     },
 
     /**
@@ -290,9 +290,6 @@ function Spinner(props, context) {
           break;
         }
         case "mousedown": {
-          // Use preventDefault to keep focus on input boxes
-          event.preventDefault();
-          event.target.setCapture();
           this.state.mouseState = {
             down: true,
             layerX: event.layerX,
