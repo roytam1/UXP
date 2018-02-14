@@ -1737,6 +1737,7 @@ let DateTimePickerListener = {
       }
       case "MozUpdateDateTimePicker": {
         let value = this._inputElement.getDateTimeInputBoxValue();
+        value.type = this._inputElement.type;
         sendAsyncMessage("FormDateTime:UpdatePicker", { value });
         break;
       }
