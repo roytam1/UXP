@@ -5,42 +5,37 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 @template
-def FirefoxBranding():
-    JS_PREFERENCE_FILES += [
+def ApplicationBranding():
+    JS_PREFERENCE_PP_FILES += [
         'pref/firefox-branding.js',
     ]
 
     if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         FINAL_TARGET_FILES['..'] += [
-            'firefox.VisualElementsManifest.xml',
+            'basilisk.VisualElementsManifest.xml',
         ]
         FINAL_TARGET_FILES.VisualElements += [
             'VisualElements_150.png',
             'VisualElements_70.png',
         ]
         BRANDING_FILES += [
+            '../shared/newtab.ico',
+            '../shared/newwindow.ico',
+            '../shared/pbmode.ico',
             'appname.bmp',
-            'bgintro.bmp',
             'branding.nsi',
-            'clock.bmp',
             'document.ico',
             'firefox.ico',
-            'newtab.ico',
-            'newwindow.ico',
-            'particles.bmp',
-            'pbmode.ico',
-            'pencil-rtl.bmp',
-            'pencil.bmp',
             'wizHeader.bmp',
             'wizHeaderRTL.bmp',
             'wizWatermark.bmp',
          ]
     elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         BRANDING_FILES += [
-            'background.png',
+            '../shared/dsstore',
             'disk.icns',
             'document.icns',
-            'dsstore',
+            'background.png',
             'firefox.icns',
         ]
     elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
@@ -56,3 +51,6 @@ def FirefoxBranding():
             'default32.png',
             'default48.png',
         ]
+    DEFINES['MOZ_APP_VERSION'] = CONFIG['MOZ_APP_VERSION']
+    DEFINES['MOZ_BRANDING_DIRECTORY'] = CONFIG['MOZ_BRANDING_DIRECTORY']
+    DEFINES['MOZILLA_UAVERSION_U'] = CONFIG['MOZILLA_UAVERSION_U']
