@@ -136,9 +136,6 @@ SYMBOL_ARCHIVE_BASENAME = $(PKG_BASENAME).crashreporter-symbols
 # Code coverage package naming
 CODE_COVERAGE_ARCHIVE_BASENAME = $(PKG_BASENAME).code-coverage-gcno
 
-# Mozharness naming
-MOZHARNESS_PACKAGE = mozharness.zip
-
 # Test package naming
 TEST_PACKAGE = $(PKG_BASENAME).common.tests.zip
 CPP_TEST_PACKAGE = $(PKG_BASENAME).cppunittest.tests.zip
@@ -157,8 +154,6 @@ endif
 
 MOZ_SOURCESTAMP_FILE = $(DIST)/$(PKG_PATH)/$(MOZ_INFO_BASENAME).txt
 MOZ_BUILDINFO_FILE = $(DIST)/$(PKG_PATH)/$(MOZ_INFO_BASENAME).json
-MOZ_BUILDID_INFO_TXT_FILE = $(DIST)/$(PKG_PATH)/$(MOZ_INFO_BASENAME)_info.txt
-MOZ_MOZINFO_FILE = $(DIST)/$(PKG_PATH)/$(MOZ_INFO_BASENAME).mozinfo.json
 MOZ_TEST_PACKAGES_FILE = $(DIST)/$(PKG_PATH)/$(PKG_BASENAME).test_packages.json
 
 # JavaScript Shell

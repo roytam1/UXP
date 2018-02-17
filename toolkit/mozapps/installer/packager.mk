@@ -55,12 +55,6 @@ stage-package: $(MOZ_PKG_MANIFEST) $(MOZ_PKG_MANIFEST_DEPS)
 		$(MOZ_PKG_MANIFEST) $(DIST) $(DIST)/$(STAGEPATH)$(MOZ_PKG_DIR)$(if $(MOZ_PKG_MANIFEST),,$(_BINPATH)) \
 		$(if $(filter omni,$(MOZ_PACKAGER_FORMAT)),$(if $(NON_OMNIJAR_FILES),--non-resource $(NON_OMNIJAR_FILES)))
 	$(PYTHON) $(MOZILLA_DIR)/toolkit/mozapps/installer/find-dupes.py $(DEFINES) $(ACDEFINES) $(MOZ_PKG_DUPEFLAGS) $(DIST)/$(STAGEPATH)$(MOZ_PKG_DIR)
-ifndef MOZ_THUNDERBIRD
-	# Package mozharness
-	$(call py_action,test_archive, \
-		mozharness \
-		$(ABS_DIST)/$(PKG_PATH)$(MOZHARNESS_PACKAGE))
-endif # MOZ_THUNDERBIRD
 ifdef MOZ_PACKAGE_JSSHELL
 	# Package JavaScript Shell
 	@echo 'Packaging JavaScript Shell...'
@@ -89,7 +83,7 @@ endif # Darwin
 
 prepare-package: stage-package
 
-make-package-internal: prepare-package make-sourcestamp-file make-buildinfo-file make-mozinfo-file
+make-package-internal: prepare-package make-sourcestamp-file make-buildinfo-file
 	@echo 'Compressing...'
 	cd $(DIST) && $(MAKE_PACKAGE)
 
@@ -114,11 +108,6 @@ make-buildinfo-file:
 		$(addprefix MOZ_SOURCE_REPO=,MOZ_SOURCE_REPO=$(shell awk '$$2 == "MOZ_SOURCE_REPO" {print $$3}' $(DEPTH)/source-repo.h)) \
 		MOZ_SOURCE_STAMP=$(shell awk '$$2 == "MOZ_SOURCE_STAMP" {print $$3}' $(DEPTH)/source-repo.h) \
 		MOZ_PKG_PLATFORM=$(MOZ_PKG_PLATFORM)
-	echo "buildID=$(BUILDID)" > $(MOZ_BUILDID_INFO_TXT_FILE)
-
-.PHONY: make-mozinfo-file
-make-mozinfo-file:
-	cp $(DEPTH)/mozinfo.json $(MOZ_MOZINFO_FILE)
 
 # The install target will install the application to prefix/lib/appname-version
 # In addition if INSTALL_SDK is set, it will install the development headers,
