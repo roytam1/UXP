@@ -11,9 +11,7 @@ INSTALLER_FILES = \
 	app.tag \
 	nsis/installer.nsi \
 	nsis/uninstaller.nsi \
-	nsis/stub.nsi \
 	nsis/shared.nsh \
-	stub.tag \
 	$(NULL)
 
 ifdef MOZ_MAINTENANCE_SERVICE
@@ -25,11 +23,6 @@ endif
 BRANDING_FILES = \
 	branding.nsi \
 	appname.bmp \
-	bgintro.bmp \
-	clock.bmp \
-	particles.bmp \
-	pencil.bmp \
-	pencil-rtl.bmp \
 	wizHeader.bmp \
 	wizHeaderRTL.bmp \
 	wizWatermark.bmp \

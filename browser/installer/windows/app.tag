@@ -1,4 +1,4 @@
 ;!@Install@!UTF-8!
-Title="Mozilla Firefox"
+Title="Basilisk"
 RunProgram="setup.exe"
 ;!@InstallEnd@!
