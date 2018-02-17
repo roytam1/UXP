@@ -2312,7 +2312,7 @@ MOZ_TIME_MANAGER=
 MOZ_AUDIO_CHANNEL_MANAGER=
 MOZ_CONTENT_SANDBOX=
 MOZ_GMP_SANDBOX=
-MOZ_SANDBOX=1
+MOZ_SANDBOX=
 MOZ_BINARY_EXTENSIONS=
 MOZ_JETPACK=1
 MOZ_DEVTOOLS_SERVER=1
@@ -3933,6 +3933,11 @@ AC_SUBST(MOZ_NO_SMART_CARDS)
 dnl ========================================================
 dnl = Sandboxing support
 dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(sandbox,
+[  --enable-sandbox        Enable sandboxing support],
+    MOZ_SANDBOX=1,
+    MOZ_SANDBOX=)
+
 if test -n "$MOZ_TSAN" -o -n "$MOZ_ASAN"; then
     # Bug 1182565: TSan conflicts with sandboxing on Linux.
     # Bug 1287971: LSan also conflicts with sandboxing on Linux.
@@ -3942,11 +3947,6 @@ if test -n "$MOZ_TSAN" -o -n "$MOZ_ASAN"; then
         ;;
     esac
 fi
-
-MOZ_ARG_DISABLE_BOOL(sandbox,
-[  --disable-sandbox        Disable sandboxing support],
-    MOZ_SANDBOX=,
-    MOZ_SANDBOX=1)
 
 dnl ========================================================
 dnl = Content process sandboxing
