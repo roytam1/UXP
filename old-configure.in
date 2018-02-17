@@ -2315,6 +2315,7 @@ MOZ_GMP_SANDBOX=
 MOZ_SANDBOX=1
 MOZ_BINARY_EXTENSIONS=
 MOZ_DEVTOOLS=server
+MOZ_JETPACK=1
 
 case "$target_os" in
     mingw*)
@@ -4790,6 +4791,20 @@ dnl = Misc. Options
 dnl =
 dnl ========================================================
 MOZ_ARG_HEADER(Misc. Options)
+
+dnl ========================================================
+dnl = Disable Jetpack
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(jetpack,
+[  --disable-jetpack         Disable Jetpack Support Code],
+    MOZ_JETPACK=,
+    MOZ_JETPACK=1)
+
+if test -n "$MOZ_JETPACK"; then
+    AC_DEFINE(MOZ_JETPACK)
+fi
+
+AC_SUBST(MOZ_JETPACK)
 
 dnl ========================================================
 dnl = Define default location for MOZILLA_FIVE_HOME

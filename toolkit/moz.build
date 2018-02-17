@@ -9,7 +9,6 @@ DIRS += [
     'content',
     'forgetaboutsite',
     'identity',
-    'jetpack',
     'locales',
     'modules',
     'mozapps/downloads',
@@ -20,6 +19,9 @@ DIRS += [
     'profile',
     'themes',
 ]
+
+if CONFIG['MOZ_JETPACK']:
+    DIRS += ['jetpack']
 
 if CONFIG['MOZ_WEBEXTENSIONS']:
     DIRS += ['mozapps/webextensions']
