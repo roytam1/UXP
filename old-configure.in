@@ -2314,8 +2314,9 @@ MOZ_CONTENT_SANDBOX=
 MOZ_GMP_SANDBOX=
 MOZ_SANDBOX=1
 MOZ_BINARY_EXTENSIONS=
-MOZ_DEVTOOLS=server
 MOZ_JETPACK=1
+MOZ_DEVTOOLS_SERVER=1
+MOZ_DEVTOOLS=
 
 case "$target_os" in
     mingw*)
@@ -4807,6 +4808,44 @@ fi
 AC_SUBST(MOZ_JETPACK)
 
 dnl ========================================================
+dnl = Disable Mozilla Developer Tools (server)
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(devtools-server,
+[  --disable-devtools-server         Disable Mozilla Developer Tools (server)],
+    MOZ_DEVTOOLS_SERVER=,
+    MOZ_DEVTOOLS_SERVER=1)
+
+
+
+if test -n "$MOZ_DEVTOOLS_SERVER"; then
+    if test ! -n "$MOZ_JETPACK"; then
+        AC_MSG_ERROR("Jetpack is required to include the Developer Tools Server")
+    fi
+
+    AC_DEFINE(MOZ_DEVTOOLS_SERVER)
+fi
+
+AC_SUBST(MOZ_DEVTOOLS_SERVER)
+
+dnl ========================================================
+dnl = Enable Mozilla Developer Tools (client)
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(devtools,
+[  --enable-devtools           Enable Mozilla Developer Tools (client)],
+    MOZ_DEVTOOLS=1,
+    MOZ_DEVTOOLS=)
+
+if test -n "$MOZ_DEVTOOLS"; then
+    if test ! -n "$MOZ_DEVTOOLS_SERVER"; then
+        AC_MSG_ERROR("The Developer Tools Server is required to include the client")
+    fi
+
+    AC_DEFINE(MOZ_DEVTOOLS)
+fi
+
+AC_SUBST(MOZ_DEVTOOLS)
+
+dnl ========================================================
 dnl = Define default location for MOZILLA_FIVE_HOME
 dnl ========================================================
 MOZ_ARG_WITH_STRING(default-mozilla-five-home,
@@ -5688,7 +5727,6 @@ AC_SUBST(LIBJPEG_TURBO_USE_YASM)
 AC_SUBST_LIST(LIBJPEG_TURBO_ASFLAGS)
 AC_SUBST(MOZ_LIBAV_FFT)
 AC_SUBST_LIST(LIBAV_FFT_ASFLAGS)
-AC_SUBST(MOZ_DEVTOOLS)
 
 AC_SUBST(MOZ_PACKAGE_JSSHELL)
 AC_SUBST(MOZ_FOLD_LIBS)

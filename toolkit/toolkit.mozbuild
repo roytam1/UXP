@@ -132,8 +132,10 @@ DIRS += [
 if CONFIG['MOZ_PREF_EXTENSIONS']:
     DIRS += ['/extensions/pref']
 
+if CONFIG['MOZ_DEVTOOLS_SERVER']:
+    DIRS += ['/devtools']
+
 DIRS += [
-    '/devtools',
     '/services',
     '/startupcache',
     '/js/ductwork/debugger',
