@@ -62,4 +62,8 @@ MOZ_ADDON_SIGNING=0
 MOZ_REQUIRE_SIGNING=0
 
 # Include the DevTools client, not just the server (which is the default)
-MOZ_DEVTOOLS=all
+if test -n "$BASILISK_DISABLE_DEVTOOLS" ; then
+MOZ_DEVTOOLS=
+else
+MOZ_DEVTOOLS=1
+fi
