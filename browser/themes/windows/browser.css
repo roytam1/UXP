@@ -16,6 +16,8 @@
 %define conditionalForwardWithUrlbar window:not([chromehidden~="toolbar"]) #urlbar-wrapper
 
 :root {
+  --titlebar-text-color: currentColor;
+
   --space-above-tabbar: 15px;
 
   --backbutton-urlbar-overlap: 6px;
@@ -187,19 +189,22 @@ toolbar:-moz-lwtheme {
   transition: min-height 170ms ease-out, max-height 170ms ease-out, visibility 170ms linear;
 }
 
+#toolbar-menubar,
+#TabsToolbar {
+  color: var(--titlebar-text-color);
+}
+
 @media not all and (-moz-windows-compositor),
        not all and (-moz-windows-default-theme) {
   /* Please keep the menu text colors in this media block in sync with
    * devedition.css, minus the :not(:-moz-lwtheme) condition - see Bug 1165718.
    */
-  #main-window[tabsintitlebar]:not([inFullscreen]) #toolbar-menubar:not(:-moz-lwtheme),
-  #main-window[tabsintitlebar]:not([inFullscreen]) #TabsToolbar:not(:-moz-lwtheme) {
-    color: CaptionText;
+  :root[tabsintitlebar]:not([inFullscreen]):not(:-moz-lwtheme) {
+    --titlebar-text-color: CaptionText;
   }
 
-  #main-window[tabsintitlebar]:not([inFullscreen]) #toolbar-menubar:not(:-moz-lwtheme):-moz-window-inactive,
-  #main-window[tabsintitlebar]:not([inFullscreen]) #TabsToolbar:not(:-moz-lwtheme):-moz-window-inactive {
-    color: InactiveCaptionText;
+  :root[tabsintitlebar]:not([inFullscreen]):not(:-moz-lwtheme):-moz-window-inactive {
+    --titlebar-text-color: InactiveCaptionText;
   }
 }
 
