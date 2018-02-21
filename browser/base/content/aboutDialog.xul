@@ -47,7 +47,7 @@
         <hbox align="baseline">
 #expand <label id="version"></label>
 #ifndef NIGHTLY_BUILD
-#expand <label id="releasenotes" class="text-link" href="https://www.basilisk-browser.org/releasenotes.shtml">&releaseNotes.link;</label>
+       <label id="releasenotes" class="text-link">&releaseNotes.link;</label>
 #endif
         </hbox>
 
