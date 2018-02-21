@@ -37,6 +37,10 @@ pref("app.update.url.manual", "https://@BRANDING_SITEURL@/");
 // supplied in the "An update is available" page of the update wizard.
 pref("app.update.url.details", "https://@BRANDING_SITEURL@/@BRANDING_RELNOTESPATH@");
 
+// Provide UA Gecko and Firefox slices for web compatibility
+pref("general.useragent.compatMode.firefox",true);
+pref("general.useragent.compatMode.gecko",true);
+
 // Switch Application Updates off for now
 pref("app.update.enabled", false);
 
