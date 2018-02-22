@@ -1555,6 +1555,10 @@ var BookmarkingUI = {
     // so kill current view and let popupshowing generate a new one.
     if (this.button._placesView)
       this.button._placesView.uninit();
+    // ...and do the same for the menu bar.
+    let menubar = document.getElementById("bookmarksMenu");
+    if (menubar._placesview)
+      menubar._placesview.uninit();
 
     // We have to do the same thing for the "special" views underneath the
     // the bookmarks menu.
