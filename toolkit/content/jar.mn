@@ -65,6 +65,14 @@ toolkit.jar:
    content/global/timepicker.xhtml
    content/global/treeUtils.js
    content/global/viewZoomOverlay.js
+   content/global/globalOverlay.xul
+*  content/global/dialogOverlay.xul
+   content/global/dialogOverlay.js
+   content/global/inlineSpellCheckUI.js
+   content/global/nsClipboard.js
+   content/global/nsDragAndDrop.js
+   content/global/nsUserSettings.js
+   content/global/strres.js
    content/global/bindings/autocomplete.xml    (widgets/autocomplete.xml)
    content/global/bindings/browser.xml         (widgets/browser.xml)
    content/global/bindings/button.xml          (widgets/button.xml)
