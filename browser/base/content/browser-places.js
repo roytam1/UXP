@@ -1557,8 +1557,8 @@ var BookmarkingUI = {
       this.button._placesView.uninit();
     // ...and do the same for the menu bar.
     let menubar = document.getElementById("bookmarksMenu");
-    if (menubar._placesview)
-      menubar._placesview.uninit();
+    if (menubar && menubar._placesView)
+      menubar._placesView.uninit();
 
     // We have to do the same thing for the "special" views underneath the
     // the bookmarks menu.
