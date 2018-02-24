@@ -4862,12 +4862,12 @@ fi
 AC_SUBST(MOZ_DEVTOOLS_SERVER)
 
 dnl ========================================================
-dnl = Enable Mozilla Developer Tools (client)
+dnl = Disable Mozilla Developer Tools (client)
 dnl ========================================================
-MOZ_ARG_ENABLE_BOOL(devtools,
-[  --enable-devtools           Enable Mozilla Developer Tools (client)],
-    MOZ_DEVTOOLS=1,
-    MOZ_DEVTOOLS=)
+MOZ_ARG_DISABLE_BOOL(devtools,
+[  --disable-devtools           Disable Mozilla Developer Tools (client)],
+    MOZ_DEVTOOLS=,
+    MOZ_DEVTOOLS=1)
 
 if test -n "$MOZ_DEVTOOLS"; then
     if test ! -n "$MOZ_DEVTOOLS_SERVER"; then
