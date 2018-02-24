@@ -1092,13 +1092,9 @@ void HTMLMediaElement::AbortExistingLoads()
   mDownloadSuspendedByCache = false;
   mMediaInfo = MediaInfo();
   mIsEncrypted = false;
-<<<<<<< HEAD
-  mPendingEncryptedInitData.mInitDatas.Clear();
-=======
 #ifdef MOZ_EME
-  mPendingEncryptedInitData.Reset();
+  mPendingEncryptedInitData.mInitDatas.Clear();
 #endif
->>>>>>> 8b6178ba9d... Don't build EME-specific subroutines without EME.
   mWaitingForKey = NOT_WAITING_FOR_KEY;
   mSourcePointer = nullptr;
 
@@ -4523,12 +4519,8 @@ void HTMLMediaElement::MetadataLoaded(const MediaInfo* aInfo,
     for (const auto& initData : mPendingEncryptedInitData.mInitDatas) {
       DispatchEncrypted(initData.mInitData, initData.mType);
     }
-<<<<<<< HEAD
     mPendingEncryptedInitData.mInitDatas.Clear();
-=======
-    mPendingEncryptedInitData.Reset();
 #endif
->>>>>>> 8b6178ba9d... Don't build EME-specific subroutines without EME.
   }
 
   mWatchManager.ManualNotify(&HTMLMediaElement::UpdateReadyStateInternal);
@@ -5465,12 +5457,8 @@ void HTMLMediaElement::SuspendOrResumeElement(bool aPauseElement, bool aSuspendE
       ReportEMETelemetry();
 #endif
 
-<<<<<<< HEAD
-      // For EME content, force destruction of the CDM client (and CDM
-=======
 #ifdef MOZ_EME
       // For EME content, we may force destruction of the CDM client (and CDM
->>>>>>> 8b6178ba9d... Don't build EME-specific subroutines without EME.
       // instance if this is the last client for that CDM instance) and
       // the CDM's decoder. This ensures the CDM gets reliable and prompt
       // shutdown notifications, as it may have book-keeping it needs
@@ -5533,8 +5521,6 @@ void HTMLMediaElement::NotifyOwnerDocumentActivityChanged()
   bool pauseElement = ShouldElementBePaused();
   SuspendOrResumeElement(pauseElement, !IsActive());
 
-<<<<<<< HEAD
-=======
 #ifdef MOZ_EME
   // If the owning document has become inactive we should shutdown the CDM.
   if (!OwnerDoc()->IsCurrentActiveDocument() && mMediaKeys) {
@@ -5546,7 +5532,6 @@ void HTMLMediaElement::NotifyOwnerDocumentActivityChanged()
     }
 #endif
 
->>>>>>> 8b6178ba9d... Don't build EME-specific subroutines without EME.
   AddRemoveSelfReference();
 }
 
