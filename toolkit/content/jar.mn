@@ -70,7 +70,6 @@ toolkit.jar:
    content/global/dialogOverlay.js
    content/global/inlineSpellCheckUI.js
    content/global/nsClipboard.js
-   content/global/nsDragAndDrop.js
    content/global/nsUserSettings.js
    content/global/strres.js
    content/global/bindings/autocomplete.xml    (widgets/autocomplete.xml)
