@@ -190,7 +190,10 @@ DevToolsStartup.prototype = {
       listener.open();
       dump("Started debugger server on " + portOrPath + "\n");
     } catch (e) {
-      dump("Unable to start debugger server on " + portOrPath + ": " + e);
+      let _error = "Unable to start debugger server on " + portOrPath + ": "
+          + e;
+      Cu.reportError(_error);
+      dump(_error + "\n");
     }
 
     if (cmdLine.state == Ci.nsICommandLine.STATE_REMOTE_AUTO) {
@@ -199,12 +202,14 @@ DevToolsStartup.prototype = {
   },
 
   /* eslint-disable max-len */
-  helpInfo: "  --jsconsole        Open the Browser Console.\n" +
-            "  --jsdebugger       Open the Browser Toolbox.\n" +
-            "  --devtools         Open DevTools on initial load.\n" +
-            "  --start-debugger-server [ws:][ <port> | <path> ] Start the debugger server on\n" +
-            "                     a TCP port or Unix domain socket path. Defaults to TCP port\n" +
-            "                     6000. Use WebSocket protocol if ws: prefix is specified.\n",
+  helpInfo: "  --jsconsole                                  Open the Browser Console.\n" +
+            "  --jsdebugger                                 Open the Browser Toolbox.\n" +
+            "  --devtools                                   Open DevTools on initial load.\n" +
+            "  --start-debugger-server [ws:][<port>|<path>] Start the debugger server on\n" +
+            "                                               a TCP port or Unix domain socket path.\n" +
+            "                                               Defaults to TCP port 6000.\n" +
+            "                                               Use WebSocket protocol if ws: prefix\n" +
+            "                                               is specified.\n",
   /* eslint-disable max-len */
 
   classID: Components.ID("{9e9a9283-0ce9-4e4a-8f1c-ba129a032c32}"),

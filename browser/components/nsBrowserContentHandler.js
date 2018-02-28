@@ -454,16 +454,16 @@ nsBrowserContentHandler.prototype = {
 
   get helpInfo() {
     let info =
-              "  --browser          Open a browser window.\n" +
-              "  --new-window <url> Open <url> in a new window.\n" +
-              "  --new-tab <url>    Open <url> in a new tab.\n" +
-              "  --private-window <url> Open <url> in a new private window.\n";
+              "  --browser                                    Open a browser window.\n" +
+              "  --new-window <url>                           Open <url> in a new window.\n" +
+              "  --new-tab <url>                              Open <url> in a new tab.\n" +
+              "  --private-window <url>                       Open <url> in a new private window.\n";
     if (AppConstants.platform == "win") {
-      info += "  --preferences      Open Options dialog.\n";
+      info += "  --preferences                                Open Options dialog.\n";
     } else {
-      info += "  --preferences      Open Preferences dialog.\n";
+      info += "  --preferences                                Open Preferences dialog.\n";
     }
-    info += "  --search <term>    Search <term> with your default search engine.\n";
+    info += "  --search <term>                              Search <term> with your default search engine.\n";
     return info;
   },
 
