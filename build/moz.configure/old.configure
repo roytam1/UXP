@@ -214,6 +214,7 @@ def old_configure_options(*options):
     '--enable-png-arm-neon-support',
     '--enable-posix-nspr-emulation',
     '--enable-pref-extensions',
+    '--enable-private-build',
     '--enable-pulseaudio',
     '--enable-raw',
     '--enable-readline',

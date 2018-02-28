@@ -4,11 +4,9 @@
 
 # Imports
 from __future__ import print_function, unicode_literals
-from collections import OrderedDict
 
 import os
 import sys
-import json
 
 # Sanity check
 if not len(sys.argv) > 1:
@@ -19,6 +17,7 @@ if not len(sys.argv) > 1:
 listConfigure = sys.argv[1:]
 listConfig = []
 strBrandingDirectory = ""
+listViolations = []
 
 # Build a list of set configure variables
 for _value in listConfigure:
@@ -33,8 +32,8 @@ for _value in listConfigure:
 if ('MOZ_OFFICIAL_BRANDING' in listConfig) or (strBrandingDirectory.endswith("branding/official")) or (strBrandingDirectory.endswith("branding/unstable")):
     # Applies to Pale Moon and Basilisk
     if ('MC_BASILISK' in listConfig) or ('MC_PALEMOON' in listConfig):
-        # Define a list of system libs
-        listSystemLibs = [
+        listViolations += [
+            'MOZ_SANDBOX',
             'MOZ_SYSTEM_LIBEVENT',
             'MOZ_SYSTEM_NSS',
             'MOZ_SYSTEM_NSPR',
@@ -47,25 +46,17 @@ if ('MOZ_OFFICIAL_BRANDING' in listConfig) or (strBrandingDirectory.endswith("br
             'MOZ_SYSTEM_JEMALLOC'
         ]
         
-        # Iterate through system libs and output 1 to DIRECTIVE4 if any are found
-        for _value in listSystemLibs:
-            if _value in listConfig:
-                sys.stdout.write("1")
-                sys.exit(1)
-
-    # Applies only to Pale Moon
+    # Applies to Pale Moon Only
     if 'MC_PALEMOON' in listConfig:
-        # Define a list of configure features that are in violation of Official branding
-        listFeatureViolations = [
-            'MOZ_SANDBOX',
+        listViolations += [
             'MOZ_WEBRTC'
         ]
-        
-        # Iterate through features and output 1 to DIRECTIVE4 if any violations are found
-        for _value in listFeatureViolations:
-            if _value in listConfig:
-                sys.stdout.write("1")
-                sys.exit(1)
+    
+    # Iterate through enabled violations and output 1 to DIRECTIVE4 if any are found
+    for _value in listViolations:
+        if _value in listConfig:
+            sys.stdout.write("1")
+            sys.exit(1)
 
 # Exit outputting nothing to DIRECTIVE4 being empty because there are no violations
 sys.exit(0)

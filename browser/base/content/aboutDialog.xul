@@ -122,12 +122,18 @@
               &warningDesc.version;
             </description>
           </vbox>
+#ifdef MC_PRIVATE_BUILD
+<description class="text-blurb" id="communityDesc">
+              This is a private build of Basilisk. If you did not manually build this copy from source yourself, then please download an official version from the <label class="text-link" href="http://www.basilisk-browser.org/">Basilisk website</label>.
+          </description>
+#else
           <description class="text-blurb" id="communityDesc">
               Basilisk is community software released by <label class="text-link" href="http://www.palemoon.org/">the Pale Moon team</label> and Mozilla developers. Learn <label class="text-link" useoriginprincipal="true" href="about:credits">who contributed</label> to this software.
           </description>
           <description class="text-blurb" id="contributeDesc">
-              Want to help? Please consider <label class="text-link" href="https://www.palemoon.org/donations.shtml">donating</label> or get involved with our <label class="text-link" href="https://github.com/MoonchildProductions/moebius">development</label> of the Unified XUL Platform.
+              Want to help? Please consider <label class="text-link" href="https://www.palemoon.org/donations.shtml">donating</label> or get involved with our <label class="text-link" href="https://github.com/MoonchildProductions/UXP">development</label> of the Unified XUL Platform.
           </description>
+#endif
         </vbox>
       </vbox>
     </hbox>

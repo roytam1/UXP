@@ -2629,6 +2629,22 @@ fi
 AC_SUBST(MOZ_BRANDING_DIRECTORY)
 
 dnl ========================================================
+dnl = Private Build
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(private-build,
+[  --enable-private-build   Enable private builds
+                            This allows you to build with official
+                            branding for personal use only using any
+                            build time configuration.],
+    MC_PRIVATE_BUILD=1,
+    MC_PRIVATE_BUILD=)
+
+AC_SUBST(MC_PRIVATE_BUILD)
+if test -n "$MC_PRIVATE_BUILD"; then
+  AC_DEFINE(MC_PRIVATE_BUILD)
+fi
+
+dnl ========================================================
 dnl = Distribution ID
 dnl ========================================================
 MOZ_ARG_WITH_STRING(distribution-id,
@@ -5857,7 +5873,8 @@ dnl ========================================================
 dnl Directive 4
 dnl ========================================================
 
-DIRECTIVE4_LIST="MOZ_OFFICIAL_BRANDING=$MOZ_OFFICIAL_BRANDING
+DIRECTIVE4_LIST="
+MOZ_OFFICIAL_BRANDING=$MOZ_OFFICIAL_BRANDING
 MOZ_BRANDING_DIRECTORY=$MOZ_BRANDING_DIRECTORY
 MC_BASILISK=$MC_BASILISK
 MC_PALEMOON=$MC_PALEMOON
@@ -5877,7 +5894,11 @@ MOZ_SYSTEM_JEMALLOC=$MOZ_SYSTEM_JEMALLOC"
 DIRECTIVE4=`$PYTHON $_topsrcdir/build/directive4.py $DIRECTIVE4_LIST`
 
 if test -n "$DIRECTIVE4"; then
-    AC_ERROR([Branding Violation - Please see: http://www.palemoon.org/redist.shtml])
+    if test -n "$MC_PRIVATE_BUILD"; then
+        AC_MSG_WARN([Private Build - The configuration you have chosen to use with official branding deviates from official build configuration. Your build is thus for personal and private use only and must not be (re)distributed - Please see: http://www.palemoon.org/redist.shtml])
+    else
+        AC_MSG_ERROR([Branding Violation - Please see: http://www.palemoon.org/redist.shtml])
+    fi
 fi
 
 AC_SUBST(DIRECTIVE4)
