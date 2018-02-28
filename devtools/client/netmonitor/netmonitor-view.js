@@ -233,7 +233,7 @@ var NetMonitorView = {
         // populating the statistics view.
         // • The response mime type is used for categorization.
         yield whenDataAvailable(requestsView, [
-          "responseHeaders", "status", "contentSize", "mimeType", "totalTime"
+          "responseHeaders", "status", "contentSize", "transferredSize", "mimeType", "totalTime"
         ]);
       } catch (ex) {
         // Timed out while waiting for data. Continue with what we have.

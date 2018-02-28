@@ -44,7 +44,7 @@ add_task(function* () {
   yield teardown(monitor);
 
   function testStatus() {
-    const { count, totalBytes, totalMillis } = getSummary(gStore.getState());
+    const { count, contentSize, transferredSize, millis } = getSummary(gStore.getState());
     let value = $("#requests-menu-network-summary-button").textContent;
     info("Current summary: " + value);
 
@@ -57,13 +57,14 @@ add_task(function* () {
       return;
     }
 
-    info("Computed total bytes: " + totalBytes);
-    info("Computed total millis: " + totalMillis);
+    info("Computed total bytes: " + contentSize);
+    info("Computed total millis: " + millis);
 
-    is(value, PluralForm.get(count, L10N.getStr("networkMenu.summary"))
+    is(value, PluralForm.get(count, L10N.getStr("networkMenu.summary2"))
       .replace("#1", count)
-      .replace("#2", L10N.numberWithDecimals((totalBytes || 0) / 1024, 2))
-      .replace("#3", L10N.numberWithDecimals((totalMillis || 0) / 1000, 2))
+      .replace("#2", L10N.numberWithDecimals((contentSize || 0) / 1024, 2))
+      .replace("#3", L10N.numberWithDecimals((transferredSize || 0) / 1024, 2))
+      .replace("#4", L10N.numberWithDecimals((millis || 0) / 1000, 2))
     , "The current summary text is incorrect.");
   }
 });

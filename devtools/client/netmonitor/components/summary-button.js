@@ -14,21 +14,25 @@ const { DOM, PropTypes } = require("devtools/client/shared/vendor/react");
 const { connect } = require("devtools/client/shared/vendor/react-redux");
 const { PluralForm } = require("devtools/shared/plural-form");
 const { L10N } = require("../l10n");
-const { getSummary } = require("../selectors/index");
+const { 
+  getDisplayedRequestsSummary
+} = require("../selectors/index");
 
 const { button, span } = DOM;
 
 function SummaryButton({
   summary,
-  triggerSummary,
+  triggerSummary
 }) {
-  let { count, totalBytes, totalMillis } = summary;
+  let { count, contentSize, transferredSize, millis } = summary;
   const text = (count === 0) ? L10N.getStr("networkMenu.empty") :
-    PluralForm.get(count, L10N.getStr("networkMenu.summary"))
+    PluralForm.get(count, L10N.getStr("networkMenu.summary2"))
     .replace("#1", count)
-    .replace("#2", L10N.numberWithDecimals(totalBytes / 1024,
+    .replace("#2", L10N.numberWithDecimals(contentSize / 1024,
       CONTENT_SIZE_DECIMALS))
-    .replace("#3", L10N.numberWithDecimals(totalMillis / 1000,
+    .replace("#3", L10N.numberWithDecimals(transferredSize / 1024,
+      CONTENT_SIZE_DECIMALS))
+    .replace("#4", L10N.numberWithDecimals(millis / 1000,
       REQUEST_TIME_DECIMALS));
 
   return button({
@@ -47,7 +51,7 @@ SummaryButton.propTypes = {
 
 module.exports = connect(
   (state) => ({
-    summary: getSummary(state),
+    summary: getDisplayedRequestsSummary(state),
   }),
   (dispatch) => ({
     triggerSummary: () => {

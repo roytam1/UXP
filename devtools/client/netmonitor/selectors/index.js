@@ -13,7 +13,7 @@ const { createSelector } = require("devtools/client/shared/vendor/reselect");
  * @param {array} items - an array of request items
  * @return {number} total bytes of requests
  */
-function getTotalBytesOfRequests(items) {
+function getContentSizeOfRequests(items) {
   if (!items.length) {
     return 0;
   }
@@ -27,6 +27,20 @@ function getTotalBytesOfRequests(items) {
   return result;
 }
 
+function getTransferredSizeOfRequests(items) {
+  if (!items.length) {
+    return 0;
+  }
+
+  let result = 0;
+  items.forEach((item) => {
+    let size = item.attachment.transferredSize;
+    result += (typeof size == "number") ? size : 0;
+  });
+
+  return result;
+}
+
 /**
  * Gets the total milliseconds for all requests. Returns null for an
  * empty set.
@@ -34,7 +48,7 @@ function getTotalBytesOfRequests(items) {
  * @param {array} items - an array of request items
  * @return {object} total milliseconds for all requests
  */
-function getTotalMillisOfRequests(items) {
+function getMillisOfRequests(items) {
   if (!items.length) {
     return null;
   }
@@ -49,15 +63,16 @@ function getTotalMillisOfRequests(items) {
   return newest.attachment.endedMillis - oldest.attachment.startedMillis;
 }
 
-const getSummary = createSelector(
+const getDisplayedRequestsSummary = createSelector(
   (state) => state.requests.items,
   (requests) => ({
     count: requests.length,
-    totalBytes: getTotalBytesOfRequests(requests),
-    totalMillis: getTotalMillisOfRequests(requests),
+    contentSize: getContentSizeOfRequests(requests),
+    transferredSize: getTransferredSizeOfRequests(requests),
+    millis: getMillisOfRequests(requests),
   })
 );
 
 module.exports = {
-  getSummary,
+  getDisplayedRequestsSummary,
 };
