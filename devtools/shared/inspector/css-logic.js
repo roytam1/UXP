@@ -30,6 +30,8 @@
 
 "use strict";
 
+const MAX_DATA_URL_LENGTH = 40;
+
 /**
  * Provide access to the style information in a page.
  * CssLogic uses the standard DOM API, and the Gecko inIDOMUtils API to access
@@ -103,6 +105,13 @@ exports.shortSource = function (sheet) {
     return exports.l10n("rule.sourceInline");
   }
 
+  // If the sheet is a data URL, return a trimmed version of it.
+  let dataUrl = sheet.href.trim().match(/^data:.*?,((?:.|\r|\n)*)$/);
+  if (dataUrl) {
+    return dataUrl[1].length > MAX_DATA_URL_LENGTH ?
+      `${dataUrl[1].substr(0, MAX_DATA_URL_LENGTH - 1)}…` : dataUrl[1];
+  }
+
   // We try, in turn, the filename, filePath, query string, whole thing
   let url = {};
   try {
@@ -123,8 +132,7 @@ exports.shortSource = function (sheet) {
     return url.query;
   }
 
-  let dataUrl = sheet.href.match(/^(data:[^,]*),/);
-  return dataUrl ? dataUrl[1] : sheet.href;
+  return sheet.href;
 };
 
 const TAB_CHARS = "\t";

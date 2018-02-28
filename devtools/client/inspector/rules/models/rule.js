@@ -140,11 +140,18 @@ Rule.prototype = {
                                                      line, mediaText}) => {
       let mediaString = mediaText ? " @" + mediaText : "";
       let linePart = line > 0 ? (":" + line) : "";
+      let decodedHref = href;
+
+      if (decodedHref) {
+        try {
+          decodedHref = decodeURIComponent(href);
+        } catch (e) {}
+      }
 
       let sourceStrings = {
-        full: (href || CssLogic.l10n("rule.sourceInline")) + linePart +
+        full: (decodedHref || CssLogic.l10n("rule.sourceInline")) + linePart +
           mediaString,
-        short: CssLogic.shortSource({href: href}) + linePart + mediaString
+        short: CssLogic.shortSource({href: decodedHref}) + linePart + mediaString
       };
 
       return sourceStrings;
