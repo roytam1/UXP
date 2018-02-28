@@ -1327,8 +1327,24 @@ NetworkMonitor.prototype = {
 
     let response = {};
     response.httpVersion = statusLineArray.shift();
-    response.remoteAddress = httpActivity.channel.remoteAddress;
-    response.remotePort = httpActivity.channel.remotePort;
+    // XXX: 
+    // Sometimes, when using a proxy server (manual proxy configuration),
+    // throws an errors:
+    // 0x80040111 (NS_ERROR_NOT_AVAILABLE)
+    // [nsIHttpChannelInternal.remoteAddress]
+    // Bug 1337791 is the suspect.
+    response.remoteAddress = null;
+    try {
+      response.remoteAddress = httpActivity.channel.remoteAddress;
+    } catch (e) {
+      Cu.reportError(e);
+    }
+    response.remotePort = null;
+    try {
+      response.remotePort = httpActivity.channel.remotePort;
+    } catch (e) {
+      Cu.reportError(e);
+    }
     response.status = statusLineArray.shift();
     response.statusText = statusLineArray.join(" ");
     response.headersSize = extraStringData.length;
