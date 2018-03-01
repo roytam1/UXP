@@ -550,6 +550,26 @@
                                  id="security-warning-cipher"
                                  data-localization="tooltiptext=netmonitor.security.warning.cipher" />
                         </hbox>
+                        <hbox id="security-keagroup"
+                              class="tabpanel-summary-container"
+                              align="baseline">
+                          <label class="plain tabpanel-summary-label"
+                                 data-localization="content=netmonitor.security.keaGroup"/>
+                          <textbox id="security-keagroup-value"
+                                   class="plain tabpanel-summary-value devtools-monospace cropped-textbox"
+                                   flex="1"
+                                   readonly="true"/>
+                        </hbox>
+                        <hbox id="security-signaturescheme"
+                              class="tabpanel-summary-container"
+                              align="baseline">
+                          <label class="plain tabpanel-summary-label"
+                                 data-localization="content=netmonitor.security.signatureScheme"/>
+                          <textbox id="security-signaturescheme-value"
+                                   class="plain tabpanel-summary-value devtools-monospace cropped-textbox"
+                                   flex="1"
+                                   readonly="true"/>
+                        </hbox>
                       </vbox>
                     </vbox>
                     <vbox id="security-info-domain"

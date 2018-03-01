@@ -1124,6 +1124,8 @@ NetworkDetailsView.prototype = {
       setValue("#security-protocol-version-value",
         securityInfo.protocolVersion);
       setValue("#security-ciphersuite-value", securityInfo.cipherSuite);
+      setValue("#security-keagroup-value", securityInfo.keaGroupName);
+      setValue("#security-signaturescheme-value", securityInfo.signatureSchemeName);
 
       // Host header
       let domain = getUriHostPort(url);

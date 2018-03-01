@@ -66,6 +66,10 @@ add_task(function* () {
   checkLabel("#security-cert-issuer-o", "Mozilla Testing");
   checkLabel("#security-cert-issuer-ou", "<Not Available>");
 
+  // These two values can change. So only check they're not empty.
+  checkLabelNotEmpty("#security-keagroup-value");
+  checkLabelNotEmpty("#security-signaturescheme-value");
+
   // Locale sensitive and varies between timezones. Cant't compare equality or
   // the test fails depending on which part of the world the test is executed.
   checkLabelNotEmpty("#security-cert-validity-begins");

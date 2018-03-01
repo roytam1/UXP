@@ -1502,12 +1502,24 @@
     "n_buckets": 50,
     "description": "HTTP page: DNS lookup time (ms)"
   },
-  "HTTP_PAGE_TCP_CONNECTION": {
+  "HTTP_PAGE_TLS_HANDSHAKE": {
+    "alert_emails": ["necko@mozilla.com", "pmcmanus@mozilla.com"],
+    "bug_numbers": [772589],
     "expires_in_version": "never",
     "kind": "exponential",
     "high": 30000,
     "n_buckets": 50,
-    "description": "HTTP page: TCP connection setup (ms)"
+    "description": "HTTP page channel: After TCP SYN to Ready for HTTP (ms)"
+
+  },
+  "HTTP_PAGE_TCP_CONNECTION_2": {
+    "alert_emails": ["necko@mozilla.com", "pmcmanus@mozilla.com"],
+    "bug_numbers": [772589],
+    "expires_in_version": "never",
+    "kind": "exponential",
+    "high": 30000,
+    "n_buckets": 50,
+    "description": "HTTP page channel: TCP SYN to Ready for HTTP (ms)"
   },
   "HTTP_PAGE_OPEN_TO_FIRST_SENT": {
     "expires_in_version": "never",
@@ -1621,12 +1633,23 @@
     "n_buckets": 50,
     "description": "HTTP subitem: DNS lookup time (ms)"
   },
-  "HTTP_SUB_TCP_CONNECTION": {
+  "HTTP_SUB_TLS_HANDSHAKE": {
+    "alert_emails": ["necko@mozilla.com", "pmcmanus@mozilla.com"],
+    "bug_numbers": [772589],
     "expires_in_version": "never",
     "kind": "exponential",
     "high": 30000,
     "n_buckets": 50,
-    "description": "HTTP subitem: TCP connection setup (ms)"
+    "description": "HTTP subitem channel: After TCP SYN to Ready for HTTP (ms)"
+  },
+  "HTTP_SUB_TCP_CONNECTION_2": {
+    "alert_emails": ["necko@mozilla.com", "pmcmanus@mozilla.com"],
+    "bug_numbers": [772589],
+    "expires_in_version": "never",
+    "kind": "exponential",
+    "high": 30000,
+    "n_buckets": 50,
+    "description": "HTTP subitem channel: TCP SYN to Ready for HTTP (ms)"
   },
   "HTTP_SUB_OPEN_TO_FIRST_SENT": {
     "expires_in_version": "never",
