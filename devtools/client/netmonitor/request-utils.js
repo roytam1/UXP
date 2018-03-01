@@ -92,7 +92,7 @@ exports.getFormDataSections = Task.async(function* (headers, uploadHeaders, post
 exports.formDataURI = function (mimeType, encoding, text) {
   if (!encoding) {
     encoding = "base64";
-    text = btoa(text);
+    text = btoa(unescape(encodeURIComponent(text)));
   }
   return "data:" + mimeType + ";" + encoding + "," + text;
 };
