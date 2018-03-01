@@ -139,7 +139,7 @@ FINAL_LIBRARY = 'xul'
 SPHINX_TREES['webidl'] = 'docs'
 SPHINX_PYTHON_PACKAGE_DIRS += ['mozwebidlcodegen']
 
-if CONFIG['MOZ_BUILD_APP'] in ['mobile/android', 'xulrunner'] or CONFIG['MOZ_PHOENIX']:
+if CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_FENNEC'] or CONFIG['MOZ_XULRUNNER']:
     # This is needed for Window.webidl
     DEFINES['HAVE_SIDEBAR'] = True
 

@@ -6,5 +6,5 @@
 
 DIRS += ['ssl', 'locales']
 
-if CONFIG['MOZ_XUL'] and CONFIG['MOZ_BUILD_APP'] != 'mobile/android':
+if CONFIG['MOZ_XUL'] and CONFIG['MOZ_FENNEC']:
     DIRS += ['pki']

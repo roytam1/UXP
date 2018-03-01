@@ -16,7 +16,7 @@ EXTRA_JS_MODULES += [
     'PushService.jsm',
 ]
 
-if CONFIG['MOZ_BUILD_APP'] != 'mobile/android':
+if not CONFIG['MOZ_FENNEC']:
     # Everything but Fennec.
     EXTRA_JS_MODULES += [
         'PushServiceHttp2.jsm',

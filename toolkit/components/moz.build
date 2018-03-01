@@ -73,7 +73,7 @@ if CONFIG['MOZ_WEBEXTENSIONS']:
 if CONFIG['ENABLE_INTL_API']:
     DIRS += ['mozintl']
 
-if CONFIG['MOZ_BUILD_APP'] != 'mobile/android':
+if not CONFIG['MOZ_FENNEC']:
     DIRS += ['narrate', 'viewsource'];
 
     if CONFIG['NS_PRINTING']:

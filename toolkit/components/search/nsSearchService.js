@@ -4676,9 +4676,9 @@ SearchService.prototype = {
     Services.obs.addObserver(this, SEARCH_ENGINE_TOPIC, false);
     Services.obs.addObserver(this, QUIT_APPLICATION_TOPIC, false);
 
-    if (AppConstants.MOZ_BUILD_APP == "mobile/android") {
-      Services.prefs.addObserver(LOCALE_PREF, this, false);
-    }
+#ifdef MOZ_FENNEC
+    Services.prefs.addObserver(LOCALE_PREF, this, false);
+#endif
 
     // The current stage of shutdown. Used to help analyze crash
     // signatures in case of shutdown timeout.
@@ -4721,9 +4721,9 @@ SearchService.prototype = {
     Services.obs.removeObserver(this, SEARCH_ENGINE_TOPIC);
     Services.obs.removeObserver(this, QUIT_APPLICATION_TOPIC);
 
-    if (AppConstants.MOZ_BUILD_APP == "mobile/android") {
-      Services.prefs.removeObserver(LOCALE_PREF, this);
-    }
+#ifdef MOZ_FENNEC
+    Services.prefs.removeObserver(LOCALE_PREF, this);
+#endif
   },
 
   QueryInterface: XPCOMUtils.generateQI([

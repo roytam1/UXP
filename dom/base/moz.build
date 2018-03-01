@@ -411,7 +411,7 @@ EXTRA_COMPONENTS += [
 ]
 
 # Firefox for Android provides an alternate version of this component
-if CONFIG['MOZ_BUILD_APP'] != 'mobile/android':
+if not CONFIG['MOZ_FENNEC']:
     EXTRA_COMPONENTS += [
         'SiteSpecificUserAgent.js',
         'SiteSpecificUserAgent.manifest',
@@ -472,7 +472,7 @@ include('/ipc/chromium/chromium-config.mozbuild')
 
 FINAL_LIBRARY = 'xul'
 
-if CONFIG['MOZ_BUILD_APP'] in ['mobile/android', 'xulrunner'] or CONFIG['MOZ_PHOENIX']:
+if CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_FENNEC'] or CONFIG['MOZ_XULRUNNER']:
     DEFINES['HAVE_SIDEBAR'] = True
 
 if CONFIG['MOZ_X11']:

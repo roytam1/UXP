@@ -23,7 +23,7 @@ GECKO_APP_AP_PATH = $(topobjdir)/mobile/android/base
 
 ifdef ENABLE_TESTS
 INNER_ROBOCOP_PACKAGE=true
-ifeq ($(MOZ_BUILD_APP),mobile/android)
+ifdef MOZ_FENNEC
 UPLOAD_EXTRA_FILES += robocop.apk
 
 # Robocop/Robotium tests, Android Background tests, and Fennec need to

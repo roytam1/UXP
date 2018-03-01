@@ -22,7 +22,7 @@ endif
 ifndef MOZ_PKG_PLATFORM
 MOZ_PKG_PLATFORM := $(TARGET_OS)-$(TARGET_CPU)
 
-ifeq ($(MOZ_BUILD_APP),mobile/android)
+ifdef MOZ_FENNEC
 MOZ_PKG_PLATFORM := android-$(TARGET_CPU)
 endif
 

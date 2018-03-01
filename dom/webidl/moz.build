@@ -773,7 +773,7 @@ if CONFIG['MOZ_BUILD_APP'] in ['xulrunner'] or CONFIG['MOZ_PHOENIX'] or CONFIG['
         'BrowserFeedWriter.webidl',
     ]
 
-if CONFIG['MOZ_BUILD_APP'] in ['mobile/android', 'xulrunner'] or CONFIG['MOZ_PHOENIX']:
+if CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_FENNEC'] or CONFIG['MOZ_XULRUNNER']:
     WEBIDL_FILES += [
         'External.webidl',
     ]
