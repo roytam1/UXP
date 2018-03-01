@@ -307,8 +307,10 @@ PerformanceTiming::SecureConnectionStartHighRes()
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
-  return mSecureConnectionStart.IsNull() ? mZeroTime
-                                         : TimeStampToDOMHighRes(mSecureConnectionStart);
+  // Rounding to 1ms
+  return mSecureConnectionStart.IsNull()
+         ? mZeroTime
+         : floor(TimeStampToDOMHighRes(mSecureConnectionStart) / 1) * 1;
 }
 
 DOMTimeMilliSec
