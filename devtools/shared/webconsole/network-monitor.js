@@ -1331,7 +1331,7 @@ NetworkMonitor.prototype = {
     response.httpVersion = statusLineArray.shift();
     // XXX: 
     // Sometimes, when using a proxy server (manual proxy configuration),
-    // throws an errors:
+    // throws an error:
     // 0x80040111 (NS_ERROR_NOT_AVAILABLE)
     // [nsIHttpChannelInternal.remoteAddress]
     // Bug 1337791 is the suspect.
