@@ -399,9 +399,20 @@ RequestsMenuView.prototype = Heritage.extend(WidgetMethods, {
     if (rawHeadersHidden) {
       let selected = this.selectedItem.attachment;
       let selectedRequestHeaders = selected.requestHeaders.headers;
-      let selectedResponseHeaders = selected.responseHeaders.headers;
+      // display Status-Line above other response headers
+      let selectedStatusLine = selected.httpVersion
+                               + " " + selected.status
+                               + " " + selected.statusText
+                               + "\n";
       requestTextarea.value = writeHeaderText(selectedRequestHeaders);
-      responseTextare.value = writeHeaderText(selectedResponseHeaders);
+      // sometimes it's empty
+      if (selected.responseHeaders) {
+        let selectedResponseHeaders = selected.responseHeaders.headers;
+        responseTextare.value = selectedStatusLine
+                                + writeHeaderText(selectedResponseHeaders);
+      } else {
+        responseTextare.value = selectedStatusLine;
+      }
       $("#raw-headers").hidden = false;
     } else {
       requestTextarea.value = null;
