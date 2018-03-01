@@ -10,6 +10,7 @@ const Services = require("Services");
 const { Task } = require("devtools/shared/task");
 const { Curl } = require("devtools/client/shared/curl");
 const { gDevTools } = require("devtools/client/framework/devtools");
+const { openRequestInTab } = require("devtools/client/netmonitor/open-request-in-tab");
 const Menu = require("devtools/client/framework/menu");
 const MenuItem = require("devtools/client/framework/menu-item");
 const { L10N } = require("./l10n");
@@ -186,8 +187,7 @@ RequestListContextMenu.prototype = {
    */
   openRequestInTab() {
     let win = Services.wm.getMostRecentWindow(gDevTools.chromeWindowType);
-    let { url } = this.selectedItem.attachment;
-    win.openUILinkIn(url, "tab", { relatedToCurrent: true });
+    openRequestInTab(this.selectedItem.attachment);
   },
 
   /**

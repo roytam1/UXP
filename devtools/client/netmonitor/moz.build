@@ -17,6 +17,7 @@ DevToolsModules(
     'events.js',
     'filter-predicates.js',
     'l10n.js',
+    'open-request-in-tab.js',
     'panel.js',
     'performance-statistics-view.js',
     'prefs.js',
