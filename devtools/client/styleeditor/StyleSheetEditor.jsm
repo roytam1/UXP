@@ -468,6 +468,9 @@ StyleSheetEditor.prototype = {
         sourceEditor.container.addEventListener("mousemove", this._onMouseMove);
       }
 
+      // Add the commands controller for the source-editor.
+      sourceEditor.insertCommandsController();
+
       this.emit("source-editor-load");
     });
   },
