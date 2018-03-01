@@ -722,6 +722,7 @@ BrowserConsole.prototype = extend(WebConsole.prototype, {
   },
 });
 
+const HUDService = new HUD_SERVICE();
 exports.HUDService = HUDService;
 
 /**
