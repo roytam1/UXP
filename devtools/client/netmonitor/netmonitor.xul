@@ -478,6 +478,14 @@
                     <hbox class="requests-menu-timings-box connect"/>
                     <label class="plain requests-menu-timings-total"/>
                   </hbox>
+                  <hbox id="timings-summary-ssl"
+                        class="tabpanel-summary-container"
+                        align="center">
+                    <label class="plain tabpanel-summary-label"
+                           data-localization="content=netmonitor.timings.ssl"/>
+                    <hbox class="requests-menu-timings-box ssl"/>
+                    <label class="plain requests-menu-timings-total"/>
+                  </hbox>
                   <hbox id="timings-summary-send"
                         class="tabpanel-summary-container"
                         align="center">

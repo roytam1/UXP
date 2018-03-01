@@ -50,6 +50,7 @@ netmonitor.properties:netmonitor.response.dimensions = netmonitor.dtd:netmonitor
 netmonitor.properties:netmonitor.response.mime = netmonitor.dtd:netmonitorUI.response.mime
 netmonitor.properties:netmonitor.timings.blocked = netmonitor.dtd:netmonitorUI.timings.blocked
 netmonitor.properties:netmonitor.timings.dns = netmonitor.dtd:netmonitorUI.timings.dns
+netmonitor.properties:netmonitor.timings.ssl = netmonitor.dtd:netmonitorUI.timings.ssl
 netmonitor.properties:netmonitor.timings.connect = netmonitor.dtd:netmonitorUI.timings.connect
 netmonitor.properties:netmonitor.timings.send = netmonitor.dtd:netmonitorUI.timings.send
 netmonitor.properties:netmonitor.timings.wait = netmonitor.dtd:netmonitorUI.timings.wait

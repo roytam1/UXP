@@ -623,6 +623,14 @@ nsHttpTransaction::OnTransportStatus(nsITransport* transport,
         } else if (status == NS_NET_STATUS_CONNECTED_TO) {
             SetConnectEnd(TimeStamp::Now(), true);
         } else if (status == NS_NET_STATUS_TLS_HANDSHAKE_ENDED) {
+            {
+                // before overwriting connectEnd, copy it to secureConnectionStart
+                MutexAutoLock lock(mLock);
+                if (mTimings.secureConnectionStart.IsNull() &&
+                    !mTimings.connectEnd.IsNull()) {
+                    mTimings.secureConnectionStart = mTimings.connectEnd;
+                }
+            }
             SetConnectEnd(TimeStamp::Now(), false);
         }
     }
@@ -2136,6 +2144,13 @@ nsHttpTransaction::Timings()
 }
 
 void
+nsHttpTransaction::BootstrapTimings(TimingStruct times)
+{
+    mozilla::MutexAutoLock lock(mLock);
+    mTimings = times;
+}
+
+void
 nsHttpTransaction::SetDomainLookupStart(mozilla::TimeStamp timeStamp, bool onlyIfNull)
 {
     mozilla::MutexAutoLock lock(mLock);
@@ -2224,6 +2239,13 @@ nsHttpTransaction::GetConnectStart()
 {
     mozilla::MutexAutoLock lock(mLock);
     return mTimings.connectStart;
+}
+
+mozilla::TimeStamp
+nsHttpTransaction::GetSecureConnectionStart()
+{
+    mozilla::MutexAutoLock lock(mLock);
+    return mTimings.secureConnectionStart;
 }
 
 mozilla::TimeStamp

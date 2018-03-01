@@ -888,6 +888,11 @@ nsLoadGroup::TelemetryReportChannel(nsITimedChannel *aTimedChannel,
     if (NS_FAILED(rv))
         return;
 
+    TimeStamp secureConnectionStart;
+    rv = aTimedChannel->GetSecureConnectionStart(&secureConnectionStart);
+    if (NS_FAILED(rv))
+        return;
+
     TimeStamp connectEnd;
     rv = aTimedChannel->GetConnectEnd(&connectEnd);
     if (NS_FAILED(rv))
@@ -921,9 +926,15 @@ nsLoadGroup::TelemetryReportChannel(nsITimedChannel *aTimedChannel,
             domainLookupStart, domainLookupEnd);                               \
     }                                                                          \
                                                                                \
+    if (!secureConnectionStart.IsNull() && !connectEnd.IsNull()) {             \
+        Telemetry::AccumulateTimeDelta(                                        \
+            Telemetry::HTTP_##prefix##_TLS_HANDSHAKE,                          \
+            secureConnectionStart, connectEnd);                                \
+    }                                                                          \
+                                                                               \
     if (!connectStart.IsNull() && !connectEnd.IsNull()) {                      \
         Telemetry::AccumulateTimeDelta(                                        \
-            Telemetry::HTTP_##prefix##_TCP_CONNECTION,                         \
+            Telemetry::HTTP_##prefix##_TCP_CONNECTION_2,                       \
             connectStart, connectEnd);                                         \
     }                                                                          \
                                                                                \

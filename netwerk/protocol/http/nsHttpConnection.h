@@ -16,6 +16,7 @@
 #include "TunnelUtils.h"
 #include "mozilla/Mutex.h"
 #include "ARefBase.h"
+#include "TimingStruct.h"
 
 #include "nsIAsyncInputStream.h"
 #include "nsIAsyncOutputStream.h"
@@ -379,6 +380,11 @@ private:
     bool                           mEarlyDataNegotiated; //Only used for telemetry
     nsCString                      mEarlyNegotiatedALPN;
     bool                           mDid0RTTSpdy;
+
+public:
+    void BootstrapTimings(TimingStruct times);
+private:
+    TimingStruct    mBootstrappedTimings;
 };
 
 } // namespace net

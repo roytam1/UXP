@@ -3314,6 +3314,11 @@ nsHalfOpenSocket::OnOutputStreamReady(nsIAsyncOutputStream *out)
     LOG(("nsHalfOpenSocket::OnOutputStreamReady "
          "Created new nshttpconnection %p\n", conn.get()));
 
+    NullHttpTransaction *nullTrans = mTransaction->QueryNullTransaction();
+    if (nullTrans) {
+        conn->BootstrapTimings(nullTrans->Timings());
+    }
+
     // Some capabilities are needed before a transaciton actually gets
     // scheduled (e.g. how to negotiate false start)
     conn->SetTransactionCaps(mTransaction->Caps());

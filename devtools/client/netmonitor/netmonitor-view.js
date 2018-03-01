@@ -963,7 +963,7 @@ NetworkDetailsView.prototype = {
     if (!response) {
       return;
     }
-    let { blocked, dns, connect, send, wait, receive } = response.timings;
+    let { blocked, dns, connect, ssl, send, wait, receive } = response.timings;
 
     let tabboxWidth = $("#details-pane").getAttribute("width");
 
@@ -988,6 +988,11 @@ NetworkDetailsView.prototype = {
     $("#timings-summary-connect .requests-menu-timings-total")
       .setAttribute("value", L10N.getFormatStr("networkMenu.totalMS", connect));
 
+    $("#timings-summary-ssl .requests-menu-timings-box")
+      .setAttribute("width", ssl * scale);
+    $("#timings-summary-ssl .requests-menu-timings-total")
+      .setAttribute("value", L10N.getFormatStr("networkMenu.totalMS", ssl));
+
     $("#timings-summary-send .requests-menu-timings-box")
       .setAttribute("width", send * scale);
     $("#timings-summary-send .requests-menu-timings-total")
@@ -1007,6 +1012,8 @@ NetworkDetailsView.prototype = {
       .style.transform = "translateX(" + (scale * blocked) + "px)";
     $("#timings-summary-connect .requests-menu-timings-box")
       .style.transform = "translateX(" + (scale * (blocked + dns)) + "px)";
+    $("#timings-summary-ssl .requests-menu-timings-box")
+      .style.transform = "translateX(" + (scale * blocked) + "px)";
     $("#timings-summary-send .requests-menu-timings-box")
       .style.transform =
         "translateX(" + (scale * (blocked + dns + connect)) + "px)";
@@ -1022,6 +1029,8 @@ NetworkDetailsView.prototype = {
       .style.transform = "translateX(" + (scale * blocked) + "px)";
     $("#timings-summary-connect .requests-menu-timings-total")
       .style.transform = "translateX(" + (scale * (blocked + dns)) + "px)";
+    $("#timings-summary-ssl .requests-menu-timings-total")
+      .style.transform = "translateX(" + (scale * blocked) + "px)";
     $("#timings-summary-send .requests-menu-timings-total")
       .style.transform =
         "translateX(" + (scale * (blocked + dns + connect)) + "px)";

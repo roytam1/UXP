@@ -149,6 +149,7 @@ public:
 
     // Locked methods to get and set timing info
     const TimingStruct Timings();
+    void BootstrapTimings(TimingStruct times);
     void SetDomainLookupStart(mozilla::TimeStamp timeStamp, bool onlyIfNull = false);
     void SetDomainLookupEnd(mozilla::TimeStamp timeStamp, bool onlyIfNull = false);
     void SetConnectStart(mozilla::TimeStamp timeStamp, bool onlyIfNull = false);
@@ -160,6 +161,8 @@ public:
     mozilla::TimeStamp GetDomainLookupStart();
     mozilla::TimeStamp GetDomainLookupEnd();
     mozilla::TimeStamp GetConnectStart();
+    mozilla::TimeStamp GetSecureConnectionStart();
+
     mozilla::TimeStamp GetConnectEnd();
     mozilla::TimeStamp GetRequestStart();
     mozilla::TimeStamp GetResponseStart();

@@ -9,6 +9,7 @@
 
 #include "nsAHttpTransaction.h"
 #include "mozilla/Attributes.h"
+#include "TimingStruct.h"
 
 // This is the minimal nsAHttpTransaction implementation. A NullHttpTransaction
 // can be used to drive connection level semantics (such as SSL handshakes
@@ -49,6 +50,8 @@ public:
     return PR_SecondsToInterval(15);
   }
 
+  TimingStruct Timings() { return mTimings; }
+
 protected:
   virtual ~NullHttpTransaction();
 
@@ -68,6 +71,7 @@ private:
   Atomic<uint32_t> mCapsToClear;
   bool mIsDone;
   bool mClaimed;
+  TimingStruct mTimings;
 
 protected:
   RefPtr<nsAHttpConnection> mConnection;

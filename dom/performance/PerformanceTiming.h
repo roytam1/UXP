@@ -161,6 +161,7 @@ public:
   DOMHighResTimeStamp DomainLookupStartHighRes();
   DOMHighResTimeStamp DomainLookupEndHighRes();
   DOMHighResTimeStamp ConnectStartHighRes();
+  DOMHighResTimeStamp SecureConnectionStartHighRes();
   DOMHighResTimeStamp ConnectEndHighRes();
   DOMHighResTimeStamp RequestStartHighRes();
   DOMHighResTimeStamp ResponseStartHighRes();
@@ -173,6 +174,7 @@ public:
   DOMTimeMilliSec DomainLookupStart();
   DOMTimeMilliSec DomainLookupEnd();
   DOMTimeMilliSec ConnectStart();
+  DOMTimeMilliSec SecureConnectionStart();
   DOMTimeMilliSec ConnectEnd();
   DOMTimeMilliSec RequestStart();
   DOMTimeMilliSec ResponseStart();
@@ -255,6 +257,7 @@ private:
   TimeStamp mDomainLookupStart;
   TimeStamp mDomainLookupEnd;
   TimeStamp mConnectStart;
+  TimeStamp mSecureConnectionStart;
   TimeStamp mConnectEnd;
   TimeStamp mRequestStart;
   TimeStamp mResponseStart;

@@ -226,6 +226,8 @@ function test() {
         "The eventTimings attachment has an incorrect |timings.blocked| property.");
       is(typeof requestItem.attachment.eventTimings.timings.dns, "number",
         "The eventTimings attachment has an incorrect |timings.dns| property.");
+      is(typeof requestItem.attachment.eventTimings.timings.ssl, "number",
+        "The eventTimings attachment has an incorrect |timings.ssl| property.");
       is(typeof requestItem.attachment.eventTimings.timings.connect, "number",
         "The eventTimings attachment has an incorrect |timings.connect| property.");
       is(typeof requestItem.attachment.eventTimings.timings.send, "number",

@@ -527,8 +527,15 @@ npnComplete:
     mNPNComplete = true;
 
     mTransaction->OnTransportStatus(mSocketTransport,
-                                    NS_NET_STATUS_TLS_HANDSHAKE_ENDED,
-                                    0);
+                                    NS_NET_STATUS_TLS_HANDSHAKE_ENDED, 0);
+
+    // this is happening after the bootstrap was originally written to. so update it.
+    if (mBootstrappedTimings.secureConnectionStart.IsNull() &&
+        !mBootstrappedTimings.connectEnd.IsNull()) {
+        mBootstrappedTimings.secureConnectionStart = mBootstrappedTimings.connectEnd;
+        mBootstrappedTimings.connectEnd = TimeStamp::Now();
+    }
+
     if (mWaitingFor0RTTResponse) {
         // Didn't get 0RTT OK, back out of the "attempting 0RTT" state
         mWaitingFor0RTTResponse = false;
@@ -572,8 +579,14 @@ nsHttpConnection::Activate(nsAHttpTransaction *trans, uint32_t caps, int32_t pri
     LOG(("nsHttpConnection::Activate [this=%p trans=%p caps=%x]\n",
          this, trans, caps));
 
-    if (!trans->IsNullTransaction())
+    if (!mExperienced && !trans->IsNullTransaction()) {
         mExperienced = true;
+        nsHttpTransaction *hTrans = trans->QueryHttpTransaction();
+        if (hTrans) {
+            hTrans->BootstrapTimings(mBootstrappedTimings);
+        }
+        mBootstrappedTimings = TimingStruct();
+    }
 
     mTransactionCaps = caps;
     mPriority = pri;
@@ -2412,6 +2425,12 @@ nsHttpConnection::CheckForTraffic(bool check)
         // mark it as not checked
         mTrafficStamp = false;
     }
+}
+
+void
+nsHttpConnection::BootstrapTimings(TimingStruct times)
+{
+    mBootstrappedTimings = times;
 }
 
 } // namespace net

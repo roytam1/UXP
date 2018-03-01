@@ -586,6 +586,13 @@ NullHttpChannel::GetConnectStart(mozilla::TimeStamp *aConnectStart)
 }
 
 NS_IMETHODIMP
+NullHttpChannel::GetSecureConnectionStart(mozilla::TimeStamp *aSecureConnectionStart)
+{
+  *aSecureConnectionStart = mAsyncOpenTime;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 NullHttpChannel::GetConnectEnd(mozilla::TimeStamp *aConnectEnd)
 {
   *aConnectEnd = mAsyncOpenTime;
@@ -757,6 +764,7 @@ IMPL_TIMING_ATTR(AsyncOpen)
 IMPL_TIMING_ATTR(DomainLookupStart)
 IMPL_TIMING_ATTR(DomainLookupEnd)
 IMPL_TIMING_ATTR(ConnectStart)
+IMPL_TIMING_ATTR(SecureConnectionStart)
 IMPL_TIMING_ATTR(ConnectEnd)
 IMPL_TIMING_ATTR(RequestStart)
 IMPL_TIMING_ATTR(ResponseStart)
