@@ -22,7 +22,7 @@ const TEST_IMAGE = "http://example.com/browser/devtools/client/webconsole/" +
 add_task(function* () {
   yield loadTab(TEST_URI);
 
-  let opened = waitForConsole();
+  let opened = waitForBrowserConsole();
 
   let hud = HUDService.getBrowserConsole();
   ok(!hud, "browser console is not open");
@@ -140,21 +140,4 @@ function consoleOpened(hud) {
       },
     ],
   });
-}
-
-function waitForConsole() {
-  let deferred = promise.defer();
-
-  Services.obs.addObserver(function observer(aSubject) {
-    Services.obs.removeObserver(observer, "web-console-created");
-    aSubject.QueryInterface(Ci.nsISupportsString);
-
-    let hud = HUDService.getBrowserConsole();
-    ok(hud, "browser console is open");
-    is(aSubject.data, hud.hudId, "notification hudId is correct");
-
-    executeSoon(() => deferred.resolve(hud));
-  }, "web-console-created", false);
-
-  return deferred.promise;
 }

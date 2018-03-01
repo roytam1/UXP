@@ -8,7 +8,7 @@
 
 const promise = require("promise");
 
-loader.lazyGetter(this, "HUDService", () => require("devtools/client/webconsole/hudservice"));
+loader.lazyRequireGetter(this, "HUDService", "devtools/client/webconsole/hudservice", true);
 loader.lazyGetter(this, "EventEmitter", () => require("devtools/shared/event-emitter"));
 
 /**

@@ -120,7 +120,7 @@ exports.menuitems = [
   { id: "menu_browserConsole",
     l10nKey: "browserConsoleCmd",
     oncommand() {
-      let HUDService = require("devtools/client/webconsole/hudservice");
+      let {HUDService} = require("devtools/client/webconsole/hudservice");
       HUDService.openBrowserConsoleOrFocus();
     },
     key: {
