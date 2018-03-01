@@ -2501,7 +2501,11 @@ DebuggerProgressListener.prototype = {
     if (isWindow && isStop) {
       // Don't dispatch "navigate" event just yet when there is a redirect to
       // about:neterror page.
-      if (request.status != Cr.NS_OK) {
+      // Navigating to about:neterror will make `status` be something else than NS_OK.
+      // But for some error like NS_BINDING_ABORTED we don't want to emit any `navigate`
+      // event as the page load has been cancelled and the related page document is going
+      // to be a dead wrapper.
+      if (request.status != Cr.NS_OK && request.status != Cr.NS_BINDING_ABORTED) {
         // Instead, listen for DOMContentLoaded as about:neterror is loaded
         // with LOAD_BACKGROUND flags and never dispatches load event.
         // That may be the same reason why there is no onStateChange event
