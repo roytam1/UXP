@@ -25,7 +25,7 @@ function DevToolsStartup() {}
 
 DevToolsStartup.prototype = {
   handle: function (cmdLine) {
-    let consoleFlag = cmdLine.handleFlag("jsconsole", false);
+    let consoleFlag = cmdLine.handleFlag("browserconsole", false);
     let debuggerFlag = cmdLine.handleFlag("jsdebugger", false);
     let devtoolsFlag = cmdLine.handleFlag("devtools", false);
 
@@ -204,7 +204,7 @@ DevToolsStartup.prototype = {
   },
 
   /* eslint-disable max-len */
-  helpInfo: "  --jsconsole                                  Open the Browser Console.\n" +
+  helpInfo: "  --browserconsole                             Open the Browser Console.\n" +
             "  --jsdebugger                                 Open the Browser Toolbox.\n" +
             "  --devtools                                   Open DevTools on initial load.\n" +
             "  --start-debugger-server [ws:][<port>|<path>] Start the debugger server on\n" +
