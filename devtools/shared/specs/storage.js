@@ -97,6 +97,14 @@ createStorageSpec({
         },
         response: {}
       }
+    }, {
+      removeAllSessionCookies: {
+        request: {
+          host: Arg(0, "string"),
+          domain: Arg(1, "nullable:string")
+        },
+        response: {}
+      }
     }
   )
 });

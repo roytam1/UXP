@@ -163,6 +163,7 @@ function StorageUI(front, target, panelWin, toolbox) {
   this.onRemoveItem = this.onRemoveItem.bind(this);
   this.onRemoveAllFrom = this.onRemoveAllFrom.bind(this);
   this.onRemoveAll = this.onRemoveAll.bind(this);
+  this.onRemoveAllSessionCookies = this.onRemoveAllSessionCookies.bind(this);
   this.onRemoveTreeItem = this.onRemoveTreeItem.bind(this);
 
   this._tablePopupDelete = this._panelDoc.getElementById(
@@ -178,9 +179,19 @@ function StorageUI(front, target, panelWin, toolbox) {
     "storage-table-popup-delete-all");
   this._tablePopupDeleteAll.addEventListener("command", this.onRemoveAll);
 
+  this._tablePopupDeleteAllSessionCookies = this._panelDoc.getElementById(
+    "storage-table-popup-delete-all-session-cookies");
+  this._tablePopupDeleteAllSessionCookies.addEventListener("command",
+    this.onRemoveAllSessionCookies);
+
   this._treePopupDeleteAll = this._panelDoc.getElementById(
     "storage-tree-popup-delete-all");
   this._treePopupDeleteAll.addEventListener("command", this.onRemoveAll);
+
+  this._treePopupDeleteAllSessionCookies = this._panelDoc.getElementById(
+    "storage-tree-popup-delete-all-session-cookies");
+  this._treePopupDeleteAllSessionCookies.addEventListener("command",
+    this.onRemoveAllSessionCookies);
 
   this._treePopupDelete = this._panelDoc.getElementById("storage-tree-popup-delete");
   this._treePopupDelete.addEventListener("command", this.onRemoveTreeItem);
@@ -211,12 +222,16 @@ StorageUI.prototype = {
 
     this._treePopup.removeEventListener("popupshowing", this.onTreePopupShowing);
     this._treePopupDeleteAll.removeEventListener("command", this.onRemoveAll);
+    this._treePopupDeleteAllSessionCookies.removeEventListener("command",
+      this.onRemoveAllSessionCookies);
     this._treePopupDelete.removeEventListener("command", this.onRemoveTreeItem);
 
     this._tablePopup.removeEventListener("popupshowing", this.onTablePopupShowing);
     this._tablePopupDelete.removeEventListener("command", this.onRemoveItem);
     this._tablePopupDeleteAllFrom.removeEventListener("command", this.onRemoveAllFrom);
     this._tablePopupDeleteAll.removeEventListener("command", this.onRemoveAll);
+    this._tablePopupDeleteAllSessionCookies.removeEventListener("command",
+      this.onRemoveAllSessionCookies);
   },
 
   /**
@@ -453,22 +468,24 @@ StorageUI.prototype = {
    * @param {object} See onUpdate docs
    */
   handleChangedItems: function (changed) {
-    let [type, host, db, objectStore] = this.tree.selectedItem;
-    if (!changed[type] || !changed[type][host] ||
-        changed[type][host].length == 0) {
-      return;
-    }
-    try {
-      let toUpdate = [];
-      for (let name of changed[type][host]) {
-        let names = JSON.parse(name);
-        if (names[0] == db && names[1] == objectStore && names[2]) {
-          toUpdate.push(name);
-        }
+    if (this.tree.selectedItem) {
+      let [type, host, db, objectStore] = this.tree.selectedItem;
+      if (!changed[type] || !changed[type][host] ||
+          changed[type][host].length == 0) {
+        return;
       }
-      this.fetchStorageObjects(type, host, toUpdate, REASON.UPDATE);
-    } catch (ex) {
-      this.fetchStorageObjects(type, host, changed[type][host], REASON.UPDATE);
+      try {
+        let toUpdate = [];
+        for (let name of changed[type][host]) {
+          let names = JSON.parse(name);
+          if (names[0] == db && names[1] == objectStore && names[2]) {
+            toUpdate.push(name);
+          }
+        }
+        this.fetchStorageObjects(type, host, toUpdate, REASON.UPDATE);
+      } catch (ex) {
+        this.fetchStorageObjects(type, host, changed[type][host], REASON.UPDATE);
+      }
     }
   },
 
@@ -957,6 +974,15 @@ StorageUI.prototype = {
     this._tablePopupDelete.setAttribute("label",
       L10N.getFormatStr("storage.popupMenu.deleteLabel", label));
 
+    let showDeleteAllSessionCookies = false;
+    if (selectedItem && actor.removeAllSessionCookies) {
+      if (type === "cookies" && selectedItem.length === 2) {
+        showDeleteAllSessionCookies = true;
+      }
+    }
+
+    this._tablePopupDeleteAllSessionCookies.hidden = !showDeleteAllSessionCookies;
+
     if (type === "cookies") {
       let host = addEllipsis(data.host);
 
@@ -996,6 +1022,17 @@ StorageUI.prototype = {
       }
 
       this._treePopupDeleteAll.hidden = !showDeleteAll;
+
+      // The delete all session cookies action is displayed for cookie object stores
+      // (level 2 of tree)
+      let showDeleteAllSessionCookies = false;
+      if (actor.removeAllSessionCookies) {
+        if (type === "cookies" && selectedItem.length === 2) {
+          showDeleteAllSessionCookies = true;
+        }
+      }
+
+      this._treePopupDeleteAllSessionCookies.hidden = !showDeleteAllSessionCookies;
 
       // The delete action is displayed for:
       // - IndexedDB databases (level 3 of the tree)
@@ -1037,12 +1074,25 @@ StorageUI.prototype = {
    */
   onRemoveAll: function () {
     // Cannot use this.currentActor() if the handler is called from the
-    // tree context menu: it returns correct value only after the table
-    // data from server are successfully fetched (and that's async).
+    // tree context menu: it returns the correct value only after the
+    // table data from server are successfully fetched (and that's async).
     let [type, host, ...path] = this.tree.selectedItem;
     let actor = this.storageTypes[type];
     let name = path.length > 0 ? JSON.stringify(path) : undefined;
     actor.removeAll(host, name);
+  },
+
+  /**
+   * Handles removing all session cookies from the storage
+   */
+  onRemoveAllSessionCookies: function () {
+    // Cannot use this.currentActor() if the handler is called from the
+    // tree context menu: it returns the correct value only after the
+    // table data from server is successfully fetched (and that's async).
+    let [, host, ...path] = this.tree.selectedItem;
+    let actor = this.getCurrentActor();
+    let name = path.length > 0 ? JSON.stringify(path) : undefined;
+    actor.removeAllSessionCookies(host, name);
   },
 
   /**
