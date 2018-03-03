@@ -3238,20 +3238,6 @@
         </body>
       </method>
 
-      <!-- Opens a given tab to a non-remote window. -->
-      <method name="openNonRemoteWindow">
-        <parameter name="aTab"/>
-        <body>
-          <![CDATA[
-            if (!this.AppConstants.E10S_TESTING_ONLY) {
-              throw "This method is intended only for e10s testing!";
-            }
-            let url = aTab.linkedBrowser.currentURI.spec;
-            return window.openDialog("chrome://browser/content/", "_blank", "chrome,all,dialog=no,non-remote", url);
-          ]]>
-        </body>
-      </method>
-
       <method name="moveTabTo">
         <parameter name="aTab"/>
         <parameter name="aIndex"/>
@@ -4597,8 +4583,7 @@
               label = this.mStringBundle.getString(stringID);
             }
           } else {
-            label = tab.getAttribute("label") +
-                      (this.AppConstants.E10S_TESTING_ONLY && tab.linkedBrowser && tab.linkedBrowser.isRemoteBrowser ? " - e10s" : "");
+            label = tab.getAttribute("label");
           }
           event.target.setAttribute("label", label);
         ]]></body>

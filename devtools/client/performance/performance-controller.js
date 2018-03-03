@@ -527,11 +527,10 @@ var PerformanceController = {
     if (flags.testing) {
       return { supported: true, enabled: true };
     }
-    let supported = system.constants.E10S_TESTING_ONLY;
     // This is only checked on tool startup -- requires a restart if
     // e10s subsequently enabled.
     let enabled = this._e10s;
-    return { supported, enabled };
+    return { supported: false, enabled };
   },
 
   /**
