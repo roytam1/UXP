@@ -73,6 +73,24 @@ const getDisplayedRequestsSummary = createSelector(
   })
 );
 
+function getDisplayedTimingMarker(state, marker) {
+  let timingMarker = null;
+  if (state.timingMarkers) {
+    timingMarker = state.timingMarkers.get(marker);
+  }    
+  let firstRequestStartedMillis = null;
+  if (state.requests.items.length) {
+    firstRequestStartedMillis = state.requests.items[0]
+                                .attachment.firstRequestStartedMillis;
+  }
+  if (timingMarker && firstRequestStartedMillis) {
+    return timingMarker - firstRequestStartedMillis;
+  } else {
+    return -1;
+  }
+}
+
 module.exports = {
   getDisplayedRequestsSummary,
+  getDisplayedTimingMarker,
 };

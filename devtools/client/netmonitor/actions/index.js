@@ -5,6 +5,7 @@
 
 const filters = require("./filters");
 const requests = require("./requests");
+const timingMarkers = require("./timing-markers");
 const ui = require("./ui");
 
-module.exports = Object.assign({}, filters, requests, ui);
+module.exports = Object.assign({}, filters, requests, timingMarkers, ui);

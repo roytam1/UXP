@@ -6,10 +6,12 @@
 const { combineReducers } = require("devtools/client/shared/vendor/redux");
 const filters = require("./filters");
 const requests = require("./requests");
+const timingMarkers = require("./timing-markers");
 const ui = require("./ui");
 
 module.exports = combineReducers({
   filters,
   requests,
+  timingMarkers,
   ui,
 });

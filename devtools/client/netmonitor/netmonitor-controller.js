@@ -414,6 +414,7 @@ TargetEventsHandler.prototype = {
         }
         // Clear any accumulated markers.
         NetMonitorController.NetworkEventsHandler.clearMarkers();
+        gStore.dispatch(Actions.clearTimingMarkers());
 
         window.emit(EVENTS.TARGET_WILL_NAVIGATE);
         break;
@@ -534,6 +535,7 @@ NetworkEventsHandler.prototype = {
   _onDocLoadingMarker: function (marker) {
     window.emit(EVENTS.TIMELINE_EVENT, marker);
     this._markers.push(marker);
+    gStore.dispatch(Actions.addTimingMarker(marker));
   },
 
   /**

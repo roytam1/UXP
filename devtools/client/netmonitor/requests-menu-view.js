@@ -275,6 +275,7 @@ RequestsMenuView.prototype = Heritage.extend(WidgetMethods, {
     this._addQueue = [];
     this._updateQueue = [];
     this._firstRequestStartedMillis = -1;
+    this._firstRequestStartedMillisInRequests = false;
     this._lastRequestEndedMillis = -1;
   },
 
@@ -650,6 +651,9 @@ RequestsMenuView.prototype = Heritage.extend(WidgetMethods, {
       // Append a network request item to this container.
       let requestItem = this.push([menuView, id], {
         attachment: {
+          firstRequestStartedMillis: this._firstRequestStartedMillisInRequests
+                                     ? null
+                                     : this._firstRequestStartedMillis,
           startedDeltaMillis: unixTime - this._firstRequestStartedMillis,
           startedMillis: unixTime,
           method: method,
@@ -660,6 +664,8 @@ RequestsMenuView.prototype = Heritage.extend(WidgetMethods, {
           fromServiceWorker: fromServiceWorker
         }
       });
+
+      this._firstRequestStartedMillisInRequests = true;
 
       if (id == this._preferredItemId) {
         this.selectedItem = requestItem;
@@ -1563,6 +1569,7 @@ RequestsMenuView.prototype = Heritage.extend(WidgetMethods, {
   _ctx: null,
   _cachedWaterfallWidth: 0,
   _firstRequestStartedMillis: -1,
+  _firstRequestStartedMillisInRequests: false,
   _lastRequestEndedMillis: -1,
   _updateQueue: [],
   _addQueue: [],
