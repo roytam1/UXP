@@ -4,8 +4,13 @@
 
 /* import-globals-from head.js */
 
-// Basic test to assert that the storage tree and table corresponding to each
-// item in the storage tree is correctly displayed
+// A second basic test to assert that the storage tree and table corresponding
+// to each item in the storage tree is correctly displayed.
+
+// This test differs from browser_storage_basic.js because the URLs we load
+// include fragments e.g. http://example.com/test.js#abcdefg
+//                                                  ^^^^^^^^
+//                                                  fragment
 
 // Entries that should be present in the tree for this test
 // Format for each entry in the array :
@@ -29,22 +34,15 @@ const testCases = [
       getCookieId("c1", "test1.example.org", "/browser"),
       getCookieId("cs2", ".example.org", "/"),
       getCookieId("c3", "test1.example.org", "/"),
-      getCookieId("c4", ".example.org", "/"),
-      getCookieId("uc1", ".example.org", "/"),
-      getCookieId("uc2", ".example.org", "/")
+      getCookieId("uc1", ".example.org", "/")
     ]
   ],
   [
     ["cookies", "https://sectest1.example.org"],
     [
       getCookieId("uc1", ".example.org", "/"),
-      getCookieId("uc2", ".example.org", "/"),
       getCookieId("cs2", ".example.org", "/"),
-      getCookieId("c4", ".example.org", "/"),
-      getCookieId("sc1", "sectest1.example.org",
-        "/browser/devtools/client/storage/test/"),
-      getCookieId("sc2", "sectest1.example.org",
-        "/browser/devtools/client/storage/test/")
+      getCookieId("sc1", "sectest1.example.org", "/browser/devtools/client/storage/test/")
     ]
   ],
   [["localStorage", "http://test1.example.org"],
@@ -108,14 +106,14 @@ function* testTables() {
   gUI.tree.expandAll();
 
   // First tree item is already selected so no clicking and waiting for update
-  for (let [treeItem, items] of testCases.slice(1)) {
-    yield selectTreeItem(treeItem);
+  for (let id of testCases[0][1]) {
+    ok(doc.querySelector(".table-widget-cell[data-id='" + id + "']"),
        "Table item " + id + " should be present");
   }
 
   // Click rest of the tree items and wait for the table to be updated
-  for (let item of testCases.slice(1)) {
-    yield selectTreeItem(item[0]);
+  for (let [treeItem, items] of testCases.slice(1)) {
+    yield selectTreeItem(treeItem);
 
     // Check whether correct number of items are present in the table
     is(doc.querySelectorAll(
@@ -131,7 +129,8 @@ function* testTables() {
 }
 
 add_task(function* () {
-  yield openTabAndSetupStorage(MAIN_DOMAIN + "storage-listings.html");
+  yield openTabAndSetupStorage(
+    MAIN_DOMAIN + "storage-listings-with-fragment.html#abc");
 
   testTree();
   yield testTables();

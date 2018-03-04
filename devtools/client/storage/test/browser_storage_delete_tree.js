@@ -18,7 +18,7 @@ add_task(function* () {
   info("test state before delete");
   yield checkState([
     [
-      ["cookies", "test1.example.org"],
+      ["cookies", "http://test1.example.org"],
       [
         getCookieId("c1", "test1.example.org", "/browser"),
         getCookieId("cs2", ".example.org", "/"),
@@ -37,7 +37,7 @@ add_task(function* () {
 
   info("do the delete");
   const deleteHosts = [
-    ["cookies", "test1.example.org"],
+    ["cookies", "http://test1.example.org"],
     ["localStorage", "http://test1.example.org"],
     ["sessionStorage", "http://test1.example.org"],
     ["indexedDB", "http://test1.example.org", "idb1 (default)", "obj1"],
@@ -66,7 +66,7 @@ add_task(function* () {
 
   info("test state after delete");
   yield checkState([
-    [["cookies", "test1.example.org"], []],
+    [["cookies", "http://test1.example.org"], []],
     [["localStorage", "http://test1.example.org"], []],
     [["sessionStorage", "http://test1.example.org"], []],
     [["indexedDB", "http://test1.example.org", "idb1 (default)", "obj1"], []],
