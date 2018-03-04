@@ -9,7 +9,7 @@ DIRS += [
 ]
 
 # Save file size on Fennec until there are active plans to use the decoder there
-if CONFIG['MOZ_FENNEC']:
+if not CONFIG['MOZ_FENNEC']:
     DIRS += [
         'decoder'
     ]
