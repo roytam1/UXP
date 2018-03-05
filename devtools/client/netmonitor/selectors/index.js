@@ -80,8 +80,10 @@ function getDisplayedTimingMarker(state, marker) {
   }    
   let firstRequestStartedMillis = null;
   if (state.requests.items.length) {
-    firstRequestStartedMillis = state.requests.items[0]
-                                .attachment.firstRequestStartedMillis;
+    firstRequestStartedMillis = state.requests
+                                .items[state.requests.items.length - 1]
+                                .attachment
+                                .firstRequestStartedMillisNotPersistent;
   }
   if (timingMarker && firstRequestStartedMillis) {
     return timingMarker - firstRequestStartedMillis;

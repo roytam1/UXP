@@ -407,6 +407,9 @@ TargetEventsHandler.prototype = {
         if (!Services.prefs.getBoolPref("devtools.webconsole.persistlog")) {
           NetMonitorView.RequestsMenu.reset();
           NetMonitorView.Sidebar.toggle(false);
+        } else {
+          // If the log is persistent, just clear some informations.
+          NetMonitorView.RequestsMenu.resetNotPersistent();
         }
         // Switch to the default network traffic inspector view.
         if (NetMonitorController.getCurrentActivity() == ACTIVITY_TYPE.NONE) {
