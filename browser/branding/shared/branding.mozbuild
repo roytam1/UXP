@@ -33,9 +33,9 @@ def ApplicationBranding():
     elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         BRANDING_FILES += [
             '../shared/dsstore',
+            'background.png',
             'disk.icns',
             'document.icns',
-            'background.png',
             'firefox.icns',
         ]
     elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
