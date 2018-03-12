@@ -131,7 +131,13 @@ var gUpdateWizard = {
     if (gMismatchPage.waiting) {
       logger.info("Dialog closed in mismatch page");
       if (gUpdateWizard.addonInstalls.size > 0) {
-        gInstallingPage.startInstalls([i for ([, i] of gUpdateWizard.addonInstalls)]);
+        // Tycho: gInstallingPage.startInstalls([i for ([, i] of gUpdateWizard.addonInstalls)]);
+        let results = [];
+        for (let [, i] of gUpdateWizard.addonInstalls) {
+          results.push(i);
+        }
+
+        gInstallingPage.startInstalls(results);
       }
       return true;
     }
@@ -196,7 +202,13 @@ var gVersionInfoPage = {
       }
     }
     // Fetch the add-ons that are still affected by this update.
-    let idlist = [id for (id of gUpdateWizard.affectedAddonIDs)];
+    // Tycho: let idlist = [id for (id of gUpdateWizard.affectedAddonIDs)];
+
+    let idlist = [];
+    for (let id of gUpdateWizard.affectedAddonIDs) {
+      idlist.push(id);
+    }
+
     if (idlist.length < 1) {
       gVersionInfoPage.onAllUpdatesFinished();
       return;
@@ -206,7 +218,16 @@ var gVersionInfoPage = {
     let fetchedAddons = yield new Promise((resolve, reject) =>
       AddonManager.getAddonsByIDs(idlist, resolve));
     // We shouldn't get nulls here, but let's be paranoid...
-    gUpdateWizard.addons = [a for (a of fetchedAddons) if (a)];
+    // Tycho: gUpdateWizard.addons = [a for (a of fetchedAddons) if (a)];
+    let results = [];
+    for (let a of fetchedAddons) {
+      if (a) {
+        results.push(a);
+      }
+    }
+
+    gUpdateWizard.addons = results;
+
     if (gUpdateWizard.addons.length < 1) {
       gVersionInfoPage.onAllUpdatesFinished();
       return;
@@ -234,8 +255,18 @@ var gVersionInfoPage = {
     AddonManagerPrivate.recordSimpleMeasure("appUpdate_upgradeFailed", 0);
     AddonManagerPrivate.recordSimpleMeasure("appUpdate_upgradeDeclined", 0);
     // Filter out any add-ons that are now enabled.
-    logger.debug("VersionInfo updates finished: found " +
-         [addon.id + ":" + addon.appDisabled for (addon of gUpdateWizard.addons)].toSource());
+    // Tycho:
+    // logger.debug("VersionInfo updates finished: found " +
+    //      [addon.id + ":" + addon.appDisabled for (addon of gUpdateWizard.addons)].toSource());
+    
+    let logDisabledAddons = [];
+    for (let addon of gUpdateWizard.addons) {
+      if (addon.appDisabled) {
+        logDisabledAddons.push(addon.id + ":" + addon.appDisabled);
+      }
+    }
+    logger.debug("VersionInfo updates finished: found " + logDisabledAddons.toSource());
+
     let filteredAddons = [];
     for (let a of gUpdateWizard.addons) {
       if (a.appDisabled) {
@@ -252,7 +283,13 @@ var gVersionInfoPage = {
     if (gUpdateWizard.shuttingDown) {
       // jump directly to updating auto-update add-ons in the background
       if (gUpdateWizard.addonInstalls.size > 0) {
-        gInstallingPage.startInstalls([i for ([, i] of gUpdateWizard.addonInstalls)]);
+        // Tycho: gInstallingPage.startInstalls([i for ([, i] of gUpdateWizard.addonInstalls)]);
+        let results = [];
+        for (let [, i] of gUpdateWizard.addonInstalls) {
+          results.push(i);
+        }
+
+        gInstallingPage.startInstalls(results);
       }
       return;
     }
@@ -478,8 +515,16 @@ var gInstallingPage = {
       return;
     }
 
-    logger.debug("Start installs for "
-                 + [i.existingAddon.id for (i of aInstallList)].toSource());
+    // Tycho:
+    // logger.debug("Start installs for "
+    //             + [i.existingAddon.id for (i of aInstallList)].toSource());
+
+    let logInstallAddons = [];
+    for (let i of aInstallList) {
+      logInstallAddons.push(i.existingAddon.id);
+    }
+    logger.debug("Start installs for " + logInstallAddons.toSource());
+
     this._errors = [];
     this._installs = aInstallList;
     this._installing = true;
