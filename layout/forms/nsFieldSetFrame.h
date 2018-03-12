@@ -33,7 +33,6 @@ public:
               const mozilla::LogicalSize& aBorder,
               const mozilla::LogicalSize& aPadding,
               ComputeSizeFlags aFlags) override;
-  virtual nscoord GetLogicalBaseline(mozilla::WritingMode aWritingMode) const override;
 
   /**
    * The area to paint box-shadows around.  It's the border rect except
