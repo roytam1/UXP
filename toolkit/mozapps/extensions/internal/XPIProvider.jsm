@@ -635,9 +635,6 @@ function isUsableAddon(aAddon) {
   if (aAddon.type == "theme" && aAddon.internalName == XPIProvider.defaultSkin)
     return true;
 
-  if (aAddon.jetsdk)
-    return false;
-
   if (aAddon.blocklistState == Blocklist.STATE_BLOCKED)
     return false;
 
@@ -1116,23 +1113,7 @@ function loadManifestFromZipReader(aZipReader) {
     } else {
       addon.hasBinaryComponents = false;
     }
-
-    // Set a boolean value whether the .xpi archive contains file related to old
-    // Mozilla Add-on SDK or contains file related to PMkit (or new Mozilla SDK),
-    // but extension is not directly targeting Pale Moon
-    if (aZipReader.hasEntry("harness-options.json")) {
-      addon.jetsdk = true;
-    } else if (aZipReader.hasEntry("package.json")) {
-      let app = addon.matchingTargetApplication;
-      if (app && app.id == Services.appinfo.ID) {
-        addon.jetsdk = false;
-      } else {
-        addon.jetsdk = true;
-      }
-    } else {
-      addon.jetsdk = false;
-    }
-    
+   
     addon.appDisabled = !isUsableAddon(addon);
     return addon;
   }
@@ -6731,7 +6712,7 @@ function AddonWrapper(aAddon) {
    "providesUpdatesSecurely", "blocklistState", "blocklistURL", "appDisabled",
    "softDisabled", "skinnable", "size", "foreignInstall", "hasBinaryComponents",
    "strictCompatibility", "compatibilityOverrides", "updateURL",
-   "getDataDirectory", "multiprocessCompatible", "jetsdk", "native"].forEach(function(aProp) {
+   "getDataDirectory", "multiprocessCompatible", "native"].forEach(function(aProp) {
      this.__defineGetter__(aProp, function AddonWrapper_propertyGetter() aAddon[aProp]);
   }, this);
 
