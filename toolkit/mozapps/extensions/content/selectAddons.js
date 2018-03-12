@@ -123,7 +123,11 @@ var gChecking = {
     if (this._completeCount < this._addonCount)
       return;
 
-    var addons = [gAddons[id] for (id in gAddons)];
+    // Tycho: var addons = [gAddons[id] for (id in gAddons)];
+    var addons = [];
+    for (let id in gAddons) {
+      addons.push(gAddons[id])
+    }
 
     addons.sort(function sortAddons(a, b) {
       let orderA = orderForScope(a.addon.scope);
