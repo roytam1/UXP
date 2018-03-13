@@ -16,7 +16,6 @@ name = "gkrust-shared"
 version = "0.1.0"
 dependencies = [
  "nsstring 0.1.0",
- "rust_url_capi 0.0.1",
 ]
 
 [[package]]
@@ -48,14 +47,6 @@ name = "nsstring-gtest"
 version = "0.1.0"
 dependencies = [
  "nsstring 0.1.0",
-]
-
-[[package]]
-name = "rust_url_capi"
-version = "0.0.1"
-dependencies = [
- "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

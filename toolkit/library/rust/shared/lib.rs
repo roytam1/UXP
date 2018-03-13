@@ -3,4 +3,3 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 extern crate nsstring;
-extern crate rust_url_capi;

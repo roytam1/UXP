@@ -7,7 +7,6 @@ description = "Shared Rust code for libxul"
 
 [dependencies]
 nsstring = { path = "../../../../xpcom/rust/nsstring" }
-rust_url_capi = { path = "../../../../netwerk/base/rust-url-capi" }
 
 [lib]
 path = "lib.rs"
