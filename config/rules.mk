@@ -905,44 +905,6 @@ $(ASOBJS):
 	$(AS) $(ASOUTOPTION)$@ $(ASFLAGS) $($(notdir $<)_FLAGS) $(AS_DASH_C_FLAG) $(_VPATH_SRCS)
 endif
 
-ifdef MOZ_RUST
-ifdef RUST_LIBRARY_FILE
-
-# Permit users to pass flags to cargo from their mozconfigs (e.g. --color=always).
-cargo_build_flags = $(CARGOFLAGS)
-ifndef MOZ_DEBUG
-cargo_build_flags = --release
-endif
-ifdef MOZ_CARGO_SUPPORTS_FROZEN
-cargo_build_flags += --frozen
-endif
-
-cargo_build_flags += --manifest-path $(CARGO_FILE)
-cargo_build_flags += --target=$(RUST_TARGET)
-cargo_build_flags += --verbose
-
-# Enable color output if original stdout was a TTY and color settings
-# aren't already present. This essentially restores the default behavior
-# of cargo when running via `mach`.
-ifdef MACH_STDOUT_ISATTY
-ifeq (,$(findstring --color,$(cargo_build_flags)))
-cargo_build_flags += --color=always
-endif
-endif
-
-# Assume any system libraries rustc links against are already in the target's LIBS.
-#
-# We need to run cargo unconditionally, because cargo is the only thing that
-# has full visibility into how changes in Rust sources might affect the final
-# build.
-force-cargo-build:
-	$(REPORT_BUILD)
-	env CARGO_TARGET_DIR=. RUSTC=$(RUSTC) $(CARGO) build $(cargo_build_flags) --
-
-$(RUST_LIBRARY_FILE): force-cargo-build
-endif # CARGO_FILE
-endif # MOZ_RUST
-
 $(SOBJS):
 	$(REPORT_BUILD)
 	$(AS) -o $@ $(DEFINES) $(ASFLAGS) $($(notdir $<)_FLAGS) $(LOCAL_INCLUDES) -c $<

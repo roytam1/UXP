@@ -20,11 +20,6 @@ USE_LIBS += [
 # before StaticXULComponentStart.
 Libxul('xul-gtest-real')
 
-if CONFIG['MOZ_RUST']:
-    USE_LIBS += [
-        'gkrust-gtest',
-    ]
-
 DIRS += [
     'static',
 ]

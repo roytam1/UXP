@@ -61,7 +61,6 @@ from .data import (
     PreprocessedTestWebIDLFile,
     PreprocessedWebIDLFile,
     Program,
-    RustLibrary,
     SdkFiles,
     SharedLibrary,
     SimpleProgram,
@@ -198,7 +197,7 @@ class TreeMetadataEmitter(LoggingMixin):
     def _emit_libs_derived(self, contexts):
         # First do FINAL_LIBRARY linkage.
         for lib in (l for libs in self._libs.values() for l in libs):
-            if not isinstance(lib, (StaticLibrary, RustLibrary)) or not lib.link_into:
+            if not isinstance(lib, StaticLibrary) or not lib.link_into:
                 continue
             if lib.link_into not in self._libs:
                 raise SandboxValidationError(
@@ -407,66 +406,6 @@ class TreeMetadataEmitter(LoggingMixin):
                 raise SandboxValidationError(
                     '%s %s of crate %s refers to a non-existent path' % (description, dep_crate_name, crate_name),
                     context)
-
-    def _rust_library(self, context, libname, static_args):
-        # We need to note any Rust library for linking purposes.
-        cargo_file = mozpath.join(context.srcdir, 'Cargo.toml')
-        if not os.path.exists(cargo_file):
-            raise SandboxValidationError(
-                'No Cargo.toml file found in %s' % cargo_file, context)
-
-        config = self._parse_cargo_file(cargo_file)
-        crate_name = config['package']['name']
-
-        if crate_name != libname:
-            raise SandboxValidationError(
-                'library %s does not match Cargo.toml-defined package %s' % (libname, crate_name),
-                context)
-
-        # Check that the [lib.crate-type] field is correct
-        lib_section = config.get('lib', None)
-        if not lib_section:
-            raise SandboxValidationError(
-                'Cargo.toml for %s has no [lib] section' % libname,
-                context)
-
-        crate_type = lib_section.get('crate-type', None)
-        if not crate_type:
-            raise SandboxValidationError(
-                'Can\'t determine a crate-type for %s from Cargo.toml' % libname,
-                context)
-
-        crate_type = crate_type[0]
-        if crate_type != 'staticlib':
-            raise SandboxValidationError(
-                'crate-type %s is not permitted for %s' % (crate_type, libname),
-                context)
-
-        # Check that the [profile.{dev,release}.panic] field is "abort"
-        profile_section = config.get('profile', None)
-        if not profile_section:
-            raise SandboxValidationError(
-                'Cargo.toml for %s has no [profile] section' % libname,
-                context)
-
-        for profile_name in ['dev', 'release']:
-            profile = profile_section.get(profile_name, None)
-            if not profile:
-                raise SandboxValidationError(
-                    'Cargo.toml for %s has no [profile.%s] section' % (libname, profile_name),
-                    context)
-
-            panic = profile.get('panic', None)
-            if panic != 'abort':
-                raise SandboxValidationError(
-                    ('Cargo.toml for %s does not specify `panic = "abort"`'
-                     ' in [profile.%s] section') % (libname, profile_name),
-                    context)
-
-        dependencies = set(config.get('dependencies', {}).iterkeys())
-
-        return RustLibrary(context, libname, cargo_file, crate_type,
-                           dependencies, **static_args)
 
     def _handle_linkables(self, context, passthru, generated_files):
         linkables = []
@@ -688,11 +627,7 @@ class TreeMetadataEmitter(LoggingMixin):
                         'generate_symbols_file', lib.symbols_file,
                         [symbols_file], defines)
             if static_lib:
-                is_rust_library = context.get('IS_RUST_LIBRARY')
-                if is_rust_library:
-                    lib = self._rust_library(context, libname, static_args)
-                else:
-                    lib = StaticLibrary(context, libname, **static_args)
+                lib = StaticLibrary(context, libname, **static_args)
                 self._libs[libname].append(lib)
                 self._linkage.append((context, lib, 'USE_LIBS'))
                 linkables.append(lib)

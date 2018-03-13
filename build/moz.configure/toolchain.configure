@@ -907,4 +907,3 @@ set_config('WRAP_SYSTEM_INCLUDES', wrap_system_includes)
 set_config('VISIBILITY_FLAGS', visibility_flags)
 
 include('windows.configure')
-include('rust.configure')
