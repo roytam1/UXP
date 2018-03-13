@@ -39,17 +39,6 @@ version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "nsstring"
-version = "0.1.0"
-
-[[package]]
-name = "nsstring-gtest"
-version = "0.1.0"
-dependencies = [
- "nsstring 0.1.0",
-]
-
-[[package]]
 name = "unicode-bidi"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
