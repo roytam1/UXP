@@ -46,8 +46,6 @@ using mozilla::dom::KeyframeEffectReadOnly;
 using namespace mozilla;
 using namespace mozilla::css;
 
-typedef mozilla::ComputedTiming::AnimationPhase AnimationPhase;
-
 namespace {
 struct TransitionEventParams {
   EventMessage mMessage;
@@ -203,7 +201,7 @@ CSSTransition::QueueEvents(StickyTimeDuration aActiveTime)
   StickyTimeDuration intervalEndTime;
 
   if (!mEffect) {
-    currentPhase      = GetTransitionPhaseWithoutEffect();
+    currentPhase = GetAnimationPhaseWithoutEffect<TransitionPhase>(*this);
     intervalStartTime = zeroDuration;
     intervalEndTime   = zeroDuration;
   } else {
@@ -327,23 +325,6 @@ CSSTransition::QueueEvents(StickyTimeDuration aActiveTime)
                                             evt.mTimeStamp,
                                             this));
   }
-}
-
-CSSTransition::TransitionPhase
-CSSTransition::GetTransitionPhaseWithoutEffect() const
-{
-  MOZ_ASSERT(!mEffect, "Should only be called when we do not have an effect");
-
-  Nullable<TimeDuration> currentTime = GetCurrentTime();
-  if (currentTime.IsNull()) {
-    return TransitionPhase::Idle;
-  }
-
-  // If we don't have a target effect, the duration will be zero so the phase is
-  // 'before' if the current time is less than zero.
-  return currentTime.Value() < TimeDuration()
-         ? TransitionPhase::Before
-         : TransitionPhase::After;
 }
 
 void

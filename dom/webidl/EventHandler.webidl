@@ -129,6 +129,7 @@ interface GlobalEventHandlers {
            attribute EventHandler onmozpointerlockerror;
 
            // CSS-Animation and CSS-Transition handlers.
+           attribute EventHandler onanimationcancel;
            attribute EventHandler onanimationend;
            attribute EventHandler onanimationiteration;
            attribute EventHandler onanimationstart;
