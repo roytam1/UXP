@@ -95,10 +95,6 @@ case $cmd in
     # copy build and config directory.
     cp -pPR ${TOPSRCDIR}/build ${TOPSRCDIR}/config ${tgtpath}
 
-    # copy cargo config
-    ${MKDIR} -p ${tgtpath}/.cargo
-    cp -pPR ${TOPSRCDIR}/.cargo/config.in ${tgtpath}/.cargo
-
     # generate configure files to avoid build dependency on autoconf-2.13
     cp -PR ${TOPSRCDIR}/js/src/configure.in ${tgtpath}/js/src/configure
     chmod a+x ${tgtpath}/js/src/configure
