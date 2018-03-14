@@ -132,6 +132,7 @@ interface GlobalEventHandlers {
            attribute EventHandler onanimationend;
            attribute EventHandler onanimationiteration;
            attribute EventHandler onanimationstart;
+           attribute EventHandler ontransitioncancel;
            attribute EventHandler ontransitionend;
            // We will ship transitionrun and transitionstart events
            // on Firefox 53. (For detail, see bug 1324985)
