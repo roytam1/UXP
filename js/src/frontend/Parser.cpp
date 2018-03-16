@@ -2245,13 +2245,13 @@ GetYieldHandling(GeneratorKind generatorKind, FunctionAsyncKind asyncKind)
 
 template <>
 ParseNode*
-Parser<FullParseHandler>::standaloneFunctionBody(HandleFunction fun,
-                                                 HandleScope enclosingScope,
-                                                 Handle<PropertyNameVector> formals,
-                                                 GeneratorKind generatorKind,
-                                                 FunctionAsyncKind asyncKind,
-                                                 Directives inheritedDirectives,
-                                                 Directives* newDirectives)
+Parser<FullParseHandler>::standaloneFunction(HandleFunction fun,
+                                             HandleScope enclosingScope,
+                                             Maybe<uint32_t> parameterListEnd,
+                                             GeneratorKind generatorKind,
+                                             FunctionAsyncKind asyncKind,
+                                             Directives inheritedDirectives,
+                                             Directives* newDirectives)
 {
     MOZ_ASSERT(checkOptionsCalled);
 
@@ -2274,25 +2274,14 @@ Parser<FullParseHandler>::standaloneFunctionBody(HandleFunction fun,
     if (!funpc.init())
         return null();
     funpc.setIsStandaloneFunctionBody();
-    funpc.functionScope().useAsVarScope(&funpc);
-
-    if (formals.length() >= ARGNO_LIMIT) {
-        report(ParseError, false, null(), JSMSG_TOO_MANY_FUN_ARGS);
-        return null();
-    }
-
-    bool duplicatedParam = false;
-    for (uint32_t i = 0; i < formals.length(); i++) {
-        if (!notePositionalFormalParameter(fn, formals[i], false, &duplicatedParam))
-            return null();
-    }
-    funbox->hasDuplicateParameters = duplicatedParam;
 
     YieldHandling yieldHandling = GetYieldHandling(generatorKind, asyncKind);
     AutoAwaitIsKeyword awaitIsKeyword(&tokenStream, asyncKind == AsyncFunction);
-    ParseNode* pn = functionBody(InAllowed, yieldHandling, Statement, StatementListBody);
-    if (!pn)
+    if (!functionFormalParametersAndBody(InAllowed, yieldHandling, fn, Statement,
+                                         parameterListEnd))
+    {
         return null();
+    }
 
     TokenKind tt;
     if (!tokenStream.getToken(&tt, TokenStream::Operand))
@@ -2303,15 +2292,7 @@ Parser<FullParseHandler>::standaloneFunctionBody(HandleFunction fun,
         return null();
     }
 
-    if (!FoldConstants(context, &pn, this))
-        return null();
-
-    fn->pn_pos.end = pos().end;
-
-    MOZ_ASSERT(fn->pn_body->isKind(PNK_PARAMSBODY));
-    fn->pn_body->append(pn);
-
-    if (!finishFunction())
+    if (!FoldConstants(context, &fn, this))
         return null();
 
     return fn;
@@ -3415,7 +3396,8 @@ template <typename ParseHandler>
 bool
 Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
                                                       YieldHandling yieldHandling,
-                                                      Node pn, FunctionSyntaxKind kind)
+                                                      Node pn, FunctionSyntaxKind kind,
+                                                      Maybe<uint32_t> parameterListEnd /* = Nothing() */)
 {
     // Given a properly initialized parse context, try to parse an actual
     // function without concern for conversion to strict mode, use of lazy
@@ -3445,6 +3427,13 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
             report(ParseError, false, null(), JSMSG_BAD_ARROW_ARGS);
             return false;
         }
+    }
+
+    // When parsing something for new Function() we have to make sure to
+    // only treat a certain part of the source as a parameter list.
+    if (parameterListEnd.isSome() && parameterListEnd.value() != pos().begin) {
+        report(ParseError, false, null(), JSMSG_UNEXPECTED_PARAMLIST_END);
+        return false;
     }
 
     // Parse the function body.
@@ -3502,7 +3491,7 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
             report(ParseError, false, null(), JSMSG_CURLY_AFTER_BODY);
             return false;
         }
-        funbox->bufEnd = pos().begin + 1;
+        funbox->bufEnd = pos().end;
     } else {
 #if !JS_HAS_EXPR_CLOSURES
         MOZ_ASSERT(kind == Arrow);
