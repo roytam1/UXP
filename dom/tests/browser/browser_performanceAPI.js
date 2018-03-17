@@ -17,7 +17,6 @@ const PERFORMANCE_TIMINGS = [
   "domainLookupEnd",
   "connectStart",
   "connectEnd",
-  "secureConnectionStart",
   "requestStart",
   "responseStart",
   "responseEnd",
