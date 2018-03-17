@@ -46,6 +46,23 @@ PerformanceTiming::PerformanceTiming(Performance* aPerformance,
     mReportCrossOriginRedirect = mTimingAllowed && redirectsPassCheck;
   }
 
+  mSecureConnection = false;
+  nsCOMPtr<nsIURI> uri;
+  if (aHttpChannel) {
+    aHttpChannel->GetURI(getter_AddRefs(uri));
+  } else {
+    nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(aChannel);
+    if (httpChannel) {
+      httpChannel->GetURI(getter_AddRefs(uri));
+    }
+  }
+
+  if (uri) {
+    nsresult rv = uri->SchemeIs("https", &mSecureConnection);
+    if (NS_FAILED(rv)) {
+      mSecureConnection = false;
+    }
+  }
   InitializeTimingInfo(aChannel);
 }
 
@@ -89,7 +106,8 @@ PerformanceTiming::InitializeTimingInfo(nsITimedChannel* aChannel)
         mConnectStart = mAsyncOpen;
       }
 
-      if (!mSecureConnectionStart.IsNull() && mSecureConnectionStart < mAsyncOpen) {
+      if (mSecureConnection && !mSecureConnectionStart.IsNull() &&
+          mSecureConnectionStart < mAsyncOpen) {
         mSecureConnectionStart = mAsyncOpen;
       }
 
@@ -307,8 +325,11 @@ PerformanceTiming::SecureConnectionStartHighRes()
   if (!nsContentUtils::IsPerformanceTimingEnabled() || !IsInitialized()) {
     return mZeroTime;
   }
-  return mSecureConnectionStart.IsNull() ? mZeroTime
-                                         : TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(mSecureConnectionStart));
+  return !mSecureConnection
+    ? 0 // We use 0 here, because mZeroTime is sometimes set to the navigation
+        // start time.
+    : (mSecureConnectionStart.IsNull() ? mZeroTime
+                                       : TimerClamping::ReduceMsTimeValue(TimeStampToDOMHighRes(mSecureConnectionStart)));
 }
 
 DOMTimeMilliSec
