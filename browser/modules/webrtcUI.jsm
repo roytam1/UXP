@@ -290,7 +290,13 @@ function prompt(aBrowser, aRequest) {
   let {audioDevices: audioDevices, videoDevices: videoDevices,
        sharingScreen: sharingScreen, sharingAudio: sharingAudio,
        requestTypes: requestTypes} = aRequest;
-  let uri = Services.io.newURI(aRequest.documentURI, null, null);
+  let uri;
+  try {
+    // This fails for principals that serialize to "null", e.g. file URIs.
+    uri = Services.io.newURI(aRequest.origin, null, null);
+  } catch (e) {
+    uri = Services.io.newURI(aRequest.documentURI, null, null);
+  }
   let host = getHost(uri);
   let chromeDoc = aBrowser.ownerDocument;
   let chromeWin = chromeDoc.defaultView;
