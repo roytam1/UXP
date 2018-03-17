@@ -35,11 +35,19 @@ function IsDetachedBuffer(buffer) {
     return (flags & JS_ARRAYBUFFER_DETACHED_FLAG) !== 0;
 }
 
+function TypedArrayLengthMethod() {
+    return TypedArrayLength(this);
+}
+
 function GetAttachedArrayBuffer(tarray) {
     var buffer = ViewedArrayBufferIfReified(tarray);
     if (IsDetachedBuffer(buffer))
         ThrowTypeError(JSMSG_TYPED_ARRAY_DETACHED);
     return buffer;
+}
+
+function GetAttachedArrayBufferMethod() {
+    return GetAttachedArrayBuffer(this);
 }
 
 // A function which ensures that the argument is either a typed array or a
@@ -54,10 +62,7 @@ function IsTypedArrayEnsuringArrayBuffer(arg) {
         return true;
     }
 
-    // This is a bit hacky but gets the job done: the first `arg` is used to
-    // test for a wrapped typed array, the second as an argument to
-    // GetAttachedArrayBuffer.
-    callFunction(CallTypedArrayMethodIfWrapped, arg, arg, "GetAttachedArrayBuffer");
+    callFunction(CallTypedArrayMethodIfWrapped, arg, "GetAttachedArrayBufferMethod");
     return false;
 }
 
@@ -98,8 +103,8 @@ function TypedArrayCreateWithLength(constructor, length) {
     if (isTypedArray) {
         len = TypedArrayLength(newTypedArray);
     } else {
-        len = callFunction(CallTypedArrayMethodIfWrapped, newTypedArray, newTypedArray,
-                           "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, newTypedArray,
+                           "TypedArrayLengthMethod");
     }
 
     if (len < length)
@@ -259,15 +264,14 @@ function TypedArrayEvery(callbackfn/*, thisArg*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Steps 3-5.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 6.
     if (arguments.length === 0)
@@ -348,15 +352,14 @@ function TypedArrayFilter(callbackfn/*, thisArg*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Step 3.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 4.
     if (arguments.length === 0)
@@ -410,15 +413,14 @@ function TypedArrayFind(predicate/*, thisArg*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Steps 3-5.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 6.
     if (arguments.length === 0)
@@ -452,15 +454,14 @@ function TypedArrayFindIndex(predicate/*, thisArg*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Steps 3-5.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 6.
     if (arguments.length === 0)
@@ -492,15 +493,14 @@ function TypedArrayForEach(callbackfn/*, thisArg*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Step 3-4.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 5.
     if (arguments.length === 0)
@@ -686,15 +686,14 @@ function TypedArrayMap(callbackfn/*, thisArg*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Step 3.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 4.
     if (arguments.length === 0)
@@ -730,15 +729,14 @@ function TypedArrayReduce(callbackfn/*, initialValue*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Steps 3-5.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 6.
     if (arguments.length === 0)
@@ -776,15 +774,14 @@ function TypedArrayReduceRight(callbackfn/*, initialValue*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Steps 3-5.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 6.
     if (arguments.length === 0)
@@ -1034,15 +1031,14 @@ function TypedArraySome(callbackfn/*, thisArg*/) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(O);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Steps 3-5.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(O);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, O, O, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, O, "TypedArrayLengthMethod");
 
     // Step 6.
     if (arguments.length === 0)
@@ -1137,7 +1133,7 @@ function TypedArraySort(comparefn) {
     if (isTypedArray) {
         buffer = GetAttachedArrayBuffer(obj);
     } else {
-        buffer = callFunction(CallTypedArrayMethodIfWrapped, obj, obj, "GetAttachedArrayBuffer");
+        buffer = callFunction(CallTypedArrayMethodIfWrapped, obj, "GetAttachedArrayBufferMethod");
     }
 
     // Step 3.
@@ -1145,7 +1141,7 @@ function TypedArraySort(comparefn) {
     if (isTypedArray) {
         len = TypedArrayLength(obj);
     } else {
-        len = callFunction(CallTypedArrayMethodIfWrapped, obj, obj, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, obj, "TypedArrayLengthMethod");
     }
 
     if (comparefn === undefined) {
@@ -1181,8 +1177,8 @@ function TypedArraySort(comparefn) {
             if (isTypedArray) {
                 buffer = GetAttachedArrayBuffer(obj);
             } else {
-                buffer = callFunction(CallTypedArrayMethodIfWrapped, obj, obj,
-                                      "GetAttachedArrayBuffer");
+                buffer = callFunction(CallTypedArrayMethodIfWrapped, obj,
+                                      "GetAttachedArrayBufferMethod");
             }
         }
         var bufferDetached;
@@ -1217,15 +1213,14 @@ function TypedArrayToLocaleString(locales = undefined, options = undefined) {
     // We want to make sure that we have an attached buffer, per spec prose.
     var isTypedArray = IsTypedArrayEnsuringArrayBuffer(array);
 
-    // If we got here, `this` is either a typed array or a cross-compartment
-    // wrapper for one.
+    // If we got here, `this` is either a typed array or a wrapper for one.
 
     // Step 2.
     var len;
     if (isTypedArray)
         len = TypedArrayLength(array);
     else
-        len = callFunction(CallTypedArrayMethodIfWrapped, array, array, "TypedArrayLength");
+        len = callFunction(CallTypedArrayMethodIfWrapped, array, "TypedArrayLengthMethod");
 
     // Step 4.
     if (len === 0)
