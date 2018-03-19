@@ -336,9 +336,9 @@ BytecodeCompiler::compileScript(HandleObject environment, SharedContext* sc)
                 if (!deoptimizeArgumentsInEnclosingScripts(cx->asJSContext(), environment))
                     return nullptr;
             }
-            if (!NameFunctions(cx, pn))
-                return nullptr;
             if (!emitter->emitScript(pn))
+                return nullptr;
+            if (!NameFunctions(cx, pn))
                 return nullptr;
             parser->handler.freeTree(pn);
 
@@ -397,13 +397,13 @@ BytecodeCompiler::compileModule()
     if (!pn)
         return nullptr;
 
-    if (!NameFunctions(cx, pn))
-        return nullptr;
-
     Maybe<BytecodeEmitter> emitter;
     if (!emplaceEmitter(emitter, &modulesc))
         return nullptr;
     if (!emitter->emitScript(pn->pn_body))
+        return nullptr;
+
+    if (!NameFunctions(cx, pn))
         return nullptr;
 
     parser->handler.freeTree(pn);
@@ -453,9 +453,6 @@ BytecodeCompiler::compileStandaloneFunction(MutableHandleFunction fun,
             return false;
     } while (!fn);
 
-    if (!NameFunctions(cx, fn))
-        return false;
-
     if (fn->pn_funbox->function()->isInterpreted()) {
         MOZ_ASSERT(fun == fn->pn_funbox->function());
 
@@ -471,6 +468,9 @@ BytecodeCompiler::compileStandaloneFunction(MutableHandleFunction fun,
         fun.set(fn->pn_funbox->function());
         MOZ_ASSERT(IsAsmJSModule(fun));
     }
+
+    if (!NameFunctions(cx, fn))
+        return false;
 
     if (!maybeCompleteCompressSource())
         return false;
@@ -646,9 +646,6 @@ frontend::CompileLazyFunction(JSContext* cx, Handle<LazyScript*> lazy, const cha
     if (!pn)
         return false;
 
-    if (!NameFunctions(cx, pn))
-        return false;
-
     RootedScriptSource sourceObject(cx, lazy->sourceObject());
     MOZ_ASSERT(sourceObject);
 
@@ -667,7 +664,13 @@ frontend::CompileLazyFunction(JSContext* cx, Handle<LazyScript*> lazy, const cha
     if (!bce.init())
         return false;
 
-    return bce.emitFunctionScript(pn->pn_body);
+    if (!bce.emitFunctionScript(pn->pn_body))
+        return false;
+
+    if (!NameFunctions(cx, pn))
+        return false;
+
+    return true;
 }
 
 bool

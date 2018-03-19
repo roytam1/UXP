@@ -4539,8 +4539,6 @@ BytecodeEmitter::setOrEmitSetFunName(ParseNode* maybeFun, HandleAtom name,
         RootedAtom funName(cx, NameToFunctionName(cx, name, prefixKind));
         if (!funName)
             return false;
-        if (fun->hasGuessedAtom())
-            fun->clearGuessedAtom();
         fun->setCompileTimeName(name);
         return true;
     }
