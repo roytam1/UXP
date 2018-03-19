@@ -1053,7 +1053,7 @@ BytecodeEmitter::EmitterScope::enterFunction(BytecodeEmitter* bce, FunctionBox* 
             if (p) {
                 MOZ_ASSERT(bi.kind() == BindingKind::FormalParameter);
                 MOZ_ASSERT(!funbox->hasDestructuringArgs);
-                MOZ_ASSERT(!funbox->function()->hasRest());
+                MOZ_ASSERT(!funbox->hasRest());
                 p->value() = loc;
                 continue;
             }
@@ -8017,7 +8017,7 @@ BytecodeEmitter::isRestParameter(ParseNode* pn, bool* result)
 
     FunctionBox* funbox = sc->asFunctionBox();
     RootedFunction fun(cx, funbox->function());
-    if (!fun->hasRest()) {
+    if (!funbox->hasRest()) {
         *result = false;
         return true;
     }
@@ -8960,7 +8960,7 @@ BytecodeEmitter::emitFunctionFormalParameters(ParseNode* pn)
     EmitterScope* funScope = innermostEmitterScope;
 
     bool hasParameterExprs = funbox->hasParameterExprs;
-    bool hasRest = funbox->function()->hasRest();
+    bool hasRest = funbox->hasRest();
 
     uint16_t argSlot = 0;
     for (ParseNode* arg = pn->pn_head; arg != funBody; arg = arg->pn_next, argSlot++) {
