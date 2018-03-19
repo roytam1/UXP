@@ -3415,7 +3415,7 @@ ASTSerializer::function(ParseNode* pn, ASTType type, MutableHandleValue dst)
 #endif
 
     RootedValue id(cx);
-    RootedAtom funcAtom(cx, func->name());
+    RootedAtom funcAtom(cx, func->explicitName());
     if (!optIdentifier(funcAtom, nullptr, &id))
         return false;
 

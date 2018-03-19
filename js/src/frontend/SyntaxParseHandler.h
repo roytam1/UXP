@@ -339,6 +339,9 @@ class SyntaxParseHandler
                                     Node catchGuard, Node catchBody) { return true; }
 
     MOZ_MUST_USE bool setLastFunctionFormalParameterDefault(Node funcpn, Node pn) { return true; }
+
+    void checkAndSetIsDirectRHSAnonFunction(Node pn) {}
+
     Node newFunctionDefinition() { return NodeFunctionDefinition; }
     bool setComprehensionLambdaBody(Node pn, Node body) { return true; }
     void setFunctionFormalParametersAndBody(Node pn, Node kid) {}
