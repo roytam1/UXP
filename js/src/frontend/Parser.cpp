@@ -838,7 +838,7 @@ Parser<ParseHandler>::reportBadReturn(Node pn, ParseReportKind kind,
                                       unsigned errnum, unsigned anonerrnum)
 {
     JSAutoByteString name;
-    if (JSAtom* atom = pc->functionBox()->function()->name()) {
+    if (JSAtom* atom = pc->functionBox()->function()->explicitName()) {
         if (!AtomToPrintableString(context, atom, &name))
             return false;
     } else {
