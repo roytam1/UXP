@@ -1563,6 +1563,7 @@ IonBuilder::traverseBytecode()
               case JSOP_DUP:
               case JSOP_DUP2:
               case JSOP_PICK:
+              case JSOP_UNPICK:
               case JSOP_SWAP:
               case JSOP_SETARG:
               case JSOP_SETLOCAL:
@@ -2015,6 +2016,10 @@ IonBuilder::inspectOpcode(JSOp op)
 
       case JSOP_PICK:
         current->pick(-GET_INT8(pc));
+        return true;
+
+      case JSOP_UNPICK:
+        current->unpick(-GET_INT8(pc));
         return true;
 
       case JSOP_GETALIASEDVAR:
