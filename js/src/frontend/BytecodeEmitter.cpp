@@ -1534,13 +1534,19 @@ class MOZ_STACK_CLASS TryEmitter
     // stream and fixed-up later.
     //
     // If ShouldUseControl is DontUseControl, all that handling is skipped.
-    // DontUseControl is used by yield*, that matches to the following:
-    //   * has only one catch block
-    //   * has no catch guard
-    //   * has JSOP_GOTO at the end of catch-block
-    //   * has no non-local-jump
-    //   * doesn't use finally block for normal completion of try-block and
+    // DontUseControl is used by yield* and the internal try-catch around
+    // IteratorClose. These internal uses must:
+    //   * have only one catch block
+    //   * have no catch guard
+    //   * have JSOP_GOTO at the end of catch-block
+    //   * have no non-local-jump
+    //   * don't use finally block for normal completion of try-block and
     //     catch-block
+    //
+    // Additionally, a finally block may be emitted when ShouldUseControl is
+    // DontUseControl, even if the kind is not TryCatchFinally or TryFinally,
+    // because GOSUBs are not emitted. This internal use shares the
+    // requirements as above.
     Maybe<TryFinallyControl> controlInfo_;
 
     int depth_;
@@ -1708,7 +1714,17 @@ class MOZ_STACK_CLASS TryEmitter
 
   public:
     bool emitFinally(Maybe<uint32_t> finallyPos = Nothing()) {
-        MOZ_ASSERT(hasFinally());
+        // If we are using controlInfo_ (i.e., emitting a syntactic try
+        // blocks), we must have specified up front if there will be a finally
+        // close. For internal try blocks, like those emitted for yield* and
+        // IteratorClose inside for-of loops, we can emitFinally even without
+        // specifying up front, since the internal try blocks emit no GOSUBs.
+        if (!controlInfo_) {
+            if (kind_ == TryCatch)
+                kind_ = TryCatchFinally;
+        } else {
+            MOZ_ASSERT(hasFinally());
+        }
 
         if (state_ == Try) {
             if (!emitTryEnd())
@@ -2004,21 +2020,31 @@ class ForOfLoopControl : public LoopControl
     //   }
     Maybe<TryEmitter> tryCatch_;
 
+    // Used to track if any yields were emitted between calls to to
+    // emitBeginCodeNeedingIteratorClose and emitEndCodeNeedingIteratorClose.
+    uint32_t numYieldsAtBeginCodeNeedingIterClose_;
+
     bool allowSelfHosted_;
 
   public:
     ForOfLoopControl(BytecodeEmitter* bce, int32_t iterDepth, bool allowSelfHosted)
       : LoopControl(bce, StatementKind::ForOfLoop),
         iterDepth_(iterDepth),
+        numYieldsAtBeginCodeNeedingIterClose_(UINT32_MAX),
         allowSelfHosted_(allowSelfHosted)
     {
     }
 
     bool emitBeginCodeNeedingIteratorClose(BytecodeEmitter* bce) {
-        tryCatch_.emplace(bce, TryEmitter::TryCatch, TryEmitter::DontUseRetVal);
+        tryCatch_.emplace(bce, TryEmitter::TryCatch, TryEmitter::DontUseRetVal,
+                          TryEmitter::DontUseControl);
 
         if (!tryCatch_->emitTry())
             return false;
+
+        MOZ_ASSERT(numYieldsAtBeginCodeNeedingIterClose_ == UINT32_MAX);
+        numYieldsAtBeginCodeNeedingIterClose_ = bce->yieldOffsetList.numYields;
+
         return true;
     }
 
@@ -2056,10 +2082,33 @@ class ForOfLoopControl : public LoopControl
         if (!bce->emit1(JSOP_THROW))              // ITER ...
             return false;
 
+        // If any yields were emitted, then this for-of loop is inside a star
+        // generator and must handle the case of Generator.return. Like in
+        // yield*, it is handled with a finally block.
+        uint32_t numYieldsEmitted = bce->yieldOffsetList.numYields;
+        if (numYieldsEmitted > numYieldsAtBeginCodeNeedingIterClose_) {
+            if (!tryCatch_->emitFinally())
+                return false;
+
+            IfThenElseEmitter ifGeneratorClosing(bce);
+            if (!bce->emit1(JSOP_ISGENCLOSING))   // ITER ... FTYPE FVALUE CLOSING
+                return false;
+            if (!ifGeneratorClosing.emitIf())     // ITER ... FTYPE FVALUE
+                return false;
+            if (!bce->emitDupAt(slotFromTop + 1)) // ITER ... FTYPE FVALUE ITER
+                return false;
+            if (!emitIteratorClose(bce, CompletionKind::Normal)) // ITER ... FTYPE FVALUE
+                return false;
+            if (!ifGeneratorClosing.emitEnd())    // ITER ... FTYPE FVALUE
+                return false;
+        }
+
         if (!tryCatch_->emitEnd())
             return false;
 
         tryCatch_.reset();
+        numYieldsAtBeginCodeNeedingIterClose_ = UINT32_MAX;
+
         return true;
     }
 
@@ -4747,6 +4796,11 @@ BytecodeEmitter::emitYieldOp(JSOp op)
         reportError(nullptr, JSMSG_TOO_MANY_YIELDS);
         return false;
     }
+
+    if (op == JSOP_YIELD)
+        yieldOffsetList.numYields++;
+    else
+        yieldOffsetList.numAwaits++;
 
     SET_UINT24(code(off), yieldIndex);
 

@@ -100,7 +100,9 @@ struct CGScopeNoteList {
 
 struct CGYieldOffsetList {
     Vector<uint32_t> list;
-    explicit CGYieldOffsetList(ExclusiveContext* cx) : list(cx) {}
+    uint32_t numYields;
+    uint32_t numAwaits;
+    explicit CGYieldOffsetList(ExclusiveContext* cx) : list(cx), numYields(0), numAwaits(0) {}
 
     MOZ_MUST_USE bool append(uint32_t offset) { return list.append(offset); }
     size_t length() const { return list.length(); }
