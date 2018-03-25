@@ -783,6 +783,7 @@ class IonBuilder
     MOZ_MUST_USE bool jsop_debugger();
     MOZ_MUST_USE bool jsop_newtarget();
     MOZ_MUST_USE bool jsop_checkisobj(uint8_t kind);
+    MOZ_MUST_USE bool jsop_checkiscallable(uint8_t kind);
     MOZ_MUST_USE bool jsop_checkobjcoercible();
     MOZ_MUST_USE bool jsop_pushcallobj();
 

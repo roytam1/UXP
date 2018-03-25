@@ -13,6 +13,7 @@
 
 #include "jit/CompileInfo.h"
 #include "jit/JitFrames.h"
+#include "vm/Interpreter.h"
 
 namespace js {
 
@@ -801,6 +802,9 @@ ThrowObjectCoercible(JSContext* cx, HandleValue v);
 
 MOZ_MUST_USE bool
 BaselineGetFunctionThis(JSContext* cx, BaselineFrame* frame, MutableHandleValue res);
+
+MOZ_MUST_USE bool
+CheckIsCallable(JSContext* cx, HandleValue v, CheckIsCallableKind kind);
 
 } // namespace jit
 } // namespace js

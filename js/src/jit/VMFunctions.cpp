@@ -1349,5 +1349,14 @@ BaselineGetFunctionThis(JSContext* cx, BaselineFrame* frame, MutableHandleValue 
     return GetFunctionThis(cx, frame, res);
 }
 
+bool
+CheckIsCallable(JSContext* cx, HandleValue v, CheckIsCallableKind kind)
+{
+    if (!IsCallable(v))
+        return ThrowCheckIsCallable(cx, kind);
+
+    return true;
+}
+
 } // namespace jit
 } // namespace js
