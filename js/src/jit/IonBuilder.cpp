@@ -958,35 +958,32 @@ IonBuilder::build()
 bool
 IonBuilder::processIterators()
 {
-    // Find phis that must directly hold an iterator live.
-    Vector<MPhi*, 0, SystemAllocPolicy> worklist;
+    // Find and mark phis that must transitively hold an iterator live.
+
+    Vector<MDefinition*, 8, SystemAllocPolicy> worklist;
+
     for (size_t i = 0; i < iterators_.length(); i++) {
-        MDefinition* def = iterators_[i];
-        if (def->isPhi()) {
-            if (!worklist.append(def->toPhi()))
-                return false;
-        } else {
-            for (MUseDefIterator iter(def); iter; iter++) {
-                if (iter.def()->isPhi()) {
-                    if (!worklist.append(iter.def()->toPhi()))
-                        return false;
-                }
-            }
-        }
+        if (!worklist.append(iterators_[i]))
+            return false;
+        iterators_[i]->setInWorklist();
     }
 
-    // Propagate the iterator and live status of phis to all other connected
-    // phis.
     while (!worklist.empty()) {
-        MPhi* phi = worklist.popCopy();
-        phi->setIterator();
-        phi->setImplicitlyUsedUnchecked();
+        MDefinition* def = worklist.popCopy();
+        def->setNotInWorklist();
 
-        for (MUseDefIterator iter(phi); iter; iter++) {
-            if (iter.def()->isPhi()) {
-                MPhi* other = iter.def()->toPhi();
-                if (!other->isIterator() && !worklist.append(other))
+        if (def->isPhi()) {
+            MPhi* phi = def->toPhi();
+            phi->setIterator();
+            phi->setImplicitlyUsedUnchecked();
+        }
+
+        for (MUseDefIterator iter(def); iter; iter++) {
+            MDefinition* use = iter.def();
+            if (!use->isInWorklist() && (!use->isPhi() || !use->toPhi()->isIterator())) {
+                if (!worklist.append(use))
                     return false;
+                use->setInWorklist();
             }
         }
     }
