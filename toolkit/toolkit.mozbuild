@@ -181,10 +181,6 @@ if CONFIG['ENABLE_TESTS']:
         '/testing/web-platform',
     ]
 
-    # The file id utility requires breakpad libraries.
-    if CONFIG['MOZ_CRASHREPORTER']:
-        DIRS += ['/testing/tools/fileid']
-
     if CONFIG['MOZ_MEMORY']:
         DIRS += ['/memory/gtest']
 

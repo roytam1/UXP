@@ -188,10 +188,6 @@
 #include "mozilla/Telemetry.h"
 #include "mozilla/ThreadLocal.h"
 
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#endif
-
 using namespace mozilla;
 
 //#define COLLECT_TIME_DEBUG
@@ -3150,14 +3146,6 @@ nsCycleCollector::ScanWhiteNodes(bool aFullySynchGraphBuild)
     }
 
     if (pi->mInternalRefs > pi->mRefCount) {
-#ifdef MOZ_CRASHREPORTER
-      const char* piName = "Unknown";
-      if (pi->mParticipant) {
-        piName = pi->mParticipant->ClassName();
-      }
-      nsPrintfCString msg("More references to an object than its refcount, for class %s", piName);
-      CrashReporter::AnnotateCrashReport(NS_LITERAL_CSTRING("CycleCollector"), msg);
-#endif
       MOZ_CRASH();
     }
 

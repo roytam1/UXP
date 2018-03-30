@@ -27,9 +27,6 @@
 #include "nsITabParent.h"
 #include "nsPluginHost.h"
 #include "nsThreadUtils.h"
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#endif
 
 #include "base/task.h"
 #include "base/thread.h"
@@ -556,16 +553,6 @@ HangMonitorParent::HangMonitorParent(ProcessHangMonitor* aMonitor)
 
 HangMonitorParent::~HangMonitorParent()
 {
-#ifdef MOZ_CRASHREPORTER
-  MutexAutoLock lock(mBrowserCrashDumpHashLock);
-
-  for (auto iter = mBrowserCrashDumpIds.Iter(); !iter.Done(); iter.Next()) {
-    nsString crashId = iter.UserData();
-    if (!crashId.IsEmpty()) {
-      CrashReporter::DeleteMinidumpFilesForID(crashId);
-    }
-  }
-#endif
 }
 
 void
@@ -698,24 +685,6 @@ bool
 HangMonitorParent::TakeBrowserMinidump(const PluginHangData& aPhd,
                                        nsString& aCrashId)
 {
-#ifdef MOZ_CRASHREPORTER
-  MutexAutoLock lock(mBrowserCrashDumpHashLock);
-  if (!mBrowserCrashDumpIds.Get(aPhd.pluginId(), &aCrashId)) {
-    nsCOMPtr<nsIFile> browserDump;
-    if (CrashReporter::TakeMinidump(getter_AddRefs(browserDump), true)) {
-      if (!CrashReporter::GetIDFromMinidump(browserDump, aCrashId)
-          || aCrashId.IsEmpty()) {
-        browserDump->Remove(false);
-        NS_WARNING("Failed to generate timely browser stack, "
-                   "this is bad for plugin hang analysis!");
-      } else {
-        mBrowserCrashDumpIds.Put(aPhd.pluginId(), aCrashId);
-        return true;
-      }
-    }
-  }
-#endif // MOZ_CRASHREPORTER
-
   return false;
 }
 
@@ -840,11 +809,6 @@ HangMonitorParent::CleanupPluginHang(uint32_t aPluginId, bool aRemoveFiles)
     return;
   }
   mBrowserCrashDumpIds.Remove(aPluginId);
-#ifdef MOZ_CRASHREPORTER
-  if (aRemoveFiles && !crashId.IsEmpty()) {
-    CrashReporter::DeleteMinidumpFilesForID(crashId);
-  }
-#endif
 }
 
 void

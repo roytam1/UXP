@@ -213,10 +213,6 @@ nsAppShell::~nsAppShell()
 nsresult
 nsAppShell::Init()
 {
-#ifdef MOZ_CRASHREPORTER
-  LSPAnnotate();
-#endif
-
   mLastNativeEventScheduled = TimeStamp::NowLoRes();
 
   mozilla::ipc::windows::InitUIThread();

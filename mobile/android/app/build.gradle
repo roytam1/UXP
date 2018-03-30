@@ -100,9 +100,7 @@ android {
                     srcDir "${topsrcdir}/mobile/android/stumbler/java"
                 }
 
-                if (!mozconfig.substs.MOZ_CRASHREPORTER) {
-                    exclude 'org/mozilla/gecko/CrashReporter.java'
-                }
+                exclude 'org/mozilla/gecko/CrashReporter.java'
 
                 if (!mozconfig.substs.MOZ_NATIVE_DEVICES) {
                     exclude 'org/mozilla/gecko/ChromeCastDisplay.java'

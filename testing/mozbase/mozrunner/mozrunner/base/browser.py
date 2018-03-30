@@ -75,6 +75,5 @@ class GeckoRuntimeRunner(BaseRunner):
             if not self.show_crash_reporter:
                 # hide the crash reporter window
                 self.env["MOZ_CRASHREPORTER_NO_REPORT"] = "1"
-            self.env["MOZ_CRASHREPORTER"] = "1"
 
         BaseRunner.start(self, *args, **kwargs)

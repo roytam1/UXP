@@ -54,9 +54,6 @@ public:
   void AsyncShutdownComplete(GMPParent* aParent);
 
   int32_t AsyncShutdownTimeoutMs();
-#ifdef MOZ_CRASHREPORTER
-  void SetAsyncShutdownPluginState(GMPParent* aGMPParent, char aId, const nsCString& aState);
-#endif // MOZ_CRASHREPORTER
   RefPtr<GenericPromise> EnsureInitialized();
   RefPtr<GenericPromise> AsyncAddPluginDirectory(const nsAString& aDirectory);
 
@@ -168,21 +165,6 @@ private:
   nsTArray<RefPtr<GMPParent>> mPlugins;
   bool mShuttingDown;
   nsTArray<RefPtr<GMPParent>> mAsyncShutdownPlugins;
-
-#ifdef MOZ_CRASHREPORTER
-  Mutex mAsyncShutdownPluginStatesMutex; // Protects mAsyncShutdownPluginStates.
-  class AsyncShutdownPluginStates
-  {
-  public:
-    void Update(const nsCString& aPlugin, const nsCString& aInstance,
-                char aId, const nsCString& aState);
-  private:
-    struct State { nsCString mStateSequence; nsCString mLastStateDescription; };
-    typedef nsClassHashtable<nsCStringHashKey, State> StatesByInstance;
-    typedef nsClassHashtable<nsCStringHashKey, StatesByInstance> StateInstancesByPlugin;
-    StateInstancesByPlugin mStates;
-  } mAsyncShutdownPluginStates;
-#endif // MOZ_CRASHREPORTER
 
   // True if we've inspected MOZ_GMP_PATH on the GMP thread and loaded any
   // plugins found there into mPlugins.

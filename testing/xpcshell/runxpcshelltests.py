@@ -910,9 +910,6 @@ class XPCShellTests(object):
         """
         # Make assertions fatal
         self.env["XPCOM_DEBUG_BREAK"] = "stack-and-abort"
-        # Crash reporting interferes with debugging
-        if not self.debuggerInfo:
-            self.env["MOZ_CRASHREPORTER"] = "1"
         # Don't launch the crash reporter client
         self.env["MOZ_CRASHREPORTER_NO_REPORT"] = "1"
         # Don't permit remote connections by default.

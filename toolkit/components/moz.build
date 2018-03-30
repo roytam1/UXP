@@ -79,9 +79,6 @@ if not CONFIG['MOZ_FENNEC']:
     if CONFIG['NS_PRINTING']:
         DIRS += ['printing']
 
-if CONFIG['MOZ_CRASHREPORTER']:
-    DIRS += ['crashes']
-
 if CONFIG['BUILD_CTYPES']:
     DIRS += ['ctypes']
 

@@ -90,7 +90,6 @@ class CPPUnitTests(object):
         # been fixed to enable crash reporting
         env["XPCOM_DEBUG_BREAK"] = "stack-and-abort"
         env["MOZ_CRASHREPORTER_NO_REPORT"] = "1"
-        env["MOZ_CRASHREPORTER"] = "1"
         return env
 
     def build_environment(self):

@@ -263,20 +263,6 @@
 #include ../search/manifests/SearchAndroidManifest_activities.xml.in
 #endif
 
-#if MOZ_CRASHREPORTER
-  <activity android:name="org.mozilla.gecko.CrashReporter"
-            android:process="@ANDROID_PACKAGE_NAME@.CrashReporter"
-            android:label="@string/crash_reporter_title"
-            android:icon="@drawable/crash_reporter"
-            android:theme="@style/Gecko"
-            android:exported="false"
-            android:excludeFromRecents="true">
-          <intent-filter>
-            <action android:name="org.mozilla.gecko.reportCrash" />
-          </intent-filter>
-  </activity>
-#endif
-
         <activity android:name="org.mozilla.gecko.preferences.GeckoPreferences"
                   android:theme="@style/Gecko.Preferences"
                   android:configChanges="orientation|screenSize|locale|layoutDirection"

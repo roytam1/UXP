@@ -851,9 +851,6 @@ this.BrowserTestUtils = {
   crashBrowser: Task.async(function*(browser, shouldShowTabCrashPage=true) {
     let extra = {};
     let KeyValueParser = {};
-    if (AppConstants.MOZ_CRASHREPORTER) {
-      Cu.import("resource://gre/modules/KeyValueParser.jsm", KeyValueParser);
-    }
 
     if (!browser.isRemoteBrowser) {
       throw new Error("<xul:browser> needs to be remote in order to crash");
@@ -938,11 +935,7 @@ this.BrowserTestUtils = {
           extrafile.append(dumpID + '.extra');
           if (extrafile.exists()) {
             dump(`\nNo .extra file for dumpID: ${dumpID}\n`);
-            if (AppConstants.MOZ_CRASHREPORTER) {
-              extra = KeyValueParser.parseKeyValuePairsFromFile(extrafile);
-            } else {
-              dump('\nCrashReporter not enabled - will not return any extra data\n');
-            }
+            dump('\nWill not return any extra data\n');
           }
 
           removeFile(minidumpDirectory, dumpID + '.dmp');

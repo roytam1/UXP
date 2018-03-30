@@ -51,10 +51,6 @@
 #include <algorithm>
 #include "chrome/common/ipc_channel.h" // for IPC::Channel::kMaximumMessageSize
 
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#endif
-
 #ifdef ANDROID
 #include <android/log.h>
 #endif

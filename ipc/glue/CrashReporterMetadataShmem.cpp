@@ -208,28 +208,5 @@ private:
   EntryType mEntryType;
 };
 
-#ifdef MOZ_CRASHREPORTER
-void
-CrashReporterMetadataShmem::ReadAppNotes(const Shmem& aShmem, CrashReporter::AnnotationTable* aNotes)
-{
-  for (MetadataShmemReader reader(aShmem); !reader.Done(); reader.Next()) {
-    switch (reader.Type()) {
-      case EntryType::Annotation: {
-        nsCString key, value;
-        if (!reader.Read(key) || !reader.Read(value)) {
-          return;
-        }
-
-        aNotes->Put(key, value);
-        break;
-      }
-      default:
-        NS_ASSERTION(false, "Unknown metadata entry type");
-        break;
-    }
-  }
-}
-#endif
-
 } // namespace ipc
 } // namespace mozilla

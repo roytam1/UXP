@@ -83,16 +83,6 @@ public:
 
   void WaitForAllAsynchronousShutdowns();
 
-#ifdef MOZ_CRASHREPORTER
-  enum class ShouldSaveMemoryReport
-  {
-    kMaybeReport,
-    kForceReport
-  };
-
-  static bool SaveMemoryReportNearOOM(ShouldSaveMemoryReport aShouldSave);
-#endif
-
 private:
   void DoMainThreadSpecificProcessing(bool aReallyWait);
 

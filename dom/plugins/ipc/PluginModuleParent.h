@@ -26,10 +26,6 @@
 #include "nsWindowsHelpers.h"
 #endif
 
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#endif
-
 class nsIProfileSaveEvent;
 class nsPluginTag;
 
@@ -56,9 +52,6 @@ class PluginInstanceParent;
 #ifdef XP_WIN
 class PluginHangUIParent;
 #endif
-#ifdef MOZ_CRASHREPORTER_INJECTOR
-class FinishInjectorInitTask;
-#endif
 
 /**
  * PluginModuleParent
@@ -80,9 +73,6 @@ class FinishInjectorInitTask;
 class PluginModuleParent
     : public PPluginModuleParent
     , public PluginLibrary
-#ifdef MOZ_CRASHREPORTER_INJECTOR
-    , public CrashReporter::InjectorCrashCallback
-#endif
 {
 protected:
     typedef mozilla::PluginLibrary PluginLibrary;
@@ -395,10 +385,6 @@ class PluginModuleContentParent : public PluginModuleParent
     virtual bool ShouldContinueFromReplyTimeout() override;
     virtual void OnExitedSyncSend() override;
 
-#ifdef MOZ_CRASHREPORTER_INJECTOR
-    void OnCrash(DWORD processID) override {}
-#endif
-
     static PluginModuleContentParent* sSavedModuleParent;
 
     uint32_t mPluginId;
@@ -522,11 +508,6 @@ private:
 
     virtual bool ShouldContinueFromReplyTimeout() override;
 
-#ifdef MOZ_CRASHREPORTER
-    void ProcessFirstMinidump();
-    void WriteExtraDataForMinidump(CrashReporter::AnnotationTable& notes);
-#endif
-
     virtual PCrashReporterParent*
     AllocPCrashReporterParent(mozilla::dom::NativeThreadId* id,
                               uint32_t* processType) override;
@@ -594,17 +575,6 @@ private:
     PluginHangUIParent *mHangUIParent;
     bool mHangUIEnabled;
     bool mIsTimerReset;
-#ifdef MOZ_CRASHREPORTER
-    /**
-     * This mutex protects the crash reporter when the Plugin Hang UI event
-     * handler is executing off main thread. It is intended to protect both
-     * the mCrashReporter variable in addition to the CrashReporterParent object
-     * that mCrashReporter refers to.
-     */
-    mozilla::Mutex mCrashReporterMutex;
-    CrashReporterParent* mCrashReporter;
-#endif // MOZ_CRASHREPORTER
-
 
     /**
      * Launches the Plugin Hang UI.
@@ -625,20 +595,6 @@ private:
 
     friend class mozilla::dom::CrashReporterParent;
     friend class mozilla::plugins::PluginAsyncSurrogate;
-
-#ifdef MOZ_CRASHREPORTER_INJECTOR
-    friend class mozilla::plugins::FinishInjectorInitTask;
-
-    void InitializeInjector();
-    void DoInjection(const nsAutoHandle& aSnapshot);
-    static DWORD WINAPI GetToolhelpSnapshot(LPVOID aContext);
-
-    void OnCrash(DWORD processID) override;
-
-    DWORD mFlashProcess1;
-    DWORD mFlashProcess2;
-    RefPtr<mozilla::plugins::FinishInjectorInitTask> mFinishInitTask;
-#endif
 
     void OnProcessLaunched(const bool aSucceeded);
 

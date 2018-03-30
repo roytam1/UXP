@@ -549,19 +549,6 @@ var dataProviders = {
   }
 };
 
-if (AppConstants.MOZ_CRASHREPORTER) {
-  dataProviders.crashes = function crashes(done) {
-    let CrashReports = Cu.import("resource://gre/modules/CrashReports.jsm").CrashReports;
-    let reports = CrashReports.getReports();
-    let now = new Date();
-    let reportsNew = reports.filter(report => (now - report.date < Troubleshoot.kMaxCrashAge));
-    let reportsSubmitted = reportsNew.filter(report => (!report.pending));
-    let reportsPendingCount = reportsNew.length - reportsSubmitted.length;
-    let data = {submitted : reportsSubmitted, pending : reportsPendingCount};
-    done(data);
-  }
-}
-
 if (AppConstants.MOZ_SANDBOX) {
   dataProviders.sandbox = function sandbox(done) {
     let data = {};

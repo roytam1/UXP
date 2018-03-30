@@ -50,9 +50,6 @@ static RedirEntry kRedirMap[] = {
       nsIAboutModule::ALLOW_SCRIPT
   },
   { "config", "chrome://global/content/config.xul", 0 },
-#ifdef MOZ_CRASHREPORTER
-  { "crashes", "chrome://global/content/crashes.xhtml", 0 },
-#endif
   {
     "credits", "http://www.palemoon.org/Contributors.shtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |

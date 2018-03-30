@@ -472,14 +472,10 @@ DuplicateHandle(HANDLE aSourceHandle,
 #endif
 
 /**
- * Annotate the crash reporter with the error code from the most recent system
- * call. Returns the system error.
+ * Hist: Annotated the crash reporter with the error code from the most
+ * recent system call. Returned the system error.
  */
-#ifdef MOZ_CRASHREPORTER
-void AnnotateSystemError();
-#else
 #define AnnotateSystemError() do { } while (0)
-#endif
 
 /**
  * An endpoint represents one end of a partially initialized IPDL channel. To
@@ -599,12 +595,8 @@ private:
     ProtocolId mProtocolId;
 };
 
-#if defined(MOZ_CRASHREPORTER) && defined(XP_MACOSX)
-void AnnotateCrashReportWithErrno(const char* tag, int error);
-#else
 static inline void AnnotateCrashReportWithErrno(const char* tag, int error)
 {}
-#endif
 
 // This function is used internally to create a pair of Endpoints. See the
 // comment above Endpoint for a description of how it might be used.

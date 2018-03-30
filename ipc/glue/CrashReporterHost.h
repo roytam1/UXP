@@ -28,26 +28,6 @@ class CrashReporterHost
 public:
   CrashReporterHost(GeckoProcessType aProcessType, const Shmem& aShmem);
 
-#ifdef MOZ_CRASHREPORTER
-  void GenerateCrashReport(base::ProcessId aPid) {
-    RefPtr<nsIFile> crashDump;
-    if (!XRE_TakeMinidumpForChild(aPid, getter_AddRefs(crashDump), nullptr)) {
-      return;
-    }
-    GenerateCrashReport(crashDump);
-  }
-
-  // This is a static helper function to notify the crash service that a
-  // crash has occurred. When PCrashReporter is removed, we can make this
-  // a member function. This can be called from any thread, and if not
-  // called from the main thread, will post a synchronous message to the
-  // main thread.
-  static void NotifyCrashService(
-    GeckoProcessType aProcessType,
-    const nsString& aChildDumpID,
-    const AnnotationTable* aNotes);
-#endif
-
 private:
   void GenerateCrashReport(RefPtr<nsIFile> aCrashDump);
 

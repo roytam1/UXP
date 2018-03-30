@@ -53,10 +53,6 @@
 #include "Logging.h"
 #endif
 
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#endif
-
 #include "nsImageFrame.h"
 #include "nsIObserverService.h"
 #include "nsLayoutUtils.h"
@@ -1282,12 +1278,6 @@ nsAccessibilityService::Init()
 
   NS_ADDREF(gApplicationAccessible); // will release in Shutdown()
   gApplicationAccessible->Init();
-
-#ifdef MOZ_CRASHREPORTER
-  CrashReporter::
-    AnnotateCrashReport(NS_LITERAL_CSTRING("Accessibility"),
-                        NS_LITERAL_CSTRING("Active"));
-#endif
 
 #ifdef XP_WIN
   sPendingPlugins = new nsTArray<nsCOMPtr<nsIContent> >;

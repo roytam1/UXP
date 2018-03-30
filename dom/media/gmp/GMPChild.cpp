@@ -257,10 +257,6 @@ GMPChild::Init(const nsAString& aPluginPath,
     return false;
   }
 
-#ifdef MOZ_CRASHREPORTER
-  SendPCrashReporterConstructor(CrashReporter::CurrentThreadId());
-#endif
-
   mPluginPath = aPluginPath;
   mSandboxVoucherPath = aVoucherPath;
 

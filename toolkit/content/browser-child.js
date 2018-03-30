@@ -17,12 +17,6 @@ Cu.import("resource://gre/modules/Timer.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PageThumbUtils",
   "resource://gre/modules/PageThumbUtils.jsm");
 
-if (AppConstants.MOZ_CRASHREPORTER) {
-  XPCOMUtils.defineLazyServiceGetter(this, "CrashReporter",
-                                     "@mozilla.org/xre/app-info;1",
-                                     "nsICrashReporter");
-}
-
 function makeInputStream(aString) {
   let stream = Cc["@mozilla.org/io/string-input-stream;1"].
                createInstance(Ci.nsISupportsCString);
@@ -174,15 +168,6 @@ var WebProgressListener = {
       json.principal = content.document.nodePrincipal;
       json.synthetic = content.document.mozSyntheticDocument;
       json.inLoadURI = WebNavigation.inLoadURI;
-
-      if (AppConstants.MOZ_CRASHREPORTER && CrashReporter.enabled) {
-        let uri = aLocationURI.clone();
-        try {
-          // If the current URI contains a username/password, remove it.
-          uri.userPass = "";
-        } catch (ex) { /* Ignore failures on about: URIs. */ }
-        CrashReporter.annotateCrashReport("URL", uri.spec);
-      }
     }
 
     this._send("Content:LocationChange", json, objects);
@@ -310,17 +295,6 @@ var WebNavigation =  {
   },
 
   loadURI: function(uri, flags, referrer, referrerPolicy, postData, headers, baseURI) {
-    if (AppConstants.MOZ_CRASHREPORTER && CrashReporter.enabled) {
-      let annotation = uri;
-      try {
-        let url = Services.io.newURI(uri, null, null);
-        // If the current URI contains a username/password, remove it.
-        url.userPass = "";
-        annotation = url.spec;
-      } catch (ex) { /* Ignore failures to parse and failures
-                      on about: URIs. */ }
-      CrashReporter.annotateCrashReport("URL", annotation);
-    }
     if (referrer)
       referrer = Services.io.newURI(referrer, null, null);
     if (postData)

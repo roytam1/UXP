@@ -59,10 +59,6 @@
 #include "nsIXULRuntime.h"
 #include "nsJSPrincipals.h"
 
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#endif
-
 #if defined(MOZ_JEMALLOC4)
 #include "mozmemory.h"
 #endif
@@ -708,11 +704,6 @@ XPCJSContext::GCSliceCallback(JSContext* cx,
     XPCJSContext* self = nsXPConnect::GetContextInstance();
     if (!self)
         return;
-
-#ifdef MOZ_CRASHREPORTER
-    CrashReporter::SetGarbageCollecting(progress == JS::GC_CYCLE_BEGIN ||
-                                        progress == JS::GC_SLICE_BEGIN);
-#endif
 
     if (self->mPrevGCSliceCallback)
         (*self->mPrevGCSliceCallback)(cx, progress, desc);

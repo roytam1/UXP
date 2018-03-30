@@ -54,13 +54,6 @@
               type="bool"/>
 #endif
 
-  <!-- Data Choices tab -->
-#ifdef MOZ_CRASHREPORTER
-  <preference id="browser.crashReports.unsubmittedCheck.autoSubmit2"
-              name="browser.crashReports.unsubmittedCheck.autoSubmit2"
-              type="bool"/>
-#endif
-
   <!-- Network tab -->
   <preference id="browser.cache.disk.capacity"
               name="browser.cache.disk.capacity"
@@ -231,22 +224,6 @@
             </groupbox>
           </hbox>
         </vbox>
-      </groupbox>
-#endif
-#ifdef MOZ_CRASHREPORTER
-      <groupbox>
-        <caption>
-          <checkbox id="automaticallySubmitCrashesBox"
-                    preference="browser.crashReports.unsubmittedCheck.autoSubmit2"
-                    label="&alwaysSubmitCrashReports.label;"
-                    accesskey="&alwaysSubmitCrashReports.accesskey;"/>
-        </caption>
-        <hbox class="indent">
-          <label flex="1">&crashReporterDesc2.label;</label>
-          <spacer flex="10"/>
-          <label id="crashReporterLearnMore"
-                 class="text-link">&crashReporterLearnMore.label;</label>
-        </hbox>
       </groupbox>
 #endif
     </tabpanel>

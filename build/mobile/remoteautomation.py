@@ -76,7 +76,6 @@ class RemoteAutomation(Automation):
 
         if crashreporter and not debugger:
             env['MOZ_CRASHREPORTER_NO_REPORT'] = '1'
-            env['MOZ_CRASHREPORTER'] = '1'
         else:
             env['MOZ_CRASHREPORTER_DISABLE'] = '1'
 
@@ -215,36 +214,9 @@ class RemoteAutomation(Automation):
         if javaException:
             return True
 
-        # If crash reporting is disabled (MOZ_CRASHREPORTER!=1), we can't say
-        # anything.
-        if not self.CRASHREPORTER:
-            return False
+        # No crash reporting means we can't say anything.
+        return False
 
-        try:
-            dumpDir = tempfile.mkdtemp()
-            remoteCrashDir = posixpath.join(self._remoteProfile, 'minidumps')
-            if not self._devicemanager.dirExists(remoteCrashDir):
-                # If crash reporting is enabled (MOZ_CRASHREPORTER=1), the
-                # minidumps directory is automatically created when Fennec
-                # (first) starts, so its lack of presence is a hint that
-                # something went wrong.
-                print "Automation Error: No crash directory (%s) found on remote device" % remoteCrashDir
-                # Whilst no crash was found, the run should still display as a failure
-                return True
-            self._devicemanager.getDirectory(remoteCrashDir, dumpDir)
-
-            logger = get_default_logger()
-            if logger is not None:
-                crashed = mozcrash.log_crashes(logger, dumpDir, symbolsPath, test=self.lastTestSeen)
-            else:
-                crashed = Automation.checkForCrashes(self, dumpDir, symbolsPath)
-
-        finally:
-            try:
-                shutil.rmtree(dumpDir)
-            except:
-                print "WARNING: unable to remove directory: %s" % dumpDir
-        return crashed
 
     def buildCommandLine(self, app, debuggerInfo, profileDir, testURL, extraArgs):
         # If remote profile is specified, use that instead

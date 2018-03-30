@@ -22,8 +22,7 @@ class DeviceRunner(BaseRunner):
     The base runner class used for running gecko on
     remote devices (or emulators), such as B2G.
     """
-    env = {'MOZ_CRASHREPORTER': '1',
-           'MOZ_CRASHREPORTER_NO_REPORT': '1',
+    env = {'MOZ_CRASHREPORTER_NO_REPORT': '1',
            'MOZ_CRASHREPORTER_SHUTDOWN': '1',
            'MOZ_HIDE_RESULTS_TABLE': '1',
            'MOZ_LOG': 'signaling:3,mtransport:4,DataChannel:4,jsep:4,MediaPipelineFactory:4',

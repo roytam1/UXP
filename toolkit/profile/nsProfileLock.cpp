@@ -30,7 +30,7 @@
 #include "prenv.h"
 #endif
 
-#if defined(MOZ_WIDGET_GONK) && !defined(MOZ_CRASHREPORTER)
+#if defined(MOZ_WIDGET_GONK)
 #include <sys/syscall.h>
 #endif
 
@@ -198,7 +198,6 @@ void nsProfileLock::FatalSignalHandler(int signo
         case SIGILL:
         case SIGABRT:
         case SIGSEGV:
-#ifndef MOZ_CRASHREPORTER
             // Retrigger the signal for those that can generate a core dump
             signal(signo, SIG_DFL);
             if (info->si_code <= 0) {
@@ -206,7 +205,6 @@ void nsProfileLock::FatalSignalHandler(int signo
                     break;
                 }
             }
-#endif
             return;
         default:
             break;

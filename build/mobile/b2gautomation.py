@@ -157,7 +157,6 @@ class B2GRemoteAutomation(Automation):
             env = {}
 
         if crashreporter:
-            env['MOZ_CRASHREPORTER'] = '1'
             env['MOZ_CRASHREPORTER_NO_REPORT'] = '1'
 
         # We always hide the results table in B2G; it's much slower if we don't.

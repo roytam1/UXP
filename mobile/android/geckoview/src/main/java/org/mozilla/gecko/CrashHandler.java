@@ -467,10 +467,6 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
 
             @Override
             public boolean reportException(final Thread thread, final Throwable exc) {
-                if (AppConstants.MOZ_CRASHREPORTER && AppConstants.MOZILLA_OFFICIAL) {
-                    // Only use Java crash reporter if enabled on official build.
-                    return super.reportException(thread, exc);
-                }
                 return false;
             }
         };

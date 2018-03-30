@@ -21,10 +21,6 @@
 extern unsigned int _gdb_sleep_duration;
 #endif
 
-#ifdef MOZ_CRASHREPORTER
-#include "nsICrashReporter.h"
-#endif
-
 // We can test that certain operations cause expected aborts by forking
 // and then checking that the child aborted in the expected way (i.e. via
 // MOZ_CRASH). We skip this for the following configurations.
@@ -46,17 +42,6 @@ TestCrashyOperation(void (*aCrashyOperation)())
   ASSERT_NE(pid, -1);
 
   if (pid == 0) {
-    // Disable the crashreporter -- writing a crash dump in the child will
-    // prevent the parent from writing a subsequent dump. Crashes here are
-    // expected, so we don't want their stacks to show up in the log anyway.
-#ifdef MOZ_CRASHREPORTER
-    nsCOMPtr<nsICrashReporter> crashreporter =
-      do_GetService("@mozilla.org/toolkit/crash-reporter;1");
-    if (crashreporter) {
-      crashreporter->SetEnabled(false);
-    }
-#endif
-
     // Child: perform the crashy operation.
     fprintf(stderr, "TestCrashyOperation: The following crash is expected. Do not panic.\n");
     aCrashyOperation();

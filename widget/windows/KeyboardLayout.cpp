@@ -13,9 +13,6 @@
 #include "mozilla/WindowsVersion.h"
 
 #include "nsAlgorithm.h"
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#endif
 #include "nsGkAtoms.h"
 #include "nsIDOMKeyEvent.h"
 #include "nsIIdleServiceInternal.h"
@@ -2792,42 +2789,6 @@ NativeKey::NeedsToHandleWithoutFollowingCharMessages() const
   return mIsPrintableKey;
 }
 
-#ifdef MOZ_CRASHREPORTER
-
-static nsCString
-GetResultOfInSendMessageEx()
-{
-  DWORD ret = ::InSendMessageEx(nullptr);
-  if (!ret) {
-    return NS_LITERAL_CSTRING("ISMEX_NOSEND");
-  }
-  nsAutoCString result;
-  if (ret & ISMEX_CALLBACK) {
-    result = "ISMEX_CALLBACK";
-  }
-  if (ret & ISMEX_NOTIFY) {
-    if (!result.IsEmpty()) {
-      result += " | ";
-    }
-    result += "ISMEX_NOTIFY";
-  }
-  if (ret & ISMEX_REPLIED) {
-    if (!result.IsEmpty()) {
-      result += " | ";
-    }
-    result += "ISMEX_REPLIED";
-  }
-  if (ret & ISMEX_SEND) {
-    if (!result.IsEmpty()) {
-      result += " | ";
-    }
-    result += "ISMEX_SEND";
-  }
-  return result;
-}
-
-#endif // #ifdef MOZ_CRASHREPORTER
-
 bool
 NativeKey::MayBeSameCharMessage(const MSG& aCharMsg1,
                                 const MSG& aCharMsg2) const
@@ -3071,33 +3032,6 @@ NativeKey::GetFollowingCharMessage(MSG& aCharMsg)
     }
 
     if (doCrash) {
-#ifdef MOZ_CRASHREPORTER
-      nsPrintfCString info("\nPeekMessage() failed to remove char message! "
-                           "\nActive keyboard layout=0x%08X (%s), "
-                           "\nHandling message: %s, InSendMessageEx()=%s, "
-                           "\nFound message: %s, "
-                           "\nWM_NULL has been removed: %d, "
-                           "\nNext key message in all windows: %s, "
-                           "time=%d, ",
-                           KeyboardLayout::GetActiveLayout(),
-                           KeyboardLayout::GetActiveLayoutName().get(),
-                           ToString(mMsg).get(),
-                           GetResultOfInSendMessageEx().get(),
-                           ToString(kFoundCharMsg).get(), i,
-                           ToString(nextKeyMsgInAllWindows).get(),
-                           nextKeyMsgInAllWindows.time);
-      CrashReporter::AppendAppNotesToCrashReport(info);
-      MSG nextMsg;
-      if (WinUtils::PeekMessage(&nextMsg, 0, 0, 0,
-                                PM_NOREMOVE | PM_NOYIELD)) {
-        nsPrintfCString info("\nNext message in all windows: %s, time=%d",
-                             ToString(nextMsg).get(), nextMsg.time);
-        CrashReporter::AppendAppNotesToCrashReport(info);
-      } else {
-        CrashReporter::AppendAppNotesToCrashReport(
-          NS_LITERAL_CSTRING("\nThere is no message in any window"));
-      }
-#endif // #ifdef MOZ_CRASHREPORTER
       MOZ_CRASH("We lost the following char message");
     }
 
@@ -3216,63 +3150,12 @@ NativeKey::GetFollowingCharMessage(MSG& aCharMsg)
        "nextKeyMsg=%s, kFoundCharMsg=%s",
        this, ToString(removedMsg).get(), ToString(nextKeyMsg).get(),
        ToString(kFoundCharMsg).get()));
-#ifdef MOZ_CRASHREPORTER
-    nsPrintfCString info("\nPeekMessage() removed unexpcted char message! "
-                         "\nActive keyboard layout=0x%08X (%s), "
-                         "\nHandling message: %s, InSendMessageEx()=%s, "
-                         "\nFound message: %s, "
-                         "\nRemoved message: %s, ",
-                         KeyboardLayout::GetActiveLayout(),
-                         KeyboardLayout::GetActiveLayoutName().get(),
-                         ToString(mMsg).get(),
-                         GetResultOfInSendMessageEx().get(),
-                         ToString(kFoundCharMsg).get(),
-                         ToString(removedMsg).get());
-    CrashReporter::AppendAppNotesToCrashReport(info);
-    // What's the next key message?
-    MSG nextKeyMsgAfter;
-    if (WinUtils::PeekMessage(&nextKeyMsgAfter, mMsg.hwnd,
-                              WM_KEYFIRST, WM_KEYLAST,
-                              PM_NOREMOVE | PM_NOYIELD)) {
-      nsPrintfCString info("\nNext key message after unexpected char message "
-                           "removed: %s, ",
-                           ToString(nextKeyMsgAfter).get());
-      CrashReporter::AppendAppNotesToCrashReport(info);
-    } else {
-      CrashReporter::AppendAppNotesToCrashReport(
-        NS_LITERAL_CSTRING("\nThere is no key message after unexpected char "
-                           "message removed, "));
-    }
-    // Another window has a key message?
-    if (WinUtils::PeekMessage(&nextKeyMsgInAllWindows, 0,
-                              WM_KEYFIRST, WM_KEYLAST,
-                              PM_NOREMOVE | PM_NOYIELD)) {
-      nsPrintfCString info("\nNext key message in all windows: %s.",
-                           ToString(nextKeyMsgInAllWindows).get());
-      CrashReporter::AppendAppNotesToCrashReport(info);
-    } else {
-      CrashReporter::AppendAppNotesToCrashReport(
-        NS_LITERAL_CSTRING("\nThere is no key message in any windows."));
-    }
-#endif // #ifdef MOZ_CRASHREPORTER
     MOZ_CRASH("PeekMessage() removed unexpected message");
   }
   MOZ_LOG(sNativeKeyLogger, LogLevel::Error,
     ("%p   NativeKey::GetFollowingCharMessage(), FAILED, removed messages "
      "are all WM_NULL, nextKeyMsg=%s",
      this, ToString(nextKeyMsg).get()));
-#ifdef MOZ_CRASHREPORTER
-  nsPrintfCString info("\nWe lost following char message! "
-                       "\nActive keyboard layout=0x%08X (%s), "
-                       "\nHandling message: %s, InSendMessageEx()=%s, \n"
-                       "Found message: %s, removed a lot of WM_NULL",
-                       KeyboardLayout::GetActiveLayout(),
-                       KeyboardLayout::GetActiveLayoutName().get(),
-                       ToString(mMsg).get(),
-                       GetResultOfInSendMessageEx().get(),
-                       ToString(kFoundCharMsg).get());
-  CrashReporter::AppendAppNotesToCrashReport(info);
-#endif // #ifdef MOZ_CRASHREPORTER
   MOZ_CRASH("We lost the following char message");
   return false;
 }

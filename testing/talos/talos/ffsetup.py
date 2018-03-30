@@ -67,10 +67,7 @@ class FFSetup(object):
         # for winxp e10s logging:
         # https://bugzilla.mozilla.org/show_bug.cgi?id=1037445
         self.env['MOZ_WIN_INHERIT_STD_HANDLES_PRE_VISTA'] = '1'
-        if self.browser_config['symbols_path']:
-            self.env['MOZ_CRASHREPORTER'] = '1'
-        else:
-            self.env['MOZ_CRASHREPORTER_DISABLE'] = '1'
+        self.env['MOZ_CRASHREPORTER_DISABLE'] = '1'
 
         self.env['MOZ_DISABLE_NONLOCAL_CONNECTIONS'] = '1'
 

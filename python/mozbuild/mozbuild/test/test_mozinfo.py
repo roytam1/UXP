@@ -215,7 +215,6 @@ class TestBuildDict(unittest.TestCase, Base):
             OS_TARGET='Linux',
             TARGET_CPU='i386',
             MOZ_WIDGET_TOOLKIT='gtk2',
-            MOZ_CRASHREPORTER='1',
         )))
         self.assertEqual(True, d['crashreporter'])
 

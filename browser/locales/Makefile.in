@@ -165,11 +165,6 @@ else
 endif
 endif
 
-ifdef MOZ_CRASHREPORTER
-libs:: crashreporter-override.ini
-	$(SYSINSTALL) $(IFLAGS1) $^ $(FINAL_TARGET)
-endif
-
 ident:
 	@printf 'fx_revision '
 	@$(PYTHON) $(topsrcdir)/config/printconfigsetting.py \

@@ -660,30 +660,8 @@ PluginContent.prototype = {
   },
 
   submitReport: function submitReport(plugin) {
-    if (!AppConstants.MOZ_CRASHREPORTER) {
-      return;
-    }
-    if (!plugin) {
-      Cu.reportError("Attempted to submit crash report without an associated plugin.");
-      return;
-    }
-    if (!(plugin instanceof Ci.nsIObjectLoadingContent)) {
-      Cu.reportError("Attempted to submit crash report on plugin that does not" +
-                     "implement nsIObjectLoadingContent.");
-      return;
-    }
-
-    let runID = plugin.runID;
-    let submitURLOptIn = this.getPluginUI(plugin, "submitURLOptIn").checked;
-    let keyVals = {};
-    let userComment = this.getPluginUI(plugin, "submitComment").value.trim();
-    if (userComment)
-      keyVals.PluginUserComment = userComment;
-    if (submitURLOptIn)
-      keyVals.PluginContentURL = plugin.ownerDocument.URL;
-
-    this.global.sendAsyncMessage("PluginContent:SubmitReport",
-                                 { runID, keyVals, submitURLOptIn });
+    /*** STUB ***/
+    return;
   },
 
   reloadPage: function () {

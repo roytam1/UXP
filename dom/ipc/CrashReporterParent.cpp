@@ -13,13 +13,6 @@
 
 #include "mozilla/Telemetry.h"
 
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#include "nsICrashService.h"
-#include "mozilla/SyncRunnable.h"
-#include "nsThreadUtils.h"
-#endif
-
 namespace mozilla {
 namespace dom {
 
@@ -29,9 +22,6 @@ void
 CrashReporterParent::AnnotateCrashReport(const nsCString& key,
                                          const nsCString& data)
 {
-#ifdef MOZ_CRASHREPORTER
-  mNotes.Put(key, data);
-#endif
 }
 
 void
@@ -49,9 +39,6 @@ CrashReporterParent::RecvAppendAppNotes(const nsCString& data)
 
 CrashReporterParent::CrashReporterParent()
   :
-#ifdef MOZ_CRASHREPORTER
-    mNotes(4),
-#endif
     mStartTime(::time(nullptr))
   , mInitialized(false)
 {
@@ -71,76 +58,6 @@ CrashReporterParent::SetChildData(const NativeThreadId& tid,
   mMainThread = tid;
   mProcessType = GeckoProcessType(processType);
 }
-
-#ifdef MOZ_CRASHREPORTER
-bool
-CrashReporterParent::GenerateCrashReportForMinidump(nsIFile* minidump,
-                                                    const AnnotationTable* processNotes)
-{
-  if (!CrashReporter::GetIDFromMinidump(minidump, mChildDumpID)) {
-    return false;
-  }
-
-  bool result = GenerateChildData(processNotes);
-  FinalizeChildData();
-  return result;
-}
-
-bool
-CrashReporterParent::GenerateChildData(const AnnotationTable* processNotes)
-{
-  MOZ_ASSERT(mInitialized);
-
-  if (mChildDumpID.IsEmpty()) {
-    NS_WARNING("problem with GenerateChildData: no child dump id yet!");
-    return false;
-  }
-
-  nsAutoCString type;
-  switch (mProcessType) {
-    case GeckoProcessType_Content:
-      type = NS_LITERAL_CSTRING("content");
-      break;
-    case GeckoProcessType_Plugin:
-    case GeckoProcessType_GMPlugin:
-      type = NS_LITERAL_CSTRING("plugin");
-      break;
-    default:
-      NS_ERROR("unknown process type");
-      break;
-  }
-  mNotes.Put(NS_LITERAL_CSTRING("ProcessType"), type);
-
-  char startTime[32];
-  SprintfLiteral(startTime, "%lld", static_cast<long long>(mStartTime));
-  mNotes.Put(NS_LITERAL_CSTRING("StartupTime"), nsDependentCString(startTime));
-
-  if (!mAppNotes.IsEmpty()) {
-    mNotes.Put(NS_LITERAL_CSTRING("Notes"), mAppNotes);
-  }
-
-  // Append these notes to the end of the extra file based on the current
-  // dump id we obtained from CreatePairedMinidumps.
-  bool ret = CrashReporter::AppendExtraData(mChildDumpID, mNotes);
-  if (ret && processNotes) {
-    ret = CrashReporter::AppendExtraData(mChildDumpID, *processNotes);
-  }
-
-  if (!ret) {
-    NS_WARNING("problem appending child data to .extra");
-  }
-  return ret;
-}
-
-void
-CrashReporterParent::FinalizeChildData()
-{
-  MOZ_ASSERT(mInitialized);
-
-  CrashReporterHost::NotifyCrashService(mProcessType, mChildDumpID, &mNotes);
-  mNotes.Clear();
-}
-#endif
 
 } // namespace dom
 } // namespace mozilla

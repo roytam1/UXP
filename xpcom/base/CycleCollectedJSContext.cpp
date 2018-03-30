@@ -82,10 +82,6 @@
 #include "nsJSUtils.h"
 #include "nsWrapperCache.h"
 
-#ifdef MOZ_CRASHREPORTER
-#include "nsExceptionHandler.h"
-#endif
-
 #include "nsIException.h"
 #include "nsIPlatformInfo.h"
 #include "nsThread.h"
@@ -539,10 +535,6 @@ CycleCollectedJSContext::Initialize(JSContext* aParentContext,
   JS_SetSweepZoneCallback(mJSContext, XPCStringConvert::ClearZoneCache);
   JS::SetBuildIdOp(mJSContext, GetBuildId);
   JS::SetWarningReporter(mJSContext, MozCrashWarningReporter);
-#ifdef MOZ_CRASHREPORTER
-    js::AutoEnterOOMUnsafeRegion::setAnnotateOOMAllocationSizeCallback(
-            CrashReporter::AnnotateOOMAllocationSize);
-#endif
 
   static js::DOMCallbacks DOMcallbacks = {
     InstanceClassHasProtoAtDepth
@@ -1607,16 +1599,6 @@ CycleCollectedJSContext::AnnotateAndSetOutOfMemory(OOMState* aStatePtr,
   MOZ_ASSERT(mJSContext);
 
   *aStatePtr = aNewState;
-#ifdef MOZ_CRASHREPORTER
-  CrashReporter::AnnotateCrashReport(aStatePtr == &mOutOfMemoryState
-                                     ? NS_LITERAL_CSTRING("JSOutOfMemory")
-                                     : NS_LITERAL_CSTRING("JSLargeAllocationFailure"),
-                                     aNewState == OOMState::Reporting
-                                     ? NS_LITERAL_CSTRING("Reporting")
-                                     : aNewState == OOMState::Reported
-                                     ? NS_LITERAL_CSTRING("Reported")
-                                     : NS_LITERAL_CSTRING("Recovered"));
-#endif
 }
 
 void
@@ -1630,14 +1612,6 @@ CycleCollectedJSContext::OnGC(JSGCStatus aStatus)
       mZonesWaitingForGC.Clear();
       break;
     case JSGC_END: {
-#ifdef MOZ_CRASHREPORTER
-      if (mOutOfMemoryState == OOMState::Reported) {
-        AnnotateAndSetOutOfMemory(&mOutOfMemoryState, OOMState::Recovered);
-      }
-      if (mLargeAllocationFailureState == OOMState::Reported) {
-        AnnotateAndSetOutOfMemory(&mLargeAllocationFailureState, OOMState::Recovered);
-      }
-#endif
 
       // Do any deferred finalization of native objects.
       FinalizeDeferredThings(JS::WasIncrementalGC(mJSContext) ? FinalizeIncrementally :

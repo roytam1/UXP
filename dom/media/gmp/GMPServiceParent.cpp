@@ -36,10 +36,6 @@
 #include "nsHashKeys.h"
 #include "nsIFile.h"
 #include "nsISimpleEnumerator.h"
-#if defined(MOZ_CRASHREPORTER)
-#include "nsExceptionHandler.h"
-#include "nsPrintfCString.h"
-#endif
 #include "nsIXULRuntime.h"
 #include "GMPDecoderModule.h"
 #include <limits>
@@ -88,9 +84,6 @@ NS_IMPL_ISUPPORTS_INHERITED(GeckoMediaPluginServiceParent,
 
 GeckoMediaPluginServiceParent::GeckoMediaPluginServiceParent()
   : mShuttingDown(false)
-#ifdef MOZ_CRASHREPORTER
-  , mAsyncShutdownPluginStatesMutex("GeckoMediaPluginService::mAsyncShutdownPluginStatesMutex")
-#endif
   , mScannedPluginOnDisk(false)
   , mWaitingForPluginsSyncShutdown(false)
   , mInitPromiseMonitor("GeckoMediaPluginServiceParent::mInitPromiseMonitor")
@@ -421,28 +414,16 @@ GeckoMediaPluginServiceParent::Observe(nsISupports* aSubject,
     if (gmpThread) {
       LOGD(("%s::%s Starting to unload plugins, waiting for first sync shutdown..."
             , __CLASS__, __FUNCTION__));
-#ifdef MOZ_CRASHREPORTER
-      SetAsyncShutdownPluginState(nullptr, '0',
-        NS_LITERAL_CSTRING("Dispatching UnloadPlugins"));
-#endif
       gmpThread->Dispatch(
         NewRunnableMethod(this,
                           &GeckoMediaPluginServiceParent::UnloadPlugins),
         NS_DISPATCH_NORMAL);
 
-#ifdef MOZ_CRASHREPORTER
-      SetAsyncShutdownPluginState(nullptr, '1',
-        NS_LITERAL_CSTRING("Waiting for sync shutdown"));
-#endif
       // Wait for UnloadPlugins() to do initial sync shutdown...
       while (mWaitingForPluginsSyncShutdown) {
         NS_ProcessNextEvent(NS_GetCurrentThread(), true);
       }
 
-#ifdef MOZ_CRASHREPORTER
-      SetAsyncShutdownPluginState(nullptr, '4',
-        NS_LITERAL_CSTRING("Waiting for async shutdown"));
-#endif
       // Wait for other plugins (if any) to do async shutdown...
       auto syncShutdownPluginsRemaining =
         std::numeric_limits<decltype(mAsyncShutdownPlugins.Length())>::max();
@@ -452,10 +433,6 @@ GeckoMediaPluginServiceParent::Observe(nsISupports* aSubject,
           if (mAsyncShutdownPlugins.IsEmpty()) {
             LOGD(("%s::%s Finished unloading all plugins"
                   , __CLASS__, __FUNCTION__));
-#if defined(MOZ_CRASHREPORTER)
-            CrashReporter::RemoveCrashReportAnnotation(
-              NS_LITERAL_CSTRING("AsyncPluginShutdown"));
-#endif
             break;
           } else if (mAsyncShutdownPlugins.Length() < syncShutdownPluginsRemaining) {
             // First time here, or number of pending plugins has decreased.
@@ -463,24 +440,10 @@ GeckoMediaPluginServiceParent::Observe(nsISupports* aSubject,
             syncShutdownPluginsRemaining = mAsyncShutdownPlugins.Length();
             LOGD(("%s::%s Still waiting for %d plugins to shutdown..."
                   , __CLASS__, __FUNCTION__, (int)syncShutdownPluginsRemaining));
-#if defined(MOZ_CRASHREPORTER)
-            nsAutoCString names;
-            for (const auto& plugin : mAsyncShutdownPlugins) {
-              if (!names.IsEmpty()) { names.Append(NS_LITERAL_CSTRING(", ")); }
-              names.Append(plugin->GetDisplayName());
-            }
-            CrashReporter::AnnotateCrashReport(
-              NS_LITERAL_CSTRING("AsyncPluginShutdown"),
-              names);
-#endif
           }
         }
         NS_ProcessNextEvent(NS_GetCurrentThread(), true);
       }
-#ifdef MOZ_CRASHREPORTER
-      SetAsyncShutdownPluginState(nullptr, '5',
-        NS_LITERAL_CSTRING("Async shutdown complete"));
-#endif
     } else {
       // GMP thread has already shutdown.
       MOZ_ASSERT(mPlugins.IsEmpty());
@@ -627,66 +590,6 @@ GeckoMediaPluginServiceParent::AsyncShutdownComplete(GMPParent* aParent)
   }
 }
 
-#ifdef MOZ_CRASHREPORTER
-void
-GeckoMediaPluginServiceParent::SetAsyncShutdownPluginState(GMPParent* aGMPParent,
-                                                           char aId,
-                                                           const nsCString& aState)
-{
-  MutexAutoLock lock(mAsyncShutdownPluginStatesMutex);
-  if (!aGMPParent) {
-    mAsyncShutdownPluginStates.Update(NS_LITERAL_CSTRING("-"),
-                                      NS_LITERAL_CSTRING("-"),
-                                      aId,
-                                      aState);
-    return;
-  }
-  mAsyncShutdownPluginStates.Update(aGMPParent->GetDisplayName(),
-                                    nsPrintfCString("%p", aGMPParent),
-                                    aId,
-                                    aState);
-}
-
-void
-GeckoMediaPluginServiceParent::AsyncShutdownPluginStates::Update(const nsCString& aPlugin,
-                                                                 const nsCString& aInstance,
-                                                                 char aId,
-                                                                 const nsCString& aState)
-{
-  nsCString note;
-  StatesByInstance* instances = mStates.LookupOrAdd(aPlugin);
-  if (!instances) { return; }
-  State* state = instances->LookupOrAdd(aInstance);
-  if (!state) { return; }
-  state->mStateSequence += aId;
-  state->mLastStateDescription = aState;
-  note += '{';
-  bool firstPlugin = true;
-  for (auto pluginIt = mStates.ConstIter(); !pluginIt.Done(); pluginIt.Next()) {
-    if (!firstPlugin) { note += ','; } else { firstPlugin = false; }
-    note += pluginIt.Key();
-    note += ":{";
-    bool firstInstance = true;
-    for (auto instanceIt = pluginIt.UserData()->ConstIter(); !instanceIt.Done(); instanceIt.Next()) {
-      if (!firstInstance) { note += ','; } else { firstInstance = false; }
-      note += instanceIt.Key();
-      note += ":\"";
-      note += instanceIt.UserData()->mStateSequence;
-      note += '=';
-      note += instanceIt.UserData()->mLastStateDescription;
-      note += '"';
-    }
-    note += '}';
-  }
-  note += '}';
-  LOGD(("%s::%s states[%s][%s]='%c'/'%s' -> %s", __CLASS__, __FUNCTION__,
-        aPlugin.get(), aInstance.get(), aId, aState.get(), note.get()));
-  CrashReporter::AnnotateCrashReport(
-    NS_LITERAL_CSTRING("AsyncPluginShutdownStates"),
-    note);
-}
-#endif // MOZ_CRASHREPORTER
-
 void
 GeckoMediaPluginServiceParent::NotifyAsyncShutdownComplete()
 {
@@ -714,10 +617,6 @@ GeckoMediaPluginServiceParent::UnloadPlugins()
   MOZ_ASSERT(NS_GetCurrentThread() == mGMPThread);
   MOZ_ASSERT(!mShuttingDownOnGMPThread);
   mShuttingDownOnGMPThread = true;
-#ifdef MOZ_CRASHREPORTER
-      SetAsyncShutdownPluginState(nullptr, '2',
-        NS_LITERAL_CSTRING("Starting to unload plugins"));
-#endif
 
   nsTArray<RefPtr<GMPParent>> plugins;
   {
@@ -742,17 +641,9 @@ GeckoMediaPluginServiceParent::UnloadPlugins()
   // Note: CloseActive may be async; it could actually finish
   // shutting down when all the plugins have unloaded.
   for (const auto& plugin : plugins) {
-#ifdef MOZ_CRASHREPORTER
-    SetAsyncShutdownPluginState(plugin, 'S',
-        NS_LITERAL_CSTRING("CloseActive"));
-#endif
     plugin->CloseActive(true);
   }
 
-#ifdef MOZ_CRASHREPORTER
-      SetAsyncShutdownPluginState(nullptr, '3',
-        NS_LITERAL_CSTRING("Dispatching sync-shutdown-complete"));
-#endif
   nsCOMPtr<nsIRunnable> task(NewRunnableMethod(
     this, &GeckoMediaPluginServiceParent::NotifySyncShutdownComplete));
   NS_DispatchToMainThread(task);

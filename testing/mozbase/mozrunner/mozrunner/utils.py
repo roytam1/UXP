@@ -132,7 +132,6 @@ def test_environment(xrePath, env=None, crashreporter=True, debugger=False,
 
     if crashreporter and not debugger:
         env['MOZ_CRASHREPORTER_NO_REPORT'] = '1'
-        env['MOZ_CRASHREPORTER'] = '1'
     else:
         env['MOZ_CRASHREPORTER_DISABLE'] = '1'
 
