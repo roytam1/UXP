@@ -8,9 +8,17 @@
 .datetime-input-box-wrapper {
   -moz-appearance: none;
   display: inline-flex;
+  flex: 1;
   cursor: default;
   background-color: inherit;
   color: inherit;
+  min-width: 0;
+  justify-content: space-between;
+}
+
+.datetime-input-edit-wrapper {
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .datetime-input {
@@ -43,5 +51,5 @@
   height: 12px;
   width: 12px;
   align-self: center;
-  justify-content: flex-end;
+  flex: none;
 }

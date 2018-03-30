@@ -1135,3 +1135,8 @@ input[type="number"] > div > div > div:hover {
   /* give some indication of hover state for the up/down buttons */
   background-color: lightblue;
 }
+
+input[type="date"],
+input[type="time"] {
+  overflow: hidden !important;
+}

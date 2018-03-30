@@ -21,6 +21,7 @@ this.EXPORTED_SYMBOLS = [
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/Task.jsm");
 
 /*
  * DateTimePickerHelper receives message from content side (input box) and
@@ -66,6 +67,9 @@ this.DateTimePickerHelper = {
         break;
       }
       case "FormDateTime:UpdatePicker": {
+        if (!this.picker) {
+          return;
+        }
         this.picker.setPopupValue(aMessage.data);
         break;
       }
@@ -105,7 +109,7 @@ this.DateTimePickerHelper = {
   },
 
   // Get picker from browser and show it anchored to the input box.
-  showPicker: function(aBrowser, aData) {
+  showPicker: Task.async(function* (aBrowser, aData) {
     let rect = aData.rect;
     let dir = aData.dir;
     let type = aData.type;
@@ -135,13 +139,23 @@ this.DateTimePickerHelper = {
       debug("aBrowser.dateTimePicker not found, exiting now.");
       return;
     }
-    this.picker.loadPicker(type, detail);
+    // The datetimepopup binding is only attached when it is needed.
+    // Check if openPicker method is present to determine if binding has
+    // been attached. If not, attach the binding first before calling it.
+    if (!this.picker.openPicker) {
+      let bindingPromise = new Promise(resolve => {
+        this.picker.addEventListener("DateTimePickerBindingReady",
+                                     resolve, {once: true});
+      });
+      this.picker.setAttribute("active", true);
+      yield bindingPromise;
+    }
     // The arrow panel needs an anchor to work. The popupAnchor (this._anchor)
     // is a transparent div that the arrow can point to.
-    this.picker.openPopup(this._anchor, "after_start", 0, 0);
+    this.picker.openPicker(type, this._anchor, detail);
 
     this.addPickerListeners();
-  },
+  }),
 
   // Picker is closed, do some cleanup.
   close: function() {

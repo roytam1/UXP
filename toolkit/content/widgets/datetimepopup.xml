@@ -22,11 +22,20 @@
       <field name="TIME_PICKER_HEIGHT" readonly="true">"21em"</field>
       <field name="DATE_PICKER_WIDTH" readonly="true">"23.1em"</field>
       <field name="DATE_PICKER_HEIGHT" readonly="true">"20.7em"</field>
-      <method name="loadPicker">
+      <constructor><![CDATA[
+        this.l10n = {};
+        const mozIntl = Components.classes["@mozilla.org/mozintl;1"]
+                          .getService(Components.interfaces.mozIMozIntl);
+        mozIntl.addGetCalendarInfo(l10n);
+        mozIntl.addGetDisplayNames(l10n);
+        // Notify DateTimePickerHelper.jsm that binding is ready.
+        this.dispatchEvent(new CustomEvent("DateTimePickerBindingReady"));
+      ]]></constructor>
+      <method name="openPicker">
         <parameter name="type"/>
+        <parameter name="anchor"/>
         <parameter name="detail"/>
         <body><![CDATA[
-          this.hidden = false;
           this.type = type;
           this.pickerState = {};
           // TODO: Resize picker according to content zoom level
@@ -49,17 +58,20 @@
               break;
             }
           }
+          this.hidden = false;
+          this.openPopup(anchor, "after_start", 0, 0);
         ]]></body>
       </method>
       <method name="closePicker">
         <body><![CDATA[
-          this.hidden = true;
           this.setInputBoxValue(true);
           this.pickerState = {};
           this.type = undefined;
           this.dateTimePopupFrame.removeEventListener("load", this, true);
           this.dateTimePopupFrame.contentDocument.removeEventListener("message", this, false);
           this.dateTimePopupFrame.setAttribute("src", "");
+          this.hidePopup();
+          this.hidden = true;
         ]]></body>
       </method>
       <method name="setPopupValue">
@@ -115,6 +127,34 @@
             }
             case "date": {
               const { year, month, day } = detail.value;
+              const { firstDayOfWeek, weekends } =
+                this.getCalendarInfo(locale);
+              const monthStrings = this.getDisplayNames(
+                locale, [
+                  "dates/gregorian/months/january",
+                  "dates/gregorian/months/february",
+                  "dates/gregorian/months/march",
+                  "dates/gregorian/months/april",
+                  "dates/gregorian/months/may",
+                  "dates/gregorian/months/june",
+                  "dates/gregorian/months/july",
+                  "dates/gregorian/months/august",
+                  "dates/gregorian/months/september",
+                  "dates/gregorian/months/october",
+                  "dates/gregorian/months/november",
+                  "dates/gregorian/months/december",
+                ], "short");
+              const weekdayStrings = this.getDisplayNames(
+                locale, [
+                  "dates/gregorian/weekdays/sunday",
+                  "dates/gregorian/weekdays/monday",
+                  "dates/gregorian/weekdays/tuesday",
+                  "dates/gregorian/weekdays/wednesday",
+                  "dates/gregorian/weekdays/thursday",
+                  "dates/gregorian/weekdays/friday",
+                  "dates/gregorian/weekdays/saturday",
+                ], "short");
+
               this.postMessageToPicker({
                 name: "PickerInit",
                 detail: {
@@ -122,7 +162,13 @@
                   // Month value from input box starts from 1 instead of 0
                   month: month == undefined ? undefined : month - 1,
                   day,
-                  locale
+                  firstDayOfWeek,
+                  weekends,
+                  monthStrings,
+                  weekdayStrings,
+                  locale,
+                  min: detail.min,
+                  max: detail.max,
                 }
               });
               break;
@@ -184,6 +230,46 @@
           }
         ]]></body>
       </method>
+      <method name="getCalendarInfo">
+        <parameter name="locale"/>
+        <body><![CDATA[
+          const calendarInfo = this.l10n.getCalendarInfo(locale);
+
+          // Day of week from calendarInfo starts from 1 as Sunday to 7 as Saturday,
+          // so they need to be mapped to JavaScript convention with 0 as Sunday
+          // and 6 as Saturday
+          let firstDayOfWeek = calendarInfo.firstDayOfWeek - 1,
+              weekendStart = calendarInfo.weekendStart - 1,
+              weekendEnd = calendarInfo.weekendEnd - 1;
+
+          let weekends = [];
+
+          // Make sure weekendEnd is greater than weekendStart
+          if (weekendEnd < weekendStart) {
+            weekendEnd += 7;
+          }
+
+          // We get the weekends by incrementing weekendStart up to weekendEnd.
+          // If the start and end is the same day, then weekends only has one day.
+          for (let day = weekendStart; day <= weekendEnd; day++) {
+            weekends.push(day % 7);
+          }
+
+          return {
+            firstDayOfWeek,
+            weekends
+          }
+        ]]></body>
+      </method>
+      <method name="getDisplayNames">
+        <parameter name="locale"/>
+        <parameter name="keys"/>
+        <parameter name="style"/>
+        <body><![CDATA[
+          const displayNames = this.l10n.getDisplayNames(locale, {keys, style});
+          return keys.map(key => displayNames.values[key]);
+        ]]></body>
+      </method>
       <method name="handleEvent">
         <parameter name="aEvent"/>
         <body><![CDATA[
@@ -230,12 +316,5 @@
       </method>
 
     </implementation>
-    <handlers>
-      <handler event="popuphiding">
-        <![CDATA[
-          this.closePicker();
-        ]]>
-      </handler>
-    </handlers>
   </binding>
 </bindings>
