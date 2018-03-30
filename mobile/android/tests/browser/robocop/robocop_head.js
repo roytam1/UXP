@@ -70,8 +70,6 @@ try {
 catch (e) { }
 
 // Enable crash reporting, if possible
-// We rely on the Python harness to set MOZ_CRASHREPORTER_NO_REPORT
-// and handle checking for minidumps.
 // Note that if we're in a child process, we don't want to init the
 // crashreporter component.
 try { // nsIXULRuntime is not available in some configurations.

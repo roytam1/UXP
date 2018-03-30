@@ -90,7 +90,6 @@ class MachCommands(MachCommandBase):
             env = os.environ.copy()
             env['G_SLICE'] = 'always-malloc'
             env['MOZ_CC_RUN_DURING_SHUTDOWN'] = '1'
-            env['MOZ_CRASHREPORTER_NO_REPORT'] = '1'
             env['XPCOM_DEBUG_BREAK'] = 'warn'
 
             env.update(self.extra_environment_variables)

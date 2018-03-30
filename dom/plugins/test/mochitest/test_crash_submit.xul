@@ -70,11 +70,6 @@ var testObserver = {
              getService(Components.interfaces.nsIObserverService);
     os.removeObserver(testObserver, "crash-report-status");
 
-    // Then re-set MOZ_CRASHREPORTER_NO_REPORT
-    let env = Components.classes["@mozilla.org/process/environment;1"]
-                        .getService(Components.interfaces.nsIEnvironment);
-    env.set("MOZ_CRASHREPORTER_NO_REPORT", "1");
-
     // Finally re-set crashreporter URL
     crashReporter.serverURL = oldServerURL;
 
@@ -123,13 +118,6 @@ function onPluginCrashed(aEvent) {
 }
 
 function runTests() {
-  // the test harness will have set MOZ_CRASHREPORTER_NO_REPORT,
-  // ensure that we can change the setting and have our minidumps
-  // wind up in Crash Reports/pending
-  let env = Components.classes["@mozilla.org/process/environment;1"]
-                      .getService(Components.interfaces.nsIEnvironment);
-  env.set("MOZ_CRASHREPORTER_NO_REPORT", "");
-
   // Override the crash reporter URL to send to our fake server
   crashReporter.serverURL = NetUtil.newURI(SERVER_URL);
 

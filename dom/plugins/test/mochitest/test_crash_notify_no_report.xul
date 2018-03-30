@@ -83,21 +83,10 @@ function onPluginCrashed(aEvent) {
            getService(Components.interfaces.nsIObserverService);
   os.removeObserver(testObserver, "plugin-crashed");
 
-  // re-set MOZ_CRASHREPORTER_NO_REPORT
-  let env = Components.classes["@mozilla.org/process/environment;1"]
-                      .getService(Components.interfaces.nsIEnvironment);
-  env.set("MOZ_CRASHREPORTER_NO_REPORT", "1");
   SimpleTest.finish();
 }
 
 function runTests() {
-  // the test harness will have set MOZ_CRASHREPORTER_NO_REPORT,
-  // ensure that we can change the setting and have our minidumps
-  // wind up in Crash Reports/pending
-  let env = Components.classes["@mozilla.org/process/environment;1"]
-                      .getService(Components.interfaces.nsIEnvironment);
-  env.set("MOZ_CRASHREPORTER_NO_REPORT", "");
-
   var os = Components.classes["@mozilla.org/observer-service;1"].
            getService(Components.interfaces.nsIObserverService);
   os.addObserver(testObserver, "plugin-crashed", true);

@@ -53,7 +53,6 @@ if __name__ == '__main__':
                              locations=locations)
 
     env = os.environ.copy()
-    env["MOZ_CRASHREPORTER_NO_REPORT"] = "1"
     env["XPCOM_DEBUG_BREAK"] = "warn"
 
     # For VC12+, make sure we can find the right bitness of pgort1x0.dll

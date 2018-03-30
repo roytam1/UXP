@@ -36,7 +36,6 @@ fail() {
     exit 1
 }
 
-export MOZ_CRASHREPORTER_NO_REPORT=1
 export MOZ_OBJDIR=obj-firefox
 export TINDERBOX_OUTPUT=1
 

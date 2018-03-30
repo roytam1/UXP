@@ -74,10 +74,7 @@ class RemoteAutomation(Automation):
         if 'MOZ_HIDE_RESULTS_TABLE' in os.environ:
             env['MOZ_HIDE_RESULTS_TABLE'] = os.environ['MOZ_HIDE_RESULTS_TABLE']
 
-        if crashreporter and not debugger:
-            env['MOZ_CRASHREPORTER_NO_REPORT'] = '1'
-        else:
-            env['MOZ_CRASHREPORTER_DISABLE'] = '1'
+        env['MOZ_CRASHREPORTER_DISABLE'] = '1'
 
         # Crash on non-local network connections by default.
         # MOZ_DISABLE_NONLOCAL_CONNECTIONS can be set to "0" to temporarily

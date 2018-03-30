@@ -78,10 +78,6 @@ var testObserver = {
     // Next unregister our observer
     Services.obs.removeObserver(testObserver, "crash-report-status");
 
-    // Then re-set MOZ_CRASHREPORTER_NO_REPORT
-    let env = Cc["@mozilla.org/process/environment;1"].getService(Ci.nsIEnvironment);
-    env.set("MOZ_CRASHREPORTER_NO_REPORT", "1");
-
     // Finally re-set prefs
     crashReporter.serverURL = oldServerURL;
     Services.prefs.setIntPref("dom.ipc.plugins.timeoutSecs", oldTimeoutPref);
@@ -132,13 +128,6 @@ function onPluginCrashed(aEvent) {
 function runTests() {
   // Default plugin hang timeout is too high for mochitests
   Services.prefs.setIntPref("dom.ipc.plugins.timeoutSecs", 1);
-
-  // the test harness will have set MOZ_CRASHREPORTER_NO_REPORT,
-  // ensure that we can change the setting and have our minidumps
-  // wind up in Crash Reports/pending
-  let env = Cc["@mozilla.org/process/environment;1"]
-                      .getService(Ci.nsIEnvironment);
-  env.set("MOZ_CRASHREPORTER_NO_REPORT", "");
 
   // Override the crash reporter URL to send to our fake server
   crashReporter.serverURL = NetUtil.newURI(SERVER_URL);
