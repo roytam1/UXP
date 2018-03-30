@@ -269,4 +269,12 @@ partial interface HTMLInputElement {
 
   [Pref="dom.forms.datetime", Func="IsChromeOrXBL"]
   void closeDateTimePicker();
+
+  [Pref="dom.forms.datetime", Func="IsChromeOrXBL",
+   BinaryName="getStepAsDouble"]
+  double getStep();
+
+  [Pref="dom.forms.datetime", Func="IsChromeOrXBL",
+   BinaryName="getStepBaseAsDouble"]
+  double getStepBase();
 };

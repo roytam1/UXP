@@ -800,6 +800,8 @@ public:
    * The following are called from datetime input box binding to get the
    * corresponding computed values.
    */
+  double GetStepAsDouble() { return GetStep().toDouble(); }
+  double GetStepBaseAsDouble() { return GetStepBase().toDouble(); }
   double GetMinimumAsDouble() { return GetMinimum().toDouble(); }
   double GetMaximumAsDouble() { return GetMaximum().toDouble(); }
 
