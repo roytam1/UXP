@@ -796,6 +796,13 @@ public:
   void UpdateDateTimePicker(const DateTimeValue& aValue);
   void CloseDateTimePicker();
 
+  /*
+   * The following are called from datetime input box binding to get the
+   * corresponding computed values.
+   */
+  double GetMinimumAsDouble() { return GetMinimum().toDouble(); }
+  double GetMaximumAsDouble() { return GetMaximum().toDouble(); }
+
   HTMLInputElement* GetOwnerNumberControl();
   HTMLInputElement* GetOwnerDateTimeControl();
 
