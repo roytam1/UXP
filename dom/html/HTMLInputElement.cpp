@@ -2311,7 +2311,7 @@ HTMLInputElement::GetValueAsDate(ErrorResult& aRv)
     {
       uint32_t year, month, day, timeInMs;
       nsAutoString value;
-      GetNonFileValueInternal(value);
+      GetValueInternal(value);
       if (!ParseDateTimeLocal(value, &year, &month, &day, &timeInMs)) {
         return Nullable<Date>();
       }
