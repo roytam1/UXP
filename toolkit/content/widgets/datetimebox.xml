@@ -9,6 +9,16 @@
 %datetimeboxDTD;
 ]>
 
+<!--
+TODO
+Bug 1446342:
+Input type="date" not working if the other form elements has name="document"
+
+Any alternative solution:
+document === window.document
+document === this.ownerDocument
+-->
+
 <bindings id="datetimeboxBindings"
    xmlns="http://www.mozilla.org/xbl"
    xmlns:html="http://www.w3.org/1999/xhtml"
@@ -48,11 +58,11 @@
 
         // Default to en-US, month-day-year order.
         this.mMonthField =
-          document.getAnonymousElementByAttribute(this, "anonid", "input-one");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "input-one");
         this.mDayField =
-          document.getAnonymousElementByAttribute(this, "anonid", "input-two");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "input-two");
         this.mYearField =
-          document.getAnonymousElementByAttribute(this, "anonid", "input-three");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "input-three");
         this.mYearField.size = this.mYearLength;
         this.mYearField.maxLength = this.mMaxYear.toString().length;
 
@@ -73,10 +83,10 @@
                                      this.mYearPageUpDownInterval);
 
         this.mDaySeparator =
-           document.getAnonymousElementByAttribute(this, "anonid", "sep-first");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "sep-first");
         this.mDaySeparator.textContent = this.mSeparatorText;
         this.mYearSeparator =
-          document.getAnonymousElementByAttribute(this, "anonid", "sep-second");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "sep-second");
         this.mYearSeparator.textContent = this.mSeparatorText;
 
         if (this.mInputElement.value) {
@@ -489,13 +499,13 @@
         this.mMinSecPageUpDownInterval = 10;
 
         this.mHourField =
-          document.getAnonymousElementByAttribute(this, "anonid", "input-one");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "input-one");
         this.mHourField.setAttribute("typeBuffer", "");
         this.mMinuteField =
-          document.getAnonymousElementByAttribute(this, "anonid", "input-two");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "input-two");
         this.mMinuteField.setAttribute("typeBuffer", "");
         this.mDayPeriodField =
-          document.getAnonymousElementByAttribute(this, "anonid", "input-three");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "input-three");
         this.mDayPeriodField.classList.remove("numeric");
 
         this.mHourField.placeholder = this.mPlaceHolder;
@@ -508,10 +518,10 @@
         this.mMinuteField.setAttribute("max", this.mMaxMinute);
 
         this.mMinuteSeparator =
-           document.getAnonymousElementByAttribute(this, "anonid", "sep-first");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "sep-first");
         this.mMinuteSeparator.textContent = this.mSeparatorText;
         this.mSpaceSeparator =
-          document.getAnonymousElementByAttribute(this, "anonid", "sep-second");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "sep-second");
         // space between time and am/pm field
         this.mSpaceSeparator.textContent = " ";
 
@@ -1062,7 +1072,7 @@
         this.mIsPickerOpen = false;
 
         this.mResetButton =
-          document.getAnonymousElementByAttribute(this, "anonid", "reset-button");
+          window.document.getAnonymousElementByAttribute(this, "anonid", "reset-button");
 
         this.EVENTS.forEach((eventName) => {
           this.addEventListener(eventName, this, { mozSystemGroup: true });
@@ -1130,7 +1140,7 @@
         <body>
         <![CDATA[
           this.log("focusInnerTextBox");
-          document.getAnonymousElementByAttribute(this, "anonid", "input-one").focus();
+          window.document.getAnonymousElementByAttribute(this, "anonid", "input-one").focus();
         ]]>
         </body>
       </method>
