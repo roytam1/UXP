@@ -127,7 +127,6 @@ button.month-year::after {
   width: 2.6rem;
   height: 1.6rem;
   background: url("chrome://global/skin/icons/spinner-arrows.svg#down") no-repeat 50% 50%;
-  background-color: var(--button-font-color);
 }
 
 button.month-year.active::after {
