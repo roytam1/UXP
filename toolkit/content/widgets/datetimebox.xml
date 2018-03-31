@@ -1076,9 +1076,6 @@
         // includes padding area).
         this.mInputElement.addEventListener("click", this,
                                             { mozSystemGroup: true });
-        // This is to close the picker when input element blurs.
-        this.mInputElement.addEventListener("blur", this,
-                                            { mozSystemGroup: true });
       ]]>
       </constructor>
 
@@ -1092,8 +1089,6 @@
           mozSystemGroup: true
         });
         this.mInputElement.removeEventListener("click", this,
-                                               { mozSystemGroup: true });
-        this.mInputElement.removeEventListener("blur", this,
                                                { mozSystemGroup: true });
 
         this.mInputElement = null;
@@ -1349,10 +1344,6 @@
         <![CDATA[
           this.log("onBlur originalTarget: " + aEvent.originalTarget +
             " target: " + aEvent.target);
-
-          if (aEvent.target == this.mInputElement && this.mIsPickerOpen) {
-            this.mInputElement.closeDateTimePicker();
-          }
 
           let target = aEvent.originalTarget;
           target.setAttribute("typeBuffer", "");
