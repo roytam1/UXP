@@ -279,9 +279,11 @@ function DatePicker(context) {
    */
   function MonthYear(options, context) {
     const spinnerSize = 5;
-    const yearFormat = new Intl.DateTimeFormat(options.locale, { year: "numeric" }).format;
-    const dateFormat = new Intl.DateTimeFormat(options.locale, { year: "numeric", month: "long" }).format;
-
+    const yearFormat = new Intl.DateTimeFormat(options.locale, { year: "numeric",
+                                                                 timeZone: "UTC" }).format;
+    const dateFormat = new Intl.DateTimeFormat(options.locale, { year: "numeric",
+                                                                 month: "long",
+                                                                 timeZone: "UTC" }).format;
     this.context = context;
     this.state = { dateFormat };
     this.props = {};
@@ -299,7 +301,7 @@ function DatePicker(context) {
           this.state.isYearSet = true;
           options.setYear(year);
         },
-        getDisplayString: year => yearFormat(new Date(new Date(0).setFullYear(year))),
+        getDisplayString: year => yearFormat(new Date(new Date(0).setUTCFullYear(year))),
         viewportSize: spinnerSize
       }, context.monthYearView)
     };
