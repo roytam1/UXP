@@ -5694,6 +5694,17 @@ if (IsCSSPropertyPrefEnabled("layout.css.text-combine-upright.enabled")) {
   }
 }
 
+if (IsCSSPropertyPrefEnabled("layout.css.text-justify.enabled")) {
+  gCSSProperties["text-justify"] = {
+    domProp: "textJustify",
+    inherited: true,
+    type: CSS_TYPE_LONGHAND,
+    initial_values: [ "auto" ],
+    other_values: [ "none", "inter-word", "inter-character", "distribute" ],
+    invalid_values: []
+  };
+}
+
 if (IsCSSPropertyPrefEnabled("svg.paint-order.enabled")) {
   gCSSProperties["paint-order"] = {
     domProp: "paintOrder",

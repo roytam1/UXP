@@ -3064,6 +3064,7 @@ exports.CSS_PROPERTIES = {
       "text-emphasis-style",
       "-webkit-text-fill-color",
       "text-indent",
+      "text-justify",
       "text-orientation",
       "text-overflow",
       "text-rendering",
@@ -3240,6 +3241,7 @@ exports.CSS_PROPERTIES = {
       "dialog",
       "difference",
       "disabled",
+      "distribute",
       "dotted",
       "double",
       "drag",
@@ -3299,6 +3301,8 @@ exports.CSS_PROPERTIES = {
       "inline-table",
       "inset",
       "inside",
+      "inter-character",
+      "inter-word",
       "intersect",
       "isolate",
       "italic",
@@ -8862,6 +8866,23 @@ exports.CSS_PROPERTIES = {
       "calc",
       "inherit",
       "initial",
+      "unset"
+    ]
+  },
+  "text-justify": {
+    "isInherited": true,
+    "subproperties": [
+      "text-justify"
+    ],
+    "supports": [],
+    "values": [
+      "auto",
+      "distribute",
+      "inherit",
+      "initial",
+      "inter-character",
+      "inter-word",
+      "none",
       "unset"
     ]
   },
