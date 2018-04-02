@@ -186,7 +186,6 @@ RequestListContextMenu.prototype = {
    * Opens selected item in a new tab.
    */
   openRequestInTab() {
-    let win = Services.wm.getMostRecentWindow(gDevTools.chromeWindowType);
     openRequestInTab(this.selectedItem.attachment);
   },
 
