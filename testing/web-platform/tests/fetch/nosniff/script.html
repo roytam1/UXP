@@ -4,8 +4,8 @@
 <script>
   var log = function() {}, // see comment below
       p = function() {}, // see comment below
-      fails = ["", "?type=", "?type=x", "?type=x/x"],
-      passes = ["?type=text/javascript", "?type=text/ecmascript", "?type=text/ecmascript;blah"]
+      fails = ["", "?type=", "?type=x", "?type=x/x", "?type=text/json"],
+      passes = ["?type=text/javascript", "?type=text/ecmascript", "?type=text/ecmascript;blah", "?type=text/javascript1.0"]
 
   // Ideally we'd also check whether the scripts in fact execute, but that would involve
   // timers and might get a bit racy without cross-browser support for the execute events.
