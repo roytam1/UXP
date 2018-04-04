@@ -8,23 +8,11 @@
 #include "application.ini.h"
 #include "nsXPCOMGlue.h"
 #if defined(XP_WIN)
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
 #include <windows.h>
-#include <winbase.h>
-#include <VersionHelpers.h>
 #include <stdlib.h>
-#include <io.h>
-#include <fcntl.h>
 #elif defined(XP_UNIX)
 #include <sys/resource.h>
-#include <time.h>
 #include <unistd.h>
-#endif
-
-#ifdef XP_MACOSX
-#include <mach/mach_time.h>
-#include "MacQuirks.h"
 #endif
 
 #include <stdio.h>
@@ -35,20 +23,31 @@
 #include "nsIFile.h"
 #include "nsStringGlue.h"
 
-// Easy access to a five second startup delay used to get
-// a debugger attached in the metro environment. 
-// #define DEBUG_delay_start_metro
-
 #ifdef XP_WIN
-// we want a wmain entry point
-#include "nsWindowsWMain.cpp"
-#define snprintf _snprintf
+#ifdef MOZ_ASAN
+// ASAN requires palemoon.exe to be built with -MD, and it's OK if we don't
+// support Windows XP SP2 in ASAN builds.
+#define XRE_DONT_SUPPORT_XPSP2
+#endif
+#define XRE_WANT_ENVIRON
 #define strcasecmp _stricmp
+#ifdef MOZ_SANDBOX
+#include "mozilla/sandboxing/SandboxInitialization.h"
+#endif
 #endif
 #include "BinaryPath.h"
 
 #include "nsXPCOMPrivate.h" // for MAXPATHLEN and XPCOM_DLL
-#include "mozilla/StartupTimeline.h"
+
+#include "mozilla/Sprintf.h"
+#include "mozilla/Telemetry.h"
+#include "mozilla/WindowsDllBlocklist.h"
+
+#if !defined(MOZ_WIDGET_COCOA) && !defined(MOZ_WIDGET_ANDROID) \
+  && !(defined(XP_LINUX) && defined(MOZ_SANDBOX))
+#define MOZ_BROWSER_CAN_BE_CONTENTPROC
+#include "../../ipc/contentproc/plugin-container.cpp"
+#endif
 
 using namespace mozilla;
 
@@ -56,12 +55,6 @@ using namespace mozilla;
 #define kOSXResourcesFolder "Resources"
 #endif
 #define kDesktopFolder "browser"
-#define kMetroFolder "metro"
-#define kMetroAppIniFilename "metroapp.ini"
-#ifdef XP_WIN
-#define kMetroTestFile "tests.ini"
-const char* kMetroConsoleIdParam = "testconsoleid=";
-#endif
 
 static void Output(const char *fmt, ... )
 {
@@ -84,10 +77,19 @@ static void Output(const char *fmt, ... )
 #if MOZ_WINCONSOLE
   fwprintf_s(stderr, wide_msg);
 #else
-  MessageBoxW(nullptr, 
-              wide_msg,
-              L"Pale Moon",
-              MB_OK | MB_ICONERROR | MB_SETFOREGROUND);
+  // Linking user32 at load-time interferes with the DLL blocklist (bug 932100).
+  // This is a rare codepath, so we can load user32 at run-time instead.
+  HMODULE user32 = LoadLibraryW(L"user32.dll");
+  if (user32) {
+    decltype(MessageBoxW)* messageBoxW =
+      (decltype(MessageBoxW)*) GetProcAddress(user32, "MessageBoxW");
+    if (messageBoxW) {
+      messageBoxW(nullptr, wide_msg, L"Pale Moon", MB_OK
+                                               | MB_ICONERROR
+                                               | MB_SETFOREGROUND);
+    }
+    FreeLibrary(user32);
+  }
 #endif
 #endif
 
@@ -114,76 +116,60 @@ static bool IsArg(const char* arg, const char* s)
   return false;
 }
 
-#ifdef XP_WIN
-/*
- * AttachToTestHarness - Windows helper for when we are running
- * in the immersive environment. Firefox is launched by Windows in
- * response to a request by metrotestharness, which is launched by
- * runtests.py. As such stdout in fx doesn't point to the right
- * stream. This helper touches up stdout such that test output gets
- * routed to a named pipe metrotestharness creates and dumps to its
- * stdout.
- */
-static void AttachToTestHarness()
-{
-  // attach to the metrotestharness named logging pipe
-  HANDLE winOut = CreateFileA("\\\\.\\pipe\\metrotestharness",
-                              GENERIC_WRITE,
-                              FILE_SHARE_WRITE, 0,
-                              OPEN_EXISTING, 0, 0);
-  
-  if (winOut == INVALID_HANDLE_VALUE) {
-    OutputDebugStringW(L"Could not create named logging pipe.\n");
-    return;
-  }
-
-  // Set the c runtime handle
-  int stdOut = _open_osfhandle((intptr_t)winOut, _O_APPEND);
-  if (stdOut == -1) {
-    OutputDebugStringW(L"Could not open c-runtime handle.\n");
-    return;
-  }
-  FILE *fp = _fdopen(stdOut, "a");
-  *stdout = *fp;
-}
-#endif
-
 XRE_GetFileFromPathType XRE_GetFileFromPath;
 XRE_CreateAppDataType XRE_CreateAppData;
 XRE_FreeAppDataType XRE_FreeAppData;
-#ifdef XRE_HAS_DLL_BLOCKLIST
-XRE_SetupDllBlocklistType XRE_SetupDllBlocklist;
-#endif
+XRE_TelemetryAccumulateType XRE_TelemetryAccumulate;
 XRE_StartupTimelineRecordType XRE_StartupTimelineRecord;
 XRE_mainType XRE_main;
 XRE_StopLateWriteChecksType XRE_StopLateWriteChecks;
+XRE_XPCShellMainType XRE_XPCShellMain;
+XRE_GetProcessTypeType XRE_GetProcessType;
+XRE_SetProcessTypeType XRE_SetProcessType;
+XRE_InitChildProcessType XRE_InitChildProcess;
+XRE_EnableSameExecutableForContentProcType XRE_EnableSameExecutableForContentProc;
+#ifdef LIBFUZZER
+XRE_LibFuzzerSetMainType XRE_LibFuzzerSetMain;
+XRE_LibFuzzerGetFuncsType XRE_LibFuzzerGetFuncs;
+#endif
 
 static const nsDynamicFunctionLoad kXULFuncs[] = {
     { "XRE_GetFileFromPath", (NSFuncPtr*) &XRE_GetFileFromPath },
     { "XRE_CreateAppData", (NSFuncPtr*) &XRE_CreateAppData },
     { "XRE_FreeAppData", (NSFuncPtr*) &XRE_FreeAppData },
-#ifdef XRE_HAS_DLL_BLOCKLIST
-    { "XRE_SetupDllBlocklist", (NSFuncPtr*) &XRE_SetupDllBlocklist },
-#endif
+    { "XRE_TelemetryAccumulate", (NSFuncPtr*) &XRE_TelemetryAccumulate },
     { "XRE_StartupTimelineRecord", (NSFuncPtr*) &XRE_StartupTimelineRecord },
     { "XRE_main", (NSFuncPtr*) &XRE_main },
     { "XRE_StopLateWriteChecks", (NSFuncPtr*) &XRE_StopLateWriteChecks },
+    { "XRE_XPCShellMain", (NSFuncPtr*) &XRE_XPCShellMain },
+    { "XRE_GetProcessType", (NSFuncPtr*) &XRE_GetProcessType },
+    { "XRE_SetProcessType", (NSFuncPtr*) &XRE_SetProcessType },
+    { "XRE_InitChildProcess", (NSFuncPtr*) &XRE_InitChildProcess },
+    { "XRE_EnableSameExecutableForContentProc", (NSFuncPtr*) &XRE_EnableSameExecutableForContentProc },
+#ifdef LIBFUZZER
+    { "XRE_LibFuzzerSetMain", (NSFuncPtr*) &XRE_LibFuzzerSetMain },
+    { "XRE_LibFuzzerGetFuncs", (NSFuncPtr*) &XRE_LibFuzzerGetFuncs },
+#endif
     { nullptr, nullptr }
 };
 
-static int do_main(int argc, char* argv[], nsIFile *xreDirectory)
+#ifdef LIBFUZZER
+int libfuzzer_main(int argc, char **argv);
+
+/* This wrapper is used by the libFuzzer main to call into libxul */
+
+void libFuzzerGetFuncs(const char* moduleName, LibFuzzerInitFunc* initFunc,
+                       LibFuzzerTestingFunc* testingFunc) {
+  return XRE_LibFuzzerGetFuncs(moduleName, initFunc, testingFunc);
+}
+#endif
+
+static int do_main(int argc, char* argv[], char* envp[], nsIFile *xreDirectory)
 {
   nsCOMPtr<nsIFile> appini;
   nsresult rv;
   uint32_t mainFlags = 0;
 
-#ifdef XP_WIN
-  if (!IsWindowsVistaOrGreater()) {
-    Output("Couldn't load valid PE image.\n");
-    return 255;
-  }
-  
-#endif
   // Allow palemoon.exe to launch XULRunner apps via -app <application.ini>
   // Note that -app must be the *first* argument.
   const char *appDataFile = getenv("XUL_APP_FILE");
@@ -207,14 +193,26 @@ static int do_main(int argc, char* argv[], nsIFile *xreDirectory)
     }
 
     char appEnv[MAXPATHLEN];
-    snprintf(appEnv, MAXPATHLEN, "XUL_APP_FILE=%s", argv[2]);
-    if (putenv(appEnv)) {
+    SprintfLiteral(appEnv, "XUL_APP_FILE=%s", argv[2]);
+    if (putenv(strdup(appEnv))) {
       Output("Couldn't set %s.\n", appEnv);
       return 255;
     }
     argv[2] = argv[0];
     argv += 2;
     argc -= 2;
+  } else if (argc > 1 && IsArg(argv[1], "xpcshell")) {
+    for (int i = 1; i < argc; i++) {
+      argv[i] = argv[i + 1];
+    }
+
+    XREShellData shellData;
+#if defined(XP_WIN) && defined(MOZ_SANDBOX)
+    shellData.sandboxBrokerServices =
+      sandboxing::GetInitializedBrokerServices();
+#endif
+
+    return XRE_XPCShellMain(--argc, argv, envp, &shellData);
   }
 
   if (appini) {
@@ -224,6 +222,13 @@ static int do_main(int argc, char* argv[], nsIFile *xreDirectory)
       Output("Couldn't read application.ini");
       return 255;
     }
+#if defined(HAS_DLL_BLOCKLIST)
+    // The dll blocklist operates in the exe vs. xullib. Pass a flag to
+    // xullib so automated tests can check the result once the browser
+    // is up and running.
+    appData->flags |=
+      DllBlocklist_CheckStatus() ? NS_XRE_DLL_BLOCKLIST_ENABLED : 0;
+#endif
     // xreDirectory already has a refcount from NS_NewLocalFile
     appData->xreDirectory = xreDirectory;
     int result = XRE_main(argc, argv, appData, mainFlags);
@@ -231,7 +236,6 @@ static int do_main(int argc, char* argv[], nsIFile *xreDirectory)
     return result;
   }
 
-  // Desktop browser launch
   ScopedAppData appData(&sAppData);
   nsCOMPtr<nsIFile> exeFile;
   rv = mozilla::BinaryPath::GetFile(argv[0], getter_AddRefs(exeFile));
@@ -243,10 +247,7 @@ static int do_main(int argc, char* argv[], nsIFile *xreDirectory)
   nsCOMPtr<nsIFile> greDir;
   exeFile->GetParent(getter_AddRefs(greDir));
 #ifdef XP_MACOSX
-  nsCOMPtr<nsIFile> parent;
-  greDir->GetParent(getter_AddRefs(parent));
-  greDir = parent.forget();
-  greDir->AppendNative(NS_LITERAL_CSTRING(kOSXResourcesFolder));
+  greDir->SetNativeLeafName(NS_LITERAL_CSTRING(kOSXResourcesFolder));
 #endif
   nsCOMPtr<nsIFile> appSubdir;
   greDir->Clone(getter_AddRefs(appSubdir));
@@ -256,33 +257,29 @@ static int do_main(int argc, char* argv[], nsIFile *xreDirectory)
   // xreDirectory already has a refcount from NS_NewLocalFile
   appData.xreDirectory = xreDirectory;
 
-  return XRE_main(argc, argv, &appData, mainFlags);
-}
-
-/**
- * Local TimeStamp::Now()-compatible implementation used to record timestamps
- * which will be passed to XRE_StartupTimelineRecord().
- */
-static uint64_t
-TimeStamp_Now()
-{
-#ifdef XP_WIN
-  LARGE_INTEGER freq;
-  ::QueryPerformanceFrequency(&freq);
-  return GetTickCount64() * freq.QuadPart;
-#elif defined(XP_MACOSX)
-  return mach_absolute_time();
-#elif defined(HAVE_CLOCK_MONOTONIC)
-  struct timespec ts;
-  int rv = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-  if (rv != 0) {
-    return 0;
-  }
-
-  uint64_t baseNs = (uint64_t)ts.tv_sec * 1000000000;
-  return baseNs + (uint64_t)ts.tv_nsec;
+#if defined(HAS_DLL_BLOCKLIST)
+  appData.flags |=
+    DllBlocklist_CheckStatus() ? NS_XRE_DLL_BLOCKLIST_ENABLED : 0;
 #endif
+
+#if defined(XP_WIN) && defined(MOZ_SANDBOX)
+  sandbox::BrokerServices* brokerServices =
+    sandboxing::GetInitializedBrokerServices();
+#if defined(MOZ_CONTENT_SANDBOX)
+  if (!brokerServices) {
+    Output("Couldn't initialize the broker services.\n");
+    return 255;
+  }
+#endif
+  appData.sandboxBrokerServices = brokerServices;
+#endif
+
+#ifdef LIBFUZZER
+  if (getenv("LIBFUZZER"))
+    XRE_LibFuzzerSetMain(argc, argv, libfuzzer_main);
+#endif
+
+  return XRE_main(argc, argv, &appData, mainFlags);
 }
 
 static bool
@@ -298,11 +295,6 @@ FileExists(const char *path)
 #endif
 }
 
-#ifdef LIBXUL_SDK
-#  define XPCOM_PATH "xulrunner" XPCOM_FILE_PATH_SEPARATOR XPCOM_DLL
-#else
-#  define XPCOM_PATH XPCOM_DLL
-#endif
 static nsresult
 InitXPCOMGlue(const char *argv0, nsIFile **xreDirectory)
 {
@@ -315,55 +307,13 @@ InitXPCOMGlue(const char *argv0, nsIFile **xreDirectory)
   }
 
   char *lastSlash = strrchr(exePath, XPCOM_FILE_PATH_SEPARATOR[0]);
-  if (!lastSlash || (size_t(lastSlash - exePath) > MAXPATHLEN - sizeof(XPCOM_PATH) - 1))
+  if (!lastSlash ||
+      (size_t(lastSlash - exePath) > MAXPATHLEN - sizeof(XPCOM_DLL) - 1))
     return NS_ERROR_FAILURE;
 
-  strcpy(lastSlash + 1, XPCOM_PATH);
-  lastSlash += sizeof(XPCOM_PATH) - sizeof(XPCOM_DLL);
+  strcpy(lastSlash + 1, XPCOM_DLL);
 
   if (!FileExists(exePath)) {
-#if defined(LIBXUL_SDK) && defined(XP_MACOSX)
-    // Check for <bundle>/Contents/Frameworks/XUL.framework/libxpcom.dylib
-    bool greFound = false;
-    CFBundleRef appBundle = CFBundleGetMainBundle();
-    if (!appBundle)
-      return NS_ERROR_FAILURE;
-    CFURLRef fwurl = CFBundleCopyPrivateFrameworksURL(appBundle);
-    CFURLRef absfwurl = nullptr;
-    if (fwurl) {
-      absfwurl = CFURLCopyAbsoluteURL(fwurl);
-      CFRelease(fwurl);
-    }
-    if (absfwurl) {
-      CFURLRef xulurl =
-        CFURLCreateCopyAppendingPathComponent(nullptr, absfwurl,
-                                              CFSTR("XUL.framework"),
-                                              true);
-
-      if (xulurl) {
-        CFURLRef xpcomurl =
-          CFURLCreateCopyAppendingPathComponent(nullptr, xulurl,
-                                                CFSTR("libxpcom.dylib"),
-                                                false);
-
-        if (xpcomurl) {
-          if (CFURLGetFileSystemRepresentation(xpcomurl, true,
-                                               (UInt8*) exePath,
-                                               sizeof(exePath)) &&
-              access(tbuffer, R_OK | X_OK) == 0) {
-            if (realpath(tbuffer, exePath)) {
-              greFound = true;
-            }
-          }
-          CFRelease(xpcomurl);
-        }
-        CFRelease(xulurl);
-      }
-      CFRelease(absfwurl);
-    }
-  }
-  if (!greFound) {
-#endif
     Output("Could not find the Mozilla runtime.\n");
     return NS_ERROR_FAILURE;
   }
@@ -383,44 +333,71 @@ InitXPCOMGlue(const char *argv0, nsIFile **xreDirectory)
     return rv;
   }
 
+  // This will set this thread as the main thread.
   NS_LogInit();
 
-  // chop XPCOM_DLL off exePath
-  *lastSlash = '\0';
+  if (xreDirectory) {
+    // chop XPCOM_DLL off exePath
+    *lastSlash = '\0';
 #ifdef XP_MACOSX
-  lastSlash = strrchr(exePath, XPCOM_FILE_PATH_SEPARATOR[0]);
-  strcpy(lastSlash + 1, kOSXResourcesFolder);
+    lastSlash = strrchr(exePath, XPCOM_FILE_PATH_SEPARATOR[0]);
+    strcpy(lastSlash + 1, kOSXResourcesFolder);
 #endif
 #ifdef XP_WIN
-  rv = NS_NewLocalFile(NS_ConvertUTF8toUTF16(exePath), false,
-                       xreDirectory);
+    rv = NS_NewLocalFile(NS_ConvertUTF8toUTF16(exePath), false,
+                         xreDirectory);
 #else
-  rv = NS_NewNativeLocalFile(nsDependentCString(exePath), false,
-                             xreDirectory);
+    rv = NS_NewNativeLocalFile(nsDependentCString(exePath), false,
+                               xreDirectory);
 #endif
+  }
 
   return rv;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char* argv[], char* envp[])
 {
-#ifdef DEBUG_delay_start_metro
-  Sleep(5000);
-#endif
-  uint64_t start = TimeStamp_Now();
+  mozilla::TimeStamp start = mozilla::TimeStamp::Now();
 
-#ifdef XP_MACOSX
-  TriggerQuirks();
+#ifdef HAS_DLL_BLOCKLIST
+  DllBlocklist_Initialize();
+
+#ifdef DEBUG
+  // In order to be effective against AppInit DLLs, the blocklist must be
+  // initialized before user32.dll is loaded into the process (bug 932100).
+  if (GetModuleHandleA("user32.dll")) {
+    fprintf(stderr, "DLL blocklist was unable to intercept AppInit DLLs.\n");
+  }
+#endif
 #endif
 
-  int gotCounters;
-#if defined(XP_UNIX)
-  struct rusage initialRUsage;
-  gotCounters = !getrusage(RUSAGE_SELF, &initialRUsage);
-#elif defined(XP_WIN)
-  IO_COUNTERS ioCounters;
-  gotCounters = GetProcessIoCounters(GetCurrentProcess(), &ioCounters);
+#ifdef MOZ_BROWSER_CAN_BE_CONTENTPROC
+  // We are launching as a content process, delegate to the appropriate
+  // main
+  if (argc > 1 && IsArg(argv[1], "contentproc")) {
+#if defined(XP_WIN) && defined(MOZ_SANDBOX)
+    // We need to initialize the sandbox TargetServices before InitXPCOMGlue
+    // because we might need the sandbox broker to give access to some files.
+    if (IsSandboxedProcess() && !sandboxing::GetInitializedTargetServices()) {
+      Output("Failed to initialize the sandbox target services.");
+      return 255;
+    }
 #endif
+
+    nsresult rv = InitXPCOMGlue(argv[0], nullptr);
+    if (NS_FAILED(rv)) {
+      return 255;
+    }
+
+    int result = content_process_main(argc, argv);
+
+    // InitXPCOMGlue calls NS_LogInit, so we need to balance it here.
+    NS_LogTerm();
+
+    return result;
+  }
+#endif
+
 
   nsIFile *xreDirectory;
 
@@ -431,11 +408,11 @@ int main(int argc, char* argv[])
 
   XRE_StartupTimelineRecord(mozilla::StartupTimeline::START, start);
 
-#ifdef XRE_HAS_DLL_BLOCKLIST
-  XRE_SetupDllBlocklist();
+#ifdef MOZ_BROWSER_CAN_BE_CONTENTPROC
+  XRE_EnableSameExecutableForContentProc();
 #endif
 
-  int result = do_main(argc, argv, xreDirectory);
+  int result = do_main(argc, argv, envp, xreDirectory);
 
   NS_LogTerm();
 
