@@ -10,7 +10,7 @@
 #include "mozilla/Attributes.h"
 
 class nsFeedSniffer final : public nsIContentSniffer,
-                                       nsIStreamListener
+                                   nsIStreamListener
 {
 public:
   NS_DECL_ISUPPORTS
@@ -18,12 +18,12 @@ public:
   NS_DECL_NSIREQUESTOBSERVER
   NS_DECL_NSISTREAMLISTENER
 
-  static NS_METHOD AppendSegmentToString(nsIInputStream* inputStream,
-                                         void* closure,
-                                         const char* rawSegment,
-                                         uint32_t toOffset,
-                                         uint32_t count,
-                                         uint32_t* writeCount);
+  static nsresult AppendSegmentToString(nsIInputStream* inputStream,
+                                        void* closure,
+                                        const char* rawSegment,
+                                        uint32_t toOffset,
+                                        uint32_t count,
+                                        uint32_t* writeCount);
 
 protected:
   ~nsFeedSniffer() {}
