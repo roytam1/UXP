@@ -242,7 +242,7 @@ gfxPlatformGtk::GetCommonFallbackFonts(uint32_t aCh, uint32_t aNextCh,
 {
     if (aNextCh == 0xfe0fu) {
       // if char is followed by VS16, try for a color emoji glyph
-      aFontList.AppendElement(kFontEmojiOneMozilla);
+      aFontList.AppendElement(kFontTwemojiMozilla);
     }
 
     aFontList.AppendElement(kFontDejaVuSerif);
