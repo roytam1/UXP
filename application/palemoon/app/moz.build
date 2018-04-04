@@ -8,9 +8,9 @@ DIRS += ['profile/extensions']
 
 
 if CONFIG['OS_ARCH'] == 'WINNT' and CONFIG['MOZ_ASAN']:
-    GoannaProgram(CONFIG['MOZ_APP_NAME'])
+    GeckoProgram(CONFIG['MOZ_APP_NAME'])
 else:
-    GoannaProgram(CONFIG['MOZ_APP_NAME'], msvcrt='static')
+    GeckoProgram(CONFIG['MOZ_APP_NAME'], msvcrt='static')
 
 JS_PREFERENCE_FILES += [
     'profile/palemoon.js',
@@ -36,8 +36,8 @@ for var in ('MOZILLA_OFFICIAL', 'LIBXUL_SDK'):
 
 DEFINES['XPCOM_GLUE'] = True
 
-GENERATED_INCLUDES += [
-    '/build',
+LOCAL_INCLUDES += [
+    '!/build',
 ]
 
 LOCAL_INCLUDES += [
