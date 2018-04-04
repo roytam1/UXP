@@ -3,58 +3,106 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MOZ_APP_BASENAME=Palemoon
+# Application Basename and Vendor
+# MOZ_APP_BASENAME and MOZ_APP_VENDOR must not have spaces.
+# These values where appropriate are hardcoded in application.ini
+# to "Pale Moon" and "Moonchild Productions" respectively for
+# Pale Moon
+MOZ_APP_BASENAME=Palemoon 
 MOZ_APP_VENDOR=Moonchild
-MOZ_UPDATER=1
+
+# Application Version
+# MOZ_APP_VERSION is read from ./config/version.txt
+# MOZ_APP_VERSION_DISPLAY is not used in Pale Moon so set it
+# to MOZ_APP_VERSION
+MOZ_APP_VERSION=`cat ${_topsrcdir}/$MOZ_BUILD_APP/config/version.txt`
+MOZ_APP_VERSION_DISPLAY=$MOZ_APP_VERSION
+
+# Application ID
+# This is a unique identifier used for the application
+# Most frequently the AppID is used for targetApplication
+# in extensions and for chrome manifests
+MOZ_APP_ID={8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}
+
+# Use static Application INI File
+MOZ_APP_STATIC_INI=1
+
+# Application Branding
+# The default is MOZ_BRANDING_DIRECTORY and should never point to
+# official branding by default.
+# Changing MOZ_*BRANDING_DIRECTORY requires a clobber because branding
+# dependencies are broken.
+# MOZ_APP_DISPLAYNAME will be set by [branding]/configure.sh
+MOZ_BRANDING_DIRECTORY=$MOZ_BUILD_APP/branding/unofficial
+MOZ_OFFICIAL_BRANDING_DIRECTORY=$MOZ_BUILD_APP/branding/official
+
+# Enables conditional code in the platform for Pale Moon only
+MC_PALEMOON=1
+
+# Enables conditional code in the platform for historically
+# Firefox-like browsers
 MOZ_PHOENIX=1
 
-if test "$OS_TARGET" = "WINNT"; then
-  MOZ_BUNDLED_FONTS=1
-fi
-
-MOZ_CHROME_FILE_FORMAT=omni
-MOZ_SERVICES_COMMON=1
-MOZ_MEDIA_NAVIGATOR=1
-MOZ_SERVICES_CRYPTO=1
-MOZ_SERVICES_SYNC=1
-MOZ_APP_VERSION=`cat ${_topsrcdir}/$MOZ_BUILD_APP/config/version.txt`
-MOZ_EXTENSIONS_DEFAULT=" gio"
-
-MOZ_SERVICES_FXACCOUNTS=1
-MOZ_DISABLE_EXPORT_JS=1
-MOZ_WEBGL_CONFORMANT=1
-MOZ_ACTIVITIES=1
-MOZ_JSDOWNLOADS=1
-MOZ_WEBM_ENCODER=1
-
-MOZ_PHOENIX_EXTENSIONS=1
+# Browser Feature: Status bar Component
 MOZ_BROWSER_STATUSBAR=1
 
-#disabled by default on desktop.
-MOZ_DEVTOOLS=
-
-# MOZ_APP_DISPLAYNAME will be set by branding/configure.sh
-# Changing MOZ_*BRANDING_DIRECTORY requires a clobber to ensure correct results,
-# because branding dependencies are broken.
-# MOZ_BRANDING_DIRECTORY is the default branding directory used when none is
-# specified. It should never point to the "official" branding directory.
-# For mozilla-beta, mozilla-release, or mozilla-central repositories, use
-# "nightly" branding (until bug 659568 is fixed).
-# For the mozilla-aurora repository, use "aurora".
-MOZ_BRANDING_DIRECTORY=browser/branding/unofficial
-MOZ_OFFICIAL_BRANDING_DIRECTORY=browser/branding/official
-# New Pale Moon App GUID
-# Firefox MOZ_APP_ID={ec8030f7-c20a-464f-9b0e-13a3a9e97384}
-MOZ_APP_ID={8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}
-# This should usually be the same as the value MAR_CHANNEL_ID.
-# If more than one ID is needed, then you should use a comma separated list
-# of values.
-ACCEPTED_MAR_CHANNEL_IDS=palemoon-release
-# The MAR_CHANNEL_ID must not contain the following 3 characters: ",\t "
-MAR_CHANNEL_ID=palemoon-release
+# Browser Feature: Profile Migration Component
 MOZ_PROFILE_MIGRATOR=1
-MOZ_EXTENSION_MANAGER=1
-MOZ_APP_STATIC_INI=1
+
+# Platform Feature: Application Update Service
+# MAR_CHANNEL_ID must not contained the follow 3 characters: ",\t"
+# ACCEPTED_MAR_CHANNEL_IDS should usually be the same as MAR_CHANNEL_ID
+# If more than one ID is needed, then you should use a comma seperated list.
+MOZ_UPDATER=1
+MAR_CHANNEL_ID=palemoon-release
+ACCEPTED_MAR_CHANNEL_IDS=palemoon-release
+
+# Platform Feature: Developer Tools
+# XXX: Devtools are disabled until they can be made to work with Pale Moon
+MOZ_DEVTOOLS=
+MOZ_DEVTOOLS_SERVER=
+
+# Platform Feature: "Phoenix" Extensions Support aka Dual-guid system.
+# Allows installation of Firefox GUID targeted extensions despite having
+# a different Application ID
+# On UXP this is a possible feature only for the Tycho Add-ons Manager
+MOZ_PHOENIX_EXTENSIONS=1
+
+# Platform Feature: Sync Service
+MOZ_SERVICES_COMMON=1
+MOZ_SERVICES_SYNC=1
+MOZ_SERVICES_FXACCOUNTS=1
+MOZ_SERVICES_CRYPTO=1
+
+# Platform Feature: JS based Downloads Manager
+MOZ_JSDOWNLOADS=1
+
+# Platform Feature: Conformant WebGL
+# Exposes the "webgl" context name, which is reserved for
+# conformant implementations.
+MOZ_WEBGL_CONFORMANT=1
+
+# Platform Feature: Windows Maintaince Service
+# XXX: This is never used
+if test "$OS_ARCH" = "WINNT"; then
+  MOZ_MAINTENANCE_SERVICE=
+fi
+
+# Set the chrome packing format
+# Possible values are omni, jar, and flat
+# Currently, only omni and flat are supported
+MOZ_CHROME_FILE_FORMAT=omni
+
+# Set the default top-level extensions
+MOZ_EXTENSIONS_DEFAULT=" gio"
+
+# Fold Libs
 if test "$OS_TARGET" = "WINNT" -o "$OS_TARGET" = "Darwin"; then
   MOZ_FOLD_LIBS=1
+fi
+
+# Include bundled fonts
+if test "$OS_ARCH" = "WINNT" -o \
+        "$OS_ARCH" = "Linux"; then
+  MOZ_BUNDLED_FONTS=1
 fi
