@@ -16,9 +16,10 @@
 
 class nsWindowsShellService : public nsIWindowsShellService
 {
+  virtual ~nsWindowsShellService();
+
 public:
   nsWindowsShellService();
-  virtual ~nsWindowsShellService();
 
   NS_DECL_ISUPPORTS
   NS_DECL_NSISHELLSERVICE
@@ -26,12 +27,11 @@ public:
 
 protected:
   bool IsDefaultBrowserVista(bool aCheckAllTypes, bool* aIsDefaultBrowser);
+  nsresult LaunchControlPanelDefaultsSelectionUI();
   nsresult LaunchControlPanelDefaultPrograms();
   nsresult LaunchModernSettingsDialogDefaultApps();
+  nsresult InvokeHTTPOpenAsVerb();
   nsresult LaunchHTTPHandlerPane();
-
-private:
-  bool      mCheckedThisSession;
 };
 
 #endif // nswindowsshellservice_h____

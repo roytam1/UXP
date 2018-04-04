@@ -21,12 +21,13 @@
 #include "nsIStringBundle.h"
 #include "nsIOutputStream.h"
 #include "nsIProcess.h"
-#include "nsNetUtil.h"
+#include "nsServiceManagerUtils.h"
+#include "nsComponentManagerUtils.h"
 #include "nsIDOMHTMLImageElement.h"
 #include "nsIImageLoadingContent.h"
 #include "imgIRequest.h"
 #include "imgIContainer.h"
-#include "prprf.h"
+#include "mozilla/Sprintf.h"
 #if defined(MOZ_WIDGET_GTK)
 #include "nsIImageToPixbuf.h"
 #endif
@@ -116,7 +117,7 @@ nsGNOMEShellService::Init()
   return appPath->GetNativePath(mAppPath);
 }
 
-NS_IMPL_ISUPPORTS(nsGNOMEShellService, nsIShellService)
+NS_IMPL_ISUPPORTS(nsGNOMEShellService, nsIGNOMEShellService, nsIShellService)
 
 bool
 nsGNOMEShellService::GetAppPathFromLauncher()
@@ -152,7 +153,8 @@ nsGNOMEShellService::KeyMatchesAppName(const char *aKeyValue) const
 
   gchar *commandPath;
   if (mUseLocaleFilenames) {
-    gchar *nativePath = g_filename_from_utf8(aKeyValue, -1, nullptr, nullptr, nullptr);
+    gchar *nativePath = g_filename_from_utf8(aKeyValue, -1,
+                                             nullptr, nullptr, nullptr);
     if (!nativePath) {
       NS_ERROR("Error converting path to filesystem encoding");
       return false;
@@ -199,8 +201,6 @@ nsGNOMEShellService::IsDefaultBrowser(bool aStartupCheck,
                                       bool* aIsDefaultBrowser)
 {
   *aIsDefaultBrowser = false;
-  if (aStartupCheck)
-    mCheckedThisSession = true;
 
   nsCOMPtr<nsIGConfService> gconf = do_GetService(NS_GCONFSERVICE_CONTRACTID);
   nsCOMPtr<nsIGIOService> giovfs = do_GetService(NS_GIOSERVICE_CONTRACTID);
@@ -284,7 +284,7 @@ nsGNOMEShellService::SetDefaultBrowser(bool aClaimAllTypes,
     NS_ENSURE_SUCCESS(rv, rv);
 
     nsString brandShortName;
-    brandBundle->GetStringFromName(MOZ_UTF16("brandShortName"),
+    brandBundle->GetStringFromName(u"brandShortName",
                                    getter_Copies(brandShortName));
 
     // use brandShortName as the application id.
@@ -312,40 +312,13 @@ nsGNOMEShellService::SetDefaultBrowser(bool aClaimAllTypes,
     }
   }
 
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsGNOMEShellService::GetShouldCheckDefaultBrowser(bool* aResult)
-{
-  // If we've already checked, the browser has been started and this is a 
-  // new window open, and we don't want to check again.
-  if (mCheckedThisSession) {
-    *aResult = false;
-    return NS_OK;
+  nsCOMPtr<nsIPrefBranch> prefs(do_GetService(NS_PREFSERVICE_CONTRACTID));
+  if (prefs) {
+    (void) prefs->SetBoolPref(PREF_CHECKDEFAULTBROWSER, true);
+    // Reset the number of times the dialog should be shown
+    // before it is silenced.
+    (void) prefs->SetIntPref(PREF_DEFAULTBROWSERCHECKCOUNT, 0);
   }
-
-  nsCOMPtr<nsIPrefBranch> prefs;
-  nsCOMPtr<nsIPrefService> pserve(do_GetService(NS_PREFSERVICE_CONTRACTID));
-  if (pserve)
-    pserve->GetBranch("", getter_AddRefs(prefs));
-
-  if (prefs)
-    prefs->GetBoolPref(PREF_CHECKDEFAULTBROWSER, aResult);
-
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsGNOMEShellService::SetShouldCheckDefaultBrowser(bool aShouldCheck)
-{
-  nsCOMPtr<nsIPrefBranch> prefs;
-  nsCOMPtr<nsIPrefService> pserve(do_GetService(NS_PREFSERVICE_CONTRACTID));
-  if (pserve)
-    pserve->GetBranch("", getter_AddRefs(prefs));
-
-  if (prefs)
-    prefs->SetBoolPref(PREF_CHECKDEFAULTBROWSER, aShouldCheck);
 
   return NS_OK;
 }
@@ -386,7 +359,7 @@ WriteImage(const nsCString& aPath, imgIContainer* aImage)
   return res ? NS_OK : NS_ERROR_FAILURE;
 #endif
 }
-                 
+
 NS_IMETHODIMP
 nsGNOMEShellService::SetDesktopBackground(nsIDOMElement* aElement, 
                                           int32_t aPosition)
@@ -407,15 +380,15 @@ nsGNOMEShellService::SetDesktopBackground(nsIDOMElement* aElement,
   // Set desktop wallpaper filling style
   nsAutoCString options;
   if (aPosition == BACKGROUND_TILE)
-    options.Assign("wallpaper");
+    options.AssignLiteral("wallpaper");
   else if (aPosition == BACKGROUND_STRETCH)
-    options.Assign("stretched");
+    options.AssignLiteral("stretched");
   else if (aPosition == BACKGROUND_FILL)
-    options.Assign("zoom");
+    options.AssignLiteral("zoom");
   else if (aPosition == BACKGROUND_FIT)
-    options.Assign("scaled");
+    options.AssignLiteral("scaled");
   else
-    options.Assign("centered");
+    options.AssignLiteral("centered");
 
   // Write the background file to the home directory.
   nsAutoCString filePath(PR_GetEnv("HOME"));
@@ -429,7 +402,7 @@ nsGNOMEShellService::SetDesktopBackground(nsIDOMElement* aElement,
     rv = bundleService->CreateBundle(BRAND_PROPERTIES,
                                      getter_AddRefs(brandBundle));
     if (NS_SUCCEEDED(rv) && brandBundle) {
-      rv = brandBundle->GetStringFromName(MOZ_UTF16("brandShortName"),
+      rv = brandBundle->GetStringFromName(u"brandShortName",
                                           getter_Copies(brandName));
       NS_ENSURE_SUCCESS(rv, rv);
     }
@@ -438,7 +411,7 @@ nsGNOMEShellService::SetDesktopBackground(nsIDOMElement* aElement,
   // build the file name
   filePath.Append('/');
   filePath.Append(NS_ConvertUTF16toUTF8(brandName));
-  filePath.Append("_wallpaper.png");
+  filePath.AppendLiteral("_wallpaper.png");
 
   // write the image to a file in the home dir
   rv = WriteImage(filePath, container);
@@ -478,7 +451,7 @@ nsGNOMEShellService::SetDesktopBackground(nsIDOMElement* aElement,
 
     // Set the image to an empty string first to force a refresh
     // (since we could be writing a new image on top of an existing
-    // Firefox_wallpaper.png and nautilus doesn't monitor the file for changes)
+    // PaleMoon_wallpaper.png and nautilus doesn't monitor the file for changes)
     gconf->SetString(NS_LITERAL_CSTRING(kDesktopImageKey),
                      EmptyCString());
 
@@ -543,7 +516,7 @@ ColorToCString(uint32_t aColor, nsCString& aResult)
   uint16_t green = COLOR_8_TO_16_BIT((aColor >> 8) & 0xff);
   uint16_t blue = COLOR_8_TO_16_BIT(aColor & 0xff);
 
-  PR_snprintf(buf, 14, "#%04x%04x%04x", red, green, blue);
+  snprintf(buf, 14, "#%04x%04x%04x", red, green, blue);
 }
 
 NS_IMETHODIMP
@@ -580,9 +553,9 @@ nsGNOMEShellService::OpenApplication(int32_t aApplication)
 {
   nsAutoCString scheme;
   if (aApplication == APPLICATION_MAIL)
-    scheme.Assign("mailto");
+    scheme.AssignLiteral("mailto");
   else if (aApplication == APPLICATION_NEWS)
-    scheme.Assign("news");
+    scheme.AssignLiteral("news");
   else
     return NS_ERROR_NOT_AVAILABLE;
 
