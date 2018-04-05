@@ -9617,8 +9617,9 @@ Parser<ParseHandler>::warnOnceAboutForEach()
         return true;
 
     if (!cx->compartment()->warnedAboutForEach) {
-        if (!report(ParseWarning, false, null(), JSMSG_DEPRECATED_FOR_EACH))
-            return false;
+        // Disabled warning spew.
+        // if (!report(ParseWarning, false, null(), JSMSG_DEPRECATED_FOR_EACH))
+        //    return false;
         cx->compartment()->warnedAboutForEach = true;
     }
     return true;
