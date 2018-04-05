@@ -55,6 +55,7 @@ toolkit.jar:
    content/global/filepicker.properties
    content/global/globalOverlay.js
    content/global/mozilla.xhtml
+   content/global/logopage.xhtml
    content/global/process-content.js
    content/global/resetProfile.css
    content/global/resetProfile.js
