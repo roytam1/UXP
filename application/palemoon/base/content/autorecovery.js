@@ -10,10 +10,6 @@
  * have been properly initialized already.
  */
 
-let Cc = Components.classes;
-let Ci = Components.interfaces;
-let Cu = Components.utils;
-
 // Services = object with smart getters for common XPCOM services
 Cu.import("resource://gre/modules/Services.jsm");
 

@@ -1,6 +1,3 @@
-let Cc = Components.classes;
-let Ci = Components.interfaces;
-let Cu = Components.utils;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var padlock_PadLock =
