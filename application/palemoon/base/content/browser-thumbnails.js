@@ -92,7 +92,12 @@ let gBrowserThumbnails = {
 
   filterForThumbnailExpiration:
   function Thumbnails_filterForThumbnailExpiration(aCallback) {
-    aCallback([browser.currentURI.spec for (browser of gBrowser.browsers)]);
+    // Tycho: aCallback([browser.currentURI.spec for (browser of gBrowser.browsers)]);
+    let result = [];
+    for (let browser of gBrowser.browsers) {
+      result.push(browser.currentURL.spec);
+    }
+    aCallback(result);
   },
 
   /**
