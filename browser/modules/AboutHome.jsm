@@ -24,17 +24,10 @@ XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
 XPCOMUtils.defineLazyModuleGetter(this, "Promise",
   "resource://gre/modules/Promise.jsm");
 
-// Url to fetch snippets, in the urlFormatter service format.
-const SNIPPETS_URL_PREF = "browser.aboutHomeSnippets.updateUrl";
-
-// Should be bumped up if the snippets content format changes.
-const STARTPAGE_VERSION = 4;
+// Should be bumped up if any data content format changes.
+const STARTPAGE_VERSION = 5;
 
 this.AboutHomeUtils = {
-  get snippetsVersion() {
-    return STARTPAGE_VERSION;
-  },
-
   /*
    * showKnowYourRights - Determines if the user should be shown the
    * about:rights notification. The notification should *not* be shown if
@@ -75,16 +68,6 @@ this.AboutHomeUtils = {
     return true;
   }
 };
-
-/**
- * Returns the URL to fetch snippets from, in the urlFormatter service format.
- */
-XPCOMUtils.defineLazyGetter(AboutHomeUtils, "snippetsURL", function() {
-  let updateURL = Services.prefs
-                          .getCharPref(SNIPPETS_URL_PREF)
-                          .replace("%STARTPAGE_VERSION%", STARTPAGE_VERSION);
-  return Services.urlFormatter.formatURL(updateURL);
-});
 
 /**
  * This code provides services to the about:home page. Whenever
@@ -169,9 +152,7 @@ var AboutHome = {
     ss.promiseInitialized.then(function() {
       let data = {
         showRestoreLastSession: ss.canRestoreLastSession,
-        snippetsURL: AboutHomeUtils.snippetsURL,
-        showKnowYourRights: AboutHomeUtils.showKnowYourRights,
-        snippetsVersion: AboutHomeUtils.snippetsVersion,
+        showKnowYourRights: AboutHomeUtils.showKnowYourRights
       };
 
       if (AboutHomeUtils.showKnowYourRights) {
