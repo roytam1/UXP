@@ -1035,7 +1035,7 @@ GetWidgetStyleInternal(WidgetNodeType aNodeType)
       return GetWidgetStyleWithClass(MOZ_GTK_RADIOMENUITEM,
                                      GTK_STYLE_CLASS_RADIO);
     case MOZ_GTK_CHECKMENUITEM_INDICATOR:
-+      return GetWidgetStyleWithClass(MOZ_GTK_CHECKMENUITEM,
+      return GetWidgetStyleWithClass(MOZ_GTK_CHECKMENUITEM,
                                      GTK_STYLE_CLASS_CHECK);
     case MOZ_GTK_PROGRESS_TROUGH:
       return GetWidgetStyleWithClass(MOZ_GTK_PROGRESSBAR,

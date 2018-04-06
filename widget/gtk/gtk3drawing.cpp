@@ -1029,8 +1029,7 @@ moz_gtk_treeview_expander_paint(cairo_t *cr, GdkRectangle* rect,
     return MOZ_GTK_SUCCESS;
 }
 
-/* See gtk_separator_draw() for reference.
-*/
+/* See gtk_separator_draw() for reference. */
 static gint
 moz_gtk_combo_box_paint(cairo_t *cr, GdkRectangle* rect,
                         GtkWidgetState* state,
@@ -1844,6 +1843,7 @@ moz_gtk_menu_item_paint(WidgetNodeType widget, cairo_t *cr, GdkRectangle* rect,
         if (widget == MOZ_GTK_MENUBARITEM) {
             gtk_style_context_add_class(style, GTK_STYLE_CLASS_MENUBAR);
         }
+	}
 
     x = rect->x;
     y = rect->y;
