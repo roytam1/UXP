@@ -558,7 +558,7 @@ nsBrowserContentHandler.prototype = {
     if (overridePage && startPage && !willRestoreSession && !skipStartPage)
       return overridePage + "|" + startPage;
 
-    return overridePage || startPage || "about:blank";
+    return overridePage || startPage || "about:blank" || "about:logopage";
   },
 
   get startPage() {

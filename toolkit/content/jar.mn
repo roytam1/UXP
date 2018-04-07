@@ -55,7 +55,9 @@ toolkit.jar:
    content/global/filepicker.properties
    content/global/globalOverlay.js
    content/global/mozilla.xhtml
+#ifdef MOZ_PHOENIX
    content/global/logopage.xhtml
+#endif
    content/global/process-content.js
    content/global/resetProfile.css
    content/global/resetProfile.js

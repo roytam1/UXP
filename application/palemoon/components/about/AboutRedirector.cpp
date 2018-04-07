@@ -52,9 +52,6 @@ static RedirEntry kRedirMap[] = {
   { "palemoon", "chrome://global/content/palemoon.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "logopage", "chrome://global/content/logopage.xhtml",
-    nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
   { "robots", "chrome://browser/content/aboutRobots.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT },

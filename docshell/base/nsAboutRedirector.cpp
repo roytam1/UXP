@@ -72,6 +72,13 @@ static RedirEntry kRedirMap[] = {
     // Linkable for testing reasons.
     nsIAboutModule::MAKE_LINKABLE
   },
+#ifdef MOZ_PHOENIX
+  {
+    "logopage", "chrome://global/content/logopage.xhtml",
+    nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+#endif
   {
     "memory", "chrome://global/content/aboutMemory.xhtml",
     nsIAboutModule::ALLOW_SCRIPT
