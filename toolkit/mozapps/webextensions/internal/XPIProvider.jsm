@@ -175,6 +175,8 @@ const RDFURI_INSTALL_MANIFEST_ROOT    = "urn:mozilla:install-manifest";
 const PREFIX_NS_EM                    = "http://www.mozilla.org/2004/em-rdf#";
 
 const TOOLKIT_ID                      = "toolkit@mozilla.org";
+const WEBEXTENSIONS_ID                = "webextensions@mozilla.org";
+const WEBEXTENSIONS_VERSION           = "52.0";
 
 const XPI_SIGNATURE_CHECK_PERIOD      = 24 * 60 * 60;
 
@@ -1037,7 +1039,7 @@ var loadManifestFromWebManifest = Task.async(function*(aUri) {
   delete addon.defaultLocale.locales;
 
   addon.targetApplications = [{
-    id: TOOLKIT_ID,
+    id: WEBEXTENSIONS_ID,
     minVersion: bss.strict_min_version,
     maxVersion: bss.strict_max_version,
   }];
@@ -7228,6 +7230,8 @@ AddonInternal.prototype = {
       version = aAppVersion;
     else if (app.id == TOOLKIT_ID)
       version = aPlatformVersion
+    else if (app.id == WEBEXTENSIONS_ID)
+      version = WEBEXTENSIONS_VERSION
 
     // Only extensions and dictionaries can be compatible by default; themes
     // and language packs always use strict compatibility checking.
@@ -7250,7 +7254,7 @@ AddonInternal.prototype = {
       let minCompatVersion;
       if (app.id == Services.appinfo.ID)
         minCompatVersion = XPIProvider.minCompatibleAppVersion;
-      else if (app.id == TOOLKIT_ID)
+      else if (app.id == TOOLKIT_ID || app.id == WEBEXTENSIONS_ID)
         minCompatVersion = XPIProvider.minCompatiblePlatformVersion;
 
       if (minCompatVersion &&
@@ -7269,7 +7273,7 @@ AddonInternal.prototype = {
     for (let targetApp of this.targetApplications) {
       if (targetApp.id == Services.appinfo.ID)
         return targetApp;
-      if (targetApp.id == TOOLKIT_ID)
+      if (targetApp.id == TOOLKIT_ID || targetApp.id == WEBEXTENSIONS_ID)
         app = targetApp;
     }
     return app;
