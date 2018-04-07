@@ -183,9 +183,9 @@ exports.menuitems = [
     }
   },
   { separator: true,
-    id: "devToolsEndSeparator"
+    id: "menu_devToolsEndSeparator"
   },
-  { id: "getMoreDevtools",
+  { id: "menu_getMoreDevtools",
     l10nKey: "getMoreDevtoolsCmd",
     oncommand(event) {
       let window = event.target.ownerDocument.defaultView;
