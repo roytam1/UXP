@@ -867,9 +867,19 @@ DownloadsDataCtor.prototype = {
 
     // Sort backwards by start time, ensuring that the most recent
     // downloads are added first regardless of their state.
-    let loadedItemsArray = [dataItem
-                            for each (dataItem in this.dataItems)
-                            if (dataItem)];
+    // Tycho:
+    //let loadedItemsArray = [dataItem
+    //                        for each (dataItem in this.dataItems)
+    //                        if (dataItem)];
+
+    let loadedItemsArray = [];
+
+    for each (let dataItem in this.dataItems) {
+      if (dataItem) {
+        loadedItemsArray.push(dataItem);
+      }
+    }
+
     loadedItemsArray.sort(function(a, b) b.startTime - a.startTime);
     loadedItemsArray.forEach(
       function (dataItem) aView.onDataItemAdded(dataItem, false)

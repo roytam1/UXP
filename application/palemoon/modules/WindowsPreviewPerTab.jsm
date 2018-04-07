@@ -510,7 +510,14 @@ TabWindow.prototype = {
 
     // Previews are internally stored using a map, so we need to iterate over
     // the tabbrowser's array of tabs to retrieve previews in the same order.
-    let inorder = [previews.get(t) for (t of tabs) if (previews.has(t))];
+    // Tycho: let inorder = [previews.get(t) for (t of tabs) if (previews.has(t))];
+    let inorder = [];
+    
+    for (let t of tabs) {
+      if (previews.has(t)) {
+        inorder.push(previews.get(t));
+      }
+    }
 
     // Since the internal taskbar array has not yet been updated, we must force
     // the sorting order of our local array on it.  To do so, we must walk
