@@ -404,7 +404,7 @@ IsAboutToBeFinalizedDuringSweep(TenuredCell& tenured);
 inline Cell*
 ToMarkable(const Value& v)
 {
-    if (v.isMarkable())
+    if (v.isGCThing())
         return (Cell*)v.toGCThing();
     return nullptr;
 }

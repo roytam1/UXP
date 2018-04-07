@@ -56,7 +56,7 @@ HeapSlot::preconditionForWriteBarrierPost(NativeObject* obj, Kind kind, uint32_t
     bool isCorrectSlot = kind == Slot
                          ? obj->getSlotAddressUnchecked(slot)->get() == target
                          : static_cast<HeapSlot*>(obj->getDenseElements() + slot)->get() == target;
-    bool isBlackToGray = target.isMarkable() &&
+    bool isBlackToGray = target.isGCThing() &&
                          IsMarkedBlack(obj) && JS::GCThingIsMarkedGray(JS::GCCellPtr(target));
     return isCorrectSlot && !isBlackToGray;
 }

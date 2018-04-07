@@ -328,7 +328,7 @@ ShouldMarkCrossCompartment(JSTracer* trc, JSObject* src, Cell* cell)
 static bool
 ShouldMarkCrossCompartment(JSTracer* trc, JSObject* src, const Value& val)
 {
-    return val.isMarkable() && ShouldMarkCrossCompartment(trc, src, (Cell*)val.toGCThing());
+    return val.isGCThing() && ShouldMarkCrossCompartment(trc, src, val.toGCThing());
 }
 
 static void
@@ -1599,7 +1599,7 @@ ObjectDenseElementsMayBeMarkable(NativeObject* nobj)
     if (!mayBeMarkable) {
         const Value* elements = nobj->getDenseElementsAllowCopyOnWrite();
         for (unsigned i = 0; i < nobj->getDenseInitializedLength(); i++)
-            MOZ_ASSERT(!elements[i].isMarkable());
+            MOZ_ASSERT(!elements[i].isGCThing());
     }
 #endif
 
