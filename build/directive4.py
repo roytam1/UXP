@@ -49,6 +49,7 @@ if ('MOZ_OFFICIAL_BRANDING' in listConfig) or (strBrandingDirectory.endswith("br
     # Applies to Pale Moon Only
     if 'MC_PALEMOON' in listConfig:
         listViolations += [
+            'MOZ_EME',
             'MOZ_WEBRTC'
         ]
     
