@@ -27,8 +27,11 @@ loader.lazyRequireGetter(this, "DebuggerServer", "devtools/server/main", true);
 loader.lazyRequireGetter(this, "DebuggerClient", "devtools/shared/client/main", true);
 loader.lazyRequireGetter(this, "BrowserMenus", "devtools/client/framework/browser-menus");
 
-loader.lazyImporter(this, "CustomizableUI", "resource:///modules/CustomizableUI.jsm");
 loader.lazyImporter(this, "AppConstants", "resource://gre/modules/AppConstants.jsm");
+
+if (AppConstants.MOZ_APP_NAME.toLowerCase() != "palemoon") {
+  loader.lazyImporter(this, "CustomizableUI", "resource:///modules/CustomizableUI.jsm");
+}
 
 const {LocalizationHelper} = require("devtools/shared/l10n");
 const L10N = new LocalizationHelper("devtools/client/locales/toolbox.properties");
@@ -295,6 +298,9 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    * Install Developer widget
    */
   installDeveloperWidget: function () {
+    if (typeof CustomizableUI === "undefined") {
+      return;
+    }
     let id = "developer-button";
     let widget = CustomizableUI.getWidget(id);
     if (widget && widget.provider == CustomizableUI.PROVIDER_API) {
@@ -350,7 +356,7 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    */
   // Used by itself
   installWebIDEWidget: function () {
-    if (this.isWebIDEWidgetInstalled()) {
+    if ((typeof CustomizableUI === "undefined") || this.isWebIDEWidgetInstalled()) {
       return;
     }
 
@@ -374,6 +380,9 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
   },
 
   isWebIDEWidgetInstalled: function () {
+    if (typeof CustomizableUI === "undefined") {
+      return false;
+    }
     let widgetWrapper = CustomizableUI.getWidget("webide-button");
     return !!(widgetWrapper && widgetWrapper.provider == CustomizableUI.PROVIDER_API);
   },
@@ -387,6 +396,9 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    * Uninstall WebIDE widget
    */
   uninstallWebIDEWidget: function () {
+    if (typeof CustomizableUI === "undefined") {
+      return;
+    }
     if (this.isWebIDEWidgetInstalled()) {
       CustomizableUI.removeWidgetFromArea("webide-button");
     }
@@ -398,6 +410,9 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    */
    // Used by webide.js
   moveWebIDEWidgetInNavbar: function () {
+    if (typeof CustomizableUI === "undefined") {
+      return;
+    }
     CustomizableUI.addWidgetToArea("webide-button", CustomizableUI.AREA_NAVBAR);
   },
 
