@@ -35,75 +35,117 @@ struct RedirEntry {
   URI_SAFE_FOR_UNTRUSTED_CONTENT.
 */
 static RedirEntry kRedirMap[] = {
-  { "blocked", "chrome://browser/content/blockedSite.xhtml",
+  {
+    "basilisk", "chrome://global/content/memoriam.xhtml",
+    nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+  {
+    "blocked", "chrome://browser/content/blockedSite.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::URI_CAN_LOAD_IN_CHILD |
     nsIAboutModule::ALLOW_SCRIPT |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "certerror", "chrome://browser/content/aboutNetError.xhtml",
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+  {
+    "certerror", "chrome://browser/content/aboutNetError.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::URI_CAN_LOAD_IN_CHILD |
     nsIAboutModule::ALLOW_SCRIPT |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "socialerror", "chrome://browser/content/aboutSocialError.xhtml",
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+  {
+    "socialerror", "chrome://browser/content/aboutSocialError.xhtml",
     nsIAboutModule::ALLOW_SCRIPT |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "providerdirectory", "chrome://browser/content/aboutProviderDirectory.xhtml",
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+  {
+    "providerdirectory", "chrome://browser/content/aboutProviderDirectory.xhtml",
     nsIAboutModule::ALLOW_SCRIPT |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "tabcrashed", "chrome://browser/content/aboutTabCrashed.xhtml",
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+  {
+    "tabcrashed", "chrome://browser/content/aboutTabCrashed.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "feeds", "chrome://browser/content/feeds/subscribe.xhtml",
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+  {
+    "feeds", "chrome://browser/content/feeds/subscribe.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "privatebrowsing", "chrome://browser/content/aboutPrivateBrowsing.xhtml",
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+  {
+    "privatebrowsing", "chrome://browser/content/aboutPrivateBrowsing.xhtml",
     nsIAboutModule::URI_MUST_LOAD_IN_CHILD |
-    nsIAboutModule::ALLOW_SCRIPT },
-  { "rights",
-    "chrome://global/content/aboutRights.xhtml",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
+  { 
+    "rights", "chrome://global/content/aboutRights.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::MAKE_LINKABLE |
-    nsIAboutModule::ALLOW_SCRIPT },
-  { "robots", "chrome://browser/content/aboutRobots.xhtml",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
+  {
+    "robots", "chrome://browser/content/aboutRobots.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
-    nsIAboutModule::ALLOW_SCRIPT },
-  { "searchreset", "chrome://browser/content/search/searchReset.xhtml",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
+  {
+    "searchreset", "chrome://browser/content/search/searchReset.xhtml",
     nsIAboutModule::ALLOW_SCRIPT |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "sessionrestore", "chrome://browser/content/aboutSessionRestore.xhtml",
-    nsIAboutModule::ALLOW_SCRIPT },
-  { "welcomeback", "chrome://browser/content/aboutWelcomeBack.xhtml",
-    nsIAboutModule::ALLOW_SCRIPT },
-  { "sync-tabs", "chrome://browser/content/sync/aboutSyncTabs.xul",
-    nsIAboutModule::ALLOW_SCRIPT },
-  // Linkable because of indexeddb use (bug 1228118)
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
+  {
+    "sessionrestore", "chrome://browser/content/aboutSessionRestore.xhtml",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
+  {
+    "welcomeback", "chrome://browser/content/aboutWelcomeBack.xhtml",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
+  {
+    "sync-tabs", "chrome://browser/content/sync/aboutSyncTabs.xul",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
   { "home", "chrome://browser/content/abouthome/aboutHome.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::URI_MUST_LOAD_IN_CHILD |
     nsIAboutModule::ALLOW_SCRIPT |
+    // Linkable because of indexeddb use (bug 1228118)
     nsIAboutModule::MAKE_LINKABLE |
     nsIAboutModule::ENABLE_INDEXED_DB },
-  // the newtab's actual URL will be determined when the channel is created
-  { "newtab", "about:blank",
-    nsIAboutModule::ALLOW_SCRIPT },
-  { "preferences", "chrome://browser/content/preferences/in-content/preferences.xul",
-    nsIAboutModule::ALLOW_SCRIPT },
-  { "downloads", "chrome://browser/content/downloads/contentAreaDownloadsView.xul",
-    nsIAboutModule::ALLOW_SCRIPT },
+  {
+    // the newtab's actual URL will be determined when the channel is created
+    "newtab", "about:blank",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
+  {
+    "preferences", "chrome://browser/content/preferences/in-content/preferences.xul",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
+  {
+    "downloads", "chrome://browser/content/downloads/contentAreaDownloadsView.xul",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
 #ifdef MOZ_SERVICES_HEALTHREPORT
-  { "healthreport", "chrome://browser/content/abouthealthreport/abouthealth.xhtml",
-    nsIAboutModule::ALLOW_SCRIPT },
+  {
+    "healthreport", "chrome://browser/content/abouthealthreport/abouthealth.xhtml",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
 #endif
-  { "accounts", "chrome://browser/content/aboutaccounts/aboutaccounts.xhtml",
-    nsIAboutModule::ALLOW_SCRIPT },
-  { "reader", "chrome://global/content/reader/aboutReader.html",
+  {
+    "accounts", "chrome://browser/content/aboutaccounts/aboutaccounts.xhtml",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
+  {
+    "reader", "chrome://global/content/reader/aboutReader.html",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT |
     nsIAboutModule::URI_MUST_LOAD_IN_CHILD |
-    nsIAboutModule::HIDE_FROM_ABOUTABOUT },
+    nsIAboutModule::HIDE_FROM_ABOUTABOUT
+  },
 };
 static const int kRedirTotal = ArrayLength(kRedirMap);
 
