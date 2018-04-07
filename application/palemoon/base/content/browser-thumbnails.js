@@ -142,7 +142,7 @@ let gBrowserThumbnails = {
 
     // FIXME Bug 720575 - Don't capture thumbnails for SVG or XML documents as
     //       that currently regresses Talos SVG tests.
-    if (doc instanceof SVGDocument || doc instanceof XMLDocument)
+    if (doc instanceof XMLDocument)
       return false;
 
     // There's no point in taking screenshot of loading pages.
