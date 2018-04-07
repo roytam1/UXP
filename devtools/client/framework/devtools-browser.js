@@ -8,7 +8,7 @@
  * This is the main module loaded in Firefox desktop that handles browser
  * windows and coordinates devtools around each window.
  *
- * This module is loaded lazily by devtools-clhandler.js, once the first
+ * This module is loaded lazily by devtools-startup.js, once the first
  * browser window is ready (i.e. fired browser-delayed-startup-finished event)
  **/
 
