@@ -95,7 +95,7 @@ let gBrowserThumbnails = {
     // Tycho: aCallback([browser.currentURI.spec for (browser of gBrowser.browsers)]);
     let result = [];
     for (let browser of gBrowser.browsers) {
-      result.push(browser.currentURL.spec);
+      result.push(browser.currentURI.spec);
     }
     aCallback(result);
   },
