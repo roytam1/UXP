@@ -53,9 +53,11 @@ browser.jar:
   skin/classic/browser/Toolbar.png
   skin/classic/browser/Toolbar-small.png
   skin/classic/browser/urlbar-arrow.png
+#ifdef MOZ_WEBRTC
   skin/classic/browser/webRTC-shareDevice-16.png
   skin/classic/browser/webRTC-shareDevice-64.png
   skin/classic/browser/webRTC-sharingDevice-16.png
+#endif
   skin/classic/browser/downloads/buttons.png          (downloads/buttons.png)
   skin/classic/browser/downloads/download-glow.png    (downloads/download-glow.png)
   skin/classic/browser/downloads/download-glow-small.png (downloads/download-glow-small.png)

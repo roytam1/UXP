@@ -440,8 +440,10 @@
             <image id="alert-plugins-notification-icon" class="notification-anchor-icon" role="button"/>
             <image id="blocked-plugins-notification-icon" class="notification-anchor-icon" role="button"/>
             <image id="mixed-content-blocked-notification-icon" class="notification-anchor-icon" role="button"/>
+#ifdef MOZ_WEBRTC
             <image id="webRTC-shareDevices-notification-icon" class="notification-anchor-icon" role="button"/>
             <image id="webRTC-sharingDevices-notification-icon" class="notification-anchor-icon" role="button"/>
+#endif
             <image id="pointerLock-notification-icon" class="notification-anchor-icon" role="button"/>
             <image id="servicesInstall-notification-icon" class="notification-anchor-icon" role="button"/>
           </box>
@@ -513,7 +515,7 @@
                    flex="100" persist="width" removable="true">
         <searchbar id="searchbar" flex="1"/>
       </toolbaritem>
-
+#ifdef MOZ_WEBRTC
       <toolbarbutton id="webrtc-status-button"
                      class="toolbarbutton-1 chromeclass-toolbar-additional"
                      type="menu"
@@ -525,7 +527,7 @@
                    onpopuphiding="WebrtcIndicator.clearPopup(this);"
                    oncommand="WebrtcIndicator.menuCommand(event.target);"/>
       </toolbarbutton>
-
+#endif
       <toolbarbutton id="bookmarks-menu-button"
                      class="toolbarbutton-1 chromeclass-toolbar-additional"
                      persist="class"

@@ -25,7 +25,9 @@ Cu.import("resource://gre/modules/Services.jsm");
   ["PageThumbs", "resource://gre/modules/PageThumbs.jsm"],
   ["NewTabUtils", "resource://gre/modules/NewTabUtils.jsm"],
   ["BrowserNewTabPreloader", "resource:///modules/BrowserNewTabPreloader.jsm"],
+#ifdef MOZ_WEBRTC
   ["webrtcUI", "resource:///modules/webrtcUI.jsm"],
+#endif
   ["PrivateBrowsingUtils", "resource://gre/modules/PrivateBrowsingUtils.jsm"],
   ["RecentWindow", "resource:///modules/RecentWindow.jsm"],
   ["Task", "resource://gre/modules/Task.jsm"],
@@ -395,7 +397,9 @@ BrowserGlue.prototype = {
     PageThumbs.init();
     NewTabUtils.init();
     BrowserNewTabPreloader.init();
+#ifdef MOZ_WEBRTC
     webrtcUI.init();
+#endif
     FormValidationHandler.init();
     
     LoginManagerParent.init();
@@ -502,7 +506,9 @@ BrowserGlue.prototype = {
   _onProfileShutdown: function BG__onProfileShutdown() {
     BrowserNewTabPreloader.uninit();
     UserAgentOverrides.uninit();
+#ifdef MOZ_WEBRTC
     webrtcUI.uninit();
+#endif
     FormValidationHandler.uninit();
     this._dispose();
   },

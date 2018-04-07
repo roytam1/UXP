@@ -153,7 +153,11 @@ let gInitialPages = [
 #include browser-plugins.js
 #include browser-tabPreviews.js
 #include browser-thumbnails.js
+
+#ifdef MOZ_WEBRTC
 #include browser-webrtcUI.js
+#endif
+
 #include browser-gestureSupport.js
 
 #ifdef MOZ_SERVICES_SYNC
@@ -1020,7 +1024,9 @@ var gBrowserInit = {
     OfflineApps.init();
     IndexedDBPromptHelper.init();
     AddonManager.addAddonListener(AddonsMgrListener);
+#ifdef MOZ_WEBRTC
     WebrtcIndicator.init();
+#endif
 
     // Ensure login manager is up and running.
     Services.logins;

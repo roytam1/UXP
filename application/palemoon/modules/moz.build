@@ -19,9 +19,11 @@ EXTRA_JS_MODULES += [
     'PageMenu.jsm',
     'PopupNotifications.jsm',
     'QuotaManager.jsm',
-    'SharedFrame.jsm',
-    'webrtcUI.jsm'
+    'SharedFrame.jsm'
 ]
+
+if CONFIG['MOZ_WEBRTC']:
+    EXTRA_JS_MODULES += ['webrtcUI.jsm']
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     EXTRA_JS_MODULES += [

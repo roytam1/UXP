@@ -728,9 +728,11 @@ toolbar[mode="full"] .toolbarbutton-1 > .toolbarbutton-menubutton-button {
   opacity: .4;
 }
 
+%ifdef MOZ_WEBRTC
 #webrtc-status-button {
   -moz-image-region: rect(0px 192px 24px 168px);
 }
+%endif
 
 /* 16px primary toolbar buttons */
 toolbar[iconsize="small"] .toolbarbutton-1:not([type="menu-button"]) {
@@ -812,7 +814,9 @@ toolbar[iconsize="small"] #downloads-button {
   -moz-image-region: rect(0px 16px 16px 0px);
 }
 
+%ifdef MOZ_WEBRTC
 toolbar[iconsize="small"] #webrtc-status-button /* temporary placeholder (bug 824825) */,
+%endif
 toolbar[iconsize="small"] #history-button,
 toolbar[iconsize="small"] #history-menu-button {
   -moz-image-region: rect(0px 32px 16px 16px);
@@ -884,9 +888,11 @@ toolbar[iconsize="small"] #feed-button {
   -moz-image-region: rect(0px 112px 16px 96px);
 }
 
+%ifdef MOZ_WEBRTC
 toolbar[iconsize="small"] #webrtc-status-button {
   -moz-image-region: rect(0px 128px 16px 112px);
 }
+%endif
 
 /* Fullscreen window controls */
 #window-controls {
@@ -1226,10 +1232,12 @@ toolbar[iconsize="small"] #webrtc-status-button {
   list-style-image: url(chrome://browser/skin/mixed-content-blocked-64.png);
 }
 
+%ifdef MOZ_WEBRTC
 .popup-notification-icon[popupid="webRTC-sharingDevices"],
 .popup-notification-icon[popupid="webRTC-shareDevices"] {
   list-style-image: url(chrome://browser/skin/webRTC-shareDevice-64.png);
 }
+%endif
 
 .popup-notification-icon[popupid="pointerLock"] {
   list-style-image: url(chrome://browser/skin/pointerLock-64.png);
@@ -1352,6 +1360,7 @@ toolbar[iconsize="small"] #webrtc-status-button {
   list-style-image: url(chrome://browser/skin/mixed-content-blocked-16.png);
 }
 
+%ifdef MOZ_WEBRTC
 .webRTC-shareDevices-notification-icon,
 #webRTC-shareDevices-notification-icon {
   list-style-image: url(chrome://browser/skin/webRTC-shareDevice-16.png);
@@ -1361,6 +1370,7 @@ toolbar[iconsize="small"] #webrtc-status-button {
 #webRTC-sharingDevices-notification-icon {
   list-style-image: url(chrome://browser/skin/webRTC-sharingDevice-16.png);
 }
+%endif
 
 .web-notifications-notification-icon,
 #web-notifications-notification-icon {

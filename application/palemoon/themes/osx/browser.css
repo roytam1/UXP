@@ -801,10 +801,11 @@ toolbar[brighttext] #bookmarks-menu-button.bookmark-item {
     -moz-image-region: rect(0, 342px, 18px, 324px);
 }
 
+%ifdef MOZ_WEBRTC
 #webrtc-status-button {
     -moz-image-region: rect(0, 360px, 18px, 342px);
 }
-
+%endif
 
 /* ::::: fullscreen window controls ::::: */
 
@@ -1955,11 +1956,13 @@ toolbarbutton.bookmark-item[dragover="true"][open="true"] {
     list-style-image: url(chrome://browser/skin/mixed-content-blocked-64.png);
 }
 
+%ifdef MOZ_WEBRTC
 .popup-notification-icon[popupid="webRTC-sharingDevices"],
 .popup-notification-icon[popupid="webRTC-shareDevices"] {
     list-style-image: url(chrome://browser/skin/webRTC-shareDevice-64.png);
 }
 
+%endif
 .popup-notification-icon[popupid="pointerLock"] {
     list-style-image: url(chrome://browser/skin/pointerLock-64.png);
 }
@@ -2079,6 +2082,7 @@ toolbarbutton.bookmark-item[dragover="true"][open="true"] {
     list-style-image: url(chrome://browser/skin/mixed-content-blocked-16.png);
 }
 
+%ifdef MOZ_WEBRTC
 .webRTC-shareDevices-notification-icon,
 #webRTC-shareDevices-notification-icon {
     list-style-image: url(chrome://browser/skin/webRTC-shareDevice-16.png);
@@ -2088,6 +2092,7 @@ toolbarbutton.bookmark-item[dragover="true"][open="true"] {
 #webRTC-sharingDevices-notification-icon {
     list-style-image: url(chrome://browser/skin/webRTC-sharingDevice-16.png);
 }
+%endif
 
 .web-notifications-notification-icon,
 #web-notifications-notification-icon {
