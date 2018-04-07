@@ -14,6 +14,7 @@ Services.scriptloader.loadSubScript(
 
 var {Utils: WebConsoleUtils} = require("devtools/client/webconsole/utils");
 const WEBCONSOLE_STRINGS_URI = "devtools/client/locales/webconsole.properties";
+var {HUDService} = require("devtools/client/webconsole/hudservice");
 var WCUL10n = new WebConsoleUtils.L10n(WEBCONSOLE_STRINGS_URI);
 
 Services.prefs.setBoolPref("devtools.webconsole.new-frontend-enabled", true);
