@@ -13,7 +13,6 @@ DevToolsModules(
     'about-devtools-toolbox.js',
     'attach-thread.js',
     'browser-menus.js',
-    'devtools-browser.js',
     'devtools.js',
     'gDevTools.jsm',
     'location-store.js',
@@ -31,3 +30,7 @@ DevToolsModules(
     'toolbox.js',
     'ToolboxProcess.jsm',
 )
+
+FINAL_TARGET_PP_FILES.chrome.devtools.modules.devtools.client.framework += [
+    'devtools-browser.js',
+]

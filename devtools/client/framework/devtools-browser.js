@@ -28,10 +28,9 @@ loader.lazyRequireGetter(this, "DebuggerClient", "devtools/shared/client/main", 
 loader.lazyRequireGetter(this, "BrowserMenus", "devtools/client/framework/browser-menus");
 
 loader.lazyImporter(this, "AppConstants", "resource://gre/modules/AppConstants.jsm");
-
-if (AppConstants.MOZ_APP_NAME.toLowerCase() != "palemoon") {
+#ifdef MC_BASILISK
   loader.lazyImporter(this, "CustomizableUI", "resource:///modules/CustomizableUI.jsm");
-}
+#endif
 
 const {LocalizationHelper} = require("devtools/shared/l10n");
 const L10N = new LocalizationHelper("devtools/client/locales/toolbox.properties");
@@ -298,9 +297,7 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    * Install Developer widget
    */
   installDeveloperWidget: function () {
-    if (typeof CustomizableUI === "undefined") {
-      return;
-    }
+#ifdef MC_BASILISK
     let id = "developer-button";
     let widget = CustomizableUI.getWidget(id);
     if (widget && widget.provider == CustomizableUI.PROVIDER_API) {
@@ -349,6 +346,9 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
         doc.getElementById("PanelUI-multiView").appendChild(view);
       }
     });
+#else
+    return;
+#endif
   },
 
   /**
@@ -356,7 +356,8 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    */
   // Used by itself
   installWebIDEWidget: function () {
-    if ((typeof CustomizableUI === "undefined") || this.isWebIDEWidgetInstalled()) {
+#ifdef MC_BASILISK
+    if (this.isWebIDEWidgetInstalled()) {
       return;
     }
 
@@ -377,14 +378,18 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
         gDevToolsBrowser.openWebIDE();
       }
     });
+#else
+    return;
+#endif
   },
 
   isWebIDEWidgetInstalled: function () {
-    if (typeof CustomizableUI === "undefined") {
-      return false;
-    }
+#ifdef MC_BASILISK
     let widgetWrapper = CustomizableUI.getWidget("webide-button");
     return !!(widgetWrapper && widgetWrapper.provider == CustomizableUI.PROVIDER_API);
+#else
+    return false;
+#endif
   },
 
   /**
@@ -396,13 +401,14 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    * Uninstall WebIDE widget
    */
   uninstallWebIDEWidget: function () {
-    if (typeof CustomizableUI === "undefined") {
-      return;
-    }
+#ifdef MC_BASILISK
     if (this.isWebIDEWidgetInstalled()) {
       CustomizableUI.removeWidgetFromArea("webide-button");
     }
     CustomizableUI.destroyWidget("webide-button");
+#else
+    return;
+#endif
   },
 
   /**
@@ -410,10 +416,11 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    */
    // Used by webide.js
   moveWebIDEWidgetInNavbar: function () {
-    if (typeof CustomizableUI === "undefined") {
-      return;
-    }
+#ifdef MC_BASILISK
     CustomizableUI.addWidgetToArea("webide-button", CustomizableUI.AREA_NAVBAR);
+#else
+    return;
+#endif
   },
 
   /**
