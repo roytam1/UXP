@@ -29,9 +29,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "PluralForm",
 XPCOMUtils.defineLazyModuleGetter(this, "Preferences",
                                   "resource://gre/modules/Preferences.jsm");
 
-XPCOMUtils.defineLazyModuleGetter(this, "Experiments",
-  "resource:///modules/experiments/Experiments.jsm");
-
 const PREF_DISCOVERURL = "extensions.webservice.discoverURL";
 const PREF_DISCOVER_ENABLED = "extensions.getAddons.showPane";
 const PREF_XPI_ENABLED = "xpinstall.enabled";
@@ -295,23 +292,6 @@ function isDiscoverEnabled() {
   } catch (e) {}
 
   return true;
-}
-
-function getExperimentEndDate(aAddon) {
-  if (!("@mozilla.org/browser/experiments-service;1" in Cc)) {
-    return 0;
-  }
-
-  if (!aAddon.isActive) {
-    return aAddon.endDate;
-  }
-
-  let experiment = Experiments.instance().getActiveExperiment();
-  if (!experiment) {
-    return 0;
-  }
-
-  return experiment.endDate;
 }
 
 /**
@@ -1444,27 +1424,6 @@ var gViewController = {
       }
     },
 
-    cmd_experimentsLearnMore: {
-      isEnabled: function() {
-        let mainWindow = getMainWindow();
-        return mainWindow && "switchToTabHavingURI" in mainWindow;
-      },
-      doCommand: function() {
-        let url = Services.prefs.getCharPref("toolkit.telemetry.infoURL");
-        openOptionsInTab(url);
-      },
-    },
-
-    cmd_experimentsOpenTelemetryPreferences: {
-      isEnabled: function() {
-        return !!getMainWindowWithPreferencesPane();
-      },
-      doCommand: function() {
-        let mainWindow = getMainWindowWithPreferencesPane();
-        mainWindow.openAdvancedPreferences("dataChoicesTab");
-      },
-    },
-
     cmd_showUnsignedExtensions: {
       isEnabled: function() {
         return true;
@@ -1577,10 +1536,6 @@ function shouldShowVersionNumber(aAddon) {
   if (!aAddon.version)
     return false;
 
-  // The version number is hidden for experiments.
-  if (aAddon.type == "experiment")
-    return false;
-
   // The version number is hidden for lightweight themes.
   if (aAddon.type == "theme")
     return !/@personas\.mozilla\.org$/.test(aAddon.id);
@@ -1613,10 +1568,6 @@ function createItem(aObj, aIsInstall, aIsRemote) {
   // set only attributes needed for sorting and XBL binding,
   // the binding handles the rest
   item.setAttribute("value", aObj.id);
-
-  if (aObj.type == "experiment") {
-    item.endDate = getExperimentEndDate(aObj);
-  }
 
   return item;
 }
@@ -2861,13 +2812,6 @@ var gListView = {
     // the existing item
     if (aInstall.existingAddon)
       this.removeItem(aInstall, true);
-
-    if (aInstall.addon.type == "experiment") {
-      let item = this.getListItemForID(aInstall.addon.id);
-      if (item) {
-        item.endDate = getExperimentEndDate(aInstall.addon);
-      }
-    }
   },
 
   addItem: function(aObj, aIsInstall) {
@@ -3124,34 +3068,6 @@ var gDetailView = {
       } else {
         gridRow.removeAttribute("first-row");
       }
-    }
-
-    if (this._addon.type == "experiment") {
-      let prefix = "details.experiment.";
-      let active = this._addon.isActive;
-
-      let stateKey = prefix + "state." + (active ? "active" : "complete");
-      let node = document.getElementById("detail-experiment-state");
-      node.value = gStrings.ext.GetStringFromName(stateKey);
-
-      let now = Date.now();
-      let end = getExperimentEndDate(this._addon);
-      let days = Math.abs(end - now) / (24 * 60 * 60 * 1000);
-
-      let timeKey = prefix + "time.";
-      let timeMessage;
-      if (days < 1) {
-        timeKey += (active ? "endsToday" : "endedToday");
-        timeMessage = gStrings.ext.GetStringFromName(timeKey);
-      } else {
-        timeKey += (active ? "daysRemaining" : "daysPassed");
-        days = Math.round(days);
-        let timeString = gStrings.ext.GetStringFromName(timeKey);
-        timeMessage = PluralForm.get(days, timeString)
-                                .replace("#1", days);
-      }
-
-      document.getElementById("detail-experiment-time").value = timeMessage;
     }
 
     this.fillSettingsRows(aScrollToPreferences, (function() {

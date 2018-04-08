@@ -153,7 +153,6 @@ const DEFAULT_ENVIRONMENT_PREFS = new Map([
   ["dom.ipc.plugins.enabled", {what: RECORD_PREF_VALUE}],
   ["dom.ipc.processCount", {what: RECORD_PREF_VALUE, requiresRestart: true}],
   ["dom.max_script_run_time", {what: RECORD_PREF_VALUE}],
-  ["experiments.manifest.uri", {what: RECORD_PREF_VALUE}],
   ["extensions.autoDisableScopes", {what: RECORD_PREF_VALUE}],
   ["extensions.enabledScopes", {what: RECORD_PREF_VALUE}],
   ["extensions.blocklist.enabled", {what: RECORD_PREF_VALUE}],
@@ -209,7 +208,6 @@ const PREF_E10S_COHORT = "e10s.rollout.cohort";
 
 const COMPOSITOR_CREATED_TOPIC = "compositor:created";
 const DISTRIBUTION_CUSTOMIZATION_COMPLETE_TOPIC = "distribution-customization-complete";
-const EXPERIMENTS_CHANGED_TOPIC = "experiments-changed";
 const GFX_FEATURES_READY_TOPIC = "gfx-features-ready";
 const SEARCH_ENGINE_MODIFIED_TOPIC = "browser-search-engine-modified";
 const SEARCH_SERVICE_TOPIC = "browser-search-service";
@@ -465,7 +463,6 @@ EnvironmentAddonBuilder.prototype = {
   watchForChanges: function() {
     this._loaded = true;
     AddonManager.addAddonListener(this);
-    Services.obs.addObserver(this, EXPERIMENTS_CHANGED_TOPIC, false);
   },
 
   // AddonListener
@@ -490,7 +487,6 @@ EnvironmentAddonBuilder.prototype = {
   // nsIObserver
   observe: function (aSubject, aTopic, aData) {
     this._environment._log.trace("observe - Topic " + aTopic);
-    this._checkForChanges("experiment-changed");
   },
 
   _checkForChanges: function(changeReason) {
@@ -515,7 +511,6 @@ EnvironmentAddonBuilder.prototype = {
   _shutdownBlocker: function() {
     if (this._loaded) {
       AddonManager.removeAddonListener(this);
-      Services.obs.removeObserver(this, EXPERIMENTS_CHANGED_TOPIC);
     }
     return this._pendingTask;
   },
@@ -545,7 +540,6 @@ EnvironmentAddonBuilder.prototype = {
       theme: yield this._getActiveTheme(),
       activePlugins: this._getActivePlugins(),
       activeGMPlugins: yield this._getActiveGMPlugins(),
-      activeExperiment: this._getActiveExperiment(),
       persona: personaId,
     };
 
@@ -718,29 +712,7 @@ EnvironmentAddonBuilder.prototype = {
     }
 
     return activeGMPlugins;
-  }),
-
-  /**
-   * Get the active experiment data in object form.
-   * @return Object containing the active experiment data.
-   */
-  _getActiveExperiment: function () {
-    let experimentInfo = {};
-    try {
-      let scope = {};
-      Cu.import("resource:///modules/experiments/Experiments.jsm", scope);
-      let experiments = scope.Experiments.instance();
-      let activeExperiment = experiments.getActiveExperimentID();
-      if (activeExperiment) {
-        experimentInfo.id = activeExperiment;
-        experimentInfo.branch = experiments.getActiveExperimentBranch();
-      }
-    } catch (e) {
-      // If this is not Firefox, the import will fail.
-    }
-
-    return experimentInfo;
-  },
+  })
 };
 
 function EnvironmentCache() {

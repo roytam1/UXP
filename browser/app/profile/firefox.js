@@ -1392,13 +1392,6 @@ pref("browser.translation.engine", "bing");
 // Determines if Telemetry pings can be archived locally.
 pref("toolkit.telemetry.archive.enabled", true);
 
-// Telemetry experiments settings.
-pref("experiments.enabled", true);
-pref("experiments.manifest.fetchIntervalSeconds", 86400);
-pref("experiments.manifest.uri", "https://telemetry-experiment.cdn.mozilla.net/manifest/v1/firefox/%VERSION%/%CHANNEL%");
-// Whether experiments are supported by the current application profile.
-pref("experiments.supported", true);
-
 // Enable GMP support in the addon manager.
 pref("media.gmp-provider.enabled", true);
 
