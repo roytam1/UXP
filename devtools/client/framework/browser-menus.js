@@ -133,10 +133,11 @@ function attachKeybindingsToBrowser(doc, keys) {
  */
 function createToolMenuElements(toolDefinition, doc) {
   let id = toolDefinition.id;
+  let appmenuId = "appmenuitem_" + id;
   let menuId = "menuitem_" + id;
 
   // Prevent multiple entries for the same tool.
-  if (doc.getElementById(menuId)) {
+  if (doc.getElementById(appmenuId) || doc.getElementById(menuId)) {
     return;
   }
 
@@ -321,6 +322,7 @@ function addTopLevelItems(doc) {
         doc,
         id: "app" + id,
         label: l10n(l10nKey + ".label"),
+        accesskey: null,
         isCheckbox: item.checkbox
       });
       let menuitem = createMenuItem({

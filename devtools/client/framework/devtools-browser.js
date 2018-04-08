@@ -87,6 +87,9 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
 
     function toggleMenuItem(id, isEnabled) {
       let cmd = doc.getElementById(id);
+      if (!cmd) {
+        return;
+      }
       if (isEnabled) {
         cmd.removeAttribute("disabled");
         cmd.removeAttribute("hidden");
@@ -96,22 +99,39 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
       }
     }
 
+    let idEls = [];
+    
     // Enable developer toolbar?
     let devToolbarEnabled = Services.prefs.getBoolPref("devtools.toolbar.enabled");
-    toggleMenuItem("menu_devToolbar", devToolbarEnabled);
-    let focusEl = doc.getElementById("menu_devToolbar");
-    if (devToolbarEnabled) {
-      focusEl.removeAttribute("disabled");
-    } else {
-      focusEl.setAttribute("disabled", "true");
-    }
+    idEls = [
+      "appmenu_devToolbar",
+      "menu_devToolbar"
+    ];
+    idEls.forEach(function (idEl) {
+      toggleMenuItem(idEl, devToolbarEnabled);
+      let focusEl = doc.getElementById(idEl);
+      if (!focusEl) {
+        return;
+      }
+      if (devToolbarEnabled) {
+        focusEl.removeAttribute("disabled");
+      } else {
+        focusEl.setAttribute("disabled", "true");
+      }
+    });
     if (devToolbarEnabled && Services.prefs.getBoolPref("devtools.toolbar.visible")) {
       win.DeveloperToolbar.show(false).catch(console.error);
     }
 
     // Enable WebIDE?
     let webIDEEnabled = Services.prefs.getBoolPref("devtools.webide.enabled");
-    toggleMenuItem("menu_webide", webIDEEnabled);
+    idEls = [
+      "appmenu_webide",
+      "menu_webide"
+    ];
+    idEls.forEach(function (idEl) {
+      toggleMenuItem(idEl, webIDEEnabled);
+    });
 
     let showWebIDEWidget = Services.prefs.getBoolPref("devtools.webide.widget.enabled");
     if (webIDEEnabled && showWebIDEWidget) {
@@ -124,11 +144,29 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
     let chromeEnabled = Services.prefs.getBoolPref("devtools.chrome.enabled");
     let devtoolsRemoteEnabled = Services.prefs.getBoolPref("devtools.debugger.remote-enabled");
     let remoteEnabled = chromeEnabled && devtoolsRemoteEnabled;
-    toggleMenuItem("menu_browserToolbox", remoteEnabled);
-    toggleMenuItem("menu_browserContentToolbox", remoteEnabled && win.gMultiProcessBrowser);
+    idEls = [
+      "appmenu_browserToolbox",
+      "menu_browserToolbox"
+    ];
+    idEls.forEach(function (idEl) {
+      toggleMenuItem(idEl, remoteEnabled);
+    });
+    idEls = [
+      "appmenu_browserContentToolbox",
+      "menu_browserContentToolbox"
+    ];
+    idEls.forEach(function (idEl) {
+      toggleMenuItem(idEl, remoteEnabled && win.gMultiProcessBrowser);
+    });
 
     // Enable DevTools connection screen, if the preference allows this.
-    toggleMenuItem("menu_devtools_connect", devtoolsRemoteEnabled);
+    idEls = [
+      "appmenu_devtools_connect",
+      "menu_devtools_connect"
+    ];
+    idEls.forEach(function (idEl) {
+      toggleMenuItem(idEl, devtoolsRemoteEnabled);
+    });
   },
 
   observe: function (subject, topic, prefName) {
@@ -613,12 +651,23 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
 
       let hasToolbox = gDevToolsBrowser.hasToolboxOpened(win);
 
-      let menu = win.document.getElementById("menu_devToolbox");
-      if (hasToolbox) {
-        menu.setAttribute("checked", "true");
-      } else {
-        menu.removeAttribute("checked");
-      }
+      let idEls = [];
+
+      idEls = [
+        "appmenu_devToolbox",
+        "menu_devToolbox"
+      ];
+      idEls.forEach(function (idEl) {
+        let menu = win.document.getElementById(idEl);
+        if (!menu) {
+          return;
+        }
+        if (hasToolbox) {
+          menu.setAttribute("checked", "true");
+        } else {
+          menu.removeAttribute("checked");
+        }
+      });
     }
   },
 

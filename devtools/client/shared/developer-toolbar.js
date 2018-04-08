@@ -449,7 +449,15 @@ DeveloperToolbar.prototype.show = function (focus) {
 
     [ this.tooltipPanel, this.outputPanel ] = panels;
 
-    this._doc.getElementById("menu_devToolbar").setAttribute("checked", "true");
+    let checkboxValue = "true";
+    let appmenuEl = this._doc.getElementById("appmenu_devToolbar");
+    let menuEl = this._doc.getElementById("menu_devToolbar");
+    if (appmenuEl) {
+      appmenuEl.setAttribute("checked", checkboxValue);
+    }
+    if (menuEl) {
+      menuEl.setAttribute("checked", checkboxValue);
+    }
 
     this.target = TargetFactory.forTab(this._chromeWindow.gBrowser.selectedTab);
     const options = {
@@ -569,7 +577,15 @@ DeveloperToolbar.prototype.hide = function () {
 
     Services.prefs.setBoolPref("devtools.toolbar.visible", false);
 
-    this._doc.getElementById("menu_devToolbar").setAttribute("checked", "false");
+    let checkboxValue = "false";
+    let appmenuEl = this._doc.getElementById("appmenu_devToolbar");
+    let menuEl = this._doc.getElementById("menu_devToolbar");
+    if (appmenuEl) {
+      appmenuEl.setAttribute("checked", checkboxValue);
+    }
+    if (menuEl) {
+      menuEl.setAttribute("checked", checkboxValue);
+    }
     this.destroy();
 
     this._telemetry.toolClosed("developertoolbar");
