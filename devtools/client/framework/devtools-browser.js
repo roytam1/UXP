@@ -29,7 +29,7 @@ loader.lazyRequireGetter(this, "BrowserMenus", "devtools/client/framework/browse
 
 loader.lazyImporter(this, "AppConstants", "resource://gre/modules/AppConstants.jsm");
 #ifdef MC_BASILISK
-  loader.lazyImporter(this, "CustomizableUI", "resource:///modules/CustomizableUI.jsm");
+loader.lazyImporter(this, "CustomizableUI", "resource:///modules/CustomizableUI.jsm");
 #endif
 
 const {LocalizationHelper} = require("devtools/shared/l10n");
