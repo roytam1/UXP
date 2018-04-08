@@ -282,7 +282,7 @@
 @RESPATH@/components/jar.xpt
 @RESPATH@/components/jsdebugger.xpt
 @RESPATH@/components/jsdownloads.xpt
-@RESPATH@/components/jsinspector.xpt
+@RESPATH@/browser/components/jsinspector.xpt
 @RESPATH@/components/layout_base.xpt
 
 #ifdef NS_PRINTING
@@ -322,7 +322,7 @@
 @RESPATH@/components/plugin.xpt
 @RESPATH@/components/pref.xpt
 @RESPATH@/components/prefetch.xpt
-@RESPATH@/components/profile.xpt
+@RESPATH@/components/profiler.xpt
 @RESPATH@/components/rdf.xpt
 @RESPATH@/components/satchel.xpt
 @RESPATH@/components/saxparser.xpt
@@ -421,8 +421,8 @@
 @RESPATH@/components/jsconsole-clhandler.manifest
 @RESPATH@/components/jsconsole-clhandler.js
 #ifdef MOZ_DEVTOOLS
-@RESPATH@/components/devtools-clhandler.manifest
-@RESPATH@/components/devtools-clhandler.js
+@RESPATH@/browser/components/devtools-startup.manifest
+@RESPATH@/browser/components/devtools-startup.js
 #endif
 @RESPATH@/components/webvtt.xpt
 @RESPATH@/components/WebVTT.manifest
@@ -677,6 +677,16 @@
 @RESPATH@/browser/chrome/icons/default/default48.png
 #endif
 
+; [Webide Files]
+@RESPATH@/browser/chrome/webide@JAREXT@
+@RESPATH@/browser/chrome/webide.manifest
+@RESPATH@/browser/@PREF_DIR@/webide-prefs.js
+
+; DevTools
+@RESPATH@/browser/chrome/devtools@JAREXT@
+@RESPATH@/browser/chrome/devtools.manifest
+@RESPATH@/browser/@PREF_DIR@/devtools.js
+ 
 ; shell icons
 #ifdef XP_UNIX
 #ifndef XP_MACOSX
