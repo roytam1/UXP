@@ -106,12 +106,12 @@ XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
 
 #ifdef MOZ_DEVTOOLS
 XPCOMUtils.defineLazyModuleGetter(this, "ScratchpadManager",
-  "resource://gre/modules/devtools/scratchpad-manager.jsm");
+  "resource://devtools/client/scratchpad/scratchpad-manager.jsm");
 
 Object.defineProperty(this, "HUDService", {
   get: function HUDService_getter() {
-    let devtools = Cu.import("resource://gre/modules/devtools/Loader.jsm", {}).devtools;
-    return devtools.require("devtools/webconsole/hudservice").HUDService;
+    let devtools = Cu.import("resource://devtools/shared/Loader.jsm", {}).devtools;
+    return devtools.require("devtools/client/webconsole/hudservice").HUDService;
   },
   configurable: true,
   enumerable: true
