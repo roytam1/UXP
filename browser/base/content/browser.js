@@ -53,6 +53,8 @@ Cu.import("resource://gre/modules/NotificationDB.jsm");
   ["UpdateUtils", "resource://gre/modules/UpdateUtils.jsm"],
   ["Weave", "resource://services-sync/main.js"],
   ["fxAccounts", "resource://gre/modules/FxAccounts.jsm"],
+  // Note: Do not delete! It is used for: base/content/nsContextMenu.js
+  ["gDevTools", "resource://devtools/client/framework/gDevTools.jsm"],
   ["webrtcUI", "resource:///modules/webrtcUI.jsm", ]
 ].forEach(([name, resource]) => XPCOMUtils.defineLazyModuleGetter(this, name, resource));
 
