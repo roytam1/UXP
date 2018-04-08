@@ -383,27 +383,33 @@ function addTopLevelItems(doc) {
 
   attachKeybindingsToBrowser(doc, keys);
 
+  // There are hardcoded menu items in the Web Developer menus plus it is a
+  // location of menu items via overlays from extensions so we want to make
+  // sure the last seperator and the "Get More Tools..." items are last.
+  // This will emulate the behavior when devtools menu items were actually
+  // physically present in browser.xul
+
+  // Tools > Web Developer
+  let menu = doc.getElementById("menuWebDeveloperPopup");
+  // Insert the Devtools Menu Items before everything else
+  menu.insertBefore(menuItems, menu.firstChild);
+  // Move the devtools last seperator and Get More Tools menu items to the bottom
+  let menu_endSeparator = doc.getElementById("menu_devToolsEndSeparator");
+  let menu_getMoreDevtools = doc.getElementById("menu_getMoreDevtools");
+  menu.insertBefore(menu_getMoreDevtools, null);
+  menu.insertBefore(menu_endSeparator, menu_getMoreDevtools);
+  
+  // Application Menu > Web Developer (If existant)
   let appmenu = doc.getElementById("appmenu_webDeveloper_popup");
   if (appmenu) {
-    appmenu.appendChild(appmenuItems);
-
-    // There is still "Page Source" menuitem hardcoded into browser.xul. Instead
-    // of manually inserting everything around it, move it to the expected
-    // position.
-    let appmenu_pageSource = doc.getElementById("appmenu_pageSource");
+    // Insert the Devtools Menu Items after the hardcoded idless seperator
+    appmenu.insertBefore(appmenuItems, appmenu.childNodes[2].nextSibling);
+    // Move the devtools last seperator and Get More Tools menu items to the bottom
     let appmenu_endSeparator = doc.getElementById("appmenu_devToolsEndSeparator");
-    appmenu.insertBefore(appmenu_pageSource, appmenu_endSeparator);
+    let appmenu_getMoreDevtools = doc.getElementById("appmenu_getMoreDevtools");
+    appmenu.insertBefore(appmenu_getMoreDevtools, null);
+    appmenu.insertBefore(appmenu_endSeparator, appmenu_getMoreDevtools);
   }
-
-  let menu = doc.getElementById("menuWebDeveloperPopup");
-  menu.appendChild(menuItems);
-
-  // There is still "Page Source" menuitem hardcoded into browser.xul. Instead
-  // of manually inserting everything around it, move it to the expected
-  // position.
-  let menu_pageSource = doc.getElementById("menu_pageSource");
-  let menu_endSeparator = doc.getElementById("menu_devToolsEndSeparator");
-  menu.insertBefore(menu_pageSource, menu_endSeparator);
 }
 
 /**

@@ -144,10 +144,10 @@
                     observes="workOfflineMenuitemState"
                     oncommand="BrowserOffline.toggleOfflineStatus();"/>
           <menuseparator/>
-          <menuitem id="appmenu_javascriptConsole"
-                    observes="devtoolsMenuBroadcaster_ErrorConsole"/>
           <menuitem id="appmenu_pageSource"
                     observes="devtoolsMenuBroadcaster_PageSource"/>
+          <menuitem id="appmenu_javascriptConsole"
+                    observes="devtoolsMenuBroadcaster_ErrorConsole"/>
         </menupopup>
       </splitmenu>
       <menuseparator class="appmenu-menuseparator"/>
