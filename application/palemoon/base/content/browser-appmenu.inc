@@ -132,38 +132,8 @@
       </splitmenu>
       <menuseparator class="appmenu-menuseparator"/>
       <splitmenu id="appmenu_webDeveloper"
-                 command="Tools:DevToolbox"
                  label="&appMenuWebDeveloper.label;">
         <menupopup id="appmenu_webDeveloper_popup">
-#ifdef MOZ_DEVTOOLS
-          <menuitem id="appmenu_devToolbox"
-                    observes="devtoolsMenuBroadcaster_DevToolbox"/>
-          <menuseparator id="appmenu_devtools_separator"/>
-          <menuitem id="appmenu_devToolbar"
-                    observes="devtoolsMenuBroadcaster_DevToolbar"/>
-          <menuitem id="appmenu_chromeDebugger"
-                    observes="devtoolsMenuBroadcaster_ChromeDebugger"/>
-          <menuitem id="appmenu_browserConsole"
-                    observes="devtoolsMenuBroadcaster_BrowserConsole"/>
-          <menuitem id="appmenu_responsiveUI"
-                    observes="devtoolsMenuBroadcaster_ResponsiveUI"/>
-          <menuitem id="appmenu_eyedropper"
-                    observes="devtoolsMenuBroadcaster_Eyedropper"/>
-          <menuitem id="appmenu_scratchpad"
-                    observes="devtoolsMenuBroadcaster_Scratchpad"/>
-#endif
-          <menuitem id="appmenu_pageSource"
-                    observes="devtoolsMenuBroadcaster_PageSource"/>
-          <menuitem id="appmenu_errorConsole"
-                    observes="devtoolsMenuBroadcaster_ErrorConsole"/>
-#ifdef MOZ_DEVTOOLS
-          <menuitem id="appmenu_devtools_connect"
-                    observes="devtoolsMenuBroadcaster_connect"/>
-#endif
-          <menuseparator id="appmenu_devToolsEndSeparator"/>
-          <menuitem id="appmenu_getMoreDevtools"
-                    observes="devtoolsMenuBroadcaster_GetMoreTools"/>
-          <menuseparator/>
 #define ID_PREFIX appmenu_developer_
 #define OMIT_ACCESSKEYS
 #include browser-charsetmenu.inc
@@ -173,6 +143,11 @@
                     type="checkbox"
                     observes="workOfflineMenuitemState"
                     oncommand="BrowserOffline.toggleOfflineStatus();"/>
+          <menuseparator/>
+          <menuitem id="appmenu_javascriptConsole"
+                    observes="devtoolsMenuBroadcaster_ErrorConsole"/>
+          <menuitem id="appmenu_pageSource"
+                    observes="devtoolsMenuBroadcaster_PageSource"/>
         </menupopup>
       </splitmenu>
       <menuseparator class="appmenu-menuseparator"/>
