@@ -6832,6 +6832,12 @@ var TabContextMenu = {
   }
 };
 
+#ifdef MOZ_DEVTOOLS
+// Note: Do not delete! It is used for: base/content/nsContextMenu.js
+XPCOMUtils.defineLazyModuleGetter(this, "gDevTools",
+                                  "resource://devtools/client/framework/gDevTools.jsm");
+#endif
+
 // Prompt user to restart the browser in safe mode or normally
 function restart(safeMode)
 {
