@@ -109,7 +109,12 @@ let gGrid = {
 
     // (Re-)initialize all cells.
     let cellElements = this.node.querySelectorAll(".newtab-cell");
-    this._cells = [new Cell(this, cell) for (cell of cellElements)];
+    // Tycho: this._cells = [new Cell(this, cell) for (cell of cellElements)];
+    this.cells = [];
+    
+    for (let cellItem of cellElements) {
+      this.cells.push(new Cell(this, cellItem));
+    }
   },
 
   /**
