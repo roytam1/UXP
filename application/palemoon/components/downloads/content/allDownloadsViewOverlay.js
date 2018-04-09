@@ -1408,7 +1408,12 @@ DownloadsPlacesView.prototype = {
   _copySelectedDownloadsToClipboard:
   function DPV__copySelectedDownloadsToClipboard() {
     let selectedElements = this._richlistbox.selectedItems;
-    let urls = [e._shell.downloadURI for each (e in selectedElements)];
+    // Tycho: let urls = [e._shell.downloadURI for each (e in selectedElements)];
+    let urls = [];
+
+    for each (e in selectedElements) {
+      urls.push(e._shell.downloadURI);
+    }
 
     Cc["@mozilla.org/widget/clipboardhelper;1"].
     getService(Ci.nsIClipboardHelper).copyString(urls.join("\n"), document);
