@@ -1036,6 +1036,9 @@ pref("browser.newtab.preload", false);
 // Toggles the content of 'about:newtab'. Shows the grid when enabled.
 pref("browser.newtabpage.enabled", true);
 
+// XXX: Remove this when "enhanced" tiles are dead
+pref("browser.newtabpage.enhanced", false);
+
 // number of columns of newtab grid
 pref("browser.newtabpage.columns", 4);
 
