@@ -176,7 +176,13 @@ this.MigratorPrototype = {
    * @see nsIBrowserProfileMigrator
    */
   getMigrateData: function MP_getMigrateData(aProfile) {
-    let types = [r.type for each (r in this._getMaybeCachedResources(aProfile))];
+    // Tycho: let types = [r.type for each (r in this._getMaybeCachedResources(aProfile))];
+    let types = [];
+
+    for each (r in this._getMaybeCachedResources(aProfile)) {
+      types.push(r.type);
+    }
+
     return types.reduce(function(a, b) a |= b, 0);
   },
 
@@ -192,7 +198,14 @@ this.MigratorPrototype = {
       throw new Error("migrate called for a non-existent source");
 
     if (aItems != Ci.nsIBrowserProfileMigrator.ALL)
-      resources = [r for each (r in resources) if (aItems & r.type)];
+      // Tycho: resources = [r for each (r in resources) if (aItems & r.type)];
+      resources = [];
+
+      for each (r in resources) {
+        if (aItems & r.type) {
+          resources.push(r);
+        }
+      }
 
     // Called either directly or through the bookmarks import callback.
     function doMigrate() {
