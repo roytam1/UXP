@@ -187,7 +187,7 @@ function onCheckboxClick(aPartId)
   var command  = document.getElementById("cmd_" + aPartId + "Toggle");
   var checkbox = document.getElementById(aPartId + "Def");
   if (checkbox.checked) {
-    permissionManager.remove(gPermURI.host, aPartId);
+    permissionManager.remove(gPermURI, aPartId);
     command.setAttribute("disabled", "true");
     var perm = gPermObj[aPartId]();
     setRadioState(aPartId, perm);
@@ -211,7 +211,7 @@ function onRadioClick(aPartId)
   var id = radioGroup.selectedItem.id;
   var permission = id.split('#')[1];
   if (permission == UNKNOWN) {
-    permissionManager.remove(gPermURI.host, aPartId);
+    permissionManager.remove(gPermURI, aPartId);
   } else {
     permissionManager.add(gPermURI, aPartId, permission);
   }
@@ -251,7 +251,7 @@ function onIndexedDBClear()
 
   var permissionManager = Components.classes[PERMISSION_CONTRACTID]
                                     .getService(nsIPermissionManager);
-  permissionManager.remove(gPermURI.host, "indexedDB");
+  permissionManager.remove(gPermURI, "indexedDB");
   initIndexedDBRow();
 }
 
