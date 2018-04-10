@@ -359,7 +359,7 @@ function loadPageInfo()
   makeTabs(gDocument, gWindow);
 
   initFeedTab();
-  onLoadPermission();
+  onLoadPermission(gDocument.nodePrincipal);
 
   /* Call registered overlay init functions */
   onLoadRegistry.forEach(function(func) { func(); });

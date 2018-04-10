@@ -12,9 +12,10 @@ const IMAGE_DENY = 2;
 const COOKIE_DENY = 2;
 const COOKIE_SESSION = 2;
 
-const nsIQuotaManager = Components.interfaces.nsIQuotaManager;
+const nsIQuotaManagerService = Components.interfaces.nsIQuotaManagerService;
 
 var gPermURI;
+var gPermPrincipal;
 var gPrefs;
 var gUsageRequest;
 
@@ -107,7 +108,7 @@ var permissionObserver = {
   }
 };
 
-function onLoadPermission()
+function onLoadPermission(principal)
 {
   gPrefs = Components.classes[PREFERENCES_CONTRACTID]
                      .getService(Components.interfaces.nsIPrefBranch);
@@ -116,6 +117,7 @@ function onLoadPermission()
   var permTab = document.getElementById("permTab");
   if (/^https?$/.test(uri.scheme)) {
     gPermURI = uri;
+    gPermPrincipal = principal;
     var hostText = document.getElementById("hostText");
     hostText.value = gPermURI.host;
 
@@ -230,10 +232,13 @@ function initIndexedDBRow()
 
   row.appendChild(extras);
 
-  var quotaManager = Components.classes["@mozilla.org/dom/quota/manager;1"]
-                               .getService(nsIQuotaManager);
+  var quotaManagerService =
+    Components.classes["@mozilla.org/dom/quota-manager-service;1"]
+              .getService(nsIQuotaManagerService);
+
   gUsageRequest =
-    quotaManager.getUsageForURI(gPermURI, onIndexedDBUsageCallback);
+    quotaManagerService.getUsageForPrincipal(gPermPrincipal,
+                                             onIndexedDBUsageCallback);
 
   var status = document.getElementById("indexedDBStatus");
   var button = document.getElementById("indexedDBClear");
@@ -245,9 +250,9 @@ function initIndexedDBRow()
 
 function onIndexedDBClear()
 {
-  Components.classes["@mozilla.org/dom/quota/manager;1"]
-            .getService(nsIQuotaManager)
-            .clearStoragesForURI(gPermURI);
+  Components.classes["@mozilla.org/dom/quota-manager-service;1"]
+            .getService(nsIQuotaManagerService)
+            .clearStoragesForPrincipal(gPermPrincipal);
 
   var permissionManager = Components.classes[PERMISSION_CONTRACTID]
                                     .getService(nsIPermissionManager);
@@ -255,12 +260,14 @@ function onIndexedDBClear()
   initIndexedDBRow();
 }
 
-function onIndexedDBUsageCallback(uri, usage, fileUsage)
+function onIndexedDBUsageCallback(request)
 {
+  let uri = request.principal.URI;
   if (!uri.equals(gPermURI)) {
     throw new Error("Callback received for bad URI: " + uri);
   }
 
+  let usage = request.result.usage;
   if (usage) {
     if (!("DownloadUtils" in window)) {
       Components.utils.import("resource://gre/modules/DownloadUtils.jsm");
