@@ -362,20 +362,33 @@ function initPluginsRow() {
     }
   }
 
-  let entries = [
-    {
+  // Tycho:
+  // let entries = [
+  //   {
+  //     "permission": item[0],
+  //     "obj": item[1],
+  //   }
+  //   for (item of permissionMap)
+  // ];
+  let entries = [];
+  for (let item of permissionMap) {
+    entries.push({
       "permission": item[0],
-      "obj": item[1],
-    }
-    for (item of permissionMap)
-  ];
+      "obj": item[1]
+    });
+  }    
   entries.sort(function(a, b) {
     return ((a.obj.name < b.obj.name) ? -1 : (a.obj.name == b.obj.name ? 0 : 1));
   });
 
-  let permissionEntries = [
-    fillInPluginPermissionTemplate(p.permission, p.obj) for (p of entries)
-  ];
+  // Tycho:
+  // let permissionEntries = [
+  //   fillInPluginPermissionTemplate(p.permission, p.obj) for (p of entries)
+  // ];
+  let permissionEntries = [];
+  entries.forEach(function (p) {
+    permissionEntries.push(fillInPluginPermissionTemplate(p.permission, p.obj));
+  });
 
   let permPluginsRow = document.getElementById("permPluginsRow");
   clearPluginPermissionTemplate();
