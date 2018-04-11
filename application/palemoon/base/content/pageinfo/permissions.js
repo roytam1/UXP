@@ -264,7 +264,7 @@ function onIndexedDBUsageCallback(request)
 {
   let uri = request.principal.URI;
   if (!uri.equals(gPermURI)) {
-    throw new Error("Callback received for bad URI: " + uri);
+    throw new Error("Callback received for bad URI: " + uri.spec);
   }
 
   let usage = request.result.usage;
