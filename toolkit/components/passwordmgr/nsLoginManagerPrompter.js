@@ -1408,9 +1408,11 @@ LoginManagerPrompter.prototype = {
     let windows = Services.wm.getEnumerator(null);
     while (windows.hasMoreElements()) {
       let win = windows.getNext();
-      let browser = win.gBrowser.getBrowserForContentWindow(aWindow);
-      if (browser) {
-        return { win, browser };
+      if (win.gBrowser) {
+        let browser = win.gBrowser.getBrowserForContentWindow(aWindow);
+        if (browser) {
+          return { win, browser };
+        }
       }
     }
     return null;
