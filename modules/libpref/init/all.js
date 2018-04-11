@@ -24,7 +24,7 @@ pref("general.useragent.locale", "chrome://global/locale/intl.properties");
 pref("general.useragent.compatMode.gecko", false);
 pref("general.useragent.compatMode.firefox", false);
 pref("general.useragent.compatMode.version", "52.9");
-pref("general.useragent.appVersionIsBuildID", true);
+pref("general.useragent.appVersionIsBuildID", false);
 
 // This pref exists only for testing purposes. In order to disable all
 // overrides by default, don't initialize UserAgentOverrides.jsm.

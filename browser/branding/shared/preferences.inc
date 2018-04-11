@@ -31,3 +31,5 @@ pref("browser.safebrowsing.downloads.remote.enabled", false);
 // Disable the UI controls for it as well for Basilisk-official.
 pref("browser.safebrowsing.UI.enabled", false);
 
+// 
+pref("general.useragent.appVersionIsBuildID", true);
