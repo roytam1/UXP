@@ -166,7 +166,12 @@ function prefillAlertInfo() {
 }
 
 function onAlertLoad() {
-  const ALERT_DURATION_IMMEDIATE = 20000;
+  const ALERT_DURATION_IMMEDIATE_MIN = 4000;
+  const ALERT_DURATION_IMMEDIATE_MAX = 60000;
+  let alertDurationImmediate = Services.prefs.getIntPref("alerts.durationImmediate", ALERT_DURATION_IMMEDIATE_MIN);
+  alertDurationImmediate = alertDurationImmediate >= ALERT_DURATION_IMMEDIATE_MIN
+      && alertDurationImmediate <= ALERT_DURATION_IMMEDIATE_MAX
+      ? alertDurationImmediate : ALERT_DURATION_IMMEDIATE_MIN;
   let alertTextBox = document.getElementById("alertTextBox");
   let alertImageBox = document.getElementById("alertImageBox");
   alertImageBox.style.minHeight = alertTextBox.scrollHeight + "px";
@@ -186,7 +191,7 @@ function onAlertLoad() {
   // If the require interaction flag is set, prevent auto-closing the notification.
   if (!gRequireInteraction) {
     if (Services.prefs.getBoolPref("alerts.disableSlidingEffect")) {
-      setTimeout(function() { window.close(); }, ALERT_DURATION_IMMEDIATE);
+      setTimeout(function() { window.close(); }, alertDurationImmediate);
     } else {
       let alertBox = document.getElementById("alertBox");
       alertBox.addEventListener("animationend", function hideAlert(event) {
@@ -197,6 +202,7 @@ function onAlertLoad() {
           window.close();
         }
       }, false);
+      alertBox.style.animationDuration = Math.round(alertDurationImmediate / 1000).toString() + "s";
       alertBox.setAttribute("animate", true);
     }
   }
