@@ -8,9 +8,9 @@
  * ON IT AS AN API.
  */
 
-let Cu = Components.utils;
-let Ci = Components.interfaces;
-let Cc = Components.classes;
+var Cu = Components.utils;
+var Ci = Components.interfaces;
+var Cc = Components.classes;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
