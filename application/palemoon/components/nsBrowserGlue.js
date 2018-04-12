@@ -254,7 +254,8 @@ BrowserGlue.prototype = {
         if (!linkHandled.data) {
           let win = this.getMostRecentBrowserWindow();
           if (win) {
-            win.openUILinkIn(data, "tab");
+            data = JSON.parse(data);
+            win.openUILinkIn(data.href, "tab");
             linkHandled.data = true;
           }
         }
