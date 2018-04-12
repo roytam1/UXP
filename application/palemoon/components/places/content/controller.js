@@ -64,7 +64,7 @@ InsertionPoint.prototype = {
       // If dropNearItemId is set up we must calculate the real index of
       // the item near which we will drop.
       var index = PlacesUtils.bookmarks.getItemIndex(this.dropNearItemId);
-      return this.orientation == Components.interfaces.nsITreeView.DROP_BEFORE ? index : index + 1;
+      return this.orientation == Ci.nsITreeView.DROP_BEFORE ? index : index + 1;
     }
     return this._index;
   }
@@ -80,7 +80,7 @@ function PlacesController(aView) {
                                      "@mozilla.org/widget/clipboard;1",
                                      "nsIClipboard");
   XPCOMUtils.defineLazyGetter(this, "profileName", function () {
-    return Services.dirsvc.get("ProfD", Components.interfaces.nsIFile).leafName;
+    return Services.dirsvc.get("ProfD", Ci.nsIFile).leafName;
   });
 
   this._cachedLivemarkInfoObjects = new Map();
@@ -93,7 +93,7 @@ PlacesController.prototype = {
   _view: null,
 
   QueryInterface: XPCOMUtils.generateQI([
-    Components.interfaces.nsIClipboardOwner
+    Ci.nsIClipboardOwner
   ]),
 
   // nsIClipboardOwner
@@ -174,7 +174,7 @@ PlacesController.prototype = {
       return this._canInsert() &&
              !PlacesUtils.asQuery(this._view.result.root).queryOptions.excludeItems &&
              this._view.result.sortingMode ==
-                 Components.interfaces.nsINavHistoryQueryOptions.SORT_BY_NONE;
+                 Ci.nsINavHistoryQueryOptions.SORT_BY_NONE;
     case "placesCmd_show:info":
       var selectedNode = this._view.selectedNode;
       return selectedNode && PlacesUtils.getConcreteItemId(selectedNode) != -1
@@ -188,7 +188,7 @@ PlacesController.prototype = {
              PlacesUtils.nodeIsFolder(selectedNode) &&
              !PlacesUIUtils.isContentsReadOnly(selectedNode) &&
              this._view.result.sortingMode ==
-                 Components.interfaces.nsINavHistoryQueryOptions.SORT_BY_NONE;
+                 Ci.nsINavHistoryQueryOptions.SORT_BY_NONE;
     case "placesCmd_createBookmark":
       var node = this._view.selectedNode;
       return node && PlacesUtils.nodeIsURI(node) && node.itemId == -1;
@@ -366,25 +366,25 @@ PlacesController.prototype = {
     var clipboard = this.clipboard;
     var hasPlacesData =
       clipboard.hasDataMatchingFlavors(flavors, flavors.length,
-                                       Components.interfaces.nsIClipboard.kGlobalClipboard);
+                                       Ci.nsIClipboard.kGlobalClipboard);
     if (hasPlacesData)
       return this._view.insertionPoint != null;
 
     // if the clipboard doesn't have TYPE_X_MOZ_PLACE_* data, we also allow
     // pasting of valid "text/unicode" and "text/x-moz-url" data
     var xferable = Cc["@mozilla.org/widget/transferable;1"].
-                   createInstance(Components.interfaces.nsITransferable);
+                   createInstance(Ci.nsITransferable);
     xferable.init(null);
 
     xferable.addDataFlavor(PlacesUtils.TYPE_X_MOZ_URL);
     xferable.addDataFlavor(PlacesUtils.TYPE_UNICODE);
-    clipboard.getData(xferable, Components.interfaces.nsIClipboard.kGlobalClipboard);
+    clipboard.getData(xferable, Ci.nsIClipboard.kGlobalClipboard);
 
     try {
       // getAnyTransferData will throw if no data is available.
       var data = { }, type = { };
       xferable.getAnyTransferData(type, data, { });
-      data = data.value.QueryInterface(Components.interfaces.nsISupportsString).data;
+      data = data.value.QueryInterface(Ci.nsISupportsString).data;
       if (type.value != PlacesUtils.TYPE_X_MOZ_URL &&
           type.value != PlacesUtils.TYPE_UNICODE)
         return false;
@@ -436,28 +436,28 @@ PlacesController.prototype = {
       // We don't use the nodeIs* methods here to avoid going through the type
       // property way too often
       switch (nodeType) {
-        case Components.interfaces.nsINavHistoryResultNode.RESULT_TYPE_QUERY:
+        case Ci.nsINavHistoryResultNode.RESULT_TYPE_QUERY:
           nodeData["query"] = true;
           if (node.parent) {
             switch (PlacesUtils.asQuery(node.parent).queryOptions.resultType) {
-              case Components.interfaces.nsINavHistoryQueryOptions.RESULTS_AS_SITE_QUERY:
+              case Ci.nsINavHistoryQueryOptions.RESULTS_AS_SITE_QUERY:
                 nodeData["host"] = true;
                 break;
-              case Components.interfaces.nsINavHistoryQueryOptions.RESULTS_AS_DATE_SITE_QUERY:
-              case Components.interfaces.nsINavHistoryQueryOptions.RESULTS_AS_DATE_QUERY:
+              case Ci.nsINavHistoryQueryOptions.RESULTS_AS_DATE_SITE_QUERY:
+              case Ci.nsINavHistoryQueryOptions.RESULTS_AS_DATE_QUERY:
                 nodeData["day"] = true;
                 break;
             }
           }
           break;
-        case Components.interfaces.nsINavHistoryResultNode.RESULT_TYPE_FOLDER:
-        case Components.interfaces.nsINavHistoryResultNode.RESULT_TYPE_FOLDER_SHORTCUT:
+        case Ci.nsINavHistoryResultNode.RESULT_TYPE_FOLDER:
+        case Ci.nsINavHistoryResultNode.RESULT_TYPE_FOLDER_SHORTCUT:
           nodeData["folder"] = true;
           break;
-        case Components.interfaces.nsINavHistoryResultNode.RESULT_TYPE_SEPARATOR:
+        case Ci.nsINavHistoryResultNode.RESULT_TYPE_SEPARATOR:
           nodeData["separator"] = true;
           break;
-        case Components.interfaces.nsINavHistoryResultNode.RESULT_TYPE_URI:
+        case Ci.nsINavHistoryResultNode.RESULT_TYPE_URI:
           nodeData["link"] = true;
           uri = NetUtil.newURI(node.uri);
           if (PlacesUtils.nodeIsBookmark(node)) {
@@ -1118,7 +1118,7 @@ PlacesController.prototype = {
       else if (PlacesUtils.nodeIsTagQuery(node) && node.parent &&
                PlacesUtils.nodeIsQuery(node.parent) &&
                PlacesUtils.asQuery(node.parent).queryOptions.resultType ==
-                 Components.interfaces.nsINavHistoryQueryOptions.RESULTS_AS_TAG_QUERY) {
+                 Ci.nsINavHistoryQueryOptions.RESULTS_AS_TAG_QUERY) {
         // This is a tag container.
         // Untag all URIs tagged with this tag only if the tag container is
         // child of the "Tags" query in the library, in all other places we
@@ -1133,7 +1133,7 @@ PlacesController.prototype = {
       else if (PlacesUtils.nodeIsURI(node) &&
                PlacesUtils.nodeIsQuery(node.parent) &&
                PlacesUtils.asQuery(node.parent).queryOptions.queryType ==
-                 Components.interfaces.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY) {
+                 Ci.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY) {
         // This is a uri node inside an history query.
         PlacesUtils.bhistory.removePage(NetUtil.newURI(node.uri));
         // History deletes are not undoable, so we don't have a transaction.
@@ -1141,7 +1141,7 @@ PlacesController.prototype = {
       else if (node.itemId == -1 &&
                PlacesUtils.nodeIsQuery(node) &&
                PlacesUtils.asQuery(node).queryOptions.queryType ==
-                 Components.interfaces.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY) {
+                 Ci.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY) {
         // This is a dynamically generated history query, like queries
         // grouped by site, time or both.  Dynamically generated queries don't
         // have an itemId even if they are descendants of a bookmark.
@@ -1199,7 +1199,7 @@ PlacesController.prototype = {
       }
       else if (PlacesUtils.nodeIsQuery(node) &&
                PlacesUtils.asQuery(node).queryOptions.queryType ==
-                 Components.interfaces.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY) {
+                 Ci.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY) {
         this._removeHistoryContainer(node);
       }
     }
@@ -1213,7 +1213,7 @@ PlacesController.prototype = {
           try {
             gen.next();
           } catch (ex if ex instanceof StopIteration) {}
-        }, Components.interfaces.nsIThread.DISPATCH_NORMAL);
+        }, Ci.nsIThread.DISPATCH_NORMAL);
         yield;
       }
     }
@@ -1266,9 +1266,9 @@ PlacesController.prototype = {
       this._removeRowsFromBookmarks(aTxnName);
     else if (PlacesUtils.nodeIsQuery(root)) {
       var queryType = PlacesUtils.asQuery(root).queryOptions.queryType;
-      if (queryType == Components.interfaces.nsINavHistoryQueryOptions.QUERY_TYPE_BOOKMARKS)
+      if (queryType == Ci.nsINavHistoryQueryOptions.QUERY_TYPE_BOOKMARKS)
         this._removeRowsFromBookmarks(aTxnName);
-      else if (queryType == Components.interfaces.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY)
+      else if (queryType == Ci.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY)
         this._removeRowsFromHistory();
       else
         NS_ASSERT(false, "implement support for QUERY_TYPE_UNIFIED");
@@ -1333,13 +1333,13 @@ PlacesController.prototype = {
     let actionOwner;
     try {
       let xferable = Cc["@mozilla.org/widget/transferable;1"].
-                     createInstance(Components.interfaces.nsITransferable);
+                     createInstance(Ci.nsITransferable);
       xferable.init(null);
       xferable.addDataFlavor(PlacesUtils.TYPE_X_MOZ_PLACE_ACTION)
-      this.clipboard.getData(xferable, Components.interfaces.nsIClipboard.kGlobalClipboard);
+      this.clipboard.getData(xferable, Ci.nsIClipboard.kGlobalClipboard);
       xferable.getTransferData(PlacesUtils.TYPE_X_MOZ_PLACE_ACTION, action, {});
       [action, actionOwner] =
-        action.value.QueryInterface(Components.interfaces.nsISupportsString).data.split(",");
+        action.value.QueryInterface(Ci.nsISupportsString).data.split(",");
     } catch(ex) {
       // Paste from external sources don't have any associated action, just
       // fallback to a copy action.
@@ -1357,19 +1357,19 @@ PlacesController.prototype = {
   _releaseClipboardOwnership: function PC__releaseClipboardOwnership() {
     if (this.cutNodes.length > 0) {
       // This clears the logical clipboard, doesn't remove data.
-      this.clipboard.emptyClipboard(Components.interfaces.nsIClipboard.kGlobalClipboard);
+      this.clipboard.emptyClipboard(Ci.nsIClipboard.kGlobalClipboard);
     }
   },
 
   _clearClipboard: function PC__clearClipboard() {
     let xferable = Cc["@mozilla.org/widget/transferable;1"].
-                   createInstance(Components.interfaces.nsITransferable);
+                   createInstance(Ci.nsITransferable);
     xferable.init(null);
     // Empty transferables may cause crashes, so just add an unknown type.
     const TYPE = "text/x-moz-place-empty";
     xferable.addDataFlavor(TYPE);
     xferable.setTransferData(TYPE, PlacesUtils.toISupportsString(""), 0);
-    this.clipboard.setData(xferable, null, Components.interfaces.nsIClipboard.kGlobalClipboard);
+    this.clipboard.setData(xferable, null, Ci.nsIClipboard.kGlobalClipboard);
   },
 
   _populateClipboard: function PC__populateClipboard(aNodes, aAction) {
@@ -1409,7 +1409,7 @@ PlacesController.prototype = {
     }
 
     let xferable = Cc["@mozilla.org/widget/transferable;1"].
-                   createInstance(Components.interfaces.nsITransferable);
+                   createInstance(Ci.nsITransferable);
     xferable.init(null);
     let hasData = false;
     // This order matters here!  It controls how this and other applications
@@ -1432,7 +1432,7 @@ PlacesController.prototype = {
     if (hasData) {
       this.clipboard.setData(xferable,
                              this.cutNodes.length > 0 ? this : null,
-                             Components.interfaces.nsIClipboard.kGlobalClipboard);
+                             Ci.nsIClipboard.kGlobalClipboard);
     }
   },
 
@@ -1499,7 +1499,7 @@ PlacesController.prototype = {
     let action = this.clipboardAction;
 
     let xferable = Cc["@mozilla.org/widget/transferable;1"].
-                   createInstance(Components.interfaces.nsITransferable);
+                   createInstance(Ci.nsITransferable);
     xferable.init(null);
     // This order matters here!  It controls the preferred flavors for this
     // paste operation.
@@ -1508,13 +1508,13 @@ PlacesController.prototype = {
       PlacesUtils.TYPE_UNICODE,
     ].forEach(function (type) xferable.addDataFlavor(type));
 
-    this.clipboard.getData(xferable, Components.interfaces.nsIClipboard.kGlobalClipboard);
+    this.clipboard.getData(xferable, Ci.nsIClipboard.kGlobalClipboard);
 
     // Now get the clipboard contents, in the best available flavor.
     let data = {}, type = {}, items = [];
     try {
       xferable.getAnyTransferData(type, data, {});
-      data = data.value.QueryInterface(Components.interfaces.nsISupportsString).data;
+      data = data.value.QueryInterface(Ci.nsISupportsString).data;
       type = type.value;
       items = PlacesUtils.unwrapNodes(data, type);
     } catch(ex) {
@@ -1694,7 +1694,7 @@ let PlacesControllerDragHelper = {
       }
 
       // Only bookmarks and urls can be dropped into tag containers.
-      if (ip.isTag && ip.orientation == Components.interfaces.nsITreeView.DROP_ON &&
+      if (ip.isTag && ip.orientation == Ci.nsITreeView.DROP_ON &&
           dragged.type != PlacesUtils.TYPE_X_MOZ_URL &&
           (dragged.type != PlacesUtils.TYPE_X_MOZ_PLACE ||
            (dragged.uri && dragged.uri.startsWith("place:")) ))
@@ -1784,7 +1784,7 @@ let PlacesControllerDragHelper = {
 
       // If dragging over a tag container we should tag the item.
       if (insertionPoint.isTag &&
-          insertionPoint.orientation == Components.interfaces.nsITreeView.DROP_ON) {
+          insertionPoint.orientation == Ci.nsITreeView.DROP_ON) {
         let uri = NetUtil.newURI(unwrapped.uri);
         let tagItemId = insertionPoint.itemId;
         let tagTxn = new PlacesTagURITransaction(uri, [tagItemId]);

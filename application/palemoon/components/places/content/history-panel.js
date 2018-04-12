@@ -41,7 +41,7 @@ function searchHistory(aInput)
   var query = PlacesUtils.history.getNewQuery();
   var options = PlacesUtils.history.getNewQueryOptions();
 
-  const NHQO = Components.interfaces.nsINavHistoryQueryOptions;
+  const NHQO = Ci.nsINavHistoryQueryOptions;
   var sortingMode;
   var resultType;
 
