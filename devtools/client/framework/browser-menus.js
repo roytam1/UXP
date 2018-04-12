@@ -160,7 +160,8 @@ function createToolMenuElements(toolDefinition, doc) {
   let appmenuitem = createMenuItem({
     doc,
     id: "appmenuitem_" + id,
-    label: toolDefinition.menuLabel || toolDefinition.label
+    label: toolDefinition.menuLabel || toolDefinition.label,
+    accesskey: null
   });
 
   let menuitem = createMenuItem({
@@ -173,6 +174,7 @@ function createToolMenuElements(toolDefinition, doc) {
     // Refer to the key in order to display the key shortcut at menu ends
     menuitem.setAttribute("key", key.id);
   }
+  appmenuitem.addEventListener("command", oncommand);
   menuitem.addEventListener("command", oncommand);
 
   return {
@@ -202,26 +204,26 @@ function insertToolMenuElements(doc, toolDefinition, prevDef) {
 
   let amp;
   if (prevDef) {
-    let menuitem = doc.getElementById("appmenuitem_" + prevDef.id);
-    ref = menuitem && menuitem.nextSibling ? menuitem.nextSibling : null;
+    let appmenuitem = doc.getElementById("appmenuitem_" + prevDef.id);
+    amp = appmenuitem && appmenuitem.nextSibling ? appmenuitem.nextSibling : null;
   } else {
-    ref = doc.getElementById("appmenu_devtools_separator");
+    amp = doc.getElementById("appmenu_devtools_separator");
   }
 
-  if (ref) {
-    amp.parentNode.insertBefore(menuitem, ref);
+  if (amp) {
+    amp.parentNode.insertBefore(appmenuitem, amp);
   }
 
-  let ref;
+  let mp;
   if (prevDef) {
     let menuitem = doc.getElementById("menuitem_" + prevDef.id);
-    ref = menuitem && menuitem.nextSibling ? menuitem.nextSibling : null;
+    mp = menuitem && menuitem.nextSibling ? menuitem.nextSibling : null;
   } else {
-    ref = doc.getElementById("menu_devtools_separator");
+    mp = doc.getElementById("menu_devtools_separator");
   }
 
-  if (ref) {
-    ref.parentNode.insertBefore(menuitem, ref);
+  if (mp) {
+    mp.parentNode.insertBefore(menuitem, mp);
   }
 }
 exports.insertToolMenuElements = insertToolMenuElements;
