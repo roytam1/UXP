@@ -491,7 +491,7 @@ this.MigrationUtils = Object.freeze({
 
   // Iterates the available migrators, in the most suitable
   // order for the running platform.
-  get migrators() {
+  migrators: function* MU_migrators() {
     let migratorKeysOrdered = [
 #ifdef XP_WIN
       "firefox", "ie", "chrome", "safari"
