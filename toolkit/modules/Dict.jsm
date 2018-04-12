@@ -171,7 +171,12 @@ Dict.prototype = Object.freeze({
    * Returns a list of all the keys in the dictionary in an arbitrary order.
    */
   listkeys: function Dict_listkeys() {
-    return [unconvert(k) for (k in this._state.items)];
+    // Tycho: return [unconvert(k) for (k in this._state.items)];
+    let rv = [];
+    for (let k in this._state.items) {
+      rv.push(unconvert(k));
+    }
+    return rv;
   },
 
   /**
@@ -179,7 +184,12 @@ Dict.prototype = Object.freeze({
    */
   listvalues: function Dict_listvalues() {
     var items = this._state.items;
-    return [items[k] for (k in items)];
+    // Tycho: return [items[k] for (k in items)];
+    let rv = [];
+    for (let k in items) {
+      rv.push(items[k]);
+    }
+    return rv;
   },
 
   /**
@@ -188,7 +198,12 @@ Dict.prototype = Object.freeze({
    */
   listitems: function Dict_listitems() {
     var items = this._state.items;
-    return [[unconvert(k), items[k]] for (k in items)];
+    //Tycho: return [[unconvert(k), items[k]] for (k in items)];
+    let rv = [];
+    for (let k in items) {
+      rv.push([unconvert(k), items[k]]);
+    }
+    return rv;
   },
 
   /**
@@ -200,7 +215,12 @@ Dict.prototype = Object.freeze({
     // If we don't capture this._state.items here then the this-binding will be
     // incorrect when the generator is executed
     var items = this._state.items;
-    return (unconvert(k) for (k in items));
+    // Tycho: return (unconvert(k) for (k in items));
+    let rv = [];
+    for (let k in items) {
+      rv.push(unconvert(k));
+    }
+    return rv;
   },
 
   /**
@@ -212,7 +232,12 @@ Dict.prototype = Object.freeze({
     // If we don't capture this._state.items here then the this-binding will be
     // incorrect when the generator is executed
     var items = this._state.items;
-    return (items[k] for (k in items));
+    // Tycho: return (items[k] for (k in items));
+    let rv = [];
+    for (let k in items) {
+      rv.push(items[k]);
+    }
+    return rv;
   },
 
   /**
@@ -224,16 +249,27 @@ Dict.prototype = Object.freeze({
     // If we don't capture this._state.items here then the this-binding will be
     // incorrect when the generator is executed
     var items = this._state.items;
-    return ([unconvert(k), items[k]] for (k in items));
+    // Tycho: return ([unconvert(k), items[k]] for (k in items));
+    let rv = [];
+    for (let k in items) {
+      rv.push([unconvert(k), items[k]]);
+    }
+    return rv;
   },
 
   /**
    * Returns a String representation of this dictionary.
    */
   toString: function Dict_toString() {
-    return "{" +
-      [(key + ": " + val) for ([key, val] in this.items)].join(", ") +
-      "}";
+    // Tycho:
+    // return "{" +
+    //   [(key + ": " + val) for ([key, val] in this.items)].join(", ") +
+    //   "}";
+    let dictString = [];
+    for (let [key, val] in this.items) {
+      dictString.push(key + ": " + value);
+    }
+    return "{" + dictString.join(", ") + "}";
   },
 
   /**
