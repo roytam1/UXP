@@ -13,6 +13,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
   "resource://gre/modules/BrowserUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "LoginManagerContent",
   "resource://gre/modules/LoginManagerContent.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "LoginFormFactory",
+  "resource://gre/modules/LoginManagerContent.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "InsecurePasswordUtils",
   "resource://gre/modules/InsecurePasswordUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "FormSubmitObserver",
@@ -47,8 +49,9 @@ addMessageListener("Browser:HideSessionRestoreButton", function (message) {
 });
 
 addEventListener("DOMFormHasPassword", function(event) {
-  InsecurePasswordUtils.checkForInsecurePasswords(event.target);
-  LoginManagerContent.onFormPassword(event);
+  LoginManagerContent.onDOMFormHasPassword(event, content);
+  let formLike = LoginFormFactory.createFromForm(event.target);
+  InsecurePasswordUtils.reportInsecurePasswords(formLike);
 });
 addEventListener("DOMAutoComplete", function(event) {
   LoginManagerContent.onUsernameInput(event);
