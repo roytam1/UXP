@@ -15,7 +15,6 @@ toolkit.jar:
   skin/classic/mozapps/extensions/category-recent.png        (webextensions/category-recent.png)
   skin/classic/mozapps/extensions/category-available.png     (webextensions/category-available.png)
   skin/classic/mozapps/extensions/extensionGeneric-16.png    (webextensions/extensionGeneric-16.png)
-  skin/classic/mozapps/extensions/extensionGeneric-48.png    (webextensions/extensionGeneric-48.png)
   skin/classic/mozapps/extensions/themeGeneric.png           (webextensions/themeGeneric.png)
   skin/classic/mozapps/extensions/themeGeneric-16.png        (webextensions/themeGeneric-16.png)
   skin/classic/mozapps/extensions/dictionaryGeneric.png      (webextensions/dictionaryGeneric.png)
