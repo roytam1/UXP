@@ -808,6 +808,9 @@ LoginManagerPrompter.prototype = {
    */
   _showLoginCaptureDoorhanger(login, type) {
     let { browser } = this._getNotifyWindow();
+    if (!browser) {
+      return;
+    }
 
     let saveMsgNames = {
       prompt: login.username === "" ? "rememberLoginMsgNoUser"
@@ -1405,10 +1408,34 @@ LoginManagerPrompter.prototype = {
    * Given a content DOM window, returns the chrome window and browser it's in.
    */
   _getChromeWindow: function (aWindow) {
+    // Handle non-e10s toolkit consumers.
+    if (!Cu.isCrossProcessWrapper(aWindow)) {
+      let chromeWin = aWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+                             .getInterface(Ci.nsIWebNavigation)
+                             .QueryInterface(Ci.nsIDocShell)
+                             .chromeEventHandler.ownerGlobal;
+      if (!chromeWin) {
+        return null;
+     }
+
+      // gBrowser only exists on some apps, like Firefox.
+      let tabbrowser = chromeWin.gBrowser ||
+        (typeof chromeWin.getBrowser == "function" ? chromeWin.getBrowser() : null);
+      // At least serve the chrome window if getBrowser()
+      // or getBrowserForContentWindow() are not supported.
+      if (!tabbrowser || typeof tabbrowser.getBrowserForContentWindow != "function") {
+        return { win: chromeWin };
+      }
+
+      let browser = tabbrowser.getBrowserForContentWindow(aWindow);
+      return { win: chromeWin, browser };
+    }
+
     let windows = Services.wm.getEnumerator(null);
     while (windows.hasMoreElements()) {
       let win = windows.getNext();
-      let browser = win.gBrowser.getBrowserForContentWindow(aWindow);
+      let tabbrowser = win.gBrowser || win.getBrowser();
+      let browser = tabbrowser.getBrowserForContentWindow(aWindow);
       if (browser) {
         return { win, browser };
       }
