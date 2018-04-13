@@ -1116,10 +1116,17 @@ nsContextMenu.prototype = {
       }
     }
 
-    // set up a channel to do the saving
-    var ioService = Cc["@mozilla.org/network/io-service;1"].
-                    getService(Ci.nsIIOService);
-    var channel = ioService.newChannelFromURI(makeURI(linkURL));
+    // setting up a new channel for 'right click - save link as ...'
+    // ideally we should use:
+    // * doc            - as the loadingNode, and/or
+    // * this.principal - as the loadingPrincipal
+    // for now lets use systemPrincipal to bypass mixedContentBlocker
+    // checks after redirects, see bug: 1136055
+    var channel = NetUtil.newChannel({
+                    uri: makeURI(linkURL),
+                    loadUsingSystemPrincipal: true
+                  });
+
     if (linkDownload)
       channel.contentDispositionFilename = linkDownload;
     if (channel instanceof Ci.nsIPrivateBrowsingChannel) {
@@ -1152,7 +1159,7 @@ nsContextMenu.prototype = {
                            timer.TYPE_ONE_SHOT);
 
     // kick off the channel with our proxy object as the listener
-    channel.asyncOpen(new saveAsListener(), null);
+    channel.asyncOpen2(new saveAsListener());
   },
 
   // Save URL of clicked-on link.

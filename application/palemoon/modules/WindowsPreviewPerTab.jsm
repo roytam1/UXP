@@ -62,9 +62,6 @@ const WINTASKBAR_CONTRACTID = "@mozilla.org/windows-taskbar;1";
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Various utility properties
-XPCOMUtils.defineLazyServiceGetter(this, "ioSvc",
-                                   "@mozilla.org/network/io-service;1",
-                                   "nsIIOService");
 XPCOMUtils.defineLazyServiceGetter(this, "imgTools",
                                    "@mozilla.org/image/tools;1",
                                    "imgITools");
@@ -73,8 +70,13 @@ XPCOMUtils.defineLazyServiceGetter(this, "faviconSvc",
                                    "nsIFaviconService");
 
 // nsIURI -> imgIContainer
-function _imageFromURI(uri, privateMode, callback) {
-  let channel = ioSvc.newChannelFromURI(uri);
+function _imageFromURI(doc, uri, privateMode, callback) {
+  let channel = NetUtil.newChannel({
+    uri: uri,
+    loadUsingSystemPrincipal: true,
+    contentPolicyType: Ci.nsIContentPolicy.TYPE_INTERNAL_IMAGE
+  });
+
   try {
     channel.QueryInterface(Ci.nsIPrivateBrowsingChannel);
     channel.setPrivate(privateMode);
@@ -93,17 +95,17 @@ function _imageFromURI(uri, privateMode, callback) {
       // favicon).
       let defaultURI = faviconSvc.defaultFavicon;
       if (!defaultURI.equals(uri))
-        _imageFromURI(defaultURI, callback);
+        _imageFromURI(doc, defaultURI, privateMode, callback);
     }
   });
 }
 
 // string? -> imgIContainer
-function getFaviconAsImage(iconurl, privateMode, callback) {
+function getFaviconAsImage(doc, iconurl, privateMode, callback) {
   if (iconurl)
-    _imageFromURI(NetUtil.newURI(iconurl), privateMode, callback);
+    _imageFromURI(doc, NetUtil.newURI(iconurl), privateMode, callback);
   else
-    _imageFromURI(faviconSvc.defaultFavicon, privateMode, callback);
+    _imageFromURI(doc, faviconSvc.defaultFavicon, privateMode, callback);
 }
 
 // Snaps the given rectangle to be pixel-aligned at the given scale
@@ -460,12 +462,16 @@ TabWindow.prototype = {
     preview.visible = AeroPeek.enabled;
     preview.active = this.tabbrowser.selectedTab == controller.tab;
     // Grab the default favicon
-    getFaviconAsImage(null, PrivateBrowsingUtils.isWindowPrivate(this.win), function (img) {
-      // It is possible that we've already gotten the real favicon, so make sure
-      // we have not set one before setting this default one.
-      if (!preview.icon)
-        preview.icon = img;
-    });
+    getFaviconAsImage(
+      controller.linkedBrowser.contentWindow.document,
+      null,
+      PrivateBrowsingUtils.isWindowPrivate(this.win),
+      function (img) {
+        // It is possible that we've already gotten the real favicon, so make sure
+        // we have not set one before setting this default one.
+        if (!preview.icon)
+          preview.icon = img;
+      });
 
     return preview;
   },
@@ -552,14 +558,17 @@ TabWindow.prototype = {
   //// Browser progress listener
   onLinkIconAvailable: function (aBrowser, aIconURL) {
     let self = this;
-    getFaviconAsImage(aIconURL, PrivateBrowsingUtils.isWindowPrivate(this.win), function (img) {
-      let index = self.tabbrowser.browsers.indexOf(aBrowser);
-      // Only add it if we've found the index.  The tab could have closed!
-      if (index != -1) {
-        let tab = self.tabbrowser.tabs[index];
-        self.previews.get(tab).icon = img;
-      }
-    });
+    getFaviconAsImage(
+      aBrowser.contentWindow.document,
+      aIconURL,PrivateBrowsingUtils.isWindowPrivate(this.win),
+      function (img) {
+        let index = self.tabbrowser.browsers.indexOf(aBrowser);
+        // Only add it if we've found the index.  The tab could have closed!
+        if (index != -1) {
+          let tab = self.tabbrowser.tabs[index];
+          self.previews.get(tab).icon = img;
+        }
+      });
   }
 }
 
