@@ -2730,6 +2730,9 @@
           get finder() {
             return this.mTabBrowser.mCurrentBrowser.finder;
           },
+          destroy: function() {
+            this.finder.destroy();
+          },
           addResultListener: function(aListener) {
             this.mListeners.add(aListener);
             this.finder.addResultListener(aListener);
@@ -2750,20 +2753,32 @@
           set caseSensitive(val) {
             return this.finder.caseSensitive = val;
           },
-          fastFind: function(aSearchString, aLinksOnly, aDrawOutline) {
-            this.finder.fastFind(aSearchString, aLinksOnly, aDrawOutline);
+          set entireWord(val) {
+            return this.finder.entireWord = val;
           },
-          findAgain: function(aFindBackwards, aLinksOnly, aDrawOutline) {
-            this.finder.findAgain(aFindBackwards, aLinksOnly, aDrawOutline);
+          get highlighter() {
+            return this.finder.highlighter;
+          },
+          get matchesCountLimit() {
+            return this.finder.matchesCountLimit;
+          },
+          fastFind: function(...args) {
+            this.finder.fastFind(...args);
+          },
+          findAgain: function(...args) {
+            this.finder.findAgain(...args);
           },
           setSearchStringToSelection: function() {
             return this.finder.setSearchStringToSelection();
           },
-          highlight: function(aHighlight, aWord) {
-            this.finder.highlight(aHighlight, aWord);
+          highlight: function(...args) {
+            this.finder.highlight(...args);
           },
           getInitialSelection: function() {
             this.finder.getInitialSelection();
+          },
+          getActiveSelectionText: function() {
+            return this.finder.getActiveSelectionText();
           },
           enableSelection: function() {
             this.finder.enableSelection();
@@ -2774,11 +2789,38 @@
           focusContent: function() {
             this.finder.focusContent();
           },
+          onFindbarClose: function() {
+            this.finder.onFindbarClose();
+          },
+          onFindbarOpen: function() {
+            this.finder.onFindbarOpen();
+          },
+          onModalHighlightChange: function(...args) {
+            return this.finder.onModalHighlightChange(...args);
+          },
+          onHighlightAllChange: function(...args) {
+            return this.finder.onHighlightAllChange(...args);
+          },
           keyPress: function(aEvent) {
             this.finder.keyPress(aEvent);
           },
-          requestMatchesCount: function(aWord, aMatchLimit, aLinksOnly) {
-            this.finder.requestMatchesCount(aWord, aMatchLimit, aLinksOnly);
+          requestMatchesCount: function(...args) {
+            this.finder.requestMatchesCount(...args);
+          },
+          onIteratorRangeFound: function(...args) {
+            this.finder.onIteratorRangeFound(...args);
+          },
+          onIteratorReset: function() {
+            this.finder.onIteratorReset();
+          },
+          onIteratorRestart: function(...args) {
+            this.finder.onIteratorRestart(...args);
+          },
+          onIteratorStart: function(...args) {
+            this.finder.onIteratorStart(...args);
+          },
+          onLocationChange: function(...args) {
+            this.finder.onLocationChange(...args);
           }
         })
       ]]></field>
@@ -2786,6 +2828,19 @@
       <property name="docShell"
                 onget="return this.mCurrentBrowser.docShell"
                 readonly="true"/>
+
+      <property name="messageManager"
+                readonly="true">
+        <getter>
+          <![CDATA[
+            let frameLoader = this.mCurrentBrowser.frameLoader;
+            if (!frameLoader) {
+              return null;
+            }
+            return frameLoader.messageManager;
+          ]]>
+        </getter>
+      </property>
 
       <property name="webNavigation"
                 onget="return this.mCurrentBrowser.webNavigation"
@@ -2802,6 +2857,10 @@
       <property name="contentWindow"
                 readonly="true"
                 onget="return this.mCurrentBrowser.contentWindow"/>
+
+      <property name="contentWindowAsCPOW"
+                readonly="true"
+                onget="return this.contentWindow;"/>
 
       <property name="sessionHistory"
                 onget="return this.mCurrentBrowser.sessionHistory;"
@@ -2870,23 +2929,6 @@
                 aEvent.stopPropagation();
                 aEvent.preventDefault();
                 return;
-            }
-          }
-
-          // We need to take care of FAYT-watching as long as the findbar
-          // isn't initialized.  The checks on aEvent are copied from
-          // _shouldFastFind (see findbar.xml).
-          if (!gFindBarInitialized &&
-              !(aEvent.ctrlKey || aEvent.metaKey) &&
-              !aEvent.defaultPrevented) {
-            let charCode = aEvent.charCode;
-            if (charCode) {
-              let char = String.fromCharCode(charCode);
-              if (char == "'" || char == "/" ||
-                  Services.prefs.getBoolPref("accessibility.typeaheadfind")) {
-                gFindBar._onBrowserKeypress(aEvent);
-                return;
-              }
             }
           }
 
@@ -2981,6 +3023,14 @@
               window.focus();
               break;
             }
+            case "Findbar:Keypress":
+              if (!gFindBarInitialized) {
+                // If the find bar for this tab is not yet alive, change that,
+                // and make sure we return the result:
+                return gFindBar.receiveMessage(aMessage);
+              }
+              break;
+
           }
         ]]></body>
       </method>
@@ -3047,6 +3097,7 @@
                                               this.mCurrentBrowser);
           }
           messageManager.addMessageListener("DOMWebNotificationClicked", this);
+          messageManager.addMessageListener("Findbar:Keypress", this);
         ]]>
       </constructor>
 
