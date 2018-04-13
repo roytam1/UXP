@@ -162,21 +162,29 @@
     <content hidden="true">
     <xul:hbox anonid="findbar-container" class="findbar-container" flex="1" align="center">
       <xul:hbox anonid="findbar-textbox-wrapper" align="stretch">
+      <xul:toolbarbutton anonid="find-closebutton"
+                         class="findbar-closebutton close-icon"
+                         tooltiptext="&findCloseButton.tooltip;"
+                         oncommand="close();"/>
         <xul:textbox anonid="findbar-textbox"
                      class="findbar-textbox findbar-find-fast"
                      xbl:inherits="flash"/>
-        <xul:toolbarbutton anonid="find-previous"
-                           class="findbar-find-previous tabbable"
-                           tooltiptext="&previous.tooltip;"
-                           oncommand="onFindAgainCommand(true);"
-                           disabled="true"
-                           xbl:inherits="accesskey=findpreviousaccesskey"/>
-        <xul:toolbarbutton anonid="find-next"
+         <xul:toolbarbutton anonid="find-next"
                            class="findbar-find-next tabbable"
+                           label="&next.label;"
+                           accesskey="&next.accesskey;"
                            tooltiptext="&next.tooltip;"
                            oncommand="onFindAgainCommand(false);"
                            disabled="true"
                            xbl:inherits="accesskey=findnextaccesskey"/>
+       <xul:toolbarbutton anonid="find-previous"
+                           class="findbar-find-previous tabbable"
+                           label="&previous.label;"
+                           accesskey="&previous.accesskey;"
+                           tooltiptext="&previous.tooltip;"
+                           oncommand="onFindAgainCommand(true);"
+                           disabled="true"
+                           xbl:inherits="accesskey=findpreviousaccesskey"/>
       </xul:hbox>
       <xul:toolbarbutton anonid="highlight"
                          class="findbar-highlight findbar-button tabbable"
@@ -186,22 +194,22 @@
                          oncommand="toggleHighlight(this.checked);"
                          type="checkbox"
                          xbl:inherits="accesskey=highlightaccesskey"/>
-      <xul:toolbarbutton anonid="find-case-sensitive"
-                         class="findbar-case-sensitive findbar-button tabbable"
-                         label="&caseSensitive.label;"
-                         accesskey="&caseSensitive.accesskey;"
-                         tooltiptext="&caseSensitive.tooltiptext;"
-                         oncommand="_setCaseSensitivity(this.checked ? 1 : 0);"
-                         type="checkbox"
-                         xbl:inherits="accesskey=matchcaseaccesskey"/>
-      <xul:toolbarbutton anonid="find-entire-word"
-                         class="findbar-entire-word findbar-button tabbable"
-                         label="&entireWord.label;"
-                         accesskey="&entireWord.accesskey;"
-                         tooltiptext="&entireWord.tooltiptext;"
-                         oncommand="toggleEntireWord(this.checked);"
-                         type="checkbox"
-                         xbl:inherits="accesskey=entirewordaccesskey"/>
+      <xul:checkbox anonid="find-case-sensitive"
+                     class="findbar-case-sensitive findbar-button tabbable"
+                     label="&caseSensitive.label;"
+                     accesskey="&caseSensitive.accesskey;"
+                     tooltiptext="&caseSensitive.tooltiptext;"
+                     oncommand="_setCaseSensitivity(this.checked ? 1 : 0);"
+                     type="checkbox"
+                     xbl:inherits="accesskey=matchcaseaccesskey"/>
+      <xul:checkbox anonid="find-entire-word"
+                     class="findbar-entire-word findbar-button tabbable"
+                     label="&entireWord.label;"
+                     accesskey="&entireWord.accesskey;"
+                     tooltiptext="&entireWord.tooltiptext;"
+                     oncommand="toggleEntireWord(this.checked);"
+                     type="checkbox"
+                     xbl:inherits="accesskey=entirewordaccesskey"/>
       <xul:label anonid="match-case-status" class="findbar-find-fast"/>
       <xul:label anonid="entire-word-status" class="findbar-find-fast"/>
       <xul:label anonid="found-matches" class="findbar-find-fast found-matches" hidden="true"/>
@@ -212,10 +220,6 @@
       <!-- Do not use value, first child is used because it provides a11y with text change events -->
       </xul:description>
     </xul:hbox>
-    <xul:toolbarbutton anonid="find-closebutton"
-                       class="findbar-closebutton close-icon"
-                       tooltiptext="&findCloseButton.tooltip;"
-                       oncommand="close();"/>
     </content>
 
     <implementation implements="nsIMessageListener, nsIEditActionListener">
