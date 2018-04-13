@@ -2860,7 +2860,7 @@
 
       <property name="contentWindowAsCPOW"
                 readonly="true"
-                onget="return this.contentWindow;"/>
+                onget="return this.mCurrentBrowser.contentWindow;"/>
 
       <property name="sessionHistory"
                 onget="return this.mCurrentBrowser.sessionHistory;"
