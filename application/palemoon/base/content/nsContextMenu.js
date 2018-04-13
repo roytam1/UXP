@@ -911,6 +911,9 @@ nsContextMenu.prototype = {
   },
 
   saveVideoFrameAsImage: function () {
+    let referrerURI = document.documentURIObject;
+    let isPrivate = PrivateBrowsingUtils.isBrowserPrivate(this.browser);
+
     urlSecurityCheck(this.mediaURL, this.browser.contentPrincipal,
                      Ci.nsIScriptSecurityManager.DISALLOW_SCRIPT);
     let name = "";
@@ -928,7 +931,9 @@ nsContextMenu.prototype = {
     canvas.height = video.videoHeight;
     var ctxDraw = canvas.getContext("2d");
     ctxDraw.drawImage(video, 0, 0);
-    saveImageURL(canvas.toDataURL("image/jpeg", ""), name, "SaveImageTitle", true, false, document.documentURIObject, this.target.ownerDocument);
+    saveImageURL(canvas.toDataURL("image/jpeg", ""), name, "SaveImageTitle",
+                 true, false, referrerURI,
+                 null, null, null, isPrivate);
   },
 
   fullScreenVideo: function () {
@@ -1179,6 +1184,8 @@ nsContextMenu.prototype = {
   // Save URL of the clicked upon image, video, or audio.
   saveMedia: function() {
     var doc = this.target.ownerDocument;
+    let referrerURI = doc.documentURIObject;
+    let isPrivate = PrivateBrowsingUtils.isBrowserPrivate(this.browser);
     if (this.onCanvas) {
       // Bypass cache, since it's a blob: URL.
       var target = this.target;
@@ -1194,14 +1201,16 @@ nsContextMenu.prototype = {
           resolve(win.URL.createObjectURL(blob));
         })
         }}).then(function (blobURL) {
-          saveImageURL(blobURL, "canvas.png", "SaveImageTitle", true,
-                       false, doc.documentURIObject, doc);
+          saveImageURL(blobURL, "canvas.png", "SaveImageTitle",
+                       true, false, referrerURI, null, null, null,
+                       isPrivate);
         }, Components.utils.reportError);
       }
     } else if (this.onImage) {
       urlSecurityCheck(this.mediaURL, doc.nodePrincipal);
-      saveImageURL(this.mediaURL, null, "SaveImageTitle", false,
-                   false, doc.documentURIObject, doc);
+      saveImageURL(this.mediaURL, null, "SaveImageTitle",
+                   false, false, referrerURI, doc, null, null,
+                   isPrivate);
     } else if (this.onVideo || this.onAudio) {
       urlSecurityCheck(this.mediaURL, doc.nodePrincipal);
       var dialogTitle = this.onVideo ? "SaveVideoTitle" : "SaveAudioTitle";
