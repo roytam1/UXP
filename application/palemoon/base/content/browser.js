@@ -3798,11 +3798,16 @@ var XULBrowserWindow = {
           gFindBar.close();
         }
         
+        // XXX
+        // See: https://github.com/MoonchildProductions/Pale-Moon/issues/364
+        // An actual preference: findbar.highlightAll
+        /*
         if (!(gPrefService.getBoolPref("accessibility.typeaheadfind.highlightallremember") ||
               gPrefService.getBoolPref("accessibility.typeaheadfind.highlightallbydefault"))) {
             // fix bug 253793 - turn off highlight when page changes
             gFindBar.getElement("highlight").checked = false;
         }
+        */
       }
     }
     UpdateBackForwardCommands(gBrowser.webNavigation);
