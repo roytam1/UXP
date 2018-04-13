@@ -3,8 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /**
- * Listeners for the DevEdition theme.  This adds an extra stylesheet
- * to browser.xul if a pref is set and no other themes are applied.
+ * Listeners for the DevTools theme.
  */
 var DevToolsTheme = {
   _devtoolsThemePrefName: "devtools.theme",
