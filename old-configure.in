@@ -2264,7 +2264,7 @@ MOZ_ARG_HEADER(Application)
 ENABLE_SYSTEM_EXTENSION_DIRS=1
 MOZ_BRANDING_DIRECTORY=
 MOZ_OFFICIAL_BRANDING=
-MC_OFFICIAL=1
+MC_OFFICIAL=
 MOZ_FEEDS=1
 MOZ_AUTH_EXTENSION=1
 if test "$MOZ_IOS"; then
@@ -2357,10 +2357,10 @@ AC_SUBST(MOZ_ANDROID_DISTRIBUTION_DIRECTORY)
 dnl ========================================================
 dnl = Vendor override
 dnl ========================================================
-MOZ_ARG_DISABLE_BOOL(official-vendor,
-[  --disable-official-vendor   Disable the use of official vendor.],
-    MC_OFFICIAL=,
-    MC_OFFICIAL=1)
+MOZ_ARG_ENABLE_BOOL(official-vendor,
+[  --enable-official-vendor   This is an official release build.],
+    MC_OFFICIAL=1,
+    MC_OFFICIAL=)
 
 
 dnl ========================================================
@@ -2368,11 +2368,10 @@ dnl = Trademarked Branding
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(official-branding,
 [  --enable-official-branding
-                          Enable Official mozilla.org Branding
+                          Enable Official Branding
                           Do not distribute builds with
                           --enable-official-branding unless you have
-                          permission to use trademarks per
-                          http://www.mozilla.org/foundation/trademarks/ .],
+                          permission to use our trademarks!],
     MOZ_OFFICIAL_BRANDING=1,
     MOZ_OFFICIAL_BRANDING=)
 
@@ -2592,6 +2591,7 @@ if test -n "$MOZ_OFFICIAL_BRANDING"; then
   else
     MOZ_BRANDING_DIRECTORY=${MOZ_OFFICIAL_BRANDING_DIRECTORY}
     AC_DEFINE(MOZ_OFFICIAL_BRANDING)
+dnl Using official branding implies an official release build.
     MC_OFFICIAL=1
   fi
 fi
@@ -5567,7 +5567,7 @@ AC_SUBST(MOZ_SIMPLE_PACKAGE_NAME)
 AC_SUBST(MOZILLA_OFFICIAL)
 if test "$MOZILLA_OFFICIAL"; then
     AC_DEFINE(MOZILLA_OFFICIAL)
-    # Build revisions should always be present in official builds
+    # Build revisions should always be present in official Mozilla builds
     MOZ_INCLUDE_SOURCE_INFO=1
 fi
 

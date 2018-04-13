@@ -44,7 +44,7 @@ this.AboutHomeUtils = {
       return !Services.prefs.getBoolPref("browser.EULA.override");
     } catch (e) { }
 
-#ifndef MOZILLA_OFFICIAL
+#ifndef MC_OFFICIAL
     // Non-official builds shouldn't show the notification.
     return false;
 #endif

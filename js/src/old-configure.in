@@ -2112,6 +2112,7 @@ AC_SUBST(MOZ_APP_VERSION)
 AC_SUBST(MOZ_PKG_SPECIAL)
 
 AC_SUBST(MOZILLA_OFFICIAL)
+AC_SUBST(MC_OFFICIAL)
 
 dnl ========================================================
 dnl ECMAScript Internationalization API Support (uses ICU)

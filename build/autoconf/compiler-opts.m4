@@ -7,7 +7,7 @@ dnl Add compiler specific options
 AC_DEFUN([MOZ_DEFAULT_COMPILER],
 [
 dnl set DEVELOPER_OPTIONS early; MOZ_DEFAULT_COMPILER is usually the first non-setup directive
-  if test -z "$MOZILLA_OFFICIAL"; then
+  if test -z "$MC_OFFICIAL"; then
     DEVELOPER_OPTIONS=1
   fi
   MOZ_ARG_ENABLE_BOOL(release,

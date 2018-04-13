@@ -164,7 +164,7 @@ interface nsIXULRuntime : nsISupports
   readonly attribute AUTF8String distributionID;
 
   /**
-   * True if this is an official build (MOZILLA_OFFICIAL).
+   * True if this is an official build (MC_OFFICIAL).
    */
   readonly attribute boolean isOfficial;
 
