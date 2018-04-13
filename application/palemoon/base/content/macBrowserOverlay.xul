@@ -24,6 +24,9 @@
 # wishes to include *must* go into the global-scripts.inc file
 # so that they can be shared by this overlay.
 #include global-scripts.inc
+#ifdef MOZ_DEVTOOLS
+#include global-devtools-theme-scripts.inc
+#endif
 
 <script type="application/javascript">
   function OpenBrowserWindowFromDockMenu(options) {

@@ -65,6 +65,9 @@
 # wishes to include *must* go into the global-scripts.inc file
 # so that they can be shared by macBrowserOverlay.xul.
 #include global-scripts.inc
+#ifdef MOZ_DEVTOOLS
+#include global-devtools-theme-scripts.inc
+#endif
 <script type="application/javascript" src="chrome://browser/content/nsContextMenu.js"/>
 
 <script type="application/javascript" src="chrome://global/content/contentAreaUtils.js"/>

@@ -722,6 +722,14 @@ var gBrowserInit = {
 
     window.addEventListener("AppCommand", HandleAppCommandEvent, true);
 
+    // These routines add message listeners. They must run before
+    // loading the frame script to ensure that we don't miss any
+    // message sent between when the frame script is loaded and when
+    // the listener is registered.
+#ifdef MOZ_DEVTOOLS
+    DevToolsTheme.init();
+#endif
+
     messageManager.loadFrameScript("chrome://browser/content/content.js", true);
     messageManager.loadFrameScript("chrome://browser/content/content-sessionStore.js", true);
 
@@ -1280,6 +1288,10 @@ var gBrowserInit = {
     TabsInTitlebar.uninit();
     
     ToolbarIconColor.uninit();
+
+#ifdef MOZ_DEVTOOLS
+    DevToolsTheme.uninit();
+#endif
 
     var enumerator = Services.wm.getEnumerator(null);
     enumerator.getNext();

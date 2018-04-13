@@ -53,6 +53,9 @@ browser.jar:
         content/browser/browser-title.css             (content/browser-title.css)
 *       content/browser/browser.js                    (content/browser.js)
 *       content/browser/browser.xul                   (content/browser.xul)
+#ifdef MOZ_DEVTOOLS
+        content/browser/browser-devtools-theme.js     (content/browser-devtools-theme.js)
+#endif
 *       content/browser/browser-tabPreviews.xml       (content/browser-tabPreviews.xml)
         content/browser/content.js                    (content/content.js)
         content/browser/padlock.xul                   (content/padlock.xul)

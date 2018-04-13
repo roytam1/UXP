@@ -2882,6 +2882,10 @@
                 onget="return this.mCurrentBrowser.contentDocument;"
                 readonly="true"/>
 
+      <property name="contentDocumentAsCPOW"
+                onget="return this.mCurrentBrowser.contentDocument;"
+                readonly="true"/>
+
       <property name="contentTitle"
                 onget="return this.mCurrentBrowser.contentTitle;"
                 readonly="true"/>
