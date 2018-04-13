@@ -2849,7 +2849,7 @@ const DOMLinkHandler = {
               break;
 
             let tab = gBrowser.tabs[browserIndex];
-            gBrowser.setIcon(tab, uri.spec);
+            gBrowser.setIcon(tab, uri.spec, link.ownerDocument.nodePrincipal);
             iconAdded = true;
           }
           break;

@@ -3131,7 +3131,11 @@ let SessionStoreInternal = {
 
     // Restore the tab icon.
     if ("image" in tabData) {
-      aWindow.gBrowser.setIcon(tab, tabData.image);
+      // Using null as the loadingPrincipal because serializing
+      // the principal would be overkill. Within SetIcon we
+      // default to the systemPrincipal if aLoadingPrincipal is
+      // null which will allow the favicon to load.
+      aWindow.gBrowser.setIcon(tab, tabData.image, null);
     }
 
     if (tabData.storage && browser.docShell instanceof Ci.nsIDocShell)
