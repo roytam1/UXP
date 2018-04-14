@@ -45,6 +45,12 @@ def ApplicationBranding():
             'default48.png',
             'mozicon128.png',
         ]
+        FINAL_TARGET_FILES.icons += ['mozicon128.png']
+        FINAL_TARGET_FILES.chrome.icons.default += [
+            'default16.png',
+            'default32.png',
+            'default48.png',
+        ]
 
     DEFINES['MOZ_APP_VERSION'] = CONFIG['MOZ_APP_VERSION']
     DEFINES['MOZ_BRANDING_DIRECTORY'] = CONFIG['MOZ_BRANDING_DIRECTORY']
