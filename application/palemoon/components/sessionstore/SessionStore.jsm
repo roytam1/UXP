@@ -2404,7 +2404,7 @@ let SessionStoreInternal = {
       for (var [host, isPinned] in Iterator(internalWindow.hosts)) {
         let list;
         try {
-          list = Services.cookies.getCookiesFromHost(host);
+          list = Services.cookies.getCookiesFromHost(host, {});
         }
         catch (ex) {
           debug("getCookiesFromHost failed. Host: " + host);
