@@ -119,7 +119,6 @@
     _(IntrinsicGuardToArrayIterator) \
     _(IntrinsicGuardToMapIterator)  \
     _(IntrinsicGuardToSetIterator)  \
-    _(IntrinsicIsListIterator)      \
     _(IntrinsicGuardToStringIterator) \
                                     \
     _(IntrinsicGuardToMapObject)    \

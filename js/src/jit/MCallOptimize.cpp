@@ -285,8 +285,6 @@ IonBuilder::inlineNativeCall(CallInfo& callInfo, JSFunction* target)
         return inlineGuardToClass(callInfo, &SetIteratorObject::class_);
       case InlinableNative::IntrinsicGuardToStringIterator:
         return inlineGuardToClass(callInfo, &StringIteratorObject::class_);
-      case InlinableNative::IntrinsicIsListIterator:
-        return inlineHasClass(callInfo, &ListIteratorObject::class_);
       case InlinableNative::IntrinsicDefineDataProperty:
         return inlineDefineDataProperty(callInfo);
       case InlinableNative::IntrinsicObjectHasPrototype:
