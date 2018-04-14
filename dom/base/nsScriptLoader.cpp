@@ -654,6 +654,19 @@ nsScriptLoader::CheckContentPolicy(nsIDocument* aDocument,
 }
 
 bool
+nsScriptLoader::ModuleScriptsEnabled()
+{
+  static bool sEnabledForContent = false;
+  static bool sCachedPref = false;
+  if (!sCachedPref) {
+    sCachedPref = true;
+    Preferences::AddBoolVarCache(&sEnabledForContent, "dom.moduleScripts.enabled", false);
+  }
+
+  return nsContentUtils::IsChromeDoc(mDocument) || sEnabledForContent;
+}
+
+bool
 nsScriptLoader::ModuleMapContainsModule(nsModuleLoadRequest *aRequest) const
 {
   // Returns whether we have fetched, or are currently fetching, a module script
@@ -1448,8 +1461,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
 
   nsScriptKind scriptKind = nsScriptKind::Classic;
   if (!type.IsEmpty()) {
-    // Support type="module" only for chrome documents.
-    if (nsContentUtils::IsChromeDoc(mDocument) && type.LowerCaseEqualsASCII("module")) {
+    if (ModuleScriptsEnabled() && type.LowerCaseEqualsASCII("module")) {
       scriptKind = nsScriptKind::Module;
     } else {
       NS_ENSURE_TRUE(ParseTypeAttribute(type, &version), false);
@@ -2768,7 +2780,7 @@ nsScriptLoader::PreloadURI(nsIURI *aURI, const nsAString &aCharset,
   }
 
   // TODO: Preload module scripts.
-  if (nsContentUtils::IsChromeDoc(mDocument) && aType.LowerCaseEqualsASCII("module")) {
+  if (ModuleScriptsEnabled() && aType.LowerCaseEqualsASCII("module")) {
     return;
   }
 
