@@ -1129,6 +1129,12 @@ ifneq (,$(JAR_MANIFEST))
 ifndef NO_DIST_INSTALL
 
 ifdef XPI_NAME
+# XXX: Figure out why Pale Moon's defs.mk is not being propigated
+ifndef XPI_ROOT_APPID
+ifdef MC_PALEMOON
+XPI_ROOT_APPID=$(MOZ_APP_ID)
+endif
+endif
 ifdef XPI_ROOT_APPID
 # For add-on packaging we may specify that an application
 # sub-dir should be added to the root chrome manifest with
