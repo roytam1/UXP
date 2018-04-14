@@ -7,10 +7,10 @@ dnl file, You can obtain one at http://mozilla.org/MPL/2.0/.
 dnl Things we need to carry from confvars.sh
 AC_DEFINE(MOZ_PHOENIX)
 AC_SUBST(MOZ_PHOENIX)
-
 AC_DEFINE(MC_PALEMOON)
 AC_SUBST(MC_PALEMOON)
-
+AC_DEFINE(MOZ_PHOENIX_EXTENSIONS)
+AC_SUBST(MOZ_PHOENIX_EXTENSIONS)
 
 dnl Optional parts of the build.
 
