@@ -156,7 +156,10 @@ let SessionFileInternal = {
     let text;
     try {
       let file = new FileUtils.File(aPath);
-      let chan = NetUtil.newChannel(file);
+      let chan = NetUtil.newChannel({
+        uri: NetUtil.newURI(file),
+        loadUsingSystemPrincipal: true
+      });
       let stream = chan.open();
       text = NetUtil.readInputStreamToString(stream, stream.available(),
         {charset: "utf-8"});
