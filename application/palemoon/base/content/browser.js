@@ -5124,7 +5124,8 @@ function handleDroppedLink(event, urlOrLinks, name)
 
   let lastLocationChange = gBrowser.selectedBrowser.lastLocationChange;
 
-  let userContextId = gBrowser.selectedBrowser.getAttribute("usercontextid");
+  let userContextId = gBrowser.selectedBrowser
+                      .getAttribute("usercontextid") || 0;
 
   let inBackground = Services.prefs.getBoolPref("browser.tabs.loadInBackground");
   if (event.shiftKey)

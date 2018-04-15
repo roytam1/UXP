@@ -4507,40 +4507,35 @@
           this.tabbrowser.updateCurrentBrowser(true);
         } else {
           // Pass true to disallow dropping javascript: or data: urls
-          let url;
+          let links;
           try {
-            url = browserDragAndDrop.drop(event, { }, true);
+            links = browserDragAndDrop.dropLinks(event, true);
           } catch (ex) {}
 
 //          // valid urls don't contain spaces ' '; if we have a space it isn't a valid url.
 //          if (!url || url.includes(" ")) //PMed
-          if (!url) //FF
+          if (!links || links.length === 0) //FF
             return;
 
-          let bgLoad = Services.prefs.getBoolPref("browser.tabs.loadInBackground");
+          let inBackground = Services.prefs.getBoolPref("browser.tabs.loadInBackground");
 
           if (event.shiftKey)
-            bgLoad = !bgLoad;
+            inBackground = !inBackground;
 
-          let tab = this._getDragTargetTab(event);
-          if (!tab || dropEffect == "copy") {
-            // We're adding a new tab.
-            let newIndex = this._getDropIndex(event);
-            let newTab = this.tabbrowser.loadOneTab(url, {inBackground: bgLoad, allowThirdPartyFixup: true});
-            this.tabbrowser.moveTabTo(newTab, newIndex);
-          } else {
-            // Load in an existing tab.
-            try {
-              let webNav = Ci.nsIWebNavigation;
-              let flags = webNav.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP |
-                          webNav.LOAD_FLAGS_FIXUP_SCHEME_TYPOS;
-              this.tabbrowser.getBrowserForTab(tab).loadURIWithFlags(url, flags);
-              if (!bgLoad)
-                this.selectedItem = tab;
-            } catch(ex) {
-              // Just ignore invalid urls
-            }
-          }
+          let targetTab = this._getDragTargetTab(event);
+          let userContextId = this.selectedItem
+                              .getAttribute("usercontextid") || 0;
+          let replace = !(!tab || dropEffect == "copy");
+          let newIndex = this._getDropIndex(event);
+          let urls = links.map(link => link.url);
+          this.tabbrowser.loadTabs(urls, {
+            inBackground,
+            replace,
+            allowThirdPartyFixup: true,
+            targetTab,
+            newIndex,
+            userContextId,
+          });
         }
 
         if (draggedTab) {
