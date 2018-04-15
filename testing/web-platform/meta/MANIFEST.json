@@ -39138,6 +39138,18 @@
         "url": "/2dcontext/drawing-images-to-the-canvas/drawimage_html_image_9.html"
       }
     ],
+    "2dcontext/drawing-images-to-the-canvas/drawimage_svg_image_1.html": [
+      {
+        "path": "2dcontext/drawing-images-to-the-canvas/drawimage_svg_image_1.html",
+        "references": [
+          [
+            "/2dcontext/drawing-images-to-the-canvas/drawimage_svg_image_1_ref.html",
+            "=="
+          ]
+        ],
+        "url": "/2dcontext/drawing-images-to-the-canvas/drawimage_svg_image_1.html"
+      }
+    ],
     "2dcontext/line-styles/canvas_linestyles_linecap_001.htm": [
       {
         "path": "2dcontext/line-styles/canvas_linestyles_linecap_001.htm",

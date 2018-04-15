@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<link rel=match href=drawimage_html_image_1_ref.html>
+<link rel=match href=drawimage_svg_image_1_ref.html>
 <style>
   html, body {
     margin: 0;
@@ -13,8 +13,8 @@ var sourceWidth = 100;
 var sourceHeight = 100;
 var smoothingEnabled = false;
 var destCanvas = document.getElementById('dest');
-var sourceImg = document.createElement('img');
-sourceImg.src = '../2x2.png'
+var sourceImg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+sourceImg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '../2x2.png');
 sourceImg.width = sourceWidth;
 sourceImg.height = sourceHeight;
 
