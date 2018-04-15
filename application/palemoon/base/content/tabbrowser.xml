@@ -1314,6 +1314,24 @@
         <parameter name="aLoadInBackground"/>
         <parameter name="aReplace"/>
         <body><![CDATA[
+          let aAllowThirdPartyFixup;
+          let aTargetTab;
+          let aNewIndex = -1;
+          let aPostDatas = [];
+          let aUserContextId;
+          if (arguments.length == 2 &&
+              typeof arguments[1] == "object") {
+            let params = arguments[1];
+            aLoadInBackground     = params.inBackground;
+            aReplace              = params.replace;
+            aAllowThirdPartyFixup = params.allowThirdPartyFixup;
+            aTargetTab            = params.targetTab;
+            aNewIndex             = typeof params.newIndex === "number" ?
+                                    params.newIndex : aNewIndex;
+            aPostDatas            = params.postDatas || aPostDatas;
+            aUserContextId        = params.userContextId;
+          }
+
           if (!aURIs.length)
             return;
 
@@ -1331,22 +1349,53 @@
           var multiple = aURIs.length > 1;
           var owner = multiple || aLoadInBackground ? null : this.selectedTab;
           var firstTabAdded = null;
+          var targetTabIndex = -1;
 
           if (aReplace) {
+            let browser;
+            if (aTargetTab) {
+              browser = this.getBrowserForTab(aTargetTab);
+              targetTabIndex = aTargetTab._tPos;
+            } else {
+              browser = this.mCurrentBrowser;
+              targetTabIndex = this.tabContainer.selectedIndex;
+            }
+            let flags = Ci.nsIWebNavigation.LOAD_FLAGS_NONE;
+            if (aAllowThirdPartyFixup) {
+              flags |= Ci.nsIWebNavigation.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP |
+                       Ci.nsIWebNavigation.LOAD_FLAGS_FIXUP_SCHEME_TYPOS;
+            }
             try {
-              this.loadURI(aURIs[0], null, null);
+              browser.loadURIWithFlags(aURIs[0], {
+                flags, postData: aPostDatas[0]
+              });
             } catch (e) {
               // Ignore failure in case a URI is wrong, so we can continue
               // opening the next ones.
             }
+          } else {
+            firstTabAdded = this.addTab(aURIs[0], {
+              ownerTab: owner,
+              skipAnimation: multiple,
+              allowThirdPartyFixup: aAllowThirdPartyFixup,
+              postData: aPostDatas[0],
+              userContextId: aUserContextId
+            });
+            if (aNewIndex !== -1) {
+              this.moveTabTo(firstTabAdded, aNewIndex);
+              targetTabIndex = firstTabAdded._tPos;
+            }
           }
-          else
-            firstTabAdded = this.addTab(aURIs[0], {ownerTab: owner, skipAnimation: multiple});
 
-          var tabNum = this.tabContainer.selectedIndex;
+          let tabNum = targetTabIndex;
           for (let i = 1; i < aURIs.length; ++i) {
-            let tab = this.addTab(aURIs[i], {skipAnimation: true});
-            if (aReplace)
+            let tab = this.addTab(aURIs[i], {
+              skipAnimation: true,
+              allowThirdPartyFixup: aAllowThirdPartyFixup,
+              postData: aPostDatas[i],
+              userContextId: aUserContextId
+            });
+            if (targetTabIndex !== -1)
               this.moveTabTo(tab, ++tabNum);
           }
 
