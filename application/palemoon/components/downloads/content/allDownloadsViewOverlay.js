@@ -1594,10 +1594,14 @@ DownloadsPlacesView.prototype = {
     if (dt.mozGetDataAt("application/x-moz-file", 0))
       return;
 
-    let name = { };
-    let url = Services.droppedLinkHandler.dropLink(aEvent, name);
-    if (url)
-      DownloadURL(url, name.value);
+    let links = Services.droppedLinkHandler.dropLinks(aEvent);
+    if (!links.length)
+      return;
+    for (let link of links) {
+      if (link.url.startsWith("about:"))
+        continue;
+      DownloadURL(link.url, link.name);
+    }
   }
 };
 
