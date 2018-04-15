@@ -35,6 +35,7 @@ Cu.import("resource://gre/modules/Services.jsm");
   ["OS", "resource://gre/modules/osfile.jsm"],
   ["LoginManagerParent", "resource://gre/modules/LoginManagerParent.jsm"],
   ["FormValidationHandler", "resource:///modules/FormValidationHandler.jsm"],
+  ["DateTimePickerHelper", "resource://gre/modules/DateTimePickerHelper.jsm"],
 ].forEach(([name, resource]) => XPCOMUtils.defineLazyModuleGetter(this, name, resource));
 
 const PREF_PLUGINS_NOTIFYUSER = "plugins.update.notifyUser";
@@ -167,6 +168,7 @@ BrowserGlue.prototype = {
         } catch (e) {
           Cu.reportError("Could not end startup crash tracking in quit-application-granted: " + e);
         }
+        DateTimePickerHelper.uninit();
         break;
 #ifdef OBSERVE_LASTWINDOW_CLOSE_TOPICS
       case "browser-lastwindow-close-requested":
@@ -495,6 +497,8 @@ BrowserGlue.prototype = {
       temp.WinTaskbarJumpList.startup();
     }
 #endif
+
+    DateTimePickerHelper.init();
 
     this._trackSlowStartup();
   },

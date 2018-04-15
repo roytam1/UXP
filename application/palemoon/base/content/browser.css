@@ -280,6 +280,10 @@ panel[noactions] > richlistbox > richlistitem[type~="action"] > .ac-url-box > .a
   -moz-binding: url("chrome://browser/content/urlbarBindings.xml#urlbar-rich-result-popup");
 }
 
+#DateTimePickerPanel[active="true"] {
+  -moz-binding: url("chrome://global/content/bindings/datetimepopup.xml#datetime-popup");
+}
+
 /* Pale Moon: Address bar: Feeds */
 #ub-feed-button > .button-box > .box-inherit > .button-text,
 #ub-feed-button > .button-box > .button-menu-dropmarker {
@@ -542,11 +546,11 @@ window[chromehidden~="toolbar"] toolbar:not(.toolbar-primary):not(#nav-bar):not(
   max-width: 280px;
 }
 
-.form-validation-anchor {
+.popup-anchor {
   /* should occupy space but not be visible */
   opacity: 0;
-  visibility: hidden;
   pointer-events: none;
+  -moz-stack-sizing: ignore;
 }
 
 #addon-progress-notification {
