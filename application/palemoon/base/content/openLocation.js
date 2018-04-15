@@ -62,13 +62,12 @@ function doEnabling()
 
 function open()
 {
-  Task.spawn(function() {
+  getShortcutOrURIAndPostData(dialog.input.value).then(data => {
     let url;
     let postData = null;
     let mayInheritPrincipal = false;
 
     if (browser) {
-      let data = yield browser.getShortcutOrURIAndPostData(dialog.input.value);
       url = data.url;
       postData = data.postData;
       mayInheritPrincipal = data.mayInheritPrincipal;
