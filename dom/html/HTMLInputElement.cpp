@@ -540,7 +540,8 @@ GetDOMFileOrDirectoryPath(const OwningFileOrDirectory& aData,
 bool
 HTMLInputElement::ValueAsDateEnabled(JSContext* cx, JSObject* obj)
 {
-  return IsExperimentalFormsEnabled() || IsInputDateTimeEnabled();
+  return IsExperimentalFormsEnabled() || IsInputDateTimeEnabled() ||
+    IsInputDateTimeOthersEnabled();
 }
 
 NS_IMETHODIMP
@@ -5709,7 +5710,7 @@ HTMLInputElement::IsDateTimeTypeSupported(uint8_t aDateTimeInputType)
          ((aDateTimeInputType == NS_FORM_INPUT_MONTH ||
            aDateTimeInputType == NS_FORM_INPUT_WEEK ||
            aDateTimeInputType == NS_FORM_INPUT_DATETIME_LOCAL) &&
-          IsInputDateTimeEnabled());
+          IsInputDateTimeOthersEnabled());
 }
 
 /* static */ bool
@@ -5786,6 +5787,20 @@ HTMLInputElement::IsInputDateTimeEnabled()
 }
 
 /* static */ bool
+HTMLInputElement::IsInputDateTimeOthersEnabled()
+{
+  static bool sDateTimeOthersEnabled = false;
+  static bool sDateTimeOthersPrefCached = false;
+  if (!sDateTimeOthersPrefCached) {
+    sDateTimeOthersPrefCached = true;
+    Preferences::AddBoolVarCache(&sDateTimeOthersEnabled,
+                                 "dom.forms.datetime.others", false);
+  }
+
+  return sDateTimeOthersEnabled;
+}
+
+/* static */ bool
 HTMLInputElement::IsInputNumberEnabled()
 {
   static bool sInputNumberEnabled = false;
@@ -5827,12 +5842,9 @@ HTMLInputElement::ParseAttribute(int32_t aNamespaceID,
       bool success = aResult.ParseEnumValue(aValue, kInputTypeTable, false);
       if (success) {
         newType = aResult.GetEnumValue();
-        if ((IsExperimentalMobileType(newType) &&
-             !IsExperimentalFormsEnabled()) ||
-            (newType == NS_FORM_INPUT_NUMBER && !IsInputNumberEnabled()) ||
+        if ((newType == NS_FORM_INPUT_NUMBER && !IsInputNumberEnabled()) ||
             (newType == NS_FORM_INPUT_COLOR && !IsInputColorEnabled()) ||
-            (IsDateTimeInputType(newType) &&
-             !IsDateTimeTypeSupported(newType))) {
+          (IsDateTimeInputType(newType) && !IsDateTimeTypeSupported(newType))) {
           newType = kInputDefaultType->value;
           aResult.SetTo(newType, &aValue);
         }
