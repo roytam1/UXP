@@ -1913,7 +1913,7 @@
             viewsLeft = 0;
             return;
             // XXX
-            
+            /*
             if (Services.prefs.prefHasUserValue("services.sync.username") &&
                this._notificationType != "addons-sync-disabled") {
               // If the user has already setup Sync, don't show the notification.
@@ -1947,6 +1947,7 @@
               this._promomessage.firstChild.textContent = this._notificationMessage;
               this._promomessage.height = this._promomessage.getBoundingClientRect().height;
             }.bind(this), true);
+            */
           }
         ]]></body>
       </method>
