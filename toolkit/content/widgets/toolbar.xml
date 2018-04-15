@@ -49,6 +49,7 @@
 
       <constructor>
         <![CDATA[
+          this.toolbarInfoSeparators = ["|", "-"];
           // Look to see if there is a toolbarset.
           this.toolbarset = this.firstChild;
           while (this.toolbarset && this.toolbarset.localName != "toolbarset")
@@ -57,10 +58,14 @@
           if (this.toolbarset) {
             // Create each toolbar described by the toolbarset.
             var index = 0;
-            while (toolbarset.hasAttribute("toolbar"+(++index))) {
-              var toolbarInfo = toolbarset.getAttribute("toolbar"+index);
-              var infoSplit = toolbarInfo.split(":");
-              this.appendCustomToolbar(infoSplit[0], infoSplit[1]);
+            while (this.toolbarset.hasAttribute("toolbar" + (++index))) {
+              var toolbarInfo = this.toolbarset.getAttribute("toolbar"+index);
+              var infoSplit = toolbarInfo.split(this.toolbarInfoSeparators[0]);
+              var infoName = infoSplit[0];
+              var infoHidingAttribute = infoSplit[1].split(this.toolbarInfoSeparators[1]);
+              var infoCurrentSet = infoSplit[2];
+
+              this.appendCustomToolbar(infoName, infoCurrentSet, infoHidingAttribute);
             }
           }
         ]]>
@@ -69,6 +74,7 @@
       <method name="appendCustomToolbar">
         <parameter name="aName"/>
         <parameter name="aCurrentSet"/>
+        <parameter name="aHidingAttribute"/>
         <body>
           <![CDATA[
             if (!this.toolbarset)
@@ -84,6 +90,10 @@
             toolbar.setAttribute("iconsize", this.getAttribute("iconsize"));
             toolbar.setAttribute("context", this.toolbarset.getAttribute("context"));
             toolbar.setAttribute("class", "chromeclass-toolbar");
+            // Restore persist the hiding attribute.
+            if (aHidingAttribute[0]) {
+              toolbar.setAttribute(aHidingAttribute[0], aHidingAttribute[1]);
+            }
 
             this.insertBefore(toolbar, this.toolbarset);
             return toolbar;
