@@ -489,8 +489,8 @@ private:
     nsCString      mCompatGecko;
     bool           mCompatGeckoEnabled;
     nsCString      mCompatFirefox;
-    nsCString      mCompatFirefoxVersion;
     bool           mCompatFirefoxEnabled;
+    nsCString      mCompatFirefoxVersion;
     nsXPIDLCString mCompatDevice;
     nsCString      mDeviceModelId;
 
