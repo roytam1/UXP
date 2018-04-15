@@ -180,8 +180,8 @@ function persistCurrentSets()
         // Persist custom toolbar info on the <toolbarset/>
         // Attributes:
         // Names: "toolbarX" (X - the number of the toolbar)
-        // Values: "Name:HidingAttributeName-HidingAttributeValue:CurrentSet"
-        gToolbox.toolbarset.setAttribute("toolbar"+(++customCount),
+        // Values: "Name|HidingAttributeName-HidingAttributeValue|CurrentSet"
+        gToolbox.toolbarset.setAttribute("toolbar" + (++customCount),
                                          toolbar.toolbarName
                                          + gToolbarInfoSeparators[0]
                                          + hidingAttribute
