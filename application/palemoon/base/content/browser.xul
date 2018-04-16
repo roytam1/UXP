@@ -428,7 +428,7 @@
         <textbox id="urlbar" flex="1"
                  placeholder=""
                  type="autocomplete"
-                 autocompletesearch="unifiedcomplete"
+                 autocompletesearch="urlinline history"
                  autocompletesearchparam="enable-actions"
                  autocompletepopup="PopupAutoCompleteRichResult"
                  completeselectedindex="true"
