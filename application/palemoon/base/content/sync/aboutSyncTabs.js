@@ -11,7 +11,7 @@ Cu.import("resource://gre/modules/PlacesUtils.jsm", this);
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-let RemoteTabViewer = {
+var RemoteTabViewer = {
   _tabsList: null,
 
   init: function () {

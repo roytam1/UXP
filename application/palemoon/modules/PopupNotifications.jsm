@@ -18,8 +18,8 @@ const ICON_ATTRIBUTE_SHOWING = "showing";
 
 const PREF_SECURITY_DELAY = "security.notification_enable_delay";
 
-let popupNotificationsMap = new WeakMap();
-let gNotificationParents = new WeakMap;
+var popupNotificationsMap = new WeakMap();
+var gNotificationParents = new WeakMap;
 
 function getAnchorFromBrowser(aBrowser) {
   let anchor = aBrowser.getAttribute("popupnotificationanchor") ||

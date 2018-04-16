@@ -959,7 +959,7 @@ var PlacesMenuDNDHandler = {
  * This object handles the initialization and uninitialization of the bookmarks
  * toolbar.
  */
-let PlacesToolbarHelper = {
+var PlacesToolbarHelper = {
   _place: "place:folder=TOOLBAR",
 
   get _viewElt() {
@@ -1006,7 +1006,7 @@ let PlacesToolbarHelper = {
  * menu button.
  */
 
-let BookmarkingUI = {
+var BookmarkingUI = {
   get button() {
     if (!this._button) {
       this._button = document.getElementById("bookmarks-menu-button");

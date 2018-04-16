@@ -88,7 +88,7 @@ XPCOMUtils.defineLazyServiceGetter(this, "gScreenManager",
 // retrieved from a given docShell if not already collected before.
 // This is made so they're automatically in sync with all nsIDocShell.allow*
 // properties.
-let gDocShellCapabilities = (function () {
+var gDocShellCapabilities = (function () {
   let caps;
 
   return docShell => {
@@ -247,7 +247,7 @@ this.SessionStore = {
 // Freeze the SessionStore object. We don't want anyone to modify it.
 Object.freeze(SessionStore);
 
-let SessionStoreInternal = {
+var SessionStoreInternal = {
   QueryInterface: XPCOMUtils.generateQI([
     Ci.nsIDOMEventListener,
     Ci.nsIObserver,
@@ -4471,7 +4471,7 @@ let SessionStoreInternal = {
  * pinned, visible and hidden tabs in that and FIFO order. Hidden tabs are only
  * restored with restore_hidden_tabs=true.
  */
-let TabRestoreQueue = {
+var TabRestoreQueue = {
   // The separate buckets used to store tabs.
   tabs: {priority: [], visible: [], hidden: []},
 
@@ -4608,7 +4608,7 @@ let TabRestoreQueue = {
 // A map storing a closed window's state data until it goes aways (is GC'ed).
 // This ensures that API clients can still read (but not write) states of
 // windows they still hold a reference to but we don't.
-let DyingWindowCache = {
+var DyingWindowCache = {
   _data: new WeakMap(),
 
   has: function (window) {
@@ -4631,7 +4631,7 @@ let DyingWindowCache = {
 // A set of tab attributes to persist. We will read a given list of tab
 // attributes when collecting tab data and will re-set those attributes when
 // the given tab data is restored to a new tab.
-let TabAttributes = {
+var TabAttributes = {
   _attrs: new Set(),
 
   // We never want to directly read or write those attributes.
@@ -4677,7 +4677,7 @@ let TabAttributes = {
 // This is used to help meter the number of restoring tabs. This is the control
 // point for telling the next tab to restore. It gets attached to each gBrowser
 // via gBrowser.addTabsProgressListener
-let gRestoreTabsProgressListener = {
+var gRestoreTabsProgressListener = {
   onStateChange: function(aBrowser, aWebProgress, aRequest, aStateFlags, aStatus) {
     // Ignore state changes on browsers that we've already restored and state
     // changes that aren't applicable.

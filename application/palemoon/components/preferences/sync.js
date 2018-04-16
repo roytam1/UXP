@@ -9,7 +9,7 @@ const PAGE_NO_ACCOUNT = 0;
 const PAGE_HAS_ACCOUNT = 1;
 const PAGE_NEEDS_UPDATE = 2;
 
-let gSyncPane = {
+var gSyncPane = {
   _stringBundle: null,
   prefArray: ["engine.bookmarks", "engine.passwords", "engine.prefs",
               "engine.tabs", "engine.history"],

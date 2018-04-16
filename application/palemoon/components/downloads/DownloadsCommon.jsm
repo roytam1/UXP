@@ -104,7 +104,7 @@ const kPartialDownloadSuffix = ".part";
 
 const kPrefBranch = Services.prefs.getBranch("browser.download.");
 
-let PrefObserver = {
+var PrefObserver = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
                                          Ci.nsISupportsWeakReference]),
   getPref: function PO_getPref(name) {

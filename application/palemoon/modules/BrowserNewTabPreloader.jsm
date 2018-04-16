@@ -79,7 +79,7 @@ this.BrowserNewTabPreloader = {
 
 Object.freeze(BrowserNewTabPreloader);
 
-let Initializer = {
+var Initializer = {
   _timer: null,
   _observing: false,
 
@@ -120,7 +120,7 @@ let Initializer = {
   }
 };
 
-let Preferences = {
+var Preferences = {
   _enabled: null,
   _branch: null,
 
@@ -157,7 +157,7 @@ let Preferences = {
   },
 };
 
-let HiddenBrowsers = {
+var HiddenBrowsers = {
   _browsers: null,
   _updateTimer: null,
 
@@ -379,7 +379,7 @@ HiddenBrowser.prototype = {
   }
 };
 
-let HostFrame = {
+var HostFrame = {
   _frame: null,
   _deferred: null,
 

@@ -222,7 +222,7 @@ const LOGGER_ID = "addons.xpi";
 
 // Create a new logger for use by all objects in this Addons XPI Provider module
 // (Requires AddonManager.jsm)
-let logger = Log.repository.getLogger(LOGGER_ID);
+var logger = Log.repository.getLogger(LOGGER_ID);
 
 const LAZY_OBJECTS = ["XPIDatabase"];
 
@@ -7822,7 +7822,7 @@ WinRegInstallLocation.prototype = {
 };
 #endif
 
-let addonTypes = [
+var addonTypes = [
   new AddonManagerPrivate.AddonType("extension", URI_EXTENSION_STRINGS,
                                     STRING_TYPE_NAME,
                                     AddonManager.VIEW_TYPE_LIST, 4000,

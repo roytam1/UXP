@@ -38,7 +38,7 @@ this.SessionStorage = {
 
 Object.freeze(SessionStorage);
 
-let DomStorage = {
+var DomStorage = {
   /**
    * Reads all session storage data from the given docShell.
    * @param aDocShell
@@ -142,7 +142,7 @@ let DomStorage = {
   }
 };
 
-let History = {
+var History = {
   /**
    * Returns a given history entry's URI.
    * @param aHistory

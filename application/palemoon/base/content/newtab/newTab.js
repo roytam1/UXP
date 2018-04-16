@@ -18,7 +18,7 @@ XPCOMUtils.defineLazyModuleGetter(this, "Rect",
 XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
   "resource://gre/modules/PrivateBrowsingUtils.jsm");
 
-let {
+var {
   links: gLinks,
   allPages: gAllPages,
   linkChecker: gLinkChecker,

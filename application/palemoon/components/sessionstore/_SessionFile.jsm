@@ -130,7 +130,7 @@ const TaskUtils = {
   }
 };
 
-let SessionFileInternal = {
+var SessionFileInternal = {
   /**
    * A promise fulfilled once initialization is complete
    */

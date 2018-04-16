@@ -2329,7 +2329,7 @@ function BrowserOnAboutPageLoad(doc) {
 /**
  * Handle command events bubbling up from error page content
  */
-let BrowserOnClick = {
+var BrowserOnClick = {
   handleEvent: function BrowserOnClick_handleEvent(aEvent) {
     if (!aEvent.isTrusted || // Don't trust synthetic events
         aEvent.button == 2 || aEvent.target.localName != "button") {
@@ -6998,7 +6998,8 @@ function focusNextFrame(event) {
   if (element.ownerDocument == document)
     focusAndSelectUrlBar();
 }
-let BrowserChromeTest = {
+
+var BrowserChromeTest = {
   _cb: null,
   _ready: false,
   markAsReady: function () {
@@ -7016,7 +7017,7 @@ let BrowserChromeTest = {
   }
 };
 
-let ToolbarIconColor = {
+var ToolbarIconColor = {
   init: function () {
     this._initialized = true;
 

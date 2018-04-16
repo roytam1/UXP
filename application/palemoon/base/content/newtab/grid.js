@@ -7,7 +7,7 @@
 /**
  * This singleton represents the grid that contains all sites.
  */
-let gGrid = {
+var gGrid = {
   /**
    * The DOM node of the grid.
    */

@@ -10,11 +10,11 @@ Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
 
 this.EXPORTED_SYMBOLS = [ "OpenLocationLastURL" ];
 
-let prefSvc = Components.classes["@mozilla.org/preferences-service;1"]
+var prefSvc = Components.classes["@mozilla.org/preferences-service;1"]
                         .getService(Components.interfaces.nsIPrefBranch);
-let gOpenLocationLastURLData = "";
+var gOpenLocationLastURLData = "";
 
-let observer = {
+var observer = {
   QueryInterface: function (aIID) {
     if (aIID.equals(Components.interfaces.nsIObserver) ||
         aIID.equals(Components.interfaces.nsISupports) ||
@@ -35,7 +35,7 @@ let observer = {
   }
 };
 
-let os = Components.classes["@mozilla.org/observer-service;1"]
+var os = Components.classes["@mozilla.org/observer-service;1"]
                    .getService(Components.interfaces.nsIObserverService);
 os.addObserver(observer, "last-pb-context-exited", true);
 os.addObserver(observer, "browser:purge-session-history", true);

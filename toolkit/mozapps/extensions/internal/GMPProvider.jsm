@@ -64,11 +64,11 @@ XPCOMUtils.defineLazyGetter(this, "pluginsBundle",
 XPCOMUtils.defineLazyGetter(this, "gmpService",
   () => Cc["@mozilla.org/gecko-media-plugin-service;1"].getService(Ci.mozIGeckoMediaPluginChromeService));
 
-let messageManager = Cc["@mozilla.org/globalmessagemanager;1"]
+var messageManager = Cc["@mozilla.org/globalmessagemanager;1"]
                        .getService(Ci.nsIMessageListenerManager);
 
-let gLogger;
-let gLogAppenderDump = null;
+var gLogger;
+var gLogAppenderDump = null;
 
 function configureLogging() {
   if (!gLogger) {
@@ -443,7 +443,7 @@ GMPWrapper.prototype = {
   },
 };
 
-let GMPProvider = {
+var GMPProvider = {
   get name() { return "GMPProvider"; },
 
   _plugins: null,

@@ -24,7 +24,7 @@ module.metadata = {
   'stability': 'unstable'
 };
 
-let promised = (function() {
+var promised = (function() {
   // Note: Define shortcuts and utility functions here in order to avoid
   // slower property accesses and unnecessary closure creations on each
   // call of this popular function.

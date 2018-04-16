@@ -13,15 +13,15 @@ Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
 Cu.import("resource://gre/modules/ForgetAboutSite.jsm");
 
-let gFaviconService = Cc["@mozilla.org/browser/favicon-service;1"].
+var gFaviconService = Cc["@mozilla.org/browser/favicon-service;1"].
                       getService(Ci.nsIFaviconService);
 
-let gPlacesDatabase = Cc["@mozilla.org/browser/nav-history-service;1"].
+var gPlacesDatabase = Cc["@mozilla.org/browser/nav-history-service;1"].
                       getService(Ci.nsPIPlacesDatabase).
                       DBConnection.
                       clone(true);
 
-let gSitesStmt = gPlacesDatabase.createAsyncStatement(
+var gSitesStmt = gPlacesDatabase.createAsyncStatement(
                   "SELECT get_unreversed_host(rev_host) AS host " +
                   "FROM moz_places " +
                   "WHERE rev_host > '.' " +
@@ -30,12 +30,12 @@ let gSitesStmt = gPlacesDatabase.createAsyncStatement(
                   "ORDER BY MAX(frecency) DESC " +
                   "LIMIT :limit");
 
-let gVisitStmt = gPlacesDatabase.createAsyncStatement(
+var gVisitStmt = gPlacesDatabase.createAsyncStatement(
                   "SELECT SUM(visit_count) AS count " +
                   "FROM moz_places " +
                   "WHERE rev_host = :rev_host");
 
-let gFlash = {
+var gFlash = {
   name: "Shockwave Flash",
   betterName: "Adobe Flash",
   type: "application/x-shockwave-flash",
@@ -290,7 +290,7 @@ Site.prototype = {
  *
  * Inspired by pageinfo/permissions.js
  */
-let PermissionDefaults = {
+var PermissionDefaults = {
   UNKNOWN: Ci.nsIPermissionManager.UNKNOWN_ACTION,   // 0
   ALLOW: Ci.nsIPermissionManager.ALLOW_ACTION,       // 1
   DENY: Ci.nsIPermissionManager.DENY_ACTION,         // 2
@@ -449,7 +449,7 @@ let PermissionDefaults = {
 /**
  * AboutPermissions manages the about:permissions page.
  */
-let AboutPermissions = {
+var AboutPermissions = {
  /**
   * Maximum number of sites to return from the places database.
   */  

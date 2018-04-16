@@ -50,7 +50,7 @@ function debug(aMsg) {
   Services.console.logStringMessage(aMsg);
 }
 
-let gOnceInitializedDeferred = Promise.defer();
+var gOnceInitializedDeferred = Promise.defer();
 
 /* :::::::: The Service ::::::::::::::: */
 

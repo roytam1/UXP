@@ -18,7 +18,7 @@ const Cu = Components.utils;
  * when another one of the placeholder is meant to be displayed.
  * */
 
-let Frames = new Map();
+var Frames = new Map();
 
 /**
  * The Frames map is the main data structure that holds information

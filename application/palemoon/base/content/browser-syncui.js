@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // gSyncUI handles updating the tools menu
-let gSyncUI = {
+var gSyncUI = {
   _obs: ["weave:service:sync:start",
          "weave:service:sync:delayed",
          "weave:service:quota:remaining",

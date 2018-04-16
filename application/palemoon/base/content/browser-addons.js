@@ -226,7 +226,7 @@ const gXPInstallObserver = {
  * - If an add-on was installed, incrementing the count, show the bar.
  * - If an add-on was uninstalled, and no more items are left, hide the bar.
  */
-let AddonsMgrListener = {
+var AddonsMgrListener = {
   get addonBar() document.getElementById("addon-bar"),
   get statusBar() document.getElementById("status-bar"),
   getAddonBarItemCount: function() {
@@ -461,7 +461,7 @@ var LightWeightThemeWebInstaller = {
 /*
  * Listen for Lightweight Theme styling changes and update the browser's theme accordingly.
  */
-let LightweightThemeListener = {
+var LightweightThemeListener = {
   _modifiedStyles: [],
 
   init: function () {

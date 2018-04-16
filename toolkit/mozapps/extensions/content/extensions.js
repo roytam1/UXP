@@ -2456,7 +2456,7 @@ var gSearchView = {
     this._allResultsLink.setAttribute("href",
                                       AddonRepository.getSearchURL(this._lastQuery));
     this._allResultsLink.hidden = false;
- },
+  },
 
   updateListAttributes: function gSearchView_updateListAttributes() {
     var item = this._listBox.querySelector("richlistitem[remote='true'][first]");

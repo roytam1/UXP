@@ -6,8 +6,8 @@ const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://services-sync/main.js");
 
-let gProgressBar;
-let gCounter = 0;
+var gProgressBar;
+var gCounter = 0;
 
 function onLoad(event) {
   Services.obs.addObserver(onEngineSync, "weave:engine:sync:finish", false);
