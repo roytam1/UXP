@@ -76,6 +76,7 @@
               switch (infoSplitLen) {
                 case 3:
                   // Pale Moon 27.2+
+                  // Basilisk (UXP)
                   infoHidingAttribute = infoSplit[1]
                       .split(this.toolbarInfoSeparators[1]);
                   infoCurrentSet = infoSplit[2];
@@ -83,7 +84,7 @@
                 case 2:
                   // Legacy:
                   // - toolbars from Pale Moon 27.0 - 27.1.x
-                  // - Basilisk
+                  // - Basilisk (moebius)
                   // The previous value (hiddingAttribute) isn't stored.
                   infoHidingAttribute = [hiddingAttribute, "false"];
                   infoCurrentSet = infoSplit[1];
