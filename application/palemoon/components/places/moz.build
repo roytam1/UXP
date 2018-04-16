@@ -6,10 +6,5 @@
 
 JAR_MANIFESTS += ['jar.mn']
 
-EXTRA_COMPONENTS += [
-    'nsPlacesAutoComplete.js',
-    'nsPlacesAutoComplete.manifest',
-]
-
 EXTRA_JS_MODULES += [ 'PlacesUIUtils.jsm' ]
 
