@@ -8,6 +8,8 @@ pref("app.releaseNotesURL", "http://www.palemoon.org/releasenotes.shtml");
 
 // Enable Firefox compatmode by default.
 pref("general.useragent.compatMode", 2);
+pref("general.useragent.compatMode.gecko", true);
+pref("general.useragent.compatMode.firefox", true);
 
 // ========================= updates ========================
 #if defined(XP_WIN)
