@@ -1931,12 +1931,10 @@ this.XPIProvider = {
 
         let chan;
         try {
-          chan = Services.io.newChannelFromURI2(aURI,
-                                                null,      // aLoadingNode
-                                                Services.scriptSecurityManager.getSystemPrincipal(),
-                                                null,      // aTriggeringPrincipal
-                                                Ci.nsILoadInfo.SEC_NORMAL,
-                                                Ci.nsIContentPolicy.TYPE_OTHER);
+          chan = NetUtil.newChannel({
+            uri: aURI,
+            loadUsingSystemPrincipal: true
+          });
         }
         catch (ex) {
           return null;
@@ -5456,21 +5454,17 @@ AddonInstall.prototype = {
       let requireBuiltIn = Preferences.get(PREF_INSTALL_REQUIREBUILTINCERTS, true);
       this.badCertHandler = new BadCertHandler(!requireBuiltIn);
 
-      this.channel = NetUtil.newChannel2(this.sourceURI,
-                                         null,
-                                         null,
-                                         null,      // aLoadingNode
-                                         Services.scriptSecurityManager.getSystemPrincipal(),
-                                         null,      // aTriggeringPrincipal
-                                         Ci.nsILoadInfo.SEC_NORMAL,
-                                         Ci.nsIContentPolicy.TYPE_OTHER);
+      this.channel = NetUtil.newChannel({
+        uri: this.sourceURI,
+        loadUsingSystemPrincipal: true
+      });
       this.channel.notificationCallbacks = this;
       if (this.channel instanceof Ci.nsIHttpChannel) {
         this.channel.setRequestHeader("Moz-XPI-Update", "1", true);
         if (this.channel instanceof Ci.nsIHttpChannelInternal)
           this.channel.forceAllowThirdPartyCookie = true;
       }
-      this.channel.asyncOpen(listener, null);
+      this.channel.asyncOpen2(listener);
 
       Services.obs.addObserver(this, "network:offline-about-to-go-offline", false);
     }
