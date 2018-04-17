@@ -328,6 +328,68 @@ panel[noactions] > richlistbox > richlistitem[type~="action"] > .ac-url-box > .a
   visibility: hidden;
 }
 
+/* Override xul.css for autocomplete bindings and css */
+textbox[type="autocomplete"] {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete");
+}
+
+panel[type="autocomplete"] {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-result-popup");
+}
+
+panel[type="autocomplete-richlistbox"] {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-rich-result-popup");
+}
+
+/* FIXME: bug 616258 */
+
+.autocomplete-tree {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-tree");
+  -moz-user-focus: ignore;
+}
+
+.autocomplete-treebody {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-treebody");
+}
+
+.autocomplete-richlistbox {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-richlistbox");
+  -moz-user-focus: ignore;
+}
+
+.autocomplete-richlistbox > scrollbox {
+  overflow-x: hidden !important;
+}
+
+.autocomplete-richlistitem {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-richlistitem");
+  -moz-box-orient: vertical;
+  overflow: -moz-hidden-unscrollable;
+}
+
+.autocomplete-treerows {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-treerows");
+}
+
+.autocomplete-history-dropmarker {
+  display: none;
+}
+
+.autocomplete-history-dropmarker[enablehistory="true"] {
+  display: -moz-box;
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#history-dropmarker");
+}
+
+.ac-ellipsis-after {
+  visibility: hidden;
+}
+
+.ac-url-text[type~="action"],
+.ac-action-text:not([type~="action"]) {
+  visibility: collapse;
+}
+
+
 /* ::::: Unified Back-/Forward Button ::::: */
 #back-button > .toolbarbutton-menu-dropmarker,
 #forward-button > .toolbarbutton-menu-dropmarker {

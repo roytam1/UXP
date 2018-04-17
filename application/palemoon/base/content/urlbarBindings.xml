@@ -17,7 +17,7 @@
           xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
           xmlns:xbl="http://www.mozilla.org/xbl">
 
-  <binding id="urlbar" extends="chrome://global/content/bindings/autocomplete.xml#autocomplete">
+  <binding id="urlbar" extends="chrome://browser/content/autocomplete.xml#autocomplete">
 
     <content sizetopopup="pref">
       <xul:hbox anonid="textbox-container"
@@ -769,7 +769,7 @@
   </binding>
 
   <!-- Note: this binding is applied to the autocomplete popup used in the Search bar and in web page content -->
-  <binding id="browser-autocomplete-result-popup" extends="chrome://global/content/bindings/autocomplete.xml#autocomplete-result-popup">
+  <binding id="browser-autocomplete-result-popup" extends="chrome://browser/content/autocomplete.xml#autocomplete-result-popup">
     <implementation>
       <method name="openAutocompletePopup">
         <parameter name="aInput"/>
@@ -823,7 +823,7 @@
       </implementation>
     </binding>
 
-    <binding id="urlbar-rich-result-popup" extends="chrome://global/content/bindings/autocomplete.xml#autocomplete-rich-result-popup">
+    <binding id="urlbar-rich-result-popup" extends="chrome://browser/content/autocomplete.xml#autocomplete-rich-result-popup">
       <implementation>
       <field name="_maxResults">0</field>
 
