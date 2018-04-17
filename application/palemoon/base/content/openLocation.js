@@ -17,7 +17,7 @@ try {
 
 Components.utils.import("resource:///modules/openLocationLastURL.jsm", openLocationModule);
 Components.utils.import("resource://gre/modules/Task.jsm");
-let gOpenLocationLastURL = new openLocationModule.OpenLocationLastURL(window.opener);
+var gOpenLocationLastURL = new openLocationModule.OpenLocationLastURL(window.opener);
 
 function onLoad()
 {
