@@ -9,6 +9,7 @@
 EXTRA_JS_MODULES += [ 'promise.js' ]
 
 EXTRA_JS_MODULES += [
+    'AutoCompletePopup.jsm',
     'BrowserNewTabPreloader.jsm',
     'CharsetMenu.jsm',
     'FormSubmitObserver.jsm',

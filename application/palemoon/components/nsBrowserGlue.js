@@ -35,6 +35,7 @@ Cu.import("resource://gre/modules/Services.jsm");
   ["OS", "resource://gre/modules/osfile.jsm"],
   ["LoginManagerParent", "resource://gre/modules/LoginManagerParent.jsm"],
   ["FormValidationHandler", "resource:///modules/FormValidationHandler.jsm"],
+  ["AutoCompletePopup", "resource:///modules/AutoCompletePopup.jsm"],
   ["DateTimePickerHelper", "resource://gre/modules/DateTimePickerHelper.jsm"],
 ].forEach(([name, resource]) => XPCOMUtils.defineLazyModuleGetter(this, name, resource));
 
@@ -405,6 +406,8 @@ BrowserGlue.prototype = {
 #endif
     FormValidationHandler.init();
     
+    AutoCompletePopup.init();
+    
     LoginManagerParent.init();
     
     Services.obs.notifyObservers(null, "browser-ui-startup-complete", "");
@@ -515,6 +518,7 @@ BrowserGlue.prototype = {
     webrtcUI.uninit();
 #endif
     FormValidationHandler.uninit();
+    AutoCompletePopup.uninit();
     this._dispose();
   },
 
