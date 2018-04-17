@@ -73,7 +73,7 @@
                   .getService(Components.interfaces.nsIFaviconService);
       </field>
       <field name="_placesAutocomplete" readonly="true">
-         Components.classes["@mozilla.org/autocomplete/search;1?name=unifiedcomplete"]
+         Components.classes["@mozilla.org/autocomplete/search;1?name=history"]
                    .getService(Components.interfaces.mozIPlacesAutoComplete);
       </field>
       <field name="mTabBox" readonly="true">

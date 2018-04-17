@@ -78,6 +78,8 @@ if CONFIG['MOZ_PLACES']:
     EXTRA_COMPONENTS += [
         'ColorAnalyzer.js',
         'nsLivemarkService.js',
+        'nsPlacesAutoComplete.js',
+        'nsPlacesAutoComplete.manifest',
         'nsPlacesExpiration.js',
         'nsTaggingService.js',
         'PageIconProtocolHandler.js',
