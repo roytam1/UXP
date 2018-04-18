@@ -45,7 +45,7 @@ IdleRequest::SetTimeoutHandle(int32_t aHandle)
   mTimeoutHandle = Some(aHandle);
 }
 
-int32_t
+uint32_t
 IdleRequest::GetTimeoutHandle() const
 {
   MOZ_DIAGNOSTIC_ASSERT(mTimeoutHandle.isSome());
