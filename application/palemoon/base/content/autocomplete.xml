@@ -3,13 +3,13 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<bindings id="autocompleteBindings"
+<bindings id="privateAutocompleteBindings"
           xmlns="http://www.mozilla.org/xbl"
           xmlns:html="http://www.w3.org/1999/xhtml"
           xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
           xmlns:xbl="http://www.mozilla.org/xbl">
 
-  <binding id="autocomplete" role="xul:combobox"
+  <binding id="private-autocomplete" role="xul:combobox"
            extends="chrome://global/content/bindings/textbox.xml#textbox">
     <resources>
       <stylesheet src="chrome://browser/content/autocomplete.css"/>
@@ -17,25 +17,25 @@
     </resources>
 
     <content sizetopopup="pref">
-      <xul:hbox class="autocomplete-textbox-container" flex="1" xbl:inherits="focused">
+      <xul:hbox class="private-autocomplete-textbox-container" flex="1" xbl:inherits="focused">
         <children includes="image|deck|stack|box">
-          <xul:image class="autocomplete-icon" allowevents="true"/>
+          <xul:image class="private-autocomplete-icon" allowevents="true"/>
         </children>
 
         <xul:hbox anonid="textbox-input-box" class="textbox-input-box" flex="1" xbl:inherits="tooltiptext=inputtooltiptext">
           <children/>
-          <html:input anonid="input" class="autocomplete-textbox textbox-input"
+          <html:input anonid="input" class="private-autocomplete-textbox textbox-input"
                       allowevents="true"
                       xbl:inherits="tooltiptext=inputtooltiptext,value,type=inputtype,maxlength,disabled,size,readonly,placeholder,tabindex,accesskey,mozactionhint"/>
         </xul:hbox>
         <children includes="hbox"/>
       </xul:hbox>
 
-      <xul:dropmarker anonid="historydropmarker" class="autocomplete-history-dropmarker"
+      <xul:dropmarker anonid="historydropmarker" class="private-autocomplete-history-dropmarker"
                       allowevents="true"
                       xbl:inherits="open,enablehistory,parentfocused=focused"/>
 
-      <xul:popupset anonid="popupset" class="autocomplete-result-popupset"/>
+      <xul:popupset anonid="popupset" class="private-autocomplete-result-popupset"/>
 
       <children includes="toolbarbutton"/>
     </content>
@@ -656,7 +656,7 @@
     </handlers>
   </binding>
 
-  <binding id="autocomplete-result-popup" extends="chrome://browser/content/autocomplete.xml#autocomplete-base-popup">
+  <binding id="private-autocomplete-result-popup" extends="chrome://browser/content/autocomplete.xml#private-autocomplete-base-popup">
     <resources>
       <stylesheet src="chrome://browser/content/autocomplete.css"/>
       <stylesheet src="chrome://global/skin/tree.css"/>
@@ -664,11 +664,11 @@
     </resources>
 
     <content ignorekeys="true" level="top" consumeoutsideclicks="never">
-      <xul:tree anonid="tree" class="autocomplete-tree plain" hidecolumnpicker="true" flex="1" seltype="single">
+      <xul:tree anonid="tree" class="private-autocomplete-tree plain" hidecolumnpicker="true" flex="1" seltype="single">
         <xul:treecols anonid="treecols">
-          <xul:treecol id="treecolAutoCompleteValue" class="autocomplete-treecol" flex="1" overflow="true"/>
+          <xul:treecol id="treecolAutoCompleteValue" class="private-autocomplete-treecol" flex="1" overflow="true"/>
         </xul:treecols>
-        <xul:treechildren class="autocomplete-treebody"/>
+        <xul:treechildren class="private-autocomplete-treebody"/>
       </xul:tree>
     </content>
 
@@ -718,7 +718,7 @@
         <body>
           <![CDATA[
           var col = document.createElement("treecol");
-          col.setAttribute("class", "autocomplete-treecol");
+          col.setAttribute("class", "private-autocomplete-treecol");
           for (var name in aAttrs)
             col.setAttribute(name, aAttrs[name]);
           this.treecols.appendChild(col);
@@ -866,7 +866,7 @@
     </implementation>
   </binding>
 
-  <binding id="autocomplete-base-popup" role="none"
+  <binding id="private-autocomplete-base-popup" role="none"
 extends="chrome://global/content/bindings/popup.xml#popup">
     <implementation implements="nsIAutoCompletePopup">
       <field name="mInput">null</field>
@@ -1010,14 +1010,14 @@ extends="chrome://global/content/bindings/popup.xml#popup">
     </handlers>
   </binding>
 
-  <binding id="autocomplete-rich-result-popup" extends="chrome://browser/content/autocomplete.xml#autocomplete-base-popup">
+  <binding id="private-autocomplete-rich-result-popup" extends="chrome://browser/content/autocomplete.xml#private-autocomplete-base-popup">
     <resources>
       <stylesheet src="chrome://browser/content/autocomplete.css"/>
       <stylesheet src="chrome://browser/skin/autocomplete.css"/>
     </resources>
 
     <content ignorekeys="true" level="top" consumeoutsideclicks="never">
-      <xul:richlistbox anonid="richlistbox" class="autocomplete-richlistbox" flex="1"/>
+      <xul:richlistbox anonid="richlistbox" class="private-autocomplete-richlistbox" flex="1"/>
       <xul:hbox>
         <children/>
       </xul:hbox>
@@ -1270,7 +1270,7 @@ extends="chrome://global/content/bindings/popup.xml#popup">
             else {
               // set the class at the end so we can use the attributes
               // in the xbl constructor
-              item.className = "autocomplete-richlistitem";
+              item.className = "private-autocomplete-richlistitem";
               this.richlistbox.appendChild(item);
             }
 
@@ -1322,7 +1322,7 @@ extends="chrome://global/content/bindings/popup.xml#popup">
     </implementation>
   </binding>
 
-  <binding id="autocomplete-richlistitem" extends="chrome://global/content/bindings/richlistbox.xml#richlistitem">
+  <binding id="private-autocomplete-richlistitem" extends="chrome://global/content/bindings/richlistbox.xml#richlistitem">
     <content>
       <xul:hbox align="center" class="ac-title-box">
         <xul:image xbl:inherits="src=image" class="ac-site-icon"/>
@@ -2015,16 +2015,16 @@ extends="chrome://global/content/bindings/popup.xml#popup">
     </implementation>
   </binding>
 
-  <binding id="autocomplete-tree" extends="chrome://global/content/bindings/tree.xml#tree">
+  <binding id="private-autocomplete-tree" extends="chrome://global/content/bindings/tree.xml#tree">
     <content>
       <children includes="treecols"/>
-      <xul:treerows class="autocomplete-treerows tree-rows" xbl:inherits="hidescrollbar" flex="1">
+      <xul:treerows class="private-autocomplete-treerows tree-rows" xbl:inherits="hidescrollbar" flex="1">
         <children/>
       </xul:treerows>
     </content>
   </binding>
 
-  <binding id="autocomplete-richlistbox" extends="chrome://global/content/bindings/richlistbox.xml#richlistbox">
+  <binding id="private-autocomplete-richlistbox" extends="chrome://global/content/bindings/richlistbox.xml#richlistbox">
     <implementation>
       <field name="mLastMoveTime">Date.now()</field>
       <field name="mouseSelectedIndex">-1</field>
@@ -2068,7 +2068,7 @@ extends="chrome://global/content/bindings/popup.xml#popup">
     </handlers>
   </binding>
 
-  <binding id="autocomplete-treebody">
+  <binding id="private-autocomplete-treebody">
     <implementation>
       <field name="mLastMoveTime">Date.now()</field>
     </implementation>
@@ -2093,7 +2093,7 @@ extends="chrome://global/content/bindings/popup.xml#popup">
     </handlers>
   </binding>
 
-  <binding id="autocomplete-treerows">
+  <binding id="private-autocomplete-treerows">
     <content>
       <xul:hbox flex="1" class="tree-bodybox">
         <children/>
@@ -2102,7 +2102,7 @@ extends="chrome://global/content/bindings/popup.xml#popup">
     </content>
   </binding>
 
-  <binding id="history-dropmarker" extends="chrome://global/content/bindings/general.xml#dropmarker">
+  <binding id="private-history-dropmarker" extends="chrome://global/content/bindings/general.xml#dropmarker">
     <implementation>
       <method name="showPopup">
         <body><![CDATA[

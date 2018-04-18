@@ -328,56 +328,54 @@ panel[noactions] > richlistbox > richlistitem[type~="action"] > .ac-url-box > .a
   visibility: hidden;
 }
 
-/* Override xul.css for autocomplete bindings and css */
-textbox[type="autocomplete"] {
+/* Private Autocomplete */
+textbox[type="private-autocomplete"] {
   -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete");
 }
 
-panel[type="autocomplete"] {
+panel[type="private-autocomplete"] {
   -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-result-popup");
 }
 
-panel[type="autocomplete-richlistbox"] {
-  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-rich-result-popup");
+panel[type="private-autocomplete-richlistbox"] {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#private-autocomplete-rich-result-popup");
 }
 
-/* FIXME: bug 616258 */
-
-.autocomplete-tree {
-  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-tree");
+.private-autocomplete-tree {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#private-autocomplete-tree");
   -moz-user-focus: ignore;
 }
 
-.autocomplete-treebody {
-  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-treebody");
+.private-autocomplete-treebody {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#private-autocomplete-treebody");
 }
 
-.autocomplete-richlistbox {
-  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-richlistbox");
+.private-autocomplete-richlistbox {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#private-autocomplete-richlistbox");
   -moz-user-focus: ignore;
 }
 
-.autocomplete-richlistbox > scrollbox {
+.private-autocomplete-richlistbox > scrollbox {
   overflow-x: hidden !important;
 }
 
-.autocomplete-richlistitem {
-  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-richlistitem");
+.private-autocomplete-richlistitem {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#private-autocomplete-richlistitem");
   -moz-box-orient: vertical;
   overflow: -moz-hidden-unscrollable;
 }
 
-.autocomplete-treerows {
-  -moz-binding: url("chrome://browser/content/autocomplete.xml#autocomplete-treerows");
+.private-autocomplete-treerows {
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#private-autocomplete-treerows");
 }
 
-.autocomplete-history-dropmarker {
+.private-autocomplete-history-dropmarker {
   display: none;
 }
 
-.autocomplete-history-dropmarker[enablehistory="true"] {
+.private-autocomplete-history-dropmarker[enablehistory="true"] {
   display: -moz-box;
-  -moz-binding: url("chrome://browser/content/autocomplete.xml#history-dropmarker");
+  -moz-binding: url("chrome://browser/content/autocomplete.xml#private-history-dropmarker");
 }
 
 .ac-ellipsis-after {
