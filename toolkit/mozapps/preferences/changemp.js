@@ -167,8 +167,8 @@ function setPasswordStrength()
 
 // length of the password
   var pwlength=(pw.length);
-  if (pwlength>5)
-    pwlength=5;
+  if (pwlength>10)
+    pwlength=10;
 
 
 // use of numbers in the password
@@ -190,7 +190,7 @@ function setPasswordStrength()
     upper=3;
 
 
-  var pwstrength=((pwlength*10)-20) + (numeric*10) + (numsymbols*15) + (upper*10);
+  var pwstrength=((pwlength*5)-20) + (numeric*10) + (numsymbols*15) + (upper*10);
 
   // make sure we're give a value between 0 and 100
   if ( pwstrength < 0 ) {
@@ -227,6 +227,12 @@ function checkPasswords()
     }
   }
 
+  // Never accept short passwords < 8 chars
+  if (pw1.length < 8) {
+    ok.setAttribute("disabled", "true");
+    return;
+  }
+  
   if (pw1 == pw2) {
     ok.setAttribute("disabled", "false");
   } else
