@@ -763,9 +763,8 @@ nsGlobalWindow::RunIdleRequest(IdleRequest* aRequest,
 {
   AssertIsOnMainThread();
   RefPtr<IdleRequest> request(aRequest);
-  nsresult result = request->IdleRun(AsInner(), aDeadline, aDidTimeout);
   RemoveIdleCallback(request);
-  return result;
+  return request->IdleRun(AsInner(), aDeadline, aDidTimeout);
 }
 
 nsresult
