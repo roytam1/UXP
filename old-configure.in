@@ -936,7 +936,7 @@ case "$target" in
     fi
 
     MOZ_GFX_OPTIMIZE_MOBILE=1
-    MOZ_OPTIMIZE_FLAGS="-Os"
+    MOZ_OPTIMIZE_FLAGS="-O2"
     if test -z "$CLANG_CC"; then
        MOZ_OPTIMIZE_FLAGS="-freorder-blocks -fno-reorder-functions $MOZ_OPTIMIZE_FLAGS"
     fi
@@ -945,7 +945,7 @@ case "$target" in
 *-*linux*)
     if test "$GNU_CC" -o "$GNU_CXX"; then
         MOZ_PGO_OPTIMIZE_FLAGS="-O3"
-        MOZ_OPTIMIZE_FLAGS="-Os"
+        MOZ_OPTIMIZE_FLAGS="-O2"
         if test -z "$CLANG_CC"; then
            MOZ_OPTIMIZE_FLAGS="-freorder-blocks $MOZ_OPTIMIZE_FLAGS"
         fi
