@@ -38674,6 +38674,12 @@
             "url": "/html/webappapis/idle-callbacks/callback-multiple-calls.html"
           }
         ],
+        "html/webappapis/idle-callbacks/callback-suspended.html": [
+          {
+            "path": "html/webappapis/idle-callbacks/callback-suspended.html",
+            "url": "/html/webappapis/idle-callbacks/callback-suspended.html"
+          }
+        ],
         "html/webappapis/idle-callbacks/callback-timeout.html": [
           {
             "path": "html/webappapis/idle-callbacks/callback-timeout.html",
