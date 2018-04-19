@@ -390,7 +390,7 @@
 !macroend
 !define SetHandlers "!insertmacro SetHandlers"
 
-; Adds the HKLM\Software\Clients\StartMenuInternet\FIREFOX.EXE registry
+; Adds the HKLM\Software\Clients\StartMenuInternet\PALEMOON.EXE registry
 ; entries (does not use SHCTX).
 ;
 ; The values for StartMenuInternet are only valid under HKLM and there can only
@@ -770,11 +770,11 @@
 !macro RemoveDeprecatedKeys
   StrCpy $0 "SOFTWARE\Classes"
   ; Remove support for launching gopher urls from the shell during install or
-  ; update if the DefaultIcon is from firefox.exe.
+  ; update if the DefaultIcon is from palemoon.exe.
   ${RegCleanAppHandler} "gopher"
 
   ; Remove support for launching chrome urls from the shell during install or
-  ; update if the DefaultIcon is from firefox.exe (Bug 301073).
+  ; update if the DefaultIcon is from palemoon.exe (Bug 301073).
   ${RegCleanAppHandler} "chrome"
 
   ; Remove protocol handler registry keys added by the MS shim
