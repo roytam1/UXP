@@ -2096,12 +2096,12 @@ toolbar[mode="text"] toolbarbutton.chevron > .toolbarbutton-icon {
 }
 %endif
 
-.toolbarbutton-badge-container {
+.toolbarbutton-badge-stack {
   margin: 5px 3px;
   position: relative;
 }
 
-toolbar[iconsize="small"] .toolbarbutton-badge-container {
+toolbar[iconsize="small"] .toolbarbutton-badge-stack {
   margin: 0;
 }
 

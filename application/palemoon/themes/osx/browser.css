@@ -452,7 +452,7 @@ toolbar[mode=full] .toolbarbutton-1 > .toolbarbutton-menubutton-button {
 }
 
 @navbarLargeIcons@ .toolbarbutton-1 > .toolbarbutton-icon,
-@navbarLargeIcons@ .toolbarbutton-1 > .toolbarbutton-badge-container,
+@navbarLargeIcons@ .toolbarbutton-1 > .toolbarbutton-badge-stack,
 @navbarLargeIcons@ .toolbarbutton-1 > .toolbarbutton-menubutton-button > .toolbarbutton-icon,
 @navbarLargeIcons@ .toolbarbutton-1 > .toolbarbutton-menubutton-dropmarker > .dropmarker-icon {
     padding: 2px 6px;
@@ -470,7 +470,7 @@ toolbar[mode=full] .toolbarbutton-1 > .toolbarbutton-menubutton-button {
 }
 
 @navbarLargeIcons@ .toolbarbutton-1:not(:-moz-any(@primaryToolbarButtons@)) > .toolbarbutton-icon,
-@navbarLargeIcons@ .toolbarbutton-1:not(:-moz-any(@primaryToolbarButtons@)) > .toolbarbutton-badge-container,
+@navbarLargeIcons@ .toolbarbutton-1:not(:-moz-any(@primaryToolbarButtons@)) > .toolbarbutton-badge-stack,
 @navbarLargeIcons@ .toolbarbutton-1:not(:-moz-any(@primaryToolbarButtons@)) > .toolbarbutton-menubutton-button > .toolbarbutton-icon {
     padding: 3px 7px;
 }
@@ -521,7 +521,7 @@ toolbar[mode=full] .toolbarbutton-1 > .toolbarbutton-menubutton-button {
 @navbarLargeIcons@ .toolbarbutton-1:not([disabled]):-moz-any(:hover,[open]) > .toolbarbutton-menubutton-button > .toolbarbutton-icon,
 @navbarLargeIcons@ .toolbarbutton-1:not([disabled]):hover > .toolbarbutton-menubutton-dropmarker > .dropmarker-icon,
 @navbarLargeIcons@ .toolbarbutton-1:not([disabled]):not([checked]):not([open]):not(:active):hover > .toolbarbutton-icon,
-@navbarLargeIcons@ .toolbarbutton-1:not([disabled]):not([checked]):not([open]):not(:active):hover > .toolbarbutton-badge-container,
+@navbarLargeIcons@ .toolbarbutton-1:not([disabled]):not([checked]):not([open]):not(:active):hover > .toolbarbutton-badge-stack,
 @conditionalForwardWithUrlbar@ > .toolbarbutton-1:-moz-any([disabled],:not([open]):not([disabled]):not(:active)) > .toolbarbutton-icon {
     background-image: linear-gradient(hsla(0,0%,100%,.8), hsla(0,0%,100%,.5));
     border-color: hsla(210,54%,20%,.25) hsla(210,54%,20%,.3) hsla(210,54%,20%,.35);
@@ -544,7 +544,7 @@ toolbar[mode=full] .toolbarbutton-1 > .toolbarbutton-menubutton-button {
 @navbarLargeIcons@ .toolbarbutton-1 > .toolbarbutton-menubutton-button:not([disabled]):hover:active > .toolbarbutton-icon,
 @navbarLargeIcons@ .toolbarbutton-1[open] > .toolbarbutton-menubutton-dropmarker:not([disabled]) > .dropmarker-icon,
 @navbarLargeIcons@ .toolbarbutton-1:not([disabled]):-moz-any([open],[checked],:hover:active) > .toolbarbutton-icon,
-@navbarLargeIcons@ .toolbarbutton-1:not([disabled]):-moz-any([open],[checked],:hover:active) > .toolbarbutton-badge-container {
+@navbarLargeIcons@ .toolbarbutton-1:not([disabled]):-moz-any([open],[checked],:hover:active) > .toolbarbutton-badge-stack {
     background-image: linear-gradient(hsla(0,0%,100%,.6), hsla(0,0%,100%,.1));
     background-color: hsla(210,54%,20%,.15);
     border-color: hsla(210,54%,20%,.3) hsla(210,54%,20%,.35) hsla(210,54%,20%,.4);
@@ -2371,23 +2371,23 @@ toolbar[brighttext] #addonbar-closebutton {
 }
 %endif
 
-.toolbarbutton-badge-container {
+.toolbarbutton-badge-stack {
     margin: 0;
     padding: 0;
     position: relative;
 }
 
-@navbarLargeIcons@ .toolbarbutton-1 > .toolbarbutton-badge-container {
+@navbarLargeIcons@ .toolbarbutton-1 > .toolbarbutton-badge-stack {
     padding: 2px 5px;
 }
 
-.toolbarbutton-1 > .toolbarbutton-badge-container > .toolbar-icon {
+.toolbarbutton-1 > .toolbarbutton-badge-stack > .toolbar-icon {
     position: absolute;
     top: 2px;
     right: 2px;
 }
 
-.toolbarbutton-badge-container > .toolbarbutton-icon[label]:not([label=""]) {
+.toolbarbutton-badge-stack > .toolbarbutton-icon[label]:not([label=""]) {
     -moz-margin-end: 0;
 }
 
