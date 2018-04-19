@@ -183,16 +183,15 @@ if test "$GNU_CC"; then
         case "$CC_VERSION" in
         4.*)
             ;;
+        5.*)
+            ;;
         *)
             # Lifetime Dead Store Elimination level 2 (default in GCC6+) breaks Gecko.
-            # Ideally, we'd use -flifetime-dse=1, but that means we'd forcefully
-            # enable it on optimization levels where it would otherwise not be enabled.
-            # So we disable it entirely. But since that would mean inconsistency with
-            # GCC5, which has level 1 depending on optimization level, disable it on
-            # GCC5 as well, because better safe than sorry.
+            # Instead of completely disabling this optimization on newer GCC's,
+            # we'll force them to use level 1 optimization with -flifetime-dse=1.
             # Add it first so that a mozconfig can override by setting CFLAGS/CXXFLAGS.
-            CFLAGS="-fno-lifetime-dse $CFLAGS"
-            CXXFLAGS="-fno-lifetime-dse $CXXFLAGS"
+            CFLAGS="-flifetime-dse=1 $CFLAGS"
+            CXXFLAGS="-flifetime-dse=1 $CXXFLAGS"
             ;;
         esac
     fi
