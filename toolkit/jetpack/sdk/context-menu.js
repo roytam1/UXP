@@ -7,6 +7,7 @@ module.metadata = {
   "stability": "stable",
   "engines": {
     // TODO Fennec support Bug 788334
+    "Palemoon": "*",
     "Firefox": "*",
     "SeaMonkey": "*"
   }

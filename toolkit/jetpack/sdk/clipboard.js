@@ -8,6 +8,7 @@ module.metadata = {
   "stability": "stable",
   "engines": {
     // TODO Fennec Support 789757
+    "Palemoon": "*",
     "Firefox": "*",
     "SeaMonkey": "*",
     "Thunderbird": "*"

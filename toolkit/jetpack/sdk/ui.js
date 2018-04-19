@@ -6,6 +6,7 @@
 module.metadata = {
   'stability': 'experimental',
   'engines': {
+    'Palemoon': '> 27',
     'Firefox': '> 28'
   }
 };

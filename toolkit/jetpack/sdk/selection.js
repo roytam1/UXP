@@ -7,6 +7,7 @@
 module.metadata = {
   "stability": "stable",
   "engines": {
+    "Palemoon": "*",
     "Firefox": "*",
     "SeaMonkey": "*"
   }
