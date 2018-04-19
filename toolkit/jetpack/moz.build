@@ -219,9 +219,12 @@ EXTRA_JS_MODULES.commonjs.sdk += [
     'sdk/tabs.js',
     'sdk/test.js',
     'sdk/timers.js',
-    'sdk/ui.js',
     'sdk/url.js',
     'sdk/windows.js',
+]
+
+EXTRA_PP_JS_MODULES.commonjs.sdk += [
+    'sdk/ui.js',
 ]
 
 EXTRA_JS_MODULES.commonjs.sdk.addon += [

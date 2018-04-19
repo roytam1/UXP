@@ -13,6 +13,8 @@ module.metadata = {
 
 exports.ActionButton = require('./ui/button/action').ActionButton;
 exports.ToggleButton = require('./ui/button/toggle').ToggleButton;
+#ifndef MC_PALEMOON
 exports.Sidebar = require('./ui/sidebar').Sidebar;
 exports.Frame = require('./ui/frame').Frame;
 exports.Toolbar = require('./ui/toolbar').Toolbar;
+#endif
