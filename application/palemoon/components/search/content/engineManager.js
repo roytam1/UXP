@@ -110,7 +110,7 @@ var gEngineManagerDialog = {
     document.getElementById("engineList").focus();
   },
 
-  editKeyword: Task.async(function* () {
+  editKeyword: Task.async(function* engineManager_editKeyword() {
     var selectedEngine = gEngineView.selectedEngine;
     if (!selectedEngine)
       return;
