@@ -85,10 +85,18 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] != "gonk":
         'sdk/ui/toolbar.js',
     ]
 
+    if CONFIG['MC_PALEMOON']:
+        EXTRA_JS_MODULES.commonjs.sdk.ui += [
+            'sdk/ui/buttons.js',
+        ]
+
     EXTRA_JS_MODULES.commonjs.sdk.ui.button += [
         'sdk/ui/button/action.js',
         'sdk/ui/button/contract.js',
         'sdk/ui/button/toggle.js',
+    ]
+
+    EXTRA_PP_JS_MODULES.commonjs.sdk.ui.button += [
         'sdk/ui/button/view.js',
     ]
 

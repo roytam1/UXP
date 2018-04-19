@@ -20,14 +20,19 @@ const { isObject, isNil } = require('../../lang/type');
 
 const { getMostRecentBrowserWindow } = require('../../window/utils');
 const { ignoreWindow } = require('../../private-browsing/utils');
+#ifdef MC_PALEMOON
+const { buttons } = require('../buttons');
+#else
 const { CustomizableUI } = Cu.import('resource:///modules/CustomizableUI.jsm', {});
 const { AREA_PANEL, AREA_NAVBAR } = CustomizableUI;
+#endif
 
 const { events: viewEvents } = require('./view/events');
 
 const XUL_NS = 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul';
 
 const views = new Map();
+#ifndef MC_PALEMOON
 const customizedWindows = new WeakMap();
 
 const buttonListener = {
@@ -65,19 +70,25 @@ CustomizableUI.addListener(buttonListener);
 require('../../system/unload').when( _ =>
   CustomizableUI.removeListener(buttonListener)
 );
+#endif
 
 function getNode(id, window) {
   return !views.has(id) || ignoreWindow(window)
     ? null
+#ifdef MC_PALEMOON
+    : buttons.getNode(id, window);
+#else
     : CustomizableUI.getWidget(id).forWindow(window).node
+#endif
 };
 
+#ifndef MC_PALEMOON
 function isInToolbar(id) {
   let placement = CustomizableUI.getPlacementOfWidget(id);
 
   return placement && CustomizableUI.getAreaType(placement.area) === 'toolbar';
 }
-
+#endif
 
 function getImage(icon, isInToolbar, pixelRatio) {
   let targetSize = (isInToolbar ? 18 : 32) * pixelRatio;
@@ -110,7 +121,11 @@ function getImage(icon, isInToolbar, pixelRatio) {
 }
 
 function nodeFor(id, window=getMostRecentBrowserWindow()) {
+#ifdef MC_PALEMOON
+  return getNode(id, window);
+#else
   return customizedWindows.has(window) ? null : getNode(id, window);
+#endif
 };
 exports.nodeFor = nodeFor;
 
@@ -120,14 +135,23 @@ function create(options) {
   if (views.has(id))
     throw new Error('The ID "' + id + '" seems already used.');
 
+#ifdef MC_PALEMOON
+  buttons.createButton({
+#else
   CustomizableUI.createWidget({
+#endif
     id: id,
+#ifdef MC_PALEMOON
+
+    onBuild: function(document, _id) {
+#else
     type: 'custom',
     removable: true,
     defaultArea: AREA_NAVBAR,
     allowedAreas: [ AREA_PANEL, AREA_NAVBAR ],
 
     onBuild: function(document) {
+#endif
       let window = document.defaultView;
 
       let node = document.createElementNS(XUL_NS, 'toolbarbutton');
@@ -137,16 +161,28 @@ function create(options) {
       if (ignoreWindow(window))
         node.style.display = 'none';
 
+#ifdef MC_PALEMOON
+      node.setAttribute('id', _id);
+#else
       node.setAttribute('id', this.id);
+#endif
       node.setAttribute('class', 'toolbarbutton-1 chromeclass-toolbar-additional badged-button');
+#ifndef MC_PALEMOON
       node.setAttribute('type', type);
+#endif
       node.setAttribute('label', label);
       node.setAttribute('tooltiptext', label);
       node.setAttribute('image', image);
+#ifdef MC_PALEMOON
+      node.setAttribute('pmkit-button', 'true');
+#else
       node.setAttribute('constrain-size', 'true');
+#endif
 
       views.set(id, {
+#ifndef MC_PALEMOON
         area: this.currentArea,
+#endif
         icon: icon,
         label: label
       });
@@ -172,7 +208,11 @@ function dispose(id) {
   if (!views.has(id)) return;
 
   views.delete(id);
+#ifdef MC_PALEMOON
+  buttons.destroyButton(id);
+#else
   CustomizableUI.destroyWidget(id);
+#endif
 }
 exports.dispose = dispose;
 
@@ -180,8 +220,12 @@ function setIcon(id, window, icon) {
   let node = getNode(id, window);
 
   if (node) {
+#ifdef MC_PALEMOON
+    let image = getImage(icon, true, window.devicePixelRatio);
+#else
     icon = customizedWindows.has(window) ? views.get(id).icon : icon;
     let image = getImage(icon, isInToolbar(id), window.devicePixelRatio);
+#endif
 
     node.setAttribute('image', image);
   }
