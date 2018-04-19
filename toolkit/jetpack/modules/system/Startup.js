@@ -15,6 +15,7 @@ const appStartupSrv = Cc["@mozilla.org/toolkit/app-startup;1"]
                        .getService(Ci.nsIAppStartup);
 
 const NAME2TOPIC = {
+  'Palemoon': 'sessionstore-windows-restored',
   'Firefox': 'sessionstore-windows-restored',
   'Fennec': 'sessionstore-windows-restored',
   'SeaMonkey': 'sessionstore-windows-restored',
