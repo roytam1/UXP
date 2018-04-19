@@ -726,6 +726,7 @@ this.MigrationUtils = Object.freeze({
       "Internet Explorer":                 "ie",
       "Microsoft Edge":                    "edge",
       "Safari":                            "safari",
+      "Basilisk":                          "firefox",
       "Firefox":                           "firefox",
       "Nightly":                           "firefox",
       "Google Chrome":                     "chrome",  // Windows, Linux
