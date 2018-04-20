@@ -128,9 +128,10 @@ EXTRA_JS_MODULES.commonjs += [
     'test.js',
 ]
 
-EXTRA_JS_MODULES.commonjs.sdk += [
-    'sdk/webextension.js',
-]
+if not CONFIG['MC_PALEMOON']:
+    EXTRA_JS_MODULES.commonjs.sdk += [
+        'sdk/webextension.js',
+    ]
 
 EXTRA_JS_MODULES.commonjs.dev += [
     'dev/debuggee.js',
@@ -228,13 +229,16 @@ EXTRA_PP_JS_MODULES.commonjs.sdk += [
 ]
 
 EXTRA_JS_MODULES.commonjs.sdk.addon += [
-    'sdk/addon/bootstrap.js',
     'sdk/addon/events.js',
     'sdk/addon/host.js',
     'sdk/addon/installer.js',
     'sdk/addon/manager.js',
     'sdk/addon/runner.js',
     'sdk/addon/window.js',
+]
+
+EXTRA_PP_JS_MODULES.commonjs.sdk.addon += [
+    'sdk/addon/bootstrap.js',
 ]
 
 EXTRA_JS_MODULES.commonjs.sdk.browser += [
