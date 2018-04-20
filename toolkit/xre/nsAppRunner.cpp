@@ -1358,7 +1358,9 @@ DumpHelp()
          "  -v or --version                              Print %s version.\n"
          "  -P <profile>                                 Start with <profile>.\n"
          "  --profile <path>                             Start with profile at <path>.\n"
+#ifdef MC_BASILISK
          "  --migration                                  Start with migration wizard.\n"
+#endif
          "  --ProfileManager                             Start with ProfileManager.\n"
          "  --no-remote                                  Do not accept or send remote commands;\n"
          "                                               implies --new-instance.\n"
