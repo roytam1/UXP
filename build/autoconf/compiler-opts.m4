@@ -181,9 +181,7 @@ if test "$GNU_CC"; then
 
     if test -z "$CLANG_CC"; then
         case "$CC_VERSION" in
-        4.*)
-            ;;
-        5.*)
+        4.* | 5.*)
             ;;
         *)
             # Lifetime Dead Store Elimination level 2 (default in GCC6+) breaks Gecko.
