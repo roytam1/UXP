@@ -4,8 +4,7 @@
 
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
-.css-bg-editor
-{
-	-moz-binding: url("chrome://browser/content/statusbar/prefs.xml#css-bg-editor");
+.css-bg-editor {
+  -moz-binding: url("chrome://browser/content/statusbar/prefs.xml#css-bg-editor");
 }
 

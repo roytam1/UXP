@@ -8,8 +8,7 @@
  * Status Popup
  */
 
-statuspanel
-{
-	-moz-binding: url("chrome://browser/content/statusbar/tabbrowser.xml#statuspanel");
+statuspanel {
+  -moz-binding: url("chrome://browser/content/statusbar/tabbrowser.xml#statuspanel");
 }
 
