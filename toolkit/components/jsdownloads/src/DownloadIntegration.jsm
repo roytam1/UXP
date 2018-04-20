@@ -530,7 +530,6 @@ this.DownloadIntegration = {
    * @return true if files should be marked
    */
   _shouldSaveZoneInformation() {
-#ifdef MC_PALEMOON
     let zonePref = 2;
     try {
       zonePref = Services.prefs.getIntPref("browser.download.saveZoneInformation");
@@ -560,23 +559,6 @@ this.DownloadIntegration = {
       default: // Invalid pref value defaults marking files.
                return true;
     }
-#else
-    let key = Cc["@mozilla.org/windows-registry-key;1"]
-                .createInstance(Ci.nsIWindowsRegKey);
-    try {
-      key.open(Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,
-               "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Attachments",
-               Ci.nsIWindowsRegKey.ACCESS_QUERY_VALUE);
-      try {
-        return key.readIntValue("SaveZoneInformation") != 1;
-      } finally {
-        key.close();
-      }
-    } catch (ex) {
-      // If the key is not present, files should be marked by default.
-      return true;
-    }
-#endif
   },
 #endif
 
