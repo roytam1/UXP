@@ -128,7 +128,7 @@ EXTRA_JS_MODULES.commonjs += [
     'test.js',
 ]
 
-if not CONFIG['MC_PALEMOON']:
+if CONFIG['MOZ_WEBEXTENSIONS']:
     EXTRA_JS_MODULES.commonjs.sdk += [
         'sdk/webextension.js',
     ]

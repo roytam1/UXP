@@ -134,7 +134,7 @@ Bootstrap.prototype = {
       const main = command === "test" ? "sdk/test/runner" : null;
       const prefsURI = `${baseURI}defaults/preferences/prefs.js`;
 
-#ifndef MC_PALEMOON
+#ifdef MOZ_WEBEXTENSIONS
       // Init the 'sdk/webextension' module from the bootstrap addon parameter.
       require("sdk/webextension").initFromBootstrapAddonParam(addon);
 #endif
