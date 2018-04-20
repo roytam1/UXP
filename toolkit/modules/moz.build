@@ -100,12 +100,6 @@ EXTRA_JS_MODULES += [
     'WindowDraggingUtils.jsm',
     'ZipUtils.jsm',
 ]
-
-if CONFIG['MC_PALEMOON']:
-    EXTRA_JS_MODULES += [
-        'Dict.jsm',
-    ]
-
 EXTRA_JS_MODULES.third_party.jsesc += ['third_party/jsesc/jsesc.js']
 EXTRA_JS_MODULES.sessionstore += ['sessionstore/Utils.jsm']
 
