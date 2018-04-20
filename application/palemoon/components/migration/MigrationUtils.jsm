@@ -177,12 +177,11 @@ this.MigratorPrototype = {
    */
   getMigrateData: function MP_getMigrateData(aProfile) {
     // Tycho: let types = [r.type for each (r in this._getMaybeCachedResources(aProfile))];
-    let types = [];
-
-    for each (r in this._getMaybeCachedResources(aProfile)) {
-      types.push(r.type);
+    let resources = this._getMaybeCachedResources(aProfile);
+    if (!resources) {
+      return [];
     }
-
+    let types = resources.map(r => r.type);
     return types.reduce(function(a, b) a |= b, 0);
   },
 
@@ -197,15 +196,10 @@ this.MigratorPrototype = {
     if (resources.length == 0)
       throw new Error("migrate called for a non-existent source");
 
-    if (aItems != Ci.nsIBrowserProfileMigrator.ALL)
+    if (aItems != Ci.nsIBrowserProfileMigrator.ALL) {
       // Tycho: resources = [r for each (r in resources) if (aItems & r.type)];
-      resources = [];
-
-      for each (r in resources) {
-        if (aItems & r.type) {
-          resources.push(r);
-        }
-      }
+      resources = resources.filter(r => aItems & r.type);
+    }
 
     // Called either directly or through the bookmarks import callback.
     function doMigrate() {
