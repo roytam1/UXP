@@ -80,6 +80,14 @@ pref("browser.slowstartup.help.url", "http://www.palemoon.org/support/slowstartu
 // on a network error page (e.g. cert error)
 pref("browser.escape_to_blank", false);
 
+#ifdef XP_WIN
+// Save internet zone information on downloaded files:
+// 0 => Never
+// 1 => Always
+// 2 => Use system setting
+pref("browser.download.saveZoneInformation", 2);
+#endif
+
 // The minimum delay in seconds for the timer to fire.
 // default=2 minutes
 pref("app.update.timerMinimumDelay", 120);
