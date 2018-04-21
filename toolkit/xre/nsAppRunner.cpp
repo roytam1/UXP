@@ -4310,7 +4310,6 @@ MultiprocessBlockPolicy() {
 
   if (addonsCanDisable && disabledByAddons) {
     gMultiprocessBlockPolicy = kE10sDisabledForAddons;
-    return gMultiprocessBlockPolicy;
   }
 
 #if defined(XP_WIN)
@@ -4344,29 +4343,13 @@ MultiprocessBlockPolicy() {
 
   if (disabledForA11y) {
     gMultiprocessBlockPolicy = kE10sDisabledForAccessibility;
-    return gMultiprocessBlockPolicy;
   }
 #endif
+  
+  // We do not support E10S, block by policy.
+  gMultiprocessBlockPolicy = kE10sForceDisabled;
 
-  /**
-   * Avoids enabling e10s for Windows XP users on the release channel.
-   */
-#if defined(XP_WIN)
-  if (!IsVistaOrLater()) {
-    nsAdoptingCString channelName = Preferences::GetDefaultCString("app.update.channel");
-    if (channelName.EqualsLiteral("release") || channelName.EqualsLiteral("esr")) {
-      gMultiprocessBlockPolicy = kE10sDisabledForOperatingSystem;
-      return gMultiprocessBlockPolicy;
-    }
-  }
-#endif // XP_WIN
-
-  /*
-   * None of the blocking policies matched, so e10s is allowed to run.
-   * Cache the information and return 0, indicating success.
-   */
-  gMultiprocessBlockPolicy = 0;
-  return 0;
+  return gMultiprocessBlockPolicy;
 }
 
 bool
