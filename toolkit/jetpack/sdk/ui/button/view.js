@@ -141,11 +141,11 @@ function create(options) {
   CustomizableUI.createWidget({
 #endif
     id: id,
+    type: 'custom',
 #ifdef MC_PALEMOON
 
     onBuild: function(document, _id) {
 #else
-    type: 'custom',
     removable: true,
     defaultArea: AREA_NAVBAR,
     allowedAreas: [ AREA_PANEL, AREA_NAVBAR ],
@@ -167,9 +167,7 @@ function create(options) {
       node.setAttribute('id', this.id);
 #endif
       node.setAttribute('class', 'toolbarbutton-1 chromeclass-toolbar-additional badged-button');
-#ifndef MC_PALEMOON
       node.setAttribute('type', type);
-#endif
       node.setAttribute('label', label);
       node.setAttribute('tooltiptext', label);
       node.setAttribute('image', image);
