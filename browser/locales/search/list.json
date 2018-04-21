@@ -5,36 +5,6 @@
     ]
   },
   "regionOverrides": {
-    "US": {
-      "google": "google-nocodes"
-    },
-    "CA": {
-      "google": "google-nocodes"
-    },
-    "KZ": {
-      "google": "google-nocodes"
-    },
-    "BY": {
-      "google": "google-nocodes"
-    },
-    "RU": {
-      "google": "google-nocodes"
-    },
-    "TR": {
-      "google": "google-nocodes"
-    },
-    "UA": {
-      "google": "google-nocodes"
-    },
-    "CN": {
-      "google": "google-nocodes"
-    },
-    "TW": {
-      "google": "google-nocodes"
-    },
-    "HK": {
-      "google": "google-nocodes"
-    }
   },
   "locales": {
     "en-US": {
