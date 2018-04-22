@@ -575,6 +575,13 @@ interface nsILoadInfo : nsISupports
   [infallible] attribute boolean initialSecurityCheckDone;
 
   /**
+   * Returns true if the load was triggered from an external application
+   * (e.g. Thunderbird). Please note that this flag will only ever be true
+   * if the load is of TYPE_DOCUMENT. 
+   */
+  [infallible] attribute boolean loadTriggeredFromExternal;
+
+  /**
    * Whenever a channel gets redirected, append the principal of the
    * channel [before the channels got redirected] to the loadinfo,
    * so that at every point this array lets us reason about all the

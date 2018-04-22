@@ -7,6 +7,7 @@
 #include "mozilla/LoadInfo.h"
 
 #include "mozilla/Assertions.h"
+#include "mozilla/dom/TabChild.h"
 #include "mozilla/dom/ToJSValue.h"
 #include "mozIThirdPartyUtil.h"
 #include "nsFrameLoader.h"
@@ -63,6 +64,7 @@ LoadInfo::LoadInfo(nsIPrincipal* aLoadingPrincipal,
   , mIsThirdPartyContext(false)
   , mForcePreflight(false)
   , mIsPreflight(false)
+  , mLoadTriggeredFromExternal(false)
   , mForceHSTSPriming(false)
   , mMixedContentWouldBlock(false)
 {
@@ -235,6 +237,7 @@ LoadInfo::LoadInfo(nsPIDOMWindowOuter* aOuterWindow,
   , mIsThirdPartyContext(false) // NB: TYPE_DOCUMENT implies not third-party.
   , mForcePreflight(false)
   , mIsPreflight(false)
+  , mLoadTriggeredFromExternal(false)
   , mForceHSTSPriming(false)
   , mMixedContentWouldBlock(false)
 {
@@ -297,6 +300,7 @@ LoadInfo::LoadInfo(const LoadInfo& rhs)
   , mCorsUnsafeHeaders(rhs.mCorsUnsafeHeaders)
   , mForcePreflight(rhs.mForcePreflight)
   , mIsPreflight(rhs.mIsPreflight)
+  , mLoadTriggeredFromExternal(rhs.mLoadTriggeredFromExternal)
   , mForceHSTSPriming(rhs.mForceHSTSPriming)
   , mMixedContentWouldBlock(rhs.mMixedContentWouldBlock)
 {
@@ -325,6 +329,7 @@ LoadInfo::LoadInfo(nsIPrincipal* aLoadingPrincipal,
                    const nsTArray<nsCString>& aCorsUnsafeHeaders,
                    bool aForcePreflight,
                    bool aIsPreflight,
+                   bool aLoadTriggeredFromExternal,
                    bool aForceHSTSPriming,
                    bool aMixedContentWouldBlock)
   : mLoadingPrincipal(aLoadingPrincipal)
@@ -348,6 +353,7 @@ LoadInfo::LoadInfo(nsIPrincipal* aLoadingPrincipal,
   , mCorsUnsafeHeaders(aCorsUnsafeHeaders)
   , mForcePreflight(aForcePreflight)
   , mIsPreflight(aIsPreflight)
+  , mLoadTriggeredFromExternal(aLoadTriggeredFromExternal)
   , mForceHSTSPriming (aForceHSTSPriming)
   , mMixedContentWouldBlock(aMixedContentWouldBlock)
 {
@@ -869,6 +875,23 @@ NS_IMETHODIMP
 LoadInfo::GetIsPreflight(bool* aIsPreflight)
 {
   *aIsPreflight = mIsPreflight;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+LoadInfo::SetLoadTriggeredFromExternal(bool aLoadTriggeredFromExternal)
+{
+  MOZ_ASSERT(!aLoadTriggeredFromExternal ||
+             mInternalContentPolicyType == nsIContentPolicy::TYPE_DOCUMENT,
+             "can only set load triggered from external for TYPE_DOCUMENT");
+  mLoadTriggeredFromExternal = aLoadTriggeredFromExternal;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+LoadInfo::GetLoadTriggeredFromExternal(bool* aLoadTriggeredFromExternal)
+{
+  *aLoadTriggeredFromExternal = mLoadTriggeredFromExternal;
   return NS_OK;
 }
 
