@@ -60,7 +60,11 @@ this.AddonRepository_SQLiteMigrator = {
 
     this._retrieveStoredData((results) => {
       this._closeConnection();
-      let resultArray = [addon for ([,addon] of Iterator(results))];
+      // Tycho: let resultArray = [addon for ([,addon] of Iterator(results))];
+      let resultArray = [];
+      for (let [,addon] of Iterator(results)) {
+        resultArray.push(addon);
+      }
       logger.debug(resultArray.length + " addons imported.")
       aCallback(resultArray);
     });
