@@ -37,8 +37,6 @@ public:
    * @param aFileName non-null when the link should be downloaded as the given file
    * @param aHeadersDataStream ???
    * @param aIsTrusted false if the triggerer is an untrusted DOM event.
-   * @param aTriggeringPrincipal, if not passed explicitly we fall back to
-   *        the document's principal.
    */
   NS_IMETHOD OnLinkClick(nsIContent* aContent,
                          nsIURI* aURI,
@@ -46,8 +44,7 @@ public:
                          const nsAString& aFileName,
                          nsIInputStream* aPostDataStream,
                          nsIInputStream* aHeadersDataStream,
-                         bool aIsTrusted,
-                         nsIPrincipal* aTriggeringPrincipal) = 0;
+                         bool aIsTrusted) = 0;
 
   /**
    * Process a click on a link.
@@ -64,8 +61,6 @@ public:
    * @param aHeadersDataStream ???
    * @param aDocShell (out-param) the DocShell that the request was opened on
    * @param aRequest the request that was opened
-   * @param aTriggeringPrincipal, if not passed explicitly we fall back to
-   *        the document's principal.
    */
   NS_IMETHOD OnLinkClickSync(nsIContent* aContent,
                              nsIURI* aURI,
@@ -74,8 +69,7 @@ public:
                              nsIInputStream* aPostDataStream = 0,
                              nsIInputStream* aHeadersDataStream = 0,
                              nsIDocShell** aDocShell = 0,
-                             nsIRequest** aRequest = 0,
-                             nsIPrincipal* aTriggeringPrincipal = nullptr) = 0;
+                             nsIRequest** aRequest = 0) = 0;
 
   /**
    * Process a mouse-over a link.
