@@ -42,6 +42,7 @@
 
 #include "nsArray.h"
 #include "nsArrayUtils.h"
+#include "nsContentSecurityManager.h"
 #include "nsICaptivePortalService.h"
 #include "nsIDOMStorage.h"
 #include "nsIContentViewer.h"
@@ -9884,6 +9885,15 @@ nsDocShell::InternalLoad(nsIURI* aURI,
     contentType = nsIContentPolicy::TYPE_DOCUMENT;
   }
 
+  if (!nsContentSecurityManager::AllowTopLevelNavigationToDataURI(
+        aURI,
+        contentType,
+        aTriggeringPrincipal,
+        (aLoadType == LOAD_NORMAL_EXTERNAL))) {
+    // logging to console happens within AllowTopLevelNavigationToDataURI
+    return NS_OK;
+  }
+
   // If there's no targetDocShell, that means we are about to create a new window,
   // perform a content policy check before creating the window.
   if (!targetDocShell) {
@@ -10232,8 +10242,11 @@ nsDocShell::InternalLoad(nsIURI* aURI,
     }
   }
 
+  bool loadFromExternal = false;
+
   // Before going any further vet loads initiated by external programs.
   if (aLoadType == LOAD_NORMAL_EXTERNAL) {
+    loadFromExternal = true;
     // Disallow external chrome: loads targetted at content windows
     bool isChrome = false;
     if (NS_SUCCEEDED(aURI->SchemeIs("chrome", &isChrome)) && isChrome) {
@@ -10724,7 +10737,7 @@ nsDocShell::InternalLoad(nsIURI* aURI,
                         nsINetworkPredictor::PREDICT_LOAD, this, nullptr);
 
   nsCOMPtr<nsIRequest> req;
-  rv = DoURILoad(aURI, aOriginalURI, aLoadReplace, aReferrer,
+  rv = DoURILoad(aURI, aOriginalURI, aLoadReplace, loadFromExternal, aReferrer,
                  !(aFlags & INTERNAL_LOAD_FLAGS_DONT_SEND_REFERRER),
                  aReferrerPolicy,
                  aTriggeringPrincipal, principalToInherit, aTypeHint,
@@ -10804,6 +10817,7 @@ nsresult
 nsDocShell::DoURILoad(nsIURI* aURI,
                       nsIURI* aOriginalURI,
                       bool aLoadReplace,
+                      bool aLoadFromExternal,
                       nsIURI* aReferrerURI,
                       bool aSendReferrer,
                       uint32_t aReferrerPolicy,

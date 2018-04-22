@@ -5572,6 +5572,12 @@ pref("security.mixed_content.use_hsts", true);
 // Approximately 1 week default cache for HSTS priming failures
 pref ("security.mixed_content.hsts_priming_cache_timeout", 10080);
 
+// TODO: Bug 1380959: Block toplevel data: URI navigations
+// If true, all toplevel data: URI navigations will be blocked.
+// Please note that manually entering a data: URI in the
+// URL-Bar will not be blocked when flipping this pref.
+pref("security.data_uri.block_toplevel_data_uri_navigations", false);
+
 // Disable Storage api in release builds.
 #ifdef NIGHTLY_BUILD
 pref("dom.storageManager.enabled", true);

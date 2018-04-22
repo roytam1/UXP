@@ -173,6 +173,8 @@ uint32_t   nsIOService::gDefaultSegmentCount = 24;
 
 bool nsIOService::sTelemetryEnabled = false;
 
+bool nsIOService::sBlockToplevelDataUriNavigations = false;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 nsIOService::nsIOService()
@@ -251,6 +253,8 @@ nsIOService::Init()
         NS_WARNING("failed to get observer service");
 
     Preferences::AddBoolVarCache(&sTelemetryEnabled, "toolkit.telemetry.enabled", false);
+    Preferences::AddBoolVarCache(&sBlockToplevelDataUriNavigations,
+                                 "security.data_uri.block_toplevel_data_uri_navigations", false);
     Preferences::AddBoolVarCache(&mOfflineMirrorsConnectivity, OFFLINE_MIRRORS_CONNECTIVITY, true);
 
     gIOService = this;
@@ -1874,6 +1878,12 @@ nsIOService::SpeculativeAnonymousConnect2(nsIURI *aURI,
                                           nsIInterfaceRequestor *aCallbacks)
 {
     return SpeculativeConnectInternal(aURI, aPrincipal, aCallbacks, true);
+}
+
+/*static*/ bool
+nsIOService::BlockToplevelDataUriNavigations()
+{
+  return sBlockToplevelDataUriNavigations;
 }
 
 } // namespace net
