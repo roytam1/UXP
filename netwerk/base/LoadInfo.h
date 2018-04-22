@@ -59,10 +59,12 @@ public:
            nsSecurityFlags aSecurityFlags,
            nsContentPolicyType aContentPolicyType);
 
-  // Constructor used for TYPE_DOCUMENT loads which have no reasonable
-  // loadingNode or loadingPrincipal
+  // Constructor used for TYPE_DOCUMENT loads which have a different
+  // loadingContext than other loads. This ContextForTopLevelLoad is
+  // only used for content policy checks.
   LoadInfo(nsPIDOMWindowOuter* aOuterWindow,
            nsIPrincipal* aTriggeringPrincipal,
+           nsISupports* aContextForTopLevelLoad,
            nsSecurityFlags aSecurityFlags);
 
   // create an exact copy of the loadinfo
@@ -134,6 +136,7 @@ private:
   nsCOMPtr<nsIPrincipal>           mTriggeringPrincipal;
   nsCOMPtr<nsIPrincipal>           mPrincipalToInherit;
   nsWeakPtr                        mLoadingContext;
+  nsWeakPtr                        mContextForTopLevelLoad;
   nsSecurityFlags                  mSecurityFlags;
   nsContentPolicyType              mInternalContentPolicyType;
   LoadTainting                     mTainting;

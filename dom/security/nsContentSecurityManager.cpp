@@ -253,7 +253,7 @@ DoContentSecurityChecks(nsIChannel* aChannel, nsILoadInfo* aLoadInfo)
   nsContentPolicyType internalContentPolicyType =
     aLoadInfo->InternalContentPolicyType();
   nsCString mimeTypeGuess;
-  nsCOMPtr<nsINode> requestingContext = nullptr;
+  nsCOMPtr<nsISupports> requestingContext = nullptr;
 
 #ifdef DEBUG
   // Don't enforce TYPE_DOCUMENT assertions for loads
@@ -327,10 +327,13 @@ DoContentSecurityChecks(nsIChannel* aChannel, nsILoadInfo* aLoadInfo)
     case nsIContentPolicy::TYPE_XMLHTTPREQUEST: {
       // alias nsIContentPolicy::TYPE_DATAREQUEST:
       requestingContext = aLoadInfo->LoadingNode();
-      MOZ_ASSERT(!requestingContext ||
-                 requestingContext->NodeType() == nsIDOMNode::DOCUMENT_NODE,
-                 "type_xml requires requestingContext of type Document");
-
+#ifdef DEBUG
+      {
+        nsCOMPtr<nsINode> node = do_QueryInterface(requestingContext);
+        MOZ_ASSERT(!node || node->NodeType() == nsIDOMNode::DOCUMENT_NODE,
+                   "type_xml requires requestingContext of type Document");
+      }
+#endif
       // We're checking for the external TYPE_XMLHTTPREQUEST here in case
       // an addon creates a request with that type.
       if (internalContentPolicyType ==
@@ -351,18 +354,26 @@ DoContentSecurityChecks(nsIChannel* aChannel, nsILoadInfo* aLoadInfo)
     case nsIContentPolicy::TYPE_OBJECT_SUBREQUEST: {
       mimeTypeGuess = EmptyCString();
       requestingContext = aLoadInfo->LoadingNode();
-      MOZ_ASSERT(!requestingContext ||
-                 requestingContext->NodeType() == nsIDOMNode::ELEMENT_NODE,
-                 "type_subrequest requires requestingContext of type Element");
+#ifdef DEBUG
+      {
+        nsCOMPtr<nsINode> node = do_QueryInterface(requestingContext);
+        MOZ_ASSERT(!node || node->NodeType() == nsIDOMNode::ELEMENT_NODE,
+                   "type_subrequest requires requestingContext of type Element");
+      }
+#endif
       break;
     }
 
     case nsIContentPolicy::TYPE_DTD: {
       mimeTypeGuess = EmptyCString();
       requestingContext = aLoadInfo->LoadingNode();
-      MOZ_ASSERT(!requestingContext ||
-                 requestingContext->NodeType() == nsIDOMNode::DOCUMENT_NODE,
-                 "type_dtd requires requestingContext of type Document");
+#ifdef DEBUG
+      {
+        nsCOMPtr<nsINode> node = do_QueryInterface(requestingContext);
+        MOZ_ASSERT(!node || node->NodeType() == nsIDOMNode::DOCUMENT_NODE,
+                   "type_dtd requires requestingContext of type Document");
+      }
+#endif
       break;
     }
 
@@ -380,9 +391,13 @@ DoContentSecurityChecks(nsIChannel* aChannel, nsILoadInfo* aLoadInfo)
         mimeTypeGuess = EmptyCString();
       }
       requestingContext = aLoadInfo->LoadingNode();
-      MOZ_ASSERT(!requestingContext ||
-                 requestingContext->NodeType() == nsIDOMNode::ELEMENT_NODE,
-                 "type_media requires requestingContext of type Element");
+#ifdef DEBUG
+      {
+        nsCOMPtr<nsINode> node = do_QueryInterface(requestingContext);
+        MOZ_ASSERT(!node || node->NodeType() == nsIDOMNode::ELEMENT_NODE,
+                   "type_media requires requestingContext of type Element");
+      }
+#endif
       break;
     }
 
@@ -409,18 +424,26 @@ DoContentSecurityChecks(nsIChannel* aChannel, nsILoadInfo* aLoadInfo)
     case nsIContentPolicy::TYPE_XSLT: {
       mimeTypeGuess = NS_LITERAL_CSTRING("application/xml");
       requestingContext = aLoadInfo->LoadingNode();
-      MOZ_ASSERT(!requestingContext ||
-                 requestingContext->NodeType() == nsIDOMNode::DOCUMENT_NODE,
-                 "type_xslt requires requestingContext of type Document");
+#ifdef DEBUG
+      {
+        nsCOMPtr<nsINode> node = do_QueryInterface(requestingContext);
+        MOZ_ASSERT(!node || node->NodeType() == nsIDOMNode::DOCUMENT_NODE,
+                   "type_xslt requires requestingContext of type Document");
+      }
+#endif
       break;
     }
 
     case nsIContentPolicy::TYPE_BEACON: {
       mimeTypeGuess = EmptyCString();
       requestingContext = aLoadInfo->LoadingNode();
-      MOZ_ASSERT(!requestingContext ||
-                 requestingContext->NodeType() == nsIDOMNode::DOCUMENT_NODE,
-                 "type_beacon requires requestingContext of type Document");
+#ifdef DEBUG
+      {
+        nsCOMPtr<nsINode> node = do_QueryInterface(requestingContext);
+        MOZ_ASSERT(!node || node->NodeType() == nsIDOMNode::DOCUMENT_NODE,
+                   "type_beacon requires requestingContext of type Document");
+      }
+#endif
       break;
     }
 
