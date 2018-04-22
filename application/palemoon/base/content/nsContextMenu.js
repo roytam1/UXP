@@ -909,7 +909,8 @@ nsContextMenu.prototype = {
                        Ci.nsIScriptSecurityManager.DISALLOW_SCRIPT);
       let doc = this.target.ownerDocument;
       openUILink(viewURL, e, { disallowInheritPrincipal: true,
-                               referrerURI: doc.documentURIObject });
+                               referrerURI: doc.documentURIObject,
+                               forceAllowDataURI: true });
     }
   },
 

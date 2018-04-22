@@ -15,6 +15,7 @@ nsDocShellLoadInfo::nsDocShellLoadInfo()
   : mLoadReplace(false)
   , mInheritPrincipal(false)
   , mPrincipalIsExplicit(false)
+  , mForceAllowDataURI(false)
   , mSendReferrer(true)
   , mReferrerPolicy(mozilla::net::RP_Default)
   , mLoadType(nsIDocShellLoadInfo::loadNormal)
@@ -123,6 +124,20 @@ NS_IMETHODIMP
 nsDocShellLoadInfo::SetPrincipalIsExplicit(bool aPrincipalIsExplicit)
 {
   mPrincipalIsExplicit = aPrincipalIsExplicit;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsDocShellLoadInfo::GetForceAllowDataURI(bool* aForceAllowDataURI)
+{
+  *aForceAllowDataURI = mForceAllowDataURI;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsDocShellLoadInfo::SetForceAllowDataURI(bool aForceAllowDataURI)
+{
+  mForceAllowDataURI = aForceAllowDataURI;
   return NS_OK;
 }
 

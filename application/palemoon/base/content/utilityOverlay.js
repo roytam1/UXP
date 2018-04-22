@@ -205,6 +205,7 @@ function openUILinkIn(url, where, aAllowThirdPartyFixup, aPostData, aReferrerURI
   openLinkIn(url, where, params);
 }
 
+/* eslint-disable complexity */
 function openLinkIn(url, where, params) {
   if (!where || !url)
     return;
@@ -215,6 +216,7 @@ function openLinkIn(url, where, params) {
   var aCharset              = params.charset;
   var aReferrerURI          = params.referrerURI;
   var aRelatedToCurrent     = params.relatedToCurrent;
+  var aForceAllowDataURI    = params.forceAllowDataURI;
   var aInBackground         = params.inBackground;
   var aDisallowInheritPrincipal = params.disallowInheritPrincipal;
   var aInitiatingDoc        = params.initiatingDoc;
@@ -315,6 +317,9 @@ function openLinkIn(url, where, params) {
     }
     if (aDisallowInheritPrincipal)
       flags |= Ci.nsIWebNavigation.LOAD_FLAGS_DISALLOW_INHERIT_OWNER;
+    if (aForceAllowDataURI) {
+      flags |= Ci.nsIWebNavigation.LOAD_FLAGS_FORCE_ALLOW_DATA_URI;
+    }
     w.gBrowser.loadURIWithFlags(url, flags, aReferrerURI, null, aPostData);
     break;
   case "tabshifted":
