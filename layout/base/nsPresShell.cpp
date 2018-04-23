@@ -8191,6 +8191,8 @@ PresShell::HandleEventInternal(WidgetEvent* aEvent,
       }
       case eMouseDown:
       case eMouseUp:
+      case ePointerDown:
+      case ePointerUp:
         isHandlingUserInput = true;
         break;
 
