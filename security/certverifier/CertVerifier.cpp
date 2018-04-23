@@ -224,8 +224,7 @@ CertVerifier::VerifySignedCertificateTimestamps(
   CERTCertListNode* issuerNode = CERT_LIST_NEXT(endEntityNode);
   if (!issuerNode || CERT_LIST_END(issuerNode, builtChain)) {
     // Issuer certificate is required for SCT verification.
-    // TODO(bug 1294580): change this to Result::FATAL_ERROR_INVALID_ARGS
-    return Success;
+    return Result::FATAL_ERROR_INVALID_ARGS;
   }
 
   CERTCertificate* endEntity = endEntityNode->cert;
