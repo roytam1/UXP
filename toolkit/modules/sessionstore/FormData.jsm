@@ -216,7 +216,7 @@ var FormDataInternal = {
     // We want to avoid saving data for about:sessionrestore as a string.
     // Since it's stored in the form as stringified JSON, stringifying further
     // causes an explosion of escape characters. cf. bug 467409
-    if (isRestorationPage(ret.url)) {
+    if (isRestorationPage(ret.url) && ret.id && ret.id.sessionData) {
       ret.id.sessionData = JSON.parse(ret.id.sessionData);
     }
 

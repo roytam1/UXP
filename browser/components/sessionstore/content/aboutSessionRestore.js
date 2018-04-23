@@ -41,7 +41,11 @@ window.onload = function() {
     return;
   }
 
-  gStateObject = JSON.parse(sessionData.value);
+  try {
+    gStateObject = JSON.parse(sessionData.value);
+  } catch (e) {
+    Cu.reportError(e);
+  }
 
   // make sure the data is tracked to be restored in case of a subsequent crash
   var event = document.createEvent("UIEvents");
@@ -68,30 +72,32 @@ function initTreeView() {
   var winLabel = tabList.getAttribute("_window_label");
 
   gTreeData = [];
-  gStateObject.windows.forEach(function(aWinData, aIx) {
-    var winState = {
-      label: winLabel.replace("%S", (aIx + 1)),
-      open: true,
-      checked: true,
-      ix: aIx
-    };
-    winState.tabs = aWinData.tabs.map(function(aTabData) {
-      var entry = aTabData.entries[aTabData.index - 1] || { url: "about:blank" };
-      var iconURL = aTabData.image || null;
-      // don't initiate a connection just to fetch a favicon (see bug 462863)
-      if (/^https?:/.test(iconURL))
-        iconURL = "moz-anno:favicon:" + iconURL;
-      return {
-        label: entry.title || entry.url,
+  if (gStateObject) {
+    gStateObject.windows.forEach(function(aWinData, aIx) {
+      var winState = {
+        label: winLabel.replace("%S", (aIx + 1)),
+        open: true,
         checked: true,
-        src: iconURL,
-        parent: winState
+        ix: aIx
       };
-    });
-    gTreeData.push(winState);
-    for (let tab of winState.tabs)
-      gTreeData.push(tab);
-  }, this);
+      winState.tabs = aWinData.tabs.map(function(aTabData) {
+        var entry = aTabData.entries[aTabData.index - 1] || { url: "about:blank" };
+        var iconURL = aTabData.image || null;
+        // don't initiate a connection just to fetch a favicon (see bug 462863)
+        if (/^https?:/.test(iconURL))
+          iconURL = "moz-anno:favicon:" + iconURL;
+        return {
+          label: entry.title || entry.url,
+          checked: true,
+          src: iconURL,
+          parent: winState
+        };
+      });
+      gTreeData.push(winState);
+      for (let tab of winState.tabs)
+        gTreeData.push(tab);
+    }, this);
+  }
 
   tabList.view = treeView;
   tabList.view.selection.select(0);
