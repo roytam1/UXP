@@ -1056,6 +1056,11 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
     LOG_EVENT_CREATION(STORAGEEVENT);
     return NS_NewDOMStorageEvent(aOwner);
   }
+  if (aEventType.LowerCaseEqualsLiteral("focusevent")) {
+    RefPtr<Event> event = NS_NewDOMFocusEvent(aOwner, aPresContext, nullptr);
+    event->MarkUninitialized();
+    return event.forget();
+  }
 
 #undef LOG_EVENT_CREATION
 
