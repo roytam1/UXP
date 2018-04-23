@@ -163,11 +163,12 @@ CommandList.prototype = {
     // The modifiers are the remaining elements.
     keyElement.setAttribute("modifiers", this.getModifiersAttribute(parts));
 
-    if (/^[A-Z0-9]$/.test(chromeKey)) {
+    if (/^[A-Z]$/.test(chromeKey)) {
       // We use the key attribute for all single digits and characters.
       keyElement.setAttribute("key", chromeKey);
     } else {
       keyElement.setAttribute("keycode", this.getKeycodeAttribute(chromeKey));
+      keyElement.setAttribute("event", "keydown");
     }
 
     return keyElement;
@@ -187,6 +188,9 @@ CommandList.prototype = {
    * @returns {string} The constructed value for the Key's 'keycode' attribute.
    */
   getKeycodeAttribute(chromeKey) {
+    if (/[0-9]/.test(chromeKey)) {
+      return `VK_${chromeKey}`;
+    }
     return `VK${chromeKey.replace(/([A-Z])/g, "_$&").toUpperCase()}`;
   },
 
