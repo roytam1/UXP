@@ -179,6 +179,9 @@ public:
   {
     return mRanges.Length();
   }
+
+  void GetType(nsAString& aOutType) const;
+
   nsRange* GetRangeAt(uint32_t aIndex, mozilla::ErrorResult& aRv);
   void AddRange(nsRange& aRange, mozilla::ErrorResult& aRv);
   void RemoveRange(nsRange& aRange, mozilla::ErrorResult& aRv);

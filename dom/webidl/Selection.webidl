@@ -33,6 +33,7 @@ interface Selection {
   void               deleteFromDocument();
 
   readonly attribute unsigned long rangeCount;
+  readonly attribute DOMString     type;
   [Throws]
   Range              getRangeAt(unsigned long index);
   [Throws]
@@ -77,7 +78,7 @@ partial interface Selection {
   void  removeSelectionListener(nsISelectionListener listenerToRemove);
 
   [ChromeOnly,BinaryName="rawType"]
-  readonly attribute short type;
+  readonly attribute short selectionType;
 
   [ChromeOnly,Throws,Pref="dom.testing.selection.GetRangesForInterval"]
   sequence<Range> GetRangesForInterval(Node beginNode, long beginOffset, Node endNode, long endOffset,
