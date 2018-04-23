@@ -344,6 +344,7 @@ class ContentScriptContextChild extends BaseContext {
       // because it enables us to create the APIs object in this sandbox object and then copying it
       // into the iframe's window, see Bug 1214658 for rationale)
       this.sandbox = Cu.Sandbox(contentWindow, {
+        sandboxName: `Web-Accessible Extension Page ${this.extension.id}`,
         sandboxPrototype: contentWindow,
         sameZoneAs: contentWindow,
         wantXrays: false,
@@ -360,6 +361,7 @@ class ContentScriptContextChild extends BaseContext {
 
       this.sandbox = Cu.Sandbox(principal, {
         metadata,
+        sandboxName: `Content Script ${this.extension.id}`,
         sandboxPrototype: contentWindow,
         sameZoneAs: contentWindow,
         wantXrays: true,
