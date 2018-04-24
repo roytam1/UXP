@@ -51,6 +51,7 @@ a .mainBox:focus,
   line-height: initial;
 }
 
+%ifndef MC_PALEMOON
 /* Initialize the overlay with visibility:hidden to prevent flickering if
 * the plugin is too small to show the overlay */
 .mainBox > .hoverBox,
@@ -62,6 +63,7 @@ a .mainBox:focus,
 .visible > .closeIcon {
   visibility: visible;
 }
+%endif
 
 .mainBox[chromedir="rtl"] {
   direction: rtl;
@@ -97,6 +99,10 @@ a .msgTapToPlay,
 :-moz-handler-blocked .msgBlocked,
 :-moz-handler-crashed .msgCrashed {
   display: block;
+  position: relative;
+  left: 0;
+  top: 0;
+  z-index: 9999;
 }
 
 .submitStatus[status] {
