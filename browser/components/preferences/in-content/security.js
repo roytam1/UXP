@@ -168,12 +168,24 @@ var gSecurityPane = {
     let safeBrowsingPhishingPref = document.getElementById("browser.safebrowsing.phishing.enabled");
     let safeBrowsingMalwarePref = document.getElementById("browser.safebrowsing.malware.enabled");
 
+    let safeBrowsingUIPref = document.getElementById("browser.safebrowsing.UI.enabled");
+    let safeBrowsingUISep = document.getElementById("safeBrowsingUISep");
+    let safeBrowsingUIGroup = document.getElementById("safeBrowsingUIGroup");
+
     let blockDownloadsPref = document.getElementById("browser.safebrowsing.downloads.enabled");
     let malwareTable = document.getElementById("urlclassifier.malwareTable");
 
     let blockUnwantedPref = document.getElementById("browser.safebrowsing.downloads.remote.block_potentially_unwanted");
     let blockUncommonPref = document.getElementById("browser.safebrowsing.downloads.remote.block_uncommon");
 
+    if (safeBrowsingUIPref.value == false) {
+      safeBrowsingUISep.setAttribute("hidden", "true");
+      safeBrowsingUIGroup.setAttribute("hidden", "true");
+    } else {
+      safeBrowsingUISep.removeAttribute("hidden");
+      safeBrowsingUIGroup.removeAttribute("hidden");
+    }
+      
     enableSafeBrowsing.addEventListener("command", function() {
       safeBrowsingPhishingPref.value = enableSafeBrowsing.checked;
       safeBrowsingMalwarePref.value = enableSafeBrowsing.checked;

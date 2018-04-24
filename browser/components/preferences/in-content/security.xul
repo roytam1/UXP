@@ -28,6 +28,10 @@
               name="browser.safebrowsing.phishing.enabled"
               type="bool"/>
 
+  <preference id="browser.safebrowsing.UI.enabled"
+              name="browser.safebrowsing.UI.enabled"
+              type="bool"/>
+
   <preference id="browser.safebrowsing.downloads.enabled"
               name="browser.safebrowsing.downloads.enabled"
               type="bool"/>
@@ -73,8 +77,8 @@
             accesskey="&addonExceptions.accesskey;"/>
   </hbox>
 
-  <separator class="thin"/>
-  <vbox align="start">
+  <separator id="safeBrowsingUISep" class="thin"/>
+  <vbox id="safeBrowsingUIGroup" align="start">
     <checkbox id="enableSafeBrowsing"
               label="&enableSafeBrowsing.label;"
               accesskey="&enableSafeBrowsing.accesskey;" />
