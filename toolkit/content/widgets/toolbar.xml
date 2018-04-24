@@ -54,7 +54,7 @@
           // Look to see if there is a toolbarset.
           this.toolbarset = this.firstChild;
           while (this.toolbarset && this.toolbarset.localName != "toolbarset") {
-            this.toolbarset = toolbarset.nextSibling;
+            this.toolbarset = this.toolbarset.nextSibling;
           }
 
           if (this.toolbarset) {
