@@ -43,17 +43,6 @@ endif
 # Default
 HAVE_FREEBL_LIBS = 1
 
-# 32-bit HP-UX PA-RISC
-ifeq ($(OS_ARCH), HP-UX)
-ifneq ($(OS_TEST), ia64)
-ifndef HAVE_64BIT_BUILD
-HAVE_FREEBL_LIBS =
-HAVE_FREEBL_LIBS_32INT32 = 1
-HAVE_FREEBL_LIBS_32FPU = 1
-endif
-endif
-endif
-
 # SunOS SPARC
 ifeq ($(OS_ARCH), SunOS)
 ifneq (86,$(findstring 86,$(OS_TEST)))

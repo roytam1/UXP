@@ -708,7 +708,7 @@ if CONFIG['_MSC_VER']:
     CXXFLAGS += ['-wd4577']
     CXXFLAGS += ['-wd4312']
 
-if CONFIG['OS_ARCH'] not in ('WINNT', 'HP-UX'):
+if CONFIG['OS_ARCH'] not in ('WINNT'):
     OS_LIBS += [
         'm',
     ]

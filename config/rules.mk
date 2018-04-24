@@ -386,26 +386,6 @@ endif
 endif
 endif
 
-#
-# HP-UXBeOS specific section: for COMPONENTS only, add -Bsymbolic flag
-# which uses internal symbols first
-#
-ifeq ($(OS_ARCH),HP-UX)
-ifdef IS_COMPONENT
-ifeq ($(GNU_CC)$(GNU_CXX),)
-EXTRA_DSO_LDOPTS += -Wl,-Bsymbolic
-ifneq ($(HAS_EXTRAEXPORTS),1)
-MKSHLIB  += -Wl,+eNSGetModule -Wl,+eerrno
-MKCSHLIB += +eNSGetModule +eerrno
-ifneq ($(OS_TEST),ia64)
-MKSHLIB  += -Wl,+e_shlInit
-MKCSHLIB += +e_shlInit
-endif # !ia64
-endif # !HAS_EXTRAEXPORTS
-endif # non-gnu compilers
-endif # IS_COMPONENT
-endif # HP-UX
-
 ifeq ($(OS_ARCH),AIX)
 ifdef IS_COMPONENT
 ifneq ($(HAS_EXTRAEXPORTS),1)

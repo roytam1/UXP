@@ -7,17 +7,6 @@
 # HPPA
 ######################################################################
 #
-# HP-UX/PA32
-#
-# for gas and gcc, check comment in xptcinvoke_asm_pa32.s
-ifeq ($(OS_ARCH),HP-UX)
-ifneq ($(CC),gcc)
-# #18875  Building the CPP's (CXX) optimized causes a crash
-CXXFLAGS 	:=  $(filter-out $(MOZ_OPTIMIZE_FLAGS), $(CXXFLAGS))
-endif
-endif
-
-#
 # Linux/HPPA/gcc
 #
 ifeq ($(OS_ARCH),Linux)

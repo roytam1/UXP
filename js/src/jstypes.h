@@ -160,10 +160,6 @@
 # if defined(__64BIT__)
 #  define JS_64BIT
 # endif
-#elif defined(__HP_cc) || defined(__HP_aCC)       /* HP-UX cc/aCC */
-# if defined(__LP64__)
-#  define JS_64BIT
-# endif
 #else
 # error "Implement me"
 #endif
