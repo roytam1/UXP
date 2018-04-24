@@ -217,6 +217,16 @@ enum nsChangeHint {
    */
   nsChangeHint_AddOrRemoveTransform = 1 << 27,
 
+  /**
+   * Indicates that the overflow-x and/or overflow-y property changed.
+   *
+   * In most cases, this is equivalent to nsChangeHint_ReconstructFrame. But
+   * in some special cases where the change is really targeting the viewport's
+   * scrollframe, this is instead equivalent to nsChangeHint_AllReflowHints
+   * (because the viewport always has an associated scrollframe).
+   */
+  nsChangeHint_CSSOverflowChange = 1 << 28,
+
   // IMPORTANT NOTE: When adding new hints, consider whether you need
   // to add them to NS_HintsNotHandledForDescendantsIn() below. Please
   // also add them to RestyleManager::ChangeHintToString and modify
@@ -225,7 +235,7 @@ enum nsChangeHint {
   /**
    * Dummy hint value for all hints. It exists for compile time check.
    */
-  nsChangeHint_AllHints = (1 << 28) - 1,
+  nsChangeHint_AllHints = (1 << 29) - 1,
 };
 
 // Redefine these operators to return nothing. This will catch any use
@@ -306,6 +316,7 @@ inline nsChangeHint operator^=(nsChangeHint& aLeft, nsChangeHint aRight)
           nsChangeHint_UpdatePostTransformOverflow | \
           nsChangeHint_UpdateParentOverflow | \
           nsChangeHint_ChildrenOnlyTransform | \
+          nsChangeHint_CSSOverflowChange | \
           nsChangeHint_RecomputePosition | \
           nsChangeHint_UpdateContainingBlock | \
           nsChangeHint_AddOrRemoveTransform | \
@@ -374,6 +385,48 @@ inline nsChangeHint NS_HintsNotHandledForDescendantsIn(nsChangeHint aChangeHint)
                nsChangeHint_ClearAncestorIntrinsics |   \
                nsChangeHint_ClearDescendantIntrinsics | \
                nsChangeHint_NeedDirtyReflow)
+
+// Below are the change hints that we send for ISize & BSize changes.
+// Each is similar to nsChangeHint_AllReflowHints with a few changes.
+
+// * For an ISize change, we send nsChangeHint_AllReflowHints, with two bits
+// excluded: nsChangeHint_ClearDescendantIntrinsics (because an ancestor's
+// inline-size change can't affect descendant intrinsic sizes), and
+// nsChangeHint_NeedDirtyReflow (because ISize changes don't need to *force*
+// all descendants to reflow).
+#define nsChangeHint_ReflowHintsForISizeChange            \
+  nsChangeHint(nsChangeHint_AllReflowHints &              \
+               ~(nsChangeHint_ClearDescendantIntrinsics | \
+                 nsChangeHint_NeedDirtyReflow))
+
+// * For a BSize change, we send almost the same hints as for ISize changes,
+// with one extra: nsChangeHint_UpdateComputedBSize.  We need this hint because
+// BSize changes CAN affect descendant intrinsic sizes, due to replaced
+// elements with percentage BSizes in descendants which also have percentage
+// BSizes. nsChangeHint_UpdateComputedBSize clears intrinsic sizes for frames
+// that have such replaced elements. (We could instead send
+// nsChangeHint_ClearDescendantIntrinsics, but that's broader than we need.)
+//
+// NOTE: You might think that BSize changes could exclude
+// nsChangeHint_ClearAncestorIntrinsics (which is inline-axis specific), but we
+// do need to send it, to clear cached results from CSS Flex measuring reflows.
+#define nsChangeHint_ReflowHintsForBSizeChange            \
+  nsChangeHint((nsChangeHint_AllReflowHints |             \
+                nsChangeHint_UpdateComputedBSize) &       \
+               ~(nsChangeHint_ClearDescendantIntrinsics | \
+                 nsChangeHint_NeedDirtyReflow))
+
+// * For changes to the float area of an already-floated element, we need all
+// reflow hints, but not the ones that apply to descendants.
+// Our descendants aren't impacted when our float area only changes
+// placement but not size/shape. (e.g. if we change which side we float to).
+// But our ancestors/siblings are potentially impacted, so we need to send
+// the non-descendant reflow hints.
+#define nsChangeHint_ReflowHintsForFloatAreaChange            \
+  nsChangeHint(nsChangeHint_AllReflowHints &              \
+               ~(nsChangeHint_ClearDescendantIntrinsics | \
+                 nsChangeHint_NeedDirtyReflow))
+
 #define NS_STYLE_HINT_REFLOW \
   nsChangeHint(NS_STYLE_HINT_VISUAL | nsChangeHint_AllReflowHints)
 

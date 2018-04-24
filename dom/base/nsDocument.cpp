@@ -2054,10 +2054,17 @@ nsDocument::ResetToURI(nsIURI *aURI, nsILoadGroup *aLoadGroup,
         mFirstChild = content->GetNextSibling();
       }
       mChildren.RemoveChildAt(i);
+      if (content == mCachedRootElement) {
+        // Immediately clear mCachedRootElement, now that it's been removed
+        // from mChildren, so that GetRootElement() will stop returning this
+        // now-stale value.
+        mCachedRootElement = nullptr;
+      }
       nsNodeUtils::ContentRemoved(this, content, i, previousSibling);
       content->UnbindFromTree();
     }
-    mCachedRootElement = nullptr;
+    MOZ_ASSERT(!mCachedRootElement,
+               "After removing all children, there should be no root elem");
   }
   mInUnlinkOrDeletion = oldVal;
 
@@ -3913,8 +3920,18 @@ nsDocument::RemoveChildAt(uint32_t aIndex, bool aNotify)
     DestroyElementMaps();
   }
 
-  doRemoveChildAt(aIndex, aNotify, oldKid, mChildren);
+  // Preemptively clear mCachedRootElement, since we may be about to remove it
+  // from our child list, and we don't want to return this maybe-obsolete value
+  // from any GetRootElement() calls that happen inside of doRemoveChildAt().
+  // (NOTE: for this to be useful, doRemoveChildAt() must NOT trigger any
+  // GetRootElement() calls until after it's removed the child from mChildren.
+  // Any call before that point would restore this soon-to-be-obsolete cached
+  // answer, and our clearing here would be fruitless.)
   mCachedRootElement = nullptr;
+  doRemoveChildAt(aIndex, aNotify, oldKid, mChildren);
+  MOZ_ASSERT(mCachedRootElement != oldKid,
+             "Stale pointer in mCachedRootElement, after we tried to clear it "
+             "(maybe somebody called GetRootElement() too early?)");
 }
 
 void
