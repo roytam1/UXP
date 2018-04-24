@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<link rel="icon" href="/mozilla-central/static/hgicon.png" type="image/png" />
+<meta name="robots" content="index, nofollow"/>
+<link rel="stylesheet" href="/mozilla-central/static/style-gitweb.css" type="text/css" />
+
+<style type="text/css">
+div.feed {
+  float: right;
+}
+a img {
+  border-width: 0px;
+}
+div.log_link {
+  width: 80px;
+  background-color: white;
+}
+
+div.log_body {
+  padding-left: 96px;
+}
+</style>
+<script type="text/javascript" src="/mozilla-central/static/mercurial.js"></script>
+
+<link rel="stylesheet" href="/mozilla-central/highlightcss" type="text/css" />
+<title>mozilla-central: layout/reftests/xul/css-flex-1.xul@67bbef772796</title>
+<link rel="alternate" type="application/atom+xml"
+   href="/mozilla-central/atom-log" title="Atom feed for mozilla-central"/>
+<link rel="alternate" type="application/rss+xml"
+   href="/mozilla-central/rss-log" title="RSS feed for mozilla-central"/>
+</head>
+<body>
+
+<div class="page_header">
+<div class="logo">        <a href="https://developer.mozilla.org/en/docs/Mercurial">            <img src="/mozilla-central/static/moz-logo-bw-rgb.svg" alt="mercurial" />        </a>    </div>
+<a href="/">Mercurial</a> &gt; <a href="/mozilla-central">mozilla-central</a>  / file revision / layout/reftests/xul/css-flex-1.xul@67bbef772796
+</div>
+
+<div class="page_nav">
+<div>
+<a href="/mozilla-central/summary">summary</a> |
+<a href="/mozilla-central/shortlog">shortlog</a> |
+<a href="/mozilla-central/log">changelog</a> |
+<a href="/mozilla-central/pushloghtml">pushlog</a> |
+<a href="/mozilla-central/graph">graph</a> |
+<a href="/mozilla-central/tags">tags</a> |
+<a href="/mozilla-central/bookmarks">bookmarks</a> |
+<a href="/mozilla-central/branches">branches</a> |
+<a href="/mozilla-central/file/67bbef772796/layout/reftests/xul/">files</a> |
+<a href="/mozilla-central/rev/67bbef772796">changeset</a> |
+file |
+<a href="/mozilla-central/file/tip/layout/reftests/xul/css-flex-1.xul">latest</a> |
+<a href="/mozilla-central/log/67bbef772796/layout/reftests/xul/css-flex-1.xul">revisions</a> |
+<a href="/mozilla-central/annotate/67bbef772796/layout/reftests/xul/css-flex-1.xul">annotate</a> |
+<a href="/mozilla-central/diff/67bbef772796/layout/reftests/xul/css-flex-1.xul">diff</a> |
+<a href="/mozilla-central/comparison/67bbef772796/layout/reftests/xul/css-flex-1.xul">comparison</a> |
+<a href="/mozilla-central/raw-file/67bbef772796/layout/reftests/xul/css-flex-1.xul">raw</a> |
+<a href="/mozilla-central/help">help</a>
+</div>
+
+<div class="search">
+<form id="searchform" action="/mozilla-central/log">
+
+<input name="rev" type="text" value="" size="40" />
+<div id="hint">Find changesets by keywords (author, files, the commit message), revision
+number or hash, or <a href="/mozilla-central/help/revsets">revset expression</a>.</div>
+</form>
+</div>
+</div>
+
+<div class="title">layout/reftests/xul/css-flex-1.xul</div>
+
+<div class="title_text">
+<table cellspacing="0">
+<tr>
+ <td>author</td>
+ <td>&#68;&#97;&#110;&#105;&#101;&#108;&#32;&#72;&#111;&#108;&#98;&#101;&#114;&#116;&#32;&#60;&#100;&#104;&#111;&#108;&#98;&#101;&#114;&#116;&#64;&#99;&#115;&#46;&#115;&#116;&#97;&#110;&#102;&#111;&#114;&#100;&#46;&#101;&#100;&#117;&#62;</td>
+</tr>
+<tr>
+ <td></td>
+ <td class="date age">Wed, 08 Feb 2017 23:08:43 -0800</td>
+</tr>
+
+<tr>
+ <td>changeset 341731</td>
+ <td style="font-family:monospace"><a class="list" href="/mozilla-central/rev/67bbef772796">67bbef772796</a></td>
+</tr>
+
+
+<tr>
+ <td>permissions</td>
+ <td style="font-family:monospace">-rw-r--r--</td>
+</tr>
+</table>
+</div>
+
+<div class="page_path description"><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1338053">Bug 1338053</a>: Make nsFlexContainerFrame::MarkIntrinsicISizesDirty() also call its parent class's method. r=emilio
+
+MozReview-Commit-ID: 72oIlunLcVq</div>
+
+<div class="page_body">
+<pre class="sourcelines stripes"
+     data-logurl="/mozilla-central/log/67bbef772796/layout/reftests/xul/css-flex-1.xul"
+     data-selectabletag="SPAN"
+     data-ishead="1">
+
+<a href="#l1"></a><span id="l1">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+<a href="#l2"></a><span id="l2">&lt;window xmlns=&quot;http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul&quot;</span>
+<a href="#l3"></a><span id="l3">        class=&quot;reftest-wait&quot;</span>
+<a href="#l4"></a><span id="l4">        onload=&quot;tweak()&quot;&gt;</span>
+<a href="#l5"></a><span id="l5">  &lt;style xmlns=&quot;http://www.w3.org/1999/xhtml&quot;&gt;</span>
+<a href="#l6"></a><span id="l6">    &lt;![CDATA[</span>
+<a href="#l7"></a><span id="l7">    panelview {</span>
+<a href="#l8"></a><span id="l8">      border: 1px solid black;</span>
+<a href="#l9"></a><span id="l9">      background: green;</span>
+<a href="#l10"></a><span id="l10">      display: flex;</span>
+<a href="#l11"></a><span id="l11">      height: 50px;</span>
+<a href="#l12"></a><span id="l12">    }</span>
+<a href="#l13"></a><span id="l13">    ]]&gt;</span>
+<a href="#l14"></a><span id="l14">  &lt;/style&gt;</span>
+<a href="#l15"></a><span id="l15">  &lt;script&gt;</span>
+<a href="#l16"></a><span id="l16">    &lt;![CDATA[</span>
+<a href="#l17"></a><span id="l17">    function tweak() {</span>
+<a href="#l18"></a><span id="l18">      var tweakMe = document.getElementById(&quot;tweakMe&quot;);</span>
+<a href="#l19"></a><span id="l19">      tweakMe.style.width = &quot;100px&quot;;</span>
+<a href="#l20"></a><span id="l20">      document.documentElement.className = &quot;&quot;;</span>
+<a href="#l21"></a><span id="l21">    }</span>
+<a href="#l22"></a><span id="l22">    ]]&gt;</span>
+<a href="#l23"></a><span id="l23">  &lt;/script&gt;</span>
+<a href="#l24"></a><span id="l24">  &lt;hbox&gt;</span>
+<a href="#l25"></a><span id="l25">    &lt;panelview id=&quot;tweakMe&quot;&gt;&lt;/panelview&gt;</span>
+<a href="#l26"></a><span id="l26">  &lt;/hbox&gt;</span>
+<a href="#l27"></a><span id="l27">&lt;/window&gt;</span>
+</pre>
+</div>
+
+<script type="text/javascript" src="/mozilla-central/static/followlines.js"></script>
+
+<div class="page_footer">
+<div class="page_footer_text">mozilla-central</div>
+<div class="page_footer_text" style="padding-left: 10px">Deployed from <a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/bd13917afa61">bd13917afa61</a> at 2018-04-20T21:06:08Z.</div>
+<div class="rss_logo">
+<a href="/mozilla-central/rss-log">RSS</a>
+<a href="/mozilla-central/atom-log">Atom</a>
+</div>
+<br />
+
+</div>
+</body>
+</html>
+

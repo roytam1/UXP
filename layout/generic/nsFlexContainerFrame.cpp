@@ -1857,6 +1857,7 @@ nsFlexContainerFrame::MarkIntrinsicISizesDirty()
   for (nsIFrame* childFrame : mFrames) {
     childFrame->Properties().Delete(CachedFlexMeasuringReflow());
   }
+  nsContainerFrame::MarkIntrinsicISizesDirty();
 }
 
 nscoord
