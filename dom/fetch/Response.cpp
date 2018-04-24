@@ -104,7 +104,7 @@ Response::Redirect(const GlobalObject& aGlobal, const nsAString& aUrl,
     return nullptr;
   }
 
-  Optional<ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams> body;
+  Optional<Nullable<ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams>> body;
   ResponseInit init;
   init.mStatus = aStatus;
   RefPtr<Response> r = Response::Constructor(aGlobal, body, init, aRv);
@@ -125,7 +125,7 @@ Response::Redirect(const GlobalObject& aGlobal, const nsAString& aUrl,
 
 /*static*/ already_AddRefed<Response>
 Response::Constructor(const GlobalObject& aGlobal,
-                      const Optional<ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams>& aBody,
+                      const Optional<Nullable<ArrayBufferOrArrayBufferViewOrBlobOrFormDataOrUSVStringOrURLSearchParams>>& aBody,
                       const ResponseInit& aInit, ErrorResult& aRv)
 {
   nsCOMPtr<nsIGlobalObject> global = do_QueryInterface(aGlobal.GetAsSupports());
@@ -191,7 +191,7 @@ Response::Constructor(const GlobalObject& aGlobal,
     }
   }
 
-  if (aBody.WasPassed()) {
+  if (aBody.WasPassed() && !aBody.Value().IsNull()) {
     if (aInit.mStatus == 204 || aInit.mStatus == 205 || aInit.mStatus == 304) {
       aRv.ThrowTypeError<MSG_RESPONSE_NULL_STATUS_WITH_BODY>();
       return nullptr;
@@ -200,7 +200,7 @@ Response::Constructor(const GlobalObject& aGlobal,
     nsCOMPtr<nsIInputStream> bodyStream;
     nsCString contentType;
     uint64_t bodySize = 0;
-    aRv = ExtractByteStreamFromBody(aBody.Value(),
+    aRv = ExtractByteStreamFromBody(aBody.Value().Value(),
                                     getter_AddRefs(bodyStream),
                                     contentType,
                                     bodySize);

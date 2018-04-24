@@ -7,7 +7,7 @@
  * https://fetch.spec.whatwg.org/#response-class
  */
 
-[Constructor(optional BodyInit body, optional ResponseInit init),
+[Constructor(optional BodyInit? body, optional ResponseInit init),
  Exposed=(Window,Worker)]
 interface Response {
   [NewObject] static Response error();
