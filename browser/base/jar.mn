@@ -90,7 +90,7 @@ browser.jar:
         content/browser/browser-safebrowsing.js       (content/browser-safebrowsing.js)
         content/browser/browser-sidebar.js            (content/browser-sidebar.js)
         content/browser/browser-social.js             (content/browser-social.js)
-        content/browser/browser-syncui.js             (content/browser-syncui.js)
+*       content/browser/browser-syncui.js             (content/browser-syncui.js)
 *       content/browser/browser-tabPreviews.xml       (content/browser-tabPreviews.xml)
 #ifdef CAN_DRAW_IN_TITLEBAR
         content/browser/browser-tabsintitlebar.js       (content/browser-tabsintitlebar.js)

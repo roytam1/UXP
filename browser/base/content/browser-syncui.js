@@ -4,10 +4,10 @@
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-if (AppConstants.MOZ_SERVICES_CLOUDSYNC) {
-  XPCOMUtils.defineLazyModuleGetter(this, "CloudSync",
-                                    "resource://gre/modules/CloudSync.jsm");
-}
+#ifdef MOZ_SERVICES_CLOUDSYNC
+XPCOMUtils.defineLazyModuleGetter(this, "CloudSync",
+                                  "resource://gre/modules/CloudSync.jsm");
+#endif
 
 XPCOMUtils.defineLazyModuleGetter(this, "fxAccounts",
                                   "resource://gre/modules/FxAccounts.jsm");
@@ -170,9 +170,13 @@ var gSyncUI = {
       document.getElementById("sync-setup-state").hidden = true;
       document.getElementById("sync-syncnow-state").hidden = true;
 
+#ifdef MOZ_SERVICES_CLOUDSYNC
       if (CloudSync && CloudSync.ready && CloudSync().adapters.count) {
         document.getElementById("sync-syncnow-state").hidden = false;
       } else if (loginFailed) {
+#else
+      if (loginFailed) {
+#endif
         // unhiding this element makes the menubar show the login failure state.
         document.getElementById("sync-reauth-state").hidden = false;
       } else if (needsSetup) {
