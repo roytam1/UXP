@@ -37,7 +37,7 @@ function setTestPluginEnabledState(newEnabledState, plugin) {
   });
 }
 
-add_task(function* setup() {
+add_task(function* () {
   var tags = pluginHost.getPluginTags();
 
   // Find the test plugin
@@ -50,12 +50,9 @@ add_task(function* setup() {
   }
   if (!pluginTag) {
     ok(false, "Test Plug-in not available, can't run test");
-    finish();
+    return;
   }
   setTestPluginEnabledState(Ci.nsIPluginTag.STATE_ENABLED, pluginTag);
-});
-
-add_task(function* () {
   yield BrowserTestUtils.openNewForegroundTab(gBrowser, testURL);
 
   // Set data for the plugin after the page load.
@@ -87,5 +84,3 @@ add_task(function* () {
 
   gBrowser.removeCurrentTab();
 });
-
-
