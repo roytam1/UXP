@@ -1443,6 +1443,10 @@ DownloadsPlacesView.prototype = {
   },
 
   doCommand: function DPV_doCommand(aCommand) {
+    // Commands may be invoked with keyboard shortcuts even if disabled.
+    if (!this.isCommandEnabled(aCommand)) {
+      return;
+    }
     switch (aCommand) {
       case "cmd_copy":
         this._copySelectedDownloadsToClipboard();
