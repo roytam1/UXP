@@ -1689,6 +1689,16 @@ ContentPermissionPrompt.prototype = {
     return chromeWin;
   },
 
+  _getBrowserForRequest: function (aRequest) {
+    let requestingWindow = aRequest.window.top;
+    // find the requesting browser or iframe
+    let browser = requestingWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+                                  .getInterface(Ci.nsIWebNavigation)
+                                  .QueryInterface(Ci.nsIDocShell)
+                                  .chromeEventHandler;
+    return browser;
+  },
+
   /**
    * Show a permission prompt.
    *
