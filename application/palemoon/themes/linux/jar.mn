@@ -36,8 +36,6 @@ browser.jar:
   skin/classic/browser/mixed-content-blocked-64.png
   skin/classic/browser/monitor.png
   skin/classic/browser/monitor_16-10.png
-  skin/classic/browser/notification-16.png
-  skin/classic/browser/notification-64.png
 * skin/classic/browser/pageInfo.css
   skin/classic/browser/pageInfo.png
   skin/classic/browser/page-livemarks.png
@@ -54,6 +52,8 @@ browser.jar:
   skin/classic/browser/Toolbar.png
   skin/classic/browser/Toolbar-small.png
   skin/classic/browser/urlbar-arrow.png
+  skin/classic/browser/web-notifications-icon.svg
+  skin/classic/browser/web-notifications-tray.svg
 #ifdef MOZ_WEBRTC
   skin/classic/browser/webRTC-shareDevice-16.png
   skin/classic/browser/webRTC-shareDevice-64.png
