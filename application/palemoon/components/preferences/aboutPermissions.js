@@ -274,6 +274,10 @@ Site.prototype = {
    * Removes all data from the browser corresponding to the site.
    */
   forgetSite: function Site_forgetSite() {
+    // XXX This removes data for an entire domain, rather than just
+    // an origin. This may produce confusing results, as data will
+    // be cleared for the http:// as well as the https:// domain
+    // if you try to forget the https:// site.
     ForgetAboutSite.removeDataFromDomain(this.principal.URI.host)
                    .catch(Cu.reportError);
   }
