@@ -1414,7 +1414,10 @@ BrowserGlue.prototype = {
       let win = RecentWindow.getMostRecentBrowserWindow();
       win.openUILinkIn(data, "tab");
     }
-    let imageURL = "chrome://browser/skin/web-notifications-icon.svg";
+    // Show the application icon for XUL notifications. We assume system-level
+    // notifications will include their own icon.
+    let imageURL = this._hasSystemAlertsService() ? "" :
+                   "chrome://branding/content/about-logo.png";
     let title = gBrowserBundle.GetStringFromName("webNotifications.upgradeTitle");
     let text = gBrowserBundle.GetStringFromName("webNotifications.upgradeBody");
     let url = Services.urlFormatter.formatURLPref("browser.push.warning.infoURL");
@@ -1426,6 +1429,14 @@ BrowserGlue.prototype = {
     catch (e) {
       Cu.reportError(e);
     }
+  },
+
+  _hasSystemAlertsService: function() {
+    try {
+      return !!Cc["@mozilla.org/system-alerts-service;1"].getService(
+        Ci.nsIAlertsService);
+    } catch (e) {}
+    return false;
   },
 
   _getPersist: function BG__getPersist(aSource, aProperty) {
