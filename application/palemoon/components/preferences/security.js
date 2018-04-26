@@ -131,9 +131,21 @@ var gSecurityPane = {
    */
   showPasswordExceptions: function ()
   {
+    let bundlePrefs = document.getElementById("bundlePreferences");
+    let params = {
+      blockVisible: true,
+      sessionVisible: false,
+      allowVisible: false,
+      hideStatusColumn: true,
+      prefilledHost: "",
+      permissionType: "login-saving",
+      windowTitle: bundlePrefs.getString("savedLoginsExceptions_title"),
+      introText: bundlePrefs.getString("savedLoginsExceptions_desc")
+    };
+
     document.documentElement.openWindow("Toolkit:PasswordManagerExceptions",
-                                        "chrome://passwordmgr/content/passwordManagerExceptions.xul",
-                                        "", null);
+                                        "chrome://browser/content/preferences/permissions.xul",
+                                        null, params);
   },
 
   /**
