@@ -151,7 +151,7 @@ var gPermissionManager = {
     // Re-do the sort, if the status changed from Block to Allow
     // or vice versa, since if we're sorted on status, we may no
     // longer be in order.
-    if (this._lastPermissionSortColumn.id == "statusCol") {
+    if (this._lastPermissionSortColumn == "statusCol") {
       this._resortPermissions();
     }
     this._tree.treeBoxObject.invalidate();
