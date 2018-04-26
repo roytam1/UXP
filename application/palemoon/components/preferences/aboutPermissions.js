@@ -449,19 +449,6 @@ var PermissionDefaults = {
     let value = (aValue != this.DENY);
     Services.prefs.setBoolPref("full-screen-api.pointer-lock.enabled", value);
   },
-
-  get push() {
-    if (!Services.prefs.getBoolPref("dom.push.enabled")) {
-      return this.DENY;
-    }
-    // We always ask for permission to push with a specific site,
-    // so there is no global ALLOW.
-    return this.UNKNOWN;
-  },
-  set push(aValue) {
-    let value = (aValue != this.DENY);
-    Services.prefs.setBoolPref("dom.push.enabled", value);
-  },
 }
 
 /**
@@ -509,13 +496,13 @@ var AboutPermissions = {
    */
   _supportedPermissions: ["password", "image", "popup", "cookie",
                           "desktop-notification", "install", "geo", "indexedDB",
-                          "fullscreen", "pointerLock", "push"],
+                          "fullscreen", "pointerLock"],
 
   /**
    * Permissions that don't have a global "Allow" option.
    */
   _noGlobalAllow: ["desktop-notification", "geo", "indexedDB", "fullscreen",
-                   "pointerLock", "push"],
+                   "pointerLock"],
 
   /**
    * Permissions that don't have a global "Deny" option.
