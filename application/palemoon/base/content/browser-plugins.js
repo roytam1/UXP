@@ -470,28 +470,12 @@ var gPluginHandler = {
     }
   },
 
-  // Match the behaviour of nsPermissionManager
-  _getHostFromPrincipal: function PH_getHostFromPrincipal(principal) {
-    if (!principal.URI || principal.URI.schemeIs("moz-nullprincipal")) {
-      return "(null)";
-    }
-
-    try {
-      if (principal.URI.host)
-        return principal.URI.host;
-    } catch (e) {}
-
-    return principal.origin;
-  },
-
   _makeCenterActions: function PH_makeCenterActions(notification) {
     let contentWindow = notification.browser.contentWindow;
     let cwu = contentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
                            .getInterface(Ci.nsIDOMWindowUtils);
 
     let principal = contentWindow.document.nodePrincipal;
-    // This matches the behavior of nsPermssionManager, used for display purposes only
-    let principalHost = this._getHostFromPrincipal(principal);
 
     let centerActions = [];
     let pluginsFound = new Set();
@@ -517,11 +501,11 @@ var gPluginHandler = {
       let permissionObj = Services.perms.
         getPermissionObject(principal, pluginInfo.permissionString, false);
       if (permissionObj) {
-        pluginInfo.pluginPermissionHost = permissionObj.host;
+        pluginInfo.pluginPermissionPrePath = permissionObj.principal.originNoSuffix;
         pluginInfo.pluginPermissionType = permissionObj.expireType;
       }
       else {
-        pluginInfo.pluginPermissionHost = principalHost;
+        pluginInfo.pluginPermissionPrePath = principal.originNoSuffix;
         pluginInfo.pluginPermissionType = undefined;
       }
 
