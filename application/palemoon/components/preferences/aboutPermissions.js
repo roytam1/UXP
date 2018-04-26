@@ -449,6 +449,19 @@ var PermissionDefaults = {
     let value = (aValue != this.DENY);
     Services.prefs.setBoolPref("full-screen-api.pointer-lock.enabled", value);
   },
+
+  get push() {
+    if (!Services.prefs.getBoolPref("dom.push.enabled")) {
+      return this.DENY;
+    }
+    // We always ask for permission to push with a specific site,
+    // so there is no global ALLOW.
+    return this.UNKNOWN;
+  },
+  set push(aValue) {
+    let value = (aValue != this.DENY);
+    Services.prefs.setBoolPref("dom.push.enabled", value);
+  },
 }
 
 /**
@@ -488,13 +501,13 @@ var AboutPermissions = {
    */
   _supportedPermissions: ["password", "image", "popup", "cookie",
                           "desktop-notification", "install", "geo", "indexedDB",
-                          "fullscreen", "pointerLock"],
+                          "fullscreen", "pointerLock", "push"],
 
   /**
    * Permissions that don't have a global "Allow" option.
    */
   _noGlobalAllow: ["desktop-notification", "geo", "indexedDB", "fullscreen",
-                   "pointerLock"],
+                   "pointerLock", "push"],
 
   /**
    * Permissions that don't have a global "Deny" option.
@@ -543,6 +556,7 @@ var AboutPermissions = {
     Services.prefs.addObserver("plugins.click_to_play", this, false);
     Services.prefs.addObserver("full-screen-api.enabled", this, false);
     Services.prefs.addObserver("full-screen-api.pointer-lock.enabled", this, false);
+    Services.prefs.addObserver("dom.push.enabled", this, false);
     Services.prefs.addObserver("permissions.places-sites-limit", this, false);
 
     Services.obs.addObserver(this, "perm-changed", false);
@@ -695,6 +709,7 @@ var AboutPermissions = {
       Services.prefs.removeObserver("plugins.click_to_play", this, false);
       Services.prefs.removeObserver("full-screen-api.enabled", this, false);
       Services.prefs.removeObserver("full-screen-api.pointer-lock.enabled", this, false);
+      Services.prefs.removeObserver("dom.push.enabled", this, false);
       Services.prefs.removeObserver("permissions.places-sites-limit", this, false);
 
       Services.obs.removeObserver(this, "perm-changed");

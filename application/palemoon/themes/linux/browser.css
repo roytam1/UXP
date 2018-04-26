@@ -1169,6 +1169,10 @@ toolbar[iconsize="small"] #webrtc-status-button {
   list-style-image: url(chrome://browser/skin/Geolocation-64.png);
 }
 
+.popup-notification-icon[popupid="push"] {
+  list-style-image: url(chrome://browser/skin/Push-64.png);
+}
+
 .popup-notification-icon[popupid="xpinstall-disabled"],
 .popup-notification-icon[popupid="addon-progress"],
 .popup-notification-icon[popupid="addon-install-cancelled"],
@@ -1286,6 +1290,10 @@ toolbar[iconsize="small"] #webrtc-status-button {
 .geo-notification-icon,
 #geo-notification-icon {
   list-style-image: url(chrome://browser/skin/Geolocation-16.png);
+}
+
+#push-notification-icon {
+  list-style-image: url(chrome://browser/skin/Push-16.png);
 }
 
 #addons-notification-icon {
