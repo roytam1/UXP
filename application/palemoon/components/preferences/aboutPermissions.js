@@ -18,6 +18,9 @@ Cu.import("resource://gre/modules/ForgetAboutSite.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PluralForm",
                                   "resource://gre/modules/PluralForm.jsm");
 
+var gSecMan = Cc["@mozilla.org/scriptsecuritymanager;1"].
+              getService(Ci.nsIScriptSecurityManager);
+
 var gFaviconService = Cc["@mozilla.org/browser/favicon-service;1"].
                       getService(Ci.nsIFaviconService);
 
@@ -27,7 +30,7 @@ var gPlacesDatabase = Cc["@mozilla.org/browser/nav-history-service;1"].
                       clone(true);
 
 var gSitesStmt = gPlacesDatabase.createAsyncStatement(
-                  "SELECT get_unreversed_host(rev_host) AS host " +
+                  "SELECT url " +
                   "FROM moz_places " +
                   "WHERE rev_host > '.' " +
                   "AND visit_count > 0 " +
@@ -59,14 +62,11 @@ const MASTER_PASSWORD_MESSAGE = "User canceled master password entry";
 const TEST_EXACT_PERM_TYPES = ["desktop-notification", "geo", "pointerLock"];
 
 /**
- * Site object represents a single site, uniquely identified by a host.
+ * Site object represents a single site, uniquely identified by a principal.
  */
-function Site(host) {
-  this.host = host;
+function Site(principal) {
+  this.principal = principal;
   this.listitem = null;
-
-  this.httpURI = NetUtil.newURI("http://" + this.host);
-  this.httpsURI = NetUtil.newURI("https://" + this.host);
 }
 
 Site.prototype = {
@@ -88,16 +88,10 @@ Site.prototype = {
       }
     }
 
-    // Try to find favicon for both URIs, but always prefer the https favicon.
-    gFaviconService.getFaviconURLForPage(this.httpsURI, function(aURI) {
+    // Get the favicon for the origin
+    gFaviconService.getFaviconURLForPage(this.principal.URI, function (aURI) {
       if (aURI) {
         invokeCallback(aURI);
-      } else {
-        gFaviconService.getFaviconURLForPage(this.httpURI, function(aURI) {
-          if (aURI) {
-            invokeCallback(aURI);
-          }
-        });
       }
     }.bind(this));
   },
@@ -109,7 +103,9 @@ Site.prototype = {
    *        A function that takes the visit count (a number) as a parameter.
    */
   getVisitCount: function Site_getVisitCount(aCallback) {
-    let rev_host = this.host.split("").reverse().join("") + ".";
+    // XXX This won't be a very reliable system, as it will count both http: and https: visits
+    // Unfortunately, I don't think that there is a much better way to do it right now.
+    let rev_host = this.principal.URI.host.split("").reverse().join("") + ".";
     gVisitStmt.params.rev_host = rev_host;
     gVisitStmt.executeAsync({
       handleResult: function(aResults) {
@@ -152,9 +148,9 @@ Site.prototype = {
 
     let permissionValue;
     if (TEST_EXACT_PERM_TYPES.indexOf(aType) == -1) {
-      permissionValue = Services.perms.testPermission(this.httpURI, aType);
+      permissionValue = Services.perms.testPermissionFromPrincipal(this.principal, aType);
     } else {
-      permissionValue = Services.perms.testExactPermission(this.httpURI, aType);
+      permissionValue = Services.perms.testExactPermissionFromPrincipal(this.principal, aType);
     }
     aResultObj.value = permissionValue;
 
@@ -192,9 +188,7 @@ Site.prototype = {
       }
     }
 
-    // Using httpURI is kind of bogus, but the permission manager stores
-    // the permission for the host, so the right thing happens in the end.
-    Services.perms.add(this.httpURI, aType, aPerm);
+    Services.perms.addFromPrincipal(this.principal, aType, aPerm);
   },
 
   /**
@@ -205,7 +199,7 @@ Site.prototype = {
    *        e.g. "cookie", "geo", "indexedDB", "popup", "image"
    */
   clearPermission: function Site_clearPermission(aType) {
-    Services.perms.remove(this.httpURI, aType);
+    Services.perms.removeFromPrincipal(this.principal, aType);
   },
 
   /**
@@ -215,11 +209,9 @@ Site.prototype = {
    */
   get logins() {
     try {
-      let httpLogins = Services.logins.findLogins(
-          {}, this.httpURI.prePath, "", "");
-      let httpsLogins = Services.logins.findLogins(
-          {}, this.httpsURI.prePath, "", "");
-      return httpLogins.concat(httpsLogins);
+     let logins = Services.logins.findLogins({},
+                  this.principal.originNoSuffix, "", "");
+     return logins;
     } catch (e) {
       if (!e.message.includes(MASTER_PASSWORD_MESSAGE)) {
         Cu.reportError("AboutPermissions: " + e);
@@ -232,8 +224,7 @@ Site.prototype = {
     // Only say that login saving is blocked if it is blocked for both
     // http and https.
     try {
-      return Services.logins.getLoginSavingEnabled(this.httpURI.prePath) &&
-             Services.logins.getLoginSavingEnabled(this.httpsURI.prePath);
+      return Services.logins.getLoginSavingEnabled(this.principal.originNoSuffix);
     } catch (e) {
       if (!e.message.includes(MASTER_PASSWORD_MESSAGE)) {
         Cu.reportError("AboutPermissions: " + e);
@@ -244,8 +235,7 @@ Site.prototype = {
 
   set loginSavingEnabled(isEnabled) {
     try {
-      Services.logins.setLoginSavingEnabled(this.httpURI.prePath, isEnabled);
-      Services.logins.setLoginSavingEnabled(this.httpsURI.prePath, isEnabled);
+      Services.logins.setLoginSavingEnabled(this.principal.originNoSuffix, isEnabled);
     } catch (e) {
       if (!e.message.includes(MASTER_PASSWORD_MESSAGE)) {
         Cu.reportError("AboutPermissions: " + e);
@@ -284,7 +274,7 @@ Site.prototype = {
    * Removes all data from the browser corresponding to the site.
    */
   forgetSite: function Site_forgetSite() {
-    ForgetAboutSite.removeDataFromDomain(this.host)
+    ForgetAboutSite.removeDataFromDomain(this.principal.URI.host)
                    .catch(Cu.reportError);
   }
 }
@@ -466,7 +456,7 @@ var AboutPermissions = {
   LIST_BUILD_DELAY: 100, // delay between intervals
 
   /**
-   * Stores a mapping of host strings to Site objects.
+   * Stores a mapping of origin strings to Site objects.
    */
   _sites: {},
 
@@ -738,9 +728,9 @@ var AboutPermissions = {
           break;
         }
         let permission = aSubject.QueryInterface(Ci.nsIPermission);
-        // We can't compare selectedSite.host and permission.host here because
-        // we need to handle the case where a parent domain was changed in
-        // a way that affects the subdomain.
+        // We can't compare selectedSite.principal and permission.principal here
+        // because we need to handle the case where a parent domain was changed
+        // in a way that affects the subdomain.
         if (this._supportedPermissions.indexOf(permission.type) != -1) {
           this.updatePermission(permission.type);
         }
@@ -815,8 +805,11 @@ var AboutPermissions = {
         AboutPermissions.startSitesListBatch();
         let row;
         while (row = aResults.getNextRow()) {
-          let host = row.getResultByName("host");
-          AboutPermissions.addHost(host);
+          let spec = row.getResultByName("url");
+          let uri = NetUtil.newURI(spec);
+          let principal = gSecMan.getNoAppCodebasePrincipal(uri);
+
+          AboutPermissions.addPrincipal(principal);
         }
         AboutPermissions.endSitesListBatch();
       },
@@ -870,7 +863,8 @@ var AboutPermissions = {
           // i.e.: "chrome://weave" (Sync)
           if (!aLogin.hostname.startsWith(schemeChrome + ":")) {
             let uri = NetUtil.newURI(aLogin.hostname);
-            this.addHost(uri.host);
+            let principal = gSecMan.getNoAppCodebasePrincipal(uri);
+            this.addPrincipal(principal);
           }
         } catch (e) {
           Cu.reportError("AboutPermissions: " + e);
@@ -886,7 +880,8 @@ var AboutPermissions = {
           // i.e.: "chrome://weave" (Sync)
           if (!aHostname.startsWith(schemeChrome + ":")) {
             let uri = NetUtil.newURI(aHostname);
-            this.addHost(uri.host);
+            let principal = gSecMan.getNoAppCodebasePrincipal(uri);
+            this.addPrincipal(principal);
           }
         } catch (e) {
           Cu.reportError("AboutPermissions: " + e);
@@ -904,7 +899,7 @@ var AboutPermissions = {
       let permission = enumerator.getNext().QueryInterface(Ci.nsIPermission);
       // Only include sites with exceptions set for supported permission types.
       if (this._supportedPermissions.indexOf(permission.type) != -1) {
-        this.addHost(permission.host);
+        this.addPrincipal(permission.principal);
       }
       itemCnt++;
     }
@@ -915,15 +910,15 @@ var AboutPermissions = {
   /**
    * Creates a new Site and adds it to _sites if it's not already there.
    *
-   * @param aHost
-   *        A host string.
+   * @param aPrincipal
+   *        A principal.
    */
-  addHost: function(aHost) {
-    if (aHost in this._sites) {
+  addPrincipal: function(aPrincipal) {
+    if (aPrincipal.origin in this._sites) {
       return;
     }
-    let site = new Site(aHost);
-    this._sites[aHost] = site;
+    let site = new Site(aPrincipal);
+    this._sites[aPrincipal.origin] = site;
     this.addToSitesList(site);
   },
 
@@ -936,7 +931,7 @@ var AboutPermissions = {
   addToSitesList: function(aSite) {
     let item = document.createElement("richlistitem");
     item.setAttribute("class", "site");
-    item.setAttribute("value", aSite.host);
+    item.setAttribute("value", aSite.principal.origin);
 
     aSite.getFavicon(function(aURL) {
       item.setAttribute("favicon", aURL);
@@ -945,7 +940,7 @@ var AboutPermissions = {
 
     // Make sure to only display relevant items when list is filtered.
     let filterValue = this.sitesFilter.value.toLowerCase();
-    item.collapsed = aSite.host.toLowerCase().indexOf(filterValue) == -1;
+    item.collapsed = aSite.principal.origin.toLowerCase().indexOf(filterValue) == -1;
 
     (this._listFragment || this.sitesList).appendChild(item);
   },
@@ -998,9 +993,9 @@ var AboutPermissions = {
    *        The host string corresponding to the site to delete.
    */
   deleteFromSitesList: function(aHost) {
-    for (let host in this._sites) {
-      let site = this._sites[host];
-      if (site.host.hasRootDomain(aHost)) {
+    for (let origin in this._sites) {
+      let site = this._sites[origin];
+      if (site.principal.URI.host.hasRootDomain(aHost)) {
         if (site == this._selectedSite) {
           // Replace site-specific interface with "All Sites" interface.
           this.sitesList.selectedItem =
@@ -1008,7 +1003,7 @@ var AboutPermissions = {
         }
 
         this.sitesList.removeChild(site.listitem);
-        delete this._sites[site.host];
+        delete this._sites[site.principal.origin];
       }
     }
   },
@@ -1024,9 +1019,9 @@ var AboutPermissions = {
       return;
     }
 
-    let host = event.target.value;
-    let site = this._selectedSite = this._sites[host];
-    document.getElementById("site-label").value = host;
+    let origin = event.target.value;
+    let site = this._selectedSite = this._sites[origin];
+    document.getElementById("site-label").value = origin;
     document.getElementById("header-deck").selectedPanel =
         document.getElementById("site-header");
 
@@ -1260,19 +1255,19 @@ var AboutPermissions = {
    * Opens password manager dialog.
    */
   managePasswords: function() {
-    let selectedHost = "";
+    let selectedOrigin = "";
     if (this._selectedSite) {
-      selectedHost = this._selectedSite.host;
+      selectedOrigin = this._selectedSite.principal.URI.prePath;
     }
 
     let win = Services.wm.getMostRecentWindow("Toolkit:PasswordManager");
     if (win) {
-      win.setFilter(selectedHost);
+      win.setFilter(selectedOrigin);
       win.focus();
     } else {
       window.openDialog("chrome://passwordmgr/content/passwordManager.xul",
                         "Toolkit:PasswordManager", "",
-                        {filterString : selectedHost});
+                        {filterString : selectedOrigin});
     }
   },
 
@@ -1328,10 +1323,12 @@ var AboutPermissions = {
    * Opens cookie manager dialog.
    */
   manageCookies: function() {
+    // Cookies are stored by-host, and thus we filter the cookie window
+    // using only the host of the selected principal's origin
     let selectedHost = "";
     let selectedDomain = "";
     if (this._selectedSite) {
-      selectedHost = this._selectedSite.host;
+      selectedHost = this._selectedSite.principal.URI.host;
       selectedDomain = this.domainFromHost(selectedHost);
     }
 
