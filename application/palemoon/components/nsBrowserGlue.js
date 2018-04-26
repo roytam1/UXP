@@ -850,6 +850,7 @@ BrowserGlue.prototype = {
       // This will throw NS_ERROR_NOT_AVAILABLE if the notification cannot
       // be displayed per the idl.
       AlertsService.showAlertNotification(null, title, text,
+                                          true, url, clickCallback);
     }
     catch (e) {
       Cu.reportError(e);
@@ -1982,15 +1983,16 @@ ContentPermissionPrompt.prototype = {
 
     // Show the prompt.
     switch (perm.type) {
-    case "geolocation":
-      this._promptGeo(request);
-      break;
-    case "desktop-notification":
-      this._promptWebNotifications(request);
-      break;
-    case "pointerLock":
-      this._promptPointerLock(request, autoAllow);
-      break;
+      case "geolocation":
+        this._promptGeo(request);
+        break;
+      case "desktop-notification":
+        this._promptWebNotifications(request);
+        break;
+      case "pointerLock":
+        this._promptPointerLock(request, autoAllow);
+        break;
+    }
   },
 
 };
