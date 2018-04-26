@@ -483,6 +483,14 @@ var AboutPermissions = {
    */
   _sites: {},
 
+  /**
+   * Using a getter for sitesFilter to avoid races with tests.
+   */
+  get sitesFilter () {
+    delete this.sitesFilter;
+    return this.sitesFilter = document.getElementById("sites-filter");
+  },
+
   sitesList: null,
   _selectedSite: null,
 
@@ -949,8 +957,7 @@ var AboutPermissions = {
     aSite.listitem = item;
 
     // Make sure to only display relevant items when list is filtered.
-    let filterValue =
-        document.getElementById("sites-filter").value.toLowerCase();
+    let filterValue = this.sitesFilter.value.toLowerCase();
     item.collapsed = aSite.host.toLowerCase().indexOf(filterValue) == -1;
 
     (this._listFragment || this.sitesList).appendChild(item);
@@ -973,8 +980,7 @@ var AboutPermissions = {
    */
   filterSitesList: function() {
     let siteItems = this.sitesList.children;
-    let filterValue =
-        document.getElementById("sites-filter").value.toLowerCase();
+    let filterValue = this.sitesFilter.value.toLowerCase();
 
     if (filterValue == "") {
       for (let i = 0, iLen = siteItems.length; i < iLen; i++) {
@@ -1350,6 +1356,13 @@ var AboutPermissions = {
       window.openDialog("chrome://browser/content/preferences/cookies.xul",
                         "Browser:Cookies", "", {filterString : selectedDomain});
     }
+  },
+
+  /**
+   * Focusses the filter box.
+   */
+  focusFilterBox: function() {
+    this.sitesFilter.focus();
   }
 }
 

@@ -56,3 +56,5 @@
 <!ENTITY pointerLock.label               "Hide the Mouse Pointer">
 
 <!ENTITY push.label                      "Receive Push Notifications">
+
+<!ENTITY focusSearch.key                 "f">
