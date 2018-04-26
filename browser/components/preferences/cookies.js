@@ -30,6 +30,11 @@ var gCookiesWindow = {
     this._bundle = document.getElementById("bundlePreferences");
     this._tree = document.getElementById("cookiesList");
 
+    let removeAllCookies = document.getElementById("removeAllCookies");
+    removeAllCookies.setAttribute("accesskey", this._bundle.getString("removeAllCookies.accesskey"));
+    let removeSelectedCookies = document.getElementById("removeSelectedCookies");
+    removeSelectedCookies.setAttribute("accesskey", this._bundle.getString("removeSelectedCookies.accesskey"));
+
     this._populateList(true);
 
     document.getElementById("filter").focus();
@@ -582,7 +587,7 @@ var gCookiesWindow = {
       }
     }
 
-    let buttonLabel = this._bundle.getString("removeSelectedCookies");
+    let buttonLabel = this._bundle.getString("removeSelectedCookies.label");
     let removeSelectedCookies = document.getElementById("removeSelectedCookies");
     removeSelectedCookies.label = PluralForm.get(selectedCookieCount, buttonLabel)
                                             .replace("#1", selectedCookieCount);
@@ -894,7 +899,17 @@ var gCookiesWindow = {
   },
 
   _updateRemoveAllButton: function gCookiesWindow__updateRemoveAllButton() {
-    document.getElementById("removeAllCookies").disabled = this._view._rowCount == 0;
+    let removeAllCookies = document.getElementById("removeAllCookies");
+    removeAllCookies.disabled = this._view._rowCount == 0;
+
+    let labelStringID = "removeAllCookies.label";
+    let accessKeyStringID = "removeAllCookies.accesskey";
+    if (this._view._filtered) {
+      labelStringID = "removeAllShownCookies.label";
+      accessKeyStringID = "removeAllShownCookies.accesskey";
+    }
+    removeAllCookies.setAttribute("label", this._bundle.getString(labelStringID));
+    removeAllCookies.setAttribute("accesskey", this._bundle.getString(accessKeyStringID));
   },
 
   filter: function () {
