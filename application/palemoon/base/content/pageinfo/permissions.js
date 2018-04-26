@@ -98,7 +98,7 @@ var permissionObserver = {
     if (aTopic == "perm-changed") {
       var permission = aSubject.QueryInterface(
                        Components.interfaces.nsIPermission);
-      if (permission.host == gPermURI.host) {
+      if (permission.matchesURI(gPermURI, true)) {
         if (permission.type in gPermObj)
           initRow(permission.type);
         else if (permission.type.startsWith("plugin"))
@@ -119,7 +119,7 @@ function onLoadPermission(principal)
     gPermURI = uri;
     gPermPrincipal = principal;
     var hostText = document.getElementById("hostText");
-    hostText.value = gPermURI.host;
+    hostText.value = gPermURI.prePath;
 
     for (var i in gPermObj)
       initRow(i);
