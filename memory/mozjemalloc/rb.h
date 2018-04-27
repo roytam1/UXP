@@ -1,7 +1,7 @@
 /******************************************************************************
  *
  * Copyright (C) 2008 Jason Evans <jasone@FreeBSD.org>.
- * All rights reserved.
+ * Copyright (C) 2015-2018 Mark Straver <moonchild@palemoon.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
