@@ -546,7 +546,6 @@ var AboutPermissions = {
     Services.prefs.addObserver("plugins.click_to_play", this, false);
     Services.prefs.addObserver("full-screen-api.enabled", this, false);
     Services.prefs.addObserver("full-screen-api.pointer-lock.enabled", this, false);
-    Services.prefs.addObserver("dom.push.enabled", this, false);
     Services.prefs.addObserver("permissions.places-sites-limit", this, false);
 
     Services.obs.addObserver(this, "perm-changed", false);
@@ -700,7 +699,6 @@ var AboutPermissions = {
       Services.prefs.removeObserver("plugins.click_to_play", this, false);
       Services.prefs.removeObserver("full-screen-api.enabled", this, false);
       Services.prefs.removeObserver("full-screen-api.pointer-lock.enabled", this, false);
-      Services.prefs.removeObserver("dom.push.enabled", this, false);
       Services.prefs.removeObserver("permissions.places-sites-limit", this, false);
 
       Services.obs.removeObserver(this, "perm-changed");
