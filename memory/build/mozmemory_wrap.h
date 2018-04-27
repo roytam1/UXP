@@ -120,16 +120,12 @@
 #include "mozilla/Types.h"
 
 #ifdef MOZ_MEMORY_IMPL
-#  if defined(MOZ_JEMALLOC_IMPL) && defined(MOZ_REPLACE_MALLOC) && !defined(MOZ_REPLACE_JEMALLOC)
+#  if defined(MOZ_JEMALLOC_IMPL) && defined(MOZ_REPLACE_MALLOC)
 #    define mozmem_malloc_impl(a)     je_ ## a
 #    define mozmem_jemalloc_impl(a)   je_ ## a
 #  else
 #    define MOZ_JEMALLOC_API MFBT_API
-#    ifdef MOZ_REPLACE_JEMALLOC
-#      define MOZ_MEMORY_API MFBT_API
-#      define mozmem_malloc_impl(a)     replace_ ## a
-#      define mozmem_jemalloc_impl(a)   replace_ ## a
-#    elif (defined(XP_WIN) || defined(XP_DARWIN))
+#    if (defined(XP_WIN) || defined(XP_DARWIN))
 #      if defined(MOZ_REPLACE_MALLOC)
 #        define mozmem_malloc_impl(a)   a ## _impl
 #      else
