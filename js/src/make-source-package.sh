@@ -151,7 +151,6 @@ case $cmd in
         ${TOPSRCDIR}/memory/moz.build \
         ${TOPSRCDIR}/memory/build \
         ${TOPSRCDIR}/memory/fallible \
-        ${TOPSRCDIR}/memory/jemalloc \
         ${TOPSRCDIR}/memory/mozalloc \
         ${TOPSRCDIR}/memory/mozjemalloc \
         ${tgtpath}/memory

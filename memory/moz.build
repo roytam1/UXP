@@ -21,7 +21,4 @@ if CONFIG['MOZ_MEMORY']:
     ]
 
     if CONFIG['MOZ_REPLACE_MALLOC']:
-        DIRS += ['jemalloc']
-
-    if CONFIG['MOZ_REPLACE_MALLOC']:
         DIRS += ['replace']

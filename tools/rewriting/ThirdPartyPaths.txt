@@ -42,7 +42,6 @@ media/openmax_dl/
 media/pocketsphinx/
 media/sphinxbase/
 media/webrtc/trunk/
-memory/jemalloc/src/
 mfbt/decimal/
 mfbt/double-conversion/
 mfbt/lz4
