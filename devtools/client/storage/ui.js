@@ -482,24 +482,27 @@ StorageUI.prototype = {
    * @param {object} See onUpdate docs
    */
   handleChangedItems: function (changed) {
-    if (this.tree.selectedItem) {
-      let [type, host, db, objectStore] = this.tree.selectedItem;
-      if (!changed[type] || !changed[type][host] ||
-          changed[type][host].length == 0) {
-        return;
-      }
-      try {
-        let toUpdate = [];
-        for (let name of changed[type][host]) {
-          let names = JSON.parse(name);
-          if (names[0] == db && names[1] == objectStore && names[2]) {
-            toUpdate.push(name);
-          }
+    let selectedItem = this.tree.selectedItem;
+    if (!selectedItem) {
+      return;
+    }
+
+    let [type, host, db, objectStore] = selectedItem;
+    if (!changed[type] || !changed[type][host] ||
+        changed[type][host].length == 0) {
+      return;
+    }
+    try {
+      let toUpdate = [];
+      for (let name of changed[type][host]) {
+        let names = JSON.parse(name);
+        if (names[0] == db && names[1] == objectStore && names[2]) {
+          toUpdate.push(name);
         }
-        this.fetchStorageObjects(type, host, toUpdate, REASON.UPDATE);
-      } catch (ex) {
-        this.fetchStorageObjects(type, host, changed[type][host], REASON.UPDATE);
       }
+      this.fetchStorageObjects(type, host, toUpdate, REASON.UPDATE);
+    } catch (ex) {
+      this.fetchStorageObjects(type, host, changed[type][host], REASON.UPDATE);
     }
   },
 
@@ -830,6 +833,7 @@ StorageUI.prototype = {
     if (!item) {
       return;
     }
+
     this.table.clear();
     this.hideSidebar();
     this.searchBox.value = "";
@@ -1136,11 +1140,12 @@ StorageUI.prototype = {
    * Handles adding an item from the storage
    */
   onAddItem: function () {
-    if (!this.tree.selectedItem) {
+    let selectedItem = this.tree.selectedItem;
+    if (!selectedItem) {
       return;
     }
     let front = this.getCurrentFront();
-    let [, host] = this.tree.selectedItem;
+    let [, host] = selectedItem;
 
     // Prepare to scroll into view.
     this.table.scrollIntoViewOnUpdate = true;
