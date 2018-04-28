@@ -1144,6 +1144,7 @@ StorageUI.prototype = {
     if (!selectedItem) {
       return;
     }
+
     let front = this.getCurrentFront();
     let [, host] = selectedItem;
 
