@@ -140,17 +140,9 @@
 #endif
 
 /*
- * Use only one arena by default.  Mozilla does not currently make extensive
- * use of concurrent allocation, so the increased fragmentation associated with
- * multiple arenas is not warranted.
- *
- * When using the Servo style system, we do indeed make use of significant
- * concurrent allocation, and the overhead matters. Bug 1291355 tracks
- * investigating the fragmentation overhead of turning this on for users.
+ * Uncomment this to use only one arena by default.
  */
-#ifndef MOZ_STYLO
-#define MOZ_MEMORY_NARENAS_DEFAULT_ONE
-#endif
+// #define MOZ_MEMORY_NARENAS_DEFAULT_ONE
 
 /*
  * Pass this set of options to jemalloc as its default. It does not override
@@ -5251,7 +5243,10 @@ huge_dalloc(void *ptr)
 	base_node_dealloc(node);
 }
 
-#ifndef MOZ_MEMORY_NARENAS_DEFAULT_ONE
+/* 
+ * Platform-specific methods to determine the number of CPUs in a system.
+ * This will be used to determine the desired number of arenas.
+ */
 #ifdef MOZ_MEMORY_BSD
 static inline unsigned
 malloc_ncpus(void)
@@ -5349,18 +5344,25 @@ malloc_ncpus(void)
 {
 	return sysconf(_SC_NPROCESSORS_ONLN);
 }
+#elif (defined(MOZ_MEMORY_WINDOWS))
+static inline unsigned
+malloc_ncpus(void)
+{
+	SYSTEM_INFO info;
+	
+	GetSystemInfo(&info);
+	return (info.dwNumberOfProcessors);
+}
 #else
 static inline unsigned
 malloc_ncpus(void)
 {
-
 	/*
 	 * We lack a way to determine the number of CPUs on this platform, so
 	 * assume 1 CPU.
 	 */
 	return (1);
 }
-#endif
 #endif
 
 static void
@@ -5562,18 +5564,14 @@ malloc_init_hard(void)
 
 		GetSystemInfo(&info);
 		result = info.dwPageSize;
-
-#ifndef MOZ_MEMORY_NARENAS_DEFAULT_ONE
-		ncpus = info.dwNumberOfProcessors;
-#endif
 	}
 #else
-#ifndef MOZ_MEMORY_NARENAS_DEFAULT_ONE
-	ncpus = malloc_ncpus();
-#endif
-
 	result = sysconf(_SC_PAGESIZE);
 	assert(result != -1);
+#endif
+
+#ifndef MOZ_MEMORY_NARENAS_DEFAULT_ONE
+	ncpus = malloc_ncpus();
 #endif
 
 	/* We assume that the page size is a power of 2. */
