@@ -5117,7 +5117,8 @@ function middleMousePaste(event) {
         lastLocationChange == gBrowser.selectedBrowser.lastLocationChange) {
       openUILink(data.url, event,
                  { ignoreButton: true,
-                   disallowInheritPrincipal: !data.mayInheritPrincipal });
+                   disallowInheritPrincipal: !data.mayInheritPrincipal,
+                   initiatingDoc: event ? event.target.ownerDocument : null });
     }
   });
 
