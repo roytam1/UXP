@@ -122,7 +122,7 @@ XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
 XPCOMUtils.defineLazyModuleGetter(this, "FormValidationHandler",
   "resource:///modules/FormValidationHandler.jsm");
 
-let gInitialPages = [
+var gInitialPages = [
   "about:blank",
   "about:newtab",
   "about:home",
