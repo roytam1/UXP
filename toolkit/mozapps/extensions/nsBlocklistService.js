@@ -910,7 +910,7 @@ Blocklist.prototype = {
     let issuer = blocklistElement.getAttribute("issuerName");
     for (let snElement of blocklistElement.children) {
       try {
-        gCertBlocklistService.addRevokedCert(issuer, snElement.textContent);
+        gCertBlocklistService.revokeCertByIssuerAndSerial(issuer, snElement.textContent);
       } catch (e) {
         // we want to keep trying other elements since missing all items
         // is worse than missing one
