@@ -59,8 +59,13 @@ var gGrid = {
    * Refreshes the grid and re-creates all sites.
    */
   refresh: function Grid_refresh() {
+    let cells = this.cells;
+    if (!cells) {
+      return;
+    }
+
     // Remove all sites.
-    this.cells.forEach(function (cell) {
+    cells.forEach(function (cell) {
       let node = cell.node;
       let child = node.firstElementChild;
 
