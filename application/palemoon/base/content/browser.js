@@ -1989,7 +1989,7 @@ function getShortcutOrURIAndPostData(url, callback = null) {
 
       if (/%s/i.test(escapedPostData)) // POST keyword
         postData = getPostDataStream(escapedPostData, param, encodedParam,
-                                               "application/x-www-form-urlencoded");
+                                     "application/x-www-form-urlencoded");
 
       // This URL came from a bookmark, so it's safe to let it inherit the current
       // document's principal.
