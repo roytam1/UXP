@@ -4525,7 +4525,7 @@
           let targetTab = this._getDragTargetTab(event);
           let userContextId = this.selectedItem
                               .getAttribute("usercontextid") || 0;
-          let replace = !(!tab || dropEffect == "copy");
+          let replace = !(!targetTab || dropEffect == "copy");
           let newIndex = this._getDropIndex(event);
           let urls = links.map(link => link.url);
           this.tabbrowser.loadTabs(urls, {
