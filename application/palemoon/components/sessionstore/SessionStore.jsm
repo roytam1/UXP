@@ -1951,7 +1951,13 @@ var SessionStoreInternal = {
     // userTypedValue.
     if (browser.userTypedValue) {
       tabData.userTypedValue = browser.userTypedValue;
-      tabData.userTypedClear = browser.userTypedClear;
+      // We always used to keep track of the loading state as an integer, where
+      // '0' indicated the user had typed since the last load (or no load was
+      // ongoing), and any positive value indicated we had started a load since
+      // the last time the user typed in the URL bar. Mimic this to keep the
+      // session store representation in sync, even though we now represent this
+      // more explicitly:
+      tabData.userTypedClear = browser.didStartLoadSinceLastUserTyping() ? 1 : 0;
     } else {
       delete tabData.userTypedValue;
       delete tabData.userTypedClear;
