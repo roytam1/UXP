@@ -12,6 +12,12 @@ applications.
 This repository will contain at least one application to demonstrate and make use
 of the platform: The Basilisk web browser, a close twin to Mozilla's Firefox.
 
+## Additional documentation
+
+Additional documentation relevant to this source code can be found in the `/docs`
+directory. This will contain relevant documentation regarding contributing,
+using and distributing this code and its binaries.
+
 ### A note about trademarks and branding
 
 Although this repository is licensed under Mozilla Public License v2.0, the
