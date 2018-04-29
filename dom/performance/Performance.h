@@ -24,6 +24,7 @@ namespace dom {
 class PerformanceEntry;
 class PerformanceNavigation;
 class PerformanceObserver;
+class PerformanceService;
 class PerformanceTiming;
 
 namespace workers {
@@ -68,6 +69,8 @@ public:
   void ClearResourceTimings();
 
   virtual DOMHighResTimeStamp Now() const = 0;
+
+  DOMHighResTimeStamp TimeOrigin();
 
   void Mark(const nsAString& aName, ErrorResult& aRv);
 
@@ -157,6 +160,8 @@ private:
   uint64_t mResourceTimingBufferSize;
   static const uint64_t kDefaultResourceTimingBufferSize = 150;
   bool mPendingNotificationObserversTask;
+
+  RefPtr<PerformanceService> mPerformanceService;
 };
 
 } // namespace dom
