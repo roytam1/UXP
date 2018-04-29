@@ -1336,10 +1336,7 @@ Console::MethodInternal(JSContext* aCx, MethodName aMethodName,
       WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
       MOZ_ASSERT(workerPrivate);
 
-      TimeDuration duration =
-        mozilla::TimeStamp::Now() - workerPrivate->CreationTimeStamp();
-
-      monotonicTimer = TimerClamping::ReduceMsTimeValue(duration.ToMilliseconds());
+      monotonicTimer = workerPrivate->TimeStampToDOMHighRes(TimeStamp::Now());
     }
   }
 
