@@ -990,12 +990,23 @@ var gBrowserInit = {
 
         gBrowser.swapBrowsersAndCloseOther(gBrowser.selectedTab, uriToLoad);
       }
-      // window.arguments[2]: referrer (nsIURI)
+      // window.arguments[2]: referrer (nsIURI | string)
       //                 [3]: postData (nsIInputStream)
       //                 [4]: allowThirdPartyFixup (bool)
+      //                 [5]: referrerPolicy (int)
       else if (window.arguments.length >= 3) {
-        loadURI(uriToLoad, window.arguments[2], window.arguments[3] || null,
-                window.arguments[4] || false);
+        let referrerURI = window.arguments[2];
+        if (typeof(referrerURI) == "string") {
+          try {
+            referrerURI = makeURI(referrerURI);
+          } catch (e) {
+            referrerURI = null;
+          }
+        }
+        let referrerPolicy = (window.arguments[5] != undefined ?
+            window.arguments[5] : Ci.nsIHttpChannel.REFERRER_POLICY_DEFAULT);
+        loadURI(uriToLoad, referrerURI, window.arguments[3] || null,
+                window.arguments[4] || false, referrerPolicy);
         window.focus();
       }
       // Note: loadOneOrMoreURIs *must not* be called if window.arguments.length >= 3.
@@ -1883,7 +1894,7 @@ function BrowserTryToCloseWindow()
     window.close();     // WindowIsClosing does all the necessary checks
 }
 
-function loadURI(uri, referrer, postData, allowThirdPartyFixup) {
+function loadURI(uri, referrer, postData, allowThirdPartyFixup, referrerPolicy) {
   if (postData === undefined)
     postData = null;
 
@@ -1894,7 +1905,12 @@ function loadURI(uri, referrer, postData, allowThirdPartyFixup) {
   }
 
   try {
-    gBrowser.loadURIWithFlags(uri, flags, referrer, null, postData);
+    gBrowser.loadURIWithFlags(uri, {
+                              flags: flags,
+                              referrerURI: referrer,
+                              referrerPolicy: referrerPolicy,
+                              postData: postData,
+                              });
   } catch (e) {}
 }
 
@@ -4288,6 +4304,13 @@ nsBrowserAccess.prototype = {
       else
         aWhere = gPrefService.getIntPref("browser.link.open_newwindow");
     }
+
+    let referrer = aOpener ? makeURI(aOpener.location.href) : null;
+    let referrerPolicy = Ci.nsIHttpChannel.REFERRER_POLICY_DEFAULT;
+    if (aOpener && aOpener.document) {
+      referrerPolicy = aOpener.document.referrerPolicy;
+    }
+
     switch (aWhere) {
       case Ci.nsIBrowserDOMWindow.OPEN_NEWWINDOW :
         // FIXME: Bug 408379. So how come this doesn't send the
@@ -4326,6 +4349,7 @@ nsBrowserAccess.prototype = {
 
         let tab = win.gBrowser.loadOneTab(aURI ? aURI.spec : "about:blank", {
                                           referrerURI: referrer,
+                                          referrerPolicy: referrerPolicy,
                                           fromExternal: isExternal,
                                           inBackground: loadInBackground});
         let browser = win.gBrowser.getBrowserForTab(tab);
@@ -4341,11 +4365,14 @@ nsBrowserAccess.prototype = {
       default : // OPEN_CURRENTWINDOW or an illegal value
         newWindow = content;
         if (aURI) {
-          let referrer = aOpener ? makeURI(aOpener.location.href) : null;
           let loadflags = isExternal ?
                             Ci.nsIWebNavigation.LOAD_FLAGS_FROM_EXTERNAL :
                             Ci.nsIWebNavigation.LOAD_FLAGS_NONE;
-          gBrowser.loadURIWithFlags(aURI.spec, loadflags, referrer, null, null);
+          gBrowser.loadURIWithFlags(aURI.spec, {
+                                    flags: loadflags,
+                                    referrerURI: referrer,
+                                    referrerPolicy: referrerPolicy,
+                                    });
         }
         if (!gPrefService.getBoolPref("browser.tabs.loadDivertedInBackground"))
           window.focus();
@@ -5075,7 +5102,8 @@ function handleLinkClick(event, href, linkNode) {
 
   urlSecurityCheck(href, doc.nodePrincipal);
   openLinkIn(href, where, { referrerURI: doc.documentURIObject,
-                            charset: doc.characterSet });
+                            charset: doc.characterSet,
+                            referrerPolicy: doc.referrerPolicy });
   event.preventDefault();
   return true;
 }

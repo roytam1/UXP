@@ -1264,6 +1264,7 @@
         <parameter name="aAllowThirdPartyFixup"/>
         <body>
           <![CDATA[
+            var aReferrerPolicy;
             var aFromExternal;
             var aRelatedToCurrent;
             if (arguments.length == 2 &&
@@ -1271,6 +1272,7 @@
                 !(arguments[1] instanceof Ci.nsIURI)) {
               let params = arguments[1];
               aReferrerURI          = params.referrerURI;
+              aReferrerPolicy       = params.referrerPolicy;
               aCharset              = params.charset;
               aPostData             = params.postData;
               aLoadInBackground     = params.inBackground;
@@ -1284,6 +1286,7 @@
             var owner = bgLoad ? null : this.selectedTab;
             var tab = this.addTab(aURI, {
                                   referrerURI: aReferrerURI,
+                                  referrerPolicy: aReferrerPolicy,
                                   charset: aCharset,
                                   postData: aPostData,
                                   ownerTab: owner,
@@ -1409,6 +1412,7 @@
         <body>
           <![CDATA[
             const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+            var aReferrerPolicy;
             var aFromExternal;
             var aRelatedToCurrent;
             var aSkipAnimation;
@@ -1417,6 +1421,7 @@
                 !(arguments[1] instanceof Ci.nsIURI)) {
               let params = arguments[1];
               aReferrerURI          = params.referrerURI;
+              aReferrerPolicy       = params.referrerPolicy;
               aCharset              = params.charset;
               aPostData             = params.postData;
               aOwner                = params.ownerTab;
@@ -1588,7 +1593,13 @@
               if (aFromExternal)
                 flags |= Ci.nsIWebNavigation.LOAD_FLAGS_FROM_EXTERNAL;
               try {
-                b.loadURIWithFlags(aURI, flags, aReferrerURI, aCharset, aPostData);
+                b.loadURIWithFlags(aURI, {
+                                   flags: flags,
+                                   referrerURI: aReferrerURI,
+                                   referrerPolicy: aReferrerPolicy,
+                                   charset: aCharset,
+                                   postData: aPostData,
+                                   });
               } catch (ex) {
                 Cu.reportError(ex);
               }
@@ -2700,6 +2711,11 @@
         <parameter name="aPostData"/>
         <body>
           <![CDATA[
+            // Note - the callee understands both:
+            // (a) loadURIWithFlags(aURI, aFlags, ...)
+            // (b) loadURIWithFlags(aURI, { flags: aFlags, ... })
+            // Forwarding it as (a) here actually supports both (a) and (b),
+            // so you can call us either way too.
             return this.mCurrentBrowser.loadURIWithFlags(aURI, aFlags, aReferrerURI, aCharset, aPostData);
           ]]>
         </body>
