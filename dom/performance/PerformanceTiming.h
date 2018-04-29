@@ -242,6 +242,14 @@ public:
     return TimerClamping::ReduceMsTimeValue(GetDOMTiming()->GetLoadEventEnd());
   }
 
+  DOMTimeMilliSec TimeToNonBlankPaint() const
+  {
+    if (!nsContentUtils::IsPerformanceTimingEnabled()) {
+      return 0;
+    }
+    return TimerClamping::ReduceMsTimeValue(GetDOMTiming()->GetTimeToNonBlankPaint());
+  }
+
 private:
   ~PerformanceTiming();
 

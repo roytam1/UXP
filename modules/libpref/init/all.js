@@ -183,6 +183,9 @@ pref("dom.enable_resource_timing", true);
 // Enable high-resolution timing markers for users
 pref("dom.enable_user_timing", true);
 
+// Whether performance.GetEntries* will contain an entry for the active document
+pref("dom.enable_performance_navigation_timing", true);
+
 // Enable printing performance marks/measures to log
 pref("dom.performance.enable_user_timing_logging", false);
 
@@ -191,6 +194,9 @@ pref("dom.performance.enable_notify_performance_timing", false);
 
 // Enable Permission API's .revoke() method
 pref("dom.permissions.revoke.enable", false);
+
+// Enable exposing timeToNonBlankPaint
+pref("dom.performance.time_to_non_blank_paint.enabled", false);
 
 // Enable Performance Observer API
 #ifdef NIGHTLY_BUILD

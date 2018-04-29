@@ -16,7 +16,8 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(PerformanceMainThread)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(PerformanceMainThread,
                                                 Performance)
 NS_IMPL_CYCLE_COLLECTION_UNLINK(mTiming,
-                                mNavigation)
+                                mNavigation,
+                                mDocEntry)
   tmp->mMozMemory = nullptr;
   mozilla::DropJSObjects(this);
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
@@ -24,7 +25,8 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(PerformanceMainThread,
                                                   Performance)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mTiming,
-                                    mNavigation)
+                                    mNavigation,
+                                    mDocEntry)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
@@ -152,38 +154,7 @@ PerformanceMainThread::AddEntry(nsIHttpChannel* channel,
     // The PerformanceResourceTiming object will use the PerformanceTiming
     // object to get all the required timings.
     RefPtr<PerformanceResourceTiming> performanceEntry =
-      new PerformanceResourceTiming(performanceTiming, this, entryName);
-
-    nsAutoCString protocol;
-    channel->GetProtocolVersion(protocol);
-
-    // If this is a local fetch, nextHopProtocol should be set to empty string.
-    nsCOMPtr<nsICacheInfoChannel> cachedChannel = do_QueryInterface(channel);
-    if (cachedChannel) {
-      bool isFromCache;
-      if (NS_SUCCEEDED(cachedChannel->IsFromCache(&isFromCache))
-          && isFromCache) {
-        protocol.Truncate();
-      }
-    }
-
-    performanceEntry->SetNextHopProtocol(NS_ConvertUTF8toUTF16(protocol));
-
-    uint64_t encodedBodySize = 0;
-    channel->GetEncodedBodySize(&encodedBodySize);
-    performanceEntry->SetEncodedBodySize(encodedBodySize);
-
-    uint64_t transferSize = 0;
-    channel->GetTransferSize(&transferSize);
-    performanceEntry->SetTransferSize(transferSize);
-
-    uint64_t decodedBodySize = 0;
-    channel->GetDecodedBodySize(&decodedBodySize);
-    if (decodedBodySize == 0) {
-      decodedBodySize = encodedBodySize;
-    }
-    performanceEntry->SetDecodedBodySize(decodedBodySize);
-
+      new PerformanceResourceTiming(performanceTiming, this, entryName, channel);
     // If the initiator type had no valid value, then set it to the default
     // ("other") value.
     if (initiatorType.IsEmpty()) {
@@ -335,6 +306,66 @@ DOMHighResTimeStamp
 PerformanceMainThread::CreationTime() const
 {
   return GetDOMTiming()->GetNavigationStart();
+}
+
+void
+PerformanceMainThread::EnsureDocEntry()
+{
+  if (!mDocEntry && nsContentUtils::IsPerformanceNavigationTimingEnabled()) {
+    nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(mChannel);
+    RefPtr<PerformanceTiming> timing =
+      new PerformanceTiming(this, mChannel, nullptr, 0);
+    mDocEntry = new PerformanceNavigationTiming(timing, this,
+                                                httpChannel);
+  }
+}
+
+
+void
+PerformanceMainThread::GetEntries(nsTArray<RefPtr<PerformanceEntry>>& aRetval)
+{
+  aRetval = mResourceEntries;
+  aRetval.AppendElements(mUserEntries);
+
+  EnsureDocEntry();
+  if (mDocEntry) {
+    aRetval.AppendElement(mDocEntry);
+  }
+
+  aRetval.Sort(PerformanceEntryComparator());
+}
+
+void
+PerformanceMainThread::GetEntriesByType(const nsAString& aEntryType,
+                                        nsTArray<RefPtr<PerformanceEntry>>& aRetval)
+{
+  if (aEntryType.EqualsLiteral("navigation")) {
+    aRetval.Clear();
+    EnsureDocEntry();
+    if (mDocEntry) {
+      aRetval.AppendElement(mDocEntry);
+    }
+    return;
+  }
+
+  Performance::GetEntriesByType(aEntryType, aRetval);
+}
+
+void
+PerformanceMainThread::GetEntriesByName(const nsAString& aName,
+                                        const Optional<nsAString>& aEntryType,
+                                        nsTArray<RefPtr<PerformanceEntry>>& aRetval)
+{
+  if (aName.EqualsLiteral("document")) {
+    aRetval.Clear();
+    EnsureDocEntry();
+    if (mDocEntry) {
+      aRetval.AppendElement(mDocEntry);
+    }
+    return;
+  }
+
+  Performance::GetEntriesByName(aName, aEntryType, aRetval);
 }
 
 } // dom namespace

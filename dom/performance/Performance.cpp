@@ -20,6 +20,7 @@
 #include "mozilla/dom/PerformanceEntryEvent.h"
 #include "mozilla/dom/PerformanceNavigationBinding.h"
 #include "mozilla/dom/PerformanceObserverBinding.h"
+#include "mozilla/dom/PerformanceNavigationTiming.h"
 #include "mozilla/IntegerPrintfMacros.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/TimerClamping.h"

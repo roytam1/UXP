@@ -281,6 +281,7 @@ bool nsContentUtils::sIsCutCopyAllowed = true;
 bool nsContentUtils::sIsFrameTimingPrefEnabled = false;
 bool nsContentUtils::sIsPerformanceTimingEnabled = false;
 bool nsContentUtils::sIsResourceTimingEnabled = false;
+bool nsContentUtils::sIsPerformanceNavigationTimingEnabled = false;
 bool nsContentUtils::sIsUserTimingLoggingEnabled = false;
 bool nsContentUtils::sIsExperimentalAutocompleteEnabled = false;
 bool nsContentUtils::sEncodeDecodeURLHash = false;
@@ -570,6 +571,9 @@ nsContentUtils::Init()
 
   Preferences::AddBoolVarCache(&sIsResourceTimingEnabled,
                                "dom.enable_resource_timing", true);
+
+  Preferences::AddBoolVarCache(&sIsPerformanceNavigationTimingEnabled,
+                               "dom.enable_performance_navigation_timing", true);
 
   Preferences::AddBoolVarCache(&sIsUserTimingLoggingEnabled,
                                "dom.performance.enable_user_timing_logging", false);

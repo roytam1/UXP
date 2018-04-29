@@ -54,14 +54,14 @@ public:
   JSObject* WrapObject(JSContext *cx,
                        JS::Handle<JSObject*> aGivenProto) override;
 
-  void GetEntries(nsTArray<RefPtr<PerformanceEntry>>& aRetval);
+  virtual void GetEntries(nsTArray<RefPtr<PerformanceEntry>>& aRetval);
 
-  void GetEntriesByType(const nsAString& aEntryType,
-                        nsTArray<RefPtr<PerformanceEntry>>& aRetval);
+  virtual void GetEntriesByType(const nsAString& aEntryType,
+                                nsTArray<RefPtr<PerformanceEntry>>& aRetval);
 
-  void GetEntriesByName(const nsAString& aName,
-                        const Optional<nsAString>& aEntryType,
-                        nsTArray<RefPtr<PerformanceEntry>>& aRetval);
+  virtual void GetEntriesByName(const nsAString& aName,
+                                const Optional<nsAString>& aEntryType,
+                                nsTArray<RefPtr<PerformanceEntry>>& aRetval);
 
   virtual void AddEntry(nsIHttpChannel* channel,
                         nsITimedChannel* timedChannel) = 0;
@@ -153,7 +153,7 @@ protected:
 
   nsTObserverArray<PerformanceObserver*> mObservers;
 
-private:
+protected:
   nsTArray<RefPtr<PerformanceEntry>> mUserEntries;
   nsTArray<RefPtr<PerformanceEntry>> mResourceEntries;
 
