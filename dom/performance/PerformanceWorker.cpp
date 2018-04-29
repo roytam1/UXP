@@ -23,14 +23,6 @@ PerformanceWorker::~PerformanceWorker()
   mWorkerPrivate->AssertIsOnWorkerThread();
 }
 
-DOMHighResTimeStamp
-PerformanceWorker::Now() const
-{
-  TimeDuration duration =
-    TimeStamp::Now() - mWorkerPrivate->NowBaseTimeStamp();
-  return RoundTime(duration.ToMilliseconds());
-}
-
 void
 PerformanceWorker::InsertUserEntry(PerformanceEntry* aEntry)
 {
