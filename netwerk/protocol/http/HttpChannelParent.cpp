@@ -130,7 +130,13 @@ HttpChannelParent::Init(const HttpChannelCreationArgs& aArgs)
                        a.initialRwin(), a.blockAuthPrompt(),
                        a.suspendAfterSynthesizeResponse(),
                        a.allowStaleCacheContent(), a.contentTypeHint(),
-                       a.channelId(), a.contentWindowId(), a.preferredAlternativeType());
+                       a.channelId(), a.contentWindowId(), a.preferredAlternativeType(),
+                       a.launchServiceWorkerStart(),
+                       a.launchServiceWorkerEnd(),
+                       a.dispatchFetchEventStart(),
+                       a.dispatchFetchEventEnd(),
+                       a.handleFetchEventStart(),
+                       a.handleFetchEventEnd());
   }
   case HttpChannelCreationArgs::THttpChannelConnectArgs:
   {
@@ -329,7 +335,13 @@ HttpChannelParent::DoAsyncOpen(  const URIParams&           aURI,
                                  const nsCString&           aContentTypeHint,
                                  const nsCString&           aChannelId,
                                  const uint64_t&            aContentWindowId,
-                                 const nsCString&           aPreferredAlternativeType)
+                                 const nsCString&           aPreferredAlternativeType,
+                                 const TimeStamp&           aLaunchServiceWorkerStart,
+                                 const TimeStamp&           aLaunchServiceWorkerEnd,
+                                 const TimeStamp&           aDispatchFetchEventStart,
+                                 const TimeStamp&           aDispatchFetchEventEnd,
+                                 const TimeStamp&           aHandleFetchEventStart,
+                                 const TimeStamp&           aHandleFetchEventEnd)
 {
   nsCOMPtr<nsIURI> uri = DeserializeURI(aURI);
   if (!uri) {
@@ -533,6 +545,13 @@ HttpChannelParent::DoAsyncOpen(  const URIParams&           aURI,
   mChannel->SetBeConservative(beConservative);
   mChannel->SetInitialRwin(aInitialRwin);
   mChannel->SetBlockAuthPrompt(aBlockAuthPrompt);
+
+  mChannel->SetLaunchServiceWorkerStart(aLaunchServiceWorkerStart);
+  mChannel->SetLaunchServiceWorkerEnd(aLaunchServiceWorkerEnd);
+  mChannel->SetDispatchFetchEventStart(aDispatchFetchEventStart);
+  mChannel->SetDispatchFetchEventEnd(aDispatchFetchEventEnd);
+  mChannel->SetHandleFetchEventStart(aHandleFetchEventStart);
+  mChannel->SetHandleFetchEventEnd(aHandleFetchEventEnd);
 
   nsCOMPtr<nsIApplicationCacheChannel> appCacheChan =
     do_QueryObject(mChannel);
@@ -1159,7 +1178,7 @@ HttpChannelParent::OnStartRequest(nsIRequest *aRequest, nsISupports *aContext)
   nsCString secInfoSerialization;
   UpdateAndSerializeSecurityInfo(secInfoSerialization);
 
-  uint16_t redirectCount = 0;
+  uint8_t redirectCount = 0;
   chan->GetRedirectCount(&redirectCount);
 
   nsCOMPtr<nsISupports> cacheKey;

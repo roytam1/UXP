@@ -2132,6 +2132,13 @@ HttpChannelChild::ContinueAsyncOpen()
     return NS_ERROR_FAILURE;
   }
 
+  openArgs.launchServiceWorkerStart() = mLaunchServiceWorkerStart;
+  openArgs.launchServiceWorkerEnd()   = mLaunchServiceWorkerEnd;
+  openArgs.dispatchFetchEventStart()  = mDispatchFetchEventStart;
+  openArgs.dispatchFetchEventEnd()    = mDispatchFetchEventEnd;
+  openArgs.handleFetchEventStart()    = mHandleFetchEventStart;
+  openArgs.handleFetchEventEnd()      = mHandleFetchEventEnd;
+
   // The socket transport in the chrome process now holds a logical ref to us
   // until OnStopRequest, or we do a redirect, or we hit an IPDL error.
   AddIPDLReference();

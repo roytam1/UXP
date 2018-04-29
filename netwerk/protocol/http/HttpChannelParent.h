@@ -143,7 +143,13 @@ protected:
                    const nsCString&           aContentTypeHint,
                    const nsCString&           aChannelId,
                    const uint64_t&            aContentWindowId,
-                   const nsCString&           aPreferredAlternativeType);
+                   const nsCString&           aPreferredAlternativeType,
+                   const TimeStamp&           aLaunchServiceWorkerStart,
+                   const TimeStamp&           aLaunchServiceWorkerEnd,
+                   const TimeStamp&           aDispatchFetchEventStart,
+                   const TimeStamp&           aDispatchFetchEventEnd,
+                   const TimeStamp&           aHandleFetchEventStart,
+                   const TimeStamp&           aHandleFetchEventEnd);
 
   virtual bool RecvSetPriority(const uint16_t& priority) override;
   virtual bool RecvSetClassOfService(const uint32_t& cos) override;

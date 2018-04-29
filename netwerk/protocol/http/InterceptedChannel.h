@@ -46,6 +46,13 @@ protected:
   nsresult DoSynthesizeStatus(uint16_t aStatus, const nsACString& aReason);
   nsresult DoSynthesizeHeader(const nsACString& aName, const nsACString& aValue);
 
+  TimeStamp mLaunchServiceWorkerStart;
+  TimeStamp mLaunchServiceWorkerEnd;
+  TimeStamp mDispatchFetchEventStart;
+  TimeStamp mDispatchFetchEventEnd;
+  TimeStamp mHandleFetchEventStart;
+  TimeStamp mHandleFetchEventEnd;
+
   virtual ~InterceptedChannelBase();
 public:
   explicit InterceptedChannelBase(nsINetworkInterceptController* aController);
@@ -59,6 +66,50 @@ public:
   NS_IMETHOD GetResponseBody(nsIOutputStream** aOutput) override;
   NS_IMETHOD GetConsoleReportCollector(nsIConsoleReportCollector** aCollectorOut) override;
   NS_IMETHOD SetReleaseHandle(nsISupports* aHandle) override;
+
+  NS_IMETHODIMP
+  SetLaunchServiceWorkerStart(TimeStamp aTimeStamp) override
+  {
+    mLaunchServiceWorkerStart = aTimeStamp;
+    return NS_OK;
+  }
+
+  NS_IMETHODIMP
+  SetLaunchServiceWorkerEnd(TimeStamp aTimeStamp) override
+  {
+    mLaunchServiceWorkerEnd = aTimeStamp;
+    return NS_OK;
+  }
+
+  NS_IMETHODIMP
+  SetDispatchFetchEventStart(TimeStamp aTimeStamp) override
+  {
+    mDispatchFetchEventStart = aTimeStamp;
+    return NS_OK;
+  }
+
+  NS_IMETHODIMP
+  SetDispatchFetchEventEnd(TimeStamp aTimeStamp) override
+  {
+    mDispatchFetchEventEnd = aTimeStamp;
+    return NS_OK;
+  }
+
+  NS_IMETHODIMP
+  SetHandleFetchEventStart(TimeStamp aTimeStamp) override
+  {
+    mHandleFetchEventStart = aTimeStamp;
+    return NS_OK;
+  }
+
+  NS_IMETHODIMP
+  SetHandleFetchEventEnd(TimeStamp aTimeStamp) override
+  {
+    mHandleFetchEventEnd = aTimeStamp;
+    return NS_OK;
+  }
+
+  NS_IMETHODIMP SaveTimeStampsToUnderlyingChannel() override;
 
   static already_AddRefed<nsIURI>
   SecureUpgradeChannelURI(nsIChannel* aChannel);

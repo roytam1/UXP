@@ -20,6 +20,7 @@ using struct mozilla::void_t from "ipc/IPCMessageUtils.h";
 using RequestHeaderTuples from "mozilla/net/PHttpChannelParams.h";
 using struct nsHttpAtom from "nsHttp.h";
 using class nsHttpResponseHead from "nsHttpResponseHead.h";
+using class mozilla::TimeStamp from "mozilla/TimeStamp.h";
 
 namespace mozilla {
 namespace net {
@@ -134,6 +135,12 @@ struct HttpChannelOpenArgs
   nsCString                   channelId;
   uint64_t                    contentWindowId;
   nsCString                   preferredAlternativeType;
+  TimeStamp                   launchServiceWorkerStart;
+  TimeStamp                   launchServiceWorkerEnd;
+  TimeStamp                   dispatchFetchEventStart;
+  TimeStamp                   dispatchFetchEventEnd;
+  TimeStamp                   handleFetchEventStart;
+  TimeStamp                   handleFetchEventEnd;
 };
 
 struct HttpChannelConnectArgs
