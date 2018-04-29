@@ -1540,6 +1540,14 @@ MOZ_ARG_ENABLE_STRING(ui-locale,
 AC_SUBST(MOZ_UI_LOCALE)
 
 dnl ========================================================
+dnl Build the tests?
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(tests,
+[  --enable-tests          Build test libraries & programs],
+    ENABLE_TESTS=1,
+    ENABLE_TESTS= )
+
+dnl ========================================================
 dnl =
 dnl = Module specific options
 dnl =
@@ -2096,6 +2104,8 @@ AC_SUBST(MOZ_DEBUG)
 AC_SUBST(MOZ_DEBUG_LDFLAGS)
 AC_SUBST(WARNINGS_AS_ERRORS)
 AC_SUBST(LIBICONV)
+
+AC_SUBST(ENABLE_TESTS)
 
 AC_SUBST(ENABLE_STRIP)
 AC_SUBST(PKG_SKIP_STRIP)
