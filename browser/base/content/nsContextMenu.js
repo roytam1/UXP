@@ -968,6 +968,7 @@ nsContextMenu.prototype = {
   _openLinkInParameters : function (extra) {
     let params = { charset: gContextMenuContentData.charSet,
                    originPrincipal: this.principal,
+                   triggeringPrincipal: this.principal,
                    referrerURI: gContextMenuContentData.documentURIObject,
                    referrerPolicy: gContextMenuContentData.referrerPolicy,
                    noReferrer: this.linkHasNoReferrer };
@@ -1152,7 +1153,7 @@ nsContextMenu.prototype = {
       this._canvasToBlobURL(this.target).then(function(blobURL) {
         openUILink(blobURL, e, { disallowInheritPrincipal: true,
                                  referrerURI: referrerURI,
-                                 originPrincipal: systemPrincipal});
+                                 triggeringPrincipal: systemPrincipal});
       }, Cu.reportError);
     }
     else {
