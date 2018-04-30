@@ -83,7 +83,7 @@ function open()
           var flags = webNav.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP |
                       webNav.LOAD_FLAGS_FIXUP_SCHEME_TYPOS;
           if (!mayInheritPrincipal)
-            flags |= webNav.LOAD_FLAGS_DISALLOW_INHERIT_OWNER;
+            flags |= webNav.LOAD_FLAGS_DISALLOW_INHERIT_PRINCIPAL;
           browser.gBrowser.loadURIWithFlags(url, flags, null, null, postData);
           break;
         case "1":
