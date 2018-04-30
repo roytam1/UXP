@@ -1292,10 +1292,6 @@ toolbar[iconsize="small"] #webrtc-status-button {
   list-style-image: url(chrome://browser/skin/Geolocation-16.png);
 }
 
-#push-notification-icon {
-  list-style-image: url(chrome://browser/skin/Push-16.png);
-}
-
 #addons-notification-icon {
   list-style-image: url(chrome://mozapps/skin/extensions/extensionGeneric-16.png);
 }
