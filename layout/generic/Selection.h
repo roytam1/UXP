@@ -51,8 +51,9 @@ struct RangeData
 namespace mozilla {
 namespace dom {
 
-class Selection final : public nsISelectionPrivate,
+class Selection final : public nsISelection,
                         public nsWrapperCache,
+                        public nsISelectionPrivate,
                         public nsSupportsWeakReference
 {
 protected:
@@ -63,7 +64,7 @@ public:
   explicit Selection(nsFrameSelection *aList);
 
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_AMBIGUOUS(Selection, nsISelectionPrivate)
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_AMBIGUOUS(Selection, nsISelection)
   NS_DECL_NSISELECTION
   NS_DECL_NSISELECTIONPRIVATE
 
