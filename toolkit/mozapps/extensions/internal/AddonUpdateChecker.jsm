@@ -766,8 +766,17 @@ this.AddonUpdateChecker = {
    *         down in-progress update requests
    */
   checkForUpdates: function AUC_checkForUpdates(aId, aUpdateKey, aUrl, aObserver) {
-    // Exclude default theme
-    if (aId != "{972ce4c6-7e08-4474-a285-3208198ce6fd}")
+    // Define an array of internally used IDs to NOT send to AUS such as the
+    // Default Theme. Please keep this list in sync with:
+    // toolkit/mozapps/webextensions/AddonUpdateChecker.jsm
+    let internalIDS = [
+      '{972ce4c6-7e08-4474-a285-3208198ce6fd}',
+      'modern@themes.mozilla.org'
+    ];
+    
+    // If the ID is not in the array then go ahead and query AUS
+    if (internalIDS.indexOf(aId) == -1) {
         return new UpdateParser(aId, aUpdateKey, aUrl, aObserver);
+    }
   }
 };
