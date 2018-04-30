@@ -37,6 +37,7 @@ Cu.import("resource://gre/modules/Services.jsm");
   ["FormValidationHandler", "resource:///modules/FormValidationHandler.jsm"],
   ["AutoCompletePopup", "resource:///modules/AutoCompletePopup.jsm"],
   ["DateTimePickerHelper", "resource://gre/modules/DateTimePickerHelper.jsm"],
+  ["ShellService", "resource:///modules/ShellService.jsm"],
 ].forEach(([name, resource]) => XPCOMUtils.defineLazyModuleGetter(this, name, resource));
 
 XPCOMUtils.defineLazyServiceGetter(this, "AlertsService",
@@ -562,17 +563,17 @@ BrowserGlue.prototype = {
     }
 
     // Perform default browser checking.
-    var shell;
-    try {
-      shell = Components.classes["@mozilla.org/browser/shell-service;1"]
-        .getService(Components.interfaces.nsIShellService);
-    } catch (e) { }
-    if (shell) {
-#ifdef DEBUG
-      let shouldCheck = false;
-#else
-      let shouldCheck = shell.shouldCheckDefaultBrowser;
-#endif
+    if (ShellService) {
+      let shouldCheck = ShellService.shouldCheckDefaultBrowser;
+
+      const skipDefaultBrowserCheck =
+        Services.prefs.getBoolPref("browser.shell.skipDefaultBrowserCheckOnFirstRun") &&
+        Services.prefs.getBoolPref("browser.shell.skipDefaultBrowserCheck");
+
+      const usePromptLimit = false;
+      let promptCount =
+        usePromptLimit ? Services.prefs.getIntPref("browser.shell.defaultBrowserCheckCount") : 0;
+
       let willRecoverSession = false;
       try {
         let ss = Cc["@mozilla.org/browser/sessionstartup;1"].
@@ -582,9 +583,25 @@ BrowserGlue.prototype = {
       }
       catch (ex) { /* never mind; suppose SessionStore is broken */ }
 
-      let isDefault = shell.isDefaultBrowser(true, false); // startup check, check all assoc
+      // startup check, check all assoc
+      let isDefault = false;
+      let isDefaultError = false;
+      try {
+        isDefault = ShellService.isDefaultBrowser(true, false);
+      } catch (ex) {
+        isDefaultError = true;
+      }
 
-      if (shouldCheck && !isDefault && !willRecoverSession) {
+      if (isDefault) {
+        let now = (Math.floor(Date.now() / 1000)).toString();
+        Services.prefs.setCharPref("browser.shell.mostRecentDateSetAsDefault", now);
+      }
+
+      let willPrompt = shouldCheck && !isDefault && !willRecoverSession;
+
+      // Skip the "Set Default Browser" check during first-run or after the
+      // browser has been run a few times.
+      if (willPrompt) {
         Services.tm.mainThread.dispatch(function() {
           var win = this.getMostRecentBrowserWindow();
           var brandBundle = win.document.getElementById("bundle_brand");
@@ -613,9 +630,9 @@ BrowserGlue.prototype = {
               claimAllTypes = (parseFloat(version) < 6.2);
             } catch (ex) { }
 #endif
-            shell.setDefaultBrowser(claimAllTypes, false);
+            ShellService.setDefaultBrowser(claimAllTypes, false);
           }
-          shell.shouldCheckDefaultBrowser = checkEveryTime.value;
+          ShellService.shouldCheckDefaultBrowser = checkEveryTime.value;
         }.bind(this), Ci.nsIThread.DISPATCH_NORMAL);
       }
     }
