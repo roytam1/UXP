@@ -856,7 +856,7 @@ function _loadURIWithFlags(browser, uri, params) {
       let loadParams = {
         uri: uri,
         triggeringPrincipal: triggeringPrincipal
-          ? gSerializationHelper.serializePrincipal(triggeringPrincipal)
+          ? gSerializationHelper.serializeToString(triggeringPrincipal)
           : null,
         flags: flags,
         referrer: referrer ? referrer.spec : null,
