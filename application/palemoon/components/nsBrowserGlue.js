@@ -13,7 +13,11 @@ const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-// Define Lazy Module Gitters
+// Define Lazy Service Getters
+XPCOMUtils.defineLazyServiceGetter(this, "AlertsService",
+                                   "@mozilla.org/alerts-service;1", "nsIAlertsService");
+
+// Define Lazy Module Getters
 [
   ["AddonManager", "resource://gre/modules/AddonManager.jsm"],
   ["NetUtil", "resource://gre/modules/NetUtil.jsm"],
@@ -40,8 +44,10 @@ Cu.import("resource://gre/modules/Services.jsm");
   ["ShellService", "resource:///modules/ShellService.jsm"],
 ].forEach(([name, resource]) => XPCOMUtils.defineLazyModuleGetter(this, name, resource));
 
-XPCOMUtils.defineLazyServiceGetter(this, "AlertsService",
-                                   "@mozilla.org/alerts-service;1", "nsIAlertsService");
+// Define Lazy Getters
+XPCOMUtils.defineLazyGetter(this, "gBrowserBundle", function() {
+  return Services.strings.createBundle('chrome://browser/locale/browser.properties');
+});
 
 const PREF_PLUGINS_NOTIFYUSER = "plugins.update.notifyUser";
 const PREF_PLUGINS_UPDATEURL  = "plugins.update.url";
