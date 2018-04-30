@@ -109,7 +109,7 @@ browser.jar:
 *       content/browser/sanitizeDialog.js             (content/sanitizeDialog.js)
         content/browser/sanitizeDialog.css            (content/sanitizeDialog.css)
         content/browser/autocomplete.css              (content/autocomplete.css)
-        content/browser/autocomplete.xml              (content/autocomplete.xml)
+*       content/browser/autocomplete.xml              (content/autocomplete.xml)
         content/browser/tabbrowser.css                (content/tabbrowser.css)
 *       content/browser/tabbrowser.xml                (content/tabbrowser.xml)
 *       content/browser/urlbarBindings.xml            (content/urlbarBindings.xml)
