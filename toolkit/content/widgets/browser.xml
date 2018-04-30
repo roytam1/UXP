@@ -135,6 +135,7 @@
               aURI = "about:blank";
 
             var aReferrerPolicy = Components.interfaces.nsIHttpChannel.REFERRER_POLICY_DEFAULT;
+            var aTriggeringPrincipal;
 
             // Check for loadURIWithFlags(uri, { ... });
             var params = arguments[1];
@@ -144,6 +145,9 @@
               if ('referrerPolicy' in params) {
                 aReferrerPolicy = params.referrerPolicy;
               }
+              if ("triggeringPrincipal" in params) {
+                aTriggeringPrincipal = params.triggeringPrincipal;
+              }
               aCharset = params.charset;
               aPostData = params.postData;
             }
@@ -151,7 +155,7 @@
             this._wrapURIChangeCall(() =>
               this.webNavigation.loadURIWithOptions(
                   aURI, aFlags, aReferrerURI, aReferrerPolicy,
-                  aPostData, null, null));
+                  aPostData, null, null, aTriggeringPrincipal));
           ]]>
         </body>
       </method>

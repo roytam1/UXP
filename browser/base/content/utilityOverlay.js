@@ -407,6 +407,7 @@ function openLinkIn(url, where, params) {
     }
 
     aCurrentBrowser.loadURIWithFlags(url, {
+      triggeringPrincipal: aPrincipal,
       flags: flags,
       referrerURI: aNoReferrer ? null : aReferrerURI,
       referrerPolicy: aReferrerPolicy,
@@ -432,6 +433,7 @@ function openLinkIn(url, where, params) {
       noReferrer: aNoReferrer,
       userContextId: aUserContextId,
       originPrincipal: aPrincipal,
+      triggeringPrincipal: aPrincipal,
     });
     browserUsedForLoad = tabUsedForLoad.linkedBrowser;
     break;
