@@ -36,8 +36,10 @@ XPCOMUtils.defineLazyModuleGetter(this, "Task",
                                   "resource://gre/modules/Task.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "OS",
                                   "resource://gre/modules/osfile.jsm");
+#ifdef MOZ_DEVTOOLS
 XPCOMUtils.defineLazyModuleGetter(this, "BrowserToolboxProcess",
                                   "resource://devtools/client/framework/ToolboxProcess.jsm");
+#endif
 XPCOMUtils.defineLazyModuleGetter(this, "ConsoleAPI",
                                   "resource://gre/modules/Console.jsm");
 
@@ -138,7 +140,9 @@ const FIREFOX_APPCOMPATVERSION        = "56.9"
 
 // The value for this is in Makefile.in
 #expand const DB_SCHEMA                       = __MOZ_EXTENSIONS_DB_SCHEMA__;
+#ifdef MOZ_DEVTOOLS
 const NOTIFICATION_TOOLBOXPROCESS_LOADED      = "ToolboxProcessLoaded";
+#endif
 
 // Properties that exist in the install manifest
 const PROP_METADATA      = ["id", "version", "type", "internalName", "updateURL",
@@ -1846,8 +1850,10 @@ this.XPIProvider = {
   _enabledExperiments: null,
   // A Map from an add-on install to its ID
   _addonFileMap: new Map(),
+#ifdef MOZ_DEVTOOLS
   // Flag to know if ToolboxProcess.jsm has already been loaded by someone or not
   _toolboxProcessLoaded: false,
+#endif
   // Have we started shutting down bootstrap add-ons?
   _closing: false,
 
@@ -2083,6 +2089,8 @@ this.XPIProvider = {
       Services.prefs.addObserver(PREF_EM_MIN_COMPAT_APP_VERSION, this, false);
       Services.prefs.addObserver(PREF_EM_MIN_COMPAT_PLATFORM_VERSION, this, false);
       Services.obs.addObserver(this, NOTIFICATION_FLUSH_PERMISSIONS, false);
+
+#ifdef MOZ_DEVTOOLS
       if (Cu.isModuleLoaded("resource://devtools/client/framework/ToolboxProcess.jsm")) {
         // If BrowserToolboxProcess is already loaded, set the boolean to true
         // and do whatever is needed
@@ -2094,6 +2102,7 @@ this.XPIProvider = {
         // Else, wait for it to load
         Services.obs.addObserver(this, NOTIFICATION_TOOLBOXPROCESS_LOADED, false);
       }
+#endif
 
       let flushCaches = this.checkForChanges(aAppChanged, aOldAppVersion,
                                              aOldPlatformVersion);
@@ -4088,12 +4097,14 @@ this.XPIProvider = {
       }
       return;
     }
+#ifdef MOZ_DEVTOOLS
     else if (aTopic == NOTIFICATION_TOOLBOXPROCESS_LOADED) {
       Services.obs.removeObserver(this, NOTIFICATION_TOOLBOXPROCESS_LOADED, false);
       this._toolboxProcessLoaded = true;
       BrowserToolboxProcess.on("connectionchange",
                                this.onDebugConnectionChange.bind(this));
     }
+#endif
 
     if (aTopic == "nsPref:changed") {
       switch (aData) {
@@ -4358,12 +4369,14 @@ this.XPIProvider = {
       logger.warn("Error loading bootstrap.js for " + aId, e);
     }
 
+#ifdef MOZ_DEVTOOLS
     // Only access BrowserToolboxProcess if ToolboxProcess.jsm has been
     // initialized as otherwise, when it will be initialized, all addons'
     // globals will be added anyways
     if (this._toolboxProcessLoaded) {
       BrowserToolboxProcess.setAddonOptions(aId, { global: this.bootstrapScopes[aId] });
     }
+#endif
   },
 
   /**
@@ -4383,11 +4396,13 @@ this.XPIProvider = {
     this.persistBootstrappedAddons();
     this.addAddonsToCrashReporter();
 
+#ifdef MOZ_DEVTOOLS
     // Only access BrowserToolboxProcess if ToolboxProcess.jsm has been
     // initialized as otherwise, there won't be any addon globals added to it
     if (this._toolboxProcessLoaded) {
       BrowserToolboxProcess.setAddonOptions(aId, { global: null });
     }
+#endif
   },
 
   /**

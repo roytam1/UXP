@@ -53,8 +53,10 @@
       <menuitem id="menuitem_uninstallItem" command="cmd_uninstallItem"
                 label="&cmd.uninstallAddon.label;"
                 accesskey="&cmd.uninstallAddon.accesskey;"/>
+#ifdef MOZ_DEVTOOLS
       <menuitem id="menuitem_debugItem" command="cmd_debugItem"
                 label="&cmd.debugAddon.label;"/>
+#endif
       <menuseparator id="addonitem-menuseparator" />
       <menuitem id="menuitem_preferences" command="cmd_showItemPreferences"
 #ifdef XP_WIN
@@ -101,7 +103,9 @@
     <command id="cmd_findItemUpdates"/>
     <command id="cmd_showItemPreferences"/>
     <command id="cmd_showItemAbout"/>
+#ifdef MOZ_DEVTOOLS
     <command id="cmd_debugItem"/>
+#endif
     <command id="cmd_enableItem"/>
     <command id="cmd_disableItem"/>
     <command id="cmd_installItem"/>
@@ -631,9 +635,11 @@
 #endif
                             command="cmd_showItemPreferences"/>
                     <spacer flex="1"/>
+#ifdef MOZ_DEVTOOLS
                     <button id="detail-debug-btn" class="addon-control debug"
                             label="Debug"
                             command="cmd_debugItem" />
+#endif
                     <button id="detail-enable-btn" class="addon-control enable"
                             label="&cmd.enableAddon.label;"
                             accesskey="&cmd.enableAddon.accesskey;"

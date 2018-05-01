@@ -1628,11 +1628,13 @@
         ]]></body>
       </method>
 
+#ifdef MOZ_DEVTOOLS
       <method name="debug">
         <body><![CDATA[
           gViewController.doCommand("cmd_debugItem", this.mAddon);
         ]]></body>
       </method>
+#endif
 
       <method name="showPreferences">
         <body><![CDATA[

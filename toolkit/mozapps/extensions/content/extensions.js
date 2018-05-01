@@ -18,10 +18,12 @@ Cu.import("resource://gre/modules/addons/AddonRepository.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PluralForm",
                                   "resource://gre/modules/PluralForm.jsm");
 
+#ifdef MOZ_DEVTOOLS
 XPCOMUtils.defineLazyGetter(this, "BrowserToolboxProcess", function () {
   return Cu.import("resource://devtools/client/framework/ToolboxProcess.jsm", {}).
          BrowserToolboxProcess;
 });
+#endif
 
 const PREF_DISCOVERURL = "extensions.webservice.discoverURL";
 const PREF_DISCOVER_ENABLED = "extensions.getAddons.showPane";
@@ -1002,6 +1004,7 @@ var gViewController = {
       }
     },
 
+#ifdef MOZ_DEVTOOLS
     cmd_debugItem: {
       doCommand: function cmd_debugItem_doCommand(aAddon) {
         BrowserToolboxProcess.init({ addonID: aAddon.id });
@@ -1015,6 +1018,7 @@ var gViewController = {
         return aAddon && aAddon.isDebuggable && debuggerEnabled && remoteEnabled;
       }
     },
+#endif
 
     cmd_showItemPreferences: {
       isEnabled: function cmd_showItemPreferences_isEnabled(aAddon) {
