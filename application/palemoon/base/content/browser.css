@@ -760,3 +760,7 @@ toolbarbutton[pmkit-button="true"] > .toolbarbutton-badge-stack > .toolbarbutton
 #main-window[inFullscreen] #high-priority-global-notificationbox {
   visibility: collapse;
 }
+
+#navigator-toolbox[fullscreenShouldAnimate] {
+  transition: 1.5s margin-top ease-out;
+}

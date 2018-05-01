@@ -1741,7 +1741,7 @@ function loadOneOrMoreURIs(aURIString)
 function focusAndSelectUrlBar() {
   if (gURLBar) {
     if (window.fullScreen)
-      FullScreen.mouseoverToggle(true);
+      FullScreen.showNavToolbox();
 
     gURLBar.select();
     if (document.activeElement == gURLBar.inputField)
@@ -3015,7 +3015,7 @@ const BrowserSearch = {
 #endif
     var searchBar = this.searchBar;
     if (searchBar && window.fullScreen)
-      FullScreen.mouseoverToggle(true);
+      FullScreen.showNavToolbox();
     if (searchBar)
       searchBar.select();
     if (!searchBar || document.activeElement != searchBar.textbox.inputField)
