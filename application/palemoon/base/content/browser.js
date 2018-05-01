@@ -2533,8 +2533,8 @@ function BrowserFullScreen()
   window.fullScreen = !window.fullScreen;
 }
 
-function onFullScreen(event) {
-  FullScreen.toggle(event);
+function onFullScreen() {
+  FullScreen.toggle();
 }
 
 function onMozEnteredDomFullscreen(event) {
