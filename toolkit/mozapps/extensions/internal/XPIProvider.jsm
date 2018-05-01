@@ -6442,21 +6442,23 @@ AddonInternal.prototype = {
     if (!aPlatformVersion)
       aPlatformVersion = Services.appinfo.platformVersion;
 
+#ifdef MOZ_PHOENIX_EXTENSIONS
     this.native = false;
-  
+#endif
+
     let version;
     if (app.id == Services.appinfo.ID) {
       version = aAppVersion;
+#ifdef MOZ_PHOENIX_EXTENSIONS
       this.native = true;
     }
-#ifdef MOZ_PHOENIX_EXTENSIONS
     else if (app.id == FIREFOX_ID) {
      version = FIREFOX_APPCOMPATVERSION;
       if (this.type == "locale")
         //Never allow language packs in Firefox compatibility mode
         return false;
-    }
 #endif
+    }
     else if (app.id == TOOLKIT_ID)
       version = aPlatformVersion
 
