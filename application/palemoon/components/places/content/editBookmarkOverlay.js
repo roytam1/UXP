@@ -12,6 +12,7 @@ var gEditItemOverlay = {
   _uris: [],
   _tags: [],
   _allTags: [],
+  _keyword: null,
   _multiEdit: false,
   _itemType: -1,
   _readOnly: false,
@@ -139,9 +140,8 @@ var gEditItemOverlay = {
       this._itemType = PlacesUtils.bookmarks.getItemType(this._itemId);
       if (this._itemType == Ci.nsINavBookmarksService.TYPE_BOOKMARK) {
         this._uri = PlacesUtils.bookmarks.getBookmarkURI(this._itemId);
-        this._initTextField("keywordField",
-                            PlacesUtils.bookmarks
-                                       .getKeywordForBookmark(this._itemId));
+        this._keyword = PlacesUtils.bookmarks.getKeywordForBookmark(this._itemId);
+        this._initTextField("keywordField", this._keyword);
         this._element("loadInSidebarCheckbox").checked =
           PlacesUtils.annotations.itemHasAnnotation(this._itemId,
                                                     PlacesUIUtils.LOAD_IN_SIDEBAR_ANNO);
@@ -610,9 +610,13 @@ var gEditItemOverlay = {
   },
 
   onKeywordFieldBlur: function EIO_onKeywordFieldBlur() {
-    var keyword = this._element("keywordField").value;
-    if (keyword != PlacesUtils.bookmarks.getKeywordForBookmark(this._itemId)) {
-      var txn = new PlacesEditBookmarkKeywordTransaction(this._itemId, keyword);
+    let oldKeyword = this._keyword;
+    let keyword = this._keyword = this._element("keywordField").value;
+    if (keyword != oldKeyword) {
+      var txn = new PlacesEditBookmarkKeywordTransaction(this._itemId,
+                                                         keyword,
+                                                         null,
+                                                         oldKeyword);
       PlacesUtils.transactionManager.doTransaction(txn);
     }
   },
@@ -1004,9 +1008,8 @@ var gEditItemOverlay = {
       }
       break;
     case "keyword":
-      this._initTextField("keywordField",
-                          PlacesUtils.bookmarks
-                                     .getKeywordForBookmark(this._itemId));
+      this._keyword = PlacesUtils.bookmarks.getKeywordForBookmark(this._itemId);
+      this._initTextField("keywordField", this._keyword);
       break;
     case PlacesUIUtils.DESCRIPTION_ANNO:
       this._initTextField("descriptionField",
