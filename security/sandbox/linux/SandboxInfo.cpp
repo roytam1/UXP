@@ -225,11 +225,6 @@ SandboxInfo::SandboxInfo() {
     }
   }
 
-#ifdef MOZ_GMP_SANDBOX
-  if (!getenv("MOZ_DISABLE_GMP_SANDBOX")) {
-    flags |= kEnabledForMedia;
-  }
-#endif
   if (getenv("MOZ_SANDBOX_VERBOSE")) {
     flags |= kVerbose;
   }

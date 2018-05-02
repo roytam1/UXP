@@ -76,13 +76,6 @@ namespace mozilla {
 // This is initialized by SandboxSetCrashFunc().
 SandboxCrashFunc gSandboxCrashFunc;
 
-#ifdef MOZ_GMP_SANDBOX
-// For media plugins, we can start the sandbox before we dlopen the
-// module, so we have to pre-open the file and simulate the sandboxed
-// open().
-static SandboxOpenedFile gMediaPluginFile;
-#endif
-
 static UniquePtr<SandboxChroot> gChrootHelper;
 static void (*gChromiumSigSysHandler)(int, siginfo_t*, void*);
 
@@ -525,19 +518,6 @@ SandboxEarlyInit(GeckoProcessType aType)
   case GeckoProcessType_Default:
     MOZ_ASSERT(false, "SandboxEarlyInit in parent process");
     return;
-#ifdef MOZ_GMP_SANDBOX
-  case GeckoProcessType_GMPlugin:
-    if (!info.Test(SandboxInfo::kEnabledForMedia)) {
-      break;
-    }
-    canUnshareNet = true;
-    canUnshareIPC = true;
-    // Need seccomp-bpf to intercept open().
-    canChroot = info.Test(SandboxInfo::kHasSeccompBPF);
-    break;
-#endif
-    // In the future, content processes will be able to use some of
-    // these.
   default:
     // Other cases intentionally left blank.
     break;
@@ -625,41 +605,5 @@ SandboxEarlyInit(GeckoProcessType aType)
     MOZ_CRASH("can't drop capabilities");
   }
 }
-
-#ifdef MOZ_GMP_SANDBOX
-/**
- * Starts the seccomp sandbox for a media plugin process.  Should be
- * called only once, and before any potentially harmful content is
- * loaded -- including the plugin itself, if it's considered untrusted.
- *
- * The file indicated by aFilePath, if non-null, can be open()ed
- * read-only, once, after the sandbox starts; it should be the .so
- * file implementing the not-yet-loaded plugin.
- *
- * Will normally make the process exit on failure.
-*/
-void
-SetMediaPluginSandbox(const char *aFilePath)
-{
-  if (!SandboxInfo::Get().Test(SandboxInfo::kEnabledForMedia)) {
-    return;
-  }
-
-  MOZ_ASSERT(!gMediaPluginFile.mPath);
-  if (aFilePath) {
-    gMediaPluginFile.mPath = strdup(aFilePath);
-    gMediaPluginFile.mFd = open(aFilePath, O_RDONLY | O_CLOEXEC);
-    if (gMediaPluginFile.mFd == -1) {
-      SANDBOX_LOG_ERROR("failed to open plugin file %s: %s",
-                        aFilePath, strerror(errno));
-      MOZ_CRASH();
-    }
-  } else {
-    gMediaPluginFile.mFd = -1;
-  }
-  // Finally, start the sandbox.
-  SetCurrentProcessSandbox(GetMediaSandboxPolicy(&gMediaPluginFile));
-}
-#endif // MOZ_GMP_SANDBOX
 
 } // namespace mozilla

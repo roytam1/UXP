@@ -12,10 +12,6 @@
 #include "gmp-entrypoints.h"
 #include "mozilla/UniquePtr.h"
 
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-#include "mozilla/Sandbox.h"
-#endif
-
 namespace mozilla {
 namespace gmp {
 
@@ -23,12 +19,6 @@ class SandboxStarter {
 public:
   virtual ~SandboxStarter() {}
   virtual bool Start(const char* aLibPath) = 0;
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-  // On OS X we need to set Mac-specific sandbox info just before we start the
-  // sandbox, which we don't yet know when the GMPLoader and SandboxStarter
-  // objects are created.
-  virtual void SetSandboxInfo(MacSandboxInfo* aSandboxInfo) = 0;
-#endif
 };
 
 // Interface that adapts a plugin to the GMP API.
@@ -94,13 +84,6 @@ public:
   // Calls the GMPShutdown function exported by the GMP lib, and unloads the
   // plugin library.
   virtual void Shutdown() = 0;
-
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-  // On OS X we need to set Mac-specific sandbox info just before we start the
-  // sandbox, which we don't yet know when the GMPLoader and SandboxStarter
-  // objects are created.
-  virtual void SetSandboxInfo(MacSandboxInfo* aSandboxInfo) = 0;
-#endif
 };
 
 // On Desktop, this function resides in plugin-container.

@@ -5440,13 +5440,6 @@ pref("narrate.voice", " { \"default\": \"automatic\" }");
 // Only make voices that match content language available.
 pref("narrate.filter-voices", true);
 
-#if defined(XP_LINUX) && defined(MOZ_GMP_SANDBOX)
-// Whether to allow, on a Linux system that doesn't support the necessary sandboxing
-// features, loading Gecko Media Plugins unsandboxed.  However, EME CDMs will not be
-// loaded without sandboxing even if this pref is changed.
-pref("media.gmp.insecure.allow", false);
-#endif
-
 pref("dom.audiochannel.mutedByDefault", false);
 
 // Enable <details> and <summary> tags.

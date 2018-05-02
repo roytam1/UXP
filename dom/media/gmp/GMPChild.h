@@ -40,10 +40,6 @@ public:
   // GMPAsyncShutdownHost
   void ShutdownComplete() override;
 
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-  bool SetMacSandboxInfo(MacSandboxPluginType aPluginType);
-#endif
-
 private:
   friend class GMPContentChild;
 

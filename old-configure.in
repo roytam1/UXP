@@ -2311,7 +2311,6 @@ MOZ_INSTALL_TRACKING=
 ACCESSIBILITY=1
 MOZ_TIME_MANAGER=
 MOZ_AUDIO_CHANNEL_MANAGER=
-MOZ_GMP_SANDBOX=
 MOZ_SANDBOX=
 MOZ_BINARY_EXTENSIONS=
 MOZ_JETPACK=1
@@ -3941,42 +3940,6 @@ if test -n "$MOZ_TSAN" -o -n "$MOZ_ASAN"; then
         ;;
     esac
 fi
-
-dnl ========================================================
-dnl = Gecko Media Plugin sandboxing
-dnl ========================================================
-case $OS_TARGET in
-WINNT)
-    MOZ_GMP_SANDBOX=$MOZ_SANDBOX
-    ;;
-Linux)
-    case $CPU_ARCH in
-    x86_64|x86)
-        MOZ_GMP_SANDBOX=$MOZ_SANDBOX
-        ;;
-    esac
-    ;;
-Darwin)
-    MOZ_GMP_SANDBOX=$MOZ_SANDBOX
-    ;;
-esac
-
-if test -n "$MOZ_GMP_SANDBOX"; then
-    AC_DEFINE(MOZ_GMP_SANDBOX)
-fi
-
-AC_SUBST(MOZ_GMP_SANDBOX)
-
-if test -z "$MOZ_GMP_SANDBOX"; then
-    MOZ_SANDBOX=
-fi
-
-if test -n "$MOZ_SANDBOX"; then
-    AC_DEFINE(MOZ_SANDBOX)
-fi
-
-AC_SUBST(MOZ_SANDBOX)
-
 
 dnl ========================================================
 dnl =

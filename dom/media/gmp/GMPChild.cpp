@@ -36,12 +36,6 @@ static const int MAX_VOUCHER_LENGTH = 500000;
 #include <unistd.h> // for _exit()
 #endif
 
-#if defined(MOZ_GMP_SANDBOX)
-#if defined(XP_MACOSX)
-#include "mozilla/Sandbox.h"
-#endif
-#endif
-
 namespace mozilla {
 
 #undef LOG
@@ -131,7 +125,6 @@ GetPluginFile(const nsAString& aPluginPath,
   return true;
 }
 
-#if !defined(XP_MACOSX) || !defined(MOZ_GMP_SANDBOX)
 static bool
 GetPluginFile(const nsAString& aPluginPath,
               nsCOMPtr<nsIFile>& aLibFile)
@@ -139,110 +132,6 @@ GetPluginFile(const nsAString& aPluginPath,
   nsCOMPtr<nsIFile> unusedlibDir;
   return GetPluginFile(aPluginPath, unusedlibDir, aLibFile);
 }
-#endif
-
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-static nsCString
-GetNativeTarget(nsIFile* aFile)
-{
-  bool isLink;
-  nsCString path;
-  aFile->IsSymlink(&isLink);
-  if (isLink) {
-    aFile->GetNativeTarget(path);
-  } else {
-    aFile->GetNativePath(path);
-  }
-  return path;
-}
-
-static bool
-GetPluginPaths(const nsAString& aPluginPath,
-               nsCString &aPluginDirectoryPath,
-               nsCString &aPluginFilePath)
-{
-  nsCOMPtr<nsIFile> libDirectory, libFile;
-  if (!GetPluginFile(aPluginPath, libDirectory, libFile)) {
-    return false;
-  }
-
-  // Mac sandbox rules expect paths to actual files and directories -- not
-  // soft links.
-  libDirectory->Normalize();
-  aPluginDirectoryPath = GetNativeTarget(libDirectory);
-
-  libFile->Normalize();
-  aPluginFilePath = GetNativeTarget(libFile);
-
-  return true;
-}
-
-static bool
-GetAppPaths(nsCString &aAppPath, nsCString &aAppBinaryPath)
-{
-  nsAutoCString appPath;
-  nsAutoCString appBinaryPath(
-    (CommandLine::ForCurrentProcess()->argv()[0]).c_str());
-
-  nsAutoCString::const_iterator start, end;
-  appBinaryPath.BeginReading(start);
-  appBinaryPath.EndReading(end);
-  if (RFindInReadable(NS_LITERAL_CSTRING(".app/Contents/MacOS/"), start, end)) {
-    end = start;
-    ++end; ++end; ++end; ++end;
-    appBinaryPath.BeginReading(start);
-    appPath.Assign(Substring(start, end));
-  } else {
-    return false;
-  }
-
-  nsCOMPtr<nsIFile> app, appBinary;
-  nsresult rv = NS_NewLocalFile(NS_ConvertUTF8toUTF16(appPath),
-                                true, getter_AddRefs(app));
-  if (NS_FAILED(rv)) {
-    return false;
-  }
-  rv = NS_NewLocalFile(NS_ConvertUTF8toUTF16(appBinaryPath),
-                       true, getter_AddRefs(appBinary));
-  if (NS_FAILED(rv)) {
-    return false;
-  }
-
-  // Mac sandbox rules expect paths to actual files and directories -- not
-  // soft links.
-  aAppPath = GetNativeTarget(app);
-  appBinaryPath = GetNativeTarget(appBinary);
-
-  return true;
-}
-
-bool
-GMPChild::SetMacSandboxInfo(MacSandboxPluginType aPluginType)
-{
-  if (!mGMPLoader) {
-    return false;
-  }
-  nsAutoCString pluginDirectoryPath, pluginFilePath;
-  if (!GetPluginPaths(mPluginPath, pluginDirectoryPath, pluginFilePath)) {
-    return false;
-  }
-  nsAutoCString appPath, appBinaryPath;
-  if (!GetAppPaths(appPath, appBinaryPath)) {
-    return false;
-  }
-
-  MacSandboxInfo info;
-  info.type = MacSandboxType_Plugin;
-  info.pluginInfo.type = aPluginType;
-  info.pluginInfo.pluginPath.assign(pluginDirectoryPath.get());
-  info.pluginInfo.pluginBinaryPath.assign(pluginFilePath.get());
-  info.appPath.assign(appPath.get());
-  info.appBinaryPath.assign(appBinaryPath.get());
-
-  mGMPLoader->SetSandboxInfo(&info);
-  return true;
-}
-#endif // XP_MACOSX && MOZ_GMP_SANDBOX
 
 bool
 GMPChild::Init(const nsAString& aPluginPath,
@@ -324,14 +213,6 @@ GMPChild::RecvPreloadLibs(const nsCString& aLibs)
 bool
 GMPChild::GetUTF8LibPath(nsACString& aOutLibPath)
 {
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-  nsAutoCString pluginDirectoryPath, pluginFilePath;
-  if (!GetPluginPaths(mPluginPath, pluginDirectoryPath, pluginFilePath)) {
-    MOZ_CRASH("Error scanning plugin path");
-  }
-  aOutLibPath.Assign(pluginFilePath);
-  return true;
-#else
   nsCOMPtr<nsIFile> libFile;
   if (!GetPluginFile(mPluginPath, libFile)) {
     return false;
@@ -347,7 +228,6 @@ GMPChild::GetUTF8LibPath(nsACString& aOutLibPath)
   aOutLibPath = NS_ConvertUTF16toUTF8(path);
 
   return true;
-#endif
 }
 
 bool
@@ -377,17 +257,6 @@ GMPChild::AnswerStartPlugin(const nsString& aAdapter)
   }
 
   bool isWidevine = aAdapter.EqualsLiteral("widevine");
-#if defined(MOZ_GMP_SANDBOX) && defined(XP_MACOSX)
-  MacSandboxPluginType pluginType = MacSandboxPluginType_GMPlugin_Default;
-  if (isWidevine) {
-    pluginType = MacSandboxPluginType_GMPlugin_EME_Widevine;
-  }
-  if (!SetMacSandboxInfo(pluginType)) {
-    NS_WARNING("Failed to set Mac GMP sandbox info");
-    delete platformAPI;
-    return false;
-  }
-#endif
 
   GMPAdapter* adapter = (isWidevine) ? new WidevineAdapter() : nullptr;
   if (!mGMPLoader->Load(libPath.get(),

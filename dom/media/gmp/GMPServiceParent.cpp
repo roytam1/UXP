@@ -27,9 +27,6 @@
 #include "nsComponentManagerUtils.h"
 #include "runnable_utils.h"
 #include "VideoUtils.h"
-#if defined(XP_LINUX) && defined(MOZ_GMP_SANDBOX)
-#include "mozilla/SandboxInfo.h"
-#endif
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsDirectoryServiceUtils.h"
 #include "nsDirectoryServiceDefs.h"
@@ -960,15 +957,6 @@ GeckoMediaPluginServiceParent::SelectPluginForAPI(const nsACString& aNodeId,
 RefPtr<GMPParent>
 CreateGMPParent()
 {
-#if defined(XP_LINUX) && defined(MOZ_GMP_SANDBOX)
-  if (!SandboxInfo::Get().CanSandboxMedia()) {
-    if (!MediaPrefs::GMPAllowInsecure()) {
-      NS_WARNING("Denying media plugin load due to lack of sandboxing.");
-      return nullptr;
-    }
-    NS_WARNING("Loading media plugin despite lack of sandboxing.");
-  }
-#endif
   return new GMPParent();
 }
 

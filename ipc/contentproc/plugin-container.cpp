@@ -27,11 +27,6 @@
 #include "mozilla/sandboxing/sandboxLogging.h"
 #endif
 
-#if defined(XP_LINUX) && defined(MOZ_GMP_SANDBOX)
-#include "mozilla/Sandbox.h"
-#include "mozilla/SandboxInfo.h"
-#endif
-
 #ifdef MOZ_WIDGET_GONK
 # include <sys/time.h>
 # include <sys/resource.h> 
@@ -79,54 +74,11 @@ public:
 };
 #endif
 
-#if defined(XP_LINUX) && defined(MOZ_GMP_SANDBOX)
-class LinuxSandboxStarter : public mozilla::gmp::SandboxStarter {
-    LinuxSandboxStarter() { }
-public:
-    static SandboxStarter* Make() {
-        if (mozilla::SandboxInfo::Get().CanSandboxMedia()) {
-            return new LinuxSandboxStarter();
-        } else {
-            // Sandboxing isn't possible, but the parent has already
-            // checked that this plugin doesn't require it.  (Bug 1074561)
-            return nullptr;
-        }
-    }
-    virtual bool Start(const char *aLibPath) override {
-        mozilla::SetMediaPluginSandbox(aLibPath);
-        return true;
-    }
-};
-#endif
-
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-class MacSandboxStarter : public mozilla::gmp::SandboxStarter {
-public:
-    virtual bool Start(const char *aLibPath) override {
-      std::string err;
-      bool rv = mozilla::StartMacSandbox(mInfo, err);
-      if (!rv) {
-        fprintf(stderr, "sandbox_init() failed! Error \"%s\"\n", err.c_str());
-      }
-      return rv;
-    }
-    virtual void SetSandboxInfo(MacSandboxInfo* aSandboxInfo) override {
-      mInfo = *aSandboxInfo;
-    }
-private:
-  MacSandboxInfo mInfo;
-};
-#endif
-
 mozilla::gmp::SandboxStarter*
 MakeSandboxStarter()
 {
 #if defined(XP_WIN) && defined(MOZ_SANDBOX)
     return new WinSandboxStarter();
-#elif defined(XP_LINUX) && defined(MOZ_GMP_SANDBOX)
-    return LinuxSandboxStarter::Make();
-#elif defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-    return new MacSandboxStarter();
 #else
     return nullptr;
 #endif

@@ -25,9 +25,6 @@
 #include "nsComponentManagerUtils.h"
 #include "runnable_utils.h"
 #include "VideoUtils.h"
-#if defined(XP_LINUX) && defined(MOZ_GMP_SANDBOX)
-#include "mozilla/SandboxInfo.h"
-#endif
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsDirectoryServiceUtils.h"
 #include "nsDirectoryServiceDefs.h"
@@ -485,14 +482,6 @@ GeckoMediaPluginService::GetGMPDecryptor(GMPCrashHelper* aHelper,
                                          const nsACString& aNodeId,
                                          UniquePtr<GetGMPDecryptorCallback>&& aCallback)
 {
-#if defined(XP_LINUX) && defined(MOZ_GMP_SANDBOX)
-  if (!SandboxInfo::Get().CanSandboxMedia()) {
-    NS_WARNING("GeckoMediaPluginService::GetGMPDecryptor: "
-               "EME decryption not available without sandboxing support.");
-    return NS_ERROR_NOT_AVAILABLE;
-  }
-#endif
-
   MOZ_ASSERT(NS_GetCurrentThread() == mGMPThread);
   NS_ENSURE_ARG(aTags && aTags->Length() > 0);
   NS_ENSURE_ARG(aCallback);

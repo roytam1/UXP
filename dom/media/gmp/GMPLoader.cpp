@@ -44,10 +44,6 @@ public:
 
   void Shutdown() override;
 
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-  void SetSandboxInfo(MacSandboxInfo* aSandboxInfo) override;
-#endif
-
 private:
   SandboxStarter* mSandboxStarter;
   UniquePtr<GMPAdapter> mAdapter;
@@ -208,15 +204,6 @@ GMPLoaderImpl::Shutdown()
   }
 }
 
-#if defined(XP_MACOSX) && defined(MOZ_GMP_SANDBOX)
-void
-GMPLoaderImpl::SetSandboxInfo(MacSandboxInfo* aSandboxInfo)
-{
-  if (mSandboxStarter) {
-    mSandboxStarter->SetSandboxInfo(aSandboxInfo);
-  }
-}
-#endif
 } // namespace gmp
 } // namespace mozilla
 
