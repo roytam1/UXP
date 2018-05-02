@@ -492,32 +492,7 @@ bool
 DocAccessibleParent::RecvGetWindowedPluginIAccessible(
       const WindowsHandle& aHwnd, IAccessibleHolder* aPluginCOMProxy)
 {
-#if defined(MOZ_CONTENT_SANDBOX)
-  // We don't actually want the accessible object for aHwnd, but rather the
-  // one that belongs to its child (see HTMLWin32ObjectAccessible).
-  HWND childWnd = ::GetWindow(reinterpret_cast<HWND>(aHwnd), GW_CHILD);
-  if (!childWnd) {
-    // We're seeing this in the wild - the plugin is windowed but we no longer
-    // have a window.
-    return true;
-  }
-
-  IAccessible* rawAccPlugin = nullptr;
-  HRESULT hr = ::AccessibleObjectFromWindow(childWnd, OBJID_WINDOW,
-                                            IID_IAccessible,
-                                            (void**)&rawAccPlugin);
-  if (FAILED(hr)) {
-    // This might happen if the plugin doesn't handle WM_GETOBJECT properly.
-    // We should not consider that a failure.
-    return true;
-  }
-
-  aPluginCOMProxy->Set(IAccessibleHolder::COMPtrType(rawAccPlugin));
-
-  return true;
-#else
   return false;
-#endif
 }
 
 #endif // defined(XP_WIN)

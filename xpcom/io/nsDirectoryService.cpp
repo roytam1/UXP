@@ -490,27 +490,6 @@ nsDirectoryService::UnregisterProvider(nsIDirectoryServiceProvider* aProv)
   return NS_OK;
 }
 
-#if defined(MOZ_CONTENT_SANDBOX) && defined(XP_WIN)
-static nsresult
-GetLowIntegrityTempBase(nsIFile** aLowIntegrityTempBase)
-{
-  nsCOMPtr<nsIFile> localFile;
-  nsresult rv = GetSpecialSystemDirectory(Win_LocalAppdataLow,
-                                          getter_AddRefs(localFile));
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  rv = localFile->Append(NS_LITERAL_STRING(MOZ_USER_DIR));
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  localFile.forget(aLowIntegrityTempBase);
-  return rv;
-}
-#endif
-
 // DO NOT ADD ANY LOCATIONS TO THIS FUNCTION UNTIL YOU TALK TO: dougt@netscape.com.
 // This is meant to be a place of xpcom or system specific file locations, not
 // application specific locations.  If you need the later, register a callback for
@@ -684,12 +663,6 @@ nsDirectoryService::GetFile(const char* aProp, bool* aPersistent,
     rv = GetSpecialSystemDirectory(Win_Appdata, getter_AddRefs(localFile));
   } else if (inAtom == nsDirectoryService::sLocalAppdata) {
     rv = GetSpecialSystemDirectory(Win_LocalAppdata, getter_AddRefs(localFile));
-#if defined(MOZ_CONTENT_SANDBOX)
-  } else if (inAtom == nsDirectoryService::sLocalAppdataLow) {
-    rv = GetSpecialSystemDirectory(Win_LocalAppdataLow, getter_AddRefs(localFile));
-  } else if (inAtom == nsDirectoryService::sLowIntegrityTempBase) {
-    rv = GetLowIntegrityTempBase(getter_AddRefs(localFile));
-#endif
   } else if (inAtom == nsDirectoryService::sPrinthood) {
     rv = GetSpecialSystemDirectory(Win_Printhood, getter_AddRefs(localFile));
   } else if (inAtom == nsDirectoryService::sWinCookiesDirectory) {

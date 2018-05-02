@@ -469,10 +469,6 @@ const SNAPSHOT_SCHEMA = {
           required: false,
           type: "boolean"
         },
-        contentSandboxLevel: {
-          required: AppConstants.MOZ_CONTENT_SANDBOX,
-          type: "number"
-        },
       },
     },
   },

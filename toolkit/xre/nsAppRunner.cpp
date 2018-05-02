@@ -107,10 +107,6 @@
 #endif
 #endif
 
-#if (defined(XP_WIN) || defined(XP_MACOSX)) && defined(MOZ_CONTENT_SANDBOX)
-#include "nsIUUIDGenerator.h"
-#endif
-
 #ifdef ACCESSIBILITY
 #include "nsAccessibilityService.h"
 #if defined(XP_WIN)
@@ -2962,13 +2958,6 @@ XREMain::XRE_mainInit(bool* aExitFlag)
     Telemetry::Accumulate(Telemetry::SANDBOX_BROKER_INITIALIZED, true);
   } else {
     Telemetry::Accumulate(Telemetry::SANDBOX_BROKER_INITIALIZED, false);
-#if defined(MOZ_CONTENT_SANDBOX)
-    // If we're sandboxing content and we fail to initialize, then crashing here
-    // seems like the sensible option.
-    if (BrowserTabsRemoteAutostart()) {
-      MOZ_CRASH("Failed to initialize broker services, can't continue.");
-    }
-#endif
     // Otherwise just warn for the moment, as most things will work.
     NS_WARNING("Failed to initialize broker services, sandboxed processes will "
                "fail to start.");

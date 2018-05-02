@@ -15,10 +15,6 @@ class SandboxBrokerPolicyFactory {
 public:
   SandboxBrokerPolicyFactory();
 
-#ifdef MOZ_CONTENT_SANDBOX
-  UniquePtr<SandboxBroker::Policy> GetContentPolicy(int aPid);
-#endif
-
 private:
   UniquePtr<const SandboxBroker::Policy> mCommonContentPolicy;
   // B2G devices tend to have hardware-specific paths used by device

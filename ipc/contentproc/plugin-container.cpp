@@ -49,10 +49,6 @@
        "Gecko:MozillaRntimeMain", __VA_ARGS__)) \
      : (void)0 )
 
-# ifdef MOZ_CONTENT_SANDBOX
-# include "mozilla/Sandbox.h"
-# endif
-
 #endif // MOZ_WIDGET_GONK
 
 #ifdef MOZ_WIDGET_GONK

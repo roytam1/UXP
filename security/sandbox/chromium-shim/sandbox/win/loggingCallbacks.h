@@ -89,15 +89,6 @@ InitLoggingIfRequired(ProvideLogFunctionCb aProvideLogFunctionCb)
   if (Preferences::GetBool("security.sandbox.windows.log") ||
       PR_GetEnv("MOZ_WIN_SANDBOX_LOGGING")) {
     aProvideLogFunctionCb(Log);
-
-#if defined(MOZ_CONTENT_SANDBOX)
-    // We can only log the stack trace on process types where we know that the
-    // sandbox won't prevent it.
-    if (XRE_IsContentProcess()) {
-      Preferences::AddUintVarCache(&sStackTraceDepth,
-        "security.sandbox.windows.log.stackTraceDepth");
-    }
-#endif
   }
 }
 

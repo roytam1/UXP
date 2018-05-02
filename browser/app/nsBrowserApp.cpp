@@ -265,12 +265,6 @@ static int do_main(int argc, char* argv[], char* envp[], nsIFile *xreDirectory)
 #if defined(XP_WIN) && defined(MOZ_SANDBOX)
   sandbox::BrokerServices* brokerServices =
     sandboxing::GetInitializedBrokerServices();
-#if defined(MOZ_CONTENT_SANDBOX)
-  if (!brokerServices) {
-    Output("Couldn't initialize the broker services.\n");
-    return 255;
-  }
-#endif
   appData.sandboxBrokerServices = brokerServices;
 #endif
 

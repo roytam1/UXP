@@ -547,11 +547,6 @@ if (AppConstants.MOZ_SANDBOX) {
       }
     }
 
-    if (AppConstants.MOZ_CONTENT_SANDBOX) {
-      data.contentSandboxLevel =
-        Services.prefs.getIntPref("security.sandbox.content.level");
-    }
-
     done(data);
   }
 }

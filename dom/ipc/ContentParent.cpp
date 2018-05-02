@@ -230,12 +230,6 @@ using namespace mozilla::system;
 #include "mozilla/dom/SpeechSynthesisParent.h"
 #endif
 
-#if defined(MOZ_CONTENT_SANDBOX) && defined(XP_LINUX)
-#include "mozilla/SandboxInfo.h"
-#include "mozilla/SandboxBroker.h"
-#include "mozilla/SandboxBrokerPolicyFactory.h"
-#endif
-
 #ifdef MOZ_TOOLKIT_SEARCH
 #include "nsIBrowserSearchService.h"
 #endif
@@ -503,9 +497,6 @@ nsTArray<ContentParent*>* ContentParent::sNonAppContentParents;
 nsTArray<ContentParent*>* ContentParent::sLargeAllocationContentParents;
 nsTArray<ContentParent*>* ContentParent::sPrivateContent;
 StaticAutoPtr<LinkedList<ContentParent> > ContentParent::sContentParents;
-#if defined(XP_LINUX) && defined(MOZ_CONTENT_SANDBOX)
-UniquePtr<SandboxBrokerPolicyFactory> ContentParent::sSandboxBrokerPolicyFactory;
-#endif
 
 // This is true when subprocess launching is enabled.  This is the
 // case between StartUp() and ShutDown() or JoinAllSubprocesses().
@@ -637,18 +628,6 @@ ContentParent::StartUp()
     return;
   }
 
-#if defined(MOZ_CONTENT_SANDBOX) && defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 19
-  // Require sandboxing on B2G >= KitKat.  This condition must stay
-  // in sync with ContentChild::RecvSetProcessSandbox.
-  if (!SandboxInfo::Get().CanSandboxContent()) {
-    // MOZ_CRASH strings are only for debug builds; make sure the
-    // message is clear on non-debug builds as well:
-    printf_stderr("Sandboxing support is required on this platform.  "
-                  "Recompile kernel with CONFIG_SECCOMP_FILTER=y\n");
-    MOZ_CRASH("Sandboxing support is required on this platform.");
-  }
-#endif
-
   // Note: This reporter measures all ContentParents.
   RegisterStrongMemoryReporter(new ContentParentsMemoryReporter());
 
@@ -662,10 +641,6 @@ ContentParent::StartUp()
   PreallocatedProcessManager::AllocateAfterDelay();
 
   sDisableUnsafeCPOWWarnings = PR_GetEnv("DISABLE_UNSAFE_CPOW_WARNINGS");
-
-#if defined(XP_LINUX) && defined(MOZ_CONTENT_SANDBOX)
-  sSandboxBrokerPolicyFactory = MakeUnique<SandboxBrokerPolicyFactory>();
-#endif
 }
 
 /*static*/ void
@@ -674,10 +649,6 @@ ContentParent::ShutDown()
   // No-op for now.  We rely on normal process shutdown and
   // ClearOnShutdown() to clean up our state.
   sCanLaunchSubprocesses = false;
-
-#if defined(XP_LINUX) && defined(MOZ_CONTENT_SANDBOX)
-  sSandboxBrokerPolicyFactory = nullptr;
-#endif
 }
 
 /*static*/ void
@@ -2244,37 +2215,6 @@ ContentParent::InitInternal(ProcessPriority aInitialPriority,
     }
   }
 
-#ifdef MOZ_CONTENT_SANDBOX
-  bool shouldSandbox = true;
-  MaybeFileDesc brokerFd = void_t();
-#ifdef XP_LINUX
-  // XXX: Checking the pref here makes it possible to enable/disable sandboxing
-  // during an active session. Currently the pref is only used for testing
-  // purpose. If the decision is made to permanently rely on the pref, this
-  // should be changed so that it is required to restart firefox for the change
-  // of value to take effect.
-  shouldSandbox = (Preferences::GetInt("security.sandbox.content.level") > 0) &&
-    !PR_GetEnv("MOZ_DISABLE_CONTENT_SANDBOX");
-
-  if (shouldSandbox) {
-    MOZ_ASSERT(!mSandboxBroker);
-    UniquePtr<SandboxBroker::Policy> policy =
-      sSandboxBrokerPolicyFactory->GetContentPolicy(Pid());
-    if (policy) {
-      brokerFd = FileDescriptor();
-      mSandboxBroker = SandboxBroker::Create(Move(policy), Pid(), brokerFd);
-      if (!mSandboxBroker) {
-        KillHard("SandboxBroker::Create failed");
-        return;
-      }
-      MOZ_ASSERT(static_cast<const FileDescriptor&>(brokerFd).IsValid());
-    }
-  }
-#endif
-  if (shouldSandbox && !SendSetProcessSandbox(brokerFd)) {
-    KillHard("SandboxInitFailed");
-  }
-#endif
 #if defined(XP_WIN)
   // Send the info needed to join the browser process's audio session.
   nsID id;

@@ -626,34 +626,6 @@ SandboxEarlyInit(GeckoProcessType aType)
   }
 }
 
-#ifdef MOZ_CONTENT_SANDBOX
-/**
- * Starts the seccomp sandbox for a content process.  Should be called
- * only once, and before any potentially harmful content is loaded.
- *
- * Will normally make the process exit on failure.
-*/
-bool
-SetContentProcessSandbox(int aBrokerFd)
-{
-  if (!SandboxInfo::Get().Test(SandboxInfo::kEnabledForContent)) {
-    if (aBrokerFd >= 0) {
-      close(aBrokerFd);
-    }
-    return false;
-  }
-
-  // This needs to live until the process exits.
-  static Maybe<SandboxBrokerClient> sBroker;
-  if (aBrokerFd >= 0) {
-    sBroker.emplace(aBrokerFd);
-  }
-
-  SetCurrentProcessSandbox(GetContentSandboxPolicy(sBroker.ptrOr(nullptr)));
-  return true;
-}
-#endif // MOZ_CONTENT_SANDBOX
-
 #ifdef MOZ_GMP_SANDBOX
 /**
  * Starts the seccomp sandbox for a media plugin process.  Should be

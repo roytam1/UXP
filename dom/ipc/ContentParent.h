@@ -46,11 +46,6 @@ class PRemoteSpellcheckEngineParent;
 class ProfileGatherer;
 #endif
 
-#if defined(XP_LINUX) && defined(MOZ_CONTENT_SANDBOX)
-class SandboxBroker;
-class SandboxBrokerPolicyFactory;
-#endif
-
 namespace embedding {
 class PrintingParent;
 }
@@ -1151,12 +1146,6 @@ private:
   nsCString mProfile;
 
   UniquePtr<gfx::DriverCrashGuard> mDriverCrashGuard;
-
-#if defined(XP_LINUX) && defined(MOZ_CONTENT_SANDBOX)
-  mozilla::UniquePtr<SandboxBroker> mSandboxBroker;
-  static mozilla::UniquePtr<SandboxBrokerPolicyFactory>
-      sSandboxBrokerPolicyFactory;
-#endif
 
 #ifdef NS_PRINTING
   RefPtr<embedding::PrintingParent> mPrintingParent;

@@ -23,10 +23,6 @@
 #include "prenv.h"
 #include "nsXPCOMPrivate.h"
 
-#if defined(XP_MACOSX) && defined(MOZ_CONTENT_SANDBOX)
-#include "nsAppDirectoryServiceDefs.h"
-#endif
-
 #include "nsExceptionHandler.h"
 
 #include "nsDirectoryServiceDefs.h"
@@ -311,15 +307,6 @@ GeckoChildProcessHost::PrepareLaunch()
   if (mProcessType == GeckoProcessType_Plugin) {
     InitWindowsGroupID();
   }
-
-#if defined(MOZ_CONTENT_SANDBOX)
-  // We need to get the pref here as the process is launched off main thread.
-  if (mProcessType == GeckoProcessType_Content) {
-    mSandboxLevel = Preferences::GetInt("security.sandbox.content.level");
-    mEnableSandboxLogging =
-      Preferences::GetBool("security.sandbox.windows.log");
-  }
-#endif
 
 #if defined(MOZ_SANDBOX)
   // For other process types we can't rely on them being launched on main
@@ -608,20 +595,6 @@ AddAppDirToCommandLine(std::vector<std::string>& aCmdLine)
         aCmdLine.push_back(path.get());
 #endif
       }
-
-#if defined(XP_MACOSX) && defined(MOZ_CONTENT_SANDBOX)
-      // Full path to the profile dir
-      nsCOMPtr<nsIFile> profileDir;
-      rv = directoryService->Get(NS_APP_USER_PROFILE_50_DIR,
-                                 NS_GET_IID(nsIFile),
-                                 getter_AddRefs(profileDir));
-      if (NS_SUCCEEDED(rv)) {
-        nsAutoCString path;
-        MOZ_ALWAYS_SUCCEEDS(profileDir->GetNativePath(path));
-        aCmdLine.push_back("-profile");
-        aCmdLine.push_back(path.get());
-      }
-#endif
     }
   }
 }
@@ -1029,17 +1002,6 @@ GeckoChildProcessHost::PerformAsyncLaunchInternal(std::vector<std::string>& aExt
   // of reorganizing so I don't think this patch is the right time.
   switch (mProcessType) {
     case GeckoProcessType_Content:
-#if defined(MOZ_CONTENT_SANDBOX)
-      if (mSandboxLevel > 0 &&
-          !PR_GetEnv("MOZ_DISABLE_CONTENT_SANDBOX")) {
-        // For now we treat every failure as fatal in SetSecurityLevelForContentProcess
-        // and just crash there right away. Should this change in the future then we
-        // should also handle the error here.
-        mSandboxBroker.SetSecurityLevelForContentProcess(mSandboxLevel);
-        shouldSandboxCurrentProcess = true;
-        AddContentSandboxAllowedFiles(mSandboxLevel, mAllowedFilesRead);
-      }
-#endif // MOZ_CONTENT_SANDBOX
       break;
     case GeckoProcessType_Plugin:
       if (mSandboxLevel > 0 &&

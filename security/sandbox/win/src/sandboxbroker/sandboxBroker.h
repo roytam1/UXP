@@ -31,9 +31,6 @@ public:
   virtual ~SandboxBroker();
 
   // Security levels for different types of processes
-#if defined(MOZ_CONTENT_SANDBOX)
-  void SetSecurityLevelForContentProcess(int32_t aSandboxLevel);
-#endif
   bool SetSecurityLevelForPluginProcess(int32_t aSandboxLevel);
   enum SandboxLevel {
     LockDown,

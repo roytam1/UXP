@@ -48,7 +48,6 @@
 #ifdef XP_WIN
 #include <windows.h>
 #include <shlobj.h>
-#include "mozilla/WindowsVersion.h"
 #endif
 #ifdef XP_MACOSX
 #include "nsILocalFileMac.h"
@@ -63,11 +62,6 @@
 #include "UIKitDirProvider.h"
 #endif
 
-#if (defined(XP_WIN) || defined(XP_MACOSX)) && defined(MOZ_CONTENT_SANDBOX)
-#include "nsIUUIDGenerator.h"
-#include "mozilla/Unused.h"
-#endif
-
 #if defined(XP_MACOSX)
 #define APP_REGISTRY_NAME "Application Registry"
 #elif defined(XP_WIN)
@@ -77,14 +71,6 @@
 #endif
 
 #define PREF_OVERRIDE_DIRNAME "preferences"
-
-#if (defined(XP_WIN) || defined(XP_MACOSX)) && defined(MOZ_CONTENT_SANDBOX)
-static already_AddRefed<nsIFile> GetContentProcessSandboxTempDir();
-static nsresult DeleteDirIfExists(nsIFile *dir);
-static bool IsContentSandboxDisabled();
-static const char* GetContentProcessTempBaseDirKey();
-static already_AddRefed<nsIFile> CreateContentProcessSandboxTempDir();
-#endif
 
 static already_AddRefed<nsIFile>
 CloneAndAppend(nsIFile* aFile, const char* name)
@@ -496,14 +482,6 @@ nsXREDirProvider::GetFile(const char* aProperty, bool* aPersistent,
     bool unused;
     rv = dirsvc->GetFile("XCurProcD", &unused, getter_AddRefs(file));
   }
-#if (defined(XP_WIN) || defined(XP_MACOSX)) && defined(MOZ_CONTENT_SANDBOX)
-  else if (!strcmp(aProperty, NS_APP_CONTENT_PROCESS_TEMP_DIR)) {
-    if (!mContentTempDir && NS_FAILED((rv = LoadContentProcessTempDir()))) {
-      return rv;
-    }
-    rv = mContentTempDir->Clone(getter_AddRefs(file));
-  }
-#endif // defined(XP_WIN) && defined(MOZ_CONTENT_SANDBOX)
   else if (NS_SUCCEEDED(GetProfileStartupDir(getter_AddRefs(file)))) {
     // We need to allow component, xpt, and chrome registration to
     // occur prior to the profile-after-change notification.
@@ -729,179 +707,6 @@ LoadExtensionDirectories(nsINIParser &parser,
   }
   while (true);
 }
-
-#if (defined(XP_WIN) || defined(XP_MACOSX)) && defined(MOZ_CONTENT_SANDBOX)
-
-static const char*
-GetContentProcessTempBaseDirKey()
-{
-#if defined(XP_WIN)
-  return NS_WIN_LOW_INTEGRITY_TEMP_BASE;
-#else
-  return NS_OS_TEMP_DIR;
-#endif
-}
-
-//
-// Sets mContentTempDir so that it refers to the appropriate temp dir.
-// If the sandbox is enabled, NS_APP_CONTENT_PROCESS_TEMP_DIR, otherwise
-// NS_OS_TEMP_DIR is used.
-//
-nsresult
-nsXREDirProvider::LoadContentProcessTempDir()
-{
-  mContentTempDir = GetContentProcessSandboxTempDir();
-  if (mContentTempDir) {
-    return NS_OK;
-  } else {
-    return NS_GetSpecialDirectory(NS_OS_TEMP_DIR,
-                                  getter_AddRefs(mContentTempDir));
-  }
-}
-
-static bool
-IsContentSandboxDisabled()
-{
-  if (!BrowserTabsRemoteAutostart()) {
-    return false;
-  }
-#if defined(XP_WIN)
-  const bool isSandboxDisabled = !mozilla::IsVistaOrLater() ||
-    (Preferences::GetInt("security.sandbox.content.level") < 1);
-#elif defined(XP_MACOSX)
-  const bool isSandboxDisabled =
-    Preferences::GetInt("security.sandbox.content.level") < 1;
-#endif
-  return isSandboxDisabled;
-}
-
-//
-// If a content process sandbox temp dir is to be used, returns an nsIFile
-// for the directory. Returns null if the content sandbox is disabled or
-// an error occurs.
-//
-static already_AddRefed<nsIFile>
-GetContentProcessSandboxTempDir()
-{
-  if (IsContentSandboxDisabled()) {
-    return nullptr;
-  }
-
-  nsCOMPtr<nsIFile> localFile;
-
-  nsresult rv = NS_GetSpecialDirectory(GetContentProcessTempBaseDirKey(),
-                                       getter_AddRefs(localFile));
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return nullptr;
-  }
-
-  nsAutoString tempDirSuffix;
-  rv = Preferences::GetString("security.sandbox.content.tempDirSuffix",
-                              &tempDirSuffix);
-  if (NS_WARN_IF(NS_FAILED(rv)) || tempDirSuffix.IsEmpty()) {
-    return nullptr;
-  }
-
-  rv = localFile->Append(NS_LITERAL_STRING("Temp-") + tempDirSuffix);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return nullptr;
-  }
-
-  return localFile.forget();
-}
-
-//
-// Create a temporary directory for use from sandboxed content processes.
-// Only called in the parent. The path is derived from a UUID stored in a
-// pref which is available to content processes. Returns null if the
-// content sandbox is disabled or if an error occurs.
-//
-static already_AddRefed<nsIFile>
-CreateContentProcessSandboxTempDir()
-{
-  if (IsContentSandboxDisabled()) {
-    return nullptr;
-  }
-
-  // Get (and create if blank) temp directory suffix pref.
-  nsresult rv;
-  nsAdoptingString tempDirSuffix =
-    Preferences::GetString("security.sandbox.content.tempDirSuffix");
-  if (tempDirSuffix.IsEmpty()) {
-    nsCOMPtr<nsIUUIDGenerator> uuidgen =
-      do_GetService("@mozilla.org/uuid-generator;1", &rv);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return nullptr;
-    }
-
-    nsID uuid;
-    rv = uuidgen->GenerateUUIDInPlace(&uuid);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return nullptr;
-    }
-
-    char uuidChars[NSID_LENGTH];
-    uuid.ToProvidedString(uuidChars);
-    tempDirSuffix.AssignASCII(uuidChars);
-
-    // Save the pref
-    rv = Preferences::SetCString("security.sandbox.content.tempDirSuffix",
-                                 uuidChars);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      // If we fail to save the pref we don't want to create the temp dir,
-      // because we won't be able to clean it up later.
-      return nullptr;
-    }
-
-    nsCOMPtr<nsIPrefService> prefsvc = Preferences::GetService();
-    if (!prefsvc || NS_FAILED((rv = prefsvc->SavePrefFile(nullptr)))) {
-      // Again, if we fail to save the pref file we might not be able to clean
-      // up the temp directory, so don't create one.
-      NS_WARNING("Failed to save pref file, cannot create temp dir.");
-      return nullptr;
-    }
-  }
-
-  nsCOMPtr<nsIFile> sandboxTempDir = GetContentProcessSandboxTempDir();
-  if (!sandboxTempDir) {
-    NS_WARNING("Failed to determine sandbox temp dir path.");
-    return nullptr;
-  }
-
-  // Remove the directory. It may exist due to a previous crash.
-  if (NS_FAILED(DeleteDirIfExists(sandboxTempDir))) {
-    NS_WARNING("Failed to reset sandbox temp dir.");
-    return nullptr;
-  }
-
-  // Create the directory
-  rv = sandboxTempDir->Create(nsIFile::DIRECTORY_TYPE, 0700);
-  if (NS_FAILED(rv)) {
-    NS_WARNING("Failed to create sandbox temp dir.");
-    return nullptr;
-  }
-
-  return sandboxTempDir.forget();
-}
-
-static nsresult
-DeleteDirIfExists(nsIFile* dir)
-{
-  if (dir) {
-    // Don't return an error if the directory doesn't exist.
-    // Windows Remove() returns NS_ERROR_FILE_NOT_FOUND while
-    // OS X returns NS_ERROR_FILE_TARGET_DOES_NOT_EXIST.
-    nsresult rv = dir->Remove(/* aRecursive */ true);
-    if (NS_FAILED(rv) && rv != NS_ERROR_FILE_NOT_FOUND &&
-        rv != NS_ERROR_FILE_TARGET_DOES_NOT_EXIST) {
-      return rv;
-    }
-  }
-  return NS_OK;
-}
-
-#endif // (defined(XP_WIN) || defined(XP_MACOSX)) &&
-  // defined(MOZ_CONTENT_SANDBOX)
 
 void
 nsXREDirProvider::LoadExtensionBundleDirectories()
@@ -1207,14 +1012,6 @@ nsXREDirProvider::DoStartup()
     }
 
     obsSvc->NotifyObservers(nullptr, "profile-initial-state", nullptr);
-
-#if (defined(XP_WIN) || defined(XP_MACOSX)) && defined(MOZ_CONTENT_SANDBOX)
-    // The parent is responsible for creating the sandbox temp dir
-    if (XRE_IsParentProcess()) {
-      mContentProcessSandboxTempDir = CreateContentProcessSandboxTempDir();
-      mContentTempDir = mContentProcessSandboxTempDir;
-    }
-#endif
   }
   return NS_OK;
 }
@@ -1225,12 +1022,6 @@ nsXREDirProvider::DoShutdown()
   PROFILER_LABEL_FUNC(js::ProfileEntry::Category::OTHER);
 
   if (mProfileNotified) {
-#if (defined(XP_WIN) || defined(XP_MACOSX)) && defined(MOZ_CONTENT_SANDBOX)
-    if (XRE_IsParentProcess()) {
-      Unused << DeleteDirIfExists(mContentProcessSandboxTempDir);
-    }
-#endif
-
     nsCOMPtr<nsIObserverService> obsSvc =
       mozilla::services::GetObserverService();
     NS_ASSERTION(obsSvc, "No observer service?");
