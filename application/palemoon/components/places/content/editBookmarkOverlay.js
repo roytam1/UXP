@@ -613,7 +613,7 @@ var gEditItemOverlay = {
     let oldKeyword = this._keyword;
     let keyword = this._keyword = this._element("keywordField").value;
     if (keyword != oldKeyword) {
-      var txn = new PlacesEditBookmarkKeywordTransaction(this._itemId,
+      let txn = new PlacesEditBookmarkKeywordTransaction(this._itemId,
                                                          keyword,
                                                          null,
                                                          oldKeyword);
