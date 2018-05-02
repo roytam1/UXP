@@ -2671,6 +2671,8 @@ this.AddonManager = {
   ERROR_CORRUPT_FILE: -3,
   // An error occured trying to write to the filesystem.
   ERROR_FILE_ACCESS: -4,
+  // The downloaded file seems to be Jetpack.
+  ERROR_JETPACKSDK_FILE: -8,
   // The downloaded file seems to be WebExtension.
   ERROR_WEBEXT_FILE: -9,
 

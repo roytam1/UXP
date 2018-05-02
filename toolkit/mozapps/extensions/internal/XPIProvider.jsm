@@ -112,6 +112,10 @@ const DIR_TRASH                       = "trash";
 const FILE_DATABASE                   = "extensions.json";
 const FILE_OLD_CACHE                  = "extensions.cache";
 const FILE_INSTALL_MANIFEST           = "install.rdf";
+#ifndef MOZ_JETPACK
+const FILE_JETPACK_MANIFEST_1         = "harness-options.json";
+const FILE_JETPACK_MANIFEST_2         = "package.json";
+#endif
 const FILE_WEBEXT_MANIFEST            = "manifest.json";
 const FILE_XPI_ADDONS_LIST            = "extensions.ini";
 
@@ -1067,37 +1071,36 @@ function loadManifestFromDir(aDir) {
  * @throws if the XPI file does not contain a valid install manifest.
  *         Throws with |webext:true| if a WebExtension manifest was found
  *         to distinguish between WebExtensions and corrupt files.
+ *         Throws with |jetpacksdk:true| if a Jetpack files were found
+ *         if Jetpack its self isn't built.
  */
 function loadManifestFromZipReader(aZipReader) {
-  let zis;
-  try {
-    zis = aZipReader.getInputStream(FILE_INSTALL_MANIFEST);
-  } catch (e) {
-    // We're going to throw here, but depending on whether we have a
-    // WebExtension manifest in the XPI, we'll throw with the webext flag.
-    try {
-      let zws = aZipReader.getInputStream(FILE_WEBEXT_MANIFEST);
-      zws.close();
-    } catch(e2) {
-      // We have neither an install manifest nor a WebExtension manifest;
-      // this means the extension file has a structural problem.
-      // Just pass the original error up the chain in that case.
+  // If WebExtension but not install.rdf throw an error
+  if (aZipReader.hasEntry(FILE_WEBEXT_MANIFEST)) {
+    if (!aZipReader.hasEntry(FILE_INSTALL_MANIFEST)) {
       throw {
-        name: e.name,
-        message: e.message
+        name: "UnsupportedExtension",
+        message: Services.appinfo.name + " does not support WebExtensions",
+        webext: true
       };
     }
-    // If we get here, we have a WebExtension manifest but no install
-    // manifest. Pass the error up the chain with the webext flag.
+  }
+
+#ifndef MOZ_JETPACK
+  // If Jetpack is not built throw an error
+  if (aZipReader.hasEntry(FILE_JETPACK_MANIFEST_1) ||
+      aZipReader.hasEntry(FILE_JETPACK_MANIFEST_2)) {
     throw {
-      name: e.name,
-      message: e.message,
-      webext: true
+      name: "UnsupportedExtension",
+      message: Services.appinfo.name + " does not support Jetpack Extensions",
+      jetpacksdk: true
     };
   }
-  
-  // We found an install manifest, so it's either a regular or hybrid
-  // extension. Continue processing.
+#endif
+ 
+  // Attempt to open install.rdf else throw normally
+  let zis = aZipReader.getInputStream(FILE_INSTALL_MANIFEST);
+  // Create a buffered input stream for install.rdf
   let bis = Cc["@mozilla.org/network/buffered-input-stream;1"].
             createInstance(Ci.nsIBufferedInputStream);
   bis.init(zis, 4096);
@@ -1126,7 +1129,9 @@ function loadManifestFromZipReader(aZipReader) {
     return addon;
   }
   finally {
+    // Close the buffered input stream
     bis.close();
+    // Close the input stream to install.rdf
     zis.close();
   }
 }
@@ -5020,6 +5025,11 @@ AddonInstall.prototype = {
       if (e.webext) {
         logger.warn("WebExtension XPI", e);
         this.error = AddonManager.ERROR_WEBEXT_FILE;
+#ifndef MOZ_JETPACK
+      } else if (e.jetpacksdk) {
+        logger.warn("Jetpack XPI", e);
+        this.error = AddonManager.ERROR_JETPACKSDK_FILE;
+#endif
       } else {
         logger.warn("Invalid XPI", e);
         this.error = AddonManager.ERROR_CORRUPT_FILE;
@@ -5661,6 +5671,10 @@ AddonInstall.prototype = {
         catch (e) {
           if (e.webext) {
             this.downloadFailed(AddonManager.ERROR_WEBEXT_FILE, e);
+#ifndef MOZ_JETPACK
+          } else if (e.jetpacksdk) {
+            this.downloadFailed(AddonManager.ERROR_JETPACKSDK_FILE, e);
+#endif
           } else {
             this.downloadFailed(AddonManager.ERROR_CORRUPT_FILE, e);
           }
