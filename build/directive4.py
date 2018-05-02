@@ -33,7 +33,6 @@ if ('MOZ_OFFICIAL_BRANDING' in listConfig) or (strBrandingDirectory.endswith("br
     # Applies to Pale Moon and Basilisk
     if ('MC_BASILISK' in listConfig) or ('MC_PALEMOON' in listConfig):
         listViolations += [
-            'MOZ_SANDBOX',
             'MOZ_SYSTEM_LIBEVENT',
             'MOZ_SYSTEM_NSS',
             'MOZ_SYSTEM_NSPR',

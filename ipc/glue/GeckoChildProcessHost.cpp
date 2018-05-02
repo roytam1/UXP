@@ -39,12 +39,6 @@
 #ifdef XP_WIN
 #include "nsIWinTaskbar.h"
 #define NS_TASKBAR_CONTRACTID "@mozilla.org/windows-taskbar;1"
-
-#if defined(MOZ_SANDBOX)
-#include "mozilla/Preferences.h"
-#include "mozilla/sandboxing/sandboxLogging.h"
-#include "nsDirectoryServiceUtils.h"
-#endif
 #endif
 
 #include "nsTArray.h"
@@ -97,10 +91,6 @@ GeckoChildProcessHost::GeckoChildProcessHost(GeckoProcessType aProcessType,
     mPrivileges(aPrivileges),
     mMonitor("mozilla.ipc.GeckChildProcessHost.mMonitor"),
     mProcessState(CREATING_CHANNEL),
-#if defined(MOZ_SANDBOX) && defined(XP_WIN)
-    mEnableSandboxLogging(false),
-    mSandboxLevel(0),
-#endif
     mChildProcessHandle(0)
 #if defined(MOZ_WIDGET_COCOA)
   , mChildTask(MACH_PORT_NULL)
@@ -307,14 +297,6 @@ GeckoChildProcessHost::PrepareLaunch()
   if (mProcessType == GeckoProcessType_Plugin) {
     InitWindowsGroupID();
   }
-
-#if defined(MOZ_SANDBOX)
-  // For other process types we can't rely on them being launched on main
-  // thread and they may not have access to prefs in the child process, so allow
-  // them to turn on logging via an environment variable.
-  mEnableSandboxLogging = mEnableSandboxLogging
-                          || !!PR_GetEnv("MOZ_WIN_SANDBOX_LOGGING");
-#endif
 #endif
 }
 
@@ -599,91 +581,6 @@ AddAppDirToCommandLine(std::vector<std::string>& aCmdLine)
   }
 }
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-static void
-MaybeAddNsprLogFileAccess(std::vector<std::wstring>& aAllowedFilesReadWrite)
-{
-  const char* nsprLogFileEnv = PR_GetEnv("NSPR_LOG_FILE");
-  if (!nsprLogFileEnv) {
-    return;
-  }
-
-  nsDependentCString nsprLogFilePath(nsprLogFileEnv);
-  nsCOMPtr<nsIFile> nsprLogFile;
-  nsresult rv = NS_NewNativeLocalFile(nsprLogFilePath, true,
-                                      getter_AddRefs(nsprLogFile));
-  if (NS_FAILED(rv)) {
-    // Not an absolute path, try it as a relative one.
-    nsresult rv = NS_GetSpecialDirectory(NS_OS_CURRENT_WORKING_DIR,
-                                         getter_AddRefs(nsprLogFile));
-    if (NS_FAILED(rv) || !nsprLogFile) {
-      NS_WARNING("Failed to get current working directory");
-      return;
-    }
-
-    rv = nsprLogFile->AppendRelativeNativePath(nsprLogFilePath);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return;
-    }
-  }
-
-  nsAutoString resolvedFilePath;
-  rv = nsprLogFile->GetPath(resolvedFilePath);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-      return;
-  }
-
-  // Update the environment variable as well as adding the rule, because the
-  // Chromium sandbox can only allow access to fully qualified file paths. This
-  // only affects the environment for the child process we're about to create,
-  // because this will get reset to the original value in PerformAsyncLaunch.
-  aAllowedFilesReadWrite.push_back(std::wstring(resolvedFilePath.get()));
-  nsAutoCString resolvedEnvVar("NSPR_LOG_FILE=");
-  AppendUTF16toUTF8(resolvedFilePath, resolvedEnvVar);
-  PR_SetEnv(resolvedEnvVar.get());
-}
-
-static void
-AddContentSandboxAllowedFiles(int32_t aSandboxLevel,
-                              std::vector<std::wstring>& aAllowedFilesRead)
-{
-  if (aSandboxLevel < 1) {
-    return;
-  }
-
-  nsCOMPtr<nsIFile> binDir;
-  nsresult rv = NS_GetSpecialDirectory(NS_GRE_DIR, getter_AddRefs(binDir));
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return;
-  }
-
-  nsAutoString binDirPath;
-  rv = binDir->GetPath(binDirPath);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return;
-  }
-
-  // If bin directory is on a remote drive add read access.
-  wchar_t volPath[MAX_PATH];
-  if (!::GetVolumePathNameW(binDirPath.get(), volPath, MAX_PATH)) {
-    return;
-  }
-
-  if (::GetDriveTypeW(volPath) != DRIVE_REMOTE) {
-    return;
-  }
-
-  // Convert network share path to format for sandbox policy.
-  if (Substring(binDirPath, 0, 2).Equals(L"\\\\")) {
-    binDirPath.InsertLiteral(u"??\\UNC", 1);
-  }
-
-  binDirPath.AppendLiteral(u"\\*");
-
-  aAllowedFilesRead.push_back(std::wstring(binDirPath.get()));
-}
-#endif
-
 bool
 GeckoChildProcessHost::PerformAsyncLaunchInternal(std::vector<std::string>& aExtraOpts, base::ProcessArchitecture arch)
 {
@@ -807,27 +704,6 @@ GeckoChildProcessHost::PerformAsyncLaunchInternal(std::vector<std::string>& aExt
     newEnvVars["LD_PRELOAD"] = ldPreloadPath;
   }
 #endif // MOZ_WIDGET_GONK
-
-#if defined(XP_LINUX) && defined(MOZ_SANDBOX)
-  // Preload libmozsandbox.so so that sandbox-related interpositions
-  // can be defined there instead of in the executable.
-  // (This could be made conditional on intent to use sandboxing, but
-  // it's harmless for non-sandboxed processes.)
-  {
-    nsAutoCString preload;
-    // Prepend this, because people can and do preload libpthread.
-    // (See bug 1222500.)
-    preload.AssignLiteral("libmozsandbox.so");
-    if (const char* oldPreload = PR_GetEnv("LD_PRELOAD")) {
-      // Doesn't matter if oldPreload is ""; extra separators are ignored.
-      preload.Append(' ');
-      preload.Append(oldPreload);
-    }
-    // Explicitly construct the std::string to make it clear that this
-    // isn't retaining a pointer to the nsCString's buffer.
-    newEnvVars["LD_PRELOAD"] = std::string(preload.get());
-  }
-#endif
 
   // remap the IPC socket fd to a well-known int, as the OS does for
   // STDOUT_FILENO, for example
@@ -994,74 +870,6 @@ GeckoChildProcessHost::PerformAsyncLaunchInternal(std::vector<std::string>& aExt
     }
   }
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-  bool shouldSandboxCurrentProcess = false;
-
-  // XXX: Bug 1124167: We should get rid of the process specific logic for
-  // sandboxing in this class at some point. Unfortunately it will take a bit
-  // of reorganizing so I don't think this patch is the right time.
-  switch (mProcessType) {
-    case GeckoProcessType_Content:
-      break;
-    case GeckoProcessType_Plugin:
-      if (mSandboxLevel > 0 &&
-          !PR_GetEnv("MOZ_DISABLE_NPAPI_SANDBOX")) {
-        bool ok = mSandboxBroker.SetSecurityLevelForPluginProcess(mSandboxLevel);
-        if (!ok) {
-          return false;
-        }
-        shouldSandboxCurrentProcess = true;
-      }
-      break;
-    case GeckoProcessType_IPDLUnitTest:
-      // XXX: We don't sandbox this process type yet
-      break;
-    case GeckoProcessType_GMPlugin:
-      if (!PR_GetEnv("MOZ_DISABLE_GMP_SANDBOX")) {
-        // The Widevine CDM on Windows can only load at USER_RESTRICTED,
-        // not at USER_LOCKDOWN. So look in the command line arguments
-        // to see if we're loading the path to the Widevine CDM, and if
-        // so use sandbox level USER_RESTRICTED instead of USER_LOCKDOWN.
-        bool isWidevine = std::any_of(aExtraOpts.begin(), aExtraOpts.end(),
-          [](const std::string arg) { return arg.find("gmp-widevinecdm") != std::string::npos; });
-        auto level = isWidevine ? SandboxBroker::Restricted : SandboxBroker::LockDown;
-        bool ok = mSandboxBroker.SetSecurityLevelForGMPlugin(level);
-        if (!ok) {
-          return false;
-        }
-        shouldSandboxCurrentProcess = true;
-      }
-      break;
-    case GeckoProcessType_GPU:
-      break;
-    case GeckoProcessType_Default:
-    default:
-      MOZ_CRASH("Bad process type in GeckoChildProcessHost");
-      break;
-  };
-
-  if (shouldSandboxCurrentProcess) {
-    MaybeAddNsprLogFileAccess(mAllowedFilesReadWrite);
-    for (auto it = mAllowedFilesRead.begin();
-         it != mAllowedFilesRead.end();
-         ++it) {
-      mSandboxBroker.AllowReadFile(it->c_str());
-    }
-
-    for (auto it = mAllowedFilesReadWrite.begin();
-         it != mAllowedFilesReadWrite.end();
-         ++it) {
-      mSandboxBroker.AllowReadWriteFile(it->c_str());
-    }
-
-    for (auto it = mAllowedDirectories.begin();
-         it != mAllowedDirectories.end();
-         ++it) {
-      mSandboxBroker.AllowDirectory(it->c_str());
-    }
-  }
-#endif // XP_WIN && MOZ_SANDBOX
-
   // Add the application directory path (-appdir path)
   AddAppDirToCommandLine(cmdLine);
 
@@ -1078,33 +886,8 @@ GeckoChildProcessHost::PerformAsyncLaunchInternal(std::vector<std::string>& aExt
   // Process type
   cmdLine.AppendLooseValue(UTF8ToWide(childProcessType));
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-  if (shouldSandboxCurrentProcess) {
-    if (mSandboxBroker.LaunchApp(cmdLine.program().c_str(),
-                                 cmdLine.command_line_string().c_str(),
-                                 mEnableSandboxLogging,
-                                 &process)) {
-      EnvironmentLog("MOZ_PROCESS_LOG").print(
-        "==> process %d launched child process %d (%S)\n",
-        base::GetCurrentProcId(), base::GetProcId(process),
-        cmdLine.command_line_string().c_str());
-    }
-  } else
-#endif
   {
     base::LaunchApp(cmdLine, false, false, &process);
-
-#ifdef MOZ_SANDBOX
-    // We need to be able to duplicate handles to some types of non-sandboxed
-    // child processes.
-    if (mProcessType == GeckoProcessType_Content ||
-        mProcessType == GeckoProcessType_GPU ||
-        mProcessType == GeckoProcessType_GMPlugin) {
-      if (!mSandboxBroker.AddTargetPeer(process)) {
-        NS_WARNING("Failed to add content process as target peer.");
-      }
-    }
-#endif
   }
 
 #else

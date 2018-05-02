@@ -22,9 +22,6 @@
 #define XRE_DONT_PROTECT_DLL_LOAD
 #define XRE_WANT_ENVIRON
 #include "nsWindowsWMain.cpp"
-#ifdef MOZ_SANDBOX
-#include "mozilla/sandboxing/SandboxInitialization.h"
-#endif
 #endif
 
 #ifdef MOZ_WIDGET_GTK
@@ -54,10 +51,6 @@ main(int argc, char** argv, char** envp)
 #endif
 
     XREShellData shellData;
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-    shellData.sandboxBrokerServices =
-      mozilla::sandboxing::GetInitializedBrokerServices();
-#endif
 
     int result = XRE_XPCShellMain(argc, argv, envp, &shellData);
 

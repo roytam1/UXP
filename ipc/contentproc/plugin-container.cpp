@@ -22,11 +22,6 @@
 
 #include "GMPLoader.h"
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-#include "mozilla/sandboxing/SandboxInitialization.h"
-#include "mozilla/sandboxing/sandboxLogging.h"
-#endif
-
 #ifdef MOZ_WIDGET_GONK
 # include <sys/time.h>
 # include <sys/resource.h> 
@@ -62,26 +57,10 @@ InitializeBinder(void *aDummy) {
 }
 #endif
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-class WinSandboxStarter : public mozilla::gmp::SandboxStarter {
-public:
-    virtual bool Start(const char *aLibPath) override {
-        if (IsSandboxedProcess()) {
-            mozilla::sandboxing::LowerSandbox();
-        }
-        return true;
-    }
-};
-#endif
-
 mozilla::gmp::SandboxStarter*
 MakeSandboxStarter()
 {
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-    return new WinSandboxStarter();
-#else
     return nullptr;
-#endif
 }
 
 int
@@ -95,26 +74,7 @@ content_process_main(int argc, char* argv[])
 
     XREChildData childData;
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-    if (IsSandboxedProcess()) {
-        childData.sandboxTargetServices =
-            mozilla::sandboxing::GetInitializedTargetServices();
-        if (!childData.sandboxTargetServices) {
-            return 1;
-        }
-
-        childData.ProvideLogFunction = mozilla::sandboxing::ProvideLogFunction;
-    }
-#endif
-
     XRE_SetProcessType(argv[--argc]);
-
-#if defined(XP_LINUX) && defined(MOZ_SANDBOX)
-    // This has to happen while we're still single-threaded, and on
-    // B2G that means before the Android Binder library is
-    // initialized.
-    mozilla::SandboxEarlyInit(XRE_GetProcessType());
-#endif
 
 #ifdef MOZ_WIDGET_GONK
     // This creates a ThreadPool for binder ipc. A ThreadPool is necessary to

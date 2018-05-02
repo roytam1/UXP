@@ -9,14 +9,6 @@
 
 #include "mozilla/UniquePtr.h"
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-#include "mozilla/sandboxing/loggingTypes.h"
-
-namespace sandbox {
-class TargetServices;
-}
-#endif
-
 namespace mozilla {
 namespace gmp {
 class GMPLoader;
@@ -35,17 +27,6 @@ struct XREChildData
   mozilla::UniquePtr<mozilla::gmp::GMPLoader> gmpLoader;
 #endif
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-  /**
-   * Chromium sandbox TargetServices.
-   */
-  sandbox::TargetServices* sandboxTargetServices = nullptr;
-
-  /**
-   * Function to provide a logging function to the chromium sandbox code.
-   */
-  mozilla::sandboxing::ProvideLogFunctionCb ProvideLogFunction = nullptr;
-#endif
 };
 
 #endif // XREChildData_h

@@ -497,26 +497,7 @@ var snapshotFormatters = {
     $("prefs-user-js-section").style.display = "";
     // Clear the no-copy class
     $("prefs-user-js-section").className = "";
-  },
-
-  sandbox: function sandbox(data) {
-    if (!AppConstants.MOZ_SANDBOX)
-      return;
-
-    let strings = stringBundle();
-    let tbody = $("sandbox-tbody");
-    for (let key in data) {
-      // Simplify the display a little in the common case.
-      if (key === "hasPrivilegedUserNamespaces" &&
-          data[key] === data["hasUserNamespaces"]) {
-        continue;
-      }
-      tbody.appendChild($.new("tr", [
-        $.new("th", strings.GetStringFromName(key), "column"),
-        $.new("td", data[key])
-      ]));
-    }
-  },
+  }
 };
 
 var $ = document.getElementById.bind(document);

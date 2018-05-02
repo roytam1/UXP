@@ -43,45 +43,8 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         'nss3.dll',
     ]
 
-    if CONFIG['MOZ_SANDBOX']:
-        # For sandbox includes and the include dependencies those have
-        LOCAL_INCLUDES += [
-            '/security/sandbox/chromium',
-            '/security/sandbox/chromium-shim',
-        ]
-
-        USE_LIBS += [
-            'sandbox_s',
-        ]
-
-        DELAYLOAD_DLLS += [
-            'winmm.dll',
-            'user32.dll',
-        ]
-
     DELAYLOAD_DLLS += [
         'xul.dll',
-    ]
-
-if CONFIG['MOZ_SANDBOX'] and CONFIG['OS_TARGET'] in ('Linux', 'Android'):
-    USE_LIBS += [
-        'mozsandbox',
-    ]
-
-    # gcc lto likes to put the top level asm in syscall.cc in a different partition
-    # from the function using it which breaks the build.  Work around that by
-    # forcing there to be only one partition.
-    if '-flto' in CONFIG['OS_CXXFLAGS'] and not CONFIG['CLANG_CXX']:
-        LDFLAGS += ['--param lto-partitions=1']
-
-if CONFIG['MOZ_SANDBOX'] and CONFIG['OS_TARGET'] == 'Darwin':
-    # For sandbox includes and the include dependencies those have
-    LOCAL_INCLUDES += [
-        '/security/sandbox/chromium',
-        '/security/sandbox/chromium-shim',
-    ]
-    USE_LIBS += [
-        'mozsandbox',
     ]
 
 if CONFIG['_MSC_VER']:

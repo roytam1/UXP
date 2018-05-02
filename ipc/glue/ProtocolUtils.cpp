@@ -20,11 +20,6 @@
 #include "mozilla/Unused.h"
 #include "nsPrintfCString.h"
 
-#if defined(MOZ_SANDBOX) && defined(XP_WIN)
-#define TARGET_SANDBOX_EXPORTS
-#include "mozilla/sandboxTarget.h"
-#endif
-
 #include "nsAutoPtr.h"
 
 using namespace IPC;
@@ -161,17 +156,6 @@ bool DuplicateHandle(HANDLE aSourceHandle,
                                aDesiredAccess, false, aOptions);
 
   }
-
-#if defined(MOZ_SANDBOX)
-  // Try the broker next (will fail if not sandboxed).
-  if (SandboxTarget::Instance()->BrokerDuplicateHandle(aSourceHandle,
-                                                       aTargetProcessId,
-                                                       aTargetHandle,
-                                                       aDesiredAccess,
-                                                       aOptions)) {
-    return true;
-  }
-#endif
 
   // Finally, see if we already have access to the process.
   ScopedProcessHandle targetProcess(OpenProcess(PROCESS_DUP_HANDLE,

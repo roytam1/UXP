@@ -7,23 +7,11 @@
 #ifndef XREShellData_h
 #define XREShellData_h
 
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-namespace sandbox {
-class BrokerServices;
-}
-#endif
-
 /**
  * Data needed by XRE_XPCShellMain.
  */
 struct XREShellData
 {
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-  /**
-   * Chromium sandbox BrokerServices.
-   */
-  sandbox::BrokerServices* sandboxBrokerServices;
-#endif
 };
 
 #endif // XREShellData_h

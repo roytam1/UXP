@@ -12,10 +12,6 @@
 
 #ifdef XP_WIN
 #include "windows.h"
-#ifdef MOZ_SANDBOX
-#include <intrin.h>
-#include <assert.h>
-#endif
 #endif
 
 #if defined(HASH_NODE_ID_WITH_DEVICE_ID)
@@ -35,10 +31,6 @@
 
 #ifdef XP_WIN
 #include "windows.h"
-#ifdef MOZ_SANDBOX
-#include <intrin.h>
-#include <assert.h>
-#endif
 #endif
 
 #ifdef XP_MACOSX

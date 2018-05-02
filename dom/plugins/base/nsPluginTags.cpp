@@ -427,24 +427,7 @@ void nsPluginTag::InitMime(const char* const* aMimeTypes,
 void
 nsPluginTag::InitSandboxLevel()
 {
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-  nsAutoCString sandboxPref("dom.ipc.plugins.sandbox-level.");
-  sandboxPref.Append(GetNiceFileName());
-  if (NS_FAILED(Preferences::GetInt(sandboxPref.get(), &mSandboxLevel))) {
-    mSandboxLevel = Preferences::GetInt("dom.ipc.plugins.sandbox-level.default"
-);
-  }
-
-#if defined(_AMD64_)
-  // As level 2 is now the default NPAPI sandbox level for 64-bit flash, we
-  // don't want to allow a lower setting unless this environment variable is
-  // set. This should be changed if the firefox.js pref file is changed.
-  if (mIsFlashPlugin &&
-      !PR_GetEnv("MOZ_ALLOW_WEAKER_SANDBOX") && mSandboxLevel < 2) {
-    mSandboxLevel = 2;
-  }
-#endif
-#endif
+/* STUB */
 }
 
 #if !defined(XP_WIN) && !defined(XP_MACOSX)

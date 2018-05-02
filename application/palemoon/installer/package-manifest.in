@@ -334,21 +334,6 @@
 @RESPATH@/chrome/pippki@JAREXT@
 @RESPATH@/chrome/pippki.manifest
 
-; For process sandboxing
-#if defined(MOZ_SANDBOX)
-#if defined(XP_WIN)
-#if defined(WOW_HELPER)
-@BINPATH@/wow_helper.exe
-#endif
-#endif
-#endif
-
-#if defined(MOZ_SANDBOX)
-#if defined(XP_LINUX)
-@BINPATH@/@DLL_PREFIX@mozsandbox@DLL_SUFFIX@
-#endif
-#endif
-
 ; for Solaris SPARC
 #ifdef SOLARIS
 bin/libfreebl_32fpu_3.so

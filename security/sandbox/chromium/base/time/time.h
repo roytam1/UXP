@@ -522,7 +522,6 @@ class BASE_EXPORT Time : public time_internal::TimeBase<Time> {
     return FromExploded(true, exploded);
   }
 
-#if !defined(MOZ_SANDBOX)
   // Converts a string representation of time to a Time object.
   // An example of a time string which is converted is as below:-
   // "Tue, 15 Nov 1994 12:45:26 GMT". If the timezone is not specified
@@ -537,7 +536,6 @@ class BASE_EXPORT Time : public time_internal::TimeBase<Time> {
   static bool FromUTCString(const char* time_string, Time* parsed_time) {
     return FromStringInternal(time_string, false, parsed_time);
   }
-#endif
 
   // Fills the given exploded structure with either the local time or UTC from
   // this time structure (containing UTC).
@@ -565,7 +563,6 @@ class BASE_EXPORT Time : public time_internal::TimeBase<Time> {
   // |is_local = true| or UTC |is_local = false|.
   static Time FromExploded(bool is_local, const Exploded& exploded);
 
-#if !defined(MOZ_SANDBOX)
   // Converts a string representation of time to a Time object.
   // An example of a time string which is converted is as below:-
   // "Tue, 15 Nov 1994 12:45:26 GMT". If the timezone is not specified
@@ -576,7 +573,6 @@ class BASE_EXPORT Time : public time_internal::TimeBase<Time> {
   static bool FromStringInternal(const char* time_string,
                                  bool is_local,
                                  Time* parsed_time);
-#endif
 };
 
 // Inline the TimeDelta factory methods, for fast TimeDelta construction.

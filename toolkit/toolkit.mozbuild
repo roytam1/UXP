@@ -4,12 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-if CONFIG['MOZ_SANDBOX']:
-    DIRS += ['/security/sandbox']
-
 DIRS += [
-    # Depends on NSS and NSPR, and must be built after sandbox or else B2G emulator
-    # builds fail.
+    # Depends on NSS and NSPR
     '/security/certverifier',
     # Depends on certverifier
     '/security/apps',

@@ -22,10 +22,6 @@ extern "C" CGError CGSSetDebugOptions(int options);
 
 #ifdef XP_WIN
 bool ShouldProtectPluginCurrentDirectory(char16ptr_t pluginFilePath);
-#if defined(MOZ_SANDBOX)
-#define TARGET_SANDBOX_EXPORTS
-#include "mozilla/sandboxTarget.h"
-#endif
 #endif
 
 using mozilla::ipc::IOThreadChild;
@@ -107,12 +103,6 @@ PluginProcessChild::Init()
 
     pluginFilename = WideToUTF8(values[0]);
 
-#if defined(MOZ_SANDBOX)
-    // This is probably the earliest we would want to start the sandbox.
-    // As we attempt to tighten the sandbox, we may need to consider moving this
-    // to later in the plugin initialization.
-    mozilla::SandboxTarget::Instance()->StartSandbox();
-#endif
 #else
 #  error Sorry
 #endif

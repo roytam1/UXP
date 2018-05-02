@@ -2311,7 +2311,6 @@ MOZ_INSTALL_TRACKING=
 ACCESSIBILITY=1
 MOZ_TIME_MANAGER=
 MOZ_AUDIO_CHANNEL_MANAGER=
-MOZ_SANDBOX=
 MOZ_BINARY_EXTENSIONS=
 MOZ_JETPACK=1
 MOZ_DEVTOOLS_SERVER=1
@@ -3922,24 +3921,6 @@ if test -n "$MOZ_NO_SMART_CARDS"; then
     AC_DEFINE(MOZ_NO_SMART_CARDS)
 fi
 AC_SUBST(MOZ_NO_SMART_CARDS)
-
-dnl ========================================================
-dnl = Sandboxing support
-dnl ========================================================
-MOZ_ARG_ENABLE_BOOL(sandbox,
-[  --enable-sandbox        Enable sandboxing support],
-    MOZ_SANDBOX=1,
-    MOZ_SANDBOX=)
-
-if test -n "$MOZ_TSAN" -o -n "$MOZ_ASAN"; then
-    # Bug 1182565: TSan conflicts with sandboxing on Linux.
-    # Bug 1287971: LSan also conflicts with sandboxing on Linux.
-    case $OS_TARGET in
-    Linux|Android)
-        MOZ_SANDBOX=
-        ;;
-    esac
-fi
 
 dnl ========================================================
 dnl =
@@ -5771,7 +5752,6 @@ MOZ_OFFICIAL_BRANDING=$MOZ_OFFICIAL_BRANDING
 MOZ_BRANDING_DIRECTORY=$MOZ_BRANDING_DIRECTORY
 MC_BASILISK=$MC_BASILISK
 MC_PALEMOON=$MC_PALEMOON
-MOZ_SANDBOX=$MOZ_SANDBOX
 MOZ_EME=$MOZ_EME
 MOZ_WEBRTC=$MOZ_WEBRTC
 MOZ_SYSTEM_LIBEVENT=$MOZ_SYSTEM_LIBEVENT

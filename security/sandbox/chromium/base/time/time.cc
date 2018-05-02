@@ -242,7 +242,6 @@ Time Time::LocalMidnight() const {
   return FromLocalExploded(exploded);
 }
 
-#if !defined(MOZ_SANDBOX)
 // static
 bool Time::FromStringInternal(const char* time_string,
                               bool is_local,
@@ -263,7 +262,6 @@ bool Time::FromStringInternal(const char* time_string,
   *parsed_time = Time(result_time);
   return true;
 }
-#endif
 
 std::ostream& operator<<(std::ostream& os, Time time) {
   Time::Exploded exploded;

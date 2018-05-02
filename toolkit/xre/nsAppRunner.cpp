@@ -194,14 +194,6 @@
 #include "GeneratedJNIWrappers.h"
 #endif
 
-#if defined(MOZ_SANDBOX)
-#if defined(XP_LINUX) && !defined(ANDROID)
-#include "mozilla/SandboxInfo.h"
-#elif defined(XP_WIN)
-#include "SandboxBroker.h"
-#endif
-#endif
-
 extern uint32_t gRestartMode;
 extern void InstallSignalHandlers(const char *ProgramName);
 
@@ -2952,18 +2944,6 @@ XREMain::XRE_mainInit(bool* aExitFlag)
   if (NS_FAILED(rv))
     return 1;
 
-#if defined(MOZ_SANDBOX) && defined(XP_WIN)
-  if (mAppData->sandboxBrokerServices) {
-    SandboxBroker::Initialize(mAppData->sandboxBrokerServices);
-    Telemetry::Accumulate(Telemetry::SANDBOX_BROKER_INITIALIZED, true);
-  } else {
-    Telemetry::Accumulate(Telemetry::SANDBOX_BROKER_INITIALIZED, false);
-    // Otherwise just warn for the moment, as most things will work.
-    NS_WARNING("Failed to initialize broker services, sandboxed processes will "
-               "fail to start.");
-  }
-#endif
-
 #ifdef XP_MACOSX
   // Set up ability to respond to system (Apple) events. This must occur before
   // ProcessUpdates to ensure that links clicked in external applications aren't
@@ -3906,24 +3886,6 @@ XREMain::XRE_mainRun()
   }
 #endif /* MOZ_INSTRUMENT_EVENT_LOOP */
 
-#if defined(MOZ_SANDBOX) && defined(XP_LINUX) && !defined(MOZ_WIDGET_GONK)
-  // If we're on Linux, we now have information about the OS capabilities
-  // available to us.
-  SandboxInfo sandboxInfo = SandboxInfo::Get();
-  Telemetry::Accumulate(Telemetry::SANDBOX_HAS_SECCOMP_BPF,
-                        sandboxInfo.Test(SandboxInfo::kHasSeccompBPF));
-  Telemetry::Accumulate(Telemetry::SANDBOX_HAS_SECCOMP_TSYNC,
-                        sandboxInfo.Test(SandboxInfo::kHasSeccompTSync));
-  Telemetry::Accumulate(Telemetry::SANDBOX_HAS_USER_NAMESPACES_PRIVILEGED,
-                        sandboxInfo.Test(SandboxInfo::kHasPrivilegedUserNamespaces));
-  Telemetry::Accumulate(Telemetry::SANDBOX_HAS_USER_NAMESPACES,
-                        sandboxInfo.Test(SandboxInfo::kHasUserNamespaces));
-  Telemetry::Accumulate(Telemetry::SANDBOX_CONTENT_ENABLED,
-                        sandboxInfo.Test(SandboxInfo::kEnabledForContent));
-  Telemetry::Accumulate(Telemetry::SANDBOX_MEDIA_ENABLED,
-                        sandboxInfo.Test(SandboxInfo::kEnabledForMedia));
-#endif /* MOZ_SANDBOX && XP_LINUX && !MOZ_WIDGET_GONK */
-
   {
     rv = appStartup->Run();
     if (NS_FAILED(rv)) {
@@ -3988,10 +3950,6 @@ XREMain::XRE_main(int argc, char* argv[], const nsXREAppData* aAppData)
   //   WARNING: XPCOM objects created/destroyed from static ctor/dtor: [..]
   // See bug 1279614.
   XRE_CreateStatsObject();
-
-#if defined(MOZ_SANDBOX) && defined(XP_LINUX) && !defined(ANDROID)
-  SandboxInfo::ThreadingCheck();
-#endif
 
   char aLocal;
   GeckoProfilerInitRAII profilerGuard(&aLocal);

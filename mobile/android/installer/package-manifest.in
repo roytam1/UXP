@@ -502,11 +502,6 @@
 ;
 @BINPATH@/components/pipnss.xpt
 
-; For process sandboxing
-#if defined(MOZ_SANDBOX)
-@BINPATH@/@DLL_PREFIX@mozsandbox@DLL_SUFFIX@
-#endif
-
 [mobile]
 @BINPATH@/chrome/chrome@JAREXT@
 @BINPATH@/chrome/chrome.manifest
