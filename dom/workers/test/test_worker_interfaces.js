@@ -38,7 +38,7 @@ var ecmaGlobals =
     "Int32Array",
     "Int8Array",
     "InternalError",
-    {name: "Intl", android: false},
+    "Intl",
     "Iterator",
     "JSON",
     "Map",
