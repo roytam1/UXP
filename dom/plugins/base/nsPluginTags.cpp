@@ -248,7 +248,6 @@ nsPluginTag::nsPluginTag(nsPluginInfo* aPluginInfo,
            aPluginInfo->fMimeDescriptionArray,
            aPluginInfo->fExtensionArray,
            aPluginInfo->fVariantCount);
-  InitSandboxLevel();
   EnsureMembersAreUTF8();
   FixupVersion();
 }
@@ -283,7 +282,6 @@ nsPluginTag::nsPluginTag(const char* aName,
 {
   InitMime(aMimeTypes, aMimeDescriptions, aExtensions,
            static_cast<uint32_t>(aVariants));
-  InitSandboxLevel();
   if (!aArgsAreUTF8)
     EnsureMembersAreUTF8();
   FixupVersion();
@@ -422,12 +420,6 @@ void nsPluginTag::InitMime(const char* const* aMimeTypes,
       mExtensions.AppendElement(nsCString());
     }
   }
-}
-
-void
-nsPluginTag::InitSandboxLevel()
-{
-/* STUB */
 }
 
 #if !defined(XP_WIN) && !defined(XP_MACOSX)

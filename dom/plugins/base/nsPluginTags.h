@@ -190,7 +190,6 @@ private:
                 const char* const* aMimeDescriptions,
                 const char* const* aExtensions,
                 uint32_t aVariantCount);
-  void InitSandboxLevel();
   nsresult EnsureMembersAreUTF8();
   void FixupVersion();
 
