@@ -50,9 +50,7 @@ main(int argc, char** argv, char** envp)
     DllBlocklist_Initialize();
 #endif
 
-    XREShellData shellData;
-
-    int result = XRE_XPCShellMain(argc, argv, envp, &shellData);
+    int result = XRE_XPCShellMain(argc, argv, envp);
 
 #ifdef XP_MACOSX
     FinishAutoreleasePool();

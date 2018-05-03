@@ -1232,11 +1232,8 @@ GetCurrentWorkingDirectory(nsAString& workingDirectory)
 static JSSecurityCallbacks shellSecurityCallbacks;
 
 int
-XRE_XPCShellMain(int argc, char** argv, char** envp,
-                 const XREShellData* aShellData)
+XRE_XPCShellMain(int argc, char** argv, char** envp)
 {
-    MOZ_ASSERT(aShellData);
-
     JSContext* cx;
     int result = 0;
     nsresult rv;

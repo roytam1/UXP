@@ -20,7 +20,6 @@
 #include "mozilla/Vector.h"
 #include "mozilla/TimeStamp.h"
 #include "XREChildData.h"
-#include "XREShellData.h"
 
 /**
  * A directory service key which provides the platform-correct "application
@@ -504,8 +503,7 @@ XRE_API(void,
         XRE_EnableSameExecutableForContentProc, ())
 
 XRE_API(int,
-        XRE_XPCShellMain, (int argc, char** argv, char** envp,
-                           const XREShellData* aShellData))
+        XRE_XPCShellMain, (int argc, char** argv, char** envp))
 
 #if MOZ_WIDGET_GTK == 2
 XRE_API(void,
