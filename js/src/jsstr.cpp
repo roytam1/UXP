@@ -36,9 +36,7 @@
 #include "jit/InlinableNatives.h"
 #include "js/Conversions.h"
 #include "js/UniquePtr.h"
-#if ENABLE_INTL_API
 #include "unicode/unorm.h"
-#endif
 #include "vm/GlobalObject.h"
 #include "vm/Interpreter.h"
 #include "vm/Opcodes.h"

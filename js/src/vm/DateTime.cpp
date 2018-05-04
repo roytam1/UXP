@@ -13,9 +13,7 @@
 #include "jsutil.h"
 
 #include "js/Date.h"
-#if ENABLE_INTL_API
 #include "unicode/timezone.h"
-#endif
 
 using mozilla::Atomic;
 using mozilla::ReleaseAcquire;
@@ -333,7 +331,7 @@ JS::ResetTimeZone()
 {
     js::DateTimeInfo::updateTimeZoneAdjustment();
 
-#if ENABLE_INTL_API && defined(ICU_TZ_HAS_RECREATE_DEFAULT)
+#if defined(ICU_TZ_HAS_RECREATE_DEFAULT)
     TZInfo.acquire();
     TZInfo.status = IcuTimeZoneInfo::NeedsUpdate;
     TZInfo.release();
@@ -343,7 +341,7 @@ JS::ResetTimeZone()
 void
 js::ResyncICUDefaultTimeZone()
 {
-#if ENABLE_INTL_API && defined(ICU_TZ_HAS_RECREATE_DEFAULT)
+#if defined(ICU_TZ_HAS_RECREATE_DEFAULT)
     TZInfo.acquire();
     if (TZInfo.status == IcuTimeZoneInfo::NeedsUpdate) {
         icu::TimeZone::recreateDefault();
