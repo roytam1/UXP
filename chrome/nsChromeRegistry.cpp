@@ -32,9 +32,7 @@
 #include "mozilla/StyleSheet.h"
 #include "mozilla/StyleSheetInlines.h"
 
-#ifdef ENABLE_INTL_API
 #include "unicode/uloc.h"
-#endif
 
 nsChromeRegistry* nsChromeRegistry::gChromeRegistry;
 
@@ -720,7 +718,6 @@ nsChromeRegistry::GetSingleton()
 void
 nsChromeRegistry::SanitizeForBCP47(nsACString& aLocale)
 {
-#ifdef ENABLE_INTL_API
   // Currently, the only locale code we use that's not BCP47-conformant is
   // "ja-JP-mac" on OS X, but let's try to be more general than just
   // hard-coding that here.
@@ -735,13 +732,4 @@ nsChromeRegistry::SanitizeForBCP47(nsACString& aLocale)
   if (U_SUCCESS(err) && len > 0) {
     aLocale.Assign(langTag, len);
   }
-#else
-  // This is only really needed for Intl API purposes, AFAIK,
-  // so probably won't be used in a non-ENABLE_INTL_API build.
-  // But let's fix up the single anomalous code we actually ship,
-  // just in case:
-  if (aLocale.EqualsLiteral("ja-JP-mac")) {
-    aLocale.AssignLiteral("ja-JP");
-  }
-#endif
 }
