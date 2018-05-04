@@ -900,11 +900,7 @@ function ArrayToLocaleString(locales, options) {
     if (firstElement === undefined || firstElement === null) {
         R = "";
     } else {
-#if EXPOSE_INTL_API
         R = ToString(callContentFunction(firstElement.toLocaleString, firstElement, locales, options));
-#else
-        R = ToString(callContentFunction(firstElement.toLocaleString, firstElement));
-#endif
     }
 
     // Step 3 (reordered).
@@ -919,11 +915,7 @@ function ArrayToLocaleString(locales, options) {
         // Steps 9.a, 9.c-e.
         R += separator;
         if (!(nextElement === undefined || nextElement === null)) {
-#if EXPOSE_INTL_API
             R += ToString(callContentFunction(nextElement.toLocaleString, nextElement, locales, options));
-#else
-            R += ToString(callContentFunction(nextElement.toLocaleString, nextElement));
-#endif
         }
     }
 

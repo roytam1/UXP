@@ -17,9 +17,7 @@
 
 #include "builtin/AtomicsObject.h"
 #include "builtin/Eval.h"
-#if EXPOSE_INTL_API
-# include "builtin/Intl.h"
-#endif
+#include "builtin/Intl.h"
 #include "builtin/MapObject.h"
 #include "builtin/ModuleObject.h"
 #include "builtin/Object.h"

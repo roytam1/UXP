@@ -724,141 +724,6 @@ js::num_toString(JSContext* cx, unsigned argc, Value* vp)
     return CallNonGenericMethod<IsNumber, num_toString_impl>(cx, args);
 }
 
-#if !EXPOSE_INTL_API
-MOZ_ALWAYS_INLINE bool
-num_toLocaleString_impl(JSContext* cx, const CallArgs& args)
-{
-    MOZ_ASSERT(IsNumber(args.thisv()));
-
-    double d = Extract(args.thisv());
-
-    RootedString str(cx, NumberToStringWithBase<CanGC>(cx, d, 10));
-    if (!str) {
-        JS_ReportOutOfMemory(cx);
-        return false;
-    }
-
-    /*
-     * Create the string, move back to bytes to make string twiddling
-     * a bit easier and so we can insert platform charset seperators.
-     */
-    JSAutoByteString numBytes(cx, str);
-    if (!numBytes)
-        return false;
-    const char* num = numBytes.ptr();
-    if (!num)
-        return false;
-
-    /*
-     * Find the first non-integer value, whether it be a letter as in
-     * 'Infinity', a decimal point, or an 'e' from exponential notation.
-     */
-    const char* nint = num;
-    if (*nint == '-')
-        nint++;
-    while (*nint >= '0' && *nint <= '9')
-        nint++;
-    int digits = nint - num;
-    const char* end = num + digits;
-    if (!digits) {
-        args.rval().setString(str);
-        return true;
-    }
-
-    JSRuntime* rt = cx->runtime();
-    size_t thousandsLength = strlen(rt->thousandsSeparator);
-    size_t decimalLength = strlen(rt->decimalSeparator);
-
-    /* Figure out how long resulting string will be. */
-    int buflen = strlen(num);
-    if (*nint == '.')
-        buflen += decimalLength - 1; /* -1 to account for existing '.' */
-
-    const char* numGrouping;
-    const char* tmpGroup;
-    numGrouping = tmpGroup = rt->numGrouping;
-    int remainder = digits;
-    if (*num == '-')
-        remainder--;
-
-    while (*tmpGroup != CHAR_MAX && *tmpGroup != '\0') {
-        if (*tmpGroup >= remainder)
-            break;
-        buflen += thousandsLength;
-        remainder -= *tmpGroup;
-        tmpGroup++;
-    }
-
-    int nrepeat;
-    if (*tmpGroup == '\0' && *numGrouping != '\0') {
-        nrepeat = (remainder - 1) / tmpGroup[-1];
-        buflen += thousandsLength * nrepeat;
-        remainder -= nrepeat * tmpGroup[-1];
-    } else {
-        nrepeat = 0;
-    }
-    tmpGroup--;
-
-    char* buf = cx->pod_malloc<char>(buflen + 1);
-    if (!buf)
-        return false;
-
-    char* tmpDest = buf;
-    const char* tmpSrc = num;
-
-    while (*tmpSrc == '-' || remainder--) {
-        MOZ_ASSERT(tmpDest - buf < buflen);
-        *tmpDest++ = *tmpSrc++;
-    }
-    while (tmpSrc < end) {
-        MOZ_ASSERT(tmpDest - buf + ptrdiff_t(thousandsLength) <= buflen);
-        strcpy(tmpDest, rt->thousandsSeparator);
-        tmpDest += thousandsLength;
-        MOZ_ASSERT(tmpDest - buf + *tmpGroup <= buflen);
-        js_memcpy(tmpDest, tmpSrc, *tmpGroup);
-        tmpDest += *tmpGroup;
-        tmpSrc += *tmpGroup;
-        if (--nrepeat < 0)
-            tmpGroup--;
-    }
-
-    if (*nint == '.') {
-        MOZ_ASSERT(tmpDest - buf + ptrdiff_t(decimalLength) <= buflen);
-        strcpy(tmpDest, rt->decimalSeparator);
-        tmpDest += decimalLength;
-        MOZ_ASSERT(tmpDest - buf + ptrdiff_t(strlen(nint + 1)) <= buflen);
-        strcpy(tmpDest, nint + 1);
-    } else {
-        MOZ_ASSERT(tmpDest - buf + ptrdiff_t(strlen(nint)) <= buflen);
-        strcpy(tmpDest, nint);
-    }
-
-    if (cx->runtime()->localeCallbacks && cx->runtime()->localeCallbacks->localeToUnicode) {
-        Rooted<Value> v(cx, StringValue(str));
-        bool ok = !!cx->runtime()->localeCallbacks->localeToUnicode(cx, buf, &v);
-        if (ok)
-            args.rval().set(v);
-        js_free(buf);
-        return ok;
-    }
-
-    str = NewStringCopyN<CanGC>(cx, buf, buflen);
-    js_free(buf);
-    if (!str)
-        return false;
-
-    args.rval().setString(str);
-    return true;
-}
-
-static bool
-num_toLocaleString(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    return CallNonGenericMethod<IsNumber, num_toLocaleString_impl>(cx, args);
-}
-#endif /* !EXPOSE_INTL_API */
-
 MOZ_ALWAYS_INLINE bool
 num_valueOf_impl(JSContext* cx, const CallArgs& args)
 {
@@ -1075,11 +940,7 @@ static const JSFunctionSpec number_methods[] = {
     JS_FN(js_toSource_str,       num_toSource,          0, 0),
 #endif
     JS_FN(js_toString_str,       num_toString,          1, 0),
-#if EXPOSE_INTL_API
     JS_SELF_HOSTED_FN(js_toLocaleString_str, "Number_toLocaleString", 0,0),
-#else
-    JS_FN(js_toLocaleString_str, num_toLocaleString,     0,0),
-#endif
     JS_FN(js_valueOf_str,        num_valueOf,           0, 0),
     JS_FN("toFixed",             num_toFixed,           1, 0),
     JS_FN("toExponential",       num_toExponential,     1, 0),
@@ -1135,71 +996,10 @@ js::InitRuntimeNumberState(JSRuntime* rt)
 {
     FIX_FPU();
 
-    // XXX If EXPOSE_INTL_API becomes true all the time at some point,
-    //     js::InitRuntimeNumberState is no longer fallible, and we should
-    //     change its return type.
-#if !EXPOSE_INTL_API
-    /* Copy locale-specific separators into the runtime strings. */
-    const char* thousandsSeparator;
-    const char* decimalPoint;
-    const char* grouping;
-#ifdef HAVE_LOCALECONV
-    struct lconv* locale = localeconv();
-    thousandsSeparator = locale->thousands_sep;
-    decimalPoint = locale->decimal_point;
-    grouping = locale->grouping;
-#else
-    thousandsSeparator = getenv("LOCALE_THOUSANDS_SEP");
-    decimalPoint = getenv("LOCALE_DECIMAL_POINT");
-    grouping = getenv("LOCALE_GROUPING");
-#endif
-    if (!thousandsSeparator)
-        thousandsSeparator = "'";
-    if (!decimalPoint)
-        decimalPoint = ".";
-    if (!grouping)
-        grouping = "\3\0";
-
-    /*
-     * We use single malloc to get the memory for all separator and grouping
-     * strings.
-     */
-    size_t thousandsSeparatorSize = strlen(thousandsSeparator) + 1;
-    size_t decimalPointSize = strlen(decimalPoint) + 1;
-    size_t groupingSize = strlen(grouping) + 1;
-
-    char* storage = js_pod_malloc<char>(thousandsSeparatorSize +
-                                        decimalPointSize +
-                                        groupingSize);
-    if (!storage)
-        return false;
-
-    js_memcpy(storage, thousandsSeparator, thousandsSeparatorSize);
-    rt->thousandsSeparator = storage;
-    storage += thousandsSeparatorSize;
-
-    js_memcpy(storage, decimalPoint, decimalPointSize);
-    rt->decimalSeparator = storage;
-    storage += decimalPointSize;
-
-    js_memcpy(storage, grouping, groupingSize);
-    rt->numGrouping = grouping;
-#endif /* !EXPOSE_INTL_API */
+    // XXX EXPOSE_INTL_API has become true all the time, meaning this is
+    //     no longer fallible, and we should change its return type.
     return true;
 }
-
-#if !EXPOSE_INTL_API
-void
-js::FinishRuntimeNumberState(JSRuntime* rt)
-{
-    /*
-     * The free also releases the memory for decimalSeparator and numGrouping
-     * strings.
-     */
-    char* storage = const_cast<char*>(rt->thousandsSeparator);
-    js_free(storage);
-}
-#endif
 
 JSObject*
 js::InitNumberClass(JSContext* cx, HandleObject obj)

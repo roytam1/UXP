@@ -172,9 +172,7 @@ extern nsresult nsStringInputStreamConstructor(nsISupports*, REFNSIID, void**);
 
 #include "gfxPlatform.h"
 
-#if EXPOSE_INTL_API
 #include "unicode/putil.h"
-#endif
 
 using namespace mozilla;
 using base::AtExitManager;
@@ -692,7 +690,7 @@ NS_InitXPCOM2(nsIServiceManager** aResult,
                         memmove);
 #endif
 
-#if EXPOSE_INTL_API && defined(MOZ_ICU_DATA_ARCHIVE)
+#if defined(MOZ_ICU_DATA_ARCHIVE)
   nsCOMPtr<nsIFile> greDir;
   nsDirectoryService::gService->Get(NS_GRE_DIR,
                                     NS_GET_IID(nsIFile),

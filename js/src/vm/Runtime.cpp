@@ -213,11 +213,6 @@ JSRuntime::JSRuntime(JSRuntime* parentRuntime)
     warningReporter(nullptr),
     buildIdOp(nullptr),
     propertyRemovals(0),
-#if !EXPOSE_INTL_API
-    thousandsSeparator(0),
-    decimalSeparator(0),
-    numGrouping(0),
-#endif
     keepAtoms_(0),
     trustedPrincipals_(nullptr),
     beingDestroyed_(false),
@@ -424,10 +419,6 @@ JSRuntime::destroyRuntime()
      * some filenames around because of gcKeepAtoms.
      */
     FreeScriptData(this, lock);
-
-#if !EXPOSE_INTL_API
-    FinishRuntimeNumberState(this);
-#endif
 
     gc.finish();
     atomsCompartment_ = nullptr;

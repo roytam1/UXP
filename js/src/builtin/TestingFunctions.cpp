@@ -236,11 +236,7 @@ GetBuildConfiguration(JSContext* cx, unsigned argc, Value* vp)
     if (!JS_SetProperty(cx, info, "binary-data", value))
         return false;
 
-#ifdef EXPOSE_INTL_API
     value = BooleanValue(true);
-#else
-    value = BooleanValue(false);
-#endif
     if (!JS_SetProperty(cx, info, "intl-api", value))
         return false;
 

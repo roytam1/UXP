@@ -897,38 +897,6 @@ js::str_toLocaleUpperCase(JSContext* cx, unsigned argc, Value* vp)
     return ToUpperCaseHelper(cx, args);
 }
 
-#if !EXPOSE_INTL_API
-bool
-js::str_localeCompare(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    RootedString str(cx, ToStringForStringFunction(cx, args.thisv()));
-    if (!str)
-        return false;
-
-    RootedString thatStr(cx, ToString<CanGC>(cx, args.get(0)));
-    if (!thatStr)
-        return false;
-
-    if (cx->runtime()->localeCallbacks && cx->runtime()->localeCallbacks->localeCompare) {
-        RootedValue result(cx);
-        if (!cx->runtime()->localeCallbacks->localeCompare(cx, str, thatStr, &result))
-            return false;
-
-        args.rval().set(result);
-        return true;
-    }
-
-    int32_t result;
-    if (!CompareStrings(cx, str, thatStr, &result))
-        return false;
-
-    args.rval().setInt32(result);
-    return true;
-}
-#endif
-
-#if EXPOSE_INTL_API
 /* ES6 20140210 draft 21.1.3.12. */
 bool
 js::str_normalize(JSContext* cx, unsigned argc, Value* vp)
@@ -1005,7 +973,6 @@ js::str_normalize(JSContext* cx, unsigned argc, Value* vp)
     args.rval().setString(ns);
     return true;
 }
-#endif
 
 bool
 js::str_charAt(JSContext* cx, unsigned argc, Value* vp)
@@ -2597,15 +2564,9 @@ static const JSFunctionSpec string_methods[] = {
     JS_FN("trimRight",         str_trimRight,         0,0),
     JS_FN("toLocaleLowerCase", str_toLocaleLowerCase, 0,0),
     JS_FN("toLocaleUpperCase", str_toLocaleUpperCase, 0,0),
-#if EXPOSE_INTL_API
     JS_SELF_HOSTED_FN("localeCompare", "String_localeCompare", 1,0),
-#else
-    JS_FN("localeCompare",     str_localeCompare,     1,0),
-#endif
     JS_SELF_HOSTED_FN("repeat", "String_repeat",      1,0),
-#if EXPOSE_INTL_API
     JS_FN("normalize",         str_normalize,         0,0),
-#endif
 
     /* Perl-ish methods (search is actually Python-esque). */
     JS_SELF_HOSTED_FN("match", "String_match",        1,0),
@@ -2916,9 +2877,7 @@ static const JSFunctionSpec string_static_methods[] = {
     JS_SELF_HOSTED_FN("trimRight",       "String_static_trimRight",     1,0),
     JS_SELF_HOSTED_FN("toLocaleLowerCase","String_static_toLocaleLowerCase",1,0),
     JS_SELF_HOSTED_FN("toLocaleUpperCase","String_static_toLocaleUpperCase",1,0),
-#if EXPOSE_INTL_API
     JS_SELF_HOSTED_FN("normalize",       "String_static_normalize",     1,0),
-#endif
     JS_SELF_HOSTED_FN("concat",          "String_static_concat",        2,0),
 
     JS_SELF_HOSTED_FN("localeCompare",   "String_static_localeCompare", 2,0),

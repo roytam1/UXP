@@ -37,11 +37,7 @@
 #define TYPED_ARRAY_CLASP(type)     (&TypedArrayObject::classes[Scalar::type])
 #define ERROR_CLASP(type)           (&ErrorObject::classes[type])
 
-#ifdef EXPOSE_INTL_API
 #define IF_INTL(real,imaginary) real
-#else
-#define IF_INTL(real,imaginary) imaginary
-#endif
 
 #ifdef ENABLE_BINARYDATA
 #define IF_BDATA(real,imaginary) real

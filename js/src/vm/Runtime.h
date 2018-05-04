@@ -978,13 +978,6 @@ struct JSRuntime : public JS::shadow::Runtime,
      */
     uint32_t            propertyRemovals;
 
-#if !EXPOSE_INTL_API
-    /* Number localization, used by jsnum.cpp. */
-    const char*         thousandsSeparator;
-    const char*         decimalSeparator;
-    const char*         numGrouping;
-#endif
-
   private:
     mozilla::Maybe<js::SharedImmutableStringsCache> sharedImmutableStrings_;
 
