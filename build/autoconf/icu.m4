@@ -22,24 +22,8 @@ fi
 
 AC_SUBST(MOZ_SYSTEM_ICU)
 
-dnl Determine the status of the ECMAScript Internationalization API.
-dnl ENABLE_INTL_API builds it, but doesn't determine if it's used or exposed
-dnl EXPOSE_INTL_API (when built) uses ICU and exposes the API to js
-
-ENABLE_INTL_API=1
-EXPOSE_INTL_API=1
-
-if test -n "$ENABLE_INTL_API"; then
-    USE_ICU=1
-fi
-
-if test -n "$EXPOSE_INTL_API"; then
-    AC_DEFINE(EXPOSE_INTL_API)
-fi
-
-if test -n "$ENABLE_INTL_API"; then
-    AC_DEFINE(ENABLE_INTL_API)
-fi
+dnl We always use ICU.
+USE_ICU=1
 
 dnl Settings for the implementation of the ECMAScript Internationalization API
 if test -n "$USE_ICU"; then
