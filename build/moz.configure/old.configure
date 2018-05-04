@@ -271,7 +271,6 @@ def old_configure_options(*options):
     '--with-doc-output-dir',
     '--with-float-abi',
     '--with-fpu',
-    '--with-intl-api',
     '--with-ios-sdk',
     '--with-jitreport-granularity',
     '--with-macbundlename-prefix',

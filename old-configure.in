@@ -5516,8 +5516,6 @@ dnl ========================================================
 dnl ICU Support
 dnl ========================================================
 
-_INTL_API=yes
-
 if test "$MOZ_WIDGET_TOOLKIT" = "cocoa"; then
     USE_ICU=1
 fi

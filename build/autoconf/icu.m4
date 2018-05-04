@@ -22,30 +22,12 @@ fi
 
 AC_SUBST(MOZ_SYSTEM_ICU)
 
-MOZ_ARG_WITH_STRING(intl-api,
-[  --with-intl-api, --with-intl-api=build, --without-intl-api
-    Determine the status of the ECMAScript Internationalization API.  The first
-    (or lack of any of these) builds and exposes the API.  The second builds it
-    but doesn't use ICU or expose the API to script.  The third doesn't build
-    ICU at all.],
-    _INTL_API=$withval)
+dnl Determine the status of the ECMAScript Internationalization API.
+dnl ENABLE_INTL_API builds it, but doesn't determine if it's used or exposed
+dnl EXPOSE_INTL_API (when built) uses ICU and exposes the API to js
 
-ENABLE_INTL_API=
-EXPOSE_INTL_API=
-case "$_INTL_API" in
-no)
-    ;;
-build)
-    ENABLE_INTL_API=1
-    ;;
-yes)
-    ENABLE_INTL_API=1
-    EXPOSE_INTL_API=1
-    ;;
-*)
-    AC_MSG_ERROR([Invalid value passed to --with-intl-api: $_INTL_API])
-    ;;
-esac
+ENABLE_INTL_API=1
+EXPOSE_INTL_API=1
 
 if test -n "$ENABLE_INTL_API"; then
     USE_ICU=1
