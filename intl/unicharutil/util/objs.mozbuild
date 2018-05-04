@@ -6,14 +6,7 @@
 
 intl_unicharutil_util_lcppsrcs = [
     'GreekCasing.cpp',
-]
-
-if CONFIG['ENABLE_INTL_API']:
-    intl_unicharutil_util_lcppsrcs += [
-        'ICUUtils.cpp',
-    ]
-
-intl_unicharutil_util_lcppsrcs += [
+    'ICUUtils.cpp',
     'IrishCasing.cpp',
     'nsBidiUtils.cpp',
     'nsSpecialCasingData.cpp',
