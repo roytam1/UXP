@@ -223,12 +223,10 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'DeviceManagerDx.cpp',
     ]
 
-# We prefer to use ICU for normalization functions, but currently it is only
-# available if we're building with the Intl API enabled:
-if CONFIG['ENABLE_INTL_API']:
-    USE_LIBS += [
-        'icu',
-    ]
+# We use ICU for normalization functions
+USE_LIBS += [
+    'icu',
+]
 
 include('/ipc/chromium/chromium-config.mozbuild')
 
