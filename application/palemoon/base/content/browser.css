@@ -762,5 +762,6 @@ toolbarbutton[pmkit-button="true"] > .toolbarbutton-badge-stack > .toolbarbutton
 }
 
 #navigator-toolbox[fullscreenShouldAnimate] {
-  transition: 1.5s margin-top ease-out;
+  transition: 0.7s margin-top ease-out;
+  transition-delay: 0.8s;
 }
