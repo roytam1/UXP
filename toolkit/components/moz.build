@@ -70,8 +70,7 @@ DIRS += [
 if CONFIG['MOZ_WEBEXTENSIONS']:
     DIRS += ['webextensions']
 
-if CONFIG['ENABLE_INTL_API']:
-    DIRS += ['mozintl']
+DIRS += ['mozintl']
 
 if not CONFIG['MOZ_FENNEC']:
     DIRS += ['narrate', 'viewsource'];
