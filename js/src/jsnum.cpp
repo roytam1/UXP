@@ -991,14 +991,10 @@ js::FIX_FPU()
 #endif
 }
 
-bool
+void
 js::InitRuntimeNumberState(JSRuntime* rt)
 {
     FIX_FPU();
-
-    // XXX EXPOSE_INTL_API has become true all the time, meaning this is
-    //     no longer fallible, and we should change its return type.
-    return true;
 }
 
 JSObject*

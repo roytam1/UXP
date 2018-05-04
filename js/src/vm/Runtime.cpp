@@ -325,8 +325,7 @@ JSRuntime::init(uint32_t maxbytes, uint32_t maxNurseryBytes)
     /* The garbage collector depends on everything before this point being initialized. */
     gcInitialized = true;
 
-    if (!InitRuntimeNumberState(this))
-        return false;
+    InitRuntimeNumberState(this);
 
     JS::ResetTimeZone();
 
