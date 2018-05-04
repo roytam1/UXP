@@ -70,17 +70,6 @@ Standard.
 
 #pragma pack(1)
 
-#if !ENABLE_INTL_API
-
-struct nsCharProps1 {
-  unsigned char mMirrorOffsetIndex:5;
-  unsigned char mHangulType:3;
-  unsigned char mCombiningClass:8;
-};
-
-#endif
-
-#if ENABLE_INTL_API
 
 struct nsCharProps2 {
   // Currently only 6 bits are defined here, so 2 more could be added without
@@ -88,24 +77,6 @@ struct nsCharProps2 {
   unsigned char mVertOrient:2;
   unsigned char mXidmod:4;
 };
-
-#endif
-
-#if !ENABLE_INTL_API
-
-struct nsCharProps2 {
-  unsigned char mScriptCode:8;
-  unsigned char mPairedBracketType:2;
-  unsigned char mEastAsianWidthFWH:1;
-  unsigned char mCategory:5;
-  unsigned char mBidiCategory:5;
-  unsigned char mXidmod:4;
-  signed char   mNumericValue:5;
-  unsigned char mVertOrient:2;
-  unsigned char mLineBreak; // only 6 bits actually needed
-};
-
-#endif
 
 #pragma pack()
 
