@@ -50,7 +50,7 @@ function insertButton(aWindow, id, onBuild) {
   let toolbar = toolbarId != "" && doc.getElementById(toolbarId);
 
   if (toolbar) {
-    let nextItem = doc.getElementById(nextItemId);
+    let nextItem = nextItemId != "" && doc.getElementById(nextItemId);
     // If nextItem not in toolbar then retrieve it by reading currentset attribute
     if (!(nextItem && nextItem.parentNode && nextItem.parentNode.id == toolbarId)) {
       nextItem = null;
