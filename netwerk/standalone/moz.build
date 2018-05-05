@@ -27,7 +27,6 @@ netwerk_dns_src = [
     'DNS.cpp',
     'DNSListenerProxy.cpp',
     'GetAddrInfo.cpp',
-    'nameprep.c',
     'nsDNSService2.cpp',
     'nsIDNService.cpp',
     'punycode.c',
