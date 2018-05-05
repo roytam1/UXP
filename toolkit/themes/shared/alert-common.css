@@ -15,14 +15,12 @@
 }
 
 #alertBox[animate][clicked] {
-  animation-duration: .6s;
   animation-name: alert-clicked-animation;
 }
 
 /* This is used if the close button is clicked
    before the animation has finished. */
 #alertBox[animate][closing] {
-  animation-duration: .6s;
   animation-name: alert-closing-animation;
 }
 

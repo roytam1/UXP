@@ -313,6 +313,7 @@ function onAlertClick() {
   let alertBox = document.getElementById("alertBox");
   if (alertBox.getAttribute("animate") == "true") {
     // Closed when the animation ends.
+    alertBox.style.animationDuration = ".6s";
     alertBox.setAttribute("clicked", "true");
   } else {
     window.close();
@@ -355,6 +356,7 @@ function onAlertClose() {
   let alertBox = document.getElementById("alertBox");
   if (alertBox.getAttribute("animate") == "true") {
     // Closed when the animation ends.
+    alertBox.style.animationDuration = ".6s";
     alertBox.setAttribute("closing", "true");
   } else {
     window.close();
