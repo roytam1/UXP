@@ -1157,7 +1157,7 @@ var gBrowserInit = {
 
     // Called when we enter DOM full-screen mode. Note we can already be in browser
     // full-screen mode when we enter DOM full-screen mode.
-    window.addEventListener("MozEnteredDomFullscreen", onMozEnteredDomFullscreen, true);
+    window.addEventListener("MozDOMFullscreen:NewOrigin", onMozEnteredDomFullscreen, true);
 
     if (window.fullScreen)
       onFullScreen();

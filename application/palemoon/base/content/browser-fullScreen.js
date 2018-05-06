@@ -91,7 +91,7 @@ var FullScreen = {
     if (!document.mozFullScreen)
       return;
 
-    // However, if we receive a "MozEnteredDomFullScreen" event for a document
+    // However, if we receive a "MozDOMFullscreen:NewOrigin" event for a document
     // which is not a subdocument of a currently active (ie. visible) browser
     // or iframe, we know that we've switched to a different frame since the
     // request to enter full-screen was made, so we should exit full-screen
