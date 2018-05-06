@@ -1058,11 +1058,6 @@ pref("browser.newtabpage.rows", 4);
 // Enable the DOM fullscreen API.
 pref("full-screen-api.enabled", true);
 
-// True if the fullscreen API requires approval upon a domain entering fullscreen.
-// Domains that have already had fullscreen permission granted won't re-request
-// approval.
-pref("full-screen-api.approval-required", true);
-
 // about:permissions
 // Maximum number of sites to return from the places database.
 // 0-100 (currently)
