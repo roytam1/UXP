@@ -20,6 +20,14 @@ function f()
     finish();
 }
 
+function init()
+{
+  SpecialPowers.pushPrefEnv({"set": [
+    ["security.data_uri.block_toplevel_data_uri_navigations", false],
+  ]}, start);
+
+}
+
 function start()
 {
     var html = "<script>" + f + "<\/script><body onload=f()>";
@@ -29,5 +37,5 @@ function start()
 
 </script>
 </head>
-<body onload="start();"></body>
+<body onload="init();"></body>
 </html>

@@ -194,6 +194,7 @@ class tpaint(TsBase):
     tpmozafterpaint = True
     filters = filter.ignore_first.prepare(5) + filter.median.prepare()
     unit = 'ms'
+    preferences = {'security.data_uri.block_toplevel_data_uri_navigations': False}
 
 
 @register_test()

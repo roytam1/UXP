@@ -3,8 +3,11 @@
  * and we re-initialize print preview (e.g. by changing page orientation),
  * we still show (and will therefore print) the original contents.
  */
+const TEST_PATH = getRootDirectory(gTestPath)
+                    .replace("chrome://mochitests/content", "http://example.com");
+
 add_task(function* pp_after_orientation_change() {
-  const DATA_URI = `data:text/html,<script>window.onafterprint = function() { setTimeout("window.location = 'data:text/plain,REPLACED PAGE!'", 0); }</script><pre>INITIAL PAGE</pre>`;
+  const URI = TEST_PATH + "file_page_change_print_original_1.html";
   // Can only do something if we have a print preview UI:
   if (AppConstants.platform != "win" && AppConstants.platform != "linux") {
     ok(true, "Can't test if there's no print preview.");
@@ -12,7 +15,7 @@ add_task(function* pp_after_orientation_change() {
   }
 
   // Ensure we get a browserStopped for this browser
-  let tab = yield BrowserTestUtils.openNewForegroundTab(gBrowser, DATA_URI, false, true);
+  let tab = yield BrowserTestUtils.openNewForegroundTab(gBrowser, URI, false, true);
   let browserToPrint = tab.linkedBrowser;
   let ppBrowser = PrintPreviewListener.getPrintPreviewBrowser();
 
@@ -26,7 +29,7 @@ add_task(function* pp_after_orientation_change() {
 
   // Assert that we are showing the original page
   yield ContentTask.spawn(ppBrowser, null, function* () {
-    is(content.document.body.textContent, "INITIAL PAGE", "Should have initial page print previewed.");
+    is(content.document.body.textContent.trim(), "INITIAL PAGE", "Should have initial page print previewed.");
   });
 
   yield originalTabNavigated;
@@ -43,12 +46,12 @@ add_task(function* pp_after_orientation_change() {
 
   // Check that we're still showing the original page.
   yield ContentTask.spawn(ppBrowser, null, function* () {
-    is(content.document.body.textContent, "INITIAL PAGE", "Should still have initial page print previewed.");
+    is(content.document.body.textContent.trim(), "INITIAL PAGE", "Should still have initial page print previewed.");
   });
 
   // Check that the other tab is definitely showing the new page:
   yield ContentTask.spawn(browserToPrint, null, function* () {
-    is(content.document.body.textContent, "REPLACED PAGE!", "Original page should have changed.");
+    is(content.document.body.textContent.trim(), "REPLACED PAGE!", "Original page should have changed.");
   });
 
   PrintUtils.exitPrintPreview();
