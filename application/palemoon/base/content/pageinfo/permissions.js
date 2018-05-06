@@ -76,20 +76,6 @@ var gPermObj = {
   {
     return UNKNOWN;
   },
-  fullscreen: function getFullscreenDefaultPermissions()
-  {
-    if (!gPrefs.getBoolPref("full-screen-api.enabled")) {
-      return DENY;
-    }
-    return UNKNOWN;  
-  },
-  pointerLock: function getPointerLockPermissions()
-  {
-    if (!gPrefs.getBoolPref("full-screen-api.pointer-lock.enabled")) {
-      return DENY;
-    }
-    return ALLOW;
-  },
 };
 
 var permissionObserver = {

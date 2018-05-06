@@ -418,31 +418,6 @@ var PermissionDefaults = {
     Services.prefs.setBoolPref("dom.indexedDB.enabled", value);
   },
 
-  get fullscreen() {
-    if (!Services.prefs.getBoolPref("full-screen-api.enabled")) {
-      return this.DENY;
-    }
-    // We always ask for permission to fullscreen with a specific site,
-    // so there is no global ALLOW.
-    return this.UNKNOWN;
-  },
-  set fullscreen(aValue) {
-    let value = (aValue != this.DENY);
-    Services.prefs.setBoolPref("full-screen-api.enabled", value);
-  },
-
-  get pointerLock() {
-    if (!Services.prefs.getBoolPref("full-screen-api.pointer-lock.enabled")) {
-      return this.DENY;
-    }
-    // We always ask for permission to hide the mouse pointer
-    // with a specific site, so there is no global ALLOW.
-    return this.UNKNOWN;
-  },
-  set pointerLock(aValue) {
-    let value = (aValue != this.DENY);
-    Services.prefs.setBoolPref("full-screen-api.pointer-lock.enabled", value);
-  },
 }
 
 /**
@@ -489,14 +464,12 @@ var AboutPermissions = {
    * Potential future additions: "sts/use", "sts/subd"
    */
   _supportedPermissions: ["password", "image", "popup", "cookie",
-                          "desktop-notification", "install", "geo", "indexedDB",
-                          "fullscreen", "pointerLock"],
+                          "desktop-notification", "install", "geo", "indexedDB"],
 
   /**
    * Permissions that don't have a global "Allow" option.
    */
-  _noGlobalAllow: ["desktop-notification", "geo", "indexedDB", "fullscreen",
-                   "pointerLock"],
+  _noGlobalAllow: ["desktop-notification", "geo", "indexedDB"],
 
   /**
    * Permissions that don't have a global "Deny" option.
@@ -543,8 +516,6 @@ var AboutPermissions = {
     Services.prefs.addObserver("geo.enabled", this, false);
     Services.prefs.addObserver("dom.indexedDB.enabled", this, false);
     Services.prefs.addObserver("plugins.click_to_play", this, false);
-    Services.prefs.addObserver("full-screen-api.enabled", this, false);
-    Services.prefs.addObserver("full-screen-api.pointer-lock.enabled", this, false);
     Services.prefs.addObserver("permissions.places-sites-limit", this, false);
 
     Services.obs.addObserver(this, "perm-changed", false);
@@ -695,8 +666,6 @@ var AboutPermissions = {
       Services.prefs.removeObserver("geo.enabled", this, false);
       Services.prefs.removeObserver("dom.indexedDB.enabled", this, false);
       Services.prefs.removeObserver("plugins.click_to_play", this, false);
-      Services.prefs.removeObserver("full-screen-api.enabled", this, false);
-      Services.prefs.removeObserver("full-screen-api.pointer-lock.enabled", this, false);
       Services.prefs.removeObserver("permissions.places-sites-limit", this, false);
 
       Services.obs.removeObserver(this, "perm-changed");

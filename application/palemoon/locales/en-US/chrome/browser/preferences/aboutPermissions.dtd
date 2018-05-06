@@ -51,8 +51,4 @@
 
 <!ENTITY popup.label                     "Open Pop-up Windows">
 
-<!ENTITY fullscreen.label                "Fullscreen">
-
-<!ENTITY pointerLock.label               "Hide the Mouse Pointer">
-
 <!ENTITY focusSearch.key                 "f">
