@@ -18,8 +18,6 @@ chrome.jar:
   skin/aboutMemory.css                      (aboutMemory.css)
   skin/aboutPrivateBrowsing.css             (aboutPrivateBrowsing.css)
   skin/aboutReader.css                      (aboutReader.css)
-  skin/aboutReaderContent.css               (aboutReaderContent.css)
-  skin/aboutReaderControls.css              (aboutReaderControls.css)
   skin/aboutSupport.css                     (aboutSupport.css)
   skin/content.css                          (content.css)
   skin/scrollbar.css                        (scrollbar-apz.css)
@@ -31,8 +29,6 @@ chrome.jar:
 % override chrome://global/skin/about.css chrome://browser/skin/about.css
 % override chrome://global/skin/aboutMemory.css chrome://browser/skin/aboutMemory.css
 % override chrome://global/skin/aboutReader.css chrome://browser/skin/aboutReader.css
-% override chrome://global/skin/aboutReaderContent.css chrome://browser/skin/aboutReaderContent.css
-% override chrome://global/skin/aboutReaderControls.css chrome://browser/skin/aboutReaderControls.css
 % override chrome://global/skin/aboutSupport.css chrome://browser/skin/aboutSupport.css
 % override chrome://global/skin/media/videocontrols.css chrome://browser/skin/touchcontrols.css
 % override chrome://global/skin/netError.css chrome://browser/skin/netError.css

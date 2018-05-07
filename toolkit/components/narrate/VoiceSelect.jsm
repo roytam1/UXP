@@ -13,6 +13,7 @@ function VoiceSelect(win, label) {
 
   let element = win.document.createElement("div");
   element.classList.add("voiceselect");
+  // eslint-disable-next-line no-unsanitized/property
   element.innerHTML =
    `<button class="select-toggle" aria-controls="voice-options">
       <span class="label">${label}</span> <span class="current-voice"></span>
@@ -37,7 +38,7 @@ function VoiceSelect(win, label) {
 }
 
 VoiceSelect.prototype = {
-  add: function(label, value) {
+  add(label, value) {
     let option = this._doc.createElement("button");
     option.dataset.value = value;
     option.classList.add("option");
@@ -48,7 +49,7 @@ VoiceSelect.prototype = {
     return option;
   },
 
-  addOptions: function(options) {
+  addOptions(options) {
     let selected = null;
     for (let option of options) {
       if (option.selected) {
@@ -61,11 +62,11 @@ VoiceSelect.prototype = {
     this._select(selected || this.options[0], true);
   },
 
-  clear: function() {
+  clear() {
     this.listbox.innerHTML = "";
   },
 
-  toggleList: function(force, focus = true) {
+  toggleList(force, focus = true) {
     if (this.element.classList.toggle("open", force)) {
       if (focus) {
         (this.selected || this.options[0]).focus();
@@ -84,7 +85,7 @@ VoiceSelect.prototype = {
     }
   },
 
-  handleEvent: function(evt) {
+  handleEvent(evt) {
     let target = evt.target;
 
     switch (evt.type) {
@@ -131,7 +132,7 @@ VoiceSelect.prototype = {
     }
   },
 
-  _getPagedOption: function(option, up) {
+  _getPagedOption(option, up) {
     let height = elem => elem.getBoundingClientRect().height;
     let listboxHeight = height(this.listbox);
 
@@ -148,7 +149,7 @@ VoiceSelect.prototype = {
     return next;
   },
 
-  _keyPressedButton: function(evt) {
+  _keyPressedButton(evt) {
     if (evt.altKey && (evt.key === "ArrowUp" || evt.key === "ArrowUp")) {
       this.toggleList(true);
       return;
@@ -178,7 +179,7 @@ VoiceSelect.prototype = {
     }
   },
 
-  _keyPressedInBox: function(evt) {
+  _keyPressedInBox(evt) {
     let toFocus;
     let cur = this._doc.activeElement;
 
@@ -212,7 +213,7 @@ VoiceSelect.prototype = {
     }
   },
 
-  _select: function(option, suppressEvent = false) {
+  _select(option, suppressEvent = false) {
     let oldSelected = this.selected;
     if (oldSelected) {
       oldSelected.removeAttribute("aria-selected");
@@ -233,7 +234,7 @@ VoiceSelect.prototype = {
     }
   },
 
-  _updateDropdownHeight: function(now) {
+  _updateDropdownHeight(now) {
     let updateInner = () => {
       let winHeight = this._win.innerHeight;
       let listbox = this.listbox;
@@ -252,7 +253,7 @@ VoiceSelect.prototype = {
     }
   },
 
-  _getOptionFromValue: function(value) {
+  _getOptionFromValue(value) {
     return Array.from(this.options).find(o => o.dataset.value === value);
   },
 
