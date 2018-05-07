@@ -248,6 +248,7 @@ pref("devtools.webconsole.filter.log", true);
 pref("devtools.webconsole.filter.debug", true);
 pref("devtools.webconsole.filter.net", false);
 pref("devtools.webconsole.filter.netxhr", false);
+pref("devtools.webconsole.filter.saveBodies", true);
 // Deprecated - old console frontend
 pref("devtools.webconsole.filter.network", true);
 pref("devtools.webconsole.filter.networkinfo", false);
@@ -273,6 +274,7 @@ pref("devtools.browserconsole.filter.network", true);
 pref("devtools.browserconsole.filter.networkinfo", false);
 pref("devtools.browserconsole.filter.netwarn", true);
 pref("devtools.browserconsole.filter.netxhr", false);
+pref("devtools.browserconsole.filter.saveBodies", false);
 pref("devtools.browserconsole.filter.csserror", true);
 pref("devtools.browserconsole.filter.cssparser", false);
 pref("devtools.browserconsole.filter.csslog", false);

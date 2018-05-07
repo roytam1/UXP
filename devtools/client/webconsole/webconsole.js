@@ -555,6 +555,19 @@ WebConsoleFrame.prototype = {
     // calculations.
     this._updateCharSize();
 
+    let saveBodiesDisabled = !this.getFilterState("networkinfo") &&
+                             !this.getFilterState("netxhr") &&
+                             !this.getFilterState("network");
+
+    let saveBodies = this.document.getElementById("saveBodies");
+    saveBodies.disabled = saveBodiesDisabled;
+
+    saveBodies.parentNode.addEventListener("popupshowing", () => {
+      saveBodies.disabled = !this.getFilterState("networkinfo") &&
+                            !this.getFilterState("netxhr") &&
+                            !this.getFilterState("network");
+    });
+
     this.jsterm = new JSTerm(this);
     this.jsterm.init();
 
@@ -684,9 +697,9 @@ WebConsoleFrame.prototype = {
   _initDefaultFilterPrefs: function () {
     let prefs = ["network", "networkinfo", "csserror", "cssparser", "csslog",
                  "exception", "jswarn", "jslog", "error", "info", "warn", "log",
-                 "secerror", "secwarn", "netwarn", "netxhr", "sharedworkers",
-                 "serviceworkers", "windowlessworkers", "servererror",
-                 "serverwarn", "serverinfo", "serverlog"];
+                 "secerror", "secwarn", "netwarn", "netxhr", "saveBodies",
+                 "sharedworkers", "serviceworkers", "windowlessworkers",
+                 "servererror", "serverwarn", "serverinfo", "serverlog"];
 
     for (let pref of prefs) {
       this.filterPrefs[pref] = Services.prefs.getBoolPref(
@@ -954,6 +967,16 @@ WebConsoleFrame.prototype = {
         let prefKey = target.getAttribute("prefKey");
         this.setFilterState(prefKey, state);
 
+        // Disable the log response and request body if network logging is off.
+        if (prefKey == "networkinfo" ||
+            prefKey == "netxhr" ||
+            prefKey == "network") {
+          let checkState = !this.getFilterState("networkinfo") &&
+                           !this.getFilterState("netxhr") &&
+                           !this.getFilterState("network");
+          this.document.getElementById("saveBodies").disabled = checkState;
+        }
+
         // Adjust the state of the button appropriately.
         let menuPopup = target.parentNode;
 
@@ -987,9 +1010,12 @@ WebConsoleFrame.prototype = {
   _setMenuState: function (target, state) {
     let menuItems = target.querySelectorAll("menuitem");
     Array.forEach(menuItems, (item) => {
-      item.setAttribute("checked", state);
       let prefKey = item.getAttribute("prefKey");
-      this.setFilterState(prefKey, state);
+      // If not a separate switch only.
+      if (prefKey != "saveBodies") {
+        item.setAttribute("checked", state);
+        this.setFilterState(prefKey, state);
+      }
     });
   },
 
@@ -1005,6 +1031,10 @@ WebConsoleFrame.prototype = {
     this.adjustVisibilityForMessageType(toggleType, state);
 
     Services.prefs.setBoolPref(this._filterPrefsPrefix + toggleType, state);
+
+    if (toggleType == "saveBodies") {
+      this.setSaveRequestAndResponseBodies(state);
+    }
 
     if (this._updateListenersTimeout) {
       clearTimeout(this._updateListenersTimeout);
@@ -3245,9 +3275,8 @@ WebConsoleConnectionProxy.prototype = {
     this.webConsoleClient = webConsoleClient;
     this._hasNativeConsoleAPI = response.nativeConsoleAPI;
 
-    // There is no way to view response bodies from the Browser Console, so do
-    // not waste the memory.
-    let saveBodies = !this.webConsoleFrame.isBrowserConsole;
+    let saveBodiesPref = this.webConsoleFrame._filterPrefsPrefix + "saveBodies";
+    let saveBodies = Services.prefs.getBoolPref(saveBodiesPref);
     this.webConsoleFrame.setSaveRequestAndResponseBodies(saveBodies);
 
     this.webConsoleClient.on("networkEvent", this._onNetworkEvent);
