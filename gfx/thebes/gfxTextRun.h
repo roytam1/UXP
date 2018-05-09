@@ -917,7 +917,8 @@ public:
 
 protected:
     // search through pref fonts for a character, return nullptr if no matching pref font
-    already_AddRefed<gfxFont> WhichPrefFontSupportsChar(uint32_t aCh);
+    already_AddRefed<gfxFont> WhichPrefFontSupportsChar(uint32_t aCh,
+                                                        uint32_t aNextCh);
 
     already_AddRefed<gfxFont>
         WhichSystemFontSupportsChar(uint32_t aCh, uint32_t aNextCh,
