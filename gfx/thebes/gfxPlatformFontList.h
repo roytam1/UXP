@@ -386,7 +386,7 @@ protected:
     void
     GetFontFamiliesFromGenericFamilies(
         nsTArray<nsString>& aGenericFamilies,
-        nsAtom* aLangGroup,
+        nsIAtom* aLangGroup,
         nsTArray<RefPtr<gfxFontFamily>>* aFontFamilies);
 
     virtual nsresult InitFontListForPlatform() = 0;
