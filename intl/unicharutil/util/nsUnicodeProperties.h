@@ -54,6 +54,12 @@ enum XidmodType {
   XIDMOD_NOT_CHARS
 };
 
+enum EmojiPresentation {
+  TextOnly = 0,
+  TextDefault = 1,
+  EmojiDefault = 2
+};
+
 // ICU is available, so simply forward to its API
 
 extern const hb_unicode_general_category_t sICUtoHBcategory[];
@@ -168,6 +174,19 @@ IsEastAsianWidthFWH(uint32_t aCh)
       return false;
   }
   return false;
+}
+
+inline EmojiPresentation
+GetEmojiPresentation(uint32_t aCh)
+{
+  if (!u_hasBinaryProperty(aCh, UCHAR_EMOJI)) {
+    return TextOnly;
+  }
+
+  if (u_hasBinaryProperty(aCh, UCHAR_EMOJI_PRESENTATION)) {
+    return EmojiDefault;
+  }
+  return TextDefault;
 }
 
 // returns the simplified Gen Category as defined in nsIUGenCategory
