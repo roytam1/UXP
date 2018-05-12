@@ -27,11 +27,6 @@
 #include "nsServiceManagerUtils.h"
 #include "mozilla/dom/SettingChangeNotificationBinding.h"
 
-#ifdef MOZ_WIDGET_GONK
-#include "nsJSUtils.h"
-#include "SpeakerManagerService.h"
-#endif
-
 #include "mozilla/Preferences.h"
 
 using namespace mozilla;
@@ -237,20 +232,12 @@ AudioChannelService::Shutdown()
 
       if (IsParentProcess()) {
         obs->RemoveObserver(gAudioChannelService, "ipc:content-shutdown");
-
-#ifdef MOZ_WIDGET_GONK
-        // To monitor the volume settings based on audio channel.
-        obs->RemoveObserver(gAudioChannelService, "mozsettings-changed");
-#endif
       }
     }
 
     gAudioChannelService->mWindows.Clear();
     gAudioChannelService->mPlayingChildren.Clear();
     gAudioChannelService->mTabParents.Clear();
-#ifdef MOZ_WIDGET_GONK
-    gAudioChannelService->mSpeakerManager.Clear();
-#endif
 
     gAudioChannelService = nullptr;
   }
@@ -284,11 +271,6 @@ AudioChannelService::AudioChannelService()
     obs->AddObserver(this, "outer-window-destroyed", false);
     if (IsParentProcess()) {
       obs->AddObserver(this, "ipc:content-shutdown", false);
-
-#ifdef MOZ_WIDGET_GONK
-      // To monitor the volume settings based on audio channel.
-      obs->AddObserver(this, "mozsettings-changed", false);
-#endif
     }
   }
 
@@ -341,13 +323,6 @@ AudioChannelService::UnregisterAudioChannelAgent(AudioChannelAgent* aAgent)
   // released in their callback.
   RefPtr<AudioChannelAgent> kungFuDeathGrip(aAgent);
   winData->RemoveAgent(aAgent);
-
-#ifdef MOZ_WIDGET_GONK
-  bool active = AnyAudioChannelIsActive();
-  for (uint32_t i = 0; i < mSpeakerManager.Length(); i++) {
-    mSpeakerManager[i]->SetAudioChannelActive(active);
-  }
-#endif
 
   MaybeSendStatusUpdate();
 }
@@ -573,13 +548,6 @@ AudioChannelService::Observe(nsISupports* aSubject, const char* aTopic,
         iter.GetNext()->WindowVolumeChanged();
       }
     }
-
-#ifdef MOZ_WIDGET_GONK
-    bool active = AnyAudioChannelIsActive();
-    for (uint32_t i = 0; i < mSpeakerManager.Length(); i++) {
-      mSpeakerManager[i]->SetAudioChannelActive(active);
-    }
-#endif
   } else if (!strcmp(aTopic, "ipc:content-shutdown")) {
     nsCOMPtr<nsIPropertyBag2> props = do_QueryInterface(aSubject);
     if (!props) {

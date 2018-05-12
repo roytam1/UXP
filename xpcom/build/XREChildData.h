@@ -20,7 +20,7 @@ class GMPLoader;
  */
 struct XREChildData
 {
-#if !defined(MOZ_WIDGET_ANDROID) && !defined(MOZ_WIDGET_GONK)
+#if !defined(MOZ_WIDGET_ANDROID)
   /**
    * Used to load the GMP binary.
    */

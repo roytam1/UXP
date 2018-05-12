@@ -393,10 +393,7 @@ class Sampler {
   static mozilla::UniquePtr<Mutex> sRegisteredThreadsMutex;
 
   static bool CanNotifyObservers() {
-#ifdef MOZ_WIDGET_GONK
-    // We use profile.sh on b2g to manually select threads and options per process.
-    return false;
-#elif defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
     // Android ANR reporter uses the profiler off the main thread
     return NS_IsMainThread();
 #else

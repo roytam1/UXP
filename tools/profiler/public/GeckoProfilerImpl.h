@@ -346,13 +346,6 @@ static inline void profiler_tracing(const char* aCategory, const char* aInfo,
 #define PROFILER_MAIN_THREAD_LABEL_PRINTF(name_space, info, category, ...)  MOZ_ASSERT(NS_IsMainThread(), "This can only be called on the main thread"); mozilla::SamplerStackFramePrintfRAII SAMPLER_APPEND_LINE_NUMBER(sampler_raii)(name_space "::" info, category, __LINE__, __VA_ARGS__)
 
 
-/* FIXME/bug 789667: memory constraints wouldn't much of a problem for
- * this small a sample buffer size, except that serializing the
- * profile data is extremely, unnecessarily memory intensive. */
-#ifdef MOZ_WIDGET_GONK
-# define PLATFORM_LIKELY_MEMORY_CONSTRAINED
-#endif
-
 #if !defined(PLATFORM_LIKELY_MEMORY_CONSTRAINED) && !defined(ARCH_ARMV6)
 # define PROFILE_DEFAULT_ENTRY 1000000
 #else

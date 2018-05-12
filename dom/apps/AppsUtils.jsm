@@ -312,9 +312,6 @@ this.AppsUtils = {
     // Instead, we check if the app is installed under /system/b2g
     let isCoreApp = false;
 
-#ifdef MOZ_WIDGET_GONK
-    isCoreApp = app.basePath == this.getCoreAppsBasePath();
-#endif
     debug(app.basePath + " isCoreApp: " + isCoreApp);
 
     return { "path": app.basePath + "/" + app.id,

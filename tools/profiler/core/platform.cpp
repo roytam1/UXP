@@ -36,11 +36,11 @@
 #include "GeckoTaskTracer.h"
 #endif
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
   #include "FennecJNIWrappers.h"
 #endif
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
 #include "FennecJNINatives.h"
 #endif
 
@@ -52,7 +52,7 @@
 #endif
 #endif
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
 class GeckoJavaSampler : public java::GeckoJavaSampler::Natives<GeckoJavaSampler>
 {
 private:
@@ -502,7 +502,7 @@ void mozilla_sampler_init(void* stackTop)
   set_stderr_callback(mozilla_sampler_log);
 #endif
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
   if (mozilla::jni::IsFennec()) {
     GeckoJavaSampler::Init();
   }
@@ -524,7 +524,7 @@ void mozilla_sampler_init(void* stackTop)
     || defined(SPS_PLAT_amd64_linux) || defined(SPS_PLAT_x86_linux)
                          , "stackwalk"
 #endif
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
                          , "java"
 #endif
                          };
@@ -819,7 +819,7 @@ void mozilla_sampler_start(int aProfileEntries, double aInterval,
       }
   }
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
   if (t->ProfileJava()) {
     int javaInterval = aInterval;
     // Java sampling doesn't accuratly keep up with 1ms sampling
@@ -1020,15 +1020,6 @@ bool mozilla_sampler_register_thread(const char* aName, void* aGuessStackTop)
   if (sInitCount == 0) {
     return false;
   }
-
-#if defined(MOZ_WIDGET_GONK) && !defined(MOZ_PROFILING)
-  // The only way to profile secondary threads on b2g
-  // is to build with profiling OR have the profiler
-  // running on startup.
-  if (!profiler_is_active()) {
-    return false;
-  }
-#endif
 
   MOZ_ASSERT(tlsPseudoStack.get() == nullptr);
   PseudoStack* stack = PseudoStack::create();

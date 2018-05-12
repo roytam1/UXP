@@ -44,7 +44,7 @@
 #include "mozilla/ProfileGatherer.h"
 #endif
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
   #include "FennecJNIWrappers.h"
 #endif
 
@@ -213,7 +213,7 @@ GeckoSampler::GeckoSampler(double aInterval, int aEntrySize,
   }
 #endif
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
   mProfileJava = mozilla::jni::IsFennec() &&
       hasFeature(aFeatures, aFeatureCount, "java");
 #else
@@ -462,7 +462,7 @@ void SubProcessCallback(const char* aProfile, void* aClosure)
 }
 
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
 static
 void BuildJavaThreadJSObject(SpliceableJSONWriter& aWriter)
 {
@@ -567,7 +567,7 @@ void GeckoSampler::StreamJSON(SpliceableJSONWriter& aWriter, double aSinceTime)
         }
       }
 
-  #if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+  #if defined(SPS_OS_android)
       if (ProfileJava()) {
         java::GeckoJavaSampler::Pause();
 

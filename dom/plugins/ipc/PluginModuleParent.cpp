@@ -529,7 +529,7 @@ PluginModuleChromeParent::OnProcessLaunched(const bool aSucceeded)
         if (NS_SUCCEEDED(mAsyncInitRv))
 #endif
         {
-#if defined(XP_UNIX) && !defined(XP_MACOSX) && !defined(MOZ_WIDGET_GONK)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
             mAsyncInitRv = NP_Initialize(mNPNIface,
                                          mNPPIface,
                                          &mAsyncInitError);
@@ -1745,7 +1745,7 @@ PluginModuleChromeParent::CachedSettingChanged(const char* aPref, void* aModule)
     module->CachedSettingChanged();
 }
 
-#if defined(XP_UNIX) && !defined(XP_MACOSX) && !defined(MOZ_WIDGET_GONK)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 nsresult
 PluginModuleParent::NP_Initialize(NPNetscapeFuncs* bFuncs, NPPluginFuncs* pFuncs, NPError* error)
 {

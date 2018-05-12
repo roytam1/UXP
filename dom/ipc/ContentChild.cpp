@@ -137,12 +137,6 @@
 #include "APKOpen.h"
 #endif
 
-#if defined(MOZ_WIDGET_GONK)
-#include "nsVolume.h"
-#include "nsVolumeService.h"
-#include "SpeakerManagerService.h"
-#endif
-
 #ifdef XP_WIN
 #include <process.h>
 #define getpid _getpid
@@ -196,9 +190,6 @@ using namespace mozilla::net;
 using namespace mozilla::jsipc;
 using namespace mozilla::psm;
 using namespace mozilla::widget;
-#if defined(MOZ_WIDGET_GONK)
-using namespace mozilla::system;
-#endif
 using namespace mozilla::widget;
 
 namespace mozilla {
@@ -585,15 +576,7 @@ ContentChild::Init(MessageLoop* aIOLoop,
 void
 ContentChild::InitProcessAttributes()
 {
-#ifdef MOZ_WIDGET_GONK
-  if (mIsForApp && !mIsForBrowser) {
-    SetProcessName(NS_LITERAL_STRING("(Preallocated app)"), false);
-  } else {
-    SetProcessName(NS_LITERAL_STRING("Browser"), false);
-  }
-#else
   SetProcessName(NS_LITERAL_STRING("Web Content"), true);
-#endif
 }
 
 void
@@ -1257,15 +1240,6 @@ ContentChild::RecvNotifyLayerAllocated(const dom::TabId& aTabId, const uint64_t&
 bool
 ContentChild::RecvSpeakerManagerNotify()
 {
-#ifdef MOZ_WIDGET_GONK
-  // Only notify the process which has the SpeakerManager instance.
-  RefPtr<SpeakerManagerService> service =
-    SpeakerManagerService::GetSpeakerManagerService();
-  if (service) {
-    service->Notify();
-  }
-  return true;
-#endif
   return false;
 }
 
@@ -2284,12 +2258,6 @@ ContentChild::RecvLastPrivateDocShellDestroyed()
 bool
 ContentChild::RecvVolumes(nsTArray<VolumeInfo>&& aVolumes)
 {
-#ifdef MOZ_WIDGET_GONK
-  RefPtr<nsVolumeService> vs = nsVolumeService::GetSingleton();
-  if (vs) {
-    vs->RecvVolumesFromParent(aVolumes);
-  }
-#endif
   return true;
 }
 
@@ -2306,17 +2274,6 @@ ContentChild::RecvFileSystemUpdate(const nsString& aFsName,
                                    const bool& aIsRemovable,
                                    const bool& aIsHotSwappable)
 {
-#ifdef MOZ_WIDGET_GONK
-  RefPtr<nsVolume> volume = new nsVolume(aFsName, aVolumeName, aState,
-                                         aMountGeneration, aIsMediaPresent,
-                                         aIsSharing, aIsFormatting, aIsFake,
-                                         aIsUnmounting, aIsRemovable, aIsHotSwappable);
-
-  RefPtr<nsVolumeService> vs = nsVolumeService::GetSingleton();
-  if (vs) {
-    vs->UpdateVolume(volume);
-  }
-#else
   // Remove warnings about unused arguments
   Unused << aFsName;
   Unused << aVolumeName;
@@ -2329,22 +2286,15 @@ ContentChild::RecvFileSystemUpdate(const nsString& aFsName,
   Unused << aIsUnmounting;
   Unused << aIsRemovable;
   Unused << aIsHotSwappable;
-#endif
+
   return true;
 }
 
 bool
 ContentChild::RecvVolumeRemoved(const nsString& aFsName)
 {
-#ifdef MOZ_WIDGET_GONK
-  RefPtr<nsVolumeService> vs = nsVolumeService::GetSingleton();
-  if (vs) {
-    vs->RemoveVolumeByName(aFsName);
-  }
-#else
   // Remove warnings about unused arguments
   Unused << aFsName;
-#endif
   return true;
 }
 

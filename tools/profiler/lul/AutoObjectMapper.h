@@ -62,7 +62,7 @@ private:
 };
 
 
-#if defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_OS_android)
 // This is a variant of AutoObjectMapperPOSIX suitable for use in
 // conjunction with faulty.lib on Android.  How it behaves depends on
 // the name of the file to be mapped.  There are three possible cases:
@@ -110,6 +110,6 @@ private:
   void  operator delete[](void*);
 };
 
-#endif // defined(SPS_OS_android) && !defined(MOZ_WIDGET_GONK)
+#endif // defined(SPS_OS_android)
 
 #endif // AutoObjectMapper_h

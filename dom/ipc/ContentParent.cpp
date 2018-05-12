@@ -16,11 +16,6 @@
 # include <sys/resource.h>
 #endif
 
-#ifdef MOZ_WIDGET_GONK
-#include <sys/types.h>
-#include <sys/wait.h>
-#endif
-
 #include "chrome/common/process_watcher.h"
 
 #include "mozilla/a11y/PDocAccessible.h"
@@ -208,14 +203,6 @@
 
 #ifdef MOZ_WIDGET_ANDROID
 # include "AndroidBridge.h"
-#endif
-
-#ifdef MOZ_WIDGET_GONK
-#include "nsIVolume.h"
-#include "nsVolumeService.h"
-#include "nsIVolumeService.h"
-#include "SpeakerManagerService.h"
-using namespace mozilla::system;
 #endif
 
 #ifdef MOZ_WIDGET_GTK
@@ -526,11 +513,6 @@ static const char* sObserverTopics[] = {
   "child-mmu-request",
   "last-pb-context-exited",
   "file-watcher-update",
-#ifdef MOZ_WIDGET_GONK
-  NS_VOLUME_STATE_CHANGED,
-  NS_VOLUME_REMOVED,
-  "phone-state-changed",
-#endif
 #ifdef ACCESSIBILITY
   "a11y-init-or-shutdown",
 #endif
@@ -1355,14 +1337,6 @@ ContentParent::ForwardKnownInfo()
   if (!mMetamorphosed) {
     return;
   }
-#ifdef MOZ_WIDGET_GONK
-  InfallibleTArray<VolumeInfo> volumeInfo;
-  RefPtr<nsVolumeService> vs = nsVolumeService::GetSingleton();
-  if (vs) {
-    vs->GetVolumesForIPC(&volumeInfo);
-    Unused << SendVolumes(volumeInfo);
-  }
-#endif /* MOZ_WIDGET_GONK */
 }
 
 namespace {
@@ -1410,23 +1384,6 @@ bool
 ContentParent::SetPriorityAndCheckIsAlive(ProcessPriority aPriority)
 {
   ProcessPriorityManager::SetProcessPriority(this, aPriority);
-
-  // Now that we've set this process's priority, check whether the process is
-  // still alive.  Hopefully we've set the priority to FOREGROUND*, so the
-  // process won't unexpectedly crash after this point!
-  //
-  // Bug 943174: use waitid() with WNOWAIT so that, if the process
-  // did exit, we won't consume its zombie and confuse the
-  // GeckoChildProcessHost dtor.
-#ifdef MOZ_WIDGET_GONK
-  siginfo_t info;
-  info.si_pid = 0;
-  if (waitid(P_PID, Pid(), &info, WNOWAIT | WNOHANG | WEXITED) == 0
-    && info.si_pid != 0) {
-    return false;
-  }
-#endif
-
   return true;
 }
 
@@ -2686,50 +2643,6 @@ ContentParent::Observe(nsISupports* aSubject,
   else if (!strcmp(aTopic, "last-pb-context-exited")) {
     Unused << SendLastPrivateDocShellDestroyed();
   }
-#ifdef MOZ_WIDGET_GONK
-  else if(!strcmp(aTopic, NS_VOLUME_STATE_CHANGED)) {
-    nsCOMPtr<nsIVolume> vol = do_QueryInterface(aSubject);
-    if (!vol) {
-      return NS_ERROR_NOT_AVAILABLE;
-    }
-
-    nsString volName;
-    nsString mountPoint;
-    int32_t  state;
-    int32_t  mountGeneration;
-    bool   isMediaPresent;
-    bool   isSharing;
-    bool   isFormatting;
-    bool   isFake;
-    bool   isUnmounting;
-    bool   isRemovable;
-    bool   isHotSwappable;
-
-    vol->GetName(volName);
-    vol->GetMountPoint(mountPoint);
-    vol->GetState(&state);
-    vol->GetMountGeneration(&mountGeneration);
-    vol->GetIsMediaPresent(&isMediaPresent);
-    vol->GetIsSharing(&isSharing);
-    vol->GetIsFormatting(&isFormatting);
-    vol->GetIsFake(&isFake);
-    vol->GetIsUnmounting(&isUnmounting);
-    vol->GetIsRemovable(&isRemovable);
-    vol->GetIsHotSwappable(&isHotSwappable);
-
-    Unused << SendFileSystemUpdate(volName, mountPoint, state,
-                                   mountGeneration, isMediaPresent,
-                                   isSharing, isFormatting, isFake,
-                                   isUnmounting, isRemovable, isHotSwappable);
-  } else if (!strcmp(aTopic, "phone-state-changed")) {
-    nsString state(aData);
-    Unused << SendNotifyPhoneStateChange(state);
-  }
-  else if(!strcmp(aTopic, NS_VOLUME_REMOVED)) {
-    nsString volName(aData);
-    Unused << SendVolumeRemoved(volName);
-  }
-#endif
 #ifdef ACCESSIBILITY
   else if (aData && !strcmp(aTopic, "a11y-init-or-shutdown")) {
     if (*aData == '1') {
@@ -3398,29 +3311,12 @@ ContentParent::RecvPSpeechSynthesisConstructor(PSpeechSynthesisParent* aActor)
 bool
 ContentParent::RecvSpeakerManagerGetSpeakerStatus(bool* aValue)
 {
-#ifdef MOZ_WIDGET_GONK
-  *aValue = false;
-  RefPtr<SpeakerManagerService> service =
-  SpeakerManagerService::GetOrCreateSpeakerManagerService();
-  MOZ_ASSERT(service);
-
-  *aValue = service->GetSpeakerStatus();
-  return true;
-#endif
   return false;
 }
 
 bool
 ContentParent::RecvSpeakerManagerForceSpeaker(const bool& aEnable)
 {
-#ifdef MOZ_WIDGET_GONK
-  RefPtr<SpeakerManagerService> service =
-  SpeakerManagerService::GetOrCreateSpeakerManagerService();
-  MOZ_ASSERT(service);
-  service->ForceSpeaker(aEnable, mChildID);
-
-  return true;
-#endif
   return false;
 }
 
@@ -3976,49 +3872,22 @@ bool
 ContentParent::RecvCreateFakeVolume(const nsString& fsName,
                                     const nsString& mountPoint)
 {
-#ifdef MOZ_WIDGET_GONK
-  nsresult rv;
-  nsCOMPtr<nsIVolumeService> vs = do_GetService(NS_VOLUMESERVICE_CONTRACTID, &rv);
-  if (vs) {
-    vs->CreateFakeVolume(fsName, mountPoint);
-  }
-  return true;
-#else
-  NS_WARNING("ContentParent::RecvCreateFakeVolume shouldn't be called when MOZ_WIDGET_GONK is not defined");
+  NS_WARNING("ContentParent::RecvCreateFakeVolume shouldn't be called");
   return false;
-#endif
 }
 
 bool
 ContentParent::RecvSetFakeVolumeState(const nsString& fsName, const int32_t& fsState)
 {
-#ifdef MOZ_WIDGET_GONK
-  nsresult rv;
-  nsCOMPtr<nsIVolumeService> vs = do_GetService(NS_VOLUMESERVICE_CONTRACTID, &rv);
-  if (vs) {
-    vs->SetFakeVolumeState(fsName, fsState);
-  }
-  return true;
-#else
-  NS_WARNING("ContentParent::RecvSetFakeVolumeState shouldn't be called when MOZ_WIDGET_GONK is not defined");
+  NS_WARNING("ContentParent::RecvSetFakeVolumeState shouldn't be called");
   return false;
-#endif
 }
 
 bool
 ContentParent::RecvRemoveFakeVolume(const nsString& fsName)
 {
-#ifdef MOZ_WIDGET_GONK
-  nsresult rv;
-  nsCOMPtr<nsIVolumeService> vs = do_GetService(NS_VOLUMESERVICE_CONTRACTID, &rv);
-  if (vs) {
-    vs->RemoveFakeVolume(fsName);
-  }
-  return true;
-#else
-  NS_WARNING("ContentParent::RecvRemoveFakeVolume shouldn't be called when MOZ_WIDGET_GONK is not defined");
+  NS_WARNING("ContentParent::RecvRemoveFakeVolume shouldn't be called");
   return false;
-#endif
 }
 
 bool

@@ -267,7 +267,7 @@ protected:
                        const mozilla::NativeEventData& aNativeKeyData,
                        bool aIsConsumed) override;
 
-#if defined(XP_UNIX) && !defined(XP_MACOSX) && !defined(MOZ_WIDGET_GONK)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
     virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPPluginFuncs* pFuncs, NPError* error) override;
 #else
     virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error) override;
@@ -517,7 +517,7 @@ private:
     PluginProcessParent* Process() const { return mSubprocess; }
     base::ProcessHandle ChildProcessHandle() { return mSubprocess->GetChildProcessHandle(); }
 
-#if defined(XP_UNIX) && !defined(XP_MACOSX) && !defined(MOZ_WIDGET_GONK)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
     virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPPluginFuncs* pFuncs, NPError* error) override;
 #else
     virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error) override;

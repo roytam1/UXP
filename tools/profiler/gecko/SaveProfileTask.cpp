@@ -9,7 +9,7 @@
 nsresult
 SaveProfileTask::Run() {
   // Get file path
-#if defined(SPS_PLAT_arm_android) && !defined(MOZ_WIDGET_GONK)
+#if defined(SPS_PLAT_arm_android)
   nsCString tmpPath;
   tmpPath.AppendPrintf("/sdcard/profile_%i_%i.txt", XRE_GetProcessType(), getpid());
 #else

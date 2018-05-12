@@ -37,7 +37,6 @@ static std::string getId(const char *bin_name)
   return "";
 }
 
-#if !defined(MOZ_WIDGET_GONK)
 // TODO fix me with proper include
 #include "nsDebug.h"
 #ifdef ANDROID
@@ -86,13 +85,10 @@ dl_iterate_callback(struct dl_phdr_info *dl_info, size_t size, void *data)
   return 0;
 }
 
-#endif // !MOZ_WIDGET_GONK
-
 SharedLibraryInfo SharedLibraryInfo::GetInfoForSelf()
 {
   SharedLibraryInfo info;
 
-#if !defined(MOZ_WIDGET_GONK)
 #ifdef ANDROID
   if (!dl_iterate_phdr) {
     // On ARM Android, dl_iterate_phdr is provided by the custom linker.
@@ -104,9 +100,8 @@ SharedLibraryInfo SharedLibraryInfo::GetInfoForSelf()
 #endif // ANDROID
 
   dl_iterate_phdr(dl_iterate_callback, &info);
-#endif // !MOZ_WIDGET_GONK
 
-#if defined(ANDROID) || defined(MOZ_WIDGET_GONK)
+#if defined(ANDROID)
   pid_t pid = getpid();
   char path[PATH_MAX];
   snprintf(path, PATH_MAX, "/proc/%d/maps", pid);
@@ -132,19 +127,10 @@ SharedLibraryInfo SharedLibraryInfo::GetInfoForSelf()
       LOG("Get maps line failed");
       continue;
     }
-#if defined(ANDROID) && !defined(MOZ_WIDGET_GONK)
     // Use proc/pid/maps to get the dalvik-jit section since it has
     // no associated phdrs
     if (strcmp(name, "/dev/ashmem/dalvik-jit-code-cache") != 0)
       continue;
-#else
-    if (strcmp(perm, "r-xp") != 0) {
-      // Ignore entries that are writable and/or shared.
-      // At least one graphics driver uses short-lived "rwxs" mappings
-      // (see bug 926734 comment 5), so just checking for 'x' isn't enough.
-      continue;
-    }
-#endif
     SharedLibrary shlib(start, end, offset, getId(name), name);
     info.AddSharedLibrary(shlib);
     if (count > 10000) {
@@ -153,7 +139,7 @@ SharedLibraryInfo SharedLibraryInfo::GetInfoForSelf()
     }
     count++;
   }
-#endif // ANDROID || MOZ_WIDGET_GONK
+#endif // ANDROID
 
   return info;
 }
