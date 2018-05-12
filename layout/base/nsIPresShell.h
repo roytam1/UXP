@@ -51,10 +51,6 @@
 #include "nsFrameState.h"
 #include "Units.h"
 
-#ifdef MOZ_B2G
-#include "nsIHardwareKeyHandler.h"
-#endif
-
 class nsDocShell;
 class nsIDocument;
 class nsIFrame;
@@ -1765,11 +1761,6 @@ protected:
   // posted messages are processed before other messages when the modal
   // moving/sizing loop is running, see bug 491700 for details.
   nsCOMPtr<nsITimer>        mReflowContinueTimer;
-
-#ifdef MOZ_B2G
-  // Forward hardware key events to the input-method-app
-  nsCOMPtr<nsIHardwareKeyHandler> mHardwareKeyHandler;
-#endif // MOZ_B2G
 
 #ifdef DEBUG
   nsIFrame*                 mDrawEventTargetFrame;

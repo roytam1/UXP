@@ -741,9 +741,6 @@ MediaEngineWebRTCMicrophoneSource::AllocChannel()
 
       // Check for availability.
       if (!mAudioInput->SetRecordingDevice(mCapIndex)) {
-#ifndef MOZ_B2G
-        // Because of the permission mechanism of B2G, we need to skip the status
-        // check here.
         bool avail = false;
         mAudioInput->GetRecordingDeviceStatus(avail);
         if (!avail) {
@@ -752,7 +749,6 @@ MediaEngineWebRTCMicrophoneSource::AllocChannel()
           }
           return false;
         }
-#endif // MOZ_B2G
 
         // Set "codec" to PCM, 32kHz on 1 channel
         ScopedCustomReleasePtr<webrtc::VoECodec> ptrVoECodec(webrtc::VoECodec::GetInterface(mVoiceEngine));

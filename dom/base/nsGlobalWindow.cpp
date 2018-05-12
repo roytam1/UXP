@@ -249,10 +249,6 @@
 #include "mozilla/dom/SpeechSynthesis.h"
 #endif
 
-#ifdef MOZ_B2G
-#include "nsPISocketTransportService.h"
-#endif
-
 // Apple system headers seem to have a check() macro.  <sigh>
 #ifdef check
 class nsIScriptTimeoutHandler;
@@ -1557,10 +1553,6 @@ nsGlobalWindow::nsGlobalWindow(nsGlobalWindow *aOuterWindow)
 #ifdef DEBUG
     mSetOpenerWindowCalled(false),
 #endif
-#ifdef MOZ_B2G
-    mNetworkUploadObserverEnabled(false),
-    mNetworkDownloadObserverEnabled(false),
-#endif
     mCleanedUp(false),
     mDialogAbuseCount(0),
     mAreDialogsEnabled(true),
@@ -1913,11 +1905,6 @@ nsGlobalWindow::CleanUp()
       os->RemoveObserver(mObserver, "dom-storage2-changed");
     }
 
-#ifdef MOZ_B2G
-    DisableNetworkEvent(eNetworkUpload);
-    DisableNetworkEvent(eNetworkDownload);
-#endif // MOZ_B2G
-
     if (mIdleService) {
       mIdleService->RemoveIdleObserver(mObserver, MIN_IDLE_NOTIFICATION_TIME_S);
     }
@@ -1986,9 +1973,6 @@ nsGlobalWindow::CleanUp()
     mHasGamepad = false;
     DisableVRUpdates();
     mHasVREvents = false;
-#ifdef MOZ_B2G
-    DisableTimeChangeNotifications();
-#endif
     DisableIdleCallbackRequests();
   } else {
     MOZ_ASSERT(!mHasGamepad);
@@ -12133,27 +12117,6 @@ nsGlobalWindow::Observe(nsISupports* aSubject, const char* aTopic,
     return NS_OK;
   }
 
-#ifdef MOZ_B2G
-  if (!nsCRT::strcmp(aTopic, NS_NETWORK_ACTIVITY_BLIP_UPLOAD_TOPIC) ||
-      !nsCRT::strcmp(aTopic, NS_NETWORK_ACTIVITY_BLIP_DOWNLOAD_TOPIC)) {
-    MOZ_ASSERT(IsInnerWindow());
-    if (!AsInner()->IsCurrentInnerWindow()) {
-      return NS_OK;
-    }
-
-    RefPtr<Event> event = NS_NewDOMEvent(this, nullptr, nullptr);
-    event->InitEvent(
-      !nsCRT::strcmp(aTopic, NS_NETWORK_ACTIVITY_BLIP_UPLOAD_TOPIC)
-        ? NETWORK_UPLOAD_EVENT_NAME
-        : NETWORK_DOWNLOAD_EVENT_NAME,
-      false, false);
-    event->SetTrusted(true);
-
-    bool dummy;
-    return DispatchEvent(event, &dummy);
-  }
-#endif // MOZ_B2G
-
   if (!nsCRT::strcmp(aTopic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID)) {
     MOZ_ASSERT(!NS_strcmp(aData, u"intl.accept_languages"));
     MOZ_ASSERT(IsInnerWindow());
@@ -15052,80 +15015,6 @@ nsGlobalWindow::GetIsPrerendered()
   nsIDocShell* docShell = GetDocShell();
   return docShell && docShell->GetIsPrerendered();
 }
-
-#ifdef MOZ_B2G
-void
-nsGlobalWindow::EnableNetworkEvent(EventMessage aEventMessage)
-{
-  MOZ_ASSERT(IsInnerWindow());
-
-  nsCOMPtr<nsIPermissionManager> permMgr =
-    services::GetPermissionManager();
-  if (!permMgr) {
-    NS_ERROR("No PermissionManager available!");
-    return;
-  }
-
-  uint32_t permission = nsIPermissionManager::DENY_ACTION;
-  permMgr->TestExactPermissionFromPrincipal(GetPrincipal(), "network-events",
-                                            &permission);
-
-  if (permission != nsIPermissionManager::ALLOW_ACTION) {
-    return;
-  }
-
-  nsCOMPtr<nsIObserverService> os = mozilla::services::GetObserverService();
-  if (!os) {
-    NS_ERROR("ObserverService should be available!");
-    return;
-  }
-
-  switch (aEventMessage) {
-    case eNetworkUpload:
-      if (!mNetworkUploadObserverEnabled) {
-        mNetworkUploadObserverEnabled = true;
-        os->AddObserver(mObserver, NS_NETWORK_ACTIVITY_BLIP_UPLOAD_TOPIC, false);
-      }
-      break;
-    case eNetworkDownload:
-      if (!mNetworkDownloadObserverEnabled) {
-        mNetworkDownloadObserverEnabled = true;
-        os->AddObserver(mObserver, NS_NETWORK_ACTIVITY_BLIP_DOWNLOAD_TOPIC, false);
-      }
-      break;
-    default:
-      break;
-  }
-}
-
-void
-nsGlobalWindow::DisableNetworkEvent(EventMessage aEventMessage)
-{
-  MOZ_ASSERT(IsInnerWindow());
-
-  nsCOMPtr<nsIObserverService> os = mozilla::services::GetObserverService();
-  if (!os) {
-    return;
-  }
-
-  switch (aEventMessage) {
-    case eNetworkUpload:
-      if (mNetworkUploadObserverEnabled) {
-        mNetworkUploadObserverEnabled = false;
-        os->RemoveObserver(mObserver, NS_NETWORK_ACTIVITY_BLIP_UPLOAD_TOPIC);
-      }
-      break;
-    case eNetworkDownload:
-      if (mNetworkDownloadObserverEnabled) {
-        mNetworkDownloadObserverEnabled = false;
-        os->RemoveObserver(mObserver, NS_NETWORK_ACTIVITY_BLIP_DOWNLOAD_TOPIC);
-      }
-      break;
-    default:
-      break;
-  }
-}
-#endif // MOZ_B2G
 
 void
 nsGlobalWindow::RedefineProperty(JSContext* aCx, const char* aPropName,

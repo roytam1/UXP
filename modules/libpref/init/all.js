@@ -1260,7 +1260,7 @@ pref("javascript.options.wasm",             false);
 pref("javascript.options.wasm_baselinejit", false);
 pref("javascript.options.native_regexp",    true);
 pref("javascript.options.parallel_parsing", true);
-#if !defined(RELEASE_OR_BETA) && !defined(ANDROID) && !defined(MOZ_B2G) && !defined(XP_IOS)
+#if !defined(RELEASE_OR_BETA) && !defined(ANDROID) && !defined(XP_IOS)
 pref("javascript.options.asyncstack",       true);
 #else
 pref("javascript.options.asyncstack",       false);
@@ -2144,14 +2144,6 @@ pref("font.name.monospace.x-math", "monospace");
 // These fonts are ignored the underline offset, instead of it, the underline is lowered to bottom of its em descent.
 pref("font.blacklist.underline_offset", "FangSong,Gulim,GulimChe,MingLiU,MingLiU-ExtB,MingLiU_HKSCS,MingLiU-HKSCS-ExtB,MS Gothic,MS Mincho,MS PGothic,MS PMincho,MS UI Gothic,PMingLiU,PMingLiU-ExtB,SimHei,SimSun,SimSun-ExtB,Hei,Kai,Apple LiGothic,Apple LiSung,Osaka");
 
-#ifdef MOZ_B2G
-// Whitelist of fonts that ship with B2G that do not include space lookups in
-// default features. This allows us to skip analyzing the GSUB/GPOS tables
-// unless features are explicitly enabled.
-// Use NSPR_LOG_MODULES=fontinit:5 to dump out details of space lookups
-pref("font.whitelist.skip_default_features_space_check", "Fira Sans,Fira Mono");
-#endif
-
 pref("images.dither", "auto");
 pref("security.directory",              "");
 
@@ -2521,7 +2513,7 @@ pref("layout.css.text-justify.enabled", true);
 
 // Is support for CSS "float: inline-{start,end}" and
 // "clear: inline-{start,end}" enabled?
-#if defined(MOZ_B2G) || !defined(RELEASE_OR_BETA)
+#if !defined(RELEASE_OR_BETA)
 pref("layout.css.float-logical-values.enabled", true);
 #else
 pref("layout.css.float-logical-values.enabled", false);
@@ -4193,7 +4185,7 @@ pref("gfx.font_rendering.fontconfig.max_generic_substitutions", 3);
 #endif
 #endif
 
-#if defined(ANDROID) || defined(MOZ_B2G)
+#if defined(ANDROID)
 
 pref("font.size.fixed.ar", 12);
 
@@ -4211,73 +4203,10 @@ pref("font.size.fixed.x-unicode", 12);
 pref("font.default.x-western", "sans-serif");
 pref("font.size.fixed.x-western", 12);
 
-# ANDROID || MOZ_B2G
+# ANDROID
 #endif
 
-#if defined(MOZ_B2G)
-// Gonk, FxOS Simulator, B2G Desktop and Mulet.
-
-// TODO: some entries could probably be cleaned up.
-
-// ar
-
-pref("font.name.serif.el", "Droid Serif"); // not Charis SIL Compact, only has a few Greek chars
-pref("font.name.sans-serif.el", "Fira Sans");
-pref("font.name.monospace.el", "Fira Mono");
-
-pref("font.name.serif.he", "Charis SIL Compact");
-pref("font.name.sans-serif.he", "Fira Sans");
-pref("font.name.monospace.he", "Fira Mono");
-pref("font.name-list.sans-serif.he", "Droid Sans Hebrew, Fira Sans");
-
-pref("font.name.serif.ja", "Charis SIL Compact");
-pref("font.name.sans-serif.ja", "Fira Sans");
-pref("font.name.monospace.ja", "MotoyaLMaru");
-pref("font.name-list.sans-serif.ja", "Fira Sans, MotoyaLMaru, MotoyaLCedar, Droid Sans Japanese");
-pref("font.name-list.monospace.ja", "MotoyaLMaru, MotoyaLCedar, Fira Mono");
-
-pref("font.name.serif.ko", "Charis SIL Compact");
-pref("font.name.sans-serif.ko", "Fira Sans");
-pref("font.name.monospace.ko", "Fira Mono");
-
-pref("font.name.serif.th", "Charis SIL Compact");
-pref("font.name.sans-serif.th", "Fira Sans");
-pref("font.name.monospace.th", "Fira Mono");
-pref("font.name-list.sans-serif.th", "Fira Sans, Noto Sans Thai, Droid Sans Thai");
-
-pref("font.name.serif.x-cyrillic", "Charis SIL Compact");
-pref("font.name.sans-serif.x-cyrillic", "Fira Sans");
-pref("font.name.monospace.x-cyrillic", "Fira Mono");
-
-pref("font.name.serif.x-unicode", "Charis SIL Compact");
-pref("font.name.sans-serif.x-unicode", "Fira Sans");
-pref("font.name.monospace.x-unicode", "Fira Mono");
-
-pref("font.name.serif.x-western", "Charis SIL Compact");
-pref("font.name.sans-serif.x-western", "Fira Sans");
-pref("font.name.monospace.x-western", "Fira Mono");
-
-pref("font.name.serif.zh-CN", "Charis SIL Compact");
-pref("font.name.sans-serif.zh-CN", "Fira Sans");
-pref("font.name.monospace.zh-CN", "Fira Mono");
-pref("font.name-list.sans-serif.zh-CN", "Fira Sans,Droid Sans Fallback");
-
-pref("font.name.serif.zh-HK", "Charis SIL Compact");
-pref("font.name.sans-serif.zh-HK", "Fira Sans");
-pref("font.name.monospace.zh-HK", "Fira Mono");
-pref("font.name-list.sans-serif.zh-HK", "Fira Sans,Droid Sans Fallback");
-
-pref("font.name.serif.zh-TW", "Charis SIL Compact");
-pref("font.name.sans-serif.zh-TW", "Fira Sans");
-pref("font.name.monospace.zh-TW", "Fira Mono");
-pref("font.name-list.sans-serif.zh-TW", "Fira Sans,Droid Sans Fallback");
-
-pref("font.name.serif.x-math", "Latin Modern Math");
-pref("font.name-list.serif.x-math", "Latin Modern Math, XITS Math, Cambria Math, Libertinus Math, DejaVu Math TeX Gyre, TeX Gyre Bonum Math, TeX Gyre Pagella Math, TeX Gyre Schola, TeX Gyre Termes Math, STIX Math, Asana Math, STIXGeneral, DejaVu Serif, DejaVu Sans, Charis SIL Compact");
-pref("font.name.sans-serif.x-math", "Fira Sans");
-pref("font.name.monospace.x-math", "Fira Mono");
-
-#elif defined(ANDROID)
+#if defined(ANDROID)
 // We use the bundled fonts for Firefox for Android
 
 pref("font.name-list.emoji", "Noto Color Emoji");

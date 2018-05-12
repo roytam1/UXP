@@ -124,11 +124,6 @@ protected:
   // Calculate and register extension and theme bundle directories.
   void LoadExtensionBundleDirectories();
 
-#ifdef MOZ_B2G
-  // Calculate and register app-bundled extension directories.
-  void LoadAppBundleDirs();
-#endif
-
   void Append(nsIFile* aDirectory);
 
   nsCOMPtr<nsIDirectoryServiceProvider> mAppProvider;

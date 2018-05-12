@@ -15,7 +15,7 @@ Cu.import("chrome://marionette/content/error.js");
 this.EXPORTED_SYMBOLS = ["assert"];
 
 const isFennec = () => AppConstants.platform == "android";
-const isB2G = () => AppConstants.MOZ_B2G;
+const isB2G = () => false;
 const isFirefox = () => Services.appinfo.name == "Firefox";
 
 /** Shorthands for common assertions made in Marionette. */

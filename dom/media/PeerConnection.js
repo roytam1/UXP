@@ -791,7 +791,6 @@ RTCPeerConnection.prototype = {
       return this._havePermission;
     }
     if (this._isChrome ||
-        AppConstants.MOZ_B2G ||
         Services.prefs.getBoolPref("media.navigator.permission.disabled")) {
       return this._havePermission = Promise.resolve();
     }

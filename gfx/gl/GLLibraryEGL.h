@@ -656,32 +656,12 @@ public:
     static void AfterGLCall(const char* glFunction);
 #endif
 
-#ifdef MOZ_B2G
-    EGLContext CachedCurrentContext() {
-        return sCurrentContext.get();
-    }
-    void UnsetCachedCurrentContext() {
-        sCurrentContext.set(nullptr);
-    }
-    void SetCachedCurrentContext(EGLContext aCtx) {
-        sCurrentContext.set(aCtx);
-    }
-    bool CachedCurrentContextMatches() {
-        return sCurrentContext.get() == fGetCurrentContext();
-    }
-
-private:
-    static MOZ_THREAD_LOCAL(EGLContext) sCurrentContext;
-public:
-
-#else
     EGLContext CachedCurrentContext() {
         return nullptr;
     }
     void UnsetCachedCurrentContext() {}
     void SetCachedCurrentContext(EGLContext aCtx) { }
     bool CachedCurrentContextMatches() { return true; }
-#endif
 
 private:
     bool mInitialized;

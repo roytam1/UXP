@@ -333,11 +333,7 @@ AudioStream::Init(uint32_t aNumChannels, uint32_t aRate,
   params.rate = aRate;
   params.channels = mOutChannels;
 #if defined(__ANDROID__)
-#if defined(MOZ_B2G)
-  params.stream_type = CubebUtils::ConvertChannelToCubebType(aAudioChannel);
-#else
   params.stream_type = CUBEB_STREAM_TYPE_MUSIC;
-#endif
 
   if (params.stream_type == CUBEB_STREAM_TYPE_MAX) {
     return NS_ERROR_INVALID_ARG;

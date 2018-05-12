@@ -815,15 +815,6 @@ protected:
          bool aEmbeddedCancelled,
          size_t aChainIndex = 0);
 
-#ifdef MOZ_B2G
-  // This method is used to forward the keyboard event to the input-method-app
-  // before the event is dispatched to its event target.
-  // Return true if it's successfully forwarded. Otherwise, return false.
-  bool ForwardKeyToInputMethodApp(nsINode* aTarget,
-                                  mozilla::WidgetKeyboardEvent& aEvent,
-                                  nsEventStatus* aStatus);
-#endif // MOZ_B2G
-
   // This method tries forwarding key events to the input-method-editor(IME).
   // If the event isn't be forwarded, then it will be dispathed to its target.
   // Return true when event is successfully forwarded to the input-method-editor.

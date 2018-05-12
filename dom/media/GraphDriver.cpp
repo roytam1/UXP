@@ -640,11 +640,7 @@ AudioCallbackDriver::Init()
   mSampleRate = output.rate = CubebUtils::PreferredSampleRate();
 
 #if defined(__ANDROID__)
-#if defined(MOZ_B2G)
-  output.stream_type = CubebUtils::ConvertChannelToCubebType(mAudioChannel);
-#else
   output.stream_type = CUBEB_STREAM_TYPE_MUSIC;
-#endif
   if (output.stream_type == CUBEB_STREAM_TYPE_MAX) {
     NS_WARNING("Bad stream type");
     return;

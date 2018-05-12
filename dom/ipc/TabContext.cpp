@@ -358,12 +358,7 @@ MaybeInvalidTabContext::MaybeInvalidTabContext(const IPCTabContext& aParams)
     case IPCTabContext::TUnsafeIPCTabContext: {
       // XXXcatalinb: This used *only* by ServiceWorkerClients::OpenWindow.
       // It is meant as a temporary solution until service workers can
-      // provide a TabChild equivalent. Don't allow this on b2g since
-      // it might be used to escalate privileges.
-#ifdef MOZ_B2G
-      mInvalidReason = "ServiceWorkerClients::OpenWindow is not supported.";
-      return;
-#endif
+      // provide a TabChild equivalent.
       if (!Preferences::GetBool("dom.serviceWorkers.enabled", false)) {
         mInvalidReason = "ServiceWorkers should be enabled.";
         return;

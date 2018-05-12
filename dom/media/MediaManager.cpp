@@ -73,10 +73,6 @@
 #include "browser_logging/WebRtcLog.h"
 #endif
 
-#ifdef MOZ_B2G
-#include "MediaPermissionGonk.h"
-#endif
-
 #if defined (XP_WIN)
 #include "mozilla/WindowsVersion.h"
 #include <winsock2.h>
@@ -1819,10 +1815,6 @@ MediaManager::Get() {
                                             __LINE__,
                                             NS_LITERAL_STRING("Media shutdown"));
     MOZ_RELEASE_ASSERT(NS_SUCCEEDED(rv));
-#ifdef MOZ_B2G
-    // Init MediaPermissionManager before sending out any permission requests.
-    (void) MediaPermissionManager::GetInstance();
-#endif //MOZ_B2G
   }
   return sSingleton;
 }

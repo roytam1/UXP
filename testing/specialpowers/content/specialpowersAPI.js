@@ -1529,11 +1529,7 @@ SpecialPowersAPI.prototype = {
   },
 
   get isB2G() {
-#ifdef MOZ_B2G
-    return true;
-#else
     return false;
-#endif
   },
 
   addSystemEventListener: function(target, type, listener, useCapture) {

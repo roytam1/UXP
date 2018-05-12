@@ -336,12 +336,8 @@ void MaybeShutdownAccService(uint32_t aFormerConsumer);
 inline bool
 IPCAccessibilityActive()
 {
-#ifdef MOZ_B2G
-  return false;
-#else
   return XRE_IsContentProcess() &&
     mozilla::Preferences::GetBool("accessibility.ipc_architecture.enabled", true);
-#endif
 }
 
 /**

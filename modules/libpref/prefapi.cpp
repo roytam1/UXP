@@ -573,9 +573,7 @@ nsresult PREF_GetBoolPref(const char *pref_name, bool * return_value, bool get_d
 nsresult
 PREF_DeleteBranch(const char *branch_name)
 {
-#ifndef MOZ_B2G
     MOZ_ASSERT(NS_IsMainThread());
-#endif
 
     int len = (int)strlen(branch_name);
 
@@ -636,9 +634,7 @@ PREF_ClearUserPref(const char *pref_name)
 nsresult
 PREF_ClearAllUserPrefs()
 {
-#ifndef MOZ_B2G
     MOZ_ASSERT(NS_IsMainThread());
-#endif
 
     if (!gHashTable)
         return NS_ERROR_NOT_INITIALIZED;
@@ -739,18 +735,14 @@ static PrefTypeFlags pref_SetValue(PrefValue* existingValue, PrefTypeFlags flags
 
 PrefHashEntry* pref_HashTableLookup(const char *key)
 {
-#ifndef MOZ_B2G
     MOZ_ASSERT(NS_IsMainThread());
-#endif
 
     return static_cast<PrefHashEntry*>(gHashTable->Search(key));
 }
 
 nsresult pref_HashPref(const char *key, PrefValue value, PrefType type, uint32_t flags)
 {
-#ifndef MOZ_B2G
     MOZ_ASSERT(NS_IsMainThread());
-#endif
 
     if (!gHashTable)
         return NS_ERROR_OUT_OF_MEMORY;

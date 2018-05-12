@@ -18,10 +18,6 @@ ifneq (1_WINNT,$(MOZ_PGO)_$(OS_ARCH))
 BUILD_GTEST=1
 endif
 
-ifdef MOZ_B2G
-BUILD_GTEST=
-endif
-
 ifndef MOZ_PHOENIX
 BUILD_GTEST=
 endif

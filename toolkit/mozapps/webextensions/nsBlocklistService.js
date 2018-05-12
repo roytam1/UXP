@@ -907,10 +907,6 @@ Blocklist.prototype = {
                                                       this._handleEmItemNode);
           break;
         case "pluginItems":
-          // We don't support plugins on b2g.
-          if (AppConstants.MOZ_B2G) {
-            return;
-          }
           this._pluginEntries = this._processItemNodes(element.childNodes, "pluginItem",
                                                        this._handlePluginItemNode);
           break;
@@ -1151,8 +1147,7 @@ Blocklist.prototype = {
 
   /* See nsIBlocklistService */
   getPluginBlocklistState: function(plugin, appVersion, toolkitVersion) {
-    if (AppConstants.platform == "android" ||
-        AppConstants.MOZ_B2G) {
+    if (AppConstants.platform == "android") {
       return Ci.nsIBlocklistService.STATE_NOT_BLOCKED;
     }
     if (!this._isBlocklistLoaded())
@@ -1314,10 +1309,6 @@ Blocklist.prototype = {
   },
 
   _blocklistUpdated: function(oldAddonEntries, oldPluginEntries) {
-    if (AppConstants.MOZ_B2G) {
-      return;
-    }
-
     var addonList = [];
 
     // A helper function that reverts the prefs passed to default values.

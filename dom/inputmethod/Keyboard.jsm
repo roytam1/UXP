@@ -24,12 +24,7 @@ XPCOMUtils.defineLazyGetter(this, "appsService", function() {
 });
 
 XPCOMUtils.defineLazyGetter(this, "hardwareKeyHandler", function() {
-#ifdef MOZ_B2G
-  return Cc["@mozilla.org/HardwareKeyHandler;1"]
-         .getService(Ci.nsIHardwareKeyHandler);
-#else
   return null;
-#endif
 });
 
 var Utils = {
@@ -50,17 +45,6 @@ var Utils = {
 };
 
 this.Keyboard = {
-#ifdef MOZ_B2G
-  // For receving keyboard event fired from hardware before it's dispatched,
-  // |this| object is used to be the listener to get the forwarded event.
-  // As the listener, |this| object must implement nsIHardwareKeyEventListener
-  // and nsSupportsWeakReference.
-  // Please see nsIHardwareKeyHandler.idl to get more information.
-  QueryInterface: XPCOMUtils.generateQI([
-    Ci.nsIHardwareKeyEventListener,
-    Ci.nsISupportsWeakReference
-  ]),
-#endif
   _isConnectedToHardwareKeyHandler: false,
   _formMM: null,      // The current web page message manager.
   _keyboardMM: null,  // The keyboard app message manager.
