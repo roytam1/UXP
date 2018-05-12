@@ -24,6 +24,7 @@ MOZ_ANDROID_APPLICATION_CLASS=org.mozilla.gecko.GeckoApplication
 MOZ_ANDROID_BROWSER_INTENT_CLASS=org.mozilla.gecko.BrowserApp
 MOZ_ANDROID_SEARCH_INTENT_CLASS=org.mozilla.search.SearchActivity
 
+MOZ_SAFE_BROWSING=
 MOZ_NO_SMART_CARDS=1
 
 MOZ_XULRUNNER=
