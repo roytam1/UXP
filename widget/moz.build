@@ -6,9 +6,9 @@
 
 toolkit = CONFIG['MOZ_WIDGET_TOOLKIT']
 
-if toolkit in ('cocoa', 'android', 'gonk', 'uikit'):
+if toolkit in ('cocoa', 'android', 'uikit'):
     DIRS += [toolkit]
-if toolkit in ('android', 'gonk', 'gtk2', 'gtk3'):
+if toolkit in ('android', 'gtk2', 'gtk3'):
     EXPORTS += ['nsIPrintDialogService.h']
 
 if toolkit == 'windows':
@@ -222,7 +222,7 @@ if toolkit in ('cocoa', 'windows'):
     ]
 
 if toolkit in {'gtk2', 'gtk3', 'cocoa', 'windows',
-               'android', 'gonk', 'uikit'}:
+               'android', 'uikit'}:
     UNIFIED_SOURCES += [
         'nsBaseFilePicker.cpp',
     ]
