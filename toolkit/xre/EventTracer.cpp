@@ -65,12 +65,6 @@
 #include <prthread.h>
 #include <prtime.h>
 
-#ifdef MOZ_WIDGET_GONK
-#include "nsThreadUtils.h"
-#include "nsIObserverService.h"
-#include "mozilla/Services.h"
-#endif
-
 using mozilla::TimeDuration;
 using mozilla::TimeStamp;
 using mozilla::FireAndWaitForTracerEvent;
@@ -84,31 +78,6 @@ struct TracerStartClosure {
   bool mLogTracing;
   int32_t mThresholdInterval;
 };
-
-#ifdef MOZ_WIDGET_GONK
-class EventLoopLagDispatcher : public Runnable
-{
-  public:
-    explicit EventLoopLagDispatcher(int aLag)
-      : mLag(aLag) {}
-
-    NS_IMETHOD Run() override
-    {
-      nsCOMPtr<nsIObserverService> obsService =
-        mozilla::services::GetObserverService();
-      if (!obsService) {
-        return NS_ERROR_FAILURE;
-      }
-
-      nsAutoString value;
-      value.AppendInt(mLag);
-      return obsService->NotifyObservers(nullptr, "event-loop-lag", value.get());
-    }
-
-  private:
-    int mLag;
-};
-#endif
 
 /*
  * The tracer thread fires events at the native event loop roughly
@@ -180,10 +149,6 @@ void TracerThread(void *arg)
         fprintf(log, "MOZ_EVENT_TRACE sample %llu %lf\n",
                 now,
                 duration.ToMilliseconds());
-#ifdef MOZ_WIDGET_GONK
-        NS_DispatchToMainThread(
-         new EventLoopLagDispatcher(int(duration.ToSecondsSigDigits() * 1000)));
-#endif
       }
 
       if (next_sleep > duration.ToMilliseconds()) {

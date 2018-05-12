@@ -541,10 +541,6 @@ PuppetWidget::ExecuteNativeKeyBinding(NativeKeyBindingsType aType,
                                       DoCommandCallback aCallback,
                                       void* aCallbackData)
 {
-  // B2G doesn't have native key bindings.
-#ifdef MOZ_WIDGET_GONK
-  return false;
-#else // #ifdef MOZ_WIDGET_GONK
   AutoCacheNativeKeyCommands autoCache(this);
   if (!aEvent.mWidget && !mNativeKeyCommandsValid) {
     MOZ_ASSERT(!aEvent.mFlags.mIsSynthesizedForTests);
@@ -581,7 +577,6 @@ PuppetWidget::ExecuteNativeKeyBinding(NativeKeyBindingsType aType,
     aCallback(static_cast<mozilla::Command>((*commands)[i]), aCallbackData);
   }
   return true;
-#endif
 }
 
 LayerManager*

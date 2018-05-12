@@ -10,11 +10,7 @@
 #include <stagefright/MetaData.h>
 #include <stagefright/OMXCodec.h>
 #include <media/stagefright/MediaErrors.h>
-#ifdef MOZ_WIDGET_GONK
-#include <OMX.h>
-#else
 #include <stagefright/OMXClient.h>
-#endif
 #include <algorithm>
 
 #include "mozilla/Assertions.h"
@@ -125,7 +121,6 @@ public:
   bool ReadAudio(AudioFrame *aFrame, int64_t aSeekTimeUs);
 };
 
-#if !defined(MOZ_WIDGET_GONK)
 static class OmxClientInstance {
 public:
   OmxClientInstance()
@@ -156,7 +151,6 @@ private:
   OMXClient *mClient;
   status_t mStatus;
 } sClientInstance;
-#endif
 
 OmxDecoder::OmxDecoder(PluginHost *aPluginHost, Decoder *aDecoder) :
   mPluginHost(aPluginHost),
@@ -210,16 +204,6 @@ public:
   }
 };
 
-#ifdef MOZ_WIDGET_GONK
-static sp<IOMX> sOMX = nullptr;
-static sp<IOMX> GetOMX() {
-  if(sOMX.get() == nullptr) {
-    sOMX = reinterpret_cast<IOMX*>(new OMX);
-  }
-  return sOMX;
-}
-#endif
-
 static uint32_t
 GetDefaultStagefrightFlags(PluginHost *aPluginHost)
 {
@@ -246,11 +230,6 @@ GetDefaultStagefrightFlags(PluginHost *aPluginHost)
 
 static uint32_t GetVideoCreationFlags(PluginHost* aPluginHost)
 {
-#ifdef MOZ_WIDGET_GONK
-  // Flag value of zero means return a hardware or software decoder
-  // depending on what the device supports.
-  return 0;
-#else
   // Check whether the user has set a pref to override our default OMXCodec
   // CreationFlags flags. This is useful for A/B testing hardware and software
   // decoders for performance and bugs. The interesting flag values are:
@@ -271,7 +250,6 @@ static uint32_t GetVideoCreationFlags(PluginHost* aPluginHost)
   flags |= GetDefaultStagefrightFlags(aPluginHost);
 
   return static_cast<uint32_t>(flags);
-#endif
 }
 
 enum ColorFormatSupport {
@@ -481,11 +459,7 @@ bool OmxDecoder::Init()
 
   int64_t totalDurationUs = 0;
 
-#ifdef MOZ_WIDGET_GONK
-  sp<IOMX> omx = GetOMX();
-#else
   sp<IOMX> omx = sClientInstance.get()->interface();
-#endif
 
   sp<MediaSource> videoTrack;
   sp<MediaSource> videoSource;

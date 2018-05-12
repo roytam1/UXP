@@ -62,13 +62,9 @@ static const int kMagicAndroidSystemPropFd = 5;
 #endif
 
 static const bool kLowRightsSubprocesses =
-  // We currently only attempt to drop privileges on gonk, because we
-  // have no plugins or extensions to worry about breaking.
-#ifdef MOZ_WIDGET_GONK
-  true
-#else
+  // We only attempted to drop privileges on gonk, because it
+  // had no plugins or extensions to worry about breaking.
   false
-#endif
   ;
 
 static bool
@@ -698,12 +694,6 @@ GeckoChildProcessHost::PerformAsyncLaunchInternal(std::vector<std::string>& aExt
     newEnvVars["ANDROID_PROPERTY_WORKSPACE"] = buf;
   }
 #endif  // ANDROID
-
-#ifdef MOZ_WIDGET_GONK
-  if (const char *ldPreloadPath = getenv("LD_PRELOAD")) {
-    newEnvVars["LD_PRELOAD"] = ldPreloadPath;
-  }
-#endif // MOZ_WIDGET_GONK
 
   // remap the IPC socket fd to a well-known int, as the OS does for
   // STDOUT_FILENO, for example

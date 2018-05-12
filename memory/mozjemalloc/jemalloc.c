@@ -149,12 +149,7 @@
  * the options passed via the MALLOC_OPTIONS environment variable but is
  * applied in addition to them.
  */
-#ifdef MOZ_WIDGET_GONK
-    /* Reduce the amount of unused dirty pages to 1MiB on B2G */
-#   define MOZ_MALLOC_OPTIONS "ff"
-#else
 #   define MOZ_MALLOC_OPTIONS ""
-#endif
 
 /*
  * MALLOC_STATS enables statistics calculation, and is required for

@@ -43,10 +43,6 @@
 #include "sslerr.h"
 #include <algorithm>
 
-#ifdef MOZ_WIDGET_GONK
-#include "NetStatistics.h"
-#endif
-
 //-----------------------------------------------------------------------------
 
 static NS_DEFINE_CID(kMultiplexInputStream, NS_MULTIPLEXINPUTSTREAM_CID);
@@ -265,15 +261,6 @@ nsHttpTransaction::Init(uint32_t caps,
     if (channel) {
         NS_GetAppInfo(channel, &mAppId, &mIsInIsolatedMozBrowser);
     }
-
-#ifdef MOZ_WIDGET_GONK
-    if (mAppId != NECKO_NO_APP_ID) {
-        nsCOMPtr<nsINetworkInfo> activeNetworkInfo;
-        GetActiveNetworkInfo(activeNetworkInfo);
-        mActiveNetworkInfo =
-            new nsMainThreadPtrHolder<nsINetworkInfo>(activeNetworkInfo);
-    }
-#endif
 
     nsCOMPtr<nsIHttpChannelInternal> httpChannelInternal =
         do_QueryInterface(eventsink);
@@ -937,40 +924,7 @@ nsHttpTransaction::WriteSegments(nsAHttpSegmentWriter *writer,
 nsresult
 nsHttpTransaction::SaveNetworkStats(bool enforce)
 {
-#ifdef MOZ_WIDGET_GONK
-    // Check if active network and appid are valid.
-    if (!mActiveNetworkInfo || mAppId == NECKO_NO_APP_ID) {
-        return NS_OK;
-    }
-
-    if (mCountRecv <= 0 && mCountSent <= 0) {
-        // There is no traffic, no need to save.
-        return NS_OK;
-    }
-
-    // If |enforce| is false, the traffic amount is saved
-    // only when the total amount exceeds the predefined
-    // threshold.
-    uint64_t totalBytes = mCountRecv + mCountSent;
-    if (!enforce && totalBytes < NETWORK_STATS_THRESHOLD) {
-        return NS_OK;
-    }
-
-    // Create the event to save the network statistics.
-    // the event is then dispatched to the main thread.
-    RefPtr<Runnable> event =
-        new SaveNetworkStatsEvent(mAppId, mIsInIsolatedMozBrowser, mActiveNetworkInfo,
-                                  mCountRecv, mCountSent, false);
-    NS_DispatchToMainThread(event);
-
-    // Reset the counters after saving.
-    mCountSent = 0;
-    mCountRecv = 0;
-
-    return NS_OK;
-#else
     return NS_ERROR_NOT_IMPLEMENTED;
-#endif
 }
 
 void

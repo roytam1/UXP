@@ -13,9 +13,6 @@
 #include "nsArray.h"
 #include "nsContentUtils.h"
 #include "nsHashPropertyBag.h"
-#ifdef MOZ_WIDGET_GONK
-#include "nsIAudioManager.h"
-#endif
 #include "nsIEventTarget.h"
 #include "nsIUUIDGenerator.h"
 #include "nsIScriptGlobalObject.h"
@@ -1569,7 +1566,7 @@ private:
   RefPtr<MediaManager> mManager; // get ref to this when creating the runnable
 };
 
-#if defined(ANDROID) && !defined(MOZ_WIDGET_GONK)
+#if defined(ANDROID)
 class GetUserMediaRunnableWrapper : public Runnable
 {
 public:
@@ -3052,18 +3049,6 @@ MediaManager::Observe(nsISupports* aSubject, const char* aTopic,
     }
     return NS_OK;
   }
-#ifdef MOZ_WIDGET_GONK
-  else if (!strcmp(aTopic, "phone-state-changed")) {
-    nsString state(aData);
-    nsresult rv;
-    uint32_t phoneState = state.ToInteger(&rv);
-
-    if (NS_SUCCEEDED(rv) && phoneState == nsIAudioManager::PHONE_STATE_IN_CALL) {
-      StopMediaStreams();
-    }
-    return NS_OK;
-  }
-#endif
 
   return NS_OK;
 }

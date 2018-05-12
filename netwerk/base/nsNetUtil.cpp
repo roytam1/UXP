@@ -71,11 +71,6 @@
 #include "nsHttpHandler.h"
 #include "nsNSSComponent.h"
 
-#ifdef MOZ_WIDGET_GONK
-#include "nsINetworkManager.h"
-#include "nsThreadUtils.h" // for NS_IsMainThread
-#endif
-
 #include <limits>
 
 using namespace mozilla;

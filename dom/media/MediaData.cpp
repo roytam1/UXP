@@ -9,9 +9,6 @@
 #include "VideoUtils.h"
 #include "ImageContainer.h"
 
-#ifdef MOZ_WIDGET_GONK
-#include <cutils/properties.h>
-#endif
 #include <stdint.h>
 
 namespace mozilla {
@@ -92,31 +89,6 @@ ValidatePlane(const VideoData::YCbCrBuffer::Plane& aPlane)
          aPlane.mWidth * aPlane.mHeight < MAX_VIDEO_WIDTH * MAX_VIDEO_HEIGHT &&
          aPlane.mStride > 0 && aPlane.mWidth <= aPlane.mStride;
 }
-
-#ifdef MOZ_WIDGET_GONK
-static bool
-IsYV12Format(const VideoData::YCbCrBuffer::Plane& aYPlane,
-             const VideoData::YCbCrBuffer::Plane& aCbPlane,
-             const VideoData::YCbCrBuffer::Plane& aCrPlane)
-{
-  return
-    aYPlane.mWidth % 2 == 0 &&
-    aYPlane.mHeight % 2 == 0 &&
-    aYPlane.mWidth / 2 == aCbPlane.mWidth &&
-    aYPlane.mHeight / 2 == aCbPlane.mHeight &&
-    aCbPlane.mWidth == aCrPlane.mWidth &&
-    aCbPlane.mHeight == aCrPlane.mHeight;
-}
-
-static bool
-IsInEmulator()
-{
-  char propQemu[PROPERTY_VALUE_MAX];
-  property_get("ro.kernel.qemu", propQemu, "");
-  return !strncmp(propQemu, "1", 1);
-}
-
-#endif
 
 VideoData::VideoData(int64_t aOffset,
                      int64_t aTime,
@@ -310,19 +282,8 @@ VideoData::CreateAndCopyData(const VideoInfo& aInfo,
                                     aTimecode,
                                     aInfo.mDisplay,
                                     0));
-#ifdef MOZ_WIDGET_GONK
-  const YCbCrBuffer::Plane &Y = aBuffer.mPlanes[0];
-  const YCbCrBuffer::Plane &Cb = aBuffer.mPlanes[1];
-  const YCbCrBuffer::Plane &Cr = aBuffer.mPlanes[2];
-#endif
-
   // Currently our decoder only knows how to output to ImageFormat::PLANAR_YCBCR
   // format.
-#ifdef MOZ_WIDGET_GONK
-  if (IsYV12Format(Y, Cb, Cr) && !IsInEmulator()) {
-    v->mImage = new layers::GrallocImage();
-  }
-#endif
   if (!v->mImage) {
     v->mImage = aContainer->CreatePlanarYCbCrImage();
   }
@@ -341,20 +302,6 @@ VideoData::CreateAndCopyData(const VideoInfo& aInfo,
     return nullptr;
   }
 
-#ifdef MOZ_WIDGET_GONK
-  if (!videoImage->IsValid() && IsYV12Format(Y, Cb, Cr)) {
-    // Failed to allocate gralloc. Try fallback.
-    v->mImage = aContainer->CreatePlanarYCbCrImage();
-    if (!v->mImage) {
-      return nullptr;
-    }
-    videoImage = v->mImage->AsPlanarYCbCrImage();
-    if (!VideoData::SetVideoDataToImage(videoImage, aInfo, aBuffer, aPicture,
-                                        true /* aCopyData */)) {
-      return nullptr;
-    }
-  }
-#endif
   return v.forget();
 }
 

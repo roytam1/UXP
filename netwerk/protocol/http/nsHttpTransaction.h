@@ -19,11 +19,6 @@
 #include "ARefBase.h"
 #include "AlternateServices.h"
 
-#ifdef MOZ_WIDGET_GONK
-#include "nsINetworkInterface.h"
-#include "nsProxyRelease.h"
-#endif
-
 //-----------------------------------------------------------------------------
 
 class nsIHttpActivityObserver;
@@ -435,9 +430,6 @@ private:
     uint64_t                           mCountSent;
     uint32_t                           mAppId;
     bool                               mIsInIsolatedMozBrowser;
-#ifdef MOZ_WIDGET_GONK
-    nsMainThreadPtrHandle<nsINetworkInfo> mActiveNetworkInfo;
-#endif
     nsresult                           SaveNetworkStats(bool);
     void                               CountRecvBytes(uint64_t recvBytes)
     {

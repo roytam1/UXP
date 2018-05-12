@@ -410,8 +410,6 @@ this.DownloadIntegration = {
     directoryPath = yield this.getPreferredDownloadsDirectory();
 #elifdef MOZ_WIDGET_ANDROID
     directoryPath = yield this.getSystemDownloadsDirectory();
-#elifdef MOZ_WIDGET_GONK
-    directoryPath = yield this.getSystemDownloadsDirectory();
 #else
     directoryPath = this._getDirectory("TmpD");
 #endif

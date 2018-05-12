@@ -22,7 +22,7 @@
 
 #include "nsIPropertyBag2.h"
 
-#if defined(ANDROID) || defined(MOZ_WIDGET_GONK)
+#if defined(ANDROID)
 #include "android/log.h"
 #define ALOG(args...)  __android_log_print(ANDROID_LOG_INFO, "AndroidMediaPluginHost" , ## args)
 #else
@@ -134,7 +134,7 @@ static bool IsOmxSupported()
 // nullptr is returned if Omx decoding is not supported on the device,
 static const char* GetOmxLibraryName()
 {
-#if defined(ANDROID) && !defined(MOZ_WIDGET_GONK)
+#if defined(ANDROID)
   nsCOMPtr<nsIPropertyBag2> infoService = do_GetService("@mozilla.org/system-info;1");
   NS_ASSERTION(infoService, "Could not find a system info service");
 
@@ -172,7 +172,7 @@ static const char* GetOmxLibraryName()
   if (!IsOmxSupported())
     return nullptr;
 
-#if defined(ANDROID) && !defined(MOZ_WIDGET_GONK)
+#if defined(ANDROID)
   if (version >= 17) {
     return "libomxpluginkk.so";
   }
@@ -180,8 +180,6 @@ static const char* GetOmxLibraryName()
   // Ice Cream Sandwich and Jellybean
   return "libomxplugin.so";
 
-#elif defined(ANDROID) && defined(MOZ_WIDGET_GONK)
-  return "libomxplugin.so";
 #else
   return nullptr;
 #endif

@@ -74,23 +74,6 @@ GetUpdateLog()
 #define UPDATER_PNG "updater.png"
 #endif
 
-#if defined(MOZ_WIDGET_GONK)
-#include <linux/ioprio.h>
-
-static const int kB2GServiceArgc = 2;
-static const char *kB2GServiceArgv[] = { "/system/bin/start", "b2g" };
-
-static const char kAppUpdaterPrio[]        = "app.update.updater.prio";
-static const char kAppUpdaterOomScoreAdj[] = "app.update.updater.oom_score_adj";
-static const char kAppUpdaterIOPrioClass[] = "app.update.updater.ioprio.class";
-static const char kAppUpdaterIOPrioLevel[] = "app.update.updater.ioprio.level";
-
-static const int  kAppUpdaterPrioDefault        = 19;     // -20..19 where 19 = lowest priority
-static const int  kAppUpdaterOomScoreAdjDefault = -1000;  // -1000 = Never kill
-static const int  kAppUpdaterIOPrioClassDefault = IOPRIO_CLASS_IDLE;
-static const int  kAppUpdaterIOPrioLevelDefault = 0;      // Doesn't matter for CLASS IDLE
-#endif
-
 static nsresult
 GetCurrentWorkingDir(char *buf, size_t size)
 {
@@ -387,7 +370,7 @@ CopyUpdaterIntoUpdateDir(nsIFile *greDir, nsIFile *appDir, nsIFile *updateDir,
  * @param pathToAppend A new library path to prepend to LD_LIBRARY_PATH
  */
 #if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN) && \
-    !defined(XP_MACOSX) && !defined(MOZ_WIDGET_GONK)
+    !defined(XP_MACOSX)
 #include "prprf.h"
 #define PATH_SEPARATOR ":"
 #define LD_LIBRARY_PATH_ENVVAR_NAME "LD_LIBRARY_PATH"
@@ -503,15 +486,9 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
 #else
 
   nsAutoCString appFilePath;
-#if defined(MOZ_WIDGET_GONK)
-  appFilePath.Assign(kB2GServiceArgv[0]);
-  appArgc = kB2GServiceArgc;
-  appArgv = const_cast<char**>(kB2GServiceArgv);
-#else
   rv = appFile->GetNativePath(appFilePath);
   if (NS_FAILED(rv))
     return;
-#endif
 
   nsAutoCString updaterPath;
   rv = updater->GetNativePath(updaterPath);
@@ -617,19 +594,13 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
     PR_SetEnv("MOZ_SAFE_MODE_RESTART=1");
   }
 #if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN) && \
-    !defined(XP_MACOSX) && !defined(MOZ_WIDGET_GONK)
+    !defined(XP_MACOSX)
   AppendToLibPath(installDirPath.get());
 #endif
 
   LOG(("spawning updater process for replacing [%s]\n", updaterPath.get()));
 
 #if defined(XP_UNIX) & !defined(XP_MACOSX)
-# if defined(MOZ_WIDGET_GONK)
-  // In Gonk, we preload libmozglue, which the updater process doesn't need.
-  // Since the updater will move and delete libmozglue.so, this can actually
-  // stop the /system mount from correctly being remounted as read-only.
-  unsetenv("LD_PRELOAD");
-# endif
   exit(execv(updaterPath.get(), argv));
 #elif defined(XP_WIN)
   // Switch the application using updater.exe
@@ -646,46 +617,6 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
   exit(0);
 #endif
 }
-
-#if defined(MOZ_WIDGET_GONK)
-static nsresult
-GetOSApplyToDir(nsACString& applyToDir)
-{
-  nsCOMPtr<nsIProperties> ds =
-    do_GetService(NS_DIRECTORY_SERVICE_CONTRACTID);
-  NS_ASSERTION(ds, "Can't get directory service");
-
-  nsCOMPtr<nsIFile> osApplyToDir;
-  nsresult rv = ds->Get(XRE_OS_UPDATE_APPLY_TO_DIR, NS_GET_IID(nsIFile),
-                                   getter_AddRefs(osApplyToDir));
-  if (NS_FAILED(rv)) {
-    LOG(("Can't get the OS applyTo dir"));
-    return rv;
-  }
-
-  return osApplyToDir->GetNativePath(applyToDir);
-}
-
-static void
-SetOSApplyToDir(nsIUpdate* update, const nsACString& osApplyToDir)
-{
-  nsresult rv;
-  nsCOMPtr<nsIWritablePropertyBag> updateProperties =
-    do_QueryInterface(update, &rv);
-
-  if (NS_FAILED(rv)) {
-    return;
-  }
-
-  RefPtr<nsVariant> variant = new nsVariant();
-  rv = variant->SetAsACString(osApplyToDir);
-  if (NS_FAILED(rv)) {
-    return;
-  }
-
-  updateProperties->SetProperty(NS_LITERAL_STRING("osApplyToDir"), variant);
-}
-#endif
 
 /**
  * Apply an update. This applies to both normal and staged updates.
@@ -780,13 +711,9 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   if (NS_FAILED(rv))
     return;
 
-  // Get the directory where the update was staged for replace and GONK OS
-  // Updates or where it will be applied.
-#ifndef MOZ_WIDGET_GONK
-  // OS Updates are only supported on GONK so force it to false on everything
+  // OS Updates were only supported on GONK so force it to false on everything
   // but GONK to simplify the following logic.
   isOSUpdate = false;
-#endif
   nsAutoCString applyToDir;
   nsCOMPtr<nsIFile> updatedDir;
   if (restart && !isOSUpdate) {
@@ -806,15 +733,6 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
       return;
     }
     applyToDir = NS_ConvertUTF16toUTF8(applyToDirW);
-#elif MOZ_WIDGET_GONK
-    if (isOSUpdate) {
-      if (!osApplyToDir) {
-        return;
-      }
-      rv = osApplyToDir->GetNativePath(applyToDir);
-    } else {
-      rv = updatedDir->GetNativePath(applyToDir);
-    }
 #else
     rv = updatedDir->GetNativePath(applyToDir);
 #endif
@@ -900,33 +818,13 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
     PR_SetEnv("MOZ_SAFE_MODE_RESTART=1");
   }
 #if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN) && \
-    !defined(XP_MACOSX) && !defined(MOZ_WIDGET_GONK)
+    !defined(XP_MACOSX)
   AppendToLibPath(installDirPath.get());
 #endif
 
   if (isOSUpdate) {
     PR_SetEnv("MOZ_OS_UPDATE=1");
   }
-#if defined(MOZ_WIDGET_GONK)
-  // We want the updater to be CPU friendly and not subject to being killed by
-  // the low memory killer, so we pass in some preferences to allow it to
-  // adjust its priority.
-
-  int32_t prioVal = Preferences::GetInt(kAppUpdaterPrio,
-                                        kAppUpdaterPrioDefault);
-  int32_t oomScoreAdj = Preferences::GetInt(kAppUpdaterOomScoreAdj,
-                                            kAppUpdaterOomScoreAdjDefault);
-  int32_t ioprioClass = Preferences::GetInt(kAppUpdaterIOPrioClass,
-                                            kAppUpdaterIOPrioClassDefault);
-  int32_t ioprioLevel = Preferences::GetInt(kAppUpdaterIOPrioLevel,
-                                            kAppUpdaterIOPrioLevelDefault);
-  nsPrintfCString prioEnv("MOZ_UPDATER_PRIO=%d/%d/%d/%d",
-                          prioVal, oomScoreAdj, ioprioClass, ioprioLevel);
-  // Note: we allocate a new string on heap and pass that to PR_SetEnv, since
-  // the string can be used after this function returns.  This means that we
-  // will intentionally leak this buffer.
-  PR_SetEnv(ToNewCString(prioEnv));
-#endif
 
   LOG(("spawning updater process [%s]\n", updaterPath.get()));
 
@@ -1122,12 +1020,6 @@ nsUpdateProcessor::ProcessUpdate(nsIUpdate* aUpdate)
     // Check for and process any available updates
     bool persistent;
     nsresult rv = NS_ERROR_FAILURE; // Take the NS_FAILED path when non-GONK
-#ifdef MOZ_WIDGET_GONK
-    // Check in the sdcard for updates first, since that's our preferred
-    // download location.
-    rv = dirProvider->GetFile(XRE_UPDATE_ARCHIVE_DIR, &persistent,
-                              getter_AddRefs(updRoot));
-#endif
     if (NS_FAILED(rv)) {
       rv = dirProvider->GetFile(XRE_UPDATE_ROOT_DIR, &persistent,
                                 getter_AddRefs(updRoot));
@@ -1216,34 +1108,6 @@ nsUpdateProcessor::ProcessUpdate(nsIUpdate* aUpdate)
     strcpy(mInfo.mArgv[0], binPath.get());
   }
   mInfo.mAppVersion = appVersion;
-
-#if defined(MOZ_WIDGET_GONK)
-  NS_ENSURE_ARG_POINTER(aUpdate);
-
-  bool isOSUpdate;
-  if (NS_SUCCEEDED(aUpdate->GetIsOSUpdate(&isOSUpdate)) &&
-      isOSUpdate) {
-    nsAutoCString osApplyToDir;
-
-    // This needs to be done on the main thread, so we pass it along in
-    // BackgroundThreadInfo
-    nsresult rv = GetOSApplyToDir(osApplyToDir);
-    if (NS_FAILED(rv)) {
-      LOG(("Can't get the OS apply to dir"));
-      return rv;
-    }
-
-    SetOSApplyToDir(aUpdate, osApplyToDir);
-
-    mInfo.mIsOSUpdate = true;
-    rv = NS_NewNativeLocalFile(osApplyToDir, false,
-                               getter_AddRefs(mInfo.mOSApplyToDir));
-    if (NS_FAILED(rv)) {
-      LOG(("Can't create nsIFile for OS apply to dir"));
-      return rv;
-    }
-  }
-#endif
 
   MOZ_ASSERT(NS_IsMainThread(), "not main thread");
   nsCOMPtr<nsIRunnable> r = NewRunnableMethod(this, &nsUpdateProcessor::StartStagedUpdate);

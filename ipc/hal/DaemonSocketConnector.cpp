@@ -18,14 +18,9 @@
 #undef CHROMIUM_LOG
 #endif
 
-#if defined(MOZ_WIDGET_GONK)
-#include <android/log.h>
-#define CHROMIUM_LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "I/O", args);
-#else
 #include <stdio.h>
 #define IODEBUG true
 #define CHROMIUM_LOG(args...) if (IODEBUG) printf(args);
-#endif
 
 namespace mozilla {
 namespace ipc {

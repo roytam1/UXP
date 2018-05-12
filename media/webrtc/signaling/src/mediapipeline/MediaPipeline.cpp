@@ -2217,11 +2217,7 @@ public:
 #if defined(MOZILLA_INTERNAL_API)
     if (buffer) {
       // Create a video frame using |buffer|.
-#ifdef MOZ_WIDGET_GONK
-      RefPtr<PlanarYCbCrImage> yuvImage = new GrallocImage();
-#else
       RefPtr<PlanarYCbCrImage> yuvImage = image_container_->CreatePlanarYCbCrImage();
-#endif
       uint8_t* frame = const_cast<uint8_t*>(static_cast<const uint8_t*> (buffer));
 
       PlanarYCbCrData yuvData;

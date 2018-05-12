@@ -31,10 +31,6 @@
 #include "nsIDNSService.h"
 #include "nsICancelable.h"
 
-#ifdef MOZ_WIDGET_GONK
-#include "NetStatistics.h"
-#endif
-
 namespace mozilla {
 namespace net {
 
@@ -626,15 +622,6 @@ nsUDPSocket::InitWithAddress(const NetAddr *aAddr, nsIPrincipal *aPrincipal,
       aPrincipal->GetIsInIsolatedMozBrowserElement();
   }
 
-#ifdef MOZ_WIDGET_GONK
-  if (mAppId != NECKO_UNKNOWN_APP_ID) {
-    nsCOMPtr<nsINetworkInfo> activeNetworkInfo;
-    GetActiveNetworkInfo(activeNetworkInfo);
-    mActiveNetworkInfo =
-      new nsMainThreadPtrHolder<nsINetworkInfo>(activeNetworkInfo);
-  }
-#endif
-
   uint16_t port;
   if (NS_FAILED(net::GetPort(aAddr, &port))) {
     NS_WARNING("invalid bind address");
@@ -770,29 +757,7 @@ nsUDPSocket::GetLocalAddr(nsINetAddr * *aResult)
 void
 nsUDPSocket::SaveNetworkStats(bool aEnforce)
 {
-#ifdef MOZ_WIDGET_GONK
-  if (!mActiveNetworkInfo || mAppId == NECKO_UNKNOWN_APP_ID) {
-    return;
-  }
-
-  if (mByteReadCount == 0 && mByteWriteCount == 0) {
-    return;
-  }
-
-  uint64_t total = mByteReadCount + mByteWriteCount;
-  if (aEnforce || total > NETWORK_STATS_THRESHOLD) {
-    // Create the event to save the network statistics.
-    // the event is then dispathed to the main thread.
-    RefPtr<Runnable> event =
-      new SaveNetworkStatsEvent(mAppId, mIsInIsolatedMozBrowserElement, mActiveNetworkInfo,
-                                mByteReadCount, mByteWriteCount, false);
-    NS_DispatchToMainThread(event);
-
-    // Reset the counters after saving.
-    mByteReadCount = 0;
-    mByteWriteCount = 0;
-  }
-#endif
+  /*** STUB ***/
 }
 
 void

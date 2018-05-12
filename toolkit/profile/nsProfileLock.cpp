@@ -30,10 +30,6 @@
 #include "prenv.h"
 #endif
 
-#if defined(MOZ_WIDGET_GONK)
-#include <sys/syscall.h>
-#endif
-
 // **********************************************************************
 // class nsProfileLock
 //
@@ -191,25 +187,6 @@ void nsProfileLock::FatalSignalHandler(int signo
             oldact->sa_handler(signo);
         }
     }
-
-#ifdef MOZ_WIDGET_GONK
-    switch (signo) {
-        case SIGQUIT:
-        case SIGILL:
-        case SIGABRT:
-        case SIGSEGV:
-            // Retrigger the signal for those that can generate a core dump
-            signal(signo, SIG_DFL);
-            if (info->si_code <= 0) {
-                if (syscall(__NR_tgkill, getpid(), syscall(__NR_gettid), signo) < 0) {
-                    break;
-                }
-            }
-            return;
-        default:
-            break;
-    }
-#endif
 
     // Backstop exit call, just in case.
     _exit(signo);

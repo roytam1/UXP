@@ -12,11 +12,6 @@
 #include "nsAutoPtr.h"
 #include "nsCycleCollectionParticipant.h"
 
-#ifdef MOZ_WIDGET_GONK
-#include "nsINetworkInterface.h"
-#include "nsProxyRelease.h"
-#endif
-
 //-----------------------------------------------------------------------------
 
 namespace mozilla {
@@ -76,9 +71,6 @@ private:
 
   uint64_t   mByteReadCount;
   uint64_t   mByteWriteCount;
-#ifdef MOZ_WIDGET_GONK
-  nsMainThreadPtrHandle<nsINetworkInfo> mActiveNetworkInfo;
-#endif
 };
 
 //-----------------------------------------------------------------------------

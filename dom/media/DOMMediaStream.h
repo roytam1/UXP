@@ -833,9 +833,6 @@ class DOMHwMediaStream : public DOMLocalMediaStream
 {
   typedef mozilla::gfx::IntSize IntSize;
   typedef layers::OverlayImage OverlayImage;
-#ifdef MOZ_WIDGET_GONK
-  typedef layers::OverlayImage::Data Data;
-#endif
 
 public:
   explicit DOMHwMediaStream(nsPIDOMWindowInner* aWindow);
@@ -853,14 +850,6 @@ protected:
 
 private:
   void Init(MediaStream* aStream, OverlayImage* aImage);
-
-#ifdef MOZ_WIDGET_GONK
-  const int DEFAULT_IMAGE_ID = 0x01;
-  const int DEFAULT_IMAGE_WIDTH = 400;
-  const int DEFAULT_IMAGE_HEIGHT = 300;
-  RefPtr<OverlayImage> mOverlayImage;
-  PrincipalHandle mPrincipalHandle;
-#endif
 };
 
 } // namespace mozilla

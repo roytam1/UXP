@@ -45,10 +45,6 @@
 #include "nsIAuthPrompt2.h"
 #include "nsIFTPChannelParentInternal.h"
 
-#ifdef MOZ_WIDGET_GONK
-#include "NetStatistics.h"
-#endif
-
 using namespace mozilla;
 using namespace mozilla::net;
 
@@ -1619,13 +1615,6 @@ nsFtpState::Init(nsFtpChannel *channel)
     // initialize counter for network metering
     mCountRecv = 0;
 
-#ifdef MOZ_WIDGET_GONK
-    nsCOMPtr<nsINetworkInfo> activeNetworkInfo;
-    GetActiveNetworkInfo(activeNetworkInfo);
-    mActiveNetworkInfo =
-        new nsMainThreadPtrHolder<nsINetworkInfo>(activeNetworkInfo);
-#endif
-
     mKeepRunning = true;
     mSuppliedEntityID = channel->EntityID();
 
@@ -2104,43 +2093,7 @@ nsFtpState::ReadSegments(nsWriteSegmentFun writer, void *closure,
 nsresult
 nsFtpState::SaveNetworkStats(bool enforce)
 {
-#ifdef MOZ_WIDGET_GONK
-    // Obtain app id
-    uint32_t appId;
-    bool isInBrowser;
-    NS_GetAppInfo(mChannel, &appId, &isInBrowser);
-
-    // Check if active network and appid are valid.
-    if (!mActiveNetworkInfo || appId == NECKO_NO_APP_ID) {
-        return NS_OK;
-    }
-
-    if (mCountRecv <= 0) {
-        // There is no traffic, no need to save.
-        return NS_OK;
-    }
-
-    // If |enforce| is false, the traffic amount is saved
-    // only when the total amount exceeds the predefined
-    // threshold.
-    if (!enforce && mCountRecv < NETWORK_STATS_THRESHOLD) {
-        return NS_OK;
-    }
-
-    // Create the event to save the network statistics.
-    // the event is then dispathed to the main thread.
-    RefPtr<Runnable> event =
-        new SaveNetworkStatsEvent(appId, isInBrowser, mActiveNetworkInfo,
-                                  mCountRecv, 0, false);
-    NS_DispatchToMainThread(event);
-
-    // Reset the counters after saving.
-    mCountRecv = 0;
-
-    return NS_OK;
-#else
     return NS_ERROR_NOT_IMPLEMENTED;
-#endif
 }
 
 NS_IMETHODIMP

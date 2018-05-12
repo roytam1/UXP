@@ -13,12 +13,7 @@
 #include "nsISupportsImpl.h" // for MOZ_COUNT_CTOR, MOZ_COUNT_DTOR
 #include "nsThreadUtils.h" // For NS_IsMainThread.
 
-#ifdef MOZ_WIDGET_GONK
-#include <android/log.h>
-#define KEYSTORE_LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Gonk", args)
-#else
 #define KEYSTORE_LOG(args...)  printf(args);
-#endif
 
 namespace mozilla {
 namespace ipc {
