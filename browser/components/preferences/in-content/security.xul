@@ -16,20 +16,18 @@
               name="pref.privacy.disable_button.view_passwords_exceptions"
               type="bool"/>
 
-  <!-- Add-ons, malware, phishing -->
+  <!-- Add-ons -->
   <preference id="xpinstall.whitelist.required"
               name="xpinstall.whitelist.required"
               type="bool"/>
 
+#ifdef MOZ_SAFE_BROWSING
+  <!-- Malware, phishing -->
   <preference id="browser.safebrowsing.malware.enabled"
               name="browser.safebrowsing.malware.enabled"
               type="bool"/>
   <preference id="browser.safebrowsing.phishing.enabled"
               name="browser.safebrowsing.phishing.enabled"
-              type="bool"/>
-
-  <preference id="browser.safebrowsing.UI.enabled"
-              name="browser.safebrowsing.UI.enabled"
               type="bool"/>
 
   <preference id="browser.safebrowsing.downloads.enabled"
@@ -46,6 +44,7 @@
   <preference id="browser.safebrowsing.downloads.remote.block_uncommon"
               name="browser.safebrowsing.downloads.remote.block_uncommon"
               type="bool"/>
+#endif
 
   <!-- Passwords -->
   <preference id="signon.rememberSignons" name="signon.rememberSignons" type="bool"/>
@@ -61,7 +60,7 @@
   <html:a class="help-button" target="_blank" aria-label="&helpButton.label;"></html:a>
 </hbox>
 
-<!-- addons, forgery (phishing) UI -->
+<!-- addons -->
 <groupbox id="addonsPhishingGroup" data-category="paneSecurity" hidden="true">
   <caption><label>&general.label;</label></caption>
 
@@ -77,8 +76,10 @@
             accesskey="&addonExceptions.accesskey;"/>
   </hbox>
 
-  <separator id="safeBrowsingUISep" class="thin"/>
-  <vbox id="safeBrowsingUIGroup" align="start">
+#ifdef MOZ_SAFE_BROWSING
+<!-- Safebrowsing (phishing) UI -->
+  <separator class="thin"/>
+  <vbox align="start">
     <checkbox id="enableSafeBrowsing"
               label="&enableSafeBrowsing.label;"
               accesskey="&enableSafeBrowsing.accesskey;" />
@@ -91,6 +92,7 @@
                 accesskey="&blockUncommonUnwanted.accesskey;" />
     </vbox>
   </vbox>
+#endif
 </groupbox>
 
 <!-- Passwords -->

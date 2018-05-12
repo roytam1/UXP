@@ -636,9 +636,11 @@ pref("media.eme.apiVisible", false);
 // optimize images memory usage
 pref("image.downscale-during-decode.enabled", true);
 
+#ifdef MOZ_SAFE_BROWSING
 pref("browser.safebrowsing.downloads.enabled", false);
 
 pref("browser.safebrowsing.id", @MOZ_APP_UA_NAME@);
+#endif
 
 // True if this is the first time we are showing about:firstrun
 pref("browser.firstrun.show.uidiscovery", true);

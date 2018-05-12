@@ -4998,6 +4998,7 @@ pref("dom.flyweb.enabled", false);
 // Enable mapped array buffer by default.
 pref("dom.mapped_arraybuffer.enabled", true);
 
+#ifdef MOZ_SAFE_BROWSING
 // The tables used for Safebrowsing phishing and malware checks.
 pref("urlclassifier.malwareTable", "goog-malware-shavar,goog-unwanted-shavar,test-malware-simple,test-unwanted-simple");
 
@@ -5104,6 +5105,7 @@ pref("browser.safebrowsing.allowOverride", true);
 pref("browser.safebrowsing.id", "navclient-auto-ffox");
 #else
 pref("browser.safebrowsing.id", "Firefox");
+#endif
 #endif
 
 // Turn off Spatial navigation by default.

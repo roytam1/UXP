@@ -22,14 +22,5 @@ pref("app.update.badgeWaitTime", 0);
 // If this is less than 5, then pasting code into the web console or scratchpad is disabled
 pref("devtools.selfxss.count", 100);
 
-// Disable Google Safebrowsing by default. Without an API key, this won't work.
-pref("browser.safebrowsing.phishing.enabled", false);
-pref("browser.safebrowsing.malware.enabled", false);
-pref("browser.safebrowsing.downloads.enabled", false);
-pref("browser.safebrowsing.downloads.remote.enabled", false);
-
-// Disable the UI controls for it as well for Basilisk-official.
-pref("browser.safebrowsing.UI.enabled", false);
-
 // 
 pref("general.useragent.appVersionIsBuildID", true);
