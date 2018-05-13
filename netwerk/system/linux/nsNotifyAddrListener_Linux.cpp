@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <errno.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 
 #include "nsThreadUtils.h"
 #include "nsIObserverService.h"
