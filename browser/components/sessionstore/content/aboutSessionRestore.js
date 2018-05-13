@@ -289,7 +289,9 @@ var treeView = {
   get rowCount()                     { return gTreeData.length; },
   setTree: function(treeBox)         { this.treeBox = treeBox; },
   getCellText: function(idx, column) { return gTreeData[idx].label; },
-  isContainer: function(idx)         { return "open" in gTreeData[idx]; },
+  isContainer: function(idx)         {
+    return gTreeData[idx] ? "open" in gTreeData[idx] : false;
+  },
   getCellValue: function(idx, column){ return gTreeData[idx].checked; },
   isContainerOpen: function(idx)     { return gTreeData[idx].open; },
   isContainerEmpty: function(idx)    { return false; },
