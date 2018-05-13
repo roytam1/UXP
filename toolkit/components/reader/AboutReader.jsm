@@ -16,10 +16,11 @@ XPCOMUtils.defineLazyModuleGetter(this, "AsyncPrefs", "resource://gre/modules/As
 XPCOMUtils.defineLazyModuleGetter(this, "NarrateControls", "resource://gre/modules/narrate/NarrateControls.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Rect", "resource://gre/modules/Geometry.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PluralForm", "resource://gre/modules/PluralForm.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils", "resource://gre/modules/PlacesUtils.jsm");
 
 var gStrings = Services.strings.createBundle("chrome://global/locale/aboutReader.properties");
 
-var AboutReader = function(mm, win, articlePromise) {
+var AboutReader = function(win, articlePromise) {
   let url = this._getOriginalUrl(win);
   if (!(url.startsWith("http://") || url.startsWith("https://"))) {
     let errorMsg = "Only http:// and https:// URLs can be loaded in about:reader.";
@@ -31,12 +32,6 @@ var AboutReader = function(mm, win, articlePromise) {
   }
 
   let doc = win.document;
-
-  this._mm = mm;
-  this._mm.addMessageListener("Reader:CloseDropdown", this);
-  this._mm.addMessageListener("Reader:AddButton", this);
-  this._mm.addMessageListener("Reader:RemoveButton", this);
-  this._mm.addMessageListener("Reader:GetStoredArticleData", this);
 
   this._docRef = Cu.getWeakReference(doc);
   this._winRef = Cu.getWeakReference(win);
@@ -70,6 +65,9 @@ var AboutReader = function(mm, win, articlePromise) {
   win.addEventListener("scroll", this);
   win.addEventListener("resize", this);
 
+  win.addEventListener("AboutReaderAddButton", this, false, true);
+  win.addEventListener("AboutReaderRemoveButton", this, false, true);
+
   Services.obs.addObserver(this, "inner-window-destroyed", false);
 
   doc.addEventListener("visibilitychange", this);
@@ -78,7 +76,8 @@ var AboutReader = function(mm, win, articlePromise) {
   this._setupButton("close-button", this._onReaderClose.bind(this), "aboutReader.toolbar.close");
 
   // we're ready for any external setup, send a signal for that.
-  this._mm.sendAsyncMessage("Reader:OnSetup");
+  doc.dispatchEvent(
+    new win.CustomEvent("AboutReaderOnSetup", { bubbles: true, cancelable: false }));
 
   let colorSchemeValues = JSON.parse(Services.prefs.getCharPref("reader.color_scheme.values"));
   let colorSchemeOptions = colorSchemeValues.map((value) => {
@@ -117,7 +116,7 @@ var AboutReader = function(mm, win, articlePromise) {
   this._setupLineHeightButtons();
 
   if (win.speechSynthesis && Services.prefs.getBoolPref("narrate.enabled")) {
-    new NarrateControls(mm, win, this._languagePromise);
+    new NarrateControls(win, this._languagePromise);
   }
 
   this._loadArticle();
@@ -189,48 +188,6 @@ AboutReader.prototype = {
     return _viewId;
   },
 
-  receiveMessage (message) {
-    switch (message.name) {
-      // Triggered by Android user pressing BACK while the banner font-dropdown is open.
-      case "Reader:CloseDropdown": {
-        // Just close it.
-        this._closeDropdowns();
-        break;
-      }
-
-      case "Reader:AddButton": {
-        if (message.data.id && message.data.image &&
-            !this._doc.getElementById(message.data.id)) {
-          let btn = this._doc.createElement("button");
-          btn.setAttribute("class", "button " + message.data.id);
-          btn.setAttribute("style", "background-image: url('" + message.data.image + "')");
-          btn.setAttribute("id", message.data.id);
-          if (message.data.title)
-            btn.setAttribute("title", message.data.title);
-          if (message.data.text)
-            btn.textContent = message.data.text;
-          let tb = this._toolbarElement;
-          tb.appendChild(btn);
-          this._setupButton(message.data.id, button => {
-            this._mm.sendAsyncMessage("Reader:Clicked-" + button.getAttribute("id"), { article: this._article });
-          });
-        }
-        break;
-      }
-      case "Reader:RemoveButton": {
-        if (message.data.id) {
-          let btn = this._doc.getElementById(message.data.id);
-          if (btn)
-            btn.remove();
-        }
-        break;
-      }
-      case "Reader:GetStoredArticleData": {
-        this._mm.sendAsyncMessage("Reader:StoredArticleData", { article: this._article });
-      }
-    }
-  },
-
   handleEvent(aEvent) {
     if (!aEvent.isTrusted)
       return;
@@ -249,8 +206,6 @@ AboutReader.prototype = {
         break;
       case "scroll":
         this._closeDropdowns(true);
-        let isScrollingUp = this._scrollOffset > aEvent.pageY;
-        this._setSystemUIVisibility(isScrollingUp);
         this._scrollOffset = aEvent.pageY;
         break;
       case "resize":
@@ -275,13 +230,39 @@ AboutReader.prototype = {
       case "pagehide":
         // Close the Banners Font-dropdown, cleanup Android BackPressListener.
         this._closeDropdowns();
-
-        this._mm.removeMessageListener("Reader:CloseDropdown", this);
-        this._mm.removeMessageListener("Reader:AddButton", this);
-        this._mm.removeMessageListener("Reader:RemoveButton", this);
-        this._mm.removeMessageListener("Reader:GetStoredArticleData", this);
         this._windowUnloaded = true;
         break;
+
+      case "AboutReaderAddButton": {
+        if (aEvent.detail.id && aEvent.detail.image &&
+            !this._doc.getElementById(aEvent.detail.id)) {
+          let btn = this._doc.createElement("button");
+          btn.setAttribute("class", "button " + aEvent.detail.id);
+          btn.setAttribute("style", "background-image: url('" + aEvent.detail.image + "')");
+          btn.setAttribute("id", aEvent.detail.id);
+          if (aEvent.detail.title)
+            btn.setAttribute("title", aEvent.detail.title);
+          if (aEvent.detail.text)
+            btn.textContent = aEvent.detail.text;
+          let tb = this._toolbarElement;
+          tb.appendChild(btn);
+          this._setupButton(aEvent.detail.id, button => {
+            var data = { article: this._article };
+            this._doc.dispatchEvent(
+              new this._win.CustomEvent("AboutReaderButtonClicked-" + button.getAttribute("id"), {detail: data, bubbles: true, cancelable: false}));
+          });
+        }
+        break;
+      }
+
+      case "AboutReaderRemoveButton": {
+        if (aEvent.detail.id) {
+          let btn = this._doc.getElementById(aEvent.detail.id);
+          if (btn)
+            btn.remove();
+        }
+        break;
+      }
     }
   },
 
@@ -291,15 +272,11 @@ AboutReader.prototype = {
     }
 
     Services.obs.removeObserver(this, "inner-window-destroyed");
-
-    this._mm.removeMessageListener("Reader:CloseDropdown", this);
-    this._mm.removeMessageListener("Reader:AddButton", this);
-    this._mm.removeMessageListener("Reader:RemoveButton", this);
     this._windowUnloaded = true;
   },
 
   _onReaderClose() {
-    ReaderMode.leaveReaderMode(this._mm.docShell, this._win);
+    ReaderMode.leaveReaderMode(this._win.document.docShell, this._win);
   },
 
   _setFontSize(newFontSize) {
@@ -616,10 +593,6 @@ AboutReader.prototype = {
     AsyncPrefs.set("reader.font_type", this._fontType);
   },
 
-  _setSystemUIVisibility(visible) {
-    this._mm.sendAsyncMessage("Reader:SystemUIVisibility", { visible: visible });
-  },
-
   _setToolbarVisibility(visible) {
     let tb = this._toolbarElement;
 
@@ -673,30 +646,18 @@ AboutReader.prototype = {
   },
 
   _getArticle(url) {
-    //  return new Promise((resolve, reject) => {
-    //    let listener = (message) => {
-    //      this._mm.removeMessageListener("Reader:ArticleData", listener);
-    //      if (message.data.newURL) {
-    //        reject({ newURL: message.data.newURL });
-    //        return;
-    //      }
-    //      resolve(message.data.article);
-    //    };
-    //    this._mm.addMessageListener("Reader:ArticleData", listener);
-    //    this._mm.sendAsyncMessage("Reader:ArticleGet", { url });
-    //  });
-    //}
     return ReaderMode.downloadAndParseDocument(url);
   },
 
   _requestFavicon() {
-    let handleFaviconReturn = (message) => {
-      this._mm.removeMessageListener("Reader:FaviconReturn", handleFaviconReturn);
-      this._loadFavicon(message.data.url, message.data.faviconUrl);
-    };
-
-    this._mm.addMessageListener("Reader:FaviconReturn", handleFaviconReturn);
-    this._mm.sendAsyncMessage("Reader:FaviconRequest", { url: this._article.url });
+    let faviconUrl = PlacesUtils.promiseFaviconLinkUrl(this._article.url);
+    var self = this;
+    faviconUrl.then(function onResolution(favicon) {
+      self._loadFavicon(self._article.url, favicon.path.replace(/^favicon:/, ""));
+    },
+    function onRejection(reason) {
+      Cu.reportError("Error requesting favicon URL for about:reader content: " + reason);
+    }).catch(Cu.reportError);
   },
 
   _loadFavicon(url, faviconUrl) {
@@ -996,10 +957,7 @@ AboutReader.prototype = {
     }
 
     this._closeDropdowns();
-
-    // Trigger BackPressListener initialization in Android.
     dropdown.classList.add("open");
-    this._mm.sendAsyncMessage("Reader:DropdownOpened", this.viewId);
   },
 
   /*
@@ -1016,11 +974,6 @@ AboutReader.prototype = {
     let openDropdowns = this._doc.querySelectorAll(selector);
     for (let dropdown of openDropdowns) {
       dropdown.classList.remove("open");
-    }
-
-    // Trigger BackPressListener cleanup in Android.
-    if (openDropdowns.length) {
-      this._mm.sendAsyncMessage("Reader:DropdownClosed", this.viewId);
     }
   },
 

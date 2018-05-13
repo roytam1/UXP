@@ -16,8 +16,7 @@ this.EXPORTED_SYMBOLS = ["NarrateControls"];
 
 var gStrings = Services.strings.createBundle("chrome://global/locale/narrate.properties");
 
-function NarrateControls(mm, win, languagePromise) {
-  this._mm = mm;
+function NarrateControls(win, languagePromise) {
   this._winRef = Cu.getWeakReference(win);
   this._languagePromise = languagePromise;
 

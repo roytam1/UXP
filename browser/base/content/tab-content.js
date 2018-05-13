@@ -307,7 +307,7 @@ var AboutReaderListener = {
         if (content.document.body) {
           // Update the toolbar icon to show the "reader active" icon.
           sendAsyncMessage("Reader:UpdateReaderButton");
-          new AboutReader(global, content, this._articlePromise);
+          new AboutReader(content, this._articlePromise);
           this._articlePromise = null;
         }
         break;

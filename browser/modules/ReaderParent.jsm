@@ -19,8 +19,6 @@ const gStringBundle = Services.strings.createBundle("chrome://global/locale/abou
 
 var ReaderParent = {
   MESSAGES: [
-    "Reader:ArticleGet",
-    "Reader:FaviconRequest",
     "Reader:UpdateReaderButton",
   ],
 
@@ -33,38 +31,6 @@ var ReaderParent = {
 
   receiveMessage(message) {
     switch (message.name) {
-      case "Reader:ArticleGet":
-        this._getArticle(message.data.url, message.target).then((article) => {
-          // Make sure the target browser is still alive before trying to send data back.
-          if (message.target.messageManager) {
-            message.target.messageManager.sendAsyncMessage("Reader:ArticleData", { article: article });
-          }
-        }, e => {
-          if (e && e.newURL) {
-            // Make sure the target browser is still alive before trying to send data back.
-            if (message.target.messageManager) {
-              message.target.messageManager.sendAsyncMessage("Reader:ArticleData", { newURL: e.newURL });
-            }
-          }
-        });
-        break;
-
-      case "Reader:FaviconRequest": {
-        if (message.target.messageManager) {
-          let faviconUrl = PlacesUtils.promiseFaviconLinkUrl(message.data.url);
-          faviconUrl.then(function onResolution(favicon) {
-            message.target.messageManager.sendAsyncMessage("Reader:FaviconReturn", {
-              url: message.data.url,
-              faviconUrl: favicon.path.replace(/^favicon:/, "")
-            });
-          },
-          function onRejection(reason) {
-            Cu.reportError("Error requesting favicon URL for about:reader content: " + reason);
-          }).catch(Cu.reportError);
-        }
-        break;
-      }
-
       case "Reader:UpdateReaderButton": {
         let browser = message.target;
         if (message.data && message.data.isArticle !== undefined) {
@@ -132,24 +98,5 @@ var ReaderParent = {
     let win = event.target.ownerGlobal;
     let browser = win.gBrowser.selectedBrowser;
     browser.messageManager.sendAsyncMessage("Reader:ToggleReaderMode");
-  },
-
-  /**
-   * Gets an article for a given URL. This method will download and parse a document.
-   *
-   * @param url The article URL.
-   * @param browser The browser where the article is currently loaded.
-   * @return {Promise}
-   * @resolves JS object representing the article, or null if no article is found.
-   */
-  async _getArticle(url, browser) {
-    return await ReaderMode.downloadAndParseDocument(url).catch(e => {
-      if (e && e.newURL) {
-        // Pass up the error so we can navigate the browser in question to the new URL:
-        throw e;
-      }
-      Cu.reportError("Error downloading and parsing document: " + e);
-      return null;
-    });
   }
 };
