@@ -39,7 +39,6 @@ LOCAL_INCLUDES += [
     '/dom/jsurl',
     '/dom/media',
     '/dom/offline',
-    '/dom/speakermanager',
     '/dom/storage',
     '/dom/svg',
     '/dom/xbl',
@@ -72,10 +71,6 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
     LOCAL_INCLUDES += [
         '/dom/system',
         '/dom/system/android',
-    ]
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
-    LOCAL_INCLUDES += [
-        '/dom/system/gonk',
     ]
 
 if CONFIG['MOZ_WEBSPEECH']:

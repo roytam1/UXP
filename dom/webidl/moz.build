@@ -677,22 +677,9 @@ if CONFIG['MOZ_SECUREELEMENT']:
          'SecureElementManager.webidl',
     ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
-    WEBIDL_FILES += [
-        'MozNetworkStats.webidl',
-        'MozNetworkStatsAlarm.webidl',
-        'MozNetworkStatsData.webidl',
-        'MozNetworkStatsInterface.webidl',
-        'MozNetworkStatsManager.webidl',
-        'MozSpeakerManager.webidl',
-        'MozWifiCapabilities.webidl',
-        'MozWifiManager.webidl',
-        'MozWifiP2pManager.webidl',
-    ]
-else:
-    WEBIDL_FILES += [
-        'InstallTrigger.webidl',
-    ]
+WEBIDL_FILES += [
+    'InstallTrigger.webidl',
+]
 
 GENERATED_EVENTS_WEBIDL_FILES = [
     'AnimationPlaybackEvent.webidl',
@@ -759,14 +746,6 @@ if CONFIG['MOZ_GAMEPAD']:
         'GamepadAxisMoveEvent.webidl',
         'GamepadButtonEvent.webidl',
         'GamepadEvent.webidl',
-    ]
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
-    GENERATED_EVENTS_WEBIDL_FILES += [
-        'MozWifiConnectionInfoEvent.webidl',
-        'MozWifiP2pStatusChangeEvent.webidl',
-        'MozWifiStationInfoEvent.webidl',
-        'MozWifiStatusChangeEvent.webidl',
     ]
 
 if CONFIG['MOZ_BUILD_APP'] in ['xulrunner'] or CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_SUITE']:

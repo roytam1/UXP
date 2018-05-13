@@ -96,8 +96,8 @@ add_task(function* test_nonproto() {
 
 // Prototypical tests, operating on |File| handles.
 add_task(function* test_proto() {
-  if (OS.Constants.Sys.Name == "Android" || OS.Constants.Sys.Name == "Gonk") {
-    do_print("File.prototype.setDates is not implemented for Android/B2G");
+  if (OS.Constants.Sys.Name == "Android") {
+    do_print("File.prototype.setDates is not implemented for Android");
     do_check_eq(OS.File.prototype.setDates, undefined);
     return;
   }
@@ -107,7 +107,7 @@ add_task(function* test_proto() {
                               "test_osfile_async_setDates_proto.tmp");
   yield OS.File.writeAtomic(path, new Uint8Array(1));
 
-  try {
+  try {
     let fd = yield OS.File.open(path, {write: true});
 
     try {

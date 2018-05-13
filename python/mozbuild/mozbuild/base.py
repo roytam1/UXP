@@ -753,16 +753,11 @@ class MachCommandConditions(object):
     @staticmethod
     def is_b2g(cls):
         """Must have a B2G build."""
-        if hasattr(cls, 'substs'):
-            return cls.substs.get('MOZ_WIDGET_TOOLKIT') == 'gonk'
         return False
 
     @staticmethod
     def is_b2g_desktop(cls):
         """Must have a B2G desktop build."""
-        if hasattr(cls, 'substs'):
-            return cls.substs.get('MOZ_BUILD_APP') == 'b2g' and \
-                   cls.substs.get('MOZ_WIDGET_TOOLKIT') != 'gonk'
         return False
 
     @staticmethod

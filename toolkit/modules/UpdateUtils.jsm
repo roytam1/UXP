@@ -87,24 +87,6 @@ this.UpdateUtils = {
     url = url.replace(/%CUSTOM%/g, Preferences.get(PREF_APP_UPDATE_CUSTOM, ""));
     url = url.replace(/\+/g, "%2B");
 
-    if (AppConstants.platform == "gonk") {
-      let sysLibs = {};
-      Cu.import("resource://gre/modules/systemlibs.js", sysLibs);
-      let productDevice = sysLibs.libcutils.property_get("ro.product.device");
-      let buildType = sysLibs.libcutils.property_get("ro.build.type");
-      url = url.replace(/%PRODUCT_MODEL%/g,
-                        sysLibs.libcutils.property_get("ro.product.model"));
-      if (buildType == "user" || buildType == "userdebug") {
-        url = url.replace(/%PRODUCT_DEVICE%/g, productDevice);
-      } else {
-        url = url.replace(/%PRODUCT_DEVICE%/g, productDevice + "-" + buildType);
-      }
-      url = url.replace(/%B2G_VERSION%/g,
-                        Preferences.get(PREF_APP_B2G_VERSION, null));
-      url = url.replace(/%IMEI%/g,
-                        Preferences.get(PREF_APP_UPDATE_IMEI_HASH, "default"));
-    }
-
     return url;
   }
 };

@@ -90,7 +90,7 @@ function LoginObserver(captivePortalDetector) {
                               .getService(Ci.nsIHttpActivityDistributor);
   let urlFetcher = null;
 
-  let waitForNetworkActivity = Services.appinfo.widgetToolkit == "gonk";
+  let waitForNetworkActivity = false;
 
   let pageCheckingDone = function pageCheckingDone() {
     if (state === LOGIN_OBSERVER_STATE_VERIFYING) {

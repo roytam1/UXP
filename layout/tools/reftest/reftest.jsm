@@ -324,11 +324,7 @@ this.OnRefTestLoad = function OnRefTestLoad(win)
 
     if (Services.appinfo.OS == "Android") {
       let doc;
-      if (Services.appinfo.widgetToolkit == "gonk") {
-        doc = gContainingWindow.document.getElementsByTagName("html")[0];
-      } else {
-        doc = gContainingWindow.document.getElementById('main-window');
-      }
+      doc = gContainingWindow.document.getElementById('main-window');
       while (doc.hasChildNodes()) {
         doc.removeChild(doc.firstChild);
       }
@@ -684,7 +680,7 @@ function BuildConditionSandbox(aURL) {
       gWindowUtils.layerManagerRemote == true;
 
     // Shortcuts for widget toolkits.
-    sandbox.B2G = xr.widgetToolkit == "gonk";
+    sandbox.B2G = false;
     sandbox.Android = xr.OS == "Android" && !sandbox.B2G;
     sandbox.cocoaWidget = xr.widgetToolkit == "cocoa";
     sandbox.gtkWidget = xr.widgetToolkit == "gtk2"

@@ -81,9 +81,6 @@ DriverInfo = (function() {
       var versionMatch = /Mac OS X (\d+.\d+)/.exec(navigator.userAgent);
       version = versionMatch ? parseFloat(versionMatch[1]) : null;
 
-    } else if (runtime.widgetToolkit == 'gonk') {
-      os = OS.B2G;
-
     } else if (navigator.appVersion.indexOf('Android') != -1) {
       os = OS.ANDROID;
       // From layout/tools/reftest/reftest.js:

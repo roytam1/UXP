@@ -12,116 +12,115 @@ EXTRA_JS_MODULES.sdk.system += [
     'modules/system/Startup.js',
 ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] != "gonk":
-    EXTRA_JS_MODULES.commonjs.method.test += [
-        'method/test/browser.js',
-        'method/test/common.js',
-    ]
+EXTRA_JS_MODULES.commonjs.method.test += [
+    'method/test/browser.js',
+    'method/test/common.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.deprecated += [
-        'sdk/deprecated/api-utils.js',
-        'sdk/deprecated/sync-worker.js',
-        'sdk/deprecated/unit-test-finder.js',
-        'sdk/deprecated/unit-test.js',
-        'sdk/deprecated/window-utils.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.deprecated += [
+    'sdk/deprecated/api-utils.js',
+    'sdk/deprecated/sync-worker.js',
+    'sdk/deprecated/unit-test-finder.js',
+    'sdk/deprecated/unit-test.js',
+    'sdk/deprecated/window-utils.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.frame += [
-        'sdk/frame/hidden-frame.js',
-        'sdk/frame/utils.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.frame += [
+    'sdk/frame/hidden-frame.js',
+    'sdk/frame/utils.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.panel += [
-        'sdk/panel/events.js',
-        'sdk/panel/utils.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.panel += [
+    'sdk/panel/events.js',
+    'sdk/panel/utils.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.places += [
-        'sdk/places/bookmarks.js',
-        'sdk/places/contract.js',
-        'sdk/places/events.js',
-        'sdk/places/favicon.js',
-        'sdk/places/history.js',
-        'sdk/places/utils.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.places += [
+    'sdk/places/bookmarks.js',
+    'sdk/places/contract.js',
+    'sdk/places/events.js',
+    'sdk/places/favicon.js',
+    'sdk/places/history.js',
+    'sdk/places/utils.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.places.host += [
-        'sdk/places/host/host-bookmarks.js',
-        'sdk/places/host/host-query.js',
-        'sdk/places/host/host-tags.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.places.host += [
+    'sdk/places/host/host-bookmarks.js',
+    'sdk/places/host/host-query.js',
+    'sdk/places/host/host-tags.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.tabs += [
-        'sdk/tabs/common.js',
-        'sdk/tabs/events.js',
-        'sdk/tabs/helpers.js',
-        'sdk/tabs/namespace.js',
-        'sdk/tabs/observer.js',
-        'sdk/tabs/tab-fennec.js',
-        'sdk/tabs/tab-firefox.js',
-        'sdk/tabs/tab.js',
-        'sdk/tabs/tabs-firefox.js',
-        'sdk/tabs/utils.js',
-        'sdk/tabs/worker.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.tabs += [
+    'sdk/tabs/common.js',
+    'sdk/tabs/events.js',
+    'sdk/tabs/helpers.js',
+    'sdk/tabs/namespace.js',
+    'sdk/tabs/observer.js',
+    'sdk/tabs/tab-fennec.js',
+    'sdk/tabs/tab-firefox.js',
+    'sdk/tabs/tab.js',
+    'sdk/tabs/tabs-firefox.js',
+    'sdk/tabs/utils.js',
+    'sdk/tabs/worker.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.test += [
-        'sdk/test/assert.js',
-        'sdk/test/harness.js',
-        'sdk/test/httpd.js',
-        'sdk/test/loader.js',
-        'sdk/test/memory.js',
-        'sdk/test/options.js',
-        'sdk/test/runner.js',
-        'sdk/test/utils.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.test += [
+    'sdk/test/assert.js',
+    'sdk/test/harness.js',
+    'sdk/test/httpd.js',
+    'sdk/test/loader.js',
+    'sdk/test/memory.js',
+    'sdk/test/options.js',
+    'sdk/test/runner.js',
+    'sdk/test/utils.js',
+]
 
+EXTRA_JS_MODULES.commonjs.sdk.ui += [
+    'sdk/ui/component.js',
+    'sdk/ui/frame.js',
+    'sdk/ui/id.js',
+    'sdk/ui/sidebar.js',
+    'sdk/ui/state.js',
+    'sdk/ui/toolbar.js',
+]
+
+if CONFIG['MC_PALEMOON']:
     EXTRA_JS_MODULES.commonjs.sdk.ui += [
-        'sdk/ui/component.js',
-        'sdk/ui/frame.js',
-        'sdk/ui/id.js',
-        'sdk/ui/sidebar.js',
-        'sdk/ui/state.js',
-        'sdk/ui/toolbar.js',
+        'sdk/ui/buttons.js',
     ]
 
-    if CONFIG['MC_PALEMOON']:
-        EXTRA_JS_MODULES.commonjs.sdk.ui += [
-            'sdk/ui/buttons.js',
-        ]
+EXTRA_JS_MODULES.commonjs.sdk.ui.button += [
+    'sdk/ui/button/action.js',
+    'sdk/ui/button/contract.js',
+    'sdk/ui/button/toggle.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.ui.button += [
-        'sdk/ui/button/action.js',
-        'sdk/ui/button/contract.js',
-        'sdk/ui/button/toggle.js',
-    ]
+EXTRA_PP_JS_MODULES.commonjs.sdk.ui.button += [
+    'sdk/ui/button/view.js',
+]
 
-    EXTRA_PP_JS_MODULES.commonjs.sdk.ui.button += [
-        'sdk/ui/button/view.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.ui.sidebar += [
+    'sdk/ui/sidebar/actions.js',
+    'sdk/ui/sidebar/contract.js',
+    'sdk/ui/sidebar/namespace.js',
+    'sdk/ui/sidebar/utils.js',
+    'sdk/ui/sidebar/view.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.ui.sidebar += [
-        'sdk/ui/sidebar/actions.js',
-        'sdk/ui/sidebar/contract.js',
-        'sdk/ui/sidebar/namespace.js',
-        'sdk/ui/sidebar/utils.js',
-        'sdk/ui/sidebar/view.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.window += [
+    'sdk/window/browser.js',
+    'sdk/window/events.js',
+    'sdk/window/helpers.js',
+    'sdk/window/namespace.js',
+    'sdk/window/utils.js',
+]
 
-    EXTRA_JS_MODULES.commonjs.sdk.window += [
-        'sdk/window/browser.js',
-        'sdk/window/events.js',
-        'sdk/window/helpers.js',
-        'sdk/window/namespace.js',
-        'sdk/window/utils.js',
-    ]
-
-    EXTRA_JS_MODULES.commonjs.sdk.windows += [
-        'sdk/windows/fennec.js',
-        'sdk/windows/firefox.js',
-        'sdk/windows/observer.js',
-        'sdk/windows/tabs-fennec.js',
-    ]
+EXTRA_JS_MODULES.commonjs.sdk.windows += [
+    'sdk/windows/fennec.js',
+    'sdk/windows/firefox.js',
+    'sdk/windows/observer.js',
+    'sdk/windows/tabs-fennec.js',
+]
 
 EXTRA_JS_MODULES.commonjs += [
     'index.js',

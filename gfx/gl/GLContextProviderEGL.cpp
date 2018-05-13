@@ -23,7 +23,7 @@
 
     #ifdef ANDROID
         #include <android/log.h>
-        #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Gonk" , ## args)
+        #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Android" , ## args)
     #endif
 
     #define GLES2_LIB "libGLESv2.so"
