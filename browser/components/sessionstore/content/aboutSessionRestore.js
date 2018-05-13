@@ -188,6 +188,9 @@ function onListClick(aEvent) {
   if (aEvent.button == 2)
     return;
 
+  if (!treeView.treeBox) {
+    return;
+  }
   var cell = treeView.treeBox.getCellAt(aEvent.clientX, aEvent.clientY);
   if (cell.col) {
     // Restore this specific tab in the same window for middle/double/accel clicking
