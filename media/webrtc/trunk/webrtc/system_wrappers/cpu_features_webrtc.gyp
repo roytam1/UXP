@@ -11,7 +11,7 @@
     'include_ndk_cpu_features%': 0,
   },
   'conditions': [
-    ['OS=="android" or moz_widget_toolkit_gonk==1', {
+    ['OS=="android"', {
       'targets': [
         {
           'target_name': 'cpu_features_android',

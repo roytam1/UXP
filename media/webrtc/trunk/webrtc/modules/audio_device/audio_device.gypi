@@ -92,18 +92,6 @@
             'android',
           ],
         }], # OS==android
-        ['moz_widget_toolkit_gonk==1', {
-          'cflags_mozilla': [
-            '-I$(ANDROID_SOURCE)/frameworks/wilhelm/include',
-            '-I$(ANDROID_SOURCE)/frameworks/av/include',
-            '-I$(ANDROID_SOURCE)/system/media/wilhelm/include',
-            '-I$(ANDROID_SOURCE)/system/media/audio_effects/include',
-            '-I$(ANDROID_SOURCE)/frameworks/native/include',
-          ],
-          'include_dirs': [
-            'android',
-          ],
-        }], # moz_widget_toolkit_gonk==1
         ['enable_android_opensl==1', {
           'include_dirs': [
             'opensl',
@@ -162,14 +150,7 @@
             'android/audio_track_jni.h',
           ],
           'conditions': [
-	    ['moz_widget_toolkit_gonk==1', {
-              'sources': [
-                # references to android/audio_manager to avoid platform-specific limits
-	        'gonk/audio_manager.cc',
-                'gonk/audio_manager.h',
-	      ],
-	    }],
-            ['OS=="android" or moz_widget_toolkit_gonk==1', {
+            ['OS=="android"', {
               'link_settings': {
                 'libraries': [
                   '-llog',

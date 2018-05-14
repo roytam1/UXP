@@ -119,7 +119,7 @@
             'source/metrics_default.cc',
           ],
         }],
-        ['OS=="android" or moz_widget_toolkit_gonk==1', {
+        ['OS=="android"', {
           'defines': [
             'WEBRTC_THREAD_RR',
             # TODO(leozwang): Investigate CLOCK_REALTIME and CLOCK_MONOTONIC

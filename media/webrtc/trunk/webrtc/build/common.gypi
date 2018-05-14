@@ -196,11 +196,6 @@
   },
   'target_defaults': {
     'conditions': [
-      ['moz_widget_toolkit_gonk==1', {
-        'defines' : [
-          'WEBRTC_GONK',
-        ],
-      }],
       ['restrict_webrtc_logging==1', {
         'defines': ['WEBRTC_RESTRICT_LOGGING',],
       }],
@@ -417,7 +412,7 @@
         'msvs_disabled_warnings!': [4189,],
       }],
       # used on GONK as well
-      ['enable_android_opensl==1 and (OS=="android" or moz_widget_toolkit_gonk==1)', {
+      ['enable_android_opensl==1 and OS=="android"', {
         'defines': [
           'WEBRTC_ANDROID_OPENSLES',
         ],
