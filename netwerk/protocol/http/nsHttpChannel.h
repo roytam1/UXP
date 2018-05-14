@@ -460,8 +460,6 @@ private:
 
     void MaybeWarnAboutAppCache();
 
-    void SetLoadGroupUserAgentOverride();
-
     void SetDoNotTrack();
 
 private:
