@@ -19,8 +19,9 @@
 #define OS_SLICE Windows NT 6.1; WOW64;
 #endif
 
-// FxA override
+// Mozilla overrides
 pref("@GUAO_PREF@.accounts.firefox.com", "Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
+pref("@GUAO_PREF@.addons.mozilla.org", "Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 
 // Required for domains that have proven unresponsive to requests from users
 
