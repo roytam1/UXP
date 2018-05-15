@@ -25,7 +25,6 @@ EXTRA_COMPONENTS += [
 
 EXTRA_PP_COMPONENTS += [
     'extensions.manifest',
-    'nsBlocklistService.js',
 ]
 
 EXTRA_JS_MODULES += [

@@ -12,7 +12,6 @@ const Cr = Components.results;
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
 
 try {
   // AddonManager.jsm doesn't allow itself to be imported in the child
@@ -25,8 +24,13 @@ try {
 
 XPCOMUtils.defineLazyModuleGetter(this, "FileUtils",
                                   "resource://gre/modules/FileUtils.jsm");
+#ifdef MOZ_WEBEXTENSIONS
 XPCOMUtils.defineLazyModuleGetter(this, "UpdateUtils",
                                   "resource://gre/modules/UpdateUtils.jsm");
+#else
+XPCOMUtils.defineLazyModuleGetter(this, "UpdateChannel",
+                                  "resource://gre/modules/UpdateChannel.jsm");
+#endif
 XPCOMUtils.defineLazyModuleGetter(this, "OS",
                                   "resource://gre/modules/osfile.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "ServiceRequest",
@@ -115,15 +119,15 @@ XPCOMUtils.defineLazyGetter(this, "gABI", function() {
     LOG("BlockList Global gABI: XPCOM ABI unknown.");
   }
 
-  if (AppConstants.platform == "macosx") {
-    // Mac universal build should report a different ABI than either macppc
-    // or mactel.
-    let macutils = Cc["@mozilla.org/xpcom/mac-utils;1"].
-                   getService(Ci.nsIMacUtils);
+#ifdef XP_MACOSX
+  // Mac universal build should report a different ABI than either macppc
+  // or mactel.
+  let macutils = Cc["@mozilla.org/xpcom/mac-utils;1"].
+                 getService(Ci.nsIMacUtils);
 
-    if (macutils.isUniversalBinary)
-      abi += "-u-" + macutils.architecturesInBinary;
-  }
+  if (macutils.isUniversalBinary)
+    abi += "-u-" + macutils.architecturesInBinary;
+#endif
   return abi;
 });
 
@@ -567,7 +571,11 @@ Blocklist.prototype = {
     dsURI = dsURI.replace(/%BUILD_TARGET%/g, gApp.OS + "_" + gABI);
     dsURI = dsURI.replace(/%OS_VERSION%/g, gOSVersion);
     dsURI = dsURI.replace(/%LOCALE%/g, getLocale());
+#ifdef MOZ_WEBEXTENSIONS
     dsURI = dsURI.replace(/%CHANNEL%/g, UpdateUtils.UpdateChannel);
+#else
+    dsURI = dsURI.replace(/%CHANNEL%/g, UpdateChannel.get());
+#endif
     dsURI = dsURI.replace(/%PLATFORM_VERSION%/g, gApp.platformVersion);
     dsURI = dsURI.replace(/%DISTRIBUTION%/g,
                       getDistributionPrefValue(PREF_APP_DISTRIBUTION));
@@ -1147,9 +1155,9 @@ Blocklist.prototype = {
 
   /* See nsIBlocklistService */
   getPluginBlocklistState: function(plugin, appVersion, toolkitVersion) {
-    if (AppConstants.platform == "android") {
-      return Ci.nsIBlocklistService.STATE_NOT_BLOCKED;
-    }
+#ifdef MOZ_WIDGET_ANDROID
+    return Ci.nsIBlocklistService.STATE_NOT_BLOCKED;
+#endif
     if (!this._isBlocklistLoaded())
       this._loadBlocklist();
     return this._getPluginBlocklistState(plugin, this._pluginEntries,
