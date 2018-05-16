@@ -417,6 +417,7 @@
 #endif
 @RESPATH@/components/amWebInstallListener.js
 @RESPATH@/components/nsBlocklistService.js
+@RESPATH@/components/blocklist.manifest
 #ifdef MOZ_WEBEXTENSIONS
 @RESPATH@/components/nsBlocklistServiceContent.js
 #endif
