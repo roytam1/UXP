@@ -13,7 +13,6 @@
  */
 #include "cairo-win32.h"
 
-#include "gfxCrashReporterUtils.h"
 #include "gfxFontUtils.h"
 #include "gfxWindowsSurface.h"
 #include "gfxFont.h"

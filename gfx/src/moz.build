@@ -16,7 +16,6 @@ DEFINES['MOZ_APP_VERSION'] = '"%s"' % CONFIG['MOZ_APP_VERSION']
 EXPORTS += [
     'DriverCrashGuard.h',
     'FilterSupport.h',
-    'gfxCrashReporterUtils.h',
     'gfxTelemetry.h',
     'nsBoundingMetrics.h',
     'nsColor.h',
@@ -60,7 +59,6 @@ if CONFIG['MOZ_X11']:
 UNIFIED_SOURCES += [
     'DriverCrashGuard.cpp',
     'FilterSupport.cpp',
-    'gfxCrashReporterUtils.cpp',
     'gfxTelemetry.cpp',
     'nsColor.cpp',
     'nsFont.cpp',

@@ -389,7 +389,6 @@ DeviceManagerDx::CreateDevice(IDXGIAdapter* aAdapter,
 void
 DeviceManagerDx::CreateWARPCompositorDevice()
 {
-  ScopedGfxFeatureReporter reporterWARP("D3D11-WARP", gfxPrefs::LayersD3D11ForceWARP());
   FeatureState& d3d11 = gfxConfig::GetFeature(Feature::D3D11_COMPOSITING);
 
   HRESULT hr;
@@ -434,7 +433,6 @@ DeviceManagerDx::CreateWARPCompositorDevice()
   }
   mCompositorDevice->SetExceptionMode(0);
 
-  reporterWARP.SetSuccessful();
 }
 
 FeatureStatus
