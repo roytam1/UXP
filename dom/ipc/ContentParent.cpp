@@ -22,7 +22,6 @@
 #include "AppProcessChecker.h"
 #include "AudioChannelService.h"
 #include "BlobParent.h"
-#include "CrashReporterParent.h"
 #include "GMPServiceParent.h"
 #include "HandlerServiceParent.h"
 #include "IHistory.h"

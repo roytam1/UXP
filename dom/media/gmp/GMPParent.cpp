@@ -22,7 +22,6 @@
 #include "MediaPrefs.h"
 #include "VideoUtils.h"
 
-#include "mozilla/dom/CrashReporterParent.h"
 using mozilla::ipc::GeckoChildProcessHost;
 
 #include "mozilla/Telemetry.h"
