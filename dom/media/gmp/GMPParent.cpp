@@ -23,7 +23,6 @@
 #include "VideoUtils.h"
 
 #include "mozilla/dom/CrashReporterParent.h"
-using mozilla::dom::CrashReporterParent;
 using mozilla::ipc::GeckoChildProcessHost;
 
 #include "mozilla/Telemetry.h"
@@ -578,22 +577,6 @@ GMPParent::ActorDestroy(ActorDestroyReason aWhy)
     // Note: final destruction will be Dispatched to ourself
     mService->ReAddOnGMPThread(self);
   }
-}
-
-mozilla::dom::PCrashReporterParent*
-GMPParent::AllocPCrashReporterParent(const NativeThreadId& aThread)
-{
-  MOZ_ASSERT(false, "Should only be sent if crash reporting is enabled.");
-  CrashReporterParent* cr = new CrashReporterParent();
-  cr->SetChildData(aThread, GeckoProcessType_GMPlugin);
-  return cr;
-}
-
-bool
-GMPParent::DeallocPCrashReporterParent(PCrashReporterParent* aCrashReporter)
-{
-  delete aCrashReporter;
-  return true;
 }
 
 PGMPStorageParent*

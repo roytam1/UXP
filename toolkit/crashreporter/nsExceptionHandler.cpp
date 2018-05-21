@@ -116,7 +116,6 @@ using google_breakpad::PageAllocator;
 #endif
 using namespace mozilla;
 using mozilla::dom::CrashReporterChild;
-using mozilla::dom::PCrashReporterChild;
 using mozilla::ipc::CrashReporterClient;
 
 namespace CrashReporter {
@@ -2249,13 +2248,7 @@ nsresult AnnotateCrashReport(const nsACString& key, const nsACString& data)
     }
 
     MOZ_ASSERT(NS_IsMainThread());
-    PCrashReporterChild* reporter = CrashReporterChild::GetCrashReporter();
-    if (!reporter) {
-      EnqueueDelayedNote(new DelayedNote(key, data));
-      return NS_OK;
-    }
-    if (!reporter->SendAnnotateCrashReport(nsCString(key), escapedData))
-      return NS_ERROR_FAILURE;
+    EnqueueDelayedNote(new DelayedNote(key, data));
     return NS_OK;
   }
 
@@ -2334,14 +2327,7 @@ nsresult AppendAppNotesToCrashReport(const nsACString& data)
     }
 
     MOZ_ASSERT(NS_IsMainThread());
-    PCrashReporterChild* reporter = CrashReporterChild::GetCrashReporter();
-    if (!reporter) {
-      EnqueueDelayedNote(new DelayedNote(data));
-      return NS_OK;
-    }
-
-    if (!reporter->SendAppendAppNotes(escapedData))
-      return NS_ERROR_FAILURE;
+    EnqueueDelayedNote(new DelayedNote(data));
     return NS_OK;
   }
 

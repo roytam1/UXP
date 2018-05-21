@@ -7,63 +7,14 @@
 #ifndef mozilla_dom_CrashReporterParent_h
 #define mozilla_dom_CrashReporterParent_h
 
-#include "mozilla/dom/PCrashReporterParent.h"
 #include "mozilla/dom/TabMessageUtils.h"
 #include "nsIFile.h"
 
 namespace mozilla {
 namespace dom {
 
-class CrashReporterParent : public PCrashReporterParent
-{
-public:
-  CrashReporterParent();
-  virtual ~CrashReporterParent();
-
-  /*
-   * Initialize this reporter with data from the child process.
-   */
-  void
-  SetChildData(const NativeThreadId& id, const uint32_t& processType);
-
-  /*
-   * Returns the ID of the child minidump.
-   * GeneratePairedMinidump or GenerateCrashReport must be called first.
-   */
-  const nsString& ChildDumpID() const {
-    return mChildDumpID;
-  }
-
-  /*
-   * Add an annotation to our internally tracked list of annotations.
-   * Callers must apply these notes using GenerateChildData otherwise
-   * the notes will get dropped.
-   */
-  void
-  AnnotateCrashReport(const nsCString& aKey, const nsCString& aData);
-
- protected:
-  virtual void ActorDestroy(ActorDestroyReason aWhy) override;
-
-  virtual bool RecvAnnotateCrashReport(const nsCString& aKey,
-                                       const nsCString& aData) override
-  {
-    AnnotateCrashReport(aKey, aData);
-    return true;
-  }
-
-  virtual bool RecvAppendAppNotes(const nsCString& aData) override;
-
-  nsCString mAppNotes;
-  nsString mChildDumpID;
-  // stores the child main thread id
-  NativeThreadId mMainThread;
-  time_t mStartTime;
-  // stores the child process type
-  GeckoProcessType mProcessType;
-  bool mInitialized;
-};
-
+  /*** STUB ***/
+  
 } // namespace dom
 } // namespace mozilla
 

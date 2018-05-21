@@ -11,7 +11,6 @@ include protocol PCompositorBridge;
 include protocol PContentBridge;
 include protocol PContentPermissionRequest;
 include protocol PCycleCollectWithLogs;
-include protocol PCrashReporter;
 include protocol PPSMContentDownloader;
 include protocol PExternalHelperApp;
 include protocol PHandlerService;
@@ -243,7 +242,6 @@ nested(upto inside_cpow) sync protocol PContent
     manages PBlob;
     manages PBrowser;
     manages PContentPermissionRequest;
-    manages PCrashReporter;
     manages PCycleCollectWithLogs;
     manages PPSMContentDownloader;
     manages PExternalHelperApp;
@@ -624,8 +622,6 @@ parent:
     async PJavaScript();
 
     async PRemoteSpellcheckEngine();
-
-    sync PCrashReporter(NativeThreadId tid, uint32_t processType);
 
     /**
      * Is this token compatible with the provided version?

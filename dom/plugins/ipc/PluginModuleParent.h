@@ -34,7 +34,6 @@ namespace mozilla {
 class ProfileGatherer;
 #endif
 namespace dom {
-class PCrashReporterParent;
 class CrashReporterParent;
 } // namespace dom
 
@@ -76,7 +75,6 @@ class PluginModuleParent
 {
 protected:
     typedef mozilla::PluginLibrary PluginLibrary;
-    typedef mozilla::dom::PCrashReporterParent PCrashReporterParent;
     typedef mozilla::dom::CrashReporterParent CrashReporterParent;
 
     PPluginInstanceParent*
@@ -157,12 +155,6 @@ protected:
 
     virtual bool
     RecvPluginHideWindow(const uint32_t& aWindowId) override;
-
-    virtual PCrashReporterParent*
-    AllocPCrashReporterParent(mozilla::dom::NativeThreadId* id,
-                              uint32_t* processType) override;
-    virtual bool
-    DeallocPCrashReporterParent(PCrashReporterParent* actor) override;
 
     virtual bool
     RecvSetCursor(const NSCursorInfo& aCursorInfo) override;
@@ -507,12 +499,6 @@ private:
     AnnotateHang(mozilla::HangMonitor::HangAnnotations& aAnnotations) override;
 
     virtual bool ShouldContinueFromReplyTimeout() override;
-
-    virtual PCrashReporterParent*
-    AllocPCrashReporterParent(mozilla::dom::NativeThreadId* id,
-                              uint32_t* processType) override;
-    virtual bool
-    DeallocPCrashReporterParent(PCrashReporterParent* actor) override;
 
     PluginProcessParent* Process() const { return mSubprocess; }
     base::ProcessHandle ChildProcessHandle() { return mSubprocess->GetChildProcessHandle(); }

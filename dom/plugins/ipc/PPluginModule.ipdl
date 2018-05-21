@@ -5,7 +5,6 @@
 
 include protocol PPluginInstance;
 include protocol PPluginScriptableObject;
-include protocol PCrashReporter;
 include protocol PContent;
 include ProfilerTypes;
 
@@ -39,7 +38,6 @@ intr protocol PPluginModule
   bridges PContent, PPluginModule;
 
   manages PPluginInstance;
-  manages PCrashReporter;
 
 both:
   // Window-specific message which instructs the interrupt mechanism to enter
@@ -93,9 +91,6 @@ child:
                             nsString aIconPath);
 
   async SetParentHangTimeout(uint32_t seconds);
-
-  intr PCrashReporter()
-    returns (NativeThreadId tid, uint32_t processType);
 
   /**
    * Control the Gecko Profiler in the plugin process.

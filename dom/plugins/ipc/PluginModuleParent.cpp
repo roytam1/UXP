@@ -10,7 +10,6 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/ContentChild.h"
-#include "mozilla/dom/PCrashReporterParent.h"
 #include "mozilla/ipc/GeckoChildProcessHost.h"
 #include "mozilla/ipc/MessageChannel.h"
 #include "mozilla/ipc/ProtocolUtils.h"
@@ -67,7 +66,6 @@ using mozilla::ProfileGatherer;
 #endif
 using mozilla::ipc::MessageChannel;
 using mozilla::ipc::GeckoChildProcessHost;
-using mozilla::dom::PCrashReporterParent;
 using mozilla::dom::CrashReporterParent;
 
 using namespace mozilla;
@@ -2523,33 +2521,6 @@ PluginModuleParent::RecvPluginHideWindow(const uint32_t& aWindowId)
         "PluginInstanceParent::RecvPluginHideWindow not implemented!");
     return false;
 #endif
-}
-
-PCrashReporterParent*
-PluginModuleParent::AllocPCrashReporterParent(mozilla::dom::NativeThreadId* id,
-                                              uint32_t* processType)
-{
-    MOZ_CRASH("unreachable");
-}
-
-bool
-PluginModuleParent::DeallocPCrashReporterParent(PCrashReporterParent* actor)
-{
-    MOZ_CRASH("unreachable");
-}
-
-PCrashReporterParent*
-PluginModuleChromeParent::AllocPCrashReporterParent(mozilla::dom::NativeThreadId* id,
-                                                    uint32_t* processType)
-{
-    return nullptr;
-}
-
-bool
-PluginModuleChromeParent::DeallocPCrashReporterParent(PCrashReporterParent* actor)
-{
-    delete actor;
-    return true;
 }
 
 bool
