@@ -14,7 +14,6 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/gfxVars.h"
-#include "mozilla/ipc/CrashReporterClient.h"
 #include "mozilla/ipc/ProcessChild.h"
 #include "mozilla/layers/APZThreadUtils.h"
 #include "mozilla/layers/APZCTreeManager.h"

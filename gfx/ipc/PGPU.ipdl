@@ -89,8 +89,6 @@ child:
   // Graphics errors, analogous to PContent::GraphicsError
   async GraphicsError(nsCString aError);
 
-  async InitCrashReporter(Shmem shmem);
-
   // Have a message be broadcasted to the UI process by the UI process
   // observer service.
   async NotifyUiObservers(nsCString aTopic);
