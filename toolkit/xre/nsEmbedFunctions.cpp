@@ -81,10 +81,6 @@
 using mozilla::_ipdltest::IPDLUnitTestProcessChild;
 #endif  // ifdef MOZ_IPDL_TESTS
 
-#ifdef MOZ_JPROF
-#include "jprof.h"
-#endif
-
 using namespace mozilla;
 
 using mozilla::ipc::BrowserProcessSubThread;
@@ -269,11 +265,6 @@ XRE_InitChildProcess(int aArgc,
   NS_ENSURE_ARG_POINTER(aArgv);
   NS_ENSURE_ARG_POINTER(aArgv[0]);
   MOZ_ASSERT(aChildData);
-
-#ifdef MOZ_JPROF
-  // Call the code to install our handler
-  setupProfilingStuff();
-#endif
 
 #if !defined(MOZ_WIDGET_ANDROID)
   // On non-Fennec Gecko, the GMPLoader code resides in plugin-container,

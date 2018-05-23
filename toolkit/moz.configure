@@ -22,19 +22,6 @@ def systrace(value, target):
 
 set_define('MOZ_USE_SYSTRACE', systrace)
 
-
-option('--enable-jprof', env='MOZ_JPROF',
-       help='Enable jprof profiling tool (needs mozilla/tools/jprof)')
-
-@depends('--enable-jprof')
-def jprof(value):
-    if value:
-        return True
-
-set_config('MOZ_JPROF', jprof)
-set_define('MOZ_JPROF', jprof)
-imply_option('--enable-profiling', jprof)
-
 @depends(target)
 def sps_profiler(target):
     if target.os == 'Android':
