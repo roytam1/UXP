@@ -4,9 +4,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// Avoid DMD-specific parts of MOZ_DEFINE_MALLOC_SIZE_OF
-#undef MOZ_DMD
-
 #include "nsIMemoryReporter.h"
 #include "mozilla/Mutex.h"
 

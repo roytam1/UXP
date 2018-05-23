@@ -367,22 +367,6 @@ function onLoad()
   appendButton(row4, GCAndCCAllLogDesc,
                saveGCLogAndVerboseCCLog, "Save verbose", 'saveLogsVerbose');
 
-  // Three cases here:
-  // - DMD is disabled (i.e. not built): don't show the button.
-  // - DMD is enabled but is not running: show the button, but disable it.
-  // - DMD is enabled and is running: show the button and enable it.
-  if (gMgr.isDMDEnabled) {
-    let row5 = appendElement(ops, "div", "opsRow");
-
-    appendElementWithText(row5, "div", "opsRowLabel", "Save DMD output");
-    let enableButtons = gMgr.isDMDRunning;
-
-    let dmdButton =
-      appendButton(row5, enableButtons ? DMDEnabledDesc : DMDDisabledDesc,
-                   doDMD, "Save");
-    dmdButton.disabled = !enableButtons;
-  }
-
   // Generate the main div, where content ("section" divs) will go.  It's
   // hidden at first.
 

@@ -720,17 +720,6 @@ if test "$MOZ_PROFILING" -a -z "$STRIP_FLAGS"; then
 fi
 
 dnl ========================================================
-dnl = Enable DMD
-dnl ========================================================
-
-if test "$MOZ_DMD"; then
-    if test "${CPU_ARCH}" = "arm"; then
-        CFLAGS="$CFLAGS -funwind-tables"
-        CXXFLAGS="$CXXFLAGS -funwind-tables"
-    fi
-fi
-
-dnl ========================================================
 dnl System overrides of the defaults for host
 dnl ========================================================
 case "$host" in
@@ -4558,7 +4547,7 @@ fi
 
 # Demangle only for debug or DMD builds
 MOZ_DEMANGLE_SYMBOLS=
-if test "$HAVE_DEMANGLE" && test "$MOZ_DEBUG" -o "$MOZ_DMD"; then
+if test "$HAVE_DEMANGLE" && test "$MOZ_DEBUG"; then
     MOZ_DEMANGLE_SYMBOLS=1
     AC_DEFINE(MOZ_DEMANGLE_SYMBOLS)
 fi
@@ -5153,7 +5142,7 @@ fi
 
 
 dnl ========================================================
-if test "$MOZ_DEBUG" -o "$MOZ_DMD"; then
+if test "$MOZ_DEBUG"; then
     MOZ_COMPONENTS_VERSION_SCRIPT_LDFLAGS=
 fi
 

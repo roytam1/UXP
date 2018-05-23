@@ -173,17 +173,6 @@ OS_LDFLAGS += -DEBUG -OPT:REF
 endif
 endif
 
-#
-# Handle DMD in optimized builds.
-#
-ifdef MOZ_DMD
-ifdef HAVE_64BIT_BUILD
-OS_LDFLAGS = -DEBUG -OPT:REF,ICF
-else
-OS_LDFLAGS = -DEBUG -OPT:REF
-endif
-endif # MOZ_DMD
-
 endif # MOZ_DEBUG
 
 endif # WINNT && !GNU_CC

@@ -349,10 +349,6 @@ ifndef MOZ_PKG_MANIFEST
   NO_PKG_FILES += ssltunnel*
 endif
 
-ifdef MOZ_DMD
-  NO_PKG_FILES += SmokeDMD
-endif
-
 DEFINES += -DDLL_PREFIX=$(DLL_PREFIX) -DDLL_SUFFIX=$(DLL_SUFFIX) -DBIN_SUFFIX=$(BIN_SUFFIX)
 
 ifeq (cocoa,$(MOZ_WIDGET_TOOLKIT))

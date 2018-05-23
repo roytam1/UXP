@@ -52,15 +52,12 @@ if CONFIG['MOZ_PHOENIX']:
         'compare-mozconfig/compare-mozconfigs-wrapper.py',
     ]
 
-if CONFIG['ENABLE_TESTS'] or CONFIG['MOZ_DMD']:
+if CONFIG['ENABLE_TESTS']:
     FINAL_TARGET_FILES += ['/tools/rb/fix_stack_using_bpsyms.py']
     if CONFIG['OS_ARCH'] == 'Darwin':
         FINAL_TARGET_FILES += ['/tools/rb/fix_macosx_stack.py']
     if CONFIG['OS_ARCH'] == 'Linux':
         FINAL_TARGET_FILES += ['/tools/rb/fix_linux_stack.py']
-
-if CONFIG['MOZ_DMD']:
-    FINAL_TARGET_FILES += ['/memory/replace/dmd/dmd.py']
 
 # Put a useful .gdbinit in the bin directory, to be picked up automatically
 # by GDB when we debug executables there.

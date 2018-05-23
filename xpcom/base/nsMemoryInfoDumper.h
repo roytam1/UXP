@@ -28,15 +28,6 @@ public:
   nsMemoryInfoDumper();
 
   static void Initialize();
-
-#ifdef MOZ_DMD
-  // Open an appropriately named file for a DMD report.  If DMD is
-  // disabled, return a null FILE* instead.
-  static nsresult OpenDMDFile(const nsAString& aIdentifier, int aPid,
-                              FILE** aOutFile);
-  // Write a DMD report to the given file and close it.
-  static nsresult DumpDMDToFile(FILE* aFile);
-#endif
 };
 
 #define NS_MEMORY_INFO_DUMPER_CID \
