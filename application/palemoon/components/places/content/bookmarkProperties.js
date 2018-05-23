@@ -61,6 +61,8 @@
 Components.utils.import('resource://gre/modules/XPCOMUtils.jsm');
 XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
                                   "resource://gre/modules/PrivateBrowsingUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "Task",
+                                  "resource://gre/modules/Task.jsm");
 
 const BOOKMARK_ITEM = 0;
 const BOOKMARK_FOLDER = 1;
@@ -303,7 +305,7 @@ var BookmarkPropertiesPanel = {
    * This method should be called by the onload of the Bookmark Properties
    * dialog to initialize the state of the panel.
    */
-  onDialogLoad: function BPP_onDialogLoad() {
+  onDialogLoad: Task.async(function* BPP_onDialogLoad() {
     this._determineItemInfo();
 
     document.title = this._getDialogTitle();
@@ -355,7 +357,7 @@ var BookmarkPropertiesPanel = {
         acceptButton.disabled = this._readOnly;
         break;
       case ACTION_ADD:
-        this._fillAddProperties();
+        yield this._fillAddProperties();
         // if this is an uri related dialog disable accept button until
         // the user fills an uri value.
         if (this._itemType == BOOKMARK_ITEM)
@@ -380,7 +382,7 @@ var BookmarkPropertiesPanel = {
             .addEventListener("input", this, false);
       }
     }
-  },
+  }),
 
   // nsIDOMEventListener
   handleEvent: function BPP_handleEvent(aEvent) {
@@ -428,8 +430,8 @@ var BookmarkPropertiesPanel = {
                                  forceReadOnly: this._readOnly });
   },
 
-  _fillAddProperties: function BPP__fillAddProperties() {
-    this._createNewItem();
+  _fillAddProperties: Task.async(function* BPP__fillAddProperties() {
+    yield this._createNewItem();
     // Edit the new item
     gEditItemOverlay.initPanel(this._itemId,
                                { hiddenRows: this._hiddenRows });
@@ -439,7 +441,7 @@ var BookmarkPropertiesPanel = {
     var locationField = this._element("locationField");
     if (locationField.value == "about:blank")
       locationField.value = "";
-  },
+  }),
 
   // nsISupports
   QueryInterface: function BPP_QueryInterface(aIID) {
@@ -637,7 +639,7 @@ var BookmarkPropertiesPanel = {
   /**
    * Dialog-accept code-path for creating a new item (any type)
    */
-  _createNewItem: function BPP__getCreateItemTransaction() {
+  _createNewItem: Task.async(function* BPP__getCreateItemTransaction() {
     var [container, index] = this._getInsertionPointDetails();
     var txn;
 
@@ -647,12 +649,22 @@ var BookmarkPropertiesPanel = {
         break;
       case LIVEMARK_CONTAINER:
         txn = this._getCreateNewLivemarkTransaction(container, index);
-        break;      
+        break;
       default: // BOOKMARK_ITEM
         txn = this._getCreateNewBookmarkTransaction(container, index);
     }
 
     PlacesUtils.transactionManager.doTransaction(txn);
-    this._itemId = PlacesUtils.bookmarks.getIdForItemAt(container, index);
-  }
+    // This is a temporary hack until we use PlacesTransactions.jsm
+    if (txn._promise) {
+      yield txn._promise;
+    }
+
+    let folderGuid = yield PlacesUtils.promiseItemGuid(container);
+    let bm = yield PlacesUtils.bookmarks.fetch({
+      parentGuid: folderGuid,
+      index: index
+    });
+    this._itemId = yield PlacesUtils.promiseItemId(bm.guid);
+  })
 };
