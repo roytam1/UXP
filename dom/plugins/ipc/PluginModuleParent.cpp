@@ -55,7 +55,6 @@ using base::KillProcess;
 using mozilla::PluginLibrary;
 using mozilla::ipc::MessageChannel;
 using mozilla::ipc::GeckoChildProcessHost;
-using mozilla::dom::CrashReporterParent;
 
 using namespace mozilla;
 using namespace mozilla::plugins;
