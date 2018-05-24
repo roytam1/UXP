@@ -133,8 +133,6 @@ browser.jar:
 * skin/classic/browser/preferences/in-content/preferences.css  (preferences/in-content/preferences.css)
 * skin/classic/browser/preferences/in-content/dialog.css       (preferences/in-content/dialog.css)
   skin/classic/browser/preferences/applications.css            (preferences/applications.css)
-  skin/classic/browser/social/services-16.png                  (social/services-16.png)
-  skin/classic/browser/social/services-64.png                  (social/services-64.png)
   skin/classic/browser/tabbrowser/newtab.svg                   (tabbrowser/newtab.svg)
   skin/classic/browser/tabbrowser/newtab-XPVista7.svg          (tabbrowser/newtab-XPVista7.svg)
   skin/classic/browser/tabbrowser/newtab-inverted.svg          (tabbrowser/newtab-inverted.svg)
