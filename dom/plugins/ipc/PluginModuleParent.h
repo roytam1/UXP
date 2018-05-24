@@ -33,9 +33,6 @@ namespace mozilla {
 #ifdef MOZ_ENABLE_PROFILER_SPS
 class ProfileGatherer;
 #endif
-namespace dom {
-class CrashReporterParent;
-} // namespace dom
 
 namespace layers {
 class TextureClientRecycleAllocator;
@@ -75,7 +72,6 @@ class PluginModuleParent
 {
 protected:
     typedef mozilla::PluginLibrary PluginLibrary;
-    typedef mozilla::dom::CrashReporterParent CrashReporterParent;
 
     PPluginInstanceParent*
     AllocPPluginInstanceParent(const nsCString& aMimeType,
@@ -340,7 +336,6 @@ protected:
     bool
     GetPluginDetails();
 
-    friend class mozilla::dom::CrashReporterParent;
     friend class mozilla::plugins::PluginAsyncSurrogate;
 
     bool              mIsStartingAsync;
@@ -520,8 +515,6 @@ private:
                                       int32_t aSandboxLevel,
                                       bool aAllowAsyncInit);
 
-    CrashReporterParent* CrashReporter();
-
     void CleanupFromTimeout(const bool aByHangUI);
 
     virtual void UpdatePluginTimeout() override;
@@ -579,7 +572,6 @@ private:
     FinishHangUI();
 #endif
 
-    friend class mozilla::dom::CrashReporterParent;
     friend class mozilla::plugins::PluginAsyncSurrogate;
 
     void OnProcessLaunched(const bool aSucceeded);
