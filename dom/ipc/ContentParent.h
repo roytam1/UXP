@@ -1015,11 +1015,7 @@ private:
   virtual bool RecvUpdateDropEffect(const uint32_t& aDragAction,
                                     const uint32_t& aDropEffect) override;
 
-  virtual bool RecvProfile(const nsCString& aProfile) override;
-
   virtual bool RecvGetGraphicsDeviceInitData(ContentDeviceData* aOut) override;
-
-  void StartProfiler(nsIProfilerStartParams* aParams);
 
   virtual bool RecvGetAndroidSystemInfo(AndroidSystemInfo* aInfo) override;
 

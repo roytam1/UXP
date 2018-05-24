@@ -2404,61 +2404,6 @@ ContentChild::DeallocPOfflineCacheUpdateChild(POfflineCacheUpdateChild* actor)
 }
 
 bool
-ContentChild::RecvStartProfiler(const ProfilerInitParams& params)
-{
-  nsTArray<const char*> featureArray;
-  for (size_t i = 0; i < params.features().Length(); ++i) {
-    featureArray.AppendElement(params.features()[i].get());
-  }
-
-  nsTArray<const char*> threadNameFilterArray;
-  for (size_t i = 0; i < params.threadFilters().Length(); ++i) {
-    threadNameFilterArray.AppendElement(params.threadFilters()[i].get());
-  }
-
-  profiler_start(params.entries(), params.interval(),
-                 featureArray.Elements(), featureArray.Length(),
-                 threadNameFilterArray.Elements(),
-                 threadNameFilterArray.Length());
-
- return true;
-}
-
-bool
-ContentChild::RecvStopProfiler()
-{
-  profiler_stop();
-  return true;
-}
-
-bool
-ContentChild::RecvPauseProfiler(const bool& aPause)
-{
-  if (aPause) {
-    profiler_pause();
-  } else {
-    profiler_resume();
-  }
-
-  return true;
-}
-
-bool
-ContentChild::RecvGatherProfile()
-{
-  nsCString profileCString;
-  UniquePtr<char[]> profile = profiler_get_profile();
-  if (profile) {
-    profileCString = nsCString(profile.get(), strlen(profile.get()));
-  } else {
-    profileCString = EmptyCString();
-  }
-
-  Unused << SendProfile(profileCString);
-  return true;
-}
-
-bool
 ContentChild::RecvLoadPluginResult(const uint32_t& aPluginId,
                                    const bool& aResult)
 {

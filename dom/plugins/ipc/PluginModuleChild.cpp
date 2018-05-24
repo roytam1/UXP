@@ -2549,48 +2549,6 @@ PluginModuleChild::ProcessNativeEvents() {
 }
 #endif
 
-bool
-PluginModuleChild::RecvStartProfiler(const ProfilerInitParams& params)
-{
-    nsTArray<const char*> featureArray;
-    for (size_t i = 0; i < params.features().Length(); ++i) {
-        featureArray.AppendElement(params.features()[i].get());
-    }
-
-    nsTArray<const char*> threadNameFilterArray;
-    for (size_t i = 0; i < params.threadFilters().Length(); ++i) {
-        threadNameFilterArray.AppendElement(params.threadFilters()[i].get());
-    }
-
-    profiler_start(params.entries(), params.interval(),
-                   featureArray.Elements(), featureArray.Length(),
-                   threadNameFilterArray.Elements(), threadNameFilterArray.Length());
-
-    return true;
-}
-
-bool
-PluginModuleChild::RecvStopProfiler()
-{
-    profiler_stop();
-    return true;
-}
-
-bool
-PluginModuleChild::RecvGatherProfile()
-{
-    nsCString profileCString;
-    UniquePtr<char[]> profile = profiler_get_profile();
-    if (profile != nullptr) {
-        profileCString = nsCString(profile.get(), strlen(profile.get()));
-    } else {
-        profileCString = nsCString("", 0);
-    }
-
-    Unused << SendProfile(profileCString);
-    return true;
-}
-
 NPError
 PluginModuleChild::PluginRequiresAudioDeviceChanges(
                           PluginInstanceChild* aInstance,

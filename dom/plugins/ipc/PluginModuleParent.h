@@ -185,8 +185,6 @@ protected:
 
     virtual bool RecvNotifyContentModuleDestroyed() override { return true; }
 
-    virtual bool RecvProfile(const nsCString& aProfile) override { return true; }
-
     virtual bool AnswerGetKeyState(const int32_t& aVirtKey, int16_t* aRet) override;
 
     virtual bool RecvReturnClearSiteData(const NPError& aRv,
@@ -462,9 +460,6 @@ class PluginModuleChromeParent
     SendAssociatePluginId();
 
     void CachedSettingChanged();
-
-    virtual bool
-    RecvProfile(const nsCString& aProfile) override;
 
     virtual bool
     AnswerGetKeyState(const int32_t& aVirtKey, int16_t* aRet) override;

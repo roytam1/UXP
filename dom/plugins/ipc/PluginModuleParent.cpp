@@ -2643,13 +2643,6 @@ PluginModuleParent::AnswerNPN_SetValue_NPPVpluginRequiresAudioDeviceChanges(
 }
 
 bool
-PluginModuleChromeParent::RecvProfile(const nsCString& aProfile)
-{
-  /*** STUB ***/
-    return true;
-}
-
-bool
 PluginModuleParent::AnswerGetKeyState(const int32_t& aVirtKey, int16_t* aRet)
 {
     return false;

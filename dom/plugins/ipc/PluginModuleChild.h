@@ -125,10 +125,6 @@ protected:
     virtual bool
     RecvProcessNativeEventsInInterruptCall() override;
 
-    virtual bool RecvStartProfiler(const ProfilerInitParams& params) override;
-    virtual bool RecvStopProfiler() override;
-    virtual bool RecvGatherProfile() override;
-
     virtual bool
     AnswerModuleSupportsAsyncRender(bool* aResult) override;
 public:
