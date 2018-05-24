@@ -30,10 +30,6 @@ class nsIProfileSaveEvent;
 class nsPluginTag;
 
 namespace mozilla {
-#ifdef MOZ_ENABLE_PROFILER_SPS
-class ProfileGatherer;
-#endif
-
 namespace layers {
 class TextureClientRecycleAllocator;
 } // namespace layers
@@ -467,13 +463,6 @@ class PluginModuleChromeParent
 
     void CachedSettingChanged();
 
-#ifdef  MOZ_ENABLE_PROFILER_SPS
-    void GatherAsyncProfile();
-    void GatheredAsyncProfile(nsIProfileSaveEvent* aSaveEvent);
-    void StartProfiler(nsIProfilerStartParams* aParams);
-    void StopProfiler();
-#endif
-
     virtual bool
     RecvProfile(const nsCString& aProfile) override;
 
@@ -518,11 +507,6 @@ private:
     void CleanupFromTimeout(const bool aByHangUI);
 
     virtual void UpdatePluginTimeout() override;
-
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    void InitPluginProfiling();
-    void ShutdownPluginProfiling();
-#endif
 
     void RegisterSettingsCallbacks();
     void UnregisterSettingsCallbacks();
@@ -606,9 +590,6 @@ private:
     // processes in existence!
     dom::ContentParent* mContentParent;
     nsCOMPtr<nsIObserver> mPluginOfflineObserver;
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    RefPtr<mozilla::ProfileGatherer> mGatherer;
-#endif
     nsCString mProfile;
     bool mIsBlocklisted;
     static bool sInstantiated;

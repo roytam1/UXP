@@ -169,13 +169,9 @@
 #endif
 #ifdef NS_PRINTING
 #endif
-#ifdef MOZ_ENABLE_PROFILER_SPS
-#endif
 #ifdef NECKO_WIFI
 #endif
 #ifdef MOZ_WEBRTC
-#endif
-#ifdef MOZ_ENABLE_PROFILER_SPS
 #endif
 #ifdef MOZ_ENABLE_XREMOTE
 #endif

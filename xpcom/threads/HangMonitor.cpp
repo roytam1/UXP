@@ -26,10 +26,6 @@
 #include <windows.h>
 #endif
 
-#if defined(MOZ_ENABLE_PROFILER_SPS) && defined(MOZ_PROFILING) && defined(XP_WIN)
-  #define REPORT_CHROME_HANGS
-#endif
-
 namespace mozilla {
 namespace HangMonitor {
 
@@ -40,10 +36,6 @@ namespace HangMonitor {
 volatile bool gDebugDisableHangMonitor = false;
 
 const char kHangMonitorPrefName[] = "hangmonitor.timeout";
-
-#ifdef REPORT_CHROME_HANGS
-const char kTelemetryPrefName[] = "toolkit.telemetry.enabled";
-#endif
 
 // Monitor protects gShutdown and gTimeout, but not gTimestamp which rely on
 // being atomically set by the processor; synchronization doesn't really matter
@@ -62,31 +54,11 @@ bool gShutdown;
 // we're currently not processing events.
 Atomic<PRIntervalTime> gTimestamp(PR_INTERVAL_NO_WAIT);
 
-#ifdef REPORT_CHROME_HANGS
-// Main thread ID used in reporting chrome hangs under Windows
-static HANDLE winMainThreadHandle = nullptr;
-
-// Default timeout for reporting chrome hangs to Telemetry (5 seconds)
-static const int32_t DEFAULT_CHROME_HANG_INTERVAL = 5;
-
-// Maximum number of PCs to gather from the stack
-static const int32_t MAX_CALL_STACK_PCS = 400;
-#endif
-
 // PrefChangedFunc
 void
 PrefChanged(const char*, void*)
 {
   int32_t newval = Preferences::GetInt(kHangMonitorPrefName);
-#ifdef REPORT_CHROME_HANGS
-  // Monitor chrome hangs on the profiling branch if Telemetry enabled
-  if (newval == 0) {
-    bool telemetryEnabled = Preferences::GetBool(kTelemetryPrefName);
-    if (telemetryEnabled) {
-      newval = DEFAULT_CHROME_HANG_INTERVAL;
-    }
-  }
-#endif
   MonitorAutoLock lock(*gMonitor);
   if (newval != gTimeout) {
     gTimeout = newval;
@@ -110,89 +82,6 @@ Crash()
   NS_RUNTIMEABORT("HangMonitor triggered");
 }
 
-#ifdef REPORT_CHROME_HANGS
-
-static void
-ChromeStackWalker(uint32_t aFrameNumber, void* aPC, void* aSP, void* aClosure)
-{
-  MOZ_ASSERT(aClosure);
-  std::vector<uintptr_t>* stack =
-    static_cast<std::vector<uintptr_t>*>(aClosure);
-  if (stack->size() == MAX_CALL_STACK_PCS) {
-    return;
-  }
-  MOZ_ASSERT(stack->size() < MAX_CALL_STACK_PCS);
-  stack->push_back(reinterpret_cast<uintptr_t>(aPC));
-}
-
-static void
-GetChromeHangReport(Telemetry::ProcessedStack& aStack,
-                    int32_t& aSystemUptime,
-                    int32_t& aFirefoxUptime)
-{
-  MOZ_ASSERT(winMainThreadHandle);
-
-  // The thread we're about to suspend might have the alloc lock
-  // so allocate ahead of time
-  std::vector<uintptr_t> rawStack;
-  rawStack.reserve(MAX_CALL_STACK_PCS);
-
-  // Workaround possible deadlock where the main thread is running a
-  // long-standing JS job, and happens to be in the JIT allocator when we
-  // suspend it. Since, on win 64, this requires holding a process lock that
-  // MozStackWalk requires, take this "workaround lock" to avoid deadlock.
-#ifdef _WIN64
-  AcquireStackWalkWorkaroundLock();
-#endif
-  DWORD ret = ::SuspendThread(winMainThreadHandle);
-  bool suspended = false;
-  if (ret != -1) {
-    // SuspendThread is asynchronous, so the thread may still be running. Use
-    // GetThreadContext to ensure it's really suspended.
-    // See https://blogs.msdn.microsoft.com/oldnewthing/20150205-00/?p=44743.
-    CONTEXT context;
-    context.ContextFlags = CONTEXT_CONTROL;
-    if (::GetThreadContext(winMainThreadHandle, &context)) {
-      suspended = true;
-    }
-  }
-
-#ifdef _WIN64
-  ReleaseStackWalkWorkaroundLock();
-#endif
-
-  if (!suspended) {
-    if (ret != -1) {
-      MOZ_ALWAYS_TRUE(::ResumeThread(winMainThreadHandle) != DWORD(-1));
-    }
-    return;
-  }
-
-  MozStackWalk(ChromeStackWalker, /* skipFrames */ 0, /* maxFrames */ 0,
-               reinterpret_cast<void*>(&rawStack),
-               reinterpret_cast<uintptr_t>(winMainThreadHandle), nullptr);
-  ret = ::ResumeThread(winMainThreadHandle);
-  if (ret == -1) {
-    return;
-  }
-  aStack = Telemetry::GetStackAndModules(rawStack);
-
-  // Record system uptime (in minutes) at the time of the hang
-  aSystemUptime = ((GetTickCount() / 1000) - (gTimeout * 2)) / 60;
-
-  // Record Firefox uptime (in minutes) at the time of the hang
-  bool error;
-  TimeStamp processCreation = TimeStamp::ProcessCreation(error);
-  if (!error) {
-    TimeDuration td = TimeStamp::Now() - processCreation;
-    aFirefoxUptime = (static_cast<int32_t>(td.ToSeconds()) - (gTimeout * 2)) / 60;
-  } else {
-    aFirefoxUptime = -1;
-  }
-}
-
-#endif
-
 void
 ThreadMain(void*)
 {
@@ -205,13 +94,6 @@ ThreadMain(void*)
   // run twice to trigger hang protection.
   PRIntervalTime lastTimestamp = 0;
   int waitCount = 0;
-
-#ifdef REPORT_CHROME_HANGS
-  Telemetry::ProcessedStack stack;
-  int32_t systemUptime = -1;
-  int32_t firefoxUptime = -1;
-  UniquePtr<HangAnnotations> annotations;
-#endif
 
   while (true) {
     if (gShutdown) {
@@ -233,14 +115,6 @@ ThreadMain(void*)
         timestamp == lastTimestamp &&
         gTimeout > 0) {
       ++waitCount;
-#ifdef REPORT_CHROME_HANGS
-      // Capture the chrome-hang stack + Firefox & system uptimes after
-      // the minimum hang duration has been reached (not when the hang ends)
-      if (waitCount == 2) {
-        GetChromeHangReport(stack, systemUptime, firefoxUptime);
-        annotations = ChromeHangAnnotatorCallout();
-      }
-#else
       // This is the crash-on-hang feature.
       // See bug 867313 for the quirk in the waitCount comparison
       if (waitCount >= 2) {
@@ -251,16 +125,7 @@ ThreadMain(void*)
           Crash();
         }
       }
-#endif
     } else {
-#ifdef REPORT_CHROME_HANGS
-      if (waitCount >= 2) {
-        uint32_t hangDuration = PR_IntervalToSeconds(now - lastTimestamp);
-        Telemetry::RecordChromeHang(hangDuration, stack, systemUptime,
-                                    firefoxUptime, Move(annotations));
-        stack.Clear();
-      }
-#endif
       lastTimestamp = timestamp;
       waitCount = 0;
     }
@@ -288,15 +153,6 @@ Startup()
 
   Preferences::RegisterCallback(PrefChanged, kHangMonitorPrefName, nullptr);
   PrefChanged(nullptr, nullptr);
-
-#ifdef REPORT_CHROME_HANGS
-  Preferences::RegisterCallback(PrefChanged, kTelemetryPrefName, nullptr);
-  winMainThreadHandle =
-    OpenThread(THREAD_ALL_ACCESS, FALSE, GetCurrentThreadId());
-  if (!winMainThreadHandle) {
-    return;
-  }
-#endif
 
   // Don't actually start measuring hangs until we hit the main event loop.
   // This potentially misses a small class of really early startup hangs,

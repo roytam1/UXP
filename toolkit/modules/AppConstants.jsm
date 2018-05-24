@@ -257,13 +257,6 @@ MOZ_SAFE_BROWSING:
   false,
 #endif
 
-  MOZ_ENABLE_PROFILER_SPS:
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  true,
-#else
-  false,
-#endif
-
   MOZ_ANDROID_ACTIVITY_STREAM:
 #ifdef MOZ_ANDROID_ACTIVITY_STREAM
   true,

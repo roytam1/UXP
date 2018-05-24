@@ -22,23 +22,6 @@ def systrace(value, target):
 
 set_define('MOZ_USE_SYSTRACE', systrace)
 
-@depends(target)
-def sps_profiler(target):
-    if target.os == 'Android':
-        return target.cpu in ('arm', 'x86')
-    elif target.kernel == 'Linux':
-        return target.cpu in ('x86', 'x86_64')
-    return target.os in ('OSX', 'WINNT')
-
-@depends(sps_profiler)
-def sps_profiler_define(value):
-    if value:
-        return True
-
-set_config('MOZ_ENABLE_PROFILER_SPS', sps_profiler_define)
-set_define('MOZ_ENABLE_PROFILER_SPS', sps_profiler_define)
-
-
 # JACK cubeb backend
 # ==============================================================
 option('--enable-jack', env='MOZ_JACK',

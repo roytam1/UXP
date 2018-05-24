@@ -11,11 +11,6 @@
 #include "mozilla/layers/CompositorBridgeParent.h"
 #include "mozilla/layers/CompositorThread.h"
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-#include "GeckoProfiler.h"
-#include "ProfilerMarkers.h"
-#endif
-
 namespace mozilla {
 
 CompositorVsyncDispatcher::CompositorVsyncDispatcher()
@@ -35,11 +30,6 @@ CompositorVsyncDispatcher::~CompositorVsyncDispatcher()
 void
 CompositorVsyncDispatcher::NotifyVsync(TimeStamp aVsyncTimestamp)
 {
-  // In vsync thread
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  layers::CompositorBridgeParent::PostInsertVsyncProfilerMarker(aVsyncTimestamp);
-#endif
-
   MutexAutoLock lock(mCompositorObserverLock);
   if (mCompositorVsyncObserver) {
     mCompositorVsyncObserver->NotifyVsync(aVsyncTimestamp);

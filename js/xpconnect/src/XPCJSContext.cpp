@@ -1528,12 +1528,6 @@ XPCJSContext::~XPCJSContext()
     delete mDyingWrappedNativeProtoMap;
     mDyingWrappedNativeProtoMap = nullptr;
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    // Tell the profiler that the context is gone
-    if (PseudoStack* stack = mozilla_get_pseudo_stack())
-        stack->sampleContext(nullptr);
-#endif
-
     Preferences::UnregisterCallback(ReloadPrefsCallback, JS_OPTIONS_DOT_STR, this);
 }
 
@@ -3382,10 +3376,6 @@ XPCJSContext::Initialize()
     JS_AddWeakPointerCompartmentCallback(cx, WeakPointerCompartmentCallback, this);
     JS_SetWrapObjectCallbacks(cx, &WrapObjectCallbacks);
     js::SetPreserveWrapperCallback(cx, PreserveWrapper);
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    if (PseudoStack* stack = mozilla_get_pseudo_stack())
-        stack->sampleContext(cx);
-#endif
     JS_SetAccumulateTelemetryCallback(cx, AccumulateTelemetryCallback);
     js::SetActivityCallback(cx, ActivityCallback, this);
     JS_AddInterruptCallback(cx, InterruptCallback);

@@ -79,8 +79,6 @@ enum TracingMetadata {
   TRACING_TIMESTAMP
 };
 
-#if !defined(MOZ_ENABLE_PROFILER_SPS)
-
 #include <stdint.h>
 #include <stdarg.h>
 
@@ -247,12 +245,6 @@ static inline bool profiler_in_privacy_mode() { return false; }
 
 static inline void profiler_log(const char *str) {}
 static inline void profiler_log(const char *fmt, va_list args) {}
-
-#else
-
-#include "GeckoProfilerImpl.h"
-
-#endif
 
 class MOZ_RAII GeckoProfilerInitRAII {
 public:

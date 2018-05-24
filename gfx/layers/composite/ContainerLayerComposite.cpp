@@ -35,9 +35,6 @@
 #include "TextRenderer.h"               // for TextRenderer
 #include <vector>
 #include "GeckoProfiler.h"              // for GeckoProfiler
-#ifdef MOZ_ENABLE_PROFILER_SPS
-#include "ProfilerMarkers.h"            // for ProfilerMarkers
-#endif
 
 #define CULLING_LOG(...)
 // #define CULLING_LOG(...) printf_stderr("CULLING: " __VA_ARGS__)
@@ -86,26 +83,7 @@ static gfx::IntRect ContainerVisibleRect(ContainerT* aContainer)
 
 static void PrintUniformityInfo(Layer* aLayer)
 {
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  if (!profiler_is_active()) {
-    return;
-  }
-
-  // Don't want to print a log for smaller layers
-  if (aLayer->GetLocalVisibleRegion().GetBounds().width < 300 ||
-      aLayer->GetLocalVisibleRegion().GetBounds().height < 300) {
-    return;
-  }
-
-  Matrix4x4 transform = aLayer->AsLayerComposite()->GetShadowBaseTransform();
-  if (!transform.Is2D()) {
-    return;
-  }
-
-  Point translation = transform.As2D().GetTranslation();
-  LayerTranslationPayload* payload = new LayerTranslationPayload(aLayer, translation);
-  PROFILER_MARKER_PAYLOAD("LayerTranslation", payload);
-#endif
+  /*** STUB ***/
 }
 
 /* all of the per-layer prepared data we need to maintain */

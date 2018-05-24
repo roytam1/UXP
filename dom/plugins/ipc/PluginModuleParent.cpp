@@ -18,9 +18,6 @@
 #include "mozilla/plugins/PluginBridge.h"
 #include "mozilla/plugins/PluginInstanceParent.h"
 #include "mozilla/Preferences.h"
-#ifdef MOZ_ENABLE_PROFILER_SPS
-#include "mozilla/ProfileGatherer.h"
-#endif
 #include "mozilla/ProcessHangMonitor.h"
 #include "mozilla/Services.h"
 #include "mozilla/Telemetry.h"
@@ -46,11 +43,6 @@
 #include "PluginUtilsWin.h"
 #endif
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-#include "nsIProfiler.h"
-#include "nsIProfileSaveEvent.h"
-#endif
-
 #ifdef MOZ_WIDGET_GTK
 #include <glib.h>
 #elif XP_MACOSX
@@ -61,9 +53,6 @@
 using base::KillProcess;
 
 using mozilla::PluginLibrary;
-#ifdef MOZ_ENABLE_PROFILER_SPS
-using mozilla::ProfileGatherer;
-#endif
 using mozilla::ipc::MessageChannel;
 using mozilla::ipc::GeckoChildProcessHost;
 using mozilla::dom::CrashReporterParent;
@@ -544,25 +533,6 @@ PluginModuleChromeParent::OnProcessLaunched(const bool aSucceeded)
         }
 #endif
     }
-
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    nsCOMPtr<nsIProfiler> profiler(do_GetService("@mozilla.org/tools/profiler;1"));
-    bool profilerActive = false;
-    DebugOnly<nsresult> rv = profiler->IsActive(&profilerActive);
-    MOZ_ASSERT(NS_SUCCEEDED(rv));
-    if (profilerActive) {
-        nsCOMPtr<nsIProfilerStartParams> currentProfilerParams;
-        rv = profiler->GetStartParams(getter_AddRefs(currentProfilerParams));
-        MOZ_ASSERT(NS_SUCCEEDED(rv));
-
-        nsCOMPtr<nsISupports> gatherer;
-        rv = profiler->GetProfileGatherer(getter_AddRefs(gatherer));
-        MOZ_ASSERT(NS_SUCCEEDED(rv));
-        mGatherer = static_cast<ProfileGatherer*>(gatherer.get());
-
-        StartProfiler(currentProfilerParams);
-    }
-#endif
 }
 
 bool
@@ -648,10 +618,6 @@ PluginModuleChromeParent::PluginModuleChromeParent(const char* aFilePath,
     mSandboxLevel = aSandboxLevel;
     mRunID = GeckoChildProcessHost::GetUniqueID();
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    InitPluginProfiling();
-#endif
-
     mozilla::HangMonitor::RegisterAnnotator(*this);
 }
 
@@ -660,10 +626,6 @@ PluginModuleChromeParent::~PluginModuleChromeParent()
     if (!OkToCleanup()) {
         NS_RUNTIMEABORT("unsafe destruction");
     }
-
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    ShutdownPluginProfiling();
-#endif
 
 #ifdef XP_WIN
     // If we registered for audio notifications, stop.
@@ -2680,133 +2642,10 @@ PluginModuleParent::AnswerNPN_SetValue_NPPVpluginRequiresAudioDeviceChanges(
     return true;
 }
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-class PluginProfilerObserver final : public nsIObserver,
-                                     public nsSupportsWeakReference
-{
-public:
-    NS_DECL_ISUPPORTS
-    NS_DECL_NSIOBSERVER
-
-    explicit PluginProfilerObserver(PluginModuleChromeParent* pmp)
-      : mPmp(pmp)
-    {}
-
-private:
-    ~PluginProfilerObserver() {}
-    PluginModuleChromeParent* mPmp;
-};
-
-NS_IMPL_ISUPPORTS(PluginProfilerObserver, nsIObserver, nsISupportsWeakReference)
-
-NS_IMETHODIMP
-PluginProfilerObserver::Observe(nsISupports *aSubject,
-                                const char *aTopic,
-                                const char16_t *aData)
-{
-    if (!strcmp(aTopic, "profiler-started")) {
-        nsCOMPtr<nsIProfilerStartParams> params(do_QueryInterface(aSubject));
-        mPmp->StartProfiler(params);
-    } else if (!strcmp(aTopic, "profiler-stopped")) {
-        mPmp->StopProfiler();
-    } else if (!strcmp(aTopic, "profiler-subprocess-gather")) {
-        mPmp->GatherAsyncProfile();
-    } else if (!strcmp(aTopic, "profiler-subprocess")) {
-        nsCOMPtr<nsIProfileSaveEvent> pse = do_QueryInterface(aSubject);
-        mPmp->GatheredAsyncProfile(pse);
-    }
-    return NS_OK;
-}
-
-void
-PluginModuleChromeParent::InitPluginProfiling()
-{
-    nsCOMPtr<nsIObserverService> observerService = mozilla::services::GetObserverService();
-    if (observerService) {
-        mProfilerObserver = new PluginProfilerObserver(this);
-        observerService->AddObserver(mProfilerObserver, "profiler-started", false);
-        observerService->AddObserver(mProfilerObserver, "profiler-stopped", false);
-        observerService->AddObserver(mProfilerObserver, "profiler-subprocess-gather", false);
-        observerService->AddObserver(mProfilerObserver, "profiler-subprocess", false);
-    }
-}
-
-void
-PluginModuleChromeParent::ShutdownPluginProfiling()
-{
-    nsCOMPtr<nsIObserverService> observerService = mozilla::services::GetObserverService();
-    if (observerService) {
-        observerService->RemoveObserver(mProfilerObserver, "profiler-started");
-        observerService->RemoveObserver(mProfilerObserver, "profiler-stopped");
-        observerService->RemoveObserver(mProfilerObserver, "profiler-subprocess-gather");
-        observerService->RemoveObserver(mProfilerObserver, "profiler-subprocess");
-    }
-}
-
-void
-PluginModuleChromeParent::StartProfiler(nsIProfilerStartParams* aParams)
-{
-    if (NS_WARN_IF(!aParams)) {
-        return;
-    }
-
-    ProfilerInitParams ipcParams;
-
-    ipcParams.enabled() = true;
-    aParams->GetEntries(&ipcParams.entries());
-    aParams->GetInterval(&ipcParams.interval());
-    ipcParams.features() = aParams->GetFeatures();
-    ipcParams.threadFilters() = aParams->GetThreadFilterNames();
-
-    Unused << SendStartProfiler(ipcParams);
-
-    nsCOMPtr<nsIProfiler> profiler(do_GetService("@mozilla.org/tools/profiler;1"));
-    if (NS_WARN_IF(!profiler)) {
-        return;
-    }
-    nsCOMPtr<nsISupports> gatherer;
-    profiler->GetProfileGatherer(getter_AddRefs(gatherer));
-    mGatherer = static_cast<ProfileGatherer*>(gatherer.get());
-}
-
-void
-PluginModuleChromeParent::StopProfiler()
-{
-    mGatherer = nullptr;
-    Unused << SendStopProfiler();
-}
-
-void
-PluginModuleChromeParent::GatherAsyncProfile()
-{
-    if (NS_WARN_IF(!mGatherer)) {
-        return;
-    }
-    mGatherer->WillGatherOOPProfile();
-    Unused << SendGatherProfile();
-}
-
-void
-PluginModuleChromeParent::GatheredAsyncProfile(nsIProfileSaveEvent* aSaveEvent)
-{
-    if (aSaveEvent && !mProfile.IsEmpty()) {
-        aSaveEvent->AddSubProfile(mProfile.get());
-        mProfile.Truncate();
-    }
-}
-#endif // MOZ_ENABLE_PROFILER_SPS
-
 bool
 PluginModuleChromeParent::RecvProfile(const nsCString& aProfile)
 {
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    if (NS_WARN_IF(!mGatherer)) {
-        return true;
-    }
-
-    mProfile = aProfile;
-    mGatherer->GatheredOOPProfile();
-#endif
+  /*** STUB ***/
     return true;
 }
 

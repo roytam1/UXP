@@ -2612,15 +2612,6 @@ ContentChild::RecvShutdown()
 
   GetIPCChannel()->SetAbortOnError(false);
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  if (profiler_is_active()) {
-    // We're shutting down while we were profiling. Send the
-    // profile up to the parent so that we don't lose this
-    // information.
-    Unused << RecvGatherProfile();
-  }
-#endif
-
   // Start a timer that will insure we quickly exit after a reasonable
   // period of time. Prevents shutdown hangs after our connection to the
   // parent closes.

@@ -81,9 +81,6 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/ProcessHangMonitor.h"
 #include "mozilla/ProcessHangMonitorIPC.h"
-#ifdef MOZ_ENABLE_PROFILER_SPS
-#include "mozilla/ProfileGatherer.h"
-#endif
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Services.h"
 #include "mozilla/StaticPtr.h"
@@ -220,11 +217,6 @@
 #include "nsIBrowserSearchService.h"
 #endif
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-#include "nsIProfiler.h"
-#include "nsIProfileSaveEvent.h"
-#endif
-
 #ifdef XP_WIN
 #include "mozilla/widget/AudioSession.h"
 #endif
@@ -245,9 +237,6 @@ extern const char* kForceEnableE10sPref;
 
 using base::ChildPrivileges;
 using base::KillProcess;
-#ifdef MOZ_ENABLE_PROFILER_SPS
-using mozilla::ProfileGatherer;
-#endif
 
 using namespace mozilla::dom::power;
 using namespace mozilla::media;
@@ -514,14 +503,6 @@ static const char* sObserverTopics[] = {
   "file-watcher-update",
 #ifdef ACCESSIBILITY
   "a11y-init-or-shutdown",
-#endif
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  "profiler-started",
-  "profiler-stopped",
-  "profiler-paused",
-  "profiler-resumed",
-  "profiler-subprocess-gather",
-  "profiler-subprocess",
 #endif
   "cacheservice:empty-cache",
 };
@@ -1305,26 +1286,6 @@ ContentParent::Init()
   }
 #endif
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  nsCOMPtr<nsIProfiler> profiler(do_GetService("@mozilla.org/tools/profiler;1"));
-  bool profilerActive = false;
-  DebugOnly<nsresult> rv = profiler->IsActive(&profilerActive);
-  MOZ_ASSERT(NS_SUCCEEDED(rv));
-
-  if (profilerActive) {
-    nsCOMPtr<nsIProfilerStartParams> currentProfilerParams;
-    rv = profiler->GetStartParams(getter_AddRefs(currentProfilerParams));
-    MOZ_ASSERT(NS_SUCCEEDED(rv));
-
-    nsCOMPtr<nsISupports> gatherer;
-    rv = profiler->GetProfileGatherer(getter_AddRefs(gatherer));
-    MOZ_ASSERT(NS_SUCCEEDED(rv));
-    mGatherer = static_cast<ProfileGatherer*>(gatherer.get());
-
-    StartProfiler(currentProfilerParams);
-  }
-#endif
-
   RefPtr<GeckoMediaPluginServiceParent> gmps(GeckoMediaPluginServiceParent::GetSingleton());
   gmps->UpdateContentProcessGMPCapabilities();
 }
@@ -1750,12 +1711,6 @@ ContentParent::ActorDestroy(ActorDestroyReason why)
   RecvRemoveGeolocationListener();
 
   mConsoleService = nullptr;
-
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  if (mGatherer && !mProfile.IsEmpty()) {
-    mGatherer->OOPExitProfile(mProfile);
-  }
-#endif
 
   if (obs) {
     RefPtr<nsHashPropertyBag> props = new nsHashPropertyBag();
@@ -2556,27 +2511,6 @@ ContentParent::Observe(nsISupports* aSubject,
     NS_ASSERTION(!mSubprocess, "Close should have nulled mSubprocess");
   }
 
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  // Need to do this before the mIsAlive check to avoid missing profiles.
-  if (!strcmp(aTopic, "profiler-subprocess-gather")) {
-    if (mGatherer) {
-      mGatherer->WillGatherOOPProfile();
-      if (mIsAlive && mSubprocess) {
-        Unused << SendGatherProfile();
-      }
-    }
-  }
-  else if (!strcmp(aTopic, "profiler-subprocess")) {
-    nsCOMPtr<nsIProfileSaveEvent> pse = do_QueryInterface(aSubject);
-    if (pse) {
-      if (!mProfile.IsEmpty()) {
-        pse->AddSubProfile(mProfile.get());
-        mProfile.Truncate();
-      }
-    }
-  }
-#endif
-
   if (!mIsAlive || !mSubprocess)
     return NS_OK;
 
@@ -2661,22 +2595,6 @@ ContentParent::Observe(nsISupports* aSubject,
       // accessibility gets shutdown in chrome process.
       Unused << SendShutdownA11y();
     }
-  }
-#endif
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  else if (!strcmp(aTopic, "profiler-started")) {
-    nsCOMPtr<nsIProfilerStartParams> params(do_QueryInterface(aSubject));
-    StartProfiler(params);
-  }
-  else if (!strcmp(aTopic, "profiler-stopped")) {
-    mGatherer = nullptr;
-    Unused << SendStopProfiler();
-  }
-  else if (!strcmp(aTopic, "profiler-paused")) {
-    Unused << SendPauseProfiler(true);
-  }
-  else if (!strcmp(aTopic, "profiler-resumed")) {
-    Unused << SendPauseProfiler(false);
   }
 #endif
   else if (!strcmp(aTopic, "cacheservice:empty-cache")) {
@@ -4559,13 +4477,7 @@ ContentParent::RecvCreateWindow(PBrowserParent* aThisTab,
 bool
 ContentParent::RecvProfile(const nsCString& aProfile)
 {
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  if (NS_WARN_IF(!mGatherer)) {
-    return true;
-  }
-  mProfile = aProfile;
-  mGatherer->GatheredOOPProfile();
-#endif
+  /*** STUB ***/
   return true;
 }
 
@@ -4658,29 +4570,7 @@ ContentParent::RecvNotifyBenchmarkResult(const nsString& aCodecName,
 void
 ContentParent::StartProfiler(nsIProfilerStartParams* aParams)
 {
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  if (NS_WARN_IF(!aParams)) {
-    return;
-  }
-
-  ProfilerInitParams ipcParams;
-
-  ipcParams.enabled() = true;
-  aParams->GetEntries(&ipcParams.entries());
-  aParams->GetInterval(&ipcParams.interval());
-  ipcParams.features() = aParams->GetFeatures();
-  ipcParams.threadFilters() = aParams->GetThreadFilterNames();
-
-  Unused << SendStartProfiler(ipcParams);
-
-  nsCOMPtr<nsIProfiler> profiler(do_GetService("@mozilla.org/tools/profiler;1"));
-  if (NS_WARN_IF(!profiler)) {
-    return;
-  }
-  nsCOMPtr<nsISupports> gatherer;
-  profiler->GetProfileGatherer(getter_AddRefs(gatherer));
-  mGatherer = static_cast<ProfileGatherer*>(gatherer.get());
-#endif
+  /*** STUB ***/
 }
 
 bool

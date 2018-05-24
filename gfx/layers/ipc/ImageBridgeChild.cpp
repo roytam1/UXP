@@ -73,24 +73,10 @@ protected:
 
   MOZ_IS_CLASS_INIT
   void Init() {
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    mPseudoStackHack = mozilla_get_pseudo_stack();
-#endif
   }
 
   void CleanUp() {
-#ifdef MOZ_ENABLE_PROFILER_SPS
-    mPseudoStackHack = nullptr;
-#endif
   }
-
-private:
-
-#ifdef MOZ_ENABLE_PROFILER_SPS
-  // This is needed to avoid a spurious leak report.  There's no other
-  // use for it.  See bug 1239504 and bug 1215265.
-  MOZ_INIT_OUTSIDE_CTOR PseudoStack* mPseudoStackHack;
-#endif
 };
 }
 
