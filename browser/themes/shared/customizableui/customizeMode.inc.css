@@ -457,5 +457,3 @@ toolbarpaletteitem[place="toolbar"]:not([mousedown="true"]):-moz-focusring {
 .customization-lwtheme-menu-footeritem:first-child {
   border-inline-end: 1px solid var(--panel-separator-color);
 }
-
-%include customizeTip.inc.css

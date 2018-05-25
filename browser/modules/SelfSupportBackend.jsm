@@ -25,8 +25,6 @@ const PREF_ENABLED = "browser.selfsupport.enabled";
 const PREF_URL = "browser.selfsupport.url";
 // Unified Telemetry status.
 const PREF_TELEMETRY_UNIFIED = "toolkit.telemetry.unified";
-// UITour status.
-const PREF_UITOUR_ENABLED = "browser.uitour.enabled";
 
 // Controls the interval at which the self support page tries to reload in case of
 // errors.
@@ -43,8 +41,6 @@ const PREF_LOG_DUMP = PREF_BRANCH_LOG + "dump";
 
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-
-const UITOUR_FRAME_SCRIPT = "chrome://browser/content/content-UITour.js";
 
 // Whether the FHR/Telemetry unification features are enabled.
 // Changing this pref requires a restart.
@@ -90,8 +86,7 @@ var SelfSupportBackendInternal = {
     }
 
     // Make sure UITour is enabled.
-    let uiTourEnabled = Preferences.get(PREF_UITOUR_ENABLED, false);
-    if (!uiTourEnabled) {
+    if (true) {
       this._log.config("init - Disabling SelfSupport because UITour is disabled.");
       return;
     }
@@ -253,9 +248,6 @@ var SelfSupportBackendInternal = {
 
     // Create the hidden browser.
     this._makeHiddenBrowser(url).then(() => {
-      // Load UITour frame script.
-      this._browser.messageManager.loadFrameScript(UITOUR_FRAME_SCRIPT, true);
-
       // We need to watch for load errors as well and, in case, try to reload
       // the self support page.
       const webFlags = Ci.nsIWebProgress.NOTIFY_STATE_WINDOW |

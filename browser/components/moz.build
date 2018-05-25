@@ -21,7 +21,6 @@ DIRS += [
     'shell',
     'selfsupport',
     'syncedtabs',
-    'uitour',
     'translation',
 ]
 

@@ -3192,24 +3192,6 @@ menulist.translate-infobar-element > .menulist-dropmarker {
 }
 
 @media (min-resolution: 2dppx) {
-  .customization-tipPanel-infoBox {
-    background-image: url(chrome://browser/skin/customizableui/info-icon-customizeTip@2x.png);
-    background-size: 25px 25px;
-  }
-
-  .customization-tipPanel-contentImage {
-    list-style-image: url(chrome://browser/skin/customizableui/customize-illustration@2x.png);
-  }
-
-  .customization-tipPanel-contentImage:-moz-locale-dir(rtl) {
-    list-style-image: url(chrome://browser/skin/customizableui/customize-illustration-rtl@2x.png);
-  }
-
-  #customization-tipPanel > .panel-arrowcontainer > .panel-arrowbox > .panel-arrow[side="left"],
-  #customization-tipPanel > .panel-arrowcontainer > .panel-arrowbox > .panel-arrow[side="right"] {
-    list-style-image: url("chrome://browser/skin/customizableui/panelarrow-customizeTip@2x.png");
-  }
-
   .customization-lwtheme-menu-theme[defaulttheme] {
     list-style-image: url(chrome://browser/skin/theme-switcher-icon@2x.png);
   }
@@ -3277,24 +3259,6 @@ menulist.translate-infobar-element > .menulist-dropmarker {
 
 #TabsToolbar > .private-browsing-indicator:-moz-locale-dir(rtl) {
   -moz-box-ordinal-group: 0;
-}
-
-%include ../shared/UITour.inc.css
-
-#UITourTooltipDescription {
-  font-size: 1.18rem;
-  line-height: 2rem;
-}
-
-#UITourTooltipClose {
-  margin-inline-end: -10px;
-  margin-top: -14px;
-}
-
-@media (min-resolution: 2dppx) {
-  #UITourTooltipClose > .toolbarbutton-icon {
-    width: 16px;
-  }
 }
 
 %include ../shared/contextmenu.inc.css

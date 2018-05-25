@@ -2431,14 +2431,6 @@ notification.pluginVulnerable > .notification-inner > .messageCloseButton {
   border-bottom: 1px solid @toolbarShadowColor@;
 }
 
-#customization-tipPanel > .panel-arrowcontainer > .panel-arrowbox > .panel-arrow[side="left"] {
-  margin-right: -2px;
-}
-
-#customization-tipPanel > .panel-arrowcontainer > .panel-arrowbox > .panel-arrow[side="right"] {
-  margin-left: -2px;
-}
-
 /* End customization mode */
 
 /* Private browsing indicators */
@@ -2541,18 +2533,6 @@ notification.pluginVulnerable > .notification-inner > .messageCloseButton {
 }
 
 /* End private browsing indicators */
-
-%include ../shared/UITour.inc.css
-
-#UITourTooltipButtons {
-  /**
-   * Override the --arrowpanel-padding so the background extends
-   * to the sides and bottom of the panel.
-   */
-  margin-left: -10px;
-  margin-right: -10px;
-  margin-bottom: -10px;
-}
 
 %include ../shared/contextmenu.inc.css
 

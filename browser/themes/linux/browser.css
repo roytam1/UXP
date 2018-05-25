@@ -1543,51 +1543,12 @@ notification.pluginVulnerable > .notification-inner > .messageCloseButton:not(:h
   border-left: 3px solid transparent;
 }
 
-/* The :hover:active style from toolkit doesn't seem to work in this panel so just use :active. */
-.customization-tipPanel-closeBox > .close-icon:active {
-  background-image: -moz-image-rect(url("chrome://global/skin/icons/close.svg"), 0, 48, 16, 32);
-}
-
 /* End customization mode */
 
 
 #main-window[privatebrowsingmode=temporary] #private-browsing-indicator {
   background: url("chrome://browser/skin/privatebrowsing-mask.png") center no-repeat;
   width: 40px;
-}
-
-%include ../shared/UITour.inc.css
-
-#UITourHighlight {
-  /* Below are some fixes for people without an X compositor on Linux.
-     This is why we can't have nice things: */
-  /* Animations don't repaint properly without an X compositor. */
-  animation-name: none !important;
-  /* Opacity rounds to 0 or 1 on Linux without an X compositor so make the
-     background be transparent in that case by having all alpha values < 0.5 */
-  background-image: radial-gradient(50% 100%, rgba(0,149,220,0.3) 50%, rgba(0,149,220,0.49) 100%);
-  /* The highlight isn't anti-aliased without an X compositor so make it thicker.
-     Make it a darker color since we don't have the box-shadow in this case. */
-  border: 4px solid rgb(0,149,220);
-}
-
-#UITourTooltipDescription {
-  font-size: 1.05rem;
-}
-
-#UITourTooltipClose {
-  margin-inline-end: -4px;
-  height: 16px;
-  width: 16px;
-}
-
-/**
- * Override the --arrowpanel-padding so the background extends
- * to the sides and bottom of the panel.
- */
-#UITourTooltipButtons {
-  margin-left: -10px;
-  margin-bottom: -10px;
 }
 
 %include ../shared/contextmenu.inc.css

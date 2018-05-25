@@ -90,7 +90,6 @@ function CustomizeMode(aWindow) {
   // to the user when in customizing mode.
   this.visiblePalette = this.document.getElementById(kPaletteId);
   this.paletteEmptyNotice = this.document.getElementById("customization-empty");
-  this.tipPanel = this.document.getElementById("customization-tipPanel");
   if (Services.prefs.getCharPref("general.skins.selectedSkin") != "classic/1.0") {
     let lwthemeButton = this.document.getElementById("customization-lwtheme-button");
     lwthemeButton.setAttribute("hidden", "true");
@@ -355,7 +354,6 @@ CustomizeMode.prototype = {
       this._updateEmptyPaletteNotice();
 
       this._updateLWThemeButtonIcon();
-      this.maybeShowTip(panelHolder);
 
       this._handler.isEnteringCustomizeMode = false;
       panelContents.removeAttribute("customize-transitioning");
@@ -399,8 +397,6 @@ CustomizeMode.prototype = {
                 "We'll exit after resetting has finished.");
       return;
     }
-
-    this.hideTip();
 
     this._handler.isExitingCustomizeMode = true;
 
@@ -673,46 +669,6 @@ CustomizeMode.prototype = {
 
   _getHeaderImageRef: function(aData) {
     return "url(\"" + aData.headerURL.replace(/"/g, '\\"') + "\")";
-  },
-
-  maybeShowTip: function(aAnchor) {
-    let shown = false;
-    const kShownPref = "browser.customizemode.tip0.shown";
-    try {
-      shown = Services.prefs.getBoolPref(kShownPref);
-    } catch (ex) {}
-    if (shown)
-      return;
-
-    let anchorNode = aAnchor || this.document.getElementById("customization-panelHolder");
-    let messageNode = this.tipPanel.querySelector(".customization-tipPanel-contentMessage");
-    if (!messageNode.childElementCount) {
-      // Put the tip contents in the popup.
-      let bundle = this.document.getElementById("bundle_browser");
-      const kLabelClass = "customization-tipPanel-link";
-      messageNode.innerHTML = bundle.getFormattedString("customizeTips.tip0", [
-        "<label class=\"customization-tipPanel-em\" value=\"" +
-          bundle.getString("customizeTips.tip0.hint") + "\"/>",
-        this.document.getElementById("bundle_brand").getString("brandShortName"),
-        "<label class=\"" + kLabelClass + " text-link\" value=\"" +
-        bundle.getString("customizeTips.tip0.learnMore") + "\"/>"
-      ]);
-
-      messageNode.querySelector("." + kLabelClass).addEventListener("click", () => {
-        let url = Services.urlFormatter.formatURLPref("browser.customizemode.tip0.learnMoreUrl");
-        let browser = this.browser;
-        browser.selectedTab = browser.addTab(url);
-        this.hideTip();
-      });
-    }
-
-    this.tipPanel.hidden = false;
-    this.tipPanel.openPopup(anchorNode);
-    Services.prefs.setBoolPref(kShownPref, true);
-  },
-
-  hideTip: function() {
-    this.tipPanel.hidePopup();
   },
 
   _getCustomizableChildForNode: function(aNode) {

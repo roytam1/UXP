@@ -17,8 +17,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "RecentWindow",
   "resource:///modules/RecentWindow.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "CustomizableUI",
   "resource:///modules/CustomizableUI.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "UITour",
-  "resource:///modules/UITour.jsm");
 XPCOMUtils.defineLazyGetter(this, "Timer", function() {
   let timer = {};
   Cu.import("resource://gre/modules/Timer.jsm", timer);
@@ -174,11 +172,6 @@ this.BrowserUITelemetry = {
                                          this.getToolbarMeasures.bind(this));
     UITelemetry.addSimpleMeasureFunction("contextmenu",
                                          this.getContextMenuInfo.bind(this));
-    // Ensure that UITour.jsm remains lazy-loaded, yet always registers its
-    // simple measure function with UITelemetry.
-    UITelemetry.addSimpleMeasureFunction("UITour",
-                                         () => UITour.getTelemetry());
-
     UITelemetry.addSimpleMeasureFunction("syncstate",
                                          this.getSyncState.bind(this));
 
