@@ -588,6 +588,7 @@ Tester.prototype = {
             sidebar.setAttribute("src", "about:blank");
 
             SelfSupportBackend.uninit();
+            SocialShare.uninit();
           }
 
           // Destroy BackgroundPageThumbs resources.

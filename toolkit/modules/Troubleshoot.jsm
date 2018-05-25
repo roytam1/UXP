@@ -83,6 +83,7 @@ const PREFS_WHITELIST = [
   "services.sync.lastSync",
   "services.sync.numClients",
   "services.sync.engine.",
+  "social.enabled",
   "storage.vacuum.last.",
   "svg.",
   "toolkit.startup.recent_crashes",

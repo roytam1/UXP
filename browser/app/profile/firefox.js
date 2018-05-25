@@ -1118,6 +1118,13 @@ pref("pdfjs.previousHandler.alwaysAskBeforeHandling", false);
 // (This is intentionally on the high side; see bug 746055.)
 pref("image.mem.max_decoded_image_kb", 256000);
 
+pref("social.sidebar.unload_timeout_ms", 10000);
+
+// Activation from inside of share panel is possible if activationPanelEnabled
+// is true. Pref'd off for release while usage testing is done through beta.
+pref("social.share.activationPanelEnabled", true);
+pref("social.shareDirectory", "https://activations.cdn.mozilla.net/sharePanel.html");
+
 // Block insecure active content on https pages
 pref("security.mixed_content.block_active_content", true);
 

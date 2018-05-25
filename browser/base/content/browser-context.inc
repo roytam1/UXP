@@ -85,6 +85,10 @@
                 label="&bookmarkThisLinkCmd.label;"
                 accesskey="&bookmarkThisLinkCmd.accesskey;"
                 oncommand="gContextMenu.bookmarkLink();"/>
+      <menuitem id="context-sharelink"
+                label="&shareLink.label;"
+                accesskey="&shareLink.accesskey;"
+                oncommand="gContextMenu.shareLink();"/>
       <menuitem id="context-savelink"
                 label="&saveLinkCmd.label;"
                 accesskey="&saveLinkCmd.accesskey;"
@@ -208,6 +212,10 @@
                 label="&saveImageCmd.label;"
                 accesskey="&saveImageCmd.accesskey;"
                 oncommand="gContextMenu.saveMedia();"/>
+      <menuitem id="context-shareimage"
+                label="&shareImage.label;"
+                accesskey="&shareImage.accesskey;"
+                oncommand="gContextMenu.shareImage();"/>
       <menuitem id="context-sendimage"
                 label="&emailImageCmd.label;"
                 accesskey="&emailImageCmd.accesskey;"
@@ -229,6 +237,10 @@
                 label="&saveVideoCmd.label;"
                 accesskey="&saveVideoCmd.accesskey;"
                 oncommand="gContextMenu.saveMedia();"/>
+      <menuitem id="context-sharevideo"
+                label="&shareVideo.label;"
+                accesskey="&shareVideo.accesskey;"
+                oncommand="gContextMenu.shareVideo();"/>
       <menuitem id="context-saveaudio"
                 label="&saveAudioCmd.label;"
                 accesskey="&saveAudioCmd.accesskey;"
@@ -259,6 +271,10 @@
                 accesskey="&hidePluginCmd.accesskey;"
                 oncommand="gContextMenu.hidePlugin();"/>
       <menuseparator id="context-sep-ctp"/>
+      <menuitem id="context-sharepage"
+                label="&sharePageCmd.label;"
+                accesskey="&sharePageCmd.accesskey;"
+                oncommand="SocialShare.sharePage();"/>
       <menuitem id="context-savepage"
                 label="&savePageCmd.label;"
                 accesskey="&savePageCmd.accesskey2;"
@@ -318,6 +334,10 @@
         <menupopup id="context-sendlinktodevice-popup"
                    onpopupshowing="gFxAccounts.populateSendTabToDevicesMenu(event.target, gContextMenu.linkURL, gContextMenu.linkTextStr);"/>
       </menu>
+      <menuitem id="context-shareselect"
+                label="&shareSelect.label;"
+                accesskey="&shareSelect.accesskey;"
+                oncommand="gContextMenu.shareSelect();"/>
       <menuseparator id="frame-sep"/>
       <menu id="frame" label="&thisFrameMenu.label;" accesskey="&thisFrameMenu.accesskey;">
         <menupopup>
