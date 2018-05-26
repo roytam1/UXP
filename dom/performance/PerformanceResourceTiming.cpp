@@ -6,6 +6,7 @@
 
 #include "PerformanceResourceTiming.h"
 #include "mozilla/dom/PerformanceResourceTimingBinding.h"
+#include "mozilla/Unused.h"
 
 using namespace mozilla::dom;
 

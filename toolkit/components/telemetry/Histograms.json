@@ -8312,33 +8312,6 @@
     "n_values": 10,
     "description": "How often would blocked mixed content be allowed if HSTS upgrades were allowed? 0=display/no-HSTS, 1=display/HSTS, 2=active/no-HSTS, 3=active/HSTS"
   },
-  "MIXED_CONTENT_HSTS_PRIMING": {
-    "alert_emails": ["seceng@mozilla.org"],
-    "bug_numbers": [1246540],
-    "expires_in_version": "60",
-    "kind": "enumerated",
-    "n_values": 16,
-    "description": "How often would blocked mixed content be allowed if HSTS upgrades were allowed, including how often would we send an HSTS priming request? 0=display/no-HSTS, 1=display/HSTS, 2=active/no-HSTS, 3=active/HSTS, 4=display/no-HSTS-priming, 5=display/do-HSTS-priming, 6=active/no-HSTS-priming, 7=active/do-HSTS-priming"
-  },
-  "MIXED_CONTENT_HSTS_PRIMING_RESULT": {
-    "alert_emails": ["seceng@mozilla.org"],
-    "bug_numbers": [1246540],
-    "expires_in_version": "60",
-    "kind": "enumerated",
-    "n_values": 16,
-    "description": "How often do we get back an HSTS priming result which upgrades the connection to HTTPS? 0=cached (no upgrade), 1=cached (do upgrade), 2=cached (blocked), 3=already upgraded, 4=priming succeeded, 5=priming succeeded (block due to pref), 6=priming succeeded (no upgrade due to pref), 7=priming failed (block), 8=priming failed (accept)"
-  },
-  "HSTS_PRIMING_REQUEST_DURATION": {
-    "alert_emails": ["seceng-telemetry@mozilla.org"],
-    "bug_numbers": [1311893],
-    "expires_in_version": "58",
-    "kind": "exponential",
-    "low": 100,
-    "high": 30000,
-    "n_buckets": 100,
-    "keyed": true,
-    "description": "The amount of time required for HSTS priming requests (ms), keyed by success or failure of the priming request. (success, failure)"
-  },
   "MIXED_CONTENT_OBJECT_SUBREQUEST": {
     "alert_emails": ["seceng@mozilla.org"],
     "bug_numbers": [1244116],

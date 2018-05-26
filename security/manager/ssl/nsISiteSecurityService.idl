@@ -188,15 +188,6 @@ interface nsISiteSecurityService : nsISupports
                         in int64_t aExpires, in unsigned long aPinCount,
                         [array, size_is(aPinCount)] in string aSha256Pins,
                         [optional] in boolean aIsPreload);
-
-    /**
-     * Mark a host as declining to provide a given security state so that features
-     * such as HSTS priming will not flood a server with requests.
-     *
-     * @param aURI the nsIURI that this applies to
-     * @param aMaxAge lifetime (in seconds) of this negative cache
-     */
-    [noscript] void cacheNegativeHSTSResult(in nsIURI aURI, in unsigned long long aMaxAge);
 };
 
 %{C++

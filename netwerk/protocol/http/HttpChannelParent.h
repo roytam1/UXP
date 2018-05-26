@@ -162,8 +162,6 @@ protected:
                                    const uint32_t& loadFlags,
                                    const OptionalURIParams& apiRedirectUri,
                                    const OptionalCorsPreflightArgs& aCorsPreflightArgs,
-                                   const bool& aForceHSTSPriming,
-                                   const bool& aMixedContentWouldBlock,
                                    const bool& aChooseAppcache) override;
   virtual bool RecvUpdateAssociatedContentSecurity(const int32_t& broken,
                                                    const int32_t& no) override;

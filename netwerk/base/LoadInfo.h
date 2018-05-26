@@ -111,9 +111,7 @@ private:
            const nsTArray<nsCString>& aUnsafeHeaders,
            bool aForcePreflight,
            bool aIsPreflight,
-           bool aLoadTriggeredFromExternal,
-           bool aForceHSTSPriming,
-           bool aMixedContentWouldBlock);
+           bool aLoadTriggeredFromExternal);
   LoadInfo(const LoadInfo& rhs);
 
   friend nsresult
@@ -159,9 +157,6 @@ private:
   bool                             mForcePreflight;
   bool                             mIsPreflight;
   bool                             mLoadTriggeredFromExternal;
-
-  bool                             mForceHSTSPriming : 1;
-  bool                             mMixedContentWouldBlock : 1;
 };
 
 } // namespace net

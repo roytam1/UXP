@@ -16,6 +16,7 @@
 #include "xpcprivate.h"
 #include "mozilla/Casting.h"
 #include "mozilla/Telemetry.h"
+#include "mozilla/Unused.h"
 #include "nsAutoPtr.h"
 
 using namespace js;

@@ -356,14 +356,6 @@ nsSiteSecurityService::SetHSTSState(uint32_t aType,
 }
 
 NS_IMETHODIMP
-nsSiteSecurityService::CacheNegativeHSTSResult(nsIURI* aSourceURI,
-                                               uint64_t aMaxAge)
-{
-  return SetHSTSState(nsISiteSecurityService::HEADER_HSTS, aSourceURI,
-                      aMaxAge, false, 0, SecurityPropertyNegative);
-}
-
-NS_IMETHODIMP
 nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI,
                                    uint32_t aFlags)
 {

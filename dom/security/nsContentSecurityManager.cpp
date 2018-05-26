@@ -8,8 +8,6 @@
 #include "nsContentUtils.h"
 #include "nsCORSListenerProxy.h"
 #include "nsIStreamListener.h"
-#include "nsIDocument.h"
-#include "nsMixedContentBlocker.h"
 #include "nsCDefaultURIFixup.h"
 #include "nsIURIFixup.h"
 
@@ -505,13 +503,6 @@ DoContentSecurityChecks(nsIChannel* aChannel, nsILoadInfo* aLoadInfo)
       return NS_ERROR_CONTENT_BLOCKED_SHOW_ALT;
     }
     return NS_ERROR_CONTENT_BLOCKED;
-  }
-
-  if (nsMixedContentBlocker::sSendHSTSPriming) {
-    rv = nsMixedContentBlocker::MarkLoadInfoForPriming(uri,
-                                                       requestingContext,
-                                                       aLoadInfo);
-    return rv;
   }
 
   return NS_OK;
