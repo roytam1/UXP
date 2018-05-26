@@ -1459,14 +1459,14 @@ richlistitem[type~="action"][actiontype="switchtab"][selected="true"] > .ac-url-
         linear-gradient(-moz-dialog, -moz-dialog);
 }
 
-.tabbrowser-tab:-moz-lwtheme {
-    color: inherit;
-    /* 0.99 opacity rquired to force an active layer, see bug #1028369 */
-    opacity: 0.99;
+.tabbrowser-tab[visuallyselected=true]:not(:-moz-lwtheme) {
+  /* overriding tabbox.css */
+  color: inherit;
 }
 
-.tabbrowser-tab:-moz-lwtheme:not([selected="true"]) {
-    opacity: 0.9;
+.tabbrowser-tab[visuallyselected=true] {
+  /* overriding tabbox.css */
+  text-shadow: inherit;
 }
 
 /* Remove highlight fuzz on dark themes */
