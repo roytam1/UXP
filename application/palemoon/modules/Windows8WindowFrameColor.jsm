@@ -11,15 +11,15 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/WindowsRegistry.jsm");
 
-const Windows8WindowFrameColor = {
+var Windows8WindowFrameColor = {
   _windowFrameColor: null,
 
   get_win8: function() {
     if (this._windowFrameColor)
       return this._windowFrameColor;
     
-    let HKCU = Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER;
-    let dwmKey = "Software\\Microsoft\\Windows\\DWM";
+    const HKCU = Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER;
+    const dwmKey = "Software\\Microsoft\\Windows\\DWM";
 
     // Window frame base color component values when Color Intensity is at 0.
     let frameBaseColor = 217;
