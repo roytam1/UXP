@@ -28,7 +28,7 @@ include $(topsrcdir)/config/config.mk
 ifdef MOZ_LINUX_SSE2_STARTUP_ERROR
 CXXFLAGS := $(filter-out -march=% -msse2 -mfpmath=sse,$(CXXFLAGS))
 CXX := $(filter-out -march=% -msse2 -mfpmath=sse,$(CXX))
-CXXFLAGS += -mno-sse2 -mfpmath=387
+CXXFLAGS += -msse -mno-sse2 -mfpmath=387
 endif
 
 ifeq ($(OS_ARCH),WINNT)
