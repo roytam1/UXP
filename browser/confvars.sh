@@ -18,6 +18,11 @@ if test "$OS_ARCH" = "WINNT"; then
   MOZ_MAINTENANCE_SERVICE=
 fi
 
+# Display an error on non-SSE2 Linux systems
+if test "$OS_ARCH" = "Linux"; then
+  MOZ_LINUX_SSE2_STARTUP_ERROR=1
+fi
+
 # For Basilisk we want to use 52.9.YYYY.MM.DD as MOZ_APP_VERSION in release
 # builds so add-on developers have something to target while maintaining
 # Firefox compatiblity.
