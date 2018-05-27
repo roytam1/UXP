@@ -176,8 +176,8 @@ if test "$GNU_CC"; then
         CFLAGS="$CFLAGS -ffunction-sections -fdata-sections"
         CXXFLAGS="$CXXFLAGS -ffunction-sections -fdata-sections"
     fi
-    CFLAGS="$CFLAGS -fno-math-errno"
-    CXXFLAGS="$CXXFLAGS -fno-exceptions -fno-math-errno"
+    CFLAGS="$CFLAGS -fno-math-errno -msse2 -mfpmath=sse"
+    CXXFLAGS="$CXXFLAGS -fno-exceptions -fno-math-errno -msse2 -mfpmath=sse"
 
     if test -z "$CLANG_CC"; then
         case "$CC_VERSION" in
