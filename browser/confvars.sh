@@ -18,9 +18,11 @@ if test "$OS_ARCH" = "WINNT"; then
   MOZ_MAINTENANCE_SERVICE=
 fi
 
-# Display an error on non-SSE2 Linux systems
-if test "$OS_ARCH" = "Linux"; then
-  MOZ_LINUX_SSE2_STARTUP_ERROR=1
+# Display an error on non-SSE2 32-bit Linux systems
+if ! test "$HAVE_64BIT_BUILD"; then
+  if test "$OS_ARCH" = "Linux"; then
+    MOZ_LINUX_SSE2_STARTUP_ERROR=1
+  fi
 fi
 
 # For Basilisk we want to use 52.9.YYYY.MM.DD as MOZ_APP_VERSION in release
