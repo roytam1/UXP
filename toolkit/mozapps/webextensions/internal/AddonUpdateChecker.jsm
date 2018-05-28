@@ -26,6 +26,12 @@ const XMLURI_PARSE_ERROR    = "http://www.mozilla.org/newlayout/xml/parsererror.
 
 const PREF_UPDATE_REQUIREBUILTINCERTS = "extensions.update.requireBuiltInCerts";
 
+#ifdef MOZ_PHOENIX
+const PREF_EM_MIN_COMPAT_PLATFORM_VERSION = "extensions.minCompatiblePlatformVersion";
+const FIREFOX_ID                      = "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+const FIREFOX_APPCOMPATVERSION        = "56.9"
+#endif
+
 Components.utils.import("resource://gre/modules/Services.jsm");
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 
@@ -446,6 +452,10 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
  * @throws if the update manifest is invalid in any way
  */
 function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
+#ifndef MOZ_PHOENIX
+  throw Components.Exception("This application does not support JSON update manifests");
+#endif
+
   if (aUpdateKey)
     throw Components.Exception("Update keys are not supported for JSON update manifests");
 
@@ -515,10 +525,10 @@ function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
     let app = getProperty(applications, "gecko", "object");
 
     let appEntry = {
-      id: TOOLKIT_ID,
+      id: FIREFOX_ID,
       minVersion: getProperty(app, "strict_min_version", "string",
-                              AddonManagerPrivate.webExtensionsMinPlatformVersion),
-      maxVersion: "*",
+                              Services.prefs.getCharPref(PREF_EM_MIN_COMPAT_PLATFORM_VERSION)),
+      maxVersion: FIREFOX_APPCOMPATVERSION,
     };
 
     let result = {
@@ -539,7 +549,6 @@ function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
       }
 
       appEntry.maxVersion = getProperty(app, "strict_max_version", "string");
-      result.strictCompatibility = appEntry.maxVersion != "*";
     } else if ("advisory_max_version" in app) {
       appEntry.maxVersion = getProperty(app, "advisory_max_version", "string");
     }
