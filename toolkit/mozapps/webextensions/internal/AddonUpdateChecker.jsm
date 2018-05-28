@@ -452,10 +452,7 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
  * @throws if the update manifest is invalid in any way
  */
 function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
-#ifndef MOZ_PHOENIX
-  throw Components.Exception("This application does not support JSON update manifests");
-#endif
-
+#ifdef MOZ_PHOENIX
   if (aUpdateKey)
     throw Components.Exception("Update keys are not supported for JSON update manifests");
 
@@ -560,6 +557,9 @@ function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
     results.push(result);
   }
   return results;
+#else
+  throw Components.Exception("This application does not support JSON update manifests");
+#endif
 }
 
 /**
