@@ -4885,12 +4885,6 @@ if test "$USE_FC_FREETYPE"; then
 fi
 
 dnl ========================================================
-dnl Check if we need the Linux SSE2 error dialog
-dnl ========================================================
-
-AC_SUBST(MOZ_LINUX_SSE2_STARTUP_ERROR)
-
-dnl ========================================================
 dnl Check for pixman and cairo
 dnl ========================================================
 

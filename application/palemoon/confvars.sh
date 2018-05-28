@@ -98,11 +98,6 @@ if test "$OS_ARCH" = "WINNT" -o \
   MOZ_BUNDLED_FONTS=1
 fi
 
-# Display an error on non-SSE2 Linux systems
-if test "$OS_ARCH" = "Linux"; then
-  MOZ_LINUX_SSE2_STARTUP_ERROR=1
-fi
-
 # Short-circuit a few services to be removed
 MOZ_MAINTENANCE_SERVICE=
 MOZ_SERVICES_HEALTHREPORT=
