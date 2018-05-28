@@ -10,10 +10,10 @@ DIRS += ['internal']
 TEST_DIRS += ['test']
 
 XPIDL_SOURCES += [
-    'amIAddonManager.idl',
-    'amIAddonPathService.idl',
-    'amIWebInstaller.idl',
-    'amIWebInstallListener.idl',
+    '../extensions/amIAddonManager.idl',
+    '../extensions/amIAddonPathService.idl',
+    '../extensions/amIWebInstaller.idl',
+    '../extensions/amIWebInstallListener.idl',
 ]
 
 XPIDL_MODULE = 'extensions'

@@ -5,6 +5,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 EXTRA_JS_MODULES.addons += [
+    '../../extensions/internal/ProductAddonChecker.jsm',
+    '../../extensions/internal/SpellCheckDictionaryBootstrap.js',
     'AddonLogging.jsm',
     'AddonRepository.jsm',
     'AddonRepository_SQLiteMigrator.jsm',
@@ -13,8 +15,6 @@ EXTRA_JS_MODULES.addons += [
     'E10SAddonsRollout.jsm',
     'GMPProvider.jsm',
     'LightweightThemeImageOptimizer.jsm',
-    'ProductAddonChecker.jsm',
-    'SpellCheckDictionaryBootstrap.js',
     'WebExtensionBootstrap.js',
     'XPIProvider.jsm',
     'XPIProviderUtils.js',
