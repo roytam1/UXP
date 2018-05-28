@@ -10,7 +10,7 @@ function debug(msg) {
  * Listens for and handles content events that we need for the
  * session store service to be notified of state changes in content.
  */
-let EventListener = {
+var EventListener = {
 
   DOM_EVENTS: [
     "pageshow", "change", "input"

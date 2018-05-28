@@ -144,6 +144,7 @@ const FIREFOX_APPCOMPATVERSION        = "56.9"
 
 // The value for this is in Makefile.in
 #expand const DB_SCHEMA                       = __MOZ_EXTENSIONS_DB_SCHEMA__;
+XPCOMUtils.defineConstant(this, "DB_SCHEMA", DB_SCHEMA);
 #ifdef MOZ_DEVTOOLS
 const NOTIFICATION_TOOLBOXPROCESS_LOADED      = "ToolboxProcessLoaded";
 #endif
