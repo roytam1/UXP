@@ -68,8 +68,6 @@ browser.jar:
         skin/classic/browser/urlbar-arrow.png
         skin/classic/browser/urlbar-popup-blocked.png
         skin/classic/browser/urlbar-history-dropmarker.png
-        skin/classic/browser/webapps-16.png
-        skin/classic/browser/webapps-64.png
         skin/classic/browser/web-notifications-icon.svg
         skin/classic/browser/web-notifications-tray.svg
         skin/classic/browser/notification-pluginNormal.png           (../shared/plugins/notification-pluginNormal.png)
