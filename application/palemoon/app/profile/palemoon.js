@@ -1079,6 +1079,8 @@ pref("security.csp.speccompliant", true);
 // Block insecure active content on https pages
 pref("security.mixed_content.block_active_content", true);
 
+// Disable HPKP telemetry
+pref("security.ssl.errorReporting.enabled", false);
 
 // Override the Goanna-default value of false for Firefox.
 pref("plain_text.wrap_long_lines", true);
