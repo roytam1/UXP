@@ -27,7 +27,7 @@ const XMLURI_PARSE_ERROR    = "http://www.mozilla.org/newlayout/xml/parsererror.
 const PREF_UPDATE_REQUIREBUILTINCERTS = "extensions.update.requireBuiltInCerts";
 
 #ifdef MOZ_PHOENIX
-const PREF_EM_MIN_COMPAT_PLATFORM_VERSION = "extensions.minCompatiblePlatformVersion";
+const PREF_EM_MIN_COMPAT_APP_VERSION      = "extensions.minCompatibleAppVersion";
 const FIREFOX_ID                      = "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
 const FIREFOX_APPCOMPATVERSION        = "56.9"
 #endif
@@ -524,7 +524,7 @@ function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
     let appEntry = {
       id: FIREFOX_ID,
       minVersion: getProperty(app, "strict_min_version", "string",
-                              Services.prefs.getCharPref(PREF_EM_MIN_COMPAT_PLATFORM_VERSION)),
+                              Services.prefs.getCharPref(PREF_EM_MIN_COMPAT_APP_VERSION)),
       maxVersion: FIREFOX_APPCOMPATVERSION,
     };
 
