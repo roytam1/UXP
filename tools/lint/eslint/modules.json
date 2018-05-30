@@ -200,7 +200,6 @@
   "SharedPromptUtils.jsm": ["PromptUtils", "EnableDelayHelper"],
   "ShutdownLeaksCollector.jsm": ["ContentCollector"],
   "SignInToWebsite.jsm": ["SignInToWebsiteController"],
-  "Social.jsm": ["Social", "OpenGraphBuilder", "DynamicResizeWatcher", "sizeSocialPanelToContent"],
   "SpecialPowersObserver.jsm": ["SpecialPowersObserver", "SpecialPowersObserverFactory"],
   "stack.js": ["findCallerFrame"],
   "StateMachineHelper.jsm": ["State", "CommandType"],

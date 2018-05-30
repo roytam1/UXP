@@ -53,7 +53,6 @@ XPCOMUtils.defineLazyGetter(this, "DEFAULT_AREA_PLACEMENTS", function() {
       "pocket-button",
       "downloads-button",
       "home-button",
-      "social-share-button",
     ],
     // It's true that toolbar-menubar is not visible
     // on OS X, but the XUL node is definitely present
@@ -694,7 +693,7 @@ this.BrowserUITelemetry = {
     "spell-undo-add-to-dictionary", "openlinkincurrent", "openlinkintab",
     "openlink",
     // "openlinkprivate" intentionally omitted for privacy reasons. See bug 1176391.
-    "bookmarklink", "sharelink", "savelink",
+    "bookmarklink", "savelink",
     "marklinkMenu", "copyemail", "copylink", "media-play", "media-pause",
     "media-mute", "media-unmute", "media-playbackrate",
     "media-playbackrate-050x", "media-playbackrate-100x",
@@ -702,12 +701,12 @@ this.BrowserUITelemetry = {
     "media-showcontrols", "media-hidecontrols",
     "video-fullscreen", "leave-dom-fullscreen",
     "reloadimage", "viewimage", "viewvideo", "copyimage-contents", "copyimage",
-    "copyvideourl", "copyaudiourl", "saveimage", "shareimage", "sendimage",
+    "copyvideourl", "copyaudiourl", "saveimage", "sendimage",
     "setDesktopBackground", "viewimageinfo", "viewimagedesc", "savevideo",
-    "sharevideo", "saveaudio", "video-saveimage", "sendvideo", "sendaudio",
-    "ctp-play", "ctp-hide", "sharepage", "savepage", "pocket", "markpageMenu",
+    "saveaudio", "video-saveimage", "sendvideo", "sendaudio",
+    "ctp-play", "ctp-hide", "savepage", "pocket", "markpageMenu",
     "viewbgimage", "undo", "cut", "copy", "paste", "delete", "selectall",
-    "keywordfield", "searchselect", "shareselect", "frame", "showonlythisframe",
+    "keywordfield", "searchselect", "frame", "showonlythisframe",
     "openframeintab", "openframe", "reloadframe", "bookmarkframe", "saveframe",
     "printframe", "viewframesource", "viewframeinfo",
     "viewpartialsource-selection", "viewpartialsource-mathml",
