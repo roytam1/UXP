@@ -5445,11 +5445,11 @@ pref("media.block-autoplay-until-in-foreground", false);
 pref("layout.css.servo.enabled", true);
 #endif
 
-// TODO: Bug 1380959: Block toplevel data: URI navigations
+// Block toplevel data: URI navigations
 // If true, all toplevel data: URI navigations will be blocked.
 // Please note that manually entering a data: URI in the
 // URL-Bar will not be blocked when flipping this pref.
-pref("security.data_uri.block_toplevel_data_uri_navigations", false);
+pref("security.data_uri.block_toplevel_data_uri_navigations", true);
 
 // Disable Storage api in release builds.
 #ifdef NIGHTLY_BUILD
