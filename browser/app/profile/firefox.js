@@ -178,9 +178,6 @@ pref("browser.eme.ui.enabled", true);
 pref("browser.eme.ui.enabled", false);
 #endif
 
-pref("browser.customizemode.tip0.shown", false);
-pref("browser.customizemode.tip0.learnMoreUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/customize");
-
 pref("keyword.enabled", true);
 pref("browser.fixup.domainwhitelist.localhost", true);
 
