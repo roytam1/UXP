@@ -516,6 +516,18 @@ RTCPeerConnection.prototype = {
     };
   },
 
+  // This implements the fairly common "Queue a task" logic
+  async _queueTaskWithClosedCheck(func) {
+    return new Promise(resolve => {
+      Services.tm.mainThread.dispatch({ run() {
+        if (!this._closed) {
+          func();
+          resolve();
+        }
+      }}, Ci.nsIThread.DISPATCH_NORMAL);
+    });
+  },
+
   /**
    * An RTCConfiguration may look like this:
    *
