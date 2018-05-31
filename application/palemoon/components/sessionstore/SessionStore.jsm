@@ -3598,38 +3598,70 @@ var SessionStoreInternal = {
     var _this = this;
     function win_(aName) { return _this._getWindowDimension(win, aName); }
 
-    // find available space on the screen where this window is being placed
+    // Find available space on the screen where this window is being placed
     let screen = gScreenManager.screenForRect(aLeft, aTop, aWidth, aHeight);
     if (screen && !this._prefBranch.getBoolPref("sessionstore.exactPos")) {
       let screenLeft = {}, screenTop = {}, screenWidth = {}, screenHeight = {};
       screen.GetAvailRectDisplayPix(screenLeft, screenTop, screenWidth, screenHeight);
-      // constrain the dimensions to the actual space available
-      if (aWidth > screenWidth.value) {
-        aWidth = screenWidth.value;
+
+      // Screen X/Y are based on the origin of the screen's desktop-pixel coordinate space
+      let screenLeftCss = screenLeft.value;
+      let screenTopCss = screenTop.value;
+      
+      // Convert the screen's device pixel dimensions to CSS px dimensions
+      screen.GetAvailRect(screenLeft, screenTop, screenWidth, screenHeight);
+      let cssToDevScale = screen.defaultCSSScaleFactor;
+      let screenRightCss = screenLeftCss + screenWidth.value / cssToDevScale;
+      let screenBottomCss = screenTopCss + screenHeight.value / cssToDevScale;
+      
+      // Pull the window within the screen's bounds.
+      // First, ensure the left edge is on-screen
+      if (aLeft < screenLeftCss) {
+        aLeft = screenLeftCss;
       }
-      if (aHeight > screenHeight.value) {
-        aHeight = screenHeight.value;
+      // Then check the resulting right edge, and reduce it if necessary.
+      let right = aLeft + aWidth;
+      if (right > screenRightCss) {
+        right = screenRightCss;
+        // See if we can move the left edge leftwards to maintain width.
+        if (aLeft > screenLeftCss) {
+          aLeft = Math.max(right - aWidth, screenLeftCss);
+        }
       }
-      // and then pull the window within the screen's bounds
-      if (aLeft < screenLeft.value) {
-        aLeft = screenLeft.value;
-      } else if (aLeft + aWidth > screenLeft.value + screenWidth.value) {
-        aLeft = screenLeft.value + screenWidth.value - aWidth;
+      // Finally, update aWidth to account for the adjusted left and right edges.
+      aWidth = right - aLeft;
+
+      // Do the same in the vertical dimension.
+      // First, ensure the top edge is on-screen
+      if (aTop < screenTopCss) {
+        aTop = screenTopCss;
       }
-      if (aTop < screenTop.value) {
-        aTop = screenTop.value;
-      } else if (aTop + aHeight > screenTop.value + screenHeight.value) {
-        aTop = screenTop.value + screenHeight.value - aHeight;
+      // Then check the resulting right edge, and reduce it if necessary.
+      let bottom = aTop + aHeight;
+      if (bottom > screenBottomCss) {
+        bottom = screenBottomCss;
+        // See if we can move the top edge upwards to maintain height.
+        if (aTop > screenTopCss) {
+          aTop = Math.max(bottom - aHeight, screenTopCss);
+        }
       }
+      // Finally, update aHeight to account for the adjusted top and bottom edges.
+      aHeight = bottom - aTop;
     }
 
-    // only modify those aspects which aren't correct yet
-    if (aWidth && aHeight && (aWidth != win_("width") || aHeight != win_("height"))) {
-      aWindow.resizeTo(aWidth, aHeight);
-    }
+    // Only modify those aspects which aren't correct yet
     if (!isNaN(aLeft) && !isNaN(aTop) && (aLeft != win_("screenX") || aTop != win_("screenY"))) {
       aWindow.moveTo(aLeft, aTop);
     }
+    if (aWidth && aHeight && (aWidth != win_("width") || aHeight != win_("height"))) {
+      // Don't resize the window if it's currently maximized and we would
+      // maximize it again shortly after.
+      if (aSizeMode != "maximized" || win_("sizemode") != "maximized") {
+        aWindow.resizeTo(aWidth, aHeight);
+      }
+    }
+    
+    // Restore window state
     if (aSizeMode && win_("sizemode") != aSizeMode)
     {
       switch (aSizeMode)
