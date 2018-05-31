@@ -195,7 +195,6 @@ this.ControlCenter = {
     trackingProtectionEnabled: {
       applyConfig: Task.async(function* () {
         Services.prefs.setBoolPref("privacy.trackingprotection.enabled", true);
-        Services.prefs.setIntPref("privacy.trackingprotection.introCount", 20);
         yield UrlClassifierTestUtils.addTestTrackers();
 
         yield loadPage(TRACKING_PAGE);
@@ -208,7 +207,6 @@ this.ControlCenter = {
         let browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
         let gBrowser = browserWindow.gBrowser;
         Services.prefs.setBoolPref("privacy.trackingprotection.enabled", true);
-        Services.prefs.setIntPref("privacy.trackingprotection.introCount", 20);
         yield UrlClassifierTestUtils.addTestTrackers();
 
         yield loadPage(TRACKING_PAGE);

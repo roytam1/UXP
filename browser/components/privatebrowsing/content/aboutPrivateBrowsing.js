@@ -63,13 +63,9 @@ document.addEventListener("DOMContentLoaded", function () {
  document.getElementById("favicon")
          .setAttribute("href", FAVICON_PRIVACY);
  tpToggle.addEventListener("change", toggleTrackingProtection);
- document.getElementById("startTour")
-         .addEventListener("click", dontShowIntroPanelAgain);
 
  let formatURLPref = Cc["@mozilla.org/toolkit/URLFormatterService;1"]
                        .getService(Ci.nsIURLFormatter).formatURLPref;
- document.getElementById("startTour").setAttribute("href",
-                    formatURLPref("privacy.trackingprotection.introURL"));
  document.getElementById("learnMore").setAttribute("href",
                     formatURLPref("app.support.baseURL") + "private-browsing");
 
@@ -87,12 +83,5 @@ function toggleTrackingProtection() {
  // Ask chrome to enable tracking protection
  document.dispatchEvent(
    new CustomEvent("AboutPrivateBrowsingToggleTrackingProtection",
-                   {bubbles: true}));
-}
-
-function dontShowIntroPanelAgain() {
- // Ask chrome to disable the doorhanger
- document.dispatchEvent(
-   new CustomEvent("AboutPrivateBrowsingDontShowIntroPanelAgain",
                    {bubbles: true}));
 }

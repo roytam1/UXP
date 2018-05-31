@@ -1290,8 +1290,6 @@ pref("privacy.trackingprotection.ui.enabled", true);
 #else
 pref("privacy.trackingprotection.ui.enabled", false);
 #endif
-pref("privacy.trackingprotection.introCount", 0);
-pref("privacy.trackingprotection.introURL", "https://www.mozilla.org/%LOCALE%/firefox/%VERSION%/tracking-protection/start/");
 
 // Enable Contextual Identity Containers
 #ifdef NIGHTLY_BUILD

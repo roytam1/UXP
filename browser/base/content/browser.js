@@ -8090,11 +8090,6 @@ var AboutPrivateBrowsingListener = {
         const PREF = "privacy.trackingprotection.pbmode.enabled";
         Services.prefs.setBoolPref(PREF, !Services.prefs.getBoolPref(PREF));
     });
-    window.messageManager.addMessageListener(
-      "AboutPrivateBrowsing:DontShowIntroPanelAgain",
-      msg => {
-        TrackingProtection.dontShowIntroPanelAgain();
-    });
   }
 };
 

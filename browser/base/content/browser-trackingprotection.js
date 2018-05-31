@@ -4,7 +4,6 @@
 
 var TrackingProtection = {
   // If the user ignores the doorhanger, we stop showing it after some time.
-  MAX_INTROS: 20,
   PREF_ENABLED_GLOBALLY: "privacy.trackingprotection.enabled",
   PREF_ENABLED_IN_PRIVATE_WINDOWS: "privacy.trackingprotection.pbmode.enabled",
   enabledGlobally: false,
@@ -106,16 +105,6 @@ var TrackingProtection = {
       this.icon.setAttribute("state", "blocked-tracking-content");
       this.content.setAttribute("state", "blocked-tracking-content");
 
-      // Open the tracking protection introduction panel, if applicable.
-      if (this.enabledGlobally) {
-        let introCount = gPrefService.getIntPref("privacy.trackingprotection.introCount");
-        if (introCount < TrackingProtection.MAX_INTROS) {
-          gPrefService.setIntPref("privacy.trackingprotection.introCount", ++introCount);
-          gPrefService.savePrefFile(null);
-          this.showIntroPanel();
-        }
-      }
-
       this.shieldHistogramAdd(2);
     } else if (isAllowing) {
       this.icon.setAttribute("tooltiptext", this.disabledTooltipText);
@@ -185,46 +174,4 @@ var TrackingProtection = {
 
     BrowserReload();
   },
-
-  dontShowIntroPanelAgain() {
-    // This function may be called in private windows, but it does not change
-    // any preference unless Tracking Protection is enabled globally.
-    if (this.enabledGlobally) {
-      gPrefService.setIntPref("privacy.trackingprotection.introCount",
-                              this.MAX_INTROS);
-      gPrefService.savePrefFile(null);
-    }
-  },
-
-  showIntroPanel: Task.async(function*() {
-    let brandBundle = document.getElementById("bundle_brand");
-    let brandShortName = brandBundle.getString("brandShortName");
-
-    let openStep2 = () => {
-      // When the user proceeds in the tour, adjust the counter to indicate that
-      // the user doesn't need to see the intro anymore.
-      this.dontShowIntroPanelAgain();
-
-      let nextURL = Services.urlFormatter.formatURLPref("privacy.trackingprotection.introURL") +
-                    "?step=2&newtab=true";
-      switchToTabHavingURI(nextURL, true, {
-        // Ignore the fragment in case the intro is shown on the tour page
-        // (e.g. if the user manually visited the tour or clicked the link from
-        // about:privatebrowsing) so we can avoid a reload.
-        ignoreFragment: "whenComparingAndReplace",
-      });
-    };
-
-    let buttons = [
-      {
-        label: gNavigatorBundle.getString("trackingProtection.intro.step1of3"),
-        style: "text",
-      },
-      {
-        callback: openStep2,
-        label: gNavigatorBundle.getString("trackingProtection.intro.nextButton.label"),
-        style: "primary",
-      },
-    ];
-  }),
 };
