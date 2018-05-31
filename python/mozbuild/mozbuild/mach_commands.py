@@ -541,6 +541,13 @@ class Build(MachCommandBase):
                 # as when doing OSX Universal builds)
                 pass
 
+        # Check if there are any unpreprocessed files
+        grepcmd = 'grep -E -r "^(#|%)ifdef" --include=\*.{js\*,css,x\*,h\*,manifest,dtd,properties} '\
+                  + self.topobjdir + '/dist/bin'
+        grepresult = subprocess.Popen(grepcmd, stdout=subprocess.PIPE, shell=True).communicate()[0]
+        if grepresult:
+            print('\nERROR: preprocessor was not applied to the following files:\n\n' + grepresult)
+
         return status
 
     @Command('configure', category='build',
