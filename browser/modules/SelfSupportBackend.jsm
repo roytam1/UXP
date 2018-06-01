@@ -85,11 +85,8 @@ var SelfSupportBackendInternal = {
       return;
     }
 
-    // Make sure UITour is enabled.
-    if (true) {
-      this._log.config("init - Disabling SelfSupport because UITour is disabled.");
-      return;
-    }
+    this._log.config("init - Disabling SelfSupport because UITour is disabled.");
+    return;
 
     // Check the preferences to see if we want this to be active.
     if (!Preferences.get(PREF_ENABLED, true)) {
