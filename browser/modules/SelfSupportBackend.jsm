@@ -87,14 +87,6 @@ var SelfSupportBackendInternal = {
 
     this._log.config("init - Disabling SelfSupport because UITour is disabled.");
     return;
-
-    // Check the preferences to see if we want this to be active.
-    if (!Preferences.get(PREF_ENABLED, true)) {
-      this._log.config("init - SelfSupport is disabled.");
-      return;
-    }
-
-    Services.obs.addObserver(this, "sessionstore-windows-restored", false);
   },
 
   /**
