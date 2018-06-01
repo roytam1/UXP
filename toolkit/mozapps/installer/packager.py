@@ -156,16 +156,15 @@ def precompile_cache(registry, source_path, gre_path, app_path):
             extra_env['TSAN_OPTIONS'] = 'report_bugs=0'
         if buildconfig.substs.get('MOZ_ASAN'):
             extra_env['ASAN_OPTIONS'] = 'detect_leaks=0'
-        if buildconfig.substs.get('MOZ_DISABLE_PRECOMPILED_STARTUPCACHE') != '1':
-            if launcher.launch(['xpcshell', '-g', gre_path, '-a', app_path,
-                                '-f', os.path.join(os.path.dirname(__file__),
-                                'precompile_cache.js'),
-                                '-e', 'precompile_startupcache("resource://%s/");'
-                                      % resource],
-                               extra_linker_path=gre_path,
-                               extra_env=extra_env):
-                errors.fatal('Error while running startup cache precompilation')
-                return
+        if launcher.launch(['xpcshell', '-g', gre_path, '-a', app_path,
+                            '-f', os.path.join(os.path.dirname(__file__),
+                            'precompile_cache.js'),
+                            '-e', 'precompile_startupcache("resource://%s/");'
+                                  % resource],
+                           extra_linker_path=gre_path,
+                           extra_env=extra_env):
+            errors.fatal('Error while running startup cache precompilation')
+            return
         from mozpack.mozjar import JarReader
         jar = JarReader(cache)
         resource = '/resource/%s/' % resource
@@ -392,7 +391,8 @@ def main():
 
     # Fill startup cache
     if isinstance(formatter, OmniJarFormatter) and launcher.can_launch() \
-      and buildconfig.substs['MOZ_DISABLE_STARTUPCACHE'] != '1':
+      and buildconfig.substs['MOZ_DISABLE_STARTUPCACHE'] != '1' \
+      and buildconfig.substs['MOZ_DISABLE_PRECOMPILED_STARTUPCACHE'] != '1':
         gre_path = None
         def get_bases():
             for b in sink.packager.get_bases(addons=False):
