@@ -6,11 +6,9 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 const BASE_LIST_ID = "base";
 const CONTENT_LIST_ID = "content";
 const TRACK_SUFFIX = "-track-digest256";
-#ifdef MOZ_SAFE_BROWSING
 const TRACKING_TABLE_PREF = "urlclassifier.trackingTable";
 const LISTS_PREF_BRANCH = "browser.safebrowsing.provider.mozilla.lists.";
 const UPDATE_TIME_PREF = "browser.safebrowsing.provider.mozilla.nextupdatetime";
-#endif
 
 var gBlocklistManager = {
   _type: "",
