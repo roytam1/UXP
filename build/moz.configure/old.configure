@@ -213,6 +213,7 @@ def old_configure_options(*options):
     '--enable-pie',
     '--enable-png-arm-neon-support',
     '--enable-posix-nspr-emulation',
+    '--enable-precompiled-startupcache',
     '--enable-pref-extensions',
     '--enable-private-build',
     '--enable-pulseaudio',
