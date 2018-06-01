@@ -544,7 +544,7 @@ class Build(MachCommandBase):
         # Check if there are any unpreprocessed files in '@MOZ_OBJDIR@/dist/bin'
         # See python/mozbuild/mozbuild/preprocessor.py#L293-L309 for the list of directives
         grepcmd = 'grep -E -r "^(#|%)(define|el|endif|error|expand|filter|if|include|literal|undef|unfilter)" '\
-                  + '--include=\*.{css,dtd,h\*,js\*,x\*,manifest,properties,rdf} '\
+                  + '--include=\*.{css,dtd,html,js,jsm,xhtml,xml,xul,manifest,properties,rdf} '\
                   + self.topobjdir + '/dist/bin | grep -v ".css:#"'
         grepresult = subprocess.Popen(grepcmd, stdout=subprocess.PIPE, shell=True).communicate()[0]
         if grepresult:
