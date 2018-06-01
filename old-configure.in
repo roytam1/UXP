@@ -4423,6 +4423,22 @@ MOZ_ARG_ENABLE_BOOL(debug-js-modules,
 AC_SUBST(DEBUG_JS_MODULES)
 
 dnl ========================================================
+dnl = Don't precompile the startup cache
+dnl ========================================================
+MOZ_DISABLE_PRECOMPILED_STARTUPCACHE=
+
+MOZ_ARG_DISABLE_BOOL(precompiled-startupcache,
+[  --disable-precompiled-startupcache      Don't precompile the startup cache ],
+    MOZ_DISABLE_PRECOMPILED_STARTUPCACHE=1,
+	MOZ_DISABLE_PRECOMPILED_STARTUPCACHE= )
+
+if test -n "$MOZ_DISABLE_PRECOMPILED_STARTUPCACHE"; then
+  AC_DEFINE(MOZ_DISABLE_PRECOMPILED_STARTUPCACHE)
+fi
+
+AC_SUBST(MOZ_DISABLE_PRECOMPILED_STARTUPCACHE)
+
+dnl ========================================================
 dnl =
 dnl = Profiling and Instrumenting
 dnl =
