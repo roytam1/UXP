@@ -541,9 +541,11 @@ class Build(MachCommandBase):
                 # as when doing OSX Universal builds)
                 pass
 
-        # Check if there are any unpreprocessed files
-        grepcmd = 'grep -E -r "^(#|%)ifdef" --include=\*.{js\*,css,x\*,h\*,manifest,dtd,properties} '\
-                  + self.topobjdir + '/dist/bin'
+        # Check if there are any unpreprocessed files in '@MOZ_OBJDIR@/dist/bin'
+        # See python/mozbuild/mozbuild/preprocessor.py#L293-L309 for the list of directives
+        grepcmd = 'grep -E -r "^(#|%)(define|el|endif|error|expand|filter|if|include|literal|undef|unfilter)" '\
+                  + '--include=\*.{css,dtd,h\*,js\*,x\*,manifest,properties,rdf} '\
+                  + self.topobjdir + '/dist/bin | grep -v ".css:#"'
         grepresult = subprocess.Popen(grepcmd, stdout=subprocess.PIPE, shell=True).communicate()[0]
         if grepresult:
             print('\nERROR: preprocessor was not applied to the following files:\n\n' + grepresult)
