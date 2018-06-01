@@ -2,7 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifdef MOZ_SAFE_BROWSING
 var gSafeBrowsing = {
 
   setReportPhishingMenu: function() {
@@ -47,4 +46,3 @@ var gSafeBrowsing = {
     return SafeBrowsing.getReportURL(name, gBrowser.currentURI);
   }
 }
-#endif
