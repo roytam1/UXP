@@ -33,7 +33,6 @@ EXTRA_JS_MODULES += [
     'RecentWindow.jsm',
     'RemotePrompt.jsm',
     'Sanitizer.jsm',
-    'SelfSupportBackend.jsm',
     'SitePermissions.jsm',
     'TransientPrefs.jsm',
     'URLBarZoom.jsm',
