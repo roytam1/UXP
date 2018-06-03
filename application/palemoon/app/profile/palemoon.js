@@ -433,8 +433,6 @@ pref("browser.tabs.loadDivertedInBackground", false);
 pref("browser.tabs.loadBookmarksInBackground", false);
 pref("browser.tabs.noWindowActivationOnExternal", false);
 pref("browser.tabs.tabClipWidth", 140);
-pref("browser.tabs.tabMinWidth", 100);
-pref("browser.tabs.tabMaxWidth", 250);
 pref("browser.tabs.animate", true);
 pref("browser.tabs.onTop", true);
 #ifdef XP_WIN

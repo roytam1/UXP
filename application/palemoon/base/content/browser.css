@@ -43,6 +43,8 @@ tabbrowser {
 
 .tabbrowser-tab:not([pinned]) {
   -moz-box-flex: 100;
+  max-width: 250px;
+  min-width: 100px;
   width: 0;
   transition: min-width 175ms ease-out,
               max-width 200ms ease-out,
@@ -63,12 +65,6 @@ tabbrowser {
 .tab-icon-image:not([fadein]):not([pinned]),
 .tab-close-button:not([fadein]):not([pinned]) {
   display: none;
-}
-
-.tabbrowser-tab[pinned] {
-  -moz-box-flex: 0;
-  min-width: 0 !important;
-  max-width: none !important;
 }
 
 .tabbrowser-tabs[positionpinnedtabs] > .tabbrowser-tab[pinned] {
