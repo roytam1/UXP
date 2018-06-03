@@ -16,7 +16,8 @@ try {
 }
 
 Components.utils.import("resource:///modules/openLocationLastURL.jsm", openLocationModule);
-var gOpenLocationLastURL = new openLocationModule.OpenLocationLastURL(window.opener);
+var gOpenLocationLastURL = new openLocationModule.OpenLocationLastURL(
+    window.opener);
 
 function onLoad()
 {
@@ -40,7 +41,8 @@ function onLoad()
 
     try {
       var value = pref.getIntPref("general.open_location.last_window_choice");
-      var element = dialog.openWhereList.getElementsByAttribute("value", value)[0];
+      var element = dialog.openWhereList.getElementsByAttribute(
+          "value", value)[0];
       if (element)
         dialog.openWhereList.selectedItem = element;
       dialog.input.value = gOpenLocationLastURL.value;
@@ -61,53 +63,63 @@ function doEnabling()
 
 function open()
 {
-  getShortcutOrURIAndPostData(dialog.input.value).then(data => {
-    let url;
-    let postData = null;
-    let mayInheritPrincipal = false;
+  var openData = {
+    "url": null,
+    "postData": null,
+    "mayInheritPrincipal": false
+  };
+  if (browser) {
+    browser.getShortcutOrURIAndPostData(dialog.input.value).then(data => {
+      openData.url = data.url;
+      openData.postData = data.postData;
+      openData.mayInheritPrincipal = data.mayInheritPrincipal;
 
-    if (browser) {
-      url = data.url;
-      postData = data.postData;
-      mayInheritPrincipal = data.mayInheritPrincipal;
-    } else {
-      url = dialog.input.value;
-    }
+      openLocation(openData);
+    });
+  } else {
+    openData.url = dialog.input.value;
 
-    try {
-      // Whichever target we use for the load, we allow third-party services to
-      // fixup the URI
-      switch (dialog.openWhereList.value) {
-        case "0":
-          var webNav = Components.interfaces.nsIWebNavigation;
-          var flags = webNav.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP |
-                      webNav.LOAD_FLAGS_FIXUP_SCHEME_TYPOS;
-          if (!mayInheritPrincipal)
-            flags |= webNav.LOAD_FLAGS_DISALLOW_INHERIT_PRINCIPAL;
-          browser.gBrowser.loadURIWithFlags(url, flags, null, null, postData);
-          break;
-        case "1":
-          window.opener.delayedOpenWindow(getBrowserURL(), "all,dialog=no",
-                                          url, postData, null, null, true);
-          break;
-        case "3":
-          browser.delayedOpenTab(url, null, null, postData, true);
-          break;
-      }
-    }
-    catch(exception) {
-    }
-
-    if (pref) {
-      gOpenLocationLastURL.value = dialog.input.value;
-      pref.setIntPref("general.open_location.last_window_choice", dialog.openWhereList.value);
-    }
-
-    // Delay closing slightly to avoid timing bug on Linux.
-    window.close();
-  });
+    openLocation(openData);
+  }
 
   return false;
+}
+
+function openLocation(openData)
+{
+  try {
+    // Whichever target we use for the load, we allow third-party services to
+    // fixup the URI
+    switch (dialog.openWhereList.value) {
+      case "0":
+        var webNav = Components.interfaces.nsIWebNavigation;
+        var flags = webNav.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP |
+                    webNav.LOAD_FLAGS_FIXUP_SCHEME_TYPOS;
+        if (!openData.mayInheritPrincipal)
+          flags |= webNav.LOAD_FLAGS_DISALLOW_INHERIT_PRINCIPAL;
+        browser.gBrowser.loadURIWithFlags(
+            openData.url, flags, null, null, openData.postData);
+        break;
+      case "1":
+        window.opener.delayedOpenWindow(getBrowserURL(), "all,dialog=no",
+                                        openData.url, openData.postData,
+                                        null, null, true);
+        break;
+      case "3":
+        browser.delayedOpenTab(
+            openData.url, null, null, openData.postData, true);
+        break;
+    }
+  } catch (ex) {}
+
+  if (pref) {
+    gOpenLocationLastURL.value = dialog.input.value;
+    pref.setIntPref(
+        "general.open_location.last_window_choice", dialog.openWhereList.value);
+  }
+
+  // Delay closing slightly to avoid timing bug on Linux.
+  window.close();
 }
 
 function createInstance(contractid, iidName)
