@@ -56,7 +56,7 @@
 @RESPATH@/hyphenation/*
 @RESPATH@/browser/@PREF_DIR@/palemoon-l10n.js
 @RESPATH@/browser/searchplugins/*
-#ifdef HAVE_MAKENSISU
+#ifdef XP_WIN32
 @BINPATH@/uninstall/helper.exe
 #endif
 #ifdef MOZ_UPDATER
