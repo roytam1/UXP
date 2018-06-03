@@ -37,8 +37,8 @@ toolkit.jar:
    content/global/plugins.html
    content/global/plugins.css
    content/global/browser-child.js
-   content/global/browser-content.js
-*   content/global/buildconfig.html
+*  content/global/browser-content.js
+*  content/global/buildconfig.html
    content/global/contentAreaUtils.js
 #ifndef MOZ_FENNEC
    content/global/customizeToolbar.css
@@ -56,7 +56,7 @@ toolkit.jar:
    content/global/filepicker.properties
    content/global/globalOverlay.js
    content/global/memoriam.xhtml
-*   content/global/mozilla.css
+*  content/global/mozilla.css
    content/global/mozilla.xhtml
 #ifdef MOZ_PHOENIX
    content/global/logopage.xhtml
