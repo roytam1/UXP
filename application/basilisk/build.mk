@@ -3,43 +3,43 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 installer:
-	@$(MAKE) -C browser/installer installer
+	@$(MAKE) -C application/basilisk/installer installer
 
 package:
-	@$(MAKE) -C browser/installer
+	@$(MAKE) -C application/basilisk/installer
 
 package-compare:
-	@$(MAKE) -C browser/installer package-compare
+	@$(MAKE) -C application/basilisk/installer package-compare
 
 stage-package:
-	@$(MAKE) -C browser/installer stage-package
+	@$(MAKE) -C application/basilisk/installer stage-package
 
 sdk:
-	@$(MAKE) -C browser/installer make-sdk
+	@$(MAKE) -C application/basilisk/installer make-sdk
 
 install::
-	@$(MAKE) -C browser/installer install
+	@$(MAKE) -C application/basilisk/installer install
 
 clean::
-	@$(MAKE) -C browser/installer clean
+	@$(MAKE) -C application/basilisk/installer clean
 
 distclean::
-	@$(MAKE) -C browser/installer distclean
+	@$(MAKE) -C application/basilisk/installer distclean
 
 source-package::
-	@$(MAKE) -C browser/installer source-package
+	@$(MAKE) -C application/basilisk/installer source-package
 
 upload::
-	@$(MAKE) -C browser/installer upload
+	@$(MAKE) -C application/basilisk/installer upload
 
 source-upload::
-	@$(MAKE) -C browser/installer source-upload
+	@$(MAKE) -C application/basilisk/installer source-upload
 
 hg-bundle::
-	@$(MAKE) -C browser/installer hg-bundle
+	@$(MAKE) -C application/basilisk/installer hg-bundle
 
 l10n-check::
-	@$(MAKE) -C browser/locales l10n-check
+	@$(MAKE) -C application/basilisk/locales l10n-check
 
 ifdef ENABLE_TESTS
 # Implemented in testing/testsuite-targets.mk

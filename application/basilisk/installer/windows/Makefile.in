@@ -32,12 +32,12 @@ include $(topsrcdir)/config/config.mk
 
 ifdef LOCALE_MERGEDIR
 PPL_LOCALE_ARGS = \
-  --l10n-dir=$(LOCALE_MERGEDIR)/browser/installer \
-  --l10n-dir=$(call EXPAND_LOCALE_SRCDIR,browser/locales)/installer \
-  --l10n-dir=$(topsrcdir)/browser/locales/en-US/installer \
+  --l10n-dir=$(LOCALE_MERGEDIR)/application/basilisk/installer \
+  --l10n-dir=$(call EXPAND_LOCALE_SRCDIR,application/basilisk/locales)/installer \
+  --l10n-dir=$(topsrcdir)/application/basilisk/locales/en-US/installer \
   $(NULL)
 else
-PPL_LOCALE_ARGS=$(call EXPAND_LOCALE_SRCDIR,browser/locales)/installer
+PPL_LOCALE_ARGS=$(call EXPAND_LOCALE_SRCDIR,application/basilisk/locales)/installer
 endif
 
 OVERRIDE_DEFAULT_GOAL := installer

@@ -607,8 +607,9 @@ def include_project_configure(project, external_source_dir, build_env, help):
 
     build_app = project[0]
 
-    # Uncomment when browser becomes application/basilisk
-    #if build_app == 'browser':
+    # XXX: Change this when 'browser' becomes invalid as an alias
+    if build_app == 'browser':
+        build_app = 'basilisk'
         #die('The project "browser" is no longer valid. Perhaps you meant "basilisk" or "palemoon"?')
     
     path_project_src_dir_application = os.path.join(base_dir, 'application/' + build_app, 'moz.configure')
