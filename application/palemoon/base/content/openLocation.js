@@ -116,7 +116,6 @@ function openLocation(openData)
         "general.open_location.last_window_choice", dialog.openWhereList.value);
   }
 
-  // Delay closing slightly to avoid timing bug on Linux.
   window.close();
 }
 
