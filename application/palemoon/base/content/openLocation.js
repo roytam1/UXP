@@ -16,8 +16,7 @@ try {
 }
 
 Components.utils.import("resource:///modules/openLocationLastURL.jsm", openLocationModule);
-var gOpenLocationLastURL = new openLocationModule.OpenLocationLastURL(
-    window.opener);
+var gOpenLocationLastURL = new openLocationModule.OpenLocationLastURL(window.opener);
 
 function onLoad()
 {
@@ -41,8 +40,7 @@ function onLoad()
 
     try {
       var value = pref.getIntPref("general.open_location.last_window_choice");
-      var element = dialog.openWhereList.getElementsByAttribute(
-          "value", value)[0];
+      var element = dialog.openWhereList.getElementsByAttribute("value", value)[0];
       if (element)
         dialog.openWhereList.selectedItem = element;
       dialog.input.value = gOpenLocationLastURL.value;
@@ -89,7 +87,7 @@ function openLocation(openData)
 {
   try {
     // Whichever target we use for the load, we allow third-party services to
-    // fixup the URI
+    // fix up the URI
     switch (dialog.openWhereList.value) {
       case "0":
         var webNav = Components.interfaces.nsIWebNavigation;
