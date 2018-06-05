@@ -1,0 +1,91 @@
+From 504f6e1ed6960d70f07a4fafbc6ee2026b8e9c12 Mon Sep 17 00:00:00 2001
+From: wolfbeast <mcwerewolf@gmail.com>
+Date: Tue, 5 Jun 2018 22:33:20 +0200
+Subject: [PATCH] Restore NSS default storage file format to DBM when no prefix
+ is given.
+
+---
+ security/nss/lib/util/utilpars.c  | 6 +++++-
+ security/nss/tests/all.sh         | 3 +--
+ security/nss/tests/merge/merge.sh | 2 +-
+ 3 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/security/nss/lib/util/utilpars.c b/security/nss/lib/util/utilpars.c
+index e7435bfcc..88e38b16d 100644
+--- a/security/nss/lib/util/utilpars.c
++++ b/security/nss/lib/util/utilpars.c
+@@ -1106,18 +1106,22 @@ NSSUTIL_MkNSSString(char **slotStrings, int slotCount, PRBool internal,
+ #define SECMOD_DB "secmod.db"
+ const char *
+ _NSSUTIL_EvaluateConfigDir(const char *configdir,
+                            NSSDBType *pdbType, char **appName)
+ {
+     NSSDBType dbType;
+     PRBool checkEnvDefaultDB = PR_FALSE;
+     *appName = NULL;
+-    /* force the default */
++/* force the default */
++#ifdef NSS_DISABLE_DBM
+     dbType = NSS_DB_TYPE_SQL;
++#else
++    dbType = NSS_DB_TYPE_LEGACY;
++#endif
+     if (configdir == NULL) {
+         checkEnvDefaultDB = PR_TRUE;
+     } else if (PORT_Strncmp(configdir, MULTIACCESS, sizeof(MULTIACCESS) - 1) == 0) {
+         char *cdir;
+         dbType = NSS_DB_TYPE_MULTIACCESS;
+ 
+         *appName = PORT_Strdup(configdir + sizeof(MULTIACCESS) - 1);
+         if (*appName == NULL) {
+diff --git a/security/nss/tests/all.sh b/security/nss/tests/all.sh
+index 8d5bd2dbb..06a39dfe6 100755
+--- a/security/nss/tests/all.sh
++++ b/security/nss/tests/all.sh
+@@ -169,19 +169,18 @@ run_cycle_pkix()
+     export NSS_ENABLE_PKIX_VERIFY
+ 
+     TESTS="${ALL_TESTS}"
+     TESTS_SKIP="cipher dbtests sdr crmf smime merge multinit"
+ 
+     NSS_SSL_TESTS=`echo "${NSS_SSL_TESTS}" | sed -e "s/normal//g" -e "s/fips//g" -e "s/_//g"`
+     export -n NSS_SSL_RUN
+ 
+-    # use the default format. (unset for the shell, export -n for binaries)
++    # use the default format.
+     export -n NSS_DEFAULT_DB_TYPE
+-    unset NSS_DEFAULT_DB_TYPE
+ 
+     run_tests
+ }
+ 
+ ######################### run_cycle_upgrade_db #########################
+ # upgrades certificate database to shareable format and run test suites
+ # with those databases
+ ########################################################################
+diff --git a/security/nss/tests/merge/merge.sh b/security/nss/tests/merge/merge.sh
+index d17a8c4ef..1929b12c8 100755
+--- a/security/nss/tests/merge/merge.sh
++++ b/security/nss/tests/merge/merge.sh
+@@ -93,17 +93,17 @@ merge_init()
+   CONFLICT1DIR=conflict1
+   CONFLICT2DIR=conflict2
+   mkdir ${CONFLICT1DIR}
+   mkdir ${CONFLICT2DIR}
+   # in the upgrade mode (dbm->sql), make sure our test databases
+   # are dbm databases.
+   if [ "${TEST_MODE}" = "UPGRADE_DB" ]; then
+ 	save=${NSS_DEFAULT_DB_TYPE}
+-	NSS_DEFAULT_DB_TYPE=dbm ; export NSS_DEFAULT_DB_TYPE
++	NSS_DEFAULT_DB_TYPE= ; export NSS_DEFAULT_DB_TYPE
+   fi
+ 
+   certutil -N -d ${CONFLICT1DIR} -f ${R_PWFILE}
+   certutil -N -d ${CONFLICT2DIR} -f ${R_PWFILE}
+   certutil -A -n Alice -t ,, -i ${R_CADIR}/TestUser41.cert -d ${CONFLICT1DIR}
+   # modify CONFLICTDIR potentially corrupting the database
+   certutil -A -n "Alice #1" -t C,, -i ${R_CADIR}/TestUser42.cert -d ${CONFLICT1DIR} -f ${R_PWFILE}
+   certutil -M -n "Alice #1" -t ,, -d ${CONFLICT1DIR} -f ${R_PWFILE}
+-- 
+2.16.1.windows.4
+
