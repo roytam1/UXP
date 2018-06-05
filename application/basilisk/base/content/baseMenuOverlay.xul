@@ -29,7 +29,7 @@
         <menuitem id="menu_mac_show_all" label="&showAllAppsCmdMac.label;"/>
     </menupopup>
 <!-- Mac window menu -->
-#include ../../../toolkit/content/macWindowMenu.inc
+#include ../../../../toolkit/content/macWindowMenu.inc
 #endif
 
 #ifdef XP_WIN
