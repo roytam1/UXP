@@ -193,10 +193,15 @@ var gUsageTreeView = {
       return;
     }
 
-    toremove = [this._byname[coll].title for each (coll in toremove)];
-    toremove = toremove.join(gSyncQuota.bundle.getString("quota.list.separator"));
+    // Tycho: toremove = [this._byname[coll].title for each (coll in toremove)];
+    let toremovetitles = [];
+    for (let coll in toremove) {
+      toremovetitles.push(this._byname[coll].title);
+    }
+    
+    toremovetitles = toremovetitles.join(gSyncQuota.bundle.getString("quota.list.separator"));
     caption.firstChild.nodeValue = gSyncQuota.bundle.getFormattedString(
-      "quota.removal.label", [toremove]);
+      "quota.removal.label", [toremovetitles]);
     if (freeup)
       caption.firstChild.nodeValue += gSyncQuota.bundle.getFormattedString(
         "quota.freeup.label", gSyncQuota.convertKB(freeup));
