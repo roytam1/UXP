@@ -110,6 +110,14 @@ pref("image.mem.decode_bytes_at_a_time", 65536); //larger chunks
 
 // ============================================================================
 
+// ===| Sync |=================================================================
+
+// Sync server URL
+pref("services.sync.serverURL","https://pmsync.palemoon.org/sync/index.php/");
+pref("services.sync.jpake.serverURL","https://keyserver.palemoon.org/");
+
+// ============================================================================
+
 // ===| Misc. |================================================================
 
 // store sessions less frequently to prevent redundant mem usage by storing too much
