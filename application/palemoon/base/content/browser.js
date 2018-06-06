@@ -328,6 +328,66 @@ const gSessionHistoryObserver = {
   }
 };
 
+var gFindBarSettings = {
+  messageName: "Findbar:Keypress",
+  prefName: "accessibility.typeaheadfind",
+  findAsYouType: null,
+
+  init() {
+    window.messageManager.addMessageListener(this.messageName, this);
+
+    gPrefService.addObserver(this.prefName, this, false);
+    this.writeFindAsYouType();
+  },
+
+  uninit() {
+    window.messageManager.removeMessageListener(this.messageName, this);
+
+    try {
+      gPrefService.removeObserver(this.prefName, this);
+    } catch (ex) {
+      Cu.reportError(ex);
+    }
+  },
+
+  observe: function(aSubject, aTopic, aData) {
+    if (aTopic != "nsPref:changed") {
+      return;
+    }
+
+    this.writeFindAsYouType();
+  },
+
+  writeFindAsYouType: function() {
+    this.findAsYouType = gPrefService.getBoolPref(this.prefName);
+  },
+
+  receiveMessage(aMessage) {
+    switch (aMessage.name) {
+      case this.messageName:
+        // If the find bar for this tab is not yet alive, only initialize
+        // it if there's a possibility FindAsYouType will be used.
+        // There's no point in doing it for most random keypresses.
+        if (!gFindBarInitialized && aMessage.data.shouldFastFind) {
+          let shouldFastFind = this.findAsYouType;
+          if (!shouldFastFind) {
+            // Please keep in sync with toolkit/content/widgets/findbar.xml
+            const FAYT_LINKS_KEY = "'";
+            const FAYT_TEXT_KEY = "/";
+            let charCode = aMessage.data.fakeEvent.charCode;
+            let key = charCode ? String.fromCharCode(charCode) : null;
+            shouldFastFind = key == FAYT_LINKS_KEY || key == FAYT_TEXT_KEY;
+          }
+          if (shouldFastFind) {
+            // Make sure we return the result.
+            return gFindBar.receiveMessage(aMessage);
+          }
+        }
+        break;
+    }
+  }
+};
+
 var gURLBarSettings = {
   prefSuggest: "browser.urlbar.suggest.",
   /*
@@ -730,6 +790,7 @@ var gBrowserInit = {
 #ifdef MOZ_DEVTOOLS
     DevToolsTheme.init();
 #endif
+    gFindBarSettings.init();
 
     messageManager.loadFrameScript("chrome://browser/content/content.js", true);
     messageManager.loadFrameScript("chrome://browser/content/content-sessionStore.js", true);
@@ -1305,6 +1366,7 @@ var gBrowserInit = {
 #ifdef MOZ_DEVTOOLS
     DevToolsTheme.uninit();
 #endif
+    gFindBarSettings.uninit();
 
     UserAgentCompatibility.uninit();
 
