@@ -365,8 +365,9 @@ var gFindBarSettings = {
   receiveMessage(aMessage) {
     switch (aMessage.name) {
       case this.messageName:
-        // If the find bar for this tab is not yet alive, only initialize
-        // it if there's a possibility FindAsYouType will be used.
+        // If the find bar for chrome window's context is not yet alive,
+        // only initialize it if there's a possibility FindAsYouType
+        // will be used.
         // There's no point in doing it for most random keypresses.
         if (!gFindBarInitialized && aMessage.data.shouldFastFind) {
           let shouldFastFind = this.findAsYouType;
