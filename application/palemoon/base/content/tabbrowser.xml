@@ -1669,8 +1669,22 @@
           var tabsToClose;
           switch (aCloseTabs) {
             case this.closingTabsEnum.ALL:
-              tabsToClose = this.tabs.length - this._removingTabs.length -
-                            gBrowser._numPinnedTabs;
+              // If there are multiple windows, pinned tabs will be closed, so
+              // we warn about them, too; if there is just one window, pinned
+              // tabs should come back on restart, so exclude them from warning.
+              var numberOfWindows = 0;
+              var browserEnum = Services.wm.getEnumerator("navigator:browser");
+              while (browserEnum.hasMoreElements() && numberOfWindows < 2) {
+                numberOfWindows++;
+                browserEnum.getNext();
+              }
+              if (numberOfWindows > 1) {
+                tabsToClose = this.tabs.length - this._removingTabs.length
+              }
+              else {
+                tabsToClose = this.tabs.length - this._removingTabs.length -
+                              gBrowser._numPinnedTabs;
+              }
               break;
             case this.closingTabsEnum.OTHER:
               tabsToClose = this.visibleTabs.length - 1 - gBrowser._numPinnedTabs;
