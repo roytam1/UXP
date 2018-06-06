@@ -1828,11 +1828,11 @@ nsNSSComponent::InitializeNSS()
   if (!nocertdb && !profileStr.IsEmpty()) {
     // First try to initialize the NSS DB in read/write mode.
     // Only load PKCS11 modules if we're not in safe mode.
-    init_rv = ::mozilla::psm::InitializeNSS(profileStr.get(), false, !inSafeMode);
+    init_rv = ::mozilla::psm::InitializeNSS(profileStr, false, !inSafeMode);
     // If that fails, attempt read-only mode.
     if (init_rv != SECSuccess) {
       MOZ_LOG(gPIPNSSLog, LogLevel::Debug, ("could not init NSS r/w in %s\n", profileStr.get()));
-      init_rv = ::mozilla::psm::InitializeNSS(profileStr.get(), true, !inSafeMode);
+      init_rv = ::mozilla::psm::InitializeNSS(profileStr, true, !inSafeMode);
     }
     if (init_rv != SECSuccess) {
       MOZ_LOG(gPIPNSSLog, LogLevel::Debug, ("could not init in r/o either\n"));

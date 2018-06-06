@@ -22,6 +22,7 @@
 #include "mozilla/Unused.h"
 #include "nsNSSCertificate.h"
 #include "nsServiceManagerUtils.h"
+#include "nsThreadUtils.h"
 #include "nss.h"
 #include "pk11pub.h"
 #include "pkix/Result.h"
@@ -1087,8 +1088,10 @@ NSSCertDBTrustDomain::NoteAuxiliaryExtension(AuxiliaryExtension extension,
 }
 
 SECStatus
-InitializeNSS(const char* dir, bool readOnly, bool loadPKCS11Modules)
+InitializeNSS(const nsACString& dir, bool readOnly, bool loadPKCS11Modules)
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   // The NSS_INIT_NOROOTINIT flag turns off the loading of the root certs
   // module by NSS_Initialize because we will load it in InstallLoadableRoots
   // later.  It also allows us to work around a bug in the system NSS in
@@ -1101,7 +1104,10 @@ InitializeNSS(const char* dir, bool readOnly, bool loadPKCS11Modules)
   if (!loadPKCS11Modules) {
     flags |= NSS_INIT_NOMODDB;
   }
-  return ::NSS_Initialize(dir, "", "", SECMOD_DB, flags);
+  nsAutoCString dbTypeAndDirectory;
+  dbTypeAndDirectory.Append("dbm:");
+  dbTypeAndDirectory.Append(dir);
+  return ::NSS_Initialize(dbTypeAndDirectory.get(), "", "", SECMOD_DB, flags);
 }
 
 void
