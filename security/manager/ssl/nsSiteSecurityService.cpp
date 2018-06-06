@@ -935,7 +935,7 @@ int STSPreloadCompare(const void *key, const void *entry)
 {
   const char *keyStr = (const char *)key;
   const nsSTSPreload *preloadEntry = (const nsSTSPreload *)entry;
-  return strcmp(keyStr, &kSTSHostTable[preloadEntry->mHostIndex]);
+  return strcmp(keyStr, preloadEntry->mHost);
 }
 
 // Returns the preload list entry for the given host, if it exists.
