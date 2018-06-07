@@ -333,14 +333,14 @@ var gFindBarSettings = {
   prefName: "accessibility.typeaheadfind",
   findAsYouType: null,
 
-  init() {
+  init: function() {
     window.messageManager.addMessageListener(this.messageName, this);
 
     gPrefService.addObserver(this.prefName, this, false);
     this.writeFindAsYouType();
   },
 
-  uninit() {
+  uninit: function() {
     window.messageManager.removeMessageListener(this.messageName, this);
 
     try {
@@ -362,7 +362,7 @@ var gFindBarSettings = {
     this.findAsYouType = gPrefService.getBoolPref(this.prefName);
   },
 
-  receiveMessage(aMessage) {
+  receiveMessage: function(aMessage) {
     switch (aMessage.name) {
       case this.messageName:
         // If the find bar for chrome window's context is not yet alive,
