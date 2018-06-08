@@ -142,7 +142,8 @@ def config_status(topobjdir='.', topsrcdir='.', defines=None,
     log_manager.add_terminal_logging(level=log_level)
     log_manager.enable_unstructured()
 
-    print('Reticulating splines...', file=sys.stderr)
+    print('Feeding the hatchlings...', file=sys.stderr)
+    sys.stderr.flush()
     if len(selected_backends) > 1:
         definitions = list(definitions)
 
