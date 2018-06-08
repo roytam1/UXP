@@ -13,6 +13,9 @@ XPCSHELL_TESTS_MANIFESTS += ['tests/unit/xpcshell.ini']
 
 EXTRA_COMPONENTS += [
     'SyncComponents.manifest',
+]
+
+EXTRA_PP_COMPONENTS += [
     'Weave.js',
 ]
 
@@ -28,11 +31,11 @@ EXTRA_JS_MODULES['services-sync'] += [
     'modules/jpakeclient.js',
     'modules/keys.js',
     'modules/main.js',
+    'modules/notifications.js',
     'modules/policies.js',
     'modules/record.js',
     'modules/resource.js',
     'modules/rest.js',
-    'modules/service.js',
     'modules/status.js',
     'modules/SyncedTabs.jsm',
     'modules/telemetry.js',
@@ -42,10 +45,11 @@ EXTRA_JS_MODULES['services-sync'] += [
 
 EXTRA_PP_JS_MODULES['services-sync'] += [
     'modules/constants.js',
+    'modules/service.js',
 ]
 
 # Definitions used by constants.js
-DEFINES['weave_version'] = '1.54.0'
+DEFINES['weave_version'] = '1.54.1'
 DEFINES['weave_id'] = '{340c2bbc-ce74-4362-90b5-7c26312808ef}'
 
 EXTRA_JS_MODULES['services-sync'].engines += [

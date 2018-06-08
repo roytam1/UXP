@@ -72,10 +72,12 @@ WeaveService.prototype = {
                                          Ci.nsISupportsWeakReference]),
 
   ensureLoaded: function () {
+#ifndef MC_PALEMOON
     // If we are loaded and not using FxA, load the migration module.
     if (!this.fxAccountsEnabled) {
       Cu.import("resource://services-sync/FxaMigrator.jsm");
     }
+#endif
 
     Components.utils.import("resource://services-sync/main.js");
 
@@ -103,6 +105,9 @@ WeaveService.prototype = {
    * @return bool
    */
   get fxAccountsEnabled() {
+#ifdef MC_PALEMOON
+    return false;
+#else
     try {
       // Old sync guarantees '@' will never appear in the username while FxA
       // uses the FxA email address - so '@' is the flag we use.
@@ -111,6 +116,7 @@ WeaveService.prototype = {
     } catch (_) {
       return true; // No username == only allow FxA to be configured.
     }
+#endif
   },
 
   /**
