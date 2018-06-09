@@ -115,6 +115,7 @@ pref("image.mem.decode_bytes_at_a_time", 65536); //larger chunks
 // Sync server URL
 pref("services.sync.serverURL","https://pmsync.palemoon.org/sync/index.php/");
 pref("services.sync.jpake.serverURL","https://keyserver.palemoon.org/");
+pref("services.sync.APILevel", 1); // FSyncMS doesn't support info/configuration
 
 // ============================================================================
 
