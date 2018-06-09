@@ -213,7 +213,14 @@ var gUsageTreeView = {
    * disabled.
    */
   getEnginesToDisable: function getEnginesToDisable() {
-    return [coll.name for each (coll in this._collections) if (!coll.enabled)];
+    // Tycho: return [coll.name for each (coll in this._collections) if (!coll.enabled)];
+    let engines = [];
+    for each (let coll in this._collections) {
+      if (!coll.enabled) {
+        engines.push(coll.name);
+      }
+    }
+    return engines;
   },
 
   // nsITreeView
