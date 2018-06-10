@@ -1217,7 +1217,11 @@ pref("privacy.donottrackheader.enabled",    false);
 // Enforce tracking protection in all modes
 pref("privacy.trackingprotection.enabled",  false);
 // Enforce tracking protection in Private Browsing mode
+#ifdef MOZ_SAFE_BROWSING
 pref("privacy.trackingprotection.pbmode.enabled",  true);
+#else
+pref("privacy.trackingprotection.pbmode.enabled",  false);
+#endif
 
 pref("dom.event.contextmenu.enabled",       true);
 pref("dom.event.clipboardevents.enabled",   true);
