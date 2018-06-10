@@ -10,12 +10,18 @@
 <preferences id="privacyPreferences" hidden="true" data-category="panePrivacy">
 
   <!-- Tracking -->
+#ifdef MOZ_SAFEBROWSING
   <preference id="privacy.trackingprotection.enabled"
               name="privacy.trackingprotection.enabled"
               type="bool"/>
   <preference id="privacy.trackingprotection.pbmode.enabled"
               name="privacy.trackingprotection.pbmode.enabled"
               type="bool"/>
+#else
+  <preference id="privacy.donottrackheader.enabled"
+              name="privacy.donottrackheader.enabled"
+              type="bool"/>
+#endif
 
   <!-- XXX button prefs -->
   <preference id="pref.privacy.disable_button.cookie_exceptions"
@@ -85,6 +91,7 @@
 
 <!-- Tracking -->
 <groupbox id="trackingGroup" data-category="panePrivacy" hidden="true">
+#ifdef MOZ_SAFEBROWSING
   <vbox id="trackingprotectionbox" hidden="true">
     <hbox align="start">
       <vbox>
@@ -138,6 +145,20 @@
     class="text-link" id="doNotTrackSettings"
     >&doNotTrack.settings.label;</label>&doNotTrack.post.label;</description>
   </vbox>
+#else
+  <vbox id="donottrackbox">
+    <caption><label>&tracking.label;</label></caption>
+    <hbox align="center">
+      <checkbox id="DoNotTrack"
+                preference="privacy.donottrackheader.enabled"
+                accesskey="&doNotTrack.accesskey;"
+                label="&doNotTrack.label;" />
+      <label class="text-link"
+             value="&doNotTrackLearnMore.label;"
+             href="https://www.mozilla.org/dnt"/>
+    </hbox>
+  </vbox>
+#endif
 </groupbox>
 
 <!-- History -->

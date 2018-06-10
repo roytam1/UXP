@@ -22,6 +22,7 @@ var gPrivacyPane = {
    */
   _shouldPromptForRestart: true,
 
+#ifdef MOZ_SAFEBROWSING
   /**
    * Show the Tracking Protection UI depending on the
    * privacy.trackingprotection.ui.enabled pref, and linkify its Learn More link
@@ -50,6 +51,7 @@ var gPrivacyPane = {
     let url = Services.urlFormatter.formatURLPref("app.support.baseURL") + "tracking-protection-pbm";
     link.setAttribute("href", url);
   },
+#endif
 
   /**
    * Initialize autocomplete to ensure prefs are in sync.
@@ -129,8 +131,10 @@ var gPrivacyPane = {
     this.updateHistoryModePane();
     this.updatePrivacyMicroControls();
     this.initAutoStartPrivateBrowsingReverter();
+#ifdef MOZ_SAFEBROWSING
     this._initTrackingProtection();
     this._initTrackingProtectionPBM();
+#endif
     this._initAutocomplete();
     this._initBrowserContainers();
 
@@ -156,10 +160,12 @@ var gPrivacyPane = {
       gPrivacyPane.clearPrivateDataNow(true);
       return false;
     });
+#ifdef MOZ_SAFEBROWSING
     setEventListener("doNotTrackSettings", "click", function () {
       gPrivacyPane.showDoNotTrackSettings();
       return false;
     });
+#endif
     setEventListener("privateBrowsingAutoStart", "command",
                      gPrivacyPane.updateAutostart);
     setEventListener("cookieExceptions", "command",
@@ -168,6 +174,7 @@ var gPrivacyPane = {
                      gPrivacyPane.showCookies);
     setEventListener("clearDataSettings", "command",
                      gPrivacyPane.showClearPrivateDataSettings);
+#ifdef MOZ_SAFEBROWSING
     setEventListener("trackingProtectionRadioGroup", "command",
                      gPrivacyPane.trackingProtectionWritePrefs);
     setEventListener("trackingProtectionExceptions", "command",
@@ -176,12 +183,14 @@ var gPrivacyPane = {
                      gPrivacyPane.showBlockLists);
     setEventListener("changeBlockListPBM", "command",
                      gPrivacyPane.showBlockLists);
+#endif
     setEventListener("browserContainersCheckbox", "command",
                      gPrivacyPane._checkBrowserContainers);
     setEventListener("browserContainersSettings", "command",
                      gPrivacyPane.showContainerSettings);
   },
 
+#ifdef MOZ_SAFEBROWSING
   // TRACKING PROTECTION MODE
 
   /**
@@ -225,6 +234,7 @@ var gPrivacyPane = {
         break;
     }
   },
+#endif
 
   // HISTORY MODE
 
@@ -462,6 +472,7 @@ var gPrivacyPane = {
       this._shouldPromptForRestart = true;
   },
 
+#ifdef MOZ_SAFEBROWSING
   /**
    * Displays fine-grained, per-site preferences for tracking protection.
    */
@@ -476,6 +487,7 @@ var gPrivacyPane = {
     gSubDialog.open("chrome://browser/content/preferences/permissions.xul",
                     null, params);
   },
+#endif
 
   /**
    * Displays container panel for customising and adding containers.
@@ -484,6 +496,7 @@ var gPrivacyPane = {
     gotoPref("containers");
   },
 
+#ifdef MOZ_SAFEBROWSING
   /**
    * Displays the available block lists for tracking protection.
    */
@@ -506,6 +519,7 @@ var gPrivacyPane = {
     gSubDialog.open("chrome://browser/content/preferences/donottrack.xul",
                     "resizable=no");
   },
+#endif
 
   // HISTORY
 
