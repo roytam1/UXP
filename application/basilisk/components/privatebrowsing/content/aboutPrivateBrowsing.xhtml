@@ -35,7 +35,9 @@
     <div class="showPrivate about-content-container">
       <h1 class="title">
         <span id="title">&privateBrowsing.title;</span>
+#ifdef MOZ_SAFE_BROWSING
         <span id="titleTracking">&privateBrowsing.title.tracking;</span>
+#endif
       </h1>
       <section class="section-main">
         <p>&aboutPrivateBrowsing.info.notsaved.before;<strong>&aboutPrivateBrowsing.info.notsaved.emphasize;</strong>&aboutPrivateBrowsing.info.notsaved.after;</p>
