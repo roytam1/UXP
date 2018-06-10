@@ -14,6 +14,7 @@ const FAVICON_PRIVACY = "chrome://browser/skin/privatebrowsing/favicon.svg";
 var stringBundle = Services.strings.createBundle(
                     "chrome://browser/locale/aboutPrivateBrowsing.properties");
 
+#ifdef MOZ_SAFE_BROWSING
 var prefBranch = Services.prefs.getBranch("privacy.trackingprotection.");
 var prefObserver = {
  QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
@@ -37,6 +38,7 @@ var prefObserver = {
 };
 prefBranch.addObserver("pbmode.enabled", prefObserver, true);
 prefBranch.addObserver("enabled", prefObserver, true);
+#endif
 
 function setFavIcon(url) {
  document.getElementById("favicon").setAttribute("href", url);
@@ -54,23 +56,29 @@ document.addEventListener("DOMContentLoaded", function () {
    return;
  }
 
+#ifdef MOZ_SAFE_BROWSING
  let tpToggle = document.getElementById("tpToggle");
  document.getElementById("tpButton").addEventListener('click', () => {
    tpToggle.click();
  });
+#endif
 
  document.title = stringBundle.GetStringFromName("title.head");
  document.getElementById("favicon")
          .setAttribute("href", FAVICON_PRIVACY);
+#ifdef MOZ_SAFE_BROWSING
  tpToggle.addEventListener("change", toggleTrackingProtection);
+#endif
 
  let formatURLPref = Cc["@mozilla.org/toolkit/URLFormatterService;1"]
                        .getService(Ci.nsIURLFormatter).formatURLPref;
  document.getElementById("learnMore").setAttribute("href",
                     formatURLPref("app.support.baseURL") + "private-browsing");
 
+#ifdef MOZ_SAFE_BROWSING
  // Update state that depends on preferences.
  prefObserver.observe();
+#endif
 }, false);
 
 function openPrivateWindow() {
@@ -79,9 +87,11 @@ function openPrivateWindow() {
    new CustomEvent("AboutPrivateBrowsingOpenWindow", {bubbles:true}));
 }
 
+#ifdef MOZ_SAFE_BROWSING
 function toggleTrackingProtection() {
  // Ask chrome to enable tracking protection
  document.dispatchEvent(
    new CustomEvent("AboutPrivateBrowsingToggleTrackingProtection",
                    {bubbles: true}));
 }
+#endif
