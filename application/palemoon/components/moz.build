@@ -12,6 +12,7 @@ DIRS += [
     'feeds',
     'fuel',
     'places',
+    'permissions',
     'preferences',
     'privatebrowsing',
     'search',

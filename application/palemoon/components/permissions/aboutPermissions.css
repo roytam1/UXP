@@ -3,9 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 .site {
-  -moz-binding: url("chrome://browser/content/preferences/aboutPermissions.xml#site");
+  -moz-binding: url("chrome://browser/content/permissions/aboutPermissions.xml#site");
 }
 
 .pluginPermission {
-  -moz-binding: url("chrome://browser/content/preferences/aboutPermissions.xml#pluginPermission");
+  -moz-binding: url("chrome://browser/content/permissions/aboutPermissions.xml#pluginPermission");
 }

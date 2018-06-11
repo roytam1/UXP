@@ -480,7 +480,7 @@ var AboutPermissions = {
       .createBundle("chrome://browser/locale/browser.properties"),
 
   _stringBundleAboutPermissions: Services.strings.createBundle(
-      "chrome://browser/locale/preferences/aboutPermissions.properties"),
+      "chrome://browser/locale/permissions/aboutPermissions.properties"),
 
   _initPart1: function() {
     this.initPluginList();

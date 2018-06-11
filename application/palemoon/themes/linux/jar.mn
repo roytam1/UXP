@@ -97,6 +97,7 @@ browser.jar:
   skin/classic/browser/places/toolbarDropMarker.png   (places/toolbarDropMarker.png)
   skin/classic/browser/places/unsortedBookmarks.png   (places/unsortedBookmarks.png)
   skin/classic/browser/places/downloads.png           (places/downloads.png)
+  skin/classic/browser/permissions/aboutPermissions.css (permissions/aboutPermissions.css)
   skin/classic/browser/preferences/alwaysAsk.png      (preferences/alwaysAsk.png)
   skin/classic/browser/preferences/mail.png           (preferences/mail.png)
   skin/classic/browser/preferences/Options.png        (preferences/Options.png)
@@ -105,7 +106,6 @@ browser.jar:
 #endif
 * skin/classic/browser/preferences/preferences.css    (preferences/preferences.css)
   skin/classic/browser/preferences/applications.css   (preferences/applications.css)
-  skin/classic/browser/preferences/aboutPermissions.css (preferences/aboutPermissions.css)
 #ifdef MOZ_BROWSER_STATUSBAR
   skin/classic/browser/statusbar/dynamic.css                   (../shared/statusbar/dynamic.css)
 * skin/classic/browser/statusbar/overlay.css                   (statusbar/overlay.css)

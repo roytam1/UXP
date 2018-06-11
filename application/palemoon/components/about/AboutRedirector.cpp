@@ -62,7 +62,7 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::HIDE_FROM_ABOUTABOUT
   },
   {
-    "permissions", "chrome://browser/content/preferences/aboutPermissions.xul",
+    "permissions", "chrome://browser/content/permissions/aboutPermissions.xul",
     nsIAboutModule::ALLOW_SCRIPT
   },
   {

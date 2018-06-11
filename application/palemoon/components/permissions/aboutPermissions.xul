@@ -4,13 +4,13 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<?xml-stylesheet href="chrome://browser/content/preferences/aboutPermissions.css"?>
-<?xml-stylesheet href="chrome://browser/skin/preferences/aboutPermissions.css"?>
+<?xml-stylesheet href="chrome://browser/content/permissions/aboutPermissions.css"?>
+<?xml-stylesheet href="chrome://browser/skin/permissions/aboutPermissions.css"?>
 
 <!DOCTYPE page [
 <!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd" >
 %brandDTD;
-<!ENTITY % aboutPermissionsDTD SYSTEM "chrome://browser/locale/preferences/aboutPermissions.dtd" >
+<!ENTITY % aboutPermissionsDTD SYSTEM "chrome://browser/locale/permissions/aboutPermissions.dtd" >
 %aboutPermissionsDTD;
 ]>
 
@@ -23,7 +23,7 @@
       role="application">
 
   <script type="application/javascript"
-          src="chrome://browser/content/preferences/aboutPermissions.js"/>
+          src="chrome://browser/content/permissions/aboutPermissions.js"/>
 
   <keyset>
     <key key="&focusSearch.key;" modifiers="accel" oncommand="AboutPermissions.focusFilterBox();"/>
