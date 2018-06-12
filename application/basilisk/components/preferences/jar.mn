@@ -5,7 +5,7 @@
 browser.jar:
     content/browser/preferences/applicationManager.xul
     content/browser/preferences/applicationManager.js
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
     content/browser/preferences/blocklists.xul
     content/browser/preferences/blocklists.js
 #endif
@@ -14,7 +14,7 @@ browser.jar:
     content/browser/preferences/cookies.js
 *   content/browser/preferences/connection.xul
     content/browser/preferences/connection.js
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
     content/browser/preferences/donottrack.xul
 #endif
 *   content/browser/preferences/fonts.xul

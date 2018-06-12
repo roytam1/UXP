@@ -10,7 +10,7 @@
 <preferences id="privacyPreferences" hidden="true" data-category="panePrivacy">
 
   <!-- Tracking -->
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
   <preference id="privacy.trackingprotection.enabled"
               name="privacy.trackingprotection.enabled"
               type="bool"/>
@@ -91,7 +91,7 @@
 
 <!-- Tracking -->
 <groupbox id="trackingGroup" data-category="panePrivacy" hidden="true">
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
   <vbox id="trackingprotectionbox" hidden="true">
     <hbox align="start">
       <vbox>

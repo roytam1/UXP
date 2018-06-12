@@ -22,7 +22,7 @@ var gPrivacyPane = {
    */
   _shouldPromptForRestart: true,
 
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
   /**
    * Show the Tracking Protection UI depending on the
    * privacy.trackingprotection.ui.enabled pref, and linkify its Learn More link
@@ -131,7 +131,7 @@ var gPrivacyPane = {
     this.updateHistoryModePane();
     this.updatePrivacyMicroControls();
     this.initAutoStartPrivateBrowsingReverter();
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
     this._initTrackingProtection();
     this._initTrackingProtectionPBM();
 #endif
@@ -160,7 +160,7 @@ var gPrivacyPane = {
       gPrivacyPane.clearPrivateDataNow(true);
       return false;
     });
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
     setEventListener("doNotTrackSettings", "click", function () {
       gPrivacyPane.showDoNotTrackSettings();
       return false;
@@ -174,7 +174,7 @@ var gPrivacyPane = {
                      gPrivacyPane.showCookies);
     setEventListener("clearDataSettings", "command",
                      gPrivacyPane.showClearPrivateDataSettings);
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
     setEventListener("trackingProtectionRadioGroup", "command",
                      gPrivacyPane.trackingProtectionWritePrefs);
     setEventListener("trackingProtectionExceptions", "command",
@@ -190,7 +190,7 @@ var gPrivacyPane = {
                      gPrivacyPane.showContainerSettings);
   },
 
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
   // TRACKING PROTECTION MODE
 
   /**
@@ -472,7 +472,7 @@ var gPrivacyPane = {
       this._shouldPromptForRestart = true;
   },
 
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
   /**
    * Displays fine-grained, per-site preferences for tracking protection.
    */
@@ -496,7 +496,7 @@ var gPrivacyPane = {
     gotoPref("containers");
   },
 
-#ifdef MOZ_SAFEBROWSING
+#ifdef MOZ_SAFE_BROWSING
   /**
    * Displays the available block lists for tracking protection.
    */
