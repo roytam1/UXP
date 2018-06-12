@@ -53,20 +53,13 @@ var gEditUIVisible = true;
 
 // Smart getter for the findbar.  If you don't wish to force the creation of
 // the findbar, check gFindBarInitialized first.
-var gFindBarInitialized = false;
-XPCOMUtils.defineLazyGetter(window, "gFindBar", function() {
-  let XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-  let findbar = document.createElementNS(XULNS, "findbar");
-  findbar.id = "FindToolbar";
 
-  let browserBottomBox = document.getElementById("browser-bottombox");
-  browserBottomBox.insertBefore(findbar, browserBottomBox.firstChild);
+this.__defineGetter__("gFindBar", function() {
+  return window.gBrowser.getFindBar();
+});
 
-  // Force a style flush to ensure that our binding is attached.
-  findbar.clientTop;
-  findbar.browser = gBrowser.mCurrentBrowser;
-  window.gFindBarInitialized = true;
-  return findbar;
+this.__defineGetter__("gFindBarInitialized", function() {
+  return window.gBrowser.isFindBarInitialized();
 });
 
 XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
