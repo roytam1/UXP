@@ -4339,7 +4339,7 @@ pref("image.decode-immediately.enabled", false);
 pref("image.downscale-during-decode.enabled", true);
 
 // The default Accept header sent for images loaded over HTTP(S)
-pref("image.http.accept", "image/png,image/*;q=0.8,*/*;q=0.5");
+pref("image.http.accept", "image/webp,image/png,image/*;q=0.8,*/*;q=0.5");
 
 // The threshold for inferring that changes to an <img> element's |src|
 // attribute by JavaScript represent an animation, in milliseconds. If the |src|
@@ -4388,7 +4388,7 @@ pref("image.mem.surfacecache.discard_factor", 1);
 pref("image.multithreaded_decoding.limit", -1);
 
 // Whether we attempt to decode WebP images or not.
-pref("image.webp.enabled", false);
+pref("image.webp.enabled", true);
 
 // Limit for the canvas image cache. 0 means we don't limit the size of the
 // cache.
