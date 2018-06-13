@@ -42,6 +42,9 @@ var snapshotFormatters = {
     $("os-box").textContent = data.osVersion;
     $("supportLink").href = data.supportURL;
     let version = AppConstants.MOZ_APP_VERSION_DISPLAY;
+    if (data.versionArch) {
+      version += " (" + data.versionArch + ")";
+    }
     if (data.vendor)
       version += " (" + data.vendor + ")";
     $("version-box").textContent = version;

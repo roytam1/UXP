@@ -33,7 +33,12 @@ var versionNum = Components.classes["@mozilla.org/xre/app-info;1"]
                            .getService(Components.interfaces.nsIXULAppInfo)
                            .version;
 var version = document.getElementById("version");
-version.textContent += " " + versionNum;
+#ifdef HAVE_64BIT_BUILD
+var versionStr = versionNum + " (64-bit)";
+#else
+var versionStr = versionNum + " (32-bit)";
+#endif
+version.textContent += " " + versionStr;
 
 // insert the buildid of the XUL application
 var BuildIDVal = Components.classes["@mozilla.org/xre/app-info;1"]

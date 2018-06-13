@@ -94,7 +94,6 @@ EXTRA_JS_MODULES += [
     'Sqlite.jsm',
     'Task.jsm',
     'Timer.jsm',
-    'Troubleshoot.jsm',
     'UpdateUtils.jsm',
     'WebChannel.jsm',
     'WindowDraggingUtils.jsm',
@@ -103,7 +102,10 @@ EXTRA_JS_MODULES += [
 EXTRA_JS_MODULES.third_party.jsesc += ['third_party/jsesc/jsesc.js']
 EXTRA_JS_MODULES.sessionstore += ['sessionstore/Utils.jsm']
 
-EXTRA_PP_JS_MODULES += ['NewTabUtils.jsm']
+EXTRA_PP_JS_MODULES += [
+    'NewTabUtils.jsm',
+    'Troubleshoot.jsm',
+]
 
 if not CONFIG['MOZ_WEBEXTENSIONS']:
   EXTRA_PP_JS_MODULES += ['UpdateChannel.jsm']

@@ -188,6 +188,12 @@ var dataProviders = {
     if (AppConstants.MOZ_UPDATER)
       data.updateChannel = Cu.import("resource://gre/modules/UpdateUtils.jsm", {}).UpdateUtils.UpdateChannel;
 
+#ifdef HAVE_64BIT_BUILD
+    data.versionArch = "64-bit";
+#else
+    data.versionArch = "32-bit";
+#endif
+
     try {
       data.vendor = Services.prefs.getCharPref("app.support.vendor");
     }
