@@ -1207,7 +1207,7 @@ BrowserGlue.prototype = {
   },
 
   _migrateUI: function BG__migrateUI() {
-    const UI_VERSION = 18;
+    const UI_VERSION = 19;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul#";
     let currentUIVersion = 0;
     try {
@@ -1425,6 +1425,22 @@ BrowserGlue.prototype = {
       }
       catch (ex) {}
     }
+
+#ifndef MOZ_JXR
+    // Until JPEG-XR decoder is implemented (UXP #144)
+    if (currentUIVersion < 19) {
+      try {
+        let ihaPref = "image.http.accept";
+        let ihaValue = Services.prefs.getCharPref(ihaPref);
+        if (ihaValue.includes("image/jxr,")) {
+          Services.prefs.setCharPref(ihaPref, ihaValue.replace("image/jxr,", ""));
+        } else if (ihaValue.includes("image/jxr")) {
+          Services.prefs.clearUserPref(ihaPref);
+        }
+      }
+      catch (ex) {}
+    }
+#endif
 
     // Update the migration version.
     Services.prefs.setIntPref("browser.migration.version", UI_VERSION);
