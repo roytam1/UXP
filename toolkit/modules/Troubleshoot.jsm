@@ -10,6 +10,7 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/AppConstants.jsm");
 
 // We use a preferences whitelist to make sure we only show preferences that
 // are useful for support and won't compromise the user's privacy.  Note that
@@ -176,17 +177,16 @@ var dataProviders = {
     let data = {
       name: Services.appinfo.name,
       osVersion: sysInfo.getProperty("name") + " " + sysInfo.getProperty("version"),
+      version: AppConstants.MOZ_APP_VERSION_DISPLAY,
       buildID: Services.appinfo.appBuildID,
       userAgent: Cc["@mozilla.org/network/protocol;1?name=http"].
                  getService(Ci.nsIHttpProtocolHandler).
                  userAgent,
       safeMode: Services.appinfo.inSafeMode,
     };
-#expand let data.version = "__MOZ_APP_VERSION_DISPLAY__";
 
-#ifdef MOZ_UPDATER
-    data.updateChannel = Cu.import("resource://gre/modules/UpdateUtils.jsm", {}).UpdateUtils.UpdateChannel;
-#endif
+    if (AppConstants.MOZ_UPDATER)
+      data.updateChannel = Cu.import("resource://gre/modules/UpdateUtils.jsm", {}).UpdateUtils.UpdateChannel;
 
 #ifdef HAVE_64BIT_BUILD
     data.versionArch = "64-bit";
@@ -356,11 +356,9 @@ var dataProviders = {
     data.currentAudioBackend = winUtils.currentAudioBackend;
 
     if (!data.numAcceleratedWindows && gfxInfo) {
-#ifdef XP_WIN
-      let feature = gfxInfo.FEATURE_DIRECT3D_9_LAYERS;
-#else
-      let feature = gfxInfo.FEATURE_OPENGL_LAYERS;
-#endif
+      let win = AppConstants.platform == "win";
+      let feature = win ? gfxInfo.FEATURE_DIRECT3D_9_LAYERS :
+                          gfxInfo.FEATURE_OPENGL_LAYERS;
       data.numAcceleratedWindowsMessage = statusMsgForFeature(feature);
     }
 
