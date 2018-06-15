@@ -24,6 +24,8 @@ pref("@GUAO_PREF@.accounts.firefox.com", "Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION
 pref("@GUAO_PREF@.addons.mozilla.org", "Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 
 // Required for domains that have proven unresponsive to requests from users
+pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:42.0) @GK_SLICE@ Firefox/42.0 @APP_SLICE@");
+pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:42.0) @GK_SLICE@ Firefox/42.0");
 
 // The never-ending Facebook debacle...
 
