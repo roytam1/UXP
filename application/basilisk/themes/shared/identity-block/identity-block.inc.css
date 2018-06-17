@@ -31,7 +31,7 @@
 
 #urlbar[pageproxystate="valid"] > #identity-box.chromeUI > #identity-icon-labels {
 %ifdef MOZ_OFFICIAL_BRANDING
-  color: rgb(229,115,0);
+  color: rgb(21,150,119);
 %else
   color: inherit;
 %endif
