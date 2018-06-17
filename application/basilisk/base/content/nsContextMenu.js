@@ -1355,7 +1355,9 @@ nsContextMenu.prototype = {
     // checks after redirects, see bug: 1136055
     var channel = NetUtil.newChannel({
                     uri: makeURI(linkURL),
-                    loadUsingSystemPrincipal: true
+                    loadingPrincipal: this.principal,
+                    contentPolicyType: Ci.nsIContentPolicy.TYPE_SAVEAS_DOWNLOAD,
+                    securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_DATA_INHERITS,
                   });
 
     if (linkDownload)
