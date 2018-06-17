@@ -1126,7 +1126,7 @@ nsContextMenu.prototype = {
     // setting up a new channel for 'right click - save link as ...'
     var channel = NetUtil.newChannel({
                     uri: makeURI(linkURL),
-                    loadingPrincipal: this.principal,
+                    loadingPrincipal: this.target.ownerDocument.nodePrincipal,
                     contentPolicyType: Ci.nsIContentPolicy.TYPE_SAVEAS_DOWNLOAD,
                     securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_DATA_INHERITS,
                   });
