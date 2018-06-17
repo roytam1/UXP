@@ -237,7 +237,7 @@ NS_CheckContentLoadPolicy(uint32_t          contentType,
     CHECK_PRINCIPAL_AND_DATA(ShouldLoad);
     if (policyService) {
         CHECK_CONTENT_POLICY_WITH_SERVICE(ShouldLoad, policyService);
-y   ?
+    }
     CHECK_CONTENT_POLICY(ShouldLoad);
 }
 
