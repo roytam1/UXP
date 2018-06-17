@@ -269,7 +269,6 @@ static_assert(nsIContentPolicy::TYPE_INVALID == 0 &&
               nsIContentPolicy::TYPE_FETCH == 20 &&
               nsIContentPolicy::TYPE_IMAGESET == 21 &&
               nsIContentPolicy::TYPE_WEB_MANIFEST == 22 &&
-              nsIContentPolicy::TYPE_SAVEAS_DOWNLOAD == 43 &&
               nsIContentPolicy::TYPE_INTERNAL_SCRIPT == 23 &&
               nsIContentPolicy::TYPE_INTERNAL_WORKER == 24 &&
               nsIContentPolicy::TYPE_INTERNAL_SHARED_WORKER == 25 &&
@@ -288,7 +287,8 @@ static_assert(nsIContentPolicy::TYPE_INVALID == 0 &&
               nsIContentPolicy::TYPE_INTERNAL_IMAGE_PRELOAD == 38 &&
               nsIContentPolicy::TYPE_INTERNAL_STYLESHEET == 39 &&
               nsIContentPolicy::TYPE_INTERNAL_STYLESHEET_PRELOAD == 40 &&
-              nsIContentPolicy::TYPE_INTERNAL_IMAGE_FAVICON == 41,
+              nsIContentPolicy::TYPE_INTERNAL_IMAGE_FAVICON == 41 &&
+              nsIContentPolicy::TYPE_SAVEAS_DOWNLOAD == 42,
               "nsContentPolicyType values are as expected");
 
 namespace {
