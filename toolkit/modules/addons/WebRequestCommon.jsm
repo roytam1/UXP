@@ -35,6 +35,7 @@ var WebRequestCommon = {
       case Ci.nsIContentPolicy.TYPE_CSP_REPORT: return "csp_report";
       case Ci.nsIContentPolicy.TYPE_IMAGESET: return "imageset";
       case Ci.nsIContentPolicy.TYPE_WEB_MANIFEST: return "web_manifest";
+      case Ci.nsIContentPolicy.TYPE_SAVEAS_DOWNLOAD: return "saveas_download";
       default: return "other";
     }
   },

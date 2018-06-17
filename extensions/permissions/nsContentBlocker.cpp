@@ -46,6 +46,7 @@ static const char *kTypeString[] = {
                                     "fetch",
                                     "image",
                                     "manifest",
+                                    "saveas_download",
                                     "", // TYPE_INTERNAL_SCRIPT
                                     "", // TYPE_INTERNAL_WORKER
                                     "", // TYPE_INTERNAL_SHARED_WORKER

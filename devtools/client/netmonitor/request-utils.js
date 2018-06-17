@@ -177,7 +177,8 @@ const LOAD_CAUSE_STRINGS = {
   [Ci.nsIContentPolicy.TYPE_BEACON]: "beacon",
   [Ci.nsIContentPolicy.TYPE_FETCH]: "fetch",
   [Ci.nsIContentPolicy.TYPE_IMAGESET]: "imageset",
-  [Ci.nsIContentPolicy.TYPE_WEB_MANIFEST]: "webManifest"
+  [Ci.nsIContentPolicy.TYPE_WEB_MANIFEST]: "webManifest",
+  [Ci.nsIContentPolicy.TYPE_SAVEAS_DOWNLOAD]: "saveasDownload"
 };
 
 exports.loadCauseString = function (causeType) {
