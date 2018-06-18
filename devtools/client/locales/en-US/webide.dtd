@@ -2,7 +2,11 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!ENTITY windowTitle "Firefox WebIDE">
+<!ENTITY % brandDTD
+    SYSTEM "chrome://branding/locale/brand.dtd">
+  %brandDTD;
+
+<!ENTITY windowTitle "&brandShortName; WebIDE">
 
 <!ENTITY projectMenu_label "Project">
 <!ENTITY projectMenu_accesskey "P">
@@ -59,7 +63,7 @@
 <!ENTITY projectButton_label "Open App">
 <!ENTITY runtimeButton_label "Select Runtime">
 
-<!-- We try to repicate Firefox' bindings: -->
+<!-- We try to repicate browser' bindings: -->
 <!-- quit app -->
 <!ENTITY key_quit "W">
 <!-- open menu -->

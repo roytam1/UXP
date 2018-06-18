@@ -11,6 +11,10 @@
   - A good criteria is the language in which you'd find the best
   - documentation on web development on the web. -->
 
+<!ENTITY % brandDTD
+    SYSTEM "chrome://branding/locale/brand.dtd">
+  %brandDTD;
+
 <!-- LOCALIZATION NOTE (performanceUI.bufferStatusTooltip): This string
   -  is displayed as the tooltip for the buffer capacity during a recording. -->
 <!ENTITY performanceUI.bufferStatusTooltip "The profiler stores samples in a circular buffer, and once the buffer reaches the limit for a recording, newer samples begin to overwrite samples at the beginning of the recording.">
@@ -18,12 +22,12 @@
 <!-- LOCALIZATION NOTE (performanceUI.disabledRealTime.nonE10SBuild): This string
   -  is displayed as a message for why the real time overview graph is disabled
   -  when running on a non-multiprocess build. -->
-<!ENTITY performanceUI.disabledRealTime.nonE10SBuild "Realtime recording data disabled on non-multiprocess Firefox.">
+<!ENTITY performanceUI.disabledRealTime.nonE10SBuild "Realtime recording data disabled on non-multiprocess &brandShortName;.">
 
 <!-- LOCALIZATION NOTE (performanceUI.disabledRealTime.disabledE10S): This string
   -  is displayed as a message for why the real time overview graph is disabled
-  -  when running on a build that can run multiprocess Firefox, but just is not enabled. -->
-<!ENTITY performanceUI.disabledRealTime.disabledE10S "Enable multiprocess Firefox in preferences for rendering recording data in realtime.">
+  -  when running on a build that can run multiprocess browser, but just is not enabled. -->
+<!ENTITY performanceUI.disabledRealTime.disabledE10S "Enable multiprocess &brandShortName; in preferences for rendering recording data in realtime.">
 
 <!-- LOCALIZATION NOTE (performanceUI.bufferStatusFull): This string
   -  is displayed when the profiler's circular buffer has started to overlap. -->
@@ -88,10 +92,10 @@
 <!ENTITY performanceUI.invertFlameGraph.tooltiptext "Inverting the flame chart displays the profiled call paths starting from the youngest frames and expanding out to the older frames.">
 
 <!-- LOCALIZATION NOTE (performanceUI.showPlatformData): This is the
-  -  label for the checkbox that toggles whether or not Gecko platform data
+  -  label for the checkbox that toggles whether or not Goanna platform data
   -  is displayed in the profiler. -->
-<!ENTITY performanceUI.showPlatformData             "Show Gecko Platform Data">
-<!ENTITY performanceUI.showPlatformData.tooltiptext "Showing platform data enables the JavaScript Profiler reports to include Gecko platform symbols.">
+<!ENTITY performanceUI.showPlatformData             "Show Goanna Platform Data">
+<!ENTITY performanceUI.showPlatformData.tooltiptext "Showing platform data enables the JavaScript Profiler reports to include Goanna platform symbols.">
 
 <!-- LOCALIZATION NOTE (performanceUI.showJITOptimizations): This string
   -  is displayed next to a checkbox determining whether or not JIT optimization data
