@@ -37,7 +37,7 @@ toolkit.jar:
    content/global/plugins.html
    content/global/plugins.css
    content/global/browser-child.js
-*  content/global/browser-content.js
+   content/global/browser-content.js
 *  content/global/buildconfig.html
    content/global/contentAreaUtils.js
 #ifndef MOZ_FENNEC
