@@ -1104,9 +1104,11 @@
               this.mCurrentTab.removeAttribute("unread");
               this.selectedTab.lastAccessed = Date.now();
 
-              // Bug 666816 - TypeAheadFind support for e10s
-              if (!gMultiProcessBrowser)
-                this._fastFind.setDocShell(this.mCurrentBrowser.docShell);
+              let oldFindBar = oldTab._findBar;
+              if (oldFindBar &&
+                  oldFindBar.findMode == oldFindBar.FIND_NORMAL &&
+                  !oldFindBar.hidden)
+                this._lastFindValue = oldFindBar._findField.value;
 
               this.updateTitlebar();
 
@@ -1157,6 +1159,11 @@
 
               // Adjust focus
               oldBrowser._urlbarFocused = (gURLBar && gURLBar.focused);
+              if (this.isFindBarInitialized(oldTab)) {
+                let findBar = this.getFindBar(oldTab);
+                oldTab._findBarFocused = (!findBar.hidden &&
+                  findBar._findField.getAttribute("focused") == "true");
+              }
               do {
                 // When focus is in the tab bar, retain it there.
                 if (document.activeElement == oldTab) {
@@ -1192,11 +1199,12 @@
                   }
                 }
 
-                // If the find bar is focused, keep it focused.
-                if (gFindBarInitialized &&
-                    !gFindBar.hidden &&
-                    gFindBar.getElement("findbar-textbox").getAttribute("focused") == "true")
+                // Focus the find bar if it was previously focused for that tab.
+                if (gFindBarInitialized && !gFindBar.hidden &&
+                    this.selectedTab._findBarFocused) {
+                  gFindBar._findField.focus();
                   break;
+                }
 
                 // Otherwise, focus the content area.
                 let fm = Cc["@mozilla.org/focus-manager;1"].getService(Ci.nsIFocusManager);
@@ -1599,7 +1607,6 @@
             this.mTabListeners[position] = tabListener;
             this.mTabFilters[position] = filter;
 
-            b._fastFind = this.fastFind;
             b.droppedLinkHandler = handleDroppedLink;
 
             // If we just created a new tab that loads the default
@@ -2840,21 +2847,6 @@
                 onget="return this.mCurrentBrowser.currentURI;"
                 readonly="true"/>
 
-      <field name="_fastFind">null</field>
-      <property name="fastFind"
-                readonly="true">
-        <getter>
-        <![CDATA[
-          if (!this._fastFind) {
-            this._fastFind = Components.classes["@mozilla.org/typeaheadfind;1"]
-                                       .createInstance(Components.interfaces.nsITypeAheadFind);
-            this._fastFind.init(this.docShell);
-          }
-          return this._fastFind;
-        ]]>
-        </getter>
-      </property>
-
       <field name="_lastSearchString">null</field>
       <field name="_lastSearchHighlight">false</field>
 
@@ -3158,6 +3150,28 @@
               window.focus();
               break;
             }
+            case "Findbar:Keypress":
+              let tab = this.getTabForBrowser(browser);
+              // If the find bar for this tab is not yet alive, only initialize
+              // it if there's a possibility FindAsYouType will be used.
+              // There's no point in doing it for most random keypresses.
+              if (!this.isFindBarInitialized(tab) &&
+                aMessage.data.shouldFastFind) {
+                let shouldFastFind = this._findAsYouType;
+                if (!shouldFastFind) {
+                  // Please keep in sync with toolkit/content/widgets/findbar.xml
+                  const FAYT_LINKS_KEY = "'";
+                  const FAYT_TEXT_KEY = "/";
+                  let charCode = aMessage.data.fakeEvent.charCode;
+                  let key = charCode ? String.fromCharCode(charCode) : null;
+                  shouldFastFind = key == FAYT_LINKS_KEY || key == FAYT_TEXT_KEY;
+                }
+                if (shouldFastFind) {
+                  // Make sure we return the result.
+                  return this.getFindBar(tab).receiveMessage(aMessage);
+                }
+              }
+              break;
           }
         ]]></body>
       </method>
@@ -3224,6 +3238,11 @@
                                               this.mCurrentBrowser);
           }
           messageManager.addMessageListener("DOMWebNotificationClicked", this);
+
+          // To correctly handle keypresses for potential FindAsYouType, while
+          // the tab's find bar is not yet initialized.
+          this._findAsYouType = Services.prefs.getBoolPref("accessibility.typeaheadfind");
+          messageManager.addMessageListener("Findbar:Keypress", this);
         ]]>
       </constructor>
 
@@ -3478,6 +3497,7 @@
           tab.setAttribute("onerror", "this.removeAttribute('image');");
           this.adjustTabstrip();
 
+          Services.prefs.addObserver("accessibility.typeaheadfind", this._prefObserver, false);
           Services.prefs.addObserver("browser.tabs.", this._prefObserver, false);
           window.addEventListener("resize", this, false);
           window.addEventListener("load", this, false);
@@ -3493,6 +3513,7 @@
 
       <destructor>
         <![CDATA[
+          Services.prefs.removeObserver("accessibility.typeaheadfind", this._prefObserver);
           Services.prefs.removeObserver("browser.tabs.", this._prefObserver);
         ]]>
       </destructor>
@@ -3558,6 +3579,9 @@
 
         observe: function (subject, topic, data) {
           switch (data) {
+            case "accessibility.typeaheadfind":
+              this._findAsYouType = Services.prefs.getBoolPref(data);
+              break;
             case "browser.tabs.closeButtons":
               this.tabContainer.mCloseButtons = Services.prefs.getIntPref(data);
               this.tabContainer.adjustTabstrip();
