@@ -841,35 +841,6 @@ var FindBar = {
         fakeEvent[k] = event[k];
       }
     }
-#ifdef MC_PALEMOON
-    let findBarId = "FindToolbar";
-    // The FindBar is in the chrome window's context, not in tabbrowser
-    // - see also bug 537013
-    let chromeWin = null;
-    try {
-       chromeWin = content
-         .QueryInterface(Ci.nsIInterfaceRequestor)
-         .getInterface(Ci.nsIWebNavigation)
-         .QueryInterface(Ci.nsIDocShellTreeItem)
-         .rootTreeItem
-         .QueryInterface(Ci.nsIInterfaceRequestor)
-         .getInterface(Ci.nsIDOMWindow)
-         .QueryInterface(Ci.nsIDOMChromeWindow);
-    } catch (e) {
-      Cu.reportError(
-          "The FindBar - the chrome window's context was not detected:\n" + e);
-    }
-    if (chromeWin && chromeWin.document.getElementById(findBarId)) {
-      try {
-        chromeWin.document.getElementById(findBarId)
-            .browser = Services.wm.getMostRecentWindow("navigator:browser")
-                .gBrowser.mCurrentBrowser;
-      } catch (e) {
-        Cu.reportError(
-            "The FindBar - cannot set the property 'browser':\n" + e);
-      }
-    }
-#endif
 
     // sendSyncMessage returns an array of the responses from all listeners
     let rv = sendSyncMessage("Findbar:Keypress", {
