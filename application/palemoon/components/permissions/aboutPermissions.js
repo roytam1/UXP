@@ -77,7 +77,7 @@ Site.prototype = {
    * @param aCallback
    *        A callback function that takes a favicon image URL as a parameter.
    */
-  getFavicon: function Site_getFavicon(aCallback) {
+  getFavicon: function(aCallback) {
     function invokeCallback(aFaviconURI) {
       try {
         // Use getFaviconLinkForIcon to get image data from the database instead
@@ -102,7 +102,7 @@ Site.prototype = {
    * @param aCallback
    *        A function that takes the visit count (a number) as a parameter.
    */
-  getVisitCount: function Site_getVisitCount(aCallback) {
+  getVisitCount: function(aCallback) {
     // XXX This won't be a very reliable system, as it will count both http: and https: visits
     // Unfortunately, I don't think that there is a much better way to do it right now.
     let rev_host = this.principal.URI.host.split("").reverse().join("") + ".";
@@ -136,7 +136,7 @@ Site.prototype = {
    *
    * @return A boolean indicating whether or not a permission is set.
    */
-  getPermission: function Site_getPermission(aType, aResultObj) {
+  getPermission: function(aType, aResultObj) {
     // Password saving isn't a nsIPermissionManager permission type, so handle
     // it seperately.
     if (aType == "password") {
@@ -174,7 +174,7 @@ Site.prototype = {
    *        The permission value to set for the permission type. This should
    *        be one of the constants defined in nsIPermissionManager.
    */
-  setPermission: function Site_setPermission(aType, aPerm) {
+  setPermission: function(aType, aPerm) {
     // Password saving isn't a nsIPermissionManager permission type, so handle
     // it seperately.
     if (aType == "password") {
@@ -198,7 +198,7 @@ Site.prototype = {
    *        The permission type string stored in permission manager.
    *        e.g. "cookie", "geo", "indexedDB", "popup", "image"
    */
-  clearPermission: function Site_clearPermission(aType) {
+  clearPermission: function(aType) {
     Services.perms.removeFromPrincipal(this.principal, aType);
   },
 
@@ -264,7 +264,7 @@ Site.prototype = {
   /**
    * Removes a set of specific cookies from the browser.
    */
-  clearCookies: function Site_clearCookies() {
+  clearCookies: function() {
     this.cookies.forEach(function(aCookie) {
       Services.cookies.remove(aCookie.host, aCookie.name, aCookie.path, false,
                               aCookie.originAttributes);
@@ -274,7 +274,7 @@ Site.prototype = {
   /**
    * Removes all data from the browser corresponding to the site.
    */
-  forgetSite: function Site_forgetSite() {
+  forgetSite: function() {
     // XXX This removes data for an entire domain, rather than just
     // an origin. This may produce confusing results, as data will
     // be cleared for the http:// as well as the https:// domain
@@ -1321,7 +1321,7 @@ var AboutPermissions = {
 }
 
 // See toolkit/forgetaboutsite/ForgetAboutSite.jsm
-String.prototype.hasRootDomain = function hasRootDomain(aDomain) {
+String.prototype.hasRootDomain = function(aDomain) {
   let index = this.indexOf(aDomain);
   if (index == -1) {
     return false;
