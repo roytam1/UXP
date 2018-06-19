@@ -266,7 +266,8 @@ Site.prototype = {
    */
   clearCookies: function Site_clearCookies() {
     this.cookies.forEach(function(aCookie) {
-      Services.cookies.remove(aCookie.host, aCookie.name, aCookie.path, false);
+      Services.cookies.remove(aCookie.host, aCookie.name, aCookie.path, false,
+                              aCookie.originAttributes);
     });
   },
 
