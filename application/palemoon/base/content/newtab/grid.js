@@ -5,6 +5,13 @@
 #endif
 
 /**
+ * Define various fixed dimensions
+ */
+const GRID_BOTTOM_EXTRA = 7; // title's line-height extends 7px past the margin
+const GRID_WIDTH_EXTRA = 1; // provide 1px buffer to allow for rounding error
+const SPONSORED_TAG_BUFFER = 2; // 2px buffer to clip off top of sponsored tag
+
+/**
  * This singleton represents the grid that contains all sites.
  */
 var gGrid = {
@@ -12,6 +19,7 @@ var gGrid = {
    * The DOM node of the grid.
    */
   _node: null,
+  _gridDefaultContent: null,
   get node() { return this._node; },
 
   /**
@@ -22,7 +30,7 @@ var gGrid = {
   /**
    * All cells contained in the grid.
    */
-  _cells: null,
+  _cells: [],
   get cells() { return this._cells; },
 
   /**
@@ -31,7 +39,10 @@ var gGrid = {
   get sites() { return [for (cell of this.cells) cell.site]; },
 
   // Tells whether the grid has already been initialized.
-  get ready() { return !!this._node; },
+  get ready() { return !!this._ready; },
+
+  // Returns whether the page has finished loading yet.
+  get isDocumentLoaded() { return document.readyState == "complete"; },
 
   /**
    * Initializes the grid.
@@ -39,8 +50,26 @@ var gGrid = {
    */
   init: function Grid_init() {
     this._node = document.getElementById("newtab-grid");
+    this._gridDefaultContent = this._node.lastChild;
     this._createSiteFragment();
-    this._render();
+
+    gLinks.populateCache(() => {
+      this._refreshGrid();
+      this._ready = true;
+
+      // If fetching links took longer than loading the page itself then
+      // we need to resize the grid as that was blocked until now.
+      // We also want to resize now if the page was already loaded when
+      // initializing the grid (the user toggled the page).
+      this._resizeGrid();
+
+      addEventListener("resize", this);
+    });
+
+    // Resize the grid as soon as the page loads.
+    if (!this.isDocumentLoaded) {
+      addEventListener("load", this);
+    }
   },
 
   /**
@@ -56,25 +85,15 @@ var gGrid = {
   },
 
   /**
-   * Refreshes the grid and re-creates all sites.
+   * Handles all grid events.
    */
-  refresh: function Grid_refresh() {
-    let cells = this.cells;
-    if (!cells) {
-      return;
+  handleEvent: function Grid_handleEvent(aEvent) {
+    switch (aEvent.type) {
+      case "load":
+      case "resize":
+        this._resizeGrid();
+        break;
     }
-
-    // Remove all sites.
-    cells.forEach(function (cell) {
-      let node = cell.node;
-      let child = node.firstElementChild;
-
-      if (child)
-        node.removeChild(child);
-    }, this);
-
-    // Render the grid again.
-    this._render();
   },
 
   /**
@@ -92,34 +111,65 @@ var gGrid = {
   },
 
   /**
-   * Creates the newtab grid.
+   * Renders and resizes the gird. _resizeGrid() call is needed to ensure
+   * that scrollbar disappears when the bottom row becomes empty following
+   * the block action, or tile display is turmed off via cog menu
    */
-  _renderGrid: function Grid_renderGrid() {
-    let row = document.createElementNS(HTML_NAMESPACE, "div");
+
+  refresh() {
+    this._refreshGrid();
+    this._resizeGrid();
+  },
+
+  /**
+   * Renders the grid, including cells and sites.
+   */
+  _refreshGrid() {
     let cell = document.createElementNS(HTML_NAMESPACE, "div");
-    row.classList.add("newtab-row");
     cell.classList.add("newtab-cell");
 
-    // Clear the grid
-    this._node.innerHTML = "";
-
-    // Creates the structure of one row
-    for (let i = 0; i < gGridPrefs.gridColumns; i++) {
-      row.appendChild(cell.cloneNode(true));
-    }
-    // Creates the grid
-    for (let j = 0; j < gGridPrefs.gridRows; j++) {
-      this._node.appendChild(row.cloneNode(true));
+    // Creates all the cells up to the maximum
+    let fragment = document.createDocumentFragment();
+    for (let i = 0; i < gGridPrefs.gridColumns * gGridPrefs.gridRows; i++) {
+      fragment.appendChild(cell.cloneNode(true));
     }
 
-    // (Re-)initialize all cells.
-    let cellElements = this.node.querySelectorAll(".newtab-cell");
-    // Tycho: this._cells = [new Cell(this, cell) for (cell of cellElements)];
-    this._cells = [];
-    
-    for (let cellItem of cellElements) {
-      this._cells.push(new Cell(this, cellItem));
+    // Create cells.
+    let cells = Array.from(fragment.childNodes, (cell) => new Cell(this, cell));
+
+    // Fetch links.
+    let links = gLinks.getLinks();
+
+    // Create sites.
+    let numLinks = Math.min(links.length, cells.length);
+    let hasHistoryTiles = false;
+    for (let i = 0; i < numLinks; i++) {
+      if (links[i]) {
+        this.createSite(links[i], cells[i]);
+        if (links[i].type == "history") {
+          hasHistoryTiles = true;
+        }
+      }
     }
+
+    this._cells = cells;
+    while (this._gridDefaultContent.nextSibling) {
+      this._gridDefaultContent.nextSibling.remove();
+    }
+    this._node.appendChild(fragment);
+
+    document.getElementById("topsites-heading").textContent =
+      hasHistoryTiles ? "Your Top Sites" : "Top Sites";
+  },
+
+  /**
+   * Calculate the height for a number of rows up to the maximum rows
+   * @param rows Number of rows defaulting to the max
+   */
+  _computeHeight: function Grid_computeHeight(aRows) {
+    let {gridRows} = gGridPrefs;
+    aRows = aRows === undefined ? gridRows : Math.min(gridRows, aRows);
+    return aRows * this._cellHeight + GRID_BOTTOM_EXTRA;
   },
 
   /**
@@ -132,50 +182,98 @@ var gGrid = {
 
     // Create the site's inner HTML code.
     site.innerHTML =
+      '<span class="newtab-sponsored">' + newTabString("sponsored.button") + '</span>' +
       '<a class="newtab-link">' +
-      '  <span class="newtab-thumbnail"/>' +
+      '  <span class="newtab-thumbnail placeholder"/>' +
+      '  <span class="newtab-thumbnail thumbnail"/>' +
+      '  <span class="newtab-thumbnail enhanced-content"/>' +
       '  <span class="newtab-title"/>' +
       '</a>' +
       '<input type="button" title="' + newTabString("pin") + '"' +
       '       class="newtab-control newtab-control-pin"/>' +
       '<input type="button" title="' + newTabString("block") + '"' +
-      '       class="newtab-control newtab-control-block"/>';
+      '       class="newtab-control newtab-control-block"/>' +
+      '<span class="newtab-suggested"/>';
 
     this._siteFragment = document.createDocumentFragment();
     this._siteFragment.appendChild(site);
   },
 
   /**
-   * Renders the sites, creates all sites and puts them into their cells.
+   * Test a tile at a given position for being pinned or history
+   * @param position Position in sites array
    */
-  _renderSites: function Grid_renderSites() {
-    let cells = this.cells;
-    // Put sites into the cells.
-    let links = gLinks.getLinks();
-    let length = Math.min(links.length, cells.length);
-
-    for (let i = 0; i < length; i++) {
-      if (links[i])
-        this.createSite(links[i], cells[i]);
-    }
+  _isHistoricalTile: function Grid_isHistoricalTile(aPos) {
+    let site = this.sites[aPos];
+    return site && (site.isPinned() || site.link && site.link.type == "history");
   },
 
   /**
-   * Renders the grid.
+   * Make sure the correct number of rows and columns are visible
    */
-  _render: function Grid_render() {
-    if (this._shouldRenderGrid()) {
-      this._renderGrid();
+  _resizeGrid: function Grid_resizeGrid() {
+    // If we're somehow called before the page has finished loading,
+    // let's bail out to avoid caching zero heights and widths.
+    // We'll be called again when DOMContentLoaded fires.
+    // Same goes for the grid if that's not ready yet.
+    if (!this.isDocumentLoaded || !this._ready) {
+      return;
     }
 
-    this._renderSites();
-  },
+    // Save the cell's computed height/width including margin and border
+    if (this._cellHeight === undefined) {
+      let refCell = document.querySelector(".newtab-cell");
+      let style = getComputedStyle(refCell);
+      this._cellHeight = refCell.offsetHeight +
+        parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+      this._cellWidth = refCell.offsetWidth +
+        parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+    }
 
-  _shouldRenderGrid : function Grid_shouldRenderGrid() {
-    let rowsLength = this._node.querySelectorAll(".newtab-row").length;
-    let cellsLength = this._node.querySelectorAll(".newtab-cell").length;
+    let searchContainer = document.querySelector("#newtab-search-container");
+    // Save search-container margin height
+    if (this._searchContainerMargin === undefined) {
+      let style = getComputedStyle(searchContainer);
+      this._searchContainerMargin = parseFloat(style.marginBottom) +
+                                    parseFloat(style.marginTop);
+    }
 
-    return (rowsLength != gGridPrefs.gridRows ||
-            cellsLength != (gGridPrefs.gridRows * gGridPrefs.gridColumns));
+    // Find the number of rows we can place into view port
+    let availHeight = document.documentElement.clientHeight -
+                      searchContainer.offsetHeight - this._searchContainerMargin;
+    let visibleRows = Math.floor(availHeight / this._cellHeight);
+
+    // Find the number of columns that fit into view port
+    let maxGridWidth = gGridPrefs.gridColumns * this._cellWidth + GRID_WIDTH_EXTRA;
+    // available width is current grid width, but no greater than maxGridWidth
+    let availWidth = Math.min(document.querySelector("#newtab-grid").clientWidth,
+                              maxGridWidth);
+    // finally get the number of columns we can fit into view port
+    let gridColumns = Math.floor(availWidth / this._cellWidth);
+    // walk sites backwords until a pinned or history tile is found or visibleRows reached
+    let tileIndex = Math.min(gGridPrefs.gridRows * gridColumns, this.sites.length) - 1;
+    while (tileIndex >= visibleRows * gridColumns) {
+      if (this._isHistoricalTile(tileIndex)) {
+        break;
+      }
+      tileIndex--;
+    }
+
+    // Compute the actual number of grid rows we will display (potentially
+    // with a scroll bar). tileIndex now points to a historical tile with
+    // heighest index or to the last index of the visible row, if none found
+    // Dividing tileIndex by number of tiles in a column gives the rows
+    let gridRows = Math.floor(tileIndex / gridColumns) + 1;
+
+    // we need to set grid width, for otherwise the scrollbar may shrink
+    // the grid when shown and cause grid layout to be different from
+    // what being computed above. This, in turn, may cause scrollbar shown
+    // for directory tiles, and introduce jitter when grid width is aligned
+    // exactly on the column boundary
+    this._node.style.width = gridColumns * this._cellWidth + "px";
+    this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth +
+                                GRID_WIDTH_EXTRA + "px";
+    this._node.style.height = this._computeHeight() + "px";
+    this._node.style.maxHeight = this._computeHeight(gridRows) - SPONSORED_TAG_BUFFER + "px";
   }
 };

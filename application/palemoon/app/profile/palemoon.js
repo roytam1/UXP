@@ -1056,11 +1056,18 @@ pref("browser.newtabpage.enabled", true);
 // XXX: Remove this when "enhanced" tiles are dead
 pref("browser.newtabpage.enhanced", false);
 
+// enables showing basic placeholders for missing thumbnails
+pref("browser.newtabpage.thumbnailPlaceholder", false);
+
+pref("browser.newtabpage.compact", false);
+
+pref("privacy.usercontext.about_newtab_segregation.enabled", false);
+
 // number of columns of newtab grid
 pref("browser.newtabpage.columns", 4);
 
 // number of rows of newtab grid
-pref("browser.newtabpage.rows", 4);
+pref("browser.newtabpage.rows", 3);
 
 // Enable the DOM fullscreen API.
 pref("full-screen-api.enabled", true);

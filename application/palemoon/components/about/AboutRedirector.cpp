@@ -53,7 +53,7 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::ALLOW_SCRIPT
   },
   {
-    "newtab", "chrome://browser/content/newtab/newTab.xul",
+    "newtab", "chrome://browser/content/newtab/newTab.xhtml",
     nsIAboutModule::ALLOW_SCRIPT
   },
   {
