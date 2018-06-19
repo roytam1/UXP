@@ -254,7 +254,7 @@ Site.prototype = {
     while (enumerator.hasMoreElements()) {
       let cookie = enumerator.getNext().QueryInterface(Ci.nsICookie2);
       if (cookie.host.hasRootDomain(
-          AboutPermissions.domainFromHost(this.host))) {
+          AboutPermissions.domainFromHost(this.principal.URI.host))) {
         cookies.push(cookie);
       }
     }
