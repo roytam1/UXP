@@ -147,13 +147,45 @@
   line-height: 24px;
 }
 
+.newtab-site[pinned] .newtab-title {
+  padding-inline-start: 24px;
+}
+
+.newtab-site[pinned] .newtab-title::before {
+  background-image: url(chrome://browser/skin/newtab/controls.png);
+  background-position: -74px -1px;
+  content: "";
+  left: 2px;
+  top: 2px;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+}
+
+.newtab-site[pinned] .newtab-title:dir(rtl)::before {
+  left: auto;
+  right: 2px;
+}
+
 /* CONTROLS */
 .newtab-control {
-  width: 24px;
-  height: 24px;
-  padding: 1px 2px 3px;
+  background-color: transparent;
+  background-size: 24px;
   border: none;
+  height: 24px;
+  width: 24px;
+  top: 4px;
   background: transparent url(chrome://browser/skin/newtab/controls.png);
+}
+
+.newtab-control-pin:dir(ltr),
+.newtab-control-block:dir(rtl) {
+  left: 4px;
+}
+
+.newtab-control-block:dir(ltr),
+.newtab-control-pin:dir(rtl) {
+  right: 4px;
 }
 
 .newtab-control-pin:hover {
@@ -164,15 +196,15 @@
   background-position: -48px 0;
 }
 
-.newtab-control-pin[pinned] {
+.newtab-site[pinned] .newtab-control-pin {
   background-position: -72px 0;
 }
 
-.newtab-control-pin[pinned]:hover {
+.newtab-site[pinned] .newtab-control-pin:hover {
   background-position: -96px 0;
 }
 
-.newtab-control-pin[pinned]:active {
+.newtab-site[pinned] .newtab-control-pin:active {
   background-position: -120px 0;
 }
 
@@ -187,3 +219,4 @@
 .newtab-control-block:active {
   background-position: -192px 0;
 }
+
