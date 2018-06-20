@@ -119,10 +119,6 @@ var gPage = {
     document.getElementById("searchSubmit").value =
       document.body.getAttribute("dir") == "ltr" ? "\u25B6" : "\u25C0";
 
-    if (Services.prefs.getBoolPref("browser.newtabpage.compact")) {
-      document.body.classList.add("compact");
-    }
-
     if (document.hidden) {
       addEventListener("visibilitychange", this);
     } else {
