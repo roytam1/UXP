@@ -230,7 +230,7 @@ var gGrid = {
         parseFloat(style.marginLeft) + parseFloat(style.marginRight);
     }
 
-    let searchContainer = document.querySelector("#newtab-search-container");
+    let searchContainer = document.querySelector("#searchContainer");
     // Save search-container margin height
     if (this._searchContainerMargin === undefined) {
       let style = getComputedStyle(searchContainer);

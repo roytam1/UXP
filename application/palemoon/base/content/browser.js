@@ -2400,6 +2400,9 @@ function PageProxyClickHandler(aEvent)
  *  to the DOM for unprivileged pages.
  */
 function BrowserOnAboutPageLoad(doc) {
+
+  /* === about:home === */
+
   if (doc.documentURI.toLowerCase() == "about:home") {
     let ss = Components.classes["@mozilla.org/browser/sessionstore;1"].
              getService(Components.interfaces.nsISessionStore);
@@ -2438,6 +2441,32 @@ function BrowserOnAboutPageLoad(doc) {
       Services.obs.removeObserver(updateSearchEngine, "browser-search-engine-modified");
     }, false);
   }
+
+  /* === about:newtab === */
+  
+  if (doc.documentURI.toLowerCase() == "about:newtab") {
+
+    let docElt = doc.documentElement;
+
+    function updateSearchEngine() {
+      let engine = AboutHomeUtils.defaultSearchEngine;
+      docElt.setAttribute("searchEngineName", engine.name);
+      docElt.setAttribute("searchEnginePostData", engine.postDataString || "");
+      docElt.setAttribute("searchEngineURL", engine.searchURL);
+    }
+    updateSearchEngine();
+
+    // Listen for the event that's triggered when the user changes search engine.
+    // At this point we simply reload about:newtab to reflect the change.
+    Services.obs.addObserver(updateSearchEngine, "browser-search-engine-modified", false);
+
+    // Remove the observer when the page is reloaded or closed.
+    doc.defaultView.addEventListener("pagehide", function removeObserver() {
+      doc.defaultView.removeEventListener("pagehide", removeObserver);
+      Services.obs.removeObserver(updateSearchEngine, "browser-search-engine-modified");
+    }, false);
+  }
+
 }
 
 /**

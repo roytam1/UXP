@@ -16,6 +16,7 @@
 <!ENTITY newtab.undo.undoButton "Undo.">
 <!ENTITY newtab.undo.restoreButton "Restore All.">
 <!ENTITY newtab.undo.closeTooltip "Hide">
+<!ENTITY newtab.searchEngineButton.label "Search">
 
 <!-- LOCALIZATION NOTE (contentSearchInput.label):
      This is set as the aria-label attribute for the search input box in the

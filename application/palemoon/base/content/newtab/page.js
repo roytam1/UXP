@@ -116,15 +116,12 @@ var gPage = {
 
     // Set submit button label for when CSS background are disabled (e.g.
     // high contrast mode).
-    document.getElementById("newtab-search-submit").value =
+    document.getElementById("searchSubmit").value =
       document.body.getAttribute("dir") == "ltr" ? "\u25B6" : "\u25C0";
 
     if (Services.prefs.getBoolPref("browser.newtabpage.compact")) {
       document.body.classList.add("compact");
     }
-
-    // Initialize search.
-    gSearch.init();
 
     if (document.hidden) {
       addEventListener("visibilitychange", this);
@@ -151,7 +148,7 @@ var gPage = {
    */
   _updateAttributes: function Page_updateAttributes(aValue) {
     // Set the nodes' states.
-    let nodeSelector = "#newtab-grid, #newtab-search-container";
+    let nodeSelector = "#newtab-grid, #searchContainer";
     for (let node of document.querySelectorAll(nodeSelector)) {
       if (aValue)
         node.removeAttribute("page-disabled");

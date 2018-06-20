@@ -60,14 +60,13 @@
       </div>
     </div>
 
-    <div id="newtab-search-container">
-      <div id="newtab-search-form">
-        <div id="newtab-search-icon"/>
-        <input type="text" name="q" value="" id="newtab-search-text"
-             aria-label="&contentSearchInput.label;" maxlength="256"/>
-        <input id="newtab-search-submit" type="button"
-             title="&contentSearchSubmit.tooltip;"/>
-      </div>
+    <div id="searchContainer">
+      <form name="searchForm" id="searchForm" onsubmit="onSearchSubmit(event)">
+        <div id="searchLogoContainer"><img id="searchEngineLogo"/></div>
+        <input type="text" name="q" value="" id="searchText" maxlength="256"
+               autofocus="autofocus"/>
+        <input id="searchSubmit" type="submit" value="&newtab.searchEngineButton.label;"/>
+      </form>
     </div>
 
     <div id="newtab-horizontal-margin">
@@ -84,6 +83,5 @@
          value="&#x2699;"
          title="&newtab.customize.title;"/>
 </body>
-<script type="text/javascript;version=1.8" src="chrome://browser/content/contentSearchUI.js"/>
 <script type="text/javascript;version=1.8" src="chrome://browser/content/newtab/newTab.js"/>
 </html>
