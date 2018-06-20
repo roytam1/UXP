@@ -157,9 +157,6 @@ var gGrid = {
       this._gridDefaultContent.nextSibling.remove();
     }
     this._node.appendChild(fragment);
-
-    document.getElementById("topsites-heading").textContent =
-      hasHistoryTiles ? "Your Top Sites" : "Top Sites";
   },
 
   /**
