@@ -419,6 +419,13 @@ TLSServerConnectionInfo::GetCipherName(nsACString& aCipherName)
 }
 
 NS_IMETHODIMP
+TLSServerConnectionInfo::GetCipherSuite(nsACString& aCipherSuite)
+{
+  aCipherSuite.Assign(mCipherSuite);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 TLSServerConnectionInfo::GetKeyLength(uint32_t* aKeyLength)
 {
   if (NS_WARN_IF(!aKeyLength)) {
@@ -490,7 +497,8 @@ TLSServerConnectionInfo::HandshakeCallback(PRFileDesc* aFD)
   if (NS_FAILED(rv)) {
     return rv;
   }
-  mCipherName.Assign(cipherInfo.cipherSuiteName);
+  mCipherName.Assign(cipherInfo.symCipherName);
+  mCipherSuite.Assign(cipherInfo.cipherSuiteName);
   mKeyLength = cipherInfo.effectiveKeyBits;
   mMacLength = cipherInfo.macBits;
 
