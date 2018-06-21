@@ -1122,6 +1122,12 @@ pref("browser.padlock.urlbar_background", 2);
 //Pale Moon standalone image background color
 pref("browser.display.standalone_images.background_color", "#2E3B41");
 
+// These are the thumbnail width/height set in about:newtab.
+// If you change this, ENSURE IT IS THE SAME SIZE SET
+// by about:newtab. These values are in CSS pixels.
+pref("toolkit.pageThumbs.minWidth", 250);
+pref("toolkit.pageThumbs.minHeight", 180);
+
 // ****************** domain-specific UAs ******************
 
 // AMO needs "Firefox", obviously - pass on the OS (determined at build time)
