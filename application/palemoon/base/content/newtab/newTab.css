@@ -372,7 +372,7 @@ input[type=button] {
   margin-inline-start: -1px;
   padding: 0;
   border: 1px solid;
-  background color: #e0e0e0;
+  background-color: #e0e0e0;
   color: black;
   border-color: hsla(220,54%,20%,.15) hsla(220,54%,20%,.17) hsla(220,54%,20%,.2);
   border-radius: 0 2px 2px 0;
