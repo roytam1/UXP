@@ -317,11 +317,12 @@ CSPService::AsyncOnChannelRedirect(nsIChannel *oldChannel,
   loadInfo->LoadingPrincipal()->GetCsp(getter_AddRefs(csp));
 
   if (csp) {
+    nsCOMPtr<nsISupports> requestContext = loadInfo->GetLoadingContext();
     // Pass  originalURI as aExtra to indicate the redirect
     csp->ShouldLoad(policyType,     // load type per nsIContentPolicy (uint32_t)
                     newUri,         // nsIURI
                     nullptr,        // nsIURI
-                    nullptr,        // nsISupports
+                    requestContext, // nsISupports
                     EmptyCString(), // ACString - MIME guess
                     originalUri,    // aExtra
                     &aDecision);
