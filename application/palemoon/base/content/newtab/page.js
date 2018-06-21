@@ -33,9 +33,6 @@ var gPage = {
       this._init();
 
     this._updateAttributes(enabled);
-
-    // Initialize customize controls.
-    gCustomize.init();
   },
 
   /**
@@ -43,8 +40,6 @@ var gPage = {
    */
   observe: function Page_observe(aSubject, aTopic, aData) {
     if (aTopic == "nsPref:changed") {
-      gCustomize.updateSelected();
-
       let enabled = gAllPages.enabled;
       this._updateAttributes(enabled);
 
