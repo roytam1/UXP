@@ -267,8 +267,7 @@ input[type=button] {
 }
 
 #searchText[keepfocus],
-#searchText:focus,
-#searchText[autofocus] {
+#searchText:focus {
   border-color: hsla(216,100%,60%,.6) hsla(216,76%,52%,.6) hsla(214,100%,40%,.6);
 }
 
@@ -299,14 +298,12 @@ input[type=button] {
 }
 
 #searchText:focus + #searchSubmit,
-#searchText + #searchSubmit:hover,
-#searchText[autofocus] + #searchSubmit {
+#searchText + #searchSubmit:hover {
   border-color: #5985fc #4573e7 #3264d5;
 }
 
 #searchText:focus + #searchSubmit,
-#searchText[keepfocus] + #searchSubmit,
-#searchText[autofocus] + #searchSubmit {
+#searchText[keepfocus] + #searchSubmit {
   box-shadow: 0 1px 0 hsla(0,0%,100%,.2) inset,
               0 0 0 1px hsla(0,0%,100%,.1) inset,
               0 1px 0 hsla(220,54%,20%,.03);

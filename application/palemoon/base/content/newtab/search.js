@@ -116,15 +116,6 @@ function onSearchSubmit(aEvent) {
 
 
 function setupSearchEngine() {
-  // The "autofocus" attribute doesn't focus the form element
-  // immediately when the element is first drawn, so the
-  // attribute is also used for styling when the page first loads.
-  let searchText = document.getElementById("searchText");
-  searchText.addEventListener("blur", function searchText_onBlur() {
-    searchText.removeEventListener("blur", searchText_onBlur);
-    searchText.removeAttribute("autofocus");
-  });
- 
   let searchEngineName = document.documentElement.getAttribute("searchEngineName");
   let searchEngineInfo = SEARCH_ENGINES[searchEngineName];
   let logoElt = document.getElementById("searchEngineLogo");
@@ -139,5 +130,4 @@ function setupSearchEngine() {
     logoElt.parentNode.hidden = true;
     searchText.placeholder = searchEngineName;
   }
-
 }
