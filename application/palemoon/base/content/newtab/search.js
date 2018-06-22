@@ -116,6 +116,7 @@ function onSearchSubmit(aEvent) {
 
 
 function setupSearchEngine() {
+  let searchText = document.getElementById("searchText");
   let searchEngineName = document.documentElement.getAttribute("searchEngineName");
   let searchEngineInfo = SEARCH_ENGINES[searchEngineName];
   let logoElt = document.getElementById("searchEngineLogo");
