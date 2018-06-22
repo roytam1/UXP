@@ -316,6 +316,7 @@ popupnotificationcontent {
 
 /* :::::: Close button icons ::::: */
 
+%ifdef MC_BASILISK
 .close-icon {
   -moz-appearance: none;
   height: 16px;
@@ -332,3 +333,8 @@ popupnotificationcontent {
 .close-icon:hover:active {
   background-image: -moz-image-rect(url("chrome://global/skin/icons/close.svg"), 0, 48, 16, 32);
 }
+%else
+.close-icon {
+  list-style-image: url("moz-icon://stock/gtk-close?size=menu");
+}
+%endif

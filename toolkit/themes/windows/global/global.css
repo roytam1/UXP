@@ -331,6 +331,7 @@ popupnotificationcontent {
 
 /* :::::: Close button icons ::::: */
 
+%ifdef MC_BASILISK
 .close-icon {
   list-style-image: url("chrome://global/skin/icons/close.png");
   -moz-image-region: rect(0, 20px, 20px, 0);
@@ -402,3 +403,17 @@ popupnotificationcontent {
     }
   }
 }
+%else
+.close-icon {
+  list-style-image: url("chrome://global/skin/icons/close.svg");
+  -moz-image-region: rect(0, 16px, 16px, 0);
+}
+
+.close-icon:hover {
+  -moz-image-region: rect(0, 32px, 16px, 16px);
+}
+
+.close-icon:hover:active {
+  -moz-image-region: rect(0, 48px, 16px, 32px);
+}
+%endif

@@ -45,6 +45,8 @@ toolkit.jar:
   skin/classic/global/icons/autocomplete-search.svg        (icons/autocomplete-search.svg)
   skin/classic/global/icons/blacklist_favicon.png          (icons/blacklist_favicon.png)
   skin/classic/global/icons/blacklist_large.png            (icons/blacklist_large.png)
+  skin/classic/global/icons/close.svg                      (icons/close.svg)
+  skin/classic/global/icons/close-inverted.svg             (icons/close-inverted.svg)
   skin/classic/global/icons/close-XPVista7.png             (icons/close-XPVista7.png)
   skin/classic/global/icons/close-XPVista7@2x.png          (icons/close-XPVista7@2x.png)
   skin/classic/global/icons/close-inverted-XPVista7.png    (icons/close-inverted-XPVista7.png)
