@@ -123,24 +123,23 @@ body {
 
 /* TITLES */
 .newtab-title {
-  padding: 0 8px;
+  padding: 0 8px 1px;
   background-color: rgba(248,249,251,.95);
   color: #1f364c;
   line-height: 24px;
 }
 
 .newtab-site[pinned] .newtab-title {
-  padding-inline-start: 24px;
+  padding-inline-start: 16px;
 }
 
 .newtab-site[pinned] .newtab-title::before {
-  background-image: url(chrome://browser/skin/newtab/controls.png);
-  background-position: -74px -1px;
+  background-image: url(chrome://browser/skin/newtab/pinned.png);
   content: "";
   left: 2px;
   top: 2px;
   position: absolute;
-  width: 20px;
+  width: 12px;
   height: 20px;
 }
 
