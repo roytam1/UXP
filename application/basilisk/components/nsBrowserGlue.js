@@ -27,7 +27,6 @@ XPCOMUtils.defineLazyServiceGetter(this, "AlertsService", "@mozilla.org/alerts-s
   ["AutoCompletePopup", "resource://gre/modules/AutoCompletePopup.jsm"],
   ["BookmarkHTMLUtils", "resource://gre/modules/BookmarkHTMLUtils.jsm"],
   ["BookmarkJSONUtils", "resource://gre/modules/BookmarkJSONUtils.jsm"],
-  ["BrowserUITelemetry", "resource:///modules/BrowserUITelemetry.jsm"],
   ["BrowserUsageTelemetry", "resource:///modules/BrowserUsageTelemetry.jsm"],
   ["ContentClick", "resource:///modules/ContentClick.jsm"],
   ["ContentPrefServiceParent", "resource://gre/modules/ContentPrefServiceParent.jsm"],
@@ -667,7 +666,6 @@ BrowserGlue.prototype = {
 
     SessionStore.init();
     BrowserUsageTelemetry.init();
-    BrowserUITelemetry.init();
     ContentSearch.init();
     FormValidationHandler.init();
 

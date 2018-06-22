@@ -16,7 +16,6 @@ Cu.import("resource://gre/modules/NotificationDB.jsm");
   ["AboutHome", "resource:///modules/AboutHome.jsm"],
   ["AddonWatcher", "resource://gre/modules/AddonWatcher.jsm"],
   ["AppConstants", "resource://gre/modules/AppConstants.jsm"],
-  ["BrowserUITelemetry", "resource:///modules/BrowserUITelemetry.jsm"],
   ["BrowserUsageTelemetry", "resource:///modules/BrowserUsageTelemetry.jsm"],
   ["BrowserUtils", "resource://gre/modules/BrowserUtils.jsm"],
   ["CastingApps", "resource:///modules/CastingApps.jsm"],
@@ -3729,18 +3728,6 @@ const BrowserSearch = {
     openUILinkIn(this.searchEnginesURL, where);
   },
 
-  _getSearchEngineId: function (engine) {
-    if (engine && engine.identifier) {
-      return engine.identifier;
-    }
-
-    if (!engine || (engine.name === undefined) ||
-        !Services.prefs.getBoolPref("toolkit.telemetry.enabled"))
-      return "other";
-
-    return "other-" + engine.name;
-  },
-
   /**
    * Helper to record a search with Telemetry.
    *
@@ -3759,7 +3746,6 @@ const BrowserSearch = {
    *        selected it: {selection: {index: The selected index, kind: "key" or "mouse"}}
    */
   recordSearchInTelemetry: function (engine, source, details={}) {
-    BrowserUITelemetry.countSearchEvent(source, null, details.selection);
     try {
       BrowserUsageTelemetry.recordSearch(engine, source, details);
     } catch (ex) {
@@ -3783,8 +3769,6 @@ const BrowserSearch = {
    *        (string) Where was the search link opened (e.g. new tab, current tab, ..).
    */
   recordOneoffSearchInTelemetry: function (engine, source, type, where) {
-    let id = this._getSearchEngineId(engine) + "." + source;
-    BrowserUITelemetry.countOneoffSearchEvent(id, type, where);
     try {
       const details = {type, isOneOff: true};
       BrowserUsageTelemetry.recordSearch(engine, source, details);
