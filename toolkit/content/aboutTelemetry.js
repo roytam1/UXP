@@ -75,6 +75,10 @@ function isFlatArray(obj) {
  * This is a helper function for explodeObject.
  */
 function flattenObject(obj, map, path, array) {
+  if (!obj) {
+    return;
+  }
+
   for (let k of Object.keys(obj)) {
     let newPath = [...path, array ? "[" + k + "]" : k];
     let v = obj[k];
