@@ -13,9 +13,9 @@ toolkit.jar:
    content/global/aboutAbout.js
    content/global/aboutAbout.xhtml
 #ifdef MC_OFFICIAL
-   content/global/aboutRights.xhtml
+*  content/global/aboutRights.xhtml
 #else
-   content/global/aboutRights.xhtml           (aboutRights-unbranded.xhtml)
+*  content/global/aboutRights.xhtml           (aboutRights-unbranded.xhtml)
 #endif
    content/global/aboutNetworking.js
    content/global/aboutNetworking.xhtml
