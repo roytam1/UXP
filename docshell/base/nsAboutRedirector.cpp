@@ -140,10 +140,12 @@ static RedirEntry kRedirMap[] = {
   {
     "telemetry", "chrome://global/content/aboutTelemetry.xhtml",
     nsIAboutModule::ALLOW_SCRIPT
+#ifdef MOZ_WEBRTC
   },
   {
     "webrtc", "chrome://global/content/aboutwebrtc/aboutWebrtc.html",
     nsIAboutModule::ALLOW_SCRIPT
+#endif
   }
 };
 static const int kRedirTotal = mozilla::ArrayLength(kRedirMap);
