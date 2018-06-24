@@ -393,6 +393,10 @@ Location::GetHost(nsAString& aHost)
 NS_IMETHODIMP
 Location::SetHost(const nsAString& aHost)
 {
+  if (aHost.IsEmpty()) {
+    return NS_OK; // Ignore empty string
+  }
+
   nsCOMPtr<nsIURI> uri;
   nsresult rv = GetWritableURI(getter_AddRefs(uri));
   if (NS_WARN_IF(NS_FAILED(rv) || !uri)) {
@@ -424,6 +428,10 @@ Location::GetHostname(nsAString& aHostname)
 NS_IMETHODIMP
 Location::SetHostname(const nsAString& aHostname)
 {
+  if (aHostname.IsEmpty()) {
+    return NS_OK; // Ignore empty string
+  }
+
   nsCOMPtr<nsIURI> uri;
   nsresult rv = GetWritableURI(getter_AddRefs(uri));
   if (NS_WARN_IF(NS_FAILED(rv) || !uri)) {
@@ -507,6 +515,10 @@ nsresult
 Location::SetHrefWithBase(const nsAString& aHref, nsIURI* aBase,
                             bool aReplace)
 {
+  if (aHref.IsEmpty()) {
+    return NS_OK; // Ignore empty string
+  }
+
   nsresult result;
   nsCOMPtr<nsIURI> newUri;
 
@@ -694,6 +706,10 @@ Location::GetProtocol(nsAString& aProtocol)
 NS_IMETHODIMP
 Location::SetProtocol(const nsAString& aProtocol)
 {
+  if (aProtocol.IsEmpty()) {
+    return NS_OK; // Ignore empty string
+  }
+
   nsCOMPtr<nsIURI> uri;
   nsresult rv = GetWritableURI(getter_AddRefs(uri));
   if (NS_WARN_IF(NS_FAILED(rv) || !uri)) {
@@ -747,6 +763,10 @@ Location::GetSearch(nsAString& aSearch)
 NS_IMETHODIMP
 Location::SetSearch(const nsAString& aSearch)
 {
+  if (aSearch.IsEmpty()) {
+    return NS_OK; // Ignore empty string
+  }
+
   nsresult rv = SetSearchInternal(aSearch);
   if (NS_FAILED(rv)) {
     return rv;
