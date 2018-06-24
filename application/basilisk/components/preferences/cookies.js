@@ -808,7 +808,9 @@ var gCookiesWindow = {
 
     this._view._invalidateCache(0);
     this._view.selection.clearSelection();
-    this._view.selection.select(0);
+    if (this._view.rowCount > 0) {
+      this._view.selection.select(0);
+    }
     this._tree.treeBoxObject.invalidate();
     this._tree.treeBoxObject.ensureRowIsVisible(0);
 
