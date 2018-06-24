@@ -191,20 +191,22 @@ EyeDropper.prototype = {
   },
 
   prepareImageCapture() {
-    // Get the image data from the content window.
-    let imageData = getWindowAsImageData(this.win);
+    // Get the canvas from the content window.
+    let canvas = getWindowAsImageData(this.win);
 
-    // We need to transform imageData to something drawWindow will consume. An ImageBitmap
-    // works well. We could have used an Image, but doing so results in errors if the page
-    // defines CSP headers.
-    this.win.createImageBitmap(imageData).then(image => {
-      this.pageImage = image;
-      // We likely haven't drawn anything yet (no mousemove events yet), so start now.
-      this.draw();
+    canvas.toBlob(blob => {
+      // We need to transform imageData to something drawWindow will consume. An ImageBitmap
+      // works well. We could have used an Image, but doing so results in errors if the page
+      // defines CSP headers.
+      this.win.createImageBitmap(blob).then(image => {
+        this.pageImage = image;
+        // We likely haven't drawn anything yet (no mousemove events yet), so start now.
+        this.draw();
 
-      // Set an attribute on the root element to be able to run tests after the first draw
-      // was done.
-      this.getElement("root").setAttribute("drawn", "true");
+        // Set an attribute on the root element to be able to run tests after the first draw
+        // was done.
+        this.getElement("root").setAttribute("drawn", "true");
+      });
     });
   },
 
@@ -486,7 +488,7 @@ function getWindowAsImageData(win) {
   ctx.scale(scale, scale);
   ctx.drawWindow(win, win.scrollX, win.scrollY, width, height, "#fff");
 
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+  return canvas;
 }
 
 /**
