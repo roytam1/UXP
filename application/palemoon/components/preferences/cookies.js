@@ -540,6 +540,8 @@ var gCookiesWindow = {
   onCookieSelected: function () {
     var properties, item;
     var seln = this._tree.view.selection;
+    var hasRows = this._tree.view.rowCount > 0;
+    var hasSelection = seln.count > 0;
     if (!this._view._filtered)
       item = this._view._getItemAtIndex(seln.currentIndex);
     else
@@ -570,7 +572,7 @@ var gCookiesWindow = {
     removeSelectedCookies.label = PluralForm.get(selectedCookieCount, buttonLabel)
                                             .replace("#1", selectedCookieCount);
 
-    removeSelectedCookies.disabled = !(seln.count > 0);
+    removeSelectedCookies.disabled = !hasRows || !hasSelection;
   },
 
   performDeletion: function gCookiesWindow_performDeletion(deleteItems) {
