@@ -326,7 +326,7 @@ function LoadSignons() {
 function GetTreeSelections() {
   let selections = [];
   let select = signonsTree.view.selection;
-  if (select) {
+  if (select && signonsTree.view.rowCount > 0) {
     let count = select.getRangeCount();
     let min = {};
     let max = {};
