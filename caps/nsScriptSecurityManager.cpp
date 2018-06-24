@@ -836,6 +836,16 @@ nsScriptSecurityManager::CheckLoadURIWithPrincipal(nsIPrincipal* aPrincipal,
         // exception for foo: linking to view-source:foo for reftests...
         return NS_OK;
     }
+    else if ((!sourceScheme.EqualsIgnoreCase("http") &&
+              !sourceScheme.EqualsIgnoreCase("https")) &&
+             targetScheme.EqualsIgnoreCase("moz-icon"))
+    {
+        // Exception for linking to moz-icon://.ext?size=...
+        // Note that because targetScheme is the base (innermost) URI scheme,
+        // this does NOT allow e.g. file -> moz-icon:file:///... links.
+        // This is intentional.
+        return NS_OK;
+    }
 
     // If we get here, check all the schemes can link to each other, from the top down:
     nsCaseInsensitiveCStringComparator stringComparator;
@@ -976,9 +986,12 @@ nsScriptSecurityManager::CheckLoadURIFlags(nsIURI *aSourceURI,
     if (hasFlags) {
         if (aFlags & nsIScriptSecurityManager::ALLOW_CHROME) {
 
-            // For now, don't change behavior for resource:// or moz-icon:// and
-            // just allow them.
-            if (!targetScheme.EqualsLiteral("chrome")) {
+            // For now, don't change behavior for resource:// and
+            // just allow it. This is required for extensions injecting
+            // extension-internal resource URLs in snippets in pages, e.g.
+            // Adding custom controls in-page.
+            if (!targetScheme.EqualsLiteral("chrome") &&
+                !targetScheme.EqualsLiteral("moz-icon")) {
                 return NS_OK;
             }
 
