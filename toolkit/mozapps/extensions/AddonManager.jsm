@@ -47,8 +47,7 @@ const KEY_APPDIR                      = "XCurProcD";
 const FILE_BLOCKLIST                  = "blocklist.xml";
 
 const BRANCH_REGEXP                   = /^([^\.]+\.[0-9]+[a-z]*).*/gi;
-const PREF_EM_CHECK_COMPATIBILITY_BASE = "extensions.checkCompatibility";
-var PREF_EM_CHECK_COMPATIBILITY;
+const PREF_EM_CHECK_COMPATIBILITY = "extensions.checkCompatibility";
 
 const TOOLKIT_ID                      = "toolkit@mozilla.org";
 
@@ -808,9 +807,6 @@ var AddonManagerInternal = {
                                   (appChanged === undefined ? 0 : -1));
         this.validateBlocklist();
       }
-
-      PREF_EM_CHECK_COMPATIBILITY = PREF_EM_CHECK_COMPATIBILITY_BASE + "." +
-                                    Services.appinfo.version.replace(BRANCH_REGEXP, "$1");
 
       try {
         gCheckCompatibility = Services.prefs.getBoolPref(PREF_EM_CHECK_COMPATIBILITY);
