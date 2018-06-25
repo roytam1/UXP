@@ -131,8 +131,6 @@ const PREF_E10S_HAS_NONEXEMPT_ADDON   = "extensions.e10s.rollout.hasAddon";
 const PREF_EM_MIN_COMPAT_APP_VERSION      = "extensions.minCompatibleAppVersion";
 const PREF_EM_MIN_COMPAT_PLATFORM_VERSION = "extensions.minCompatiblePlatformVersion";
 
-const PREF_CHECKCOMAT_THEMEOVERRIDE   = "extensions.checkCompatibility.temporaryThemeOverride_minAppVersion";
-
 const PREF_EM_HOTFIX_ID               = "extensions.hotfix.id";
 const PREF_EM_CERT_CHECKATTRIBUTES    = "extensions.hotfix.cert.checkAttributes";
 const PREF_EM_HOTFIX_CERTS            = "extensions.hotfix.certs.";
@@ -794,24 +792,9 @@ function isUsableAddon(aAddon) {
     }
   }
   else {
-    let app = aAddon.matchingTargetApplication;
-    if (!app) {
+    if (!aAddon.matchingTargetApplication) {
       logger.warn(`Add-on ${aAddon.id} is not compatible with target application.`);
       return false;
-    }
-
-    // XXX Temporary solution to let applications opt-in to make themes safer
-    //     following significant UI changes even if checkCompatibility=false has
-    //     been set, until we get bug 962001.
-    if (aAddon.type == "theme" && app.id == Services.appinfo.ID) {
-      try {
-        let minCompatVersion = Services.prefs.getCharPref(PREF_CHECKCOMAT_THEMEOVERRIDE);
-        if (minCompatVersion &&
-            Services.vc.compare(minCompatVersion, app.maxVersion) > 0) {
-          logger.warn(`Theme ${aAddon.id} is not compatible with application version.`);
-          return false;
-        }
-      } catch (e) {}
     }
   }
 
