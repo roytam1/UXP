@@ -47,7 +47,7 @@ const KEY_APPDIR                      = "XCurProcD";
 const FILE_BLOCKLIST                  = "blocklist.xml";
 
 const BRANCH_REGEXP                   = /^([^\.]+\.[0-9]+[a-z]*).*/gi;
-const PREF_EM_CHECK_COMPATIBILITY = "extensions.checkCompatibility";
+const PREF_EM_CHECK_COMPATIBILITY = "extensions.enableCompatibilityChecking";
 
 const TOOLKIT_ID                      = "toolkit@mozilla.org";
 
