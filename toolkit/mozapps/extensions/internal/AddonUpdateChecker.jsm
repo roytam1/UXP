@@ -281,7 +281,7 @@ function sanitizeUpdateURL(aUpdate, aRequest, aHashPattern, aHashString) {
  */
 function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
   if (aManifestData.documentElement.namespaceURI != PREFIX_NS_RDF) {
-    throw Components.Exception("Update manifest had an unrecognised namespace: " +
+    throw Components.Exception("update.rdf: Update manifest had an unrecognised namespace: " +
                                aManifestData.documentElement.namespaceURI);
   }
 
@@ -313,7 +313,7 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
   function getRequiredProperty(aDs, aSource, aProperty) {
     let value = getProperty(aDs, aSource, aProperty);
     if (!value)
-      throw Components.Exception("Update manifest is missing a required " + aProperty + " property.");
+      throw Components.Exception("update.rdf: Update manifest is missing a required " + aProperty + " property.");
     return value;
   }
 
@@ -339,7 +339,7 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
   if (aUpdateKey) {
     let signature = getProperty(ds, addonRes, "signature");
     if (!signature)
-      throw Components.Exception("Update manifest for " + aId + " does not contain a required signature");
+      throw Components.Exception("update.rdf: Update manifest for " + aId + " does not contain a required signature");
     let serializer = new RDFSerializer();
     let updateString = null;
 
@@ -347,7 +347,7 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
       updateString = serializer.serializeResource(ds, addonRes);
     }
     catch (e) {
-      throw Components.Exception("Failed to generate signed string for " + aId + ". Serializer threw " + e,
+      throw Components.Exception("update.rdf: Failed to generate signed string for " + aId + ". Serializer threw " + e,
                                  e.result);
     }
 
@@ -359,7 +359,7 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
       result = verifier.verifyData(updateString, signature, aUpdateKey);
     }
     catch (e) {
-      throw Components.Exception("The signature or updateKey for " + aId + " is malformed." +
+      throw Components.Exception("update.rdf: The signature or updateKey for " + aId + " is malformed." +
                                  "Verifier threw " + e, e.result);
     }
 
@@ -372,7 +372,7 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
   // A missing updates property doesn't count as a failure, just as no avialable
   // update information
   if (!updates) {
-    logger.warn("Update manifest for " + aId + " did not contain an updates property");
+    logger.warn("update.rdf: Update manifest for " + aId + " did not contain an updates property");
     return [];
   }
 
@@ -382,7 +382,7 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
   let cu = Cc["@mozilla.org/rdf/container-utils;1"].
            getService(Ci.nsIRDFContainerUtils);
   if (!cu.IsContainer(ds, updates))
-    throw Components.Exception("Updates property was not an RDF container");
+    throw Components.Exception("update.rdf: Updates property was not an RDF container");
 
   let results = [];
   let ctr = Cc["@mozilla.org/rdf/container;1"].
@@ -393,11 +393,11 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
     let item = items.getNext().QueryInterface(Ci.nsIRDFResource);
     let version = getProperty(ds, item, "version");
     if (!version) {
-      logger.warn("Update manifest is missing a required version property.");
+      logger.warn("update.rdf: Update manifest is missing a required version property.");
       continue;
     }
 
-    logger.debug("Found an update entry for " + aId + " version " + version);
+    logger.debug("update.rdf: Found an update entry for " + aId + " version " + version);
 
     let targetApps = ds.GetTargets(item, EM_R("targetApplication"), true);
     while (targetApps.hasMoreElements()) {
@@ -451,7 +451,7 @@ function parseRDFManifest(aId, aUpdateKey, aRequest, aManifestData) {
  */
 function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
   if (aUpdateKey)
-    throw Components.Exception("Update keys are not supported for JSON update manifests");
+    throw Components.Exception("update.json: Update keys are not supported for JSON update manifests");
 
   let TYPE_CHECK = {
     "array": val => Array.isArray(val),
@@ -466,7 +466,7 @@ function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
 
     let matchesType = aType in TYPE_CHECK ? TYPE_CHECK[aType](value) : typeof value == aType;
     if (!matchesType)
-      throw Components.Exception(`Update manifest property '${aProperty}' has incorrect type (expected ${aType})`);
+      throw Components.Exception(`update.json: Update manifest property '${aProperty}' has incorrect type (expected ${aType})`);
 
     return value;
   }
@@ -474,14 +474,14 @@ function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
   function getRequiredProperty(aObj, aProperty, aType) {
     let value = getProperty(aObj, aProperty, aType);
     if (value === undefined)
-      throw Components.Exception(`Update manifest is missing a required ${aProperty} property.`);
+      throw Components.Exception(`update.json: Update manifest is missing a required ${aProperty} property.`);
     return value;
   }
 
   let manifest = aManifestData;
 
   if (!TYPE_CHECK["object"](manifest))
-    throw Components.Exception("Root element of update manifest must be a JSON object literal");
+    throw Components.Exception("update.json: Root element of update manifest must be a JSON object literal");
 
   // The set of add-ons this manifest has updates for
   let addons = getRequiredProperty(manifest, "addons", "object");
@@ -492,7 +492,7 @@ function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
   // A missing entry doesn't count as a failure, just as no avialable update
   // information
   if (!addon) {
-    logger.warn("Update manifest did not contain an entry for " + aId);
+    logger.warn("update.json: Update manifest did not contain an entry for " + aId);
     return [];
   }
 
@@ -506,7 +506,7 @@ function parseJSONManifest(aId, aUpdateKey, aRequest, aManifestData) {
 
   for (let update of updates) {
     let version = getRequiredProperty(update, "version", "string");
-    logger.debug(`Found an update entry for ${aId} version ${version}`);
+    logger.debug(`update.json: Found an update entry for ${aId} version ${version}`);
 
     let applications = getRequiredProperty(update, "applications", "object");
 
