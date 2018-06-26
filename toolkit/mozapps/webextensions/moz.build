@@ -19,8 +19,8 @@ XPIDL_SOURCES += [
 XPIDL_MODULE = 'extensions'
 
 EXTRA_COMPONENTS += [
+    '../extensions/amContentHandler.js',
     'addonManager.js',
-    'amContentHandler.js',
     'amInstallTrigger.js',
     'amWebAPI.js',
     'amWebInstallListener.js',
