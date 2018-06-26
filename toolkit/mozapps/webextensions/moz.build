@@ -31,9 +31,9 @@ EXTRA_PP_COMPONENTS += [
 ]
 
 EXTRA_JS_MODULES += [
+    '../extensions/ChromeManifestParser.jsm',
+    '../extensions/DeferredSave.jsm',
     'AddonManager.jsm',
-    'ChromeManifestParser.jsm',
-    'DeferredSave.jsm',
     'LightweightThemeManager.jsm',
 ]
 
