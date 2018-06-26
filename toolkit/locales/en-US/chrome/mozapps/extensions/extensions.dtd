@@ -24,10 +24,12 @@
 <!ENTITY cmd.back.tooltip                     "Go back one page">
 <!ENTITY cmd.forward.tooltip                  "Go forward one page">
 
+#ifdef MOZ_WEBEXTENSIONS
 <!ENTITY showUnsignedExtensions.button.label  "Some extensions could not be verified">
 <!ENTITY showAllExtensions.button.label       "Show all extensions">
 <!ENTITY debugAddons.label                    "Debug Add-ons">
 <!ENTITY debugAddons.accesskey                "B">
+#endif
 
 <!-- global warnings -->
 <!ENTITY warning.safemode.label                    "All add-ons have been disabled by safe mode.">
@@ -241,6 +243,7 @@
 
 <!ENTITY setting.learnmore "Learn More…">
 
+#ifdef MOZ_WEBEXTENSIONS
 <!ENTITY disabledUnsigned.heading "Some add-ons have been disabled">
 <!-- LOCALIZATION NOTE (disabledUnsigned.description.start, disabledUnsigned.description.findAddonsLink, disabledUnsigned.description.end):
      These entities form a sentence, with
@@ -258,3 +261,4 @@
 
 <!ENTITY pluginDeprecation.description "Missing something? Some plugins are no longer supported by &brandShortName;.">
 <!ENTITY pluginDeprecation.learnMore "Learn More.">
+#endif
