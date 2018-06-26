@@ -6,5 +6,5 @@
 <!ENTITY aboutProfiles.subtitle "This page helps you to manage your profiles. Each profile is a separate world which contains separate history, bookmarks, settings and add-ons.">
 <!ENTITY aboutProfiles.create "Create a New Profile">
 <!ENTITY aboutProfiles.restart.title "Restart">
-<!ENTITY aboutProfiles.restart.inSafeMode "Restart with Add-ons Disabled…">
+<!ENTITY aboutProfiles.restart.inSafeMode "Restart in Safe Mode…">
 <!ENTITY aboutProfiles.restart.normal "Restart normally…">
