@@ -472,7 +472,6 @@ this.XPIDatabase = {
                                             ASYNC_SAVE_DELAY_MS);
     }
 
-    this.updateAddonsBlockingE10s();
     let promise = this._deferredSave.saveChanges();
     if (!this._schemaVersionSet) {
       this._schemaVersionSet = true;
@@ -1411,21 +1410,6 @@ this.XPIDatabase = {
 
     aAddon.active = aActive;
     this.saveChanges();
-  },
-
-  updateAddonsBlockingE10s: function() {
-    let blockE10s = false;
-
-    Preferences.set(PREF_E10S_HAS_NONEXEMPT_ADDON, false);
-    for (let [, addon] of this.addonDB) {
-      let active = (addon.visible && !addon.disabled && !addon.pendingUninstall);
-
-      if (active && XPIProvider.isBlockingE10s(addon)) {
-        blockE10s = true;
-        break;
-      }
-    }
-    Preferences.set(PREF_E10S_BLOCKED_BY_ADDONS, blockE10s);
   },
 
   /**

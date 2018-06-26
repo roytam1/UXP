@@ -56,8 +56,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "UpdateUtils",
                                   "resource://gre/modules/UpdateUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
                                   "resource://gre/modules/AppConstants.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "isAddonPartOfE10SRollout",
-                                  "resource://gre/modules/addons/E10SAddonsRollout.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "LegacyExtensionsUtils",
                                   "resource://gre/modules/LegacyExtensionsUtils.jsm");
 
@@ -123,10 +121,6 @@ const PREF_BRANCH_INSTALLED_ADDON     = "extensions.installedDistroAddon.";
 const PREF_INTERPOSITION_ENABLED      = "extensions.interposition.enabled";
 const PREF_SYSTEM_ADDON_SET           = "extensions.systemAddonSet";
 const PREF_SYSTEM_ADDON_UPDATE_URL    = "extensions.systemAddon.update.url";
-const PREF_E10S_BLOCK_ENABLE          = "extensions.e10sBlocksEnabling";
-const PREF_E10S_ADDON_BLOCKLIST       = "extensions.e10s.rollout.blocklist";
-const PREF_E10S_ADDON_POLICY          = "extensions.e10s.rollout.policy";
-const PREF_E10S_HAS_NONEXEMPT_ADDON   = "extensions.e10s.rollout.hasAddon";
 
 const PREF_EM_MIN_COMPAT_APP_VERSION      = "extensions.minCompatibleAppVersion";
 const PREF_EM_MIN_COMPAT_PLATFORM_VERSION = "extensions.minCompatiblePlatformVersion";
@@ -2791,8 +2785,6 @@ this.XPIProvider = {
 
       Services.prefs.addObserver(PREF_EM_MIN_COMPAT_APP_VERSION, this, false);
       Services.prefs.addObserver(PREF_EM_MIN_COMPAT_PLATFORM_VERSION, this, false);
-      Services.prefs.addObserver(PREF_E10S_ADDON_BLOCKLIST, this, false);
-      Services.prefs.addObserver(PREF_E10S_ADDON_POLICY, this, false);
       if (!REQUIRE_SIGNING)
         Services.prefs.addObserver(PREF_XPI_SIGNATURES_REQUIRED, this, false);
       Services.obs.addObserver(this, NOTIFICATION_FLUSH_PERMISSIONS, false);
@@ -4463,73 +4455,8 @@ this.XPIProvider = {
       case PREF_XPI_SIGNATURES_REQUIRED:
         this.updateAddonAppDisabledStates();
         break;
-
-      case PREF_E10S_ADDON_BLOCKLIST:
-      case PREF_E10S_ADDON_POLICY:
-        XPIDatabase.updateAddonsBlockingE10s();
-        break;
       }
     }
-  },
-
-  /**
-   * Determine if an add-on should be blocking e10s if enabled.
-   *
-   * @param  aAddon
-   *         The add-on to test
-   * @return true if enabling the add-on should block e10s
-   */
-  isBlockingE10s: function(aAddon) {
-    if (aAddon.type != "extension" &&
-        aAddon.type != "webextension" &&
-        aAddon.type != "theme")
-      return false;
-
-    // The hotfix is exempt
-    let hotfixID = Preferences.get(PREF_EM_HOTFIX_ID, undefined);
-    if (hotfixID && hotfixID == aAddon.id)
-      return false;
-
-    // The default theme is exempt
-    if (aAddon.type == "theme" &&
-        aAddon.internalName == XPIProvider.defaultSkin)
-      return false;
-
-    // System add-ons are exempt
-    let locName = aAddon._installLocation ? aAddon._installLocation.name
-                                          : undefined;
-    if (locName == KEY_APP_SYSTEM_DEFAULTS ||
-        locName == KEY_APP_SYSTEM_ADDONS)
-      return false;
-
-    if (isAddonPartOfE10SRollout(aAddon)) {
-      Preferences.set(PREF_E10S_HAS_NONEXEMPT_ADDON, true);
-      return false;
-    }
-
-    logger.debug("Add-on " + aAddon.id + " blocks e10s rollout.");
-    return true;
-  },
-
-  /**
-   * In some cases having add-ons active blocks e10s but turning off e10s
-   * requires a restart so some add-ons that are normally restartless will
-   * require a restart to install or enable.
-   *
-   * @param  aAddon
-   *         The add-on to test
-   * @return true if enabling the add-on requires a restart
-   */
-  e10sBlocksEnabling: function(aAddon) {
-    // If the preference isn't set then don't block anything
-    if (!Preferences.get(PREF_E10S_BLOCK_ENABLE, false))
-      return false;
-
-    // If e10s isn't active then don't block anything
-    if (!Services.appinfo.browserTabsRemoteAutostart)
-      return false;
-
-    return this.isBlockingE10s(aAddon);
   },
 
   /**
@@ -4565,9 +4492,6 @@ this.XPIProvider = {
       // lightweight theme is considered active.
       return aAddon.internalName != this.currentSkin;
     }
-
-    if (this.e10sBlocksEnabling(aAddon))
-      return true;
 
     return !aAddon.bootstrap;
   },
@@ -4658,9 +4582,6 @@ this.XPIProvider = {
     // doesn't require a restart to install.
     if (aAddon.disabled)
       return false;
-
-    if (this.e10sBlocksEnabling(aAddon))
-      return true;
 
     // Themes will require a restart (even if dynamic switching is enabled due
     // to some caching issues) and non-bootstrapped add-ons will require a

@@ -12,7 +12,6 @@ EXTRA_JS_MODULES.addons += [
     'AddonRepository.jsm',
     'AddonRepository_SQLiteMigrator.jsm',
     'APIExtensionBootstrap.js',
-    'E10SAddonsRollout.jsm',
     'GMPProvider.jsm',
     'LightweightThemeImageOptimizer.jsm',
     'WebExtensionBootstrap.js',
