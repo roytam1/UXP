@@ -85,16 +85,12 @@
       <textbox id="TextboxEval" class="toolbar" value="" onkeypress="onEvalKeyPress(event)" flex="1"/>
       <toolbarbutton id="ButtonEval" label="&evaluate.label;"
                      accesskey="&evaluate.accesskey;" oncommand="evaluateTypein()"/>
+      <textbox accesskey="&filter2.accesskey;" type="search"
+               id="Filter" oncommand="changeFilter();"/>
     </toolbar>
   </toolbox>
 
   <vbox id="ConsoleBox" class="console-box" flex="1" context="ConsoleContext" persist="sortOrder"/>
 
   <iframe name="Evaluator" id="Evaluator" collapsed="true"/>
-
-  <toolbar align="center" nowindowdrag="true">
-    <label value="&filter2.label;" control="Filter"/>
-    <textbox accesskey="&filter2.accesskey;" type="search"
-             id="Filter" oncommand="changeFilter();"/>
-  </toolbar>
 </window>
