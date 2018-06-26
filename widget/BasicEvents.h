@@ -161,6 +161,9 @@ public:
   }
   inline void PreventDefault(bool aCalledByDefaultHandler = true)
   {
+    if (!mCancelable) {
+      return;
+    }
     mDefaultPrevented = true;
     // Note that even if preventDefault() has already been called by chrome,
     // a call of preventDefault() by content needs to overwrite
@@ -175,6 +178,9 @@ public:
   // This should be used only before dispatching events into the DOM tree.
   inline void PreventDefaultBeforeDispatch()
   {
+    if (!mCancelable) {
+      return;
+    }
     mDefaultPrevented = true;
   }
   inline bool DefaultPrevented() const
