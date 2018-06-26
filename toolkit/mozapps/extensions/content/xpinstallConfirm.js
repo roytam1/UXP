@@ -6,7 +6,7 @@
 
 var XPInstallConfirm = {};
 
-XPInstallConfirm.init = function XPInstallConfirm_init()
+XPInstallConfirm.init = function()
 {
   Components.utils.import("resource://gre/modules/AddonManager.jsm");
 
@@ -36,7 +36,7 @@ XPInstallConfirm.init = function XPInstallConfirm_init()
     var delay_in_milliseconds = prefs.getIntPref("security.dialog_enable_delay");
     _installCountdownLength = Math.round(delay_in_milliseconds / 500);
   } catch (ex) { }
-  
+
   var itemList = document.getElementById("itemList");
 
   let installMap = new WeakMap();
@@ -47,7 +47,7 @@ XPInstallConfirm.init = function XPInstallConfirm_init()
         window.close();
     }
   };
-  
+
   var numItemsToInstall = args.installs.length;
   for (let install of args.installs) {
     var installItem = document.createElement("installitem");
@@ -72,7 +72,7 @@ XPInstallConfirm.init = function XPInstallConfirm_init()
     installMap.set(install, installItem);
     install.addListener(installListener);
   }
-  
+
   var introString = bundle.getString("itemWarnIntroSingle");
   if (numItemsToInstall > 4)
     introString = bundle.getFormattedString("itemWarnIntroMultiple", [numItemsToInstall]);
@@ -81,7 +81,7 @@ XPInstallConfirm.init = function XPInstallConfirm_init()
   while (introNode.hasChildNodes())
     introNode.removeChild(introNode.firstChild);
   introNode.appendChild(textNode);
-  
+
   var okButton = document.documentElement.getButton("accept");
   okButton.focus();
 
@@ -177,7 +177,7 @@ XPInstallConfirm.init = function XPInstallConfirm_init()
     okButton.label = bundle.getString("installButtonLabel");
 }
 
-XPInstallConfirm.onOK = function XPInstallConfirm_onOk()
+XPInstallConfirm.onOK = function()
 {
   Components.classes["@mozilla.org/base/telemetry;1"].
     getService(Components.interfaces.nsITelemetry).
@@ -188,7 +188,7 @@ XPInstallConfirm.onOK = function XPInstallConfirm_onOk()
   return true;
 }
 
-XPInstallConfirm.onCancel = function XPInstallConfirm_onCancel()
+XPInstallConfirm.onCancel = function()
 {
   // Perform the install or cancel after the window has unloaded
   XPInstallConfirm._installOK = false;
