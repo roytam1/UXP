@@ -50,7 +50,6 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::ALLOW_SCRIPT
   },
   { "config", "chrome://global/content/config.xul", 0 },
-  { "console", "chrome://global/content/console.xul", 0 },
   {
     "credits", "http://www.palemoon.org/Contributors.shtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
