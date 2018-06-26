@@ -247,7 +247,8 @@ public:
    * IME event handlers.
    */
   virtual nsresult BeginIMEComposition(WidgetCompositionEvent* aEvent);
-  virtual nsresult UpdateIMEComposition(nsIDOMEvent* aDOMTextEvent) = 0;
+  virtual nsresult UpdateIMEComposition(
+                     WidgetCompositionEvent* aCompositionChangeEvent) = 0;
   void EndIMEComposition();
 
   void SwitchTextDirectionTo(uint32_t aDirection);

@@ -130,7 +130,8 @@ public:
   virtual already_AddRefed<dom::EventTarget> GetDOMEventTarget() override;
 
   virtual nsresult BeginIMEComposition(WidgetCompositionEvent* aEvent) override;
-  virtual nsresult UpdateIMEComposition(nsIDOMEvent* aTextEvent) override;
+  virtual nsresult UpdateIMEComposition(
+                     WidgetCompositionEvent* aCompositionChangeEvent) override;
 
   virtual already_AddRefed<nsIContent> GetInputEventTargetContent() override;
 
