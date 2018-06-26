@@ -77,6 +77,7 @@
       <toolbarseparator/>
       <toolbarbutton id="Console:clear" oncommand="clearConsole();"
                      label="&clear.label;" accesskey="&clear.accesskey;"/>
+      <toolbarspring/>
     </toolbar>
 
     <toolbar class="chromeclass-toolbar" id="ToolbarEval" align="center" nowindowdrag="true">
@@ -91,11 +92,9 @@
 
   <iframe name="Evaluator" id="Evaluator" collapsed="true"/>
 
-  <statusbar>
-    <statusbarpanel flex="1" pack="start">
-      <label value="&filter2.label;" control="Filter"/>
-      <textbox accesskey="&filter2.accesskey;" type="search"
-               id="Filter" oncommand="changeFilter();"/>
-    </statusbarpanel>
-  </statusbar>
+  <toolbar align="center" nowindowdrag="true">
+    <label value="&filter2.label;" control="Filter"/>
+    <textbox accesskey="&filter2.accesskey;" type="search"
+             id="Filter" oncommand="changeFilter();"/>
+  </toolbar>
 </window>
