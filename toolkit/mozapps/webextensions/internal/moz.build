@@ -6,12 +6,12 @@
 
 EXTRA_JS_MODULES.addons += [
     '../../extensions/internal/AddonLogging.jsm',
+    '../../extensions/internal/Content.js',
     '../../extensions/internal/ProductAddonChecker.jsm',
     '../../extensions/internal/SpellCheckDictionaryBootstrap.js',
     'AddonRepository.jsm',
     'AddonRepository_SQLiteMigrator.jsm',
     'APIExtensionBootstrap.js',
-    'Content.js',
     'E10SAddonsRollout.jsm',
     'GMPProvider.jsm',
     'LightweightThemeImageOptimizer.jsm',
