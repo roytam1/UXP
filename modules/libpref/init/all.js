@@ -208,6 +208,10 @@ pref("dom.enable_performance_observer", false);
 // Enable requestIdleCallback API
 pref("dom.requestIdleCallback.enabled", true);
 
+// Enable Intersection Observers
+// See WD https://w3c.github.io/IntersectionObserver/
+pref("dom.IntersectionObserver.enabled", true);
+
 // Whether the Gamepad API is enabled
 pref("dom.gamepad.enabled", true);
 pref("dom.gamepad.test.enabled", false);
