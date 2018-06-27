@@ -1122,6 +1122,11 @@ InitSystemMetrics()
     sSystemMetrics->AppendElement(nsGkAtoms::mac_graphite_theme);
   }
 
+  rv = LookAndFeel::GetInt(LookAndFeel::eIntID_MacLionTheme, &metricResult);
+  if (NS_SUCCEEDED(rv) && metricResult) {
+    sSystemMetrics->AppendElement(nsGkAtoms::mac_lion_theme);
+  }
+
   rv = LookAndFeel::GetInt(LookAndFeel::eIntID_MacYosemiteTheme, &metricResult);
   if (NS_SUCCEEDED(rv) && metricResult) {
     sSystemMetrics->AppendElement(nsGkAtoms::mac_yosemite_theme);
@@ -1161,7 +1166,7 @@ InitSystemMetrics()
   if (NS_SUCCEEDED(rv) && metricResult) {
     sSystemMetrics->AppendElement(nsGkAtoms::touch_enabled);
   }
- 
+
   rv = LookAndFeel::GetInt(LookAndFeel::eIntID_SwipeAnimationEnabled,
                            &metricResult);
   if (NS_SUCCEEDED(rv) && metricResult) {
@@ -1539,7 +1544,7 @@ checkGenericEmptyMatches(Element* aElement,
   do {
     child = aElement->GetChildAt(++index);
     // stop at first non-comment (and non-whitespace for
-    // :-moz-only-whitespace) node        
+    // :-moz-only-whitespace) node
   } while (child && !IsSignificantChild(child, true, isWhitespaceSignificant));
   return (child == nullptr);
 }
@@ -2233,7 +2238,7 @@ static bool SelectorMatches(Element* aElement,
           NS_ASSERTION(hasAttr, "HasAttr lied");
           result = AttrMatchesValue(attr, value, isHTML);
         }
-        
+
         attr = attr->mNext;
       } while (attr && result);
     }
@@ -3085,7 +3090,7 @@ nsCSSRuleProcessor::AppendFontFaceRules(
     if (!aArray.AppendElements(cascade->mFontFaceRules))
       return false;
   }
-  
+
   return true;
 }
 
@@ -3129,7 +3134,7 @@ nsCSSRuleProcessor::AppendPageRules(
       return false;
     }
   }
-  
+
   return true;
 }
 

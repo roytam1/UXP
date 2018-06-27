@@ -250,7 +250,7 @@ public:
      * should return NS_ERROR_NOT_IMPLEMENTED when queried for this metric.
      */
     eIntID_WindowsAccentColorApplies,
-    
+
     /*
      * A Boolean value to determine whether the Windows accent color
      * is considered dark and should get bright text/controls.
@@ -312,6 +312,16 @@ public:
      * should return NS_ERROR_NOT_IMPLEMENTED when queried for this metric.
      */
     eIntID_MacGraphiteTheme,
+
+    /*
+     * A Boolean value to determine whether the Mac OS X Lion-specific theming
+     * should be used.
+     *
+     * The value of this metric is not used on non-Mac platforms. These
+     * platforms should return NS_ERROR_NOT_IMPLEMENTED when queried for this
+     * metric.
+     */
+    eIntID_MacLionTheme,
 
    /*
     * A Boolean value to determine whether the Mac OS X Yosemite-specific theming
@@ -412,7 +422,7 @@ public:
       */
      eIntID_ScrollbarFadeBeginDelay,
      eIntID_ScrollbarFadeDuration,
-      
+
      /**
       * Distance in pixels to offset the context menu from the cursor
       * on open.

@@ -51,7 +51,7 @@ nsLookAndFeel::nsLookAndFeel()
       mDefaultFontCached(false), mButtonFontCached(false),
       mFieldFontCached(false), mMenuFontCached(false)
 {
-    Init();    
+    Init();
 }
 
 nsLookAndFeel::~nsLookAndFeel()
@@ -266,7 +266,7 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor& aColor)
         break;
     case eColorID_WindowForeground:
     case eColorID_WidgetForeground:
-    case eColorID_TextForeground: 
+    case eColorID_TextForeground:
     case eColorID_captiontext: // text in active window caption, size box, and scrollbar arrow box (!)
     case eColorID_windowtext:
     case eColorID__moz_dialogtext:
@@ -303,7 +303,7 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor& aColor)
         // not used?
         aColor = GDK_COLOR_TO_NS_RGB(mStyle->base[GTK_STATE_NORMAL]);
         break;
-    case eColorID_TextForeground: 
+    case eColorID_TextForeground:
         // not used?
         aColor = GDK_COLOR_TO_NS_RGB(mStyle->text[GTK_STATE_NORMAL]);
         break;
@@ -415,7 +415,7 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor& aColor)
         // inactive window caption
         GtkStyleContext *style = ClaimStyleContext(MOZ_GTK_WINDOW);
         gtk_style_context_get_background_color(style,
-                                               GTK_STATE_FLAG_INSENSITIVE, 
+                                               GTK_STATE_FLAG_INSENSITIVE,
                                                &gdk_color);
         aColor = GDK_RGBA_TO_NS_RGBA(gdk_color);
         ReleaseStyleContext(style);
@@ -509,7 +509,7 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor& aColor)
         break;
     case eColorID__moz_dragtargetzone:
         aColor = GDK_COLOR_TO_NS_RGB(mStyle->bg[GTK_STATE_SELECTED]);
-        break; 
+        break;
     case eColorID__moz_buttondefault:
         // default button border color
         aColor = GDK_COLOR_TO_NS_RGB(mStyle->black);
@@ -552,8 +552,8 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor& aColor)
     }
     case eColorID__moz_buttonhoverface: {
         GtkStyleContext *style = ClaimStyleContext(MOZ_GTK_BUTTON);
-        gtk_style_context_get_background_color(style, 
-                                               GTK_STATE_FLAG_PRELIGHT, 
+        gtk_style_context_get_background_color(style,
+                                               GTK_STATE_FLAG_PRELIGHT,
                                                &gdk_color);
         aColor = GDK_RGBA_TO_NS_RGBA(gdk_color);
         ReleaseStyleContext(style);
@@ -637,7 +637,7 @@ static int32_t ConvertGTKStepperStyleToMozillaScrollArrowStyle(GtkWidget* aWidge
 {
     if (!aWidget)
         return mozilla::LookAndFeel::eScrollArrowStyle_Single;
-  
+
     return
         CheckWidgetStyle(aWidget, "has-backward-stepper",
                          mozilla::LookAndFeel::eScrollArrow_StartBackward) |
@@ -654,7 +654,7 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
 {
     nsresult res = NS_OK;
 
-    // Set these before they can get overrided in the nsXPLookAndFeel. 
+    // Set these before they can get overrided in the nsXPLookAndFeel.
     switch (aID) {
     case eIntID_ScrollButtonLeftMouseButtonAction:
         aResult = 0;
@@ -686,7 +686,7 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
                           "gtk-cursor-blink-time", &blink_time,
                           "gtk-cursor-blink", &blink,
                           nullptr);
- 
+
             if (blink)
                 aResult = (int32_t) blink_time;
             else
@@ -708,11 +708,11 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
             entry = gtk_entry_new();
             g_object_ref_sink(entry);
             settings = gtk_widget_get_settings(entry);
-            g_object_get(settings, 
+            g_object_get(settings,
                          "gtk-entry-select-on-focus",
                          &select_on_focus,
                          nullptr);
-            
+
             if(select_on_focus)
                 aResult = 1;
             else
@@ -773,7 +773,7 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
                          "gtk-dnd-drag-threshold", &threshold,
                          nullptr);
             g_object_ref_sink(box);
-            
+
             aResult = threshold;
         }
         break;
@@ -818,6 +818,7 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
 #endif
         break;
     case eIntID_MacGraphiteTheme:
+    case eIntID_MacLionTheme:
         aResult = 0;
         res = NS_ERROR_NOT_IMPLEMENTED;
         break;
@@ -1082,7 +1083,7 @@ nsLookAndFeel::Init()
 
     gtk_widget_destroy(widget);
     g_object_unref(widget);
-        
+
     // tooltip foreground and background
     GtkStyle *style = gtk_rc_get_style_by_paths(gtk_settings_get_default(),
                                                 "gtk-tooltips", "GtkWindow",
@@ -1116,7 +1117,7 @@ nsLookAndFeel::Init()
     if (style) {
         sMenuBackground = GDK_COLOR_TO_NS_RGB(style->bg[GTK_STATE_NORMAL]);
     }
-    
+
     style = gtk_widget_get_style(menuitem);
     if (style) {
         sMenuHover = GDK_COLOR_TO_NS_RGB(style->bg[GTK_STATE_PRELIGHT]);
@@ -1225,7 +1226,7 @@ nsLookAndFeel::Init()
     gtk_container_add(GTK_CONTAINER(window), parent);
     gtk_container_add(GTK_CONTAINER(parent), entry);
     gtk_container_add(GTK_CONTAINER(parent), textView);
-    
+
 #if (MOZ_WIDGET_GTK == 2)
     gtk_widget_set_style(button, nullptr);
     gtk_widget_set_style(label, nullptr);
@@ -1348,7 +1349,7 @@ nsLookAndFeel::Init()
     sComboBoxText = GDK_RGBA_TO_NS_RGBA(color);
     ReleaseStyleContext(style);
 
-    // Menubar text and hover text colors    
+    // Menubar text and hover text colors
     style = ClaimStyleContext(MOZ_GTK_MENUBARITEM);
     gtk_style_context_get_color(style, GTK_STATE_FLAG_NORMAL, &color);
     sMenuBarText = GDK_RGBA_TO_NS_RGBA(color);

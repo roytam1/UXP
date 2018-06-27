@@ -67,19 +67,19 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor &aColor)
   NS_OBJC_BEGIN_TRY_ABORT_BLOCK_NSRESULT;
 
   nsresult res = NS_OK;
-  
+
   switch (aID) {
     case eColorID_WindowBackground:
       aColor = NS_RGB(0xff,0xff,0xff);
       break;
     case eColorID_WindowForeground:
-      aColor = NS_RGB(0x00,0x00,0x00);        
+      aColor = NS_RGB(0x00,0x00,0x00);
       break;
     case eColorID_WidgetBackground:
       aColor = NS_RGB(0xdd,0xdd,0xdd);
       break;
     case eColorID_WidgetForeground:
-      aColor = NS_RGB(0x00,0x00,0x00);        
+      aColor = NS_RGB(0x00,0x00,0x00);
       break;
     case eColorID_WidgetSelectBackground:
       aColor = NS_RGB(0x80,0x80,0x80);
@@ -107,7 +107,7 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor &aColor)
       break;
     case eColorID__moz_menuhover:
       aColor = GetColorFromNSColor([NSColor alternateSelectedControlColor]);
-      break;      
+      break;
     case eColorID_TextSelectForeground:
       GetColor(eColorID_TextSelectBackground, aColor);
       if (aColor == 0x000000)
@@ -147,9 +147,9 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor &aColor)
       // css2 system colors http://www.w3.org/TR/REC-CSS2/ui.html#system-colors
       //
       // It's really hard to effectively map these to the Appearance Manager properly,
-      // since they are modeled word for word after the win32 system colors and don't have any 
-      // real counterparts in the Mac world. I'm sure we'll be tweaking these for 
-      // years to come. 
+      // since they are modeled word for word after the win32 system colors and don't have any
+      // real counterparts in the Mac world. I'm sure we'll be tweaking these for
+      // years to come.
       //
       // Thanks to mpt26@student.canterbury.ac.nz for the hardcoded values that form the defaults
       //  if querying the Appearance Manager fails ;)
@@ -161,7 +161,7 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor &aColor)
         break;
       }
       // Otherwise fall through and return the regular button text:
-      
+
     case eColorID_buttontext:
     case eColorID__moz_buttonhovertext:
       aColor = GetColorFromNSColor([NSColor controlTextColor]);
@@ -267,13 +267,13 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor &aColor)
       break;
     case eColorID__moz_mac_menushadow:
       aColor = NS_RGB(0xA3,0xA3,0xA3);
-      break;          
+      break;
     case eColorID__moz_mac_menutextdisable:
       aColor = NS_RGB(0x98,0x98,0x98);
-      break;      
+      break;
     case eColorID__moz_mac_menutextselect:
       aColor = GetColorFromNSColor([NSColor selectedMenuItemTextColor]);
-      break;      
+      break;
     case eColorID__moz_mac_disabledtoolbartext:
       aColor = GetColorFromNSColor([NSColor disabledControlTextColor]);
       break;
@@ -307,7 +307,7 @@ nsLookAndFeel::NativeGetColor(ColorID aID, nscolor &aColor)
       res = NS_ERROR_FAILURE;
       break;
     }
-  
+
   return res;
 
   NS_OBJC_END_TRY_ABORT_BLOCK_NSRESULT;
@@ -322,7 +322,7 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
   if (NS_SUCCEEDED(res))
     return res;
   res = NS_OK;
-  
+
   switch (aID) {
     case eIntID_CaretBlinkTime:
       aResult = 567;
@@ -411,6 +411,9 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
     case eIntID_MacGraphiteTheme:
       aResult = [NSColor currentControlTint] == NSGraphiteControlTint;
       break;
+    case eIntID_MacLionTheme:
+      aResult = 1;
+      break;
     case eIntID_MacYosemiteTheme:
       aResult = nsCocoaFeatures::OnYosemiteOrLater();
       break;
@@ -473,7 +476,7 @@ nsLookAndFeel::GetFloatImpl(FloatID aID, float &aResult)
   if (NS_SUCCEEDED(res))
     return res;
   res = NS_OK;
-  
+
   switch (aID) {
     case eFloatID_IMEUnderlineRelativeSize:
       aResult = 2.0f;

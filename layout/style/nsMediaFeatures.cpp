@@ -708,6 +708,14 @@ nsMediaFeatures::features[] = {
     GetSystemMetric
   },
   {
+    &nsGkAtoms::_moz_mac_lion_theme,
+    nsMediaFeature::eMinMaxNotAllowed,
+    nsMediaFeature::eBoolInteger,
+    nsMediaFeature::eNoRequirements,
+    { &nsGkAtoms::mac_lion_theme },
+    GetSystemMetric
+  },
+  {
     &nsGkAtoms::_moz_mac_yosemite_theme,
     nsMediaFeature::eMinMaxNotAllowed,
     nsMediaFeature::eBoolInteger,
@@ -730,7 +738,7 @@ nsMediaFeatures::features[] = {
     nsMediaFeature::eNoRequirements,
     { &nsGkAtoms::windows_accent_color_is_dark },
     GetSystemMetric
-  },  
+  },
   {
     &nsGkAtoms::_moz_windows_compositor,
     nsMediaFeature::eMinMaxNotAllowed,
