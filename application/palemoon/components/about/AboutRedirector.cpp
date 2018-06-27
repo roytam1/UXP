@@ -57,7 +57,7 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::ALLOW_SCRIPT
   },
   {
-    "palemoon", "chrome://global/content/memoriam.xhtml",
+    "palemoon", "chrome://browser/content/palemoon.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::HIDE_FROM_ABOUTABOUT
   },

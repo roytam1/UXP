@@ -57,8 +57,6 @@ toolkit.jar:
 #endif
    content/global/filepicker.properties
    content/global/globalOverlay.js
-   content/global/memoriam.xhtml
-*  content/global/mozilla.css
    content/global/mozilla.xhtml
 #ifdef MOZ_PHOENIX
    content/global/logopage.xhtml
