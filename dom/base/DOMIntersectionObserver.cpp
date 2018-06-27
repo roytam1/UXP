@@ -47,6 +47,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(DOMIntersectionObserver)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mCallback)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mRoot)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mQueuedEntries)
+  tmp->Disconnect();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(DOMIntersectionObserver)
@@ -184,9 +185,10 @@ DOMIntersectionObserver::Connect()
   if (mConnected) {
     return;
   }
+  mConnected = true;
+
   nsIDocument* document = mOwner->GetExtantDoc();
   document->AddIntersectionObserver(this);
-  mConnected = true;
 }
 
 void
@@ -202,7 +204,9 @@ DOMIntersectionObserver::Disconnect()
   mObservationTargets.Clear();
   if (mOwner) {
     nsIDocument* document = mOwner->GetExtantDoc();
-    document->RemoveIntersectionObserver(this);
+    if (document) {
+      document->RemoveIntersectionObserver(this);
+    }
   }
   mConnected = false;
 }
@@ -247,6 +251,12 @@ EdgeInclusiveIntersection(const nsRect& aRect, const nsRect& aOtherRect)
   }
   return Some(nsRect(left, top, right - left, bottom - top));
 }
+
+enum class BrowsingContextInfo {
+  SimilarOriginBrowsingContext,
+  DifferentOriginBrowsingContext,
+  UnknownBrowsingContext
+};
 
 void
 DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time)
@@ -359,11 +369,22 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
       }
     }
 
-    nsRect rootIntersectionRect = rootRect;
-    bool isInSimilarOriginBrowsingContext = rootFrame && targetFrame &&
-                                            CheckSimilarOrigin(root, target);
+    nsRect rootIntersectionRect;
+    BrowsingContextInfo isInSimilarOriginBrowsingContext =
+      BrowsingContextInfo::UnknownBrowsingContext;
 
-    if (isInSimilarOriginBrowsingContext) {
+    if (rootFrame && targetFrame) {
+      rootIntersectionRect = rootRect;
+    }
+ 
+    if (root && target) {
+      isInSimilarOriginBrowsingContext = CheckSimilarOrigin(root, target) ?
+        BrowsingContextInfo::SimilarOriginBrowsingContext :
+        BrowsingContextInfo::DifferentOriginBrowsingContext;
+    }
+
+    if (isInSimilarOriginBrowsingContext ==
+        BrowsingContextInfo::SimilarOriginBrowsingContext) {
       rootIntersectionRect.Inflate(rootMargin);
     }
 
@@ -413,7 +434,9 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
     if (target->UpdateIntersectionObservation(this, threshold)) {
       QueueIntersectionObserverEntry(
         target, time,
-        isInSimilarOriginBrowsingContext ? Some(rootIntersectionRect) : Nothing(),
+        isInSimilarOriginBrowsingContext ==
+          BrowsingContextInfo::DifferentOriginBrowsingContext ?
+          Nothing() : Some(rootIntersectionRect),
         targetRect, intersectionRect, intersectionRatio
       );
     }

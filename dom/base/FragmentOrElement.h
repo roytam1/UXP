@@ -21,6 +21,7 @@
 #include "nsIWeakReference.h"             // base class
 #include "nsNodeUtils.h"                  // class member nsNodeUtils::CloneNodeImpl
 #include "nsIHTMLCollection.h"
+#include "nsDataHashtable.h"
 
 class ContentUnbinder;
 class nsContentList;
@@ -353,12 +354,7 @@ public:
     /**
      * Registered Intersection Observers on the element.
      */
-    struct IntersectionObserverRegistration {
-      DOMIntersectionObserver* observer;
-      int32_t previousThreshold;
-    };
-
-    nsTArray<IntersectionObserverRegistration> mRegisteredIntersectionObservers;
+    nsDataHashtable<nsPtrHashKey<DOMIntersectionObserver>, int32_t> mRegisteredIntersectionObservers;
   };
 
 protected:
