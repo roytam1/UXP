@@ -5,9 +5,6 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-# XXX: Include this until we convert browser/ to use toolkit promises directly
-EXTRA_JS_MODULES += [ 'promise.js' ]
-
 EXTRA_JS_MODULES += [
     'AutoCompletePopup.jsm',
     'BrowserNewTabPreloader.jsm',
