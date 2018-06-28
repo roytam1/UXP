@@ -21,6 +21,10 @@ var gPage = {
 
     // Listen for 'unload' to unregister this page.
     addEventListener("unload", this, false);
+    
+    // Listen for toggle button clicks.
+    let button = document.getElementById("newtab-toggle");
+    button.addEventListener("click", e => this.toggleEnabled(e));
 
     // XXX bug 991111 - Not all click events are correctly triggered when
     // listening from xhtml nodes -- in particular middle clicks on sites, so
@@ -277,6 +281,11 @@ var gPage = {
     }
   },
 
+  toggleEnabled: function(aEvent) {
+    gAllPages.enabled = !gAllPages.enabled;
+    event.stopPropagation();
+  },
+  
   maybeShowAutoMigrationUndoNotification() {
     // sendAsyncMessage("NewTab:MaybeShowAutoMigrationUndoNotification");
   },

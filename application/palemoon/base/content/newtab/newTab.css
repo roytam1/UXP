@@ -42,6 +42,18 @@ input[type=button] {
   pointer-events: none;
 }
 
+/* TOGGLE */
+#newtab-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+#newtab-toggle:-moz-locale-dir(rtl) {
+  left: 12px;
+  right: auto;
+}
+
 /* MARGINS */
 #newtab-vertical-margin {
   display: -moz-box;
@@ -100,7 +112,7 @@ input[type=button] {
   -moz-box-orient: vertical;
   min-width: 600px;
   min-height: 400px;
-  transition: 300ms ease-out;
+  transition: 175ms ease-out;
   transition-property: opacity;
 }
 
@@ -136,7 +148,7 @@ input[type=button] {
 .newtab-site {
   position: relative;
   -moz-box-flex: 1;
-  transition: 200ms ease-out;
+  transition: 150ms ease-out;
   transition-property: top, left, opacity;
 }
 

@@ -105,7 +105,7 @@ body {
 
 .newtab-site:hover,
 .newtab-site[dragged] {
-  box-shadow: 0 3px 10px rgba(8,20,37,.6);
+  box-shadow: 0 3px 6px 1px rgba(8,20,37,.6);
 }
 
 .newtab-site[dragged] {
