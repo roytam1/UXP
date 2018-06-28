@@ -317,6 +317,7 @@ $(CONFIGURES): %: %.in $(EXTRA_CONFIG_DEPS)
 
 CONFIG_STATUS_DEPS := \
   $(wildcard $(TOPSRCDIR)/*/confvars.sh) \
+  $(wildcard $(TOPSRCDIR)/application/*/confvars.sh) \
   $(CONFIGURES) \
   $(TOPSRCDIR)/CLOBBER \
   $(TOPSRCDIR)/nsprpub/configure \
