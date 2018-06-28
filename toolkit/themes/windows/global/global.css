@@ -331,7 +331,7 @@ popupnotificationcontent {
 
 /* :::::: Close button icons ::::: */
 
-%ifdef MC_BASILISK
+%ifdef MOZ_AUSTRALIS
 .close-icon {
   list-style-image: url("chrome://global/skin/icons/close.png");
   -moz-image-region: rect(0, 20px, 20px, 0);

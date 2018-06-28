@@ -316,7 +316,7 @@ popupnotificationcontent {
 
 /* :::::: Close button icons ::::: */
 
-%ifdef MC_BASILISK
+%ifdef MOZ_AUSTRALIS
 .close-icon {
   -moz-appearance: none;
   height: 16px;

@@ -28,7 +28,7 @@ loader.lazyRequireGetter(this, "DebuggerClient", "devtools/shared/client/main", 
 loader.lazyRequireGetter(this, "BrowserMenus", "devtools/client/framework/browser-menus");
 
 loader.lazyImporter(this, "AppConstants", "resource://gre/modules/AppConstants.jsm");
-#ifdef MC_BASILISK
+#ifdef MOZ_AUSTRALIS
 loader.lazyImporter(this, "CustomizableUI", "resource:///modules/CustomizableUI.jsm");
 #endif
 
@@ -335,7 +335,7 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    * Install Developer widget
    */
   installDeveloperWidget: function () {
-#ifdef MC_BASILISK
+#ifdef MOZ_AUSTRALIS
     let id = "developer-button";
     let widget = CustomizableUI.getWidget(id);
     if (widget && widget.provider == CustomizableUI.PROVIDER_API) {
@@ -394,7 +394,7 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    */
   // Used by itself
   installWebIDEWidget: function () {
-#ifdef MC_BASILISK
+#ifdef MOZ_AUSTRALIS
     if (this.isWebIDEWidgetInstalled()) {
       return;
     }
@@ -422,7 +422,7 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
   },
 
   isWebIDEWidgetInstalled: function () {
-#ifdef MC_BASILISK
+#ifdef MOZ_AUSTRALIS
     let widgetWrapper = CustomizableUI.getWidget("webide-button");
     return !!(widgetWrapper && widgetWrapper.provider == CustomizableUI.PROVIDER_API);
 #else
@@ -439,7 +439,7 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    * Uninstall WebIDE widget
    */
   uninstallWebIDEWidget: function () {
-#ifdef MC_BASILISK
+#ifdef MOZ_AUSTRALIS
     if (this.isWebIDEWidgetInstalled()) {
       CustomizableUI.removeWidgetFromArea("webide-button");
     }
@@ -454,7 +454,7 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
    */
    // Used by webide.js
   moveWebIDEWidgetInNavbar: function () {
-#ifdef MC_BASILISK
+#ifdef MOZ_AUSTRALIS
     CustomizableUI.addWidgetToArea("webide-button", CustomizableUI.AREA_NAVBAR);
 #else
     return;
