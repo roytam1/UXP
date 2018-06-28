@@ -124,7 +124,9 @@ libs-%:
 	@$(MAKE) -C ../../../services/sync/locales AB_CD=$* XPI_NAME=locale-$*
 	@$(MAKE) -C ../../../extensions/spellcheck/locales AB_CD=$* XPI_NAME=locale-$*
 	@$(MAKE) -C ../../../intl/locales AB_CD=$* XPI_NAME=locale-$*
+ifdef MOZ_DEVTOOLS
 	@$(MAKE) -C ../../../devtools/client/locales AB_CD=$* XPI_NAME=locale-$*
+endif
 	@$(MAKE) libs AB_CD=$* XPI_NAME=locale-$* PREF_DIR=$(PREF_DIR)
 	@$(MAKE) -C $(DEPTH)/$(MOZ_BRANDING_DIRECTORY)/locales AB_CD=$* XPI_NAME=locale-$*
 
