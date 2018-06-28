@@ -249,7 +249,7 @@ var AllPages = {
    * Returns whether the history tiles are enhanced.
    */
   get enhanced() {
-#ifdef MC_BASILISK
+#if defined(MC_BASILISK) || defined(HYPE_ICEWEASEL)
     // Hard-block the use of sponsored tiles.
     return false;
 #else
