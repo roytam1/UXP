@@ -69,32 +69,37 @@ input[type=button] {
 
 #newtab-horizontal-margin {
   display: -moz-box;
-  -moz-box-flex: 1;
-}
-
-#newtab-margin-top,
-#newtab-margin-bottom {
-  display: -moz-box;
-  position: relative;
+  -moz-box-flex: 5;
 }
 
 #newtab-margin-top {
+  min-height: 10px;
+  max-height: 30px;
+  display: -moz-box;
   -moz-box-flex: 1;
+  -moz-box-align: center;
+  -moz-box-pack: center;
 }
 
 #newtab-margin-bottom {
-  -moz-box-flex: 2;
+  min-height: 40px;
+  max-height: 80px;
+  -moz-box-flex: 1;
 }
 
 .newtab-side-margin {
-  min-width: 10px;
+  min-width: 40px;
+  max-width: 300px;
   -moz-box-flex: 1;
 }
 
 /* GRID */
 #newtab-grid {
+  display: -moz-box;
   -moz-box-flex: 5;
-  overflow: hidden;
+  -moz-box-orient: vertical;
+  min-width: 600px;
+  min-height: 400px;
   transition: 300ms ease-out;
   transition-property: opacity;
 }
@@ -108,18 +113,23 @@ input[type=button] {
   pointer-events: none;
 }
 
+/* ROWS */
+.newtab-row {
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-direction: normal;
+  -moz-box-flex: 1;
+}
+
 /*
- * If you change the sizes here, make sure you
- * change the preferences:
+ * Thumbnail image sizes are determined in the preferences:
  * toolkit.pageThumbs.minWidth
  * toolkit.pageThumbs.minHeight
  */
 /* CELLS */
 .newtab-cell {
   display: -moz-box;
-  height: 180px;
-  margin: 15px 10px 30px;
-  width: 250px;
+  -moz-box-flex: 1;
 }
 
 /* SITES */
@@ -211,7 +221,7 @@ input[type=button] {
   display: -moz-box;
   position: relative;
   -moz-box-pack: center;
-  margin: 40px 0 15px;
+  margin: 10px 0 15px;
 }
 
 #searchContainer[page-disabled] {

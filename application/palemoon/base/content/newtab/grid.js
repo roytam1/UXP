@@ -124,17 +124,27 @@ var gGrid = {
    * Renders the grid, including cells and sites.
    */
   _refreshGrid() {
+    let row = document.createElementNS(HTML_NAMESPACE, "div");
+    row.classList.add("newtab-row");
     let cell = document.createElementNS(HTML_NAMESPACE, "div");
     cell.classList.add("newtab-cell");
 
-    // Creates all the cells up to the maximum
-    let fragment = document.createDocumentFragment();
-    for (let i = 0; i < gGridPrefs.gridColumns * gGridPrefs.gridRows; i++) {
-      fragment.appendChild(cell.cloneNode(true));
+    // Clear the grid
+    this._node.innerHTML = "";
+
+    // Creates the structure of one row
+    for (let i = 0; i < gGridPrefs.gridColumns; i++) {
+      row.appendChild(cell.cloneNode(true));
     }
 
-    // Create cells.
-    let cells = Array.from(fragment.childNodes, (cell) => new Cell(this, cell));
+    // Creates the grid
+    for (let j = 0; j < gGridPrefs.gridRows; j++) {
+      this._node.appendChild(row.cloneNode(true));
+    }      
+
+    // Create cell array.
+    let cellElements = this.node.querySelectorAll(".newtab-cell");
+    let cells = Array.from(cellElements, (cell) => new Cell(this, cell));
 
     // Fetch links.
     let links = gLinks.getLinks();
@@ -152,10 +162,6 @@ var gGrid = {
     }
 
     this._cells = cells;
-    while (this._gridDefaultContent.nextSibling) {
-      this._gridDefaultContent.nextSibling.remove();
-    }
-    this._node.appendChild(fragment);
   },
 
   /**
@@ -263,10 +269,10 @@ var gGrid = {
     // what being computed above. This, in turn, may cause scrollbar shown
     // for directory tiles, and introduce jitter when grid width is aligned
     // exactly on the column boundary
-    this._node.style.width = gridColumns * this._cellWidth + "px";
-    this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth +
-                                GRID_WIDTH_EXTRA + "px";
-    this._node.style.height = this._computeHeight() + "px";
-    this._node.style.maxHeight = this._computeHeight(gridRows) + "px";
+    //this._node.style.width = gridColumns * this._cellWidth + "px";
+    //this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth +
+    //                            GRID_WIDTH_EXTRA + "px";
+    //this._node.style.height = this._computeHeight() + "px";
+    //this._node.style.maxHeight = this._computeHeight(gridRows) + "px";
   }
 };
