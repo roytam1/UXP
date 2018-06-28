@@ -250,6 +250,10 @@ function openLinkIn(url, where, params) {
     aRelatedToCurrent = false;
   }
 
+  // We can only do this after we're sure of what |w| will be the rest of this function.
+  // Note that if |w| is null we might have no current browser (we'll open a new window).
+  var aCurrentBrowser = params.currentBrowser || (w && w.gBrowser.selectedBrowser);
+  
   if (!w || where == "window") {
     // This propagates to window.arguments.
     // Strip referrer data when opening a new private window, to prevent
