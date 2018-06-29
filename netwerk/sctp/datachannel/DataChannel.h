@@ -111,7 +111,7 @@ public:
     virtual void NotifyDataChannel(already_AddRefed<DataChannel> channel) = 0;
   };
 
-  explicit DataChannelConnection(DataConnectionListener *listener);
+  DataChannelConnection(DataConnectionListener *listener);
 
   bool Init(unsigned short aPort, uint16_t aNumStreams, bool aUsingDtls);
   void Destroy(); // So we can spawn refs tied to runnables in shutdown

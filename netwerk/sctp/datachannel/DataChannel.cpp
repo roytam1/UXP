@@ -654,7 +654,10 @@ int
 DataChannelConnection::SendPacket(unsigned char data[], size_t len, bool release)
 {
   //LOG(("%p: SCTP/DTLS sent %ld bytes", this, len));
-  int res = mTransportFlow->SendPacket(data, len) < 0 ? 1 : 0;
+  int res = 0;
+  if (mTransportFlow) {
+    res = mTransportFlow->SendPacket(data, len) < 0 ? 1 : 0;
+  }
   if (release)
     delete [] data;
   return res;
