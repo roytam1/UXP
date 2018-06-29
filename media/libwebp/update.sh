@@ -56,8 +56,10 @@ cp $1/src/dsp/rescaler_sse2.c dsp
 cp $1/src/dsp/upsampling.c dsp
 cp $1/src/dsp/upsampling_neon.c dsp
 cp $1/src/dsp/upsampling_sse2.c dsp
+cp $1/src/dsp/upsampling_sse41.c dsp
 cp $1/src/dsp/yuv.c dsp
 cp $1/src/dsp/yuv_sse2.c dsp
+cp $1/src/dsp/yuv_sse41.c dsp
 
 mkdir -p enc
 cp $1/src/enc/*.h enc
@@ -74,3 +76,5 @@ cp $1/src/utils/random_utils.c utils
 cp $1/src/utils/rescaler_utils.c utils
 cp $1/src/utils/thread_utils.c utils
 cp $1/src/utils/utils.c utils
+
+find . \( -name "*.c" -o -name "*.h" \) -exec sed -i 's/#include "src\//#include "..\//g' {} \;
