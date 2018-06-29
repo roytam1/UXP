@@ -31,18 +31,14 @@
 #ifdef __GNUC__
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wshadow"
-#  if MOZ_GCC_VERSION_AT_LEAST(4, 9, 0)
-#    pragma GCC diagnostic ignored "-Wshadow-local"
-#  endif
+#  pragma GCC diagnostic ignored "-Wshadow-local"
 #endif
 
 #include <hash_map>
 #include <hash_set>
 
 #ifdef __GNUC__
-#  if MOZ_GCC_VERSION_AT_LEAST(4, 9, 0)
-#    pragma GCC diagnostic pop // -Wshadow-local
-#  endif
+#  pragma GCC diagnostic pop // -Wshadow-local
 #  pragma GCC diagnostic pop // -Wshadow
 #endif
 
