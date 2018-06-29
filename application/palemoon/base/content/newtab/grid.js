@@ -5,12 +5,6 @@
 #endif
 
 /**
- * Define various fixed dimensions
- */
-const GRID_BOTTOM_EXTRA = 7; // title's line-height extends 7px past the margin
-const GRID_WIDTH_EXTRA = 1; // provide 1px buffer to allow for rounding error
-
-/**
  * This singleton represents the grid that contains all sites.
  */
 var gGrid = {
@@ -35,7 +29,14 @@ var gGrid = {
   /**
    * All sites contained in the grid's cells. Sites may be empty.
    */
-  get sites() { return [for (cell of this.cells) cell.site]; },
+  get sites() { 
+    // return [for (cell of this.cells) cell.site];
+    let aSites = [];
+    for (let cell of this.cells) {
+      aSites.push(cell.site);
+    }
+    return aSites;
+  },
 
   // Tells whether the grid has already been initialized.
   get ready() { return !!this._ready; },
@@ -55,20 +56,7 @@ var gGrid = {
     gLinks.populateCache(() => {
       this._refreshGrid();
       this._ready = true;
-
-      // If fetching links took longer than loading the page itself then
-      // we need to resize the grid as that was blocked until now.
-      // We also want to resize now if the page was already loaded when
-      // initializing the grid (the user toggled the page).
-      this._resizeGrid();
-
-      addEventListener("resize", this);
     });
-
-    // Resize the grid as soon as the page loads.
-    if (!this.isDocumentLoaded) {
-      addEventListener("load", this);
-    }
   },
 
   /**
@@ -87,12 +75,7 @@ var gGrid = {
    * Handles all grid events.
    */
   handleEvent: function Grid_handleEvent(aEvent) {
-    switch (aEvent.type) {
-      case "load":
-      case "resize":
-        this._resizeGrid();
-        break;
-    }
+    // Any specific events should go here.
   },
 
   /**
@@ -110,14 +93,10 @@ var gGrid = {
   },
 
   /**
-   * Renders and resizes the gird. _resizeGrid() call is needed to ensure
-   * that scrollbar disappears when the bottom row becomes empty following
-   * the block action, or tile display is turmed off via cog menu
+   * Renders the grid.
    */
-
   refresh() {
     this._refreshGrid();
-    this._resizeGrid();
   },
 
   /**
@@ -165,16 +144,6 @@ var gGrid = {
   },
 
   /**
-   * Calculate the height for a number of rows up to the maximum rows
-   * @param rows Number of rows defaulting to the max
-   */
-  _computeHeight: function Grid_computeHeight(aRows) {
-    let {gridRows} = gGridPrefs;
-    aRows = aRows === undefined ? gridRows : Math.min(gridRows, aRows);
-    return aRows * this._cellHeight + GRID_BOTTOM_EXTRA;
-  },
-
-  /**
    * Creates the DOM fragment that is re-used when creating sites.
    */
   _createSiteFragment: function Grid_createSiteFragment() {
@@ -205,74 +174,6 @@ var gGrid = {
   _isHistoricalTile: function Grid_isHistoricalTile(aPos) {
     let site = this.sites[aPos];
     return site && (site.isPinned() || site.link && site.link.type == "history");
-  },
-
-  /**
-   * Make sure the correct number of rows and columns are visible
-   */
-  _resizeGrid: function Grid_resizeGrid() {
-    // If we're somehow called before the page has finished loading,
-    // let's bail out to avoid caching zero heights and widths.
-    // We'll be called again when DOMContentLoaded fires.
-    // Same goes for the grid if that's not ready yet.
-    if (!this.isDocumentLoaded || !this._ready) {
-      return;
-    }
-
-    // Save the cell's computed height/width including margin and border
-    if (this._cellHeight === undefined) {
-      let refCell = document.querySelector(".newtab-cell");
-      let style = getComputedStyle(refCell);
-      this._cellHeight = refCell.offsetHeight +
-        parseFloat(style.marginTop) + parseFloat(style.marginBottom);
-      this._cellWidth = refCell.offsetWidth +
-        parseFloat(style.marginLeft) + parseFloat(style.marginRight);
-    }
-
-    let searchContainer = document.querySelector("#searchContainer");
-    // Save search-container margin height
-    if (this._searchContainerMargin === undefined) {
-      let style = getComputedStyle(searchContainer);
-      this._searchContainerMargin = parseFloat(style.marginBottom) +
-                                    parseFloat(style.marginTop);
-    }
-
-    // Find the number of rows we can place into view port
-    let availHeight = document.documentElement.clientHeight -
-                      searchContainer.offsetHeight - this._searchContainerMargin;
-    let visibleRows = Math.floor(availHeight / this._cellHeight);
-
-    // Find the number of columns that fit into view port
-    let maxGridWidth = gGridPrefs.gridColumns * this._cellWidth + GRID_WIDTH_EXTRA;
-    // available width is current grid width, but no greater than maxGridWidth
-    let availWidth = Math.min(document.querySelector("#newtab-grid").clientWidth,
-                              maxGridWidth);
-    // finally get the number of columns we can fit into view port
-    let gridColumns = Math.floor(availWidth / this._cellWidth);
-    // walk sites backwords until a pinned or history tile is found or visibleRows reached
-    let tileIndex = Math.min(gGridPrefs.gridRows * gridColumns, this.sites.length) - 1;
-    while (tileIndex >= visibleRows * gridColumns) {
-      if (this._isHistoricalTile(tileIndex)) {
-        break;
-      }
-      tileIndex--;
-    }
-
-    // Compute the actual number of grid rows we will display (potentially
-    // with a scroll bar). tileIndex now points to a historical tile with
-    // heighest index or to the last index of the visible row, if none found
-    // Dividing tileIndex by number of tiles in a column gives the rows
-    let gridRows = Math.floor(tileIndex / gridColumns) + 1;
-
-    // we need to set grid width, for otherwise the scrollbar may shrink
-    // the grid when shown and cause grid layout to be different from
-    // what being computed above. This, in turn, may cause scrollbar shown
-    // for directory tiles, and introduce jitter when grid width is aligned
-    // exactly on the column boundary
-    //this._node.style.width = gridColumns * this._cellWidth + "px";
-    //this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth +
-    //                            GRID_WIDTH_EXTRA + "px";
-    //this._node.style.height = this._computeHeight() + "px";
-    //this._node.style.maxHeight = this._computeHeight(gridRows) + "px";
   }
+
 };
