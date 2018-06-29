@@ -15,7 +15,7 @@
 #include "../webp/config.h"
 #endif
 
-#include "./bit_reader_inl_utils.h"
+#include "../utils/bit_reader_inl_utils.h"
 #include "../utils/utils.h"
 
 //------------------------------------------------------------------------------

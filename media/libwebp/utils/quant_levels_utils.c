@@ -14,7 +14,7 @@
 
 #include <assert.h>
 
-#include "./quant_levels_utils.h"
+#include "../utils/quant_levels_utils.h"
 
 #define NUM_SYMBOLS     256
 

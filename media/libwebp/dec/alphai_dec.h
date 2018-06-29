@@ -11,10 +11,10 @@
 //
 // Author: Urvang (urvang@google.com)
 
-#ifndef WEBP_DEC_ALPHAI_H_
-#define WEBP_DEC_ALPHAI_H_
+#ifndef WEBP_DEC_ALPHAI_DEC_H_
+#define WEBP_DEC_ALPHAI_DEC_H_
 
-#include "./webpi_dec.h"
+#include "../dec/webpi_dec.h"
 #include "../utils/filters_utils.h"
 
 #ifdef __cplusplus
@@ -51,4 +51,4 @@ void WebPDeallocateAlphaMemory(VP8Decoder* const dec);
 }    // extern "C"
 #endif
 
-#endif  /* WEBP_DEC_ALPHAI_H_ */
+#endif  /* WEBP_DEC_ALPHAI_DEC_H_ */

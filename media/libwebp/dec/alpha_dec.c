@@ -12,9 +12,9 @@
 // Author: Skal (pascal.massimino@gmail.com)
 
 #include <stdlib.h>
-#include "./alphai_dec.h"
-#include "./vp8i_dec.h"
-#include "./vp8li_dec.h"
+#include "../dec/alphai_dec.h"
+#include "../dec/vp8i_dec.h"
+#include "../dec/vp8li_dec.h"
 #include "../dsp/dsp.h"
 #include "../utils/quant_levels_dec_utils.h"
 #include "../utils/utils.h"
