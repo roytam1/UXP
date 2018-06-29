@@ -5,6 +5,12 @@
 @media not print {
   /* N.B.: Remember to update ImageDocument.css in the tree or reftests may fail! */
 
+%ifdef MC_PALEMOON
+  body {
+    color: #eee;
+    background: #2E3B41;
+  }
+%else
   body {
     color: #eee;
     background-image: url("chrome://global/skin/media/imagedoc-darknoise.png");
@@ -14,4 +20,5 @@
     background: hsl(0,0%,90%) url("chrome://global/skin/media/imagedoc-lightnoise.png");
     color: #222;
   }
+%endif
 }
