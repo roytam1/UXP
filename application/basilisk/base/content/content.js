@@ -385,18 +385,6 @@ var AboutNetAndCertErrorListener = {
       let ownerDoc = originalTarget.ownerDocument;
       ClickEventHandler.onCertError(originalTarget, ownerDoc);
     }
-
-    let automatic = Services.prefs.getBoolPref("security.ssl.errorReporting.automatic");
-    content.dispatchEvent(new content.CustomEvent("AboutNetErrorOptions", {
-      detail: JSON.stringify({
-        enabled: Services.prefs.getBoolPref("security.ssl.errorReporting.enabled"),
-        changedCertPrefs: this.changedCertPrefs(),
-        automatic: automatic
-      })
-    }));
-
-    sendAsyncMessage("Browser:SSLErrorReportTelemetry",
-                     {reportStatus: TLS_ERROR_REPORT_TELEMETRY_UI_SHOWN});
   },
 
   openCaptivePortalPage: function(evt) {
@@ -406,22 +394,6 @@ var AboutNetAndCertErrorListener = {
 
   onResetPreferences: function(evt) {
     sendAsyncMessage("Browser:ResetSSLPreferences");
-  },
-
-  onSetAutomatic: function(evt) {
-    sendAsyncMessage("Browser:SetSSLErrorReportAuto", {
-      automatic: evt.detail
-    });
-
-    // if we're enabling reports, send a report for this failure
-    if (evt.detail) {
-      let {host, port} = content.document.mozDocumentURIIfNotForErrorPages;
-      sendAsyncMessage("Browser:SendSSLErrorReport", {
-        uri: { host, port },
-        securityInfo: getSerializedSecurityInfo(docShell),
-      });
-
-    }
   },
 
   onOverride: function(evt) {
