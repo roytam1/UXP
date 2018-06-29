@@ -1,0 +1,4 @@
+Changes made to pristine libwebp source by Moonchild Productions and mozilla.org developers.
+
+2017/01/27  -- Synced with libwebp-0.6.0 (BZ #1294490).
+2018/06/29  -- Synced with libwebp-1.0.0 + BUG=webp:381,383,384.
