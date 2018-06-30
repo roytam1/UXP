@@ -51,6 +51,7 @@
 #include "base/process_util.h"
 #include "chrome/common/child_process.h"
 
+#include "mozilla/FilePreferences.h"
 #include "mozilla/ipc/BrowserProcessSubThread.h"
 #include "mozilla/ipc/GeckoChildProcessHost.h"
 #include "mozilla/ipc/IOThreadChild.h"
@@ -565,6 +566,9 @@ XRE_InitChildProcess(int aArgc,
       // down or logs off.
       ::SetProcessShutdownParameters(0x280 - 1, SHUTDOWN_NORETRY);
 #endif
+
+      mozilla::FilePreferences::InitDirectoriesWhitelist();
+      mozilla::FilePreferences::InitPrefs();
 
       OverrideDefaultLocaleIfNeeded();
 
