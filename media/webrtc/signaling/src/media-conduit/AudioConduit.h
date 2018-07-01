@@ -161,6 +161,8 @@ public:
 
   virtual uint64_t CodecPluginID() override { return 0; }
 
+  virtual void DeleteStreams() override {}
+  
   WebrtcAudioConduit():
                       mVoiceEngine(nullptr),
                       mTransportMonitor("WebrtcAudioConduit"),

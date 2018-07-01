@@ -269,6 +269,8 @@ public:
     return mSendingHeight;
   }
 
+  virtual void DeleteStreams() override;
+  
   unsigned int SendingMaxFs() override {
     if(mCurSendCodecConfig) {
       return mCurSendCodecConfig->mEncodingConstraints.maxFs;
@@ -288,7 +290,6 @@ public:
 
   MediaConduitErrorCode InitMain();
   virtual MediaConduitErrorCode Init();
-  virtual void Destroy();
 
   int GetChannel() { return mChannel; }
   webrtc::VideoEngine* GetVideoEngine() { return mVideoEngine; }

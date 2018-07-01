@@ -109,7 +109,7 @@ WebrtcVideoConduit::~WebrtcVideoConduit()
 
   // Release AudioConduit first by dropping reference on MainThread, where it expects to be
   SyncTo(nullptr);
-  Destroy();
+  MOZ_ASSERT(!mSendStream && !mRecvStream, "Call DeleteStreams prior to ~WebrtcVideoConduit.");
 }
 
 bool WebrtcVideoConduit::SetLocalSSRC(unsigned int ssrc)
@@ -478,7 +478,7 @@ WebrtcVideoConduit::Init()
 }
 
 void
-WebrtcVideoConduit::Destroy()
+WebrtcVideoConduit::DeleteStreams()
 {
   // The first one of a pair to be deleted shuts down media for both
   //Deal with External Capturer

@@ -227,6 +227,8 @@ public:
                                    uint64_t* bytesSent) = 0;
 
   virtual uint64_t CodecPluginID() = 0;
+  
+  virtual void DeleteStreams() = 0;
 
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(MediaSessionConduit)
 

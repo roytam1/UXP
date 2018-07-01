@@ -1,4 +1,4 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
+:SelfDestruct_m/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -1035,6 +1035,11 @@ PeerConnectionMedia::SelfDestruct_m()
 
   mLocalSourceStreams.Clear();
   mRemoteSourceStreams.Clear();
+
+  // Clean up our send and receive streams
+  for (auto i = mConduits.begin(); i != mConduits.end(); ++i) {
+    i->second.second->DeleteStreams();
+  }
 
   mMainThread = nullptr;
 
