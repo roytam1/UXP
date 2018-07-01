@@ -50,6 +50,14 @@ function insertButton(aWindow, id, onBuild) {
   let toolbar = toolbarId != "" && doc.getElementById(toolbarId);
 
   if (toolbar) {
+    // Handle special items with dynamic ids
+    let match = /^(separator|spacer|spring)\[(\d+)\]$/.exec(nextItemId);
+    if (match !== null) {
+      let dynItems = toolbar.querySelectorAll("toolbar" + match[1]);
+      if (match[2] < dynItems.length) {
+        nextItemId = dynItems[match[2]].id;
+      }
+    }
     let nextItem = nextItemId != "" && doc.getElementById(nextItemId);
     // If nextItem not in toolbar then retrieve it by reading currentset attribute
     if (!(nextItem && nextItem.parentNode && nextItem.parentNode.id == toolbarId)) {
@@ -82,13 +90,24 @@ function afterCustomize(e) {
   for (let [id] of buttonsList) {
     let toolbox = e.target;
     let b = toolbox.parentNode.querySelector("#" + id);
-    let toolbarId = null, nextItemId = null;
+    let toolbarId = null, nextItem = null, nextItemId = null;
     if (b) {
       let parent = b.parentNode;
-      let nextItem = b.nextSibling;
+      nextItem = b.nextSibling;
       if (parent && parent.localName == "toolbar") {
         toolbarId = parent.id;
         nextItemId = nextItem && nextItem.id;
+      }
+    }
+    // Handle special items with dynamic ids
+    let match = /^(separator|spacer|spring)\d+$/.exec(nextItemId);
+    if (match !== null) {
+      let dynItems = nextItem.parentNode.querySelectorAll("toolbar" + match[1]);
+      for (let i = 0; i < dynItems.length; i++) {
+        if (dynItems[i].id == nextItemId) {
+          nextItemId = match[1] + "[" + i + "]";
+          break;
+        }
       }
     }
     saveLocation(id, toolbarId, nextItemId);
