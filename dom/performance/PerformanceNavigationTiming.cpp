@@ -6,6 +6,7 @@
 
 #include "mozilla/dom/PerformanceNavigationTiming.h"
 #include "mozilla/dom/PerformanceNavigationTimingBinding.h"
+#include "mozilla/TimerClamping.h"
 
 using namespace mozilla::dom;
 
@@ -24,49 +25,49 @@ PerformanceNavigationTiming::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aG
 DOMHighResTimeStamp
 PerformanceNavigationTiming::UnloadEventStart() const
 {
-  return mTiming->GetDOMTiming()->GetUnloadEventStartHighRes();
+  return TimerClamping::ReduceMsTimeValue(mTiming->GetDOMTiming()->GetUnloadEventStartHighRes());
 }
 
 DOMHighResTimeStamp
 PerformanceNavigationTiming::UnloadEventEnd() const
 {
-  return mTiming->GetDOMTiming()->GetUnloadEventEndHighRes();
+  return TimerClamping::ReduceMsTimeValue(mTiming->GetDOMTiming()->GetUnloadEventEndHighRes());
 }
 
 DOMHighResTimeStamp
 PerformanceNavigationTiming::DomInteractive() const
 {
-  return mTiming->GetDOMTiming()->GetDomInteractiveHighRes();
+  return TimerClamping::ReduceMsTimeValue(mTiming->GetDOMTiming()->GetDomInteractiveHighRes());
 }
 
 DOMHighResTimeStamp
 PerformanceNavigationTiming::DomContentLoadedEventStart() const
 {
-  return mTiming->GetDOMTiming()->GetDomContentLoadedEventStartHighRes();
+  return TimerClamping::ReduceMsTimeValue(mTiming->GetDOMTiming()->GetDomContentLoadedEventStartHighRes());
 }
 
 DOMHighResTimeStamp
 PerformanceNavigationTiming::DomContentLoadedEventEnd() const
 {
-  return mTiming->GetDOMTiming()->GetDomContentLoadedEventEndHighRes();
+  return TimerClamping::ReduceMsTimeValue(mTiming->GetDOMTiming()->GetDomContentLoadedEventEndHighRes());
 }
 
 DOMHighResTimeStamp
 PerformanceNavigationTiming::DomComplete() const
 {
-  return mTiming->GetDOMTiming()->GetDomCompleteHighRes();
+  return TimerClamping::ReduceMsTimeValue(mTiming->GetDOMTiming()->GetDomCompleteHighRes());
 }
 
 DOMHighResTimeStamp
 PerformanceNavigationTiming::LoadEventStart() const
 {
-  return mTiming->GetDOMTiming()->GetLoadEventStartHighRes();
+  return TimerClamping::ReduceMsTimeValue(mTiming->GetDOMTiming()->GetLoadEventStartHighRes());
 }
 
 DOMHighResTimeStamp
 PerformanceNavigationTiming::LoadEventEnd() const
 {
-  return mTiming->GetDOMTiming()->GetLoadEventEndHighRes();
+  return TimerClamping::ReduceMsTimeValue(mTiming->GetDOMTiming()->GetLoadEventEndHighRes());
 }
 
 NavigationType
