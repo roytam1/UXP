@@ -55,7 +55,7 @@ const PREFS_WHITELIST = [
   "browser.urlbar.",
   "browser.zoom.",
   "dom.",
-  "extensions.checkCompatibility",
+  "extensions.enableCompatibilityChecking",
   "extensions.lastAppVersion",
   "font.",
   "general.autoScroll",
