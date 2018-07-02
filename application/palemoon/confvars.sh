@@ -47,7 +47,7 @@ MOZ_PHOENIX=1
 MOZ_BROWSER_STATUSBAR=1
 
 # Browser Feature: Profile Migration Component
-MOZ_PROFILE_MIGRATOR=1
+MOZ_PROFILE_MIGRATOR=
 
 # Platform Feature: Application Update Service
 # MAR_CHANNEL_ID must not contained the follow 3 characters: ",\t"
@@ -103,5 +103,3 @@ MOZ_MAINTENANCE_SERVICE=
 MOZ_SERVICES_HEALTHREPORT=
 MOZ_ADDON_SIGNING=0
 MOZ_REQUIRE_SIGNING=0
-MOZ_PROFILE_MIGRATOR=
-
