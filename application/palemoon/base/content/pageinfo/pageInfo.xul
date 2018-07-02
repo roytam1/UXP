@@ -53,7 +53,6 @@
     <command id="cmd_desktop-notificationDef" oncommand="onCheckboxClick('desktop-notification');"/>
     <command id="cmd_installDef"    oncommand="onCheckboxClick('install');"/>
     <command id="cmd_geoDef"        oncommand="onCheckboxClick('geo');"/>
-    <command id="cmd_indexedDBDef"  oncommand="onCheckboxClick('indexedDB');"/>
     <command id="cmd_pluginsDef"    oncommand="onCheckboxClick('plugins');"/>
     <command id="cmd_imageToggle"   oncommand="onRadioClick('image');"/>
     <command id="cmd_popupToggle"   oncommand="onRadioClick('popup');"/>
@@ -61,7 +60,6 @@
     <command id="cmd_desktop-notificationToggle" oncommand="onRadioClick('desktop-notification');"/>
     <command id="cmd_installToggle" oncommand="onRadioClick('install');"/>
     <command id="cmd_geoToggle"     oncommand="onRadioClick('geo');"/>
-    <command id="cmd_indexedDBToggle" oncommand="onRadioClick('indexedDB');"/>
     <command id="cmd_pluginsToggle" oncommand="onPluginRadioClick(event);"/>
   </commandset>
 
@@ -364,27 +362,6 @@
               <radio id="geo#1" command="cmd_geoToggle" label="&permAllow;"/>
               <radio id="geo#2" command="cmd_geoToggle" label="&permBlock;"/>
             </radiogroup>
-          </hbox>
-        </vbox>
-        <vbox class="permission" id="permIndexedDBRow">
-          <label class="permissionLabel" id="permIndexedDBLabel"
-                 value="&permIndexedDB;" control="indexedDBRadioGroup"/>
-          <hbox id="permIndexedDBBox" role="group" aria-labelledby="permIndexedDBLabel">
-            <checkbox id="indexedDBDef" command="cmd_indexedDBDef" label="&permUseDefault;"/>
-            <spacer flex="1"/>
-            <radiogroup id="indexedDBRadioGroup" orient="horizontal">
-              <radio id="indexedDB#0" command="cmd_indexedDBToggle" label="&permAskAlways;"/>
-              <radio id="indexedDB#1" command="cmd_indexedDBToggle" label="&permAllow;"/>
-              <radio id="indexedDB#2" command="cmd_indexedDBToggle" label="&permBlock;"/>
-            </radiogroup>
-          </hbox>
-          <hbox id="permIndexedDBExtras">
-            <spacer flex="1"/>
-            <vbox id="permIndexedDBStatusBox" pack="center">
-              <label id="indexedDBStatus" control="indexedDBClear" hidden="true"/>
-            </vbox>
-            <button id="indexedDBClear" label="&permClearStorage;" hidden="true"
-                    accesskey="&permClearStorage.accesskey;" onclick="onIndexedDBClear();"/>
           </hbox>
         </vbox>
         <vbox class="permission" id="permPluginsRow">

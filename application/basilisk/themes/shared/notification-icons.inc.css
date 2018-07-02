@@ -87,10 +87,6 @@
   list-style-image: url(chrome://browser/skin/notification-icons.svg#indexedDB);
 }
 
-.indexedDB-icon.blocked-permission-icon {
-  list-style-image: url(chrome://browser/skin/notification-icons.svg#indexedDB-blocked);
-}
-
 .login-icon {
   list-style-image: url(chrome://browser/skin/notification-icons.svg#login);
 }

@@ -130,7 +130,7 @@ Site.prototype = {
    *
    * @param aType
    *        The permission type string stored in permission manager.
-   *        e.g. "cookie", "geo", "indexedDB", "popup", "image"
+   *        e.g. "cookie", "geo", "popup", "image"
    * @param aResultObj
    *        An object that stores the permission value set for aType.
    *
@@ -169,7 +169,7 @@ Site.prototype = {
    *
    * @param aType
    *        The permission type string stored in permission manager.
-   *        e.g. "cookie", "geo", "indexedDB", "popup", "image"
+   *        e.g. "cookie", "geo", "popup", "image"
    * @param aPerm
    *        The permission value to set for the permission type. This should
    *        be one of the constants defined in nsIPermissionManager.
@@ -196,7 +196,7 @@ Site.prototype = {
    *
    * @param aType
    *        The permission type string stored in permission manager.
-   *        e.g. "cookie", "geo", "indexedDB", "popup", "image"
+   *        e.g. "cookie", "geo", "popup", "image"
    */
   clearPermission: function(aType) {
     Services.perms.removeFromPrincipal(this.principal, aType);
@@ -405,20 +405,6 @@ var PermissionDefaults = {
     let value = (aValue != this.DENY);
     Services.prefs.setBoolPref("geo.enabled", value);
   },
-
-  get indexedDB() {
-    if (!Services.prefs.getBoolPref("dom.indexedDB.enabled")) {
-      return this.DENY;
-    }
-    // We always ask for permission to enable indexedDB storage for a specific
-    // site, so there is no global ALLOW.
-    return this.UNKNOWN;
-  },
-  set indexedDB(aValue) {
-    let value = (aValue != this.DENY);
-    Services.prefs.setBoolPref("dom.indexedDB.enabled", value);
-  },
-
 }
 
 /**
@@ -465,12 +451,12 @@ var AboutPermissions = {
    * Potential future additions: "sts/use", "sts/subd"
    */
   _supportedPermissions: ["password", "image", "popup", "cookie",
-                          "desktop-notification", "install", "geo", "indexedDB"],
+                          "desktop-notification", "install", "geo"],
 
   /**
    * Permissions that don't have a global "Allow" option.
    */
-  _noGlobalAllow: ["desktop-notification", "geo", "indexedDB"],
+  _noGlobalAllow: ["desktop-notification", "geo"],
 
   /**
    * Permissions that don't have a global "Deny" option.
@@ -515,7 +501,6 @@ var AboutPermissions = {
     Services.prefs.addObserver("dom.webnotifications.enabled", this, false);
     Services.prefs.addObserver("xpinstall.whitelist.required", this, false);
     Services.prefs.addObserver("geo.enabled", this, false);
-    Services.prefs.addObserver("dom.indexedDB.enabled", this, false);
     Services.prefs.addObserver("plugins.click_to_play", this, false);
     Services.prefs.addObserver("permissions.places-sites-limit", this, false);
 
@@ -665,7 +650,6 @@ var AboutPermissions = {
       Services.prefs.removeObserver("dom.webnotifications.enabled", this, false);
       Services.prefs.removeObserver("xpinstall.whitelist.required", this, false);
       Services.prefs.removeObserver("geo.enabled", this, false);
-      Services.prefs.removeObserver("dom.indexedDB.enabled", this, false);
       Services.prefs.removeObserver("plugins.click_to_play", this, false);
       Services.prefs.removeObserver("permissions.places-sites-limit", this, false);
 
@@ -1030,7 +1014,7 @@ var AboutPermissions = {
    *
    * @param aType
    *        The permission type string stored in permission manager.
-   *        e.g. "cookie", "geo", "indexedDB", "popup", "image"
+   *        e.g. "cookie", "geo", "popup", "image"
    */
   updatePermission: function(aType) {
     let allowItem = document.getElementById(

@@ -262,8 +262,6 @@ var gPermissionObject = {
   "geo": {
     exactHostMatch: true
   },
-
-  "indexedDB": {}
 };
 
 const kPermissionIDs = Object.keys(gPermissionObject);
