@@ -640,8 +640,8 @@
 
 ; [Default Preferences]
 ; All the pref files must be part of base to prevent migration bugs
-@RESPATH@/browser/@PREF_DIR@/firefox.js
-@RESPATH@/browser/@PREF_DIR@/firefox-branding.js
+@RESPATH@/browser/@PREF_DIR@/basilisk.js
+@RESPATH@/browser/@PREF_DIR@/basilisk-branding.js
 @RESPATH@/greprefs.js
 @RESPATH@/defaults/autoconfig/prefcalls.js
 @RESPATH@/browser/defaults/permissions

@@ -77,7 +77,7 @@ pref("browser.dictionaries.download.url", "https://addons.mozilla.org/%LOCALE%/f
 pref("app.update.checkInstallTime", true);
 
 // The number of days a binary is permitted to be old without checking is defined in
-// firefox-branding.js (app.update.checkInstallTime.days)
+// basilisk-branding.js (app.update.checkInstallTime.days)
 
 // The minimum delay in seconds for the timer to fire between the notification
 // of each consumer of the timer manager.
@@ -92,7 +92,7 @@ pref("app.update.timerFirstInterval", 30000);
 // App-specific update preferences
 
 // The interval to check for updates (app.update.interval) is defined in
-// firefox-branding.js
+// basilisk-branding.js
 
 // Alternative windowtype for an application update user interface window. When
 // a window with this windowtype is open the application update service won't
