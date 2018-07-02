@@ -86,8 +86,7 @@ const kDownloadsStringsRequiringFormatting = {
   shortTimeLeftHours: true,
   shortTimeLeftDays: true,
   statusSeparator: true,
-  statusSeparatorBeforeNumber: true,
-  fileExecutableSecurityWarning: true
+  statusSeparatorBeforeNumber: true
 };
 
 const kDownloadsStringsRequiringPluralForm = {

@@ -124,52 +124,35 @@ this.DownloadPrompter.prototype = {
 
   /**
    * Displays a warning message box that informs that the specified file is
-   * executable, and asks whether the user wants to launch it.  The user is
-   * given the option of disabling future instances of this warning.
+   * executable, and asks whether the user wants to launch it.
    *
    * @param aPath
    *        String containing the full path to the file to be opened.
    *
-   * @return {Promise}
    * @resolves Boolean indicating whether the launch operation can continue.
-   * @rejects JavaScript exception.
    */
-  confirmLaunchExecutable: function (aPath)
+  async confirmLaunchExecutable: function (aPath)
   {
-    const kPrefAlertOnEXEOpen = "browser.download.manager.alertOnEXEOpen";
+    const kPrefConfirmOpenExe = "browser.download.confirmOpenExecutable";
+
+    // Always launch in case we have no prompter implementation.
+    if (!this._prompter) {
+      return true;
+    }
 
     try {
-      // Always launch in case we have no prompter implementation.
-      if (!this._prompter) {
-        return Promise.resolve(true);
+      if (!Services.prefs.getBoolPref(kPrefConfirmOpenExe)) {
+        return true;
       }
-
-      try {
-        if (!Services.prefs.getBoolPref(kPrefAlertOnEXEOpen)) {
-          return Promise.resolve(true);
-        }
-      } catch (ex) {
-        // If the preference does not exist, continue with the prompt.
-      }
-
-      let leafName = OS.Path.basename(aPath);
-
-      let s = DownloadUIHelper.strings;
-      let checkState = { value: false };
-      let shouldLaunch = this._prompter.confirmCheck(
-                           s.fileExecutableSecurityWarningTitle,
-                           s.fileExecutableSecurityWarning(leafName, leafName),
-                           s.fileExecutableSecurityWarningDontAsk,
-                           checkState);
-
-      if (shouldLaunch) {
-        Services.prefs.setBoolPref(kPrefAlertOnEXEOpen, !checkState.value);
-      }
-
-      return Promise.resolve(shouldLaunch);
     } catch (ex) {
-      return Promise.reject(ex);
+      // If the preference does not exist, continue with the prompt.
     }
+
+    let leafName = OS.Path.basename(aPath);
+
+    let s = DownloadUIHelper.strings;
+    return this._prompter.confirm(s.fileExecutableSecurityWarningTitle,
+                                  s.fileExecutableSecurityWarning(leafName, leafName));
   },
 
   /**

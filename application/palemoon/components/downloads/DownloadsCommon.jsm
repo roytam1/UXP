@@ -77,7 +77,7 @@ const nsIDM = Ci.nsIDownloadManager;
 const kDownloadsStringBundleUrl =
   "chrome://browser/locale/downloads/downloads.properties";
 
-const kPrefBdmAlertOnExeOpen = "browser.download.manager.alertOnEXEOpen";
+const kPrefConfirmOpenExe = "browser.download.confirmOpenExecutable";
 
 const kDownloadsStringsRequiringFormatting = {
   sizeWithUnits: true,
@@ -530,8 +530,10 @@ this.DownloadsCommon = {
     if (aFile.isExecutable() && !isWindowsExe) {
       let showAlert = true;
       try {
-        showAlert = Services.prefs.getBoolPref(kPrefBdmAlertOnExeOpen);
-      } catch (ex) { }
+        showAlert = Services.prefs.getBoolPref(kPrefConfirmOpenExe);
+      } catch (ex) {
+        // If the preference does not exist, continue with the prompt.
+      }
 
       if (showAlert) {
         let name = aFile.leafName;
@@ -539,18 +541,11 @@ this.DownloadsCommon = {
           DownloadsCommon.strings.fileExecutableSecurityWarning(name, name);
         let title =
           DownloadsCommon.strings.fileExecutableSecurityWarningTitle;
-        let dontAsk =
-          DownloadsCommon.strings.fileExecutableSecurityWarningDontAsk;
 
-        let checkbox = { value: false };
-        let open = Services.prompt.confirmCheck(aOwnerWindow, title, message,
-                                                dontAsk, checkbox);
+        let open = Services.prompt.confirm(aOwnerWindow, title, message);
         if (!open) {
           return;
         }
-
-        Services.prefs.setBoolPref(kPrefBdmAlertOnExeOpen,
-                                   !checkbox.value);
       }
     }
 
