@@ -127,8 +127,8 @@
 }
 
 /* ensure extra titlebar doesn't appear on normal (e.g. non-privacy) windows */
-#titlebar-buttonbox-container,
-#main-window:not([drawintitlebar=true]) > #titlebar {
+#main-window:not([privatebrowsingmode=temporary]) > #titlebar > #titlebar-content > #titlebar-buttonbox-container,
+#main-window:not([drawintitlebar=true]):not(:-moz-lwtheme) > #titlebar {
     display: none;
 }
 
