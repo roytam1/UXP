@@ -369,7 +369,13 @@ function openTabPrompt(domWin, tabPrompt, args) {
                          .getInterface(Ci.nsIDocShell);
     let inPermitUnload = docShell.contentViewer && docShell.contentViewer.inPermitUnload;
     let eventDetail = Cu.cloneInto({tabPrompt: true, inPermitUnload}, domWin);
-    PromptUtils.fireDialogEvent(domWin, "DOMWillOpenModalDialog", null, eventDetail);
+    let allowFocusSwitch = true;
+    try {
+      allowFocusSwitch = Services.prefs.getBoolPref("prompts.tab_modal.focusSwitch");
+    } catch(e) {}
+    
+    if (allowFocusSwitch)    
+      PromptUtils.fireDialogEvent(domWin, "DOMWillOpenModalDialog", null, eventDetail);
 
     let winUtils = domWin.QueryInterface(Ci.nsIInterfaceRequestor)
                          .getInterface(Ci.nsIDOMWindowUtils);
@@ -395,8 +401,8 @@ function openTabPrompt(domWin, tabPrompt, args) {
         frameMM.removeEventListener("pagehide", pagehide, true);
 
         winUtils.leaveModalState();
-
-        PromptUtils.fireDialogEvent(domWin, "DOMModalDialogClosed");
+        if (allowFocusSwitch)
+          PromptUtils.fireDialogEvent(domWin, "DOMModalDialogClosed");
     }
 
     frameMM.addEventListener("pagehide", pagehide, true);
