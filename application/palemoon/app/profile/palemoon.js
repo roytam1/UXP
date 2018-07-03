@@ -1123,10 +1123,15 @@ pref("browser.padlock.urlbar_background", 2);
 pref("browser.display.standalone_images.background_color", "#2E3B41");
 
 // These are the thumbnail width/height set in about:newtab.
-// If you change this, ENSURE IT IS THE SAME SIZE SET
-// by about:newtab. These values are in CSS pixels.
+// If you change this, make sure the size is sufficient for tile sizes
+// in about:newtab. These values are in CSS pixels.
 pref("toolkit.pageThumbs.minWidth", 250);
 pref("toolkit.pageThumbs.minHeight", 180);
+
+// On GTK, we now default to showing the menubar only when alt is pressed:
+#ifdef MOZ_WIDGET_GTK
+pref("ui.key.menuAccessKeyFocuses", true);
+#endif
 
 // ****************** domain-specific UAs ******************
 
