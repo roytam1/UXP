@@ -10,7 +10,6 @@ Cu.import("resource://gre/modules/narrate/VoiceSelect.jsm");
 Cu.import("resource://gre/modules/narrate/Narrator.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AsyncPrefs.jsm");
-Cu.import("resource://gre/modules/TelemetryStopwatch.jsm");
 
 this.EXPORTED_SYMBOLS = ["NarrateControls"];
 
@@ -147,11 +146,6 @@ NarrateControls.prototype = {
       case "voiceschanged":
         this._setupVoices();
         break;
-      case "unload":
-        if (this.narrator.speaking) {
-          TelemetryStopwatch.finish("NARRATE_CONTENT_SPEAKTIME_MS", this);
-        }
-        break;
     }
   },
 
@@ -187,19 +181,8 @@ NarrateControls.prototype = {
       }
 
       let narrateToggle = win.document.querySelector(".narrate-toggle");
-      let histogram = Services.telemetry.getKeyedHistogramById(
-        "NARRATE_CONTENT_BY_LANGUAGE_2");
       let initial = !this._voicesInitialized;
       this._voicesInitialized = true;
-
-      if (initial) {
-        histogram.add(language, 0);
-      }
-
-      if (options.length && narrateToggle.hidden) {
-        // About to show for the first time..
-        histogram.add(language, 1);
-      }
 
       // We disable this entire feature if there are no available voices.
       narrateToggle.hidden = !options.length;
@@ -265,12 +248,6 @@ NarrateControls.prototype = {
 
     this._doc.querySelector(".narrate-skip-previous").disabled = !speaking;
     this._doc.querySelector(".narrate-skip-next").disabled = !speaking;
-
-    if (speaking) {
-      TelemetryStopwatch.start("NARRATE_CONTENT_SPEAKTIME_MS", this);
-    } else {
-      TelemetryStopwatch.finish("NARRATE_CONTENT_SPEAKTIME_MS", this);
-    }
   },
 
   _createVoiceLabel(voice) {
