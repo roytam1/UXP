@@ -335,7 +335,7 @@ StorageManager::Estimate(ErrorResult& aRv)
     new EstimateWorkerMainThreadRunnable(promiseProxy->GetWorkerPrivate(),
                                          promiseProxy);
 
-  runnnable->Dispatch(aRv);
+  runnnable->Dispatch(Terminating, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }

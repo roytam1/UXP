@@ -1442,8 +1442,11 @@ private:
     memcpy(aPreferences, mPreferences, WORKERPREF_COUNT * sizeof(bool));
   }
 
+  // If the worker shutdown status is equal or greater then aFailStatus, this
+  // operation will fail and nullptr will be returned. See WorkerHolder.h for
+  // more information about the correct value to use.
   already_AddRefed<nsIEventTarget>
-  CreateNewSyncLoop();
+  CreateNewSyncLoop(Status aFailStatus);
 
   bool
   RunCurrentSyncLoop();
@@ -1518,9 +1521,11 @@ class AutoSyncLoopHolder
   uint32_t mIndex;
 
 public:
-  explicit AutoSyncLoopHolder(WorkerPrivate* aWorkerPrivate)
+  // See CreateNewSyncLoop() for more information about the correct value to use
+  // for aFailStatus.
+  AutoSyncLoopHolder(WorkerPrivate* aWorkerPrivate, Status aFailStatus)
   : mWorkerPrivate(aWorkerPrivate)
-  , mTarget(aWorkerPrivate->CreateNewSyncLoop())
+  , mTarget(aWorkerPrivate->CreateNewSyncLoop(aFailStatus))
   , mIndex(aWorkerPrivate->mSyncLoopStack.Length() - 1)
   {
     aWorkerPrivate->AssertIsOnWorkerThread();
@@ -1528,7 +1533,7 @@ public:
 
   ~AutoSyncLoopHolder()
   {
-    if (mWorkerPrivate) {
+    if (mWorkerPrivate && mTarget) {
       mWorkerPrivate->AssertIsOnWorkerThread();
       mWorkerPrivate->StopSyncLoop(mTarget, false);
       mWorkerPrivate->DestroySyncLoop(mIndex);
@@ -1547,8 +1552,9 @@ public:
   }
 
   nsIEventTarget*
-  EventTarget() const
+  GetEventTarget() const
   {
+    // This can be null if CreateNewSyncLoop() fails.
     return mTarget;
   }
 };
