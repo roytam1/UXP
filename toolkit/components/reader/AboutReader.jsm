@@ -200,9 +200,6 @@ AboutReader.prototype = {
         } else if (!target.closest(".dropdown-popup")) {
           this._closeDropdowns();
         }
-        if (target.tagName == "A" && !target.classList.contains("reader-domain")) {
-          this._linkClicked(aEvent);
-        }
         break;
       case "scroll":
         this._closeDropdowns(true);
@@ -720,6 +717,21 @@ AboutReader.prototype = {
     }
   },
 
+  _fixLocalLinks() {
+    // We need to do this because preprocessing the content through nsIParserUtils
+    // gives back a DOM with a <base> element. That influences how these URLs get
+    // resolved, making them no longer match the document URI (which is
+    // about:reader?url=...). To fix this, make all the hash URIs absolute. This
+    // is hacky, but the alternative of removing the base element has potential
+    // security implications if Readability has not successfully made all the URLs
+    // absolute, so we pick just fixing these in-document links explicitly.
+    let localLinks = this._contentElement.querySelectorAll("a[href^='#']");
+    for (let localLink of localLinks) {
+      // Have to get the attribute because .href provides an absolute URI.
+      localLink.href = this._doc.documentURI + localLink.getAttribute("href");
+    }
+  },
+
   _formatReadTime(slowEstimate, fastEstimate) {
     let displayStringKey = "aboutReader.estimatedReadTimeRange1";
 
@@ -790,6 +802,7 @@ AboutReader.prototype = {
       false, articleUri, this._contentElement);
     this._contentElement.innerHTML = "";
     this._contentElement.appendChild(contentFragment);
+    this._fixLocalLinks();
     this._maybeSetTextDirection(article);
     this._foundLanguage(article.language);
 
@@ -974,18 +987,6 @@ AboutReader.prototype = {
     let openDropdowns = this._doc.querySelectorAll(selector);
     for (let dropdown of openDropdowns) {
       dropdown.classList.remove("open");
-    }
-  },
-
-  /*
-   * Override link handling for same-page references so we don't exit Reader View.
-   */
-  _linkClicked(event) {
-    var originalUrl = Services.io.newURI(this._getOriginalUrl(), null, null);
-    var targetUrl = Services.io.newURI(event.target.href, null, null);
-    if (originalUrl.specIgnoringRef == targetUrl.specIgnoringRef) {
-      event.preventDefault();
-      this._goToReference(targetUrl.ref);
     }
   },
 
