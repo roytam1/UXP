@@ -12,7 +12,7 @@ toolkit.jar:
    content/global/about.xhtml
    content/global/aboutAbout.js
    content/global/aboutAbout.xhtml
-#ifdef MC_OFFICIAL
+#ifdef MOZ_OFFICIAL_BRANDING
 *  content/global/aboutRights.xhtml
 #else
 *  content/global/aboutRights.xhtml           (aboutRights-unbranded.xhtml)

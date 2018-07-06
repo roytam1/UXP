@@ -70,12 +70,7 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::ALLOW_SCRIPT
   },
   {
-    "rights",
-#ifdef MOZ_OFFICIAL_BRANDING
-    "chrome://global/content/aboutRights.xhtml",
-#else
-    "chrome://global/content/aboutRights-unbranded.xhtml",
-#endif
+    "rights", "chrome://global/content/aboutRights.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::MAKE_LINKABLE |
     nsIAboutModule::ALLOW_SCRIPT
