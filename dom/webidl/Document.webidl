@@ -277,8 +277,11 @@ partial interface Document {
 
 // https://w3c.github.io/page-visibility/#extensions-to-the-document-interface
 partial interface Document {
+  [Pref="dom.visibilityAPI.enabled"]
   readonly attribute boolean hidden;
+  [Pref="dom.visibilityAPI.enabled"]
   readonly attribute VisibilityState visibilityState;
+  [Pref="dom.visibilityAPI.enabled"]
            attribute EventHandler onvisibilitychange;
 };
 
