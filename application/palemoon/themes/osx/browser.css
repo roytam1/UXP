@@ -137,6 +137,11 @@
     display: none;
 }
 
+#titlebar-buttonbox-container {
+  margin-left: 7px;
+  margin-top: 3px;
+}
+
 /* ::::: bookmark toolbar ::::: */
 
 #personal-bookmarks {

@@ -334,7 +334,9 @@
       </button>
     </hbox>
 #endif
+#ifndef XP_MACOSX
     <spacer id="titlebar-spacer" flex="1"/>
+#endif
     <hbox id="titlebar-buttonbox-container" align="start">
       <hbox id="titlebar-buttonbox">
         <toolbarbutton class="titlebar-button" id="titlebar-min" oncommand="window.minimize();"/>
