@@ -50,6 +50,8 @@ browser.jar:
         skin/classic/browser/Privacy-16.png
         skin/classic/browser/Privacy-32.png
         skin/classic/browser/Privacy-48.png
+  skin/classic/browser/privatebrowsing-mask.png
+  skin/classic/browser/privatebrowsing-mask@2x.png
         skin/classic/browser/privatebrowsing-light.png
         skin/classic/browser/privatebrowsing-dark.png
         skin/classic/browser/reload-stop-go.png

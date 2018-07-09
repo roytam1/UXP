@@ -27,6 +27,11 @@
     border-top: none;
 }
 
+#main-window {
+  -moz-appearance: none;
+  background-color: #eeeeee;
+}
+
 #navigator-toolbox::after {
     content: "";
     display: -moz-box;
@@ -79,7 +84,7 @@
 
 /* ::::: titlebar ::::: */
 
-#main-window[sizemode="normal"] > #titlebar {
+#main-window[sizemode="normal"]:not([privatebrowsingmode=temporary]) > #titlebar {
     -moz-appearance: -moz-window-titlebar;
 }
 
@@ -2405,19 +2410,56 @@ toolbar[brighttext] #addonbar-closebutton {
     right: auto;
 }
 
-#main-window[privatebrowsingmode=temporary] #toolbar-menubar {
-    background-image: url("chrome://browser/skin/privatebrowsing-dark.png");
-    background-position: top right;
-    background-repeat: no-repeat;
+#main-window[privatebrowsingmode=temporary] {
+  background-image: url("chrome://browser/skin/privatebrowsing-mask.png");
+  background-position: top right;
+  background-repeat: no-repeat;
+  background-color: moz-mac-chrome-active;
 }
 
-#main-window[privatebrowsingmode=temporary] #toolbar-menubar:-moz-locale-dir(rtl) {
-    background-position: top left;
+@media (min-resolution: 2dppx) {
+  #main-window[privatebrowsingmode=temporary] {
+    background-image: url("chrome://browser/skin/privatebrowsing-mask@2x.png");
+    background-size: 38px;
+  }
 }
 
-#main-window[privatebrowsingmode=temporary] #appmenu-button > .button-box > .box-inherit > .button-icon {
-    list-style-image: url("chrome://browser/skin/privatebrowsing-light.png");
-    width: 20px;
-    height: 16px;
+#main-window[privatebrowsingmode=temporary] {
+  background-position: top right 40px;
 }
 
+#main-window[privatebrowsingmode=temporary][inFullscreen] {
+  background-position: top right 10px;
+}
+
+#main-window[privatebrowsingmode=temporary]:-moz-locale-dir(rtl) {
+  background-position: top left 70px;
+}
+
+#main-window[privatebrowsingmode=temporary][inFullscreen]:-moz-locale-dir(rtl) {
+  background-position: top left 10px;
+}
+
+#main-window[privatebrowsingmode=temporary]:-moz-window-inactive {
+  background-color: -moz-mac-chrome-inactive;
+}
+
+#main-window[privatebrowsingmode=temporary][inFullscreen] #nav-bar[tabsontop=false] {
+  -moz-padding-end: 50px !important;
+}
+
+@media (-moz-mac-lion-theme) {
+  #main-window[privatebrowsingmode=temporary][inFullscreen] #TabsToolbar[tabsontop=true] {
+    -moz-padding-end: 50px;
+  }
+}
+
+@media not all and (-moz-mac-lion-theme) {
+  #main-window[privatebrowsingmode=temporary] {
+    background-position: top right 10px;
+  }
+
+  #main-window[privatebrowsingmode=temporary][inFullscreen][tabsontop=true] #window-controls {
+    -moz-padding-end: 50px;
+  }
+}
