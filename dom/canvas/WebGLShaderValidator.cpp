@@ -295,8 +295,8 @@ ShaderValidator::CanLinkTo(const ShaderValidator* prev, nsCString* const out_log
         }
     }
     {
-        const auto vertVars = sh::GetInterfaceBlocks(prev->mHandle);
-        const auto fragVars = sh::GetInterfaceBlocks(mHandle);
+        const auto vertVars = ShGetInterfaceBlocks(prev->mHandle);
+        const auto fragVars = ShGetInterfaceBlocks(mHandle);
         if (!vertVars || !fragVars) {
             nsPrintfCString error("Could not create uniform block list.");
             *out_log = error;
