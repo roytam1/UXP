@@ -67,6 +67,11 @@ struct WorkaroundsD3D
     // Some drivers (NVIDIA) do not take into account the base level of the texture in the results
     // of the HLSL GetDimensions builtin.
     bool getDimensionsIgnoresBaseLevel = false;
+    
+    // In the Intel driver, data with format DXGI_FORMAT_B5G6R5_UNORM will be parsed incorrectly.
+    // This workaroud will disable B5G6R5 support when it's Intel's driver. By default, we will
+    // use R8G8B8A8 as format.
+    bool disableB5G6R5Support = false;
 
     // On some Intel drivers, HLSL's function texture.Load returns 0 when the parameter Location
     // is negative, even if the sum of Offset and Location is in range. This may cause errors when
