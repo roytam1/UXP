@@ -17,7 +17,7 @@ namespace webgl {
 class ShaderValidator final
 {
     const ShHandle mHandle;
-    const ShCompileOptions mCompileOptions;
+    const int mCompileOptions;
     const int mMaxVaryingVectors;
     bool mHasRun;
 
@@ -25,10 +25,10 @@ public:
     static ShaderValidator* Create(GLenum shaderType, ShShaderSpec spec,
                                    ShShaderOutput outputLanguage,
                                    const ShBuiltInResources& resources,
-                                   ShCompileOptions compileOptions);
+                                   int compileOptions);
 
 private:
-    ShaderValidator(ShHandle handle, ShCompileOptions compileOptions,
+    ShaderValidator(ShHandle handle, int compileOptions,
                     int maxVaryingVectors)
         : mHandle(handle)
         , mCompileOptions(compileOptions)
