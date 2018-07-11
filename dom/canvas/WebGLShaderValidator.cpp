@@ -55,6 +55,17 @@ ChooseValidatorCompileOptions(const ShBuiltInResources& resources,
         // Work around https://bugs.webkit.org/show_bug.cgi?id=124684,
         // https://chromium.googlesource.com/angle/angle/+/5e70cf9d0b1bb
         options |= SH_UNFOLD_SHORT_CIRCUIT;
+        
+        // OS X 10.7/10.8 specific:
+        
+        // Work around bug 665578 and bug 769810
+        if (gl->Vendor() == gl::GLVendor::ATI) {
+            options |= SH_EMULATE_BUILT_IN_FUNCTIONS;
+        }
+        // Work around bug 735560
+        if (gl->Vendor() == gl::GLVendor::Intel) {
+            options |= SH_EMULATE_BUILT_IN_FUNCTIONS;
+        }
 
         // Work around that Mac drivers handle struct scopes incorrectly.
         options |= SH_REGENERATE_STRUCT_NAMES;
