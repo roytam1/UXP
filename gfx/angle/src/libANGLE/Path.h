@@ -49,7 +49,9 @@ class Path final : angle::NonCopyable
 
     bool hasPathData() const { return mHasData; }
 
-    rx::PathImpl *getImplementation() const { return mPath; }
+    const rx::PathImpl *getImplementation() const { return mPath; }
+
+    rx::PathImpl *getImplementation() { return mPath; }
 
   private:
     rx::PathImpl *mPath;

@@ -4,10 +4,11 @@
 // found in the LICENSE file.
 //
 
-#include "compiler/preprocessor/Macro.h"
+#include "Macro.h"
 
-#include "common/angleutils.h"
-#include "compiler/preprocessor/Token.h"
+#include <sstream>
+
+#include "Token.h"
 
 namespace pp
 {
@@ -22,9 +23,12 @@ bool Macro::equals(const Macro &other) const
 
 void PredefineMacro(MacroSet *macroSet, const char *name, int value)
 {
+    std::ostringstream stream;
+    stream << value;
+
     Token token;
     token.type = Token::CONST_INT;
-    token.text = ToString(value);
+    token.text = stream.str();
 
     Macro macro;
     macro.predefined = true;

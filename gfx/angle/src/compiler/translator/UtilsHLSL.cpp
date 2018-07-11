@@ -173,8 +173,6 @@ TString TextureTypeSuffix(const TBasicType type)
             return "Cube_int4_";
         case EbtUSamplerCube:
             return "Cube_uint4_";
-        case EbtSamplerExternalOES:
-            return "_External";
         default:
             // All other types are identified by their group suffix
             return TextureGroupSuffix(type);

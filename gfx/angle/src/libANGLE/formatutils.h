@@ -15,7 +15,6 @@
 #include "angle_gl.h"
 #include "libANGLE/Caps.h"
 #include "libANGLE/Error.h"
-#include "libANGLE/Version.h"
 #include "libANGLE/angletypes.h"
 
 namespace gl
@@ -48,32 +47,29 @@ struct InternalFormat
 {
     InternalFormat();
 
-    ErrorOrResult<GLuint> computeRowPitch(GLsizei width,
-                                          GLint alignment,
-                                          GLint rowLength) const;
-    static ErrorOrResult<GLuint> computeDepthPitch(GLsizei height,
-                                                   GLint imageHeight,
-                                                   GLuint rowPitch);
-    ErrorOrResult<GLuint> computeDepthPitch(GLsizei width,
-                                            GLsizei height,
-                                            GLint alignment,
-                                            GLint rowLength,
-                                            GLint imageHeight) const;
-
-    ErrorOrResult<GLuint> computeCompressedImageSize(const Extents &size) const;
-
-    ErrorOrResult<GLuint> computeSkipBytes(GLuint rowPitch,
-                                           GLuint depthPitch,
-                                           const PixelStoreStateBase &state,
-                                           bool is3D) const;
-
-    ErrorOrResult<GLuint> computePackUnpackEndByte(const Extents &size,
-                                                   const PixelStoreStateBase &state,
-                                                   bool is3D) const;
+    gl::ErrorOrResult<GLuint> computeRowPitch(GLenum formatType,
+                                              GLsizei width,
+                                              GLint alignment,
+                                              GLint rowLength) const;
+    gl::ErrorOrResult<GLuint> computeDepthPitch(GLenum formatType,
+                                                GLsizei width,
+                                                GLsizei height,
+                                                GLint alignment,
+                                                GLint rowLength,
+                                                GLint imageHeight) const;
+    gl::ErrorOrResult<GLuint> computeCompressedImageSize(GLenum formatType,
+                                                         const gl::Extents &size) const;
+    gl::ErrorOrResult<GLuint> computeSkipBytes(GLuint rowPitch,
+                                               GLuint depthPitch,
+                                               GLint skipImages,
+                                               GLint skipRows,
+                                               GLint skipPixels,
+                                               bool applySkipImages) const;
+    gl::ErrorOrResult<GLuint> computeUnpackSize(GLenum formatType,
+                                                const gl::Extents &size,
+                                                const gl::PixelUnpackState &unpack) const;
 
     bool isLUMA() const;
-    GLenum getReadPixelsFormat() const;
-    GLenum getReadPixelsType() const;
 
     bool operator==(const InternalFormat &other) const;
     bool operator!=(const InternalFormat &other) const;
@@ -106,7 +102,7 @@ struct InternalFormat
     GLenum componentType;
     GLenum colorEncoding;
 
-    typedef bool (*SupportCheckFunction)(const Version &, const Extensions &);
+    typedef bool (*SupportCheckFunction)(GLuint, const Extensions &);
     SupportCheckFunction textureSupport;
     SupportCheckFunction renderSupport;
     SupportCheckFunction filterSupport;
@@ -271,7 +267,7 @@ enum VertexFormatType
     VERTEX_FORMAT_UINT210_INT,
 };
 
-typedef std::vector<VertexFormatType> InputLayout;
+typedef std::vector<gl::VertexFormatType> InputLayout;
 
 struct VertexFormat : angle::NonCopyable
 {
@@ -287,14 +283,6 @@ VertexFormatType GetVertexFormatType(GLenum type, GLboolean normalized, GLuint c
 VertexFormatType GetVertexFormatType(const VertexAttribute &attrib);
 VertexFormatType GetVertexFormatType(const VertexAttribute &attrib, GLenum currentValueType);
 const VertexFormat &GetVertexFormatFromType(VertexFormatType vertexFormatType);
-
-// Implemented in format_map_autogen.cpp
-bool ValidES3Format(GLenum format);
-bool ValidES3Type(GLenum type);
-bool ValidES3FormatCombination(GLenum format, GLenum type, GLenum internalFormat);
-
-// Implemented in es3_copy_conversion_table_autogen.cpp
-bool ValidES3CopyConversion(GLenum textureFormat, GLenum framebufferFormat);
 
 }  // namespace gl
 

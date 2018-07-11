@@ -6,9 +6,6 @@
 
 #include "compiler/translator/LoopInfo.h"
 
-namespace sh
-{
-
 namespace
 {
 
@@ -96,7 +93,8 @@ void TLoopIndexInfo::fillInfo(TIntermLoop *node)
 
     // Here we assume all the operations are valid, because the loop node is
     // already validated in ValidateLimitations.
-    TIntermSequence *declSeq = node->getInit()->getAsDeclarationNode()->getSequence();
+    TIntermSequence *declSeq =
+        node->getInit()->getAsAggregate()->getSequence();
     TIntermBinary *declInit = (*declSeq)[0]->getAsBinaryNode();
     TIntermSymbol *symbol = declInit->getLeft()->getAsSymbolNode();
 
@@ -211,4 +209,3 @@ void TLoopStack::pop()
     pop_back();
 }
 
-}  // namespace sh

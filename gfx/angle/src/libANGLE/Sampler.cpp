@@ -135,24 +135,18 @@ GLenum Sampler::getCompareFunc() const
     return mSamplerState.compareFunc;
 }
 
-void Sampler::setSRGBDecode(GLenum sRGBDecode)
-{
-    mSamplerState.sRGBDecode = sRGBDecode;
-}
-
-GLenum Sampler::getSRGBDecode() const
-{
-    return mSamplerState.sRGBDecode;
-}
-
 const SamplerState &Sampler::getSamplerState() const
 {
     return mSamplerState;
 }
 
-rx::SamplerImpl *Sampler::getImplementation() const
+const rx::SamplerImpl *Sampler::getImplementation() const
 {
     return mImpl;
 }
 
+rx::SamplerImpl *Sampler::getImplementation()
+{
+    return mImpl;
+}
 }

@@ -14,9 +14,6 @@
 #include "compiler/translator/IntermNode.h"
 #include "compiler/translator/IntermNodePatternMatcher.h"
 
-namespace sh
-{
-
 namespace
 {
 
@@ -52,7 +49,11 @@ SeparateExpressionsTraverser::SeparateExpressionsTraverser()
 // and also needs to be replaced in its original location by a different node.
 TIntermBinary *CopyAssignmentNode(TIntermBinary *node)
 {
-    return new TIntermBinary(node->getOp(), node->getLeft(), node->getRight());
+    TIntermBinary *copyNode = new TIntermBinary(node->getOp());
+    copyNode->setLeft(node->getLeft());
+    copyNode->setRight(node->getRight());
+    copyNode->setType(node->getType());
+    return copyNode;
 }
 
 // Performs a shallow copy of a constructor/function call node.
@@ -62,11 +63,12 @@ TIntermAggregate *CopyAggregateNode(TIntermAggregate *node)
     TIntermSequence *copySeq = copyNode->getSequence();
     copySeq->insert(copySeq->begin(), node->getSequence()->begin(), node->getSequence()->end());
     copyNode->setType(node->getType());
-    *copyNode->getFunctionSymbolInfo() = *node->getFunctionSymbolInfo();
+    copyNode->setFunctionId(node->getFunctionId());
     if (node->isUserDefined())
     {
         copyNode->setUserDefined();
     }
+    copyNode->setNameObj(node->getNameObj());
     return copyNode;
 }
 
@@ -140,5 +142,3 @@ void SeparateExpressionsReturningArrays(TIntermNode *root, unsigned int *tempora
     }
     while (traverser.foundArrayExpression());
 }
-
-}  // namespace sh

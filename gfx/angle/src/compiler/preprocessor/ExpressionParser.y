@@ -41,15 +41,17 @@ WHICH GENERATES THE GLSL ES preprocessor expression parser.
 
 #include <cassert>
 #include <sstream>
-#include <stdint.h>
 
 #include "DiagnosticsBase.h"
 #include "Lexer.h"
 #include "Token.h"
-#include "common/mathutil.h"
 
-typedef int32_t YYSTYPE;
-typedef uint32_t UNSIGNED_TYPE;
+#if defined(_MSC_VER)
+typedef __int64 YYSTYPE;
+#else
+#include <stdint.h>
+typedef intmax_t YYSTYPE;
+#endif  // _MSC_VER
 
 #define YYENABLE_NLS 0
 #define YYLTYPE_IS_TRIVIAL 1
@@ -194,7 +196,7 @@ expression
         $$ = $1 < $3;
     }
     | expression TOK_OP_RIGHT expression {
-        if ($3 < 0 || $3 > 31)
+        if ($3 < 0)
         {
             if (!context->isIgnoringErrors())
             {
@@ -208,18 +210,13 @@ expression
             }
             $$ = static_cast<YYSTYPE>(0);
         }
-        else if ($1 < 0)
-        {
-            // Logical shift right.
-            $$ = static_cast<YYSTYPE>(static_cast<UNSIGNED_TYPE>($1) >> $3);
-        }
         else
         {
             $$ = $1 >> $3;
         }
     }
     | expression TOK_OP_LEFT expression {
-        if ($3 < 0 || $3 > 31)
+        if ($3 < 0)
         {
             if (!context->isIgnoringErrors())
             {
@@ -233,21 +230,16 @@ expression
             }
             $$ = static_cast<YYSTYPE>(0);
         }
-        else if ($1 < 0)
-        {
-            // Logical shift left.
-            $$ = static_cast<YYSTYPE>(static_cast<UNSIGNED_TYPE>($1) << $3);
-        }
         else
         {
             $$ = $1 << $3;
         }
     }
     | expression '-' expression {
-        $$ = gl::WrappingDiff<YYSTYPE>($1, $3);
+        $$ = $1 - $3;
     }
     | expression '+' expression {
-        $$ = gl::WrappingSum<YYSTYPE>($1, $3);
+        $$ = $1 + $3;
     }
     | expression '%' expression {
         if ($3 == 0)
@@ -263,12 +255,6 @@ expression
                 *(context->valid) = false;
             }
             $$ = static_cast<YYSTYPE>(0);
-        }
-        else if (($1 == std::numeric_limits<YYSTYPE>::min()) && ($3 == -1))
-        {
-            // Check for the special case where the minimum representable number is
-            // divided by -1. If left alone this has undefined results.
-            $$ = 0;
         }
         else
         {
@@ -290,20 +276,13 @@ expression
             }
             $$ = static_cast<YYSTYPE>(0);
         }
-        else if (($1 == std::numeric_limits<YYSTYPE>::min()) && ($3 == -1))
-        {
-            // Check for the special case where the minimum representable number is
-            // divided by -1. If left alone this leads to integer overflow in C++, which
-            // has undefined results.
-            $$ = std::numeric_limits<YYSTYPE>::max();
-        }
         else
         {
             $$ = $1 / $3;
         }
     }
     | expression '*' expression {
-        $$ = gl::WrappingMul($1, $3);
+        $$ = $1 * $3;
     }
     | '!' expression %prec TOK_UNARY {
         $$ = ! $2;
@@ -312,16 +291,7 @@ expression
         $$ = ~ $2;
     }
     | '-' expression %prec TOK_UNARY {
-        // Check for negation of minimum representable integer to prevent undefined signed int
-        // overflow.
-        if ($2 == std::numeric_limits<YYSTYPE>::min())
-        {
-            $$ = std::numeric_limits<YYSTYPE>::min();
-        }
-        else
-        {
-            $$ = -$2;
-        }
+        $$ = - $2;
     }
     | '+' expression %prec TOK_UNARY {
         $$ = + $2;

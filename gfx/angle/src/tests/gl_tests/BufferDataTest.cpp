@@ -5,7 +5,6 @@
 //
 
 #include "test_utils/ANGLETest.h"
-#include "test_utils/gl_raii.h"
 
 #include <stdint.h>
 
@@ -448,8 +447,24 @@ class BufferDataOverflowTest : public ANGLETest
 {
   protected:
     BufferDataOverflowTest()
+        : mProgram(0)
     {
     }
+
+    ~BufferDataOverflowTest()
+    {
+        if (!mBuffers.empty())
+        {
+            glDeleteBuffers(static_cast<GLsizei>(mBuffers.size()), &mBuffers[0]);
+        }
+        if (mProgram != 0u)
+        {
+            glDeleteProgram(mProgram);
+        }
+    }
+
+    std::vector<GLuint> mBuffers;
+    GLuint mProgram;
 };
 
 // See description above.
@@ -457,9 +472,9 @@ TEST_P(BufferDataOverflowTest, VertexBufferIntegerOverflow)
 {
     // These values are special, to trigger the rounding bug.
     unsigned int numItems = 0x7FFFFFE;
-    constexpr GLsizei bufferCnt = 8;
+    GLsizei bufferCnt = 8;
 
-    std::vector<GLBuffer> buffers(bufferCnt);
+    mBuffers.resize(bufferCnt);
 
     std::stringstream vertexShaderStr;
 
@@ -487,27 +502,30 @@ TEST_P(BufferDataOverflowTest, VertexBufferIntegerOverflow)
         "  gl_FragColor = vec4(v_attrib, 0, 0, 1);\n"
         "}";
 
-    ANGLE_GL_PROGRAM(program, vertexShaderStr.str(), fragmentShader);
-    glUseProgram(program.get());
+    mProgram = CompileProgram(vertexShaderStr.str(), fragmentShader);
+    ASSERT_NE(0u, mProgram);
+    glUseProgram(mProgram);
+
+    glGenBuffers(bufferCnt, &mBuffers[0]);
 
     std::vector<GLfloat> data(numItems, 1.0f);
 
     for (GLsizei bufferIndex = 0; bufferIndex < bufferCnt; ++bufferIndex)
     {
-        glBindBuffer(GL_ARRAY_BUFFER, buffers[bufferIndex].get());
+        glBindBuffer(GL_ARRAY_BUFFER, mBuffers[bufferIndex]);
         glBufferData(GL_ARRAY_BUFFER, numItems * sizeof(float), &data[0], GL_DYNAMIC_DRAW);
 
         std::stringstream attribNameStr;
         attribNameStr << "attrib" << bufferIndex;
 
-        GLint attribLocation = glGetAttribLocation(program.get(), attribNameStr.str().c_str());
+        GLint attribLocation = glGetAttribLocation(mProgram, attribNameStr.str().c_str());
         ASSERT_NE(-1, attribLocation);
 
         glVertexAttribPointer(attribLocation, 1, GL_FLOAT, GL_FALSE, 4, nullptr);
         glEnableVertexAttribArray(attribLocation);
     }
 
-    GLint positionLocation = glGetAttribLocation(program.get(), "position");
+    GLint positionLocation = glGetAttribLocation(mProgram, "position");
     ASSERT_NE(-1, positionLocation);
     glDisableVertexAttribArray(positionLocation);
     glVertexAttrib2f(positionLocation, 1.0f, 1.0f);
@@ -515,28 +533,6 @@ TEST_P(BufferDataOverflowTest, VertexBufferIntegerOverflow)
     EXPECT_GL_NO_ERROR();
     glDrawArrays(GL_TRIANGLES, 0, numItems);
     EXPECT_GL_ERROR(GL_OUT_OF_MEMORY);
-}
-
-// Tests a security bug in our CopyBufferSubData validation (integer overflow).
-TEST_P(BufferDataOverflowTest, CopySubDataValidation)
-{
-    GLBuffer readBuffer, writeBuffer;
-
-    glBindBuffer(GL_COPY_READ_BUFFER, readBuffer.get());
-    glBindBuffer(GL_COPY_WRITE_BUFFER, writeBuffer.get());
-
-    constexpr int bufSize = 100;
-
-    glBufferData(GL_COPY_READ_BUFFER, bufSize, nullptr, GL_STATIC_DRAW);
-    glBufferData(GL_COPY_WRITE_BUFFER, bufSize, nullptr, GL_STATIC_DRAW);
-
-    GLintptr big = std::numeric_limits<GLintptr>::max() - bufSize + 90;
-
-    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, big, 0, 50);
-    EXPECT_GL_ERROR(GL_INVALID_VALUE);
-
-    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, big, 50);
-    EXPECT_GL_ERROR(GL_INVALID_VALUE);
 }
 
 ANGLE_INSTANTIATE_TEST(BufferDataOverflowTest, ES3_D3D11());

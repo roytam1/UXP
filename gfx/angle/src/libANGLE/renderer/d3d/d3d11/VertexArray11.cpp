@@ -182,8 +182,12 @@ gl::Error VertexArray11::updateDirtyAndDynamicAttribs(VertexDataManager *vertexD
                     break;
                 case VertexStorageType::STATIC:
                 {
-                    ANGLE_TRY(
-                        VertexDataManager::StoreStaticAttrib(translatedAttrib, count, instances));
+                    auto error =
+                        VertexDataManager::StoreStaticAttrib(translatedAttrib, count, instances);
+                    if (error.isError())
+                    {
+                        return error;
+                    }
                     break;
                 }
                 case VertexStorageType::CURRENT_VALUE:

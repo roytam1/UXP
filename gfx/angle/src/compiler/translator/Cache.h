@@ -16,9 +16,6 @@
 #include "compiler/translator/Types.h"
 #include "compiler/translator/PoolAlloc.h"
 
-namespace sh
-{
-
 class TCache
 {
   public:
@@ -89,7 +86,5 @@ class TCache
 
     static TCache *sCache;
 };
-
-}  // namespace sh
 
 #endif  // COMPILER_TRANSLATOR_CACHE_H_

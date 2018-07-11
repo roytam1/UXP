@@ -7,9 +7,9 @@
 #ifndef COMPILER_PREPROCESSOR_TOKENIZER_H_
 #define COMPILER_PREPROCESSOR_TOKENIZER_H_
 
-#include "common/angleutils.h"
-#include "compiler/preprocessor/Input.h"
-#include "compiler/preprocessor/Lexer.h"
+#include "Input.h"
+#include "Lexer.h"
+#include "pp_utils.h"
 
 namespace pp
 {
@@ -45,6 +45,7 @@ class Tokenizer : public Lexer
     void lex(Token *token) override;
 
   private:
+    PP_DISALLOW_COPY_AND_ASSIGN(Tokenizer);
     bool initScanner();
     void destroyScanner();
 

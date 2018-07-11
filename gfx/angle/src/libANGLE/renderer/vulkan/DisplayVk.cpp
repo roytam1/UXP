@@ -111,8 +111,7 @@ SurfaceImpl *DisplayVk::createPbufferSurface(const egl::SurfaceState &state,
 
 SurfaceImpl *DisplayVk::createPbufferFromClientBuffer(const egl::SurfaceState &state,
                                                       const egl::Config *configuration,
-                                                      EGLenum buftype,
-                                                      EGLClientBuffer clientBuffer,
+                                                      EGLClientBuffer shareHandle,
                                                       const egl::AttributeMap &attribs)
 {
     UNIMPLEMENTED();

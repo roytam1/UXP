@@ -62,6 +62,8 @@ const char *GetOperatorString(TOperator op)
       case EOpIndexDirectStruct:
       case EOpIndexDirectInterfaceBlock: return ".";
 
+      case EOpVectorSwizzle: return ".";
+
       case EOpRadians: return "radians";
       case EOpDegrees: return "degrees";
       case EOpSin: return "sin";

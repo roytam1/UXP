@@ -34,8 +34,7 @@ class DisplayD3D : public DisplayImpl
                                       const egl::AttributeMap &attribs) override;
     SurfaceImpl *createPbufferFromClientBuffer(const egl::SurfaceState &state,
                                                const egl::Config *configuration,
-                                               EGLenum buftype,
-                                               EGLClientBuffer clientBuffer,
+                                               EGLClientBuffer shareHandle,
                                                const egl::AttributeMap &attribs) override;
     SurfaceImpl *createPixmapSurface(const egl::SurfaceState &state,
                                      const egl::Config *configuration,
@@ -60,10 +59,6 @@ class DisplayD3D : public DisplayImpl
     egl::Error restoreLostDevice() override;
 
     bool isValidNativeWindow(EGLNativeWindowType window) const override;
-    egl::Error validateClientBuffer(const egl::Config *configuration,
-                                    EGLenum buftype,
-                                    EGLClientBuffer clientBuffer,
-                                    const egl::AttributeMap &attribs) const override;
 
     egl::Error getDevice(DeviceImpl **device) override;
 

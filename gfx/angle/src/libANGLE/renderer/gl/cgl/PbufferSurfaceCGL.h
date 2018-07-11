@@ -53,7 +53,7 @@ class PbufferSurfaceCGL : public SurfaceGL
 
     const FunctionsGL *mFunctions;
     StateManagerGL *mStateManager;
-    RendererGL *mRenderer;
+    const WorkaroundsGL &mWorkarounds;
 
     GLuint mFramebuffer;
     GLuint mColorRenderbuffer;

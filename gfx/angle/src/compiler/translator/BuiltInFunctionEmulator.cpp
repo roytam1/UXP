@@ -9,9 +9,6 @@
 #include "compiler/translator/SymbolTable.h"
 #include "compiler/translator/Cache.h"
 
-namespace sh
-{
-
 class BuiltInFunctionEmulator::BuiltInFunctionEmulationMarker : public TIntermTraverser
 {
   public:
@@ -245,5 +242,3 @@ BuiltInFunctionEmulator::FunctionId BuiltInFunctionEmulator::FunctionId::getCopy
 {
     return FunctionId(mOp, new TType(*mParam1), new TType(*mParam2), new TType(*mParam3));
 }
-
-}  // namespace sh

@@ -11,9 +11,6 @@
 #include <stdlib.h>
 #include "compiler/translator/Common.h"
 
-namespace sh
-{
-
 // Returns the fractional part of the given floating-point number.
 inline float fractionalPart(float f) {
   float intPart = 0.0f;
@@ -115,7 +112,5 @@ public:
     TInfoSinkBase debug;
     TInfoSinkBase obj;
 };
-
-}  // namespace sh
 
 #endif // COMPILER_TRANSLATOR_INFOSINK_H_

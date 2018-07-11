@@ -4,9 +4,9 @@
 // found in the LICENSE file.
 //
 
-#include "compiler/preprocessor/DiagnosticsBase.h"
+#include "DiagnosticsBase.h"
 
-#include "common/debug.h"
+#include <cassert>
 
 namespace pp
 {
@@ -31,7 +31,7 @@ Diagnostics::Severity Diagnostics::severity(ID id)
     if ((id > PP_WARNING_BEGIN) && (id < PP_WARNING_END))
         return PP_WARNING;
 
-    UNREACHABLE();
+    assert(false);
     return PP_ERROR;
 }
 
@@ -74,8 +74,6 @@ std::string Diagnostics::message(ID id)
         return "predefined macro undefined";
       case PP_MACRO_UNTERMINATED_INVOCATION:
         return "unterminated macro invocation";
-      case PP_MACRO_UNDEFINED_WHILE_INVOKED:
-          return "macro undefined while being invoked";
       case PP_MACRO_TOO_FEW_ARGS:
         return "Not enough arguments for macro";
       case PP_MACRO_TOO_MANY_ARGS:
@@ -133,8 +131,8 @@ std::string Diagnostics::message(ID id)
         return "macro name with a double underscore is reserved - unintented behavior is possible";
       // Warnings end.
       default:
-          UNREACHABLE();
-          return "";
+        assert(false);
+        return "";
     }
 }
 

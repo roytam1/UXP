@@ -8,8 +8,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32B32A32_TYPELESS":
     {
@@ -19,8 +18,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32B32A32_FLOAT":
     {
@@ -30,30 +28,27 @@
       "shaderSample": "10_0check10_1always",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32B32A32_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32B32A32_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32B32_TYPELESS":
     {
@@ -63,8 +58,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32B32_FLOAT":
     {
@@ -74,8 +68,7 @@
       "shaderSample": "11_0check",
       "renderTarget": "check",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32B32_UINT":
     {
@@ -85,8 +78,7 @@
       "shaderSample": "never",
       "renderTarget": "check",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32B32_SINT":
     {
@@ -96,8 +88,7 @@
       "shaderSample": "never",
       "renderTarget": "check",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16B16A16_TYPELESS":
     {
@@ -107,63 +98,57 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16B16A16_FLOAT":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "9_3check_10_0always",
+      "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16B16A16_UNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16B16A16_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16B16A16_SNORM":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "10_0",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16B16A16_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32_TYPELESS":
     {
@@ -173,8 +158,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32_FLOAT":
     {
@@ -184,41 +168,37 @@
       "shaderSample": "10_0check10_1always",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G32_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32G8X24_TYPELESS":
     {
-      "texture2D": "10_0",
+      "texture2D": "always",
       "texture3D": "never",
-      "textureCube": "10_0",
+      "textureCube": "always",
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_D32_FLOAT_S8X24_UINT":
     {
@@ -228,8 +208,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "check",
-      "depthStencil": "10_0",
-      "mipAutoGen": "never"
+      "depthStencil": "always"
     },
     "DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS":
     {
@@ -239,8 +218,7 @@
       "shaderSample": "10_0check10_1always",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_X32_TYPELESS_G8X24_UINT":
     {
@@ -250,52 +228,47 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R10G10B10A2_TYPELESS":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R10G10B10A2_UNORM":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "10_0",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R10G10B10A2_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R11G11B10_FLOAT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "10_0",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8B8A8_TYPELESS":
     {
@@ -305,63 +278,57 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8B8A8_UNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8B8A8_UNORM_SRGB":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8B8A8_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8B8A8_SNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8B8A8_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16_TYPELESS":
     {
@@ -371,8 +338,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16_FLOAT":
     {
@@ -382,63 +348,57 @@
       "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16_UNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16_SNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16G16_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32_TYPELESS":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_D32_FLOAT":
     {
@@ -448,8 +408,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "check",
-      "depthStencil": "10_0",
-      "mipAutoGen": "never"
+      "depthStencil": "always"
     },
     "DXGI_FORMAT_R32_FLOAT":
     {
@@ -459,30 +418,27 @@
       "shaderSample": "10_0check10_1always",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R32_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R24G8_TYPELESS":
     {
@@ -492,8 +448,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_D24_UNORM_S8_UINT":
     {
@@ -513,8 +468,7 @@
       "shaderSample": "10_0check10_1always",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_X24_TYPELESS_G8_UINT":
     {
@@ -524,8 +478,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8_TYPELESS":
     {
@@ -535,52 +488,47 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8_UNORM":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
-      "shaderSample": "9_3check_10_0always",
-      "renderTarget": "9_3check_10_0always",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
+      "shaderSample": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8_SNORM":
     {
       "texture2D": "always",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
-      "shaderSample": "always",
-      "renderTarget": "10_0",
+      "texture3D": "always",
+      "textureCube": "always",
+      "shaderSample": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16_TYPELESS":
     {
@@ -590,19 +538,17 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16_FLOAT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "10_0",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_D16_UNORM":
     {
@@ -612,52 +558,47 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "check",
-      "depthStencil": "always",
-      "mipAutoGen": "never"
+      "depthStencil": "always"
     },
     "DXGI_FORMAT_R16_UNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
-      "renderTarget": "10_0",
+      "shaderSample": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16_SNORM":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "10_0",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R16_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8_TYPELESS":
     {
@@ -667,52 +608,47 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8_UNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
-      "renderTarget": "9_3check_10_0always",
+      "shaderSample": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8_UINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8_SNORM":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "10_0",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8_SINT":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "never",
-      "renderTarget": "10_0",
+      "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_A8_UNORM":
     {
@@ -722,8 +658,7 @@
       "shaderSample": "10_0",
       "renderTarget": "always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "10_0"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R1_UNORM":
     {
@@ -733,19 +668,17 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R9G9B9E5_SHAREDEXP":
     {
-      "texture2D": "10_0",
-      "texture3D": "10_0",
-      "textureCube": "10_0",
+      "texture2D": "always",
+      "texture3D": "always",
+      "textureCube": "always",
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R8G8_B8G8_UNORM":
     {
@@ -755,8 +688,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_G8R8_G8B8_UNORM":
     {
@@ -766,8 +698,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC1_TYPELESS":
     {
@@ -777,19 +708,17 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC1_UNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC1_UNORM_SRGB":
     {
@@ -799,8 +728,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC2_TYPELESS":
     {
@@ -810,19 +738,17 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC2_UNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC2_UNORM_SRGB":
     {
@@ -832,8 +758,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC3_TYPELESS":
     {
@@ -843,19 +768,17 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC3_UNORM":
     {
       "texture2D": "always",
       "texture3D": "always",
       "textureCube": "always",
-      "shaderSample": "always",
+      "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC3_UNORM_SRGB":
     {
@@ -865,8 +788,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC4_TYPELESS":
     {
@@ -876,8 +798,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC4_UNORM":
     {
@@ -887,8 +808,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC4_SNORM":
     {
@@ -898,8 +818,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC5_TYPELESS":
     {
@@ -909,8 +828,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC5_UNORM":
     {
@@ -920,8 +838,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC5_SNORM":
     {
@@ -931,8 +848,7 @@
       "shaderSample": "10_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B5G6R5_UNORM":
     {
@@ -942,8 +858,7 @@
       "shaderSample": "dxgi1_2",
       "renderTarget": "dxgi1_2",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "dxgi1_2"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B5G5R5A1_UNORM":
     {
@@ -953,19 +868,17 @@
       "shaderSample": "dxgi1_2",
       "renderTarget": "check",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "dxgi1_2"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B8G8R8A8_UNORM":
     {
       "texture2D": "check",
       "texture3D": "check",
       "textureCube": "check",
-      "shaderSample": "9_3always_10_0check11_0always",
-      "renderTarget": "9_3always_10_0check11_0always",
+      "shaderSample": "10_0check11_0always",
+      "renderTarget": "10_0check11_0always",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "always"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B8G8R8X8_UNORM":
     {
@@ -975,8 +888,7 @@
       "shaderSample": "10_0check11_0always",
       "renderTarget": "11_0",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM":
     {
@@ -986,8 +898,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B8G8R8A8_TYPELESS":
     {
@@ -997,8 +908,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B8G8R8A8_UNORM_SRGB":
     {
@@ -1008,8 +918,7 @@
       "shaderSample": "10_0check11_0always",
       "renderTarget": "11_0",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B8G8R8X8_TYPELESS":
     {
@@ -1019,8 +928,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B8G8R8X8_UNORM_SRGB":
     {
@@ -1030,8 +938,7 @@
       "shaderSample": "10_0check11_0always",
       "renderTarget": "11_0",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC6H_TYPELESS":
     {
@@ -1041,8 +948,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC6H_UF16":
     {
@@ -1052,8 +958,7 @@
       "shaderSample": "11_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC6H_SF16":
     {
@@ -1063,8 +968,7 @@
       "shaderSample": "11_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC7_TYPELESS":
     {
@@ -1074,8 +978,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC7_UNORM":
     {
@@ -1085,8 +988,7 @@
       "shaderSample": "11_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_BC7_UNORM_SRGB":
     {
@@ -1096,8 +998,7 @@
       "shaderSample": "11_0",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_AYUV":
     {
@@ -1107,8 +1008,7 @@
       "shaderSample": "11_1",
       "renderTarget": "11_1",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_Y410":
     {
@@ -1118,8 +1018,7 @@
       "shaderSample": "11_1",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_Y416":
     {
@@ -1129,8 +1028,7 @@
       "shaderSample": "11_1",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_NV12":
     {
@@ -1140,8 +1038,7 @@
       "shaderSample": "11_1",
       "renderTarget": "11_1",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_P010":
     {
@@ -1151,8 +1048,7 @@
       "shaderSample": "11_1",
       "renderTarget": "11_1",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_P016":
     {
@@ -1162,8 +1058,7 @@
       "shaderSample": "11_1",
       "renderTarget": "11_1",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_420_OPAQUE":
     {
@@ -1173,8 +1068,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_YUY2":
     {
@@ -1184,8 +1078,7 @@
       "shaderSample": "11_1",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_Y210":
     {
@@ -1195,8 +1088,7 @@
       "shaderSample": "11_1",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_Y216":
     {
@@ -1206,8 +1098,7 @@
       "shaderSample": "11_1",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_NV11":
     {
@@ -1217,8 +1108,7 @@
       "shaderSample": "11_1",
       "renderTarget": "11_1",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_AI44":
     {
@@ -1228,8 +1118,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_IA44":
     {
@@ -1239,8 +1128,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_P8":
     {
@@ -1250,8 +1138,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_A8P8":
     {
@@ -1261,8 +1148,7 @@
       "shaderSample": "never",
       "renderTarget": "never",
       "multisampleRT": "never",
-      "depthStencil": "never",
-      "mipAutoGen": "never"
+      "depthStencil": "never"
     },
     "DXGI_FORMAT_B4G4R4A4_UNORM":
     {
@@ -1272,8 +1158,7 @@
       "shaderSample": "dxgi1_2",
       "renderTarget": "check",
       "multisampleRT": "check",
-      "depthStencil": "never",
-      "mipAutoGen": "dxgi1_2"
+      "depthStencil": "never"
     }
   }
 ]

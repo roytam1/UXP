@@ -18,9 +18,6 @@
 #include "common/debug.h"
 #include "compiler/translator/PoolAlloc.h"
 
-namespace sh
-{
-
 struct TSourceLoc {
     int first_file;
     int first_line;
@@ -94,7 +91,5 @@ inline TString str(T i)
     snprintf(buffer, sizeof(buffer), formatStr, i);
     return buffer;
 }
-
-}  // namespace sh
 
 #endif // COMPILER_TRANSLATOR_COMMON_H_

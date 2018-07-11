@@ -22,7 +22,6 @@
 #include "libANGLE/Error.h"
 #include "libANGLE/HandleAllocator.h"
 #include "libANGLE/VertexAttribute.h"
-#include "libANGLE/Workarounds.h"
 #include "libANGLE/angletypes.h"
 
 namespace rx
@@ -125,6 +124,7 @@ class Context final : public ValidationContext
     void bindTexture(GLenum target, GLuint handle);
     void bindReadFramebuffer(GLuint framebufferHandle);
     void bindDrawFramebuffer(GLuint framebufferHandle);
+    void bindRenderbuffer(GLuint renderbufferHandle);
     void bindVertexArray(GLuint vertexArrayHandle);
     void bindSampler(GLuint textureUnit, GLuint samplerHandle);
     void bindGenericUniformBuffer(GLuint bufferHandle);
@@ -148,26 +148,25 @@ class Context final : public ValidationContext
     Error endQuery(GLenum target);
     Error queryCounter(GLuint id, GLenum target);
     void getQueryiv(GLenum target, GLenum pname, GLint *params);
-    void getQueryObjectiv(GLuint id, GLenum pname, GLint *params);
-    void getQueryObjectuiv(GLuint id, GLenum pname, GLuint *params);
-    void getQueryObjecti64v(GLuint id, GLenum pname, GLint64 *params);
-    void getQueryObjectui64v(GLuint id, GLenum pname, GLuint64 *params);
+    Error getQueryObjectiv(GLuint id, GLenum pname, GLint *params);
+    Error getQueryObjectuiv(GLuint id, GLenum pname, GLuint *params);
+    Error getQueryObjecti64v(GLuint id, GLenum pname, GLint64 *params);
+    Error getQueryObjectui64v(GLuint id, GLenum pname, GLuint64 *params);
 
     void setVertexAttribDivisor(GLuint index, GLuint divisor);
 
     void samplerParameteri(GLuint sampler, GLenum pname, GLint param);
-    void samplerParameteriv(GLuint sampler, GLenum pname, const GLint *param);
     void samplerParameterf(GLuint sampler, GLenum pname, GLfloat param);
-    void samplerParameterfv(GLuint sampler, GLenum pname, const GLfloat *param);
-
-    void getSamplerParameteriv(GLuint sampler, GLenum pname, GLint *params);
-    void getSamplerParameterfv(GLuint sampler, GLenum pname, GLfloat *params);
+    GLint getSamplerParameteri(GLuint sampler, GLenum pname);
+    GLfloat getSamplerParameterf(GLuint sampler, GLenum pname);
 
     void programParameteri(GLuint program, GLenum pname, GLint value);
 
     Buffer *getBuffer(GLuint handle) const;
     FenceNV *getFenceNV(GLuint handle);
     FenceSync *getFenceSync(GLsync handle) const;
+    Shader *getShader(GLuint handle) const;
+    Program *getProgram(GLuint handle) const;
     Texture *getTexture(GLuint handle) const;
     Framebuffer *getFramebuffer(GLuint handle) const;
     Renderbuffer *getRenderbuffer(GLuint handle) const;
@@ -206,9 +205,7 @@ class Context final : public ValidationContext
 
     void activeTexture(GLenum texture);
     void blendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
-    void blendEquation(GLenum mode);
     void blendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
-    void blendFunc(GLenum sfactor, GLenum dfactor);
     void blendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
     void clearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
     void clearDepthf(GLclampf depth);
@@ -481,11 +478,8 @@ class Context final : public ValidationContext
                                 GLboolean unpackFlipY,
                                 GLboolean unpackPremultiplyAlpha,
                                 GLboolean unpackUnmultiplyAlpha);
-    void compressedCopyTextureCHROMIUM(GLuint sourceId, GLuint destId);
 
     void generateMipmap(GLenum target);
-
-    GLboolean enableExtension(const char *name);
 
     Error flush();
     Error finish();
@@ -573,20 +567,6 @@ class Context final : public ValidationContext
                                      GLint components,
                                      const GLfloat *coeffs);
 
-    void bufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
-    void bufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data);
-    void attachShader(GLuint program, GLuint shader);
-    void bindAttribLocation(GLuint program, GLuint index, const GLchar *name);
-    void bindBuffer(GLenum target, GLuint buffer);
-    void bindFramebuffer(GLenum target, GLuint framebuffer);
-    void bindRenderbuffer(GLenum target, GLuint renderbuffer);
-
-    void copyBufferSubData(GLenum readTarget,
-                           GLenum writeTarget,
-                           GLintptr readOffset,
-                           GLintptr writeOffset,
-                           GLsizeiptr size);
-
     void handleError(const Error &error) override;
 
     GLenum getError();
@@ -599,14 +579,13 @@ class Context final : public ValidationContext
     EGLenum getClientType() const;
     EGLenum getRenderBuffer() const;
 
-    const char *getRendererString() const;
+    const std::string &getRendererString() const;
 
-    const char *getExtensionString() const;
-    const char *getExtensionString(size_t idx) const;
+    const std::string &getExtensionString() const;
+    const std::string &getExtensionString(size_t idx) const;
     size_t getExtensionStringCount() const;
 
     rx::ContextImpl *getImplementation() const { return mImplementation.get(); }
-    const Workarounds &getWorkarounds() const;
 
   private:
     void syncRendererState();
@@ -630,9 +609,7 @@ class Context final : public ValidationContext
     void initRendererString();
     void initExtensionStrings();
 
-    void initCaps(bool webGLContext);
-    void updateCaps();
-    void initWorkarounds();
+    void initCaps();
 
     LabeledObject *getLabeledObject(GLenum identifier, GLuint name) const;
     LabeledObject *getLabeledObjectFromPtr(const void *ptr) const;
@@ -649,6 +626,9 @@ class Context final : public ValidationContext
     Compiler *mCompiler;
 
     State mGLState;
+
+    int mClientMajorVersion;
+    int mClientMinorVersion;
 
     const egl::Config *mConfig;
     EGLenum mClientType;
@@ -670,9 +650,9 @@ class Context final : public ValidationContext
     ResourceMap<TransformFeedback> mTransformFeedbackMap;
     HandleAllocator mTransformFeedbackAllocator;
 
-    const char *mRendererString;
-    const char *mExtensionString;
-    std::vector<const char *> mExtensionStrings;
+    std::string mRendererString;
+    std::string mExtensionString;
+    std::vector<std::string> mExtensionStrings;
 
     // Recorded errors
     typedef std::set<GLenum> ErrorSet;
@@ -682,7 +662,6 @@ class Context final : public ValidationContext
     bool mHasBeenCurrent;
     bool mContextLost;
     GLenum mResetStatus;
-    bool mContextLostForced;
     GLenum mResetStrategy;
     bool mRobustAccess;
     egl::Surface *mCurrentSurface;
@@ -697,8 +676,6 @@ class Context final : public ValidationContext
     State::DirtyObjects mClearDirtyObjects;
     State::DirtyBits mBlitDirtyBits;
     State::DirtyObjects mBlitDirtyObjects;
-
-    Workarounds mWorkarounds;
 };
 
 }  // namespace gl

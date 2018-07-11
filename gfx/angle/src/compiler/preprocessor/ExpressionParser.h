@@ -7,8 +7,8 @@
 #ifndef COMPILER_PREPROCESSOR_EXPRESSIONPARSER_H_
 #define COMPILER_PREPROCESSOR_EXPRESSIONPARSER_H_
 
-#include "common/angleutils.h"
-#include "compiler/preprocessor/DiagnosticsBase.h"
+#include "DiagnosticsBase.h"
+#include "pp_utils.h"
 
 namespace pp
 {
@@ -16,7 +16,7 @@ namespace pp
 class Lexer;
 struct Token;
 
-class ExpressionParser : angle::NonCopyable
+class ExpressionParser
 {
   public:
     struct ErrorSettings
@@ -34,6 +34,8 @@ class ExpressionParser : angle::NonCopyable
                bool *valid);
 
   private:
+    PP_DISALLOW_COPY_AND_ASSIGN(ExpressionParser);
+
     Lexer *mLexer;
     Diagnostics *mDiagnostics;
 };

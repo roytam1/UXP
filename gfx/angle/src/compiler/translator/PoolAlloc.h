@@ -157,12 +157,7 @@ public:
     void lock();
     void unlock();
 
-  private:
-    size_t alignment;  // all returned allocations will be aligned at
-                       // this granularity, which will be a power of 2
-    size_t alignmentMask;
-
-#if !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
+protected:
     friend struct tHeader;
     
     struct tHeader {
@@ -205,21 +200,20 @@ public:
     }
 
     size_t pageSize;        // granularity of allocation from the OS
+    size_t alignment;       // all returned allocations will be aligned at 
+                            // this granularity, which will be a power of 2
+    size_t alignmentMask;
     size_t headerSkip;      // amount of memory to skip to make room for the
                             //      header (basically, size of header, rounded
                             //      up to make it aligned
     size_t currentPageOffset;  // next offset in top of inUseList to allocate from
     tHeader* freeList;      // list of popped memory
     tHeader* inUseList;     // list of all memory currently being used
-    tAllocStack mStack;     // stack of where to allocate from, to partition pool
+    tAllocStack stack;      // stack of where to allocate from, to partition pool
 
     int numCalls;           // just an interesting statistic
     size_t totalBytes;      // just an interesting statistic
-
-#else  // !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-    std::vector<std::vector<void *>> mStack;
-#endif
-
+private:
     TPoolAllocator& operator=(const TPoolAllocator&);  // dont allow assignment operator
     TPoolAllocator(const TPoolAllocator&);  // dont allow default copy constructor
     bool mLocked;

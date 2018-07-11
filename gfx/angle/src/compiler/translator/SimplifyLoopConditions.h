@@ -11,8 +11,6 @@
 #ifndef COMPILER_TRANSLATOR_SIMPLIFYLOOPCONDITIONS_H_
 #define COMPILER_TRANSLATOR_SIMPLIFYLOOPCONDITIONS_H_
 
-namespace sh
-{
 class TIntermNode;
 class TSymbolTable;
 
@@ -21,6 +19,5 @@ void SimplifyLoopConditions(TIntermNode *root,
                             unsigned int *temporaryIndex,
                             const TSymbolTable &symbolTable,
                             int shaderVersion);
-}  // namespace sh
 
 #endif  // COMPILER_TRANSLATOR_SIMPLIFYLOOPCONDITIONS_H_

@@ -41,15 +41,6 @@ const egl::DisplayExtensions &DisplayImpl::getExtensions() const
     return mExtensions;
 }
 
-egl::Error DisplayImpl::validateClientBuffer(const egl::Config *configuration,
-                                             EGLenum buftype,
-                                             EGLClientBuffer clientBuffer,
-                                             const egl::AttributeMap &attribs) const
-{
-    UNREACHABLE();
-    return egl::Error(EGL_BAD_DISPLAY, "DisplayImpl::validateClientBuffer unimplemented.");
-}
-
 const egl::Caps &DisplayImpl::getCaps() const
 {
     if (!mCapsInitialized)

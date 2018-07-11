@@ -9,28 +9,21 @@
 
 #include "compiler/translator/Compiler.h"
 
-namespace sh
-{
-
 class TranslatorGLSL : public TCompiler
 {
   public:
     TranslatorGLSL(sh::GLenum type, ShShaderSpec spec, ShShaderOutput output);
 
   protected:
-    void initBuiltInFunctionEmulator(BuiltInFunctionEmulator *emu,
-                                     ShCompileOptions compileOptions) override;
+    void initBuiltInFunctionEmulator(BuiltInFunctionEmulator *emu, int compileOptions) override;
 
-    void translate(TIntermNode *root, ShCompileOptions compileOptions) override;
+    void translate(TIntermNode *root, int compileOptions) override;
     bool shouldFlattenPragmaStdglInvariantAll() override;
-    bool shouldCollectVariables(ShCompileOptions compileOptions) override;
 
   private:
     void writeVersion(TIntermNode *root);
     void writeExtensionBehavior(TIntermNode *root);
     void conditionallyOutputInvariantDeclaration(const char *builtinVaryingName);
 };
-
-}  // namespace sh
 
 #endif  // COMPILER_TRANSLATOR_TRANSLATORGLSL_H_

@@ -35,8 +35,7 @@ class DisplayCGL : public DisplayGL
                                       const egl::AttributeMap &attribs) override;
     SurfaceImpl *createPbufferFromClientBuffer(const egl::SurfaceState &state,
                                                const egl::Config *configuration,
-                                               EGLenum buftype,
-                                               EGLClientBuffer clientBuffer,
+                                               EGLClientBuffer shareHandle,
                                                const egl::AttributeMap &attribs) override;
     SurfaceImpl *createPixmapSurface(const egl::SurfaceState &state,
                                      const egl::Config *configuration,

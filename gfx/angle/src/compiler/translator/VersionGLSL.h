@@ -11,9 +11,6 @@
 
 #include "compiler/translator/Pragma.h"
 
-namespace sh
-{
-
 static const int GLSL_VERSION_110 = 110;
 static const int GLSL_VERSION_120 = 120;
 static const int GLSL_VERSION_130 = 130;
@@ -61,14 +58,11 @@ class TVersionGLSL : public TIntermTraverser
 
     void visitSymbol(TIntermSymbol *) override;
     bool visitAggregate(Visit, TIntermAggregate *) override;
-    bool visitDeclaration(Visit, TIntermDeclaration *node) override;
 
   private:
     void ensureVersionIsAtLeast(int version);
 
     int mVersion;
 };
-
-}  // namespace sh
 
 #endif  // COMPILER_TRANSLATOR_VERSIONGLSL_H_

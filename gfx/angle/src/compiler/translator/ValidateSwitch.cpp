@@ -8,13 +8,8 @@
 
 #include "compiler/translator/ParseContext.h"
 
-namespace sh
-{
-
-bool ValidateSwitch::validate(TBasicType switchType,
-                              TParseContext *context,
-                              TIntermBlock *statementList,
-                              const TSourceLoc &loc)
+bool ValidateSwitch::validate(TBasicType switchType, TParseContext *context,
+    TIntermAggregate *statementList, const TSourceLoc &loc)
 {
     ValidateSwitch validate(switchType, context);
     ASSERT(statementList);
@@ -64,19 +59,11 @@ bool ValidateSwitch::visitUnary(Visit, TIntermUnary *)
 {
     if (!mFirstCaseFound)
         mStatementBeforeCase = true;
-    mLastStatementWasCase    = false;
-    return true;
-}
-
-bool ValidateSwitch::visitTernary(Visit, TIntermTernary *)
-{
-    if (!mFirstCaseFound)
-        mStatementBeforeCase = true;
     mLastStatementWasCase = false;
     return true;
 }
 
-bool ValidateSwitch::visitIfElse(Visit visit, TIntermIfElse *)
+bool ValidateSwitch::visitSelection(Visit visit, TIntermSelection *)
 {
     if (visit == PreVisit)
         ++mControlFlowDepth;
@@ -211,5 +198,3 @@ bool ValidateSwitch::validateInternal(const TSourceLoc &loc)
     return !mStatementBeforeCase && !mLastStatementWasCase && !mCaseInsideControlFlow &&
         !mCaseTypeMismatch && mDefaultCount <= 1 && !mDuplicateCases;
 }
-
-}  // namespace sh

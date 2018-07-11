@@ -241,15 +241,12 @@ class Program final : angle::NonCopyable, public LabeledObject
     void setLabel(const std::string &label) override;
     const std::string &getLabel() const override;
 
-    rx::ProgramImpl *getImplementation() const { return mProgram; }
+    rx::ProgramImpl *getImplementation() { return mProgram; }
+    const rx::ProgramImpl *getImplementation() const { return mProgram; }
 
-    void attachShader(Shader *shader);
+    bool attachShader(Shader *shader);
     bool detachShader(Shader *shader);
     int getAttachedShadersCount() const;
-
-    const Shader *getAttachedVertexShader() const { return mState.mAttachedVertexShader; }
-    const Shader *getAttachedFragmentShader() const { return mState.mAttachedFragmentShader; }
-    const Shader *getAttachedComputeShader() const { return mState.mAttachedComputeShader; }
 
     void bindAttributeLocation(GLuint index, const char *name);
     void bindUniformLocation(GLuint index, const char *name);
@@ -327,6 +324,7 @@ class Program final : angle::NonCopyable, public LabeledObject
     void getUniformuiv(GLint location, GLuint *params) const;
 
     void getActiveUniformBlockName(GLuint uniformBlockIndex, GLsizei bufSize, GLsizei *length, GLchar *uniformBlockName) const;
+    void getActiveUniformBlockiv(GLuint uniformBlockIndex, GLenum pname, GLint *params) const;
     GLuint getActiveUniformBlockCount() const;
     GLint getActiveUniformBlockMaxLength() const;
 
@@ -460,15 +458,11 @@ class Program final : angle::NonCopyable, public LabeledObject
 
     void defineUniformBlock(const sh::InterfaceBlock &interfaceBlock, GLenum shaderType);
 
-    // Both these function update the cached uniform values and return a modified "count"
-    // so that the uniform update doesn't overflow the uniform.
     template <typename T>
-    GLsizei setUniformInternal(GLint location, GLsizei count, int vectorSize, const T *v);
+    void setUniformInternal(GLint location, GLsizei count, const T *v);
+
     template <size_t cols, size_t rows, typename T>
-    GLsizei setMatrixUniformInternal(GLint location,
-                                     GLsizei count,
-                                     GLboolean transpose,
-                                     const T *v);
+    void setMatrixUniformInternal(GLint location, GLsizei count, GLboolean transpose, const T *v);
 
     template <typename DestT>
     void getUniformInternal(GLint location, DestT *dataOut) const;

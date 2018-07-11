@@ -16,8 +16,6 @@
 #include "compiler/translator/IntermNode.h"
 #include "compiler/translator/VariableInfo.h"
 
-namespace sh
-{
 
 // The translator needs to analyze the the graph of the function calls
 // to run checks and analyses; since in GLSL recursion is not allowed
@@ -43,7 +41,7 @@ class CallDAG : angle::NonCopyable
     struct Record
     {
         std::string name;
-        TIntermFunctionDefinition *node;
+        TIntermAggregate *node;
         std::vector<int> callees;
     };
 
@@ -59,7 +57,7 @@ class CallDAG : angle::NonCopyable
     InitResult init(TIntermNode *root, TInfoSinkBase *info);
 
     // Returns InvalidIndex if the function wasn't found
-    size_t findIndex(const TFunctionSymbolInfo *functionInfo) const;
+    size_t findIndex(const TIntermAggregate *function) const;
 
     const Record &getRecordFromIndex(size_t index) const;
     const Record &getRecord(const TIntermAggregate *function) const;
@@ -73,7 +71,5 @@ class CallDAG : angle::NonCopyable
 
     class CallDAGCreator;
 };
-
-}  // namespace sh
 
 #endif  // COMPILER_TRANSLATOR_CALLDAG_H_

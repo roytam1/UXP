@@ -87,7 +87,8 @@ class VertexArray final : public LabeledObject
         return mState.getVertexAttributes();
     }
 
-    rx::VertexArrayImpl *getImplementation() const { return mVertexArray; }
+    rx::VertexArrayImpl *getImplementation() { return mVertexArray; }
+    const rx::VertexArrayImpl *getImplementation() const { return mVertexArray; }
 
     size_t getMaxEnabledAttribute() const { return mState.getMaxEnabledAttribute(); }
 

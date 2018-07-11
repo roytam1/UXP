@@ -7,9 +7,6 @@
 
 #include "compiler/translator/ValidateMaxParameters.h"
 
-namespace sh
-{
-
 ValidateMaxParameters::ValidateMaxParameters(unsigned int maxParameters)
     : TIntermTraverser(true, false, false), mMaxParameters(maxParameters), mValid(true)
 {
@@ -36,5 +33,3 @@ bool ValidateMaxParameters::validate(TIntermNode *root, unsigned int maxParamete
     root->traverse(&argsTraverser);
     return argsTraverser.mValid;
 }
-
-}  // namespace sh

@@ -153,6 +153,7 @@ gl::Error TextureStorage9_2D::getSurfaceLevel(GLenum target,
                                               IDirect3DSurface9 **outSurface)
 {
     ASSERT(target == GL_TEXTURE_2D);
+    UNUSED_ASSERTION_VARIABLE(target);
 
     IDirect3DBaseTexture9 *baseTexture = NULL;
     gl::Error error = getBaseTexture(&baseTexture);
@@ -328,6 +329,8 @@ gl::Error TextureStorage9_EGLImage::getSurfaceLevel(GLenum target,
 {
     ASSERT(target == GL_TEXTURE_2D);
     ASSERT(level == 0);
+    UNUSED_ASSERTION_VARIABLE(target);
+    UNUSED_ASSERTION_VARIABLE(level);
 
     RenderTargetD3D *renderTargetD3D = nullptr;
     gl::Error error = mImage->getRenderTarget(&renderTargetD3D);
@@ -347,6 +350,7 @@ gl::Error TextureStorage9_EGLImage::getRenderTarget(const gl::ImageIndex &index,
 {
     ASSERT(!index.hasLayer());
     ASSERT(index.mipIndex == 0);
+    UNUSED_ASSERTION_VARIABLE(index);
 
     return mImage->getRenderTarget(outRT);
 }

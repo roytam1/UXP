@@ -13,8 +13,6 @@
 #include "compiler/translator/NodeSearch.h"
 #include "compiler/translator/TranslatorGLSL.h"
 
-using namespace sh;
-
 class RemovePowTest : public testing::Test
 {
   public:
@@ -26,9 +24,8 @@ class RemovePowTest : public testing::Test
         allocator.push();
         SetGlobalPoolAllocator(&allocator);
         ShBuiltInResources resources;
-        sh::InitBuiltInResources(&resources);
-        mTranslatorGLSL =
-            new sh::TranslatorGLSL(GL_FRAGMENT_SHADER, SH_GLES2_SPEC, SH_GLSL_COMPATIBILITY_OUTPUT);
+        ShInitBuiltInResources(&resources);
+        mTranslatorGLSL = new TranslatorGLSL(GL_FRAGMENT_SHADER, SH_GLES2_SPEC, SH_GLSL_COMPATIBILITY_OUTPUT);
         ASSERT_TRUE(mTranslatorGLSL->Init(resources));
     }
 
@@ -58,7 +55,7 @@ class RemovePowTest : public testing::Test
     }
 
   private:
-    sh::TranslatorGLSL *mTranslatorGLSL;
+    TranslatorGLSL *mTranslatorGLSL;
     TIntermNode *mASTRoot;
 
     TPoolAllocator allocator;

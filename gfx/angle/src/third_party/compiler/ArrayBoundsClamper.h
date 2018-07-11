@@ -29,12 +29,8 @@
 #include "compiler/translator/InfoSink.h"
 #include "compiler/translator/IntermNode.h"
 
-namespace sh
-{
-
-class ArrayBoundsClamper
-{
-  public:
+class ArrayBoundsClamper {
+public:
     ArrayBoundsClamper();
 
     // Must be set before compiling any shaders to ensure consistency
@@ -60,7 +56,5 @@ private:
     ShArrayIndexClampingStrategy mClampingStrategy;
     bool mArrayBoundsClampDefinitionNeeded;
 };
-
-}  // namespace sh
 
 #endif // THIRD_PARTY_COMPILER_ARRAYBOUNDSCLAMPER_H_

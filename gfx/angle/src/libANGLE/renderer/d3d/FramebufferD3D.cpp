@@ -207,7 +207,7 @@ GLenum FramebufferD3D::getImplementationColorReadFormat() const
     GLenum implementationFormat = getRenderTargetImplementationFormat(attachmentRenderTarget);
     const gl::InternalFormat &implementationFormatInfo = gl::GetInternalFormatInfo(implementationFormat);
 
-    return implementationFormatInfo.getReadPixelsFormat();
+    return implementationFormatInfo.format;
 }
 
 GLenum FramebufferD3D::getImplementationColorReadType() const
@@ -229,7 +229,7 @@ GLenum FramebufferD3D::getImplementationColorReadType() const
     GLenum implementationFormat = getRenderTargetImplementationFormat(attachmentRenderTarget);
     const gl::InternalFormat &implementationFormatInfo = gl::GetInternalFormatInfo(implementationFormat);
 
-    return implementationFormatInfo.getReadPixelsType();
+    return implementationFormatInfo.type;
 }
 
 gl::Error FramebufferD3D::readPixels(ContextImpl *context,
@@ -240,13 +240,15 @@ gl::Error FramebufferD3D::readPixels(ContextImpl *context,
 {
     const gl::PixelPackState &packState = context->getGLState().getPackState();
 
-    const gl::InternalFormat &formatInfo = gl::GetInternalFormatInfo(gl::GetSizedInternalFormat(format, type));
-
-    GLuint outputPitch = 0;
-    ANGLE_TRY_RESULT(formatInfo.computeRowPitch(area.width, packState.alignment, packState.rowLength),
-                     outputPitch);
+    GLenum sizedInternalFormat = gl::GetSizedInternalFormat(format, type);
+    const gl::InternalFormat &sizedFormatInfo = gl::GetInternalFormatInfo(sizedInternalFormat);
+    GLuint outputPitch                        = 0;
+    ANGLE_TRY_RESULT(
+        sizedFormatInfo.computeRowPitch(type, area.width, packState.alignment, packState.rowLength),
+        outputPitch);
     GLuint outputSkipBytes = 0;
-    ANGLE_TRY_RESULT(formatInfo.computeSkipBytes(outputPitch, 0, packState, false),
+    ANGLE_TRY_RESULT(sizedFormatInfo.computeSkipBytes(outputPitch, 0, 0, packState.skipRows,
+                                                      packState.skipPixels, false),
                      outputSkipBytes);
 
     return readPixelsImpl(area, format, type, outputPitch, packState,

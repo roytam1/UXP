@@ -29,7 +29,7 @@ enum InterpolationType
 };
 
 // Validate link & SSO consistency of interpolation qualifiers
-bool InterpolationTypesMatch(InterpolationType a, InterpolationType b);
+COMPILER_EXPORT bool InterpolationTypesMatch(InterpolationType a, InterpolationType b);
 
 // Uniform block layout qualifier, see section 4.3.8.3 of the ESSL 3.00.4 spec
 enum BlockLayoutType
@@ -43,7 +43,7 @@ enum BlockLayoutType
 // Note: we must override the copy constructor and assignment operator so we can
 // work around excessive GCC binary bloating:
 // See https://code.google.com/p/angleproject/issues/detail?id=697
-struct ShaderVariable
+struct COMPILER_EXPORT ShaderVariable
 {
     ShaderVariable();
     ShaderVariable(GLenum typeIn, unsigned int arraySizeIn);
@@ -92,7 +92,7 @@ struct ShaderVariable
     }
 };
 
-struct Uniform : public ShaderVariable
+struct COMPILER_EXPORT Uniform : public ShaderVariable
 {
     Uniform();
     ~Uniform();
@@ -113,7 +113,7 @@ struct Uniform : public ShaderVariable
 // An interface variable is a variable which passes data between the GL data structures and the
 // shader execution: either vertex shader inputs or fragment shader outputs. These variables can
 // have integer locations to pass back to the GL API.
-struct InterfaceVariable : public ShaderVariable
+struct COMPILER_EXPORT InterfaceVariable : public ShaderVariable
 {
     InterfaceVariable();
     ~InterfaceVariable();
@@ -125,7 +125,7 @@ struct InterfaceVariable : public ShaderVariable
     int location;
 };
 
-struct Attribute : public InterfaceVariable
+struct COMPILER_EXPORT Attribute : public InterfaceVariable
 {
     Attribute();
     ~Attribute();
@@ -135,7 +135,7 @@ struct Attribute : public InterfaceVariable
     bool operator!=(const Attribute &other) const { return !operator==(other); }
 };
 
-struct OutputVariable : public InterfaceVariable
+struct COMPILER_EXPORT OutputVariable : public InterfaceVariable
 {
     OutputVariable();
     ~OutputVariable();
@@ -145,7 +145,7 @@ struct OutputVariable : public InterfaceVariable
     bool operator!=(const OutputVariable &other) const { return !operator==(other); }
 };
 
-struct InterfaceBlockField : public ShaderVariable
+struct COMPILER_EXPORT InterfaceBlockField : public ShaderVariable
 {
     InterfaceBlockField();
     ~InterfaceBlockField();
@@ -167,7 +167,7 @@ struct InterfaceBlockField : public ShaderVariable
     bool isRowMajorLayout;
 };
 
-struct Varying : public ShaderVariable
+struct COMPILER_EXPORT Varying : public ShaderVariable
 {
     Varying();
     ~Varying();
@@ -193,7 +193,7 @@ struct Varying : public ShaderVariable
     bool isInvariant;
 };
 
-struct InterfaceBlock
+struct COMPILER_EXPORT InterfaceBlock
 {
     InterfaceBlock();
     ~InterfaceBlock();
@@ -216,7 +216,7 @@ struct InterfaceBlock
     std::vector<InterfaceBlockField> fields;
 };
 
-struct WorkGroupSize
+struct COMPILER_EXPORT WorkGroupSize
 {
     void fill(int fillValue);
     void setLocalSize(int localSizeX, int localSizeY, int localSizeZ);

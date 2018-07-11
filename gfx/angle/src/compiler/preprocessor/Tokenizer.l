@@ -27,10 +27,10 @@ IF YOU MODIFY THIS FILE YOU ALSO NEED TO RUN generate_parser.sh.
 #pragma warning(disable: 4005)
 #endif
 
-#include "compiler/preprocessor/Tokenizer.h"
+#include "Tokenizer.h"
 
-#include "compiler/preprocessor/DiagnosticsBase.h"
-#include "compiler/preprocessor/Token.h"
+#include "DiagnosticsBase.h"
+#include "Token.h"
 
 #if defined(__GNUC__)
 // Triggered by the auto-generated yy_fatal_error function.
@@ -280,7 +280,9 @@ FRACTIONAL_CONSTANT  ({DIGIT}*"."{DIGIT}+)|({DIGIT}+".")
 
 namespace pp {
 
-Tokenizer::Tokenizer(Diagnostics *diagnostics) : mHandle(nullptr), mMaxTokenSize(256)
+Tokenizer::Tokenizer(Diagnostics *diagnostics)
+    : mHandle(0),
+      mMaxTokenSize(256)
 {
     mContext.diagnostics = diagnostics;
 }
@@ -337,7 +339,7 @@ void Tokenizer::lex(Token *token)
 
 bool Tokenizer::initScanner()
 {
-    if ((mHandle == nullptr) && yylex_init_extra(&mContext, &mHandle))
+    if ((mHandle == NULL) && yylex_init_extra(&mContext, &mHandle))
         return false;
 
     yyrestart(0, mHandle);
@@ -346,11 +348,11 @@ bool Tokenizer::initScanner()
 
 void Tokenizer::destroyScanner()
 {
-    if (mHandle == nullptr)
+    if (mHandle == NULL)
         return;
 
     yylex_destroy(mHandle);
-    mHandle = nullptr;
+    mHandle = NULL;
 }
 
 }  // namespace pp

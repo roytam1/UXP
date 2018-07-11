@@ -16,8 +16,8 @@ namespace gl
 
 struct Version
 {
-    constexpr Version();
-    constexpr Version(GLuint major, GLuint minor);
+    Version();
+    Version(GLuint major, GLuint minor);
 
     GLuint major;
     GLuint minor;
@@ -26,9 +26,8 @@ struct Version
 bool operator==(const Version &a, const Version &b);
 bool operator!=(const Version &a, const Version &b);
 bool operator>=(const Version &a, const Version &b);
-bool operator<=(const Version &a, const Version &b);
 bool operator<(const Version &a, const Version &b);
-bool operator>(const Version &a, const Version &b);
+
 }
 
 #include "Version.inl"

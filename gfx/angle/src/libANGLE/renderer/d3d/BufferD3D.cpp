@@ -19,8 +19,8 @@ namespace rx
 
 unsigned int BufferD3D::mNextSerial = 1;
 
-BufferD3D::BufferD3D(const gl::BufferState &state, BufferFactoryD3D *factory)
-    : BufferImpl(state),
+BufferD3D::BufferD3D(BufferFactoryD3D *factory)
+    : BufferImpl(),
       mFactory(factory),
       mStaticIndexBuffer(nullptr),
       mStaticBufferCacheTotalSize(0),
@@ -179,7 +179,11 @@ gl::Error BufferD3D::getIndexRange(GLenum type,
                                    gl::IndexRange *outRange)
 {
     const uint8_t *data = nullptr;
-    ANGLE_TRY(getData(&data));
+    gl::Error error = getData(&data);
+    if (error.isError())
+    {
+        return error;
+    }
 
     *outRange = gl::ComputeIndexRange(type, data + offset, count, primitiveRestartEnabled);
     return gl::Error(GL_NO_ERROR);

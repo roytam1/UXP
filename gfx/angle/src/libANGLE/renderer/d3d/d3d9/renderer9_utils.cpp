@@ -18,7 +18,6 @@
 #include "libANGLE/renderer/d3d/d3d9/RenderTarget9.h"
 #include "libANGLE/renderer/d3d/FramebufferD3D.h"
 #include "libANGLE/renderer/d3d/WorkaroundsD3D.h"
-#include "libANGLE/renderer/driver_utils.h"
 
 #include "third_party/systeminfo/SystemInfo.h"
 
@@ -307,7 +306,7 @@ GLsizei GetSamplesCount(D3DMULTISAMPLE_TYPE type)
 
 bool IsFormatChannelEquivalent(D3DFORMAT d3dformat, GLenum format)
 {
-    GLenum internalFormat  = d3d9::GetD3DFormatInfo(d3dformat).info().glInternalFormat;
+    GLenum internalFormat  = d3d9::GetD3DFormatInfo(d3dformat).info->glInternalFormat;
     GLenum convertedFormat = gl::GetInternalFormatInfo(internalFormat).format;
     return convertedFormat == format;
 }
@@ -541,12 +540,12 @@ void GenerateCaps(IDirect3D9 *d3d9,
     {
         // ATI cards on XP have problems with non-power-of-two textures.
         extensions->textureNPOT = !(deviceCaps.TextureCaps & D3DPTEXTURECAPS_POW2) &&
-                                  !(deviceCaps.TextureCaps & D3DPTEXTURECAPS_CUBEMAP_POW2) &&
-                                  !(deviceCaps.TextureCaps & D3DPTEXTURECAPS_NONPOW2CONDITIONAL) &&
-                                  !(!isWindowsVistaOrGreater() && IsAMD(adapterId.VendorId));
+                                      !(deviceCaps.TextureCaps & D3DPTEXTURECAPS_CUBEMAP_POW2) &&
+                                      !(deviceCaps.TextureCaps & D3DPTEXTURECAPS_NONPOW2CONDITIONAL) &&
+                                      !(!isWindowsVistaOrGreater() && adapterId.VendorId == VENDOR_ID_AMD);
 
         // Disable depth texture support on AMD cards (See ANGLE issue 839)
-        if (IsAMD(adapterId.VendorId))
+        if (adapterId.VendorId == VENDOR_ID_AMD)
         {
             extensions->depthTextures = false;
         }

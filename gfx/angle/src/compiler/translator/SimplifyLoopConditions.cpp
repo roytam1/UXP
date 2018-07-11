@@ -13,9 +13,6 @@
 #include "compiler/translator/IntermNode.h"
 #include "compiler/translator/IntermNodePatternMatcher.h"
 
-namespace sh
-{
-
 namespace
 {
 
@@ -39,7 +36,7 @@ class SimplifyLoopConditionsTraverser : public TLValueTrackingTraverser
 
     bool visitBinary(Visit visit, TIntermBinary *node) override;
     bool visitAggregate(Visit visit, TIntermAggregate *node) override;
-    bool visitTernary(Visit visit, TIntermTernary *node) override;
+    bool visitSelection(Visit visit, TIntermSelection *node) override;
 
     void nextIteration();
     bool foundLoopToChange() const { return mFoundLoopToChange; }
@@ -97,20 +94,20 @@ bool SimplifyLoopConditionsTraverser::visitAggregate(Visit visit, TIntermAggrega
 
     // If we're outside a loop condition, we only need to traverse nodes that may contain loops.
     if (!mInsideLoopConditionOrExpression)
-        return false;
+        return (node->getOp() == EOpSequence || node->getOp() == EOpFunction);
 
     mFoundLoopToChange = mConditionsToSimplify.match(node, getParentNode());
     return !mFoundLoopToChange;
 }
 
-bool SimplifyLoopConditionsTraverser::visitTernary(Visit visit, TIntermTernary *node)
+bool SimplifyLoopConditionsTraverser::visitSelection(Visit visit, TIntermSelection *node)
 {
     if (mFoundLoopToChange)
         return false;
 
     // Don't traverse ternary operators outside loop conditions.
     if (!mInsideLoopConditionOrExpression)
-        return false;
+        return !node->usesTernaryOperator();
 
     mFoundLoopToChange = mConditionsToSimplify.match(node);
     return !mFoundLoopToChange;
@@ -148,9 +145,10 @@ void SimplifyLoopConditionsTraverser::traverseLoop(TIntermLoop *node)
                 tempInitSeq.push_back(createTempInitDeclaration(node->getCondition()->deepCopy()));
                 insertStatementsInParentBlock(tempInitSeq);
 
-                TIntermBlock *newBody = new TIntermBlock();
+                TIntermAggregate *newBody = new TIntermAggregate(EOpSequence);
                 if (node->getBody())
                 {
+                    ASSERT(node->getBody()->getOp() == EOpSequence);
                     newBody->getSequence()->push_back(node->getBody());
                 }
                 newBody->getSequence()->push_back(
@@ -178,9 +176,10 @@ void SimplifyLoopConditionsTraverser::traverseLoop(TIntermLoop *node)
                 tempInitSeq.push_back(createTempInitDeclaration(CreateBoolConstantNode(true)));
                 insertStatementsInParentBlock(tempInitSeq);
 
-                TIntermBlock *newBody = new TIntermBlock();
+                TIntermAggregate *newBody = new TIntermAggregate(EOpSequence);
                 if (node->getBody())
                 {
+                    ASSERT(node->getBody()->getOp() == EOpSequence);
                     newBody->getSequence()->push_back(node->getBody());
                 }
                 newBody->getSequence()->push_back(
@@ -203,7 +202,7 @@ void SimplifyLoopConditionsTraverser::traverseLoop(TIntermLoop *node)
                 //     bool s0 = expr;
                 //     while (s0) { { body; } exprB; s0 = expr; }
                 //   }
-                TIntermBlock *loopScope = new TIntermBlock();
+                TIntermAggregate *loopScope = new TIntermAggregate(EOpSequence);
                 if (node->getInit())
                 {
                     loopScope->getSequence()->push_back(node->getInit());
@@ -211,15 +210,12 @@ void SimplifyLoopConditionsTraverser::traverseLoop(TIntermLoop *node)
                 loopScope->getSequence()->push_back(
                     createTempInitDeclaration(node->getCondition()->deepCopy()));
 
-                TIntermBlock *whileLoopBody = new TIntermBlock();
+                TIntermAggregate *whileLoopBody = new TIntermAggregate(EOpSequence);
                 if (node->getBody())
                 {
                     whileLoopBody->getSequence()->push_back(node->getBody());
                 }
-                if (node->getExpression())
-                {
-                    whileLoopBody->getSequence()->push_back(node->getExpression());
-                }
+                whileLoopBody->getSequence()->push_back(node->getExpression());
                 whileLoopBody->getSequence()->push_back(
                     createTempAssignment(node->getCondition()->deepCopy()));
                 TIntermLoop *whileLoop = new TIntermLoop(
@@ -246,8 +242,8 @@ void SimplifyLoopConditionsTraverser::traverseLoop(TIntermLoop *node)
             //   for (init; expr; ) { { body; } exprB; }
             TIntermTyped *loopExpression = node->getExpression();
             node->setExpression(nullptr);
-            TIntermBlock *oldBody = node->getBody();
-            node->setBody(new TIntermBlock());
+            TIntermAggregate *oldBody = node->getBody();
+            node->setBody(new TIntermAggregate(EOpSequence));
             if (oldBody != nullptr)
             {
                 node->getBody()->getSequence()->push_back(oldBody);
@@ -284,5 +280,3 @@ void SimplifyLoopConditions(TIntermNode *root,
             traverser.updateTree();
     } while (traverser.foundLoopToChange());
 }
-
-}  // namespace sh

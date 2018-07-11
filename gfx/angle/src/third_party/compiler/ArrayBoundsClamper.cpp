@@ -38,11 +38,7 @@ const char* kIntClampBegin = "// BEGIN: Generated code for array bounds clamping
 const char* kIntClampEnd = "// END: Generated code for array bounds clamping\n\n";
 const char* kIntClampDefinition = "int webgl_int_clamp(int value, int minValue, int maxValue) { return ((value < minValue) ? minValue : ((value > maxValue) ? maxValue : value)); }\n\n";
 
-namespace sh
-{
-
-namespace
-{
+namespace {
 
 class ArrayBoundsClamperMarker : public TIntermTraverser {
 public:
@@ -109,5 +105,3 @@ void ArrayBoundsClamper::OutputClampingFunctionDefinition(TInfoSinkBase& out) co
     }
     out << kIntClampBegin << kIntClampDefinition << kIntClampEnd;
 }
-
-}  // namespace sh

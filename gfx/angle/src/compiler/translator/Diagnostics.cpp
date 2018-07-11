@@ -11,9 +11,6 @@
 #include "compiler/translator/Common.h"
 #include "compiler/translator/InfoSink.h"
 
-namespace sh
-{
-
 TDiagnostics::TDiagnostics(TInfoSink& infoSink) :
     mInfoSink(infoSink),
     mNumErrors(0),
@@ -82,5 +79,3 @@ void TDiagnostics::print(ID id,
 {
     writeInfo(severity(id), loc, message(id), text, "");
 }
-
-}  // namespace sh

@@ -20,7 +20,6 @@
 #include "libANGLE/renderer/GLImplFactory.h"
 #include "libANGLE/renderer/ShaderImpl.h"
 #include "libANGLE/ResourceManager.h"
-#include "libANGLE/Context.h"
 
 namespace gl
 {
@@ -228,7 +227,7 @@ void Shader::getTranslatedSourceWithDebugInfo(GLsizei bufSize, GLsizei *length, 
     getSourceImpl(debugInfo, bufSize, length, buffer);
 }
 
-void Shader::compile(const Context *context)
+void Shader::compile(Compiler *compiler)
 {
     mState.mTranslatedSource.clear();
     mInfoLog.clear();
@@ -239,23 +238,14 @@ void Shader::compile(const Context *context)
     mState.mActiveAttributes.clear();
     mState.mActiveOutputVariables.clear();
 
-    Compiler *compiler = context->getCompiler();
     ShHandle compilerHandle = compiler->getCompilerHandle(mState.mShaderType);
 
     std::stringstream sourceStream;
 
     std::string sourcePath;
-    ShCompileOptions additionalOptions =
+    int additionalOptions =
         mImplementation->prepareSourceAndReturnOptions(&sourceStream, &sourcePath);
-    ShCompileOptions compileOptions = (SH_OBJECT_CODE | SH_VARIABLES | additionalOptions);
-
-    // Add default options to WebGL shaders to prevent unexpected behavior during compilation.
-    if (context->getExtensions().webglCompatibility)
-    {
-        compileOptions |= SH_LIMIT_CALL_STACK_DEPTH;
-        compileOptions |= SH_LIMIT_EXPRESSION_COMPLEXITY;
-        compileOptions |= SH_ENFORCE_PACKING_RESTRICTIONS;
-    }
+    int compileOptions    = (SH_OBJECT_CODE | SH_VARIABLES | additionalOptions);
 
     // Some targets (eg D3D11 Feature Level 9_3 and below) do not support non-constant loop indexes
     // in fragment shaders. Shader compilation will fail. To provide a better error message we can
@@ -276,17 +266,17 @@ void Shader::compile(const Context *context)
     sourceCStrings.push_back(sourceString.c_str());
 
     bool result =
-        sh::Compile(compilerHandle, &sourceCStrings[0], sourceCStrings.size(), compileOptions);
+        ShCompile(compilerHandle, &sourceCStrings[0], sourceCStrings.size(), compileOptions);
 
     if (!result)
     {
-        mInfoLog = sh::GetInfoLog(compilerHandle);
+        mInfoLog = ShGetInfoLog(compilerHandle);
         TRACE("\n%s", mInfoLog.c_str());
         mCompiled = false;
         return;
     }
 
-    mState.mTranslatedSource = sh::GetObjectCode(compilerHandle);
+    mState.mTranslatedSource = ShGetObjectCode(compilerHandle);
 
 #ifndef NDEBUG
     // Prefix translated shader with commented out un-translated shader.
@@ -311,22 +301,22 @@ void Shader::compile(const Context *context)
 #endif
 
     // Gather the shader information
-    mState.mShaderVersion = sh::GetShaderVersion(compilerHandle);
+    mState.mShaderVersion = ShGetShaderVersion(compilerHandle);
 
-    mState.mVaryings        = GetShaderVariables(sh::GetVaryings(compilerHandle));
-    mState.mUniforms        = GetShaderVariables(sh::GetUniforms(compilerHandle));
-    mState.mInterfaceBlocks = GetShaderVariables(sh::GetInterfaceBlocks(compilerHandle));
+    mState.mVaryings        = GetShaderVariables(ShGetVaryings(compilerHandle));
+    mState.mUniforms        = GetShaderVariables(ShGetUniforms(compilerHandle));
+    mState.mInterfaceBlocks = GetShaderVariables(ShGetInterfaceBlocks(compilerHandle));
 
     switch (mState.mShaderType)
     {
         case GL_COMPUTE_SHADER:
         {
-            mState.mLocalSize = sh::GetComputeShaderLocalGroupSize(compilerHandle);
+            mState.mLocalSize = ShGetComputeShaderLocalGroupSize(compilerHandle);
             break;
         }
         case GL_VERTEX_SHADER:
         {
-            mState.mActiveAttributes = GetActiveShaderVariables(sh::GetAttributes(compilerHandle));
+            mState.mActiveAttributes = GetActiveShaderVariables(ShGetAttributes(compilerHandle));
             break;
         }
         case GL_FRAGMENT_SHADER:
@@ -334,7 +324,7 @@ void Shader::compile(const Context *context)
             // TODO(jmadill): Figure out why we only sort in the FS, and if we need to.
             std::sort(mState.mVaryings.begin(), mState.mVaryings.end(), CompareShaderVar);
             mState.mActiveOutputVariables =
-                GetActiveShaderVariables(sh::GetOutputVariables(compilerHandle));
+                GetActiveShaderVariables(ShGetOutputVariables(compilerHandle));
             break;
         }
         default:

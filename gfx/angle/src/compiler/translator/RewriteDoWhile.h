@@ -10,10 +10,7 @@
 #ifndef COMPILER_TRANSLATOR_REWRITEDOWHILE_H_
 #define COMPILER_TRANSLATOR_REWRITEDOWHILE_H_
 
-namespace sh
-{
 class TIntermNode;
 void RewriteDoWhile(TIntermNode *root, unsigned int *temporaryIndex);
-}  // namespace sh
 
 #endif  // COMPILER_TRANSLATOR_REWRITEDOWHILE_H_

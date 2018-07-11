@@ -15,6 +15,8 @@
 namespace sh
 {
 struct OutputVariable;
+}
+
 class TIntermNode;
 
 // Replace all gl_FragColor with gl_FragData[0], and in the end of main() function,
@@ -22,7 +24,6 @@ class TIntermNode;
 // If gl_FragColor is in outputVariables, it is replaced by gl_FragData.
 void EmulateGLFragColorBroadcast(TIntermNode *root,
                                  int maxDrawBuffers,
-                                 std::vector<OutputVariable> *outputVariables);
-}
+                                 std::vector<sh::OutputVariable> *outputVariables);
 
 #endif  // COMPILER_TRANSLATOR_EMULATEGLFRAGCOLORBROADCAST_H_

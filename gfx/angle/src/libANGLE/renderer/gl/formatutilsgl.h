@@ -112,16 +112,6 @@ struct RenderbufferFormat
 RenderbufferFormat GetRenderbufferFormat(const FunctionsGL *functions,
                                          const WorkaroundsGL &workarounds,
                                          GLenum internalFormat);
-
-struct ReadPixelsFormat
-{
-    GLenum format;
-    GLenum type;
-};
-ReadPixelsFormat GetReadPixelsFormat(const FunctionsGL *functions,
-                                     const WorkaroundsGL &workarounds,
-                                     GLenum format,
-                                     GLenum type);
 }
 
 }

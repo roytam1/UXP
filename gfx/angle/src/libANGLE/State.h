@@ -21,7 +21,6 @@
 #include "libANGLE/Sampler.h"
 #include "libANGLE/Texture.h"
 #include "libANGLE/TransformFeedback.h"
-#include "libANGLE/Version.h"
 #include "libANGLE/VertexAttribute.h"
 #include "libANGLE/angletypes.h"
 
@@ -42,9 +41,8 @@ class State : angle::NonCopyable
 
     void initialize(const Caps &caps,
                     const Extensions &extensions,
-                    const Version &clientVersion,
-                    bool debug,
-                    bool bindGeneratesResource);
+                    GLuint clientVersion,
+                    bool debug);
     void reset();
 
     // State chunk getters
@@ -148,9 +146,6 @@ class State : angle::NonCopyable
     // Hint setters
     void setGenerateMipmapHint(GLenum hint);
     void setFragmentShaderDerivativeHint(GLenum hint);
-
-    // GL_CHROMIUM_bind_generates_resource
-    bool isBindGeneratesResourceEnabled() const;
 
     // Viewport state setter/getter
     void setViewportParams(GLint x, GLint y, GLsizei width, GLsizei height);
@@ -291,10 +286,6 @@ class State : angle::NonCopyable
     GLint getPathStencilRef() const;
     GLuint getPathStencilMask() const;
 
-    // GL_EXT_sRGB_write_control
-    void setFramebufferSRGB(bool sRGB);
-    bool getFramebufferSRGB() const;
-
     // State query functions
     void getBooleanv(GLenum pname, GLboolean *params);
     void getFloatv(GLenum pname, GLfloat *params);
@@ -368,7 +359,6 @@ class State : angle::NonCopyable
         DIRTY_BIT_PATH_RENDERING_MATRIX_MV,    // CHROMIUM_path_rendering path model view matrix
         DIRTY_BIT_PATH_RENDERING_MATRIX_PROJ,  // CHROMIUM_path_rendering path projection matrix
         DIRTY_BIT_PATH_RENDERING_STENCIL_STATE,
-        DIRTY_BIT_FRAMEBUFFER_SRGB,  // GL_EXT_sRGB_write_control
         DIRTY_BIT_CURRENT_VALUE_0,
         DIRTY_BIT_CURRENT_VALUE_MAX = DIRTY_BIT_CURRENT_VALUE_0 + MAX_VERTEX_ATTRIBS,
         DIRTY_BIT_INVALID           = DIRTY_BIT_CURRENT_VALUE_MAX,
@@ -428,8 +418,6 @@ class State : angle::NonCopyable
     GLenum mGenerateMipmapHint;
     GLenum mFragmentShaderDerivativeHint;
 
-    bool mBindGeneratesResource;
-
     Rectangle mViewport;
     float mNearZ;
     float mFarZ;
@@ -484,9 +472,6 @@ class State : angle::NonCopyable
     GLenum mPathStencilFunc;
     GLint mPathStencilRef;
     GLuint mPathStencilMask;
-
-    // GL_EXT_sRGB_write_control
-    bool mFramebufferSRGB;
 
     DirtyBits mDirtyBits;
     DirtyObjects mDirtyObjects;

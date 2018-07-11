@@ -6,10 +6,7 @@
 
 #include "compiler/translator/RemoveSwitchFallThrough.h"
 
-namespace sh
-{
-
-TIntermBlock *RemoveSwitchFallThrough::removeFallThrough(TIntermBlock *statementList)
+TIntermAggregate *RemoveSwitchFallThrough::removeFallThrough(TIntermAggregate *statementList)
 {
     RemoveSwitchFallThrough rm(statementList);
     ASSERT(statementList);
@@ -25,13 +22,14 @@ TIntermBlock *RemoveSwitchFallThrough::removeFallThrough(TIntermBlock *statement
     return rm.mStatementListOut;
 }
 
-RemoveSwitchFallThrough::RemoveSwitchFallThrough(TIntermBlock *statementList)
+RemoveSwitchFallThrough::RemoveSwitchFallThrough(TIntermAggregate *statementList)
     : TIntermTraverser(true, false, false),
       mStatementList(statementList),
       mLastStatementWasBreak(false),
       mPreviousCase(nullptr)
 {
-    mStatementListOut = new TIntermBlock();
+    mStatementListOut = new TIntermAggregate();
+    mStatementListOut->setOp(EOpSequence);
 }
 
 void RemoveSwitchFallThrough::visitSymbol(TIntermSymbol *node)
@@ -64,14 +62,7 @@ bool RemoveSwitchFallThrough::visitUnary(Visit, TIntermUnary *node)
     return false;
 }
 
-bool RemoveSwitchFallThrough::visitTernary(Visit, TIntermTernary *node)
-{
-    mPreviousCase->getSequence()->push_back(node);
-    mLastStatementWasBreak = false;
-    return false;
-}
-
-bool RemoveSwitchFallThrough::visitIfElse(Visit, TIntermIfElse *node)
+bool RemoveSwitchFallThrough::visitSelection(Visit, TIntermSelection *node)
 {
     mPreviousCase->getSequence()->push_back(node);
     mLastStatementWasBreak = false;
@@ -132,20 +123,14 @@ void RemoveSwitchFallThrough::handlePreviousCase()
 bool RemoveSwitchFallThrough::visitCase(Visit, TIntermCase *node)
 {
     handlePreviousCase();
-    mPreviousCase = new TIntermBlock();
+    mPreviousCase = new TIntermAggregate();
+    mPreviousCase->setOp(EOpSequence);
     mPreviousCase->getSequence()->push_back(node);
     // Don't traverse the condition of the case statement
     return false;
 }
 
 bool RemoveSwitchFallThrough::visitAggregate(Visit, TIntermAggregate *node)
-{
-    mPreviousCase->getSequence()->push_back(node);
-    mLastStatementWasBreak = false;
-    return false;
-}
-
-bool RemoveSwitchFallThrough::visitBlock(Visit, TIntermBlock *node)
 {
     if (node != mStatementList)
     {
@@ -170,5 +155,3 @@ bool RemoveSwitchFallThrough::visitBranch(Visit, TIntermBranch *node)
     mLastStatementWasBreak = true;
     return false;
 }
-
-}  // namespace sh

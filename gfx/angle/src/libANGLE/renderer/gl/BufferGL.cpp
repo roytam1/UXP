@@ -29,10 +29,8 @@ static const GLenum SourceBufferOperationTarget = GL_COPY_READ_BUFFER;
 // supported GL versions and doesn't affect any current state when it changes.
 static const GLenum DestBufferOperationTarget = GL_ARRAY_BUFFER;
 
-BufferGL::BufferGL(const gl::BufferState &state,
-                   const FunctionsGL *functions,
-                   StateManagerGL *stateManager)
-    : BufferImpl(state),
+BufferGL::BufferGL(const FunctionsGL *functions, StateManagerGL *stateManager)
+    : BufferImpl(),
       mIsMapped(false),
       mMapOffset(0),
       mMapSize(0),
@@ -55,7 +53,7 @@ BufferGL::~BufferGL()
     mBufferID = 0;
 }
 
-gl::Error BufferGL::setData(GLenum /*target*/, const void *data, size_t size, GLenum usage)
+gl::Error BufferGL::setData(const void* data, size_t size, GLenum usage)
 {
     mStateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
     mFunctions->bufferData(DestBufferOperationTarget, size, data, usage);
@@ -78,7 +76,7 @@ gl::Error BufferGL::setData(GLenum /*target*/, const void *data, size_t size, GL
     return gl::Error(GL_NO_ERROR);
 }
 
-gl::Error BufferGL::setSubData(GLenum /*target*/, const void *data, size_t size, size_t offset)
+gl::Error BufferGL::setSubData(const void* data, size_t size, size_t offset)
 {
     mStateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
     mFunctions->bufferSubData(DestBufferOperationTarget, offset, size, data);

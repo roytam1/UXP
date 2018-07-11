@@ -66,7 +66,6 @@ class DXGISwapChainWindowSurfaceWGL : public SurfaceGL
 
     StateManagerGL *mStateManager;
     const WorkaroundsGL &mWorkarounds;
-    RendererGL *mRenderer;
     const FunctionsGL *mFunctionsGL;
     const FunctionsWGL *mFunctionsWGL;
 

@@ -11,9 +11,6 @@
 
 #include "compiler/translator/IntermNode.h"
 
-namespace sh
-{
-
 namespace
 {
 
@@ -46,11 +43,15 @@ class DoWhileRewriter : public TIntermTraverser
   public:
     DoWhileRewriter() : TIntermTraverser(true, false, false) {}
 
-    bool visitBlock(Visit, TIntermBlock *node) override
+    bool visitAggregate(Visit, TIntermAggregate *node) override
     {
-        // A well-formed AST can only have do-while inside TIntermBlock. By doing a prefix traversal
-        // we are able to replace the do-while in the sequence directly as the content of the
-        // do-while will be traversed later.
+        // A well-formed AST can only have do-while in EOpSequence which represent lists of
+        // statements. By doing a prefix traversal we are able to replace the do-while in the
+        // sequence directly as the content of the do-while will be traversed later.
+        if (node->getOp() != EOpSequence)
+        {
+            return true;
+        }
 
         TIntermSequence *statements = node->getSequence();
 
@@ -70,7 +71,7 @@ class DoWhileRewriter : public TIntermTraverser
             TType boolType = TType(EbtBool);
 
             // bool temp = false;
-            TIntermDeclaration *tempDeclaration = nullptr;
+            TIntermAggregate *tempDeclaration = nullptr;
             {
                 TConstantUnion *falseConstant = new TConstantUnion();
                 falseConstant->setBConst(false);
@@ -94,22 +95,23 @@ class DoWhileRewriter : public TIntermTraverser
             //     break;
             //   }
             // }
-            TIntermIfElse *breakIf = nullptr;
+            TIntermSelection *breakIf = nullptr;
             {
                 TIntermBranch *breakStatement = new TIntermBranch(EOpBreak, nullptr);
 
-                TIntermBlock *breakBlock = new TIntermBlock();
+                TIntermAggregate *breakBlock = new TIntermAggregate(EOpSequence);
                 breakBlock->getSequence()->push_back(breakStatement);
 
-                TIntermUnary *negatedCondition =
-                    new TIntermUnary(EOpLogicalNot, loop->getCondition());
+                TIntermUnary *negatedCondition = new TIntermUnary(EOpLogicalNot);
+                negatedCondition->setOperand(loop->getCondition());
 
-                TIntermIfElse *innerIf = new TIntermIfElse(negatedCondition, breakBlock, nullptr);
+                TIntermSelection *innerIf =
+                    new TIntermSelection(negatedCondition, breakBlock, nullptr);
 
-                TIntermBlock *innerIfBlock = new TIntermBlock();
+                TIntermAggregate *innerIfBlock = new TIntermAggregate(EOpSequence);
                 innerIfBlock->getSequence()->push_back(innerIf);
 
-                breakIf = new TIntermIfElse(createTempSymbol(boolType), innerIfBlock, nullptr);
+                breakIf = new TIntermSelection(createTempSymbol(boolType), innerIfBlock, nullptr);
             }
 
             // Assemble the replacement loops, reusing the do-while loop's body and inserting our
@@ -120,10 +122,14 @@ class DoWhileRewriter : public TIntermTraverser
                 trueConstant->setBConst(true);
                 TIntermTyped *trueValue = new TIntermConstantUnion(trueConstant, boolType);
 
-                TIntermBlock *body = loop->getBody();
-                if (body == nullptr)
+                TIntermAggregate *body = nullptr;
+                if (loop->getBody() != nullptr)
                 {
-                    body = new TIntermBlock();
+                    body = loop->getBody()->getAsAggregate();
+                }
+                else
+                {
+                    body = new TIntermAggregate(EOpSequence);
                 }
                 auto sequence = body->getSequence();
                 sequence->insert(sequence->begin(), assignTrue);
@@ -155,5 +161,3 @@ void RewriteDoWhile(TIntermNode *root, unsigned int *temporaryIndex)
 
     root->traverse(&rewriter);
 }
-
-}  // namespace sh

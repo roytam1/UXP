@@ -32,25 +32,22 @@ namespace d3d11
 // DSVs given a GL internal format.
 struct Format final : angle::NonCopyable
 {
-    constexpr Format();
-    constexpr Format(GLenum internalFormat,
-                     angle::Format::ID formatID,
-                     DXGI_FORMAT texFormat,
-                     DXGI_FORMAT srvFormat,
-                     DXGI_FORMAT rtvFormat,
-                     DXGI_FORMAT dsvFormat,
-                     DXGI_FORMAT blitSRVFormat,
-                     GLenum swizzleFormat,
-                     InitializeTextureDataFunction internalFormatInitializer);
+    Format();
+    Format(GLenum internalFormat,
+           angle::Format::ID formatID,
+           DXGI_FORMAT texFormat,
+           DXGI_FORMAT srvFormat,
+           DXGI_FORMAT rtvFormat,
+           DXGI_FORMAT dsvFormat,
+           DXGI_FORMAT blitSRVFormat,
+           GLenum swizzleFormat,
+           InitializeTextureDataFunction internalFormatInitializer,
+           const Renderer11DeviceCaps &deviceCaps);
 
     static const Format &Get(GLenum internalFormat, const Renderer11DeviceCaps &deviceCaps);
 
-    const Format &getSwizzleFormat(const Renderer11DeviceCaps &deviceCaps) const;
-    LoadFunctionMap getLoadFunctions() const;
-    const angle::Format &format() const;
-
     GLenum internalFormat;
-    angle::Format::ID formatID;
+    const angle::Format &format;
 
     DXGI_FORMAT texFormat;
     DXGI_FORMAT srvFormat;
@@ -59,44 +56,12 @@ struct Format final : angle::NonCopyable
 
     DXGI_FORMAT blitSRVFormat;
 
-    GLenum swizzleFormat;
+    const Format &swizzle;
 
     InitializeTextureDataFunction dataInitializerFunction;
+
+    LoadFunctionMap loadFunctions;
 };
-
-constexpr Format::Format()
-    : internalFormat(GL_NONE),
-      formatID(angle::Format::ID::NONE),
-      texFormat(DXGI_FORMAT_UNKNOWN),
-      srvFormat(DXGI_FORMAT_UNKNOWN),
-      rtvFormat(DXGI_FORMAT_UNKNOWN),
-      dsvFormat(DXGI_FORMAT_UNKNOWN),
-      blitSRVFormat(DXGI_FORMAT_UNKNOWN),
-      swizzleFormat(GL_NONE),
-      dataInitializerFunction(nullptr)
-{
-}
-
-constexpr Format::Format(GLenum internalFormat,
-                         angle::Format::ID formatID,
-                         DXGI_FORMAT texFormat,
-                         DXGI_FORMAT srvFormat,
-                         DXGI_FORMAT rtvFormat,
-                         DXGI_FORMAT dsvFormat,
-                         DXGI_FORMAT blitSRVFormat,
-                         GLenum swizzleFormat,
-                         InitializeTextureDataFunction internalFormatInitializer)
-    : internalFormat(internalFormat),
-      formatID(formatID),
-      texFormat(texFormat),
-      srvFormat(srvFormat),
-      rtvFormat(rtvFormat),
-      dsvFormat(dsvFormat),
-      blitSRVFormat(blitSRVFormat),
-      swizzleFormat(swizzleFormat),
-      dataInitializerFunction(internalFormatInitializer)
-{
-}
 
 }  // namespace d3d11
 

@@ -4,12 +4,11 @@
 // found in the LICENSE file.
 //
 
-#include "compiler/preprocessor/Input.h"
+#include "Input.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cstring>
-
-#include "common/debug.h"
 
 namespace pp
 {
@@ -33,7 +32,7 @@ Input::Input(size_t count, const char *const string[], const int length[]) :
 const char *Input::skipChar()
 {
     // This function should only be called when there is a character to skip.
-    ASSERT(mReadLoc.cIndex < mLength[mReadLoc.sIndex]);
+    assert(mReadLoc.cIndex < mLength[mReadLoc.sIndex]);
     ++mReadLoc.cIndex;
     if (mReadLoc.cIndex == mLength[mReadLoc.sIndex])
     {

@@ -6,9 +6,6 @@
 
 #include "compiler/translator/VersionGLSL.h"
 
-namespace sh
-{
-
 int ShaderOutputTypeToGLSLVersion(ShShaderOutput output)
 {
     switch (output)
@@ -65,22 +62,25 @@ void TVersionGLSL::visitSymbol(TIntermSymbol *node)
     }
 }
 
-bool TVersionGLSL::visitDeclaration(Visit, TIntermDeclaration *node)
-{
-    const TIntermSequence &sequence = *(node->getSequence());
-    if (sequence.front()->getAsTyped()->getType().isInvariant())
-    {
-        ensureVersionIsAtLeast(GLSL_VERSION_120);
-    }
-    return true;
-}
-
 bool TVersionGLSL::visitAggregate(Visit, TIntermAggregate *node)
 {
     bool visitChildren = true;
 
     switch (node->getOp())
     {
+      case EOpSequence:
+        // We need to visit sequence children to get to global or inner scope.
+        visitChildren = true;
+        break;
+      case EOpDeclaration:
+        {
+            const TIntermSequence &sequence = *(node->getSequence());
+            if (sequence.front()->getAsTyped()->getType().isInvariant())
+            {
+                ensureVersionIsAtLeast(GLSL_VERSION_120);
+            }
+            break;
+        }
       case EOpInvariantDeclaration:
         ensureVersionIsAtLeast(GLSL_VERSION_120);
         break;
@@ -138,4 +138,3 @@ void TVersionGLSL::ensureVersionIsAtLeast(int version)
     mVersion = std::max(version, mVersion);
 }
 
-}  // namespace sh

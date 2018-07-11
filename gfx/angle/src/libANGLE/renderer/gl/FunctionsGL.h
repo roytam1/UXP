@@ -36,9 +36,7 @@ class FunctionsGL
     StandardGL standard;
     GLint profile;
     bool isAtLeastGL(const gl::Version &glVersion) const;
-    bool isAtMostGL(const gl::Version &glVersion) const;
     bool isAtLeastGLES(const gl::Version &glesVersion) const;
-    bool isAtMostGLES(const gl::Version &glesVersion) const;
 
     // Extensions
     std::vector<std::string> extensions;

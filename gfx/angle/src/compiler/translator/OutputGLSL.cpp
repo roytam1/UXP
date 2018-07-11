@@ -6,27 +6,20 @@
 
 #include "compiler/translator/OutputGLSL.h"
 
-namespace sh
-{
-
-TOutputGLSL::TOutputGLSL(TInfoSinkBase &objSink,
+TOutputGLSL::TOutputGLSL(TInfoSinkBase& objSink,
                          ShArrayIndexClampingStrategy clampingStrategy,
                          ShHashFunction64 hashFunction,
-                         NameMap &nameMap,
-                         TSymbolTable &symbolTable,
-                         sh::GLenum shaderType,
+                         NameMap& nameMap,
+                         TSymbolTable& symbolTable,
                          int shaderVersion,
-                         ShShaderOutput output,
-                         ShCompileOptions compileOptions)
+                         ShShaderOutput output)
     : TOutputGLSLBase(objSink,
                       clampingStrategy,
                       hashFunction,
                       nameMap,
                       symbolTable,
-                      shaderType,
                       shaderVersion,
-                      output,
-                      compileOptions)
+                      output)
 {
 }
 
@@ -44,11 +37,11 @@ void TOutputGLSL::visitSymbol(TIntermSymbol *node)
     {
         out << "gl_FragDepth";
     }
-    else if (symbol == "gl_FragColor" && sh::IsGLSL130OrNewer(getShaderOutput()))
+    else if (symbol == "gl_FragColor" && IsGLSL130OrNewer(getShaderOutput()))
     {
         out << "webgl_FragColor";
     }
-    else if (symbol == "gl_FragData" && sh::IsGLSL130OrNewer(getShaderOutput()))
+    else if (symbol == "gl_FragData" && IsGLSL130OrNewer(getShaderOutput()))
     {
         out << "webgl_FragData";
     }
@@ -94,8 +87,8 @@ TString TOutputGLSL::translateTextureFunction(TString &name)
         "textureCubeGradEXT", "textureGrad",
         NULL, NULL
     };
-    const char **mapping =
-        (sh::IsGLSL130OrNewer(getShaderOutput())) ? legacyToCoreRename : simpleRename;
+    const char **mapping = (IsGLSL130OrNewer(getShaderOutput())) ?
+        legacyToCoreRename : simpleRename;
 
     for (int i = 0; mapping[i] != NULL; i += 2)
     {
@@ -107,5 +100,3 @@ TString TOutputGLSL::translateTextureFunction(TString &name)
 
     return name;
 }
-
-}  // namespace sh

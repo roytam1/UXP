@@ -50,17 +50,28 @@ void SetGlobalPoolAllocator(TPoolAllocator* poolAllocator)
 // Implement the functionality of the TPoolAllocator class, which
 // is documented in PoolAlloc.h.
 //
-TPoolAllocator::TPoolAllocator(int growthIncrement, int allocationAlignment)
-    : alignment(allocationAlignment),
-#if !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-      pageSize(growthIncrement),
-      freeList(0),
-      inUseList(0),
-      numCalls(0),
-      totalBytes(0),
-#endif
-      mLocked(false)
+TPoolAllocator::TPoolAllocator(int growthIncrement, int allocationAlignment) : 
+    pageSize(growthIncrement),
+    alignment(allocationAlignment),
+    freeList(0),
+    inUseList(0),
+    numCalls(0),
+    totalBytes(0),
+    mLocked(false)
 {
+    //
+    // Don't allow page sizes we know are smaller than all common
+    // OS page sizes.
+    //
+    if (pageSize < 4*1024)
+        pageSize = 4*1024;
+
+    //
+    // A large currentPageOffset indicates a new page needs to
+    // be obtained to allocate memory.
+    //
+    currentPageOffset = pageSize;
+
     //
     // Adjust alignment to be at least pointer aligned and
     // power of 2.
@@ -75,20 +86,6 @@ TPoolAllocator::TPoolAllocator(int growthIncrement, int allocationAlignment)
     alignment = a;
     alignmentMask = a - 1;
 
-#if !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-    //
-    // Don't allow page sizes we know are smaller than all common
-    // OS page sizes.
-    //
-    if (pageSize < 4 * 1024)
-        pageSize = 4 * 1024;
-
-    //
-    // A large currentPageOffset indicates a new page needs to
-    // be obtained to allocate memory.
-    //
-    currentPageOffset = pageSize;
-
     //
     // Align header skip
     //
@@ -96,14 +93,10 @@ TPoolAllocator::TPoolAllocator(int growthIncrement, int allocationAlignment)
     if (headerSkip < sizeof(tHeader)) {
         headerSkip = (sizeof(tHeader) + alignmentMask) & ~alignmentMask;
     }
-#else  // !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-    mStack.push_back({});
-#endif
 }
 
 TPoolAllocator::~TPoolAllocator()
 {
-#if !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
     while (inUseList) {
         tHeader* next = inUseList->nextPage;
         inUseList->~tHeader();
@@ -120,16 +113,6 @@ TPoolAllocator::~TPoolAllocator()
         delete [] reinterpret_cast<char*>(freeList);
         freeList = next;
     }
-#else  // !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-    for (auto &allocs : mStack)
-    {
-        for (auto alloc : allocs)
-        {
-            free(alloc);
-        }
-    }
-    mStack.clear();
-#endif
 }
 
 // Support MSVC++ 6.0
@@ -170,18 +153,14 @@ void TAllocation::checkGuardBlock(unsigned char* blockMem, unsigned char val, co
 
 void TPoolAllocator::push()
 {
-#if !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
     tAllocState state = { currentPageOffset, inUseList };
 
-    mStack.push_back(state);
-
+    stack.push_back(state);
+        
     //
     // Indicate there is no current page to allocate from.
     //
     currentPageOffset = pageSize;
-#else  // !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-    mStack.push_back({});
-#endif
 }
 
 //
@@ -193,12 +172,11 @@ void TPoolAllocator::push()
 //
 void TPoolAllocator::pop()
 {
-    if (mStack.size() < 1)
+    if (stack.size() < 1)
         return;
 
-#if !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-    tHeader *page     = mStack.back().page;
-    currentPageOffset = mStack.back().offset;
+    tHeader* page = stack.back().page;
+    currentPageOffset = stack.back().offset;
 
     while (inUseList != page) {
         // invoke destructor to free allocation list
@@ -214,14 +192,7 @@ void TPoolAllocator::pop()
         inUseList = nextInUse;
     }
 
-    mStack.pop_back();
-#else  // !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-    for (auto &alloc : mStack.back())
-    {
-        free(alloc);
-    }
-    mStack.pop_back();
-#endif
+    stack.pop_back();
 }
 
 //
@@ -230,7 +201,7 @@ void TPoolAllocator::pop()
 //
 void TPoolAllocator::popAll()
 {
-    while (mStack.size() > 0)
+    while (stack.size() > 0)
         pop();
 }
 
@@ -238,7 +209,6 @@ void* TPoolAllocator::allocate(size_t numBytes)
 {
     ASSERT(!mLocked);
 
-#if !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
     //
     // Just keep some interesting statistics.
     //
@@ -315,14 +285,6 @@ void* TPoolAllocator::allocate(size_t numBytes)
     currentPageOffset = (headerSkip + allocationSize + alignmentMask) & ~alignmentMask;
 
     return initializeAllocation(inUseList, ret, numBytes);
-#else  // !defined(ANGLE_TRANSLATOR_DISABLE_POOL_ALLOC)
-    void *alloc = malloc(numBytes + alignmentMask);
-    mStack.back().push_back(alloc);
-
-    intptr_t intAlloc = reinterpret_cast<intptr_t>(alloc);
-    intAlloc          = (intAlloc + alignmentMask) & ~alignmentMask;
-    return reinterpret_cast<void *>(intAlloc);
-#endif
 }
 
 void TPoolAllocator::lock()

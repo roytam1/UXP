@@ -15,43 +15,42 @@
 #include "compiler/translator/IntermNode.h"
 #include "compiler/translator/SymbolTable.h"
 
-namespace sh
-{
-
 namespace
 {
 
-void SetInternalFunctionName(TFunctionSymbolInfo *functionInfo, const char *name)
+void SetInternalFunctionName(TIntermAggregate *functionNode, const char *name)
 {
     TString nameStr(name);
     nameStr = TFunction::mangleName(nameStr);
     TName nameObj(nameStr);
     nameObj.setInternal(true);
-    functionInfo->setNameObj(nameObj);
+    functionNode->setNameObj(nameObj);
 }
 
 TIntermAggregate *CreateFunctionPrototypeNode(const char *name, const int functionId)
 {
     TIntermAggregate *functionNode = new TIntermAggregate(EOpPrototype);
 
-    SetInternalFunctionName(functionNode->getFunctionSymbolInfo(), name);
+    SetInternalFunctionName(functionNode, name);
     TType returnType(EbtVoid);
     functionNode->setType(returnType);
-    functionNode->getFunctionSymbolInfo()->setId(functionId);
+    functionNode->setFunctionId(functionId);
     return functionNode;
 }
 
-TIntermFunctionDefinition *CreateFunctionDefinitionNode(const char *name,
-                                                        TIntermBlock *functionBody,
-                                                        const int functionId)
+TIntermAggregate *CreateFunctionDefinitionNode(const char *name,
+                                               TIntermAggregate *functionBody,
+                                               const int functionId)
 {
-    TType returnType(EbtVoid);
+    TIntermAggregate *functionNode = new TIntermAggregate(EOpFunction);
     TIntermAggregate *paramsNode = new TIntermAggregate(EOpParameters);
-    TIntermFunctionDefinition *functionNode =
-        new TIntermFunctionDefinition(returnType, paramsNode, functionBody);
+    functionNode->getSequence()->push_back(paramsNode);
+    functionNode->getSequence()->push_back(functionBody);
 
-    SetInternalFunctionName(functionNode->getFunctionSymbolInfo(), name);
-    functionNode->getFunctionSymbolInfo()->setId(functionId);
+    SetInternalFunctionName(functionNode, name);
+    TType returnType(EbtVoid);
+    functionNode->setType(returnType);
+    functionNode->setFunctionId(functionId);
     return functionNode;
 }
 
@@ -60,10 +59,10 @@ TIntermAggregate *CreateFunctionCallNode(const char *name, const int functionId)
     TIntermAggregate *functionNode = new TIntermAggregate(EOpFunctionCall);
 
     functionNode->setUserDefined();
-    SetInternalFunctionName(functionNode->getFunctionSymbolInfo(), name);
+    SetInternalFunctionName(functionNode, name);
     TType returnType(EbtVoid);
     functionNode->setType(returnType);
-    functionNode->getFunctionSymbolInfo()->setId(functionId);
+    functionNode->setFunctionId(functionId);
     return functionNode;
 }
 
@@ -74,7 +73,7 @@ class DeferGlobalInitializersTraverser : public TIntermTraverser
 
     bool visitBinary(Visit visit, TIntermBinary *node) override;
 
-    void insertInitFunction(TIntermBlock *root);
+    void insertInitFunction(TIntermNode *root);
 
   private:
     TIntermSequence mDeferredInitializers;
@@ -102,8 +101,10 @@ bool DeferGlobalInitializersTraverser::visitBinary(Visit visit, TIntermBinary *n
             // Deferral is done also in any cases where the variable has not been constant folded,
             // since otherwise there's a chance that HLSL output will generate extra statements
             // from the initializer expression.
-            TIntermBinary *deferredInit =
-                new TIntermBinary(EOpAssign, symbolNode->deepCopy(), node->getRight());
+            TIntermBinary *deferredInit = new TIntermBinary(EOpAssign);
+            deferredInit->setLeft(symbolNode->deepCopy());
+            deferredInit->setRight(node->getRight());
+            deferredInit->setType(node->getType());
             mDeferredInitializers.push_back(deferredInit);
 
             // Change const global to a regular global if its initialization is deferred.
@@ -114,7 +115,7 @@ bool DeferGlobalInitializersTraverser::visitBinary(Visit visit, TIntermBinary *n
             if (symbolNode->getQualifier() == EvqConst)
             {
                 // All of the siblings in the same declaration need to have consistent qualifiers.
-                auto *siblings = getParentNode()->getAsDeclarationNode()->getSequence();
+                auto *siblings = getParentNode()->getAsAggregate()->getSequence();
                 for (TIntermNode *siblingNode : *siblings)
                 {
                     TIntermBinary *siblingBinary = siblingNode->getAsBinaryNode();
@@ -135,51 +136,56 @@ bool DeferGlobalInitializersTraverser::visitBinary(Visit visit, TIntermBinary *n
     return false;
 }
 
-void DeferGlobalInitializersTraverser::insertInitFunction(TIntermBlock *root)
+void DeferGlobalInitializersTraverser::insertInitFunction(TIntermNode *root)
 {
     if (mDeferredInitializers.empty())
     {
         return;
     }
     const int initFunctionId  = TSymbolTable::nextUniqueId();
+    TIntermAggregate *rootAgg = root->getAsAggregate();
+    ASSERT(rootAgg != nullptr && rootAgg->getOp() == EOpSequence);
 
     const char *functionName = "initializeDeferredGlobals";
 
     // Add function prototype to the beginning of the shader
     TIntermAggregate *functionPrototypeNode =
         CreateFunctionPrototypeNode(functionName, initFunctionId);
-    root->getSequence()->insert(root->getSequence()->begin(), functionPrototypeNode);
+    rootAgg->getSequence()->insert(rootAgg->getSequence()->begin(), functionPrototypeNode);
 
     // Add function definition to the end of the shader
-    TIntermBlock *functionBodyNode = new TIntermBlock();
+    TIntermAggregate *functionBodyNode = new TIntermAggregate(EOpSequence);
     TIntermSequence *functionBody = functionBodyNode->getSequence();
     for (const auto &deferredInit : mDeferredInitializers)
     {
         functionBody->push_back(deferredInit);
     }
-    TIntermFunctionDefinition *functionDefinition =
+    TIntermAggregate *functionDefinition =
         CreateFunctionDefinitionNode(functionName, functionBodyNode, initFunctionId);
-    root->getSequence()->push_back(functionDefinition);
+    rootAgg->getSequence()->push_back(functionDefinition);
 
     // Insert call into main function
-    for (TIntermNode *node : *root->getSequence())
+    for (TIntermNode *node : *rootAgg->getSequence())
     {
-        TIntermFunctionDefinition *nodeFunction = node->getAsFunctionDefinition();
-        if (nodeFunction != nullptr && nodeFunction->getFunctionSymbolInfo()->isMain())
+        TIntermAggregate *nodeAgg = node->getAsAggregate();
+        if (nodeAgg != nullptr && nodeAgg->getOp() == EOpFunction &&
+            TFunction::unmangleName(nodeAgg->getName()) == "main")
         {
             TIntermAggregate *functionCallNode =
                 CreateFunctionCallNode(functionName, initFunctionId);
 
-            TIntermBlock *mainBody = nodeFunction->getBody();
-            ASSERT(mainBody != nullptr);
-            mainBody->getSequence()->insert(mainBody->getSequence()->begin(), functionCallNode);
+            TIntermNode *mainBody         = nodeAgg->getSequence()->back();
+            TIntermAggregate *mainBodyAgg = mainBody->getAsAggregate();
+            ASSERT(mainBodyAgg != nullptr && mainBodyAgg->getOp() == EOpSequence);
+            mainBodyAgg->getSequence()->insert(mainBodyAgg->getSequence()->begin(),
+                                               functionCallNode);
         }
     }
 }
 
 }  // namespace
 
-void DeferGlobalInitializers(TIntermBlock *root)
+void DeferGlobalInitializers(TIntermNode *root)
 {
     DeferGlobalInitializersTraverser traverser;
     root->traverse(&traverser);
@@ -190,5 +196,3 @@ void DeferGlobalInitializers(TIntermBlock *root)
     // Add the function with initialization and the call to that.
     traverser.insertInitFunction(root);
 }
-
-}  // namespace sh

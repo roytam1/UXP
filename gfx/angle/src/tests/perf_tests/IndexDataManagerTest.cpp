@@ -11,7 +11,6 @@
 
 #include <gmock/gmock.h>
 
-#include "angle_unittests_utils.h"
 #include "libANGLE/renderer/d3d/BufferD3D.h"
 #include "libANGLE/renderer/d3d/IndexBuffer.h"
 #include "libANGLE/renderer/d3d/IndexDataManager.h"
@@ -76,10 +75,14 @@ class MockBufferFactoryD3D : public rx::BufferFactoryD3D
 class MockBufferD3D : public rx::BufferD3D
 {
   public:
-    MockBufferD3D(rx::BufferFactoryD3D *factory) : BufferD3D(mockState, factory), mData() {}
+    MockBufferD3D(rx::BufferFactoryD3D *factory)
+        : BufferD3D(factory),
+          mData()
+    {
+    }
 
     // BufferImpl
-    gl::Error setData(GLenum target, const void *data, size_t size, GLenum) override
+    gl::Error setData(const void *data, size_t size, GLenum) override
     {
         mData.resize(size);
         if (data && size > 0)
@@ -89,7 +92,7 @@ class MockBufferD3D : public rx::BufferD3D
         return gl::Error(GL_NO_ERROR);
     }
 
-    MOCK_METHOD4(setSubData, gl::Error(GLenum, const void *, size_t, size_t));
+    MOCK_METHOD3(setSubData, gl::Error(const void*, size_t, size_t));
     MOCK_METHOD4(copySubData, gl::Error(BufferImpl*, GLintptr, GLintptr, GLsizeiptr));
     MOCK_METHOD2(map, gl::Error(GLenum, GLvoid **));
     MOCK_METHOD4(mapRange, gl::Error(size_t, size_t, GLbitfield, GLvoid **));
@@ -109,28 +112,7 @@ class MockBufferD3D : public rx::BufferD3D
     }
 
   private:
-    gl::BufferState mockState;
     std::vector<uint8_t> mData;
-};
-
-class MockGLFactoryD3D : public rx::MockGLFactory
-{
-  public:
-    MockGLFactoryD3D(MockBufferFactoryD3D *bufferFactory) : mBufferFactory(bufferFactory) {}
-
-    rx::BufferImpl *createBuffer(const gl::BufferState &state) override
-    {
-        MockBufferD3D *mockBufferD3D = new MockBufferD3D(mBufferFactory);
-
-        EXPECT_CALL(*mBufferFactory, createVertexBuffer())
-            .WillOnce(Return(nullptr))
-            .RetiresOnSaturation();
-        mockBufferD3D->initializeStaticData();
-
-        return mockBufferD3D;
-    }
-
-    MockBufferFactoryD3D *mBufferFactory;
 };
 
 class IndexDataManagerPerfTest : public ANGLEPerfTest
@@ -143,27 +125,34 @@ class IndexDataManagerPerfTest : public ANGLEPerfTest
     rx::IndexDataManager mIndexDataManager;
     GLsizei mIndexCount;
     unsigned int mBufferSize;
-    MockBufferFactoryD3D mMockBufferFactory;
-    MockGLFactoryD3D mMockGLFactory;
+    MockBufferFactoryD3D mMockFactory;
     gl::Buffer mIndexBuffer;
 };
 
+MockBufferD3D *InitMockBufferD3D(MockBufferFactoryD3D *mockFactory)
+{
+    MockBufferD3D *mockBufferD3D = new MockBufferD3D(mockFactory);
+
+    EXPECT_CALL(*mockFactory, createVertexBuffer()).WillOnce(Return(nullptr)).RetiresOnSaturation();
+    mockBufferD3D->initializeStaticData();
+
+    return mockBufferD3D;
+}
+
 IndexDataManagerPerfTest::IndexDataManagerPerfTest()
     : ANGLEPerfTest("IndexDataManger", "_run"),
-      mIndexDataManager(&mMockBufferFactory, rx::RENDERER_D3D11),
+      mIndexDataManager(&mMockFactory, rx::RENDERER_D3D11),
       mIndexCount(4000),
       mBufferSize(mIndexCount * sizeof(GLushort)),
-      mMockBufferFactory(mBufferSize, GL_UNSIGNED_SHORT),
-      mMockGLFactory(&mMockBufferFactory),
-      mIndexBuffer(&mMockGLFactory, 1)
+      mMockFactory(mBufferSize, GL_UNSIGNED_SHORT),
+      mIndexBuffer(InitMockBufferD3D(&mMockFactory), 1)
 {
     std::vector<GLushort> indexData(mIndexCount);
     for (GLsizei index = 0; index < mIndexCount; ++index)
     {
         indexData[index] = static_cast<GLushort>(index);
     }
-    mIndexBuffer.bufferData(GL_ARRAY_BUFFER, &indexData[0], indexData.size() * sizeof(GLushort),
-                            GL_STATIC_DRAW);
+    mIndexBuffer.bufferData(&indexData[0], indexData.size() * sizeof(GLushort), GL_STATIC_DRAW);
 }
 
 void IndexDataManagerPerfTest::step()
@@ -183,4 +172,4 @@ TEST_F(IndexDataManagerPerfTest, Run)
     run();
 }
 
-}  // anonymous namespace
+}

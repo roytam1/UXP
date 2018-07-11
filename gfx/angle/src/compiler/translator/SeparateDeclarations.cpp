@@ -17,9 +17,6 @@
 
 #include "compiler/translator/IntermNode.h"
 
-namespace sh
-{
-
 namespace
 {
 
@@ -29,7 +26,7 @@ class SeparateDeclarationsTraverser : private TIntermTraverser
     static void apply(TIntermNode *root);
   private:
     SeparateDeclarationsTraverser();
-    bool visitDeclaration(Visit, TIntermDeclaration *node) override;
+    bool visitAggregate(Visit, TIntermAggregate *node) override;
 };
 
 void SeparateDeclarationsTraverser::apply(TIntermNode *root)
@@ -44,28 +41,32 @@ SeparateDeclarationsTraverser::SeparateDeclarationsTraverser()
 {
 }
 
-bool SeparateDeclarationsTraverser::visitDeclaration(Visit, TIntermDeclaration *node)
+bool SeparateDeclarationsTraverser::visitAggregate(Visit, TIntermAggregate *node)
 {
-    TIntermSequence *sequence = node->getSequence();
-    if (sequence->size() > 1)
+    if (node->getOp() == EOpDeclaration)
     {
-        TIntermBlock *parentBlock = getParentNode()->getAsBlock();
-        ASSERT(parentBlock != nullptr);
-
-        TIntermSequence replacementDeclarations;
-        for (size_t ii = 0; ii < sequence->size(); ++ii)
+        TIntermSequence *sequence = node->getSequence();
+        if (sequence->size() > 1)
         {
-            TIntermDeclaration *replacementDeclaration = new TIntermDeclaration();
+            TIntermAggregate *parentAgg = getParentNode()->getAsAggregate();
+            ASSERT(parentAgg != nullptr);
 
-            replacementDeclaration->appendDeclarator(sequence->at(ii)->getAsTyped());
-            replacementDeclaration->setLine(sequence->at(ii)->getLine());
-            replacementDeclarations.push_back(replacementDeclaration);
+            TIntermSequence replacementDeclarations;
+            for (size_t ii = 0; ii < sequence->size(); ++ii)
+            {
+                TIntermAggregate *replacementDeclaration = new TIntermAggregate;
+
+                replacementDeclaration->setOp(EOpDeclaration);
+                replacementDeclaration->getSequence()->push_back(sequence->at(ii));
+                replacementDeclaration->setLine(sequence->at(ii)->getLine());
+                replacementDeclarations.push_back(replacementDeclaration);
+            }
+
+            mMultiReplacements.push_back(NodeReplaceWithMultipleEntry(parentAgg, node, replacementDeclarations));
         }
-
-        mMultiReplacements.push_back(
-            NodeReplaceWithMultipleEntry(parentBlock, node, replacementDeclarations));
+        return false;
     }
-    return false;
+    return true;
 }
 
 } // namespace
@@ -74,5 +75,3 @@ void SeparateDeclarations(TIntermNode *root)
 {
     SeparateDeclarationsTraverser::apply(root);
 }
-
-}  // namespace sh

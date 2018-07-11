@@ -49,8 +49,7 @@ SamplerState::SamplerState()
       minLod(-1000.0f),
       maxLod(1000.0f),
       compareMode(GL_NONE),
-      compareFunc(GL_LEQUAL),
-      sRGBDecode(GL_DECODE_EXT)
+      compareFunc(GL_LEQUAL)
 {
 }
 

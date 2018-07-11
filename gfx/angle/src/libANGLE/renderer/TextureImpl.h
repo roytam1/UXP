@@ -16,7 +16,6 @@
 #include "libANGLE/Error.h"
 #include "libANGLE/ImageIndex.h"
 #include "libANGLE/Stream.h"
-#include "libANGLE/Texture.h"
 #include "libANGLE/renderer/FramebufferAttachmentObjectImpl.h"
 
 namespace egl
@@ -73,8 +72,6 @@ class TextureImpl : public FramebufferAttachmentObjectImpl
                                      bool unpackUnmultiplyAlpha,
                                      const gl::Texture *source);
 
-    virtual gl::Error copyCompressedTexture(const gl::Texture *source);
-
     virtual gl::Error setStorage(GLenum target, size_t levels, GLenum internalFormat, const gl::Extents &size) = 0;
 
     virtual gl::Error setEGLImageTarget(GLenum target, egl::Image *image) = 0;
@@ -89,8 +86,6 @@ class TextureImpl : public FramebufferAttachmentObjectImpl
 
     virtual void bindTexImage(egl::Surface *surface) = 0;
     virtual void releaseTexImage() = 0;
-
-    virtual void syncState(const gl::Texture::DirtyBits &dirtyBits) = 0;
 
   protected:
     const gl::TextureState &mState;

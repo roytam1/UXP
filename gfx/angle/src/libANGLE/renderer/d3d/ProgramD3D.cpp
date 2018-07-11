@@ -739,14 +739,14 @@ LinkResult ProgramD3D::load(gl::InfoLog &infoLog, gl::BinaryInputStream *stream)
     if (memcmp(&identifier, &binaryDeviceIdentifier, sizeof(DeviceIdentifier)) != 0)
     {
         infoLog << "Invalid program binary, device configuration has changed.";
-        return false;
+        return LinkResult(false, gl::Error(GL_NO_ERROR));
     }
 
     int compileFlags = stream->readInt<int>();
     if (compileFlags != ANGLE_COMPILE_OPTIMIZATION_LEVEL)
     {
         infoLog << "Mismatched compilation flags.";
-        return false;
+        return LinkResult(false, gl::Error(GL_NO_ERROR));
     }
 
     for (int &index : mAttribLocationToD3DSemantic)
@@ -780,7 +780,7 @@ LinkResult ProgramD3D::load(gl::InfoLog &infoLog, gl::BinaryInputStream *stream)
     if (stream->error())
     {
         infoLog << "Invalid program binary.";
-        return false;
+        return LinkResult(false, gl::Error(GL_NO_ERROR));
     }
 
     const auto &linkedUniforms = mState.getUniforms();
@@ -804,7 +804,7 @@ LinkResult ProgramD3D::load(gl::InfoLog &infoLog, gl::BinaryInputStream *stream)
     if (stream->error())
     {
         infoLog << "Invalid program binary.";
-        return false;
+        return LinkResult(false, gl::Error(GL_NO_ERROR));
     }
 
     ASSERT(mD3DUniformBlocks.empty());
@@ -853,8 +853,6 @@ LinkResult ProgramD3D::load(gl::InfoLog &infoLog, gl::BinaryInputStream *stream)
 
     const unsigned char *binary = reinterpret_cast<const unsigned char *>(stream->data());
 
-    bool separateAttribs = (mState.getTransformFeedbackBufferMode() == GL_SEPARATE_ATTRIBS);
-
     const unsigned int vertexShaderCount = stream->readInt<unsigned int>();
     for (unsigned int vertexShaderIndex = 0; vertexShaderIndex < vertexShaderCount;
          vertexShaderIndex++)
@@ -872,14 +870,18 @@ LinkResult ProgramD3D::load(gl::InfoLog &infoLog, gl::BinaryInputStream *stream)
 
         ShaderExecutableD3D *shaderExecutable = nullptr;
 
-        ANGLE_TRY(mRenderer->loadExecutable(vertexShaderFunction, vertexShaderSize, SHADER_VERTEX,
-                                            mStreamOutVaryings, separateAttribs,
-                                            &shaderExecutable));
+        gl::Error error = mRenderer->loadExecutable(
+            vertexShaderFunction, vertexShaderSize, SHADER_VERTEX, mStreamOutVaryings,
+            (mState.getTransformFeedbackBufferMode() == GL_SEPARATE_ATTRIBS), &shaderExecutable);
+        if (error.isError())
+        {
+            return LinkResult(false, error);
+        }
 
         if (!shaderExecutable)
         {
             infoLog << "Could not create vertex shader.";
-            return false;
+            return LinkResult(false, gl::Error(GL_NO_ERROR));
         }
 
         // generated converted input layout
@@ -907,14 +909,18 @@ LinkResult ProgramD3D::load(gl::InfoLog &infoLog, gl::BinaryInputStream *stream)
         const unsigned char *pixelShaderFunction = binary + stream->offset();
         ShaderExecutableD3D *shaderExecutable    = nullptr;
 
-        ANGLE_TRY(mRenderer->loadExecutable(pixelShaderFunction, pixelShaderSize, SHADER_PIXEL,
-                                            mStreamOutVaryings, separateAttribs,
-                                            &shaderExecutable));
+        gl::Error error = mRenderer->loadExecutable(
+            pixelShaderFunction, pixelShaderSize, SHADER_PIXEL, mStreamOutVaryings,
+            (mState.getTransformFeedbackBufferMode() == GL_SEPARATE_ATTRIBS), &shaderExecutable);
+        if (error.isError())
+        {
+            return LinkResult(false, error);
+        }
 
         if (!shaderExecutable)
         {
             infoLog << "Could not create pixel shader.";
-            return false;
+            return LinkResult(false, gl::Error(GL_NO_ERROR));
         }
 
         // add new binary
@@ -934,22 +940,27 @@ LinkResult ProgramD3D::load(gl::InfoLog &infoLog, gl::BinaryInputStream *stream)
         }
 
         const unsigned char *geometryShaderFunction = binary + stream->offset();
+        bool splitAttribs                           = (mState.getTransformFeedbackBufferMode() == GL_SEPARATE_ATTRIBS);
 
-        ANGLE_TRY(mRenderer->loadExecutable(geometryShaderFunction, geometryShaderSize,
-                                            SHADER_GEOMETRY, mStreamOutVaryings, separateAttribs,
-                                            &mGeometryExecutables[geometryExeIndex]));
+        gl::Error error = mRenderer->loadExecutable(
+            geometryShaderFunction, geometryShaderSize, SHADER_GEOMETRY, mStreamOutVaryings,
+            splitAttribs, &mGeometryExecutables[geometryExeIndex]);
+        if (error.isError())
+        {
+            return LinkResult(false, error);
+        }
 
         if (!mGeometryExecutables[geometryExeIndex])
         {
             infoLog << "Could not create geometry shader.";
-            return false;
+            return LinkResult(false, gl::Error(GL_NO_ERROR));
         }
         stream->skip(geometryShaderSize);
     }
 
     initializeUniformStorage();
 
-    return true;
+    return LinkResult(true, gl::Error(GL_NO_ERROR));
 }
 
 gl::Error ProgramD3D::save(gl::BinaryOutputStream *stream)
@@ -1278,14 +1289,22 @@ LinkResult ProgramD3D::compileProgramExecutables(const gl::ContextState &data, g
 {
     const gl::InputLayout &defaultInputLayout =
         GetDefaultInputLayoutFromShader(mState.getAttachedVertexShader());
-    ShaderExecutableD3D *defaultVertexExecutable = nullptr;
-    ANGLE_TRY(
-        getVertexExecutableForInputLayout(defaultInputLayout, &defaultVertexExecutable, &infoLog));
+    ShaderExecutableD3D *defaultVertexExecutable = NULL;
+    gl::Error error =
+        getVertexExecutableForInputLayout(defaultInputLayout, &defaultVertexExecutable, &infoLog);
+    if (error.isError())
+    {
+        return LinkResult(false, error);
+    }
 
     std::vector<GLenum> defaultPixelOutput      = GetDefaultOutputLayoutFromShader(getPixelShaderKey());
-    ShaderExecutableD3D *defaultPixelExecutable = nullptr;
-    ANGLE_TRY(
-        getPixelExecutableForOutputLayout(defaultPixelOutput, &defaultPixelExecutable, &infoLog));
+    ShaderExecutableD3D *defaultPixelExecutable = NULL;
+    error =
+        getPixelExecutableForOutputLayout(defaultPixelOutput, &defaultPixelExecutable, &infoLog);
+    if (error.isError())
+    {
+        return LinkResult(false, error);
+    }
 
     // Auto-generate the geometry shader here, if we expect to be using point rendering in D3D11.
     ShaderExecutableD3D *pointGS = nullptr;
@@ -1318,8 +1337,9 @@ LinkResult ProgramD3D::compileProgramExecutables(const gl::ContextState &data, g
         fragmentShaderD3D->appendDebugInfo(defaultPixelExecutable->getDebugInfo());
     }
 
-    return (defaultVertexExecutable && defaultPixelExecutable &&
-            (!usesGeometryShader(GL_POINTS) || pointGS));
+    bool linkSuccess = (defaultVertexExecutable && defaultPixelExecutable &&
+                        (!usesGeometryShader(GL_POINTS) || pointGS));
+    return LinkResult(linkSuccess, gl::Error(GL_NO_ERROR));
 }
 
 LinkResult ProgramD3D::link(const gl::ContextState &data, gl::InfoLog &infoLog)
@@ -1343,7 +1363,7 @@ LinkResult ProgramD3D::link(const gl::ContextState &data, gl::InfoLog &infoLog)
         if (fragmentShaderD3D->usesFrontFacing())
         {
             infoLog << "The current renderer doesn't support gl_FrontFacing";
-            return false;
+            return LinkResult(false, gl::Error(GL_NO_ERROR));
         }
     }
 
@@ -1355,7 +1375,7 @@ LinkResult ProgramD3D::link(const gl::ContextState &data, gl::InfoLog &infoLog)
     if (!varyingPacking.packVaryings(infoLog, packedVaryings,
                                      mState.getTransformFeedbackVaryingNames()))
     {
-        return false;
+        return LinkResult(false, gl::Error(GL_NO_ERROR));
     }
 
     ProgramD3DMetadata metadata(mRenderer, vertexShaderD3D, fragmentShaderD3D);
@@ -1366,7 +1386,7 @@ LinkResult ProgramD3D::link(const gl::ContextState &data, gl::InfoLog &infoLog)
     if (static_cast<GLuint>(varyingPacking.getRegisterCount()) > data.getCaps().maxVaryingVectors)
     {
         infoLog << "No varying registers left to support gl_FragCoord/gl_PointCoord";
-        return false;
+        return LinkResult(false, gl::Error(GL_NO_ERROR));
     }
 
     // TODO(jmadill): Implement more sophisticated component packing in D3D9.
@@ -1376,13 +1396,13 @@ LinkResult ProgramD3D::link(const gl::ContextState &data, gl::InfoLog &infoLog)
         varyingPacking.getMaxSemanticIndex() > data.getCaps().maxVaryingVectors)
     {
         infoLog << "Cannot pack these varyings on D3D9.";
-        return false;
+        return LinkResult(false, gl::Error(GL_NO_ERROR));
     }
 
     if (!mDynamicHLSL->generateShaderLinkHLSL(data, mState, metadata, varyingPacking, &mPixelHLSL,
                                               &mVertexHLSL))
     {
-        return false;
+        return LinkResult(false, gl::Error(GL_NO_ERROR));
     }
 
     mUsesPointSize = vertexShaderD3D->usesPointSize();
@@ -1413,12 +1433,7 @@ LinkResult ProgramD3D::link(const gl::ContextState &data, gl::InfoLog &infoLog)
     gatherTransformFeedbackVaryings(varyingPacking);
 
     LinkResult result = compileProgramExecutables(data, infoLog);
-    if (result.isError())
-    {
-        infoLog << result.getError().getMessage();
-        return result;
-    }
-    else if (!result.getResult())
+    if (result.error.isError() || !result.linkSuccess)
     {
         infoLog << "Failed to create D3D shaders.";
         return result;
@@ -1426,7 +1441,7 @@ LinkResult ProgramD3D::link(const gl::ContextState &data, gl::InfoLog &infoLog)
 
     initUniformBlockInfo();
 
-    return true;
+    return LinkResult(true, gl::Error(GL_NO_ERROR));
 }
 
 GLboolean ProgramD3D::validate(const gl::Caps & /*caps*/, gl::InfoLog * /*infoLog*/)

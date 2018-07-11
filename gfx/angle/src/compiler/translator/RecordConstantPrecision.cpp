@@ -18,9 +18,6 @@
 #include "compiler/translator/InfoSink.h"
 #include "compiler/translator/IntermNode.h"
 
-namespace sh
-{
-
 namespace
 {
 
@@ -48,11 +45,6 @@ RecordConstantPrecisionTraverser::RecordConstantPrecisionTraverser()
 
 bool RecordConstantPrecisionTraverser::operandAffectsParentOperationPrecision(TIntermTyped *operand)
 {
-    if (getParentNode()->getAsCaseNode() || getParentNode()->getAsBlock())
-    {
-        return false;
-    }
-
     const TIntermBinary *parentAsBinary = getParentNode()->getAsBinaryNode();
     if (parentAsBinary != nullptr)
     {
@@ -163,5 +155,3 @@ void RecordConstantPrecision(TIntermNode *root, unsigned int *temporaryIndex)
     }
     while (traverser.foundHigherPrecisionConstant());
 }
-
-}  // namespace sh

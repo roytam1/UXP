@@ -559,43 +559,54 @@ void CollectVariables::visitInfoList(const TIntermSequence &sequence,
     }
 }
 
-bool CollectVariables::visitDeclaration(Visit, TIntermDeclaration *node)
+bool CollectVariables::visitAggregate(Visit, TIntermAggregate *node)
 {
-    const TIntermSequence &sequence = *(node->getSequence());
-    ASSERT(!sequence.empty());
+    bool visitChildren = true;
 
-    const TIntermTyped &typedNode = *(sequence.front()->getAsTyped());
-    TQualifier qualifier          = typedNode.getQualifier();
-
-    if (typedNode.getBasicType() == EbtInterfaceBlock)
+    switch (node->getOp())
     {
-        visitInfoList(sequence, mInterfaceBlocks);
-        return false;
-    }
-    else if (qualifier == EvqAttribute || qualifier == EvqVertexIn || qualifier == EvqFragmentOut ||
-             qualifier == EvqUniform || IsVarying(qualifier))
-    {
-        switch (qualifier)
+      case EOpDeclaration:
         {
-            case EvqAttribute:
-            case EvqVertexIn:
-                visitInfoList(sequence, mAttribs);
-                break;
-            case EvqFragmentOut:
-                visitInfoList(sequence, mOutputVariables);
-                break;
-            case EvqUniform:
-                visitInfoList(sequence, mUniforms);
-                break;
-            default:
-                visitInfoList(sequence, mVaryings);
-                break;
-        }
+            const TIntermSequence &sequence = *(node->getSequence());
+            ASSERT(!sequence.empty());
 
-        return false;
+            const TIntermTyped &typedNode = *(sequence.front()->getAsTyped());
+            TQualifier qualifier = typedNode.getQualifier();
+
+            if (typedNode.getBasicType() == EbtInterfaceBlock)
+            {
+                visitInfoList(sequence, mInterfaceBlocks);
+                visitChildren = false;
+            }
+            else if (qualifier == EvqAttribute || qualifier == EvqVertexIn ||
+                     qualifier == EvqFragmentOut || qualifier == EvqUniform ||
+                     IsVarying(qualifier))
+            {
+                switch (qualifier)
+                {
+                  case EvqAttribute:
+                  case EvqVertexIn:
+                    visitInfoList(sequence, mAttribs);
+                    break;
+                  case EvqFragmentOut:
+                    visitInfoList(sequence, mOutputVariables);
+                    break;
+                  case EvqUniform:
+                    visitInfoList(sequence, mUniforms);
+                    break;
+                  default:
+                    visitInfoList(sequence, mVaryings);
+                    break;
+                }
+
+                visitChildren = false;
+            }
+            break;
+        }
+      default: break;
     }
 
-    return true;
+    return visitChildren;
 }
 
 bool CollectVariables::visitBinary(Visit, TIntermBinary *binaryNode)

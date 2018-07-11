@@ -10,9 +10,6 @@
 #include "compiler/translator/ParseContext.h"
 #include "angle_gl.h"
 
-namespace sh
-{
-
 namespace
 {
 
@@ -216,8 +213,8 @@ int ValidateLimitations::validateForLoopInit(TIntermLoop *node)
     // init-declaration has the form:
     //     type-specifier identifier = constant-expression
     //
-    TIntermDeclaration *decl = init->getAsDeclarationNode();
-    if (decl == nullptr)
+    TIntermAggregate *decl = init->getAsAggregate();
+    if ((decl == NULL) || (decl->getOp() != EOpDeclaration))
     {
         error(init->getLine(), "Invalid init declaration", "for");
         return -1;
@@ -426,8 +423,7 @@ bool ValidateLimitations::validateFunctionCall(TIntermAggregate *node)
 
     bool valid = true;
     TSymbolTable& symbolTable = GetGlobalParseContext()->symbolTable;
-    TSymbol *symbol           = symbolTable.find(node->getFunctionSymbolInfo()->getName(),
-                                       GetGlobalParseContext()->getShaderVersion());
+    TSymbol* symbol = symbolTable.find(node->getName(), GetGlobalParseContext()->getShaderVersion());
     ASSERT(symbol && symbol->isFunction());
     TFunction *function = static_cast<TFunction *>(symbol);
     for (ParamIndex::const_iterator i = pIndex.begin();
@@ -499,4 +495,3 @@ bool ValidateLimitations::validateIndexing(TIntermBinary *node)
     return valid;
 }
 
-}  // namespace sh

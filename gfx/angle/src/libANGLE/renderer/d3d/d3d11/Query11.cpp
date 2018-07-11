@@ -96,11 +96,17 @@ template <typename T>
 gl::Error Query11::getResultBase(T *params)
 {
     ASSERT(mActiveQuery->query == nullptr);
-    ANGLE_TRY(flush(true));
+
+    gl::Error error = flush(true);
+    if (error.isError())
+    {
+        return error;
+    }
+
     ASSERT(mPendingQueries.empty());
     *params = static_cast<T>(mResultSum);
 
-    return gl::NoError();
+    return gl::Error(GL_NO_ERROR);
 }
 
 gl::Error Query11::getResult(GLint *params)
@@ -125,10 +131,14 @@ gl::Error Query11::getResult(GLuint64 *params)
 
 gl::Error Query11::isResultAvailable(bool *available)
 {
-    ANGLE_TRY(flush(false));
+    gl::Error error = flush(false);
+    if (error.isError())
+    {
+        return error;
+    }
 
     *available = mPendingQueries.empty();
-    return gl::NoError();
+    return gl::Error(GL_NO_ERROR);
 }
 
 gl::Error Query11::pause()
@@ -157,7 +167,11 @@ gl::Error Query11::resume()
 {
     if (mActiveQuery->query == nullptr)
     {
-        ANGLE_TRY(flush(false));
+        gl::Error error = flush(false);
+        if (error.isError())
+        {
+            return error;
+        }
 
         GLenum queryType         = getType();
         D3D11_QUERY d3dQueryType = gl_d3d11::ConvertQueryType(queryType);
@@ -181,7 +195,7 @@ gl::Error Query11::resume()
             D3D11_QUERY_DESC desc;
             desc.Query     = D3D11_QUERY_TIMESTAMP;
             desc.MiscFlags = 0;
-            result         = device->CreateQuery(&desc, &mActiveQuery->beginTimestamp);
+            result = device->CreateQuery(&desc, &mActiveQuery->beginTimestamp);
             if (FAILED(result))
             {
                 return gl::Error(GL_OUT_OF_MEMORY, "Internal query creation failed, result: 0x%X.",
@@ -220,7 +234,11 @@ gl::Error Query11::flush(bool force)
 
         do
         {
-            ANGLE_TRY(testQuery(query));
+            gl::Error error = testQuery(query);
+            if (error.isError())
+            {
+                return error;
+            }
             if (!query->finished && !force)
             {
                 return gl::Error(GL_NO_ERROR);
@@ -231,7 +249,7 @@ gl::Error Query11::flush(bool force)
         mPendingQueries.pop_front();
     }
 
-    return gl::NoError();
+    return gl::Error(GL_NO_ERROR);
 }
 
 gl::Error Query11::testQuery(QueryState *queryState)
@@ -241,8 +259,8 @@ gl::Error Query11::testQuery(QueryState *queryState)
         ID3D11DeviceContext *context = mRenderer->getDeviceContext();
         switch (getType())
         {
-            case GL_ANY_SAMPLES_PASSED_EXT:
-            case GL_ANY_SAMPLES_PASSED_CONSERVATIVE_EXT:
+          case GL_ANY_SAMPLES_PASSED_EXT:
+          case GL_ANY_SAMPLES_PASSED_CONSERVATIVE_EXT:
             {
                 ASSERT(queryState->query);
                 UINT64 numPixels = 0;
@@ -250,35 +268,31 @@ gl::Error Query11::testQuery(QueryState *queryState)
                     context->GetData(queryState->query, &numPixels, sizeof(numPixels), 0);
                 if (FAILED(result))
                 {
-                    return gl::Error(GL_OUT_OF_MEMORY,
-                                     "Failed to get the data of an internal query, result: 0x%X.",
-                                     result);
+                    return gl::Error(GL_OUT_OF_MEMORY, "Failed to get the data of an internal query, result: 0x%X.", result);
                 }
 
                 if (result == S_OK)
                 {
                     queryState->finished = true;
-                    mResult              = (numPixels > 0) ? GL_TRUE : GL_FALSE;
+                    mResult = (numPixels > 0) ? GL_TRUE : GL_FALSE;
                 }
             }
             break;
 
-            case GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN:
+          case GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN:
             {
                 ASSERT(queryState->query);
-                D3D11_QUERY_DATA_SO_STATISTICS soStats = {0};
+                D3D11_QUERY_DATA_SO_STATISTICS soStats = { 0 };
                 HRESULT result = context->GetData(queryState->query, &soStats, sizeof(soStats), 0);
                 if (FAILED(result))
                 {
-                    return gl::Error(GL_OUT_OF_MEMORY,
-                                     "Failed to get the data of an internal query, result: 0x%X.",
-                                     result);
+                    return gl::Error(GL_OUT_OF_MEMORY, "Failed to get the data of an internal query, result: 0x%X.", result);
                 }
 
                 if (result == S_OK)
                 {
                     queryState->finished = true;
-                    mResult              = static_cast<GLuint64>(soStats.NumPrimitivesWritten);
+                    mResult        = static_cast<GLuint64>(soStats.NumPrimitivesWritten);
                 }
             }
             break;
@@ -355,7 +369,7 @@ gl::Error Query11::testQuery(QueryState *queryState)
                 // to have any sort of continuity outside of a disjoint timestamp query block, which
                 // GL depends on
                 ASSERT(queryState->query == nullptr);
-                mResult              = 0;
+                mResult = 0;
                 queryState->finished = true;
             }
             break;
@@ -382,9 +396,9 @@ gl::Error Query11::testQuery(QueryState *queryState)
             }
             break;
 
-            default:
-                UNREACHABLE();
-                break;
+        default:
+            UNREACHABLE();
+            break;
         }
 
         if (!queryState->finished && mRenderer->testDeviceLost())
@@ -394,7 +408,7 @@ gl::Error Query11::testQuery(QueryState *queryState)
         }
     }
 
-    return gl::NoError();
+    return gl::Error(GL_NO_ERROR);
 }
 
-}  // namespace rx
+}

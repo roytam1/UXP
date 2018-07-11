@@ -4,7 +4,7 @@
 // found in the LICENSE file.
 //
 
-#include "compiler/preprocessor/Lexer.h"
+#include "Lexer.h"
 
 namespace pp
 {

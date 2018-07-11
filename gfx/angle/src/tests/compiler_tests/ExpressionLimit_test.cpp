@@ -32,7 +32,7 @@ protected:
     // Set up the per compile resources
     static void GenerateResources(ShBuiltInResources *res)
     {
-        sh::InitBuiltInResources(res);
+        ShInitBuiltInResources(res);
 
         res->MaxVertexAttribs             = 8;
         res->MaxVertexUniformVectors      = 128;
@@ -176,17 +176,17 @@ protected:
     // to the issue we are testing.
     bool CheckShaderCompilation(ShHandle compiler,
                                 const char *source,
-                                ShCompileOptions compileOptions,
+                                int compileOptions,
                                 const char *expected_error)
     {
-                bool success = sh::Compile(compiler, &source, 1, compileOptions) != 0;
-                if (success)
-                {
-                    success = !expected_error;
+        bool success = ShCompile(compiler, &source, 1, compileOptions) != 0;
+        if (success)
+        {
+            success = !expected_error;
         }
         else
         {
-            std::string log = sh::GetInfoLog(compiler);
+            std::string log = ShGetInfoLog(compiler);
             if (expected_error)
                 success = log.find(expected_error) != std::string::npos;
 
@@ -211,8 +211,9 @@ TEST_F(ExpressionLimitTest, ExpressionComplexity)
 {
     ShShaderSpec spec = SH_WEBGL_SPEC;
     ShShaderOutput output = SH_ESSL_OUTPUT;
-    ShHandle vertexCompiler = sh::ConstructCompiler(GL_FRAGMENT_SHADER, spec, output, &resources);
-    ShCompileOptions compileOptions = SH_LIMIT_EXPRESSION_COMPLEXITY;
+    ShHandle vertexCompiler = ShConstructCompiler(
+        GL_FRAGMENT_SHADER, spec, output, &resources);
+    int compileOptions = SH_LIMIT_EXPRESSION_COMPLEXITY;
 
     // Test expression under the limit passes.
     EXPECT_TRUE(CheckShaderCompilation(
@@ -232,15 +233,16 @@ TEST_F(ExpressionLimitTest, ExpressionComplexity)
         GenerateShaderWithLongExpression(
             kMaxExpressionComplexity + 10).c_str(),
         compileOptions & ~SH_LIMIT_EXPRESSION_COMPLEXITY, NULL));
-    sh::Destruct(vertexCompiler);
+    ShDestruct(vertexCompiler);
 }
 
 TEST_F(ExpressionLimitTest, UnusedExpressionComplexity)
 {
     ShShaderSpec spec = SH_WEBGL_SPEC;
     ShShaderOutput output = SH_ESSL_OUTPUT;
-    ShHandle vertexCompiler = sh::ConstructCompiler(GL_FRAGMENT_SHADER, spec, output, &resources);
-    ShCompileOptions compileOptions = SH_LIMIT_EXPRESSION_COMPLEXITY;
+    ShHandle vertexCompiler = ShConstructCompiler(
+        GL_FRAGMENT_SHADER, spec, output, &resources);
+    int compileOptions = SH_LIMIT_EXPRESSION_COMPLEXITY;
 
     // Test expression under the limit passes.
     EXPECT_TRUE(CheckShaderCompilation(
@@ -260,15 +262,16 @@ TEST_F(ExpressionLimitTest, UnusedExpressionComplexity)
         GenerateShaderWithUnusedLongExpression(
             kMaxExpressionComplexity + 10).c_str(),
         compileOptions & ~SH_LIMIT_EXPRESSION_COMPLEXITY, NULL));
-    sh::Destruct(vertexCompiler);
+    ShDestruct(vertexCompiler);
 }
 
 TEST_F(ExpressionLimitTest, CallStackDepth)
 {
     ShShaderSpec spec = SH_WEBGL_SPEC;
     ShShaderOutput output = SH_ESSL_OUTPUT;
-    ShHandle vertexCompiler = sh::ConstructCompiler(GL_FRAGMENT_SHADER, spec, output, &resources);
-    ShCompileOptions compileOptions = SH_LIMIT_CALL_STACK_DEPTH;
+    ShHandle vertexCompiler = ShConstructCompiler(
+        GL_FRAGMENT_SHADER, spec, output, &resources);
+    int compileOptions = SH_LIMIT_CALL_STACK_DEPTH;
 
     // Test call stack under the limit passes.
     EXPECT_TRUE(CheckShaderCompilation(
@@ -288,15 +291,16 @@ TEST_F(ExpressionLimitTest, CallStackDepth)
         GenerateShaderWithDeepFunctionStack(
             kMaxCallStackDepth + 10).c_str(),
         compileOptions & ~SH_LIMIT_CALL_STACK_DEPTH, NULL));
-    sh::Destruct(vertexCompiler);
+    ShDestruct(vertexCompiler);
 }
 
 TEST_F(ExpressionLimitTest, UnusedCallStackDepth)
 {
     ShShaderSpec spec = SH_WEBGL_SPEC;
     ShShaderOutput output = SH_ESSL_OUTPUT;
-    ShHandle vertexCompiler = sh::ConstructCompiler(GL_FRAGMENT_SHADER, spec, output, &resources);
-    ShCompileOptions compileOptions = SH_LIMIT_CALL_STACK_DEPTH;
+    ShHandle vertexCompiler = ShConstructCompiler(
+        GL_FRAGMENT_SHADER, spec, output, &resources);
+    int compileOptions = SH_LIMIT_CALL_STACK_DEPTH;
 
     // Test call stack under the limit passes.
     EXPECT_TRUE(CheckShaderCompilation(
@@ -316,15 +320,16 @@ TEST_F(ExpressionLimitTest, UnusedCallStackDepth)
         GenerateShaderWithUnusedDeepFunctionStack(
             kMaxCallStackDepth + 10).c_str(),
         compileOptions & ~SH_LIMIT_CALL_STACK_DEPTH, NULL));
-    sh::Destruct(vertexCompiler);
+    ShDestruct(vertexCompiler);
 }
 
 TEST_F(ExpressionLimitTest, Recursion)
 {
     ShShaderSpec spec = SH_WEBGL_SPEC;
     ShShaderOutput output = SH_ESSL_OUTPUT;
-    ShHandle vertexCompiler = sh::ConstructCompiler(GL_FRAGMENT_SHADER, spec, output, &resources);
-    ShCompileOptions compileOptions = 0;
+    ShHandle vertexCompiler = ShConstructCompiler(
+        GL_FRAGMENT_SHADER, spec, output, &resources);
+    int compileOptions = 0;
 
     static const char* shaderWithRecursion0 = SHADER(
         precision mediump float;
@@ -531,15 +536,15 @@ TEST_F(ExpressionLimitTest, Recursion)
     EXPECT_TRUE(CheckShaderCompilation(
         vertexCompiler, shaderWithNoRecursion,
         compileOptions | SH_LIMIT_CALL_STACK_DEPTH, NULL));
-    sh::Destruct(vertexCompiler);
+    ShDestruct(vertexCompiler);
 }
 
 TEST_F(ExpressionLimitTest, FunctionParameterCount)
 {
     ShShaderSpec spec     = SH_WEBGL_SPEC;
     ShShaderOutput output = SH_ESSL_OUTPUT;
-    ShHandle compiler     = sh::ConstructCompiler(GL_FRAGMENT_SHADER, spec, output, &resources);
-    ShCompileOptions compileOptions = SH_LIMIT_EXPRESSION_COMPLEXITY;
+    ShHandle compiler     = ShConstructCompiler(GL_FRAGMENT_SHADER, spec, output, &resources);
+    int compileOptions    = SH_LIMIT_EXPRESSION_COMPLEXITY;
 
     // Test parameters under the limit succeeds.
     EXPECT_TRUE(CheckShaderCompilation(
@@ -553,5 +558,5 @@ TEST_F(ExpressionLimitTest, FunctionParameterCount)
     EXPECT_TRUE(CheckShaderCompilation(
         compiler, GenerateShaderWithFunctionParameters(kMaxFunctionParameters + 1).c_str(),
         compileOptions & ~SH_LIMIT_EXPRESSION_COMPLEXITY, nullptr));
-    sh::Destruct(compiler);
+    ShDestruct(compiler);
 }

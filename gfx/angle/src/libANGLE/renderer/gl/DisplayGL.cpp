@@ -22,7 +22,8 @@
 namespace rx
 {
 
-DisplayGL::DisplayGL() : mRenderer(nullptr), mCurrentDrawSurface(nullptr)
+DisplayGL::DisplayGL()
+    : mRenderer(nullptr)
 {
 }
 
@@ -72,13 +73,6 @@ StreamProducerImpl *DisplayGL::createStreamProducerD3DTextureNV12(
 
 egl::Error DisplayGL::makeCurrent(egl::Surface *drawSurface, egl::Surface *readSurface, gl::Context *context)
 {
-    // Notify the previous surface (if it still exists) that it is no longer current
-    if (mCurrentDrawSurface && mSurfaceSet.find(mCurrentDrawSurface) != mSurfaceSet.end())
-    {
-        ANGLE_TRY(GetImplAs<SurfaceGL>(mCurrentDrawSurface)->unMakeCurrent());
-    }
-    mCurrentDrawSurface = nullptr;
-
     if (!drawSurface)
     {
         return egl::Error(EGL_SUCCESS);
@@ -89,10 +83,7 @@ egl::Error DisplayGL::makeCurrent(egl::Surface *drawSurface, egl::Surface *readS
     glContext->getStateManager()->pauseTransformFeedback(context->getContextState());
 
     SurfaceGL *glDrawSurface = GetImplAs<SurfaceGL>(drawSurface);
-    ANGLE_TRY(glDrawSurface->makeCurrent());
-    mCurrentDrawSurface = drawSurface;
-
-    return egl::Error(EGL_SUCCESS);
+    return glDrawSurface->makeCurrent();
 }
 
 gl::Version DisplayGL::getMaxSupportedESVersion() const

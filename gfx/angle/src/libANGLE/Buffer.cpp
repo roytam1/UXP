@@ -10,95 +10,99 @@
 
 #include "libANGLE/Buffer.h"
 #include "libANGLE/renderer/BufferImpl.h"
-#include "libANGLE/renderer/GLImplFactory.h"
 
 namespace gl
 {
 
-BufferState::BufferState()
-    : mLabel(),
+Buffer::Buffer(rx::BufferImpl *impl, GLuint id)
+    : RefCountObject(id),
+      mBuffer(impl),
+      mLabel(),
       mUsage(GL_STATIC_DRAW),
       mSize(0),
       mAccessFlags(0),
       mAccess(GL_WRITE_ONLY_OES),
       mMapped(GL_FALSE),
-      mMapPointer(nullptr),
+      mMapPointer(NULL),
       mMapOffset(0),
       mMapLength(0)
 {
 }
 
-BufferState::~BufferState()
-{
-}
-
-Buffer::Buffer(rx::GLImplFactory *factory, GLuint id)
-    : RefCountObject(id), mImpl(factory->createBuffer(mState))
-{
-}
-
 Buffer::~Buffer()
 {
-    SafeDelete(mImpl);
+    SafeDelete(mBuffer);
 }
 
 void Buffer::setLabel(const std::string &label)
 {
-    mState.mLabel = label;
+    mLabel = label;
 }
 
 const std::string &Buffer::getLabel() const
 {
-    return mState.mLabel;
+    return mLabel;
 }
 
-Error Buffer::bufferData(GLenum target, const void *data, GLsizeiptr size, GLenum usage)
+Error Buffer::bufferData(const void *data, GLsizeiptr size, GLenum usage)
 {
-    ANGLE_TRY(mImpl->setData(target, data, size, usage));
+    gl::Error error = mBuffer->setData(data, size, usage);
+    if (error.isError())
+    {
+        return error;
+    }
 
     mIndexRangeCache.clear();
-    mState.mUsage = usage;
-    mState.mSize  = size;
+    mUsage = usage;
+    mSize = size;
 
-    return NoError();
+    return error;
 }
 
-Error Buffer::bufferSubData(GLenum target, const void *data, GLsizeiptr size, GLintptr offset)
+Error Buffer::bufferSubData(const void *data, GLsizeiptr size, GLintptr offset)
 {
-    ANGLE_TRY(mImpl->setSubData(target, data, size, offset));
+    gl::Error error = mBuffer->setSubData(data, size, offset);
+    if (error.isError())
+    {
+        return error;
+    }
 
     mIndexRangeCache.invalidateRange(static_cast<unsigned int>(offset), static_cast<unsigned int>(size));
 
-    return NoError();
+    return error;
 }
 
 Error Buffer::copyBufferSubData(Buffer* source, GLintptr sourceOffset, GLintptr destOffset, GLsizeiptr size)
 {
-    ANGLE_TRY(mImpl->copySubData(source->getImplementation(), sourceOffset, destOffset, size));
+    gl::Error error = mBuffer->copySubData(source->getImplementation(), sourceOffset, destOffset, size);
+    if (error.isError())
+    {
+        return error;
+    }
 
     mIndexRangeCache.invalidateRange(static_cast<unsigned int>(destOffset), static_cast<unsigned int>(size));
 
-    return NoError();
+    return error;
 }
 
 Error Buffer::map(GLenum access)
 {
-    ASSERT(!mState.mMapped);
+    ASSERT(!mMapped);
 
-    Error error = mImpl->map(access, &mState.mMapPointer);
+    Error error = mBuffer->map(access, &mMapPointer);
     if (error.isError())
     {
-        mState.mMapPointer = nullptr;
+        mMapPointer = NULL;
         return error;
     }
 
     ASSERT(access == GL_WRITE_ONLY_OES);
 
-    mState.mMapped      = GL_TRUE;
-    mState.mMapOffset   = 0;
-    mState.mMapLength   = mState.mSize;
-    mState.mAccess      = access;
-    mState.mAccessFlags = GL_MAP_WRITE_BIT;
+    mMapped = GL_TRUE;
+    mMapOffset = 0;
+    mMapLength = mSize;
+    mAccess = access;
+    mAccessFlags = GL_MAP_WRITE_BIT;
     mIndexRangeCache.clear();
 
     return error;
@@ -106,21 +110,21 @@ Error Buffer::map(GLenum access)
 
 Error Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access)
 {
-    ASSERT(!mState.mMapped);
-    ASSERT(offset + length <= mState.mSize);
+    ASSERT(!mMapped);
+    ASSERT(offset + length <= mSize);
 
-    Error error = mImpl->mapRange(offset, length, access, &mState.mMapPointer);
+    Error error = mBuffer->mapRange(offset, length, access, &mMapPointer);
     if (error.isError())
     {
-        mState.mMapPointer = nullptr;
+        mMapPointer = NULL;
         return error;
     }
 
-    mState.mMapped      = GL_TRUE;
-    mState.mMapOffset   = static_cast<GLint64>(offset);
-    mState.mMapLength   = static_cast<GLint64>(length);
-    mState.mAccess      = GL_WRITE_ONLY_OES;
-    mState.mAccessFlags = access;
+    mMapped = GL_TRUE;
+    mMapOffset = static_cast<GLint64>(offset);
+    mMapLength = static_cast<GLint64>(length);
+    mAccess = GL_WRITE_ONLY_OES;
+    mAccessFlags = access;
 
     // The OES_mapbuffer extension states that GL_WRITE_ONLY_OES is the only valid
     // value for GL_BUFFER_ACCESS_OES because it was written against ES2.  Since there is
@@ -137,21 +141,21 @@ Error Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access)
 
 Error Buffer::unmap(GLboolean *result)
 {
-    ASSERT(mState.mMapped);
+    ASSERT(mMapped);
 
-    Error error = mImpl->unmap(result);
+    Error error = mBuffer->unmap(result);
     if (error.isError())
     {
         *result = GL_FALSE;
         return error;
     }
 
-    mState.mMapped      = GL_FALSE;
-    mState.mMapPointer  = nullptr;
-    mState.mMapOffset   = 0;
-    mState.mMapLength   = 0;
-    mState.mAccess      = GL_WRITE_ONLY_OES;
-    mState.mAccessFlags = 0;
+    mMapped = GL_FALSE;
+    mMapPointer = NULL;
+    mMapOffset = 0;
+    mMapLength = 0;
+    mAccess = GL_WRITE_ONLY_OES;
+    mAccessFlags = 0;
 
     return error;
 }
@@ -174,14 +178,18 @@ Error Buffer::getIndexRange(GLenum type,
 {
     if (mIndexRangeCache.findRange(type, offset, count, primitiveRestartEnabled, outRange))
     {
-        return NoError();
+        return gl::Error(GL_NO_ERROR);
     }
 
-    ANGLE_TRY(mImpl->getIndexRange(type, offset, count, primitiveRestartEnabled, outRange));
+    Error error = mBuffer->getIndexRange(type, offset, count, primitiveRestartEnabled, outRange);
+    if (error.isError())
+    {
+        return error;
+    }
 
     mIndexRangeCache.addRange(type, offset, count, primitiveRestartEnabled, *outRange);
 
-    return NoError();
+    return Error(GL_NO_ERROR);
 }
 
 }  // namespace gl

@@ -62,8 +62,7 @@ ProgramImpl *ContextGL::createProgram(const gl::ProgramState &data)
 
 FramebufferImpl *ContextGL::createFramebuffer(const gl::FramebufferState &data)
 {
-    return new FramebufferGL(data, getFunctions(), getStateManager(), getWorkaroundsGL(),
-                             mRenderer->getBlitter(), false);
+    return new FramebufferGL(data, getFunctions(), getStateManager(), getWorkaroundsGL(), false);
 }
 
 TextureImpl *ContextGL::createTexture(const gl::TextureState &state)
@@ -78,9 +77,9 @@ RenderbufferImpl *ContextGL::createRenderbuffer()
                               getNativeTextureCaps());
 }
 
-BufferImpl *ContextGL::createBuffer(const gl::BufferState &state)
+BufferImpl *ContextGL::createBuffer()
 {
-    return new BufferGL(state, getFunctions(), getStateManager());
+    return new BufferGL(getFunctions(), getStateManager());
 }
 
 VertexArrayImpl *ContextGL::createVertexArray(const gl::VertexArrayState &data)

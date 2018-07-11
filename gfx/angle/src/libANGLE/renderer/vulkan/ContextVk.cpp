@@ -211,9 +211,9 @@ RenderbufferImpl *ContextVk::createRenderbuffer()
     return new RenderbufferVk();
 }
 
-BufferImpl *ContextVk::createBuffer(const gl::BufferState &state)
+BufferImpl *ContextVk::createBuffer()
 {
-    return new BufferVk(state);
+    return new BufferVk();
 }
 
 VertexArrayImpl *ContextVk::createVertexArray(const gl::VertexArrayState &state)

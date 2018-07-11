@@ -192,46 +192,64 @@ struct SamplerState
 
     GLenum compareMode;
     GLenum compareFunc;
-
-    GLenum sRGBDecode;
 };
 
 bool operator==(const SamplerState &a, const SamplerState &b);
 bool operator!=(const SamplerState &a, const SamplerState &b);
 
-struct PixelStoreStateBase
+struct PixelUnpackState
 {
     BindingPointer<Buffer> pixelBuffer;
-    GLint alignment   = 4;
-    GLint rowLength   = 0;
-    GLint skipRows    = 0;
-    GLint skipPixels  = 0;
-    GLint imageHeight = 0;
-    GLint skipImages  = 0;
-};
+    GLint alignment;
+    GLint rowLength;
+    GLint skipRows;
+    GLint skipPixels;
+    GLint imageHeight;
+    GLint skipImages;
 
-struct PixelUnpackState : PixelStoreStateBase
-{
-    PixelUnpackState() {}
+    PixelUnpackState()
+        : alignment(4),
+          rowLength(0),
+          skipRows(0),
+          skipPixels(0),
+          imageHeight(0),
+          skipImages(0)
+    {}
 
     PixelUnpackState(GLint alignmentIn, GLint rowLengthIn)
-    {
-        alignment = alignmentIn;
-        rowLength = rowLengthIn;
-    }
+        : alignment(alignmentIn),
+          rowLength(rowLengthIn),
+          skipRows(0),
+          skipPixels(0),
+          imageHeight(0),
+          skipImages(0)
+    {}
 };
 
-struct PixelPackState : PixelStoreStateBase
+struct PixelPackState
 {
-    PixelPackState() {}
+    BindingPointer<Buffer> pixelBuffer;
+    GLint alignment;
+    bool reverseRowOrder;
+    GLint rowLength;
+    GLint skipRows;
+    GLint skipPixels;
 
-    PixelPackState(GLint alignmentIn, bool reverseRowOrderIn)
-        : reverseRowOrder(reverseRowOrderIn)
-    {
-        alignment = alignmentIn;
-    }
+    PixelPackState()
+        : alignment(4),
+          reverseRowOrder(false),
+          rowLength(0),
+          skipRows(0),
+          skipPixels(0)
+    {}
 
-    bool reverseRowOrder = false;
+    explicit PixelPackState(GLint alignmentIn, bool reverseRowOrderIn)
+        : alignment(alignmentIn),
+          reverseRowOrder(reverseRowOrderIn),
+          rowLength(0),
+          skipRows(0),
+          skipPixels(0)
+    {}
 };
 
 // Used in Program and VertexArray.
@@ -248,6 +266,17 @@ using ResourceMap = std::unordered_map<GLuint, ResourceT *>;
 
 namespace rx
 {
+enum VendorID : uint32_t
+{
+    VENDOR_ID_UNKNOWN  = 0x0,
+    VENDOR_ID_AMD      = 0x1002,
+    VENDOR_ID_INTEL    = 0x8086,
+    VENDOR_ID_NVIDIA   = 0x10DE,
+    // This is Qualcomm PCI Vendor ID.
+    // Android doesn't have a PCI bus, but all we need is a unique id.
+    VENDOR_ID_QUALCOMM = 0x5143,
+};
+
 // A macro that determines whether an object has a given runtime type.
 #if defined(__clang__)
 #if __has_feature(cxx_rtti)
@@ -286,6 +315,12 @@ template <typename DestT, typename SrcT>
 inline DestT *GetImplAs(SrcT *src)
 {
     return GetAs<DestT>(src->getImplementation());
+}
+
+template <typename DestT, typename SrcT>
+inline const DestT *GetImplAs(const SrcT *src)
+{
+    return GetAs<const DestT>(src->getImplementation());
 }
 
 }

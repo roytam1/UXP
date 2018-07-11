@@ -10,9 +10,6 @@
 
 #include "compiler/translator/VersionGLSL.h"
 
-namespace sh
-{
-
 TExtensionGLSL::TExtensionGLSL(ShShaderOutput output)
     : TIntermTraverser(true, false, false), mTargetVersion(ShaderOutputTypeToGLSLVersion(output))
 {
@@ -101,5 +98,3 @@ void TExtensionGLSL::checkOperator(TIntermOperator *node)
             break;
     }
 }
-
-}  // namespace sh

@@ -22,19 +22,11 @@ struct Format final : angle::NonCopyable
 {
     enum class ID;
 
-    constexpr Format(ID id,
-                     GLenum glFormat,
-                     GLenum fboFormat,
-                     rx::MipGenerationFunction mipGen,
-                     const rx::FastCopyFunctionMap &fastCopyFunctions,
-                     rx::ColorReadFunction colorRead,
-                     GLenum componentType,
-                     GLuint redBits,
-                     GLuint greenBits,
-                     GLuint blueBits,
-                     GLuint alphaBits,
-                     GLuint depthBits,
-                     GLuint stencilBits);
+    Format(ID id,
+           GLenum glFormat,
+           GLenum fboFormat,
+           rx::MipGenerationFunction mipGen,
+           rx::ColorReadFunction colorRead);
 
     static const Format &Get(ID id);
 
@@ -53,46 +45,8 @@ struct Format final : angle::NonCopyable
     rx::ColorReadFunction colorReadFunction;
 
     // A map from a gl::FormatType to a fast pixel copy function for this format.
-    const rx::FastCopyFunctionMap &fastCopyFunctions;
-
-    GLenum componentType;
-
-    GLuint redBits;
-    GLuint greenBits;
-    GLuint blueBits;
-    GLuint alphaBits;
-    GLuint depthBits;
-    GLuint stencilBits;
+    rx::FastCopyFunctionMap fastCopyFunctions;
 };
-
-constexpr Format::Format(ID id,
-                         GLenum glFormat,
-                         GLenum fboFormat,
-                         rx::MipGenerationFunction mipGen,
-                         const rx::FastCopyFunctionMap &fastCopyFunctions,
-                         rx::ColorReadFunction colorRead,
-                         GLenum componentType,
-                         GLuint redBits,
-                         GLuint greenBits,
-                         GLuint blueBits,
-                         GLuint alphaBits,
-                         GLuint depthBits,
-                         GLuint stencilBits)
-    : id(id),
-      glInternalFormat(glFormat),
-      fboImplementationInternalFormat(fboFormat),
-      mipGenerationFunction(mipGen),
-      colorReadFunction(colorRead),
-      fastCopyFunctions(fastCopyFunctions),
-      componentType(componentType),
-      redBits(redBits),
-      greenBits(greenBits),
-      blueBits(blueBits),
-      alphaBits(alphaBits),
-      depthBits(depthBits),
-      stencilBits(stencilBits)
-{
-}
 
 }  // namespace angle
 

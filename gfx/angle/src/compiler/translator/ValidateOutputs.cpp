@@ -9,9 +9,6 @@
 #include "compiler/translator/InitializeParseContext.h"
 #include "compiler/translator/ParseContext.h"
 
-namespace sh
-{
-
 namespace
 {
 void error(int *errorCount, TInfoSinkBase &sink, const TIntermSymbol &symbol, const char *reason)
@@ -109,5 +106,3 @@ int ValidateOutputs::validateAndCountErrors(TInfoSinkBase &sink) const
     }
     return errorCount;
 }
-
-}  // namespace sh

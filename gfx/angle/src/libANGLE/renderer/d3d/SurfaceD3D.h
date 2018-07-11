@@ -61,8 +61,7 @@ class SurfaceD3D : public SurfaceImpl
                egl::Display *display,
                const egl::Config *config,
                EGLNativeWindowType window,
-               EGLenum buftype,
-               EGLClientBuffer clientBuffer,
+               EGLClientBuffer shareHandle,
                const egl::AttributeMap &attribs);
 
     egl::Error swapRect(EGLint x, EGLint y, EGLint width, EGLint height);
@@ -88,7 +87,6 @@ class SurfaceD3D : public SurfaceImpl
     EGLint mSwapInterval;
 
     HANDLE mShareHandle;
-    IUnknown *mD3DTexture;
 };
 
 class WindowSurfaceD3D : public SurfaceD3D
@@ -110,8 +108,7 @@ class PbufferSurfaceD3D : public SurfaceD3D
                       RendererD3D *renderer,
                       egl::Display *display,
                       const egl::Config *config,
-                      EGLenum buftype,
-                      EGLClientBuffer clientBuffer,
+                      EGLClientBuffer shareHandle,
                       const egl::AttributeMap &attribs);
     ~PbufferSurfaceD3D() override;
 };

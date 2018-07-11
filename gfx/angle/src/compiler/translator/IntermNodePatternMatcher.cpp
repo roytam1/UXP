@@ -12,8 +12,16 @@
 
 #include "compiler/translator/IntermNode.h"
 
-namespace sh
+namespace
 {
+
+bool IsNodeBlock(TIntermNode *node)
+{
+    ASSERT(node != nullptr);
+    return (node->getAsAggregate() && node->getAsAggregate()->getOp() == EOpSequence);
+}
+
+}  // anonymous namespace
 
 IntermNodePatternMatcher::IntermNodePatternMatcher(const unsigned int mask) : mMask(mask)
 {
@@ -31,7 +39,7 @@ bool IntermNodePatternMatcher::matchInternal(TIntermBinary *node, TIntermNode *p
     if ((mMask & kExpressionReturningArray) != 0)
     {
         if (node->isArray() && node->getOp() == EOpAssign && parentNode != nullptr &&
-            !parentNode->getAsBlock())
+            !IsNodeBlock(parentNode))
         {
             return true;
         }
@@ -88,7 +96,7 @@ bool IntermNodePatternMatcher::match(TIntermAggregate *node, TIntermNode *parent
 
             if (node->getType().isArray() && !parentIsAssignment &&
                 (node->isConstructor() || node->getOp() == EOpFunctionCall) &&
-                !parentNode->getAsBlock())
+                !IsNodeBlock(parentNode))
             {
                 return true;
             }
@@ -97,13 +105,14 @@ bool IntermNodePatternMatcher::match(TIntermAggregate *node, TIntermNode *parent
     return false;
 }
 
-bool IntermNodePatternMatcher::match(TIntermTernary *node)
+bool IntermNodePatternMatcher::match(TIntermSelection *node)
 {
     if ((mMask & kUnfoldedShortCircuitExpression) != 0)
     {
-        return true;
+        if (node->usesTernaryOperator())
+        {
+            return true;
+        }
     }
     return false;
 }
-
-}  // namespace sh

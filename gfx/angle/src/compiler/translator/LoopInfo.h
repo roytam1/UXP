@@ -9,9 +9,6 @@
 
 #include "compiler/translator/IntermNode.h"
 
-namespace sh
-{
-
 class TLoopIndexInfo
 {
   public:
@@ -78,8 +75,6 @@ class TLoopStack : public TVector<TLoopInfo>
     void push(TIntermLoop *info);
     void pop();
 };
-
-}  // namespace sh
 
 #endif // COMPILER_TRANSLATOR_LOOPINFO_H_
 

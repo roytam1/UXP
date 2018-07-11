@@ -24,7 +24,7 @@ struct Uniform;
 struct Varying;
 struct InterfaceBlock;
 
-struct BlockMemberInfo
+struct COMPILER_EXPORT BlockMemberInfo
 {
     BlockMemberInfo() : offset(-1), arrayStride(-1), matrixStride(-1), isRowMajorMatrix(false) {}
 
@@ -46,7 +46,7 @@ struct BlockMemberInfo
     bool isRowMajorMatrix;
 };
 
-class BlockLayoutEncoder
+class COMPILER_EXPORT BlockLayoutEncoder
 {
   public:
     BlockLayoutEncoder();
@@ -77,7 +77,7 @@ class BlockLayoutEncoder
 // Block layout according to the std140 block layout
 // See "Standard Uniform Block Layout" in Section 2.11.6 of the OpenGL ES 3.0 specification
 
-class Std140BlockEncoder : public BlockLayoutEncoder
+class COMPILER_EXPORT Std140BlockEncoder : public BlockLayoutEncoder
 {
   public:
     Std140BlockEncoder();

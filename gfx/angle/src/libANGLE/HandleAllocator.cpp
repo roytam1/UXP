@@ -63,13 +63,10 @@ GLuint HandleAllocator::allocate()
     GLuint freeListHandle = listIt->begin;
     ASSERT(freeListHandle > 0);
 
+    listIt->begin++;
     if (listIt->begin == listIt->end)
     {
         mUnallocatedList.erase(listIt);
-    }
-    else
-    {
-        listIt->begin++;
     }
 
     return freeListHandle;
@@ -104,7 +101,7 @@ void HandleAllocator::reserve(GLuint handle)
 
     if (handle == begin || handle == end)
     {
-        if (begin == end)
+        if (begin + 1 == end)
         {
             mUnallocatedList.erase(boundIt);
         }
@@ -120,12 +117,18 @@ void HandleAllocator::reserve(GLuint handle)
         return;
     }
 
-    ASSERT(begin < handle && handle < end);
-
     // need to split the range
     auto placementIt = mUnallocatedList.erase(boundIt);
-    placementIt      = mUnallocatedList.insert(placementIt, HandleRange(handle + 1, end));
-    mUnallocatedList.insert(placementIt, HandleRange(begin, handle - 1));
+
+    if (handle + 1 != end)
+    {
+        placementIt = mUnallocatedList.insert(placementIt, HandleRange(handle + 1, end));
+    }
+    if (begin != handle)
+    {
+        ASSERT(begin < handle);
+        mUnallocatedList.insert(placementIt, HandleRange(begin, handle));
+    }
 }
 
 }  // namespace gl

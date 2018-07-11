@@ -25,11 +25,31 @@ struct Renderer11DeviceCaps;
 namespace d3d11
 {
 
-// A texture might be stored as DXGI_FORMAT_R16_TYPELESS but store integer components,
+typedef bool (*NativeMipmapGenerationSupportFunction)(D3D_FEATURE_LEVEL);
+
+struct DXGIFormat
+{
+    DXGIFormat();
+
+    GLuint redBits;
+    GLuint greenBits;
+    GLuint blueBits;
+    GLuint alphaBits;
+    GLuint sharedBits;
+
+    GLuint depthBits;
+    GLuint stencilBits;
+
+    GLenum componentType;
+
+    NativeMipmapGenerationSupportFunction nativeMipmapSupport;
+};
+
+// This structure is problematic because a resource is associated with multiple DXGI formats.
+// For example, a texture might be stored as DXGI_FORMAT_R16_TYPELESS but store integer components,
 // which are accessed through an DXGI_FORMAT_R16_SINT view. It's easy to write code which queries
 // information about the wrong format. Therefore, use of this should be avoided where possible.
-
-bool SupportsMipGen(DXGI_FORMAT dxgiFormat, D3D_FEATURE_LEVEL featureLevel);
+const DXGIFormat &GetDXGIFormatInfo(DXGI_FORMAT format);
 
 struct DXGIFormatSize
 {
@@ -41,30 +61,21 @@ struct DXGIFormatSize
 };
 const DXGIFormatSize &GetDXGIFormatSizeInfo(DXGI_FORMAT format);
 
-struct VertexFormat : angle::NonCopyable
+struct VertexFormat
 {
-    constexpr VertexFormat();
-    constexpr VertexFormat(VertexConversionType conversionType,
-                           DXGI_FORMAT nativeFormat,
-                           VertexCopyFunction copyFunction);
+    VertexFormat();
+    VertexFormat(VertexConversionType conversionType,
+                 DXGI_FORMAT nativeFormat,
+                 VertexCopyFunction copyFunction);
 
     VertexConversionType conversionType;
     DXGI_FORMAT nativeFormat;
     VertexCopyFunction copyFunction;
 };
-
 const VertexFormat &GetVertexFormatInfo(gl::VertexFormatType vertexFormatType,
                                         D3D_FEATURE_LEVEL featureLevel);
 
-// Auto-generated in dxgi_format_map_autogen.cpp.
-GLenum GetComponentType(DXGI_FORMAT dxgiFormat);
-
 }  // namespace d3d11
-
-namespace d3d11_angle
-{
-const angle::Format &GetFormat(DXGI_FORMAT dxgiFormat);
-}
 
 }  // namespace rx
 

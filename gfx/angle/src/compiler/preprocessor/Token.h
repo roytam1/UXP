@@ -10,7 +10,7 @@
 #include <ostream>
 #include <string>
 
-#include "compiler/preprocessor/SourceLocation.h"
+#include "SourceLocation.h"
 
 namespace pp
 {
@@ -113,7 +113,7 @@ inline bool operator!=(const Token &lhs, const Token &rhs)
     return !lhs.equals(rhs);
 }
 
-std::ostream &operator<<(std::ostream &out, const Token &token);
+extern std::ostream &operator<<(std::ostream &out, const Token &token);
 
 }  // namepsace pp
 

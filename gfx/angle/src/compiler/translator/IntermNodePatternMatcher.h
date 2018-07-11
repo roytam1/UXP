@@ -11,13 +11,10 @@
 #ifndef COMPILER_TRANSLATOR_INTERMNODEPATTERNMATCHER_H_
 #define COMPILER_TRANSLATOR_INTERMNODEPATTERNMATCHER_H_
 
-namespace sh
-{
-
 class TIntermAggregate;
 class TIntermBinary;
 class TIntermNode;
-class TIntermTernary;
+class TIntermSelection;
 
 class IntermNodePatternMatcher
 {
@@ -45,14 +42,12 @@ class IntermNodePatternMatcher
     bool match(TIntermBinary *node, TIntermNode *parentNode, bool isLValueRequiredHere);
 
     bool match(TIntermAggregate *node, TIntermNode *parentNode);
-    bool match(TIntermTernary *node);
+    bool match(TIntermSelection *node);
 
   private:
     const unsigned int mMask;
 
     bool matchInternal(TIntermBinary *node, TIntermNode *parentNode);
 };
-
-}  // namespace sh
 
 #endif

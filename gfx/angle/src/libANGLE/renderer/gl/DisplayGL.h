@@ -12,11 +12,6 @@
 #include "libANGLE/renderer/DisplayImpl.h"
 #include "libANGLE/renderer/gl/FunctionsGL.h"
 
-namespace egl
-{
-class Surface;
-}
-
 namespace rx
 {
 
@@ -53,8 +48,6 @@ class DisplayGL : public DisplayImpl
     virtual const FunctionsGL *getFunctionsGL() const = 0;
 
     RendererGL *mRenderer;
-
-    egl::Surface *mCurrentDrawSurface;
 };
 
 }

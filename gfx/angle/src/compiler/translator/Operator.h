@@ -13,9 +13,12 @@
 enum TOperator
 {
     EOpNull,            // if in a node, should only mean a node is still being built
+    EOpSequence,        // denotes a list of statements, or parameters, etc.
     EOpFunctionCall,
+    EOpFunction,        // For function definition
     EOpParameters,      // an aggregate listing the parameters to a function
 
+    EOpDeclaration,
     EOpInvariantDeclaration, // Specialized declarations for attributing invariance
     EOpPrototype,
 
@@ -73,6 +76,8 @@ enum TOperator
     EOpIndexIndirect,
     EOpIndexDirectStruct,
     EOpIndexDirectInterfaceBlock,
+
+    EOpVectorSwizzle,
 
     //
     // Built-in functions potentially mapped to operators

@@ -15,23 +15,22 @@ namespace gl
 {
 
 ContextState::ContextState(uintptr_t contextIn,
-                           const Version &clientVersion,
+                           GLint clientMajorVersionIn,
+                           GLint clientMinorVersionIn,
                            State *stateIn,
                            const Caps &capsIn,
                            const TextureCapsMap &textureCapsIn,
                            const Extensions &extensionsIn,
                            const ResourceManager *resourceManagerIn,
-                           const Limitations &limitationsIn,
-                           const ResourceMap<Framebuffer> &framebufferMap)
-    : mClientVersion(clientVersion),
+                           const Limitations &limitationsIn)
+    : mGLVersion(clientMajorVersionIn, clientMinorVersionIn),
       mContext(contextIn),
       mState(stateIn),
       mCaps(capsIn),
       mTextureCaps(textureCapsIn),
       mExtensions(extensionsIn),
       mResourceManager(resourceManagerIn),
-      mLimitations(limitationsIn),
-      mFramebufferMap(framebufferMap)
+      mLimitations(limitationsIn)
 {
 }
 
@@ -44,24 +43,24 @@ const TextureCaps &ContextState::getTextureCap(GLenum internalFormat) const
     return mTextureCaps.get(internalFormat);
 }
 
-ValidationContext::ValidationContext(const Version &clientVersion,
+ValidationContext::ValidationContext(GLint clientMajorVersion,
+                                     GLint clientMinorVersion,
                                      State *state,
                                      const Caps &caps,
                                      const TextureCapsMap &textureCaps,
                                      const Extensions &extensions,
                                      const ResourceManager *resourceManager,
                                      const Limitations &limitations,
-                                     const ResourceMap<Framebuffer> &framebufferMap,
                                      bool skipValidation)
     : mState(reinterpret_cast<uintptr_t>(this),
-             clientVersion,
+             clientMajorVersion,
+             clientMinorVersion,
              state,
              caps,
              textureCaps,
              extensions,
              resourceManager,
-             limitations,
-             framebufferMap),
+             limitations),
       mSkipValidation(skipValidation)
 {
 }
@@ -279,14 +278,6 @@ bool ValidationContext::getQueryParameterInfo(GLenum pname, GLenum *type, unsign
             *type      = GL_INT;
             *numParams = 1;
             return true;
-        case GL_TEXTURE_BINDING_EXTERNAL_OES:
-            if (!getExtensions().eglStreamConsumerExternal && !getExtensions().eglImageExternal)
-            {
-                return false;
-            }
-            *type      = GL_INT;
-            *numParams = 1;
-            return true;
     }
 
     if (getExtensions().debug)
@@ -336,28 +327,6 @@ bool ValidationContext::getQueryParameterInfo(GLenum pname, GLenum *type, unsign
         }
     }
 
-    if (getExtensions().bindGeneratesResource)
-    {
-        switch (pname)
-        {
-            case GL_BIND_GENERATES_RESOURCE_CHROMIUM:
-                *type      = GL_BOOL;
-                *numParams = 1;
-                return true;
-        }
-    }
-
-    if (getExtensions().sRGBWriteControl)
-    {
-        switch (pname)
-        {
-            case GL_FRAMEBUFFER_SRGB_EXT:
-                *type      = GL_BOOL;
-                *numParams = 1;
-                return true;
-        }
-    }
-
     // Check for ES3.0+ parameter names which are also exposed as ES2 extensions
     switch (pname)
     {
@@ -400,7 +369,9 @@ bool ValidationContext::getQueryParameterInfo(GLenum pname, GLenum *type, unsign
             return true;
     }
 
-    if (getClientVersion() < Version(3, 0))
+    const GLVersion &glVersion = mState.getGLVersion();
+
+    if (!glVersion.isES3OrGreater())
     {
         return false;
     }
@@ -476,7 +447,7 @@ bool ValidationContext::getQueryParameterInfo(GLenum pname, GLenum *type, unsign
         }
     }
 
-    if (getClientVersion() < Version(3, 1))
+    if (!glVersion.isES31())
     {
         return false;
     }
@@ -540,7 +511,9 @@ bool ValidationContext::getIndexedQueryParameterInfo(GLenum target,
                                                      GLenum *type,
                                                      unsigned int *numParams)
 {
-    if (getClientVersion() < Version(3, 0))
+
+    const GLVersion &glVersion = mState.getGLVersion();
+    if (!glVersion.isES3OrGreater())
     {
         return false;
     }
@@ -565,7 +538,7 @@ bool ValidationContext::getIndexedQueryParameterInfo(GLenum target,
         }
     }
 
-    if (getClientVersion() < Version(3, 1))
+    if (!glVersion.isES31())
     {
         return false;
     }
@@ -582,37 +555,6 @@ bool ValidationContext::getIndexedQueryParameterInfo(GLenum target,
     }
 
     return false;
-}
-
-Program *ValidationContext::getProgram(GLuint handle) const
-{
-    return mState.mResourceManager->getProgram(handle);
-}
-
-Shader *ValidationContext::getShader(GLuint handle) const
-{
-    return mState.mResourceManager->getShader(handle);
-}
-
-bool ValidationContext::isTextureGenerated(GLuint texture) const
-{
-    return mState.mResourceManager->isTextureGenerated(texture);
-}
-
-bool ValidationContext::isBufferGenerated(GLuint buffer) const
-{
-    return mState.mResourceManager->isBufferGenerated(buffer);
-}
-
-bool ValidationContext::isRenderbufferGenerated(GLuint renderbuffer) const
-{
-    return mState.mResourceManager->isRenderbufferGenerated(renderbuffer);
-}
-
-bool ValidationContext::isFramebufferGenerated(GLuint framebuffer) const
-{
-    ASSERT(mState.mFramebufferMap.find(0) != mState.mFramebufferMap.end());
-    return mState.mFramebufferMap.find(framebuffer) != mState.mFramebufferMap.end();
 }
 
 }  // namespace gl

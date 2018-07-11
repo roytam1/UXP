@@ -31,7 +31,7 @@ class CollectVariables : public TIntermTraverser
                      const TExtensionBehavior &extensionBehavior);
 
     void visitSymbol(TIntermSymbol *symbol) override;
-    bool visitDeclaration(Visit, TIntermDeclaration *node) override;
+    bool visitAggregate(Visit, TIntermAggregate *node) override;
     bool visitBinary(Visit visit, TIntermBinary *binaryNode) override;
 
   private:

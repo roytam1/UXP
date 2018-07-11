@@ -10,17 +10,17 @@
 class CompilerTestEnvironment : public testing::Environment
 {
   public:
-    void SetUp() override
+    virtual void SetUp()
     {
-        if (!sh::Initialize())
+        if (!ShInitialize())
         {
             FAIL() << "Failed to initialize the compiler.";
         }
     }
 
-    void TearDown() override
+    virtual void TearDown()
     {
-        if (!sh::Finalize())
+        if (!ShFinalize())
         {
             FAIL() << "Failed to finalize the compiler.";
         }

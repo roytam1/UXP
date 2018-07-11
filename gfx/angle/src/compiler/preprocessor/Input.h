@@ -7,7 +7,7 @@
 #ifndef COMPILER_PREPROCESSOR_INPUT_H_
 #define COMPILER_PREPROCESSOR_INPUT_H_
 
-#include <cstddef>
+#include <stddef.h>
 #include <vector>
 
 namespace pp

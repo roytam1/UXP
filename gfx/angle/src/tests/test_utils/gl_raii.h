@@ -46,7 +46,6 @@ using GLBuffer       = GLWrapper<glGenBuffers, glDeleteBuffers>;
 using GLTexture      = GLWrapper<glGenTextures, glDeleteTextures>;
 using GLFramebuffer  = GLWrapper<glGenFramebuffers, glDeleteFramebuffers>;
 using GLRenderbuffer = GLWrapper<glGenRenderbuffers, glDeleteRenderbuffers>;
-using GLSampler      = GLWrapper<glGenSamplers, glDeleteSamplers>;
 
 class GLProgram
 {

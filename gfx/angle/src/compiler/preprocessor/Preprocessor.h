@@ -7,9 +7,9 @@
 #ifndef COMPILER_PREPROCESSOR_PREPROCESSOR_H_
 #define COMPILER_PREPROCESSOR_PREPROCESSOR_H_
 
-#include <cstddef>
+#include <stddef.h>
 
-#include "common/angleutils.h"
+#include "pp_utils.h"
 
 namespace pp
 {
@@ -19,7 +19,7 @@ class DirectiveHandler;
 struct PreprocessorImpl;
 struct Token;
 
-class Preprocessor : angle::NonCopyable
+class Preprocessor
 {
   public:
     Preprocessor(Diagnostics *diagnostics, DirectiveHandler *directiveHandler);
@@ -44,6 +44,8 @@ class Preprocessor : angle::NonCopyable
     void setMaxTokenSize(size_t maxTokenSize);
 
   private:
+    PP_DISALLOW_COPY_AND_ASSIGN(Preprocessor);
+
     PreprocessorImpl *mImpl;
 };
 

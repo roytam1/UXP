@@ -19,11 +19,10 @@ namespace rx
 SwapChain9::SwapChain9(Renderer9 *renderer,
                        NativeWindow9 *nativeWindow,
                        HANDLE shareHandle,
-                       IUnknown *d3dTexture,
                        GLenum backBufferFormat,
                        GLenum depthBufferFormat,
                        EGLint orientation)
-    : SwapChainD3D(shareHandle, d3dTexture, backBufferFormat, depthBufferFormat),
+    : SwapChainD3D(shareHandle, backBufferFormat, depthBufferFormat),
       mRenderer(renderer),
       mWidth(-1),
       mHeight(-1),
@@ -106,37 +105,28 @@ EGLint SwapChain9::reset(int backbufferWidth, int backbufferHeight, EGLint swapI
     SafeRelease(mOffscreenTexture);
     SafeRelease(mDepthStencil);
 
-    const d3d9::TextureFormat &backBufferd3dFormatInfo =
-        d3d9::GetTextureFormatInfo(mOffscreenRenderTargetFormat);
-    if (mD3DTexture != nullptr)
+    HANDLE *pShareHandle = NULL;
+    if (!mNativeWindow->getNativeWindow() && mRenderer->getShareHandleSupport())
     {
-        result = mD3DTexture->QueryInterface(&mOffscreenTexture);
-        ASSERT(SUCCEEDED(result));
+        pShareHandle = &mShareHandle;
     }
-    else
+
+    const d3d9::TextureFormat &backBufferd3dFormatInfo = d3d9::GetTextureFormatInfo(mOffscreenRenderTargetFormat);
+    result = device->CreateTexture(backbufferWidth, backbufferHeight, 1, D3DUSAGE_RENDERTARGET,
+                                   backBufferd3dFormatInfo.texFormat, D3DPOOL_DEFAULT, &mOffscreenTexture,
+                                   pShareHandle);
+    if (FAILED(result))
     {
-        HANDLE *pShareHandle = NULL;
-        if (!mNativeWindow->getNativeWindow() && mRenderer->getShareHandleSupport())
+        ERR("Could not create offscreen texture: %08lX", result);
+        release();
+
+        if (d3d9::isDeviceLostError(result))
         {
-            pShareHandle = &mShareHandle;
+            return EGL_CONTEXT_LOST;
         }
-
-        result = device->CreateTexture(backbufferWidth, backbufferHeight, 1, D3DUSAGE_RENDERTARGET,
-                                       backBufferd3dFormatInfo.texFormat, D3DPOOL_DEFAULT,
-                                       &mOffscreenTexture, pShareHandle);
-        if (FAILED(result))
+        else
         {
-            ERR("Could not create offscreen texture: %08lX", result);
-            release();
-
-            if (d3d9::isDeviceLostError(result))
-            {
-                return EGL_CONTEXT_LOST;
-            }
-            else
-            {
-                return EGL_BAD_ALLOC;
-            }
+            return EGL_BAD_ALLOC;
         }
     }
 
@@ -201,7 +191,7 @@ EGLint SwapChain9::reset(int backbufferWidth, int backbufferHeight, EGLint swapI
         //
         // Some non-switchable AMD GPUs / drivers do not respect the source rectangle to Present. Therefore, when the vendor ID
         // is not Intel, the back buffer width must be exactly the same width as the window or horizontal scaling will occur.
-        if (IsIntel(mRenderer->getVendorId()))
+        if (mRenderer->getVendorId() == VENDOR_ID_INTEL)
         {
             presentParameters.BackBufferWidth = (presentParameters.BackBufferWidth + 63) / 64 * 64;
         }

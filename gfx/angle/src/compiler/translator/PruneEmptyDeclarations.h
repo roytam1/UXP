@@ -8,11 +8,8 @@
 #ifndef COMPILER_TRANSLATOR_PRUNEEMPTYDECLARATIONS_H_
 #define COMPILER_TRANSLATOR_PRUNEEMPTYDECLARATIONS_H_
 
-namespace sh
-{
 class TIntermNode;
 
 void PruneEmptyDeclarations(TIntermNode *root);
-}
 
 #endif  // COMPILER_TRANSLATOR_PRUNEEMPTYDECLARATIONS_H_

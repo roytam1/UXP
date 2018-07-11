@@ -6,27 +6,20 @@
 
 #include "compiler/translator/OutputESSL.h"
 
-namespace sh
-{
-
 TOutputESSL::TOutputESSL(TInfoSinkBase &objSink,
                          ShArrayIndexClampingStrategy clampingStrategy,
                          ShHashFunction64 hashFunction,
                          NameMap &nameMap,
                          TSymbolTable &symbolTable,
-                         sh::GLenum shaderType,
                          int shaderVersion,
-                         bool forceHighp,
-                         ShCompileOptions compileOptions)
+                         bool forceHighp)
     : TOutputGLSLBase(objSink,
                       clampingStrategy,
                       hashFunction,
                       nameMap,
                       symbolTable,
-                      shaderType,
                       shaderVersion,
-                      SH_ESSL_OUTPUT,
-                      compileOptions),
+                      SH_ESSL_OUTPUT),
       mForceHighp(forceHighp)
 {
 }
@@ -43,5 +36,3 @@ bool TOutputESSL::writeVariablePrecision(TPrecision precision)
         out << getPrecisionString(precision);
     return true;
 }
-
-}  // namespace sh
