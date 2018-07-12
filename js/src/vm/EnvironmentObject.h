@@ -930,6 +930,9 @@ class DebugEnvironments
     void mark(JSTracer* trc);
     void sweep(JSRuntime* rt);
     void finish();
+#ifdef JSGC_HASH_TABLE_CHECKS
+    void checkHashTablesAfterMovingGC(JSRuntime* runtime);
+#endif 
 
     // If a live frame has a synthesized entry in missingEnvs, make sure it's not
     // collected.

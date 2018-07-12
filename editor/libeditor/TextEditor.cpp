@@ -836,7 +836,7 @@ TextEditor::BeginIMEComposition(WidgetCompositionEvent* aEvent)
 nsresult
 TextEditor::UpdateIMEComposition(WidgetCompositionEvent* aCompositionChangeEvent)
 {
-  MOZ_ASSERT(aCompsitionChangeEvent,
+  MOZ_ASSERT(aCompositionChangeEvent,
              "aCompositionChangeEvent must not be nullptr");
 
   if (NS_WARN_IF(!aCompositionChangeEvent)) {

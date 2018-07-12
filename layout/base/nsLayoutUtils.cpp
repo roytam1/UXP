@@ -5057,7 +5057,7 @@ nsLayoutUtils::IntrinsicForAxis(PhysicalAxis              aAxis,
   NS_PRECONDITION(aFrame->GetParent(),
                   "IntrinsicForAxis called on frame not in tree");
   NS_PRECONDITION(aType == MIN_ISIZE || aType == PREF_ISIZE, "bad type");
-  MOZ_ASSERT(aFrame->GetParent()->Type() != LayoutFrameType::GridContainer ||
+  MOZ_ASSERT(aFrame->GetParent()->GetType() != nsGkAtoms::gridContainerFrame ||
              aPercentageBasis.isSome(),
              "grid layout should always pass a percentage basis");
 
