@@ -419,41 +419,6 @@ struct BaselineStackBuilder
     }
 };
 
-// Ensure that all value locations are readable from the SnapshotIterator.
-// Remove RInstructionResults from the JitActivation if the frame got recovered
-// ahead of the bailout.
-class SnapshotIteratorForBailout : public SnapshotIterator
-{
-    JitActivation* activation_;
-    JitFrameIterator& iter_;
-
-  public:
-    SnapshotIteratorForBailout(JitActivation* activation, JitFrameIterator& iter)
-      : SnapshotIterator(iter, activation->bailoutData()->machineState()),
-        activation_(activation),
-        iter_(iter)
-    {
-        MOZ_ASSERT(iter.isBailoutJS());
-    }
-
-    ~SnapshotIteratorForBailout() {
-        // The bailout is complete, we no longer need the recover instruction
-        // results.
-        activation_->removeIonFrameRecovery(fp_);
-    }
-
-    // Take previously computed result out of the activation, or compute the
-    // results of all recover instructions contained in the snapshot.
-    MOZ_MUST_USE bool init(JSContext* cx) {
-
-        // Under a bailout, there is no need to invalidate the frame after
-        // evaluating the recover instruction, as the invalidation is only
-        // needed to cause of the frame which has been introspected.
-        MaybeReadFallback recoverBailout(cx, activation_, &iter_, MaybeReadFallback::Fallback_DoNothing);
-        return initInstructionResults(recoverBailout);
-    }
-};
-
 #ifdef DEBUG
 static inline bool
 IsInlinableFallback(ICFallbackStub* icEntry)
@@ -1476,6 +1441,7 @@ jit::BailoutIonToBaseline(JSContext* cx, JitActivation* activation, JitFrameIter
 {
     MOZ_ASSERT(bailoutInfo != nullptr);
     MOZ_ASSERT(*bailoutInfo == nullptr);
+    MOZ_ASSERT(iter.isBailoutJS());
 
     TraceLoggerThread* logger = TraceLoggerForMainThread(cx->runtime());
     TraceLogStopEvent(logger, TraceLogger_IonMonkey);
@@ -1486,6 +1452,12 @@ jit::BailoutIonToBaseline(JSContext* cx, JitActivation* activation, JitFrameIter
     // ensure that its Debugger.Frame entry is cleaned up.
     auto guardRemoveRematerializedFramesFromDebugger = mozilla::MakeScopeExit([&] {
         activation->removeRematerializedFramesFromDebugger(cx, iter.fp());
+    });
+
+    // Always remove the RInstructionResults from the JitActivation, even in
+    // case of failures as the stack frame is going away after the bailout.
+    auto removeIonFrameRecovery = mozilla::MakeScopeExit([&] {
+        activation->removeIonFrameRecovery(iter.jsFrame());
     });
 
     // The caller of the top frame must be one of the following:
@@ -1561,9 +1533,19 @@ jit::BailoutIonToBaseline(JSContext* cx, JitActivation* activation, JitFrameIter
     }
     JitSpew(JitSpew_BaselineBailouts, "  Incoming frame ptr = %p", builder.startFrame());
 
-    SnapshotIteratorForBailout snapIter(activation, iter);
-    if (!snapIter.init(cx))
+    // Under a bailout, there is no need to invalidate the frame after
+    // evaluating the recover instruction, as the invalidation is only needed in
+    // cases where the frame is introspected ahead of the bailout.
+    MaybeReadFallback recoverBailout(cx, activation, &iter, MaybeReadFallback::Fallback_DoNothing);
+
+    // Ensure that all value locations are readable from the SnapshotIterator.
+    // Get the RInstructionResults from the JitActivation if the frame got
+    // recovered ahead of the bailout.
+    SnapshotIterator snapIter(iter, activation->bailoutData()->machineState());
+    if (!snapIter.initInstructionResults(recoverBailout)) {
+        ReportOutOfMemory(cx);
         return BAILOUT_RETURN_FATAL_ERROR;
+    }
 
 #ifdef TRACK_SNAPSHOTS
     snapIter.spewBailingFrom();
