@@ -42,7 +42,10 @@ function initialize() {
     // If the add-on doesn't exist or it is already enabled or it has already
     // been seen or it cannot be enabled then this UI is useless, just close it.
     // This shouldn't normally happen unless session restore restores the tab.
-    if (!aAddon || !aAddon.userDisabled || aAddon.seen ||
+    if (!aAddon || !aAddon.userDisabled ||
+#ifdef MOZ_WEBEXTENSIONS
+        aAddon.seen ||
+#endif
         !(aAddon.permissions & AddonManager.PERM_CAN_ENABLE)) {
       window.close();
       return;
@@ -79,6 +82,7 @@ function initialize() {
       document.getElementById("location").hidden = true;
     }
 
+#ifdef MOZ_WEBEXTENSIONS
     // Only mark the add-on as seen if the page actually gets focus
     if (document.hasFocus()) {
       aAddon.markAsSeen();
@@ -86,6 +90,7 @@ function initialize() {
     else {
       document.addEventListener("focus", () => aAddon.markAsSeen(), false);
     }
+#endif
 
     var event = document.createEvent("Events");
     event.initEvent("AddonDisplayed", true, true);
