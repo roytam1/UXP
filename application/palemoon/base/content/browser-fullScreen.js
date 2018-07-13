@@ -53,6 +53,18 @@ var FullScreen = {
       document.addEventListener("popupshown", this._setPopupOpen, false);
       document.addEventListener("popuphidden", this._setPopupOpen, false);
       this._shouldAnimate = true;
+      // If it is not safe to collapse, add the mouse position tracker or
+      // else it won't be possible to hide the navigation toolbox again
+      if (!this._safeToCollapse(document.mozFullScreen)) {
+        let rect = gBrowser.mPanelContainer.getBoundingClientRect();
+        this._mouseTargetRect = {
+          top: rect.top + 50,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right
+        };
+        MousePosTracker.addListener(this);
+      }
       // We don't animate the toolbar collapse if in DOM full-screen mode,
       // as the size of the content area would still be changing after the
       // mozfullscreenchange event fired, which could confuse content script.
