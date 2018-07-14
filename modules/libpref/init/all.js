@@ -4357,7 +4357,6 @@ pref("image.infer-src-animation.threshold-ms", 2000);
 // Whether to always optimize to image layers. Setting this to true will increase
 // performance of downscaled large images at the expense of visual quality,
 // because we can't use HQ downscaling in image layers.
-// Aliasing may occur past downscaling beyond 34% in that case.
 pref("image.layerize.always", false);
 
 //
