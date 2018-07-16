@@ -45,8 +45,13 @@
   <description id="remember-text"/>
 
   <hbox class="dialog-button-box" pack="end">
+#ifdef XP_WIN
+    <button dlgtype="accept" label="&accept;" icon="open" class="dialog-button"/>
+    <button dlgtype="cancel" icon="cancel" class="dialog-button"/>
+#else
     <button dlgtype="cancel" icon="cancel" class="dialog-button"/>
     <button dlgtype="accept" label="&accept;" icon="open" class="dialog-button"/>
+#endif
   </hbox>
 
 </dialog>
