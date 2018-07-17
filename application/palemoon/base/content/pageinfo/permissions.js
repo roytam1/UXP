@@ -217,14 +217,20 @@ function fillInPluginPermissionTemplate(aPermissionString, aPluginObject) {
                            .cloneNode(true);
   permPluginTemplate.setAttribute("permString", aPermissionString);
   permPluginTemplate.setAttribute("tooltiptext", aPluginObject.description);
-  let attrs = [
-    [ ".permPluginTemplateLabel", "value", aPluginObject.name ],
-    [ ".permPluginTemplateRadioGroup", "id", aPermissionString + "RadioGroup" ],
-    [ ".permPluginTemplateRadioDefault", "id", aPermissionString + "#0" ],
-    [ ".permPluginTemplateRadioAsk", "id", aPermissionString + "#3" ],
-    [ ".permPluginTemplateRadioAllow", "id", aPermissionString + "#1" ],
-    [ ".permPluginTemplateRadioBlock", "id", aPermissionString + "#2" ]
-  ];
+  let attrs = [];
+  attrs.push([".permPluginTemplateLabel", "value", aPluginObject.name]);
+  attrs.push([".permPluginTemplateRadioGroup", "id", aPermissionString + "RadioGroup"]);
+  attrs.push([".permPluginTemplateRadioDefault", "id", aPermissionString + "#0"]);
+  let permPluginTemplateRadioAsk = ".permPluginTemplateRadioAsk";
+  if (Services.prefs.getBoolPref("plugins.click_to_play") ||
+      aPluginObject.vulnerable) {
+    attrs.push([permPluginTemplateRadioAsk, "id", aPermissionString + "#3"]);
+  } else {
+    permPluginTemplate.querySelector(permPluginTemplateRadioAsk)
+        .setAttribute("disabled", "true");
+  }
+  attrs.push([".permPluginTemplateRadioAllow", "id", aPermissionString + "#1"]);
+  attrs.push([".permPluginTemplateRadioBlock", "id", aPermissionString + "#2"]);
 
   for (let attr of attrs) {
     permPluginTemplate.querySelector(attr[0]).setAttribute(attr[1], attr[2]);
@@ -264,13 +270,16 @@ function initPluginsRow() {
       }
       let permString = pluginHost.getPermissionStringForType(mimeType);
       if (!permissionMap.has(permString)) {
-        var name = makeNicePluginName(plugin.name) + " " + plugin.version;
+        let name = makeNicePluginName(plugin.name) + " " + plugin.version;
+        let vulnerable = false;
         if (permString.startsWith("plugin-vulnerable:")) {
           name += " \u2014 " + vulnerableLabel;
+          vulnerable = true;
         }
         permissionMap.set(permString, {
           "name": name,
           "description": plugin.description,
+          "vulnerable": vulnerable 
         });
       }
     }
