@@ -572,13 +572,7 @@ var AboutPermissions = {
           permissionEntry.setAttribute("id", permString + "-entry");
           // If the plugin is disabled, it makes no sense to change its
           // click-to-play status, so don't add it.
-          // If the click-to-play pref is not set and the plugin is not
-          // click-to-play blocklisted, again click-to-play doesn't apply,
-          // so don't add it.
-          if (plugin.disabled ||
-              (!Services.prefs.getBoolPref("plugins.click_to_play") &&
-               (pluginHost.getStateForType(mimeType)
-                   != Ci.nsIPluginTag.STATE_CLICKTOPLAY))) {
+          if (plugin.disabled) {
             permissionEntry.hidden = true;
           } else {
             permissionEntry.hidden = false;
@@ -588,10 +582,13 @@ var AboutPermissions = {
           this._noGlobalDeny.push(permString);
           Object.defineProperty(PermissionDefaults, permString, {
             get: function() {
-                   return this.isClickToPlay()
-                          ? PermissionDefaults.UNKNOWN
-                          : PermissionDefaults.ALLOW;
-                 }.bind(permissionEntry),
+                   if ((Services.prefs.getBoolPref("plugins.click_to_play") &&
+                       plugin.clicktoplay) ||
+                       permString.startsWith("plugin-vulnerable:")) {
+                     return PermissionDefaults.UNKNOWN;
+                   }
+                   return PermissionDefaults.ALLOW;
+                 },
             set: function(aValue) {
                    this.clicktoplay = (aValue == PermissionDefaults.UNKNOWN);
                  }.bind(plugin),
@@ -1051,20 +1048,23 @@ var AboutPermissions = {
         // which is reserved for site-specific preferences only.
         document.getElementById(aType + "-9").hidden = true;
       } else if (aType.startsWith("plugin")) {
-        if (!Services.prefs.getBoolPref("plugins.click_to_play")) {
-          // It is reserved for site-specific preferences only.
-          document.getElementById(aType + "-0").disabled = true;
-        }
         pluginPermissionEntry = document.getElementById(aType + "-entry");
         pluginPermissionEntry.setAttribute("vulnerable", "");
+        let vulnerable = false;
         if (pluginPermissionEntry.isBlocklisted()) {
           permissionMenulist.disabled = true;
           permissionMenulist.setAttribute("tooltiptext",
               AboutPermissions._stringBundleAboutPermissions
               .GetStringFromName("pluginBlocklisted"));
+          vulnerable = true;
         } else {
           permissionMenulist.disabled = false;
           permissionMenulist.setAttribute("tooltiptext", "");
+        }
+        if (Services.prefs.getBoolPref("plugins.click_to_play") || vulnerable) {
+          document.getElementById(aType + "-0").disabled = false;
+        } else {
+          document.getElementById(aType + "-0").disabled = true;
         }
       }
     } else {
@@ -1079,14 +1079,20 @@ var AboutPermissions = {
       } else if (aType == "cookie") {
         document.getElementById(aType + "-9").hidden = false;
       } else if (aType.startsWith("plugin")) {
-        document.getElementById(aType + "-0").disabled = false;
         pluginPermissionEntry = document.getElementById(aType + "-entry");
         let permString = pluginPermissionEntry.getAttribute("permString");
+        let vulnerable = false;        
         if (permString.startsWith("plugin-vulnerable:")) {
           let nameVulnerable = " \u2014 "
               + AboutPermissions._stringBundleBrowser
                 .GetStringFromName("pluginActivateVulnerable.label");
           pluginPermissionEntry.setAttribute("vulnerable", nameVulnerable);
+          vulnerable = true;
+        }
+        if (Services.prefs.getBoolPref("plugins.click_to_play") || vulnerable) {
+          document.getElementById(aType + "-0").disabled = false;
+        } else {
+          document.getElementById(aType + "-0").disabled = true;
         }
         permissionMenulist.disabled = false;
         permissionMenulist.setAttribute("tooltiptext", "");
