@@ -22,10 +22,12 @@ this.LightweightThemeConsumer =
   this._win = aDocument.defaultView;
   this._footerId = aDocument.documentElement.getAttribute("lightweightthemesfooter");
 
+/* XXX: If we want to disable LWTs for PB mode, this would be needed.
+ * Perhaps make this pref-controlled in the future if people want it?
   if (PrivateBrowsingUtils.isWindowPrivate(this._win) &&
       !PrivateBrowsingUtils.permanentPrivateBrowsing) {
     return;
-  }
+  } */
 
   let screen = this._win.screen;
   this._lastScreenWidth = screen.width;
@@ -87,12 +89,16 @@ LightweightThemeConsumer.prototype = {
   },
 
   destroy: function () {
+/* XXX: If we want to disable LWTs for PB mode, this would be needed.
     if (!PrivateBrowsingUtils.isWindowPrivate(this._win) ||
         PrivateBrowsingUtils.permanentPrivateBrowsing) {
       Services.obs.removeObserver(this, "lightweight-theme-styling-update");
 
       this._win.removeEventListener("resize", this);
-    }
+    } */
+
+    Services.obs.removeObserver(this, "lightweight-theme-styling-update");
+    this._win.removeEventListener("resize", this);
 
     this._win = this._doc = null;
   },
