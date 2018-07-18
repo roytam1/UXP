@@ -7,7 +7,7 @@
 // Globals
 
 const PREF_BDM_CLOSEWHENDONE = "browser.download.manager.closeWhenDone";
-const PREF_BDM_ALERTONEXEOPEN = "browser.download.manager.alertOnEXEOpen";
+const PREF_BDM_CONFIRMOPENEXE = "browser.download.confirmOpenExecutable";
 const PREF_BDM_SCANWHENDONE = "browser.download.manager.scanWhenDone";
 
 const nsLocalFile = Components.Constructor("@mozilla.org/file/local;1",
@@ -78,7 +78,6 @@ var gStr = {
   downloadsTitleFiles: "downloadsTitleFiles",
   downloadsTitlePercent: "downloadsTitlePercent",
   fileExecutableSecurityWarningTitle: "fileExecutableSecurityWarningTitle",
-  fileExecutableSecurityWarningDontAsk: "fileExecutableSecurityWarningDontAsk"
 };
 
 // The statement to query for downloads that are active or match the search
@@ -251,7 +250,7 @@ function openDownload(aDownload)
     var pref = Cc["@mozilla.org/preferences-service;1"].
                getService(Ci.nsIPrefBranch);
     try {
-      dontAsk = !pref.getBoolPref(PREF_BDM_ALERTONEXEOPEN);
+      dontAsk = !pref.getBoolPref(PREF_BDM_CONFIRMOPENEXE);
     } catch (e) { }
 
     if (AppConstants.platform == "win") {
@@ -273,16 +272,13 @@ function openDownload(aDownload)
       var message = strings.getFormattedString("fileExecutableSecurityWarning", [name, name]);
 
       let title = gStr.fileExecutableSecurityWarningTitle;
-      let dontAsk = gStr.fileExecutableSecurityWarningDontAsk;
 
       var promptSvc = Cc["@mozilla.org/embedcomp/prompt-service;1"].
                       getService(Ci.nsIPromptService);
-      var checkbox = { value: false };
-      var open = promptSvc.confirmCheck(window, title, message, dontAsk, checkbox);
+      var open = promptSvc.confirm(window, title, message);
 
       if (!open)
         return;
-      pref.setBoolPref(PREF_BDM_ALERTONEXEOPEN, !checkbox.value);
     }
   }
   try {
