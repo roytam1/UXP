@@ -12,7 +12,7 @@ pref("general.useragent.compatMode.gecko", true);
 pref("general.useragent.compatMode.firefox", true);
 
 // ========================= updates ========================
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_LINUX)
 // Updates enabled
 pref("app.update.enabled", true);
 pref("app.update.cert.checkAttributes", true);
@@ -29,7 +29,7 @@ pref("app.update.url.manual", "http://www.palemoon.org/");
 // supplied in the "An update is available" page of the update wizard. 
 pref("app.update.url.details", "http://www.palemoon.org/releasenotes.shtml");
 #else
-// Updates disabled (Linux, etc.)
+// Updates disabled (Mac, etc.)
 pref("app.update.enabled", false);
 pref("app.update.url", "");
 #endif
