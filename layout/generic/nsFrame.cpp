@@ -10289,8 +10289,8 @@ DR_init_constraints_cookie::~DR_init_constraints_cookie()
 
 DR_init_offsets_cookie::DR_init_offsets_cookie(
                      nsIFrame*                aFrame,
-                     SizeComputationInput*        aState,
-                     const LogicalSize&       aPercentBasis,
+                     SizeComputationInput*    aState,
+                     nscoord                  aPercentBasis,
                      const nsMargin*          aMargin,
                      const nsMargin*          aPadding)
   : mFrame(aFrame)
@@ -11243,7 +11243,7 @@ ReflowInput::DisplayInitConstraintsExit(nsIFrame* aFrame,
 /* static */ void*
 SizeComputationInput::DisplayInitOffsetsEnter(nsIFrame* aFrame,
                                           SizeComputationInput* aState,
-                                          const LogicalSize& aPercentBasis,
+                                          nscoord aPercentBasis,
                                           const nsMargin* aBorder,
                                           const nsMargin* aPadding)
 {
@@ -11258,12 +11258,10 @@ SizeComputationInput::DisplayInitOffsetsEnter(nsIFrame* aFrame,
   if (treeNode && treeNode->mDisplay) {
     DR_state->DisplayFrameTypeInfo(aFrame, treeNode->mIndent);
 
-    char horizPctBasisStr[16];
-    char vertPctBasisStr[16];
+    char pctBasisStr[16];
     WritingMode wm = aState->GetWritingMode();
-    DR_state->PrettyUC(aPercentBasis.ISize(wm), horizPctBasisStr, 16);
-    DR_state->PrettyUC(aPercentBasis.BSize(wm), vertPctBasisStr, 16);
-    printf("InitOffsets pct_basis=%s,%s", horizPctBasisStr, vertPctBasisStr);
+    DR_state->PrettyUC(aPercentBasis, pctBasisStr, 16);
+    printf("InitOffsets pct_basis=%s", pctBasisStr);
 
     DR_state->PrintMargin("b", aBorder);
     DR_state->PrintMargin("p", aPadding);
