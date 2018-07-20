@@ -564,13 +564,6 @@ function openFeedbackPage()
   openUILinkIn(Services.prefs.getCharPref("browser.feedback.url"), "tab");
 }
 
-function buildHelpMenu()
-{
-  // Enable/disable the "Report Web Forgery" menu item.
-  if (typeof gSafeBrowsing != "undefined")
-    gSafeBrowsing.setReportPhishingMenu();
-}
-
 function isElementVisible(aElement)
 {
   if (!aElement)

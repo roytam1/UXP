@@ -41,7 +41,7 @@
           label="&helpMenu.label;"
           accesskey="&helpMenu.accesskey;">
 #endif
-      <menupopup id="menu_HelpPopup" onpopupshowing="buildHelpMenu();">
+      <menupopup id="menu_HelpPopup">
         <menuitem id="menu_openHelp"
                   oncommand="openHelpLink('firefox-help')"
                   onclick="checkForMiddleClick(this, event);"
