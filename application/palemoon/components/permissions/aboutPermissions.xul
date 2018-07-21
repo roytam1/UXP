@@ -29,7 +29,7 @@
     <key key="&focusSearch.key;" modifiers="accel" oncommand="AboutPermissions.focusFilterBox();"/>
   </keyset>
 
-  <hbox flex="1" id="permissions-header">
+  <hbox id="permissions-header">
     <label id="permissions-pagetitle">&permissionsManager.title;</label>
   </hbox>
   <hbox flex="1" id="permissions-content" class="main-content">
