@@ -39,8 +39,13 @@ SinfParser::ParseSchm(Box& aBox)
     return;
   }
 
-  mozilla::Unused << reader->ReadU32(); // flags -- ignore
-  mSinf.mDefaultEncryptionType = reader->ReadU32();
+  uint32_t type;
+  if (!reader->Skip(4) ||
+      !reader->ReadU32(type)) {
+    NS_WARNING("Failed to parse schm data");
+    return;
+  }
+  mSinf.mDefaultEncryptionType = type;
 }
 
 void
@@ -62,11 +67,16 @@ SinfParser::ParseTenc(Box& aBox)
     return;
   }
 
-  mozilla::Unused << reader->ReadU32(); // flags -- ignore
-
-  uint32_t isEncrypted = reader->ReadU24();
-  mSinf.mDefaultIVSize = reader->ReadU8();
-  memcpy(mSinf.mDefaultKeyID, reader->Read(16), 16);
+  uint32_t isEncrypted;
+  const uint8_t* key;
+  if (!reader->Skip(4) ||  // flags -- ignore
+      !reader->ReadU24(isEncrypted) ||
+      !reader->ReadU8(mSinf.mDefaultIVSize) ||
+      !reader->Read(16, &key)) {
+    NS_WARNING("Failed to parse tenc data");
+    return;
+  }
+  memcpy(mSinf.mDefaultKeyID, key, 16);
 }
 
 }
