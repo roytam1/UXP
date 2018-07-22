@@ -84,7 +84,7 @@ nsNSSErrors::getErrorMessageFromCode(PRErrorCode err,
     params[0] = idU.get();
 
     nsString formattedString;
-    rv = component->PIPBundleFormatStringFromName("certErrorCodePrefix2",
+    rv = component->PIPBundleFormatStringFromName("certErrorCodePrefix",
                                                   params, 1, 
                                                   formattedString);
     if (NS_SUCCEEDED(rv)) {

@@ -854,7 +854,7 @@ AppendErrorTextCode(PRErrorCode errorCodeToReport,
 
     nsString formattedString;
     nsresult rv;
-    rv = component->PIPBundleFormatStringFromName("certErrorCodePrefix2",
+    rv = component->PIPBundleFormatStringFromName("certErrorCodePrefix",
                                                   params, 1, 
                                                   formattedString);
     if (NS_SUCCEEDED(rv)) {
