@@ -88,6 +88,7 @@
           </vbox>
 
         <description class="text-pmcreds">
+#if defined(MOZ_OFFICIAL_BRANDING) || defined(MC_OFFICIAL)
 #ifdef MC_PRIVATE_BUILD
           This is a private build of Pale Moon. If you did not manually build this copy from source yourself, then please download an official version from the <label class="text-link" href="http://www.palemoon.org/">Pale Moon website</label>.
 #else
@@ -99,6 +100,12 @@
         <description class="text-blurb">
           If you wish to contribute, please consider helping out by providing support to other users on the <label class="text-link" href="https://forum.palemoon.org/">Pale Moon forum</label>
           or getting involved in our development by tackling some of the issues found in our GitHub issue tracker.
+#endif
+#else
+          &brandFullName; is released by &vendorShortName;.
+        </description>
+        <description class="text-blurb">
+          This is an unofficial build of Pale Moon. For official builds, please go to <label class="text-link" href="http://www.palemoon.org/">the Pale Moon website</label>.
 #endif
         </description>    
         </vbox>
