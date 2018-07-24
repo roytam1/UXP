@@ -86,6 +86,10 @@ class ProgramImpl : angle::NonCopyable
                                          GLint components,
                                          const GLfloat *coeffs) = 0;
 
+    virtual void assignUniformBlockRegisters()
+    {
+    }
+
   protected:
     const gl::ProgramState &mState;
 };

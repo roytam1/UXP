@@ -231,6 +231,7 @@ class ProgramD3D : public ProgramImpl
                                const GLfloat *value);
 
     void setUniformBlockBinding(GLuint uniformBlockIndex, GLuint uniformBlockBinding) override;
+    void assignUniformBlockRegisters() override;
 
     const UniformStorageD3D &getVertexUniformStorage() const { return *mVertexUniformStorage; }
     const UniformStorageD3D &getFragmentUniformStorage() const { return *mFragmentUniformStorage; }
@@ -350,7 +351,6 @@ class ProgramD3D : public ProgramImpl
     void initAttribLocationsToD3DSemantic();
 
     void reset();
-    void assignUniformBlockRegisters();
 
     void initUniformBlockInfo();
     size_t getUniformBlockInfo(const sh::InterfaceBlock &interfaceBlock);

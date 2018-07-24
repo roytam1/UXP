@@ -679,6 +679,12 @@ Error Program::link(const ContextState &data)
 
     gatherInterfaceBlockInfo();
 
+    // Because we do lazy init in assignUniformBlockRegisters,
+    // we must initialize them when linking shaders,
+    // otherwise, we will have no shaders for getting uniform blocks
+    // information from shaders when doing draw calls.
+    mProgram->assignUniformBlockRegisters();
+
     mLinked = true;
     return NoError();
 }
