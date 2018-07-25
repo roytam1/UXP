@@ -468,11 +468,9 @@ Capture.prototype = {
     };
 
     if (!data) {
-      // If this background attempt failed, cause a dummy file to be saved, so
+      // If this background attempt failed, cause a placeholder file to be saved, so
       // that gets loaded instead of attempting again (and again).
-      // XXX: Perhaps we can create a placeholder image to use instead of "null"
-      // here, so it has something to show to the user?
-      PageThumbs._store(this.url, this.url, null, true)
+      PageThumbs._store(this.url, this.url, atob(BLANKTHUMB), true)
                 .then(done, done);
       return;
     }

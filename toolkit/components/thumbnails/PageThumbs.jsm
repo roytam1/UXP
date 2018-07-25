@@ -28,6 +28,9 @@ const MAX_THUMBNAIL_AGE_SECS = 172800; // 2 days == 60*60*24*2 == 172800 secs.
  */
 const THUMBNAIL_DIRECTORY = "thumbnails";
 
+// contains base64 version of a placeholder thumbnail
+#include "blankthumb.inc"
+
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 Cu.import("resource://gre/modules/PromiseWorker.jsm", this);
 Cu.import("resource://gre/modules/Promise.jsm", this);
