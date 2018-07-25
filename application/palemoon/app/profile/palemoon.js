@@ -59,9 +59,9 @@ pref("extensions.blocklist.level.updated", false);
 // Controls what level the blocklist switches from warning about items to forcibly
 // blocking them.
 pref("extensions.blocklist.level", 2);
-pref("extensions.blocklist.url", "http://blocklist.palemoon.org/%VERSION%/blocklist.xml");
+pref("extensions.blocklist.url", "https://blocklist.palemoon.org/?version=%VERSION%");
 pref("extensions.blocklist.detailsURL", "https://blocklist.palemoon.org/about.shtml");
-pref("extensions.blocklist.itemURL", "http://blocklist.palemoon.org/info/?id=%blockID%");
+pref("extensions.blocklist.itemURL", "https://blocklist.palemoon.org/info/?id=%blockID%");
 
 pref("extensions.update.autoUpdateDefault", true);
 
