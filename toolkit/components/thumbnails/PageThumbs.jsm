@@ -609,7 +609,15 @@ this.PageThumbsStorage = {
   writeData: function Storage_writeData(aURL, aData, aNoOverwrite) {
     let path = this.getFilePathForURL(aURL);
     this.ensurePath();
-    aData = new Uint8Array(aData);
+    
+    // XXX: We try/catch here since 'null' isn't accepted until we implement
+    // ES2017's new Uint8Array(); allowance.
+    try {
+      aData = new Uint8Array(aData);
+    } catch(e) { 
+      aData = new Uint8Array(0);
+    }
+    
     let msg = [
       path,
       aData,
