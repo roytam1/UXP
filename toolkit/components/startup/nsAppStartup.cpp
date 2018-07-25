@@ -1020,8 +1020,13 @@ nsAppStartup::CreateInstanceWithProfile(nsIToolkitProfile* aProfile)
     return rv;
   }
 
+#if defined(XP_WIN)
+  const char *args[] = { "-no-remote", "-P", profileName.get() };
+  rv = process->Run(false, args, 3);
+#else
   const char *args[] = { "-P", profileName.get() };
   rv = process->Run(false, args, 2);
+#endif
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
