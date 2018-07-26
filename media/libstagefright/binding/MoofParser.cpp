@@ -1086,7 +1086,10 @@ Sbgp::Sbgp(Box& aBox)
     return;
   }
 
-  uint32_t flags = reader->ReadU32();
+  uint32_t flags;
+  if (!reader->ReadU32(flags)) {
+    return;
+  }
   const uint8_t version = flags >> 24;
   flags = flags & 0xffffff;
 
@@ -1098,13 +1101,22 @@ Sbgp::Sbgp(Box& aBox)
     return;
   }
 
-  mGroupingType = reader->ReadU32();
+  uint32_t groupType;
+  if (!reader->ReadU32(groupType)) {
+    return;
+  }
+  mGroupingType = groupType;
 
   if (version == 1) {
-    mGroupingTypeParam = reader->Read32();
+    if (reader->ReadU32(mGroupingTypeParam)) {
+      false;
+    }
   }
 
-  uint32_t count = reader->ReadU32();
+  uint32_t count;
+  if (!reader->ReadU32(count)) {
+    return;
+  }
 
   // Make sure we can read all the entries.
   need = sizeof(uint32_t) * 2 * count;
@@ -1115,8 +1127,12 @@ Sbgp::Sbgp(Box& aBox)
   }
 
   for (uint32_t i = 0; i < count; i++) {
-    uint32_t sampleCount = reader->ReadU32();
-    uint32_t groupDescriptionIndex = reader->ReadU32();
+    uint32_t sampleCount;
+    uint32_t groupDescriptionIndex;
+    if (!reader->ReadU32(sampleCount) ||
+        !reader->ReadU32(groupDescriptionIndex)) {
+      return;
+    }
 
     SampleToGroupEntry entry(sampleCount, groupDescriptionIndex);
     mEntries.AppendElement(entry);
@@ -1134,7 +1150,10 @@ Sgpd::Sgpd(Box& aBox)
     return;
   }
 
-  uint32_t flags = reader->ReadU32();
+  uint32_t flags;
+  if (!reader->ReadU32(flags)) {
+    return;
+  }
   const uint8_t version = flags >> 24;
   flags = flags & 0xffffff;
 
@@ -1145,19 +1164,28 @@ Sgpd::Sgpd(Box& aBox)
     return;
   }
 
-  mGroupingType = reader->ReadU32();
+  uint32_t groupType;
+  if (!reader->ReadU32(groupType)) {
+    return;
+  }
+  mGroupingType = groupType;
 
   const uint32_t entrySize = sizeof(uint32_t) + kKeyIdSize;
   uint32_t defaultLength = 0;
 
   if (version == 1) {
-    defaultLength = reader->ReadU32();
+    if (!reader->ReadU32(defaultLength)) {
+      return;
+    }
     if (defaultLength < entrySize && defaultLength != 0) {
       return;
     }
   }
 
-  uint32_t count = reader->ReadU32();
+  uint32_t count;
+  if (!reader->ReadU32(count)) {
+    return;
+  }
 
   // Make sure we have sufficient remaining bytes to read the entries.
   need =
@@ -1170,7 +1198,10 @@ Sgpd::Sgpd(Box& aBox)
   }
   for (uint32_t i = 0; i < count; ++i) {
     if (version == 1 && defaultLength == 0) {
-      uint32_t descriptionLength = reader->ReadU32();
+      uint32_t descriptionLength;
+      if (!reader->ReadU32(descriptionLength)) {
+        return;
+      }
       if (descriptionLength < entrySize) {
         return;
       }
@@ -1190,16 +1221,26 @@ Sgpd::Sgpd(Box& aBox)
 bool CencSampleEncryptionInfoEntry::Init(BoxReader& aReader)
 {
   // Skip a reserved byte.
-  aReader->ReadU8();
+  uint8_t skip;
+  if (!aReader->ReadU8(skip)) {
+    return false;
+  }
 
-  uint8_t possiblePatternInfo = aReader->ReadU8();
-  uint8_t flag = aReader->ReadU8();
-
-  mIVSize = aReader->ReadU8();
+  uint8_t possiblePatternInfo;
+  uint8_t flag;
+  if (!aReader->ReadU8(possiblePatternInfo) ||
+      !aReader->ReadU8(flag) ||
+      !aReader->ReadU8(mIVSize)) {
+    return false;
+  }
 
   // Read the key id.
+  uint8_t key;
   for (uint32_t i = 0; i < kKeyIdSize; ++i) {
-    mKeyId.AppendElement(aReader->ReadU8());
+    if (!aReader->ReadU8(key)) {
+      return false;
+    }
+    mKeyId.AppendElement(key);
   }
 
   mIsEncrypted = flag != 0;
