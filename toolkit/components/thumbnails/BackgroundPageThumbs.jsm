@@ -368,9 +368,12 @@ Capture.prototype = {
     tel("CAPTURE_QUEUE_TIME_MS", this.startDate - this.creationDate);
 
     // timeout timer
-    let timeout = this.options && typeof(this.options.timeout) == "number" ?
-                  this.options.timeout :
-                  DEFAULT_CAPTURE_TIMEOUT;
+    let timeout;
+    if (this.options && typeof(this.options.timeout) == "number") {
+      timeout = this.options.timeout;
+    } else {
+      timeout = DEFAULT_CAPTURE_TIMEOUT;
+    }
     this._timeoutTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     this._timeoutTimer.initWithCallback(this, timeout,
                                         Ci.nsITimer.TYPE_ONE_SHOT);
