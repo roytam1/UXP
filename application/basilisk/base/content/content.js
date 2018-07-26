@@ -298,12 +298,10 @@ var AboutNetAndCertErrorListener = {
   onCertErrorDetails(msg) {
     let div = content.document.getElementById("certificateErrorText");
     div.textContent = msg.data.info;
-    let learnMoreLink = content.document.getElementById("learnMoreLink");
     let baseURL = Services.urlFormatter.formatURLPref("app.support.baseURL");
 
     switch (msg.data.code) {
       case SEC_ERROR_UNKNOWN_ISSUER:
-        learnMoreLink.href = baseURL  + "security-error";
         break;
 
       // in case the certificate expired we make sure the system clock
@@ -336,7 +334,6 @@ var AboutNetAndCertErrorListener = {
           content.document.getElementById("wrongSystemTimePanel")
             .style.display = "block";
         }
-        learnMoreLink.href = baseURL  + "time-errors";
         break;
     }
   },
