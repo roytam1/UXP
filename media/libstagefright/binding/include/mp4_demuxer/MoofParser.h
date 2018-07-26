@@ -230,8 +230,8 @@ public:
   Interval<Microseconds> mTimeRange;
   FallibleTArray<Sample> mIndex;
 
-  nsTArray<CencSampleEncryptionInfoEntry> mSampleEncryptionInfoEntries;
-  nsTArray<SampleToGroupEntry> mSampleToGroupEntries;
+  nsTArray<CencSampleEncryptionInfoEntry> mFragmentSampleEncryptionInfoEntries;
+  nsTArray<SampleToGroupEntry> mFragmentSampleToGroupEntries;
 
   nsTArray<Saiz> mSaizs;
   nsTArray<Saio> mSaios;
@@ -297,6 +297,10 @@ public:
   Tfdt mTfdt;
   Edts mEdts;
   Sinf mSinf;
+
+  nsTArray<CencSampleEncryptionInfoEntry> mTrackSampleEncryptionInfoEntries;
+  nsTArray<SampleToGroupEntry> mTrackSampleToGroupEntries;
+
   nsTArray<Moof>& Moofs() { return mMoofs; }
 private:
   void ScanForMetadata(mozilla::MediaByteRange& aFtyp,
