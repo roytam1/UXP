@@ -32,6 +32,9 @@ public:
   Microseconds GetNextKeyframeTime();
 private:
   Sample* Get();
+
+  CencSampleEncryptionInfoEntry* GetSampleEncryptionEntry();
+
   void Next();
   RefPtr<Index> mIndex;
   friend class Index;
