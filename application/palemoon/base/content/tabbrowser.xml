@@ -1313,13 +1313,16 @@
         <parameter name="aAllowThirdPartyFixup"/>
         <body>
           <![CDATA[
+            var aTriggeringPrincipal;
             var aReferrerPolicy;
             var aFromExternal;
             var aRelatedToCurrent;
+            var aOriginPrincipal;
             if (arguments.length == 2 &&
                 typeof arguments[1] == "object" &&
                 !(arguments[1] instanceof Ci.nsIURI)) {
               let params = arguments[1];
+              aTriggeringPrincipal  = params.triggeringPrincipal;
               aReferrerURI          = params.referrerURI;
               aReferrerPolicy       = params.referrerPolicy;
               aCharset              = params.charset;
@@ -1328,12 +1331,14 @@
               aAllowThirdPartyFixup = params.allowThirdPartyFixup;
               aFromExternal         = params.fromExternal;
               aRelatedToCurrent     = params.relatedToCurrent;
+              aOriginPrincipal      = params.originPrincipal;
             }
 
             var bgLoad = (aLoadInBackground != null) ? aLoadInBackground :
                          Services.prefs.getBoolPref("browser.tabs.loadInBackground");
             var owner = bgLoad ? null : this.selectedTab;
             var tab = this.addTab(aURI, {
+                                  triggeringPrincipal: aTriggeringPrincipal,
                                   referrerURI: aReferrerURI,
                                   referrerPolicy: aReferrerPolicy,
                                   charset: aCharset,
@@ -1341,6 +1346,7 @@
                                   ownerTab: owner,
                                   allowThirdPartyFixup: aAllowThirdPartyFixup,
                                   fromExternal: aFromExternal,
+                                  originPrincipal: aOriginPrincipal,
                                   relatedToCurrent: aRelatedToCurrent});
             if (!bgLoad)
               this.selectedTab = tab;
@@ -1461,14 +1467,17 @@
         <body>
           <![CDATA[
             const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+            var aTriggeringPrincipal;
             var aReferrerPolicy;
             var aFromExternal;
             var aRelatedToCurrent;
             var aSkipAnimation;
+            var aOriginPrincipal;
             if (arguments.length == 2 &&
                 typeof arguments[1] == "object" &&
                 !(arguments[1] instanceof Ci.nsIURI)) {
               let params = arguments[1];
+              aTriggeringPrincipal  = params.triggeringPrincipal;
               aReferrerURI          = params.referrerURI;
               aReferrerPolicy       = params.referrerPolicy;
               aCharset              = params.charset;
@@ -1478,6 +1487,7 @@
               aFromExternal         = params.fromExternal;
               aRelatedToCurrent     = params.relatedToCurrent;
               aSkipAnimation        = params.skipAnimation;
+              aOriginPrincipal      = params.originPrincipal;
             }
 
             // if we're adding tabs, we're past interrupt mode, ditch the owner
@@ -1485,6 +1495,11 @@
               this.mCurrentTab.owner = null;
 
             var t = document.createElementNS(NS_XUL, "tab");
+
+            let aURIObject = null;
+            try {
+              aURIObject = Services.io.newURI(aURI || "about:blank");
+            } catch (ex) { /* we'll try to fix up this URL later */ }
 
             var uriIsAboutBlank = !aURI || aURI == "about:blank";
 
@@ -1625,6 +1640,16 @@
             evt.initEvent("TabOpen", true, false);
             t.dispatchEvent(evt);
 
+            if (aOriginPrincipal && aURI) {
+              let {URI_INHERITS_SECURITY_CONTEXT} = Ci.nsIProtocolHandler;
+              // Unless we know for sure we're not inheriting principals,
+              // force the about:blank viewer to have the right principal:
+              if (!aURIObject ||
+                  (Services.io.getProtocolFlags(aURIObject.scheme) & URI_INHERITS_SECURITY_CONTEXT)) {
+                b.createAboutBlankContentViewer(aOriginPrincipal);
+              }
+            }
+
             // If we didn't swap docShells with a preloaded browser
             // then let's just continue loading the page normally.
             if (!docShellsSwapped && !uriIsAboutBlank) {
@@ -1643,6 +1668,7 @@
               try {
                 b.loadURIWithFlags(aURI, {
                                    flags: flags,
+                                   triggeringPrincipal: aTriggeringPrincipal,
                                    referrerURI: aReferrerURI,
                                    referrerPolicy: aReferrerPolicy,
                                    charset: aCharset,

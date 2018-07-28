@@ -230,6 +230,10 @@ function openLinkIn(url, where, params) {
   var aDisallowInheritPrincipal = params.disallowInheritPrincipal;
   var aInitiatingDoc        = params.initiatingDoc;
   var aIsPrivate            = params.private;
+  var aPrincipal            = params.originPrincipal;
+  var aTriggeringPrincipal  = params.triggeringPrincipal;
+  var aForceAboutBlankViewerInCurrent =
+      params.forceAboutBlankViewerInCurrent;
   var sendReferrerURI       = true;
 
   if (where == "save") {
@@ -254,6 +258,23 @@ function openLinkIn(url, where, params) {
   // Note that if |w| is null we might have no current browser (we'll open a new window).
   var aCurrentBrowser = params.currentBrowser || (w && w.gBrowser.selectedBrowser);
   
+  // Teach the principal about the right OA to use, e.g. in case when
+  // opening a link in a new private window.
+  // Please note we do not have to do that for SystemPrincipals and we
+  // can not do it for NullPrincipals since NullPrincipals are only
+  // identical if they actually are the same object (See Bug: 1346759)
+  function useOAForPrincipal(principal) {
+    if (principal && principal.isCodebasePrincipal) {
+      let attrs = {
+        privateBrowsingId: aIsPrivate || (w && PrivateBrowsingUtils.isWindowPrivate(w)),
+      };
+      return Services.scriptSecurityManager.createCodebasePrincipal(principal.URI, attrs);
+    }
+    return principal;
+  }
+  aPrincipal = useOAForPrincipal(aPrincipal);
+  aTriggeringPrincipal = useOAForPrincipal(aTriggeringPrincipal);
+
   if (!w || where == "window") {
     // This propagates to window.arguments.
     // Strip referrer data when opening a new private window, to prevent
@@ -297,6 +318,8 @@ function openLinkIn(url, where, params) {
     sa.AppendElement(aPostData);
     sa.AppendElement(allowThirdPartyFixupSupports);
     sa.AppendElement(referrerPolicySupports);
+    sa.AppendElement(aPrincipal);
+    sa.AppendElement(aTriggeringPrincipal);
 
     let features = "chrome,dialog=no,all";
     if (aIsPrivate) {
@@ -314,10 +337,17 @@ function openLinkIn(url, where, params) {
                          getBoolPref("browser.tabs.loadInBackground");
   }
 
+  let uriObj;
+  if (where == "current") {
+    try {
+      uriObj = Services.io.newURI(url, null, null);
+    } catch (e) {}
+  }
+
   if (where == "current" && w.gBrowser.selectedTab.pinned) {
     try {
-      let uriObj = Services.io.newURI(url, null, null);
-      if (!uriObj.schemeIs("javascript") &&
+      // nsIURI.host can throw for non-nsStandardURL nsIURIs.
+      if (!uriObj || !uriObj.schemeIs("javascript") &&
           w.gBrowser.currentURI.host != uriObj.host) {
         where = "tab";
         loadInBackground = false;
@@ -345,11 +375,22 @@ function openLinkIn(url, where, params) {
     if (aForceAllowDataURI) {
       flags |= Ci.nsIWebNavigation.LOAD_FLAGS_FORCE_ALLOW_DATA_URI;
     }
+    let {URI_INHERITS_SECURITY_CONTEXT} = Ci.nsIProtocolHandler;
+    if (aForceAboutBlankViewerInCurrent &&
+        (!uriObj ||
+         (Services.io.getProtocolFlags(uriObj.scheme) & URI_INHERITS_SECURITY_CONTEXT))) {
+      // Unless we know for sure we're not inheriting principals,
+      // force the about:blank viewer to have the right principal:
+      w.gBrowser.selectedBrowser.createAboutBlankContentViewer(aPrincipal);
+    }
+
     w.gBrowser.loadURIWithFlags(url, {
                                 flags: flags,
+                                triggeringPrincipal: aTriggeringPrincipal,
                                 referrerURI: aReferrerURI,
                                 referrerPolicy: aReferrerPolicy,
                                 postData: aPostData,
+                                originPrincipal: aPrincipal,
                                 }); 
     browserUsedForLoad = aCurrentBrowser;
     break;
@@ -365,7 +406,9 @@ function openLinkIn(url, where, params) {
                            postData: aPostData,
                            inBackground: loadInBackground,
                            allowThirdPartyFixup: aAllowThirdPartyFixup,
-                           relatedToCurrent: aRelatedToCurrent});
+                           relatedToCurrent: aRelatedToCurrent,
+                           originPrincipal: aPrincipal,
+                           triggeringPrincipal: aTriggeringPrincipal });
     browserUsedForLoad = tabUsedForLoad.linkedBrowser;
     break;
   }

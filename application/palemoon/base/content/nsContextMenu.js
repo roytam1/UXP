@@ -754,7 +754,9 @@ nsContextMenu.prototype = {
     openLinkIn(this.linkURL, "window",
                { charset: doc.characterSet,
                  referrerURI: doc.documentURIObject,
-                 referrerPolicy: doc.referrerPolicy });
+                 referrerPolicy: doc.referrerPolicy,
+                 originPrincipal: doc.nodePrincipal,
+                 triggeringPrincipal: doc.nodePrincipal });
   },
 
   // Open linked-to URL in a new private window.
@@ -765,6 +767,8 @@ nsContextMenu.prototype = {
                { charset: doc.characterSet,
                  referrerURI: doc.documentURIObject,
                  referrerPolicy: doc.referrerPolicy,
+                 originPrincipal: doc.nodePrincipal,
+                 triggeringPrincipal: doc.nodePrincipal,
                  private: true });
   },
 
@@ -775,7 +779,9 @@ nsContextMenu.prototype = {
     openLinkIn(this.linkURL, "tab",
                { charset: doc.characterSet,
                  referrerURI: doc.documentURIObject,
-                 referrerPolicy: doc.referrerPolicy });
+                 referrerPolicy: doc.referrerPolicy,
+                 originPrincipal: doc.nodePrincipal,
+                 triggeringPrincipal: doc.nodePrincipal });
   },
 
   // open URL in current tab
@@ -784,7 +790,9 @@ nsContextMenu.prototype = {
     urlSecurityCheck(this.linkURL, doc.nodePrincipal);
     openLinkIn(this.linkURL, "current",
                { charset: doc.characterSet,
-                 referrerURI: doc.documentURIObject });
+                 referrerURI: doc.documentURIObject,
+                 originPrincipal: doc.nodePrincipal,
+                 triggeringPrincipal: doc.nodePrincipal });
   },
 
   // Open frame in a new tab.

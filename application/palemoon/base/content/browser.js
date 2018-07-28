@@ -1051,6 +1051,8 @@ var gBrowserInit = {
       //                 [3]: postData (nsIInputStream)
       //                 [4]: allowThirdPartyFixup (bool)
       //                 [5]: referrerPolicy (int)
+      //                 [6]: originPrincipal (nsIPrincipal)
+      //                 [7]: triggeringPrincipal (nsIPrincipal)
       else if (window.arguments.length >= 3) {
         let referrerURI = window.arguments[2];
         if (typeof(referrerURI) == "string") {
@@ -1063,7 +1065,10 @@ var gBrowserInit = {
         let referrerPolicy = (window.arguments[5] != undefined ?
             window.arguments[5] : Ci.nsIHttpChannel.REFERRER_POLICY_DEFAULT);
         loadURI(uriToLoad, referrerURI, window.arguments[3] || null,
-                window.arguments[4] || false, referrerPolicy);
+                window.arguments[4] || false, referrerPolicy,
+                // pass the origin principal (if any) and force its use to create
+                // an initial about:blank viewer if present:
+                window.arguments[6], !!window.arguments[6], window.arguments[7]);
         window.focus();
       }
       // Note: loadOneOrMoreURIs *must not* be called if window.arguments.length >= 3.
@@ -1952,7 +1957,9 @@ function BrowserTryToCloseWindow()
     window.close();     // WindowIsClosing does all the necessary checks
 }
 
-function loadURI(uri, referrer, postData, allowThirdPartyFixup, referrerPolicy) {
+function loadURI(uri, referrer, postData, allowThirdPartyFixup, referrerPolicy,
+                 originPrincipal, forceAboutBlankViewerInCurrent,
+                 triggeringPrincipal) {
   if (postData === undefined)
     postData = null;
 
@@ -1968,6 +1975,9 @@ function loadURI(uri, referrer, postData, allowThirdPartyFixup, referrerPolicy) 
                               referrerURI: referrer,
                               referrerPolicy: referrerPolicy,
                               postData: postData,
+                              originPrincipal: originPrincipal,
+                              triggeringPrincipal: triggeringPrincipal,
+                              forceAboutBlankViewerInCurrent: forceAboutBlankViewerInCurrent,
                               });
   } catch (e) {}
 }
@@ -4395,9 +4405,11 @@ nsBrowserAccess.prototype = {
     }
 
     let referrer = aOpener ? makeURI(aOpener.location.href) : null;
+    let triggeringPrincipal = null;
     let referrerPolicy = Ci.nsIHttpChannel.REFERRER_POLICY_DEFAULT;
     if (aOpener && aOpener.document) {
       referrerPolicy = aOpener.document.referrerPolicy;
+      triggeringPrincipal = aOpener.document.nodePrincipal;
     }
 
     switch (aWhere) {
@@ -4437,6 +4449,7 @@ nsBrowserAccess.prototype = {
         let referrer = aOpener ? makeURI(aOpener.location.href) : null;
 
         let tab = win.gBrowser.loadOneTab(aURI ? aURI.spec : "about:blank", {
+                                          triggeringPrincipal: triggeringPrincipal,
                                           referrerURI: referrer,
                                           referrerPolicy: referrerPolicy,
                                           fromExternal: isExternal,
@@ -4459,6 +4472,7 @@ nsBrowserAccess.prototype = {
                             Ci.nsIWebNavigation.LOAD_FLAGS_NONE;
           gBrowser.loadURIWithFlags(aURI.spec, {
                                     flags: loadflags,
+                                    triggeringPrincipal: triggeringPrincipal,
                                     referrerURI: referrer,
                                     referrerPolicy: referrerPolicy,
                                     });
@@ -5192,7 +5206,9 @@ function handleLinkClick(event, href, linkNode) {
   urlSecurityCheck(href, doc.nodePrincipal);
   openLinkIn(href, where, { referrerURI: doc.documentURIObject,
                             charset: doc.characterSet,
-                            referrerPolicy: doc.referrerPolicy });
+                            referrerPolicy: doc.referrerPolicy,
+                            originPrincipal: doc.nodePrincipal,
+                            triggeringPrincipal: doc.nodePrincipal });
   event.preventDefault();
   return true;
 }
