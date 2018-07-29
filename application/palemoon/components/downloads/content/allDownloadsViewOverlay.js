@@ -58,8 +58,7 @@ const NOT_AVAILABLE = Number.MAX_VALUE;
  *  - The DownloadsPlacesView object implements onDataItemStateChanged and
  *    onDataItemChanged of the DownloadsView pseudo interface.
  *  - The DownloadsPlacesView object adds itself as a places result observer and
- *    calls this object's placesNodeIconChanged and placesNodeAnnotationChanged
- *    from its callbacks.
+ *    calls this object's placesNodeAnnotationChanged from its callbacks.
  *
  * @param [optional] aDataItem
  *        The data item of a the session download. Required if aPlacesNode is not set
@@ -164,12 +163,10 @@ DownloadElementShell.prototype = {
       return "moz-icon://" + metaData.filePath + "?size=32";
 
     if (this._placesNode) {
-      // Try to extract an extension from the uri.
-      let ext = this._downloadURIObj.QueryInterface(Ci.nsIURL).fileExtension;
-      if (ext)
-        return "moz-icon://." + ext + "?size=32";
-      return this._placesNode.icon || "moz-icon://.unknown?size=32";
+      return "moz-icon://.unknown?size=32";
     }
+
+    // Assert unreachable.
     if (this._dataItem)
       throw new Error("Session-download items should always have a target file uri");
 
@@ -504,11 +501,6 @@ DownloadElementShell.prototype = {
       this._updateDownloadStatusUI();
     else
       this._fetchTargetFileInfo(true);
-  },
-
-  placesNodeIconChanged: function DES_placesNodeIconChanged() {
-    if (!this._dataItem)
-      this._element.setAttribute("image", this._getIcon());
   },
 
   placesNodeAnnotationChanged: function DES_placesNodeAnnotationChanged(aAnnoName) {
@@ -1244,18 +1236,13 @@ DownloadsPlacesView.prototype = {
     this._removeHistoryDownloadFromView(aPlacesNode);
   },
 
-  nodeIconChanged: function DPV_nodeIconChanged(aNode) {
-    this._forEachDownloadElementShellForURI(aNode.uri, function(aDownloadElementShell) {
-      aDownloadElementShell.placesNodeIconChanged();
-    });
-  },
-
   nodeAnnotationChanged: function DPV_nodeAnnotationChanged(aNode, aAnnoName) {
     this._forEachDownloadElementShellForURI(aNode.uri, function(aDownloadElementShell) {
       aDownloadElementShell.placesNodeAnnotationChanged(aAnnoName);
     });
   },
 
+  nodeIconChanged() {},
   nodeTitleChanged() {},
   nodeKeywordChanged: function() {},
   nodeDateAddedChanged: function() {},
