@@ -6,6 +6,8 @@
 
 var { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+
 XPCOMUtils.defineLazyModuleGetter(this, "DownloadsCommon",
                                   "resource:///modules/DownloadsCommon.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "DownloadsViewUI",
