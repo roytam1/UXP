@@ -413,8 +413,7 @@ this.DownloadsCommon = {
    *                           complete.
    *         percentComplete : The percentage of bytes successfully downloaded.
    */
-summarizeDownloads(downloads) {
-  {
+  summarizeDownloads(downloads) {
     let summary = {
       numActive: 0,
       numPaused: 0,
@@ -1480,7 +1479,6 @@ const DownloadsViewPrototype = {
    * @note Subclasses should override this.
    */
   onDownloadChanged(download) {
-  {
     throw Components.results.NS_ERROR_NOT_IMPLEMENTED;
   },
 
@@ -1574,7 +1572,6 @@ DownloadsIndicatorDataCtor.prototype = {
   },
 
   onDownloadAdded(download, newest) {
-  {
     this._itemCount++;
     this._updateViews();
   },
@@ -1691,7 +1688,7 @@ DownloadsIndicatorDataCtor.prototype = {
    * to generate statistics about the downloads we care about - in this case,
    * it's all active downloads.
    */
-  _activeDownloads() {
+  _activeDownloads: function* () {
     let downloads = this._isPrivate ? PrivateDownloadsData.downloads
                                     : DownloadsData.downloads;
     for (let download of downloads) {
@@ -1897,7 +1894,7 @@ DownloadsSummaryData.prototype = {
    * it's the downloads in this._downloads after the first few to exclude,
    * which was set when constructing this DownloadsSummaryData instance.
    */
-  _downloadsForSummary() {
+  _downloadsForSummary: function* () {
     if (this._downloads.length > 0) {
       for (let i = this._numToExclude; i < this._downloads.length; ++i) {
         yield this._downloads[i];

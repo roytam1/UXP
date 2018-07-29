@@ -12,7 +12,7 @@
 
 "use strict";
 
-let { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
+var { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
@@ -91,16 +91,16 @@ DownloadElementShell.prototype = {
 
   get extendedDisplayName() {
     let s = DownloadsCommon.strings;
-    let referrer = this.dataItem.download.source.referrer ||
-                   this.dataItem.download.source.url;
+    let referrer = this.download.source.referrer ||
+                   this.download.source.url;
     let [displayHost, fullHost] = DownloadUtils.getURIHost(referrer);
     return s.statusSeparator(this.displayName, displayHost);
   },
   
   get extendedDisplayNameTip() {
     let s = DownloadsCommon.strings;
-    let referrer = this.dataItem.download.source.referrer ||
-                   this.dataItem.download.source.url;
+    let referrer = this.download.source.referrer ||
+                   this.download.source.url;
     let [displayHost, fullHost] = DownloadUtils.getURIHost(referrer);
     return s.statusSeparator(this.displayName, fullHost);
   },

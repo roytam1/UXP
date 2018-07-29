@@ -251,8 +251,9 @@ HistoryDownloadElementShell.prototype = {
 
     if (this.element.selected) {
       goUpdateDownloadCommands();
-    else
+    } else {
       goUpdateCommand("downloadsCmd_clearDownloads");
+    }
   },
 
   onChanged() {
@@ -720,7 +721,6 @@ DownloadsPlacesView.prototype = {
         // the top of the richlistbox, along with other session downloads.
         // More generally, if a new download is added, should be made visible.
         this._richlistbox.ensureElementIsVisible(newOrUpdatedShell.element);
-      }
       } else if (sessionDownload) {
         let before = this._lastSessionDownloadElement ?
           this._lastSessionDownloadElement.nextSibling : this._richlistbox.firstChild;

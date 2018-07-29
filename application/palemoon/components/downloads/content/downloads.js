@@ -807,7 +807,6 @@ const DownloadsView = {
    *        asynchronous data load.
    */
   onDownloadAdded(download, aNewest) {
-  {
     DownloadsCommon.log("A new download data item was added - aNewest =",
                         aNewest);
 
@@ -911,7 +910,6 @@ const DownloadsView = {
    * Removes the view item associated with the specified data item.
    */
   _removeViewItem(download) {
-  {
     DownloadsCommon.log("Removing a DownloadsViewItem from the downloads list.");
     let element = this._visibleViewItems.get(download).element;
     let previousSelectedIndex = this.richListBox.selectedIndex;
