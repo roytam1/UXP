@@ -90,7 +90,7 @@ HistoryDownload.prototype = {
       this.canceled = false;
 
       // These properties may be updated if the user interface is refreshed.
-      this.exists = false;
+      this.target.exists = false;
       this.target.size = undefined;
     }
   },
