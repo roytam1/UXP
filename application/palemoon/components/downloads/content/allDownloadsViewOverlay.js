@@ -58,8 +58,8 @@ const NOT_AVAILABLE = Number.MAX_VALUE;
  *  - The DownloadsPlacesView object implements onDataItemStateChanged and
  *    onDataItemChanged of the DownloadsView pseudo interface.
  *  - The DownloadsPlacesView object adds itself as a places result observer and
- *    calls this object's placesNodeIconChanged, placesNodeTitleChanged and
- *    placeNodeAnnotationChanged from its callbacks.
+ *    calls this object's placesNodeIconChanged and placesNodeAnnotationChanged
+ *    from its callbacks.
  *
  * @param [optional] aDataItem
  *        The data item of a the session download. Required if aPlacesNode is not set
@@ -287,9 +287,9 @@ DownloadElementShell.prototype = {
    * - fileName: the downloaded file name on the file system.  Set if filePath
    *   is set.
    * - displayName: the user-facing label for the download.  This is always
-   *   set.  If available, it's set to the downloaded file name.  If not,
-   *   the places title for the download uri is used.  As a last resort,
-   *   we fallback to the download uri.
+   *   set.  If available, it's set to the downloaded file name.  If not, this
+   *   means the download does not have Places metadata because it is very old,
+   *   and in this rare case the download uri is used.
    * - fileSize (only set for downloads which completed successfully):
    *   the downloaded file size.  For downloads done after the landing of
    *   bug 826991, this value is "static" - that is, it does not necessarily
@@ -337,7 +337,7 @@ DownloadElementShell.prototype = {
           this._metaData.displayName = this._metaData.fileName;
         }
         catch(ex) {
-          this._metaData.displayName = this._placesNode.title || this.downloadURI;
+          this._metaData.displayName = this.downloadURI;
         }
       }
     }
@@ -509,14 +509,6 @@ DownloadElementShell.prototype = {
   placesNodeIconChanged: function DES_placesNodeIconChanged() {
     if (!this._dataItem)
       this._element.setAttribute("image", this._getIcon());
-  },
-
-  placesNodeTitleChanged: function DES_placesNodeTitleChanged() {
-    // If there's a file path, we use the leaf name for the title.
-    if (!this._dataItem && this.active && !this.getDownloadMetaData().filePath) {
-      this._metaData = null;
-      this._updateDisplayNameAndIcon();
-    }
   },
 
   placesNodeAnnotationChanged: function DES_placesNodeAnnotationChanged(aAnnoName) {
@@ -1264,12 +1256,7 @@ DownloadsPlacesView.prototype = {
     });
   },
 
-  nodeTitleChanged: function DPV_nodeTitleChanged(aNode, aNewTitle) {
-    this._forEachDownloadElementShellForURI(aNode.uri, function(aDownloadElementShell) {
-      aDownloadElementShell.placesNodeTitleChanged();
-    });
-  },
-
+  nodeTitleChanged() {},
   nodeKeywordChanged: function() {},
   nodeDateAddedChanged: function() {},
   nodeLastModifiedChanged: function() {},
