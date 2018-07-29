@@ -1071,12 +1071,14 @@ function DownloadsViewItem(aDataItem, aElement)
   // as bug 239948 comment 12 is handled, the "file" property will be always a
   // file URL rather than a file name.  At that point we should remove the "//"
   // (double slash) from the icon URI specification (see test_moz_icon_uri.js).
-  this.image = "moz-icon://" + this.dataItem.file + "?size=32";
+  this.image = "moz-icon://" + this.dataItem.download.target.path + "?size=32";
 
   let s = DownloadsCommon.strings;
   let [displayHost, fullHost] =
-    DownloadUtils.getURIHost(this.dataItem.referrer || this.dataItem.uri);
+    DownloadUtils.getURIHost(this.dataItem.download.source.referrer ||
+                             this.dataItem.download.source.url);
 
+  let target = OS.Path.basename(this.dataItem.download.target.path);
   let attributes = {
     "type": "download",
     "class": "download-state",
@@ -1084,9 +1086,9 @@ function DownloadsViewItem(aDataItem, aElement)
     "downloadGuid": this.dataItem.downloadGuid,
     "state": this.dataItem.state,
     "progress": this.dataItem.inProgress ? this.dataItem.percentComplete : 100,
-    "displayName": this.dataItem.target,
-    "extendedDisplayName": s.statusSeparator(this.dataItem.target, displayHost),
-    "extendedDisplayNameTip": s.statusSeparator(this.dataItem.target, fullHost),
+    "displayName": target,
+    "extendedDisplayName": s.statusSeparator(target, displayHost),
+    "extendedDisplayNameTip": s.statusSeparator(target, fullHost),
     "image": this.image
   };
 
@@ -1203,7 +1205,7 @@ DownloadsViewItem.prototype = {
     let statusTip = "";
 
     if (this.dataItem.paused) {
-      let transfer = DownloadUtils.getTransferTotal(this.dataItem.currBytes,
+      let transfer = DownloadUtils.getTransferTotal(this.dataItem.download.currentBytes,
                                                     this.dataItem.maxBytes);
 
       // We use the same XUL label to display both the state and the amount
@@ -1216,17 +1218,17 @@ DownloadsViewItem.prototype = {
       // The remaining time per download is likely enough information for the
       // panel.
       [status] =
-        DownloadUtils.getDownloadStatusNoRate(this.dataItem.currBytes,
+        DownloadUtils.getDownloadStatusNoRate(this.dataItem.download.currentBytes,
                                               this.dataItem.maxBytes,
-                                              this.dataItem.speed,
+                                              this.dataItem.download.speed,
                                               this.lastEstimatedSecondsLeft);
 
       // We are, however, OK with displaying the rate in the tooltip.
       let newEstimatedSecondsLeft;
       [statusTip, newEstimatedSecondsLeft] =
-        DownloadUtils.getDownloadStatus(this.dataItem.currBytes,
+        DownloadUtils.getDownloadStatus(this.dataItem.download.currentBytes,
                                         this.dataItem.maxBytes,
-                                        this.dataItem.speed,
+                                        this.dataItem.download.speed,
                                         this.lastEstimatedSecondsLeft);
       this.lastEstimatedSecondsLeft = newEstimatedSecondsLeft;
     } else if (this.dataItem.starting) {
@@ -1248,7 +1250,8 @@ DownloadsViewItem.prototype = {
       }.apply(this);
 
       let [displayHost, fullHost] =
-        DownloadUtils.getURIHost(this.dataItem.referrer || this.dataItem.uri);
+        DownloadUtils.getURIHost(this.dataItem.download.source.referrer ||
+                                 this.dataItem.download.source.url);
 
       let end = new Date(this.dataItem.endTime);
       let [displayDate, fullDate] = DownloadUtils.getReadableDates(end);
@@ -1294,18 +1297,17 @@ DownloadsViewItem.prototype = {
    */
   verifyTargetExists: function DVI_verifyTargetExists() {
     // We don't need to check if the download is not finished successfully.
-    if (!this.dataItem.openable) {
+    if (!this.dataItem.download.succeeded) {
       return;
     }
 
-    OS.File.exists(this.dataItem.localFile.path).then(
-      function DVI_RTE_onSuccess(aExists) {
-        if (aExists) {
-          this._element.setAttribute("exists", "true");
-        } else {
-          this._element.removeAttribute("exists");
-        }
-      }.bind(this), Cu.reportError);
+    OS.File.exists(this.dataItem.download.target.path).then(aExists => {
+      if (aExists) {
+        this._element.setAttribute("exists", "true");
+      } else {
+        this._element.removeAttribute("exists");
+      }
+    }).catch(Cu.reportError);
   },
 };
 
@@ -1434,18 +1436,20 @@ DownloadsViewItemController.prototype = {
   {
     switch (aCommand) {
       case "downloadsCmd_open": {
-        return this.dataItem.openable && this.dataItem.localFile.exists();
+        return this.dataItem.download.succeeded &&
+               this.dataItem.localFile.exists();
       }
       case "downloadsCmd_show": {
         return this.dataItem.localFile.exists() ||
                this.dataItem.partFile.exists();
       }
       case "downloadsCmd_pauseResume":
-        return this.dataItem.inProgress && this.dataItem.resumable;
+        return this.dataItem.inProgress &&
+               this.dataItem.download.hasPartialData;
       case "downloadsCmd_retry":
         return this.dataItem.canRetry;
       case "downloadsCmd_openReferrer":
-        return !!this.dataItem.referrer;
+        return !!this.dataItem.download.source.referrer;
       case "cmd_delete":
       case "downloadsCmd_cancel":
       case "downloadsCmd_copyLocation":
@@ -1474,20 +1478,22 @@ DownloadsViewItemController.prototype = {
     cmd_delete: function DVIC_cmd_delete()
     {
       Downloads.getList(Downloads.ALL)
-               .then(list => list.remove(this.dataItem._download))
-               .then(() => this.dataItem._download.finalize(true))
+               .then(list => list.remove(this.dataItem.download))
+               .then(() => this.dataItem.download.finalize(true))
                .catch(Cu.reportError);
-      PlacesUtils.bhistory.removePage(NetUtil.newURI(this.dataItem.uri));
+      PlacesUtils.bhistory.removePage(
+                             NetUtil.newURI(this.dataItem.download.source.url));
     },
 
     downloadsCmd_cancel: function DVIC_downloadsCmd_cancel()
     {
-      this.dataItem.cancel();
+      this.dataItem.download.cancel().catch(() => {});
+      this.dataItem.download.removePartialData().catch(Cu.reportError);
     },
 
     downloadsCmd_open: function DVIC_downloadsCmd_open()
     {
-      this.dataItem.openLocalFile(window);
+      this.dataItem.download.launch().catch(Cu.reportError);
       // We explicitly close the panel here to give the user the feedback that
       // their click has been received, and we're handling the action.
       // Otherwise, we'd have to wait for the file-type handler to execute
@@ -1498,7 +1504,7 @@ DownloadsViewItemController.prototype = {
 
     downloadsCmd_show: function DVIC_downloadsCmd_show()
     {
-      this.dataItem.showLocalFile();
+      DownloadsCommon.showDownloadedFile(this.dataItem.localFile);
 
       // We explicitly close the panel here to give the user the feedback that
       // their click has been received, and we're handling the action.
@@ -1510,24 +1516,28 @@ DownloadsViewItemController.prototype = {
 
     downloadsCmd_pauseResume: function DVIC_downloadsCmd_pauseResume()
     {
-      this.dataItem.togglePauseResume();
+      if (this.dataItem.download.stopped) {
+        this.dataItem.download.start();
+      } else {
+        this.dataItem.download.cancel();
+      }
     },
 
     downloadsCmd_retry: function DVIC_downloadsCmd_retry()
     {
-      this.dataItem.retry();
+      this.dataItem.download.start().catch(() => {});
     },
 
     downloadsCmd_openReferrer: function DVIC_downloadsCmd_openReferrer()
     {
-      openURL(this.dataItem.referrer);
+      openURL(this.dataItem.download.source.referrer);
     },
 
     downloadsCmd_copyLocation: function DVIC_downloadsCmd_copyLocation()
     {
       let clipboard = Cc["@mozilla.org/widget/clipboardhelper;1"]
                       .getService(Ci.nsIClipboardHelper);
-      clipboard.copyString(this.dataItem.uri, document);
+      clipboard.copyString(this.dataItem.download.source.url, document);
     },
 
     downloadsCmd_doDefault: function DVIC_downloadsCmd_doDefault()

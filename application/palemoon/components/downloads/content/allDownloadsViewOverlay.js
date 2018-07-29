@@ -137,7 +137,7 @@ DownloadElementShell.prototype = {
   // The download uri (as a string)
   get downloadURI() {
     if (this._dataItem)
-     return this._dataItem.uri;
+     return this._dataItem.download.source.url;
     if (this._placesNode)
       return this._placesNode.uri;
     throw new Error("Unexpected download element state");
@@ -246,21 +246,22 @@ DownloadElementShell.prototype = {
   getDownloadMetaData: function DES_getDownloadMetaData() {
     if (!this._metaData) {
       if (this._dataItem) {
+        let leafName = OS.Path.basename(this._dataItem.download.target.path);
         let s = DownloadsCommon.strings;
-        let referrer = this._dataItem.referrer || this._dataItem.uri;
+        let referrer = this.dataItem.download.source.referrer ||
+                       this.dataItem.download.source.url;
         let [displayHost, fullHost] = DownloadUtils.getURIHost(referrer);
         this._metaData = {
           state:                  this._dataItem.state,
           endTime:                this._dataItem.endTime,
-          fileName:               this._dataItem.target,
-          displayName:            this._dataItem.target,
-          extendedDisplayName:    s.statusSeparator(this._dataItem.target, displayHost),
-          extendedDisplayNameTip: s.statusSeparator(this._dataItem.target, fullHost)
+          fileName:               leafName,
+          displayName:            leafName,
+          extendedDisplayName:    s.statusSeparator(leafName, displayHost),
+          extendedDisplayNameTip: s.statusSeparator(leafName, fullHost)
         };
         if (this._dataItem.done)
           this._metaData.fileSize = this._dataItem.maxBytes;
-        if (this._dataItem.localFile)
-          this._metaData.filePath = this._dataItem.localFile.path;
+        this._metaData.filePath = this._dataItem.download.target.path;
       }
       else {
         try {
@@ -304,7 +305,7 @@ DownloadElementShell.prototype = {
     if (this._dataItem && this._dataItem.inProgress) {
       if (this._dataItem.paused) {
         let transfer =
-          DownloadUtils.getTransferTotal(this._dataItem.currBytes,
+          DownloadUtils.getTransferTotal(this._dataItem.download.currentBytes,
                                          this._dataItem.maxBytes);
 
         // We use the same XUL label to display both the state and the amount
@@ -313,9 +314,9 @@ DownloadElementShell.prototype = {
       }
       if (this._dataItem.state == nsIDM.DOWNLOAD_DOWNLOADING) {
         let [status, newEstimatedSecondsLeft] =
-          DownloadUtils.getDownloadStatus(this.dataItem.currBytes,
+          DownloadUtils.getDownloadStatus(this.dataItem.download.currentBytes,
                                           this.dataItem.maxBytes,
-                                          this.dataItem.speed,
+                                          this.dataItem.download.speed,
                                           this._lastEstimatedSecondsLeft || Infinity);
         this._lastEstimatedSecondsLeft = newEstimatedSecondsLeft;
         return status;
@@ -365,7 +366,7 @@ DownloadElementShell.prototype = {
     }
 
     // TODO (bug 829201): history downloads should get the referrer from Places.
-    let referrer = this._dataItem && this._dataItem.referrer ||
+    let referrer = this._dataItem && this._dataItem.download.source.referrer ||
                    this.downloadURI;
     let [displayHost, fullHost] = DownloadUtils.getURIHost(referrer);
 
@@ -488,10 +489,10 @@ DownloadElementShell.prototype = {
       return false;
     switch (aCommand) {
       case "downloadsCmd_open": {
-        // We cannot open a session download file unless it's done ("openable").
-        // If it's finished, we need to make sure the file was not removed,
+        // We cannot open a session download file unless it's succeeded.
+        // If it's succeeded, we need to make sure the file was not removed,
         // as we do for past downloads.
-        if (this._dataItem && !this._dataItem.openable)
+        if (this._dataItem && !this._dataItem.download.succeeded) {
           return false;
 
         if (this._targetFileInfoFetched)
@@ -515,12 +516,13 @@ DownloadElementShell.prototype = {
         return this.getDownloadMetaData().state == nsIDM.DOWNLOAD_FINISHED;
       }
       case "downloadsCmd_pauseResume":
-        return this._dataItem && this._dataItem.inProgress && this._dataItem.resumable;
+        return this._dataItem && this._dataItem.inProgress &&
+               this._dataItem.download.hasPartialData;
       case "downloadsCmd_retry":
         // An history download can always be retried.
         return !this._dataItem || this._dataItem.canRetry;
       case "downloadsCmd_openReferrer":
-        return this._dataItem && !!this._dataItem.referrer;
+        return this._dataItem && !!this._dataItem.download.source.referrer;
       case "cmd_delete":
         // The behavior in this case is somewhat unexpected, so we disallow that.
         if (this._placesNode && this._dataItem && this._dataItem.inProgress)
@@ -546,36 +548,35 @@ DownloadElementShell.prototype = {
   doCommand: function DES_doCommand(aCommand) {
     switch (aCommand) {
       case "downloadsCmd_open": {
-        let file = this._dataItem ?
-          this.dataItem.localFile :
-          new FileUtils.File(this.getDownloadMetaData().filePath);
+        let file = new FileUtils.File(this._dataItem
+                                      ? this._dataItem.download.target.path
+                                      : this.getDownloadMetaData().filePath);
 
         DownloadsCommon.openDownloadedFile(file, null, window);
         break;
       }
       case "downloadsCmd_show": {
-        if (this._dataItem) {
-          this._dataItem.showLocalFile();
-        }
-        else {
-          let file = new FileUtils.File(this.getDownloadMetaData().filePath);
-          DownloadsCommon.showDownloadedFile(file);
-        }
+        let file = new FileUtils.File(this._dataItem
+                                      ? this._dataItem.download.target.path
+                                      : this.getDownloadMetaData().filePath);
+
+        DownloadsCommon.showDownloadedFile(file);
         break;
       }
       case "downloadsCmd_openReferrer": {
-        openURL(this._dataItem.referrer);
+        openURL(this._dataItem.download.source.referrer);
         break;
       }
       case "downloadsCmd_cancel": {
-        this._dataItem.cancel();
+        this._dataItem.download.cancel().catch(() => {});
+        this._dataItem.download.removePartialData().catch(Cu.reportError);
         break;
       }
       case "cmd_delete": {
         if (this._dataItem)
           Downloads.getList(Downloads.ALL)
-                   .then(list => list.remove(this._dataItem._download))
-                   .then(() => this._dataItem._download.finalize(true))
+                   .then(list => list.remove(this._dataItem.download))
+                   .then(() => this._dataItem.download.finalize(true))
                    .catch(Cu.reportError);
         if (this._placesNode)
           PlacesUtils.bhistory.removePage(this._downloadURIObj);
@@ -583,13 +584,17 @@ DownloadElementShell.prototype = {
        }
       case "downloadsCmd_retry": {
         if (this._dataItem)
-          this._dataItem.retry();
+          this._dataItem.download.start().catch(() => {});
         else
           this._retryAsHistoryDownload();
         break;
       }
       case "downloadsCmd_pauseResume": {
-        this._dataItem.togglePauseResume();
+        if (this._dataItem.download.stopped) {
+          this._dataItem.download.start();
+        } else {
+          this._dataItem.download.cancel();
+        }
         break;
       }
     }
@@ -836,7 +841,8 @@ DownloadsPlacesView.prototype = {
   _addDownloadData:
   function DPV_addDownloadData(aDataItem, aPlacesNode, aNewest = false,
                                aDocumentFragment = null) {
-    let downloadURI = aPlacesNode ? aPlacesNode.uri : aDataItem.uri;
+    let downloadURI = aPlacesNode ? aPlacesNode.uri
+                                  : aDataItem.download.source.url;
     let shellsForURI = this._downloadElementsShellsForURI.get(downloadURI);
     if (!shellsForURI) {
       shellsForURI = new Set();
@@ -989,7 +995,8 @@ DownloadsPlacesView.prototype = {
 
   _removeSessionDownloadFromView:
   function DPV__removeSessionDownloadFromView(aDataItem) {
-    let shells = this._downloadElementsShellsForURI.get(aDataItem.uri);
+    let shells = this._downloadElementsShellsForURI
+                     .get(aDataItem.download.source.url);
     if (shells.size == 0)
       throw new Error("Should have had at leaat one shell for this uri");
 
@@ -1005,7 +1012,7 @@ DownloadsPlacesView.prototype = {
       this._removeElement(shell.element);
       shells.delete(shell);
       if (shells.size == 0)
-        this._downloadElementsShellsForURI.delete(aDataItem.uri);
+        this._downloadElementsShellsForURI.delete(aDataItem.download.source.url);
     }
     else {
       // We have one download element shell containing both a session download
