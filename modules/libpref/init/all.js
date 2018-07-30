@@ -4604,8 +4604,8 @@ pref("gfx.direct2d.force-enabled", false);
 
 pref("layers.prefer-opengl", false);
 pref("layers.prefer-d3d9", false);
-// Disable for now due to bug 1304360
-pref("layers.allow-d3d9-fallback", false);
+// Enable fallback if d3d11 can't be used. See bug #1262187
+pref("layers.allow-d3d9-fallback", true);
 #endif
 
 // Copy-on-write canvas
