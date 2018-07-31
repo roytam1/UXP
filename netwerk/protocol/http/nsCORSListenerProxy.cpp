@@ -577,7 +577,7 @@ nsCORSListenerProxy::CheckRequestApproved(nsIRequest* aRequest)
   // check for duplicate headers
   rv = http->VisitOriginalResponseHeaders(visitor);
   if (NS_FAILED(rv)) {
-    LogBlockedRequest(aRequest, "CORSAllowOriginNotMatchingOrigin", nullptr);
+    LogBlockedRequest(aRequest, "CORSMultipleAllowOriginNotAllowed", nullptr);
     return rv;
   }
 
