@@ -1435,11 +1435,7 @@ pref("network.http.response.timeout", 300);
 // Limit the absolute number of http connections.
 // Note: the socket transport service will clamp the number below this if the OS
 // cannot allocate that many FDs
-#ifdef ANDROID
 pref("network.http.max-connections", 256);
-#else
-pref("network.http.max-connections", 900);
-#endif
 
 // If NOT connecting via a proxy, then
 // a new connection will only be attempted if the number of active persistent
@@ -1487,13 +1483,13 @@ pref("network.http.redirection-limit", 20);
 pref("network.http.accept-encoding", "gzip, deflate");
 pref("network.http.accept-encoding.secure", "gzip, deflate, br");
 
-pref("network.http.pipelining"      , false);
+pref("network.http.pipelining"      , true);
 pref("network.http.pipelining.ssl"  , false); // disable pipelining over SSL
 pref("network.http.pipelining.abtest", false);
 pref("network.http.proxy.pipelining", false);
 
 // Max number of requests in the pipeline
-pref("network.http.pipelining.maxrequests" , 32);
+pref("network.http.pipelining.maxrequests" , 16);
 
 // An optimistic request is one pipelined when policy might allow a new
 // connection instead

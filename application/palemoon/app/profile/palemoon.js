@@ -544,6 +544,25 @@ pref("privacy.sanitize.migrateFx3Prefs",    false);
 
 pref("network.proxy.share_proxy_settings",  false); // use the same proxy settings for all protocols
 
+// Disable speculative half-open connections on Pale Moon
+pref("network.http.speculative-parallel-limit", 0);
+
+// Enable pipelining over SSL
+pref("network.http.pipelining.ssl", true);
+
+// Disable predictor/prefetch of URIs
+pref("network.predictor.enabled", false);
+pref("network.prefetch-next", false);
+
+// Disable DNS prefetching
+pref("network.dns.disablePrefetch", true);
+
+// Tune DNS lookups
+pref("network.dnsCacheEntries", 800);
+pref("network.dnsCacheExpiration", 180);            // 3 minutes if no TTL given by DNS resolver
+pref("network.dns.get-ttl", true);                  // Get and use DNS resolver TTL
+pref("network.dnsCacheExpirationGracePeriod", 60);  // 1 minute grace period for stale entry
+
 // simple gestures support
 pref("browser.gesture.swipe.left", "Browser:BackOrBackDuplicate");
 pref("browser.gesture.swipe.right", "Browser:ForwardOrForwardDuplicate");
