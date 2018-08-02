@@ -817,14 +817,6 @@ toolbar[brighttext] #bookmarks-menu-button.bookmark-item {
 }
 %endif
 
-/* ::::: fullscreen window controls ::::: */
-
-#minimize-button,
-#close-button,
-#fullscreen-button ~ #window-controls > #restore-button {
-    display: none;
-}
-
 /* ::::: Location Bar ::::: */
 
 #urlbar,
