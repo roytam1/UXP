@@ -18,6 +18,9 @@ Additional documentation relevant to this source code can be found in the `/docs
 directory. This will contain relevant documentation regarding contributing,
 using and distributing this code and its binaries.
 
+If you are interested in the development and building side of things, some
+information will be available on the [Pale Moon developer wiki](http://developer.palemoon.org).
+
 ### A note about trademarks and branding
 
 Although this repository is licensed under Mozilla Public License v2.0, the
