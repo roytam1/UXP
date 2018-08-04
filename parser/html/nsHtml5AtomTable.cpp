@@ -24,6 +24,7 @@ nsHtml5AtomEntry::~nsHtml5AtomEntry()
 }
 
 nsHtml5AtomTable::nsHtml5AtomTable()
+  : mRecentlyUsedParserAtoms{}
 {
 #ifdef DEBUG
   NS_GetMainThread(getter_AddRefs(mPermittedLookupThread));
@@ -31,11 +32,7 @@ nsHtml5AtomTable::nsHtml5AtomTable()
 }
 
 nsHtml5AtomTable::~nsHtml5AtomTable()
-  : mRecentlyUsedParserAtoms{}
 {
-#ifdef DEBUG
-  NS_GetMainThread(getter_AddRefs(mPermittedLookupThread));
-#endif
 }
 
 nsIAtom*
