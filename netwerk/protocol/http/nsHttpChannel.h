@@ -452,8 +452,6 @@ private:
 
     void SetPushedStream(Http2PushedStream *stream);
 
-    void MaybeWarnAboutAppCache();
-
     void SetDoNotTrack();
 
 private:

@@ -3372,10 +3372,6 @@ nsHttpChannel::ContinueProcessFallback(nsresult rv)
     }
     NS_ENSURE_SUCCESS(rv, rv);
 
-    if (mLoadFlags & LOAD_INITIAL_DOCUMENT_URI) {
-        MaybeWarnAboutAppCache();
-    }
-
     // close down this channel
     Cancel(NS_BINDING_REDIRECTED);
 
@@ -4260,10 +4256,6 @@ nsHttpChannel::OnOfflineCacheEntryAvailable(nsICacheEntry *aEntry,
         mCacheEntryIsReadOnly = true;
         mCacheEntry = aEntry;
         mCacheEntryIsWriteOnly = false;
-
-        if (mLoadFlags & LOAD_INITIAL_DOCUMENT_URI && !mApplicationCacheForWrite) {
-            MaybeWarnAboutAppCache();
-        }
 
         return NS_OK;
     }
@@ -8184,21 +8176,6 @@ nsHttpChannel::ResumeInternal()
     }
 
     return NS_FAILED(rvTransaction) ? rvTransaction : rvCache;
-}
-
-void
-nsHttpChannel::MaybeWarnAboutAppCache()
-{
-    // First, accumulate a telemetry ping about appcache usage.
-    Telemetry::Accumulate(Telemetry::HTTP_OFFLINE_CACHE_DOCUMENT_LOAD,
-                          true);
-
-    // Then, issue a deprecation warning.
-    nsCOMPtr<nsIDeprecationWarner> warner;
-    GetCallback(warner);
-    if (warner) {
-        warner->IssueWarning(nsIDocument::eAppCache, false);
-    }
 }
 
 void
