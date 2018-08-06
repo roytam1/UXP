@@ -1,0 +1,31 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXTRA_COMPONENTS += [
+    'nsSearchSuggestions.js',
+]
+
+EXTRA_PP_COMPONENTS += [
+    'nsSearchService.js',
+]
+
+if CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_FENNEC'] or CONFIG['MOZ_XULRUNNER']:
+    DEFINES['HAVE_SIDEBAR'] = True
+    EXTRA_COMPONENTS += [
+    'nsSidebar.js',
+    ]
+
+EXTRA_JS_MODULES += [
+    'SearchSuggestionController.jsm',
+]
+
+EXTRA_PP_COMPONENTS += [
+    'toolkitsearch.manifest',
+]
+
+EXTRA_JS_MODULES += [
+    'SearchStaticData.jsm',
+]
