@@ -6,9 +6,10 @@
 
 XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
 
-DIRS += [
-    'current',
-]
+if CONFIG['MC_PALEMOON']:
+    DIRS += ['orginal']
+else:
+    DIRS += ['current']
 
 with Files('**'):
     BUG_COMPONENT = ('Firefox', 'Search')
