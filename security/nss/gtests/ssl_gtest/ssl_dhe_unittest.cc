@@ -103,8 +103,8 @@ TEST_P(TlsConnectGenericPre13, ConnectFfdheServer) {
 
 class TlsDheServerKeyExchangeDamager : public TlsHandshakeFilter {
  public:
-  TlsDheServerKeyExchangeDamager(const std::shared_ptr<TlsAgent>& agent)
-      : TlsHandshakeFilter(agent, {kTlsHandshakeServerKeyExchange}) {}
+  TlsDheServerKeyExchangeDamager(const std::shared_ptr<TlsAgent>& a)
+      : TlsHandshakeFilter(a, {kTlsHandshakeServerKeyExchange}) {}
   virtual PacketFilter::Action FilterHandshake(
       const TlsHandshakeFilter::HandshakeHeader& header,
       const DataBuffer& input, DataBuffer* output) {
@@ -141,9 +141,9 @@ class TlsDheSkeChangeY : public TlsHandshakeFilter {
     kYZeroPad
   };
 
-  TlsDheSkeChangeY(const std::shared_ptr<TlsAgent>& agent,
-                   uint8_t handshake_type, ChangeYTo change)
-      : TlsHandshakeFilter(agent, {handshake_type}), change_Y_(change) {}
+  TlsDheSkeChangeY(const std::shared_ptr<TlsAgent>& a, uint8_t handshake_type,
+                   ChangeYTo change)
+      : TlsHandshakeFilter(a, {handshake_type}), change_Y_(change) {}
 
  protected:
   void ChangeY(const DataBuffer& input, DataBuffer* output, size_t offset,
@@ -208,9 +208,9 @@ class TlsDheSkeChangeY : public TlsHandshakeFilter {
 
 class TlsDheSkeChangeYServer : public TlsDheSkeChangeY {
  public:
-  TlsDheSkeChangeYServer(const std::shared_ptr<TlsAgent>& agent,
-                         ChangeYTo change, bool modify)
-      : TlsDheSkeChangeY(agent, kTlsHandshakeServerKeyExchange, change),
+  TlsDheSkeChangeYServer(const std::shared_ptr<TlsAgent>& a, ChangeYTo change,
+                         bool modify)
+      : TlsDheSkeChangeY(a, kTlsHandshakeServerKeyExchange, change),
         modify_(modify),
         p_() {}
 
@@ -247,9 +247,9 @@ class TlsDheSkeChangeYServer : public TlsDheSkeChangeY {
 class TlsDheSkeChangeYClient : public TlsDheSkeChangeY {
  public:
   TlsDheSkeChangeYClient(
-      const std::shared_ptr<TlsAgent>& agent, ChangeYTo change,
+      const std::shared_ptr<TlsAgent>& a, ChangeYTo change,
       std::shared_ptr<const TlsDheSkeChangeYServer> server_filter)
-      : TlsDheSkeChangeY(agent, kTlsHandshakeClientKeyExchange, change),
+      : TlsDheSkeChangeY(a, kTlsHandshakeClientKeyExchange, change),
         server_filter_(server_filter) {}
 
  protected:
@@ -357,8 +357,8 @@ INSTANTIATE_TEST_CASE_P(
 
 class TlsDheSkeMakePEven : public TlsHandshakeFilter {
  public:
-  TlsDheSkeMakePEven(const std::shared_ptr<TlsAgent>& agent)
-      : TlsHandshakeFilter(agent, {kTlsHandshakeServerKeyExchange}) {}
+  TlsDheSkeMakePEven(const std::shared_ptr<TlsAgent>& a)
+      : TlsHandshakeFilter(a, {kTlsHandshakeServerKeyExchange}) {}
 
   virtual PacketFilter::Action FilterHandshake(
       const TlsHandshakeFilter::HandshakeHeader& header,
@@ -390,8 +390,8 @@ TEST_P(TlsConnectGenericPre13, MakeDhePEven) {
 
 class TlsDheSkeZeroPadP : public TlsHandshakeFilter {
  public:
-  TlsDheSkeZeroPadP(const std::shared_ptr<TlsAgent>& agent)
-      : TlsHandshakeFilter(agent, {kTlsHandshakeServerKeyExchange}) {}
+  TlsDheSkeZeroPadP(const std::shared_ptr<TlsAgent>& a)
+      : TlsHandshakeFilter(a, {kTlsHandshakeServerKeyExchange}) {}
 
   virtual PacketFilter::Action FilterHandshake(
       const TlsHandshakeFilter::HandshakeHeader& header,
@@ -475,6 +475,45 @@ TEST_P(TlsConnectTls13, NamedGroupMismatch13) {
   client_->CheckErrorCode(SSL_ERROR_NO_CYPHER_OVERLAP);
 }
 
+// Replace the key share in the server key exchange message with one that's
+// larger than 8192 bits.
+class TooLongDHEServerKEXFilter : public TlsHandshakeFilter {
+ public:
+  TooLongDHEServerKEXFilter(const std::shared_ptr<TlsAgent>& server)
+      : TlsHandshakeFilter(server, {kTlsHandshakeServerKeyExchange}) {}
+
+ protected:
+  virtual PacketFilter::Action FilterHandshake(const HandshakeHeader& header,
+                                               const DataBuffer& input,
+                                               DataBuffer* output) {
+    // Replace the server key exchange message very large DH shares that are
+    // not supported by NSS.
+    const uint32_t share_len = 0x401;
+    const uint8_t zero_share[share_len] = {0x80};
+    size_t offset = 0;
+    // Write dh_p.
+    offset = output->Write(offset, share_len, 2);
+    offset = output->Write(offset, zero_share, share_len);
+    // Write dh_g.
+    offset = output->Write(offset, share_len, 2);
+    offset = output->Write(offset, zero_share, share_len);
+    // Write dh_Y.
+    offset = output->Write(offset, share_len, 2);
+    offset = output->Write(offset, zero_share, share_len);
+
+    return CHANGE;
+  }
+};
+
+TEST_P(TlsConnectGenericPre13, TooBigDHGroup) {
+  EnableOnlyDheCiphers();
+  MakeTlsFilter<TooLongDHEServerKEXFilter>(server_);
+  client_->SetOption(SSL_REQUIRE_DH_NAMED_GROUPS, PR_FALSE);
+  ConnectExpectAlert(client_, kTlsAlertIllegalParameter);
+  server_->CheckErrorCode(SSL_ERROR_ILLEGAL_PARAMETER_ALERT);
+  client_->CheckErrorCode(SSL_ERROR_DH_KEY_TOO_LONG);
+}
+
 // Even though the client doesn't have DHE groups enabled the server assumes it
 // does. The client requires named groups and thus does not accept FF3072 as
 // custom group in contrast to the previous test.
@@ -546,9 +585,9 @@ TEST_P(TlsConnectTls13, ResumeFfdhe) {
 
 class TlsDheSkeChangeSignature : public TlsHandshakeFilter {
  public:
-  TlsDheSkeChangeSignature(const std::shared_ptr<TlsAgent>& agent,
-                           uint16_t version, const uint8_t* data, size_t len)
-      : TlsHandshakeFilter(agent, {kTlsHandshakeServerKeyExchange}),
+  TlsDheSkeChangeSignature(const std::shared_ptr<TlsAgent>& a, uint16_t version,
+                           const uint8_t* data, size_t len)
+      : TlsHandshakeFilter(a, {kTlsHandshakeServerKeyExchange}),
         version_(version),
         data_(data),
         len_(len) {}
