@@ -16,7 +16,9 @@ libs-%:
 	@$(MAKE) -C ../../netwerk/locales/ libs AB_CD=$* XPI_NAME=locale-$*
 	@$(MAKE) -C ../../dom/locales/ libs AB_CD=$* XPI_NAME=locale-$*
 	@$(MAKE) -C ../../security/manager/locales/ libs AB_CD=$* XPI_NAME=locale-$*
+ifdef MOZ_DEVTOOLS_SERVER
 	@$(MAKE) -C ../../devtools/shared/locales/ libs AB_CD=$* XPI_NAME=locale-$*
+endif
 	@$(MAKE) libs AB_CD=$* XPI_NAME=locale-$*
 
 # target to be used by multi-locale l10n builds, just add this locale
