@@ -11,7 +11,8 @@ Examples of behavior that contributes to creating a positive environment include
 * Using welcoming and inclusive language
 * Being courteous (use "please" when you ask something of someone)
 * Being respectful of differing viewpoints and experiences
-* Gracefully accepting constructive criticism, even if you disagree with such criticism. Similarly, accept that someone may not act on criticism given.
+* Gracefully accepting constructive criticism, even if you disagree with such criticism.
+* Similarly, accepting that someone may not act on criticism given.
 * Focusing on what is best for the community and its projects
 * Showing understanding and a reasonable level of empathy towards other community members
 
