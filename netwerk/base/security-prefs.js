@@ -42,6 +42,8 @@ pref("security.ssl3.dhe_rsa_aes_128_sha", false);
 pref("security.ssl3.rsa_aes_128_gcm_sha256", false);
 pref("security.ssl3.rsa_aes_128_sha256", false);
 pref("security.ssl3.rsa_des_ede3_sha", false);
+pref("security.ssl3.rsa_rc4_128_sha", false);
+pref("security.ssl3.rsa_rc4_128_md5", false);
 
 pref("security.content.signature.root_hash",
      "97:E8:BA:9C:F1:2F:B3:DE:53:CC:42:A4:E6:57:7E:D6:4D:F4:93:C2:47:B4:14:FE:A0:36:81:8D:38:23:56:0E");

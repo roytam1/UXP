@@ -1376,12 +1376,18 @@ static const CipherPref sCipherPrefs[] = {
    TLS_RSA_WITH_AES_256_CBC_SHA, true },
 
 // Expensive/deprecated/weak
+// Deprecated
  { "security.ssl3.rsa_aes_128_gcm_sha256",
    TLS_RSA_WITH_AES_128_GCM_SHA256, false }, // Deprecated
  { "security.ssl3.rsa_aes_128_sha256",
    TLS_RSA_WITH_AES_128_CBC_SHA256, false }, // Deprecated
+// Weak/vulnerable
  { "security.ssl3.rsa_des_ede3_sha",
-   TLS_RSA_WITH_3DES_EDE_CBC_SHA, false }, // Weak (3DES)
+   TLS_RSA_WITH_3DES_EDE_CBC_SHA, false, true }, // Weak (3DES)
+ { "security.ssl3.rsa_rc4_128_sha",
+   TLS_RSA_WITH_RC4_128_SHA, false, true }, // RC4
+ { "security.ssl3.rsa_rc4_128_md5",
+   TLS_RSA_WITH_RC4_128_MD5, false, true }, // RC4, HMAC-MD5
 
  // All the rest are disabled
 
