@@ -1540,7 +1540,7 @@ CipherSuiteChangeObserver::Observe(nsISupports* aSubject,
           // are enabled in prefs. They are only used on specific
           // sockets as a part of a fallback mechanism.
           // Only the main thread will change sEnabledWeakCiphers.
-          uint32_t enabledWeakCiphers = sEnabledWeakCiphers;
+          uint64_t enabledWeakCiphers = sEnabledWeakCiphers;
           if (cipherEnabled) {
             enabledWeakCiphers |= ((uint64_t)1 << i);
           } else {
