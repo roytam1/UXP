@@ -18,7 +18,12 @@ public:
       Other       // Everything else.
   };
 
-  nsTabSizes() { mozilla::PodZero(this); }
+  nsTabSizes()
+    : mDom(0)
+    , mStyle(0)
+    , mOther(0)
+  {
+  }
 
   void add(Kind kind, size_t n)
   {
