@@ -37,8 +37,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "OS",
                                   "resource://gre/modules/osfile.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
                                   "resource://gre/modules/PlacesUtils.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "TelemetryStopwatch",
-                                  "resource://gre/modules/TelemetryStopwatch.jsm");
 
 XPCOMUtils.defineLazyGetter(this, "gBrandBundle", function() {
   const kBrandBundle = "chrome://branding/locale/brand.properties";
@@ -211,7 +209,6 @@ const AutoMigrate = {
 
   undo: Task.async(function* () {
     let browserId = Preferences.get(kAutoMigrateBrowserPref, "unknown");
-    TelemetryStopwatch.startKeyed("FX_STARTUP_MIGRATION_UNDO_TOTAL_MS", browserId);
     let histogram = Services.telemetry.getHistogramById("FX_STARTUP_MIGRATION_AUTOMATED_IMPORT_UNDO");
     histogram.add(0);
     if (!(yield this.canUndo())) {
@@ -236,38 +233,24 @@ const AutoMigrate = {
       Services.telemetry.getKeyedHistogramById(histogramId).add(browserId, this._errorMap[type]);
     };
 
-    let startTelemetryStopwatch = resourceType => {
-      let histogramId = `FX_STARTUP_MIGRATION_UNDO_${resourceType.toUpperCase()}_MS`;
-      TelemetryStopwatch.startKeyed(histogramId, browserId);
-    };
-    let stopTelemetryStopwatch = resourceType => {
-      let histogramId = `FX_STARTUP_MIGRATION_UNDO_${resourceType.toUpperCase()}_MS`;
-      TelemetryStopwatch.finishKeyed(histogramId, browserId);
-    };
-    startTelemetryStopwatch("bookmarks");
     yield this._removeUnchangedBookmarks(stateData.get("bookmarks")).catch(ex => {
       Cu.reportError("Uncaught exception when removing unchanged bookmarks!");
       Cu.reportError(ex);
     });
-    stopTelemetryStopwatch("bookmarks");
     reportErrorTelemetry("bookmarks");
     histogram.add(15);
 
-    startTelemetryStopwatch("visits");
     yield this._removeSomeVisits(stateData.get("visits")).catch(ex => {
       Cu.reportError("Uncaught exception when removing history visits!");
       Cu.reportError(ex);
     });
-    stopTelemetryStopwatch("visits");
     reportErrorTelemetry("visits");
     histogram.add(20);
 
-    startTelemetryStopwatch("logins");
     yield this._removeUnchangedLogins(stateData.get("logins")).catch(ex => {
       Cu.reportError("Uncaught exception when removing unchanged logins!");
       Cu.reportError(ex);
     });
-    stopTelemetryStopwatch("logins");
     reportErrorTelemetry("logins");
     histogram.add(25);
 
@@ -278,7 +261,6 @@ const AutoMigrate = {
 
     this._purgeUndoState(this.UNDO_REMOVED_REASON_UNDO_USED);
     histogram.add(30);
-    TelemetryStopwatch.finishKeyed("FX_STARTUP_MIGRATION_UNDO_TOTAL_MS", browserId);
   }),
 
   _removeNotificationBars() {

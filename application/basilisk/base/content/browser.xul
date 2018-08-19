@@ -523,8 +523,7 @@
             tabbrowser="content"
             flex="1"
             setfocus="false"
-            tooltip="tabbrowser-tab-tooltip"
-            stopwatchid="FX_TAB_CLICK_MS">
+            tooltip="tabbrowser-tab-tooltip">
         <tab class="tabbrowser-tab" selected="true" visuallyselected="true" fadein="true"/>
       </tabs>
 

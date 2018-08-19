@@ -1001,13 +1001,10 @@ var gHistorySwipeAnimation = {
                    ctx.DRAWWINDOW_ASYNC_DECODE_IMAGES |
                    ctx.DRAWWINDOW_USE_WIDGET_LAYERS);
 
-    TelemetryStopwatch.start("FX_GESTURE_INSTALL_SNAPSHOT_OF_PAGE");
     try {
       this._installCurrentPageSnapshot(canvas);
       this._assignSnapshotToCurrentBrowser(canvas);
-    } finally {
-      TelemetryStopwatch.finish("FX_GESTURE_INSTALL_SNAPSHOT_OF_PAGE");
-    }
+    }  catch (e) {}
   },
 
   /**
@@ -1058,7 +1055,6 @@ var gHistorySwipeAnimation = {
       return;
     }
 
-    TelemetryStopwatch.start("FX_GESTURE_COMPRESS_SNAPSHOT_OF_PAGE");
     try {
       let browser = gBrowser.selectedBrowser;
       let snapshots = browser.snapshots;
@@ -1072,9 +1068,7 @@ var gHistorySwipeAnimation = {
           }
         }, "image/png"
       );
-    } finally {
-      TelemetryStopwatch.finish("FX_GESTURE_COMPRESS_SNAPSHOT_OF_PAGE");
-    }
+    }  catch (e) {}
   },
 
   /**

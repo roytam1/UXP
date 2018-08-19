@@ -135,7 +135,6 @@ Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm", this);
 Cu.import("resource://gre/modules/Promise.jsm", this);
 Cu.import("resource://gre/modules/Services.jsm", this);
 Cu.import("resource://gre/modules/Task.jsm", this);
-Cu.import("resource://gre/modules/TelemetryStopwatch.jsm", this);
 Cu.import("resource://gre/modules/TelemetryTimestamps.jsm", this);
 Cu.import("resource://gre/modules/Timer.jsm", this);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
@@ -564,7 +563,6 @@ var SessionStoreInternal = {
    * Initialize the session using the state provided by SessionStartup
    */
   initSession: function () {
-    TelemetryStopwatch.start("FX_SESSION_RESTORE_STARTUP_INIT_SESSION_MS");
     let state;
     let ss = gSessionStartup;
 
@@ -640,7 +638,6 @@ var SessionStoreInternal = {
         this._prefBranch.getBoolPref("sessionstore.resume_session_once"))
       this._prefBranch.setBoolPref("sessionstore.resume_session_once", false);
 
-    TelemetryStopwatch.finish("FX_SESSION_RESTORE_STARTUP_INIT_SESSION_MS");
     return state;
   },
 
@@ -1247,9 +1244,7 @@ var SessionStoreInternal = {
         if (initialState) {
           Services.obs.notifyObservers(null, NOTIFY_RESTORING_ON_STARTUP, "");
         }
-        TelemetryStopwatch.start("FX_SESSION_RESTORE_STARTUP_ONLOAD_INITIAL_WINDOW_MS");
         this.initializeWindow(aWindow, initialState);
-        TelemetryStopwatch.finish("FX_SESSION_RESTORE_STARTUP_ONLOAD_INITIAL_WINDOW_MS");
 
         // Let everyone know we're done.
         this._deferredInitialized.resolve();
@@ -2857,7 +2852,6 @@ var SessionStoreInternal = {
 
     var activeWindow = this._getMostRecentBrowserWindow();
 
-    TelemetryStopwatch.start("FX_SESSION_RESTORE_COLLECT_ALL_WINDOWS_DATA_MS");
     if (RunState.isRunning) {
       // update the data for all windows with activities since the last save operation
       this._forEachBrowserWindow(function(aWindow) {
@@ -2872,7 +2866,6 @@ var SessionStoreInternal = {
       });
       DirtyWindows.clear();
     }
-    TelemetryStopwatch.finish("FX_SESSION_RESTORE_COLLECT_ALL_WINDOWS_DATA_MS");
 
     // An array that at the end will hold all current window data.
     var total = [];
@@ -2892,9 +2885,7 @@ var SessionStoreInternal = {
         nonPopupCount++;
     }
 
-    TelemetryStopwatch.start("FX_SESSION_RESTORE_COLLECT_COOKIES_MS");
     SessionCookies.update(total);
-    TelemetryStopwatch.finish("FX_SESSION_RESTORE_COLLECT_COOKIES_MS");
 
     // collect the data for all windows yet to be restored
     for (ix in this._statesToRestore) {
@@ -3062,8 +3053,6 @@ var SessionStoreInternal = {
     // initialize window if necessary
     if (aWindow && (!aWindow.__SSi || !this._windows[aWindow.__SSi]))
       this.onLoad(aWindow);
-
-    TelemetryStopwatch.start("FX_SESSION_RESTORE_RESTORE_WINDOW_MS");
 
     // We're not returning from this before we end up calling restoreTabs
     // for this window, so make sure we send the SSWindowStateBusy event.
@@ -3234,8 +3223,6 @@ var SessionStoreInternal = {
 
     // set smoothScroll back to the original value
     tabstrip.smoothScroll = smoothScroll;
-
-    TelemetryStopwatch.finish("FX_SESSION_RESTORE_RESTORE_WINDOW_MS");
 
     this._setWindowStateReady(aWindow);
 

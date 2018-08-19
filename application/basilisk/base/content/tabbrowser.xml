@@ -1054,11 +1054,6 @@
         </body>
       </method>
 
-      <!-- Holds a unique ID for the tab change that's currently being timed.
-           Used to make sure that multiple, rapid tab switches do not try to
-           create overlapping timers. -->
-      <field name="_tabSwitchID">null</field>
-
       <method name="updateCurrentBrowser">
         <parameter name="aForceUpdate"/>
         <body>
@@ -1066,33 +1061,6 @@
             var newBrowser = this.getBrowserAtIndex(this.tabContainer.selectedIndex);
             if (this.mCurrentBrowser == newBrowser && !aForceUpdate)
               return;
-
-            if (!aForceUpdate) {
-              TelemetryStopwatch.start("FX_TAB_SWITCH_UPDATE_MS");
-              if (!gMultiProcessBrowser) {
-                // old way of measuring tab paint which is not valid with e10s.
-                // Waiting until the next MozAfterPaint ensures that we capture
-                // the time it takes to paint, upload the textures to the compositor,
-                // and then composite.
-                if (this._tabSwitchID) {
-                  TelemetryStopwatch.cancel("FX_TAB_SWITCH_TOTAL_MS");
-                }
-
-                let tabSwitchID = Symbol();
-
-                TelemetryStopwatch.start("FX_TAB_SWITCH_TOTAL_MS");
-                this._tabSwitchID = tabSwitchID;
-
-                let onMozAfterPaint = () => {
-                  if (this._tabSwitchID === tabSwitchID) {
-                    TelemetryStopwatch.finish("FX_TAB_SWITCH_TOTAL_MS");
-                    this._tabSwitchID = null;
-                  }
-                  window.removeEventListener("MozAfterPaint", onMozAfterPaint);
-                }
-                window.addEventListener("MozAfterPaint", onMozAfterPaint);
-              }
-            }
 
             var oldTab = this.mCurrentTab;
 
@@ -1286,9 +1254,6 @@
               });
               this.dispatchEvent(event);
             }
-
-            if (!aForceUpdate)
-              TelemetryStopwatch.finish("FX_TAB_SWITCH_UPDATE_MS");
           ]]>
         </body>
       </method>
@@ -4161,8 +4126,6 @@
              */
 
             startTabSwitch: function () {
-              TelemetryStopwatch.cancel("FX_TAB_SWITCH_TOTAL_E10S_MS", window);
-              TelemetryStopwatch.start("FX_TAB_SWITCH_TOTAL_E10S_MS", window);
               this.addMarker("AsyncTabSwitch:Start");
               this.switchInProgress = true;
             },
@@ -4178,31 +4141,18 @@
                   this.getTabState(this.requestedTab) == this.STATE_LOADED) {
                 // After this point the tab has switched from the content thread's point of view.
                 // The changes will be visible after the next refresh driver tick + composite.
-                let time = TelemetryStopwatch.timeElapsed("FX_TAB_SWITCH_TOTAL_E10S_MS", window);
-                if (time != -1) {
-                  TelemetryStopwatch.finish("FX_TAB_SWITCH_TOTAL_E10S_MS", window);
-                  this.log("DEBUG: tab switch time = " + time);
                   this.addMarker("AsyncTabSwitch:Finish");
-                }
                 this.switchInProgress = false;
               }
             },
 
             spinnerDisplayed: function () {
               this.assert(!this.spinnerTab);
-              TelemetryStopwatch.start("FX_TAB_SWITCH_SPINNER_VISIBLE_MS", window);
-              // We have a second, similar probe for capturing recordings of
-              // when the spinner is displayed for very long periods.
-              TelemetryStopwatch.start("FX_TAB_SWITCH_SPINNER_VISIBLE_LONG_MS", window);
               this.addMarker("AsyncTabSwitch:SpinnerShown");
             },
 
             spinnerHidden: function () {
               this.assert(this.spinnerTab);
-              this.log("DEBUG: spinner time = " +
-                       TelemetryStopwatch.timeElapsed("FX_TAB_SWITCH_SPINNER_VISIBLE_MS", window));
-              TelemetryStopwatch.finish("FX_TAB_SWITCH_SPINNER_VISIBLE_MS", window);
-              TelemetryStopwatch.finish("FX_TAB_SWITCH_SPINNER_VISIBLE_LONG_MS", window);
               this.addMarker("AsyncTabSwitch:SpinnerHidden");
               // we do not get a onPaint after displaying the spinner
               this.maybeFinishTabSwitch();

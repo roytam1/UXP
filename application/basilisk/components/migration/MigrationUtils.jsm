@@ -32,8 +32,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "ResponsivenessMonitor",
                                   "resource://gre/modules/ResponsivenessMonitor.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Sqlite",
                                   "resource://gre/modules/Sqlite.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "TelemetryStopwatch",
-                                  "resource://gre/modules/TelemetryStopwatch.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "WindowsRegistry",
                                   "resource://gre/modules/WindowsRegistry.jsm");
 
@@ -254,14 +252,6 @@ this.MigratorPrototype = {
 
     let browserKey = this.getBrowserKey();
 
-    let maybeStartTelemetryStopwatch = resourceType => {
-      let histogramId = getHistogramIdForResourceType(resourceType, "FX_MIGRATION_*_IMPORT_MS");
-      if (histogramId) {
-        TelemetryStopwatch.startKeyed(histogramId, browserKey);
-      }
-      return histogramId;
-    };
-
     let maybeStartResponsivenessMonitor = resourceType => {
       let responsivenessMonitor;
       let responsivenessHistogramId =
@@ -323,8 +313,6 @@ this.MigratorPrototype = {
       for (let [migrationType, itemResources] of resourcesGroupedByItems) {
         notify("Migration:ItemBeforeMigrate", migrationType);
 
-        let stopwatchHistogramId = maybeStartTelemetryStopwatch(migrationType);
-
         let {responsivenessMonitor, responsivenessHistogramId} =
           maybeStartResponsivenessMonitor(migrationType);
 
@@ -339,10 +327,6 @@ this.MigratorPrototype = {
                      "Migration:ItemAfterMigrate" : "Migration:ItemError",
                      migrationType);
               resourcesGroupedByItems.delete(migrationType);
-
-              if (stopwatchHistogramId) {
-                TelemetryStopwatch.finishKeyed(stopwatchHistogramId, browserKey);
-              }
 
               maybeFinishResponsivenessMonitor(responsivenessMonitor, responsivenessHistogramId);
 
