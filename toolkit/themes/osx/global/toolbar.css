@@ -16,12 +16,21 @@ toolbar {
   -moz-appearance: toolbar;
 }
 
+%ifdef MOZ_AUSTRALIS
 menubar:-moz-lwtheme,
 toolbar:-moz-lwtheme {
   -moz-appearance: none;
   background: none;
   border-color: transparent;
 }
+%else
+menubar:-moz-lwtheme,
+toolbar:-moz-lwtheme {
+  -moz-appearance: none;
+  background: none;
+  border-style: none;
+}
+%endif
 
 menubar {
   -moz-appearance: dialog; /* For content menubars, "toolbar" is too dark, so we use "dialog". */

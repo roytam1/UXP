@@ -37,7 +37,8 @@ toolbar:first-child, menubar {
 }
 
 /* ::::: lightweight theme ::::: */
- 
+
+%ifdef MOZ_AUSTRALIS
 menubar:-moz-lwtheme,
 toolbox:-moz-lwtheme,
 toolbar:-moz-lwtheme {
@@ -45,6 +46,15 @@ toolbar:-moz-lwtheme {
   background: none;
   border-color: transparent;
 }
+%else
+menubar:-moz-lwtheme,
+toolbox:-moz-lwtheme,
+toolbar:-moz-lwtheme {
+  -moz-appearance: none;
+  background: none;
+  border-style: none;
+}
+%endif
 
 /* ::::: toolbar decorations ::::: */
 
