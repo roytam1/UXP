@@ -21,8 +21,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "OS",
   "resource://gre/modules/osfile.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Task",
   "resource://gre/modules/Task.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "TelemetryStopwatch",
-  "resource://gre/modules/TelemetryStopwatch.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "SearchStaticData",
   "resource://gre/modules/SearchStaticData.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "setTimeout",
@@ -3873,21 +3871,17 @@ SearchService.prototype = {
     LOG("SearchService.init");
     let self = this;
     if (!this._initStarted) {
-      TelemetryStopwatch.start("SEARCH_SERVICE_INIT_MS");
       this._initStarted = true;
       Task.spawn(function* task() {
         try {
           // Complete initialization by calling asynchronous initializer.
           yield self._asyncInit();
-          TelemetryStopwatch.finish("SEARCH_SERVICE_INIT_MS");
         } catch (ex) {
           if (ex.result == Cr.NS_ERROR_ALREADY_INITIALIZED) {
             // No need to pursue asynchronous because synchronous fallback was
             // called and has finished.
-            TelemetryStopwatch.finish("SEARCH_SERVICE_INIT_MS");
           } else {
             self._initObservers.reject(ex);
-            TelemetryStopwatch.cancel("SEARCH_SERVICE_INIT_MS");
           }
         }
       });

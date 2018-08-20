@@ -56,7 +56,6 @@ Cu.import("resource://gre/modules/Task.jsm", this);
 // The implementation of communications
 Cu.import("resource://gre/modules/PromiseWorker.jsm", this);
 Cu.import("resource://gre/modules/Services.jsm", this);
-Cu.import("resource://gre/modules/TelemetryStopwatch.jsm", this);
 Cu.import("resource://gre/modules/AsyncShutdown.jsm", this);
 var Native = Cu.import("resource://gre/modules/osfile/osfile_native.jsm", {});
 
@@ -1171,13 +1170,10 @@ File.writeAtomic = function writeAtomic(path, buffer, options = {}) {
   if (isTypedArray(buffer) && (!("bytes" in options))) {
     options.bytes = buffer.byteLength;
   };
-  let refObj = {};
-  TelemetryStopwatch.start("OSFILE_WRITEATOMIC_JANK_MS", refObj);
   let promise = Scheduler.post("writeAtomic",
     [Type.path.toMsg(path),
      Type.void_t.in_ptr.toMsg(buffer),
      options], [options, buffer, path]);
-  TelemetryStopwatch.finish("OSFILE_WRITEATOMIC_JANK_MS", refObj);
   return promise;
 };
 
