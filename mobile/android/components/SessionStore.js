@@ -16,7 +16,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "Messaging", "resource://gre/modules/Mes
 XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils", "resource://gre/modules/PrivateBrowsingUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "FormData", "resource://gre/modules/FormData.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "ScrollPosition", "resource://gre/modules/ScrollPosition.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "TelemetryStopwatch", "resource://gre/modules/TelemetryStopwatch.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Log", "resource://gre/modules/AndroidLog.jsm", "AndroidLog");
 XPCOMUtils.defineLazyModuleGetter(this, "SharedPreferences", "resource://gre/modules/SharedPreferences.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Utils", "resource://gre/modules/sessionstore/Utils.jsm");
@@ -1053,9 +1052,7 @@ SessionStore.prototype = {
    * @param aAsync boolelan used to determine the method of saving the state
    */
   _writeFile: function ss_writeFile(aFile, aFileTemp, aData, aAsync) {
-    TelemetryStopwatch.start("FX_SESSION_RESTORE_SERIALIZE_DATA_MS");
     let state = JSON.stringify(aData);
-    TelemetryStopwatch.finish("FX_SESSION_RESTORE_SERIALIZE_DATA_MS");
 
     // Convert data string to a utf-8 encoded array buffer
     let buffer = new TextEncoder().encode(state);

@@ -8,7 +8,6 @@ Cu.import("resource://services-common/utils.js"); /*global: CommonUtils */
 Cu.import("resource://gre/modules/Messaging.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/TelemetryStopwatch.jsm");
 
 XPCOMUtils.defineLazyGetter(window, "gChromeWin", () =>
   window.QueryInterface(Ci.nsIInterfaceRequestor)

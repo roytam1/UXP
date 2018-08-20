@@ -24,7 +24,6 @@ globals:
     strings: false
     Strings: false
     Task: false
-    TelemetryStopwatch: false
     UITelemetry: false
     UserAgentOverrides: 0
     XPCOMUtils: false
