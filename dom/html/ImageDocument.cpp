@@ -40,12 +40,14 @@
 #include "nsThreadUtils.h"
 #include "nsIScrollableFrame.h"
 #include "nsContentUtils.h"
+#include "nsCSSParser.h" // for CSS colors on the background
 #include "mozilla/dom/Element.h"
 #include "mozilla/Preferences.h"
 #include <algorithm>
 
 #define AUTOMATIC_IMAGE_RESIZING_PREF "browser.enable_automatic_image_resizing"
 #define CLICK_IMAGE_RESIZING_PREF "browser.enable_click_image_resizing"
+#define STANDALONE_IMAGE_BACKGROUND_COLOR_PREF "browser.display.standalone_images.background_color"
 //XXX A hack needed for Firefox's site specific zoom.
 #define SITE_SPECIFIC_ZOOM "browser.zoom.siteSpecific"
 
@@ -170,6 +172,8 @@ ImageDocument::Init()
   mClickResizingEnabled = Preferences::GetBool(CLICK_IMAGE_RESIZING_PREF);
   mShouldResize = mResizeImageByDefault;
   mFirstResize = true;
+  
+  mBackgroundColor = Preferences::GetString(STANDALONE_IMAGE_BACKGROUND_COLOR_PREF);
 
   return NS_OK;
 }
@@ -682,9 +686,22 @@ ImageDocument::CreateSyntheticDocument()
   mImageContent->SetAttr(kNameSpaceID_None, nsGkAtoms::src, srcString, false);
   mImageContent->SetAttr(kNameSpaceID_None, nsGkAtoms::alt, srcString, false);
 
+  // Implement mechanism for custom background color from pref.
+  if (!mBackgroundColor.IsEmpty()) {
+    nsCSSValue color;
+    nsCSSParser parser;
+    if (parser.ParseColorString(mBackgroundColor, nullptr, 0, color)) {
+      nsAutoString styleAttr(NS_LITERAL_STRING("background-color: "));
+      styleAttr.Append(mBackgroundColor);
+      body->SetAttr(kNameSpaceID_None, nsGkAtoms::style, styleAttr, false);
+    }
+  }
+
   body->AppendChildTo(mImageContent, false);
   imageLoader->SetLoadingEnabled(true);
 
+  UpdateTitleAndCharset();
+  
   return NS_OK;
 }
 
