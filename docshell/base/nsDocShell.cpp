@@ -12281,7 +12281,11 @@ nsDocShell::ShouldAddToSessionHistory(nsIURI* aURI)
       return false;
     }
 
-    if (buf.EqualsLiteral("blank") || buf.EqualsLiteral("newtab")) {
+    if (buf.EqualsLiteral("blank") || buf.EqualsLiteral("logopage")
+#ifndef MC_PALEMOON
+        || buf.EqualsLiteral("newtab")
+#endif
+       ) {
       return false;
     }
   }
