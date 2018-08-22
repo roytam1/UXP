@@ -12281,11 +12281,9 @@ nsDocShell::ShouldAddToSessionHistory(nsIURI* aURI)
       return false;
     }
 
-    if (buf.EqualsLiteral("blank") || buf.EqualsLiteral("logopage")
-#ifndef MC_PALEMOON
-        || buf.EqualsLiteral("newtab")
-#endif
-       ) {
+    if (buf.EqualsLiteral("blank") || buf.EqualsLiteral("logopage") ||
+        buf.EqualsLiteral("newtab") &&
+        !Preferences::GetBool("browser.newtabpage.add_to_session_history", false)) {
       return false;
     }
   }

@@ -247,6 +247,10 @@ pref("dom.compartment_per_addon", true);
 // of content viewers to cache based on the amount of available memory.
 pref("browser.sessionhistory.max_total_viewers", -1);
 
+// Whether to store 'about:newtab' in the session history, disabled by default.
+// See https://github.com/MoonchildProductions/UXP/issues/719
+pref("browser.newtabpage.add_to_session_history", false);
+
 pref("ui.use_native_colors", true);
 pref("ui.click_hold_context_menus", false);
 // Duration of timeout of incremental search in menus (ms).  0 means infinite.
