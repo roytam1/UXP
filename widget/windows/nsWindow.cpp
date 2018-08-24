@@ -367,6 +367,9 @@ static const int32_t kResizableBorderMinSize = 3;
 // Cached pointer events enabler value, True if pointer events are enabled.
 static bool gIsPointerEventsEnabled = false;
 
+// Cached scroll outside menu enabler value, True if scrolling is allowed.
+static bool gIsScrollingOutsideEnabled = false;
+
 // We should never really try to accelerate windows bigger than this. In some
 // cases this might lead to no D3D9 acceleration where we could have had it
 // but D3D9 does not reliably report when it supports bigger windows. 8192
@@ -666,6 +669,10 @@ nsWindow::nsWindow()
     Preferences::AddBoolVarCache(&gIsPointerEventsEnabled,
                                  "dom.w3c_pointer_events.enabled",
                                  gIsPointerEventsEnabled);
+    Preferences::AddBoolVarCache(&gIsScrollingOutsideEnabled,
+                                 "ui.menu.allow_content_scroll",
+                                 gIsScrollingOutsideEnabled);
+                                 
   } // !sInstanceCount
 
   mIdleService = nullptr;
@@ -7755,7 +7762,8 @@ nsWindow::DealWithPopups(HWND aWnd, UINT aMessage,
           break;
         }
       }
-      return consumeRollupEvent;
+      // Consume event if appropriate unless overridden.
+      return consumeRollupEvent && !gIsScrollingOutsideEnabled;
 
     case WM_ACTIVATEAPP:
       break;

@@ -2209,6 +2209,10 @@ pref("ui.key.contentAccess", 5);
 pref("ui.key.menuAccessKeyFocuses", false); // overridden below
 pref("ui.key.saveLink.shift", true); // true = shift, false = meta
 
+// When true, overrides OS convention to lock content scrolling
+// if a contextual menu is open.
+pref("ui.menu.allow_content_scroll", false);
+
 // Disable page loading activity cursor by default.
 pref("ui.use_activity_cursor", false);
 
