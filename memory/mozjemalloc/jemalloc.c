@@ -142,7 +142,7 @@
 /*
  * Uncomment this to use only one arena by default.
  */
-// #define MOZ_MEMORY_NARENAS_DEFAULT_ONE
+#define MOZ_MEMORY_NARENAS_DEFAULT_ONE
 
 /*
  * Pass this set of options to jemalloc as its default. It does not override
