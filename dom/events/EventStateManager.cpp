@@ -3245,6 +3245,7 @@ EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
           double deltaX = wheelEvent->mDeltaX;
           wheelEvent->mDeltaX = wheelEvent->mDeltaY;
           wheelEvent->mDeltaY = deltaX;
+        }
         case WheelPrefs::ACTION_SCROLL: {
           // For scrolling of default action, we should honor the mouse wheel
           // transaction.
