@@ -25,12 +25,16 @@
 #include "nsIErrorService.h"
 #include "nsICategoryManager.h"
 #include "nsContentUtils.h"
+#include "mozilla/Preferences.h"
 
 // for async loading
 #ifdef ASYNC_LOADING
 #include "nsIBinaryInputStream.h"
 #include "nsIStringStream.h"
 #endif
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
 
 using namespace mozilla;
 
@@ -529,6 +533,8 @@ nsStringBundleService::Init()
     os->AddObserver(this, "profile-do-change", true);
     os->AddObserver(this, "chrome-flush-caches", true);
     os->AddObserver(this, "xpcom-category-entry-added", true);
+    os->AddObserver(this, "selected-locale-has-changed", true);
+    os->AddObserver(this, "final-ui-startup", true);
   }
 
   // instantiate the override service, if there is any.
@@ -550,6 +556,19 @@ nsStringBundleService::Observe(nsISupports* aSubject,
   {
     flushBundleCache();
   }
+  else if (strcmp("selected-locale-has-changed", aTopic) == 0)
+  {
+    flushBundleCache();
+    notifyBundlesFlushed();
+  }
+  else if (strcmp("final-ui-startup", aTopic) == 0)
+  {
+    nsAdoptingCString ualocale = Preferences::GetCString("general.useragent.locale");
+    if (!ualocale.EqualsLiteral(STR(MOZ_UI_LOCALE))) {
+      flushBundleCache();
+      notifyBundlesFlushed();
+    }
+  }
   else if (strcmp("xpcom-category-entry-added", aTopic) == 0 &&
            NS_LITERAL_STRING("xpcom-autoregistration").Equals(aSomeData))
   {
@@ -557,6 +576,14 @@ nsStringBundleService::Observe(nsISupports* aSubject,
   }
 
   return NS_OK;
+}
+
+void
+nsStringBundleService::notifyBundlesFlushed()
+{
+  nsCOMPtr<nsIObserverService> obsSvc = mozilla::services::GetObserverService();
+  NS_ASSERTION(obsSvc, "Couldn't get observer service.");
+  obsSvc->NotifyObservers(nullptr, "string-bundles-have-flushed", nullptr);
 }
 
 void

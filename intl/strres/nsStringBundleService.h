@@ -43,6 +43,8 @@ private:
 
   void flushBundleCache();
 
+  void notifyBundlesFlushed();
+
   bundleCacheEntry_t *insertIntoCache(already_AddRefed<nsIStringBundle> aBundle,
                                       nsCString &aHashKey);
 
