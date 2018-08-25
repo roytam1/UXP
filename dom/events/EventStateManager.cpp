@@ -3240,6 +3240,11 @@ EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
         action = WheelPrefs::GetInstance()->ComputeActionFor(wheelEvent);
       }
       switch (action) {
+        case WheelPrefs::ACTION_HSCROLL: {
+          // Swap axes and fall through
+          double deltaX = wheelEvent->mDeltaX;
+          wheelEvent->mDeltaX = wheelEvent->mDeltaY;
+          wheelEvent->mDeltaY = deltaX;
         case WheelPrefs::ACTION_SCROLL: {
           // For scrolling of default action, we should honor the mouse wheel
           // transaction.

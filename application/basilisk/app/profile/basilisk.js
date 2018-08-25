@@ -543,9 +543,10 @@ pref("browser.gesture.tap", "cmd_fullZoomReset");
 pref("browser.snapshots.limit", 0);
 
 // 0: Nothing happens
-// 1: Scrolling contents
+// 1: Scroll contents
 // 2: Go back or go forward, in your history
-// 3: Zoom in or out.
+// 3: Zoom in or out
+// 4: Scroll contents with X and Y swapped
 #ifdef XP_MACOSX
 // On OS X, if the wheel has one axis only, shift+wheel comes through as a
 // horizontal scroll event. Thus, we can't assign anything other than normal

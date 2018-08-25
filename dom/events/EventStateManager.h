@@ -513,7 +513,8 @@ protected:
       ACTION_SCROLL,
       ACTION_HISTORY,
       ACTION_ZOOM,
-      ACTION_LAST = ACTION_ZOOM,
+      ACTION_HSCROLL,
+      ACTION_LAST = ACTION_HSCROLL,
       // Following actions are used only by internal processing.  So, cannot
       // specified by prefs.
       ACTION_SEND_TO_PLUGIN
