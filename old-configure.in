@@ -3625,11 +3625,15 @@ dnl = FFmpeg's ffvpx configuration
 dnl ========================================================
 
 MOZ_FFVPX=
-case "$CPU_ARCH" in
-  x86)
+
+dnl Build ffvpx on 32-bit Windows and all supported 64-bit platforms.
+dnl 32-bit *nix has performance issues due to not supporting assembly decoder.
+
+case "$OS_ARCH:$CPU_ARCH" in
+  WINNT:x86)
       MOZ_FFVPX=1
   ;;
-  x86_64)
+  *:x86_64)
       MOZ_FFVPX=1
   ;;
 esac
