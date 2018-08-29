@@ -335,6 +335,33 @@ bool LaunchApp(const std::wstring& cmdline,
     bInheritHandles = TRUE;
   }
 
+  // setup our handle array first - if we end up with no handles that can
+  // be inherited we can avoid trying to do the ThreadAttributeList dance...
+  HANDLE handlesToInherit[2];
+  int handleCount = 0;
+  HANDLE stdOut = ::GetStdHandle(STD_OUTPUT_HANDLE);
+  HANDLE stdErr = ::GetStdHandle(STD_ERROR_HANDLE);
+
+  if (IsInheritableHandle(stdOut))
+    handlesToInherit[handleCount++] = stdOut;
+  if (stdErr != stdOut && IsInheritableHandle(stdErr))
+    handlesToInherit[handleCount++] = stdErr;
+
+  if (handleCount) {
+    lpAttributeList = CreateThreadAttributeList(handlesToInherit, handleCount);
+    if (lpAttributeList) {
+      // it's safe to inherit handles, so arrange for that...
+      startup_info.cb = sizeof(startup_info_ex);
+      startup_info.dwFlags |= STARTF_USESTDHANDLES;
+      startup_info.hStdOutput = stdOut;
+      startup_info.hStdError = stdErr;
+      startup_info.hStdInput = INVALID_HANDLE_VALUE;
+      startup_info_ex.lpAttributeList = lpAttributeList;
+      dwCreationFlags |= EXTENDED_STARTUPINFO_PRESENT;
+      bInheritHandles = TRUE;
+    }
+  }
+
   PROCESS_INFORMATION process_info;
   BOOL createdOK = CreateProcess(NULL,
                      const_cast<wchar_t*>(cmdline.c_str()), NULL, NULL,
