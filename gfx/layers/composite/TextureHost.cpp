@@ -890,7 +890,8 @@ BufferTextureHost::Upload(nsIntRegion *aRegion)
         mFirstSource = mCompositor->CreateDataTextureSource(mFlags|TextureFlags::RGB_FROM_YCBCR);
         mFirstSource->SetOwner(this);
       }
-      return mFirstSource->Update(surf, aRegion);
+      mFirstSource->Update(surf, aRegion);
+      return true;
     }
 
     RefPtr<DataTextureSource> srcY;

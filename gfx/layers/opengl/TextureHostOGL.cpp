@@ -161,7 +161,9 @@ TextureImageTextureSourceOGL::Update(gfx::DataSourceSurface* aSurface,
     }
   }
 
-  return mTexImage->UpdateFromDataSource(aSurface, aDestRegion, aSrcOffset);
+  mTexImage->UpdateFromDataSource(aSurface, aDestRegion, aSrcOffset);
+
+  return true;
 }
 
 void
