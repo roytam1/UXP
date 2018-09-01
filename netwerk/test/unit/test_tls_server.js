@@ -90,7 +90,6 @@ function startServer(cert, expectingPeerCert, clientCertificateConfig,
     onStopListening: function() {}
   };
 
-  tlsServer.setSessionCache(false);
   tlsServer.setSessionTickets(false);
   tlsServer.setRequestClientCertificate(clientCertificateConfig);
 

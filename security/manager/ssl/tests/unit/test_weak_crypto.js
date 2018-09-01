@@ -77,7 +77,6 @@ function startServer(cert, rc4only) {
     onStopListening: function() {}
   };
 
-  tlsServer.setSessionCache(false);
   tlsServer.setSessionTickets(false);
   tlsServer.setRequestClientCertificate(Ci.nsITLSServerSocket.REQUEST_NEVER);
   if (rc4only) {
