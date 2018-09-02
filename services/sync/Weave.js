@@ -72,13 +72,6 @@ WeaveService.prototype = {
                                          Ci.nsISupportsWeakReference]),
 
   ensureLoaded: function () {
-#ifndef MC_PALEMOON
-    // If we are loaded and not using FxA, load the migration module.
-    if (!this.fxAccountsEnabled) {
-      Cu.import("resource://services-sync/FxaMigrator.jsm");
-    }
-#endif
-
     Components.utils.import("resource://services-sync/main.js");
 
     // Side-effect of accessing the service is that it is instantiated.

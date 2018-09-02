@@ -4,8 +4,6 @@
 
 var gFxAccounts = {
 
-  SYNC_MIGRATION_NOTIFICATION_TITLE: "fxa-migration",
-
   _initialized: false,
   _inCustomizationMode: false,
   _cachedProfile: null,
@@ -26,7 +24,6 @@ var gFxAccounts = {
       "weave:service:setup-complete",
       "weave:service:sync:error",
       "weave:ui:login:error",
-      "fxa-migration:state-changed",
       this.FxAccountsCommon.ONLOGIN_NOTIFICATION,
       this.FxAccountsCommon.ONLOGOUT_NOTIFICATION,
       this.FxAccountsCommon.ON_PROFILE_CHANGE_NOTIFICATION,
@@ -122,9 +119,6 @@ var gFxAccounts = {
 
   observe: function (subject, topic, data) {
     switch (topic) {
-      case "fxa-migration:state-changed":
-        this.onMigrationStateChanged(data, subject);
-        break;
       case this.FxAccountsCommon.ON_PROFILE_CHANGE_NOTIFICATION:
         this._cachedProfile = null;
         // Fallthrough intended
@@ -132,48 +126,6 @@ var gFxAccounts = {
         this.updateUI();
         break;
     }
-  },
-
-  onMigrationStateChanged: function () {
-    // Since we nuked most of the migration code, this notification will fire
-    // once after legacy Sync has been disconnected (and should never fire
-    // again)
-    let nb = window.document.getElementById("global-notificationbox");
-
-    let msg = this.strings.GetStringFromName("autoDisconnectDescription")
-    let signInLabel = this.strings.GetStringFromName("autoDisconnectSignIn.label");
-    let signInAccessKey = this.strings.GetStringFromName("autoDisconnectSignIn.accessKey");
-    let learnMoreLink = this.fxaMigrator.learnMoreLink;
-
-    let buttons = [
-      {
-        label: signInLabel,
-        accessKey: signInAccessKey,
-        callback: () => {
-          this.openPreferences();
-        }
-      }
-    ];
-
-    let fragment = document.createDocumentFragment();
-    let msgNode = document.createTextNode(msg);
-    fragment.appendChild(msgNode);
-    if (learnMoreLink) {
-      let link = document.createElement("label");
-      link.className = "text-link";
-      link.setAttribute("value", learnMoreLink.text);
-      link.href = learnMoreLink.href;
-      fragment.appendChild(link);
-    }
-
-    nb.appendNotification(fragment,
-                          this.SYNC_MIGRATION_NOTIFICATION_TITLE,
-                          undefined,
-                          nb.PRIORITY_WARNING_LOW,
-                          buttons);
-
-    // ensure the hamburger menu reflects the newly disconnected state.
-    this.updateAppMenuItem();
   },
 
   handleEvent: function (event) {
