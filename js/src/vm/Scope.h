@@ -111,6 +111,39 @@ class BindingName
     void trace(JSTracer* trc);
 };
 
+/**
+ * The various {Global,Module,...}Scope::Data classes consist of always-present
+ * bits, then a trailing array of BindingNames.  The various Data classes all
+ * end in a TrailingNamesArray that contains sized/aligned space for *one*
+ * BindingName.  Data instances that contain N BindingNames, are then allocated
+ * in sizeof(Data) + (space for (N - 1) BindingNames).  Because this class's
+ * |data_| field is properly sized/aligned, the N-BindingName array can start
+ * at |data_|.
+ *
+ * This is concededly a very low-level representation, but we want to only
+ * allocate once for data+bindings both, and this does so approximately as
+ * elegantly as C++ allows.
+ */
+class TrailingNamesArray
+{
+  private:
+    alignas(BindingName) unsigned char data_[sizeof(BindingName)];
+
+  private:
+    // Some versions of GCC treat it as a -Wstrict-aliasing violation (ergo a
+    // -Werror compile error) to reinterpret_cast<> |data_| to |T*|, even
+    // through |void*|.  Placing the latter cast in these separate functions
+    // breaks the chain such that affected GCC versions no longer warn/error.
+    void* ptr() {
+        return data_;
+    }
+
+  public:
+    BindingName* start() { return reinterpret_cast<BindingName*>(ptr()); }
+
+    BindingName& operator[](size_t i) { return start()[i]; }
+};
+
 class BindingLocation
 {
   public:
@@ -346,7 +379,7 @@ class LexicalScope : public Scope
 
         // The array of tagged JSAtom* names, allocated beyond the end of the
         // struct.
-        BindingName names[1];
+        TrailingNamesArray trailingNames;
 
         void trace(JSTracer* trc);
     };
@@ -462,7 +495,7 @@ class FunctionScope : public Scope
 
         // The array of tagged JSAtom* names, allocated beyond the end of the
         // struct.
-        BindingName names[1];
+        TrailingNamesArray trailingNames;
 
         void trace(JSTracer* trc);
     };
@@ -556,7 +589,7 @@ class VarScope : public Scope
 
         // The array of tagged JSAtom* names, allocated beyond the end of the
         // struct.
-        BindingName names[1];
+        TrailingNamesArray trailingNames;
 
         void trace(JSTracer* trc);
     };
@@ -645,7 +678,7 @@ class GlobalScope : public Scope
 
         // The array of tagged JSAtom* names, allocated beyond the end of the
         // struct.
-        BindingName names[1];
+        TrailingNamesArray trailingNames;
 
         void trace(JSTracer* trc);
     };
@@ -745,7 +778,7 @@ class EvalScope : public Scope
 
         // The array of tagged JSAtom* names, allocated beyond the end of the
         // struct.
-        BindingName names[1];
+        TrailingNamesArray trailingNames;
 
         void trace(JSTracer* trc);
     };
@@ -846,7 +879,7 @@ class ModuleScope : public Scope
 
         // The array of tagged JSAtom* names, allocated beyond the end of the
         // struct.
-        BindingName names[1];
+        TrailingNamesArray trailingNames;
 
         void trace(JSTracer* trc);
     };

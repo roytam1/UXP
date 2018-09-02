@@ -1231,34 +1231,34 @@ BindingIter::trace(JSTracer* trc)
 void
 LexicalScope::Data::trace(JSTracer* trc)
 {
-    TraceBindingNames(trc, names, length);
+    TraceBindingNames(trc, trailingNames.start(), length);
 }
 void
 FunctionScope::Data::trace(JSTracer* trc)
 {
     TraceNullableEdge(trc, &canonicalFunction, "scope canonical function");
-    TraceNullableBindingNames(trc, names, length);
+    TraceNullableBindingNames(trc, trailingNames.start(), length);
 }
 void
 VarScope::Data::trace(JSTracer* trc)
 {
-    TraceBindingNames(trc, names, length);
+    TraceBindingNames(trc, trailingNames.start(), length);
 }
 void
 GlobalScope::Data::trace(JSTracer* trc)
 {
-    TraceBindingNames(trc, names, length);
+    TraceBindingNames(trc, trailingNames.start(), length);
 }
 void
 EvalScope::Data::trace(JSTracer* trc)
 {
-    TraceBindingNames(trc, names, length);
+    TraceBindingNames(trc, trailingNames.start(), length);
 }
 void
 ModuleScope::Data::trace(JSTracer* trc)
 {
     TraceNullableEdge(trc, &module, "scope module");
-    TraceBindingNames(trc, names, length);
+    TraceBindingNames(trc, trailingNames.start(), length);
 }
 void
 Scope::traceChildren(JSTracer* trc)
@@ -1302,13 +1302,13 @@ js::GCMarker::eagerlyMarkChildren(Scope* scope)
         traverseEdge(scope, static_cast<Scope*>(scope->enclosing_));
     if (scope->environmentShape_)
         traverseEdge(scope, static_cast<Shape*>(scope->environmentShape_));
-    BindingName* names = nullptr;
+    TrailingNamesArray* names = nullptr;
     uint32_t length = 0;
     switch (scope->kind_) {
       case ScopeKind::Function: {
         FunctionScope::Data* data = reinterpret_cast<FunctionScope::Data*>(scope->data_);
         traverseEdge(scope, static_cast<JSObject*>(data->canonicalFunction));
-        names = data->names;
+        names = &data->trailingNames;
         length = data->length;
         break;
       }
@@ -1316,7 +1316,7 @@ js::GCMarker::eagerlyMarkChildren(Scope* scope)
       case ScopeKind::FunctionBodyVar:
       case ScopeKind::ParameterExpressionVar: {
         VarScope::Data* data = reinterpret_cast<VarScope::Data*>(scope->data_);
-        names = data->names;
+        names = &data->trailingNames;
         length = data->length;
         break;
       }
@@ -1327,7 +1327,7 @@ js::GCMarker::eagerlyMarkChildren(Scope* scope)
       case ScopeKind::NamedLambda:
       case ScopeKind::StrictNamedLambda: {
         LexicalScope::Data* data = reinterpret_cast<LexicalScope::Data*>(scope->data_);
-        names = data->names;
+        names = &data->trailingNames;
         length = data->length;
         break;
       }
@@ -1335,7 +1335,7 @@ js::GCMarker::eagerlyMarkChildren(Scope* scope)
       case ScopeKind::Global:
       case ScopeKind::NonSyntactic: {
         GlobalScope::Data* data = reinterpret_cast<GlobalScope::Data*>(scope->data_);
-        names = data->names;
+        names = &data->trailingNames;
         length = data->length;
         break;
       }
@@ -1343,7 +1343,7 @@ js::GCMarker::eagerlyMarkChildren(Scope* scope)
       case ScopeKind::Eval:
       case ScopeKind::StrictEval: {
         EvalScope::Data* data = reinterpret_cast<EvalScope::Data*>(scope->data_);
-        names = data->names;
+        names = &data->trailingNames;
         length = data->length;
         break;
       }
@@ -1351,7 +1351,7 @@ js::GCMarker::eagerlyMarkChildren(Scope* scope)
       case ScopeKind::Module: {
         ModuleScope::Data* data = reinterpret_cast<ModuleScope::Data*>(scope->data_);
         traverseEdge(scope, static_cast<JSObject*>(data->module));
-        names = data->names;
+        names = &data->trailingNames;
         length = data->length;
         break;
       }
@@ -1361,12 +1361,12 @@ js::GCMarker::eagerlyMarkChildren(Scope* scope)
     }
     if (scope->kind_ == ScopeKind::Function) {
         for (uint32_t i = 0; i < length; i++) {
-            if (JSAtom* name = names[i].name())
+            if (JSAtom* name = names->operator[](i).name())
                 traverseEdge(scope, static_cast<JSString*>(name));
         }
     } else {
         for (uint32_t i = 0; i < length; i++)
-            traverseEdge(scope, static_cast<JSString*>(names[i].name()));
+            traverseEdge(scope, static_cast<JSString*>(names->operator[](i).name()));
     }
 }
 
