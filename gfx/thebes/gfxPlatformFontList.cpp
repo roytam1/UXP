@@ -322,8 +322,6 @@ gfxPlatformFontList::InitOtherFamilyNames()
         mOtherFamilyNamesInitialized = true;
     }
     TimeStamp end = TimeStamp::Now();
-    Telemetry::AccumulateTimeDelta(Telemetry::FONTLIST_INITOTHERFAMILYNAMES,
-                                   start, end);
 
     if (LOG_FONTINIT_ENABLED()) {
         TimeDuration elapsed = end - start;
@@ -370,8 +368,6 @@ gfxPlatformFontList::SearchFamiliesForFaceName(const nsAString& aFaceName)
     lookup = FindFaceName(aFaceName);
 
     TimeStamp end = TimeStamp::Now();
-    Telemetry::AccumulateTimeDelta(Telemetry::FONTLIST_INITFACENAMELISTS,
-                                   start, end);
     if (LOG_FONTINIT_ENABLED()) {
         TimeDuration elapsed = end - start;
         LOG_FONTINIT(("(fontinit) SearchFamiliesForFaceName took %8.2f ms %s %s",
@@ -587,15 +583,7 @@ gfxPlatformFontList::SystemFindFontForChar(uint32_t aCh, uint32_t aNextCh,
     static bool first = true;
     int32_t intElapsed = int32_t(first ? elapsed.ToMilliseconds() :
                                          elapsed.ToMicroseconds());
-    Telemetry::Accumulate((first ? Telemetry::SYSTEM_FONT_FALLBACK_FIRST :
-                                   Telemetry::SYSTEM_FONT_FALLBACK),
-                          intElapsed);
     first = false;
-
-    // track the script for which fallback occurred (incremented one make it
-    // 1-based)
-    Telemetry::Accumulate(Telemetry::SYSTEM_FONT_FALLBACK_SCRIPT,
-                          int(aRunScript) + 1);
 
     return fontEntry;
 }

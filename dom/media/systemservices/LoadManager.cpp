@@ -15,7 +15,6 @@
 #include "nsThreadUtils.h"
 #include "nsReadableUtils.h"
 #include "nsIObserverService.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/ArrayUtils.h"
 
 // MOZ_LOG=LoadManager:5
@@ -191,23 +190,6 @@ LoadManagerSingleton::RemoveObserver(webrtc::CPULoadStateObserver * aObserver)
     float total = 0;
     for (size_t i = 0; i < MOZ_ARRAY_LENGTH(mTimeInState); i++) {
       total += mTimeInState[i];
-    }
-    // Don't include short calls; we don't have reasonable load data, and
-    // such short calls rarely reach a stable state.  Keep relatively
-    // short calls separate from longer ones
-    bool log = total > 5*PR_MSEC_PER_SEC;
-    bool small = log && total < 30*PR_MSEC_PER_SEC;
-    if (log) {
-      // Note: We don't care about rounding here; thus total may be < 100
-      Telemetry::Accumulate(small ? Telemetry::WEBRTC_LOAD_STATE_RELAXED_SHORT :
-                            Telemetry::WEBRTC_LOAD_STATE_RELAXED,
-                            (uint32_t) (mTimeInState[webrtc::CPULoadState::kLoadRelaxed]/total * 100));
-      Telemetry::Accumulate(small ? Telemetry::WEBRTC_LOAD_STATE_NORMAL_SHORT :
-                            Telemetry::WEBRTC_LOAD_STATE_NORMAL,
-                            (uint32_t) (mTimeInState[webrtc::CPULoadState::kLoadNormal]/total * 100));
-      Telemetry::Accumulate(small ? Telemetry::WEBRTC_LOAD_STATE_STRESSED_SHORT :
-                            Telemetry::WEBRTC_LOAD_STATE_STRESSED,
-                            (uint32_t) (mTimeInState[webrtc::CPULoadState::kLoadStressed]/total * 100));
     }
     for (auto &in_state : mTimeInState) {
       in_state = 0;

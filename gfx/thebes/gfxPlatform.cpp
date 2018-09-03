@@ -361,7 +361,6 @@ class CrashTelemetryEvent : public Runnable
 
   NS_IMETHOD Run() override {
     MOZ_ASSERT(NS_IsMainThread());
-    Telemetry::Accumulate(Telemetry::GFX_CRASH, mReason);
     return NS_OK;
   }
 
@@ -374,29 +373,7 @@ NS_IMPL_ISUPPORTS_INHERITED0(CrashTelemetryEvent, Runnable);
 void
 CrashStatsLogForwarder::CrashAction(LogReason aReason)
 {
-#ifndef RELEASE_OR_BETA
-  // Non-release builds crash by default, but will use telemetry
-  // if this environment variable is present.
-  static bool useTelemetry = gfxEnv::GfxDevCrashTelemetry();
-#else
-  // Release builds use telemetry by default, but will crash instead
-  // if this environment variable is present.
-  static bool useTelemetry = !gfxEnv::GfxDevCrashMozCrash();
-#endif
-
-  if (useTelemetry) {
-    // The callers need to assure that aReason is in the range
-    // that the telemetry call below supports.
-    if (NS_IsMainThread()) {
-      Telemetry::Accumulate(Telemetry::GFX_CRASH, (uint32_t)aReason);
-    } else {
-      nsCOMPtr<nsIRunnable> r1 = new CrashTelemetryEvent((uint32_t)aReason);
-      NS_DispatchToMainThread(r1);
-    }
-  } else {
-    // ignoring aReason, we can get the information we need from the stack
-    MOZ_CRASH("GFX_CRASH");
-  }
+  MOZ_CRASH("GFX_CRASH");
 }
 
 NS_IMPL_ISUPPORTS(SRGBOverrideObserver, nsIObserver, nsISupportsWeakReference)

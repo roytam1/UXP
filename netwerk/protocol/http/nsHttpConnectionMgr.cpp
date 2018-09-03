@@ -23,7 +23,6 @@
 #include "mozilla/net/DNS.h"
 #include "nsISocketTransport.h"
 #include "nsISSLSocketControl.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/net/DashboardTypes.h"
 #include "NullHttpTransaction.h"
 #include "nsIDNSRecord.h"
@@ -847,7 +846,6 @@ nsHttpConnectionMgr::GetSpdyPreferredEnt(nsConnectionEntry *aOriginalEntry)
              "with %s connections. rv=%x isJoined=%d",
              preferred->mConnInfo->Origin(), aOriginalEntry->mConnInfo->Origin(),
              rv, isJoined));
-        Telemetry::Accumulate(Telemetry::SPDY_NPN_JOIN, false);
         return nullptr;
     }
 
@@ -857,7 +855,6 @@ nsHttpConnectionMgr::GetSpdyPreferredEnt(nsConnectionEntry *aOriginalEntry)
          "so %s will be coalesced with %s",
          preferred->mConnInfo->Origin(), aOriginalEntry->mConnInfo->Origin(),
          aOriginalEntry->mConnInfo->Origin(), preferred->mConnInfo->Origin()));
-    Telemetry::Accumulate(Telemetry::SPDY_NPN_JOIN, true);
     return preferred;
 }
 
@@ -1835,16 +1832,7 @@ nsHttpConnectionMgr::BuildPipeline(nsConnectionEntry *ent,
 void
 nsHttpConnectionMgr::ReportProxyTelemetry(nsConnectionEntry *ent)
 {
-    enum { PROXY_NONE = 1, PROXY_HTTP = 2, PROXY_SOCKS = 3, PROXY_HTTPS = 4 };
-
-    if (!ent->mConnInfo->UsingProxy())
-        Telemetry::Accumulate(Telemetry::HTTP_PROXY_TYPE, PROXY_NONE);
-    else if (ent->mConnInfo->UsingHttpsProxy())
-        Telemetry::Accumulate(Telemetry::HTTP_PROXY_TYPE, PROXY_HTTPS);
-    else if (ent->mConnInfo->UsingHttpProxy())
-        Telemetry::Accumulate(Telemetry::HTTP_PROXY_TYPE, PROXY_HTTP);
-    else
-        Telemetry::Accumulate(Telemetry::HTTP_PROXY_TYPE, PROXY_SOCKS);
+  /* STUB */
 }
 
 nsresult
@@ -3107,8 +3095,6 @@ nsHalfOpenSocket::SetupStreams(nsISocketTransport **transport,
     rv = socketTransport->SetSecurityCallbacks(this);
     NS_ENSURE_SUCCESS(rv, rv);
 
-    Telemetry::Accumulate(Telemetry::HTTP_CONNECTION_ENTRY_CACHE_HIT_1,
-                          mEnt->mUsedForConnection);
     mEnt->mUsedForConnection = true;
 
     nsCOMPtr<nsIOutputStream> sout;

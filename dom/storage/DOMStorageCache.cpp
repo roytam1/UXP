@@ -309,7 +309,7 @@ public:
   explicit TelemetryAutoTimer(Telemetry::ID aId)
     : id(aId), start(TimeStamp::Now()) {}
   ~TelemetryAutoTimer()
-    { Telemetry::AccumulateDelta_impl<Telemetry::Millisecond>::compute(id, start); }
+    { /* STUB */ }
 private:
   Telemetry::ID id;
   const TimeStamp start;
@@ -329,9 +329,6 @@ DOMStorageCache::WaitForPreload(Telemetry::ID aTelemetryID)
   // Telemetry of rates of pending preloads
   if (!mPreloadTelemetryRecorded) {
     mPreloadTelemetryRecorded = true;
-    Telemetry::Accumulate(
-      Telemetry::LOCALDOMSTORAGE_PRELOAD_PENDING_ON_FIRST_ACCESS,
-      !loaded);
   }
 
   if (loaded) {

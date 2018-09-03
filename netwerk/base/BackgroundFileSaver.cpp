@@ -798,8 +798,6 @@ BackgroundFileSaver::NotifySaveComplete()
   // during the session in a telemetry histogram, and we reset the maximum
   // thread counter for the next download session
   if (sThreadCount == 0) {
-    Telemetry::Accumulate(Telemetry::BACKGROUNDFILESAVER_THREAD_COUNT,
-                          sTelemetryMaxThreadCount);
     sTelemetryMaxThreadCount = 0;
   }
 

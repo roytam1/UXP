@@ -11,7 +11,6 @@
 #include "PDMFactory.h"
 #include "WebMDemuxer.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/dom/ContentChild.h"
 
 #ifndef MOZ_WIDGET_ANDROID
@@ -68,7 +67,6 @@ VP9Benchmark::IsVP9DecodeFast()
           Preferences::SetUint(sBenchmarkFpsPref, aDecodeFps);
           Preferences::SetUint(sBenchmarkFpsVersionCheck, sBenchmarkVersionID);
         }
-        Telemetry::Accumulate(Telemetry::ID::VIDEO_VP9_BENCHMARK_FPS, aDecodeFps);
       },
       []() { });
   }

@@ -3325,11 +3325,6 @@ nsCookieService::SetCookieInternal(nsIURI                        *aHostURI,
   // 3 = secure and "https:"
   bool isHTTPS;
   nsresult rv = aHostURI->SchemeIs("https", &isHTTPS);
-  if (NS_SUCCEEDED(rv)) {
-    Telemetry::Accumulate(Telemetry::COOKIE_SCHEME_SECURITY,
-                          ((cookieAttributes.isSecure)? 0x02 : 0x00) |
-                          ((isHTTPS)? 0x01 : 0x00));
-  }
 
   int64_t currentTimeInUsec = PR_Now();
 
@@ -3480,8 +3475,6 @@ nsCookieService::AddInternal(const nsCookieKey             &aKey,
   if (mLeaveSecureAlone && aCookie->IsSecure() && !isSecure) {
     COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, aCookieHeader,
       "non-https cookie can't set secure flag");
-    Telemetry::Accumulate(Telemetry::COOKIE_LEAVE_SECURE_ALONE,
-                          BLOCKED_SECURE_SET_FROM_HTTP);
     return;
   }
   nsListIter exactIter;
@@ -3502,14 +3495,7 @@ nsCookieService::AddInternal(const nsCookieKey             &aKey,
       if (!isSecure) {
         COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, aCookieHeader,
            "cookie can't save because older cookie is secure cookie but newer cookie is non-secure cookie");
-        Telemetry::Accumulate(Telemetry::COOKIE_LEAVE_SECURE_ALONE,
-                              BLOCKED_DOWNGRADE_SECURE);
         return;
-      } else {
-        // A secure site is allowed to downgrade a secure cookie
-        // but we want to measure anyway
-        Telemetry::Accumulate(Telemetry::COOKIE_LEAVE_SECURE_ALONE,
-                              DOWNGRADE_SECURE_FROM_SECURE);
       }
     }
   }
@@ -3609,8 +3595,6 @@ nsCookieService::AddInternal(const nsCookieKey             &aKey,
           // It's valid to evict a secure cookie for another secure cookie.
           oldestCookieTime = FindStaleCookie(entry, currentTime, aHostURI, Some(true), iter);
         } else {
-          Telemetry::Accumulate(Telemetry::COOKIE_LEAVE_SECURE_ALONE,
-                                EVICTING_SECURE_BLOCKED);
           COOKIE_LOGEVICTED(aCookie,
             "Too many cookies for this domain and the new cookie is not a secure cookie");
           return;
@@ -4651,19 +4635,7 @@ void
 nsCookieService::TelemetryForEvictingStaleCookie(nsCookie *aEvicted,
                                                  int64_t oldestCookieTime)
 {
-  // We need to record the evicting cookie to telemetry.
-  if (!aEvicted->IsSecure()) {
-    if (aEvicted->LastAccessed() > oldestCookieTime) {
-      Telemetry::Accumulate(Telemetry::COOKIE_LEAVE_SECURE_ALONE,
-                            EVICTED_NEWER_INSECURE);
-    } else {
-      Telemetry::Accumulate(Telemetry::COOKIE_LEAVE_SECURE_ALONE,
-                            EVICTED_OLDEST_COOKIE);
-    }
-  } else {
-    Telemetry::Accumulate(Telemetry::COOKIE_LEAVE_SECURE_ALONE,
-                          EVICTED_PREFERRED_COOKIE);
-  }
+  /* STUB */
 }
 
 // count the number of cookies stored by a particular host. this is provided by the

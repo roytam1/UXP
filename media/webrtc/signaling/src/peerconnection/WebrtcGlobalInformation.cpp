@@ -1194,18 +1194,8 @@ static void GetStatsForLongTermStorage_s(
     rate_limit_bit_pattern |= 2;
   }
 
-  if (query->failed) {
-    Telemetry::Accumulate(
-        Telemetry::WEBRTC_STUN_RATE_LIMIT_EXCEEDED_BY_TYPE_GIVEN_FAILURE,
-        rate_limit_bit_pattern);
-  } else {
-    Telemetry::Accumulate(
-        Telemetry::WEBRTC_STUN_RATE_LIMIT_EXCEEDED_BY_TYPE_GIVEN_SUCCESS,
-        rate_limit_bit_pattern);
-  }
-
-  // Even if Telemetry::Accumulate is threadsafe, we still need to send the
-  // query back to main, since that is where it must be destroyed.
+  // We still need to send the query back to main, since that is where
+  // it must be destroyed.
   NS_DispatchToMainThread(
       WrapRunnableNM(
           &StoreLongTermICEStatisticsImpl_m,
@@ -1216,8 +1206,6 @@ static void GetStatsForLongTermStorage_s(
 
 void WebrtcGlobalInformation::StoreLongTermICEStatistics(
     PeerConnectionImpl& aPc) {
-  Telemetry::Accumulate(Telemetry::WEBRTC_ICE_FINAL_CONNECTION_STATE,
-                        static_cast<uint32_t>(aPc.IceConnectionState()));
 
   if (aPc.IceConnectionState() == PCImplIceConnectionState::New) {
     // ICE has not started; we won't have any remote candidates, so recording

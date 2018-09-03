@@ -2201,8 +2201,6 @@ nsFrameSelection::CommonPageMove(bool aForward,
     return;
 
   // scroll one page
-  mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-      (uint32_t) ScrollInputMethod::MainThreadScrollPage);
   aScrollableFrame->ScrollBy(nsIntPoint(0, aForward ? 1 : -1),
                              nsIScrollableFrame::PAGES,
                              nsIScrollableFrame::SMOOTH);
@@ -6200,11 +6198,6 @@ Selection::ScrollIntoView(SelectionRegion aRegion,
   }
   if (aFlags & Selection::SCROLL_OVERFLOW_HIDDEN) {
     flags |= nsIPresShell::SCROLL_OVERFLOW_HIDDEN;
-  }
-
-  if (aFlags & Selection::SCROLL_FOR_CARET_MOVE) {
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-        (uint32_t) ScrollInputMethod::MainThreadScrollCaretIntoView);
   }
 
   presShell->ScrollFrameRectIntoView(frame, rect, aVertical, aHorizontal,

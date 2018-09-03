@@ -757,15 +757,6 @@ XMLHttpRequestMainThread::SetResponseType(XMLHttpRequestResponseType aResponseTy
     return;
   }
 
-  // We want to get rid of this moz-only types. Bug 1335365.
-  if (aResponseType == XMLHttpRequestResponseType::Moz_blob) {
-    Telemetry::Accumulate(Telemetry::MOZ_BLOB_IN_XHR, 1);
-  } else if (aResponseType == XMLHttpRequestResponseType::Moz_chunked_text) {
-    Telemetry::Accumulate(Telemetry::MOZ_CHUNKED_TEXT_IN_XHR, 1);
-  } else if (aResponseType == XMLHttpRequestResponseType::Moz_chunked_arraybuffer) {
-    Telemetry::Accumulate(Telemetry::MOZ_CHUNKED_ARRAYBUFFER_IN_XHR, 1);
-  }
-
   // Set the responseType attribute's value to the given value.
   mResponseType = aResponseType;
 }
@@ -1520,8 +1511,6 @@ XMLHttpRequestMainThread::Open(const nsACString& aMethod,
       GetOwner()->GetExtantDoc()) {
     GetOwner()->GetExtantDoc()->WarnOnceAbout(nsIDocument::eSyncXMLHttpRequest);
   }
-
-  Telemetry::Accumulate(Telemetry::XMLHTTPREQUEST_ASYNC_OR_SYNC, aAsync ? 0 : 1);
 
   // Step 1
   nsCOMPtr<nsIDocument> responsibleDocument = GetDocumentIfCurrent();

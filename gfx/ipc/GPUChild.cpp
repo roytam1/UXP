@@ -8,7 +8,6 @@
 #include "gfxPrefs.h"
 #include "GPUProcessHost.h"
 #include "GPUProcessManager.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/dom/CheckerboardReportService.h"
 #include "mozilla/gfx/gfxVars.h"
 #if defined(XP_WIN)
@@ -80,7 +79,6 @@ GPUChild::EnsureGPUReady()
   SendGetDeviceStatus(&data);
 
   gfxPlatform::GetPlatform()->ImportGPUDeviceData(data);
-  Telemetry::AccumulateTimeDelta(Telemetry::GPU_PROCESS_LAUNCH_TIME_MS, mHost->GetLaunchTime());
   mGPUReady = true;
 }
 
@@ -93,7 +91,6 @@ GPUChild::RecvInitComplete(const GPUDeviceData& aData)
   }
 
   gfxPlatform::GetPlatform()->ImportGPUDeviceData(aData);
-  Telemetry::AccumulateTimeDelta(Telemetry::GPU_PROCESS_LAUNCH_TIME_MS, mHost->GetLaunchTime());
   mGPUReady = true;
   return true;
 }
@@ -131,14 +128,14 @@ GPUChild::RecvNotifyUiObservers(const nsCString& aTopic)
 bool
 GPUChild::RecvAccumulateChildHistogram(InfallibleTArray<Accumulation>&& aAccumulations)
 {
-  Telemetry::AccumulateChild(GeckoProcessType_GPU, aAccumulations);
+  /* Telemetry STUB */
   return true;
 }
 
 bool
 GPUChild::RecvAccumulateChildKeyedHistogram(InfallibleTArray<KeyedAccumulation>&& aAccumulations)
 {
-  Telemetry::AccumulateChildKeyed(GeckoProcessType_GPU, aAccumulations);
+  /* Telemetry STUB */
   return true;
 }
 
@@ -152,11 +149,6 @@ GPUChild::RecvNotifyDeviceReset()
 void
 GPUChild::ActorDestroy(ActorDestroyReason aWhy)
 {
-  if (aWhy == AbnormalShutdown) {
-    Telemetry::Accumulate(Telemetry::SUBPROCESS_ABNORMAL_ABORT,
-        nsDependentCString(XRE_ChildProcessTypeToString(GeckoProcessType_GPU), 1));
-  }
-
   gfxVars::RemoveReceiver(this);
   mHost->OnChannelClosed();
 }

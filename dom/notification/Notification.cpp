@@ -642,8 +642,6 @@ NotificationPermissionRequest::ResolvePromise()
     mCallback->Call(mPermission, error);
     rv = error.StealNSResult();
   }
-  Telemetry::Accumulate(
-    Telemetry::WEB_NOTIFICATION_REQUEST_PERMISSION_CALLBACK, !!mCallback);
   mPromise->MaybeResolve(mPermission);
   return rv;
 }
@@ -750,11 +748,6 @@ NotificationTelemetryService::RecordPermissions()
     if (!GetNotificationPermission(supportsPermission, &capability)) {
       continue;
     }
-    if (capability == nsIPermissionManager::DENY_ACTION) {
-      Telemetry::Accumulate(Telemetry::WEB_NOTIFICATION_PERMISSIONS, 0);
-    } else if (capability == nsIPermissionManager::ALLOW_ACTION) {
-      Telemetry::Accumulate(Telemetry::WEB_NOTIFICATION_PERMISSIONS, 1);
-    }
   }
 }
 
@@ -800,9 +793,6 @@ NotificationTelemetryService::RecordDNDSupported()
   if (NS_FAILED(rv)) {
     return;
   }
-
-  Telemetry::Accumulate(
-    Telemetry::ALERTS_SERVICE_DND_SUPPORTED_FLAG, true);
 }
 
 nsresult
@@ -819,7 +809,6 @@ NotificationTelemetryService::RecordSender(nsIPrincipal* aPrincipal)
   }
   if (!mOrigins.Contains(origin)) {
     mOrigins.PutEntry(origin);
-    Telemetry::Accumulate(Telemetry::WEB_NOTIFICATION_SENDERS, 1);
   }
   return NS_OK;
 }
@@ -829,21 +818,7 @@ NotificationTelemetryService::Observe(nsISupports* aSubject,
                                       const char* aTopic,
                                       const char16_t* aData)
 {
-  uint32_t capability;
-  if (strcmp("perm-changed", aTopic) ||
-      !NS_strcmp(u"cleared", aData) ||
-      !GetNotificationPermission(aSubject, &capability)) {
-    return NS_OK;
-  }
-  if (!NS_strcmp(u"deleted", aData)) {
-    if (capability == nsIPermissionManager::DENY_ACTION) {
-      Telemetry::Accumulate(
-        Telemetry::WEB_NOTIFICATION_PERMISSION_REMOVED, 0);
-    } else if (capability == nsIPermissionManager::ALLOW_ACTION) {
-      Telemetry::Accumulate(
-        Telemetry::WEB_NOTIFICATION_PERMISSION_REMOVED, 1);
-    }
-  }
+  /* STUB */
   return NS_OK;
 }
 
@@ -1407,7 +1382,6 @@ NotificationObserver::Observe(nsISupports* aSubject, const char* aTopic,
   AssertIsOnMainThread();
 
   if (!strcmp("alertdisablecallback", aTopic)) {
-    Telemetry::Accumulate(Telemetry::WEB_NOTIFICATION_MENU, 1);
     if (XRE_IsParentProcess()) {
       return Notification::RemovePermission(mPrincipal);
     }
@@ -1417,10 +1391,7 @@ NotificationObserver::Observe(nsISupports* aSubject, const char* aTopic,
     ContentChild::GetSingleton()->SendDisableNotifications(
       IPC::Principal(mPrincipal));
     return NS_OK;
-  } else if (!strcmp("alertclickcallback", aTopic)) {
-    Telemetry::Accumulate(Telemetry::WEB_NOTIFICATION_CLICKED, 1);
   } else if (!strcmp("alertsettingscallback", aTopic)) {
-    Telemetry::Accumulate(Telemetry::WEB_NOTIFICATION_MENU, 2);
     if (XRE_IsParentProcess()) {
       return Notification::OpenSettings(mPrincipal);
     }
@@ -1433,21 +1404,7 @@ NotificationObserver::Observe(nsISupports* aSubject, const char* aTopic,
              !strcmp("alertfinished", aTopic)) {
     RefPtr<NotificationTelemetryService> telemetry =
       NotificationTelemetryService::GetInstance();
-    if (telemetry) {
-      // Record whether "do not disturb" is supported after the first
-      // notification, to account for falling back to XUL alerts.
-      telemetry->RecordDNDSupported();
-      if (!mInPrivateBrowsing) {
-        // Ignore senders in private windows.
-        Unused << NS_WARN_IF(NS_FAILED(telemetry->RecordSender(mPrincipal)));
-      }
-    }
     Unused << NS_WARN_IF(NS_FAILED(AdjustPushQuota(aTopic)));
-
-    if (!strcmp("alertshow", aTopic)) {
-      // Record notifications actually shown (e.g. don't count if DND is on).
-      Telemetry::Accumulate(Telemetry::WEB_NOTIFICATION_SHOWN, 1);
-    }
   }
 
   return mObserver->Observe(aSubject, aTopic, aData);

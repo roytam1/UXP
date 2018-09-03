@@ -24,7 +24,6 @@
 #include "mozilla/Services.h"
 #include "mozilla/SHA1.h"
 #include "mozilla/Sprintf.h"
-#include "mozilla/Telemetry.h"
 
 /* a shorter name that better explains what it does */
 #define EINTR_RETRY(x) MOZ_TEMP_FAILURE_RETRY(x)
@@ -176,12 +175,10 @@ void nsNotifyAddrListener::calculateNetworkId(void)
                                 LOG(("networkid: id %s\n", output.get()));
                                 if (mNetworkId != output) {
                                     // new id
-                                    Telemetry::Accumulate(Telemetry::NETWORK_ID, 1);
                                     mNetworkId = output;
                                 }
                                 else {
                                     // same id
-                                    Telemetry::Accumulate(Telemetry::NETWORK_ID, 2);
                                 }
                                 found = true;
                                 break;
@@ -195,7 +192,6 @@ void nsNotifyAddrListener::calculateNetworkId(void)
     } /* if (froute) */
     if (!found) {
         // no id
-        Telemetry::Accumulate(Telemetry::NETWORK_ID, 0);
     }
 }
 

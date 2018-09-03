@@ -25,7 +25,6 @@
 #include "plstr.h"
 #include "mozilla/Sprintf.h"
 
-#include "mozilla/Telemetry.h"
 #include "nsIInterfaceRequestor.h"
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsILoadContext.h"
@@ -12370,101 +12369,7 @@ MightBeAboutOrChromeScheme(nsIURI* aURI)
 void
 nsDocument::ReportUseCounters()
 {
-  static const bool sDebugUseCounters = false;
-  if (mReportedUseCounters) {
-    return;
-  }
-
-  mReportedUseCounters = true;
-
-  if (Telemetry::HistogramUseCounterCount > 0 &&
-      (IsContentDocument() || IsResourceDoc())) {
-    nsCOMPtr<nsIURI> uri;
-    NodePrincipal()->GetURI(getter_AddRefs(uri));
-    if (!uri || MightBeAboutOrChromeScheme(uri)) {
-      return;
-    }
-
-    if (sDebugUseCounters) {
-      nsCString spec = uri->GetSpecOrDefault();
-
-      // URIs can be rather long for data documents, so truncate them to
-      // some reasonable length.
-      spec.Truncate(std::min(128U, spec.Length()));
-      printf("-- Use counters for %s --\n", spec.get());
-    }
-
-    // We keep separate counts for individual documents and top-level
-    // pages to more accurately track how many web pages might break if
-    // certain features were removed.  Consider the case of a single
-    // HTML document with several SVG images and/or iframes with
-    // sub-documents of their own.  If we maintained a single set of use
-    // counters and all the sub-documents use a particular feature, then
-    // telemetry would indicate that we would be breaking N documents if
-    // that feature were removed.  Whereas with a document/top-level
-    // page split, we can see that N documents would be affected, but
-    // only a single web page would be affected.
-
-    // The difference between the values of these two histograms and the
-    // related use counters below tell us how many pages did *not* use
-    // the feature in question.  For instance, if we see that a given
-    // session has destroyed 30 content documents, but a particular use
-    // counter shows only a count of 5, we can infer that the use
-    // counter was *not* used in 25 of those 30 documents.
-    //
-    // We do things this way, rather than accumulating a boolean flag
-    // for each use counter, to avoid sending histograms for features
-    // that don't get widely used.  Doing things in this fashion means
-    // smaller telemetry payloads and faster processing on the server
-    // side.
-    Telemetry::Accumulate(Telemetry::CONTENT_DOCUMENTS_DESTROYED, 1);
-    if (IsTopLevelContentDocument()) {
-      Telemetry::Accumulate(Telemetry::TOP_LEVEL_CONTENT_DOCUMENTS_DESTROYED, 1);
-    }
-
-    for (int32_t c = 0;
-         c < eUseCounter_Count; ++c) {
-      UseCounter uc = static_cast<UseCounter>(c);
-
-      Telemetry::ID id =
-        static_cast<Telemetry::ID>(Telemetry::HistogramFirstUseCounter + uc * 2);
-      bool value = GetUseCounter(uc);
-
-      if (value) {
-        if (sDebugUseCounters) {
-          const char* name = Telemetry::GetHistogramName(id);
-          if (name) {
-            printf("  %s", name);
-          } else {
-            printf("  #%d", id);
-          }
-          printf(": %d\n", value);
-        }
-
-        Telemetry::Accumulate(id, 1);
-      }
-
-      if (IsTopLevelContentDocument()) {
-        id = static_cast<Telemetry::ID>(Telemetry::HistogramFirstUseCounter +
-                                        uc * 2 + 1);
-        value = GetUseCounter(uc) || GetChildDocumentUseCounter(uc);
-
-        if (value) {
-          if (sDebugUseCounters) {
-            const char* name = Telemetry::GetHistogramName(id);
-            if (name) {
-              printf("  %s", name);
-            } else {
-              printf("  #%d", id);
-            }
-            printf(": %d\n", value);
-          }
-
-          Telemetry::Accumulate(id, 1);
-        }
-      }
-    }
-  }
+/* STUB */
 }
 
 void

@@ -237,9 +237,6 @@ nsNSSSocketInfo::NoteTimeUntilReady()
 
   mNotedTimeUntilReady = true;
 
-  // This will include TCP and proxy tunnel wait time
-  Telemetry::AccumulateTimeDelta(Telemetry::SSL_TIME_UNTIL_READY,
-                                 mSocketCreationTimestamp, TimeStamp::Now());
   MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
          ("[%p] nsNSSSocketInfo::NoteTimeUntilReady\n", mFd));
 }
@@ -259,16 +256,6 @@ nsNSSSocketInfo::SetHandshakeCompleted()
                                 : mFalseStarted ? FalseStarted
                                 : mFalseStartCallbackCalled ? ChoseNotToFalseStart
                                 : NotAllowedToFalseStart;
-
-    // This will include TCP and proxy tunnel wait time
-    Telemetry::AccumulateTimeDelta(Telemetry::SSL_TIME_UNTIL_HANDSHAKE_FINISHED,
-                                   mSocketCreationTimestamp, TimeStamp::Now());
-
-    // If the handshake is completed for the first time from just 1 callback
-    // that means that TLS session resumption must have been used.
-    Telemetry::Accumulate(Telemetry::SSL_RESUMED_SESSION,
-                          handshakeType == Resumption);
-    Telemetry::Accumulate(Telemetry::SSL_HANDSHAKE_TYPE, handshakeType);
   }
 
 
@@ -621,11 +608,6 @@ nsNSSSocketInfo::SetCertVerificationResult(PRErrorCode errorCode,
   if (errorCode) {
     mFailedVerification = true;
     SetCanceled(errorCode, errorMessageType);
-  }
-
-  if (mPlaintextBytesRead && !errorCode) {
-    Telemetry::Accumulate(Telemetry::SSL_BYTES_BEFORE_CERT_CALLBACK,
-                          AssertedCast<uint32_t>(mPlaintextBytesRead));
   }
 
   mCertVerificationState = after_cert_verification;
@@ -1121,8 +1103,6 @@ retryDueToTLSIntolerance(PRErrorCode err, nsNSSSocketInfo* socketInfo)
     PRErrorCode originalReason =
       helpers.getIntoleranceReason(socketInfo->GetHostName(),
                                    socketInfo->GetPort());
-    Telemetry::Accumulate(Telemetry::SSL_VERSION_FALLBACK_INAPPROPRIATE,
-                          tlsIntoleranceTelemetryBucket(originalReason));
 
     helpers.forgetIntolerance(socketInfo->GetHostName(),
                               socketInfo->GetPort());
@@ -1144,11 +1124,8 @@ retryDueToTLSIntolerance(PRErrorCode err, nsNSSSocketInfo* socketInfo)
         helpers.mUnrestrictedRC4Fallback) {
       if (helpers.rememberStrongCiphersFailed(socketInfo->GetHostName(),
                                               socketInfo->GetPort(), err)) {
-        Telemetry::Accumulate(Telemetry::SSL_WEAK_CIPHERS_FALLBACK,
-                              tlsIntoleranceTelemetryBucket(err));
         return true;
       }
-      Telemetry::Accumulate(Telemetry::SSL_WEAK_CIPHERS_FALLBACK, 0);
     }
   }
 
@@ -1191,17 +1168,11 @@ retryDueToTLSIntolerance(PRErrorCode err, nsNSSSocketInfo* socketInfo)
       return false;
   }
 
-  // The difference between _PRE and _POST represents how often we avoided
-  // TLS intolerance fallback due to remembered tolerance.
-  Telemetry::Accumulate(pre, reason);
-
   if (!helpers.rememberIntolerantAtVersion(socketInfo->GetHostName(),
                                            socketInfo->GetPort(),
                                            range.min, range.max, err)) {
     return false;
   }
-
-  Telemetry::Accumulate(post, reason);
 
   return true;
 }
@@ -1242,8 +1213,6 @@ reportHandshakeResult(int32_t bytesTransferred, bool wasReading, PRErrorCode err
   } else {
     bucket = 671;
   }
-
-  Telemetry::Accumulate(Telemetry::SSL_HANDSHAKE_RESULT, bucket);
 }
 
 int32_t

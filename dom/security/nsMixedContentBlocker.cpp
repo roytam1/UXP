@@ -983,44 +983,5 @@ enum MixedContentHSTSState {
 void
 nsMixedContentBlocker::AccumulateMixedContentHSTS(nsIURI* aURI, bool aActive)
 {
-  // This method must only be called in the parent, because
-  // nsSiteSecurityService is only available in the parent
-  if (!XRE_IsParentProcess()) {
-    MOZ_ASSERT(false);
-    return;
-  }
-
-  bool hsts;
-  nsresult rv;
-  nsCOMPtr<nsISiteSecurityService> sss = do_GetService(NS_SSSERVICE_CONTRACTID, &rv);
-  if (NS_FAILED(rv)) {
-    return;
-  }
-  rv = sss->IsSecureURI(nsISiteSecurityService::HEADER_HSTS, aURI, 0, nullptr, &hsts);
-  if (NS_FAILED(rv)) {
-    return;
-  }
-
-  // states: would upgrade, hsts info cached
-  // active, passive
-  //
-  if (!aActive) {
-    if (!hsts) {
-      Telemetry::Accumulate(Telemetry::MIXED_CONTENT_HSTS,
-                            MCB_HSTS_PASSIVE_NO_HSTS);
-    }
-    else {
-      Telemetry::Accumulate(Telemetry::MIXED_CONTENT_HSTS,
-                            MCB_HSTS_PASSIVE_WITH_HSTS);
-    }
-  } else {
-    if (!hsts) {
-      Telemetry::Accumulate(Telemetry::MIXED_CONTENT_HSTS,
-                            MCB_HSTS_ACTIVE_NO_HSTS);
-    }
-    else {
-      Telemetry::Accumulate(Telemetry::MIXED_CONTENT_HSTS,
-                            MCB_HSTS_ACTIVE_WITH_HSTS);
-    }
-  }
+/* STUB */
 }

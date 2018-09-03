@@ -33,9 +33,7 @@ PotentialCheckerboardDurationTracker::CheckerboardDone()
   MOZ_ASSERT(Tracking());
   mInCheckerboard = false;
   if (!Tracking()) {
-    mozilla::Telemetry::AccumulateTimeDelta(
-        mozilla::Telemetry::CHECKERBOARD_POTENTIAL_DURATION,
-        mCurrentPeriodStart);
+    /* Telemetry STUB */
   }
 }
 
@@ -63,9 +61,7 @@ PotentialCheckerboardDurationTracker::InTransform(bool aInTransform)
     // would have taken the other !Tracking branch above. If it's false now,
     // it means we just stopped tracking, so we are ending a potential
     // checkerboard period.
-    mozilla::Telemetry::AccumulateTimeDelta(
-        mozilla::Telemetry::CHECKERBOARD_POTENTIAL_DURATION,
-        mCurrentPeriodStart);
+    /* Telemetry STUB */
   }
 }
 

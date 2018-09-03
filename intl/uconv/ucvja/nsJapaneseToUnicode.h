@@ -83,8 +83,6 @@ public:
         mGB2312Decoder = nullptr;
         mEUCKRDecoder = nullptr;
         mISO88597Decoder = nullptr;
-        mozilla::Telemetry::Accumulate(
-          mozilla::Telemetry::DECODER_INSTANTIATED_ISO2022JP, true);
      }
  virtual ~nsISO2022JPToUnicodeV2()
      {

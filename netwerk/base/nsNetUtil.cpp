@@ -2262,7 +2262,6 @@ NS_ShouldSecureUpgrade(nsIURI* aURI,
                             nsIScriptError::warningFlag, "CSP",
                             innerWindowId);
 
-        Telemetry::Accumulate(Telemetry::HTTP_SCHEME_UPGRADE, 4);
         aShouldUpgrade = true;
         return NS_OK;
       }
@@ -2285,17 +2284,10 @@ NS_ShouldSecureUpgrade(nsIURI* aURI,
     if (isStsHost) {
       LOG(("nsHttpChannel::Connect() STS permissions found\n"));
       if (aAllowSTS) {
-        Telemetry::Accumulate(Telemetry::HTTP_SCHEME_UPGRADE, 3);
         aShouldUpgrade = true;
         return NS_OK;
-      } else {
-        Telemetry::Accumulate(Telemetry::HTTP_SCHEME_UPGRADE, 2);
       }
-    } else {
-      Telemetry::Accumulate(Telemetry::HTTP_SCHEME_UPGRADE, 1);
     }
-  } else {
-    Telemetry::Accumulate(Telemetry::HTTP_SCHEME_UPGRADE, 0);
   }
   aShouldUpgrade = false;
   return NS_OK;

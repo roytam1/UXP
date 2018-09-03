@@ -45,12 +45,6 @@ UpdategDisableXULCache()
     // Get the value of "nglayout.debug.disable_xul_cache" preference
     gDisableXULCache =
         Preferences::GetBool(kDisableXULCachePref, gDisableXULCache);
-
-    // Sets the flag if the XUL cache is disabled
-    if (gDisableXULCache) {
-        Telemetry::Accumulate(Telemetry::XUL_CACHE_DISABLED, true);
-    }
-
 }
 
 static void

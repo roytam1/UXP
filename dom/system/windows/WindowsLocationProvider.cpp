@@ -10,7 +10,6 @@
 #include "nsComponentManagerUtils.h"
 #include "prtime.h"
 #include "MLSFallback.h"
-#include "mozilla/Telemetry.h"
 
 namespace mozilla {
 namespace dom {
@@ -34,7 +33,6 @@ WindowsLocationProvider::MLSUpdate::Update(nsIDOMGeoPosition *aPosition)
   if (!coords) {
     return NS_ERROR_FAILURE;
   }
-  Telemetry::Accumulate(Telemetry::GEOLOCATION_WIN8_SOURCE_IS_MLS, true);
   return mCallback->Update(aPosition);
 }
 NS_IMETHODIMP
@@ -175,8 +173,6 @@ LocationEvent::OnLocationChanged(REFIID aReportType,
     new nsGeoPosition(latitude, longitude, alt, herror, verror, 0.0, 0.0,
                       PR_Now() / PR_USEC_PER_MSEC);
   mCallback->Update(position);
-
-  Telemetry::Accumulate(Telemetry::GEOLOCATION_WIN8_SOURCE_IS_MLS, false);
 
   return S_OK;
 }

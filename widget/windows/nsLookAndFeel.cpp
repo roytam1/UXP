@@ -11,7 +11,6 @@
 #include "nsUXThemeConstants.h"
 #include "gfxFont.h"
 #include "WinUtils.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/WindowsVersion.h"
 #include "gfxFontConstants.h"
 
@@ -69,8 +68,6 @@ nsLookAndFeel::nsLookAndFeel()
   : nsXPLookAndFeel()
   , mUseAccessibilityTheme(0)
 {
-  mozilla::Telemetry::Accumulate(mozilla::Telemetry::TOUCH_ENABLED_DEVICE,
-                                 WinUtils::IsTouchDeviceSupportPresent());
 }
 
 nsLookAndFeel::~nsLookAndFeel()

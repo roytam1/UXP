@@ -3757,7 +3757,6 @@ ReportHashSizeMatch(const SHA1Sum::Hash *aHash1, const SHA1Sum::Hash *aHash2)
       bitsDiff++;
 
       uint8_t hashSizeMatch = debruijn32[bitsDiff*0x076be629>>27] + (i<<5);
-      Telemetry::Accumulate(Telemetry::NETWORK_CACHE_HASH_STATS, hashSizeMatch);
 
       return;
     }

@@ -229,7 +229,6 @@ gfxFontCache::Lookup(const gfxFontEntry* aFontEntry,
     Key key(aFontEntry, aStyle, aUnicodeRangeMap);
     HashEntry *entry = mFonts.GetEntry(key);
 
-    Telemetry::Accumulate(Telemetry::FONT_CACHE_HIT, entry != nullptr);
     if (!entry)
         return nullptr;
 
@@ -2578,9 +2577,6 @@ gfxFont::GetShapedWord(DrawTarget *aDrawTarget,
 
     if (sw) {
         sw->ResetAge();
-        Telemetry::Accumulate((isContent ? Telemetry::WORD_CACHE_HITS_CONTENT :
-                                   Telemetry::WORD_CACHE_HITS_CHROME),
-                              aLength);
 #ifndef RELEASE_OR_BETA
         if (aTextPerf) {
             aTextPerf->current.wordCacheHit++;
@@ -2589,9 +2585,6 @@ gfxFont::GetShapedWord(DrawTarget *aDrawTarget,
         return sw;
     }
 
-    Telemetry::Accumulate((isContent ? Telemetry::WORD_CACHE_MISSES_CONTENT :
-                               Telemetry::WORD_CACHE_MISSES_CHROME),
-                          aLength);
 #ifndef RELEASE_OR_BETA
     if (aTextPerf) {
         aTextPerf->current.wordCacheMiss++;

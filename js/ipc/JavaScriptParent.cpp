@@ -15,7 +15,6 @@
 #include "js/HeapAPI.h"
 #include "xpcprivate.h"
 #include "mozilla/Casting.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Unused.h"
 #include "nsAutoPtr.h"
 
@@ -110,7 +109,6 @@ JavaScriptParent::allowMessage(JSContext* cx)
 
         if (!xpc::CompartmentPrivate::Get(jsGlobal)->allowCPOWs) {
             if (!addonId && ForbidUnsafeBrowserCPOWs() && !isSafe) {
-                Telemetry::Accumulate(Telemetry::BROWSER_SHIM_USAGE_BLOCKED, 1);
                 JS_ReportErrorASCII(cx, "unsafe CPOW usage forbidden");
                 return false;
             }
@@ -120,7 +118,6 @@ JavaScriptParent::allowMessage(JSContext* cx)
                 nsString addonIdString;
                 AssignJSFlatString(addonIdString, flat);
                 NS_ConvertUTF16toUTF8 addonIdCString(addonIdString);
-                Telemetry::Accumulate(Telemetry::ADDON_FORBIDDEN_CPOW_USAGE, addonIdCString);
 
                 if (ForbidCPOWsInCompatibleAddon(addonIdCString)) {
                     JS_ReportErrorASCII(cx, "CPOW usage forbidden in this add-on");

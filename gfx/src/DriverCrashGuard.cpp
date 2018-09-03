@@ -11,7 +11,6 @@
 #include "nsString.h"
 #include "nsXULAppAPI.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Services.h"
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/dom/ContentChild.h"
@@ -469,20 +468,7 @@ D3D11LayersCrashGuard::LogFeatureDisabled()
 void
 D3D11LayersCrashGuard::RecordTelemetry(TelemetryState aState)
 {
-  // D3D11LayersCrashGuard is a no-op in the child process.
-  if (!XRE_IsParentProcess()) {
-    return;
-  }
-
-  // Since we instantiate this class more than once, make sure we only record
-  // the first state (since that is really all we care about).
-  static bool sTelemetryStateRecorded = false;
-  if (sTelemetryStateRecorded) {
-    return;
-  }
-
-  Telemetry::Accumulate(Telemetry::GRAPHICS_DRIVER_STARTUP_TEST, int32_t(aState));
-  sTelemetryStateRecorded = true;
+  /* STUB */
 }
 
 D3D9VideoCrashGuard::D3D9VideoCrashGuard(dom::ContentParent* aContentParent)

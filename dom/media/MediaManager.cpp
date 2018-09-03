@@ -32,7 +32,6 @@
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsIInputStream.h"
 #include "nsILineInputStream.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Types.h"
 #include "mozilla/PeerIdentity.h"
 #include "mozilla/dom/ContentChild.h"
@@ -2060,28 +2059,6 @@ MediaManager::GetUserMedia(nsPIDOMWindowInner* aWindow,
                       host.LowerCaseEqualsLiteral("127.0.0.1") ||
                       host.LowerCaseEqualsLiteral("::1"));
 
-  // Record telemetry about whether the source of the call was secure, i.e.,
-  // privileged or HTTPS.  We may handle other cases
-if (privileged) {
-    Telemetry::Accumulate(Telemetry::WEBRTC_GET_USER_MEDIA_SECURE_ORIGIN,
-                          (uint32_t) GetUserMediaSecurityState::Privileged);
-  } else if (isHTTPS) {
-    Telemetry::Accumulate(Telemetry::WEBRTC_GET_USER_MEDIA_SECURE_ORIGIN,
-                          (uint32_t) GetUserMediaSecurityState::HTTPS);
-  } else if (isFile) {
-    Telemetry::Accumulate(Telemetry::WEBRTC_GET_USER_MEDIA_SECURE_ORIGIN,
-                          (uint32_t) GetUserMediaSecurityState::File);
-  } else if (isApp) {
-    Telemetry::Accumulate(Telemetry::WEBRTC_GET_USER_MEDIA_SECURE_ORIGIN,
-                          (uint32_t) GetUserMediaSecurityState::App);
-  } else if (isLocalhost) {
-    Telemetry::Accumulate(Telemetry::WEBRTC_GET_USER_MEDIA_SECURE_ORIGIN,
-                          (uint32_t) GetUserMediaSecurityState::Localhost);
-  } else {
-    Telemetry::Accumulate(Telemetry::WEBRTC_GET_USER_MEDIA_SECURE_ORIGIN,
-                          (uint32_t) GetUserMediaSecurityState::Other);
-  }
-
   nsCString origin;
   rv = nsPrincipal::GetOriginForURI(docURI, origin);
   if (NS_WARN_IF(NS_FAILED(rv))) {
@@ -2100,8 +2077,6 @@ if (privileged) {
     videoType = StringToEnum(dom::MediaSourceEnumValues::strings,
                              vc.mMediaSource,
                              MediaSourceEnum::Other);
-    Telemetry::Accumulate(Telemetry::WEBRTC_GET_USER_MEDIA_TYPE,
-                          (uint32_t) videoType);
     switch (videoType) {
       case MediaSourceEnum::Camera:
         break;
@@ -2192,8 +2167,6 @@ if (privileged) {
       ac.mMediaSource.AssignASCII(EnumToASCII(dom::MediaSourceEnumValues::strings,
                                               audioType));
     }
-    Telemetry::Accumulate(Telemetry::WEBRTC_GET_USER_MEDIA_TYPE,
-                          (uint32_t) audioType);
 
     switch (audioType) {
       case MediaSourceEnum::Microphone:

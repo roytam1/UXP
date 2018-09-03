@@ -58,7 +58,6 @@
 #include "mozilla/net/NeckoChild.h"
 #include "mozilla/net/NeckoParent.h"
 #include "mozilla/ipc/URIUtils.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Unused.h"
 #include "mozilla/BasePrincipal.h"
 
@@ -2182,11 +2181,6 @@ nsHttpHandler::Observe(nsISupports *subject,
         // depend on this value.
         mSessionStartTime = NowInSeconds();
 
-        if (!mDoNotTrackEnabled) {
-            Telemetry::Accumulate(Telemetry::DNT_USAGE, 2);
-        } else {
-            Telemetry::Accumulate(Telemetry::DNT_USAGE, 1);
-        }
     } else if (!strcmp(topic, "profile-change-net-restore")) {
         // initialize connection manager
         InitConnectionMgr();

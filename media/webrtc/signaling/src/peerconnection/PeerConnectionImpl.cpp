@@ -2245,22 +2245,6 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
 
   CSFLogDebug(logTag, "AddIceCandidate: %s", aCandidate);
 
-#if !defined(MOZILLA_EXTERNAL_LINKAGE)
-  // When remote candidates are added before our ICE ctx is up and running
-  // (the transition to New is async through STS, so this is not impossible),
-  // we won't record them as trickle candidates. Is this what we want?
-  if(!mIceStartTime.IsNull()) {
-    TimeDuration timeDelta = TimeStamp::Now() - mIceStartTime;
-    if (mIceConnectionState == PCImplIceConnectionState::Failed) {
-      Telemetry::Accumulate(Telemetry::WEBRTC_ICE_LATE_TRICKLE_ARRIVAL_TIME,
-                            timeDelta.ToMilliseconds());
-    } else {
-      Telemetry::Accumulate(Telemetry::WEBRTC_ICE_ON_TIME_TRICKLE_ARRIVAL_TIME,
-                            timeDelta.ToMilliseconds());
-    }
-  }
-#endif
-
   nsresult res = mJsepSession->AddRemoteIceCandidate(aCandidate, aMid, aLevel);
 
   if (NS_SUCCEEDED(res)) {
@@ -3011,49 +2995,7 @@ PeerConnectionImpl::PluginCrash(uint32_t aPluginID,
 void
 PeerConnectionImpl::RecordEndOfCallTelemetry() const
 {
-  if (!mJsepSession) {
-    return;
-  }
-
-#if !defined(MOZILLA_EXTERNAL_LINKAGE)
-  // Bitmask used for WEBRTC/LOOP_CALL_TYPE telemetry reporting
-  static const uint32_t kAudioTypeMask = 1;
-  static const uint32_t kVideoTypeMask = 2;
-  static const uint32_t kDataChannelTypeMask = 4;
-
-  // Report end-of-call Telemetry
-  if (mJsepSession->GetNegotiations() > 0) {
-    Telemetry::Accumulate(Telemetry::WEBRTC_RENEGOTIATIONS,
-                          mJsepSession->GetNegotiations()-1);
-  }
-  Telemetry::Accumulate(Telemetry::WEBRTC_MAX_VIDEO_SEND_TRACK,
-                        mMaxSending[SdpMediaSection::MediaType::kVideo]);
-  Telemetry::Accumulate(Telemetry::WEBRTC_MAX_VIDEO_RECEIVE_TRACK,
-                        mMaxReceiving[SdpMediaSection::MediaType::kVideo]);
-  Telemetry::Accumulate(Telemetry::WEBRTC_MAX_AUDIO_SEND_TRACK,
-                        mMaxSending[SdpMediaSection::MediaType::kAudio]);
-  Telemetry::Accumulate(Telemetry::WEBRTC_MAX_AUDIO_RECEIVE_TRACK,
-                        mMaxReceiving[SdpMediaSection::MediaType::kAudio]);
-  // DataChannels appear in both Sending and Receiving
-  Telemetry::Accumulate(Telemetry::WEBRTC_DATACHANNEL_NEGOTIATED,
-                        mMaxSending[SdpMediaSection::MediaType::kApplication]);
-  // Enumerated/bitmask: 1 = Audio, 2 = Video, 4 = DataChannel
-  // A/V = 3, A/V/D = 7, etc
-  uint32_t type = 0;
-  if (mMaxSending[SdpMediaSection::MediaType::kAudio] ||
-      mMaxReceiving[SdpMediaSection::MediaType::kAudio]) {
-    type = kAudioTypeMask;
-  }
-  if (mMaxSending[SdpMediaSection::MediaType::kVideo] ||
-      mMaxReceiving[SdpMediaSection::MediaType::kVideo]) {
-    type |= kVideoTypeMask;
-  }
-  if (mMaxSending[SdpMediaSection::MediaType::kApplication]) {
-    type |= kDataChannelTypeMask;
-  }
-  Telemetry::Accumulate(Telemetry::WEBRTC_CALL_TYPE,
-                        type);
-#endif
+  /* STUB */
 }
 
 nsresult
@@ -3108,13 +3050,6 @@ PeerConnectionImpl::ShutdownMedia()
     for (const auto& pair : info->GetMediaStreamTracks()) {
       pair.second->RemovePrincipalChangeObserver(this);
     }
-  }
-
-  // End of call to be recorded in Telemetry
-  if (!mStartTime.IsNull()){
-    TimeDuration timeDelta = TimeStamp::Now() - mStartTime;
-    Telemetry::Accumulate(Telemetry::WEBRTC_CALL_DURATION,
-                          timeDelta.ToSeconds());
   }
 #endif
 
@@ -3423,33 +3358,6 @@ void PeerConnectionImpl::IceConnectionStateChange(
     return;
   }
 
-#if !defined(MOZILLA_EXTERNAL_LINKAGE)
-  if (!isDone(mIceConnectionState) && isDone(domState)) {
-    // mIceStartTime can be null if going directly from New to Closed, in which
-    // case we don't count it as a success or a failure.
-    if (!mIceStartTime.IsNull()){
-      TimeDuration timeDelta = TimeStamp::Now() - mIceStartTime;
-      if (isSucceeded(domState)) {
-        Telemetry::Accumulate(Telemetry::WEBRTC_ICE_SUCCESS_TIME,
-                              timeDelta.ToMilliseconds());
-      } else if (isFailed(domState)) {
-        Telemetry::Accumulate(Telemetry::WEBRTC_ICE_FAILURE_TIME,
-                              timeDelta.ToMilliseconds());
-      }
-    }
-
-    if (isSucceeded(domState)) {
-      Telemetry::Accumulate(
-          Telemetry::WEBRTC_ICE_ADD_CANDIDATE_ERRORS_GIVEN_SUCCESS,
-          mAddCandidateErrorCount);
-    } else if (isFailed(domState)) {
-      Telemetry::Accumulate(
-          Telemetry::WEBRTC_ICE_ADD_CANDIDATE_ERRORS_GIVEN_FAILURE,
-          mAddCandidateErrorCount);
-    }
-  }
-#endif
-
   mIceConnectionState = domState;
 
   if (mIceConnectionState == PCImplIceConnectionState::Connected ||
@@ -3467,10 +3375,6 @@ void PeerConnectionImpl::IceConnectionStateChange(
       STAMP_TIMECARD(mTimeCard, "Ice state: new");
       break;
     case PCImplIceConnectionState::Checking:
-#if !defined(MOZILLA_EXTERNAL_LINKAGE)
-      // For telemetry
-      mIceStartTime = TimeStamp::Now();
-#endif
       STAMP_TIMECARD(mTimeCard, "Ice state: checking");
       break;
     case PCImplIceConnectionState::Connected:
@@ -4067,16 +3971,7 @@ PeerConnectionImpl::IceStreamReady(NrIceMediaStream *aStream)
 //Telemetry for when calls start
 void
 PeerConnectionImpl::startCallTelem() {
-  if (!mStartTime.IsNull()) {
-    return;
-  }
-
-  // Start time for calls
-  mStartTime = TimeStamp::Now();
-
-  // Increment session call counter
-  // If we want to track Loop calls independently here, we need two histograms.
-  Telemetry::Accumulate(Telemetry::WEBRTC_CALL_COUNT_2, 1);
+  /* STUB */
 }
 #endif
 

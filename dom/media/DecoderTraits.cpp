@@ -288,7 +288,7 @@ CanHandleMediaType(const MediaContentType& aType,
   MOZ_ASSERT(NS_IsMainThread());
 
   if (IsHttpLiveStreamingType(aType.GetMIMEType())) {
-    Telemetry::Accumulate(Telemetry::MEDIA_HLS_CANPLAY_REQUESTED, true);
+    /* Telemetry STUB */
   }
 
   if (aType.HaveCodecs()) {
@@ -432,11 +432,6 @@ InstantiateDecoder(const nsACString& aType,
     return decoder.forget();
   }
 #endif
-
-  if (IsHttpLiveStreamingType(aType)) {
-    // We don't have an HLS decoder.
-    Telemetry::Accumulate(Telemetry::MEDIA_HLS_DECODER_SUCCESS, false);
-  }
 
   return nullptr;
 }

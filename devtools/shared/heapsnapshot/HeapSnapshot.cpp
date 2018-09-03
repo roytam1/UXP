@@ -28,7 +28,6 @@
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/HeapSnapshotBinding.h"
 #include "mozilla/RangedPtr.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Unused.h"
 
 #include "jsapi.h"
@@ -1610,13 +1609,6 @@ ThreadSafeChromeUtils::SaveHeapSnapshot(GlobalObject& global,
       return;
     }
   }
-
-  Telemetry::AccumulateTimeDelta(Telemetry::DEVTOOLS_SAVE_HEAP_SNAPSHOT_MS,
-                                 start);
-  Telemetry::Accumulate(Telemetry::DEVTOOLS_HEAP_SNAPSHOT_NODE_COUNT,
-                        nodeCount);
-  Telemetry::Accumulate(Telemetry::DEVTOOLS_HEAP_SNAPSHOT_EDGE_COUNT,
-                        edgeCount);
 }
 
 /* static */ already_AddRefed<HeapSnapshot>
@@ -1640,10 +1632,6 @@ ThreadSafeChromeUtils::ReadHeapSnapshot(GlobalObject& global,
   RefPtr<HeapSnapshot> snapshot = HeapSnapshot::Create(
       global.Context(), global, reinterpret_cast<const uint8_t*>(mm.address()),
       mm.size(), rv);
-
-  if (!rv.Failed())
-    Telemetry::AccumulateTimeDelta(Telemetry::DEVTOOLS_READ_HEAP_SNAPSHOT_MS,
-                                   start);
 
   return snapshot.forget();
 }

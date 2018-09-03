@@ -248,13 +248,8 @@ void ReportCubebBackendUsed()
   bool foundBackend = false;
   for (uint32_t i = 0; i < ArrayLength(AUDIOSTREAM_BACKEND_ID_STR); i++) {
     if (!strcmp(cubeb_get_backend_id(sCubebContext), AUDIOSTREAM_BACKEND_ID_STR[i])) {
-      Telemetry::Accumulate(Telemetry::AUDIOSTREAM_BACKEND_USED, i);
       foundBackend = true;
     }
-  }
-  if (!foundBackend) {
-    Telemetry::Accumulate(Telemetry::AUDIOSTREAM_BACKEND_USED,
-                          CUBEB_BACKEND_UNKNOWN);
   }
 }
 
@@ -267,9 +262,6 @@ void ReportCubebStreamInitFailure(bool aIsFirst)
     // failures to open multiple streams in a process over time.
     return;
   }
-  Telemetry::Accumulate(Telemetry::AUDIOSTREAM_BACKEND_USED,
-                        aIsFirst ? CUBEB_BACKEND_INIT_FAILURE_FIRST
-                                 : CUBEB_BACKEND_INIT_FAILURE_OTHER);
 }
 
 uint32_t GetCubebPlaybackLatencyInMilliseconds()

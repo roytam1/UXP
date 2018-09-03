@@ -1718,9 +1718,6 @@ ContentParent::ActorDestroy(ActorDestroyReason why)
     props->SetPropertyAsUint64(NS_LITERAL_STRING("childID"), mChildID);
 
     if (AbnormalShutdown == why) {
-      Telemetry::Accumulate(Telemetry::SUBPROCESS_ABNORMAL_ABORT,
-                            NS_LITERAL_CSTRING("content"), 1);
-
       props->SetPropertyAsBool(NS_LITERAL_STRING("abnormal"), true);
     }
     nsAutoString cpId;
@@ -4778,7 +4775,7 @@ bool
 ContentParent::RecvAccumulateChildHistogram(
                 InfallibleTArray<Accumulation>&& aAccumulations)
 {
-  Telemetry::AccumulateChild(GeckoProcessType_Content, aAccumulations);
+  /* STUB */
   return true;
 }
 
@@ -4786,6 +4783,6 @@ bool
 ContentParent::RecvAccumulateChildKeyedHistogram(
                 InfallibleTArray<KeyedAccumulation>&& aAccumulations)
 {
-  Telemetry::AccumulateChildKeyed(GeckoProcessType_Content, aAccumulations);
+  /* STUB */
   return true;
 }

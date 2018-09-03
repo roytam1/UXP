@@ -223,7 +223,6 @@ nsSocketTransportService::CanAttachSocket()
     if (mTelemetryEnabledPref &&
         (((total >= 900) || !rv) && !reported900FDLimit)) {
         reported900FDLimit = true;
-        Telemetry::Accumulate(Telemetry::NETWORK_SESSION_AT_900FD, true);
     }
 
     return rv;
@@ -902,16 +901,6 @@ nsSocketTransportService::Run()
 
             DoPollIteration(&singlePollDuration);
 
-            if (mTelemetryEnabledPref && !pollCycleStart.IsNull()) {
-                Telemetry::Accumulate(Telemetry::STS_POLL_BLOCK_TIME,
-                                      singlePollDuration.ToMilliseconds());
-                Telemetry::AccumulateTimeDelta(
-                    Telemetry::STS_POLL_CYCLE,
-                    pollCycleStart + singlePollDuration,
-                    TimeStamp::NowLoRes());
-                pollDuration += singlePollDuration;
-            }
-
             mRawThread->HasPendingEvents(&pendingEvents);
             if (pendingEvents) {
                 if (!mServingPendingQueue) {
@@ -944,22 +933,6 @@ nsSocketTransportService::Run()
                          ((TimeStamp::NowLoRes() -
                            eventQueueStart).ToMilliseconds() <
                           mMaxTimePerPollIter));
-
-                if (mTelemetryEnabledPref && !mServingPendingQueue &&
-                    !startOfIteration.IsNull()) {
-                    Telemetry::AccumulateTimeDelta(
-                        Telemetry::STS_POLL_AND_EVENTS_CYCLE,
-                        startOfIteration + pollDuration,
-                        TimeStamp::NowLoRes());
-
-                    Telemetry::Accumulate(
-                        Telemetry::STS_NUMBER_OF_PENDING_EVENTS,
-                        numberOfPendingEvents);
-
-                    numberOfPendingEventsLastCycle += numberOfPendingEvents;
-                    numberOfPendingEvents = 0;
-                    pollDuration = 0;
-                }
             }
         } while (pendingEvents);
 
@@ -968,16 +941,6 @@ nsSocketTransportService::Run()
         {
             MutexAutoLock lock(mLock);
             if (mShuttingDown) {
-                if (mTelemetryEnabledPref &&
-                    !startOfCycleForLastCycleCalc.IsNull()) {
-                    Telemetry::Accumulate(
-                        Telemetry::STS_NUMBER_OF_PENDING_EVENTS_IN_THE_LAST_CYCLE,
-                        numberOfPendingEventsLastCycle);
-                    Telemetry::AccumulateTimeDelta(
-                        Telemetry::STS_POLL_AND_EVENT_THE_LAST_CYCLE,
-                        startOfCycleForLastCycleCalc,
-                        TimeStamp::NowLoRes());
-                }
                 break;
             }
             if (mGoingOffline) {
@@ -1145,11 +1108,6 @@ nsSocketTransportService::DoPollIteration(TimeDuration *pollDuration)
                     numberOfOnSocketReadyCalls++;
                 }
             }
-        }
-        if (mTelemetryEnabledPref) {
-            Telemetry::Accumulate(
-                Telemetry::STS_NUMBER_OF_ONSOCKETREADY_CALLS,
-                numberOfOnSocketReadyCalls);
         }
 
         //
@@ -1474,7 +1432,6 @@ nsSocketTransportService::ProbeMaxCount()
         if (pfd[index].fd)
             PR_Close(pfd[index].fd);
 
-    Telemetry::Accumulate(Telemetry::NETWORK_PROBE_MAXCOUNT, gMaxCount);
     SOCKET_LOG(("Socket Limit Test max was confirmed at %d\n", gMaxCount));
 }
 #endif // windows

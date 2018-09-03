@@ -14,7 +14,6 @@
 #include "nsCharSeparatedTokenizer.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Sprintf.h"
-#include "mozilla/Telemetry.h"
 #include "nsDirectoryServiceUtils.h"
 #include "nsDirectoryServiceDefs.h"
 #include "nsAppDirectoryServiceDefs.h"
@@ -864,8 +863,6 @@ gfxDWriteFontList::InitFontListForPlatform()
     hr = gfxWindowsPlatform::GetPlatform()->GetDWriteFactory()->
         GetGdiInterop(getter_AddRefs(mGDIInterop));
     if (FAILED(hr)) {
-        Telemetry::Accumulate(Telemetry::DWRITEFONT_INIT_PROBLEM,
-                              uint32_t(errGDIInterop));
         return NS_ERROR_FAILURE;
     }
 
@@ -878,8 +875,6 @@ gfxDWriteFontList::InitFontListForPlatform()
     NS_ASSERTION(SUCCEEDED(hr), "GetSystemFontCollection failed!");
 
     if (FAILED(hr)) {
-        Telemetry::Accumulate(Telemetry::DWRITEFONT_INIT_PROBLEM,
-                              uint32_t(errSystemFontCollection));
         return NS_ERROR_FAILURE;
     }
 
@@ -891,8 +886,6 @@ gfxDWriteFontList::InitFontListForPlatform()
     NS_ASSERTION(mFontFamilies.Count() != 0,
                  "no fonts found in the system fontlist -- holy crap batman!");
     if (mFontFamilies.Count() == 0) {
-        Telemetry::Accumulate(Telemetry::DWRITEFONT_INIT_PROBLEM,
-                              uint32_t(errNoFonts));
         return NS_ERROR_FAILURE;
     }
 
@@ -1001,9 +994,6 @@ gfxDWriteFontList::InitFontListForPlatform()
     }
 
     elapsedTime = (t5.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
-    Telemetry::Accumulate(Telemetry::DWRITEFONT_DELAYEDINITFONTLIST_TOTAL, elapsedTime);
-    Telemetry::Accumulate(Telemetry::DWRITEFONT_DELAYEDINITFONTLIST_COUNT,
-                          mSystemFonts->GetFontFamilyCount());
     LOG_FONTINIT((
        "(fontinit) Total time in InitFontList:    %9.3f ms (families: %d, %s)\n",
        elapsedTime, mSystemFonts->GetFontFamilyCount(),
@@ -1013,7 +1003,6 @@ gfxDWriteFontList::InitFontListForPlatform()
     LOG_FONTINIT(("(fontinit)  --- base/interop obj initialization init: %9.3f ms\n", elapsedTime));
 
     elapsedTime = (t3.QuadPart - t2.QuadPart) * 1000.0 / frequency.QuadPart;
-    Telemetry::Accumulate(Telemetry::DWRITEFONT_DELAYEDINITFONTLIST_COLLECT, elapsedTime);
     LOG_FONTINIT(("(fontinit)  --- GetSystemFontCollection:  %9.3f ms\n", elapsedTime));
 
     elapsedTime = (t4.QuadPart - t3.QuadPart) * 1000.0 / frequency.QuadPart;
@@ -1455,7 +1444,6 @@ gfxDWriteFontList::PlatformGlobalFontFallback(const uint32_t aCh,
             *aMatchedFamily = family;
             return fontEntry;
         }
-        Telemetry::Accumulate(Telemetry::BAD_FALLBACK_FONT, true);
     }
 
     return nullptr;

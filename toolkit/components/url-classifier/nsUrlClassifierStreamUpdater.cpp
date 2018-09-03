@@ -646,9 +646,6 @@ nsUrlClassifierStreamUpdater::OnStartRequest(nsIRequest *request,
     if (NS_FAILED(status)) {
       // Assume we're overloading the server and trigger backoff.
       downloadError = true;
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::URLCLASSIFIER_UPDATE_REMOTE_STATUS,
-                                     15 /* unknown response code */);
-
     } else {
       bool succeeded = false;
       rv = httpChannel->GetRequestSucceeded(&succeeded);
@@ -657,8 +654,6 @@ nsUrlClassifierStreamUpdater::OnStartRequest(nsIRequest *request,
       uint32_t requestStatus;
       rv = httpChannel->GetResponseStatus(&requestStatus);
       NS_ENSURE_SUCCESS(rv, rv);
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::URLCLASSIFIER_UPDATE_REMOTE_STATUS,
-                                     HTTPStatusToBucket(requestStatus));
       LOG(("nsUrlClassifierStreamUpdater::OnStartRequest %s (%d)", succeeded ?
            "succeeded" : "failed", requestStatus));
       if (!succeeded) {

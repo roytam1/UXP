@@ -14,22 +14,22 @@ namespace a11y {
 namespace statistics {
 
   inline void A11yInitialized()
-    { Telemetry::Accumulate(Telemetry::A11Y_INSTANTIATED_FLAG, true); }
+    { /* STUB */ }
 
   inline void A11yConsumers(uint32_t aConsumer)
-    { Telemetry::Accumulate(Telemetry::A11Y_CONSUMERS, aConsumer); }
+    { /* STUB */ }
 
   /**
    * Report that ISimpleDOM* has been used.
    */
   inline void ISimpleDOMUsed()
-    { Telemetry::Accumulate(Telemetry::A11Y_ISIMPLEDOM_USAGE_FLAG, true); }
+    { /* STUB */ }
 
   /**
    * Report that IAccessibleTable has been used.
    */
   inline void IAccessibleTableUsed()
-    { Telemetry::Accumulate(Telemetry::A11Y_IATABLE_USAGE_FLAG, true); }
+    { /* STUB */ }
 
 } // namespace statistics
 } // namespace a11y

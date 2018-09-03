@@ -567,15 +567,12 @@ CertErrorRunnable::CheckCertOverrides()
       // want a ballpark answer, we don't care.
       if (mErrorCodeTrust != 0) {
         uint32_t probeValue = MapOverridableErrorToProbeValue(mErrorCodeTrust);
-        Telemetry::Accumulate(Telemetry::SSL_CERT_ERROR_OVERRIDES, probeValue);
       }
       if (mErrorCodeMismatch != 0) {
         uint32_t probeValue = MapOverridableErrorToProbeValue(mErrorCodeMismatch);
-        Telemetry::Accumulate(Telemetry::SSL_CERT_ERROR_OVERRIDES, probeValue);
       }
       if (mErrorCodeTime != 0) {
         uint32_t probeValue = MapOverridableErrorToProbeValue(mErrorCodeTime);
-        Telemetry::Accumulate(Telemetry::SSL_CERT_ERROR_OVERRIDES, probeValue);
       }
 
       // all errors are covered by override rules, so let's accept the cert
@@ -660,7 +657,6 @@ CreateCertErrorRunnable(CertVerifier& certVerifier,
   MOZ_ASSERT(cert);
 
   uint32_t probeValue = MapCertErrorToProbeValue(defaultErrorCodeToReport);
-  Telemetry::Accumulate(Telemetry::SSL_CERT_VERIFICATION_ERRORS, probeValue);
 
   uint32_t collected_errors = 0;
   PRErrorCode errorCodeTrust = 0;
@@ -869,19 +865,11 @@ void
 AccumulateSubjectCommonNameTelemetry(const char* commonName,
                                      bool commonNameInSubjectAltNames)
 {
-  if (!commonName) {
-    // 1 means no common name present
-    Telemetry::Accumulate(Telemetry::BR_9_2_2_SUBJECT_COMMON_NAME, 1);
-  } else if (!commonNameInSubjectAltNames) {
+  if (!commonNameInSubjectAltNames) {
     MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
            ("BR telemetry: common name '%s' not in subject alt. names "
             "(or the subject alt. names extension is not present)\n",
             commonName));
-    // 2 means the common name is not present in subject alt names
-    Telemetry::Accumulate(Telemetry::BR_9_2_2_SUBJECT_COMMON_NAME, 2);
-  } else {
-    // 0 means the common name is present in subject alt names
-    Telemetry::Accumulate(Telemetry::BR_9_2_2_SUBJECT_COMMON_NAME, 0);
   }
 }
 
@@ -947,8 +935,6 @@ GatherBaselineRequirementsTelemetry(const UniqueCERTCertList& certList)
     MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
            ("BR telemetry: no subject alt names extension for '%s'\n",
             commonName.get()));
-    // 1 means there is no subject alt names extension
-    Telemetry::Accumulate(Telemetry::BR_9_2_1_SUBJECT_ALT_NAMES, 1);
     AccumulateSubjectCommonNameTelemetry(commonName.get(), false);
     return;
   }
@@ -960,8 +946,6 @@ GatherBaselineRequirementsTelemetry(const UniqueCERTCertList& certList)
     MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
            ("BR telemetry: could not decode subject alt names for '%s'\n",
             commonName.get()));
-    // 2 means the subject alt names extension could not be decoded
-    Telemetry::Accumulate(Telemetry::BR_9_2_1_SUBJECT_ALT_NAMES, 2);
     AccumulateSubjectCommonNameTelemetry(commonName.get(), false);
     return;
   }
@@ -1044,24 +1028,6 @@ GatherBaselineRequirementsTelemetry(const UniqueCERTCertList& certList)
     currentName = CERT_GetNextGeneralName(currentName);
   } while (currentName && currentName != subjectAltNames);
 
-  if (nonDNSNameOrIPAddressPresent) {
-    // 3 means there's an entry that isn't an ip address or dns name
-    Telemetry::Accumulate(Telemetry::BR_9_2_1_SUBJECT_ALT_NAMES, 3);
-  }
-  if (malformedDNSNameOrIPAddressPresent) {
-    // 4 means there's a malformed ip address or dns name entry
-    Telemetry::Accumulate(Telemetry::BR_9_2_1_SUBJECT_ALT_NAMES, 4);
-  }
-  if (nonFQDNPresent) {
-    // 5 means there's a DNS name entry with a non-fully-qualified domain name
-    Telemetry::Accumulate(Telemetry::BR_9_2_1_SUBJECT_ALT_NAMES, 5);
-  }
-  if (!nonDNSNameOrIPAddressPresent && !malformedDNSNameOrIPAddressPresent &&
-      !nonFQDNPresent) {
-    // 0 means the extension is acceptable
-    Telemetry::Accumulate(Telemetry::BR_9_2_1_SUBJECT_ALT_NAMES, 0);
-  }
-
   AccumulateSubjectCommonNameTelemetry(commonName.get(),
                                        commonNameInSubjectAltNames);
 }
@@ -1111,7 +1077,6 @@ GatherEKUTelemetry(const UniqueCERTCertList& certList)
   }
 
   if (!foundEKU) {
-    Telemetry::Accumulate(Telemetry::SSL_SERVER_AUTH_EKU, 0);
     return;
   }
 
@@ -1132,18 +1097,6 @@ GatherEKUTelemetry(const UniqueCERTCertList& certList)
     } else {
       foundOther = true;
     }
-  }
-
-  // Cases 3 is included only for completeness.  It should never
-  // appear in these statistics, because CheckExtendedKeyUsage()
-  // should require the EKU extension, if present, to contain the
-  // value id_kp_serverAuth.
-  if (foundServerAuth && !foundOther) {
-    Telemetry::Accumulate(Telemetry::SSL_SERVER_AUTH_EKU, 1);
-  } else if (foundServerAuth && foundOther) {
-    Telemetry::Accumulate(Telemetry::SSL_SERVER_AUTH_EKU, 2);
-  } else if (!foundServerAuth) {
-    Telemetry::Accumulate(Telemetry::SSL_SERVER_AUTH_EKU, 3);
   }
 }
 
@@ -1210,9 +1163,6 @@ GatherEndEntityTelemetry(const UniqueCERTCertList& certList)
   if (durationInWeeks > (2 * ONE_YEAR_IN_WEEKS)) {
     durationInWeeks = (2 * ONE_YEAR_IN_WEEKS) + 1;
   }
-
-  Telemetry::Accumulate(Telemetry::SSL_OBSERVED_END_ENTITY_CERTIFICATE_LIFETIME,
-      durationInWeeks);
 }
 
 // There are various things that we want to measure about certificate
@@ -1229,75 +1179,14 @@ GatherSuccessfulValidationTelemetry(const UniqueCERTCertList& certList)
 void
 GatherTelemetryForSingleSCT(const ct::SignedCertificateTimestamp& sct)
 {
-  // See SSL_SCTS_ORIGIN in Histograms.json.
-  uint32_t origin = 0;
-  switch (sct.origin) {
-    case ct::SignedCertificateTimestamp::Origin::Embedded:
-      origin = 1;
-      break;
-    case ct::SignedCertificateTimestamp::Origin::TLSExtension:
-      origin = 2;
-      break;
-    case ct::SignedCertificateTimestamp::Origin::OCSPResponse:
-      origin = 3;
-      break;
-    default:
-      MOZ_ASSERT_UNREACHABLE("Unexpected SCT::Origin type");
-  }
-  Telemetry::Accumulate(Telemetry::SSL_SCTS_ORIGIN, origin);
-
-  // See SSL_SCTS_VERIFICATION_STATUS in Histograms.json.
-  uint32_t verificationStatus = 0;
-  switch (sct.verificationStatus) {
-    case ct::SignedCertificateTimestamp::VerificationStatus::OK:
-      verificationStatus = 1;
-      break;
-    case ct::SignedCertificateTimestamp::VerificationStatus::UnknownLog:
-      verificationStatus = 2;
-      break;
-    case ct::SignedCertificateTimestamp::VerificationStatus::InvalidSignature:
-      verificationStatus = 3;
-      break;
-    case ct::SignedCertificateTimestamp::VerificationStatus::InvalidTimestamp:
-      verificationStatus = 4;
-      break;
-    default:
-      MOZ_ASSERT_UNREACHABLE("Unexpected SCT::VerificationStatus type");
-  }
-  Telemetry::Accumulate(Telemetry::SSL_SCTS_VERIFICATION_STATUS,
-                        verificationStatus);
+/* STUB */
 }
 
 void
 GatherCertificateTransparencyTelemetry(const UniqueCERTCertList& certList,
                                        const CertificateTransparencyInfo& info)
 {
-  if (!info.enabled) {
-    // No telemetry is gathered when CT is disabled.
-    return;
-  }
-
-  if (!info.processedSCTs) {
-    // We didn't receive any SCT data for this connection.
-    Telemetry::Accumulate(Telemetry::SSL_SCTS_PER_CONNECTION, 0);
-    return;
-  }
-
-  for (const ct::SignedCertificateTimestamp& sct : info.verifyResult.scts) {
-    GatherTelemetryForSingleSCT(sct);
-  }
-
-  // Decoding errors are reported to the 0th bucket
-  // of the SSL_SCTS_VERIFICATION_STATUS enumerated probe.
-  for (size_t i = 0; i < info.verifyResult.decodingErrors; ++i) {
-    Telemetry::Accumulate(Telemetry::SSL_SCTS_VERIFICATION_STATUS, 0);
-  }
-
-  // Handle the histogram of SCTs counts.
-  uint32_t sctsCount = static_cast<uint32_t>(info.verifyResult.scts.length());
-  // Note that sctsCount can be 0 in case we've received SCT binary data,
-  // but it failed to parse (e.g. due to unsupported CT protocol version).
-  Telemetry::Accumulate(Telemetry::SSL_SCTS_PER_CONNECTION, sctsCount);
+/* STUB */
 }
 
 // Note: Takes ownership of |peerCertChain| if SECSuccess is not returned.
@@ -1350,29 +1239,6 @@ AuthCertificate(CertVerifier& certVerifier,
   uint32_t evStatus = (rv != Success) ? 0                   // 0 = Failure
                     : (evOidPolicy == SEC_OID_UNKNOWN) ? 1  // 1 = DV
                     : 2;                                    // 2 = EV
-  Telemetry::Accumulate(Telemetry::CERT_EV_STATUS, evStatus);
-
-  if (ocspStaplingStatus != CertVerifier::OCSP_STAPLING_NEVER_CHECKED) {
-    Telemetry::Accumulate(Telemetry::SSL_OCSP_STAPLING, ocspStaplingStatus);
-  }
-  if (keySizeStatus != KeySizeStatus::NeverChecked) {
-    Telemetry::Accumulate(Telemetry::CERT_CHAIN_KEY_SIZE_STATUS,
-                          static_cast<uint32_t>(keySizeStatus));
-  }
-  if (sha1ModeResult != SHA1ModeResult::NeverChecked) {
-    Telemetry::Accumulate(Telemetry::CERT_CHAIN_SHA1_POLICY_STATUS,
-                          static_cast<uint32_t>(sha1ModeResult));
-  }
-
-  if (pinningTelemetryInfo.accumulateForRoot) {
-    Telemetry::Accumulate(Telemetry::CERT_PINNING_FAILURES_BY_CA,
-                          pinningTelemetryInfo.rootBucket);
-  }
-
-  if (pinningTelemetryInfo.accumulateResult) {
-    Telemetry::Accumulate(pinningTelemetryInfo.certPinningResultHistogram,
-                          pinningTelemetryInfo.certPinningResultBucket);
-  }
 
   if (rv == Success) {
     // Certificate verification succeeded. Delete any potential record of
@@ -1517,7 +1383,6 @@ SSLServerCertVerificationJob::Run()
         new SSLServerCertVerificationResult(mInfoObject, 0,
                                             successTelemetry, interval));
       restart->Dispatch();
-      Telemetry::Accumulate(Telemetry::SSL_CERT_ERROR_OVERRIDES, 1);
       return NS_OK;
     }
 
@@ -1527,7 +1392,6 @@ SSLServerCertVerificationJob::Run()
     {
       TimeStamp now = TimeStamp::Now();
       MutexAutoLock telemetryMutex(*gSSLVerificationTelemetryMutex);
-      Telemetry::AccumulateTimeDelta(failureTelemetry, mJobStartTime, now);
     }
     if (error != 0) {
       RefPtr<CertErrorRunnable> runnable(
@@ -1694,7 +1558,6 @@ AuthCertificateHook(void* arg, PRFileDesc* fd, PRBool checkSig, PRBool isServer)
   MOZ_ASSERT(peerCertChain || rv != SECSuccess,
              "AuthCertificate() should take ownership of chain on failure");
   if (rv == SECSuccess) {
-    Telemetry::Accumulate(Telemetry::SSL_CERT_ERROR_OVERRIDES, 1);
     return SECSuccess;
   }
 
@@ -1782,10 +1645,6 @@ SSLServerCertVerificationResult::Dispatch()
 NS_IMETHODIMP
 SSLServerCertVerificationResult::Run()
 {
-  // TODO: Assert that we're on the socket transport thread
-  if (mTelemetryID != Telemetry::HistogramCount) {
-     Telemetry::Accumulate(mTelemetryID, mTelemetryValue);
-  }
   // XXX: This cast will be removed by the next patch
   ((nsNSSSocketInfo*) mInfoObject.get())
     ->SetCertVerificationResult(mErrorCode, mErrorMessageType);

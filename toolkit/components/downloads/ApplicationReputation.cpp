@@ -34,7 +34,6 @@
 #include "mozilla/LoadContext.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 
 #include "nsAutoPtr.h"
@@ -59,7 +58,6 @@ using mozilla::DocShellOriginAttributes;
 using mozilla::PrincipalOriginAttributes;
 using mozilla::Preferences;
 using mozilla::TimeStamp;
-using mozilla::Telemetry::Accumulate;
 using safe_browsing::ClientDownloadRequest;
 using safe_browsing::ClientDownloadRequest_CertificateChain;
 using safe_browsing::ClientDownloadRequest_Resource;
@@ -356,7 +354,6 @@ PendingDBLookup::HandleEvent(const nsACString& tables)
   Preferences::GetCString(PREF_DOWNLOAD_BLOCK_TABLE, &blockList);
   if (!mAllowlistOnly && FindInReadable(blockList, tables)) {
     mPendingLookup->mBlocklistCount++;
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_LOCAL, BLOCK_LIST);
     LOG(("Found principal %s on blocklist [this = %p]", mSpec.get(), this));
     return mPendingLookup->OnComplete(true, NS_OK,
       nsIApplicationReputationService::VERDICT_DANGEROUS);
@@ -366,13 +363,11 @@ PendingDBLookup::HandleEvent(const nsACString& tables)
   Preferences::GetCString(PREF_DOWNLOAD_ALLOW_TABLE, &allowList);
   if (FindInReadable(allowList, tables)) {
     mPendingLookup->mAllowlistCount++;
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_LOCAL, ALLOW_LIST);
     LOG(("Found principal %s on allowlist [this = %p]", mSpec.get(), this));
     // Don't call onComplete, since blocklisting trumps allowlisting
   } else {
     LOG(("Didn't find principal %s on any list [this = %p]", mSpec.get(),
          this));
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_LOCAL, NO_LIST);
   }
   return mPendingLookup->LookupNext();
 }
@@ -1144,8 +1139,6 @@ PendingLookup::OnComplete(bool shouldBlock, nsresult rv, uint32_t verdict)
     mTimeoutTimer = nullptr;
   }
 
-  Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SHOULD_BLOCK,
-    shouldBlock);
   double t = (TimeStamp::Now() - mStartTime).ToMilliseconds();
   LOG(("Application Reputation verdict is %lu, obtained in %f ms [this = %p]",
        verdict, t, this));
@@ -1393,8 +1386,6 @@ PendingLookup::Notify(nsITimer* aTimer)
 {
   LOG(("Remote lookup timed out [this = %p]", this));
   MOZ_ASSERT(aTimer == mTimeoutTimer);
-  Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_REMOTE_LOOKUP_TIMEOUT,
-    true);
   mChannel->Cancel(NS_ERROR_NET_TIMEOUT);
   mTimeoutTimer->Cancel();
   return NS_OK;
@@ -1457,8 +1448,6 @@ PendingLookup::OnStopRequest(nsIRequest *aRequest,
 
   bool shouldBlock = false;
   uint32_t verdict = nsIApplicationReputationService::VERDICT_SAFE;
-  Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_REMOTE_LOOKUP_TIMEOUT,
-    false);
 
   nsresult rv = OnStopRequestInternal(aRequest, aContext, aResult,
                                       &shouldBlock, &verdict);
@@ -1473,8 +1462,6 @@ PendingLookup::OnStopRequestInternal(nsIRequest *aRequest,
                                      bool* aShouldBlock,
                                      uint32_t* aVerdict) {
   if (NS_FAILED(aResult)) {
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SERVER,
-      SERVER_RESPONSE_FAILED);
     return aResult;
   }
 
@@ -1483,22 +1470,16 @@ PendingLookup::OnStopRequestInternal(nsIRequest *aRequest,
   nsresult rv;
   nsCOMPtr<nsIHttpChannel> channel = do_QueryInterface(aRequest, &rv);
   if (NS_FAILED(rv)) {
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SERVER,
-      SERVER_RESPONSE_FAILED);
     return rv;
   }
 
   uint32_t status = 0;
   rv = channel->GetResponseStatus(&status);
   if (NS_FAILED(rv)) {
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SERVER,
-      SERVER_RESPONSE_FAILED);
     return rv;
   }
 
   if (status != 200) {
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SERVER,
-      SERVER_RESPONSE_FAILED);
     return NS_ERROR_NOT_AVAILABLE;
   }
 
@@ -1506,16 +1487,9 @@ PendingLookup::OnStopRequestInternal(nsIRequest *aRequest,
   safe_browsing::ClientDownloadResponse response;
   if (!response.ParseFromString(buf)) {
     LOG(("Invalid protocol buffer response [this = %p]: %s", this, buf.c_str()));
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SERVER,
-                                   SERVER_RESPONSE_INVALID);
     return NS_ERROR_CANNOT_CONVERT_DATA;
   }
 
-  Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SERVER,
-    SERVER_RESPONSE_VALID);
-  // Clamp responses 0-7, we only know about 0-4 for now.
-  Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SERVER_VERDICT,
-    std::min<uint32_t>(response.verdict(), 7));
   switch(response.verdict()) {
     case safe_browsing::ClientDownloadResponse::DANGEROUS:
       *aShouldBlock = Preferences::GetBool(PREF_BLOCK_DANGEROUS, true);
@@ -1583,11 +1557,8 @@ ApplicationReputationService::QueryReputation(
   NS_ENSURE_ARG_POINTER(aQuery);
   NS_ENSURE_ARG_POINTER(aCallback);
 
-  Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_COUNT, true);
   nsresult rv = QueryReputationInternal(aQuery, aCallback);
   if (NS_FAILED(rv)) {
-    Accumulate(mozilla::Telemetry::APPLICATION_REPUTATION_SHOULD_BLOCK,
-      false);
     aCallback->OnComplete(false, rv,
                           nsIApplicationReputationService::VERDICT_SAFE);
   }

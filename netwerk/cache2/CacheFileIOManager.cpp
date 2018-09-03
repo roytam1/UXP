@@ -21,7 +21,6 @@
 #include "nsIObserverService.h"
 #include "nsICacheStorageVisitor.h"
 #include "nsISizeOf.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Services.h"
 #include "nsDirectoryServiceUtils.h"
@@ -3861,7 +3860,6 @@ CacheFileIOManager::CreateCacheTree()
     }
 #endif
 
-    Telemetry::Accumulate(Telemetry::NETWORK_CACHE_FS_TYPE, fsType);
     CacheObserver::SetCacheFSReported();
   }
 
@@ -3917,8 +3915,6 @@ CacheFileIOManager::OpenNSPRHandle(CacheFileHandle *aHandle, bool aCreate)
           uint32_t cacheUsage;
           if (NS_SUCCEEDED(CacheIndex::GetCacheSize(&cacheUsage))) {
             cacheUsage >>= 10;
-            Telemetry::Accumulate(Telemetry::NETWORK_CACHE_SIZE_FULL_FAT,
-                                  cacheUsage);
             sSizeReported = true;
           }
         }

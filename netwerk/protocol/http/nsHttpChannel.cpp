@@ -133,18 +133,7 @@ enum CacheDisposition {
 void
 AccumulateCacheHitTelemetry(CacheDisposition hitOrMiss)
 {
-    if (!CacheObserver::UseNewCache()) {
-        Telemetry::Accumulate(Telemetry::HTTP_CACHE_DISPOSITION_2, hitOrMiss);
-    }
-    else {
-        Telemetry::Accumulate(Telemetry::HTTP_CACHE_DISPOSITION_2_V2, hitOrMiss);
-
-        int32_t experiment = CacheObserver::HalfLifeExperiment();
-        if (experiment > 0 && hitOrMiss == kCacheMissed) {
-            Telemetry::Accumulate(Telemetry::HTTP_CACHE_MISS_HALFLIFE_EXPERIMENT_2,
-                                  experiment - 1);
-        }
-    }
+  /* STUB */
 }
 
 // Computes and returns a SHA1 hash of the input buffer. The input buffer
@@ -1141,26 +1130,21 @@ EnsureMIMEOfScript(nsIURI* aURI, nsHttpResponseHead* aResponseHead, nsILoadInfo*
 
     if (nsContentUtils::IsJavascriptMIMEType(typeString)) {
         // script load has type script
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 1);
         return NS_OK;
     }
 
     bool block = false;
     if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("image/"))) {
         // script load has type image
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 2);
         block = true;
     } else if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("audio/"))) {
         // script load has type audio
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 3);
         block = true;
     } else if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("video/"))) {
         // script load has type video
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 4);
         block = true;
     } else if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/csv"))) {
         // script load has type text/csv
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 6);
         block = true;
     }
 
@@ -1186,42 +1170,35 @@ EnsureMIMEOfScript(nsIURI* aURI, nsHttpResponseHead* aResponseHead, nsILoadInfo*
 
     if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/plain"))) {
         // script load has type text/plain
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 5);
         return NS_OK;
     }
 
     if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/xml"))) {
         // script load has type text/xml
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 7);
         return NS_OK;
     }
 
     if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("application/octet-stream"))) {
         // script load has type application/octet-stream
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 8);
         return NS_OK;
     }
 
     if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("application/xml"))) {
         // script load has type application/xml
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 9);
         return NS_OK;
     }
 
     if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("text/html"))) {
         // script load has type text/html
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 10);
         return NS_OK;
     }
 
     if (contentType.IsEmpty()) {
         // script load has no type
-        Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 11);
         return NS_OK;
     }
 
     // script load has unknown type
-    Telemetry::Accumulate(Telemetry::SCRIPT_BLOCK_INCORRECT_MIME, 0);
     return NS_OK;
 }
 
@@ -1867,65 +1844,6 @@ nsHttpChannel::ProcessResponse()
     LOG(("nsHttpChannel::ProcessResponse [this=%p httpStatus=%u]\n",
         this, httpStatus));
 
-    // do some telemetry
-    if (gHttpHandler->IsTelemetryEnabled()) {
-        // Gather data on whether the transaction and page (if this is
-        // the initial page load) is being loaded with SSL.
-        Telemetry::Accumulate(Telemetry::HTTP_TRANSACTION_IS_SSL,
-                              mConnectionInfo->EndToEndSSL());
-        if (mLoadFlags & LOAD_INITIAL_DOCUMENT_URI) {
-            Telemetry::Accumulate(Telemetry::HTTP_PAGELOAD_IS_SSL,
-                                  mConnectionInfo->EndToEndSSL());
-        }
-
-        // how often do we see something like Alternate-Protocol: "443:quic,p=1"
-        nsAutoCString alt_protocol;
-        mResponseHead->GetHeader(nsHttp::Alternate_Protocol, alt_protocol);
-        bool saw_quic = (!alt_protocol.IsEmpty() &&
-                         PL_strstr(alt_protocol.get(), "quic")) ? 1 : 0;
-        Telemetry::Accumulate(Telemetry::HTTP_SAW_QUIC_ALT_PROTOCOL, saw_quic);
-
-        // Gather data on how many URLS get redirected
-        switch (httpStatus) {
-            case 200:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 0);
-                break;
-            case 301:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 1);
-                break;
-            case 302:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 2);
-                break;
-            case 304:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 3);
-                break;
-            case 307:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 4);
-                break;
-            case 308:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 5);
-                break;
-            case 400:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 6);
-                break;
-            case 401:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 7);
-                break;
-            case 403:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 8);
-                break;
-            case 404:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 9);
-                break;
-            case 500:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 10);
-                break;
-            default:
-                Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_STATUS_CODE, 11);
-                break;
-        }
-    }
-
     // Let the predictor know whether this was a cacheable response or not so
     // that it knows whether or not to possibly prefetch this resource in the
     // future.
@@ -2204,9 +2122,6 @@ nsHttpChannel::ContinueProcessResponse2(nsresult rv)
         }
         AccumulateCacheHitTelemetry(cacheDisposition);
 
-        Telemetry::Accumulate(Telemetry::HTTP_RESPONSE_VERSION,
-                              mResponseHead->Version());
-
         if (mResponseHead->Version() == NS_HTTP_VERSION_0_9) {
             // DefaultPortTopLevel = 0, DefaultPortSubResource = 1,
             // NonDefaultPortTopLevel = 2, NonDefaultPortSubResource = 3
@@ -2217,7 +2132,6 @@ nsHttpChannel::ContinueProcessResponse2(nsresult rv)
             if (mConnectionInfo->OriginPort() != mConnectionInfo->DefaultPort()) {
                 v09Info += 2;
             }
-            Telemetry::Accumulate(Telemetry::HTTP_09_INFO, v09Info);
         }
     }
     return rv;
@@ -3212,7 +3126,6 @@ nsHttpChannel::ProcessNotModified()
                 PipelineFeedbackInfo(mConnectionInfo,
                                      nsHttpConnectionMgr::RedCorruptedContent,
                                      nullptr, 0);
-        Telemetry::Accumulate(Telemetry::CACHE_LM_INCONSISTENT, true);
     }
 
     // merge any new headers with the cached response headers
@@ -4222,11 +4135,6 @@ nsHttpChannel::OnNormalCacheEntryAvailable(nsICacheEntry *aEntry,
     if (NS_SUCCEEDED(aEntryStatus)) {
         mCacheEntry = aEntry;
         mCacheEntryIsWriteOnly = aNew;
-
-        if (mLoadFlags & LOAD_INITIAL_DOCUMENT_URI) {
-            Telemetry::Accumulate(Telemetry::HTTP_OFFLINE_CACHE_DOCUMENT_LOAD,
-                                  false);
-        }
     }
 
     return NS_OK;
@@ -5897,17 +5805,13 @@ nsHttpChannel::BeginConnect()
 
         LOG(("nsHttpChannel %p Using connection info from altsvc mapping", this));
         mapping->GetConnectionInfo(getter_AddRefs(mConnectionInfo), proxyInfo, originAttributes);
-        Telemetry::Accumulate(Telemetry::HTTP_TRANSACTION_USE_ALTSVC, true);
-        Telemetry::Accumulate(Telemetry::HTTP_TRANSACTION_USE_ALTSVC_OE, !isHttps);
     } else if (mConnectionInfo) {
         LOG(("nsHttpChannel %p Using channel supplied connection info", this));
-        Telemetry::Accumulate(Telemetry::HTTP_TRANSACTION_USE_ALTSVC, false);
     } else {
         LOG(("nsHttpChannel %p Using default connection info", this));
 
         mConnectionInfo = new nsHttpConnectionInfo(host, port, EmptyCString(), mUsername, proxyInfo,
                                                    originAttributes, isHttps);
-        Telemetry::Accumulate(Telemetry::HTTP_TRANSACTION_USE_ALTSVC, false);
     }
 
     // Set network interface id only when it's not empty to avoid
@@ -6829,7 +6733,6 @@ nsHttpChannel::OnStopRequest(nsIRequest *request, nsISupports *ctxt, nsresult st
         chanDisposition = static_cast<ChannelDisposition>(chanDisposition + kHttpsCanceled);
     }
     LOG(("  nsHttpChannel::OnStopRequest ChannelDisposition %d\n", chanDisposition));
-    Telemetry::Accumulate(Telemetry::HTTP_CHANNEL_DISPOSITION, chanDisposition);
 
     // if needed, check cache entry has all data we expect
     if (mCacheEntry && mCachePump &&
@@ -8200,129 +8103,7 @@ nsHttpChannel::SetDoNotTrack()
 void
 nsHttpChannel::ReportNetVSCacheTelemetry()
 {
-    nsresult rv;
-    if (!mCacheEntry) {
-        return;
-    }
-
-    // We only report telemetry if the entry is persistent (on disk)
-    bool persistent;
-    rv = mCacheEntry->GetPersistent(&persistent);
-    if (NS_FAILED(rv) || !persistent) {
-        return;
-    }
-
-    nsXPIDLCString tmpStr;
-    rv = mCacheEntry->GetMetaDataElement("net-response-time-onstart",
-                                         getter_Copies(tmpStr));
-    if (NS_FAILED(rv)) {
-        return;
-    }
-    uint64_t onStartNetTime = tmpStr.ToInteger64(&rv);
-    if (NS_FAILED(rv)) {
-        return;
-    }
-
-    tmpStr.Truncate();
-    rv = mCacheEntry->GetMetaDataElement("net-response-time-onstop",
-                                         getter_Copies(tmpStr));
-    if (NS_FAILED(rv)) {
-        return;
-    }
-    uint64_t onStopNetTime = tmpStr.ToInteger64(&rv);
-    if (NS_FAILED(rv)) {
-        return;
-    }
-
-    uint64_t onStartCacheTime = (mOnStartRequestTimestamp - mAsyncOpenTime).ToMilliseconds();
-    int64_t onStartDiff = onStartNetTime - onStartCacheTime;
-    onStartDiff += 500; // We offset the difference by 500 ms to report positive values in telemetry
-
-    uint64_t onStopCacheTime = (mCacheReadEnd - mAsyncOpenTime).ToMilliseconds();
-    int64_t onStopDiff = onStopNetTime - onStopCacheTime;
-    onStopDiff += 500; // We offset the difference by 500 ms
-
-    if (mDidReval) {
-        Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_REVALIDATED, onStartDiff);
-        Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_REVALIDATED, onStopDiff);
-    } else {
-        Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_NOTREVALIDATED, onStartDiff);
-        Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_NOTREVALIDATED, onStopDiff);
-    }
-
-    if (mDidReval) {
-        // We don't report revalidated probes as the data would be skewed.
-        return;
-    }
-
-    uint32_t diskStorageSizeK = 0;
-    rv = mCacheEntry->GetDiskStorageSizeInKB(&diskStorageSizeK);
-    if (NS_FAILED(rv)) {
-        return;
-    }
-
-    nsAutoCString contentType;
-    if (mResponseHead && mResponseHead->HasContentType()) {
-        mResponseHead->ContentType(contentType);
-    }
-    bool isImage = StringBeginsWith(contentType, NS_LITERAL_CSTRING("image/"));
-    if (isImage) {
-        Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_ISIMG, onStartDiff);
-        Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_ISIMG, onStopDiff);
-    } else {
-        Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_NOTIMG, onStartDiff);
-        Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_NOTIMG, onStopDiff);
-    }
-
-    if (mCacheOpenWithPriority) {
-        if (mCacheQueueSizeWhenOpen < 5) {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_QSMALL_HIGHPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_QSMALL_HIGHPRI, onStopDiff);
-        } else if (mCacheQueueSizeWhenOpen < 10) {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_QMED_HIGHPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_QMED_HIGHPRI, onStopDiff);
-        } else {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_QBIG_HIGHPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_QBIG_HIGHPRI, onStopDiff);
-        }
-    } else { // The limits are higher for normal priority cache queues
-        if (mCacheQueueSizeWhenOpen < 10) {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_QSMALL_NORMALPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_QSMALL_NORMALPRI, onStopDiff);
-        } else if (mCacheQueueSizeWhenOpen < 50) {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_QMED_NORMALPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_QMED_NORMALPRI, onStopDiff);
-        } else {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_QBIG_NORMALPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_QBIG_NORMALPRI, onStopDiff);
-        }
-    }
-
-    if (diskStorageSizeK < 32) {
-        if (mCacheOpenWithPriority) {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_SMALL_HIGHPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_SMALL_HIGHPRI, onStopDiff);
-        } else {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_SMALL_NORMALPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_SMALL_NORMALPRI, onStopDiff);
-        }
-    } else if (diskStorageSizeK < 256) {
-        if (mCacheOpenWithPriority) {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_MED_HIGHPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_MED_HIGHPRI, onStopDiff);
-        } else {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_MED_NORMALPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_MED_NORMALPRI, onStopDiff);
-        }
-    } else {
-        if (mCacheOpenWithPriority) {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_LARGE_HIGHPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_LARGE_HIGHPRI, onStopDiff);
-        } else {
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTART_LARGE_NORMALPRI, onStartDiff);
-            Telemetry::Accumulate(Telemetry::HTTP_NET_VS_CACHE_ONSTOP_LARGE_NORMALPRI, onStopDiff);
-        }
-    }
+  /* STUB */
 }
 
 } // namespace net

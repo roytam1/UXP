@@ -44,7 +44,6 @@ public:
     AddHistogram(jni::String::Param aName, int32_t aValue)
     {
         MOZ_ASSERT(aName);
-        mozilla::Telemetry::Accumulate(aName->ToCString().get(), aValue);
     }
 
     static void
@@ -52,8 +51,6 @@ public:
                       int32_t aValue)
     {
         MOZ_ASSERT(aName && aKey);
-        mozilla::Telemetry::Accumulate(aName->ToCString().get(),
-                                       aKey->ToCString(), aValue);
     }
 
     static void

@@ -452,7 +452,6 @@ void
 WebCryptoTask::FailWithError(nsresult aRv)
 {
   MOZ_ASSERT(IsOnOriginalThread());
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_RESOLVED, false);
 
   // Blindly convert nsresult to DOMException
   // Individual tasks must ensure they pass the right values
@@ -491,7 +490,6 @@ WebCryptoTask::CallCallback(nsresult rv)
   }
 
   Resolve();
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_RESOLVED, true);
 
   // Manually release mResultPromise while we're on the main thread
   mResultPromise = nullptr;
@@ -650,7 +648,6 @@ public:
       mEarlyRv = NS_ERROR_DOM_NOT_SUPPORTED_ERR;
       return;
     }
-    Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, telemetryAlg);
   }
 
 private:
@@ -794,7 +791,6 @@ public:
       return;
     }
 
-    Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, TA_AES_KW);
   }
 
 private:
@@ -908,8 +904,6 @@ public:
   void Init(JSContext* aCx, const ObjectOrString& aAlgorithm,
             CryptoKey& aKey, bool aEncrypt)
   {
-    Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, TA_RSA_OAEP);
-
     CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_RSA_OAEP);
 
     if (mEncrypt) {
@@ -1049,7 +1043,6 @@ public:
       case CKM_SHA512_HMAC: telemetryAlg = TA_HMAC_SHA_512; break;
       default:              telemetryAlg = TA_UNKNOWN;
     }
-    Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, telemetryAlg);
   }
 
 private:
@@ -1158,12 +1151,10 @@ public:
 
     if (algName.EqualsLiteral(WEBCRYPTO_ALG_RSASSA_PKCS1)) {
       mAlgorithm = Algorithm::RSA_PKCS1;
-      Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, TA_RSASSA_PKCS1);
       CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_RSASSA_PKCS1);
       hashAlgName = aKey.Algorithm().mRsa.mHash.mName;
     } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_RSA_PSS)) {
       mAlgorithm = Algorithm::RSA_PSS;
-      Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, TA_RSA_PSS);
       CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_RSA_PSS);
 
       KeyAlgorithm& hashAlg = aKey.Algorithm().mRsa.mHash;
@@ -1188,7 +1179,6 @@ public:
       mSaltLength = params.mSaltLength;
     } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_ECDSA)) {
       mAlgorithm = Algorithm::ECDSA;
-      Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, TA_ECDSA);
       CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_ECDSA);
 
       // For ECDSA, the hash name comes from the algorithm parameter
@@ -1356,7 +1346,6 @@ public:
       mEarlyRv = NS_ERROR_DOM_SYNTAX_ERR;
       return;
     }
-    Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, telemetryAlg);
     mOidTag = MapHashAlgorithmNameToOID(algName);
   }
 
@@ -2656,7 +2645,6 @@ public:
   void Init(JSContext* aCx, const ObjectOrString& aAlgorithm, CryptoKey& aKey,
             uint32_t aLength)
   {
-    Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, TA_HKDF);
     CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_HKDF);
 
     // Check that we have a key.
@@ -2806,7 +2794,6 @@ public:
   void Init(JSContext* aCx, const ObjectOrString& aAlgorithm, CryptoKey& aKey,
             uint32_t aLength)
   {
-    Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, TA_PBKDF2);
     CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_PBKDF2);
 
     // Check that we got a symmetric key
@@ -2981,7 +2968,6 @@ public:
 
   void Init(JSContext* aCx, const ObjectOrString& aAlgorithm, CryptoKey& aKey)
   {
-    Telemetry::Accumulate(Telemetry::WEBCRYPTO_ALG, TA_ECDH);
     CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_ECDH);
 
     // Check that we have a private key.
@@ -3277,10 +3263,6 @@ WebCryptoTask::CreateEncryptDecryptTask(JSContext* aCx,
                                         const CryptoOperationData& aData,
                                         bool aEncrypt)
 {
-  TelemetryMethod method = (aEncrypt)? TM_ENCRYPT : TM_DECRYPT;
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, method);
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_EXTRACTABLE_ENC, aKey.Extractable());
-
   // Ensure key is usable for this operation
   if ((aEncrypt  && !aKey.HasUsage(CryptoKey::ENCRYPT)) ||
       (!aEncrypt && !aKey.HasUsage(CryptoKey::DECRYPT))) {
@@ -3312,10 +3294,6 @@ WebCryptoTask::CreateSignVerifyTask(JSContext* aCx,
                                     const CryptoOperationData& aData,
                                     bool aSign)
 {
-  TelemetryMethod method = (aSign)? TM_SIGN : TM_VERIFY;
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, method);
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_EXTRACTABLE_SIG, aKey.Extractable());
-
   // Ensure key is usable for this operation
   if ((aSign  && !aKey.HasUsage(CryptoKey::SIGN)) ||
       (!aSign && !aKey.HasUsage(CryptoKey::VERIFY))) {
@@ -3345,8 +3323,6 @@ WebCryptoTask::CreateDigestTask(JSContext* aCx,
                                 const ObjectOrString& aAlgorithm,
                                 const CryptoOperationData& aData)
 {
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, TM_DIGEST);
-
   nsString algName;
   nsresult rv = GetAlgorithmName(aCx, aAlgorithm, algName);
   if (NS_FAILED(rv)) {
@@ -3372,9 +3348,6 @@ WebCryptoTask::CreateImportKeyTask(nsIGlobalObject* aGlobal,
                                    bool aExtractable,
                                    const Sequence<nsString>& aKeyUsages)
 {
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, TM_IMPORTKEY);
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_EXTRACTABLE_IMPORT, aExtractable);
-
   // Verify that the format is recognized
   if (!aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_SPKI) &&
@@ -3426,8 +3399,6 @@ WebCryptoTask*
 WebCryptoTask::CreateExportKeyTask(const nsAString& aFormat,
                                    CryptoKey& aKey)
 {
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, TM_EXPORTKEY);
-
   // Verify that the format is recognized
   if (!aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_SPKI) &&
@@ -3470,9 +3441,6 @@ WebCryptoTask::CreateGenerateKeyTask(nsIGlobalObject* aGlobal,
                                      bool aExtractable,
                                      const Sequence<nsString>& aKeyUsages)
 {
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, TM_GENERATEKEY);
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_EXTRACTABLE_GENERATE, aExtractable);
-
   // Verify that aKeyUsages does not contain an unrecognized value
   // SPEC-BUG: Spec says that this should be InvalidAccessError, but that
   // is inconsistent with other analogous points in the spec
@@ -3515,8 +3483,6 @@ WebCryptoTask::CreateDeriveKeyTask(nsIGlobalObject* aGlobal,
                                    bool aExtractable,
                                    const Sequence<nsString>& aKeyUsages)
 {
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, TM_DERIVEKEY);
-
   // Ensure baseKey is usable for this operation
   if (!aBaseKey.HasUsage(CryptoKey::DERIVEKEY)) {
     return new FailureTask(NS_ERROR_DOM_INVALID_ACCESS_ERR);
@@ -3560,8 +3526,6 @@ WebCryptoTask::CreateDeriveBitsTask(JSContext* aCx,
                                     CryptoKey& aKey,
                                     uint32_t aLength)
 {
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, TM_DERIVEBITS);
-
   // Ensure baseKey is usable for this operation
   if (!aKey.HasUsage(CryptoKey::DERIVEBITS)) {
     return new FailureTask(NS_ERROR_DOM_INVALID_ACCESS_ERR);
@@ -3599,8 +3563,6 @@ WebCryptoTask::CreateWrapKeyTask(JSContext* aCx,
                                  CryptoKey& aWrappingKey,
                                  const ObjectOrString& aWrapAlgorithm)
 {
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, TM_WRAPKEY);
-
   // Verify that the format is recognized
   if (!aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_SPKI) &&
@@ -3652,8 +3614,6 @@ WebCryptoTask::CreateUnwrapKeyTask(nsIGlobalObject* aGlobal,
                                    bool aExtractable,
                                    const Sequence<nsString>& aKeyUsages)
 {
-  Telemetry::Accumulate(Telemetry::WEBCRYPTO_METHOD, TM_UNWRAPKEY);
-
   // Ensure key is usable for this operation
   if (!aUnwrappingKey.HasUsage(CryptoKey::UNWRAPKEY)) {
     return new FailureTask(NS_ERROR_DOM_INVALID_ACCESS_ERR);

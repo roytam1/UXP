@@ -1597,17 +1597,6 @@ nsSocketTransport::RecoverFromError()
 
     bool tryAgain = false;
 
-    if ((mState == STATE_CONNECTING) && mDNSRecord &&
-        mSocketTransportService->IsTelemetryEnabledAndNotSleepPhase()) {
-        if (mNetAddr.raw.family == AF_INET) {
-            Telemetry::Accumulate(Telemetry::IPV4_AND_IPV6_ADDRESS_CONNECTIVITY,
-                                  UNSUCCESSFUL_CONNECTING_TO_IPV4_ADDRESS);
-        } else if (mNetAddr.raw.family == AF_INET6) {
-            Telemetry::Accumulate(Telemetry::IPV4_AND_IPV6_ADDRESS_CONNECTIVITY,
-                                  UNSUCCESSFUL_CONNECTING_TO_IPV6_ADDRESS);
-        }
-    }
-
     if (mConnectionFlags & (DISABLE_IPV6 | DISABLE_IPV4) &&
         mCondition == NS_ERROR_UNKNOWN_HOST &&
         mState == STATE_RESOLVING &&
@@ -2012,18 +2001,6 @@ nsSocketTransport::OnSocketReady(PRFileDesc *fd, int16_t outFlags)
             // we are connected!
             //
             OnSocketConnected();
-
-            if (mSocketTransportService->IsTelemetryEnabledAndNotSleepPhase()) {
-                if (mNetAddr.raw.family == AF_INET) {
-                    Telemetry::Accumulate(
-                        Telemetry::IPV4_AND_IPV6_ADDRESS_CONNECTIVITY,
-                        SUCCESSFUL_CONNECTING_TO_IPV4_ADDRESS);
-                } else if (mNetAddr.raw.family == AF_INET6) {
-                    Telemetry::Accumulate(
-                        Telemetry::IPV4_AND_IPV6_ADDRESS_CONNECTIVITY,
-                        SUCCESSFUL_CONNECTING_TO_IPV6_ADDRESS);
-                }
-            }
         }
         else {
             PRErrorCode code = PR_GetError();
@@ -3217,28 +3194,7 @@ nsSocketTransport::SendPRBlockingTelemetry(PRIntervalTime aStart,
                                            Telemetry::ID aIDLinkChange,
                                            Telemetry::ID aIDOffline)
 {
-    PRIntervalTime now = PR_IntervalNow();
-    if (gIOService->IsNetTearingDown()) {
-        Telemetry::Accumulate(aIDShutdown,
-                              PR_IntervalToMilliseconds(now - aStart));
-
-    } else if (PR_IntervalToSeconds(now - gIOService->LastConnectivityChange())
-               < 60) {
-        Telemetry::Accumulate(aIDConnectivityChange,
-                              PR_IntervalToMilliseconds(now - aStart));
-    } else if (PR_IntervalToSeconds(now - gIOService->LastNetworkLinkChange())
-               < 60) {
-        Telemetry::Accumulate(aIDLinkChange,
-                              PR_IntervalToMilliseconds(now - aStart));
-
-    } else if (PR_IntervalToSeconds(now - gIOService->LastOfflineStateChange())
-               < 60) {
-        Telemetry::Accumulate(aIDOffline,
-                              PR_IntervalToMilliseconds(now - aStart));
-    } else {
-        Telemetry::Accumulate(aIDNormal,
-                              PR_IntervalToMilliseconds(now - aStart));
-    }
+  /* STUB */
 }
 
 } // namespace net

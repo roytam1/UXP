@@ -2084,8 +2084,6 @@ CacheStorageService::TelemetryRecordEntryCreation(CacheEntry const* entry)
 
   mPurgeTimeStamps.Remove(key);
 
-  Telemetry::AccumulateTimeDelta(Telemetry::HTTP_CACHE_ENTRY_RELOAD_TIME,
-                                 timeStamp, TimeStamp::NowLoRes());
 }
 
 void
@@ -2112,9 +2110,6 @@ CacheStorageService::TelemetryRecordEntryRemoval(CacheEntry const* entry)
   TelemetryPrune(now);
   mPurgeTimeStamps.Put(key, now);
 
-  Telemetry::Accumulate(Telemetry::HTTP_CACHE_ENTRY_REUSE_COUNT, entry->UseCount());
-  Telemetry::AccumulateTimeDelta(Telemetry::HTTP_CACHE_ENTRY_ALIVE_TIME,
-                                 entry->LoadStart(), TimeStamp::NowLoRes());
 }
 
 // nsIMemoryReporter

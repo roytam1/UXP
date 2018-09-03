@@ -30,7 +30,6 @@
 #include "mozilla/AsyncEventDispatcher.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/CycleCollectedJSContext.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/dom/asmjscache/AsmJSCache.h"
 #include "mozilla/dom/AtomList.h"
@@ -1534,7 +1533,6 @@ RuntimeService::RegisterWorker(WorkerPrivate* aWorkerPrivate)
   const bool isDedicatedWorker = aWorkerPrivate->IsDedicatedWorker();
   if (isServiceWorker) {
     AssertIsOnMainThread();
-    Telemetry::Accumulate(Telemetry::SERVICE_WORKER_SPAWN_ATTEMPTS, 1);
   }
 
   nsCString sharedWorkerScriptSpec;
@@ -1586,14 +1584,6 @@ RuntimeService::RegisterWorker(WorkerPrivate* aWorkerPrivate)
       // Worker spawn gets queued due to hitting max workers per domain
       // limit so let's log a warning.
       WorkerPrivate::ReportErrorToConsole("HittingMaxWorkersPerDomain2");
-
-      if (isServiceWorker) {
-        Telemetry::Accumulate(Telemetry::SERVICE_WORKER_SPAWN_GETS_QUEUED, 1);
-      } else if (isSharedWorker) {
-        Telemetry::Accumulate(Telemetry::SHARED_WORKER_SPAWN_GETS_QUEUED, 1);
-      } else if (isDedicatedWorker) {
-        Telemetry::Accumulate(Telemetry::DEDICATED_WORKER_SPAWN_GETS_QUEUED, 1);
-      }
     }
     else if (parent) {
       domainInfo->mChildWorkerCount++;
@@ -1669,7 +1659,6 @@ RuntimeService::RegisterWorker(WorkerPrivate* aWorkerPrivate)
 
   if (isServiceWorker) {
     AssertIsOnMainThread();
-    Telemetry::Accumulate(Telemetry::SERVICE_WORKER_WAS_SPAWNED, 1);
   }
   return true;
 }
@@ -1766,8 +1755,6 @@ RuntimeService::UnregisterWorker(WorkerPrivate* aWorkerPrivate)
 
   if (aWorkerPrivate->IsServiceWorker()) {
     AssertIsOnMainThread();
-    Telemetry::AccumulateTimeDelta(Telemetry::SERVICE_WORKER_LIFE_TIME,
-                                   aWorkerPrivate->CreationTimeStamp());
   }
 
   if (aWorkerPrivate->IsSharedWorker() ||

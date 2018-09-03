@@ -760,11 +760,6 @@ MessageChannel::Echo(Message* aMsg)
 bool
 MessageChannel::Send(Message* aMsg)
 {
-    if (aMsg->size() >= kMinTelemetryMessageSize) {
-        Telemetry::Accumulate(Telemetry::IPC_MESSAGE_SIZE,
-                              nsDependentCString(aMsg->name()), aMsg->size());
-    }
-
     MOZ_RELEASE_ASSERT(!aMsg->is_sync());
     MOZ_RELEASE_ASSERT(aMsg->nested_level() != IPC::Message::NESTED_INSIDE_SYNC);
 
@@ -1059,11 +1054,6 @@ MessageChannel::ProcessPendingRequests(AutoEnterTransaction& aTransaction)
 bool
 MessageChannel::Send(Message* aMsg, Message* aReply)
 {
-    if (aMsg->size() >= kMinTelemetryMessageSize) {
-        Telemetry::Accumulate(Telemetry::IPC_MESSAGE_SIZE,
-                              nsDependentCString(aMsg->name()), aMsg->size());
-    }
-
     nsAutoPtr<Message> msg(aMsg);
 
     // Sanity checks.
@@ -1249,10 +1239,6 @@ MessageChannel::Send(Message* aMsg, Message* aReply)
     MOZ_RELEASE_ASSERT(reply->is_sync());
 
     *aReply = Move(*reply);
-    if (aReply->size() >= kMinTelemetryMessageSize) {
-        Telemetry::Accumulate(Telemetry::IPC_REPLY_SIZE,
-                              nsDependentCString(msgName), aReply->size());
-    }
     return true;
 }
 
@@ -2546,7 +2532,6 @@ void
 CancelCPOWs()
 {
     if (gParentProcessBlocker) {
-        mozilla::Telemetry::Accumulate(mozilla::Telemetry::IPC_TRANSACTION_CANCEL, true);
         gParentProcessBlocker->CancelCurrentTransaction();
     }
 }

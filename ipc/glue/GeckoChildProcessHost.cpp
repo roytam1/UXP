@@ -32,7 +32,6 @@
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/ipc/BrowserProcessSubThread.h"
 #include "mozilla/Omnijar.h"
-#include "mozilla/Telemetry.h"
 #include "ProtocolUtils.h"
 #include <sys/stat.h>
 
@@ -534,8 +533,6 @@ GeckoChildProcessHost::RunPerformAsyncLaunch(std::vector<std::string> aExtraOpts
     lock.Notify();
     CHROMIUM_LOG(ERROR) << "Failed to launch " <<
       XRE_ChildProcessTypeToString(mProcessType) << " subprocess";
-    Telemetry::Accumulate(Telemetry::SUBPROCESS_LAUNCH_FAILURE,
-      nsDependentCString(XRE_ChildProcessTypeToString(mProcessType)));
   }
   return ok;
 }

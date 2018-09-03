@@ -62,8 +62,6 @@ void CacheIOTelemetry::Report(uint32_t aLevel, CacheIOTelemetry::size_type aLeng
 
   // 10 is number of buckets we have in each probe
   aLength = std::min<size_type>(aLength, 10);
-
-  Telemetry::Accumulate(telemetryID[aLevel], aLength - 1); // counted from 0
 }
 
 } // anon

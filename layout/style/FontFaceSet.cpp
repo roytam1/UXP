@@ -1762,17 +1762,9 @@ FontFaceSet::UserFontSet::RecordFontLoadDone(uint32_t aFontSize,
 {
   mDownloadCount++;
   mDownloadSize += aFontSize;
-  Telemetry::Accumulate(Telemetry::WEBFONT_SIZE, aFontSize / 1024);
 
   if (!mFontFaceSet) {
     return;
-  }
-
-  TimeStamp navStart = mFontFaceSet->GetNavigationStartTimeStamp();
-  TimeStamp zero;
-  if (navStart != zero) {
-    Telemetry::AccumulateTimeDelta(Telemetry::WEBFONT_DOWNLOAD_TIME_AFTER_START,
-                                   navStart, aDoneTime);
   }
 }
 

@@ -408,8 +408,6 @@ ServiceWorkerUpdateJob::ComparisonResult(nsresult aStatus,
     return;
   }
 
-  Telemetry::Accumulate(Telemetry::SERVICE_WORKER_UPDATED, 1);
-
   // Begin step 7 of the Update algorithm to evaluate the new script.
 
   RefPtr<ServiceWorkerInfo> sw =

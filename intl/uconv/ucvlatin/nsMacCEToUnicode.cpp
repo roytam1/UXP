@@ -20,7 +20,6 @@ nsMacCEToUnicodeConstructor(nsISupports *aOuter, REFNSIID aIID,
 #include "macce.ut"
   };
 
-  Telemetry::Accumulate(Telemetry::DECODER_INSTANTIATED_MACCE, true);
   return CreateOneByteDecoder((uMappingTable*) &g_MacCEMappingTable,
                             aOuter, aIID, aResult);
 }

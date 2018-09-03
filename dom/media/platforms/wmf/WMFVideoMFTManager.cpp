@@ -128,7 +128,6 @@ WMFVideoMFTManager::~WMFVideoMFTManager()
 
   nsCOMPtr<nsIRunnable> task = NS_NewRunnableFunction([=]() -> void {
     LOG(nsPrintfCString("Reporting telemetry VIDEO_MFT_OUTPUT_NULL_SAMPLES=%d", telemetry).get());
-    Telemetry::Accumulate(Telemetry::ID::VIDEO_MFT_OUTPUT_NULL_SAMPLES, telemetry);
   });
   AbstractThread::MainThread()->Dispatch(task.forget());
 }
@@ -511,8 +510,6 @@ WMFVideoMFTManager::InitInternal(bool aForceD3D9)
     if (mStreamType == VP9 || mStreamType == VP8) {
       return false;
     }
-    Telemetry::Accumulate(Telemetry::MEDIA_DECODER_BACKEND_USED,
-                          uint32_t(media::MediaDecoderBackend::WMFSoftware));
   }
 
   mDecoder = decoder;

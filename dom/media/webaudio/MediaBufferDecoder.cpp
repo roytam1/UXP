@@ -23,7 +23,6 @@
 #include "VideoUtils.h"
 #include "WebAudioUtils.h"
 #include "mozilla/dom/Promise.h"
-#include "mozilla/Telemetry.h"
 #include "nsPrintfCString.h"
 #include "GMPService.h"
 
@@ -302,7 +301,6 @@ MediaDecodeTask::OnMetadataRead(MetadataHolder* aMetadata)
     MOZ_LOG(gMediaDecoderLog,
             LogLevel::Debug,
             ("Telemetry (WebAudio) MEDIA_CODEC_USED= '%s'", codec.get()));
-    Telemetry::Accumulate(Telemetry::ID::MEDIA_CODEC_USED, codec);
   });
   AbstractThread::MainThread()->Dispatch(task.forget());
 

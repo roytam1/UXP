@@ -22,7 +22,6 @@
 #include "nsIPrefBranch.h"
 #include "nsIServiceManager.h"
 #include "nsNativeCharsetUtils.h"
-#include "mozilla/Telemetry.h"
 
 #include "nsAuthGSSAPI.h"
 
@@ -376,16 +375,6 @@ nsAuthGSSAPI::Init(const char *serviceName,
 
     mServiceName = serviceName;
     mServiceFlags = serviceFlags;
-
-    static bool sTelemetrySent = false;
-    if (!sTelemetrySent) {
-        mozilla::Telemetry::Accumulate(
-            mozilla::Telemetry::NTLM_MODULE_USED_2,
-            serviceFlags & nsIAuthModule::REQ_PROXY_AUTH
-                ? NTLM_MODULE_KERBEROS_PROXY
-                : NTLM_MODULE_KERBEROS_DIRECT);
-        sTelemetrySent = true;
-    }
 
     return NS_OK;
 }

@@ -211,7 +211,6 @@
 #include "mozilla/AddonPathService.h"
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/Services.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/dom/Location.h"
 #include "nsHTMLDocument.h"
 #include "nsWrapperCacheInlines.h"
@@ -1759,9 +1758,6 @@ nsGlobalWindow::~nsGlobalWindow()
 
     DropOuterWindowDocs();
   } else {
-    Telemetry::Accumulate(Telemetry::INNERWINDOWS_WITH_MUTATION_LISTENERS,
-                          mMutationBits ? 1 : 0);
-
     if (mListenerManager) {
       mListenerManager->Disconnect();
       mListenerManager = nullptr;
@@ -2695,7 +2691,6 @@ TreatAsRemoteXUL(nsIPrincipal* aPrincipal)
 static bool
 EnablePrivilege(JSContext* cx, unsigned argc, JS::Value* vp)
 {
-  Telemetry::Accumulate(Telemetry::ENABLE_PRIVILEGE_EVER_CALLED, true);
   return xpc::EnableUniversalXPConnect(cx);
 }
 
@@ -3388,9 +3383,6 @@ nsGlobalWindow::InnerSetNewDocument(JSContext* aCx, nsIDocument* aDocument)
 #ifdef DEBUG
   mLastOpenedURI = aDocument->GetDocumentURI();
 #endif
-
-  Telemetry::Accumulate(Telemetry::INNERWINDOWS_WITH_MUTATION_LISTENERS,
-                        mMutationBits ? 1 : 0);
 
   // Clear our mutation bitfield.
   mMutationBits = 0;
@@ -6848,8 +6840,6 @@ FullscreenTransitionTask::Run()
       Preferences::GetUint("full-screen-api.transition.timeout", 1000);
     mTimer->Init(observer, timeout, nsITimer::TYPE_ONE_SHOT);
   } else if (stage == eAfterToggle) {
-    Telemetry::AccumulateTimeDelta(Telemetry::FULLSCREEN_TRANSITION_BLACK_MS,
-                                   mFullscreenChangeStartTime);
     mWidget->PerformFullscreenTransition(nsIWidget::eAfterFullscreenToggle,
                                          mDuration.mFadeOut, mTransitionData,
                                          this);
@@ -11577,11 +11567,6 @@ nsGlobalWindow::ShowSlowScriptDialog()
   unsigned lineno;
   bool hasFrame = JS::DescribeScriptedCaller(cx, &filename, &lineno);
 
-  // Record the slow script event if we haven't done so already for this inner window
-  // (which represents a particular page to the user).
-  if (!mHasHadSlowScript) {
-    Telemetry::Accumulate(Telemetry::SLOW_SCRIPT_PAGE_COUNT, 1);
-  }
   mHasHadSlowScript = true;
 
   if (XRE_IsContentProcess() &&
@@ -11612,10 +11597,6 @@ nsGlobalWindow::ShowSlowScriptDialog()
 
     return ContinueSlowScriptAndKeepNotifying;
   }
-
-  // Reached only on non-e10s - once per slow script dialog.
-  // On e10s - we probe once at ProcessHangsMonitor.jsm
-  Telemetry::Accumulate(Telemetry::SLOW_SCRIPT_NOTICE_COUNT, 1);
 
   // Get the nsIPrompt interface from the docshell
   nsCOMPtr<nsIDocShell> ds = GetDocShell();

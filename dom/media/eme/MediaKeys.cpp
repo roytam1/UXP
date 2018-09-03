@@ -13,7 +13,6 @@
 #include "mozilla/dom/MediaKeySession.h"
 #include "mozilla/dom/DOMException.h"
 #include "mozilla/dom/UnionTypes.h"
-#include "mozilla/Telemetry.h"
 #include "GMPCDMProxy.h"
 #ifdef MOZ_WIDGET_ANDROID
 #include "mozilla/MediaDrmCDMProxy.h"
@@ -457,7 +456,6 @@ MediaKeys::OnCDMCreated(PromiseId aId, const nsACString& aNodeId, const uint32_t
                                         mKeySystem,
                                         MediaKeySystemStatus::Cdm_created);
 
-  Telemetry::Accumulate(Telemetry::VIDEO_CDM_CREATED, ToCDMTypeTelemetryEnum(mKeySystem));
 }
 
 static bool

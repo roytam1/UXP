@@ -529,9 +529,6 @@ nsSliderFrame::HandleEvent(nsPresContext* aPresContext,
         return NS_OK;
       }
 
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-          (uint32_t) ScrollInputMethod::MainThreadScrollbarDrag);
-
       // take our current position and subtract the start location
       pos -= mDragStart;
       bool isMouseOutsideThumb = false;
@@ -597,9 +594,6 @@ nsSliderFrame::HandleEvent(nsPresContext* aPresContext,
     }
     nsSize thumbSize = thumbFrame->GetSize();
     nscoord thumbLength = isHorizontal ? thumbSize.width : thumbSize.height;
-
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-        (uint32_t) ScrollInputMethod::MainThreadScrollbarTrackClick);
 
     // set it
     nsWeakFrame weakFrame(this);

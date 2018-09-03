@@ -9,7 +9,6 @@
 #include "gfxUtils.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Assertions.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Tokenizer.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Unused.h"
@@ -470,20 +469,6 @@ GLLibraryEGL::EnsureInitialized(bool forceAccel, nsACString* const out_failureId
         // Hardware accelerated ANGLE path (supported or force accel)
         if (shouldTryAccel) {
             chosenDisplay = GetAndInitDisplayForAccelANGLE(*this, out_failureId);
-        }
-
-        // Report the acceleration status to telemetry
-        if (!chosenDisplay) {
-            if (accelAngleFailureId.IsEmpty()) {
-                Telemetry::Accumulate(Telemetry::CANVAS_WEBGL_ACCL_FAILURE_ID,
-                                      NS_LITERAL_CSTRING("FEATURE_FAILURE_ACCL_ANGLE_UNKNOWN"));
-            } else {
-                Telemetry::Accumulate(Telemetry::CANVAS_WEBGL_ACCL_FAILURE_ID,
-                                      accelAngleFailureId);
-            }
-        } else {
-            Telemetry::Accumulate(Telemetry::CANVAS_WEBGL_ACCL_FAILURE_ID,
-                                  NS_LITERAL_CSTRING("SUCCESS"));
         }
 
         // Fallback to a WARP display if ANGLE fails, or if WARP is forced

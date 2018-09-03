@@ -12,7 +12,6 @@
 #include "mozilla/Atomics.h"
 #include "mozilla/PodOperations.h"
 #include "mozilla/SharedThreadPool.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include "MediaDataDemuxer.h"
 #include "nsAutoRef.h"
@@ -164,7 +163,6 @@ OggDemuxer::~OggDemuxer()
       MOZ_LOG(gMediaDemuxerLog, mozilla::LogLevel::Debug,
               ("OggDemuxer(%p)::%s: Reporting telemetry MEDIA_OGG_LOADED_IS_CHAINED=%d",
                ptr, __func__, isChained));
-      Telemetry::Accumulate(Telemetry::ID::MEDIA_OGG_LOADED_IS_CHAINED, isChained);
     });
     AbstractThread::MainThread()->Dispatch(task.forget());
   }

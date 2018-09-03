@@ -205,7 +205,6 @@ nsFontFaceLoader::OnStreamComplete(nsIStreamLoader* aLoader,
   TimeStamp doneTime = TimeStamp::Now();
   TimeDuration downloadTime = doneTime - mStartTime;
   uint32_t downloadTimeMS = uint32_t(downloadTime.ToMilliseconds());
-  Telemetry::Accumulate(Telemetry::WEBFONT_DOWNLOAD_TIME, downloadTimeMS);
 
   if (GetFontDisplay() == NS_FONT_DISPLAY_FALLBACK) {
     uint32_t loadTimeout = GetFallbackDelay();

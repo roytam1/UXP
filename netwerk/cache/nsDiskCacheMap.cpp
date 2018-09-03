@@ -19,7 +19,6 @@
 
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/Sprintf.h"
-#include "mozilla/Telemetry.h"
 #include <algorithm>
 
 using namespace mozilla;
@@ -181,9 +180,6 @@ nsDiskCacheMap::Open(nsIFile *  cacheDirectory,
         goto error_exit;
     }
     
-    Telemetry::Accumulate(Telemetry::HTTP_DISK_CACHE_OVERHEAD,
-                          (uint32_t)SizeOfExcludingThis(moz_malloc_size_of));
-
     *corruptInfo = nsDiskCache::kNotCorrupt;
     return NS_OK;
     

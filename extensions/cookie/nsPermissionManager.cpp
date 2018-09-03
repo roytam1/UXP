@@ -866,9 +866,6 @@ nsPermissionManager::InitDB(bool aRemoveFile)
   if (rv == NS_ERROR_FILE_CORRUPTED) {
     LogToConsole(NS_LITERAL_STRING("permissions.sqlite is corrupted! Try again!"));
 
-    // Add telemetry probe
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::PERMISSIONS_SQL_CORRUPTED, 1);
-
     // delete corrupted permissions.sqlite and try again
     rv = permissionsFile->Remove(false);
     NS_ENSURE_SUCCESS(rv, rv);
@@ -890,9 +887,6 @@ nsPermissionManager::InitDB(bool aRemoveFile)
     rv = permissionsFile->Remove(false);
     NS_ENSURE_SUCCESS(rv, rv);
     LogToConsole(NS_LITERAL_STRING("Defective permissions.sqlite has been removed."));
-
-    // Add telemetry probe
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::DEFECTIVE_PERMISSIONS_SQL_REMOVED, 1);
 
     rv = OpenDatabase(permissionsFile);
     NS_ENSURE_SUCCESS(rv, rv);
@@ -1185,25 +1179,7 @@ nsPermissionManager::InitDB(bool aRemoveFile)
             if (NS_SUCCEEDED(rv) &&
                 NS_SUCCEEDED(countStmt->ExecuteStep(&hasResult)) &&
                 hasResult) {
-              int32_t permsCount = countStmt->AsInt32(0);
-
-              // The id variable contains the number of rows inserted into the
-              // moz_hosts_new table (as one ID was used per entry)
-              uint32_t telemetryValue;
-              if (permsCount > id) {
-                telemetryValue = 3; // NEW > OLD
-              } else if (permsCount == id) {
-                telemetryValue = 2; // NEW == OLD
-              } else if (permsCount == 0) {
-                telemetryValue = 0; // NEW = 0
-              } else {
-                telemetryValue = 1; // NEW < OLD
-              }
-
-              // Report the telemetry value to telemetry
-              mozilla::Telemetry::Accumulate(
-                  mozilla::Telemetry::PERMISSIONS_REMIGRATION_COMPARISON,
-                  telemetryValue);
+              // Telemetry STUB (count rows and report)
             } else {
               NS_WARNING("Could not count the rows in moz_perms");
             }
@@ -1221,9 +1197,6 @@ nsPermissionManager::InitDB(bool aRemoveFile)
 
           rv = mDBConn->CommitTransaction();
           NS_ENSURE_SUCCESS(rv, rv);
-
-          mozilla::Telemetry::Accumulate(mozilla::Telemetry::PERMISSIONS_MIGRATION_7_ERROR,
-                                         NS_WARN_IF(migrationError));
         } else {
           // We don't have a moz_hosts table, so we create one for downgrading purposes.
           // This table is empty.

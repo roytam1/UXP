@@ -1547,9 +1547,6 @@ IncrementalFinalizeRunnable::Run()
     }
   }
 
-  uint32_t duration = (uint32_t)((TimeStamp::Now() - start).ToMilliseconds());
-  Telemetry::Accumulate(Telemetry::DEFERRED_FINALIZE_ASYNC, duration);
-
   return NS_OK;
 }
 

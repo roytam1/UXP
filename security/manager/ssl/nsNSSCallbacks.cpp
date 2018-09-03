@@ -490,31 +490,6 @@ nsNSSHttpRequestSession::internal_send_receive_attempt(bool &retryable_error,
     }
   }
 
-  if (!event->mStartTime.IsNull()) {
-    if (request_canceled) {
-      Telemetry::Accumulate(Telemetry::CERT_VALIDATION_HTTP_REQUEST_RESULT, 0);
-      Telemetry::AccumulateTimeDelta(
-        Telemetry::CERT_VALIDATION_HTTP_REQUEST_CANCELED_TIME,
-        event->mStartTime, TimeStamp::Now());
-    }
-    else if (NS_SUCCEEDED(mListener->mResultCode) &&
-             mListener->mHttpResponseCode == 200) {
-      Telemetry::Accumulate(Telemetry::CERT_VALIDATION_HTTP_REQUEST_RESULT, 1);
-      Telemetry::AccumulateTimeDelta(
-        Telemetry::CERT_VALIDATION_HTTP_REQUEST_SUCCEEDED_TIME,
-        event->mStartTime, TimeStamp::Now());
-    }
-    else {
-      Telemetry::Accumulate(Telemetry::CERT_VALIDATION_HTTP_REQUEST_RESULT, 2);
-      Telemetry::AccumulateTimeDelta(
-        Telemetry::CERT_VALIDATION_HTTP_REQUEST_FAILED_TIME,
-        event->mStartTime, TimeStamp::Now());
-    }
-  }
-  else {
-    Telemetry::Accumulate(Telemetry::CERT_VALIDATION_HTTP_REQUEST_RESULT, 3);
-  }
-
   if (request_canceled) {
     return Result::ERROR_OCSP_SERVER_ERROR;
   }
@@ -996,7 +971,6 @@ PreliminaryHandshakeDone(PRFileDesc* fd)
     } else {
       infoObject->SetNegotiatedNPN(nullptr, 0);
     }
-    mozilla::Telemetry::Accumulate(Telemetry::SSL_NPN_TYPE, state);
   } else {
     infoObject->SetNegotiatedNPN(nullptr, 0);
   }
@@ -1091,9 +1065,6 @@ CanFalseStartCallback(PRFileDesc* fd, void* client_data, PRBool *canFalseStart)
     }
   }
 
-  Telemetry::Accumulate(Telemetry::SSL_REASONS_FOR_NOT_FALSE_STARTING,
-                        reasonsForNotFalseStarting);
-
   if (reasonsForNotFalseStarting == 0) {
     *canFalseStart = PR_TRUE;
     infoObject->SetFalseStarted();
@@ -1118,7 +1089,6 @@ AccumulateNonECCKeySize(Telemetry::ID probe, uint32_t bits)
                      : bits <  8192 ? 17 : bits ==  8192 ? 18
                      : bits < 16384 ? 19 : bits == 16384 ? 20
                      : 0;
-  Telemetry::Accumulate(probe, value);
 }
 
 // XXX: This attempts to map a bit count to an ECC named curve identifier. In
@@ -1134,7 +1104,6 @@ AccumulateECCCurve(Telemetry::ID probe, uint32_t bits)
                      : bits == 384 ? 24 // P-384
                      : bits == 521 ? 25 // P-521
                      : 0; // Unknown
-  Telemetry::Accumulate(probe, value);
 }
 
 static void
@@ -1197,7 +1166,6 @@ AccumulateCipherSuite(Telemetry::ID probe, const SSLChannelInfo& channelInfo)
       break;
   }
   MOZ_ASSERT(value != 0);
-  Telemetry::Accumulate(probe, value);
 }
 
 // In the case of session resumption, the AuthCertificate hook has been bypassed
@@ -1318,7 +1286,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
     // 1=tls1, 2=tls1.1, 3=tls1.2
     unsigned int versionEnum = channelInfo.protocolVersion & 0xFF;
     MOZ_ASSERT(versionEnum > 0);
-    Telemetry::Accumulate(Telemetry::SSL_HANDSHAKE_VERSION, versionEnum);
     AccumulateCipherSuite(
       infoObject->IsFullHandshake() ? Telemetry::SSL_CIPHER_SUITE_FULL
                                     : Telemetry::SSL_CIPHER_SUITE_RESUMED,
@@ -1330,13 +1297,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
     MOZ_ASSERT(rv == SECSuccess);
     if (rv == SECSuccess) {
       usesFallbackCipher = channelInfo.keaType == ssl_kea_dh;
-
-      // keyExchange null=0, rsa=1, dh=2, fortezza=3, ecdh=4
-      Telemetry::Accumulate(
-        infoObject->IsFullHandshake()
-          ? Telemetry::SSL_KEY_EXCHANGE_ALGORITHM_FULL
-          : Telemetry::SSL_KEY_EXCHANGE_ALGORITHM_RESUMED,
-        channelInfo.keaType);
 
       MOZ_ASSERT(infoObject->GetKEAUsed() == channelInfo.keaType);
 
@@ -1359,9 +1319,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
             break;
         }
 
-        Telemetry::Accumulate(Telemetry::SSL_AUTH_ALGORITHM_FULL,
-                              channelInfo.authType);
-
         // RSA key exchange doesn't use a signature for auth.
         if (channelInfo.keaType != ssl_kea_rsa) {
           switch (channelInfo.authType) {
@@ -1380,12 +1337,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
           }
         }
       }
-
-      Telemetry::Accumulate(
-          infoObject->IsFullHandshake()
-            ? Telemetry::SSL_SYMMETRIC_CIPHER_FULL
-            : Telemetry::SSL_SYMMETRIC_CIPHER_RESUMED,
-          cipherInfo.symCipher);
     }
   }
 

@@ -6,7 +6,6 @@
 #include "LookupCache.h"
 #include "HashStore.h"
 #include "nsISeekableStream.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Logging.h"
 #include "nsNetUtil.h"
 #include "prprf.h"
@@ -451,9 +450,6 @@ nsresult
 LookupCacheV2::Build(AddPrefixArray& aAddPrefixes,
                      AddCompleteArray& aAddCompletes)
 {
-  Telemetry::Accumulate(Telemetry::URLCLASSIFIER_LC_COMPLETIONS,
-                        static_cast<uint32_t>(aAddCompletes.Length()));
-
   mUpdateCompletions.Clear();
   mUpdateCompletions.SetCapacity(aAddCompletes.Length());
   for (uint32_t i = 0; i < aAddCompletes.Length(); i++) {
@@ -461,9 +457,6 @@ LookupCacheV2::Build(AddPrefixArray& aAddPrefixes,
   }
   aAddCompletes.Clear();
   mUpdateCompletions.Sort();
-
-  Telemetry::Accumulate(Telemetry::URLCLASSIFIER_LC_PREFIXES,
-                        static_cast<uint32_t>(aAddPrefixes.Length()));
 
   nsresult rv = ConstructPrefixSet(aAddPrefixes);
   NS_ENSURE_SUCCESS(rv, rv);

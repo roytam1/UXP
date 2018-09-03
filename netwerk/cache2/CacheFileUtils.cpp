@@ -7,7 +7,6 @@
 #include "CacheFileUtils.h"
 #include "LoadContextInfo.h"
 #include "mozilla/Tokenizer.h"
-#include "mozilla/Telemetry.h"
 #include "nsCOMPtr.h"
 #include "nsAutoPtr.h"
 #include "nsString.h"
@@ -474,19 +473,6 @@ DetailedCacheHitTelemetry::AddRecord(ERecType aType, TimeStamp aLoadStart)
 
   StaticMutexAutoLock lock(sLock);
 
-  if (aType == MISS) {
-    mozilla::Telemetry::AccumulateTimeDelta(
-      mozilla::Telemetry::NETWORK_CACHE_V2_MISS_TIME_MS,
-      aLoadStart);
-  } else {
-    mozilla::Telemetry::AccumulateTimeDelta(
-      mozilla::Telemetry::NETWORK_CACHE_V2_HIT_TIME_MS,
-      aLoadStart);
-  }
-
-  Telemetry::Accumulate(Telemetry::NETWORK_CACHE_HIT_MISS_STAT_PER_CACHE_SIZE,
-                        hitMissValue);
-
   sHRStats[rangeIdx].AddRecord(aType);
   ++sRecordCnt;
 
@@ -505,8 +491,6 @@ DetailedCacheHitTelemetry::AddRecord(ERecType aType, TimeStamp aLoadStart)
       uint32_t bucketOffset = sHRStats[i].GetHitRateBucket(kHitRateBuckets) *
                               kNumOfRanges;
 
-      Telemetry::Accumulate(Telemetry::NETWORK_CACHE_HIT_RATE_PER_CACHE_SIZE,
-                            bucketOffset + i);
       sHRStats[i].Reset();
     }
   }

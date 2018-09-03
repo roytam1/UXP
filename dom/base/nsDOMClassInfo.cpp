@@ -49,7 +49,6 @@
 #include "nsContentUtils.h"
 #include "nsIDOMGlobalPropertyInitializer.h"
 #include "mozilla/Attributes.h"
-#include "mozilla/Telemetry.h"
 
 // Window scriptable helper includes
 #include "nsScriptNameSpaceManager.h"
@@ -1903,9 +1902,6 @@ LookupComponentsShim(JSContext *cx, JS::Handle<JSObject*> global,
                      nsPIDOMWindowInner *win,
                      JS::MutableHandle<JS::PropertyDescriptor> desc)
 {
-  // Keep track of how often this happens.
-  Telemetry::Accumulate(Telemetry::COMPONENTS_SHIM_ACCESSED_BY_CONTENT, true);
-
   // Warn once.
   nsCOMPtr<nsIDocument> doc = win->GetExtantDoc();
   if (doc) {

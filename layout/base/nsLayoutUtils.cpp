@@ -3569,8 +3569,6 @@ nsLayoutUtils::PaintFrame(nsRenderingContext* aRenderingContext, nsIFrame* aFram
   }
 
   builder.LeavePresShell(aFrame, &list);
-  Telemetry::AccumulateTimeDelta(Telemetry::PAINT_BUILD_DISPLAYLIST_TIME,
-                                 startBuildDisplayList);
 
   bool profilerNeedsDisplayList = profiler_feature_active("displaylistdump");
   bool consoleNeedsDisplayList = gfxUtils::DumpDisplayList() || gfxEnv::DumpPaint();
@@ -3651,8 +3649,6 @@ nsLayoutUtils::PaintFrame(nsRenderingContext* aRenderingContext, nsIFrame* aFram
   TimeStamp paintStart = TimeStamp::Now();
   RefPtr<LayerManager> layerManager
     = list.PaintRoot(&builder, aRenderingContext, flags);
-  Telemetry::AccumulateTimeDelta(Telemetry::PAINT_RASTERIZE_TIME,
-                                 paintStart);
 
   if (gfxPrefs::GfxLoggingPaintedPixelCountEnabled()) {
     TimeStamp now = TimeStamp::Now();

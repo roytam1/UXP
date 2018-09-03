@@ -6,7 +6,6 @@
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/PermissionMessageUtils.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "nsXULAppAPI.h"
 
 #include "nsAlertsService.h"
@@ -299,9 +298,6 @@ NS_IMETHODIMP nsAlertsService::SetManualDoNotDisturb(bool aDoNotDisturb)
   NS_ENSURE_TRUE(alertsDND, NS_ERROR_NOT_IMPLEMENTED);
 
   nsresult rv = alertsDND->SetManualDoNotDisturb(aDoNotDisturb);
-  if (NS_SUCCEEDED(rv)) {
-    Telemetry::Accumulate(Telemetry::ALERTS_SERVICE_DND_ENABLED, 1);
-  }
   return rv;
 #endif
 }

@@ -4245,10 +4245,6 @@ nsWindow::DispatchMouseEvent(EventMessage aEventMessage, WPARAM wParam,
   }
 
   if (WinUtils::GetIsMouseFromTouch(aEventMessage)) {
-    if (aEventMessage == eMouseDown) {
-      Telemetry::Accumulate(Telemetry::FX_TOUCH_USED, 1);
-    }
-
     if (mTouchWindow) {
       // If mTouchWindow is true, then we must have APZ enabled and be
       // feeding it raw touch events. In that case we don't need to
@@ -6802,8 +6798,6 @@ bool nsWindow::OnGesture(WPARAM wParam, LPARAM lParam)
     bool endFeedback = true;
 
     if (mGesture.PanDeltaToPixelScroll(wheelEvent)) {
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-          (uint32_t) ScrollInputMethod::MainThreadTouch);
       DispatchEvent(&wheelEvent, status);
     }
 

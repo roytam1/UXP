@@ -14,7 +14,6 @@
 #include "nsICacheEntry.h" // for nsICacheEntryMetaDataVisitor
 #include "../cache/nsCacheUtils.h"
 #include "nsIFile.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/DebugOnly.h"
 #include "prnetdb.h"
 
@@ -687,16 +686,6 @@ CacheFileMetadata::OnDataRead(CacheFileHandle *aHandle, char *aBuf,
     return NS_OK;
   }
 
-  if (mFirstRead) {
-    Telemetry::AccumulateTimeDelta(
-      Telemetry::NETWORK_CACHE_METADATA_FIRST_READ_TIME_MS, mReadStart);
-    Telemetry::Accumulate(
-      Telemetry::NETWORK_CACHE_METADATA_FIRST_READ_SIZE, mBufSize);
-  } else {
-    Telemetry::AccumulateTimeDelta(
-      Telemetry::NETWORK_CACHE_METADATA_SECOND_READ_TIME_MS, mReadStart);
-  }
-
   // check whether we have read all necessary data
   uint32_t realOffset = NetworkEndian::readUint32(mBuf + mBufSize -
                                                   sizeof(uint32_t));
@@ -775,9 +764,6 @@ CacheFileMetadata::OnDataRead(CacheFileHandle *aHandle, char *aBuf,
 
     return NS_OK;
   }
-
-  Telemetry::Accumulate(Telemetry::NETWORK_CACHE_METADATA_SIZE,
-                        size - realOffset);
 
   // We have all data according to offset information at the end of the entry.
   // Try to parse it.

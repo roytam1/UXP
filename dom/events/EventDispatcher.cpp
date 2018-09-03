@@ -858,63 +858,46 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
 
   // And if we didn't get an event, check the type argument.
 
-#define LOG_EVENT_CREATION(name) mozilla::Telemetry::Accumulate( \
-    mozilla::Telemetry::CREATE_EVENT_##name, true);
-
   if (aEventType.LowerCaseEqualsLiteral("mouseevent")) {
-    LOG_EVENT_CREATION(MOUSEEVENT);
     return NS_NewDOMMouseEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("mouseevents")) {
-    LOG_EVENT_CREATION(MOUSEEVENTS);
     return NS_NewDOMMouseEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("popupevents")) {
-    LOG_EVENT_CREATION(POPUPEVENTS);
     return NS_NewDOMMouseEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("mousescrollevents")) {
-    LOG_EVENT_CREATION(MOUSESCROLLEVENTS);
     return NS_NewDOMMouseScrollEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("dragevent")) {
-    LOG_EVENT_CREATION(DRAGEVENT);
     return NS_NewDOMDragEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("dragevents")) {
-    LOG_EVENT_CREATION(DRAGEVENTS);
     return NS_NewDOMDragEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("keyboardevent")) {
-    LOG_EVENT_CREATION(KEYBOARDEVENT);
     return NS_NewDOMKeyboardEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("keyevents")) {
-    LOG_EVENT_CREATION(KEYEVENTS);
     return NS_NewDOMKeyboardEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("compositionevent")) {
-    LOG_EVENT_CREATION(COMPOSITIONEVENT);
     return NS_NewDOMCompositionEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("textevent")) {
-    LOG_EVENT_CREATION(TEXTEVENT);
     return NS_NewDOMCompositionEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("textevents")) {
-    LOG_EVENT_CREATION(TEXTEVENTS);
     return NS_NewDOMCompositionEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("mutationevent")) {
-    LOG_EVENT_CREATION(MUTATIONEVENT);
     return NS_NewDOMMutationEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("mutationevents")) {
-    LOG_EVENT_CREATION(MUTATIONEVENTS);
     return NS_NewDOMMutationEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("deviceorientationevent")) {
-    LOG_EVENT_CREATION(DEVICEORIENTATIONEVENT);
     DeviceOrientationEventInit init;
     RefPtr<Event> event =
       DeviceOrientationEvent::Constructor(aOwner, EmptyString(), init);
@@ -922,97 +905,74 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
     return event.forget();
   }
   if (aEventType.LowerCaseEqualsLiteral("devicemotionevent")) {
-    LOG_EVENT_CREATION(DEVICEMOTIONEVENT);
     return NS_NewDOMDeviceMotionEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("uievent")) {
-    LOG_EVENT_CREATION(UIEVENT);
     return NS_NewDOMUIEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("uievents")) {
-    LOG_EVENT_CREATION(UIEVENTS);
     return NS_NewDOMUIEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("event")) {
-    LOG_EVENT_CREATION(EVENT);
     return NS_NewDOMEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("events")) {
-    LOG_EVENT_CREATION(EVENTS);
     return NS_NewDOMEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("htmlevents")) {
-    LOG_EVENT_CREATION(HTMLEVENTS);
     return NS_NewDOMEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("svgevent")) {
-    LOG_EVENT_CREATION(SVGEVENT);
     return NS_NewDOMEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("svgevents")) {
-    LOG_EVENT_CREATION(SVGEVENTS);
     return NS_NewDOMEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("svgzoomevent")) {
-    LOG_EVENT_CREATION(SVGZOOMEVENT);
     return NS_NewDOMSVGZoomEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("svgzoomevents")) {
-    LOG_EVENT_CREATION(SVGZOOMEVENTS);
     return NS_NewDOMSVGZoomEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("timeevent")) {
-    LOG_EVENT_CREATION(TIMEEVENT);
     return NS_NewDOMTimeEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("timeevents")) {
-    LOG_EVENT_CREATION(TIMEEVENTS);
     return NS_NewDOMTimeEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("xulcommandevent")) {
-    LOG_EVENT_CREATION(XULCOMMANDEVENT);
     return NS_NewDOMXULCommandEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("xulcommandevents")) {
-    LOG_EVENT_CREATION(XULCOMMANDEVENTS);
     return NS_NewDOMXULCommandEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("commandevent")) {
-    LOG_EVENT_CREATION(COMMANDEVENT);
     return NS_NewDOMCommandEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("commandevents")) {
-    LOG_EVENT_CREATION(COMMANDEVENTS);
     return NS_NewDOMCommandEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("datacontainerevent")) {
-    LOG_EVENT_CREATION(DATACONTAINEREVENT);
     return NS_NewDOMDataContainerEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("datacontainerevents")) {
-    LOG_EVENT_CREATION(DATACONTAINEREVENTS);
     return NS_NewDOMDataContainerEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("messageevent")) {
-    LOG_EVENT_CREATION(MESSAGEEVENT);
     RefPtr<Event> event = new MessageEvent(aOwner, aPresContext, nullptr);
     return event.forget();
   }
   if (aEventType.LowerCaseEqualsLiteral("notifypaintevent")) {
-    LOG_EVENT_CREATION(NOTIFYPAINTEVENT);
     return NS_NewDOMNotifyPaintEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("simplegestureevent")) {
-    LOG_EVENT_CREATION(SIMPLEGESTUREEVENT);
     return NS_NewDOMSimpleGestureEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("beforeunloadevent")) {
-    LOG_EVENT_CREATION(BEFOREUNLOADEVENT);
     return NS_NewDOMBeforeUnloadEvent(aOwner, aPresContext, nullptr);
   }
   // XXXkhuey this is broken
   if (aEventType.LowerCaseEqualsLiteral("pagetransition")) {
-    LOG_EVENT_CREATION(PAGETRANSITION);
     PageTransitionEventInit init;
     RefPtr<Event> event =
       PageTransitionEvent::Constructor(aOwner, EmptyString(), init);
@@ -1020,14 +980,12 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
     return event.forget();
   }
   if (aEventType.LowerCaseEqualsLiteral("scrollareaevent")) {
-    LOG_EVENT_CREATION(SCROLLAREAEVENT);
     return NS_NewDOMScrollAreaEvent(aOwner, aPresContext, nullptr);
   }
   // XXXkhuey Chrome supports popstateevent here, even though it provides no
   // initPopStateEvent method.  This is nuts ... but copying it is unlikely to
   // break the web.
   if (aEventType.LowerCaseEqualsLiteral("popstateevent")) {
-    LOG_EVENT_CREATION(POPSTATEEVENT);
     AutoJSContext cx;
     RootedDictionary<PopStateEventInit> init(cx);
     RefPtr<Event> event =
@@ -1037,11 +995,9 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
   }
   if (aEventType.LowerCaseEqualsLiteral("touchevent") &&
       TouchEvent::PrefEnabled(nsContentUtils::GetDocShellForEventTarget(aOwner))) {
-    LOG_EVENT_CREATION(TOUCHEVENT);
     return NS_NewDOMTouchEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("hashchangeevent")) {
-    LOG_EVENT_CREATION(HASHCHANGEEVENT);
     HashChangeEventInit init;
     RefPtr<Event> event =
       HashChangeEvent::Constructor(aOwner, EmptyString(), init);
@@ -1049,11 +1005,9 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
     return event.forget();
   }
   if (aEventType.LowerCaseEqualsLiteral("customevent")) {
-    LOG_EVENT_CREATION(CUSTOMEVENT);
     return NS_NewDOMCustomEvent(aOwner, aPresContext, nullptr);
   }
   if (aEventType.LowerCaseEqualsLiteral("storageevent")) {
-    LOG_EVENT_CREATION(STORAGEEVENT);
     return NS_NewDOMStorageEvent(aOwner);
   }
   if (aEventType.LowerCaseEqualsLiteral("focusevent")) {
@@ -1061,8 +1015,6 @@ EventDispatcher::CreateEvent(EventTarget* aOwner,
     event->MarkUninitialized();
     return event.forget();
   }
-
-#undef LOG_EVENT_CREATION
 
   // NEW EVENT TYPES SHOULD NOT BE ADDED HERE; THEY SHOULD USE ONLY EVENT
   // CONSTRUCTORS

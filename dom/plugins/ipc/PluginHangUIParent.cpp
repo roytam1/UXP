@@ -8,7 +8,6 @@
 
 #include "PluginHangUIParent.h"
 
-#include "mozilla/Telemetry.h"
 #include "mozilla/ipc/ProtocolUtils.h"
 #include "mozilla/plugins/PluginModuleParent.h"
 
@@ -48,14 +47,6 @@ public:
   NS_IMETHOD
   Run() override
   {
-    mozilla::Telemetry::Accumulate(
-              mozilla::Telemetry::PLUGIN_HANG_UI_USER_RESPONSE, mResponseCode);
-    mozilla::Telemetry::Accumulate(
-              mozilla::Telemetry::PLUGIN_HANG_UI_DONT_ASK, mDontAskCode);
-    mozilla::Telemetry::Accumulate(
-              mozilla::Telemetry::PLUGIN_HANG_UI_RESPONSE_TIME, mResponseTimeMs);
-    mozilla::Telemetry::Accumulate(
-              mozilla::Telemetry::PLUGIN_HANG_TIME, mTimeoutMs + mResponseTimeMs);
     return NS_OK;
   }
 

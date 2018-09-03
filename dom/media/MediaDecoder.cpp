@@ -877,7 +877,6 @@ MediaDecoder::EnsureTelemetryReported()
   }
   for (const nsCString& codec : codecs) {
     DECODER_LOG("Telemetry MEDIA_CODEC_USED= '%s'", codec.get());
-    Telemetry::Accumulate(Telemetry::ID::MEDIA_CODEC_USED, codec);
   }
 
   mTelemetryReported = true;

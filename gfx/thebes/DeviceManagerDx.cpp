@@ -10,7 +10,6 @@
 #include "gfxPrefs.h"
 #include "gfxWindowsPlatform.h"
 #include "mozilla/D3DMessageUtils.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/WindowsVersion.h"
 #include "mozilla/gfx/GraphicsMessages.h"
 #include "mozilla/gfx/Logging.h"
@@ -589,10 +588,6 @@ DeviceManagerDx::MaybeResetAndReacquireDevices()
     return false;
   }
 
-  if (resetReason != DeviceResetReason::FORCED_RESET) {
-    Telemetry::Accumulate(Telemetry::DEVICE_RESET_REASON, uint32_t(resetReason));
-  }
-
   bool createCompositorDevice = !!mCompositorDevice;
   bool createContentDevice = !!mContentDevice;
 
@@ -724,7 +719,6 @@ DeviceManagerDx::GetAnyDeviceRemovedReason(DeviceResetReason* aOutReason)
 void
 DeviceManagerDx::ForceDeviceReset(ForcedDeviceResetReason aReason)
 {
-  Telemetry::Accumulate(Telemetry::FORCED_DEVICE_RESET_REASON, uint32_t(aReason));
   {
     MutexAutoLock lock(mDeviceLock);
     mDeviceResetReason = Some(DeviceResetReason::FORCED_RESET);

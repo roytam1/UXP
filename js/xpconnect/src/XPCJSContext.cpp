@@ -28,7 +28,6 @@
 #include "nsPIDOMWindow.h"
 #include "nsPrintfCString.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Services.h"
 #include "mozilla/dom/ScriptSettings.h"
 
@@ -135,8 +134,6 @@ public:
   {
       TimeStamp start = TimeStamp::Now();
       bool hadSnowWhiteObjects = nsCycleCollector_doDeferredDeletion();
-      Telemetry::Accumulate(Telemetry::CYCLE_COLLECTOR_ASYNC_SNOW_WHITE_FREEING,
-                            uint32_t((TimeStamp::Now() - start).ToMilliseconds()));
       if (hadSnowWhiteObjects && !mContinuation) {
           mContinuation = true;
           if (NS_FAILED(NS_DispatchToCurrentThread(this))) {
@@ -1317,7 +1314,6 @@ XPCJSContext::InterruptCallback(JSContext* cx)
     // Accumulate slow script invokation delay.
     if (!chrome && !self->mTimeoutAccumulated) {
       uint32_t delay = uint32_t(self->mSlowScriptActualWait.ToMilliseconds() - (limit * 1000.0));
-      Telemetry::Accumulate(Telemetry::SLOW_SCRIPT_NOTIFY_DELAY, delay);
       self->mTimeoutAccumulated = true;
     }
 
@@ -2955,100 +2951,7 @@ JSSizeOfTab(JSObject* objArg, size_t* jsObjectsSize, size_t* jsStringsSize,
 static void
 AccumulateTelemetryCallback(int id, uint32_t sample, const char* key)
 {
-    switch (id) {
-      case JS_TELEMETRY_GC_REASON:
-        Telemetry::Accumulate(Telemetry::GC_REASON_2, sample);
-        break;
-      case JS_TELEMETRY_GC_IS_ZONE_GC:
-        Telemetry::Accumulate(Telemetry::GC_IS_COMPARTMENTAL, sample);
-        break;
-      case JS_TELEMETRY_GC_MS:
-        Telemetry::Accumulate(Telemetry::GC_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_BUDGET_MS:
-        Telemetry::Accumulate(Telemetry::GC_BUDGET_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_ANIMATION_MS:
-        Telemetry::Accumulate(Telemetry::GC_ANIMATION_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_MAX_PAUSE_MS:
-        Telemetry::Accumulate(Telemetry::GC_MAX_PAUSE_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_MARK_MS:
-        Telemetry::Accumulate(Telemetry::GC_MARK_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_SWEEP_MS:
-        Telemetry::Accumulate(Telemetry::GC_SWEEP_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_COMPACT_MS:
-        Telemetry::Accumulate(Telemetry::GC_COMPACT_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_MARK_ROOTS_MS:
-        Telemetry::Accumulate(Telemetry::GC_MARK_ROOTS_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_MARK_GRAY_MS:
-        Telemetry::Accumulate(Telemetry::GC_MARK_GRAY_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_SLICE_MS:
-        Telemetry::Accumulate(Telemetry::GC_SLICE_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_SLOW_PHASE:
-        Telemetry::Accumulate(Telemetry::GC_SLOW_PHASE, sample);
-        break;
-      case JS_TELEMETRY_GC_MMU_50:
-        Telemetry::Accumulate(Telemetry::GC_MMU_50, sample);
-        break;
-      case JS_TELEMETRY_GC_RESET:
-        Telemetry::Accumulate(Telemetry::GC_RESET, sample);
-        break;
-      case JS_TELEMETRY_GC_RESET_REASON:
-        Telemetry::Accumulate(Telemetry::GC_RESET_REASON, sample);
-        break;
-      case JS_TELEMETRY_GC_INCREMENTAL_DISABLED:
-        Telemetry::Accumulate(Telemetry::GC_INCREMENTAL_DISABLED, sample);
-        break;
-      case JS_TELEMETRY_GC_NON_INCREMENTAL:
-        Telemetry::Accumulate(Telemetry::GC_NON_INCREMENTAL, sample);
-        break;
-      case JS_TELEMETRY_GC_NON_INCREMENTAL_REASON:
-        Telemetry::Accumulate(Telemetry::GC_NON_INCREMENTAL_REASON, sample);
-        break;
-      case JS_TELEMETRY_GC_SCC_SWEEP_TOTAL_MS:
-        Telemetry::Accumulate(Telemetry::GC_SCC_SWEEP_TOTAL_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_SCC_SWEEP_MAX_PAUSE_MS:
-        Telemetry::Accumulate(Telemetry::GC_SCC_SWEEP_MAX_PAUSE_MS, sample);
-        break;
-      case JS_TELEMETRY_GC_MINOR_REASON:
-        Telemetry::Accumulate(Telemetry::GC_MINOR_REASON, sample);
-        break;
-      case JS_TELEMETRY_GC_MINOR_REASON_LONG:
-        Telemetry::Accumulate(Telemetry::GC_MINOR_REASON_LONG, sample);
-        break;
-      case JS_TELEMETRY_GC_MINOR_US:
-        Telemetry::Accumulate(Telemetry::GC_MINOR_US, sample);
-        break;
-      case JS_TELEMETRY_GC_NURSERY_BYTES:
-        Telemetry::Accumulate(Telemetry::GC_NURSERY_BYTES, sample);
-        break;
-      case JS_TELEMETRY_GC_PRETENURE_COUNT:
-        Telemetry::Accumulate(Telemetry::GC_PRETENURE_COUNT, sample);
-        break;
-      case JS_TELEMETRY_DEPRECATED_LANGUAGE_EXTENSIONS_IN_CONTENT:
-        Telemetry::Accumulate(Telemetry::JS_DEPRECATED_LANGUAGE_EXTENSIONS_IN_CONTENT, sample);
-        break;
-      case JS_TELEMETRY_DEPRECATED_LANGUAGE_EXTENSIONS_IN_ADDONS:
-        Telemetry::Accumulate(Telemetry::JS_DEPRECATED_LANGUAGE_EXTENSIONS_IN_ADDONS, sample);
-        break;
-      case JS_TELEMETRY_ADDON_EXCEPTIONS:
-        Telemetry::Accumulate(Telemetry::JS_TELEMETRY_ADDON_EXCEPTIONS, nsDependentCString(key), sample);
-        break;
-      case JS_TELEMETRY_AOT_USAGE:
-        Telemetry::Accumulate(Telemetry::JS_AOT_USAGE, sample);
-        break;
-      default:
-        MOZ_ASSERT_UNREACHABLE("Unexpected JS_TELEMETRY id");
-    }
+/* STUB */
 }
 
 static void

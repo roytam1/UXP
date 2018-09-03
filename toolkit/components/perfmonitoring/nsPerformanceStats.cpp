@@ -27,7 +27,6 @@
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/EventStateManager.h"
 #include "mozilla/Services.h"
-#include "mozilla/Telemetry.h"
 
 #if defined(XP_WIN)
 #include <processthreadsapi.h>
@@ -957,22 +956,7 @@ nsPerformanceStatsService::SetJankAlertBufferingDelay(uint32_t value) {
 nsresult
 nsPerformanceStatsService::UpdateTelemetry()
 {
-  // Promote everything to floating-point explicitly before dividing.
-  const double processStayed = mProcessStayed;
-  const double processMoved = mProcessMoved;
-
-  if (processStayed <= 0 || processMoved <= 0 || processStayed + processMoved <= 0) {
-    // Overflow/underflow/nothing to report
-    return NS_OK;
-  }
-
-  const double proportion = (100 * processStayed) / (processStayed + processMoved);
-  if (proportion < 0 || proportion > 100) {
-    // Overflow/underflow
-    return NS_OK;
-  }
-
-  mozilla::Telemetry::Accumulate(mozilla::Telemetry::PERF_MONITORING_TEST_CPU_RESCHEDULING_PROPORTION_MOVED, (uint32_t)proportion);
+  /* STUB */
   return NS_OK;
 }
 

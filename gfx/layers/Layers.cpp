@@ -22,7 +22,6 @@
 #include "gfxUtils.h"                   // for gfxUtils, etc
 #include "gfx2DGlue.h"
 #include "mozilla/DebugOnly.h"          // for DebugOnly
-#include "mozilla/Telemetry.h"          // for Accumulate
 #include "mozilla/ToString.h"
 #include "mozilla/dom/Animation.h"      // for ComputedTimingFunction
 #include "mozilla/gfx/2D.h"             // for DrawTarget
@@ -1621,8 +1620,6 @@ void
 LayerManager::PostPresent()
 {
   if (!mTabSwitchStart.IsNull()) {
-    Telemetry::Accumulate(Telemetry::FX_TAB_SWITCH_TOTAL_MS,
-                          uint32_t((TimeStamp::Now() - mTabSwitchStart).ToMilliseconds()));
     mTabSwitchStart = TimeStamp();
   }
 }

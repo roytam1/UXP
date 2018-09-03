@@ -706,15 +706,6 @@ WebrtcAudioConduit::GetAudioFrame(int16_t speechData[],
     if (GetAVStats(&jitter_buffer_delay_ms,
                    &playout_buffer_delay_ms,
                    &avsync_offset_ms)) {
-#if !defined(MOZILLA_EXTERNAL_LINKAGE)
-      if (avsync_offset_ms < 0) {
-        Telemetry::Accumulate(Telemetry::WEBRTC_AVSYNC_WHEN_VIDEO_LAGS_AUDIO_MS,
-                              -avsync_offset_ms);
-      } else {
-        Telemetry::Accumulate(Telemetry::WEBRTC_AVSYNC_WHEN_AUDIO_LAGS_VIDEO_MS,
-                              avsync_offset_ms);
-      }
-#endif
       CSFLogError(logTag,
                   "A/V sync: sync delta: %dms, audio jitter delay %dms, playout delay %dms",
                   avsync_offset_ms, jitter_buffer_delay_ms, playout_buffer_delay_ms);

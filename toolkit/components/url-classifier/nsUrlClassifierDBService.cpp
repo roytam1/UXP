@@ -37,7 +37,6 @@
 #include "mozilla/Mutex.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/TimeStamp.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Logging.h"
 #include "prprf.h"
 #include "prnetdb.h"
@@ -320,9 +319,6 @@ nsUrlClassifierDBServiceWorker::HandlePendingLookups()
       MutexAutoUnlock unlock(mPendingLookupLock);
       DoLookup(lookup.mKey, lookup.mTables, lookup.mCallback);
     }
-    double lookupTime = (TimeStamp::Now() - lookup.mStartTime).ToMilliseconds();
-    Telemetry::Accumulate(Telemetry::URLCLASSIFIER_LOOKUP_TIME,
-                          static_cast<uint32_t>(lookupTime));
   }
 
   return NS_OK;

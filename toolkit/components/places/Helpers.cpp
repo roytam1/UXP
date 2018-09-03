@@ -385,9 +385,7 @@ AsyncStatementCallbackNotifier::HandleCompletion(uint16_t aReason)
 NS_IMETHODIMP
 AsyncStatementTelemetryTimer::HandleCompletion(uint16_t aReason)
 {
-  if (aReason == mozIStorageStatementCallback::REASON_FINISHED) {
-    Telemetry::AccumulateTimeDelta(mHistogramId, mStart);
-  }
+  /* STUB */
   return NS_OK;
 }
 

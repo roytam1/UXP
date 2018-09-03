@@ -249,8 +249,6 @@ NotifyActivity(ActivityType aActivityType)
 
   // If we have UI activity we should reset the timer and report it
   if (aActivityType == kUIActivity) {
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::EVENTLOOP_UI_ACTIVITY_EXP_MS,
-                                     cumulativeUILagMS);
     cumulativeUILagMS = 0;
   }
 

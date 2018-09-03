@@ -15,7 +15,6 @@
 #include "nsPrintfCString.h"
 #include "mozilla/dom/PerformanceNavigation.h"
 #include "mozilla/TimeStamp.h"
-#include "mozilla/Telemetry.h"
 
 using namespace mozilla;
 
@@ -202,12 +201,6 @@ nsDOMNavigationTiming::NotifyNonBlankPaintForRootContentDocument()
                            int(elapsed.ToMilliseconds()), spec.get(),
                            mDocShellHasBeenActiveSinceNavigationStart ? "foreground tab" : "this tab was inactive some of the time between navigation start and first non-blank paint");
     PROFILER_MARKER(marker.get());
-  }
-
-  if (mDocShellHasBeenActiveSinceNavigationStart) {
-    Telemetry::AccumulateTimeDelta(Telemetry::TIME_TO_NON_BLANK_PAINT_MS,
-                                   mNavigationStart,
-                                   mNonBlankPaint);
   }
 }
 

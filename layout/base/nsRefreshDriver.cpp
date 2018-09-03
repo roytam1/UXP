@@ -526,10 +526,6 @@ private:
       if (XRE_IsParentProcess()) {
         TimeDuration vsyncLatency = TimeStamp::Now() - aVsyncTimestamp;
         uint32_t sample = (uint32_t)vsyncLatency.ToMilliseconds();
-        Telemetry::Accumulate(Telemetry::FX_REFRESH_DRIVER_CHROME_FRAME_DELAY_MS,
-                              sample);
-        Telemetry::Accumulate(Telemetry::FX_REFRESH_DRIVER_SYNC_SCROLL_FRAME_DELAY_MS,
-                              sample);
         RecordJank(sample);
       } else if (mVsyncRate != TimeDuration::Forever()) {
         TimeDuration contentDelay = (TimeStamp::Now() - mLastChildTick) - mVsyncRate;
@@ -539,10 +535,6 @@ private:
           contentDelay = TimeDuration::FromMilliseconds(0);
         }
         uint32_t sample = (uint32_t)contentDelay.ToMilliseconds();
-        Telemetry::Accumulate(Telemetry::FX_REFRESH_DRIVER_CONTENT_FRAME_DELAY_MS,
-                              sample);
-        Telemetry::Accumulate(Telemetry::FX_REFRESH_DRIVER_SYNC_SCROLL_FRAME_DELAY_MS,
-                              sample);
         RecordJank(sample);
       } else {
         // Request the vsync rate from the parent process. Might be a few vsyncs
@@ -2026,10 +2018,6 @@ nsRefreshDriver::Tick(int64_t aNowEpoch, TimeStamp aNowTime)
 
     notifyGC = true;
   }
-
-#ifndef ANDROID  /* bug 1142079 */
-  mozilla::Telemetry::AccumulateTimeDelta(mozilla::Telemetry::REFRESH_DRIVER_TICK, mTickStart);
-#endif
 
   nsTObserverArray<nsAPostRefreshObserver*>::ForwardIterator iter(mPostRefreshObservers);
   while (iter.HasMore()) {

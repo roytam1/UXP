@@ -7491,9 +7491,6 @@ PaintTelemetry::AutoRecordPaint::~AutoRecordPaint()
 
   double totalMs = (TimeStamp::Now() - mStart).ToMilliseconds();
 
-  // Record the total time.
-  Telemetry::Accumulate(Telemetry::CONTENT_PAINT_TIME, static_cast<uint32_t>(totalMs));
-
   // If the total time was >= 16ms, then it's likely we missed a frame due to
   // painting. In this case we'll gather some detailed metrics below.
   if (totalMs <= 16.0) {
@@ -7504,9 +7501,6 @@ PaintTelemetry::AutoRecordPaint::~AutoRecordPaint()
     MOZ_ASSERT(aDurationMs <= totalMs);
 
     uint32_t amount = static_cast<int32_t>((aDurationMs / totalMs) * 100.0);
-
-    nsDependentCString key(aKey);
-    Telemetry::Accumulate(Telemetry::CONTENT_LARGE_PAINT_PHASE_WEIGHT, key, amount);
   };
 
   double dlMs = sMetrics[Metric::DisplayList];

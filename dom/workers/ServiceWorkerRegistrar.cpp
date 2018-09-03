@@ -135,9 +135,6 @@ ServiceWorkerRegistrar::GetRegistrations(
 
   if (firstTime) {
     firstTime = false;
-    Telemetry::AccumulateTimeDelta(
-      Telemetry::SERVICE_WORKER_REGISTRATION_LOADING,
-      startTime);
   }
 }
 

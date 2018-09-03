@@ -294,26 +294,9 @@ Predictor::Action::OnCacheEntryAvailable(nsICacheEntry *entry, bool isNew,
                    "Aborting.", this, result));
     return NS_OK;
   }
-  Telemetry::AccumulateTimeDelta(Telemetry::PREDICTOR_WAIT_TIME,
-                                 mStartTime);
-  if (mPredict) {
-    bool predicted = mPredictor->PredictInternal(mPredictReason, entry, isNew,
-                                                 mFullUri, mTargetURI,
-                                                 mVerifier, mStackCount);
-    Telemetry::AccumulateTimeDelta(
-      Telemetry::PREDICTOR_PREDICT_WORK_TIME, mStartTime);
-    if (predicted) {
-      Telemetry::AccumulateTimeDelta(
-        Telemetry::PREDICTOR_PREDICT_TIME_TO_ACTION, mStartTime);
-    } else {
-      Telemetry::AccumulateTimeDelta(
-        Telemetry::PREDICTOR_PREDICT_TIME_TO_INACTION, mStartTime);
-    }
-  } else {
+  if (!mPredict) {
     mPredictor->LearnInternal(mLearnReason, entry, isNew, mFullUri, mTargetURI,
                               mSourceURI);
-    Telemetry::AccumulateTimeDelta(
-      Telemetry::PREDICTOR_LEARN_WORK_TIME, mStartTime);
   }
 
   return NS_OK;
@@ -1073,8 +1056,6 @@ Predictor::CalculateGlobalDegradation(uint32_t lastLoad)
     globalDegradation = mPageDegradationMax;
   }
 
-  Telemetry::Accumulate(Telemetry::PREDICTOR_GLOBAL_DEGRADATION,
-                        globalDegradation);
   return globalDegradation;
 }
 
@@ -1139,10 +1120,6 @@ Predictor::CalculateConfidence(uint32_t hitCount, uint32_t hitsPossible,
   confidence = std::max(confidence, 0);
   confidence = std::min(confidence, maxConfidence);
 
-  Telemetry::Accumulate(Telemetry::PREDICTOR_BASE_CONFIDENCE, baseConfidence);
-  Telemetry::Accumulate(Telemetry::PREDICTOR_SUBRESOURCE_DEGRADATION,
-                        confidenceDegradation);
-  Telemetry::Accumulate(Telemetry::PREDICTOR_CONFIDENCE, confidence);
   return confidence;
 }
 
@@ -2335,7 +2312,6 @@ Predictor::PrefetchListener::OnStopRequest(nsIRequest *aRequest,
   if (NS_FAILED(aStatusCode)) {
     return aStatusCode;
   }
-  Telemetry::AccumulateTimeDelta(Telemetry::PREDICTOR_PREFETCH_TIME, mStartTime);
 
   nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(aRequest);
   if (!httpChannel) {

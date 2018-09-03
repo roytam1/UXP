@@ -168,13 +168,6 @@ Http2Session::~Http2Session()
         this, mDownstreamState));
 
   Shutdown();
-
-  Telemetry::Accumulate(Telemetry::SPDY_PARALLEL_STREAMS, mConcurrentHighWater);
-  Telemetry::Accumulate(Telemetry::SPDY_REQUEST_PER_CONN, (mNextStreamID - 1) / 2);
-  Telemetry::Accumulate(Telemetry::SPDY_SERVER_INITIATED_STREAMS,
-                        mServerPushedResources);
-  Telemetry::Accumulate(Telemetry::SPDY_GOAWAY_LOCAL, mClientGoAwayReason);
-  Telemetry::Accumulate(Telemetry::SPDY_GOAWAY_PEER, mPeerGoAwayReason);
 }
 
 void
@@ -1508,13 +1501,11 @@ Http2Session::RecvSettings(Http2Session *self)
 
     case SETTINGS_TYPE_MAX_CONCURRENT:
       self->mMaxConcurrent = value;
-      Telemetry::Accumulate(Telemetry::SPDY_SETTINGS_MAX_STREAMS, value);
       self->ProcessPending();
       break;
 
     case SETTINGS_TYPE_INITIAL_WINDOW:
       {
-        Telemetry::Accumulate(Telemetry::SPDY_SETTINGS_IW, value >> 10);
         int32_t delta = value - self->mServerInitialStreamWindow;
         self->mServerInitialStreamWindow = value;
 
@@ -2494,8 +2485,6 @@ Http2Session::ReadyToProcessDataFrame(enum internalStateType newState)
              newState == DISCARDING_DATA_FRAME_PADDING);
   ChangeDownstreamState(newState);
 
-  Telemetry::Accumulate(Telemetry::SPDY_CHUNK_RECVD,
-                        mInputFrameDataSize >> 10);
   mLastDataReadEpoch = mLastReadEpoch;
 
   if (!mInputFrameID) {

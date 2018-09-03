@@ -904,9 +904,6 @@ nsEventStatus AsyncPanZoomController::HandleDragEvent(const MouseInput& aEvent,
     return nsEventStatus_eConsumeNoDefault;
   }
 
-  mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-      (uint32_t) ScrollInputMethod::ApzScrollbarDrag);
-
   ReentrantMonitorAutoEnter lock(mMonitor);
   CSSPoint scrollFramePoint = aEvent.mLocalOrigin / GetFrameMetrics().GetZoom();
   // The scrollbar can be transformed with the frame but the pres shell
@@ -1731,10 +1728,6 @@ nsEventStatus AsyncPanZoomController::OnScrollWheel(const ScrollWheelInput& aEve
     return nsEventStatus_eIgnore;
   }
 
-  mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-      (uint32_t) ScrollInputMethodForWheelDeltaType(aEvent.mDeltaType));
-
-
   switch (aEvent.mScrollMode) {
     case ScrollWheelInput::SCROLLMODE_INSTANT: {
 
@@ -1933,9 +1926,6 @@ nsEventStatus AsyncPanZoomController::OnPan(const PanGestureInput& aEvent, bool 
   mY.UpdateWithTouchAtDevicePoint(aEvent.mLocalPanStartPoint.y, logicalPanDisplacement.y, aEvent.mTime);
 
   HandlePanningUpdate(physicalPanDisplacement);
-
-  mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-      (uint32_t) ScrollInputMethod::ApzPanGesture);
 
   ScreenPoint panDistance(fabs(physicalPanDisplacement.x), fabs(physicalPanDisplacement.y));
   MOZ_ASSERT(GetCurrentPanGestureBlock());
@@ -2600,8 +2590,6 @@ void AsyncPanZoomController::TrackTouch(const MultiTouchInput& aEvent) {
   UpdateWithTouchAtDevicePoint(aEvent);
 
   if (prevTouchPoint != touchPoint) {
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-        (uint32_t) ScrollInputMethod::ApzTouch);
     MOZ_ASSERT(GetCurrentTouchBlock());
     OverscrollHandoffState handoffState(
         *GetCurrentTouchBlock()->GetOverscrollHandoffChain(),
@@ -3260,14 +3248,7 @@ AsyncPanZoomController::UpdateCheckerboardEvent(const MutexAutoLock& aProofOfLoc
                                                 uint32_t aMagnitude)
 {
   if (mCheckerboardEvent && mCheckerboardEvent->RecordFrameInfo(aMagnitude)) {
-    // This checkerboard event is done. Report some metrics to telemetry.
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::CHECKERBOARD_SEVERITY,
-      mCheckerboardEvent->GetSeverity());
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::CHECKERBOARD_PEAK,
-      mCheckerboardEvent->GetPeak());
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::CHECKERBOARD_DURATION,
-      (uint32_t)mCheckerboardEvent->GetDuration().ToMilliseconds());
-
+    // This checkerboard event is done.
     mPotentialCheckerboardTracker.CheckerboardDone();
 
     if (gfxPrefs::APZRecordCheckerboarding()) {

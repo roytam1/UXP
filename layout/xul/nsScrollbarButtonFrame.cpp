@@ -171,9 +171,6 @@ nsScrollbarButtonFrame::HandleButtonPress(nsPresContext* aPresContext,
       return false;
     }
 
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::SCROLL_INPUT_METHODS,
-        (uint32_t) ScrollInputMethod::MainThreadScrollbarButtonClick);
-
     if (!m) {
       sb->MoveToNewPosition();
       if (!weakFrame.IsAlive()) {

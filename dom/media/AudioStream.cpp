@@ -14,7 +14,6 @@
 #include "mozilla/Mutex.h"
 #include "mozilla/Sprintf.h"
 #include <algorithm>
-#include "mozilla/Telemetry.h"
 #include "CubebUtils.h"
 #include "nsPrintfCString.h"
 #include "gfxPrefs.h"
@@ -378,8 +377,6 @@ AudioStream::OpenCubeb(cubeb* aContext, cubeb_stream_params& aParams,
   TimeDuration timeDelta = TimeStamp::Now() - aStartTime;
   LOG("creation time %sfirst: %u ms", aIsFirst ? "" : "not ",
       (uint32_t) timeDelta.ToMilliseconds());
-  Telemetry::Accumulate(aIsFirst ? Telemetry::AUDIOSTREAM_FIRST_OPEN_MS :
-      Telemetry::AUDIOSTREAM_LATER_OPEN_MS, timeDelta.ToMilliseconds());
 
   return NS_OK;
 }

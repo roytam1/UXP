@@ -242,31 +242,6 @@ StartupCache::LoadArchive(enum TelemetrifyAge flag)
   
   mArchive = new nsZipArchive();
   rv = mArchive->OpenArchive(mFile);
-  if (NS_FAILED(rv) || flag == IGNORE_AGE)
-    return rv;
-
-  nsCString comment;
-  if (!mArchive->GetComment(comment)) {
-    return rv;
-  }
-
-  const char *data;
-  size_t len = NS_CStringGetData(comment, &data);
-  PRTime creationStamp;
-  // We might not have a comment if the startup cache file was created
-  // before we started recording creation times in the comment.
-  if (len == sizeof(creationStamp)) {
-    memcpy(&creationStamp, data, len);
-    PRTime current = PR_Now();
-    int64_t diff = current - creationStamp;
-
-    // We can't use AccumulateTimeDelta here because we have no way of
-    // reifying a TimeStamp from creationStamp.
-    int64_t usec_per_hour = PR_USEC_PER_SEC * int64_t(3600);
-    int64_t hour_diff = (diff + usec_per_hour - 1) / usec_per_hour;
-    mozilla::Telemetry::Accumulate(Telemetry::STARTUP_CACHE_AGE_HOURS,
-                                   hour_diff);
-  }
 
   return rv;
 }
@@ -497,7 +472,6 @@ StartupCache::InvalidateCache()
   if (NS_FAILED(rv) && rv != NS_ERROR_FILE_TARGET_DOES_NOT_EXIST &&
       rv != NS_ERROR_FILE_NOT_FOUND) {
     gIgnoreDiskCache = true;
-    mozilla::Telemetry::Accumulate(Telemetry::STARTUP_CACHE_INVALID, true);
     return;
   }
   gIgnoreDiskCache = false;

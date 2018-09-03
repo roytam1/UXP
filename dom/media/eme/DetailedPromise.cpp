@@ -96,9 +96,6 @@ DetailedPromise::MaybeReportTelemetry(Status aStatus)
   uint32_t latency = (TimeStamp::Now() - mStartTime).ToMilliseconds();
   EME_LOG("%s %s latency %ums reported via telemetry", mName.get(),
           ((aStatus == Succeeded) ? "succcess" : "failure"), latency);
-  Telemetry::ID tid = (aStatus == Succeeded) ? mSuccessLatencyProbe.Value()
-                                             : mFailureLatencyProbe.Value();
-  Telemetry::Accumulate(tid, latency);
 }
 
 } // namespace dom

@@ -14,7 +14,6 @@
 #include "mozilla/layers/D3D11ShareHandleImage.h"
 #include "mozilla/layers/ImageBridgeChild.h"
 #include "mozilla/layers/TextureForwarder.h"
-#include "mozilla/Telemetry.h"
 #include "MediaTelemetryConstants.h"
 #include "mfapi.h"
 #include "gfxPrefs.h"
@@ -442,9 +441,6 @@ D3D9DXVA2Manager::Init(layers::KnowsCompositor* aKnowsCompositor,
   }
   mTextureClientAllocator->SetMaxPoolSize(5);
 
-  Telemetry::Accumulate(Telemetry::MEDIA_DECODER_BACKEND_USED,
-                        uint32_t(media::MediaDecoderBackend::WMFDXVA2D3D9));
-
   return S_OK;
 }
 
@@ -774,9 +770,6 @@ D3D11DXVA2Manager::Init(layers::KnowsCompositor* aKnowsCompositor,
                                                         mDevice);
   }
   mTextureClientAllocator->SetMaxPoolSize(5);
-
-  Telemetry::Accumulate(Telemetry::MEDIA_DECODER_BACKEND_USED,
-                        uint32_t(media::MediaDecoderBackend::WMFDXVA2D3D11));
 
   return S_OK;
 }

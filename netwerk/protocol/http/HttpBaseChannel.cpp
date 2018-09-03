@@ -49,7 +49,6 @@
 #include "LoadInfo.h"
 #include "nsNullPrincipal.h"
 #include "nsISSLSocketControl.h"
-#include "mozilla/Telemetry.h"
 #include "nsIURL.h"
 #include "nsIConsoleService.h"
 #include "mozilla/BinarySearch.h"
@@ -1006,7 +1005,6 @@ HttpBaseChannel::DoApplyContentConversions(nsIStreamListener* aNextListener,
         } else if (from.Equals("br")) {
           mode = 3;
         }
-        Telemetry::Accumulate(Telemetry::HTTP_CONTENT_ENCODING, mode);
       }
       nextListener = converter;
     }

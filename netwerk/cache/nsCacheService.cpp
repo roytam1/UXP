@@ -2655,18 +2655,7 @@ nsCacheService::Lock(mozilla::Telemetry::ID mainThreadLockerID)
         generalID = mozilla::Telemetry::CACHE_SERVICE_LOCK_WAIT_2;
     }
 
-    TimeStamp start(TimeStamp::Now());
-
     nsCacheService::Lock();
-
-    TimeStamp stop(TimeStamp::Now());
-
-    // Telemetry isn't thread safe on its own, but this is OK because we're
-    // protecting it with the cache lock. 
-    if (lockerID != mozilla::Telemetry::HistogramCount) {
-        mozilla::Telemetry::AccumulateTimeDelta(lockerID, start, stop);
-    }
-    mozilla::Telemetry::AccumulateTimeDelta(generalID, start, stop);
 }
 
 void

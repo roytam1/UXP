@@ -8,7 +8,6 @@
 #include "PLDHashTable.h"
 #include "nsExpirationTracker.h"
 #include "nsClassHashtable.h"
-#include "mozilla/Telemetry.h"
 #include "gfxGradientCache.h"
 #include <time.h>
 
@@ -127,7 +126,6 @@ class GradientCache final : public nsExpirationTracker<GradientCacheData,4>
     {
       srand(time(nullptr));
       mTimerPeriod = rand() % MAX_GENERATION_MS + 1;
-      Telemetry::Accumulate(Telemetry::GRADIENT_RETENTION_TIME, mTimerPeriod);
     }
 
     virtual void NotifyExpired(GradientCacheData* aObject)

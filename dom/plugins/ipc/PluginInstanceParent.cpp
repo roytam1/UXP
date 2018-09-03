@@ -9,7 +9,6 @@
 
 #include "mozilla/BasicEvents.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "PluginInstanceParent.h"
 #include "BrowserStreamParent.h"
 #include "PluginAsyncSurrogate.h"
@@ -2504,6 +2503,5 @@ PluginInstanceParent::RecordDrawingModel()
     }
     MOZ_ASSERT(mode >= 0);
 
-    Telemetry::Accumulate(Telemetry::PLUGIN_DRAWING_MODEL, mode);
     mLastRecordedDrawingModel = mode;
 }

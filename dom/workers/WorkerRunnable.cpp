@@ -15,7 +15,6 @@
 #include "mozilla/DebugOnly.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/dom/ScriptSettings.h"
-#include "mozilla/Telemetry.h"
 
 #include "js/RootingAPI.h"
 #include "js/Value.h"
@@ -572,8 +571,6 @@ WorkerMainThreadRunnable::Dispatch(Status aFailStatus, ErrorResult& aRv)
 {
   mWorkerPrivate->AssertIsOnWorkerThread();
 
-  TimeStamp startTime = TimeStamp::NowLoRes();
-
   AutoSyncLoopHolder syncLoop(mWorkerPrivate, aFailStatus);
 
   mSyncLoopTarget = syncLoop.GetEventTarget();
@@ -590,11 +587,6 @@ WorkerMainThreadRunnable::Dispatch(Status aFailStatus, ErrorResult& aRv)
   if (!syncLoop.Run()) {
     aRv.ThrowUncatchableException();
   }
-
-  Telemetry::Accumulate(Telemetry::SYNC_WORKER_OPERATION, mTelemetryKey,
-                        static_cast<uint32_t>((TimeStamp::NowLoRes() - startTime)
-                                                .ToMilliseconds()));
-  Unused << startTime; // Shut the compiler up.
 }
 
 NS_IMETHODIMP

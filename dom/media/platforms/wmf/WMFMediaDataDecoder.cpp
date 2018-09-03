@@ -8,7 +8,6 @@
 #include "VideoUtils.h"
 #include "WMFUtils.h"
 #include "nsTArray.h"
-#include "mozilla/Telemetry.h"
 
 #include "mozilla/Logging.h"
 #include "mozilla/SyncRunnable.h"
@@ -67,7 +66,7 @@ SendTelemetry(unsigned long hr)
 
   nsCOMPtr<nsIRunnable> runnable = NS_NewRunnableFunction(
     [sample] {
-      Telemetry::Accumulate(Telemetry::MEDIA_WMF_DECODE_ERROR, sample);
+      /* Telemetry STUB */
     });
   NS_DispatchToMainThread(runnable);
 }

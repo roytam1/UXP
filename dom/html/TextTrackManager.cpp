@@ -12,7 +12,6 @@
 #include "mozilla/dom/TextTrackCue.h"
 #include "mozilla/dom/Event.h"
 #include "mozilla/ClearOnShutdown.h"
-#include "mozilla/Telemetry.h"
 #include "nsComponentManagerUtils.h"
 #include "nsVariant.h"
 #include "nsVideoFrame.h"
@@ -824,24 +823,13 @@ TextTrackManager::NotifyReset()
 void
 TextTrackManager::ReportTelemetryForTrack(TextTrack* aTextTrack) const
 {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aTextTrack);
-  MOZ_ASSERT(mTextTracks->Length() > 0);
-
-  TextTrackKind kind = aTextTrack->Kind();
-  Telemetry::Accumulate(Telemetry::WEBVTT_TRACK_KINDS, uint32_t(kind));
+/* STUB */
 }
 
 void
 TextTrackManager::ReportTelemetryForCue()
 {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(!mNewCues->IsEmpty() || !mLastActiveCues->IsEmpty());
-
-  if (!mCueTelemetryReported) {
-    Telemetry::Accumulate(Telemetry::WEBVTT_USED_VTT_CUES, 1);
-    mCueTelemetryReported = true;
-  }
+/* STUB */
 }
 
 } // namespace dom

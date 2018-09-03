@@ -14,7 +14,6 @@
 #include <algorithm>
 #include "nsComponentManagerUtils.h"
 #include "nsProxyRelease.h"
-#include "mozilla/Telemetry.h"
 
 // When CACHE_CHUNKS is defined we always cache unused chunks in mCacheChunks.
 // When it is not defined, we always release the chunks ASAP, i.e. we cache
@@ -1914,9 +1913,6 @@ CacheFile::RemoveInput(CacheFileInputStream *aInput, nsresult aStatus)
   // chunks that won't be used anymore.
   CleanUpCachedChunks();
 
-  Telemetry::Accumulate(Telemetry::NETWORK_CACHE_V2_INPUT_STREAM_STATUS,
-                        StatusToTelemetryEnum(aStatus));
-
   return NS_OK;
 }
 
@@ -1951,9 +1947,6 @@ CacheFile::RemoveOutput(CacheFileOutputStream *aOutput, nsresult aStatus)
 
   // Notify close listener as the last action
   aOutput->NotifyCloseListener();
-
-  Telemetry::Accumulate(Telemetry::NETWORK_CACHE_V2_OUTPUT_STREAM_STATUS,
-                        StatusToTelemetryEnum(aStatus));
 
   return NS_OK;
 }

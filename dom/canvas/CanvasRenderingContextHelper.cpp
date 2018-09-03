@@ -7,7 +7,6 @@
 #include "ImageBitmapRenderingContext.h"
 #include "ImageEncoder.h"
 #include "mozilla/dom/CanvasRenderingContext2D.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/UniquePtr.h"
 #include "nsContentUtils.h"
 #include "nsDOMJSUtils.h"
@@ -138,13 +137,10 @@ CanvasRenderingContextHelper::CreateContextHelper(CanvasContextType aContextType
     break;
 
   case CanvasContextType::Canvas2D:
-    Telemetry::Accumulate(Telemetry::CANVAS_2D_USED, 1);
     ret = new CanvasRenderingContext2D(aCompositorBackend);
     break;
 
   case CanvasContextType::WebGL1:
-    Telemetry::Accumulate(Telemetry::CANVAS_WEBGL_USED, 1);
-
     ret = WebGL1Context::Create();
     if (!ret)
       return nullptr;
@@ -152,8 +148,6 @@ CanvasRenderingContextHelper::CreateContextHelper(CanvasContextType aContextType
     break;
 
   case CanvasContextType::WebGL2:
-    Telemetry::Accumulate(Telemetry::CANVAS_WEBGL_USED, 1);
-
     ret = WebGL2Context::Create();
     if (!ret)
       return nullptr;
@@ -205,16 +199,8 @@ CanvasRenderingContextHelper::GetContext(JSContext* aCx,
       // See bug 645792 and bug 1215072.
       // We want to throw only if dictionary initialization fails,
       // so only in case aRv has been set to some error value.
-      if (contextType == CanvasContextType::WebGL1)
-        Telemetry::Accumulate(Telemetry::CANVAS_WEBGL_SUCCESS, 0);
-      else if (contextType == CanvasContextType::WebGL2)
-        Telemetry::Accumulate(Telemetry::CANVAS_WEBGL2_SUCCESS, 0);
       return nullptr;
     }
-    if (contextType == CanvasContextType::WebGL1)
-      Telemetry::Accumulate(Telemetry::CANVAS_WEBGL_SUCCESS, 1);
-    else if (contextType == CanvasContextType::WebGL2)
-      Telemetry::Accumulate(Telemetry::CANVAS_WEBGL2_SUCCESS, 1);
   } else {
     // We already have a context of some type.
     if (contextType != mCurrentContextType)

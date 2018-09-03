@@ -453,8 +453,6 @@ gfxUserFontEntry::LoadNextSrc()
                                   gfxUserFontData::kUnknownCompression);
                 mPlatformFontEntry = fe;
                 SetLoadState(STATUS_LOADED);
-                Telemetry::Accumulate(Telemetry::WEBFONT_SRCTYPE,
-                                      currSrc.mSourceType + 1);
                 return;
             } else {
                 LOG(("userfonts (%p) [src %d] failed local: (%s) for (%s)\n",
@@ -517,8 +515,6 @@ gfxUserFontEntry::LoadNextSrc()
                         if (NS_SUCCEEDED(rv) &&
                             LoadPlatformFont(buffer, bufferLength)) {
                             SetLoadState(STATUS_LOADED);
-                            Telemetry::Accumulate(Telemetry::WEBFONT_SRCTYPE,
-                                                  currSrc.mSourceType + 1);
                             return;
                         } else {
                             mFontSet->LogMessage(this,
@@ -572,8 +568,6 @@ gfxUserFontEntry::LoadNextSrc()
                 // LoadPlatformFont takes ownership of the buffer, so no need
                 // to free it here.
                 SetLoadState(STATUS_LOADED);
-                Telemetry::Accumulate(Telemetry::WEBFONT_SRCTYPE,
-                                      currSrc.mSourceType + 1);
                 return;
             } else {
                 mFontSet->LogMessage(this,
@@ -617,7 +611,6 @@ gfxUserFontEntry::LoadPlatformFont(const uint8_t* aFontData, uint32_t& aLength)
 
     gfxUserFontType fontType =
         gfxFontUtils::DetermineFontDataType(aFontData, aLength);
-    Telemetry::Accumulate(Telemetry::WEBFONT_FONTTYPE, uint32_t(fontType));
 
     // Unwrap/decompress/sanitize or otherwise munge the downloaded data
     // to make a usable sfnt structure.
@@ -650,13 +643,6 @@ gfxUserFontEntry::LoadPlatformFont(const uint8_t* aFontData, uint32_t& aLength)
     if (saneData) {
         if (saneLen) {
             fontCompressionRatio = uint32_t(100.0 * aLength / saneLen + 0.5);
-            if (fontType == GFX_USERFONT_WOFF ||
-                fontType == GFX_USERFONT_WOFF2) {
-                Telemetry::Accumulate(fontType == GFX_USERFONT_WOFF ?
-                                      Telemetry::WEBFONT_COMPRESSION_WOFF :
-                                      Telemetry::WEBFONT_COMPRESSION_WOFF2,
-                                      fontCompressionRatio);
-                }
         }
 
         // The sanitizer ensures that we have a valid sfnt and a usable

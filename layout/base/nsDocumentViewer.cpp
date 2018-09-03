@@ -1275,7 +1275,6 @@ nsDocumentViewer::PermitUnloadInternal(bool *aShouldPrompt,
 
       nsAutoSyncOperation sync(mDocument);
       mInPermitUnloadPrompt = true;
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::ONBEFOREUNLOAD_PROMPT_COUNT, 1);
       rv = prompt->ConfirmEx(title, message, buttonFlags,
                              leaveLabel, stayLabel, nullptr, nullptr,
                              &dummy, &buttonPressed);
@@ -1290,15 +1289,12 @@ nsDocumentViewer::PermitUnloadInternal(bool *aShouldPrompt,
       // XXX: Are there other cases where prompts can abort? Is it ok to
       //      prevent unloading the page in those cases?
       if (NS_FAILED(rv)) {
-        mozilla::Telemetry::Accumulate(mozilla::Telemetry::ONBEFOREUNLOAD_PROMPT_ACTION, 2);
         *aPermitUnload = false;
         return NS_OK;
       }
 
       // Button 0 == leave, button 1 == stay
       *aPermitUnload = (buttonPressed == 0);
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::ONBEFOREUNLOAD_PROMPT_ACTION,
-        (*aPermitUnload ? 1 : 0));
       // If the user decided to go ahead, make sure not to prompt the user again
       // by toggling the internal prompting bool to false:
       if (*aPermitUnload) {

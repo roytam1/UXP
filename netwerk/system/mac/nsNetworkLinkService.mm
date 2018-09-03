@@ -24,7 +24,6 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/SHA1.h"
 #include "mozilla/Base64.h"
-#include "mozilla/Telemetry.h"
 #include "nsNetworkLinkService.h"
 
 #import <Cocoa/Cocoa.h>
@@ -274,19 +273,16 @@ void nsNetworkLinkService::calculateNetworkId(void)
             LOG(("networkid: id %s\n", output.get()));
             if (mNetworkId != output) {
                 // new id
-                Telemetry::Accumulate(Telemetry::NETWORK_ID, 1);
                 mNetworkId = output;
             }
             else {
                 // same id
-                Telemetry::Accumulate(Telemetry::NETWORK_ID, 2);
             }
             found = true;
         }
     }
     if (!found) {
         // no id
-        Telemetry::Accumulate(Telemetry::NETWORK_ID, 0);
     }
 }
 

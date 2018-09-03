@@ -38,7 +38,6 @@
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/URLSearchParams.h"
 #include "mozilla/dom/workers/ServiceWorkerManager.h"
-#include "mozilla/Telemetry.h"
 
 #include "InternalRequest.h"
 #include "InternalResponse.h"
@@ -237,8 +236,6 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
       }
     }
 
-    Telemetry::Accumulate(Telemetry::FETCH_IS_MAINTHREAD, 1);
-
     RefPtr<MainThreadFetchResolver> resolver = new MainThreadFetchResolver(p);
     RefPtr<FetchDriver> fetch = new FetchDriver(r, principal, loadGroup);
     fetch->SetDocument(doc);
@@ -250,8 +247,6 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
   } else {
     WorkerPrivate* worker = GetCurrentThreadWorkerPrivate();
     MOZ_ASSERT(worker);
-
-    Telemetry::Accumulate(Telemetry::FETCH_IS_MAINTHREAD, 0);
 
     if (worker->IsServiceWorker()) {
       r->SetSkipServiceWorker();

@@ -33,7 +33,6 @@
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/ErrorNames.h"
 #include "mozilla/LoadContext.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/DOMError.h"
@@ -676,7 +675,6 @@ ServiceWorkerManager::Register(mozIDOMWindow* aWindow,
   queue->ScheduleJob(job);
 
   AssertIsOnMainThread();
-  Telemetry::Accumulate(Telemetry::SERVICE_WORKER_REGISTRATIONS, 1);
 
   promise.forget(aPromise);
   return NS_OK;
@@ -2180,7 +2178,6 @@ ServiceWorkerManager::StartControllingADocument(ServiceWorkerRegistrationInfo* a
   if (!aDocumentId.IsEmpty()) {
     aDoc->SetId(aDocumentId);
   }
-  Telemetry::Accumulate(Telemetry::SERVICE_WORKER_CONTROLLED_DOCUMENTS, 1);
 }
 
 void

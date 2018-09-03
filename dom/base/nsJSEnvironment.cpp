@@ -70,7 +70,6 @@
 #include "prthread.h"
 
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/asmjscache/AsmJSCache.h"
@@ -1477,21 +1476,7 @@ nsJSContext::EndCycleCollectionCallback(CycleCollectorResults &aResults)
            NS_GC_DELAY - std::min(ccNowDuration, kMaxICCDuration));
   }
 
-  // Log information about the CC via telemetry, JSON and the console.
-  Telemetry::Accumulate(Telemetry::CYCLE_COLLECTOR_FINISH_IGC, gCCStats.mAnyLockedOut);
-  Telemetry::Accumulate(Telemetry::CYCLE_COLLECTOR_SYNC_SKIPPABLE, gCCStats.mRanSyncForgetSkippable);
-  Telemetry::Accumulate(Telemetry::CYCLE_COLLECTOR_FULL, ccNowDuration);
-  Telemetry::Accumulate(Telemetry::CYCLE_COLLECTOR_MAX_PAUSE, gCCStats.mMaxSliceTime);
-
-  if (!sLastCCEndTime.IsNull()) {
-    // TimeBetween returns milliseconds, but we want to report seconds.
-    uint32_t timeBetween = TimeBetween(sLastCCEndTime, gCCStats.mBeginTime) / 1000;
-    Telemetry::Accumulate(Telemetry::CYCLE_COLLECTOR_TIME_BETWEEN, timeBetween);
-  }
   sLastCCEndTime = endCCTimeStamp;
-
-  Telemetry::Accumulate(Telemetry::FORGET_SKIPPABLE_MAX,
-                        sMaxForgetSkippableTime / PR_USEC_PER_MSEC);
 
   PRTime delta = GetCollectionTimeDelta();
 

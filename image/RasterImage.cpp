@@ -39,8 +39,8 @@
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/Services.h"
 #include <stdint.h>
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
+#include "mozilla/Telemetry.h"
 #include "mozilla/Tuple.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/gfx/Scale.h"
@@ -104,9 +104,6 @@ RasterImage::~RasterImage()
 
   // Release all frames from the surface cache.
   SurfaceCache::RemoveImage(ImageKey(this));
-
-  // Record Telemetry.
-  Telemetry::Accumulate(Telemetry::IMAGE_DECODE_COUNT, mDecodeCount);
 }
 
 nsresult
@@ -1365,18 +1362,8 @@ RasterImage::Draw(gfxContext* aContext,
     return DrawResult::NOT_READY;
   }
 
-  bool shouldRecordTelemetry = !mDrawStartTime.IsNull() &&
-                               surface->IsFinished();
-
   auto result = DrawInternal(Move(surface), aContext, aSize,
                              aRegion, aSamplingFilter, flags);
-
-  if (shouldRecordTelemetry) {
-      TimeDuration drawLatency = TimeStamp::Now() - mDrawStartTime;
-      Telemetry::Accumulate(Telemetry::IMAGE_DECODE_ON_DRAW_LATENCY,
-                            int32_t(drawLatency.ToMicroseconds()));
-      mDrawStartTime = TimeStamp();
-  }
 
   return result;
 }
@@ -1612,22 +1599,6 @@ RasterImage::NotifyDecodeComplete(const DecoderFinalStatus& aStatus,
     // We've finished a full decode of all animation frames and our AnimationState
     // has been notified about them all, so let it know not to expect anymore.
     mAnimationState->SetDoneDecoding(true);
-  }
-
-  // Do some telemetry if this isn't a metadata decode.
-  if (!aStatus.mWasMetadataDecode) {
-    if (aTelemetry.mChunkCount) {
-      Telemetry::Accumulate(Telemetry::IMAGE_DECODE_CHUNKS, aTelemetry.mChunkCount);
-    }
-
-    if (aStatus.mFinished) {
-      Telemetry::Accumulate(Telemetry::IMAGE_DECODE_TIME,
-                            int32_t(aTelemetry.mDecodeTime.ToMicroseconds()));
-
-      if (aTelemetry.mSpeedHistogram) {
-        Telemetry::Accumulate(*aTelemetry.mSpeedHistogram, aTelemetry.Speed());
-      }
-    }
   }
 
   // Only act on errors if we have no usable frames from the decoder.

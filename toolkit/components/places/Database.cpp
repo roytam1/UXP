@@ -615,9 +615,6 @@ Database::BackupAndReplaceDatabaseFile(nsCOMPtr<mozIStorageService>& aStorage)
         // Set up a pref to try replacing the database at the next startup.
         Preferences::SetBool(PREF_FORCE_DATABASE_REPLACEMENT, true);
       }
-      // Report the corruption through telemetry.
-      Telemetry::Accumulate(Telemetry::PLACES_DATABASE_CORRUPTION_HANDLING_STAGE,
-                            static_cast<int8_t>(stage));
     });
 
     // Close database connection if open.

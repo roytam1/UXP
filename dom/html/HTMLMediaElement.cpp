@@ -92,7 +92,6 @@
 #include "mozilla/dom/VideoTrackList.h"
 #include "mozilla/dom/TextTrack.h"
 #include "nsIContentPolicy.h"
-#include "mozilla/Telemetry.h"
 #include "DecoderDoctorDiagnostics.h"
 #include "DecoderTraits.h"
 #include "MediaContentType.h"
@@ -1902,7 +1901,6 @@ void
 HTMLMediaElement::FastSeek(double aTime, ErrorResult& aRv)
 {
   LOG(LogLevel::Debug, ("Reporting telemetry VIDEO_FASTSEEK_USED"));
-  Telemetry::Accumulate(Telemetry::VIDEO_FASTSEEK_USED, 1);
   RefPtr<Promise> tobeDropped = Seek(aTime, SeekTarget::PrevSyncPoint, aRv);
 }
 
@@ -3693,7 +3691,6 @@ HTMLMediaElement::ReportEMETelemetry()
   // Report telemetry for EME videos when a page is unloaded.
   NS_ASSERTION(NS_IsMainThread(), "Should be on main thread.");
   if (mIsEncrypted && Preferences::GetBool("media.eme.enabled")) {
-    Telemetry::Accumulate(Telemetry::VIDEO_EME_PLAY_SUCCESS, mLoadedDataFired);
     LOG(LogLevel::Debug, ("%p VIDEO_EME_PLAY_SUCCESS = %s",
                        this, mLoadedDataFired ? "true" : "false"));
   }
@@ -3745,7 +3742,6 @@ HTMLMediaElement::ReportTelemetry()
     }
   }
 
-  Telemetry::Accumulate(Telemetry::VIDEO_UNLOAD_STATE, state);
   LOG(LogLevel::Debug, ("%p VIDEO_UNLOAD_STATE = %d", this, state));
 
   FrameStatisticsData data;
@@ -3761,8 +3757,6 @@ HTMLMediaElement::ReportTelemetry()
         uint32_t percentage = 100 * data.mDroppedFrames / data.mParsedFrames;
         LOG(LogLevel::Debug,
             ("Reporting telemetry DROPPED_FRAMES_IN_VIDEO_PLAYBACK"));
-        Telemetry::Accumulate(Telemetry::VIDEO_DROPPED_FRAMES_PROPORTION,
-                              percentage);
       }
     }
   }
@@ -3774,10 +3768,8 @@ HTMLMediaElement::ReportTelemetry()
     double hiddenPlayTime = mHiddenPlayTime.Total();
     double videoDecodeSuspendTime = mVideoDecodeSuspendTime.Total();
 
-    Telemetry::Accumulate(Telemetry::VIDEO_PLAY_TIME_MS, SECONDS_TO_MS(playTime));
     LOG(LogLevel::Debug, ("%p VIDEO_PLAY_TIME_MS = %f", this, playTime));
 
-    Telemetry::Accumulate(Telemetry::VIDEO_HIDDEN_PLAY_TIME_MS, SECONDS_TO_MS(hiddenPlayTime));
     LOG(LogLevel::Debug, ("%p VIDEO_HIDDEN_PLAY_TIME_MS = %f", this, hiddenPlayTime));
 
     if (playTime > 0.0) {
@@ -3804,24 +3796,11 @@ HTMLMediaElement::ReportTelemetry()
       key.AppendASCII(resolution);
 
       uint32_t hiddenPercentage = uint32_t(hiddenPlayTime / playTime * 100.0 + 0.5);
-      Telemetry::Accumulate(Telemetry::VIDEO_HIDDEN_PLAY_TIME_PERCENTAGE,
-                            key,
-                            hiddenPercentage);
-      // Also accumulate all percentages in an "All" key.
-      Telemetry::Accumulate(Telemetry::VIDEO_HIDDEN_PLAY_TIME_PERCENTAGE,
-                            NS_LITERAL_CSTRING("All"),
-                            hiddenPercentage);
       LOG(LogLevel::Debug, ("%p VIDEO_HIDDEN_PLAY_TIME_PERCENTAGE = %u, keys: '%s' and 'All'",
                             this, hiddenPercentage, key.get()));
 
       uint32_t videoDecodeSuspendPercentage =
         uint32_t(videoDecodeSuspendTime / playTime * 100.0 + 0.5);
-      Telemetry::Accumulate(Telemetry::VIDEO_INFERRED_DECODE_SUSPEND_PERCENTAGE,
-                            key,
-                            videoDecodeSuspendPercentage);
-      Telemetry::Accumulate(Telemetry::VIDEO_INFERRED_DECODE_SUSPEND_PERCENTAGE,
-                            NS_LITERAL_CSTRING("All"),
-                            videoDecodeSuspendPercentage);
       LOG(LogLevel::Debug, ("%p VIDEO_INFERRED_DECODE_SUSPEND_PERCENTAGE = %u, keys: '%s' and 'All'",
                             this, videoDecodeSuspendPercentage, key.get()));
 
@@ -3832,24 +3811,12 @@ HTMLMediaElement::ReportTelemetry()
                                       / 1000.0
                                       + 0.5,
                                       UINT32_MAX));
-        Telemetry::Accumulate(Telemetry::VIDEO_INTER_KEYFRAME_AVERAGE_MS,
-                              key,
-                              average_ms);
-        Telemetry::Accumulate(Telemetry::VIDEO_INTER_KEYFRAME_AVERAGE_MS,
-                              NS_LITERAL_CSTRING("All"),
-                              average_ms);
         LOG(LogLevel::Debug, ("%p VIDEO_INTER_KEYFRAME_AVERAGE_MS = %u, keys: '%s' and 'All'",
                               this, average_ms, key.get()));
 
         uint32_t max_ms =
           uint32_t(std::min<uint64_t>((data.mInterKeyFrameMax_us + 500) / 1000,
                                       UINT32_MAX));
-        Telemetry::Accumulate(Telemetry::VIDEO_INTER_KEYFRAME_MAX_MS,
-                              key,
-                              max_ms);
-        Telemetry::Accumulate(Telemetry::VIDEO_INTER_KEYFRAME_MAX_MS,
-                              NS_LITERAL_CSTRING("All"),
-                              max_ms);
         LOG(LogLevel::Debug, ("%p VIDEO_INTER_KEYFRAME_MAX_MS = %u, keys: '%s' and 'All'",
                               this, max_ms, key.get()));
       } else {
@@ -3858,12 +3825,6 @@ HTMLMediaElement::ReportTelemetry()
         // decode-suspend delay (showing recovery would be difficult).
         uint32_t suspendDelay_ms = MediaPrefs::MDSMSuspendBackgroundVideoDelay();
         if (uint32_t(playTime * 1000.0) > suspendDelay_ms) {
-          Telemetry::Accumulate(Telemetry::VIDEO_INTER_KEYFRAME_MAX_MS,
-                                key,
-                                0);
-          Telemetry::Accumulate(Telemetry::VIDEO_INTER_KEYFRAME_MAX_MS,
-                                NS_LITERAL_CSTRING("All"),
-                                0);
           LOG(LogLevel::Debug, ("%p VIDEO_INTER_KEYFRAME_MAX_MS = 0 (only 1 keyframe), keys: '%s' and 'All'",
                                 this, key.get()));
         }
@@ -6859,97 +6820,6 @@ void
 HTMLMediaElement::MarkAsContentSource(CallerAPI aAPI)
 {
   const bool isVisible = mVisibilityState != Visibility::APPROXIMATELY_NONVISIBLE;
-
-  if (isVisible) {
-    // 0 = ALL_VISIBLE
-    Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 0);
-  } else {
-    // 1 = ALL_INVISIBLE
-    Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 1);
-
-    if (IsInUncomposedDoc()) {
-      // 0 = ALL_IN_TREE
-      Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 0);
-    } else {
-      // 1 = ALL_NOT_IN_TREE
-      Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 1);
-    }
-  }
-
-  switch (aAPI) {
-    case CallerAPI::DRAW_IMAGE: {
-      if (isVisible) {
-        // 2 = drawImage_VISIBLE
-        Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 2);
-      } else {
-        // 3 = drawImage_INVISIBLE
-        Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 3);
-
-        if (IsInUncomposedDoc()) {
-          // 2 = drawImage_IN_TREE
-          Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 2);
-        } else {
-          // 3 = drawImage_NOT_IN_TREE
-          Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 3);
-        }
-      }
-      break;
-    }
-    case CallerAPI::CREATE_PATTERN: {
-      if (isVisible) {
-        // 4 = createPattern_VISIBLE
-        Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 4);
-      } else {
-        // 5 = createPattern_INVISIBLE
-        Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 5);
-
-        if (IsInUncomposedDoc()) {
-          // 4 = createPattern_IN_TREE
-          Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 4);
-        } else {
-          // 5 = createPattern_NOT_IN_TREE
-          Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 5);
-        }
-      }
-      break;
-    }
-    case CallerAPI::CREATE_IMAGEBITMAP: {
-      if (isVisible) {
-        // 6 = createImageBitmap_VISIBLE
-        Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 6);
-      } else {
-        // 7 = createImageBitmap_INVISIBLE
-        Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 7);
-
-        if (IsInUncomposedDoc()) {
-          // 6 = createImageBitmap_IN_TREE
-          Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 6);
-        } else {
-          // 7 = createImageBitmap_NOT_IN_TREE
-          Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 7);
-        }
-      }
-      break;
-    }
-    case CallerAPI::CAPTURE_STREAM: {
-      if (isVisible) {
-        // 8 = captureStream_VISIBLE
-        Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 8);
-      } else {
-        // 9 = captureStream_INVISIBLE
-        Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE, 9);
-
-        if (IsInUncomposedDoc()) {
-          // 8 = captureStream_IN_TREE
-          Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 8);
-        } else {
-          // 9 = captureStream_NOT_IN_TREE
-          Telemetry::Accumulate(Telemetry::VIDEO_AS_CONTENT_SOURCE_IN_TREE_OR_NOT, 9);
-        }
-      }
-      break;
-    }
-  }
 
   LOG(LogLevel::Debug,
       ("%p Log VIDEO_AS_CONTENT_SOURCE: visibility = %u, API: '%d' and 'All'",

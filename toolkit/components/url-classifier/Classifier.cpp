@@ -15,7 +15,6 @@
 #include "nsNetCID.h"
 #include "nsPrintfCString.h"
 #include "nsThreadUtils.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Logging.h"
 #include "mozilla/SyncRunnable.h"
 #include "mozilla/Base64.h"
@@ -498,9 +497,6 @@ Classifier::Check(const nsACString& aSpec,
         matchingStatistics |= PrefixMatch::eMatchV2Prefix;
       }
     }
-
-    Telemetry::Accumulate(Telemetry::URLCLASSIFIER_PREFIX_MATCH,
-                          static_cast<uint8_t>(matchingStatistics));
   }
 
   return NS_OK;

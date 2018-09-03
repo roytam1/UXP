@@ -10,7 +10,6 @@
 #include "gfxPrefs.h"                       // for gfxPrefs
 #include "mozilla/MouseEvents.h"
 #include "mozilla/SizePrintfMacros.h"       // for PRIuSIZE
-#include "mozilla/Telemetry.h"              // for Telemetry
 #include "mozilla/layers/APZCTreeManager.h" // for AllowedTouchBehavior
 #include "OverscrollHandoffState.h"
 #include "QueuedInput.h"
@@ -246,8 +245,6 @@ CancelableBlockState::RecordContentResponseTime()
     // Not done yet, we'll get called again
     return;
   }
-  mozilla::Telemetry::Accumulate(mozilla::Telemetry::CONTENT_RESPONSE_DURATION,
-    (uint32_t)(TimeStamp::Now() - mContentResponseTimer).ToMilliseconds());
   mContentResponseTimer = TimeStamp();
 }
 

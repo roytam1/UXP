@@ -138,7 +138,7 @@ private:
   // 10-%15%, ...
   static const uint32_t kHitRateBuckets = 20;
 
-  // Protects sRecordCnt, sHitStats and Telemetry::Accumulated() calls.
+  // Protects sRecordCnt and sHitStats calls.
   static StaticMutex sLock;
 
   // Counter of samples that is compared against kTotalSamplesReportLimit.

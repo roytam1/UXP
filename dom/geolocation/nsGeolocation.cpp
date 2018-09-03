@@ -382,13 +382,6 @@ nsGeolocationRequest::GetElement(nsIDOMElement * *aRequestingElement)
 NS_IMETHODIMP
 nsGeolocationRequest::Cancel()
 {
-  if (mRequester) {
-    // Record the number of denied requests for regular web content.
-    // This method is only called when the user explicitly denies the request,
-    // and is not called when the page is simply unloaded, or similar.
-    Telemetry::Accumulate(Telemetry::GEOLOCATION_REQUEST_GRANTED, mProtocolType);
-  }
-
   if (mLocator->ClearPendingRequest(this)) {
     return NS_OK;
   }
@@ -403,9 +396,6 @@ nsGeolocationRequest::Allow(JS::HandleValue aChoices)
   MOZ_ASSERT(aChoices.isUndefined());
 
   if (mRequester) {
-    // Record the number of granted requests for regular web content.
-    Telemetry::Accumulate(Telemetry::GEOLOCATION_REQUEST_GRANTED, mProtocolType + 10);
-
     // Record whether a location callback is fulfilled while the owner window
     // is not visible.
     bool isVisible = false;
@@ -414,12 +404,6 @@ nsGeolocationRequest::Allow(JS::HandleValue aChoices)
     if (window) {
       nsCOMPtr<nsIDocument> doc = window->GetDoc();
       isVisible = doc && !doc->Hidden();
-    }
-
-    if (IsWatch()) {
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::GEOLOCATION_WATCHPOSITION_VISIBLE, isVisible);
-    } else {
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::GEOLOCATION_GETCURRENTPOSITION_VISIBLE, isVisible);
     }
   }
 
@@ -1110,7 +1094,6 @@ Geolocation::Update(nsIDOMGeoPosition *aSomewhere)
     if (coords) {
       double accuracy = -1;
       coords->GetAccuracy(&accuracy);
-      mozilla::Telemetry::Accumulate(mozilla::Telemetry::GEOLOCATION_ACCURACY_EXPONENTIAL, accuracy);
     }
   }
 
@@ -1134,8 +1117,6 @@ Geolocation::NotifyError(uint16_t aErrorCode)
     Shutdown();
     return NS_OK;
   }
-
-  mozilla::Telemetry::Accumulate(mozilla::Telemetry::GEOLOCATION_ERROR, true);
 
   for (uint32_t i = mPendingCallbacks.Length(); i > 0; i--) {
     mPendingCallbacks[i-1]->NotifyErrorAndShutdown(aErrorCode);
@@ -1214,10 +1195,6 @@ Geolocation::GetCurrentPosition(GeoPositionCallback callback,
 
   // After this we hand over ownership of options to our nsGeolocationRequest.
 
-  // Count the number of requests per protocol/scheme.
-  Telemetry::Accumulate(Telemetry::GEOLOCATION_GETCURRENTPOSITION_SECURE_ORIGIN,
-                        static_cast<uint8_t>(mProtocolType));
-
   RefPtr<nsGeolocationRequest> request =
     new nsGeolocationRequest(this, Move(callback), Move(errorCallback),
                              Move(options), static_cast<uint8_t>(mProtocolType),
@@ -1291,10 +1268,6 @@ Geolocation::WatchPosition(GeoPositionCallback aCallback,
   if (mWatchingCallbacks.Length() > MAX_GEO_REQUESTS_PER_WINDOW) {
     return NS_ERROR_NOT_AVAILABLE;
   }
-
-  // Count the number of requests per protocol/scheme.
-  Telemetry::Accumulate(Telemetry::GEOLOCATION_WATCHPOSITION_SECURE_ORIGIN,
-                        static_cast<uint8_t>(mProtocolType));
 
   // The watch ID:
   *aRv = mLastWatchId++;

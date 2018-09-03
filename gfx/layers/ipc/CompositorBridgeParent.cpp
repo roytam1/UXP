@@ -484,8 +484,6 @@ CompositorVsyncScheduler::Composite(TimeStamp aVsyncTimestamp)
     mVsyncNotificationsSkipped = 0;
 
     TimeDuration compositeFrameTotal = TimeStamp::Now() - aVsyncTimestamp;
-    mozilla::Telemetry::Accumulate(mozilla::Telemetry::COMPOSITE_FRAME_ROUNDTRIP_TIME,
-                                   compositeFrameTotal.ToMilliseconds());
   } else if (mVsyncNotificationsSkipped++ > gfxPrefs::CompositorUnobserveCount()) {
     UnobserveVsync();
   }
@@ -1305,7 +1303,6 @@ CompositorBridgeParent::CompositeToTarget(DrawTarget* aTarget, const gfx::IntRec
   }
   mCompositor->SetCompositionTime(TimeStamp());
 
-  mozilla::Telemetry::AccumulateTimeDelta(mozilla::Telemetry::COMPOSITE_TIME, start);
   profiler_tracing("Paint", "Composite", TRACING_INTERVAL_END);
 }
 
@@ -1660,19 +1657,6 @@ CompositorBridgeParent::NewCompositor(const nsTArray<LayersBackend>& aBackendHin
         failureReason = "SUCCESS";
       }
 
-      // should only report success here
-      if (aBackendHints[i] == LayersBackend::LAYERS_OPENGL){
-        Telemetry::Accumulate(Telemetry::OPENGL_COMPOSITING_FAILURE_ID, failureReason);
-      }
-#ifdef XP_WIN
-      else if (aBackendHints[i] == LayersBackend::LAYERS_D3D9){
-        Telemetry::Accumulate(Telemetry::D3D9_COMPOSITING_FAILURE_ID, failureReason);
-      }
-      else if (aBackendHints[i] == LayersBackend::LAYERS_D3D11){
-        Telemetry::Accumulate(Telemetry::D3D11_COMPOSITING_FAILURE_ID, failureReason);
-      }
-#endif
-
       compositor->SetCompositorID(mCompositorID);
       return compositor;
     }
@@ -1681,18 +1665,15 @@ CompositorBridgeParent::NewCompositor(const nsTArray<LayersBackend>& aBackendHin
     if (aBackendHints[i] == LayersBackend::LAYERS_OPENGL){
       gfxCriticalNote << "[OPENGL] Failed to init compositor with reason: "
                       << failureReason.get();
-      Telemetry::Accumulate(Telemetry::OPENGL_COMPOSITING_FAILURE_ID, failureReason);
     }
 #ifdef XP_WIN
     else if (aBackendHints[i] == LayersBackend::LAYERS_D3D9){
       gfxCriticalNote << "[D3D9] Failed to init compositor with reason: "
                       << failureReason.get();
-      Telemetry::Accumulate(Telemetry::D3D9_COMPOSITING_FAILURE_ID, failureReason);
     }
     else if (aBackendHints[i] == LayersBackend::LAYERS_D3D11){
       gfxCriticalNote << "[D3D11] Failed to init compositor with reason: "
                       << failureReason.get();
-      Telemetry::Accumulate(Telemetry::D3D11_COMPOSITING_FAILURE_ID, failureReason);
     }
 #endif
   }

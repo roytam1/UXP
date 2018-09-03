@@ -20,7 +20,6 @@ nsCP866ToUnicodeConstructor(nsISupports *aOuter, REFNSIID aIID,
 #include "cp866.ut"
   };
 
-  Telemetry::Accumulate(Telemetry::DECODER_INSTANTIATED_IBM866, true);
   return CreateOneByteDecoder((uMappingTable*) &g_utMappingTable,
                               aOuter, aIID, aResult);
 }

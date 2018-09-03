@@ -392,9 +392,6 @@ nsNodeInfoManager::SetDocumentPrincipal(nsIPrincipal *aPrincipal)
   NS_ASSERTION(aPrincipal, "Must have principal by this point!");
   MOZ_DIAGNOSTIC_ASSERT(!nsContentUtils::IsExpandedPrincipal(aPrincipal),
                         "Documents shouldn't have an expanded principal");
-  if (nsContentUtils::IsExpandedPrincipal(aPrincipal)) {
-    Telemetry::Accumulate(Telemetry::DOCUMENT_WITH_EXPANDED_PRINCIPAL, 1);
-  }
 
   mPrincipal = aPrincipal;
 }

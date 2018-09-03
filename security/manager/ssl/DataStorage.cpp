@@ -276,9 +276,6 @@ DataStorage::Reader::Run()
         }
       }
     } while (true);
-
-    Telemetry::Accumulate(Telemetry::DATA_STORAGE_ENTRIES,
-                          mDataStorage->mPersistentDataTable.Count());
   }
 
   return NS_OK;

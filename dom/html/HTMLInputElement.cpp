@@ -24,7 +24,6 @@
 #include "nsIPhonetic.h"
 
 #include "HTMLFormSubmissionConstants.h"
-#include "mozilla/Telemetry.h"
 #include "nsIControllers.h"
 #include "nsIStringBundle.h"
 #include "nsFocusManager.h"
@@ -1274,10 +1273,6 @@ HTMLInputElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
         GetAttr(kNameSpaceID_None, nsGkAtoms::name, name);
         container->RadioRequiredWillChange(name, !!aValue);
       }
-    }
-
-    if (aName == nsGkAtoms::webkitdirectory) {
-      Telemetry::Accumulate(Telemetry::WEBKIT_DIRECTORY_USED, true);
     }
   }
 
@@ -4989,10 +4984,6 @@ HTMLInputElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                                  true);
       dispatcher->PostDOMEvent();
     }
-
-#ifdef EARLY_BETA_OR_EARLIER
-    Telemetry::Accumulate(Telemetry::PWMGR_PASSWORD_INPUT_IN_FORM, !!mForm);
-#endif
   }
 
   return rv;
@@ -8863,7 +8854,6 @@ HTMLInputElement::UpdateEntries(const nsTArray<OwningFileOrDirectory>& aFilesOrD
 void
 HTMLInputElement::GetWebkitEntries(nsTArray<RefPtr<FileSystemEntry>>& aSequence)
 {
-  Telemetry::Accumulate(Telemetry::BLINK_FILESYSTEM_USED, true);
   aSequence.AppendElements(mEntries);
 }
 
