@@ -85,11 +85,14 @@ var gTabsPane = {
     let newtabUrlPref = document.getElementById("browser.newtab.url");
     let newtabUrlSanitizedPref = document.getElementById("browser.newtab.myhome");
     let newtabUrlChoice = document.getElementById("browser.newtab.choice");
+    let defaultStartupHomepage = Services.prefs.getDefaultBranch("browser.")
+                                  .getComplexValue("startup.homepage",
+                                    Components.interfaces.nsIPrefLocalizedString).data;
     switch (newtabUrlPref.value) {
       case "about:logopage": 
         newtabUrlChoice.value = 1;
         break;
-      case "http://start.palemoon.org/":
+      case defaultStartupHomepage:
         newtabUrlChoice.value = 2;
         break;
       case newtabUrlSanitizedPref.value:

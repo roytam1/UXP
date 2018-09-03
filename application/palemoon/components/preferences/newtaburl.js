@@ -42,7 +42,9 @@ var gNewtabUrl = {
           newtabUrlPref = "about:logopage";
           break;
         case 2:
-          newtabUrlPref = "http://start.palemoon.org/";
+          newtabUrlPref = Services.prefs.getDefaultBranch("browser.")
+                            .getComplexValue("startup.homepage",
+                              Components.interfaces.nsIPrefLocalizedString).data;
           break;
         case 3:
           // If url is a pipe-delimited set of pages, just take the first one.
