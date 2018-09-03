@@ -56,10 +56,10 @@
 #endif
 #endif
             onunload="if (typeof gSecurityPane != 'undefined') gSecurityPane.syncAddonSecurityLevel();"
-            ondialogaccept="if (typeof gTabsPane != 'undefined') gTabsPane.writeNewtabUrl();
-                            return true;">
+            ondialogaccept="gNewtabUrl.writeNewtabUrl();">
 
     <script type="application/javascript" src="chrome://browser/content/utilityOverlay.js"/>
+    <script type="application/javascript" src="chrome://browser/content/preferences/newtaburl.js"/>
 
     <stringbundle id="bundleBrand" src="chrome://branding/locale/brand.properties"/>
     <stringbundle id="bundlePreferences"
