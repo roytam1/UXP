@@ -1315,7 +1315,7 @@ BindingIter::init(GlobalScope::Data& data)
     init(0, 0, 0, data.varStart, data.letStart, data.constStart,
          CannotHaveSlots,
          UINT32_MAX, UINT32_MAX,
-         data.names, data.length);
+         data.trailingNames.start(), data.length);
 }
 
 void
