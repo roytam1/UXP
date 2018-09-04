@@ -716,9 +716,6 @@ nsIdleService::IdleTimerCallback(void)
     return;
   }
 
-  // Tell expired listeners they are expired,and find the next timeout
-  Telemetry::AutoTimer<Telemetry::IDLE_NOTIFY_IDLE_MS> timer;
-
   // We need to initialise the time to the next idle switch.
   mDeltaToNextIdleSwitchInS = UINT32_MAX;
 

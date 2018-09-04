@@ -163,8 +163,6 @@ DOMStorageDBThread::Shutdown()
     return NS_ERROR_NOT_INITIALIZED;
   }
 
-  Telemetry::AutoTimer<Telemetry::LOCALDOMSTORAGE_SHUTDOWN_DATABASE_MS> timer;
-
   {
     MonitorAutoLock monitor(mThreadObserver->GetMonitor());
 

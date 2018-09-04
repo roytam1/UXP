@@ -226,7 +226,6 @@ bool
 AsyncExecuteStatements::executeStatement(sqlite3_stmt *aStatement)
 {
   mMutex.AssertNotCurrentThreadOwns();
-  Telemetry::AutoTimer<Telemetry::MOZ_STORAGE_ASYNC_REQUESTS_MS> finallySendExecutionDuration(mRequestStartDate);
   while (true) {
     // lock the sqlite mutex so sqlite3_errmsg cannot change
     SQLiteMutexAutoLock lockedScope(mDBMutex);

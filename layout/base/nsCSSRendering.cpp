@@ -2516,7 +2516,6 @@ nsCSSRendering::PaintGradient(nsPresContext* aPresContext,
   PROFILER_LABEL("nsCSSRendering", "PaintGradient",
     js::ProfileEntry::Category::GRAPHICS);
 
-  Telemetry::AutoTimer<Telemetry::GRADIENT_DURATION, Telemetry::Microsecond> gradientTimer;
   if (aDest.IsEmpty() || aFillArea.IsEmpty()) {
     return;
   }

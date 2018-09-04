@@ -1523,7 +1523,6 @@ nsOfflineCacheDevice::FindEntry(nsCString *fullKey, bool *collision)
 {
   NS_ENSURE_TRUE(Initialized(), nullptr);
 
-  mozilla::Telemetry::AutoTimer<mozilla::Telemetry::CACHE_OFFLINE_SEARCH_2> timer;
   LOG(("nsOfflineCacheDevice::FindEntry [key=%s]\n", fullKey->get()));
 
   // SELECT * FROM moz_cache WHERE key = ?

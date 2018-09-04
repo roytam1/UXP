@@ -407,7 +407,6 @@ xTruncate(sqlite3_file *pFile, sqlite_int64 size)
   IOThreadAutoTimer ioTimer(Telemetry::MOZ_SQLITE_TRUNCATE_MS);
   telemetry_file *p = (telemetry_file *)pFile;
   int rc;
-  Telemetry::AutoTimer<Telemetry::MOZ_SQLITE_TRUNCATE_MS> timer;
   if (p->quotaObject) {
     if (p->fileChunkSize > 0) {
       // Round up to the smallest multiple of the chunk size that will hold all
@@ -609,7 +608,6 @@ xOpen(sqlite3_vfs* vfs, const char *zName, sqlite3_file* pFile,
 {
   IOThreadAutoTimer ioTimer(Telemetry::MOZ_SQLITE_OPEN_MS,
                             IOInterposeObserver::OpCreateOrOpen);
-  Telemetry::AutoTimer<Telemetry::MOZ_SQLITE_OPEN_MS> timer;
   sqlite3_vfs *orig_vfs = static_cast<sqlite3_vfs*>(vfs->pAppData);
   int rc;
   telemetry_file *p = (telemetry_file *)pFile;

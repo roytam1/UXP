@@ -541,8 +541,6 @@ static void EnsureSorted(T* aArray)
 nsresult
 LookupCacheV2::ConstructPrefixSet(AddPrefixArray& aAddPrefixes)
 {
-  Telemetry::AutoTimer<Telemetry::URLCLASSIFIER_PS_CONSTRUCT_TIME> timer;
-
   nsTArray<uint32_t> array;
   if (!array.SetCapacity(aAddPrefixes.Length(), fallible)) {
     return NS_ERROR_OUT_OF_MEMORY;

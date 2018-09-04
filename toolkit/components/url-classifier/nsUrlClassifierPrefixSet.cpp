@@ -315,8 +315,6 @@ nsUrlClassifierPrefixSet::LoadFromFile(nsIFile* aFile)
 {
   MutexAutoLock lock(mLock);
 
-  Telemetry::AutoTimer<Telemetry::URLCLASSIFIER_PS_FILELOAD_TIME> timer;
-
   nsCOMPtr<nsIInputStream> localInFile;
   nsresult rv = NS_NewLocalFileInputStream(getter_AddRefs(localInFile), aFile,
                                            PR_RDONLY | nsIFile::OS_READAHEAD);
@@ -356,17 +354,13 @@ nsUrlClassifierPrefixSet::StoreToFile(nsIFile* aFile)
 
   uint32_t fileSize;
 
-  // Preallocate the file storage
-  {
-    nsCOMPtr<nsIFileOutputStream> fos(do_QueryInterface(localOutFile));
-    Telemetry::AutoTimer<Telemetry::URLCLASSIFIER_PS_FALLOCATE_TIME> timer;
+  nsCOMPtr<nsIFileOutputStream> fos(do_QueryInterface(localOutFile));
 
-    fileSize = CalculatePreallocateSize();
+  fileSize = CalculatePreallocateSize();
 
-    // Ignore failure, the preallocation is a hint and we write out the entire
-    // file later on
-    Unused << fos->Preallocate(fileSize);
-  }
+  // Ignore failure, the preallocation is a hint and we write out the entire
+  // file later on
+  Unused << fos->Preallocate(fileSize);
 
   // Convert to buffered stream
   nsCOMPtr<nsIOutputStream> out =

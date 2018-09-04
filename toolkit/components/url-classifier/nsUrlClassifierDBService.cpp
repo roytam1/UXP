@@ -1814,8 +1814,6 @@ nsUrlClassifierDBService::Shutdown()
 
   gShuttingDownThread = true;
 
-  Telemetry::AutoTimer<Telemetry::URLCLASSIFIER_SHUTDOWN_TIME> timer;
-
   mCompleters.Clear();
 
   nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);

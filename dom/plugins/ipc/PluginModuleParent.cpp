@@ -2284,27 +2284,23 @@ PluginModuleParent::NPP_NewInternal(NPMIMEType pluginType, NPP instance,
         return NS_ERROR_FAILURE;
     }
 
-    {   // Scope for timer
-        Telemetry::AutoTimer<Telemetry::BLOCKED_ON_PLUGIN_INSTANCE_INIT_MS>
-            timer(GetHistogramKey());
-        if (mIsStartingAsync) {
-            MOZ_ASSERT(surrogate);
-            surrogate->AsyncCallDeparting();
-            if (!SendAsyncNPP_New(parentInstance)) {
+    if (mIsStartingAsync) {
+        MOZ_ASSERT(surrogate);
+        surrogate->AsyncCallDeparting();
+        if (!SendAsyncNPP_New(parentInstance)) {
+            *error = NPERR_GENERIC_ERROR;
+            return NS_ERROR_FAILURE;
+        }
+        *error = NPERR_NO_ERROR;
+    } else {
+        if (!CallSyncNPP_New(parentInstance, error)) {
+            // if IPC is down, we'll get an immediate "failed" return, but
+            // without *error being set.  So make sure that the error
+            // condition is signaled to nsNPAPIPluginInstance
+            if (NPERR_NO_ERROR == *error) {
                 *error = NPERR_GENERIC_ERROR;
-                return NS_ERROR_FAILURE;
             }
-            *error = NPERR_NO_ERROR;
-        } else {
-            if (!CallSyncNPP_New(parentInstance, error)) {
-                // if IPC is down, we'll get an immediate "failed" return, but
-                // without *error being set.  So make sure that the error
-                // condition is signaled to nsNPAPIPluginInstance
-                if (NPERR_NO_ERROR == *error) {
-                    *error = NPERR_GENERIC_ERROR;
-                }
-                return NS_ERROR_FAILURE;
-            }
+            return NS_ERROR_FAILURE;
         }
     }
 

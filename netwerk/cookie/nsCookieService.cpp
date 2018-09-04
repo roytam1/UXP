@@ -954,19 +954,14 @@ nsCookieService::TryInitDB(bool aRecreateDB)
     NS_ENSURE_SUCCESS(rv, RESULT_FAILURE);
   }
 
-  // This block provides scope for the Telemetry AutoTimer
-  {
-    Telemetry::AutoTimer<Telemetry::MOZ_SQLITE_COOKIES_OPEN_READAHEAD_MS>
-      telemetry;
-    ReadAheadFile(mDefaultDBState->cookieFile);
+  ReadAheadFile(mDefaultDBState->cookieFile);
 
-    // open a connection to the cookie database, and only cache our connection
-    // and statements upon success. The connection is opened unshared to eliminate
-    // cache contention between the main and background threads.
-    rv = mStorageService->OpenUnsharedDatabase(mDefaultDBState->cookieFile,
-      getter_AddRefs(mDefaultDBState->dbConn));
-    NS_ENSURE_SUCCESS(rv, RESULT_RETRY);
-  }
+  // open a connection to the cookie database, and only cache our connection
+  // and statements upon success. The connection is opened unshared to eliminate
+  // cache contention between the main and background threads.
+  rv = mStorageService->OpenUnsharedDatabase(mDefaultDBState->cookieFile,
+    getter_AddRefs(mDefaultDBState->dbConn));
+  NS_ENSURE_SUCCESS(rv, RESULT_RETRY);
 
   // Set up our listeners.
   mDefaultDBState->insertListener = new InsertCookieDBListener(mDefaultDBState);

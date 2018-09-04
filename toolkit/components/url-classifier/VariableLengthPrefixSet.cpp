@@ -209,8 +209,6 @@ VariableLengthPrefixSet::LoadFromFile(nsIFile* aFile)
 
   NS_ENSURE_ARG_POINTER(aFile);
 
-  Telemetry::AutoTimer<Telemetry::URLCLASSIFIER_VLPS_FILELOAD_TIME> timer;
-
   nsCOMPtr<nsIInputStream> localInFile;
   nsresult rv = NS_NewLocalFileInputStream(getter_AddRefs(localInFile), aFile,
                                            PR_RDONLY | nsIFile::OS_READAHEAD);
@@ -255,15 +253,12 @@ VariableLengthPrefixSet::StoreToFile(nsIFile* aFile)
 
   uint32_t fileSize = 0;
   // Preallocate the file storage
-  {
-    nsCOMPtr<nsIFileOutputStream> fos(do_QueryInterface(localOutFile));
-    Telemetry::AutoTimer<Telemetry::URLCLASSIFIER_VLPS_FALLOCATE_TIME> timer;
+  nsCOMPtr<nsIFileOutputStream> fos(do_QueryInterface(localOutFile));
 
-    fileSize += mFixedPrefixSet->CalculatePreallocateSize();
-    fileSize += CalculatePreallocateSize();
+  fileSize += mFixedPrefixSet->CalculatePreallocateSize();
+  fileSize += CalculatePreallocateSize();
 
-    Unused << fos->Preallocate(fileSize);
-  }
+  Unused << fos->Preallocate(fileSize);
 
   // Convert to buffered stream
   nsCOMPtr<nsIOutputStream> out =

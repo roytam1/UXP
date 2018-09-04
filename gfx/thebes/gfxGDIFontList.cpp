@@ -654,8 +654,6 @@ gfxGDIFontList::GetFontSubstitutes()
 nsresult
 gfxGDIFontList::InitFontListForPlatform()
 {
-    Telemetry::AutoTimer<Telemetry::GDI_INITFONTLIST_TOTAL> timer;
-
     mFontSubstitutes.Clear();
     mNonExistingFonts.Clear();
 

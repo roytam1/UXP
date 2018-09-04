@@ -737,8 +737,6 @@ gfxMacPlatformFontList::InitFontListForPlatform()
 {
     nsAutoreleasePool localPool;
 
-    Telemetry::AutoTimer<Telemetry::MAC_INITFONTLIST_TOTAL> timer;
-
     // reset system font list
     mSystemFontFamilies.Clear();
     

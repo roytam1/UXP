@@ -504,8 +504,6 @@ PluginAsyncSurrogate::WaitForInit()
   if (mAcceptCalls) {
     return true;
   }
-  Telemetry::AutoTimer<Telemetry::BLOCKED_ON_PLUGINASYNCSURROGATE_WAITFORINIT_MS>
-    timer(mParent->GetHistogramKey());
   bool result = false;
   MOZ_ASSERT(mParent);
   if (mParent->IsChrome()) {
