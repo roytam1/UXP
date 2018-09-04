@@ -9787,19 +9787,3 @@ nsContentUtils::AttemptLargeAllocationLoad(nsIHttpChannel* aChannel)
 
   return reloadSucceeded;
 }
-
-/* static */ bool
-nsContentUtils::IsLocalRefURL(const nsString& aString)
-{
-  // Find the first non-"C0 controls + space" character.
-  const char16_t* current = aString.get();
-  for (; *current != '\0'; current++) {
-    if (*current > 0x20) {
-      // if the first non-"C0 controls + space" character is '#', this is a
-      // local-ref URL.
-      return *current == '#';
-    }
-  }
-
-  return false;
-}

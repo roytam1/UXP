@@ -2730,13 +2730,6 @@ public:
 
   static bool AttemptLargeAllocationLoad(nsIHttpChannel* aChannel);
 
-  /**
-   * Detect whether a string is a (CSS) local-url.
-   * https://drafts.csswg.org/css-values/#local-urls
-   */
-  static bool
-  IsLocalRefURL(const nsString& aString);
-
 private:
   static bool InitializeEventTable();
 

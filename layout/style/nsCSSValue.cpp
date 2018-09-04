@@ -29,6 +29,22 @@
 
 using namespace mozilla;
 
+static bool
+IsLocalRefURL(nsStringBuffer* aString)
+{
+  // Find the first non-"C0 controls + space" character.
+  char16_t* current = static_cast<char16_t*>(aString->Data());
+  for (; *current != '\0'; current++) {
+    if (*current > 0x20) {
+      // if the first non-"C0 controls + space" character is '#', this is a
+      // local-ref URL.
+      return *current == '#';
+    }
+  }
+
+  return false;
+}
+
 nsCSSValue::nsCSSValue(int32_t aValue, nsCSSUnit aUnit)
   : mUnit(aUnit)
 {
@@ -2707,7 +2723,7 @@ css::URLValueData::URLValueData(already_AddRefed<PtrHolder<nsIURI>> aURI,
   , mReferrer(Move(aReferrer))
   , mOriginPrincipal(Move(aOriginPrincipal))
   , mURIResolved(true)
-  , mIsLocalRef(nsContentUtils::IsLocalRefURL(aString))
+  , mIsLocalRef(IsLocalRefURL(aString))
 {
   MOZ_ASSERT(mString);
   MOZ_ASSERT(mBaseURI);
@@ -2724,7 +2740,7 @@ css::URLValueData::URLValueData(nsStringBuffer* aString,
   , mReferrer(Move(aReferrer))
   , mOriginPrincipal(Move(aOriginPrincipal))
   , mURIResolved(false)
-  , mIsLocalRef(nsContentUtils::IsLocalRefURL(aString))
+  , mIsLocalRef(IsLocalRefURL(aString))
 {
   MOZ_ASSERT(aString);
   MOZ_ASSERT(mBaseURI);
