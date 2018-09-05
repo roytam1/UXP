@@ -396,6 +396,7 @@ fuzzy-if(skiaContent,1,300) == tspan-xy-05.svg tspan-xy-ref.svg # bug 773482
 fuzzy-if(skiaContent,1,300) == tspan-xy-06.svg tspan-xy-ref.svg # bug 773482
 fuzzy-if(skiaContent,1,100) == tspan-xy-anchor-middle-01.svg tspan-xy-anchor-middle-ref.svg # bug 773482
 fuzzy-if(skiaContent,1,100) == tspan-xy-anchor-end-01.svg tspan-xy-anchor-end-ref.svg # bug 773482
+== use-localRef-link.html pass.svg
 == userSpaceOnUse-and-pattern-01.svg userSpaceOnUse-and-pattern-01-ref.svg
 == viewBox-and-pattern-01.svg pass.svg
 == viewBox-and-pattern-02.svg pass.svg
