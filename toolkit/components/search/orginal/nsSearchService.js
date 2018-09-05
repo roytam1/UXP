@@ -2237,12 +2237,26 @@ Engine.prototype = {
   get lazySerializeTask() {
     if (!this._lazySerializeTask) {
       let task = function taskCallback() {
-        this._serializeToFile();
+        // This check should be done by caller, but it is better to be safe than sorry.
+        if (!this._readOnly && this._file) {
+          this._serializeToFile();
+        }
       }.bind(this);
       this._lazySerializeTask = new DeferredTask(task, LAZY_SERIALIZE_DELAY);
     }
 
     return this._lazySerializeTask;
+  },
+
+  // This API is required by some search engine management extensions, so let's restore it.
+  // Old API was using a timer to do its work, but this can lead us too far. If extension is
+  // rely on such subtle internal details, that extension should be fixed, not browser.
+  _lazySerializeToFile: function SRCH_ENG_lazySerializeToFile() {
+    // This check should be done by caller, but it is better to be safe than sorry.
+    // Besides, we don't have to create a task for r/o or non-file engines.
+    if (!this._readOnly && this._file) {
+      this.lazySerializeTask.arm();
+    }
   },
 
   /**
@@ -3059,10 +3073,9 @@ SearchService.prototype = {
       }
 
       // Write out serialized search engine files when rebuilding cache.
-      if (!engine._readOnly && engine._file) {
-        engine._serializeToFile();
-      }
-      
+      // Do it lazily, to: 1) reuse existing API; 2) make browser interface more responsive
+      engine._lazySerializeToFile();
+
       let cacheKey = parent.path;
       if (!cache.directories[cacheKey]) {
         let cacheEntry = {};
