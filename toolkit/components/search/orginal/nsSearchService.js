@@ -3058,6 +3058,11 @@ SearchService.prototype = {
         continue;
       }
 
+      // Write out serialized search engine files when rebuilding cache.
+      if (!engine._readOnly && engine._file) {
+        engine._serializeToFile();
+      }
+      
       let cacheKey = parent.path;
       if (!cache.directories[cacheKey]) {
         let cacheEntry = {};
