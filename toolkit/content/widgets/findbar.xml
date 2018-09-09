@@ -282,6 +282,7 @@
           return this._browser;
         ]]></getter>
         <setter><![CDATA[
+          let prefsvc = this._prefsvc;
           if (this._browser) {
             if (this._browser.messageManager) {
               this._browser.messageManager.removeMessageListener("Findbar:Keypress", this);
@@ -300,7 +301,9 @@
             this._browser.messageManager.addMessageListener("Findbar:Mouseup", this);
             this._browser.finder.addResultListener(this);
 
-            this._findField.value = this._browser._lastSearchString;
+            if (prefsvc.getBoolPref("findbar.termPerTab") == true) {
+              this._findField.value = this._browser._lastSearchString;
+            }
           }
           return val;
         ]]></setter>
