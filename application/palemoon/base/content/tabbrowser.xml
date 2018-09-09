@@ -1041,6 +1041,11 @@
             // Bug 666809 - SecurityUI support for e10s
             var webProgress = this.mCurrentBrowser.webProgress;
             var securityUI = this.mCurrentBrowser.securityUI;
+            
+            // Update global findbar with new content browser
+            if (gFindBarInitialized) {
+              gFindBar.browser = newBrowser;
+            }
 
             this._callProgressListeners(null, "onLocationChange",
                                         [webProgress, null, loc, 0], true,
