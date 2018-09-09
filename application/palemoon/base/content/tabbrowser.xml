@@ -2303,17 +2303,6 @@
               this._swapBrowserDocShells(aOurTab, otherBrowser);
             }
 
-            // Handle findbar data (if any)
-            let otherFindBar = aOtherTab._findBar;
-            if (otherFindBar &&
-                otherFindBar.findMode == otherFindBar.FIND_NORMAL) {
-              let ourFindBar = this.getFindBar(aOurTab);
-              ourFindBar._findField.value = otherFindBar._findField.value;
-              if (!otherFindBar.hidden) {
-                ourFindBar.onFindCommand();
-              }
-            }
-
             // Finish tearing down the tab that's going away.
             remoteBrowser._endRemoveTab(aOtherTab);
 
