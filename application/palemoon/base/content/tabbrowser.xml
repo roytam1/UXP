@@ -128,10 +128,6 @@
         false
       </field>
 
-      <field name="_lastFindValue">
-        ""
-      </field>
-
       <property name="_numPinnedTabs" readonly="true">
         <getter><![CDATA[
           for (var i = 0; i < this.tabs.length; i++) {
@@ -157,43 +153,6 @@
         return this.mCurrentTab._popupAnchor = popupAnchor;
         ]]></getter>
       </property>
-
-      <method name="isFindBarInitialized">
-        <parameter name="aTab"/>
-        <body><![CDATA[
-          return (aTab || this.selectedTab)._findBar != undefined;
-        ]]></body>
-      </method>
-
-      <method name="getFindBar">
-        <parameter name="aTab"/>
-        <body><![CDATA[
-          if (!aTab)
-            aTab = this.selectedTab;
-
-          if (aTab._findBar)
-            return aTab._findBar;
-
-          let findBar = document.createElementNS(this.namespaceURI, "findbar");
-          let browser = this.getBrowserForTab(aTab);
-          let browserContainer = this.getBrowserContainer(browser);
-          browserContainer.appendChild(findBar);
-
-          // Force a style flush to ensure that our binding is attached.
-          findBar.clientTop;
-
-          findBar.browser = browser;
-          findBar._findField.value = this._lastFindValue;
-
-          aTab._findBar = findBar;
-
-          let event = document.createEvent("Events");
-          event.initEvent("TabFindInitialized", true, false);
-          aTab.dispatchEvent(event);
-
-          return findBar;
-        ]]></body>
-      </method>
 
       <method name="updateWindowResizers">
         <body><![CDATA[
