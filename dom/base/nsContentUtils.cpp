@@ -7990,6 +7990,8 @@ GetSurfaceDataImpl(mozilla::gfx::DataSourceSurface* aSurface,
                                                             &maxBufLen,
                                                             &bufLen);
   if (NS_FAILED(rv)) {
+    // Release mapped memory
+    aSurface->Unmap();
     return GetSurfaceDataContext::NullValue();
   }
 
