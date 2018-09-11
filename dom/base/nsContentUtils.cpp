@@ -7609,7 +7609,8 @@ nsContentUtils::CalculateBufferSizeForImage(const uint32_t& aStride,
     return NS_ERROR_FAILURE;
   }
   *aMaxBufferSize = requiredBytes.value();
-  *aUsedBufferSize = *aMaxBufferSize - aStride + (aImageSize.width * BytesPerPixel(aFormat));
+  *aUsedBufferSize = *aMaxBufferSize - aStride + 
+                     (aImageSize.width * BytesPerPixel(aFormat));
   return NS_OK;
 }
 
@@ -7633,7 +7634,8 @@ nsContentUtils::DataTransferItemToImage(const IPCDataTransferItem& aItem,
   size_t maxBufLen = 0;
   nsresult rv = CalculateBufferSizeForImage(imageDetails.stride(),
                                             size,
-                                            imageDetails.format(),
+                                            static_cast<SurfaceFormat>(
+                                              imageDetails.format()),
                                             &maxBufLen,
                                             &imageBufLen);
   if (NS_FAILED(rv)) {
