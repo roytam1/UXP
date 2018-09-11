@@ -608,6 +608,8 @@ def apply_patches():
     os.system("patch -p3 < input_frame_validation.patch")
     # Bug 1315288 - Check input frame resolution for vp9
     os.system("patch -p3 < input_frame_validation_vp9.patch")
+    # Cherrypick fix from upstream
+    os.system("patch -p3 < bug1480092.patch")
 
 def update_readme(commit):
     with open('README_MOZILLA') as f:

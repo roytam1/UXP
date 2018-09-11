@@ -1,0 +1,36 @@
+From f00fe25d7eb13ceafbea6a6987d45fdef64cffb3 Mon Sep 17 00:00:00 2001
+From: Pale Moon <git-repo@palemoon.org>
+Date: Tue, 11 Sep 2018 08:58:16 +0200
+Subject: [PATCH] Cherry-pick libvpx upstream
+ 52add5896661d186dec284ed646a4b33b607d2c7.
+
+---
+ media/libvpx/vp8/common/postproc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/media/libvpx/vp8/common/postproc.c b/media/libvpx/vp8/common/postproc.c
+index a4e6ae170..3b05bc63e 100644
+--- a/media/libvpx/vp8/common/postproc.c
++++ b/media/libvpx/vp8/common/postproc.c
+@@ -325,17 +325,17 @@ void vp8_deblock(VP8_COMMON                 *cm,
+                  YV12_BUFFER_CONFIG         *post,
+                  int                         q,
+                  int                         low_var_thresh,
+                  int                         flag)
+ {
+     double level = 6.0e-05 * q * q * q - .0067 * q * q + .306 * q + .0065;
+     int ppl = (int)(level + .5);
+ 
+-    const MODE_INFO *mode_info_context = cm->show_frame_mi;
++    const MODE_INFO *mode_info_context = cm->mi;
+     int mbr, mbc;
+ 
+     /* The pixel thresholds are adjusted according to if or not the macroblock
+      * is a skipped block.  */
+     unsigned char *ylimits = cm->pp_limits_buffer;
+     unsigned char *uvlimits = cm->pp_limits_buffer + 16 * cm->mb_cols;
+     (void) low_var_thresh;
+     (void) flag;
+-- 
+2.16.1.windows.4
+
