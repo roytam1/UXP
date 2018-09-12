@@ -9,7 +9,6 @@
 
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Maybe.h"
-#include "mozilla/PodOperations.h"
 
 #include "jscntxt.h"
 
@@ -102,9 +101,9 @@ struct TenureCountCache
     static const size_t EntryShift = 4;
     static const size_t EntryCount = 1 << EntryShift;
 
-    TenureCount entries[EntryCount];
+    TenureCount entries[EntryCount] = {}; // zeroes
 
-    TenureCountCache() { mozilla::PodZero(this); }
+    TenureCountCache() = default;
 
     HashNumber hash(ObjectGroup* group) {
 #if JS_BITS_PER_WORD == 32

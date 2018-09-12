@@ -10,7 +10,6 @@
 #include "mozilla/EnumeratedArray.h"
 #include "mozilla/IntegerRange.h"
 #include "mozilla/Maybe.h"
-#include "mozilla/PodOperations.h"
 
 #include "jsalloc.h"
 #include "jsgc.h"
@@ -112,29 +111,26 @@ enum Stat {
 struct ZoneGCStats
 {
     /* Number of zones collected in this GC. */
-    int collectedZoneCount;
+    int collectedZoneCount = 0;
 
     /* Total number of zones in the Runtime at the start of this GC. */
-    int zoneCount;
+    int zoneCount = 0;
 
     /* Number of zones swept in this GC. */
-    int sweptZoneCount;
+    int sweptZoneCount = 0;
 
     /* Total number of compartments in all zones collected. */
-    int collectedCompartmentCount;
+    int collectedCompartmentCount = 0;
 
     /* Total number of compartments in the Runtime at the start of this GC. */
-    int compartmentCount;
+    int compartmentCount = 0;
 
     /* Total number of compartments swept by this GC. */
-    int sweptCompartmentCount;
+    int sweptCompartmentCount = 0;
 
     bool isCollectingAllZones() const { return collectedZoneCount == zoneCount; }
 
-    ZoneGCStats()
-      : collectedZoneCount(0), zoneCount(0), sweptZoneCount(0),
-        collectedCompartmentCount(0), compartmentCount(0), sweptCompartmentCount(0)
-    {}
+    ZoneGCStats() = default;
 };
 
 #define FOR_EACH_GC_PROFILE_TIME(_)                                           \

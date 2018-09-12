@@ -7,8 +7,6 @@
 #ifndef jit_shared_Assembler_shared_h
 #define jit_shared_Assembler_shared_h
 
-#include "mozilla/PodOperations.h"
-
 #include <limits.h>
 
 #include "jit/AtomicOp.h"
@@ -491,10 +489,10 @@ class CodeLabel
 
 class CodeOffsetJump
 {
-    size_t offset_;
+    size_t offset_ = 0;
 
 #ifdef JS_SMALL_BRANCH
-    size_t jumpTableIndex_;
+    size_t jumpTableIndex_ = 0;
 #endif
 
   public:
@@ -510,9 +508,7 @@ class CodeOffsetJump
     explicit CodeOffsetJump(size_t offset) : offset_(offset) {}
 #endif
 
-    CodeOffsetJump() {
-        mozilla::PodZero(this);
-    }
+    CodeOffsetJump() = default;
 
     size_t offset() const {
         return offset_;

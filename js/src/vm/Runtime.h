@@ -11,11 +11,11 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/LinkedList.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/PodOperations.h"
 #include "mozilla/Scoped.h"
 #include "mozilla/ThreadLocal.h"
 #include "mozilla/Vector.h"
 
+#include <algorithm>
 #include <setjmp.h>
 
 #include "jsatom.h"
@@ -1504,20 +1504,21 @@ PerThreadData::exclusiveThreadsPresent()
 static MOZ_ALWAYS_INLINE void
 MakeRangeGCSafe(Value* vec, size_t len)
 {
-    mozilla::PodZero(vec, len);
+    // Don't PodZero here because JS::Value is non-trivial.
+    for (size_t i = 0; i < len; i++)
+        vec[i].setDouble(+0.0);
 }
 
 static MOZ_ALWAYS_INLINE void
 MakeRangeGCSafe(Value* beg, Value* end)
 {
-    mozilla::PodZero(beg, end - beg);
+    MakeRangeGCSafe(beg, end - beg);
 }
 
 static MOZ_ALWAYS_INLINE void
 MakeRangeGCSafe(jsid* beg, jsid* end)
 {
-    for (jsid* id = beg; id != end; ++id)
-        *id = INT_TO_JSID(0);
+    std::fill(beg, end, INT_TO_JSID(0));
 }
 
 static MOZ_ALWAYS_INLINE void
@@ -1529,13 +1530,13 @@ MakeRangeGCSafe(jsid* vec, size_t len)
 static MOZ_ALWAYS_INLINE void
 MakeRangeGCSafe(Shape** beg, Shape** end)
 {
-    mozilla::PodZero(beg, end - beg);
+    std::fill(beg, end, nullptr);
 }
 
 static MOZ_ALWAYS_INLINE void
 MakeRangeGCSafe(Shape** vec, size_t len)
 {
-    mozilla::PodZero(vec, len);
+    MakeRangeGCSafe(vec, vec + len);
 }
 
 static MOZ_ALWAYS_INLINE void

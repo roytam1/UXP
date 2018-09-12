@@ -7,6 +7,8 @@
 #ifndef vm_Caches_h
 #define vm_Caches_h
 
+#include <new>
+
 #include "jsatom.h"
 #include "jsbytecode.h"
 #include "jsobj.h"
@@ -191,14 +193,20 @@ class NewObjectCache
         char templateObject[MAX_OBJ_SIZE];
     };
 
-    Entry entries[41];  // TODO: reconsider size
+    using EntryArray = Entry[41]; // TODO: reconsider size;
+    EntryArray entries;
 
   public:
 
-    typedef int EntryIndex;
+    using EntryIndex = int;
 
-    NewObjectCache() { mozilla::PodZero(this); }
-    void purge() { mozilla::PodZero(this); }
+    NewObjectCache()
+      : entries{} // zeroes out the array
+    {}
+
+    void purge() {
+        new (&entries) EntryArray{}; // zeroes out the array
+    }
 
     /* Remove any cached items keyed on moved objects. */
     void clearNurseryObjects(JSRuntime* rt);
