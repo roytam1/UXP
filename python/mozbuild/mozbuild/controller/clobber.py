@@ -169,6 +169,7 @@ class Clobberer(object):
 
         if not self.clobber_needed():
             print('Clobber not needed.', file=fh)
+            fh.flush()
             self.ensure_objdir_state()
             return False, False, None
 
@@ -190,6 +191,7 @@ class Clobberer(object):
                 'Cannot clobber while the shell is inside the object directory.')
 
         print('Automatically clobbering %s' % self.topobjdir, file=fh)
+        fh.flush()
         try:
             self.remove_objdir(False)
             self.ensure_objdir_state()
