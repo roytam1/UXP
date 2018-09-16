@@ -117,7 +117,10 @@ WorkerRunnable::DispatchInternal()
     return NS_SUCCEEDED(parent->Dispatch(runnable.forget()));
   }
 
-  return NS_SUCCEEDED(mWorkerPrivate->DispatchToMainThread(runnable.forget()));
+  nsCOMPtr<nsIThread> mainThread = do_GetMainThread();
+  MOZ_ASSERT(mainThread);
+
+  return NS_SUCCEEDED(mainThread->Dispatch(runnable.forget(), NS_DISPATCH_NORMAL));
 }
 
 void
@@ -553,7 +556,10 @@ WorkerControlRunnable::DispatchInternal()
     return NS_SUCCEEDED(parent->DispatchControlRunnable(runnable.forget()));
   }
 
-  return NS_SUCCEEDED(mWorkerPrivate->DispatchToMainThread(runnable.forget()));
+  nsCOMPtr<nsIThread> mainThread = do_GetMainThread();
+  MOZ_ASSERT(mainThread);
+
+  return NS_SUCCEEDED(mainThread->Dispatch(runnable.forget(), NS_DISPATCH_NORMAL));
 }
 
 NS_IMPL_ISUPPORTS_INHERITED0(WorkerControlRunnable, WorkerRunnable)
@@ -580,7 +586,10 @@ WorkerMainThreadRunnable::Dispatch(Status aFailStatus, ErrorResult& aRv)
     return;
   }
 
-  DebugOnly<nsresult> rv = mWorkerPrivate->DispatchToMainThread(this);
+  RefPtr<WorkerMainThreadRunnable> runnable(this);
+
+  DebugOnly<nsresult> rv =
+    NS_DispatchToMainThread(runnable.forget(), NS_DISPATCH_NORMAL);
   MOZ_ASSERT(NS_SUCCEEDED(rv),
              "Should only fail after xpcom-shutdown-threads and we're gone by then");
 
@@ -670,7 +679,7 @@ WorkerProxyToMainThreadRunnable::Dispatch()
     return false;
   }
 
-  if (NS_WARN_IF(NS_FAILED(mWorkerPrivate->DispatchToMainThread(this)))) {
+  if (NS_WARN_IF(NS_FAILED(NS_DispatchToMainThread(this)))) {
     ReleaseWorker();
     RunBackOnWorkerThread();
     return false;
