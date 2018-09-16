@@ -1429,6 +1429,7 @@
             var aRelatedToCurrent;
             var aSkipAnimation;
             var aOriginPrincipal;
+            var aSkipBackgroundNotify;
             if (arguments.length == 2 &&
                 typeof arguments[1] == "object" &&
                 !(arguments[1] instanceof Ci.nsIURI)) {
@@ -1444,6 +1445,7 @@
               aRelatedToCurrent     = params.relatedToCurrent;
               aSkipAnimation        = params.skipAnimation;
               aOriginPrincipal      = params.originPrincipal;
+              aSkipBackgroundNotify = params.skipBackgroundNotify;
             }
 
             // if we're adding tabs, we're past interrupt mode, ditch the owner
@@ -1467,6 +1469,11 @@
             t.setAttribute("crop", "end");
             t.setAttribute("validate", "never"); //PMed
             t.setAttribute("onerror", "this.removeAttribute('image');");
+
+            if (aSkipBackgroundNotify) {
+              t.setAttribute("skipbackgroundnotify", true);
+            }
+
             t.className = "tabbrowser-tab";
 
             this.tabContainer._unlockTabSizing();
@@ -4143,7 +4150,11 @@
             this._fillTrailingGap();
             this._handleTabSelect();
           } else {
-            this._notifyBackgroundTab(tab);
+            if (tab.hasAttribute("skipbackgroundnotify")) {
+              tab.removeAttribute("skipbackgroundnotify");
+            } else {
+              this._notifyBackgroundTab(tab);
+            }
           }
 
           // XXXmano: this is a temporary workaround for bug 345399

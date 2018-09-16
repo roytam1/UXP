@@ -2739,7 +2739,9 @@ var SessionStoreInternal = {
     for (var t = 0; t < newTabCount; t++) {
       tabs.push(t < openTabCount ?
                 tabbrowser.tabs[t] :
-                tabbrowser.addTab("about:blank", {skipAnimation: true}));
+                tabbrowser.addTab("about:blank",
+                                  {skipAnimation: true,
+                                   skipBackgroundNotify: true}));
       // when resuming at startup: add additionally requested pages to the end
       if (!aOverwriteTabs && root._firstTabs) {
         tabbrowser.moveTabTo(tabs[t], t);
@@ -4684,7 +4686,8 @@ var TabAttributes = {
   // 'image' should not be accessed directly but handled by using the
   //         gBrowser.getIcon()/setIcon() methods.
   // 'pending' is used internal by sessionstore and managed accordingly.
-  _skipAttrs: new Set(["image", "pending"]),
+  // 'skipbackgroundnotify' is used internal by tabbrowser.xml.
+  _skipAttrs: new Set(["image", "pending", "skipbackgroundnotify"]),
 
   persist: function (name) {
     if (this._attrs.has(name) || this._skipAttrs.has(name)) {
