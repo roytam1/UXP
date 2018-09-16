@@ -3113,7 +3113,8 @@ var SessionStoreInternal = {
                                 tabbrowser.addTab("about:blank",
                                                   {skipAnimation: true,
                                                    forceNotRemote,
-                                                   userContextId});
+                                                   userContextId,
+                                                   skipBackgroundNotify: true});
 
       // If we inserted a new tab because the userContextId didn't match with the
       // open tab, even though `t < openTabCount`, we need to remove that open tab
