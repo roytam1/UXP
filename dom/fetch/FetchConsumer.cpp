@@ -339,11 +339,7 @@ FetchBodyConsumer<Derived>::Create(nsIGlobalObject* aGlobal,
 
   nsCOMPtr<nsIRunnable> r = new BeginConsumeBodyRunnable<Derived>(consumer);
 
-  if (workerPrivate) {
-    aRv = workerPrivate->DispatchToMainThread(r.forget());
-  } else {
-    aRv = NS_DispatchToMainThread(r.forget());
-  }
+  aRv = NS_DispatchToMainThread(r.forget());
 
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
@@ -655,9 +651,7 @@ FetchBodyConsumer<Derived>::ShutDownMainThreadConsuming()
     nsCOMPtr<nsIRunnable> r = NS_NewRunnableFunction(
       [self] () { self->ShutDownMainThreadConsuming(); });
 
-    WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
-    MOZ_ASSERT(workerPrivate);
-    workerPrivate->DispatchToMainThread(r.forget());
+    MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(r.forget()));
     return;
   }
 

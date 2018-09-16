@@ -260,7 +260,7 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
     }
 
     RefPtr<MainThreadFetchRunnable> run = new MainThreadFetchRunnable(resolver, r);
-    worker->DispatchToMainThread(run.forget());
+    MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(run));
   }
 
   return p.forget();
