@@ -183,7 +183,7 @@ ServiceWorkerWindowClient::Focus(ErrorResult& aRv) const
     if (promiseProxy) {
       RefPtr<ClientFocusRunnable> r = new ClientFocusRunnable(mWindowId,
                                                               promiseProxy);
-      MOZ_ALWAYS_SUCCEEDS(workerPrivate->DispatchToMainThread(r.forget()));
+      MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(r));
     } else {
       promise->MaybeReject(NS_ERROR_DOM_ABORT_ERR);
     }
@@ -549,7 +549,7 @@ ServiceWorkerWindowClient::Navigate(const nsAString& aUrl, ErrorResult& aRv)
   if (promiseProxy) {
     RefPtr<ClientNavigateRunnable> r =
       new ClientNavigateRunnable(mWindowId, aUrl, scope, promiseProxy);
-    MOZ_ALWAYS_SUCCEEDS(workerPrivate->DispatchToMainThread(r.forget()));
+    MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(r));
   } else {
     promise->MaybeReject(NS_ERROR_DOM_ABORT_ERR);
   }

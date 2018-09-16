@@ -1107,7 +1107,7 @@ ServiceWorkerRegistrationWorkerThread::Update(ErrorResult& aRv)
   }
 
   RefPtr<UpdateRunnable> r = new UpdateRunnable(proxy, mScope);
-  MOZ_ALWAYS_SUCCEEDS(worker->DispatchToMainThread(r.forget()));
+  MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(r));
 
   return promise.forget();
 }
@@ -1139,7 +1139,7 @@ ServiceWorkerRegistrationWorkerThread::Unregister(ErrorResult& aRv)
   }
 
   RefPtr<StartUnregisterRunnable> r = new StartUnregisterRunnable(proxy, mScope);
-  MOZ_ALWAYS_SUCCEEDS(worker->DispatchToMainThread(r.forget()));
+  MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(r));
 
   return promise.forget();
 }
@@ -1161,7 +1161,7 @@ ServiceWorkerRegistrationWorkerThread::InitListener()
 
   nsCOMPtr<nsIRunnable> r =
     NewRunnableMethod(mListener, &WorkerListener::StartListeningForEvents);
-  MOZ_ALWAYS_SUCCEEDS(worker->DispatchToMainThread(r.forget()));
+  MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(r));
 }
 
 void
@@ -1183,7 +1183,7 @@ ServiceWorkerRegistrationWorkerThread::ReleaseListener()
 
   nsCOMPtr<nsIRunnable> r =
     NewRunnableMethod(mListener, &WorkerListener::StopListeningForEvents);
-  MOZ_ALWAYS_SUCCEEDS(mWorkerPrivate->DispatchToMainThread(r.forget()));
+  MOZ_ALWAYS_SUCCEEDS(NS_DispatchToMainThread(r));
 
   mListener = nullptr;
   mWorkerPrivate = nullptr;
