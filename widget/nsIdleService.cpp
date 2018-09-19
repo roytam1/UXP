@@ -46,6 +46,10 @@ using namespace mozilla;
 // Number of seconds in a day.
 #define SECONDS_PER_DAY 86400
 
+// MAX_DELTA_SEC * 1000 should be less than UINT32_MAX to prevent overflow on
+// converting from sec to msec
+#define MAX_DELTA_SEC (SECONDS_PER_DAY * 10)
+
 static PRLogModuleInfo *sLog = nullptr;
 
 #define LOG_TAG "GeckoIdleService"
@@ -391,7 +395,7 @@ nsIdleService::GetInstance()
 
 nsIdleService::nsIdleService() : mCurrentlySetToTimeoutAt(TimeStamp()),
                                  mIdleObserverCount(0),
-                                 mDeltaToNextIdleSwitchInS(UINT32_MAX),
+                                 mDeltaToNextIdleSwitchInS(MAX_DELTA_SEC),
                                  mLastUserInteraction(TimeStamp::Now())
 {
   if (sLog == nullptr)
@@ -544,7 +548,7 @@ nsIdleService::ResetIdleTimeOut(uint32_t idleDeltaInMS)
 
   // Mark all idle services as non-idle, and calculate the next idle timeout.
   nsCOMArray<nsIObserver> notifyList;
-  mDeltaToNextIdleSwitchInS = UINT32_MAX;
+  mDeltaToNextIdleSwitchInS = MAX_DELTA_SEC;
 
   // Loop through all listeners, and find any that have detected idle.
   for (uint32_t i = 0; i < mArrayListeners.Length(); i++) {
@@ -717,7 +721,7 @@ nsIdleService::IdleTimerCallback(void)
   }
 
   // We need to initialise the time to the next idle switch.
-  mDeltaToNextIdleSwitchInS = UINT32_MAX;
+  mDeltaToNextIdleSwitchInS = MAX_DELTA_SEC;
 
   // Create list of observers that should be notified.
   nsCOMArray<nsIObserver> notifyList;
@@ -839,7 +843,7 @@ void
 nsIdleService::ReconfigureTimer(void)
 {
   // Check if either someone is idle, or someone will become idle.
-  if ((mIdleObserverCount == 0) && UINT32_MAX == mDeltaToNextIdleSwitchInS) {
+  if ((mIdleObserverCount == 0) && MAX_DELTA_SEC == mDeltaToNextIdleSwitchInS) {
     // If not, just let any existing timers run to completion
     // And bail out.
     MOZ_LOG(sLog, LogLevel::Debug,
