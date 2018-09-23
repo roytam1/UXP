@@ -637,14 +637,6 @@ ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
       continue;
     }
 
-#ifndef MOZ_BINARY_EXTENSIONS
-    if (directive->apponly && NS_APP_LOCATION != aType) {
-      LogMessageWithContext(aFile, line,
-                            "Only application manifests may use the '%s' directive.", token);
-      continue;
-    }
-#endif
-
     if (directive->componentonly && NS_SKIN_LOCATION == aType) {
       LogMessageWithContext(aFile, line,
                             "Skin manifest not allowed to use '%s' directive.",
