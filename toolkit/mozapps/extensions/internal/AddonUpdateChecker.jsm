@@ -976,12 +976,13 @@ this.AddonUpdateChecker = {
    *         down in-progress update requests
    */
   checkForUpdates: function(aId, aUpdateKey, aUrl, aObserver) {
-    // Define an array of internally used IDs to NOT send to AUS such as the
-    // Default Theme. Please keep this list in sync with:
-    // toolkit/mozapps/extensions/AddonUpdateChecker.jsm
+    // Define an array of internally used IDs to NOT send to AUS.
     let internalIDS = [
-      '{972ce4c6-7e08-4474-a285-3208198ce6fd}',
-      'modern@themes.mozilla.org'
+      '{972ce4c6-7e08-4474-a285-3208198ce6fd}', // Global Default Theme
+      'modern@themes.mozilla.org', // Modern Theme for Borealis/Suite-based Applications
+      'xplatform@interlink.projects.binaryoutcast.com', // Pref-set default theme for Interlink
+      '{e2fda1a4-762b-4020-b5ad-a41df1933103}', // Lightning/Calendar Extension
+      '{a62ef8ec-5fdc-40c2-873c-223b8a6925cc}' // Provider for Google Calendar (gdata) Extension
     ];
     
     // If the ID is not in the array then go ahead and query AUS
