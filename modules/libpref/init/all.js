@@ -705,6 +705,10 @@ pref("apz.y_skate_size_multiplier", "1.5");
 pref("apz.y_stationary_size_multiplier", "1.5");
 #endif
 
+#if !defined(MOZ_WIDGET_ANDROID) && !defined(MOZ_WIDGET_UIKIT)
+pref("apz.desktop.enabled", false);
+#endif
+
 #ifdef XP_MACOSX
 // Whether to run in native HiDPI mode on machines with "Retina"/HiDPI display;
 //   <= 0 : hidpi mode disabled, display will just use pixel-based upscaling

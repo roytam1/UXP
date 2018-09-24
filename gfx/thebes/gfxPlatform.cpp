@@ -2380,13 +2380,13 @@ gfxPlatform::AsyncPanZoomEnabled()
 {
 #if !defined(MOZ_WIDGET_ANDROID) && !defined(MOZ_WIDGET_UIKIT)
   // For XUL applications (everything but Firefox on Android) we only want
-  // to use APZ when E10S is enabled. If we ever get input events off the
-  // main thread we can consider relaxing this requirement.
-  if (!BrowserTabsRemoteAutostart()) {
+  // to use APZ when E10S is enabled or when the user explicitly enable it.
+  if (BrowserTabsRemoteAutostart() || gfxPrefs::APZDesktopEnabled()) {
+    return gfxPrefs::AsyncPanZoomEnabledDoNotUseDirectly();
+  } else {
     return false;
   }
-#endif
-#ifdef MOZ_WIDGET_ANDROID
+#elif defined(MOZ_WIDGET_ANDROID)
   return true;
 #else
   return gfxPrefs::AsyncPanZoomEnabledDoNotUseDirectly();
