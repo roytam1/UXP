@@ -17,6 +17,7 @@ DIRS += [
     'heapsnapshot',
     'inspector',
     'jsbeautify',
+    'jsinspector',
     'layout',
     'locales',
     'node-properties',

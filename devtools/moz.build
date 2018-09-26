@@ -13,11 +13,14 @@ if CONFIG['MOZ_DEVTOOLS_SERVER']:
         'shared',
     ]
 else:
-  DIRS += ['shared/heapsnapshot/']
+  DIRS += [
+      'shared/heapsnapshot',
+      'shared/jsinspector',
+  ]
 
 # /browser uses DIST_SUBDIR.  We opt-in to this treatment when building
 # DevTools for the browser to keep the root omni.ja slim for use by external XUL
 # apps.  Mulet also uses this since it includes /browser.
-if CONFIG['MOZ_BUILD_APP'] == 'b2g/dev' or CONFIG['MOZ_PHOENIX']:
+if CONFIG['MOZ_PHOENIX']:
     DIST_SUBDIR = 'browser'
     export('DIST_SUBDIR')
