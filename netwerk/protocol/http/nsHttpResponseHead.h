@@ -65,6 +65,8 @@ public:
      */
     int64_t TotalEntitySize();
 
+    nsresult SetHeader(const nsACString &h, const nsACString &v,
+                       bool m=false);
     nsresult SetHeader(nsHttpAtom h, const nsACString &v, bool m=false);
     nsresult GetHeader(nsHttpAtom h, nsACString &v);
     void ClearHeader(nsHttpAtom h);
@@ -137,8 +139,8 @@ public:
     bool HasContentType();
     bool HasContentCharset();
 private:
-    nsresult SetHeader_locked(nsHttpAtom h, const nsACString &v,
-                              bool m=false);
+    nsresult SetHeader_locked(nsHttpAtom atom, const nsACString &h,
+                              const nsACString &v, bool m=false);
     void AssignDefaultStatusText();
     void ParseVersion(const char *);
     void ParseCacheControl(const char *);

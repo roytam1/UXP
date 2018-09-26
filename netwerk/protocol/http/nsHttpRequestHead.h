@@ -57,10 +57,12 @@ public:
                    int32_t port);
     void Origin(nsACString &aOrigin);
 
+    nsresult SetHeader(const nsACString &h, const nsACString &v,
+                       bool m=false);
     nsresult SetHeader(nsHttpAtom h, const nsACString &v, bool m=false);
     nsresult SetHeader(nsHttpAtom h, const nsACString &v, bool m,
                        nsHttpHeaderArray::HeaderVariety variety);
-    nsresult SetEmptyHeader(nsHttpAtom h);
+    nsresult SetEmptyHeader(const nsACString &h);
     nsresult GetHeader(nsHttpAtom h, nsACString &v);
 
     nsresult ClearHeader(nsHttpAtom h);

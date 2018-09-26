@@ -49,19 +49,30 @@ public:
     };
 
     // Used by internal setters: to set header from network use SetHeaderFromNet
+    nsresult SetHeader(const nsACString &headerName,
+                       const nsACString &value,
+                       bool merge, HeaderVariety variety);
     nsresult SetHeader(nsHttpAtom header, const nsACString &value,
+                       bool merge, HeaderVariety variety);
+    nsresult SetHeader(nsHttpAtom header,
+                       const nsACString &headerName,
+                       const nsACString &value,
                        bool merge, HeaderVariety variety);
 
     // Used by internal setters to set an empty header
-    nsresult SetEmptyHeader(nsHttpAtom header, HeaderVariety variety);
+    nsresult SetEmptyHeader(const nsACString &headerName, HeaderVariety variety);
 
     // Merges supported headers. For other duplicate values, determines if error
     // needs to be thrown or 1st value kept.
     // For the response header we keep the original headers as well.
-    nsresult SetHeaderFromNet(nsHttpAtom header, const nsACString &value,
+    nsresult SetHeaderFromNet(nsHttpAtom header,
+                              const nsACString &headerNameOriginal,
+                              const nsACString &value,
                               bool response);
 
-    nsresult SetResponseHeaderFromCache(nsHttpAtom header, const nsACString &value,
+    nsresult SetResponseHeaderFromCache(nsHttpAtom header,
+                                        const nsACString &headerNameOriginal,
+                                        const nsACString &value,
                                         HeaderVariety variety);
 
     nsresult GetHeader(nsHttpAtom header, nsACString &value) const;
@@ -97,15 +108,17 @@ public:
     // parse a header line, return the header atom and a pointer to the
     // header value (the substring of the header line -- do not free).
     static nsresult ParseHeaderLine(const nsACString& line,
-                                    nsHttpAtom *header=nullptr,
-                                    nsACString* value=nullptr);
+                                                 nsHttpAtom *header = nullptr,
+                                                 nsACString *headerNameOriginal = nullptr,
+                                                 nsACString *value = nullptr);
 
     void Flatten(nsACString &, bool pruneProxyHeaders, bool pruneTransients);
     void FlattenOriginalHeader(nsACString &);
 
     uint32_t Count() const { return mHeaders.Length(); }
 
-    const char *PeekHeaderAt(uint32_t i, nsHttpAtom &header) const;
+    const char *PeekHeaderAt(uint32_t i, nsHttpAtom &header,
+                             nsACString &headerNameOriginal) const;
 
     void Clear();
 
@@ -113,6 +126,7 @@ public:
     struct nsEntry
     {
         nsHttpAtom header;
+        nsCString headerNameOriginal;
         nsCString value;
         HeaderVariety variety = eVarietyUnknown;
 
@@ -140,7 +154,9 @@ private:
     int32_t LookupEntry(nsHttpAtom header, nsEntry **);
     nsresult MergeHeader(nsHttpAtom header, nsEntry *entry,
                          const nsACString &value, HeaderVariety variety);
-    nsresult SetHeader_internal(nsHttpAtom header, const nsACString &value,
+    nsresult SetHeader_internal(nsHttpAtom header,
+                                const nsACString &headerName,
+                                const nsACString &value,
                                 HeaderVariety variety);
 
     // Header cannot be merged: only one value possible
@@ -257,7 +273,11 @@ nsHttpHeaderArray::MergeHeader(nsHttpAtom header,
     if (entry->variety == eVarietyResponseNetOriginalAndResponse) {
         MOZ_ASSERT(variety == eVarietyResponse);
         entry->variety = eVarietyResponseNetOriginal;
-        nsresult rv = SetHeader_internal(header, newValue, eVarietyResponse);
+        // Copy entry->headerNameOriginal because in SetHeader_internal we are going
+        // to a new one and a realocation can happen.
+        nsCString headerNameOriginal = entry->headerNameOriginal;
+        nsresult rv = SetHeader_internal(header, headerNameOriginal,
+                                         newValue, eVarietyResponse);
         if (NS_FAILED(rv)) {
             return rv;
         }

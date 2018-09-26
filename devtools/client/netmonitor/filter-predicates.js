@@ -72,7 +72,7 @@ function isWS({ requestHeaders, responseHeaders }) {
 
   // Find the 'upgrade' header.
   let upgradeHeader = requestHeaders.headers.find(header => {
-    return (header.name == "Upgrade");
+    return (header.name.toLowerCase() == "upgrade");
   });
 
   // If no header found on request, check response - mainly to get
@@ -81,7 +81,7 @@ function isWS({ requestHeaders, responseHeaders }) {
   if (!upgradeHeader && responseHeaders &&
       Array.isArray(responseHeaders.headers)) {
     upgradeHeader = responseHeaders.headers.find(header => {
-      return (header.name == "Upgrade");
+      return (header.name.toLowerCase() == "upgrade");
     });
   }
 
