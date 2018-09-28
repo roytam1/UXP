@@ -32,7 +32,7 @@
 
 <!ENTITY image.label                     "Load Images">
 
-<!ENTITY cookie.label                    "Set Cookies">
+<!ENTITY cookie.label                    "Store Cookies and Site Data">
 <!ENTITY cookie.remove                   "Remove Cookies">
 <!ENTITY cookie.manage                   "Manage Cookies…">
 <!ENTITY cookie.removeAll                "Remove All Cookies">
