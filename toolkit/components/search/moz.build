@@ -6,10 +6,10 @@
 
 XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
 
-if CONFIG['MC_PALEMOON']:
-    DIRS += ['orginal']
-else:
+if CONFIG['MC_BASILISK'] or CONFIG['HYPE_ICEWEASEL'] or CONFIG['HYPE_ICEDOVE']:
     DIRS += ['current']
+else:
+    DIRS += ['orginal']
 
 with Files('**'):
     BUG_COMPONENT = ('Firefox', 'Search')
