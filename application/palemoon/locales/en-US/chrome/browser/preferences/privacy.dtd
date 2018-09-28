@@ -10,9 +10,9 @@
 
 <!ENTITY  history.label                 "History">
 
-<!ENTITY  locationBar.label             "Address Bar">
+<!ENTITY  locationBar.label             "Location Bar">
 
-<!ENTITY  locbar.suggest.label          "When using the address bar, suggest:">
+<!ENTITY  locbar.suggest.label          "When using the location bar, suggest:">
 <!ENTITY  locbar.history.label          "History">
 <!ENTITY  locbar.history.accesskey      "H">
 <!ENTITY  locbar.bookmarks.label        "Bookmarks">
