@@ -249,8 +249,6 @@ const char kSQLiteJournalSuffix[] = ".sqlite-journal";
 const char kSQLiteSHMSuffix[] = ".sqlite-shm";
 const char kSQLiteWALSuffix[] = ".sqlite-wal";
 
-const char kPrefIndexedDBEnabled[] = "dom.indexedDB.enabled";
-
 const char kPrefFileHandleEnabled[] = "dom.fileHandle.enabled";
 
 #define IDB_PREFIX "indexedDB"
@@ -21167,16 +21165,6 @@ FactoryOp::CheckPermission(ContentParent* aContentParent,
       if (aContentParent) {
         // We just want ContentPrincipalInfo or SystemPrincipalInfo.
         aContentParent->KillHard("IndexedDB CheckPermission 0");
-      }
-
-      return NS_ERROR_DOM_INDEXEDDB_NOT_ALLOWED_ERR;
-    }
-
-    if (NS_WARN_IF(!Preferences::GetBool(kPrefIndexedDBEnabled, false))) {
-      if (aContentParent) {
-        // The DOM in the other process should have kept us from receiving any
-        // indexedDB messages so assume that the child is misbehaving.
-        aContentParent->KillHard("IndexedDB CheckPermission 1");
       }
 
       return NS_ERROR_DOM_INDEXEDDB_NOT_ALLOWED_ERR;

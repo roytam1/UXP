@@ -128,8 +128,6 @@ pref("browser.download.saveZoneInformation", 2);
 // Whether or not testing features are enabled.
 pref("dom.quotaManager.testing", false);
 
-// Whether or not indexedDB is enabled.
-pref("dom.indexedDB.enabled", true);
 // Whether or not indexedDB experimental features are enabled.
 pref("dom.indexedDB.experimental", false);
 // Enable indexedDB logging.
