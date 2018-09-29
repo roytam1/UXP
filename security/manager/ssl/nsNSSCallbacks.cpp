@@ -1277,7 +1277,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
                                            infoObject->GetPort(),
                                            versions.max);
 
-  bool usesFallbackCipher = false;
   SSLChannelInfo channelInfo;
   rv = SSL_GetChannelInfo(fd, &channelInfo, sizeof(channelInfo));
   MOZ_ASSERT(rv == SECSuccess);
@@ -1296,8 +1295,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
                                 sizeof cipherInfo);
     MOZ_ASSERT(rv == SECSuccess);
     if (rv == SECSuccess) {
-      usesFallbackCipher = channelInfo.keaType == ssl_kea_dh;
-
       MOZ_ASSERT(infoObject->GetKEAUsed() == channelInfo.keaType);
 
       if (infoObject->IsFullHandshake()) {
@@ -1372,15 +1369,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
   } else {
     state = nsIWebProgressListener::STATE_IS_SECURE |
             nsIWebProgressListener::STATE_SECURE_HIGH;
-    if (!usesFallbackCipher) {
-      SSLVersionRange defVersion;
-      rv = SSL_VersionRangeGetDefault(ssl_variant_stream, &defVersion);
-      if (rv == SECSuccess && versions.max >= defVersion.max) {
-        // we know this site no longer requires a fallback cipher
-        ioLayerHelpers.removeInsecureFallbackSite(infoObject->GetHostName(),
-                                                  infoObject->GetPort());
-      }
-    }
   }
 
   if (status->HasServerCert()) {
