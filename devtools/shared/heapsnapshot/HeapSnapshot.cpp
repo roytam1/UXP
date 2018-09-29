@@ -1616,8 +1616,6 @@ ThreadSafeChromeUtils::ReadHeapSnapshot(GlobalObject& global,
                                         const nsAString& filePath,
                                         ErrorResult& rv)
 {
-  auto start = TimeStamp::Now();
-
   UniquePtr<char[]> path(ToNewCString(filePath));
   if (!path) {
     rv.Throw(NS_ERROR_OUT_OF_MEMORY);

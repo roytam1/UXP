@@ -475,19 +475,12 @@ nsSocketTransportService::Poll(uint32_t *interval,
     PRIntervalTime ts = PR_IntervalNow();
 
     TimeStamp pollStart;
-    if (mTelemetryEnabledPref) {
-        pollStart = TimeStamp::NowLoRes();
-    }
 
     SOCKET_LOG(("    timeout = %i milliseconds\n",
          PR_IntervalToMilliseconds(pollTimeout)));
     int32_t rv = PR_Poll(pollList, pollCount, pollTimeout);
 
     PRIntervalTime passedInterval = PR_IntervalNow() - ts;
-
-    if (mTelemetryEnabledPref && !pollStart.IsNull()) {
-        *pollDuration = TimeStamp::NowLoRes() - pollStart;
-    }
 
     SOCKET_LOG(("    ...returned after %i milliseconds\n",
          PR_IntervalToMilliseconds(passedInterval))); 
@@ -862,20 +855,9 @@ nsSocketTransportService::Run()
     // make sure the pseudo random number generator is seeded on this thread
     srand(static_cast<unsigned>(PR_Now()));
 
-    // For the calculation of the duration of the last cycle (i.e. the last for-loop
-    // iteration before shutdown).
-    TimeStamp startOfCycleForLastCycleCalc;
-    int numberOfPendingEventsLastCycle;
-
-    // For measuring of the poll iteration duration without time spent blocked
-    // in poll().
-    TimeStamp pollCycleStart;
     // Time blocked in poll().
     TimeDuration singlePollDuration;
 
-    // For calculating the time needed for a new element to run.
-    TimeStamp startOfIteration;
-    TimeStamp startOfNextIteration;
     int numberOfPendingEvents;
 
     // If there is too many pending events queued, we will run some poll()
@@ -887,18 +869,9 @@ nsSocketTransportService::Run()
         bool pendingEvents = false;
 
         numberOfPendingEvents = 0;
-        numberOfPendingEventsLastCycle = 0;
-        if (mTelemetryEnabledPref) {
-            startOfCycleForLastCycleCalc = TimeStamp::NowLoRes();
-            startOfNextIteration = TimeStamp::NowLoRes();
-        }
         pollDuration = 0;
 
         do {
-            if (mTelemetryEnabledPref) {
-                pollCycleStart = TimeStamp::NowLoRes();
-            }
-
             DoPollIteration(&singlePollDuration);
 
             mRawThread->HasPendingEvents(&pendingEvents);
@@ -912,15 +885,6 @@ nsSocketTransportService::Run()
                                    "socket thread.");
                     } else {
                         mServingPendingQueue = true;
-                    }
-
-                    if (mTelemetryEnabledPref) {
-                        startOfIteration = startOfNextIteration;
-                        // Everything that comes after this point will
-                        // be served in the next iteration. If no even
-                        // arrives, startOfNextIteration will be reset at the
-                        // beginning of each for-loop.
-                        startOfNextIteration = TimeStamp::NowLoRes();
                     }
                 }
                 TimeStamp eventQueueStart = TimeStamp::NowLoRes();

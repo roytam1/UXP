@@ -770,12 +770,6 @@ nsUDPSocket::CloseSocket()
       // If shutdown last to long, let the socket leak and do not close it.
       UDPSOCKET_LOG(("Intentional leak"));
     } else {
-
-      PRIntervalTime closeStarted = 0;
-      if (gSocketTransportService->IsTelemetryEnabledAndNotSleepPhase()) {
-        closeStarted = PR_IntervalNow();
-      }
-
       PR_Close(mFD);
     }
     mFD = nullptr;

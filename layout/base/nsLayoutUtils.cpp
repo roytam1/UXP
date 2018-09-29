@@ -3423,7 +3423,6 @@ nsLayoutUtils::PaintFrame(nsRenderingContext* aRenderingContext, nsIFrame* aFram
     return NS_OK;
   }
 
-  TimeStamp startBuildDisplayList = TimeStamp::Now();
   nsDisplayListBuilder builder(aFrame, aBuilderMode,
                                !(aFlags & PaintFrameFlags::PAINT_HIDE_CARET));
   if (aFlags & PaintFrameFlags::PAINT_IN_TRANSFORM) {

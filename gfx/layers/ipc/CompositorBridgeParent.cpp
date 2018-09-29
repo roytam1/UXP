@@ -482,8 +482,6 @@ CompositorVsyncScheduler::Composite(TimeStamp aVsyncTimestamp)
     mLastCompose = aVsyncTimestamp;
     ComposeToTarget(nullptr);
     mVsyncNotificationsSkipped = 0;
-
-    TimeDuration compositeFrameTotal = TimeStamp::Now() - aVsyncTimestamp;
   } else if (mVsyncNotificationsSkipped++ > gfxPrefs::CompositorUnobserveCount()) {
     UnobserveVsync();
   }

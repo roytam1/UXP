@@ -395,18 +395,6 @@ nsGeolocationRequest::Allow(JS::HandleValue aChoices)
 {
   MOZ_ASSERT(aChoices.isUndefined());
 
-  if (mRequester) {
-    // Record whether a location callback is fulfilled while the owner window
-    // is not visible.
-    bool isVisible = false;
-    nsCOMPtr<nsPIDOMWindowInner> window = mLocator->GetParentObject();
-
-    if (window) {
-      nsCOMPtr<nsIDocument> doc = window->GetDoc();
-      isVisible = doc && !doc->Hidden();
-    }
-  }
-
   if (mLocator->ClearPendingRequest(this)) {
     return NS_OK;
   }

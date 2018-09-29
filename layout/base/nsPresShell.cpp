@@ -1111,10 +1111,6 @@ PresShell::Destroy()
       LogTextPerfStats(tp, this, tp->cumulative, 0.0, eLog_totals, nullptr);
     }
   }
-  if (mPresContext) {
-    const bool mayFlushUserFontSet = false;
-    gfxUserFontSet* fs = mPresContext->GetUserFontSet(mayFlushUserFontSet);
-  }
 
 #ifdef MOZ_REFLOW_PERF
   DumpReflows();
@@ -9409,7 +9405,6 @@ PresShell::ProcessReflowCommands(bool aInterruptible)
     return true;
   }
 
-  mozilla::TimeStamp timerStart = mozilla::TimeStamp::Now();
   bool interrupted = false;
   if (!mDirtyRoots.IsEmpty()) {
 

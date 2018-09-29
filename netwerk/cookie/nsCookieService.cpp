@@ -3311,13 +3311,6 @@ nsCookieService::SetCookieInternal(nsIURI                        *aHostURI,
   // so we can handle them separately.
   bool newCookie = ParseAttributes(aCookieHeader, cookieAttributes);
 
-  // Collect telemetry on how often secure cookies are set from non-secure
-  // origins, and vice-versa.
-  //
-  // 0 = nonsecure and "http:"
-  // 1 = nonsecure and "https:"
-  // 2 = secure and "http:"
-  // 3 = secure and "https:"
   bool isHTTPS;
   nsresult rv = aHostURI->SchemeIs("https", &isHTTPS);
 

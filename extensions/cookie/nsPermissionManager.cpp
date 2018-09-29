@@ -1076,8 +1076,6 @@ nsPermissionManager::InitDB(bool aRemoveFile)
         bool hostsTableExists = false;
         mDBConn->TableExists(NS_LITERAL_CSTRING("moz_hosts"), &hostsTableExists);
         if (hostsTableExists) {
-          bool migrationError = false;
-
           // Both versions 4 and 6 have a version 4 formatted hosts table named
           // moz_hosts. We can migrate this table to our version 7 table moz_perms.
           // If moz_perms is present, then we can use it as a basis for comparison.
@@ -1125,12 +1123,10 @@ nsPermissionManager::InitDB(bool aRemoveFile)
             // Read in the old row
             rv = stmt->GetUTF8String(0, host);
             if (NS_WARN_IF(NS_FAILED(rv))) {
-              migrationError = true;
               continue;
             }
             rv = stmt->GetUTF8String(1, type);
             if (NS_WARN_IF(NS_FAILED(rv))) {
-              migrationError = true;
               continue;
             }
             permission = stmt->AsInt32(2);
@@ -1138,7 +1134,6 @@ nsPermissionManager::InitDB(bool aRemoveFile)
             expireTime = stmt->AsInt64(4);
             modificationTime = stmt->AsInt64(5);
             if (NS_WARN_IF(stmt->AsInt64(6) < 0)) {
-              migrationError = true;
               continue;
             }
             appId = static_cast<uint32_t>(stmt->AsInt64(6));
@@ -1155,7 +1150,6 @@ nsPermissionManager::InitDB(bool aRemoveFile)
             if (NS_FAILED(rv)) {
               NS_WARNING("Unexpected failure when upgrading migrating permission "
                          "from host to origin");
-              migrationError = true;
             }
           }
 
