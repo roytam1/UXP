@@ -15,8 +15,8 @@ if [ -n "$rev" ]; then
     version=$version-dirty
     echo "WARNING: updating from a dirty git repository."
   fi
-  sed -i "/The git commit ID used was/ s/[0-9a-f]\+\(-dirty\)\?\./$version./" README_MOZILLA
+  sed -i "/The git commit ID used was/ s/[0-9a-f]\+\(-dirty\)\?\./$version./" README_MCP
 else
-  echo "Remember to update README_MOZILLA with the version details."
+  echo "Remember to update README_MCP with the version details."
 fi
 
