@@ -918,8 +918,6 @@ private:
   // Memory reporting (private part)
   size_t SizeOfExcludingThisInternal(mozilla::MallocSizeOf mallocSizeOf) const;
 
-  void ReportHashStats();
-
   static mozilla::StaticRefPtr<CacheIndex> gInstance;
   static StaticMutex sLock;
 

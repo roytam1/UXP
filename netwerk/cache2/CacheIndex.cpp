@@ -20,7 +20,6 @@
 #include "nsITimer.h"
 #include "mozilla/AutoRestore.h"
 #include <algorithm>
-#include "mozilla/Telemetry.h"
 #include "mozilla/Unused.h"
 
 
@@ -3167,11 +3166,6 @@ CacheIndex::ChangeState(EState aNewState)
     return;
   }
 
-  if ((mState == READING || mState == BUILDING || mState == UPDATING) &&
-      aNewState == READY) {
-    ReportHashStats();
-  }
-
   // Try to evict entries over limit everytime we're leaving state READING,
   // BUILDING or UPDATING, but not during shutdown or when removing all
   // entries.
@@ -3718,75 +3712,6 @@ CacheIndex::SizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf)
   StaticMutexAutoLock lock(sLock);
 
   return mallocSizeOf(gInstance) + SizeOfExcludingThis(mallocSizeOf);
-}
-
-namespace {
-
-class HashComparator
-{
-public:
-  bool Equals(CacheIndexRecord* a, CacheIndexRecord* b) const {
-    return memcmp(&a->mHash, &b->mHash, sizeof(SHA1Sum::Hash)) == 0;
-  }
-  bool LessThan(CacheIndexRecord* a, CacheIndexRecord* b) const {
-    return memcmp(&a->mHash, &b->mHash, sizeof(SHA1Sum::Hash)) < 0;
-  }
-};
-
-void
-ReportHashSizeMatch(const SHA1Sum::Hash *aHash1, const SHA1Sum::Hash *aHash2)
-{
-  const uint32_t *h1 = reinterpret_cast<const uint32_t *>(aHash1);
-  const uint32_t *h2 = reinterpret_cast<const uint32_t *>(aHash2);
-
-  for (uint32_t i = 0; i < 5; ++i) {
-    if (h1[i] != h2[i]) {
-      uint32_t bitsDiff = h1[i] ^ h2[i];
-      bitsDiff = NetworkEndian::readUint32(&bitsDiff);
-
-      // count leading zeros in bitsDiff
-      static const uint8_t debruijn32[32] =
-        { 0, 31, 9, 30, 3, 8, 13, 29, 2, 5, 7, 21, 12, 24, 28, 19,
-          1, 10, 4, 14, 6, 22, 25, 20, 11, 15, 23, 26, 16, 27, 17, 18};
-
-      bitsDiff |= bitsDiff>>1;
-      bitsDiff |= bitsDiff>>2;
-      bitsDiff |= bitsDiff>>4;
-      bitsDiff |= bitsDiff>>8;
-      bitsDiff |= bitsDiff>>16;
-      bitsDiff++;
-
-      uint8_t hashSizeMatch = debruijn32[bitsDiff*0x076be629>>27] + (i<<5);
-
-      return;
-    }
-  }
-
-  MOZ_ASSERT(false, "Found a collision in the index!");
-}
-
-} // namespace
-
-void
-CacheIndex::ReportHashStats()
-{
-  // We're gathering the hash stats only once, exclude too small caches.
-  if (CacheObserver::HashStatsReported() || mFrecencyArray.Length() < 15000) {
-    return;
-  }
-
-  nsTArray<CacheIndexRecord *> records;
-  for (auto iter = mFrecencyArray.Iter(); !iter.Done(); iter.Next()) {
-    records.AppendElement(iter.Get());
-  }
-
-  records.Sort(HashComparator());
-
-  for (uint32_t i = 1; i < records.Length(); i++) {
-    ReportHashSizeMatch(&records[i-1]->mHash, &records[i]->mHash);
-  }
-
-  CacheObserver::SetHashStatsReported();
 }
 
 // static
