@@ -1294,29 +1294,6 @@ CacheIndex::GetCacheSize(uint32_t *_retval)
 
 // static
 nsresult
-CacheIndex::GetEntryFileCount(uint32_t *_retval)
-{
-  LOG(("CacheIndex::GetEntryFileCount()"));
-
-  StaticMutexAutoLock lock(sLock);
-
-  RefPtr<CacheIndex> index = gInstance;
-
-  if (!index) {
-    return NS_ERROR_NOT_INITIALIZED;
-  }
-
-  if (!index->IsIndexUsable()) {
-    return NS_ERROR_NOT_AVAILABLE;
-  }
-
-  *_retval = index->mIndexStats.ActiveEntriesCount();
-  LOG(("CacheIndex::GetEntryFileCount() - returning %u", *_retval));
-  return NS_OK;
-}
-
-// static
-nsresult
 CacheIndex::GetCacheStats(nsILoadContextInfo *aInfo, uint32_t *aSize, uint32_t *aCount)
 {
   LOG(("CacheIndex::GetCacheStats() [info=%p]", aInfo));

@@ -419,11 +419,6 @@ bool CacheEntry::Load(bool aTruncate, bool aPriority)
   {
     mozilla::MutexAutoUnlock unlock(mLock);
 
-    if (reportMiss) {
-      CacheFileUtils::DetailedCacheHitTelemetry::AddRecord(
-        CacheFileUtils::DetailedCacheHitTelemetry::MISS, mLoadStart);
-    }
-
     LOG(("  performing load, file=%p", mFile.get()));
     if (NS_SUCCEEDED(rv)) {
       rv = mFile->Init(fileKey,
@@ -457,16 +452,6 @@ NS_IMETHODIMP CacheEntry::OnFileReady(nsresult aResult, bool aIsNew)
       this, aResult, aIsNew));
 
   MOZ_ASSERT(!mLoadStart.IsNull());
-
-  if (NS_SUCCEEDED(aResult)) {
-    if (aIsNew) {
-      CacheFileUtils::DetailedCacheHitTelemetry::AddRecord(
-        CacheFileUtils::DetailedCacheHitTelemetry::MISS, mLoadStart);
-    } else {
-      CacheFileUtils::DetailedCacheHitTelemetry::AddRecord(
-        CacheFileUtils::DetailedCacheHitTelemetry::HIT, mLoadStart);
-    }
-  }
 
   // OnFileReady, that is the only code that can transit from LOADING
   // to any follow-on state and can only be invoked ones on an entry.
