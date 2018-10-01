@@ -31,7 +31,7 @@ function Status4Evar(window, gBrowser, toolbox)
   this.statusService = new S4EStatusService(this._window, s4e_service, this.getters);
   this.progressMeter = new S4EProgressService(gBrowser, s4e_service, this.getters, this.statusService);
   this.downloadStatus = new S4EDownloadService(this._window, gBrowser, s4e_service, this.getters);
-  this.sizeModeService = new SizeModeService(this._window, this);
+  this.sizeModeService = new SizeModeService(this._window, gBrowser, this);
 
   this._window.addEventListener("unload", this, false);
 }
@@ -232,20 +232,31 @@ S4EWindowGetters.prototype =
   }
 };
 
-function SizeModeService(window, s4e)
+function SizeModeService(window, gBrowser, s4e)
 {
   this._window = window;
+  this._gBrowser = gBrowser;
   this._s4e = s4e;
+  this._mm = this._window.messageManager;
 
   this.lastFullScreen = this._window.fullScreen;
   this.lastwindowState = this._window.windowState;
+
+  if(s4e_service.advancedStatusDetectFullScreen)
+  {
+    this._mm.addMessageListener("status4evar@caligonstudios.com:video-detect-answer", this)
+    this._mm.loadFrameScript("resource:///modules/statusbar/content-thunk.js", true);
+  }
+
   this._window.addEventListener("sizemodechange", this, false);
 }
 
 SizeModeService.prototype =
 {
   _window:         null,
+  _gBrowser:       null,
   _s4e:            null,
+  _mm:             null,
 
   lastFullScreen:  null,
   lastwindowState: null,
@@ -254,7 +265,13 @@ SizeModeService.prototype =
   {
     this._window.removeEventListener("sizemodechange", this, false);
 
-    ["_window", "_s4e"].forEach(function(prop)
+    if(s4e_service.advancedStatusDetectFullScreen)
+    {
+      this._mm.removeDelayedFrameScript("resource:///modules/statusbar/content-thunk.js");
+      this._mm.removeMessageListener("status4evar@caligonstudios.com:video-detect-answer", this);
+    }
+
+    ["_window", "_gBrowser", "_s4e", "_mm"].forEach(function(prop)
     {
       delete this[prop];
     }, this);
@@ -262,10 +279,18 @@ SizeModeService.prototype =
 
   handleEvent: function(e)
   {
-    if(this._window.fullScreen != this.lastFullScreen)
+    if(this._window.fullScreen != this.lastFullScreen && s4e_service.advancedStatusDetectFullScreen)
     {
       this.lastFullScreen = this._window.fullScreen;
-      this._s4e.statusService.updateFullScreen();
+
+      if(this.lastFullScreen && s4e_service.advancedStatusDetectVideo)
+      {
+        this._gBrowser.selectedBrowser.messageManager.sendAsyncMessage("status4evar@caligonstudios.com:video-detect");
+      }
+      else
+      {
+        this._s4e.statusService.setFullScreenState(this.lastFullScreen, false);
+      }
     }
 
     if(this._window.windowState != this.lastwindowState)
@@ -275,5 +300,13 @@ SizeModeService.prototype =
     }
   },
 
-  QueryInterface: XPCOMUtils.generateQI([ CI.nsIDOMEventListener ])
+  receiveMessage: function(message)
+  {
+    if(message.name == "status4evar@caligonstudios.com:video-detect-answer")
+    {
+      this._s4e.statusService.setFullScreenState(this.lastFullScreen, message.data.isVideo);
+    }
+  },
+
+  QueryInterface: XPCOMUtils.generateQI([ CI.nsIDOMEventListener, CI.nsIMessageListener ])
 };

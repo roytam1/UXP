@@ -35,7 +35,7 @@ S4EStatusService.prototype =
   _defaultStatus:          { val: "", type: "" },
 
   _isFullScreen:           false,
-  _isFullScreenVideo:      false,
+  _isVideo:                false,
 
   _statusText:             { val: "", type: "" },
   _noUpdate:               false,
@@ -222,18 +222,10 @@ S4EStatusService.prototype =
     }
   },
 
-  updateFullScreen: function()
+  setFullScreenState: function(isFullScreen, isVideo)
   {
-    this._isFullScreen = this._window.fullScreen;
-    this._isFullScreenVideo = false;
-    if(this._isFullScreen)
-    {
-      let fsEl = this._window.content.document.mozFullScreenElement;
-      if(fsEl && (fsEl.nodeName == "VIDEO" || fsEl.getElementsByTagName("VIDEO").length > 0))
-      {
-        this._isFullScreenVideo = true;
-      }
-    }
+    this._isFullScreen = isFullScreen;
+    this._isVideo = isFullScreen && isVideo;
 
     this.clearStatusField();
     this.updateStatusField(true);
@@ -305,7 +297,7 @@ S4EStatusService.prototype =
 
     let label = null;
 
-    if(this._isFullScreen && this._service.advancedStatusDetectFullScreen)
+    if(this._isFullScreen)
     {
       switch(location)
       {
@@ -330,7 +322,7 @@ S4EStatusService.prototype =
         break;
       case 3: // Popup
       default:
-        if(this._isFullScreenVideo && this._service.advancedStatusDetectVideo)
+        if(this._isVideo)
         {
           return;
         }
