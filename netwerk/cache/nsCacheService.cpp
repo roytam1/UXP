@@ -2640,17 +2640,8 @@ nsCacheService::Lock()
 void
 nsCacheService::Lock(mozilla::Telemetry::ID mainThreadLockerID)
 {
-    mozilla::Telemetry::ID lockerID;
-    mozilla::Telemetry::ID generalID;
-
-    if (NS_IsMainThread()) {
-        lockerID = mainThreadLockerID;
-        generalID = mozilla::Telemetry::CACHE_SERVICE_LOCK_WAIT_MAINTHREAD_2;
-    } else {
-        lockerID = mozilla::Telemetry::HistogramCount;
-        generalID = mozilla::Telemetry::CACHE_SERVICE_LOCK_WAIT_2;
-    }
-
+    // Telemetry data removed.
+    // XXX: Fold into nsCacheService::Lock()
     nsCacheService::Lock();
 }
 
