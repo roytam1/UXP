@@ -3524,9 +3524,9 @@ nsCycleCollector::CleanupAfterCollection()
   mGraph.Clear();
   timeLog.Checkpoint("CleanupAfterCollection::mGraph.Clear()");
 
+#ifdef COLLECT_TIME_DEBUG
   uint32_t interval =
     (uint32_t)((TimeStamp::Now() - mCollectionStart).ToMilliseconds());
-#ifdef COLLECT_TIME_DEBUG
   printf("cc: total cycle collector time was %ums in %u slices\n", interval,
          mResults.mNumSlices);
   printf("cc: visited %u ref counted and %u GCed objects, freed %d ref counted and %d GCed objects",

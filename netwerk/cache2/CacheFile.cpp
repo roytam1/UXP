@@ -1865,33 +1865,6 @@ CacheFile::Truncate(int64_t aOffset)
   return NS_OK;
 }
 
-static uint32_t
-StatusToTelemetryEnum(nsresult aStatus)
-{
-  if (NS_SUCCEEDED(aStatus)) {
-    return 0;
-  }
-
-  switch (aStatus) {
-    case NS_BASE_STREAM_CLOSED:
-      return 0; // Log this as a success
-    case NS_ERROR_OUT_OF_MEMORY:
-      return 2;
-    case NS_ERROR_FILE_DISK_FULL:
-      return 3;
-    case NS_ERROR_FILE_CORRUPTED:
-      return 4;
-    case NS_ERROR_FILE_NOT_FOUND:
-      return 5;
-    case NS_BINDING_ABORTED:
-      return 6;
-    default:
-      return 1; // other error
-  }
-
-  NS_NOTREACHED("We should never get here");
-}
-
 nsresult
 CacheFile::RemoveInput(CacheFileInputStream *aInput, nsresult aStatus)
 {

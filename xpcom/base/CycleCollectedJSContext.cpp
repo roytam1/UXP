@@ -1537,7 +1537,6 @@ IncrementalFinalizeRunnable::Run()
     return NS_OK;
   }
 
-  TimeStamp start = TimeStamp::Now();
   ReleaseNow(true);
 
   if (mDeferredFinalizeFunctions.Length()) {
