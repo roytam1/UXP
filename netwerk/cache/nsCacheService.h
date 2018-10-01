@@ -371,18 +371,12 @@ private:
  *  nsCacheServiceAutoLock
  ******************************************************************************/
 
-#define LOCK_TELEM(x) \
-  (::mozilla::Telemetry::CACHE_SERVICE_LOCK_WAIT_MAINTHREAD_##x)
-
 // Instantiate this class to acquire the cache service lock for a particular
 // execution scope.
 class nsCacheServiceAutoLock {
 public:
     nsCacheServiceAutoLock() {
         nsCacheService::Lock();
-    }
-    explicit nsCacheServiceAutoLock(mozilla::Telemetry::ID mainThreadLockerID) {
-        nsCacheService::Lock(mainThreadLockerID);
     }
     ~nsCacheServiceAutoLock() {
         nsCacheService::Unlock();
