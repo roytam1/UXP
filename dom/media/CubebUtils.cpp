@@ -239,31 +239,6 @@ cubeb* GetCubebContextUnlocked()
   return sCubebContext;
 }
 
-void ReportCubebBackendUsed()
-{
-  StaticMutexAutoLock lock(sMutex);
-
-  sAudioStreamInitEverSucceeded = true;
-
-  bool foundBackend = false;
-  for (uint32_t i = 0; i < ArrayLength(AUDIOSTREAM_BACKEND_ID_STR); i++) {
-    if (!strcmp(cubeb_get_backend_id(sCubebContext), AUDIOSTREAM_BACKEND_ID_STR[i])) {
-      foundBackend = true;
-    }
-  }
-}
-
-void ReportCubebStreamInitFailure(bool aIsFirst)
-{
-  StaticMutexAutoLock lock(sMutex);
-  if (!aIsFirst && !sAudioStreamInitEverSucceeded) {
-    // This machine has no audio hardware, or it's in really bad shape, don't
-    // send this info, since we want CUBEB_BACKEND_INIT_FAILURE_OTHER to detect
-    // failures to open multiple streams in a process over time.
-    return;
-  }
-}
-
 uint32_t GetCubebPlaybackLatencyInMilliseconds()
 {
   StaticMutexAutoLock lock(sMutex);

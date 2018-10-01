@@ -35,8 +35,6 @@ double GetVolumeScale();
 bool GetFirstStream();
 cubeb* GetCubebContext();
 cubeb* GetCubebContextUnlocked();
-void ReportCubebStreamInitFailure(bool aIsFirstStream);
-void ReportCubebBackendUsed();
 uint32_t GetCubebPlaybackLatencyInMilliseconds();
 Maybe<uint32_t> GetCubebMSGLatencyInFrames();
 bool CubebLatencyPrefSet();
