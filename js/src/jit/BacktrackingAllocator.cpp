@@ -1843,10 +1843,19 @@ BacktrackingAllocator::resolveControlFlow()
                 LiveRange* from = vreg(input).rangeFor(exitOf(predecessor), /* preferRegister = */ true);
                 MOZ_ASSERT(from);
 
-                if (!alloc().ensureBallast())
+                if (!alloc().ensureBallast()) {
                     return false;
-                if (!moveAtExit(predecessor, from, to, def->type()))
-                    return false;
+                }
+                if (mSuccessor->numPredecessors() > 1) {
+                    MOZ_ASSERT(predecessor->mir()->numSuccessors() == 1);
+                    if (!moveAtExit(predecessor, from, to, def->type())) {
+                        return false;
+                    }
+                } else {
+                    if (!moveAtEntry(successor, from, to, def->type())) {
+                        return false;
+                    }
+                }
             }
         }
     }
