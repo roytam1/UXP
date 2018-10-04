@@ -51,7 +51,9 @@ interface Event {
   [Pure]
   readonly attribute DOMHighResTimeStamp timeStamp;
 
-  void initEvent(DOMString type, boolean bubbles, boolean cancelable);
+  void initEvent(DOMString type,
+                 optional boolean bubbles = false,
+                 optional boolean cancelable = false);
   attribute boolean cancelBubble;
 };
 

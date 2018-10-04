@@ -25,9 +25,9 @@ interface CompositionEvent : UIEvent
 partial interface CompositionEvent
 {
   void initCompositionEvent(DOMString typeArg,
-                            boolean canBubbleArg,
-                            boolean cancelableArg,
-                            Window? viewArg,
-                            DOMString? dataArg,
-                            DOMString localeArg);
+                            optional boolean canBubbleArg = false,
+                            optional boolean cancelableArg = false,
+                            optional Window? viewArg = null,
+                            optional DOMString? dataArg = null,
+                            optional DOMString localeArg = "");
 };
