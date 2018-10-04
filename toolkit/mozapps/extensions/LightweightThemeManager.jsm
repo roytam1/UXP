@@ -110,11 +110,11 @@ this.LightweightThemeManager = {
     return _setCurrentTheme(aData, false);
   },
 
-  setLocalTheme: function LightweightThemeManager_setLocalTheme(aData) {
+  setLocalTheme: function(aData) {
     _setCurrentTheme(aData, true);
   },
 
-  getUsedTheme: function LightweightThemeManager_getUsedTheme(aId) {
+  getUsedTheme: function(aId) {
     var usedThemes = this.usedThemes;
     for (let usedTheme of usedThemes) {
       if (usedTheme.id == aId)
@@ -123,7 +123,7 @@ this.LightweightThemeManager = {
     return null;
   },
 
-  forgetUsedTheme: function LightweightThemeManager_forgetUsedTheme(aId) {
+  forgetUsedTheme: function(aId) {
     let theme = this.getUsedTheme(aId);
     if (!theme)
       return;
@@ -141,7 +141,7 @@ this.LightweightThemeManager = {
     AddonManagerPrivate.callAddonListeners("onUninstalled", wrapper);
   },
 
-  previewTheme: function LightweightThemeManager_previewTheme(aData) {
+  previewTheme: function(aData) {
     let cancel = Cc["@mozilla.org/supports-PRBool;1"].createInstance(Ci.nsISupportsPRBool);
     cancel.data = false;
     Services.obs.notifyObservers(cancel, "lightweight-theme-preview-requested",
@@ -160,7 +160,7 @@ this.LightweightThemeManager = {
     _notifyWindows(aData);
   },
 
-  resetPreview: function LightweightThemeManager_resetPreview() {
+  resetPreview: function() {
     if (_previewTimer) {
       _previewTimer.cancel();
       _previewTimer = null;
@@ -168,7 +168,7 @@ this.LightweightThemeManager = {
     }
   },
 
-  parseTheme: function LightweightThemeManager_parseTheme(aString, aBaseURI) {
+  parseTheme: function(aString, aBaseURI) {
     try {
       return _sanitizeTheme(JSON.parse(aString), aBaseURI, false);
     } catch (e) {
@@ -176,7 +176,7 @@ this.LightweightThemeManager = {
     }
   },
 
-  updateCurrentTheme: function LightweightThemeManager_updateCurrentTheme() {
+  updateCurrentTheme: function() {
     try {
       if (!_prefs.getBoolPref("update.enabled"))
         return;
@@ -224,7 +224,7 @@ this.LightweightThemeManager = {
    * @param  aData
    *         The lightweight theme to switch to
    */
-  themeChanged: function LightweightThemeManager_themeChanged(aData) {
+  themeChanged: function(aData) {
     if (_previewTimer) {
       _previewTimer.cancel();
       _previewTimer = null;
@@ -251,7 +251,7 @@ this.LightweightThemeManager = {
    * Starts the Addons provider and enables the new lightweight theme if
    * necessary.
    */
-  startup: function LightweightThemeManager_startup() {
+  startup: function() {
     if (Services.prefs.prefHasUserValue(PREF_LWTHEME_TO_SELECT)) {
       let id = Services.prefs.getCharPref(PREF_LWTHEME_TO_SELECT);
       if (id)
@@ -267,7 +267,7 @@ this.LightweightThemeManager = {
   /**
    * Shuts down the provider.
    */
-  shutdown: function LightweightThemeManager_shutdown() {
+  shutdown: function() {
     _prefs.removeObserver("", _prefObserver);
   },
 
@@ -283,7 +283,7 @@ this.LightweightThemeManager = {
    *         true if the newly enabled add-on will only become enabled after a
    *         restart
    */
-  addonChanged: function LightweightThemeManager_addonChanged(aId, aType, aPendingRestart) {
+  addonChanged: function(aId, aType, aPendingRestart) {
     if (aType != ADDON_TYPE)
       return;
 
@@ -356,7 +356,7 @@ this.LightweightThemeManager = {
    * @param  aCallback
    *         A callback to pass the Addon to
    */
-  getAddonByID: function LightweightThemeManager_getAddonByID(aId, aCallback) {
+  getAddonByID: function(aId, aCallback) {
     let id = _getInternalID(aId);
     if (!id) {
       aCallback(null);
@@ -380,7 +380,7 @@ this.LightweightThemeManager = {
    * @param  aCallback
    *         A callback to pass an array of Addons to
    */
-  getAddonsByTypes: function LightweightThemeManager_getAddonsByTypes(aTypes, aCallback) {
+  getAddonsByTypes: function(aTypes, aCallback) {
     if (aTypes && aTypes.indexOf(ADDON_TYPE) == -1) {
       aCallback([]);
       return;
@@ -541,7 +541,7 @@ AddonWrapper.prototype = {
   },
 
   // Lightweight themes are always compatible
-  isCompatibleWith: function AddonWrapper_isCompatibleWith(appVersion, platformVersion) {
+  isCompatibleWith: function(appVersion, platformVersion) {
     return true;
   },
 
@@ -708,7 +708,7 @@ function _notifyWindows(aThemeData) {
 
 var _previewTimer;
 var _previewTimerCallback = {
-  notify: function _previewTimerCallback_notify() {
+  notify: function() {
     LightweightThemeManager.resetPreview();
   }
 };
