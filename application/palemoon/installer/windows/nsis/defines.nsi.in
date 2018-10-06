@@ -3,23 +3,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Defining FunnelcakeVersion will append the value of StubURLVersionAppend to
-# StubURLVersion, append the value of URLManualDownloadAppend to
-# URLManualDownload, and append the value of URLStubDownloadAppend to
-# URLStubDownload. The value of FunnelcakeVersion should not be defined when it
-# is not used and when it is defined its value should never be empty.
-# !define FunnelcakeVersion        "999"
-
-!ifdef FunnelcakeVersion
-!define URLManualDownloadAppend  "&f=${FunnelcakeVersion}"
-!define URLStubDownloadAppend    "-f${FunnelcakeVersion}"
-!define StubURLVersionAppend     "-${FunnelcakeVersion}"
-!else
-!define URLManualDownloadAppend  ""
-!define URLStubDownloadAppend    ""
-!define StubURLVersionAppend     ""
-!endif
-
 # These defines should match application.ini settings
 !define AppName               "Pale Moon"
 !define AppVersion            "@APP_VERSION@"
@@ -84,13 +67,3 @@ VIAddVersionKey "FileVersion"     "${AppVersion}"
 VIAddVersionKey "ProductVersion"  "${AppVersion}"
 # Comments is not used but left below commented out for future reference
 # VIAddVersionKey "Comments"        "Comments"
-
-# Control positions in Dialog Units so they are placed correctly with
-# non-default DPI settings
-!define OPTIONS_ITEM_EDGE_DU 90u
-!define OPTIONS_ITEM_WIDTH_DU 356u
-!define OPTIONS_SUBITEM_EDGE_DU 119u
-!define OPTIONS_SUBITEM_WIDTH_DU 327u
-!define INSTALL_BLURB_TOP_DU 78u
-!define APPNAME_BMP_EDGE_DU 19u
-!define APPNAME_BMP_TOP_DU 12u
