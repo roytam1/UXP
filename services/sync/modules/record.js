@@ -10,10 +10,10 @@ this.EXPORTED_SYMBOLS = [
   "Collection",
 ];
 
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-const Cr = Components.results;
-const Cu = Components.utils;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cr = Components.results;
+var Cu = Components.utils;
 
 const CRYPTO_COLLECTION = "crypto";
 const KEYS_WBO = "keys";
@@ -85,7 +85,7 @@ WBORecord.prototype = {
   toJSON: function toJSON() {
     // Copy fields from data to be stringified, making sure payload is a string
     let obj = {};
-    for (let [key, val] in Iterator(this.data))
+    for (let [key, val] of Object.entries(this.data))
       obj[key] = key == "payload" ? JSON.stringify(val) : val;
     if (this.ttl)
       obj.ttl = this.ttl;
@@ -309,7 +309,7 @@ CollectionKeyManager.prototype = {
     // Return a sorted, unique array.
     changed.sort();
     let last;
-    changed = [x for each (x in changed) if ((x != last) && (last = x))];
+    changed = changed.filter(x => (x != last) && (last = x));
     return {same: changed.length == 0,
             changed: changed};
   },

@@ -18,7 +18,7 @@ this.EXPORTED_SYMBOLS = [
   "add_identity_test",
 ];
 
-const {utils: Cu} = Components;
+var {utils: Cu} = Components;
 
 Cu.import("resource://services-sync/status.js");
 Cu.import("resource://services-sync/identity.js");

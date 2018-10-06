@@ -7,7 +7,7 @@ this.EXPORTED_SYMBOLS = [
   "ClientsRec"
 ];
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+var {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://services-common/stringbundle.js");
 Cu.import("resource://services-sync/constants.js");
@@ -66,10 +66,13 @@ ClientEngine.prototype = {
       numClients: 1,
     };
 
-    for each (let {name, type} in this._store._remoteClients) {
-      stats.hasMobile = stats.hasMobile || type == "mobile";
-      stats.names.push(name);
-      stats.numClients++;
+    for (let id in this._store._remoteClients) {
+      let {name, type, stale} = this._store._remoteClients[id];
+      if (!stale) {
+        stats.hasMobile = stats.hasMobile || type == DEVICE_TYPE_MOBILE;
+        stats.names.push(name);
+        stats.numClients++;
+      }
     }
 
     return stats;
@@ -85,7 +88,11 @@ ClientEngine.prototype = {
 
     counts.set(this.localType, 1);
 
-    for each (let record in this._store._remoteClients) {
+    for (let id in this._store._remoteClients) {
+      let record = this._store._remoteClients[id];
+      if (record.stale) {
+        continue; // pretend "stale" records don't exist.
+      }
       let type = record.type;
       if (!counts.has(type)) {
         counts.set(type, 0);

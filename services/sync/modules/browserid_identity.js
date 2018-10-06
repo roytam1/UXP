@@ -6,7 +6,7 @@
 
 this.EXPORTED_SYMBOLS = ["BrowserIDManager"];
 
-const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
+var {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
 Cu.import("resource://gre/modules/Log.jsm");
 Cu.import("resource://services-common/async.js");
@@ -39,7 +39,7 @@ XPCOMUtils.defineLazyGetter(this, 'log', function() {
 });
 
 // FxAccountsCommon.js doesn't use a "namespace", so create one here.
-let fxAccountsCommon = {};
+var fxAccountsCommon = {};
 Cu.import("resource://gre/modules/FxAccountsCommon.js", fxAccountsCommon);
 
 const OBSERVER_TOPICS = [
@@ -144,7 +144,7 @@ this.BrowserIDManager.prototype = {
     // re-entering of credentials by the user is necessary we don't take any
     // further action - an observer will fire when the user does that.
     if (Weave.Status.login == LOGIN_FAILED_LOGIN_REJECTED) {
-      return Promise.reject();
+      return Promise.reject(new Error("User needs to re-authenticate"));
     }
 
     // So - we've a previous auth problem and aren't currently attempting to

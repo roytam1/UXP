@@ -6,7 +6,7 @@
 
 this.EXPORTED_SYMBOLS = ["IdentityManager"];
 
-const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
+var {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
@@ -206,7 +206,7 @@ IdentityManager.prototype = {
         return null;
       }
 
-      for each (let login in this._getLogins(PWDMGR_PASSWORD_REALM)) {
+      for (let login of this._getLogins(PWDMGR_PASSWORD_REALM)) {
         if (login.username.toLowerCase() == username) {
           // It should already be UTF-8 encoded, but we don't take any chances.
           this._basicPassword = Utils.encodeUTF8(login.password);
@@ -260,7 +260,7 @@ IdentityManager.prototype = {
         return null;
       }
 
-      for each (let login in this._getLogins(PWDMGR_PASSPHRASE_REALM)) {
+      for (let login of this._getLogins(PWDMGR_PASSPHRASE_REALM)) {
         if (login.username.toLowerCase() == username) {
           this._syncKey = login.password;
         }
@@ -411,7 +411,7 @@ IdentityManager.prototype = {
         this._setLogin(PWDMGR_PASSWORD_REALM, this.username,
                        this._basicPassword);
       } else {
-        for each (let login in this._getLogins(PWDMGR_PASSWORD_REALM)) {
+        for (let login of this._getLogins(PWDMGR_PASSWORD_REALM)) {
           Services.logins.removeLogin(login);
         }
       }
@@ -423,7 +423,7 @@ IdentityManager.prototype = {
       if (this._syncKey) {
         this._setLogin(PWDMGR_PASSPHRASE_REALM, this.username, this._syncKey);
       } else {
-        for each (let login in this._getLogins(PWDMGR_PASSPHRASE_REALM)) {
+        for (let login of this._getLogins(PWDMGR_PASSPHRASE_REALM)) {
           Services.logins.removeLogin(login);
         }
       }
@@ -477,7 +477,7 @@ IdentityManager.prototype = {
    */
   _setLogin: function _setLogin(realm, username, password) {
     let exists = false;
-    for each (let login in this._getLogins(realm)) {
+    for (let login of this._getLogins(realm)) {
       if (login.username == username && login.password == password) {
         exists = true;
       } else {
@@ -513,7 +513,7 @@ IdentityManager.prototype = {
   deleteSyncCredentials: function deleteSyncCredentials() {
     for (let host of this._getSyncCredentialsHosts()) {
       let logins = Services.logins.findLogins({}, host, "", "");
-      for each (let login in logins) {
+      for (let login of logins) {
         Services.logins.removeLogin(login);
       }
     }

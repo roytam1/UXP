@@ -10,7 +10,7 @@ this.EXPORTED_SYMBOLS = [
   "Store"
 ];
 
-const {classes: Cc, interfaces: Ci, results: Cr, utils: Cu} = Components;
+var {classes: Cc, interfaces: Ci, results: Cr, utils: Cu} = Components;
 
 Cu.import("resource://services-common/async.js");
 Cu.import("resource://gre/modules/Log.jsm");
@@ -104,7 +104,7 @@ Tracker.prototype = {
     Utils.jsonLoad("changes/" + this.file, this, function(json) {
       if (json && (typeof(json) == "object")) {
         this.changedIDs = json;
-      } else {
+      } else if (json !== null) {
         this._log.warn("Changed IDs file " + this.file + " contains non-object value.");
         json = null;
       }
@@ -135,7 +135,7 @@ Tracker.prototype = {
       return false;
     }
 
-    if (this.ignoreAll || (id in this._ignored)) {
+    if (this.ignoreAll || this._ignored.includes(id)) {
       return false;
     }
 
@@ -159,8 +159,9 @@ Tracker.prototype = {
       this._log.warn("Attempted to remove undefined ID to tracker");
       return false;
     }
-    if (this.ignoreAll || (id in this._ignored))
+    if (this.ignoreAll || this._ignored.includes(id)) {
       return false;
+    }
     if (this.changedIDs[id] != null) {
       this._log.trace("Removing changed ID " + id);
       delete this.changedIDs[id];
@@ -299,7 +300,7 @@ Store.prototype = {
    */
   applyIncomingBatch: function (records) {
     let failed = [];
-    for each (let record in records) {
+    for (let record of records) {
       try {
         this.applyIncoming(record);
       } catch (ex if (ex.code == Engine.prototype.eEngineAbortApplyIncoming)) {
@@ -483,7 +484,11 @@ EngineManager.prototype = {
   },
 
   getAll: function () {
-    return [engine for ([name, engine] in Iterator(this._engines))];
+    let engines = [];
+    for (let [, engine] of Object.entries(this._engines)) {
+      engines.push(engine);
+    }
+    return engines;
   },
 
   /**
@@ -496,7 +501,7 @@ EngineManager.prototype = {
   },
 
   get enabledEngineNames() {
-    return [e.name for each (e in this.getEnabled())];
+    return this.getEnabled().map(e => e.name);
   },
 
   persistDeclined: function () {
@@ -1245,7 +1250,7 @@ SyncEngine.prototype = {
     // because some state may change during the course of this function and we
     // need to operate on the original values.
     let existsLocally   = this._store.itemExists(item.id);
-    let locallyModified = item.id in this._modified;
+    let locallyModified = this._modified.has(item.id);
 
     // TODO Handle clock drift better. Tracked in bug 721181.
     let remoteAge = AsyncResource.serverTime - item.modified;
@@ -1444,14 +1449,14 @@ SyncEngine.prototype = {
                           + failed_ids.join(", "));
 
         // Clear successfully uploaded objects.
-        for each (let id in resp.obj.success) {
+        for (let id of resp.obj.success) {
           delete this._modified[id];
         }
 
         up.clearRecords();
       });
 
-      for each (let id in modifiedIDs) {
+      for (let id of modifiedIDs) {
         try {
           let out = this._createRecord(id);
           if (this._log.level <= Log.Level.Trace)
@@ -1489,7 +1494,7 @@ SyncEngine.prototype = {
       coll.delete();
     });
 
-    for (let [key, val] in Iterator(this._delete)) {
+    for (let [key, val] of Object.entries(this._delete)) {
       // Remove the key for future uses
       delete this._delete[key];
 

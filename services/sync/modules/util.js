@@ -4,7 +4,7 @@
 
 this.EXPORTED_SYMBOLS = ["XPCOMUtils", "Services", "Utils", "Async", "Svc", "Str"];
 
-const {classes: Cc, interfaces: Ci, results: Cr, utils: Cu} = Components;
+var {classes: Cc, interfaces: Ci, results: Cr, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Log.jsm");
 Cu.import("resource://services-common/observers.js");
@@ -338,12 +338,14 @@ this.Utils = {
 
     try {
       json = yield CommonUtils.readJSON(path);
-    } catch (e if e instanceof OS.File.Error && e.becauseNoSuchFile) {
-      // Ignore non-existent files.
     } catch (e) {
-      if (that._log) {
-        that._log.debug("Failed to load json: " +
-                        CommonUtils.exceptionStr(e));
+      if (e instanceof OS.File.Error && e.becauseNoSuchFile) {
+        // Ignore non-existent files, but explicitly return null.
+        json = null;
+      } else {
+        if (that._log) {
+          that._log.debug("Failed to load json", e);
+        }
       }
     }
 
@@ -690,7 +692,7 @@ Svc.Prefs = new Preferences(PREFS_BRANCH);
 Svc.DefaultPrefs = new Preferences({branch: PREFS_BRANCH, defaultBranch: true});
 Svc.Obs = Observers;
 
-let _sessionCID = Services.appinfo.ID == SEAMONKEY_ID ?
+var _sessionCID = Services.appinfo.ID == SEAMONKEY_ID ?
   "@mozilla.org/suite/sessionstore;1" :
   "@mozilla.org/browser/sessionstore;1";
 

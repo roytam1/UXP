@@ -11,7 +11,7 @@ this.EXPORTED_SYMBOLS = [
   "RotaryTracker",
 ];
 
-const {utils: Cu} = Components;
+var {utils: Cu} = Components;
 
 Cu.import("resource://services-sync/engines.js");
 Cu.import("resource://services-sync/record.js");
@@ -115,7 +115,7 @@ RotaryEngine.prototype = {
       return "DUPE_LOCAL";
     }
 
-    for (let [id, value] in Iterator(this._store.items)) {
+    for (let [id, value] of Object.entries(this._store.items)) {
       if (item.denomination == value) {
         return id;
       }

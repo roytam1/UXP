@@ -72,13 +72,6 @@ WeaveService.prototype = {
                                          Ci.nsISupportsWeakReference]),
 
   ensureLoaded: function () {
-    // XXX: We don't support FxA, so prevent migrator calls
-    // to the Sync server from this module! Don't load it.
-    // If we are loaded and not using FxA, load the migration module.
-    //if (!this.fxAccountsEnabled) {
-    //  Cu.import("resource://services-sync/FxaMigrator.jsm");
-    //}
-
     Components.utils.import("resource://services-sync/main.js");
 
     // Side-effect of accessing the service is that it is instantiated.
@@ -193,10 +186,13 @@ AboutWeaveLog.prototype = {
     channel.originalURI = aURI;
 
     // Ensure that the about page has the same privileges as a regular directory
-    // view. That way links to files can be opened.
+    // view. That way links to files can be opened. make sure we use the correct
+    // origin attributes when creating the principal for accessing the
+    // about:sync-log data.
     let ssm = Cc["@mozilla.org/scriptsecuritymanager;1"]
                 .getService(Ci.nsIScriptSecurityManager);
-    let principal = ssm.getNoAppCodebasePrincipal(uri);
+    let principal = ssm.createCodebasePrincipal(uri, aLoadInfo.originAttributes);
+
     channel.owner = principal;
     return channel;
   }

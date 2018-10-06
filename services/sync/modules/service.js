@@ -4,10 +4,10 @@
 
 this.EXPORTED_SYMBOLS = ["Service"];
 
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-const Cr = Components.results;
-const Cu = Components.utils;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cr = Components.results;
+var Cu = Components.utils;
 
 // How long before refreshing the cluster
 const CLUSTER_BACKOFF = 5 * 60 * 1000; // 5 minutes
@@ -432,7 +432,7 @@ Sync11Service.prototype = {
 
     // Map each old pref to the current pref branch
     let oldPref = new Preferences(oldPrefBranch);
-    for each (let pref in oldPrefNames)
+    for (let pref of oldPrefNames)
       Svc.Prefs.set(pref, oldPref.get(pref));
 
     // Remove all the old prefs and remember that we've migrated
@@ -890,7 +890,7 @@ Sync11Service.prototype = {
     // Deletion doesn't make sense if we aren't set up yet!
     if (this.clusterURL != "") {
       // Clear client-specific data from the server, including disabled engines.
-      for each (let engine in [this.clientsEngine].concat(this.engineManager.getAll())) {
+      for (let engine of [this.clientsEngine].concat(this.engineManager.getAll())) {
         try {
           engine.removeClientData();
         } catch(ex) {
@@ -1497,7 +1497,7 @@ Sync11Service.prototype = {
 
     // Wipe everything we know about except meta because we just uploaded it
     let engines = [this.clientsEngine].concat(this.engineManager.getAll());
-    let collections = [engine.name for each (engine in engines)];
+    let collections = engines.map(engine => engine.name);
     // TODO: there's a bug here. We should be calling resetClient, no?
 
     // Generate, upload, and download new keys. Do this last so we don't wipe
@@ -1657,7 +1657,7 @@ Sync11Service.prototype = {
       }
 
       // Have each engine drop any temporary meta data
-      for each (let engine in engines) {
+      for (let engine of engines) {
         engine.resetClient();
       }
     })();

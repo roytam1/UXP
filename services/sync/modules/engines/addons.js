@@ -33,7 +33,7 @@
  */
 "use strict";
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+var {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://services-sync/addonutils.js");
 Cu.import("resource://services-sync/addonsreconciler.js");
@@ -150,7 +150,7 @@ AddonsEngine.prototype = {
    */
   getChangedIDs: function getChangedIDs() {
     let changes = {};
-    for (let [id, modified] in Iterator(this._tracker.changedIDs)) {
+    for (let [id, modified] of Object.entries(this._tracker.changedIDs)) {
       changes[id] = modified;
     }
 
@@ -160,7 +160,7 @@ AddonsEngine.prototype = {
     // we assume this function is only called from within a sync.
     let reconcilerChanges = this._reconciler.getChangesSinceDate(lastSyncDate);
     let addons = this._reconciler.addons;
-    for each (let change in reconcilerChanges) {
+    for (let change of reconcilerChanges) {
       let changeTime = change[0];
       let id = change[2];
 
@@ -291,7 +291,7 @@ AddonsStore.prototype = {
       id:               record.addonID,
       syncGUID:         record.id,
       enabled:          record.enabled,
-      requireSecureURI: !Svc.Prefs.get("addons.ignoreRepositoryChecking", false),
+      requireSecureURI: this._extensionsPrefs.get("install.requireSecureOrigin", true),
     }], cb);
 
     // This will throw if there was an error. This will get caught by the sync
@@ -299,7 +299,7 @@ AddonsStore.prototype = {
     let results = cb.wait();
 
     let addon;
-    for each (let a in results.addons) {
+    for (let a of results.addons) {
       if (a.id == record.addonID) {
         addon = a;
         break;
@@ -443,7 +443,8 @@ AddonsStore.prototype = {
     let ids = {};
 
     let addons = this.reconciler.addons;
-    for each (let addon in addons) {
+    for (let id in addons) {
+      let addon = addons[id];
       if (this.isAddonSyncable(addon)) {
         ids[addon.guid] = true;
       }

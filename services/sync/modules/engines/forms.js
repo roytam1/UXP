@@ -4,9 +4,9 @@
 
 this.EXPORTED_SYMBOLS = ['FormEngine', 'FormRec'];
 
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-const Cu = Components.utils;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cu = Components.utils;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://services-sync/engines.js");
@@ -30,7 +30,7 @@ FormRec.prototype = {
 Utils.deferGetSet(FormRec, "cleartext", ["name", "value"]);
 
 
-let FormWrapper = {
+var FormWrapper = {
   _log: Log.repository.getLogger("Sync.Engine.Forms"),
 
   _getEntryCols: ["fieldname", "value"],
