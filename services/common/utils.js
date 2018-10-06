@@ -69,6 +69,10 @@ this.CommonUtils = {
     return true;
   },
 
+  // Import these from Log.jsm for backward compatibility
+  exceptionStr: Log.exceptionStr,
+  stackTrace: Log.stackTrace,
+
   /**
    * Encode byte string as base64URL (RFC 4648).
    *

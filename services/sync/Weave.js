@@ -103,7 +103,7 @@ WeaveService.prototype = {
   get fxAccountsEnabled() {
     // Early exit: FxA not supported.
     return false;
-    
+/* -- commented out to prevent unreachable code warning --    
     try {
       // Old sync guarantees '@' will never appear in the username while FxA
       // uses the FxA email address - so '@' is the flag we use.
@@ -112,6 +112,7 @@ WeaveService.prototype = {
     } catch (_) {
       return true; // No username == only allow FxA to be configured.
     }
+*/
   },
 
   /**
