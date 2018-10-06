@@ -10,12 +10,13 @@
 # instead of BrandFullName and typically should not be modified.
 !define BrandFullNameInternal "Serpent"
 !define CompanyName           "Moonchild Productions"
-!define URLInfoAbout          "http://www.basilisk-browser.org"
+!define URLInfoAbout          "https://www.basilisk-browser.org"
+!define URLUpdateInfo         "https://www.basilisk-browser.org"
 !define HelpLink              "https://forum.palemoon.org"
 
 !define URLStubDownload ""
 !define URLManualDownload ""
-!define URLSystemRequirements ""
+!define URLSystemRequirements "https://www.basilisk-browser.org"
 !define Channel "unofficial"
 
 # The installer's certificate name and issuer expected by the stub installer

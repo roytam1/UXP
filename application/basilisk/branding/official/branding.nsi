@@ -12,7 +12,7 @@
 !define CompanyName           "Moonchild Productions"
 !define URLInfoAbout          "https://www.basilisk-browser.org"
 !define URLUpdateInfo         "https://www.basilisk-browser.org/releasenotes.shtml"
-!define HelpLink              "https://www.basilisk-browser.org"
+!define HelpLink              "https://www.basilisk-browser.org/contact.shtml"
 
 ; The OFFICIAL define is a workaround to support different urls for Release and
 ; Beta since they share the same branding when building with other branches that
@@ -20,7 +20,7 @@
 !define OFFICIAL
 !define URLStubDownload ""
 !define URLManualDownload ""
-!define URLSystemRequirements ""
+!define URLSystemRequirements "https://www.basilisk-browser.org/requirements.shtml"
 !define Channel "release"
 
 # The installer's certificate name and issuer expected by the stub installer
