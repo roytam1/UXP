@@ -29,6 +29,7 @@ function test_urls() {
 
     Service.serverURL = "http://weave.server/";
     Service.clusterURL = "http://weave.cluster/";
+    do_check_eq(Svc.Prefs.get("clusterURL"), "http://weave.cluster/");
 
     do_check_eq(Service.userBaseURL, "http://weave.cluster/1.1/johndoe/");
     do_check_eq(Service.infoURL,
@@ -62,11 +63,11 @@ function test_urls() {
     _("The 'serverURL' attributes updates/resets preferences.");
     // Identical value doesn't do anything
     Service.serverURL = Service.serverURL;
-    do_check_eq(Service.clusterURL, "http://weave.cluster/");
+    do_check_eq(Svc.Prefs.get("clusterURL"), "http://weave.cluster/");
 
     Service.serverURL = "http://different.auth.node/";
     do_check_eq(Svc.Prefs.get("serverURL"), "http://different.auth.node/");
-    do_check_eq(Service.clusterURL, "");
+    do_check_eq(Svc.Prefs.get("clusterURL"), undefined);
 
   } finally {
     Svc.Prefs.resetBranch("");
@@ -83,12 +84,12 @@ function test_syncID() {
     do_check_eq(Svc.Prefs.get("client.syncID"), undefined);
 
     // Performing the first get on the attribute will generate a new GUID.
-    do_check_eq(Service.syncID, "fake-guid-00");
-    do_check_eq(Svc.Prefs.get("client.syncID"), "fake-guid-00");
+    do_check_eq(Service.syncID, "fake-guid-0");
+    do_check_eq(Svc.Prefs.get("client.syncID"), "fake-guid-0");
 
     Svc.Prefs.set("client.syncID", Utils.makeGUID());
-    do_check_eq(Svc.Prefs.get("client.syncID"), "fake-guid-01");
-    do_check_eq(Service.syncID, "fake-guid-01");
+    do_check_eq(Svc.Prefs.get("client.syncID"), "fake-guid-1");
+    do_check_eq(Service.syncID, "fake-guid-1");
   } finally {
     Svc.Prefs.resetBranch("");
     new FakeGUIDService();

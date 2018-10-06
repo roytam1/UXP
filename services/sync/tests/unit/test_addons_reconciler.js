@@ -71,7 +71,7 @@ add_test(function test_install_detection() {
 
   const KEYS = ["id", "guid", "enabled", "installed", "modified", "type",
                 "scope", "foreignInstall"];
-  for (let key of KEYS) {
+  for each (let key in KEYS) {
     do_check_true(key in record);
     do_check_neq(null, record[key]);
   }

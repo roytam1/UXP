@@ -40,8 +40,6 @@
    const Cu = Components.utils;
    const Cr = Components.results;
 
-   Cu.import("resource://gre/modules/NetUtil.jsm");
-
    var exports = {};
 
    var ios = Cc['@mozilla.org/network/io-service;1']
@@ -170,7 +168,8 @@
        if (rootPaths) {
          if (rootPaths.constructor.name != "Array")
            rootPaths = [rootPaths];
-         var fses = rootPaths.map(path => new exports.LocalFileSystem(path));
+         var fses = [new exports.LocalFileSystem(path)
+                     for each (path in rootPaths)];
          options.fs = new exports.CompositeFileSystem(fses);
        } else
          options.fs = new exports.LocalFileSystem();
@@ -315,26 +314,17 @@
        else
          baseURI = ios.newURI(base, null, null);
        var newURI = ios.newURI(path, null, baseURI);
-       var channel = NetUtil.newChannel({
-          uri: newURI,
-          loadUsingSystemPrincipal: true
-       });
+       var channel = ios.newChannelFromURI(newURI);
        try {
-         channel.open2().close();
-       } catch (e) {
-         if (e.result != Cr.NS_ERROR_FILE_NOT_FOUND) {
-           throw e;
-         }
+         channel.open().close();
+       } catch (e if e.result == Cr.NS_ERROR_FILE_NOT_FOUND) {
          return null;
        }
        return newURI.spec;
      },
      getFile: function getFile(path) {
-       var channel = NetUtil.newChannel({
-         uri: path,
-         loadUsingSystemPrincipal: true
-       });
-       var iStream = channel.open2();
+       var channel = ios.newChannel(path, null, null);
+       var iStream = channel.open();
        var ciStream = Cc["@mozilla.org/intl/converter-input-stream;1"].
                       createInstance(Ci.nsIConverterInputStream);
        var bufLen = 0x8000;

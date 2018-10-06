@@ -6,12 +6,8 @@ function run_test() {
   base.prototype = {
     dst: {},
 
-    get a() {
-      return "a";
-    },
-    set b(val) {
-      this.dst.b = val + "!!!";
-    }
+    get a() "a",
+    set b(val) this.dst.b = val + "!!!"
   };
   let src = new base();
 

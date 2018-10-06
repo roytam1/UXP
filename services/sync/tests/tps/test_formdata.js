@@ -31,11 +31,6 @@ var formdata1 = [
   }
 ];
 
-// This is currently pointless - it *looks* like it is trying to check that
-// one of the entries in formdata1 has been removed, but (a) the delete code
-// isn't active (see comments below), and (b) the way the verification works
-// means it would never do the right thing - it only checks all the entries
-// here exist, but not that they are the only entries in the DB.
 var formdata2 = [
   { fieldname: "testing",
     value: "success",
@@ -52,11 +47,6 @@ var formdata_delete = [
   }
 ];
 
-var formdata_new = [
-  { fieldname: "new-field",
-    value: "new-value"
-  }
-]
 /*
  * Test phases
  */
@@ -82,15 +72,12 @@ Phase('phase3', [
   [Formdata.delete, formdata_delete],
 //[Formdata.verifyNot, formdata_delete],
   [Formdata.verify, formdata2],
-  // add new data after the first Sync, ensuring the tracker works.
-  [Formdata.add, formdata_new],
   [Sync],
 ]);
 
 Phase('phase4', [
   [Sync],
   [Formdata.verify, formdata2],
-  [Formdata.verify, formdata_new],
 //[Formdata.verifyNot, formdata_delete]
 ]);
 

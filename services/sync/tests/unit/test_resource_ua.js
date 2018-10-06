@@ -7,18 +7,15 @@ Cu.import("resource://services-sync/service.js");
 Cu.import("resource://services-sync/util.js");
 Cu.import("resource://testing-common/services/sync/utils.js");
 
-var httpProtocolHandler = Cc["@mozilla.org/network/protocol;1?name=http"]
-                          .getService(Ci.nsIHttpProtocolHandler);
-
 // Tracking info/collections.
-var collectionsHelper = track_collections_helper();
-var collections = collectionsHelper.collections;
+let collectionsHelper = track_collections_helper();
+let collections = collectionsHelper.collections;
 
-var meta_global;
-var server;
+let meta_global;
+let server;
 
-var expectedUA;
-var ua;
+let expectedUA;
+let ua;
 function uaHandler(f) {
   return function(request, response) {
     ua = request.getHeader("User-Agent");
@@ -40,10 +37,7 @@ function run_test() {
   Service.clusterURL = server.baseURI + "/";
   _("Server URL: " + server.baseURI);
 
-  // Note this string is missing the trailing ".destkop" as the test
-  // adjusts the "client.type" pref where that portion comes from.
   expectedUA = Services.appinfo.name + "/" + Services.appinfo.version +
-               " (" + httpProtocolHandler.oscpu + ")" +
                " FxSync/" + WEAVE_VERSION + "." +
                Services.appinfo.appBuildID;
 

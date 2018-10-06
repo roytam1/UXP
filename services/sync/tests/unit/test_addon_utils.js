@@ -3,7 +3,6 @@
 
 "use strict";
 
-Cu.import("resource://gre/modules/Log.jsm");
 Cu.import("resource://gre/modules/Preferences.jsm");
 Cu.import("resource://services-sync/addonutils.js");
 Cu.import("resource://services-sync/util.js");
@@ -11,7 +10,7 @@ Cu.import("resource://services-sync/util.js");
 const HTTP_PORT = 8888;
 const SERVER_ADDRESS = "http://127.0.0.1:8888";
 
-var prefs = new Preferences();
+let prefs = new Preferences();
 
 prefs.set("extensions.getAddons.get.url",
           SERVER_ADDRESS + "/search/guid:%IDS%");
@@ -36,7 +35,7 @@ function createAndStartHTTPServer(port=HTTP_PORT) {
     return server;
   } catch (ex) {
     _("Got exception starting HTTP server on port " + port);
-    _("Error: " + Log.exceptionStr(ex));
+    _("Error: " + Utils.exceptionStr(ex));
     do_throw(ex);
   }
 }
@@ -61,9 +60,6 @@ add_test(function test_handle_empty_source_uri() {
   do_check_true("installedIDs" in result);
   do_check_eq(0, result.installedIDs.length);
 
-  do_check_true("skipped" in result);
-  do_check_true(result.skipped.includes(ID));
-
   server.stop(run_next_test);
 });
 
@@ -83,18 +79,44 @@ add_test(function test_ignore_untrusted_source_uris() {
     let sourceURI = ioService.newURI(s, null, null);
     let addon = {sourceURI: sourceURI, name: "bad", id: "bad"};
 
-    let canInstall = AddonUtils.canInstallAddon(addon);
-    do_check_false(canInstall, "Correctly rejected a bad URL");
+    try {
+      let cb = Async.makeSpinningCallback();
+      AddonUtils.getInstallFromSearchResult(addon, cb, true);
+      cb.wait();
+    } catch (ex) {
+      do_check_neq(null, ex);
+      do_check_eq(0, ex.message.indexOf("Insecure source URI"));
+      continue;
+    }
+
+    // We should never get here if an exception is thrown.
+    do_check_true(false);
   }
 
+  let count = 0;
   for (let s of good) {
     let sourceURI = ioService.newURI(s, null, null);
     let addon = {sourceURI: sourceURI, name: "good", id: "good"};
 
-    let canInstall = AddonUtils.canInstallAddon(addon);
-    do_check_true(canInstall, "Correctly accepted a good URL");
+    // Despite what you might think, we don't get an error in the callback.
+    // The install won't work because the underlying Addon instance wasn't
+    // proper. But, that just results in an AddonInstall that is missing
+    // certain values. We really just care that the callback is being invoked
+    // anyway.
+    let callback = function onInstall(error, install) {
+      do_check_null(error);
+      do_check_neq(null, install);
+      do_check_eq(sourceURI.spec, install.sourceURI.spec);
+
+      count += 1;
+
+      if (count >= good.length) {
+        run_next_test();
+      }
+    };
+
+    AddonUtils.getInstallFromSearchResult(addon, callback, true);
   }
-  run_next_test();
 });
 
 add_test(function test_source_uri_rewrite() {
@@ -102,6 +124,8 @@ add_test(function test_source_uri_rewrite() {
 
   // This tests for conformance with bug 708134 so server-side metrics aren't
   // skewed.
+
+  Svc.Prefs.set("addons.ignoreRepositoryChecking", true);
 
   // We resort to monkeypatching because of the API design.
   let oldFunction = AddonUtils.__proto__.installAddonFromSearchResult;
@@ -127,15 +151,12 @@ add_test(function test_source_uri_rewrite() {
   let server = createAndStartHTTPServer();
 
   let installCallback = Async.makeSpinningCallback();
-  let installOptions = {
-    id: "rewrite@tests.mozilla.org",
-    requireSecureURI: false,
-  }
-  AddonUtils.installAddons([installOptions], installCallback);
+  AddonUtils.installAddons([{id: "rewrite@tests.mozilla.org"}], installCallback);
 
   installCallback.wait();
   do_check_true(installCalled);
   AddonUtils.__proto__.installAddonFromSearchResult = oldFunction;
 
+  Svc.Prefs.reset("addons.ignoreRepositoryChecking");
   server.stop(run_next_test);
 });

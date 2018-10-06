@@ -4,8 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 // Process each item in the "constants hash" to add to "global" and give a name
-this.EXPORTED_SYMBOLS = [];
-for (let [key, val] of Object.entries({
+this.EXPORTED_SYMBOLS = [((this[key] = val), key) for ([key, val] in Iterator({
 
 WEAVE_VERSION:                         "@weave_version@",
 
@@ -45,7 +44,7 @@ MAX_IGNORE_ERROR_COUNT:                5,
 
 // Backoff intervals
 MINIMUM_BACKOFF_INTERVAL:              15 * 60 * 1000,      // 15 minutes
-MAXIMUM_BACKOFF_INTERVAL:              8 * 60 * 60 * 1000,  // 8 hours
+MAXIMUM_BACKOFF_INTERVAL:              8 * 60 * 60 * 1000,  // 8 hours 
 
 // HMAC event handling timeout.
 // 10 minutes: a compromise between the multi-desktop sync interval
@@ -76,10 +75,6 @@ PASSWORDS_STORE_BATCH_SIZE:            50,      // same as MOBILE_BATCH_SIZE
 ADDONS_STORE_BATCH_SIZE:               1000000, // process all addons at once
 APPS_STORE_BATCH_SIZE:                 50,      // same as MOBILE_BATCH_SIZE
 
-// Default batch size for download batching
-// (how many records are fetched at a time from the server when batching is used).
-DEFAULT_DOWNLOAD_BATCH_SIZE:           1000,
-
 // score thresholds for early syncs
 SINGLE_USER_THRESHOLD:                 1000,
 MULTI_DEVICE_THRESHOLD:                300,
@@ -98,15 +93,12 @@ SCORE_UPDATE_DELAY:                    100,
 // observed spurious idle/back events and short enough to pre-empt user activity.
 IDLE_OBSERVER_BACK_DELAY:              100,
 
-// Max number of records or bytes to upload in a single POST - we'll do multiple POSTS if either
-// MAX_UPLOAD_RECORDS or MAX_UPLOAD_BYTES is hit)
+// Number of records to upload in a single POST (multiple POSTS if exceeded)
+// FIXME: Record size limit is 256k (new cluster), so this can be quite large!
+// (Bug 569295)
 MAX_UPLOAD_RECORDS:                    100,
-MAX_UPLOAD_BYTES:                      1024 * 1023, // just under 1MB
 MAX_HISTORY_UPLOAD:                    5000,
 MAX_HISTORY_DOWNLOAD:                  5000,
-
-// TTL of the message sent to another device when sending a tab
-NOTIFY_TAB_SENT_TTL_SECS:              1 * 3600, // 1 hour
 
 // Top-level statuses:
 STATUS_OK:                             "success.status_ok",
@@ -130,6 +122,7 @@ LOGIN_FAILED_NETWORK_ERROR:            "error.login.reason.network",
 LOGIN_FAILED_SERVER_ERROR:             "error.login.reason.server",
 LOGIN_FAILED_INVALID_PASSPHRASE:       "error.login.reason.recoverykey",
 LOGIN_FAILED_LOGIN_REJECTED:           "error.login.reason.account",
+LOGIN_FAILED_NOT_READY:                "error.login.reason.initializing",
 
 // sync failure status codes
 METARECORD_DOWNLOAD_FAIL:              "error.sync.reason.metarecord_download_fail",
@@ -152,8 +145,6 @@ ENGINE_UNKNOWN_FAIL:                   "error.engine.reason.unknown_fail",
 ENGINE_APPLY_FAIL:                     "error.engine.reason.apply_fail",
 ENGINE_METARECORD_DOWNLOAD_FAIL:       "error.engine.reason.metarecord_download_fail",
 ENGINE_METARECORD_UPLOAD_FAIL:         "error.engine.reason.metarecord_upload_fail",
-// an upload failure where the batch was interrupted with a 412
-ENGINE_BATCH_INTERRUPTED:              "error.engine.reason.batch_interrupted",
 
 JPAKE_ERROR_CHANNEL:                   "jpake.error.channel",
 JPAKE_ERROR_NETWORK:                   "jpake.error.network",
@@ -181,7 +172,7 @@ kSyncBackoffNotMet:                    "Trying to sync before the server said it
 kFirstSyncChoiceNotMade:               "User has not selected an action for first sync",
 
 // Application IDs
-FIREFOX_ID:                            "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}",
+FIREFOX_ID:                            "{8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}",
 FENNEC_ID:                             "{a23983c0-fd0e-11dc-95ff-0800200c9a66}",
 SEAMONKEY_ID:                          "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}",
 TEST_HARNESS_ID:                       "xuth@mozilla.org",
@@ -189,10 +180,6 @@ TEST_HARNESS_ID:                       "xuth@mozilla.org",
 MIN_PP_LENGTH:                         12,
 MIN_PASS_LENGTH:                       8,
 
-DEVICE_TYPE_DESKTOP:                   "desktop",
-DEVICE_TYPE_MOBILE:                    "mobile",
+LOG_DATE_FORMAT:                       "%Y-%m-%d %H:%M:%S",
 
-})) {
-  this[key] = val;
-  this.EXPORTED_SYMBOLS.push(key);
-}
+}))];

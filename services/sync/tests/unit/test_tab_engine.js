@@ -1,7 +1,6 @@
 /* Any copyright is dedicated to the Public Domain.
    http://creativecommons.org/publicdomain/zero/1.0/ */
 
-Cu.import("resource://services-sync/constants.js");
 Cu.import("resource://services-sync/engines/tabs.js");
 Cu.import("resource://services-sync/record.js");
 Cu.import("resource://services-sync/service.js");
@@ -24,12 +23,11 @@ add_test(function test_getOpenURLs() {
   _("Test getOpenURLs.");
   let [engine, store] = getMocks();
 
-  let superLongURL = "http://" + (new Array(MAX_UPLOAD_BYTES).join("w")) + ".com/";
-  let urls = ["http://bar.com", "http://foo.com", "http://foobar.com", superLongURL];
-  function fourURLs() {
+  let urls = ["http://bar.com", "http://foo.com", "http://foobar.com"];
+  function threeURLs() {
     return urls.pop();
   }
-  store.getWindowEnumerator = mockGetWindowEnumerator.bind(this, fourURLs, 1, 4);
+  store.getWindowEnumerator = mockGetWindowEnumerator.bind(this, threeURLs, 1, 3);
 
   let matches;
 
@@ -40,10 +38,6 @@ add_test(function test_getOpenURLs() {
 
   _("  test matching works (false)");
   matches = openurlsset.has("http://barfoo.com");
-  ok(!matches);
-
-  _("  test matching works (too long)");
-  matches = openurlsset.has(superLongURL);
   ok(!matches);
 
   run_next_test();

@@ -38,8 +38,8 @@ function new_channel() {
   return cid;
 }
 
-var server;
-var channels = {};  // Map channel -> ServerChannel object
+let server;
+let channels = {};  // Map channel -> ServerChannel object
 function server_new_channel(request, response) {
   check_headers(request);
   let cid = new_channel();
@@ -48,7 +48,7 @@ function server_new_channel(request, response) {
   response.bodyOutputStream.write(body, body.length);
 }
 
-var error_report;
+let error_report;
 function server_report(request, response) {
   check_headers(request);
 
@@ -68,7 +68,7 @@ function server_report(request, response) {
 }
 
 // Hook for test code.
-var hooks = {};
+let hooks = {};
 function initHooks() {
   hooks.onGET = function onGET(request) {};
 }
@@ -146,7 +146,7 @@ ServerChannel.prototype = {
 /**
  * Controller that throws for everything.
  */
-var BaseController = {
+let BaseController = {
   displayPIN: function displayPIN() {
     do_throw("displayPIN() shouldn't have been called!");
   },
@@ -369,7 +369,7 @@ add_test(function test_wrongPIN() {
     displayPIN: function displayPIN(pin) {
       this.cid = pin.slice(JPAKE_LENGTH_SECRET);
       let secret = pin.slice(0, JPAKE_LENGTH_SECRET);
-      secret = Array.prototype.slice.call(secret).reverse().join("");
+      secret = [char for each (char in secret)].reverse().join("");
       let new_pin = secret + this.cid;
       _("Received PIN " + pin + ", but I'm entering " + new_pin);
 

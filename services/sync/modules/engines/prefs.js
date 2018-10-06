@@ -4,11 +4,11 @@
 
 this.EXPORTED_SYMBOLS = ['PrefsEngine', 'PrefRec'];
 
-var Cc = Components.classes;
-var Ci = Components.interfaces;
-var Cu = Components.utils;
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+const Cu = Components.utils;
 
-const PREF_SYNC_PREFS_PREFIX = "services.sync.prefs.sync.";
+const SYNC_PREFS_PREFIX = "services.sync.prefs.sync.";
 
 Cu.import("resource://services-sync/engines.js");
 Cu.import("resource://services-sync/record.js");
@@ -42,7 +42,6 @@ PrefsEngine.prototype = {
   version: 2,
 
   syncPriority: 1,
-  allowSkippedRecord: false,
 
   getChangedIDs: function () {
     // No need for a proper timestamp (no conflict resolution needed).
@@ -88,45 +87,37 @@ PrefStore.prototype = {
   _getSyncPrefs: function () {
     let syncPrefs = Cc["@mozilla.org/preferences-service;1"]
                       .getService(Ci.nsIPrefService)
-                      .getBranch(PREF_SYNC_PREFS_PREFIX)
+                      .getBranch(SYNC_PREFS_PREFIX)
                       .getChildList("", {});
     // Also sync preferences that determine which prefs get synced.
-    let controlPrefs = syncPrefs.map(pref => PREF_SYNC_PREFS_PREFIX + pref);
+    let controlPrefs = syncPrefs.map(pref => SYNC_PREFS_PREFIX + pref);
     return controlPrefs.concat(syncPrefs);
   },
 
   _isSynced: function (pref) {
-    return pref.startsWith(PREF_SYNC_PREFS_PREFIX) ||
-           this._prefs.get(PREF_SYNC_PREFS_PREFIX + pref, false);
+    return pref.startsWith(SYNC_PREFS_PREFIX) ||
+            this._prefs.get(SYNC_PREFS_PREFIX + pref, false);
   },
 
   _getAllPrefs: function () {
     let values = {};
-    for (let pref of this._getSyncPrefs()) {
+    for each (let pref in this._getSyncPrefs()) {
       if (this._isSynced(pref)) {
-        // Missing and default prefs get the null value.
-        values[pref] = this._prefs.isSet(pref) ? this._prefs.get(pref, null) : null;
+        // Missing prefs get the null value.
+        values[pref] = this._prefs.get(pref, null);
       }
     }
     return values;
   },
 
-  _updateLightWeightTheme (themeID) {
-    let themeObject = null;
-    if (themeID) {
-      themeObject = LightweightThemeManager.getUsedTheme(themeID);
-    }
-    LightweightThemeManager.currentTheme = themeObject;
-  },
-
   _setAllPrefs: function (values) {
-    let selectedThemeIDPref = "lightweightThemes.selectedThemeID";
-    let selectedThemeIDBefore = this._prefs.get(selectedThemeIDPref, null);
-    let selectedThemeIDAfter = selectedThemeIDBefore;
+    let enabledPref = "lightweightThemes.isThemeSelected";
+    let enabledBefore = this._prefs.get(enabledPref, false);
+    let prevTheme = LightweightThemeManager.currentTheme;
 
     // Update 'services.sync.prefs.sync.foo.pref' before 'foo.pref', otherwise
     // _isSynced returns false when 'foo.pref' doesn't exist (e.g., on a new device).
-    let prefs = Object.keys(values).sort(a => -a.indexOf(PREF_SYNC_PREFS_PREFIX));
+    let prefs = Object.keys(values).sort(a => -a.indexOf(SYNC_PREFS_PREFIX));
     for (let pref of prefs) {
       if (!this._isSynced(pref)) {
         continue;
@@ -134,30 +125,26 @@ PrefStore.prototype = {
 
       let value = values[pref];
 
-      switch (pref) {
-        // Some special prefs we don't want to set directly.
-        case selectedThemeIDPref:
-          selectedThemeIDAfter = value;
-          break;
-
-        // default is to just set the pref
-        default:
-          if (value == null) {
-            // Pref has gone missing. The best we can do is reset it.
-            this._prefs.reset(pref);
-          } else {
-            try {
-              this._prefs.set(pref, value);
-            } catch(ex) {
-              this._log.trace("Failed to set pref: " + pref + ": " + ex);
-            }
-          }
+      // Pref has gone missing. The best we can do is reset it.
+      if (value == null) {
+        this._prefs.reset(pref);
+        continue;
       }
+
+      try {
+        this._prefs.set(pref, value);
+      } catch(ex) {
+        this._log.trace("Failed to set pref: " + pref + ": " + ex);
+      } 
     }
 
-    // Notify the lightweight theme manager if the selected theme has changed.
-    if (selectedThemeIDBefore != selectedThemeIDAfter) {
-      this._updateLightWeightTheme(selectedThemeIDAfter);
+    // Notify the lightweight theme manager of all the new values
+    let enabledNow = this._prefs.get(enabledPref, false);
+    if (enabledBefore && !enabledNow) {
+      LightweightThemeManager.currentTheme = null;
+    } else if (enabledNow && LightweightThemeManager.usedThemes[0] != prevTheme) {
+      LightweightThemeManager.currentTheme = null;
+      LightweightThemeManager.currentTheme = LightweightThemeManager.usedThemes[0];
     }
   },
 
@@ -261,8 +248,8 @@ PrefTracker.prototype = {
       case "nsPref:changed":
         // Trigger a sync for MULTI-DEVICE for a change that determines
         // which prefs are synced or a regular pref change.
-        if (data.indexOf(PREF_SYNC_PREFS_PREFIX) == 0 ||
-            this._prefs.get(PREF_SYNC_PREFS_PREFIX + data, false)) {
+        if (data.indexOf(SYNC_PREFS_PREFIX) == 0 ||
+            this._prefs.get(SYNC_PREFS_PREFIX + data, false)) {
           this.score += SCORE_INCREMENT_XLARGE;
           this.modified = true;
           this._log.trace("Preference " + data + " changed");

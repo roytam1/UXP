@@ -80,9 +80,5 @@ var Authentication = {
     }
 
     return true;
-  },
-
-  signOut() {
-    Weave.Service.logout();
   }
 };

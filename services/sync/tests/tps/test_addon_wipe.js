@@ -8,7 +8,7 @@
 
 EnableEngines(["addons"]);
 
-var phases = {
+let phases = {
   "phase01": "profile1",
   "phase02": "profile1",
   "phase03": "profile1"
@@ -30,6 +30,5 @@ Phase("phase02", [
 ]);
 Phase("phase03", [
   [Addons.verify, [id1], STATE_ENABLED],
-  [Addons.verify, [id2], STATE_ENABLED],
-  [Sync] // Sync to ensure that the addon validator can run without error
+  [Addons.verify, [id2], STATE_ENABLED]
 ]);

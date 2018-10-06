@@ -7,13 +7,12 @@ this.EXPORTED_SYMBOLS = [
   "Resource"
 ];
 
-var Cc = Components.classes;
-var Ci = Components.interfaces;
-var Cr = Components.results;
-var Cu = Components.utils;
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+const Cr = Components.results;
+const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Preferences.jsm");
-Cu.import("resource://gre/modules/NetUtil.jsm");
 Cu.import("resource://services-common/async.js");
 Cu.import("resource://gre/modules/Log.jsm");
 Cu.import("resource://services-common/observers.js");
@@ -74,6 +73,20 @@ AsyncResource.prototype = {
    */
   authenticator: null,
 
+  // The string to use as the base User-Agent in Sync requests.
+  // These strings will look something like
+  //
+  //   Firefox/4.0 FxSync/1.8.0.20100101.mobile
+  //
+  // or
+  //
+  //   Firefox Aurora/5.0a1 FxSync/1.9.0.20110409.desktop
+  //
+  _userAgent:
+    Services.appinfo.name + "/" + Services.appinfo.version +  // Product.
+    " FxSync/" + WEAVE_VERSION + "." +                        // Sync.
+    Services.appinfo.appBuildID + ".",                        // Build.
+
   // Wait 5 minutes before killing a request.
   ABORT_TIMEOUT: 300000,
 
@@ -121,9 +134,7 @@ AsyncResource.prototype = {
   //
   // Get and set the data encapulated in the resource.
   _data: null,
-  get data() {
-    return this._data;
-  },
+  get data() this._data,
   set data(value) {
     this._data = value;
   },
@@ -135,9 +146,16 @@ AsyncResource.prototype = {
   // to obtain a request channel.
   //
   _createRequest: function Res__createRequest(method) {
-    let channel = NetUtil.newChannel({uri: this.spec, loadUsingSystemPrincipal: true})
-                         .QueryInterface(Ci.nsIRequest)
-                         .QueryInterface(Ci.nsIHttpChannel);
+    let channel = Services.io.newChannel2(this.spec,
+                                          null,
+                                          null,
+                                          null,      // aLoadingNode
+                                          Services.scriptSecurityManager.getSystemPrincipal(),
+                                          null,      // aTriggeringPrincipal
+                                          Ci.nsILoadInfo.SEC_NORMAL,
+                                          Ci.nsIContentPolicy.TYPE_OTHER)
+                          .QueryInterface(Ci.nsIRequest)
+                          .QueryInterface(Ci.nsIHttpChannel);
 
     channel.loadFlags |= DEFAULT_LOAD_FLAGS;
 
@@ -147,7 +165,8 @@ AsyncResource.prototype = {
 
     // Compose a UA string fragment from the various available identifiers.
     if (Svc.Prefs.get("sendVersionInfo", true)) {
-      channel.setRequestHeader("user-agent", Utils.userAgent, false);
+      let ua = this._userAgent + Svc.Prefs.get("client.type", "desktop");
+      channel.setRequestHeader("user-agent", ua, false);
     }
 
     let headers = this.headers;
@@ -155,7 +174,7 @@ AsyncResource.prototype = {
     if (this.authenticator) {
       let result = this.authenticator(this, method);
       if (result && result.headers) {
-        for (let [k, v] of Object.entries(result.headers)) {
+        for (let [k, v] in Iterator(result.headers)) {
           headers[k.toLowerCase()] = v;
         }
       }
@@ -163,7 +182,7 @@ AsyncResource.prototype = {
       this._log.debug("No authenticator found.");
     }
 
-    for (let [key, value] of Object.entries(headers)) {
+    for (let [key, value] in Iterator(headers)) {
       if (key == 'authorization')
         this._log.trace("HTTP Header " + key + ": ***** (suppressed)");
       else
@@ -209,10 +228,10 @@ AsyncResource.prototype = {
                                        this._log, this.ABORT_TIMEOUT);
     channel.requestMethod = action;
     try {
-      channel.asyncOpen2(listener);
+      channel.asyncOpen(listener, null);
     } catch (ex) {
-      // asyncOpen2 can throw in a bunch of cases -- e.g., a forbidden port.
-      this._log.warn("Caught an error in asyncOpen2", ex);
+      // asyncOpen can throw in a bunch of cases -- e.g., a forbidden port.
+      this._log.warn("Caught an error in asyncOpen: " + CommonUtils.exceptionStr(ex));
       CommonUtils.nextTick(callback.bind(this, ex));
     }
   },
@@ -259,7 +278,9 @@ AsyncResource.prototype = {
     } catch(ex) {
       // Got a response, but an exception occurred during processing.
       // This shouldn't occur.
-      this._log.warn("Caught unexpected exception in _oncomplete", ex);
+      this._log.warn("Caught unexpected exception " + CommonUtils.exceptionStr(ex) +
+                     " in _onComplete.");
+      this._log.debug(CommonUtils.stackTrace(ex));
     }
 
     // Process headers. They can be empty, or the call can otherwise fail, so
@@ -297,18 +318,16 @@ AsyncResource.prototype = {
                        contentLength + ".");
       }
     } catch (ex) {
-      this._log.debug("Caught exception visiting headers in _onComplete", ex);
+      this._log.debug("Caught exception " + CommonUtils.exceptionStr(ex) +
+                      " visiting headers in _onComplete.");
+      this._log.debug(CommonUtils.stackTrace(ex));
     }
 
     let ret     = new String(data);
-    ret.url     = channel.URI.spec;
     ret.status  = status;
     ret.success = success;
     ret.headers = headers;
 
-    if (!success) {
-      this._log.warn(`${action} request to ${ret.url} failed with status ${status}`);
-    }
     // Make a lazy getter to convert the json response into an object.
     // Note that this can cause a parse error to be thrown far away from the
     // actual fetch, so be warned!
@@ -316,7 +335,7 @@ AsyncResource.prototype = {
       try {
         return JSON.parse(ret);
       } catch (ex) {
-        this._log.warn("Got exception parsing response body", ex);
+        this._log.warn("Got exception parsing response body: \"" + CommonUtils.exceptionStr(ex));
         // Stringify to avoid possibly printing non-printable characters.
         this._log.debug("Parse fail: Response body starts: \"" +
                         JSON.stringify((ret + "").slice(0, 100)) +
@@ -384,12 +403,7 @@ Resource.prototype = {
     try {
       this._doRequest(action, data, callback);
       return Async.waitForSyncCallback(cb);
-    } catch (ex) {
-      if (Async.isShutdownException(ex)) {
-        throw ex;
-      }
-      this._log.warn("${action} request to ${url} failed: ${ex}",
-                     { action, url: this.uri.spec, ex });
+    } catch(ex) {
       // Combine the channel stack with this request stack.  Need to create
       // a new error object for that.
       let error = Error(ex.message);
@@ -527,7 +541,7 @@ ChannelListener.prototype = {
       siStream = Cc["@mozilla.org/scriptableinputstream;1"].createInstance(Ci.nsIScriptableInputStream);
       siStream.init(stream);
     } catch (ex) {
-      this._log.warn("Exception creating nsIScriptableInputStream", ex);
+      this._log.warn("Exception creating nsIScriptableInputStream." + CommonUtils.exceptionStr(ex));
       this._log.debug("Parameters: " + req.URI.spec + ", " + stream + ", " + off + ", " + count);
       // Cannot proceed, so rethrow and allow the channel to cancel itself.
       throw ex;
@@ -543,11 +557,9 @@ ChannelListener.prototype = {
     try {
       this._onProgress();
     } catch (ex) {
-      if (Async.isShutdownException(ex)) {
-        throw ex;
-      }
       this._log.warn("Got exception calling onProgress handler during fetch of "
-                     + req.URI.spec, ex);
+                     + req.URI.spec);
+      this._log.debug(CommonUtils.exceptionStr(ex));
       this._log.trace("Rethrowing; expect a failure code from the HTTP channel.");
       throw ex;
     }
@@ -562,7 +574,7 @@ ChannelListener.prototype = {
     try {
       CommonUtils.namedTimer(this.abortRequest, this._timeout, this, "abortTimer");
     } catch (ex) {
-      this._log.warn("Got exception extending abort timer", ex);
+      this._log.warn("Got exception extending abort timer: " + CommonUtils.exceptionStr(ex));
     }
   },
 
@@ -656,14 +668,14 @@ ChannelNotificationListener.prototype = {
         }
       }
     } catch (ex) {
-      this._log.error("Error copying headers", ex);
+      this._log.error("Error copying headers: " + CommonUtils.exceptionStr(ex));
     }
 
     // We let all redirects proceed.
     try {
       callback.onRedirectVerifyCallback(Cr.NS_OK);
     } catch (ex) {
-      this._log.error("onRedirectVerifyCallback threw!", ex);
+      this._log.error("onRedirectVerifyCallback threw!" + CommonUtils.exceptionStr(ex));
     }
   }
 };

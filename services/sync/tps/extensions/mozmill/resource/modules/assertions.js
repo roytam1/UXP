@@ -4,7 +4,7 @@
 
 var EXPORTED_SYMBOLS = ['Assert', 'Expect'];
 
-var Cu = Components.utils;
+const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 
@@ -658,10 +658,7 @@ Expect.prototype.waitFor = function Expect_waitFor(aCallback, aMessage, aTimeout
   try {
     Assert.prototype.waitFor.apply(this, arguments);
   }
-  catch (ex) {
-    if (!(ex instanceof errors.AssertionError)) {
-      throw ex;
-    }
+  catch (ex if ex instanceof errors.AssertionError) {
     message = ex.message;
     condition = false;
   }

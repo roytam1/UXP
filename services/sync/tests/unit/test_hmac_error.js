@@ -8,7 +8,7 @@ Cu.import("resource://testing-common/services/sync/rotaryengine.js");
 Cu.import("resource://testing-common/services/sync/utils.js");
 
 // Track HMAC error counts.
-var hmacErrorCount = 0;
+let hmacErrorCount = 0;
 (function () {
   let hHE = Service.handleHMACEvent;
   Service.handleHMACEvent = function () {
@@ -49,7 +49,7 @@ function shared_setup() {
   return [engine, rotaryColl, clientsColl, keysWBO, global];
 }
 
-add_task(function *hmac_error_during_404() {
+add_test(function hmac_error_during_404() {
   _("Attempt to replicate the HMAC error setup.");
   let [engine, rotaryColl, clientsColl, keysWBO, global] = shared_setup();
 
@@ -83,14 +83,13 @@ add_task(function *hmac_error_during_404() {
 
   try {
     _("Syncing.");
-    yield sync_and_validate_telem();
-
+    Service.sync();
     _("Partially resetting client, as if after a restart, and forcing redownload.");
     Service.collectionKeys.clear();
     engine.lastSync = 0;        // So that we redownload records.
     key404Counter = 1;
     _("---------------------------");
-    yield sync_and_validate_telem();
+    Service.sync();
     _("---------------------------");
 
     // Two rotary items, one client record... no errors.
@@ -98,7 +97,7 @@ add_task(function *hmac_error_during_404() {
   } finally {
     Svc.Prefs.resetBranch("");
     Service.recordManager.clearCache();
-    yield new Promise(resolve => server.stop(resolve));
+    server.stop(run_next_test);
   }
 });
 

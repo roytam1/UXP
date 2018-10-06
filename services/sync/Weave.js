@@ -72,6 +72,13 @@ WeaveService.prototype = {
                                          Ci.nsISupportsWeakReference]),
 
   ensureLoaded: function () {
+    // XXX: We don't support FxA, so prevent migrator calls
+    // to the Sync server from this module! Don't load it.
+    // If we are loaded and not using FxA, load the migration module.
+    //if (!this.fxAccountsEnabled) {
+    //  Cu.import("resource://services-sync/FxaMigrator.jsm");
+    //}
+
     Components.utils.import("resource://services-sync/main.js");
 
     // Side-effect of accessing the service is that it is instantiated.
@@ -96,11 +103,14 @@ WeaveService.prototype = {
    * Whether Firefox Accounts is enabled.
    *
    * @return bool
+   *
+   * This function is currently always returning false because we don't support
+   * the use of FxA/Sync-1.5 but do want to keep the code "just in case".
    */
   get fxAccountsEnabled() {
-#ifdef MC_PALEMOON
+    // Early exit: FxA not supported.
     return false;
-#else
+    
     try {
       // Old sync guarantees '@' will never appear in the username while FxA
       // uses the FxA email address - so '@' is the flag we use.
@@ -109,7 +119,6 @@ WeaveService.prototype = {
     } catch (_) {
       return true; // No username == only allow FxA to be configured.
     }
-#endif
   },
 
   /**
@@ -123,7 +132,8 @@ WeaveService.prototype = {
    */
   get enabled() {
     let prefs = Services.prefs.getBranch(SYNC_PREFS_BRANCH);
-    return prefs.prefHasUserValue("username");
+    return prefs.prefHasUserValue("username") &&
+           prefs.prefHasUserValue("clusterURL");
   },
 
   observe: function (subject, topic, data) {
@@ -183,13 +193,10 @@ AboutWeaveLog.prototype = {
     channel.originalURI = aURI;
 
     // Ensure that the about page has the same privileges as a regular directory
-    // view. That way links to files can be opened. make sure we use the correct
-    // origin attributes when creating the principal for accessing the
-    // about:sync-log data.
+    // view. That way links to files can be opened.
     let ssm = Cc["@mozilla.org/scriptsecuritymanager;1"]
                 .getService(Ci.nsIScriptSecurityManager);
-    let principal = ssm.createCodebasePrincipal(uri, aLoadInfo.originAttributes);
-
+    let principal = ssm.getNoAppCodebasePrincipal(uri);
     channel.owner = principal;
     return channel;
   }

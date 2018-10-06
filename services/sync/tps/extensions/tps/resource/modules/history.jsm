@@ -33,7 +33,7 @@ var DumpHistory = function TPS_History__DumpHistory() {
     let node = root.getChild(i);
     let uri = node.uri;
     let curvisits = HistoryEntry._getVisits(uri);
-    for (var visit of curvisits) {
+    for each (var visit in curvisits) {
       Logger.logInfo("URI: " + uri + ", type=" + visit.type + ", date=" + visit.date, true);
     }
   }
@@ -70,8 +70,8 @@ var HistoryEntry = {
       "WHERE place_id = (" +
         "SELECT id " +
         "FROM moz_places " +
-        "WHERE url_hash = hash(:url) AND url = :url) " +
-      "ORDER BY date DESC LIMIT 20");
+        "WHERE url = :url) " +
+      "ORDER BY date DESC LIMIT 10");
     this.__defineGetter__("_visitStm", () => stm);
     return stm;
   },
@@ -110,7 +110,7 @@ var HistoryEntry = {
       uri: uri,
       visits: []
     };
-    for (let visit of item.visits) {
+    for each (visit in item.visits) {
       place.visits.push({
         visitDate: usSinceEpoch + (visit.date * 60 * 60 * 1000 * 1000),
         transitionType: visit.type
@@ -150,8 +150,8 @@ var HistoryEntry = {
       "History entry in test file must have both 'visits' " +
       "and 'uri' properties");
     let curvisits = this._getVisits(item.uri);
-    for (let visit of curvisits) {
-      for (let itemvisit of item.visits) {
+    for each (visit in curvisits) {
+      for each (itemvisit in item.visits) {
         let expectedDate = itemvisit.date * 60 * 60 * 1000 * 1000
             + usSinceEpoch;
         if (visit.type == itemvisit.type && visit.date == expectedDate) {
@@ -161,7 +161,7 @@ var HistoryEntry = {
     }
 
     let all_items_found = true;
-    for (let itemvisit of item.visits) {
+    for each (itemvisit in item.visits) {
       all_items_found = all_items_found && "found" in itemvisit;
       Logger.logInfo("History entry for " + item.uri + ", type:" +
               itemvisit.type + ", date:" + itemvisit.date +
@@ -189,16 +189,9 @@ var HistoryEntry = {
       PlacesUtils.history.removePagesFromHost(item.host, false);
     }
     else if ("begin" in item && "end" in item) {
-      let cb = Async.makeSpinningCallback();
-      let msSinceEpoch = parseInt(usSinceEpoch / 1000);
-      let filter = {
-        beginDate: new Date(msSinceEpoch + (item.begin * 60 * 60 * 1000)),
-        endDate: new Date(msSinceEpoch + (item.end * 60 * 60 * 1000))
-      };
-      PlacesUtils.history.removeVisitsByFilter(filter)
-      .catch(ex => Logger.AssertTrue(false, "An error occurred while deleting history: " + ex))
-      .then(result => {cb(null, result)}, err => {cb(err)});
-      Async.waitForSyncCallback(cb);
+      PlacesUtils.history.removeVisitsByTimeframe(
+          usSinceEpoch + (item.begin * 60 * 60 * 1000 * 1000),
+          usSinceEpoch + (item.end * 60 * 60 * 1000 * 1000));
     }
     else {
       Logger.AssertTrue(false, "invalid entry in delete history");

@@ -88,8 +88,7 @@ Phase('phase2', [
   [Sync],
   [Bookmarks.verify, bookmarks_initial],
   [Bookmarks.delete, bookmarks_to_delete],
-  [Bookmarks.verifyNot, bookmarks_to_delete],
-  [Bookmarks.skipValidation]
+  [Bookmarks.verifyNot, bookmarks_to_delete]
 ]);
 
 // Using profile1, sync again with wipe-server set to true.  Verify our

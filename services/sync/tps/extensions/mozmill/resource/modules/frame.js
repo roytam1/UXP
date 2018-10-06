@@ -5,9 +5,9 @@
 var EXPORTED_SYMBOLS = ['Collector','Runner','events', 'runTestFile', 'log',
                         'timers', 'persisted', 'shutdownApplication'];
 
-var Cc = Components.classes;
-var Ci = Components.interfaces;
-var Cu = Components.utils;
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+const Cu = Components.utils;
 
 const TIMEOUT_SHUTDOWN_HTTPD = 15000;
 
@@ -256,7 +256,7 @@ events.pass = function (obj) {
     events.currentTest.__passes__.push(obj);
   }
 
-  for (var timer of timers) {
+  for each (var timer in timers) {
     timer.actions.push(
       {"currentTest": events.currentModule.__file__ + "::" + events.currentTest.__name__,
        "obj": obj,
@@ -286,7 +286,7 @@ events.fail = function (obj) {
     events.currentTest.__fails__.push(obj);
   }
 
-  for (var time of timers) {
+  for each (var time in timers) {
     timer.actions.push(
       {"currentTest": events.currentModule.__file__ + "::" + events.currentTest.__name__,
        "obj": obj,
@@ -325,7 +325,7 @@ events.fireEvent = function (name, obj) {
     }
   }
 
-  for (var listener of this.globalListeners) {
+  for each(var listener in this.globalListeners) {
     listener(name, obj);
   }
 }

@@ -2,16 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-this.EXPORTED_SYMBOLS = ['PasswordEngine', 'LoginRec', 'PasswordValidator'];
+this.EXPORTED_SYMBOLS = ['PasswordEngine', 'LoginRec'];
 
-var {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://services-sync/record.js");
 Cu.import("resource://services-sync/constants.js");
-Cu.import("resource://services-sync/collection_validator.js");
 Cu.import("resource://services-sync/engines.js");
 Cu.import("resource://services-sync/util.js");
-Cu.import("resource://services-common/async.js");
 
 this.LoginRec = function LoginRec(collection, id) {
   CryptoWrapper.call(this, collection, id);
@@ -24,7 +22,6 @@ LoginRec.prototype = {
 Utils.deferGetSet(LoginRec, "cleartext", [
     "hostname", "formSubmitURL",
     "httpRealm", "username", "password", "usernameField", "passwordField",
-    "timeCreated", "timePasswordChanged",
     ]);
 
 
@@ -70,10 +67,7 @@ PasswordEngine.prototype = {
         Svc.Prefs.set("deletePwdFxA", true);
         Svc.Prefs.reset("deletePwd"); // The old prefname we previously used.
       } catch (ex) {
-        if (Async.isShutdownException(ex)) {
-          throw ex;
-        }
-        this._log.debug("Password deletes failed", ex);
+        this._log.debug("Password deletes failed: " + Utils.exceptionStr(ex));
       }
     }
   },
@@ -89,7 +83,7 @@ PasswordEngine.prototype = {
     this._store._sleep(0); // Yield back to main thread after synchronous operation.
 
     // Look for existing logins that match the hostname, but ignore the password.
-    for (let local of logins) {
+    for each (let local in logins) {
       if (login.matches(local, true) && local instanceof Ci.nsILoginMetaInfo) {
         return local.guid;
       }
@@ -104,13 +98,6 @@ function PasswordStore(name, engine) {
 PasswordStore.prototype = {
   __proto__: Store.prototype,
 
-  _newPropertyBag: function () {
-    return Cc["@mozilla.org/hash-property-bag;1"].createInstance(Ci.nsIWritablePropertyBag2);
-  },
-
-  /**
-   * Return an instance of nsILoginInfo (and, implicitly, nsILoginMetaInfo).
-   */
   _nsLoginInfoFromRecord: function (record) {
     function nullUndefined(x) {
       return (x == undefined) ? null : x;
@@ -131,21 +118,13 @@ PasswordStore.prototype = {
                                      record.password,
                                      record.usernameField,
                                      record.passwordField);
-
     info.QueryInterface(Ci.nsILoginMetaInfo);
     info.guid = record.id;
-    if (record.timeCreated) {
-      info.timeCreated = record.timeCreated;
-    }
-    if (record.timePasswordChanged) {
-      info.timePasswordChanged = record.timePasswordChanged;
-    }
-
     return info;
   },
 
   _getLoginFromGUID: function (id) {
-    let prop = this._newPropertyBag();
+    let prop = Cc["@mozilla.org/hash-property-bag;1"].createInstance(Ci.nsIWritablePropertyBag2);
     prop.setPropertyAsAUTF8String("guid", id);
 
     let logins = Services.logins.searchLogins({}, prop);
@@ -190,7 +169,8 @@ PasswordStore.prototype = {
       return;
     }
 
-    let prop = this._newPropertyBag();
+    let prop = Cc["@mozilla.org/hash-property-bag;1"]
+                 .createInstance(Ci.nsIWritablePropertyBag2);
     prop.setPropertyAsAUTF8String("guid", newID);
 
     Services.logins.modifyLogin(oldLogin, prop);
@@ -217,11 +197,6 @@ PasswordStore.prototype = {
     record.usernameField = login.usernameField;
     record.passwordField = login.passwordField;
 
-    // Optional fields.
-    login.QueryInterface(Ci.nsILoginMetaInfo);
-    record.timeCreated = login.timeCreated;
-    record.timePasswordChanged = login.timePasswordChanged;
-
     return record;
   },
 
@@ -237,7 +212,8 @@ PasswordStore.prototype = {
     try {
       Services.logins.addLogin(login);
     } catch(ex) {
-      this._log.debug(`Adding record ${record.id} resulted in exception`, ex);
+      this._log.debug("Adding record " + record.id +
+                      " resulted in exception " + Utils.exceptionStr(ex));
     }
   },
 
@@ -269,7 +245,9 @@ PasswordStore.prototype = {
     try {
       Services.logins.modifyLogin(loginItem, newinfo);
     } catch(ex) {
-      this._log.debug(`Modifying record ${record.id} resulted in exception; not modifying`, ex);
+      this._log.debug("Modifying record " + record.id +
+                      " resulted in exception " + Utils.exceptionStr(ex) +
+                      ". Not modifying.");
     }
   },
 
@@ -326,46 +304,3 @@ PasswordTracker.prototype = {
     }
   },
 };
-
-class PasswordValidator extends CollectionValidator {
-  constructor() {
-    super("passwords", "id", [
-      "hostname",
-      "formSubmitURL",
-      "httpRealm",
-      "password",
-      "passwordField",
-      "username",
-      "usernameField",
-    ]);
-  }
-
-  getClientItems() {
-    let logins = Services.logins.getAllLogins({});
-    let syncHosts = Utils.getSyncCredentialsHosts()
-    let result = logins.map(l => l.QueryInterface(Ci.nsILoginMetaInfo))
-                       .filter(l => !syncHosts.has(l.hostname));
-    return Promise.resolve(result);
-  }
-
-  normalizeClientItem(item) {
-    return {
-      id: item.guid,
-      guid: item.guid,
-      hostname: item.hostname,
-      formSubmitURL: item.formSubmitURL,
-      httpRealm: item.httpRealm,
-      password: item.password,
-      passwordField: item.passwordField,
-      username: item.username,
-      usernameField: item.usernameField,
-      original: item,
-    }
-  }
-
-  normalizeServerItem(item) {
-    return Object.assign({ guid: item.id }, item);
-  }
-}
-
-

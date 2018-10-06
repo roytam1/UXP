@@ -9,9 +9,9 @@ var EXPORTED_SYMBOLS = ["Elem", "Selector", "ID", "Link", "XPath", "Name", "Look
 
 const NAMESPACE_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
-var Cc = Components.classes;
-var Ci = Components.interfaces;
-var Cu = Components.utils;
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+const Cu = Components.utils;
 
 var EventUtils = {};  Cu.import('resource://mozmill/stdlib/EventUtils.js', EventUtils);
 
@@ -131,7 +131,7 @@ MozMillElement.prototype.__defineGetter__("element", function () {
 
 /**
  * Drag an element to the specified offset on another element, firing mouse and
- * drag events. Adapted from EventUtils.js synthesizeDrop()
+ * drag events. Adapted from ChromeUtils.js synthesizeDrop()
  *
  * By default it will drag the source element over the destination's element
  * center with a "move" dropEffect.
@@ -218,7 +218,7 @@ MozMillElement.prototype.dragToElement = function(aElement, aOffsetX, aOffsetY,
     EventUtils.synthesizeMouse(destNode, destCoords.x, destCoords.y,
                                { type: "mousemove" }, destWindow);
 
-    var event = destWindow.document.createEvent("DragEvent");
+    var event = destWindow.document.createEvent("DragEvents");
     event.initDragEvent("dragenter", true, true, destWindow, 0, 0, 0, 0, 0,
                         false, false, false, false, 0, null, dataTransfer);
     event.initDragEvent("dragover", true, true, destWindow, 0, 0, 0, 0, 0,

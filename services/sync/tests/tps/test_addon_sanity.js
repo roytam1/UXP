@@ -9,7 +9,7 @@
 
 EnableEngines(["addons"]);
 
-var phases = { "phase1": "profile1",
+let phases = { "phase1": "profile1",
                "phase2": "profile1" };
 
 const id = "unsigned-xpi@tests.mozilla.org";
@@ -25,6 +25,5 @@ Phase("phase1", [
 
 Phase("phase2", [
   // Add-on should be present after restart
-  [Addons.verify, [id], STATE_ENABLED],
-  [Sync] // Sync to ensure everything is initialized enough for the addon validator to run
+  [Addons.verify, [id], STATE_ENABLED]
 ]);

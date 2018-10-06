@@ -4,7 +4,7 @@
 
 this.EXPORTED_SYMBOLS = ["TabEngine", "TabSetRecord"];
 
-var {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 const TABS_TTL = 604800;           // 7 days.
 const TAB_ENTRIES_LIMIT = 25;      // How many URLs to include in tab history.
@@ -43,11 +43,6 @@ TabEngine.prototype = {
   _storeObj: TabStore,
   _trackerObj: TabTracker,
   _recordObj: TabSetRecord,
-  // A flag to indicate if we have synced in this session. This is to help
-  // consumers of remote tabs that may want to differentiate between "I've an
-  // empty tab list as I haven't yet synced" vs "I've an empty tab list
-  // as there really are no tabs"
-  hasSyncedThisSession: false,
 
   syncPriority: 3,
 
@@ -72,7 +67,6 @@ TabEngine.prototype = {
     SyncEngine.prototype._resetClient.call(this);
     this._store.wipe();
     this._tracker.modified = true;
-    this.hasSyncedThisSession = false;
   },
 
   removeClientData: function () {
@@ -100,12 +94,7 @@ TabEngine.prototype = {
     }
 
     return SyncEngine.prototype._reconcile.call(this, item);
-  },
-
-  _syncFinish() {
-    this.hasSyncedThisSession = true;
-    return SyncEngine.prototype._syncFinish.call(this);
-  },
+  }
 };
 
 
@@ -145,7 +134,7 @@ TabStore.prototype = {
       }
 
       for (let tab of win.gBrowser.tabs) {
-        let tabState = this.getTabState(tab);
+        tabState = this.getTabState(tab);
 
         // Make sure there are history entries to look at.
         if (!tabState || !tabState.entries.length) {
@@ -162,11 +151,6 @@ TabStore.prototype = {
         // We ignore the tab completely if the current entry url is
         // not acceptable (we need something accurate to open).
         if (!acceptable(current.url)) {
-          continue;
-        }
-
-        if (current.url.length >= (MAX_UPLOAD_BYTES - 1000)) {
-          this._log.trace("Skipping over-long URL.");
           continue;
         }
 
@@ -189,9 +173,7 @@ TabStore.prototype = {
         allTabs.push({
           title: current.title || "",
           urlHistory: urls,
-          icon: tabState.image ||
-                (tabState.attributes && tabState.attributes.image) ||
-                "",
+          icon: tabState.attributes && tabState.attributes.image || "",
           lastUsed: Math.floor((tabState.lastAccessed || 0) / 1000),
         });
       }
@@ -265,9 +247,27 @@ TabStore.prototype = {
 
   create: function (record) {
     this._log.debug("Adding remote tabs from " + record.clientName);
-    this._remoteClients[record.id] = Object.assign({}, record.cleartext, {
-      lastModified: record.modified
-    });
+    this._remoteClients[record.id] = record.cleartext;
+
+    // Lose some precision, but that's good enough (seconds).
+    let roundModify = Math.floor(record.modified / 1000);
+    let notifyState = Svc.Prefs.get("notifyTabState");
+
+    // If there's no existing pref, save this first modified time.
+    if (notifyState == null) {
+      Svc.Prefs.set("notifyTabState", roundModify);
+      return;
+    }
+
+    // Don't change notifyState if it's already 0 (don't notify).
+    if (notifyState == 0) {
+      return;
+    }
+
+    // We must have gotten a new tab that isn't the same as last time.
+    if (notifyState != roundModify) {
+      Svc.Prefs.set("notifyTabState", 0);
+    }
   },
 
   update: function (record) {
@@ -302,14 +302,10 @@ TabTracker.prototype = {
 
   _registerListenersForWindow: function (window) {
     this._log.trace("Registering tab listeners in window");
-    for (let topic of this._topics) {
+    for each (let topic in this._topics) {
       window.addEventListener(topic, this.onTab, false);
     }
     window.addEventListener("unload", this._unregisterListeners, false);
-    // If it's got a tab browser we can listen for things like navigation.
-    if (window.gBrowser) {
-      window.gBrowser.addProgressListener(this);
-    }
   },
 
   _unregisterListeners: function (event) {
@@ -319,11 +315,8 @@ TabTracker.prototype = {
   _unregisterListenersForWindow: function (window) {
     this._log.trace("Removing tab listeners in window");
     window.removeEventListener("unload", this._unregisterListeners, false);
-    for (let topic of this._topics) {
+    for each (let topic in this._topics) {
       window.removeEventListener(topic, this.onTab, false);
-    }
-    if (window.gBrowser) {
-      window.gBrowser.removeProgressListener(this);
     }
   },
 
@@ -378,16 +371,6 @@ TabTracker.prototype = {
     // events, always bump the score.
     if (event.type != "pageshow" || Math.random() < .1) {
       this.score += SCORE_INCREMENT_SMALL;
-    }
-  },
-
-  // web progress listeners.
-  onLocationChange: function (webProgress, request, location, flags) {
-    // We only care about top-level location changes which are not in the same
-    // document.
-    if (webProgress.isTopLevel &&
-        ((flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT) == 0)) {
-      this.modified = true;
     }
   },
 };

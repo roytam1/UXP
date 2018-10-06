@@ -10,16 +10,16 @@ var EXPORTED_SYMBOLS = ["applicationName", "assert", "Copy", "getBrowserObject",
                         "unwrapNode", "waitFor"
                        ];
 
-var Cc = Components.classes;
-var Ci = Components.interfaces;
-var Cu = Components.utils;
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+const Cu = Components.utils;
 
 
 Cu.import("resource://gre/modules/NetUtil.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 const applicationIdMap = {
-  '{ec8030f7-c20a-464f-9b0e-13a3a9e97384}': 'Firefox'
+  '{8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}': 'Firefox'
 }
 const applicationName = applicationIdMap[Services.appinfo.ID] || Services.appinfo.name;
 
@@ -83,7 +83,7 @@ function getWindows(type) {
 }
 
 function getMethodInWindows(methodName) {
-  for (var w of getWindows()) {
+  for each (var w in getWindows()) {
     if (w[methodName] != undefined) {
       return w[methodName];
     }
@@ -93,7 +93,7 @@ function getMethodInWindows(methodName) {
 }
 
 function getWindowByTitle(title) {
-  for (var w of getWindows()) {
+  for each (var w in getWindows()) {
     if (w.document.title && w.document.title == title) {
       return w;
     }

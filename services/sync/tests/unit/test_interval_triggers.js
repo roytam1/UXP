@@ -10,13 +10,8 @@ Cu.import("resource://testing-common/services/sync/utils.js");
 Svc.DefaultPrefs.set("registerEngines", "");
 Cu.import("resource://services-sync/service.js");
 
-var scheduler = Service.scheduler;
-var clientsEngine = Service.clientsEngine;
-
-// Don't remove stale clients when syncing. This is a test-only workaround
-// that lets us add clients directly to the store, without losing them on
-// the next sync.
-clientsEngine._removeRemoteClient = id => {};
+let scheduler = Service.scheduler;
+let clientsEngine = Service.clientsEngine;
 
 function promiseStopServer(server) {
   let deferred = Promise.defer();
@@ -46,7 +41,7 @@ function sync_httpd_setup() {
   });
 }
 
-function* setUp(server) {
+function setUp(server) {
   yield configureIdentity({username: "johndoe"});
   Service.serverURL = server.baseURI + "/";
   Service.clusterURL = server.baseURI + "/";
@@ -65,7 +60,7 @@ function run_test() {
   run_next_test();
 }
 
-add_identity_test(this, function* test_successful_sync_adjustSyncInterval() {
+add_identity_test(this, function test_successful_sync_adjustSyncInterval() {
   _("Test successful sync calling adjustSyncInterval");
   let syncSuccesses = 0;
   function onSyncFinish() {
@@ -164,7 +159,7 @@ add_identity_test(this, function* test_successful_sync_adjustSyncInterval() {
   yield promiseStopServer(server);
 });
 
-add_identity_test(this, function* test_unsuccessful_sync_adjustSyncInterval() {
+add_identity_test(this, function test_unsuccessful_sync_adjustSyncInterval() {
   _("Test unsuccessful sync calling adjustSyncInterval");
 
   let syncFailures = 0;
@@ -269,7 +264,7 @@ add_identity_test(this, function* test_unsuccessful_sync_adjustSyncInterval() {
   yield promiseStopServer(server);
 });
 
-add_identity_test(this, function* test_back_triggers_sync() {
+add_identity_test(this, function test_back_triggers_sync() {
   let server = sync_httpd_setup();
   yield setUp(server);
 
@@ -301,7 +296,7 @@ add_identity_test(this, function* test_back_triggers_sync() {
   yield deferred.promise;
 });
 
-add_identity_test(this, function* test_adjust_interval_on_sync_error() {
+add_identity_test(this, function test_adjust_interval_on_sync_error() {
   let server = sync_httpd_setup();
   yield setUp(server);
 
@@ -332,7 +327,7 @@ add_identity_test(this, function* test_adjust_interval_on_sync_error() {
   yield promiseStopServer(server);
 });
 
-add_identity_test(this, function* test_bug671378_scenario() {
+add_identity_test(this, function test_bug671378_scenario() {
   // Test scenario similar to bug 671378. This bug appeared when a score
   // update occurred that wasn't large enough to trigger a sync so
   // scheduleNextSync() was called without a time interval parameter,

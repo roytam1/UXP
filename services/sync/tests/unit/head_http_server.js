@@ -1,4 +1,4 @@
-var Cm = Components.manager;
+const Cm = Components.manager;
 
 // Shared logging for all HTTP server functions.
 Cu.import("resource://gre/modules/Log.jsm");
@@ -178,13 +178,9 @@ ServerCollection.prototype = {
    * @return an array of IDs.
    */
   keys: function keys(filter) {
-    let ids = [];
-    for (let [id, wbo] of Object.entries(this._wbos)) {
-      if (wbo.payload && (!filter || filter(id, wbo))) {
-        ids.push(id);
-      }
-    }
-    return ids;
+    return [id for ([id, wbo] in Iterator(this._wbos))
+               if (wbo.payload &&
+                   (!filter || filter(id, wbo)))];
   },
 
   /**
@@ -198,13 +194,8 @@ ServerCollection.prototype = {
    * @return an array of ServerWBOs.
    */
   wbos: function wbos(filter) {
-    let os = [];
-    for (let [id, wbo] of Object.entries(this._wbos)) {
-      if (wbo.payload) {
-        os.push(wbo);
-      }
-    }
-
+    let os = [wbo for ([id, wbo] in Iterator(this._wbos))
+              if (wbo.payload)];
     if (filter) {
       return os.filter(filter);
     }
@@ -276,7 +267,7 @@ ServerCollection.prototype = {
   count: function(options) {
     options = options || {};
     let c = 0;
-    for (let [id, wbo] of Object.entries(this._wbos)) {
+    for (let [id, wbo] in Iterator(this._wbos)) {
       if (wbo.modified && this._inResultSet(wbo, options)) {
         c++;
       }
@@ -287,23 +278,12 @@ ServerCollection.prototype = {
   get: function(options) {
     let result;
     if (options.full) {
-      let data = [];
-      for (let [id, wbo] of Object.entries(this._wbos)) {
-        // Drop deleted.
-        if (wbo.modified && this._inResultSet(wbo, options)) {
-          data.push(wbo.get());
-        }
-      }
-      let start = options.offset || 0;
+      let data = [wbo.get() for ([id, wbo] in Iterator(this._wbos))
+                            // Drop deleted.
+                            if (wbo.modified &&
+                                this._inResultSet(wbo, options))];
       if (options.limit) {
-        let numItemsPastOffset = data.length - start;
-        data = data.slice(start, start + options.limit);
-        // use options as a backchannel to set x-weave-next-offset
-        if (numItemsPastOffset > options.limit) {
-          options.nextOffset = start + options.limit;
-        }
-      } else if (start) {
-        data = data.slice(start);
+        data = data.slice(0, options.limit);
       }
       // Our implementation of application/newlines.
       result = data.join("\n") + "\n";
@@ -311,18 +291,10 @@ ServerCollection.prototype = {
       // Use options as a backchannel to report count.
       options.recordCount = data.length;
     } else {
-      let data = [];
-      for (let [id, wbo] of Object.entries(this._wbos)) {
-        if (this._inResultSet(wbo, options)) {
-          data.push(id);
-        }
-      }
-      let start = options.offset || 0;
+      let data = [id for ([id, wbo] in Iterator(this._wbos))
+                     if (this._inResultSet(wbo, options))];
       if (options.limit) {
-        data = data.slice(start, start + options.limit);
-        options.nextOffset = start + options.limit;
-      } else if (start) {
-        data = data.slice(start);
+        data = data.slice(0, options.limit);
       }
       result = JSON.stringify(data);
       options.recordCount = data.length;
@@ -337,8 +309,7 @@ ServerCollection.prototype = {
 
     // This will count records where we have an existing ServerWBO
     // registered with us as successful and all other records as failed.
-    for (let key in input) {
-      let record = input[key];
+    for each (let record in input) {
       let wbo = this.wbo(record.id);
       if (!wbo && this.acceptNew) {
         this._log.debug("Creating WBO " + JSON.stringify(record.id) +
@@ -361,7 +332,7 @@ ServerCollection.prototype = {
 
   delete: function(options) {
     let deleted = [];
-    for (let [id, wbo] of Object.entries(this._wbos)) {
+    for (let [id, wbo] in Iterator(this._wbos)) {
       if (this._inResultSet(wbo, options)) {
         this._log.debug("Deleting " + JSON.stringify(wbo));
         deleted.push(wbo.id);
@@ -383,7 +354,7 @@ ServerCollection.prototype = {
 
       // Parse queryString
       let options = {};
-      for (let chunk of request.queryString.split("&")) {
+      for each (let chunk in request.queryString.split("&")) {
         if (!chunk) {
           continue;
         }
@@ -403,36 +374,29 @@ ServerCollection.prototype = {
       if (options.limit) {
         options.limit = parseInt(options.limit, 10);
       }
-      if (options.offset) {
-        options.offset = parseInt(options.offset, 10);
-      }
 
       switch(request.method) {
         case "GET":
-          body = self.get(options, request);
-          // see http://moz-services-docs.readthedocs.io/en/latest/storage/apis-1.5.html
-          // for description of these headers.
-          let { recordCount: records, nextOffset } = options;
-
-          self._log.info("Records: " + records + ", nextOffset: " + nextOffset);
+          body = self.get(options);
+          // "If supported by the db, this header will return the number of
+          // records total in the request body of any multiple-record GET
+          // request."
+          let records = options.recordCount;
+          self._log.info("Records: " + records);
           if (records != null) {
             response.setHeader("X-Weave-Records", "" + records);
           }
-          if (nextOffset) {
-            response.setHeader("X-Weave-Next-Offset", "" + nextOffset);
-          }
-          response.setHeader("X-Last-Modified", "" + this.timestamp);
           break;
 
         case "POST":
-          let res = self.post(readBytesFromInputStream(request.bodyInputStream), request);
+          let res = self.post(readBytesFromInputStream(request.bodyInputStream));
           body = JSON.stringify(res);
           response.newModified = res.modified;
           break;
 
         case "DELETE":
           self._log.debug("Invoking ServerCollection.DELETE.");
-          let deleted = self.delete(options, request);
+          let deleted = self.delete(options);
           let ts = new_timestamp();
           body = JSON.stringify(ts);
           response.newModified = ts;
@@ -541,7 +505,7 @@ function track_collections_helper() {
  * find out what it needs without monkeypatching. Use this object as your
  * prototype, and override as appropriate.
  */
-var SyncServerCallback = {
+let SyncServerCallback = {
   onCollectionDeleted: function onCollectionDeleted(user, collection) {},
   onItemDeleted: function onItemDeleted(user, collection, wboID) {},
 
@@ -581,13 +545,13 @@ SyncServer.prototype = {
    * Start the SyncServer's underlying HTTP server.
    *
    * @param port
-   *        The numeric port on which to start. -1 implies the default, a
-   *        randomly chosen port.
+   *        The numeric port on which to start. A falsy value implies the
+   *        default, a randomly chosen port.
    * @param cb
    *        A callback function (of no arguments) which is invoked after
    *        startup.
    */
-  start: function start(port = -1, cb) {
+  start: function start(port, cb) {
     if (this.started) {
       this._log.warn("Warning: server already started on " + this.port);
       return;
@@ -605,7 +569,7 @@ SyncServer.prototype = {
     } catch (ex) {
       _("==========================================");
       _("Got exception starting Sync HTTP server.");
-      _("Error: " + Log.exceptionStr(ex));
+      _("Error: " + Utils.exceptionStr(ex));
       _("Is there a process already listening on port " + port + "?");
       _("==========================================");
       do_throw(ex);
@@ -703,10 +667,10 @@ SyncServer.prototype = {
       throw new Error("Unknown user.");
     }
     let userCollections = this.users[username].collections;
-    for (let [id, contents] of Object.entries(collections)) {
+    for (let [id, contents] in Iterator(collections)) {
       let coll = userCollections[id] ||
                  this._insertCollection(userCollections, id);
-      for (let [wboID, payload] of Object.entries(contents)) {
+      for (let [wboID, payload] in Iterator(contents)) {
         coll.insert(wboID, payload);
       }
     }
@@ -740,8 +704,7 @@ SyncServer.prototype = {
       throw new Error("Unknown user.");
     }
     let userCollections = this.users[username].collections;
-    for (let name in userCollections) {
-      let coll = userCollections[name];
+    for each (let [name, coll] in Iterator(userCollections)) {
       this._log.trace("Bulk deleting " + name + " for " + username + "...");
       coll.delete({});
     }
@@ -805,10 +768,7 @@ SyncServer.prototype = {
    */
   respond: function respond(req, resp, code, status, body, headers) {
     resp.setStatusLine(req.httpVersion, code, status);
-    if (!headers)
-      headers = this.defaultHeaders;
-    for (let header in headers) {
-      let value = headers[header];
+    for each (let [header, value] in Iterator(headers || this.defaultHeaders)) {
       resp.setHeader(header, value);
     }
     resp.setHeader("X-Weave-Timestamp", "" + this.timestamp(), false);
@@ -1035,7 +995,7 @@ SyncServer.prototype = {
  */
 function serverForUsers(users, contents, callback) {
   let server = new SyncServer(callback);
-  for (let [user, pass] of Object.entries(users)) {
+  for (let [user, pass] in Iterator(users)) {
     server.registerUser(user, pass);
     server.createContents(user, contents);
   }

@@ -6,7 +6,7 @@ Cu.import("resource://services-sync/service.js");
 Cu.import("resource://services-sync/util.js");
 Cu.import("resource://testing-common/services/sync/utils.js");
 
-add_identity_test(this, function* test_missing_crypto_collection() {
+add_identity_test(this, function test_missing_crypto_collection() {
   let johnHelper = track_collections_helper();
   let johnU      = johnHelper.with_updated_collection;
   let johnColls  = johnHelper.collections;
@@ -33,10 +33,7 @@ add_identity_test(this, function* test_missing_crypto_collection() {
   };
   let collections = ["clients", "bookmarks", "forms", "history",
                      "passwords", "prefs", "tabs"];
-  // Disable addon sync because AddonManager won't be initialized here.
-  Service.engineManager.unregister("addons");
-
-  for (let coll of collections) {
+  for each (let coll in collections) {
     handlers["/1.1/johndoe/storage/" + coll] =
       johnU(coll, new ServerCollection({}, true).handler());
   }
@@ -53,7 +50,7 @@ add_identity_test(this, function* test_missing_crypto_collection() {
     };
 
     _("Startup, no meta/global: freshStart called once.");
-    yield sync_and_validate_telem();
+    Service.sync();
     do_check_eq(fresh, 1);
     fresh = 0;
 
@@ -63,12 +60,12 @@ add_identity_test(this, function* test_missing_crypto_collection() {
 
     _("Simulate a bad info/collections.");
     delete johnColls.crypto;
-    yield sync_and_validate_telem();
+    Service.sync();
     do_check_eq(fresh, 1);
     fresh = 0;
 
     _("Regular sync: no need to freshStart.");
-    yield sync_and_validate_telem();
+    Service.sync();
     do_check_eq(fresh, 0);
 
   } finally {

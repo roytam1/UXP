@@ -7,9 +7,9 @@ Cu.import("resource://services-sync/identity.js");
 Cu.import("resource://services-sync/resource.js");
 Cu.import("resource://services-sync/util.js");
 
-var logger;
+let logger;
 
-var fetched = false;
+let fetched = false;
 function server_open(metadata, response) {
   let body;
   if (metadata.method == "GET") {
@@ -45,7 +45,7 @@ function server_404(metadata, response) {
   response.bodyOutputStream.write(body, body.length);
 }
 
-var pacFetched = false;
+let pacFetched = false;
 function server_pac(metadata, response) {
   pacFetched = true;
   let body = 'function FindProxyForURL(url, host) { return "DIRECT"; }';
@@ -55,7 +55,7 @@ function server_pac(metadata, response) {
 }
 
 
-var sample_data = {
+let sample_data = {
   some: "sample_data",
   injson: "format",
   number: 42
@@ -140,7 +140,7 @@ function server_headers(metadata, response) {
   header_names = header_names.sort();
 
   headers = {};
-  for (let header of header_names) {
+  for each (let header in header_names) {
     headers[header] = metadata.getHeader(header);
   }
   let body = JSON.stringify(headers);
@@ -442,8 +442,6 @@ function run_test() {
   // It throws and logs.
   do_check_eq(error.result, Cr.NS_ERROR_MALFORMED_URI);
   do_check_eq(error, "Error: NS_ERROR_MALFORMED_URI");
-  // Note the strings haven't been formatted yet, but that's OK for this test.
-  do_check_eq(warnings.pop(), "${action} request to ${url} failed: ${ex}");
   do_check_eq(warnings.pop(),
               "Got exception calling onProgress handler during fetch of " +
               server.baseURI + "/json");
@@ -467,7 +465,6 @@ function run_test() {
   // It throws and logs.
   do_check_eq(error.result, Cr.NS_ERROR_XPC_JS_THREW_STRING);
   do_check_eq(error, "Error: NS_ERROR_XPC_JS_THREW_STRING");
-  do_check_eq(warnings.pop(), "${action} request to ${url} failed: ${ex}");
   do_check_eq(warnings.pop(),
               "Got exception calling onProgress handler during fetch of " +
               server.baseURI + "/json");
