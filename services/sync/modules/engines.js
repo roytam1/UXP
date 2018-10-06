@@ -1250,7 +1250,7 @@ SyncEngine.prototype = {
     // because some state may change during the course of this function and we
     // need to operate on the original values.
     let existsLocally   = this._store.itemExists(item.id);
-    let locallyModified = this._modified.has(item.id);
+    let locallyModified = item.id in this._modified;
 
     // TODO Handle clock drift better. Tracked in bug 721181.
     let remoteAge = AsyncResource.serverTime - item.modified;
