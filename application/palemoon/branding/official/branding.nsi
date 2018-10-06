@@ -11,7 +11,9 @@
 !define BrandFullNameInternal "Pale Moon"
 !define CompanyName           "Moonchild Productions"
 !define URLInfoAbout          "http://www.palemoon.org/"
-!define URLUpdateInfo         "http://www.palemoon.org/releasenotes-ng.shtml"
+!define URLUpdateInfo         "http://www.palemoon.org/releasenotes.shtml"
+!define HelpLink              "http://www.palemoon.org/troubleshooting.shtml"
+!define URLSystemRequirements "http://www.palemoon.org/download.shtml"
 
 ; The OFFICIAL define is a workaround to support different urls for Release and
 ; Beta since they share the same branding when building with other branches that

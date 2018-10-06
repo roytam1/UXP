@@ -12,6 +12,8 @@
 !define CompanyName           "Moonchild Productions"
 !define URLInfoAbout          "http://www.palemoon.org"
 !define URLUpdateInfo         "http://www.palemoon.org"
+!define HelpLink              "http://www.palemoon.org"
+!define URLSystemRequirements "http://www.palemoon.org/download.shtml"
 
 !define URLManualDownload "http://www.palemoon.org/download-ng.shtml"
 !define Channel "unofficial"
