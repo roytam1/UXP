@@ -5407,6 +5407,9 @@ pref("plugins.navigator_hide_disabled_flash", false);
 // Disable browser frames by default
 pref("dom.mozBrowserFramesEnabled", false);
 
+// Thick caret when behind CJK characters
+pref("layout.cjkthickcaret", true); 
+
 // Is support for 'color-adjust' CSS property enabled?
 pref("layout.css.color-adjust.enabled", true);
 
