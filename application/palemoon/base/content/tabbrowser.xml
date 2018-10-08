@@ -4296,94 +4296,17 @@
             event.originalTarget.localName != "box")
           return;
 
-        // See comments in the "mousedown" and "click" event handlers of the
-        // "tabbrowser-tabs" binding.
+        // See hack note in the tabbrowser-close-tab-button binding
         if (!this._blockDblClick)
           BrowserOpenTab();
-        else
-          this.flagBlockedOpenTabAfterDblClick = true;
 
         event.preventDefault();
       ]]></handler>
 
-      <!-- Consider that the in-tab close button is only shown on the active
-           tab. When clicking on an inactive tab at the position where the
-           close button will appear during the click, no "click" event will be
-           dispatched, because the mousedown and mouseup events don't have the
-           same event target. For that reason use "mousedown" instead of "click"
-           to implement in-tab close button behavior. (Pale Moon UXP issue #775)
-      -->
-      <handler event="mousedown" button="0" phase="capturing"><![CDATA[
-        /* The only sequence in which a second click event (i.e. dblclik)
-         * can be dispatched on an in-tab close button is when it is shown
-         * after the first click (i.e. the first click event was dispatched
-         * on the tab). This happens when we show the close button only on
-         * the active tab. (bug 352021)
-         * The only sequence in which a third click event can be dispatched
-         * on an in-tab close button is when the tab was opened with a
-         * double click on the tabbar. (bug 378344)
-         * In both cases, it is most likely that the close button area has
-         * been accidentally clicked, therefore we do not close the tab.
-         *
-         * We don't want to ignore processing of more than one click event,
-         * though, since the user might actually be repeatedly clicking to
-         * close many tabs at once.
-         *
-         * Also prevent errant doubleclick on the close button from opening
-         * a new tab (bug 343628):
-         * Since we're removing the event target, if the user double-clicks
-         * the button, the dblclick event will be dispatched with the tabbar
-         * as its event target (and explicit/originalTarget), which treats
-         * that as a mouse gesture for opening a new tab.
-         * In this context, we're manually blocking the dblclick event.
-         */
+      <handler event="click"><![CDATA[
+        if (event.button != 1)
+          return;
 
-        // Reset flags at the beginning of a series of clicks:
-        if (event.detail == 1) {
-          this.flagBlockedOpenTabAfterDblClick = false;
-          this.flagClickNotOnCloseButton = false;
-          this.flagClickOnCloseButton = false;
-        }
-
-        if (this.flagClickNotOnCloseButton) {
-          this.flagClickNotOnCloseButton = false;
-          this.blockCloseButtonAfterDblclick = true;
-        } else
-          this.blockCloseButtonAfterDblclick = false;
-
-        if (this.flagClickOnCloseButton) {
-          this.flagClickOnCloseButton = false;
-          this._blockDblClick = true;
-        } else
-          this._blockDblClick = false;
-
-        // Set flags:
-        if (event.originalTarget.classList.contains("tab-close-button"))
-          this.flagClickOnCloseButton = true;
-        else
-          this.flagClickNotOnCloseButton = true;
-      ]]></handler>
-
-      <handler event="click" button="0"><![CDATA[
-        // When closing a tab and then immediately double-clicking on the
-        // tab bar to open a new one, actually a triple-click is dispatched,
-        // which must be dealt with separately.
-        if (event.detail == 3 && this.flagBlockedOpenTabAfterDblClick) {
-          this.flagBlockedOpenTabAfterDblClick = false;
-          BrowserOpenTab();
-        }
-
-        // See comment in the "mousedown" event handler of the
-        // "tabbrowser-tabs" binding.
-        if (event.originalTarget.classList.contains("tab-close-button") &&
-            !this.blockCloseButtonAfterDblclick) {
-          gBrowser.removeTab(document.getBindingParent(event.originalTarget),
-                             {animate: true, byMouse: true,});
-          this._blockDblClick = true;
-        }
-      ]]></handler>
-
-      <handler event="click" button="1"><![CDATA[
         if (event.target.localName == "tab") {
           if (this.childNodes.length > 1 || !this._closeWindowWithLastTab)
             this.tabbrowser.removeTab(event.target, {animate: true, byMouse: true});
@@ -4756,6 +4679,63 @@
   <binding id="tabbrowser-close-tab-button"
            extends="chrome://global/content/bindings/toolbarbutton.xml#toolbarbutton-image">
     <handlers>
+      <handler event="click" button="0"><![CDATA[
+        var bindingParent = document.getBindingParent(this);
+        var tabContainer = bindingParent.parentNode;
+        /* The only sequence in which a second click event (i.e. dblclik)
+         * can be dispatched on an in-tab close button is when it is shown
+         * after the first click (i.e. the first click event was dispatched
+         * on the tab). This happens when we show the close button only on
+         * the active tab. (bug 352021)
+         * The only sequence in which a third click event can be dispatched
+         * on an in-tab close button is when the tab was opened with a
+         * double click on the tabbar. (bug 378344)
+         * In both cases, it is most likely that the close button area has
+         * been accidentally clicked, therefore we do not close the tab.
+         *
+         * We don't want to ignore processing of more than one click event,
+         * though, since the user might actually be repeatedly clicking to
+         * close many tabs at once.
+         */
+        if (event.detail > 1 && !this._ignoredClick) {
+          this._ignoredClick = true;
+          return;
+        }
+
+        // Reset the "ignored click" flag
+        this._ignoredClick = false;
+
+        tabContainer.tabbrowser.removeTab(bindingParent, {animate: true, byMouse: true});
+        tabContainer._blockDblClick = true;
+
+        /* XXXmano hack (see bug 343628):
+         * Since we're removing the event target, if the user
+         * double-clicks this button, the dblclick event will be dispatched
+         * with the tabbar as its event target (and explicit/originalTarget),
+         * which treats that as a mouse gesture for opening a new tab.
+         * In this context, we're manually blocking the dblclick event
+         * (see dblclick handler).
+         */
+        var clickedOnce = false;
+        function enableDblClick(event) {
+          var target = event.originalTarget;
+          if (target.className == 'tab-close-button')
+            target._ignoredClick = true;
+          if (!clickedOnce) {
+            clickedOnce = true;
+            return;
+          }
+          tabContainer._blockDblClick = false;
+          tabContainer.removeEventListener("click", enableDblClick, true);
+        }
+        tabContainer.addEventListener("click", enableDblClick, true);
+      ]]></handler>
+
+      <handler event="dblclick" button="0" phase="capturing">
+        // for the one-close-button case
+        event.stopPropagation();
+      </handler>
+
       <handler event="dragstart">
         event.stopPropagation();
       </handler>
