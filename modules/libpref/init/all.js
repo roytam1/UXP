@@ -117,6 +117,9 @@ pref("browser.cache.compression_level", 0);
 // Don't show "Open with" option on download dialog if true.
 pref("browser.download.forbid_open_with", false);
 
+// Save download locations as a content preference
+pref("browser.download.lastDir.savePerSite", true);
+
 #ifdef XP_WIN
 // Save internet zone information on downloaded files:
 // 0 => Never
