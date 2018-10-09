@@ -469,6 +469,14 @@ var testcases = [ {
     keywordLookup: true,
     protocolChange: true,
     affectedByDNSForSingleHosts: true,
+  }, {
+    input: " \t mozilla.org/\t \t ",
+    fixedURI: "http://mozilla.org/",
+    alternateURI: "http://www.mozilla.org/",
+    protocolChange: true,
+  }, {
+    input: " moz\ti\tlla.org ",
+    keywordLookup: true,
   }];
 
 if (Services.appinfo.OS.toLowerCase().startsWith("win")) {
