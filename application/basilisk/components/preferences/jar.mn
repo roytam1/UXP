@@ -31,5 +31,3 @@ browser.jar:
     content/browser/preferences/sanitize.js
     content/browser/preferences/selectBookmark.xul
     content/browser/preferences/selectBookmark.js
-    content/browser/preferences/translation.xul
-    content/browser/preferences/translation.js

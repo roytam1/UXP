@@ -45,7 +45,6 @@ Cu.import("resource://gre/modules/NotificationDB.jsm");
   ["SitePermissions", "resource:///modules/SitePermissions.jsm"],
   ["TabCrashHandler", "resource:///modules/ContentCrashHandlers.jsm"],
   ["Task", "resource://gre/modules/Task.jsm"],
-  ["Translation", "resource:///modules/translation/Translation.jsm"],
   ["UpdateUtils", "resource://gre/modules/UpdateUtils.jsm"],
   ["Weave", "resource://services-sync/main.js"],
   ["fxAccounts", "resource://gre/modules/FxAccounts.jsm"],
@@ -974,7 +973,6 @@ var gBrowserInit = {
     // the listener is registered.
     DOMLinkHandler.init();
     gPageStyleMenu.init();
-    LanguageDetectionListener.init();
     BrowserOnClick.init();
     FeedHandler.init();
     DevEdition.init();
@@ -5687,16 +5685,6 @@ function setStyleDisabled(disabled) {
   if (disabled)
     gPageStyleMenu.disableStyle();
 }
-
-
-var LanguageDetectionListener = {
-  init: function() {
-    window.messageManager.addMessageListener("Translation:DocumentState", msg => {
-      Translation.documentStateReceived(msg.target, msg.data);
-    });
-  }
-};
-
 
 var BrowserOffline = {
   _inited: false,

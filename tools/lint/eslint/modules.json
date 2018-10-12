@@ -224,7 +224,6 @@
   "tokenserverclient.js": ["TokenServerClient", "TokenServerClientError", "TokenServerClientNetworkError", "TokenServerClientServerError"],
   "ToolboxProcess.jsm": ["BrowserToolboxProcess"],
   "tps.jsm": ["ACTIONS", "TPS"],
-  "Translation.jsm": ["Translation", "TranslationTelemetry"],
   "Traversal.jsm": ["TraversalRules", "TraversalHelper"],
   "UpdateTelemetry.jsm": ["AUSTLMY"],
   "userapi.js": ["UserAPI10Client"],

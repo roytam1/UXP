@@ -933,11 +933,6 @@ html|*#gcli-output-frame,
   transition: none;
 }
 
-/* Translation */
-notification[value="translation"] {
-  -moz-binding: url("chrome://browser/content/translation-infobar.xml#translationbar");
-}
-
 /** See bug 872317 for why the following rule is necessary. */
 
 #downloads-button {

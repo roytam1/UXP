@@ -558,13 +558,6 @@ var PageStyleHandler = {
 };
 PageStyleHandler.init();
 
-// Keep a reference to the translation content handler to avoid it it being GC'ed.
-var trHandler = null;
-if (Services.prefs.getBoolPref("browser.translation.detectLanguage")) {
-  Cu.import("resource:///modules/translation/TranslationContentHandler.jsm");
-  trHandler = new TranslationContentHandler(global, docShell);
-}
-
 function gKeywordURIFixup(fixupInfo) {
   fixupInfo.QueryInterface(Ci.nsIURIFixupInfo);
   if (!fixupInfo.consumer) {

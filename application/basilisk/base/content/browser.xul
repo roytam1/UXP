@@ -677,10 +677,6 @@
                          tooltiptext="&urlbar.webRTCShareScreenNotificationAnchor.tooltip;"/>
                   <image id="servicesInstall-notification-icon" class="notification-anchor-icon service-icon" role="button"
                          tooltiptext="&urlbar.servicesNotificationAnchor.tooltip;"/>
-                  <image id="translate-notification-icon" class="notification-anchor-icon translation-icon" role="button"
-                         tooltiptext="&urlbar.translateNotificationAnchor.tooltip;"/>
-                  <image id="translated-notification-icon" class="notification-anchor-icon translation-icon in-use" role="button"
-                         tooltiptext="&urlbar.translatedNotificationAnchor.tooltip;"/>
                   <image id="eme-notification-icon" class="notification-anchor-icon drm-icon" role="button"
                          tooltiptext="&urlbar.emeNotificationAnchor.tooltip;"/>
                 </box>

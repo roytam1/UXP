@@ -31,18 +31,6 @@ var gContentPane = {
       menulist.value = FontBuilder.readFontSelection(menulist);
     }
 
-    // Show translation preferences if we may:
-    const prefName = "browser.translation.ui.show";
-    if (Services.prefs.getBoolPref(prefName)) {
-      let row = document.getElementById("translationBox");
-      row.removeAttribute("hidden");
-      // Showing attribution only for Bing Translator.
-      Components.utils.import("resource:///modules/translation/Translation.jsm");
-      if (Translation.translationEngine == "bing") {
-        document.getElementById("bingAttribution").removeAttribute("hidden");
-      }
-    }
-
     if (AlertsServiceDND) {
       let notificationsDoNotDisturbRow =
         document.getElementById("notificationsDoNotDisturbRow");
@@ -66,10 +54,6 @@ var gContentPane = {
       gContentPane.configureColors);
     setEventListener("chooseLanguage", "command",
       gContentPane.showLanguages);
-    setEventListener("translationAttributionImage", "click",
-      gContentPane.openTranslationProviderAttribution);
-    setEventListener("translateButton", "command",
-      gContentPane.showTranslationExceptions);
     setEventListener("notificationsDoNotDisturb", "command",
       gContentPane.toggleDoNotDisturbNotifications);
 
@@ -272,21 +256,6 @@ var gContentPane = {
   showLanguages: function ()
   {
     gSubDialog.open("chrome://browser/content/preferences/languages.xul");
-  },
-
-  /**
-   * Displays the translation exceptions dialog where specific site and language
-   * translation preferences can be set.
-   */
-  showTranslationExceptions: function ()
-  {
-    gSubDialog.open("chrome://browser/content/preferences/translation.xul");
-  },
-
-  openTranslationProviderAttribution: function ()
-  {
-    Components.utils.import("resource:///modules/translation/Translation.jsm");
-    Translation.openProviderAttribution();
   },
 
   toggleDoNotDisturbNotifications: function (event)
