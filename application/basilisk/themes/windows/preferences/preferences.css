@@ -15,13 +15,6 @@
 #isNotDefaultLabel {
   font-weight: bold;
 }
-
-/* Content Pane */
-#translationAttributionImage {
-  width: 70px;
-  cursor: pointer;
-}
-
 /* Modeless Window Dialogs */
 .windowDialog,
 .windowDialog prefpane {

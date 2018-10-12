@@ -49,11 +49,6 @@ caption {
   border-bottom: 1px solid #ccc;
 }
 
-#translationAttributionImage {
-  width: 70px;
-  cursor: pointer;
-}
-
 #browserUseCurrent,
 #browserUseBookmark,
 #browserUseBlank {
