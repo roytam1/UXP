@@ -244,6 +244,7 @@ def old_configure_options(*options):
     '--enable-universalchardet',
     '--enable-updater',
     '--enable-url-classifier',
+    '--enable-userinfo',
     '--enable-valgrind',
     '--enable-verify-mar',
     '--enable-webrtc',

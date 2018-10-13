@@ -5,7 +5,9 @@
 #include "mozilla/ModuleUtils.h"
 #include "nsAppStartup.h"
 #include "nsNetCID.h"
+#ifdef MOZ_USERINFO
 #include "nsUserInfo.h"
+#endif
 #include "nsToolkitCompsCID.h"
 #include "nsFindService.h"
 #if defined(MOZ_UPDATER) && !defined(MOZ_WIDGET_ANDROID)
@@ -76,7 +78,9 @@ NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsPerformanceStatsService, Init)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsTerminator)
 #endif
 
+#if defined(MOZ_USERINFO)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsUserInfo)
+#endif
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsFindService)
 
 #if !defined(MOZ_DISABLE_PARENTAL_CONTROLS)
@@ -141,7 +145,9 @@ NS_DEFINE_NAMED_CID(NS_TOOLKIT_PERFORMANCESTATSSERVICE_CID);
 #if defined(MOZ_HAS_TERMINATOR)
 NS_DEFINE_NAMED_CID(NS_TOOLKIT_TERMINATOR_CID);
 #endif
+#if defined(NS_USERINFO)
 NS_DEFINE_NAMED_CID(NS_USERINFO_CID);
+#endif // defined (MOZ_USERINFO)
 NS_DEFINE_NAMED_CID(ALERT_NOTIFICATION_CID);
 NS_DEFINE_NAMED_CID(NS_ALERTSSERVICE_CID);
 #if !defined(MOZ_DISABLE_PARENTAL_CONTROLS)
@@ -179,7 +185,9 @@ static const Module::CIDEntry kToolkitCIDs[] = {
 #if defined(MOZ_HAS_PERFSTATS)
   { &kNS_TOOLKIT_PERFORMANCESTATSSERVICE_CID, false, nullptr, nsPerformanceStatsServiceConstructor },
 #endif // defined (MOZ_HAS_PERFSTATS)
+#if defined(MOZ_USERINFO)
   { &kNS_USERINFO_CID, false, nullptr, nsUserInfoConstructor },
+#endif // defined (MOZ_USERINFO)
   { &kALERT_NOTIFICATION_CID, false, nullptr, AlertNotificationConstructor },
   { &kNS_ALERTSSERVICE_CID, false, nullptr, nsAlertsServiceConstructor },
 #if !defined(MOZ_DISABLE_PARENTAL_CONTROLS)
@@ -219,7 +227,9 @@ static const Module::ContractIDEntry kToolkitContracts[] = {
 #if defined(MOZ_HAS_PERFSTATS)
   { NS_TOOLKIT_PERFORMANCESTATSSERVICE_CONTRACTID, &kNS_TOOLKIT_PERFORMANCESTATSSERVICE_CID },
 #endif // defined (MOZ_HAS_PERFSTATS)
+#if defined(NS_USERINFO)
   { NS_USERINFO_CONTRACTID, &kNS_USERINFO_CID },
+#endif // defined(NSUSERINFO)
   { ALERT_NOTIFICATION_CONTRACTID, &kALERT_NOTIFICATION_CID },
   { NS_ALERTSERVICE_CONTRACTID, &kNS_ALERTSSERVICE_CID },
 #if !defined(MOZ_DISABLE_PARENTAL_CONTROLS)

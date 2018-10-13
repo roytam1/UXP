@@ -2252,6 +2252,7 @@ MOZ_PLACES=1
 MOZ_SERVICES_HEALTHREPORT=1
 MOZ_SERVICES_SYNC=1
 MOZ_SERVICES_CLOUDSYNC=1
+MOZ_USERINFO=1
 
 case "$target_os" in
     mingw*)
@@ -4668,6 +4669,22 @@ if test -n "$MOZ_DEVTOOLS"; then
 fi
 
 AC_SUBST(MOZ_DEVTOOLS)
+
+dnl ========================================================
+dnl = Disable nsUserInfo
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(userinfo,
+[  --disable-userinfo         Disable nsUserInfo],
+    MOZ_USERINFO=,
+    MOZ_USERINFO=1)
+
+
+
+if test -n "$MOZ_USERINFO"; then
+    AC_DEFINE(MOZ_USERINFO)
+fi
+
+AC_SUBST(MOZ_USERINFO)
 
 dnl ========================================================
 dnl = Define default location for MOZILLA_FIVE_HOME
