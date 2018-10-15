@@ -14,7 +14,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "AsyncPrefs", "resource://gre/modules/AsyncPrefs.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "NarrateControls", "resource://gre/modules/narrate/NarrateControls.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "Rect", "resource://gre/modules/Geometry.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PluralForm", "resource://gre/modules/PluralForm.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils", "resource://gre/modules/PlacesUtils.jsm");
 
