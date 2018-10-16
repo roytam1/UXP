@@ -56,6 +56,7 @@ netwerk/srtp/src/
 nsprpub/
 other-licenses/
 security/sandbox/chromium/
+third_party/aom/
 testing/gtest/gmock/
 testing/gtest/gtest/
 toolkit/components/protobuf/
