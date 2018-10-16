@@ -1,0 +1,11 @@
+This directory contains build files for the aom video
+codec reference implementation. The actual library
+source is in $TOPSRCDIR/third_party/aom/
+
+Any patches or additional configuration to be applied to the
+upstream source should be kept here in the media/libaom
+directory.
+
+The upstream aom git repository is:
+
+    https://aomedia.googlesource.com/aom
