@@ -49,10 +49,10 @@ AOMDecoder::Init()
 {
   int decode_threads = 2;
   aom_codec_iface_t* dx = aom_codec_av1_dx();
-  if (aInfo.mDisplay.width >= 2048) {
+  if (mInfo.mDisplay.width >= 2048) {
     decode_threads = 8;
   }
-  else if (aInfo.mDisplay.width >= 1024) {
+  else if (mInfo.mDisplay.width >= 1024) {
     decode_threads = 4;
   }
   decode_threads = std::min(decode_threads, PR_GetNumberOfProcessors());
@@ -64,7 +64,7 @@ AOMDecoder::Init()
 
   aom_codec_flags_t flags = 0;
   
-  if (!dx || aom_codec_dec_init(aCtx, dx, &config, flags) {
+  if (!dx || aom_codec_dec_init(&mCodec, dx, &config, flags)) {
     return InitPromise::CreateAndReject(NS_ERROR_DOM_MEDIA_FATAL_ERR, __func__);
   }
   return InitPromise::CreateAndResolve(TrackInfo::kVideoTrack, __func__);
