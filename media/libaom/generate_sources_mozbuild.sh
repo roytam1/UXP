@@ -197,6 +197,7 @@ gen_config_files linux/ia32 "--target=x86-linux-gcc ${all_platforms} ${x86_platf
 gen_config_files mac/x64 "--target=x86_64-darwin9-gcc ${all_platforms} ${x86_platforms}"
 gen_config_files win/x64 "--target=x86_64-win64-vs12 ${all_platforms} ${x86_platforms}"
 gen_config_files win/ia32 "--target=x86-win32-gcc ${all_platforms} ${x86_platforms}"
+gen_config_files win/mingw32 "--target=x86-win32-gcc ${all_platforms} ${x86_platforms}"
 
 gen_config_files linux/arm "--target=armv7-linux-gcc ${all_platforms} ${arm_platforms}"
 
@@ -217,6 +218,7 @@ gen_rtcd_header linux/ia32 x86
 gen_rtcd_header mac/x64 x86_64
 gen_rtcd_header win/x64 x86_64
 gen_rtcd_header win/ia32 x86
+gen_rtcd_header win/mingw32 x86
 
 gen_rtcd_header linux/arm armv7
 
