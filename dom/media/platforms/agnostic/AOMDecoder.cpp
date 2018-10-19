@@ -113,6 +113,7 @@ highbd_img_downshift(aom_image_t *dst, aom_image_t *src, int down_shift) {
     case AOM_IMG_FMT_I44016:
       break;
     default:
+      // We don't support anything that's not 16 bit
       return AOM_CODEC_UNSUP_BITSTREAM;
   }
   for (plane = 0; plane < 3; plane++) {
@@ -174,7 +175,6 @@ AOMDecoder::DoDecode(MediaRawData* aSample)
           RESULT_DETAIL("Couldn't allocate conversion buffer for AV1 frame"));
       }
       if (aom_codec_err_t r = highbd_img_downshift(img8.get(), img, img->bit_depth - 8)) {
-        LOG_RESULT(r, "Image downconversion failed");
         return MediaResult(
           NS_ERROR_DOM_MEDIA_DECODE_ERR,
           RESULT_DETAIL("Error converting AV1 frame to 8 bits: %s",
@@ -309,7 +309,7 @@ AOMDecoder::IsSupportedCodec(const nsAString& aCodecType)
   // for a specific aom commit hash so sites can check
   // compatibility.
   auto version = NS_ConvertASCIItoUTF16("av1.experimental.");
-  version.AppendLiteral("f5bdeac22930ff4c6b219be49c843db35970b918");
+  version.AppendLiteral("e87fb2378f01103d5d6e477a4ef6892dc714e614");
   return aCodecType.EqualsLiteral("av1") ||
          aCodecType.Equals(version);
 }
