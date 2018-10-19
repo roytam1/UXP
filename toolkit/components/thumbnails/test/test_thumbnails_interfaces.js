@@ -22,10 +22,4 @@ function run_test() {
                                null, null);
   ok(uri instanceof Ci.nsIFileURL, "moz-page-thumb:// is a FileURL");
   ok(uri.file, "This moz-page-thumb:// object is backed by a file");
-
-  // and check that the error case works as specified
-  let bad = Services.io.newURI("moz-page-thumb://wronghost/?url=http%3A%2F%2Fwww.mozilla.org%2F",
-                               null, null);
-  Assert.throws(() => handler.resolveURI(bad), /NS_ERROR_NOT_AVAILABLE/i,
-                "moz-page-thumb object with wrong host must not resolve to a file path");
 }
