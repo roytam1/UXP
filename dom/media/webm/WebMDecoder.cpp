@@ -8,6 +8,7 @@
 #ifdef MOZ_AV1
 #include "AOMDecoder.h"
 #endif
+#include "MediaPrefs.h"
 #include "MediaDecoderStateMachine.h"
 #include "WebMDemuxer.h"
 #include "WebMDecoder.h"
@@ -69,7 +70,8 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
       continue;
     }
 #ifdef MOZ_AV1
-    if (isWebMVideo && AOMDecoder::IsSupportedCodec(codec)) {
+    if (isWebMVideo && MediaPrefs::AV1Enabled() &&
+        AOMDecoder::IsSupportedCodec(codec)) {
       continue;
     }
 #endif

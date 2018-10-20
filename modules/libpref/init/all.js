@@ -585,6 +585,10 @@ pref("media.mediasource.webm.enabled", true);
 #endif
 pref("media.mediasource.webm.audio.enabled", true);
 
+#ifdef MOZ_AV1
+pref("media.av1.enabled", false);
+#endif
+
 // Use new MediaFormatReader architecture for plain ogg.
 pref("media.flac.enabled", true);
 pref("media.ogg.flac.enabled", true);

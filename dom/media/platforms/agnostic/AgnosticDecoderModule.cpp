@@ -5,6 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "AgnosticDecoderModule.h"
+#include "MediaPrefs.h"
 #include "mozilla/Logging.h"
 #include "OpusDecoder.h"
 #include "VorbisDecoder.h"
@@ -25,7 +26,9 @@ AgnosticDecoderModule::SupportsMimeType(const nsACString& aMimeType,
   bool supports =
     VPXDecoder::IsVPX(aMimeType) ||
 #ifdef MOZ_AV1
-    AOMDecoder::IsAV1(aMimeType) ||
+  if (MediaPrefs::AV1Enabled()) {
+    supports |= AOMDecoder::IsAV1(aMimeType);
+  }
 #endif
     OpusDataDecoder::IsOpus(aMimeType) ||
     VorbisDataDecoder::IsVorbis(aMimeType) ||
@@ -45,7 +48,8 @@ AgnosticDecoderModule::CreateVideoDecoder(const CreateDecoderParams& aParams)
     m = new VPXDecoder(aParams);
   }
 #ifdef MOZ_AV1
-  else if (AOMDecoder::IsAV1(aParams.mConfig.mMimeType)) {
+  else if (AOMDecoder::IsAV1(aParams.mConfig.mMimeType) &&
+           MediaPrefs::AV1Enabled()) {
     m = new AOMDecoder(aParams);
   }
 #endif
