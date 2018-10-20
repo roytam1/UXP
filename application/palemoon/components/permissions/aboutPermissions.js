@@ -516,6 +516,14 @@ var AboutPermissions = {
     Services.obs.notifyObservers(null, "browser-permissions-preinit", null);
 
     this._initPart2();
+
+    // Process about:permissions?filter=<string>
+    // About URIs don't support query params, so do this manually
+    var loc = document.location.href;
+    var matches = /[?&]filter\=([^&]+)/i.exec(loc);
+    if (matches) {
+      this.sitesFilter.value = decodeURIComponent(matches[1]);
+    }
   },
 
   sitesReload: function() {
