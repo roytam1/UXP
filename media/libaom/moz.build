@@ -15,7 +15,7 @@ if CONFIG['CPU_ARCH'] == 'x86_64':
     SOURCES += files['X64_SOURCES']
     USE_YASM = True
     if CONFIG['OS_TARGET'] == 'WINNT':
-        if CONFIG['GNU_CC']
+        if CONFIG['GNU_CC']:
             ASFLAGS += [ '-I%s/media/libaom/config/win/mingw64/' % TOPSRCDIR ]
             LOCAL_INCLUDES += [ '/media/libaom/config/win/mingw64/' ]
             EXPORTS.aom += [ 'config/win/mingw64/config/aom_config.h' ]
@@ -37,7 +37,7 @@ elif CONFIG['CPU_ARCH'] == 'x86':
     SOURCES += files['IA32_SOURCES']
     USE_YASM = True
     if CONFIG['OS_TARGET'] == 'WINNT':
-        if CONFIG['GNU_CC']
+        if CONFIG['GNU_CC']:
             ASFLAGS += [ '-I%s/media/libaom/config/win/mingw32/' % TOPSRCDIR ]
             LOCAL_INCLUDES += [ '/media/libaom/config/win/mingw32/' ]
             EXPORTS.aom += [ 'config/win/mingw32/config/aom_config.h' ]
