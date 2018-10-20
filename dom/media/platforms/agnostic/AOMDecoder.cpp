@@ -62,6 +62,7 @@ AOMDecoder::Init()
   PodZero(&config);
   config.threads = decode_threads;
   config.w = config.h = 0; // set after decode
+  config.allow_lowbitdepth = true;
 
   aom_codec_flags_t flags = 0;
   
@@ -101,7 +102,6 @@ highbd_img_downshift(aom_image_t *dst, aom_image_t *src, int down_shift) {
     case AOM_IMG_FMT_I420:
     case AOM_IMG_FMT_I422:
     case AOM_IMG_FMT_I444:
-    case AOM_IMG_FMT_I440:
       break;
     default:
       return AOM_CODEC_INVALID_PARAM;
@@ -110,7 +110,6 @@ highbd_img_downshift(aom_image_t *dst, aom_image_t *src, int down_shift) {
     case AOM_IMG_FMT_I42016:
     case AOM_IMG_FMT_I42216:
     case AOM_IMG_FMT_I44416:
-    case AOM_IMG_FMT_I44016:
       break;
     default:
       // We don't support anything that's not 16 bit
@@ -150,7 +149,7 @@ AOMDecoder::DoDecode(MediaRawData* aSample)
                "AOM Decode Keyframe error sample->mKeyframe and si.si_kf out of sync");
 #endif
 
-  if (aom_codec_err_t r = aom_codec_decode(&mCodec, aSample->Data(), aSample->Size(), nullptr, 0)) {
+  if (aom_codec_err_t r = aom_codec_decode(&mCodec, aSample->Data(), aSample->Size(), nullptr)) {
     LOG("AOM Decode error: %s", aom_codec_err_to_string(r));
     return MediaResult(
       NS_ERROR_DOM_MEDIA_DECODE_ERR,
@@ -305,13 +304,7 @@ AOMDecoder::IsAV1(const nsACString& aMimeType)
 bool
 AOMDecoder::IsSupportedCodec(const nsAString& aCodecType)
 {
-  // While AV1 is under development, we describe support
-  // for a specific aom commit hash so sites can check
-  // compatibility.
-  auto version = NS_ConvertASCIItoUTF16("av1.experimental.");
-  version.AppendLiteral("d14c5bb4f336ef1842046089849dee4a301fbbf0");
-  return aCodecType.EqualsLiteral("av1") ||
-         aCodecType.Equals(version);
+  return aCodecType.EqualsLiteral("av1");
 }
 
 /* static */
