@@ -2842,7 +2842,7 @@ this.AddonManager = {
    *         The type of startup change to get
    * @return An array of add-on IDs
    */
-  getStartupChangesAM_ge: function(aType) {
+  getStartupChanges: function(aType) {
     if (!(aType in AddonManagerInternal.startupChanges))
       return [];
     return AddonManagerInternal.startupChanges[aType].slice(0);
