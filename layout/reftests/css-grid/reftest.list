@@ -280,3 +280,5 @@ asserts(1-10) == grid-fragmentation-dyn4-021.html grid-fragmentation-021-ref.htm
 == grid-fragmentation-dyn2-031.html grid-fragmentation-031-ref.html
 == bug1306106.html bug1306106-ref.html
 == grid-percent-intrinsic-sizing-001.html grid-percent-intrinsic-sizing-001-ref.html
+== bug1349571.html bug1349571-ref.html
+== bug1356820.html bug1356820-ref.html
