@@ -207,8 +207,20 @@ already_AddRefed<SharedThreadPool> GetMediaThreadPool(MediaThreadType aType)
       name = "MediaPlayback";
       break;
   }
-  return SharedThreadPool::
+  RefPtr<SharedThreadPool> pool = SharedThreadPool::
     Get(nsDependentCString(name), MediaPrefs::MediaThreadPoolDefaultCount());
+
+  // Ensure a larger stack for platform decoder threads
+  if (aType == MediaThreadType::PLATFORM_DECODER) {
+    const uint32_t minStackSize = 512*1024;
+    uint32_t stackSize;
+    MOZ_ALWAYS_SUCCEEDS(pool->GetThreadStackSize(&stackSize));
+    if (stackSize < minStackSize) {
+      MOZ_ALWAYS_SUCCEEDS(pool->SetThreadStackSize(minStackSize));
+    }
+  }
+
+  return pool.forget();
 }
 
 bool
