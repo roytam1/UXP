@@ -49,6 +49,7 @@ RefPtr<MediaDataDecoder::InitPromise>
 AOMDecoder::Init()
 {
   int decode_threads = 2;
+
   aom_codec_iface_t* dx = aom_codec_av1_dx();
   if (mInfo.mDisplay.width >= 2048) {
     decode_threads = 8;
@@ -231,23 +232,22 @@ AOMDecoder::DoDecode(MediaRawData* aSample)
                          RESULT_DETAIL("AOM Unknown image format"));
     }
 
-    RefPtr<VideoData> v;
-    v = VideoData::CreateAndCopyData(mInfo,
-                                     mImageContainer,
-                                     aSample->mOffset,
-                                     aSample->mTime,
-                                     aSample->mDuration,
-                                     b,
-                                     aSample->mKeyframe,
-                                     aSample->mTimecode,
-                                     mInfo.ScaledImageRect(img->d_w,
-                                                           img->d_h));
+    RefPtr<VideoData> v =
+      VideoData::CreateAndCopyData(mInfo,
+                                   mImageContainer,
+                                   aSample->mOffset,
+                                   aSample->mTime,
+                                   aSample->mDuration,
+                                   b,
+                                   aSample->mKeyframe,
+                                   aSample->mTimecode,
+                                   mInfo.ScaledImageRect(img->d_w,
+                                                         img->d_h));
 
     if (!v) {
-      LOG(
-        "Image allocation error source %ux%u display %ux%u picture %ux%u",
-        img->d_w, img->d_h, mInfo.mDisplay.width, mInfo.mDisplay.height,
-        mInfo.mImage.width, mInfo.mImage.height);
+      LOG("Image allocation error source %ux%u display %ux%u picture %ux%u",
+          img->d_w, img->d_h, mInfo.mDisplay.width, mInfo.mDisplay.height,
+          mInfo.mImage.width, mInfo.mImage.height);
       return MediaResult(NS_ERROR_OUT_OF_MEMORY, __func__);
     }
     mCallback->Output(v);
@@ -296,15 +296,8 @@ AOMDecoder::Drain()
 bool
 AOMDecoder::IsAV1(const nsACString& aMimeType)
 {
-  return aMimeType.EqualsLiteral("video/webm; codecs=av1")
-         || aMimeType.EqualsLiteral("video/av1");
-}
-
-/* static */
-bool
-AOMDecoder::IsSupportedCodec(const nsAString& aCodecType)
-{
-  return aCodecType.EqualsLiteral("av1");
+  return aMimeType.EqualsLiteral("video/webm; codecs=av1") ||
+         aMimeType.EqualsLiteral("video/av1");
 }
 
 /* static */

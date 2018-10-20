@@ -25,15 +25,15 @@ AgnosticDecoderModule::SupportsMimeType(const nsACString& aMimeType,
 {
   bool supports =
     VPXDecoder::IsVPX(aMimeType) ||
+    OpusDataDecoder::IsOpus(aMimeType) ||
+    VorbisDataDecoder::IsVorbis(aMimeType) ||
+    WaveDataDecoder::IsWave(aMimeType) ||
+    TheoraDecoder::IsTheora(aMimeType);
 #ifdef MOZ_AV1
   if (MediaPrefs::AV1Enabled()) {
     supports |= AOMDecoder::IsAV1(aMimeType);
   }
 #endif
-    OpusDataDecoder::IsOpus(aMimeType) ||
-    VorbisDataDecoder::IsVorbis(aMimeType) ||
-    WaveDataDecoder::IsWave(aMimeType) ||
-    TheoraDecoder::IsTheora(aMimeType);
   MOZ_LOG(sPDMLog, LogLevel::Debug, ("Agnostic decoder %s requested type",
         supports ? "supports" : "rejects"));
   return supports;

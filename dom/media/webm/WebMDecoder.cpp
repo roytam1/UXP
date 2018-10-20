@@ -70,8 +70,7 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
       continue;
     }
 #ifdef MOZ_AV1
-    if (isWebMVideo && MediaPrefs::AV1Enabled() &&
-        AOMDecoder::IsSupportedCodec(codec)) {
+    if (MediaPrefs::AV1Enabled() && IsAV1CodecString(codec)) {
       continue;
     }
 #endif

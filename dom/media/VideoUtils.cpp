@@ -458,6 +458,14 @@ IsVP9CodecString(const nsAString& aCodec)
          aCodec.EqualsLiteral("vp9.0");
 }
 
+#ifdef MOZ_AV1
+bool
+IsAV1CodecString(const nsAString& aCodec)
+{
+  return aCodec.EqualsLiteral("av1");
+}
+#endif
+
 template <int N>
 static bool
 StartsWith(const nsACString& string, const char (&prefix)[N])
