@@ -152,6 +152,9 @@ BrowserGlue.prototype = {
   // nsIObserver implementation 
   observe: function BG_observe(subject, topic, data) {
     switch (topic) {
+      case "notifications-open-settings":
+        this._openPermissions(subject);
+        break;
       case "prefservice:after-app-defaults":
         this._onAppDefaults();
         break;
@@ -322,6 +325,7 @@ BrowserGlue.prototype = {
   // initialization (called on application startup) 
   _init: function BG__init() {
     let os = Services.obs;
+    os.addObserver(this, "notifications-open-settings", false);
     os.addObserver(this, "prefservice:after-app-defaults", false);
     os.addObserver(this, "final-ui-startup", false);
     os.addObserver(this, "browser-delayed-startup-finished", false);
@@ -354,6 +358,7 @@ BrowserGlue.prototype = {
   // cleanup (called on application shutdown)
   _dispose: function BG__dispose() {
     let os = Services.obs;
+    os.removeObserver(this, "notifications-open-settings");
     os.removeObserver(this, "prefservice:after-app-defaults");
     os.removeObserver(this, "final-ui-startup");
     os.removeObserver(this, "sessionstore-windows-restored");
@@ -1482,6 +1487,16 @@ BrowserGlue.prototype = {
     catch (e) {
       Cu.reportError(e);
     }
+  },
+
+  _openPermissions: function(aPrincipal) {
+    var win = this.getMostRecentBrowserWindow();
+    var url = "about:permissions";
+    try {
+      url = url + "?filter=" + aPrincipal.URI.host;
+    }
+    catch (e) {}
+    win.openUILinkIn(url, "tab");
   },
 
   _hasSystemAlertsService: function() {
