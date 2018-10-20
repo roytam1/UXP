@@ -2950,19 +2950,6 @@
                 onget="return this.mCurrentBrowser.docShell"
                 readonly="true"/>
 
-      <property name="messageManager"
-                readonly="true">
-        <getter>
-          <![CDATA[
-            let frameLoader = this.mCurrentBrowser.frameLoader;
-            if (!frameLoader) {
-              return null;
-            }
-            return frameLoader.messageManager;
-          ]]>
-        </getter>
-      </property>
-
       <property name="webNavigation"
                 onget="return this.mCurrentBrowser.webNavigation"
                 readonly="true"/>
