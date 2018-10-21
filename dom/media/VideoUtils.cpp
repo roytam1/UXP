@@ -438,6 +438,16 @@ ParseMIMETypeString(const nsAString& aMIMEType,
   return ParseCodecsString(codecsStr, aOutCodecs);
 }
 
+template <int N>
+static bool
+StartsWith(const nsACString& string, const char (&prefix)[N])
+{
+    if (N - 1 > string.Length()) {
+      return false;
+    }
+    return memcmp(string.Data(), prefix, N - 1) == 0;
+}
+
 bool
 IsH264CodecString(const nsAString& aCodec)
 {
@@ -474,19 +484,10 @@ IsVP9CodecString(const nsAString& aCodec)
 bool
 IsAV1CodecString(const nsAString& aCodec)
 {
-  return aCodec.EqualsLiteral("av1");
+  return aCodec.EqualsLiteral("av1") ||
+    StartsWith(NS_ConvertUTF16toUTF8(aCodec), "av01");
 }
 #endif
-
-template <int N>
-static bool
-StartsWith(const nsACString& string, const char (&prefix)[N])
-{
-    if (N - 1 > string.Length()) {
-      return false;
-    }
-    return memcmp(string.Data(), prefix, N - 1) == 0;
-}
 
 UniquePtr<TrackInfo>
 CreateTrackInfoWithMIMEType(const nsACString& aCodecMIMEType)
