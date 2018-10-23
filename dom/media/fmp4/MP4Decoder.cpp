@@ -147,14 +147,6 @@ MP4Decoder::CanHandleMediaType(const MediaContentType& aType,
             NS_LITERAL_CSTRING("audio/flac"), aType));
         continue;
       }
-#ifdef MOZ_AV1
-    if (IsAV1CodecString(codec)) {
-      trackInfos.AppendElement(
-          CreateTrackInfoWithMIMETypeAndContentTypeExtraParameters(
-          NS_LITERAL_CSTRING("video/av1"), aType));
-      continue;
-    }
-#endif
       // Note: Only accept H.264 in a video content type, not in an audio
       // content type.
       if (IsWhitelistedH264Codec(codec) && isMP4Video) {
