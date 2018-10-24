@@ -425,7 +425,6 @@ nsChildView::Create(nsIWidget* aParent,
   if (!gChildViewMethodsSwizzled) {
     nsToolkit::SwizzleMethods([NSView class], @selector(mouseDownCanMoveWindow),
                               @selector(nsChildView_NSView_mouseDownCanMoveWindow));
-
     gChildViewMethodsSwizzled = true;
   }
 
