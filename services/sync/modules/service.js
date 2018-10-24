@@ -465,8 +465,7 @@ Sync11Service.prototype = {
 
         this.engineManager.register(ns[engineName]);
       } catch (ex) {
-        this._log.warn("Could not register engine " + name + ": " +
-                       CommonUtils.exceptionStr(ex));
+        this._log.warn("Could not register engine " + name + ": ", ex);
       }
     }
 
@@ -661,8 +660,7 @@ Sync11Service.prototype = {
 
     } catch (ex) {
       // This means no keys are present, or there's a network error.
-      this._log.debug("Failed to fetch and verify keys: "
-                      + Utils.exceptionStr(ex));
+      this._log.debug("Failed to fetch and verify keys: ", ex);
       this.errorHandler.checkServerError(ex);
       return false;
     }
@@ -759,7 +757,7 @@ Sync11Service.prototype = {
       }
     } catch (ex) {
       // Must have failed on some network issue
-      this._log.debug("verifyLogin failed: " + Utils.exceptionStr(ex));
+      this._log.debug("verifyLogin failed: ", ex);
       this.status.login = LOGIN_FAILED_NETWORK_ERROR;
       this.errorHandler.checkServerError(ex);
       return false;
@@ -832,8 +830,7 @@ Sync11Service.prototype = {
     try {
       cb.wait();
     } catch (ex) {
-      this._log.debug("Password change failed: " +
-                      CommonUtils.exceptionStr(ex));
+      this._log.debug("Password change failed: ", ex);
       return false;
     }
 
@@ -879,8 +876,7 @@ Sync11Service.prototype = {
         try {
           engine.removeClientData();
         } catch(ex) {
-          this._log.warn("Deleting client data for " + engine.name + " failed:"
-                         + Utils.exceptionStr(ex));
+          this._log.warn("Deleting client data for " + engine.name + " failed:", ex);
         }
       }
       this._log.debug("Finished deleting client data.");
@@ -1508,7 +1504,7 @@ Sync11Service.prototype = {
       try {
         response = res.delete();
       } catch (ex) {
-        this._log.debug("Failed to wipe server: " + CommonUtils.exceptionStr(ex));
+        this._log.debug("Failed to wipe server: ", ex);
         throw ex;
       }
       if (response.status != 200 && response.status != 404) {
@@ -1525,8 +1521,7 @@ Sync11Service.prototype = {
       try {
         response = this.resource(url).delete();
       } catch (ex) {
-        this._log.debug("Failed to wipe '" + name + "' collection: " +
-                        Utils.exceptionStr(ex));
+        this._log.debug("Failed to wipe '" + name + "' collection: ", ex);
         throw ex;
       }
 
@@ -1672,8 +1667,7 @@ Sync11Service.prototype = {
     return this.getStorageRequest(url).get(function onComplete(error) {
       // Note: 'this' is the request.
       if (error) {
-        this._log.debug("Failed to retrieve '" + info_type + "': " +
-                        Utils.exceptionStr(error));
+        this._log.debug("Failed to retrieve '" + info_type + "': ", error);
         return callback(error);
       }
       if (this.response.status != 200) {

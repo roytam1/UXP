@@ -231,7 +231,7 @@ AsyncResource.prototype = {
       channel.asyncOpen(listener, null);
     } catch (ex) {
       // asyncOpen can throw in a bunch of cases -- e.g., a forbidden port.
-      this._log.warn("Caught an error in asyncOpen: " + CommonUtils.exceptionStr(ex));
+      this._log.warn("Caught an error in asyncOpen: ", ex);
       CommonUtils.nextTick(callback.bind(this, ex));
     }
   },
@@ -278,8 +278,7 @@ AsyncResource.prototype = {
     } catch(ex) {
       // Got a response, but an exception occurred during processing.
       // This shouldn't occur.
-      this._log.warn("Caught unexpected exception " + CommonUtils.exceptionStr(ex) +
-                     " in _onComplete.");
+      this._log.warn("Caught unexpected exception in _onComplete. ", ex);
       this._log.debug(CommonUtils.stackTrace(ex));
     }
 
@@ -318,8 +317,7 @@ AsyncResource.prototype = {
                        contentLength + ".");
       }
     } catch (ex) {
-      this._log.debug("Caught exception " + CommonUtils.exceptionStr(ex) +
-                      " visiting headers in _onComplete.");
+      this._log.debug("Caught exception visiting headers in _onComplete", ex);
       this._log.debug(CommonUtils.stackTrace(ex));
     }
 
@@ -335,7 +333,7 @@ AsyncResource.prototype = {
       try {
         return JSON.parse(ret);
       } catch (ex) {
-        this._log.warn("Got exception parsing response body: \"" + CommonUtils.exceptionStr(ex));
+        this._log.warn("Got exception parsing response body", ex);
         // Stringify to avoid possibly printing non-printable characters.
         this._log.debug("Parse fail: Response body starts: \"" +
                         JSON.stringify((ret + "").slice(0, 100)) +
@@ -541,7 +539,7 @@ ChannelListener.prototype = {
       siStream = Cc["@mozilla.org/scriptableinputstream;1"].createInstance(Ci.nsIScriptableInputStream);
       siStream.init(stream);
     } catch (ex) {
-      this._log.warn("Exception creating nsIScriptableInputStream." + CommonUtils.exceptionStr(ex));
+      this._log.warn("Exception creating nsIScriptableInputStream", ex);
       this._log.debug("Parameters: " + req.URI.spec + ", " + stream + ", " + off + ", " + count);
       // Cannot proceed, so rethrow and allow the channel to cancel itself.
       throw ex;
@@ -558,8 +556,7 @@ ChannelListener.prototype = {
       this._onProgress();
     } catch (ex) {
       this._log.warn("Got exception calling onProgress handler during fetch of "
-                     + req.URI.spec);
-      this._log.debug(CommonUtils.exceptionStr(ex));
+                     + req.URI.spec, ex);
       this._log.trace("Rethrowing; expect a failure code from the HTTP channel.");
       throw ex;
     }
@@ -574,7 +571,7 @@ ChannelListener.prototype = {
     try {
       CommonUtils.namedTimer(this.abortRequest, this._timeout, this, "abortTimer");
     } catch (ex) {
-      this._log.warn("Got exception extending abort timer: " + CommonUtils.exceptionStr(ex));
+      this._log.warn("Got exception extending abort timer: ", ex);
     }
   },
 
@@ -668,7 +665,7 @@ ChannelNotificationListener.prototype = {
         }
       }
     } catch (ex) {
-      this._log.error("Error copying headers: " + CommonUtils.exceptionStr(ex));
+      this._log.error("Error copying headers: ", ex);
     }
 
     // We let all redirects proceed.

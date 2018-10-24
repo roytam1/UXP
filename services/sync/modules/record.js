@@ -236,7 +236,7 @@ RecordManager.prototype = {
 
       return this.set(url, record);
     } catch(ex) {
-      this._log.debug("Failed to import record: " + Utils.exceptionStr(ex));
+      this._log.debug("Failed to import record: ", ex);
       return null;
     }
   },

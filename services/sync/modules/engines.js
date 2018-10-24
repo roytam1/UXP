@@ -310,7 +310,7 @@ Store.prototype = {
         throw ex.cause;
       } catch (ex) {
         this._log.warn("Failed to apply incoming record " + record.id);
-        this._log.warn("Encountered exception: " + Utils.exceptionStr(ex));
+        this._log.warn("Encountered exception: ", ex);
         failed.push(record.id);
       }
     };
@@ -578,7 +578,7 @@ EngineManager.prototype = {
         this._engines[name] = engine;
       }
     } catch (ex) {
-      this._log.error(CommonUtils.exceptionStr(ex));
+      this._log.error("Engine init error: ", ex);
 
       let mesg = ex.message ? ex.message : ex;
       let name = engineObject || "";
@@ -793,7 +793,7 @@ SyncEngine.prototype = {
     return this._toFetch;
   },
   set toFetch(val) {
-    let cb = (error) => this._log.error(Utils.exceptionStr(error));
+    let cb = (error) => this._log.error("Failed to read JSON records to fetch: ", error);
     // Coerce the array to a string for more efficient comparison.
     if (val + "" == this._toFetch) {
       return;
@@ -818,7 +818,13 @@ SyncEngine.prototype = {
     return this._previousFailed;
   },
   set previousFailed(val) {
-    let cb = (error) => this._log.error(Utils.exceptionStr(error));
+    let cb = (error) => {
+      if (error) {
+        this._log.error("Failed to set previousFailed", error);
+      } else {
+        this._log.debug("Successfully wrote previousFailed.");
+      }
+    }
     // Coerce the array to a string for more efficient comparison.
     if (val + "" == this._previousFailed) {
       return;
@@ -1001,8 +1007,7 @@ SyncEngine.prototype = {
       } catch (ex) {
         // Catch any error that escapes from applyIncomingBatch. At present
         // those will all be abort events.
-        this._log.warn("Got exception " + Utils.exceptionStr(ex) +
-                       ", aborting processIncoming.");
+        this._log.warn("Got exception, aborting processIncoming. ", ex);
         aborting = ex;
       }
       this._tracker.ignoreAll = false;
@@ -1070,7 +1075,7 @@ SyncEngine.prototype = {
               self._log.debug("Ignoring second retry suggestion.");
               // Fall through to error case.
             case SyncEngine.kRecoveryStrategy.error:
-              self._log.warn("Error decrypting record: " + Utils.exceptionStr(ex));
+              self._log.warn("Error decrypting record: ", ex);
               failed.push(item.id);
               return;
             case SyncEngine.kRecoveryStrategy.ignore:
@@ -1080,7 +1085,7 @@ SyncEngine.prototype = {
           }
         }
       } catch (ex) {
-        self._log.warn("Error decrypting record: " + Utils.exceptionStr(ex));
+        self._log.warn("Error decrypting record: ", ex);
         failed.push(item.id);
         return;
       }
@@ -1094,7 +1099,7 @@ SyncEngine.prototype = {
         aborting = ex.cause;
       } catch (ex) {
         self._log.warn("Failed to reconcile incoming record " + item.id);
-        self._log.warn("Encountered exception: " + Utils.exceptionStr(ex));
+        self._log.warn("Encountered exception: ", ex);
         failed.push(item.id);
         return;
       }
@@ -1466,7 +1471,7 @@ SyncEngine.prototype = {
           up.pushData(out);
         }
         catch(ex) {
-          this._log.warn("Error creating record: " + Utils.exceptionStr(ex));
+          this._log.warn("Error creating record: ", ex);
         }
 
         // Partial upload
@@ -1558,7 +1563,7 @@ SyncEngine.prototype = {
       test.get();
     }
     catch(ex) {
-      this._log.debug("Failed test decrypt: " + Utils.exceptionStr(ex));
+      this._log.debug("Failed test decrypt: ", ex);
     }
 
     return canDecrypt;

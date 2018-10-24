@@ -119,7 +119,7 @@ this.NotificationButton =
       callback.apply(this, arguments);
     } catch (e) {
       let logger = Log.repository.getLogger("Sync.Notifications");
-      logger.error("An exception occurred: " + Utils.exceptionStr(e));
+      logger.error("An exception occurred: ", e);
       logger.info(Utils.stackTrace(e));
       throw e;
     }

@@ -67,7 +67,7 @@ PasswordEngine.prototype = {
         Svc.Prefs.set("deletePwdFxA", true);
         Svc.Prefs.reset("deletePwd"); // The old prefname we previously used.
       } catch (ex) {
-        this._log.debug("Password deletes failed: " + Utils.exceptionStr(ex));
+        this._log.debug("Password deletes failed: ", ex);
       }
     }
   },
@@ -213,7 +213,7 @@ PasswordStore.prototype = {
       Services.logins.addLogin(login);
     } catch(ex) {
       this._log.debug("Adding record " + record.id +
-                      " resulted in exception " + Utils.exceptionStr(ex));
+                      " resulted in exception ", ex);
     }
   },
 
@@ -246,8 +246,7 @@ PasswordStore.prototype = {
       Services.logins.modifyLogin(loginItem, newinfo);
     } catch(ex) {
       this._log.debug("Modifying record " + record.id +
-                      " resulted in exception " + Utils.exceptionStr(ex) +
-                      ". Not modifying.");
+                      " resulted in exception. Not modifying.", ex);
     }
   },
 

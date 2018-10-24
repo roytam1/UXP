@@ -77,7 +77,7 @@ this.Utils = {
         return func.call(thisArg);
       }
       catch(ex) {
-        thisArg._log.debug("Exception: " + Utils.exceptionStr(ex));
+        thisArg._log.debug("Exception: ", ex);
         if (exceptionCallback) {
           return exceptionCallback.call(thisArg, ex);
         }
