@@ -206,8 +206,12 @@ const BackgroundPageThumbs = {
 
     let browser = this._parentWin.document.createElementNS(XUL_NS, "browser");
     browser.setAttribute("type", "content");
-    browser.setAttribute("remote", "true");
     browser.setAttribute("disableglobalhistory", "true");
+
+    if (Services.prefs.getPrefType("browser.tabs.remote") == Services.prefs.PREF_BOOL &&
+        Services.prefs.getBoolPref("browser.tabs.remote")) {
+      browser.setAttribute("remote", "true");
+    }
 
     if (Services.prefs.getBoolPref(ABOUT_NEWTAB_SEGREGATION_PREF)) {
       // Use the private container for thumbnails.
