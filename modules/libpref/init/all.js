@@ -2438,7 +2438,7 @@ pref("layout.word_select.stop_at_punctuation", true);
 pref("layout.selection.caret_style", 0);
 
 // pref to report CSS errors to the error console
-pref("layout.css.report_errors", true);
+pref("layout.css.report_errors", false);
 
 // Should the :visited selector ever match (otherwise :link matches instead)?
 pref("layout.css.visited_links_enabled", true);
