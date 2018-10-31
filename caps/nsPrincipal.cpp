@@ -161,6 +161,19 @@ nsPrincipal::GetOriginForURI(nsIURI* aURI, nsACString& aOrigin)
       (NS_SUCCEEDED(origin->SchemeIs("indexeddb", &isBehaved)) && isBehaved)) {
     rv = origin->GetAsciiSpec(aOrigin);
     NS_ENSURE_SUCCESS(rv, rv);
+    
+    // Remove query or ref part from about: origin
+    int32_t pos = aOrigin.FindChar('?');
+    int32_t hashPos = aOrigin.FindChar('#');
+
+    if (hashPos != kNotFound && (pos == kNotFound || hashPos < pos)) {
+      pos = hashPos;
+    }
+
+    if (pos != kNotFound) {
+      aOrigin.Truncate(pos);
+    }
+
     // These URIs could technically contain a '^', but they never should.
     if (NS_WARN_IF(aOrigin.FindChar('^', 0) != -1)) {
       aOrigin.Truncate();
