@@ -8272,7 +8272,10 @@ class MGetFirstDollarIndex
       : MUnaryInstruction(str)
     {
         setResultType(MIRType::Int32);
-        setMovable();
+
+        // Codegen assumes string length > 0 but that's not guaranteed in RegExp.
+        // Don't allow LICM to move this.
+        MOZ_ASSERT(!isMovable());
     }
 
   public:
