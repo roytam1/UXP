@@ -22,6 +22,10 @@ class InProcessWinCompositorWidget final : public WinCompositorWidget
 public:
   InProcessWinCompositorWidget(const CompositorWidgetInitData& aInitData, nsWindow* aWindow);
 
+  void OnDestroyWindow() override;
+  void UpdateTransparency(nsTransparencyMode aMode) override;
+  void ClearTransparentWindow() override;
+
   void ObserveVsync(VsyncObserver* aObserver) override;
   nsIWidget* RealWidget() override;
 
