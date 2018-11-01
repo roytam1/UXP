@@ -146,7 +146,14 @@ nsIndexedToHTML::DoOnStartRequest(nsIRequest* request, nsISupports *aContext,
     nsAutoCString baseUri, titleUri;
     rv = uri->GetAsciiSpec(baseUri);
     if (NS_FAILED(rv)) return rv;
-    titleUri = baseUri;
+
+    nsCOMPtr<nsIURI> titleURL;
+    rv = uri->Clone(getter_AddRefs(titleURL));
+    if (NS_FAILED(rv)) titleURL = uri;
+    rv = titleURL->SetQuery(EmptyCString());
+    if (NS_FAILED(rv)) titleURL = uri;
+    rv = titleURL->SetRef(EmptyCString());
+    if (NS_FAILED(rv)) titleURL = uri;
 
     nsCString parentStr;
 
@@ -170,15 +177,13 @@ nsIndexedToHTML::DoOnStartRequest(nsIRequest* request, nsISupports *aContext,
         // that - see above
         
         nsAutoCString pw;
-        rv = uri->GetPassword(pw);
+        rv = titleURL->GetPassword(pw);
         if (NS_FAILED(rv)) return rv;
         if (!pw.IsEmpty()) {
              nsCOMPtr<nsIURI> newUri;
-             rv = uri->Clone(getter_AddRefs(newUri));
+             rv = titleURL->Clone(getter_AddRefs(newUri));
              if (NS_FAILED(rv)) return rv;
              rv = newUri->SetPassword(EmptyCString());
-             if (NS_FAILED(rv)) return rv;
-             rv = newUri->GetAsciiSpec(titleUri);
              if (NS_FAILED(rv)) return rv;
         }
 
@@ -245,6 +250,11 @@ nsIndexedToHTML::DoOnStartRequest(nsIRequest* request, nsISupports *aContext,
             rv = uri->Resolve(NS_LITERAL_CSTRING(".."), parentStr);
             if (NS_FAILED(rv)) return rv;
         }
+    }
+
+    rv = titleURL->GetAsciiSpec(titleUri);
+    if (NS_FAILED(rv)) {
+        return rv;
     }
 
     buffer.AppendLiteral("<style type=\"text/css\">\n"
