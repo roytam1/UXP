@@ -2152,8 +2152,7 @@ void
 ScrollFrameHelper::CompleteAsyncScroll(const nsRect &aRange, nsIAtom* aOrigin)
 {
   // Apply desired destination range since this is the last step of scrolling.
-  mAsyncSmoothMSDScroll = nullptr;
-  mAsyncScroll = nullptr;
+  RemoveObservers();
   nsWeakFrame weakFrame(mOuter);
   ScrollToImpl(mDestination, aRange, aOrigin);
   if (!weakFrame.IsAlive()) {
@@ -4588,11 +4587,19 @@ ScrollFrameHelper::Destroy()
     mScrollActivityTimer->Cancel();
     mScrollActivityTimer = nullptr;
   }
+  RemoveObservers();
+}
+
+void
+ScrollFrameHelper::RemoveObservers()
+{
   if (mAsyncScroll) {
     mAsyncScroll->RemoveObserver();
+    mAsyncScroll = nullptr;
   }
   if (mAsyncSmoothMSDScroll) {
     mAsyncSmoothMSDScroll->RemoveObserver();
+    mAsyncSmoothMSDScroll = nullptr;
   }
 }
 
