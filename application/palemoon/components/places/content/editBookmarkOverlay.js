@@ -222,6 +222,11 @@ var gEditItemOverlay = {
     }
 
     let focusElement = () => {
+      let elt = document.querySelector("textbox:not([collapsed=true])");
+      if (elt) {
+        elt.focus();
+        elt.select();
+      }
       this._initialized = true;
     };
 
