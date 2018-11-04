@@ -31,6 +31,9 @@
 #define HAVE_AVX 1
 #define HAVE_AVX2 1
 #define HAVE_VPX_PORTS 1
+#ifdef HAVE_STDINT_H
+#undef HAVE_STDINT_H
+#endif
 #define HAVE_STDINT_H 0
 #define HAVE_PTHREAD_H 0
 #define HAVE_SYS_MMAN_H 0
