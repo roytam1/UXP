@@ -49,10 +49,6 @@
       <preference id="security.cert_pinning.enforcement_level"
                   name="security.cert_pinning.enforcement_level"
                   type="int"/>
-                  
-      <preference id="network.http.opportunistic-encryption"
-                  name="network.http.opportunistic-encryption"
-                  type="bool"/>
       
       <!-- XSS Filter -->
       <!--
@@ -148,10 +144,6 @@
                   oncommand="gSecurityPane.updateHPKPPref();"/>
       </vbox>
     </groupbox>
-    
-    <checkbox id="enableOpEnc"
-              label="&enableOpEnc.label;"
-              preference="network.http.opportunistic-encryption" />
 
     <!-- XSS Filter -->
     <!--

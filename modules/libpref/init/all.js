@@ -1374,9 +1374,6 @@ pref("network.tickle-wifi.delay", 16);
 // Turn off interprocess security checks. Needed to run xpcshell tests.
 pref("network.disable.ipc.security", false);
 
-// Send upgrade-insecure-requests HTTP header?
-pref("network.http.opportunistic-encryption", false);
-
 // Default action for unlisted external protocol handlers
 pref("network.protocol-handler.external-default", true);      // OK to load
 pref("network.protocol-handler.warn-external-default", true); // warn before load

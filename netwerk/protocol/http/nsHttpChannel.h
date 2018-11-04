@@ -597,10 +597,6 @@ private:
     HttpChannelSecurityWarningReporter* mWarningReporter;
 
     RefPtr<ADivertableParentChannel> mParentChannel;
-    
-    // Whether we send opportunistic encryption requests.
-    bool mSendUpgradeRequest;
-
 protected:
     virtual void DoNotifyListenerCleanup() override;
 
