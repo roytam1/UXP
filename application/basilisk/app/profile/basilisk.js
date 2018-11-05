@@ -580,6 +580,10 @@ pref("network.captive-portal-service.enabled", true);
 // If true, network link events will change the value of navigator.onLine
 pref("network.manage-offline-status", true);
 
+// Enable opportunistic encryption by default
+pref("network.http.altsvc.oe", true);
+pref("network.http.upgrade-insecure-requests", true);
+
 // We want to make sure mail URLs are handled externally...
 pref("network.protocol-handler.external.mailto", true); // for mail
 pref("network.protocol-handler.external.news", true);   // for news
