@@ -2227,6 +2227,7 @@ VPX_X86_ASM=
 VPX_ARM_ASM=
 LIBJPEG_TURBO_AS=
 LIBJPEG_TURBO_ASFLAGS=
+MOZ_GAMEPAD=
 MOZ_PREF_EXTENSIONS=1
 MOZ_REFLOW_PERF=
 MOZ_SAFE_BROWSING=
@@ -2238,6 +2239,7 @@ MOZ_URL_CLASSIFIER=
 MOZ_XUL=1
 MOZ_ZIPWRITER=1
 MOZ_NO_SMART_CARDS=
+MOZ_NECKO_WIFI=1
 NECKO_COOKIES=1
 MOZ_USE_NATIVE_POPUP_WINDOWS=
 MOZ_EXCLUDE_HYPHENATION_DICTIONARIES=
@@ -3428,13 +3430,12 @@ fi # COMPILE_ENVIRONMENT
 dnl ========================================================
 dnl Gamepad support
 dnl ========================================================
-MOZ_GAMEPAD=1
 MOZ_GAMEPAD_BACKEND=stub
 
-MOZ_ARG_DISABLE_BOOL(gamepad,
-[  --disable-gamepad   Disable gamepad support],
-    MOZ_GAMEPAD=,
-    MOZ_GAMEPAD=1)
+MOZ_ARG_ENABLE_BOOL(gamepad,
+[  --enable-gamepad   Enable gamepad support],
+    MOZ_GAMEPAD=1,
+    MOZ_GAMEPAD=)
 
 if test "$MOZ_GAMEPAD"; then
     case "$OS_TARGET" in
@@ -5081,27 +5082,29 @@ dnl
 dnl option to disable necko's wifi scanner
 dnl
 
-case "$OS_TARGET" in
-  Android)
-    ;;
-  Darwin)
-    if test -z "$MOZ_IOS"; then
-      NECKO_WIFI=1
-    fi
-    ;;
-  DragonFly|FreeBSD|WINNT)
-    NECKO_WIFI=1
-    ;;
-  Linux)
-    NECKO_WIFI=1
-    NECKO_WIFI_DBUS=1
-    ;;
-esac
-
 MOZ_ARG_DISABLE_BOOL(necko-wifi,
 [  --disable-necko-wifi    Disable necko wifi scanner],
-    NECKO_WIFI=,
-    NECKO_WIFI=1)
+    MOZ_NECKO_WIFI=,
+    MOZ_NECKO_WIFI=1)
+
+if test "$MOZ_NECKO_WIFI"; then
+  case "$OS_TARGET" in
+    Android)
+      ;;
+    Darwin)
+      if test -z "$MOZ_IOS"; then
+        NECKO_WIFI=1
+      fi
+      ;;
+    DragonFly|FreeBSD|WINNT)
+      NECKO_WIFI=1
+      ;;
+    Linux)
+      NECKO_WIFI=1
+      NECKO_WIFI_DBUS=1
+      ;;
+  esac
+fi
 
 if test "$NECKO_WIFI"; then
   if test -z "$MOZ_ENABLE_DBUS" -a -n "$NECKO_WIFI_DBUS"; then
