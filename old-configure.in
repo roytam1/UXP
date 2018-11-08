@@ -2231,8 +2231,6 @@ MOZ_PREF_EXTENSIONS=1
 MOZ_REFLOW_PERF=
 MOZ_SAFE_BROWSING=
 MOZ_SPELLCHECK=1
-MOZ_GAMEPAD=1
-MOZ_GAMEPAD_BACKEND=stub
 MOZ_TOOLKIT_SEARCH=1
 MOZ_UI_LOCALE=en-US
 MOZ_UNIVERSALCHARDET=1
@@ -2269,23 +2267,6 @@ case "${target}" in
         MOZ_RAW=1
         ;;
 
-esac
-
-case "$OS_TARGET" in
-  Android)
-    ;;
-  Darwin)
-    if test -z "$MOZ_IOS"; then
-      NECKO_WIFI=1
-    fi
-    ;;
-  DragonFly|FreeBSD|WINNT)
-    NECKO_WIFI=1
-    ;;
-  Linux)
-    NECKO_WIFI=1
-    NECKO_WIFI_DBUS=1
-    ;;
 esac
 
 # Optional Firefox for Android partner distribution directory.
@@ -3447,6 +3428,9 @@ fi # COMPILE_ENVIRONMENT
 dnl ========================================================
 dnl Gamepad support
 dnl ========================================================
+MOZ_GAMEPAD=1
+MOZ_GAMEPAD_BACKEND=stub
+
 MOZ_ARG_DISABLE_BOOL(gamepad,
 [  --disable-gamepad   Disable gamepad support],
     MOZ_GAMEPAD=,
@@ -5096,6 +5080,23 @@ dnl ========================================================
 dnl
 dnl option to disable necko's wifi scanner
 dnl
+
+case "$OS_TARGET" in
+  Android)
+    ;;
+  Darwin)
+    if test -z "$MOZ_IOS"; then
+      NECKO_WIFI=1
+    fi
+    ;;
+  DragonFly|FreeBSD|WINNT)
+    NECKO_WIFI=1
+    ;;
+  Linux)
+    NECKO_WIFI=1
+    NECKO_WIFI_DBUS=1
+    ;;
+esac
 
 MOZ_ARG_DISABLE_BOOL(necko-wifi,
 [  --disable-necko-wifi    Disable necko wifi scanner],
