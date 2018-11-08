@@ -40,9 +40,6 @@ using namespace mozilla::psm;
 
 extern LazyLogModule gPIPNSSLog;
 
-static void AccumulateCipherSuite(Telemetry::ID probe,
-                                  const SSLChannelInfo& channelInfo);
-
 namespace {
 
 // Bits in bit mask for SSL_REASONS_FOR_NOT_FALSE_STARTING telemetry probe
@@ -1106,68 +1103,6 @@ AccumulateECCCurve(Telemetry::ID probe, uint32_t bits)
                      : 0; // Unknown
 }
 
-static void
-AccumulateCipherSuite(Telemetry::ID probe, const SSLChannelInfo& channelInfo)
-{
-  uint32_t value;
-  switch (channelInfo.cipherSuite) {
-    // ECDHE key exchange
-    case TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256: value = 1; break;
-    case TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256: value = 2; break;
-    case TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA: value = 3; break;
-    case TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA: value = 4; break;
-    case TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA: value = 5; break;
-    case TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA: value = 6; break;
-    case TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA: value = 7; break;
-    case TLS_ECDHE_RSA_WITH_RC4_128_SHA: value = 8; break;
-    case TLS_ECDHE_ECDSA_WITH_RC4_128_SHA: value = 9; break;
-    case TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA: value = 10; break;
-    case TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256: value = 11; break;
-    case TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256: value = 12; break;
-    case TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384: value = 13; break;
-    case TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384: value = 14; break;
-    // DHE key exchange
-    case TLS_DHE_RSA_WITH_AES_128_CBC_SHA: value = 21; break;
-    case TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA: value = 22; break;
-    case TLS_DHE_RSA_WITH_AES_256_CBC_SHA: value = 23; break;
-    case TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA: value = 24; break;
-    case TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA: value = 25; break;
-    case TLS_DHE_DSS_WITH_AES_128_CBC_SHA: value = 26; break;
-    case TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA: value = 27; break;
-    case TLS_DHE_DSS_WITH_AES_256_CBC_SHA: value = 28; break;
-    case TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA: value = 29; break;
-    case TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA: value = 30; break;
-    // ECDH key exchange
-    case TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA: value = 41; break;
-    case TLS_ECDH_RSA_WITH_AES_128_CBC_SHA: value = 42; break;
-    case TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA: value = 43; break;
-    case TLS_ECDH_RSA_WITH_AES_256_CBC_SHA: value = 44; break;
-    case TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA: value = 45; break;
-    case TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA: value = 46; break;
-    case TLS_ECDH_ECDSA_WITH_RC4_128_SHA: value = 47; break;
-    case TLS_ECDH_RSA_WITH_RC4_128_SHA: value = 48; break;
-    // RSA key exchange
-    case TLS_RSA_WITH_AES_128_CBC_SHA: value = 61; break;
-    case TLS_RSA_WITH_CAMELLIA_128_CBC_SHA: value = 62; break;
-    case TLS_RSA_WITH_AES_256_CBC_SHA: value = 63; break;
-    case TLS_RSA_WITH_CAMELLIA_256_CBC_SHA: value = 64; break;
-    case SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA: value = 65; break;
-    case TLS_RSA_WITH_3DES_EDE_CBC_SHA: value = 66; break;
-    case TLS_RSA_WITH_SEED_CBC_SHA: value = 67; break;
-    case TLS_RSA_WITH_RC4_128_SHA: value = 68; break;
-    case TLS_RSA_WITH_RC4_128_MD5: value = 69; break;
-    // TLS 1.3 PSK resumption
-    case TLS_AES_128_GCM_SHA256: value = 70; break;
-    case TLS_CHACHA20_POLY1305_SHA256: value = 71; break;
-    case TLS_AES_256_GCM_SHA384: value = 72; break;
-    // unknown
-    default:
-      value = 0;
-      break;
-  }
-  MOZ_ASSERT(value != 0);
-}
-
 // In the case of session resumption, the AuthCertificate hook has been bypassed
 // (because we've previously successfully connected to our peer). That being the
 // case, we unfortunately don't know if the peer's server certificate verified
@@ -1285,10 +1220,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
     // 1=tls1, 2=tls1.1, 3=tls1.2
     unsigned int versionEnum = channelInfo.protocolVersion & 0xFF;
     MOZ_ASSERT(versionEnum > 0);
-    AccumulateCipherSuite(
-      infoObject->IsFullHandshake() ? Telemetry::SSL_CIPHER_SUITE_FULL
-                                    : Telemetry::SSL_CIPHER_SUITE_RESUMED,
-      channelInfo);
 
     SSLCipherSuiteInfo cipherInfo;
     rv = SSL_GetCipherSuiteInfo(channelInfo.cipherSuite, &cipherInfo,

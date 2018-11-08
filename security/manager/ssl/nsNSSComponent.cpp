@@ -1309,8 +1309,8 @@ typedef struct {
   bool weak;
 } CipherPref;
 
-// Update the switch statement in AccumulateCipherSuite in nsNSSCallbacks.cpp
-// when you add/remove cipher suites here.
+// List of available cipher suites and their prefs
+// Format: "pref", cipherSuite, defaultEnabled, [isWeak = false]
 static const CipherPref sCipherPrefs[] = {
  { "security.ssl3.ecdhe_rsa_aes_128_gcm_sha256",
    TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, true },
