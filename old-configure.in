@@ -3778,10 +3778,10 @@ if test "$MOZ_IOS"; then
   MOZ_UPDATER=
 fi
 
-MOZ_ARG_DISABLE_BOOL(updater,
-[  --disable-updater       Disable building of updater],
-    MOZ_UPDATER=,
-    MOZ_UPDATER=1 )
+MOZ_ARG_ENABLE_BOOL(updater,
+[  --enable-updater       Enable building of internal updater],
+    MOZ_UPDATER=1,
+    MOZ_UPDATER= )
 
 if test -n "$MOZ_UPDATER"; then
     AC_DEFINE(MOZ_UPDATER)

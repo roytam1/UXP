@@ -8,7 +8,7 @@ MOZ_APP_VENDOR=Moonchild
 MOZ_PHOENIX=1
 MOZ_AUSTRALIS=1
 MC_BASILISK=1
-MOZ_UPDATER=1
+MOZ_UPDATER=
 
 if test "$OS_ARCH" = "WINNT" -o \
         "$OS_ARCH" = "Linux"; then
@@ -45,9 +45,9 @@ MOZ_APP_ID={ec8030f7-c20a-464f-9b0e-13a3a9e97384}
 # This should usually be the same as the value MAR_CHANNEL_ID.
 # If more than one ID is needed, then you should use a comma separated list
 # of values.
-ACCEPTED_MAR_CHANNEL_IDS=basilisk-release
+ACCEPTED_MAR_CHANNEL_IDS=unofficial,unstable,release
 # The MAR_CHANNEL_ID must not contain the following 3 characters: ",\t "
-MAR_CHANNEL_ID=basilisk-release
+MAR_CHANNEL_ID=unofficial
 
 # Features
 MOZ_PROFILE_MIGRATOR=1

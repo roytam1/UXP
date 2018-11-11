@@ -53,9 +53,9 @@ MOZ_PROFILE_MIGRATOR=
 # MAR_CHANNEL_ID must not contained the follow 3 characters: ",\t"
 # ACCEPTED_MAR_CHANNEL_IDS should usually be the same as MAR_CHANNEL_ID
 # If more than one ID is needed, then you should use a comma seperated list.
-MOZ_UPDATER=1
-MAR_CHANNEL_ID=palemoon-release
-ACCEPTED_MAR_CHANNEL_IDS=palemoon-release
+MOZ_UPDATER=
+MAR_CHANNEL_ID=unofficial
+ACCEPTED_MAR_CHANNEL_IDS=unofficial,unstable,release
 
 # Platform Feature: Developer Tools
 # XXX: Devtools are disabled until they can be made to work with Pale Moon
