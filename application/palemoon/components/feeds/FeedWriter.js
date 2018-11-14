@@ -698,12 +698,7 @@ FeedWriter.prototype = {
    * @returns moz-icon url of the given file as a string
    */
   _getFileIconURL: function FW__getFileIconURL(file) {
-    var ios = Cc["@mozilla.org/network/io-service;1"].
-              getService(Ci.nsIIOService);
-    var fph = ios.getProtocolHandler("file")
-                 .QueryInterface(Ci.nsIFileProtocolHandler);
-    var urlSpec = fph.getURLSpecFromFile(file);
-    return "moz-icon://" + urlSpec + "?size=16";
+    return "moz-icon://dummy.exe?size=16";
   },
 
   /**
