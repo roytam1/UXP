@@ -382,6 +382,11 @@ var BookmarkPropertiesPanel = {
             .addEventListener("input", this, false);
       }
     }
+    
+    // Ensure the Name Picker textbox is focused on load
+    var namePickerElem = document.getElementById('editBMPanel_namePicker');
+    namePickerElem.focus();
+    namePickerElem.select();
   }),
 
   // nsIDOMEventListener
