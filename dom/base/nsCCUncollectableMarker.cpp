@@ -188,23 +188,21 @@ MarkMessageManagers()
 }
 
 void
-MarkContentViewer(nsIContentViewer* aViewer, bool aCleanupJS,
-                  bool aPrepareForCC)
+MarkDocument(nsIDocument* aDoc, bool aCleanupJS, bool aPrepareForCC)
 {
-  if (!aViewer) {
+  if (!aDoc) {
     return;
   }
 
   nsIDocument *doc = aViewer->GetDocument();
-  if (doc &&
-      doc->GetMarkedCCGeneration() != nsCCUncollectableMarker::sGeneration) {
-    doc->MarkUncollectableForCCGeneration(nsCCUncollectableMarker::sGeneration);
+  if (aDoc->GetMarkedCCGeneration() != nsCCUncollectableMarker::sGeneration) {
+    aDoc->MarkUncollectableForCCGeneration(nsCCUncollectableMarker::sGeneration);
     if (aCleanupJS) {
-      EventListenerManager* elm = doc->GetExistingListenerManager();
+      EventListenerManager* elm = aDoc->GetExistingListenerManager();
       if (elm) {
         elm->MarkForCC();
       }
-      nsCOMPtr<EventTarget> win = do_QueryInterface(doc->GetInnerWindow());
+      nsCOMPtr<EventTarget> win = do_QueryInterface(aDoc->GetInnerWindow());
       if (win) {
         elm = win->GetExistingListenerManager();
         if (elm) {
@@ -215,18 +213,27 @@ MarkContentViewer(nsIContentViewer* aViewer, bool aCleanupJS,
     } else if (aPrepareForCC) {
       // Unfortunately we need to still mark user data just before running CC so
       // that it has the right generation.
-      doc->PropertyTable(DOM_USER_DATA)->
+      aDoc->PropertyTable(DOM_USER_DATA)->
         EnumerateAll(MarkUserData, &nsCCUncollectableMarker::sGeneration);
     }
   }
-  if (doc) {
-    if (nsPIDOMWindowInner* inner = doc->GetInnerWindow()) {
-      inner->MarkUncollectableForCCGeneration(nsCCUncollectableMarker::sGeneration);
-    }
-    if (nsPIDOMWindowOuter* outer = doc->GetWindow()) {
-      outer->MarkUncollectableForCCGeneration(nsCCUncollectableMarker::sGeneration);
-    }
+  if (nsPIDOMWindowInner* inner = aDoc->GetInnerWindow()) {
+    inner->MarkUncollectableForCCGeneration(nsCCUncollectableMarker::sGeneration);
   }
+  if (nsPIDOMWindowOuter* outer = aDoc->GetWindow()) {
+    outer->MarkUncollectableForCCGeneration(nsCCUncollectableMarker::sGeneration);
+  }
+}
+
+void
+MarkContentViewer(nsIContentViewer* aViewer, bool aCleanupJS,
+                  bool aPrepareForCC)
+{
+  if (!aViewer) {
+    return;
+  }
+
+  MarkDocument(aViewer->GetDocument(), aCleanupJS, aPrepareForCC);
 }
 
 void MarkDocShell(nsIDocShellTreeItem* aNode, bool aCleanupJS,
