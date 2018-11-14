@@ -88,7 +88,7 @@
                            tooltiptext="&closeNotification.tooltip;"
                            oncommand="document.getBindingParent(this).close()"/>
         <xul:hbox anonid="details" align="center" flex="1">
-          <xul:image anonid="messageImage" class="messageImage" xbl:inherits="src=image"/>
+          <xul:image anonid="messageImage" class="messageImage" xbl:inherits="src=image,type"/>
           <xul:description anonid="messageText" class="messageText" xbl:inherits="xbl:text=label"/>
 
           <!-- The children are the buttons defined by the notification. -->
