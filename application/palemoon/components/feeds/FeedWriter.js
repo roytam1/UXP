@@ -692,21 +692,6 @@ FeedWriter.prototype = {
   },
 
   /**
-   * Get moz-icon url for a file
-   * @param   file
-   *          A nsIFile object for which the moz-icon:// is returned
-   * @returns moz-icon url of the given file as a string
-   */
-  _getFileIconURL: function FW__getFileIconURL(file) {
-    var ios = Cc["@mozilla.org/network/io-service;1"].
-              getService(Ci.nsIIOService);
-    var fph = ios.getProtocolHandler("file")
-                 .QueryInterface(Ci.nsIFileProtocolHandler);
-    var urlSpec = fph.getURLSpecFromFile(file);
-    return "moz-icon://" + urlSpec + "?size=16";
-  },
-
-  /**
    * Helper method to set the selected application and system default
    * reader menuitems details from a file object
    *   @param aMenuItem
@@ -717,7 +702,10 @@ FeedWriter.prototype = {
   _initMenuItemWithFile: function(aMenuItem, aFile) {
     this._contentSandbox.menuitem = aMenuItem;
     this._contentSandbox.label = this._getFileDisplayName(aFile);
-    this._contentSandbox.image = this._getFileIconURL(aFile);
+    // For security reasons, access to moz-icon:file://... URIs is
+    // no longer allowed (indirect file system access from content).
+    // We use a dummy application instead to get a generic icon.
+    this._contentSandbox.image = "moz-icon://dummy.exe?size=16";
     var codeStr = "menuitem.setAttribute('label', label); " +
                   "menuitem.setAttribute('image', image);"
     Cu.evalInSandbox(codeStr, this._contentSandbox);
