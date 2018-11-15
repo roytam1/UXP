@@ -194,7 +194,6 @@ MarkDocument(nsIDocument* aDoc, bool aCleanupJS, bool aPrepareForCC)
     return;
   }
 
-  nsIDocument *doc = aViewer->GetDocument();
   if (aDoc->GetMarkedCCGeneration() != nsCCUncollectableMarker::sGeneration) {
     aDoc->MarkUncollectableForCCGeneration(nsCCUncollectableMarker::sGeneration);
     if (aCleanupJS) {
