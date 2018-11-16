@@ -616,7 +616,7 @@
 
                 if (this.mTab.hasAttribute("busy")) {
                   this.mTab.removeAttribute("busy");
-                  this.mTabBrowser._tabAttrModified(this.mTab);
+                  this.mTabBrowser._tabAttrModified(this.mTab, ["busy"]);
                   if (!this.mTab.selected)
                     this.mTab.setAttribute("unread", "true");
                 }
@@ -695,6 +695,19 @@
                     ((aFlags & Ci.nsIWebProgressListener.LOCATION_CHANGE_ERROR_PAGE) &&
                      aLocation.spec != "about:blank"))
                   this.mBrowser.userTypedValue = null;
+
+                // If the browser was playing audio, we should remove the playing state.
+                if (this.mTab.hasAttribute("soundplaying") && !isSameDocument) {
+                  clearTimeout(this.mTab._soundPlayingAttrRemovalTimer);
+                  this.mTab._soundPlayingAttrRemovalTimer = 0;
+                  this.mTab.removeAttribute("soundplaying");
+                  this.mTabBrowser._tabAttrModified(this.mTab, ["soundplaying"]);
+                }
+
+                // If the browser was previously muted, we should restore the muted state.
+                if (this.mTab.hasAttribute("muted")) {
+                  this.mTab.linkedBrowser.mute();
+                }
 
                 // Don't clear the favicon if this onLocationChange was
                 // triggered by a pushState or a replaceState.  See bug 550565.
@@ -804,7 +817,7 @@
                 aTab.setAttribute("image", sizedIconUrl);
               else
                 aTab.removeAttribute("image");
-              this._tabAttrModified(aTab);
+              this._tabAttrModified(aTab, ["image"]);
             }
 
             this._callProgressListeners(browser, "onLinkIconAvailable", [browser.mIconURL]);
@@ -1116,8 +1129,8 @@
               });
               this.mCurrentTab.dispatchEvent(event);
 
-              this._tabAttrModified(oldTab);
-              this._tabAttrModified(this.mCurrentTab);
+              this._tabAttrModified(oldTab, ["selected"]);
+              this._tabAttrModified(this.mCurrentTab, ["selected"]);
 
               // Adjust focus
               oldBrowser._urlbarFocused = (gURLBar && gURLBar.focused);
@@ -1187,14 +1200,18 @@
 
       <method name="_tabAttrModified">
         <parameter name="aTab"/>
+        <parameter name="aChanged"/>
         <body><![CDATA[
           if (aTab.closing)
             return;
 
-          // This event should be dispatched when any of these attributes change:
-          // label, crop, busy, image, selected
-          var event = document.createEvent("Events");
-          event.initEvent("TabAttrModified", true, false);
+          let event = new CustomEvent("TabAttrModified", {
+            bubbles: true,
+            cancelable: false,
+            detail: {
+              changed: aChanged,
+            }
+          });
           aTab.dispatchEvent(event);
         ]]></body>
       </method>
@@ -1205,7 +1222,7 @@
           <![CDATA[
             aTab.label = this.mStringBundle.getString("tabs.connecting");
             aTab.crop = "end";
-            this._tabAttrModified(aTab);
+            this._tabAttrModified(aTab, ["label", "crop"]);
           ]]>
         </body>
       </method>
@@ -1250,7 +1267,7 @@
 
             aTab.label = title;
             aTab.crop = crop;
-            this._tabAttrModified(aTab);
+            this._tabAttrModified(aTab, ["label", "crop"]);
 
             if (aTab.selected)
               this.updateTitlebar();
@@ -2239,6 +2256,14 @@
             var remoteBrowser = aOtherTab.ownerDocument.defaultView.gBrowser;
             var isPending = aOtherTab.hasAttribute("pending");
 
+            // Expedite the removal of the icon if it was already scheduled.
+            if (aOtherTab._soundPlayingAttrRemovalTimer) {
+              clearTimeout(aOtherTab._soundPlayingAttrRemovalTimer);
+              aOtherTab._soundPlayingAttrRemovalTimer = 0;
+              aOtherTab.removeAttribute("soundplaying");
+              remoteBrowser._tabAttrModified(aOtherTab, ["soundplaying"]);
+            }
+
             // First, start teardown of the other browser.  Make sure to not
             // fire the beforeunload event in the process.  Close the other
             // window if this was its last tab.
@@ -2247,6 +2272,18 @@
 
             let ourBrowser = this.getBrowserForTab(aOurTab);
             let otherBrowser = aOtherTab.linkedBrowser;
+
+            let modifiedAttrs = [];
+            if (aOtherTab.hasAttribute("muted")) {
+              aOurTab.setAttribute("muted", "true");
+              aOurTab.muteReason = aOtherTab.muteReason;
+              ourBrowser.mute();
+              modifiedAttrs.push("muted");
+            }
+            if (aOtherTab.hasAttribute("soundplaying")) {
+              aOurTab.setAttribute("soundplaying", "true");
+              modifiedAttrs.push("soundplaying");
+            }
 
             // If the other tab is pending (i.e. has not been restored, yet)
             // then do not switch docShells but retrieve the other tab's state
@@ -2266,7 +2303,7 @@
               var isBusy = aOtherTab.hasAttribute("busy");
               if (isBusy) {
                 aOurTab.setAttribute("busy", "true");
-                this._tabAttrModified(aOurTab);
+                modifiedAttrs.push("busy");
                 if (aOurTab.selected)
                   this.mIsBusy = true;
               }
@@ -2286,6 +2323,10 @@
             // of replaceTabWithWindow), notify onLocationChange, etc.
             if (aOurTab.selected)
               this.updateCurrentBrowser(true);
+
+            if (modifiedAttrs.length) {
+              this._tabAttrModified(aOurTab, modifiedAttrs);
+            }
           ]]>
         </body>
       </method>
@@ -3316,6 +3357,7 @@
         ]]>
         </getter>
       </property>
+      <field name="_soundPlayingAttrRemovalTimer">0</field>
     </implementation>
 
     <handlers>
@@ -4850,7 +4892,7 @@
                      xbl:inherits="value=label,crop,accesskey,fadein,pinned,selected"
                      class="tab-text tab-label"
                      role="presentation"/>
-          <xul:image xbl:inherits="soundplaying,soundplaying-scheduledremoval,pinned,muted,blocked,selected=visuallyselected"
+          <xul:image xbl:inherits="soundplaying,soundplaying-scheduledremoval,pinned,muted,blocked,selected"
                      anonid="soundplaying-icon"
                      class="tab-icon-sound"
                      role="presentation"/>
