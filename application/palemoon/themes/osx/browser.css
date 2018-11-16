@@ -1834,6 +1834,7 @@ richlistitem[type~="action"][actiontype="switchtab"][selected="true"] > .ac-url-
   display: none;
 }
 
+.alltabs-endimage[soundplaying],
 .tab-icon-sound[soundplaying] {
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio");
 }
@@ -1846,6 +1847,8 @@ richlistitem[type~="action"][actiontype="switchtab"][selected="true"] > .ac-url-
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-pressed");
 }
 
+.alltabs-endimage[muted],
+.alltabs-endimage[blocked],
 .tab-icon-sound[muted],
 .tab-icon-sound[blocked] {
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-muted");
