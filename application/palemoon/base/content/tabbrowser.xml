@@ -3347,6 +3347,78 @@
             tab.setAttribute("titlechanged", "true");
         ]]>
       </handler>
+      <handler event="DOMAudioPlaybackStarted">
+        <![CDATA[
+          var tab = getTabFromAudioEvent(event)
+          if (!tab) {
+            return;
+          }
+
+          clearTimeout(tab._soundPlayingAttrRemovalTimer);
+          tab._soundPlayingAttrRemovalTimer = 0;
+
+          let modifiedAttrs = [];
+          if (tab.hasAttribute("soundplaying-scheduledremoval")) {
+            tab.removeAttribute("soundplaying-scheduledremoval");
+            modifiedAttrs.push("soundplaying-scheduledremoval");
+          }
+
+          if (!tab.hasAttribute("soundplaying")) {
+            tab.setAttribute("soundplaying", true);
+            modifiedAttrs.push("soundplaying");
+          }
+
+          this._tabAttrModified(tab, modifiedAttrs);
+        ]]>
+      </handler>
+      <handler event="DOMAudioPlaybackStopped">
+        <![CDATA[
+          var tab = getTabFromAudioEvent(event)
+          if (!tab) {
+            return;
+          }
+
+          if (tab.hasAttribute("soundplaying")) {
+            let removalDelay = Services.prefs.getIntPref("browser.tabs.delayHidingAudioPlayingIconMS");
+
+            tab.style.setProperty("--soundplaying-removal-delay", `${removalDelay - 300}ms`);
+            tab.setAttribute("soundplaying-scheduledremoval", "true");
+            this._tabAttrModified(tab, ["soundplaying-scheduledremoval"]);
+
+            tab._soundPlayingAttrRemovalTimer = setTimeout(() => {
+              tab.removeAttribute("soundplaying-scheduledremoval");
+              tab.removeAttribute("soundplaying");
+              this._tabAttrModified(tab, ["soundplaying", "soundplaying-scheduledremoval"]);
+            }, removalDelay);
+          }
+        ]]>
+      </handler>
+      <handler event="DOMAudioPlaybackBlockStarted">
+        <![CDATA[
+          var tab = getTabFromAudioEvent(event)
+          if (!tab) {
+            return;
+          }
+
+          if (!tab.hasAttribute("blocked")) {
+            tab.setAttribute("blocked", true);
+            this._tabAttrModified(tab, ["blocked"]);
+          }
+        ]]>
+      </handler>
+      <handler event="DOMAudioPlaybackBlockStopped">
+        <![CDATA[
+          var tab = getTabFromAudioEvent(event)
+          if (!tab) {
+            return;
+          }
+
+          if (tab.hasAttribute("blocked")) {
+            tab.removeAttribute("blocked");
+            this._tabAttrModified(tab, ["blocked"]);
+          }
+        ]]>
+      </handler>
     </handlers>
   </binding>
 
@@ -4762,6 +4834,10 @@
                      xbl:inherits="value=label,crop,accesskey,fadein,pinned,selected"
                      class="tab-text tab-label"
                      role="presentation"/>
+          <xul:image xbl:inherits="soundplaying,soundplaying-scheduledremoval,pinned,muted,blocked,selected=visuallyselected"
+                     anonid="soundplaying-icon"
+                     class="tab-icon-sound"
+                     role="presentation"/>
           <xul:toolbarbutton anonid="close-button"
                              xbl:inherits="fadein,pinned,selected"
                              class="tab-close-button close-icon"/>
@@ -4782,9 +4858,59 @@
       </property>
 
       <field name="mOverCloseButton">false</field>
+      <property name="_overPlayingIcon" readonly="true">
+        <getter><![CDATA[
+          let iconVisible = this.hasAttribute("soundplaying") ||
+                            this.hasAttribute("muted") ||
+                            this.hasAttribute("blocked");
+          let soundPlayingIcon =
+            document.getAnonymousElementByAttribute(this, "anonid", "soundplaying-icon");
+          let overlayIcon =
+            document.getAnonymousElementByAttribute(this, "anonid", "overlay-icon");
+
+          return soundPlayingIcon && soundPlayingIcon.matches(":hover") ||
+                 (overlayIcon && overlayIcon.matches(":hover") && iconVisible);
+        ]]></getter>
+      </property>
       <field name="mCorrespondingMenuitem">null</field>
       <field name="closing">false</field>
       <field name="lastAccessed">0</field>
+      
+      <method name="toggleMuteAudio">
+        <parameter name="aMuteReason"/>
+        <body>
+        <![CDATA[
+          let tabContainer = this.parentNode;
+          let browser = this.linkedBrowser;
+          let modifiedAttrs = [];
+          if (browser.audioBlocked) {
+            this.removeAttribute("blocked");
+            modifiedAttrs.push("blocked");
+
+            // We don't want sound icon flickering between "blocked", "none" and
+            // "sound-playing", here adding the "soundplaying" is to keep the
+            // transition smoothly.
+            if (!this.hasAttribute("soundplaying")) {
+              this.setAttribute("soundplaying", true);
+              modifiedAttrs.push("soundplaying");
+            }
+
+            browser.resumeMedia();
+          } else {
+            if (browser.audioMuted) {
+              browser.unmute();
+              this.removeAttribute("muted");
+            } else {
+              browser.mute();
+              this.setAttribute("muted", "true");
+            }
+            this.muteReason = aMuteReason || null;
+            modifiedAttrs.push("muted");
+          }
+          tabContainer.tabbrowser._tabAttrModified(this, modifiedAttrs);
+        ]]>
+        </body>
+      </method>
     </implementation>
 
     <handlers>
@@ -4843,7 +4969,8 @@
         if (this.selected) {
           this.style.MozUserFocus = 'ignore';
           this.clientTop; // just using this to flush style updates
-        } else if (this.mOverCloseButton) {
+        } else if (this.mOverCloseButton ||
+                   this._overPlayingIcon) {
           // Prevent tabbox.xml from selecting the tab.
           event.stopPropagation();
         }
@@ -4851,6 +4978,17 @@
       </handler>
       <handler event="mouseup">
         this.style.MozUserFocus = '';
+      </handler>
+      <handler event="click">
+      <![CDATA[
+        if (event.button != 0) {
+          return;
+        }
+
+        if (this._overPlayingIcon) {
+          this.toggleMuteAudio();
+        }
+      ]]>
       </handler>
     </handlers>
   </binding>

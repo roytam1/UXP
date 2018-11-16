@@ -2018,6 +2018,78 @@ richlistitem[type~="action"][actiontype="switchtab"] > .ac-url-box > .ac-action-
   list-style-image: url("chrome://global/skin/icons/close-inverted.svg");
 }
 
+/* Tab sound indicator */
+.tab-icon-sound {
+  -moz-margin-start: 4px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.tab-icon-sound:not(:-moz-any([soundplaying],[muted])),
+.tab-icon-sound[pinned] {
+  display: none;
+}
+
+.tab-icon-sound[soundplaying] {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio");
+}
+
+.tab-icon-sound[soundplaying]:hover {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-hover");
+}
+
+.tab-icon-sound[soundplaying]:hover:active {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-pressed");
+}
+
+.tab-icon-sound[muted],
+.tab-icon-sound[blocked] {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-muted");
+}
+
+.tab-icon-sound[muted]:hover,
+.tab-icon-sound[blocked]:hover {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-muted-hover");
+}
+
+.tab-icon-sound[muted]:hover:active,
+.tab-icon-sound[blocked]:hover:active {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-muted-pressed");
+}
+
+#TabsToolbar[brighttext] .tab-icon-sound[soundplaying] {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-dark");
+}
+
+#TabsToolbar[brighttext] .tab-icon-sound[soundplaying]:hover {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-dark-hover");
+}
+
+#TabsToolbar[brighttext] .tab-icon-sound[soundplaying]:hover:active {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-dark-pressed");
+}
+
+#TabsToolbar[brighttext] .tab-icon-sound[blocked],
+#TabsToolbar[brighttext] .tab-icon-sound[muted] {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-muted-dark");
+}
+
+#TabsToolbar[brighttext] .tab-icon-sound[blocked]:hover,
+#TabsToolbar[brighttext] .tab-icon-sound[muted]:hover {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-muted-dark-hover");
+}
+
+#TabsToolbar[brighttext] .tab-icon-sound[blocked]:hover:active,
+#TabsToolbar[brighttext] .tab-icon-sound[muted]:hover:active {
+  list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-muted-dark-pressed");
+}
+
+.tab-icon-sound[soundplaying-scheduledremoval]:not([muted]):not(:hover) {
+  transition: opacity .3s linear var(--soundplaying-removal-delay);
+  opacity: 0;
+}
+
 /* Tab scrollbox arrow, tabstrip new tab and all-tabs buttons */
 
 .tabbrowser-arrowscrollbox > .scrollbutton-up,
