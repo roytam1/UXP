@@ -3084,9 +3084,25 @@
             event.preventDefault();
             return;
           }
-          event.target.setAttribute("label", tab.mOverCloseButton ?
-                                             tab.getAttribute("closetabtext") :
-                                             tab.getAttribute("label"));
+
+          var stringID, label;
+          if (tab.mOverCloseButton) {
+            stringID = "tabs.closeTab";
+          } else if (tab._overPlayingIcon) {
+            if (tab.linkedBrowser.audioBlocked) {
+              stringID = "tabs.unblockAudio.tooltip";
+            } else {
+              stringID = tab.linkedBrowser.audioMuted ?
+                "tabs.unmuteAudio.tooltip" :
+                "tabs.muteAudio.tooltip";
+            }
+          } else {
+            label = tab.getAttribute("label");
+          }
+          if (stringID && !label) {
+            label = this.mStringBundle.getString(stringID);
+          }
+          event.target.setAttribute("label", label);
         ]]></body>
       </method>
 
