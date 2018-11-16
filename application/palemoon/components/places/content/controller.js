@@ -1287,15 +1287,15 @@ PlacesController.prototype = {
     if (!didSuppressNotifications)
       result.suppressNotifications = true;
 
-    function addData(type, index, overrideURI) {
-      let wrapNode = PlacesUtils.wrapNode(node, type, overrideURI, doCopy);
+    function addData(type, index, feedURI) {
+      let wrapNode = PlacesUtils.wrapNode(node, type, feedURI);
       dt.mozSetDataAt(type, wrapNode, index);
     }
 
-    function addURIData(index, overrideURI) {
-      addData(PlacesUtils.TYPE_X_MOZ_URL, index, overrideURI);
-      addData(PlacesUtils.TYPE_UNICODE, index, overrideURI);
-      addData(PlacesUtils.TYPE_HTML, index, overrideURI);
+    function addURIData(index, feedURI) {
+      addData(PlacesUtils.TYPE_X_MOZ_URL, index, feedURI);
+      addData(PlacesUtils.TYPE_UNICODE, index, feedURI);
+      addData(PlacesUtils.TYPE_HTML, index, feedURI);
     }
 
     try {
@@ -1387,12 +1387,11 @@ PlacesController.prototype = {
         copiedFolders.push(node);
 
       let livemarkInfo = this.getCachedLivemarkInfo(node);
-      let overrideURI = livemarkInfo ? livemarkInfo.feedURI.spec : null;
-      let resolveShortcuts = !PlacesControllerDragHelper.canMoveNode(node);
+      let feedURI = livemarkInfo && livemarkInfo.feedURI.spec;
 
       contents.forEach(function (content) {
         content.entries.push(
-          PlacesUtils.wrapNode(node, content.type, overrideURI, resolveShortcuts)
+          PlacesUtils.wrapNode(node, content.type, feedURI)
         );
       });
     }, this);
