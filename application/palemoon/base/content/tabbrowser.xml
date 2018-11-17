@@ -4888,6 +4888,10 @@
                      class="tab-icon-image"
                      role="presentation"
                      anonid="tab-icon"/>
+          <xul:image xbl:inherits="busy,soundplaying,soundplaying-scheduledremoval,pinned,muted,blocked,selected"
+                     anonid="overlay-icon"
+                     class="tab-icon-overlay"
+                     role="presentation"/>
           <xul:label flex="1"
                      xbl:inherits="value=label,crop,accesskey,fadein,pinned,selected"
                      class="tab-text tab-label"

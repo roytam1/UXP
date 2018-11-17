@@ -45,8 +45,17 @@ tabpanels {
 }
 
 .tab-throbber:not([busy]),
-.tab-throbber[busy] + .tab-icon-image {
+.tab-throbber[busy] + .tab-icon-image,
+.tab-icon-sound:not([soundplaying]):not([muted]):not([blocked]),
+.tab-icon-sound[pinned],
+.tab-icon-overlay {
   display: none;
+}
+
+.tab-icon-overlay[soundplaying][pinned],
+.tab-icon-overlay[muted][pinned],
+.tab-icon-overlay[blocked][pinned] {
+  display: -moz-box;
 }
 
 .closing-tabs-spacer {
