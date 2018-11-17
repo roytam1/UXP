@@ -940,6 +940,13 @@ var allTabs = {
       aPreview.setAttribute("image", aPreview._tab.image);
     else
       aPreview.removeAttribute("image");
+  
+    aPreview.removeAttribute("soundplaying");
+    aPreview.removeAttribute("muted");
+    if (aPreview._tab.hasAttribute("muted"))
+      aPreview.setAttribute("muted", "true");
+    else if (aPreview._tab.hasAttribute("soundplaying"))
+      aPreview.setAttribute("soundplaying", "true");
 
     var thumbnail = tabPreviews.get(aPreview._tab);
     if (aPreview.firstChild) {
