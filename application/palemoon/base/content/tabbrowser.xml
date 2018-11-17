@@ -5160,7 +5160,7 @@
 
           function addEndImage() {
             let endImage = document.createElement("image");
-            endImage.setAttribute("class", "alltabs-endimage");
+            endImage.setAttribute("class", "allTabs-endimage");
             let endImageContainer = document.createElement("hbox");
             endImageContainer.setAttribute("align", "center");
             endImageContainer.setAttribute("pack", "center");

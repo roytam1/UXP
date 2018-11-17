@@ -1829,17 +1829,17 @@ richlistitem[type~="action"][actiontype="switchtab"][selected="true"] > .ac-url-
   padding: 0;
 }
 
-.alltabs-endimage[soundplaying],
+.allTabs-endimage[soundplaying],
 .tab-icon-sound[soundplaying] {
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio");
 }
 
-.alltabs-endimage[muted],
+.allTabs-endimage[muted],
 .tab-icon-sound[muted] {
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-muted");
 }
 
-.alltabs-endimage[blocked],
+.allTabs-endimage[blocked],
 .tab-icon-sound[blocked] {
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-blocked");
 }

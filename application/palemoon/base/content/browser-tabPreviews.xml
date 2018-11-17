@@ -43,7 +43,7 @@
             <children/>
           </xul:hbox>
           <xul:hbox align="center">
-            <xul:image xbl:inherits="soundplaying,muted" class="alltabs-endimage"/>
+            <xul:image xbl:inherits="soundplaying,muted" class="allTabs-endimage"/>
             <xul:label flex="1" xbl:inherits="value=label,crop" class="allTabs-preview-label plain"/>
           </xul:hbox>
         </xul:vbox>
