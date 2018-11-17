@@ -438,6 +438,22 @@
         </body>
       </method>
 
+      <method name="getTabFromAudioEvent">
+        <parameter name="aEvent"/>
+        <body>
+        <![CDATA[
+          if (!Services.prefs.getBoolPref("browser.tabs.showAudioPlayingIcon") ||
+              !aEvent.isTrusted) {
+            return null;
+          }
+
+          var browser = aEvent.originalTarget;
+          var tab = this.getTabForBrowser(browser);
+          return tab;
+        ]]>
+        </body>
+      </method>
+
       <method name="_callProgressListeners">
         <parameter name="aBrowser"/>
         <parameter name="aMethod"/>
