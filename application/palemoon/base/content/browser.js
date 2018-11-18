@@ -976,6 +976,7 @@ var gBrowserInit = {
     CombinedStopReload.init();
     allTabs.readPref();
     TabsOnTop.init();
+    AudioIndicator.init();
     gPrivateBrowsingUI.init();
     TabsInTitlebar.init();
     retrieveToolbarIconsizesFromTheme();
@@ -1364,6 +1365,8 @@ var gBrowserInit = {
     BookmarkingUI.uninit();
 
     TabsOnTop.uninit();
+    
+    AudioIndicator.uninit();
 
     TabsInTitlebar.uninit();
     
@@ -4595,6 +4598,42 @@ function setToolbarVisibility(toolbar, isVisible) {
 
   if (isVisible)
     ToolbarIconColor.inferFromText();
+}
+
+var AudioIndicator = {
+  init: function () {
+    Services.prefs.addObserver(this._prefName, this, false);
+    this.syncUI();
+  },
+
+  uninit: function () {
+    Services.prefs.removeObserver(this._prefName, this);
+  },
+
+  toggle: function () {
+    this.enabled = !Services.prefs.getBoolPref(this._prefName);
+  },
+
+  syncUI: function () {
+    document.getElementById("context_toggleMuteTab").setAttribute("hidden", this.enabled);
+    document.getElementById("key_toggleMute").setAttribute("disabled", this.enabled);
+  },
+
+  get enabled () {
+    return !Services.prefs.getBoolPref(this._prefName);
+  },
+
+  set enabled (val) {
+    Services.prefs.setBoolPref(this._prefName, !!val);
+    return val;
+  },
+
+  observe: function (subject, topic, data) {
+    if (topic == "nsPref:changed")
+      this.syncUI();
+  },
+
+  _prefName: "browser.tabs.showAudioPlayingIcon"
 }
 
 var TabsOnTop = {
