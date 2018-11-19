@@ -516,8 +516,7 @@ GMPCapability::Supports(const nsTArray<GMPCapability>& aCapabilities,
 #ifdef XP_WIN
         // Clearkey on Windows advertises that it can decode in its GMP info
         // file, but uses Windows Media Foundation to decode. That's not present
-        // on Windows XP, and on some Vista, Windows N, and KN variants without
-        // certain services packs.
+        // on Windows N and KN variants without certain services packs.
         if (tag.Equals(kEMEKeySystemClearkey)) {
           if (capabilities.mAPIName.EqualsLiteral(GMP_API_VIDEO_DECODER)) {
             if (!WMFDecoderModule::HasH264()) {

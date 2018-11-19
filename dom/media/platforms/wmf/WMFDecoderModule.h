@@ -40,10 +40,8 @@ public:
   static int GetNumDecoderThreads();
 
   // Accessors that report whether we have the required MFTs available
-  // on the system to play various codecs. Windows Vista doesn't have the
-  // H.264/AAC decoders if the "Platform Update Supplement for Windows Vista"
-  // is not installed, and Window N and KN variants also require a "Media
-  // Feature Pack" to be installed. Windows XP doesn't have WMF.
+  // on the system to play various codecs. Windows N and KN variants
+  // require a "Media Feature Pack" to be installed.
   static bool HasAAC();
   static bool HasH264();
 

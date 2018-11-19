@@ -62,8 +62,6 @@ namespace mozilla {
 
 // Returns true if we should enable MSE webm regardless of preferences.
 // 1. If MP4/H264 isn't supported:
-//   * Windows XP
-//   * Windows Vista and Server 2008 without the optional "Platform Update Supplement"
 //   * N/KN editions (Europe and Korea) of Windows 7/8/8.1/10 without the
 //     optional "Windows Media Feature Pack"
 // 2. If H264 hardware acceleration is not available.

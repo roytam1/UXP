@@ -14,7 +14,7 @@
 #include "MP3FrameParser.h"
 
 // Add the graph to the Running Object Table so that we can connect
-// to this graph with GraphEdit/GraphStudio. Note: on Vista and up you must
+// to this graph with GraphEdit/GraphStudio. Note: you must
 // also regsvr32 proppage.dll from the Windows SDK.
 // See: http://msdn.microsoft.com/en-us/library/ms787252(VS.85).aspx
 // #define DIRECTSHOW_REGISTER_GRAPH
