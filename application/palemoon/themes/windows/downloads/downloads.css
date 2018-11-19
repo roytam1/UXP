@@ -326,6 +326,11 @@ toolbar[brighttext] #downloads-indicator-icon {
                               0, 108, 18, 90) center no-repeat;
 }
 
+#downloads-indicator[attention] > #downloads-indicator-anchor > #downloads-indicator-icon {
+  background: -moz-image-rect(var(--toolbarbutton-image),
+                                19, 108, 36, 90) center no-repeat;
+}
+
 @media (-moz-windows-compositor) {
   :-moz-any(#toolbar-menubar, #nav-bar[tabsontop=false]) #downloads-indicator-icon:not(:-moz-lwtheme),
   #TabsToolbar[tabsontop=true] #downloads-indicator-icon:not(:-moz-lwtheme),
@@ -333,10 +338,12 @@ toolbar[brighttext] #downloads-indicator-icon {
     background: -moz-image-rect(var(--toolbarbutton-glass-image),
                                 0, 108, 18, 90) center no-repeat;
   }
+  #downloads-indicator[attention] > #downloads-indicator-anchor > #downloads-indicator-icon {
+    background: -moz-image-rect(var(--toolbarbutton-glass-image),
+                                19, 108, 36, 90) center no-repeat;
 }
 
-#downloads-indicator[attention] > #downloads-indicator-anchor > #downloads-indicator-icon {
-  background-image: url("chrome://browser/skin/downloads/download-glow.png");
+
 }
 
 /* In the next few rules, we use :not([counter]) as a shortcut that is
@@ -360,10 +367,10 @@ toolbar[brighttext] #downloads-indicator:not([counter]) > #downloads-indicator-a
     background: -moz-image-rect(var(--toolbarbutton-glass-image),
                                 0, 108, 18, 90) center no-repeat;
   }
-}
-
-#downloads-indicator:not([counter])[attention] > #downloads-indicator-anchor > #downloads-indicator-progress-area > #downloads-indicator-counter {
-  background-image: url("chrome://browser/skin/downloads/download-glow.png");
+  #downloads-indicator:not([counter])[attention] > #downloads-indicator-anchor > #downloads-indicator-progress-area > #downloads-indicator-counter {
+    background: -moz-image-rect(var(--toolbarbutton-glass-image),
+                                19, 108, 36, 90) center no-repeat;
+  }
 }
 
 /*** Download notifications ***/

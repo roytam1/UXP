@@ -60,9 +60,9 @@ browser.jar:
         skin/classic/browser/Secure24.png
         skin/classic/browser/setDesktopBackground.css
         skin/classic/browser/slowStartup-16.png
-        skin/classic/browser/Toolbar.png
-        skin/classic/browser/Toolbar-glass.png
-        skin/classic/browser/Toolbar-inverted.png
+        skin/classic/browser/Toolbar.svg
+        skin/classic/browser/Toolbar-glass.svg
+        skin/classic/browser/Toolbar-inverted.svg
         skin/classic/browser/toolbarbutton-dropdown-arrow.png
         skin/classic/browser/toolbarbutton-dropdown-arrow-inverted.png
         skin/classic/browser/urlbar-arrow.png
@@ -79,7 +79,6 @@ browser.jar:
         skin/classic/browser/webRTC-sharingDevice-16.png
 #endif
         skin/classic/browser/downloads/buttons.png                   (downloads/buttons.png)
-        skin/classic/browser/downloads/download-glow.png             (downloads/download-glow.png)
         skin/classic/browser/downloads/download-notification-finish.png (downloads/download-notification-finish.png)
         skin/classic/browser/downloads/download-notification-start.png (downloads/download-notification-start.png)
         skin/classic/browser/downloads/download-summary.png          (downloads/download-summary.png)

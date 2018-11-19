@@ -39,9 +39,9 @@
   --toolbarbutton-border-radius: 2.5px;
   --toolbarbutton-border-color: hsla(210,54%,20%,.2);
 
-  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.png");
-  --toolbarbutton-glass-image: url("chrome://browser/skin/Toolbar-glass.png");
-  --toolbarbutton-inverted-image: url("chrome://browser/skin/Toolbar-inverted.png");
+  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
+  --toolbarbutton-glass-image: url("chrome://browser/skin/Toolbar-glass.svg");
+  --toolbarbutton-inverted-image: url("chrome://browser/skin/Toolbar-inverted.svg");
 
   --tab-background: linear-gradient(transparent, hsla(0,0%,45%,.1) 1px, hsla(0,0%,32%,.2) 80%, hsla(0,0%,0%,.2));
   --tab-background-hover: linear-gradient(hsla(0,0%,100%,.3) 1px, hsla(0,0%,75%,.2) 80%, hsla(0,0%,60%,.2));
