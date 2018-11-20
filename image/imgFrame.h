@@ -12,6 +12,7 @@
 #include "mozilla/Monitor.h"
 #include "mozilla/Move.h"
 #include "mozilla/VolatileBuffer.h"
+#include "AnimationParams.h"
 #include "gfxDrawable.h"
 #include "imgIContainer.h"
 #include "MainThreadUtils.h"
@@ -22,24 +23,6 @@ namespace image {
 class ImageRegion;
 class DrawableFrameRef;
 class RawAccessFrameRef;
-
-enum class BlendMethod : int8_t {
-  // All color components of the frame, including alpha, overwrite the current
-  // contents of the frame's output buffer region.
-  SOURCE,
-
-  // The frame should be composited onto the output buffer based on its alpha,
-  // using a simple OVER operation.
-  OVER
-};
-
-enum class DisposalMethod : int8_t {
-  CLEAR_ALL = -1,  // Clear the whole image, revealing what's underneath.
-  NOT_SPECIFIED,   // Leave the frame and let the new frame draw on top.
-  KEEP,            // Leave the frame and let the new frame draw on top.
-  CLEAR,           // Clear the frame's area, revealing what's underneath.
-  RESTORE_PREVIOUS // Restore the previous (composited) frame.
-};
 
 enum class Opacity : uint8_t {
   FULLY_OPAQUE,
@@ -210,14 +193,19 @@ public:
                           const nsIntRect& aRect,
                           SurfaceFormat aFormat,
                           uint8_t aPaletteDepth = 0,
-                          bool aNonPremult = false);
+                          bool aNonPremult = false,
+                          const Maybe<AnimationParams>& aAnimParams = Nothing());
 
   nsresult InitForDecoder(const nsIntSize& aSize,
                           SurfaceFormat aFormat,
                           uint8_t aPaletteDepth = 0)
   {
-    return InitForDecoder(aSize, nsIntRect(0, 0, aSize.width, aSize.height),
-                          aFormat, aPaletteDepth);
+    nsIntRect frameRect(0, 0, aSize.width, aSize.height);
+    AnimationParams animParams { frameRect, FrameTimeout::Forever(),
+                                 /* aFrameNum */ 1, BlendMethod::OVER,
+                                 DisposalMethod::NOT_SPECIFIED };
+    return InitForDecoder(aSize, frameRect,
+                          aFormat, aPaletteDepth, false, Some(animParams));
   }
 
 
@@ -268,22 +256,8 @@ public:
    * RawAccessFrameRef pointing to an imgFrame.
    *
    * @param aFrameOpacity    Whether this imgFrame is opaque.
-   * @param aDisposalMethod  For animation frames, how this imgFrame is cleared
-   *                         from the compositing frame before the next frame is
-   *                         displayed.
-   * @param aTimeout         For animation frames, the timeout before the next
-   *                         frame is displayed.
-   * @param aBlendMethod     For animation frames, a blending method to be used
-   *                         when compositing this frame.
-   * @param aBlendRect       For animation frames, if present, the subrect in
-   *                         which @aBlendMethod applies. Outside of this
-   *                         subrect, BlendMethod::OVER is always used.
    */
-  void Finish(Opacity aFrameOpacity = Opacity::SOME_TRANSPARENCY,
-              DisposalMethod aDisposalMethod = DisposalMethod::KEEP,
-              FrameTimeout aTimeout = FrameTimeout::FromRawMilliseconds(0),
-              BlendMethod aBlendMethod = BlendMethod::OVER,
-              const Maybe<IntRect>& aBlendRect = Nothing());
+  void Finish(Opacity aFrameOpacity = Opacity::SOME_TRANSPARENCY);
 
   /**
    * Mark this imgFrame as aborted. This informs the imgFrame that if it isn't
@@ -322,9 +296,15 @@ public:
    */
   uint32_t GetBytesPerPixel() const { return GetIsPaletted() ? 1 : 4; }
 
-  IntSize GetImageSize() const { return mImageSize; }
-  IntRect GetRect() const { return mFrameRect; }
+  const IntSize& GetImageSize() const { return mImageSize; }
+  const IntRect& GetRect() const { return mFrameRect; }
   IntSize GetSize() const { return mFrameRect.Size(); }
+  const IntRect& GetBlendRect() const { return mBlendRect; }
+  IntRect GetBoundedBlendRect() const { return mBlendRect.Intersect(mFrameRect); }
+  FrameTimeout GetTimeout() const { return mTimeout; }
+  BlendMethod GetBlendMethod() const { return mBlendMethod; }
+  DisposalMethod GetDisposalMethod() const { return mDisposalMethod; }
+  bool FormatHasAlpha() const { return mFormat == SurfaceFormat::B8G8R8A8; }
   void GetImageData(uint8_t** aData, uint32_t* length) const;
   uint8_t* GetImageData() const;
 
@@ -406,14 +386,6 @@ private: // data
   //! Number of RawAccessFrameRefs currently alive for this imgFrame.
   int32_t mLockCount;
 
-  //! The timeout for this frame.
-  FrameTimeout mTimeout;
-
-  DisposalMethod mDisposalMethod;
-  BlendMethod    mBlendMethod;
-  Maybe<IntRect> mBlendRect;
-  SurfaceFormat  mFormat;
-
   bool mHasNoAlpha;
   bool mAborted;
   bool mFinished;
@@ -426,6 +398,14 @@ private: // data
 
   IntSize      mImageSize;
   IntRect      mFrameRect;
+  IntRect      mBlendRect;
+
+  //! The timeout for this frame.
+  FrameTimeout mTimeout;
+
+  DisposalMethod mDisposalMethod;
+  BlendMethod    mBlendMethod;
+  SurfaceFormat  mFormat;
 
   // The palette and image data for images that are paletted, since Cairo
   // doesn't support these images.
