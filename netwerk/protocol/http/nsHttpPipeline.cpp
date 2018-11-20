@@ -291,6 +291,11 @@ nsHttpPipeline::PushBack(const char *data, uint32_t length)
     MOZ_ASSERT(PR_GetCurrentThread() == gSocketThread);
     MOZ_ASSERT(mPushBackLen == 0, "push back buffer already has data!");
 
+    // Some bad behaving proxies may yank the connection out from under us.
+    // Check if we still have a connection to work with.
+    if (!mConnection)
+      return NS_ERROR_FAILURE;
+
     // If we have no chance for a pipeline (e.g. due to an Upgrade)
     // then push this data down to original connection
     if (!mConnection->IsPersistent())
