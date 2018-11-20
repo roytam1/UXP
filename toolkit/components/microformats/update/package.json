@@ -16,6 +16,6 @@
 	"dependencies": {
 		"download-github-repo": "0.1.x",
 		"fs-extra": "0.19.x",
-		"request": "2.58.x"
+		"request": ">=2.68.0"
 	}
 }
