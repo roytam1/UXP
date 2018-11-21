@@ -43,3 +43,5 @@ struct AnimationParams
 
 } // namespace image
 } // namespace mozilla
+
+#endif // mozilla_image_AnimationParams_h
