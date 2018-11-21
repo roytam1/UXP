@@ -91,10 +91,6 @@ MP4Decoder::CanHandleMediaType(const MediaContentType& aType,
   const bool isMP4Audio = aType.GetMIMEType().EqualsASCII("audio/mp4") ||
                           aType.GetMIMEType().EqualsASCII("audio/x-m4a");
   const bool isMP4Video =
-  // On B2G, treat 3GPP as MP4 when Gonk PDM is available.
-#ifdef MOZ_GONK_MEDIACODEC
-      aType.GetMIMEType().EqualsASCII(VIDEO_3GPP) ||
-#endif
       aType.GetMIMEType().EqualsASCII("video/mp4") ||
       aType.GetMIMEType().EqualsASCII("video/quicktime") ||
       aType.GetMIMEType().EqualsASCII("video/x-m4v");
