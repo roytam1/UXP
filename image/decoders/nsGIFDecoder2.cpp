@@ -212,10 +212,16 @@ nsGIFDecoder2::BeginImageFrame(const IntRect& aFrameRect,
   } else {
     // This is an animation frame (and not the first). To minimize the memory
     // usage of animations, the image data is stored in paletted form.
+    //
+    // We should never use paletted surfaces with a draw target directly, so
+    // the only practical difference between B8G8R8A8 and B8G8R8X8 is the
+    // cleared pixel value if we get truncated. We want 0 in that case to
+    // ensure it is an acceptable value for the color map as was the case
+    // historically.
     MOZ_ASSERT(Size() == OutputSize());
     pipe =
       SurfacePipeFactory::CreatePalettedSurfacePipe(this, Size(), aFrameRect,
-                                                    format,
+                                                    SurfaceFormat::B8G8R8A8,
                                                     aDepth, Some(animParams),
                                                     pipeFlags);
   }
