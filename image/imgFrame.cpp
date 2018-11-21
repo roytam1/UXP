@@ -252,13 +252,13 @@ imgFrame::InitForDecoder(const nsIntSize& aImageSize,
   } else {
     MOZ_ASSERT(!mImageSurface, "Called imgFrame::InitForDecoder() twice?");
 
-    mRawSurface = AllocateBufferForImage(mFrameRect.Size(), mFormat);
-    if (!mRawSurface) {
+    mVBuf = AllocateBufferForImage(mFrameRect.Size(), mFormat);
+    if (!mVBuf) {
       mAborted = true;
       return NS_ERROR_OUT_OF_MEMORY;
     }
 
-    mImageSurface = CreateLockedSurface(mRawSurface, mFrameRect.Size(), mFormat);
+    mImageSurface = CreateLockedSurface(mVBuf, mFrameRect.Size(), mFormat);
 
     if (!mImageSurface) {
       NS_WARNING("Failed to create ImageSurface");
@@ -266,7 +266,7 @@ imgFrame::InitForDecoder(const nsIntSize& aImageSize,
       return NS_ERROR_OUT_OF_MEMORY;
     }
 
-    if (!ClearSurface(mRawSurface, mFrameRect.Size(), mFormat)) {
+    if (!ClearSurface(mVBuf, mFrameRect.Size(), mFormat)) {
       NS_WARNING("Could not clear allocated buffer");
       mAborted = true;
       return NS_ERROR_OUT_OF_MEMORY;
