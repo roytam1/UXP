@@ -135,8 +135,6 @@ class SpeechSynthesis;
 class TabGroup;
 class Timeout;
 class U2F;
-class VRDisplay;
-class VREventObserver;
 class WakeLock;
 #if defined(MOZ_WIDGET_ANDROID)
 class WindowOrientationObserver;
@@ -744,18 +742,6 @@ public:
   // Enable/disable updates for gamepad input.
   void EnableGamepadUpdates();
   void DisableGamepadUpdates();
-
-  // Inner windows only.
-  // Enable/disable updates for VR
-  void EnableVRUpdates();
-  void DisableVRUpdates();
-
-  // Update the VR displays for this window
-  bool UpdateVRDisplays(nsTArray<RefPtr<mozilla::dom::VRDisplay>>& aDisplays);
-
-  // Inner windows only.
-  // Called to inform that the set of active VR displays has changed.
-  void NotifyActiveVRDisplaysChanged();
 
 #define EVENT(name_, id_, type_, struct_)                                     \
   mozilla::dom::EventHandlerNonNull* GetOn##name_()                           \
@@ -1832,9 +1818,6 @@ protected:
   // Indicates whether this window wants gamepad input events
   bool                   mHasGamepad : 1;
 
-  // Inner windows only.
-  // Indicates whether this window wants VR events
-  bool                   mHasVREvents : 1;
 #ifdef MOZ_GAMEPAD
   nsCheapSet<nsUint32HashKey> mGamepadIndexSet;
   nsRefPtrHashtable<nsUint32HashKey, mozilla::dom::Gamepad> mGamepads;
@@ -1988,11 +1971,6 @@ protected:
 
   // This is the CC generation the last time we called CanSkip.
   uint32_t mCanSkipCCGeneration;
-
-  // The VR Displays for this window
-  nsTArray<RefPtr<mozilla::dom::VRDisplay>> mVRDisplays;
-
-  nsAutoPtr<mozilla::dom::VREventObserver> mVREventObserver;
 
   friend class nsDOMScriptableHelper;
   friend class nsDOMWindowUtils;

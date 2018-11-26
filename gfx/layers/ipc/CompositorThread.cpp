@@ -12,11 +12,6 @@
 
 namespace mozilla {
 
-namespace gfx {
-// See VRManagerChild.cpp
-void ReleaseVRManagerParentSingleton();
-} // namespace gfx
-
 namespace layers {
 
 static StaticRefPtr<CompositorThreadHolder> sCompositorThreadHolder;
@@ -130,7 +125,6 @@ CompositorThreadHolder::Shutdown()
   MOZ_ASSERT(sCompositorThreadHolder, "The compositor thread has already been shut down!");
 
   ReleaseImageBridgeParentSingleton();
-  gfx::ReleaseVRManagerParentSingleton();
   MediaSystemResourceService::Shutdown();
 
   sCompositorThreadHolder = nullptr;

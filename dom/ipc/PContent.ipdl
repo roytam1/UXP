@@ -44,7 +44,6 @@ include protocol PRemoteSpellcheckEngine;
 include protocol PWebBrowserPersistDocument;
 include protocol PWebrtcGlobal;
 include protocol PPresentation;
-include protocol PVRManager;
 include protocol PVideoDecoderManager;
 include protocol PFlyWebPublishedServer;
 include DOMTypes;
@@ -311,7 +310,6 @@ child:
     async InitRendering(
       Endpoint<PCompositorBridgeChild> compositor,
       Endpoint<PImageBridgeChild> imageBridge,
-      Endpoint<PVRManagerChild> vr,
       Endpoint<PVideoDecoderManagerChild> video);
 
     // Re-create the rendering stack using the given endpoints. This is sent
@@ -320,7 +318,6 @@ child:
     async ReinitRendering(
       Endpoint<PCompositorBridgeChild> compositor,
       Endpoint<PImageBridgeChild> bridge,
-      Endpoint<PVRManagerChild> vr,
       Endpoint<PVideoDecoderManagerChild> video);
 
     /**

@@ -76,7 +76,6 @@ class Connection;
 class PowerManager;
 class Presentation;
 class LegacyMozTCPSocket;
-class VRDisplay;
 class StorageManager;
 
 namespace time {
@@ -204,8 +203,6 @@ public:
   void GetGamepads(nsTArray<RefPtr<Gamepad> >& aGamepads, ErrorResult& aRv);
   GamepadServiceTest* RequestGamepadServiceTest();
 #endif // MOZ_GAMEPAD
-  already_AddRefed<Promise> GetVRDisplays(ErrorResult& aRv);
-  void GetActiveVRDisplays(nsTArray<RefPtr<VRDisplay>>& aDisplays) const;
 #ifdef MOZ_TIME_MANAGER
   time::TimeManager* GetMozTime(ErrorResult& aRv);
 #endif // MOZ_TIME_MANAGER
@@ -268,10 +265,6 @@ public:
 private:
   RefPtr<MediaKeySystemAccessManager> mMediaKeySystemAccessManager;
 #endif
-
-public:
-  void NotifyVRDisplaysUpdated();
-  void NotifyActiveVRDisplaysChanged();
 
 private:
   virtual ~Navigator();

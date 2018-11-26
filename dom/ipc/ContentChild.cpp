@@ -171,7 +171,6 @@
 #include "GMPServiceChild.h"
 #include "gfxPlatform.h"
 #include "nscore.h" // for NS_FREE_PERMANENT_DATA
-#include "VRManagerChild.h"
 
 using namespace mozilla;
 using namespace mozilla::docshell;
@@ -1148,16 +1147,12 @@ ContentChild::RecvGMPsChanged(nsTArray<GMPCapabilityData>&& capabilities)
 bool
 ContentChild::RecvInitRendering(Endpoint<PCompositorBridgeChild>&& aCompositor,
                                 Endpoint<PImageBridgeChild>&& aImageBridge,
-                                Endpoint<PVRManagerChild>&& aVRBridge,
                                 Endpoint<PVideoDecoderManagerChild>&& aVideoManager)
 {
   if (!CompositorBridgeChild::InitForContent(Move(aCompositor))) {
     return false;
   }
   if (!ImageBridgeChild::InitForContent(Move(aImageBridge))) {
-    return false;
-  }
-  if (!gfx::VRManagerChild::InitForContent(Move(aVRBridge))) {
     return false;
   }
   VideoDecoderManagerChild::InitForContent(Move(aVideoManager));
@@ -1167,7 +1162,6 @@ ContentChild::RecvInitRendering(Endpoint<PCompositorBridgeChild>&& aCompositor,
 bool
 ContentChild::RecvReinitRendering(Endpoint<PCompositorBridgeChild>&& aCompositor,
                                   Endpoint<PImageBridgeChild>&& aImageBridge,
-                                  Endpoint<PVRManagerChild>&& aVRBridge,
                                   Endpoint<PVideoDecoderManagerChild>&& aVideoManager)
 {
   nsTArray<RefPtr<TabChild>> tabs = TabChild::GetAll();
@@ -1184,9 +1178,6 @@ ContentChild::RecvReinitRendering(Endpoint<PCompositorBridgeChild>&& aCompositor
     return false;
   }
   if (!ImageBridgeChild::ReinitForContent(Move(aImageBridge))) {
-    return false;
-  }
-  if (!gfx::VRManagerChild::ReinitForContent(Move(aVRBridge))) {
     return false;
   }
 

@@ -28,8 +28,6 @@
 #include "nsThreadManager.h"
 #include "prenv.h"
 #include "ProcessUtils.h"
-#include "VRManager.h"
-#include "VRManagerParent.h"
 #include "VsyncBridgeParent.h"
 #if defined(XP_WIN)
 # include "DeviceManagerD3D9.h"
@@ -100,7 +98,6 @@ GPUParent::Init(base::ProcessId aParentPid,
   CompositorThreadHolder::Start();
   APZThreadUtils::SetControllerThread(CompositorThreadHolder::Loop());
   APZCTreeManager::InitializeGlobalState();
-  VRManager::ManagerInit();
   LayerTreeOwnerTracker::Initialize();
   mozilla::ipc::SetThisProcessName("GPU Process");
 #ifdef XP_WIN
@@ -203,13 +200,6 @@ GPUParent::RecvInitImageBridge(Endpoint<PImageBridgeParent>&& aEndpoint)
 }
 
 bool
-GPUParent::RecvInitVRManager(Endpoint<PVRManagerParent>&& aEndpoint)
-{
-  VRManagerParent::CreateForGPUProcess(Move(aEndpoint));
-  return true;
-}
-
-bool
 GPUParent::RecvUpdatePref(const GfxPrefSetting& setting)
 {
   gfxPrefs::Pref* pref = gfxPrefs::all()[setting.index()];
@@ -299,12 +289,6 @@ bool
 GPUParent::RecvNewContentImageBridge(Endpoint<PImageBridgeParent>&& aEndpoint)
 {
   return ImageBridgeParent::CreateForContent(Move(aEndpoint));
-}
-
-bool
-GPUParent::RecvNewContentVRManager(Endpoint<PVRManagerParent>&& aEndpoint)
-{
-  return VRManagerParent::CreateForContent(Move(aEndpoint));
 }
 
 bool

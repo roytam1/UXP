@@ -656,9 +656,6 @@ public:
     void PixelStorei(GLenum pname, GLint param);
     void PolygonOffset(GLfloat factor, GLfloat units);
 
-    already_AddRefed<layers::SharedSurfaceTextureClient> GetVRFrame();
-    bool StartVRPresentation();
-
     ////
 
     webgl::PackingInfo

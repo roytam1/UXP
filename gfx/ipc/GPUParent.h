@@ -32,7 +32,6 @@ public:
                 const DevicePrefs& devicePrefs) override;
   bool RecvInitVsyncBridge(Endpoint<PVsyncBridgeParent>&& aVsyncEndpoint) override;
   bool RecvInitImageBridge(Endpoint<PImageBridgeParent>&& aEndpoint) override;
-  bool RecvInitVRManager(Endpoint<PVRManagerParent>&& aEndpoint) override;
   bool RecvUpdatePref(const GfxPrefSetting& pref) override;
   bool RecvUpdateVar(const GfxVarUpdate& pref) override;
   bool RecvNewWidgetCompositor(
@@ -43,7 +42,6 @@ public:
     const IntSize& aSurfaceSize) override;
   bool RecvNewContentCompositorBridge(Endpoint<PCompositorBridgeParent>&& aEndpoint) override;
   bool RecvNewContentImageBridge(Endpoint<PImageBridgeParent>&& aEndpoint) override;
-  bool RecvNewContentVRManager(Endpoint<PVRManagerParent>&& aEndpoint) override;
   bool RecvNewContentVideoDecoderManager(Endpoint<PVideoDecoderManagerParent>&& aEndpoint) override;
   bool RecvGetDeviceStatus(GPUDeviceData* aOutStatus) override;
   bool RecvAddLayerTreeIdMapping(nsTArray<LayerTreeIdMapping>&& aMappings) override;

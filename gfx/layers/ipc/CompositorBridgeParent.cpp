@@ -30,7 +30,6 @@
 #include "mozilla/gfx/2D.h"          // for DrawTarget
 #include "mozilla/gfx/Point.h"          // for IntSize
 #include "mozilla/gfx/Rect.h"          // for IntSize
-#include "VRManager.h"                  // for VRManager
 #include "mozilla/ipc/Transport.h"      // for Transport
 #include "mozilla/layers/APZCTreeManager.h"  // for APZCTreeManager
 #include "mozilla/layers/APZCTreeManagerParent.h"  // for APZCTreeManagerParent
@@ -475,7 +474,6 @@ CompositorVsyncScheduler::Composite(TimeStamp aVsyncTimestamp)
   }
 
   DispatchTouchEvents(aVsyncTimestamp);
-  DispatchVREvents(aVsyncTimestamp);
 
   if (mNeedsComposite || mAsapScheduling) {
     mNeedsComposite = 0;
@@ -539,15 +537,6 @@ CompositorVsyncScheduler::UnobserveVsync()
 void
 CompositorVsyncScheduler::DispatchTouchEvents(TimeStamp aVsyncTimestamp)
 {
-}
-
-void
-CompositorVsyncScheduler::DispatchVREvents(TimeStamp aVsyncTimestamp)
-{
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
-
-  VRManager* vm = VRManager::Get();
-  vm->NotifyVsync(aVsyncTimestamp);
 }
 
 void

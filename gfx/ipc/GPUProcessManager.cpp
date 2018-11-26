@@ -22,8 +22,6 @@
 #endif
 #include "nsBaseWidget.h"
 #include "nsContentUtils.h"
-#include "VRManagerChild.h"
-#include "VRManagerParent.h"
 #include "VsyncBridgeChild.h"
 #include "VsyncIOThreadHolder.h"
 #include "VsyncSource.h"
@@ -194,36 +192,6 @@ GPUProcessManager::EnsureImageBridgeChild()
 
   mGPUChild->SendInitImageBridge(Move(parentPipe));
   ImageBridgeChild::InitWithGPUProcess(Move(childPipe));
-}
-
-void
-GPUProcessManager::EnsureVRManager()
-{
-  if (VRManagerChild::IsCreated()) {
-    return;
-  }
-
-  EnsureGPUReady();
-
-  if (!mGPUChild) {
-    VRManagerChild::InitSameProcess();
-    return;
-  }
-
-  ipc::Endpoint<PVRManagerParent> parentPipe;
-  ipc::Endpoint<PVRManagerChild> childPipe;
-  nsresult rv = PVRManager::CreateEndpoints(
-    mGPUChild->OtherPid(),
-    base::GetCurrentProcId(),
-    &parentPipe,
-    &childPipe);
-  if (NS_FAILED(rv)) {
-    DisableGPUProcess("Failed to create PVRManager endpoints");
-    return;
-  }
-
-  mGPUChild->SendInitVRManager(Move(parentPipe));
-  VRManagerChild::InitWithGPUProcess(Move(childPipe));
 }
 
 void
@@ -488,7 +456,6 @@ GPUProcessManager::CreateTopLevelCompositor(nsBaseWidget* aWidget,
 
   EnsureGPUReady();
   EnsureImageBridgeChild();
-  EnsureVRManager();
 
   if (mGPUChild) {
     RefPtr<CompositorSession> session = CreateRemoteSession(
@@ -599,12 +566,10 @@ bool
 GPUProcessManager::CreateContentBridges(base::ProcessId aOtherProcess,
                                         ipc::Endpoint<PCompositorBridgeChild>* aOutCompositor,
                                         ipc::Endpoint<PImageBridgeChild>* aOutImageBridge,
-                                        ipc::Endpoint<PVRManagerChild>* aOutVRBridge,
                                         ipc::Endpoint<dom::PVideoDecoderManagerChild>* aOutVideoManager)
 {
   if (!CreateContentCompositorBridge(aOtherProcess, aOutCompositor) ||
-      !CreateContentImageBridge(aOtherProcess, aOutImageBridge) ||
-      !CreateContentVRManager(aOtherProcess, aOutVRBridge))
+      !CreateContentImageBridge(aOtherProcess, aOutImageBridge))
   {
     return false;
   }
@@ -690,40 +655,6 @@ GPUProcessManager::GPUProcessPid()
                            ? mGPUChild->OtherPid()
                            : -1;
   return gpuPid;
-}
-
-bool
-GPUProcessManager::CreateContentVRManager(base::ProcessId aOtherProcess,
-                                          ipc::Endpoint<PVRManagerChild>* aOutEndpoint)
-{
-  EnsureVRManager();
-
-  base::ProcessId gpuPid = mGPUChild
-                           ? mGPUChild->OtherPid()
-                           : base::GetCurrentProcId();
-
-  ipc::Endpoint<PVRManagerParent> parentPipe;
-  ipc::Endpoint<PVRManagerChild> childPipe;
-  nsresult rv = PVRManager::CreateEndpoints(
-    gpuPid,
-    aOtherProcess,
-    &parentPipe,
-    &childPipe);
-  if (NS_FAILED(rv)) {
-    gfxCriticalNote << "Could not create content compositor bridge: " << hexa(int(rv));
-    return false;
-  }
-
-  if (mGPUChild) {
-    mGPUChild->SendNewContentVRManager(Move(parentPipe));
-  } else {
-    if (!VRManagerParent::CreateForContent(Move(parentPipe))) {
-      return false;
-    }
-  }
-
-  *aOutEndpoint = Move(childPipe);
-  return true;
 }
 
 void

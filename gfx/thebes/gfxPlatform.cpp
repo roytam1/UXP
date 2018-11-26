@@ -131,8 +131,6 @@ class mozilla::gl::SkiaGLGlue : public GenericAtomicRefCounted {
 #include "SoftwareVsyncSource.h"
 #include "nscore.h" // for NS_FREE_PERMANENT_DATA
 #include "mozilla/dom/ContentChild.h"
-#include "gfxVR.h"
-#include "VRManagerChild.h"
 #include "mozilla/gfx/GPUParent.h"
 #include "prsystem.h"
 
@@ -492,8 +490,6 @@ gfxPlatform::gfxPlatform()
                      contentMask, BackendType::CAIRO);
 
     mTotalSystemMemory = PR_GetPhysicalMemorySize();
-
-    VRManager::ManagerInit();
 }
 
 gfxPlatform*
@@ -900,14 +896,12 @@ gfxPlatform::ShutdownLayersIPC()
     sLayersIPCIsUp = false;
 
     if (XRE_IsContentProcess()) {
-        gfx::VRManagerChild::ShutDown();
         // cf bug 1215265.
         if (gfxPrefs::ChildProcessShutdown()) {
           layers::CompositorBridgeChild::ShutDown();
           layers::ImageBridgeChild::ShutDown();
         }
     } else if (XRE_IsParentProcess()) {
-        gfx::VRManagerChild::ShutDown();
         layers::CompositorBridgeChild::ShutDown();
         layers::ImageBridgeChild::ShutDown();
 

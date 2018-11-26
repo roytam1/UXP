@@ -45,7 +45,6 @@ namespace gfx {
 
 class GPUChild;
 class GPUProcessListener;
-class PVRManagerChild;
 class VsyncBridgeChild;
 class VsyncIOThreadHolder;
 
@@ -91,7 +90,6 @@ public:
     base::ProcessId aOtherProcess,
     ipc::Endpoint<PCompositorBridgeChild>* aOutCompositor,
     ipc::Endpoint<PImageBridgeChild>* aOutImageBridge,
-    ipc::Endpoint<PVRManagerChild>* aOutVRBridge,
     ipc::Endpoint<dom::PVideoDecoderManagerChild>* aOutVideoManager);
 
   // This returns a reference to the APZCTreeManager to which
@@ -156,8 +154,6 @@ private:
                                      ipc::Endpoint<PCompositorBridgeChild>* aOutEndpoint);
   bool CreateContentImageBridge(base::ProcessId aOtherProcess,
                                 ipc::Endpoint<PImageBridgeChild>* aOutEndpoint);
-  bool CreateContentVRManager(base::ProcessId aOtherProcess,
-                              ipc::Endpoint<PVRManagerChild>* aOutEndpoint);
   void CreateContentVideoDecoderManager(base::ProcessId aOtherProcess,
                                         ipc::Endpoint<dom::PVideoDecoderManagerChild>* aOutEndPoint);
 
@@ -182,7 +178,6 @@ private:
   void ShutdownVsyncIOThread();
 
   void EnsureImageBridgeChild();
-  void EnsureVRManager();
 
   RefPtr<CompositorSession> CreateRemoteSession(
     nsBaseWidget* aWidget,

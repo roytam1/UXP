@@ -268,14 +268,6 @@ partial interface Navigator {
 };
 #endif // MOZ_GAMEPAD
 
-partial interface Navigator {
-  [Throws, Pref="dom.vr.enabled"]
-  Promise<sequence<VRDisplay>> getVRDisplays();
-  // TODO: Use FrozenArray once available. (Bug 1236777)
-  [Frozen, Cached, Pure, Pref="dom.vr.enabled"]
-  readonly attribute sequence<VRDisplay> activeVRDisplays;
-};
-
 #ifdef MOZ_TIME_MANAGER
 // nsIDOMMozNavigatorTime
 partial interface Navigator {

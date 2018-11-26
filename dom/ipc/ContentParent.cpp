@@ -2073,21 +2073,18 @@ ContentParent::InitInternal(ProcessPriority aInitialPriority,
 
       Endpoint<PCompositorBridgeChild> compositor;
       Endpoint<PImageBridgeChild> imageBridge;
-      Endpoint<PVRManagerChild> vrBridge;
       Endpoint<PVideoDecoderManagerChild> videoManager;
 
       DebugOnly<bool> opened = gpm->CreateContentBridges(
         OtherPid(),
         &compositor,
         &imageBridge,
-        &vrBridge,
         &videoManager);
       MOZ_ASSERT(opened);
 
       Unused << SendInitRendering(
         Move(compositor),
         Move(imageBridge),
-        Move(vrBridge),
         Move(videoManager));
 
       gpm->AddListener(this);
@@ -2201,21 +2198,18 @@ ContentParent::OnCompositorUnexpectedShutdown()
 
   Endpoint<PCompositorBridgeChild> compositor;
   Endpoint<PImageBridgeChild> imageBridge;
-  Endpoint<PVRManagerChild> vrBridge;
   Endpoint<PVideoDecoderManagerChild> videoManager;
 
   DebugOnly<bool> opened = gpm->CreateContentBridges(
     OtherPid(),
     &compositor,
     &imageBridge,
-    &vrBridge,
     &videoManager);
   MOZ_ASSERT(opened);
 
   Unused << SendReinitRendering(
     Move(compositor),
     Move(imageBridge),
-    Move(vrBridge),
     Move(videoManager));
 }
 

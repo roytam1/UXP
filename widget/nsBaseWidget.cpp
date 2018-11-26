@@ -73,7 +73,6 @@
 #endif
 #include "gfxConfig.h"
 #include "mozilla/layers/CompositorSession.h"
-#include "VRManagerChild.h"
 
 #ifdef DEBUG
 #include "nsIObserver.h"
@@ -366,7 +365,6 @@ nsBaseWidget::OnRenderingDeviceReset()
   // Update the texture factory identifier.
   clm->UpdateTextureFactoryIdentifier(identifier);
   ImageBridgeChild::IdentifyCompositorTextureHost(identifier);
-  gfx::VRManagerChild::IdentifyTextureHost(identifier);
 }
 
 void
@@ -1377,7 +1375,6 @@ void nsBaseWidget::CreateCompositor(int aWidth, int aHeight)
     // compositors used with ImageBridge and VR (and more generally web content).
     if (WidgetTypeSupportsAcceleration()) {
       ImageBridgeChild::IdentifyCompositorTextureHost(textureFactoryIdentifier);
-      gfx::VRManagerChild::IdentifyTextureHost(textureFactoryIdentifier);
     }
   }
 

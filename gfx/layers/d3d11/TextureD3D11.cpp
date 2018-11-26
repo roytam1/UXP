@@ -1160,8 +1160,7 @@ CompositingRenderTargetD3D11::CompositingRenderTargetD3D11(ID3D11Texture2D* aTex
   mFormatOverride = aFormatOverride;
 
   // If we happen to have a typeless underlying DXGI surface, we need to be explicit
-  // about the format here. (Such a surface could come from an external source, such
-  // as the Oculus compositor)
+  // about the format here. (Such a surface could come from an external source)
   CD3D11_RENDER_TARGET_VIEW_DESC rtvDesc(D3D11_RTV_DIMENSION_TEXTURE2D, mFormatOverride);
   D3D11_RENDER_TARGET_VIEW_DESC *desc = aFormatOverride == DXGI_FORMAT_UNKNOWN ? nullptr : &rtvDesc;
 

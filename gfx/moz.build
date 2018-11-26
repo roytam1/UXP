@@ -20,7 +20,6 @@ DIRS += [
     'ots/src',
     'thebes',
     'ipc',
-    'vr',
     'config',
 ]
 

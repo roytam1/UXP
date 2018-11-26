@@ -350,10 +350,6 @@ public:
   static void SetAttrFromAsyncCanvasRenderer(AsyncCanvasRenderer *aRenderer);
   static void InvalidateFromAsyncCanvasRenderer(AsyncCanvasRenderer *aRenderer);
 
-  void StartVRPresentation();
-  void StopVRPresentation();
-  already_AddRefed<layers::SharedSurfaceTextureClient> GetVRFrame();
-
 protected:
   virtual ~HTMLCanvasElement();
 

@@ -202,9 +202,6 @@
 #include "mozilla/dom/GamepadManager.h"
 #endif
 
-#include "mozilla/dom/VRDisplay.h"
-#include "mozilla/dom/VREventObserver.h"
-
 #include "nsRefreshDriver.h"
 #include "Layers.h"
 
@@ -1532,7 +1529,6 @@ nsGlobalWindow::nsGlobalWindow(nsGlobalWindow *aOuterWindow)
     mShowFocusRingForContent(false),
     mFocusByKeyOccurred(false),
     mHasGamepad(false),
-    mHasVREvents(false),
 #ifdef MOZ_GAMEPAD
     mHasSeenGamepadInput(false),
 #endif
@@ -1967,12 +1963,9 @@ nsGlobalWindow::CleanUp()
   if (IsInnerWindow()) {
     DisableGamepadUpdates();
     mHasGamepad = false;
-    DisableVRUpdates();
-    mHasVREvents = false;
     DisableIdleCallbackRequests();
   } else {
     MOZ_ASSERT(!mHasGamepad);
-    MOZ_ASSERT(!mHasVREvents);
   }
 
   if (mCleanMessageManager) {
@@ -2118,9 +2111,6 @@ nsGlobalWindow::FreeInnerObjects(bool aForDocumentOpen)
   mHasGamepad = false;
   mGamepads.Clear();
 #endif
-  DisableVRUpdates();
-  mHasVREvents = false;
-  mVRDisplays.Clear();
 }
 
 //*****************************************************************************
@@ -2275,7 +2265,6 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(nsGlobalWindow)
 #endif
 
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCacheStorage)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mVRDisplays)
 
   // Traverse stuff from nsPIDOMWindow
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mChromeEventHandler)
@@ -2352,7 +2341,6 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsGlobalWindow)
 #endif
 
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mCacheStorage)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mVRDisplays)
 
   // Unlink stuff from nsPIDOMWindow
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mChromeEventHandler)
@@ -10508,24 +10496,6 @@ nsGlobalWindow::DisableGamepadUpdates()
 }
 
 void
-nsGlobalWindow::EnableVRUpdates()
-{
-  MOZ_ASSERT(IsInnerWindow());
-
-  if (mHasVREvents && !mVREventObserver) {
-    mVREventObserver = new VREventObserver(this);
-  }
-}
-
-void
-nsGlobalWindow::DisableVRUpdates()
-{
-  MOZ_ASSERT(IsInnerWindow());
-
-  mVREventObserver = nullptr;
-}
-
-void
 nsGlobalWindow::SetChromeEventHandler(EventTarget* aChromeEventHandler)
 {
   MOZ_ASSERT(IsOuterWindow());
@@ -12210,7 +12180,6 @@ nsGlobalWindow::Suspend()
       ac->RemoveWindowListener(mEnabledSensors[i], this);
   }
   DisableGamepadUpdates();
-  DisableVRUpdates();
 
   mozilla::dom::workers::SuspendWorkersForWindow(AsInner());
 
@@ -12274,7 +12243,6 @@ nsGlobalWindow::Resume()
       ac->AddWindowListener(mEnabledSensors[i], this);
   }
   EnableGamepadUpdates();
-  EnableVRUpdates();
 
   // Resume all of the AudioContexts for this window
   for (uint32_t i = 0; i < mAudioContexts.Length(); ++i) {
@@ -14030,19 +13998,6 @@ nsGlobalWindow::SetHasGamepadEventListener(bool aHasGamepad/* = true*/)
 void
 nsGlobalWindow::EventListenerAdded(nsIAtom* aType)
 {
-  if (aType == nsGkAtoms::onvrdisplayconnect ||
-      aType == nsGkAtoms::onvrdisplaydisconnect ||
-      aType == nsGkAtoms::onvrdisplaypresentchange) {
-    NotifyVREventListenerAdded();
-  }
-}
-
-void
-nsGlobalWindow::NotifyVREventListenerAdded()
-{
-  MOZ_ASSERT(IsInnerWindow());
-  mHasVREvents = true;
-  EnableVRUpdates();
 }
 
 void
@@ -14186,27 +14141,6 @@ nsGlobalWindow::SyncGamepadState()
   }
 }
 #endif // MOZ_GAMEPAD
-
-bool
-nsGlobalWindow::UpdateVRDisplays(nsTArray<RefPtr<mozilla::dom::VRDisplay>>& aDevices)
-{
-  FORWARD_TO_INNER(UpdateVRDisplays, (aDevices), false);
-
-  VRDisplay::UpdateVRDisplays(mVRDisplays, AsInner());
-  aDevices = mVRDisplays;
-  return true;
-}
-
-void
-nsGlobalWindow::NotifyActiveVRDisplaysChanged()
-{
-  MOZ_ASSERT(IsInnerWindow());
-
-  if (mNavigator) {
-    mNavigator->NotifyActiveVRDisplaysChanged();
-  }
-}
-
 
 // nsGlobalChromeWindow implementation
 
