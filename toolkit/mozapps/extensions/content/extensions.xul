@@ -186,7 +186,7 @@
              placeholder="&search.placeholder;"/>
   </hbox>
 
-  <hbox flex="1">
+  <hbox id="main" flex="1">
 
     <!-- category list -->
     <richlistbox id="categories">
