@@ -16,9 +16,6 @@
 class nsGlobalWindow;
 
 namespace mozilla {
-namespace gfx {
-class VRManagerChild;
-} // namespace gfx
 namespace dom {
 
 class EventTarget;
@@ -123,7 +120,6 @@ class GamepadManager final : public nsIObserver,
   // will be destroyed during the IPDL shutdown chain, so we
   // don't need to refcount it here.
   nsTArray<GamepadEventChannelChild *> mChannelChildren;
-  gfx::VRManagerChild* mVRChannelChild;
 
  private:
 
@@ -138,8 +134,6 @@ class GamepadManager final : public nsIObserver,
   // Indicate that a window has received data from a gamepad.
   void SetWindowHasSeenGamepad(nsGlobalWindow* aWindow, uint32_t aIndex,
                                bool aHasSeen = true);
-  // Our gamepad index has VR_GAMEPAD_IDX_OFFSET while GamepadChannelType
-  // is from VRManager.
   uint32_t GetGamepadIndexWithServiceType(uint32_t aIndex, GamepadServiceType aServiceType);
 
   // Gamepads connected to the system. Copies of these are handed out

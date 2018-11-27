@@ -6,11 +6,9 @@ namespace mozilla{
 namespace dom{
 
 // Standard channel is used for managing gamepads that
-// are from GamepadPlatformService. VR channel
-// is for gamepads that are from VRManagerChild.
+// are from GamepadPlatformService.
 enum class GamepadServiceType : uint16_t {
   Standard,
-  VR,
   NumGamepadServiceType
 };
 

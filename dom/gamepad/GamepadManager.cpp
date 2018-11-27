@@ -28,7 +28,6 @@
 #include "nsIObserverService.h"
 #include "nsIServiceManager.h"
 #include "nsThreadUtils.h"
-#include "VRManagerChild.h"
 #include "mozilla/Services.h"
 #include "mozilla/Unused.h"
 
@@ -110,11 +109,6 @@ GamepadManager::StopMonitoring()
   }
   mChannelChildren.Clear();
   mGamepads.Clear();
-
-#if defined(XP_WIN) || defined(XP_MACOSX) || defined(XP_LINUX)
-  mVRChannelChild = gfx::VRManagerChild::Get();
-  mVRChannelChild->SendControllerListenerRemoved();
-#endif
 }
 
 void
@@ -209,11 +203,6 @@ uint32_t GamepadManager::GetGamepadIndexWithServiceType(uint32_t aIndex,
     {
      MOZ_ASSERT(aIndex <= VR_GAMEPAD_IDX_OFFSET);
      newIndex = aIndex;
-     break;
-    }
-    case GamepadServiceType::VR:
-    {
-     newIndex = aIndex + VR_GAMEPAD_IDX_OFFSET;
      break;
     }
     default:
@@ -679,13 +668,6 @@ GamepadManager::ActorCreated(PBackgroundChild *aActor)
   MOZ_ASSERT(initedChild == child);
   child->SendGamepadListenerAdded();
   mChannelChildren.AppendElement(child);
-
-#if defined(XP_WIN) || defined(XP_MACOSX) || defined(XP_LINUX)
-  // Construct VRManagerChannel and ask adding the connected
-  // VR controllers to GamepadManager
-  mVRChannelChild = gfx::VRManagerChild::Get();
-  mVRChannelChild->SendControllerListenerAdded();
-#endif
 }
 
 //Override nsIIPCBackgroundChildCreateCallback
