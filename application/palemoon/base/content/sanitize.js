@@ -257,18 +257,13 @@ Sanitizer.prototype = {
                                       .getService(Components.interfaces.nsIWindowMediator);
         var windows = windowManager.getEnumerator("navigator:browser");
         while (windows.hasMoreElements()) {
-          let currentWindow = windows.getNext();
-          let currentDocument = currentWindow.document;
+          let currentDocument = windows.getNext().document;
           let searchBar = currentDocument.getElementById("searchbar");
           if (searchBar)
             searchBar.textbox.reset();
-          let tabBrowser = currentWindow.gBrowser;
-          for (let tab of tabBrowser.tabs) {
-            if (tabBrowser.isFindBarInitialized(tab))
-              tabBrowser.getFindBar(tab).clear();
-          }
-          // Clear any saved find value
-          tabBrowser._lastFindValue = "";
+          let findBar = currentDocument.getElementById("FindToolbar");
+          if (findBar)
+            findBar.clear();
         }
 
         let change = { op: "remove" };
@@ -284,8 +279,7 @@ Sanitizer.prototype = {
                                       .getService(Components.interfaces.nsIWindowMediator);
         var windows = windowManager.getEnumerator("navigator:browser");
         while (windows.hasMoreElements()) {
-          let currentWindow = windows.getNext();
-          let currentDocument = currentWindow.document;
+          let currentDocument = windows.getNext().document;
           let searchBar = currentDocument.getElementById("searchbar");
           if (searchBar) {
             let transactionMgr = searchBar.textbox.editor.transactionManager;
@@ -296,12 +290,8 @@ Sanitizer.prototype = {
               return false;
             }
           }
-          let tabBrowser = currentWindow.gBrowser;
-          let findBarCanClear = Array.some(tabBrowser.tabs, function (aTab) {
-            return tabBrowser.isFindBarInitialized(aTab) &&
-                   tabBrowser.getFindBar(aTab).canClear;
-          });
-          if (findBarCanClear) {
+          let findBar = currentDocument.getElementById("FindToolbar");
+          if (findBar && findBar.canClear) {
             aCallback("formdata", true, aArg);
             return false;
           }
