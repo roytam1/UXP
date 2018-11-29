@@ -229,10 +229,10 @@ pref("keyword.enabled", true);
 pref("general.useragent.locale", "@AB_CD@");
 pref("general.skins.selectedSkin", "classic/1.0");
 
-// Native UA mode by default
+// Native UA mode by default for unbranded
 pref("general.useragent.compatMode", 0);
-pref("general.useragent.compatmode.gecko", false);
-pref("general.useragent.compatmode.firefox", false);
+pref("general.useragent.compatMode.gecko", false);
+pref("general.useragent.compatMode.firefox", false);
 
 pref("general.smoothScroll", true);
 #ifdef UNIX_BUT_NOT_MAC
