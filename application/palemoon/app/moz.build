@@ -6,7 +6,6 @@
 
 DIRS += ['profile/extensions']
 
-
 GeckoProgram(CONFIG['MOZ_APP_NAME'])
 
 JS_PREFERENCE_PP_FILES += [
@@ -18,18 +17,14 @@ if CONFIG['LIBXUL_SDK']:
         'profile/channel-prefs.js',
     ]
 
-SOURCES += [
-    'nsBrowserApp.cpp',
-]
+SOURCES += ['nsBrowserApp.cpp']
 
 FINAL_TARGET_FILES += ['blocklist.xml']
 FINAL_TARGET_FILES.defaults.profile += ['profile/prefs.js']
 
 DEFINES['APP_VERSION'] = CONFIG['MOZ_APP_VERSION']
 
-LOCAL_INCLUDES += [
-    '!/build',
-]
+LOCAL_INCLUDES += ['!/build']
 
 LOCAL_INCLUDES += [
     '/toolkit/xre',
@@ -37,9 +32,7 @@ LOCAL_INCLUDES += [
     '/xpcom/build',
 ]
 
-USE_LIBS += [
-    'mozglue',
-]
+USE_LIBS += ['mozglue']
 
 if CONFIG['_MSC_VER']:
     # Always enter a Windows program through wmain, whether or not we're

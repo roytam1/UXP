@@ -13,9 +13,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'browser-feeds'
 
-SOURCES += [
-    'nsFeedSniffer.cpp',
-]
+SOURCES += ['nsFeedSniffer.cpp']
 
 EXTRA_COMPONENTS += [
     'BrowserFeeds.manifest',
@@ -32,6 +30,4 @@ FINAL_LIBRARY = 'browsercomps'
 for var in ('MOZ_APP_NAME', 'MOZ_MACBUNDLE_NAME'):
     DEFINES[var] = CONFIG[var]
 
-LOCAL_INCLUDES += [
-    '../build',
-]
+LOCAL_INCLUDES += ['../build']

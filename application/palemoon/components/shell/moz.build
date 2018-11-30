@@ -6,37 +6,23 @@
 
 JAR_MANIFESTS += ['jar.mn']
 
-XPIDL_SOURCES += [
-    'nsIShellService.idl',
-]
+XPIDL_SOURCES += ['nsIShellService.idl']
 
 if CONFIG['OS_ARCH'] == 'WINNT':
-    XPIDL_SOURCES += [
-        'nsIWindowsShellService.idl',
-    ]
+    XPIDL_SOURCES += ['nsIWindowsShellService.idl']
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    XPIDL_SOURCES += [
-        'nsIMacShellService.idl',
-    ]
+    XPIDL_SOURCES += ['nsIMacShellService.idl']
 elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
-    XPIDL_SOURCES += [
-        'nsIGNOMEShellService.idl',
-    ]
+    XPIDL_SOURCES += ['nsIGNOMEShellService.idl']
 
 XPIDL_MODULE = 'shellservice'
 
 if CONFIG['OS_ARCH'] == 'WINNT':
-    SOURCES += [
-        'nsWindowsShellService.cpp',
-    ]
+    SOURCES += ['nsWindowsShellService.cpp']
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    SOURCES += [
-        'nsMacShellService.cpp',
-    ]
+    SOURCES += ['nsMacShellService.cpp']
 elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
-    SOURCES += [
-        'nsGNOMEShellService.cpp',
-    ]
+    SOURCES += ['nsGNOMEShellService.cpp']
 
 if SOURCES:
     FINAL_LIBRARY = 'browsercomps'
@@ -46,9 +32,7 @@ EXTRA_COMPONENTS += [
     'nsSetDefaultBrowser.manifest',
 ]
 
-EXTRA_JS_MODULES += [
-    'ShellService.jsm',
-]
+EXTRA_JS_MODULES += ['ShellService.jsm']
 
 for var in ('MOZ_APP_NAME', 'MOZ_APP_VERSION'):
     DEFINES[var] = '"%s"' % CONFIG[var]

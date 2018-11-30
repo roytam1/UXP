@@ -4,17 +4,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-XPIDL_SOURCES += [
-    'fuelIApplication.idl',
-]
+XPIDL_SOURCES += ['fuelIApplication.idl']
 
 XPIDL_MODULE = 'fuel'
 
-EXTRA_COMPONENTS += [
-    'fuelApplication.manifest',
-]
+EXTRA_COMPONENTS += ['fuelApplication.manifest']
 
-EXTRA_PP_COMPONENTS += [
-    'fuelApplication.js',
-]
+EXTRA_PP_COMPONENTS += ['fuelApplication.js']
 

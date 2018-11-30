@@ -26,6 +26,4 @@ EXTRA_JS_MODULES.sessionstore = [
     'XPathGenerator.jsm',
 ]
 
-EXTRA_PP_JS_MODULES.sessionstore += [
-    'SessionStore.jsm',
-]
+EXTRA_PP_JS_MODULES.sessionstore += ['SessionStore.jsm']

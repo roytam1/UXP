@@ -15,9 +15,7 @@ DIRS += [
     'themes',
 ]
 
-DIRS += [
-    'app',
-]
+DIRS += ['app']
 
 if CONFIG['MAKENSISU']:
     DIRS += ['installer/windows']
