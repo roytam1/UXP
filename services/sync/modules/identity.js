@@ -22,8 +22,7 @@ for (let symbol of ["BulkKeyBundle", "SyncKeyBundle"]) {
 }
 
 /**
- * Manages "legacy" identity and authentication for Sync.
- * See browserid_identity for the Firefox Accounts based identity manager.
+ * Manages identity and authentication for Sync.
  *
  * The following entities are managed:
  *
