@@ -12,6 +12,7 @@ DIRS += [
     'feeds',
     'fuel',
     'newtab',
+    'pageinfo',
     'places',
     'permissions',
     'preferences',

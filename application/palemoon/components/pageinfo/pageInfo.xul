@@ -501,7 +501,7 @@
   </deck>
 
 #ifdef XP_MACOSX
-#include ../browserMountPoints.inc
+#include ../../base/content/browserMountPoints.inc
 #endif
 
 </window>
