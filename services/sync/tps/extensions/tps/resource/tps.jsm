@@ -632,8 +632,8 @@ var TPS = {
 
       Logger.init(logpath);
       Logger.logInfo("Sync version: " + WEAVE_VERSION);
-      Logger.logInfo("Firefox buildid: " + Services.appinfo.appBuildID);
-      Logger.logInfo("Firefox version: " + Services.appinfo.version);
+      Logger.logInfo(Services.appinfo.name + " buildid: " + Services.appinfo.appBuildID);
+      Logger.logInfo(Services.appinfo.name + " version: " + Services.appinfo.version);
 
       // do some sync housekeeping
       if (Weave.Service.isLoggedIn) {
