@@ -1,3 +1,22 @@
+# nsAboutRedirector.js
+component {8cc51368-6aa0-43e8-b762-bde9b9fd828c} nsAboutRedirector.js
+# Each entry here should be coupled with an entry in nsAboutRedirector.js
+contract @mozilla.org/network/protocol/about;1?what=certerror {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=downloads {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=feeds {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=home {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=newtab {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=palemoon {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=permissions {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=privatebrowsing {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=rights {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=robots {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=sessionrestore {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+#ifdef MOZ_SERVICES_SYNC
+contract @mozilla.org/network/protocol/about;1?what=sync-progress {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+contract @mozilla.org/network/protocol/about;1?what=sync-tabs {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
+#endif
+
 # nsBrowserContentHandler.js
 component {5d0ce354-df01-421a-83fb-7ead0990c24e} nsBrowserContentHandler.js application={8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}
 contract @mozilla.org/browser/clh;1 {5d0ce354-df01-421a-83fb-7ead0990c24e} application={8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}
