@@ -3,5 +3,5 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 browser.jar:
-  content/browser/certerror/aboutCertError.xhtml               (content/aboutCertError.xhtml)
-  content/browser/certerror/aboutCertError.css                 (content/aboutCertError.css)
+  content/browser/certerror/aboutCertError.xhtml      (content/aboutCertError.xhtml)
+  content/browser/certerror/aboutCertError.css        (content/aboutCertError.css)

@@ -3,6 +3,6 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 browser.jar:
-*   content/browser/aboutSessionRestore.xhtml             (content/aboutSessionRestore.xhtml)
-*   content/browser/aboutSessionRestore.js                (content/aboutSessionRestore.js)
-    content/browser/content-sessionStore.js               (content/content-sessionStore.js)
+* content/browser/aboutSessionRestore.xhtml             (content/aboutSessionRestore.xhtml)
+* content/browser/aboutSessionRestore.js                (content/aboutSessionRestore.js)
+  content/browser/content-sessionStore.js               (content/content-sessionStore.js)

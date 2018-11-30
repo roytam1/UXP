@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 browser.jar:
-    content/browser/permissions/aboutPermissions.xul
-    content/browser/permissions/aboutPermissions.js
-    content/browser/permissions/aboutPermissions.css
-    content/browser/permissions/aboutPermissions.xml
+  content/browser/permissions/aboutPermissions.xul
+  content/browser/permissions/aboutPermissions.js
+  content/browser/permissions/aboutPermissions.css
+  content/browser/permissions/aboutPermissions.xml
