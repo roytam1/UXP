@@ -12,7 +12,6 @@ var Cu = Components.utils;
 Cu.import("resource://services-sync/constants.js");
 Cu.import("resource://gre/modules/Log.jsm");
 Cu.import("resource://services-sync/identity.js");
-Cu.import("resource://services-sync/browserid_identity.js");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://services-common/async.js");
 
