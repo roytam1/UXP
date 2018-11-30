@@ -155,10 +155,7 @@ WeaveService.prototype = {
             Components.utils.import("resource://services-sync/main.js");
             isConfigured = Weave.Status.checkSetup() != Weave.CLIENT_NOT_CONFIGURED;
           }
-          let getHistogramById = Services.telemetry.getHistogramById;
-          getHistogramById("WEAVE_CONFIGURED").add(isConfigured);
           if (isConfigured) {
-            getHistogramById("WEAVE_CONFIGURED_MASTER_PASSWORD").add(Utils.mpEnabled());
             this.ensureLoaded();
           }
         }.bind(this)
