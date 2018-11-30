@@ -43,8 +43,7 @@ SyncScheduler.prototype = {
                     .getService(Ci.nsISupports)
                     .wrappedJSObject;
 
-    let part = service.fxAccountsEnabled ? "fxa" : "sync11";
-    let prefSDInterval = "scheduler." + part + ".singleDeviceInterval";
+    let prefSDInterval = "scheduler.sync11.singleDeviceInterval";
     this.singleDeviceInterval = Svc.Prefs.get(prefSDInterval) * 1000;
 
     this.idleInterval         = Svc.Prefs.get("scheduler.idleInterval")         * 1000;

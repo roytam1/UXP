@@ -93,29 +93,6 @@ WeaveService.prototype = {
   },
 
   /**
-   * Whether Firefox Accounts is enabled.
-   *
-   * @return bool
-   *
-   * This function is currently always returning false because we don't support
-   * the use of FxA/Sync-1.5 but do want to keep the code "just in case".
-   */
-  get fxAccountsEnabled() {
-    // Early exit: FxA not supported.
-    return false;
-/* -- commented out to prevent unreachable code warning --    
-    try {
-      // Old sync guarantees '@' will never appear in the username while FxA
-      // uses the FxA email address - so '@' is the flag we use.
-      let username = Services.prefs.getCharPref(SYNC_PREFS_BRANCH + "username");
-      return !username || username.includes('@');
-    } catch (_) {
-      return true; // No username == only allow FxA to be configured.
-    }
-*/
-  },
-
-  /**
    * Whether Sync appears to be enabled.
    *
    * This returns true if all the Sync preferences for storing account

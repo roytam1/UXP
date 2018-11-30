@@ -28,7 +28,7 @@ this.Status = {
     let service = Components.classes["@mozilla.org/weave/service;1"]
                     .getService(Components.interfaces.nsISupports)
                     .wrappedJSObject;
-    let idClass = service.fxAccountsEnabled ? BrowserIDManager : IdentityManager;
+    let idClass = IdentityManager;
     this.__authManager = new idClass();
     // .initialize returns a promise, so we need to spin until it resolves.
     let cb = Async.makeSpinningCallback();

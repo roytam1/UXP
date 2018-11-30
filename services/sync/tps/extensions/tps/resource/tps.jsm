@@ -114,7 +114,6 @@ var TPS = {
     let service = Cc["@mozilla.org/weave/service;1"]
                   .getService(Components.interfaces.nsISupports)
                   .wrappedJSObject;
-    this.fxaccounts_enabled = service.fxAccountsEnabled;
 
     this.delayAutoSync();
 
@@ -123,12 +122,7 @@ var TPS = {
     }, this);
 
     // Import the appropriate authentication module
-    if (this.fxaccounts_enabled) {
-      Cu.import("resource://tps/auth/fxaccounts.jsm", module);
-    }
-    else {
-      Cu.import("resource://tps/auth/sync.jsm", module);
-    }
+    Cu.import("resource://tps/auth/sync.jsm", module);
   },
 
   DumpError: function TPS__DumpError(msg) {
@@ -640,7 +634,6 @@ var TPS = {
       Logger.logInfo("Sync version: " + WEAVE_VERSION);
       Logger.logInfo("Firefox buildid: " + Services.appinfo.appBuildID);
       Logger.logInfo("Firefox version: " + Services.appinfo.version);
-      Logger.logInfo('Firefox Accounts enabled: ' + this.fxaccounts_enabled);
 
       // do some sync housekeeping
       if (Weave.Service.isLoggedIn) {
@@ -729,15 +722,9 @@ var TPS = {
 
       // Store account details as prefs so they're accessible to the Mozmill
       // framework.
-      if (this.fxaccounts_enabled) {
-        prefs.setCharPref('tps.account.username', this.config.fx_account.username);
-        prefs.setCharPref('tps.account.password', this.config.fx_account.password);
-      }
-      else {
-        prefs.setCharPref('tps.account.username', this.config.sync_account.username);
-        prefs.setCharPref('tps.account.password', this.config.sync_account.password);
-        prefs.setCharPref('tps.account.passphrase', this.config.sync_account.passphrase);
-      }
+      prefs.setCharPref('tps.account.username', this.config.sync_account.username);
+      prefs.setCharPref('tps.account.password', this.config.sync_account.password);
+      prefs.setCharPref('tps.account.passphrase', this.config.sync_account.passphrase);
 
       // start processing the test actions
       this._currentAction = 0;
@@ -862,8 +849,7 @@ var TPS = {
     }
 
     Logger.logInfo("Setting client credentials and login.");
-    let account = this.fxaccounts_enabled ? this.config.fx_account
-                                          : this.config.sync_account;
+    let account = this.config.sync_account;
     Authentication.signIn(account);
     this.waitForSetupComplete();
     Logger.AssertEqual(Weave.Status.service, Weave.STATUS_OK, "Weave status OK");
