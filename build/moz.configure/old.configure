@@ -310,6 +310,10 @@ def old_configure_options(*options):
     '--enable-calendar',
     '--enable-incomplete-external-linkage',
     
+    # Below are configure flags used by Pale Moon
+    '--disable-browser-statusbar',
+    '--disable-sync',
+    
     # Below are configure flags used by Basilisk
     '--disable-webextensions',
 )

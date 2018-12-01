@@ -27,3 +27,16 @@ if test -n "$MOZ_BROWSER_STATUSBAR"; then
 fi
 
 AC_SUBST(MOZ_BROWSER_STATUSBAR)
+
+dnl ========================================================
+dnl = Disable Sync
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(sync,
+[  --disable-sync           Disable Sync],
+    MOZ_SERVICES_SYNC=,
+    MOZ_SERVICES_SYNC=1)
+
+if test -z "$MOZ_SERVICES_SYNC"; then
+    MOZ_SERVICES_CLOUDSYNC=
+fi
+

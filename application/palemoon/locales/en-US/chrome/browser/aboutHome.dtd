@@ -4,8 +4,10 @@
 
 <!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd">
 %brandDTD;
+#ifdef MOZ_SERVICES_SYNC
 <!ENTITY % syncBrandDTD SYSTEM "chrome://browser/locale/syncBrand.dtd">
 %syncBrandDTD;
+#endif
 
 <!-- These strings are used in the about:home page -->
 
@@ -19,4 +21,6 @@
 <!ENTITY abouthome.addonsButton.label    "Add-ons">
 <!ENTITY abouthome.appsButton.label      "Marketplace">
 <!ENTITY abouthome.downloadsButton.label "Downloads">
+#ifdef MOZ_SERVICES_SYNC
 <!ENTITY abouthome.syncButton.label      "&syncBrand.shortName.label;">
+#endif
