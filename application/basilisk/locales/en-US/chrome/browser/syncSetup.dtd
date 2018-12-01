@@ -16,7 +16,7 @@
 
 <!-- New Account AND Existing Account -->
 <!ENTITY server.label               "Server">
-<!ENTITY serverType.default.label      "Default: Mozilla &syncBrand.fullName.label; server">
+<!ENTITY serverType.default.label      "Default: &syncBrand.fullName.label; server">
 <!ENTITY serverType.custom2.label   "Use a custom server…">
 <!ENTITY signIn.account2.label      "Account">
 <!ENTITY signIn.account2.accesskey  "A">

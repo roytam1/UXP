@@ -293,17 +293,13 @@ var gSyncUI = {
    */
 
   openSetup: function SUI_openSetup(wizardType, entryPoint = "syncbutton") {
-    if (this.weaveService.fxAccountsEnabled) {
-      this.openPrefs(entryPoint);
-    } else {
-      let win = Services.wm.getMostRecentWindow("Weave:AccountSetup");
-      if (win)
-        win.focus();
-      else {
-        window.openDialog("chrome://browser/content/sync/setup.xul",
-                          "weaveSetup", "centerscreen,chrome,resizable=no",
-                          wizardType);
-      }
+    let win = Services.wm.getMostRecentWindow("Weave:AccountSetup");
+    if (win)
+      win.focus();
+    else {
+      window.openDialog("chrome://browser/content/sync/setup.xul",
+                        "weaveSetup", "centerscreen,chrome,resizable=no",
+                        wizardType);
     }
   },
 
@@ -326,23 +322,6 @@ var gSyncUI = {
 
   openSignInAgainPage: function (entryPoint = "syncbutton") {
     gFxAccounts.openSignInAgainPage(entryPoint);
-  },
-
-  openSyncedTabsPanel() {
-    let placement = CustomizableUI.getPlacementOfWidget("sync-button");
-    let area = placement ? placement.area : CustomizableUI.AREA_NAVBAR;
-    let anchor = document.getElementById("sync-button") ||
-                 document.getElementById("PanelUI-menu-button");
-    if (area == CustomizableUI.AREA_PANEL) {
-      // The button is in the panel, so we need to show the panel UI, then our
-      // subview.
-      PanelUI.show().then(() => {
-        PanelUI.showSubView("PanelUI-remotetabs", anchor, area);
-      }).catch(Cu.reportError);
-    } else {
-      // It is placed somewhere else - just try and show it.
-      PanelUI.showSubView("PanelUI-remotetabs", anchor, area);
-    }
   },
 
   /* After Sync is initialized we perform a once-only check for the sync

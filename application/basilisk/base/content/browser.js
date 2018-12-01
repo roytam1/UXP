@@ -6355,7 +6355,7 @@ function checkEmptyPageOrigin(browser = gBrowser.selectedBrowser,
 }
 
 function BrowserOpenSyncTabs() {
-  gSyncUI.openSyncedTabsPanel();
+  switchToTabHavingURI("about:sync-tabs", true);
 }
 
 /**

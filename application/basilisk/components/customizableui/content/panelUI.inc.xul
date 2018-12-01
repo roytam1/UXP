@@ -111,7 +111,7 @@
           <vbox id="PanelUI-remotetabs-buttons">
             <toolbarbutton id="PanelUI-remotetabs-view-sidebar"
                            class="subviewbutton"
-                           observes="viewTabsSidebar"
+                           oncommand="BrowserOpenSyncTabs();"
                            label="&appMenuRemoteTabs.sidebar.label;"/>
             <toolbarbutton id="PanelUI-remotetabs-syncnow"
                            observes="sync-status"
