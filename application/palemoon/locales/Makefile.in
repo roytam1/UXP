@@ -121,7 +121,9 @@ searchplugins: $(addprefix $(FINAL_TARGET)/searchplugins/,$(SEARCHPLUGINS))
 libs-%:
 	$(NSINSTALL) -D $(DIST)/install
 	@$(MAKE) -C ../../../toolkit/locales libs-$*
+ifdef MOZ_SERVICES_SYNC
 	@$(MAKE) -C ../../../services/sync/locales AB_CD=$* XPI_NAME=locale-$*
+endif
 	@$(MAKE) -C ../../../extensions/spellcheck/locales AB_CD=$* XPI_NAME=locale-$*
 	@$(MAKE) -C ../../../intl/locales AB_CD=$* XPI_NAME=locale-$*
 ifdef MOZ_DEVTOOLS

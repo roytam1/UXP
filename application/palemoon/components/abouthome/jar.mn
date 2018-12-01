@@ -13,7 +13,9 @@ browser.jar:
   content/browser/abouthome/bookmarks.png
   content/browser/abouthome/history.png
   content/browser/abouthome/addons.png
+#ifdef MOZ_SERVICES_SYNC
   content/browser/abouthome/sync.png
+#endif
   content/browser/abouthome/settings.png
   content/browser/abouthome/restore.png
   content/browser/abouthome/restore-large.png
@@ -23,7 +25,9 @@ browser.jar:
   content/browser/abouthome/bookmarks@2x.png
   content/browser/abouthome/history@2x.png
   content/browser/abouthome/addons@2x.png
+#ifdef MOZ_SERVICES_SYNC
   content/browser/abouthome/sync@2x.png
+#endif
   content/browser/abouthome/settings@2x.png
   content/browser/abouthome/restore@2x.png
   content/browser/abouthome/restore-large@2x.png

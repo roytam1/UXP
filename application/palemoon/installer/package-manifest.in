@@ -248,8 +248,10 @@
 ; gre location for now.
 @RESPATH@/defaults/pref/channel-prefs.js
 
+#ifdef MOZ_SERVICES_SYNC
 ; Services (gre) prefs
 @RESPATH@/defaults/pref/services-sync.js
+#endif
 
 ; [Layout Engine Resources]
 ; Style Sheets, Graphics and other Resources used by the layout engine.
