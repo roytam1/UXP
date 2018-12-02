@@ -14,7 +14,6 @@
 #include "mozilla/layers/D3D11ShareHandleImage.h"
 #include "mozilla/layers/ImageBridgeChild.h"
 #include "mozilla/layers/TextureForwarder.h"
-#include "MediaTelemetryConstants.h"
 #include "mfapi.h"
 #include "gfxPrefs.h"
 #include "MFTDecoder.h"

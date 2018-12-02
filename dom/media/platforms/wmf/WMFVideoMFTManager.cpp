@@ -27,7 +27,6 @@
 #include "mozilla/WindowsVersion.h"
 #include "mozilla/Telemetry.h"
 #include "nsPrintfCString.h"
-#include "MediaTelemetryConstants.h"
 #include "GMPUtils.h" // For SplitAt. TODO: Move SplitAt to a central place.
 #include "MP4Decoder.h"
 #include "VPXDecoder.h"
