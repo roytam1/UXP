@@ -153,11 +153,6 @@ var gFxAccounts = {
       profileInfoEnabled = Services.prefs.getBoolPref("identity.fxaccounts.profile_image.enabled");
     } catch (e) { }
 
-    // Bail out if FxA is disabled.
-    if (!this.weave.fxAccountsEnabled) {
-      return Promise.resolve();
-    }
-
     this.panelUIFooter.hidden = false;
 
     // Make sure the button is disabled in customization mode.
@@ -176,6 +171,7 @@ var gFxAccounts = {
     let defaultLabel = this.panelUIStatus.getAttribute("defaultlabel");
     let errorLabel = this.panelUIStatus.getAttribute("errorlabel");
     let unverifiedLabel = this.panelUIStatus.getAttribute("unverifiedlabel");
+    let settingslabel = this.panelUIStatus.getAttribute("settingslabel");
     // The localization string is for the signed in text, but it's the default text as well
     let defaultTooltiptext = this.panelUIStatus.getAttribute("signedinTooltiptext");
 
@@ -191,34 +187,19 @@ var gFxAccounts = {
       this.panelUIFooter.removeAttribute("fxastatus");
       this.panelUIFooter.removeAttribute("fxaprofileimage");
       this.panelUIAvatar.style.removeProperty("list-style-image");
-      let showErrorBadge = false;
-      if (userData) {
-        // At this point we consider the user as logged-in (but still can be in an error state)
-        if (this.loginFailed) {
-          let tooltipDescription = this.strings.formatStringFromName("reconnectDescription", [userData.email], 1);
-          this.panelUIFooter.setAttribute("fxastatus", "error");
-          this.panelUILabel.setAttribute("label", errorLabel);
-          this.panelUIStatus.setAttribute("tooltiptext", tooltipDescription);
-          showErrorBadge = true;
-        } else if (!userData.verified) {
-          let tooltipDescription = this.strings.formatStringFromName("verifyDescription", [userData.email], 1);
-          this.panelUIFooter.setAttribute("fxastatus", "error");
-          this.panelUIFooter.setAttribute("unverified", "true");
-          this.panelUILabel.setAttribute("label", unverifiedLabel);
-          this.panelUIStatus.setAttribute("tooltiptext", tooltipDescription);
-          showErrorBadge = true;
-        } else {
-          this.panelUIFooter.setAttribute("fxastatus", "signedin");
-          this.panelUILabel.setAttribute("label", userData.email);
-        }
-        if (profileInfoEnabled) {
-          this.panelUIFooter.setAttribute("fxaprofileimage", "enabled");
-        }
+
+      if (Weave.Status.service == Weave.CLIENT_NOT_CONFIGURED) {
+        // Leave the default state
+        return;
       }
-      if (showErrorBadge) {
-        gMenuButtonBadgeManager.addBadge(gMenuButtonBadgeManager.BADGEID_FXA, "fxa-needs-authentication");
+
+      if (this.loginFailed) {
+        this.panelUIFooter.setAttribute("fxastatus", "error");
+        this.panelUILabel.setAttribute("label", errorLabel);
       } else {
-        gMenuButtonBadgeManager.removeBadge(gMenuButtonBadgeManager.BADGEID_FXA);
+        this.panelUIFooter.setAttribute("fxastatus", "signedin");
+        this.panelUILabel.setAttribute("label", settingslabel);
+        this.panelUIStatus.setAttribute("tooltiptext", "");       
       }
     }
 

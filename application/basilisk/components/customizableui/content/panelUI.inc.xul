@@ -23,10 +23,11 @@
         <hbox id="PanelUI-footer-fxa">
           <hbox id="PanelUI-fxa-status"
                 defaultlabel="&fxaSignIn.label;"
-                signedinTooltiptext="&fxaSignedIn.tooltip;"
-                tooltiptext="&fxaSignedIn.tooltip;"
+                signedinTooltiptext="&syncSettings.label;"
+                tooltiptext="&syncSettings.label;"
                 errorlabel="&fxaSignInError.label;"
                 unverifiedlabel="&fxaUnverified.label;"
+                settingslabel="&syncSettings.label;"
                 onclick="if (event.which == 1) gFxAccounts.onMenuPanelCommand();">
             <image id="PanelUI-fxa-avatar"/>
             <toolbarbutton id="PanelUI-fxa-label"
