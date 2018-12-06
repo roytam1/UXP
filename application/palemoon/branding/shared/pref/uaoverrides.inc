@@ -21,6 +21,11 @@
 #define OS_SLICE Windows NT 6.1; WOW64;
 #endif
 
+// Special-case AMO
+// We send the native UA slice now, since they no longer offer any compatible extensions for us.
+// This will result in an "only with Firefox" message which suits us fine, because it's the truth.
+pref("@GUAO_PREF@.addons.mozilla.org","Mozilla/5.0 (@OS_SLICE@ rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
+
 // Required for domains that have proven unresponsive to requests from users
 pref("@GUAO_PREF@.live.com","Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.msn.com","Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");

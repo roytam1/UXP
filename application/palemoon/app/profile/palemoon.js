@@ -1152,19 +1152,6 @@ pref("toolkit.pageThumbs.minHeight", 180);
 pref("ui.key.menuAccessKeyFocuses", true);
 #endif
 
-// ****************** domain-specific UAs ******************
-
-// AMO needs "Firefox", obviously - pass on the OS (determined at build time)
-#ifdef XP_UNIX
-#ifdef XP_MACOSX
-pref("general.useragent.override.addons.mozilla.org","Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:27.0) Gecko/20100101 Firefox/27.0");
-#else
-pref("general.useragent.override.addons.mozilla.org","Mozilla/5.0 (Linux; X11; rv:27.0) Gecko/20100101 Firefox/27.0");
-#endif
-#else
-pref("general.useragent.override.addons.mozilla.org","Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0");
-#endif
-
 // ****************** s4e prefs ******************
 pref("status4evar.addonbar.borderStyle", false);
 pref("status4evar.addonbar.closeButton", false);
