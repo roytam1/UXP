@@ -831,13 +831,40 @@
                               "-moz-resolution=" + size + "," + size;
             }
             if (sizedIconUrl != aTab.getAttribute("image")) {
-              if (browser.mIconURL) //PMed
+              if (browser.mIconURL)
                 aTab.setAttribute("image", sizedIconUrl);
               else
                 aTab.removeAttribute("image");
               this._tabAttrModified(aTab, ["image"]);
             }
 
+            if (Services.prefs.getBoolPref("browser.chrome.favicons.process")) {
+              let favImage = new Image;
+              favImage.src = browser.mIconURL;
+              var tabBrowser = this;
+              favImage.onload = function () {
+                try {
+                  // Draw the icon on a hidden canvas
+                  var canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
+                  var tabImg = document.getAnonymousElementByAttribute(aTab, "anonid", "tab-icon");
+                  var w = tabImg.boxObject.width;
+                  var h = tabImg.boxObject.height;
+                  canvas.width = w;
+                  canvas.height = h;
+                  var ctx = canvas.getContext('2d');
+                  ctx.drawImage(favImage, 0, 0, w, h);
+                  icon = canvas.toDataURL();
+                  browser.mIconURL = icon;
+                  aTab.setAttribute("image", icon);
+                }
+                catch (e) {
+                  console.warn("Processing of favicon failed.");
+                  // Canvas failed: icon remains as it was
+                }
+                tabBrowser._callProgressListeners(browser, "onLinkIconAvailable", [browser.mIconURL]);
+              }
+            }
+                
             this._callProgressListeners(browser, "onLinkIconAvailable", [browser.mIconURL]);
           ]]>
         </body>

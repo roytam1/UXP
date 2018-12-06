@@ -264,6 +264,9 @@ pref("browser.slowStartup.maxSamples", 5);
 pref("browser.enable_automatic_image_resizing", true);
 pref("browser.chrome.site_icons", true);
 pref("browser.chrome.favicons", true);
+// If enabled, will process favicons by drawing them on a canvas,
+// optimizing display size for the UI. This also strips animations.
+pref("browser.chrome.favicons.process", false);
 // browser.warnOnQuit == false will override all other possible prompts when quitting or restarting
 pref("browser.warnOnQuit", true);
 // browser.showQuitWarning specifically controls the quit warning dialog. We
