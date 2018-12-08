@@ -24,7 +24,7 @@ MP3Decoder::Clone(MediaDecoderOwner* aOwner) {
 MediaDecoderStateMachine*
 MP3Decoder::CreateStateMachine() {
   RefPtr<MediaDecoderReader> reader =
-      new MediaFormatReader(this, new mp3::MP3Demuxer(GetResource()));
+      new MediaFormatReader(this, new MP3Demuxer(GetResource()));
   return new MediaDecoderStateMachine(this, reader);
 }
 

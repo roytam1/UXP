@@ -33,7 +33,6 @@ using mozilla::media::TimeIntervals;
 using mp4_demuxer::ByteReader;
 
 namespace mozilla {
-namespace mp3 {
 
 // MP3Demuxer
 
@@ -1338,5 +1337,4 @@ ID3Parser::ID3Header::Update(uint8_t c) {
   return IsValid(mPos++);
 }
 
-} // namespace mp3
 } // namespace mozilla

@@ -13,7 +13,6 @@
 #include <vector>
 
 namespace mozilla {
-namespace mp3 {
 
 class MP3TrackDemuxer;
 
@@ -468,7 +467,6 @@ private:
   UniquePtr<AudioInfo> mInfo;
 };
 
-} // namespace mp3
 } // namespace mozilla
 
 #endif
