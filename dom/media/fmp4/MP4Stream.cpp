@@ -48,9 +48,6 @@ MP4Stream::BlockingReadIntoCache(int64_t aOffset, size_t aCount, Monitor* aToUnl
   return true;
 }
 
-// We surreptitiously reimplement the supposedly-blocking ReadAt as a non-
-// blocking CachedReadAt, and record when it fails. This allows MP4Reader
-// to retry the read as an actual blocking read without holding the lock.
 bool
 MP4Stream::ReadAt(int64_t aOffset, void* aBuffer, size_t aCount,
                   size_t* aBytesRead)

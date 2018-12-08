@@ -33,7 +33,7 @@ public:
   // Returns S_OK on success, or MF_E_TRANSFORM_NEED_MORE_INPUT if there's not
   // enough data to produce more output. If this returns a failure code other
   // than MF_E_TRANSFORM_NEED_MORE_INPUT, an error will be reported to the
-  // MP4Reader.
+  // MP4Demuxer.
   virtual HRESULT Output(int64_t aStreamOffset,
                          RefPtr<MediaData>& aOutput) = 0;
 
