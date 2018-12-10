@@ -19,6 +19,7 @@ var gSyncUI = {
   _obs: ["weave:service:sync:start",
          "weave:service:sync:finish",
          "weave:service:sync:error",
+         "weave:service:quota:remaining",
          "weave:service:setup-complete",
          "weave:service:login:start",
          "weave:service:login:finish",
@@ -246,6 +247,21 @@ var gSyncUI = {
     this.updateUI();
   },
 
+  onQuotaNotice: function onQuotaNotice(subject, data) {
+    let title = this._stringBundle.GetStringFromName("warning.sync.quota.label");
+    let description = this._stringBundle.GetStringFromName("warning.sync.quota.description");
+    let buttons = [];
+    buttons.push(new Weave.NotificationButton(
+      this._stringBundle.GetStringFromName("error.sync.viewQuotaButton.label"),
+      this._stringBundle.GetStringFromName("error.sync.viewQuotaButton.accesskey"),
+      function() { gSyncUI.openQuotaDialog(); return true; }
+    ));
+
+    let notification = new Weave.Notification(
+      title, description, null, Weave.Notifications.PRIORITY_WARNING, buttons);
+    Weave.Notifications.replaceTitle(notification);
+  },
+
   _getAppName: function () {
     let brand = new StringBundle("chrome://branding/locale/brand.properties");
     return brand.get("brandShortName");
@@ -435,6 +451,32 @@ var gSyncUI = {
     }
   },
 
+  onSyncError: function SUI_onSyncError() {
+    this.log.debug("onSyncError: login=${login}, sync=${sync}", Weave.Status);
+    let title = this._stringBundle.GetStringFromName("error.sync.title");
+    let error = Weave.Utils.getErrorString(Weave.Status.sync);
+    let description =
+        this._stringBundle.formatStringFromName("error.sync.description", [error], 1);
+    let priority = Weave.Notifications.PRIORITY_WARNING;
+    let buttons = [];
+
+    if (Weave.Status.sync == Weave.OVER_QUOTA) {
+      description = this._stringBundle.GetStringFromName("error.sync.quota.description");
+      buttons.push(new Weave.NotificationButton(
+        this._stringBundle.GetStringFromName("error.sync.viewQuotaButton.label"),
+        this._stringBundle.GetStringFromName("error.sync.viewQuotaButton.accesskey"),
+        function() { gSyncUI.openQuotaDialog(); return true; } )
+      );
+      // Only show the notification bar on Quota error. the panel will show the rest.
+      let notification =
+        new Weave.Notification(title, description, null, priority, buttons);
+      Weave.Notifications.replaceTitle(notification);
+    }
+
+    this.updateUI();
+  },
+
+
   observe: function SUI_observe(subject, topic, data) {
     this.log.debug("observed", topic);
     if (this._unloaded) {
@@ -466,11 +508,16 @@ var gSyncUI = {
         // Do nothing.
         break;
       case "weave:ui:sync:error":
+        this.onSyncError();
+        break;
       case "weave:service:setup-complete":
       case "weave:service:login:finish":
       case "weave:service:login:start":
       case "weave:service:start-over":
         this.updateUI();
+        break;
+      case "weave:service:quota:remaining":
+        this.onQuotaNotice();
         break;
       case "weave:ui:login:error":
       case "weave:service:login:error":

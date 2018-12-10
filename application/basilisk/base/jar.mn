@@ -153,6 +153,8 @@ browser.jar:
         content/browser/sync/customize.xul            (content/sync/customize.xul)
         content/browser/sync/customize.js             (content/sync/customize.js)
         content/browser/sync/customize.css            (content/sync/customize.css)
+        content/browser/sync/quota.xul                (content/sync/quota.xul)
+        content/browser/sync/quota.js                 (content/sync/quota.js)
         content/browser/safeMode.css                  (content/safeMode.css)
         content/browser/safeMode.js                   (content/safeMode.js)
         content/browser/safeMode.xul                  (content/safeMode.xul)

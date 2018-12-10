@@ -71,6 +71,9 @@
                 label="&manageAccount.label;"
                 accesskey="&manageAccount.accesskey;">
           <menupopup>
+            <menuitem id="syncViewQuota" label="&viewQuota.label;"
+                      oncommand="gSyncPane.openQuotaDialog();"/>
+            <menuseparator/> 
             <menuitem id="syncChangePassword" label="&changePassword2.label;"/>
             <menuitem id="syncResetPassphrase" label="&myRecoveryKey.label;"/>
             <menuseparator/>
@@ -90,11 +93,6 @@
         <label>&syncMy.label;</label>
         <richlistbox id="syncEnginesList"
                      orient="vertical">
-          <richlistitem>
-            <checkbox label="&engine.addons.label;"
-                      accesskey="&engine.addons.accesskey;"
-                      preference="engine.addons"/>
-          </richlistitem>
           <richlistitem>
             <checkbox label="&engine.bookmarks.label;"
                       accesskey="&engine.bookmarks.accesskey;"
