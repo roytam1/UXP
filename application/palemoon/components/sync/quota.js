@@ -174,38 +174,6 @@ var gUsageTreeView = {
     let collection = this._collections[row];
     collection.enabled = !collection.enabled;
     this.treeBox.invalidateRow(row);
-
-    // Display which ones will be removed 
-    let freeup = 0;
-    let toremove = [];
-    for each (collection in this._collections) {
-      if (collection.enabled)
-        continue;
-      toremove.push(collection.name);
-      freeup += collection.size;
-    }
-
-    let caption = document.getElementById("treeCaption");
-    if (!toremove.length) {
-      caption.className = "";
-      caption.firstChild.nodeValue = gSyncQuota.bundle.getString(
-        "quota.treeCaption.label");
-      return;
-    }
-
-    // Tycho: toremove = [this._byname[coll].title for each (coll in toremove)];
-    let toremovetitles = [];
-    for (let coll in toremove) {
-      toremovetitles.push(this._byname[coll].title);
-    }
-    
-    toremovetitles = toremovetitles.join(gSyncQuota.bundle.getString("quota.list.separator"));
-    caption.firstChild.nodeValue = gSyncQuota.bundle.getFormattedString(
-      "quota.removal.label", [toremovetitles]);
-    if (freeup)
-      caption.firstChild.nodeValue += gSyncQuota.bundle.getFormattedString(
-        "quota.freeup.label", gSyncQuota.convertKB(freeup));
-    caption.className = "captionWarning";
   },
 
   /*
