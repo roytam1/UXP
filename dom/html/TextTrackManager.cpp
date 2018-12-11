@@ -29,6 +29,13 @@ namespace dom {
 
 NS_IMPL_ISUPPORTS(TextTrackManager::ShutdownObserverProxy, nsIObserver);
 
+void
+TextTrackManager::ShutdownObserverProxy::Unregister()
+{
+  nsContentUtils::UnregisterShutdownObserver(this);
+  mManager = nullptr;
+}
+
 CompareTextTracks::CompareTextTracks(HTMLMediaElement* aMediaElement)
 {
   mMediaElement = aMediaElement;
@@ -137,7 +144,7 @@ TextTrackManager::TextTrackManager(HTMLMediaElement *aMediaElement)
 TextTrackManager::~TextTrackManager()
 {
   WEBVTT_LOG("%p ~TextTrackManager",this);
-  nsContentUtils::UnregisterShutdownObserver(mShutdownProxy);
+  mShutdownProxy->Unregister();
 }
 
 TextTrackList*
