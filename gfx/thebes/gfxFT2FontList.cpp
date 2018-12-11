@@ -812,6 +812,15 @@ public:
         : mFontList(aFontList)
     { }
 
+    void Remove()
+    {
+        nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+        if (obs) {
+            obs->RemoveObserver(this, NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID);
+        }
+        mFontList = nullptr;
+    }
+
 protected:
     virtual ~WillShutdownObserver()
     { }
@@ -847,11 +856,7 @@ gfxFT2FontList::gfxFT2FontList()
 gfxFT2FontList::~gfxFT2FontList()
 {
     if (mObserver) {
-        nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
-        if (obs) {
-            obs->RemoveObserver(mObserver, NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID);
-        }
-        mObserver = nullptr;
+        mObserver->Remove();
     }
 }
 
