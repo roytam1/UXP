@@ -588,6 +588,9 @@ nsFrameLoader::ReallyStartLoadingInternal()
     flags = nsIWebNavigation::LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP |
             nsIWebNavigation::LOAD_FLAGS_DISALLOW_INHERIT_PRINCIPAL;
   }
+  
+  // Notify that this load resulted from attribute changes.
+  loadInfo->SetIsFromProcessingFrameAttributes(true);
 
   // Kick off the load...
   bool tmpState = mNeedsAsyncDestroy;

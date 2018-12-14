@@ -295,7 +295,8 @@ LoadInfoToLoadInfoArgs(nsILoadInfo *aLoadInfo,
       aLoadInfo->CorsUnsafeHeaders(),
       aLoadInfo->GetForcePreflight(),
       aLoadInfo->GetIsPreflight(),
-      aLoadInfo->GetLoadTriggeredFromExternal()
+      aLoadInfo->GetLoadTriggeredFromExternal(),
+      aLoadInfo->GetIsFromProcessingFrameAttributes()
       );
 
   return NS_OK;
@@ -347,7 +348,7 @@ LoadInfoArgsToLoadInfo(const OptionalLoadInfoArgs& aOptionalLoadInfoArgs,
     redirectChain.AppendElement(redirectedPrincipal.forget());
   }
 
-  nsCOMPtr<nsILoadInfo> loadInfo =
+  RefPtr<mozilla::LoadInfo> loadInfo =
     new mozilla::LoadInfo(loadingPrincipal,
                           triggeringPrincipal,
                           principalToInherit,
@@ -375,8 +376,12 @@ LoadInfoArgsToLoadInfo(const OptionalLoadInfoArgs& aOptionalLoadInfoArgs,
                           loadInfoArgs.loadTriggeredFromExternal()
                           );
 
-   loadInfo.forget(outLoadInfo);
-   return NS_OK;
+  if (loadInfoArgs.isFromProcessingFrameAttributes()) {
+    loadInfo->SetIsFromProcessingFrameAttributes();
+  }
+
+  loadInfo.forget(outLoadInfo);
+  return NS_OK;
 }
 
 } // namespace ipc
