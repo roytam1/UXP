@@ -436,7 +436,7 @@ public:
   void SetOpenInParentProcess(bool aVal);
 
 protected:
-  virtual ~HTMLSelectElement();
+  virtual ~HTMLSelectElement() = default;
 
   friend class SafeOptionListMutation;
 
