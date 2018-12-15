@@ -15,30 +15,40 @@
 #include "selfencrypt.h"
 #include "ssl3ext.h"
 #include "ssl3exthandle.h"
+#include "tls13esni.h"
 #include "tls13exthandle.h" /* For tls13_ServerSendStatusRequestXtn. */
+
+PRBool
+ssl_ShouldSendSNIExtension(const sslSocket *ss, const char *url)
+{
+    PRNetAddr netAddr;
+
+    /* must have a hostname */
+    if (!url || !url[0]) {
+        return PR_FALSE;
+    }
+    /* must not be an IPv4 or IPv6 address */
+    if (PR_SUCCESS == PR_StringToNetAddr(url, &netAddr)) {
+        /* is an IP address (v4 or v6) */
+        return PR_FALSE;
+    }
+
+    return PR_TRUE;
+}
 
 /* Format an SNI extension, using the name from the socket's URL,
  * unless that name is a dotted decimal string.
  * Used by client and server.
  */
 SECStatus
-ssl3_ClientSendServerNameXtn(const sslSocket *ss, TLSExtensionData *xtnData,
-                             sslBuffer *buf, PRBool *added)
+ssl3_ClientFormatServerNameXtn(const sslSocket *ss, const char *url,
+                               TLSExtensionData *xtnData,
+                               sslBuffer *buf)
 {
     unsigned int len;
-    PRNetAddr netAddr;
     SECStatus rv;
 
-    /* must have a hostname */
-    if (!ss->url || !ss->url[0]) {
-        return SECSuccess;
-    }
-    /* must not be an IPv4 or IPv6 address */
-    if (PR_SUCCESS == PR_StringToNetAddr(ss->url, &netAddr)) {
-        /* is an IP address (v4 or v6) */
-        return SECSuccess;
-    }
-    len = PORT_Strlen(ss->url);
+    len = PORT_Strlen(url);
     /* length of server_name_list */
     rv = sslBuffer_AppendNumber(buf, len + 3, 2);
     if (rv != SECSuccess) {
@@ -50,7 +60,33 @@ ssl3_ClientSendServerNameXtn(const sslSocket *ss, TLSExtensionData *xtnData,
         return SECFailure;
     }
     /* HostName (length and value) */
-    rv = sslBuffer_AppendVariable(buf, (const PRUint8 *)ss->url, len, 2);
+    rv = sslBuffer_AppendVariable(buf, (const PRUint8 *)url, len, 2);
+    if (rv != SECSuccess) {
+        return SECFailure;
+    }
+
+    return SECSuccess;
+}
+
+SECStatus
+ssl3_ClientSendServerNameXtn(const sslSocket *ss, TLSExtensionData *xtnData,
+                             sslBuffer *buf, PRBool *added)
+{
+    SECStatus rv;
+
+    const char *url = ss->url;
+
+    /* We only make an ESNI private key if we are going to
+     * send ESNI. */
+    if (ss->xtnData.esniPrivateKey != NULL) {
+        url = ss->esniKeys->dummySni;
+    }
+
+    if (!ssl_ShouldSendSNIExtension(ss, url)) {
+        return SECSuccess;
+    }
+
+    rv = ssl3_ClientFormatServerNameXtn(ss, url, xtnData, buf);
     if (rv != SECSuccess) {
         return SECFailure;
     }
@@ -59,7 +95,6 @@ ssl3_ClientSendServerNameXtn(const sslSocket *ss, TLSExtensionData *xtnData,
     return SECSuccess;
 }
 
-/* Handle an incoming SNI extension. */
 SECStatus
 ssl3_HandleServerNameXtn(const sslSocket *ss, TLSExtensionData *xtnData,
                          SECItem *data)
@@ -70,6 +105,13 @@ ssl3_HandleServerNameXtn(const sslSocket *ss, TLSExtensionData *xtnData,
 
     if (!ss->sec.isServer) {
         return SECSuccess; /* ignore extension */
+    }
+
+    if (ssl3_ExtensionNegotiated(ss, ssl_tls13_encrypted_sni_xtn)) {
+        /* If we already have ESNI, make sure we don't overwrite
+         * the value. */
+        PORT_Assert(ss->version >= SSL_LIBRARY_VERSION_TLS_1_3);
+        return SECSuccess;
     }
 
     /* Server side - consume client data and register server sender. */
@@ -1174,17 +1216,18 @@ ssl3_ProcessSessionTicketCommon(sslSocket *ss, const SECItem *ticket,
                                   &decryptedTicket.len,
                                   decryptedTicket.len);
     if (rv != SECSuccess) {
-        SECITEM_ZfreeItem(&decryptedTicket, PR_FALSE);
-
-        /* Fail with no ticket if we're not a recipient. Otherwise
-         * it's a hard failure. */
-        if (PORT_GetError() != SEC_ERROR_NOT_A_RECIPIENT) {
-            SSL3_SendAlert(ss, alert_fatal, illegal_parameter);
-            return SECFailure;
+        /* Ignore decryption failure if we are doing TLS 1.3; that
+         * means the server rejects the client's resumption
+         * attempt. In TLS 1.2, however, it's a hard failure, unless
+         * it's just because we're not the recipient of the ticket. */
+        if (ss->version >= SSL_LIBRARY_VERSION_TLS_1_3 ||
+            PORT_GetError() == SEC_ERROR_NOT_A_RECIPIENT) {
+            SECITEM_ZfreeItem(&decryptedTicket, PR_FALSE);
+            return SECSuccess;
         }
 
-        /* We didn't have the right key, so pretend we don't have a
-         * ticket. */
+        SSL3_SendAlert(ss, alert_fatal, illegal_parameter);
+        goto loser;
     }
 
     rv = ssl_ParseSessionTicket(ss, &decryptedTicket, &parsedTicket);

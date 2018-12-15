@@ -10,7 +10,7 @@
 #include "sslproto.h"
 
 #include "gtest_utils.h"
-#include "scoped_ptrs.h"
+#include "nss_scoped_ptrs.h"
 #include "tls_connect.h"
 #include "tls_filter.h"
 #include "tls_parser.h"
@@ -106,8 +106,8 @@ class RecordFragmenter : public PacketFilter {
         }
 
         // Just rewrite the sequence number (CCS only).
-        if (header.content_type() != kTlsHandshakeType) {
-          EXPECT_EQ(kTlsChangeCipherSpecType, header.content_type());
+        if (header.content_type() != ssl_ct_handshake) {
+          EXPECT_EQ(ssl_ct_change_cipher_spec, header.content_type());
           WriteRecord(header, record);
           continue;
         }

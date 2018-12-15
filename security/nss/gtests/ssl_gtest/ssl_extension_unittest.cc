@@ -9,6 +9,9 @@
 #include "sslerr.h"
 #include "sslproto.h"
 
+// This is only to get DTLS_1_3_DRAFT_VERSION
+#include "ssl3prot.h"
+
 #include <memory>
 
 #include "tls_connect.h"
@@ -39,28 +42,6 @@ class TlsExtensionTruncator : public TlsExtensionFilter {
  private:
   uint16_t extension_;
   size_t length_;
-};
-
-class TlsExtensionDamager : public TlsExtensionFilter {
- public:
-  TlsExtensionDamager(const std::shared_ptr<TlsAgent>& a, uint16_t extension,
-                      size_t index)
-      : TlsExtensionFilter(a), extension_(extension), index_(index) {}
-  virtual PacketFilter::Action FilterExtension(uint16_t extension_type,
-                                               const DataBuffer& input,
-                                               DataBuffer* output) {
-    if (extension_type != extension_) {
-      return KEEP;
-    }
-
-    *output = input;
-    output->data()[index_] += 73;  // Increment selected for maximum damage
-    return CHANGE;
-  }
-
- private:
-  uint16_t extension_;
-  size_t index_;
 };
 
 class TlsExtensionAppender : public TlsHandshakeFilter {
@@ -454,6 +435,25 @@ TEST_P(TlsExtensionTest12Plus, SignatureAlgorithmsOddLength) {
       client_, ssl_signature_algorithms_xtn, extension));
 }
 
+TEST_F(TlsExtensionTest13Stream, SignatureAlgorithmsPrecedingGarbage) {
+  // 31 unknown signature algorithms followed by sha-256, rsa
+  const uint8_t val[] = {
+      0x00, 0x40, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04, 0x01};
+  DataBuffer extension(val, sizeof(val));
+  MakeTlsFilter<TlsExtensionReplacer>(client_, ssl_signature_algorithms_xtn,
+                                      extension);
+  client_->ExpectSendAlert(kTlsAlertBadRecordMac);
+  server_->ExpectSendAlert(kTlsAlertBadRecordMac);
+  ConnectExpectFail();
+  client_->CheckErrorCode(SSL_ERROR_BAD_MAC_READ);
+  server_->CheckErrorCode(SSL_ERROR_BAD_MAC_READ);
+}
+
 TEST_P(TlsExtensionTestGeneric, NoSupportedGroups) {
   ClientHelloErrorTest(
       std::make_shared<TlsExtensionDropper>(client_, ssl_supported_groups_xtn),
@@ -563,10 +563,10 @@ TEST_F(TlsExtensionTest13Stream, DropServerKeyShare) {
   EnsureTlsSetup();
   MakeTlsFilter<TlsExtensionDropper>(server_, ssl_tls13_key_share_xtn);
   client_->ExpectSendAlert(kTlsAlertMissingExtension);
-  server_->ExpectSendAlert(kTlsAlertBadRecordMac);
+  server_->ExpectSendAlert(kTlsAlertUnexpectedMessage);
   ConnectExpectFail();
   EXPECT_EQ(SSL_ERROR_MISSING_KEY_SHARE, client_->error_code());
-  EXPECT_EQ(SSL_ERROR_BAD_MAC_READ, server_->error_code());
+  EXPECT_EQ(SSL_ERROR_RX_UNEXPECTED_RECORD_TYPE, server_->error_code());
 }
 
 TEST_F(TlsExtensionTest13Stream, WrongServerKeyShare) {
@@ -583,13 +583,12 @@ TEST_F(TlsExtensionTest13Stream, WrongServerKeyShare) {
   EnsureTlsSetup();
   MakeTlsFilter<TlsExtensionReplacer>(server_, ssl_tls13_key_share_xtn, buf);
   client_->ExpectSendAlert(kTlsAlertIllegalParameter);
-  server_->ExpectSendAlert(kTlsAlertBadRecordMac);
+  server_->ExpectSendAlert(kTlsAlertUnexpectedMessage);
   ConnectExpectFail();
   EXPECT_EQ(SSL_ERROR_RX_MALFORMED_KEY_SHARE, client_->error_code());
-  EXPECT_EQ(SSL_ERROR_BAD_MAC_READ, server_->error_code());
+  EXPECT_EQ(SSL_ERROR_RX_UNEXPECTED_RECORD_TYPE, server_->error_code());
 }
 
-// TODO(ekr@rtfm.com): This is the wrong error code. See bug 1307269.
 TEST_F(TlsExtensionTest13Stream, UnknownServerKeyShare) {
   const uint16_t wrong_group = 0xffff;
 
@@ -603,11 +602,11 @@ TEST_F(TlsExtensionTest13Stream, UnknownServerKeyShare) {
   DataBuffer buf(key_share, sizeof(key_share));
   EnsureTlsSetup();
   MakeTlsFilter<TlsExtensionReplacer>(server_, ssl_tls13_key_share_xtn, buf);
-  client_->ExpectSendAlert(kTlsAlertMissingExtension);
-  server_->ExpectSendAlert(kTlsAlertBadRecordMac);
+  client_->ExpectSendAlert(kTlsAlertIllegalParameter);
+  server_->ExpectSendAlert(kTlsAlertUnexpectedMessage);
   ConnectExpectFail();
-  EXPECT_EQ(SSL_ERROR_MISSING_KEY_SHARE, client_->error_code());
-  EXPECT_EQ(SSL_ERROR_BAD_MAC_READ, server_->error_code());
+  EXPECT_EQ(SSL_ERROR_RX_MALFORMED_KEY_SHARE, client_->error_code());
+  EXPECT_EQ(SSL_ERROR_RX_UNEXPECTED_RECORD_TYPE, server_->error_code());
 }
 
 TEST_F(TlsExtensionTest13Stream, AddServerSignatureAlgorithmsOnResumption) {
@@ -616,10 +615,10 @@ TEST_F(TlsExtensionTest13Stream, AddServerSignatureAlgorithmsOnResumption) {
   MakeTlsFilter<TlsExtensionInjector>(server_, ssl_signature_algorithms_xtn,
                                       empty);
   client_->ExpectSendAlert(kTlsAlertUnsupportedExtension);
-  server_->ExpectSendAlert(kTlsAlertBadRecordMac);
+  server_->ExpectSendAlert(kTlsAlertUnexpectedMessage);
   ConnectExpectFail();
   EXPECT_EQ(SSL_ERROR_EXTENSION_DISALLOWED_FOR_VERSION, client_->error_code());
-  EXPECT_EQ(SSL_ERROR_BAD_MAC_READ, server_->error_code());
+  EXPECT_EQ(SSL_ERROR_RX_UNEXPECTED_RECORD_TYPE, server_->error_code());
 }
 
 struct PskIdentity {
@@ -912,23 +911,32 @@ TEST_P(TlsExtensionTest13, RemoveTls13FromVersionListServerV12) {
 // 3. Server supports 1.2 and 1.3, client supports 1.2 and 1.3
 // but advertises 1.2 (because we changed things).
 TEST_P(TlsExtensionTest13, RemoveTls13FromVersionListBothV12) {
+  client_->SetOption(SSL_ENABLE_HELLO_DOWNGRADE_CHECK, PR_TRUE);
   client_->SetVersionRange(SSL_LIBRARY_VERSION_TLS_1_2,
                            SSL_LIBRARY_VERSION_TLS_1_3);
   server_->SetVersionRange(SSL_LIBRARY_VERSION_TLS_1_2,
                            SSL_LIBRARY_VERSION_TLS_1_3);
-#ifndef TLS_1_3_DRAFT_VERSION
-  ExpectAlert(server_, kTlsAlertIllegalParameter);
-#else
-  ExpectAlert(server_, kTlsAlertDecryptError);
+// The downgrade check is disabled in DTLS 1.3, so all that happens when we
+// tamper with the supported versions is that the Finished check fails.
+#ifdef DTLS_1_3_DRAFT_VERSION
+  if (variant_ == ssl_variant_datagram) {
+    ExpectAlert(server_, kTlsAlertDecryptError);
+  } else
 #endif
+  {
+    ExpectAlert(client_, kTlsAlertIllegalParameter);
+  }
   ConnectWithReplacementVersionList(SSL_LIBRARY_VERSION_TLS_1_2);
-#ifndef TLS_1_3_DRAFT_VERSION
-  client_->CheckErrorCode(SSL_ERROR_RX_MALFORMED_SERVER_HELLO);
-  server_->CheckErrorCode(SSL_ERROR_ILLEGAL_PARAMETER_ALERT);
-#else
-  client_->CheckErrorCode(SSL_ERROR_DECRYPT_ERROR_ALERT);
-  server_->CheckErrorCode(SSL_ERROR_BAD_HANDSHAKE_HASH_VALUE);
+#ifdef DTLS_1_3_DRAFT_VERSION
+  if (variant_ == ssl_variant_datagram) {
+    client_->CheckErrorCode(SSL_ERROR_DECRYPT_ERROR_ALERT);
+    server_->CheckErrorCode(SSL_ERROR_BAD_HANDSHAKE_HASH_VALUE);
+  } else
 #endif
+  {
+    client_->CheckErrorCode(SSL_ERROR_RX_MALFORMED_SERVER_HELLO);
+    server_->CheckErrorCode(SSL_ERROR_ILLEGAL_PARAMETER_ALERT);
+  }
 }
 
 TEST_P(TlsExtensionTest13, HrrThenRemoveSignatureAlgorithms) {
@@ -1017,7 +1025,7 @@ class TlsBogusExtensionTest13 : public TlsBogusExtensionTest {
     client_->ExpectSendAlert(alert);
     client_->Handshake();
     if (variant_ == ssl_variant_stream) {
-      server_->ExpectSendAlert(kTlsAlertBadRecordMac);
+      server_->ExpectSendAlert(kTlsAlertUnexpectedMessage);
     }
     server_->Handshake();
   }

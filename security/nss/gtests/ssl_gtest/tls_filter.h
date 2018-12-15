@@ -172,20 +172,19 @@ inline std::ostream& operator<<(std::ostream& stream,
   hdr.WriteStream(stream);
   stream << ' ';
   switch (hdr.content_type()) {
-    case kTlsChangeCipherSpecType:
+    case ssl_ct_change_cipher_spec:
       stream << "CCS";
       break;
-    case kTlsAlertType:
+    case ssl_ct_alert:
       stream << "Alert";
       break;
-    case kTlsHandshakeType:
-    case kTlsAltHandshakeType:
+    case ssl_ct_handshake:
       stream << "Handshake";
       break;
-    case kTlsApplicationDataType:
+    case ssl_ct_application_data:
       stream << "Data";
       break;
-    case kTlsAckType:
+    case ssl_ct_ack:
       stream << "ACK";
       break;
     default:
@@ -301,7 +300,7 @@ class TlsRecordRecorder : public TlsRecordFilter {
   TlsRecordRecorder(const std::shared_ptr<TlsAgent>& a)
       : TlsRecordFilter(a),
         filter_(false),
-        ct_(content_handshake),  // dummy (<optional> is C++14)
+        ct_(ssl_ct_handshake),  // dummy (<optional> is C++14)
         records_() {}
   virtual PacketFilter::Action FilterRecord(const TlsRecordHeader& header,
                                             const DataBuffer& input,
@@ -464,6 +463,20 @@ class TlsExtensionInjector : public TlsHandshakeFilter {
  private:
   const uint16_t extension_;
   const DataBuffer data_;
+};
+
+class TlsExtensionDamager : public TlsExtensionFilter {
+ public:
+  TlsExtensionDamager(const std::shared_ptr<TlsAgent>& a, uint16_t extension,
+                      size_t index)
+      : TlsExtensionFilter(a), extension_(extension), index_(index) {}
+  virtual PacketFilter::Action FilterExtension(uint16_t extension_type,
+                                               const DataBuffer& input,
+                                               DataBuffer* output);
+
+ private:
+  uint16_t extension_;
+  size_t index_;
 };
 
 typedef std::function<void(void)> VoidFunction;

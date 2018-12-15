@@ -20,13 +20,6 @@
 
 namespace nss_test {
 
-const uint8_t kTlsChangeCipherSpecType = 20;
-const uint8_t kTlsAlertType = 21;
-const uint8_t kTlsHandshakeType = 22;
-const uint8_t kTlsApplicationDataType = 23;
-const uint8_t kTlsAltHandshakeType = 24;
-const uint8_t kTlsAckType = 25;
-
 const uint8_t kTlsHandshakeClientHello = 1;
 const uint8_t kTlsHandshakeServerHello = 2;
 const uint8_t kTlsHandshakeNewSessionTicket = 4;
@@ -48,6 +41,8 @@ const uint8_t kTlsAlertBadRecordMac = 20;
 const uint8_t kTlsAlertRecordOverflow = 22;
 const uint8_t kTlsAlertHandshakeFailure = 40;
 const uint8_t kTlsAlertBadCertificate = 42;
+const uint8_t kTlsAlertCertificateRevoked = 44;
+const uint8_t kTlsAlertCertificateExpired = 45;
 const uint8_t kTlsAlertIllegalParameter = 47;
 const uint8_t kTlsAlertDecodeError = 50;
 const uint8_t kTlsAlertDecryptError = 51;
@@ -60,7 +55,7 @@ const uint8_t kTlsAlertUnrecognizedName = 112;
 const uint8_t kTlsAlertNoApplicationProtocol = 120;
 
 const uint8_t kTlsFakeChangeCipherSpec[] = {
-    kTlsChangeCipherSpecType,  // Type
+    ssl_ct_change_cipher_spec,  // Type
     0xfe,
     0xff,  // Version
     0x00,

@@ -13,7 +13,7 @@
 #include "sslproto.h"
 
 #include "gtest_utils.h"
-#include "scoped_ptrs.h"
+#include "nss_scoped_ptrs.h"
 #include "tls_connect.h"
 #include "tls_filter.h"
 #include "tls_parser.h"
@@ -641,6 +641,45 @@ TEST_P(TlsConnectGenericPre13, InvalidDERSignatureFfdhe) {
 
   ConnectExpectAlert(client_, kTlsAlertDecryptError);
   client_->CheckErrorCode(SSL_ERROR_BAD_HANDSHAKE_HASH_VALUE);
+}
+
+// Replace SignatureAndHashAlgorithm of a SKE.
+class DHEServerKEXSigAlgReplacer : public TlsHandshakeFilter {
+ public:
+  DHEServerKEXSigAlgReplacer(const std::shared_ptr<TlsAgent>& server,
+                             SSLSignatureScheme sig_scheme)
+      : TlsHandshakeFilter(server, {kTlsHandshakeServerKeyExchange}),
+        sig_scheme_(sig_scheme) {}
+
+ protected:
+  virtual PacketFilter::Action FilterHandshake(const HandshakeHeader& header,
+                                               const DataBuffer& input,
+                                               DataBuffer* output) {
+    *output = input;
+
+    uint32_t len;
+    uint32_t idx = 0;
+    EXPECT_TRUE(output->Read(idx, 2, &len));
+    idx += 2 + len;
+    EXPECT_TRUE(output->Read(idx, 2, &len));
+    idx += 2 + len;
+    EXPECT_TRUE(output->Read(idx, 2, &len));
+    idx += 2 + len;
+    output->Write(idx, sig_scheme_, 2);
+
+    return CHANGE;
+  }
+
+ private:
+  SSLSignatureScheme sig_scheme_;
+};
+
+TEST_P(TlsConnectTls12, ConnectInconsistentSigAlgDHE) {
+  EnableOnlyDheCiphers();
+
+  MakeTlsFilter<DHEServerKEXSigAlgReplacer>(server_,
+                                            ssl_sig_ecdsa_secp256r1_sha256);
+  ConnectExpectAlert(client_, kTlsAlertIllegalParameter);
 }
 
 }  // namespace nss_test

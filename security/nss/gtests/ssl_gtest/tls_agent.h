@@ -10,9 +10,6 @@
 #include "prio.h"
 #include "ssl.h"
 
-// This is an internal header, used to get TLS_1_3_DRAFT_VERSION.
-#include "ssl3prot.h"
-
 #include <functional>
 #include <iostream>
 
@@ -20,7 +17,8 @@
 
 #define GTEST_HAS_RTTI 0
 #include "gtest/gtest.h"
-#include "scoped_ptrs.h"
+#include "nss_scoped_ptrs.h"
+#include "scoped_ptrs_ssl.h"
 
 extern bool g_ssl_gtest_verbose;
 
@@ -59,8 +57,6 @@ typedef std::function<void(TlsAgent* agent)> HandshakeCallbackFunction;
 typedef std::function<int32_t(TlsAgent* agent, const SECItem* srvNameArr,
                               PRUint32 srvNameArrSize)>
     SniCallbackFunction;
-
-static const uint8_t kD13 = TLS_1_3_DRAFT_VERSION;
 
 class TlsAgent : public PollTarget {
  public:
