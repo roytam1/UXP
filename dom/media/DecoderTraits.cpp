@@ -18,11 +18,6 @@
 #include "WebMDecoder.h"
 #include "WebMDemuxer.h"
 
-#ifdef MOZ_ANDROID_OMX
-#include "AndroidMediaDecoder.h"
-#include "AndroidMediaReader.h"
-#include "AndroidMediaPluginHost.h"
-#endif
 #ifdef MOZ_FMP4
 #include "MP4Decoder.h"
 #include "MP4Demuxer.h"
@@ -105,21 +100,6 @@ IsHttpLiveStreamingType(const nsACString& aType)
 {
   return CodecListContains(gHttpLiveStreamingTypes, aType);
 }
-
-#ifdef MOZ_ANDROID_OMX
-static bool
-IsAndroidMediaType(const nsACString& aType)
-{
-  if (!MediaDecoder::IsAndroidMediaPluginEnabled()) {
-    return false;
-  }
-
-  static const char* supportedTypes[] = {
-    "audio/mpeg", "audio/mp4", "video/mp4", "video/x-m4v", nullptr
-  };
-  return CodecListContains(supportedTypes, aType);
-}
-#endif
 
 #ifdef MOZ_FMP4
 static bool
@@ -235,11 +215,6 @@ CanHandleCodecsType(const MediaContentType& aType,
   if (IsFlacSupportedType(aType.GetMIMEType(), aType.GetCodecs())) {
     return CANPLAY_YES;
   }
-#ifdef MOZ_ANDROID_OMX
-  if (MediaDecoder::IsAndroidMediaPluginEnabled()) {
-    EnsureAndroidMediaPluginHost()->FindDecoder(aType.GetMIMEType(), &codecList);
-  }
-#endif
   if (!codecList) {
     return CANPLAY_MAYBE;
   }
@@ -305,12 +280,6 @@ CanHandleMediaType(const MediaContentType& aType,
   if (IsFlacSupportedType(aType.GetMIMEType())) {
     return CANPLAY_MAYBE;
   }
-#ifdef MOZ_ANDROID_OMX
-  if (MediaDecoder::IsAndroidMediaPluginEnabled() &&
-      EnsureAndroidMediaPluginHost()->FindDecoder(aType.GetMIMEType(), nullptr)) {
-    return CANPLAY_MAYBE;
-  }
-#endif
   return CANPLAY_NO;
 }
 
@@ -391,13 +360,6 @@ InstantiateDecoder(const nsACString& aType,
     decoder = new FlacDecoder(aOwner);
     return decoder.forget();
   }
-#ifdef MOZ_ANDROID_OMX
-  if (MediaDecoder::IsAndroidMediaPluginEnabled() &&
-      EnsureAndroidMediaPluginHost()->FindDecoder(aType, nullptr)) {
-    decoder = new AndroidMediaDecoder(aOwner, aType);
-    return decoder.forget();
-  }
-#endif
 
   if (IsWebMSupportedType(aType)) {
     decoder = new WebMDecoder(aOwner);
@@ -446,12 +408,6 @@ MediaDecoderReader* DecoderTraits::CreateReader(const nsACString& aType, Abstrac
   if (IsOggSupportedType(aType)) {
     decoderReader = new MediaFormatReader(aDecoder, new OggDemuxer(aDecoder->GetResource()));
   } else
-#ifdef MOZ_ANDROID_OMX
-  if (MediaDecoder::IsAndroidMediaPluginEnabled() &&
-      EnsureAndroidMediaPluginHost()->FindDecoder(aType, nullptr)) {
-    decoderReader = new AndroidMediaReader(aDecoder, aType);
-  } else
-#endif
   if (IsWebMSupportedType(aType)) {
     decoderReader =
       new MediaFormatReader(aDecoder, new WebMDemuxer(aDecoder->GetResource()));
@@ -474,9 +430,6 @@ bool DecoderTraits::IsSupportedInVideoDocument(const nsACString& aType)
   return
     IsOggSupportedType(aType) ||
     IsWebMSupportedType(aType) ||
-#ifdef MOZ_ANDROID_OMX
-    (MediaDecoder::IsAndroidMediaPluginEnabled() && IsAndroidMediaType(aType)) ||
-#endif
 #ifdef MOZ_FMP4
     IsMP4SupportedType(aType, /* DecoderDoctorDiagnostics* */ nullptr) ||
 #endif
