@@ -117,6 +117,7 @@
 #include "mozilla/StyleSetHandle.h"
 #include "mozilla/StyleSetHandleInlines.h"
 #include "RegionBuilder.h"
+#include "SVGSVGElement.h"
 
 #ifdef MOZ_XUL
 #include "nsXULPopupManager.h"
@@ -6935,7 +6936,7 @@ nsLayoutUtils::GetFrameTransparency(nsIFrame* aBackgroundFrame,
   const nsStyleBackground* bg = bgSC->StyleBackground();
   if (NS_GET_A(bg->mBackgroundColor) < 255 ||
       // bottom layer's clip is used for the color
-      bg->BottomLayer().mClip != NS_STYLE_IMAGELAYER_CLIP_BORDER)
+      bg->BottomLayer().mClip != StyleGeometryBox::Border)
     return eTransparencyTransparent;
   return eTransparencyOpaque;
 }
@@ -9292,4 +9293,128 @@ nsLayoutUtils::IsInvisibleBreak(nsINode* aNode, nsIFrame** aNextLineFrame)
   }
 
   return lineNonEmpty;
+}
+
+static nsRect
+ComputeSVGReferenceRect(nsIFrame* aFrame,
+                        StyleGeometryBox aGeometryBox)
+{
+  MOZ_ASSERT(aFrame->GetContent()->IsSVGElement());
+  nsRect r;
+
+  // For SVG elements without associated CSS layout box, the used value for
+  // content-box, padding-box, border-box and margin-box is fill-box.
+  switch (aGeometryBox) {
+    case StyleGeometryBox::Stroke: {
+      // XXX Bug 1299876
+      // The size of srtoke-box is not correct if this graphic element has
+      // specific stroke-linejoin or stroke-linecap.
+      gfxRect bbox = nsSVGUtils::GetBBox(aFrame,
+                nsSVGUtils::eBBoxIncludeFill | nsSVGUtils::eBBoxIncludeStroke);
+      r = nsLayoutUtils::RoundGfxRectToAppRect(bbox,
+                                         nsPresContext::AppUnitsPerCSSPixel());
+      break;
+    }
+    case StyleGeometryBox::View: {
+      nsIContent* content = aFrame->GetContent();
+      nsSVGElement* element = static_cast<nsSVGElement*>(content);
+      SVGSVGElement* svgElement = element->GetCtx();
+      MOZ_ASSERT(svgElement);
+
+      if (svgElement && svgElement->HasViewBoxRect()) {
+        // If a ‘viewBox‘ attribute is specified for the SVG viewport creating
+        // element:
+        // 1. The reference box is positioned at the origin of the coordinate
+        //    system established by the ‘viewBox‘ attribute.
+        // 2. The dimension of the reference box is set to the width and height
+        //    values of the ‘viewBox‘ attribute.
+        nsSVGViewBox* viewBox = svgElement->GetViewBox();
+        const nsSVGViewBoxRect& value = viewBox->GetAnimValue();
+        r = nsRect(nsPresContext::CSSPixelsToAppUnits(value.x),
+                   nsPresContext::CSSPixelsToAppUnits(value.y),
+                   nsPresContext::CSSPixelsToAppUnits(value.width),
+                   nsPresContext::CSSPixelsToAppUnits(value.height));
+      } else {
+        // No viewBox is specified, uses the nearest SVG viewport as reference
+        // box.
+        svgFloatSize viewportSize = svgElement->GetViewportSize();
+        r = nsRect(0, 0,
+                   nsPresContext::CSSPixelsToAppUnits(viewportSize.width),
+                   nsPresContext::CSSPixelsToAppUnits(viewportSize.height));
+      }
+
+      break;
+    }
+    case StyleGeometryBox::NoBox:
+    case StyleGeometryBox::Border:
+    case StyleGeometryBox::Content:
+    case StyleGeometryBox::Padding:
+    case StyleGeometryBox::Margin:
+    case StyleGeometryBox::Fill: {
+      gfxRect bbox = nsSVGUtils::GetBBox(aFrame,
+                                         nsSVGUtils::eBBoxIncludeFill);
+      r = nsLayoutUtils::RoundGfxRectToAppRect(bbox,
+                                         nsPresContext::AppUnitsPerCSSPixel());
+      break;
+    }
+    default:{
+      MOZ_ASSERT_UNREACHABLE("unknown StyleGeometryBox type");
+      gfxRect bbox = nsSVGUtils::GetBBox(aFrame,
+                                         nsSVGUtils::eBBoxIncludeFill);
+      r = nsLayoutUtils::RoundGfxRectToAppRect(bbox,
+                                         nsPresContext::AppUnitsPerCSSPixel());
+      break;
+    }
+  }
+
+  return r;
+}
+
+static nsRect
+ComputeHTMLReferenceRect(nsIFrame* aFrame,
+                         StyleGeometryBox aGeometryBox)
+{
+  nsRect r;
+
+  // For elements with associated CSS layout box, the used value for fill-box,
+  // stroke-box and view-box is border-box.
+  switch (aGeometryBox) {
+    case StyleGeometryBox::Content:
+      r = aFrame->GetContentRectRelativeToSelf();
+      break;
+    case StyleGeometryBox::Padding:
+      r = aFrame->GetPaddingRectRelativeToSelf();
+      break;
+    case StyleGeometryBox::Margin:
+      r = aFrame->GetMarginRectRelativeToSelf();
+      break;
+    case StyleGeometryBox::NoBox:
+    case StyleGeometryBox::Border:
+    case StyleGeometryBox::Fill:
+    case StyleGeometryBox::Stroke:
+    case StyleGeometryBox::View:
+      r = aFrame->GetRectRelativeToSelf();
+      break;
+    default:
+      MOZ_ASSERT_UNREACHABLE("unknown StyleGeometryBox type");
+      r = aFrame->GetRectRelativeToSelf();
+      break;
+  }
+
+  return r;
+}
+
+/* static */ nsRect
+nsLayoutUtils::ComputeGeometryBox(nsIFrame* aFrame,
+                                  StyleGeometryBox aGeometryBox)
+{
+  // We use ComputeSVGReferenceRect for all SVG elements, except <svg>
+  // element, which does have an associated CSS layout box. In this case we
+  // should still use ComputeHTMLReferenceRect for region computing.
+  nsRect r = aFrame->IsFrameOfType(nsIFrame::eSVG) &&
+             (aFrame->GetType() != nsGkAtoms::svgOuterSVGFrame)
+             ? ComputeSVGReferenceRect(aFrame, aGeometryBox)
+             : ComputeHTMLReferenceRect(aFrame, aGeometryBox);
+
+  return r;
 }

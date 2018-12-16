@@ -2465,7 +2465,6 @@ const nsCSSPropertyID nsStyleImageLayers::kBackgroundLayerTable[] = {
   eCSSProperty_UNKNOWN                    // composite
 };
 
-#ifdef MOZ_ENABLE_MASK_AS_SHORTHAND
 const nsCSSPropertyID nsStyleImageLayers::kMaskLayerTable[] = {
   eCSSProperty_mask,                      // shorthand
   eCSSProperty_UNKNOWN,                   // color
@@ -2480,7 +2479,6 @@ const nsCSSPropertyID nsStyleImageLayers::kMaskLayerTable[] = {
   eCSSProperty_mask_mode,                 // maskMode
   eCSSProperty_mask_composite             // composite
 };
-#endif
 
 nsStyleImageLayers::nsStyleImageLayers(nsStyleImageLayers::LayerType aType)
   : mAttachmentCount(1)
@@ -2787,7 +2785,7 @@ nsStyleImageLayers::Size::operator==(const Size& aOther) const
 }
 
 nsStyleImageLayers::Layer::Layer()
-  : mClip(NS_STYLE_IMAGELAYER_CLIP_BORDER)
+  : mClip(StyleGeometryBox::Border)
   , mAttachment(NS_STYLE_IMAGELAYER_ATTACHMENT_SCROLL)
   , mBlendMode(NS_STYLE_BLEND_NORMAL)
   , mComposite(NS_STYLE_MASK_COMPOSITE_ADD)
@@ -2809,10 +2807,10 @@ nsStyleImageLayers::Layer::Initialize(nsStyleImageLayers::LayerType aType)
   mPosition.SetInitialPercentValues(0.0f);
 
   if (aType == LayerType::Background) {
-    mOrigin = NS_STYLE_IMAGELAYER_ORIGIN_PADDING;
+    mOrigin = StyleGeometryBox::Padding;
   } else {
     MOZ_ASSERT(aType == LayerType::Mask, "unsupported layer type.");
-    mOrigin = NS_STYLE_IMAGELAYER_ORIGIN_BORDER;
+    mOrigin = StyleGeometryBox::Border;
   }
 }
 

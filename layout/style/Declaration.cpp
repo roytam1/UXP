@@ -395,28 +395,25 @@ Declaration::GetImageLayerValue(
                origin->mValue.GetUnit() == eCSSUnit_Enumerated,
                "should not have inherit/initial within list");
 
-    int32_t originDefaultValue =
+    StyleGeometryBox originDefaultValue =
       (aTable == nsStyleImageLayers::kBackgroundLayerTable)
-      ? NS_STYLE_IMAGELAYER_ORIGIN_PADDING : NS_STYLE_IMAGELAYER_ORIGIN_BORDER;
-    if (clip->mValue.GetIntValue() != NS_STYLE_IMAGELAYER_CLIP_BORDER ||
-        origin->mValue.GetIntValue() != originDefaultValue) {
+      ? StyleGeometryBox::Padding : StyleGeometryBox::Border;
+    if (static_cast<StyleGeometryBox>(clip->mValue.GetIntValue()) !=
+        StyleGeometryBox::Border ||
+        static_cast<StyleGeometryBox>(origin->mValue.GetIntValue()) !=
+        originDefaultValue) {
 #ifdef DEBUG
-      for (size_t i = 0; nsCSSProps::kImageLayerOriginKTable[i].mValue != -1; i++) {
+      const nsCSSProps::KTableEntry* originTable =
+        nsCSSProps::kKeywordTableTable[aTable[nsStyleImageLayers::origin]];
+      const nsCSSProps::KTableEntry* clipTable =
+        nsCSSProps::kKeywordTableTable[aTable[nsStyleImageLayers::clip]];
+      for (size_t i = 0; originTable[i].mValue != -1; i++) {
         // For each keyword & value in kOriginKTable, ensure that
         // kBackgroundKTable has a matching entry at the same position.
-        MOZ_ASSERT(nsCSSProps::kImageLayerOriginKTable[i].mKeyword ==
-                   nsCSSProps::kBackgroundClipKTable[i].mKeyword);
-        MOZ_ASSERT(nsCSSProps::kImageLayerOriginKTable[i].mValue ==
-                   nsCSSProps::kBackgroundClipKTable[i].mValue);
+        MOZ_ASSERT(originTable[i].mKeyword == clipTable[i].mKeyword);
+        MOZ_ASSERT(originTable[i].mValue == clipTable[i].mValue);
       }
 #endif
-      static_assert(NS_STYLE_IMAGELAYER_CLIP_BORDER ==
-                    NS_STYLE_IMAGELAYER_ORIGIN_BORDER &&
-                    NS_STYLE_IMAGELAYER_CLIP_PADDING ==
-                    NS_STYLE_IMAGELAYER_ORIGIN_PADDING &&
-                    NS_STYLE_IMAGELAYER_CLIP_CONTENT ==
-                    NS_STYLE_IMAGELAYER_ORIGIN_CONTENT,
-                    "mask-clip and mask-origin style constants must agree");
       aValue.Append(char16_t(' '));
       origin->mValue.AppendToString(aTable[nsStyleImageLayers::origin], aValue,
                                     aSerialization);
@@ -462,11 +459,7 @@ Declaration::GetImageLayerValue(
         }
       // This layer is an mask layer
       } else {
-#ifdef MOZ_ENABLE_MASK_AS_SHORTHAND
         MOZ_ASSERT(aTable == nsStyleImageLayers::kMaskLayerTable);
-#else
-        MOZ_ASSERT_UNREACHABLE("Should never get here when mask-as-shorthand is disable");
-#endif
         if (repeat || positionX || positionY || clip || origin || size ||
             composite || mode) {
           // Uneven length lists, so can't be serialized as shorthand.
@@ -487,11 +480,7 @@ Declaration::GetImageLayerValue(
       }
     // This layer is an mask layer
     } else {
-#ifdef MOZ_ENABLE_MASK_AS_SHORTHAND
       MOZ_ASSERT(aTable == nsStyleImageLayers::kMaskLayerTable);
-#else
-      MOZ_ASSERT_UNREACHABLE("Should never get here when mask-as-shorthand is disable");
-#endif
       if (!repeat || !positionX || !positionY || !clip || !origin || !size ||
           !composite || !mode) {
         // Uneven length lists, so can't be serialized as shorthand.
@@ -817,7 +806,6 @@ Declaration::GetPropertyValueInternal(
                                  nsStyleImageLayers::kBackgroundLayerTable);
       break;
     }
-#ifdef MOZ_ENABLE_MASK_AS_SHORTHAND
     case eCSSProperty_mask: {
       GetImageLayerValue(data, aValue, aSerialization,
                          nsStyleImageLayers::kMaskLayerTable);
@@ -828,7 +816,6 @@ Declaration::GetPropertyValueInternal(
                                  nsStyleImageLayers::kMaskLayerTable);
       break;
     }
-#endif
     case eCSSProperty_font: {
       // systemFont might not be present; other values are guaranteed to be
       // available based on the shorthand check at the beginning of the

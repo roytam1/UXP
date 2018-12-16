@@ -53,6 +53,7 @@ private:
   // Convenience typedefs:
   typedef nsCSSProps::KTableEntry KTableEntry;
   typedef mozilla::dom::CSSValue CSSValue;
+  typedef mozilla::StyleGeometryBox StyleGeometryBox;
 
 public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
@@ -202,12 +203,6 @@ private:
                                                const nscolor& aDefaultColor,
                                                bool aIsBoxShadow);
 
-  already_AddRefed<CSSValue> GetBackgroundList(
-    uint8_t nsStyleImageLayers::Layer::* aMember,
-    uint32_t nsStyleImageLayers::* aCount,
-    const nsStyleImageLayers& aLayers,
-    const KTableEntry aTable[]);
-
   void GetCSSGradientString(const nsStyleGradient* aGradient,
                             nsAString& aString);
   void GetImageRectString(nsIURI* aURI,
@@ -310,7 +305,6 @@ private:
 
   /* Mask properties */
   already_AddRefed<CSSValue> DoGetMask();
-#ifdef MOZ_ENABLE_MASK_AS_SHORTHAND
   already_AddRefed<CSSValue> DoGetMaskImage();
   already_AddRefed<CSSValue> DoGetMaskPosition();
   already_AddRefed<CSSValue> DoGetMaskPositionX();
@@ -321,7 +315,7 @@ private:
   already_AddRefed<CSSValue> DoGetMaskSize();
   already_AddRefed<CSSValue> DoGetMaskMode();
   already_AddRefed<CSSValue> DoGetMaskComposite();
-#endif
+
   /* Padding properties */
   already_AddRefed<CSSValue> DoGetPaddingTop();
   already_AddRefed<CSSValue> DoGetPaddingBottom();
@@ -581,8 +575,6 @@ private:
 
   /* Custom properties */
   already_AddRefed<CSSValue> DoGetCustomProperty(const nsAString& aPropertyName);
-
-  nsDOMCSSValueList* GetROCSSValueList(bool aCommaDelimited);
 
   /* Helper functions */
   void SetToRGBAColor(nsROCSSPrimitiveValue* aValue, nscolor aColor);

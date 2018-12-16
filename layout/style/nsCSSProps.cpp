@@ -932,33 +932,43 @@ const KTableEntry nsCSSProps::kImageLayerAttachmentKTable[] = {
   { eCSSKeyword_UNKNOWN, -1 }
 };
 
-static_assert(NS_STYLE_IMAGELAYER_CLIP_BORDER == NS_STYLE_IMAGELAYER_ORIGIN_BORDER &&
-              NS_STYLE_IMAGELAYER_CLIP_PADDING == NS_STYLE_IMAGELAYER_ORIGIN_PADDING &&
-              NS_STYLE_IMAGELAYER_CLIP_CONTENT == NS_STYLE_IMAGELAYER_ORIGIN_CONTENT,
-              "Except background-clip:text, all {background,mask}-clip and "
-              "{background,mask}-origin style constants must agree");
-
-const KTableEntry nsCSSProps::kImageLayerOriginKTable[] = {
-  { eCSSKeyword_border_box, NS_STYLE_IMAGELAYER_ORIGIN_BORDER },
-  { eCSSKeyword_padding_box, NS_STYLE_IMAGELAYER_ORIGIN_PADDING },
-  { eCSSKeyword_content_box, NS_STYLE_IMAGELAYER_ORIGIN_CONTENT },
+const KTableEntry nsCSSProps::kBackgroundOriginKTable[] = {
+  { eCSSKeyword_border_box, StyleGeometryBox::Border },
+  { eCSSKeyword_padding_box, StyleGeometryBox::Padding },
+  { eCSSKeyword_content_box, StyleGeometryBox::Content },
   { eCSSKeyword_UNKNOWN, -1 }
 };
 
 KTableEntry nsCSSProps::kBackgroundClipKTable[] = {
-  { eCSSKeyword_border_box, NS_STYLE_IMAGELAYER_CLIP_BORDER },
-  { eCSSKeyword_padding_box, NS_STYLE_IMAGELAYER_CLIP_PADDING },
-  { eCSSKeyword_content_box, NS_STYLE_IMAGELAYER_CLIP_CONTENT },
+  { eCSSKeyword_border_box, StyleGeometryBox::Border },
+  { eCSSKeyword_padding_box, StyleGeometryBox::Padding },
+  { eCSSKeyword_content_box, StyleGeometryBox::Content },
   // The next entry is controlled by the layout.css.background-clip-text.enabled
   // pref.
-  { eCSSKeyword_text, NS_STYLE_IMAGELAYER_CLIP_TEXT },
+  { eCSSKeyword_text, StyleGeometryBox::Text },
   { eCSSKeyword_UNKNOWN, -1 }
 };
 
-static_assert(MOZ_ARRAY_LENGTH(nsCSSProps::kImageLayerOriginKTable) ==
-              MOZ_ARRAY_LENGTH(nsCSSProps::kBackgroundClipKTable) - 1,
-              "background-clip has one extra value, which is text, compared"
-              "to {background,mask}-origin");
+const KTableEntry nsCSSProps::kMaskOriginKTable[] = {
+  { eCSSKeyword_border_box, StyleGeometryBox::Border },
+  { eCSSKeyword_padding_box, StyleGeometryBox::Padding },
+  { eCSSKeyword_content_box, StyleGeometryBox::Content },
+  { eCSSKeyword_fill_box, StyleGeometryBox::Fill },
+  { eCSSKeyword_stroke_box, StyleGeometryBox::Stroke },
+  { eCSSKeyword_view_box, StyleGeometryBox::View },
+  { eCSSKeyword_UNKNOWN, -1 }
+};
+
+const KTableEntry nsCSSProps::kMaskClipKTable[] = {
+  { eCSSKeyword_border_box, StyleGeometryBox::Border },
+  { eCSSKeyword_padding_box, StyleGeometryBox::Padding },
+  { eCSSKeyword_content_box, StyleGeometryBox::Content },
+  { eCSSKeyword_fill_box, StyleGeometryBox::Fill },
+  { eCSSKeyword_stroke_box, StyleGeometryBox::Stroke },
+  { eCSSKeyword_view_box, StyleGeometryBox::View },
+  { eCSSKeyword_no_clip, StyleGeometryBox::NoClip },
+  { eCSSKeyword_UNKNOWN, -1 }
+};
 
 // Note: Don't change this table unless you update
 // ParseImageLayerPosition!
@@ -2346,13 +2356,13 @@ const KTableEntry nsCSSProps::kFillRuleKTable[] = {
 };
 
 const KTableEntry nsCSSProps::kClipPathGeometryBoxKTable[] = {
-  { eCSSKeyword_content_box, StyleClipPathGeometryBox::Content },
-  { eCSSKeyword_padding_box, StyleClipPathGeometryBox::Padding },
-  { eCSSKeyword_border_box, StyleClipPathGeometryBox::Border },
-  { eCSSKeyword_margin_box, StyleClipPathGeometryBox::Margin },
-  { eCSSKeyword_fill_box, StyleClipPathGeometryBox::Fill },
-  { eCSSKeyword_stroke_box, StyleClipPathGeometryBox::Stroke },
-  { eCSSKeyword_view_box, StyleClipPathGeometryBox::View },
+  { eCSSKeyword_content_box, StyleGeometryBox::Content },
+  { eCSSKeyword_padding_box, StyleGeometryBox::Padding },
+  { eCSSKeyword_border_box, StyleGeometryBox::Border },
+  { eCSSKeyword_margin_box, StyleGeometryBox::Margin },
+  { eCSSKeyword_fill_box, StyleGeometryBox::Fill },
+  { eCSSKeyword_stroke_box, StyleGeometryBox::Stroke },
+  { eCSSKeyword_view_box, StyleGeometryBox::View },
   { eCSSKeyword_UNKNOWN, -1 }
 };
 
@@ -3051,7 +3061,6 @@ static const nsCSSPropertyID gScrollSnapTypeSubpropTable[] = {
   eCSSProperty_scroll_snap_type_y,
   eCSSProperty_UNKNOWN
 };
-#ifdef MOZ_ENABLE_MASK_AS_SHORTHAND
 static const nsCSSPropertyID gMaskSubpropTable[] = {
   eCSSProperty_mask_image,
   eCSSProperty_mask_repeat,
@@ -3069,7 +3078,6 @@ static const nsCSSPropertyID gMaskPositionSubpropTable[] = {
   eCSSProperty_mask_position_y,
   eCSSProperty_UNKNOWN
 };
-#endif
 // FIXME: mask-border tables should be added when we implement
 // mask-border properties.
 

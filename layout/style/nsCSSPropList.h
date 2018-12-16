@@ -564,7 +564,7 @@ CSS_PROP_BACKGROUND(
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
     "",
     VARIANT_KEYWORD, // used by list parsing
-    kImageLayerOriginKTable,
+    kBackgroundOriginKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
 CSS_PROP_SHORTHAND(
@@ -2645,19 +2645,6 @@ CSS_PROP_SVG(
     nullptr,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
-#ifndef MOZ_ENABLE_MASK_AS_SHORTHAND
-CSS_PROP_SVGRESET(
-    mask,
-    mask,
-    Mask,
-    CSS_PROPERTY_PARSE_VALUE |
-      CSS_PROPERTY_CREATES_STACKING_CONTEXT,
-    "",
-    VARIANT_HUO,
-    nullptr,
-    CSS_PROP_NO_OFFSET,
-    eStyleAnimType_Discrete)
-#else
 CSS_PROP_SHORTHAND(
     mask,
     mask,
@@ -2672,7 +2659,7 @@ CSS_PROP_SVGRESET(
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
     "",
     VARIANT_KEYWORD, // used by list parsing
-    kImageLayerOriginKTable,
+    kMaskClipKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
 CSS_PROP_SVGRESET(
@@ -2718,7 +2705,7 @@ CSS_PROP_SVGRESET(
         CSS_PROPERTY_VALUE_LIST_USES_COMMAS,
     "",
     VARIANT_KEYWORD, // used by list parsing
-    kImageLayerOriginKTable,
+    kMaskOriginKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
 CSS_PROP_SHORTHAND(
@@ -2776,7 +2763,6 @@ CSS_PROP_SVGRESET(
     kImageLayerSizeKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Custom)
-#endif // MOZ_ENABLE_MASK_AS_SHORTHAND
 CSS_PROP_SVGRESET(
     mask-type,
     mask_type,
