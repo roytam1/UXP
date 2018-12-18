@@ -546,7 +546,7 @@ class Build(MachCommandBase):
         # We skip if, ifdef, ifndef, else, elif, elifdef and elifndef, because they are never used alone
         grepcmd = 'grep -E -r "^(#|%)(define|endif|error|expand|filter|include|literal|undef|unfilter)" '\
                   + '--include=\*.{css,dtd,html,js,jsm,xhtml,xml,xul,manifest,properties,rdf} '\
-                  + self.topobjdir + '/dist/bin | grep -v ".css:#"'
+                  + self.topobjdir + '/dist/bin | awk "/\.css:%/ || (!/\.css/ && /:#/)"'
         grepresult = subprocess.Popen(grepcmd, stdout=subprocess.PIPE, shell=True).communicate()[0]
         if grepresult:
             print('\nERROR: preprocessor was not applied to the following files:\n\n' + grepresult)
