@@ -102,8 +102,13 @@ var LoginManagerParent = {
       }
 
       case "RemoteLogins:findRecipes": {
-        let formHost = (new URL(data.formOrigin)).host;
-        return this._recipeManager.getRecipesForHost(formHost);
+        try {
+          let formHost = (new URL(data.formOrigin)).host;
+          return this._recipeManager.getRecipesForHost(formHost);
+        } catch(e) {
+          // Just return an empty set in case of error.
+          return new Set();
+        }
       }
 
       case "RemoteLogins:onFormSubmit": {
