@@ -53,7 +53,7 @@ toolbar[brighttext] #status4evar-download-button #status4evar-download-icon
 
 #status4evar-download-button[attention] #status4evar-download-icon
 {
-	background-image: url("chrome://browser/skin/downloads/download-glow.png");
+	background: -moz-image-rect(var(--toolbarbutton-glass-image), 19, 108, 36, 90) center no-repeat;
 }
 
 toolbar[mode="icons"] #status4evar-download-button[forcelabel="true"] > label
