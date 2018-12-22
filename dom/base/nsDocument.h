@@ -1341,8 +1341,9 @@ protected:
   // Array of observers
   nsTObserverArray<nsIDocumentObserver*> mObservers;
 
-  // Array of intersection observers
-  nsTArray<RefPtr<mozilla::dom::DOMIntersectionObserver>> mIntersectionObservers;
+  // Hashtable of intersection observers
+  nsTHashtable<nsPtrHashKey<mozilla::dom::DOMIntersectionObserver>>
+    mIntersectionObservers;
 
   // Tracker for animations that are waiting to start.
   // nullptr until GetOrCreatePendingAnimationTracker is called.

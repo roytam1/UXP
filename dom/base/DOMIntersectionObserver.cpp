@@ -43,16 +43,18 @@ NS_IMPL_CYCLE_COLLECTION_TRACE_END
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(DOMIntersectionObserver)
   NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER
+  tmp->Disconnect();
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mOwner)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mDocument)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mCallback)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mRoot)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mQueuedEntries)
-  tmp->Disconnect();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(DOMIntersectionObserver)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mOwner)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDocument)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mCallback)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mRoot)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mQueuedEntries)
@@ -185,10 +187,11 @@ DOMIntersectionObserver::Connect()
   if (mConnected) {
     return;
   }
+  
   mConnected = true;
-
-  nsIDocument* document = mOwner->GetExtantDoc();
-  document->AddIntersectionObserver(this);
+  if(mDocument) {
+    mDocument->AddIntersectionObserver(this);
+  }
 }
 
 void
@@ -202,11 +205,8 @@ DOMIntersectionObserver::Disconnect()
     target->UnregisterIntersectionObserver(this);
   }
   mObservationTargets.Clear();
-  if (mOwner) {
-    nsIDocument* document = mOwner->GetExtantDoc();
-    if (document) {
-      document->RemoveIntersectionObserver(this);
-    }
+  if (mDocument) {
+    mDocument->RemoveIntersectionObserver(this);
   }
   mConnected = false;
 }
