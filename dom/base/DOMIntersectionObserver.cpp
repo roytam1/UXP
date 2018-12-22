@@ -319,6 +319,7 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
     nsIFrame* targetFrame = target->GetPrimaryFrame();
     nsRect targetRect;
     Maybe<nsRect> intersectionRect;
+    bool isSameDoc = root && root->GetComposedDoc() == target->GetComposedDoc();
 
     if (rootFrame && targetFrame) {
       // If mRoot is set we are testing intersection with a container element
@@ -327,7 +328,7 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
         // Skip further processing of this target if it is not in the same
         // Document as the intersection root, e.g. if root is an element of
         // the main document and target an element from an embedded iframe.
-        if (target->GetComposedDoc() != root->GetComposedDoc()) {
+        if (!isSameDoc) {
           continue;
         }
         // Skip further processing of this target if is not a descendant of the
@@ -399,12 +400,12 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
         intersectionRectRelativeToRoot,
         rootIntersectionRect
       );
-      if (intersectionRect.isSome()) {
-        intersectionRect = Some(nsLayoutUtils::TransformFrameRectToAncestor(
-          nsLayoutUtils::GetContainingBlockForClientRect(rootFrame),
-          intersectionRect.value(),
-          targetFrame->PresContext()->PresShell()->GetRootScrollFrame()
-        ));
+      if (intersectionRect.isSome() && !isSameDoc) {
+        nsRect rect = intersectionRect.value();
+        nsPresContext* presContext = targetFrame->PresContext();
+        nsLayoutUtils::TransformRect(rootFrame,
+          presContext->PresShell()->GetRootScrollFrame(), rect);
+        intersectionRect = Some(rect);
       }
     }
 
