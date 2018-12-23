@@ -2456,7 +2456,7 @@ function BrowserOnAboutPageLoad(doc) {
       docElt.setAttribute("searchEnginePostData", engine.postDataString || "");
       docElt.setAttribute("searchEngineURL", engine.searchURL);
     }
-    updateSearchEngine();
+    Services.search.init(updateSearchEngine);
 
     // Listen for the event that's triggered when the user changes search engine.
     // At this point we simply reload about:home to reflect the change.
@@ -2481,7 +2481,7 @@ function BrowserOnAboutPageLoad(doc) {
       docElt.setAttribute("searchEnginePostData", engine.postDataString || "");
       docElt.setAttribute("searchEngineURL", engine.searchURL);
     }
-    updateSearchEngine();
+    Services.search.init(updateSearchEngine);
 
     // Listen for the event that's triggered when the user changes search engine.
     // At this point we simply reload about:newtab to reflect the change.
