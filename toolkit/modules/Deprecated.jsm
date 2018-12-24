@@ -9,15 +9,21 @@ this.EXPORTED_SYMBOLS = [ "Deprecated" ];
 const Cu = Components.utils;
 const Ci = Components.interfaces;
 const PREF_DEPRECATION_WARNINGS = "devtools.errorconsole.deprecation_warnings";
+const PREF_PERFORMANCE_WARNINGS = "devtools.errorconsole.performance_warnings";
 
 Cu.import("resource://gre/modules/Services.jsm");
 
 // A flag that indicates whether deprecation warnings should be logged.
-var logWarnings = Services.prefs.getBoolPref(PREF_DEPRECATION_WARNINGS);
+var logDepWarnings = Services.prefs.getBoolPref(PREF_DEPRECATION_WARNINGS);
+var logPerfWarnings = Services.prefs.getBoolPref(PREF_PERFORMANCE_WARNINGS);
 
 Services.prefs.addObserver(PREF_DEPRECATION_WARNINGS,
   function (aSubject, aTopic, aData) {
-    logWarnings = Services.prefs.getBoolPref(PREF_DEPRECATION_WARNINGS);
+    logDepWarnings = Services.prefs.getBoolPref(PREF_DEPRECATION_WARNINGS);
+  }, false);
+Services.prefs.addObserver(PREF_PERFORMANCE_WARNINGS,
+  function (aSubject, aTopic, aData) {
+    logPerfWarnings = Services.prefs.getBoolPref(PREF_PERFORMANCE_WARNINGS);
   }, false);
 
 /**
@@ -58,7 +64,7 @@ this.Deprecated = {
    *        logged.
    */
   warning: function (aText, aUrl, aStack) {
-    if (!logWarnings) {
+    if (!logDepWarnings) {
       return;
     }
 
@@ -71,7 +77,42 @@ this.Deprecated = {
 
     let textMessage = "DEPRECATION WARNING: " + aText +
       "\nYou may find more details about this deprecation at: " +
-      aUrl + "\n" +
+      aUrl + "\nCallstack:\n" +
+      // Append a callstack part to the deprecation message.
+      stringifyCallstack(aStack);
+
+    // Report deprecation warning.
+    Cu.reportError(textMessage);
+  },
+
+  /**
+   * Log a performance warning.
+   *
+   * @param string aText
+   *        Performance issue warning text.
+   * @param string aUrl
+   *        A URL pointing to documentation describing performance
+   *        issue and the way to address it.
+   * @param nsIStackFrame aStack
+   *        An optional callstack. If it is not provided a
+   *        snapshot of the current JavaScript callstack will be
+   *        logged.
+   */
+  perfWarning: function (aText, aUrl, aStack) {
+    if (!logPerfWarnings) {
+      return;
+    }
+
+    // If URL is not provided, report an error.
+    if (!aUrl) {
+      Cu.reportError("Error in Deprecated.perfWarning: warnings must " +
+        "provide a URL documenting this performance issue.");
+      return;
+    }
+
+    let textMessage = "PERFORMANCE WARNING: " + aText +
+      "\nYou may find more details about this problem at: " +
+      aUrl + "\nCallstack:\n" +
       // Append a callstack part to the deprecation message.
       stringifyCallstack(aStack);
 

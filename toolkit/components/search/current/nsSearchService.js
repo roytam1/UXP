@@ -21,6 +21,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "OS",
   "resource://gre/modules/osfile.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Task",
   "resource://gre/modules/Task.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "Deprecated",
+  "resource://gre/modules/Deprecated.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "SearchStaticData",
   "resource://gre/modules/SearchStaticData.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "setTimeout",
@@ -2690,6 +2692,13 @@ SearchService.prototype = {
       }
       return;
     }
+
+    let performanceWarning =
+      "Search service falling back to synchronous initialization. " +
+      "This is generally the consequence of an add-on using a deprecated " +
+      "search service API.";
+    Deprecated.perfWarning(performanceWarning, "https://developer.mozilla.org/en-US/docs/XPCOM_Interface_Reference/nsIBrowserSearchService#async_warning");
+    LOG(performanceWarning);
 
     this._syncInit();
     if (!Components.isSuccessCode(this._initRV)) {

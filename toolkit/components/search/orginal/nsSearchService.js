@@ -2917,12 +2917,12 @@ SearchService.prototype = {
       return;
     }
 
-    let warning =
+    let performanceWarning =
       "Search service falling back to synchronous initialization. " +
       "This is generally the consequence of an add-on using a deprecated " +
       "search service API.";
-    Deprecated.warning(warning, "https://developer.mozilla.org/en-US/docs/XPCOM_Interface_Reference/nsIBrowserSearchService#async_warning");
-    LOG(warning);
+    Deprecated.perfWarning(performanceWarning, "https://developer.mozilla.org/en-US/docs/XPCOM_Interface_Reference/nsIBrowserSearchService#async_warning");
+    LOG(performanceWarning);
 
     engineMetadataService.syncInit();
     this._syncInit();

@@ -956,6 +956,9 @@ pref("toolkit.asyncshutdown.log", false);
 // Enable deprecation warnings.
 pref("devtools.errorconsole.deprecation_warnings", true);
 
+// Enable performance warnings.
+pref("devtools.errorconsole.performance_warnings", true);
+
 // Disable debugging chrome
 pref("devtools.chrome.enabled", false);
 
