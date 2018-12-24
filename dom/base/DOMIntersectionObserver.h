@@ -145,7 +145,7 @@ public:
   void Observe(Element& aTarget);
   void Unobserve(Element& aTarget);
 
-  bool UnlinkTarget(Element& aTarget);
+  void UnlinkTarget(Element& aTarget);
   void Disconnect();
 
   void TakeRecords(nsTArray<RefPtr<DOMIntersectionObserverEntry>>& aRetVal);
@@ -172,7 +172,10 @@ protected:
   RefPtr<Element>                                 mRoot;
   nsCSSRect                                       mRootMargin;
   nsTArray<double>                                mThresholds;
-  nsTHashtable<nsPtrHashKey<Element>>             mObservationTargets;
+  
+  // Holds raw pointers which are explicitly cleared by UnlinkTarget().
+  nsTArray<Element*>                              mObservationTargets;
+  
   nsTArray<RefPtr<DOMIntersectionObserverEntry>>  mQueuedEntries;
   bool                                            mConnected;
 };

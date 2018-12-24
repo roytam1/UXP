@@ -155,30 +155,29 @@ DOMIntersectionObserver::Observe(Element& aTarget)
     return;
   }
   aTarget.RegisterIntersectionObserver(this);
-  mObservationTargets.PutEntry(&aTarget);
+  mObservationTargets.AppendElement(&aTarget);
   Connect();
 }
 
 void
 DOMIntersectionObserver::Unobserve(Element& aTarget)
 {
-  if (UnlinkTarget(aTarget)) {
-    aTarget.UnregisterIntersectionObserver(this);
+  if (mObservationTargets.Length() == 1) {
+    Disconnect();
+    return;
   }
+
+  mObservationTargets.RemoveElement(&aTarget);
+  aTarget.UnregisterIntersectionObserver(this);
 }
 
-bool
+void
 DOMIntersectionObserver::UnlinkTarget(Element& aTarget)
 {
-    if (!mObservationTargets.Contains(&aTarget)) {
-        return false;
-    }
-    if (mObservationTargets.Count() == 1) {
-        Disconnect();
-        return false;
-    }
-    mObservationTargets.RemoveEntry(&aTarget);
-    return true;
+  mObservationTargets.RemoveElement(&aTarget);
+  if (mObservationTargets.Length() == 0) {
+    Disconnect();
+  }
 }
 
 void
@@ -200,15 +199,17 @@ DOMIntersectionObserver::Disconnect()
   if (!mConnected) {
     return;
   }
-  for (auto iter = mObservationTargets.Iter(); !iter.Done(); iter.Next()) {
-    Element* target = iter.Get()->GetKey();
+
+  mConnected = false;
+
+  for (size_t i = 0; i < mObservationTargets.Length(); ++i) {
+    Element* target = mObservationTargets.ElementAt(i);
     target->UnregisterIntersectionObserver(this);
   }
   mObservationTargets.Clear();
   if (mDocument) {
     mDocument->RemoveIntersectionObserver(this);
   }
-  mConnected = false;
 }
 
 void
@@ -318,8 +319,8 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
     rootMargin.Side(side) = nsLayoutUtils::ComputeCBDependentValue(basis, coord);
   }
 
-  for (auto iter = mObservationTargets.Iter(); !iter.Done(); iter.Next()) {
-    Element* target = iter.Get()->GetKey();
+  for (size_t i = 0; i < mObservationTargets.Length(); ++i) {
+    Element* target = mObservationTargets.ElementAt(i);
     nsIFrame* targetFrame = target->GetPrimaryFrame();
     nsRect targetRect;
     Maybe<nsRect> intersectionRect;
@@ -493,7 +494,7 @@ DOMIntersectionObserver::Notify()
   }
   mozilla::dom::Sequence<mozilla::OwningNonNull<DOMIntersectionObserverEntry>> entries;
   if (entries.SetCapacity(mQueuedEntries.Length(), mozilla::fallible)) {
-    for (uint32_t i = 0; i < mQueuedEntries.Length(); ++i) {
+    for (size_t i = 0; i < mQueuedEntries.Length(); ++i) {
       RefPtr<DOMIntersectionObserverEntry> next = mQueuedEntries[i];
       *entries.AppendElement(mozilla::fallible) = next;
     }
