@@ -3046,7 +3046,9 @@ const DOMLinkHandler = {
                 /^(?:https?|ftp):/i.test(link.href) &&
                 !PrivateBrowsingUtils.isWindowPrivate(window)) {
               var engine = { title: link.title, href: link.href };
-              BrowserSearch.addEngine(engine, link.ownerDocument);
+              Services.search.init(function () {
+                BrowserSearch.addEngine(engine, link.ownerDocument);
+              });
               searchAdded = true;
             }
           }
