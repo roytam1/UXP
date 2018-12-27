@@ -127,3 +127,5 @@ avpicture_free
 avpicture_get_size
 avpicture_layout
 avsubtitle_free
+avcodec_send_packet
+avcodec_receive_frame

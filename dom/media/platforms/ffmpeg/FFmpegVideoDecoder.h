@@ -49,6 +49,7 @@ private:
   MediaResult DoDecode(MediaRawData* aSample) override;
   MediaResult DoDecode(MediaRawData* aSample, bool* aGotFrame);
   MediaResult DoDecode(MediaRawData* aSample, uint8_t* aData, int aSize, bool* aGotFrame);
+  MediaResult CreateImage(int64_t aOffset, int64_t aPts, int64_t aDuration);
   void ProcessDrain() override;
   void ProcessFlush() override;
   void OutputDelayedFrames();
