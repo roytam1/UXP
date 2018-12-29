@@ -174,12 +174,15 @@ FFmpegVideoDecoder<LIBAV_VER>::DoDecode(MediaRawData* aSample, bool* aGotFrame)
   uint8_t* inputData = const_cast<uint8_t*>(aSample->Data());
   size_t inputSize = aSample->Size();
 
-#if LIBAVCODEC_VERSION_MAJOR >= 54
+#if LIBAVCODEC_VERSION_MAJOR >= 54 && LIBAVCODEC_VERSION_MAJOR < 58
   if (inputSize && mCodecParser && (mCodecID == AV_CODEC_ID_VP8
-#if LIBAVCODEC_VERSION_MAJOR >= 55
+#if LIBAVCODEC_VERSION_MAJOR >= 55 && LIBAVCODEC_VERSION_MAJOR < 58
       || mCodecID == AV_CODEC_ID_VP9
 #endif
-      )) {
+      ))
+#endif
+#if LIBAVCODEC_VERSION_MAJOR >= 54
+  {
     while (inputSize) {
       uint8_t* data = inputData;
       int size = inputSize;
