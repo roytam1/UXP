@@ -32,6 +32,10 @@ using mozilla::layers::Image;
 using mozilla::layers::LayerManager;
 using mozilla::layers::LayersBackend;
 
+// avoid redefined macro warning in unified builds
+#undef LOG
+#undef LOGV
+
 static mozilla::LazyLogModule sFormatDecoderLog("MediaFormatReader");
 mozilla::LazyLogModule gMediaDemuxerLog("MediaDemuxer");
 
