@@ -597,6 +597,7 @@ TabWindow.prototype = {
     "file", "chrome", "resource", "about"
   ]),
   onLinkIconAvailable: function (aBrowser, aIconURL) {
+    let self = this;
     let requestURL = null;
     if (aIconURL) {
       let shouldRequestFaviconURL = true;
@@ -613,15 +614,15 @@ TabWindow.prototype = {
     let isDefaultFavicon = !requestURL;
     getFaviconAsImage(
       requestURL,
-      PrivateBrowsingUtils.isWindowPrivate(this.win),
+      PrivateBrowsingUtils.isWindowPrivate(self.win),
       img => {
-        let index = this.tabbrowser.browsers.indexOf(aBrowser);
+        let index = self.tabbrowser.browsers.indexOf(aBrowser);
         // Only add it if we've found the index and the URI is still the same.
         // The tab could have closed, and there's no guarantee the icons
         // will have finished fetching 'in order'.
         if (index != -1) {
-          let tab = this.tabbrowser.tabs[index];
-          let preview = this.previews.get(tab);
+          let tab = self.tabbrowser.tabs[index];
+          let preview = self.previews.get(tab);
           if (tab.getAttribute("image") == aIconURL ||
               (!preview.icon && isDefaultFavicon)) {
             preview.icon = img;
