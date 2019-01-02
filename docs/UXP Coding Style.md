@@ -5,6 +5,9 @@ This document describes the preferred style for new source code files and the pr
 This style guide will not apply to 3rd party libraries that are imported verbatim to our code (e.g. NSS, NSPR, SQLite, various media libs, etc.).
 
 Our own managed and maintained code should adhere to this guide where possible or feasible. It departs from the Mozilla Coding Style in some ways, but considering Mozilla has abandoned their code style in favor of Google code style, we are now defining our own preferred style.
+
+**Important**: if you touch a file to make it adhere to this code style, do not mix code changes with formatting changes. Always make formatting changes throughout a file a single, separate commit that does not touch code functionality!
+
 ## General formatting rules
 The following formatting rules apply to all code:
 - Always use spaces for indentation, never use tabs!
@@ -48,19 +51,25 @@ Applies to `*.c`, `*.cc`, `*.cpp` and `*.h`. Potentially also `*.mm` for Mac cod
     do_something();
   }
   ```
-- Pointer types: When declaring pointer types, place the `*` with the type. When referencing pointer types, place `*` or `&` with the variable. Do not use `*` by itself with whitespace.
+- Pointer types: When declaring pointer types, place the `*` with the pointer type. When referencing pointer types, place `*` or `&` with the variable. Do not use `*` by itself with whitespace. Some existing modules still use the `int *myvar1;` style, these should be converted. Until conversion is done, follow existing, surrounding code style or convert it when you touch a file.
 
   WRONG:
   ```C++
   int * myvar;
+  int *myvar1, *myvar2;
+  int* myvar1, *myvar2;
+  int* myvar1, myvar2; //myvar2 isn't a pointer. use separate lines!
   ```
   CORRECT:
   ```C++
-  char* someString;
-  function a(char* someString) [...]
-  myString = *someString;
+  char* somePointer;
+  int* myvar1;
+  int* myvar2;
+  function a(char *somePointer) [...]
+  myString = *somePointer;
   myPointer = &myString;
   ```
+
 ### Flow control
 Flow control expressions should follow the following guidelines:
 - Scopes have their opening braces on the expression line
@@ -167,6 +176,31 @@ private:
   nsCOMPtr<EventTarget> mRelatedTarget;
 };
 ```
+### Splitting overly-long lines
+If statements on a single line become overly long, they should be split into multiple lines:
+- Binary operators (including ternary) must be left on their original lines if the line break happens around the operator. The second line should start in the same column as the start of the expression in the first line.
+- Lists of variables (e.g. when calling or declaring a function) should be split so variables are listed one-per-line, where second and subsequent lines start in the same column as the first variable listed, even if more than one variable would fit on the line segment until the wrapping column.
+
+WRONG:
+```C++
+somelongnamespace::somelongfunction(var1, var2, var3,
+                                    var4, var5);
+somelongnamespace::somelongfunction(
+  var1, var2, var3, var4, var5);
+if (somelongvariable == somelongothervariable
+  || somelongvariable2 == somelongothervariable2) {
+```
+CORRECT:
+```C++
+somelongnamespace::somelongfunction(var1,
+                                    var2,
+                                    var3,
+                                    var4,
+                                    var5);
+if (somelongvariable == somelongothervariable ||
+    somelongvariable2 == somelongothervariable2) {
+```
+ 
 ## JavaScript
 Applies to `*.js` and `*.jsm`.
 ## XUL and other XML-derivatives 
@@ -175,7 +209,8 @@ Applies to `*.xul`, `*.html`, `*.xhtml`.
 Applies to `*.idl`, `*.xpidl` and `*.webidl`.
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbODA5MjEzNTEyLC01Mzg0MjM4MDAsMzgyNj
-I3NDYzLDIwODYwMjIwODUsLTE1MjU5MjE2MjIsLTY1OTMzMTA0
-MCwtNzQwOTE5MDQ1LDE4Njc1NTQxNDJdfQ==
+eyJoaXN0b3J5IjpbODM0NjI2MDQ5LC0xOTAzMjcxOTk2LC0xMD
+EyMDI3NzgzLC0xODM4MzgzOTAyLDgwOTIxMzUxMiwtNTM4NDIz
+ODAwLDM4MjYyNzQ2MywyMDg2MDIyMDg1LC0xNTI1OTIxNjIyLC
+02NTkzMzEwNDAsLTc0MDkxOTA0NSwxODY3NTU0MTQyXX0=
 -->
