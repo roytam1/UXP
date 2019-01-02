@@ -227,6 +227,9 @@ static DllBlockInfo sWindowsDllBlocklist[] = {
 
   // K7TotalSecurity, bug 1339083.
   { "k7pswsen.dll", MAKE_VERSION(15, 2, 2, 95) },
+  
+  // Comodo IS old versions, startup crash on 64-bit, bug 1140397
+  { "guard64.dll", MAKE_VERSION(6, 3, 0, 0) },
 
   { nullptr, 0 }
 };
