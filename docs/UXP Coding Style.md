@@ -58,14 +58,14 @@ Applies to `*.c`, `*.cc`, `*.cpp` and `*.h`. Potentially also `*.mm` for Mac cod
   int * myvar;
   int *myvar1, *myvar2;
   int* myvar1, *myvar2;
-  int* myvar1, myvar2; //myvar2 isn't a pointer. use separate lines!
+  int* myvar1, myvar2; //myvar2 isn't a pointer!
   ```
   CORRECT:
   ```C++
   char* somePointer;
   int* myvar1;
   int* myvar2;
-  function a(char *somePointer) [...]
+  function a(char* somePointer) [...]
   myString = *somePointer;
   myPointer = &myString;
   ```
@@ -84,6 +84,23 @@ if (something == somethingelse) {
   true_case_code here;
 } else {
   false_case_code here;
+}
+
+if (case1) {
+  case1_code here;
+} else if (case2) {
+  case2_code here;
+} else {
+  other_case_code here;
+}
+
+if (case1) {
+  case1_code here;
+} else {
+  if (case2) {
+    case2_code here;
+  }
+  case2_and_other_code here;
 }
 ```
 #### for
@@ -125,8 +142,8 @@ switch (variable) {
 ### Classes
 Classes have some special formatting rules applied to them:
 - Classes follow the following sequence: CTOR, DTOR, methods, variables
-- Class CTOR variable initializers are listed one-per-line with a leading comma (or colon for the first).
-- `public`, `private` and `protected` keywords are not indented and are at the same level as the class identifier statement.
+- Class CTOR variable initializers (in lieu of assignments in the CTOR body) are listed one-per-line with a leading comma (or colon for the first).
+- `public`, `private` and `protected` keywords are not indented and are at the same indentation level as the class identifier statement.
 
 Example class definition:
 ```C++
@@ -176,7 +193,7 @@ private:
   nsCOMPtr<EventTarget> mRelatedTarget;
 };
 ```
-### Splitting overly-long lines
+### Long line wrapping
 If statements on a single line become overly long, they should be split into multiple lines:
 - Binary operators (including ternary) must be left on their original lines if the line break happens around the operator. The second line should start in the same column as the start of the expression in the first line.
 - Lists of variables (e.g. when calling or declaring a function) should be split so variables are listed one-per-line, where second and subsequent lines start in the same column as the first variable listed, even if more than one variable would fit on the line segment until the wrapping column.
@@ -189,6 +206,8 @@ somelongnamespace::somelongfunction(
   var1, var2, var3, var4, var5);
 if (somelongvariable == somelongothervariable
   || somelongvariable2 == somelongothervariable2) {
+somelongvariable = somelongexpression ? somevalue1
+  : somevalue2;
 ```
 CORRECT:
 ```C++
@@ -199,6 +218,9 @@ somelongnamespace::somelongfunction(var1,
                                     var5);
 if (somelongvariable == somelongothervariable ||
     somelongvariable2 == somelongothervariable2) {
+somelongvariable = somelongexpression ?
+                   somevalue1 :
+                   somevalue2;
 ```
  
 ## JavaScript
@@ -209,8 +231,9 @@ Applies to `*.xul`, `*.html`, `*.xhtml`.
 Applies to `*.idl`, `*.xpidl` and `*.webidl`.
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbODM0NjI2MDQ5LC0xOTAzMjcxOTk2LC0xMD
-EyMDI3NzgzLC0xODM4MzgzOTAyLDgwOTIxMzUxMiwtNTM4NDIz
-ODAwLDM4MjYyNzQ2MywyMDg2MDIyMDg1LC0xNTI1OTIxNjIyLC
-02NTkzMzEwNDAsLTc0MDkxOTA0NSwxODY3NTU0MTQyXX0=
+eyJoaXN0b3J5IjpbMjUzODYzMzMsMjg5MjUwODIsLTQzMjMzNz
+ExMSw4MzQ2MjYwNDksLTE5MDMyNzE5OTYsLTEwMTIwMjc3ODMs
+LTE4MzgzODM5MDIsODA5MjEzNTEyLC01Mzg0MjM4MDAsMzgyNj
+I3NDYzLDIwODYwMjIwODUsLTE1MjU5MjE2MjIsLTY1OTMzMTA0
+MCwtNzQwOTE5MDQ1LDE4Njc1NTQxNDJdfQ==
 -->
