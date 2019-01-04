@@ -1551,7 +1551,7 @@ protected:
   nsCSSExpandedDataBlock mData;
   
   // Value to make sure our resolved variable results stay within sane limits.
-  const int32_t MAX_CSS_VAR_LENGTH = 10240;
+  const uint32_t MAX_CSS_VAR_LENGTH = 10240;
 
 public:
   // Used from nsCSSParser constructors and destructors
