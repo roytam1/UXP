@@ -5663,7 +5663,7 @@ class AddonInstall {
       this.updateAddonURIs();
 
       this.addon._install = this;
-      this.name = this.addon.selectedLocale.name;
+      this.name = this.addon.selectedLocale.name || this.addon.defaultLocale.name;
       this.type = this.addon.type;
       this.version = this.addon.version;
 
@@ -6690,8 +6690,9 @@ function createUpdate(aCallback, aAddon, aUpdate) {
     } else {
       install = new DownloadAddonInstall(aAddon._installLocation, url,
                                          aUpdate.updateHash, aAddon, null,
-                                         aAddon.selectedLocale.name, aAddon.type,
-                                         aAddon.icons, aUpdate.version);
+                                         aAddon.selectedLocale.name ?
+                                         aAddon.selectedLocale.name : aAddon.defaultLocale.name,
+                                         aAddon.type, aAddon.icons, aUpdate.version);
     }
     try {
       if (aUpdate.updateInfoURL)
@@ -7985,6 +7986,9 @@ PROP_LOCALE_SINGLE.forEach(function(aProp) {
 
     if (aProp == "creator")
       return result ? new AddonManagerPrivate.AddonAuthor(result) : null;
+
+    if (aProp == "name")
+      return result ? result : addon.defaultLocale.name;
 
     return result;
   });
