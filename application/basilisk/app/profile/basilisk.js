@@ -1051,6 +1051,9 @@ sticky_pref("browser.newtabpage.enhanced", false);
 // enables Activity Stream inspired layout
 pref("browser.newtabpage.compact", false);
 
+// Disables capturing of page thumbnails
+pref("browser.pagethumbnails.capturing_disabled", false);
+
 // enables showing basic placeholders for missing thumbnails
 pref("browser.newtabpage.thumbnailPlaceholder", false);
 

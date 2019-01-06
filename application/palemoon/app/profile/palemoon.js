@@ -1081,6 +1081,9 @@ pref("browser.newtabpage.enabled", true);
 // XXX: Remove this when "enhanced" tiles are dead
 pref("browser.newtabpage.enhanced", false);
 
+// Disables capturing of page thumbnails
+pref("browser.pagethumbnails.capturing_disabled", false);
+
 // enables showing basic placeholders for missing thumbnails
 pref("browser.newtabpage.thumbnailPlaceholder", false);
 
