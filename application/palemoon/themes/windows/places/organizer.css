@@ -5,7 +5,7 @@
 :root {
   --toolbar-custom-color: hsl(210,75%,92%);
   --toolbar-highlight-top: rgba(255,255,255,.5);
-  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.png");
+  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
 }
 
 /* Toolbar */
