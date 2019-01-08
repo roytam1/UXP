@@ -58,7 +58,6 @@ interface nsIDOMHTMLElement : nsIDOMElement
 
 
   // CSSOM View
-  [optional_argc] void scrollIntoView([optional] in boolean top);
   readonly attribute nsIDOMElement    offsetParent;
   readonly attribute long             offsetTop;
   readonly attribute long             offsetLeft;

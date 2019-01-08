@@ -396,13 +396,6 @@ public:
   }
   NS_IMETHOD InsertAdjacentHTML(const nsAString& position,
                                 const nsAString& text) final override;
-  NS_IMETHOD ScrollIntoView(bool top, uint8_t _argc) final override {
-    if (!_argc) {
-      top = true;
-    }
-    mozilla::dom::Element::ScrollIntoView(top);
-    return NS_OK;
-  }
   NS_IMETHOD GetOffsetParent(nsIDOMElement** aOffsetParent)
     final override {
     mozilla::dom::Element* offsetParent = GetOffsetParent();
