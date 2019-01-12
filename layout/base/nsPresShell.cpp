@@ -170,7 +170,6 @@
 #include "mozilla/css/ImageLoader.h"
 #include "mozilla/dom/DocumentTimeline.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "nsCanvasFrame.h"
 #include "nsIImageLoadingContent.h"
 #include "nsImageFrame.h"
@@ -9393,9 +9392,6 @@ PresShell::DoVerifyReflow()
   }
 }
 #endif
-
-// used with Telemetry metrics
-#define NS_LONG_REFLOW_TIME_MS    5000
 
 bool
 PresShell::ProcessReflowCommands(bool aInterruptible)

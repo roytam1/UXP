@@ -118,8 +118,6 @@ public:
     // Returns true if keepalives are enabled in prefs.
     bool IsKeepaliveEnabled() { return mKeepaliveEnabledPref; }
 
-    bool IsTelemetryEnabledAndNotSleepPhase() { return mTelemetryEnabledPref &&
-                                                       !mSleepPhase; }
     PRIntervalTime MaxTimeForPrClosePref() {return mMaxTimeForPrClosePref; }
 protected:
 
@@ -191,7 +189,7 @@ private:
 
     bool GrowActiveList();
     bool GrowIdleList();
-    void   InitMaxCount();
+    void InitMaxCount();
 
     // Total bytes number transfered through all the sockets except active ones
     uint64_t mSentBytesCount;
@@ -206,15 +204,12 @@ private:
     PRPollDesc *mPollList;                        /* mListSize + 1 entries */
 
     PRIntervalTime PollTimeout();            // computes ideal poll timeout
-    nsresult       DoPollIteration(TimeDuration *pollDuration);
+    nsresult       DoPollIteration();
                                              // perfoms a single poll iteration
-    int32_t        Poll(uint32_t *interval,
-                        TimeDuration *pollDuration);
+    int32_t        Poll(uint32_t *interval);
                                              // calls PR_Poll.  the out param
                                              // interval indicates the poll
                                              // duration in seconds.
-                                             // pollDuration is used only for
-                                             // telemetry
 
     //-------------------------------------------------------------------------
     // pending socket queue - see NotifyWhenCanAttachSocket
@@ -236,13 +231,7 @@ private:
 
     Atomic<bool>                    mServingPendingQueue;
     Atomic<int32_t, Relaxed>        mMaxTimePerPollIter;
-    Atomic<bool, Relaxed>           mTelemetryEnabledPref;
     Atomic<PRIntervalTime, Relaxed> mMaxTimeForPrClosePref;
-
-    // Between a computer going to sleep and waking up the PR_*** telemetry
-    // will be corrupted - so do not record it.
-    Atomic<bool, Relaxed>           mSleepPhase;
-    nsCOMPtr<nsITimer>              mAfterWakeUpTimer;
 
     void OnKeepaliveEnabledPrefChange();
     void NotifyKeepaliveEnabledPrefChange(SocketContext *sock);

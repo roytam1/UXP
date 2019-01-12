@@ -31,8 +31,7 @@ public:
                                     const char* hostname,
                                     mozilla::pkix::Time time,
                                     bool enforceTestMode,
-                            /*out*/ bool& chainHasValidPins,
-                   /*optional out*/ PinningTelemetryInfo* pinningTelemetryInfo);
+                            /*out*/ bool& chainHasValidPins);
   /**
    * Sets chainMatchesPinset to true if there is any intersection between the
    * certificate list and the pins specified in the aSHA256keys array.

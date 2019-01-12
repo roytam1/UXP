@@ -15,7 +15,6 @@
 #include "nsThreadUtils.h"
 #include "nsProxyRelease.h"
 #include "prtime.h"
-#include "mozilla/Telemetry.h"
 
 namespace mozilla {
 namespace places {
@@ -268,26 +267,6 @@ public:
 
 private:
   const char* mTopic;
-};
-
-/**
- * Used to notify a topic to system observers on async execute completion.
- */
-class AsyncStatementTelemetryTimer : public AsyncStatementCallback
-{
-public:
-  explicit AsyncStatementTelemetryTimer(Telemetry::ID aHistogramId,
-                                        TimeStamp aStart = TimeStamp::Now())
-    : mHistogramId(aHistogramId)
-    , mStart(aStart)
-  {
-  }
-
-  NS_IMETHOD HandleCompletion(uint16_t aReason);
-
-private:
-  const Telemetry::ID mHistogramId;
-  const TimeStamp mStart;
 };
 
 } // namespace places

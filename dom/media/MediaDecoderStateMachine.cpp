@@ -1173,26 +1173,11 @@ StateObject::HandleShutdown()
   return SetState<ShutdownState>();
 }
 
-static void
-ReportRecoveryTelemetry(const TimeStamp& aRecoveryStart,
-                        const MediaInfo& aMediaInfo,
-                        bool aIsHardwareAccelerated)
-{
-/* STUB */
-}
-
 void
 MediaDecoderStateMachine::
 StateObject::HandleResumeVideoDecoding()
 {
   MOZ_ASSERT(mMaster->mVideoDecodeSuspended);
-
-  // Start counting recovery time from right now.
-  TimeStamp start = TimeStamp::Now();
-
-  // Local reference to mInfo, so that it will be copied in the lambda below.
-  auto& info = Info();
-  bool hw = Reader()->VideoIsHardwareAccelerated();
 
   // Start video-only seek to the current time.
   SeekJob seekJob;
@@ -1205,10 +1190,7 @@ StateObject::HandleResumeVideoDecoding()
                                type,
                                true /* aVideoOnly */);
 
-  SetState<SeekingState>(Move(seekJob), EventVisibility::Suppressed)->Then(
-    AbstractThread::MainThread(), __func__,
-    [start, info, hw](){ ReportRecoveryTelemetry(start, info, hw); },
-    [](){});
+  SetState<SeekingState>(Move(seekJob), EventVisibility::Suppressed);
 }
 
 void

@@ -213,22 +213,7 @@ WriteHeapGraph(JSContext* cx,
                CoreDumpWriter& writer,
                bool wantNames,
                JS::CompartmentSet* compartments,
-               JS::AutoCheckCannotGC& noGC,
-               uint32_t& outNodeCount,
-               uint32_t& outEdgeCount);
-inline bool
-WriteHeapGraph(JSContext* cx,
-               const JS::ubi::Node& node,
-               CoreDumpWriter& writer,
-               bool wantNames,
-               JS::CompartmentSet* compartments,
-               JS::AutoCheckCannotGC& noGC)
-{
-  uint32_t ignoreNodeCount;
-  uint32_t ignoreEdgeCount;
-  return WriteHeapGraph(cx, node, writer, wantNames, compartments, noGC,
-                        ignoreNodeCount, ignoreEdgeCount);
-}
+               JS::AutoCheckCannotGC& noGC);
 
 // Get the mozilla::MallocSizeOf for the current thread's JSRuntime.
 MallocSizeOf GetCurrentThreadDebuggerMallocSizeOf();

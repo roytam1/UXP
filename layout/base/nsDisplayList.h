@@ -4508,43 +4508,4 @@ public:
   mutable mozilla::Maybe<bool> mIsFrameSelected;
 };
 
-namespace mozilla {
-
-class PaintTelemetry
-{
- public:
-  enum class Metric {
-    DisplayList,
-    Layerization,
-    Rasterization,
-    COUNT,
-  };
-
-  class AutoRecord
-  {
-   public:
-    explicit AutoRecord(Metric aMetric);
-    ~AutoRecord();
-   private:
-    Metric mMetric;
-    mozilla::TimeStamp mStart;
-  };
-
-  class AutoRecordPaint
-  {
-   public:
-    AutoRecordPaint();
-    ~AutoRecordPaint();
-   private:
-    mozilla::TimeStamp mStart;
-  };
-
- private:
-  static uint32_t sPaintLevel;
-  static uint32_t sMetricLevel;
-  static mozilla::EnumeratedArray<Metric, Metric::COUNT, double> sMetrics;
-};
-
-} // namespace mozilla
-
 #endif /*NSDISPLAYLIST_H_*/

@@ -58,8 +58,7 @@ public:
                 nsIFile* aDatabaseFile,
                 PersistenceType aPersistenceType,
                 const nsACString& aGroup,
-                const nsACString& aOrigin,
-                uint32_t aTelemetryId);
+                const nsACString& aOrigin);
 
   static nsresult
   GetUsage(nsIFile* aDirectory, uint64_t* aUsage);

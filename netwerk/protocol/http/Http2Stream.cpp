@@ -657,12 +657,6 @@ Http2Stream::GenerateOpen()
     outputOffset += frameLen;
   }
 
-  // The size of the input headers is approximate
-  uint32_t ratio =
-    compressedData.Length() * 100 /
-    (11 + requestURI.Length() +
-     mFlatHttpRequestHeaders.Length());
-
   mFlatHttpRequestHeaders.Truncate();
   return NS_OK;
 }
@@ -980,7 +974,7 @@ Http2Stream::GenerateDataFrameHeader(uint32_t dataLength, bool lastFrame)
 }
 
 // ConvertResponseHeaders is used to convert the response headers
-// into HTTP/1 format and report some telemetry
+// into HTTP/1 format
 nsresult
 Http2Stream::ConvertResponseHeaders(Http2Decompressor *decompressor,
                                     nsACString &aHeadersIn,
@@ -1036,7 +1030,7 @@ Http2Stream::ConvertResponseHeaders(Http2Decompressor *decompressor,
 }
 
 // ConvertPushHeaders is used to convert the pushed request headers
-// into HTTP/1 format and report some telemetry
+// into HTTP/1 format
 nsresult
 Http2Stream::ConvertPushHeaders(Http2Decompressor *decompressor,
                                 nsACString &aHeadersIn,

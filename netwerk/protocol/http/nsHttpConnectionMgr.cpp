@@ -35,8 +35,6 @@
 #include "mozilla/Unused.h"
 #include "nsIURI.h"
 
-#include "mozilla/Telemetry.h"
-
 namespace mozilla {
 namespace net {
 
@@ -1186,14 +1184,6 @@ nsHttpConnectionMgr::MakeNewConnection(nsConnectionEntry *ent,
                 transport->SetConnectionFlags(flags);
             }
 
-            Telemetry::AutoCounter<Telemetry::HTTPCONNMGR_USED_SPECULATIVE_CONN> usedSpeculativeConn;
-            ++usedSpeculativeConn;
-
-            if (ent->mHalfOpens[i]->IsFromPredictor()) {
-              Telemetry::AutoCounter<Telemetry::PREDICTOR_TOTAL_PRECONNECTS_USED> totalPreconnectsUsed;
-              ++totalPreconnectsUsed;
-            }
-
             // return OK because we have essentially opened a new connection
             // by converting a speculative half-open to general use
             return NS_OK;
@@ -1387,14 +1377,6 @@ nsHttpConnectionMgr::AddToShortestPipeline(nsConnectionEntry *ent,
         ent->SetYellowConnection(bestConn);
 
     if (!trans->GetPendingTime().IsNull()) {
-        if (trans->UsesPipelining())
-            AccumulateTimeDelta(
-                Telemetry::TRANSACTION_WAIT_TIME_HTTP_PIPELINES,
-                trans->GetPendingTime(), TimeStamp::Now());
-        else
-            AccumulateTimeDelta(
-                Telemetry::TRANSACTION_WAIT_TIME_HTTP,
-                trans->GetPendingTime(), TimeStamp::Now());
         trans->SetPendingTime(false);
     }
     return true;
@@ -1677,8 +1659,6 @@ nsHttpConnectionMgr::DispatchTransaction(nsConnectionEntry *ent,
         rv = conn->Activate(trans, caps, priority);
         MOZ_ASSERT(NS_SUCCEEDED(rv), "SPDY Cannot Fail Dispatch");
         if (NS_SUCCEEDED(rv) && !trans->GetPendingTime().IsNull()) {
-            AccumulateTimeDelta(Telemetry::TRANSACTION_WAIT_TIME_SPDY,
-                trans->GetPendingTime(), TimeStamp::Now());
             trans->SetPendingTime(false);
         }
         return rv;
@@ -1695,12 +1675,6 @@ nsHttpConnectionMgr::DispatchTransaction(nsConnectionEntry *ent,
     rv = DispatchAbstractTransaction(ent, trans, caps, conn, priority);
 
     if (NS_SUCCEEDED(rv) && !trans->GetPendingTime().IsNull()) {
-        if (trans->UsesPipelining())
-            AccumulateTimeDelta(Telemetry::TRANSACTION_WAIT_TIME_HTTP_PIPELINES,
-                trans->GetPendingTime(), TimeStamp::Now());
-        else
-            AccumulateTimeDelta(Telemetry::TRANSACTION_WAIT_TIME_HTTP,
-                trans->GetPendingTime(), TimeStamp::Now());
         trans->SetPendingTime(false);
     }
     return rv;
@@ -1829,12 +1803,6 @@ nsHttpConnectionMgr::BuildPipeline(nsConnectionEntry *ent,
     return NS_OK;
 }
 
-void
-nsHttpConnectionMgr::ReportProxyTelemetry(nsConnectionEntry *ent)
-{
-  /* STUB */
-}
-
 nsresult
 nsHttpConnectionMgr::ProcessNewTransaction(nsHttpTransaction *trans)
 {
@@ -1877,8 +1845,6 @@ nsHttpConnectionMgr::ProcessNewTransaction(nsHttpTransaction *trans)
 
         ent = preferredEntry;
     }
-
-    ReportProxyTelemetry(ent);
 
     // Check if the transaction already has a sticky reference to a connection.
     // If so, then we can just use it directly by transferring its reference
@@ -1976,13 +1942,9 @@ nsHttpConnectionMgr::CreateTransport(nsConnectionEntry *ent,
     if (speculative) {
         sock->SetSpeculative(true);
         sock->SetAllow1918(allow1918);
-        Telemetry::AutoCounter<Telemetry::HTTPCONNMGR_TOTAL_SPECULATIVE_CONN> totalSpeculativeConn;
-        ++totalSpeculativeConn;
 
         if (isFromPredictor) {
           sock->SetIsFromPredictor(true);
-          Telemetry::AutoCounter<Telemetry::PREDICTOR_TOTAL_PRECONNECTS_CREATED> totalPreconnectsCreated;
-          ++totalPreconnectsCreated;
         }
     }
 
@@ -3893,16 +3855,6 @@ nsConnectionEntry::RemoveHalfOpen(nsHalfOpenSocket *halfOpen)
     // A failure to create the transport object at all
     // will result in it not being present in the halfopen table. That's expected.
     if (mHalfOpens.RemoveElement(halfOpen)) {
-
-        if (halfOpen->IsSpeculative()) {
-            Telemetry::AutoCounter<Telemetry::HTTPCONNMGR_UNUSED_SPECULATIVE_CONN> unusedSpeculativeConn;
-            ++unusedSpeculativeConn;
-
-            if (halfOpen->IsFromPredictor()) {
-                Telemetry::AutoCounter<Telemetry::PREDICTOR_TOTAL_PRECONNECTS_UNUSED> totalPreconnectsUnused;
-                ++totalPreconnectsUnused;
-            }
-        }
 
         MOZ_ASSERT(gHttpHandler->ConnMgr()->mNumHalfOpenConns);
         if (gHttpHandler->ConnMgr()->mNumHalfOpenConns) { // just in case

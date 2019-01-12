@@ -8,7 +8,6 @@
 #include "cryptohi.h"
 #include "keyhi.h"
 #include "mozilla/Assertions.h"
-#include "mozilla/Telemetry.h"
 #include "nsIContent.h"
 #include "nsIDOMHTMLSelectElement.h"
 #include "nsIGenKeypairInfoDlg.h"
@@ -395,13 +394,6 @@ loser:
       return rv;
 }
 
-
-void
-GatherKeygenTelemetry(uint32_t keyGenMechanism, int keysize, char* curve)
-{
-/* STUB */
-}
-
 nsresult
 nsKeygenFormProcessor::GetPublicKey(const nsAString& aValue,
                                     const nsAString& aChallenge,
@@ -639,8 +631,6 @@ nsKeygenFormProcessor::GetPublicKey(const nsAString& aValue,
     CopyASCIItoUTF16(keystring.get(), aOutPublicKey);
 
     rv = NS_OK;
-
-    GatherKeygenTelemetry(keyGenMechanism, keysize, keyparamsString);
 loser:
     if (srv != SECSuccess) {
         if ( privateKey ) {

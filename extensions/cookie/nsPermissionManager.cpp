@@ -37,7 +37,6 @@
 #include "mozilla/net/NeckoMessageUtils.h"
 #include "mozilla/Preferences.h"
 #include "nsReadLine.h"
-#include "mozilla/Telemetry.h"
 #include "nsIConsoleService.h"
 #include "nsINavHistoryService.h"
 #include "nsToolkitCompsCID.h"
@@ -1167,21 +1166,7 @@ nsPermissionManager::InitDB(bool aRemoveFile)
           mDBConn->TableExists(NS_LITERAL_CSTRING("moz_perms"), &permsTableExists);
           if (permsTableExists) {
             // The user already had a moz_perms table, and we are performing a
-            // re-migration. We count the rows in the old table for telemetry,
-            // and then back up their old database as moz_perms_v6
-
-            nsCOMPtr<mozIStorageStatement> countStmt;
-            rv = mDBConn->CreateStatement(NS_LITERAL_CSTRING("SELECT COUNT(*) FROM moz_perms"),
-                                          getter_AddRefs(countStmt));
-            bool hasResult = false;
-            if (NS_SUCCEEDED(rv) &&
-                NS_SUCCEEDED(countStmt->ExecuteStep(&hasResult)) &&
-                hasResult) {
-              // Telemetry STUB (count rows and report)
-            } else {
-              NS_WARNING("Could not count the rows in moz_perms");
-            }
-
+            // re-migration.
             // Back up the old moz_perms database as moz_perms_v6 before we
             // move the new table into its position
             rv = mDBConn->ExecuteSimpleSQL(NS_LITERAL_CSTRING(

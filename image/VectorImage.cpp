@@ -1337,15 +1337,6 @@ VectorImage::PropagateUseCounters(nsIDocument* aParentDocument)
   }
 }
 
-void
-VectorImage::ReportUseCounters()
-{
-  nsIDocument* doc = mSVGDocumentWrapper->GetDocument();
-  if (doc) {
-    static_cast<nsDocument*>(doc)->ReportUseCounters();
-  }
-}
-
 nsIntSize
 VectorImage::OptimalImageSizeForDest(const gfxSize& aDest,
                                      uint32_t aWhichFrame,

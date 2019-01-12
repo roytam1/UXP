@@ -363,21 +363,6 @@ protected:
                    nsPerformanceGroup* group);
 
 
-
-
-  /**********************************************************
-   *
-   * To check whether our algorithm makes sense, we keep count of the
-   * number of times the process has been rescheduled to another CPU
-   * while we were monitoring the performance of a group and we upload
-   * this data through Telemetry.
-   */
-  nsresult UpdateTelemetry();
-
-  uint64_t mProcessStayed;
-  uint64_t mProcessMoved;
-  uint32_t mProcessUpdateCounter;
-
   /**********************************************************
    *
    * Options controlling measurements.

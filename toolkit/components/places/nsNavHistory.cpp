@@ -3063,17 +3063,15 @@ nsNavHistory::Observe(nsISupports *aSubject, const char *aTopic,
 
 namespace {
 
-class DecayFrecencyCallback : public AsyncStatementTelemetryTimer
+class DecayFrecencyCallback : public AsyncStatementCallback
 {
 public:
   DecayFrecencyCallback()
-    : AsyncStatementTelemetryTimer(Telemetry::PLACES_IDLE_FRECENCY_DECAY_TIME_MS)
   {
   }
 
   NS_IMETHOD HandleCompletion(uint16_t aReason)
   {
-    (void)AsyncStatementTelemetryTimer::HandleCompletion(aReason);
     if (aReason == REASON_FINISHED) {
       nsNavHistory *navHistory = nsNavHistory::GetHistoryService();
       NS_ENSURE_STATE(navHistory);

@@ -1530,7 +1530,6 @@ RuntimeService::RegisterWorker(WorkerPrivate* aWorkerPrivate)
 
   const bool isServiceWorker = aWorkerPrivate->IsServiceWorker();
   const bool isSharedWorker = aWorkerPrivate->IsSharedWorker();
-  const bool isDedicatedWorker = aWorkerPrivate->IsDedicatedWorker();
   if (isServiceWorker) {
     AssertIsOnMainThread();
   }

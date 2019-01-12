@@ -11,7 +11,6 @@
 #include "mozilla/gfx/GPUProcessManager.h"
 #include "mozilla/gfx/GraphicsMessages.h"
 #include "mozilla/ClearOnShutdown.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/Unused.h"
 
@@ -348,25 +347,6 @@ void CrashStatsLogForwarder::Log(const std::string& aString)
     }
   }
 }
-
-class CrashTelemetryEvent : public Runnable
-{
-  virtual ~CrashTelemetryEvent() {}
-
-  NS_DECL_ISUPPORTS_INHERITED
-
-  explicit CrashTelemetryEvent(uint32_t aReason) : mReason(aReason) {}
-
-  NS_IMETHOD Run() override {
-    MOZ_ASSERT(NS_IsMainThread());
-    return NS_OK;
-  }
-
-protected:
-  uint32_t mReason;
-};
-
-NS_IMPL_ISUPPORTS_INHERITED0(CrashTelemetryEvent, Runnable);
 
 void
 CrashStatsLogForwarder::CrashAction(LogReason aReason)
@@ -2435,13 +2415,6 @@ gfxPlatform::NotifyCompositorCreated(LayersBackend aBackend)
 
   // Set the backend before we notify so it's available immediately.
   mCompositorBackend = aBackend;
-
-  // Notify that we created a compositor, so telemetry can update.
-  NS_DispatchToMainThread(NS_NewRunnableFunction([] {
-    if (nsCOMPtr<nsIObserverService> obsvc = services::GetObserverService()) {
-      obsvc->NotifyObservers(nullptr, "compositor:created", nullptr);
-    }
-  }));
 }
 
 void

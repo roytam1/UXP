@@ -35,7 +35,6 @@
 #include "nsISiteSecurityService.h"
 
 #include "mozilla/Logging.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/ipc/URIUtils.h"
 
@@ -814,17 +813,13 @@ nsMixedContentBlocker::ShouldLoad(bool aHadInsecureImageRedirect,
   //
   // We do not count requests aHadInsecureImageRedirect=true, since these are
   // just an artifact of the image caching system.
-  bool active = (classification == eMixedScript);
   if (!aHadInsecureImageRedirect) {
-    if (XRE_IsParentProcess()) {
-      AccumulateMixedContentHSTS(innerContentLocation, active);
-    } else {
+    if (!XRE_IsParentProcess()) {
       // Ask the parent process to do the same call
       mozilla::dom::ContentChild* cc = mozilla::dom::ContentChild::GetSingleton();
       if (cc) {
         mozilla::ipc::URIParams uri;
         SerializeURI(innerContentLocation, uri);
-        cc->SendAccumulateMixedContentHSTS(uri, active);
       }
     }
   }
@@ -977,11 +972,3 @@ enum MixedContentHSTSState {
   MCB_HSTS_ACTIVE_NO_HSTS    = 2,
   MCB_HSTS_ACTIVE_WITH_HSTS  = 3
 };
-
-// Record information on when HSTS would have made mixed content not mixed
-// content (regardless of whether it was actually blocked)
-void
-nsMixedContentBlocker::AccumulateMixedContentHSTS(nsIURI* aURI, bool aActive)
-{
-/* STUB */
-}

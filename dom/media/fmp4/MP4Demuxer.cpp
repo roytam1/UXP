@@ -16,9 +16,6 @@
 #include "mp4_demuxer/Index.h"
 #include "nsPrintfCString.h"
 
-// Used for telemetry
-#include "mozilla/Telemetry.h"
-#include "mp4_demuxer/AnnexB.h"
 #include "mp4_demuxer/H264.h"
 
 #include "nsAutoPtr.h"
@@ -72,22 +69,9 @@ private:
   // Queued samples extracted by the demuxer, but not yet returned.
   RefPtr<MediaRawData> mQueuedSample;
   bool mNeedReIndex;
-  bool mNeedSPSForTelemetry;
   bool mIsH264 = false;
 };
 
-
-// Returns true if no SPS was found and search for it should continue.
-bool
-AccumulateSPSTelemetry(const MediaByteBuffer* aExtradata)
-{
-  // XXX: Do we still need this without telemetry?
-  mp4_demuxer::SPSData spsdata;
-  if (mp4_demuxer::H264::DecodeSPSFromExtraData(aExtradata, spsdata)) {
-    return false;
-  }
-  return true;
-}
 
 MP4Demuxer::MP4Demuxer(MediaResource* aResource)
   : mResource(aResource)
@@ -219,25 +203,10 @@ MP4TrackDemuxer::MP4TrackDemuxer(MP4Demuxer* aParent,
   EnsureUpToDateIndex(); // Force update of index
 
   VideoInfo* videoInfo = mInfo->GetAsVideoInfo();
-  // Collect telemetry from h264 AVCC SPS.
   if (videoInfo &&
       (mInfo->mMimeType.EqualsLiteral("video/mp4") ||
        mInfo->mMimeType.EqualsLiteral("video/avc"))) {
     mIsH264 = true;
-    RefPtr<MediaByteBuffer> extraData = videoInfo->mExtraData;
-    mNeedSPSForTelemetry = AccumulateSPSTelemetry(extraData);
-    mp4_demuxer::SPSData spsdata;
-    if (mp4_demuxer::H264::DecodeSPSFromExtraData(extraData, spsdata) &&
-        spsdata.pic_width > 0 && spsdata.pic_height > 0 &&
-        mp4_demuxer::H264::EnsureSPSIsSane(spsdata)) {
-      videoInfo->mImage.width = spsdata.pic_width;
-      videoInfo->mImage.height = spsdata.pic_height;
-      videoInfo->mDisplay.width = spsdata.display_width;
-      videoInfo->mDisplay.height = spsdata.display_height;
-    }
-  } else {
-    // No SPS to be found.
-    mNeedSPSForTelemetry = false;
   }
 }
 
@@ -364,15 +333,6 @@ MP4TrackDemuxer::GetSamples(int32_t aNumSamples)
   if (samples->mSamples.IsEmpty()) {
     return SamplesPromise::CreateAndReject(NS_ERROR_DOM_MEDIA_END_OF_STREAM, __func__);
   } else {
-    for (const auto& sample : samples->mSamples) {
-      // Collect telemetry from h264 Annex B SPS.
-      if (mNeedSPSForTelemetry && mp4_demuxer::AnnexB::HasSPS(sample)) {
-        RefPtr<MediaByteBuffer> extradata =
-        mp4_demuxer::AnnexB::ExtractExtraData(sample);
-        mNeedSPSForTelemetry = AccumulateSPSTelemetry(extradata);
-      }
-    }
-
     if (mNextKeyframeTime.isNothing() ||
         samples->mSamples.LastElement()->mTime >= mNextKeyframeTime.value().ToMicroseconds()) {
       SetNextKeyFrameTime();

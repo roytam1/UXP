@@ -51,7 +51,6 @@
 #include "nsIWebProgress.h"
 #include "nsIDocShell.h"
 #include "nsIPrompt.h"
-#include "nsISecurityUITelemetry.h"
 #include "nsIStringBundle.h"
 
 // radio buttons
@@ -954,8 +953,6 @@ HTMLFormElement::DoSecureToInsecureSubmitCheck(nsIURI* aActionURL,
     return rv;
   }
   *aCancelSubmit = (buttonPressed == 1);
-  uint32_t telemetryBucket =
-    nsISecurityUITelemetry::WARNING_CONFIRM_POST_TO_INSECURE_FROM_SECURE;
   return NS_OK;
 }
 

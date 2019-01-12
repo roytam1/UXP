@@ -431,9 +431,6 @@ private:
                rv == NS_ERROR_MALFORMED_URI;
     }
 
-    // Report net vs cache time telemetry
-    void ReportNetVSCacheTelemetry();
-
     // Create a aggregate set of the current notification callbacks
     // and ensure the transaction is updated to use it.
     void UpdateAggregateCallbacks();

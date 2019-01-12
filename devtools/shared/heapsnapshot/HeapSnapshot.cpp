@@ -1351,10 +1351,6 @@ class MOZ_STACK_CLASS HeapSnapshotHandler
   JS::CompartmentSet* compartments;
 
 public:
-  // For telemetry.
-  uint32_t nodeCount;
-  uint32_t edgeCount;
-
   HeapSnapshotHandler(CoreDumpWriter& writer,
                       JS::CompartmentSet* compartments)
     : writer(writer),
@@ -1371,8 +1367,6 @@ public:
                    NodeData*,
                    bool first)
   {
-    edgeCount++;
-
     // We're only interested in the first time we reach edge.referent, not in
     // every edge arriving at that node. "But, don't we want to serialize every
     // edge in the heap graph?" you ask. Don't worry! This edge is still
@@ -1385,8 +1379,6 @@ public:
     CoreDumpWriter::EdgePolicy policy;
     if (!ShouldIncludeEdge(compartments, origin, edge, &policy))
       return true;
-
-    nodeCount++;
 
     if (policy == CoreDumpWriter::EXCLUDE_EDGES)
       traversal.abandonReferent();
@@ -1402,9 +1394,7 @@ WriteHeapGraph(JSContext* cx,
                CoreDumpWriter& writer,
                bool wantNames,
                JS::CompartmentSet* compartments,
-               JS::AutoCheckCannotGC& noGC,
-               uint32_t& outNodeCount,
-               uint32_t& outEdgeCount)
+               JS::AutoCheckCannotGC& noGC)
 {
   // Serialize the starting node to the core dump.
 
@@ -1423,11 +1413,6 @@ WriteHeapGraph(JSContext* cx,
 
   bool ok = traversal.addStartVisited(node) &&
             traversal.traverse();
-
-  if (ok) {
-    outNodeCount = handler.nodeCount;
-    outEdgeCount = handler.edgeCount;
-  }
 
   return ok;
 }
@@ -1562,8 +1547,6 @@ ThreadSafeChromeUtils::SaveHeapSnapshot(GlobalObject& global,
 
   bool wantNames = true;
   CompartmentSet compartments;
-  uint32_t nodeCount = 0;
-  uint32_t edgeCount = 0;
 
   nsCOMPtr<nsIOutputStream> outputStream = getCoreDumpOutputStream(rv, start, outFilePath);
   if (NS_WARN_IF(rv.Failed()))
@@ -1599,9 +1582,7 @@ ThreadSafeChromeUtils::SaveHeapSnapshot(GlobalObject& global,
                         writer,
                         wantNames,
                         compartments.initialized() ? &compartments : nullptr,
-                        maybeNoGC.ref(),
-                        nodeCount,
-                        edgeCount))
+                        maybeNoGC.ref()))
     {
       rv.Throw(zeroCopyStream.failed()
                ? zeroCopyStream.result()

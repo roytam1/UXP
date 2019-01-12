@@ -83,7 +83,6 @@
 #include "nsCRT.h"
 #include "CacheObserver.h"
 #include "mozilla/dom/Performance.h"
-#include "mozilla/Telemetry.h"
 #include "AlternateServices.h"
 #include "InterceptedChannel.h"
 #include "nsIHttpPushListener.h"
@@ -122,19 +121,6 @@ static uint64_t gNumIntercepted = 0;
 static NS_DEFINE_CID(kStreamListenerTeeCID, NS_STREAMLISTENERTEE_CID);
 static NS_DEFINE_CID(kStreamTransportServiceCID,
                      NS_STREAMTRANSPORTSERVICE_CID);
-
-enum CacheDisposition {
-    kCacheHit = 1,
-    kCacheHitViaReval = 2,
-    kCacheMissedViaReval = 3,
-    kCacheMissed = 4
-};
-
-void
-AccumulateCacheHitTelemetry(CacheDisposition hitOrMiss)
-{
-  /* STUB */
-}
 
 // Computes and returns a SHA1 hash of the input buffer. The input buffer
 // must be a null-terminated string.
@@ -492,11 +478,6 @@ nsHttpChannel::ContinueConnect()
             nsresult rv = ReadFromCache(true);
             if (NS_FAILED(rv) && event) {
                 event->Revoke();
-            }
-
-            // Don't accumulate the cache hit telemetry for intercepted channels.
-            if (mInterceptCache != INTERCEPTED) {
-                AccumulateCacheHitTelemetry(kCacheHit);
             }
 
             return rv;
@@ -1085,10 +1066,8 @@ ProcessXCTO(nsIURI* aURI, nsHttpResponseHead* aResponseHead, nsILoadInfo* aLoadI
 
     if (aLoadInfo->GetExternalContentPolicyType() == nsIContentPolicy::TYPE_IMAGE) {
         if (StringBeginsWith(contentType, NS_LITERAL_CSTRING("image/"))) {
-            Accumulate(Telemetry::XCTO_NOSNIFF_BLOCK_IMAGE, 0);
             return NS_OK;
         }
-        Accumulate(Telemetry::XCTO_NOSNIFF_BLOCK_IMAGE, 1);
         // Instead of consulting Preferences::GetBool() all the time we
         // can cache the result to speed things up.
         static bool sXCTONosniffBlockImages = false;
@@ -2116,29 +2095,6 @@ nsHttpChannel::ContinueProcessResponse2(nsresult rv)
         break;
     }
 
-    if (gHttpHandler->IsTelemetryEnabled()) {
-        CacheDisposition cacheDisposition;
-        if (!mDidReval) {
-            cacheDisposition = kCacheMissed;
-        } else if (successfulReval) {
-            cacheDisposition = kCacheHitViaReval;
-        } else {
-            cacheDisposition = kCacheMissedViaReval;
-        }
-        AccumulateCacheHitTelemetry(cacheDisposition);
-
-        if (mResponseHead->Version() == NS_HTTP_VERSION_0_9) {
-            // DefaultPortTopLevel = 0, DefaultPortSubResource = 1,
-            // NonDefaultPortTopLevel = 2, NonDefaultPortSubResource = 3
-            uint32_t v09Info = 0;
-            if (!(mLoadFlags & LOAD_INITIAL_DOCUMENT_URI)) {
-                v09Info += 1;
-            }
-            if (mConnectionInfo->OriginPort() != mConnectionInfo->DefaultPort()) {
-                v09Info += 2;
-            }
-        }
-    }
     return rv;
 }
 
@@ -3784,8 +3740,6 @@ nsHttpChannel::OnCacheEntryCheck(nsICacheEntry* entry, nsIApplicationCache* appC
              (!mCachedResponseHead->ExpiresInPast() ||
               !mCachedResponseHead->MustValidateIfExpired())) {
         LOG(("NOT validating based on isForcedValid being true.\n"));
-        Telemetry::AutoCounter<Telemetry::PREDICTOR_TOTAL_PREFETCHES_USED> used;
-        ++used;
         doValidation = false;
     }
     // If the LOAD_FROM_CACHE flag is set, any cached data can simply be used
@@ -6546,8 +6500,6 @@ nsHttpChannel::OnStopRequest(nsIRequest *request, nsISupports *ctxt, nsresult st
 
     if (mTimingEnabled && request == mCachePump) {
         mCacheReadEnd = TimeStamp::Now();
-
-        ReportNetVSCacheTelemetry();
     }
 
     // allow content to be cached if it was loaded successfully (bug #482935)
@@ -8102,13 +8054,6 @@ nsHttpChannel::SetDoNotTrack()
                            NS_LITERAL_CSTRING("1"),
                            false);
   }
-}
-
-
-void
-nsHttpChannel::ReportNetVSCacheTelemetry()
-{
-  /* STUB */
 }
 
 } // namespace net

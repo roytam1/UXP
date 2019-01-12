@@ -32,7 +32,6 @@
 #include "RootAccessibleWrap.h"
 #endif
 #include "States.h"
-#include "Statistics.h"
 #include "TextLeafAccessibleWrap.h"
 #include "TreeWalker.h"
 #include "xpcAccessibleApplication.h"
@@ -1287,8 +1286,6 @@ nsAccessibilityService::Init()
   // Now its safe to start platform accessibility.
   if (XRE_IsParentProcess())
     PlatformInit();
-
-  statistics::A11yInitialized();
 
   return true;
 }

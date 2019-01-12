@@ -6605,10 +6605,6 @@ SetStopwatchIsMonitoringJank(JSContext*, bool);
 extern JS_PUBLIC_API(bool)
 GetStopwatchIsMonitoringJank(JSContext*);
 
-// Extract the CPU rescheduling data.
-extern JS_PUBLIC_API(void)
-GetPerfMonitoringTestCpuRescheduling(JSContext*, uint64_t* stayed, uint64_t* moved);
-
 
 /**
  * Add a number of microseconds to the time spent waiting on CPOWs

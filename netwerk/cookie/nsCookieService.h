@@ -314,7 +314,6 @@ class nsCookieService final : public nsICookieService
     bool                          FindCookie(const nsCookieKey& aKey, const nsAFlatCString &aHost, const nsAFlatCString &aName, const nsAFlatCString &aPath, nsListIter &aIter);
     bool                          FindSecureCookie(const nsCookieKey& aKey, nsCookie* aCookie);
     int64_t                       FindStaleCookie(nsCookieEntry *aEntry, int64_t aCurrentTime, nsIURI* aSource, mozilla::Maybe<bool> aIsSecure, nsListIter &aIter);
-    void                          TelemetryForEvictingStaleCookie(nsCookie* aEvicted, int64_t oldestCookieTime);
     void                          NotifyRejected(nsIURI *aHostURI);
     void                          NotifyThirdParty(nsIURI *aHostURI, bool aAccepted, nsIChannel *aChannel);
     void                          NotifyChanged(nsISupports *aSubject, const char16_t *aData);

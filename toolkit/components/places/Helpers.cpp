@@ -382,12 +382,5 @@ AsyncStatementCallbackNotifier::HandleCompletion(uint16_t aReason)
 ////////////////////////////////////////////////////////////////////////////////
 //// AsyncStatementCallbackNotifier
 
-NS_IMETHODIMP
-AsyncStatementTelemetryTimer::HandleCompletion(uint16_t aReason)
-{
-  /* STUB */
-  return NS_OK;
-}
-
 } // namespace places
 } // namespace mozilla

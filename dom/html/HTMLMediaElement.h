@@ -1195,29 +1195,6 @@ protected:
     return isPaused;
   }
 
-  /**
-   * Video has been playing while hidden and, if feature was enabled, would
-   * trigger suspending decoder.
-   * Used to track hidden-video-decode-suspend telemetry.
-   */
-  static void VideoDecodeSuspendTimerCallback(nsITimer* aTimer, void* aClosure);
-  /**
-   * Video is now both: playing and hidden.
-   * Used to track hidden-video telemetry.
-   */
-  void HiddenVideoStart();
-  /**
-   * Video is not playing anymore and/or has become visible.
-   * Used to track hidden-video telemetry.
-   */
-  void HiddenVideoStop();
-
-#ifdef MOZ_EME
-  void ReportEMETelemetry();
-#endif
-
-  void ReportTelemetry();
-
   // Check the permissions for audiochannel.
   bool CheckAudioChannelPermissions(const nsAString& aType);
 
@@ -1688,65 +1665,7 @@ protected:
   // before attaching to the DOM tree.
   bool mUnboundFromTree = false;
 
-public:
-  // Helper class to measure times for MSE telemetry stats
-  class TimeDurationAccumulator
-  {
-  public:
-    TimeDurationAccumulator()
-      : mCount(0)
-    {}
-    void Start()
-    {
-      if (IsStarted()) {
-        return;
-      }
-      mStartTime = TimeStamp::Now();
-    }
-    void Pause()
-    {
-      if (!IsStarted()) {
-        return;
-      }
-      mSum += (TimeStamp::Now() - mStartTime);
-      mCount++;
-      mStartTime = TimeStamp();
-    }
-    bool IsStarted() const
-    {
-      return !mStartTime.IsNull();
-    }
-    double Total() const
-    {
-      if (!IsStarted()) {
-        return mSum.ToSeconds();
-      }
-      // Add current running time until now, but keep it running.
-      return (mSum + (TimeStamp::Now() - mStartTime)).ToSeconds();
-    }
-    uint32_t Count() const
-    {
-      if (!IsStarted()) {
-        return mCount;
-      }
-      // Count current run in this report, without increasing the stored count.
-      return mCount + 1;
-    }
-  private:
-    TimeStamp mStartTime;
-    TimeDuration mSum;
-    uint32_t mCount;
-  };
 private:
-  // Total time a video has spent playing.
-  TimeDurationAccumulator mPlayTime;
-
-  // Total time a video has spent playing while hidden.
-  TimeDurationAccumulator mHiddenPlayTime;
-
-  // Total time a video has (or would have) spent in video-decode-suspend mode.
-  TimeDurationAccumulator mVideoDecodeSuspendTime;
-
   // Indicates if user has interacted with the element.
   // Used to block autoplay when disabled.
   bool mHasUserInteraction;

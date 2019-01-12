@@ -543,11 +543,6 @@ js::SetPreserveWrapperCallback(JSContext* cx, PreserveWrapperCallback callback)
     cx->preserveWrapperCallback = callback;
 }
 
-/*
- * The below code is for temporary telemetry use. It can be removed when
- * sufficient data has been harvested.
- */
-
 namespace js {
 // Defined in vm/GlobalObject.cpp.
 extern size_t sSetProtoCalled;
@@ -641,12 +636,6 @@ JS_FRIEND_API(JSLinearString*)
 js::StringToLinearStringSlow(JSContext* cx, JSString* str)
 {
     return str->ensureLinear(cx);
-}
-
-JS_FRIEND_API(void)
-JS_SetAccumulateTelemetryCallback(JSContext* cx, JSAccumulateTelemetryDataCallback callback)
-{
-    cx->setTelemetryCallback(cx, callback);
 }
 
 JS_FRIEND_API(JSObject*)

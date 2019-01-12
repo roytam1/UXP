@@ -7,7 +7,6 @@
 #include "mozilla/EndianUtils.h"
 #include "mozilla/dom/TypedArray.h"
 #include "mozilla/HoldDropJSObjects.h"
-#include "mozilla/Telemetry.h"
 
 #include "nsSocketTransport2.h"
 #include "nsUDPSocket.h"
@@ -275,7 +274,6 @@ void
 nsUDPSocket::AddOutputBytes(uint64_t aBytes)
 {
   mByteWriteCount += aBytes;
-  SaveNetworkStats(false);
 }
 
 void
@@ -465,7 +463,6 @@ nsUDPSocket::OnSocketReady(PRFileDesc *fd, int16_t outFlags)
     return;
   }
   mByteReadCount += count;
-  SaveNetworkStats(false);
 
   FallibleTArray<uint8_t> data;
   if (!data.AppendElements(buff, count, fallible)) {
@@ -512,7 +509,6 @@ nsUDPSocket::OnSocketDetached(PRFileDesc *fd)
     NS_ASSERTION(mFD == fd, "wrong file descriptor");
     CloseSocket();
   }
-  SaveNetworkStats(true);
 
   if (mListener)
   {
@@ -726,7 +722,6 @@ nsUDPSocket::Close()
       // expects this happen synchronously.
       CloseSocket();
 
-      SaveNetworkStats(true);
       return NS_OK;
     }
   }
@@ -752,12 +747,6 @@ nsUDPSocket::GetLocalAddr(nsINetAddr * *aResult)
   result.forget(aResult);
 
   return NS_OK;
-}
-
-void
-nsUDPSocket::SaveNetworkStats(bool aEnforce)
-{
-  /*** STUB ***/
 }
 
 void

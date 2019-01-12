@@ -84,7 +84,6 @@
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Services.h"
 #include "mozilla/StaticPtr.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/WebBrowserPersistDocumentParent.h"
 #include "mozilla/Unused.h"
 #include "nsAnonymousTemporaryFile.h"
@@ -3364,17 +3363,6 @@ ContentParent::RecvIsSecureURI(const uint32_t& type,
 }
 
 bool
-ContentParent::RecvAccumulateMixedContentHSTS(const URIParams& aURI, const bool& aActive)
-{
-  nsCOMPtr<nsIURI> ourURI = DeserializeURI(aURI);
-  if (!ourURI) {
-    return false;
-  }
-  nsMixedContentBlocker::AccumulateMixedContentHSTS(ourURI, aActive);
-  return true;
-}
-
-bool
 ContentParent::RecvLoadURIExternal(const URIParams& uri,
                                    PBrowserParent* windowContext)
 {
@@ -4763,20 +4751,4 @@ ContentParent::ForceTabPaint(TabParent* aTabParent, uint64_t aLayerObserverEpoch
     return;
   }
   ProcessHangMonitor::ForcePaint(mHangMonitorActor, aTabParent, aLayerObserverEpoch);
-}
-
-bool
-ContentParent::RecvAccumulateChildHistogram(
-                InfallibleTArray<Accumulation>&& aAccumulations)
-{
-  /* STUB */
-  return true;
-}
-
-bool
-ContentParent::RecvAccumulateChildKeyedHistogram(
-                InfallibleTArray<KeyedAccumulation>&& aAccumulations)
-{
-  /* STUB */
-  return true;
 }

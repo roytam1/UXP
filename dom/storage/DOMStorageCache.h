@@ -14,7 +14,6 @@
 #include "nsDataHashtable.h"
 #include "nsHashKeys.h"
 #include "mozilla/Monitor.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Atomics.h"
 
 namespace mozilla {
@@ -168,7 +167,7 @@ private:
 
 private:
   // Synchronously blocks until the cache is fully loaded from the database
-  void WaitForPreload(mozilla::Telemetry::ID aTelemetryID);
+  void WaitForPreload();
 
   // Helper to get one of the 3 data sets (regular, private, session)
   Data& DataSet(const DOMStorage* aStorage);
@@ -240,9 +239,6 @@ private:
   // We also fill session-only data set with the default one at that moment.
   // Drops back to false when session-only data are cleared from chrome.
   bool mSessionOnlyDataSetActive : 1;
-
-  // Whether we have already captured state of the cache preload on our first access.
-  bool mPreloadTelemetryRecorded : 1;
 
   // DOMStorageDBThread on the parent or single process,
   // DOMStorageDBChild on the child process.

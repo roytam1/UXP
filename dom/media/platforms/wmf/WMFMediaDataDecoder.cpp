@@ -38,39 +38,6 @@ WMFMediaDataDecoder::Init()
   return InitPromise::CreateAndResolve(mMFTManager->GetType(), __func__);
 }
 
-// A single telemetry sample is reported for each MediaDataDecoder object
-// that has detected error or produced output successfully.
-static void
-SendTelemetry(unsigned long hr)
-{
-  // Collapse the error codes into a range of 0-0xff that can be viewed in
-  // telemetry histograms.  For most MF_E_* errors, unique samples are used,
-  // retaining the least significant 7 or 8 bits.  Other error codes are
-  // bucketed.
-  uint32_t sample;
-  if (SUCCEEDED(hr)) {
-    sample = 0;
-  } else if (hr < 0xc00d36b0) {
-    sample = 1; // low bucket
-  } else if (hr < 0xc00d3700) {
-    sample = hr & 0xffU; // MF_E_*
-  } else if (hr <= 0xc00d3705) {
-    sample = 0x80 + (hr & 0xfU); // more MF_E_*
-  } else if (hr < 0xc00d6d60) {
-    sample = 2; // mid bucket
-  } else if (hr <= 0xc00d6d78) {
-    sample = hr & 0xffU; // MF_E_TRANSFORM_*
-  } else {
-    sample = 3; // high bucket
-  }
-
-  nsCOMPtr<nsIRunnable> runnable = NS_NewRunnableFunction(
-    [sample] {
-      /* Telemetry STUB */
-    });
-  NS_DispatchToMainThread(runnable);
-}
-
 void
 WMFMediaDataDecoder::Shutdown()
 {
@@ -90,9 +57,6 @@ WMFMediaDataDecoder::ProcessShutdown()
   if (mMFTManager) {
     mMFTManager->Shutdown();
     mMFTManager = nullptr;
-    if (!mRecordedError && mHasSuccessfulOutput) {
-      SendTelemetry(S_OK);
-    }
   }
 }
 
@@ -124,10 +88,6 @@ WMFMediaDataDecoder::ProcessDecode(MediaRawData* aSample)
     NS_WARNING("MFTManager rejected sample");
     mCallback->Error(MediaResult(NS_ERROR_DOM_MEDIA_DECODE_ERR,
                                  RESULT_DETAIL("MFTManager::Input:%x", hr)));
-    if (!mRecordedError) {
-      SendTelemetry(hr);
-      mRecordedError = true;
-    }
     return;
   }
 
@@ -143,7 +103,6 @@ WMFMediaDataDecoder::ProcessOutput()
   HRESULT hr = S_OK;
   while (SUCCEEDED(hr = mMFTManager->Output(mLastStreamOffset, output)) &&
          output) {
-    mHasSuccessfulOutput = true;
     mCallback->Output(output);
   }
   if (hr == MF_E_TRANSFORM_NEED_MORE_INPUT) {
@@ -152,10 +111,6 @@ WMFMediaDataDecoder::ProcessOutput()
     NS_WARNING("WMFMediaDataDecoder failed to output data");
     mCallback->Error(MediaResult(NS_ERROR_DOM_MEDIA_DECODE_ERR,
                                  RESULT_DETAIL("MFTManager::Output:%x", hr)));
-    if (!mRecordedError) {
-      SendTelemetry(hr);
-      mRecordedError = true;
-    }
   }
 }
 

@@ -22,7 +22,6 @@
 #include "nsIGfxInfo.h"
 #include "nsServiceManagerUtils.h"
 #include "nsTArray.h"
-#include "mozilla/Telemetry.h"
 #include "GeckoProfiler.h"
 
 #include "nsIWindowsRegKey.h"
@@ -1480,12 +1479,6 @@ gfxWindowsPlatform::InitializeD3D11Config()
   }
 }
 
-/* static */ void
-gfxWindowsPlatform::RecordContentDeviceFailure(TelemetryDeviceCode aDevice)
-{
-  /* STUB */
-}
-
 void
 gfxWindowsPlatform::InitializeDevices()
 {
@@ -1523,18 +1516,9 @@ gfxWindowsPlatform::InitializeDevices()
     return;
   }
 
-  bool shouldUseD2D = gfxConfig::IsEnabled(Feature::DIRECT2D);
-
   // First, initialize D3D11. If this succeeds we attempt to use Direct2D.
   InitializeD3D11();
   InitializeD2D();
-
-  if (!gfxConfig::IsEnabled(Feature::DIRECT2D) &&
-      XRE_IsContentProcess() &&
-      shouldUseD2D)
-  {
-    RecordContentDeviceFailure(TelemetryDeviceCode::D2D1);
-  }
 }
 
 void

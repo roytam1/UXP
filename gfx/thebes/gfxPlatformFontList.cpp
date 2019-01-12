@@ -21,7 +21,6 @@
 #include "mozilla/Likely.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/gfx/2D.h"
 
@@ -322,7 +321,6 @@ gfxPlatformFontList::InitOtherFamilyNames()
         mOtherFamilyNamesInitialized = true;
     }
     TimeStamp end = TimeStamp::Now();
-
     if (LOG_FONTINIT_ENABLED()) {
         TimeDuration elapsed = end - start;
         LOG_FONTINIT(("(fontinit) InitOtherFamilyNames took %8.2f ms %s",
@@ -470,7 +468,7 @@ gfxPlatformFontList::GetFontList(nsIAtom *aLangGroup,
 {
     for (auto iter = mFontFamilies.Iter(); !iter.Done(); iter.Next()) {
         RefPtr<gfxFontFamily>& family = iter.Data();
-        // use the first variation for now.  This data should be the same
+        // use the first variation for now. This data should be the same
         // for all the variations and should probably be moved up to
         // the Family
         gfxFontStyle style;
@@ -578,12 +576,6 @@ gfxPlatformFontList::SystemFindFontForChar(uint32_t aCh, uint32_t aNextCh,
     } else if (aCh == 0xFFFD && fontEntry && fallbackFamily) {
         mReplacementCharFallbackFamily = fallbackFamily;
     }
- 
-    // track system fallback time
-    static bool first = true;
-    int32_t intElapsed = int32_t(first ? elapsed.ToMilliseconds() :
-                                         elapsed.ToMicroseconds());
-    first = false;
 
     return fontEntry;
 }

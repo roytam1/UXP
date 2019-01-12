@@ -48,7 +48,6 @@
 #include "mozilla/LoadInfo.h"
 #include "mozilla/net/NeckoCommon.h"
 #include "mozilla/Services.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/net/DNS.h"
 #include "mozilla/ipc/URIUtils.h"
 #include "mozilla/net/NeckoChild.h"
@@ -166,8 +165,6 @@ static const char kProfileDoChange[] = "profile-do-change";
 uint32_t   nsIOService::gDefaultSegmentSize = 4096;
 uint32_t   nsIOService::gDefaultSegmentCount = 24;
 
-bool nsIOService::sTelemetryEnabled = false;
-
 bool nsIOService::sBlockToplevelDataUriNavigations = false;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -185,9 +182,6 @@ nsIOService::nsIOService()
     , mNetworkLinkServiceInitialized(false)
     , mChannelEventSinks(NS_CHANNEL_EVENT_SINK_CATEGORY)
     , mNetworkNotifyChanged(true)
-    , mLastOfflineStateChange(PR_IntervalNow())
-    , mLastConnectivityChange(PR_IntervalNow())
-    , mLastNetworkLinkChange(PR_IntervalNow())
     , mNetTearingDownStarted(0)
 {
 }
@@ -247,7 +241,6 @@ nsIOService::Init()
     else
         NS_WARNING("failed to get observer service");
 
-    Preferences::AddBoolVarCache(&sTelemetryEnabled, "toolkit.telemetry.enabled", false);
     Preferences::AddBoolVarCache(&sBlockToplevelDataUriNavigations,
                                  "security.data_uri.block_toplevel_data_uri_navigations", false);
     Preferences::AddBoolVarCache(&mOfflineMirrorsConnectivity, OFFLINE_MIRRORS_CONNECTIVITY, true);
@@ -1068,7 +1061,6 @@ nsIOService::SetOffline(bool offline)
             if (mSocketTransportService)
                 mSocketTransportService->SetOffline(true);
 
-            mLastOfflineStateChange = PR_IntervalNow();
             if (observerService)
                 observerService->NotifyObservers(subject,
                                                  NS_IOSERVICE_OFFLINE_STATUS_TOPIC,
@@ -1088,7 +1080,6 @@ nsIOService::SetOffline(bool offline)
             if (mProxyService)
                 mProxyService->ReloadPAC();
 
-            mLastOfflineStateChange = PR_IntervalNow();
             // don't care if notification fails
             // Only send the ONLINE notification if there is connectivity
             if (observerService && mConnectivity) {
@@ -1146,10 +1137,6 @@ nsIOService::SetConnectivityInternal(bool aConnectivity)
         return NS_OK;
     }
     mConnectivity = aConnectivity;
-
-    // This is used for PR_Connect PR_Close telemetry so it is important that
-    // we have statistic about network change event even if we are offline.
-    mLastConnectivityChange = PR_IntervalNow();
 
     if (mCaptivePortalService) {
         if (aConnectivity && !xpc::AreNonLocalConnectionsDisabled()) {
@@ -1621,7 +1608,6 @@ nsIOService::OnNetworkLinkEvent(const char *data)
 
     bool isUp = true;
     if (!strcmp(data, NS_NETWORK_LINK_DATA_CHANGED)) {
-        mLastNetworkLinkChange = PR_IntervalNow();
         // CHANGED means UP/DOWN didn't change
         // but the status of the captive portal may have changed.
         RecheckCaptivePortal();

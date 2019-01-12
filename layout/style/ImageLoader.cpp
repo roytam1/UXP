@@ -519,9 +519,6 @@ ImageLoader::FlushUseCounters()
 
     nsCOMPtr<imgIContainer> container;
     request->GetImage(getter_AddRefs(container));
-    if (container) {
-      static_cast<image::Image*>(container.get())->ReportUseCounters();
-    }
   }
 }
 

@@ -15,7 +15,6 @@
 #include "mozilla/Move.h"
 #include "mozilla/SizePrintfMacros.h"
 #include "mozilla/Sprintf.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Logging.h"
 #include "nsAutoPtr.h"
 #include "nsDebug.h"
@@ -115,8 +114,6 @@ static MessageChannel* gParentProcessBlocker;
 
 namespace mozilla {
 namespace ipc {
-
-static const uint32_t kMinTelemetryMessageSize = 8192;
 
 const int32_t MessageChannel::kNoTimeout = INT32_MIN;
 
@@ -1149,9 +1146,6 @@ MessageChannel::Send(Message* aMsg, Message* aReply)
     AutoEnterTransaction transact(this, seqno, transaction, nestedLevel);
 
     IPC_LOG("Send seqno=%d, xid=%d", seqno, transaction);
-
-    // msg will be destroyed soon, but name() is not owned by msg.
-    const char* msgName = msg->name();
 
     mLink->SendMessage(msg.forget());
 

@@ -50,8 +50,6 @@ private:
 private:
   bool mInCheckerboard;
   bool mInTransform;
-
-  TimeStamp mCurrentPeriodStart;
 };
 
 } // namespace layers

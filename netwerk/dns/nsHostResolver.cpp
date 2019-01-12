@@ -32,7 +32,6 @@
 
 #include "mozilla/HashFunctions.h"
 #include "mozilla/TimeStamp.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Preferences.h"
 
@@ -1419,7 +1418,6 @@ nsHostResolver::ThreadFunc(void *arg)
         LOG(("DNS lookup thread - Calling getaddrinfo for host [%s%s%s].\n",
              LOG_HOST(rec->host, rec->netInterface)));
 
-        TimeStamp startTime = TimeStamp::Now();
 #if TTL_AVAILABLE
         bool getTtl = rec->mGetTtl;
 #else

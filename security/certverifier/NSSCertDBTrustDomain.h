@@ -84,7 +84,6 @@ public:
                        NetscapeStepUpPolicy netscapeStepUpPolicy,
                        const NeckoOriginAttributes& originAttributes,
                        UniqueCERTCertList& builtChain,
-          /*optional*/ PinningTelemetryInfo* pinningTelemetryInfo = nullptr,
           /*optional*/ const char* hostname = nullptr);
 
   virtual Result FindIssuer(mozilla::pkix::Input encodedIssuerName,
@@ -188,7 +187,6 @@ private:
   NetscapeStepUpPolicy mNetscapeStepUpPolicy;
   const NeckoOriginAttributes& mOriginAttributes;
   UniqueCERTCertList& mBuiltChain; // non-owning
-  PinningTelemetryInfo* mPinningTelemetryInfo;
   const char* mHostname; // non-owning - only used for pinning checks
   nsCOMPtr<nsICertBlocklist> mCertBlocklist;
   CertVerifier::OCSPStaplingStatus mOCSPStaplingStatus;

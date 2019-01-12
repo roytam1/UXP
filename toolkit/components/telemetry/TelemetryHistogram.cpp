@@ -2689,37 +2689,5 @@ TelemetryHistogram::IPCTimerFired(nsITimer* aTimer, void* aClosure)
     }
   }
 
-  switch (XRE_GetProcessType()) {
-    case GeckoProcessType_Content: {
-      mozilla::dom::ContentChild* contentChild = mozilla::dom::ContentChild::GetSingleton();
-      mozilla::Unused << NS_WARN_IF(!contentChild);
-      if (contentChild) {
-        if (accumulationsToSend.Length()) {
-          mozilla::Unused <<
-            NS_WARN_IF(!contentChild->SendAccumulateChildHistogram(accumulationsToSend));
-        }
-        if (keyedAccumulationsToSend.Length()) {
-          mozilla::Unused <<
-            NS_WARN_IF(!contentChild->SendAccumulateChildKeyedHistogram(keyedAccumulationsToSend));
-        }
-      }
-      break;
-    }
-    case GeckoProcessType_GPU: {
-      if (mozilla::gfx::GPUParent* gpu = mozilla::gfx::GPUParent::GetSingleton()) {
-        if (accumulationsToSend.Length()) {
-          mozilla::Unused << gpu->SendAccumulateChildHistogram(accumulationsToSend);
-        }
-        if (keyedAccumulationsToSend.Length()) {
-          mozilla::Unused << gpu->SendAccumulateChildKeyedHistogram(keyedAccumulationsToSend);
-        }
-      }
-      break;
-    }
-    default:
-      MOZ_ASSERT_UNREACHABLE("Unsupported process type");
-      break;
-  }
-
   gIPCTimerArmed = false;
 }

@@ -7,7 +7,6 @@
 #include "Compatibility.h"
 
 #include "nsWinUtils.h"
-#include "Statistics.h"
 
 #include "mozilla/Preferences.h"
 
@@ -52,8 +51,6 @@ uint32_t Compatibility::sConsumers = Compatibility::UNKNOWN;
 void
 Compatibility::Init()
 {
-  // Note we collect some AT statistics/telemetry here for convenience.
-
   HMODULE jawsHandle = ::GetModuleHandleW(L"jhook");
   if (jawsHandle)
     sConsumers |= (IsModuleVersionLessThan(jawsHandle, 8, 2173)) ?
@@ -91,15 +88,6 @@ Compatibility::Init()
   // If we have a known consumer remove the unknown bit.
   if (sConsumers != Compatibility::UNKNOWN)
     sConsumers ^= Compatibility::UNKNOWN;
-
-  // Gather telemetry
-  uint32_t temp = sConsumers;
-  for (int i = 0; temp; i++) {
-    if (temp & 0x1)
-      statistics::A11yConsumers(i);
-
-    temp >>= 1;
-  }
 
   // Turn off new tab switching for Jaws and WE.
   if (sConsumers & (JAWS | OLDJAWS | WE)) {

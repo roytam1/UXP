@@ -10,7 +10,6 @@
 #include "nsCharSeparatedTokenizer.h"
 #include "nsMimeTypes.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 
 #include "OggDecoder.h"
 #include "OggDemuxer.h"
@@ -83,22 +82,6 @@ DecoderTraits::IsWebMTypeAndEnabled(const nsACString& aType)
 DecoderTraits::IsWebMAudioType(const nsACString& aType)
 {
   return aType.EqualsASCII("audio/webm");
-}
-
-static char const *const gHttpLiveStreamingTypes[] = {
-  // For m3u8.
-  // https://tools.ietf.org/html/draft-pantos-http-live-streaming-19#section-10
-  "application/vnd.apple.mpegurl",
-  // Some sites serve these as the informal m3u type.
-  "application/x-mpegurl",
-  "audio/x-mpegurl",
-  nullptr
-};
-
-static bool
-IsHttpLiveStreamingType(const nsACString& aType)
-{
-  return CodecListContains(gHttpLiveStreamingTypes, aType);
 }
 
 #ifdef MOZ_FMP4
@@ -246,10 +229,6 @@ CanHandleMediaType(const MediaContentType& aType,
                    DecoderDoctorDiagnostics* aDiagnostics)
 {
   MOZ_ASSERT(NS_IsMainThread());
-
-  if (IsHttpLiveStreamingType(aType.GetMIMEType())) {
-    /* Telemetry STUB */
-  }
 
   if (aType.HaveCodecs()) {
     CanPlayStatus result = CanHandleCodecsType(aType, aDiagnostics);

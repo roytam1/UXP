@@ -20,7 +20,6 @@
 #include "mozilla/Logging.h"
 #include "mozilla/Move.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "nsArray.h"
 #include "nsArrayUtils.h"
 #include "nsCharSeparatedTokenizer.h"
@@ -244,21 +243,6 @@ nsNSSSocketInfo::NoteTimeUntilReady()
 void
 nsNSSSocketInfo::SetHandshakeCompleted()
 {
-  if (!mHandshakeCompleted) {
-    enum HandshakeType {
-      Resumption = 1,
-      FalseStarted = 2,
-      ChoseNotToFalseStart = 3,
-      NotAllowedToFalseStart = 4,
-    };
-
-    HandshakeType handshakeType = !IsFullHandshake() ? Resumption
-                                : mFalseStarted ? FalseStarted
-                                : mFalseStartCallbackCalled ? ChoseNotToFalseStart
-                                : NotAllowedToFalseStart;
-  }
-
-
     // Remove the plain text layer as it is not needed anymore.
     // The plain text layer is not always present - so its not a fatal error
     // if it cannot be removed
@@ -1050,29 +1034,6 @@ class SSLErrorRunnable : public SyncRunnableBase
 
 namespace {
 
-uint32_t tlsIntoleranceTelemetryBucket(PRErrorCode err)
-{
-  // returns a numeric code for where we track various errors in telemetry
-  // only errors that cause version fallback are tracked,
-  // so this is also used to determine which errors can cause version fallback
-  switch (err) {
-    case SSL_ERROR_BAD_MAC_ALERT: return 1;
-    case SSL_ERROR_BAD_MAC_READ: return 2;
-    case SSL_ERROR_HANDSHAKE_FAILURE_ALERT: return 3;
-    case SSL_ERROR_HANDSHAKE_UNEXPECTED_ALERT: return 4;
-    case SSL_ERROR_ILLEGAL_PARAMETER_ALERT: return 6;
-    case SSL_ERROR_NO_CYPHER_OVERLAP: return 7;
-    case SSL_ERROR_UNSUPPORTED_VERSION: return 10;
-    case SSL_ERROR_PROTOCOL_VERSION_ALERT: return 11;
-    case SSL_ERROR_BAD_HANDSHAKE_HASH_VALUE: return 13;
-    case SSL_ERROR_DECODE_ERROR_ALERT: return 14;
-    case PR_CONNECT_RESET_ERROR: return 16;
-    case PR_END_OF_FILE_ERROR: return 17;
-    case SSL_ERROR_INTERNAL_ERROR_ALERT: return 18;
-    default: return 0;
-  }
-}
-
 bool
 retryDueToTLSIntolerance(PRErrorCode err, nsNSSSocketInfo* socketInfo)
 {
@@ -1096,13 +1057,6 @@ retryDueToTLSIntolerance(PRErrorCode err, nsNSSSocketInfo* socketInfo)
     // This is a clear signal that we've fallen back too many versions.  Treat
     // this as a hard failure, but forget any intolerance so that later attempts
     // don't use this version (i.e., range.max) and trigger the error again.
-
-    // First, track the original cause of the version fallback.  This uses the
-    // same buckets as the telemetry below, except that bucket 0 will include
-    // all cases where there wasn't an original reason.
-    PRErrorCode originalReason =
-      helpers.getIntoleranceReason(socketInfo->GetHostName(),
-                                   socketInfo->GetPort());
 
     helpers.forgetIntolerance(socketInfo->GetHostName(),
                               socketInfo->GetPort());
@@ -1139,29 +1093,14 @@ retryDueToTLSIntolerance(PRErrorCode err, nsNSSSocketInfo* socketInfo)
     return false;
   }
 
-  uint32_t reason = tlsIntoleranceTelemetryBucket(err);
-  if (reason == 0) {
-    return false;
-  }
-
-  Telemetry::ID pre;
-  Telemetry::ID post;
   switch (range.max) {
     case SSL_LIBRARY_VERSION_TLS_1_3:
-      pre = Telemetry::SSL_TLS13_INTOLERANCE_REASON_PRE;
-      post = Telemetry::SSL_TLS13_INTOLERANCE_REASON_POST;
       break;
     case SSL_LIBRARY_VERSION_TLS_1_2:
-      pre = Telemetry::SSL_TLS12_INTOLERANCE_REASON_PRE;
-      post = Telemetry::SSL_TLS12_INTOLERANCE_REASON_POST;
       break;
     case SSL_LIBRARY_VERSION_TLS_1_1:
-      pre = Telemetry::SSL_TLS11_INTOLERANCE_REASON_PRE;
-      post = Telemetry::SSL_TLS11_INTOLERANCE_REASON_POST;
       break;
     case SSL_LIBRARY_VERSION_TLS_1_0:
-      pre = Telemetry::SSL_TLS10_INTOLERANCE_REASON_PRE;
-      post = Telemetry::SSL_TLS10_INTOLERANCE_REASON_POST;
       break;
     default:
       MOZ_CRASH("impossible TLS version");
@@ -1186,34 +1125,6 @@ static_assert((PR_MAX_ERROR - PR_NSPR_ERROR_BASE) <= 128,
               "too many NSPR errors");
 static_assert((mozilla::pkix::ERROR_BASE - mozilla::pkix::END_OF_LIST) < 31,
               "too many moz::pkix errors");
-
-static void
-reportHandshakeResult(int32_t bytesTransferred, bool wasReading, PRErrorCode err)
-{
-  uint32_t bucket;
-
-  // A negative bytesTransferred or a 0 read are errors.
-  if (bytesTransferred > 0) {
-    bucket = 0;
-  } else if ((bytesTransferred == 0) && !wasReading) {
-    // PR_Write() is defined to never return 0, but let's make sure.
-    // https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSPR/Reference/PR_Write.
-    MOZ_ASSERT(false);
-    bucket = 671;
-  } else if (IS_SSL_ERROR(err)) {
-    bucket = err - SSL_ERROR_BASE;
-    MOZ_ASSERT(bucket > 0);   // SSL_ERROR_EXPORT_ONLY_SERVER isn't used.
-  } else if (IS_SEC_ERROR(err)) {
-    bucket = (err - SEC_ERROR_BASE) + 256;
-  } else if ((err >= PR_NSPR_ERROR_BASE) && (err < PR_MAX_ERROR)) {
-    bucket = (err - PR_NSPR_ERROR_BASE) + 512;
-  } else if ((err >= mozilla::pkix::ERROR_BASE) &&
-             (err < mozilla::pkix::ERROR_LIMIT)) {
-    bucket = (err - mozilla::pkix::ERROR_BASE) + 640;
-  } else {
-    bucket = 671;
-  }
-}
 
 int32_t
 checkHandshake(int32_t bytesTransfered, bool wasReading,
@@ -1292,10 +1203,6 @@ checkHandshake(int32_t bytesTransfered, bool wasReading,
   // set the HandshakePending attribute to false so that we don't try the logic
   // above again in a subsequent transfer.
   if (handleHandshakeResultNow) {
-    // Report the result once for each handshake. Note that this does not
-    // get handshakes which are cancelled before any reads or writes
-    // happen.
-    reportHandshakeResult(bytesTransfered, wasReading, originalError);
     socketInfo->SetHandshakeNotPending();
   }
 

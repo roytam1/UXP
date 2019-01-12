@@ -11,7 +11,6 @@
 #include "mozilla/OwningNonNull.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Unused.h"
 
 #include "mozilla/dom/AppNotificationServiceOptionsBinding.h"
@@ -656,172 +655,6 @@ NotificationPermissionRequest::GetTypes(nsIArray** aTypes)
                                                          aTypes);
 }
 
-NS_IMPL_ISUPPORTS(NotificationTelemetryService, nsIObserver)
-
-NotificationTelemetryService::NotificationTelemetryService()
-  : mDNDRecorded(false)
-{}
-
-NotificationTelemetryService::~NotificationTelemetryService()
-{
-  Unused << NS_WARN_IF(NS_FAILED(RemovePermissionChangeObserver()));
-}
-
-/* static */ already_AddRefed<NotificationTelemetryService>
-NotificationTelemetryService::GetInstance()
-{
-  nsCOMPtr<nsISupports> telemetrySupports =
-    do_GetService(NOTIFICATIONTELEMETRYSERVICE_CONTRACTID);
-  if (!telemetrySupports) {
-    return nullptr;
-  }
-  RefPtr<NotificationTelemetryService> telemetry =
-    static_cast<NotificationTelemetryService*>(telemetrySupports.get());
-  return telemetry.forget();
-}
-
-nsresult
-NotificationTelemetryService::Init()
-{
-  nsresult rv = AddPermissionChangeObserver();
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  RecordPermissions();
-
-  return NS_OK;
-}
-
-nsresult
-NotificationTelemetryService::RemovePermissionChangeObserver()
-{
-  nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
-  if (!obs) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
-  return obs->RemoveObserver(this, "perm-changed");
-}
-
-nsresult
-NotificationTelemetryService::AddPermissionChangeObserver()
-{
-  nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
-  if (!obs) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
-  return obs->AddObserver(this, "perm-changed", false);
-}
-
-void
-NotificationTelemetryService::RecordPermissions()
-{
-  if (!Telemetry::CanRecordBase() || !Telemetry::CanRecordExtended()) {
-    return;
-  }
-
-  nsCOMPtr<nsIPermissionManager> permissionManager =
-    services::GetPermissionManager();
-  if (!permissionManager) {
-    return;
-  }
-
-  nsCOMPtr<nsISimpleEnumerator> enumerator;
-  nsresult rv = permissionManager->GetEnumerator(getter_AddRefs(enumerator));
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return;
-  }
-
-  for (;;) {
-    bool hasMoreElements;
-    nsresult rv = enumerator->HasMoreElements(&hasMoreElements);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return;
-    }
-    if (!hasMoreElements) {
-      break;
-    }
-    nsCOMPtr<nsISupports> supportsPermission;
-    rv = enumerator->GetNext(getter_AddRefs(supportsPermission));
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return;
-    }
-    uint32_t capability;
-    if (!GetNotificationPermission(supportsPermission, &capability)) {
-      continue;
-    }
-  }
-}
-
-bool
-NotificationTelemetryService::GetNotificationPermission(nsISupports* aSupports,
-                                                        uint32_t* aCapability)
-{
-  nsCOMPtr<nsIPermission> permission = do_QueryInterface(aSupports);
-  if (!permission) {
-    return false;
-  }
-  nsAutoCString type;
-  permission->GetType(type);
-  if (!type.Equals("desktop-notification")) {
-    return false;
-  }
-  permission->GetCapability(aCapability);
-  return true;
-}
-
-void
-NotificationTelemetryService::RecordDNDSupported()
-{
-  if (mDNDRecorded) {
-    return;
-  }
-
-  nsCOMPtr<nsIAlertsService> alertService =
-    do_GetService(NS_ALERTSERVICE_CONTRACTID);
-  if (!alertService) {
-    return;
-  }
-
-  nsCOMPtr<nsIAlertsDoNotDisturb> alertServiceDND =
-    do_QueryInterface(alertService);
-  if (!alertServiceDND) {
-    return;
-  }
-
-  mDNDRecorded = true;
-  bool isEnabled;
-  nsresult rv = alertServiceDND->GetManualDoNotDisturb(&isEnabled);
-  if (NS_FAILED(rv)) {
-    return;
-  }
-}
-
-nsresult
-NotificationTelemetryService::RecordSender(nsIPrincipal* aPrincipal)
-{
-  if (!Telemetry::CanRecordBase() || !Telemetry::CanRecordExtended() ||
-      !nsAlertsUtils::IsActionablePrincipal(aPrincipal)) {
-    return NS_OK;
-  }
-  nsAutoString origin;
-  nsresult rv = Notification::GetOrigin(aPrincipal, origin);
-  if (NS_FAILED(rv)) {
-    return rv;
-  }
-  if (!mOrigins.Contains(origin)) {
-    mOrigins.PutEntry(origin);
-  }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-NotificationTelemetryService::Observe(nsISupports* aSubject,
-                                      const char* aTopic,
-                                      const char16_t* aData)
-{
-  /* STUB */
-  return NS_OK;
-}
-
 // Observer that the alert service calls to do common tasks and/or dispatch to the
 // specific observer for the context e.g. main thread, worker, or service worker.
 class NotificationObserver final : public nsIObserver
@@ -1402,8 +1235,6 @@ NotificationObserver::Observe(nsISupports* aSubject, const char* aTopic,
     return NS_OK;
   } else if (!strcmp("alertshow", aTopic) ||
              !strcmp("alertfinished", aTopic)) {
-    RefPtr<NotificationTelemetryService> telemetry =
-      NotificationTelemetryService::GetInstance();
     Unused << NS_WARN_IF(NS_FAILED(AdjustPushQuota(aTopic)));
   }
 

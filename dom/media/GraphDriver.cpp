@@ -629,7 +629,6 @@ AudioCallbackDriver::Init()
   cubeb_stream_params output;
   cubeb_stream_params input;
   uint32_t latency_frames;
-  bool firstStream = CubebUtils::GetFirstStream();
 
   MOZ_ASSERT(!NS_IsMainThread(),
       "This is blocking and should never run on the main thread.");

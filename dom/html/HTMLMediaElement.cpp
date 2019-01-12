@@ -1037,14 +1037,6 @@ void HTMLMediaElement::ShutdownDecoder()
 
 void HTMLMediaElement::AbortExistingLoads()
 {
-#ifdef MOZ_EME
-  // If there is no existing decoder then we don't have anything to
-  // report. This prevents reporting the initial load from an
-  // empty video element as a failed EME load.
-  if (mDecoder) {
-    ReportEMETelemetry();
-  }
-#endif
   // Abort any already-running instance of the resource selection algorithm.
   mLoadWaitStatus = NOT_WAITING;
 
@@ -1900,7 +1892,6 @@ NS_IMETHODIMP HTMLMediaElement::GetCurrentTime(double* aCurrentTime)
 void
 HTMLMediaElement::FastSeek(double aTime, ErrorResult& aRv)
 {
-  LOG(LogLevel::Debug, ("Reporting telemetry VIDEO_FASTSEEK_USED"));
   RefPtr<Promise> tobeDropped = Seek(aTime, SeekTarget::PrevSyncPoint, aRv);
 }
 
@@ -3648,191 +3639,6 @@ nsresult HTMLMediaElement::BindToTree(nsIDocument* aDocument, nsIContent* aParen
   return rv;
 }
 
-/* static */
-void HTMLMediaElement::VideoDecodeSuspendTimerCallback(nsITimer* aTimer, void* aClosure)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  auto element = static_cast<HTMLMediaElement*>(aClosure);
-  element->mVideoDecodeSuspendTime.Start();
-  element->mVideoDecodeSuspendTimer = nullptr;
-}
-
-void HTMLMediaElement::HiddenVideoStart()
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  mHiddenPlayTime.Start();
-  if (mVideoDecodeSuspendTimer) {
-    // Already started, just keep it running.
-    return;
-  }
-  mVideoDecodeSuspendTimer = do_CreateInstance("@mozilla.org/timer;1");
-  mVideoDecodeSuspendTimer->InitWithNamedFuncCallback(
-    VideoDecodeSuspendTimerCallback, this,
-    MediaPrefs::MDSMSuspendBackgroundVideoDelay(), nsITimer::TYPE_ONE_SHOT,
-    "HTMLMediaElement::VideoDecodeSuspendTimerCallback");
-}
-
-void HTMLMediaElement::HiddenVideoStop()
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  mHiddenPlayTime.Pause();
-  mVideoDecodeSuspendTime.Pause();
-  if (!mVideoDecodeSuspendTimer) {
-    return;
-  }
-  mVideoDecodeSuspendTimer->Cancel();
-  mVideoDecodeSuspendTimer = nullptr;
-}
-
-#ifdef MOZ_EME
-void
-HTMLMediaElement::ReportEMETelemetry()
-{
-  // Report telemetry for EME videos when a page is unloaded.
-  NS_ASSERTION(NS_IsMainThread(), "Should be on main thread.");
-  if (mIsEncrypted && Preferences::GetBool("media.eme.enabled")) {
-    LOG(LogLevel::Debug, ("%p VIDEO_EME_PLAY_SUCCESS = %s",
-                       this, mLoadedDataFired ? "true" : "false"));
-  }
-}
-#endif
-
-void
-HTMLMediaElement::ReportTelemetry()
-{
-  // Report telemetry for videos when a page is unloaded. We
-  // want to know data on what state the video is at when
-  // the user has exited.
-  enum UnloadedState {
-    ENDED = 0,
-    PAUSED = 1,
-    STALLED = 2,
-    SEEKING = 3,
-    OTHER = 4
-  };
-
-  UnloadedState state = OTHER;
-  if (Seeking()) {
-    state = SEEKING;
-  }
-  else if (Ended()) {
-    state = ENDED;
-  }
-  else if (Paused()) {
-    state = PAUSED;
-  }
-  else {
-    // For buffering we check if the current playback position is at the end
-    // of a buffered range, within a margin of error. We also consider to be
-    // buffering if the last frame status was buffering and the ready state is
-    // HAVE_CURRENT_DATA to account for times where we are in a buffering state
-    // regardless of what actual data we have buffered.
-    bool stalled = false;
-    RefPtr<TimeRanges> ranges = Buffered();
-    const double errorMargin = 0.05;
-    double t = CurrentTime();
-    TimeRanges::index_type index = ranges->Find(t, errorMargin);
-    ErrorResult ignore;
-    stalled = index != TimeRanges::NoIndex &&
-              (ranges->End(index, ignore) - t) < errorMargin;
-    stalled |= mDecoder && NextFrameStatus() == MediaDecoderOwner::NEXT_FRAME_UNAVAILABLE_BUFFERING &&
-               mReadyState == HTMLMediaElement::HAVE_CURRENT_DATA;
-    if (stalled) {
-      state = STALLED;
-    }
-  }
-
-  LOG(LogLevel::Debug, ("%p VIDEO_UNLOAD_STATE = %d", this, state));
-
-  FrameStatisticsData data;
-
-  if (HTMLVideoElement* vid = HTMLVideoElement::FromContentOrNull(this)) {
-    FrameStatistics* stats = vid->GetFrameStatistics();
-    if (stats) {
-      data = stats->GetFrameStatisticsData();
-      if (data.mParsedFrames) {
-        MOZ_ASSERT(data.mDroppedFrames <= data.mParsedFrames);
-        // Dropped frames <= total frames, so 'percentage' cannot be higher than
-        // 100 and therefore can fit in a uint32_t (that Telemetry takes).
-        uint32_t percentage = 100 * data.mDroppedFrames / data.mParsedFrames;
-        LOG(LogLevel::Debug,
-            ("Reporting telemetry DROPPED_FRAMES_IN_VIDEO_PLAYBACK"));
-      }
-    }
-  }
-
-  if (mMediaInfo.HasVideo() &&
-      mMediaInfo.mVideo.mImage.height > 0) {
-    // We have a valid video.
-    double playTime = mPlayTime.Total();
-    double hiddenPlayTime = mHiddenPlayTime.Total();
-    double videoDecodeSuspendTime = mVideoDecodeSuspendTime.Total();
-
-    LOG(LogLevel::Debug, ("%p VIDEO_PLAY_TIME_MS = %f", this, playTime));
-
-    LOG(LogLevel::Debug, ("%p VIDEO_HIDDEN_PLAY_TIME_MS = %f", this, hiddenPlayTime));
-
-    if (playTime > 0.0) {
-      // We have actually played something -> Report some valid-video telemetry.
-
-      // Keyed by audio+video or video alone, and by a resolution range.
-      nsCString key(mMediaInfo.HasAudio() ? "AV," : "V,");
-      static const struct { int32_t mH; const char* mRes; } sResolutions[] = {
-        {  240, "0<h<=240" },
-        {  480, "240<h<=480" },
-        {  576, "480<h<=576" },
-        {  720, "576<h<=720" },
-        { 1080, "720<h<=1080" },
-        { 2160, "1080<h<=2160" }
-      };
-      const char* resolution = "h>2160";
-      int32_t height = mMediaInfo.mVideo.mImage.height;
-      for (const auto& res : sResolutions) {
-        if (height <= res.mH) {
-          resolution = res.mRes;
-          break;
-        }
-      }
-      key.AppendASCII(resolution);
-
-      uint32_t hiddenPercentage = uint32_t(hiddenPlayTime / playTime * 100.0 + 0.5);
-      LOG(LogLevel::Debug, ("%p VIDEO_HIDDEN_PLAY_TIME_PERCENTAGE = %u, keys: '%s' and 'All'",
-                            this, hiddenPercentage, key.get()));
-
-      uint32_t videoDecodeSuspendPercentage =
-        uint32_t(videoDecodeSuspendTime / playTime * 100.0 + 0.5);
-      LOG(LogLevel::Debug, ("%p VIDEO_INFERRED_DECODE_SUSPEND_PERCENTAGE = %u, keys: '%s' and 'All'",
-                            this, videoDecodeSuspendPercentage, key.get()));
-
-      if (data.mInterKeyframeCount != 0) {
-        uint32_t average_ms =
-          uint32_t(std::min<uint64_t>(double(data.mInterKeyframeSum_us)
-                                      / double(data.mInterKeyframeCount)
-                                      / 1000.0
-                                      + 0.5,
-                                      UINT32_MAX));
-        LOG(LogLevel::Debug, ("%p VIDEO_INTER_KEYFRAME_AVERAGE_MS = %u, keys: '%s' and 'All'",
-                              this, average_ms, key.get()));
-
-        uint32_t max_ms =
-          uint32_t(std::min<uint64_t>((data.mInterKeyFrameMax_us + 500) / 1000,
-                                      UINT32_MAX));
-        LOG(LogLevel::Debug, ("%p VIDEO_INTER_KEYFRAME_MAX_MS = %u, keys: '%s' and 'All'",
-                              this, max_ms, key.get()));
-      } else {
-        // Here, we have played *some* of the video, but didn't get more than 1
-        // keyframe. Report '0' if we have played for longer than the video-
-        // decode-suspend delay (showing recovery would be difficult).
-        uint32_t suspendDelay_ms = MediaPrefs::MDSMSuspendBackgroundVideoDelay();
-        if (uint32_t(playTime * 1000.0) > suspendDelay_ms) {
-          LOG(LogLevel::Debug, ("%p VIDEO_INTER_KEYFRAME_MAX_MS = 0 (only 1 keyframe), keys: '%s' and 'All'",
-                                this, key.get()));
-        }
-      }
-    }
-  }
-}
-
 void HTMLMediaElement::UnbindFromTree(bool aDeep,
                                       bool aNullParent)
 {
@@ -5312,19 +5118,6 @@ nsresult HTMLMediaElement::DispatchAsyncEvent(const nsAString& aName)
   nsCOMPtr<nsIRunnable> event = new nsAsyncEventRunner(aName, this);
   NS_DispatchToMainThread(event);
 
-  if ((aName.EqualsLiteral("play") || aName.EqualsLiteral("playing"))) {
-    mPlayTime.Start();
-    if (IsHidden()) {
-      HiddenVideoStart();
-    }
-  } else if (aName.EqualsLiteral("waiting")) {
-    mPlayTime.Pause();
-    HiddenVideoStop();
-  } else if (aName.EqualsLiteral("pause")) {
-    mPlayTime.Pause();
-    HiddenVideoStop();
-  }
-
   return NS_OK;
 }
 
@@ -5450,11 +5243,6 @@ void HTMLMediaElement::SuspendOrResumeElement(bool aPauseElement, bool aSuspendE
     UpdateSrcMediaStreamPlaying();
     UpdateAudioChannelPlayingState();
     if (aPauseElement) {
-      ReportTelemetry();
-#ifdef MOZ_EME
-      ReportEMETelemetry();
-#endif
-
 #ifdef MOZ_EME
       // For EME content, we may force destruction of the CDM client (and CDM
       // instance if this is the last client for that CDM instance) and
@@ -5506,13 +5294,6 @@ bool HTMLMediaElement::IsBeingDestroyed()
 void HTMLMediaElement::NotifyOwnerDocumentActivityChanged()
 {
   bool visible = !IsHidden();
-  if (visible) {
-    // Visible -> Just pause hidden play time (no-op if already paused).
-    HiddenVideoStop();
-  } else if (mPlayTime.IsStarted()) {
-    // Not visible, play time is running -> Start hidden play time if needed.
-    HiddenVideoStart();
-  }
 
   if (mDecoder && !IsBeingDestroyed()) {
     mDecoder->NotifyOwnerActivityChanged(visible);
@@ -6288,18 +6069,10 @@ HTMLMediaElement::OnVisibilityChange(Visibility aNewVisibility)
         break;
     }
     case Visibility::APPROXIMATELY_NONVISIBLE: {
-      if (mPlayTime.IsStarted()) {
-        // Not visible, play time is running -> Start hidden play time if needed.
-        HiddenVideoStart();
-      }
-
       mDecoder->NotifyOwnerActivityChanged(false);
       break;
     }
     case Visibility::APPROXIMATELY_VISIBLE: {
-      // Visible -> Just pause hidden play time (no-op if already paused).
-      HiddenVideoStop();
-
       mDecoder->NotifyOwnerActivityChanged(true);
       break;
     }

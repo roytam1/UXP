@@ -14,7 +14,6 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/Casting.h"
 #include "mozilla/RefPtr.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/Unused.h"
 #include "nsContentUtils.h"
@@ -1072,37 +1071,6 @@ CanFalseStartCallback(PRFileDesc* fd, void* client_data, PRBool *canFalseStart)
   return SECSuccess;
 }
 
-static void
-AccumulateNonECCKeySize(Telemetry::ID probe, uint32_t bits)
-{
-  unsigned int value = bits <   512 ?  1 : bits ==   512 ?  2
-                     : bits <   768 ?  3 : bits ==   768 ?  4
-                     : bits <  1024 ?  5 : bits ==  1024 ?  6
-                     : bits <  1280 ?  7 : bits ==  1280 ?  8
-                     : bits <  1536 ?  9 : bits ==  1536 ? 10
-                     : bits <  2048 ? 11 : bits ==  2048 ? 12
-                     : bits <  3072 ? 13 : bits ==  3072 ? 14
-                     : bits <  4096 ? 15 : bits ==  4096 ? 16
-                     : bits <  8192 ? 17 : bits ==  8192 ? 18
-                     : bits < 16384 ? 19 : bits == 16384 ? 20
-                     : 0;
-}
-
-// XXX: This attempts to map a bit count to an ECC named curve identifier. In
-// the vast majority of situations, we only have the Suite B curves available.
-// In that case, this mapping works fine. If we were to have more curves
-// available, the mapping would be ambiguous since there could be multiple
-// named curves for a given size (e.g. secp256k1 vs. secp256r1). We punt on
-// that for now. See also NSS bug 323674.
-static void
-AccumulateECCCurve(Telemetry::ID probe, uint32_t bits)
-{
-  unsigned int value = bits == 256 ? 23 // P-256
-                     : bits == 384 ? 24 // P-384
-                     : bits == 521 ? 25 // P-521
-                     : 0; // Unknown
-}
-
 // In the case of session resumption, the AuthCertificate hook has been bypassed
 // (because we've previously successfully connected to our peer). That being the
 // case, we unfortunately don't know if the peer's server certificate verified
@@ -1216,11 +1184,6 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
   rv = SSL_GetChannelInfo(fd, &channelInfo, sizeof(channelInfo));
   MOZ_ASSERT(rv == SECSuccess);
   if (rv == SECSuccess) {
-    // Get the protocol version for telemetry
-    // 1=tls1, 2=tls1.1, 3=tls1.2
-    unsigned int versionEnum = channelInfo.protocolVersion & 0xFF;
-    MOZ_ASSERT(versionEnum > 0);
-
     SSLCipherSuiteInfo cipherInfo;
     rv = SSL_GetCipherSuiteInfo(channelInfo.cipherSuite, &cipherInfo,
                                 sizeof cipherInfo);
@@ -1231,16 +1194,10 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
       if (infoObject->IsFullHandshake()) {
         switch (channelInfo.keaType) {
           case ssl_kea_rsa:
-            AccumulateNonECCKeySize(Telemetry::SSL_KEA_RSA_KEY_SIZE_FULL,
-                                    channelInfo.keaKeyBits);
             break;
           case ssl_kea_dh:
-            AccumulateNonECCKeySize(Telemetry::SSL_KEA_DHE_KEY_SIZE_FULL,
-                                    channelInfo.keaKeyBits);
             break;
           case ssl_kea_ecdh:
-            AccumulateECCCurve(Telemetry::SSL_KEA_ECDHE_CURVE_FULL,
-                               channelInfo.keaKeyBits);
             break;
           default:
             MOZ_CRASH("impossible KEA");
@@ -1252,12 +1209,8 @@ void HandshakeCallback(PRFileDesc* fd, void* client_data) {
           switch (channelInfo.authType) {
             case ssl_auth_rsa:
             case ssl_auth_rsa_sign:
-              AccumulateNonECCKeySize(Telemetry::SSL_AUTH_RSA_KEY_SIZE_FULL,
-                                      channelInfo.authKeyBits);
               break;
             case ssl_auth_ecdsa:
-              AccumulateECCCurve(Telemetry::SSL_AUTH_ECDSA_CURVE_FULL,
-                                 channelInfo.authKeyBits);
               break;
             default:
               MOZ_CRASH("impossible auth algorithm");

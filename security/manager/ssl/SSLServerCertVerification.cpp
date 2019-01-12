@@ -102,7 +102,6 @@
 #include "ExtendedValidation.h"
 #include "NSSCertDBTrustDomain.h"
 #include "PSMRunnable.h"
-#include "RootCertificateTelemetryUtils.h"
 #include "ScopedNSSTypes.h"
 #include "SharedCertVerifier.h"
 #include "SharedSSLState.h"
@@ -112,7 +111,6 @@
 #include "mozilla/Casting.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/RefPtr.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Unused.h"
 #include "mozilla/net/DNS.h"
@@ -150,11 +148,6 @@ namespace {
 // do not use a nsCOMPtr to avoid static initializer/destructor
 nsIThreadPool* gCertVerificationThreadPool = nullptr;
 
-// We avoid using a mutex for the success case to avoid lock-related
-// performance issues. However, we do use a lock in the error case to simplify
-// the code, since performance in the error case is not important.
-Mutex* gSSLVerificationTelemetryMutex = nullptr;
-
 // We add a mutex to serialize PKCS11 database operations
 Mutex* gSSLVerificationPK11Mutex = nullptr;
 
@@ -173,7 +166,6 @@ Mutex* gSSLVerificationPK11Mutex = nullptr;
 void
 InitializeSSLServerCertVerificationThreads()
 {
-  gSSLVerificationTelemetryMutex = new Mutex("SSLVerificationTelemetryMutex");
   gSSLVerificationPK11Mutex = new Mutex("SSLVerificationPK11Mutex");
   // TODO: tuning, make parameters preferences
   // XXX: instantiate nsThreadPool directly, to make this more bulletproof.
@@ -206,10 +198,6 @@ void StopSSLServerCertVerificationThreads()
   if (gCertVerificationThreadPool) {
     gCertVerificationThreadPool->Shutdown();
     NS_RELEASE(gCertVerificationThreadPool);
-  }
-  if (gSSLVerificationTelemetryMutex) {
-    delete gSSLVerificationTelemetryMutex;
-    gSSLVerificationTelemetryMutex = nullptr;
   }
   if (gSSLVerificationPK11Mutex) {
     delete gSSLVerificationPK11Mutex;
@@ -244,8 +232,6 @@ public:
 
   SSLServerCertVerificationResult(nsNSSSocketInfo* infoObject,
                                   PRErrorCode errorCode,
-                                  Telemetry::ID telemetryID = Telemetry::HistogramCount,
-                                  uint32_t telemetryValue = -1,
                                   SSLErrorMessageType errorMessageType =
                                       PlainErrorMessage);
 
@@ -255,8 +241,6 @@ private:
 public:
   const PRErrorCode mErrorCode;
   const SSLErrorMessageType mErrorMessageType;
-  const Telemetry::ID mTelemetryID;
-  const uint32_t mTelemetryValue;
 };
 
 class CertErrorRunnable : public SyncRunnableBase
@@ -296,63 +280,6 @@ private:
   const PRErrorCode mErrorCodeTime;
   const uint32_t mProviderFlags;
 };
-
-// A probe value of 1 means "no error".
-uint32_t
-MapOverridableErrorToProbeValue(PRErrorCode errorCode)
-{
-  switch (errorCode)
-  {
-    case SEC_ERROR_UNKNOWN_ISSUER:                     return  2;
-    case SEC_ERROR_CA_CERT_INVALID:                    return  3;
-    case SEC_ERROR_UNTRUSTED_ISSUER:                   return  4;
-    case SEC_ERROR_EXPIRED_ISSUER_CERTIFICATE:         return  5;
-    case SEC_ERROR_UNTRUSTED_CERT:                     return  6;
-    case SEC_ERROR_INADEQUATE_KEY_USAGE:               return  7;
-    case SEC_ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED:  return  8;
-    case SSL_ERROR_BAD_CERT_DOMAIN:                    return  9;
-    case SEC_ERROR_EXPIRED_CERTIFICATE:                return 10;
-    case mozilla::pkix::MOZILLA_PKIX_ERROR_CA_CERT_USED_AS_END_ENTITY: return 11;
-    case mozilla::pkix::MOZILLA_PKIX_ERROR_V1_CERT_USED_AS_CA: return 12;
-    case mozilla::pkix::MOZILLA_PKIX_ERROR_INADEQUATE_KEY_SIZE: return 13;
-    case mozilla::pkix::MOZILLA_PKIX_ERROR_NOT_YET_VALID_CERTIFICATE: return 14;
-    case mozilla::pkix::MOZILLA_PKIX_ERROR_NOT_YET_VALID_ISSUER_CERTIFICATE:
-      return 15;
-    case SEC_ERROR_INVALID_TIME: return 16;
-    case mozilla::pkix::MOZILLA_PKIX_ERROR_EMPTY_ISSUER_NAME: return 17;
-  }
-  NS_WARNING("Unknown certificate error code. Does MapOverridableErrorToProbeValue "
-             "handle everything in DetermineCertOverrideErrors?");
-  return 0;
-}
-
-static uint32_t
-MapCertErrorToProbeValue(PRErrorCode errorCode)
-{
-  uint32_t probeValue;
-  switch (errorCode)
-  {
-    // see security/pkix/include/pkix/Result.h
-#define MOZILLA_PKIX_MAP(name, value, nss_name) case nss_name: probeValue = value; break;
-    MOZILLA_PKIX_MAP_LIST
-#undef MOZILLA_PKIX_MAP
-    default: return 0;
-  }
-
-  // Since FATAL_ERROR_FLAG is 0x800, fatal error values are much larger than
-  // non-fatal error values. To conserve space, we remap these so they start at
-  // (decimal) 90 instead of 0x800. Currently there are ~50 non-fatal errors
-  // mozilla::pkix might return, so saving space for 90 should be sufficient
-  // (similarly, there are 4 fatal errors, so saving space for 10 should also
-  // be sufficient).
-  static_assert(FATAL_ERROR_FLAG == 0x800,
-                "mozilla::pkix::FATAL_ERROR_FLAG is not what we were expecting");
-  if (probeValue & FATAL_ERROR_FLAG) {
-    probeValue ^= FATAL_ERROR_FLAG;
-    probeValue += 90;
-  }
-  return probeValue;
-}
 
 SECStatus
 DetermineCertOverrideErrors(const UniqueCERTCertificate& cert,
@@ -562,19 +489,6 @@ CertErrorRunnable::CheckCertOverrides()
     }
 
     if (!remaining_display_errors) {
-      // This can double- or triple-count one certificate with multiple
-      // different types of errors. Since this is telemetry and we just
-      // want a ballpark answer, we don't care.
-      if (mErrorCodeTrust != 0) {
-        uint32_t probeValue = MapOverridableErrorToProbeValue(mErrorCodeTrust);
-      }
-      if (mErrorCodeMismatch != 0) {
-        uint32_t probeValue = MapOverridableErrorToProbeValue(mErrorCodeMismatch);
-      }
-      if (mErrorCodeTime != 0) {
-        uint32_t probeValue = MapOverridableErrorToProbeValue(mErrorCodeTime);
-      }
-
       // all errors are covered by override rules, so let's accept the cert
       MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
              ("[%p][%p] All errors covered by override rules\n",
@@ -621,8 +535,6 @@ CertErrorRunnable::CheckCertOverrides()
   SSLServerCertVerificationResult* result =
     new SSLServerCertVerificationResult(mInfoObject,
                                         errorCodeToReport,
-                                        Telemetry::HistogramCount,
-                                        -1,
                                         OverridableCertErrorMessage);
 
   LogInvalidCertError(mInfoObject,
@@ -655,8 +567,6 @@ CreateCertErrorRunnable(CertVerifier& certVerifier,
 {
   MOZ_ASSERT(infoObject);
   MOZ_ASSERT(cert);
-
-  uint32_t probeValue = MapCertErrorToProbeValue(defaultErrorCodeToReport);
 
   uint32_t collected_errors = 0;
   PRErrorCode errorCodeTrust = 0;
@@ -861,334 +771,6 @@ BlockServerCertChangeForSpdy(nsNSSSocketInfo* infoObject,
   return SECFailure;
 }
 
-void
-AccumulateSubjectCommonNameTelemetry(const char* commonName,
-                                     bool commonNameInSubjectAltNames)
-{
-  if (!commonNameInSubjectAltNames) {
-    MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-           ("BR telemetry: common name '%s' not in subject alt. names "
-            "(or the subject alt. names extension is not present)\n",
-            commonName));
-  }
-}
-
-// Returns true if and only if commonName ends with altName (minus its leading
-// "*"). altName has already been checked to be of the form "*.<something>".
-// commonName may be NULL.
-static bool
-TryMatchingWildcardSubjectAltName(const char* commonName,
-                                  const nsACString& altName)
-{
-  return commonName &&
-         StringEndsWith(nsDependentCString(commonName), Substring(altName, 1));
-}
-
-// Gathers telemetry on Baseline Requirements 9.2.1 (Subject Alternative
-// Names Extension) and 9.2.2 (Subject Common Name Field).
-// Specifically:
-//  - whether or not the subject common name field is present
-//  - whether or not the subject alternative names extension is present
-//  - if there is a malformed entry in the subject alt. names extension
-//  - if there is an entry in the subject alt. names extension corresponding
-//    to the subject common name
-// Telemetry is only gathered for certificates that chain to a trusted root
-// in Mozilla's Root CA program.
-// certList consists of a validated certificate chain. The end-entity
-// certificate is first and the root (trust anchor) is last.
-void
-GatherBaselineRequirementsTelemetry(const UniqueCERTCertList& certList)
-{
-  CERTCertListNode* endEntityNode = CERT_LIST_HEAD(certList);
-  CERTCertListNode* rootNode = CERT_LIST_TAIL(certList);
-  PR_ASSERT(!(CERT_LIST_END(endEntityNode, certList) ||
-              CERT_LIST_END(rootNode, certList)));
-  if (CERT_LIST_END(endEntityNode, certList) ||
-      CERT_LIST_END(rootNode, certList)) {
-    return;
-  }
-  CERTCertificate* cert = endEntityNode->cert;
-  PR_ASSERT(cert);
-  if (!cert) {
-    return;
-  }
-  UniquePORTString commonName(CERT_GetCommonName(&cert->subject));
-  // This only applies to certificates issued by authorities in our root
-  // program.
-  CERTCertificate* rootCert = rootNode->cert;
-  PR_ASSERT(rootCert);
-  if (!rootCert) {
-    return;
-  }
-  bool isBuiltIn = false;
-  Result result = IsCertBuiltInRoot(rootCert, isBuiltIn);
-  if (result != Success || !isBuiltIn) {
-    MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-           ("BR telemetry: root certificate for '%s' is not a built-in root "
-            "(or IsCertBuiltInRoot failed)\n", commonName.get()));
-    return;
-  }
-  ScopedAutoSECItem altNameExtension;
-  SECStatus rv = CERT_FindCertExtension(cert, SEC_OID_X509_SUBJECT_ALT_NAME,
-                                        &altNameExtension);
-  if (rv != SECSuccess) {
-    MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-           ("BR telemetry: no subject alt names extension for '%s'\n",
-            commonName.get()));
-    AccumulateSubjectCommonNameTelemetry(commonName.get(), false);
-    return;
-  }
-
-  UniquePLArenaPool arena(PORT_NewArena(DER_DEFAULT_CHUNKSIZE));
-  CERTGeneralName* subjectAltNames =
-    CERT_DecodeAltNameExtension(arena.get(), &altNameExtension);
-  if (!subjectAltNames) {
-    MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-           ("BR telemetry: could not decode subject alt names for '%s'\n",
-            commonName.get()));
-    AccumulateSubjectCommonNameTelemetry(commonName.get(), false);
-    return;
-  }
-
-  CERTGeneralName* currentName = subjectAltNames;
-  bool commonNameInSubjectAltNames = false;
-  bool nonDNSNameOrIPAddressPresent = false;
-  bool malformedDNSNameOrIPAddressPresent = false;
-  bool nonFQDNPresent = false;
-  do {
-    nsAutoCString altName;
-    if (currentName->type == certDNSName) {
-      altName.Assign(BitwiseCast<char*, unsigned char*>(
-                       currentName->name.other.data),
-                     currentName->name.other.len);
-      nsDependentCString altNameWithoutWildcard(altName, 0);
-      if (StringBeginsWith(altNameWithoutWildcard, NS_LITERAL_CSTRING("*."))) {
-        altNameWithoutWildcard.Rebind(altName, 2);
-        commonNameInSubjectAltNames |=
-          TryMatchingWildcardSubjectAltName(commonName.get(), altName);
-      }
-      // net_IsValidHostName appears to return true for valid IP addresses,
-      // which would be invalid for a DNS name.
-      // Note that the net_IsValidHostName check will catch things like
-      // "a.*.example.com".
-      if (!net_IsValidHostName(altNameWithoutWildcard) ||
-          net_IsValidIPv4Addr(altName.get(), altName.Length()) ||
-          net_IsValidIPv6Addr(altName.get(), altName.Length())) {
-        MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-               ("BR telemetry: DNSName '%s' not valid (for '%s')\n",
-                altName.get(), commonName.get()));
-        malformedDNSNameOrIPAddressPresent = true;
-      }
-      if (!altName.Contains('.')) {
-        nonFQDNPresent = true;
-      }
-    } else if (currentName->type == certIPAddress) {
-      // According to DNS.h, this includes space for the null-terminator
-      char buf[net::kNetAddrMaxCStrBufSize] = { 0 };
-      PRNetAddr addr;
-      if (currentName->name.other.len == 4) {
-        addr.inet.family = PR_AF_INET;
-        memcpy(&addr.inet.ip, currentName->name.other.data,
-               currentName->name.other.len);
-        if (PR_NetAddrToString(&addr, buf, sizeof(buf) - 1) != PR_SUCCESS) {
-        MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-               ("BR telemetry: IPAddress (v4) not valid (for '%s')\n",
-                commonName.get()));
-          malformedDNSNameOrIPAddressPresent = true;
-        } else {
-          altName.Assign(buf);
-        }
-      } else if (currentName->name.other.len == 16) {
-        addr.inet.family = PR_AF_INET6;
-        memcpy(&addr.ipv6.ip, currentName->name.other.data,
-               currentName->name.other.len);
-        if (PR_NetAddrToString(&addr, buf, sizeof(buf) - 1) != PR_SUCCESS) {
-        MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-               ("BR telemetry: IPAddress (v6) not valid (for '%s')\n",
-                commonName.get()));
-          malformedDNSNameOrIPAddressPresent = true;
-        } else {
-          altName.Assign(buf);
-        }
-      } else {
-        MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-               ("BR telemetry: IPAddress not valid (for '%s')\n",
-                commonName.get()));
-        malformedDNSNameOrIPAddressPresent = true;
-      }
-    } else {
-      MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-             ("BR telemetry: non-DNSName, non-IPAddress present for '%s'\n",
-              commonName.get()));
-      nonDNSNameOrIPAddressPresent = true;
-    }
-    if (commonName && altName.Equals(commonName.get())) {
-      commonNameInSubjectAltNames = true;
-    }
-    currentName = CERT_GetNextGeneralName(currentName);
-  } while (currentName && currentName != subjectAltNames);
-
-  AccumulateSubjectCommonNameTelemetry(commonName.get(),
-                                       commonNameInSubjectAltNames);
-}
-
-// Gather telemetry on whether the end-entity cert for a server has the
-// required TLS Server Authentication EKU, or any others
-void
-GatherEKUTelemetry(const UniqueCERTCertList& certList)
-{
-  CERTCertListNode* endEntityNode = CERT_LIST_HEAD(certList);
-  CERTCertListNode* rootNode = CERT_LIST_TAIL(certList);
-  PR_ASSERT(!(CERT_LIST_END(endEntityNode, certList) ||
-              CERT_LIST_END(rootNode, certList)));
-  if (CERT_LIST_END(endEntityNode, certList) ||
-      CERT_LIST_END(rootNode, certList)) {
-    return;
-  }
-  CERTCertificate* endEntityCert = endEntityNode->cert;
-  PR_ASSERT(endEntityCert);
-  if (!endEntityCert) {
-    return;
-  }
-
-  // Only log telemetry if the root CA is built-in
-  CERTCertificate* rootCert = rootNode->cert;
-  PR_ASSERT(rootCert);
-  if (!rootCert) {
-    return;
-  }
-  bool isBuiltIn = false;
-  Result rv = IsCertBuiltInRoot(rootCert, isBuiltIn);
-  if (rv != Success || !isBuiltIn) {
-    return;
-  }
-
-  // Find the EKU extension, if present
-  bool foundEKU = false;
-  SECOidTag oidTag;
-  CERTCertExtension* ekuExtension = nullptr;
-  for (size_t i = 0; endEntityCert->extensions && endEntityCert->extensions[i];
-       i++) {
-    oidTag = SECOID_FindOIDTag(&endEntityCert->extensions[i]->id);
-    if (oidTag == SEC_OID_X509_EXT_KEY_USAGE) {
-      foundEKU = true;
-      ekuExtension = endEntityCert->extensions[i];
-    }
-  }
-
-  if (!foundEKU) {
-    return;
-  }
-
-  // Parse the EKU extension
-  UniqueCERTOidSequence ekuSequence(
-    CERT_DecodeOidSequence(&ekuExtension->value));
-  if (!ekuSequence) {
-    return;
-  }
-
-  // Search through the available EKUs
-  bool foundServerAuth = false;
-  bool foundOther = false;
-  for (SECItem** oids = ekuSequence->oids; oids && *oids; oids++) {
-    oidTag = SECOID_FindOIDTag(*oids);
-    if (oidTag == SEC_OID_EXT_KEY_USAGE_SERVER_AUTH) {
-      foundServerAuth = true;
-    } else {
-      foundOther = true;
-    }
-  }
-}
-
-// Gathers telemetry on which CA is the root of a given cert chain.
-// If the root is a built-in root, then the telemetry makes a count
-// by root.  Roots that are not built-in are counted in one bin.
-void
-GatherRootCATelemetry(const UniqueCERTCertList& certList)
-{
-  CERTCertListNode* rootNode = CERT_LIST_TAIL(certList);
-  PR_ASSERT(rootNode);
-  if (!rootNode) {
-    return;
-  }
-  PR_ASSERT(!CERT_LIST_END(rootNode, certList));
-  if (CERT_LIST_END(rootNode, certList)) {
-    return;
-  }
-  CERTCertificate* rootCert = rootNode->cert;
-  PR_ASSERT(rootCert);
-  if (!rootCert) {
-    return;
-  }
-  AccumulateTelemetryForRootCA(Telemetry::CERT_VALIDATION_SUCCESS_BY_CA,
-                               rootCert);
-}
-
-// These time are appoximate, i.e., doesn't account for leap seconds, etc
-const uint64_t ONE_WEEK_IN_SECONDS = (7 * (24 * 60 *60));
-const uint64_t ONE_YEAR_IN_WEEKS   = 52;
-
-// Gathers telemetry on the certificate lifetimes we observe in the wild
-void
-GatherEndEntityTelemetry(const UniqueCERTCertList& certList)
-{
-  CERTCertListNode* endEntityNode = CERT_LIST_HEAD(certList);
-  MOZ_ASSERT(endEntityNode && !CERT_LIST_END(endEntityNode, certList));
-  if (!endEntityNode || CERT_LIST_END(endEntityNode, certList)) {
-    return;
-  }
-
-  CERTCertificate* endEntityCert = endEntityNode->cert;
-  PR_ASSERT(endEntityCert);
-  if (!endEntityCert) {
-    return;
-  }
-
-  PRTime notBefore;
-  PRTime notAfter;
-
-  if (CERT_GetCertTimes(endEntityCert, &notBefore, &notAfter) != SECSuccess) {
-    return;
-  }
-
-  PR_ASSERT(notAfter > notBefore);
-  if (notAfter <= notBefore) {
-    return;
-  }
-
-  uint64_t durationInWeeks = (notAfter - notBefore)
-    / PR_USEC_PER_SEC
-    / ONE_WEEK_IN_SECONDS;
-
-  if (durationInWeeks > (2 * ONE_YEAR_IN_WEEKS)) {
-    durationInWeeks = (2 * ONE_YEAR_IN_WEEKS) + 1;
-  }
-}
-
-// There are various things that we want to measure about certificate
-// chains that we accept.  This is a single entry point for all of them.
-void
-GatherSuccessfulValidationTelemetry(const UniqueCERTCertList& certList)
-{
-  GatherBaselineRequirementsTelemetry(certList);
-  GatherEKUTelemetry(certList);
-  GatherRootCATelemetry(certList);
-  GatherEndEntityTelemetry(certList);
-}
-
-void
-GatherTelemetryForSingleSCT(const ct::SignedCertificateTimestamp& sct)
-{
-/* STUB */
-}
-
-void
-GatherCertificateTransparencyTelemetry(const UniqueCERTCertList& certList,
-                                       const CertificateTransparencyInfo& info)
-{
-/* STUB */
-}
-
 // Note: Takes ownership of |peerCertChain| if SECSuccess is not returned.
 SECStatus
 AuthCertificate(CertVerifier& certVerifier,
@@ -1214,7 +796,6 @@ AuthCertificate(CertVerifier& certVerifier,
     CertVerifier::OCSP_STAPLING_NEVER_CHECKED;
   KeySizeStatus keySizeStatus = KeySizeStatus::NeverChecked;
   SHA1ModeResult sha1ModeResult = SHA1ModeResult::NeverChecked;
-  PinningTelemetryInfo pinningTelemetryInfo;
   CertificateTransparencyInfo certificateTransparencyInfo;
 
   int flags = 0;
@@ -1233,12 +814,7 @@ AuthCertificate(CertVerifier& certVerifier,
                                                &evOidPolicy,
                                                &ocspStaplingStatus,
                                                &keySizeStatus, &sha1ModeResult,
-                                               &pinningTelemetryInfo,
                                                &certificateTransparencyInfo);
-
-  uint32_t evStatus = (rv != Success) ? 0                   // 0 = Failure
-                    : (evOidPolicy == SEC_OID_UNKNOWN) ? 1  // 1 = DV
-                    : 2;                                    // 2 = EV
 
   if (rv == Success) {
     // Certificate verification succeeded. Delete any potential record of
@@ -1246,9 +822,6 @@ AuthCertificate(CertVerifier& certVerifier,
     RememberCertErrorsTable::GetInstance().RememberCertHasError(infoObject,
                                                                 nullptr,
                                                                 SECSuccess);
-    GatherSuccessfulValidationTelemetry(certList);
-    GatherCertificateTransparencyTelemetry(certList,
-                                           certificateTransparencyInfo);
 
     // The connection may get terminated, for example, if the server requires
     // a client cert. Let's provide a minimal SSLStatus
@@ -1363,11 +936,6 @@ SSLServerCertVerificationJob::Run()
   if (mInfoObject->isAlreadyShutDown()) {
     error = SEC_ERROR_USER_CANCELLED;
   } else {
-    Telemetry::ID successTelemetry
-      = Telemetry::SSL_SUCCESFUL_CERT_VALIDATION_TIME_MOZILLAPKIX;
-    Telemetry::ID failureTelemetry
-      = Telemetry::SSL_INITIAL_FAILED_CERT_VALIDATION_TIME_MOZILLAPKIX;
-
     // Reset the error code here so we can detect if AuthCertificate fails to
     // set the error code if/when it fails.
     PR_SetError(0, 0);
@@ -1378,21 +946,15 @@ SSLServerCertVerificationJob::Run()
     MOZ_ASSERT(mPeerCertChain || rv != SECSuccess,
                "AuthCertificate() should take ownership of chain on failure");
     if (rv == SECSuccess) {
-      uint32_t interval = (uint32_t) ((TimeStamp::Now() - mJobStartTime).ToMilliseconds());
       RefPtr<SSLServerCertVerificationResult> restart(
-        new SSLServerCertVerificationResult(mInfoObject, 0,
-                                            successTelemetry, interval));
+        new SSLServerCertVerificationResult(mInfoObject, 0));
       restart->Dispatch();
       return NS_OK;
     }
 
     // Note: the interval is not calculated once as PR_GetError MUST be called
-    // before any other  function call
+    // before any other function call
     error = PR_GetError();
-    {
-      TimeStamp now = TimeStamp::Now();
-      MutexAutoLock telemetryMutex(*gSSLVerificationTelemetryMutex);
-    }
     if (error != 0) {
       RefPtr<CertErrorRunnable> runnable(
           CreateCertErrorRunnable(*mCertVerifier, error, mInfoObject, mCert,
@@ -1614,19 +1176,11 @@ AuthCertificateHook(void* arg, PRFileDesc* fd, PRBool checkSig, PRBool isServer)
 
 SSLServerCertVerificationResult::SSLServerCertVerificationResult(
         nsNSSSocketInfo* infoObject, PRErrorCode errorCode,
-        Telemetry::ID telemetryID, uint32_t telemetryValue,
         SSLErrorMessageType errorMessageType)
   : mInfoObject(infoObject)
   , mErrorCode(errorCode)
   , mErrorMessageType(errorMessageType)
-  , mTelemetryID(telemetryID)
-  , mTelemetryValue(telemetryValue)
 {
-// We accumulate telemetry for (only) successful validations on the main thread
-// to avoid adversely affecting performance by acquiring the mutex that we use
-// when accumulating the telemetry for unsuccessful validations. Unsuccessful
-// validations times are accumulated elsewhere.
-MOZ_ASSERT(telemetryID == Telemetry::HistogramCount || errorCode == 0);
 }
 
 void

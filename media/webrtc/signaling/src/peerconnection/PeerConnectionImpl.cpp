@@ -62,7 +62,6 @@
 #include "nsDOMDataChannel.h"
 #include "mozilla/dom/Performance.h"
 #include "mozilla/TimeStamp.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/PublicSSL.h"
 #include "nsXULAppAPI.h"
@@ -2167,9 +2166,6 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
     RemoveOldRemoteTracks(pco);
 
     pco->OnSetRemoteDescriptionSuccess(jrv);
-#if !defined(MOZILLA_EXTERNAL_LINKAGE)
-    startCallTelem();
-#endif
   }
 
   UpdateSignalingState(sdpType == mozilla::kJsepSdpRollback);
@@ -2992,12 +2988,6 @@ PeerConnectionImpl::PluginCrash(uint32_t aPluginID,
   return true;
 }
 
-void
-PeerConnectionImpl::RecordEndOfCallTelemetry() const
-{
-  /* STUB */
-}
-
 nsresult
 PeerConnectionImpl::CloseInt()
 {
@@ -3014,7 +3004,6 @@ PeerConnectionImpl::CloseInt()
   if (!mPrivateWindow) {
     RecordLongtermICEStatistics();
   }
-  RecordEndOfCallTelemetry();
   CSFLogInfo(logTag, "%s: Closing PeerConnectionImpl %s; "
              "ending call", __FUNCTION__, mHandle.c_str());
   if (mJsepSession) {
@@ -3109,9 +3098,6 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState,
                  "renegotiation.");
       fireNegotiationNeeded = true;
     }
-
-    // Telemetry: record info on the current state of streams/renegotiations/etc
-    // Note: this code gets run on rollbacks as well!
 
     // Update the max channels used with each direction for each type
     uint16_t receiving[SdpMediaSection::kMediaTypes];
@@ -3966,14 +3952,6 @@ PeerConnectionImpl::IceStreamReady(NrIceMediaStream *aStream)
 
   CSFLogDebug(logTag, "%s: %s", __FUNCTION__, aStream->name().c_str());
 }
-
-#if !defined(MOZILLA_EXTERNAL_LINKAGE)
-//Telemetry for when calls start
-void
-PeerConnectionImpl::startCallTelem() {
-  /* STUB */
-}
-#endif
 
 NS_IMETHODIMP
 PeerConnectionImpl::GetLocalStreams(nsTArray<RefPtr<DOMMediaStream > >& result)

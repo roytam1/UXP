@@ -594,8 +594,6 @@ public:
   bool PluginCrash(uint32_t aPluginID,
                    const nsAString& aPluginName);
 
-  void RecordEndOfCallTelemetry() const;
-
   nsresult InitializeDataChannel();
 
   NS_IMETHODIMP_TO_ERRORRESULT_RETREF(nsDOMDataChannel,
@@ -647,9 +645,6 @@ public:
   bool HasMedia() const;
 
 #if !defined(MOZILLA_EXTERNAL_LINKAGE)
-  // initialize telemetry for when calls start
-  void startCallTelem();
-
   nsresult BuildStatsQuery_m(
       mozilla::dom::MediaStreamTrack *aSelector,
       RTCStatsQuery *query);

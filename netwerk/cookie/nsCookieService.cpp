@@ -49,7 +49,6 @@
 #include "mozilla/storage.h"
 #include "mozilla/AutoRestore.h"
 #include "mozilla/FileUtils.h"
-#include "mozilla/Telemetry.h"
 #include "nsIAppsService.h"
 #include "mozIApplication.h"
 #include "mozIApplicationClearPrivateDataParams.h"
@@ -119,15 +118,6 @@ static const char kPrefMaxCookiesPerHost[]    = "network.cookie.maxPerHost";
 static const char kPrefCookiePurgeAge[]       = "network.cookie.purgeAge";
 static const char kPrefThirdPartySession[]    = "network.cookie.thirdparty.sessionOnly";
 static const char kCookieLeaveSecurityAlone[] = "network.cookie.leave-secure-alone";
-
-// For telemetry COOKIE_LEAVE_SECURE_ALONE
-#define BLOCKED_SECURE_SET_FROM_HTTP 0
-#define BLOCKED_DOWNGRADE_SECURE     1
-#define DOWNGRADE_SECURE_FROM_SECURE 2
-#define EVICTED_NEWER_INSECURE       3
-#define EVICTED_OLDEST_COOKIE        4
-#define EVICTED_PREFERRED_COOKIE     5
-#define EVICTING_SECURE_BLOCKED      6
 
 static void
 bindCookieParameters(mozIStorageBindingParamsArray *aParamsArray,
@@ -3592,9 +3582,6 @@ nsCookieService::AddInternal(const nsCookieKey             &aKey,
       MOZ_ASSERT(iter.entry);
 
       oldCookie = iter.Cookie();
-      if (oldestCookieTime > 0 && mLeaveSecureAlone) {
-        TelemetryForEvictingStaleCookie(oldCookie, oldestCookieTime);
-      }
 
       // remove the oldest cookie from the domain
       RemoveCookieFromList(iter);
@@ -4617,13 +4604,6 @@ nsCookieService::FindStaleCookie(nsCookieEntry *aEntry,
   }
 
   return actualOldestCookieTime;
-}
-
-void
-nsCookieService::TelemetryForEvictingStaleCookie(nsCookie *aEvicted,
-                                                 int64_t oldestCookieTime)
-{
-  /* STUB */
 }
 
 // count the number of cookies stored by a particular host. this is provided by the

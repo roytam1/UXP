@@ -132,7 +132,6 @@ class AsyncFreeSnowWhite : public Runnable
 public:
   NS_IMETHOD Run() override
   {
-      TimeStamp start = TimeStamp::Now();
       bool hadSnowWhiteObjects = nsCycleCollector_doDeferredDeletion();
       if (hadSnowWhiteObjects && !mContinuation) {
           mContinuation = true;
@@ -1235,8 +1234,6 @@ XPCJSContext::InterruptCallback(JSContext* cx)
     if (self->mSlowScriptCheckpoint.IsNull()) {
         self->mSlowScriptCheckpoint = TimeStamp::NowLoRes();
         self->mSlowScriptSecondHalf = false;
-        self->mSlowScriptActualWait = mozilla::TimeDuration();
-        self->mTimeoutAccumulated = false;
         return true;
     }
 
@@ -1257,8 +1254,6 @@ XPCJSContext::InterruptCallback(JSContext* cx)
     // If there's no limit, or we're within the limit, let it go.
     if (limit == 0 || duration.ToSeconds() < limit / 2.0)
         return true;
-
-    self->mSlowScriptActualWait += duration;
 
     // In order to guard against time changes or laptops going to sleep, we
     // don't trigger the slow script warning until (limit/2) seconds have
@@ -1309,12 +1304,6 @@ XPCJSContext::InterruptCallback(JSContext* cx)
         // just kill the page.
         mozilla::dom::HandlePrerenderingViolation(win->AsInner());
         return false;
-    }
-
-    // Accumulate slow script invokation delay.
-    if (!chrome && !self->mTimeoutAccumulated) {
-      uint32_t delay = uint32_t(self->mSlowScriptActualWait.ToMilliseconds() - (limit * 1000.0));
-      self->mTimeoutAccumulated = true;
     }
 
     // Show the prompt to the user, and kill if requested.
@@ -2949,12 +2938,6 @@ JSSizeOfTab(JSObject* objArg, size_t* jsObjectsSize, size_t* jsStringsSize,
 } // namespace xpc
 
 static void
-AccumulateTelemetryCallback(int id, uint32_t sample, const char* key)
-{
-/* STUB */
-}
-
-static void
 CompartmentNameCallback(JSContext* cx, JSCompartment* comp,
                         char* buf, size_t bufsize)
 {
@@ -3113,7 +3096,6 @@ XPCJSContext::XPCJSContext()
    mWatchdogManager(new WatchdogManager(this)),
    mAsyncSnowWhiteFreer(new AsyncFreeSnowWhite()),
    mSlowScriptSecondHalf(false),
-   mTimeoutAccumulated(false),
    mPendingResult(NS_OK)
 {
 }
@@ -3279,7 +3261,6 @@ XPCJSContext::Initialize()
     JS_AddWeakPointerCompartmentCallback(cx, WeakPointerCompartmentCallback, this);
     JS_SetWrapObjectCallbacks(cx, &WrapObjectCallbacks);
     js::SetPreserveWrapperCallback(cx, PreserveWrapper);
-    JS_SetAccumulateTelemetryCallback(cx, AccumulateTelemetryCallback);
     js::SetActivityCallback(cx, ActivityCallback, this);
     JS_AddInterruptCallback(cx, InterruptCallback);
     js::SetWindowProxyClass(cx, &OuterWindowProxyClass);
@@ -3444,8 +3425,6 @@ XPCJSContext::BeforeProcessTask(bool aMightBlock)
     // Start the slow script timer.
     mSlowScriptCheckpoint = mozilla::TimeStamp::NowLoRes();
     mSlowScriptSecondHalf = false;
-    mSlowScriptActualWait = mozilla::TimeDuration();
-    mTimeoutAccumulated = false;
 
     // As we may be entering a nested event loop, we need to
     // cancel any ongoing performance measurement.

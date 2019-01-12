@@ -597,7 +597,7 @@ Database::BackupAndReplaceDatabaseFile(nsCOMPtr<mozIStorageService>& aStorage)
   // If anything fails from this point on, we have a stale connection or
   // database file, and there's not much more we can do.
   // The only thing we can try to do is to replace the database on the next
-  // startup, and report the problem through telemetry.
+  // startup.
   {
     enum eCorruptDBReplaceStage : int8_t {
       stage_closing = 0,

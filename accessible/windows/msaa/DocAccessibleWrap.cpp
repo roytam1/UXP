@@ -12,7 +12,6 @@
 #include "Role.h"
 #include "RootAccessible.h"
 #include "sdnDocAccessible.h"
-#include "Statistics.h"
 
 #include "nsIDocShell.h"
 #include "nsIInterfaceRequestorUtils.h"
@@ -36,7 +35,6 @@ DocAccessibleWrap::~DocAccessibleWrap()
 
 IMPL_IUNKNOWN_QUERY_HEAD(DocAccessibleWrap)
   if (aIID == IID_ISimpleDOMDocument) {
-    statistics::ISimpleDOMUsed();
     *aInstancePtr = static_cast<ISimpleDOMDocument*>(new sdnDocAccessible(this));
     static_cast<IUnknown*>(*aInstancePtr)->AddRef();
     return S_OK;

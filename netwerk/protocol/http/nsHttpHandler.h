@@ -105,8 +105,7 @@ public:
     bool           EnforceAssocReq()         { return mEnforceAssocReq; }
 
     bool           IsPersistentHttpsCachingEnabled() { return mEnablePersistentHttpsCaching; }
-    bool           IsTelemetryEnabled() { return mTelemetryEnabled; }
-    bool           AllowExperiments() { return mTelemetryEnabled && mAllowExperiments; }
+    bool           AllowExperiments() { return mAllowExperiments; }
 
     bool           IsSpdyEnabled() { return mEnableSpdy; }
     bool           IsHttp2Enabled() { return mHttp2Enabled; }
@@ -508,9 +507,6 @@ private:
 
     // true in between init and shutdown states
     Atomic<bool, Relaxed> mHandlerActive;
-
-    // Whether telemetry is reported or not
-    uint32_t           mTelemetryEnabled : 1;
 
     // The value of network.allow-experiments
     uint32_t           mAllowExperiments : 1;

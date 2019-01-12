@@ -411,10 +411,6 @@ D3D11LayersCrashGuard::Initialize()
   }
 
   DriverCrashGuard::Initialize();
-
-  // If no telemetry states have been recorded, this will set the state to okay.
-  // Otherwise, it will have no effect.
-  RecordTelemetry(TelemetryState::Okay);
 }
 
 bool
@@ -447,28 +443,19 @@ D3D11LayersCrashGuard::UpdateEnvironment()
     return false;
   }
 
-  RecordTelemetry(TelemetryState::EnvironmentChanged);
   return true;
 }
 
 void
 D3D11LayersCrashGuard::LogCrashRecovery()
 {
-  RecordTelemetry(TelemetryState::RecoveredFromCrash);
   gfxCriticalNote << "D3D11 layers just crashed; D3D11 will be disabled.";
 }
 
 void
 D3D11LayersCrashGuard::LogFeatureDisabled()
 {
-  RecordTelemetry(TelemetryState::FeatureDisabled);
   gfxCriticalNote << "D3D11 layers disabled due to a prior crash.";
-}
-
-void
-D3D11LayersCrashGuard::RecordTelemetry(TelemetryState aState)
-{
-  /* STUB */
 }
 
 D3D9VideoCrashGuard::D3D9VideoCrashGuard(dom::ContentParent* aContentParent)

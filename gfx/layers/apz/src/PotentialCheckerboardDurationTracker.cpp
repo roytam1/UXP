@@ -6,8 +6,6 @@
 
 #include "PotentialCheckerboardDurationTracker.h"
 
-#include "mozilla/Telemetry.h"          // for Telemetry
-
 namespace mozilla {
 namespace layers {
 
@@ -20,10 +18,6 @@ PotentialCheckerboardDurationTracker::PotentialCheckerboardDurationTracker()
 void
 PotentialCheckerboardDurationTracker::CheckerboardSeen()
 {
-  // This might get called while mInCheckerboard is already true
-  if (!Tracking()) {
-    mCurrentPeriodStart = TimeStamp::Now();
-  }
   mInCheckerboard = true;
 }
 
@@ -32,9 +26,6 @@ PotentialCheckerboardDurationTracker::CheckerboardDone()
 {
   MOZ_ASSERT(Tracking());
   mInCheckerboard = false;
-  if (!Tracking()) {
-    /* Telemetry STUB */
-  }
 }
 
 void
@@ -50,19 +41,10 @@ PotentialCheckerboardDurationTracker::InTransform(bool aInTransform)
     // must be true (or we would have early-exited this function already).
     // Therefore, we are starting a potential checkerboard period.
     mInTransform = aInTransform;
-    mCurrentPeriodStart = TimeStamp::Now();
     return;
   }
 
   mInTransform = aInTransform;
-
-  if (!Tracking()) {
-    // Tracking() must have been true at the start of this function, or we
-    // would have taken the other !Tracking branch above. If it's false now,
-    // it means we just stopped tracking, so we are ending a potential
-    // checkerboard period.
-    /* Telemetry STUB */
-  }
 }
 
 bool

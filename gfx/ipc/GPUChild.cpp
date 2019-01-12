@@ -126,20 +126,6 @@ GPUChild::RecvNotifyUiObservers(const nsCString& aTopic)
 }
 
 bool
-GPUChild::RecvAccumulateChildHistogram(InfallibleTArray<Accumulation>&& aAccumulations)
-{
-  /* Telemetry STUB */
-  return true;
-}
-
-bool
-GPUChild::RecvAccumulateChildKeyedHistogram(InfallibleTArray<KeyedAccumulation>&& aAccumulations)
-{
-  /* Telemetry STUB */
-  return true;
-}
-
-bool
 GPUChild::RecvNotifyDeviceReset()
 {
   mHost->mListener->OnProcessDeviceReset(mHost);

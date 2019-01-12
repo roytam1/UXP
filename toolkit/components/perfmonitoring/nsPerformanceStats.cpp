@@ -662,9 +662,6 @@ nsPerformanceStatsService::nsPerformanceStatsService()
                                        nsPerformanceGroup::GroupScope::RUNTIME // scope
                                      ))
   , mIsHandlingUserInput(false)
-  , mProcessStayed(0)
-  , mProcessMoved(0)
-  , mProcessUpdateCounter(0)
   , mIsMonitoringPerCompartment(false)
   , mJankAlertThreshold(mozilla::MaxValue<uint64_t>::value) // By default, no alerts
   , mJankAlertBufferingDelay(1000 /* ms */)
@@ -953,13 +950,6 @@ nsPerformanceStatsService::SetJankAlertBufferingDelay(uint32_t value) {
   return NS_OK;
 }
 
-nsresult
-nsPerformanceStatsService::UpdateTelemetry()
-{
-  /* STUB */
-  return NS_OK;
-}
-
 
 /* static */ nsIPerformanceStats*
 nsPerformanceStatsService::GetStatsForGroup(const js::PerformanceGroup* group)
@@ -990,12 +980,6 @@ nsPerformanceStatsService::GetSnapshot(JSContext* cx, nsIPerformanceSnapshot * *
     if (group->isActive()) {
       snapshot->AppendComponentsStats(GetStatsForGroup(group));
     }
-  }
-
-  js::GetPerfMonitoringTestCpuRescheduling(cx, &mProcessStayed, &mProcessMoved);
-
-  if (++mProcessUpdateCounter % 10 == 0) {
-    mozilla::Unused << UpdateTelemetry();
   }
 
   snapshot.forget(aSnapshot);

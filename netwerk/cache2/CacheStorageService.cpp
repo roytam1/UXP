@@ -964,8 +964,6 @@ CacheStorageService::RegisterEntry(CacheEntry* aEntry)
   if (mShutdown || !aEntry->CanRegister())
     return;
 
-  TelemetryRecordEntryCreation(aEntry);
-
   LOG(("CacheStorageService::RegisterEntry [entry=%p]", aEntry));
 
   MemoryPool& pool = Pool(aEntry->IsUsingDisk());
@@ -982,8 +980,6 @@ CacheStorageService::UnregisterEntry(CacheEntry* aEntry)
 
   if (!aEntry->IsRegistered())
     return;
-
-  TelemetryRecordEntryRemoval(aEntry);
 
   LOG(("CacheStorageService::UnregisterEntry [entry=%p]", aEntry));
 
@@ -2016,100 +2012,6 @@ uint32_t CacheStorageService::CacheQueueSize(bool highPriority)
   RefPtr<CacheIOThread> thread = CacheFileIOManager::IOThread();
   MOZ_ASSERT(thread);
   return thread->QueueSize(highPriority);
-}
-
-// Telementry collection
-
-namespace {
-
-bool TelemetryEntryKey(CacheEntry const* entry, nsAutoCString& key)
-{
-  nsAutoCString entryKey;
-  nsresult rv = entry->HashingKey(entryKey);
-  if (NS_FAILED(rv))
-    return false;
-
-  if (entry->GetStorageID().IsEmpty()) {
-    // Hopefully this will be const-copied, saves some memory
-    key = entryKey;
-  } else {
-    key.Assign(entry->GetStorageID());
-    key.Append(':');
-    key.Append(entryKey);
-  }
-
-  return true;
-}
-
-} // namespace
-
-void
-CacheStorageService::TelemetryPrune(TimeStamp &now)
-{
-  static TimeDuration const oneMinute = TimeDuration::FromSeconds(60);
-  static TimeStamp dontPruneUntil = now + oneMinute;
-  if (now < dontPruneUntil)
-    return;
-
-  static TimeDuration const fifteenMinutes = TimeDuration::FromSeconds(900);
-  for (auto iter = mPurgeTimeStamps.Iter(); !iter.Done(); iter.Next()) {
-    if (now - iter.Data() > fifteenMinutes) {
-      // We are not interested in resurrection of entries after 15 minutes
-      // of time.  This is also the limit for the telemetry.
-      iter.Remove();
-    }
-  }
-  dontPruneUntil = now + oneMinute;
-}
-
-void
-CacheStorageService::TelemetryRecordEntryCreation(CacheEntry const* entry)
-{
-  MOZ_ASSERT(CacheStorageService::IsOnManagementThread());
-
-  nsAutoCString key;
-  if (!TelemetryEntryKey(entry, key))
-    return;
-
-  TimeStamp now = TimeStamp::NowLoRes();
-  TelemetryPrune(now);
-
-  // When an entry is craeted (registered actually) we check if there is
-  // a timestamp marked when this very same cache entry has been removed
-  // (deregistered) because of over-memory-limit purging.  If there is such
-  // a timestamp found accumulate telemetry on how long the entry was away.
-  TimeStamp timeStamp;
-  if (!mPurgeTimeStamps.Get(key, &timeStamp))
-    return;
-
-  mPurgeTimeStamps.Remove(key);
-
-}
-
-void
-CacheStorageService::TelemetryRecordEntryRemoval(CacheEntry const* entry)
-{
-  MOZ_ASSERT(CacheStorageService::IsOnManagementThread());
-
-  // Doomed entries must not be considered, we are only interested in purged
-  // entries.  Note that the mIsDoomed flag is always set before deregistration
-  // happens.
-  if (entry->IsDoomed())
-    return;
-
-  nsAutoCString key;
-  if (!TelemetryEntryKey(entry, key))
-    return;
-
-  // When an entry is removed (deregistered actually) we put a timestamp for this
-  // entry to the hashtable so that when the entry is created (registered) again
-  // we know how long it was away.  Also accumulate number of AsyncOpen calls on
-  // the entry, this tells us how efficiently the pool actually works.
-
-  TimeStamp now = TimeStamp::NowLoRes();
-  TelemetryPrune(now);
-  mPurgeTimeStamps.Put(key, now);
-
 }
 
 // nsIMemoryReporter

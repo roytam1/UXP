@@ -9,7 +9,6 @@
 #include "ScopedNSSTypes.h"
 #include "mozilla/Casting.h"
 #include "mozilla/Logging.h"
-#include "mozilla/Telemetry.h"
 #include "nsCOMArray.h"
 #include "nsIAsyncInputStream.h"
 #include "nsIFile.h"
@@ -85,7 +84,6 @@ private:
 //// BackgroundFileSaver
 
 uint32_t BackgroundFileSaver::sThreadCount = 0;
-uint32_t BackgroundFileSaver::sTelemetryMaxThreadCount = 0;
 
 BackgroundFileSaver::BackgroundFileSaver()
 : mControlThread(nullptr)
@@ -156,9 +154,6 @@ BackgroundFileSaver::Init()
   NS_ENSURE_SUCCESS(rv, rv);
 
   sThreadCount++;
-  if (sThreadCount > sTelemetryMaxThreadCount) {
-    sTelemetryMaxThreadCount = sThreadCount;
-  }
 
   return NS_OK;
 }
@@ -792,14 +787,6 @@ BackgroundFileSaver::NotifySaveComplete()
   mWorkerThread->Shutdown();
 
   sThreadCount--;
-
-  // When there are no more active downloads, we consider the download session
-  // finished. We record the maximum number of concurrent downloads reached
-  // during the session in a telemetry histogram, and we reset the maximum
-  // thread counter for the next download session
-  if (sThreadCount == 0) {
-    sTelemetryMaxThreadCount = 0;
-  }
 
   return NS_OK;
 }

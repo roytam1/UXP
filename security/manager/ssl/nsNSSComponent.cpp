@@ -19,7 +19,6 @@
 #include "mozilla/Services.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/SyncRunnable.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Unused.h"
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsCRT.h"
@@ -785,13 +784,6 @@ nsNSSComponent::UnloadFamilySafetyRoot()
 // 2: detect Family Safety mode and import the root
 const char* kFamilySafetyModePref = "security.family_safety.mode";
 
-// The telemetry gathered by this function is as follows:
-// 0-2: the value of the Family Safety mode pref
-// 3: detecting Family Safety mode failed
-// 4: Family Safety was not enabled
-// 5: Family Safety was enabled
-// 6: failed to import the Family Safety root
-// 7: successfully imported the root
 void
 nsNSSComponent::MaybeEnableFamilySafetyCompatibility()
 {
@@ -1564,15 +1556,6 @@ CipherSuiteChangeObserver::Observe(nsISupports* aSubject,
 void nsNSSComponent::setValidationOptions(bool isInitialSetting,
                                           const MutexAutoLock& lock)
 {
-  // This preference controls whether we do OCSP fetching and does not affect
-  // OCSP stapling.
-  // 0 = disabled, 1 = enabled
-  int32_t ocspEnabled = Preferences::GetInt("security.OCSP.enabled",
-                                            OCSP_ENABLED_DEFAULT);
-
-  bool ocspRequired = ocspEnabled &&
-    Preferences::GetBool("security.OCSP.require", false);
-
   bool ocspStaplingEnabled = Preferences::GetBool("security.ssl.enable_ocsp_stapling",
                                                   true);
   PublicSSLState()->SetOCSPStaplingEnabled(ocspStaplingEnabled);

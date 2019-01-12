@@ -108,9 +108,6 @@ nsLoadGroup::nsLoadGroup(nsISupports* outer)
     , mStatus(NS_OK)
     , mPriority(PRIORITY_NORMAL)
     , mIsCanceling(false)
-    , mDefaultLoadIsTimed(false)
-    , mTimedRequests(0)
-    , mCachedRequests(0)
     , mTimedNonCachedRequestsUntilOnEndPageLoad(0)
 {
     NS_INIT_AGGREGATED(outer);
@@ -431,13 +428,6 @@ nsLoadGroup::SetDefaultLoadRequest(nsIRequest *aRequest)
         // in particular, nsIChannel::LOAD_DOCUMENT_URI...
         //
         mLoadFlags &= nsIRequest::LOAD_REQUESTMASK;
-
-        nsCOMPtr<nsITimedChannel> timedChannel = do_QueryInterface(aRequest);
-        mDefaultLoadIsTimed = timedChannel != nullptr;
-        if (mDefaultLoadIsTimed) {
-            timedChannel->GetChannelCreation(&mDefaultRequestCreationTime);
-            timedChannel->SetTimingEnabled(true);
-        }
     }
     // Else, do not change the group's load flags (see bug 95981)
     return NS_OK;
@@ -491,10 +481,6 @@ nsLoadGroup::AddRequest(nsIRequest *request, nsISupports* ctxt)
 
     if (mPriority != 0)
         RescheduleRequest(request, mPriority);
-
-    nsCOMPtr<nsITimedChannel> timedChannel = do_QueryInterface(request);
-    if (timedChannel)
-        timedChannel->SetTimingEnabled(true);
 
     if (!(flags & nsIRequest::LOAD_BACKGROUND)) {
         // Update the count of foreground URIs..
@@ -572,10 +558,6 @@ nsLoadGroup::RemoveRequest(nsIRequest *request, nsISupports* ctxt,
     }
 
     mRequests.RemoveEntry(entry);
-
-    if (mRequests.EntryCount() == 0) {
-        TelemetryReport();
-    }
 
     // Undo any group priority delta...
     if (mPriority != 0)
@@ -776,82 +758,6 @@ nsLoadGroup::SetDefaultLoadFlags(uint32_t aFlags)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-
-void
-nsLoadGroup::TelemetryReport()
-{
-  /* STUB */
-    mTimedRequests = 0;
-    mCachedRequests = 0;
-    mDefaultLoadIsTimed = false;
-}
-
-void
-nsLoadGroup::TelemetryReportChannel(nsITimedChannel *aTimedChannel,
-                                    bool aDefaultRequest)
-{
-    nsresult rv;
-    bool timingEnabled;
-    rv = aTimedChannel->GetTimingEnabled(&timingEnabled);
-    if (NS_FAILED(rv) || !timingEnabled)
-        return;
-
-    TimeStamp asyncOpen;
-    rv = aTimedChannel->GetAsyncOpen(&asyncOpen);
-    // We do not check !asyncOpen.IsNull() bellow, prevent ASSERTIONs this way
-    if (NS_FAILED(rv) || asyncOpen.IsNull())
-        return;
-
-    TimeStamp cacheReadStart;
-    rv = aTimedChannel->GetCacheReadStart(&cacheReadStart);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp cacheReadEnd;
-    rv = aTimedChannel->GetCacheReadEnd(&cacheReadEnd);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp domainLookupStart;
-    rv = aTimedChannel->GetDomainLookupStart(&domainLookupStart);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp domainLookupEnd;
-    rv = aTimedChannel->GetDomainLookupEnd(&domainLookupEnd);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp connectStart;
-    rv = aTimedChannel->GetConnectStart(&connectStart);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp secureConnectionStart;
-    rv = aTimedChannel->GetSecureConnectionStart(&secureConnectionStart);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp connectEnd;
-    rv = aTimedChannel->GetConnectEnd(&connectEnd);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp requestStart;
-    rv = aTimedChannel->GetRequestStart(&requestStart);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp responseStart;
-    rv = aTimedChannel->GetResponseStart(&responseStart);
-    if (NS_FAILED(rv))
-        return;
-
-    TimeStamp responseEnd;
-    rv = aTimedChannel->GetResponseEnd(&responseEnd);
-    if (NS_FAILED(rv))
-        return;
-}
 
 nsresult nsLoadGroup::MergeLoadFlags(nsIRequest *aRequest,
                                      nsLoadFlags& outFlags)

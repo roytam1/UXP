@@ -36,7 +36,6 @@
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
-#include "mozilla/Telemetry.h"
 #include "gfxMathTable.h"
 #include "gfxSVGGlyphs.h"
 #include "gfx2DGlue.h"
@@ -2572,8 +2571,6 @@ gfxFont::GetShapedWord(DrawTarget *aDrawTarget,
         return nullptr;
     }
     gfxShapedWord* sw = entry->mShapedWord.get();
-
-    bool isContent = !mStyle.systemFont;
 
     if (sw) {
         sw->ResetAge();

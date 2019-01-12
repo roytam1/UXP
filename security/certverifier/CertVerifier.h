@@ -11,7 +11,6 @@
 #include "CTVerifyResult.h"
 #include "OCSPCache.h"
 #include "ScopedNSSTypes.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/UniquePtr.h"
 #include "pkix/pkixtypes.h"
 
@@ -65,22 +64,6 @@ enum class SHA1ModeResult {
 };
 
 enum class NetscapeStepUpPolicy : uint32_t;
-
-class PinningTelemetryInfo
-{
-public:
-  PinningTelemetryInfo() { Reset(); }
-
-  // Should we accumulate pinning telemetry for the result?
-  bool accumulateResult;
-  Telemetry::ID certPinningResultHistogram;
-  int32_t certPinningResultBucket;
-  // Should we accumulate telemetry for the root?
-  bool accumulateForRoot;
-  int32_t rootBucket;
-
-  void Reset() { accumulateForRoot = false; accumulateResult = false; }
-};
 
 class CertificateTransparencyInfo
 {
@@ -137,7 +120,6 @@ public:
    /*optional out*/ OCSPStaplingStatus* ocspStaplingStatus = nullptr,
    /*optional out*/ KeySizeStatus* keySizeStatus = nullptr,
    /*optional out*/ SHA1ModeResult* sha1ModeResult = nullptr,
-   /*optional out*/ PinningTelemetryInfo* pinningTelemetryInfo = nullptr,
    /*optional out*/ CertificateTransparencyInfo* ctInfo = nullptr);
 
   mozilla::pkix::Result VerifySSLServerCert(
@@ -156,7 +138,6 @@ public:
    /*optional out*/ OCSPStaplingStatus* ocspStaplingStatus = nullptr,
    /*optional out*/ KeySizeStatus* keySizeStatus = nullptr,
    /*optional out*/ SHA1ModeResult* sha1ModeResult = nullptr,
-   /*optional out*/ PinningTelemetryInfo* pinningTelemetryInfo = nullptr,
    /*optional out*/ CertificateTransparencyInfo* ctInfo = nullptr);
 
   enum PinningMode {

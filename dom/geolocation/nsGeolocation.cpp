@@ -7,7 +7,6 @@
 #include "nsXULAppAPI.h"
 
 #include "mozilla/dom/ContentChild.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/UniquePtr.h"
 
 #include "nsGeolocation.h"
@@ -70,7 +69,6 @@ class nsGeolocationRequest final
                        GeoPositionCallback aCallback,
                        GeoPositionErrorCallback aErrorCallback,
                        UniquePtr<PositionOptions>&& aOptions,
-                       uint8_t aProtocolType,
                        bool aWatchPositionRequest = false,
                        int32_t aWatchId = 0);
 
@@ -119,7 +117,6 @@ class nsGeolocationRequest final
   int32_t mWatchId;
   bool mShutdown;
   nsCOMPtr<nsIContentPermissionRequester> mRequester;
-  uint8_t mProtocolType;
 };
 
 static UniquePtr<PositionOptions>
@@ -287,7 +284,6 @@ nsGeolocationRequest::nsGeolocationRequest(Geolocation* aLocator,
                                            GeoPositionCallback aCallback,
                                            GeoPositionErrorCallback aErrorCallback,
                                            UniquePtr<PositionOptions>&& aOptions,
-                                           uint8_t aProtocolType,
                                            bool aWatchPositionRequest,
                                            int32_t aWatchId)
   : mIsWatchPositionRequest(aWatchPositionRequest),
@@ -296,8 +292,7 @@ nsGeolocationRequest::nsGeolocationRequest(Geolocation* aLocator,
     mOptions(Move(aOptions)),
     mLocator(aLocator),
     mWatchId(aWatchId),
-    mShutdown(false),
-    mProtocolType(aProtocolType)
+    mShutdown(false)
 {
   if (nsCOMPtr<nsPIDOMWindowInner> win =
       do_QueryReferent(mLocator->GetOwner())) {
@@ -949,8 +944,7 @@ NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(Geolocation,
                                       mPendingRequests)
 
 Geolocation::Geolocation()
-: mProtocolType(ProtocolType::OTHER)
-, mLastWatchId(0)
+: mLastWatchId(0)
 {
 }
 
@@ -982,23 +976,6 @@ Geolocation::Init(nsPIDOMWindowInner* aContentDom)
     nsCOMPtr<nsIURI> uri;
     nsresult rv = mPrincipal->GetURI(getter_AddRefs(uri));
     NS_ENSURE_SUCCESS(rv, rv);
-
-    if (uri) {
-      bool isHttp;
-      rv = uri->SchemeIs("http", &isHttp);
-      NS_ENSURE_SUCCESS(rv, rv);
-
-      bool isHttps;
-      rv = uri->SchemeIs("https", &isHttps);
-      NS_ENSURE_SUCCESS(rv, rv);
-
-      // Store the protocol to send via telemetry later.
-      if (isHttp) {
-        mProtocolType = ProtocolType::HTTP;
-      } else if (isHttps) {
-        mProtocolType = ProtocolType::HTTPS;
-      }
-    }
   }
 
   // If no aContentDom was passed into us, we are being used
@@ -1185,7 +1162,7 @@ Geolocation::GetCurrentPosition(GeoPositionCallback callback,
 
   RefPtr<nsGeolocationRequest> request =
     new nsGeolocationRequest(this, Move(callback), Move(errorCallback),
-                             Move(options), static_cast<uint8_t>(mProtocolType),
+                             Move(options),
                              false);
 
   if (!sGeoEnabled) {
@@ -1263,7 +1240,7 @@ Geolocation::WatchPosition(GeoPositionCallback aCallback,
   RefPtr<nsGeolocationRequest> request =
     new nsGeolocationRequest(this, Move(aCallback), Move(aErrorCallback),
                              Move(aOptions),
-                             static_cast<uint8_t>(mProtocolType), true, *aRv);
+                             true, *aRv);
 
   if (!sGeoEnabled) {
     nsCOMPtr<nsIRunnable> ev = new RequestAllowEvent(false, request);

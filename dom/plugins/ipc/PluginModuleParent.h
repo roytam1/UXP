@@ -115,8 +115,6 @@ public:
         return mPluginName + mPluginVersion;
     }
 
-    void AccumulateModuleInitBlockedTime();
-
     virtual nsresult GetRunID(uint32_t* aRunID) override;
     virtual void SetHasLocalInstance() override {
         mHadLocalInstance = true;
@@ -315,7 +313,6 @@ protected:
     nsString mBrowserDumpID;
     nsString mHangID;
     RefPtr<nsIObserver> mProfilerObserver;
-    TimeDuration mTimeBlocked;
     nsCString mPluginName;
     nsCString mPluginVersion;
     int32_t mSandboxLevel;

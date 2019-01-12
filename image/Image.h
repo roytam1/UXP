@@ -220,8 +220,6 @@ public:
   virtual void SetHasError() = 0;
 
   virtual ImageURL* GetURI() = 0;
-
-  virtual void ReportUseCounters() { }
 };
 
 class ImageResource : public Image

@@ -61,9 +61,6 @@ public:
                              nsISupports* aExtra,
                              nsIPrincipal* aRequestPrincipal,
                              int16_t* aDecision);
-  static void AccumulateMixedContentHSTS(nsIURI* aURI,
-                                         bool aActive);
-
 
   static bool sBlockMixedScript;
   static bool sBlockMixedDisplay;

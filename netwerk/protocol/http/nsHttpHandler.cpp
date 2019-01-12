@@ -90,7 +90,6 @@
 #define BROWSER_PREF_PREFIX     "browser.cache."
 #define DONOTTRACK_HEADER_ENABLED "privacy.donottrackheader.enabled"
 #define H2MANDATORY_SUITE        "security.ssl3.ecdhe_rsa_aes_128_gcm_sha256"
-#define TELEMETRY_ENABLED        "toolkit.telemetry.enabled"
 #define ALLOW_EXPERIMENTS        "network.allow-experiments"
 #define SAFE_HINT_HEADER_VALUE   "safeHint.enabled"
 #define SECURITY_PREFIX          "security."
@@ -209,7 +208,6 @@ nsHttpHandler::nsHttpHandler()
     , mSafeHintEnabled(false)
     , mParentalControlEnabled(false)
     , mHandlerActive(false)
-    , mTelemetryEnabled(false)
     , mAllowExperiments(true)
     , mDebugObservations(false)
     , mEnableSpdy(false)
@@ -305,7 +303,6 @@ nsHttpHandler::Init()
         prefBranch->AddObserver(INTL_ACCEPT_LANGUAGES, this, true);
         prefBranch->AddObserver(BROWSER_PREF("disk_cache_ssl"), this, true);
         prefBranch->AddObserver(DONOTTRACK_HEADER_ENABLED, this, true);
-        prefBranch->AddObserver(TELEMETRY_ENABLED, this, true);
         prefBranch->AddObserver(H2MANDATORY_SUITE, this, true);
         prefBranch->AddObserver(HTTP_PREF("tcp_keepalive.short_lived_connections"), this, true);
         prefBranch->AddObserver(HTTP_PREF("tcp_keepalive.long_lived_connections"), this, true);
@@ -1546,19 +1543,6 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
     // toggle to true anytime a token bucket related pref is changed.. that
     // includes telemetry and allow-experiments because of the abtest profile
     bool requestTokenBucketUpdated = false;
-
-    //
-    // Telemetry
-    //
-
-    if (PREF_CHANGED(TELEMETRY_ENABLED)) {
-        cVar = false;
-        requestTokenBucketUpdated = true;
-        rv = prefs->GetBoolPref(TELEMETRY_ENABLED, &cVar);
-        if (NS_SUCCEEDED(rv)) {
-            mTelemetryEnabled = cVar;
-        }
-    }
 
     // "security.ssl3.ecdhe_rsa_aes_128_gcm_sha256" is the required h2 interop
     // suite.

@@ -27,7 +27,6 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
 #include "mozilla/StartupTimeline.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Unused.h"
 #include "Navigator.h"
 #include "URIUtils.h"
@@ -194,7 +193,6 @@
 #include "nsSandboxFlags.h"
 #include "nsXULAppAPI.h"
 #include "nsDOMNavigationTiming.h"
-#include "nsISecurityUITelemetry.h"
 #include "nsIAppsService.h"
 #include "nsDSURIContentListener.h"
 #include "nsDocShellLoadTypes.h"
@@ -4985,15 +4983,6 @@ nsDocShell::DisplayLoadError(nsresult aError, nsIURI* aURI,
           cssClass.AssignLiteral("badStsCert");
         }
 
-        uint32_t bucketId;
-        if (isStsHost) {
-          // measuring STS separately allows us to measure click through
-          // rates easily
-          bucketId = nsISecurityUITelemetry::WARNING_BAD_CERT_TOP_STS;
-        } else {
-          bucketId = nsISecurityUITelemetry::WARNING_BAD_CERT_TOP;
-        }
-
         // See if an alternate cert error page is registered
         nsAdoptingCString alternateErrorPage =
           Preferences::GetCString("security.alternate_certificate_error_page");
@@ -5021,23 +5010,12 @@ nsDocShell::DisplayLoadError(nsresult aError, nsIURI* aURI,
       errorPage.Assign(alternateErrorPage);
     }
 
-    uint32_t bucketId;
-    bool sendTelemetry = false;
     if (NS_ERROR_PHISHING_URI == aError) {
-      sendTelemetry = true;
       error.AssignLiteral("deceptiveBlocked");
-      bucketId = IsFrame() ? nsISecurityUITelemetry::WARNING_PHISHING_PAGE_FRAME
-                           : nsISecurityUITelemetry::WARNING_PHISHING_PAGE_TOP;
     } else if (NS_ERROR_MALWARE_URI == aError) {
-      sendTelemetry = true;
       error.AssignLiteral("malwareBlocked");
-      bucketId = IsFrame() ? nsISecurityUITelemetry::WARNING_MALWARE_PAGE_FRAME
-                           : nsISecurityUITelemetry::WARNING_MALWARE_PAGE_TOP;
     } else if (NS_ERROR_UNWANTED_URI == aError) {
-      sendTelemetry = true;
       error.AssignLiteral("unwantedBlocked");
-      bucketId = IsFrame() ? nsISecurityUITelemetry::WARNING_UNWANTED_PAGE_FRAME
-                           : nsISecurityUITelemetry::WARNING_UNWANTED_PAGE_TOP;
     }
 
     cssClass.AssignLiteral("blacklist");

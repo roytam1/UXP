@@ -4033,8 +4033,6 @@ nsDOMWindowUtils::ForceUseCounterFlush(nsIDOMNode *aNode)
   if (nsCOMPtr<nsIDocument> doc = do_QueryInterface(aNode)) {
     mozilla::css::ImageLoader* loader = doc->StyleImageLoader();
     loader->FlushUseCounters();
-
-    static_cast<nsDocument*>(doc.get())->ReportUseCounters();
     return NS_OK;
   }
 

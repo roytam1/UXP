@@ -117,14 +117,6 @@ private:
 
   friend class PendingDBLookup;
 
-  // Telemetry states.
-  // Status of the remote response (valid or not).
-  enum SERVER_RESPONSE_TYPES {
-    SERVER_RESPONSE_VALID = 0,
-    SERVER_RESPONSE_FAILED = 1,
-    SERVER_RESPONSE_INVALID = 2,
-  };
-
   // Number of blocklist and allowlist hits we have seen.
   uint32_t mBlocklistCount;
   uint32_t mAllowlistCount;

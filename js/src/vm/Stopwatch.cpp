@@ -638,13 +638,6 @@ GetStopwatchIsMonitoringCPOW(JSContext* cx)
 }
 
 JS_PUBLIC_API(void)
-GetPerfMonitoringTestCpuRescheduling(JSContext* cx, uint64_t* stayed, uint64_t* moved)
-{
-    *stayed = cx->performanceMonitoring.testCpuRescheduling.stayed;
-    *moved = cx->performanceMonitoring.testCpuRescheduling.moved;
-}
-
-JS_PUBLIC_API(void)
 AddCPOWPerformanceDelta(JSContext* cx, uint64_t delta)
 {
     cx->performanceMonitoring.totalCPOWTime += delta;

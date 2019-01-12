@@ -38,7 +38,6 @@
 #include "mozilla/ReentrantMonitor.h"   // for ReentrantMonitorAutoEnter, etc
 #include "mozilla/RefPtr.h"             // for RefPtr
 #include "mozilla/StaticPtr.h"          // for StaticAutoPtr
-#include "mozilla/Telemetry.h"          // for Telemetry
 #include "mozilla/TimeStamp.h"          // for TimeDuration, TimeStamp
 #include "mozilla/dom/CheckerboardReportService.h" // for CheckerboardEventStorage
              // note: CheckerboardReportService.h actually lives in gfx/layers/apz/util/
@@ -1686,25 +1685,6 @@ void AsyncPanZoomController::DoDelayedRequestContentRepaint()
   mPinchPaintTimerSet = false;
 }
 
-static ScrollInputMethod
-ScrollInputMethodForWheelDeltaType(ScrollWheelInput::ScrollDeltaType aDeltaType)
-{
-  switch (aDeltaType) {
-    case ScrollWheelInput::SCROLLDELTA_LINE: {
-      return ScrollInputMethod::ApzWheelLine;
-    }
-    case ScrollWheelInput::SCROLLDELTA_PAGE: {
-      return ScrollInputMethod::ApzWheelPage;
-    }
-    case ScrollWheelInput::SCROLLDELTA_PIXEL: {
-      return ScrollInputMethod::ApzWheelPixel;
-    }
-    default:
-      MOZ_ASSERT_UNREACHABLE("unexpected scroll delta type");
-      return ScrollInputMethod::ApzWheelLine;
-  }
-}
-
 nsEventStatus AsyncPanZoomController::OnScrollWheel(const ScrollWheelInput& aEvent)
 {
   ParentLayerPoint delta = GetScrollWheelDelta(aEvent);
@@ -3229,11 +3209,10 @@ AsyncPanZoomController::ReportCheckerboard(const TimeStamp& aSampleTime)
   mLastCheckerboardReport = aSampleTime;
 
   bool recordTrace = gfxPrefs::APZRecordCheckerboarding();
-  bool forTelemetry = Telemetry::CanRecordExtended();
   uint32_t magnitude = GetCheckerboardMagnitude();
 
   MutexAutoLock lock(mCheckerboardEventLock);
-  if (!mCheckerboardEvent && (recordTrace || forTelemetry)) {
+  if (!mCheckerboardEvent && recordTrace) {
     mCheckerboardEvent = MakeUnique<CheckerboardEvent>(recordTrace);
   }
   mPotentialCheckerboardTracker.InTransform(IsTransformingState(mState));

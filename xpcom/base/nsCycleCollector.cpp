@@ -185,7 +185,6 @@
 #include "mozilla/AutoGlobalTimelineMarker.h"
 #include "mozilla/Likely.h"
 #include "mozilla/PoisonIOInterposer.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/ThreadLocal.h"
 
 using namespace mozilla;
@@ -3488,7 +3487,6 @@ nsCycleCollector::FixGrayBits(bool aForceGC, TimeLog& aTimeLog)
     aTimeLog.Checkpoint("FixWeakMappingGrayBits");
 
     bool needGC = !mJSContext->AreGCGrayBitsValid();
-    // Only do a telemetry ping for non-shutdown CCs.
     if (!needGC) {
       return;
     }
@@ -3539,8 +3537,6 @@ nsCycleCollector::CleanupAfterCollection()
   }
   printf(".\ncc: \n");
 #endif
-
-  timeLog.Checkpoint("CleanupAfterCollection::telemetry");
 
   if (mJSContext) {
     mJSContext->FinalizeDeferredThings(mResults.mAnyManual

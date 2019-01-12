@@ -7,7 +7,6 @@
 #include "nsSocketTransport2.h"
 
 #include "mozilla/Attributes.h"
-#include "mozilla/Telemetry.h"
 #include "nsIOService.h"
 #include "nsStreamUtils.h"
 #include "nsNetSegmentUtils.h"
@@ -1227,8 +1226,7 @@ nsSocketTransport::BuildSocket(PRFileDesc *&fd, bool &proxyTransparent, bool &us
         if (NS_FAILED(rv)) {
             SOCKET_LOG(("  error pushing io layer [%u:%s rv=%x]\n", i, mTypes[i], rv));
             if (fd) {
-                CloseSocket(fd,
-                    mSocketTransportService->IsTelemetryEnabledAndNotSleepPhase());
+                CloseSocket(fd);
             }
         }
     }
@@ -1396,8 +1394,7 @@ nsSocketTransport::InitiateSocket()
     // inform socket transport about this newly created socket...
     rv = mSocketTransportService->AttachSocket(fd, this);
     if (NS_FAILED(rv)) {
-        CloseSocket(fd,
-            mSocketTransportService->IsTelemetryEnabledAndNotSleepPhase());
+        CloseSocket(fd);
         return rv;
     }
     mAttached = true;
@@ -1454,25 +1451,7 @@ nsSocketTransport::InitiateSocket()
     }
 #endif
 
-    // We use PRIntervalTime here because we need
-    // nsIOService::LastOfflineStateChange time and
-    // nsIOService::LastConectivityChange time to be atomic.
-    PRIntervalTime connectStarted = 0;
-    if (gSocketTransportService->IsTelemetryEnabledAndNotSleepPhase()) {
-        connectStarted = PR_IntervalNow();
-    }
-
     status = PR_Connect(fd, &prAddr, NS_SOCKET_CONNECT_TIMEOUT);
-
-    if (gSocketTransportService->IsTelemetryEnabledAndNotSleepPhase() &&
-        connectStarted) {
-        SendPRBlockingTelemetry(connectStarted,
-            Telemetry::PRCONNECT_BLOCKING_TIME_NORMAL,
-            Telemetry::PRCONNECT_BLOCKING_TIME_SHUTDOWN,
-            Telemetry::PRCONNECT_BLOCKING_TIME_CONNECTIVITY_CHANGE,
-            Telemetry::PRCONNECT_BLOCKING_TIME_LINK_CHANGE,
-            Telemetry::PRCONNECT_BLOCKING_TIME_OFFLINE);
-    }
 
     if (status == PR_SUCCESS) {
         // 
@@ -1532,16 +1511,6 @@ nsSocketTransport::InitiateSocket()
         // The connection was refused...
         //
         else {
-            if (gSocketTransportService->IsTelemetryEnabledAndNotSleepPhase() &&
-                connectStarted) {
-                SendPRBlockingTelemetry(connectStarted,
-                    Telemetry::PRCONNECT_FAIL_BLOCKING_TIME_NORMAL,
-                    Telemetry::PRCONNECT_FAIL_BLOCKING_TIME_SHUTDOWN,
-                    Telemetry::PRCONNECT_FAIL_BLOCKING_TIME_CONNECTIVITY_CHANGE,
-                    Telemetry::PRCONNECT_FAIL_BLOCKING_TIME_LINK_CHANGE,
-                    Telemetry::PRCONNECT_FAIL_BLOCKING_TIME_OFFLINE);
-            }
-
             rv = ErrorAccordingToNSPR(code);
             if ((rv == NS_ERROR_CONNECTION_REFUSED) && !mProxyHost.IsEmpty())
                 rv = NS_ERROR_PROXY_CONNECTION_REFUSED;
@@ -1779,8 +1748,7 @@ public:
 
   NS_IMETHOD Run() override
   {
-    nsSocketTransport::CloseSocket(mFD,
-      gSocketTransportService->IsTelemetryEnabledAndNotSleepPhase());
+    nsSocketTransport::CloseSocket(mFD);
     return NS_OK;
   }
 private:
@@ -1817,8 +1785,7 @@ nsSocketTransport::ReleaseFD_Locked(PRFileDesc *fd)
           SOCKET_LOG(("Intentional leak"));
         } else if (PR_GetCurrentThread() == gSocketThread) {
             SOCKET_LOG(("nsSocketTransport: calling PR_Close [this=%p]\n", this));
-            CloseSocket(mFD,
-                mSocketTransportService->IsTelemetryEnabledAndNotSleepPhase());
+            CloseSocket(mFD);
         } else {
             // Can't PR_Close() a socket off STS thread. Thunk it to STS to die
             STS_PRCloseOnSocketTransport(mFD);
@@ -1976,26 +1943,7 @@ nsSocketTransport::OnSocketReady(PRFileDesc *fd, int16_t outFlags)
         // We do not need to do PR_ConnectContinue when we are already
         // shutting down.
 
-        // We use PRIntervalTime here because we need
-        // nsIOService::LastOfflineStateChange time and
-        // nsIOService::LastConectivityChange time to be atomic.
-        PRIntervalTime connectStarted = 0;
-        if (gSocketTransportService->IsTelemetryEnabledAndNotSleepPhase()) {
-            connectStarted = PR_IntervalNow();
-        }
-
         PRStatus status = PR_ConnectContinue(fd, outFlags);
-
-        if (gSocketTransportService->IsTelemetryEnabledAndNotSleepPhase() &&
-            connectStarted) {
-            SendPRBlockingTelemetry(connectStarted,
-                Telemetry::PRCONNECTCONTINUE_BLOCKING_TIME_NORMAL,
-                Telemetry::PRCONNECTCONTINUE_BLOCKING_TIME_SHUTDOWN,
-                Telemetry::PRCONNECTCONTINUE_BLOCKING_TIME_CONNECTIVITY_CHANGE,
-                Telemetry::PRCONNECTCONTINUE_BLOCKING_TIME_LINK_CHANGE,
-                Telemetry::PRCONNECTCONTINUE_BLOCKING_TIME_OFFLINE);
-        }
-
         if (status == PR_SUCCESS) {
             //
             // we are connected!
@@ -3160,41 +3108,13 @@ nsSocketTransport::PRFileDescAutoLock::SetKeepaliveVals(bool aEnabled,
 }
 
 void
-nsSocketTransport::CloseSocket(PRFileDesc *aFd, bool aTelemetryEnabled)
+nsSocketTransport::CloseSocket(PRFileDesc *aFd)
 {
 #if defined(XP_WIN)
     AttachShutdownLayer(aFd);
 #endif
 
-    // We use PRIntervalTime here because we need
-    // nsIOService::LastOfflineStateChange time and
-    // nsIOService::LastConectivityChange time to be atomic.
-    PRIntervalTime closeStarted;
-    if (aTelemetryEnabled) {
-        closeStarted = PR_IntervalNow();
-    }
-
     PR_Close(aFd);
-
-    if (aTelemetryEnabled) {
-        SendPRBlockingTelemetry(closeStarted,
-            Telemetry::PRCLOSE_TCP_BLOCKING_TIME_NORMAL,
-            Telemetry::PRCLOSE_TCP_BLOCKING_TIME_SHUTDOWN,
-            Telemetry::PRCLOSE_TCP_BLOCKING_TIME_CONNECTIVITY_CHANGE,
-            Telemetry::PRCLOSE_TCP_BLOCKING_TIME_LINK_CHANGE,
-            Telemetry::PRCLOSE_TCP_BLOCKING_TIME_OFFLINE);
-    }
-}
-
-void
-nsSocketTransport::SendPRBlockingTelemetry(PRIntervalTime aStart,
-                                           Telemetry::ID aIDNormal,
-                                           Telemetry::ID aIDShutdown,
-                                           Telemetry::ID aIDConnectivityChange,
-                                           Telemetry::ID aIDLinkChange,
-                                           Telemetry::ID aIDOffline)
-{
-  /* STUB */
 }
 
 } // namespace net
