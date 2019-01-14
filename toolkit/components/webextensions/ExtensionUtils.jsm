@@ -990,7 +990,8 @@ function findPathInObject(obj, path, printErrors = true) {
   for (let elt of path.split(".")) {
     if (!obj || !(elt in obj)) {
       if (printErrors) {
-        Cu.reportError(`WebExtension API ${path} not found (it may be unimplemented by Firefox).`);
+        let appname = Services.appinfo.name;
+        Cu.reportError(`WebExtension API ${path} not found (it may be unimplemented by ${appname}).`);
       }
       return null;
     }
