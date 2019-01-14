@@ -3145,10 +3145,6 @@ HTMLMediaElement::~HTMLMediaElement()
   if (mProgressTimer) {
     StopProgress();
   }
-  if (mVideoDecodeSuspendTimer) {
-    mVideoDecodeSuspendTimer->Cancel();
-    mVideoDecodeSuspendTimer = nullptr;
-  }
   if (mSrcStream) {
     EndSrcMediaStreamPlayback();
   }

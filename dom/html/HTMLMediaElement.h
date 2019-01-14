@@ -1461,9 +1461,6 @@ protected:
   // Timer used for updating progress events.
   nsCOMPtr<nsITimer> mProgressTimer;
 
-  // Timer used to simulate video-suspend.
-  nsCOMPtr<nsITimer> mVideoDecodeSuspendTimer;
-
 #ifdef MOZ_EME
   // Encrypted Media Extension media keys.
   RefPtr<MediaKeys> mMediaKeys;
