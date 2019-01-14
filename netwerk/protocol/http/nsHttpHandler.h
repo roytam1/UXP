@@ -105,7 +105,10 @@ public:
     bool           EnforceAssocReq()         { return mEnforceAssocReq; }
 
     bool           IsPersistentHttpsCachingEnabled() { return mEnablePersistentHttpsCaching; }
-    bool           AllowExperiments() { return mAllowExperiments; }
+
+    // Since telemetry has been removed, experiments should also not be allowed.
+    // Making this function return `false` for now, it will be cleaned up later.
+    bool           AllowExperiments() { return false; }
 
     bool           IsSpdyEnabled() { return mEnableSpdy; }
     bool           IsHttp2Enabled() { return mHttp2Enabled; }
