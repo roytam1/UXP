@@ -1093,20 +1093,6 @@ retryDueToTLSIntolerance(PRErrorCode err, nsNSSSocketInfo* socketInfo)
     return false;
   }
 
-  switch (range.max) {
-    case SSL_LIBRARY_VERSION_TLS_1_3:
-      break;
-    case SSL_LIBRARY_VERSION_TLS_1_2:
-      break;
-    case SSL_LIBRARY_VERSION_TLS_1_1:
-      break;
-    case SSL_LIBRARY_VERSION_TLS_1_0:
-      break;
-    default:
-      MOZ_CRASH("impossible TLS version");
-      return false;
-  }
-
   if (!helpers.rememberIntolerantAtVersion(socketInfo->GetHostName(),
                                            socketInfo->GetPort(),
                                            range.min, range.max, err)) {
