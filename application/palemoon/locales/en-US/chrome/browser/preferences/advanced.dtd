@@ -39,6 +39,9 @@
 <!ENTITY UACompat.Gecko                  "Gecko Compatibility">
 <!ENTITY UACompat.Firefox                "Firefox Compatibility">
 
+<!ENTITY captivePortalGroup.label        "Captive portals">
+<!ENTITY captivePortalDetect.label       "Detect restricted network access">
+
 <!ENTITY dataChoicesTab.label            "Data Choices">
 
 <!ENTITY crashReporterSection.label      "Crash Reporter">

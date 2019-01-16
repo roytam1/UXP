@@ -48,6 +48,8 @@
                   type="bool"/>
 #endif
       <preference id="pref.general.compatmode" name="general.useragent.compatMode"        type="int"/>
+      
+      <preference id="pref.general.captiveportal" name="network.captive-portal-service.enabled" type="bool"/>
 
       <!-- Network tab -->
       <preference id="browser.cache.disk.capacity"     name="browser.cache.disk.capacity"     type="int"/>
@@ -179,6 +181,7 @@
             </hbox>
           </groupbox>
 #endif
+          <!-- User Agent compatibility -->
           <groupbox id="UACompatGroup" orient="vertical">
             <caption label="&UACompatGroup.label;"/>
             <hbox align="center">
@@ -192,6 +195,15 @@
                 </menulist>
             </hbox>
           </groupbox>
+          
+          <!-- Captive portal detection -->
+          <groupbox id="captivePortalGroup" orient="vertical">
+            <caption label="&captivePortalGroup.label;"/>
+            <checkbox id="captivePortalDetect"
+                      label="&captivePortalDetect.label;"
+                      preference="pref.general.captiveportal"/>
+          </groupbox>
+          
         </tabpanel>
 
         <!-- Network -->
