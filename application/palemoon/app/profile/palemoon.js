@@ -1072,6 +1072,8 @@ pref("prompts.tab_modal.focusSwitch", true);
 
 // Defines the url to be used for new tabs.
 pref("browser.newtab.url", "about:logopage");
+pref("browser.newtab.choice", 1);
+
 // Activates preloading of the new tab url.
 pref("browser.newtab.preload", false);
 
