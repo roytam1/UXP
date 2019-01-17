@@ -211,6 +211,7 @@ nsSiteSecurityService::nsSiteSecurityService()
   : mMaxMaxAge(kSixtyDaysInSeconds)
   , mUsePreloadList(true)
   , mPreloadListTimeOffset(0)
+  , mUseStsService(true)
 {
 }
 
@@ -239,6 +240,10 @@ nsSiteSecurityService::Init()
     "network.stricttransportsecurity.preloadlist", true);
   mozilla::Preferences::AddStrongObserver(this,
     "network.stricttransportsecurity.preloadlist");
+  mUseStsService = mozilla::Preferences::GetBool(
+    "network.stricttransportsecurity.enabled", true);
+  mozilla::Preferences::AddStrongObserver(this,
+    "network.stricttransportsecurity.enabled");
   mProcessPKPHeadersFromNonBuiltInRoots = mozilla::Preferences::GetBool(
     "security.cert_pinning.process_headers_from_non_builtin_roots", false);
   mozilla::Preferences::AddStrongObserver(this,
@@ -334,6 +339,11 @@ nsSiteSecurityService::SetHSTSState(uint32_t aType,
   MOZ_ASSERT((aHSTSState == SecurityPropertySet ||
               aHSTSState == SecurityPropertyNegative),
       "HSTS State must be SecurityPropertySet or SecurityPropertyNegative");
+
+  // Exit early if STS not enabled
+  if (!mUseStsService) {
+    return NS_OK;
+  }
 
   int64_t expiretime = ExpireTimeFromMaxAge(maxage);
   SiteHSTSState siteState(expiretime, aHSTSState, includeSubdomains);
@@ -922,6 +932,13 @@ nsSiteSecurityService::IsSecureURI(uint32_t aType, nsIURI* aURI,
   nsAutoCString hostname;
   nsresult rv = GetHost(aURI, hostname);
   NS_ENSURE_SUCCESS(rv, rv);
+
+  // Exit early if STS not enabled
+  if (!mUseStsService) {
+    *aResult = false;
+    return NS_OK;
+  }
+
   /* An IP address never qualifies as a secure URI. */
   if (HostIsIPAddress(hostname.get())) {
     *aResult = false;
@@ -978,6 +995,11 @@ nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
   *aResult = false;
   if (aCached) {
     *aCached = false;
+  }
+
+  // Exit early if checking HSTS and STS not enabled
+  if (!mUseStsService && aType != nsISiteSecurityService::HEADER_HSTS) {
+    return NS_OK;
   }
 
   /* An IP address never qualifies as a secure URI. */
@@ -1282,6 +1304,8 @@ nsSiteSecurityService::Observe(nsISupports *subject,
   if (strcmp(topic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID) == 0) {
     mUsePreloadList = mozilla::Preferences::GetBool(
       "network.stricttransportsecurity.preloadlist", true);
+    mUseStsService = mozilla::Preferences::GetBool(
+      "network.stricttransportsecurity.enabled", true);
     mPreloadListTimeOffset =
       mozilla::Preferences::GetInt("test.currentTimeOffsetSeconds", 0);
     mProcessPKPHeadersFromNonBuiltInRoots = mozilla::Preferences::GetBool(
