@@ -43,8 +43,8 @@
 
       <!-- Security Protocols -->
       
-      <preference id="network.stricttransportsecurity.preloadlist"
-                  name="network.stricttransportsecurity.preloadlist"
+      <preference id="network.stricttransportsecurity.enabled"
+                  name="network.stricttransportsecurity.enabled"
                   type="bool"/>
       <preference id="security.cert_pinning.enforcement_level"
                   name="security.cert_pinning.enforcement_level"
@@ -146,7 +146,7 @@
         <checkbox id="enableHSTS"
                   label="&enableHSTS.label;"
                   accesskey="&enableHSTS.accesskey;"
-                  preference="network.stricttransportsecurity.preloadlist" />
+                  preference="network.stricttransportsecurity.enabled" />
         <checkbox id="enableHPKP"
                   label="&enableHPKP.label;"
                   accesskey="&enableHPKP.accesskey;"
