@@ -998,7 +998,7 @@ nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
   }
 
   // Exit early if checking HSTS and STS not enabled
-  if (!mUseStsService && aType != nsISiteSecurityService::HEADER_HSTS) {
+  if (!mUseStsService && aType == nsISiteSecurityService::HEADER_HSTS) {
     return NS_OK;
   }
 
