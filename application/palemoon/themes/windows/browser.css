@@ -39,9 +39,9 @@
   --toolbarbutton-border-radius: 2.5px;
   --toolbarbutton-border-color: hsla(210,54%,20%,.2);
 
-  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
-  --toolbarbutton-glass-image: url("chrome://browser/skin/Toolbar-glass.svg");
-  --toolbarbutton-inverted-image: url("chrome://browser/skin/Toolbar-inverted.svg");
+  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.png");
+  --toolbarbutton-glass-image: url("chrome://browser/skin/Toolbar-glass.png");
+  --toolbarbutton-inverted-image: url("chrome://browser/skin/Toolbar-inverted.png");
 
   --tab-background: linear-gradient(transparent, hsla(0,0%,45%,.1) 1px, hsla(0,0%,32%,.2) 80%, hsla(0,0%,0%,.2));
   --tab-background-hover: linear-gradient(hsla(0,0%,100%,.3) 1px, hsla(0,0%,75%,.2) 80%, hsla(0,0%,60%,.2));
@@ -50,6 +50,15 @@
   --tab-selected-highlight: rgba(255,255,255,.7);
 
   --window-text-color: currentColor;
+}
+
+/* Use SVG for HiDPI 133%+ */
+@media (min-resolution: 1.33dppx) {
+  :root {
+    --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
+    --toolbarbutton-glass-image: url("chrome://browser/skin/Toolbar-glass.svg");
+    --toolbarbutton-inverted-image: url("chrome://browser/skin/Toolbar-inverted.svg");
+  }
 }
 
 :root:-moz-lwtheme-brighttext {

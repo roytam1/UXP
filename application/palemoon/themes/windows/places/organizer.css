@@ -5,7 +5,14 @@
 :root {
   --toolbar-custom-color: hsl(210,75%,92%);
   --toolbar-highlight-top: rgba(255,255,255,.5);
-  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
+  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.png");
+}
+
+/* Use SVG for HiDPI 133%+ */
+@media (min-resolution: 1.33dppx) {
+  :root {
+    --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
+  }
 }
 
 /* Toolbar */
