@@ -482,6 +482,7 @@ DOMIntersectionObserver::QueueIntersectionObserverEntry(Element* aTarget,
     rootBounds.forget(),
     boundingClientRect.forget(),
     intersectionRect.forget(),
+    aIntersectionRect.isSome(),
     aTarget, aIntersectionRatio);
   mQueuedEntries.AppendElement(entry.forget());
 }
