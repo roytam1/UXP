@@ -162,6 +162,11 @@ DOMIntersectionObserver::Observe(Element& aTarget)
 void
 DOMIntersectionObserver::Unobserve(Element& aTarget)
 {
+  if (!mObservationTargets.Contains(&aTarget)) {
+    // You're not on the list, buddy!
+    return;
+  }
+  
   if (mObservationTargets.Length() == 1) {
     Disconnect();
     return;
@@ -188,7 +193,7 @@ DOMIntersectionObserver::Connect()
   }
   
   mConnected = true;
-  if(mDocument) {
+  if (mDocument) {
     mDocument->AddIntersectionObserver(this);
   }
 }
@@ -293,12 +298,25 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
       if (rootFrame) {
         nsPresContext* presContext = rootFrame->PresContext();
         while (!presContext->IsRootContentDocument()) {
-          presContext = rootFrame->PresContext()->GetParentPresContext();
-          rootFrame = presContext->PresShell()->GetRootScrollFrame();
+          // Walk up the tree
+          presContext = presContext->GetParentPresContext();
+          if (!presContext) {
+            break;
+          }
+          nsIFrame* rootScrollFrame = presContext->PresShell()->GetRootScrollFrame();
+          if (rootScrollFrame) {
+            rootFrame = rootScrollFrame;
+          } else {
+            break;
+          }
         }
         root = rootFrame->GetContent()->AsElement();
         nsIScrollableFrame* scrollFrame = do_QueryFrame(rootFrame);
-        rootRect = scrollFrame->GetScrollPortRect();
+        // If we end up with a null root frame for some reason, we'll proceed
+        // with an empty root intersection rect.
+        if (scrollFrame) {
+          rootRect = scrollFrame->GetScrollPortRect();
+        }
       }
     }
   }
