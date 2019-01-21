@@ -126,7 +126,7 @@ ImageOps::DecodeToSurface(nsIInputStream* aInputStream,
   }
 
   // Run the decoder synchronously.
-  RefPtr<IDecodingTask> task = new AnonymousDecodingTask(WrapNotNull(decoder));
+  RefPtr<IDecodingTask> task = new AnonymousDecodingTask(WrapNotNull(decoder), /* aResumable */ false);
   task->Run();
   if (!decoder->GetDecodeDone() || decoder->HasError()) {
     return nullptr;
