@@ -1038,9 +1038,9 @@ const DownloadsView = {
     }
 
     // We must check for existence synchronously because this is a DOM event.
-    let file = new FileUtils.File(DownloadsView.controllerForElement(element)
-                                               .download.target.path);
-    if (!file.exists()) {
+    let localFile = new FileUtils.File(DownloadsView.controllerForElement(element)
+                                                    .download.target.path);
+    if (!localFile.exists()) {
       return;
     }
 
