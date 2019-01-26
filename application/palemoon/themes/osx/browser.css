@@ -1844,9 +1844,9 @@ richlistitem[type~="action"][actiontype="switchtab"][selected="true"] > .ac-url-
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio.svg#tab-audio-blocked");
 }
 
-#TabsToolbar[brighttext] .tab-icon-sound[soundplaying],
-#TabsToolbar[brighttext] .tab-icon-sound[blocked],
-#TabsToolbar[brighttext] .tab-icon-sound[muted] {
+#TabsToolbar:-moz-lwtheme-brighttext .tab-icon-sound[soundplaying],
+#TabsToolbar:-moz-lwtheme-brighttext .tab-icon-sound[blocked],
+#TabsToolbar:-moz-lwtheme-brighttext .tab-icon-sound[muted] {
   filter: invert(1);
 }
 
