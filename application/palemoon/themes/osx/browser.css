@@ -1890,17 +1890,17 @@ richlistitem[type~="action"][actiontype="switchtab"][selected="true"] > .ac-url-
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio-small.svg#tab-audio-blocked");
 }
 
-#TabsToolbar[brighttext] .tab-icon-overlay[soundplaying]:not([selected]):not(:hover),
+#TabsToolbar:-moz-lwtheme-brighttext .tab-icon-overlay[soundplaying]:not([selected]):not(:hover),
 .tab-icon-overlay[soundplaying][selected]:-moz-lwtheme-brighttext:not(:hover) {
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio-small.svg#tab-audio-white");
 }
 
-#TabsToolbar[brighttext] .tab-icon-overlay[muted]:not([crashed]):not([selected]):not(:hover),
+#TabsToolbar:-moz-lwtheme-brighttext .tab-icon-overlay[muted]:not([crashed]):not([selected]):not(:hover),
 .tab-icon-overlay[muted][selected]:-moz-lwtheme-brighttext:not(:hover) {
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio-small.svg#tab-audio-white-muted");
 }
 
-#TabsToolbar[brighttext] .tab-icon-overlay[blocked]:not([crashed]):not([selected]):not(:hover),
+#TabsToolbar:-moz-lwtheme-brighttext .tab-icon-overlay[blocked]:not([crashed]):not([selected]):not(:hover),
 .tab-icon-overlay[blocked][selected]:-moz-lwtheme-brighttext:not(:hover) {
   list-style-image: url("chrome://browser/skin/tabbrowser/tab-audio-small.svg#tab-audio-white-blocked");
 }
