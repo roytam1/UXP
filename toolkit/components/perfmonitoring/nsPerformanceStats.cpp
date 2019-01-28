@@ -1310,8 +1310,12 @@ nsPerformanceStatsService::GetResources(uint64_t* userTime,
 
 void
 nsPerformanceStatsService::NotifyJankObservers(const mozilla::Vector<uint64_t>& aPreviousJankLevels) {
-  GroupVector alerts;
-  mPendingAlerts.swap(alerts);
+
+  // The move operation is generally constant time, unless `mPendingAlerts.length()` is very small, in which case it's
+  // fast anyway.
+  GroupVector alerts(Move(mPendingAlerts));
+  mPendingAlerts = GroupVector(); // Reconstruct after `Move`.
+
   if (!mPendingAlertsCollector) {
     // We are shutting down.
     return;
