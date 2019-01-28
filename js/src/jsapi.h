@@ -6566,7 +6566,7 @@ struct JS_PUBLIC_API(PerformanceGroup) {
     uint64_t refCount_;
 };
 
-using PerformanceGroupVector = mozilla::Vector<RefPtr<js::PerformanceGroup>, 8, SystemAllocPolicy>;
+using PerformanceGroupVector = mozilla::Vector<RefPtr<js::PerformanceGroup>, 0, SystemAllocPolicy>;
 
 /**
  * Commit any Performance Monitoring data.
