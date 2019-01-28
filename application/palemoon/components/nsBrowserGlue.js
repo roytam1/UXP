@@ -552,14 +552,6 @@ BrowserGlue.prototype = {
       this._showPlacesLockedNotificationBox();
     }
 
-    // If there are plugins installed that are outdated, and the user hasn't
-    // been warned about them yet, open the plugins update page.
-    // Pale Moon: disable this functionality, people are already notified
-    // if they visit a page with an outdated plugin, and they can check
-    // properly from the plugins page as well.
-//    if (Services.prefs.getBoolPref(PREF_PLUGINS_NOTIFYUSER))
-//      this._showPluginUpdatePage();
-
     // For any add-ons that were installed disabled and can be enabled offer
     // them to the user.
     let changedIDs = AddonManager.getStartupChanges(AddonManager.STARTUP_CHANGE_INSTALLED);
