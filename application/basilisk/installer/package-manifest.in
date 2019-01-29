@@ -58,8 +58,8 @@
 #ifdef HAVE_MAKENSISU
 @BINPATH@/uninstall/helper.exe
 #endif
-#ifdef MOZ_UPDATER
 @RESPATH@/update.locale
+#ifdef MOZ_UPDATER
 @RESPATH@/updater.ini
 #endif
 

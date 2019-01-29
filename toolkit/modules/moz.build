@@ -46,8 +46,6 @@ EXTRA_JS_MODULES += [
     'FinderIterator.jsm',
     'FormLikeFactory.jsm',
     'Geometry.jsm',
-    'GMPInstallManager.jsm',
-    'GMPUtils.jsm',
     'Http.jsm',
     'InlineSpellChecker.jsm',
     'InlineSpellCheckerContent.jsm',
