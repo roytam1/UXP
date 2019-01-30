@@ -2584,7 +2584,7 @@ this.XPIProvider = {
               }
             }
             catch (e) {
-              logger.warn("Failed to call uninstall for " + id, e);
+              // If called on startup this may fail due to staged folder still existing.
             }
 
             try {
