@@ -2090,11 +2090,6 @@ void TelemetryHistogram::InitializeGlobalState(bool canRecordBase,
   // don't go unnoticed.
   // TODO: Compare explicitly with gHistograms[<histogram id>].bucketCount here
   // once we can make gHistograms constexpr (requires VS2015).
-  static_assert((JS::gcreason::NUM_TELEMETRY_REASONS == 100),
-      "NUM_TELEMETRY_REASONS is assumed to be a fixed value in Histograms.json."
-      " If this was an intentional change, update this assert with its value "
-      "and update the n_values for the following in Histograms.json: "
-      "GC_MINOR_REASON, GC_MINOR_REASON_LONG, GC_REASON_2");
   static_assert((mozilla::StartupTimeline::MAX_EVENT_ID == 16),
       "MAX_EVENT_ID is assumed to be a fixed value in Histograms.json.  If this"
       " was an intentional change, update this assert with its value and update"

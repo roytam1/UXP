@@ -3463,7 +3463,6 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
 
         if (kind != Arrow) {
 #if JS_HAS_EXPR_CLOSURES
-            addTelemetry(JSCompartment::DeprecatedExpressionClosure);
             if (!warnOnceAboutExprClosure())
                 return false;
 #else
@@ -5545,7 +5544,6 @@ Parser<ParseHandler>::forStatement(YieldHandling yieldHandling)
         if (matched) {
             iflags = JSITER_FOREACH;
             isForEach = true;
-            addTelemetry(JSCompartment::DeprecatedForEach);
             if (!warnOnceAboutForEach())
                 return null();
         }
@@ -6077,7 +6075,6 @@ Parser<ParseHandler>::yieldExpression(InHandling inHandling)
         }
 
         pc->functionBox()->setGeneratorKind(LegacyGenerator);
-        addTelemetry(JSCompartment::DeprecatedLegacyGenerator);
 
         MOZ_FALLTHROUGH;
 
@@ -9586,16 +9583,6 @@ Parser<ParseHandler>::exprInParens(InHandling inHandling, YieldHandling yieldHan
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_LP));
     return expr(inHandling, yieldHandling, tripledotHandling, possibleError, PredictInvoked);
-}
-
-template <typename ParseHandler>
-void
-Parser<ParseHandler>::addTelemetry(JSCompartment::DeprecatedLanguageExtension e)
-{
-    JSContext* cx = context->maybeJSContext();
-    if (!cx)
-        return;
-    cx->compartment()->addTelemetry(getFilename(), e);
 }
 
 template <typename ParseHandler>

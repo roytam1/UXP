@@ -41,7 +41,6 @@ using namespace js::gc;
 using namespace js::jit;
 
 using mozilla::DebugOnly;
-using mozilla::PodArrayZero;
 
 JSCompartment::JSCompartment(Zone* zone, const JS::CompartmentOptions& options = JS::CompartmentOptions())
   : creationOptions_(options.creationOptions()),
@@ -91,7 +90,6 @@ JSCompartment::JSCompartment(Zone* zone, const JS::CompartmentOptions& options =
     unmappedArgumentsTemplate_(nullptr),
     lcovOutput()
 {
-    PodArrayZero(sawDeprecatedLanguageExtension);
     runtime_->numCompartments++;
     MOZ_ASSERT_IF(creationOptions_.mergeable(),
                   creationOptions_.invisibleToDebugger());
@@ -99,8 +97,6 @@ JSCompartment::JSCompartment(Zone* zone, const JS::CompartmentOptions& options =
 
 JSCompartment::~JSCompartment()
 {
-    reportTelemetry();
-
     // Write the code coverage information in a file.
     JSRuntime* rt = runtimeFromMainThread();
     if (rt->lcovOutput.isEnabled())
@@ -1266,39 +1262,6 @@ JSCompartment::addSizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf,
     auto callback = runtime_->sizeOfIncludingThisCompartmentCallback;
     if (callback)
         *privateData += callback(mallocSizeOf, this);
-}
-
-void
-JSCompartment::reportTelemetry()
-{
-    // Only report telemetry for web content and add-ons, not chrome JS.
-    if (isSystem_)
-        return;
-
-    // Hazard analysis can't tell that the telemetry callbacks don't GC.
-    JS::AutoSuppressGCAnalysis nogc;
-
-    int id = creationOptions_.addonIdOrNull()
-             ? JS_TELEMETRY_DEPRECATED_LANGUAGE_EXTENSIONS_IN_ADDONS
-             : JS_TELEMETRY_DEPRECATED_LANGUAGE_EXTENSIONS_IN_CONTENT;
-
-    // Call back into Firefox's Telemetry reporter.
-    for (size_t i = 0; i < DeprecatedLanguageExtensionCount; i++) {
-        if (sawDeprecatedLanguageExtension[i])
-            runtime_->addTelemetry(id, i);
-    }
-}
-
-void
-JSCompartment::addTelemetry(const char* filename, DeprecatedLanguageExtension e)
-{
-    // Only report telemetry for web content and add-ons, not chrome JS.
-    if (isSystem_)
-        return;
-    if (!creationOptions_.addonIdOrNull() && (!filename || strncmp(filename, "http", 4) != 0))
-        return;
-
-    sawDeprecatedLanguageExtension[e] = true;
 }
 
 HashNumber

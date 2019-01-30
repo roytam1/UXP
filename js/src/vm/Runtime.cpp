@@ -147,7 +147,6 @@ JSRuntime::JSRuntime(JSRuntime* parentRuntime)
     updateChildRuntimeCount(parentRuntime),
 #endif
     interrupt_(false),
-    telemetryCallback(nullptr),
     handlingSegFault(false),
     handlingJitInterrupt_(false),
     interruptCallbackDisabled(false),
@@ -449,19 +448,6 @@ JSRuntime::destroyRuntime()
     if (ownerThreadNative_)
         CloseHandle((HANDLE)ownerThreadNative_);
 #endif
-}
-
-void
-JSRuntime::addTelemetry(int id, uint32_t sample, const char* key)
-{
-    if (telemetryCallback)
-        (*telemetryCallback)(id, sample, key);
-}
-
-void
-JSRuntime::setTelemetryCallback(JSRuntime* rt, JSAccumulateTelemetryDataCallback callback)
-{
-    rt->telemetryCallback = callback;
 }
 
 void

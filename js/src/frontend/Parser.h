@@ -1420,8 +1420,6 @@ class Parser final : private JS::AutoGCRooter, public StrictModeGetter
 
     bool asmJS(Node list);
 
-    void addTelemetry(JSCompartment::DeprecatedLanguageExtension e);
-
     bool warnOnceAboutExprClosure();
     bool warnOnceAboutForEach();
 };

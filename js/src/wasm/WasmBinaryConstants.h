@@ -434,15 +434,6 @@ enum class Op
     Limit
 };
 
-// Telemetry sample values for the JS_AOT_USAGE key, indicating whether asm.js
-// or WebAssembly is used.
-
-enum class Telemetry
-{
-    ASMJS = 0,
-    WASM = 1
-};
-
 } // namespace wasm
 } // namespace js
 

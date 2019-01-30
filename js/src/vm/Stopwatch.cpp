@@ -334,11 +334,6 @@ AutoStopwatch::exit()
             const uint64_t cyclesEnd = getCycles(runtime);
             cyclesDelta = cyclesEnd - cyclesStart_; // Always >= 0 by definition of `getCycles`.
         }
-#if WINVER >= 0x600
-        updateTelemetry(cpuStart_, cpuEnd);
-#elif defined(__linux__)
-        updateTelemetry(cpuStart_, cpuEnd);
-#endif // WINVER >= 0x600 || _linux__
     }
 
     uint64_t CPOWTimeDelta = 0;
@@ -348,17 +343,6 @@ AutoStopwatch::exit()
         CPOWTimeDelta = getDelta(CPOWTimeEnd, CPOWTimeStart_);
     }
     return addToGroups(cyclesDelta, CPOWTimeDelta);
-}
-
-void
-AutoStopwatch::updateTelemetry(const cpuid_t& cpuStart_, const cpuid_t& cpuEnd)
-{
-  JSRuntime* runtime = cx_->runtime();
-
-    if (isSameCPU(cpuStart_, cpuEnd))
-        runtime->performanceMonitoring.testCpuRescheduling.stayed += 1;
-    else
-        runtime->performanceMonitoring.testCpuRescheduling.moved += 1;
 }
 
 PerformanceGroup*

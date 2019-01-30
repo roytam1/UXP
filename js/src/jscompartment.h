@@ -344,13 +344,6 @@ struct JSCompartment
         isAtomsCompartment_ = true;
     }
 
-    // Used to approximate non-content code when reporting telemetry.
-    inline bool isProbablySystemOrAddonCode() const {
-        if (creationOptions_.addonIdOrNull())
-            return true;
-
-        return isSystem_;
-    }
   private:
     JSPrincipals*                principals_;
     bool                         isSystem_;
@@ -879,33 +872,9 @@ struct JSCompartment
         return jitCompartment_;
     }
 
-    enum DeprecatedLanguageExtension {
-        DeprecatedForEach = 0,              // JS 1.6+
-        // NO LONGER USING 1
-        DeprecatedLegacyGenerator = 2,      // JS 1.7+
-        DeprecatedExpressionClosure = 3,    // Added in JS 1.8
-        // NO LONGER USING 4
-        // NO LONGER USING 5
-        // NO LONGER USING 6
-        // NO LONGER USING 7
-        // NO LONGER USING 8
-        // NO LONGER USING 9
-        DeprecatedBlockScopeFunRedecl = 10,
-        DeprecatedLanguageExtensionCount
-    };
-
     js::ArgumentsObject* getOrCreateArgumentsTemplateObject(JSContext* cx, bool mapped);
 
     js::ArgumentsObject* maybeArgumentsTemplateObject(bool mapped) const;
-
-  private:
-    // Used for collecting telemetry on SpiderMonkey's deprecated language extensions.
-    bool sawDeprecatedLanguageExtension[DeprecatedLanguageExtensionCount];
-
-    void reportTelemetry();
-
-  public:
-    void addTelemetry(const char* filename, DeprecatedLanguageExtension e);
 
   public:
     // Aggregated output used to collect JSScript hit counts when code coverage
