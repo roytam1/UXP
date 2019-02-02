@@ -3070,8 +3070,11 @@ js::ValueToSource(JSContext* cx, HandleValue v)
 
         return ToString<CanGC>(cx, v);
     }
-
+#if JS_HAS_TOSOURCE
     return ObjectToSource(cx, obj);
+#else
+    return ToString<CanGC>(cx, v);
+#endif
 }
 
 JSString*
