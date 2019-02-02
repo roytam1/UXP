@@ -53,17 +53,9 @@ var FullScreen = {
       document.addEventListener("popupshown", this._setPopupOpen, false);
       document.addEventListener("popuphidden", this._setPopupOpen, false);
       this._shouldAnimate = true;
-      // If it is not safe to collapse, add the mouse position tracker or
-      // else it won't be possible to hide the navigation toolbox again
-      if (!this._safeToCollapse(document.mozFullScreen)) {
-        let rect = gBrowser.mPanelContainer.getBoundingClientRect();
-        this._mouseTargetRect = {
-          top: rect.top + 50,
-          bottom: rect.bottom,
-          left: rect.left,
-          right: rect.right
-        };
-        MousePosTracker.addListener(this);
+      if (gPrefService.getBoolPref("browser.fullscreen.autohide")) {
+        gBrowser.mPanelContainer.addEventListener("mousemove",
+                                                  this._collapseCallback, false);
       }
       // We don't animate the toolbar collapse if in DOM full-screen mode,
       // as the size of the content area would still be changing after the
@@ -149,7 +141,8 @@ var FullScreen = {
 
   cleanup: function () {
     if (!window.fullScreen) {
-      MousePosTracker.removeListener(this);
+      gBrowser.mPanelContainer.removeEventListener("mousemove",
+                                                   this._collapseCallback, false);
       document.removeEventListener("keypress", this._keyToggleCallback, false);
       document.removeEventListener("popupshown", this._setPopupOpen, false);
       document.removeEventListener("popuphidden", this._setPopupOpen, false);
@@ -164,17 +157,12 @@ var FullScreen = {
     }
   },
 
-  getMouseTargetRect: function()
-  {
-    return this._mouseTargetRect;
-  },
-
   // Event callbacks
   _expandCallback: function()
   {
     FullScreen.showNavToolbox();
   },
-  onMouseEnter: function()
+  _collapseCallback: function()
   {
     FullScreen.hideNavToolbox();
   },
@@ -328,14 +316,8 @@ var FullScreen = {
     // Track whether mouse is near the toolbox
     this._isChromeCollapsed = false;
     if (trackMouse) {
-      let rect = gBrowser.mPanelContainer.getBoundingClientRect();
-      this._mouseTargetRect = {
-        top: rect.top + 50,
-        bottom: rect.bottom,
-        left: rect.left,
-        right: rect.right
-      };
-      MousePosTracker.addListener(this);
+      gBrowser.mPanelContainer.addEventListener("mousemove",
+                                                this._collapseCallback, false);
     }
   },
 
@@ -378,7 +360,8 @@ var FullScreen = {
     gNavToolbox.style.marginTop =
       -gNavToolbox.getBoundingClientRect().height + "px";
     this._isChromeCollapsed = true;
-    MousePosTracker.removeListener(this);
+    gBrowser.mPanelContainer.removeEventListener("mousemove",
+                                                 this._collapseCallback, false);
   },
 
   showXULChrome: function(aTag, aShow)
