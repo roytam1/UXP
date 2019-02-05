@@ -41,6 +41,9 @@ XPCOMUtils.defineLazyModuleGetter(this, "ContextualIdentityService",
                                   "resource://gre/modules/ContextualIdentityService.jsm");
 const global = this;
 
+// contains base64 version of a placeholder thumbnail
+#include blankthumb.inc
+
 const BackgroundPageThumbs = {
 
   /**

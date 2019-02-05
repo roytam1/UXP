@@ -13,13 +13,13 @@ EXTRA_COMPONENTS += [
 ]
 
 EXTRA_JS_MODULES += [
-    'BackgroundPageThumbs.jsm',
+    'PageThumbs.jsm',
     'PageThumbsWorker.js',
     'PageThumbUtils.jsm',
 ]
 
 EXTRA_PP_JS_MODULES += [
-    'PageThumbs.jsm',
+    'BackgroundPageThumbs.jsm',
 ]
 
 
