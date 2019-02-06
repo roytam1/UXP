@@ -359,11 +359,6 @@
                       label="&appMenuSafeMode.label;"
                       oncommand="restart(true);"/>
             <menuseparator/>
-#ifdef MOZ_UPDATER
-            <menuitem id="appmenu_checkForUpdates"
-                      label="&checkForUpdates.label;"
-                      oncommand="checkForUpdates();"/>
-#endif
             <menuitem id="appmenu_about"
                       label="&aboutProduct.label;"
                       oncommand="openAboutDialog();"/>

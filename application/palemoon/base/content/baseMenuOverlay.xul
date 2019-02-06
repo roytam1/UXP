@@ -67,12 +67,6 @@
                   label="&helpSafeMode.label;"
                   oncommand="restart(true);"/>
         <menuseparator id="aboutSeparator"/>
-#ifdef MOZ_UPDATER
-        <menuitem id="helpCheckForUpdates"
-                  accesskey="&checkForUpdates.accesskey;"
-                  label="&checkForUpdates.label;"
-                  oncommand="checkForUpdates();"/>
-#endif
         <menuitem id="aboutName"
                   accesskey="&aboutProduct.accesskey;"
                   label="&aboutProduct.label;"
