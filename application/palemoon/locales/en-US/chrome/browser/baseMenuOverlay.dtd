@@ -25,6 +25,9 @@
 <!ENTITY helpTroubleshootingInfo.label      "Troubleshooting Information">
 <!ENTITY helpTroubleshootingInfo.accesskey  "T">
 
+<!ENTITY checkForUpdates.label       "Check for Updates…">
+<!ENTITY checkForUpdates.accesskey   "C">
+
 <!ENTITY helpFeedbackPage.label      "Submit Feedback…">
 <!ENTITY helpFeedbackPage.accesskey  "S">
 

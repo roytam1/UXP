@@ -590,6 +590,29 @@ function openAdvancedPreferences(tabID)
   openPreferences("paneAdvanced", { "advancedTab" : tabID });
 }
 
+#ifdef MOZ_UPDATER
+/**
+ * Opens the update manager and checks for updates to the application.
+ */
+function checkForUpdates()
+{
+  var um = 
+      Components.classes["@mozilla.org/updates/update-manager;1"].
+      getService(Components.interfaces.nsIUpdateManager);
+  var prompter = 
+      Components.classes["@mozilla.org/updates/update-prompt;1"].
+      createInstance(Components.interfaces.nsIUpdatePrompt);
+
+  // If there's an update ready to be applied, show the "Update Downloaded"
+  // UI instead and let the user know they have to restart the browser for
+  // the changes to be applied. 
+  if (um.activeUpdate && um.activeUpdate.state == "pending")
+    prompter.showUpdateDownloaded(um.activeUpdate);
+  else
+    prompter.checkForUpdates();
+}
+#endif
+
 /**
  * Opens the troubleshooting information (about:support) page for this version
  * of the application.
