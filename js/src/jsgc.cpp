@@ -2310,22 +2310,27 @@ GCRuntime::updateCellPointers(MovingTracer* trc, Zone* zone, AllocKinds kinds, s
 //  2) typed object type descriptor objects
 //  3) all other objects
 //
+// Also, there can be data races calling IsForwarded() on the new location of a
+// cell that is being updated in parallel on another thread. This can be avoided
+// by updating some kinds of cells in different phases. This is done for JSScripts
+// and LazyScripts, and JSScripts and Scopes.
+//
 // Since we want to minimize the number of phases, we put everything else into
 // the first phase and label it the 'misc' phase.
 
 static const AllocKinds UpdatePhaseMisc {
     AllocKind::SCRIPT,
-    AllocKind::LAZY_SCRIPT,
     AllocKind::BASE_SHAPE,
     AllocKind::SHAPE,
     AllocKind::ACCESSOR_SHAPE,
     AllocKind::OBJECT_GROUP,
     AllocKind::STRING,
-    AllocKind::JITCODE,
-    AllocKind::SCOPE
+    AllocKind::JITCODE
 };
 
 static const AllocKinds UpdatePhaseObjects {
+    AllocKind::LAZY_SCRIPT,
+    AllocKind::SCOPE,
     AllocKind::FUNCTION,
     AllocKind::FUNCTION_EXTENDED,
     AllocKind::OBJECT0,
