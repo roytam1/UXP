@@ -41,7 +41,6 @@ UNIFIED_SOURCES += [
     'nsDataObjCollection.cpp',
     'nsDragService.cpp',
     'nsIdleServiceWin.cpp',
-    'nsImageClipboard.cpp',
     'nsLookAndFeel.cpp',
     'nsNativeDragSource.cpp',
     'nsNativeDragTarget.cpp',

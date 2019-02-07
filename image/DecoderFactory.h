@@ -34,6 +34,7 @@ enum class DecoderType
   GIF,
   JPEG,
   BMP,
+  BMP_CLIPBOARD,
   ICO,
   ICON,
   WEBP,

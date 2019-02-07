@@ -8,6 +8,7 @@
 #include "mozilla/EventStates.h"
 #include "mozilla/Logging.h"
 #include "mozilla/WindowsVersion.h"
+#include "mozilla/gfx/Types.h" // for Color::FromABGR
 #include "nsDeviceContext.h"
 #include "nsRenderingContext.h"
 #include "nsRect.h"
@@ -41,6 +42,7 @@
 
 using mozilla::IsVistaOrLater;
 using namespace mozilla;
+using namespace mozilla::gfx;
 using namespace mozilla::widget;
 
 extern mozilla::LazyLogModule gWindowsLog;
