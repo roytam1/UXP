@@ -8,8 +8,6 @@
 
 #include "jsapi.h"
 
-#include "vm/Interpreter.h" // For InstanceOfOperator
-
 #include "jsobjinlines.h"
 #include "vm/NativeObject-inl.h"
 
@@ -1230,7 +1228,7 @@ bool
 ScriptedProxyHandler::hasInstance(JSContext* cx, HandleObject proxy, MutableHandleValue v,
                                   bool* bp) const
 {
-    return InstanceOfOperator(cx, proxy, v, bp);
+    return InstanceofOperator(cx, proxy, v, bp);
 }
 
 bool

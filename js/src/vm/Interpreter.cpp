@@ -718,14 +718,14 @@ js::Execute(JSContext* cx, HandleScript script, JSObject& envChainArg, Value* rv
 }
 
 /*
- * ES6 (4-25-16) 12.10.4 InstanceofOperator
+ * ES6 12.9.4 InstanceofOperator
  */
 extern bool
-js::InstanceOfOperator(JSContext* cx, HandleObject obj, HandleValue v, bool* bp)
+JS::InstanceofOperator(JSContext* cx, HandleObject obj, HandleValue v, bool* bp)
 {
     /* Step 1. is handled by caller. */
 
-    /* Step 2. */
+    /* Step 2-3. */
     RootedValue hasInstance(cx);
     RootedId id(cx, SYMBOL_TO_JSID(cx->wellKnownSymbols().hasInstance));
     if (!GetProperty(cx, obj, obj, id, &hasInstance))
@@ -735,7 +735,7 @@ js::InstanceOfOperator(JSContext* cx, HandleObject obj, HandleValue v, bool* bp)
         if (!IsCallable(hasInstance))
             return ReportIsNotFunction(cx, hasInstance);
 
-        /* Step 3. */
+        /* Step 4. */
         RootedValue rval(cx);
         if (!Call(cx, hasInstance, obj, v, &rval))
             return false;
@@ -743,13 +743,13 @@ js::InstanceOfOperator(JSContext* cx, HandleObject obj, HandleValue v, bool* bp)
         return true;
     }
 
-    /* Step 4. */
+    /* Step 5. */
     if (!obj->isCallable()) {
         RootedValue val(cx, ObjectValue(*obj));
         return ReportIsNotFunction(cx, val);
     }
 
-    /* Step 5. */
+    /* Step 6. */
     return OrdinaryHasInstance(cx, obj, v, bp);
 }
 
@@ -760,7 +760,7 @@ js::HasInstance(JSContext* cx, HandleObject obj, HandleValue v, bool* bp)
     RootedValue local(cx, v);
     if (JSHasInstanceOp hasInstance = clasp->getHasInstance())
         return hasInstance(cx, obj, &local, bp);
-    return js::InstanceOfOperator(cx, obj, local, bp);
+    return JS::InstanceofOperator(cx, obj, local, bp);
 }
 
 static inline bool

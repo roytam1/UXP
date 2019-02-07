@@ -2309,6 +2309,20 @@ XrayWrapper<Base, Traits>::getBuiltinClass(JSContext* cx, JS::HandleObject wrapp
 }
 
 template <typename Base, typename Traits>
+bool
+XrayWrapper<Base, Traits>::hasInstance(JSContext* cx,
+                                       JS::HandleObject wrapper,
+                                       JS::MutableHandleValue v,
+                                       bool* bp) const {
+  assertEnteredPolicy(cx, wrapper, JSID_VOID, BaseProxyHandler::GET);
+
+  // CrossCompartmentWrapper::hasInstance unwraps |wrapper|'s Xrays and enters
+  // its compartment. Any present XrayWrappers should be preserved, so the
+  // standard "instanceof" implementation is called without unwrapping first.
+  return JS::InstanceofOperator(cx, wrapper, v, bp);
+}
+
+template <typename Base, typename Traits>
 const char*
 XrayWrapper<Base, Traits>::className(JSContext* cx, HandleObject wrapper) const
 {

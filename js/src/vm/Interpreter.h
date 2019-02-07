@@ -323,9 +323,6 @@ extern JSType
 TypeOfValue(const Value& v);
 
 extern bool
-InstanceOfOperator(JSContext* cx, HandleObject obj, HandleValue v, bool* bp);
-
-extern bool
 HasInstance(JSContext* cx, HandleObject obj, HandleValue v, bool* bp);
 
 // Unwind environment chain and iterator to match the scope corresponding to

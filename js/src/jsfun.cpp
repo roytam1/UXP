@@ -690,7 +690,7 @@ js::fun_symbolHasInstance(JSContext* cx, unsigned argc, Value* vp)
 }
 
 /*
- * ES6 (4-25-16) 7.3.19 OrdinaryHasInstance
+ * ES6 7.3.19 OrdinaryHasInstance
  */
 bool
 JS::OrdinaryHasInstance(JSContext* cx, HandleObject objArg, HandleValue v, bool* bp)
@@ -707,7 +707,7 @@ JS::OrdinaryHasInstance(JSContext* cx, HandleObject objArg, HandleValue v, bool*
     if (obj->is<JSFunction>() && obj->isBoundFunction()) {
         /* Steps 2a-b. */
         obj = obj->as<JSFunction>().getBoundFunctionTarget();
-        return InstanceOfOperator(cx, obj, v, bp);
+        return InstanceofOperator(cx, obj, v, bp);
     }
 
     /* Step 3. */
@@ -716,12 +716,12 @@ JS::OrdinaryHasInstance(JSContext* cx, HandleObject objArg, HandleValue v, bool*
         return true;
     }
 
-    /* Step 4. */
+    /* Step 4-5. */
     RootedValue pval(cx);
     if (!GetProperty(cx, obj, obj, cx->names().prototype, &pval))
         return false;
 
-    /* Step 5. */
+    /* Step 6. */
     if (pval.isPrimitive()) {
         /*
          * Throw a runtime error if instanceof is called on a function that
@@ -732,7 +732,7 @@ JS::OrdinaryHasInstance(JSContext* cx, HandleObject objArg, HandleValue v, bool*
         return false;
     }
 
-    /* Step 6. */
+    /* Step 7. */
     RootedObject pobj(cx, &pval.toObject());
     bool isDelegate;
     if (!IsDelegate(cx, pobj, v, &isDelegate))

@@ -270,6 +270,8 @@ class JS_FRIEND_API(OpaqueCrossCompartmentWrapper) : public CrossCompartmentWrap
     virtual bool getBuiltinClass(JSContext* cx, HandleObject wrapper, ESClass* cls) const override;
     virtual bool isArray(JSContext* cx, HandleObject obj,
                          JS::IsArrayAnswer* answer) const override;
+    virtual bool hasInstance(JSContext* cx, HandleObject wrapper,
+                             MutableHandleValue v, bool* bp) const override;
     virtual const char* className(JSContext* cx, HandleObject wrapper) const override;
     virtual JSString* fun_toString(JSContext* cx, HandleObject proxy, unsigned indent) const override;
 

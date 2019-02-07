@@ -482,6 +482,8 @@ class XrayWrapper : public Base {
                                               JS::AutoIdVector& props) const override;
 
     virtual bool getBuiltinClass(JSContext* cx, JS::HandleObject wapper, js::ESClass* cls) const override;
+    virtual bool hasInstance(JSContext* cx, JS::HandleObject wrapper,
+                             JS::MutableHandleValue v, bool* bp) const override;
     virtual const char* className(JSContext* cx, JS::HandleObject proxy) const override;
 
     static const XrayWrapper singleton;
