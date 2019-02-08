@@ -359,10 +359,10 @@ ConvertCDMErrorToCDMException(cdm::Error error) {
 
 void
 WidevineDecryptor::OnRejectPromise(uint32_t aPromiseId,
-                                  cdm::Exception aException,
-                                  uint32_t aSystemCode,
-                                  const char* aErrorMessage,
-                                  uint32_t aErrorMessageSize)
+                                   cdm::Exception aException,
+                                   uint32_t aSystemCode,
+                                   const char* aErrorMessage,
+                                   uint32_t aErrorMessageSize)
 {
   if (!mCallback) {
     Log("Decryptor::OnRejectPromise(aPromiseId=%d, err=%d, sysCode=%u, msg=%s) FAIL; !mCallback",
@@ -390,10 +390,10 @@ ToGMPMessageType(MessageType message_type)
 
 void
 WidevineDecryptor::OnSessionMessage(const char* aSessionId,
-                                   uint32_t aSessionIdSize,
-                                   cdm::MessageType aMessageType,
-                                   const char* aMessage,
-                                   uint32_t aMessageSize)
+                                    uint32_t aSessionIdSize,
+                                    cdm::MessageType aMessageType,
+                                    const char* aMessage,
+                                    uint32_t aMessageSize)
 {
   if (!mCallback) {
     Log("Decryptor::OnSessionMessage() FAIL; !mCallback");
@@ -544,7 +544,7 @@ WidevineDecryptor::CreateFileIO(FileIOClient* aClient)
 void
 WidevineDecryptor::RequestStorageId(uint32_t aVersion)
 {
-  Log("ChromiumCDMChild::RequestStorageId() aVersion = %u", aVersion);
+  Log("Decryptor::RequestStorageId() aVersion = %u", aVersion);
   if (aVersion >= 0x80000000) {
     mCDM->OnStorageId(aVersion, nullptr, 0);
     return;
