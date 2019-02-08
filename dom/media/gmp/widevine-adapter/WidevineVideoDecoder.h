@@ -45,7 +45,7 @@ private:
 
   ~WidevineVideoDecoder();
 
-  cdm::ContentDecryptionModule_8* CDM() const {
+  cdm::ContentDecryptionModule_9* CDM() const {
     // CDM should only be accessed before 'DecodingComplete'.
     MOZ_ASSERT(mCDMWrapper);
     // CDMWrapper ensure the CDM is non-null, no need to check again.

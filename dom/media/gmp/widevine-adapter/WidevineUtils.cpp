@@ -77,7 +77,7 @@ void InitInputBuffer(const GMPEncryptedBufferMetadata* aCrypto,
   aInputBuffer.timestamp = aTimestamp;
 }
 
-CDMWrapper::CDMWrapper(cdm::ContentDecryptionModule_8* aCDM,
+CDMWrapper::CDMWrapper(cdm::ContentDecryptionModule_9* aCDM,
                        WidevineDecryptor* aDecryptor)
   : mCDM(aCDM)
   , mDecryptor(aDecryptor)

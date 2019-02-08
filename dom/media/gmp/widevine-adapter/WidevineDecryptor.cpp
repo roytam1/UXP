@@ -302,6 +302,12 @@ WidevineDecryptor::GetCurrentWallTime()
 }
 
 void
+ChromiumCDMChild::OnResolveKeyStatusPromise(uint32_t aPromiseId,
+                                            cdm::KeyStatus aKeyStatus) {
+  //TODO: The callback of GetStatusForPolicy. See Mozilla bug 1404230.
+}
+
+void
 WidevineDecryptor::OnResolveNewSessionPromise(uint32_t aPromiseId,
                                               const char* aSessionId,
                                               uint32_t aSessionIdSize)
@@ -332,42 +338,41 @@ WidevineDecryptor::OnResolvePromise(uint32_t aPromiseId)
   mCallback->ResolvePromise(aPromiseId);
 }
 
-static GMPDOMException
-ToGMPDOMException(cdm::Error aError)
-{
-  switch (aError) {
-    case kNotSupportedError: return kGMPNotSupportedError;
-    case kInvalidStateError: return kGMPInvalidStateError;
-    case kInvalidAccessError:
-      // Note: Chrome converts kInvalidAccessError to TypeError, since the
-      // Chromium CDM API doesn't have a type error enum value. The EME spec
-      // requires TypeError in some places, so we do the same conversion.
-      // See bug 1313202.
-      return kGMPTypeError;
-    case kQuotaExceededError: return kGMPQuotaExceededError;
-    case kUnknownError: return kGMPInvalidModificationError; // Note: Unique placeholder.
-    case kClientError: return kGMPAbortError; // Note: Unique placeholder.
-    case kOutputError: return kGMPSecurityError; // Note: Unique placeholder.
-  };
-  return kGMPTimeoutError; // Note: Unique placeholder.
+// Align with spec, the Exceptions used by CDM to reject promises .
+// https://w3c.github.io/encrypted-media/#exceptions
+cdm::Exception
+ConvertCDMErrorToCDMException(cdm::Error error) {
+  switch (error) {
+    case cdm::kNotSupportedError:
+      return cdm::Exception::kExceptionNotSupportedError;
+    case cdm::kInvalidStateError:
+      return cdm::Exception::kExceptionInvalidStateError;
+    case cdm::kInvalidAccessError:
+      return cdm::Exception::kExceptionTypeError;
+    case cdm::kQuotaExceededError:
+      return cdm::Exception::kExceptionQuotaExceededError;
+      break;
+  }
+
+  return cdm::Exception::kExceptionInvalidStateError;
 }
 
 void
 WidevineDecryptor::OnRejectPromise(uint32_t aPromiseId,
-                                   Error aError,
-                                   uint32_t aSystemCode,
-                                   const char* aErrorMessage,
-                                   uint32_t aErrorMessageSize)
+                                  cdm::Exception aException,
+                                  uint32_t aSystemCode,
+                                  const char* aErrorMessage,
+                                  uint32_t aErrorMessageSize)
 {
   if (!mCallback) {
     Log("Decryptor::OnRejectPromise(aPromiseId=%d, err=%d, sysCode=%u, msg=%s) FAIL; !mCallback",
-        aPromiseId, (int)aError, aSystemCode, aErrorMessage);
+        aPromiseId, (int)aException, aSystemCode, aErrorMessage);
     return;
   }
   Log("Decryptor::OnRejectPromise(aPromiseId=%d, err=%d, sysCode=%u, msg=%s)",
       aPromiseId, (int)aError, aSystemCode, aErrorMessage);
   mCallback->RejectPromise(aPromiseId,
-                           ToGMPDOMException(aError),
+                           ToGMPDOMException(aException),
                            !aErrorMessageSize ? "" : aErrorMessage,
                            aErrorMessageSize);
 }
@@ -385,12 +390,10 @@ ToGMPMessageType(MessageType message_type)
 
 void
 WidevineDecryptor::OnSessionMessage(const char* aSessionId,
-                                    uint32_t aSessionIdSize,
-                                    MessageType aMessageType,
-                                    const char* aMessage,
-                                    uint32_t aMessageSize,
-                                    const char* aLegacyDestinationUrl,
-                                    uint32_t aLegacyDestinationUrlLength)
+                                   uint32_t aSessionIdSize,
+                                   cdm::MessageType aMessageType,
+                                   const char* aMessage,
+                                   uint32_t aMessageSize)
 {
   if (!mCallback) {
     Log("Decryptor::OnSessionMessage() FAIL; !mCallback");

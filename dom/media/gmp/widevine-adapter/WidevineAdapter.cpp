@@ -46,7 +46,7 @@ void* GetCdmHost(int aHostInterfaceVersion, void* aUserData)
   Log("GetCdmHostFunc(%d, %p)", aHostInterfaceVersion, aUserData);
   WidevineDecryptor* decryptor = reinterpret_cast<WidevineDecryptor*>(aUserData);
   MOZ_ASSERT(decryptor);
-  return static_cast<cdm::Host_8*>(decryptor);
+  return static_cast<cdm::Host_9*>(decryptor);
 }
 
 #define STRINGIFY(s) _STRINGIFY(s)
@@ -162,7 +162,7 @@ WidevineAdapter::Supports(int32_t aModuleVersion,
 {
   return aModuleVersion == CDM_MODULE_VERSION &&
          aInterfaceVersion == cdm::ContentDecryptionModule::kVersion &&
-         aHostVersion == cdm::Host_8::kVersion;
+         aHostVersion == cdm::Host_9::kVersion;
 }
 
 } // namespace mozilla
