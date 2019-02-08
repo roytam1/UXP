@@ -541,4 +541,17 @@ WidevineDecryptor::CreateFileIO(FileIOClient* aClient)
   return new WidevineFileIO(aClient);
 }
 
+void
+WidevineDecryptor::RequestStorageId(uint32_t aVersion)
+{
+  Log("ChromiumCDMChild::RequestStorageId() aVersion = %u", aVersion);
+  if (aVersion >= 0x80000000) {
+    mCDM->OnStorageId(aVersion, nullptr, 0);
+    return;
+  }
+
+  //TODO: Need to provide a menaingful buffer instead of a dummy one.
+  mCDM->OnStorageId(aVersion, new uint8_t[1024*1024], 1024 * 1024);
+}
+
 } // namespace mozilla

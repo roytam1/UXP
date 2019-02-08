@@ -110,7 +110,7 @@ public:
                                     cdm::Status aDecoderStatus) override;
   // cdm::Host_9 interface
   // NOTE: the interface has changed upstream.
-  void RequestStorageId() override {}
+  void RequestStorageId(uint32_t aVersion) override;
   cdm::FileIO* CreateFileIO(cdm::FileIOClient* aClient) override;
 
   GMPDecryptorCallback* Callback() const { return mCallback; }
