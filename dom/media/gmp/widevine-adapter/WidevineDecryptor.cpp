@@ -302,7 +302,7 @@ WidevineDecryptor::GetCurrentWallTime()
 }
 
 void
-ChromiumCDMChild::OnResolveKeyStatusPromise(uint32_t aPromiseId,
+WidevineDecryptor::OnResolveKeyStatusPromise(uint32_t aPromiseId,
                                             cdm::KeyStatus aKeyStatus) {
   //TODO: The callback of GetStatusForPolicy. See Mozilla bug 1404230.
 }
@@ -351,6 +351,10 @@ ConvertCDMErrorToCDMException(cdm::Error error) {
       return cdm::Exception::kExceptionTypeError;
     case cdm::kQuotaExceededError:
       return cdm::Exception::kExceptionQuotaExceededError;
+
+    case cdm::kUnknownError:
+    case cdm::kClientError:
+    case cdm::kOutputError:
       break;
   }
 
@@ -370,7 +374,7 @@ WidevineDecryptor::OnRejectPromise(uint32_t aPromiseId,
     return;
   }
   Log("Decryptor::OnRejectPromise(aPromiseId=%d, err=%d, sysCode=%u, msg=%s)",
-      aPromiseId, (int)aError, aSystemCode, aErrorMessage);
+      aPromiseId, (int)aException, aSystemCode, aErrorMessage);
   mCallback->RejectPromise(aPromiseId,
                            ToGMPDOMException(aException),
                            !aErrorMessageSize ? "" : aErrorMessage,
