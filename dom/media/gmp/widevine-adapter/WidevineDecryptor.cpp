@@ -486,28 +486,6 @@ WidevineDecryptor::OnSessionClosed(const char* aSessionId,
 }
 
 void
-WidevineDecryptor::OnLegacySessionError(const char* aSessionId,
-                                        uint32_t aSessionIdLength,
-                                        Error aError,
-                                        uint32_t aSystemCode,
-                                        const char* aErrorMessage,
-                                        uint32_t aErrorMessageLength)
-{
-  if (!mCallback) {
-    Log("Decryptor::OnLegacySessionError(sid=%s, error=%d) FAIL; !mCallback",
-        aSessionId, (int)aError);
-    return;
-  }
-  Log("Decryptor::OnLegacySessionError(sid=%s, error=%d)", aSessionId, (int)aError);
-  mCallback->SessionError(aSessionId,
-                          aSessionIdLength,
-                          ToGMPDOMException(aError),
-                          aSystemCode,
-                          aErrorMessage,
-                          aErrorMessageLength);
-}
-
-void
 WidevineDecryptor::SendPlatformChallenge(const char* aServiceId,
                                          uint32_t aServiceIdSize,
                                          const char* aChallenge,
