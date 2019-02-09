@@ -99,6 +99,11 @@
                     oncommand="gContextMenu.mediaCommand('playbackRate', 2.0);"/>
         </menupopup>
       </menu>
+      <menuitem id="context-media-loop"
+                label="&mediaLoop.label;"
+                accesskey="&mediaLoop.accesskey;"
+                type="checkbox"
+                oncommand="gContextMenu.mediaCommand('loop');"/>
       <menuitem id="context-media-showcontrols"
                 label="&mediaShowControls.label;"
                 accesskey="&mediaShowControls.accesskey;"
