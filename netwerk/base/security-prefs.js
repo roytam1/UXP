@@ -17,6 +17,11 @@ pref("security.ssl.false_start.require-npn", false);
 pref("security.ssl.enable_npn", true);
 pref("security.ssl.enable_alpn", true);
 
+// TLS 1.3 cipher suites
+pref("security.tls13.aes_128_gcm_sha256", true);
+pref("security.tls13.chacha20_poly1305_sha256", true);
+pref("security.tls13.aes_256_gcm_sha384", true);
+
 // TLS 1.0-1.2 cipher suites
 pref("security.ssl3.ecdhe_rsa_aes_128_gcm_sha256", true);
 pref("security.ssl3.ecdhe_ecdsa_aes_128_gcm_sha256", true);
@@ -36,11 +41,14 @@ pref("security.ssl3.rsa_camellia_128_sha", true);
 pref("security.ssl3.rsa_camellia_256_sha", true);
 pref("security.ssl3.rsa_aes_128_sha", true);
 pref("security.ssl3.rsa_aes_256_sha", true);
-// Weak / deprecated
+
+// Deprecated
 pref("security.ssl3.dhe_rsa_aes_256_sha", false);
 pref("security.ssl3.dhe_rsa_aes_128_sha", false);
 pref("security.ssl3.rsa_aes_128_gcm_sha256", false);
 pref("security.ssl3.rsa_aes_128_sha256", false);
+
+// Weak/broken (requires fallback_hosts)
 pref("security.ssl3.rsa_des_ede3_sha", false);
 pref("security.ssl3.rsa_rc4_128_sha", false);
 pref("security.ssl3.rsa_rc4_128_md5", false);
