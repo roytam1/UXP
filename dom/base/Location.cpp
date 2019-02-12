@@ -789,10 +789,6 @@ Location::GetSearch(nsAString& aSearch)
 NS_IMETHODIMP
 Location::SetSearch(const nsAString& aSearch)
 {
-  if (aSearch.IsEmpty()) {
-    return NS_OK; // Ignore empty string
-  }
-
   nsresult rv = SetSearchInternal(aSearch);
   if (NS_FAILED(rv)) {
     return rv;
