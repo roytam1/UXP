@@ -121,6 +121,11 @@ public:
     static const SkScalar* ConicWeightData(const SkPath& path) {
         return path.fPathRef->conicWeights();
     }
+
+    static bool IsAxisAligned(const SkPath& path) {
+        SkRect tmp;
+        return (path.fPathRef->fIsRRect | path.fPathRef->fIsOval) || path.isRect(&tmp);
+    }
 };
 
 #endif

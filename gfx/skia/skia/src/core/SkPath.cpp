@@ -716,9 +716,11 @@ void SkPath::setConvexity(Convexity c) {
         fFirstDirection = SkPathPriv::kUnknown_FirstDirection;  \
     } while (0)
 
-void SkPath::incReserve(U16CPU inc) {
+void SkPath::incReserve(int inc) {
     SkDEBUGCODE(this->validate();)
-    SkPathRef::Editor(&fPathRef, inc, inc);
+    if (inc > 0) {
+        SkPathRef::Editor(&fPathRef, inc, inc);
+    }
     SkDEBUGCODE(this->validate();)
 }
 
@@ -1691,6 +1693,13 @@ static void subdivide_cubic_to(SkPath* path, const SkPoint pts[4],
 }
 
 void SkPath::transform(const SkMatrix& matrix, SkPath* dst) const {
+    if (matrix.isIdentity()) {
+        if (dst != nullptr && dst != this) {
+            *dst = *this;
+        }
+        return;
+    }
+
     SkDEBUGCODE(this->validate();)
     if (dst == nullptr) {
         dst = (SkPath*)this;
@@ -1738,12 +1747,19 @@ void SkPath::transform(const SkMatrix& matrix, SkPath* dst) const {
         matrix.mapPoints(ed.points(), ed.pathRef()->countPoints());
         dst->fFirstDirection = SkPathPriv::kUnknown_FirstDirection;
     } else {
+        Convexity convexity = Convexity(fConvexity);
+        
         SkPathRef::CreateTransformedCopy(&dst->fPathRef, *fPathRef.get(), matrix);
 
         if (this != dst) {
             dst->fFillType = fFillType;
-            dst->fConvexity = fConvexity;
             dst->fIsVolatile = fIsVolatile;
+        }
+        
+        if (matrix.isScaleTranslate() && SkPathPriv::IsAxisAligned(*this)) {
+            dst->fConvexity = convexity;
+        } else {
+            dst->fConvexity = kUnknown_Convexity;
         }
 
         if (SkPathPriv::kUnknown_FirstDirection == fFirstDirection) {
@@ -1758,7 +1774,6 @@ void SkPath::transform(const SkMatrix& matrix, SkPath* dst) const {
             } else if (det2x2 > 0) {
                 dst->fFirstDirection = fFirstDirection.load();
             } else {
-                dst->fConvexity = kUnknown_Convexity;
                 dst->fFirstDirection = SkPathPriv::kUnknown_FirstDirection;
             }
         }
