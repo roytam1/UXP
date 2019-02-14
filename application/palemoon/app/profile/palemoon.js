@@ -45,7 +45,7 @@ pref("extensions.getAddons.cache.enabled", false);
 pref("extensions.getAddons.maxResults", 10);
 pref("extensions.getAddons.get.url", "https://@APO_AM_URL@/internal/get?addonguid=%IDS%&os=%OS%&version=%VERSION%");
 pref("extensions.getAddons.getWithPerformance.url", "https://@APO_AM_URL@/internal/get?addonguid=%IDS%&os=%OS%&version=%VERSION%");
-pref("extensions.getAddons.search.browseURL", "https://@APO_AM_URL@/external/recommended");
+pref("extensions.getAddons.search.browseURL", "https://@APO_AM_URL@/search/?terms=%TERMS%");
 pref("extensions.getAddons.search.url", "https://@APO_AM_URL@/internal/search?q=%TERMS%&locale=%LOCALE%&os=%OS%&version=%VERSION%");
 pref("extensions.webservice.discoverURL", "http://@APO_AM_URL@/internal/discover/");
 pref("extensions.getAddons.recommended.url", "https://@APO_AM_URL@/internal/recommended?locale=%LOCALE%&os=%OS%");
