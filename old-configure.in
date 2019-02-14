@@ -220,6 +220,11 @@ case "$target" in
             # See https://connect.microsoft.com/VisualStudio/feedback/details/1789709/visual-c-2015-runtime-broken-on-windows-server-2003-c-11-magic-statics
             CXXFLAGS="$CXXFLAGS -Zc:threadSafeInit-"
 
+            # C4752: We explicitly use AVX instructions in only some libs, not global
+            # This is a pointless "helpful warning" to use /arch:AVX which we don't want.
+            CFLAGS="$CFLAGS -wd4752"
+            CXXFLAGS="$CXXFLAGS -wd4752"
+            
             # https://connect.microsoft.com/VisualStudio/feedback/details/888527/warnings-on-dbghelp-h
             # for dbghelp.h, imagehlp.h, and shobj.h
             # C4091: 'typedef ': ignored on left of '' when no variable is declared
