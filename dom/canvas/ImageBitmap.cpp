@@ -351,29 +351,27 @@ CheckSecurityForHTMLElements(const nsLayoutUtils::SurfaceFromElementResult& aRes
  */
 template<class HTMLElementType>
 static already_AddRefed<SourceSurface>
-GetSurfaceFromElement(nsIGlobalObject* aGlobal, HTMLElementType& aElement, ErrorResult& aRv)
+GetSurfaceFromElement(nsIGlobalObject* aGlobal, HTMLElementType& aElement,
+                      bool* aWriteOnly, ErrorResult& aRv)
 {
   nsLayoutUtils::SurfaceFromElementResult res =
     nsLayoutUtils::SurfaceFromElement(&aElement, nsLayoutUtils::SFE_WANT_FIRST_FRAME);
 
-  // check origin-clean
-  if (!CheckSecurityForHTMLElements(res)) {
-    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
-    return nullptr;
-  }
-
   RefPtr<SourceSurface> surface = res.GetSourceSurface();
 
   if (NS_WARN_IF(!surface)) {
-    aRv.Throw(NS_ERROR_NOT_AVAILABLE);
+    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
     return nullptr;
   }
+  
+  // Check origin-clean and pass back
+  *aWriteOnly = !CheckSecurityForHTMLElements(res);
 
   return surface.forget();
 }
 
 /*
- * The specification doesn't allow to create an ImegeBitmap from a vector image.
+ * The specification doesn't allow to create an ImageBitmap from a vector image.
  * This function is used to check if the given HTMLImageElement contains a
  * raster image.
  */
@@ -398,7 +396,7 @@ HasRasterImage(HTMLImageElement& aImageEl)
 }
 
 ImageBitmap::ImageBitmap(nsIGlobalObject* aGlobal, layers::Image* aData,
-                         bool aIsPremultipliedAlpha /* = true */)
+                         bool aWriteOnly, bool aIsPremultipliedAlpha /* = true */)
   : mParent(aGlobal)
   , mData(aData)
   , mSurface(nullptr)
@@ -406,6 +404,7 @@ ImageBitmap::ImageBitmap(nsIGlobalObject* aGlobal, layers::Image* aData,
   , mPictureRect(0, 0, aData->GetSize().width, aData->GetSize().height)
   , mIsPremultipliedAlpha(aIsPremultipliedAlpha)
   , mIsCroppingAreaOutSideOfSourceImage(false)
+  , mWriteOnly(aWriteOnly)
 {
   MOZ_ASSERT(aData, "aData is null in ImageBitmap constructor.");
 }
@@ -698,6 +697,7 @@ ImageBitmap::ToCloneData() const
   RefPtr<SourceSurface> surface = mData->GetAsSourceSurface();
   result->mSurface = surface->GetDataSurface();
   MOZ_ASSERT(result->mSurface);
+  result->mWriteOnly = mWriteOnly;
 
   return Move(result);
 }
@@ -708,7 +708,7 @@ ImageBitmap::CreateFromCloneData(nsIGlobalObject* aGlobal,
 {
   RefPtr<layers::Image> data = CreateImageFromSurface(aData->mSurface);
 
-  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data,
+  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data, aData->mWriteOnly,
                                             aData->mIsPremultipliedAlpha);
 
   ret->mIsCroppingAreaOutSideOfSourceImage =
@@ -724,11 +724,8 @@ ImageBitmap::CreateFromOffscreenCanvas(nsIGlobalObject* aGlobal,
                                        OffscreenCanvas& aOffscreenCanvas,
                                        ErrorResult& aRv)
 {
-  // Check origin-clean.
-  if (aOffscreenCanvas.IsWriteOnly()) {
-    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
-    return nullptr;
-  }
+  // Check origin-clean
+  bool writeOnly = aOffscreenCanvas.IsWriteOnly();
 
   nsLayoutUtils::SurfaceFromElementResult res =
     nsLayoutUtils::SurfaceFromOffscreenCanvas(&aOffscreenCanvas,
@@ -744,7 +741,7 @@ ImageBitmap::CreateFromOffscreenCanvas(nsIGlobalObject* aGlobal,
   RefPtr<layers::Image> data =
     CreateImageFromSurface(surface);
 
-  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data);
+  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data, writeOnly);
   return ret.forget();
 }
 
@@ -757,16 +754,19 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, HTMLImageElement& aImageEl
     aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
     return nullptr;
   }
-
+  
   // Check if the image element is a bitmap (e.g. it's a vector graphic) or not.
   if (!HasRasterImage(aImageEl)) {
     aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
     return nullptr;
   }
 
+  bool writeOnly = true;
+
   // Get the SourceSurface out from the image element and then do security
   // checking.
-  RefPtr<SourceSurface> surface = GetSurfaceFromElement(aGlobal, aImageEl, aRv);
+  RefPtr<SourceSurface> surface = GetSurfaceFromElement(aGlobal, aImageEl,
+                                                        &writeOnly, aRv);
 
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
@@ -780,7 +780,7 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, HTMLImageElement& aImageEl
     return nullptr;
   }
 
-  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data);
+  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data, writeOnly);
 
   // Set the picture rectangle.
   if (ret && aCropRect.isSome()) {
@@ -812,13 +812,13 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, HTMLVideoElement& aVideoEl
     return nullptr;
   }
 
+  bool writeOnly = true;
+  
   // Check security.
   nsCOMPtr<nsIPrincipal> principal = aVideoEl.GetCurrentVideoPrincipal();
   bool CORSUsed = aVideoEl.GetCORSMode() != CORS_NONE;
-  if (!CheckSecurityForHTMLElements(false, CORSUsed, principal)) {
-    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
-    return nullptr;
-  }
+
+  writeOnly = !CheckSecurityForHTMLElements(false, CORSUsed, principal);
 
   // Create ImageBitmap.
   ImageContainer *container = aVideoEl.GetImageContainer();
@@ -834,7 +834,7 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, HTMLVideoElement& aVideoEl
     aRv.Throw(NS_ERROR_NOT_AVAILABLE);
     return nullptr;
   }
-  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data);
+  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data, writeOnly);
 
   // Set the picture rectangle.
   if (ret && aCropRect.isSome()) {
@@ -856,10 +856,16 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, HTMLCanvasElement& aCanvas
     return nullptr;
   }
 
-  RefPtr<SourceSurface> surface = GetSurfaceFromElement(aGlobal, aCanvasEl, aRv);
+  bool writeOnly = true;
+  
+  RefPtr<SourceSurface> surface = GetSurfaceFromElement(aGlobal, aCanvasEl, &writeOnly, aRv);
 
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
+  }
+
+  if (!writeOnly) {
+    writeOnly = aCanvasEl.IsWriteOnly();
   }
 
   // Crop the source surface if needed.
@@ -874,8 +880,7 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, HTMLCanvasElement& aCanvas
       aCropRect.isSome()) {
     // The _surface_ must be a DataSourceSurface.
     MOZ_ASSERT(surface->GetType() == SurfaceType::DATA,
-               "The snapshot SourceSurface from WebGL rendering contest is not \
-               DataSourceSurface.");
+               "The snapshot SourceSurface from WebGL rendering contest is not DataSourceSurface.");
     RefPtr<DataSourceSurface> dataSurface = surface->GetDataSurface();
     croppedSurface = CropAndCopyDataSourceSurface(dataSurface, cropRect);
     cropRect.MoveTo(0, 0);
@@ -897,7 +902,7 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, HTMLCanvasElement& aCanvas
     return nullptr;
   }
 
-  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data);
+  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data, writeOnly);
 
   // Set the picture rectangle.
   if (ret && aCropRect.isSome()) {
@@ -958,9 +963,12 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, ImageData& aImageData,
     return nullptr;
   }
 
-  // Create an ImageBimtap.
+  // Create an ImageBitmap.
   // ImageData's underlying data is not alpha-premultiplied.
-  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data, false);
+  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal,
+                                            data,
+                                            false /* write-only */,
+                                            false /* alpha-premult */);
 
   // The cropping information has been handled in the CreateImageFromRawData()
   // function.
@@ -975,11 +983,8 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, ImageData& aImageData,
 ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, CanvasRenderingContext2D& aCanvasCtx,
                             const Maybe<IntRect>& aCropRect, ErrorResult& aRv)
 {
-  // Check origin-clean.
-  if (aCanvasCtx.GetCanvas()->IsWriteOnly()) {
-    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
-    return nullptr;
-  }
+  // Check origin-clean
+  bool writeOnly = aCanvasCtx.GetCanvas()->IsWriteOnly() || aCanvasCtx.IsWriteOnly();
 
   RefPtr<SourceSurface> surface = aCanvasCtx.GetSurfaceSnapshot();
 
@@ -1001,7 +1006,7 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, CanvasRenderingContext2D& 
     return nullptr;
   }
 
-  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data);
+  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data, writeOnly);
 
   // Set the picture rectangle.
   if (ret && aCropRect.isSome()) {
@@ -1024,7 +1029,10 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, ImageBitmap& aImageBitmap,
   }
 
   RefPtr<layers::Image> data = aImageBitmap.mData;
-  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal, data, aImageBitmap.mIsPremultipliedAlpha);
+  RefPtr<ImageBitmap> ret = new ImageBitmap(aGlobal,
+                                            data,
+                                            aImageBitmap.mWriteOnly,
+                                            aImageBitmap.mIsPremultipliedAlpha);
 
   // Set the picture rectangle.
   if (ret && aCropRect.isSome()) {
@@ -1295,7 +1303,7 @@ private:
     }
 
     // Create ImageBitmap object.
-    RefPtr<ImageBitmap> imageBitmap = new ImageBitmap(mGlobalObject, data);
+    RefPtr<ImageBitmap> imageBitmap = new ImageBitmap(mGlobalObject, data, false /* write-only */);
 
     // Set mIsCroppingAreaOutSideOfSourceImage.
     imageBitmap->SetIsCroppingAreaOutSideOfSourceImage(sourceSize, originalCropRect);
@@ -1391,7 +1399,7 @@ private:
     }
 
     // Create ImageBitmap object.
-    RefPtr<ImageBitmap> imageBitmap = new ImageBitmap(mGlobalObject, data);
+    RefPtr<ImageBitmap> imageBitmap = new ImageBitmap(mGlobalObject, data, false /* write-only */);
 
     // Set mIsCroppingAreaOutSideOfSourceImage.
     imageBitmap->SetIsCroppingAreaOutSideOfSourceImage(sourceSize, originalCropRect);
@@ -1486,14 +1494,19 @@ ImageBitmap::ReadStructuredClone(JSContext* aCx,
   uint32_t picRectHeight_;
   uint32_t isPremultipliedAlpha_;
   uint32_t isCroppingAreaOutSideOfSourceImage_;
+  uint32_t writeOnly;
+  uint32_t dummy;
 
   if (!JS_ReadUint32Pair(aReader, &picRectX_, &picRectY_) ||
       !JS_ReadUint32Pair(aReader, &picRectWidth_, &picRectHeight_) ||
       !JS_ReadUint32Pair(aReader, &isPremultipliedAlpha_,
-                                  &isCroppingAreaOutSideOfSourceImage_)) {
+                                  &isCroppingAreaOutSideOfSourceImage_) ||
+      !JS_ReadUint32Pair(aReader, &writeOnly, &dummy)) {
     return nullptr;
   }
 
+  MOZ_ASSERT(dummy == 0);
+  
   int32_t picRectX = BitwiseCast<int32_t>(picRectX_);
   int32_t picRectY = BitwiseCast<int32_t>(picRectY_);
   int32_t picRectWidth = BitwiseCast<int32_t>(picRectWidth_);
@@ -1512,7 +1525,7 @@ ImageBitmap::ReadStructuredClone(JSContext* aCx,
   {
     RefPtr<layers::Image> img = CreateImageFromSurface(aClonedSurfaces[aIndex]);
     RefPtr<ImageBitmap> imageBitmap =
-      new ImageBitmap(aParent, img, isPremultipliedAlpha_);
+      new ImageBitmap(aParent, img, !!writeOnly, isPremultipliedAlpha_);
 
     imageBitmap->mIsCroppingAreaOutSideOfSourceImage =
       isCroppingAreaOutSideOfSourceImage_;
@@ -1547,6 +1560,7 @@ ImageBitmap::WriteStructuredClone(JSStructuredCloneWriter* aWriter,
   const uint32_t picRectHeight = BitwiseCast<uint32_t>(aImageBitmap->mPictureRect.height);
   const uint32_t isPremultipliedAlpha = aImageBitmap->mIsPremultipliedAlpha ? 1 : 0;
   const uint32_t isCroppingAreaOutSideOfSourceImage = aImageBitmap->mIsCroppingAreaOutSideOfSourceImage ? 1 : 0;
+  const uint32_t isWriteOnly = aImageBitmap->mWriteOnly ? 1 : 0;
 
   // Indexing the cloned surfaces and send the index to the receiver.
   uint32_t index = aClonedSurfaces.Length();
@@ -1555,7 +1569,8 @@ ImageBitmap::WriteStructuredClone(JSStructuredCloneWriter* aWriter,
       NS_WARN_IF(!JS_WriteUint32Pair(aWriter, picRectX, picRectY)) ||
       NS_WARN_IF(!JS_WriteUint32Pair(aWriter, picRectWidth, picRectHeight)) ||
       NS_WARN_IF(!JS_WriteUint32Pair(aWriter, isPremultipliedAlpha,
-                                              isCroppingAreaOutSideOfSourceImage))) {
+                                              isCroppingAreaOutSideOfSourceImage)) ||
+      NS_WARN_IF(!JS_WriteUint32Pair(aWriter, isWriteOnly, 0))) {
     return false;
   }
 
