@@ -38,7 +38,8 @@ pref("extensions.strictCompatibility", false);
 pref("extensions.minCompatibleAppVersion", "1.5");
 
 // Preferences for APO integration
-#define APO_AM_URL addons.palemoon.org/integration/addon-manager
+#define APO_URL addons.palemoon.org
+#define APO_AM_URL @APO_URL@/integration/addon-manager
 #define APO_AUS_ARGS reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%
 
 pref("extensions.getAddons.cache.enabled", false);
@@ -70,7 +71,7 @@ pref("extensions.update.autoUpdateDefault", true);
 pref("extensions.autoDisableScopes", 15);
 
 // Dictionary download preference
-pref("browser.dictionaries.download.url", "https://addons.mozilla.org/%LOCALE%/firefox/dictionaries/");
+pref("browser.dictionaries.download.url", "https://@APO_URL@/dictionaries/");
 
 // Get More Tools link URL
 pref("browser.getdevtools.url","https://@APO_AM_URL@/external/devtools");

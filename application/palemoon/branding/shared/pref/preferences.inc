@@ -1,4 +1,5 @@
-#define APO_AM_URL addons.palemoon.org/integration/addon-manager
+#define APO_URL addons.palemoon.org
+#define APO_AM_URL @APO_URL@/integration/addon-manager
 #define APO_AUS_ARGS reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%
 
 // ===| General |==============================================================
@@ -36,7 +37,7 @@ pref("extensions.blocklist.url","http://blocklist.palemoon.org/%VERSION%/blockli
 pref("extensions.blocklist.itemURL", "http://blocklist.palemoon.org/info/?id=%blockID%");
 
 // Dictionary URL
-pref("browser.dictionaries.download.url", "https://addons.mozilla.org/%LOCALE%/firefox/dictionaries/");
+pref("browser.dictionaries.download.url", "https://@APO_URL@/dictionaries/");
 
 pref("extensions.update.autoUpdateDefault", true); // Automatically update extensions by default
 pref("extensions.getAddons.maxResults", 10);
