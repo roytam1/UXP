@@ -189,7 +189,8 @@ exports.menuitems = [
     l10nKey: "getMoreDevtoolsCmd",
     oncommand(event) {
       let window = event.target.ownerDocument.defaultView;
-      window.openUILinkIn("https://addons.mozilla.org/firefox/collections/mozilla/webdeveloper/", "tab");
+      let getMoreURL = Services.prefs.getCharPref("browser.getdevtools.url");
+      window.openUILinkIn(getMoreURL, "tab");
     }
   },
 ];
