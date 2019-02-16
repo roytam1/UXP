@@ -152,7 +152,6 @@ private:
 
   enum class State {
     FILE_HEADER,
-    CLIPBOARD_HEADER,
     INFO_HEADER_SIZE,
     INFO_HEADER_REST,
     BITFIELDS,
@@ -172,7 +171,7 @@ private:
   nsBMPDecoder(RasterImage* aImage, uint32_t aDataOffset);
 
   // Helper constructor called by the other two.
-  nsBMPDecoder(RasterImage* aImage, State aState, size_t aLength);
+  nsBMPDecoder(RasterImage* aImage, State aState, size_t aLength, bool aForClipboard);
 
   int32_t AbsoluteHeight() const { return abs(mH.mHeight); }
 
@@ -181,7 +180,6 @@ private:
   void FinishRow();
 
   LexerTransition<State> ReadFileHeader(const char* aData, size_t aLength);
-  LexerTransition<State> ReadClipboardHeader(const char* aData, size_t aLength);
   LexerTransition<State> ReadInfoHeaderSize(const char* aData, size_t aLength);
   LexerTransition<State> ReadInfoHeaderRest(const char* aData, size_t aLength);
   LexerTransition<State> ReadBitfields(const char* aData, size_t aLength);
@@ -199,6 +197,9 @@ private:
 
   // If the BMP is within an ICO file our treatment of it differs slightly.
   bool mIsWithinICO;
+
+  // If the BMP is decoded from the clipboard, we start with a data offset.
+  bool mIsForClipboard;
 
   bmp::BitFields mBitFields;
 
