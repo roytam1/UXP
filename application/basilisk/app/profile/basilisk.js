@@ -78,6 +78,9 @@ pref("xpinstall.signatures.devInfoURL", "https://wiki.mozilla.org/Addons/Extensi
 // Dictionary download preference
 pref("browser.dictionaries.download.url", "http://@AM_DOMAIN@/dictionaries/");
 
+// Get More Tools link URL
+pref("browser.getdevtools.url","https://@AM_DOMAIN@/?component=integration&type=external&request=devtools");
+
 // At startup, should we check to see if the installation
 // date is older than some threshold
 pref("app.update.checkInstallTime", true);
