@@ -780,9 +780,9 @@ pref("dom.phonenumber.substringmatching.BR", 8);
 pref("dom.phonenumber.substringmatching.CO", 10);
 pref("dom.phonenumber.substringmatching.VE", 7);
 
-// Support, but deprecate, hardware-accelerated Skia canvas
+// Enable hardware-accelerated Skia canvas
 pref("gfx.canvas.azure.backends", "skia");
-pref("gfx.canvas.azure.accelerated", false);
+pref("gfx.canvas.azure.accelerated", true);
 
 // See ua-update.json.in for the packaged UA override list
 pref("general.useragent.updates.enabled", true);

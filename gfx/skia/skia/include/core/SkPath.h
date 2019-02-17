@@ -373,7 +373,7 @@ public:
         @param extraPtCount The number of extra points the path should
                             preallocate for.
     */
-    void incReserve(int extraPtCount);
+    void incReserve(unsigned extraPtCount);
 
     /** Set the beginning of the next contour to the point (x,y).
 
