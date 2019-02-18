@@ -1744,7 +1744,7 @@ void SkPath::transform(const SkMatrix& matrix, SkPath* dst) const {
 
         if (this != dst) {
             dst->fFillType = fFillType;
-            dst->fConvexity = fConvexity;
+            dst->fConvexity = kUnknown_Convexity;
             dst->fIsVolatile = fIsVolatile;
         }
 
