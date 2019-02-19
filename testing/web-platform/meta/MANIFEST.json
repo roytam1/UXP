@@ -3944,6 +3944,16 @@
         "url": "/2dcontext/drawing-images-to-the-canvas/drawimage_html_image_9.html"
       },
       {
+        "path": "2dcontext/drawing-images-to-the-canvas/drawimage_svg_image_1.html",
+        "references": [
+          [
+            "/2dcontext/drawing-images-to-the-canvas/drawimage_svg_image_1_ref.html",
+            "=="
+          ]
+        ],
+        "url": "/2dcontext/drawing-images-to-the-canvas/drawimage_svg_image_1.html"
+      },
+      {
         "path": "2dcontext/line-styles/canvas_linestyles_linecap_001.htm",
         "references": [
           [
@@ -38443,8 +38453,23 @@
     ]
   },
   "local_changes": {
-    "deleted": [],
-    "deleted_reftests": {},
+    "deleted": [
+      "2dcontext/drawing-images-to-the-canvas/drawimage_html_image_1.html"
+    ],
+    "deleted_reftests": {
+      "2dcontext/drawing-images-to-the-canvas/drawimage_html_image_1.html": [
+        {
+          "path": "2dcontext/drawing-images-to-the-canvas/drawimage_html_image_1.html",
+          "references": [
+            [
+              "/2dcontext/drawing-images-to-the-canvas/drawimage_html_image_1_ref.html",
+              "=="
+            ]
+          ],
+          "url": "/2dcontext/drawing-images-to-the-canvas/drawimage_html_image_1.html"
+        }
+      ]
+    },
     "items": {
       "manual": {
         "html/browsers/windows/noreferrer-cross-origin-close-manual.sub.html": [
@@ -38461,6 +38486,78 @@
         ]
       },
       "reftest": {
+        "html/form-elements/the-textarea-element/multiline-placeholder-cr.html": [
+          {
+            "path": "html/form-elements/the-textarea-element/multiline-placeholder-cr.html",
+            "references": [
+              [
+                "/html/form-elements/the-textarea-element/multiline-placeholder-ref.html",
+                "=="
+              ]
+            ],
+            "url": "/html/form-elements/the-textarea-element/multiline-placeholder-cr.html"
+          }
+        ],
+        "html/form-elements/the-textarea-element/multiline-placeholder-crlf.html": [
+          {
+            "path": "html/form-elements/the-textarea-element/multiline-placeholder-crlf.html",
+            "references": [
+              [
+                "/html/form-elements/the-textarea-element/multiline-placeholder-ref.html",
+                "=="
+              ]
+            ],
+            "url": "/html/form-elements/the-textarea-element/multiline-placeholder-crlf.html"
+          }
+        ],
+        "html/form-elements/the-textarea-element/multiline-placeholder.html": [
+          {
+            "path": "html/form-elements/the-textarea-element/multiline-placeholder.html",
+            "references": [
+              [
+                "/html/form-elements/the-textarea-element/multiline-placeholder-ref.html",
+                "=="
+              ]
+            ],
+            "url": "/html/form-elements/the-textarea-element/multiline-placeholder.html"
+          }
+        ],
+        "html/input/the-placeholder-attribute/multiline-cr.html": [
+          {
+            "path": "html/input/the-placeholder-attribute/multiline-cr.html",
+            "references": [
+              [
+                "/html/input/the-placeholder-attribute/multiline-ref.html",
+                "=="
+              ]
+            ],
+            "url": "/html/input/the-placeholder-attribute/multiline-cr.html"
+          }
+        ],
+        "html/input/the-placeholder-attribute/multiline-crlf.html": [
+          {
+            "path": "html/input/the-placeholder-attribute/multiline-crlf.html",
+            "references": [
+              [
+                "/html/input/the-placeholder-attribute/multiline-ref.html",
+                "=="
+              ]
+            ],
+            "url": "/html/input/the-placeholder-attribute/multiline-crlf.html"
+          }
+        ],
+        "html/input/the-placeholder-attribute/multiline.html": [
+          {
+            "path": "html/input/the-placeholder-attribute/multiline.html",
+            "references": [
+              [
+                "/html/input/the-placeholder-attribute/multiline-ref.html",
+                "=="
+              ]
+            ],
+            "url": "/html/input/the-placeholder-attribute/multiline.html"
+          }
+        ],
         "html/semantics/grouping-content/the-ol-element/reversed-1e.html": [
           {
             "path": "html/semantics/grouping-content/the-ol-element/reversed-1e.html",
@@ -38797,6 +38894,78 @@
       }
     },
     "reftest_nodes": {
+      "html/form-elements/the-textarea-element/multiline-placeholder-cr.html": [
+        {
+          "path": "html/form-elements/the-textarea-element/multiline-placeholder-cr.html",
+          "references": [
+            [
+              "/html/form-elements/the-textarea-element/multiline-placeholder-ref.html",
+              "=="
+            ]
+          ],
+          "url": "/html/form-elements/the-textarea-element/multiline-placeholder-cr.html"
+        }
+      ],
+      "html/form-elements/the-textarea-element/multiline-placeholder-crlf.html": [
+        {
+          "path": "html/form-elements/the-textarea-element/multiline-placeholder-crlf.html",
+          "references": [
+            [
+              "/html/form-elements/the-textarea-element/multiline-placeholder-ref.html",
+              "=="
+            ]
+          ],
+          "url": "/html/form-elements/the-textarea-element/multiline-placeholder-crlf.html"
+        }
+      ],
+      "html/form-elements/the-textarea-element/multiline-placeholder.html": [
+        {
+          "path": "html/form-elements/the-textarea-element/multiline-placeholder.html",
+          "references": [
+            [
+              "/html/form-elements/the-textarea-element/multiline-placeholder-ref.html",
+              "=="
+            ]
+          ],
+          "url": "/html/form-elements/the-textarea-element/multiline-placeholder.html"
+        }
+      ],
+      "html/input/the-placeholder-attribute/multiline-cr.html": [
+        {
+          "path": "html/input/the-placeholder-attribute/multiline-cr.html",
+          "references": [
+            [
+              "/html/input/the-placeholder-attribute/multiline-ref.html",
+              "=="
+            ]
+          ],
+          "url": "/html/input/the-placeholder-attribute/multiline-cr.html"
+        }
+      ],
+      "html/input/the-placeholder-attribute/multiline-crlf.html": [
+        {
+          "path": "html/input/the-placeholder-attribute/multiline-crlf.html",
+          "references": [
+            [
+              "/html/input/the-placeholder-attribute/multiline-ref.html",
+              "=="
+            ]
+          ],
+          "url": "/html/input/the-placeholder-attribute/multiline-crlf.html"
+        }
+      ],
+      "html/input/the-placeholder-attribute/multiline.html": [
+        {
+          "path": "html/input/the-placeholder-attribute/multiline.html",
+          "references": [
+            [
+              "/html/input/the-placeholder-attribute/multiline-ref.html",
+              "=="
+            ]
+          ],
+          "url": "/html/input/the-placeholder-attribute/multiline.html"
+        }
+      ],
       "html/semantics/grouping-content/the-ol-element/reversed-1e.html": [
         {
           "path": "html/semantics/grouping-content/the-ol-element/reversed-1e.html",

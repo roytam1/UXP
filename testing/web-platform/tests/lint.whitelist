@@ -85,6 +85,10 @@ PRINT STATEMENT:*/tools/*
 
 CR AT EOL:WebIDL/valid/idl/documentation-dos.widl
 CR AT EOL:cors/resources/cors-headers.asis
+CR AT EOL: html/form-elements/the-textarea-element/multiline-placefolder-cr.html
+CR AT EOL: html/form-elements/the-textarea-element/multiline-placefolder-crlf.html
+CR AT EOL: html/input/the-placeholder-attribute/multiline-cr.html
+CR AT EOL: html/input/the-placeholder-attribute/multiline-crlf.html
 CR AT EOL:html/semantics/embedded-content/the-canvas-element/size.attributes.parse.whitespace.html
 INDENT TABS:html/semantics/embedded-content/the-canvas-element/size.attributes.parse.whitespace.html
 CR AT EOL:webvtt/webvtt-file-format-parsing/webvtt-file-parsing/support/newlines.vtt
