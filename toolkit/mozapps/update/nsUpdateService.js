@@ -35,9 +35,6 @@ const PREF_APP_UPDATE_LOG                  = "app.update.log";
 const PREF_APP_UPDATE_NOTIFIEDUNSUPPORTED  = "app.update.notifiedUnsupported";
 const PREF_APP_UPDATE_POSTUPDATE           = "app.update.postupdate";
 const PREF_APP_UPDATE_PROMPTWAITTIME       = "app.update.promptWaitTime";
-const PREF_APP_UPDATE_SERVICE_ENABLED      = "app.update.service.enabled";
-const PREF_APP_UPDATE_SERVICE_ERRORS       = "app.update.service.errors";
-const PREF_APP_UPDATE_SERVICE_MAXERRORS    = "app.update.service.maxErrors";
 const PREF_APP_UPDATE_SILENT               = "app.update.silent";
 const PREF_APP_UPDATE_SOCKET_MAXERRORS     = "app.update.socket.maxErrors";
 const PREF_APP_UPDATE_SOCKET_RETRYTIMEOUT  = "app.update.socket.retryTimeout";
@@ -73,12 +70,10 @@ const FILE_UPDATE_VERSION    = "update.version";
 const STATE_NONE            = "null";
 const STATE_DOWNLOADING     = "downloading";
 const STATE_PENDING         = "pending";
-const STATE_PENDING_SERVICE = "pending-service";
 const STATE_PENDING_ELEVATE = "pending-elevate";
 const STATE_APPLYING        = "applying";
 const STATE_APPLIED         = "applied";
 const STATE_APPLIED_OS      = "applied-os";
-const STATE_APPLIED_SERVICE = "applied-service";
 const STATE_SUCCEEDED       = "succeeded";
 const STATE_DOWNLOAD_FAILED = "download-failed";
 const STATE_FAILED          = "failed";
@@ -86,22 +81,9 @@ const STATE_FAILED          = "failed";
 // The values below used by this code are from common/errors.h
 const WRITE_ERROR                          = 7;
 const ELEVATION_CANCELED                   = 9;
-const SERVICE_UPDATER_COULD_NOT_BE_STARTED = 24;
-const SERVICE_NOT_ENOUGH_COMMAND_LINE_ARGS = 25;
-const SERVICE_UPDATER_SIGN_ERROR           = 26;
-const SERVICE_UPDATER_COMPARE_ERROR        = 27;
-const SERVICE_UPDATER_IDENTITY_ERROR       = 28;
-const SERVICE_STILL_APPLYING_ON_SUCCESS    = 29;
-const SERVICE_STILL_APPLYING_ON_FAILURE    = 30;
-const SERVICE_UPDATER_NOT_FIXED_DRIVE      = 31;
-const SERVICE_COULD_NOT_LOCK_UPDATER       = 32;
-const SERVICE_INSTALLDIR_ERROR             = 33;
 const WRITE_ERROR_ACCESS_DENIED            = 35;
 const WRITE_ERROR_CALLBACK_APP             = 37;
 const FILESYSTEM_MOUNT_READWRITE_ERROR     = 43;
-const SERVICE_COULD_NOT_COPY_UPDATER       = 49;
-const SERVICE_STILL_APPLYING_TERMINATED    = 50;
-const SERVICE_STILL_APPLYING_NO_EXIT_CODE  = 51;
 const WRITE_ERROR_FILE_COPY                = 61;
 const WRITE_ERROR_DELETE_FILE              = 62;
 const WRITE_ERROR_OPEN_PATCH_FILE          = 63;
@@ -164,10 +146,6 @@ const DOWNLOAD_BACKGROUND_INTERVAL  = 600;    // seconds
 const DOWNLOAD_FOREGROUND_INTERVAL  = 0;
 
 const UPDATE_WINDOW_NAME      = "Update:Wizard";
-
-// The number of consecutive failures when updating using the service before
-// setting the app.update.service.enabled preference to false.
-const DEFAULT_SERVICE_MAX_ERRORS = 10;
 
 // The number of consecutive socket errors to allow before falling back to
 // downloading a different MAR file or failing if already downloading the full.
@@ -393,15 +371,7 @@ function getElevationRequired() {
  * @return true if an update can be applied, false otherwise
  */
 function getCanApplyUpdates() {
-  let useService = false;
-  if (shouldUseService()) {
-    // No need to perform directory write checks, the maintenance service will
-    // be able to write to all directories.
-    LOG("getCanApplyUpdates - bypass the write checks because we'll use the service");
-    useService = true;
-  }
-
-  if (!useService && AppConstants.platform != "macosx") {
+  if (AppConstants.platform != "macosx") {
     try {
       let updateTestFile = getUpdateFile([FILE_UPDATE_TEST]);
       LOG("getCanApplyUpdates - testing write access " + updateTestFile.path);
@@ -479,7 +449,7 @@ function getCanApplyUpdates() {
       // No write privileges to install directory
       return false;
     }
-  } // if (!useService)
+  } 
 
   LOG("getCanApplyUpdates - able to apply updates");
   return true;
@@ -543,13 +513,6 @@ function getCanStageUpdates() {
     LOG("getCanStageUpdates - staging updates is disabled by preference " +
         PREF_APP_UPDATE_STAGING_ENABLED);
     return false;
-  }
-
-  if (AppConstants.platform == "win" && shouldUseService()) {
-    // No need to perform directory write checks, the maintenance service will
-    // be able to write to all directories.
-    LOG("getCanStageUpdates - able to stage updates using the service");
-    return true;
   }
 
   if (!hasUpdateMutex()) {
@@ -779,31 +742,6 @@ function writeVersionFile(dir, version) {
 }
 
 /**
- * Determines if the service should be used to attempt an update
- * or not.
- *
- * @return  true if the service should be used for updates.
- */
-function shouldUseService() {
-  // This function will return true if the mantenance service should be used if
-  // all of the following conditions are met:
-  // 1) This build was done with the maintenance service enabled
-  // 2) The maintenance service is installed
-  // 3) The pref for using the service is enabled
-  // 4) The Windows version is XP Service Pack 3 or above (for SHA-2 support)
-  return false;
-}
-
-/**
- * Determines if the service is is installed.
- *
- * @return  true if the service is installed.
- */
-function isServiceInstalled() {
-  return false;
-}
-
-/**
  * Removes the contents of the updates patch directory and rotates the update
  * logs when present. If the update.log exists in the patch directory this will
  * move the last-update.log if it exists to backup-update.log in the parent
@@ -1014,35 +952,6 @@ function handleUpdateFailure(update, errorCode) {
     Services.prefs.clearUserPref(PREF_APP_UPDATE_CANCELATIONS_OSX);
   }
 
-  // Replace with Array.prototype.includes when it has stabilized.
-  if (SERVICE_ERRORS.indexOf(update.errorCode) != -1) {
-    var failCount = getPref("getIntPref",
-                            PREF_APP_UPDATE_SERVICE_ERRORS, 0);
-    var maxFail = getPref("getIntPref",
-                          PREF_APP_UPDATE_SERVICE_MAXERRORS,
-                          DEFAULT_SERVICE_MAX_ERRORS);
-    // Prevent the preference from setting a value greater than 10.
-    maxFail = Math.min(maxFail, 10);
-    // As a safety, when the service reaches maximum failures, it will
-    // disable itself and fallback to using the normal update mechanism
-    // without the service.
-    if (failCount >= maxFail) {
-      Services.prefs.setBoolPref(PREF_APP_UPDATE_SERVICE_ENABLED, false);
-      Services.prefs.clearUserPref(PREF_APP_UPDATE_SERVICE_ERRORS);
-    } else {
-      failCount++;
-      Services.prefs.setIntPref(PREF_APP_UPDATE_SERVICE_ERRORS,
-                                failCount);
-    }
-
-    writeStatusFile(getUpdatesDir(), update.state = STATE_PENDING);
-    return true;
-  }
-
-  if (Services.prefs.prefHasUserValue(PREF_APP_UPDATE_SERVICE_ERRORS)) {
-    Services.prefs.clearUserPref(PREF_APP_UPDATE_SERVICE_ERRORS);
-  }
-
   return false;
 }
 
@@ -1101,9 +1010,6 @@ function pingStateAndStatusCodes(aUpdate, aStartup, aStatus) {
       case STATE_PENDING:
         stateCode = 4;
         break;
-      case STATE_PENDING_SERVICE:
-        stateCode = 5;
-        break;
       case STATE_APPLYING:
         stateCode = 6;
         break;
@@ -1112,9 +1018,6 @@ function pingStateAndStatusCodes(aUpdate, aStartup, aStatus) {
         break;
       case STATE_APPLIED_OS:
         stateCode = 8;
-        break;
-      case STATE_APPLIED_SERVICE:
-        stateCode = 9;
         break;
       case STATE_SUCCEEDED:
         stateCode = 10;
@@ -1743,8 +1646,8 @@ UpdateService.prototype = {
     // version and nsUpdateDriver.cpp skipped updating due to the version being
     // older than the current version.
     if (update && update.appVersion &&
-        (status == STATE_PENDING || status == STATE_PENDING_SERVICE ||
-         status == STATE_APPLIED || status == STATE_APPLIED_SERVICE ||
+        (status == STATE_PENDING ||
+         status == STATE_APPLIED ||
          status == STATE_PENDING_ELEVATE)) {
       if (Services.vc.compare(update.appVersion, Services.appinfo.version) < 0 ||
           Services.vc.compare(update.appVersion, Services.appinfo.version) == 0 &&
@@ -1782,9 +1685,7 @@ UpdateService.prototype = {
       // that state to "applying" and we just wait and hope for the best.
       // If it's "applying", we know that we've already been here once, so
       // we really want to start from a clean state.
-      if (update &&
-          (update.state == STATE_PENDING ||
-           update.state == STATE_PENDING_SERVICE)) {
+      if (update && (update.state == STATE_PENDING)) {
         LOG("UpdateService:_postUpdateProcessing - patch found in applying " +
             "state for the first time");
         update.state = STATE_APPLYING;
@@ -2049,7 +1950,7 @@ UpdateService.prototype = {
 
     if (this._downloader && this._downloader.patchIsStaged) {
       let readState = readStatusFile(getUpdatesDir());
-      if (readState == STATE_PENDING || readState == STATE_PENDING_SERVICE ||
+      if (readState == STATE_PENDING ||
           readState == STATE_PENDING_ELEVATE) {
         AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_IS_DOWNLOADED);
       } else {
@@ -2793,8 +2694,8 @@ UpdateManager.prototype = {
       for (let i = updates.length - 1; i >= 0; --i) {
         let state = updates[i].state;
         if (state == STATE_NONE || state == STATE_DOWNLOADING ||
-            state == STATE_APPLIED || state == STATE_APPLIED_SERVICE ||
-            state == STATE_PENDING || state == STATE_PENDING_SERVICE ||
+            state == STATE_APPLIED ||
+            state == STATE_PENDING ||
             state == STATE_PENDING_ELEVATE) {
           updates.splice(i, 1);
         }
@@ -2839,9 +2740,6 @@ UpdateManager.prototype = {
       update.QueryInterface(Ci.nsIWritablePropertyBag);
       update.setProperty("stagingFailed", "true");
     }
-    if (update.state == STATE_APPLIED && shouldUseService()) {
-      writeStatusFile(getUpdatesDir(), update.state = STATE_APPLIED_SERVICE);
-    }
 
     // Send an observer notification which the update wizard uses in
     // order to update its UI.
@@ -2857,9 +2755,7 @@ UpdateManager.prototype = {
     }
 
     if (update.state == STATE_APPLIED ||
-        update.state == STATE_APPLIED_SERVICE ||
         update.state == STATE_PENDING ||
-        update.state == STATE_PENDING_SERVICE ||
         update.state == STATE_PENDING_ELEVATE) {
       // Notify the user that an update has been staged and is ready for
       // installation (i.e. that they should restart the application).
@@ -3222,9 +3118,9 @@ Downloader.prototype = {
     // Note that if we decide to download and apply new updates after another
     // update has been successfully applied in the background, we need to stop
     // checking for the APPLIED state here.
-    return readState == STATE_PENDING || readState == STATE_PENDING_SERVICE ||
+    return readState == STATE_PENDING ||
            readState == STATE_PENDING_ELEVATE ||
-           readState == STATE_APPLIED || readState == STATE_APPLIED_SERVICE;
+           readState == STATE_APPLIED;
   },
 
   /**
@@ -3341,7 +3237,7 @@ Downloader.prototype = {
         return selectedPatch;
       }
 
-      if (state == STATE_PENDING || state == STATE_PENDING_SERVICE ||
+      if (state == STATE_PENDING ||
           state == STATE_PENDING_ELEVATE) {
         LOG("Downloader:_selectPatch - already downloaded and staged");
         return null;
@@ -3634,9 +3530,7 @@ Downloader.prototype = {
         "max fail: " + maxFail + ", " + "retryTimeout: " + retryTimeout);
     if (Components.isSuccessCode(status)) {
       if (this._verifyDownload()) {
-        if (shouldUseService()) {
-          state = STATE_PENDING_SERVICE;
-        } else if (getElevationRequired()) {
+        if (getElevationRequired()) {
           state = STATE_PENDING_ELEVATE;
         } else {
           state = STATE_PENDING;
@@ -3786,7 +3680,7 @@ Downloader.prototype = {
       return;
     }
 
-    if (state == STATE_PENDING || state == STATE_PENDING_SERVICE ||
+    if (state == STATE_PENDING ||
         state == STATE_PENDING_ELEVATE) {
       if (getCanStageUpdates()) {
         LOG("Downloader:onStopRequest - attempting to stage update: " +
