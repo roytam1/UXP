@@ -212,10 +212,8 @@ GetStatusFileContents(nsIFile *statusFile, char (&buf)[Size])
 typedef enum {
   eNoUpdateAction,
   ePendingUpdate,
-  ePendingService,
   ePendingElevate,
   eAppliedUpdate,
-  eAppliedService,
 } UpdateStatus;
 
 /**
@@ -233,21 +231,13 @@ GetUpdateStatus(nsIFile* dir, nsCOMPtr<nsIFile> &statusFile)
     char buf[32];
     if (GetStatusFileContents(statusFile, buf)) {
       const char kPending[] = "pending";
-      const char kPendingService[] = "pending-service";
       const char kPendingElevate[] = "pending-elevate";
       const char kApplied[] = "applied";
-      const char kAppliedService[] = "applied-service";
       if (!strncmp(buf, kPendingElevate, sizeof(kPendingElevate) - 1)) {
         return ePendingElevate;
       }
-      if (!strncmp(buf, kPendingService, sizeof(kPendingService) - 1)) {
-        return ePendingService;
-      }
       if (!strncmp(buf, kPending, sizeof(kPending) - 1)) {
         return ePendingUpdate;
-      }
-      if (!strncmp(buf, kAppliedService, sizeof(kAppliedService) - 1)) {
-        return eAppliedService;
       }
       if (!strncmp(buf, kApplied, sizeof(kApplied) - 1)) {
         return eAppliedUpdate;
@@ -760,9 +750,6 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
 
   // We used to write out "Applying" to the update.status file here.
   // Instead we do this from within the updater application now.
-  // This is so that we don't overwrite the status of pending-service
-  // in the Windows case.  This change was made for all platforms so
-  // that it stays consistent across all OS.
 
   // On platforms where we are not calling execv, we may need to make the
   // updater executable wait for the calling process to exit.  Otherwise, the
@@ -969,17 +956,15 @@ ProcessUpdates(nsIFile *greDir, nsIFile *appDir, nsIFile *updRootDir,
       }
       break;
     }
-    // Intentional fallthrough to ePendingUpdate and ePendingService.
+    // Intentional fallthrough to ePendingUpdate.
     MOZ_FALLTHROUGH;
   }
-  case ePendingUpdate:
-  case ePendingService: {
+  case ePendingUpdate: {
     ApplyUpdate(greDir, updatesDir, statusFile, appDir, argc, argv, restart,
                 isOSUpdate, osApplyToDir, pid);
     break;
   }
   case eAppliedUpdate:
-  case eAppliedService:
     // An update was staged and needs to be switched so the updated application
     // is used.
     SwitchToUpdatedApp(greDir, updatesDir, appDir, argc, argv);
