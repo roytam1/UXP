@@ -450,24 +450,6 @@ Section "Uninstall"
   ; uninstalls of Basilisk-release with reinstalls of Basilisk-release, for example.
   WriteRegStr HKCU "Software\Mozilla\Basilisk" "Uninstalled-${UpdateChannel}" "True"
 
-!ifdef MOZ_MAINTENANCE_SERVICE
-  ; Get the path the allowed cert is at and remove it
-  ; Keep this block of code last since it modfies the reg view
-  ServicesHelper::PathToUniqueRegistryPath "$INSTDIR"
-  Pop $MaintCertKey
-  ${If} $MaintCertKey != ""
-    ; Always use the 64bit registry for certs on 64bit systems.
-    ${If} ${RunningX64}
-      SetRegView 64
-    ${EndIf}
-    DeleteRegKey HKLM "$MaintCertKey"
-    ${If} ${RunningX64}
-      SetRegView lastused
-    ${EndIf}
-  ${EndIf}
-  Call un.UninstallServiceIfNotUsed
-!endif
-
   ${un.IsFirewallSvcRunning}
   Pop $0
   ${If} "$0" == "true"

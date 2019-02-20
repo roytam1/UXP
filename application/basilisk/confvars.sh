@@ -15,10 +15,6 @@ if test "$OS_ARCH" = "WINNT" -o \
   MOZ_BUNDLED_FONTS=1
 fi
 
-if test "$OS_ARCH" = "WINNT"; then
-  MOZ_MAINTENANCE_SERVICE=
-fi
-
 # For Basilisk we want to use 52.9.YYYY.MM.DD as MOZ_APP_VERSION in release
 # builds so add-on developers have something to target while maintaining
 # Firefox compatiblity.

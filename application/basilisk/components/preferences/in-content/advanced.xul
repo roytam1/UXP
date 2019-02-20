@@ -79,12 +79,6 @@
   <preference id="app.update.disable_button.showUpdateHistory"
               name="app.update.disable_button.showUpdateHistory"
               type="bool"/>
-
-#ifdef MOZ_MAINTENANCE_SERVICE
-  <preference id="app.update.service.enabled"
-              name="app.update.service.enabled"
-              type="bool"/>
-#endif
 #endif
 
   <preference id="browser.search.update"
@@ -331,13 +325,6 @@
                   accesskey="&updateHistory.accesskey;"
                   preference="app.update.disable_button.showUpdateHistory"/>
         </hbox>
-
-#ifdef MOZ_MAINTENANCE_SERVICE
-        <checkbox id="useService"
-                  label="&useService.label;"
-                  accesskey="&useService.accesskey;"
-                  preference="app.update.service.enabled"/>
-#endif
       </groupbox>
 #endif
       <groupbox id="updateOthers" align="start">

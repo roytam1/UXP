@@ -791,79 +791,6 @@ function shouldUseService() {
   // 2) The maintenance service is installed
   // 3) The pref for using the service is enabled
   // 4) The Windows version is XP Service Pack 3 or above (for SHA-2 support)
-  // The maintenance service requires SHA-2 support because we sign our binaries
-  // with a SHA-2 certificate and the certificate is verified before the binary
-  // is launched.
-  if (!AppConstants.MOZ_MAINTENANCE_SERVICE || !isServiceInstalled() ||
-      !getPref("getBoolPref", PREF_APP_UPDATE_SERVICE_ENABLED, false) ||
-      !AppConstants.isPlatformAndVersionAtLeast("win", "5.1") /* WinXP */) {
-    return false;
-  }
-
-  // If it's newer than XP, then the service pack doesn't matter.
-  if (Services.sysinfo.getProperty("version") != "5.1") {
-    return true;
-  }
-
-  // If the Windows version is XP, we also need to check the service pack.
-  // We'll return false if only < SP3 is installed, or if we can't tell.
-  // Check the service pack level by calling GetVersionEx via ctypes.
-  const BYTE = ctypes.uint8_t;
-  const WORD = ctypes.uint16_t;
-  const DWORD = ctypes.uint32_t;
-  const WCHAR = ctypes.char16_t;
-  const BOOL = ctypes.int;
-  // This structure is described at:
-  // http://msdn.microsoft.com/en-us/library/ms724833%28v=vs.85%29.aspx
-  const SZCSDVERSIONLENGTH = 128;
-  const OSVERSIONINFOEXW = new ctypes.StructType('OSVERSIONINFOEXW',
-    [
-      {dwOSVersionInfoSize: DWORD},
-      {dwMajorVersion: DWORD},
-      {dwMinorVersion: DWORD},
-      {dwBuildNumber: DWORD},
-      {dwPlatformId: DWORD},
-      {szCSDVersion: ctypes.ArrayType(WCHAR, SZCSDVERSIONLENGTH)},
-      {wServicePackMajor: WORD},
-      {wServicePackMinor: WORD},
-      {wSuiteMask: WORD},
-      {wProductType: BYTE},
-      {wReserved: BYTE}
-    ]);
-
-  let kernel32 = false;
-  try {
-    kernel32 = ctypes.open("Kernel32");
-  } catch (e) {
-    Cu.reportError("Unable to open kernel32! " + e);
-    return false;
-  }
-
-  if (kernel32) {
-    try {
-      try {
-        let GetVersionEx = kernel32.declare("GetVersionExW",
-                                            ctypes.default_abi,
-                                            BOOL,
-                                            OSVERSIONINFOEXW.ptr);
-        let winVer = OSVERSIONINFOEXW();
-        winVer.dwOSVersionInfoSize = OSVERSIONINFOEXW.size;
-
-        if (0 !== GetVersionEx(winVer.address())) {
-          return winVer.wServicePackMajor >= 3;
-        }
-        Cu.reportError("Unknown failure in GetVersionEX (returned 0)");
-        return false;
-      } catch (e) {
-        Cu.reportError("Error getting service pack information. Exception: " + e);
-        return false;
-      }
-    } finally {
-      kernel32.close();
-    }
-  }
-
-  // If the service pack check couldn't be done, assume we can't use the service.
   return false;
 }
 
@@ -873,22 +800,6 @@ function shouldUseService() {
  * @return  true if the service is installed.
  */
 function isServiceInstalled() {
-  if (AppConstants.MOZ_MAINTENANCE_SERVICE && AppConstants.platform == "win") {
-    let installed = 0;
-    try {
-      let wrk = Cc["@mozilla.org/windows-registry-key;1"].
-                createInstance(Ci.nsIWindowsRegKey);
-      wrk.open(wrk.ROOT_KEY_LOCAL_MACHINE,
-               "SOFTWARE\\Mozilla\\MaintenanceService",
-               wrk.ACCESS_READ | wrk.WOW64_64);
-      installed = wrk.readIntValue("Installed");
-      wrk.close();
-    } catch (e) {
-    }
-    installed = installed == 1;  // convert to bool
-    LOG("isServiceInstalled = " + installed);
-    return installed;
-  }
   return false;
 }
 
@@ -2122,28 +2033,6 @@ UpdateService.prototype = {
                           this._pingSuffix,
                           PREF_APP_UPDATE_CANCELATIONS_OSX, 0, 0);
     }
-    if (AppConstants.MOZ_MAINTENANCE_SERVICE) {
-      // Histogram IDs:
-      // UPDATE_NOT_PREF_UPDATE_SERVICE_ENABLED_EXTERNAL
-      // UPDATE_NOT_PREF_UPDATE_SERVICE_ENABLED_NOTIFY
-      AUSTLMY.pingBoolPref("UPDATE_NOT_PREF_UPDATE_SERVICE_ENABLED_" +
-                           this._pingSuffix,
-                           PREF_APP_UPDATE_SERVICE_ENABLED, true);
-      // Histogram IDs:
-      // UPDATE_PREF_SERVICE_ERRORS_EXTERNAL
-      // UPDATE_PREF_SERVICE_ERRORS_NOTIFY
-      AUSTLMY.pingIntPref("UPDATE_PREF_SERVICE_ERRORS_" + this._pingSuffix,
-                          PREF_APP_UPDATE_SERVICE_ERRORS, 0, 0);
-      if (AppConstants.platform == "win") {
-        // Histogram IDs:
-        // UPDATE_SERVICE_INSTALLED_EXTERNAL
-        // UPDATE_SERVICE_INSTALLED_NOTIFY
-        // UPDATE_SERVICE_MANUALLY_UNINSTALLED_EXTERNAL
-        // UPDATE_SERVICE_MANUALLY_UNINSTALLED_NOTIFY
-        AUSTLMY.pingServiceInstallStatus(this._pingSuffix, isServiceInstalled());
-      }
-    }
-
     let prefType = Services.prefs.getPrefType(PREF_APP_UPDATE_URL_OVERRIDE);
     let overridePrefHasValue = prefType != Ci.nsIPrefBranch.PREF_INVALID;
     // Histogram IDs:

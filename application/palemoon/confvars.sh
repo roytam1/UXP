@@ -99,7 +99,6 @@ if test "$OS_ARCH" = "WINNT" -o \
 fi
 
 # Short-circuit a few services to be removed
-MOZ_MAINTENANCE_SERVICE=
 MOZ_SERVICES_HEALTHREPORT=
 MOZ_ADDON_SIGNING=0
 MOZ_REQUIRE_SIGNING=0

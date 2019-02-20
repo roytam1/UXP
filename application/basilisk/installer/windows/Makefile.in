@@ -14,12 +14,6 @@ INSTALLER_FILES = \
 	nsis/shared.nsh \
 	$(NULL)
 
-ifdef MOZ_MAINTENANCE_SERVICE
-INSTALLER_FILES += \
-	nsis/maintenanceservice_installer.nsi \
-	$(NULL)
-endif
-
 BRANDING_FILES = \
 	branding.nsi \
 	appname.bmp \

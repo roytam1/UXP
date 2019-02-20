@@ -51,10 +51,6 @@
 
 !define MinSupportedCPU "SSE2"
 
-#ifdef MOZ_MAINTENANCE_SERVICE
-!define MOZ_MAINTENANCE_SERVICE
-#endif
-
 # File details shared by both the installer and uninstaller
 VIProductVersion "1.0.0.0"
 VIAddVersionKey "ProductName"     "${BrandShortName}"

@@ -217,16 +217,8 @@ int NS_main(int argc, NS_tchar **argv)
   }
 
   if (!NS_tstrcmp(argv[1], NS_T("check-signature"))) {
-#if defined(XP_WIN) && defined(MOZ_MAINTENANCE_SERVICE)
-    if (ERROR_SUCCESS == VerifyCertificateTrustForFile(argv[2])) {
-      return 0;
-    } else {
-      return 1;
-    }
-#else
-    // Not implemented on non-Windows platforms
+    // Not implemented
     return 1;
-#endif
   }
 
   if (!NS_tstrcmp(argv[1], NS_T("setup-symlink"))) {
