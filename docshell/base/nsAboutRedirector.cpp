@@ -8,6 +8,7 @@
 #include "nsNetUtil.h"
 #include "nsAboutProtocolUtils.h"
 #include "mozilla/ArrayUtils.h"
+#include "nsIChannel.h"
 #include "nsIProtocolHandler.h"
 
 NS_IMPL_ISUPPORTS(nsAboutRedirector, nsIAboutModule)

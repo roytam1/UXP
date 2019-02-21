@@ -15,6 +15,7 @@
 #include "nsIInputStream.h"
 #include "nsIURI.h"
 #include "mozilla/net/ReferrerPolicy.h"
+#include "nsArray.h"
 #include <algorithm>
 
 namespace dom = mozilla::dom;

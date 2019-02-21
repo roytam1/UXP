@@ -11,6 +11,7 @@
 #include "mozilla/RefPtr.h"
 #include "mozilla/UniquePtr.h"
 #include "nsTArray.h"
+#include "nsIDocShell.h"
 
 class nsIDocShell;
 

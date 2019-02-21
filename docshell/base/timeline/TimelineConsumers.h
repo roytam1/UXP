@@ -7,11 +7,14 @@
 #define mozilla_TimelineConsumers_h_
 
 #include "nsIObserver.h"
+#include "nsIDocShell.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/LinkedList.h"
 #include "mozilla/StaticMutex.h"
 #include "TimelineMarkerEnums.h" // for MarkerTracingType
+#include "mozilla/dom/ProfileTimelineMarkerBinding.h"
+#include "nsTArray.h"
 
 class nsDocShell;
 class nsIDocShell;

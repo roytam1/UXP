@@ -24,6 +24,7 @@
 #include "nsDocShellLoadTypes.h"
 #include "nsIMultiPartChannel.h"
 #include "mozilla/dom/nsCSPUtils.h"
+#include "nsIStreamListener.h"
 
 using namespace mozilla;
 

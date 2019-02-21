@@ -39,6 +39,7 @@
 #include "nsIDOMDocument.h"
 #include "nsIDOMElement.h"
 
+#include "nsAboutProtocolUtils.h"
 #include "nsArray.h"
 #include "nsArrayUtils.h"
 #include "nsContentSecurityManager.h"

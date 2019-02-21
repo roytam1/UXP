@@ -12,6 +12,7 @@
 #include "nsCOMArray.h"
 #include "nsIBFCacheEntry.h"
 #include "nsIMutationObserver.h"
+#include "nsISHEntry.h"
 #include "nsExpirationTracker.h"
 #include "nsRect.h"
 #include "nsString.h"

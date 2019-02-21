@@ -25,7 +25,7 @@ EXPORTS.mozilla += [
     'WorkerTimelineMarker.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'AbstractTimelineMarker.cpp',
     'AutoGlobalTimelineMarker.cpp',
     'AutoTimelineMarker.cpp',
