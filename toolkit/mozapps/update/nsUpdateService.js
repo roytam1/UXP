@@ -110,21 +110,6 @@ const WRITE_ERRORS = [WRITE_ERROR,
                       WRITE_ERROR_DELETE_BACKUP,
                       WRITE_ERROR_EXTRACT];
 
-// Array of write errors to simplify checks for service errors
-const SERVICE_ERRORS = [SERVICE_UPDATER_COULD_NOT_BE_STARTED,
-                        SERVICE_NOT_ENOUGH_COMMAND_LINE_ARGS,
-                        SERVICE_UPDATER_SIGN_ERROR,
-                        SERVICE_UPDATER_COMPARE_ERROR,
-                        SERVICE_UPDATER_IDENTITY_ERROR,
-                        SERVICE_STILL_APPLYING_ON_SUCCESS,
-                        SERVICE_STILL_APPLYING_ON_FAILURE,
-                        SERVICE_UPDATER_NOT_FIXED_DRIVE,
-                        SERVICE_COULD_NOT_LOCK_UPDATER,
-                        SERVICE_INSTALLDIR_ERROR,
-                        SERVICE_COULD_NOT_COPY_UPDATER,
-                        SERVICE_STILL_APPLYING_TERMINATED,
-                        SERVICE_STILL_APPLYING_NO_EXIT_CODE];
-
 // Error codes 80 through 99 are reserved for nsUpdateService.js and are not
 // defined in common/errors.h
 const FOTA_GENERAL_ERROR                   = 80;
