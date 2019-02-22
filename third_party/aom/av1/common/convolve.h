@@ -26,7 +26,7 @@ typedef struct ConvolveParams {
   int round_1;
   int plane;
   int is_compound;
-  int use_jnt_comp_avg;
+  int use_dist_wtd_comp_avg;
   int fwd_offset;
   int bck_offset;
 } ConvolveParams;
@@ -117,6 +117,11 @@ void av1_highbd_convolve_2d_facade(const uint8_t *src8, int src_stride,
                                    int scaled, ConvolveParams *conv_params,
                                    const struct scale_factors *sf,
                                    int is_intrabc, int bd);
+
+// TODO(sarahparker) This will need to be integerized and optimized
+void av1_convolve_2d_sobel_y_c(const uint8_t *src, int src_stride, double *dst,
+                               int dst_stride, int w, int h, int dir,
+                               double norm);
 
 #ifdef __cplusplus
 }  // extern "C"

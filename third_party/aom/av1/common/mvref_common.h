@@ -34,10 +34,10 @@ typedef struct position {
 // clamp_mv_ref
 #define MV_BORDER (16 << 3)  // Allow 16 pels in 1/8th pel units
 
-static INLINE int get_relative_dist(const AV1_COMMON *cm, int a, int b) {
-  if (!cm->seq_params.enable_order_hint) return 0;
+static INLINE int get_relative_dist(const OrderHintInfo *oh, int a, int b) {
+  if (!oh->enable_order_hint) return 0;
 
-  const int bits = cm->seq_params.order_hint_bits_minus_1 + 1;
+  const int bits = oh->order_hint_bits_minus_1 + 1;
 
   assert(bits >= 1);
   assert(a >= 0 && a < (1 << bits));
@@ -68,18 +68,6 @@ static INLINE int_mv get_sub_block_pred_mv(const MB_MODE_INFO *candidate,
                                            int which_mv, int search_col) {
   (void)search_col;
   return candidate->mv[which_mv];
-}
-
-// Performs mv sign inversion if indicated by the reference frame combination.
-static INLINE int_mv scale_mv(const MB_MODE_INFO *mbmi, int ref,
-                              const MV_REFERENCE_FRAME this_ref_frame,
-                              const int *ref_sign_bias) {
-  int_mv mv = mbmi->mv[ref];
-  if (ref_sign_bias[mbmi->ref_frame[ref]] != ref_sign_bias[this_ref_frame]) {
-    mv.as_mv.row *= -1;
-    mv.as_mv.col *= -1;
-  }
-  return mv;
 }
 
 // Checks that the given mi_row, mi_col and search point
@@ -169,14 +157,14 @@ static MV_REFERENCE_FRAME ref_frame_map[TOTAL_COMP_REFS][2] = {
 // clang-format on
 
 static INLINE void av1_set_ref_frame(MV_REFERENCE_FRAME *rf,
-                                     int8_t ref_frame_type) {
+                                     MV_REFERENCE_FRAME ref_frame_type) {
   if (ref_frame_type >= REF_FRAMES) {
     rf[0] = ref_frame_map[ref_frame_type - REF_FRAMES][0];
     rf[1] = ref_frame_map[ref_frame_type - REF_FRAMES][1];
   } else {
+    assert(ref_frame_type > NONE_FRAME);
     rf[0] = ref_frame_type;
     rf[1] = NONE_FRAME;
-    assert(ref_frame_type > NONE_FRAME);
   }
 }
 

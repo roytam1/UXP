@@ -8,8 +8,9 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include <memory>
 #include <string>
-
+#include "common/tools_common.h"
 #include "config/aom_config.h"
 #include "test/codec_factory.h"
 #include "test/decode_test_driver.h"
@@ -57,7 +58,7 @@ class ExternalFrameBufferList {
 
   // Searches the frame buffer list for a free frame buffer. Makes sure
   // that the frame buffer is at least |min_size| in bytes. Marks that the
-  // frame buffer is in use by libvpx. Finally sets |fb| to point to the
+  // frame buffer is in use by libaom. Finally sets |fb| to point to the
   // external frame buffer. Returns < 0 on an error.
   int GetFreeFrameBuffer(size_t min_size, aom_codec_frame_buffer_t *fb) {
     EXPECT_TRUE(fb != NULL);
@@ -113,9 +114,9 @@ class ExternalFrameBufferList {
     return 0;
   }
 
-  // Checks that the ximage data is contained within the external frame buffer
-  // private data passed back in the ximage.
-  void CheckXImageFrameBuffer(const aom_image_t *img) {
+  // Checks that the aom_image_t data is contained within the external frame
+  // buffer private data passed back in the aom_image_t.
+  void CheckImageFrameBuffer(const aom_image_t *img) {
     if (img->fb_priv != NULL) {
       const struct ExternalFrameBuffer *const ext_fb =
           reinterpret_cast<ExternalFrameBuffer *>(img->fb_priv);
@@ -157,7 +158,7 @@ class ExternalFrameBufferList {
 
 #if CONFIG_WEBM_IO
 
-// Callback used by libvpx to request the application to return a frame
+// Callback used by libaom to request the application to return a frame
 // buffer of at least |min_size| in bytes.
 int get_aom_frame_buffer(void *user_priv, size_t min_size,
                          aom_codec_frame_buffer_t *fb) {
@@ -166,7 +167,7 @@ int get_aom_frame_buffer(void *user_priv, size_t min_size,
   return fb_list->GetFreeFrameBuffer(min_size, fb);
 }
 
-// Callback used by libvpx to tell the application that |fb| is not needed
+// Callback used by libaom to tell the application that |fb| is not needed
 // anymore.
 int release_aom_frame_buffer(void *user_priv, aom_codec_frame_buffer_t *fb) {
   ExternalFrameBufferList *const fb_list =
@@ -217,7 +218,7 @@ class ExternalFrameBufferMD5Test
       const libaom_test::CompressedVideoSource &video,
       libaom_test::Decoder *decoder) {
     if (num_buffers_ > 0 && video.frame_number() == 0) {
-      // Have libvpx use frame buffers we create.
+      // Have libaom use frame buffers we create.
       ASSERT_TRUE(fb_list_.CreateBufferList(num_buffers_));
       ASSERT_EQ(AOM_CODEC_OK,
                 decoder->SetFrameBufferFunctions(GetAV1FrameBuffer,
@@ -243,7 +244,23 @@ class ExternalFrameBufferMD5Test
     expected_md5[32] = '\0';
 
     ::libaom_test::MD5 md5_res;
-    md5_res.Add(&img);
+#if !CONFIG_LOWBITDEPTH
+    const aom_img_fmt_t shifted_fmt =
+        (aom_img_fmt)(img.fmt & ~AOM_IMG_FMT_HIGHBITDEPTH);
+    if (img.bit_depth == 8 && shifted_fmt != img.fmt) {
+      aom_image_t *img_shifted =
+          aom_img_alloc(NULL, shifted_fmt, img.d_w, img.d_h, 16);
+      img_shifted->bit_depth = img.bit_depth;
+      img_shifted->monochrome = img.monochrome;
+      aom_img_downshift(img_shifted, &img, 0);
+      md5_res.Add(img_shifted);
+      aom_img_free(img_shifted);
+    } else {
+#endif
+      md5_res.Add(&img);
+#if !CONFIG_LOWBITDEPTH
+    }
+#endif
     const char *const actual_md5 = md5_res.Get();
 
     // Check md5 match.
@@ -279,16 +296,16 @@ class ExternalFrameBufferMD5Test
 };
 
 #if CONFIG_WEBM_IO
-const char kAV1TestFile[] = "av1-1-b8-01-size-226x226.ivf";
+const char kAV1TestFile[] = "av1-1-b8-03-sizeup.mkv";
 const char kAV1NonRefTestFile[] = "av1-1-b8-01-size-226x226.ivf";
 
-// Class for testing passing in external frame buffers to libvpx.
+// Class for testing passing in external frame buffers to libaom.
 class ExternalFrameBufferTest : public ::testing::Test {
  protected:
   ExternalFrameBufferTest() : video_(NULL), decoder_(NULL), num_buffers_(0) {}
 
   virtual void SetUp() {
-    video_ = new libaom_test::IVFVideoSource(kAV1TestFile);
+    video_ = new libaom_test::WebMVideoSource(kAV1TestFile);
     ASSERT_TRUE(video_ != NULL);
     video_->Init();
     video_->Begin();
@@ -305,7 +322,7 @@ class ExternalFrameBufferTest : public ::testing::Test {
     video_ = NULL;
   }
 
-  // Passes the external frame buffer information to libvpx.
+  // Passes the external frame buffer information to libaom.
   aom_codec_err_t SetFrameBufferFunctions(
       int num_buffers, aom_get_frame_buffer_cb_fn_t cb_get,
       aom_release_frame_buffer_cb_fn_t cb_release) {
@@ -342,11 +359,11 @@ class ExternalFrameBufferTest : public ::testing::Test {
 
     // Get decompressed data
     while ((img = dec_iter.Next()) != NULL) {
-      fb_list_.CheckXImageFrameBuffer(img);
+      fb_list_.CheckImageFrameBuffer(img);
     }
   }
 
-  libaom_test::IVFVideoSource *video_;
+  libaom_test::CompressedVideoSource *video_;
   libaom_test::AV1Decoder *decoder_;
   int num_buffers_;
   ExternalFrameBufferList fb_list_;
@@ -373,12 +390,13 @@ class ExternalFrameBufferNonRefTest : public ExternalFrameBufferTest {
 #endif  // CONFIG_WEBM_IO
 
 // This test runs through the set of test vectors, and decodes them.
-// Libvpx will call into the application to allocate a frame buffer when
+// Libaom will call into the application to allocate a frame buffer when
 // needed. The md5 checksums are computed for each frame in the video file.
 // If md5 checksums match the correct md5 data, then the test is passed.
 // Otherwise, the test failed.
-TEST_P(ExternalFrameBufferMD5Test, DISABLED_ExtFBMD5Match) {
+TEST_P(ExternalFrameBufferMD5Test, ExtFBMD5Match) {
   const std::string filename = GET_PARAM(kVideoNameParam);
+  aom_codec_dec_cfg_t cfg = aom_codec_dec_cfg_t();
 
   // Number of buffers equals #AOM_MAXIMUM_REF_BUFFERS +
   // #AOM_MAXIMUM_WORK_BUFFERS + four jitter buffers.
@@ -388,7 +406,7 @@ TEST_P(ExternalFrameBufferMD5Test, DISABLED_ExtFBMD5Match) {
   set_num_buffers(num_buffers);
 
   // Open compressed video file.
-  testing::internal::scoped_ptr<libaom_test::CompressedVideoSource> video;
+  std::unique_ptr<libaom_test::CompressedVideoSource> video;
   if (filename.substr(filename.length() - 3, 3) == "ivf") {
     video.reset(new libaom_test::IVFVideoSource(filename));
   } else {
@@ -407,8 +425,12 @@ TEST_P(ExternalFrameBufferMD5Test, DISABLED_ExtFBMD5Match) {
   const std::string md5_filename = filename + ".md5";
   OpenMD5File(md5_filename);
 
+  // Set decode config.
+  cfg.allow_lowbitdepth = CONFIG_LOWBITDEPTH;
+  set_cfg(cfg);
+
   // Decode frame, and check the md5 matching.
-  ASSERT_NO_FATAL_FAILURE(RunLoop(video.get()));
+  ASSERT_NO_FATAL_FAILURE(RunLoop(video.get(), cfg));
 }
 
 #if CONFIG_WEBM_IO
@@ -434,7 +456,7 @@ TEST_F(ExternalFrameBufferTest, EightJitterBuffers) {
   ASSERT_EQ(AOM_CODEC_OK, DecodeRemainingFrames());
 }
 
-TEST_F(ExternalFrameBufferTest, DISABLED_NotEnoughBuffers) {
+TEST_F(ExternalFrameBufferTest, NotEnoughBuffers) {
   // Minimum number of external frame buffers for AV1 is
   // #AOM_MAXIMUM_REF_BUFFERS + #AOM_MAXIMUM_WORK_BUFFERS. Most files will
   // only use 5 frame buffers at one time.
@@ -448,7 +470,7 @@ TEST_F(ExternalFrameBufferTest, DISABLED_NotEnoughBuffers) {
   ASSERT_EQ(AOM_CODEC_MEM_ERROR, DecodeRemainingFrames());
 }
 
-TEST_F(ExternalFrameBufferTest, DISABLED_NoRelease) {
+TEST_F(ExternalFrameBufferTest, NoRelease) {
   const int num_buffers = AOM_MAXIMUM_REF_BUFFERS + AOM_MAXIMUM_WORK_BUFFERS;
   ASSERT_EQ(AOM_CODEC_OK,
             SetFrameBufferFunctions(num_buffers, get_aom_frame_buffer,

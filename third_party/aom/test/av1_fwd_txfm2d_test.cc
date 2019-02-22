@@ -23,10 +23,10 @@
 #include "av1/encoder/hybrid_fwd_txfm.h"
 
 using libaom_test::ACMRandom;
-using libaom_test::TYPE_TXFM;
 using libaom_test::bd;
 using libaom_test::compute_avg_abs_error;
 using libaom_test::input_base;
+using libaom_test::TYPE_TXFM;
 
 using std::vector;
 
@@ -507,5 +507,12 @@ INSTANTIATE_TEST_CASE_P(SSE4_1, AV1HighbdFwdTxfm2dTest,
                         Combine(ValuesIn(Highbd_fwd_txfm_for_sse4_1),
                                 Values(av1_highbd_fwd_txfm)));
 #endif  // HAVE_SSE4_1
+#if HAVE_AVX2
+static TX_SIZE Highbd_fwd_txfm_for_avx2[] = { TX_8X8,   TX_16X16, TX_32X32,
+                                              TX_64X64, TX_8X16,  TX_16X8 };
 
+INSTANTIATE_TEST_CASE_P(AVX2, AV1HighbdFwdTxfm2dTest,
+                        Combine(ValuesIn(Highbd_fwd_txfm_for_avx2),
+                                Values(av1_highbd_fwd_txfm)));
+#endif  // HAVE_AVX2
 }  // namespace

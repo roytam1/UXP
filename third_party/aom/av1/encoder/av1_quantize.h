@@ -27,6 +27,7 @@ typedef struct QUANT_PARAM {
   TX_SIZE tx_size;
   const qm_val_t *qmatrix;
   const qm_val_t *iqmatrix;
+  int use_quant_b_adapt;
 } QUANT_PARAM;
 
 typedef void (*AV1_QUANT_FACADE)(const tran_low_t *coeff_ptr, intptr_t n_coeffs,
@@ -67,7 +68,7 @@ typedef struct {
 
 // The Dequants structure is used only for internal quantizer setup in
 // av1_quantize.c.
-// Fields are sufffixed according to whether or not they're expressed in
+// Fields are suffixed according to whether or not they're expressed in
 // the same coefficient shift/precision as TX or a fixed Q3 format.
 typedef struct {
   DECLARE_ALIGNED(16, int16_t,

@@ -42,7 +42,6 @@ typedef struct TxbInfo {
   const SCAN_ORDER *scan_order;
   TXB_CTX *txb_ctx;
   int64_t rdmult;
-  const LV_MAP_CTX_TABLE *coeff_ctx_table;
   const qm_val_t *iqmatrix;
   int tx_type_cost;
 } TxbInfo;
@@ -80,6 +79,13 @@ int av1_optimize_txb_new(const struct AV1_COMP *cpi, MACROBLOCK *x, int plane,
                          int block, TX_SIZE tx_size, TX_TYPE tx_type,
                          const TXB_CTX *const txb_ctx, int *rate_cost,
                          int sharpness);
+
+// These numbers are empirically obtained.
+static const int plane_rd_mult[REF_TYPES][PLANE_TYPES] = {
+  { 17, 13 },
+  { 16, 10 },
+};
+
 #ifdef __cplusplus
 }
 #endif
