@@ -11,6 +11,12 @@
 #include "sslimpl.h"
 #include "sslproto.h"
 
+#ifdef _MSC_VER
+#if _MSC_VER < 1900
+#define inline 
+#endif
+#endif
+
 SECStatus
 dtls13_InsertCipherTextHeader(const sslSocket *ss, ssl3CipherSpec *cwSpec,
                               sslBuffer *wrBuf, PRBool *needsLength)
