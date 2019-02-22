@@ -493,7 +493,7 @@ reference_table  (hb_face_t *face HB_UNUSED, hb_tag_t tag, void *user_data)
     return NULL;
 
   buffer = (FT_Byte *) malloc (length);
-  if (buffer == NULL)
+  if (!buffer)
     return NULL;
 
   error = FT_Load_Sfnt_Table (ft_face, tag, 0, buffer, &length);
@@ -521,7 +521,7 @@ hb_ft_face_create (FT_Face           ft_face,
 {
   hb_face_t *face;
 
-  if (ft_face->stream->read == NULL) {
+  if (!ft_face->stream->read) {
     hb_blob_t *blob;
 
     blob = hb_blob_create ((const char *) ft_face->stream->base,
@@ -621,17 +621,22 @@ hb_ft_font_create (FT_Face           ft_face,
   FT_MM_Var *mm_var = NULL;
   if (!FT_Get_MM_Var (ft_face, &mm_var))
   {
-    FT_Fixed coords[mm_var->num_axis];
-    int hbCoords[mm_var->num_axis];
-    if (!FT_Get_Var_Blend_Coordinates (ft_face, mm_var->num_axis, coords))
+    FT_Fixed *ft_coords = (FT_Fixed *) calloc (mm_var->num_axis, sizeof (FT_Fixed));
+    int *coords = (int *) calloc (mm_var->num_axis, sizeof (int));
+    if (coords && ft_coords)
     {
-      for (int i = 0; i < mm_var->num_axis; ++i)
-	hbCoords[i] = coords[i] >> 2;
+      if (!FT_Get_Var_Blend_Coordinates (ft_face, mm_var->num_axis, ft_coords))
+      {
+	for (unsigned int i = 0; i < mm_var->num_axis; ++i)
+	  coords[i] = ft_coords[i] >>= 2;
 
-      hb_font_set_var_coords_normalized (font, hbCoords, mm_var->num_axis);
+	hb_font_set_var_coords_normalized (font, coords, mm_var->num_axis);
+      }
     }
+    free (coords);
+    free (ft_coords);
+    free (mm_var);
   }
-  free (mm_var);
 #endif
 
   return font;
@@ -734,6 +739,20 @@ hb_ft_font_set_funcs (hb_font_t *font)
     FT_Matrix matrix = { font->x_scale < 0 ? -1 : +1, 0,
 			  0, font->y_scale < 0 ? -1 : +1};
     FT_Set_Transform (ft_face, &matrix, NULL);
+  }
+
+  unsigned int num_coords;
+  const int *coords = hb_font_get_var_coords_normalized (font, &num_coords);
+  if (num_coords)
+  {
+    FT_Fixed *ft_coords = (FT_Fixed *) calloc (num_coords, sizeof (FT_Fixed));
+    if (ft_coords)
+    {
+      for (unsigned int i = 0; i < num_coords; i++)
+	ft_coords[i] = coords[i] << 2;
+      FT_Set_Var_Blend_Coordinates (ft_face, num_coords, ft_coords);
+      free (ft_coords);
+    }
   }
 
   ft_face->generic.data = blob;

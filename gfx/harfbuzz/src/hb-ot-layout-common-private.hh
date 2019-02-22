@@ -941,7 +941,7 @@ struct Coverage
   }
 
   struct Iter {
-    Iter (void) : format (0) {};
+    Iter (void) : format (0), u () {};
     inline void init (const Coverage &c_) {
       format = c_.u.format;
       switch (format) {
@@ -982,8 +982,8 @@ struct Coverage
     private:
     unsigned int format;
     union {
+    CoverageFormat2::Iter	format2; /* Put this one first since it's larger; helps shut up compiler. */
     CoverageFormat1::Iter	format1;
-    CoverageFormat2::Iter	format2;
     } u;
   };
 
@@ -1323,6 +1323,14 @@ struct VariationStore
 					     this+regions);
   }
 
+  inline float get_delta (unsigned int index,
+			  int *coords, unsigned int coord_count) const
+  {
+    unsigned int outer = index >> 16;
+    unsigned int inner = index & 0xFFFF;
+    return get_delta (outer, inner, coords, coord_count);
+  }
+
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
@@ -1334,7 +1342,7 @@ struct VariationStore
 
   protected:
   USHORT				format;
-  OffsetTo<VarRegionList, ULONG>	regions;
+  LOffsetTo<VarRegionList>		regions;
   OffsetArrayOf<VarData, ULONG>		dataSets;
   public:
   DEFINE_SIZE_ARRAY (8, dataSets);
@@ -1433,8 +1441,8 @@ struct FeatureTableSubstitutionRecord
   }
 
   protected:
-  USHORT			featureIndex;
-  OffsetTo<Feature, ULONG>	feature;
+  USHORT		featureIndex;
+  LOffsetTo<Feature>	feature;
   public:
   DEFINE_SIZE_STATIC (6);
 };
@@ -1481,9 +1489,9 @@ struct FeatureVariationRecord
   }
 
   protected:
-  OffsetTo<ConditionSet, ULONG>
+  LOffsetTo<ConditionSet>
 			conditions;
-  OffsetTo<FeatureTableSubstitution, ULONG>
+  LOffsetTo<FeatureTableSubstitution>
 			substitutions;
   public:
   DEFINE_SIZE_STATIC (8);
@@ -1527,7 +1535,7 @@ struct FeatureVariations
 
   protected:
   FixedVersion<>	version;	/* Version--0x00010000u */
-  ArrayOf<FeatureVariationRecord, ULONG>
+  LArrayOf<FeatureVariationRecord>
 			varRecords;
   public:
   DEFINE_SIZE_ARRAY (8, varRecords);
