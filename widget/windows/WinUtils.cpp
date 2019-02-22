@@ -601,7 +601,7 @@ WinUtils::SystemScaleFactor()
   return systemScale;
 }
 
-#ifndef WM_DPICHANGED
+#ifndef WM_POINTERDEVICECHANGE
 typedef enum {
   MDT_EFFECTIVE_DPI = 0,
   MDT_ANGULAR_DPI = 1,

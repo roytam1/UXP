@@ -1689,10 +1689,10 @@ gfxWindowsPlatform::DwmCompositionEnabled()
     return false;
   }
 
-  MOZ_ASSERT(WinUtils::dwmIsCompositionEnabledPtr);
+  //MOZ_ASSERT(WinUtils::dwmIsCompositionEnabledPtr);
   BOOL dwmEnabled = false;
 
-  if (FAILED(WinUtils::dwmIsCompositionEnabledPtr(&dwmEnabled))) {
+  if (!WinUtils::dwmIsCompositionEnabledPtr || FAILED(WinUtils::dwmIsCompositionEnabledPtr(&dwmEnabled))) {
     return false;
   }
 

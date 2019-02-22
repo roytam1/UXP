@@ -52,14 +52,6 @@ IsWhitelistedH264Codec(const nsAString& aCodec)
     return false;
   }
 
-#ifdef XP_WIN
-  // Disable 4k video on windows vista since it performs poorly.
-  if (!IsWin7OrLater() &&
-      level >= H264_LEVEL_5) {
-    return false;
-  }
-#endif
-
   // Just assume what we can play on all platforms the codecs/formats that
   // WMF can play, since we don't have documentation about what other
   // platforms can play... According to the WMF documentation:
