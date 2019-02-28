@@ -5459,8 +5459,9 @@ pref("dom.storageManager.enabled", true);
 pref("dom.storageManager.enabled", false);
 #endif
 
-// When a user cancels this number of authentication dialogs coming from
-// a single web page in a row, all following authentication dialogs will
-// be blocked (automatically canceled) for that page. The counter resets
-// when the page is reloaded. To turn this feature off, just set the limit to 0.
-pref("prompts.authentication_dialog_abuse_limit", 3);
+// DoS protection for HTTP Auth prompt spawning.
+// -1 = completely disable HTTP Auth prompting. (careful!)
+// 0  = disable this DoS protection
+// >0 = suppress further prompts after the user has canceled the dialog n times
+// See application preferences for appropriate defaults.
+pref("prompts.authentication_dialog_abuse_limit", 0);

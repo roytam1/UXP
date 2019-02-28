@@ -1160,6 +1160,14 @@ pref("toolkit.pageThumbs.minHeight", 180);
 pref("ui.key.menuAccessKeyFocuses", true);
 #endif
 
+// When a user cancels this number of authentication dialogs coming from
+// a single web page (eTLD+1) in a row, all following authentication dialogs
+// will be blocked (automatically canceled) for that page.
+// This counter is per-tab and per-domain to minimize false positives.
+// The counter resets when the page is reloaded from the UI
+// (content-reloads do NOT clear this to mitigate reloading tricks).
+pref("prompts.authentication_dialog_abuse_limit", 3);
+
 // ****************** s4e prefs ******************
 pref("status4evar.addonbar.borderStyle", false);
 pref("status4evar.addonbar.closeButton", false);
