@@ -2661,6 +2661,11 @@ function getWebNavigation()
 }
 
 function BrowserReloadWithFlags(reloadFlags) {
+  
+  // Reset DOS mitigation for auth prompts when user initiates a reload.
+  let browser = gBrowser.selectedBrowser;
+  delete browser.authPromptCounter;
+  
   /* First, we'll try to use the session history object to reload so
    * that framesets are handled properly. If we're in a special
    * window (such as view-source) that has no session history, fall

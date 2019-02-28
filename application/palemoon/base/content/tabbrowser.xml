@@ -2458,7 +2458,10 @@
         <parameter name="aTab"/>
         <body>
           <![CDATA[
-            this.getBrowserForTab(aTab).reload();
+            let browser = this.getBrowserForTab(aTab);
+            // Reset DOS mitigation for basic auth prompt
+            delete browser.authPromptCounter;
+            browser.reload();
           ]]>
         </body>
       </method>

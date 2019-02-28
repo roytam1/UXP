@@ -302,6 +302,10 @@
               // but don't let that interfere with the loading of the url.
               Cu.reportError(ex);
             }
+            
+            // Reset DOS mitigations for the basic auth prompt.
+            let browser = gBrowser.selectedBrowser;
+            delete browser.authPromptCounter;
 
             function loadCurrent() {
               let flags = Ci.nsIWebNavigation.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP;
