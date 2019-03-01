@@ -965,7 +965,8 @@
                   tabcontainer="tabbrowser-tabs"
                   contentcontextmenu="contentAreaContextMenu"
                   autocompletepopup="PopupAutoComplete"
-                  datetimepicker="DateTimePickerPanel"/>
+                  datetimepicker="DateTimePickerPanel"
+                  authdosprotected="true"/>
       <chatbar id="pinnedchats" layer="true" mousethrough="always" hidden="true"/>
       <statuspanel id="statusbar-display" inactive="true"/>
     </vbox>

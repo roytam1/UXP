@@ -30,7 +30,7 @@
               <xul:vbox flex="1" class="browserContainer">
                 <xul:stack flex="1" class="browserStack" anonid="browserStack">
                   <xul:browser anonid="initialBrowser" type="content-primary" message="true" disablehistory="true"
-                               xbl:inherits="tooltip=contenttooltip,contextmenu=contentcontextmenu,autocompletepopup,datetimepicker"/>
+                               xbl:inherits="tooltip=contenttooltip,contextmenu=contentcontextmenu,autocompletepopup,datetimepicker,authdosprotected"/>
                 </xul:stack>
               </xul:vbox>
             </xul:hbox>
@@ -1587,6 +1587,10 @@
 
             if (this.hasAttribute("datetimepicker")) {
               b.setAttribute("datetimepicker", this.getAttribute("datetimepicker"));
+            }
+            
+            if (this.hasAttribute("authdosprotected")) {
+              b.setAttribute("authdosprotected", this.getAttribute("authdosprotected"));
             }
 
             // Create the browserStack container

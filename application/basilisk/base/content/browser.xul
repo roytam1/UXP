@@ -999,7 +999,8 @@
                     contentcontextmenu="contentAreaContextMenu"
                     autocompletepopup="PopupAutoComplete"
                     selectmenulist="ContentSelectDropdown"
-                    datetimepicker="DateTimePickerPanel"/>
+                    datetimepicker="DateTimePickerPanel"
+                    authdosprotected="true" />
       </vbox>
       <vbox id="browser-border-end" hidden="true" layer="true"/>
     </hbox>

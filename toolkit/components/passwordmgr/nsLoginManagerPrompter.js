@@ -103,7 +103,7 @@ LoginManagerPromptFactory.prototype = {
     // cancel the prompt until we stop showing it.
     let browser = prompter._browser;
     let baseDomain = null;
-    if (browser) {
+    if (browser && browser.isAuthDOSProtected) {
       try {
         baseDomain = Services.eTLD.getBaseDomainFromHost(hostname);
       } catch (e) {
@@ -145,7 +145,7 @@ LoginManagerPromptFactory.prototype = {
           prompt.inProgress = false;
           self._asyncPromptInProgress = false;
 
-          if (browser) {
+          if (browser && browser.isAuthDOSProtected) {
             // Reset the counter state if the user replied to a prompt and actually
             // tried to login (vs. simply clicking any button to get out).
             if (ok && (prompt.authInfo.username || prompt.authInfo.password)) {
@@ -177,15 +177,27 @@ LoginManagerPromptFactory.prototype = {
 
     var cancelDialogLimit = Services.prefs.getIntPref("prompts.authentication_dialog_abuse_limit");
 
-    let cancelationCounter = browser.authPromptCounter[baseDomain];
-    this.log("cancelationCounter =", cancelationCounter);
-    if (cancelDialogLimit && cancelationCounter >= cancelDialogLimit) {
-      this.log("Blocking auth dialog, due to exceeding dialog bloat limit");
-      delete this._asyncPrompts[hashKey];
+    // Block the auth prompt if:
+    // - There is an attached browser element
+    // - The browser element has opted-in to DOS protection
+    // - The dialog cancellation limit is not 0 (= feature disabled)
+    // - The amount of cancellations >= the set abuse limit
+    if (browser && browser.isAuthDOSProtected) {
+      let cancelationCounter = browser.authPromptCounter[baseDomain];
+      this.log("cancelationCounter =", cancelationCounter);
 
-      // just make the runnable cancel all consumers
-      runnable.cancel = true;
+      if (cancelDialogLimit && cancelationCounter >= cancelDialogLimit) {
+        this.log("Blocking auth dialog, due to exceeding dialog bloat limit");
+        delete this._asyncPrompts[hashKey];
+
+        // just make the runnable cancel all consumers
+        runnable.cancel = true;
+      } else {
+        this._asyncPromptInProgress = true;
+        prompt.inProgress = true;
+      }
     } else {
+      // No DOS protection: prompt
       this._asyncPromptInProgress = true;
       prompt.inProgress = true;
     }
