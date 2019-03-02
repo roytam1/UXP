@@ -899,6 +899,10 @@
 
       <field name="mIconURL">null</field>
 
+      <property name="isAuthDOSProtected"
+                onget="return (this.getAttribute('authdosprotected') == 'true');"
+                readonly="true"/>
+
       <!-- This is managed by the tabbrowser -->
       <field name="lastURI">null</field>
 

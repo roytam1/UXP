@@ -1438,3 +1438,11 @@ pref("browser.crashReports.unsubmittedCheck.autoSubmit2", false);
 // controlling validation are located in /services/sync/services-sync.js
 pref("services.sync.validation.enabled", true);
 #endif
+
+// When a user cancels this number of authentication dialogs coming from
+// a single web page (eTLD+1) in a row, all following authentication dialogs
+// will be blocked (automatically canceled) for that page.
+// This counter is per-tab and per-domain to minimize false positives.
+// The counter resets when the page is reloaded from the UI
+// (content-reloads do NOT clear this to mitigate reloading tricks).
+pref("prompts.authentication_dialog_abuse_limit", 3);

@@ -97,17 +97,25 @@ LoginManagerPromptFactory.prototype = {
       return;
     }
 
-    // Allow only a limited number of authentication dialogs when they are all
-    // canceled by the user.
-    var cancelationCounter = (prompter._browser && prompter._browser.canceledAuthenticationPromptCounter) || { count: 0, id: 0 };
-    if (prompt.channel) {
-      var httpChannel = prompt.channel.QueryInterface(Ci.nsIHttpChannel);
-      if (httpChannel) {
-        var windowId = httpChannel.topLevelContentWindowId;
-        if (windowId != cancelationCounter.id) {
-          // window has been reloaded or navigated, reset the counter
-          cancelationCounter = { count: 0, id: windowId };
-        }
+    // Set up a counter for ensuring that the basic auth prompt can not
+    // be abused for DOS-style attacks. With this counter, each eTLD+1
+    // per browser will get a limited number of times a user can
+    // cancel the prompt until we stop showing it.
+    let browser = prompter._browser;
+    let baseDomain = null;
+    if (browser && browser.isAuthDOSProtected) {
+      try {
+        baseDomain = Services.eTLD.getBaseDomainFromHost(hostname);
+      } catch (e) {
+        baseDomain = hostname;
+      }
+
+      if (!browser.authPromptCounter) {
+        browser.authPromptCounter = {};
+      }
+
+      if (!browser.authPromptCounter[baseDomain]) {
+        browser.authPromptCounter[baseDomain] = 0;
       }
     }
 
@@ -137,13 +145,14 @@ LoginManagerPromptFactory.prototype = {
           prompt.inProgress = false;
           self._asyncPromptInProgress = false;
 
-          if (ok) {
-            cancelationCounter.count = 0;
-          } else {
-            cancelationCounter.count++;
-          }
-          if (prompter._browser) {
-            prompter._browser.canceledAuthenticationPromptCounter = cancelationCounter;
+          if (browser && browser.isAuthDOSProtected) {
+            // Reset the counter state if the user replied to a prompt and actually
+            // tried to login (vs. simply clicking any button to get out).
+            if (ok && (prompt.authInfo.username || prompt.authInfo.password)) {
+              browser.authPromptCounter[baseDomain] = 0;
+            } else {
+              browser.authPromptCounter[baseDomain] += 1;
+            }
           }
         }
 
@@ -168,14 +177,27 @@ LoginManagerPromptFactory.prototype = {
 
     var cancelDialogLimit = Services.prefs.getIntPref("prompts.authentication_dialog_abuse_limit");
 
-    this.log("cancelationCounter =", cancelationCounter);
-    if (cancelDialogLimit && cancelationCounter.count >= cancelDialogLimit) {
-      this.log("Blocking auth dialog, due to exceeding dialog bloat limit");
-      delete this._asyncPrompts[hashKey];
+    // Block the auth prompt if:
+    // - There is an attached browser element
+    // - The browser element has opted-in to DOS protection
+    // - The dialog cancellation limit is not 0 (= feature disabled)
+    // - The amount of cancellations >= the set abuse limit
+    if (browser && browser.isAuthDOSProtected) {
+      let cancelationCounter = browser.authPromptCounter[baseDomain];
+      this.log("cancelationCounter =", cancelationCounter);
 
-      // just make the runnable cancel all consumers
-      runnable.cancel = true;
+      if (cancelDialogLimit && cancelationCounter >= cancelDialogLimit) {
+        this.log("Blocking auth dialog, due to exceeding dialog bloat limit");
+        delete this._asyncPrompts[hashKey];
+
+        // just make the runnable cancel all consumers
+        runnable.cancel = true;
+      } else {
+        this._asyncPromptInProgress = true;
+        prompt.inProgress = true;
+      }
     } else {
+      // No DOS protection: prompt
       this._asyncPromptInProgress = true;
       prompt.inProgress = true;
     }

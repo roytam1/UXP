@@ -554,6 +554,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
             Cu.reportError(ex);
           }
 
+          // Reset DOS mitigations for the basic auth prompt.
+          delete browser.authPromptCounter;
+
           let params = {
             postData,
             allowThirdPartyFixup: true,
