@@ -41,18 +41,6 @@
   -moz-padding-start: 0;
 }
 
-#updateButton,
-#updateDeck > hbox > label {
-  -moz-margin-start: 0;
-  -moz-padding-start: 0;
-}
-
-.update-throbber {
-  width: 16px;
-  min-height: 16px;
-  -moz-margin-end: 3px;
-  list-style-image: url("chrome://global/skin/icons/loading_16.png");
-}
 
 .text-link,
 .text-link:focus {

@@ -50,44 +50,6 @@
         <label id="distribution" class="text-blurb"/>
         <label id="distributionId" class="text-blurb"/>
 
-        <vbox id="detailsBox">
-          <vbox id="updateBox">
-#ifdef MOZ_UPDATER
-            <deck id="updateDeck" orient="vertical">
-              <hbox id="updateButtonBox" align="center">
-                <button id="updateButton" align="start"
-                        oncommand="gAppUpdater.buttonOnCommand();"/>
-                <spacer flex="1"/>
-              </hbox>
-              <hbox id="checkingForUpdates" align="center">
-                <image class="update-throbber"/><label>&update.checkingForUpdates;</label>
-              </hbox>
-              <hbox id="checkingAddonCompat" align="center">
-                <image class="update-throbber"/><label>&update.checkingAddonCompat;</label>
-              </hbox>
-              <hbox id="downloading" align="center">
-                <image class="update-throbber"/><label>&update.downloading.start;</label><label id="downloadStatus"/><label>&update.downloading.end;</label>
-              </hbox>
-              <hbox id="applying" align="center">
-                <image class="update-throbber"/><label>&update.applying;</label>
-              </hbox>
-              <hbox id="downloadFailed" align="center">
-                <label>&update.failed.start;</label><label id="failedLink" class="text-link">&update.failed.linkText;</label><label>&update.failed.end;</label>
-              </hbox>
-              <hbox id="adminDisabled" align="center">
-                <label>&update.adminDisabled;</label>
-              </hbox>
-              <hbox id="noUpdatesFound" align="center">
-                <label>&update.noUpdatesFound;</label>
-              </hbox>
-              <hbox id="manualUpdate" align="center">
-                <label>&update.manual.start;</label><label id="manualLink" class="text-link"/><label>&update.manual.end;</label>
-              </hbox>
-            </deck>
-#endif
-          </vbox>
-
-        <description class="text-pmcreds">
 #if defined(MOZ_OFFICIAL_BRANDING) || defined(MC_OFFICIAL)
 #ifdef MC_PRIVATE_BUILD
           This is a private build of Pale Moon. If you did not manually build this copy from source yourself, then please download an official version from the <label class="text-link" href="http://www.palemoon.org/">Pale Moon website</label>.
