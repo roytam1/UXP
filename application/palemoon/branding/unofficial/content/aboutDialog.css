@@ -10,15 +10,25 @@
 }
 
 .text-link {
-  color: #eef !important;
+  color: #eef;
 }
 
-#PMrightBox {
-  /* this margin prevents text from overlapping the planet image */
-  margin-left: 280px;
-  margin-right: 20px;
+.bottom-link {
+  color: black;
+  background-color: #808080;
 }
 
-#PMbottomBox {
-  background-color: rgba(0,0,0,.7);
+#aboutVersionBox {
+  margin-top: 20px;
+}
+
+#aboutTextBox {
+  font-family: Arial, helvetica;
+  font-size: 14px;
+  padding: 0px 10px;
+}
+
+#aboutLinkBox {
+  padding: 15px 10px 20px;
+  font-family: Arial, helvetica;
 }
