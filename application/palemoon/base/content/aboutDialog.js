@@ -42,7 +42,7 @@ function init(aEvent)
   if (/[ab]\d+$/.test(version)) {
     let buildID = Services.appinfo.appBuildID;
     let buildDate = buildID.slice(0,4) + "-" + buildID.slice(4,6) + "-" + buildID.slice(6,8);
-    document.getElementById("PMversion").textContent += " (" + buildDate + ")";
+    document.getElementById("aboutVersion").textContent += " (" + buildDate + ")";
   }
 
 #ifdef XP_MACOSX
