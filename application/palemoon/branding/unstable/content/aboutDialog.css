@@ -22,15 +22,29 @@
 }
 
 #aboutTextBox {
+  animation: 3s fadeIn;
+  animation-fill-mode: forwards;
   font-family: Arial, helvetica;
   font-size: 14px;
   text-shadow: 1px 1px 0px #D5BC9A;
-  padding: 0px 10px;
+  padding: 15px 10px 5px;
   background: linear-gradient(to bottom,
                               transparent 0%,
-                              rgba(255, 255, 255, .3) 20%,
-                              rgba(255, 255, 255, .5) 75%,
+                              rgba(255, 255, 255, .6) 15%,
+                              rgba(255, 255, 255, .7) 85%,
                               transparent 100%);
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 #aboutLinkBox {

@@ -75,8 +75,8 @@
     </vbox>
     <vbox id="aboutLinkBox">
       <hbox pack="center">
-        <label class="text-link bottom-link" href="about:license">Licensing information</label>
         <label class="text-link bottom-link" href="about:rights">End-user rights</label>
+        <label class="text-link bottom-link" href="about:license">Licensing information</label>
         <label class="text-link bottom-link" id="releaseNotesURL">Release notes</label>
       </hbox>
       <description id="aboutPMtrademark">&trademarkInfo.part1;</description>
