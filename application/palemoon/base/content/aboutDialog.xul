@@ -51,14 +51,14 @@
 
     </vbox>
     <vbox id="aboutTextBox" flex="1">
-        <description class="text-credits">
+        <description class="text-credits text-center">
 #if defined(MOZ_OFFICIAL_BRANDING) || defined(MC_OFFICIAL)
 #ifdef MC_PRIVATE_BUILD
           This is a private build of Pale Moon. If you did not manually build this copy from source yourself, then please download an official version from the <label class="text-link" href="http://www.palemoon.org/">Pale Moon website</label>.
 #else
           <label class="text-link" href="http://www.palemoon.org">Pale Moon</label> is released by <label class="text-link" href="http://www.moonchildproductions.info">Moonchild Productions</label>.
         </description>
-        <description class="text-credits">
+        <description class="text-credits text-center">
           Special thanks to all our supporters and donors for making this browser possible!
         </description>
         <description class="text-credits">

@@ -17,22 +17,14 @@
 }
 
 #aboutVersionBox {
-  font-family: Arial, helvetica;
   text-shadow: 1px 1px 0px #9ABCD5;
 }
 
 #aboutTextBox {
   animation: 3s fadeIn;
   animation-fill-mode: forwards;
-  font-family: Arial, helvetica;
-  font-size: 14px;
   text-shadow: 1px 1px 0px #9ABCD5;
-  padding: 15px 10px 5px;
-  background: linear-gradient(to bottom,
-                              transparent 0%,
-                              rgba(255, 255, 255, .6) 15%,
-                              rgba(255, 255, 255, .7) 85%,
-                              transparent 100%);
+  color: #101020; 
 }
 
 @keyframes fadeIn {
@@ -49,7 +41,6 @@
 
 #aboutLinkBox {
   padding: 15px 10px 0;
-  font-family: Arial, helvetica;
 }
 
 #aboutPMtrademark {

@@ -9,26 +9,11 @@
   color: #fff;
 }
 
-.text-link {
-  color: #eef;
-}
-
-.bottom-link {
-  color: black;
-  background-color: #808080;
-}
-
 #aboutVersionBox {
+  /* No wordmark: leave empty space */
   margin-top: 20px;
-}
-
-#aboutTextBox {
-  font-family: Arial, helvetica;
-  font-size: 14px;
-  padding: 0px 10px;
 }
 
 #aboutLinkBox {
   padding: 15px 10px 20px;
-  font-family: Arial, helvetica;
 }

@@ -8,6 +8,7 @@
 }
 
 #aboutVersionBox {
+  font-family: Arial, helvetica;
   height: 38 px;
 }
 
@@ -20,14 +21,34 @@
 
 #distribution,
 #distributionId {
+  text-align: center;
+  font-size: 14px;
   font-weight: bold;
   display: none;
   margin-top: 0;
   margin-bottom: 0;
 }
 
+#aboutTextBox {
+  font-family: Arial, helvetica;
+  font-size: 14px;
+  margin: 5px 20px;
+  padding: 4px 10px 0px;
+  border-radius: 3px;
+  color: black;
+  background-color: rgba(240, 240, 240, .6);
+}
+
+#aboutLinkBox {
+  font-family: Arial, helvetica;
+}
+
 .text-credits {
   margin: 5px 0px;
+}
+
+.text-center {
+  text-align: center;
 }
 
 .text-link,
