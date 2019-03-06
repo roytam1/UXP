@@ -43,15 +43,11 @@
         <parameter name="fn"/>
         <body>
           <![CDATA[
-            if (!this.isRemoteBrowser) {
-              this.inLoadURI = true;
-              try {
-                fn();
-              } finally {
-                this.inLoadURI = false;
-              }
-            } else {
+            this.inLoadURI = true;
+            try {
               fn();
+            } finally {
+              this.inLoadURI = false;
             }
           ]]>
         </body>
@@ -307,7 +303,7 @@
       <method name="preserveLayers">
         <parameter name="preserve"/>
         <body>
-          // Only useful for remote browsers.
+          <!-- Only useful for remote browsers. -->
         </body>
       </method>
 
@@ -338,8 +334,9 @@
         </getter>
       </property>
 
+      <!-- stubbed to false until all callers are removed -->
       <property name="isRemoteBrowser"
-                onget="return (this.getAttribute('remote') == 'true');"
+                onget="return false;"
                 readonly="true"/>
 
       <property name="messageManager"
@@ -920,7 +917,7 @@
               os.addObserver(this, "browser:purge-session-history", true);
 
               // enable global history if we weren't told otherwise
-              if (!this.hasAttribute("disableglobalhistory") && !this.isRemoteBrowser) {
+              if (!this.hasAttribute("disableglobalhistory")) {
                 try {
                   this.docShell.useGlobalHistory = true;
                 } catch (ex) {
@@ -949,9 +946,7 @@
             this.relatedBrowser = relatedBrowser;
           }
 
-          if (!this.isRemoteBrowser) {
-            this.addEventListener("pagehide", this.onPageHide, true);
-          }
+          this.addEventListener("pagehide", this.onPageHide, true);
 
           if (this.messageManager) {
             this.messageManager.addMessageListener("PopupBlocking:UpdateBlockedPopups", this);
@@ -1000,9 +995,7 @@
 
           this.lastURI = null;
 
-          if (!this.isRemoteBrowser) {
-            this.removeEventListener("pagehide", this.onPageHide, true);
-          }
+          this.removeEventListener("pagehide", this.onPageHide, true);
 
           if (this._autoScrollNeedsCleanup) {
             // we polluted the global scope, so clean it up
@@ -1288,9 +1281,6 @@
         <parameter name="aOtherBrowser"/>
         <body>
         <![CDATA[
-          if (this.isRemoteBrowser != aOtherBrowser.isRemoteBrowser)
-            throw new Error("Can only swap docshells between browsers in the same process.");
-
           // Give others a chance to swap state.
           // IMPORTANT: Since a swapDocShells call does not swap the messageManager
           //            instances attached to a browser to aOtherBrowser, others
@@ -1324,28 +1314,6 @@
             "_webNavigation"
           ];
 
-          if (this.isRemoteBrowser) {
-            fieldsToSwap.push(...[
-              "_remoteWebNavigation",
-              "_remoteWebNavigationImpl",
-              "_remoteWebProgressManager",
-              "_remoteWebProgress",
-              "_remoteFinder",
-              "_securityUI",
-              "_documentURI",
-              "_documentContentType",
-              "_contentTitle",
-              "_characterSet",
-              "_contentPrincipal",
-              "_imageDocument",
-              "_fullZoom",
-              "_textZoom",
-              "_isSyntheticDocument",
-              "_innerWindowID",
-              "_manifestURI",
-            ]);
-          }
-
           var ourFieldValues = {};
           var otherFieldValues = {};
           for (let field of fieldsToSwap) {
@@ -1368,27 +1336,10 @@
             aOtherBrowser[field] = ourFieldValues[field];
           }
 
-          if (!this.isRemoteBrowser) {
-            // Null the current nsITypeAheadFind instances so that they're
-            // lazily re-created on access. We need to do this because they
-            // might have attached the wrong docShell.
-            this._fastFind = aOtherBrowser._fastFind = null;
-          }
-          else {
-            // Rewire the remote listeners
-            this._remoteWebNavigationImpl.swapBrowser(this);
-            aOtherBrowser._remoteWebNavigationImpl.swapBrowser(aOtherBrowser);
-
-            if (this._remoteWebProgressManager && aOtherBrowser._remoteWebProgressManager) {
-              this._remoteWebProgressManager.swapBrowser(this);
-              aOtherBrowser._remoteWebProgressManager.swapBrowser(aOtherBrowser);
-            }
-
-            if (this._remoteFinder)
-              this._remoteFinder.swapBrowser(this);
-            if (aOtherBrowser._remoteFinder)
-              aOtherBrowser._remoteFinder.swapBrowser(aOtherBrowser);
-          }
+          // Null the current nsITypeAheadFind instances so that they're
+          // lazily re-created on access. We need to do this because they
+          // might have attached the wrong docShell.
+          this._fastFind = aOtherBrowser._fastFind = null;
 
           event = new CustomEvent("EndSwapDocShells", {"detail": aOtherBrowser});
           this.dispatchEvent(event);
@@ -1540,11 +1491,6 @@
           event.preventDefault();
         }
 
-        // No need to handle "dragover" in e10s, since nsDocShellTreeOwner.cpp in the child process
-        // handles that case using "@mozilla.org/content/dropped-link-handler;1" service.
-        if (this.isRemoteBrowser)
-          return;
-
         let linkHandler = Components.classes["@mozilla.org/content/dropped-link-handler;1"].
                             getService(Components.interfaces.nsIDroppedLinkHandler);
         if (linkHandler.canDropLink(event, false))
@@ -1553,9 +1499,7 @@
       </handler>
       <handler event="drop" group="system">
       <![CDATA[
-        // No need to handle "drop" in e10s, since nsDocShellTreeOwner.cpp in the child process
-        // handles that case using "@mozilla.org/content/dropped-link-handler;1" service.
-        if (!this.droppedLinkHandler || event.defaultPrevented || this.isRemoteBrowser)
+        if (!this.droppedLinkHandler || event.defaultPrevented)
           return;
 
         let name = { };
