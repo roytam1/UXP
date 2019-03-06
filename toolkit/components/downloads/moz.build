@@ -53,9 +53,10 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         'nsDownloadScanner.cpp',
     ]
 
-# XXX - Until Suite builds off XULRunner we can't guarantee our implementation
-# of nsIDownloadManagerUI overrides toolkit's.
-if not CONFIG['MOZ_SUITE']:
+# The Communicator Downloads Manager uses it's own DownloadManagerUI
+# component and it can't be guaranteed that it's implimentation will override
+# toolkit's so don't include toolkit's
+if not CONFIG['MOZ_SUITE'] or not CONFIG['BINOC_COMM_DLMGR']:
     EXTRA_COMPONENTS += [
         'nsDownloadManagerUI.js',
         'nsDownloadManagerUI.manifest',
