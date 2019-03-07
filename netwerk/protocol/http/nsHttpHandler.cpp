@@ -468,7 +468,9 @@ nsHttpHandler::InitConnectionMgr()
 }
 
 nsresult
-nsHttpHandler::AddStandardRequestHeaders(nsHttpRequestHead *request, bool isSecure)
+nsHttpHandler::AddStandardRequestHeaders(nsHttpRequestHead *request,
+                                         bool isSecure,
+                                         nsContentPolicyType aContentPolicyType)
 {
     nsresult rv;
 
@@ -481,7 +483,20 @@ nsHttpHandler::AddStandardRequestHeaders(nsHttpRequestHead *request, bool isSecu
     // Add the "Accept" header.  Note, this is set as an override because the
     // service worker expects to see it.  The other "default" headers are
     // hidden from service worker interception.
-    rv = request->SetHeader(nsHttp::Accept, mAccept,
+    nsAutoCString accept;
+    if (aContentPolicyType == nsIContentPolicy::TYPE_DOCUMENT ||
+        aContentPolicyType == nsIContentPolicy::TYPE_SUBDOCUMENT) {
+      accept.Assign(mAcceptNavigation);
+    } else if (aContentPolicyType == nsIContentPolicy::TYPE_IMAGE ||
+               aContentPolicyType == nsIContentPolicy::TYPE_IMAGESET) {
+      accept.Assign(mAcceptImage);
+    } else if (aContentPolicyType == nsIContentPolicy::TYPE_STYLESHEET) {
+      accept.Assign(mAcceptStyle);
+    } else {
+      accept.Assign(mAcceptDefault);
+    }
+
+    rv = request->SetHeader(nsHttp::Accept, accept,
                             false, nsHttpHeaderArray::eVarietyRequestOverride);
     if (NS_FAILED(rv)) return rv;
 
@@ -1268,12 +1283,36 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
             mQoSBits = (uint8_t) clamped(val, 0, 0xff);
     }
 
+    if (PREF_CHANGED(HTTP_PREF("accept.navigation"))) {
+        nsXPIDLCString accept;
+        rv = prefs->GetCharPref(HTTP_PREF("accept.navigation"),
+                                  getter_Copies(accept));
+        if (NS_SUCCEEDED(rv))
+            SetAccept(accept, ACCEPT_NAVIGATION);
+    }
+
+    if (PREF_CHANGED(HTTP_PREF("accept.image"))) {
+        nsXPIDLCString accept;
+        rv = prefs->GetCharPref(HTTP_PREF("accept.image"),
+                                  getter_Copies(accept));
+        if (NS_SUCCEEDED(rv))
+            SetAccept(accept, ACCEPT_IMAGE);
+    }
+
+    if (PREF_CHANGED(HTTP_PREF("accept.style"))) {
+        nsXPIDLCString accept;
+        rv = prefs->GetCharPref(HTTP_PREF("accept.style"),
+                                  getter_Copies(accept));
+        if (NS_SUCCEEDED(rv))
+            SetAccept(accept, ACCEPT_STYLE);
+    }
+
     if (PREF_CHANGED(HTTP_PREF("accept.default"))) {
         nsXPIDLCString accept;
         rv = prefs->GetCharPref(HTTP_PREF("accept.default"),
                                   getter_Copies(accept));
         if (NS_SUCCEEDED(rv))
-            SetAccept(accept);
+            SetAccept(accept, ACCEPT_DEFAULT);
     }
 
     if (PREF_CHANGED(HTTP_PREF("accept-encoding"))) {
@@ -1897,9 +1936,21 @@ nsHttpHandler::SetAcceptLanguages()
 }
 
 nsresult
-nsHttpHandler::SetAccept(const char *aAccept)
+nsHttpHandler::SetAccept(const char *aAccept, AcceptType aType)
 {
-    mAccept = aAccept;
+    switch (aType) {
+        case ACCEPT_NAVIGATION:
+            mAcceptNavigation = aAccept;
+            break;
+        case ACCEPT_IMAGE:
+            mAcceptImage = aAccept;
+            break;
+        case ACCEPT_STYLE:
+            mAcceptStyle = aAccept;
+            break;
+        case ACCEPT_DEFAULT:
+            mAcceptDefault = aAccept;
+    }
     return NS_OK;
 }
 
@@ -2057,7 +2108,11 @@ nsHttpHandler::NewProxiedChannel2(nsIURI *uri,
     rv = NewChannelId(&channelId);
     NS_ENSURE_SUCCESS(rv, rv);
 
-    rv = httpChannel->Init(uri, caps, proxyInfo, proxyResolveFlags, proxyURI, channelId);
+    nsContentPolicyType contentPolicyType =
+        aLoadInfo ? aLoadInfo->GetExternalContentPolicyType()
+                  : nsIContentPolicy::TYPE_OTHER;
+
+    rv = httpChannel->Init(uri, caps, proxyInfo, proxyResolveFlags, proxyURI, channelId, contentPolicyType);
     if (NS_FAILED(rv))
         return rv;
 

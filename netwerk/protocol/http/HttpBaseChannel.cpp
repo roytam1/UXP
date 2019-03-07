@@ -151,7 +151,8 @@ HttpBaseChannel::Init(nsIURI *aURI,
                       nsProxyInfo *aProxyInfo,
                       uint32_t aProxyResolveFlags,
                       nsIURI *aProxyURI,
-                      const nsID& aChannelId)
+                      const nsID& aChannelId,
+                      nsContentPolicyType aContentPolicyType)
 {
   LOG(("HttpBaseChannel::Init [this=%p]\n", this));
 
@@ -200,7 +201,7 @@ HttpBaseChannel::Init(nsIURI *aURI,
   rv = mRequestHead.SetHeader(nsHttp::Host, hostLine);
   if (NS_FAILED(rv)) return rv;
 
-  rv = gHttpHandler->AddStandardRequestHeaders(&mRequestHead, isHTTPS);
+  rv = gHttpHandler->AddStandardRequestHeaders(&mRequestHead, isHTTPS, aContentPolicyType);
   if (NS_FAILED(rv)) return rv;
 
   nsAutoCString type;

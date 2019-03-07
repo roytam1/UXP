@@ -99,7 +99,8 @@ public:
   virtual nsresult Init(nsIURI *aURI, uint32_t aCaps, nsProxyInfo *aProxyInfo,
                         uint32_t aProxyResolveFlags,
                         nsIURI *aProxyURI,
-                        const nsID& aChannelId);
+                        const nsID& aChannelId,
+                        nsContentPolicyType aContentPolicyType);
 
   // nsIRequest
   NS_IMETHOD GetName(nsACString& aName) override;
