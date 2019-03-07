@@ -1677,10 +1677,6 @@ Loader::LoadSheet(SheetLoadData* aLoadData,
 
   nsCOMPtr<nsIHttpChannel> httpChannel(do_QueryInterface(channel));
   if (httpChannel) {
-    // Send a minimal Accept header for text/css
-    httpChannel->SetRequestHeader(NS_LITERAL_CSTRING("Accept"),
-                                  NS_LITERAL_CSTRING("text/css,*/*;q=0.1"),
-                                  false);
     nsCOMPtr<nsIURI> referrerURI = aLoadData->GetReferrerURI();
     if (referrerURI)
       httpChannel->SetReferrerWithPolicy(referrerURI,
