@@ -2,56 +2,53 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#PMaboutDialog {
-  width: 620px;
+#aboutPMDialogContainer {
+  width: 700px;
+  height: 410px;
 }
 
-#PMrightBox {
-  background-image: url("chrome://branding/content/about-wordmark.png");
-  background-repeat: no-repeat;
-  /* padding-top creates room for the wordmark */
-  padding-top: 38px;
-  margin-top:20px;
+#aboutVersionBox {
+  font-family: Arial, helvetica;
+  height: 38 px;
 }
 
-#PMrightBox:-moz-locale-dir(rtl) {
-  background-position: 100% 0;
-}
-
-#PMbottomBox {
-  padding: 15px 10px 0;
-}
-
-#PMversion {
-  margin-top: 10px;
-  -moz-margin-start: 0;
+#aboutVersion {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin: 4px;
 }
 
 #distribution,
 #distributionId {
+  text-align: center;
+  font-size: 14px;
   font-weight: bold;
   display: none;
   margin-top: 0;
   margin-bottom: 0;
 }
 
-.text-blurb {
-  margin-bottom: 10px;
-  -moz-margin-start: 0;
-  -moz-padding-start: 0;
+#aboutTextBox {
+  font-family: Arial, helvetica;
+  font-size: 14px;
+  margin: 5px 20px;
+  padding: 4px 10px 0px;
+  border-radius: 3px;
+  color: black;
+  background-color: rgba(240, 240, 240, .6);
 }
 
-#updateButton,
-#updateDeck > hbox > label {
-  -moz-margin-start: 0;
-  -moz-padding-start: 0;
+#aboutLinkBox {
+  font-family: Arial, helvetica;
 }
 
-.update-throbber {
-  width: 16px;
-  min-height: 16px;
-  -moz-margin-end: 3px;
-  list-style-image: url("chrome://global/skin/icons/loading_16.png");
+.text-credits {
+  margin: 5px 0px;
+}
+
+.text-center {
+  text-align: center;
 }
 
 .text-link,
@@ -63,5 +60,15 @@
 .bottom-link,
 .bottom-link:focus {
   text-align: center;
+  text-decoration: none !important;
+  padding: 4px;
+  border-radius: 3px;
+  color: #244C8A;
+  background-color: rgba(240, 240, 240, .7);
   margin: 0 40px;
+  transition: background-color 0.5s ease-out;
+}
+
+.bottom-link:hover {
+  background-color: rgba(240, 240, 255, .95);
 }

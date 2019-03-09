@@ -9,16 +9,11 @@
   color: #fff;
 }
 
-.text-link {
-  color: #eef !important;
+#aboutVersionBox {
+  /* No wordmark: leave empty space */
+  margin-top: 20px;
 }
 
-#PMrightBox {
-  /* this margin prevents text from overlapping the planet image */
-  margin-left: 280px;
-  margin-right: 20px;
-}
-
-#PMbottomBox {
-  background-color: rgba(0,0,0,.7);
+#aboutLinkBox {
+  padding: 15px 10px 20px;
 }

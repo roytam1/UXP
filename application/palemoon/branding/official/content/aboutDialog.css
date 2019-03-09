@@ -3,41 +3,51 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #aboutPMDialogContainer {
-  background-image: url("chrome://branding/content/about-background.png");
+  background-image: url("chrome://branding/content/about-background.jpg");
   background-repeat: no-repeat;
-  background-color: #F7F7F7;
-  background-size: cover;
-  color: #000020; 
+  background-color: #9ABCD5;
+  color: #101020; 
 }
 
-#PMleftBox {
-  /* background-image: url("chrome://branding/content/about-logo.png"); */
+#aboutHeaderBox {
+  background-image: url("chrome://branding/content/about-wordmark.png");
   background-repeat: no-repeat;
-  /* min-width and min-height create room for the logo */
-  min-width: 210px;
-  min-height: 210px;
-  margin-top:20px;
-  -moz-margin-start: 30px;
+  background-position: center center;
+  height: 44px;
 }
 
-#PMrightBox {
-  margin-left: 30px;
-  margin-right: 30px;
+#aboutVersionBox {
+  text-shadow: 1px 1px 0px #9ABCD5;
 }
 
-#PMbottomBox {
+#aboutTextBox {
+  animation: 3s fadeIn;
+  animation-fill-mode: forwards;
+  text-shadow: 1px 1px 0px #9ABCD5;
+  color: #101020; 
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+#aboutLinkBox {
   padding: 15px 10px 0;
-  background-color: rgba(240,240,255,.7);
-}   
-
-#PMupdateDeck > hbox > label:not([class="text-link"]) {
-  color: #909090;
 }
 
-#PMtrademark {
-  font-size: xx-small;
+#aboutPMtrademark {
+  font-size: 10px;
   text-align: center;
-  color: #999999;
+  color: #C0C0C0;
+  text-shadow: 1px 1px 0px #000000;
   margin-top: 10px;
   margin-bottom: 10px;
 }
