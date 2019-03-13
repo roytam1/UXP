@@ -14,11 +14,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Promise",
                                   "resource://gre/modules/Promise.jsm");
 
-#ifdef MOZ_SERVICES_CLOUDSYNC
-XPCOMUtils.defineLazyModuleGetter(this, "CloudSync",
-                                  "resource://gre/modules/CloudSync.jsm");
-#endif
-
 var RemoteTabViewer = {
   _tabsList: null,
 
@@ -183,16 +178,7 @@ var RemoteTabViewer = {
       }
     }
 
-#ifdef MOZ_SERVICES_CLOUDSYNC
-    if (CloudSync && CloudSync.ready && CloudSync().tabsReady && CloudSync().tabs.hasRemoteTabs()) {
-      this._generateCloudSyncTabList()
-          .then(complete, complete);
-    } else {
-      complete();
-    }
-#else
     complete();
-#endif
   },
 
   _clearTabList: function () {
