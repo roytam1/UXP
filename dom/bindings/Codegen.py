@@ -84,7 +84,7 @@ def idlTypeNeedsCycleCollection(type):
         return True
     elif type.isUnion():
         return any(idlTypeNeedsCycleCollection(t) for t in type.flatMemberTypes)
-    elif type.isMozMap():
+    elif type.isRecord():
         if idlTypeNeedsCycleCollection(type.inner):
             raise TypeError("Cycle collection for type %s is not supported" % type)
         return False
@@ -1171,7 +1171,7 @@ class CGHeaders(CGWrapper):
                 declareIncludes.add(filename)
             elif unrolled.isPrimitive():
                 bindingHeaders.add("mozilla/dom/PrimitiveConversions.h")
-            elif unrolled.isMozMap():
+            elif unrolled.isRecord():
                 if dictionary or jsImplementedDescriptors:
                     declareIncludes.add("mozilla/dom/MozMap.h")
                 else:
@@ -1388,7 +1388,7 @@ def UnionTypes(unionTypes, config):
                     # the right header to be able to Release() in our inlined
                     # code.
                     headers.add(CGHeaders.getDeclarationFilename(f.callback))
-                elif f.isMozMap():
+                elif f.isRecord():
                     headers.add("mozilla/dom/MozMap.h")
                     # And add headers for the type we're parametrized over
                     addHeadersForType(f.inner)
@@ -1448,7 +1448,7 @@ def UnionConversions(unionTypes, config):
                     headers.add(CGHeaders.getDeclarationFilename(f.inner))
                 elif f.isPrimitive():
                     headers.add("mozilla/dom/PrimitiveConversions.h")
-                elif f.isMozMap():
+                elif f.isRecord():
                     headers.add("mozilla/dom/MozMap.h")
                     # And the internal type of the MozMap
                     addHeadersForType(f.inner)
@@ -4730,7 +4730,7 @@ def getJSToNativeConversionInfo(type, descriptorProvider, failureCode=None,
                                         dealWithOptional=isOptional,
                                         holderArgs=holderArgs)
 
-    if type.isMozMap():
+    if type.isRecord():
         assert not isEnforceRange and not isClamp
         if failureCode is None:
             notMozMap = ('ThrowErrorMessage(cx, MSG_NOT_OBJECT, "%s");\n'
@@ -4937,7 +4937,7 @@ def getJSToNativeConversionInfo(type, descriptorProvider, failureCode=None,
         else:
             setDictionary = None
 
-        mozMapMemberTypes = filter(lambda t: t.isMozMap(), memberTypes)
+        mozMapMemberTypes = filter(lambda t: t.isRecord(), memberTypes)
         if len(mozMapMemberTypes) > 0:
             assert len(mozMapMemberTypes) == 1
             name = getUnionMemberName(mozMapMemberTypes[0])
@@ -6385,7 +6385,7 @@ def getWrapTemplateForType(type, descriptorProvider, result, successCode,
     if type is None or type.isVoid():
         return (setUndefined(), True)
 
-    if (type.isSequence() or type.isMozMap()) and type.nullable():
+    if (type.isSequence() or type.isRecord()) and type.nullable():
         # These are both wrapped in Nullable<>
         recTemplate, recInfall = getWrapTemplateForType(type.inner, descriptorProvider,
                                                         "%s.Value()" % result, successCode,
@@ -6458,7 +6458,7 @@ def getWrapTemplateForType(type, descriptorProvider, result, successCode,
 
         return (code, False)
 
-    if type.isMozMap():
+    if type.isRecord():
         # Now do non-nullable MozMap.  Our success code is just to break to
         # where we define the property on the object.  Note that we bump the
         # mozMapWrapLevel around this call so that nested MozMap conversions
@@ -6793,7 +6793,7 @@ def typeMatchesLambda(type, func):
         return False
     if type.nullable():
         return typeMatchesLambda(type.inner, func)
-    if type.isSequence() or type.isMozMap():
+    if type.isSequence() or type.isRecord():
         return typeMatchesLambda(type.inner, func)
     if type.isUnion():
         return any(typeMatchesLambda(t, func) for t in
@@ -6889,7 +6889,7 @@ def getRetvalDeclarationForType(returnType, descriptorProvider,
         if nullable:
             result = CGTemplatedType("Nullable", result)
         return result, "ref", rooter, None, None
-    if returnType.isMozMap():
+    if returnType.isRecord():
         nullable = returnType.nullable()
         if nullable:
             returnType = returnType.inner
@@ -6999,7 +6999,7 @@ class CGCallGenerator(CGThing):
                     return True
                 if a.type.isSequence():
                     return True
-                if a.type.isMozMap():
+                if a.type.isRecord():
                     return True
                 # isObject() types are always a JS::Rooted, whether
                 # nullable or not, and it turns out a const JS::Rooted
@@ -7222,7 +7222,7 @@ def wrapTypeIntoCurrentCompartment(type, value, isMember=True):
             wrapCode = CGIfWrapper(wrapCode, "!%s.IsNull()" % origValue)
         return wrapCode
 
-    if type.isMozMap():
+    if type.isRecord():
         origType = type
         if type.nullable():
             type = type.inner
@@ -8135,7 +8135,7 @@ class CGMethodCall(CGThing):
             genericObjectSigs = [
                 s for s in possibleSignatures
                 if (distinguishingType(s).isDictionary() or
-                    distinguishingType(s).isMozMap() or
+                    distinguishingType(s).isRecord() or
                     distinguishingType(s).isCallbackInterface())]
             assert len(genericObjectSigs) <= 1
             objectSigs.extend(genericObjectSigs)
@@ -9429,7 +9429,7 @@ class CGMemberJITInfo(CGThing):
             return "JSVAL_TYPE_UNDEFINED"
         if t.isSequence():
             return "JSVAL_TYPE_OBJECT"
-        if t.isMozMap():
+        if t.isRecord():
             return "JSVAL_TYPE_OBJECT"
         if t.isGeckoInterface():
             return "JSVAL_TYPE_OBJECT"
@@ -9690,7 +9690,7 @@ def getUnionAccessorSignatureType(type, descriptorProvider):
     # Flat member types have already unwrapped nullables.
     assert not type.nullable()
 
-    if type.isSequence() or type.isMozMap():
+    if type.isSequence() or type.isRecord():
         if type.isSequence():
             wrapperType = "Sequence"
         else:
@@ -10061,7 +10061,7 @@ class CGUnionStruct(CGThing):
                         CGCase("e" + vars["name"],
                                CGGeneric("DoTraceSequence(trc, mValue.m%s.Value());\n" %
                                          vars["name"])))
-                elif t.isMozMap():
+                elif t.isRecord():
                     traceCases.append(
                         CGCase("e" + vars["name"],
                                CGGeneric("TraceMozMap(trc, mValue.m%s.Value());\n" %
@@ -13193,7 +13193,7 @@ class CGDictionary(CGThing):
                 trace = CGGeneric('%s.TraceSelf(trc);\n' % memberData)
             if type.nullable():
                 trace = CGIfWrapper(trace, "!%s.IsNull()" % memberNullable)
-        elif type.isMozMap():
+        elif type.isRecord():
             # If you implement this, add a MozMap<object> to
             # TestInterfaceJSDictionary and test it in test_bug1036214.html
             # to make sure we end up with the correct security properties.
@@ -13604,7 +13604,7 @@ class ForwardDeclarationBuilder:
             # since we don't know which one we might want
             self.addInMozillaDom(CGUnionStruct.unionTypeName(t, False))
             self.addInMozillaDom(CGUnionStruct.unionTypeName(t, True))
-        elif t.isMozMap():
+        elif t.isRecord():
             self.forwardDeclareForType(t.inner, config)
         # Don't need to do anything for void, primitive, string, any or object.
         # There may be some other cases we are missing.
@@ -14110,7 +14110,7 @@ class CGNativeMember(ClassMethod):
             else:
                 returnCode = "aRetVal.SwapElements(${declName});\n"
             return "void", "", returnCode
-        if type.isMozMap():
+        if type.isRecord():
             # If we want to handle MozMap-of-MozMap return values, we're
             # going to need to fix example codegen to not produce MozMap<void>
             # for the relevant argument...
@@ -14160,7 +14160,7 @@ class CGNativeMember(ClassMethod):
             if nullable:
                 type = CGTemplatedType("Nullable", type)
             args.append(Argument("%s&" % type.define(), "aRetVal"))
-        elif returnType.isMozMap():
+        elif returnType.isRecord():
             nullable = returnType.nullable()
             if nullable:
                 returnType = returnType.inner
@@ -14238,7 +14238,7 @@ class CGNativeMember(ClassMethod):
             decl = CGTemplatedType("Sequence", argType)
             return decl.define(), True, True
 
-        if type.isMozMap():
+        if type.isRecord():
             nullable = type.nullable()
             if nullable:
                 type = type.inner
