@@ -14,13 +14,6 @@ var gSyncUtils = {
     return this.bundle = Services.strings.createBundle("chrome://browser/locale/syncSetup.properties");
   },
 
-  get fxAccountsEnabled() {
-    let service = Components.classes["@mozilla.org/weave/service;1"]
-                            .getService(Components.interfaces.nsISupports)
-                            .wrappedJSObject;
-    return service.fxAccountsEnabled;
-  },
-
   // opens in a new window if we're in a modal prefwindow world, in a new tab otherwise
   _openLink: function (url) {
     let thisDocEl = document.documentElement,
@@ -78,8 +71,7 @@ var gSyncUtils = {
   },
 
   get tosURL() {
-    let root = this.fxAccountsEnabled ? "fxa." : "";
-    return  Weave.Svc.Prefs.get(root + "termsURL");
+    return  Weave.Svc.Prefs.get("termsURL");
   },
 
   openToS: function () {
@@ -87,8 +79,7 @@ var gSyncUtils = {
   },
 
   get privacyPolicyURL() {
-    let root = this.fxAccountsEnabled ? "fxa." : "";
-    return  Weave.Svc.Prefs.get(root + "privacyURL");
+    return  Weave.Svc.Prefs.get("privacyURL");
   },
 
   openPrivacyPolicy: function () {

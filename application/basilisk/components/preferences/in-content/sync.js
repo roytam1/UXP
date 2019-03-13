@@ -92,19 +92,7 @@ var gSyncPane = {
     } catch (e) {}
     if (!username) {
       this.page = FXA_PAGE_LOGGED_OUT;
-    } else if (xps.fxAccountsEnabled) {
-      // Use cached values while we wait for the up-to-date values
-      let cachedComputerName;
-      try {
-        cachedComputerName = Services.prefs.getCharPref("services.sync.client.name");
-      }
-      catch (e) {
-        cachedComputerName = "";
-      }
-      document.getElementById("fxaEmailAddress1").textContent = username;
-      this._populateComputerName(cachedComputerName);
-      this.page = FXA_PAGE_LOGGED_IN;
-    } else { // Old Sync
+    } else {
       this.page = PAGE_HAS_ACCOUNT;
     }
   },
@@ -388,17 +376,13 @@ var gSyncPane = {
                   .getService(Components.interfaces.nsISupports)
                   .wrappedJSObject;
 
-    if (service.fxAccountsEnabled) {
-      this._openAboutAccounts();
-    } else {
-      let win = Services.wm.getMostRecentWindow("Weave:AccountSetup");
-      if (win)
-        win.focus();
-      else {
-        window.openDialog("chrome://browser/content/sync/setup.xul",
-                          "weaveSetup", "centerscreen,chrome,resizable=no",
-                          wizardType);
-      }
+    let win = Services.wm.getMostRecentWindow("Weave:AccountSetup");
+    if (win)
+      win.focus();
+    else {
+      window.openDialog("chrome://browser/content/sync/setup.xul",
+                        "weaveSetup", "centerscreen,chrome,resizable=no",
+                        wizardType);
     }
   },
 

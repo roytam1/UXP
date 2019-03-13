@@ -93,14 +93,6 @@ var gSyncUI = {
   // Returns a promise that resolves with true if Sync needs to be configured,
   // false otherwise.
   _needsSetup() {
-    // If Sync is configured for FxAccounts then we do that promise-dance.
-    if (this.weaveService.fxAccountsEnabled) {
-      return fxAccounts.getSignedInUser().then(user => {
-        // We want to treat "account needs verification" as "needs setup".
-        return !(user && user.verified);
-      });
-    }
-    // We are using legacy sync - check that.
     let firstSync = "";
     try {
       firstSync = Services.prefs.getCharPref("services.sync.firstSync");
@@ -114,19 +106,9 @@ var gSyncUI = {
   // to Sync needs to be verified, false otherwise.
   _needsVerification() {
     // For callers who care about the distinction between "needs setup" and
-    // "needs verification"
-    if (this.weaveService.fxAccountsEnabled) {
-      return fxAccounts.getSignedInUser().then(user => {
-        // If there is no user, they can't be in a "needs verification" state.
-        if (!user) {
-          return false;
-        }
-        return !user.verified;
-      });
-    }
-
-    // Otherwise we are configured for legacy Sync, which has no verification
-    // concept.
+    // "needs verification". Only for fxAccounts. XXX: remove this check.
+    // Since we are configured for legacy Sync only, which has no verification
+    // concept, just return false.
     return Promise.resolve(false);
   },
 
