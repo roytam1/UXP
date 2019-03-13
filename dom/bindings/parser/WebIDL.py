@@ -2321,8 +2321,10 @@ class IDLNullableType(IDLParameterizedType):
         return self
 
     def isDistinguishableFrom(self, other):
-        if (other.nullable() or (other.isUnion() and other.hasNullableType) or
-            other.isDictionary()):
+        if (other.nullable() or
+            other.isDictionary() or
+            (other.isUnion() and
+             (other.hasNullableType or other.hasDictionaryType()))):
             # Can't tell which type null should become
             return False
         return self.inner.isDistinguishableFrom(other)
