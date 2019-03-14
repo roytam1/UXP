@@ -210,8 +210,8 @@ const uint64_t kSixtyDaysInSeconds = 60 * 24 * 60 * 60;
 nsSiteSecurityService::nsSiteSecurityService()
   : mMaxMaxAge(kSixtyDaysInSeconds)
   , mUsePreloadList(true)
-  , mPreloadListTimeOffset(0)
   , mUseStsService(true)
+  , mPreloadListTimeOffset(0)
 {
 }
 
