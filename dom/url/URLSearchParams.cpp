@@ -358,7 +358,7 @@ URLSearchParams::Constructor(const GlobalObject& aGlobal,
       sp->Append(entry.mKey, entry.mValue);
     }
   } else {
-    MOZ_CRASH("This should not happen.");
+    MOZ_CRASH("URLSearchParams: Invalid string");
   }
 
   return sp.forget();
