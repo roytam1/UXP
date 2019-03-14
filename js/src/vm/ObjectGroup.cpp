@@ -495,7 +495,6 @@ ObjectGroup::defaultNewGroup(ExclusiveContext* cx, const Class* clasp,
         if (associated->is<JSFunction>()) {
 
             // Canonicalize new functions to use the original one associated with its script.
-            JSFunction* fun = &associated->as<JSFunction>();
             associated = associated->as<JSFunction>().maybeCanonicalFunction();
 
             // If we have previously cleared the 'new' script information for this
