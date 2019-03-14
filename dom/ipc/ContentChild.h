@@ -152,13 +152,13 @@ public:
   RecvInitRendering(
     Endpoint<PCompositorBridgeChild>&& aCompositor,
     Endpoint<PImageBridgeChild>&& aImageBridge,
-    Endpoint<PVideoDecoderManagerChild>&& aVideoManager);
+    Endpoint<PVideoDecoderManagerChild>&& aVideoManager) override;
 
   bool
   RecvReinitRendering(
     Endpoint<PCompositorBridgeChild>&& aCompositor,
     Endpoint<PImageBridgeChild>&& aImageBridge,
-    Endpoint<PVideoDecoderManagerChild>&& aVideoManager);
+    Endpoint<PVideoDecoderManagerChild>&& aVideoManager) override;
 
   PProcessHangMonitorChild*
   AllocPProcessHangMonitorChild(Transport* aTransport,
