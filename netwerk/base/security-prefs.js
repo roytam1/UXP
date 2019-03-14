@@ -117,10 +117,6 @@ pref("security.webauth.u2f", false);
 pref("security.webauth.u2f_enable_softtoken", false);
 pref("security.webauth.u2f_enable_usbtoken", false);
 
-pref("security.ssl.errorReporting.enabled", true);
-pref("security.ssl.errorReporting.url", "https://incoming.telemetry.mozilla.org/submit/sslreports/");
-pref("security.ssl.errorReporting.automatic", false);
-
 // OCSP must-staple
 pref("security.ssl.enable_ocsp_must_staple", true);
 
