@@ -1121,6 +1121,9 @@ pref("security.csp.speccompliant", true);
 // Block insecure active content on https pages
 pref("security.mixed_content.block_active_content", true);
 
+// Disable Microsoft Family Safety MitM support
+pref("security.family_safety.mode", 0);
+
 // Override the Gecko-default value of false for Pale Moon.
 pref("plain_text.wrap_long_lines", true);
 

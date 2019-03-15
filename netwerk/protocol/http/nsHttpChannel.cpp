@@ -324,10 +324,16 @@ nsHttpChannel::Init(nsIURI *uri,
                     nsProxyInfo *proxyInfo,
                     uint32_t proxyResolveFlags,
                     nsIURI *proxyURI,
-                    const nsID& channelId)
+                    const nsID& channelId,
+                    nsContentPolicyType aContentPolicyType)
 {
-    nsresult rv = HttpBaseChannel::Init(uri, caps, proxyInfo,
-                                        proxyResolveFlags, proxyURI, channelId);
+    nsresult rv = HttpBaseChannel::Init(uri,
+                                        caps,
+                                        proxyInfo,
+                                        proxyResolveFlags,
+                                        proxyURI,
+                                        channelId,
+                                        aContentPolicyType);
     if (NS_FAILED(rv))
         return rv;
 

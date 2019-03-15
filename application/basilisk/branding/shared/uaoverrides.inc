@@ -37,6 +37,7 @@ pref("@GUAO_PREF@.dailymotion.com","Mozilla/5.0 (@OS_SLICE@ rv:52.0) @GK_SLICE@ 
 // The following requires native mode. Or it blocks.. "too old firefox", breakage, etc.
 
 // UA-Sniffing domains below have indicated no interest in supporting Pale Moon (BOO!)
+pref("@GUAO_PREF@.whatsapp.com","Mozilla/5.0 (@OS_SLICE@ rv:61.0) @GK_SLICE@ Firefox/61.0");
 
 // UA-sniffing domains that are "app/vendor-specific" and do not like Pale Moon
 
