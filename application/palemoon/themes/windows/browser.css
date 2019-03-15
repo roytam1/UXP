@@ -3057,7 +3057,7 @@ toolbar[brighttext] #addonbar-closebutton {
   
   @media (-moz-os-version: windows-vista),
          (-moz-os-version: windows-win7) {
-    :root {
+    :root:not(:-moz-lwtheme) {
       --toolbox-after-color: #aabccf;
     }
   }
@@ -3065,8 +3065,11 @@ toolbar[brighttext] #addonbar-closebutton {
   @media (-moz-os-version: windows-win8),
          (-moz-os-version: windows-win10) {
     :root {
-      --toolbox-after-color: #bcbcbc;
       --toolbar-custom-color: hsl(210,0%,92%);
+    }
+    
+    :root:not(:-moz-lwtheme) {
+      --toolbox-after-color: #bcbcbc;
     }
   }
  
