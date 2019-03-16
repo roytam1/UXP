@@ -102,7 +102,7 @@ WidevineDecryptor::CreateSession(uint32_t aCreateSessionToken,
   } else {
     // Invalid init data type
     const char* errorMsg = "Invalid init data type when creating session.";
-    OnRejectPromise(aPromiseId, kNotSupportedError, 0, errorMsg, sizeof(errorMsg));
+    OnRejectPromise(aPromiseId, kExceptionNotSupportedError, 0, errorMsg, sizeof(errorMsg));
     return;
   }
   mPromiseIdToNewSessionTokens[aPromiseId] = aCreateSessionToken;
@@ -338,6 +338,21 @@ WidevineDecryptor::OnResolvePromise(uint32_t aPromiseId)
   mCallback->ResolvePromise(aPromiseId);
 }
 
+static GMPDOMException
+ConvertCDMExceptionToGMPDOMException(cdm::Exception aException)
+{
+  switch (aException) {
+    case kExceptionNotSupportedError: return kGMPNotSupportedError;
+    case kExceptionInvalidStateError: return kGMPInvalidStateError;
+    case kExceptionTypeError: return kGMPTypeError;
+    case kExceptionQuotaExceededError: return kGMPQuotaExceededError;
+    case kUnknownError: return kGMPInvalidModificationError; // Note: Unique placeholder.
+    case kClientError: return kGMPAbortError; // Note: Unique placeholder.
+    case kOutputError: return kGMPSecurityError; // Note: Unique placeholder.
+  };
+  return kGMPInvalidStateError; // Note: Unique placeholder.
+}
+
 // Align with spec, the Exceptions used by CDM to reject promises .
 // https://w3c.github.io/encrypted-media/#exceptions
 cdm::Exception
@@ -376,7 +391,7 @@ WidevineDecryptor::OnRejectPromise(uint32_t aPromiseId,
   Log("Decryptor::OnRejectPromise(aPromiseId=%d, err=%d, sysCode=%u, msg=%s)",
       aPromiseId, (int)aException, aSystemCode, aErrorMessage);
   mCallback->RejectPromise(aPromiseId,
-                           ToGMPDOMException(aException),
+                           ConvertCDMExceptionToGMPDOMException(aException),
                            !aErrorMessageSize ? "" : aErrorMessage,
                            aErrorMessageSize);
 }
