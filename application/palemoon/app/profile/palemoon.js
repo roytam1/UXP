@@ -1089,8 +1089,6 @@ pref("browser.pagethumbnails.capturing_disabled", false);
 // enables showing basic placeholders for missing thumbnails
 pref("browser.newtabpage.thumbnailPlaceholder", false);
 
-pref("privacy.usercontext.about_newtab_segregation.enabled", false);
-
 // number of columns of newtab grid
 pref("browser.newtabpage.columns", 4);
 

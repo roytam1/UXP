@@ -139,7 +139,6 @@ var handleContentContextMenu = function (event) {
   let selectionInfo = BrowserUtils.getSelectionDetails(content);
 
   let loadContext = docShell.QueryInterface(Ci.nsILoadContext);
-  let userContextId = loadContext.originAttributes.userContextId;
 
   let browser = docShell.chromeEventHandler;
   let mainWin = browser.ownerGlobal;
@@ -160,7 +159,6 @@ var handleContentContextMenu = function (event) {
     selectionInfo: selectionInfo,
     loginFillInfo,
     parentAllowsMixedContent,
-    userContextId,
   };
 }
 

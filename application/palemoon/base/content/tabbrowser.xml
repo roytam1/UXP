@@ -737,8 +737,7 @@
 
                 let autocomplete = this.mTabBrowser._placesAutocomplete;
                 if (this.mBrowser.registeredOpenURI) {
-                  autocomplete.unregisterOpenPage(this.mBrowser.registeredOpenURI,
-                                                  this.mBrowser.getAttribute("usercontextid") || 0);
+                  autocomplete.unregisterOpenPage(this.mBrowser.registeredOpenURI);
                   delete this.mBrowser.registeredOpenURI;
                 }
                 // Tabs in private windows aren't registered as "Open" so
@@ -746,8 +745,7 @@
                 if (!isBlankPageURL(aLocation.spec) &&
                     (!PrivateBrowsingUtils.isWindowPrivate(window) ||
                     PrivateBrowsingUtils.permanentPrivateBrowsing)) {
-                  autocomplete.registerOpenPage(aLocation,
-                                                this.mBrowser.getAttribute("usercontextid") || 0);
+                  autocomplete.registerOpenPage(aLocation);
                   this.mBrowser.registeredOpenURI = aLocation;
                 }
               }
@@ -1383,7 +1381,6 @@
           let aTargetTab;
           let aNewIndex = -1;
           let aPostDatas = [];
-          let aUserContextId;
           if (arguments.length == 2 &&
               typeof arguments[1] == "object") {
             let params = arguments[1];
@@ -1394,7 +1391,6 @@
             aNewIndex             = typeof params.newIndex === "number" ?
                                     params.newIndex : aNewIndex;
             aPostDatas            = params.postDatas || aPostDatas;
-            aUserContextId        = params.userContextId;
           }
 
           if (!aURIs.length)
@@ -1443,8 +1439,7 @@
               ownerTab: owner,
               skipAnimation: multiple,
               allowThirdPartyFixup: aAllowThirdPartyFixup,
-              postData: aPostDatas[0],
-              userContextId: aUserContextId
+              postData: aPostDatas[0]
             });
             if (aNewIndex !== -1) {
               this.moveTabTo(firstTabAdded, aNewIndex);
@@ -1457,8 +1452,7 @@
             let tab = this.addTab(aURIs[i], {
               skipAnimation: true,
               allowThirdPartyFixup: aAllowThirdPartyFixup,
-              postData: aPostDatas[i],
-              userContextId: aUserContextId
+              postData: aPostDatas[i]
             });
             if (targetTabIndex !== -1)
               this.moveTabTo(tab, ++tabNum);
@@ -2059,8 +2053,7 @@
             this.mTabListeners[aTab._tPos].destroy();
 
             if (browser.registeredOpenURI && !aTabWillBeMoved) {
-              this._placesAutocomplete.unregisterOpenPage(browser.registeredOpenURI,
-                                                          browser.getAttribute("usercontextid") || 0);
+              this._placesAutocomplete.unregisterOpenPage(browser.registeredOpenURI);
               delete browser.registeredOpenURI;
             }
 
@@ -2428,8 +2421,7 @@
           <![CDATA[
             // If the current URI is registered as open remove it from the list.
             if (aOurBrowser.registeredOpenURI) {
-              this._placesAutocomplete.unregisterOpenPage(aOurBrowser.registeredOpenURI,
-                                                          aOurBrowser.getAttribute("usercontextid") || 0);
+              this._placesAutocomplete.unregisterOpenPage(aOurBrowser.registeredOpenURI);
               delete aOurBrowser.registeredOpenURI;
             }
 
@@ -3339,8 +3331,7 @@
           for (var i = 0; i < this.mTabListeners.length; ++i) {
             let browser = this.getBrowserAtIndex(i);
             if (browser.registeredOpenURI) {
-              this._placesAutocomplete.unregisterOpenPage(browser.registeredOpenURI,
-                                                          browser.getAttribute("usercontextid") || 0);
+              this._placesAutocomplete.unregisterOpenPage(browser.registeredOpenURI);
               delete browser.registeredOpenURI;
             }
             browser.webProgress.removeProgressListener(this.mTabFilters[i]);
@@ -4799,8 +4790,6 @@
             inBackground = !inBackground;
 
           let targetTab = this._getDragTargetTab(event);
-          let userContextId = this.selectedItem
-                              .getAttribute("usercontextid") || 0;
           let replace = !(!targetTab || dropEffect == "copy");
           let newIndex = this._getDropIndex(event);
           let urls = links.map(link => link.url);
@@ -4810,7 +4799,6 @@
             allowThirdPartyFixup: true,
             targetTab,
             newIndex,
-            userContextId,
           });
         }
 
