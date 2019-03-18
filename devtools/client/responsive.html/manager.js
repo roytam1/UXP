@@ -76,11 +76,6 @@ const ResponsiveUIManager = exports.ResponsiveUIManager = {
       this.showRemoteOnlyNotification(window, tab, options);
       return promise.reject(new Error("RDM only available for remote tabs."));
     }
-    // Remove this once we support this case in bug 1306975.
-    if (tab.linkedBrowser.hasAttribute("usercontextid")) {
-      this.showNoContainerTabsNotification(window, tab, options);
-      return promise.reject(new Error("RDM not available for container tabs."));
-    }
     if (!this.isActiveForTab(tab)) {
       this.initMenuCheckListenerFor(window);
 
@@ -218,16 +213,7 @@ const ResponsiveUIManager = exports.ResponsiveUIManager = {
     }
   }),
 
-  showRemoteOnlyNotification(window, tab, options) {
-    this.showErrorNotification(window, tab, options, getStr("responsive.remoteOnly"));
-  },
-
-  showNoContainerTabsNotification(window, tab, options) {
-    this.showErrorNotification(window, tab, options,
-                               getStr("responsive.noContainerTabs"));
-  },
-
-  showErrorNotification(window, tab, { command } = {}, msg) {
+  showRemoteOnlyNotification(window, tab, { command } = {}) {
     // Default to using the browser's per-tab notification box
     let nbox = window.gBrowser.getNotificationBox(tab.linkedBrowser);
 

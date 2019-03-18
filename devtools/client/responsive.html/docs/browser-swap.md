@@ -96,11 +96,8 @@ browsers are swapped.
 Browser attributes `gBrowser.swapBrowsersAndCloseOther` transfers between
 browsers:
 
-* `usercontextid`
-
 Tab attributes `gBrowser.swapBrowsersAndCloseOther` transfers between tabs:
 
-* `usercontextid`
 * `muted`
 * `soundplaying`
 * `busy`
