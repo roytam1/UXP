@@ -2204,10 +2204,9 @@ var SessionStoreInternal = {
     }
 
     // Create a new tab.
-    let userContextId = aTab.getAttribute("usercontextid");
     let newTab = aTab == aWindow.gBrowser.selectedTab ?
-      aWindow.gBrowser.addTab(null, {relatedToCurrent: true, ownerTab: aTab, userContextId}) :
-      aWindow.gBrowser.addTab(null, {userContextId});
+      aWindow.gBrowser.addTab(null, {relatedToCurrent: true, ownerTab: aTab}) :
+      aWindow.gBrowser.addTab();
 
     // Set tab title to "Connecting..." and start the throbber to pretend we're
     // doing something while actually waiting for data from the frame script.
@@ -2296,7 +2295,7 @@ var SessionStoreInternal = {
 
     // create a new tab
     let tabbrowser = aWindow.gBrowser;
-    let tab = tabbrowser.selectedTab = tabbrowser.addTab(null, state);
+    let tab = tabbrowser.selectedTab = tabbrowser.addTab();
 
     // restore tab content
     this.restoreTab(tab, state);
@@ -3100,31 +3099,13 @@ var SessionStoreInternal = {
     let numVisibleTabs = 0;
 
     for (var t = 0; t < newTabCount; t++) {
-      // When trying to restore into existing tab, we also take the userContextId
-      // into account if present.
-      let userContextId = winData.tabs[t].userContextId;
-      let reuseExisting = t < openTabCount &&
-                          (tabbrowser.tabs[t].getAttribute("usercontextid") == (userContextId || ""));
-      // If the tab is pinned, then we'll be loading it right away, and
-      // there's no need to cause a remoteness flip by loading it initially
-      // non-remote.
-      let forceNotRemote = !winData.tabs[t].pinned;
-      let tab = reuseExisting ? tabbrowser.tabs[t] :
-                                tabbrowser.addTab("about:blank",
-                                                  {skipAnimation: true,
-                                                   forceNotRemote,
-                                                   userContextId,
-                                                   skipBackgroundNotify: true});
-
-      // If we inserted a new tab because the userContextId didn't match with the
-      // open tab, even though `t < openTabCount`, we need to remove that open tab
-      // and put the newly added tab in its place.
-      if (!reuseExisting && t < openTabCount) {
-        tabbrowser.removeTab(tabbrowser.tabs[t]);
-        tabbrowser.moveTabTo(tab, t);
-      }
-
-      tabs.push(tab);
+      tabs.push(t < openTabCount ?
+                tabbrowser.tabs[t] :
+                tabbrowser.addTab("about:blank", {
+                  skipAnimation: true,
+                  forceNotRemote: true,
+                  skipBackgroundNotify: true
+                }));
 
       if (winData.tabs[t].pinned)
         tabbrowser.pinTab(tabs[t]);
@@ -3531,9 +3512,6 @@ var SessionStoreInternal = {
     let uri = activePageData ? activePageData.url || null : null;
     if (aLoadArguments) {
       uri = aLoadArguments.uri;
-      if (aLoadArguments.userContextId) {
-        browser.setAttribute("usercontextid", aLoadArguments.userContextId);
-      }
     }
 
     // We have to mark this tab as restoring first, otherwise

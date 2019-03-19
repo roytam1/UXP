@@ -8,7 +8,6 @@
 
 <?xml-stylesheet href="chrome://browser/content/browser.css" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/content/places/places.css" type="text/css"?>
-<?xml-stylesheet href="chrome://browser/content/usercontext/usercontext.css" type="text/css"?>
 #ifdef MOZ_DEVTOOLS
 <?xml-stylesheet href="chrome://devtools/skin/devtools-browser.css" type="text/css"?>
 #endif
@@ -553,12 +552,7 @@
                     key="key_undoCloseTab"
                     label="&undoCloseTab.label;"
                     observes="History:UndoCloseTab"/>
-          <menuseparator id="alltabs-popup-separator-1"/>
-          <menu id="alltabs_containersTab"
-                label="&newUserContext.label;">
-            <menupopup id="alltabs_containersMenuTab" />
-          </menu>
-          <menuseparator id="alltabs-popup-separator-2"/>
+          <menuseparator id="alltabs-popup-separator"/>
         </menupopup>
       </toolbarbutton>
 

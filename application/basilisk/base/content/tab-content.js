@@ -889,33 +889,6 @@ var RefreshBlocker = {
 
 RefreshBlocker.init();
 
-var UserContextIdNotifier = {
-  init() {
-    addEventListener("DOMWindowCreated", this);
-  },
-
-  uninit() {
-    removeEventListener("DOMWindowCreated", this);
-  },
-
-  handleEvent(aEvent) {
-    // When the window is created, we want to inform the tabbrowser about
-    // the userContextId in use in order to update the UI correctly.
-    // Just because we cannot change the userContextId from an active docShell,
-    // we don't need to check DOMContentLoaded again.
-    this.uninit();
-
-    // We use the docShell because content.document can have been loaded before
-    // setting the originAttributes.
-    let loadContext = docShell.QueryInterface(Ci.nsILoadContext);
-    let userContextId = loadContext.originAttributes.userContextId;
-
-    sendAsyncMessage("Browser:WindowCreated", { userContextId });
-  }
-};
-
-UserContextIdNotifier.init();
-
 #ifdef MOZ_WEBEXTENSIONS
 ExtensionContent.init(this);
 addEventListener("unload", () => {

@@ -8,7 +8,6 @@ var Cu = Components.utils;
 var Cc = Components.classes;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/ContextualIdentityService.jsm");
 Cu.import("resource://gre/modules/NotificationDB.jsm");
 
 // lazy module getters
@@ -832,10 +831,6 @@ function _loadURIWithFlags(browser, uri, params) {
   }
   try {
     if (!mustChangeProcess) {
-      if (params.userContextId) {
-        browser.webNavigation.setOriginAttributesBeforeLoading({ userContextId: params.userContextId });
-      }
-
       browser.webNavigation.loadURIWithOptions(uri, flags,
                                                referrer, referrerPolicy,
                                                postData, null, null, triggeringPrincipal);
@@ -861,10 +856,6 @@ function _loadURIWithFlags(browser, uri, params) {
         postData: postData
       }
 
-      if (params.userContextId) {
-        loadParams.userContextId = params.userContextId;
-      }
-
       LoadInOtherProcess(browser, loadParams);
     }
   } catch (e) {
@@ -876,10 +867,6 @@ function _loadURIWithFlags(browser, uri, params) {
     if (mustChangeProcess) {
       Cu.reportError(e);
       gBrowser.updateBrowserRemotenessByURL(browser, uri);
-
-      if (params.userContextId) {
-        browser.webNavigation.setOriginAttributesBeforeLoading({ userContextId: params.userContextId });
-      }
 
       browser.webNavigation.loadURIWithOptions(uri, flags, referrer, referrerPolicy,
                                                postData, null, null, triggeringPrincipal);
@@ -943,16 +930,6 @@ addEventListener("DOMContentLoaded", function onDCL() {
 
   let initBrowser =
     document.getAnonymousElementByAttribute(gBrowser, "anonid", "initialBrowser");
-
-  // The window's first argument is a tab if and only if we are swapping tabs.
-  // We must set the browser's usercontextid before updateBrowserRemoteness(),
-  // so that the newly created remote tab child has the correct usercontextid.
-  if (window.arguments) {
-    let tabToOpen = window.arguments[0];
-    if (tabToOpen instanceof XULElement && tabToOpen.hasAttribute("usercontextid")) {
-      initBrowser.setAttribute("usercontextid", tabToOpen.getAttribute("usercontextid"));
-    }
-  }
 
   gBrowser.updateBrowserRemoteness(initBrowser, gMultiProcessBrowser);
 });
@@ -1138,13 +1115,6 @@ var gBrowserInit = {
         // make sure it has a docshell
         gBrowser.docShell;
 
-        // We must set usercontextid before updateBrowserRemoteness()
-        // so that the newly created remote tab child has correct usercontextid
-        if (tabToOpen.hasAttribute("usercontextid")) {
-          let usercontextid = tabToOpen.getAttribute("usercontextid");
-          gBrowser.selectedBrowser.setAttribute("usercontextid", usercontextid);
-        }
-
         // If the browser that we're swapping in was remote, then we'd better
         // be able to support remote browsers, and then make our selectedTab
         // remote.
@@ -1170,9 +1140,8 @@ var gBrowserInit = {
       //                 [3]: postData (nsIInputStream)
       //                 [4]: allowThirdPartyFixup (bool)
       //                 [5]: referrerPolicy (int)
-      //                 [6]: userContextId (int)
-      //                 [7]: originPrincipal (nsIPrincipal)
-      //                 [8]: triggeringPrincipal (nsIPrincipal)
+      //                 [6]: originPrincipal (nsIPrincipal)
+      //                 [7]: triggeringPrincipal (nsIPrincipal)
       else if (window.arguments.length >= 3) {
         let referrerURI = window.arguments[2];
         if (typeof(referrerURI) == "string") {
@@ -1184,13 +1153,11 @@ var gBrowserInit = {
         }
         let referrerPolicy = (window.arguments[5] != undefined ?
             window.arguments[5] : Ci.nsIHttpChannel.REFERRER_POLICY_DEFAULT);
-        let userContextId = (window.arguments[6] != undefined ?
-            window.arguments[6] : Ci.nsIScriptSecurityManager.DEFAULT_USER_CONTEXT_ID);
         loadURI(uriToLoad, referrerURI, window.arguments[3] || null,
-                window.arguments[4] || false, referrerPolicy, userContextId,
+                window.arguments[4] || false, referrerPolicy,
                 // pass the origin principal (if any) and force its use to create
                 // an initial about:blank viewer if present:
-                window.arguments[7], !!window.arguments[7], window.arguments[8]);
+                window.arguments[6], !!window.arguments[6], window.arguments[7]);
         window.focus();
       }
       // Note: loadOneOrMoreURIs *must not* be called if window.arguments.length >= 3.
@@ -2075,7 +2042,7 @@ function BrowserTryToCloseWindow()
 }
 
 function loadURI(uri, referrer, postData, allowThirdPartyFixup, referrerPolicy,
-                 userContextId, originPrincipal, forceAboutBlankViewerInCurrent,
+                 originPrincipal, forceAboutBlankViewerInCurrent,
                  triggeringPrincipal) {
   try {
     openLinkIn(uri, "current",
@@ -2083,7 +2050,6 @@ function loadURI(uri, referrer, postData, allowThirdPartyFixup, referrerPolicy,
                  referrerPolicy: referrerPolicy,
                  postData: postData,
                  allowThirdPartyFixup: allowThirdPartyFixup,
-                 userContextId: userContextId,
                  originPrincipal,
                  triggeringPrincipal,
                  forceAboutBlankViewerInCurrent,
@@ -3958,66 +3924,6 @@ function updateEditUIVisibility()
 }
 
 /**
- * Opens a new tab with the userContextId specified as an attribute of
- * sourceEvent. This attribute is propagated to the top level originAttributes
- * living on the tab's docShell.
- *
- * @param event
- *        A click event on a userContext File Menu option
- */
-function openNewUserContextTab(event)
-{
-  openUILinkIn(BROWSER_NEW_TAB_URL, "tab", {
-    userContextId: parseInt(event.target.getAttribute('data-usercontextid')),
-  });
-}
-
-/**
- * Updates File Menu User Context UI visibility depending on
- * privacy.userContext.enabled pref state.
- */
-function updateUserContextUIVisibility()
-{
-  let menu = document.getElementById("menu_newUserContext");
-  menu.hidden = !Services.prefs.getBoolPref("privacy.userContext.enabled");
-  if (PrivateBrowsingUtils.isWindowPrivate(window)) {
-    menu.setAttribute("disabled", "true");
-  }
-}
-
-/**
- * Updates the User Context UI indicators if the browser is in a non-default context
- */
-function updateUserContextUIIndicator()
-{
-  let hbox = document.getElementById("userContext-icons");
-
-  let userContextId = gBrowser.selectedBrowser.getAttribute("usercontextid");
-  if (!userContextId) {
-    hbox.setAttribute("data-identity-color", "");
-    hbox.hidden = true;
-    return;
-  }
-
-  let identity = ContextualIdentityService.getIdentityFromId(userContextId);
-  if (!identity) {
-    hbox.setAttribute("data-identity-color", "");
-    hbox.hidden = true;
-    return;
-  }
-
-  hbox.setAttribute("data-identity-color", identity.color);
-
-  let label = document.getElementById("userContext-label");
-  label.setAttribute("value", ContextualIdentityService.getUserContextLabel(userContextId));
-
-  let indicator = document.getElementById("userContext-indicator");
-  indicator.setAttribute("data-identity-icon", identity.icon);
-
-  hbox.hidden = false;
-}
-
-/**
  * Makes the Character Encoding menu enabled or disabled as appropriate.
  * To be called when the View menu or the app menu is opened.
  */
@@ -4697,7 +4603,6 @@ nsBrowserAccess.prototype = {
 
   _openURIInNewTab: function(aURI, aReferrer, aReferrerPolicy, aIsPrivate,
                              aIsExternal, aForceNotRemote=false,
-                             aUserContextId=Ci.nsIScriptSecurityManager.DEFAULT_USER_CONTEXT_ID,
                              aOpener = null, aTriggeringPrincipal = null) {
     let win, needToFocusWin;
 
@@ -4726,7 +4631,6 @@ nsBrowserAccess.prototype = {
                                       triggeringPrincipal: aTriggeringPrincipal,
                                       referrerURI: aReferrer,
                                       referrerPolicy: aReferrerPolicy,
-                                      userContextId: aUserContextId,
                                       fromExternal: aIsExternal,
                                       inBackground: loadInBackground,
                                       forceNotRemote: aForceNotRemote,
@@ -4803,13 +4707,10 @@ nsBrowserAccess.prototype = {
         // will do the job of shuttling off the newly opened browser to run in
         // the right process once it starts loading a URI.
         let forceNotRemote = !!aOpener;
-        let userContextId = aOpener && aOpener.document
-                              ? aOpener.document.nodePrincipal.originAttributes.userContextId
-                              : Ci.nsIScriptSecurityManager.DEFAULT_USER_CONTEXT_ID;
         let openerWindow = (aFlags & Ci.nsIBrowserDOMWindow.OPEN_NO_OPENER) ? null : aOpener;
         let browser = this._openURIInNewTab(aURI, referrer, referrerPolicy,
                                             isPrivate, isExternal,
-                                            forceNotRemote, userContextId,
+                                            forceNotRemote,
                                             openerWindow, triggeringPrincipal);
         if (browser)
           newWindow = browser.contentWindow;
@@ -4841,16 +4742,10 @@ nsBrowserAccess.prototype = {
 
     var isExternal = !!(aFlags & Ci.nsIBrowserDOMWindow.OPEN_EXTERNAL);
 
-    var userContextId = aParams.openerOriginAttributes &&
-                        ("userContextId" in aParams.openerOriginAttributes)
-                          ? aParams.openerOriginAttributes.userContextId
-                          : Ci.nsIScriptSecurityManager.DEFAULT_USER_CONTEXT_ID
-
     let browser = this._openURIInNewTab(aURI, aParams.referrer,
                                         aParams.referrerPolicy,
                                         aParams.isPrivate,
                                         isExternal, false,
-                                        userContextId, null,
                                         aParams.triggeringPrincipal);
     if (browser)
       return browser.QueryInterface(Ci.nsIFrameLoaderOwner);
@@ -5408,11 +5303,6 @@ function handleLinkClick(event, href, linkNode) {
     triggeringPrincipal: doc.nodePrincipal,
   };
 
-  // The new tab/window must use the same userContextId
-  if (doc.nodePrincipal.originAttributes.userContextId) {
-    params.userContextId = doc.nodePrincipal.originAttributes.userContextId;
-  }
-
   openLinkIn(href, where, params);
   event.preventDefault();
   return true;
@@ -5484,8 +5374,6 @@ function handleDroppedLink(event, urlOrLinks, name)
 
   let lastLocationChange = gBrowser.selectedBrowser.lastLocationChange;
 
-  let userContextId = gBrowser.selectedBrowser.getAttribute("usercontextid");
-
   // event is null if links are dropped in content process.
   // inBackground should be false, as it's loading into current browser.
   let inBackground = false;
@@ -5509,7 +5397,6 @@ function handleDroppedLink(event, urlOrLinks, name)
         replace: true,
         allowThirdPartyFixup: false,
         postDatas,
-        userContextId,
       });
     }
   });
