@@ -1156,9 +1156,7 @@ protected:
 
   // For the origin-clean algorithm (mWriteOnly == !origin-clean)
   // See https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html
-  void SetWriteOnly() {
-    mWriteOnly = true;
-  }
+  void SetWriteOnly();
 
   bool IsWriteOnly() const {
     return mWriteOnly;
