@@ -93,10 +93,11 @@ class TLSFilterTransaction;
 class NudgeTunnelCallback : public nsISupports
 {
 public:
-  virtual void OnTunnelNudged(TLSFilterTransaction *) = 0;
+  virtual nsresult OnTunnelNudged(TLSFilterTransaction *) = 0;
 };
 
-#define NS_DECL_NUDGETUNNELCALLBACK void OnTunnelNudged(TLSFilterTransaction *) override;
+#define NS_DECL_NUDGETUNNELCALLBACK \
+  nsresult OnTunnelNudged(TLSFilterTransaction *) override;
 
 class TLSFilterTransaction final
   : public nsAHttpTransaction
@@ -170,7 +171,7 @@ private:
 
   nsresult mFilterReadCode;
   bool mForce;
-  bool mReadSegmentBlocked;
+  nsresult mReadSegmentReturnValue;
   uint32_t mNudgeCounter;
 };
 

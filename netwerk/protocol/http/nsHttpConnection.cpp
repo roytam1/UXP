@@ -535,16 +535,16 @@ npnComplete:
     return true;
 }
 
-void
+nsresult
 nsHttpConnection::OnTunnelNudged(TLSFilterTransaction *trans)
 {
     MOZ_ASSERT(PR_GetCurrentThread() == gSocketThread);
     LOG(("nsHttpConnection::OnTunnelNudged %p\n", this));
     if (trans != mTLSFilter) {
-        return;
+        return NS_OK;
     }
     LOG(("nsHttpConnection::OnTunnelNudged %p Calling OnSocketWritable\n", this));
-    OnSocketWritable();
+    return OnSocketWritable();
 }
 
 // called on the socket thread
