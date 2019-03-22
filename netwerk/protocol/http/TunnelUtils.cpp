@@ -23,6 +23,7 @@
 #include "nsNetCID.h"
 #include "nsServiceManagerUtils.h"
 #include "nsComponentManagerUtils.h"
+#include "nsSocketTransport2.h"
 
 namespace mozilla {
 namespace net {
@@ -130,6 +131,19 @@ TLSFilterTransaction::Close(nsresult aReason)
   }
   mTransaction->Close(aReason);
   mTransaction = nullptr;
+
+  RefPtr<NullHttpTransaction> baseTrans(do_QueryReferent(mWeakTrans));
+  SpdyConnectTransaction *trans = baseTrans
+    ? baseTrans->QuerySpdyConnectTransaction()
+    : nullptr;
+
+  LOG(("TLSFilterTransaction::Close %p aReason=%" PRIx32 " trans=%p\n",
+       this, static_cast<uint32_t>(aReason), trans));
+
+  if (trans) {
+    trans->Close(aReason);
+    trans = nullptr;
+  }
 }
 
 nsresult
@@ -190,8 +204,15 @@ TLSFilterTransaction::OnReadSegment(const char *aData,
       // mTransaction ReadSegments actually obscures this code, so
       // keep it in a member var for this::ReadSegments to insepct. Similar
       // to nsHttpConnection::mSocketOutCondition
-      mReadSegmentBlocked = (PR_GetError() == PR_WOULD_BLOCK_ERROR);
-      return mReadSegmentBlocked ? NS_BASE_STREAM_WOULD_BLOCK : NS_ERROR_FAILURE;
+      PRErrorCode code = PR_GetError();
+      mReadSegmentBlocked = (code == PR_WOULD_BLOCK_ERROR);
+      if (mReadSegmentBlocked) {
+        return NS_BASE_STREAM_WOULD_BLOCK;
+      }
+
+      nsresult rv = ErrorAccordingToNSPR(code);
+      Close(rv);
+      return rv;
     }
     aCount -= written;
     aData += written;
@@ -273,10 +294,13 @@ TLSFilterTransaction::OnWriteSegment(char *aData,
   mFilterReadCode = NS_OK;
   int32_t bytesRead = PR_Read(mFD, aData, aCount);
   if (bytesRead == -1) {
-    if (PR_GetError() == PR_WOULD_BLOCK_ERROR) {
+    PRErrorCode code = PR_GetError();
+    if (code == PR_WOULD_BLOCK_ERROR) {
       return NS_BASE_STREAM_WOULD_BLOCK;
     }
-    return NS_ERROR_FAILURE;
+    nsresult rv = ErrorAccordingToNSPR(code);
+    Close(rv);
+    return rv;
   }
   *outCountRead = bytesRead;
 
@@ -675,10 +699,12 @@ TLSFilterTransaction::TakeSubTransactions(
 }
 
 nsresult
-TLSFilterTransaction::SetProxiedTransaction(nsAHttpTransaction *aTrans)
+TLSFilterTransaction::SetProxiedTransaction(nsAHttpTransaction *aTrans,
+                                            nsAHttpTransaction *aSpdyConnectTransaction)
 {
-  LOG(("TLSFilterTransaction::SetProxiedTransaction [this=%p] aTrans=%p\n",
-       this, aTrans));
+  LOG(("TLSFilterTransaction::SetProxiedTransaction [this=%p] aTrans=%p, "
+       "aSpdyConnectTransaction=%p\n",
+       this, aTrans, aSpdyConnectTransaction));
 
   mTransaction = aTrans;
   nsCOMPtr<nsIInterfaceRequestor> callbacks;
@@ -687,6 +713,8 @@ TLSFilterTransaction::SetProxiedTransaction(nsAHttpTransaction *aTrans)
   if (secCtrl && callbacks) {
     secCtrl->SetNotificationCallbacks(callbacks);
   }
+
+  mWeakTrans = do_GetWeakReference(aSpdyConnectTransaction);
 
   return NS_OK;
 }
@@ -1075,7 +1103,7 @@ SpdyConnectTransaction::MapStreamToHttpConnection(nsISocketTransport *aTransport
   if (mForcePlainText) {
       mTunneledConn->ForcePlainText();
   } else {
-    mTunneledConn->SetupSecondaryTLS();
+    mTunneledConn->SetupSecondaryTLS(this);
     mTunneledConn->SetInSpdyTunnel(true);
   }
 

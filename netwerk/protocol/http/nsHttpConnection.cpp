@@ -639,7 +639,9 @@ nsHttpConnection::Activate(nsAHttpTransaction *trans, uint32_t caps, int32_t pri
     }
 
     if (mTLSFilter) {
-        mTLSFilter->SetProxiedTransaction(trans);
+        RefPtr<NullHttpTransaction> baseTrans(do_QueryReferent(mWeakTrans));
+        rv = mTLSFilter->SetProxiedTransaction(trans, baseTrans);
+        NS_ENSURE_SUCCESS(rv, rv);
         mTransaction = mTLSFilter;
     }
 
@@ -1979,7 +1981,7 @@ nsHttpConnection::OnSocketReadable()
             // negotiation are known (which is determined from the write path).
             // If the server speaks SPDY it is likely the readable data here is
             // a spdy settings frame and without NPN it would be misinterpreted
-            // as HTTP/*
+            // as HTTP
 
             LOG(("nsHttpConnection::OnSocketReadable %p return due to inactive "
                  "tunnel setup but incomplete NPN state\n", this));
@@ -2019,12 +2021,14 @@ nsHttpConnection::OnSocketReadable()
 }
 
 void
-nsHttpConnection::SetupSecondaryTLS()
+nsHttpConnection::SetupSecondaryTLS(nsAHttpTransaction *aSpdyConnectTransaction)
 {
     MOZ_ASSERT(PR_GetCurrentThread() == gSocketThread);
     MOZ_ASSERT(!mTLSFilter);
-    LOG(("nsHttpConnection %p SetupSecondaryTLS %s %d\n",
-         this, mConnInfo->Origin(), mConnInfo->OriginPort()));
+    LOG(("nsHttpConnection %p SetupSecondaryTLS %s %d "
+         "aSpdyConnectTransaction=%p\n",
+         this, mConnInfo->Origin(), mConnInfo->OriginPort(),
+         aSpdyConnectTransaction));
 
     nsHttpConnectionInfo *ci = nullptr;
     if (mTransaction) {
@@ -2041,6 +2045,7 @@ nsHttpConnection::SetupSecondaryTLS()
     if (mTransaction) {
         mTransaction = mTLSFilter;
     }
+    mWeakTrans = do_GetWeakReference(aSpdyConnectTransaction);
 }
 
 void
