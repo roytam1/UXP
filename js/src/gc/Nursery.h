@@ -245,6 +245,7 @@ class Nursery
 
     // Free space remaining, not counting chunk trailers.
     MOZ_ALWAYS_INLINE size_t freeSpace() const {
+        MOZ_ASSERT(isEnabled());
         MOZ_ASSERT(currentEnd_ - position_ <= NurseryChunkUsableSize);
         return (currentEnd_ - position_) +
                (numChunks() - currentChunk_ - 1) * NurseryChunkUsableSize;

@@ -31,6 +31,8 @@
 %endif
 
 :root {
+  --toolbox-after-color: ThreeDShadow;
+
   --toolbar-custom-color: hsl(210,75%,92%);
   --toolbar-highlight-top: rgba(255,255,255,.5);
   --toolbar-highlight-bottom: transparent;
@@ -91,7 +93,7 @@
   display: -moz-box;
   -moz-box-ordinal-group: 101; /* tabs toolbar is 100 */
   height: 1px;
-  background-color: ThreeDShadow;
+  background-color: var(--toolbox-after-color);
 }
 #navigator-toolbox[tabsontop=false]::after,
 #main-window[disablechrome] #navigator-toolbox::after {
@@ -1841,6 +1843,17 @@ richlistitem[type~="action"][actiontype="switchtab"] > .ac-url-box > .ac-action-
   background-image: linear-gradient(to top, @toolbarShadowColor@ 1px, rgba(0,0,0,.05) 1px, transparent 50%);
 }
 
+/* When the tab bar is collapsed, show a 1px border in its place. */
+#TabsToolbar[collapsed="true"] {
+  visibility: visible;
+  height: 1px;
+  border-bottom-width: 1px;
+  /* !important here to override border-style: none on the toolbar */
+  border-bottom-style: solid !important;
+  border-bottom-color: var(--toolbox-after-color);
+  overflow: hidden;
+}
+
 .tabbrowser-tab,
 .tabs-newtab-button {
   -moz-appearance: none;
@@ -3044,8 +3057,8 @@ toolbar[brighttext] #addonbar-closebutton {
   
   @media (-moz-os-version: windows-vista),
          (-moz-os-version: windows-win7) {
-    #navigator-toolbox:not(:-moz-lwtheme)::after {
-      background-color: #aabccf;
+    :root:not(:-moz-lwtheme) {
+      --toolbox-after-color: #aabccf;
     }
   }
 
@@ -3054,9 +3067,9 @@ toolbar[brighttext] #addonbar-closebutton {
     :root {
       --toolbar-custom-color: hsl(210,0%,92%);
     }
-
-    #navigator-toolbox:not(:-moz-lwtheme)::after {
-      background-color: #bcbcbc;
+    
+    :root:not(:-moz-lwtheme) {
+      --toolbox-after-color: #bcbcbc;
     }
   }
  

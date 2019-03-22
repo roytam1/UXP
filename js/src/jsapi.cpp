@@ -6410,6 +6410,9 @@ JS_SetGlobalJitCompilerOption(JSContext* cx, JSJitCompilerOption opt, uint32_t v
         }
         jit::JitOptions.jumpThreshold = value;
         break;
+      case JSJITCOMPILER_UNBOXED_OBJECTS:
+        jit::JitOptions.disableUnboxedObjects = !value;
+        break;
       case JSJITCOMPILER_ASMJS_ATOMICS_ENABLE:
         jit::JitOptions.asmJSAtomicsEnable = !!value;
         break;

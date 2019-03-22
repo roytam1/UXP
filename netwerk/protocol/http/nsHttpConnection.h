@@ -202,7 +202,7 @@ public:
     static nsresult MakeConnectString(nsAHttpTransaction *trans,
                                       nsHttpRequestHead *request,
                                       nsACString &result);
-    void    SetupSecondaryTLS();
+    void    SetupSecondaryTLS(nsAHttpTransaction *aSpdyConnectTransaction = nullptr);
     void    SetInSpdyTunnel(bool arg);
 
     // Check active connections for traffic (or not). SPDY connections send a
@@ -281,6 +281,7 @@ private:
     // transaction is open, otherwise it is null.
     RefPtr<nsAHttpTransaction>    mTransaction;
     RefPtr<TLSFilterTransaction>  mTLSFilter;
+    nsWeakPtr                     mWeakTrans; // SpdyConnectTransaction *
 
     RefPtr<nsHttpHandler>         mHttpHandler; // keep gHttpHandler alive
 
