@@ -16,7 +16,7 @@
 namespace mozilla {
 
 class WidevineDecryptor : public GMPDecryptor
-                        , public cdm::Host_8
+                        , public cdm::Host_9
 {
 public:
 
@@ -69,16 +69,19 @@ public:
   void DecryptingComplete() override;
 
 
-  // cdm::Host_8
+  // cdm::Host_9 implementation
   cdm::Buffer* Allocate(uint32_t aCapacity) override;
   void SetTimer(int64_t aDelayMs, void* aContext) override;
   cdm::Time GetCurrentWallTime() override;
+  // cdm::Host_9 interface
+  void OnResolveKeyStatusPromise(uint32_t aPromiseId,
+                                 cdm::KeyStatus aKeyStatus) override;
   void OnResolveNewSessionPromise(uint32_t aPromiseId,
                                   const char* aSessionId,
                                   uint32_t aSessionIdSize) override;
   void OnResolvePromise(uint32_t aPromiseId) override;
   void OnRejectPromise(uint32_t aPromiseId,
-                       cdm::Error aError,
+                       cdm::Exception aException,
                        uint32_t aSystemCode,
                        const char* aErrorMessage,
                        uint32_t aErrorMessageSize) override;
@@ -86,9 +89,7 @@ public:
                         uint32_t aSessionIdSize,
                         cdm::MessageType aMessageType,
                         const char* aMessage,
-                        uint32_t aMessageSize,
-                        const char* aLegacyDestinationUrl,
-                        uint32_t aLegacyDestinationUrlLength) override;
+                        uint32_t aMessageSize) override;
   void OnSessionKeysChange(const char* aSessionId,
                            uint32_t aSessionIdSize,
                            bool aHasAdditionalUsableKey,
@@ -99,12 +100,6 @@ public:
                           cdm::Time aNewExpiryTime) override;
   void OnSessionClosed(const char* aSessionId,
                        uint32_t aSessionIdSize) override;
-  void OnLegacySessionError(const char* aSessionId,
-                            uint32_t aSessionId_length,
-                            cdm::Error aError,
-                            uint32_t aSystemCode,
-                            const char* aErrorMessage,
-                            uint32_t aErrorMessageLength) override;
   void SendPlatformChallenge(const char* aServiceId,
                              uint32_t aServiceIdSize,
                              const char* aChallenge,
@@ -113,6 +108,9 @@ public:
   void QueryOutputProtectionStatus() override;
   void OnDeferredInitializationDone(cdm::StreamType aStreamType,
                                     cdm::Status aDecoderStatus) override;
+  // cdm::Host_9 interface
+  // NOTE: the interface has changed upstream.
+  void RequestStorageId(uint32_t aVersion) override;
   cdm::FileIO* CreateFileIO(cdm::FileIOClient* aClient) override;
 
   GMPDecryptorCallback* Callback() const { return mCallback; }
@@ -120,7 +118,7 @@ public:
 private:
   ~WidevineDecryptor();
   RefPtr<CDMWrapper> mCDM;
-  cdm::ContentDecryptionModule_8* CDM() { return mCDM->GetCDM(); }
+  cdm::ContentDecryptionModule_9* CDM() { return mCDM->GetCDM(); }
 
   GMPDecryptorCallback* mCallback;
   std::map<uint32_t, uint32_t> mPromiseIdToNewSessionTokens;

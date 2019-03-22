@@ -102,7 +102,7 @@ WidevineDecryptor::CreateSession(uint32_t aCreateSessionToken,
   } else {
     // Invalid init data type
     const char* errorMsg = "Invalid init data type when creating session.";
-    OnRejectPromise(aPromiseId, kNotSupportedError, 0, errorMsg, sizeof(errorMsg));
+    OnRejectPromise(aPromiseId, kExceptionNotSupportedError, 0, errorMsg, sizeof(errorMsg));
     return;
   }
   mPromiseIdToNewSessionTokens[aPromiseId] = aCreateSessionToken;
@@ -302,6 +302,12 @@ WidevineDecryptor::GetCurrentWallTime()
 }
 
 void
+WidevineDecryptor::OnResolveKeyStatusPromise(uint32_t aPromiseId,
+                                            cdm::KeyStatus aKeyStatus) {
+  //TODO: The callback of GetStatusForPolicy. See Mozilla bug 1404230.
+}
+
+void
 WidevineDecryptor::OnResolveNewSessionPromise(uint32_t aPromiseId,
                                               const char* aSessionId,
                                               uint32_t aSessionIdSize)
@@ -333,41 +339,59 @@ WidevineDecryptor::OnResolvePromise(uint32_t aPromiseId)
 }
 
 static GMPDOMException
-ToGMPDOMException(cdm::Error aError)
+ConvertCDMExceptionToGMPDOMException(cdm::Exception aException)
 {
-  switch (aError) {
-    case kNotSupportedError: return kGMPNotSupportedError;
-    case kInvalidStateError: return kGMPInvalidStateError;
-    case kInvalidAccessError:
-      // Note: Chrome converts kInvalidAccessError to TypeError, since the
-      // Chromium CDM API doesn't have a type error enum value. The EME spec
-      // requires TypeError in some places, so we do the same conversion.
-      // See bug 1313202.
-      return kGMPTypeError;
-    case kQuotaExceededError: return kGMPQuotaExceededError;
+  switch (aException) {
+    case kExceptionNotSupportedError: return kGMPNotSupportedError;
+    case kExceptionInvalidStateError: return kGMPInvalidStateError;
+    case kExceptionTypeError: return kGMPTypeError;
+    case kExceptionQuotaExceededError: return kGMPQuotaExceededError;
     case kUnknownError: return kGMPInvalidModificationError; // Note: Unique placeholder.
     case kClientError: return kGMPAbortError; // Note: Unique placeholder.
     case kOutputError: return kGMPSecurityError; // Note: Unique placeholder.
   };
-  return kGMPTimeoutError; // Note: Unique placeholder.
+  return kGMPInvalidStateError; // Note: Unique placeholder.
+}
+
+// Align with spec, the Exceptions used by CDM to reject promises .
+// https://w3c.github.io/encrypted-media/#exceptions
+cdm::Exception
+ConvertCDMErrorToCDMException(cdm::Error error) {
+  switch (error) {
+    case cdm::kNotSupportedError:
+      return cdm::Exception::kExceptionNotSupportedError;
+    case cdm::kInvalidStateError:
+      return cdm::Exception::kExceptionInvalidStateError;
+    case cdm::kInvalidAccessError:
+      return cdm::Exception::kExceptionTypeError;
+    case cdm::kQuotaExceededError:
+      return cdm::Exception::kExceptionQuotaExceededError;
+
+    case cdm::kUnknownError:
+    case cdm::kClientError:
+    case cdm::kOutputError:
+      break;
+  }
+
+  return cdm::Exception::kExceptionInvalidStateError;
 }
 
 void
 WidevineDecryptor::OnRejectPromise(uint32_t aPromiseId,
-                                   Error aError,
+                                   cdm::Exception aException,
                                    uint32_t aSystemCode,
                                    const char* aErrorMessage,
                                    uint32_t aErrorMessageSize)
 {
   if (!mCallback) {
     Log("Decryptor::OnRejectPromise(aPromiseId=%d, err=%d, sysCode=%u, msg=%s) FAIL; !mCallback",
-        aPromiseId, (int)aError, aSystemCode, aErrorMessage);
+        aPromiseId, (int)aException, aSystemCode, aErrorMessage);
     return;
   }
   Log("Decryptor::OnRejectPromise(aPromiseId=%d, err=%d, sysCode=%u, msg=%s)",
-      aPromiseId, (int)aError, aSystemCode, aErrorMessage);
+      aPromiseId, (int)aException, aSystemCode, aErrorMessage);
   mCallback->RejectPromise(aPromiseId,
-                           ToGMPDOMException(aError),
+                           ConvertCDMExceptionToGMPDOMException(aException),
                            !aErrorMessageSize ? "" : aErrorMessage,
                            aErrorMessageSize);
 }
@@ -386,11 +410,9 @@ ToGMPMessageType(MessageType message_type)
 void
 WidevineDecryptor::OnSessionMessage(const char* aSessionId,
                                     uint32_t aSessionIdSize,
-                                    MessageType aMessageType,
+                                    cdm::MessageType aMessageType,
                                     const char* aMessage,
-                                    uint32_t aMessageSize,
-                                    const char* aLegacyDestinationUrl,
-                                    uint32_t aLegacyDestinationUrlLength)
+                                    uint32_t aMessageSize)
 {
   if (!mCallback) {
     Log("Decryptor::OnSessionMessage() FAIL; !mCallback");
@@ -479,28 +501,6 @@ WidevineDecryptor::OnSessionClosed(const char* aSessionId,
 }
 
 void
-WidevineDecryptor::OnLegacySessionError(const char* aSessionId,
-                                        uint32_t aSessionIdLength,
-                                        Error aError,
-                                        uint32_t aSystemCode,
-                                        const char* aErrorMessage,
-                                        uint32_t aErrorMessageLength)
-{
-  if (!mCallback) {
-    Log("Decryptor::OnLegacySessionError(sid=%s, error=%d) FAIL; !mCallback",
-        aSessionId, (int)aError);
-    return;
-  }
-  Log("Decryptor::OnLegacySessionError(sid=%s, error=%d)", aSessionId, (int)aError);
-  mCallback->SessionError(aSessionId,
-                          aSessionIdLength,
-                          ToGMPDOMException(aError),
-                          aSystemCode,
-                          aErrorMessage,
-                          aErrorMessageLength);
-}
-
-void
 WidevineDecryptor::SendPlatformChallenge(const char* aServiceId,
                                          uint32_t aServiceIdSize,
                                          const char* aChallenge,
@@ -536,6 +536,19 @@ WidevineDecryptor::CreateFileIO(FileIOClient* aClient)
     return nullptr;
   }
   return new WidevineFileIO(aClient);
+}
+
+void
+WidevineDecryptor::RequestStorageId(uint32_t aVersion)
+{
+  Log("Decryptor::RequestStorageId() aVersion = %u", aVersion);
+  if (aVersion >= 0x80000000) {
+    mCDM->OnStorageId(aVersion, nullptr, 0);
+    return;
+  }
+
+  //TODO: Need to provide a menaingful buffer instead of a dummy one.
+  mCDM->OnStorageId(aVersion, new uint8_t[1024*1024], 1024 * 1024);
 }
 
 } // namespace mozilla

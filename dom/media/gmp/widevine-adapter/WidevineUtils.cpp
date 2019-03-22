@@ -43,7 +43,7 @@ ToGMPErr(cdm::Status aStatus)
     case cdm::kSuccess: return GMPNoErr;
     case cdm::kNeedMoreData: return GMPGenericErr;
     case cdm::kNoKey: return GMPNoKeyErr;
-    case cdm::kSessionError: return GMPGenericErr;
+    case cdm::kInitializationError: return GMPGenericErr;
     case cdm::kDecryptError: return GMPCryptoErr;
     case cdm::kDecodeError: return GMPDecodeErr;
     case cdm::kDeferredInitialization: return GMPGenericErr;
@@ -77,7 +77,7 @@ void InitInputBuffer(const GMPEncryptedBufferMetadata* aCrypto,
   aInputBuffer.timestamp = aTimestamp;
 }
 
-CDMWrapper::CDMWrapper(cdm::ContentDecryptionModule_8* aCDM,
+CDMWrapper::CDMWrapper(cdm::ContentDecryptionModule_9* aCDM,
                        WidevineDecryptor* aDecryptor)
   : mCDM(aCDM)
   , mDecryptor(aDecryptor)

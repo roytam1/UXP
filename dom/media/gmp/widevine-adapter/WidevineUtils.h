@@ -48,12 +48,16 @@ class CDMWrapper {
 public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(CDMWrapper)
 
-  explicit CDMWrapper(cdm::ContentDecryptionModule_8* aCDM,
+  explicit CDMWrapper(cdm::ContentDecryptionModule_9* aCDM,
                       WidevineDecryptor* aDecryptor);
-  cdm::ContentDecryptionModule_8* GetCDM() const { return mCDM; }
+  cdm::ContentDecryptionModule_9* GetCDM() const { return mCDM; }
+  void OnStorageId(uint32_t aVersion, const uint8_t* aStorageId,
+                   uint32_t aStorageIdSize) {
+    mCDM->OnStorageId(aVersion, aStorageId, aStorageIdSize);
+  }
 private:
   ~CDMWrapper();
-  cdm::ContentDecryptionModule_8* mCDM;
+  cdm::ContentDecryptionModule_9* mCDM;
   RefPtr<WidevineDecryptor> mDecryptor;
 };
 

@@ -46,7 +46,7 @@ void* GetCdmHost(int aHostInterfaceVersion, void* aUserData)
   Log("GetCdmHostFunc(%d, %p)", aHostInterfaceVersion, aUserData);
   WidevineDecryptor* decryptor = reinterpret_cast<WidevineDecryptor*>(aUserData);
   MOZ_ASSERT(decryptor);
-  return static_cast<cdm::Host_8*>(decryptor);
+  return static_cast<cdm::Host_9*>(decryptor);
 }
 
 #define STRINGIFY(s) _STRINGIFY(s)
@@ -106,8 +106,8 @@ WidevineAdapter::GMPGetAPI(const char* aAPIName,
 
     WidevineDecryptor* decryptor = new WidevineDecryptor();
 
-    auto cdm = reinterpret_cast<cdm::ContentDecryptionModule*>(
-      create(cdm::ContentDecryptionModule::kVersion,
+    auto cdm = reinterpret_cast<cdm::ContentDecryptionModule_9*>(
+      create(cdm::ContentDecryptionModule_9::kVersion,
              kEMEKeySystemWidevine.get(),
              kEMEKeySystemWidevine.Length(),
              &GetCdmHost,
@@ -161,8 +161,8 @@ WidevineAdapter::Supports(int32_t aModuleVersion,
                           int32_t aHostVersion)
 {
   return aModuleVersion == CDM_MODULE_VERSION &&
-         aInterfaceVersion == cdm::ContentDecryptionModule::kVersion &&
-         aHostVersion == cdm::Host_8::kVersion;
+         aInterfaceVersion == cdm::ContentDecryptionModule_9::kVersion &&
+         aHostVersion == cdm::Host_9::kVersion;
 }
 
 } // namespace mozilla
