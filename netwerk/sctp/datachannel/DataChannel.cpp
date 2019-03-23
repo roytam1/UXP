@@ -1928,11 +1928,20 @@ DataChannelConnection::ReceiveCallback(struct socket* sock, void *data, size_t d
   if (!data) {
     usrsctp_close(sock); // SCTP has finished shutting down
   } else {
-    mLock.AssertCurrentThreadOwns();
+    bool locked = false;
+    if (!IsSTSThread()) {
+      mLock.Lock();
+      locked = true;
+    } else {
+      mLock.AssertCurrentThreadOwns();
+    }
     if (flags & MSG_NOTIFICATION) {
       HandleNotification(static_cast<union sctp_notification *>(data), datalen);
     } else {
       HandleMessage(data, datalen, ntohl(rcv.rcv_ppid), rcv.rcv_sid);
+    }
+    if (locked) {
+      mLock.Unlock();
     }
   }
   // sctp allocates 'data' with malloc(), and expects the receiver to free
