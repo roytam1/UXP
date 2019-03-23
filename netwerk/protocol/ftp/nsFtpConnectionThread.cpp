@@ -29,7 +29,6 @@
 #include "nsIStreamListenerTee.h"
 #include "nsIPrefService.h"
 #include "nsIPrefBranch.h"
-#include "nsIStringBundle.h"
 #include "nsAuthInformationHolder.h"
 #include "nsIProtocolProxyService.h"
 #include "nsICancelable.h"
@@ -926,38 +925,7 @@ nsFtpState::R_syst() {
             mServerType = FTP_VMS_TYPE;
         } else {
             NS_ERROR("Server type list format unrecognized.");
-            // Guessing causes crashes.
-            // (Of course, the parsing code should be more robust...)
-            nsCOMPtr<nsIStringBundleService> bundleService =
-                do_GetService(NS_STRINGBUNDLE_CONTRACTID);
-            if (!bundleService)
-                return FTP_ERROR;
-
-            nsCOMPtr<nsIStringBundle> bundle;
-            nsresult rv = bundleService->CreateBundle(NECKO_MSGS_URL,
-                                                      getter_AddRefs(bundle));
-            if (NS_FAILED(rv))
-                return FTP_ERROR;
-            
-            char16_t* ucs2Response = ToNewUnicode(mResponseMsg);
-            const char16_t *formatStrings[1] = { ucs2Response };
-            NS_NAMED_LITERAL_STRING(name, "UnsupportedFTPServer");
-
-            nsXPIDLString formattedString;
-            rv = bundle->FormatStringFromName(name.get(), formatStrings, 1,
-                                              getter_Copies(formattedString));
-            free(ucs2Response);
-            if (NS_FAILED(rv))
-                return FTP_ERROR;
-
-            // TODO(darin): this code should not be dictating UI like this!
-            nsCOMPtr<nsIPrompt> prompter;
-            mChannel->GetCallback(prompter);
-            if (prompter)
-                prompter->Alert(nullptr, formattedString.get());
-            
-            // since we just alerted the user, clear mResponseMsg,
-            // which is displayed to the user.
+            // clear mResponseMsg, which is displayed to the user.
             mResponseMsg = "";
             return FTP_ERROR;
         }
@@ -1779,34 +1747,6 @@ nsFtpState::KillControlConnection()
     mControlConnection = nullptr;
 }
 
-class nsFtpAsyncAlert : public Runnable
-{
-public:
-    nsFtpAsyncAlert(nsIPrompt *aPrompter, nsString aResponseMsg)
-        : mPrompter(aPrompter)
-        , mResponseMsg(aResponseMsg)
-    {
-        MOZ_COUNT_CTOR(nsFtpAsyncAlert);
-    }
-protected:
-    virtual ~nsFtpAsyncAlert()
-    {
-        MOZ_COUNT_DTOR(nsFtpAsyncAlert);
-    }
-public:
-    NS_IMETHOD Run() override
-    {
-        if (mPrompter) {
-            mPrompter->Alert(nullptr, mResponseMsg.get());
-        }
-        return NS_OK;
-    }
-private:
-    nsCOMPtr<nsIPrompt> mPrompter;
-    nsString mResponseMsg;
-};
-
-
 nsresult
 nsFtpState::StopProcessing()
 {
@@ -1818,23 +1758,8 @@ nsFtpState::StopProcessing()
     LOG_INFO(("FTP:(%x) nsFtpState stopping", this));
 
     if (NS_FAILED(mInternalError) && !mResponseMsg.IsEmpty()) {
-        // check to see if the control status is bad.
-        // web shell wont throw an alert.  we better:
-
-        // XXX(darin): this code should not be dictating UI like this!
-        nsCOMPtr<nsIPrompt> prompter;
-        mChannel->GetCallback(prompter);
-        if (prompter) {
-            nsCOMPtr<nsIRunnable> alertEvent;
-            if (mUseUTF8) {
-                alertEvent = new nsFtpAsyncAlert(prompter,
-                    NS_ConvertUTF8toUTF16(mResponseMsg));
-            } else {
-                alertEvent = new nsFtpAsyncAlert(prompter,
-                    NS_ConvertASCIItoUTF16(mResponseMsg));
-            }
-            NS_DispatchToMainThread(alertEvent);
-        }
+        NS_ERROR("FTP: bad control status.");
+        // check to see if the control status is bad; forward the error message.
         nsCOMPtr<nsIFTPChannelParentInternal> ftpChanP;
         mChannel->GetCallback(ftpChanP);
         if (ftpChanP) {
