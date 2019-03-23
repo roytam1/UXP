@@ -24,9 +24,6 @@
         id="PMaboutDialog"
         windowtype="Browser:About"
         onload="init(event);"
-#ifdef MOZ_UPDATER
-        onunload="onUnload(event);"
-#endif
 #ifdef XP_MACOSX
         inwindowmenu="false"
 #else
