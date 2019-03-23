@@ -323,6 +323,8 @@ HangMonitorChild::Shutdown()
 {
   MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
+  BackgroundHangMonitor::UnregisterAnnotator(*this);
+
   MonitorAutoLock lock(mMonitor);
   while (!mShutdownDone) {
     mMonitor.Wait();
