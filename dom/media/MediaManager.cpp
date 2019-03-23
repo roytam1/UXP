@@ -2051,6 +2051,16 @@ MediaManager::GetUserMedia(nsPIDOMWindowInner* aWindow,
     return rv;
   }
 
+  // Disallow access to null principal pages
+  nsCOMPtr<nsIPrincipal> principal = aWindow->GetExtantDoc()->NodePrincipal();
+  if (principal->GetIsNullPrincipal()) {
+    RefPtr<MediaStreamError> error =
+        new MediaStreamError(aWindow,
+                             NS_LITERAL_STRING("NotAllowedError"));
+    onFailure->OnError(error);
+    return NS_OK;
+  }
+  
   if (!Preferences::GetBool("media.navigator.video.enabled", true)) {
     c.mVideo.SetAsBoolean() = false;
   }
@@ -2198,7 +2208,6 @@ MediaManager::GetUserMedia(nsPIDOMWindowInner* aWindow,
   StreamListeners* listeners = AddWindowID(windowID);
 
   // Create a disabled listener to act as a placeholder
-  nsIPrincipal* principal = aWindow->GetExtantDoc()->NodePrincipal();
   RefPtr<GetUserMediaCallbackMediaStreamListener> listener =
     new GetUserMediaCallbackMediaStreamListener(mMediaThread, windowID,
                                                 MakePrincipalHandle(principal));
