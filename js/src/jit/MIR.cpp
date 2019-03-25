@@ -6556,8 +6556,10 @@ jit::PropertyWriteNeedsTypeBarrier(TempAllocator& alloc, CompilerConstraintList*
     bool success = true;
     for (size_t i = 0; i < types->getObjectCount(); i++) {
         TypeSet::ObjectKey* key = types->getObject(i);
-        if (!key || key->unknownProperties())
+        if (!key)
             continue;
+        if (!key->hasStableClassAndProto(constraints))
+            return true;
 
         // TI doesn't track TypedArray indexes and should never insert a type
         // barrier for them.
@@ -6609,8 +6611,11 @@ jit::PropertyWriteNeedsTypeBarrier(TempAllocator& alloc, CompilerConstraintList*
     TypeSet::ObjectKey* excluded = nullptr;
     for (size_t i = 0; i < types->getObjectCount(); i++) {
         TypeSet::ObjectKey* key = types->getObject(i);
-        if (!key || key->unknownProperties())
+        if (!key)
             continue;
+        if (!key->hasStableClassAndProto(constraints))
+            return true;
+
         if (!name && IsTypedArrayClass(key->clasp()))
             continue;
 
