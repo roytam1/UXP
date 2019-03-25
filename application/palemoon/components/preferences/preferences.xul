@@ -56,7 +56,7 @@
 #endif
 #endif
             onunload="if (typeof gSecurityPane != 'undefined') gSecurityPane.syncAddonSecurityLevel();"
-            ondialogaccept="gNewtabUrl.writeNewtabUrl();">
+            ondialogaccept="if (typeof gTabsPane != 'undefined') gNewtabUrl.writeNewtabUrl();">
 
     <script type="application/javascript" src="chrome://browser/content/utilityOverlay.js"/>
     <script type="application/javascript" src="chrome://browser/content/preferences/newtaburl.js"/>
