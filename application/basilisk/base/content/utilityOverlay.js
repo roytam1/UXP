@@ -61,16 +61,6 @@ function openTopWin(url) {
   openUILinkIn(url, "current");
 }
 
-function getBoolPref(prefname, def)
-{
-  try {
-    return Services.prefs.getBoolPref(prefname);
-  }
-  catch (er) {
-    return def;
-  }
-}
-
 /* openUILink handles clicks on UI elements that cause URLs to load.
  *
  * As the third argument, you may pass an object with the same properties as
@@ -137,7 +127,7 @@ function whereToOpenLink( e, ignoreButton, ignoreAlt )
 
   // ignoreButton allows "middle-click paste" to use function without always opening in a new window.
   var middle = !ignoreButton && e.button == 1;
-  var middleUsesTabs = getBoolPref("browser.tabs.opentabfor.middleclick", true);
+  var middleUsesTabs = Services.prefs.getBoolPref("browser.tabs.opentabfor.middleclick", true);
 
   // Don't do anything special with right-mouse clicks.  They're probably clicks on context menu items.
 
@@ -145,7 +135,7 @@ function whereToOpenLink( e, ignoreButton, ignoreAlt )
   if (metaKey || (middle && middleUsesTabs))
     return shift ? "tabshifted" : "tab";
 
-  if (alt && getBoolPref("browser.altClickSave", false))
+  if (alt && Services.prefs.getBoolPref("browser.altClickSave", false))
     return "save";
 
   if (shift || (middle && !middleUsesTabs))
@@ -342,7 +332,7 @@ function openLinkIn(url, where, params) {
   if (loadInBackground == null) {
     loadInBackground = aFromChrome ?
                          false :
-                         getBoolPref("browser.tabs.loadInBackground");
+                         Services.prefs.getBoolPref("browser.tabs.loadInBackground");
   }
 
   let uriObj;
@@ -652,7 +642,7 @@ function getShellService()
 
 function isBidiEnabled() {
   // first check the pref.
-  if (getBoolPref("bidi.browser.ui", false))
+  if (Services.prefs.getBoolPref("bidi.browser.ui", false))
     return true;
 
   // then check intl.uidirection.<locale>
@@ -914,7 +904,7 @@ function openHelpLink(aHelpTopic, aCalledFromModal, aWhere) {
 function openPrefsHelp() {
   // non-instant apply prefwindows are usually modal, so we can't open in the topmost window,
   // since its probably behind the window.
-  var instantApply = getBoolPref("browser.preferences.instantApply");
+  var instantApply = Services.prefs.getBoolPref("browser.preferences.instantApply");
 
   var helpTopic = document.getElementsByTagName("prefwindow")[0].currentPane.helpTopic;
   openHelpLink(helpTopic, !instantApply);

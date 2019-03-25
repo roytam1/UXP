@@ -52,23 +52,6 @@ XPCOMUtils.defineLazyModuleGetter(this, 'PdfjsChromeUtils',
                                   'resource://pdf.js/PdfjsChromeUtils.jsm');
 XPCOMUtils.defineLazyModuleGetter(this, 'PdfjsContentUtils',
                                   'resource://pdf.js/PdfjsContentUtils.jsm');
-
-function getBoolPref(aPref, aDefaultValue) {
-  try {
-    return Services.prefs.getBoolPref(aPref);
-  } catch (ex) {
-    return aDefaultValue;
-  }
-}
-
-function getIntPref(aPref, aDefaultValue) {
-  try {
-    return Services.prefs.getIntPref(aPref);
-  } catch (ex) {
-    return aDefaultValue;
-  }
-}
-
 function isDefaultHandler() {
  if (Services.appinfo.processType === Services.appinfo.PROCESS_TYPE_CONTENT) {
    return PdfjsContentUtils.isDefaultHandlerApp();
@@ -172,7 +155,7 @@ var PdfJs = {
     }
     this._initialized = true;
 
-    if (!getBoolPref(PREF_DISABLED, true)) {
+    if (!Services.prefs.getBoolPref(PREF_DISABLED, true)) {
       this._migrate();
     }
 
@@ -209,7 +192,7 @@ var PdfJs = {
 
   _migrate: function migrate() {
     const VERSION = 2;
-    var currentVersion = getIntPref(PREF_MIGRATION_VERSION, 0);
+    var currentVersion = Services.prefs.getIntPref(PREF_MIGRATION_VERSION, 0);
     if (currentVersion >= VERSION) {
       return;
     }
@@ -284,7 +267,7 @@ var PdfJs = {
    * @return {boolean} Whether or not it's enabled.
    */
   get enabled() {
-    var disabled = getBoolPref(PREF_DISABLED, true);
+    var disabled = Services.prefs.getBoolPref(PREF_DISABLED, true);
     if (disabled) {
       return false;
     }

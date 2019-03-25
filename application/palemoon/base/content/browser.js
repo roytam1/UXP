@@ -1147,7 +1147,7 @@ var gBrowserInit = {
 
     // Setup click-and-hold gestures access to the session history
     // menus if global click-and-hold isn't turned on
-    if (!getBoolPref("ui.click_hold_context_menus", false))
+    if (!Services.prefs.getBoolPref("ui.click_hold_context_menus", false))
       SetClickAndHoldHandlers();
 
     // Initialize the full zoom setting.
@@ -1783,7 +1783,7 @@ function BrowserGoHome(aEvent) {
   case "tabshifted":
   case "tab":
     urls = homePage.split("|");
-    var loadInBackground = getBoolPref("browser.tabs.loadBookmarksInBackground", false);
+    var loadInBackground = Services.prefs.getBoolPref("browser.tabs.loadBookmarksInBackground", false);
     gBrowser.loadTabs(urls, loadInBackground);
     break;
   case "window":
@@ -3402,7 +3402,7 @@ function BrowserCustomizeToolbar() {
   TabsInTitlebar.allowedBy("customizing-toolbars", false);
 
   var customizeURL = "chrome://global/content/customizeToolbar.xul";
-  gCustomizeSheet = getBoolPref("toolbar.customization.usesheet", false);
+  gCustomizeSheet = Services.prefs.getBoolPref("toolbar.customization.usesheet", false);
 
   if (gCustomizeSheet) {
     let sheetFrame = document.createElement("iframe");
@@ -3486,7 +3486,7 @@ function BrowserToolboxCustomizeDone(aToolboxChanged) {
   cmd.removeAttribute("disabled");
 
   // make sure to re-enable click-and-hold
-  if (!getBoolPref("ui.click_hold_context_menus", false))
+  if (!Services.prefs.getBoolPref("ui.click_hold_context_menus", false))
     SetClickAndHoldHandlers();
 
   gBrowser.selectedBrowser.focus();

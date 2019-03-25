@@ -78,22 +78,6 @@ function getFindBar(domWindow) {
   }
 }
 
-function getBoolPref(pref, def) {
-  try {
-    return Services.prefs.getBoolPref(pref);
-  } catch (ex) {
-    return def;
-  }
-}
-
-function getIntPref(pref, def) {
-  try {
-    return Services.prefs.getIntPref(pref);
-  } catch (ex) {
-    return def;
-  }
-}
-
 function getStringPref(pref, def) {
   try {
     return Services.prefs.getComplexValue(pref, Ci.nsISupportsString).data;
@@ -103,7 +87,7 @@ function getStringPref(pref, def) {
 }
 
 function log(aMsg) {
-  if (!getBoolPref(PREF_PREFIX + '.pdfBugEnabled', false)) {
+  if (!Services.prefs.getBoolPref(PREF_PREFIX + '.pdfBugEnabled', false)) {
     return;
   }
   var msg = 'PdfStreamConverter.js: ' + (aMsg.join ? aMsg.join('') : aMsg);
@@ -359,17 +343,17 @@ ChromeActions.prototype = {
     return !!findBar && ('updateControlState' in findBar);
   },
   supportsDocumentFonts: function() {
-    var prefBrowser = getIntPref('browser.display.use_document_fonts', 1);
-    var prefGfx = getBoolPref('gfx.downloadable_fonts.enabled', true);
+    var prefBrowser = Services.prefs.getIntPref('browser.display.use_document_fonts', 1);
+    var prefGfx = Services.prefs.getBoolPref('gfx.downloadable_fonts.enabled', true);
     return (!!prefBrowser && prefGfx);
   },
   supportsDocumentColors: function() {
-    return getIntPref('browser.display.document_color_use', 0) !== 2;
+    return Services.prefs.getIntPref('browser.display.document_color_use', 0) !== 2;
   },
   supportedMouseWheelZoomModifierKeys: function() {
     return {
-      ctrlKey: getIntPref('mousewheel.with_control.action', 3) === 3,
-      metaKey: getIntPref('mousewheel.with_meta.action', 1) === 3,
+      ctrlKey: Services.prefs.getIntPref('mousewheel.with_control.action', 3) === 3,
+      metaKey: Services.prefs.getIntPref('mousewheel.with_meta.action', 1) === 3,
     };
   },
   reportTelemetry: function (data) {
@@ -531,10 +515,10 @@ ChromeActions.prototype = {
       prefName = (PREF_PREFIX + '.' + key);
       switch (typeof prefValue) {
         case 'boolean':
-          currentPrefs[key] = getBoolPref(prefName, prefValue);
+          currentPrefs[key] = Services.prefs.getBoolPref(prefName, prefValue);
           break;
         case 'number':
-          currentPrefs[key] = getIntPref(prefName, prefValue);
+          currentPrefs[key] = Services.prefs.getIntPref(prefName, prefValue);
           break;
         case 'string':
           currentPrefs[key] = getStringPref(prefName, prefValue);
@@ -921,16 +905,16 @@ PdfStreamConverter.prototype = {
       } catch (e) {}
 
       var hash = aRequest.URI.ref;
-      var isPDFBugEnabled = getBoolPref(PREF_PREFIX + '.pdfBugEnabled', false);
+      var isPDFBugEnabled = Services.prefs.getBoolPref(PREF_PREFIX + '.pdfBugEnabled', false);
       rangeRequest = contentEncoding === 'identity' &&
                      acceptRanges === 'bytes' &&
                      aRequest.contentLength >= 0 &&
-                     !getBoolPref(PREF_PREFIX + '.disableRange', false) &&
+                     !Services.prefs.getBoolPref(PREF_PREFIX + '.disableRange', false) &&
                      (!isPDFBugEnabled ||
                       hash.toLowerCase().indexOf('disablerange=true') < 0);
       streamRequest = contentEncoding === 'identity' &&
                       aRequest.contentLength >= 0 &&
-                      !getBoolPref(PREF_PREFIX + '.disableStream', false) &&
+                      !Services.prefs.getBoolPref(PREF_PREFIX + '.disableStream', false) &&
                       (!isPDFBugEnabled ||
                        hash.toLowerCase().indexOf('disablestream=true') < 0);
     }
