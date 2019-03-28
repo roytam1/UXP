@@ -2038,7 +2038,7 @@ UpdateService.prototype = {
       if (getElevationRequired()) {
         let installAttemptVersion = Services.prefs.getCharPref(
                                             PREF_APP_UPDATE_ELEVATE_VERSION,
-                                            null);
+                                            "");
         if (vc.compare(installAttemptVersion, update.appVersion) != 0) {
           Services.prefs.setCharPref(PREF_APP_UPDATE_ELEVATE_VERSION,
                                      update.appVersion);
@@ -2708,7 +2708,7 @@ UpdateManager.prototype = {
     Services.obs.notifyObservers(null, "update-staged", update.state);
 
     // Only prompt when the UI isn't already open.
-    let windowType = Services.prefs.getCharPref(PREF_APP_UPDATE_ALTWINDOWTYPE, null);
+    let windowType = Services.prefs.getCharPref(PREF_APP_UPDATE_ALTWINDOWTYPE, "");
     if (Services.wm.getMostRecentWindow(UPDATE_WINDOW_NAME) ||
         windowType && Services.wm.getMostRecentWindow(windowType)) {
       return;
@@ -2788,15 +2788,12 @@ Checker.prototype = {
     this._forced = force;
 
     // Use the override URL if specified.
-    let url = Services.prefs.getCharPref(PREF_APP_UPDATE_URL_OVERRIDE, null);
+    let url = Services.prefs.getCharPref(PREF_APP_UPDATE_URL_OVERRIDE, "");
 
     // Otherwise, construct the update URL from component parts.
     if (!url) {
-      try {
-        url = Services.prefs.getDefaultBranch(null).
-              getCharPref(PREF_APP_UPDATE_URL);
-      } catch (e) {
-      }
+      url = Services.prefs.getDefaultBranch(null).
+            getCharPref(PREF_APP_UPDATE_URL, "");
     }
 
     if (!url || url == "") {
@@ -3839,7 +3836,7 @@ UpdatePrompt.prototype = {
    * application update user interface window.
    */
   _getAltUpdateWindow: function UP__getAltUpdateWindow() {
-    let windowType = Services.prefs.getCharPref(PREF_APP_UPDATE_ALTWINDOWTYPE, null);
+    let windowType = Services.prefs.getCharPref(PREF_APP_UPDATE_ALTWINDOWTYPE, "");
     if (!windowType)
       return null;
     return Services.wm.getMostRecentWindow(windowType);
