@@ -222,7 +222,6 @@ RTCD_EXTERN void (*av1_highbd_dr_prediction_z3)(uint16_t *dst, ptrdiff_t stride,
 
 void av1_highbd_inv_txfm_add_c(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
 void av1_highbd_inv_txfm_add_sse4_1(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
-void av1_highbd_inv_txfm_add_avx2(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
 RTCD_EXTERN void (*av1_highbd_inv_txfm_add)(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
 
 void av1_highbd_inv_txfm_add_16x4_c(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
@@ -325,7 +324,6 @@ RTCD_EXTERN void (*av1_inv_txfm2d_add_8x8)(const int32_t *input, uint16_t *outpu
 
 void av1_inv_txfm_add_c(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
 void av1_inv_txfm_add_ssse3(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
-void av1_inv_txfm_add_avx2(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
 RTCD_EXTERN void (*av1_inv_txfm_add)(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
 
 void av1_round_shift_array_c(int32_t *arr, int size, int bit);
@@ -532,7 +530,6 @@ static void setup_rtcd_internal(void)
     if (flags & HAS_AVX2) av1_highbd_dr_prediction_z3 = av1_highbd_dr_prediction_z3_avx2;
     av1_highbd_inv_txfm_add = av1_highbd_inv_txfm_add_c;
     if (flags & HAS_SSE4_1) av1_highbd_inv_txfm_add = av1_highbd_inv_txfm_add_sse4_1;
-    if (flags & HAS_AVX2) av1_highbd_inv_txfm_add = av1_highbd_inv_txfm_add_avx2;
     av1_highbd_inv_txfm_add_16x4 = av1_highbd_inv_txfm_add_16x4_c;
     if (flags & HAS_SSE4_1) av1_highbd_inv_txfm_add_16x4 = av1_highbd_inv_txfm_add_16x4_sse4_1;
     av1_highbd_inv_txfm_add_4x16 = av1_highbd_inv_txfm_add_4x16_c;
@@ -556,7 +553,6 @@ static void setup_rtcd_internal(void)
     if (flags & HAS_SSE4_1) av1_inv_txfm2d_add_8x8 = av1_inv_txfm2d_add_8x8_sse4_1;
     av1_inv_txfm_add = av1_inv_txfm_add_c;
     if (flags & HAS_SSSE3) av1_inv_txfm_add = av1_inv_txfm_add_ssse3;
-    if (flags & HAS_AVX2) av1_inv_txfm_add = av1_inv_txfm_add_avx2;
     av1_round_shift_array = av1_round_shift_array_c;
     if (flags & HAS_SSE4_1) av1_round_shift_array = av1_round_shift_array_sse4_1;
     av1_selfguided_restoration = av1_selfguided_restoration_c;
