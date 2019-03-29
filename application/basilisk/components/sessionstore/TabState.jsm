@@ -181,10 +181,6 @@ var TabStateInternal = {
       if (key === "history") {
         tabData.entries = value.entries;
 
-        if (value.hasOwnProperty("userContextId")) {
-          tabData.userContextId = value.userContextId;
-        }
-
         if (value.hasOwnProperty("index")) {
           tabData.index = value.index;
         }

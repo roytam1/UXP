@@ -23,15 +23,6 @@ function debug(msg) {
   //dump("BrowserElementParent - " + msg + "\n");
 }
 
-function getIntPref(prefName, def) {
-  try {
-    return Services.prefs.getIntPref(prefName);
-  }
-  catch(err) {
-    return def;
-  }
-}
-
 function handleWindowEvent(e) {
   if (this._browserElementParents) {
     let beps = ThreadSafeChromeUtils.nondeterministicGetWeakMapKeys(this._browserElementParents);
@@ -856,8 +847,8 @@ BrowserElementParent.prototype = {
    */
   zoom: defineNoReturnMethod(function(zoom) {
     zoom *= 100;
-    zoom = Math.min(getIntPref("zoom.maxPercent", 300), zoom);
-    zoom = Math.max(getIntPref("zoom.minPercent", 50), zoom);
+    zoom = Math.min(Services.prefs.getIntPref("zoom.maxPercent", 300), zoom);
+    zoom = Math.max(Services.prefs.getIntPref("zoom.minPercent", 50), zoom);
     this._sendAsyncMsg('zoom', {zoom: zoom / 100.0});
   }),
 

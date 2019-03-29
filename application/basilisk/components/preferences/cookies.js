@@ -7,11 +7,7 @@ const nsICookie = Components.interfaces.nsICookie;
 
 Components.utils.import("resource://gre/modules/AppConstants.jsm");
 Components.utils.import("resource://gre/modules/PluralForm.jsm");
-Components.utils.import("resource://gre/modules/Services.jsm")
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(this, "ContextualIdentityService",
-                                  "resource://gre/modules/ContextualIdentityService.jsm");
 
 var gCookiesWindow = {
   _cm               : Components.classes["@mozilla.org/cookiemanager;1"]
@@ -38,10 +34,6 @@ var gCookiesWindow = {
     this._populateList(true);
 
     document.getElementById("filter").focus();
-
-    if (!Services.prefs.getBoolPref("privacy.userContext.enabled")) {
-      document.getElementById("userContextRow").hidden = true;
-    }
   },
 
   uninit: function () {
@@ -82,24 +74,11 @@ var gCookiesWindow = {
                                                aCookieB.originAttributes);
   },
 
-  _isPrivateCookie: function (aCookie) {
-      let { userContextId } = aCookie.originAttributes;
-      if (!userContextId) {
-        // Default identity is public.
-        return false;
-      }
-      return !ContextualIdentityService.getIdentityFromId(userContextId).public;
-  },
-
   observe: function (aCookie, aTopic, aData) {
     if (aTopic != "cookie-changed")
       return;
 
     if (aCookie instanceof Components.interfaces.nsICookie) {
-      if (this._isPrivateCookie(aCookie)) {
-        return;
-      }
-
       var strippedHost = this._makeStrippedHost(aCookie.host);
       if (aData == "changed")
         this._handleCookieChanged(aCookie, strippedHost);
@@ -498,9 +477,6 @@ var gCookiesWindow = {
     while (e.hasMoreElements()) {
       var cookie = e.getNext();
       if (cookie && cookie instanceof Components.interfaces.nsICookie) {
-        if (this._isPrivateCookie(cookie)) {
-          continue;
-        }
 
         var strippedHost = this._makeStrippedHost(cookie.host);
         this._addCookie(strippedHost, cookie, hostCount);
@@ -524,17 +500,9 @@ var gCookiesWindow = {
     return this._bundle.getString("expireAtEndOfSession");
   },
 
-  _getUserContextString: function(aUserContextId) {
-    if (parseInt(aUserContextId) == 0) {
-      return this._bundle.getString("defaultUserContextLabel");
-    }
-
-    return ContextualIdentityService.getUserContextLabel(aUserContextId);
-  },
-
   _updateCookieData: function (aItem) {
     var seln = this._view.selection;
-    var ids = ["name", "value", "host", "path", "isSecure", "expires", "userContext"];
+    var ids = ["name", "value", "host", "path", "isSecure", "expires"];
     var properties;
 
     if (aItem && !aItem.container && seln.count > 0) {
@@ -543,8 +511,7 @@ var gCookiesWindow = {
                      isDomain: aItem.isDomain ? this._bundle.getString("domainColon")
                                               : this._bundle.getString("hostColon"),
                      isSecure: aItem.isSecure ? this._bundle.getString("forSecureOnly")
-                                              : this._bundle.getString("forAnyConnection"),
-                     userContext: this._getUserContextString(aItem.originAttributes.userContextId) };
+                                              : this._bundle.getString("forAnyConnection") };
       for (let id of ids) {
         document.getElementById(id).disabled = false;
       }
@@ -553,7 +520,7 @@ var gCookiesWindow = {
       var noneSelected = this._bundle.getString("noCookieSelected");
       properties = { name: noneSelected, value: noneSelected, host: noneSelected,
                      path: noneSelected, expires: noneSelected,
-                     isSecure: noneSelected, userContext: noneSelected };
+                     isSecure: noneSelected };
       for (let id of ids) {
         document.getElementById(id).disabled = true;
       }

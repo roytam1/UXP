@@ -516,33 +516,6 @@ FTPChannelChild::RecvOnStopRequest(const nsresult& aChannelStatus,
   return true;
 }
 
-class nsFtpChildAsyncAlert : public Runnable
-{
-public:
-  nsFtpChildAsyncAlert(nsIPrompt *aPrompter, nsString aResponseMsg)
-    : mPrompter(aPrompter)
-    , mResponseMsg(aResponseMsg)
-  {
-    MOZ_COUNT_CTOR(nsFtpChildAsyncAlert);
-  }
-protected:
-  virtual ~nsFtpChildAsyncAlert()
-  {
-    MOZ_COUNT_DTOR(nsFtpChildAsyncAlert);
-  }
-public:
-  NS_IMETHOD Run() override
-  {
-    if (mPrompter) {
-      mPrompter->Alert(nullptr, mResponseMsg.get());
-    }
-    return NS_OK;
-  }
-private:
-  nsCOMPtr<nsIPrompt> mPrompter;
-  nsString mResponseMsg;
-};
-
 class MaybeDivertOnStopFTPEvent : public ChannelEvent
 {
  public:
@@ -600,19 +573,7 @@ FTPChannelChild::DoOnStopRequest(const nsresult& aChannelStatus,
     (void)mListener->OnStopRequest(this, mListenerContext, aChannelStatus);
 
     if (NS_FAILED(aChannelStatus) && !aErrorMsg.IsEmpty()) {
-      nsCOMPtr<nsIPrompt> prompter;
-      GetCallback(prompter);
-      if (prompter) {
-        nsCOMPtr<nsIRunnable> alertEvent;
-        if (aUseUTF8) {
-          alertEvent = new nsFtpChildAsyncAlert(prompter,
-                             NS_ConvertUTF8toUTF16(aErrorMsg));
-        } else {
-          alertEvent = new nsFtpChildAsyncAlert(prompter,
-                             NS_ConvertASCIItoUTF16(aErrorMsg));
-        }
-        NS_DispatchToMainThread(alertEvent);
-      }
+      NS_ERROR("FTP error on stop request.");
     }
 
     mListener = nullptr;

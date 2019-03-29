@@ -208,10 +208,6 @@ ContentRestoreInternal.prototype = {
                                   ? Utils.deserializePrincipal(loadArguments.triggeringPrincipal)
                                   : null;
 
-        if (loadArguments.userContextId) {
-          webNavigation.setOriginAttributesBeforeLoading({ userContextId: loadArguments.userContextId });
-        }
-
         webNavigation.loadURIWithOptions(loadArguments.uri, loadArguments.flags,
                                          referrer, referrerPolicy, postData,
                                          null, null, triggeringPrincipal);

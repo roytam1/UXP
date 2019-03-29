@@ -23,14 +23,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "Messaging",
 
 XPCOMUtils.defineLazyModuleGetter(this, "OS", "resource://gre/modules/osfile.jsm");
 
-function getPref(func, preference, defaultValue) {
-  try {
-    return Services.prefs[func](preference);
-  }
-  catch (e) {}
-  return defaultValue;
-}
-
 // -----------------------------------------------------------------------
 // Add-on auto-update management service
 // -----------------------------------------------------------------------
@@ -49,7 +41,7 @@ AddonUpdateService.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsITimerCallback]),
 
   notify: function aus_notify(aTimer) {
-    if (aTimer && !getPref("getBoolPref", PREF_ADDON_UPDATE_ENABLED, true))
+    if (aTimer && !Services.prefs.getBoolPref(PREF_ADDON_UPDATE_ENABLED, true))
       return;
 
     // If we already auto-upgraded and installed new versions, ignore this check
@@ -61,7 +53,7 @@ AddonUpdateService.prototype = {
     let gmp = new GMPInstallManager();
     gmp.simpleCheckAndInstall().then(null, () => {});
 
-    let interval = 1000 * getPref("getIntPref", PREF_ADDON_UPDATE_INTERVAL, 86400);
+    let interval = 1000 * Services.prefs.getIntPref(PREF_ADDON_UPDATE_INTERVAL, 86400);
     Messaging.sendRequest({
       type: "Gecko:ScheduleRun",
       action: "update-addons",

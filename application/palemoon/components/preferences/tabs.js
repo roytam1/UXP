@@ -78,34 +78,13 @@ var gTabsPane = {
   /**
    * Determines the value of the New Tab display drop-down based
    * on the value of browser.newtab.url.
-   *
-   * @returns the appropriate value of browser.newtab.choice
    */
   readNewtabUrl: function() {
-    let newtabUrlPref = document.getElementById("browser.newtab.url");
-    let newtabUrlSanitizedPref = document.getElementById("browser.newtab.myhome");
     let newtabUrlChoice = document.getElementById("browser.newtab.choice");
-    let defaultStartupHomepage = Services.prefs.getDefaultBranch("browser.")
-                                  .getComplexValue("startup.homepage",
-                                    Components.interfaces.nsIPrefLocalizedString).data;
-    switch (newtabUrlPref.value) {
-      case "about:logopage": 
-        newtabUrlChoice.value = 1;
-        break;
-      case defaultStartupHomepage:
-        newtabUrlChoice.value = 2;
-        break;
-      case newtabUrlSanitizedPref.value:
-        newtabUrlChoice.value = 3;
-        break;
-      case "about:newtab":
-        newtabUrlChoice.value = 4;
-        break;
-      default: // Custom URL entered.
-        document.getElementById("newtabPageCustom").hidden = false;
-        newtabUrlChoice.value = 0;
-        // We need this to consider instantApply.
-        this.newtabPageCustom = newtabUrlPref.value;
+    newtabUrlChoice.value = gNewtabUrl.getNewtabChoice();
+    if (newtabUrlChoice.value == 0) {
+      document.getElementById("newtabPageCustom").hidden = false;
     }
+    gNewtabUrl.newtabUrlChoiceIsSet = true;
   }
 };

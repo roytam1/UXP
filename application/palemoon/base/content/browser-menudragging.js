@@ -52,11 +52,9 @@ var browserMenuDragging = {
 
   initPref: function(){
     this.STAY_OPEN_ONDRAGEXIT =
-          this.getPref('browser.menu.dragging.stayOpen',
-                       'bool', false);
+          Services.prefs.getBoolPref('browser.menu.dragging.stayOpen', false);
     this.DEBUG =
-          this.getPref('browser.menu.dragging.debug',
-                       'bool', false);
+          Services.prefs.getBoolPref('browser.menu.dragging.debug', false);
   },
 
   //delayed startup
@@ -289,26 +287,6 @@ var browserMenuDragging = {
     Components.classes["@mozilla.org/consoleservice;1"]
       .getService(Components.interfaces.nsIConsoleService)
       .logStringMessage(aMsg);
-  },
-
-  getPref: function(aPrefString, aPrefType, aDefault){
-    var xpPref = Components.classes["@mozilla.org/preferences-service;1"]
-                  .getService(Components.interfaces.nsIPrefService);
-    try{
-      switch (aPrefType){
-        case 'complex':
-          return xpPref.getComplexValue(aPrefString, Components.interfaces.nsILocalFile); break;
-        case 'str':
-          return xpPref.getCharPref(aPrefString).toString(); break;
-        case 'int':
-          return xpPref.getIntPref(aPrefString); break;
-        case 'bool':
-        default:
-          return xpPref.getBoolPref(aPrefString); break;
-      }
-    }catch(e){
-    }
-    return aDefault;
   },
 
   setPref: function(aPrefString, aPrefType, aValue){
