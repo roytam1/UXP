@@ -75,6 +75,16 @@ function openTopWin(url) {
   openUILinkIn(url, "current");
 }
 
+function getBoolPref(prefname, def)
+{
+  try {
+    return Services.prefs.getBoolPref(prefname);
+  }
+  catch(er) {
+    return def;
+  }
+}
+
 /* openUILink handles clicks on UI elements that cause URLs to load.
  *
  * As the third argument, you may pass an object with the same properties as
