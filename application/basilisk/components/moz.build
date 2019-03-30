@@ -19,7 +19,6 @@ DIRS += [
     'sessionstore',
     'shell',
     'selfsupport',
-    'syncedtabs',
     'translation',
 ]
 

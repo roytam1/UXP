@@ -390,59 +390,6 @@
 
     <tooltip id="dynamic-shortcut-tooltip"
              onpopupshowing="UpdateDynamicShortcutTooltipText(this);"/>
-
-    <menupopup id="SyncedTabsSidebarContext">
-      <menuitem label="&syncedTabs.context.open.label;"
-                accesskey="&syncedTabs.context.open.accesskey;"
-                id="syncedTabsOpenSelected" where="current"/>
-      <menuitem label="&syncedTabs.context.openInNewTab.label;"
-                accesskey="&syncedTabs.context.openInNewTab.accesskey;"
-                id="syncedTabsOpenSelectedInTab" where="tab"/>
-      <menuitem label="&syncedTabs.context.openInNewWindow.label;"
-                accesskey="&syncedTabs.context.openInNewWindow.accesskey;"
-                id="syncedTabsOpenSelectedInWindow" where="window"/>
-      <menuitem label="&syncedTabs.context.openInNewPrivateWindow.label;"
-                accesskey="&syncedTabs.context.openInNewPrivateWindow.accesskey;"
-                id="syncedTabsOpenSelectedInPrivateWindow" where="window" private="true"/>
-      <menuseparator/>
-      <menuitem label="&syncedTabs.context.bookmarkSingleTab.label;"
-                accesskey="&syncedTabs.context.bookmarkSingleTab.accesskey;"
-                id="syncedTabsBookmarkSelected"/>
-      <menuitem label="&syncedTabs.context.copy.label;"
-                accesskey="&syncedTabs.context.copy.accesskey;"
-                id="syncedTabsCopySelected"/>
-      <menuseparator/>
-      <menuitem label="&syncSyncNowItem.label;"
-                accesskey="&syncSyncNowItem.accesskey;"
-                id="syncedTabsRefresh"/>
-    </menupopup>
-    <menupopup id="SyncedTabsSidebarTabsFilterContext"
-               class="textbox-contextmenu">
-      <menuitem label="&undoCmd.label;"
-                accesskey="&undoCmd.accesskey;"
-                cmd="cmd_undo"/>
-      <menuseparator/>
-      <menuitem label="&cutCmd.label;"
-                accesskey="&cutCmd.accesskey;"
-                cmd="cmd_cut"/>
-      <menuitem label="&copyCmd.label;"
-                accesskey="&copyCmd.accesskey;"
-                cmd="cmd_copy"/>
-      <menuitem label="&pasteCmd.label;"
-                accesskey="&pasteCmd.accesskey;"
-                cmd="cmd_paste"/>
-      <menuitem label="&deleteCmd.label;"
-                accesskey="&deleteCmd.accesskey;"
-                cmd="cmd_delete"/>
-      <menuseparator/>
-      <menuitem label="&selectAllCmd.label;"
-                accesskey="&selectAllCmd.accesskey;"
-                cmd="cmd_selectAll"/>
-      <menuseparator/>
-      <menuitem label="&syncSyncNowItem.label;"
-                accesskey="&syncSyncNowItem.accesskey;"
-                id="syncedTabsRefreshFilter"/>
-    </menupopup>
   </popupset>
 
 #ifdef CAN_DRAW_IN_TITLEBAR
