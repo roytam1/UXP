@@ -585,17 +585,10 @@
        } else if (Const._STAT_VER != undefined) {
          const ver = Const._STAT_VER;
          let xstat_name, lxstat_name, fxstat_name;
-         if (OS.Constants.Sys.Name == "SunOS") {
-           // Solaris
-           xstat_name = "_xstat";
-           lxstat_name = "_lxstat";
-           fxstat_name = "_fxstat";
-         } else {
-           // Linux, all widths
-           xstat_name = "__xstat";
-           lxstat_name = "__lxstat";
-           fxstat_name = "__fxstat";
-         }
+         // Linux, all widths
+         xstat_name = "__xstat";
+         lxstat_name = "__lxstat";
+         fxstat_name = "__fxstat";
 
          let Stat = {};
          libc.declareLazyFFI(Stat,  "xstat",

@@ -54,15 +54,3 @@ xptcstubs_asm_ppc_aix.s: xptcstubs_asm_ppc_aix.s.m4 $(DIST)/include/xptcstubsdef
 endif
 endif
 
-ifeq ($(OS_ARCH),SunOS)
-ifeq (86,$(findstring 86,$(OS_TEST)))
-ifndef GNU_CC
-xptcstubsdef_asm.solx86: $(DIST)/include/xptcstubsdef.inc
-	sed \
-	  -e 's/^\(STUB_ENTRY\)(\([0-9]\))/\11\(\2\)/' \
-	  -e 's/^\(STUB_ENTRY\)(\([0-9][0-9]\))/\12\(\2\)/' \
-	  -e 's/^\(STUB_ENTRY\)(\([0-9][0-9][0-9]\))/\13\(\2\)/' \
-	$(DIST)/include/xptcstubsdef.inc > $@
-endif
-endif
-endif

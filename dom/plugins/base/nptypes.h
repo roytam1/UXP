@@ -24,7 +24,7 @@
   typedef unsigned long long uint64_t;
 #elif defined(_AIX) || defined(__sun) || defined(__osf__) || defined(IRIX) || defined(HPUX)
   /*
-   * AIX and SunOS ship a inttypes.h header that defines [u]int32_t,
+   * AIX ships an inttypes.h header that defines [u]int32_t,
    * but not bool for C.
    */
   #include <inttypes.h>
