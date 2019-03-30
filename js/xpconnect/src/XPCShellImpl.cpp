@@ -644,7 +644,6 @@ env_setProperty(JSContext* cx, HandleObject obj, HandleId id, MutableHandleValue
                 ObjectOpResult& result)
 {
 /* XXX porting may be easy, but these don't seem to supply setenv by default */
-#if !defined SOLARIS
     RootedString valstr(cx);
     RootedString idstr(cx);
     int rv;
@@ -696,7 +695,6 @@ env_setProperty(JSContext* cx, HandleObject obj, HandleId id, MutableHandleValue
         return false;
     }
     vp.setString(valstr);
-#endif /* !defined SOLARIS */
     return result.succeed();
 }
 

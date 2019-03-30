@@ -14,8 +14,6 @@
 #if defined(XP_WIN)
 #include "jswin.h"
 #include <psapi.h>
-#elif defined(SOLARIS)
-// This test doesn't apply to Solaris.
 #elif defined(XP_UNIX)
 #include <algorithm>
 #include <errno.h>
@@ -39,8 +37,6 @@ BEGIN_TEST(testGCAllocator)
 #  else // Various APIs are unavailable. This test is disabled.
     return true;
 #  endif
-#elif defined(SOLARIS)
-    return true;
 #elif defined(XP_UNIX)
     PageSize = size_t(sysconf(_SC_PAGESIZE));
 #else
@@ -301,12 +297,6 @@ void* mapMemory(size_t length) { return nullptr; }
 void unmapPages(void* p, size_t size) { }
 
 #  endif
-#elif defined(SOLARIS) // This test doesn't apply to Solaris.
-
-void* mapMemoryAt(void* desired, size_t length) { return nullptr; }
-void* mapMemory(size_t length) { return nullptr; }
-void unmapPages(void* p, size_t size) { }
-
 #elif defined(XP_UNIX)
 
 void*
@@ -377,7 +367,7 @@ unmapPages(void* p, size_t size)
         MOZ_RELEASE_ASSERT(errno == ENOMEM);
 }
 
-#else // !defined(XP_WIN) && !defined(SOLARIS) && !defined(XP_UNIX)
+#else // !defined(XP_WIN) && !defined(XP_UNIX)
 #error "Memory mapping functions are not defined for your OS."
 #endif
 END_TEST(testGCAllocator)
