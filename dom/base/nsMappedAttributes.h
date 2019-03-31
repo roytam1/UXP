@@ -93,20 +93,13 @@ private:
     nsAttrValue mValue;
   };
 
-  /**
-   * Due to a compiler bug in VisualAge C++ for AIX, we need to return the
-   * address of the first index into mAttrs here, instead of simply
-   * returning mAttrs itself.
-   *
-   * See Bug 231104 for more information.
-   */
   const InternalAttr* Attrs() const
   {
-    return reinterpret_cast<const InternalAttr*>(&(mAttrs[0]));
+    return reinterpret_cast<const InternalAttr*>(mAttrs);
   }
   InternalAttr* Attrs()
   {
-    return reinterpret_cast<InternalAttr*>(&(mAttrs[0]));
+    return reinterpret_cast<InternalAttr*>(mAttrs);
   }
 
   uint16_t mAttrCount;

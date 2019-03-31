@@ -78,15 +78,8 @@ GetIndexFromCache(const nsAttrAndChildArray* aArray)
 }
 
 
-/**
- * Due to a compiler bug in VisualAge C++ for AIX, we need to return the
- * address of the first index into mBuffer here, instead of simply returning
- * mBuffer itself.
- *
- * See Bug 231104 for more information.
- */
 #define ATTRS(_impl) \
-  reinterpret_cast<InternalAttr*>(&((_impl)->mBuffer[0]))
+  reinterpret_cast<InternalAttr*>((_impl)->mBuffer)
 
 
 #define NS_IMPL_EXTRA_SIZE \
