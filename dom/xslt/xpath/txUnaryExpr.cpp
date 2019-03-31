@@ -23,16 +23,7 @@ UnaryExpr::evaluate(txIEvalContext* aContext, txAExprResult** aResult)
     NS_ENSURE_SUCCESS(rv, rv);
 
     double value = exprRes->numberValue();
-#ifdef HPUX
-    /*
-     * Negation of a zero doesn't produce a negative
-     * zero on HPUX. Perform the operation by multiplying with
-     * -1.
-     */
-    return aContext->recycler()->getNumberResult(-1 * value, aResult);
-#else
     return aContext->recycler()->getNumberResult(-value, aResult);
-#endif
 }
 
 TX_IMPL_EXPR_STUBS_1(UnaryExpr, NODESET_RESULT, expr)
