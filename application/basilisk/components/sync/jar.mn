@@ -1,0 +1,22 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+browser.jar:
+  content/browser/sync/aboutSyncTabs.xul
+  content/browser/sync/aboutSyncTabs.js
+  content/browser/sync/aboutSyncTabs.css
+  content/browser/sync/aboutSyncTabs-bindings.xml
+  content/browser/sync/setup.xul
+  content/browser/sync/addDevice.js
+  content/browser/sync/addDevice.xul
+  content/browser/sync/setup.js
+  content/browser/sync/genericChange.xul
+  content/browser/sync/genericChange.js
+  content/browser/sync/key.xhtml
+  content/browser/sync/notification.xml
+  content/browser/sync/quota.xul
+  content/browser/sync/quota.js
+  content/browser/sync/utils.js
+  content/browser/sync/progress.js
+  content/browser/sync/progress.xhtml
