@@ -200,7 +200,6 @@ var CustomizableUIInternal = {
       "find-button",
       "preferences-button",
       "add-ons-button",
-      "sync-button",
     ];
 
     if (!AppConstants.MOZ_DEV_EDITION) {

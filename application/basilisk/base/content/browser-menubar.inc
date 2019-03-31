@@ -436,12 +436,7 @@
                   label="&toolsMenu.label;"
                   accesskey="&toolsMenu.accesskey;"
                   onpopupshowing="mirrorShow(this)">
-              <menupopup id="menu_ToolsPopup"
-# We have to use setTimeout() here to avoid a flickering menu bar when opening
-# the Tools menu, see bug 970769. This can be removed once we got rid of the
-# event loop spinning in Weave.Status._authManager.
-                         onpopupshowing="setTimeout(() => gSyncUI.updateUI());"
-                         >
+              <menupopup id="menu_ToolsPopup">
               <menuitem id="menu_openDownloads"
                         label="&downloads.label;"
                         accesskey="&downloads.accesskey;"
@@ -452,23 +447,6 @@
                         accesskey="&addons.accesskey;"
                         key="key_openAddons"
                         command="Tools:Addons"/>
-
-              <!-- only one of sync-setup, sync-syncnowitem or sync-reauthitem will be showing at once -->
-              <menuitem id="sync-setup"
-                        label="&syncSignIn.label;"
-                        accesskey="&syncSignIn.accesskey;"
-                        observes="sync-setup-state"
-                        oncommand="gSyncUI.openSetup(null, 'menubar')"/>
-              <menuitem id="sync-syncnowitem"
-                        label="&syncSyncNowItem.label;"
-                        accesskey="&syncSyncNowItem.accesskey;"
-                        observes="sync-syncnow-state"
-                        oncommand="gSyncUI.doSync(event);"/>
-              <menuitem id="sync-reauthitem"
-                        label="&syncReAuthItem.label;"
-                        accesskey="&syncReAuthItem.accesskey;"
-                        observes="sync-reauth-state"
-                        oncommand="gSyncUI.openSignInAgainPage('menubar');"/>
               <menuseparator id="devToolsSeparator"/>
               <menu id="webDeveloperMenu"
                     label="&webDeveloperMenu.label;"

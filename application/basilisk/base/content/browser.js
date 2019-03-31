@@ -46,7 +46,6 @@ Cu.import("resource://gre/modules/NotificationDB.jsm");
   ["Task", "resource://gre/modules/Task.jsm"],
   ["UpdateUtils", "resource://gre/modules/UpdateUtils.jsm"],
   ["Weave", "resource://services-sync/main.js"],
-  ["fxAccounts", "resource://gre/modules/FxAccounts.jsm"],
 #ifdef MOZ_DEVTOOLS
   // Note: Do not delete! It is used for: base/content/nsContextMenu.js
   ["gDevTools", "resource://devtools/client/framework/gDevTools.jsm"],
@@ -1310,10 +1309,6 @@ var gBrowserInit = {
     FullScreen.init();
     PointerLock.init();
 
-    // initialize the sync UI
-    gSyncUI.init();
-    gFxAccounts.init();
-
     if (AppConstants.MOZ_DATA_REPORTING)
       gDataNotificationInfoBar.init();
 
@@ -1449,8 +1444,6 @@ var gBrowserInit = {
     gHistorySwipeAnimation.uninit();
 
     FullScreen.uninit();
-
-    gFxAccounts.uninit();
 
     Services.obs.removeObserver(gPluginHandler.NPAPIPluginCrashed, "plugin-crashed");
 
@@ -1611,9 +1604,6 @@ if (AppConstants.platform == "macosx") {
 
     // initialize the private browsing UI
     gPrivateBrowsingUI.init();
-
-    // initialize the sync UI
-    gSyncUI.init();
   };
 
   gBrowserInit.nonBrowserWindowShutdown = function() {
@@ -7548,8 +7538,6 @@ var TabContextMenu = {
 
     this.contextTab.addEventListener("TabAttrModified", this, false);
     aPopupMenu.addEventListener("popuphiding", this, false);
-
-    gFxAccounts.updateTabContextMenu(aPopupMenu);
   },
   handleEvent(aEvent) {
     switch (aEvent.type) {

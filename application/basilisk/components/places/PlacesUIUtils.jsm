@@ -1418,9 +1418,9 @@ this.PlacesUIUtils = {
   },
 
   shouldShowTabsFromOtherComputersMenuitem: function() {
-    let weaveOK = Weave.Status.checkSetup() != Weave.CLIENT_NOT_CONFIGURED &&
-                  Weave.Svc.Prefs.get("firstSync", "") != "notReady";
-    return weaveOK;
+#ifdef MOZ_SERVICES_SYNC
+    // Weave code to enable menu item
+#endif
   },
 
   /**
