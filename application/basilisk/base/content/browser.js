@@ -107,6 +107,12 @@ XPCOMUtils.defineLazyGetter(this, "PageMenuParent", function() {
   return new tmp.PageMenuParent();
 });
 
+#ifdef MOZ_SERVICES_SYNC
+XPCOMUtils.defineLazyModuleGetter(this, "Weave",
+  "resource://services-sync/main.js");
+#endif
+
+
 XPCOMUtils.defineLazyGetter(this, "PopupNotifications", function () {
   let tmp = {};
   Cu.import("resource://gre/modules/PopupNotifications.jsm", tmp);
@@ -211,6 +217,10 @@ var gInitialPages = [
   "about:sessionrestore",
   "about:logopage"
 ];
+
+#ifdef MOZ_SERVICES_SYNC
+#include browser-syncui.js
+#endif
 
 function* browserWindows() {
   let windows = Services.wm.getEnumerator("navigator:browser");
@@ -1312,6 +1322,11 @@ var gBrowserInit = {
     if (AppConstants.MOZ_DATA_REPORTING)
       gDataNotificationInfoBar.init();
 
+#ifdef MOZ_SERVICES_SYNC
+    // initialize the sync UI
+    gSyncUI.init();
+#endif
+
     gBrowserThumbnails.init();
 
     gMenuButtonBadgeManager.init();
@@ -1604,6 +1619,11 @@ if (AppConstants.platform == "macosx") {
 
     // initialize the private browsing UI
     gPrivateBrowsingUI.init();
+
+#ifdef MOZ_SERVICES_SYNC
+    // initialize the sync UI
+    gSyncUI.init();
+#endif
   };
 
   gBrowserInit.nonBrowserWindowShutdown = function() {
@@ -3178,12 +3198,14 @@ var PrintPreviewListener = {
     this._chromeState.globalNotificationsOpen = !globalNotificationBox.notificationsHidden;
     globalNotificationBox.notificationsHidden = true;
 
+#ifdef MOZ_SERVICES_SYNC
     this._chromeState.syncNotificationsOpen = false;
     var syncNotifications = document.getElementById("sync-notifications");
     if (syncNotifications) {
       this._chromeState.syncNotificationsOpen = !syncNotifications.notificationsHidden;
       syncNotifications.notificationsHidden = true;
     }
+#endif
   },
   _showChrome: function () {
     if (this._chromeState.notificationsOpen)
@@ -3195,8 +3217,10 @@ var PrintPreviewListener = {
     if (this._chromeState.globalNotificationsOpen)
       document.getElementById("global-notificationbox").notificationsHidden = false;
 
+#ifdef MOZ_SERVICES_SYNC
     if (this._chromeState.syncNotificationsOpen)
       document.getElementById("sync-notifications").notificationsHidden = false;
+#endif
 
     if (this._chromeState.sidebarOpen)
       SidebarUI.show(this._sidebarCommand);
@@ -6236,9 +6260,11 @@ function checkEmptyPageOrigin(browser = gBrowser.selectedBrowser,
   return ssm.isSystemPrincipal(contentPrincipal);
 }
 
+#ifdef MOZ_SERVICES_SYNC
 function BrowserOpenSyncTabs() {
   switchToTabHavingURI("about:sync-tabs", true);
 }
+#endif
 
 /**
  * Format a URL

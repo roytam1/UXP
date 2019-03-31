@@ -19,6 +19,7 @@ DIRS += [
     'sessionstore',
     'shell',
     'selfsupport',
+    'sync',
     'translation',
 ]
 
@@ -37,6 +38,9 @@ XPIDL_MODULE = 'browsercompsbase'
 EXTRA_COMPONENTS += [
     'BrowserComponents.manifest', 
     'nsBrowserContentHandler.js',
+]
+
+EXTRA_PP_COMPONENTS += [
     'nsBrowserGlue.js',
 ]
 
