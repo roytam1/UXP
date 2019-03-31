@@ -147,13 +147,7 @@
 #  define JS_64BIT
 # endif
 #elif defined(__GNUC__)
-/* Additional GCC defines are when running on Solaris, AIX, and HPUX */
-# if defined(__x86_64__) || defined(__sparcv9) || \
-        defined(__64BIT__) || defined(__LP64__)
-#  define JS_64BIT
-# endif
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC) /* Sun Studio C/C++ */
-# if defined(__x86_64) || defined(__sparcv9)
+# if defined(__x86_64__) || defined(__64BIT__)
 #  define JS_64BIT
 # endif
 #elif defined(__xlc__) || defined(__xlC__)        /* IBM XL C/C++ */

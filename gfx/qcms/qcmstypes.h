@@ -38,8 +38,6 @@ typedef unsigned __int64 uintptr_t;
 typedef unsigned long uintptr_t;
 #endif
 
-#elif defined (_AIX)
-#  include <sys/inttypes.h>
 #else
 #  include <stdint.h>
 #endif
