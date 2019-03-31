@@ -31,20 +31,10 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-/*
- * On AIX 4.3, sys/inttypes.h (which is included by sys/types.h, a very
- * common header file) defines the types int8, int16, int32, and int64.
- * So we don't define these four types here to avoid conflicts in case
- * the code also includes sys/types.h.
- */
-#if defined(AIX) && defined(HAVE_SYS_INTTYPES_H)
-#include <sys/inttypes.h>
-#else
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
-#endif /* AIX && HAVE_SYS_INTTYPES_H */
 
 typedef uint8_t JSUint8;
 typedef uint16_t JSUint16;

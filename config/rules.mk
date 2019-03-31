@@ -386,15 +386,6 @@ endif
 endif
 endif
 
-ifeq ($(OS_ARCH),AIX)
-ifdef IS_COMPONENT
-ifneq ($(HAS_EXTRAEXPORTS),1)
-MKSHLIB += -bE:$(MOZILLA_DIR)/build/unix/aix.exp -bnoexpall
-MKCSHLIB += -bE:$(MOZILLA_DIR)/build/unix/aix.exp -bnoexpall
-endif # HAS_EXTRAEXPORTS
-endif # IS_COMPONENT
-endif # AIX
-
 #
 # Linux: add -Bsymbolic flag for components
 #

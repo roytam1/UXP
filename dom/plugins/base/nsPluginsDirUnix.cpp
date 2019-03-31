@@ -24,9 +24,6 @@
 #undef LOCAL_PLUGIN_DLL_SUFFIX
 #define LOCAL_PLUGIN_DLL_SUFFIX ".sl"
 #define LOCAL_PLUGIN_DLL_ALT_SUFFIX ".so"
-#elif defined(_AIX)
-#define DEFAULT_X11_PATH "/usr/lib"
-#define LOCAL_PLUGIN_DLL_ALT_SUFFIX ".a"
 #elif defined(LINUX)
 #define DEFAULT_X11_PATH "/usr/X11R6/lib/"
 #elif defined(__APPLE__)

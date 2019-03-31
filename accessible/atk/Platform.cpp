@@ -60,11 +60,7 @@ struct GnomeAccessibilityModule
 };
 
 static GnomeAccessibilityModule sAtkBridge = {
-#ifdef AIX
-    "libatk-bridge.a(libatk-bridge.so.0)", nullptr,
-#else
     "libatk-bridge.so", nullptr,
-#endif
     "gnome_accessibility_module_init", nullptr,
     "gnome_accessibility_module_shutdown", nullptr
 };
