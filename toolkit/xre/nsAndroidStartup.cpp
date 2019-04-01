@@ -17,7 +17,6 @@
 #include "nsIFile.h"
 #include "nsAppRunner.h"
 #include "APKOpen.h"
-#include "nsExceptionHandler.h"
 
 #define LOG(args...) __android_log_print(ANDROID_LOG_INFO, MOZ_APP_NAME, args)
 

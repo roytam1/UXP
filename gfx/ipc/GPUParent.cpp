@@ -24,7 +24,6 @@
 #include "mozilla/dom/VideoDecoderManagerChild.h"
 #include "mozilla/layers/LayerTreeOwnerTracker.h"
 #include "nsDebugImpl.h"
-#include "nsExceptionHandler.h"
 #include "nsThreadManager.h"
 #include "prenv.h"
 #include "ProcessUtils.h"
