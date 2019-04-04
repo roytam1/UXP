@@ -657,7 +657,8 @@ stubPackets.set("console.log('foobar', 'test')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -689,7 +690,8 @@ stubPackets.set("console.log(undefined)", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -719,7 +721,8 @@ stubPackets.set("console.warn('danger, will robinson!')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -751,7 +754,8 @@ stubPackets.set("console.log(NaN)", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -783,7 +787,8 @@ stubPackets.set("console.log(null)", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -813,7 +818,8 @@ stubPackets.set("console.log('鼬')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -841,7 +847,8 @@ stubPackets.set("console.clear()", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086275587,
@@ -874,7 +881,8 @@ stubPackets.set("console.count('bar')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086277812,
@@ -925,7 +933,8 @@ stubPackets.set("console.assert(false, {message: 'foobar'})", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -964,7 +973,8 @@ stubPackets.set("console.log('hello \nfrom \rthe \"string world!')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -994,7 +1004,8 @@ stubPackets.set("console.log('úṇĩçödê țĕșť')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [],
@@ -1036,7 +1047,8 @@ stubPackets.set("console.dirxml(window)", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086285483,
@@ -1064,7 +1076,8 @@ stubPackets.set("console.trace()", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086287286,
@@ -1117,7 +1130,8 @@ stubPackets.set("console.time('bar')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086289137,
@@ -1150,7 +1164,8 @@ stubPackets.set("console.timeEnd('bar')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086289138,
@@ -1183,7 +1198,8 @@ stubPackets.set("console.table('bar')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086290984,
@@ -1230,7 +1246,8 @@ stubPackets.set("console.table(['a', 'b', 'c'])", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086292762,
@@ -1260,7 +1277,8 @@ stubPackets.set("console.group('bar')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086294628,
@@ -1290,7 +1308,8 @@ stubPackets.set("console.groupEnd('bar')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086294630,
@@ -1320,7 +1339,8 @@ stubPackets.set("console.groupCollapsed('foo')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086296567,
@@ -1350,7 +1370,8 @@ stubPackets.set("console.groupEnd('foo')", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086296570,
@@ -1378,7 +1399,8 @@ stubPackets.set("console.group()", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086298462,
@@ -1406,7 +1428,8 @@ stubPackets.set("console.groupEnd()", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"timeStamp": 1477086298464,
@@ -1437,7 +1460,8 @@ stubPackets.set("console.log(%cfoobar)", {
 			"appId": 0,
 			"firstPartyDomain": "",
 			"inIsolatedMozBrowser": false,
-			"privateBrowsingId": 0
+			"privateBrowsingId": 0,
+			"userContextId": 0
 		},
 		"private": false,
 		"styles": [
