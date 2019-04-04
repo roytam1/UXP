@@ -22,18 +22,6 @@
   typedef unsigned int uint32_t;
   typedef long long int64_t;
   typedef unsigned long long uint64_t;
-#elif defined(_AIX) || defined(__sun) || defined(__osf__) || defined(IRIX) || defined(HPUX)
-  /*
-   * AIX and SunOS ship a inttypes.h header that defines [u]int32_t,
-   * but not bool for C.
-   */
-  #include <inttypes.h>
-
-  #ifndef __cplusplus
-    typedef int bool;
-    #define true   1
-    #define false  0
-  #endif
 #elif defined(bsdi) || defined(FREEBSD) || defined(OPENBSD)
   /*
    * BSD/OS, FreeBSD, and OpenBSD ship sys/types.h that define int32_t and

@@ -130,7 +130,7 @@
      */
     function getMenuTree1()
     {
-      if (LINUX || SOLARIS) {
+      if (LINUX) {
         var tree = {
           role: ROLE_MENUPOPUP,
           children: [
@@ -190,7 +190,7 @@
     function getMenuTree2()
     {
       var tree = getMenuTree1();
-      if (LINUX || SOLARIS) {
+      if (LINUX) {
         var submenuTree =
         {
           name: "item2.0",
@@ -232,7 +232,7 @@
         children: []
       };
 
-      if (LINUX || SOLARIS)
+      if (LINUX)
         tree.children[2].children[0].children.push(subsubmenuTree);
       else
         tree.children[2].children[0].children[0].children[0].children.push(subsubmenuTree);

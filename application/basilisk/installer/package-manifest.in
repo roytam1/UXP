@@ -725,13 +725,6 @@
 @RESPATH@/components/pipnss.xpt
 @RESPATH@/components/pippki.xpt
 
-; for Solaris SPARC
-#ifdef SOLARIS
-bin/libfreebl_32fpu_3.so
-bin/libfreebl_32int_3.so
-bin/libfreebl_32int64_3.so
-#endif
-
 ; [Updater]
 ;
 #ifdef MOZ_UPDATER

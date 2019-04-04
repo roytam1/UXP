@@ -49,10 +49,6 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
     DIRS += ['system/androidproxy']
 
-TEST_HARNESS_FILES.testing.mochitest.browser.toolkit.crashreporter.test.browser += [
-    'crashreporter/test/browser/crashreport.sjs',
-]
-
 with Files('mozapps/installer/windows/*'):
     BUG_COMPONENT = ('Toolkit', 'NSIS Installer')
 

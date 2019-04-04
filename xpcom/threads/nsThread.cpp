@@ -203,11 +203,9 @@ public:
     }
   }
 
-  // This method needs to be public to support older compilers (xlC_r on AIX).
-  // It should be called directly as this class type is reference counted.
+private:
   virtual ~nsThreadStartupEvent() {}
 
-private:
   NS_IMETHOD Run() override
   {
     ReentrantMonitorAutoEnter mon(mMon);

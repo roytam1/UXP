@@ -71,35 +71,6 @@ js::GetNativeStackBaseImpl()
 # endif
 }
 
-#elif defined(SOLARIS)
-
-#include <ucontext.h>
-
-JS_STATIC_ASSERT(JS_STACK_GROWTH_DIRECTION < 0);
-
-void*
-js::GetNativeStackBaseImpl()
-{
-    stack_t st;
-    stack_getbounds(&st);
-    return static_cast<char*>(st.ss_sp) + st.ss_size;
-}
-
-#elif defined(AIX)
-
-#include <ucontext.h>
-
-JS_STATIC_ASSERT(JS_STACK_GROWTH_DIRECTION < 0);
-
-void*
-js::GetNativeStackBaseImpl()
-{
-    ucontext_t context;
-    getcontext(&context);
-    return static_cast<char*>(context.uc_stack.ss_sp) +
-        context.uc_stack.ss_size;
-}
-
 #elif defined(XP_LINUX) && !defined(ANDROID) && defined(__GLIBC__)
 void*
 js::GetNativeStackBaseImpl()

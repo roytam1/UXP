@@ -32,21 +32,11 @@ int main (void)
 
   f = 3.14159;
 
-#if 1
-  /* This is ifdef'd out for now. long double support under SunOS/gcc
-     is pretty much non-existent.  You'll get the odd bus error in library
-     routines like printf().  */
   printf ("%Lf\n", ldblit(f));
-#endif
   ld = 666;
   ffi_call(&cif, FFI_FN(ldblit), &ld, values);
 
-#if 1
-  /* This is ifdef'd out for now. long double support under SunOS/gcc
-     is pretty much non-existent.  You'll get the odd bus error in library
-     routines like printf().  */
   printf ("%Lf, %Lf, %Lf, %Lf\n", ld, ldblit(f), ld - ldblit(f), LDBL_EPSILON);
-#endif
 
   /* These are not always the same!! Check for a reasonable delta */
   if (ld - ldblit(f) < LDBL_EPSILON)

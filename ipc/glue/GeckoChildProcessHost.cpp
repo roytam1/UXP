@@ -23,8 +23,6 @@
 #include "prenv.h"
 #include "nsXPCOMPrivate.h"
 
-#include "nsExceptionHandler.h"
-
 #include "nsDirectoryServiceDefs.h"
 #include "nsIFile.h"
 #include "nsPrintfCString.h"

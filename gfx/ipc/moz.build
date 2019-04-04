@@ -70,7 +70,6 @@ IPDL_SOURCES = [
 
 LOCAL_INCLUDES += [
     '/dom/ipc',
-    '/toolkit/crashreporter',
     '/xpcom/threads',
 ]
 

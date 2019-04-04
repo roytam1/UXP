@@ -722,14 +722,6 @@ if CONFIG['OS_ARCH'] == 'Linux':
         'dl',
     ]
 
-if CONFIG['OS_ARCH'] == 'SunOS':
-    OS_LIBS += [
-        'posix4',
-        'dl',
-        'nsl',
-        'socket',
-    ]
-
 OS_LIBS += CONFIG['REALTIME_LIBS']
 
 CFLAGS += CONFIG['MOZ_ICU_CFLAGS']

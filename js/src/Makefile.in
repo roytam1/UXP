@@ -138,27 +138,6 @@ distclean::
 
 CFLAGS += $(MOZ_ZLIB_CFLAGS)
 
-# Silence warnings on AIX/HP-UX from non-GNU compilers
-ifndef GNU_CC
-ifeq ($(OS_ARCH),AIX)
-# Suppress warnings from xlC
-# 1540-1281: offsetof() on null non-POD types
-# 1540-1608: anonymous unions using static data members
-CFLAGS		+= -qsuppress=1540-1281 -qsuppress=1540-1608
-CXXFLAGS	+= -qsuppress=1540-1281 -qsuppress=1540-1608
-endif
-endif
-ifeq ($(OS_ARCH),SunOS)
-ifeq ($(TARGET_CPU),sparc)
-
-ifdef GNU_CC
-CFLAGS   += -mcpu=v9
-CXXFLAGS += -mcpu=v9
-endif # GNU_CC
-
-endif
-endif
-
 $(LIBRARY_NAME).pc: js.pc
 	cp $^ $@
 

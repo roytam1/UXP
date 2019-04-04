@@ -644,7 +644,6 @@ env_setProperty(JSContext* cx, HandleObject obj, HandleId id, MutableHandleValue
                 ObjectOpResult& result)
 {
 /* XXX porting may be easy, but these don't seem to supply setenv by default */
-#if !defined SOLARIS
     RootedString valstr(cx);
     RootedString idstr(cx);
     int rv;
@@ -663,7 +662,7 @@ env_setProperty(JSContext* cx, HandleObject obj, HandleId id, MutableHandleValue
     JSAutoByteString value(cx, valstr);
     if (!value)
         return false;
-#if defined XP_WIN || defined HPUX || defined OSF1 || defined SCO
+#if defined XP_WIN || defined SCO
     {
         char* waste = JS_smprintf("%s=%s", name.ptr(), value.ptr());
         if (!waste) {
@@ -671,16 +670,7 @@ env_setProperty(JSContext* cx, HandleObject obj, HandleId id, MutableHandleValue
             return false;
         }
         rv = putenv(waste);
-#ifdef XP_WIN
-        /*
-         * HPUX9 at least still has the bad old non-copying putenv.
-         *
-         * Per mail from <s.shanmuganathan@digital.com>, OSF1 also has a putenv
-         * that will crash if you pass it an auto char array (so it must place
-         * its argument directly in the char* environ[] array).
-         */
         free(waste);
-#endif
     }
 #else
     rv = setenv(name.ptr(), value.ptr(), 1);
@@ -696,7 +686,6 @@ env_setProperty(JSContext* cx, HandleObject obj, HandleId id, MutableHandleValue
         return false;
     }
     vp.setString(valstr);
-#endif /* !defined SOLARIS */
     return result.succeed();
 }
 

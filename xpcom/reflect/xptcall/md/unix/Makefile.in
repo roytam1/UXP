@@ -24,13 +24,6 @@ endif
 # PowerPC
 ######################################################################
 #
-# AIX/PPC
-#
-ifeq ($(OS_ARCH),AIX)
-# #24617  Building the CPP's (CXX) optimized causes a crash
-CXXFLAGS 	:=  $(filter-out $(MOZ_OPTIMIZE_FLAGS), $(CXXFLAGS))
-endif
-
 include $(topsrcdir)/config/rules.mk
 
 ifeq ($(OS_ARCH),Linux)
@@ -42,27 +35,4 @@ endif
 ifeq ($(OS_ARCH),Darwin)
 xptcstubs_asm_ppc_darwin.s: xptcstubs_asm_ppc_darwin.s.m4 $(DIST)/include/xptcstubsdef.inc Makefile
 	gm4 $(INCLUDES) $< > $@
-endif
-
-ifeq ($(OS_ARCH),AIX)
-ifdef HAVE_64BIT_BUILD
-xptcstubs_asm_ppc_aix64.s: xptcstubs_asm_ppc_aix64.s.m4 $(DIST)/include/xptcstubsdef.inc Makefile
-	m4 -DAIX_OBJMODEL=$(AIX_OBJMODEL) $(INCLUDES) -I. $< > $@
-else
-xptcstubs_asm_ppc_aix.s: xptcstubs_asm_ppc_aix.s.m4 $(DIST)/include/xptcstubsdef.inc Makefile
-	m4 -DAIX_OBJMODEL=$(AIX_OBJMODEL) $(INCLUDES) -I. $< > $@
-endif
-endif
-
-ifeq ($(OS_ARCH),SunOS)
-ifeq (86,$(findstring 86,$(OS_TEST)))
-ifndef GNU_CC
-xptcstubsdef_asm.solx86: $(DIST)/include/xptcstubsdef.inc
-	sed \
-	  -e 's/^\(STUB_ENTRY\)(\([0-9]\))/\11\(\2\)/' \
-	  -e 's/^\(STUB_ENTRY\)(\([0-9][0-9]\))/\12\(\2\)/' \
-	  -e 's/^\(STUB_ENTRY\)(\([0-9][0-9][0-9]\))/\13\(\2\)/' \
-	$(DIST)/include/xptcstubsdef.inc > $@
-endif
-endif
 endif
