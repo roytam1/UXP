@@ -5338,6 +5338,9 @@ function handleDroppedLink(event, urlOrLinks, name)
 
   let lastLocationChange = gBrowser.selectedBrowser.lastLocationChange;
 
+  let userContextId = gBrowser.selectedBrowser
+                      .getAttribute("usercontextid") || 0;
+
   let inBackground = Services.prefs.getBoolPref("browser.tabs.loadInBackground");
   if (event.shiftKey)
     inBackground = !inBackground;
@@ -5356,6 +5359,7 @@ function handleDroppedLink(event, urlOrLinks, name)
         replace: true,
         allowThirdPartyFixup: false,
         postDatas,
+        userContextId,
       });
     }
   });
