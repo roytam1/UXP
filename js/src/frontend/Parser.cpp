@@ -69,7 +69,7 @@ using UsedNamePtr = UsedNameTracker::UsedNameMap::Ptr;
         if (!tokenStream.getToken(&token, modifier))                                        \
             return null();                                                                  \
         if (token != tt) {                                                                  \
-            zeport(ParseError, false, errno);                                               \
+            qeport(ParseError, errno);                                                      \
             return null();                                                                  \
         }                                                                                   \
     JS_END_MACRO
@@ -596,13 +596,24 @@ Parser<ParseHandler>::reportHelper(ParseReportKind kind, bool strict, uint32_t o
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::zeport(ParseReportKind kind, bool strict, unsigned errorNumber, ...)
+Parser<ParseHandler>::qeport(ParseReportKind kind, unsigned errorNumber, ...)
 {
     va_list args;
     va_start(args, errorNumber);
-    bool result = reportHelper(kind, strict, pos().begin, errorNumber, args);
+    bool result = reportHelper(kind, false, pos().begin, errorNumber, args);
     va_end(args);
     return result;
+}
+
+template <typename ParseHandler>
+bool
+Parser<ParseHandler>::strictModeError(unsigned errorNumber, ...)
+{
+    va_list args;
+    va_start(args, errorNumber);
+    bool res = reportHelper(ParseStrictError, pc->sc()->strict(), pos().begin, errorNumber, args);
+    va_end(args);
+    return res;
 }
 
 template <typename ParseHandler>
@@ -837,7 +848,7 @@ Parser<ParseHandler>::parse()
     if (!tokenStream.getToken(&tt, TokenStream::Operand))
         return null();
     if (tt != TOK_EOF) {
-        zeport(ParseError, false, JSMSG_GARBAGE_AFTER_INPUT, "script", TokenKindToDesc(tt));
+        qeport(ParseError, JSMSG_GARBAGE_AFTER_INPUT, "script", TokenKindToDesc(tt));
         return null();
     }
     if (foldConstants) {
@@ -951,7 +962,7 @@ Parser<ParseHandler>::notePositionalFormalParameter(Node fn, HandlePropertyName 
 {
     if (AddDeclaredNamePtr p = pc->functionScope().lookupDeclaredNameForAdd(name)) {
         if (disallowDuplicateParams) {
-            zeport(ParseError, false, JSMSG_BAD_DUP_ARGS);
+            qeport(ParseError, JSMSG_BAD_DUP_ARGS);
             return false;
         }
 
@@ -963,7 +974,7 @@ Parser<ParseHandler>::notePositionalFormalParameter(Node fn, HandlePropertyName 
             JSAutoByteString bytes;
             if (!AtomToPrintableString(context, name, &bytes))
                 return false;
-            if (!zeport(ParseStrictError, pc->sc()->strict(), JSMSG_DUPLICATE_FORMAL, bytes.ptr()))
+            if (!strictModeError(JSMSG_DUPLICATE_FORMAL, bytes.ptr()))
                 return false;
         }
 
@@ -1246,7 +1257,7 @@ Parser<ParseHandler>::noteDeclaredName(HandlePropertyName name, DeclarationKind 
 
         AddDeclaredNamePtr p = pc->functionScope().lookupDeclaredNameForAdd(name);
         if (p) {
-            zeport(ParseError, false, JSMSG_BAD_DUP_ARGS);
+            qeport(ParseError, JSMSG_BAD_DUP_ARGS);
             return false;
         }
 
@@ -1453,7 +1464,7 @@ Parser<FullParseHandler>::checkStatementsEOF()
     if (!tokenStream.peekToken(&tt, TokenStream::Operand))
         return false;
     if (tt != TOK_EOF) {
-        zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN, "expression", TokenKindToDesc(tt));
+        qeport(ParseError, JSMSG_UNEXPECTED_TOKEN, "expression", TokenKindToDesc(tt));
         return false;
     }
     return true;
@@ -1918,7 +1929,7 @@ Parser<FullParseHandler>::evalBody(EvalSharedContext* evalsc)
     // script.
     if (hasUsedName(context->names().arguments)) {
         if (IsArgumentsUsedInLegacyGenerator(context, pc->sc()->compilationEnclosingScope())) {
-            zeport(ParseError, false, JSMSG_BAD_GENEXP_BODY, js_arguments_str);
+            qeport(ParseError, JSMSG_BAD_GENEXP_BODY, js_arguments_str);
             return nullptr;
         }
     }
@@ -2016,7 +2027,7 @@ Parser<FullParseHandler>::moduleBody(ModuleSharedContext* modulesc)
     if (!tokenStream.getToken(&tt, TokenStream::Operand))
         return null();
     if (tt != TOK_EOF) {
-        zeport(ParseError, false, JSMSG_GARBAGE_AFTER_INPUT, "module", TokenKindToDesc(tt));
+        qeport(ParseError, JSMSG_GARBAGE_AFTER_INPUT, "module", TokenKindToDesc(tt));
         return null();
     }
 
@@ -2336,7 +2347,7 @@ Parser<FullParseHandler>::standaloneFunction(HandleFunction fun,
     if (!tokenStream.getToken(&tt, TokenStream::Operand))
         return null();
     if (tt != TOK_EOF) {
-        zeport(ParseError, false, JSMSG_GARBAGE_AFTER_INPUT, "function body", TokenKindToDesc(tt));
+        qeport(ParseError, JSMSG_GARBAGE_AFTER_INPUT, "function body", TokenKindToDesc(tt));
         return null();
     }
 
@@ -2741,8 +2752,7 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
         if (!tokenStream.getToken(&tt, firstTokenModifier))
             return false;
         if (tt != TOK_LP) {
-            zeport(ParseError, false,
-                   kind == Arrow ? JSMSG_BAD_ARROW_ARGS : JSMSG_PAREN_BEFORE_FORMAL);
+            qeport(ParseError, kind == Arrow ? JSMSG_BAD_ARROW_ARGS : JSMSG_PAREN_BEFORE_FORMAL);
             return false;
         }
 
@@ -2774,13 +2784,13 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
         AtomVector& positionalFormals = pc->positionalFormalParameterNames();
 
         if (IsGetterKind(kind)) {
-            zeport(ParseError, false, JSMSG_ACCESSOR_WRONG_ARGS, "getter", "no", "s");
+            qeport(ParseError, JSMSG_ACCESSOR_WRONG_ARGS, "getter", "no", "s");
             return false;
         }
 
         while (true) {
             if (hasRest) {
-                zeport(ParseError, false, JSMSG_PARAMETER_AFTER_REST);
+                qeport(ParseError, JSMSG_PARAMETER_AFTER_REST);
                 return false;
             }
 
@@ -2792,14 +2802,14 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
 
             if (tt == TOK_TRIPLEDOT) {
                 if (IsSetterKind(kind)) {
-                    zeport(ParseError, false, JSMSG_ACCESSOR_WRONG_ARGS, "setter", "one", "");
+                    qeport(ParseError, JSMSG_ACCESSOR_WRONG_ARGS, "setter", "one", "");
                     return false;
                 }
 
                 disallowDuplicateParams = true;
                 if (duplicatedParam) {
                     // Has duplicated args before the rest parameter.
-                    zeport(ParseError, false, JSMSG_BAD_DUP_ARGS);
+                    qeport(ParseError, JSMSG_BAD_DUP_ARGS);
                     return false;
                 }
 
@@ -2810,7 +2820,7 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
                     return false;
 
                 if (tt != TOK_NAME && tt != TOK_YIELD && tt != TOK_LB && tt != TOK_LC) {
-                    zeport(ParseError, false, JSMSG_NO_REST_NAME);
+                    qeport(ParseError, JSMSG_NO_REST_NAME);
                     return false;
                 }
             }
@@ -2821,7 +2831,7 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
                 disallowDuplicateParams = true;
                 if (duplicatedParam) {
                     // Has duplicated args before the destructuring parameter.
-                    zeport(ParseError, false, JSMSG_BAD_DUP_ARGS);
+                    qeport(ParseError, JSMSG_BAD_DUP_ARGS);
                     return false;
                 }
 
@@ -2849,7 +2859,7 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
                     // case:
                     //
                     //   async await => 1
-                    zeport(ParseError, false, JSMSG_RESERVED_ID, "await");
+                    qeport(ParseError, JSMSG_RESERVED_ID, "await");
                     return false;
                 }
 
@@ -2869,12 +2879,12 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
               }
 
               default:
-                zeport(ParseError, false, JSMSG_MISSING_FORMAL);
+                qeport(ParseError, JSMSG_MISSING_FORMAL);
                 return false;
             }
 
             if (positionalFormals.length() >= ARGNO_LIMIT) {
-                zeport(ParseError, false, JSMSG_TOO_MANY_FUN_ARGS);
+                qeport(ParseError, JSMSG_TOO_MANY_FUN_ARGS);
                 return false;
             }
 
@@ -2889,12 +2899,12 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
                 MOZ_ASSERT(!parenFreeArrow);
 
                 if (hasRest) {
-                    zeport(ParseError, false, JSMSG_REST_WITH_DEFAULT);
+                    qeport(ParseError, JSMSG_REST_WITH_DEFAULT);
                     return false;
                 }
                 disallowDuplicateParams = true;
                 if (duplicatedParam) {
-                    zeport(ParseError, false, JSMSG_BAD_DUP_ARGS);
+                    qeport(ParseError, JSMSG_BAD_DUP_ARGS);
                     return false;
                 }
 
@@ -2938,11 +2948,11 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
                 return false;
             if (tt != TOK_RP) {
                 if (IsSetterKind(kind)) {
-                    zeport(ParseError, false, JSMSG_ACCESSOR_WRONG_ARGS, "setter", "one", "");
+                    qeport(ParseError, JSMSG_ACCESSOR_WRONG_ARGS, "setter", "one", "");
                     return false;
                 }
 
-                zeport(ParseError, false, JSMSG_PAREN_AFTER_FORMAL);
+                qeport(ParseError, JSMSG_PAREN_AFTER_FORMAL);
                 return false;
             }
         }
@@ -2955,7 +2965,7 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
 
         funbox->function()->setArgCount(positionalFormals.length());
     } else if (IsSetterKind(kind)) {
-        zeport(ParseError, false, JSMSG_ACCESSOR_WRONG_ARGS, "setter", "one", "");
+        qeport(ParseError, JSMSG_ACCESSOR_WRONG_ARGS, "setter", "one", "");
         return false;
     }
 
@@ -3085,7 +3095,7 @@ Parser<ParseHandler>::addExprAndGetNextTemplStrToken(YieldHandling yieldHandling
     if (!tokenStream.getToken(&tt))
         return false;
     if (tt != TOK_RC) {
-        zeport(ParseError, false, JSMSG_TEMPLSTR_UNTERM_EXPR);
+        qeport(ParseError, JSMSG_TEMPLSTR_UNTERM_EXPR);
         return false;
     }
 
@@ -3477,7 +3487,7 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
         if (!tokenStream.matchToken(&matched, TOK_ARROW))
             return false;
         if (!matched) {
-            zeport(ParseError, false, JSMSG_BAD_ARROW_ARGS);
+            qeport(ParseError, JSMSG_BAD_ARROW_ARGS);
             return false;
         }
     }
@@ -3485,7 +3495,7 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
     // When parsing something for new Function() we have to make sure to
     // only treat a certain part of the source as a parameter list.
     if (parameterListEnd.isSome() && parameterListEnd.value() != pos().begin) {
-        zeport(ParseError, false, JSMSG_UNEXPECTED_PARAMLIST_END);
+        qeport(ParseError, JSMSG_UNEXPECTED_PARAMLIST_END);
         return false;
     }
 
@@ -3498,7 +3508,7 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
         if ((funbox->isStarGenerator() && !funbox->isAsync()) || kind == Method ||
             kind == GetterNoExpressionClosure || kind == SetterNoExpressionClosure ||
             IsConstructorKind(kind)) {
-            zeport(ParseError, false, JSMSG_CURLY_BEFORE_BODY);
+            qeport(ParseError, JSMSG_CURLY_BEFORE_BODY);
             return false;
         }
 
@@ -3507,7 +3517,7 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
             if (!warnOnceAboutExprClosure())
                 return false;
 #else
-            zeport(ParseError, false, JSMSG_CURLY_BEFORE_BODY);
+            qeport(ParseError, JSMSG_CURLY_BEFORE_BODY);
             return false;
 #endif
         }
@@ -3540,7 +3550,7 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
         if (!tokenStream.matchToken(&matched, TOK_RC, TokenStream::Operand))
             return false;
         if (!matched) {
-            zeport(ParseError, false, JSMSG_CURLY_AFTER_BODY);
+            qeport(ParseError, JSMSG_CURLY_AFTER_BODY);
             return false;
         }
         funbox->bufEnd = pos().end;
@@ -3598,7 +3608,7 @@ Parser<ParseHandler>::functionStmt(uint32_t preludeStart, YieldHandling yieldHan
 
     if (tt == TOK_MUL) {
         if (asyncKind != SyncFunction) {
-            zeport(ParseError, false, JSMSG_ASYNC_GENERATOR);
+            qeport(ParseError, JSMSG_ASYNC_GENERATOR);
             return null();
         }
         generatorKind = StarGenerator;
@@ -3615,7 +3625,7 @@ Parser<ParseHandler>::functionStmt(uint32_t preludeStart, YieldHandling yieldHan
         tokenStream.ungetToken();
     } else {
         /* Unnamed function expressions are forbidden in statement context. */
-        zeport(ParseError, false, JSMSG_UNNAMED_FUNCTION_STMT);
+        qeport(ParseError, JSMSG_UNNAMED_FUNCTION_STMT);
         return null();
     }
 
@@ -3651,7 +3661,7 @@ Parser<ParseHandler>::functionExpr(uint32_t preludeStart, InvokedPrediction invo
 
     if (tt == TOK_MUL) {
         if (asyncKind != SyncFunction) {
-            zeport(ParseError, false, JSMSG_ASYNC_GENERATOR);
+            qeport(ParseError, JSMSG_ASYNC_GENERATOR);
             return null();
         }
         generatorKind = StarGenerator;
@@ -3824,7 +3834,7 @@ Parser<ParseHandler>::maybeParseDirective(Node list, Node pn, bool* cont)
                 // occur in the directive prologue -- octal escapes -- and
                 // complain now.
                 if (tokenStream.sawOctalEscape()) {
-                    zeport(ParseError, false, JSMSG_DEPRECATED_OCTAL);
+                    qeport(ParseError, JSMSG_DEPRECATED_OCTAL);
                     return false;
                 }
                 pc->sc()->strictScript = true;
@@ -3911,7 +3921,7 @@ Parser<ParseHandler>::condition(InHandling inHandling, YieldHandling yieldHandli
 
     /* Check for (a = b) and warn about possible (a == b) mistype. */
     if (handler.isUnparenthesizedAssignment(pn)) {
-        if (!zeport(ParseExtraWarning, false, JSMSG_EQUAL_AS_ASSIGN))
+        if (!qeport(ParseExtraWarning, JSMSG_EQUAL_AS_ASSIGN))
             return null();
     }
     return pn;
@@ -4493,7 +4503,7 @@ Parser<ParseHandler>::declarationName(Node decl, DeclarationKind declKind, Token
 {
     // Anything other than TOK_YIELD or TOK_NAME is an error.
     if (tt != TOK_NAME && tt != TOK_YIELD) {
-        zeport(ParseError, false, JSMSG_NO_VARIABLE_NAME);
+        qeport(ParseError, JSMSG_NO_VARIABLE_NAME);
         return null();
     }
 
@@ -4693,7 +4703,7 @@ Parser<FullParseHandler>::namedImportsOrNamespaceImport(TokenKind tt, Node impor
                     return false;
 
                 if (afterAs != TOK_NAME && afterAs != TOK_YIELD) {
-                    zeport(ParseError, false, JSMSG_NO_BINDING_NAME);
+                    qeport(ParseError, JSMSG_NO_BINDING_NAME);
                     return false;
                 }
             } else {
@@ -4705,7 +4715,7 @@ Parser<FullParseHandler>::namedImportsOrNamespaceImport(TokenKind tt, Node impor
                     JSAutoByteString bytes;
                     if (!AtomToPrintableString(context, importName, &bytes))
                         return false;
-                    zeport(ParseError, false, JSMSG_AS_AFTER_RESERVED_WORD, bytes.ptr());
+                    qeport(ParseError, JSMSG_AS_AFTER_RESERVED_WORD, bytes.ptr());
                     return false;
                 }
             }
@@ -4802,7 +4812,7 @@ Parser<FullParseHandler>::importDeclaration()
     MOZ_ASSERT(tokenStream.currentToken().type == TOK_IMPORT);
 
     if (!pc->atModuleLevel()) {
-        zeport(ParseError, false, JSMSG_IMPORT_DECL_AT_TOP_LEVEL);
+        qeport(ParseError, JSMSG_IMPORT_DECL_AT_TOP_LEVEL);
         return null();
     }
 
@@ -4851,7 +4861,7 @@ Parser<FullParseHandler>::importDeclaration()
                     return null();
 
                 if (tt != TOK_LC && tt != TOK_MUL) {
-                    zeport(ParseError, false, JSMSG_NAMED_IMPORTS_OR_NAMESPACE_IMPORT);
+                    qeport(ParseError, JSMSG_NAMED_IMPORTS_OR_NAMESPACE_IMPORT);
                     return null();
                 }
 
@@ -4867,7 +4877,7 @@ Parser<FullParseHandler>::importDeclaration()
             return null();
 
         if (tt != TOK_NAME || tokenStream.currentName() != context->names().from) {
-            zeport(ParseError, false, JSMSG_FROM_AFTER_IMPORT_CLAUSE);
+            qeport(ParseError, JSMSG_FROM_AFTER_IMPORT_CLAUSE);
             return null();
         }
 
@@ -4880,7 +4890,7 @@ Parser<FullParseHandler>::importDeclaration()
         // equivalent to |import {} from 'a'|.
         importSpecSet->pn_pos.end = importSpecSet->pn_pos.begin;
     } else {
-        zeport(ParseError, false, JSMSG_DECLARATION_AFTER_IMPORT);
+        qeport(ParseError, JSMSG_DECLARATION_AFTER_IMPORT);
         return null();
     }
 
@@ -4918,7 +4928,7 @@ Parser<FullParseHandler>::checkExportedName(JSAtom* exportName)
     if (!AtomToPrintableString(context, exportName, &str))
         return false;
 
-    zeport(ParseError, false, JSMSG_DUPLICATE_EXPORT_NAME, str.ptr());
+    qeport(ParseError, JSMSG_DUPLICATE_EXPORT_NAME, str.ptr());
     return false;
 }
 
@@ -4961,7 +4971,7 @@ Parser<FullParseHandler>::exportDeclaration()
     MOZ_ASSERT(tokenStream.currentToken().type == TOK_EXPORT);
 
     if (!pc->atModuleLevel()) {
-        zeport(ParseError, false, JSMSG_EXPORT_DECL_AT_TOP_LEVEL);
+        qeport(ParseError, JSMSG_EXPORT_DECL_AT_TOP_LEVEL);
         return null();
     }
 
@@ -5080,7 +5090,7 @@ Parser<FullParseHandler>::exportDeclaration()
         if (!tokenStream.getToken(&tt))
             return null();
         if (tt != TOK_NAME || tokenStream.currentName() != context->names().from) {
-            zeport(ParseError, false, JSMSG_FROM_AFTER_EXPORT_STAR);
+            qeport(ParseError, JSMSG_FROM_AFTER_EXPORT_STAR);
             return null();
         }
 
@@ -5216,7 +5226,7 @@ Parser<FullParseHandler>::exportDeclaration()
         MOZ_FALLTHROUGH;
 
       default:
-        zeport(ParseError, false, JSMSG_DECLARATION_AFTER_EXPORT);
+        qeport(ParseError, JSMSG_DECLARATION_AFTER_EXPORT);
         return null();
     }
 
@@ -5292,7 +5302,7 @@ Parser<ParseHandler>::ifStatement(YieldHandling yieldHandling)
         if (!tokenStream.peekToken(&tt, TokenStream::Operand))
             return null();
         if (tt == TOK_SEMI) {
-            if (!zeport(ParseExtraWarning, false, JSMSG_EMPTY_CONSEQUENT))
+            if (!qeport(ParseExtraWarning, JSMSG_EMPTY_CONSEQUENT))
                 return null();
         }
 
@@ -5766,7 +5776,7 @@ Parser<ParseHandler>::switchStatement(YieldHandling yieldHandling)
         switch (tt) {
           case TOK_DEFAULT:
             if (seenDefault) {
-                zeport(ParseError, false, JSMSG_TOO_MANY_DEFAULTS);
+                qeport(ParseError, JSMSG_TOO_MANY_DEFAULTS);
                 return null();
             }
             seenDefault = true;
@@ -5780,7 +5790,7 @@ Parser<ParseHandler>::switchStatement(YieldHandling yieldHandling)
             break;
 
           default:
-            zeport(ParseError, false, JSMSG_BAD_SWITCH);
+            qeport(ParseError, JSMSG_BAD_SWITCH);
             return null();
         }
 
@@ -5863,7 +5873,7 @@ Parser<ParseHandler>::continueStatement(YieldHandling yieldHandling)
             stmt = ParseContext::Statement::findNearest(stmt, isLoop);
             if (!stmt) {
                 if (foundLoop)
-                    zeport(ParseError, false, JSMSG_LABEL_NOT_FOUND);
+                    qeport(ParseError, JSMSG_LABEL_NOT_FOUND);
                 else
                     reportWithOffset(ParseError, false, begin, JSMSG_BAD_CONTINUE);
                 return null();
@@ -5885,7 +5895,7 @@ Parser<ParseHandler>::continueStatement(YieldHandling yieldHandling)
                 break;
         }
     } else if (!pc->findInnermostStatement(isLoop)) {
-        zeport(ParseError, false, JSMSG_BAD_CONTINUE);
+        qeport(ParseError, JSMSG_BAD_CONTINUE);
         return null();
     }
 
@@ -5915,7 +5925,7 @@ Parser<ParseHandler>::breakStatement(YieldHandling yieldHandling)
         };
 
         if (!pc->findInnermostStatement<ParseContext::LabelStatement>(hasSameLabel)) {
-            zeport(ParseError, false, JSMSG_LABEL_NOT_FOUND);
+            qeport(ParseError, JSMSG_LABEL_NOT_FOUND);
             return null();
         }
     } else {
@@ -6074,7 +6084,7 @@ Parser<ParseHandler>::yieldExpression(InHandling inHandling)
             return null();
 
         if (!pc->isFunctionBox()) {
-            zeport(ParseError, false, JSMSG_BAD_RETURN_OR_YIELD, js_yield_str);
+            qeport(ParseError, JSMSG_BAD_RETURN_OR_YIELD, js_yield_str);
             return null();
         }
 
@@ -6155,14 +6165,13 @@ Parser<ParseHandler>::withStatement(YieldHandling yieldHandling)
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_WITH));
     uint32_t begin = pos().begin;
 
-    // In most cases, we want the constructs forbidden in strict mode code to be
-    // a subset of those that JSOPTION_EXTRA_WARNINGS warns about, and we should
-    // use reportStrictModeError.  However, 'with' is the sole instance of a
-    // construct that is forbidden in strict mode code, but doesn't even merit a
-    // warning under JSOPTION_EXTRA_WARNINGS.  See
+    // Usually we want the constructs forbidden in strict mode code to be a
+    // subset of those that ContextOptions::extraWarnings() warns about, and we
+    // use strictModeError directly.  But while 'with' is forbidden in strict
+    // mode code, it doesn't even merit a warning in non-strict code.  See
     // https://bugzilla.mozilla.org/show_bug.cgi?id=514576#c1.
     if (pc->sc()->strict()) {
-        if (!zeport(ParseStrictError, true, JSMSG_STRICT_CODE_WITH))
+        if (!strictModeError(JSMSG_STRICT_CODE_WITH))
             return null();
     }
 
@@ -6201,7 +6210,7 @@ Parser<ParseHandler>::labeledItem(YieldHandling yieldHandling)
         // GeneratorDeclaration is only matched by HoistableDeclaration in
         // StatementListItem, so generators can't be inside labels.
         if (next == TOK_MUL) {
-            zeport(ParseError, false, JSMSG_GENERATOR_LABEL);
+            qeport(ParseError, JSMSG_GENERATOR_LABEL);
             return null();
         }
 
@@ -6209,7 +6218,7 @@ Parser<ParseHandler>::labeledItem(YieldHandling yieldHandling)
         // is ever matched.  Per Annex B.3.2 that modifies this text, this
         // applies only to strict mode code.
         if (pc->sc()->strict()) {
-            zeport(ParseError, false, JSMSG_FUNCTION_LABEL);
+            qeport(ParseError, JSMSG_FUNCTION_LABEL);
             return null();
         }
 
@@ -6262,11 +6271,11 @@ Parser<ParseHandler>::throwStatement(YieldHandling yieldHandling)
     if (!tokenStream.peekTokenSameLine(&tt, TokenStream::Operand))
         return null();
     if (tt == TOK_EOF || tt == TOK_SEMI || tt == TOK_RC) {
-        zeport(ParseError, false, JSMSG_MISSING_EXPR_AFTER_THROW);
+        qeport(ParseError, JSMSG_MISSING_EXPR_AFTER_THROW);
         return null();
     }
     if (tt == TOK_EOL) {
-        zeport(ParseError, false, JSMSG_LINE_BREAK_AFTER_THROW);
+        qeport(ParseError, JSMSG_LINE_BREAK_AFTER_THROW);
         return null();
     }
 
@@ -6340,7 +6349,7 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
 
             /* Check for another catch after unconditional catch. */
             if (hasUnconditionalCatch) {
-                zeport(ParseError, false, JSMSG_CATCH_AFTER_GENERAL);
+                qeport(ParseError, JSMSG_CATCH_AFTER_GENERAL);
                 return null();
             }
 
@@ -6388,7 +6397,7 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
               }
 
               default:
-                zeport(ParseError, false, JSMSG_CATCH_IDENTIFIER);
+                qeport(ParseError, JSMSG_CATCH_IDENTIFIER);
                 return null();
             }
 
@@ -6456,7 +6465,7 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
         tokenStream.ungetToken();
     }
     if (!catchList && !finallyBlock) {
-        zeport(ParseError, false, JSMSG_CATCH_OR_FINALLY);
+        qeport(ParseError, JSMSG_CATCH_OR_FINALLY);
         return null();
     }
 
@@ -6601,7 +6610,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
             tokenStream.ungetToken();
         } else {
             // Class statements must have a bound name
-            zeport(ParseError, false, JSMSG_UNNAMED_CLASS_STMT);
+            qeport(ParseError, JSMSG_UNNAMED_CLASS_STMT);
             return null();
         }
     } else {
@@ -6662,8 +6671,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
                 return null();
             if (tt == TOK_RC) {
                 tokenStream.consumeKnownToken(tt, TokenStream::KeywordIsName);
-                zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN,
-                       "property name", TokenKindToDesc(tt));
+                qeport(ParseError, JSMSG_UNEXPECTED_TOKEN, "property name", TokenKindToDesc(tt));
                 return null();
             }
 
@@ -6694,7 +6702,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
             propType != PropertyType::AsyncMethod &&
             propType != PropertyType::Constructor && propType != PropertyType::DerivedConstructor)
         {
-            zeport(ParseError, false, JSMSG_BAD_METHOD_DEF);
+            qeport(ParseError, JSMSG_BAD_METHOD_DEF);
             return null();
         }
 
@@ -6941,7 +6949,7 @@ Parser<ParseHandler>::statement(YieldHandling yieldHandling)
             }
 
             if (forbiddenLetDeclaration) {
-                zeport(ParseError, false, JSMSG_FORBIDDEN_AS_STATEMENT, "lexical declarations");
+                qeport(ParseError, JSMSG_FORBIDDEN_AS_STATEMENT, "lexical declarations");
                 return null();
             }
         }
@@ -6995,7 +7003,7 @@ Parser<ParseHandler>::statement(YieldHandling yieldHandling)
         // detected this way, so don't bother passing around an extra parameter
         // everywhere.
         if (!pc->isFunctionBox()) {
-            zeport(ParseError, false, JSMSG_BAD_RETURN_OR_YIELD, js_return_str);
+            qeport(ParseError, JSMSG_BAD_RETURN_OR_YIELD, js_return_str);
             return null();
         }
         return returnStatement(yieldHandling);
@@ -7023,12 +7031,12 @@ Parser<ParseHandler>::statement(YieldHandling yieldHandling)
       // statement of |if| or |else|, but Parser::consequentOrAlternative
       // handles that).
       case TOK_FUNCTION:
-        zeport(ParseError, false, JSMSG_FORBIDDEN_AS_STATEMENT, "function declarations");
+        qeport(ParseError, JSMSG_FORBIDDEN_AS_STATEMENT, "function declarations");
         return null();
 
       // |class| is also forbidden by lookahead restriction.
       case TOK_CLASS:
-        zeport(ParseError, false, JSMSG_FORBIDDEN_AS_STATEMENT, "classes");
+        qeport(ParseError, JSMSG_FORBIDDEN_AS_STATEMENT, "classes");
         return null();
 
       // ImportDeclaration (only inside modules)
@@ -7042,11 +7050,11 @@ Parser<ParseHandler>::statement(YieldHandling yieldHandling)
       // Miscellaneous error cases arguably better caught here than elsewhere.
 
       case TOK_CATCH:
-        zeport(ParseError, false, JSMSG_CATCH_WITHOUT_TRY);
+        qeport(ParseError, JSMSG_CATCH_WITHOUT_TRY);
         return null();
 
       case TOK_FINALLY:
-        zeport(ParseError, false, JSMSG_FINALLY_WITHOUT_TRY);
+        qeport(ParseError, JSMSG_FINALLY_WITHOUT_TRY);
         return null();
 
       // NOTE: default case handled in the ExpressionStatement section.
@@ -7087,7 +7095,7 @@ Parser<ParseHandler>::statementListItem(YieldHandling yieldHandling,
         if (!canHaveDirectives && tokenStream.currentToken().atom() == context->names().useAsm) {
             if (!abortIfSyntaxParser())
                 return null();
-            if (!zeport(ParseWarning, false, JSMSG_USE_ASM_DIRECTIVE_FAIL))
+            if (!qeport(ParseWarning, JSMSG_USE_ASM_DIRECTIVE_FAIL))
                 return null();
         }
         return expressionStatement(yieldHandling);
@@ -7181,7 +7189,7 @@ Parser<ParseHandler>::statementListItem(YieldHandling yieldHandling,
         // detected this way, so don't bother passing around an extra parameter
         // everywhere.
         if (!pc->isFunctionBox()) {
-            zeport(ParseError, false, JSMSG_BAD_RETURN_OR_YIELD, js_return_str);
+            qeport(ParseError, JSMSG_BAD_RETURN_OR_YIELD, js_return_str);
             return null();
         }
         return returnStatement(yieldHandling);
@@ -7233,11 +7241,11 @@ Parser<ParseHandler>::statementListItem(YieldHandling yieldHandling,
       // Miscellaneous error cases arguably better caught here than elsewhere.
 
       case TOK_CATCH:
-        zeport(ParseError, false, JSMSG_CATCH_WITHOUT_TRY);
+        qeport(ParseError, JSMSG_CATCH_WITHOUT_TRY);
         return null();
 
       case TOK_FINALLY:
-        zeport(ParseError, false, JSMSG_FINALLY_WITHOUT_TRY);
+        qeport(ParseError, JSMSG_FINALLY_WITHOUT_TRY);
         return null();
 
       // NOTE: default case handled in the ExpressionStatement section.
@@ -7282,7 +7290,7 @@ Parser<ParseHandler>::expr(InHandling inHandling, YieldHandling yieldHandling,
                 if (!tokenStream.peekToken(&tt))
                     return null();
                 if (tt != TOK_ARROW) {
-                    zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN,
+                    qeport(ParseError, JSMSG_UNEXPECTED_TOKEN,
                            "expression", TokenKindToDesc(TOK_RP));
                     return null();
                 }
@@ -7440,7 +7448,7 @@ Parser<ParseHandler>::orExpr1(InHandling inHandling, YieldHandling yieldHandling
                 return null();
             // Report an error for unary expressions on the LHS of **.
             if (tok == TOK_POW && handler.isUnparenthesizedUnaryExpression(pn)) {
-                zeport(ParseError, false, JSMSG_BAD_POW_LEFTSIDE);
+                qeport(ParseError, JSMSG_BAD_POW_LEFTSIDE);
                 return null();
             }
             pnk = BinaryOpTokenKindToParseNodeKind(tok);
@@ -7521,7 +7529,7 @@ Parser<ParseHandler>::checkAndMarkAsAssignmentLhs(Node target, AssignmentFlavor 
 
     if (handler.isUnparenthesizedDestructuringPattern(target)) {
         if (flavor == CompoundAssignment) {
-            zeport(ParseError, false, JSMSG_BAD_DESTRUCT_ASS);
+            qeport(ParseError, JSMSG_BAD_DESTRUCT_ASS);
             return false;
         }
 
@@ -7660,7 +7668,7 @@ Parser<ParseHandler>::assignExpr(InHandling inHandling, YieldHandling yieldHandl
         if (!tokenStream.getToken(&tt))
             return null();
         if (tt != TOK_ARROW) {
-            zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN,
+            qeport(ParseError, JSMSG_UNEXPECTED_TOKEN,
                    "'=>' after argument list", TokenKindToDesc(tt));
 
             return null();
@@ -7699,7 +7707,7 @@ Parser<ParseHandler>::assignExpr(InHandling inHandling, YieldHandling yieldHandl
         MOZ_ASSERT(next == TOK_ARROW || next == TOK_EOL);
 
         if (next != TOK_ARROW) {
-            zeport(ParseError, false, JSMSG_LINE_BREAK_BEFORE_ARROW);
+            qeport(ParseError, JSMSG_LINE_BREAK_BEFORE_ARROW);
             return null();
         }
         tokenStream.consumeKnownToken(TOK_ARROW);
@@ -8019,7 +8027,7 @@ Parser<ParseHandler>::unaryExpr(YieldHandling yieldHandling, TripledotHandling t
         if (!pc->isAsync()) {
             // TOK_AWAIT can be returned in module, even if it's not inside
             // async function.
-            zeport(ParseError, false, JSMSG_RESERVED_ID, "await");
+            qeport(ParseError, JSMSG_RESERVED_ID, "await");
             return null();
         }
 
@@ -8172,7 +8180,7 @@ Parser<ParseHandler>::comprehensionFor(GeneratorKind comprehensionKind)
     MUST_MATCH_TOKEN(TOK_NAME, JSMSG_NO_VARIABLE_NAME);
     RootedPropertyName name(context, tokenStream.currentName());
     if (name == context->names().let) {
-        zeport(ParseError, false, JSMSG_LET_COMP_BINDING);
+        qeport(ParseError, JSMSG_LET_COMP_BINDING);
         return null();
     }
     TokenPos namePos = pos();
@@ -8183,7 +8191,7 @@ Parser<ParseHandler>::comprehensionFor(GeneratorKind comprehensionKind)
     if (!tokenStream.matchContextualKeyword(&matched, context->names().of))
         return null();
     if (!matched) {
-        zeport(ParseError, false, JSMSG_OF_AFTER_FOR_NAME);
+        qeport(ParseError, JSMSG_OF_AFTER_FOR_NAME);
         return null();
     }
 
@@ -8244,7 +8252,7 @@ Parser<ParseHandler>::comprehensionIf(GeneratorKind comprehensionKind)
 
     /* Check for (a = b) and warn about possible (a == b) mistype. */
     if (handler.isUnparenthesizedAssignment(cond)) {
-        if (!zeport(ParseExtraWarning, false, JSMSG_EQUAL_AS_ASSIGN))
+        if (!qeport(ParseExtraWarning, JSMSG_EQUAL_AS_ASSIGN))
             return null();
     }
 
@@ -8521,14 +8529,14 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
             if (tt == TOK_NAME) {
                 PropertyName* field = tokenStream.currentName();
                 if (handler.isSuperBase(lhs) && !checkAndMarkSuperScope()) {
-                    zeport(ParseError, false, JSMSG_BAD_SUPERPROP, "property");
+                    qeport(ParseError, JSMSG_BAD_SUPERPROP, "property");
                     return null();
                 }
                 nextMember = handler.newPropertyAccess(lhs, field, pos().end);
                 if (!nextMember)
                     return null();
             } else {
-                zeport(ParseError, false, JSMSG_NAME_AFTER_DOT);
+                qeport(ParseError, JSMSG_NAME_AFTER_DOT);
                 return null();
             }
         } else if (tt == TOK_LB) {
@@ -8539,7 +8547,7 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
             MUST_MATCH_TOKEN(TOK_RB, JSMSG_BRACKET_IN_INDEX);
 
             if (handler.isSuperBase(lhs) && !checkAndMarkSuperScope()) {
-                zeport(ParseError, false, JSMSG_BAD_SUPERPROP, "member");
+                qeport(ParseError, JSMSG_BAD_SUPERPROP, "member");
                 return null();
             }
             nextMember = handler.newPropertyByValue(lhs, propExpr, pos().end);
@@ -8551,12 +8559,12 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
         {
             if (handler.isSuperBase(lhs)) {
                 if (!pc->sc()->allowSuperCall()) {
-                    zeport(ParseError, false, JSMSG_BAD_SUPERCALL);
+                    qeport(ParseError, JSMSG_BAD_SUPERCALL);
                     return null();
                 }
 
                 if (tt != TOK_LP) {
-                    zeport(ParseError, false, JSMSG_BAD_SUPER);
+                    qeport(ParseError, JSMSG_BAD_SUPER);
                     return null();
                 }
 
@@ -8583,7 +8591,7 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
                     return null();
             } else {
                 if (options().selfHostingMode && handler.isPropertyAccess(lhs)) {
-                    zeport(ParseError, false, JSMSG_SELFHOSTED_METHOD_CALL);
+                    qeport(ParseError, JSMSG_SELFHOSTED_METHOD_CALL);
                     return null();
                 }
 
@@ -8665,7 +8673,7 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
     }
 
     if (handler.isSuperBase(lhs)) {
-        zeport(ParseError, false, JSMSG_BAD_SUPER);
+        qeport(ParseError, JSMSG_BAD_SUPER);
         return null();
     }
 
@@ -8718,7 +8726,7 @@ Parser<ParseHandler>::labelOrIdentifierReference(YieldHandling yieldHandling,
                                   ? "static"
                                   : nullptr;
             if (badName) {
-                zeport(ParseError, false, JSMSG_RESERVED_ID, badName);
+                qeport(ParseError, JSMSG_RESERVED_ID, badName);
                 return nullptr;
             }
         }
@@ -8727,7 +8735,7 @@ Parser<ParseHandler>::labelOrIdentifierReference(YieldHandling yieldHandling,
             pc->sc()->strict() ||
             versionNumber() >= JSVERSION_1_7)
         {
-            zeport(ParseError, false, JSMSG_RESERVED_ID, "yield");
+            qeport(ParseError, JSMSG_RESERVED_ID, "yield");
             return nullptr;
         }
     }
@@ -8763,7 +8771,7 @@ Parser<ParseHandler>::bindingIdentifier(YieldHandling yieldHandling)
                                   ? "eval"
                                   : nullptr;
             if (badName) {
-                zeport(ParseError, false, JSMSG_BAD_STRICT_ASSIGN, badName);
+                qeport(ParseError, JSMSG_BAD_STRICT_ASSIGN, badName);
                 return nullptr;
             }
 
@@ -8773,7 +8781,7 @@ Parser<ParseHandler>::bindingIdentifier(YieldHandling yieldHandling)
                       ? "static"
                       : nullptr;
             if (badName) {
-                zeport(ParseError, false, JSMSG_RESERVED_ID, badName);
+                qeport(ParseError, JSMSG_RESERVED_ID, badName);
                 return nullptr;
             }
         }
@@ -8782,7 +8790,7 @@ Parser<ParseHandler>::bindingIdentifier(YieldHandling yieldHandling)
             pc->sc()->strict() ||
             versionNumber() >= JSVERSION_1_7)
         {
-            zeport(ParseError, false, JSMSG_RESERVED_ID, "yield");
+            qeport(ParseError, JSMSG_RESERVED_ID, "yield");
             return nullptr;
         }
     }
@@ -8881,7 +8889,7 @@ Parser<ParseHandler>::arrayInitializer(YieldHandling yieldHandling, PossibleErro
         TokenStream::Modifier modifier = TokenStream::Operand;
         for (; ; index++) {
             if (index >= NativeObject::MAX_DENSE_ELEMENTS_COUNT) {
-                zeport(ParseError, false, JSMSG_ARRAY_INIT_TOO_BIG);
+                qeport(ParseError, JSMSG_ARRAY_INIT_TOO_BIG);
                 return null();
             }
 
@@ -8991,7 +8999,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
     }
 
     if (isAsync && isGenerator) {
-        zeport(ParseError, false, JSMSG_ASYNC_GENERATOR);
+        qeport(ParseError, JSMSG_ASYNC_GENERATOR);
         return null();
     }
 
@@ -9104,7 +9112,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
       }
 
       default:
-        zeport(ParseError, false, JSMSG_BAD_PROP_ID);
+        qeport(ParseError, JSMSG_BAD_PROP_ID);
         return null();
     }
 
@@ -9114,7 +9122,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
 
     if (tt == TOK_COLON) {
         if (isGenerator) {
-            zeport(ParseError, false, JSMSG_BAD_PROP_ID);
+            qeport(ParseError, JSMSG_BAD_PROP_ID);
             return null();
         }
         *propType = PropertyType::Normal;
@@ -9123,7 +9131,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
 
     if (ltok == TOK_NAME && (tt == TOK_COMMA || tt == TOK_RC || tt == TOK_ASSIGN)) {
         if (isGenerator) {
-            zeport(ParseError, false, JSMSG_BAD_PROP_ID);
+            qeport(ParseError, JSMSG_BAD_PROP_ID);
             return null();
         }
         tokenStream.ungetToken();
@@ -9144,7 +9152,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
         return propName;
     }
 
-    zeport(ParseError, false, JSMSG_COLON_AFTER_ID);
+    qeport(ParseError, JSMSG_COLON_AFTER_ID);
     return null();
 }
 
@@ -9255,7 +9263,7 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
                 return null();
 
             if (propToken != TOK_NAME && propToken != TOK_YIELD) {
-                zeport(ParseError, false, JSMSG_RESERVED_ID, TokenKindToDesc(propToken));
+                qeport(ParseError, JSMSG_RESERVED_ID, TokenKindToDesc(propToken));
                 return null();
             }
 
@@ -9280,7 +9288,7 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
                 return null();
 
             if (propToken != TOK_NAME && propToken != TOK_YIELD) {
-                zeport(ParseError, false, JSMSG_RESERVED_ID, TokenKindToDesc(propToken));
+                qeport(ParseError, JSMSG_RESERVED_ID, TokenKindToDesc(propToken));
                 return null();
             }
 
@@ -9304,7 +9312,7 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
                     // Destructuring defaults are definitely not allowed in this object literal,
                     // because of something the caller knows about the preceding code.
                     // For example, maybe the preceding token is an operator: `x + {y=z}`.
-                    zeport(ParseError, false, JSMSG_COLON_AFTER_ID);
+                    qeport(ParseError, JSMSG_COLON_AFTER_ID);
                     return null();
                 }
 
@@ -9363,7 +9371,7 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
         if (tt == TOK_RC)
             break;
         if (tt != TOK_COMMA) {
-            zeport(ParseError, false, JSMSG_CURLY_AFTER_LIST);
+            qeport(ParseError, JSMSG_CURLY_AFTER_LIST);
             return null();
         }
     }
@@ -9412,7 +9420,7 @@ Parser<ParseHandler>::tryNewTarget(Node &newTarget)
     if (!tokenStream.getToken(&next))
         return false;
     if (next != TOK_NAME || tokenStream.currentName() != context->names().target) {
-        zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN, "target", TokenKindToDesc(next));
+        qeport(ParseError, JSMSG_UNEXPECTED_TOKEN, "target", TokenKindToDesc(next));
         return false;
     }
 
@@ -9467,7 +9475,7 @@ Parser<ParseHandler>::primaryExpr(YieldHandling yieldHandling, TripledotHandling
             if (!tokenStream.peekToken(&next))
                 return null();
             if (next != TOK_ARROW) {
-                zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN,
+                qeport(ParseError, JSMSG_UNEXPECTED_TOKEN,
                        "expression", TokenKindToDesc(TOK_RP));
                 return null();
             }
@@ -9555,7 +9563,7 @@ Parser<ParseHandler>::primaryExpr(YieldHandling yieldHandling, TripledotHandling
         // name, closing parenthesis, and arrow, and allow it only if all are
         // present.
         if (tripledotHandling != TripledotAllowed) {
-            zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN, "expression", TokenKindToDesc(tt));
+            qeport(ParseError, JSMSG_UNEXPECTED_TOKEN, "expression", TokenKindToDesc(tt));
             return null();
         }
 
@@ -9577,8 +9585,8 @@ Parser<ParseHandler>::primaryExpr(YieldHandling yieldHandling, TripledotHandling
             // or "arguments" should be prohibited.  Argument-parsing code
             // handles that.
             if (next != TOK_NAME && next != TOK_YIELD) {
-                zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN,
-                    "rest argument name", TokenKindToDesc(next));
+                qeport(ParseError, JSMSG_UNEXPECTED_TOKEN,
+                       "rest argument name", TokenKindToDesc(next));
                 return null();
             }
         }
@@ -9586,7 +9594,7 @@ Parser<ParseHandler>::primaryExpr(YieldHandling yieldHandling, TripledotHandling
         if (!tokenStream.getToken(&next))
             return null();
         if (next != TOK_RP) {
-            zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN,
+            qeport(ParseError, JSMSG_UNEXPECTED_TOKEN,
                    "closing parenthesis", TokenKindToDesc(next));
             return null();
         }
@@ -9596,7 +9604,7 @@ Parser<ParseHandler>::primaryExpr(YieldHandling yieldHandling, TripledotHandling
         if (next != TOK_ARROW) {
             // Advance the scanner for proper error location reporting.
             tokenStream.consumeKnownToken(next);
-            zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN,
+            qeport(ParseError, JSMSG_UNEXPECTED_TOKEN,
                    "'=>' after argument list", TokenKindToDesc(next));
             return null();
         }
@@ -9608,7 +9616,7 @@ Parser<ParseHandler>::primaryExpr(YieldHandling yieldHandling, TripledotHandling
       }
 
       default:
-        zeport(ParseError, false, JSMSG_UNEXPECTED_TOKEN, "expression", TokenKindToDesc(tt));
+        qeport(ParseError, JSMSG_UNEXPECTED_TOKEN, "expression", TokenKindToDesc(tt));
         return null();
     }
 }
@@ -9633,7 +9641,7 @@ Parser<ParseHandler>::warnOnceAboutExprClosure()
         return true;
 
     if (!cx->compartment()->warnedAboutExprClosure) {
-        if (!zeport(ParseWarning, false, JSMSG_DEPRECATED_EXPR_CLOSURE))
+        if (!qeport(ParseWarning, JSMSG_DEPRECATED_EXPR_CLOSURE))
             return false;
         cx->compartment()->warnedAboutExprClosure = true;
     }
@@ -9651,7 +9659,7 @@ Parser<ParseHandler>::warnOnceAboutForEach()
 
     if (!cx->compartment()->warnedAboutForEach) {
         // Disabled warning spew.
-        // if (!zeport(ParseWarning, false, JSMSG_DEPRECATED_FOR_EACH))
+        // if (!qeport(ParseWarning, JSMSG_DEPRECATED_FOR_EACH))
         //    return false;
         cx->compartment()->warnedAboutForEach = true;
     }
