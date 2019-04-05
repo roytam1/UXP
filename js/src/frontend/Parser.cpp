@@ -4458,6 +4458,10 @@ Parser<ParseHandler>::initializerInNameDeclaration(Node decl, Node binding,
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_ASSIGN));
 
+    uint32_t initializerOffset;
+    if (!tokenStream.peekOffset(&initializerOffset, TokenStream::Operand))
+        return false;
+
     Node initializer = assignExpr(forHeadKind ? InProhibited : InAllowed,
                                   yieldHandling, TripledotProhibited);
     if (!initializer)
@@ -4491,11 +4495,8 @@ Parser<ParseHandler>::initializerInNameDeclaration(Node decl, Node binding,
                 // This leaves only initialized for-in |var| declarations.  ES6
                 // forbids these; later ES un-forbids in non-strict mode code.
                 *forHeadKind = PNK_FORIN;
-                if (!reportWithNode(ParseStrictError, pc->sc()->strict(), initializer,
-                                    JSMSG_INVALID_FOR_IN_DECL_WITH_INIT))
-                {
+                if (!strictModeErrorAt(initializerOffset, JSMSG_INVALID_FOR_IN_DECL_WITH_INIT))
                     return false;
-                }
 
                 *forInOrOfExpression = expressionAfterForInOrOf(PNK_FORIN, yieldHandling);
                 if (!*forInOrOfExpression)
