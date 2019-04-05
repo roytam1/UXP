@@ -907,11 +907,13 @@ class Parser final : private JS::AutoGCRooter, public StrictModeGetter
     bool reportHelper(ParseReportKind kind, bool strict, uint32_t offset,
                       unsigned errorNumber, va_list args);
   public:
-    bool qeport(ParseReportKind kind, unsigned errorNumber, ...);
     bool reportWithNode(ParseReportKind kind, bool strict, Node pn, unsigned errorNumber, ...);
     bool reportNoOffset(ParseReportKind kind, bool strict, unsigned errorNumber, ...);
     bool reportWithOffset(ParseReportKind kind, bool strict, uint32_t offset, unsigned errorNumber,
                           ...);
+
+    /* Report the given error at the current offset. */
+    void error(unsigned errorNumber, ...);
 
     /*
      * Handle a strict mode error at the current offset.  Report an error if in
@@ -919,6 +921,15 @@ class Parser final : private JS::AutoGCRooter, public StrictModeGetter
      * arguments.
      */
     MOZ_MUST_USE bool strictModeError(unsigned errorNumber, ...);
+
+    /* Report the given warning at the current offset. */
+    MOZ_MUST_USE bool warning(unsigned errorNumber, ...);
+
+    /*
+     * If extra warnings are enabled, report the given warning at the current
+     * offset.
+     */
+    MOZ_MUST_USE bool extraWarning(unsigned errorNumber, ...);
 
     Parser(ExclusiveContext* cx, LifoAlloc& alloc, const ReadOnlyCompileOptions& options,
            const char16_t* chars, size_t length, bool foldConstants, UsedNameTracker& usedNames,
