@@ -577,6 +577,7 @@ class MOZ_STACK_CLASS TokenStream
         *offset = pos.begin;
         return true;
     }
+
     // This is like peekToken(), with one exception:  if there is an EOL
     // between the end of the current token and the start of the next token, it
     // return true and store TOK_EOL in |*ttp|.  In that case, no token with
