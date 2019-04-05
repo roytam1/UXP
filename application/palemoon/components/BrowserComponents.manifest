@@ -10,7 +10,6 @@ contract @mozilla.org/network/protocol/about;1?what=palemoon {8cc51368-6aa0-43e8
 contract @mozilla.org/network/protocol/about;1?what=permissions {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
 contract @mozilla.org/network/protocol/about;1?what=privatebrowsing {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
 contract @mozilla.org/network/protocol/about;1?what=rights {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
-contract @mozilla.org/network/protocol/about;1?what=robots {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
 contract @mozilla.org/network/protocol/about;1?what=sessionrestore {8cc51368-6aa0-43e8-b762-bde9b9fd828c}
 #ifdef MOZ_SERVICES_SYNC
 contract @mozilla.org/network/protocol/about;1?what=sync-progress {8cc51368-6aa0-43e8-b762-bde9b9fd828c}

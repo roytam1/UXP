@@ -316,7 +316,7 @@ var ProcessHangMonitor = {
 
     nb.appendNotification(bundle.getString("processHang.label"),
                           "process-hang",
-                          "chrome://browser/content/aboutRobots-icon.png",
+                          "chrome://browser/skin/slowStartup-16.png",
                           nb.PRIORITY_WARNING_HIGH, buttons);
   },
 
