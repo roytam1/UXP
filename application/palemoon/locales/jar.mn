@@ -9,7 +9,6 @@
   locale/browser/aboutCertError.dtd                             (%chrome/browser/aboutCertError.dtd)
   locale/browser/aboutDialog.dtd                                (%chrome/browser/aboutDialog.dtd)
   locale/browser/aboutPrivateBrowsing.dtd                       (%chrome/browser/aboutPrivateBrowsing.dtd)
-  locale/browser/aboutRobots.dtd                                (%chrome/browser/aboutRobots.dtd)
 * locale/browser/aboutHome.dtd                                  (%chrome/browser/aboutHome.dtd)
   locale/browser/aboutSessionRestore.dtd                        (%chrome/browser/aboutSessionRestore.dtd)
 #ifdef MOZ_SERVICES_SYNC
