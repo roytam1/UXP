@@ -701,18 +701,6 @@ Parser<ParseHandler>::reportNoOffset(ParseReportKind kind, bool strict, unsigned
     return result;
 }
 
-template <typename ParseHandler>
-bool
-Parser<ParseHandler>::reportWithOffset(ParseReportKind kind, bool strict, uint32_t offset,
-                                       unsigned errorNumber, ...)
-{
-    va_list args;
-    va_start(args, errorNumber);
-    bool result = reportHelper(kind, strict, offset, errorNumber, args);
-    va_end(args);
-    return result;
-}
-
 template <>
 bool
 Parser<FullParseHandler>::abortIfSyntaxParser()
