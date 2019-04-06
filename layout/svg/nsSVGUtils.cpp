@@ -685,7 +685,7 @@ nsSVGUtils::PaintFrameWithEffects(nsIFrame *aFrame,
   bool isOK = effectProperties.HasNoFilterOrHasValidFilter();
   nsSVGClipPathFrame *clipPathFrame = effectProperties.GetClipPathFrame(&isOK);
   nsSVGMaskFrame *maskFrame = effectProperties.GetFirstMaskFrame(&isOK);
-  if (!isOK || !maskFrame) {
+  if (!isOK) {
     // Some resource is invalid. We shouldn't paint anything.
     return DrawResult::SUCCESS;
   }
