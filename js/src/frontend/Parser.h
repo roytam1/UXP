@@ -1259,11 +1259,10 @@ class Parser final : private JS::AutoGCRooter, public StrictModeGetter
     bool functionArguments(YieldHandling yieldHandling, FunctionSyntaxKind kind,
                            Node funcpn);
 
-    Node functionDefinition(uint32_t preludeStart,
+    Node functionDefinition(uint32_t preludeStart, Node pn,
                             InHandling inHandling, YieldHandling yieldHandling, HandleAtom name,
                             FunctionSyntaxKind kind,
-                            GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
-                            InvokedPrediction invoked = PredictUninvoked);
+                            GeneratorKind generatorKind, FunctionAsyncKind asyncKind);
 
     // Parse a function body.  Pass StatementListBody if the body is a list of
     // statements; pass ExpressionBody if the body is a single expression.
