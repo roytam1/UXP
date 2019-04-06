@@ -2352,7 +2352,7 @@ Parser<FullParseHandler>::standaloneFunction(HandleFunction fun,
         tokenStream.ungetToken();
     }
 
-    Node fn = handler.newFunctionDefinition();
+    Node fn = handler.newFunctionStatement();
     if (!fn)
         return null();
 
@@ -3010,60 +3010,54 @@ Parser<ParseHandler>::functionArguments(YieldHandling yieldHandling, FunctionSyn
 
 template <typename ParseHandler>
 bool
-Parser<ParseHandler>::checkFunctionDefinition(HandleAtom funAtom, Node pn, FunctionSyntaxKind kind,
+Parser<ParseHandler>::checkFunctionDefinition(HandlePropertyName funName, Node pn,
                                               GeneratorKind generatorKind, bool* tryAnnexB)
 {
-    if (kind == Statement) {
-        TokenPos pos = handler.getPosition(pn);
-        RootedPropertyName funName(context, funAtom->asPropertyName());
+    TokenPos pos = handler.getPosition(pn);
 
-        // In sloppy mode, Annex B.3.2 allows labelled function
-        // declarations. Otherwise it is a parse error.
-        ParseContext::Statement* declaredInStmt = pc->innermostStatement();
-        if (declaredInStmt && declaredInStmt->kind() == StatementKind::Label) {
-            MOZ_ASSERT(!pc->sc()->strict(),
-                       "labeled functions shouldn't be parsed in strict mode");
+    // In sloppy mode, Annex B.3.2 allows labelled function
+    // declarations. Otherwise it is a parse error.
+    ParseContext::Statement* declaredInStmt = pc->innermostStatement();
+    if (declaredInStmt && declaredInStmt->kind() == StatementKind::Label) {
+        MOZ_ASSERT(!pc->sc()->strict(),
+                   "labeled functions shouldn't be parsed in strict mode");
 
-            // Find the innermost non-label statement.  Report an error if it's
-            // unbraced: functions can't appear in it.  Otherwise the statement
-            // (or its absence) determines the scope the function's bound in.
-            while (declaredInStmt && declaredInStmt->kind() == StatementKind::Label)
-                declaredInStmt = declaredInStmt->enclosing();
+        // Find the innermost non-label statement. Report an error if it's
+        // unbraced: functions can't appear in it. Otherwise the statement
+        // (or its absence) determines the scope the function's bound in.
+        while (declaredInStmt && declaredInStmt->kind() == StatementKind::Label)
+            declaredInStmt = declaredInStmt->enclosing();
 
-            if (declaredInStmt && !StatementKindIsBraced(declaredInStmt->kind())) {
-                reportWithOffset(ParseError, false, pos.begin, JSMSG_SLOPPY_FUNCTION_LABEL);
+        if (declaredInStmt && !StatementKindIsBraced(declaredInStmt->kind())) {
+            reportWithOffset(ParseError, false, pos.begin, JSMSG_SLOPPY_FUNCTION_LABEL);
+            return false;
+        }
+    }
+
+    if (declaredInStmt) {
+        MOZ_ASSERT(declaredInStmt->kind() != StatementKind::Label);
+        MOZ_ASSERT(StatementKindIsBraced(declaredInStmt->kind()));
+
+        if (!pc->sc()->strict() && generatorKind == NotGenerator) {
+            // In sloppy mode, try Annex B.3.3 semantics. If making an
+            // additional 'var' binding of the same name does not throw an
+            // early error, do so. This 'var' binding would be assigned
+            // the function object when its declaration is reached, not at
+            // the start of the block.
+
+            if (!tryDeclareVarForAnnexBLexicalFunction(funName, tryAnnexB))
                 return false;
-            }
         }
 
-        if (declaredInStmt) {
-            MOZ_ASSERT(declaredInStmt->kind() != StatementKind::Label);
-            MOZ_ASSERT(StatementKindIsBraced(declaredInStmt->kind()));
-
-            if (!pc->sc()->strict() && generatorKind == NotGenerator) {
-                // Under sloppy mode, try Annex B.3.3 semantics. If making an
-                // additional 'var' binding of the same name does not throw an
-                // early error, do so. This 'var' binding would be assigned
-                // the function object when its declaration is reached, not at
-                // the start of the block.
-
-                if (!tryDeclareVarForAnnexBLexicalFunction(funName, tryAnnexB))
-                    return false;
-            }
-
-            if (!noteDeclaredName(funName, DeclarationKind::LexicalFunction, pos))
-                return false;
-        } else {
-            if (!noteDeclaredName(funName, DeclarationKind::BodyLevelFunction, pos))
-                return false;
-
-            // Body-level functions in modules are always closed over.
-            if (pc->atModuleLevel())
-                pc->varScope().lookupDeclaredName(funName)->value()->setClosedOver();
-        }
+        if (!noteDeclaredName(funName, DeclarationKind::LexicalFunction, pos))
+            return false;
     } else {
-        // A function expression does not introduce any binding.
-        handler.setOp(pn, kind == Arrow ? JSOP_LAMBDA_ARROW : JSOP_LAMBDA);
+        if (!noteDeclaredName(funName, DeclarationKind::BodyLevelFunction, pos))
+            return false;
+
+        // Body-level functions in modules are always closed over.
+        if (pc->atModuleLevel())
+            pc->varScope().lookupDeclaredName(funName)->value()->setClosedOver();
     }
 
     return true;
@@ -3191,15 +3185,11 @@ typename ParseHandler::Node
 Parser<ParseHandler>::functionDefinition(uint32_t preludeStart, Node pn, InHandling inHandling,
                                          YieldHandling yieldHandling,
                                          HandleAtom funName, FunctionSyntaxKind kind,
-                                         GeneratorKind generatorKind, FunctionAsyncKind asyncKind)
+                                         GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
+                                         bool tryAnnexB /* = false */)
 {
     MOZ_ASSERT_IF(kind == Statement, funName);
     MOZ_ASSERT_IF(asyncKind == AsyncFunction, generatorKind == StarGenerator);
-
-    // Note the declared name and check for early errors.
-    bool tryAnnexB = false;
-    if (!checkFunctionDefinition(funName, pn, kind, generatorKind, &tryAnnexB))
-        return null();
 
     // When fully parsing a LazyScript, we do not fully reparse its inner
     // functions, which are also lazy. Instead, their free variables and
@@ -3433,7 +3423,7 @@ Parser<FullParseHandler>::standaloneLazyFunction(HandleFunction fun, bool strict
 {
     MOZ_ASSERT(checkOptionsCalled);
 
-    Node pn = handler.newFunctionDefinition();
+    Node pn = handler.newFunctionStatement();
     if (!pn)
         return null();
 
@@ -3657,13 +3647,18 @@ Parser<ParseHandler>::functionStmt(uint32_t preludeStart, YieldHandling yieldHan
         return null();
     }
 
-    Node pn = handler.newFunctionDefinition();
+    Node pn = handler.newFunctionStatement();
     if (!pn)
+        return null();
+
+    // Note the declared name and check for early errors.
+    bool tryAnnexB = false;
+    if (!checkFunctionDefinition(name, pn, generatorKind, &tryAnnexB))
         return null();
 
     YieldHandling newYieldHandling = GetYieldHandling(generatorKind, asyncKind);
     Node fun = functionDefinition(preludeStart, pn, InAllowed, newYieldHandling,
-                                  name, Statement, generatorKind, asyncKind);
+                                  name, Statement, generatorKind, asyncKind, tryAnnexB);
     if (!fun)
         return null();
 
@@ -3712,7 +3707,7 @@ Parser<ParseHandler>::functionExpr(uint32_t preludeStart, InvokedPrediction invo
         tokenStream.ungetToken();
     }
 
-    Node pn = handler.newFunctionDefinition();
+    Node pn = handler.newFunctionExpression();
     if (!pn)
         return null();
 
@@ -6583,31 +6578,6 @@ JSOpFromPropertyType(PropertyType propType)
     }
 }
 
-static FunctionSyntaxKind
-FunctionSyntaxKindFromPropertyType(PropertyType propType)
-{
-    switch (propType) {
-      case PropertyType::Getter:
-        return Getter;
-      case PropertyType::GetterNoExpressionClosure:
-        return GetterNoExpressionClosure;
-      case PropertyType::Setter:
-        return Setter;
-      case PropertyType::SetterNoExpressionClosure:
-        return SetterNoExpressionClosure;
-      case PropertyType::Method:
-      case PropertyType::GeneratorMethod:
-      case PropertyType::AsyncMethod:
-        return Method;
-      case PropertyType::Constructor:
-        return ClassConstructor;
-      case PropertyType::DerivedConstructor:
-        return DerivedClassConstructor;
-      default:
-        MOZ_CRASH("unexpected property type");
-    }
-}
-
 static GeneratorKind
 GeneratorKindFromPropertyType(PropertyType propType)
 {
@@ -7786,7 +7756,7 @@ Parser<ParseHandler>::assignExpr(InHandling inHandling, YieldHandling yieldHandl
             }
         }
 
-        Node pn = handler.newFunctionDefinition();
+        Node pn = handler.newArrowFunction();
         if (!pn)
             return null();
 
@@ -8125,10 +8095,9 @@ template <typename ParseHandler>
 typename ParseHandler::Node
 Parser<ParseHandler>::generatorComprehensionLambda(unsigned begin)
 {
-    Node genfn = handler.newFunctionDefinition();
+    Node genfn = handler.newFunctionExpression();
     if (!genfn)
         return null();
-    handler.setOp(genfn, JSOP_LAMBDA);
 
     ParseContext* outerpc = pc;
 
@@ -9432,12 +9401,47 @@ typename ParseHandler::Node
 Parser<ParseHandler>::methodDefinition(uint32_t preludeStart, PropertyType propType,
                                        HandleAtom funName)
 {
-    FunctionSyntaxKind kind = FunctionSyntaxKindFromPropertyType(propType);
+    FunctionSyntaxKind kind;
+    switch (propType) {
+      case PropertyType::Getter:
+        kind = Getter;
+        break;
+
+      case PropertyType::GetterNoExpressionClosure:
+        kind = GetterNoExpressionClosure;
+        break;
+
+      case PropertyType::Setter:
+        kind = Setter;
+        break;
+
+      case PropertyType::SetterNoExpressionClosure:
+        kind = SetterNoExpressionClosure;
+        break;
+
+      case PropertyType::Method:
+      case PropertyType::GeneratorMethod:
+      case PropertyType::AsyncMethod:
+        kind = Method;
+        break;
+
+      case PropertyType::Constructor:
+        kind = ClassConstructor;
+        break;
+
+      case PropertyType::DerivedConstructor:
+        kind = DerivedClassConstructor;
+        break;
+
+      default:
+        MOZ_CRASH("Parser: methodDefinition: unexpected property type");
+    }
+
     GeneratorKind generatorKind = GeneratorKindFromPropertyType(propType);
     FunctionAsyncKind asyncKind = AsyncKindFromPropertyType(propType);
     YieldHandling yieldHandling = GetYieldHandling(generatorKind, asyncKind);
 
-    Node pn = handler.newFunctionDefinition();
+    Node pn = handler.newFunctionExpression();
     if (!pn)
         return null();
 
