@@ -734,9 +734,12 @@ nsSVGUtils::PaintFrameWithEffects(nsIFrame *aFrame,
     RefPtr<SourceSurface> maskSurface;
 
     if (maskUsage.shouldGenerateMaskLayer) {
-      maskSurface =
-        maskFrame->GetMaskForMaskedFrame(&aContext, aFrame, aTransform,
-                                         maskUsage.opacity, &maskTransform);
+      // Make sure we have a mask frame.
+      if (maskFrame) {
+        maskSurface = 
+          maskFrame->GetMaskForMaskedFrame(&aContext, aFrame, aTransform,
+                                           maskUsage.opacity, &maskTransform);
+      }
 
       if (!maskSurface) {
         // Entire surface is clipped out.
