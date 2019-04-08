@@ -19,12 +19,7 @@ function LOG(str) {
   let prefB = Cc["@mozilla.org/preferences-service;1"].
               getService(Ci.nsIPrefBranch);
 
-  let shouldLog = false;
-  try {
-    shouldLog = prefB.getBoolPref("feeds.log");
-  }
-  catch (ex) {
-  }
+  let shouldLog = prefB.getBoolPref("feeds.log", false);
 
   if (shouldLog)
     dump("*** Feeds: " + str + "\n");
