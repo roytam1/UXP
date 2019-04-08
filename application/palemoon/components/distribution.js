@@ -38,13 +38,7 @@ DistributionCustomizer.prototype = {
   },
 
   get _locale() {
-    let locale;
-    try {
-      locale = this._prefs.getCharPref("general.useragent.locale");
-    }
-    catch (e) {
-      locale = "en-US";
-    }
+    let locale = this._prefs.getCharPref("general.useragent.locale", "en-US");
     this.__defineGetter__("_locale", function() locale);
     return this._locale;
   },
@@ -221,11 +215,7 @@ DistributionCustomizer.prototype = {
         this._ini.getString("Global", "id") + ".bookmarksProcessed";
     }
 
-    let bmProcessed = false;
-    try {
-      bmProcessed = this._prefs.getBoolPref(bmProcessedPref);
-    }
-    catch (e) {}
+    let bmProcessed = this._prefs.getBoolPref(bmProcessedPref, false);
 
     if (!bmProcessed) {
       if (sections["BookmarksMenu"])

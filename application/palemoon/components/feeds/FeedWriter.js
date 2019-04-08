@@ -18,12 +18,7 @@ function LOG(str) {
   var prefB = Cc["@mozilla.org/preferences-service;1"].
               getService(Ci.nsIPrefBranch);
 
-  var shouldLog = false;
-  try {
-    shouldLog = prefB.getBoolPref("feeds.log");
-  } 
-  catch (ex) {
-  }
+  var shouldLog = prefB.getBoolPref("feeds.log", false);
 
   if (shouldLog)
     dump("*** Feeds: " + str + "\n");
@@ -874,11 +869,7 @@ FeedWriter.prototype = {
         Cc["@mozilla.org/preferences-service;1"].
         getService(Ci.nsIPrefBranch);
 
-    var handler = "bookmarks";
-    try {
-      handler = prefs.getCharPref(getPrefReaderForType(feedType));
-    }
-    catch (ex) { }
+    var handler = prefs.getCharPref(getPrefReaderForType(feedType), "bookmarks");
 
     switch (handler) {
       case "web": {
@@ -1076,11 +1067,7 @@ FeedWriter.prototype = {
         .addEventListener("command", this, false);
 
     // first-run ui
-    var showFirstRunUI = true;
-    try {
-      showFirstRunUI = prefs.getBoolPref(PREF_SHOW_FIRST_RUN_UI);
-    }
-    catch (ex) { }
+    var showFirstRunUI = prefs.getBoolPref(PREF_SHOW_FIRST_RUN_UI, true);
     if (showFirstRunUI) {
       var textfeedinfo1, textfeedinfo2;
       switch (feedType) {
