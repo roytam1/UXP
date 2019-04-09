@@ -1131,12 +1131,7 @@ Toolbox.prototype = {
   setToolboxButtonsVisibility: function () {
     this.toolboxButtons.forEach(buttonSpec => {
       let { visibilityswitch, button, isTargetSupported } = buttonSpec;
-      let on = true;
-      try {
-        on = Services.prefs.getBoolPref(visibilityswitch);
-      } catch (ex) {
-        // Do nothing.
-      }
+      let on = Services.prefs.getBoolPref(visibilityswitch, true);
 
       on = on && isTargetSupported(this.target);
 
