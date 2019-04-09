@@ -277,29 +277,10 @@ this.OnRefTestLoad = function OnRefTestLoad(win)
 
     var prefs = Components.classes["@mozilla.org/preferences-service;1"].
                 getService(Components.interfaces.nsIPrefBranch);
-    try {
-        gBrowserIsRemote = prefs.getBoolPref("browser.tabs.remote.autostart");
-    } catch (e) {
-        gBrowserIsRemote = false;
-    }
-
-    try {
-        gB2GisMulet = prefs.getBoolPref("b2g.is_mulet");
-    } catch (e) {
-        gB2GisMulet = false;
-    }
-
-    try {
-      gBrowserIsIframe = prefs.getBoolPref("reftest.browser.iframe.enabled");
-    } catch (e) {
-      gBrowserIsIframe = false;
-    }
-
-    try {
-      gLogLevel = prefs.getCharPref("reftest.logLevel");
-    } catch (e) {
-      gLogLevel ='info';
-    }
+    gBrowserIsRemote = prefs.getBoolPref("browser.tabs.remote.autostart", false);
+    gB2GisMulet = prefs.getBoolPref("b2g.is_mulet", false);
+    gBrowserIsIframe = prefs.getBoolPref("reftest.browser.iframe.enabled", false);
+    gLogLevel = prefs.getCharPref("reftest.logLevel", "info");
 
     if (win === undefined || win == null) {
       win = window;
@@ -366,11 +347,7 @@ function InitAndStartRefTests()
     } catch (e) {}
 
     /* set the gLoadTimeout */
-    try {
-        gLoadTimeout = prefs.getIntPref("reftest.timeout");
-    } catch(e) {
-        gLoadTimeout = 5 * 60 * 1000; //5 minutes as per bug 479518
-    }
+    gLoadTimeout = prefs.getIntPref("reftest.timeout", 5 * 60 * 1000); //5 minutes as per bug 479518
 
     /* Get the logfile for android tests */
     try {
@@ -381,27 +358,12 @@ function InitAndStartRefTests()
         }
     } catch(e) {}
 
-    try {
-        gRemote = prefs.getBoolPref("reftest.remote");
-    } catch(e) {
-        gRemote = false;
-    }
-
-    try {
-        gIgnoreWindowSize = prefs.getBoolPref("reftest.ignoreWindowSize");
-    } catch(e) {
-        gIgnoreWindowSize = false;
-    }
+    gRemote = prefs.getBoolPref("reftest.remote", false);
+    gIgnoreWindowSize = prefs.getBoolPref("reftest.ignoreWindowSize", false);
 
     /* Support for running a chunk (subset) of tests.  In separate try as this is optional */
-    try {
-        gTotalChunks = prefs.getIntPref("reftest.totalChunks");
-        gThisChunk = prefs.getIntPref("reftest.thisChunk");
-    }
-    catch(e) {
-        gTotalChunks = 0;
-        gThisChunk = 0;
-    }
+    gTotalChunks = prefs.getIntPref("reftest.totalChunks", 0);
+    gThisChunk = prefs.getIntPref("reftest.thisChunk", 0);
 
     try {
         gFocusFilterMode = prefs.getCharPref("reftest.focusFilterMode");
@@ -468,39 +430,17 @@ function StartTests()
         logger.error("EXCEPTION: " + e);
     }
 
-    try {
-        gNoCanvasCache = prefs.getIntPref("reftest.nocache");
-    } catch(e) {
-        gNoCanvasCache = false;
-    }
-
-    try {
-      gShuffle = prefs.getBoolPref("reftest.shuffle");
-    } catch (e) {
-      gShuffle = false;
-    }
-
-    try {
-      gRunUntilFailure = prefs.getBoolPref("reftest.runUntilFailure");
-    } catch (e) {
-      gRunUntilFailure = false;
-    }
+    gNoCanvasCache = prefs.getIntPref("reftest.nocache", false);
+    gShuffle = prefs.getBoolPref("reftest.shuffle", false);
+    gRunUntilFailure = prefs.getBoolPref("reftest.runUntilFailure", false);
 
     // When we repeat this function is called again, so really only want to set
     // gRepeat once.
     if (gRepeat == null) {
-      try {
-        gRepeat = prefs.getIntPref("reftest.repeat");
-      } catch (e) {
-        gRepeat = 0;
-      }
+      gRepeat = prefs.getIntPref("reftest.repeat", 0);
     }
 
-    try {
-        gRunSlowTests = prefs.getIntPref("reftest.skipslowtests");
-    } catch(e) {
-        gRunSlowTests = false;
-    }
+    gRunSlowTests = prefs.getIntPref("reftest.skipslowtests", false);
 
     if (gShuffle) {
         gNoCanvasCache = true;
@@ -737,11 +677,7 @@ function BuildConditionSandbox(aURL) {
 
     var prefs = CC["@mozilla.org/preferences-service;1"].
                 getService(CI.nsIPrefBranch);
-    try {
-        sandbox.nativeThemePref = !prefs.getBoolPref("mozilla.widget.disable-native-theme");
-    } catch (e) {
-        sandbox.nativeThemePref = true;
-    }
+    sandbox.nativeThemePref = !prefs.getBoolPref("mozilla.widget.disable-native-theme", false);
 
     sandbox.prefs = CU.cloneInto({
         getBoolPref: function(p) { return prefs.getBoolPref(p); },
