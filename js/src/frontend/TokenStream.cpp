@@ -172,6 +172,12 @@ frontend::IsIdentifier(JSLinearString* str)
 }
 
 bool
+frontend::IsIdentifier(const char* chars, size_t length)
+{
+    return ::IsIdentifier(chars, length);
+}
+
+bool
 frontend::IsIdentifier(const char16_t* chars, size_t length)
 {
     return ::IsIdentifier(chars, length);
@@ -780,7 +786,7 @@ TokenStream::reportWarning(unsigned errorNumber, ...)
 }
 
 bool
-TokenStream::reportStrictWarningErrorNumberVA(uint32_t offset, unsigned errorNumber, va_list args)
+TokenStream::reportExtraWarningErrorNumberVA(uint32_t offset, unsigned errorNumber, va_list args)
 {
     if (!options().extraWarningsOption)
         return true;

@@ -342,7 +342,10 @@ class SyntaxParseHandler
 
     void checkAndSetIsDirectRHSAnonFunction(Node pn) {}
 
-    Node newFunctionDefinition() { return NodeFunctionDefinition; }
+    Node newFunctionStatement() { return NodeFunctionDefinition; }
+    Node newFunctionExpression() { return NodeFunctionDefinition; }
+    Node newArrowFunction() { return NodeFunctionDefinition; }
+
     bool setComprehensionLambdaBody(Node pn, Node body) { return true; }
     void setFunctionFormalParametersAndBody(Node pn, Node kid) {}
     void setFunctionBody(Node pn, Node kid) {}
@@ -519,7 +522,7 @@ class SyntaxParseHandler
     MOZ_MUST_USE Node setLikelyIIFE(Node pn) {
         return pn; // Remain in syntax-parse mode.
     }
-    void setPrologue(Node pn) {}
+    void setInDirectivePrologue(Node pn) {}
 
     bool isConstant(Node pn) { return false; }
 

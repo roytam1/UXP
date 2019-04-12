@@ -77,7 +77,7 @@ class MOZ_STACK_CLASS BytecodeCompiler
     bool canLazilyParse();
     bool createParser();
     bool createSourceAndParser(Maybe<uint32_t> parameterListEnd = Nothing());
-    bool createScript();
+    bool createScript(uint32_t preludeStart = 0);
     bool emplaceEmitter(Maybe<BytecodeEmitter>& emitter, SharedContext* sharedContext);
     bool handleParseFailure(const Directives& newDirectives);
     bool deoptimizeArgumentsInEnclosingScripts(JSContext* cx, HandleObject environment);
@@ -242,10 +242,11 @@ BytecodeCompiler::createSourceAndParser(Maybe<uint32_t> parameterListEnd /* = No
 }
 
 bool
-BytecodeCompiler::createScript()
+BytecodeCompiler::createScript(uint32_t preludeStart /* = 0 */)
 {
     script = JSScript::Create(cx, options,
-                              sourceObject, /* sourceStart = */ 0, sourceBuffer.length());
+                              sourceObject, /* sourceStart = */ 0, sourceBuffer.length(),
+                              preludeStart);
     return script != nullptr;
 }
 
@@ -456,7 +457,7 @@ BytecodeCompiler::compileStandaloneFunction(MutableHandleFunction fun,
     if (fn->pn_funbox->function()->isInterpreted()) {
         MOZ_ASSERT(fun == fn->pn_funbox->function());
 
-        if (!createScript())
+        if (!createScript(fn->pn_funbox->preludeStart))
             return false;
 
         Maybe<BytecodeEmitter> emitter;
@@ -650,7 +651,8 @@ frontend::CompileLazyFunction(JSContext* cx, Handle<LazyScript*> lazy, const cha
     MOZ_ASSERT(sourceObject);
 
     Rooted<JSScript*> script(cx, JSScript::Create(cx, options, sourceObject,
-                                                  lazy->begin(), lazy->end()));
+                                                  lazy->begin(), lazy->end(),
+                                                  lazy->preludeStart()));
     if (!script)
         return false;
 

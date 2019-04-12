@@ -375,8 +375,7 @@ class MOZ_STACK_CLASS TokenStream
                                     va_list args);
     bool reportStrictModeErrorNumberVA(uint32_t offset, bool strictMode, unsigned errorNumber,
                                        va_list args);
-    bool reportStrictWarningErrorNumberVA(uint32_t offset, unsigned errorNumber,
-                                          va_list args);
+    bool reportExtraWarningErrorNumberVA(uint32_t offset, unsigned errorNumber, va_list args);
 
     // asm.js reporter
     void reportAsmJSError(uint32_t offset, unsigned errorNumber, ...);
@@ -567,6 +566,14 @@ class MOZ_STACK_CLASS TokenStream
             verifyConsistentModifier(modifier, nextToken());
         }
         *posp = nextToken().pos;
+        return true;
+    }
+
+    MOZ_MUST_USE bool peekOffset(uint32_t* offset, Modifier modifier = None) {
+        TokenPos pos;
+        if (!peekTokenPos(&pos, modifier))
+            return false;
+        *offset = pos.begin;
         return true;
     }
 

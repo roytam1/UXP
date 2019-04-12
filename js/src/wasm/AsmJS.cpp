@@ -318,6 +318,7 @@ struct js::AsmJSMetadata : Metadata, AsmJSMetadataCacheablePod
     // Function constructor, this will be the first character in the function
     // source. Otherwise, it will be the opening parenthesis of the arguments
     // list.
+    uint32_t                preludeStart;
     uint32_t                srcStart;
     uint32_t                srcBodyStart;
     bool                    strict;
@@ -1758,6 +1759,7 @@ class MOZ_STACK_CLASS ModuleValidator
         if (!asmJSMetadata_)
             return false;
 
+        asmJSMetadata_->preludeStart = moduleFunctionNode_->pn_funbox->preludeStart;
         asmJSMetadata_->srcStart = moduleFunctionNode_->pn_body->pn_pos.begin;
         asmJSMetadata_->srcBodyStart = parser_.tokenStream.currentToken().pos.end;
         asmJSMetadata_->strict = parser_.pc->sc()->strict() &&
@@ -7049,6 +7051,7 @@ ParseFunction(ModuleValidator& m, ParseNode** fnOut, unsigned* line)
     TokenStream& tokenStream = m.tokenStream();
 
     tokenStream.consumeKnownToken(TOK_FUNCTION, TokenStream::Operand);
+    uint32_t preludeStart = tokenStream.currentToken().pos.begin;
     *line = tokenStream.srcCoords.lineNum(tokenStream.currentToken().pos.end);
 
     TokenKind tk;
@@ -7061,7 +7064,7 @@ ParseFunction(ModuleValidator& m, ParseNode** fnOut, unsigned* line)
     if (!name)
         return false;
 
-    ParseNode* fn = m.parser().handler.newFunctionDefinition();
+    ParseNode* fn = m.parser().handler.newFunctionStatement();
     if (!fn)
         return false;
 
@@ -7071,7 +7074,7 @@ ParseFunction(ModuleValidator& m, ParseNode** fnOut, unsigned* line)
 
     ParseContext* outerpc = m.parser().pc;
     Directives directives(outerpc);
-    FunctionBox* funbox = m.parser().newFunctionBox(fn, fun, directives, NotGenerator,
+    FunctionBox* funbox = m.parser().newFunctionBox(fn, fun, preludeStart, directives, NotGenerator,
                                                     SyncFunction, /* tryAnnexB = */ false);
     if (!funbox)
         return false;
@@ -8054,7 +8057,7 @@ HandleInstantiationFailure(JSContext* cx, CallArgs args, const AsmJSMetadata& me
         return false;
     }
 
-    uint32_t begin = metadata.srcStart;
+    uint32_t begin = metadata.preludeStart;
     uint32_t end = metadata.srcEndAfterCurly();
     Rooted<JSFlatString*> src(cx, source->substringDontDeflate(cx, begin, end));
     if (!src)
@@ -8085,7 +8088,7 @@ HandleInstantiationFailure(JSContext* cx, CallArgs args, const AsmJSMetadata& me
     SourceBufferHolder::Ownership ownership = stableChars.maybeGiveOwnershipToCaller()
                                               ? SourceBufferHolder::GiveOwnership
                                               : SourceBufferHolder::NoOwnership;
-    SourceBufferHolder srcBuf(chars, stableChars.twoByteRange().length(), ownership);
+    SourceBufferHolder srcBuf(chars, end - begin, ownership);
     if (!frontend::CompileStandaloneFunction(cx, &fun, options, srcBuf, Nothing()))
         return false;
 
@@ -8537,6 +8540,7 @@ LookupAsmJSModuleInCache(ExclusiveContext* cx, AsmJSParser& parser, bool* loaded
         return true;
 
     // See AsmJSMetadata comment as well as ModuleValidator::init().
+    asmJSMetadata->preludeStart = parser.pc->functionBox()->preludeStart;
     asmJSMetadata->srcStart = parser.pc->functionBox()->functionNode->pn_body->pn_pos.begin;
     asmJSMetadata->srcBodyStart = parser.tokenStream.currentToken().pos.end;
     asmJSMetadata->strict = parser.pc->sc()->strict() && !parser.pc->sc()->hasExplicitUseStrict();
@@ -8834,7 +8838,7 @@ js::AsmJSModuleToString(JSContext* cx, HandleFunction fun, bool addParenToLambda
     MOZ_ASSERT(IsAsmJSModule(fun));
 
     const AsmJSMetadata& metadata = AsmJSModuleFunctionToModule(fun).metadata().asAsmJS();
-    uint32_t begin = metadata.srcStart;
+    uint32_t begin = metadata.preludeStart;
     uint32_t end = metadata.srcEndAfterCurly();
     ScriptSource* source = metadata.scriptSource.get();
 
@@ -8843,17 +8847,15 @@ js::AsmJSModuleToString(JSContext* cx, HandleFunction fun, bool addParenToLambda
     if (addParenToLambda && fun->isLambda() && !out.append("("))
         return nullptr;
 
-    if (!out.append("function "))
-        return nullptr;
-
-    if (fun->explicitName() && !out.append(fun->explicitName()))
-        return nullptr;
-
     bool haveSource = source->hasSourceData();
     if (!haveSource && !JSScript::loadSource(cx, source, &haveSource))
         return nullptr;
 
     if (!haveSource) {
+        if (!out.append("function "))
+            return nullptr;
+        if (fun->explicitName() && !out.append(fun->explicitName()))
+            return nullptr;
         if (!out.append("() {\n    [sourceless code]\n}"))
             return nullptr;
     } else {

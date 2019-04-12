@@ -3559,9 +3559,11 @@ BytecodeEmitter::maybeSetSourceMap()
     if (parser->options().sourceMapURL()) {
         // Warn about the replacement, but use the new one.
         if (parser->ss->hasSourceMapURL()) {
-            if(!parser->report(ParseWarning, false, nullptr, JSMSG_ALREADY_HAS_PRAGMA,
-                               parser->ss->filename(), "//# sourceMappingURL"))
+            if (!parser->reportNoOffset(ParseWarning, false, JSMSG_ALREADY_HAS_PRAGMA,
+                                        parser->ss->filename(), "//# sourceMappingURL"))
+            {
                 return false;
+            }
         }
 
         if (!parser->ss->setSourceMapURL(cx, parser->options().sourceMapURL()))
@@ -3606,13 +3608,13 @@ BytecodeEmitter::reportError(ParseNode* pn, unsigned errorNumber, ...)
 }
 
 bool
-BytecodeEmitter::reportStrictWarning(ParseNode* pn, unsigned errorNumber, ...)
+BytecodeEmitter::reportExtraWarning(ParseNode* pn, unsigned errorNumber, ...)
 {
     TokenPos pos = pn ? pn->pn_pos : tokenStream()->currentToken().pos;
 
     va_list args;
     va_start(args, errorNumber);
-    bool result = tokenStream()->reportStrictWarningErrorNumberVA(pos.begin, errorNumber, args);
+    bool result = tokenStream()->reportExtraWarningErrorNumberVA(pos.begin, errorNumber, args);
     va_end(args);
     return result;
 }
@@ -7834,7 +7836,8 @@ BytecodeEmitter::emitFunction(ParseNode* pn, bool needsProto)
 
             Rooted<JSObject*> sourceObject(cx, script->sourceObject());
             Rooted<JSScript*> script(cx, JSScript::Create(cx, options, sourceObject,
-                                                          funbox->bufStart, funbox->bufEnd));
+                                                          funbox->bufStart, funbox->bufEnd,
+                                                          funbox->preludeStart));
             if (!script)
                 return false;
 
@@ -8704,13 +8707,13 @@ BytecodeEmitter::emitStatement(ParseNode* pn)
             }
 
             if (directive) {
-                if (!reportStrictWarning(pn2, JSMSG_CONTRARY_NONDIRECTIVE, directive))
+                if (!reportExtraWarning(pn2, JSMSG_CONTRARY_NONDIRECTIVE, directive))
                     return false;
             }
         } else {
             current->currentLine = parser->tokenStream.srcCoords.lineNum(pn2->pn_pos.begin);
             current->lastColumn = 0;
-            if (!reportStrictWarning(pn2, JSMSG_USELESS_EXPR))
+            if (!reportExtraWarning(pn2, JSMSG_USELESS_EXPR))
                 return false;
         }
     }
