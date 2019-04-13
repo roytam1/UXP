@@ -103,8 +103,8 @@ function openToolbox({ form, chrome, isTabActor }) {
     // Remember the last panel that was used inside of this profile.
     // But if we are testing, then it should always open the debugger panel.
     let selectedTool =
-      Services.prefs.getCharPref("devtools.toolbox.selectedTool",
-                                 Services.prefs.getCharPref("devtools.browsertoolbox.panel",
+      Services.prefs.getCharPref("devtools.browsertoolbox.panel",
+                                 Services.prefs.getCharPref("devtools.toolbox.selectedTool",
                                                             "jsdebugger"));
 
     let options = { customIframe: frame };

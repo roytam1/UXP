@@ -983,11 +983,14 @@ function ParamSubstitution(aParamValue, aSearchTerms, aEngine) {
 
   var distributionID = Services.prefs.getCharPref(BROWSER_SEARCH_PREF + "distributionID",
                                                 Services.appinfo.distributionID || "");
-  var official;
-  if (Services.prefs.getBoolPref(BROWSER_SEARCH_PREF + "official", MOZ_OFFICIAL))
-    official = "official";
-  else
-    official = "unofficial";
+  var official = MOZ_OFFICIAL;
+  try {
+    if (Services.prefs.getBoolPref(BROWSER_SEARCH_PREF + "official"))
+      official = "official";
+    else
+      official = "unofficial";
+  }
+  catch (ex) { }
 
   // Custom search parameters. These are only available to default search
   // engines.
