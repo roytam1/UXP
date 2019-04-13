@@ -486,14 +486,7 @@ this.AddonRepository = {
     }
 
     let preference = PREF_GETADDONS_CACHE_ENABLED;
-    let enabled = false;
-    try {
-      enabled = Services.prefs.getBoolPref(preference);
-    } catch(e) {
-      logger.warn("cacheEnabled: Couldn't get pref: " + preference);
-    }
-
-    return enabled;
+    return Services.prefs.getBoolPref(preference, false);
   },
 
   // A cache of the add-ons stored in the database
@@ -541,11 +534,7 @@ this.AddonRepository = {
 
   metadataAge: function() {
     let now = Math.round(Date.now() / 1000);
-
-    let lastUpdate = 0;
-    try {
-      lastUpdate = Services.prefs.getIntPref(PREF_METADATA_LASTUPDATE);
-    } catch (e) {}
+    let lastUpdate = Services.prefs.getIntPref(PREF_METADATA_LASTUPDATE, 0);
 
     // Handle clock jumps
     if (now < lastUpdate) {
@@ -555,10 +544,8 @@ this.AddonRepository = {
   },
 
   isMetadataStale: function AddonRepo_isMetadataStale() {
-    let threshold = DEFAULT_METADATA_UPDATETHRESHOLD_SEC;
-    try {
-      threshold = Services.prefs.getIntPref(PREF_METADATA_UPDATETHRESHOLD_SEC);
-    } catch (e) {}
+    let threshold = Services.prefs.getIntPref(PREF_METADATA_UPDATETHRESHOLD_SEC,
+                                              DEFAULT_METADATA_UPDATETHRESHOLD_SEC);
     return (this.metadataAge() > threshold);
   },
 
@@ -1543,10 +1530,8 @@ this.AddonRepository = {
 
   // Create url from preference, returning null if preference does not exist
   _formatURLPref: function AddonRepo_formatURLPref(aPreference, aSubstitutions) {
-    let url = null;
-    try {
-      url = Services.prefs.getCharPref(aPreference);
-    } catch(e) {
+    let url = Services.prefs.getCharPref(aPreference, "");
+    if (!url) {
       logger.warn("_formatURLPref: Couldn't get pref: " + aPreference);
       return null;
     }
@@ -1639,10 +1624,7 @@ var AddonDatabase = {
          // Create a blank addons.json file
          this._saveDBToDisk();
 
-         let dbSchema = 0;
-         try {
-           dbSchema = Services.prefs.getIntPref(PREF_GETADDONS_DB_SCHEMA);
-         } catch (e) {}
+         let dbSchema = Services.prefs.getIntPref(PREF_GETADDONS_DB_SCHEMA, 0);
 
          if (dbSchema < DB_MIN_JSON_SCHEMA) {
            let results = yield new Promise((resolve, reject) => {

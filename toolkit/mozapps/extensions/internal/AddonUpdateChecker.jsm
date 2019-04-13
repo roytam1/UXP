@@ -608,12 +608,7 @@ function UpdateParser(aId, aUpdateKey, aUrl, aObserver) {
   this.observer = aObserver;
   this.url = aUrl;
 
-  let requireBuiltIn = true;
-  try {
-    requireBuiltIn = Services.prefs.getBoolPref(PREF_UPDATE_REQUIREBUILTINCERTS);
-  }
-  catch (e) {
-  }
+  let requireBuiltIn = Services.prefs.getBoolPref(PREF_UPDATE_REQUIREBUILTINCERTS, true);
 
   logger.debug("Requesting " + aUrl);
   try {
@@ -651,12 +646,7 @@ UpdateParser.prototype = {
     this.request = null;
     this._doneAt = new Error("place holder");
 
-    let requireBuiltIn = true;
-    try {
-      requireBuiltIn = Services.prefs.getBoolPref(PREF_UPDATE_REQUIREBUILTINCERTS);
-    }
-    catch (e) {
-    }
+    let requireBuiltIn = Services.prefs.getBoolPref(PREF_UPDATE_REQUIREBUILTINCERTS, true);
 
     try {
       CertUtils.checkCert(request.channel, !requireBuiltIn);

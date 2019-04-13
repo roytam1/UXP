@@ -49,12 +49,7 @@ this.__defineGetter__("_prefs", function prefsGetter() {
 
 this.__defineGetter__("_maxUsedThemes", function maxUsedThemesGetter() {
   delete this._maxUsedThemes;
-  try {
-    this._maxUsedThemes = _prefs.getIntPref("maxUsedThemes");
-  }
-  catch (e) {
-    this._maxUsedThemes = DEFAULT_MAX_USED_THEMES_COUNT;
-  }
+  this._maxUsedThemes = _prefs.getIntPref("maxUsedThemes", DEFAULT_MAX_USED_THEMES_COUNT);
   return this._maxUsedThemes;
 });
 
@@ -719,12 +714,8 @@ var _previewTimerCallback = {
 function _prefObserver(aSubject, aTopic, aData) {
   switch (aData) {
     case "maxUsedThemes":
-      try {
-        _maxUsedThemes = _prefs.getIntPref(aData);
-      }
-      catch (e) {
-        _maxUsedThemes = DEFAULT_MAX_USED_THEMES_COUNT;
-      }
+      _maxUsedThemes = _prefs.getIntPref(aData, DEFAULT_MAX_USED_THEMES_COUNT);
+
       // Update the theme list to remove any themes over the number we keep
       _updateUsedThemes(LightweightThemeManager.usedThemes);
       break;

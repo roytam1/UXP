@@ -31,13 +31,9 @@ this.UpdateUtils = {
    *        Whether or not to include the partner bits. Default: true.
    */
   getUpdateChannel(aIncludePartners = true) {
-    let channel = AppConstants.MOZ_UPDATE_CHANNEL;
+    let channel = defaults.getCharPref("app.update.channel",
+                                       AppConstants.MOZ_UPDATE_CHANNEL);
     let defaults = Services.prefs.getDefaultBranch(null);
-    try {
-      channel = defaults.getCharPref("app.update.channel");
-    } catch (e) {
-      // use default value when pref not found
-    }
 
     if (aIncludePartners) {
       try {
@@ -93,15 +89,7 @@ this.UpdateUtils = {
 
 /* Get the distribution pref values, from defaults only */
 function getDistributionPrefValue(aPrefName) {
-  var prefValue = "default";
-
-  try {
-    prefValue = Services.prefs.getDefaultBranch(null).getCharPref(aPrefName);
-  } catch (e) {
-    // use default when pref not found
-  }
-
-  return prefValue;
+  return prefValue = Services.prefs.getDefaultBranch(null).getCharPref(aPrefName, "default");
 }
 
 /**
