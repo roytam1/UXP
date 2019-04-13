@@ -723,8 +723,9 @@ you can use these alternative items. Otherwise, their values should be empty.  -
      The word "toolbar" is appended automatically and should not be contained below! -->
 <!ENTITY tabsToolbar.label "Browser tabs">
 
-<!-- LOCALIZATION NOTE (syncTabsMenu3.label): This appears in the history menu -->
-<!ENTITY syncTabsMenu3.label     "Synced Tabs">
+#ifdef MOZ_SERVICES_SYNC
+<!-- LOCALIZATION NOTE (syncTabsMenu2.label): This appears in the history menu -->
+ <!ENTITY syncTabsMenu2.label "Tabs From Other Devices">
 
 <!ENTITY syncBrand.shortName.label    "Sync">
 
@@ -735,6 +736,7 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY syncReAuthItem.label         "Reconnect to &syncBrand.shortName.label;…">
 <!ENTITY syncReAuthItem.accesskey     "R">
 <!ENTITY syncToolbarButton.label      "Sync">
+#endif
 
 <!ENTITY customizeMode.menuAndToolbars.header2 "Additional Tools and Features">
 <!ENTITY customizeMode.menuAndToolbars.empty "Want more tools?">

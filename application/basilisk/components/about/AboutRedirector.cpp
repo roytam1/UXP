@@ -92,10 +92,16 @@ static RedirEntry kRedirMap[] = {
     "welcomeback", "chrome://browser/content/aboutWelcomeBack.xhtml",
     nsIAboutModule::ALLOW_SCRIPT
   },
+#ifdef MOZ_SERVICES_SYNC
+  {
+    "sync-progress", "chrome://browser/content/sync/progress.xhtml",
+    nsIAboutModule::ALLOW_SCRIPT
+  },
   {
     "sync-tabs", "chrome://browser/content/sync/aboutSyncTabs.xul",
     nsIAboutModule::ALLOW_SCRIPT
   },
+#endif
   { "home", "chrome://browser/content/abouthome/aboutHome.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::URI_MUST_LOAD_IN_CHILD |

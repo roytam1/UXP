@@ -178,6 +178,7 @@ browser.jar:
   skin/classic/browser/syncProgress-toolbar@2x.png
   skin/classic/browser/syncProgress-toolbar-inverted.png
   skin/classic/browser/syncProgress-toolbar-inverted@2x.png
+  skin/classic/browser/syncProgress.css
   skin/classic/browser/Toolbar-background-noise.png         (Toolbar-background-noise.png)
   skin/classic/browser/lion/toolbarbutton-dropmarker.png    (toolbarbutton-dropmarker-lion.png)
   skin/classic/browser/toolbarbutton-dropmarker@2x.png      (toolbarbutton-dropmarker-lion@2x.png)

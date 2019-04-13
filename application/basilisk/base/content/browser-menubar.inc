@@ -314,11 +314,13 @@
                           key="key_sanitize"
                           command="Tools:Sanitize"/>
                 <menuseparator id="sanitizeSeparator"/>
+#ifdef MOZ_SERVICES_SYNC
                 <menuitem id="sync-tabs-menuitem"
                           class="syncTabsMenuItem"
-                          label="&syncTabsMenu3.label;"
+                          label="&syncTabsMenu2.label;"
                           oncommand="BrowserOpenSyncTabs();"
-                          hidden="true"/>
+                          disabled="true"/>
+#endif
                 <menuitem id="historyRestoreLastSession"
                           label="&historyRestoreLastSession.label;"
                           command="Browser:RestoreLastSession"/>
