@@ -239,10 +239,9 @@ var Scheduler = this.Scheduler = {
    * Prepare to kill the OS.File worker after a few seconds.
    */
   restartTimer: function(arg) {
-    let delay;
-    try {
-      delay = Services.prefs.getIntPref("osfile.reset_worker_delay");
-    } catch(e) {
+    let delay = Services.prefs.getIntPref("osfile.reset_worker_delay", 0);
+
+    if (!delay) {
       // Don't auto-shutdown if we don't have a delay preference set.
       return;
     }
@@ -469,42 +468,24 @@ const PREF_OSFILE_LOG = "toolkit.osfile.log";
 const PREF_OSFILE_LOG_REDIRECT = "toolkit.osfile.log.redirect";
 
 /**
- * Safely read a PREF_OSFILE_LOG preference.
- * Returns a value read or, in case of an error, oldPref or false.
- *
- * @param bool oldPref
- *        An optional value that the DEBUG flag was set to previously.
- */
-function readDebugPref(prefName, oldPref = false) {
-  let pref = oldPref;
-  try {
-    pref = Services.prefs.getBoolPref(prefName);
-  } catch (x) {
-    // In case of an error when reading a pref keep it as is.
-  }
-  // If neither pref nor oldPref were set, default it to false.
-  return pref;
-};
-
-/**
  * Listen to PREF_OSFILE_LOG changes and update gShouldLog flag
  * appropriately.
  */
 Services.prefs.addObserver(PREF_OSFILE_LOG,
   function prefObserver(aSubject, aTopic, aData) {
-    SharedAll.Config.DEBUG = readDebugPref(PREF_OSFILE_LOG, SharedAll.Config.DEBUG);
+    SharedAll.Config.DEBUG = Services.prefs.getBoolPref(PREF_OSFILE_LOG, SharedAll.Config.DEBUG);
     if (Scheduler.launched) {
       // Don't start the worker just to set this preference.
       Scheduler.post("SET_DEBUG", [SharedAll.Config.DEBUG]);
     }
   }, false);
-SharedAll.Config.DEBUG = readDebugPref(PREF_OSFILE_LOG, false);
+SharedAll.Config.DEBUG = Services.prefs.getBoolPref(PREF_OSFILE_LOG, false);
 
 Services.prefs.addObserver(PREF_OSFILE_LOG_REDIRECT,
   function prefObserver(aSubject, aTopic, aData) {
-    SharedAll.Config.TEST = readDebugPref(PREF_OSFILE_LOG_REDIRECT, OS.Shared.TEST);
+    SharedAll.Config.TEST = Services.prefs.getBoolPref(PREF_OSFILE_LOG_REDIRECT, OS.Shared.TEST);
   }, false);
-SharedAll.Config.TEST = readDebugPref(PREF_OSFILE_LOG_REDIRECT, false);
+SharedAll.Config.TEST = Services.prefs.getBoolPref(PREF_OSFILE_LOG_REDIRECT, false);
 
 
 /**
@@ -515,7 +496,7 @@ var nativeWheneverAvailable = true;
 const PREF_OSFILE_NATIVE = "toolkit.osfile.native";
 Services.prefs.addObserver(PREF_OSFILE_NATIVE,
   function prefObserver(aSubject, aTopic, aData) {
-    nativeWheneverAvailable = readDebugPref(PREF_OSFILE_NATIVE, nativeWheneverAvailable);
+    nativeWheneverAvailable = Services.prefs.getBoolPref(PREF_OSFILE_NATIVE, nativeWheneverAvailable);
   }, false);
 
 
@@ -557,10 +538,9 @@ Services.prefs.addObserver(PREF_OSFILE_TEST_SHUTDOWN_OBSERVER,
   function prefObserver() {
     // The temporary phase topic used to trigger the unclosed
     // phase warning.
-    let TOPIC = null;
+    let TOPIC = Services.prefs.getCharPref(PREF_OSFILE_TEST_SHUTDOWN_OBSERVER,
+                                           "");
     try {
-      TOPIC = Services.prefs.getCharPref(
-        PREF_OSFILE_TEST_SHUTDOWN_OBSERVER);
     } catch (x) {
     }
     if (TOPIC) {

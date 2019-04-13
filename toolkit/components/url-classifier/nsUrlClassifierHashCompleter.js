@@ -20,12 +20,7 @@ Cu.import("resource://gre/modules/NetUtil.jsm");
 
 // Log only if browser.safebrowsing.debug is true
 function log(...stuff) {
-  let logging = null;
-  try {
-    logging = Services.prefs.getBoolPref("browser.safebrowsing.debug");
-  } catch(e) {
-    return;
-  }
+  let logging = Services.prefs.getBoolPref("browser.safebrowsing.debug", false);
   if (!logging) {
     return;
   }

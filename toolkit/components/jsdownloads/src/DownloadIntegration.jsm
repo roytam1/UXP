@@ -368,11 +368,7 @@ this.DownloadIntegration = {
    */
   getPreferredDownloadsDirectory: Task.async(function* () {
     let directoryPath = null;
-    let prefValue = 1;
-
-    try {
-      prefValue = Services.prefs.getIntPref("browser.download.folderList");
-    } catch(e) {}
+    let prefValue = Services.prefs.getIntPref("browser.download.folderList", 1);
 
     switch(prefValue) {
       case 0: // Desktop
