@@ -1306,8 +1306,6 @@ static nsresult pref_InitInitialObjects()
     "winpref.js"
 #elif defined(XP_UNIX)
     "unix.js"
-#elif defined(XP_BEOS)
-    "beos.js"
 #endif
   };
 
