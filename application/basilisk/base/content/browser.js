@@ -6262,7 +6262,10 @@ function checkEmptyPageOrigin(browser = gBrowser.selectedBrowser,
 
 #ifdef MOZ_SERVICES_SYNC
 function BrowserOpenSyncTabs() {
-  switchToTabHavingURI("about:sync-tabs", true);
+  if (gSyncUI._needsSetup())
+    gSyncUI.openSetup();
+  else
+    switchToTabHavingURI("about:sync-tabs", true);
 }
 #endif
 

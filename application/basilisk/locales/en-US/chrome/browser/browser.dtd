@@ -734,6 +734,7 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY syncSyncNowItem.label        "Sync Now">
 <!ENTITY syncSyncNowItem.accesskey    "S">
 <!ENTITY syncToolbarButton.label      "Sync">
+<!ENTITY syncTabsToolbarButton.label  "Synced Tabs">
 #endif
 
 <!ENTITY customizeMode.menuAndToolbars.header2 "Additional Tools and Features">

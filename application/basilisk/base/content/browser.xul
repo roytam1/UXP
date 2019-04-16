@@ -913,6 +913,18 @@
                      type="checkbox"
                      label="&fullScreenCmd.label;"
                      tooltip="dynamic-shortcut-tooltip"/>
+
+#ifdef MOZ_SERVICES_SYNC
+      <toolbarbutton id="sync-button"
+                     class="toolbarbutton-1 chromeclass-toolbar-additional"
+                     label="&syncToolbarButton.label;"
+                     oncommand="gSyncUI.handleToolbarButton();"/>>
+
+      <toolbarbutton id="sync-tabs-button"
+                     class="toolbarbutton-1 chromeclass-toolbar-additional"
+                     label="&syncTabsToolbarButton.label;"
+                     oncommand="BrowserOpenSyncTabs();"/>
+#endif
     </toolbarpalette>
   </toolbox>
 
