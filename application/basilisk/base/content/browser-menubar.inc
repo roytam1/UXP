@@ -438,7 +438,11 @@
                   label="&toolsMenu.label;"
                   accesskey="&toolsMenu.accesskey;"
                   onpopupshowing="mirrorShow(this)">
-              <menupopup id="menu_ToolsPopup">
+              <menupopup id="menu_ToolsPopup"
+#ifdef MOZ_SERVICES_SYNC
+                         onpopupshowing="gSyncUI.updateUI();"
+#endif
+              >
               <menuitem id="menu_openDownloads"
                         label="&downloads.label;"
                         accesskey="&downloads.accesskey;"
@@ -449,6 +453,19 @@
                         accesskey="&addons.accesskey;"
                         key="key_openAddons"
                         command="Tools:Addons"/>
+#ifdef MOZ_SERVICES_SYNC
+              <!-- only one of sync-setup or sync-menu will be showing at once -->
+              <menuitem id="sync-setup"
+                        label="&syncSetup.label;"
+                        accesskey="&syncSetup.accesskey;"
+                        observes="sync-setup-state"
+                        oncommand="gSyncUI.openSetup()"/>
+              <menuitem id="sync-syncnowitem"
+                        label="&syncSyncNowItem.label;"
+                        accesskey="&syncSyncNowItem.accesskey;"
+                        observes="sync-syncnow-state"
+                        oncommand="gSyncUI.doSync(event);"/>
+#endif
               <menuseparator id="devToolsSeparator"/>
               <menu id="webDeveloperMenu"
                     label="&webDeveloperMenu.label;"

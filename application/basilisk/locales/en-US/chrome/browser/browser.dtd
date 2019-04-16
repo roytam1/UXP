@@ -725,16 +725,14 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 
 #ifdef MOZ_SERVICES_SYNC
 <!-- LOCALIZATION NOTE (syncTabsMenu2.label): This appears in the history menu -->
- <!ENTITY syncTabsMenu2.label "Tabs From Other Devices">
+<!ENTITY syncTabsMenu2.label     "Tabs From Other Devices">
 
 <!ENTITY syncBrand.shortName.label    "Sync">
 
-<!ENTITY syncSignIn.label             "Sign In To &syncBrand.shortName.label;…">
-<!ENTITY syncSignIn.accesskey         "Y">
+<!ENTITY syncSetup.label              "Set Up &syncBrand.shortName.label;…">
+<!ENTITY syncSetup.accesskey          "Y">
 <!ENTITY syncSyncNowItem.label        "Sync Now">
 <!ENTITY syncSyncNowItem.accesskey    "S">
-<!ENTITY syncReAuthItem.label         "Reconnect to &syncBrand.shortName.label;…">
-<!ENTITY syncReAuthItem.accesskey     "R">
 <!ENTITY syncToolbarButton.label      "Sync">
 #endif
 
