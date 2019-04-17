@@ -19,12 +19,14 @@ DIRS += [
     'sessionstore',
     'shell',
     'selfsupport',
-    'sync',
     'translation',
 ]
 
 if CONFIG['MOZ_WEBEXTENSIONS']:
     DIRS += ['webextensions']
+
+if CONFIG['MOZ_SERVICES_SYNC']:
+    DIRS += ['sync']
 
 DIRS += ['build']
 
