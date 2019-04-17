@@ -283,9 +283,11 @@ body[narrow] #restorePreviousSession {
   content: url("chrome://browser/content/abouthome/addons.png");
 }
 
+%ifdef MOZ_SERVICES_SYNC
 #sync::before {
   content: url("chrome://browser/content/abouthome/sync.png");
 }
+%endif
 
 #settings::before {
   content: url("chrome://browser/content/abouthome/settings.png");
@@ -369,9 +371,11 @@ body[narrow] #restorePreviousSession::before {
     content: url("chrome://browser/content/abouthome/addons@2x.png");
   }
 
+%ifdef MOZ_SERVICES_SYNC
   #sync::before {
     content: url("chrome://browser/content/abouthome/sync@2x.png");
   }
+%endif
 
   #settings::before {
     content: url("chrome://browser/content/abouthome/settings@2x.png");

@@ -48,8 +48,7 @@ toolbarpaletteitem[place="palette"] > #save-page-button {
   -moz-image-region: rect(0px, 352px, 32px, 320px);
 }
 
-/* Start Sync Buttons */
-
+%ifdef MOZ_SERVICES_SYNC
 #sync-button[cui-areatype="menu-panel"],
 toolbarpaletteitem[place="palette"] > #sync-button {
   -moz-image-region: rect(0px, 384px, 32px, 352px)
@@ -71,8 +70,7 @@ toolbarpaletteitem[place="palette"] > #sync-button {
 toolbarpaletteitem[place="palette"] > #sync-tabs-button {
   -moz-image-region: rect(0px, 1024px, 32px, 992px);
 }
-
-/* End Sync Buttons */
+%endif
 
 #containers-panelmenu[cui-areatype="menu-panel"],
 toolbarpaletteitem[place="palette"] > #containers-panelmenu {

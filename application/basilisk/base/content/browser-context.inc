@@ -249,13 +249,6 @@
                 accesskey="&savePageCmd.accesskey2;"
                 oncommand="gContextMenu.savePageAs();"/>
       <menuseparator id="context-sep-sendpagetodevice" hidden="true"/>
-      <menu id="context-sendpagetodevice"
-                label="&sendPageToDevice.label;"
-                accesskey="&sendPageToDevice.accesskey;"
-                hidden="true">
-        <menupopup id="context-sendpagetodevice-popup"
-                   onpopupshowing="(() => { let browser = gBrowser || getPanelBrowser(); gFxAccounts.populateSendTabToDevicesMenu(event.target, browser.currentURI.spec, browser.contentTitle); })()"/>
-      </menu>
       <menuseparator id="context-sep-viewbgimage"/>
       <menuitem id="context-viewbgimage"
                 label="&viewBGImageCmd.label;"
@@ -296,13 +289,6 @@
       <menuitem id="context-searchselect"
                 oncommand="BrowserSearch.loadSearchFromContext(this.searchTerms);"/>
       <menuseparator id="context-sep-sendlinktodevice" hidden="true"/>
-      <menu id="context-sendlinktodevice"
-                label="&sendLinkToDevice.label;"
-                accesskey="&sendLinkToDevice.accesskey;"
-                hidden="true">
-        <menupopup id="context-sendlinktodevice-popup"
-                   onpopupshowing="gFxAccounts.populateSendTabToDevicesMenu(event.target, gContextMenu.linkURL, gContextMenu.linkTextStr);"/>
-      </menu>
       <menuseparator id="frame-sep"/>
       <menu id="frame" label="&thisFrameMenu.label;" accesskey="&thisFrameMenu.accesskey;">
         <menupopup>

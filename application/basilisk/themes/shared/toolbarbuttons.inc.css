@@ -52,8 +52,7 @@ toolbar[brighttext] #bookmarks-menu-button > .toolbarbutton-menubutton-dropmarke
   -moz-image-region: rect(0, 252px, 18px, 234px);
 }
 
-/* Start Sync Buttons */
-
+%ifdef MOZ_SERVICES_SYNC
 #sync-button[cui-areatype="toolbar"] {
   -moz-image-region: rect(0, 270px, 18px, 252px);
 }
@@ -78,8 +77,7 @@ toolbar[brighttext] #sync-button[cui-areatype="toolbar"][status="active"] {
 #sync-tabs-button[cui-areatype="toolbar"] {
   -moz-image-region: rect(0, 792px, 18px, 774px);
 }
-
-/* End Sync Buttons */
+%endif
 
 #containers-panelmenu[cui-areatype="toolbar"] {
   -moz-image-region: rect(0, 810px, 18px, 792px);
@@ -251,8 +249,7 @@ toolbar[brighttext] #sync-button[cui-areatype="toolbar"][status="active"] {
     -moz-image-region: rect(0, 504px, 36px, 468px);
   }
 
-  /* Start Sync Buttons */
-
+%ifdef MOZ_SERVICES_SYNC
   #sync-button[cui-areatype="toolbar"] {
     -moz-image-region: rect(0, 540px, 36px, 504px);
   }
@@ -277,8 +274,7 @@ toolbar[brighttext] #sync-button[cui-areatype="toolbar"][status="active"] {
   #sync-tabs-button[cui-areatype="toolbar"] {
     -moz-image-region: rect(0, 1584px, 36px, 1548px);
   }
-
-  /* End Sync Buttons */
+%endif
 
   #containers-panelmenu[cui-areatype="toolbar"] {
     -moz-image-region: rect(0, 1620px, 36px, 1584px);

@@ -10,7 +10,7 @@
     locale/browser/aboutDialog.dtd                 (%chrome/browser/aboutDialog.dtd)
     locale/browser/aboutPrivateBrowsing.dtd        (%chrome/browser/aboutPrivateBrowsing.dtd)
     locale/browser/aboutPrivateBrowsing.properties (%chrome/browser/aboutPrivateBrowsing.properties)
-    locale/browser/aboutHome.dtd                   (%chrome/browser/aboutHome.dtd)
+*   locale/browser/aboutHome.dtd                   (%chrome/browser/aboutHome.dtd)
     locale/browser/accounts.properties             (%chrome/browser/accounts.properties)
 #ifdef MOZ_SERVICES_HEALTHREPORT
     locale/browser/aboutHealthReport.dtd           (%chrome/browser/aboutHealthReport.dtd)
@@ -78,9 +78,12 @@
     locale/browser/preferences/preferences.properties (%chrome/browser/preferences/preferences.properties)
 *   locale/browser/preferences/privacy.dtd            (%chrome/browser/preferences/privacy.dtd)
     locale/browser/preferences/security.dtd           (%chrome/browser/preferences/security.dtd)
+#ifdef MOZ_SERVICES_SYNC
     locale/browser/preferences/sync.dtd               (%chrome/browser/preferences/sync.dtd)
+#endif
     locale/browser/preferences/tabs.dtd               (%chrome/browser/preferences/tabs.dtd)
     locale/browser/preferences/search.dtd             (%chrome/browser/preferences/search.dtd)
+#ifdef MOZ_SERVICES_SYNC
     locale/browser/syncBrand.dtd                (%chrome/browser/syncBrand.dtd)
     locale/browser/syncSetup.dtd                (%chrome/browser/syncSetup.dtd)
     locale/browser/syncSetup.properties         (%chrome/browser/syncSetup.properties)
@@ -88,7 +91,6 @@
     locale/browser/syncKey.dtd                  (%chrome/browser/syncKey.dtd)
     locale/browser/syncQuota.dtd                (%chrome/browser/syncQuota.dtd)
     locale/browser/syncQuota.properties         (%chrome/browser/syncQuota.properties)
-#ifdef MOZ_SERVICES_SYNC
     locale/browser/syncProgress.dtd                               (%chrome/browser/syncProgress.dtd)
     locale/browser/aboutSyncTabs.dtd                              (%chrome/browser/aboutSyncTabs.dtd)
 #endif
