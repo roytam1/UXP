@@ -35,4 +35,3 @@
 <script type="application/javascript" src="chrome://browser/content/browser-data-submission-info-bar.js"/>
 #endif
 
-<script type="application/javascript" src="chrome://browser/content/browser-fxaccounts.js"/>
