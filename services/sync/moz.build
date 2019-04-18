@@ -54,7 +54,6 @@ EXTRA_JS_MODULES['services-sync'].stages += [
 
 TESTING_JS_MODULES.services.sync += [
     'modules-testing/fakeservices.js',
-    'modules-testing/fxa_utils.js',
     'modules-testing/rotaryengine.js',
     'modules-testing/utils.js',
 ]

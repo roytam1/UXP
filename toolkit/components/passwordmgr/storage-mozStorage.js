@@ -471,7 +471,7 @@ LoginManagerStorage_mozStorage.prototype = {
                 params["http" + field] = "http://" + valueURI.hostPort;
               }
             } catch (ex) {
-              // newURI will throw for some values (e.g. chrome://FirefoxAccounts)
+              // newURI will throw for some values
               // but those URLs wouldn't support upgrades anyways.
             }
             break;

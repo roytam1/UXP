@@ -202,7 +202,7 @@ this.LoginHelper = {
           return true;
         }
       } catch (ex) {
-        // newURI will throw for some values e.g. chrome://FirefoxAccounts
+        // newURI will throw for some values
         return false;
       }
     }
@@ -406,7 +406,7 @@ this.LoginHelper = {
       try {
         preferredOriginScheme = Services.io.newURI(preferredOrigin, null, null).scheme;
       } catch (ex) {
-        // Handle strings that aren't valid URIs e.g. chrome://FirefoxAccounts
+        // Handle strings that aren't valid URIs
       }
     }
 
@@ -457,7 +457,7 @@ this.LoginHelper = {
 
               return loginURI.scheme == preferredOriginScheme;
             } catch (ex) {
-              // Some URLs aren't valid nsIURI (e.g. chrome://FirefoxAccounts)
+              // Some URLs aren't valid nsIURI
               log.debug("dedupeLogins/shouldReplaceExisting: Error comparing schemes:",
                         existingLogin.hostname, login.hostname,
                         "preferredOrigin:", preferredOrigin, ex);

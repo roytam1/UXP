@@ -37,7 +37,6 @@ const testingModules = [
   "fakeservices.js",
   "rotaryengine.js",
   "utils.js",
-  "fxa_utils.js",
 ];
 
 function run_test() {
