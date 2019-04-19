@@ -540,9 +540,6 @@ Services.prefs.addObserver(PREF_OSFILE_TEST_SHUTDOWN_OBSERVER,
     // phase warning.
     let TOPIC = Services.prefs.getCharPref(PREF_OSFILE_TEST_SHUTDOWN_OBSERVER,
                                            "");
-    try {
-    } catch (x) {
-    }
     if (TOPIC) {
       // Generate a phase, add a blocker.
       // Note that this can work only if AsyncShutdown itself has been
