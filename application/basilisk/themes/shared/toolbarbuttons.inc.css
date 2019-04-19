@@ -52,9 +52,32 @@ toolbar[brighttext] #bookmarks-menu-button > .toolbarbutton-menubutton-dropmarke
   -moz-image-region: rect(0, 252px, 18px, 234px);
 }
 
+%ifdef MOZ_SERVICES_SYNC
 #sync-button[cui-areatype="toolbar"] {
+  -moz-image-region: rect(0, 270px, 18px, 252px);
+}
+
+#sync-button[cui-areatype="toolbar"][status="active"] {
+  list-style-image: url("chrome://browser/skin/syncProgress-toolbar.png");
+  -moz-image-region: rect(0, 18px, 18px, 0);
+}
+
+@media (-moz-os-version: windows-win7) {
+  #sync-button[cui-areatype="toolbar"][status="active"] {
+    list-style-image: url("chrome://browser/skin/syncProgress-toolbar-win7.png");
+    -moz-image-region: rect(0, 18px, 18px, 0);
+  }
+}
+
+toolbar[brighttext] #sync-button[cui-areatype="toolbar"][status="active"] {
+  list-style-image: url("chrome://browser/skin/syncProgress-toolbar-inverted.png");
+  -moz-image-region: rect(0, 18px, 18px, 0);
+}
+
+#sync-tabs-button[cui-areatype="toolbar"] {
   -moz-image-region: rect(0, 792px, 18px, 774px);
 }
+%endif
 
 #containers-panelmenu[cui-areatype="toolbar"] {
   -moz-image-region: rect(0, 810px, 18px, 792px);
@@ -226,9 +249,32 @@ toolbar[brighttext] #bookmarks-menu-button > .toolbarbutton-menubutton-dropmarke
     -moz-image-region: rect(0, 504px, 36px, 468px);
   }
 
+%ifdef MOZ_SERVICES_SYNC
   #sync-button[cui-areatype="toolbar"] {
+    -moz-image-region: rect(0, 540px, 36px, 504px);
+  }
+
+  #sync-button[cui-areatype="toolbar"][status="active"] {
+    list-style-image: url("chrome://browser/skin/syncProgress-toolbar@2x.png");
+    -moz-image-region: rect(0, 36px, 36px, 0);
+  }
+
+  @media (-moz-os-version: windows-win7) {
+    #sync-button[cui-areatype="toolbar"][status="active"] {
+      list-style-image: url("chrome://browser/skin/syncProgress-toolbar-win7@2x.png");
+      -moz-image-region: rect(0, 36px, 36px, 0);
+    }
+  }
+  
+  toolbar[brighttext] #sync-button[cui-areatype="toolbar"][status="active"] {
+      list-style-image: url("chrome://browser/skin/syncProgress-toolbar-inverted@2x.png");
+      -moz-image-region: rect(0, 36px, 36px, 0);
+  }
+
+  #sync-tabs-button[cui-areatype="toolbar"] {
     -moz-image-region: rect(0, 1584px, 36px, 1548px);
   }
+%endif
 
   #containers-panelmenu[cui-areatype="toolbar"] {
     -moz-image-region: rect(0, 1620px, 36px, 1584px);

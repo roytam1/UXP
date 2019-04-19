@@ -56,8 +56,6 @@ chrome.jar:
   content/aboutHealthReport.xhtml      (content/aboutHealthReport.xhtml)
   content/aboutHealthReport.js         (content/aboutHealthReport.js)
 #endif
-  content/aboutAccounts.xhtml          (content/aboutAccounts.xhtml)
-  content/aboutAccounts.js             (content/aboutAccounts.js)
   content/aboutLogins.xhtml            (content/aboutLogins.xhtml)
   content/aboutLogins.js               (content/aboutLogins.js)
 #ifndef RELEASE_OR_BETA

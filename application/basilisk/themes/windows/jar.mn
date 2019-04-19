@@ -7,8 +7,9 @@ browser.jar:
 #include ../shared/jar.inc.mn
   skin/classic/browser/sanitizeDialog.css
   skin/classic/browser/aboutSessionRestore-window-icon.png
+#ifdef MOZ_SERVICES_SYNC
   skin/classic/browser/aboutSyncTabs.css
-* skin/classic/browser/syncedtabs/sidebar.css     (syncedtabs/sidebar.css)
+#endif
   skin/classic/browser/actionicon-tab.png
   skin/classic/browser/actionicon-tab@2x.png
   skin/classic/browser/actionicon-tab-XPVista7.png
@@ -165,6 +166,7 @@ browser.jar:
   skin/classic/browser/tabbrowser/tab-stroke-start.png         (tabbrowser/tab-stroke-start.png)
   skin/classic/browser/tabbrowser/tab-stroke-start@2x.png      (tabbrowser/tab-stroke-start@2x.png)
   skin/classic/browser/tabbrowser/tabDragIndicator.png         (tabbrowser/tabDragIndicator.png)
+#ifdef MOZ_SERVICES_SYNC
   skin/classic/browser/sync-16.png
   skin/classic/browser/sync-32.png
   skin/classic/browser/sync-128.png
@@ -191,6 +193,8 @@ browser.jar:
   skin/classic/browser/syncProgress-toolbar-inverted@2x.png
   skin/classic/browser/syncProgress-toolbar-XPVista7.png
   skin/classic/browser/syncProgress-toolbar-XPVista7@2x.png
+  skin/classic/browser/syncProgress.css
+#endif
 
 [extensions/{972ce4c6-7e08-4474-a285-3208198ce6fd}] chrome.jar:
 % override chrome://browser/skin/page-livemarks.png                   chrome://browser/skin/feeds/feedIcon16.png
@@ -230,12 +234,14 @@ browser.jar:
 % override chrome://browser/skin/privatebrowsing-mask-titlebar.png    chrome://browser/skin/privatebrowsing-mask-titlebar-XPVista7.png  os=WINNT osversion<=6.1
 % override chrome://browser/skin/reload-stop-go.png                   chrome://browser/skin/reload-stop-go-XPVista7.png                 os=WINNT osversion<=6.1
 % override chrome://browser/skin/reload-stop-go@2x.png                chrome://browser/skin/reload-stop-go-XPVista7@2x.png              os=WINNT osversion<=6.1
+#ifdef MOZ_SERVICES_SYNC
 % override chrome://browser/skin/sync-horizontalbar.png               chrome://browser/skin/sync-horizontalbar-XPVista7.png             os=WINNT osversion<=6.1
 % override chrome://browser/skin/sync-horizontalbar@2x.png            chrome://browser/skin/sync-horizontalbar-XPVista7@2x.png          os=WINNT osversion<=6.1
 % override chrome://browser/skin/syncProgress-horizontalbar.png       chrome://browser/skin/syncProgress-horizontalbar-XPVista7.png     os=WINNT osversion<=6.1
 % override chrome://browser/skin/syncProgress-horizontalbar@2x.png    chrome://browser/skin/syncProgress-horizontalbar-XPVista7@2x.png  os=WINNT osversion<=6.1
 % override chrome://browser/skin/syncProgress-toolbar.png             chrome://browser/skin/syncProgress-toolbar-XPVista7.png           os=WINNT osversion<=6.1
 % override chrome://browser/skin/syncProgress-toolbar@2x.png          chrome://browser/skin/syncProgress-toolbar-XPVista7@2x.png        os=WINNT osversion<=6.1
+#endif
 % override chrome://browser/skin/toolbarbutton-dropdown-arrow.png     chrome://browser/skin/toolbarbutton-dropdown-arrow-XPVista7.png   os=WINNT osversion<=6.1
 % override chrome://browser/skin/urlbar-history-dropmarker.png        chrome://browser/skin/urlbar-history-dropmarker-XPVista7.png      os=WINNT osversion<=6.1
 % override chrome://browser/skin/urlbar-history-dropmarker@2x.png     chrome://browser/skin/urlbar-history-dropmarker-XPVista7@2x.png   os=WINNT osversion<=6.1

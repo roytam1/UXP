@@ -239,18 +239,10 @@ try {
 } catch (noPref) {}
 Services.prefs.setBoolPref("toolkit.identity.debug", true);
 
-// Switch on firefox accounts
-var initialPrefFXAValue = false;
-try {
-  initialPrefFXAValue = Services.prefs.getBoolPref("identity.fxaccounts.enabled");
-} catch (noPref) {}
-Services.prefs.setBoolPref("identity.fxaccounts.enabled", true);
-
 // after execution, restore prefs
 do_register_cleanup(function() {
   log("restoring prefs to their initial values");
   Services.prefs.setBoolPref("toolkit.identity.debug", initialPrefDebugValue);
-  Services.prefs.setBoolPref("identity.fxaccounts.enabled", initialPrefFXAValue);
 });
 
 

@@ -486,8 +486,6 @@ add_identity_test(this, function test_shouldReportLoginFailureWithNoCluster() {
   do_check_false(errorHandler.shouldReportError());
 });
 
-// XXX - how to arrange for 'Service.identity.basicPassword = null;' in
-// an fxaccounts environment?
 add_task(function test_login_syncAndReportErrors_non_network_error() {
   // Test non-network errors are reported
   // when calling syncAndReportErrors
@@ -536,8 +534,6 @@ add_identity_test(this, function test_sync_syncAndReportErrors_non_network_error
   yield deferred.promise;
 });
 
-// XXX - how to arrange for 'Service.identity.basicPassword = null;' in
-// an fxaccounts environment?
 add_task(function test_login_syncAndReportErrors_prolonged_non_network_error() {
   // Test prolonged, non-network errors are
   // reported when calling syncAndReportErrors.

@@ -113,7 +113,6 @@ nsContextMenu.prototype = {
     this.initLeaveDOMFullScreenItems();
     this.initClickToPlayItems();
     this.initPasswordManagerItems();
-    this.initSyncItems();
   },
 
   initPageMenuSeparator: function CM_initPageMenuSeparator() {
@@ -538,10 +537,6 @@ nsContextMenu.prototype = {
     let popup = document.getElementById("fill-login-popup");
     let insertBeforeElement = document.getElementById("fill-login-no-logins");
     popup.insertBefore(fragment, insertBeforeElement);
-  },
-
-  initSyncItems: function() {
-    gFxAccounts.initPageContextMenu(this);
   },
 
   openPasswordManager: function() {

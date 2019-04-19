@@ -48,10 +48,29 @@ toolbarpaletteitem[place="palette"] > #save-page-button {
   -moz-image-region: rect(0px, 352px, 32px, 320px);
 }
 
+%ifdef MOZ_SERVICES_SYNC
 #sync-button[cui-areatype="menu-panel"],
 toolbarpaletteitem[place="palette"] > #sync-button {
+  -moz-image-region: rect(0px, 384px, 32px, 352px)
+}
+
+#sync-button[cui-areatype="menu-panel"][status="active"] {
+  list-style-image: url("chrome://browser/skin/syncProgress-menuPanel.png");
+  -moz-image-region: rect(0, 32px, 32px, 0);
+}
+
+@media (min-resolution: 1.1dppx) {
+  #sync-button[cui-areatype="menu-panel"][status="active"] {
+    list-style-image: url("chrome://browser/skin/syncProgress-menuPanel@2x.png");
+    -moz-image-region: rect(0, 64px, 64px, 0);
+  }
+}
+
+#sync-tabs-button[cui-areatype="menu-panel"],
+toolbarpaletteitem[place="palette"] > #sync-tabs-button {
   -moz-image-region: rect(0px, 1024px, 32px, 992px);
 }
+%endif
 
 #containers-panelmenu[cui-areatype="menu-panel"],
 toolbarpaletteitem[place="palette"] > #containers-panelmenu {

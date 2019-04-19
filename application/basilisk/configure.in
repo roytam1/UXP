@@ -17,6 +17,14 @@ AC_SUBST(MC_BASILISK)
 dnl Optional parts of the build.
 
 dnl ========================================================
+dnl = Disable Sync
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(sync,
+[  --disable-sync           Disable Sync],
+    MOZ_SERVICES_SYNC=,
+    MOZ_SERVICES_SYNC=1)
+
+dnl ========================================================
 dnl = Disable WebExtensions
 dnl ========================================================
 MOZ_ARG_DISABLE_BOOL(webextensions,

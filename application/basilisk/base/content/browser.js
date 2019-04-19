@@ -47,7 +47,6 @@ Cu.import("resource://gre/modules/NotificationDB.jsm");
   ["Task", "resource://gre/modules/Task.jsm"],
   ["UpdateUtils", "resource://gre/modules/UpdateUtils.jsm"],
   ["Weave", "resource://services-sync/main.js"],
-  ["fxAccounts", "resource://gre/modules/FxAccounts.jsm"],
 #ifdef MOZ_DEVTOOLS
   // Note: Do not delete! It is used for: base/content/nsContextMenu.js
   ["gDevTools", "resource://devtools/client/framework/gDevTools.jsm"],
@@ -108,6 +107,12 @@ XPCOMUtils.defineLazyGetter(this, "PageMenuParent", function() {
   Cu.import("resource://gre/modules/PageMenu.jsm", tmp);
   return new tmp.PageMenuParent();
 });
+
+#ifdef MOZ_SERVICES_SYNC
+XPCOMUtils.defineLazyModuleGetter(this, "Weave",
+  "resource://services-sync/main.js");
+#endif
+
 
 XPCOMUtils.defineLazyGetter(this, "PopupNotifications", function () {
   let tmp = {};
@@ -213,6 +218,10 @@ var gInitialPages = [
   "about:sessionrestore",
   "about:logopage"
 ];
+
+#ifdef MOZ_SERVICES_SYNC
+#include browser-syncui.js
+#endif
 
 function* browserWindows() {
   let windows = Services.wm.getEnumerator("navigator:browser");
@@ -1343,12 +1352,13 @@ var gBrowserInit = {
     FullScreen.init();
     PointerLock.init();
 
-    // initialize the sync UI
-    gSyncUI.init();
-    gFxAccounts.init();
-
     if (AppConstants.MOZ_DATA_REPORTING)
       gDataNotificationInfoBar.init();
+
+#ifdef MOZ_SERVICES_SYNC
+    // initialize the sync UI
+    gSyncUI.init();
+#endif
 
     gBrowserThumbnails.init();
 
@@ -1482,8 +1492,6 @@ var gBrowserInit = {
     gHistorySwipeAnimation.uninit();
 
     FullScreen.uninit();
-
-    gFxAccounts.uninit();
 
     Services.obs.removeObserver(gPluginHandler.NPAPIPluginCrashed, "plugin-crashed");
 
@@ -1645,8 +1653,10 @@ if (AppConstants.platform == "macosx") {
     // initialize the private browsing UI
     gPrivateBrowsingUI.init();
 
+#ifdef MOZ_SERVICES_SYNC
     // initialize the sync UI
     gSyncUI.init();
+#endif
   };
 
   gBrowserInit.nonBrowserWindowShutdown = function() {
@@ -3222,12 +3232,14 @@ var PrintPreviewListener = {
     this._chromeState.globalNotificationsOpen = !globalNotificationBox.notificationsHidden;
     globalNotificationBox.notificationsHidden = true;
 
+#ifdef MOZ_SERVICES_SYNC
     this._chromeState.syncNotificationsOpen = false;
     var syncNotifications = document.getElementById("sync-notifications");
     if (syncNotifications) {
       this._chromeState.syncNotificationsOpen = !syncNotifications.notificationsHidden;
       syncNotifications.notificationsHidden = true;
     }
+#endif
   },
   _showChrome: function () {
     if (this._chromeState.notificationsOpen)
@@ -3239,8 +3251,10 @@ var PrintPreviewListener = {
     if (this._chromeState.globalNotificationsOpen)
       document.getElementById("global-notificationbox").notificationsHidden = false;
 
+#ifdef MOZ_SERVICES_SYNC
     if (this._chromeState.syncNotificationsOpen)
       document.getElementById("sync-notifications").notificationsHidden = false;
+#endif
 
     if (this._chromeState.sidebarOpen)
       SidebarUI.show(this._sidebarCommand);
@@ -6359,9 +6373,14 @@ function checkEmptyPageOrigin(browser = gBrowser.selectedBrowser,
   return ssm.isSystemPrincipal(contentPrincipal);
 }
 
+#ifdef MOZ_SERVICES_SYNC
 function BrowserOpenSyncTabs() {
-  switchToTabHavingURI("about:sync-tabs", true);
+  if (gSyncUI._needsSetup())
+    gSyncUI.openSetup();
+  else
+    switchToTabHavingURI("about:sync-tabs", true);
 }
+#endif
 
 /**
  * Format a URL
@@ -7661,8 +7680,6 @@ var TabContextMenu = {
 
     this.contextTab.addEventListener("TabAttrModified", this, false);
     aPopupMenu.addEventListener("popuphiding", this, false);
-
-    gFxAccounts.updateTabContextMenu(aPopupMenu);
   },
   handleEvent(aEvent) {
     switch (aEvent.type) {

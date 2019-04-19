@@ -20,12 +20,14 @@ DIRS += [
     'sessionstore',
     'shell',
     'selfsupport',
-    'syncedtabs',
     'translation',
 ]
 
 if CONFIG['MOZ_WEBEXTENSIONS']:
     DIRS += ['webextensions']
+
+if CONFIG['MOZ_SERVICES_SYNC']:
+    DIRS += ['sync']
 
 DIRS += ['build']
 
@@ -39,6 +41,9 @@ XPIDL_MODULE = 'browsercompsbase'
 EXTRA_COMPONENTS += [
     'BrowserComponents.manifest', 
     'nsBrowserContentHandler.js',
+]
+
+EXTRA_PP_COMPONENTS += [
     'nsBrowserGlue.js',
 ]
 

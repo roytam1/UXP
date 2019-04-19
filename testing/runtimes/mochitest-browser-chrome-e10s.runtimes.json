@@ -76,7 +76,6 @@
     "browser/base/content/test/general/browser_fullscreen-window-open.js": 4312, 
     "browser/base/content/test/general/browser_fxa_oauth.js": 5410, 
     "browser/base/content/test/general/browser_fxa_web_channel.js": 4727, 
-    "browser/base/content/test/general/browser_fxaccounts.js": 2909, 
     "browser/base/content/test/general/browser_getshortcutoruri.js": 3083, 
     "browser/base/content/test/general/browser_identity_UI.js": 20930, 
     "browser/base/content/test/general/browser_insecureLoginForms.js": 4482, 

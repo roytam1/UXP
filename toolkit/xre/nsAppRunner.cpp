@@ -2463,7 +2463,7 @@ RemoveComponentRegistries(nsIFile* aProfileDir, nsIFile* aLocalProfileDir,
   if (!file)
     return false;
 
-#if defined(XP_UNIX) || defined(XP_BEOS)
+#if defined(XP_UNIX)
 #define PLATFORM_FASL_SUFFIX ".mfasl"
 #elif defined(XP_WIN)
 #define PLATFORM_FASL_SUFFIX ".mfl"

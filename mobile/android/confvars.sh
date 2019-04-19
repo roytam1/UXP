@@ -57,4 +57,4 @@ MOZ_WEBGL_CONFORMANT=1
 export JS_GC_SMALL_CHUNK_SIZE=1
 
 # Enable checking that add-ons are signed by the trusted root
-MOZ_ADDON_SIGNING=1
+MOZ_ADDON_SIGNING=

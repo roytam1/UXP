@@ -7,8 +7,9 @@ browser.jar:
 #include ../shared/jar.inc.mn
   skin/classic/browser/sanitizeDialog.css
   skin/classic/browser/aboutSessionRestore-window-icon.png
+#ifdef MOZ_SERVICES_SYNC
   skin/classic/browser/aboutSyncTabs.css
-* skin/classic/browser/syncedtabs/sidebar.css          (syncedtabs/sidebar.css)
+#endif
   skin/classic/browser/actionicon-tab.png
   skin/classic/browser/actionicon-tab@2x.png
 * skin/classic/browser/browser.css
@@ -159,6 +160,7 @@ browser.jar:
   skin/classic/browser/tabbrowser/tab-stroke-start@2x.png                (tabbrowser/tab-stroke-start@2x.png)
   skin/classic/browser/tabbrowser/tabDragIndicator.png                   (tabbrowser/tabDragIndicator.png)
   skin/classic/browser/tabbrowser/tabDragIndicator@2x.png                (tabbrowser/tabDragIndicator@2x.png)
+#ifdef MOZ_SERVICES_SYNC
   skin/classic/browser/sync-16.png
   skin/classic/browser/sync-32.png
   skin/classic/browser/sync-bg.png
@@ -179,6 +181,8 @@ browser.jar:
   skin/classic/browser/syncProgress-toolbar@2x.png
   skin/classic/browser/syncProgress-toolbar-inverted.png
   skin/classic/browser/syncProgress-toolbar-inverted@2x.png
+  skin/classic/browser/syncProgress.css
+#endif
   skin/classic/browser/Toolbar-background-noise.png         (Toolbar-background-noise.png)
   skin/classic/browser/lion/toolbarbutton-dropmarker.png    (toolbarbutton-dropmarker-lion.png)
   skin/classic/browser/toolbarbutton-dropmarker@2x.png      (toolbarbutton-dropmarker-lion@2x.png)
@@ -195,8 +199,10 @@ browser.jar:
   skin/classic/browser/yosemite/menuPanel-help@2x.png                  (menuPanel-help-yosemite@2x.png)
   skin/classic/browser/yosemite/reload-stop-go.png                     (reload-stop-go-yosemite.png)
   skin/classic/browser/yosemite/reload-stop-go@2x.png                  (reload-stop-go-yosemite@2x.png)
+#ifdef MOZ_SERVICES_SYNC
   skin/classic/browser/yosemite/sync-horizontalbar.png                 (sync-horizontalbar-yosemite.png)
   skin/classic/browser/yosemite/sync-horizontalbar@2x.png              (sync-horizontalbar-yosemite@2x.png)
+#endif
   skin/classic/browser/yosemite/tab-selected-end-inactive.svg          (tabbrowser/tab-selected-end-yosemite-inactive.svg)
   skin/classic/browser/yosemite/tab-selected-start-inactive.svg        (tabbrowser/tab-selected-start-yosemite-inactive.svg)
   skin/classic/browser/yosemite/tab-active-middle-inactive.png         (tabbrowser/tab-active-middle-yosemite-inactive.png)
@@ -224,5 +230,7 @@ browser.jar:
 % override chrome://browser/skin/menuPanel-help@2x.png                     chrome://browser/skin/yosemite/menuPanel-help@2x.png                    os=Darwin osversion>=10.10
 % override chrome://browser/skin/reload-stop-go.png                        chrome://browser/skin/yosemite/reload-stop-go.png                       os=Darwin osversion>=10.10
 % override chrome://browser/skin/reload-stop-go@2x.png                     chrome://browser/skin/yosemite/reload-stop-go@2x.png                    os=Darwin osversion>=10.10
+#ifdef MOZ_SERVICES_SYNC
 % override chrome://browser/skin/sync-horizontalbar.png                    chrome://browser/skin/yosemite/sync-horizontalbar.png               os=Darwin osversion>=10.10
 % override chrome://browser/skin/sync-horizontalbar@2x.png                 chrome://browser/skin/yosemite/sync-horizontalbar@2x.png            os=Darwin osversion>=10.10
+#endif

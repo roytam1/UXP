@@ -40,14 +40,8 @@ var Accounts = Object.freeze({
     }).then(data => data.exists);
   },
 
-  firefoxAccountsExist: function () {
-    return this._accountsExist("fxa");
-  },
-
   syncAccountsExist: function () {
-    Deprecated.warning("The legacy Sync account type has been removed from Firefox for Android. " +
-                       "Please use `firefoxAccountsExist` instead.",
-                       "https://developer.mozilla.org/en-US/Add-ons/Firefox_for_Android/API/Accounts.jsm");
+    Deprecated.warning("The legacy Sync account type has been removed from Firefox for Android.");
     return Promise.resolve(false);
   },
 
@@ -73,106 +67,13 @@ var Accounts = Object.freeze({
   },
 
   _addDefaultEndpoints: function (json) {
+    // Empty without FxA
     let newData = Cu.cloneInto(json, {}, { cloneFunctions: false });
-    let associations = {
-      authServerEndpoint: 'identity.fxaccounts.auth.uri',
-      profileServerEndpoint: 'identity.fxaccounts.remote.profile.uri',
-      tokenServerEndpoint: 'identity.sync.tokenserver.uri'
-    };
-    for (let key in associations) {
-      newData[key] = newData[key] || Services.urlFormatter.formatURLPref(associations[key]);
-    }
     return newData;
-  },
-
-  /**
-   * Create a new Android Account corresponding to the given
-   * fxa-content-server "login" JSON datum.  The new account will be
-   * in the "Engaged" state, and will start syncing immediately.
-   *
-   * It is an error if an Android Account already exists.
-   *
-   * Returns a Promise that resolves to a boolean indicating success.
-   */
-  createFirefoxAccountFromJSON: function (json) {
-    return Messaging.sendRequestForResult({
-      type: "Accounts:CreateFirefoxAccountFromJSON",
-      json: this._addDefaultEndpoints(json)
-    });
-  },
-
-  /**
-   * Move an existing Android Account to the "Engaged" state with the given
-   * fxa-content-server "login" JSON datum.  The account will (re)start
-   * syncing immediately, unless the user has manually configured the account
-   * to not Sync.
-   *
-   * It is an error if no Android Account exists.
-   *
-   * Returns a Promise that resolves to a boolean indicating success.
-   */
-  updateFirefoxAccountFromJSON: function (json) {
-    return Messaging.sendRequestForResult({
-      type: "Accounts:UpdateFirefoxAccountFromJSON",
-      json: this._addDefaultEndpoints(json)
-    });
-  },
-
-  /**
-   * Notify that profile for Android Account has updated.
-   * The account will re-fetch the profile image.
-   *
-   * It is an error if no Android Account exists.
-   *
-   * There is no return value from this method.
-   */
-  notifyFirefoxAccountProfileChanged: function () {
-    Messaging.sendRequest({
-      type: "Accounts:ProfileUpdated",
-    });
-  },
-
-  /**
-   * Fetch information about an existing Android Firefox Account.
-   *
-   * Returns a Promise that resolves to null if no Android Firefox Account
-   * exists, or an object including at least a string-valued 'email' key.
-   */
-  getFirefoxAccount: function () {
-    return Messaging.sendRequestForResult({
-      type: "Accounts:Exist",
-      kind: "fxa",
-    }).then(data => {
-      if (!data || !data.exists) {
-        return null;
-      }
-      delete data.exists;
-      return data;
-    });
-  },
-
-  /**
-   * Delete an existing Android Firefox Account.
-   *
-   * It is an error if no Android Account exists.
-   *
-   * Returns a Promise that resolves to a boolean indicating success.
-   */
-  deleteFirefoxAccount: function () {
-    return Messaging.sendRequestForResult({
-      type: "Accounts:DeleteFirefoxAccount",
-    });
   },
 
   showSyncPreferences: function () {
     // Only show Sync preferences of an existing Android Account.
-    return Accounts.getFirefoxAccount().then(account => {
-      if (!account) {
-        throw new Error("Can't show Sync preferences of non-existent Firefox Account!");
-      }
-      return Messaging.sendRequestForResult({
-        type: "Accounts:ShowSyncPreferences"
-      });
-    });
+    throw new Error("Can't show Sync preferences without accounts!");
   }
 });

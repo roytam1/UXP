@@ -21,11 +21,6 @@
         <item name="android:colorAccent">@color/fennec_ui_orange</item>
     </style>
 
-    <style name="ActionBar.FxAccountStatusActivity" parent="@android:style/Widget.Material.ActionBar.Solid">
-        <item name="android:displayOptions">homeAsUp|showTitle</item>
-        <item name="android:titleTextStyle">@style/ActionBarTitleTextStyle</item>
-    </style>
-
     <style name="GeckoAppBase" parent="Gecko">
         <item name="android:actionButtonStyle">@style/GeckoActionBar.Button</item>
         <item name="android:listViewStyle">@style/Widget.ListView</item>

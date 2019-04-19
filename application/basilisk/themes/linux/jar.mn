@@ -8,8 +8,9 @@ browser.jar:
 #include ../shared/jar.inc.mn
   skin/classic/browser/sanitizeDialog.css
   skin/classic/browser/aboutSessionRestore-window-icon.png
+#ifdef MOZ_SERVICES_SYNC
   skin/classic/browser/aboutSyncTabs.css
-* skin/classic/browser/syncedtabs/sidebar.css     (syncedtabs/sidebar.css)
+#endif
   skin/classic/browser/actionicon-tab.png
 * skin/classic/browser/browser.css
 * skin/classic/browser/devedition.css
@@ -107,6 +108,7 @@ browser.jar:
   skin/classic/browser/tabbrowser/tab-stroke-start@2x.png   (tabbrowser/tab-stroke-start@2x.png)
   skin/classic/browser/tabbrowser/tabDragIndicator.png      (tabbrowser/tabDragIndicator.png)
 
+#ifdef MOZ_SERVICES_SYNC
   skin/classic/browser/sync-16.png
   skin/classic/browser/sync-32.png
   skin/classic/browser/sync-bg.png
@@ -125,6 +127,8 @@ browser.jar:
   skin/classic/browser/syncQuota.css
   skin/classic/browser/syncProgress-horizontalbar.png
   skin/classic/browser/syncProgress-horizontalbar@2x.png
+  skin/classic/browser/syncProgress.css
+#endif
 
 [extensions/{972ce4c6-7e08-4474-a285-3208198ce6fd}] chrome.jar:
 % override chrome://browser/skin/feeds/audioFeedIcon.png              chrome://browser/skin/feeds/feedIcon.png
