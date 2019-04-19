@@ -106,8 +106,7 @@ static void write_drl_idx(FRAME_CONTEXT *ec_ctx, const MB_MODE_INFO *mbmi,
     int idx;
     for (idx = 0; idx < 2; ++idx) {
       if (mbmi_ext->ref_mv_count[ref_frame_type] > idx + 1) {
-        uint8_t drl_ctx =
-            av1_drl_ctx(mbmi_ext->ref_mv_stack[ref_frame_type], idx);
+        uint8_t drl_ctx = av1_drl_ctx(mbmi_ext->weight[ref_frame_type], idx);
 
         aom_write_symbol(w, mbmi->ref_mv_idx != idx, ec_ctx->drl_cdf[drl_ctx],
                          2);
@@ -122,8 +121,7 @@ static void write_drl_idx(FRAME_CONTEXT *ec_ctx, const MB_MODE_INFO *mbmi,
     // TODO(jingning): Temporary solution to compensate the NEARESTMV offset.
     for (idx = 1; idx < 3; ++idx) {
       if (mbmi_ext->ref_mv_count[ref_frame_type] > idx + 1) {
-        uint8_t drl_ctx =
-            av1_drl_ctx(mbmi_ext->ref_mv_stack[ref_frame_type], idx);
+        uint8_t drl_ctx = av1_drl_ctx(mbmi_ext->weight[ref_frame_type], idx);
         aom_write_symbol(w, mbmi->ref_mv_idx != (idx - 1),
                          ec_ctx->drl_cdf[drl_ctx], 2);
         if (mbmi->ref_mv_idx == (idx - 1)) return;
@@ -369,16 +367,16 @@ static void pack_txb_tokens(aom_writer *w, AV1_COMMON *cm, MACROBLOCK *const x,
                                                          blk_col)];
 
   if (tx_size == plane_tx_size || plane) {
+    const CB_COEFF_BUFFER *cb_coef_buff = x->cb_coef_buff;
     const int txb_offset =
         x->mbmi_ext->cb_offset / (TX_SIZE_W_MIN * TX_SIZE_H_MIN);
-    tran_low_t *tcoeff_txb =
-        x->mbmi_ext->cb_coef_buff->tcoeff[plane] + x->mbmi_ext->cb_offset;
-    uint16_t *eob_txb = x->mbmi_ext->cb_coef_buff->eobs[plane] + txb_offset;
-    uint8_t *txb_skip_ctx_txb =
-        x->mbmi_ext->cb_coef_buff->txb_skip_ctx[plane] + txb_offset;
-    int *dc_sign_ctx_txb =
-        x->mbmi_ext->cb_coef_buff->dc_sign_ctx[plane] + txb_offset;
-    tran_low_t *tcoeff = BLOCK_OFFSET(tcoeff_txb, block);
+    const tran_low_t *tcoeff_txb =
+        cb_coef_buff->tcoeff[plane] + x->mbmi_ext->cb_offset;
+    const uint16_t *eob_txb = cb_coef_buff->eobs[plane] + txb_offset;
+    const uint8_t *txb_skip_ctx_txb =
+        cb_coef_buff->txb_skip_ctx[plane] + txb_offset;
+    const int *dc_sign_ctx_txb = cb_coef_buff->dc_sign_ctx[plane] + txb_offset;
+    const tran_low_t *tcoeff = BLOCK_OFFSET(tcoeff_txb, block);
     const uint16_t eob = eob_txb[block];
     TXB_CTX txb_ctx = { txb_skip_ctx_txb[block], dc_sign_ctx_txb[block] };
     av1_write_coeffs_txb(cm, xd, w, blk_row, blk_col, plane, tx_size, tcoeff,
@@ -1373,6 +1371,7 @@ static void write_inter_txb_coeff(AV1_COMMON *const cm, MACROBLOCK *const x,
   MACROBLOCKD *const xd = &x->e_mbd;
   const struct macroblockd_plane *const pd = &xd->plane[plane];
   const BLOCK_SIZE bsize = mbmi->sb_type;
+  assert(bsize < BLOCK_SIZES_ALL);
   const BLOCK_SIZE bsizec =
       scale_chroma_bsize(bsize, pd->subsampling_x, pd->subsampling_y);
 
@@ -1392,6 +1391,7 @@ static void write_inter_txb_coeff(AV1_COMMON *const cm, MACROBLOCK *const x,
 
   int blk_row, blk_col;
 
+  assert(plane_bsize < BLOCK_SIZES_ALL);
   const int num_4x4_w = block_size_wide[plane_bsize] >> tx_size_wide_log2[0];
   const int num_4x4_h = block_size_high[plane_bsize] >> tx_size_high_log2[0];
 
@@ -1498,9 +1498,9 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
                           int mi_col) {
   write_mbmi_b(cpi, tile, w, mi_row, mi_col);
 
-  AV1_COMMON *cm = &cpi->common;
+  const AV1_COMMON *cm = &cpi->common;
   MACROBLOCKD *xd = &cpi->td.mb.e_mbd;
-  MB_MODE_INFO *mbmi = xd->mi[0];
+  const MB_MODE_INFO *mbmi = xd->mi[0];
   for (int plane = 0; plane < AOMMIN(2, av1_num_planes(cm)); ++plane) {
     const uint8_t palette_size_plane =
         mbmi->palette_mode_info.palette_size[plane];
@@ -1516,10 +1516,10 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
     }
   }
 
-  BLOCK_SIZE bsize = mbmi->sb_type;
-  int is_inter_tx = is_inter_block(mbmi) || is_intrabc_block(mbmi);
-  int skip = mbmi->skip;
-  int segment_id = mbmi->segment_id;
+  const BLOCK_SIZE bsize = mbmi->sb_type;
+  const int is_inter_tx = is_inter_block(mbmi);
+  const int skip = mbmi->skip;
+  const int segment_id = mbmi->segment_id;
   if (cm->tx_mode == TX_MODE_SELECT && block_signals_txsize(bsize) &&
       !(is_inter_tx && skip) && !xd->lossless[segment_id]) {
     if (is_inter_tx) {  // This implies skip flag is 0.
@@ -1528,17 +1528,17 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
       const int txbw = tx_size_wide_unit[max_tx_size];
       const int width = block_size_wide[bsize] >> tx_size_wide_log2[0];
       const int height = block_size_high[bsize] >> tx_size_high_log2[0];
-      int idx, idy;
-      for (idy = 0; idy < height; idy += txbh)
-        for (idx = 0; idx < width; idx += txbw)
+      for (int idy = 0; idy < height; idy += txbh) {
+        for (int idx = 0; idx < width; idx += txbw) {
           write_tx_size_vartx(xd, mbmi, max_tx_size, 0, idy, idx, w);
+        }
+      }
     } else {
       write_selected_tx_size(xd, w);
       set_txfm_ctxs(mbmi->tx_size, xd->n4_w, xd->n4_h, 0, xd);
     }
   } else {
-    set_txfm_ctxs(mbmi->tx_size, xd->n4_w, xd->n4_h,
-                  skip && is_inter_block(mbmi), xd);
+    set_txfm_ctxs(mbmi->tx_size, xd->n4_w, xd->n4_h, skip && is_inter_tx, xd);
   }
 
   write_tokens_b(cpi, tile, w, tok, tok_end, mi_row, mi_col);
@@ -1587,6 +1587,7 @@ static void write_modes_sb(AV1_COMP *const cpi, const TileInfo *const tile,
                            int mi_col, BLOCK_SIZE bsize) {
   const AV1_COMMON *const cm = &cpi->common;
   MACROBLOCKD *const xd = &cpi->td.mb.e_mbd;
+  assert(bsize < BLOCK_SIZES_ALL);
   const int hbs = mi_size_wide[bsize] / 2;
   const int quarter_step = mi_size_wide[bsize] / 4;
   int i;
@@ -1711,6 +1712,7 @@ static void write_modes(AV1_COMP *const cpi, const TileInfo *const tile,
 
     for (mi_col = mi_col_start; mi_col < mi_col_end;
          mi_col += cm->seq_params.mib_size) {
+      cpi->td.mb.cb_coef_buff = av1_get_cb_coeff_buffer(cpi, mi_row, mi_col);
       write_modes_sb(cpi, tile, w, &tok, tok_end, mi_row, mi_col,
                      cm->seq_params.sb_size);
     }

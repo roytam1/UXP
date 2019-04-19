@@ -268,8 +268,7 @@ void av1_inv_txfm2d_add_8x8_c(const int32_t *input, uint16_t *output, int stride
 #define av1_inv_txfm2d_add_8x8 av1_inv_txfm2d_add_8x8_c
 
 void av1_inv_txfm_add_c(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
-void av1_inv_txfm_add_neon(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
-RTCD_EXTERN void (*av1_inv_txfm_add)(const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param);
+#define av1_inv_txfm_add av1_inv_txfm_add_c
 
 void av1_round_shift_array_c(int32_t *arr, int size, int bit);
 void av1_round_shift_array_neon(int32_t *arr, int size, int bit);
@@ -383,8 +382,6 @@ static void setup_rtcd_internal(void)
     if (flags & HAS_NEON) av1_dist_wtd_convolve_x = av1_dist_wtd_convolve_x_neon;
     av1_dist_wtd_convolve_y = av1_dist_wtd_convolve_y_c;
     if (flags & HAS_NEON) av1_dist_wtd_convolve_y = av1_dist_wtd_convolve_y_neon;
-    av1_inv_txfm_add = av1_inv_txfm_add_c;
-    if (flags & HAS_NEON) av1_inv_txfm_add = av1_inv_txfm_add_neon;
     av1_round_shift_array = av1_round_shift_array_c;
     if (flags & HAS_NEON) av1_round_shift_array = av1_round_shift_array_neon;
     av1_selfguided_restoration = av1_selfguided_restoration_c;

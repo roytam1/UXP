@@ -23,6 +23,7 @@ typedef struct {
   int max_h_size;
   int max_v_size;
   int max_header_rate;
+  int max_tile_rate;
   int max_tiles;
   int max_tile_cols;
   int64_t max_display_rate;
@@ -36,8 +37,10 @@ typedef struct {
 typedef struct {
   int64_t ts_start;
   int64_t ts_end;
+  size_t encoded_size_in_bytes;
   int pic_size;
   int frame_header_count;
+  int tiles;
   int show_frame;
   int show_existing_frame;
 } FrameRecord;
@@ -52,11 +55,14 @@ typedef struct {
 
 // Used to keep track of AV1 Level Stats. Currently unimplemented.
 typedef struct {
-  uint64_t total_compressed_size;
+  int max_bitrate;  // In bps.
   int max_tile_size;
+  int max_superres_tile_width;
   int min_cropped_tile_width;
   int min_cropped_tile_height;
   int tile_width_is_valid;
+  int min_frame_width;
+  int min_frame_height;
   double total_time_encoded;
   double min_cr;
 } AV1LevelStats;
@@ -65,6 +71,8 @@ typedef struct {
   AV1LevelStats level_stats;
   AV1LevelSpec level_spec;
 } AV1LevelInfo;
+
+void av1_init_level_info(AV1LevelInfo *level_info);
 
 void av1_update_level_info(struct AV1_COMP *cpi, size_t size, int64_t ts_start,
                            int64_t ts_end);

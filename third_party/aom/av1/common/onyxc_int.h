@@ -917,6 +917,7 @@ static INLINE void update_partition_context(MACROBLOCKD *xd, int mi_row,
 
 static INLINE int is_chroma_reference(int mi_row, int mi_col, BLOCK_SIZE bsize,
                                       int subsampling_x, int subsampling_y) {
+  assert(bsize < BLOCK_SIZES_ALL);
   const int bw = mi_size_wide[bsize];
   const int bh = mi_size_high[bsize];
   int ref_pos = ((mi_row & 0x01) || !(bh & 0x01) || !subsampling_y) &&
@@ -926,6 +927,8 @@ static INLINE int is_chroma_reference(int mi_row, int mi_col, BLOCK_SIZE bsize,
 
 static INLINE BLOCK_SIZE scale_chroma_bsize(BLOCK_SIZE bsize, int subsampling_x,
                                             int subsampling_y) {
+  assert(subsampling_x >= 0 && subsampling_x < 2);
+  assert(subsampling_y >= 0 && subsampling_y < 2);
   BLOCK_SIZE bs = bsize;
   switch (bsize) {
     case BLOCK_4X4:
@@ -1076,6 +1079,7 @@ static INLINE int partition_cdf_length(BLOCK_SIZE bsize) {
 
 static INLINE int max_block_wide(const MACROBLOCKD *xd, BLOCK_SIZE bsize,
                                  int plane) {
+  assert(bsize < BLOCK_SIZES_ALL);
   int max_blocks_wide = block_size_wide[bsize];
   const struct macroblockd_plane *const pd = &xd->plane[plane];
 

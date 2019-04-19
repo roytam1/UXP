@@ -72,6 +72,7 @@ struct av1_extracfg {
   int enable_dual_filter;
   AQ_MODE aq_mode;
   DELTAQ_MODE deltaq_mode;
+  int deltalf_mode;
   unsigned int frame_periodic_boost;
   aom_bit_depth_t bit_depth;
   aom_tune_content content;
@@ -169,7 +170,7 @@ static struct av1_extracfg default_extra_cfg = {
   !CONFIG_SHARP_SETTINGS,  // enable_cdef
   1,                       // enable_restoration
   1,                       // enable_obmc
-  0,                       // disable_trellis_quant
+  3,                       // disable_trellis_quant
   0,                       // enable_qm
   DEFAULT_QM_Y,            // qm_y
   DEFAULT_QM_U,            // qm_u
@@ -186,6 +187,7 @@ static struct av1_extracfg default_extra_cfg = {
   1,                            // enable dual filter
   NO_AQ,                        // aq_mode
   NO_DELTA_Q,                   // deltaq_mode
+  0,                            // delta lf mode
   0,                            // frame_periodic_delta_q
   AOM_BITS_8,                   // Bit depth
   AOM_CONTENT_DEFAULT,          // content
@@ -261,6 +263,9 @@ struct aom_codec_alg_priv {
   aom_codec_priv_t base;
   aom_codec_enc_cfg_t cfg;
   struct av1_extracfg extra_cfg;
+  aom_rational64_t timestamp_ratio;
+  aom_codec_pts_t pts_offset;
+  unsigned char pts_offset_initialized;
   AV1EncoderConfig oxcf;
   AV1_COMP *cpi;
   unsigned char *cx_data;
@@ -277,6 +282,23 @@ struct aom_codec_alg_priv {
   // BufferPool that holds all reference frames.
   BufferPool *buffer_pool;
 };
+
+static INLINE int gcd(int64_t a, int b) {
+  int remainder;  // remainder
+  while (b > 0) {
+    remainder = (int)(a % b);
+    a = b;
+    b = remainder;
+  }
+
+  return (int)a;
+}
+
+static INLINE void reduce_ratio(aom_rational64_t *ratio) {
+  const int denom = gcd(ratio->num, ratio->den);
+  ratio->num /= denom;
+  ratio->den /= denom;
+}
 
 static aom_codec_err_t update_error_state(
     aom_codec_alg_priv_t *ctx, const struct aom_internal_error_info *error) {
@@ -324,7 +346,8 @@ static aom_codec_err_t validate_config(aom_codec_alg_priv_t *ctx,
   RANGE_CHECK_HI(cfg, rc_min_quantizer, cfg->rc_max_quantizer);
   RANGE_CHECK_BOOL(extra_cfg, lossless);
   RANGE_CHECK_HI(extra_cfg, aq_mode, AQ_MODE_COUNT - 1);
-  RANGE_CHECK_HI(extra_cfg, deltaq_mode, DELTAQ_MODE_COUNT - 1);
+  RANGE_CHECK_HI(extra_cfg, deltaq_mode, DELTA_Q_MODE_COUNT - 1);
+  RANGE_CHECK_HI(extra_cfg, deltalf_mode, 1);
   RANGE_CHECK_HI(extra_cfg, frame_periodic_boost, 1);
   RANGE_CHECK_HI(cfg, g_usage, 1);
   RANGE_CHECK_HI(cfg, g_threads, MAX_NUM_THREADS);
@@ -683,9 +706,6 @@ static aom_codec_err_t set_encoder_config(
     }
   }
 
-  oxcf->enable_tpl_model =
-      extra_cfg->enable_tpl_model && (oxcf->superres_mode == SUPERRES_NONE);
-
   oxcf->maximum_buffer_size_ms = is_vbr ? 240000 : cfg->rc_buf_sz;
   oxcf->starting_buffer_level_ms = is_vbr ? 60000 : cfg->rc_buf_initial_sz;
   oxcf->optimal_buffer_level_ms = is_vbr ? 60000 : cfg->rc_buf_optimal_sz;
@@ -833,8 +853,23 @@ static aom_codec_err_t set_encoder_config(
     oxcf->timing_info_present = 0;
   }
 
+  oxcf->enable_tpl_model =
+      extra_cfg->enable_tpl_model && (oxcf->superres_mode == SUPERRES_NONE);
+
   oxcf->aq_mode = extra_cfg->aq_mode;
   oxcf->deltaq_mode = extra_cfg->deltaq_mode;
+  // Turn on tpl model for deltaq_mode == DELTA_Q_OBJECTIVE and no
+  // superres. If superres is being used on the other hand, turn
+  // delta_q off.
+  if (oxcf->deltaq_mode == DELTA_Q_OBJECTIVE) {
+    if (oxcf->superres_mode == SUPERRES_NONE)
+      oxcf->enable_tpl_model = 1;
+    else
+      oxcf->deltaq_mode = NO_DELTA_Q;
+  }
+
+  oxcf->deltalf_mode =
+      (oxcf->deltaq_mode != NO_DELTA_Q) && extra_cfg->deltalf_mode;
 
   oxcf->save_as_annexb = cfg->save_as_annexb;
 
@@ -1507,6 +1542,13 @@ static aom_codec_err_t ctrl_set_deltaq_mode(aom_codec_alg_priv_t *ctx,
   return update_extra_cfg(ctx, &extra_cfg);
 }
 
+static aom_codec_err_t ctrl_set_deltalf_mode(aom_codec_alg_priv_t *ctx,
+                                             va_list args) {
+  struct av1_extracfg extra_cfg = ctx->extra_cfg;
+  extra_cfg.deltalf_mode = CAST(AV1E_SET_DELTALF_MODE, args);
+  return update_extra_cfg(ctx, &extra_cfg);
+}
+
 static aom_codec_err_t ctrl_set_min_gf_interval(aom_codec_alg_priv_t *ctx,
                                                 va_list args) {
   struct av1_extracfg extra_cfg = ctx->extra_cfg;
@@ -1596,6 +1638,11 @@ static aom_codec_err_t encoder_init(aom_codec_ctx_t *ctx,
     res = validate_config(priv, &priv->cfg, &priv->extra_cfg);
 
     if (res == AOM_CODEC_OK) {
+      priv->timestamp_ratio.den = priv->cfg.g_timebase.den;
+      priv->timestamp_ratio.num =
+          (int64_t)priv->cfg.g_timebase.num * TICKS_PER_SEC;
+      reduce_ratio(&priv->timestamp_ratio);
+
       set_encoder_config(&priv->oxcf, &priv->cfg, &priv->extra_cfg);
       priv->oxcf.use_highbitdepth =
           (ctx->init_flags & AOM_CODEC_USE_HIGHBITDEPTH) ? 1 : 0;
@@ -1643,7 +1690,8 @@ static aom_codec_err_t encoder_encode(aom_codec_alg_priv_t *ctx,
   const size_t kMinCompressedSize = 8192;
   volatile aom_codec_err_t res = AOM_CODEC_OK;
   AV1_COMP *const cpi = ctx->cpi;
-  const aom_rational_t *const timebase = &ctx->cfg.g_timebase;
+  const aom_rational64_t *const timestamp_ratio = &ctx->timestamp_ratio;
+  volatile aom_codec_pts_t ptsvol = pts;
 
   if (cpi == NULL) return AOM_CODEC_INVALID_PARAM;
 
@@ -1669,6 +1717,12 @@ static aom_codec_err_t encoder_encode(aom_codec_alg_priv_t *ctx,
     ctx->oxcf.mode = GOOD;
     av1_change_config(ctx->cpi, &ctx->oxcf);
   }
+
+  if (!ctx->pts_offset_initialized) {
+    ctx->pts_offset = ptsvol;
+    ctx->pts_offset_initialized = 1;
+  }
+  ptsvol -= ctx->pts_offset;
 
   aom_codec_pkt_list_init(&ctx->pkt_list);
 
@@ -1700,9 +1754,9 @@ static aom_codec_err_t encoder_encode(aom_codec_alg_priv_t *ctx,
   }
 
   if (res == AOM_CODEC_OK) {
-    int64_t dst_time_stamp = timebase_units_to_ticks(timebase, pts);
+    int64_t dst_time_stamp = timebase_units_to_ticks(timestamp_ratio, ptsvol);
     int64_t dst_end_time_stamp =
-        timebase_units_to_ticks(timebase, pts + duration);
+        timebase_units_to_ticks(timestamp_ratio, ptsvol + duration);
 
     // Set up internal flags
     if (ctx->base.init_flags & AOM_CODEC_USE_PSNR) cpi->b_calculate_psnr = 1;
@@ -1751,7 +1805,7 @@ static aom_codec_err_t encoder_encode(aom_codec_alg_priv_t *ctx,
            !is_frame_visible &&
            -1 != av1_get_compressed_data(cpi, &lib_flags, &frame_size, cx_data,
                                          &dst_time_stamp, &dst_end_time_stamp,
-                                         !img, timebase)) {
+                                         !img, timestamp_ratio)) {
       cpi->seq_params_locked = 1;
       if (frame_size) {
         if (ctx->pending_cx_data == 0) ctx->pending_cx_data = cx_data;
@@ -1846,7 +1900,9 @@ static aom_codec_err_t encoder_encode(aom_codec_alg_priv_t *ctx,
       pkt.data.frame.partition_id = -1;
       pkt.data.frame.vis_frame_size = frame_size;
 
-      pkt.data.frame.pts = ticks_to_timebase_units(timebase, dst_time_stamp);
+      pkt.data.frame.pts =
+          ticks_to_timebase_units(timestamp_ratio, dst_time_stamp) +
+          ctx->pts_offset;
       pkt.data.frame.flags = get_frame_pkt_flags(cpi, lib_flags);
       if (has_fwd_keyframe) {
         // If one of the invisible frames in the packet is a keyframe, set
@@ -1854,7 +1910,7 @@ static aom_codec_err_t encoder_encode(aom_codec_alg_priv_t *ctx,
         pkt.data.frame.flags |= AOM_FRAME_IS_DELAYED_RANDOM_ACCESS_POINT;
       }
       pkt.data.frame.duration = (uint32_t)ticks_to_timebase_units(
-          timebase, dst_end_time_stamp - dst_time_stamp);
+          timestamp_ratio, dst_end_time_stamp - dst_time_stamp);
 
       aom_codec_pkt_list_add(&ctx->pkt_list.head, &pkt);
 
@@ -2231,6 +2287,7 @@ static aom_codec_ctrl_fn_map_t encoder_ctrl_maps[] = {
   { AV1E_SET_COEFF_COST_UPD_FREQ, ctrl_set_coeff_cost_upd_freq },
   { AV1E_SET_MODE_COST_UPD_FREQ, ctrl_set_mode_cost_upd_freq },
   { AV1E_SET_DELTAQ_MODE, ctrl_set_deltaq_mode },
+  { AV1E_SET_DELTALF_MODE, ctrl_set_deltalf_mode },
   { AV1E_SET_FRAME_PERIODIC_BOOST, ctrl_set_frame_periodic_boost },
   { AV1E_SET_TUNE_CONTENT, ctrl_set_tune_content },
   { AV1E_SET_CDF_UPDATE_MODE, ctrl_set_cdf_update_mode },

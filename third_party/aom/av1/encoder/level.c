@@ -221,9 +221,13 @@ typedef enum {
   LUMA_PIC_SIZE_TOO_LARGE,
   LUMA_PIC_H_SIZE_TOO_LARGE,
   LUMA_PIC_V_SIZE_TOO_LARGE,
+  LUMA_PIC_H_SIZE_TOO_SMALL,
+  LUMA_PIC_V_SIZE_TOO_SMALL,
   TOO_MANY_TILE_COLUMNS,
   TOO_MANY_TILES,
+  TILE_RATE_TOO_HIGH,
   TILE_TOO_LARGE,
+  SUPERRES_TILE_WIDTH_TOO_LARGE,
   CROPPED_TILE_WIDTH_TOO_SMALL,
   CROPPED_TILE_HEIGHT_TOO_SMALL,
   TILE_WIDTH_INVALID,
@@ -231,6 +235,8 @@ typedef enum {
   DISPLAY_RATE_TOO_HIGH,
   DECODE_RATE_TOO_HIGH,
   CR_TOO_SMALL,
+  TILE_SIZE_HEADER_RATE_TOO_HIGH,
+  BITRATE_TOO_HIGH,
 
   TARGET_LEVEL_FAIL_IDS,
   TARGET_LEVEL_OK,
@@ -240,33 +246,91 @@ static const char *level_fail_messages[TARGET_LEVEL_FAIL_IDS] = {
   "The picture size is too large.",
   "The picture width is too large.",
   "The picture height is too large.",
+  "The picture width is too small.",
+  "The picture height is too small.",
   "Too many tile columns are used.",
   "Too many tiles are used.",
+  "The tile rate is too high.",
   "The tile size is too large.",
-  "The cropped tile width is less than 8",
-  "The cropped tile height is less than 8",
-  "The tile width is invalid",
-  "The frame header rate is too high",
-  "The display luma sample rate is too high",
-  "The decoded luma sample rate is too high",
-  "The compression ratio is too small",
+  "The superres tile width is too large.",
+  "The cropped tile width is less than 8.",
+  "The cropped tile height is less than 8.",
+  "The tile width is invalid.",
+  "The frame header rate is too high.",
+  "The display luma sample rate is too high.",
+  "The decoded luma sample rate is too high.",
+  "The compression ratio is too small.",
+  "The product of max tile size and header rate is too high.",
+  "The bitrate is too high.",
 };
+
+void av1_init_level_info(AV1LevelInfo *level_info) {
+  memset(level_info, 0, MAX_NUM_OPERATING_POINTS * sizeof(*level_info));
+  for (int i = 0; i < MAX_NUM_OPERATING_POINTS; ++i) {
+    AV1LevelSpec *const level_spec = &level_info[i].level_spec;
+    level_spec->level = SEQ_LEVEL_MAX;
+    AV1LevelStats *const level_stats = &level_info[i].level_stats;
+    level_stats->min_cropped_tile_width = INT_MAX;
+    level_stats->min_cropped_tile_height = INT_MAX;
+    level_stats->min_frame_width = INT_MAX;
+    level_stats->min_frame_height = INT_MAX;
+    level_stats->tile_width_is_valid = 1;
+    level_stats->min_cr = 1e8;
+  }
+}
 
 static double get_min_cr(const AV1LevelSpec *const level_spec, int tier,
                          int is_still_picture, int64_t decoded_sample_rate) {
   if (is_still_picture) return 0.8;
+  if (level_spec->level < SEQ_LEVEL_4_0) tier = 0;
   const double min_cr_basis = tier ? level_spec->high_cr : level_spec->main_cr;
   const double speed_adj =
       (double)decoded_sample_rate / level_spec->max_display_rate;
   return AOMMAX(min_cr_basis * speed_adj, 0.8);
 }
 
+static void get_temporal_parallel_params(int scalability_mode_idc,
+                                         int *temporal_parallel_num,
+                                         int *temporal_parallel_denom) {
+  if (scalability_mode_idc < 0) {
+    *temporal_parallel_num = 1;
+    *temporal_parallel_denom = 1;
+    return;
+  }
+
+  // TODO(huisu@): handle scalability cases.
+  if (scalability_mode_idc == SCALABILITY_SS) {
+    (void)scalability_mode_idc;
+  } else {
+    (void)scalability_mode_idc;
+  }
+}
+
+static double get_max_bitrate(const AV1LevelSpec *const level_spec, int tier,
+                              BITSTREAM_PROFILE profile) {
+  if (level_spec->level < SEQ_LEVEL_4_0) tier = 0;
+  const double bitrate_basis =
+      (tier ? level_spec->high_mbps : level_spec->main_mbps) * 1e6;
+  const double bitrate_profile_factor =
+      profile == PROFILE_0 ? 1.0 : (profile == PROFILE_1 ? 2.0 : 3.0);
+  return bitrate_basis * bitrate_profile_factor;
+}
+
+#define MAX_TILE_SIZE (4096 * 2304)
+#define MIN_CROPPED_TILE_WIDTH 8
+#define MIN_CROPPED_TILE_HEIGHT 8
+#define MIN_FRAME_WIDTH 16
+#define MIN_FRAME_HEIGHT 16
+#define MAX_TILE_SIZE_HEADER_RATE_PRODUCT 588251136
+
 static TARGET_LEVEL_FAIL_ID check_level_constraints(
     const AV1LevelSpec *const target_level_spec,
     const AV1LevelSpec *const level_spec,
-    const AV1LevelStats *const level_stats, int tier, int is_still_picture) {
+    const AV1LevelStats *const level_stats, int tier, int is_still_picture,
+    BITSTREAM_PROFILE profile) {
   const double min_cr = get_min_cr(target_level_spec, tier, is_still_picture,
                                    level_spec->max_decode_rate);
+  const double max_bitrate = get_max_bitrate(target_level_spec, tier, profile);
   TARGET_LEVEL_FAIL_ID fail_id = TARGET_LEVEL_OK;
 
   do {
@@ -310,18 +374,38 @@ static TARGET_LEVEL_FAIL_ID check_level_constraints(
       break;
     }
 
-    if (level_stats->max_tile_size > 4096 * 2304) {
+    if (level_spec->max_tile_rate > target_level_spec->max_tiles * 120) {
+      fail_id = TILE_RATE_TOO_HIGH;
+      break;
+    }
+
+    if (level_stats->max_tile_size > MAX_TILE_SIZE) {
       fail_id = TILE_TOO_LARGE;
       break;
     }
 
-    if (level_stats->min_cropped_tile_width < 8) {
+    if (level_stats->max_superres_tile_width > MAX_TILE_WIDTH) {
+      fail_id = SUPERRES_TILE_WIDTH_TOO_LARGE;
+      break;
+    }
+
+    if (level_stats->min_cropped_tile_width < MIN_CROPPED_TILE_WIDTH) {
       fail_id = CROPPED_TILE_WIDTH_TOO_SMALL;
       break;
     }
 
-    if (level_stats->min_cropped_tile_height < 8) {
+    if (level_stats->min_cropped_tile_height < MIN_CROPPED_TILE_HEIGHT) {
       fail_id = CROPPED_TILE_HEIGHT_TOO_SMALL;
+      break;
+    }
+
+    if (level_stats->min_frame_width < MIN_FRAME_WIDTH) {
+      fail_id = LUMA_PIC_H_SIZE_TOO_SMALL;
+      break;
+    }
+
+    if (level_stats->min_frame_height < MIN_FRAME_HEIGHT) {
+      fail_id = LUMA_PIC_V_SIZE_TOO_SMALL;
       break;
     }
 
@@ -333,6 +417,25 @@ static TARGET_LEVEL_FAIL_ID check_level_constraints(
     if (level_stats->min_cr < min_cr) {
       fail_id = CR_TOO_SMALL;
       break;
+    }
+
+    if ((double)level_stats->max_bitrate > max_bitrate) {
+      fail_id = BITRATE_TOO_HIGH;
+      break;
+    }
+
+    if (target_level_spec->level > SEQ_LEVEL_5_1) {
+      int temporal_parallel_num;
+      int temporal_parallel_denom;
+      const int scalability_mode_idc = -1;
+      get_temporal_parallel_params(scalability_mode_idc, &temporal_parallel_num,
+                                   &temporal_parallel_denom);
+      const int val = level_stats->max_tile_size * level_spec->max_header_rate *
+                      temporal_parallel_denom / temporal_parallel_num;
+      if (val > MAX_TILE_SIZE_HEADER_RATE_PRODUCT) {
+        fail_id = TILE_SIZE_HEADER_RATE_TOO_HIGH;
+        break;
+      }
     }
   } while (0);
 
@@ -349,14 +452,17 @@ static INLINE int is_in_operating_point(int operating_point,
 }
 
 static void get_tile_stats(const AV1_COMP *const cpi, int *max_tile_size,
+                           int *max_superres_tile_width,
                            int *min_cropped_tile_width,
                            int *min_cropped_tile_height,
                            int *tile_width_valid) {
   const AV1_COMMON *const cm = &cpi->common;
   const int tile_cols = cm->tile_cols;
   const int tile_rows = cm->tile_rows;
+  const int superres_scale_denominator = cm->superres_scale_denominator;
 
   *max_tile_size = 0;
+  *max_superres_tile_width = 0;
   *min_cropped_tile_width = INT_MAX;
   *min_cropped_tile_height = INT_MAX;
   *tile_width_valid = 1;
@@ -371,6 +477,11 @@ static void get_tile_stats(const AV1_COMP *const cpi, int *max_tile_size,
           (tile_info->mi_row_end - tile_info->mi_row_start) * MI_SIZE;
       const int tile_size = tile_width * tile_height;
       *max_tile_size = AOMMAX(*max_tile_size, tile_size);
+
+      const int supperres_tile_width =
+          tile_width * superres_scale_denominator / SCALE_NUMERATOR;
+      *max_superres_tile_width =
+          AOMMAX(*max_superres_tile_width, supperres_tile_width);
 
       const int cropped_tile_width =
           cm->width - tile_info->mi_col_start * MI_SIZE;
@@ -392,8 +503,9 @@ static void get_tile_stats(const AV1_COMP *const cpi, int *max_tile_size,
   }
 }
 
-static int store_frame_record(int64_t ts_start, int64_t ts_end, int pic_size,
-                              int frame_header_count, int show_frame,
+static int store_frame_record(int64_t ts_start, int64_t ts_end,
+                              size_t encoded_size, int pic_size,
+                              int frame_header_count, int tiles, int show_frame,
                               int show_existing_frame,
                               FrameWindowBuffer *const buffer) {
   if (buffer->num < FRAME_WINDOW_SIZE) {
@@ -405,8 +517,10 @@ static int store_frame_record(int64_t ts_start, int64_t ts_end, int pic_size,
   FrameRecord *const record = &buffer->buf[new_idx];
   record->ts_start = ts_start;
   record->ts_end = ts_end;
+  record->encoded_size_in_bytes = encoded_size;
   record->pic_size = pic_size;
   record->frame_header_count = frame_header_count;
+  record->tiles = tiles;
   record->show_frame = show_frame;
   record->show_existing_frame = show_existing_frame;
 
@@ -439,12 +553,15 @@ static int count_frames(const FrameWindowBuffer *const buffer,
 // Scan previously encoded frames and update level metrics accordingly.
 static void scan_past_frames(const FrameWindowBuffer *const buffer,
                              int num_frames_to_scan,
-                             AV1LevelSpec *const level_spec) {
+                             AV1LevelSpec *const level_spec,
+                             AV1LevelStats *const level_stats) {
   const int num_frames_in_buffer = buffer->num;
   int index = (buffer->start + num_frames_in_buffer - 1) % FRAME_WINDOW_SIZE;
   int frame_headers = 0;
+  int tiles = 0;
   int64_t display_samples = 0;
   int64_t decoded_samples = 0;
+  size_t encoded_size_in_bytes = 0;
   for (int i = 0; i < AOMMIN(num_frames_in_buffer, num_frames_to_scan); ++i) {
     const FrameRecord *const record = &buffer->buf[index];
     if (!record->show_existing_frame) {
@@ -454,6 +571,8 @@ static void scan_past_frames(const FrameWindowBuffer *const buffer,
     if (record->show_frame) {
       display_samples += record->pic_size;
     }
+    tiles += record->tiles;
+    encoded_size_in_bytes += record->encoded_size_in_bytes;
     --index;
     if (index < 0) index = FRAME_WINDOW_SIZE - 1;
   }
@@ -463,12 +582,16 @@ static void scan_past_frames(const FrameWindowBuffer *const buffer,
       AOMMAX(level_spec->max_display_rate, display_samples);
   level_spec->max_decode_rate =
       AOMMAX(level_spec->max_decode_rate, decoded_samples);
+  level_spec->max_tile_rate = AOMMAX(level_spec->max_tile_rate, tiles);
+  level_stats->max_bitrate =
+      AOMMAX(level_stats->max_bitrate, (int)encoded_size_in_bytes * 8);
 }
 
 void av1_update_level_info(AV1_COMP *cpi, size_t size, int64_t ts_start,
                            int64_t ts_end) {
   AV1_COMMON *const cm = &cpi->common;
   const int upscaled_width = cm->superres_upscaled_width;
+  const int width = cm->width;
   const int height = cm->height;
   const int tile_cols = cm->tile_cols;
   const int tile_rows = cm->tile_rows;
@@ -480,8 +603,8 @@ void av1_update_level_info(AV1_COMP *cpi, size_t size, int64_t ts_start,
 
   // Store info. of current frame into FrameWindowBuffer.
   FrameWindowBuffer *const buffer = &cpi->frame_window_buffer;
-  store_frame_record(ts_start, ts_end, luma_pic_size, frame_header_count,
-                     show_frame, show_existing_frame, buffer);
+  store_frame_record(ts_start, ts_end, size, luma_pic_size, frame_header_count,
+                     tiles, show_frame, show_existing_frame, buffer);
   // Count the number of frames encoded in the past 1 second.
   const int encoded_frames_in_last_second =
       show_frame ? count_frames(buffer, TICKS_PER_SEC) : 0;
@@ -489,9 +612,11 @@ void av1_update_level_info(AV1_COMP *cpi, size_t size, int64_t ts_start,
   int max_tile_size;
   int min_cropped_tile_width;
   int min_cropped_tile_height;
+  int max_superres_tile_width;
   int tile_width_is_valid;
-  get_tile_stats(cpi, &max_tile_size, &min_cropped_tile_width,
-                 &min_cropped_tile_height, &tile_width_is_valid);
+  get_tile_stats(cpi, &max_tile_size, &max_superres_tile_width,
+                 &min_cropped_tile_width, &min_cropped_tile_height,
+                 &tile_width_is_valid);
 
   const SequenceHeader *const seq_params = &cm->seq_params;
   const BITSTREAM_PROFILE profile = seq_params->profile;
@@ -524,12 +649,16 @@ void av1_update_level_info(AV1_COMP *cpi, size_t size, int64_t ts_start,
 
     level_stats->max_tile_size =
         AOMMAX(level_stats->max_tile_size, max_tile_size);
+    level_stats->max_superres_tile_width =
+        AOMMAX(level_stats->max_superres_tile_width, max_superres_tile_width);
     level_stats->min_cropped_tile_width =
         AOMMIN(level_stats->min_cropped_tile_width, min_cropped_tile_width);
     level_stats->min_cropped_tile_height =
         AOMMIN(level_stats->min_cropped_tile_height, min_cropped_tile_height);
     level_stats->tile_width_is_valid &= tile_width_is_valid;
-    level_stats->total_compressed_size += frame_compressed_size;
+    level_stats->min_frame_width = AOMMIN(level_stats->min_frame_width, width);
+    level_stats->min_frame_height =
+        AOMMIN(level_stats->min_frame_height, height);
     if (show_frame) level_stats->total_time_encoded = total_time_encoded;
     level_stats->min_cr = AOMMIN(level_stats->min_cr, compression_ratio);
 
@@ -545,7 +674,8 @@ void av1_update_level_info(AV1_COMP *cpi, size_t size, int64_t ts_start,
     level_spec->max_tiles = AOMMAX(level_spec->max_tiles, tiles);
 
     if (show_frame) {
-      scan_past_frames(buffer, encoded_frames_in_last_second, level_spec);
+      scan_past_frames(buffer, encoded_frames_in_last_second, level_spec,
+                       level_stats);
     }
 
     // Check whether target level is met.
@@ -554,8 +684,9 @@ void av1_update_level_info(AV1_COMP *cpi, size_t size, int64_t ts_start,
       const AV1LevelSpec *const target_level_spec =
           av1_level_defs + target_seq_level_idx;
       const int tier = seq_params->tier[i];
-      const TARGET_LEVEL_FAIL_ID fail_id = check_level_constraints(
-          target_level_spec, level_spec, level_stats, tier, is_still_picture);
+      const TARGET_LEVEL_FAIL_ID fail_id =
+          check_level_constraints(target_level_spec, level_spec, level_stats,
+                                  tier, is_still_picture, profile);
       if (fail_id != TARGET_LEVEL_OK) {
         const int target_level_major = 2 + (target_seq_level_idx >> 2);
         const int target_level_minor = target_seq_level_idx & 3;
@@ -578,6 +709,7 @@ aom_codec_err_t av1_get_seq_level_idx(const AV1_COMP *cpi, int *seq_level_idx) {
   }
 
   const int is_still_picture = seq_params->still_picture;
+  const BITSTREAM_PROFILE profile = seq_params->profile;
   for (int op = 0; op < seq_params->operating_points_cnt_minus_1 + 1; ++op) {
     seq_level_idx[op] = (int)SEQ_LEVEL_MAX;
     const int tier = seq_params->tier[op];
@@ -586,8 +718,9 @@ aom_codec_err_t av1_get_seq_level_idx(const AV1_COMP *cpi, int *seq_level_idx) {
     const AV1LevelSpec *const level_spec = &level_info->level_spec;
     for (int level = 0; level < SEQ_LEVELS; ++level) {
       const AV1LevelSpec *const target_level_spec = av1_level_defs + level;
-      const TARGET_LEVEL_FAIL_ID fail_id = check_level_constraints(
-          target_level_spec, level_spec, level_stats, tier, is_still_picture);
+      const TARGET_LEVEL_FAIL_ID fail_id =
+          check_level_constraints(target_level_spec, level_spec, level_stats,
+                                  tier, is_still_picture, profile);
       if (fail_id == TARGET_LEVEL_OK) {
         seq_level_idx[op] = level;
         break;

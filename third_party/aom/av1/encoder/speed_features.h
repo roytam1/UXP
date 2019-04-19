@@ -354,11 +354,6 @@ typedef struct SPEED_FEATURES {
   // 1: use model based rd breakout
   int model_based_post_interp_filter_breakout;
 
-  // Model based breakout in motion_mode_rd
-  // 0: no breakout
-  // 1: use model based rd breakout
-  int model_based_motion_mode_rd_breakout;
-
   // Used if partition_search_type = FIXED_SIZE_PARTITION
   BLOCK_SIZE always_this_block_size;
 
@@ -384,6 +379,11 @@ typedef struct SPEED_FEATURES {
 
   // Use a ML model to prune horz4 and vert4 partitions.
   int ml_prune_4_partition;
+
+  // Use a ML model to adaptively terminate partition search after trying
+  // PARTITION_SPLIT. Can take values 0 - 2, 0 meaning not being enabled, and
+  // 1 - 2 increasing aggressiveness in order.
+  int ml_early_term_after_part_split_level;
 
   int fast_cdef_search;
 
@@ -648,8 +648,11 @@ typedef struct SPEED_FEATURES {
   int simple_motion_search_prune_rect;
 
   // Perform simple motion search before none_partition to decide if we
-  // want to split directly without trying other partition types.
-  int simple_motion_search_split_only;
+  // want to remove all partitions other than PARTITION_SPLIT. If set to 0, this
+  // model is disabled. If set to 1, the model attempts to perform
+  // PARTITION_SPLIT only. If set to 2, the model also attempts to prune
+  // PARTITION_SPLIT.
+  int simple_motion_search_split;
 
   // Use features from simple_motion_search to terminate prediction block
   // partition after PARTITION_NONE
@@ -671,6 +674,9 @@ typedef struct SPEED_FEATURES {
 
   // Disable loop restoration for Chroma plane
   int disable_loop_restoration_chroma;
+
+  // Reduce the wiener filter win size for luma
+  int reduce_wiener_window_size;
 
   // Flag used to control the extent of coeff R-D optimization
   int perform_coeff_opt;
@@ -695,6 +701,16 @@ typedef struct SPEED_FEATURES {
   // inter-mode RD model for others. Only enabled when
   // inter_mode_rd_model_estimation != 0
   int inter_mode_rd_model_estimation_adaptive;
+
+  // Use very reduced set of inter mode checks and fast non-rd mode cost
+  // estimation Only enabled when use_nonrd_pick_mode is != 0
+  int use_fast_nonrd_pick_mode;
+
+  // Reuse inter prediction in fast non-rd mode.
+  int reuse_inter_pred_nonrd;
+
+  // Perform croase ME before calculating variance in variance-based partition
+  int estimate_motion_for_var_based_partition;
 } SPEED_FEATURES;
 
 struct AV1_COMP;

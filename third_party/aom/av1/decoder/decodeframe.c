@@ -1734,6 +1734,7 @@ static PARTITION_TYPE read_partition(MACROBLOCKD *xd, int mi_row, int mi_col,
 static void decode_partition(AV1Decoder *const pbi, ThreadData *const td,
                              int mi_row, int mi_col, aom_reader *reader,
                              BLOCK_SIZE bsize, int parse_decode_flag) {
+  assert(bsize < BLOCK_SIZES_ALL);
   AV1_COMMON *const cm = &pbi->common;
   MACROBLOCKD *const xd = &td->xd;
   const int bw = mi_size_wide[bsize];
@@ -1751,9 +1752,9 @@ static void decode_partition(AV1Decoder *const pbi, ThreadData *const td,
   // 01 - do parse only
   // 10 - do decode only
   // 11 - do parse and decode
-  static const block_visitor_fn_t block_visit[4] = {
-    NULL, parse_decode_block, decode_block, parse_decode_block
-  };
+  static const block_visitor_fn_t block_visit[4] = { NULL, parse_decode_block,
+                                                     decode_block,
+                                                     parse_decode_block };
 
   if (parse_decode_flag & 1) {
     const int num_planes = av1_num_planes(cm);
@@ -1778,7 +1779,11 @@ static void decode_partition(AV1Decoder *const pbi, ThreadData *const td,
     partition = get_partition(cm, mi_row, mi_col, bsize);
   }
   subsize = get_partition_subsize(bsize, partition);
-
+  if (subsize == BLOCK_INVALID) {
+    aom_internal_error(xd->error_info, AOM_CODEC_CORRUPT_FRAME,
+                       "Partition is invalid for block size %dx%d",
+                       block_size_wide[bsize], block_size_high[bsize]);
+  }
   // Check the bitstream is conformant: if there is subsampling on the
   // chroma planes, subsize must subsample to a valid block size.
   const struct macroblockd_plane *const pd_u = &xd->plane[1];

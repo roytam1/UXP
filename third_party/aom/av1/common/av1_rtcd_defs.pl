@@ -111,9 +111,8 @@ specialize qw/av1_highbd_convolve8_vert/, "$sse2_x86_64";
 
 #inv txfm
 add_proto qw/void av1_inv_txfm_add/, "const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param";
-# TODO(http://crbug.com/aomedia/2350): avx2 is disabled due to test vector
-# mismatches.
-specialize qw/av1_inv_txfm_add ssse3 neon/;
+# TODO(yunqing): Disable NEON version due to test vector mismatch.
+specialize qw/av1_inv_txfm_add ssse3 avx2/; # neon/;
 
 add_proto qw/void av1_highbd_inv_txfm_add/, "const tran_low_t *dqcoeff, uint8_t *dst, int stride, const TxfmParam *txfm_param";
 # TODO(http://crbug.com/aomedia/2350): avx2 is disabled due to test vector
@@ -164,9 +163,7 @@ add_proto qw/void av1_inv_txfm2d_add_32x8/, "const int32_t *input, uint16_t *out
 add_proto qw/void av1_highbd_dr_prediction_z1/, "uint16_t *dst, ptrdiff_t stride, int bw, int bh, const uint16_t *above, const uint16_t *left, int upsample_above, int dx, int dy, int bd";
 specialize qw/av1_highbd_dr_prediction_z1 avx2/;
 add_proto qw/void av1_highbd_dr_prediction_z2/, "uint16_t *dst, ptrdiff_t stride, int bw, int bh, const uint16_t *above, const uint16_t *left, int upsample_above, int upsample_left, int dx, int dy, int bd";
-# TODO(niva213@gmail.com): Re-enable avx2 after fixing valgrind issue
-# https://crbug.com/aomedia/2316
-# specialize qw/av1_highbd_dr_prediction_z2 avx2/;
+specialize qw/av1_highbd_dr_prediction_z2 avx2/;
 add_proto qw/void av1_highbd_dr_prediction_z3/, "uint16_t *dst, ptrdiff_t stride, int bw, int bh, const uint16_t *above, const uint16_t *left, int upsample_left, int dx, int dy, int bd";
 specialize qw/av1_highbd_dr_prediction_z3 avx2/;
 
