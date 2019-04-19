@@ -48,8 +48,7 @@ const SCRIPTS = [
   "browser/base/content/browser-tabsintitlebar.js",
   "browser/base/content/browser-thumbnails.js",
   "browser/base/content/browser-trackingprotection.js",
-  "browser/base/content/browser-data-submission-info-bar.js",
-  "browser/base/content/browser-fxaccounts.js"
+  "browser/base/content/browser-data-submission-info-bar.js"
 ];
 
 module.exports = function(context) {

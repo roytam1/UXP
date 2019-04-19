@@ -19,13 +19,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 Cu.import("resource://gre/modules/osfile.jsm", this);
 Cu.import("resource://gre/modules/Task.jsm", this);
 
-// FxAccountsCommon.js doesn't use a "namespace", so create one here.
-XPCOMUtils.defineLazyGetter(this, "FxAccountsCommon", function() {
-  let FxAccountsCommon = {};
-  Cu.import("resource://gre/modules/FxAccountsCommon.js", FxAccountsCommon);
-  return FxAccountsCommon;
-});
-
 /*
  * Utility functions
  */
@@ -599,9 +592,6 @@ this.Utils = {
    */
   getSyncCredentialsHosts: function() {
     let result = new Set(this.getSyncCredentialsHostsLegacy());
-    for (let host of this.getSyncCredentialsHostsFxA()) {
-      result.add(host);
-    }
     return result;
   },
 
@@ -611,36 +601,6 @@ this.Utils = {
   getSyncCredentialsHostsLegacy: function() {
     // the legacy sync host
     return new Set([PWDMGR_HOST]);
-  },
-
-  /*
-   * Get the FxA identity hosts.
-   */
-  getSyncCredentialsHostsFxA: function() {
-    // This is somewhat expensive and the result static, so we cache the result.
-    if (this._syncCredentialsHostsFxA) {
-      return this._syncCredentialsHostsFxA;
-    }
-    let result = new Set();
-    // the FxA host
-    result.add(FxAccountsCommon.FXA_PWDMGR_HOST);
-    //
-    // The FxA hosts - these almost certainly all have the same hostname, but
-    // better safe than sorry...
-    for (let prefName of ["identity.fxaccounts.remote.force_auth.uri",
-                          "identity.fxaccounts.remote.signup.uri",
-                          "identity.fxaccounts.remote.signin.uri",
-                          "identity.fxaccounts.settings.uri"]) {
-      let prefVal;
-      try {
-        prefVal = Services.prefs.getCharPref(prefName);
-      } catch (_) {
-        continue;
-      }
-      let uri = Services.io.newURI(prefVal, null, null);
-      result.add(uri.prePath);
-    }
-    return this._syncCredentialsHostsFxA = result;
   },
 
   getDefaultDeviceName() {

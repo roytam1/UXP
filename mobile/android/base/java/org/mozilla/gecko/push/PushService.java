@@ -22,7 +22,6 @@ import org.mozilla.gecko.Telemetry;
 import org.mozilla.gecko.TelemetryContract;
 import org.mozilla.gecko.annotation.ReflectionTarget;
 import org.mozilla.gecko.db.BrowserDB;
-import org.mozilla.gecko.fxa.FxAccountPushHandler;
 import org.mozilla.gecko.gcm.GcmTokenClient;
 import org.mozilla.gecko.push.autopush.AutopushClientException;
 import org.mozilla.gecko.util.BundleEventListener;
@@ -66,13 +65,10 @@ public class PushService implements BundleEventListener {
             "PushServiceAndroidGCM:UnregisterUserAgent",
             "PushServiceAndroidGCM:SubscribeChannel",
             "PushServiceAndroidGCM:UnsubscribeChannel",
-            "FxAccountsPush:Initialized",
-            "FxAccountsPush:ReceivedPushMessageToDecode:Response",
             "History:GetPrePathLastVisitedTimeMilliseconds",
     };
 
     private enum GeckoComponent {
-        FxAccountsPush,
         PushServiceAndroidGCM
     }
 
@@ -98,7 +94,6 @@ public class PushService implements BundleEventListener {
 
     // NB: These are not thread-safe, we're depending on these being access from the same background thread.
     private boolean isReadyPushServiceAndroidGCM = false;
-    private boolean isReadyFxAccountsPush = false;
     private final List<JSONObject> pendingPushMessages;
 
     public PushService(Context context) {
@@ -238,9 +233,6 @@ public class PushService implements BundleEventListener {
 
     protected static void sendMessageToDecodeToGeckoService(final @NonNull JSONObject message) {
         Log.i(LOG_TAG, "Delivering dom/push message to decode to Gecko!");
-        GeckoAppShell.notifyObservers("FxAccountsPush:ReceivedPushMessageToDecode",
-                                      message.toString(),
-                                      GeckoThread.State.PROFILE_READY);
     }
 
     protected void registerGeckoEventListener() {
@@ -276,11 +268,6 @@ public class PushService implements BundleEventListener {
             }
             if ("PushServiceAndroidGCM:Uninitialized".equals(event)) {
                 processComponentState(GeckoComponent.PushServiceAndroidGCM, false);
-                callback.sendSuccess(null);
-                return;
-            }
-            if ("FxAccountsPush:Initialized".equals(event)) {
-                processComponentState(GeckoComponent.FxAccountsPush, true);
                 callback.sendSuccess(null);
                 return;
             }
@@ -390,10 +377,6 @@ public class PushService implements BundleEventListener {
                 callback.sendError("Could not unsubscribe from channel: " + channelID);
                 return;
             }
-            if ("FxAccountsPush:ReceivedPushMessageToDecode:Response".equals(event)) {
-                FxAccountPushHandler.handleFxAPushMessage(context, message);
-                return;
-            }
             if ("History:GetPrePathLastVisitedTimeMilliseconds".equals(event)) {
                 if (callback == null) {
                     Log.e(LOG_TAG, "callback must not be null in " + event);
@@ -420,10 +403,7 @@ public class PushService implements BundleEventListener {
     }
 
     private void processComponentState(@NonNull GeckoComponent component, boolean isReady) {
-        if (component == GeckoComponent.FxAccountsPush) {
-            isReadyFxAccountsPush = isReady;
-
-        } else if (component == GeckoComponent.PushServiceAndroidGCM) {
+        if (component == GeckoComponent.PushServiceAndroidGCM) {
             isReadyPushServiceAndroidGCM = isReady;
         }
 
@@ -435,7 +415,7 @@ public class PushService implements BundleEventListener {
     }
 
     private boolean canSendPushMessagesToGecko() {
-        return isReadyFxAccountsPush && isReadyPushServiceAndroidGCM;
+        return isReadyPushServiceAndroidGCM;
     }
 
     private static void sendPushMessagesToGecko(@NonNull List<JSONObject> messages) {

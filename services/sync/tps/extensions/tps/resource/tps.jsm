@@ -74,9 +74,7 @@ const ACTIONS = [
   ACTION_VERIFY_NOT,
 ];
 
-const OBSERVER_TOPICS = ["fxaccounts:onlogin",
-                         "fxaccounts:onlogout",
-                         "private-browsing",
+const OBSERVER_TOPICS = ["private-browsing",
                          "quit-application-requested",
                          "sessionstore-windows-restored",
                          "weave:engine:start-tracking",
