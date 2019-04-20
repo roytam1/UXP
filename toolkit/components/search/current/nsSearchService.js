@@ -3236,14 +3236,7 @@ SearchService.prototype = {
 
     // Fallback to building a list based on the regions in the JSON
     if (!engineNames || !engineNames.length) {
-      let region;
-      if (Services.prefs.prefHasUserValue("browser.search.region")) {
-        region = Services.prefs.getCharPref("browser.search.region");
-      }
-      if (!region || !(region in searchSettings)) {
-        region = "default";
-      }
-      engineNames = searchSettings[region]["visibleDefaultEngines"];
+      engineNames = searchSettings["default"]["visibleDefaultEngines"];
     }
 
     for (let name of engineNames) {

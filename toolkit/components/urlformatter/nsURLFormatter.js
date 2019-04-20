@@ -91,15 +91,6 @@ nsURLFormatterService.prototype = {
     LOCALE:           () => Cc["@mozilla.org/chrome/chrome-registry;1"].
                             getService(Ci.nsIXULChromeRegistry).
                             getSelectedLocale('global'),
-    REGION:           function() {
-      try {
-        // When the geoip lookup failed to identify the region, we fallback to
-        // the 'ZZ' region code to mean 'unknown'.
-        return Services.prefs.getCharPref("browser.search.region") || "ZZ";
-      } catch(e) {
-        return "ZZ";
-      }
-    },
     VENDOR:           function() { return this.appInfo.vendor; },
     NAME:             function() { return this.appInfo.name; },
     ID:               function() { return this.appInfo.ID; },
