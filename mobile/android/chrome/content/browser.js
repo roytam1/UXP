@@ -4704,46 +4704,18 @@ var ErrorPageEventHandler = {
           // The event came from a button on a malware/phishing block page
           // First check whether it's malware, phishing or unwanted, so that we
           // can use the right strings/links
-          let bucketName = "";
-          let sendTelemetry = false;
-          if (errorDoc.documentURI.includes("e=malwareBlocked")) {
-            sendTelemetry = true;
-            bucketName = "WARNING_MALWARE_PAGE_";
-          } else if (errorDoc.documentURI.includes("e=deceptiveBlocked")) {
-            sendTelemetry = true;
-            bucketName = "WARNING_PHISHING_PAGE_";
-          } else if (errorDoc.documentURI.includes("e=unwantedBlocked")) {
-            sendTelemetry = true;
-            bucketName = "WARNING_UNWANTED_PAGE_";
-          }
-          let nsISecTel = Ci.nsISecurityUITelemetry;
           let isIframe = (errorDoc.defaultView.parent === errorDoc.defaultView);
-          bucketName += isIframe ? "TOP_" : "FRAME_";
-
           let formatter = Cc["@mozilla.org/toolkit/URLFormatterService;1"].getService(Ci.nsIURLFormatter);
 
           if (target == errorDoc.getElementById("getMeOutButton")) {
-            if (sendTelemetry) {
-              Telemetry.addData("SECURITY_UI", nsISecTel[bucketName + "GET_ME_OUT_OF_HERE"]);
-            }
             errorDoc.location = "about:home";
           } else if (target == errorDoc.getElementById("reportButton")) {
-            // We log even if malware/phishing info URL couldn't be found:
-            // the measurement is for how many users clicked the WHY BLOCKED button
-            if (sendTelemetry) {
-              Telemetry.addData("SECURITY_UI", nsISecTel[bucketName + "WHY_BLOCKED"]);
-            }
-
             // This is the "Why is this site blocked" button. We redirect
             // to the generic page describing phishing/malware protection.
             let url = Services.urlFormatter.formatURLPref("app.support.baseURL");
             BrowserApp.selectedBrowser.loadURI(url + "phishing-malware");
           } else if (target == errorDoc.getElementById("ignoreWarningButton") &&
                      Services.prefs.getBoolPref("browser.safebrowsing.allowOverride")) {
-            if (sendTelemetry) {
-              Telemetry.addData("SECURITY_UI", nsISecTel[bucketName + "IGNORE_WARNING"]);
-            }
-
             // Allow users to override and continue through to the site,
             let webNav = BrowserApp.selectedBrowser.docShell.QueryInterface(Ci.nsIWebNavigation);
             let location = BrowserApp.selectedBrowser.contentWindow.location;

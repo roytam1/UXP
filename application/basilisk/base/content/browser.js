@@ -2813,15 +2813,10 @@ var BrowserOnClick = {
   },
 
   onCertError: function (browser, elementId, isTopFrame, location, securityInfoAsString) {
-    let secHistogram = Services.telemetry.getHistogramById("SECURITY_UI");
     let securityInfo;
 
     switch (elementId) {
       case "exceptionDialogButton":
-        if (isTopFrame) {
-          secHistogram.add(Ci.nsISecurityUITelemetry.WARNING_BAD_CERT_TOP_CLICK_ADD_EXCEPTION);
-        }
-
         securityInfo = getSecurityInfo(securityInfoAsString);
         let sslStatus = securityInfo.QueryInterface(Ci.nsISSLStatusProvider)
                                     .SSLStatus;
@@ -2849,17 +2844,7 @@ var BrowserOnClick = {
         break;
 
       case "returnButton":
-        if (isTopFrame) {
-          secHistogram.add(Ci.nsISecurityUITelemetry.WARNING_BAD_CERT_TOP_GET_ME_OUT_OF_HERE);
-        }
         goBackFromErrorPage();
-        break;
-
-      case "advancedButton":
-        if (isTopFrame) {
-          secHistogram.add(Ci.nsISecurityUITelemetry.WARNING_BAD_CERT_TOP_UNDERSTAND_RISKS);
-        }
-
         break;
     }
   },
@@ -2867,46 +2852,19 @@ var BrowserOnClick = {
   onAboutBlocked: function (elementId, reason, isTopFrame, location) {
     // Depending on what page we are displaying here (malware/phishing/unwanted)
     // use the right strings and links for each.
-    let bucketName = "";
-    let sendTelemetry = false;
-    if (reason === 'malware') {
-      sendTelemetry = true;
-      bucketName = "WARNING_MALWARE_PAGE_";
-    } else if (reason === 'phishing') {
-      sendTelemetry = true;
-      bucketName = "WARNING_PHISHING_PAGE_";
-    } else if (reason === 'unwanted') {
-      sendTelemetry = true;
-      bucketName = "WARNING_UNWANTED_PAGE_";
-    }
-    let secHistogram = Services.telemetry.getHistogramById("SECURITY_UI");
-    let nsISecTel = Ci.nsISecurityUITelemetry;
-    bucketName += isTopFrame ? "TOP_" : "FRAME_";
     switch (elementId) {
       case "getMeOutButton":
-        if (sendTelemetry) {
-          secHistogram.add(nsISecTel[bucketName + "GET_ME_OUT_OF_HERE"]);
-        }
         getMeOutOfHere();
         break;
 
       case "reportButton":
         // This is the "Why is this site blocked" button. We redirect
         // to the generic page describing phishing/malware protection.
-
-        // We log even if malware/phishing/unwanted info URL couldn't be found:
-        // the measurement is for how many users clicked the WHY BLOCKED button
-        if (sendTelemetry) {
-          secHistogram.add(nsISecTel[bucketName + "WHY_BLOCKED"]);
-        }
         openHelpLink("phishing-malware", false, "current");
         break;
 
       case "ignoreWarningButton":
         if (gPrefService.getBoolPref("browser.safebrowsing.allowOverride")) {
-          if (sendTelemetry) {
-            secHistogram.add(nsISecTel[bucketName + "IGNORE_WARNING"]);
-          }
           this.ignoreWarningButton(reason);
         }
         break;

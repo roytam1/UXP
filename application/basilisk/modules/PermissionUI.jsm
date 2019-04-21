@@ -437,26 +437,12 @@ GeolocationPermissionPrompt.prototype = {
   },
 
   get promptActions() {
-    // We collect Telemetry data on Geolocation prompts and how users
-    // respond to them. The probe keys are a bit verbose, so let's alias them.
-    const SHARE_LOCATION =
-      Ci.nsISecurityUITelemetry.WARNING_GEOLOCATION_REQUEST_SHARE_LOCATION;
-    const ALWAYS_SHARE =
-      Ci.nsISecurityUITelemetry.WARNING_GEOLOCATION_REQUEST_ALWAYS_SHARE;
-    const NEVER_SHARE =
-      Ci.nsISecurityUITelemetry.WARNING_GEOLOCATION_REQUEST_NEVER_SHARE;
-
-    let secHistogram = Services.telemetry.getHistogramById("SECURITY_UI");
-
     let actions = [{
       label: gBrowserBundle.GetStringFromName("geolocation.shareLocation"),
       accessKey:
         gBrowserBundle.GetStringFromName("geolocation.shareLocation.accesskey"),
       action: null,
       expireType: null,
-      callback: function() {
-        secHistogram.add(SHARE_LOCATION);
-      },
     }];
 
     if (!this.principal.URI.schemeIs("file")) {
@@ -467,9 +453,6 @@ GeolocationPermissionPrompt.prototype = {
           gBrowserBundle.GetStringFromName("geolocation.alwaysShareLocation.accesskey"),
         action: Ci.nsIPermissionManager.ALLOW_ACTION,
         expireType: null,
-        callback: function() {
-          secHistogram.add(ALWAYS_SHARE);
-        },
       });
 
       // Never share location action.
@@ -479,9 +462,6 @@ GeolocationPermissionPrompt.prototype = {
           gBrowserBundle.GetStringFromName("geolocation.neverShareLocation.accesskey"),
         action: Ci.nsIPermissionManager.DENY_ACTION,
         expireType: null,
-        callback: function() {
-          secHistogram.add(NEVER_SHARE);
-        },
       });
     }
 
@@ -489,9 +469,6 @@ GeolocationPermissionPrompt.prototype = {
   },
 
   onBeforeShow() {
-    let secHistogram = Services.telemetry.getHistogramById("SECURITY_UI");
-    const SHOW_REQUEST = Ci.nsISecurityUITelemetry.WARNING_GEOLOCATION_REQUEST;
-    secHistogram.add(SHOW_REQUEST);
   },
 };
 

@@ -12,8 +12,6 @@ var gCert;
 var gChecking;
 var gBroken;
 var gNeedReset;
-var gSecHistogram;
-var gNsISecTel;
 
 Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
 
@@ -49,10 +47,6 @@ function initExceptionDialog() {
   gDialog = document.documentElement;
   gBundleBrand = document.getElementById("brand_bundle");
   gPKIBundle = document.getElementById("pippki_bundle");
-  gSecHistogram = Components.classes["@mozilla.org/base/telemetry;1"].
-                    getService(Components.interfaces.nsITelemetry).
-                    getHistogramById("SECURITY_UI");
-  gNsISecTel = Components.interfaces.nsISecurityUITelemetry;
 
   var brandName = gBundleBrand.getString("brandShortName");
   setText("warningText", gPKIBundle.getFormattedString("addExceptionBrandedWarning2", [brandName]));
@@ -190,7 +184,6 @@ function updateCertStatus() {
   var shortDesc3, longDesc3;
   var use2 = false;
   var use3 = false;
-  let bucketId = gNsISecTel.WARNING_BAD_CERT_TOP_ADD_EXCEPTION_BASE;
   if (gCert) {
     if (gBroken) {
       var mms = "addExceptionDomainMismatchShort";
@@ -201,13 +194,11 @@ function updateCertStatus() {
       var utl = "addExceptionUnverifiedOrBadSignatureLong2";
       var use1 = false;
       if (gSSLStatus.isDomainMismatch) {
-        bucketId += gNsISecTel.WARNING_BAD_CERT_TOP_ADD_EXCEPTION_FLAG_DOMAIN;
         use1 = true;
         shortDesc = mms;
         longDesc  = mml;
       }
       if (gSSLStatus.isNotValidAtThisTime) {
-        bucketId += gNsISecTel.WARNING_BAD_CERT_TOP_ADD_EXCEPTION_FLAG_TIME;
         if (!use1) {
           use1 = true;
           shortDesc = exs;
@@ -220,7 +211,6 @@ function updateCertStatus() {
         }
       }
       if (gSSLStatus.isUntrusted) {
-        bucketId += gNsISecTel.WARNING_BAD_CERT_TOP_ADD_EXCEPTION_FLAG_UNTRUSTED;
         if (!use1) {
           use1 = true;
           shortDesc = uts;
@@ -235,7 +225,6 @@ function updateCertStatus() {
           longDesc3  = utl;
         }
       }
-      gSecHistogram.add(bucketId);
 
       // In these cases, we do want to enable the "Add Exception" button
       gDialog.getButton("extra1").disabled = false;
@@ -307,7 +296,6 @@ function updateCertStatus() {
  * Handle user request to display certificate details
  */
 function viewCertButtonClick() {
-  gSecHistogram.add(gNsISecTel.WARNING_BAD_CERT_TOP_CLICK_VIEW_CERT);
   if (gCert) {
     viewCertHelper(this, gCert);
   }
@@ -324,27 +312,19 @@ function addException() {
   var overrideService = Components.classes["@mozilla.org/security/certoverride;1"]
                                   .getService(Components.interfaces.nsICertOverrideService);
   var flags = 0;
-  let confirmBucketId = gNsISecTel.WARNING_BAD_CERT_TOP_CONFIRM_ADD_EXCEPTION_BASE;
   if (gSSLStatus.isUntrusted) {
     flags |= overrideService.ERROR_UNTRUSTED;
-    confirmBucketId += gNsISecTel.WARNING_BAD_CERT_TOP_CONFIRM_ADD_EXCEPTION_FLAG_UNTRUSTED;
   }
   if (gSSLStatus.isDomainMismatch) {
     flags |= overrideService.ERROR_MISMATCH;
-    confirmBucketId += gNsISecTel.WARNING_BAD_CERT_TOP_CONFIRM_ADD_EXCEPTION_FLAG_DOMAIN;
   }
   if (gSSLStatus.isNotValidAtThisTime) {
     flags |= overrideService.ERROR_TIME;
-    confirmBucketId += gNsISecTel.WARNING_BAD_CERT_TOP_CONFIRM_ADD_EXCEPTION_FLAG_TIME;
   }
 
   var permanentCheckbox = document.getElementById("permanent");
   var shouldStorePermanently = permanentCheckbox.checked && !inPrivateBrowsingMode();
-  if (!permanentCheckbox.checked) {
-    gSecHistogram.add(gNsISecTel.WARNING_BAD_CERT_TOP_DONT_REMEMBER_EXCEPTION);
-  }
 
-  gSecHistogram.add(confirmBucketId);
   var uri = getURI();
   overrideService.rememberValidityOverride(
     uri.asciiHost, uri.port,
