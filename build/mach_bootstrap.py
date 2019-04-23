@@ -127,7 +127,6 @@ MACH_MODULES = [
     'tools/lint/mach_commands.py',
     'tools/mach_commands.py',
     'tools/power/mach_commands.py',
-    'mobile/android/mach_commands.py',
 ]
 
 if os.path.exists('addon-sdk/mach_commands.py'):
