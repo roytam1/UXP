@@ -11,7 +11,7 @@ EXTRA_PP_COMPONENTS += [
     'toolkitsearch.manifest',
 ]
 
-if CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_FENNEC'] or CONFIG['MOZ_XULRUNNER']:
+if CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_XULRUNNER']:
     DEFINES['HAVE_SIDEBAR'] = True
     EXTRA_COMPONENTS += ['nsSidebar.js']
 

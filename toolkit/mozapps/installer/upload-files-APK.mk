@@ -23,21 +23,6 @@ GECKO_APP_AP_PATH = $(topobjdir)/mobile/android/base
 
 ifdef ENABLE_TESTS
 INNER_ROBOCOP_PACKAGE=true
-ifdef MOZ_FENNEC
-UPLOAD_EXTRA_FILES += robocop.apk
-
-# Robocop/Robotium tests, Android Background tests, and Fennec need to
-# be signed with the same key, which means release signing them all.
-
-ifndef MOZ_BUILD_MOBILE_ANDROID_WITH_GRADLE
-robocop_apk := $(topobjdir)/mobile/android/tests/browser/robocop/robocop-debug-unsigned-unaligned.apk
-else
-robocop_apk := $(topobjdir)/gradle/build/mobile/android/app/outputs/apk/app-automation-debug-androidTest-unaligned.apk
-endif
-
-INNER_ROBOCOP_PACKAGE= \
-  $(call RELEASE_SIGN_ANDROID_APK,$(robocop_apk),$(ABS_DIST)/robocop.apk)
-endif
 else
 INNER_ROBOCOP_PACKAGE=echo 'Testing is disabled - No Android Robocop for you'
 endif
