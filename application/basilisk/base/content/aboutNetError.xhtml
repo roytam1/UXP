@@ -362,7 +362,7 @@
           // First, find the index of the <a> tag we care about, being
           // careful not to use an over-greedy regex.
           var re = /<a id="cert_domain_link" title="([^"]+)">/;
-          var result = domainRe.exec(desc);
+          var result = re.exec(desc);
 
           if (!result)
             return;
