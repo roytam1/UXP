@@ -2310,7 +2310,6 @@ Parser<FullParseHandler>::standaloneFunction(HandleFunction fun,
     if (!tokenStream.getToken(&tt))
         return null();
     if (asyncKind == AsyncFunction) {
-        MOZ_ASSERT(tt == TOK_ASYNC);
         if (!tokenStream.getToken(&tt))
             return null();
     }
