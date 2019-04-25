@@ -38,8 +38,8 @@ XPCOMUtils.defineLazyGetter(this, "gCertUtils", function() {
   return temp;
 });
 
-XPCOMUtils.defineLazyModuleGetter(this, "UpdateChannel",
-                                  "resource://gre/modules/UpdateChannel.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "UpdateUtils",
+                                  "resource://gre/modules/UpdateUtils.jsm");
 
 /**
  * Number of milliseconds after which we need to cancel `checkForAddons`.
@@ -190,33 +190,6 @@ XPCOMUtils.defineLazyGetter(this, "gOSVersion", function aus_gOSVersion() {
   return osVersion;
 });
 
-// This is copied directly from nsUpdateService.js
-// It is used for calculating the URL string w/ var replacement.
-// TODO: refactor this out somewhere else
-XPCOMUtils.defineLazyGetter(this, "gABI", function aus_gABI() {
-  let abi = null;
-  try {
-    abi = Services.appinfo.XPCOMABI;
-  }
-  catch (e) {
-    LOG("gABI - XPCOM ABI unknown: updates are not possible.");
-  }
-#ifdef XP_MACOSX
-  // Mac universal build should report a different ABI than either macppc
-  // or mactel.
-  let macutils = Cc["@mozilla.org/xpcom/mac-utils;1"].
-                 getService(Ci.nsIMacUtils);
-
-  if (macutils.isUniversalBinary)
-    abi += "-u-" + macutils.architecturesInBinary;
-#ifdef MOZ_SHARK
-  // Disambiguate optimised and shark nightlies
-  abi += "-shark"
-#endif
-#endif
-  return abi;
-});
-
 /**
  * Provides an easy API for downloading and installing GMP Addons
  */
@@ -241,24 +214,7 @@ GMPInstallManager.prototype = {
       log.info("Using url: " + url);
     }
 
-    url =
-      url.replace(/%PRODUCT%/g, Services.appinfo.name)
-         .replace(/%VERSION%/g, Services.appinfo.version)
-         .replace(/%BUILD_ID%/g, Services.appinfo.appBuildID)
-         .replace(/%BUILD_TARGET%/g, Services.appinfo.OS + "_" + gABI)
-         .replace(/%OS_VERSION%/g, gOSVersion);
-    if (/%LOCALE%/.test(url)) {
-      // TODO: Get the real local, does it actually matter for GMP plugins?
-      url = url.replace(/%LOCALE%/g, "en-US");
-    }
-    url =
-      url.replace(/%CHANNEL%/g, UpdateChannel.get())
-         .replace(/%PLATFORM_VERSION%/g, Services.appinfo.platformVersion)
-         .replace(/%DISTRIBUTION%/g,
-                  GMPPrefs.get(GMPPrefs.KEY_APP_DISTRIBUTION))
-         .replace(/%DISTRIBUTION_VERSION%/g,
-                  GMPPrefs.get(GMPPrefs.KEY_APP_DISTRIBUTION_VERSION))
-         .replace(/\+/g, "%2B");
+    url = UpdateUtils.formatUpdateURL(url);
     log.info("Using url (with replacement): " + url);
     return url;
   },
