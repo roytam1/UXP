@@ -92,7 +92,6 @@ EXTRA_JS_MODULES += [
     'Sqlite.jsm',
     'Task.jsm',
     'Timer.jsm',
-    'UpdateUtils.jsm',
     'WebChannel.jsm',
     'WindowDraggingUtils.jsm',
     'ZipUtils.jsm',
@@ -103,10 +102,8 @@ EXTRA_JS_MODULES.sessionstore += ['sessionstore/Utils.jsm']
 EXTRA_PP_JS_MODULES += [
     'NewTabUtils.jsm',
     'Troubleshoot.jsm',
+    'UpdateUtils.jsm',
 ]
-
-if not CONFIG['MOZ_WEBEXTENSIONS']:
-  EXTRA_PP_JS_MODULES += ['UpdateChannel.jsm']
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('windows', 'cocoa'):
     DEFINES['CAN_DRAW_IN_TITLEBAR'] = 1
