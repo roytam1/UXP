@@ -38,15 +38,6 @@ this.ReaderMode = {
 
   DEBUG: 0,
 
-  // Don't try to parse the page if it has too many elements (for memory and
-  // performance reasons)
-  get maxElemsToParse() {
-    delete this.parseNodeLimit;
-
-    Services.prefs.addObserver("reader.parse-node-limit", this, false);
-    return this.parseNodeLimit = Services.prefs.getIntPref("reader.parse-node-limit");
-  },
-
   /**
    * Enter the reader mode by going forward one step in history if applicable,
    * if not, append the about:reader page in the history instead.
@@ -548,3 +539,8 @@ this.ReaderMode = {
     return readingSpeed.get(lang) || readingSpeed.get("en");
   },
 };
+
+// Don't try to parse the page if it has too many elements (for memory and
+// performance reasons)
+XPCOMUtils.defineLazyPreferenceGetter(
+  ReaderMode, "maxElemsToParse", "reader.parse-node-limit", 0);

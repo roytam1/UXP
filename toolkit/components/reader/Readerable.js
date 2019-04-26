@@ -23,30 +23,7 @@ var Readerable = {
   DEBUG: 0,
 
   get isEnabledForParseOnLoad() {
-    delete this.isEnabledForParseOnLoad;
-
-    // Listen for future pref changes.
-    Services.prefs.addObserver("reader.parse-on-load.", this, false);
-
-    return this.isEnabledForParseOnLoad = this._getStateForParseOnLoad();
-  },
-
-  _getStateForParseOnLoad() {
-    let isEnabled = Services.prefs.getBoolPref("reader.parse-on-load.enabled");
-    let isForceEnabled = Services.prefs.getBoolPref("reader.parse-on-load.force-enabled");
-    return isForceEnabled || isEnabled;
-  },
-
-  observe(aMessage, aTopic, aData) {
-    switch (aTopic) {
-      case "nsPref:changed":
-        if (aData.startsWith("reader.parse-on-load.")) {
-          this.isEnabledForParseOnLoad = this._getStateForParseOnLoad();
-        } else if (aData === "reader.parse-node-limit") {
-          this.parseNodeLimit = Services.prefs.getIntPref(aData);
-        }
-        break;
-    }
+    return this.isEnabled || this.isForceEnabled;
   },
 
   log(msg) {
@@ -112,3 +89,8 @@ var Readerable = {
     return true;
   },
 };
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  Readerable, "isEnabled", "reader.parse-on-load.enabled", true);
+XPCOMUtils.defineLazyPreferenceGetter(
+  Readerable, "isForceEnabled", "reader.parse-on-load.force-enabled", false);
