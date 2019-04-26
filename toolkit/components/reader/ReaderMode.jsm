@@ -543,4 +543,4 @@ this.ReaderMode = {
 // Don't try to parse the page if it has too many elements (for memory and
 // performance reasons)
 XPCOMUtils.defineLazyPreferenceGetter(
-  ReaderMode, "maxElemsToParse", "reader.parse-node-limit", 0);
+  ReaderMode, "parseNodeLimit", "reader.parse-node-limit", 0);
