@@ -11,6 +11,10 @@ EXTRA_JS_MODULES += [
   'ReaderMode.jsm'
 ]
 
+EXTRA_PP_JS_MODULES += [
+  'Readerable.jsm'
+]
+
 EXTRA_JS_MODULES.reader = [
   'JSDOMParser.js',
   'Readability.js',

@@ -23,6 +23,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "AboutReader",
   "resource://gre/modules/AboutReader.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "ReaderMode",
   "resource://gre/modules/ReaderMode.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "Readerable",
+  "resource://gre/modules/Readerable.jsm");
 XPCOMUtils.defineLazyGetter(this, "SimpleServiceDiscovery", function() {
   let ssdp = Cu.import("resource://gre/modules/SimpleServiceDiscovery.jsm", {}).SimpleServiceDiscovery;
   // Register targets
@@ -339,7 +341,7 @@ var AboutReaderListener = {
    * painted is not going to work.
    */
   updateReaderButton: function(forceNonArticle) {
-    if (!ReaderMode.isEnabledForParseOnLoad || this.isAboutReader ||
+    if (!Readerable.isEnabledForParseOnLoad || this.isAboutReader ||
         !content || !(content.document instanceof content.HTMLDocument) ||
         content.document.mozSyntheticDocument) {
       return;
@@ -378,7 +380,7 @@ var AboutReaderListener = {
     this.cancelPotentialPendingReadabilityCheck();
     // Only send updates when there are articles; there's no point updating with
     // |false| all the time.
-    if (ReaderMode.isProbablyReaderable(content.document)) {
+    if (Readerable.isProbablyReaderable(content.document)) {
       sendAsyncMessage("Reader:UpdateReaderButton", { isArticle: true });
     } else if (forceNonArticle) {
       sendAsyncMessage("Reader:UpdateReaderButton", { isArticle: false });
