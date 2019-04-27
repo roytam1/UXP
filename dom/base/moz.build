@@ -410,16 +410,11 @@ EXTRA_COMPONENTS += [
     'contentAreaDropListener.manifest',
     'messageWakeupService.js',
     'messageWakeupService.manifest',
+    'SiteSpecificUserAgent.js',
+    'SiteSpecificUserAgent.manifest',
     'SlowScriptDebug.js',
     'SlowScriptDebug.manifest',
 ]
-
-# Firefox for Android provides an alternate version of this component
-if not CONFIG['MOZ_FENNEC']:
-    EXTRA_COMPONENTS += [
-        'SiteSpecificUserAgent.js',
-        'SiteSpecificUserAgent.manifest',
-    ]
 
 EXTRA_JS_MODULES += [
     'DOMRequestHelper.jsm',
@@ -471,7 +466,7 @@ include('/ipc/chromium/chromium-config.mozbuild')
 
 FINAL_LIBRARY = 'xul'
 
-if CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_FENNEC'] or CONFIG['MOZ_XULRUNNER']:
+if CONFIG['MOZ_PHOENIX'] or CONFIG['MOZ_XULRUNNER']:
     DEFINES['HAVE_SIDEBAR'] = True
 
 if CONFIG['MOZ_X11']:

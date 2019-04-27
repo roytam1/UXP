@@ -89,7 +89,9 @@ if CONFIG['MOZ_XUL']:
 if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
     DIRS += ['filepicker']
 
-if CONFIG['MOZ_TOOLKIT_SEARCH']:
+if CONFIG['MOZ_TOOLKIT_SEARCH'] and not CONFIG['MC_BASILISK'] \
+                                and not CONFIG['HYPE_ICEWEASEL'] \
+                                and not CONFIG['HYPE_ICEDOVE']:
     DIRS += ['search']
 
 if CONFIG['MOZ_URL_CLASSIFIER']:

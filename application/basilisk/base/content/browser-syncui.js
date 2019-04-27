@@ -275,7 +275,6 @@ var gSyncUI = {
     openPreferences("paneSync");
   },
 
-
   // Helpers
   _updateLastSyncTime: function SUI__updateLastSyncTime() {
     if (!gBrowser)

@@ -4,6 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#filter substitution
+
 "use strict";
 
 const Cc = Components.classes;
@@ -27,9 +29,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "FileUtils",
 #ifdef MOZ_WEBEXTENSIONS
 XPCOMUtils.defineLazyModuleGetter(this, "UpdateUtils",
                                   "resource://gre/modules/UpdateUtils.jsm");
-#else
-XPCOMUtils.defineLazyModuleGetter(this, "UpdateChannel",
-                                  "resource://gre/modules/UpdateChannel.jsm");
 #endif
 XPCOMUtils.defineLazyModuleGetter(this, "OS",
                                   "resource://gre/modules/osfile.jsm");
@@ -243,16 +242,7 @@ function getLocale() {
 
 /* Get the distribution pref values, from defaults only */
 function getDistributionPrefValue(aPrefName) {
-  var prefValue = "default";
-
-  var defaults = gPref.getDefaultBranch(null);
-  try {
-    prefValue = defaults.getCharPref(aPrefName);
-  } catch (e) {
-    // use default when pref not found
-  }
-
-  return prefValue;
+  return gPref.getDefaultBranch(null).getCharPref(aPrefName, "default");
 }
 
 /**
@@ -539,13 +529,14 @@ Blocklist.prototype = {
       pingCountTotal = 1;
 
     dsURI = dsURI.replace(/%APP_ID%/g, gApp.ID);
+
     // Not all applications implement nsIXULAppInfo (e.g. xpcshell doesn't).
-    if (gApp.version)
+    if (gApp.version) {
       dsURI = dsURI.replace(/%APP_VERSION%/g, gApp.version);
-    dsURI = dsURI.replace(/%PRODUCT%/g, gApp.name);
-    // Not all applications implement nsIXULAppInfo (e.g. xpcshell doesn't).
-    if (gApp.version)
       dsURI = dsURI.replace(/%VERSION%/g, gApp.version);
+    }
+
+    dsURI = dsURI.replace(/%PRODUCT%/g, gApp.name);
     dsURI = dsURI.replace(/%BUILD_ID%/g, gApp.appBuildID);
     dsURI = dsURI.replace(/%BUILD_TARGET%/g, gApp.OS + "_" + gABI);
     dsURI = dsURI.replace(/%OS_VERSION%/g, gOSVersion);
@@ -553,7 +544,7 @@ Blocklist.prototype = {
 #ifdef MOZ_WEBEXTENSIONS
     dsURI = dsURI.replace(/%CHANNEL%/g, UpdateUtils.UpdateChannel);
 #else
-    dsURI = dsURI.replace(/%CHANNEL%/g, UpdateChannel.get());
+    dsURI = dsURI.replace(/%CHANNEL%/g, "@MOZ_UPDATE_CHANNEL@");
 #endif
     dsURI = dsURI.replace(/%PLATFORM_VERSION%/g, gApp.platformVersion);
     dsURI = dsURI.replace(/%DISTRIBUTION%/g,

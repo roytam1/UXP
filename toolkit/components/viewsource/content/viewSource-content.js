@@ -128,8 +128,7 @@ var ViewSourceContent = {
     let objects = msg.objects;
     switch (msg.name) {
       case "ViewSource:LoadSource":
-        this.viewSource(data.URL, data.outerWindowID, data.lineNumber,
-                        data.shouldWrap);
+        this.viewSource(data.URL, data.outerWindowID, data.lineNumber);
         break;
       case "ViewSource:LoadSourceOriginal":
         this.viewSourceOriginal(data.URL, objects.pageDescriptor, data.lineNumber,

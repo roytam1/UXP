@@ -104,13 +104,7 @@ nsDefaultCLH.prototype = {
     // if the pref is missing, ignore the exception
     try {
       var chromeURI = prefs.getCharPref("toolkit.defaultChromeURI");
-
-      var flags = "chrome,dialog=no,all";
-      try {
-        flags = prefs.getCharPref("toolkit.defaultChromeFeatures");
-      }
-      catch (e) { }
-
+      var flags = prefs.getCharPref("toolkit.defaultChromeFeatures", "chrome,dialog=no,all");
       var wwatch = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
                             .getService(nsIWindowWatcher);
       wwatch.openWindow(null, chromeURI, "_blank",

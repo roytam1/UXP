@@ -145,10 +145,6 @@ const gXPInstallObserver = {
             for (let install of installInfo.installs)
               install.install();
             installInfo = null;
-
-            Services.telemetry
-                    .getHistogramById("SECURITY_UI")
-                    .add(Ci.nsISecurityUITelemetry.WARNING_CONFIRM_ADDON_INSTALL_CLICK_THROUGH);
           };
           break;
       }
@@ -208,10 +204,6 @@ const gXPInstallObserver = {
                                         options);
 
     removeNotificationOnEnd(popup, installInfo.installs);
-
-    Services.telemetry
-            .getHistogramById("SECURITY_UI")
-            .add(Ci.nsISecurityUITelemetry.WARNING_CONFIRM_ADDON_INSTALL);
   },
 
   observe: function (aSubject, aTopic, aData)
@@ -262,8 +254,6 @@ const gXPInstallObserver = {
       messageString = gNavigatorBundle.getFormattedString("xpinstallPromptMessage",
                         [brandShortName]);
 
-      let secHistogram = Components.classes["@mozilla.org/base/telemetry;1"].getService(Ci.nsITelemetry).getHistogramById("SECURITY_UI");
-      secHistogram.add(Ci.nsISecurityUITelemetry.WARNING_ADDON_ASKING_PREVENTED);
       let popup = PopupNotifications.show(browser, notificationID,
                                           messageString, anchorID,
                                           null, null, options);
@@ -273,17 +263,14 @@ const gXPInstallObserver = {
       messageString = gNavigatorBundle.getFormattedString("xpinstallPromptMessage",
                         [brandShortName]);
 
-      let secHistogram = Components.classes["@mozilla.org/base/telemetry;1"].getService(Ci.nsITelemetry).getHistogramById("SECURITY_UI");
       action = {
         label: gNavigatorBundle.getString("xpinstallPromptAllowButton"),
         accessKey: gNavigatorBundle.getString("xpinstallPromptAllowButton.accesskey"),
         callback: function() {
-          secHistogram.add(Ci.nsISecurityUITelemetry.WARNING_ADDON_ASKING_PREVENTED_CLICK_THROUGH);
           installInfo.install();
         }
       };
 
-      secHistogram.add(Ci.nsISecurityUITelemetry.WARNING_ADDON_ASKING_PREVENTED);
       let popup = PopupNotifications.show(browser, notificationID,
                                           messageString, anchorID,
                                           action, null, options);

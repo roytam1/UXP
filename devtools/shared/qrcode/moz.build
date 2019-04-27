@@ -5,14 +5,9 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 DIRS += [
-    'encoder'
+    'decoder',
+    'encoder',
 ]
-
-# Save file size on Fennec until there are active plans to use the decoder there
-if not CONFIG['MOZ_FENNEC']:
-    DIRS += [
-        'decoder'
-    ]
 
 DevToolsModules(
     'index.js',

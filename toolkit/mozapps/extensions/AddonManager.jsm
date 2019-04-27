@@ -135,12 +135,7 @@ var PrefObserver = {
         Services.obs.removeObserver(this, "xpcom-shutdown");
       }
       else if (aTopic == NS_PREFBRANCH_PREFCHANGE_TOPIC_ID) {
-        let debugLogEnabled = false;
-        try {
-          debugLogEnabled = Services.prefs.getBoolPref(PREF_LOGGING_ENABLED);
-        }
-        catch (e) {
-        }
+        let debugLogEnabled = Services.prefs.getBoolPref(PREF_LOGGING_ENABLED, false);
         if (debugLogEnabled) {
           parentLogger.level = Log.Level.Debug;
         }
@@ -791,11 +786,7 @@ var AddonManagerInternal = {
       }
       catch (e) { }
 
-      let oldPlatformVersion = null;
-      try {
-        oldPlatformVersion = Services.prefs.getCharPref(PREF_EM_LAST_PLATFORM_VERSION);
-      }
-      catch (e) { }
+      let oldPlatformVersion = Services.prefs.getCharPref(PREF_EM_LAST_PLATFORM_VERSION, "");
 
       if (appChanged !== false) {
         logger.debug("Application has been upgraded");
@@ -808,40 +799,30 @@ var AddonManagerInternal = {
         this.validateBlocklist();
       }
 
-      try {
-        gCheckCompatibility = Services.prefs.getBoolPref(PREF_EM_CHECK_COMPATIBILITY);
-      } catch (e) {}
+      gCheckCompatibility = Services.prefs.getBoolPref(PREF_EM_CHECK_COMPATIBILITY,
+                                                       gCheckCompatibility);
       Services.prefs.addObserver(PREF_EM_CHECK_COMPATIBILITY, this, false);
 
-      try {
-        gStrictCompatibility = Services.prefs.getBoolPref(PREF_EM_STRICT_COMPATIBILITY);
-      } catch (e) {}
+      gStrictCompatibility = Services.prefs.getBoolPref(PREF_EM_STRICT_COMPATIBILITY,
+                                                        gStrictCompatibility);
       Services.prefs.addObserver(PREF_EM_STRICT_COMPATIBILITY, this, false);
 
-      try {
-        let defaultBranch = Services.prefs.getDefaultBranch("");
-        gCheckUpdateSecurityDefault = defaultBranch.getBoolPref(PREF_EM_CHECK_UPDATE_SECURITY);
-      } catch(e) {}
+      let defaultBranch = Services.prefs.getDefaultBranch("");
+      gCheckUpdateSecurityDefault = defaultBranch.getBoolPref(PREF_EM_CHECK_UPDATE_SECURITY,
+                                                              gCheckUpdateSecurityDefault);
 
-      try {
-        gCheckUpdateSecurity = Services.prefs.getBoolPref(PREF_EM_CHECK_UPDATE_SECURITY);
-      } catch (e) {}
+      gCheckUpdateSecurity = Services.prefs.getBoolPref(PREF_EM_CHECK_UPDATE_SECURITY,
+                                                        gCheckUpdateSecurity);
       Services.prefs.addObserver(PREF_EM_CHECK_UPDATE_SECURITY, this, false);
 
-      try {
-        gUpdateEnabled = Services.prefs.getBoolPref(PREF_EM_UPDATE_ENABLED);
-      } catch (e) {}
+      gUpdateEnabled = Services.prefs.getBoolPref(PREF_EM_UPDATE_ENABLED, gUpdateEnabled);
       Services.prefs.addObserver(PREF_EM_UPDATE_ENABLED, this, false);
 
-      try {
-        gAutoUpdateDefault = Services.prefs.getBoolPref(PREF_EM_AUTOUPDATE_DEFAULT);
-      } catch (e) {}
+      gAutoUpdateDefault = Services.prefs.getBoolPref(PREF_EM_AUTOUPDATE_DEFAULT,
+                                                      gAutoUpdateDefault);
       Services.prefs.addObserver(PREF_EM_AUTOUPDATE_DEFAULT, this, false);
 
-      let defaultProvidersEnabled = true;
-      try {
-        defaultProvidersEnabled = Services.prefs.getBoolPref(PREF_DEFAULT_PROVIDERS_ENABLED);
-      } catch (e) {}
+      let defaultProvidersEnabled = Services.prefs.getBoolPref(PREF_DEFAULT_PROVIDERS_ENABLED, true);
       AddonManagerPrivate.recordSimpleMeasure("default_providers", defaultProvidersEnabled);
 
       // Ensure all default providers have had a chance to register themselves
@@ -1167,11 +1148,7 @@ var AddonManagerInternal = {
     switch (aData) {
       case PREF_EM_CHECK_COMPATIBILITY: {
         let oldValue = gCheckCompatibility;
-        try {
-          gCheckCompatibility = Services.prefs.getBoolPref(PREF_EM_CHECK_COMPATIBILITY);
-        } catch(e) {
-          gCheckCompatibility = true;
-        }
+        gCheckCompatibility = Services.prefs.getBoolPref(PREF_EM_CHECK_COMPATIBILITY, true);
 
         this.callManagerListeners("onCompatibilityModeChanged");
 
@@ -1182,11 +1159,7 @@ var AddonManagerInternal = {
       }
       case PREF_EM_STRICT_COMPATIBILITY: {
         let oldValue = gStrictCompatibility;
-        try {
-          gStrictCompatibility = Services.prefs.getBoolPref(PREF_EM_STRICT_COMPATIBILITY);
-        } catch(e) {
-          gStrictCompatibility = true;
-        }
+        gStrictCompatibility = Services.prefs.getBoolPref(PREF_EM_STRICT_COMPATIBILITY, true);
 
         this.callManagerListeners("onCompatibilityModeChanged");
 
@@ -1197,11 +1170,7 @@ var AddonManagerInternal = {
       }
       case PREF_EM_CHECK_UPDATE_SECURITY: {
         let oldValue = gCheckUpdateSecurity;
-        try {
-          gCheckUpdateSecurity = Services.prefs.getBoolPref(PREF_EM_CHECK_UPDATE_SECURITY);
-        } catch(e) {
-          gCheckUpdateSecurity = true;
-        }
+        gCheckUpdateSecurity = Services.prefs.getBoolPref(PREF_EM_CHECK_UPDATE_SECURITY, true);
 
         this.callManagerListeners("onCheckUpdateSecurityChanged");
 
@@ -1212,22 +1181,14 @@ var AddonManagerInternal = {
       }
       case PREF_EM_UPDATE_ENABLED: {
         let oldValue = gUpdateEnabled;
-        try {
-          gUpdateEnabled = Services.prefs.getBoolPref(PREF_EM_UPDATE_ENABLED);
-        } catch(e) {
-          gUpdateEnabled = true;
-        }
+        gUpdateEnabled = Services.prefs.getBoolPref(PREF_EM_UPDATE_ENABLED, true);
 
         this.callManagerListeners("onUpdateModeChanged");
         break;
       }
       case PREF_EM_AUTOUPDATE_DEFAULT: {
         let oldValue = gAutoUpdateDefault;
-        try {
-          gAutoUpdateDefault = Services.prefs.getBoolPref(PREF_EM_AUTOUPDATE_DEFAULT);
-        } catch(e) {
-          gAutoUpdateDefault = true;
-        }
+        gAutoUpdateDefault = Services.prefs.getBoolPref(PREF_EM_AUTOUPDATE_DEFAULT, true);
 
         this.callManagerListeners("onUpdateModeChanged");
         break;

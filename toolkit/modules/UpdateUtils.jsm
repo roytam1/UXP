@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#filter substitution
+
 this.EXPORTED_SYMBOLS = ["UpdateUtils"];
 
 const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
@@ -31,13 +33,9 @@ this.UpdateUtils = {
    *        Whether or not to include the partner bits. Default: true.
    */
   getUpdateChannel(aIncludePartners = true) {
-    let channel = AppConstants.MOZ_UPDATE_CHANNEL;
+    let channel = defaults.getCharPref("app.update.channel",
+                                       AppConstants.MOZ_UPDATE_CHANNEL);
     let defaults = Services.prefs.getDefaultBranch(null);
-    try {
-      channel = defaults.getCharPref("app.update.channel");
-    } catch (e) {
-      // use default value when pref not found
-    }
 
     if (aIncludePartners) {
       try {
@@ -69,23 +67,28 @@ this.UpdateUtils = {
    * @return The formatted URL.
    */
   formatUpdateURL(url) {
+    url = url.replace(/%ID%/g, Services.appinfo.ID);
     url = url.replace(/%PRODUCT%/g, Services.appinfo.name);
     url = url.replace(/%VERSION%/g, Services.appinfo.version);
     url = url.replace(/%BUILD_ID%/g, Services.appinfo.appBuildID);
     url = url.replace(/%BUILD_TARGET%/g, Services.appinfo.OS + "_" + this.ABI);
     url = url.replace(/%OS_VERSION%/g, this.OSVersion);
-    url = url.replace(/%SYSTEM_CAPABILITIES%/g, gSystemCapabilities);
+    url = url.replace(/%WIDGET_TOOLKIT%/g, "@MOZ_WIDGET_TOOLKIT@");
+    url = url.replace(/%CHANNEL%/g, this.UpdateChannel);
+
     if (/%LOCALE%/.test(url)) {
       url = url.replace(/%LOCALE%/g, this.Locale);
     }
-    url = url.replace(/%CHANNEL%/g, this.UpdateChannel);
+
+    url = url.replace(/%CUSTOM%/g, Preferences.get(PREF_APP_UPDATE_CUSTOM, ""));
+    url = url.replace(/\+/g, "%2B");
+
+    url = url.replace(/%SYSTEM_CAPABILITIES%/g, gSystemCapabilities);
     url = url.replace(/%PLATFORM_VERSION%/g, Services.appinfo.platformVersion);
     url = url.replace(/%DISTRIBUTION%/g,
                       getDistributionPrefValue(PREF_APP_DISTRIBUTION));
     url = url.replace(/%DISTRIBUTION_VERSION%/g,
                       getDistributionPrefValue(PREF_APP_DISTRIBUTION_VERSION));
-    url = url.replace(/%CUSTOM%/g, Preferences.get(PREF_APP_UPDATE_CUSTOM, ""));
-    url = url.replace(/\+/g, "%2B");
 
     return url;
   }
@@ -93,15 +96,7 @@ this.UpdateUtils = {
 
 /* Get the distribution pref values, from defaults only */
 function getDistributionPrefValue(aPrefName) {
-  var prefValue = "default";
-
-  try {
-    prefValue = Services.prefs.getDefaultBranch(null).getCharPref(aPrefName);
-  } catch (e) {
-    // use default when pref not found
-  }
-
-  return prefValue;
+  return prefValue = Services.prefs.getDefaultBranch(null).getCharPref(aPrefName, "default");
 }
 
 /**

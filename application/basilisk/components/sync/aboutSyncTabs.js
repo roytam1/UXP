@@ -254,13 +254,7 @@ var RemoteTabViewer = {
   _refetchTabs: function(force) {
     if (!force) {
       // Don't bother refetching tabs if we already did so recently
-      let lastFetch = 0;
-      try {
-        lastFetch = Services.prefs.getIntPref("services.sync.lastTabFetch");
-      }
-      catch (e) {
-        /* Just use the default value of 0 */
-      }
+      lastFetch = Services.prefs.getIntPref("services.sync.lastTabFetch", 0);
 
       let now = Math.floor(Date.now() / 1000);
       if (now - lastFetch < 30) {

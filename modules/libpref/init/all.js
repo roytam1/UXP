@@ -5241,9 +5241,6 @@ pref("browser.search.update.interval", 21600);
 pref("browser.search.suggest.enabled", true);
 pref("browser.search.reset.enabled", false);
 pref("browser.search.reset.whitelist", "");
-pref("browser.search.geoSpecificDefaults", false);
-pref("browser.search.geoip.url", "https://location.services.mozilla.com/v1/country?key=%MOZILLA_API_KEY%");
-pref("browser.search.geoip.timeout", 3000);
 
 #ifdef MOZ_OFFICIAL_BRANDING
 // {moz:official} expands to "official"
