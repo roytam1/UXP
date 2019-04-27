@@ -12,6 +12,7 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 // names so that rules in aboutReader.css can match them.
 const CLASSES_TO_PRESERVE = [
   "caption",
+  "emoji",
   "hidden",
   "invisble",
   "sr-only",
@@ -19,6 +20,7 @@ const CLASSES_TO_PRESERVE = [
   "visuallyhidden",
   "wp-caption",
   "wp-caption-text",
+  "wp-smiley",
 ];
 
 Cu.import("resource://gre/modules/Services.jsm");
