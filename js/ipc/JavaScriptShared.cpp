@@ -68,7 +68,7 @@ IdToObjectMap::findPreserveColor(ObjectId id)
 	if (!p)
 		return nullptr;
 	return p->value().unbarrieredGet();
-	}
+}
 
 bool
 IdToObjectMap::add(ObjectId id, JSObject* obj)
