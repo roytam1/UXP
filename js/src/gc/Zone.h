@@ -350,16 +350,16 @@ struct Zone : public JS::shadow::Zone,
     // This is used by the GC to trace them all first when compacting, since the
     // TypedObject trace hook may access these objects.
 	
-	 //
-	 // There are no barriers here - the set contains only tenured objects so no
-	 // post-barrier is required, and these are weak references so no pre-barrier
-	 // is required.
-    using TypeDescrObjectSet = js::GCHashSet<JSObject*,
+     //
+     // There are no barriers here - the set contains only tenured objects so no
+     // post-barrier is required, and these are weak references so no pre-barrier
+     // is required.
+     using TypeDescrObjectSet = js::GCHashSet<JSObject*,
                                              js::MovableCellHasher<JSObject*>,
                                              js::SystemAllocPolicy>;
     JS::WeakCache<TypeDescrObjectSet> typeDescrObjects;
 	
-	bool addTypeDescrObject(JSContext* cx, HandleObject obj);
+    bool addTypeDescrObject(JSContext* cx, HandleObject obj);
 
 
     // Malloc counter to measure memory pressure for GC scheduling. It runs from
