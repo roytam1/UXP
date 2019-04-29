@@ -1527,7 +1527,7 @@ inline void
 ArenaLists::prepareForIncrementalGC()
 {
     purge();
-        for (auto i : AllAllocKinds())
+    for (auto i : AllAllocKinds())
         arenaLists[i].moveCursorToEnd(); 
 }
 
@@ -3573,18 +3573,18 @@ RelazifyFunctions(Zone* zone, AllocKind kind)
 static bool
 ShouldCollectZone(Zone* zone, JS::gcreason::Reason reason)
 {
-	// Normally we collect all scheduled zones.
-	if (reason != JS::gcreason::COMPARTMENT_REVIVED)
-		return zone->isGCScheduled();
+    // Normally we collect all scheduled zones.
+    if (reason != JS::gcreason::COMPARTMENT_REVIVED)
+        return zone->isGCScheduled();
 	
-	// If we are repeating a GC becuase we noticed dead compartments haven't
-	// been collected, then only collect zones contianing those compartments.
-	for (CompartmentsInZoneIter comp(zone); !comp.done(); comp.next()) {
-		if (comp->scheduledForDestruction)
-			return true;
-		}
-		
-		return false;
+    // If we are repeating a GC becuase we noticed dead compartments haven't
+    // been collected, then only collect zones contianing those compartments.
+    for (CompartmentsInZoneIter comp(zone); !comp.done(); comp.next()) {
+        if (comp->scheduledForDestruction)
+            return true;
+    }
+     
+    return false;
 }
 
 bool
@@ -5527,12 +5527,12 @@ GCRuntime::budgetIncrementalGC(JS::gcreason::Reason reason, SliceBudget& budget,
 							   AutoLockForExclusiveAccess& lock)
 {
     AbortReason unsafeReason = IsIncrementalGCUnsafe(rt);
-	if (unsafeReason == AbortReason::None) {
-		if (reason == JS::gcreason::COMPARTMENT_REVIVED)
-			unsafeReason = gc::AbortReason::CompartmentRevived;
-		else if (mode != JSGC_MODE_INCREMENTAL)
-			unsafeReason = gc::AbortReason::ModeChange;
-	}
+    if (unsafeReason == AbortReason::None) {
+        if (reason == JS::gcreason::COMPARTMENT_REVIVED)
+            unsafeReason = gc::AbortReason::CompartmentRevived;
+        else if (mode != JSGC_MODE_INCREMENTAL)
+            unsafeReason = gc::AbortReason::ModeChange;
+   }
 	
     if (unsafeReason != AbortReason::None) {
         resetIncrementalGC(unsafeReason, lock);
@@ -5799,17 +5799,17 @@ GCRuntime::checkIfGCAllowedInCurrentState(JS::gcreason::Reason reason)
 bool
 GCRuntime::shouldRepeatForDeadZone(JS::gcreason::Reason reason)
 {
-	MOZ_ASSERT_IF(reason == JS::gcreason::COMPARTMENT_REVIVED, !isIncremental);
-	
-	if (!isIncremental || isIncrementalGCInProgress())
-		return false;
-	
-	for (CompartmentsIter c(rt, SkipAtoms); !c.done(); c.next()) {
-		if (c->scheduledForDestruction)
-			return true;
-	}
-	
-	return false;
+    MOZ_ASSERT_IF(reason == JS::gcreason::COMPARTMENT_REVIVED, !isIncremental);
+    
+    if (!isIncremental || isIncrementalGCInProgress())
+         return false;
+    
+    for (CompartmentsIter c(rt, SkipAtoms); !c.done(); c.next()) {
+        if (c->scheduledForDestruction)
+            return true;
+    }
+    
+    return false;
 }
 
 void
@@ -5831,21 +5831,21 @@ GCRuntime::collect(bool nonincrementalByAPI, SliceBudget budget, JS::gcreason::R
         poked = false;
         bool wasReset = gcCycle(nonincrementalByAPI, budget, reason);
       
-		bool repeatForDeadZone = false;
+        bool repeatForDeadZone = false;
         if (poked && cleanUpEverything) {
-			/* Need to re-schedule all zones for GC. */
+            /* Need to re-schedule all zones for GC. */
             JS::PrepareForFullGC(rt->contextFromMainThread());
 
        
         } else if (shouldRepeatForDeadZone(reason) && !wasReset) {
-		   /*
-			* This code makes an extra effort to collect compartments that we
-			* thought were dead at the start of the GC. See the large comment
-			* in beginMarkPhase.
-			*/
-			repeatForDeadZone = true;
-			reason = JS::gcreason::COMPARTMENT_REVIVED;
-		}
+		    /*
+             * This code makes an extra effort to collect compartments that we
+             * thought were dead at the start of the GC. See the large comment
+             * in beginMarkPhase.
+             */
+            repeatForDeadZone = true;
+            reason = JS::gcreason::COMPARTMENT_REVIVED;
+        }
    
 
         /*

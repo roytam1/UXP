@@ -187,8 +187,8 @@ WatchpointMap::markAll(JSTracer* trc)
         Map::Entry& entry = e.front();
         JSObject* object = entry.key().object;
         jsid id = entry.key().id;
-		JSObject* priorObject = object;
-		jsid priorId = id;
+        JSObject* priorObject = object;
+        jsid priorId = id;
         MOZ_ASSERT(JSID_IS_STRING(priorId) || JSID_IS_INT(priorId) || JSID_IS_SYMBOL(priorId));
 
         TraceManuallyBarrieredEdge(trc, &object, "held Watchpoint object");             

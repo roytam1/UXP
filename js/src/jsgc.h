@@ -62,7 +62,7 @@ enum class State {
     D(MallocBytesTrigger) \
     D(GCBytesTrigger) \
     D(ZoneChange) \
-	D(CompartmentRevived)
+    D(CompartmentRevived)
 enum class AbortReason {
 #define MAKE_REASON(name) name,
     GC_ABORT_REASONS(MAKE_REASON)
@@ -455,10 +455,10 @@ class ArenaList {
         return !*cursorp_;
     }
 	
-	void moveCursorToEnd() {
-		while (!isCursorAtEnd())
-			cursorp_ = &(*cursorp_)->next;
-	}
+    void moveCursorToEnd() {
+        while (!isCursorAtEnd())
+            cursorp_ = &(*cursorp_)->next;
+    }
 
     // This can return nullptr.
     Arena* arenaAfterCursor() const {
