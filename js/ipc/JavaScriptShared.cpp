@@ -64,10 +64,10 @@ IdToObjectMap::find(ObjectId id)
 JSObject*
 IdToObjectMap::findPreserveColor(ObjectId id)
 {
-	Table::Ptr p = table_.lookup(id);
-	if (!p)
-		return nullptr;
-	return p->value().unbarrieredGet();
+    Table::Ptr p = table_.lookup(id);
+    if (!p) 
+        return nullptr;
+    return p->value().unbarrieredGet();
 }
 
 bool
