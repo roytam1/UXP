@@ -1527,8 +1527,9 @@ inline void
 ArenaLists::prepareForIncrementalGC()
 {
     purge();
-    for (auto i : AllAllocKinds())
+    for (auto i : AllAllocKinds()) {
         arenaLists[i].moveCursorToEnd(); 
+    }
 }
 
 /* Compacting GC */
@@ -3577,7 +3578,7 @@ ShouldCollectZone(Zone* zone, JS::gcreason::Reason reason)
     if (reason != JS::gcreason::COMPARTMENT_REVIVED)
         return zone->isGCScheduled();
 	
-    // If we are repeating a GC becuase we noticed dead compartments haven't
+    // If we are repeating a GC because we noticed dead compartments haven't
     // been collected, then only collect zones containing those compartments.
     for (CompartmentsInZoneIter comp(zone); !comp.done(); comp.next()) {
         if (comp->scheduledForDestruction)

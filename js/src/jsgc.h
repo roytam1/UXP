@@ -456,8 +456,9 @@ class ArenaList {
     }
 	
     void moveCursorToEnd() {
-        while (!isCursorAtEnd())
+        while (!isCursorAtEnd()) {
             cursorp_ = &(*cursorp_)->next;
+        }
     }
 
     // This can return nullptr.
