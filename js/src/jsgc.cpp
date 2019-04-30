@@ -3649,10 +3649,6 @@ GCRuntime::beginMarkPhase(JS::gcreason::Reason reason, AutoLockForExclusiveAcces
      * on. If the value of keepAtoms() changes between GC slices, then we'll
      * cancel the incremental GC. See IsIncrementalGCSafe.
 	 
-	 
-	 
- 
-
  
      */
     if (isFull && !rt->keepAtoms()) {
@@ -5688,9 +5684,6 @@ GCRuntime::gcCycle(bool nonincrementalByAPI, SliceBudget& budget, JS::gcreason::
     }
 
     State prevState = incrementalState;
-	
-	
-	
 	
 
     if (nonincrementalByAPI) {
