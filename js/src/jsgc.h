@@ -354,7 +354,7 @@ struct SortedArenaListSegment
  * be treated as an invariant, however, as the free lists may be cleared,
  * leaving arenas previously used for allocation partially full. Sorting order
  * is restored during sweeping.
- 
+
  * Arenas following the cursor should not be full.
  */
 class ArenaList {

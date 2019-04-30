@@ -3578,7 +3578,7 @@ ShouldCollectZone(Zone* zone, JS::gcreason::Reason reason)
         return zone->isGCScheduled();
 	
     // If we are repeating a GC becuase we noticed dead compartments haven't
-    // been collected, then only collect zones contianing those compartments.
+    // been collected, then only collect zones containing those compartments.
     for (CompartmentsInZoneIter comp(zone); !comp.done(); comp.next()) {
         if (comp->scheduledForDestruction)
             return true;
@@ -3753,8 +3753,8 @@ GCRuntime::beginMarkPhase(JS::gcreason::Reason reason, AutoLockForExclusiveAcces
 
     gcstats::AutoPhase ap2(stats, gcstats::PHASE_MARK_ROOTS);
 
-    if (isIncremental) {     
-        bufferGrayRoots();  
+    if (isIncremental) {
+        bufferGrayRoots();
         markCompartments();
     }
      
@@ -5508,8 +5508,8 @@ gc::IsIncrementalGCUnsafe(JSRuntime* rt)
 {
     MOZ_ASSERT(!rt->mainThread.suppressGC);
 	
-	if (rt->keepAtoms())
-		return gc::AbortReason::KeepAtomsSet;
+    if (rt->keepAtoms())
+        return gc::AbortReason::KeepAtomsSet;
 
     if (!rt->gc.isIncrementalGCAllowed())
         return gc::AbortReason::IncrementalDisabled;
@@ -5519,7 +5519,7 @@ gc::IsIncrementalGCUnsafe(JSRuntime* rt)
 
 void
 GCRuntime::budgetIncrementalGC(JS::gcreason::Reason reason, SliceBudget& budget,
-							   AutoLockForExclusiveAccess& lock)
+                               AutoLockForExclusiveAccess& lock)
 {
     AbortReason unsafeReason = IsIncrementalGCUnsafe(rt);
     if (unsafeReason == AbortReason::None) {
