@@ -6372,4 +6372,3 @@ ContainerState::CreateMaskLayer(Layer *aLayer,
 }
 
 } // namespace mozilla
-
