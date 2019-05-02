@@ -3648,6 +3648,10 @@ PaintedLayerData::AccumulateEventRegions(ContainerState* aState, nsDisplayLayerE
   if (alreadyHadRegions) {
     mDispatchToContentHitRegion.OrWith(CombinedTouchActionRegion());
   }
+  
+  // Avoid quadratic performance as a result of the region growing to include
+  // and arbitrarily large number of rects, which can happen on some pages.
+  mMaybeHitRegion.SimplifyOutward(8);
 
   // Calculate scaled versions of the bounds of mHitRegion and mMaybeHitRegion
   // for quick access in FindPaintedLayerFor().
@@ -6368,3 +6372,4 @@ ContainerState::CreateMaskLayer(Layer *aLayer,
 }
 
 } // namespace mozilla
+
