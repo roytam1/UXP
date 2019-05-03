@@ -60,7 +60,7 @@ button[default="true"] {
 }
 
 @media not all and (-moz-windows-default-theme) {
-  @media (-moz-windows-compositor) {
+  @media (-moz-windows-theme: aero-lite) {
     /* This is for high-contrast themes on Windows 8 and later */
     button[default="true"],
     button:hover {
