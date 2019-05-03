@@ -61,7 +61,8 @@ enum class State {
     D(ModeChange) \
     D(MallocBytesTrigger) \
     D(GCBytesTrigger) \
-    D(ZoneChange)
+    D(ZoneChange) \
+    D(CompartmentRevived)
 enum class AbortReason {
 #define MAKE_REASON(name) name,
     GC_ABORT_REASONS(MAKE_REASON)
@@ -453,6 +454,12 @@ class ArenaList {
         check();
         return !*cursorp_;
     }
+	
+    void moveCursorToEnd() {
+        while (!isCursorAtEnd()) {
+            cursorp_ = &(*cursorp_)->next;
+        }
+    }
 
     // This can return nullptr.
     Arena* arenaAfterCursor() const {
@@ -739,7 +746,7 @@ class ArenaLists
             freeLists[i] = &placeholder;
     }
 
-    inline void prepareForIncrementalGC(JSRuntime* rt);
+    inline void prepareForIncrementalGC();
 
     /* Check if this arena is in use. */
     bool arenaIsInUse(Arena* arena, AllocKind kind) const {
