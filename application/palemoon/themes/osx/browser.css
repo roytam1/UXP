@@ -1631,7 +1631,7 @@ richlistitem[type~="action"][actiontype="switchtab"][selected="true"] > .ac-url-
 }
 
 /* When the tab bar is collapsed, show a 1px border in its place. */
-#TabsToolbar[tabsontop="false"][collapsed="true"] {
+#TabsToolbar[tabsontop="false"][collapsed="true"]:not([customizing="true"]) {
   visibility: visible;
   height: 1px;
   border-bottom-width: 1px;
