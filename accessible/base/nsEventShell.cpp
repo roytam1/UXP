@@ -9,6 +9,10 @@
 
 #include "mozilla/StaticPtr.h"
 
+#ifdef A11Y_LOG
+#include "Logging.h"
+#endif
+
 using namespace mozilla;
 using namespace mozilla::a11y;
 

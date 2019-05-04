@@ -9,6 +9,7 @@
 #include "Accessible-inl.h"
 #include "AccEvent.h"
 #include "DocAccessible.h"
+#include "DocAccessible-inl.h"
 #include "nsAccessibilityService.h"
 #include "nsCoreUtils.h"
 #include "OuterDocAccessible.h"
@@ -23,6 +24,7 @@
 #include "nsIDocShellTreeItem.h"
 #include "nsIURI.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/HTMLBodyElement.h"
 
 using namespace mozilla;
 using namespace mozilla::a11y;

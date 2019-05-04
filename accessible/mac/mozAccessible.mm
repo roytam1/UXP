@@ -49,42 +49,6 @@ using namespace mozilla::a11y;
 // - NSAccessibilityMathPrescriptsAttribute @"AXMathPrescripts"
 // - NSAccessibilityMathPostscriptsAttribute @"AXMathPostscripts"
 
-// convert an array of Gecko accessibles to an NSArray of native accessibles
-static inline NSMutableArray*
-ConvertToNSArray(nsTArray<Accessible*>& aArray)
-{
-  NSMutableArray* nativeArray = [[NSMutableArray alloc] init];
-
-  // iterate through the list, and get each native accessible.
-  size_t totalCount = aArray.Length();
-  for (size_t i = 0; i < totalCount; i++) {
-    Accessible* curAccessible = aArray.ElementAt(i);
-    mozAccessible* curNative = GetNativeFromGeckoAccessible(curAccessible);
-    if (curNative)
-      [nativeArray addObject:GetObjectOrRepresentedView(curNative)];
-  }
-
-  return nativeArray;
-}
-
-// convert an array of Gecko proxy accessibles to an NSArray of native accessibles
-static inline NSMutableArray*
-ConvertToNSArray(nsTArray<ProxyAccessible*>& aArray)
-{
-  NSMutableArray* nativeArray = [[NSMutableArray alloc] init];
-
-  // iterate through the list, and get each native accessible.
-  size_t totalCount = aArray.Length();
-  for (size_t i = 0; i < totalCount; i++) {
-    ProxyAccessible* curAccessible = aArray.ElementAt(i);
-    mozAccessible* curNative = GetNativeFromProxy(curAccessible);
-    if (curNative)
-      [nativeArray addObject:GetObjectOrRepresentedView(curNative)];
-  }
-
-  return nativeArray;
-}
-
 #pragma mark -
 
 @implementation mozAccessible

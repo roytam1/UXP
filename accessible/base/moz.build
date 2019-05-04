@@ -55,7 +55,7 @@ UNIFIED_SOURCES += [
 ]
 
 if CONFIG['A11Y_LOG']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'Logging.cpp',
     ]
 
