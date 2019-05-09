@@ -12,6 +12,9 @@ Components.utils.import("resource:///modules/RecentWindow.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "ShellService",
                                   "resource:///modules/ShellService.jsm");
 
+XPCOMUtils.defineLazyModuleGetter(this, "Deprecated",
+                                  "resource://gre/modules/Deprecated.jsm");
+
 XPCOMUtils.defineLazyGetter(this, "BROWSER_NEW_TAB_URL", function () {
   const PREF = "browser.newtab.url";
 
@@ -56,6 +59,14 @@ function getBrowserURL()
 {
   return "chrome://browser/content/browser.xul";
 }
+
+function getBoolPref(pref, defaultValue) {
+  Deprecated.warning("getBoolPref is deprecated and will be removed in a future release. " +
+                     "You should use Services.pref.getBoolPref (Services.jsm).",
+                     "https://github.com/MoonchildProductions/UXP/issues/989");
+  return Services.prefs.getBoolPref(pref, defaultValue);
+}
+
 
 function getTopWin(skipPopups) {
   // If this is called in a browser window, use that window regardless of
