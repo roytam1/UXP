@@ -58,6 +58,7 @@ var AboutReader = function(win, articlePromise) {
 
   this._scrollOffset = win.pageYOffset;
 
+  doc.addEventListener("mousedown", this);
   doc.addEventListener("click", this);
 
   win.addEventListener("pagehide", this);
@@ -119,6 +120,25 @@ var AboutReader = function(win, articlePromise) {
   }
 
   this._loadArticle();
+
+  let dropdown = this._toolbarElement;
+
+  let elemL10nMap = {
+    ".minus-button": "minus",
+    ".plus-button": "plus",
+    ".content-width-minus-button": "contentwidthminus",
+    ".content-width-plus-button": "contentwidthplus",
+    ".line-height-minus-button": "lineheightminus",
+    ".line-height-plus-button": "lineheightplus",
+    ".light-button": "colorschemelight",
+    ".dark-button": "colorschemedark",
+    ".sepia-button": "colorschemesepia",
+  };
+
+  for (let [selector, stringID] of Object.entries(elemL10nMap)) {
+    dropdown.querySelector(selector).setAttribute("title",
+      gStrings.GetStringFromName("aboutReader.toolbar." + stringID));
+  }
 };
 
 AboutReader.prototype = {
@@ -191,13 +211,16 @@ AboutReader.prototype = {
     if (!aEvent.isTrusted)
       return;
 
+    let target = aEvent.target;
     switch (aEvent.type) {
+      case "mousedown":
+        if (!target.closest(".dropdown-popup")) {
+          this._closeDropdowns();
+        }
+        break;
       case "click":
-        let target = aEvent.target;
         if (target.classList.contains("dropdown-toggle")) {
           this._toggleDropdownClicked(aEvent);
-        } else if (!target.closest(".dropdown-popup")) {
-          this._closeDropdowns();
         }
         break;
       case "scroll":
@@ -276,13 +299,10 @@ AboutReader.prototype = {
   },
 
   _setFontSize(newFontSize) {
-    let containerClasses = this._containerElement.classList;
-
-    if (this._fontSize > 0)
-      containerClasses.remove("font-size" + this._fontSize);
-
     this._fontSize = newFontSize;
-    containerClasses.add("font-size" + this._fontSize);
+    let size = (10 + 2 * this._fontSize) + "px";
+
+    this._containerElement.style.setProperty("--font-size", size);
     return AsyncPrefs.set("reader.font_size", this._fontSize);
   },
 

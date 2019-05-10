@@ -350,14 +350,19 @@
                       label="&helpTroubleshootingInfo.label;"
                       oncommand="openTroubleshootingPage()"
                       onclick="checkForMiddleClick(this,event);"/>
+            <menuitem id="appmenu_safeMode"
+                      label="&appMenuSafeMode.label;"
+                      oncommand="restart(true);"/>
+            <menuseparator/>
+            <menuitem id="appmenu_releaseNotes"
+                      accesskey="&helpReleaseNotes.accesskey;"
+                      label="&helpReleaseNotes.label;"
+                      oncommand="openReleaseNotes();"
+                      onclick="checkForMiddleClick(this, event);"/>
             <menuitem id="appmenu_feedbackPage"
                       label="&helpFeedbackPage.label;"
                       oncommand="openFeedbackPage()"
                       onclick="checkForMiddleClick(this, event);"/>
-            <menuseparator/>
-            <menuitem id="appmenu_safeMode"
-                      label="&appMenuSafeMode.label;"
-                      oncommand="restart(true);"/>
 #ifdef MOZ_UPDATER
             <menuseparator/>
             <menuitem id="appmenu_checkForUpdates"

@@ -9,6 +9,7 @@
 
 #include "nsIBaseWindow.h"
 #include "nsIDocShellTreeOwner.h"
+#include "nsIContentInlines.h"
 #include "nsIDocument.h"
 #include "nsIDOMHTMLDocument.h"
 #include "nsIDOMHTMLElement.h"

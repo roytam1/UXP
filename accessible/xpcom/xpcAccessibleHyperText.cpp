@@ -7,6 +7,7 @@
 #include "xpcAccessibleHyperText.h"
 
 #include "Accessible-inl.h"
+#include "mozilla/a11y/DocAccessibleParent.h"
 #include "HyperTextAccessible-inl.h"
 #include "TextRange.h"
 #include "xpcAccessibleDocument.h"
