@@ -584,10 +584,16 @@ function buildHelpMenu()
   var checkForUpdates = document.getElementById("checkForUpdates");
   var appMenuCheckForUpdates = document.getElementById("appmenu_checkForUpdates");
   var canCheckForUpdates = updates.canCheckForUpdates;
+  
   checkForUpdates.setAttribute("disabled", !canCheckForUpdates);
-  appMenuCheckForUpdates.setAttribute("disabled", !canCheckForUpdates);
-  if (!canCheckForUpdates)
+
+  if (appMenuCheckForUpdates) {
+    appMenuCheckForUpdates.setAttribute("disabled", !canCheckForUpdates);
+  }
+
+  if (!canCheckForUpdates) {
     return;
+  }
 
   var strings = document.getElementById("bundle_browser");
   var activeUpdate = um.activeUpdate;
@@ -623,19 +629,31 @@ function buildHelpMenu()
   }
 
   checkForUpdates.label = getStringWithUpdateName("updatesItem_" + key);
-  appMenuCheckForUpdates.label = getStringWithUpdateName("updatesItem_" + key);
+
+  if (appMenuCheckForUpdates) {
+    appMenuCheckForUpdates.label = getStringWithUpdateName("updatesItem_" + key);
+  }
+
   // updatesItem_default.accesskey, updatesItem_downloading.accesskey,
   // updatesItem_resume.accesskey or updatesItem_pending.accesskey
   checkForUpdates.accessKey = strings.getString("updatesItem_" + key +
                                                 ".accesskey");
-  appMenuCheckForUpdates.accessKey = strings.getString("updatesItem_" + key +
-                                                       ".accesskey");
+
+  if (appMenuCheckForUpdates) {
+    appMenuCheckForUpdates.accessKey = strings.getString("updatesItem_" + key +
+                                                         ".accesskey");
+  }
+
   if (um.activeUpdate && updates.isDownloading) {
     checkForUpdates.setAttribute("loading", "true");
-    appMenuCheckForUpdates.setAttribute("loading", "true");  
+    if (appMenuCheckForUpdates) {
+      appMenuCheckForUpdates.setAttribute("loading", "true");
+    }
   } else {
     checkForUpdates.removeAttribute("loading");
-    appMenuCheckForUpdates.removeAttribute("loading");
+    if (appMenuCheckForUpdates) {
+      appMenuCheckForUpdates.removeAttribute("loading");
+    }
   }
 #else
 #ifndef XP_MACOSX
