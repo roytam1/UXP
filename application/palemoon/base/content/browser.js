@@ -412,6 +412,10 @@ var gURLBarSettings = {
   },
 
   writePlaceholder: function() {
+    if (!gURLBar) {
+      return;
+    }
+
     let attribute = "placeholder";
     let prefs = this.prefSuggests.map(pref => {
       return this.prefSuggest + pref;
@@ -3471,6 +3475,7 @@ function BrowserToolboxCustomizeDone(aToolboxChanged) {
 
   // Update the urlbar
   if (gURLBar) {
+    gURLBarSettings.writePlaceholder();
     URLBarSetURI();
     XULBrowserWindow.asyncUpdateUI();
     BookmarkingUI.updateStarState();
