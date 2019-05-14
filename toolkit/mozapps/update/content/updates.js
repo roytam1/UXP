@@ -11,10 +11,9 @@
 // so we have to use different names.
 const {classes: CoC, interfaces: CoI, results: CoR, utils: CoU} = Components;
 
-/* globals DownloadUtils, Services, AUSTLMY */
+/* globals DownloadUtils, Services */
 CoU.import("resource://gre/modules/DownloadUtils.jsm", this);
 CoU.import("resource://gre/modules/Services.jsm", this);
-CoU.import("resource://gre/modules/UpdateTelemetry.jsm", this);
 
 const XMLNS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
@@ -114,15 +113,6 @@ var gUpdates = {
    * exits the wizard via onWizardCancel or onWizardFinish.
    */
   _runUnload: true,
-
-  /**
-   * Submit on close telemtry values for the update wizard.
-   * @param  pageID
-   *         The page id for the last page displayed.
-   */
-  _submitTelemetry: function(aPageID) {
-    AUSTLMY.pingWizLastPageCode(aPageID);
-  },
 
   /**
    * Helper function for setButtons
@@ -242,7 +232,6 @@ var gUpdates = {
     var pageid = document.documentElement.currentPage.pageid;
     if ("onWizardFinish" in this._pages[pageid])
       this._pages[pageid].onWizardFinish();
-    this._submitTelemetry(pageid);
   },
 
   /**
@@ -254,7 +243,6 @@ var gUpdates = {
     var pageid = document.documentElement.currentPage.pageid;
     if ("onWizardCancel" in this._pages[pageid])
       this._pages[pageid].onWizardCancel();
-    this._submitTelemetry(pageid);
   },
 
   /**
