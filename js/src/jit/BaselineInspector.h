@@ -95,8 +95,7 @@ class BaselineInspector
   public:
     typedef Vector<ReceiverGuard, 4, JitAllocPolicy> ReceiverVector;
     typedef Vector<ObjectGroup*, 4, JitAllocPolicy> ObjectGroupVector;
-    MOZ_MUST_USE bool maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receivers,
-                                             ObjectGroupVector& convertUnboxedGroups);
+    MOZ_MUST_USE bool maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receivers);
 
     SetElemICInspector setElemICInspector(jsbytecode* pc) {
         return makeICInspector<SetElemICInspector>(pc, ICStub::SetElem_Fallback);
@@ -131,12 +130,10 @@ class BaselineInspector
 
     MOZ_MUST_USE bool commonGetPropFunction(jsbytecode* pc, JSObject** holder, Shape** holderShape,
                                             JSFunction** commonGetter, Shape** globalShape,
-                                            bool* isOwnProperty, ReceiverVector& receivers,
-                                            ObjectGroupVector& convertUnboxedGroups);
+                                            bool* isOwnProperty, ReceiverVector& receivers);
     MOZ_MUST_USE bool commonSetPropFunction(jsbytecode* pc, JSObject** holder, Shape** holderShape,
                                             JSFunction** commonSetter, bool* isOwnProperty,
-                                            ReceiverVector& receivers,
-                                            ObjectGroupVector& convertUnboxedGroups);
+                                            ReceiverVector& receivers);
 
     MOZ_MUST_USE bool instanceOfData(jsbytecode* pc, Shape** shape, uint32_t* slot,
                                      JSObject** prototypeObject);

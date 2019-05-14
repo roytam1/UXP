@@ -1041,7 +1041,6 @@ class IonBuilder
     MDefinition*
     addShapeGuardsForGetterSetter(MDefinition* obj, JSObject* holder, Shape* holderShape,
                                   const BaselineInspector::ReceiverVector& receivers,
-                                  const BaselineInspector::ObjectGroupVector& convertUnboxedGroups,
                                   bool isOwnProperty);
 
     MOZ_MUST_USE bool annotateGetPropertyCache(MDefinition* obj, PropertyName* name,
@@ -1059,9 +1058,6 @@ class IonBuilder
     ResultWithOOM<bool> testNotDefinedProperty(MDefinition* obj, jsid id);
 
     uint32_t getDefiniteSlot(TemporaryTypeSet* types, PropertyName* name, uint32_t* pnfixed);
-    MDefinition* convertUnboxedObjects(MDefinition* obj);
-    MDefinition* convertUnboxedObjects(MDefinition* obj,
-                                       const BaselineInspector::ObjectGroupVector& list);
     uint32_t getUnboxedOffset(TemporaryTypeSet* types, PropertyName* name,
                               JSValueType* punboxedType);
     MInstruction* loadUnboxedProperty(MDefinition* obj, size_t offset, JSValueType unboxedType,

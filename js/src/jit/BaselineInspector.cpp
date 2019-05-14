@@ -96,13 +96,8 @@ VectorAppendNoDuplicate(S& list, T value)
 
 static bool
 AddReceiver(const ReceiverGuard& receiver,
-            BaselineInspector::ReceiverVector& receivers,
-            BaselineInspector::ObjectGroupVector& convertUnboxedGroups)
+            BaselineInspector::ReceiverVector& receivers)
 {
-    if (receiver.group && receiver.group->maybeUnboxedLayout()) {
-        if (receiver.group->unboxedLayout().nativeGroup())
-            return VectorAppendNoDuplicate(convertUnboxedGroups, receiver.group);
-    }
     return VectorAppendNoDuplicate(receivers, receiver);
 }
 
@@ -170,16 +165,12 @@ GetCacheIRReceiverForUnboxedProperty(ICCacheIR_Monitored* stub, ReceiverGuard* r
 }
 
 bool
-BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receivers,
-                                          ObjectGroupVector& convertUnboxedGroups)
+BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receivers)
 {
     // Return a list of the receivers seen by the baseline IC for the current
     // op. Empty lists indicate no receivers are known, or there was an
-    // uncacheable access. convertUnboxedGroups is used for unboxed object
-    // groups which have been seen, but have had instances converted to native
-    // objects and should be eagerly converted by Ion.
+    // uncacheable access.
     MOZ_ASSERT(receivers.empty());
-    MOZ_ASSERT(convertUnboxedGroups.empty());
 
     if (!hasBaselineScript())
         return true;
@@ -207,7 +198,7 @@ BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receiv
             return true;
         }
 
-        if (!AddReceiver(receiver, receivers, convertUnboxedGroups))
+        if (!AddReceiver(receiver, receivers))
             return false;
 
         stub = stub->next();
@@ -700,14 +691,12 @@ bool
 BaselineInspector::commonGetPropFunction(jsbytecode* pc, JSObject** holder, Shape** holderShape,
                                          JSFunction** commonGetter, Shape** globalShape,
                                          bool* isOwnProperty,
-                                         ReceiverVector& receivers,
-                                         ObjectGroupVector& convertUnboxedGroups)
+                                         ReceiverVector& receivers)
 {
     if (!hasBaselineScript())
         return false;
 
     MOZ_ASSERT(receivers.empty());
-    MOZ_ASSERT(convertUnboxedGroups.empty());
 
     *holder = nullptr;
     const ICEntry& entry = icEntryFromPC(pc);
@@ -719,7 +708,7 @@ BaselineInspector::commonGetPropFunction(jsbytecode* pc, JSObject** holder, Shap
         {
             ICGetPropCallGetter* nstub = static_cast<ICGetPropCallGetter*>(stub);
             bool isOwn = nstub->isOwnGetter();
-            if (!isOwn && !AddReceiver(nstub->receiverGuard(), receivers, convertUnboxedGroups))
+            if (!isOwn && !AddReceiver(nstub->receiverGuard(), receivers))
                 return false;
 
             if (!*holder) {
@@ -751,21 +740,19 @@ BaselineInspector::commonGetPropFunction(jsbytecode* pc, JSObject** holder, Shap
     if (!*holder)
         return false;
 
-    MOZ_ASSERT(*isOwnProperty == (receivers.empty() && convertUnboxedGroups.empty()));
+    MOZ_ASSERT(*isOwnProperty == (receivers.empty()));
     return true;
 }
 
 bool
 BaselineInspector::commonSetPropFunction(jsbytecode* pc, JSObject** holder, Shape** holderShape,
                                          JSFunction** commonSetter, bool* isOwnProperty,
-                                         ReceiverVector& receivers,
-                                         ObjectGroupVector& convertUnboxedGroups)
+                                         ReceiverVector& receivers)
 {
     if (!hasBaselineScript())
         return false;
 
     MOZ_ASSERT(receivers.empty());
-    MOZ_ASSERT(convertUnboxedGroups.empty());
 
     *holder = nullptr;
     const ICEntry& entry = icEntryFromPC(pc);
@@ -774,7 +761,7 @@ BaselineInspector::commonSetPropFunction(jsbytecode* pc, JSObject** holder, Shap
         if (stub->isSetProp_CallScripted() || stub->isSetProp_CallNative()) {
             ICSetPropCallSetter* nstub = static_cast<ICSetPropCallSetter*>(stub);
             bool isOwn = nstub->isOwnSetter();
-            if (!isOwn && !AddReceiver(nstub->receiverGuard(), receivers, convertUnboxedGroups))
+            if (!isOwn && !AddReceiver(nstub->receiverGuard(), receivers))
                 return false;
 
             if (!*holder) {
