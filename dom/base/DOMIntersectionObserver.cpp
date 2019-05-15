@@ -339,6 +339,7 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
   for (size_t i = 0; i < mObservationTargets.Length(); ++i) {
     Element* target = mObservationTargets.ElementAt(i);
     nsIFrame* targetFrame = target->GetPrimaryFrame();
+    nsIFrame* originalTargetFrame = targetFrame;
     nsRect targetRect;
     Maybe<nsRect> intersectionRect;
     bool isSameDoc = root && root->GetComposedDoc() == target->GetComposedDoc();
@@ -424,7 +425,7 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
       );
       if (intersectionRect.isSome() && !isSameDoc) {
         nsRect rect = intersectionRect.value();
-        nsPresContext* presContext = targetFrame->PresContext();
+        nsPresContext* presContext = originalTargetFrame->PresContext();
         nsLayoutUtils::TransformRect(rootFrame,
           presContext->PresShell()->GetRootScrollFrame(), rect);
         intersectionRect = Some(rect);
