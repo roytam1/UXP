@@ -54,6 +54,7 @@
 #include "vm/RegExpStaticsObject.h"
 #include "vm/Shape.h"
 #include "vm/TypedArrayCommon.h"
+#include "vm/UnboxedObject-inl.h"
 
 #include "jsatominlines.h"
 #include "jsboolinlines.h"
