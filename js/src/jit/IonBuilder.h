@@ -401,7 +401,6 @@ class IonBuilder
     MInstruction* addBoundsCheck(MDefinition* index, MDefinition* length);
     MInstruction* addShapeGuard(MDefinition* obj, Shape* const shape, BailoutKind bailoutKind);
     MInstruction* addGroupGuard(MDefinition* obj, ObjectGroup* group, BailoutKind bailoutKind);
-    MInstruction* addUnboxedExpandoGuard(MDefinition* obj, bool hasExpando, BailoutKind bailoutKind);
     MInstruction* addSharedTypedArrayGuard(MDefinition* obj);
 
     MInstruction*
@@ -441,8 +440,6 @@ class IonBuilder
                                              BarrierKind barrier, TemporaryTypeSet* types);
     MOZ_MUST_USE bool getPropTryModuleNamespace(bool* emitted, MDefinition* obj, PropertyName* name,
                                                 BarrierKind barrier, TemporaryTypeSet* types);
-    MOZ_MUST_USE bool getPropTryUnboxed(bool* emitted, MDefinition* obj, PropertyName* name,
-                                        BarrierKind barrier, TemporaryTypeSet* types);
     MOZ_MUST_USE bool getPropTryCommonGetter(bool* emitted, MDefinition* obj, PropertyName* name,
                                              TemporaryTypeSet* types);
     MOZ_MUST_USE bool getPropTryInlineAccess(bool* emitted, MDefinition* obj, PropertyName* name,
@@ -475,9 +472,6 @@ class IonBuilder
     MOZ_MUST_USE bool setPropTryDefiniteSlot(bool* emitted, MDefinition* obj,
                                              PropertyName* name, MDefinition* value,
                                              bool barrier, TemporaryTypeSet* objTypes);
-    MOZ_MUST_USE bool setPropTryUnboxed(bool* emitted, MDefinition* obj,
-                                        PropertyName* name, MDefinition* value,
-                                        bool barrier, TemporaryTypeSet* objTypes);
     MOZ_MUST_USE bool setPropTryInlineAccess(bool* emitted, MDefinition* obj,
                                              PropertyName* name, MDefinition* value,
                                              bool barrier, TemporaryTypeSet* objTypes);

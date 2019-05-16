@@ -3515,8 +3515,6 @@ PassthroughOperand(MDefinition* def)
         return def->toConvertElementsToDoubles()->elements();
     if (def->isMaybeCopyElementsForWrite())
         return def->toMaybeCopyElementsForWrite()->object();
-    if (def->isConvertUnboxedObjectToNative())
-        return def->toConvertUnboxedObjectToNative()->object();
     return nullptr;
 }
 

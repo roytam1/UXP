@@ -3252,14 +3252,6 @@ LIRGenerator::visitStoreUnboxedString(MStoreUnboxedString* ins)
 }
 
 void
-LIRGenerator::visitConvertUnboxedObjectToNative(MConvertUnboxedObjectToNative* ins)
-{
-    LInstruction* check = new(alloc()) LConvertUnboxedObjectToNative(useRegister(ins->object()));
-    add(check, ins);
-    assignSafepoint(check, ins);
-}
-
-void
 LIRGenerator::visitEffectiveAddress(MEffectiveAddress* ins)
 {
     define(new(alloc()) LEffectiveAddress(useRegister(ins->base()), useRegister(ins->index())), ins);
@@ -3774,24 +3766,6 @@ LIRGenerator::visitGuardReceiverPolymorphic(MGuardReceiverPolymorphic* ins)
     assignSnapshot(guard, Bailout_ShapeGuard);
     add(guard, ins);
     redefine(ins, ins->object());
-}
-
-void
-LIRGenerator::visitGuardUnboxedExpando(MGuardUnboxedExpando* ins)
-{
-    LGuardUnboxedExpando* guard =
-        new(alloc()) LGuardUnboxedExpando(useRegister(ins->object()));
-    assignSnapshot(guard, ins->bailoutKind());
-    add(guard, ins);
-    redefine(ins, ins->object());
-}
-
-void
-LIRGenerator::visitLoadUnboxedExpando(MLoadUnboxedExpando* ins)
-{
-    LLoadUnboxedExpando* lir =
-        new(alloc()) LLoadUnboxedExpando(useRegisterAtStart(ins->object()));
-    define(lir, ins);
 }
 
 void
