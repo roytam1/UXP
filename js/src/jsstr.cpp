@@ -1970,14 +1970,14 @@ js::str_trim(JSContext* cx, unsigned argc, Value* vp)
 }
 
 bool
-js::str_trimLeft(JSContext* cx, unsigned argc, Value* vp)
+js::str_trimStart(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
     return TrimString(cx, args, true, false);
 }
 
 bool
-js::str_trimRight(JSContext* cx, unsigned argc, Value* vp)
+js::str_trimEnd(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
     return TrimString(cx, args, false, true);
@@ -2568,8 +2568,10 @@ static const JSFunctionSpec string_methods[] = {
     JS_FN("startsWith",        str_startsWith,        1,0),
     JS_FN("endsWith",          str_endsWith,          1,0),
     JS_FN("trim",              str_trim,              0,0),
-    JS_FN("trimLeft",          str_trimLeft,          0,0),
-    JS_FN("trimRight",         str_trimRight,         0,0),
+    JS_FN("trimLeft",          str_trimStart,         0,0),
+	JS_FN("trimStart",         str_trimStart,         0,0),
+    JS_FN("trimRight",         str_trimEnd,           0,0),
+	JS_FN("trimEnd",           str_trimEnd,           0,0),
     JS_FN("toLocaleLowerCase", str_toLocaleLowerCase, 0,0),
     JS_FN("toLocaleUpperCase", str_toLocaleUpperCase, 0,0),
     JS_SELF_HOSTED_FN("localeCompare", "String_localeCompare", 1,0),
@@ -2881,8 +2883,10 @@ static const JSFunctionSpec string_static_methods[] = {
     JS_SELF_HOSTED_FN("startsWith",      "String_static_startsWith",    2,0),
     JS_SELF_HOSTED_FN("endsWith",        "String_static_endsWith",      2,0),
     JS_SELF_HOSTED_FN("trim",            "String_static_trim",          1,0),
-    JS_SELF_HOSTED_FN("trimLeft",        "String_static_trimLeft",      1,0),
-    JS_SELF_HOSTED_FN("trimRight",       "String_static_trimRight",     1,0),
+    JS_SELF_HOSTED_FN("trimLeft",        "String_static_trimStart",     1,0),
+    JS_SELF_HOSTED_FN("trimStart",       "String_static_trimStart",     1,0),
+    JS_SELF_HOSTED_FN("trimRight",       "String_static_trimEnd",       1,0),
+    JS_SELF_HOSTED_FN("trimEnd",         "String_static_trimEnd",       1,0),
     JS_SELF_HOSTED_FN("toLocaleLowerCase","String_static_toLocaleLowerCase",1,0),
     JS_SELF_HOSTED_FN("toLocaleUpperCase","String_static_toLocaleUpperCase",1,0),
     JS_SELF_HOSTED_FN("normalize",       "String_static_normalize",     1,0),
