@@ -346,7 +346,7 @@ HistoryStore.prototype = {
   },
 
   wipe: function HistStore_wipe() {
-    PlacesUtils.history.removeAllPages();
+    PlacesUtils.history.clear();
   }
 };
 

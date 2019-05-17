@@ -156,7 +156,7 @@ gfxPlatformGtk::CreateOffscreenSurface(const IntSize& aSize,
     if (gdkScreen) {
         // When forcing PaintedLayers to use image surfaces for content,
         // force creation of gfxImageSurface surfaces.
-        if (gfxVars::UseXRender() && !UseImageOffscreenSurfaces()) {
+        if (gfxVars::UseXRender()) {
             Screen *screen = gdk_x11_screen_get_xscreen(gdkScreen);
             XRenderPictFormat* xrenderFormat =
                 gfxXlibSurface::FindRenderFormat(DisplayOfScreen(screen),
@@ -166,13 +166,6 @@ gfxPlatformGtk::CreateOffscreenSurface(const IntSize& aSize,
                 newSurface = gfxXlibSurface::Create(screen, xrenderFormat,
                                                     aSize);
             }
-        } else {
-            // We're not going to use XRender, so we don't need to
-            // search for a render format
-            newSurface = new gfxImageSurface(aSize, aFormat);
-            // The gfxImageSurface ctor zeroes this for us, no need to
-            // waste time clearing again
-            needsClear = false;
         }
     }
 #endif
@@ -182,6 +175,10 @@ gfxPlatformGtk::CreateOffscreenSurface(const IntSize& aSize,
         // e.g., no display, no RENDER, bad size, etc.
         // Fall back to image surface for the data.
         newSurface = new gfxImageSurface(aSize, aFormat);
+
+        // The gfxImageSurface ctor zeroes this for us, no need to
+        // waste time clearing again
+        needsClear = false;
     }
 
     if (newSurface->CairoStatus()) {

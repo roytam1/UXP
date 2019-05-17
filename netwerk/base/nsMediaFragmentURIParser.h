@@ -89,7 +89,6 @@ private:
   bool ParseNPTMM(nsDependentSubstring& aString, uint32_t& aMinute);
   bool ParseNPTSS(nsDependentSubstring& aString, uint32_t& aSecond);
   bool ParseXYWH(nsDependentSubstring aString);
-  bool ParseMozResolution(nsDependentSubstring aString);
   bool ParseMozSampleSize(nsDependentSubstring aString);
 
   // Media fragment information.

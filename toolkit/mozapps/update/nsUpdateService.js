@@ -12,7 +12,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 Cu.import("resource://gre/modules/FileUtils.jsm", this);
 Cu.import("resource://gre/modules/Services.jsm", this);
 Cu.import("resource://gre/modules/ctypes.jsm", this);
-Cu.import("resource://gre/modules/UpdateTelemetry.jsm", this);
 Cu.import("resource://gre/modules/AppConstants.jsm", this);
 Cu.importGlobalProperties(["XMLHttpRequest"]);
 
@@ -950,63 +949,6 @@ function handleFallbackToCompleteUpdate(update, postStaging) {
 }
 
 function pingStateAndStatusCodes(aUpdate, aStartup, aStatus) {
-  let patchType = AUSTLMY.PATCH_UNKNOWN;
-  if (aUpdate && aUpdate.selectedPatch && aUpdate.selectedPatch.type) {
-    if (aUpdate.selectedPatch.type == "complete") {
-      patchType = AUSTLMY.PATCH_COMPLETE;
-    } else if (aUpdate.selectedPatch.type == "partial") {
-      patchType = AUSTLMY.PATCH_PARTIAL;
-    }
-  }
-
-  let suffix = patchType + "_" + (aStartup ? AUSTLMY.STARTUP : AUSTLMY.STAGE);
-  let stateCode = 0;
-  let parts = aStatus.split(":");
-  if (parts.length > 0) {
-    switch (parts[0]) {
-      case STATE_NONE:
-        stateCode = 2;
-        break;
-      case STATE_DOWNLOADING:
-        stateCode = 3;
-        break;
-      case STATE_PENDING:
-        stateCode = 4;
-        break;
-      case STATE_APPLYING:
-        stateCode = 6;
-        break;
-      case STATE_APPLIED:
-        stateCode = 7;
-        break;
-      case STATE_APPLIED_OS:
-        stateCode = 8;
-        break;
-      case STATE_SUCCEEDED:
-        stateCode = 10;
-        break;
-      case STATE_DOWNLOAD_FAILED:
-        stateCode = 11;
-        break;
-      case STATE_FAILED:
-        stateCode = 12;
-        break;
-      case STATE_PENDING_ELEVATE:
-        stateCode = 13;
-        break;
-      default:
-        stateCode = 1;
-    }
-
-    if (parts.length > 1) {
-      let statusErrorCode = INVALID_UPDATER_STATE_CODE;
-      if (parts[0] == STATE_FAILED) {
-        statusErrorCode = parseInt(parts[1]) || INVALID_UPDATER_STATUS_CODE;
-      }
-      AUSTLMY.pingStatusErrorCode(suffix, statusErrorCode);
-    }
-  }
-  AUSTLMY.pingStateCode(suffix, stateCode);
 }
 
 /**
@@ -1764,14 +1706,9 @@ UpdateService.prototype = {
     if (update.errorCode == NETWORK_ERROR_OFFLINE) {
       // Register an online observer to try again
       this._registerOnlineObserver();
-      if (this._pingSuffix) {
-        AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_OFFLINE);
-      }
       return;
     }
 
-    // Send the error code to telemetry
-    AUSTLMY.pingCheckExError(this._pingSuffix, update.errorCode);
     update.errorCode = BACKGROUNDCHECK_MULTIPLE_FAILURES;
     let errCount = Services.prefs.getIntPref(PREF_APP_UPDATE_BACKGROUNDERRORS, 0);
     errCount++;
@@ -1783,9 +1720,6 @@ UpdateService.prototype = {
       let prompter = Cc["@mozilla.org/updates/update-prompt;1"].
                      createInstance(Ci.nsIUpdatePrompt);
       prompter.showUpdateError(update);
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_GENERAL_ERROR_PROMPT);
-    } else {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_GENERAL_ERROR_SILENT);
     }
   },
 
@@ -1830,11 +1764,6 @@ UpdateService.prototype = {
     this._checkForBackgroundUpdates(false);
   },
 
-  // The suffix used for background update check telemetry histogram ID's.
-  get _pingSuffix() {
-    return this._isNotify ? AUSTLMY.NOTIFY : AUSTLMY.EXTERNAL;
-  },
-
   /**
    * Checks for updates in the background.
    * @param   isNotify
@@ -1844,117 +1773,8 @@ UpdateService.prototype = {
   _checkForBackgroundUpdates: function AUS__checkForBackgroundUpdates(isNotify) {
     this._isNotify = isNotify;
 
-    // Histogram IDs:
-    // UPDATE_PING_COUNT_EXTERNAL
-    // UPDATE_PING_COUNT_NOTIFY
-    AUSTLMY.pingGeneric("UPDATE_PING_COUNT_" + this._pingSuffix,
-                        true, false);
-
-    // Histogram IDs:
-    // UPDATE_UNABLE_TO_APPLY_EXTERNAL
-    // UPDATE_UNABLE_TO_APPLY_NOTIFY
-    AUSTLMY.pingGeneric("UPDATE_UNABLE_TO_APPLY_" + this._pingSuffix,
-                        getCanApplyUpdates(), true);
-    // Histogram IDs:
-    // UPDATE_CANNOT_STAGE_EXTERNAL
-    // UPDATE_CANNOT_STAGE_NOTIFY
-    AUSTLMY.pingGeneric("UPDATE_CANNOT_STAGE_" + this._pingSuffix,
-                        getCanStageUpdates(), true);
-    // Histogram IDs:
-    // UPDATE_INVALID_LASTUPDATETIME_EXTERNAL
-    // UPDATE_INVALID_LASTUPDATETIME_NOTIFY
-    // UPDATE_LAST_NOTIFY_INTERVAL_DAYS_EXTERNAL
-    // UPDATE_LAST_NOTIFY_INTERVAL_DAYS_NOTIFY
-    AUSTLMY.pingLastUpdateTime(this._pingSuffix);
-    // Histogram IDs:
-    // UPDATE_NOT_PREF_UPDATE_ENABLED_EXTERNAL
-    // UPDATE_NOT_PREF_UPDATE_ENABLED_NOTIFY
-    AUSTLMY.pingBoolPref("UPDATE_NOT_PREF_UPDATE_ENABLED_" + this._pingSuffix,
-                         PREF_APP_UPDATE_ENABLED, true, true);
-    // Histogram IDs:
-    // UPDATE_NOT_PREF_UPDATE_AUTO_EXTERNAL
-    // UPDATE_NOT_PREF_UPDATE_AUTO_NOTIFY
-    AUSTLMY.pingBoolPref("UPDATE_NOT_PREF_UPDATE_AUTO_" + this._pingSuffix,
-                         PREF_APP_UPDATE_AUTO, true, true);
-    // Histogram IDs:
-    // UPDATE_NOT_PREF_UPDATE_STAGING_ENABLED_EXTERNAL
-    // UPDATE_NOT_PREF_UPDATE_STAGING_ENABLED_NOTIFY
-    AUSTLMY.pingBoolPref("UPDATE_NOT_PREF_UPDATE_STAGING_ENABLED_" +
-                         this._pingSuffix,
-                         PREF_APP_UPDATE_STAGING_ENABLED, true, true);
-    if (AppConstants.platform == "win" || AppConstants.platform == "macosx") {
-      // Histogram IDs:
-      // UPDATE_PREF_UPDATE_CANCELATIONS_EXTERNAL
-      // UPDATE_PREF_UPDATE_CANCELATIONS_NOTIFY
-      AUSTLMY.pingIntPref("UPDATE_PREF_UPDATE_CANCELATIONS_" + this._pingSuffix,
-                          PREF_APP_UPDATE_CANCELATIONS, 0, 0);
-    }
-    if (AppConstants.platform == "macosx") {
-      // Histogram IDs:
-      // UPDATE_PREF_UPDATE_CANCELATIONS_OSX_EXTERNAL
-      // UPDATE_PREF_UPDATE_CANCELATIONS_OSX_NOTIFY
-      AUSTLMY.pingIntPref("UPDATE_PREF_UPDATE_CANCELATIONS_OSX_" +
-                          this._pingSuffix,
-                          PREF_APP_UPDATE_CANCELATIONS_OSX, 0, 0);
-    }
-    let prefType = Services.prefs.getPrefType(PREF_APP_UPDATE_URL_OVERRIDE);
-    let overridePrefHasValue = prefType != Ci.nsIPrefBranch.PREF_INVALID;
-    // Histogram IDs:
-    // UPDATE_HAS_PREF_URL_OVERRIDE_EXTERNAL
-    // UPDATE_HAS_PREF_URL_OVERRIDE_NOTIFY
-    AUSTLMY.pingGeneric("UPDATE_HAS_PREF_URL_OVERRIDE_" + this._pingSuffix,
-                        overridePrefHasValue, false);
-
-    // If a download is in progress or the patch has been staged do nothing.
-    if (this.isDownloading) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_IS_DOWNLOADING);
-      return;
-    }
-
     if (this._downloader && this._downloader.patchIsStaged) {
-      let readState = readStatusFile(getUpdatesDir());
-      if (readState == STATE_PENDING ||
-          readState == STATE_PENDING_ELEVATE) {
-        AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_IS_DOWNLOADED);
-      } else {
-        AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_IS_STAGED);
-      }
       return;
-    }
-
-    let validUpdateURL = true;
-    try {
-      this.backgroundChecker.getUpdateURL(false);
-    } catch (e) {
-      validUpdateURL = false;
-    }
-    // The following checks are done here so they can be differentiated from
-    // foreground checks.
-    if (!UpdateUtils.OSVersion) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_NO_OS_VERSION);
-    } else if (!UpdateUtils.ABI) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_NO_OS_ABI);
-    } else if (!validUpdateURL) {
-      if (overridePrefHasValue) {
-        if (Services.prefs.prefHasUserValue(PREF_APP_UPDATE_URL_OVERRIDE)) {
-          AUSTLMY.pingCheckCode(this._pingSuffix,
-                                AUSTLMY.CHK_INVALID_USER_OVERRIDE_URL);
-        } else {
-          AUSTLMY.pingCheckCode(this._pingSuffix,
-                                AUSTLMY.CHK_INVALID_DEFAULT_OVERRIDE_URL);
-        }
-      } else {
-        AUSTLMY.pingCheckCode(this._pingSuffix,
-                              AUSTLMY.CHK_INVALID_DEFAULT_URL);
-      }
-    } else if (!Services.prefs.getBoolPref(PREF_APP_UPDATE_ENABLED, true)) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_PREF_DISABLED);
-    } else if (!hasUpdateMutex()) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_NO_MUTEX);
-    } else if (!gCanCheckForUpdates) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_UNABLE_TO_CHECK);
-    } else if (!this.backgroundChecker._enabled) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_DISABLED_FOR_SESSION);
     }
 
     this.backgroundChecker.checkForUpdates(this, false);
@@ -1970,7 +1790,6 @@ UpdateService.prototype = {
    */
   selectUpdate: function AUS_selectUpdate(updates) {
     if (updates.length == 0) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_NO_UPDATE_FOUND);
       return null;
     }
 
@@ -1983,7 +1802,6 @@ UpdateService.prototype = {
     var majorUpdate = null;
     var minorUpdate = null;
     var vc = Services.vc;
-    let lastCheckCode = AUSTLMY.CHK_NO_COMPAT_UPDATE_FOUND;
 
     updates.forEach(function(aUpdate) {
       // Ignore updates for older versions of the applications and updates for
@@ -1996,7 +1814,6 @@ UpdateService.prototype = {
         LOG("UpdateService:selectUpdate - skipping update because the " +
             "update's application version is less than or equal to " +
             "the current application version.");
-        lastCheckCode = AUSTLMY.CHK_UPDATE_PREVIOUS_VERSION;
         return;
       }
 
@@ -2008,7 +1825,6 @@ UpdateService.prototype = {
           Services.prefs.getBoolPref(neverPrefName, false)) {
         LOG("UpdateService:selectUpdate - skipping update because the " +
             "preference " + neverPrefName + " is true");
-        lastCheckCode = AUSTLMY.CHK_UPDATE_NEVER_PREF;
         return;
       }
 
@@ -2028,7 +1844,6 @@ UpdateService.prototype = {
         default:
           LOG("UpdateService:selectUpdate - skipping unknown update type: " +
               aUpdate.type);
-          lastCheckCode = AUSTLMY.CHK_UPDATE_INVALID_TYPE;
           break;
       }
     });
@@ -2059,16 +1874,11 @@ UpdateService.prototype = {
                 "install this update, but the user has exceeded the max " +
                 "number of elevation attempts.");
             update.elevationFailure = true;
-            AUSTLMY.pingCheckCode(
-              this._pingSuffix,
-              AUSTLMY.CHK_ELEVATION_DISABLED_FOR_VERSION);
           } else if (vc.compare(rejectedVersion, update.appVersion) == 0) {
             LOG("UpdateService:selectUpdate - the user requires elevation to " +
                 "install this update, but elevation is disabled for this " +
                 "version.");
             update.elevationFailure = true;
-            AUSTLMY.pingCheckCode(this._pingSuffix,
-                                  AUSTLMY.CHK_ELEVATION_OPTOUT_FOR_VERSION);
           } else {
             LOG("UpdateService:selectUpdate - the user requires elevation to " +
                 "install the update.");
@@ -2088,8 +1898,6 @@ UpdateService.prototype = {
           Services.prefs.clearUserPref(PREF_APP_UPDATE_ELEVATE_NEVER);
         }
       }
-    } else if (!update) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, lastCheckCode);
     }
 
     return update;
@@ -2107,13 +1915,11 @@ UpdateService.prototype = {
     var um = Cc["@mozilla.org/updates/update-manager;1"].
              getService(Ci.nsIUpdateManager);
     if (um.activeUpdate) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_HAS_ACTIVEUPDATE);
       return;
     }
 
     var updateEnabled = Services.prefs.getBoolPref(PREF_APP_UPDATE_ENABLED, true);
     if (!updateEnabled) {
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_PREF_DISABLED);
       LOG("UpdateService:_selectAndInstallUpdate - not prompting because " +
           "update is disabled");
       return;
@@ -2132,7 +1938,6 @@ UpdateService.prototype = {
             "update is not supported for this system");
         this._showPrompt(update);
       }
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_UNSUPPORTED);
       return;
     }
 
@@ -2140,7 +1945,6 @@ UpdateService.prototype = {
       LOG("UpdateService:_selectAndInstallUpdate - the user is unable to " +
           "apply updates... prompting");
       this._showPrompt(update);
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_UNABLE_TO_APPLY);
       return;
     }
 
@@ -2163,7 +1967,6 @@ UpdateService.prototype = {
     if (update.showPrompt) {
       LOG("UpdateService:_selectAndInstallUpdate - prompting because the " +
           "update snippet specified showPrompt");
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_SHOWPROMPT_SNIPPET);
       this._showPrompt(update);
       return;
     }
@@ -2171,7 +1974,6 @@ UpdateService.prototype = {
     if (!Services.prefs.getBoolPref(PREF_APP_UPDATE_AUTO, true)) {
       LOG("UpdateService:_selectAndInstallUpdate - prompting because silent " +
           "install is disabled");
-      AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_SHOWPROMPT_PREF);
       this._showPrompt(update);
       return;
     }
@@ -2181,7 +1983,6 @@ UpdateService.prototype = {
     if (status == STATE_NONE) {
       cleanupActiveUpdate();
     }
-    AUSTLMY.pingCheckCode(this._pingSuffix, AUSTLMY.CHK_DOWNLOAD_UPDATE);
   },
 
   _showPrompt: function AUS__showPrompt(update) {
@@ -3087,8 +2888,6 @@ Downloader.prototype = {
   _verifyDownload: function Downloader__verifyDownload() {
     LOG("Downloader:_verifyDownload called");
     if (!this._request) {
-      AUSTLMY.pingDownloadCode(this.isCompleteUpdate,
-                               AUSTLMY.DWNLD_ERR_VERIFY_NO_REQUEST);
       return false;
     }
 
@@ -3097,8 +2896,6 @@ Downloader.prototype = {
     // Ensure that the file size matches the expected file size.
     if (destination.fileSize != this._patch.size) {
       LOG("Downloader:_verifyDownload downloaded size != expected size.");
-      AUSTLMY.pingDownloadCode(this.isCompleteUpdate,
-                               AUSTLMY.DWNLD_ERR_VERIFY_PATCH_SIZE_NOT_EQUAL);
       return false;
     }
 
@@ -3143,8 +2940,6 @@ Downloader.prototype = {
     }
 
     LOG("Downloader:_verifyDownload hashes do not match. ");
-    AUSTLMY.pingDownloadCode(this.isCompleteUpdate,
-                             AUSTLMY.DWNLD_ERR_VERIFY_NO_HASH_MATCH);
     return false;
   },
 
@@ -3271,7 +3066,6 @@ Downloader.prototype = {
   downloadUpdate: function Downloader_downloadUpdate(update) {
     LOG("UpdateService:_downloadUpdate");
     if (!update) {
-      AUSTLMY.pingDownloadCode(undefined, AUSTLMY.DWNLD_ERR_NO_UPDATE);
       throw Cr.NS_ERROR_NULL_POINTER;
     }
 
@@ -3284,7 +3078,6 @@ Downloader.prototype = {
     this._patch = this._selectPatch(update, updateDir);
     if (!this._patch) {
       LOG("Downloader:downloadUpdate - no patch to download");
-      AUSTLMY.pingDownloadCode(undefined, AUSTLMY.DWNLD_ERR_NO_UPDATE_PATCH);
       return readStatusFile(updateDir);
     }
     this.isCompleteUpdate = this._patch.type == "complete";
@@ -3296,8 +3089,6 @@ Downloader.prototype = {
       patchFile = this._getUpdateArchiveFile();
     }
     if (!patchFile) {
-      AUSTLMY.pingDownloadCode(this.isCompleteUpdate,
-                               AUSTLMY.DWNLD_ERR_NO_PATCH_FILE);
       return STATE_NONE;
     }
 
@@ -3401,8 +3192,6 @@ Downloader.prototype = {
       // It's important that we use a different code than
       // NS_ERROR_CORRUPTED_CONTENT so that tests can verify the difference
       // between a hash error and a wrong download error.
-      AUSTLMY.pingDownloadCode(this.isCompleteUpdate,
-                               AUSTLMY.DWNLD_ERR_PATCH_SIZE_LARGER);
       this.cancel(Cr.NS_ERROR_UNEXPECTED);
       return;
     }
@@ -3413,8 +3202,6 @@ Downloader.prototype = {
       // It's important that we use a different code than
       // NS_ERROR_CORRUPTED_CONTENT so that tests can verify the difference
       // between a hash error and a wrong download error.
-      AUSTLMY.pingDownloadCode(this.isCompleteUpdate,
-                               AUSTLMY.DWNLD_ERR_PATCH_SIZE_NOT_EQUAL);
       this.cancel(Cr.NS_ERROR_UNEXPECTED);
       return;
     }
@@ -3495,7 +3282,6 @@ Downloader.prototype = {
         if (this.background) {
           shouldShowPrompt = !getCanStageUpdates();
         }
-        AUSTLMY.pingDownloadCode(this.isCompleteUpdate, AUSTLMY.DWNLD_SUCCESS);
 
         // Tell the updater.exe we're ready to apply.
         writeStatusFile(getUpdatesDir(), state);
@@ -3525,8 +3311,6 @@ Downloader.prototype = {
       // calling downloadUpdate on the active update which continues
       // downloading the file from where it was.
       LOG("Downloader:onStopRequest - offline, register online observer: true");
-      AUSTLMY.pingDownloadCode(this.isCompleteUpdate,
-                               AUSTLMY.DWNLD_RETRY_OFFLINE);
       shouldRegisterOnlineObserver = true;
       deleteActiveUpdate = false;
     // Each of NS_ERROR_NET_TIMEOUT, ERROR_CONNECTION_REFUSED,
@@ -3540,25 +3324,11 @@ Downloader.prototype = {
                 status == Cr.NS_ERROR_DOCUMENT_NOT_CACHED) &&
                this.updateService._consecutiveSocketErrors < maxFail) {
       LOG("Downloader:onStopRequest - socket error, shouldRetrySoon: true");
-      let dwnldCode = AUSTLMY.DWNLD_RETRY_CONNECTION_REFUSED;
-      if (status == Cr.NS_ERROR_NET_TIMEOUT) {
-        dwnldCode = AUSTLMY.DWNLD_RETRY_NET_TIMEOUT;
-      } else if (status == Cr.NS_ERROR_NET_RESET) {
-        dwnldCode = AUSTLMY.DWNLD_RETRY_NET_RESET;
-      } else if (status == Cr.NS_ERROR_DOCUMENT_NOT_CACHED) {
-        dwnldCode = AUSTLMY.DWNLD_ERR_DOCUMENT_NOT_CACHED;
-      }
-      AUSTLMY.pingDownloadCode(this.isCompleteUpdate, dwnldCode);
       shouldRetrySoon = true;
       deleteActiveUpdate = false;
     } else if (status != Cr.NS_BINDING_ABORTED &&
                status != Cr.NS_ERROR_ABORT) {
       LOG("Downloader:onStopRequest - non-verification failure");
-      let dwnldCode = AUSTLMY.DWNLD_ERR_BINDING_ABORTED;
-      if (status == Cr.NS_ERROR_ABORT) {
-        dwnldCode = AUSTLMY.DWNLD_ERR_ABORT;
-      }
-      AUSTLMY.pingDownloadCode(this.isCompleteUpdate, dwnldCode);
 
       // Some sort of other failure, log this in the |statusText| property
       state = STATE_DOWNLOAD_FAILED;

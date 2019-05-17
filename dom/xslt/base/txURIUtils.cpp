@@ -45,6 +45,10 @@ void URIUtils::resolveHref(const nsAString& href, const nsAString& base,
 void
 URIUtils::ResetWithSource(nsIDocument *aNewDoc, nsINode *aSourceNode)
 {
+	if (!aSourceNode) {
+		return;
+	}
+
     nsCOMPtr<nsIDocument> sourceDoc = aSourceNode->OwnerDoc();
     nsIPrincipal* sourcePrincipal = sourceDoc->NodePrincipal();
 

@@ -23,10 +23,6 @@ EXTRA_COMPONENTS += [
     'nsUpdateServiceStub.js',
 ]
 
-EXTRA_JS_MODULES += [
-    'UpdateTelemetry.jsm',
-]
-
 JAR_MANIFESTS += ['jar.mn']
 
 with Files('**'):
