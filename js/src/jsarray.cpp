@@ -3169,6 +3169,11 @@ static const JSFunctionSpec array_methods[] = {
 
     /* ES7 additions */
     JS_SELF_HOSTED_FN("includes",    "ArrayIncludes",    2,0),
+    
+    /* ES2019 additions */
+    JS_SELF_HOSTED_FN("flat",        "ArrayFlat",        0,0),
+    JS_SELF_HOSTED_FN("flatMap",     "ArrayFlatMap",     1,0),
+    
     JS_FS_END
 };
 
@@ -3333,6 +3338,8 @@ array_proto_finish(JSContext* cx, JS::HandleObject ctor, JS::HandleObject proto)
         !DefineProperty(cx, unscopables, cx->names().fill, value) ||
         !DefineProperty(cx, unscopables, cx->names().find, value) ||
         !DefineProperty(cx, unscopables, cx->names().findIndex, value) ||
+        !DefineProperty(cx, unscopables, cx->names().flat, value) ||
+        !DefineProperty(cx, unscopables, cx->names().flatMap, value) ||
         !DefineProperty(cx, unscopables, cx->names().includes, value) ||
         !DefineProperty(cx, unscopables, cx->names().keys, value) ||
         !DefineProperty(cx, unscopables, cx->names().values, value))
