@@ -78,8 +78,21 @@ ContentClient::CreateContentClient(CompositableForwarder* aForwarder)
   // We can't use double buffering when using image content with
   // Xrender support on Linux, as ContentHostDoubleBuffered is not
   // suited for direct uploads to the server.
+  // FIXME: Even though the comment above suggests that double buffering
+  //        is supposed to be disabled when Xrender support is being enabled
+  //        (and used), it really wasn't. Historically,
+  //        UseImageOffscreenSurfaces() was always false in GTK2 builds, thus
+  //        triggering the check, regardless of UseXRender().
+  //        Some time later, offscreen surfaces were always enabled, but the
+  //        Xrender functionality broke due to not using Xlib-based surfaces.
+  //        Using Xlib-based surfaces compatible with Xrender operations seems
+  //        to lead to weird graphical artifacts (bars and stripes) on some
+  //        hardware (Intel-based?) when displaying quickly-changing content,
+  //        so contrary to the statement above we'd better enable double
+  //        buffering - which also seems to not have any negative performance
+  //        impact.
   if (!gfxPlatformGtk::GetPlatform()->UseImageOffscreenSurfaces() ||
-      !gfxVars::UseXRender())
+       gfxVars::UseXRender())
 #endif
   {
     useDoubleBuffering = (LayerManagerComposite::SupportsDirectTexturing() &&
