@@ -4481,7 +4481,6 @@ nsBrowserAccess.prototype = {
         }
 
         let loadInBackground = gPrefService.getBoolPref("browser.tabs.loadDivertedInBackground");
-        let referrer = aOpener ? makeURI(aOpener.location.href) : null;
 
         let tab = win.gBrowser.loadOneTab(aURI ? aURI.spec : "about:blank", {
                                           triggeringPrincipal: triggeringPrincipal,
