@@ -948,9 +948,6 @@ function handleFallbackToCompleteUpdate(update, postStaging) {
   update.setProperty("patchingFailed", oldType);
 }
 
-function pingStateAndStatusCodes(aUpdate, aStartup, aStatus) {
-}
-
 /**
  * Update Patch
  * @param   patch
@@ -1538,7 +1535,6 @@ UpdateService.prototype = {
              getService(Ci.nsIUpdateManager);
     var update = um.activeUpdate;
     var status = readStatusFile(getUpdatesDir());
-    pingStateAndStatusCodes(update, true, status);
     // STATE_NONE status typically means that the update.status file is present
     // but a background download error occurred.
     if (status == STATE_NONE) {
@@ -2146,8 +2142,6 @@ UpdateService.prototype = {
     if (!osApplyToDir) {
       LOG("UpdateService:applyOsUpdate - Error: osApplyToDir is not defined" +
           "in the nsIUpdate!");
-      pingStateAndStatusCodes(aUpdate, false,
-                              STATE_FAILED + ": " + FOTA_FILE_OPERATION_ERROR);
       handleUpdateFailure(aUpdate, FOTA_FILE_OPERATION_ERROR);
       return;
     }
@@ -2157,8 +2151,6 @@ UpdateService.prototype = {
     if (!updateFile.exists()) {
       LOG("UpdateService:applyOsUpdate - Error: OS update is not found at " +
           updateFile.path);
-      pingStateAndStatusCodes(aUpdate, false,
-                              STATE_FAILED + ": " + FOTA_FILE_OPERATION_ERROR);
       handleUpdateFailure(aUpdate, FOTA_FILE_OPERATION_ERROR);
       return;
     }
@@ -2173,8 +2165,6 @@ UpdateService.prototype = {
     } catch (e) {
       LOG("UpdateService:applyOsUpdate - Error: Couldn't reboot into recovery" +
           " to apply FOTA update " + updateFile.path);
-      pingStateAndStatusCodes(aUpdate, false,
-                              STATE_FAILED + ": " + FOTA_RECOVERY_ERROR);
       writeStatusFile(getUpdatesDir(), aUpdate.state = STATE_APPLIED);
       handleUpdateFailure(aUpdate, FOTA_RECOVERY_ERROR);
     }
@@ -2476,7 +2466,6 @@ UpdateManager.prototype = {
       return;
     }
     var status = readStatusFile(getUpdatesDir());
-    pingStateAndStatusCodes(update, false, status);
     var parts = status.split(":");
     update.state = parts[0];
     if (update.state == STATE_FAILED && parts[1]) {
