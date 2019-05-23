@@ -286,11 +286,6 @@ ICStub::trace(JSTracer* trc)
         TraceEdge(trc, &getElemStub->shape(), "baseline-getelem-dense-shape");
         break;
       }
-      case ICStub::GetElem_UnboxedArray: {
-        ICGetElem_UnboxedArray* getElemStub = toGetElem_UnboxedArray();
-        TraceEdge(trc, &getElemStub->group(), "baseline-getelem-unboxed-array-group");
-        break;
-      }
       case ICStub::GetElem_TypedArray: {
         ICGetElem_TypedArray* getElemStub = toGetElem_TypedArray();
         TraceEdge(trc, &getElemStub->shape(), "baseline-getelem-typedarray-shape");
@@ -2250,7 +2245,6 @@ IsCacheableProtoChain(JSObject* obj, JSObject* holder, bool isDOMProxy)
         if (obj == holder)
             return false;
         if (!obj->is<UnboxedPlainObject>() &&
-            !obj->is<UnboxedArrayObject>() &&
             !obj->is<TypedObject>())
         {
             return false;
@@ -2581,9 +2575,6 @@ CheckHasNoSuchProperty(JSContext* cx, JSObject* obj, PropertyName* name,
             return false;
         } else if (curObj->is<UnboxedPlainObject>()) {
             if (curObj->as<UnboxedPlainObject>().containsUnboxedOrExpandoProperty(cx, NameToId(name)))
-                return false;
-        } else if (curObj->is<UnboxedArrayObject>()) {
-            if (name == cx->names().length)
                 return false;
         } else if (curObj->is<TypedObject>()) {
             if (curObj->as<TypedObject>().typeDescr().hasProperty(cx->names(), NameToId(name)))
