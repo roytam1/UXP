@@ -4481,13 +4481,15 @@ nsBrowserAccess.prototype = {
         }
 
         let loadInBackground = gPrefService.getBoolPref("browser.tabs.loadDivertedInBackground");
+        let openerWindow = (aContext & Ci.nsIBrowserDOMWindow.OPEN_NO_OPENER) ? null : aOpener;
 
         let tab = win.gBrowser.loadOneTab(aURI ? aURI.spec : "about:blank", {
                                           triggeringPrincipal: triggeringPrincipal,
                                           referrerURI: referrer,
                                           referrerPolicy: referrerPolicy,
                                           fromExternal: isExternal,
-                                          inBackground: loadInBackground});
+                                          inBackground: loadInBackground,
+                                          opener: openerWindow });
         let browser = win.gBrowser.getBrowserForTab(tab);
 
         if (gPrefService.getBoolPref("browser.tabs.noWindowActivationOnExternal")) {
