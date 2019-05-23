@@ -541,7 +541,7 @@ IonBuilder::inlineArray(CallInfo& callInfo)
             if (!alloc().ensureBallast())
                 return InliningStatus_Error;
             MDefinition* value = callInfo.getArg(i);
-            if (!initializeArrayElement(array, i, /* addResumePoint = */ false))
+            if (!initializeArrayElement(array, i, value, /* addResumePoint = */ false))
                 return InliningStatus_Error;
         }
 
@@ -578,7 +578,7 @@ IonBuilder::inlineArrayIsArray(CallInfo& callInfo)
         if (!clasp || clasp->isProxy())
             return InliningStatus_NotInlined;
 
-        isArray = (clasp == &ArrayObject::class_ || clasp == &UnboxedArrayObject::class_);
+        isArray = (clasp == &ArrayObject::class_);
     }
 
     pushConstant(BooleanValue(isArray));

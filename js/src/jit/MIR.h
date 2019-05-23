@@ -9245,7 +9245,7 @@ class MLoadElementHole
     bool needsHoleCheck_;
 
     MLoadElementHole(MDefinition* elements, MDefinition* index, MDefinition* initLength,
-                     JSValueType unboxedType, bool needsHoleCheck)
+                     bool needsHoleCheck)
       : MTernaryInstruction(elements, index, initLength),
         needsNegativeIntCheck_(true),
         needsHoleCheck_(needsHoleCheck)
@@ -9715,10 +9715,6 @@ class MArraySlice
 
     gc::InitialHeap initialHeap() const {
         return initialHeap_;
-    }
-
-    JSValueType unboxedType() const {
-        return unboxedType_;
     }
 
     bool possiblyCalls() const override {

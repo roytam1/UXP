@@ -10336,22 +10336,11 @@ CodeGenerator::visitLoadElementHole(LLoadElementHole* lir)
     else
         masm.branch32(Assembler::BelowOrEqual, initLength, ToRegister(lir->index()), &undefined);
 
-    if (mir->unboxedType() != JSVAL_TYPE_MAGIC) {
-        size_t width = UnboxedTypeSize(mir->unboxedType());
-        if (lir->index()->isConstant()) {
-            Address addr(elements, ToInt32(lir->index()) * width);
-            masm.loadUnboxedProperty(addr, mir->unboxedType(), out);
-        } else {
-            BaseIndex addr(elements, ToRegister(lir->index()), ScaleFromElemWidth(width));
-            masm.loadUnboxedProperty(addr, mir->unboxedType(), out);
-        }
+    if (lir->index()->isConstant()) {
+        NativeObject::elementsSizeMustNotOverflow();
+        masm.loadValue(Address(elements, ToInt32(lir->index()) * sizeof(Value)), out);
     } else {
-        if (lir->index()->isConstant()) {
-            NativeObject::elementsSizeMustNotOverflow();
-            masm.loadValue(Address(elements, ToInt32(lir->index()) * sizeof(Value)), out);
-        } else {
-            masm.loadValue(BaseObjectElementIndex(elements, ToRegister(lir->index())), out);
-        }
+        masm.loadValue(BaseObjectElementIndex(elements, ToRegister(lir->index())), out);
     }
 
     // If a hole check is needed, and the value wasn't a hole, we're done.

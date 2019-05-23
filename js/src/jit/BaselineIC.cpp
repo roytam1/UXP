@@ -280,6 +280,12 @@ DoTypeUpdateFallback(JSContext* cx, BaselineFrame* frame, ICUpdatedStub* stub, H
     RootedId id(cx);
 
     switch(stub->kind()) {
+      case ICStub::SetElem_DenseOrUnboxedArray:
+      case ICStub::SetElem_DenseOrUnboxedArrayAdd: {
+        id = JSID_VOID;
+        AddTypePropertyId(cx, obj, id, value);
+        break;
+      }
       case ICStub::SetProp_Native:
       case ICStub::SetProp_NativeAdd:
       case ICStub::SetProp_Unboxed: {
@@ -5763,7 +5769,7 @@ CopyArray(JSContext* cx, HandleObject obj, MutableHandleValue result)
     if (!nobj)
         return false;
     EnsureArrayGroupAnalyzed(cx, nobj);
-    CopyAnyBoxedOrUnboxedDenseElements(cx, nobj, obj, 0, 0, length);
+    CopyBoxedOrUnboxedDenseElements(cx, nobj, obj, 0, 0, length);
 
     result.setObject(*nobj);
     return true;

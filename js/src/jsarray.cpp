@@ -395,7 +395,7 @@ SetArrayElement(JSContext* cx, HandleObject obj, double index, HandleValue v)
 
     if (obj->is<ArrayObject>() && !obj->isIndexed() && index <= UINT32_MAX) {
         DenseElementResult result =
-            SetOrExtendAnyBoxedOrUnboxedDenseElements(cx, obj, uint32_t(index), v.address(), 1);
+            SetOrExtendBoxedOrUnboxedDenseElements(cx, obj, uint32_t(index), v.address(), 1);
         if (result != DenseElementResult::Incomplete)
             return result == DenseElementResult::Success;
     }
@@ -1068,12 +1068,12 @@ ArrayJoinDenseKernel(JSContext* cx, SeparatorOp sepOp, HandleObject obj, uint32_
     // length > initLength we rely on the second loop to add the
     // other elements.
     MOZ_ASSERT(*numProcessed == 0);
-    uint32_t initLength = Min<uint32_t>(GetBoxedOrUnboxedInitializedLength<Type>(obj), length);
+    uint32_t initLength = Min<uint32_t>(GetBoxedOrUnboxedInitializedLength(obj), length);
     while (*numProcessed < initLength) {
         if (!CheckForInterrupt(cx))
             return DenseElementResult::Failure;
 
-        Value elem = GetBoxedOrUnboxedDenseElement<Type>(obj, *numProcessed);
+        Value elem = GetBoxedOrUnboxedDenseElement(obj, *numProcessed);
 
         if (elem.isString()) {
             if (!sb.append(elem.toString()))
@@ -1320,7 +1320,7 @@ InitArrayElements(JSContext* cx, HandleObject obj, uint32_t start,
 
     if (!ObjectMayHaveExtraIndexedProperties(obj)) {
         DenseElementResult result =
-            SetOrExtendAnyBoxedOrUnboxedDenseElements(cx, obj, start, vector, count, updateTypes);
+            SetOrExtendBoxedOrUnboxedDenseElements(cx, obj, start, vector, count, updateTypes);
         if (result != DenseElementResult::Incomplete)
             return result == DenseElementResult::Success;
     }
@@ -1359,7 +1359,7 @@ DenseElementResult
 ArrayReverseDenseKernel(JSContext* cx, HandleObject obj, uint32_t length)
 {
     /* An empty array or an array with no elements is already reversed. */
-    if (length == 0 || GetBoxedOrUnboxedInitializedLength<Type>(obj) == 0)
+    if (length == 0 || GetBoxedOrUnboxedInitializedLength(obj) == 0)
         return DenseElementResult::Success;
 
     if (obj->as<NativeObject>().denseElementsAreFrozen())
@@ -2074,7 +2074,7 @@ js::array_push(JSContext* cx, unsigned argc, Value* vp)
             uint32_t newlength = length + args.length();
             args.rval().setNumber(newlength);
 
-            // SetOrExtendAnyBoxedOrUnboxedDenseElements takes care of updating the
+            // SetOrExtendBoxedOrUnboxedDenseElements takes care of updating the
             // length for boxed and unboxed arrays. Handle updates to the length of
             // non-arrays here.
             bool isArray;
@@ -2360,7 +2360,7 @@ CanOptimizeForDenseStorage(HandleObject arr, uint32_t startingIndex, uint32_t co
         return false;
 
     /* There's no optimizing possible if it's not an array. */
-    if (!arr->is<ArrayObject>() && !arr->is<UnboxedArrayObject>())
+    if (!arr->is<ArrayObject>())
         return false;
 
     /* If it's a frozen array, always pick the slow path */
@@ -2863,7 +2863,7 @@ ArraySliceOrdinary(JSContext* cx, HandleObject obj, uint32_t length, uint32_t be
 
         if (count) {
             DebugOnly<DenseElementResult> result =
-                CopyAnyBoxedOrUnboxedDenseElements(cx, narr, obj, 0, begin, count);
+                CopyBoxedOrUnboxedDenseElements(cx, narr, obj, 0, begin, count);
             MOZ_ASSERT(result.value == DenseElementResult::Success);
         }
         arr.set(narr);
@@ -3615,7 +3615,7 @@ static inline JSObject*
 NewArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length,
                       NewObjectKind newKind = GenericObject)
 {
-    if (!obj->is<ArrayObject>() && !obj->is<UnboxedArrayObject>())
+    if (!obj->is<ArrayObject>())
         return NewArray<maxLength>(cx, length, nullptr, newKind);
 
     if (obj->staticPrototype() != cx->global()->maybeGetArrayPrototype())
