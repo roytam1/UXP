@@ -1339,6 +1339,7 @@
             var aFromExternal;
             var aRelatedToCurrent;
             var aOriginPrincipal;
+            var aOpener;
             if (arguments.length == 2 &&
                 typeof arguments[1] == "object" &&
                 !(arguments[1] instanceof Ci.nsIURI)) {
@@ -1353,6 +1354,7 @@
               aFromExternal         = params.fromExternal;
               aRelatedToCurrent     = params.relatedToCurrent;
               aOriginPrincipal      = params.originPrincipal;
+              aOpener               = params.opener;
             }
 
             var bgLoad = (aLoadInBackground != null) ? aLoadInBackground :
@@ -1368,7 +1370,8 @@
                                   allowThirdPartyFixup: aAllowThirdPartyFixup,
                                   fromExternal: aFromExternal,
                                   originPrincipal: aOriginPrincipal,
-                                  relatedToCurrent: aRelatedToCurrent});
+                                  relatedToCurrent: aRelatedToCurrent,
+                                  opener: aOpener });
             if (!bgLoad)
               this.selectedTab = tab;
 
@@ -1495,6 +1498,7 @@
             var aSkipAnimation;
             var aOriginPrincipal;
             var aSkipBackgroundNotify;
+            var aOpener;
             if (arguments.length == 2 &&
                 typeof arguments[1] == "object" &&
                 !(arguments[1] instanceof Ci.nsIURI)) {
@@ -1510,6 +1514,7 @@
               aRelatedToCurrent     = params.relatedToCurrent;
               aSkipAnimation        = params.skipAnimation;
               aOriginPrincipal      = params.originPrincipal;
+              aOpener               = params.opener;
               aSkipBackgroundNotify = params.skipBackgroundNotify;
             }
 
@@ -1582,6 +1587,10 @@
             if (window.gShowPageResizers && document.getElementById("addon-bar").collapsed &&
                 window.windowState == window.STATE_NORMAL) {
               b.setAttribute("showresizer", "true");
+            }
+
+            if (aOpener) {
+              b.QueryInterface(Ci.nsIFrameLoaderOwner).presetOpenerWindow(aOpener);
             }
 
             if (this.hasAttribute("autocompletepopup"))

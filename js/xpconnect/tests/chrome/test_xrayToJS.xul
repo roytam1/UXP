@@ -198,7 +198,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=933681
       "pop", "shift", "unshift", "splice", "concat", "slice", "lastIndexOf", "indexOf",
       "includes", "forEach", "map", "reduce", "reduceRight", "filter", "some", "every", "find",
       "findIndex", "copyWithin", "fill", Symbol.iterator, Symbol.unscopables, "entries", "keys",
-      "values", "constructor"];
+      "values", "constructor", "flat", "flatMap"];
   if (isNightlyBuild) {
     // ...nothing now
   }

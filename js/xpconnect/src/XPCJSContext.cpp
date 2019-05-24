@@ -1427,8 +1427,6 @@ ReloadPrefsCallback(const char* pref, void* data)
 
     bool extraWarnings = Preferences::GetBool(JS_OPTIONS_DOT_STR "strict");
 
-    bool unboxedObjects = Preferences::GetBool(JS_OPTIONS_DOT_STR "unboxed_objects");
-    
     sSharedMemoryEnabled = Preferences::GetBool(JS_OPTIONS_DOT_STR "shared_memory");
 
 #ifdef DEBUG
@@ -1457,8 +1455,6 @@ ReloadPrefsCallback(const char* pref, void* data)
                                   useBaselineEager ? 0 : -1);
     JS_SetGlobalJitCompilerOption(cx, JSJITCOMPILER_ION_WARMUP_TRIGGER,
                                   useIonEager ? 0 : -1);
-    JS_SetGlobalJitCompilerOption(cx, JSJITCOMPILER_UNBOXED_OBJECTS,
-                                  unboxedObjects);
 }
 
 XPCJSContext::~XPCJSContext()

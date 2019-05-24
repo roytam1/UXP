@@ -115,6 +115,8 @@
     macro(firstDayOfWeek, firstDayOfWeek, "firstDayOfWeek") \
     macro(fix, fix, "fix") \
     macro(flags, flags, "flags") \
+    macro(flat, flat, "flat") \
+    macro(flatMap, flatMap, "flatMap") \
     macro(float32, float32, "float32") \
     macro(Float32x4, Float32x4, "Float32x4") \
     macro(float64, float64, "float64") \
