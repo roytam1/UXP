@@ -368,7 +368,6 @@ static const PLDHashTableOps AtomTableOps = {
 static nsIAtom*
   sRecentlyUsedMainThreadAtoms[RECENTLY_USED_MAIN_THREAD_ATOM_CACHE_SIZE] = {};
 
-
 void
 DynamicAtom::GCAtomTable()
 {
@@ -387,7 +386,6 @@ DynamicAtom::GCAtomTableLocked(const MutexAutoLock& aProofOfLock,
   for (uint32_t i = 0; i < RECENTLY_USED_MAIN_THREAD_ATOM_CACHE_SIZE; ++i) {
     sRecentlyUsedMainThreadAtoms[i] = nullptr;
   }
-
 
   uint32_t removedCount = 0; // Use a non-atomic temporary for cheaper increments.
   nsAutoCString nonZeroRefcountAtoms;
@@ -686,8 +684,6 @@ NS_Atomize(const nsACString& aUTF8String)
 
     return atom.forget();
   }
-
-
 
   // This results in an extra addref/release of the nsStringBuffer.
   // Unfortunately there doesn't seem to be any APIs to avoid that.
