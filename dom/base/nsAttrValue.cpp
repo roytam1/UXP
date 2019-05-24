@@ -742,7 +742,7 @@ nsAttrValue::GetAsAtom() const
 {
   switch (Type()) {
     case eString:
-      return NS_Atomize(GetStringValue());
+      return NS_AtomizeMainThread(GetStringValue());
 
     case eAtom:
       {
@@ -754,7 +754,7 @@ nsAttrValue::GetAsAtom() const
       {
         nsAutoString val;
         ToString(val);
-        return NS_Atomize(val);
+        return NS_AtomizeMainThread(val);
       }
   }
 }
@@ -1267,7 +1267,7 @@ nsAttrValue::ParseAtomArray(const nsAString& aValue)
     ++iter;
   } while (iter != end && !nsContentUtils::IsHTMLWhitespace(*iter));
 
-  nsCOMPtr<nsIAtom> classAtom = NS_Atomize(Substring(start, iter));
+  nsCOMPtr<nsIAtom> classAtom = NS_AtomizeMainThread(Substring(start, iter));
   if (!classAtom) {
     Reset();
     return;
@@ -1308,7 +1308,7 @@ nsAttrValue::ParseAtomArray(const nsAString& aValue)
       ++iter;
     } while (iter != end && !nsContentUtils::IsHTMLWhitespace(*iter));
 
-    classAtom = NS_Atomize(Substring(start, iter));
+    classAtom = NS_AtomizeMainThread(Substring(start, iter));
 
     if (!array->AppendElement(classAtom)) {
       Reset();
@@ -1757,7 +1757,7 @@ nsAttrValue::SetMiscAtomOrString(const nsAString* aValue)
                  "Empty string?");
     MiscContainer* cont = GetMiscContainer();
     if (len <= NS_ATTRVALUE_MAX_STRINGLENGTH_ATOM) {
-      nsCOMPtr<nsIAtom> atom = NS_Atomize(*aValue);
+      nsCOMPtr<nsIAtom> atom = NS_AtomizeMainThread(*aValue);
       if (atom) {
         cont->mStringBits =
           reinterpret_cast<uintptr_t>(atom.forget().take()) | eAtomBase;
