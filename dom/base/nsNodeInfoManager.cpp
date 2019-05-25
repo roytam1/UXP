@@ -281,7 +281,7 @@ nsNodeInfoManager::GetNodeInfo(const nsAString& aName, nsIAtom *aPrefix,
     return NS_OK;
   }
 
-  nsCOMPtr<nsIAtom> nameAtom = NS_Atomize(aName);
+  nsCOMPtr<nsIAtom> nameAtom = NS_AtomizeMainThread(aName);
   NS_ENSURE_TRUE(nameAtom, NS_ERROR_OUT_OF_MEMORY);
 
   RefPtr<NodeInfo> newNodeInfo =
