@@ -239,6 +239,6 @@ var gPage = {
 
   toggleEnabled: function(aEvent) {
     gAllPages.enabled = !gAllPages.enabled;
-    event.stopPropagation();
+    aEvent.stopPropagation();
   }
 };
