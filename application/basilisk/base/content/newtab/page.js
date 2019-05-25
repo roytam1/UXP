@@ -162,16 +162,6 @@ var gPage = {
    */
   _handleUnloadEvent: function Page_handleUnloadEvent() {
     gAllPages.unregister(this);
-    // compute page life-span and send telemetry probe: using milli-seconds will leave
-    // many low buckets empty. Instead we use half-second precision to make low end
-    // of histogram linear and not lose the change in user attention
-    let delta = Math.round((Date.now() - this._firstVisibleTime) / 500);
-    if (this._suggestedTilePresent) {
-      Services.telemetry.getHistogramById("NEWTAB_PAGE_LIFE_SPAN_SUGGESTED").add(delta);
-    }
-    else {
-      Services.telemetry.getHistogramById("NEWTAB_PAGE_LIFE_SPAN").add(delta);
-    }
   },
 
   /**
@@ -246,32 +236,5 @@ var gPage = {
   },
 
   onPageVisibleAndLoaded() {
-    // Send the index of the last visible tile.
-    this.reportLastVisibleTileIndex();
-  },
-
-  reportLastVisibleTileIndex() {
-    let cwu = window.QueryInterface(Ci.nsIInterfaceRequestor)
-                    .getInterface(Ci.nsIDOMWindowUtils);
-
-    let rect = cwu.getBoundsWithoutFlushing(gGrid.node);
-    let nodes = cwu.nodesFromRect(rect.left, rect.top, 0, rect.width,
-                                  rect.height, 0, true, false);
-
-    let i = -1;
-    let lastIndex = -1;
-    let sites = gGrid.sites;
-
-    for (let node of nodes) {
-      if (node.classList && node.classList.contains("newtab-cell")) {
-        if (sites[++i]) {
-          lastIndex = i;
-          if (sites[i].link.targetedSite) {
-            // record that suggested tile is shown to use suggested-tiles-histogram
-            this._suggestedTilePresent = true;
-          }
-        }
-      }
-    }
   }
 };

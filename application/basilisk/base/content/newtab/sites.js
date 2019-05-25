@@ -62,7 +62,7 @@ Site.prototype = {
     this._updateAttributes(true);
     let changed = gPinnedLinks.pin(this._link, aIndex);
     if (changed) {
-      // render site again to remove suggested/sponsored tags
+      // render site again
       this._render();
     }
     return changed;
@@ -136,15 +136,6 @@ Site.prototype = {
     return str;
   },
 
-  _getSuggestedTileExplanation: function() {
-    let targetedName = `<strong> ${this.link.targetedName} </strong>`;
-    let targetedSite = `<strong> ${this.link.targetedSite} </strong>`;
-    if (this.link.explanation) {
-      return this._newTabString(this.link.explanation, [targetedName, targetedSite]);
-    }
-    return newTabString("suggested.button", [targetedName]);
-  },
-
   /**
    * Checks for and modifies link at campaign end time
    */
@@ -155,11 +146,8 @@ Site.prototype = {
        this.link.url = Services.io.newURI(this.url, null, null).resolve("/");
        // clear supplied images - this triggers thumbnail download for new url
        delete this.link.imageURI;
-       delete this.link.enhancedImageURI;
        // remove endTime to avoid further time checks
        delete this.link.endTime;
-       // clear enhanced-content image that may still exist in preloaded page
-       this._querySelector(".enhanced-content").style.backgroundImage = "";
        gPinnedLinks.replace(oldUrl, this.link);
     }
   },
@@ -184,22 +172,6 @@ Site.prototype = {
     titleNode.textContent = title;
     if (this.link.titleBgColor) {
       titleNode.style.backgroundColor = this.link.titleBgColor;
-    }
-
-    // remove "suggested" attribute to avoid showing "suggested" tag
-    // after site was pinned or dropped
-    this.node.removeAttribute("suggested");
-
-    if (this.link.targetedSite) {
-      if (this.node.getAttribute("type") != "sponsored") {
-        this._querySelector(".newtab-sponsored").textContent =
-          newTabString("suggested.tag");
-      }
-
-      this.node.setAttribute("suggested", true);
-      let explanation = this._getSuggestedTileExplanation();
-      this._querySelector(".newtab-suggested").innerHTML =
-        `<div class='newtab-suggested-bounds'> ${explanation} </div>`;
     }
 
     if (this.isPinned())
@@ -343,7 +315,7 @@ Site.prototype = {
       }
       else if (!pinned && target.classList.contains("newtab-control-pin")) {
         if (this.pin()) {
-          // suggested link has changed - update rest of the pages
+          // link has changed - update rest of the pages
           gAllPages.update(gPage);
         }
         action = "pin";

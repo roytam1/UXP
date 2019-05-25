@@ -21,7 +21,6 @@ const gPrefsMap = new Map([
   ["browser.newtabpage.remote.mode", "str"],
   ["browser.newtabpage.remote.version", "str"],
   ["browser.newtabpage.enabled", "bool"],
-  ["browser.newtabpage.enhanced", "bool"],
   ["browser.newtabpage.introShown", "bool"],
   ["browser.newtabpage.updateIntroShown", "bool"],
   ["browser.newtabpage.pinned", "str"],
@@ -34,7 +33,6 @@ const gPrefsMap = new Map([
 // prefs that are important for the newtab page
 const gNewtabPagePrefs = new Set([
   "browser.newtabpage.enabled",
-  "browser.newtabpage.enhanced",
   "browser.newtabpage.pinned",
   "browser.newtabpage.blocked",
   "browser.newtabpage.introShown",
