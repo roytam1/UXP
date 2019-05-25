@@ -5207,6 +5207,9 @@ pref("intl.allow-insecure-text-input", false);
 // Enable meta-viewport support in remote APZ-enabled frames.
 pref("dom.meta-viewport.enabled", false);
 
+// Disable <meta http-equiv=set-cookie> support. See m-c bug 1457503 / UXP #1102.
+pref("dom.meta-set-cookie.enabled", false);
+
 // MozSettings debugging prefs for each component
 pref("dom.mozSettings.SettingsDB.debug.enabled", false);
 pref("dom.mozSettings.SettingsManager.debug.enabled", false);

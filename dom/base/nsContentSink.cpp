@@ -304,7 +304,8 @@ nsContentSink::ProcessHeaderData(nsIAtom* aHeader, const nsAString& aValue,
 
   mDocument->SetHeaderData(aHeader, aValue);
 
-  if (aHeader == nsGkAtoms::setcookie) {
+  if (aHeader == nsGkAtoms::setcookie &&
+      Preferences::GetBool("dom.meta-set-cookie.enabled", true)) {
     // Don't allow setting cookies in cookie-averse documents.
     if (mDocument->IsCookieAverse()) {
       return NS_OK;
