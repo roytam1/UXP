@@ -48,11 +48,6 @@ var gPage = {
       let enabled = gAllPages.enabled;
       this._updateAttributes(enabled);
 
-      // Update thumbnails to the new enhanced setting
-      if (aData == "browser.newtabpage.enhanced") {
-        this.update();
-      }
-
       // Initialize the whole page if we haven't done that, yet.
       if (enabled) {
         this._init();
@@ -79,10 +74,7 @@ var gPage = {
   update(reason = "") {
     // Update immediately if we're visible.
     if (!document.hidden) {
-      // Ignore updates where reason=links-changed as those signal that the
-      // provider's set of links changed. We don't want to update visible pages
-      // in that case, it is ok to wait until the user opens the next tab.
-      if (reason != "links-changed" && gGrid.ready) {
+      if (gGrid.ready) {
         gGrid.refresh();
       }
 
@@ -118,10 +110,6 @@ var gPage = {
     // high contrast mode).
     document.getElementById("newtab-search-submit").value =
       document.body.getAttribute("dir") == "ltr" ? "\u25B6" : "\u25C0";
-
-    if (Services.prefs.getBoolPref("browser.newtabpage.compact")) {
-      document.body.classList.add("compact");
-    }
 
     // Initialize search.
     gSearch.init();
@@ -260,8 +248,6 @@ var gPage = {
   onPageVisibleAndLoaded() {
     // Send the index of the last visible tile.
     this.reportLastVisibleTileIndex();
-    // Maybe tell the user they can undo an initial automigration
-    this.maybeShowAutoMigrationUndoNotification();
   },
 
   reportLastVisibleTileIndex() {
@@ -287,11 +273,5 @@ var gPage = {
         }
       }
     }
-
-    DirectoryLinksProvider.reportSitesAction(sites, "view", lastIndex);
-  },
-
-  maybeShowAutoMigrationUndoNotification() {
-    sendAsyncMessage("NewTab:MaybeShowAutoMigrationUndoNotification");
-  },
+  }
 };
