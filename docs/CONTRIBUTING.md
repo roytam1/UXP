@@ -84,3 +84,45 @@ Important when editing/adding code:
     ```
 3. Comment your code where prudent! Documenting what you're doing, especially in a complex piece of code, is very important to keep it easy to debug.
 4. Try not to write "as compact as possible" source code. Many languages have facilities to write very compact source code by gluing a lot of statements together on single lines, but you should avoid this to keep it readable. Other people than yourself will be looking at and trying to understand your code, and it's important to keep proper paragraphing, whitespace and above all logical names for variables and functions.
+
+## Commit Message Style
+
+With rare exception, it is advisable to use the following style for commit messages. This ensures proper tracking and linking of commits to issues.
+
+### Commits with existing issue
+
+This would directly apply to anyone making a pull request.
+
+- Single Commit: `Issue #xxx - Cited issue title or appropriate direct description of changes`
+  - *`Issue #1083 - Deprecate FUEL extension helper javascript library`*
+- Multi-Part Commits: `Issue #xxx - Part Number: Appropriate direct description of changes`
+  - *`Issue #492 - Part 1: Remove files`*
+  - *`Issue #492 - Part 2: Build system, Installer/Packaging`*
+  - *`Issue #492 - Part 3: nsUpdateService.js, updater.cpp, nsUpdateDriver.cpp`*
+  - *`Issue #492 - Part 4: Remove superfluous brackets in nsUpdateService.js and updater.cpp`*
+
+An exception exists for multi-part commits where the issue is anticipated or ends up being long term such as "Stop using unified compilation of sources". In these instances the multi-part form is not required.
+
+### Commits with no issue
+
+Sometimes developers with direct push access will commit without an issue being created. You should, where applicable, prefix the commit message with the application, component, or lib you are working on in square brackets.
+
+- `[COMPONENT] Description of what is being changed`
+  - *`[TychoAM] Give the second <hbox> an ID so it can be targeted in extensions.xul`*
+  - *`[Pale Moon] Use generic application icon for external applications in about:feeds`*
+
+Multi-part changes by definition are not trival and should have a corresponding issue.
+
+### Additional information in commit messages
+
+It may be benefical to include supplementary information such as a longer description, caveats, specific Mozilla bug numbers, links to forum posts or other such references. If you do add additional information, you should seperate it from the main commit message by a blank line.
+
+*Example: (This happens to also be an example of the long term multi-part exception)*
+```
+Issue #80 - Stop building /accessible unified and fix deprot
+
+Note: excludes changes to Mac-specific code because I can't build
+for OS X to check and fix deprot there.
+```
+
+In general, if you have a question about commit message form or content, please ask.
