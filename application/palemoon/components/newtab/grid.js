@@ -130,13 +130,9 @@ var gGrid = {
 
     // Create sites.
     let numLinks = Math.min(links.length, cells.length);
-    let hasHistoryTiles = false;
     for (let i = 0; i < numLinks; i++) {
       if (links[i]) {
         this.createSite(links[i], cells[i]);
-        if (links[i].type == "history") {
-          hasHistoryTiles = true;
-        }
       }
     }
 
