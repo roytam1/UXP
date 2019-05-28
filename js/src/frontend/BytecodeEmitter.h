@@ -109,10 +109,12 @@ struct CGYieldOffsetList {
     void finish(YieldOffsetArray& array, uint32_t prologueLength);
 };
 
-// Use zero inline elements because these go on the stack and affect how many
-// nested functions are possible.
-typedef Vector<jsbytecode, 0> BytecodeVector;
-typedef Vector<jssrcnote, 0> SrcNotesVector;
+static size_t MaxBytecodeLength = INT32_MAX;
+static size_t MaxSrcNotesLength = INT32_MAX;
+
+// Have a few inline elements to avoid heap allocation for tiny sequences.
+typedef Vector<jsbytecode, 256> BytecodeVector;
+typedef Vector<jssrcnote, 64> SrcNotesVector;
 
 // Linked list of jump instructions that need to be patched. The linked list is
 // stored in the bytes of the incomplete bytecode that will be patched, so no

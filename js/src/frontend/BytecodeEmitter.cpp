@@ -2260,12 +2260,14 @@ BytecodeEmitter::locationOfNameBoundInFunctionScope(JSAtom* name, EmitterScope* 
 bool
 BytecodeEmitter::emitCheck(ptrdiff_t delta, ptrdiff_t* offset)
 {
-    *offset = code().length();
+    size_t oldLength = code().length();
+    *offset = ptrdiff_t(oldLength);
 
-    // Start it off moderately large to avoid repeated resizings early on.
-    // ~98% of cases fit within 1024 bytes.
-    if (code().capacity() == 0 && !code().reserve(1024))
-        return false;
+    size_t newLength = oldLength + size_t(delta);
+    if (MOZ_UNLIKELY(newLength > MaxBytecodeLength)) {
+      ReportAllocationOverflow(cx);
+      return false;
+    }
 
     if (!code().growBy(delta)) {
         ReportOutOfMemory(cx);
@@ -10697,17 +10699,19 @@ BytecodeEmitter::emitTreeInBranch(ParseNode* pn)
 static bool
 AllocSrcNote(ExclusiveContext* cx, SrcNotesVector& notes, unsigned* index)
 {
-    // Start it off moderately large to avoid repeated resizings early on.
-    // ~99% of cases fit within 256 bytes.
-    if (notes.capacity() == 0 && !notes.reserve(256))
-        return false;
+    size_t oldLength = notes.length();
 
+    if (MOZ_UNLIKELY(oldLength + 1 > MaxSrcNotesLength)) {
+        ReportAllocationOverflow(cx);
+        return false;
+    }
+    
     if (!notes.growBy(1)) {
         ReportOutOfMemory(cx);
         return false;
     }
 
-    *index = notes.length() - 1;
+    *index = oldLength;
     return true;
 }
 
@@ -10833,6 +10837,10 @@ BytecodeEmitter::setSrcNoteOffset(unsigned index, unsigned which, ptrdiff_t offs
         /* Maybe this offset was already set to a four-byte value. */
         if (!(*sn & SN_4BYTE_OFFSET_FLAG)) {
             /* Insert three dummy bytes that will be overwritten shortly. */
+            if (MOZ_UNLIKELY(notes.length() + 3 > MaxSrcNotesLength)) {
+                ReportAllocationOverflow(cx);
+                return false;
+            }
             jssrcnote dummy = 0;
             if (!(sn = notes.insert(sn, dummy)) ||
                 !(sn = notes.insert(sn, dummy)) ||
