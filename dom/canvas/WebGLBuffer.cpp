@@ -115,7 +115,7 @@ WebGLBuffer::BufferData(GLenum target, size_t size, const void* data, GLenum usa
     const ScopedLazyBind lazyBind(gl, target, this);
     mContext->InvalidateBufferFetching();
 
-#ifdef XP_MACOSX
+#if defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
     // bug 790879
     if (gl->WorkAroundDriverBugs() &&
         size > INT32_MAX)
