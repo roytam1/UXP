@@ -558,7 +558,7 @@ function checkForUpdates()
   // If there's an update ready to be applied, show the "Update Downloaded"
   // UI instead and let the user know they have to restart the application for
   // the changes to be applied.
-  if (um.activeUpdate && um.activeUpdate.state == "pending")
+  if (um.activeUpdate && ["pending", "pending-elevate", "applied"].includes(um.activeUpdate.state))
     prompter.showUpdateDownloaded(um.activeUpdate);
   else
     prompter.checkForUpdates();
