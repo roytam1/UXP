@@ -9,7 +9,6 @@ var gCustomize = {
     "blank",
     "button",
     "classic",
-    "enhanced",
     "panel",
     "overlay",
     "learn"
@@ -83,13 +82,10 @@ var gCustomize = {
     }
     switch (event.currentTarget.id) {
       case "newtab-customize-blank":
-        sendAsyncMessage("NewTab:Customize", {enabled: false, enhanced: false});
+        sendAsyncMessage("NewTab:Customize", {enabled: false});
         break;
       case "newtab-customize-classic":
-        sendAsyncMessage("NewTab:Customize", {enabled: true, enhanced: false});
-        break;
-      case "newtab-customize-enhanced":
-        sendAsyncMessage("NewTab:Customize", {enabled: true, enhanced: !gAllPages.enhanced});
+        sendAsyncMessage("NewTab:Customize", {enabled: true});
         break;
       case "newtab-customize-learn":
         this.showLearn();

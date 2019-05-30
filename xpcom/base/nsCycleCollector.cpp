@@ -2832,6 +2832,11 @@ nsCycleCollector::ForgetSkippable(bool aRemoveChildlessNodes,
 {
   CheckThreadSafety();
 
+  // Avoid this when we're aleady dealing with snow-white objects.
+  if (mFreeingSnowWhite) {
+    return;
+  }
+
   mozilla::Maybe<mozilla::AutoGlobalTimelineMarker> marker;
   if (NS_IsMainThread()) {
     marker.emplace("nsCycleCollector::ForgetSkippable", MarkerStackRequest::NO_STACK);

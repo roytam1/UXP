@@ -1077,9 +1077,6 @@ pref("browser.newtab.preload", false);
 // Toggles the content of 'about:newtab'. Shows the grid when enabled.
 pref("browser.newtabpage.enabled", true);
 
-// XXX: Remove this when "enhanced" tiles are dead
-pref("browser.newtabpage.enhanced", false);
-
 // Disables capturing of page thumbnails
 pref("browser.pagethumbnails.capturing_disabled", false);
 

@@ -36,7 +36,6 @@ XPCOMUtils.defineLazyGetter(this, "gUnicodeConverter", function () {
 
 // Boolean preferences that control newtab content
 const PREF_NEWTAB_ENABLED = "browser.newtabpage.enabled";
-const PREF_NEWTAB_ENHANCED = "browser.newtabpage.enhanced";
 
 // The preference that tells the number of rows of the newtab grid.
 const PREF_NEWTAB_ROWS = "browser.newtabpage.rows";
@@ -200,11 +199,6 @@ var AllPages = {
   _enabled: null,
 
   /**
-   * Cached value that tells whether the New Tab Page feature is enhanced.
-   */
-  _enhanced: null,
-
-  /**
    * Adds a page to the internal list of pages.
    * @param aPage The page to register.
    */
@@ -242,29 +236,6 @@ var AllPages = {
   },
 
   /**
-   * Returns whether the history tiles are enhanced.
-   */
-  get enhanced() {
-#if defined(MC_BASILISK) || defined(HYPE_ICEWEASEL)
-    // Hard-block the use of sponsored tiles.
-    return false;
-#else
-    if (this._enhanced === null)
-      this._enhanced = Services.prefs.getBoolPref(PREF_NEWTAB_ENHANCED);
-
-    return this._enhanced;
-#endif
-  },
-
-  /**
-   * Enables or disables the enhancement of history tiles feature.
-   */
-  set enhanced(aEnhanced) {
-    if (this.enhanced != aEnhanced)
-      Services.prefs.setBoolPref(PREF_NEWTAB_ENHANCED, !!aEnhanced);
-  },
-
-  /**
    * Returns the number of registered New Tab Pages (i.e. the number of open
    * about:newtab instances).
    */
@@ -296,9 +267,6 @@ var AllPages = {
         case PREF_NEWTAB_ENABLED:
           this._enabled = null;
           break;
-        case PREF_NEWTAB_ENHANCED:
-          this._enhanced = null;
-          break;
       }
     }
     // and all notifications get forwarded to each page.
@@ -313,7 +281,6 @@ var AllPages = {
    */
   _addObserver: function AllPages_addObserver() {
     Services.prefs.addObserver(PREF_NEWTAB_ENABLED, this, true);
-    Services.prefs.addObserver(PREF_NEWTAB_ENHANCED, this, true);
     Services.obs.addObserver(this, "page-thumbnail:create", true);
     this._addObserver = function () {};
   },
@@ -480,8 +447,6 @@ var PinnedLinks = {
       return false;
     }
     aLink.type = "history";
-    // always remove targetedSite
-    delete aLink.targetedSite;
     return true;
   },
 
@@ -1099,11 +1064,8 @@ var Links = {
   _getMergedProviderLinks: function Links__getMergedProviderLinks() {
     // Build a list containing a copy of each provider's sortedLinks list.
     let linkLists = [];
+    let { console } = Cu.import("resource://gre/modules/Console.jsm", {});
     for (let provider of this._providers.keys()) {
-      if (!AllPages.enhanced && provider != PlacesProvider) {
-        // Only show history tiles if we're not in 'enhanced' mode.
-        continue;
-      }
       let links = this._providers.get(provider);
       if (links && links.sortedLinks) {
         linkLists.push(links.sortedLinks.slice());
@@ -1305,8 +1267,6 @@ var Telemetry = {
     let probes = [
       { histogram: "NEWTAB_PAGE_ENABLED",
         value: AllPages.enabled },
-      { histogram: "NEWTAB_PAGE_ENHANCED",
-        value: AllPages.enhanced },
       { histogram: "NEWTAB_PAGE_PINNED_SITES_COUNT",
         value: PinnedLinks.links.length },
       { histogram: "NEWTAB_PAGE_BLOCKED_SITES_COUNT",

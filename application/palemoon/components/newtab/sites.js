@@ -136,15 +136,6 @@ Site.prototype = {
     return str;
   },
 
-  _getSuggestedTileExplanation: function() {
-    let targetedName = `<strong> ${this.link.targetedName} </strong>`;
-    let targetedSite = `<strong> ${this.link.targetedSite} </strong>`;
-    if (this.link.explanation) {
-      return this._newTabString(this.link.explanation, [targetedName, targetedSite]);
-    }
-    return newTabString("suggested.button", [targetedName]);
-  },
-
   /**
    * Checks for and modifies link at campaign end time
    */
@@ -155,11 +146,8 @@ Site.prototype = {
        this.link.url = Services.io.newURI(this.url, null, null).resolve("/");
        // clear supplied images - this triggers thumbnail download for new url
        delete this.link.imageURI;
-       delete this.link.enhancedImageURI;
        // remove endTime to avoid further time checks
        delete this.link.endTime;
-       // clear enhanced-content image that may still exist in preloaded page
-       this._querySelector(".enhanced-content").style.backgroundImage = "";
        gPinnedLinks.replace(oldUrl, this.link);
     }
   },
@@ -337,7 +325,7 @@ Site.prototype = {
       }
       else if (!pinned && target.classList.contains("newtab-control-pin")) {
         if (this.pin()) {
-          // suggested link has changed - update rest of the pages
+          // link has changed - update rest of the pages
           gAllPages.update(gPage);
         }
         action = "pin";

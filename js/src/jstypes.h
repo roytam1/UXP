@@ -147,7 +147,7 @@
 #  define JS_64BIT
 # endif
 #elif defined(__GNUC__)
-# if defined(__x86_64__) || defined(__64BIT__)
+# if defined(__x86_64__) || defined(__LP64__)
 #  define JS_64BIT
 # endif
 #elif defined(__xlc__) || defined(__xlC__)        /* IBM XL C/C++ */

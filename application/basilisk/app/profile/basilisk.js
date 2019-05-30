@@ -1040,12 +1040,6 @@ pref("browser.newtabpage.introShown", false);
 // Toggles the content of 'about:newtab'. Shows the grid when enabled.
 pref("browser.newtabpage.enabled", true);
 
-// Toggles the enhanced content of 'about:newtab'. Shows sponsored tiles.
-sticky_pref("browser.newtabpage.enhanced", false);
-
-// enables Activity Stream inspired layout
-pref("browser.newtabpage.compact", false);
-
 // Disables capturing of page thumbnails
 pref("browser.pagethumbnails.capturing_disabled", false);
 

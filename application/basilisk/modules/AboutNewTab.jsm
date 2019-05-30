@@ -33,7 +33,6 @@ var AboutNewTab = {
 
   customize: function(message) {
     NewTabUtils.allPages.enabled = message.data.enabled;
-    NewTabUtils.allPages.enhanced = message.data.enhanced;
   },
 
   uninit: function() {

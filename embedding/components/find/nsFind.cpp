@@ -932,7 +932,7 @@ nsFind::ResetAll()
 // Take nodes out of the tree with NextNode, until null (NextNode will return 0
 // at the end of our range).
 NS_IMETHODIMP
-nsFind::Find(const char16_t* aPatText, nsIDOMRange* aSearchRange,
+nsFind::Find(const nsAString& aPatText, nsIDOMRange* aSearchRange,
              nsIDOMRange* aStartPoint, nsIDOMRange* aEndPoint,
              nsIDOMRange** aRangeRet)
 {
@@ -949,10 +949,6 @@ nsFind::Find(const char16_t* aPatText, nsIDOMRange* aSearchRange,
   NS_ENSURE_ARG_POINTER(aRangeRet);
   *aRangeRet = 0;
 
-  if (!aPatText) {
-    return NS_ERROR_NULL_POINTER;
-  }
-
   ResetAll();
 
   nsAutoString patAutoStr(aPatText);
@@ -966,6 +962,11 @@ nsFind::Find(const char16_t* aPatText, nsIDOMRange* aSearchRange,
 
   const char16_t* patStr = patAutoStr.get();
   int32_t patLen = patAutoStr.Length() - 1;
+  
+  // If this function is called with an empty string, we should early exit.
+  if (patLen < 0) {
+    return NS_OK;
+  }
 
   // current offset into the pattern -- reset to beginning/end:
   int32_t pindex = (mFindBackward ? patLen : 0);
