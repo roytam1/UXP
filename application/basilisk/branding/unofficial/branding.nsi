@@ -12,5 +12,5 @@
 !define CompanyName           "Moonchild Productions"
 !define URLInfoAbout          "https://www.basilisk-browser.org"
 !define URLUpdateInfo         "https://www.basilisk-browser.org"
-!define HelpLink              "https://forum.palemoon.org"
+!define HelpLink              "https://msfn.org/board/topic/177125-my-build-of-new-moon-temp-name-aka-pale-moon-fork-targetting-xp/?do=getNewComment"
 !define URLSystemRequirements "https://www.basilisk-browser.org"
