@@ -12,5 +12,5 @@
 !define CompanyName           "Moonchild Productions"
 !define URLInfoAbout          "http://www.palemoon.org"
 !define URLUpdateInfo         "http://www.palemoon.org"
-!define HelpLink              "http://www.palemoon.org"
+!define HelpLink              "https://msfn.org/board/topic/177125-my-build-of-new-moon-temp-name-aka-pale-moon-fork-targetting-xp/?do=getNewComment"
 !define URLSystemRequirements "http://www.palemoon.org/download.shtml"
