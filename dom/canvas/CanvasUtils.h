@@ -11,7 +11,6 @@
 #include "mozilla/dom/ToJSValue.h"
 #include "jsapi.h"
 #include "mozilla/FloatingPoint.h"
-#include "nsLayoutUtils.h"
 
 class nsIPrincipal;
 
@@ -156,10 +155,6 @@ DashArrayToJSVal(nsTArray<T>& dashes,
         rv.Throw(NS_ERROR_OUT_OF_MEMORY);
     }
 }
-
-// returns true if write-only mode must used for this principal based on
-// the incumbent global.
-bool CheckWriteOnlySecurity(bool aCORSUsed, nsIPrincipal* aPrincipal);
 
 } // namespace CanvasUtils
 } // namespace mozilla

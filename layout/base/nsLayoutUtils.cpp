@@ -8,7 +8,6 @@
 
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/BasicEvents.h"
-#include "mozilla/dom/CanvasUtils.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/EffectCompositor.h"
 #include "mozilla/EffectSet.h"
@@ -7286,10 +7285,10 @@ nsLayoutUtils::SurfaceFromElement(nsIImageLoadingContent* aElement,
   }
 
   result.mPrincipal = principal.forget();
+  // no images, including SVG images, can load content from another domain.
+  result.mIsWriteOnly = false;
   result.mImageRequest = imgRequest.forget();
   return result;
-  result.mIsWriteOnly =
-      CanvasUtils::CheckWriteOnlySecurity(result.mCORSUsed, result.mPrincipal);  
 }
 
 nsLayoutUtils::SurfaceFromElementResult
@@ -7401,8 +7400,7 @@ nsLayoutUtils::SurfaceFromElement(HTMLVideoElement* aElement,
   result.mHasSize = true;
   result.mSize = result.mLayersImage->GetSize();
   result.mPrincipal = principal.forget();
-  result.mIsWriteOnly =
-      CanvasUtils::CheckWriteOnlySecurity(result.mCORSUsed, result.mPrincipal);
+  result.mIsWriteOnly = false;
 
   return result;
 }
