@@ -19,7 +19,7 @@ pref("startup.homepage_welcome_url", "");
 pref("startup.homepage_welcome_url.additional", "");
 
 // Version release notes
-pref("app.releaseNotesURL", "about:blank");
+pref("app.releaseNotesURL", "https://rtfreesoft.blogspot.com/search/label/serpent");
 
 // Vendor home page
 pref("app.vendorURL", "about:");
