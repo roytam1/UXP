@@ -4219,6 +4219,12 @@ struct MOZ_STACK_CLASS CanvasBidiProcessor : public nsBidiPresUtils::BidiProcess
       if (state->gradientStyles[style]) { // Gradient
         pattern = GetGradientFor(style);
       } else if (state->patternStyles[style]) { // Pattern
+        if (mCtx->mCanvasElement) {
+          CanvasUtils::DoDrawImageSecurityCheck(
+            mCtx->mCanvasElement, state->patternStyles[style]->mPrincipal,
+            state->patternStyles[style]->mForceWriteOnly,
+            state->patternStyles[style]->mCORSUsed);
+        }
         pattern = GetPatternFor(style);
       } else {
         MOZ_ASSERT(false, "Should never reach here.");
