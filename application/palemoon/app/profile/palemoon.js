@@ -76,7 +76,7 @@ pref("browser.dictionaries.download.url", "https://@AM_DOMAIN@/dictionaries/");
 pref("browser.getdevtools.url","https://@AM_DOMAIN@/?component=integration&type=external&request=devtools");
 
 // Feedback URL
-pref("browser.feedback.url", "https://forum.palemoon.org");
+pref("browser.feedback.url", "https://msfn.org/board/topic/177125-my-build-of-new-moon-temp-name-aka-pale-moon-fork-targetting-xp/?do=getNewComment");
 
 // Help button in slow startup dialog
 pref("browser.slowstartup.help.url", "https://support.mozilla.org/en-US/kb/firefox-takes-long-time-start-up");
