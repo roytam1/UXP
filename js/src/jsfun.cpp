@@ -1366,7 +1366,7 @@ JSFunction::createScriptForLazilyInterpretedFunction(JSContext* cx, HandleFuncti
         }
 
         if (fun != lazy->functionNonDelazifying()) {
-            if (!lazy->functionDelazifying(cx))
+            if (!LazyScript::functionDelazifying(cx, lazy))
                 return false;
             script = lazy->functionNonDelazifying()->nonLazyScript();
             if (!script)
