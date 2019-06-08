@@ -1354,6 +1354,10 @@ class Parser final : private JS::AutoGCRooter, public StrictModeGetter
     bool finishFunction();
     bool leaveInnerFunction(ParseContext* outerpc);
 
+    bool matchOrInsertSemicolonHelper(TokenStream::Modifier modifier);
+    bool matchOrInsertSemicolonAfterExpression();
+    bool matchOrInsertSemicolonAfterNonExpression();
+
   public:
     enum FunctionCallBehavior {
         PermitAssignmentToFunctionCalls,
