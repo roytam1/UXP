@@ -816,7 +816,7 @@ NonSyntacticVariablesObject::create(JSContext* cx)
         return nullptr;
 
     MOZ_ASSERT(obj->isUnqualifiedVarObj());
-    if (!obj->setQualifiedVarObj(cx))
+    if (!JSObject::setQualifiedVarObj(cx, obj))
         return nullptr;
 
     obj->initEnclosingEnvironment(&cx->global()->lexicalEnvironment());
@@ -957,7 +957,7 @@ LexicalEnvironmentObject::createHollowForDebug(JSContext* cx, Handle<LexicalScop
             return nullptr;
     }
 
-    if (!env->setFlags(cx, BaseShape::NOT_EXTENSIBLE, JSObject::GENERATE_SHAPE))
+    if (!JSObject::setFlags(cx, env, BaseShape::NOT_EXTENSIBLE, JSObject::GENERATE_SHAPE))
         return nullptr;
 
     env->initScopeUnchecked(scope);
