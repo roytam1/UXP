@@ -1070,7 +1070,8 @@ class Parser final : private JS::AutoGCRooter, public StrictModeGetter
     // ParseContext is already on the stack.
     bool functionFormalParametersAndBody(InHandling inHandling, YieldHandling yieldHandling,
                                          Node pn, FunctionSyntaxKind kind,
-                                         mozilla::Maybe<uint32_t> parameterListEnd = mozilla::Nothing());
+                                         mozilla::Maybe<uint32_t> parameterListEnd = mozilla::Nothing(),
+                                         bool isStandaloneFunction = false);
  
 
     // Determine whether |yield| is a valid name in the current context, or
@@ -1350,8 +1351,8 @@ class Parser final : private JS::AutoGCRooter, public StrictModeGetter
                                      GeneratorKind generatorKind, FunctionAsyncKind asyncKind,
                                      bool tryAnnexB,
                                      Directives inheritedDirectives, Directives* newDirectives);
-    bool finishFunctionScopes();
-    bool finishFunction();
+    bool finishFunctionScopes(bool isStandaloneFunction);
+    bool finishFunction(bool isStandaloneFunction = false);
     bool leaveInnerFunction(ParseContext* outerpc);
 
     bool matchOrInsertSemicolonHelper(TokenStream::Modifier modifier);
