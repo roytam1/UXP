@@ -18166,6 +18166,18 @@
         "url": "/html/browsers/history/the-location-interface/location-stringifier.html"
       },
       {
+        "path": "html/browsers/history/the-location-interface/location-symbol-toprimitive.html",
+        "url": "/html/browsers/history/the-location-interface/location-symbol-toprimitive.html"
+      },
+      {
+        "path": "html/browsers/history/the-location-interface/location-tojson.html",
+        "url": "/html/browsers/history/the-location-interface/location-tojson.html"
+      },
+      {
+        "path": "html/browsers/history/the-location-interface/location-valueof.html",
+        "url": "/html/browsers/history/the-location-interface/location-valueof.html"
+      },
+      {
         "path": "html/browsers/history/the-location-interface/location_assign.html",
         "url": "/html/browsers/history/the-location-interface/location_assign.html"
       },
