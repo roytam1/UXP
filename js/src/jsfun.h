@@ -58,8 +58,6 @@ class JSFunction : public js::NativeObject
         CONSTRUCTOR      = 0x0002,  /* function that can be called as a constructor */
         EXTENDED         = 0x0004,  /* structure is FunctionExtended */
         BOUND_FUN        = 0x0008,  /* function was created with Function.prototype.bind. */
-        EXPR_BODY        = 0x0010,  /* arrow function with expression body or
-                                     * expression closure: function(x) x*x */
         HAS_GUESSED_ATOM = 0x0020,  /* function had no explicit name, but a
                                        name was guessed for it anyway */
         LAMBDA           = 0x0040,  /* function comes from a FunctionExpression, ArrowFunction, or
@@ -102,7 +100,7 @@ class JSFunction : public js::NativeObject
         INTERPRETED_GENERATOR = INTERPRETED,
         NO_XDR_FLAGS = RESOLVED_LENGTH | RESOLVED_NAME,
 
-        STABLE_ACROSS_CLONES = CONSTRUCTOR | EXPR_BODY | HAS_GUESSED_ATOM | LAMBDA |
+        STABLE_ACROSS_CLONES = CONSTRUCTOR | HAS_GUESSED_ATOM | LAMBDA |
                                SELF_HOSTED | HAS_COMPILE_TIME_NAME | FUNCTION_KIND_MASK
     };
 
@@ -187,7 +185,6 @@ class JSFunction : public js::NativeObject
     bool isAsmJSNative()            const { return kind() == AsmJS; }
 
     /* Possible attributes of an interpreted function: */
-    bool isExprBody()               const { return flags() & EXPR_BODY; }
     bool hasCompileTimeName()       const { return flags() & HAS_COMPILE_TIME_NAME; }
     bool hasGuessedAtom()           const { return flags() & HAS_GUESSED_ATOM; }
     bool isLambda()                 const { return flags() & LAMBDA; }
@@ -288,11 +285,6 @@ class JSFunction : public js::NativeObject
         MOZ_ASSERT(isNative());
         MOZ_ASSERT(!isIntrinsic());
         flags_ |= SELF_HOSTED;
-    }
-
-    // Can be called multiple times by the parser.
-    void setIsExprBody() {
-        flags_ |= EXPR_BODY;
     }
 
     void setArrow() {

@@ -1021,6 +1021,7 @@ class JSScript : public js::gc::TenuredCell
     bool isAsync_:1;
 
     bool hasRest_:1;
+    bool isExprBody_:1;
 
     // Add padding so JSScript is gc::Cell aligned. Make padding protected
     // instead of private to suppress -Wunused-private-field compiler warnings.
@@ -1327,6 +1328,13 @@ class JSScript : public js::gc::TenuredCell
     }
     void setHasRest() {
         hasRest_ = true;
+    }
+
+    bool isExprBody() const {
+        return isExprBody_;
+    }
+    void setIsExprBody() {
+        isExprBody_ = true;
     }
 
     void setNeedsHomeObject() {
@@ -1936,7 +1944,7 @@ class LazyScript : public gc::TenuredCell
 #endif
 
   private:
-    static const uint32_t NumClosedOverBindingsBits = 21;
+    static const uint32_t NumClosedOverBindingsBits = 20;
     static const uint32_t NumInnerFunctionsBits = 20;
 
     struct PackedView {
@@ -1946,7 +1954,12 @@ class LazyScript : public gc::TenuredCell
         uint32_t shouldDeclareArguments : 1;
         uint32_t hasThisBinding : 1;
         uint32_t isAsync : 1;
+        uint32_t isExprBody : 1;
+
         uint32_t numClosedOverBindings : NumClosedOverBindingsBits;
+
+        // -- 32bit boundary --
+
         uint32_t numInnerFunctions : NumInnerFunctionsBits;
 
         uint32_t generatorKindBits : 2;
@@ -2102,6 +2115,13 @@ class LazyScript : public gc::TenuredCell
     }
     void setHasRest() {
         p_.hasRest = true;
+    }
+
+    bool isExprBody() const {
+        return p_.isExprBody;
+    }
+    void setIsExprBody() {
+        p_.isExprBody = true;
     }
 
     bool strict() const {

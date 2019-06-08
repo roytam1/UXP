@@ -474,6 +474,7 @@ FunctionBox::FunctionBox(ExclusiveContext* cx, LifoAlloc& alloc, ObjectBox* trac
     usesThis(false),
     usesReturn(false),
     hasRest_(false),
+    isExprBody_(false),
     funCxFlags()
 {
     // Functions created at parse time may be set singleton after parsing and
@@ -2264,6 +2265,8 @@ Parser<SyntaxParseHandler>::finishFunction(bool isStandaloneFunction /* = false 
     lazy->setAsyncKind(funbox->asyncKind());
     if (funbox->hasRest())
         lazy->setHasRest();
+    if (funbox->isExprBody())
+        lazy->setIsExprBody();
     if (funbox->isLikelyConstructorWrapper())
         lazy->setLikelyConstructorWrapper();
     if (funbox->isDerivedClassConstructor())
@@ -3030,6 +3033,8 @@ Parser<FullParseHandler>::skipLazyInnerFunction(ParseNode* pn, uint32_t preludeS
     LazyScript* lazy = fun->lazyScript();
     if (lazy->needsHomeObject())
         funbox->setNeedsHomeObject();
+    if (lazy->isExprBody())
+        funbox->setIsExprBody();
 
     PropagateTransitiveParseFlags(lazy, pc->sc());
 
@@ -3042,10 +3047,15 @@ Parser<FullParseHandler>::skipLazyInnerFunction(ParseNode* pn, uint32_t preludeS
     if (!tokenStream.advance(fun->lazyScript()->end() - userbufBase))
         return false;
 
-    if (kind == Statement && fun->isExprBody()) {
+#if JS_HAS_EXPR_CLOSURES
+    // Only expression closure can be Statement kind.
+    // If we remove expression closure, we can remove isExprBody flag from
+    // LazyScript and JSScript.
+    if (kind == Statement && funbox->isExprBody()) {
         if (!matchOrInsertSemicolonAfterExpression())
             return false;
     }
+#endif
 
     return true;
 }
@@ -3490,9 +3500,7 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
 
         tokenStream.ungetToken();
         bodyType = ExpressionBody;
-#if JS_HAS_EXPR_CLOSURES
-        fun->setIsExprBody();
-#endif
+        funbox->setIsExprBody();
     }
 
     // Arrow function parameters inherit yieldHandling from the enclosing
@@ -6130,7 +6138,7 @@ Parser<ParseHandler>::yieldExpression(InHandling inHandling)
 
         if (pc->funHasReturnExpr
 #if JS_HAS_EXPR_CLOSURES
-            || pc->functionBox()->function()->isExprBody()
+            || pc->functionBox()->isExprBody()
 #endif
             )
         {
