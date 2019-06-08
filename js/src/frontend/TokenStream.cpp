@@ -554,8 +554,10 @@ TokenStream::advance(size_t position)
     MOZ_MAKE_MEM_UNDEFINED(&cur->type, sizeof(cur->type));
     lookahead = 0;
 
-    if (flags.hitOOM)
-        return reportError(JSMSG_OUT_OF_MEMORY);
+    if (flags.hitOOM) {
+        error(JSMSG_OUT_OF_MEMORY);
+        return false;
+    }
 
     return true;
 }
@@ -803,6 +805,19 @@ TokenStream::reportAsmJSError(uint32_t offset, unsigned errorNumber, ...)
                      ? JSREPORT_ERROR
                      : JSREPORT_WARNING;
     reportCompileErrorNumberVA(offset, flags, errorNumber, args);
+    va_end(args);
+}
+
+void
+TokenStream::error(unsigned errorNumber, ...)
+{
+    va_list args;
+    va_start(args, errorNumber);
+#ifdef DEBUG
+    bool result =
+#endif
+        reportCompileErrorNumberVA(currentToken().pos.begin, JSREPORT_ERROR, errorNumber, args);
+    MOZ_ASSERT(!result, "reporting an error returned true?");
     va_end(args);
 }
 
@@ -1119,8 +1134,10 @@ TokenStream::checkForKeyword(const KeywordInfo* kw, TokenKind* ttp)
         return true;
     }
 
-    if (kw->tokentype == TOK_RESERVED)
-        return reportError(JSMSG_RESERVED_ID, kw->chars);
+    if (kw->tokentype == TOK_RESERVED) {
+        error(JSMSG_RESERVED_ID, kw->chars);
+        return false;
+    }
 
     if (kw->tokentype == TOK_STRICT_RESERVED)
         return reportStrictModeError(JSMSG_RESERVED_ID, kw->chars);
@@ -1897,7 +1914,7 @@ TokenStream::getStringOrTemplateToken(int untilChar, Token** tp)
     while ((c = getCharIgnoreEOL()) != untilChar) {
         if (c == EOF) {
             ungetCharIgnoreEOL(c);
-            reportError(JSMSG_UNTERMINATED_STRING);
+            error(JSMSG_UNTERMINATED_STRING);
             return false;
         }
 
@@ -1920,7 +1937,7 @@ TokenStream::getStringOrTemplateToken(int untilChar, Token** tp)
                 if (peekChar() == '{') {
                     uint32_t code;
                     if (!getBracedUnicode(&code)) {
-                        reportError(JSMSG_MALFORMED_ESCAPE, "Unicode");
+                        error(JSMSG_MALFORMED_ESCAPE, "Unicode");
                         return false;
                     }
 
@@ -1945,7 +1962,7 @@ TokenStream::getStringOrTemplateToken(int untilChar, Token** tp)
                     c = (c << 4) + JS7_UNHEX(cp[3]);
                     skipChars(4);
                 } else {
-                    reportError(JSMSG_MALFORMED_ESCAPE, "Unicode");
+                    error(JSMSG_MALFORMED_ESCAPE, "Unicode");
                     return false;
                 }
                 break;
@@ -1958,7 +1975,7 @@ TokenStream::getStringOrTemplateToken(int untilChar, Token** tp)
                     c = (JS7_UNHEX(cp[0]) << 4) + JS7_UNHEX(cp[1]);
                     skipChars(2);
                 } else {
-                    reportError(JSMSG_MALFORMED_ESCAPE, "hexadecimal");
+                    error(JSMSG_MALFORMED_ESCAPE, "hexadecimal");
                     return false;
                 }
                 break;
@@ -1974,7 +1991,7 @@ TokenStream::getStringOrTemplateToken(int untilChar, Token** tp)
                     // Strict mode code allows only \0, then a non-digit.
                     if (val != 0 || JS7_ISDEC(c)) {
                         if (parsingTemplate) {
-                            reportError(JSMSG_DEPRECATED_OCTAL);
+                            error(JSMSG_DEPRECATED_OCTAL);
                             return false;
                         }
                         if (!reportStrictModeError(JSMSG_DEPRECATED_OCTAL))
@@ -2003,7 +2020,7 @@ TokenStream::getStringOrTemplateToken(int untilChar, Token** tp)
         } else if (TokenBuf::isRawEOLChar(c)) {
             if (!parsingTemplate) {
                 ungetCharIgnoreEOL(c);
-                reportError(JSMSG_UNTERMINATED_STRING);
+                error(JSMSG_UNTERMINATED_STRING);
                 return false;
             }
             if (c == '\r') {
