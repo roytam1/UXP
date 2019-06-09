@@ -510,7 +510,7 @@ class NativeObject : public ShapedObject
      */
     bool setSlotSpan(ExclusiveContext* cx, uint32_t span);
 
-    bool toDictionaryMode(ExclusiveContext* cx);
+    static MOZ_MUST_USE bool toDictionaryMode(ExclusiveContext* cx, HandleNativeObject obj);
 
   private:
     friend class TenuringTracer;
