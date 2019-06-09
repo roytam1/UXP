@@ -38,6 +38,7 @@ exports.ConsoleMessage = Immutable.Record({
   groupId: null,
   exceptionDocURL: null,
   userProvidedStyles: null,
+  notes: null,
 });
 
 exports.NetworkEventMessage = Immutable.Record({

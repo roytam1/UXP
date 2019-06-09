@@ -44,6 +44,7 @@ function PageError(props) {
     stacktrace,
     frame,
     exceptionDocURL,
+    notes,
   } = message;
 
   const childProps = {
@@ -62,6 +63,7 @@ function PageError(props) {
     stacktrace,
     serviceContainer,
     exceptionDocURL,
+    notes,
   };
   return Message(childProps);
 }
