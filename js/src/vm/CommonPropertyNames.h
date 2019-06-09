@@ -38,6 +38,7 @@
     macro(Bool32x4, Bool32x4, "Bool32x4") \
     macro(Bool64x2, Bool64x2, "Bool64x2") \
     macro(boundWithSpace, boundWithSpace, "bound ") \
+    macro(break, break_, "break") \
     macro(breakdown, breakdown, "breakdown") \
     macro(buffer, buffer, "buffer") \
     macro(builder, builder, "builder") \
@@ -52,8 +53,10 @@
     macro(callee, callee, "callee") \
     macro(caller, caller, "caller") \
     macro(callFunction, callFunction, "callFunction") \
+    macro(case, case_, "case") \
     macro(caseFirst, caseFirst, "caseFirst") \
-    macro(class_, class_, "class") \
+    macro(catch, catch_, "catch") \
+    macro(class, class_, "class") \
     macro(close, close, "close") \
     macro(Collator, Collator, "Collator") \
     macro(CollatorCompareGet, CollatorCompareGet, "Intl_Collator_compare_get") \
@@ -62,9 +65,11 @@
     macro(comma, comma, ",") \
     macro(compare, compare, "compare") \
     macro(configurable, configurable, "configurable") \
+    macro(const, const_, "const") \
     macro(construct, construct, "construct") \
     macro(constructContentFunction, constructContentFunction, "constructContentFunction") \
     macro(constructor, constructor, "constructor") \
+    macro(continue, continue_, "continue") \
     macro(ConvertAndCopyTo, ConvertAndCopyTo, "ConvertAndCopyTo") \
     macro(copyWithin, copyWithin, "copyWithin") \
     macro(count, count, "count") \
@@ -76,28 +81,32 @@
     macro(DateTimeFormatFormatToParts, DateTimeFormatFormatToParts, "Intl_DateTimeFormat_formatToParts") \
     macro(day, day, "day") \
     macro(dayPeriod, dayPeriod, "dayPeriod") \
+    macro(debugger, debugger, "debugger") \
     macro(decodeURI, decodeURI, "decodeURI") \
     macro(decodeURIComponent, decodeURIComponent, "decodeURIComponent") \
     macro(DefaultBaseClassConstructor, DefaultBaseClassConstructor, "DefaultBaseClassConstructor") \
     macro(DefaultDerivedClassConstructor, DefaultDerivedClassConstructor, "DefaultDerivedClassConstructor") \
-    macro(default_, default_, "default") \
+    macro(default, default_, "default") \
     macro(defineGetter, defineGetter, "__defineGetter__") \
     macro(defineProperty, defineProperty, "defineProperty") \
     macro(defineSetter, defineSetter, "__defineSetter__") \
     macro(delete, delete_, "delete") \
     macro(deleteProperty, deleteProperty, "deleteProperty") \
     macro(displayURL, displayURL, "displayURL") \
+    macro(do, do_, "do") \
     macro(done, done, "done") \
     macro(dotGenerator, dotGenerator, ".generator") \
     macro(dotThis, dotThis, ".this") \
     macro(each, each, "each") \
     macro(elementType, elementType, "elementType") \
+    macro(else, else_, "else") \
     macro(empty, empty, "") \
     macro(emptyRegExp, emptyRegExp, "(?:)") \
     macro(encodeURI, encodeURI, "encodeURI") \
     macro(encodeURIComponent, encodeURIComponent, "encodeURIComponent") \
     macro(endTimestamp, endTimestamp, "endTimestamp") \
     macro(entries, entries, "entries") \
+    macro(enum, enum_, "enum") \
     macro(enumerable, enumerable, "enumerable") \
     macro(enumerate, enumerate, "enumerate") \
     macro(era, era, "era") \
@@ -105,11 +114,14 @@
     macro(escape, escape, "escape") \
     macro(eval, eval, "eval") \
     macro(exec, exec, "exec") \
+    macro(export, export_, "export") \
+    macro(extends, extends, "extends") \
     macro(false, false_, "false") \
     macro(fieldOffsets, fieldOffsets, "fieldOffsets") \
     macro(fieldTypes, fieldTypes, "fieldTypes") \
     macro(fileName, fileName, "fileName") \
     macro(fill, fill, "fill") \
+    macro(finally, finally_, "finally") \
     macro(find, find, "find") \
     macro(findIndex, findIndex, "findIndex") \
     macro(firstDayOfWeek, firstDayOfWeek, "firstDayOfWeek") \
@@ -121,6 +133,7 @@
     macro(Float32x4, Float32x4, "Float32x4") \
     macro(float64, float64, "float64") \
     macro(Float64x2, Float64x2, "Float64x2") \
+    macro(for, for_, "for") \
     macro(forceInterpreter, forceInterpreter, "forceInterpreter") \
     macro(forEach, forEach, "forEach") \
     macro(format, format, "format") \
@@ -146,8 +159,12 @@
     macro(hasOwn, hasOwn, "hasOwn") \
     macro(hasOwnProperty, hasOwnProperty, "hasOwnProperty") \
     macro(hour, hour, "hour") \
+    macro(if, if_, "if") \
     macro(ignoreCase, ignoreCase, "ignoreCase") \
     macro(ignorePunctuation, ignorePunctuation, "ignorePunctuation") \
+    macro(implements, implements, "implements") \
+    macro(import, import, "import") \
+    macro(in, in, "in") \
     macro(includes, includes, "includes") \
     macro(incumbentGlobal, incumbentGlobal, "incumbentGlobal") \
     macro(index, index, "index") \
@@ -158,12 +175,14 @@
     macro(innermost, innermost, "innermost") \
     macro(inNursery, inNursery, "inNursery") \
     macro(input, input, "input") \
+    macro(instanceof, instanceof, "instanceof") \
     macro(int8, int8, "int8") \
     macro(int16, int16, "int16") \
     macro(int32, int32, "int32") \
     macro(Int8x16, Int8x16, "Int8x16") \
     macro(Int16x8, Int16x8, "Int16x8") \
     macro(Int32x4, Int32x4, "Int32x4") \
+    macro(interface, interface, "interface") \
     macro(InterpretGeneratorResume, InterpretGeneratorResume, "InterpretGeneratorResume") \
     macro(isEntryPoint, isEntryPoint, "isEntryPoint") \
     macro(isExtensible, isExtensible, "isExtensible") \
@@ -240,13 +259,17 @@
     macro(outOfMemory, outOfMemory, "out of memory") \
     macro(ownKeys, ownKeys, "ownKeys") \
     macro(Object_valueOf, Object_valueOf, "Object_valueOf") \
+    macro(package, package, "package") \
     macro(parseFloat, parseFloat, "parseFloat") \
     macro(parseInt, parseInt, "parseInt") \
     macro(pattern, pattern, "pattern") \
     macro(pending, pending, "pending") \
+    macro(public, public_, "public") \
     macro(preventExtensions, preventExtensions, "preventExtensions") \
+    macro(private, private_, "private") \
     macro(promise, promise, "promise") \
     macro(propertyIsEnumerable, propertyIsEnumerable, "propertyIsEnumerable") \
+    macro(protected, protected_, "protected") \
     macro(proto, proto, "__proto__") \
     macro(prototype, prototype, "prototype") \
     macro(proxy, proxy, "proxy") \
@@ -295,10 +318,12 @@
     macro(StructType, StructType, "StructType") \
     macro(style, style, "style") \
     macro(super, super, "super") \
+    macro(switch, switch_, "switch") \
     macro(Symbol_iterator_fun, Symbol_iterator_fun, "[Symbol.iterator]") \
     macro(target, target, "target") \
     macro(test, test, "test") \
     macro(then, then, "then") \
+    macro(this, this_, "this") \
     macro(throw, throw_, "throw") \
     macro(timestamp, timestamp, "timestamp") \
     macro(timeZone, timeZone, "timeZone") \
@@ -311,7 +336,9 @@
     macro(toString, toString, "toString") \
     macro(toUTCString, toUTCString, "toUTCString") \
     macro(true, true_, "true") \
+    macro(try, try_, "try") \
     macro(type, type, "type") \
+    macro(typeof, typeof_, "typeof") \
     macro(uint8, uint8, "uint8") \
     macro(uint8Clamped, uint8Clamped, "uint8Clamped") \
     macro(uint16, uint16, "uint16") \
@@ -331,6 +358,7 @@
     macro(useAsm, useAsm, "use asm") \
     macro(useGrouping, useGrouping, "useGrouping") \
     macro(useStrict, useStrict, "use strict") \
+    macro(void, void_, "void") \
     macro(value, value, "value") \
     macro(valueOf, valueOf, "valueOf") \
     macro(values, values, "values") \
@@ -345,6 +373,8 @@
     macro(weekday, weekday, "weekday") \
     macro(weekendEnd, weekendEnd, "weekendEnd") \
     macro(weekendStart, weekendStart, "weekendStart") \
+    macro(while, while_, "while") \
+    macro(with, with, "with") \
     macro(writable, writable, "writable") \
     macro(year, year, "year") \
     macro(yield, yield, "yield") \
