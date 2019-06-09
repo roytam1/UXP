@@ -4925,8 +4925,8 @@ ResolveOrRejectPromise(JSContext* cx, JS::HandleObject promiseObj, JS::HandleVal
     }
 
     return reject
-           ? promise->reject(cx, resultOrReason)
-           : promise->resolve(cx, resultOrReason);
+           ? PromiseObject::reject(cx, promise, resultOrReason)
+           : PromiseObject::resolve(cx, promise, resultOrReason);
 }
 
 JS_PUBLIC_API(bool)
