@@ -645,6 +645,7 @@ js::ErrorToException(JSContext* cx, JSErrorReport* reportp,
     const JSErrorFormatString* errorString = callback(userRef, errorNumber);
     JSExnType exnType = errorString ? static_cast<JSExnType>(errorString->exnType) : JSEXN_ERR;
     MOZ_ASSERT(exnType < JSEXN_LIMIT);
+    MOZ_ASSERT(exnType != JSEXN_NOTE);
 
     if (exnType == JSEXN_WARN) {
         // werror must be enabled, so we use JSEXN_ERR.
@@ -728,7 +729,7 @@ ErrorReportToString(JSContext* cx, JSErrorReport* reportp)
      */
     JSExnType type = static_cast<JSExnType>(reportp->exnType);
     RootedString str(cx);
-    if (type != JSEXN_WARN)
+    if (type != JSEXN_WARN && type != JSEXN_NOTE)
         str = ClassName(GetExceptionProtoKey(type), cx);
 
     /*
