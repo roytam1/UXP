@@ -270,7 +270,7 @@ Collator(JSContext* cx, const CallArgs& args, bool construct)
     // See https://github.com/tc39/ecma402/issues/57
     if (!construct) {
         // ES Intl 1st ed., 10.1.2.1 step 3
-        JSObject* intl = cx->global()->getOrCreateIntlObject(cx);
+        JSObject* intl = GlobalObject::getOrCreateIntlObject(cx, cx->global());
         if (!intl)
             return false;
         RootedValue self(cx, args.thisv());
@@ -298,7 +298,7 @@ Collator(JSContext* cx, const CallArgs& args, bool construct)
             return false;
 
         if (!proto) {
-            proto = cx->global()->getOrCreateCollatorPrototype(cx);
+            proto = GlobalObject::getOrCreateCollatorPrototype(cx, cx->global());
             if (!proto)
                 return false;
         }
@@ -358,11 +358,12 @@ collator_finalize(FreeOp* fop, JSObject* obj)
 static JSObject*
 CreateCollatorPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global)
 {
-    RootedFunction ctor(cx, global->createConstructor(cx, &Collator, cx->names().Collator, 0));
+    RootedFunction ctor(cx, GlobalObject::createConstructor(cx, &Collator, cx->names().Collator,
+                                                            0));
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, global->createBlankPrototype(cx, &CollatorClass));
+    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global, &CollatorClass));
     if (!proto)
         return nullptr;
     proto->setReservedSlot(UCOLLATOR_SLOT, PrivateValue(nullptr));
@@ -772,7 +773,7 @@ NumberFormat(JSContext* cx, const CallArgs& args, bool construct)
     // See https://github.com/tc39/ecma402/issues/57
     if (!construct) {
         // ES Intl 1st ed., 11.1.2.1 step 3
-        JSObject* intl = cx->global()->getOrCreateIntlObject(cx);
+        JSObject* intl = GlobalObject::getOrCreateIntlObject(cx, cx->global());
         if (!intl)
             return false;
         RootedValue self(cx, args.thisv());
@@ -800,7 +801,7 @@ NumberFormat(JSContext* cx, const CallArgs& args, bool construct)
             return false;
 
         if (!proto) {
-            proto = cx->global()->getOrCreateNumberFormatPrototype(cx);
+            proto = GlobalObject::getOrCreateNumberFormatPrototype(cx, cx->global());
             if (!proto)
                 return false;
         }
@@ -862,11 +863,12 @@ static JSObject*
 CreateNumberFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global)
 {
     RootedFunction ctor(cx);
-    ctor = global->createConstructor(cx, &NumberFormat, cx->names().NumberFormat, 0);
+    ctor = GlobalObject::createConstructor(cx, &NumberFormat, cx->names().NumberFormat, 0);
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, global->createBlankPrototype(cx, &NumberFormatClass));
+    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global,
+                                                                    &NumberFormatClass));
     if (!proto)
         return nullptr;
     proto->setReservedSlot(UNUMBER_FORMAT_SLOT, PrivateValue(nullptr));
@@ -1250,7 +1252,7 @@ DateTimeFormat(JSContext* cx, const CallArgs& args, bool construct)
     // See https://github.com/tc39/ecma402/issues/57
     if (!construct) {
         // ES Intl 1st ed., 12.1.2.1 step 3
-        JSObject* intl = cx->global()->getOrCreateIntlObject(cx);
+        JSObject* intl = GlobalObject::getOrCreateIntlObject(cx, cx->global());
         if (!intl)
             return false;
         RootedValue self(cx, args.thisv());
@@ -1278,7 +1280,7 @@ DateTimeFormat(JSContext* cx, const CallArgs& args, bool construct)
             return false;
 
         if (!proto) {
-            proto = cx->global()->getOrCreateDateTimeFormatPrototype(cx);
+            proto = GlobalObject::getOrCreateDateTimeFormatPrototype(cx, cx->global());
             if (!proto)
                 return false;
         }
@@ -1340,11 +1342,12 @@ static JSObject*
 CreateDateTimeFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObject*> global)
 {
     RootedFunction ctor(cx);
-    ctor = global->createConstructor(cx, &DateTimeFormat, cx->names().DateTimeFormat, 0);
+    ctor = GlobalObject::createConstructor(cx, &DateTimeFormat, cx->names().DateTimeFormat, 0);
     if (!ctor)
         return nullptr;
 
-    RootedNativeObject proto(cx, global->createBlankPrototype(cx, &DateTimeFormatClass));
+    RootedNativeObject proto(cx, GlobalObject::createBlankPrototype(cx, global,
+                                                                    &DateTimeFormatClass));
     if (!proto)
         return nullptr;
     proto->setReservedSlot(UDATE_FORMAT_SLOT, PrivateValue(nullptr));
@@ -2731,10 +2734,10 @@ static const JSFunctionSpec intl_static_methods[] = {
  * Initializes the Intl Object and its standard built-in properties.
  * Spec: ECMAScript Internationalization API Specification, 8.0, 8.1
  */
-bool
+/* static */ bool
 GlobalObject::initIntlObject(JSContext* cx, Handle<GlobalObject*> global)
 {
-    RootedObject proto(cx, global->getOrCreateObjectPrototype(cx));
+    RootedObject proto(cx, GlobalObject::getOrCreateObjectPrototype(cx, global));
     if (!proto)
         return false;
 

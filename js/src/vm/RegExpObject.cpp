@@ -199,7 +199,7 @@ RegExpObject::trace(JSTracer* trc, JSObject* obj)
 static JSObject*
 CreateRegExpPrototype(JSContext* cx, JSProtoKey key)
 {
-    return cx->global()->createBlankPrototype(cx, &RegExpObject::protoClass_);
+    return GlobalObject::createBlankPrototype(cx, cx->global(), &RegExpObject::protoClass_);
 }
 
 static const ClassOps RegExpObjectClassOps = {

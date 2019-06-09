@@ -366,7 +366,8 @@ static const Class SharedArrayBufferObjectProtoClass = {
 static JSObject*
 CreateSharedArrayBufferPrototype(JSContext* cx, JSProtoKey key)
 {
-    return cx->global()->createBlankPrototype(cx, &SharedArrayBufferObjectProtoClass);
+    return GlobalObject::createBlankPrototype(cx, cx->global(),
+                                              &SharedArrayBufferObjectProtoClass);
 }
 
 static const ClassOps SharedArrayBufferObjectClassOps = {

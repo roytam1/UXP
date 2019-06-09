@@ -140,7 +140,7 @@ static const Class ArrayBufferObjectProtoClass = {
 static JSObject*
 CreateArrayBufferPrototype(JSContext* cx, JSProtoKey key)
 {
-    return cx->global()->createBlankPrototype(cx, &ArrayBufferObjectProtoClass);
+    return GlobalObject::createBlankPrototype(cx, cx->global(), &ArrayBufferObjectProtoClass);
 }
 
 static const ClassOps ArrayBufferObjectClassOps = {
