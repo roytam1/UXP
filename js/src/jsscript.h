@@ -1519,7 +1519,7 @@ class JSScript : public js::gc::TenuredCell
     bool mayReadFrameArgsDirectly();
 
     static JSFlatString* sourceData(JSContext* cx, JS::HandleScript script);
-    JSFlatString* sourceDataWithPrelude(JSContext* cx);
+    static JSFlatString* sourceDataWithPrelude(JSContext* cx, JS::HandleScript script);
     
     static bool loadSource(JSContext* cx, js::ScriptSource* ss, bool* worked);
 

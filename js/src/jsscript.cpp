@@ -1442,11 +1442,11 @@ JSScript::sourceData(JSContext* cx, HandleScript script)
     return script->scriptSource()->substring(cx, script->sourceStart(), script->sourceEnd());
 }
 
-JSFlatString*
-JSScript::sourceDataWithPrelude(JSContext* cx)
+/* static */ JSFlatString*
+JSScript::sourceDataWithPrelude(JSContext* cx, HandleScript script)
 {
-    MOZ_ASSERT(scriptSource()->hasSourceData());
-    return scriptSource()->substring(cx, preludeStart(), sourceEnd());
+    MOZ_ASSERT(script->scriptSource()->hasSourceData());
+    return script->scriptSource()->substring(cx, script->preludeStart(), script->sourceEnd());
 }
 
 UncompressedSourceCache::AutoHoldEntry::AutoHoldEntry()
