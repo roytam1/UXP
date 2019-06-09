@@ -973,7 +973,7 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
     };
 
     if (haveSource) {
-        Rooted<JSFlatString*> src(cx, script->sourceDataWithPrelude(cx));
+        Rooted<JSFlatString*> src(cx, JSScript::sourceDataWithPrelude(cx, script));
         if (!src)
             return nullptr;
 
