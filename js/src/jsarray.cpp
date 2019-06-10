@@ -248,18 +248,20 @@ static bool
 GetElement(JSContext* cx, HandleObject obj, HandleObject receiver,
            uint32_t index, bool* hole, MutableHandleValue vp)
 {
-    AssertGreaterThanZero(index);
-    if (index < GetAnyBoxedOrUnboxedInitializedLength(obj)) {
-        vp.set(GetAnyBoxedOrUnboxedDenseElement(obj, uint32_t(index)));
-        if (!vp.isMagic(JS_ELEMENTS_HOLE)) {
-            *hole = false;
-            return true;
+    if (obj->isNative()) {
+        NativeObject* nobj = &obj->as<NativeObject>();
+        if (index < nobj->getDenseInitializedLength()) {
+            vp.set(nobj->getDenseElement(size_t(index)));
+            if (!vp.isMagic(JS_ELEMENTS_HOLE)) {
+                *hole = false;
+                return true;
+            }
         }
-    }
-    if (obj->is<ArgumentsObject>()) {
-        if (obj->as<ArgumentsObject>().maybeGetElement(uint32_t(index), vp)) {
-            *hole = false;
-            return true;
+        if (nobj->is<ArgumentsObject>() && index <= UINT32_MAX) {
+            if (nobj->as<ArgumentsObject>().maybeGetElement(uint32_t(index), vp)) {
+                *hole = false;
+                return true;
+            }
         }
     }
 
@@ -337,11 +339,11 @@ GetBoxedOrUnboxedDenseElements(JSObject* aobj, uint32_t length, Value* vp)
 {
     MOZ_ASSERT(!ObjectMayHaveExtraIndexedProperties(aobj));
 
-    if (length > GetBoxedOrUnboxedInitializedLength(aobj))
+    if (length > aobj->as<NativeObject>().getDenseInitializedLength())
         return DenseElementResult::Incomplete;
 
     for (size_t i = 0; i < length; i++) {
-        vp[i] = GetBoxedOrUnboxedDenseElement(aobj, i);
+        vp[i] = aobj->as<NativeObject>().getDenseElement(i);
 
         // No other indexed properties so hole => undefined.
         if (vp[i].isMagic(JS_ELEMENTS_HOLE))
@@ -849,7 +851,7 @@ js::ObjectMayHaveExtraIndexedProperties(JSObject* obj)
 
         if (ObjectMayHaveExtraIndexedOwnProperties(obj))
             return true;
-        if (GetAnyBoxedOrUnboxedInitializedLength(obj) != 0)
+        if (obj->as<NativeObject>().getDenseInitializedLength() != 0)
             return true;
     } while (true);
 }
@@ -1068,12 +1070,13 @@ ArrayJoinDenseKernel(JSContext* cx, SeparatorOp sepOp, HandleObject obj, uint32_
     // length > initLength we rely on the second loop to add the
     // other elements.
     MOZ_ASSERT(*numProcessed == 0);
-    uint32_t initLength = Min<uint32_t>(GetBoxedOrUnboxedInitializedLength(obj), length);
+    uint32_t initLength = Min<uint32_t>(obj->as<NativeObject>().getDenseInitializedLength(),
+                                        length);
     while (*numProcessed < initLength) {
         if (!CheckForInterrupt(cx))
             return DenseElementResult::Failure;
 
-        Value elem = GetBoxedOrUnboxedDenseElement(obj, *numProcessed);
+        Value elem = obj->as<NativeObject>().getDenseElement(*numProcessed);
 
         if (elem.isString()) {
             if (!sb.append(elem.toString()))
@@ -1207,11 +1210,14 @@ js::array_join(JSContext* cx, unsigned argc, Value* vp)
     // An optimized version of a special case of steps 7-11: when length==1 and
     // the 0th element is a string, ToString() of that element is a no-op and
     // so it can be immediately returned as the result.
-    if (length == 1 && GetAnyBoxedOrUnboxedInitializedLength(obj) == 1) {
-        Value elem0 = GetAnyBoxedOrUnboxedDenseElement(obj, 0);
-        if (elem0.isString()) {
-            args.rval().set(elem0);
-            return true;
+    if (length == 1 && obj->isNative()) {
+        NativeObject* nobj = &obj->as<NativeObject>();
+        if (nobj->getDenseInitializedLength() == 1) {
+            Value elem0 = nobj->getDenseElement(0);
+            if (elem0.isString()) {
+                args.rval().set(elem0);
+                return true;
+            }
         }
     }
 
@@ -1359,7 +1365,7 @@ DenseElementResult
 ArrayReverseDenseKernel(JSContext* cx, HandleObject obj, uint32_t length)
 {
     /* An empty array or an array with no elements is already reversed. */
-    if (length == 0 || GetBoxedOrUnboxedInitializedLength(obj) == 0)
+    if (length == 0 || obj->as<NativeObject>().getDenseInitializedLength() == 0)
         return DenseElementResult::Success;
 
     if (obj->as<NativeObject>().denseElementsAreFrozen())
@@ -1385,15 +1391,15 @@ ArrayReverseDenseKernel(JSContext* cx, HandleObject obj, uint32_t length)
 
     uint32_t lo = 0, hi = length - 1;
     for (; lo < hi; lo++, hi--) {
-        origlo = GetBoxedOrUnboxedDenseElement(obj, lo);
-        orighi = GetBoxedOrUnboxedDenseElement(obj, hi);
-        SetBoxedOrUnboxedDenseElementNoTypeChange(obj, lo, orighi);
+        origlo = obj->as<NativeObject>().getDenseElement(lo);
+        orighi = obj->as<NativeObject>().getDenseElement(hi);
+        obj->as<NativeObject>().setDenseElement(lo, orighi);
         if (orighi.isMagic(JS_ELEMENTS_HOLE) &&
             !SuppressDeletedProperty(cx, obj, INT_TO_JSID(lo)))
         {
             return DenseElementResult::Failure;
         }
-        SetBoxedOrUnboxedDenseElementNoTypeChange(obj, hi, origlo);
+        obj->as<NativeObject>().setDenseElement(hi, origlo);
         if (origlo.isMagic(JS_ELEMENTS_HOLE) &&
             !SuppressDeletedProperty(cx, obj, INT_TO_JSID(hi)))
         {
@@ -2074,14 +2080,8 @@ js::array_push(JSContext* cx, unsigned argc, Value* vp)
             uint32_t newlength = length + args.length();
             args.rval().setNumber(newlength);
 
-            // SetOrExtendBoxedOrUnboxedDenseElements takes care of updating the
-            // length for boxed and unboxed arrays. Handle updates to the length of
-            // non-arrays here.
-            bool isArray;
-            if (!IsArray(cx, obj, &isArray))
-                return false;
-
-            if (!isArray)
+            // Handle updates to the length of non-arrays here.
+            if (!obj->is<ArrayObject>())
                 return SetLengthProperty(cx, obj, newlength);
 
             return true;
@@ -2141,14 +2141,15 @@ template <JSValueType Type>
 static inline DenseElementResult
 ShiftMoveBoxedOrUnboxedDenseElements(JSObject* obj)
 {
-    MOZ_ASSERT(HasBoxedOrUnboxedDenseElements(obj));
+    MOZ_ASSERT(obj->isNative());
+
+    size_t initlen = obj->as<NativeObject>().getDenseInitializedLength();
 
     /*
      * At this point the length and initialized length have already been
      * decremented and the result fetched, so just shift the array elements
      * themselves.
      */
-    size_t initlen = GetBoxedOrUnboxedInitializedLength(obj);
     obj->as<NativeObject>().moveDenseElementsNoPreBarrier(0, 1, initlen);
 
     return DenseElementResult::Success;
@@ -2165,6 +2166,15 @@ js::ArrayShiftMoveElements(JSObject* obj)
     JS_ALWAYS_TRUE(CallBoxedOrUnboxedSpecialization(functor, obj) == DenseElementResult::Success);
 }
 
+static inline void
+SetInitializedLength(JSContext* cx, NativeObject* obj, size_t initlen)
+{
+    size_t oldInitlen = obj->getDenseInitializedLength();
+    obj->setDenseInitializedLength(initlen);
+    if (initlen < oldInitlen)
+        obj->shrinkElements(cx, initlen);
+}
+
 template <JSValueType Type>
 DenseElementResult
 ArrayShiftDenseKernel(JSContext* cx, HandleObject obj, MutableHandleValue rval)
@@ -2179,11 +2189,11 @@ ArrayShiftDenseKernel(JSContext* cx, HandleObject obj, MutableHandleValue rval)
     if (MOZ_UNLIKELY(group->hasAllFlags(OBJECT_FLAG_ITERATED)))
         return DenseElementResult::Incomplete;
 
-    size_t initlen = GetBoxedOrUnboxedInitializedLength(obj);
+    size_t initlen = obj->as<NativeObject>().getDenseInitializedLength();
     if (initlen == 0)
         return DenseElementResult::Incomplete;
 
-    rval.set(GetBoxedOrUnboxedDenseElement(obj, 0));
+    rval.set(obj->as<NativeObject>().getDenseElement(0));
     if (rval.isMagic(JS_ELEMENTS_HOLE))
         rval.setUndefined();
 
@@ -2191,7 +2201,7 @@ ArrayShiftDenseKernel(JSContext* cx, HandleObject obj, MutableHandleValue rval)
     if (result != DenseElementResult::Success)
         return result;
 
-    SetBoxedOrUnboxedInitializedLength(cx, obj, initlen - 1);
+    SetInitializedLength(cx, obj.as<NativeObject>(), initlen - 1);
     return DenseElementResult::Success;
 }
 
@@ -2364,7 +2374,7 @@ CanOptimizeForDenseStorage(HandleObject arr, uint32_t startingIndex, uint32_t co
         return false;
 
     /* If it's a frozen array, always pick the slow path */
-    if (arr->is<ArrayObject>() && arr->as<ArrayObject>().denseElementsAreFrozen())
+    if (arr->as<ArrayObject>().denseElementsAreFrozen())
         return false;
 
     /*
@@ -2396,7 +2406,7 @@ CanOptimizeForDenseStorage(HandleObject arr, uint32_t startingIndex, uint32_t co
      * is subsumed by the initializedLength comparison.)
      */
     return !ObjectMayHaveExtraIndexedProperties(arr) &&
-           startingIndex + count <= GetAnyBoxedOrUnboxedInitializedLength(arr);
+           startingIndex + count <= arr->as<NativeObject>().getDenseInitializedLength();
 }
 
 /* ES 2016 draft Mar 25, 2016 22.1.3.26. */
@@ -2541,7 +2551,7 @@ js::array_splice_impl(JSContext* cx, unsigned argc, Value* vp, bool returnValueI
                 return false;
 
             /* Steps 15.c-d. */
-            SetBoxedOrUnboxedInitializedLength(cx, obj, finalLength);
+            SetInitializedLength(cx, obj.as<NativeObject>(), finalLength);
         } else {
             /*
              * This is all very slow if the length is very large. We don't yet
@@ -2629,7 +2639,7 @@ js::array_splice_impl(JSContext* cx, unsigned argc, Value* vp, bool returnValueI
                 return false;
 
             /* Steps 16.a-b. */
-            SetBoxedOrUnboxedInitializedLength(cx, obj, len + itemCount - actualDeleteCount);
+            SetInitializedLength(cx, obj.as<NativeObject>(), len + itemCount - actualDeleteCount);
         } else {
             RootedValue fromValue(cx);
             for (double k = len - actualDeleteCount; k > actualStart; k--) {
@@ -2851,7 +2861,7 @@ ArraySliceOrdinary(JSContext* cx, HandleObject obj, uint32_t length, uint32_t be
         begin = end;
 
     if (!ObjectMayHaveExtraIndexedProperties(obj)) {
-        size_t initlen = GetAnyBoxedOrUnboxedInitializedLength(obj);
+        size_t initlen = obj->as<NativeObject>().getDenseInitializedLength();
         size_t count = 0;
         if (initlen > begin)
             count = Min<size_t>(initlen - begin, end - begin);
@@ -2859,7 +2869,9 @@ ArraySliceOrdinary(JSContext* cx, HandleObject obj, uint32_t length, uint32_t be
         RootedObject narr(cx, NewFullyAllocatedArrayTryReuseGroup(cx, obj, count));
         if (!narr)
             return false;
-        SetAnyBoxedOrUnboxedArrayLength(cx, narr, end - begin);
+
+        MOZ_ASSERT(count >= narr->as<ArrayObject>().length());
+        narr->as<ArrayObject>().setLength(cx, count);
 
         if (count) {
             DebugOnly<DenseElementResult> result =
@@ -2991,7 +3003,7 @@ template <JSValueType Type>
 DenseElementResult
 ArraySliceDenseKernel(JSContext* cx, JSObject* obj, int32_t beginArg, int32_t endArg, JSObject* result)
 {
-    int32_t length = GetAnyBoxedOrUnboxedArrayLength(obj);
+    int32_t length = obj->as<ArrayObject>().length();
 
     uint32_t begin = NormalizeSliceTerm(beginArg, length);
     uint32_t end = NormalizeSliceTerm(endArg, length);
@@ -2999,18 +3011,19 @@ ArraySliceDenseKernel(JSContext* cx, JSObject* obj, int32_t beginArg, int32_t en
     if (begin > end)
         begin = end;
 
-    size_t initlen = GetBoxedOrUnboxedInitializedLength(obj);
+    size_t initlen = obj->as<NativeObject>().getDenseInitializedLength();
+    size_t count = Min<size_t>(initlen - begin, end - begin);
     if (initlen > begin) {
-        size_t count = Min<size_t>(initlen - begin, end - begin);
         if (count) {
-            DenseElementResult rv = EnsureBoxedOrUnboxedDenseElements(cx, result, count);
-            if (rv != DenseElementResult::Success)
-                return rv;
+            if (!result->as<ArrayObject>().ensureElements(cx, count))
+                return DenseElementResult::Failure;
             CopyBoxedOrUnboxedDenseElements(cx, result, obj, 0, begin, count);
         }
     }
 
-    SetAnyBoxedOrUnboxedArrayLength(cx, result, end - begin);
+    MOZ_ASSERT(count >= result->as<ArrayObject>().length());
+    result->as<ArrayObject>().setLength(cx, count);
+
     return DenseElementResult::Success;
 }
 
