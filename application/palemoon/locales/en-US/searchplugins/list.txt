@@ -4,3 +4,4 @@ ecosia
 twitter
 wikipedia
 yahoo
+yandex-ru
