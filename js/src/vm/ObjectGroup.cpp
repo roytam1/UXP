@@ -774,7 +774,7 @@ GetValueTypeForTable(const Value& v)
     return type;
 }
 
-/* static */ JSObject*
+/* static */ ArrayObject*
 ObjectGroup::newArrayObject(ExclusiveContext* cx,
                             const Value* vp, size_t length,
                             NewObjectKind newKind, NewArrayKind arrayKind)
@@ -854,11 +854,8 @@ ObjectGroup::newArrayObject(ExclusiveContext* cx,
     }
 
     // The type of the elements being added will already be reflected in type
-    // information, but make sure when creating an unboxed array that the
-    // common element type is suitable for the unboxed representation.
+    // information.
     ShouldUpdateTypes updateTypes = ShouldUpdateTypes::DontUpdate;
-    if (!MaybeAnalyzeBeforeCreatingLargeArray(cx, group, vp, length))
-        return nullptr;
     if (group->maybePreliminaryObjects())
         group->maybePreliminaryObjects()->maybeAnalyze(cx, group);
 

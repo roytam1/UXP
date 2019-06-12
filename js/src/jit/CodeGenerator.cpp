@@ -5169,11 +5169,11 @@ static JSObject*
 NewArrayWithGroup(JSContext* cx, uint32_t length, HandleObjectGroup group,
                   bool convertDoubleElements)
 {
-    JSObject* res = NewFullyAllocatedArrayTryUseGroup(cx, group, length);
+    ArrayObject* res = NewFullyAllocatedArrayTryUseGroup(cx, group, length);
     if (!res)
         return nullptr;
     if (convertDoubleElements)
-        res->as<ArrayObject>().setShouldConvertDoubleElements();
+        res->setShouldConvertDoubleElements();
     return res;
 }
 
@@ -5319,7 +5319,7 @@ CodeGenerator::visitNewArrayCopyOnWrite(LNewArrayCopyOnWrite* lir)
     masm.bind(ool->rejoin());
 }
 
-typedef JSObject* (*ArrayConstructorOneArgFn)(JSContext*, HandleObjectGroup, int32_t length);
+typedef ArrayObject* (*ArrayConstructorOneArgFn)(JSContext*, HandleObjectGroup, int32_t length);
 static const VMFunction ArrayConstructorOneArgInfo =
     FunctionInfo<ArrayConstructorOneArgFn>(ArrayConstructorOneArg, "ArrayConstructorOneArg");
 
@@ -7765,7 +7765,7 @@ CodeGenerator::visitSinCos(LSinCos *lir)
     masm.freeStack(sizeof(double) * 2);
 }
 
-typedef JSObject* (*StringSplitFn)(JSContext*, HandleObjectGroup, HandleString, HandleString, uint32_t);
+typedef ArrayObject* (*StringSplitFn)(JSContext*, HandleObjectGroup, HandleString, HandleString, uint32_t);
 static const VMFunction StringSplitInfo =
     FunctionInfo<StringSplitFn>(js::str_split_string, "str_split_string");
 

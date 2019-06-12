@@ -2811,7 +2811,7 @@ SliceSlowly(JSContext* cx, HandleObject obj, HandleObject receiver,
 }
 
 static bool
-SliceSparse(JSContext* cx, HandleObject obj, uint32_t begin, uint32_t end, HandleObject result)
+SliceSparse(JSContext* cx, HandleObject obj, uint32_t begin, uint32_t end, HandleArrayObject result)
 {
     MOZ_ASSERT(begin <= end);
 
@@ -2866,7 +2866,7 @@ ArraySliceOrdinary(JSContext* cx, HandleObject obj, uint32_t length, uint32_t be
         if (initlen > begin)
             count = Min<size_t>(initlen - begin, end - begin);
 
-        RootedObject narr(cx, NewFullyAllocatedArrayTryReuseGroup(cx, obj, count));
+        RootedArrayObject narr(cx, NewFullyAllocatedArrayTryReuseGroup(cx, obj, count));
         if (!narr)
             return false;
 
@@ -2882,7 +2882,7 @@ ArraySliceOrdinary(JSContext* cx, HandleObject obj, uint32_t length, uint32_t be
         return true;
     }
 
-    RootedObject narr(cx, NewPartlyAllocatedArrayTryReuseGroup(cx, obj, end - begin));
+    RootedArrayObject narr(cx, NewPartlyAllocatedArrayTryReuseGroup(cx, obj, end - begin));
     if (!narr)
         return false;
 
@@ -3069,7 +3069,7 @@ array_isArray(JSContext* cx, unsigned argc, Value* vp)
 static bool
 ArrayFromCallArgs(JSContext* cx, CallArgs& args, HandleObject proto = nullptr)
 {
-    JSObject* obj = NewCopiedArrayForCallingAllocationSite(cx, args.array(), args.length(), proto);
+    ArrayObject* obj = NewCopiedArrayForCallingAllocationSite(cx, args.array(), args.length(), proto);
     if (!obj)
         return false;
 
@@ -3234,7 +3234,7 @@ ArrayConstructorImpl(JSContext* cx, CallArgs& args, bool isConstructor)
         }
     }
 
-    JSObject* obj = NewPartlyAllocatedArrayForCallingAllocationSite(cx, length, proto);
+    ArrayObject* obj = NewPartlyAllocatedArrayForCallingAllocationSite(cx, length, proto);
     if (!obj)
         return false;
 
@@ -3260,7 +3260,7 @@ js::array_construct(JSContext* cx, unsigned argc, Value* vp)
     return ArrayConstructorImpl(cx, args, /* isConstructor = */ false);
 }
 
-JSObject*
+ArrayObject*
 js::ArrayConstructorOneArg(JSContext* cx, HandleObjectGroup group, int32_t lengthInt)
 {
     if (lengthInt < 0) {
@@ -3555,7 +3555,7 @@ js::NewDenseFullyAllocatedArrayWithTemplate(JSContext* cx, uint32_t length, JSOb
     return arr;
 }
 
-JSObject*
+ArrayObject*
 js::NewDenseCopyOnWriteArray(JSContext* cx, HandleArrayObject templateObject, gc::InitialHeap heap)
 {
     MOZ_ASSERT(!gc::IsInsideNursery(templateObject));
@@ -3573,7 +3573,7 @@ js::NewDenseCopyOnWriteArray(JSContext* cx, HandleArrayObject templateObject, gc
 // specified group cannot be used, ensure that the created array at least has
 // the given [[Prototype]].
 template <uint32_t maxLength>
-static inline JSObject*
+static inline ArrayObject*
 NewArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group, size_t length,
                     NewObjectKind newKind = GenericObject)
 {
@@ -3603,14 +3603,14 @@ NewArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group, size_t length
     return res;
 }
 
-JSObject*
+ArrayObject*
 js::NewFullyAllocatedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group, size_t length,
                                       NewObjectKind newKind)
 {
     return NewArrayTryUseGroup<UINT32_MAX>(cx, group, length, newKind);
 }
 
-JSObject*
+ArrayObject*
 js::NewPartlyAllocatedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group, size_t length)
 {
     return NewArrayTryUseGroup<ArrayObject::EagerAllocationMaxLength>(cx, group, length);
@@ -3624,7 +3624,7 @@ js::NewPartlyAllocatedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup g
 // |length| is larger than the input object's initialized length (in which case
 // UnboxedArrayObject::MaximumCapacity might be exceeded).
 template <uint32_t maxLength>
-static inline JSObject*
+static inline ArrayObject*
 NewArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length,
                       NewObjectKind newKind = GenericObject)
 {
@@ -3641,20 +3641,20 @@ NewArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length,
     return NewArrayTryUseGroup<maxLength>(cx, group, length, newKind);
 }
 
-JSObject*
+ArrayObject*
 js::NewFullyAllocatedArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length,
                                         NewObjectKind newKind)
 {
     return NewArrayTryReuseGroup<UINT32_MAX>(cx, obj, length, newKind);
 }
 
-JSObject*
+ArrayObject*
 js::NewPartlyAllocatedArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length)
 {
     return NewArrayTryReuseGroup<ArrayObject::EagerAllocationMaxLength>(cx, obj, length);
 }
 
-JSObject*
+ArrayObject*
 js::NewFullyAllocatedArrayForCallingAllocationSite(JSContext* cx, size_t length,
                                                    NewObjectKind newKind)
 {
@@ -3664,7 +3664,7 @@ js::NewFullyAllocatedArrayForCallingAllocationSite(JSContext* cx, size_t length,
     return NewArrayTryUseGroup<UINT32_MAX>(cx, group, length, newKind);
 }
 
-JSObject*
+ArrayObject*
 js::NewPartlyAllocatedArrayForCallingAllocationSite(JSContext* cx, size_t length, HandleObject proto)
 {
     RootedObjectGroup group(cx, ObjectGroup::callingAllocationSiteGroup(cx, JSProto_Array, proto));
@@ -3673,44 +3673,12 @@ js::NewPartlyAllocatedArrayForCallingAllocationSite(JSContext* cx, size_t length
     return NewArrayTryUseGroup<ArrayObject::EagerAllocationMaxLength>(cx, group, length);
 }
 
-bool
-js::MaybeAnalyzeBeforeCreatingLargeArray(ExclusiveContext* cx, HandleObjectGroup group,
-                                         const Value* vp, size_t length)
-{
-    static const size_t EagerPreliminaryObjectAnalysisThreshold = 800;
-
-    // Force analysis to see if an unboxed array can be used when making a
-    // sufficiently large array, to avoid excessive analysis and copying later
-    // on. If this is the first array of its group that is being created, first
-    // make a dummy array with the initial elements of the array we are about
-    // to make, so there is some basis for the unboxed array analysis.
-    if (length > EagerPreliminaryObjectAnalysisThreshold) {
-        if (PreliminaryObjectArrayWithTemplate* objects = group->maybePreliminaryObjects()) {
-            if (objects->empty()) {
-                size_t nlength = Min<size_t>(length, 100);
-                JSObject* obj = NewFullyAllocatedArrayTryUseGroup(cx, group, nlength);
-                if (!obj)
-                    return false;
-                DebugOnly<DenseElementResult> result =
-                    SetOrExtendBoxedOrUnboxedDenseElements(cx, obj, 0, vp, nlength,
-                                                           ShouldUpdateTypes::Update);
-                MOZ_ASSERT(result.value == DenseElementResult::Success);
-            }
-            objects->maybeAnalyze(cx, group, /* forceAnalyze = */ true);
-        }
-    }
-    return true;
-}
-
-JSObject*
+ArrayObject*
 js::NewCopiedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group,
                               const Value* vp, size_t length, NewObjectKind newKind,
                               ShouldUpdateTypes updateTypes)
 {
-    if (!MaybeAnalyzeBeforeCreatingLargeArray(cx, group, vp, length))
-        return nullptr;
-
-    JSObject* obj = NewFullyAllocatedArrayTryUseGroup(cx, group, length, newKind);
+    ArrayObject* obj = NewFullyAllocatedArrayTryUseGroup(cx, group, length, newKind);
     if (!obj)
         return nullptr;
 
@@ -3722,7 +3690,7 @@ js::NewCopiedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group,
     return obj;
 }
 
-JSObject*
+ArrayObject*
 js::NewCopiedArrayForCallingAllocationSite(JSContext* cx, const Value* vp, size_t length,
                                            HandleObject proto /* = nullptr */)
 {
