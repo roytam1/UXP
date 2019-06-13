@@ -2133,6 +2133,20 @@ SetInitializedLength(JSContext* cx, NativeObject* obj, size_t initlen)
 }
 
 static DenseElementResult
+MoveDenseElements(JSContext* cx, NativeObject* obj, uint32_t dstStart, uint32_t srcStart,
+                  uint32_t length)
+{
+    if (obj->denseElementsAreFrozen())
+        return DenseElementResult::Incomplete;
+
+    if (!obj->maybeCopyElementsForWrite(cx))
+        return DenseElementResult::Failure;
+    obj->moveDenseElements(dstStart, srcStart, length);
+
+    return DenseElementResult::Success;
+}
+
+static DenseElementResult
 ArrayShiftDenseKernel(JSContext* cx, HandleObject obj, MutableHandleValue rval)
 {
     if (ObjectMayHaveExtraIndexedProperties(obj))
@@ -2153,7 +2167,7 @@ ArrayShiftDenseKernel(JSContext* cx, HandleObject obj, MutableHandleValue rval)
     if (rval.isMagic(JS_ELEMENTS_HOLE))
         rval.setUndefined();
 
-    DenseElementResult result = MoveBoxedOrUnboxedDenseElements(cx, obj, 0, 1, initlen - 1);
+    DenseElementResult result = MoveDenseElements(cx, &obj->as<NativeObject>(), 0, 1, initlen - 1);
     if (result != DenseElementResult::Success)
         return result;
 
@@ -2514,8 +2528,7 @@ js::array_splice_impl(JSContext* cx, unsigned argc, Value* vp, bool returnValueI
         if (CanOptimizeForDenseStorage(obj, 0, len, cx)) {
             /* Steps 15.a-b. */
             DenseElementResult result =
-                MoveBoxedOrUnboxedDenseElements(cx, obj, targetIndex, sourceIndex,
-                                                len - sourceIndex);
+                MoveDenseElements(cx, &obj->as<NativeObject>(), targetIndex, sourceIndex, len - sourceIndex);
             MOZ_ASSERT(result != DenseElementResult::Incomplete);
             if (result == DenseElementResult::Failure)
                 return false;
@@ -2601,9 +2614,9 @@ js::array_splice_impl(JSContext* cx, unsigned argc, Value* vp, bool returnValueI
 
         if (CanOptimizeForDenseStorage(obj, len, itemCount - actualDeleteCount, cx)) {
             DenseElementResult result =
-                MoveBoxedOrUnboxedDenseElements(cx, obj, actualStart + itemCount,
-                                                actualStart + actualDeleteCount,
-                                                len - (actualStart + actualDeleteCount));
+                MoveDenseElements(cx, &obj->as<NativeObject>(), actualStart + itemCount,
+                                  actualStart + actualDeleteCount,
+                                  len - (actualStart + actualDeleteCount));
             MOZ_ASSERT(result != DenseElementResult::Incomplete);
             if (result == DenseElementResult::Failure)
                 return false;

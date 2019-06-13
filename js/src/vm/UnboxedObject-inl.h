@@ -210,22 +210,6 @@ SetOrExtendBoxedOrUnboxedDenseElements(ExclusiveContext* cx, JSObject* obj,
     return DenseElementResult::Success;
 }
 
-static inline DenseElementResult
-MoveBoxedOrUnboxedDenseElements(JSContext* cx, JSObject* obj, uint32_t dstStart, uint32_t srcStart,
-                                uint32_t length)
-{
-    MOZ_ASSERT(obj->isNative());
-
-    if (obj->as<NativeObject>().denseElementsAreFrozen())
-        return DenseElementResult::Incomplete;
-
-    if (!obj->as<NativeObject>().maybeCopyElementsForWrite(cx))
-        return DenseElementResult::Failure;
-    obj->as<NativeObject>().moveDenseElements(dstStart, srcStart, length);
-
-    return DenseElementResult::Success;
-}
-
 } // namespace js
 
 #endif // vm_UnboxedObject_inl_h
