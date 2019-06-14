@@ -36,7 +36,7 @@ MOZ_MUST_USE bool atomics_or(JSContext* cx, unsigned argc, Value* vp);
 MOZ_MUST_USE bool atomics_xor(JSContext* cx, unsigned argc, Value* vp);
 MOZ_MUST_USE bool atomics_isLockFree(JSContext* cx, unsigned argc, Value* vp);
 MOZ_MUST_USE bool atomics_wait(JSContext* cx, unsigned argc, Value* vp);
-MOZ_MUST_USE bool atomics_wake(JSContext* cx, unsigned argc, Value* vp);
+MOZ_MUST_USE bool atomics_notify(JSContext* cx, unsigned argc, Value* vp);
 
 /* asm.js callouts */
 namespace wasm { class Instance; }
@@ -63,10 +63,10 @@ public:
     MOZ_MUST_USE bool initInstance();
     void destroyInstance();
 
-    // Parameters to wake().
-    enum WakeReason {
-        WakeExplicit,           // Being asked to wake up by another thread
-        WakeForJSInterrupt      // Interrupt requested
+    // Parameters to notify().
+    enum NotifyReason {
+        NotifyExplicit,           // Being asked to wake up by another thread
+        NotifyForJSInterrupt      // Interrupt requested
     };
 
     // Result code from wait().
@@ -83,29 +83,27 @@ public:
     // times allowed; specify mozilla::Nothing() for an indefinite
     // wait.
     //
-    // wait() will not wake up spuriously.  It will return true and
-    // set *result to a return code appropriate for
-    // Atomics.wait() on success, and return false on error.
+    // wait() will not wake up spuriously.
     MOZ_MUST_USE bool wait(JSContext* cx, js::UniqueLock<js::Mutex>& locked,
                            mozilla::Maybe<mozilla::TimeDuration>& timeout, WaitResult* result);
 
-    // Wake the thread represented by this Runtime.
+    // Notify the thread represented by this Runtime.
     //
     // The futex lock must be held around this call.  (The sleeping
-    // thread will not wake up until the caller of Atomics.wake()
+    // thread will not wake up until the caller of Atomics.notify()
     // releases the lock.)
     //
     // If the thread is not waiting then this method does nothing.
     //
     // If the thread is waiting in a call to wait() and the
-    // reason is WakeExplicit then the wait() call will return
+    // reason is NotifyExplicit then the wait() call will return
     // with Woken.
     //
     // If the thread is waiting in a call to wait() and the
-    // reason is WakeForJSInterrupt then the wait() will return
+    // reason is NotifyForJSInterrupt then the wait() will return
     // with WaitingNotifiedForInterrupt; in the latter case the caller
     // of wait() must handle the interrupt.
-    void wake(WakeReason reason);
+    void notify(NotifyReason reason);
 
     bool isWaiting();
 
@@ -128,7 +126,7 @@ public:
                                      //   interrupt handler
         WaitingInterrupted,          // We are waiting, but have been interrupted
                                      //   and are running the interrupt handler
-        Woken                        // Woken by a script call to Atomics.wake
+        Woken                        // Woken by a script call to Atomics.notify
     };
 
     // Condition variable that this runtime will wait on.
