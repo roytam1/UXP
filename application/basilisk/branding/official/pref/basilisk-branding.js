@@ -25,6 +25,9 @@ pref("startup.homepage_welcome_url.additional", "");
 // Version release notes
 pref("app.releaseNotesURL", "http://@BRANDING_SITEURL@/@BRANDING_RELNOTESPATH@");
 
+// base url for web-based feedback pages
+pref("app.feedback.baseURL", "https://forum.palemoon.org/viewforum.php?f=61");
+
 // Vendor home page
 pref("app.vendorURL", "http://@BRANDING_SITEURL@/");
 
