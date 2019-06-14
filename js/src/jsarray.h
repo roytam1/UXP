@@ -98,12 +98,6 @@ NewFullyAllocatedArrayForCallingAllocationSite(JSContext* cx, size_t length,
 extern ArrayObject*
 NewPartlyAllocatedArrayForCallingAllocationSite(JSContext* cx, size_t length, HandleObject proto);
 
-enum class ShouldUpdateTypes
-{
-    Update,
-    DontUpdate
-};
-
 extern ArrayObject*
 NewCopiedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group,
                           const Value* vp, size_t length,

@@ -349,6 +349,11 @@ enum class DenseElementResult {
     Incomplete
 };
 
+enum class ShouldUpdateTypes {
+    Update,
+    DontUpdate
+};
+
 /*
  * NativeObject specifies the internal implementation of a native object.
  *
@@ -1146,6 +1151,10 @@ class NativeObject : public ShapedObject
         memmove(elements_ + dstStart, elements_ + srcStart, count * sizeof(HeapSlot));
         elementsRangeWriteBarrierPost(dstStart, count);
     }
+
+    inline DenseElementResult
+    setOrExtendDenseElements(JSContext* cx, uint32_t start, const Value* vp, uint32_t count,
+                             ShouldUpdateTypes updateTypes = ShouldUpdateTypes::Update);
 
     bool shouldConvertDoubleElements() {
         return getElementsHeader()->shouldConvertDoubleElements();
