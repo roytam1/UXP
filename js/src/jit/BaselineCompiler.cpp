@@ -2049,12 +2049,6 @@ BaselineCompiler::emit_JSOP_NEWARRAY()
     return true;
 }
 
-bool
-BaselineCompiler::emit_JSOP_SPREADCALLARRAY()
-{
-    return emit_JSOP_NEWARRAY();
-}
-
 typedef ArrayObject* (*NewArrayCopyOnWriteFn)(JSContext*, HandleArrayObject, gc::InitialHeap);
 const VMFunction jit::NewArrayCopyOnWriteInfo =
     FunctionInfo<NewArrayCopyOnWriteFn>(js::NewDenseCopyOnWriteArray, "NewDenseCopyOnWriteArray");
