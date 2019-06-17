@@ -2218,8 +2218,6 @@ IonBuilder::inspectOpcode(JSOp op)
         // update that stale value.
 #endif
       default:
-	    // Any unused opcodes and JSOP_LIMIT will end up here without having
-        // to explicitly specify
         break;
     }
 
