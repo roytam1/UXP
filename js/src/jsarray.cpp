@@ -2120,7 +2120,7 @@ js::ArrayShiftMoveElements(NativeObject* obj)
      * decremented and the result fetched, so just shift the array elements
      * themselves.
      */
-    obj->moveDenseElementsNoPreBarrier(0, 1, initlen - 1);
+    obj->moveDenseElementsNoPreBarrier(0, 1, initlen);
 }
 
 static inline void
