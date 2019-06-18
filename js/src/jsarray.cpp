@@ -2480,8 +2480,8 @@ js::array_splice_impl(JSContext* cx, unsigned argc, Value* vp, bool returnValueI
                 /* Steps 10-11. */
                 DebugOnly<DenseElementResult> result =
                     CopyDenseElements(cx, &arr->as<NativeObject>(), 
-					                  &obj->as<NativeObject>(), 0, 
-									  actualStart, actualDeleteCount);
+                                      &obj->as<NativeObject>(), 0, 
+                                      actualStart, actualDeleteCount);
                 MOZ_ASSERT(result.value == DenseElementResult::Success);
 
                 /* Step 12 (implicit). */
