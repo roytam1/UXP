@@ -1916,6 +1916,7 @@ CASE(EnableInterruptsPseudoOpcode)
 /* Various 1-byte no-ops. */
 CASE(JSOP_NOP)
 CASE(JSOP_NOP_DESTRUCTURING)
+CASE(JSOP_UNUSED126)
 CASE(JSOP_UNUSED192)
 CASE(JSOP_UNUSED209)
 CASE(JSOP_UNUSED210)
@@ -3636,7 +3637,6 @@ CASE(JSOP_NEWINIT)
 END_CASE(JSOP_NEWINIT)
 
 CASE(JSOP_NEWARRAY)
-CASE(JSOP_SPREADCALLARRAY)
 {
     uint32_t length = GET_UINT32(REGS.pc);
     JSObject* obj = NewArrayOperation(cx, script, REGS.pc, length);
@@ -4933,7 +4933,7 @@ js::NewObjectOperation(JSContext* cx, HandleScript script, jsbytecode* pc,
             newKind = TenuredObject;
     }
 
-    RootedObject obj(cx);
+    RootedPlainObject obj(cx);
 
     if (*pc == JSOP_NEWOBJECT) {
         RootedPlainObject baseObject(cx, &script->getObject(pc)->as<PlainObject>());
@@ -5001,9 +5001,6 @@ js::NewArrayOperation(JSContext* cx, HandleScript script, jsbytecode* pc, uint32
 
         if (group->shouldPreTenure() || group->maybePreliminaryObjects())
             newKind = TenuredObject;
-
-        if (group->maybeUnboxedLayout())
-            return UnboxedArrayObject::create(cx, group, length, newKind);
     }
 
     ArrayObject* obj = NewDenseFullyAllocatedArray(cx, length, nullptr, newKind);
@@ -5014,9 +5011,6 @@ js::NewArrayOperation(JSContext* cx, HandleScript script, jsbytecode* pc, uint32
         MOZ_ASSERT(obj->isSingleton());
     } else {
         obj->setGroup(group);
-
-        if (PreliminaryObjectArray* preliminaryObjects = group->maybePreliminaryObjects())
-            preliminaryObjects->registerNewObject(obj);
     }
 
     return obj;
@@ -5028,12 +5022,6 @@ js::NewArrayOperationWithTemplate(JSContext* cx, HandleObject templateObject)
     MOZ_ASSERT(!templateObject->isSingleton());
 
     NewObjectKind newKind = templateObject->group()->shouldPreTenure() ? TenuredObject : GenericObject;
-
-    if (templateObject->is<UnboxedArrayObject>()) {
-        uint32_t length = templateObject->as<UnboxedArrayObject>().length();
-        RootedObjectGroup group(cx, templateObject->group());
-        return UnboxedArrayObject::create(cx, group, length, newKind);
-    }
 
     ArrayObject* obj = NewDenseFullyAllocatedArray(cx, templateObject->as<ArrayObject>().length(),
                                                    nullptr, newKind);

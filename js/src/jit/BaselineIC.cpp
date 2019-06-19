@@ -1366,7 +1366,7 @@ IsNativeDenseElementAccess(HandleObject obj, HandleValue key)
 static bool
 IsNativeOrUnboxedDenseElementAccess(HandleObject obj, HandleValue key)
 {
-    if (!obj->isNative() && !obj->is<UnboxedArrayObject>())
+    if (!obj->isNative())
         return false;
     if (key.isInt32() && key.toInt32() >= 0 && !obj->is<TypedArrayObject>())
         return true;
@@ -1468,20 +1468,6 @@ TryAttachGetElemStub(JSContext* cx, JSScript* script, jsbytecode* pc, ICGetElem_
         if (*attached)
             return true;
         script = rootedScript;
-    }
-
-    // Check for UnboxedArray[int] accesses.
-    if (obj->is<UnboxedArrayObject>() && rhs.isInt32() && rhs.toInt32() >= 0) {
-        JitSpew(JitSpew_BaselineIC, "  Generating GetElem(UnboxedArray[Int32]) stub");
-        ICGetElem_UnboxedArray::Compiler compiler(cx, stub->fallbackMonitorStub()->firstMonitorStub(),
-                                                  obj->group());
-        ICStub* unboxedStub = compiler.getStub(compiler.getStubSpace(script));
-        if (!unboxedStub)
-            return false;
-
-        stub->addNewStub(unboxedStub);
-        *attached = true;
-        return true;
     }
 
     // Check for TypedArray[int] => Number and TypedObject[int] => Number accesses.
@@ -2090,56 +2076,6 @@ ICGetElem_Dense::Compiler::generateStubCode(MacroAssembler& masm)
 }
 
 //
-// GetElem_UnboxedArray
-//
-
-bool
-ICGetElem_UnboxedArray::Compiler::generateStubCode(MacroAssembler& masm)
-{
-    MOZ_ASSERT(engine_ == Engine::Baseline);
-
-    Label failure;
-    masm.branchTestObject(Assembler::NotEqual, R0, &failure);
-    masm.branchTestInt32(Assembler::NotEqual, R1, &failure);
-
-    AllocatableGeneralRegisterSet regs(availableGeneralRegs(2));
-    Register scratchReg = regs.takeAny();
-
-    // Unbox R0 and group guard.
-    Register obj = masm.extractObject(R0, ExtractTemp0);
-    masm.loadPtr(Address(ICStubReg, ICGetElem_UnboxedArray::offsetOfGroup()), scratchReg);
-    masm.branchTestObjGroup(Assembler::NotEqual, obj, scratchReg, &failure);
-
-    // Unbox key.
-    Register key = masm.extractInt32(R1, ExtractTemp1);
-
-    // Bounds check.
-    masm.load32(Address(obj, UnboxedArrayObject::offsetOfCapacityIndexAndInitializedLength()),
-                scratchReg);
-    masm.and32(Imm32(UnboxedArrayObject::InitializedLengthMask), scratchReg);
-    masm.branch32(Assembler::BelowOrEqual, scratchReg, key, &failure);
-
-    // Load obj->elements.
-    masm.loadPtr(Address(obj, UnboxedArrayObject::offsetOfElements()), scratchReg);
-
-    // Load value.
-    size_t width = UnboxedTypeSize(elementType_);
-    BaseIndex addr(scratchReg, key, ScaleFromElemWidth(width));
-    masm.loadUnboxedProperty(addr, elementType_, R0);
-
-    // Only monitor the result if its type might change.
-    if (elementType_ == JSVAL_TYPE_OBJECT)
-        EmitEnterTypeMonitorIC(masm);
-    else
-        EmitReturnFromIC(masm);
-
-    // Failure case - jump to next stub
-    masm.bind(&failure);
-    EmitStubGuardFailure(masm);
-    return true;
-}
-
-//
 // GetElem_TypedArray
 //
 
@@ -2437,18 +2373,14 @@ CanOptimizeDenseOrUnboxedArraySetElem(JSObject* obj, uint32_t index,
                                       Shape* oldShape, uint32_t oldCapacity, uint32_t oldInitLength,
                                       bool* isAddingCaseOut, size_t* protoDepthOut)
 {
-    uint32_t initLength = GetAnyBoxedOrUnboxedInitializedLength(obj);
-    uint32_t capacity = GetAnyBoxedOrUnboxedCapacity(obj);
+    uint32_t initLength = obj->as<NativeObject>().getDenseInitializedLength();
+    uint32_t capacity = obj->as<NativeObject>().getDenseCapacity();
 
     *isAddingCaseOut = false;
     *protoDepthOut = 0;
 
     // Some initial sanity checks.
     if (initLength < oldInitLength || capacity < oldCapacity)
-        return false;
-
-    // Unboxed arrays need to be able to emit floating point code.
-    if (obj->is<UnboxedArrayObject>() && !obj->runtimeFromMainThread()->jitSupportsFloatingPoint)
         return false;
 
     Shape* shape = obj->maybeShape();
@@ -2532,8 +2464,8 @@ DoSetElemFallback(JSContext* cx, BaselineFrame* frame, ICSetElem_Fallback* stub_
     uint32_t oldCapacity = 0;
     uint32_t oldInitLength = 0;
     if (index.isInt32() && index.toInt32() >= 0) {
-        oldCapacity = GetAnyBoxedOrUnboxedCapacity(obj);
-        oldInitLength = GetAnyBoxedOrUnboxedInitializedLength(obj);
+        oldCapacity = obj->as<NativeObject>().getDenseCapacity();
+        oldInitLength = obj->as<NativeObject>().getDenseInitializedLength();
     }
 
     if (op == JSOP_INITELEM || op == JSOP_INITHIDDENELEM) {
@@ -2871,29 +2803,6 @@ ICSetElem_DenseOrUnboxedArray::Compiler::generateStubCode(MacroAssembler& masm)
         masm.loadValue(valueAddr, tmpVal);
         EmitPreBarrier(masm, element, MIRType::Value);
         masm.storeValue(tmpVal, element);
-    } else {
-        // Set element on an unboxed array.
-
-        // Bounds check.
-        Address initLength(obj, UnboxedArrayObject::offsetOfCapacityIndexAndInitializedLength());
-        masm.load32(initLength, scratchReg);
-        masm.and32(Imm32(UnboxedArrayObject::InitializedLengthMask), scratchReg);
-        masm.branch32(Assembler::BelowOrEqual, scratchReg, key, &failure);
-
-        // Load obj->elements.
-        masm.loadPtr(Address(obj, UnboxedArrayObject::offsetOfElements()), scratchReg);
-
-        // Compute the address being written to.
-        BaseIndex address(scratchReg, key, ScaleFromElemWidth(UnboxedTypeSize(unboxedType_)));
-
-        EmitUnboxedPreBarrierForBaseline(masm, address, unboxedType_);
-
-        Address valueAddr(masm.getStackPointer(), ICStackValueOffset + sizeof(Value));
-        masm.Push(R0);
-        masm.loadValue(valueAddr, R0);
-        masm.storeUnboxedProperty(address, unboxedType_,
-                                  ConstantOrRegister(TypedOrValueRegister(R0)), &failurePopR0);
-        masm.Pop(R0);
     }
 
     EmitReturnFromIC(masm);
@@ -3087,40 +2996,6 @@ ICSetElemDenseOrUnboxedArrayAddCompiler::generateStubCode(MacroAssembler& masm)
         BaseIndex element(scratchReg, key, TimesEight);
         masm.loadValue(valueAddr, tmpVal);
         masm.storeValue(tmpVal, element);
-    } else {
-        // Adding element to an unboxed array.
-
-        // Bounds check (key == initLength)
-        Address initLengthAddr(obj, UnboxedArrayObject::offsetOfCapacityIndexAndInitializedLength());
-        masm.load32(initLengthAddr, scratchReg);
-        masm.and32(Imm32(UnboxedArrayObject::InitializedLengthMask), scratchReg);
-        masm.branch32(Assembler::NotEqual, scratchReg, key, &failure);
-
-        // Capacity check.
-        masm.checkUnboxedArrayCapacity(obj, RegisterOrInt32Constant(key), scratchReg, &failure);
-
-        // Load obj->elements.
-        masm.loadPtr(Address(obj, UnboxedArrayObject::offsetOfElements()), scratchReg);
-
-        // Write the value first, since this can fail. No need for pre-barrier
-        // since we're not overwriting an old value.
-        masm.Push(R0);
-        Address valueAddr(masm.getStackPointer(), ICStackValueOffset + sizeof(Value));
-        masm.loadValue(valueAddr, R0);
-        BaseIndex address(scratchReg, key, ScaleFromElemWidth(UnboxedTypeSize(unboxedType_)));
-        masm.storeUnboxedProperty(address, unboxedType_,
-                                  ConstantOrRegister(TypedOrValueRegister(R0)), &failurePopR0);
-        masm.Pop(R0);
-
-        // Increment initialized length.
-        masm.add32(Imm32(1), initLengthAddr);
-
-        // If length is now <= key, increment length.
-        Address lengthAddr(obj, UnboxedArrayObject::offsetOfLength());
-        Label skipIncrementLength;
-        masm.branch32(Assembler::Above, lengthAddr, key, &skipIncrementLength);
-        masm.add32(Imm32(1), lengthAddr);
-        masm.bind(&skipIncrementLength);
     }
 
     EmitReturnFromIC(masm);
@@ -5490,13 +5365,6 @@ GetTemplateObjectForSimd(JSContext* cx, JSFunction* target, MutableHandleObject 
     return true;
 }
 
-static void
-EnsureArrayGroupAnalyzed(JSContext* cx, JSObject* obj)
-{
-    if (PreliminaryObjectArrayWithTemplate* objects = obj->group()->maybePreliminaryObjects())
-        objects->maybeAnalyze(cx, obj->group(), /* forceAnalyze = */ true);
-}
-
 static bool
 GetTemplateObjectForNative(JSContext* cx, HandleFunction target, const CallArgs& args,
                            MutableHandleObject res, bool* skipAttach)
@@ -5528,10 +5396,7 @@ GetTemplateObjectForNative(JSContext* cx, HandleFunction target, const CallArgs&
             // With this and other array templates, analyze the group so that
             // we don't end up with a template whose structure might change later.
             res.set(NewFullyAllocatedArrayForCallingAllocationSite(cx, count, TenuredObject));
-            if (!res)
-                return false;
-            EnsureArrayGroupAnalyzed(cx, res);
-            return true;
+            return !!res;
         }
     }
 
@@ -5557,10 +5422,7 @@ GetTemplateObjectForNative(JSContext* cx, HandleFunction target, const CallArgs&
                 }
                 res.set(NewFullyAllocatedArrayTryReuseGroup(cx, &args.thisv().toObject(), 0,
                                                             TenuredObject));
-                if (!res)
-                    return false;
-                EnsureArrayGroupAnalyzed(cx, res);
-                return true;
+                return !!res;
             }
         }
     }
@@ -5577,10 +5439,7 @@ GetTemplateObjectForNative(JSContext* cx, HandleFunction target, const CallArgs&
         }
 
         res.set(NewFullyAllocatedArrayForCallingAllocationSite(cx, 0, TenuredObject));
-        if (!res)
-            return false;
-        EnsureArrayGroupAnalyzed(cx, res);
-        return true;
+        return !!res;
     }
 
     if (native == StringConstructor) {
@@ -5887,15 +5746,24 @@ TryAttachCallStub(JSContext* cx, ICCall_Fallback* stub, HandleScript script, jsb
 }
 
 static bool
-CopyArray(JSContext* cx, HandleObject obj, MutableHandleValue result)
+CopyArray(JSContext* cx, HandleArrayObject arr, MutableHandleValue result)
 {
-    uint32_t length = GetAnyBoxedOrUnboxedArrayLength(obj);
-    JSObject* nobj = NewFullyAllocatedArrayTryReuseGroup(cx, obj, length, TenuredObject);
+    uint32_t length = arr->length();
+    ArrayObject* nobj = NewFullyAllocatedArrayTryReuseGroup(cx, arr, length, TenuredObject);
     if (!nobj)
         return false;
-    EnsureArrayGroupAnalyzed(cx, nobj);
-    CopyAnyBoxedOrUnboxedDenseElements(cx, nobj, obj, 0, 0, length);
+    
+    MOZ_ASSERT(arr->isNative());
+    MOZ_ASSERT(nobj->isNative());
+    MOZ_ASSERT(nobj->as<NativeObject>().getDenseInitializedLength() == 0);
+    MOZ_ASSERT(arr->as<NativeObject>().getDenseInitializedLength() >= length);
+    MOZ_ASSERT(nobj->as<NativeObject>().getDenseCapacity() >= length);
 
+    nobj->as<NativeObject>().setDenseInitializedLength(length);
+
+    const Value* vp = arr->as<NativeObject>().getDenseElements();
+    nobj->as<NativeObject>().initDenseElements(0, vp, length);
+    
     result.setObject(*nobj);
     return true;
 }
@@ -5926,26 +5794,22 @@ TryAttachStringSplit(JSContext* cx, ICCall_Fallback* stub, HandleScript script,
     RootedValue arr(cx);
 
     // Copy the array before storing in stub.
-    if (!CopyArray(cx, obj, &arr))
+    if (!CopyArray(cx, obj.as<ArrayObject>(), &arr))
         return false;
 
     // Atomize all elements of the array.
-    RootedObject arrObj(cx, &arr.toObject());
-    uint32_t initLength = GetAnyBoxedOrUnboxedArrayLength(arrObj);
+    RootedArrayObject arrObj(cx, &arr.toObject().as<ArrayObject>());
+    uint32_t initLength = arrObj->length();
     for (uint32_t i = 0; i < initLength; i++) {
-        JSAtom* str = js::AtomizeString(cx, GetAnyBoxedOrUnboxedDenseElement(arrObj, i).toString());
+        JSAtom* str = js::AtomizeString(cx, arrObj->getDenseElement(i).toString());
         if (!str)
             return false;
 
-        if (!SetAnyBoxedOrUnboxedDenseElement(cx, arrObj, i, StringValue(str))) {
-            // The value could not be stored to an unboxed dense element.
-            return true;
-        }
+        arrObj->setDenseElementWithType(cx, i, StringValue(str));
     }
 
     ICCall_StringSplit::Compiler compiler(cx, stub->fallbackMonitorStub()->firstMonitorStub(),
-                                          script->pcToOffset(pc), str, sep,
-                                          arr);
+                                          script->pcToOffset(pc), str, sep, arrObj);
     ICStub* newStub = compiler.getStub(compiler.getStubSpace(script));
     if (!newStub)
         return false;
@@ -6830,7 +6694,7 @@ ICCallScriptedCompiler::generateStubCode(MacroAssembler& masm)
     return true;
 }
 
-typedef bool (*CopyArrayFn)(JSContext*, HandleObject, MutableHandleValue);
+typedef bool (*CopyArrayFn)(JSContext*, HandleArrayObject, MutableHandleValue);
 static const VMFunction CopyArrayInfo = FunctionInfo<CopyArrayFn>(CopyArray, "CopyArray");
 
 bool
@@ -8301,19 +8165,6 @@ ICGetElem_Dense::Clone(JSContext* cx, ICStubSpace* space, ICStub* firstMonitorSt
     return New<ICGetElem_Dense>(cx, space, other.jitCode(), firstMonitorStub, other.shape_);
 }
 
-ICGetElem_UnboxedArray::ICGetElem_UnboxedArray(JitCode* stubCode, ICStub* firstMonitorStub,
-                                               ObjectGroup *group)
-  : ICMonitoredStub(GetElem_UnboxedArray, stubCode, firstMonitorStub),
-    group_(group)
-{ }
-
-/* static */ ICGetElem_UnboxedArray*
-ICGetElem_UnboxedArray::Clone(JSContext* cx, ICStubSpace* space, ICStub* firstMonitorStub,
-                              ICGetElem_UnboxedArray& other)
-{
-    return New<ICGetElem_UnboxedArray>(cx, space, other.jitCode(), firstMonitorStub, other.group_);
-}
-
 ICGetElem_TypedArray::ICGetElem_TypedArray(JitCode* stubCode, Shape* shape, Scalar::Type type)
   : ICStub(GetElem_TypedArray, stubCode),
     shape_(shape)
@@ -8689,8 +8540,8 @@ static bool DoRestFallback(JSContext* cx, BaselineFrame* frame, ICRest_Fallback*
     unsigned numRest = numActuals > numFormals ? numActuals - numFormals : 0;
     Value* rest = frame->argv() + numFormals;
 
-    JSObject* obj = ObjectGroup::newArrayObject(cx, rest, numRest, GenericObject,
-                                                ObjectGroup::NewArrayKind::UnknownIndex);
+    ArrayObject* obj = ObjectGroup::newArrayObject(cx, rest, numRest, GenericObject,
+                                                   ObjectGroup::NewArrayKind::UnknownIndex);
     if (!obj)
         return false;
     res.setObject(*obj);

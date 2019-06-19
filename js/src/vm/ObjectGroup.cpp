@@ -774,7 +774,7 @@ GetValueTypeForTable(const Value& v)
     return type;
 }
 
-/* static */ JSObject*
+/* static */ ArrayObject*
 ObjectGroup::newArrayObject(ExclusiveContext* cx,
                             const Value* vp, size_t length,
                             NewObjectKind newKind, NewArrayKind arrayKind)
@@ -838,56 +838,13 @@ ObjectGroup::newArrayObject(ExclusiveContext* cx,
 
         AddTypePropertyId(cx, group, nullptr, JSID_VOID, elementType);
 
-        if (elementType != TypeSet::UnknownType()) {
-            // Keep track of the initial objects we create with this type.
-            // If the initial ones have a consistent shape and property types, we
-            // will try to use an unboxed layout for the group.
-            PreliminaryObjectArrayWithTemplate* preliminaryObjects =
-                cx->new_<PreliminaryObjectArrayWithTemplate>(nullptr);
-            if (!preliminaryObjects)
-                return nullptr;
-            group->setPreliminaryObjects(preliminaryObjects);
-        }
-
         if (!p.add(cx, *table, ObjectGroupCompartment::ArrayObjectKey(elementType), group))
             return nullptr;
     }
 
     // The type of the elements being added will already be reflected in type
-    // information, but make sure when creating an unboxed array that the
-    // common element type is suitable for the unboxed representation.
+    // information.
     ShouldUpdateTypes updateTypes = ShouldUpdateTypes::DontUpdate;
-    if (!MaybeAnalyzeBeforeCreatingLargeArray(cx, group, vp, length))
-        return nullptr;
-    if (group->maybePreliminaryObjects())
-        group->maybePreliminaryObjects()->maybeAnalyze(cx, group);
-    if (group->maybeUnboxedLayout()) {
-        switch (group->unboxedLayout().elementType()) {
-          case JSVAL_TYPE_BOOLEAN:
-            if (elementType != TypeSet::BooleanType())
-                updateTypes = ShouldUpdateTypes::Update;
-            break;
-          case JSVAL_TYPE_INT32:
-            if (elementType != TypeSet::Int32Type())
-                updateTypes = ShouldUpdateTypes::Update;
-            break;
-          case JSVAL_TYPE_DOUBLE:
-            if (elementType != TypeSet::Int32Type() && elementType != TypeSet::DoubleType())
-                updateTypes = ShouldUpdateTypes::Update;
-            break;
-          case JSVAL_TYPE_STRING:
-            if (elementType != TypeSet::StringType())
-                updateTypes = ShouldUpdateTypes::Update;
-            break;
-          case JSVAL_TYPE_OBJECT:
-            if (elementType != TypeSet::NullType() && !elementType.get().isObjectUnchecked())
-                updateTypes = ShouldUpdateTypes::Update;
-            break;
-          default:
-            MOZ_CRASH();
-        }
-    }
-
     return NewCopiedArrayTryUseGroup(cx, group, vp, length, newKind, updateTypes);
 }
 
@@ -897,49 +854,15 @@ GiveObjectGroup(ExclusiveContext* cx, JSObject* source, JSObject* target)
 {
     MOZ_ASSERT(source->group() != target->group());
 
-    if (!target->is<ArrayObject>() && !target->is<UnboxedArrayObject>())
-        return true;
-
-    if (target->group()->maybePreliminaryObjects()) {
-        bool force = IsInsideNursery(source);
-        target->group()->maybePreliminaryObjects()->maybeAnalyze(cx, target->group(), force);
-    }
-
-    if (target->is<ArrayObject>()) {
-        ObjectGroup* sourceGroup = source->group();
-
-        if (source->is<UnboxedArrayObject>()) {
-            Shape* shape = target->as<ArrayObject>().lastProperty();
-            if (!UnboxedArrayObject::convertToNativeWithGroup(cx, source, target->group(), shape))
-                return false;
-        } else if (source->is<ArrayObject>()) {
-            source->setGroup(target->group());
-        } else {
-            return true;
-        }
-
-        if (sourceGroup->maybePreliminaryObjects())
-            sourceGroup->maybePreliminaryObjects()->unregisterObject(source);
-        if (target->group()->maybePreliminaryObjects())
-            target->group()->maybePreliminaryObjects()->registerNewObject(source);
-
-        for (size_t i = 0; i < source->as<ArrayObject>().getDenseInitializedLength(); i++) {
-            Value v = source->as<ArrayObject>().getDenseElement(i);
-            AddTypePropertyId(cx, source->group(), source, JSID_VOID, v);
-        }
-
+    if (!target->is<ArrayObject>() || !source->is<ArrayObject>()) {
         return true;
     }
 
-    if (target->is<UnboxedArrayObject>()) {
-        if (!source->is<UnboxedArrayObject>())
-            return true;
-        if (source->as<UnboxedArrayObject>().elementType() != JSVAL_TYPE_INT32)
-            return true;
-        if (target->as<UnboxedArrayObject>().elementType() != JSVAL_TYPE_DOUBLE)
-            return true;
+    source->setGroup(target->group());
 
-        return source->as<UnboxedArrayObject>().convertInt32ToDouble(cx, target->group());
+    for (size_t i = 0; i < source->as<ArrayObject>().getDenseInitializedLength(); i++) {
+        Value v = source->as<ArrayObject>().getDenseElement(i);
+        AddTypePropertyId(cx, source->group(), source, JSID_VOID, v);
     }
 
     return true;
@@ -1501,18 +1424,6 @@ ObjectGroup::allocationSiteGroup(JSContext* cx, JSScript* scriptArg, jsbytecode*
             else
                 cx->recoverFromOutOfMemory();
         }
-    }
-
-    if (kind == JSProto_Array &&
-        (JSOp(*pc) == JSOP_NEWARRAY || IsCallPC(pc)) &&
-        cx->options().unboxedArrays())
-    {
-        PreliminaryObjectArrayWithTemplate* preliminaryObjects =
-            cx->new_<PreliminaryObjectArrayWithTemplate>(nullptr);
-        if (preliminaryObjects)
-            res->setPreliminaryObjects(preliminaryObjects);
-        else
-            cx->recoverFromOutOfMemory();
     }
 
     if (!table->add(p, key, res)) {

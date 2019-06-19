@@ -580,7 +580,7 @@ BaselineInspector::getTemplateObjectForNative(jsbytecode* pc, Native native)
 
 bool
 BaselineInspector::isOptimizableCallStringSplit(jsbytecode* pc, JSString** strOut, JSString** sepOut,
-                                                JSObject** objOut)
+                                                ArrayObject** objOut)
 {
     if (!hasBaselineScript())
         return false;
