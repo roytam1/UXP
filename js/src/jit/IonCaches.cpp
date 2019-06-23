@@ -867,30 +867,6 @@ GenerateReadSlot(JSContext* cx, IonScript* ion, MacroAssembler& masm,
     attacher.jumpNextStub(masm);
 }
 
-static void
-GenerateReadUnboxed(JSContext* cx, IonScript* ion, MacroAssembler& masm,
-                    IonCache::StubAttacher& attacher, JSObject* obj,
-                    const UnboxedLayout::Property* property,
-                    Register object, TypedOrValueRegister output,
-                    Label* failures = nullptr)
-{
-    // Guard on the group of the object.
-    attacher.branchNextStubOrLabel(masm, Assembler::NotEqual,
-                                   Address(object, JSObject::offsetOfGroup()),
-                                   ImmGCPtr(obj->group()), failures);
-
-    Address address(object, UnboxedPlainObject::offsetOfData() + property->offset);
-
-    masm.loadUnboxedProperty(address, property->type, output);
-
-    attacher.jumpRejoin(masm);
-
-    if (failures) {
-        masm.bind(failures);
-        attacher.jumpNextStub(masm);
-    }
-}
-
 static bool
 EmitGetterCall(JSContext* cx, MacroAssembler& masm,
                IonCache::StubAttacher& attacher, JSObject* obj,
@@ -1498,67 +1474,6 @@ GetPropertyIC::tryAttachNative(JSContext* cx, HandleScript outerScript, IonScrip
 }
 
 bool
-GetPropertyIC::tryAttachUnboxed(JSContext* cx, HandleScript outerScript, IonScript* ion,
-                                HandleObject obj, HandleId id, void* returnAddr, bool* emitted)
-{
-    MOZ_ASSERT(canAttachStub());
-    MOZ_ASSERT(!*emitted);
-    MOZ_ASSERT(outerScript->ionScript() == ion);
-
-    if (!obj->is<UnboxedPlainObject>())
-        return true;
-    const UnboxedLayout::Property* property = obj->as<UnboxedPlainObject>().layout().lookup(id);
-    if (!property)
-        return true;
-
-    *emitted = true;
-
-    MacroAssembler masm(cx, ion, outerScript, profilerLeavePc_);
-
-    Label failures;
-    emitIdGuard(masm, id, &failures);
-    Label* maybeFailures = failures.used() ? &failures : nullptr;
-
-    StubAttacher attacher(*this);
-    GenerateReadUnboxed(cx, ion, masm, attacher, obj, property, object(), output(), maybeFailures);
-    return linkAndAttachStub(cx, masm, attacher, ion, "read unboxed",
-                             JS::TrackedOutcome::ICGetPropStub_UnboxedRead);
-}
-
-bool
-GetPropertyIC::tryAttachUnboxedExpando(JSContext* cx, HandleScript outerScript, IonScript* ion,
-                                       HandleObject obj, HandleId id, void* returnAddr, bool* emitted)
-{
-    MOZ_ASSERT(canAttachStub());
-    MOZ_ASSERT(!*emitted);
-    MOZ_ASSERT(outerScript->ionScript() == ion);
-
-    if (!obj->is<UnboxedPlainObject>())
-        return true;
-    Rooted<UnboxedExpandoObject*> expando(cx, obj->as<UnboxedPlainObject>().maybeExpando());
-    if (!expando)
-        return true;
-
-    Shape* shape = expando->lookup(cx, id);
-    if (!shape || !shape->hasDefaultGetter() || !shape->hasSlot())
-        return true;
-
-    *emitted = true;
-
-    MacroAssembler masm(cx, ion, outerScript, profilerLeavePc_);
-
-    Label failures;
-    emitIdGuard(masm, id, &failures);
-    Label* maybeFailures = failures.used() ? &failures : nullptr;
-
-    StubAttacher attacher(*this);
-    GenerateReadSlot(cx, ion, masm, attacher, DontCheckTDZ, obj, obj,
-                     shape, object(), output(), maybeFailures);
-    return linkAndAttachStub(cx, masm, attacher, ion, "read unboxed expando",
-                             JS::TrackedOutcome::ICGetPropStub_UnboxedReadExpando);
-}
-
-bool
 GetPropertyIC::tryAttachTypedArrayLength(JSContext* cx, HandleScript outerScript, IonScript* ion,
                                          HandleObject obj, HandleId id, bool* emitted)
 {
@@ -2125,12 +2040,6 @@ GetPropertyIC::tryAttachStub(JSContext* cx, HandleScript outerScript, IonScript*
             return false;
 
         if (!*emitted && !tryAttachNative(cx, outerScript, ion, obj, id, returnAddr, emitted))
-            return false;
-
-        if (!*emitted && !tryAttachUnboxed(cx, outerScript, ion, obj, id, returnAddr, emitted))
-            return false;
-
-        if (!*emitted && !tryAttachUnboxedExpando(cx, outerScript, ion, obj, id, returnAddr, emitted))
             return false;
 
         if (!*emitted && !tryAttachTypedArrayLength(cx, outerScript, ion, obj, id, emitted))
@@ -3298,141 +3207,6 @@ CanAttachNativeSetProp(JSContext* cx, HandleObject obj, HandleId id, const Const
     return SetPropertyIC::CanAttachNone;
 }
 
-static void
-GenerateSetUnboxed(JSContext* cx, MacroAssembler& masm, IonCache::StubAttacher& attacher,
-                   JSObject* obj, jsid id, uint32_t unboxedOffset, JSValueType unboxedType,
-                   Register object, Register tempReg, const ConstantOrRegister& value,
-                   bool checkTypeset, Label* failures)
-{
-    // Guard on the type of the object.
-    masm.branchPtr(Assembler::NotEqual,
-                   Address(object, JSObject::offsetOfGroup()),
-                   ImmGCPtr(obj->group()), failures);
-
-    if (checkTypeset)
-        CheckTypeSetForWrite(masm, obj, id, tempReg, value, failures);
-
-    Address address(object, UnboxedPlainObject::offsetOfData() + unboxedOffset);
-
-    if (cx->zone()->needsIncrementalBarrier()) {
-        if (unboxedType == JSVAL_TYPE_OBJECT)
-            masm.callPreBarrier(address, MIRType::Object);
-        else if (unboxedType == JSVAL_TYPE_STRING)
-            masm.callPreBarrier(address, MIRType::String);
-        else
-            MOZ_ASSERT(!UnboxedTypeNeedsPreBarrier(unboxedType));
-    }
-
-    masm.storeUnboxedProperty(address, unboxedType, value, failures);
-
-    attacher.jumpRejoin(masm);
-
-    masm.bind(failures);
-    attacher.jumpNextStub(masm);
-}
-
-static bool
-CanAttachSetUnboxed(JSContext* cx, HandleObject obj, HandleId id, const ConstantOrRegister& val,
-                    bool needsTypeBarrier, bool* checkTypeset,
-                    uint32_t* unboxedOffset, JSValueType* unboxedType)
-{
-    if (!obj->is<UnboxedPlainObject>())
-        return false;
-
-    const UnboxedLayout::Property* property = obj->as<UnboxedPlainObject>().layout().lookup(id);
-    if (property) {
-        *checkTypeset = false;
-        if (needsTypeBarrier && !CanInlineSetPropTypeCheck(obj, id, val, checkTypeset))
-            return false;
-        *unboxedOffset = property->offset;
-        *unboxedType = property->type;
-        return true;
-    }
-
-    return false;
-}
-
-static bool
-CanAttachSetUnboxedExpando(JSContext* cx, HandleObject obj, HandleId id,
-                           const ConstantOrRegister& val,
-                           bool needsTypeBarrier, bool* checkTypeset, Shape** pshape)
-{
-    if (!obj->is<UnboxedPlainObject>())
-        return false;
-
-    Rooted<UnboxedExpandoObject*> expando(cx, obj->as<UnboxedPlainObject>().maybeExpando());
-    if (!expando)
-        return false;
-
-    Shape* shape = expando->lookupPure(id);
-    if (!shape || !shape->hasDefaultSetter() || !shape->hasSlot() || !shape->writable())
-        return false;
-
-    *checkTypeset = false;
-    if (needsTypeBarrier && !CanInlineSetPropTypeCheck(obj, id, val, checkTypeset))
-        return false;
-
-    *pshape = shape;
-    return true;
-}
-
-static bool
-CanAttachAddUnboxedExpando(JSContext* cx, HandleObject obj, HandleShape oldShape,
-                           HandleId id, const ConstantOrRegister& val,
-                           bool needsTypeBarrier, bool* checkTypeset)
-{
-    if (!obj->is<UnboxedPlainObject>())
-        return false;
-
-    Rooted<UnboxedExpandoObject*> expando(cx, obj->as<UnboxedPlainObject>().maybeExpando());
-    if (!expando || expando->inDictionaryMode())
-        return false;
-
-    Shape* newShape = expando->lastProperty();
-    if (newShape->isEmptyShape() || newShape->propid() != id || newShape->previous() != oldShape)
-        return false;
-
-    MOZ_ASSERT(newShape->hasDefaultSetter() && newShape->hasSlot() && newShape->writable());
-
-    if (PrototypeChainShadowsPropertyAdd(cx, obj, id))
-        return false;
-
-    *checkTypeset = false;
-    if (needsTypeBarrier && !CanInlineSetPropTypeCheck(obj, id, val, checkTypeset))
-        return false;
-
-    return true;
-}
-
-bool
-SetPropertyIC::tryAttachUnboxed(JSContext* cx, HandleScript outerScript, IonScript* ion,
-                                HandleObject obj, HandleId id, bool* emitted)
-{
-    MOZ_ASSERT(!*emitted);
-
-    bool checkTypeset = false;
-    uint32_t unboxedOffset;
-    JSValueType unboxedType;
-    if (!CanAttachSetUnboxed(cx, obj, id, value(), needsTypeBarrier(), &checkTypeset,
-                             &unboxedOffset, &unboxedType))
-    {
-        return true;
-    }
-
-    *emitted = true;
-
-    MacroAssembler masm(cx, ion, outerScript, profilerLeavePc_);
-    StubAttacher attacher(*this);
-
-    Label failures;
-    emitIdGuard(masm, id, &failures);
-
-    GenerateSetUnboxed(cx, masm, attacher, obj, id, unboxedOffset, unboxedType,
-                       object(), temp(), value(), checkTypeset, &failures);
-    return linkAndAttachStub(cx, masm, attacher, ion, "set_unboxed",
-                             JS::TrackedOutcome::ICSetPropStub_SetUnboxed);
-}
-
 bool
 SetPropertyIC::tryAttachProxy(JSContext* cx, HandleScript outerScript, IonScript* ion,
                               HandleObject obj, HandleId id, bool* emitted)
@@ -3514,26 +3288,6 @@ SetPropertyIC::tryAttachNative(JSContext* cx, HandleScript outerScript, IonScrip
 }
 
 bool
-SetPropertyIC::tryAttachUnboxedExpando(JSContext* cx, HandleScript outerScript, IonScript* ion,
-                                       HandleObject obj, HandleId id, bool* emitted)
-{
-    MOZ_ASSERT(!*emitted);
-
-    RootedShape shape(cx);
-    bool checkTypeset = false;
-    if (!CanAttachSetUnboxedExpando(cx, obj, id, value(), needsTypeBarrier(),
-                                    &checkTypeset, shape.address()))
-    {
-        return true;
-    }
-
-    if (!attachSetSlot(cx, outerScript, ion, obj, shape, checkTypeset))
-        return false;
-    *emitted = true;
-    return true;
-}
-
-bool
 SetPropertyIC::tryAttachStub(JSContext* cx, HandleScript outerScript, IonScript* ion,
                              HandleObject obj, HandleValue idval, HandleValue value,
                              MutableHandleId id, bool* emitted, bool* tryNativeAddSlot)
@@ -3557,12 +3311,6 @@ SetPropertyIC::tryAttachStub(JSContext* cx, HandleScript outerScript, IonScript*
             return false;
 
         if (!*emitted && !tryAttachNative(cx, outerScript, ion, obj, id, emitted, tryNativeAddSlot))
-            return false;
-
-        if (!*emitted && !tryAttachUnboxed(cx, outerScript, ion, obj, id, emitted))
-            return false;
-
-        if (!*emitted && !tryAttachUnboxedExpando(cx, outerScript, ion, obj, id, emitted))
             return false;
     }
 
@@ -3608,16 +3356,6 @@ SetPropertyIC::tryAttachAddSlot(JSContext* cx, HandleScript outerScript, IonScri
     if (tryNativeAddSlot &&
         IsPropertyAddInlineable(cx, &obj->as<NativeObject>(), id, value(), oldShape,
                                 needsTypeBarrier(), &checkTypeset))
-    {
-        if (!attachAddSlot(cx, outerScript, ion, obj, id, oldShape, oldGroup, checkTypeset))
-            return false;
-        *emitted = true;
-        return true;
-    }
-
-    checkTypeset = false;
-    if (CanAttachAddUnboxedExpando(cx, obj, oldShape, id, value(), needsTypeBarrier(),
-                                   &checkTypeset))
     {
         if (!attachAddSlot(cx, outerScript, ion, obj, id, oldShape, oldGroup, checkTypeset))
             return false;
