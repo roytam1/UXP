@@ -42,8 +42,8 @@
 #include "jit/shared/Lowering-shared-inl.h"
 #include "vm/EnvironmentObject-inl.h"
 #include "vm/Interpreter-inl.h"
+#include "vm/NativeObject-inl.h"
 #include "vm/StringObject-inl.h"
-#include "vm/UnboxedObject-inl.h"
 
 using mozilla::DebugOnly;
 
@@ -731,11 +731,6 @@ LastPropertyForSetProp(JSObject* obj)
 {
     if (obj->isNative())
         return obj->as<NativeObject>().lastProperty();
-
-    if (obj->is<UnboxedPlainObject>()) {
-        UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando();
-        return expando ? expando->lastProperty() : nullptr;
-    }
 
     return nullptr;
 }
@@ -2666,18 +2661,6 @@ BaselineScript::noteArrayWriteHole(uint32_t pcOffset)
 // SetElem_DenseOrUnboxedArray
 //
 
-template <typename T>
-void
-EmitUnboxedPreBarrierForBaseline(MacroAssembler &masm, T address, JSValueType type)
-{
-    if (type == JSVAL_TYPE_OBJECT)
-        EmitPreBarrier(masm, address, MIRType::Object);
-    else if (type == JSVAL_TYPE_STRING)
-        EmitPreBarrier(masm, address, MIRType::String);
-    else
-        MOZ_ASSERT(!UnboxedTypeNeedsPreBarrier(type));
-}
-
 bool
 ICSetElem_DenseOrUnboxedArray::Compiler::generateStubCode(MacroAssembler& masm)
 {
@@ -4124,18 +4107,7 @@ TryAttachSetValuePropStub(JSContext* cx, HandleScript script, jsbytecode* pc, IC
         return true;
 
     if (!obj->isNative()) {
-        if (obj->is<UnboxedPlainObject>()) {
-            UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando();
-            if (expando) {
-                shape = expando->lookup(cx, name);
-                if (!shape)
-                    return true;
-            } else {
-                return true;
-            }
-        } else {
-            return true;
-        }
+        return true;
     }
 
     size_t chainDepth;
@@ -4367,12 +4339,6 @@ DoSetPropFallback(JSContext* cx, BaselineFrame* frame, ICSetProp_Fallback* stub_
     if (!oldGroup)
         return false;
     RootedReceiverGuard oldGuard(cx, ReceiverGuard(obj));
-
-    if (obj->is<UnboxedPlainObject>()) {
-        MOZ_ASSERT(!oldShape);
-        if (UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando())
-            oldShape = expando->lastProperty();
-    }
 
     bool attached = false;
     // There are some reasons we can fail to attach a stub that are temporary.
@@ -5538,7 +5504,7 @@ TryAttachCallStub(JSContext* cx, ICCall_Fallback* stub, HandleScript script, jsb
             if (!thisObject)
                 return false;
 
-            if (thisObject->is<PlainObject>() || thisObject->is<UnboxedPlainObject>())
+            if (thisObject->is<PlainObject>())
                 templateObject = thisObject;
         }
 
