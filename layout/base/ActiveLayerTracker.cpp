@@ -178,7 +178,7 @@ LayerActivityTracker::NotifyExpired(LayerActivity* aObject)
       f->SchedulePaint();
     }
     f->RemoveStateBits(NS_FRAME_HAS_LAYER_ACTIVITY_PROPERTY);
-    f->Properties().Delete(LayerActivityProperty());
+    f->DeleteProperty(LayerActivityProperty());
   } else {
     c->DeleteProperty(nsGkAtoms::LayerActivity);
   }
@@ -190,15 +190,13 @@ GetLayerActivity(nsIFrame* aFrame)
   if (!aFrame->HasAnyStateBits(NS_FRAME_HAS_LAYER_ACTIVITY_PROPERTY)) {
     return nullptr;
   }
-  FrameProperties properties = aFrame->Properties();
-  return properties.Get(LayerActivityProperty());
+  return aFrame->GetProperty(LayerActivityProperty());
 }
 
 static LayerActivity*
 GetLayerActivityForUpdate(nsIFrame* aFrame)
 {
-  FrameProperties properties = aFrame->Properties();
-  LayerActivity* layerActivity = properties.Get(LayerActivityProperty());
+  LayerActivity* layerActivity = aFrame->GetProperty(LayerActivityProperty());
   if (layerActivity) {
     gLayerActivityTracker->MarkUsed(layerActivity);
   } else {
@@ -208,7 +206,7 @@ GetLayerActivityForUpdate(nsIFrame* aFrame)
     layerActivity = new LayerActivity(aFrame);
     gLayerActivityTracker->AddObject(layerActivity);
     aFrame->AddStateBits(NS_FRAME_HAS_LAYER_ACTIVITY_PROPERTY);
-    properties.Set(LayerActivityProperty(), layerActivity);
+    aFrame->SetProperty(LayerActivityProperty(), layerActivity);
   }
   return layerActivity;
 }
@@ -225,8 +223,7 @@ ActiveLayerTracker::TransferActivityToContent(nsIFrame* aFrame, nsIContent* aCon
   if (!aFrame->HasAnyStateBits(NS_FRAME_HAS_LAYER_ACTIVITY_PROPERTY)) {
     return;
   }
-  FrameProperties properties = aFrame->Properties();
-  LayerActivity* layerActivity = properties.Remove(LayerActivityProperty());
+  LayerActivity* layerActivity = aFrame->RemoveProperty(LayerActivityProperty());
   aFrame->RemoveStateBits(NS_FRAME_HAS_LAYER_ACTIVITY_PROPERTY);
   if (!layerActivity) {
     return;
@@ -248,7 +245,7 @@ ActiveLayerTracker::TransferActivityToFrame(nsIContent* aContent, nsIFrame* aFra
   layerActivity->mContent = nullptr;
   layerActivity->mFrame = aFrame;
   aFrame->AddStateBits(NS_FRAME_HAS_LAYER_ACTIVITY_PROPERTY);
-  aFrame->Properties().Set(LayerActivityProperty(), layerActivity);
+  aFrame->SetProperty(LayerActivityProperty(), layerActivity);
 }
 
 static void

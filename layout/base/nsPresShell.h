@@ -384,11 +384,12 @@ public:
   virtual void LoadComplete() override;
 
   void AddSizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf,
-                              nsArenaMemoryStats *aArenaObjectsSize,
-                              size_t *aPresShellSize,
-                              size_t *aStyleSetsSize,
-                              size_t *aTextRunsSize,
-                              size_t *aPresContextSize) override;
+                              nsArenaMemoryStats* aArenaObjectsSize,
+                              size_t* aPresShellSize,
+                              size_t* aStyleSetsSize,
+                              size_t* aTextRunsSize,
+                              size_t* aPresContextSize,
+                              size_t* aFramePropertiesSize) override;
   size_t SizeOfTextRuns(mozilla::MallocSizeOf aMallocSizeOf) const;
 
   virtual void AddInvalidateHiddenPresShellObserver(nsRefreshDriver *aDriver) override;

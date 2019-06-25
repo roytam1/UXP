@@ -164,7 +164,7 @@ public:
   NS_DECLARE_FRAME_PROPERTY_DELETABLE(GridColTrackInfo, ComputedGridTrackInfo)
   const ComputedGridTrackInfo* GetComputedTemplateColumns()
   {
-    const ComputedGridTrackInfo* info = Properties().Get(GridColTrackInfo());
+    const ComputedGridTrackInfo* info = GetProperty(GridColTrackInfo());
     MOZ_ASSERT(info, "Property generation wasn't requested.");
     return info;
   }
@@ -172,7 +172,7 @@ public:
   NS_DECLARE_FRAME_PROPERTY_DELETABLE(GridRowTrackInfo, ComputedGridTrackInfo)
   const ComputedGridTrackInfo* GetComputedTemplateRows()
   {
-    const ComputedGridTrackInfo* info = Properties().Get(GridRowTrackInfo());
+    const ComputedGridTrackInfo* info = GetProperty(GridRowTrackInfo());
     MOZ_ASSERT(info, "Property generation wasn't requested.");
     return info;
   }
@@ -180,7 +180,7 @@ public:
   NS_DECLARE_FRAME_PROPERTY_DELETABLE(GridColumnLineInfo, ComputedGridLineInfo)
   const ComputedGridLineInfo* GetComputedTemplateColumnLines()
   {
-    const ComputedGridLineInfo* info = Properties().Get(GridColumnLineInfo());
+    const ComputedGridLineInfo* info = GetProperty(GridColumnLineInfo());
     MOZ_ASSERT(info, "Property generation wasn't requested.");
     return info;
   }
@@ -188,7 +188,7 @@ public:
   NS_DECLARE_FRAME_PROPERTY_DELETABLE(GridRowLineInfo, ComputedGridLineInfo)
   const ComputedGridLineInfo* GetComputedTemplateRowLines()
   {
-    const ComputedGridLineInfo* info = Properties().Get(GridRowLineInfo());
+    const ComputedGridLineInfo* info = GetProperty(GridRowLineInfo());
     MOZ_ASSERT(info, "Property generation wasn't requested.");
     return info;
   }
@@ -199,14 +199,14 @@ public:
   NS_DECLARE_FRAME_PROPERTY_DELETABLE(ImplicitNamedAreasProperty,
                                       ImplicitNamedAreas)
   ImplicitNamedAreas* GetImplicitNamedAreas() const {
-    return Properties().Get(ImplicitNamedAreasProperty());
+    return GetProperty(ImplicitNamedAreasProperty());
   }
 
   typedef nsTArray<mozilla::css::GridNamedArea> ExplicitNamedAreas;
   NS_DECLARE_FRAME_PROPERTY_DELETABLE(ExplicitNamedAreasProperty,
                                       ExplicitNamedAreas)
   ExplicitNamedAreas* GetExplicitNamedAreas() const {
-    return Properties().Get(ExplicitNamedAreasProperty());
+    return GetProperty(ExplicitNamedAreasProperty());
   }
 
   /**

@@ -978,7 +978,7 @@ nsTableRowFrame::ReflowChildren(nsPresContext*           aPresContext,
         // MovePositionBy does internally.  (This codepath should really
         // be merged into the else below if we can.)
         nsMargin* computedOffsetProp =
-          kidFrame->Properties().Get(nsIFrame::ComputedOffsetProperty());
+          kidFrame->GetProperty(nsIFrame::ComputedOffsetProperty());
         // Bug 975644: a position:sticky kid can end up with a null
         // property value here.
         LogicalMargin computedOffsets(wm, computedOffsetProp ?
@@ -1417,16 +1417,14 @@ nsTableRowFrame::SetUnpaginatedBSize(nsPresContext* aPresContext,
                                      nscoord        aValue)
 {
   NS_ASSERTION(!GetPrevInFlow(), "program error");
-  // Get the property
-  aPresContext->PropertyTable()->
-    Set(this, RowUnpaginatedHeightProperty(), aValue);
+  // Set the property
+  SetProperty(RowUnpaginatedHeightProperty(), aValue);
 }
 
 nscoord
 nsTableRowFrame::GetUnpaginatedBSize()
 {
-  FrameProperties props = FirstInFlow()->Properties();
-  return props.Get(RowUnpaginatedHeightProperty());
+  return GetProperty(RowUnpaginatedHeightProperty());
 }
 
 void nsTableRowFrame::SetContinuousBCBorderWidth(LogicalSide aForSide,

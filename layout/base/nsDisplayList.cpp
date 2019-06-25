@@ -666,7 +666,7 @@ nsDisplayListBuilder::AddAnimationsAndTransitionsToLayer(Layer* aLayer,
     // EffectCompositor needs to know that we refused to run this animation
     // asynchronously so that it will not throttle the main thread
     // animation.
-    aFrame->Properties().Set(nsIFrame::RefusedAsyncAnimationProperty(), true);
+    aFrame->SetProperty(nsIFrame::RefusedAsyncAnimationProperty(), true);
 
     // We need to schedule another refresh driver run so that EffectCompositor
     // gets a chance to unthrottle the animation.
@@ -902,15 +902,13 @@ void nsDisplayListBuilder::MarkOutOfFlowFrameForDisplay(nsIFrame* aDirtyFrame,
   const DisplayItemClip* oldClip = mClipState.GetClipForContainingBlockDescendants();
   const DisplayItemScrollClip* sc = mClipState.GetCurrentInnermostScrollClip();
   OutOfFlowDisplayData* data = new OutOfFlowDisplayData(oldClip, sc, dirty);
-  aFrame->Properties().Set(nsDisplayListBuilder::OutOfFlowDisplayDataProperty(), data);
+  aFrame->SetProperty(nsDisplayListBuilder::OutOfFlowDisplayDataProperty(), data);
 
   MarkFrameForDisplay(aFrame, aDirtyFrame);
 }
 
 static void UnmarkFrameForDisplay(nsIFrame* aFrame) {
-  nsPresContext* presContext = aFrame->PresContext();
-  presContext->PropertyTable()->
-    Delete(aFrame, nsDisplayListBuilder::OutOfFlowDisplayDataProperty());
+  aFrame->DeleteProperty(nsDisplayListBuilder::OutOfFlowDisplayDataProperty());
 
   for (nsIFrame* f = aFrame; f;
        f = nsLayoutUtils::GetParentOrPlaceholderFor(f)) {

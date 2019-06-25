@@ -201,7 +201,7 @@ public:
 
   virtual void NotifyRenderingChanged() override
   {
-    mFrame->Properties().Delete(nsIFrame::CachedBackgroundImageDT());
+    mFrame->DeleteProperty(nsIFrame::CachedBackgroundImageDT());
   }
 
   virtual bool ShouldFixToViewport(nsDisplayListBuilder* aBuilder) override
