@@ -31,7 +31,6 @@
 #include "jit/shared/Lowering-shared-inl.h"
 #include "vm/Interpreter-inl.h"
 #include "vm/Shape-inl.h"
-#include "vm/UnboxedObject-inl.h"
 
 using namespace js;
 using namespace js::jit;
@@ -620,26 +619,7 @@ TestMatchingReceiver(MacroAssembler& masm, IonCache::StubAttacher& attacher,
                      Register object, JSObject* obj, Label* failure,
                      bool alwaysCheckGroup = false)
 {
-    if (obj->is<UnboxedPlainObject>()) {
-        MOZ_ASSERT(failure);
-
-        masm.branchTestObjGroup(Assembler::NotEqual, object, obj->group(), failure);
-        Address expandoAddress(object, UnboxedPlainObject::offsetOfExpando());
-        if (UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando()) {
-            masm.branchPtr(Assembler::Equal, expandoAddress, ImmWord(0), failure);
-            Label success;
-            masm.push(object);
-            masm.loadPtr(expandoAddress, object);
-            masm.branchTestObjShape(Assembler::Equal, object, expando->lastProperty(),
-                                    &success);
-            masm.pop(object);
-            masm.jump(failure);
-            masm.bind(&success);
-            masm.pop(object);
-        } else {
-            masm.branchPtr(Assembler::NotEqual, expandoAddress, ImmWord(0), failure);
-        }
-    } else if (obj->is<TypedObject>()) {
+    if (obj->is<TypedObject>()) {
         attacher.branchNextStubOrLabel(masm, Assembler::NotEqual,
                                        Address(object, JSObject::offsetOfGroup()),
                                        ImmGCPtr(obj->group()), failure);
@@ -756,7 +736,6 @@ GenerateReadSlot(JSContext* cx, IonScript* ion, MacroAssembler& masm,
     // jump directly. Otherwise, jump to the end of the stub, so there's a
     // common point to patch.
     bool multipleFailureJumps = (obj != holder)
-                             || obj->is<UnboxedPlainObject>()
                              || (checkTDZ && output.hasValue())
                              || (failures != nullptr && failures->used());
 
@@ -775,7 +754,6 @@ GenerateReadSlot(JSContext* cx, IonScript* ion, MacroAssembler& masm,
     Register scratchReg = Register::FromCode(0); // Quell compiler warning.
 
     if (obj != holder ||
-        obj->is<UnboxedPlainObject>() ||
         !holder->as<NativeObject>().isFixedSlot(shape->slot()))
     {
         if (output.hasValue()) {
@@ -836,10 +814,6 @@ GenerateReadSlot(JSContext* cx, IonScript* ion, MacroAssembler& masm,
 
             holderReg = InvalidReg;
         }
-    } else if (obj->is<UnboxedPlainObject>()) {
-        holder = obj->as<UnboxedPlainObject>().maybeExpando();
-        holderReg = scratchReg;
-        masm.loadPtr(Address(object, UnboxedPlainObject::offsetOfExpando()), holderReg);
     } else {
         holderReg = object;
     }
@@ -2220,12 +2194,6 @@ GenerateSetSlot(JSContext* cx, MacroAssembler& masm, IonCache::StubAttacher& att
 
     NativeObject::slotsSizeMustNotOverflow();
 
-    if (obj->is<UnboxedPlainObject>()) {
-        obj = obj->as<UnboxedPlainObject>().maybeExpando();
-        masm.loadPtr(Address(object, UnboxedPlainObject::offsetOfExpando()), tempReg);
-        object = tempReg;
-    }
-
     if (obj->as<NativeObject>().isFixedSlot(shape->slot())) {
         Address addr(object, NativeObject::getFixedSlotOffset(shape->slot()));
 
@@ -2863,23 +2831,13 @@ GenerateAddSlot(JSContext* cx, MacroAssembler& masm, IonCache::StubAttacher& att
     masm.branchTestObjGroup(Assembler::NotEqual, object, oldGroup, failures);
     if (obj->maybeShape()) {
         masm.branchTestObjShape(Assembler::NotEqual, object, oldShape, failures);
-    } else {
-        MOZ_ASSERT(obj->is<UnboxedPlainObject>());
-
-        Address expandoAddress(object, UnboxedPlainObject::offsetOfExpando());
-        masm.branchPtr(Assembler::Equal, expandoAddress, ImmWord(0), failures);
-
-        masm.loadPtr(expandoAddress, tempReg);
-        masm.branchTestObjShape(Assembler::NotEqual, tempReg, oldShape, failures);
     }
 
     Shape* newShape = obj->maybeShape();
-    if (!newShape)
-        newShape = obj->as<UnboxedPlainObject>().maybeExpando()->lastProperty();
 
     // Guard that the incoming value is in the type set for the property
     // if a type barrier is required.
-    if (checkTypeset)
+    if (newShape && checkTypeset)
         CheckTypeSetForWrite(masm, obj, newShape->propid(), tempReg, value, failures);
 
     // Guard shapes along prototype chain.
@@ -2900,9 +2858,7 @@ GenerateAddSlot(JSContext* cx, MacroAssembler& masm, IonCache::StubAttacher& att
     }
 
     // Call a stub to (re)allocate dynamic slots, if necessary.
-    uint32_t newNumDynamicSlots = obj->is<UnboxedPlainObject>()
-                                  ? obj->as<UnboxedPlainObject>().maybeExpando()->numDynamicSlots()
-                                  : obj->as<NativeObject>().numDynamicSlots();
+    uint32_t newNumDynamicSlots = obj->as<NativeObject>().numDynamicSlots();
     if (NativeObject::dynamicSlotsCount(oldShape) != newNumDynamicSlots) {
         AllocatableRegisterSet regs(RegisterSet::Volatile());
         LiveRegisterSet save(regs.asLiveSet());
@@ -2912,12 +2868,6 @@ GenerateAddSlot(JSContext* cx, MacroAssembler& masm, IonCache::StubAttacher& att
         regs.takeUnchecked(object);
         Register temp1 = regs.takeAnyGeneral();
         Register temp2 = regs.takeAnyGeneral();
-
-        if (obj->is<UnboxedPlainObject>()) {
-            // Pass the expando object to the stub.
-            masm.Push(object);
-            masm.loadPtr(Address(object, UnboxedPlainObject::offsetOfExpando()), object);
-        }
 
         masm.setupUnalignedABICall(temp1);
         masm.loadJSContext(temp1);
@@ -2935,26 +2885,15 @@ GenerateAddSlot(JSContext* cx, MacroAssembler& masm, IonCache::StubAttacher& att
         masm.jump(&allocDone);
 
         masm.bind(&allocFailed);
-        if (obj->is<UnboxedPlainObject>())
-            masm.Pop(object);
         masm.PopRegsInMask(save);
         masm.jump(failures);
 
         masm.bind(&allocDone);
         masm.setFramePushed(framePushedAfterCall);
-        if (obj->is<UnboxedPlainObject>())
-            masm.Pop(object);
         masm.PopRegsInMask(save);
     }
 
     bool popObject = false;
-
-    if (obj->is<UnboxedPlainObject>()) {
-        masm.push(object);
-        popObject = true;
-        obj = obj->as<UnboxedPlainObject>().maybeExpando();
-        masm.loadPtr(Address(object, UnboxedPlainObject::offsetOfExpando()), object);
-    }
 
     // Write the object or expando object's new shape.
     Address shapeAddr(object, ShapedObject::offsetOfShape());
@@ -2963,8 +2902,6 @@ GenerateAddSlot(JSContext* cx, MacroAssembler& masm, IonCache::StubAttacher& att
     masm.storePtr(ImmGCPtr(newShape), shapeAddr);
 
     if (oldGroup != obj->group()) {
-        MOZ_ASSERT(!obj->is<UnboxedPlainObject>());
-
         // Changing object's group from a partially to fully initialized group,
         // per the acquired properties analysis. Only change the group if the
         // old group still has a newScript.

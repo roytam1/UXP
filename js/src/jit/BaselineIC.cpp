@@ -1148,56 +1148,6 @@ TryAttachNativeOrUnboxedGetValueElemStub(JSContext* cx, HandleScript script, jsb
 
     ICStub* monitorStub = stub->fallbackMonitorStub()->firstMonitorStub();
 
-    if (obj->is<UnboxedPlainObject>() && holder == obj) {
-        const UnboxedLayout::Property* property = obj->as<UnboxedPlainObject>().layout().lookup(id);
-
-        // Once unboxed objects support symbol-keys, we need to change the following accordingly
-        MOZ_ASSERT_IF(!keyVal.isString(), !property);
-
-        if (property) {
-            if (!cx->runtime()->jitSupportsFloatingPoint)
-                return true;
-
-            RootedPropertyName name(cx, JSID_TO_ATOM(id)->asPropertyName());
-            ICGetElemNativeCompiler<PropertyName*> compiler(cx, ICStub::GetElem_UnboxedPropertyName,
-                                                            monitorStub, obj, holder,
-                                                            name,
-                                                            ICGetElemNativeStub::UnboxedProperty,
-                                                            needsAtomize, property->offset +
-                                                            UnboxedPlainObject::offsetOfData(),
-                                                            property->type);
-            ICStub* newStub = compiler.getStub(compiler.getStubSpace(script));
-            if (!newStub)
-                return false;
-
-            stub->addNewStub(newStub);
-            *attached = true;
-            return true;
-        }
-
-        Shape* shape = obj->as<UnboxedPlainObject>().maybeExpando()->lookup(cx, id);
-        if (!shape->hasDefaultGetter() || !shape->hasSlot())
-            return true;
-
-        bool isFixedSlot;
-        uint32_t offset;
-        GetFixedOrDynamicSlotOffset(shape, &isFixedSlot, &offset);
-
-        ICGetElemNativeStub::AccessType acctype =
-            isFixedSlot ? ICGetElemNativeStub::FixedSlot
-                        : ICGetElemNativeStub::DynamicSlot;
-        ICGetElemNativeCompiler<T> compiler(cx, getGetElemStubKind<T>(ICStub::GetElem_NativeSlotName),
-                                            monitorStub, obj, holder, key,
-                                            acctype, needsAtomize, offset);
-        ICStub* newStub = compiler.getStub(compiler.getStubSpace(script));
-        if (!newStub)
-            return false;
-
-        stub->addNewStub(newStub);
-        *attached = true;
-        return true;
-    }
-
     if (!holder->isNative())
         return true;
 
@@ -1445,7 +1395,7 @@ TryAttachGetElemStub(JSContext* cx, JSScript* script, jsbytecode* pc, ICGetElem_
     }
 
     // Check for NativeObject[id] and UnboxedPlainObject[id] shape-optimizable accesses.
-    if (obj->isNative() || obj->is<UnboxedPlainObject>()) {
+    if (obj->isNative()) {
         RootedScript rootedScript(cx, script);
         if (rhs.isString()) {
             if (!TryAttachNativeOrUnboxedGetValueElemStub<PropertyName*>(cx, rootedScript, pc, stub,
@@ -1857,14 +1807,6 @@ ICGetElemNativeCompiler<T>::generateStubCode(MacroAssembler& masm)
     Register holderReg;
     if (obj_ == holder_) {
         holderReg = objReg;
-
-        if (obj_->is<UnboxedPlainObject>() && acctype_ != ICGetElemNativeStub::UnboxedProperty) {
-            // The property will be loaded off the unboxed expando.
-            masm.push(R1.scratchReg());
-            popR1 = true;
-            holderReg = R1.scratchReg();
-            masm.loadPtr(Address(objReg, UnboxedPlainObject::offsetOfExpando()), holderReg);
-        }
     } else {
         // Shape guard holder.
         if (regs.empty()) {
@@ -4494,20 +4436,7 @@ GuardGroupAndShapeMaybeUnboxedExpando(MacroAssembler& masm, JSObject* obj,
 
     // Guard against shape or expando shape.
     masm.loadPtr(Address(ICStubReg, offsetOfShape), scratch);
-    if (obj->is<UnboxedPlainObject>()) {
-        Address expandoAddress(object, UnboxedPlainObject::offsetOfExpando());
-        masm.branchPtr(Assembler::Equal, expandoAddress, ImmWord(0), failure);
-        Label done;
-        masm.push(object);
-        masm.loadPtr(expandoAddress, object);
-        masm.branchTestObjShape(Assembler::Equal, object, scratch, &done);
-        masm.pop(object);
-        masm.jump(failure);
-        masm.bind(&done);
-        masm.pop(object);
-    } else {
-        masm.branchTestObjShape(Assembler::NotEqual, object, scratch, failure);
-    }
+    masm.branchTestObjShape(Assembler::NotEqual, object, scratch, failure);
 }
 
 bool
@@ -4546,13 +4475,7 @@ ICSetProp_Native::Compiler::generateStubCode(MacroAssembler& masm)
     regs.takeUnchecked(objReg);
 
     Register holderReg;
-    if (obj_->is<UnboxedPlainObject>()) {
-        // We are loading off the expando object, so use that for the holder.
-        holderReg = regs.takeAny();
-        masm.loadPtr(Address(objReg, UnboxedPlainObject::offsetOfExpando()), holderReg);
-        if (!isFixedSlot_)
-            masm.loadPtr(Address(holderReg, NativeObject::offsetOfSlots()), holderReg);
-    } else if (isFixedSlot_) {
+    if (isFixedSlot_) {
         holderReg = objReg;
     } else {
         holderReg = regs.takeAny();
@@ -4689,31 +4612,17 @@ ICSetPropNativeAddCompiler::generateStubCode(MacroAssembler& masm)
     regs.add(R0);
     regs.takeUnchecked(objReg);
 
-    if (obj_->is<UnboxedPlainObject>()) {
-        holderReg = regs.takeAny();
-        masm.loadPtr(Address(objReg, UnboxedPlainObject::offsetOfExpando()), holderReg);
+    // Write the object's new shape.
+    Address shapeAddr(objReg, ShapedObject::offsetOfShape());
+    EmitPreBarrier(masm, shapeAddr, MIRType::Shape);
+    masm.loadPtr(Address(ICStubReg, ICSetProp_NativeAdd::offsetOfNewShape()), scratch);
+    masm.storePtr(scratch, shapeAddr);
 
-        // Write the expando object's new shape.
-        Address shapeAddr(holderReg, ShapedObject::offsetOfShape());
-        EmitPreBarrier(masm, shapeAddr, MIRType::Shape);
-        masm.loadPtr(Address(ICStubReg, ICSetProp_NativeAdd::offsetOfNewShape()), scratch);
-        masm.storePtr(scratch, shapeAddr);
-
-        if (!isFixedSlot_)
-            masm.loadPtr(Address(holderReg, NativeObject::offsetOfSlots()), holderReg);
+    if (isFixedSlot_) {
+        holderReg = objReg;
     } else {
-        // Write the object's new shape.
-        Address shapeAddr(objReg, ShapedObject::offsetOfShape());
-        EmitPreBarrier(masm, shapeAddr, MIRType::Shape);
-        masm.loadPtr(Address(ICStubReg, ICSetProp_NativeAdd::offsetOfNewShape()), scratch);
-        masm.storePtr(scratch, shapeAddr);
-
-        if (isFixedSlot_) {
-            holderReg = objReg;
-        } else {
-            holderReg = regs.takeAny();
-            masm.loadPtr(Address(objReg, NativeObject::offsetOfSlots()), holderReg);
-        }
+        holderReg = regs.takeAny();
+        masm.loadPtr(Address(objReg, NativeObject::offsetOfSlots()), holderReg);
     }
 
     // Perform the store.  No write barrier required since this is a new

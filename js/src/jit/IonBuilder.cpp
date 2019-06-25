@@ -10923,63 +10923,6 @@ IonBuilder::getDefiniteSlot(TemporaryTypeSet* types, PropertyName* name, uint32_
     return slot;
 }
 
-uint32_t
-IonBuilder::getUnboxedOffset(TemporaryTypeSet* types, PropertyName* name, JSValueType* punboxedType)
-{
-    if (!types || types->unknownObject() || !types->objectOrSentinel()) {
-        trackOptimizationOutcome(TrackedOutcome::NoTypeInfo);
-        return UINT32_MAX;
-    }
-
-    uint32_t offset = UINT32_MAX;
-
-    for (size_t i = 0; i < types->getObjectCount(); i++) {
-        TypeSet::ObjectKey* key = types->getObject(i);
-        if (!key)
-            continue;
-
-        if (key->unknownProperties()) {
-            trackOptimizationOutcome(TrackedOutcome::UnknownProperties);
-            return UINT32_MAX;
-        }
-
-        if (key->isSingleton()) {
-            trackOptimizationOutcome(TrackedOutcome::Singleton);
-            return UINT32_MAX;
-        }
-
-        UnboxedLayout* layout = key->group()->maybeUnboxedLayout();
-        if (!layout) {
-            trackOptimizationOutcome(TrackedOutcome::NotUnboxed);
-            return UINT32_MAX;
-        }
-
-        const UnboxedLayout::Property* property = layout->lookup(name);
-        if (!property) {
-            trackOptimizationOutcome(TrackedOutcome::StructNoField);
-            return UINT32_MAX;
-        }
-
-        if (layout->nativeGroup()) {
-            trackOptimizationOutcome(TrackedOutcome::UnboxedConvertedToNative);
-            return UINT32_MAX;
-        }
-
-        if (offset == UINT32_MAX) {
-            offset = property->offset;
-            *punboxedType = property->type;
-        } else if (offset != property->offset) {
-            trackOptimizationOutcome(TrackedOutcome::InconsistentFieldOffset);
-            return UINT32_MAX;
-        } else if (*punboxedType != property->type) {
-            trackOptimizationOutcome(TrackedOutcome::InconsistentFieldType);
-            return UINT32_MAX;
-        }
-    }
-
-    return offset;
-}
-
 bool
 IonBuilder::jsop_runonce()
 {
@@ -11946,72 +11889,6 @@ IonBuilder::getPropTryModuleNamespace(bool* emitted, MDefinition* obj, PropertyN
     return true;
 }
 
-MInstruction*
-IonBuilder::loadUnboxedProperty(MDefinition* obj, size_t offset, JSValueType unboxedType,
-                                BarrierKind barrier, TemporaryTypeSet* types)
-{
-    // loadUnboxedValue is designed to load any value as if it were contained in
-    // an array. Thus a property offset is converted to an index, when the
-    // object is reinterpreted as an array of properties of the same size.
-    size_t index = offset / UnboxedTypeSize(unboxedType);
-    MInstruction* indexConstant = MConstant::New(alloc(), Int32Value(index));
-    current->add(indexConstant);
-
-    return loadUnboxedValue(obj, UnboxedPlainObject::offsetOfData(),
-                            indexConstant, unboxedType, barrier, types);
-}
-
-MInstruction*
-IonBuilder::loadUnboxedValue(MDefinition* elements, size_t elementsOffset,
-                             MDefinition* index, JSValueType unboxedType,
-                             BarrierKind barrier, TemporaryTypeSet* types)
-{
-    MInstruction* load;
-    switch (unboxedType) {
-      case JSVAL_TYPE_BOOLEAN:
-        load = MLoadUnboxedScalar::New(alloc(), elements, index, Scalar::Uint8,
-                                       DoesNotRequireMemoryBarrier, elementsOffset);
-        load->setResultType(MIRType::Boolean);
-        break;
-
-      case JSVAL_TYPE_INT32:
-        load = MLoadUnboxedScalar::New(alloc(), elements, index, Scalar::Int32,
-                                       DoesNotRequireMemoryBarrier, elementsOffset);
-        load->setResultType(MIRType::Int32);
-        break;
-
-      case JSVAL_TYPE_DOUBLE:
-        load = MLoadUnboxedScalar::New(alloc(), elements, index, Scalar::Float64,
-                                       DoesNotRequireMemoryBarrier, elementsOffset,
-                                       /* canonicalizeDoubles = */ false);
-        load->setResultType(MIRType::Double);
-        break;
-
-      case JSVAL_TYPE_STRING:
-        load = MLoadUnboxedString::New(alloc(), elements, index, elementsOffset);
-        break;
-
-      case JSVAL_TYPE_OBJECT: {
-        MLoadUnboxedObjectOrNull::NullBehavior nullBehavior;
-        if (types->hasType(TypeSet::NullType()))
-            nullBehavior = MLoadUnboxedObjectOrNull::HandleNull;
-        else if (barrier != BarrierKind::NoBarrier)
-            nullBehavior = MLoadUnboxedObjectOrNull::BailOnNull;
-        else
-            nullBehavior = MLoadUnboxedObjectOrNull::NullNotPossible;
-        load = MLoadUnboxedObjectOrNull::New(alloc(), elements, index, nullBehavior,
-                                             elementsOffset);
-        break;
-      }
-
-      default:
-        MOZ_CRASH();
-    }
-
-    current->add(load);
-    return load;
-}
-
 MDefinition*
 IonBuilder::addShapeGuardsForGetterSetter(MDefinition* obj, JSObject* holder, Shape* holderShape,
                 const BaselineInspector::ReceiverVector& receivers,
@@ -12831,66 +12708,6 @@ IonBuilder::setPropTryDefiniteSlot(bool* emitted, MDefinition* obj,
     trackOptimizationSuccess();
     *emitted = true;
     return true;
-}
-
-MInstruction*
-IonBuilder::storeUnboxedProperty(MDefinition* obj, size_t offset, JSValueType unboxedType,
-                                 MDefinition* value)
-{
-    size_t scaledOffsetConstant = offset / UnboxedTypeSize(unboxedType);
-    MInstruction* scaledOffset = MConstant::New(alloc(), Int32Value(scaledOffsetConstant));
-    current->add(scaledOffset);
-
-    return storeUnboxedValue(obj, obj, UnboxedPlainObject::offsetOfData(),
-                             scaledOffset, unboxedType, value);
-}
-
-MInstruction*
-IonBuilder::storeUnboxedValue(MDefinition* obj, MDefinition* elements, int32_t elementsOffset,
-                              MDefinition* scaledOffset, JSValueType unboxedType,
-                              MDefinition* value, bool preBarrier /* = true */)
-{
-    MInstruction* store;
-    switch (unboxedType) {
-      case JSVAL_TYPE_BOOLEAN:
-        store = MStoreUnboxedScalar::New(alloc(), elements, scaledOffset, value, Scalar::Uint8,
-                                         MStoreUnboxedScalar::DontTruncateInput,
-                                         DoesNotRequireMemoryBarrier, elementsOffset);
-        break;
-
-      case JSVAL_TYPE_INT32:
-        store = MStoreUnboxedScalar::New(alloc(), elements, scaledOffset, value, Scalar::Int32,
-                                         MStoreUnboxedScalar::DontTruncateInput,
-                                         DoesNotRequireMemoryBarrier, elementsOffset);
-        break;
-
-      case JSVAL_TYPE_DOUBLE:
-        store = MStoreUnboxedScalar::New(alloc(), elements, scaledOffset, value, Scalar::Float64,
-                                         MStoreUnboxedScalar::DontTruncateInput,
-                                         DoesNotRequireMemoryBarrier, elementsOffset);
-        break;
-
-      case JSVAL_TYPE_STRING:
-        store = MStoreUnboxedString::New(alloc(), elements, scaledOffset, value,
-                                         elementsOffset, preBarrier);
-        break;
-
-      case JSVAL_TYPE_OBJECT:
-        MOZ_ASSERT(value->type() == MIRType::Object ||
-                   value->type() == MIRType::Null ||
-                   value->type() == MIRType::Value);
-        MOZ_ASSERT(!value->mightBeType(MIRType::Undefined),
-                   "MToObjectOrNull slow path is invalid for unboxed objects");
-        store = MStoreUnboxedObjectOrNull::New(alloc(), elements, scaledOffset, value, obj,
-                                               elementsOffset, preBarrier);
-        break;
-
-      default:
-        MOZ_CRASH();
-    }
-
-    current->add(store);
-    return store;
 }
 
 bool
