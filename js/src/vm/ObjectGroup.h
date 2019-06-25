@@ -20,7 +20,6 @@
 namespace js {
 
 class TypeDescr;
-class UnboxedLayout;
 
 class PreliminaryObjectArrayWithTemplate;
 class TypeNewScript;
@@ -154,11 +153,6 @@ class ObjectGroup : public gc::TenuredCell
         // For some plain objects, the addendum stores a PreliminaryObjectArrayWithTemplate.
         Addendum_PreliminaryObjects,
 
-        // When objects in this group have an unboxed representation, the
-        // addendum stores an UnboxedLayout (which might have a TypeNewScript
-        // as well, if the group is also constructed using 'new').
-        Addendum_UnboxedLayout,
-
         // If this group is used by objects that have been converted from an
         // unboxed representation and/or have the same allocation kind as such
         // objects, the addendum points to that unboxed group.
@@ -223,24 +217,6 @@ class ObjectGroup : public gc::TenuredCell
     bool hasUnanalyzedPreliminaryObjects() {
         return (newScriptDontCheckGeneration() && !newScriptDontCheckGeneration()->analyzed()) ||
                maybePreliminaryObjectsDontCheckGeneration();
-    }
-
-    inline UnboxedLayout* maybeUnboxedLayout();
-    inline UnboxedLayout& unboxedLayout();
-
-    UnboxedLayout* maybeUnboxedLayoutDontCheckGeneration() const {
-        if (addendumKind() == Addendum_UnboxedLayout)
-            return reinterpret_cast<UnboxedLayout*>(addendum_);
-        return nullptr;
-    }
-
-    UnboxedLayout& unboxedLayoutDontCheckGeneration() const {
-        MOZ_ASSERT(addendumKind() == Addendum_UnboxedLayout);
-        return *maybeUnboxedLayoutDontCheckGeneration();
-    }
-
-    void setUnboxedLayout(UnboxedLayout* layout) {
-        setAddendum(Addendum_UnboxedLayout, layout);
     }
 
     ObjectGroup* maybeOriginalUnboxedGroup() const {
@@ -511,8 +487,8 @@ class ObjectGroup : public gc::TenuredCell
                                        NewObjectKind newKind,
                                        NewArrayKind arrayKind = NewArrayKind::Normal);
 
-    // Create a PlainObject or UnboxedPlainObject with the specified properties
-    // and a group specialized for those properties.
+    // Create a PlainObject with the specified properties and a group specialized
+    // for those properties.
     static JSObject* newPlainObject(ExclusiveContext* cx,
                                     IdValuePair* properties, size_t nproperties,
                                     NewObjectKind newKind);
