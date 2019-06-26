@@ -2877,14 +2877,6 @@ ObjectGroup::markUnknown(ExclusiveContext* cx)
     }
 }
 
-TypeNewScript*
-ObjectGroup::anyNewScript()
-{
-    if (newScript())
-        return newScript();
-    return nullptr;
-}
-
 void
 ObjectGroup::detachNewScript(bool writeBarrier, ObjectGroup* replacement)
 {
@@ -2892,7 +2884,7 @@ ObjectGroup::detachNewScript(bool writeBarrier, ObjectGroup* replacement)
     // analyzed, remove it from the newObjectGroups table so that it will not be
     // produced by calling 'new' on the associated function anymore.
     // The TypeNewScript is not actually destroyed.
-    TypeNewScript* newScript = anyNewScript();
+    TypeNewScript* newScript = this->newScript();
     MOZ_ASSERT(newScript);
 
     if (newScript->analyzed()) {
@@ -2922,7 +2914,7 @@ ObjectGroup::maybeClearNewScriptOnOOM()
     if (!isMarked())
         return;
 
-    TypeNewScript* newScript = anyNewScript();
+    TypeNewScript* newScript = this->newScript();
     if (!newScript)
         return;
 
@@ -2937,7 +2929,7 @@ ObjectGroup::maybeClearNewScriptOnOOM()
 void
 ObjectGroup::clearNewScript(ExclusiveContext* cx, ObjectGroup* replacement /* = nullptr*/)
 {
-    TypeNewScript* newScript = anyNewScript();
+    TypeNewScript* newScript = this->newScript();
     if (!newScript)
         return;
 

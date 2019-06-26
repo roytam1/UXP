@@ -174,7 +174,6 @@ class ObjectGroup : public gc::TenuredCell
         return nullptr;
     }
 
-    TypeNewScript* anyNewScript();
     void detachNewScript(bool writeBarrier, ObjectGroup* replacement);
 
     ObjectGroupFlags flagsDontCheckGeneration() const {
