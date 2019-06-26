@@ -3028,7 +3028,7 @@ CodeGenerator::visitStoreSlotV(LStoreSlotV* lir)
 
 static void
 GuardReceiver(MacroAssembler& masm, const ReceiverGuard& guard,
-              Register obj, Register scratch, Label* miss, bool checkNullExpando)
+              Register obj, Register scratch, Label* miss)
 {
     if (guard.group) {
         masm.branchTestObjGroup(Assembler::NotEqual, obj, guard.group, miss);
@@ -3050,13 +3050,11 @@ CodeGenerator::emitGetPropertyPolymorphic(LInstruction* ins, Register obj, Regis
 
         Label next;
         masm.comment("GuardReceiver");
-        GuardReceiver(masm, receiver, obj, scratch, &next, /* checkNullExpando = */ false);
+        GuardReceiver(masm, receiver, obj, scratch, &next);
 
         if (receiver.shape) {
             masm.comment("loadTypedOrValue");
-            // If this is an unboxed expando access, GuardReceiver loaded the
-            // expando object into scratch.
-            Register target = receiver.group ? scratch : obj;
+            Register target = obj;
 
             Shape* shape = mir->shape(i);
             if (shape->slot() < shape->numFixedSlots()) {
@@ -3122,12 +3120,10 @@ CodeGenerator::emitSetPropertyPolymorphic(LInstruction* ins, Register obj, Regis
         ReceiverGuard receiver = mir->receiver(i);
 
         Label next;
-        GuardReceiver(masm, receiver, obj, scratch, &next, /* checkNullExpando = */ false);
+        GuardReceiver(masm, receiver, obj, scratch, &next);
 
         if (receiver.shape) {
-            // If this is an unboxed expando access, GuardReceiver loaded the
-            // expando object into scratch.
-            Register target = receiver.group ? scratch : obj;
+            Register target = obj;
 
             Shape* shape = mir->shape(i);
             if (shape->slot() < shape->numFixedSlots()) {
@@ -3293,7 +3289,7 @@ CodeGenerator::visitGuardReceiverPolymorphic(LGuardReceiverPolymorphic* lir)
         const ReceiverGuard& receiver = mir->receiver(i);
 
         Label next;
-        GuardReceiver(masm, receiver, obj, temp, &next, /* checkNullExpando = */ true);
+        GuardReceiver(masm, receiver, obj, temp, &next);
 
         if (i == mir->numReceivers() - 1) {
             bailoutFrom(&next, lir->snapshot());
