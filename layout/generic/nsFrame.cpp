@@ -168,13 +168,12 @@ NS_DECLARE_FRAME_PROPERTY_DELETABLE(BoxMetricsProperty, nsBoxLayoutMetrics)
 static void
 InitBoxMetrics(nsIFrame* aFrame, bool aClear)
 {
-  FrameProperties props = aFrame->Properties();
   if (aClear) {
-    props.Delete(BoxMetricsProperty());
+    aFrame->DeleteProperty(BoxMetricsProperty());
   }
 
   nsBoxLayoutMetrics* metrics = new nsBoxLayoutMetrics();
-  props.Set(BoxMetricsProperty(), metrics);
+  aFrame->SetProperty(BoxMetricsProperty(), metrics);
 
   static_cast<nsFrame*>(aFrame)->nsFrame::MarkIntrinsicISizesDirty();
   metrics->mBlockAscent = 0;
@@ -254,7 +253,7 @@ nsIFrame::HasAbsolutelyPositionedChildren() const {
 nsAbsoluteContainingBlock*
 nsIFrame::GetAbsoluteContainingBlock() const {
   NS_ASSERTION(IsAbsoluteContainer(), "The frame is not marked as an abspos container correctly");
-  nsAbsoluteContainingBlock* absCB = Properties().Get(AbsoluteContainingBlockProperty());
+  nsAbsoluteContainingBlock* absCB = GetProperty(AbsoluteContainingBlockProperty());
   NS_ASSERTION(absCB, "The frame is marked as an abspos container but doesn't have the property");
   return absCB;
 }
@@ -263,25 +262,25 @@ void
 nsIFrame::MarkAsAbsoluteContainingBlock()
 {
   MOZ_ASSERT(GetStateBits() & NS_FRAME_CAN_HAVE_ABSPOS_CHILDREN);
-  NS_ASSERTION(!Properties().Get(AbsoluteContainingBlockProperty()),
+  NS_ASSERTION(!GetProperty(AbsoluteContainingBlockProperty()),
                "Already has an abs-pos containing block property?");
   NS_ASSERTION(!HasAnyStateBits(NS_FRAME_HAS_ABSPOS_CHILDREN),
                "Already has NS_FRAME_HAS_ABSPOS_CHILDREN state bit?");
   AddStateBits(NS_FRAME_HAS_ABSPOS_CHILDREN);
-  Properties().Set(AbsoluteContainingBlockProperty(), new nsAbsoluteContainingBlock(GetAbsoluteListID()));
+  SetProperty(AbsoluteContainingBlockProperty(), new nsAbsoluteContainingBlock(GetAbsoluteListID()));
 }
 
 void
 nsIFrame::MarkAsNotAbsoluteContainingBlock()
 {
   NS_ASSERTION(!HasAbsolutelyPositionedChildren(), "Think of the children!");
-  NS_ASSERTION(Properties().Get(AbsoluteContainingBlockProperty()),
+  NS_ASSERTION(GetProperty(AbsoluteContainingBlockProperty()),
                "Should have an abs-pos containing block property");
   NS_ASSERTION(HasAnyStateBits(NS_FRAME_HAS_ABSPOS_CHILDREN),
                "Should have NS_FRAME_HAS_ABSPOS_CHILDREN state bit");
   MOZ_ASSERT(HasAnyStateBits(NS_FRAME_CAN_HAVE_ABSPOS_CHILDREN));
   RemoveStateBits(NS_FRAME_HAS_ABSPOS_CHILDREN);
-  Properties().Delete(AbsoluteContainingBlockProperty());
+  DeleteProperty(AbsoluteContainingBlockProperty());
 }
 
 bool
@@ -652,32 +651,30 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
   }
 
   // If we have any IB split siblings, clear their references to us.
-  // (Note: This has to happen before we call shell->NotifyDestroyingFrame,
-  // because that clears our Properties() table.)
+  // (Note: This has to happen before we clear our Properties() table.)
   if (mState & NS_FRAME_PART_OF_IBSPLIT) {
     // Delete previous sibling's reference to me.
-    nsIFrame* prevSib = Properties().Get(nsIFrame::IBSplitPrevSibling());
+    nsIFrame* prevSib = GetProperty(nsIFrame::IBSplitPrevSibling());
     if (prevSib) {
       NS_WARNING_ASSERTION(
-        this == prevSib->Properties().Get(nsIFrame::IBSplitSibling()),
+        this == prevSib->GetProperty(nsIFrame::IBSplitSibling()),
         "IB sibling chain is inconsistent");
-      prevSib->Properties().Delete(nsIFrame::IBSplitSibling());
+      prevSib->DeleteProperty(nsIFrame::IBSplitSibling());
     }
 
     // Delete next sibling's reference to me.
-    nsIFrame* nextSib = Properties().Get(nsIFrame::IBSplitSibling());
+    nsIFrame* nextSib = GetProperty(nsIFrame::IBSplitSibling());
     if (nextSib) {
       NS_WARNING_ASSERTION(
-        this == nextSib->Properties().Get(nsIFrame::IBSplitPrevSibling()),
+        this == nextSib->GetProperty(nsIFrame::IBSplitPrevSibling()),
         "IB sibling chain is inconsistent");
-      nextSib->Properties().Delete(nsIFrame::IBSplitPrevSibling());
+      nextSib->DeleteProperty(nsIFrame::IBSplitPrevSibling());
     }
   }
 
   bool isPrimaryFrame = (mContent && mContent->GetPrimaryFrame() == this);
   if (isPrimaryFrame) {
-    // This needs to happen before shell->NotifyDestroyingFrame because
-    // that clears our Properties() table.
+    // This needs to happen before we clear our Properties() table.
     ActiveLayerTracker::TransferActivityToContent(this, mContent);
 
     // Unfortunately, we need to do this for all frames being reframed
@@ -712,9 +709,8 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
     }
   }
 
-  // Disable visibility tracking. Note that we have to do this before calling
-  // NotifyDestroyingFrame(), which will clear frame properties and make us lose
-  // track of whether we were previously visible or not.
+  // Disable visibility tracking. Note that we have to do this before we clear
+  // frame properties and lose track of whether we were previously visible.
   // XXX(seth): It'd be ideal to assert that we're already marked nonvisible
   // here, but it's unfortunately tricky to guarantee in the face of things like
   // frame reconstruction induced by style changes.
@@ -741,6 +737,10 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
   if (isPrimaryFrame) {
     mContent->SetPrimaryFrame(nullptr);
   }
+
+  // Delete all properties attached to the frame, to ensure any property
+  // destructors that need the frame pointer are handled properly.
+  DeleteAllProperties();
 
   // Must retrieve the object ID before calling destructors, so the
   // vtable is still valid.
@@ -860,22 +860,21 @@ nsFrame::DidSetStyleContext(nsStyleContext* aOldStyleContext)
     // calls GetUsed(Margin|Border|Padding)() before the next reflow, we
     // can give an accurate answer.
     // We don't want to set the property if one already exists.
-    FrameProperties props = Properties();
     nsMargin oldValue(0, 0, 0, 0);
     nsMargin newValue(0, 0, 0, 0);
     const nsStyleMargin* oldMargin = aOldStyleContext->PeekStyleMargin();
     if (oldMargin && oldMargin->GetMargin(oldValue)) {
       if ((!StyleMargin()->GetMargin(newValue) || oldValue != newValue) &&
-          !props.Get(UsedMarginProperty())) {
-        props.Set(UsedMarginProperty(), new nsMargin(oldValue));
+          !GetProperty(UsedMarginProperty())) {
+        SetProperty(UsedMarginProperty(), new nsMargin(oldValue));
       }
     }
 
     const nsStylePadding* oldPadding = aOldStyleContext->PeekStylePadding();
     if (oldPadding && oldPadding->GetPadding(oldValue)) {
       if ((!StylePadding()->GetPadding(newValue) || oldValue != newValue) &&
-          !props.Get(UsedPaddingProperty())) {
-        props.Set(UsedPaddingProperty(), new nsMargin(oldValue));
+          !GetProperty(UsedPaddingProperty())) {
+        SetProperty(UsedPaddingProperty(), new nsMargin(oldValue));
       }
     }
 
@@ -884,8 +883,8 @@ nsFrame::DidSetStyleContext(nsStyleContext* aOldStyleContext)
       oldValue = oldBorder->GetComputedBorder();
       newValue = StyleBorder()->GetComputedBorder();
       if (oldValue != newValue &&
-          !props.Get(UsedBorderProperty())) {
-        props.Set(UsedBorderProperty(), new nsMargin(oldValue));
+          !GetProperty(UsedBorderProperty())) {
+        SetProperty(UsedBorderProperty(), new nsMargin(oldValue));
       }
     }
   }
@@ -961,7 +960,7 @@ nsIFrame::GetUsedMargin() const
       IsSVGText())
     return margin;
 
-  nsMargin *m = Properties().Get(UsedMarginProperty());
+  nsMargin *m = GetProperty(UsedMarginProperty());
   if (m) {
     margin = *m;
   } else {
@@ -1000,7 +999,7 @@ nsIFrame::GetUsedBorder() const
     return border;
   }
 
-  nsMargin *b = Properties().Get(UsedBorderProperty());
+  nsMargin *b = GetProperty(UsedBorderProperty());
   if (b) {
     border = *b;
   } else {
@@ -1037,7 +1036,7 @@ nsIFrame::GetUsedPadding() const
     }
   }
 
-  nsMargin *p = Properties().Get(UsedPaddingProperty());
+  nsMargin *p = GetProperty(UsedPaddingProperty());
   if (p) {
     padding = *p;
   } else {
@@ -1478,8 +1477,7 @@ nsIFrame::GetVisibility() const
   }
 
   bool isSet = false;
-  FrameProperties props = Properties();
-  uint32_t visibleCount = props.Get(VisibilityStateProperty(), &isSet);
+  uint32_t visibleCount = GetProperty(VisibilityStateProperty(), &isSet);
 
   MOZ_ASSERT(isSet, "Should have a VisibilityStateProperty value "
                     "if NS_FRAME_VISIBILITY_IS_TRACKED is set");
@@ -1552,15 +1550,14 @@ nsIFrame::EnableVisibilityTracking()
     return;  // Nothing to do.
   }
 
-  FrameProperties props = Properties();
-  MOZ_ASSERT(!props.Has(VisibilityStateProperty()),
+  MOZ_ASSERT(!HasProperty(VisibilityStateProperty()),
              "Shouldn't have a VisibilityStateProperty value "
              "if NS_FRAME_VISIBILITY_IS_TRACKED is not set");
 
   // Add the state bit so we know to track visibility for this frame, and
   // initialize the frame property.
   AddStateBits(NS_FRAME_VISIBILITY_IS_TRACKED);
-  props.Set(VisibilityStateProperty(), 0);
+  SetProperty(VisibilityStateProperty(), 0);
 
   nsIPresShell* presShell = PresContext()->PresShell();
   if (!presShell) {
@@ -1582,8 +1579,7 @@ nsIFrame::DisableVisibilityTracking()
   }
 
   bool isSet = false;
-  FrameProperties props = Properties();
-  uint32_t visibleCount = props.Remove(VisibilityStateProperty(), &isSet);
+  uint32_t visibleCount = RemoveProperty(VisibilityStateProperty(), &isSet);
 
   MOZ_ASSERT(isSet, "Should have a VisibilityStateProperty value "
                     "if NS_FRAME_VISIBILITY_IS_TRACKED is set");
@@ -1605,8 +1601,7 @@ nsIFrame::DecApproximateVisibleCount(Maybe<OnNonvisible> aNonvisibleAction
   MOZ_ASSERT(GetStateBits() & NS_FRAME_VISIBILITY_IS_TRACKED);
 
   bool isSet = false;
-  FrameProperties props = Properties();
-  uint32_t visibleCount = props.Get(VisibilityStateProperty(), &isSet);
+  uint32_t visibleCount = GetProperty(VisibilityStateProperty(), &isSet);
 
   MOZ_ASSERT(isSet, "Should have a VisibilityStateProperty value "
                     "if NS_FRAME_VISIBILITY_IS_TRACKED is set");
@@ -1614,7 +1609,7 @@ nsIFrame::DecApproximateVisibleCount(Maybe<OnNonvisible> aNonvisibleAction
                                "decrementing its visible count?");
 
   visibleCount--;
-  props.Set(VisibilityStateProperty(), visibleCount);
+  SetProperty(VisibilityStateProperty(), visibleCount);
   if (visibleCount > 0) {
     return;
   }
@@ -1629,14 +1624,13 @@ nsIFrame::IncApproximateVisibleCount()
   MOZ_ASSERT(GetStateBits() & NS_FRAME_VISIBILITY_IS_TRACKED);
 
   bool isSet = false;
-  FrameProperties props = Properties();
-  uint32_t visibleCount = props.Get(VisibilityStateProperty(), &isSet);
+  uint32_t visibleCount = GetProperty(VisibilityStateProperty(), &isSet);
 
   MOZ_ASSERT(isSet, "Should have a VisibilityStateProperty value "
                     "if NS_FRAME_VISIBILITY_IS_TRACKED is set");
 
   visibleCount++;
-  props.Set(VisibilityStateProperty(), visibleCount);
+  SetProperty(VisibilityStateProperty(), visibleCount);
   if (visibleCount > 1) {
     return;
   }
@@ -4943,10 +4937,9 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
     // If FlexItemMainSizeOverride frame-property is set, then that means the
     // flex container is imposing a main-size on this flex item for it to use
     // as its size in the container's main axis.
-    FrameProperties props = Properties();
     bool didImposeMainSize;
     nscoord imposedMainSize =
-      props.Get(nsIFrame::FlexItemMainSizeOverride(), &didImposeMainSize);
+      GetProperty(nsIFrame::FlexItemMainSizeOverride(), &didImposeMainSize);
     if (didImposeMainSize) {
       imposedMainSizeStyleCoord.emplace(imposedMainSize,
                                         nsStyleCoord::CoordConstructor);
@@ -5686,7 +5679,7 @@ nsIFrame::GetView() const
     return nullptr;
 
   // Check for a property on the frame
-  nsView* value = Properties().Get(ViewProperty());
+  nsView* value = GetProperty(ViewProperty());
   NS_ASSERTION(value, "frame state bit was set but frame has no view");
   return value;
 }
@@ -5709,7 +5702,7 @@ nsIFrame::SetView(nsView* aView)
 #endif
 
     // Set a property on the frame
-    Properties().Set(ViewProperty(), aView);
+    SetProperty(ViewProperty(), aView);
 
     // Set the frame state bit that says the frame has a view
     AddStateBits(NS_FRAME_HAS_VIEW);
@@ -6098,7 +6091,7 @@ static void InvalidateFrameInternal(nsIFrame *aFrame, bool aHasDisplayItem = tru
     SchedulePaintInternal(aFrame);
   }
   if (aFrame->HasAnyStateBits(NS_FRAME_HAS_INVALID_RECT)) {
-    aFrame->Properties().Delete(nsIFrame::InvalidationRect());
+    aFrame->DeleteProperty(nsIFrame::InvalidationRect());
     aFrame->RemoveStateBits(NS_FRAME_HAS_INVALID_RECT);
   }
 }
@@ -6173,13 +6166,13 @@ nsIFrame::InvalidateFrameWithRect(const nsRect& aRect, uint32_t aDisplayItemKey)
     return;
   }
 
-  nsRect* rect = Properties().Get(InvalidationRect());
+  nsRect* rect = GetProperty(InvalidationRect());
   if (!rect) {
     if (alreadyInvalid) {
       return;
     }
     rect = new nsRect();
-    Properties().Set(InvalidationRect(), rect);
+    SetProperty(InvalidationRect(), rect);
     AddStateBits(NS_FRAME_HAS_INVALID_RECT);
   }
 
@@ -6280,7 +6273,7 @@ nsIFrame::IsInvalid(nsRect& aRect)
   }
   
   if (HasAnyStateBits(NS_FRAME_HAS_INVALID_RECT)) {
-    nsRect* rect = Properties().Get(InvalidationRect());
+    nsRect* rect = GetProperty(InvalidationRect());
     NS_ASSERTION(rect, "Must have an invalid rect if NS_FRAME_HAS_INVALID_RECT is set!");
     aRect = *rect;
   } else {
@@ -6368,8 +6361,8 @@ ComputeEffectsRect(nsIFrame* aFrame, const nsRect& aOverflowRect,
     // TODO: We could also take account of clipPath and mask to reduce the
     // visual overflow, but that's not essential.
     if (aFrame->StyleEffects()->HasFilters()) {
-      aFrame->Properties().
-        Set(nsIFrame::PreEffectsBBoxProperty(), new nsRect(r));
+      aFrame->SetProperty
+        (nsIFrame::PreEffectsBBoxProperty(), new nsRect(r));
       r = nsSVGUtils::GetPostFilterVisualOverflowRect(aFrame, aOverflowRect);
     }
     return r;
@@ -6407,8 +6400,8 @@ ComputeEffectsRect(nsIFrame* aFrame, const nsRect& aOverflowRect,
   // the frame dies.
 
   if (nsSVGIntegrationUtils::UsingEffectsForFrame(aFrame)) {
-    aFrame->Properties().
-      Set(nsIFrame::PreEffectsBBoxProperty(), new nsRect(r));
+    aFrame->SetProperty
+      (nsIFrame::PreEffectsBBoxProperty(), new nsRect(r));
     r = nsSVGIntegrationUtils::ComputePostEffectsVisualOverflowRect(aFrame, r);
   }
 
@@ -6422,7 +6415,7 @@ nsIFrame::MovePositionBy(const nsPoint& aTranslation)
 
   const nsMargin* computedOffsets = nullptr;
   if (IsRelativelyPositioned()) {
-    computedOffsets = Properties().Get(nsIFrame::ComputedOffsetProperty());
+    computedOffsets = GetProperty(nsIFrame::ComputedOffsetProperty());
   }
   ReflowInput::ApplyRelativePositioning(this, computedOffsets ?
                                               *computedOffsets : nsMargin(),
@@ -6435,7 +6428,7 @@ nsIFrame::GetNormalRect() const
 {
   // It might be faster to first check
   // StyleDisplay()->IsRelativelyPositionedStyle().
-  nsPoint* normalPosition = Properties().Get(NormalPositionProperty());
+  nsPoint* normalPosition = GetProperty(NormalPositionProperty());
   if (normalPosition) {
     return nsRect(*normalPosition, GetSize());
   }
@@ -6447,7 +6440,7 @@ nsIFrame::GetNormalPosition() const
 {
   // It might be faster to first check
   // StyleDisplay()->IsRelativelyPositionedStyle().
-  nsPoint* normalPosition = Properties().Get(NormalPositionProperty());
+  nsPoint* normalPosition = GetProperty(NormalPositionProperty());
   if (normalPosition) {
     return *normalPosition;
   }
@@ -6506,7 +6499,7 @@ nsIFrame::GetOverflowAreasRelativeToSelf() const
 {
   if (IsTransformed()) {
     nsOverflowAreas* preTransformOverflows =
-      Properties().Get(PreTransformOverflowAreasProperty());
+      GetProperty(PreTransformOverflowAreasProperty());
     if (preTransformOverflows) {
       return nsOverflowAreas(preTransformOverflows->VisualOverflow(),
                              preTransformOverflows->ScrollableOverflow());
@@ -6533,7 +6526,7 @@ nsIFrame::GetScrollableOverflowRectRelativeToSelf() const
 {
   if (IsTransformed()) {
     nsOverflowAreas* preTransformOverflows =
-      Properties().Get(PreTransformOverflowAreasProperty());
+      GetProperty(PreTransformOverflowAreasProperty());
     if (preTransformOverflows)
       return preTransformOverflows->ScrollableOverflow();
   }
@@ -6545,7 +6538,7 @@ nsIFrame::GetVisualOverflowRectRelativeToSelf() const
 {
   if (IsTransformed()) {
     nsOverflowAreas* preTransformOverflows =
-      Properties().Get(PreTransformOverflowAreasProperty());
+      GetProperty(PreTransformOverflowAreasProperty());
     if (preTransformOverflows)
       return preTransformOverflows->VisualOverflow();
   }
@@ -6555,7 +6548,7 @@ nsIFrame::GetVisualOverflowRectRelativeToSelf() const
 nsRect
 nsIFrame::GetPreEffectsVisualOverflowRect() const
 {
-  nsRect* r = Properties().Get(nsIFrame::PreEffectsBBoxProperty());
+  nsRect* r = GetProperty(nsIFrame::PreEffectsBBoxProperty());
   return r ? *r : GetVisualOverflowRectRelativeToSelf();
 }
 
@@ -6758,11 +6751,11 @@ nsIFrame::ListGeneric(nsACString& aTo, const char* aPrefix, uint32_t aFlags) con
     aTo += nsPrintfCString(" next-%s=%p", fluid?"in-flow":"continuation",
             static_cast<void*>(GetNextContinuation()));
   }
-  void* IBsibling = Properties().Get(IBSplitSibling());
+  void* IBsibling = GetProperty(IBSplitSibling());
   if (IBsibling) {
     aTo += nsPrintfCString(" IBSplitSibling=%p", IBsibling);
   }
-  void* IBprevsibling = Properties().Get(IBSplitPrevSibling());
+  void* IBprevsibling = GetProperty(IBSplitPrevSibling());
   if (IBprevsibling) {
     aTo += nsPrintfCString(" IBSplitPrevSibling=%p", IBprevsibling);
   }
@@ -7164,8 +7157,7 @@ nsFrame::GetPointFromOffset(int32_t inOffset, nsPoint* outPoint)
       // If the embedding level isn't set, just use the CSS direction
       // property.
       bool hasBidiData;
-      FrameBidiData bidiData =
-        Properties().Get(BidiDataProperty(), &hasBidiData);
+      FrameBidiData bidiData = GetProperty(BidiDataProperty(), &hasBidiData);
       bool isRTL = hasBidiData
         ? IS_LEVEL_RTL(bidiData.embeddingLevel)
         : StyleVisibility()->mDirection == NS_STYLE_DIRECTION_RTL;
@@ -8315,7 +8307,7 @@ nsIFrame::ClearOverflowRects()
     return false;
   }
   if (mOverflow.mType == NS_FRAME_OVERFLOW_LARGE) {
-    Properties().Delete(OverflowAreasProperty());
+    DeleteProperty(OverflowAreasProperty());
   }
   mOverflow.mType = NS_FRAME_OVERFLOW_NONE;
   return true;
@@ -8328,8 +8320,7 @@ nsIFrame::ClearOverflowRects()
 nsOverflowAreas*
 nsIFrame::GetOverflowAreasProperty()
 {
-  FrameProperties props = Properties();
-  nsOverflowAreas* overflow = props.Get(OverflowAreasProperty());
+  nsOverflowAreas* overflow = GetProperty(OverflowAreasProperty());
 
   if (overflow) {
     return overflow; // the property already exists
@@ -8338,7 +8329,7 @@ nsIFrame::GetOverflowAreasProperty()
   // The property isn't set yet, so allocate a new rect, set the property,
   // and return the newly allocated rect
   overflow = new nsOverflowAreas;
-  props.Set(OverflowAreasProperty(), overflow);
+  SetProperty(OverflowAreasProperty(), overflow);
   return overflow;
 }
 
@@ -8349,7 +8340,7 @@ bool
 nsIFrame::SetOverflowAreas(const nsOverflowAreas& aOverflowAreas)
 {
   if (mOverflow.mType == NS_FRAME_OVERFLOW_LARGE) {
-    nsOverflowAreas* overflow = Properties().Get(OverflowAreasProperty());
+    nsOverflowAreas* overflow = GetProperty(OverflowAreasProperty());
     bool changed = *overflow != aOverflowAreas;
     *overflow = aOverflowAreas;
 
@@ -8593,7 +8584,7 @@ ComputeAndIncludeOutlineArea(nsIFrame* aFrame, nsOverflowAreas& aOverflowAreas,
   }
 
   // Keep this code in sync with GetOutlineInnerRect in nsCSSRendering.cpp.
-  aFrame->Properties().Set(nsIFrame::OutlineInnerRectProperty(),
+  aFrame->SetProperty(nsIFrame::OutlineInnerRectProperty(),
                            new nsRect(innerRect));
   const nscoord offset = outline->mOutlineOffset;
   nsRect outerRect(innerRect);
@@ -8635,22 +8626,22 @@ nsIFrame::FinishAndStoreOverflow(nsOverflowAreas& aOverflowAreas,
     if (!aOverflowAreas.VisualOverflow().IsEqualEdges(bounds) ||
         !aOverflowAreas.ScrollableOverflow().IsEqualEdges(bounds)) {
       nsOverflowAreas* initial =
-        Properties().Get(nsIFrame::InitialOverflowProperty());
+        GetProperty(nsIFrame::InitialOverflowProperty());
       if (!initial) {
-        Properties().Set(nsIFrame::InitialOverflowProperty(),
+        SetProperty(nsIFrame::InitialOverflowProperty(),
                          new nsOverflowAreas(aOverflowAreas));
       } else if (initial != &aOverflowAreas) {
         *initial = aOverflowAreas;
       }
     } else {
-      Properties().Delete(nsIFrame::InitialOverflowProperty());
+      DeleteProperty(nsIFrame::InitialOverflowProperty());
     }
 #ifdef DEBUG
-    Properties().Set(nsIFrame::DebugInitialOverflowPropertyApplied(), true);
+    SetProperty(nsIFrame::DebugInitialOverflowPropertyApplied(), true);
 #endif
   } else {
 #ifdef DEBUG
-    Properties().Delete(nsIFrame::DebugInitialOverflowPropertyApplied());
+    DeleteProperty(nsIFrame::DebugInitialOverflowPropertyApplied());
 #endif
   }
 
@@ -8745,8 +8736,8 @@ nsIFrame::FinishAndStoreOverflow(nsOverflowAreas& aOverflowAreas,
   }
 
   if (hasTransform) {
-    Properties().Set(nsIFrame::PreTransformOverflowAreasProperty(),
-                     new nsOverflowAreas(aOverflowAreas));
+    SetProperty(nsIFrame::PreTransformOverflowAreasProperty(),
+                new nsOverflowAreas(aOverflowAreas));
 
     if (Combines3DTransformWithAncestors()) {
       /* If we're a preserve-3d leaf frame, then our pre-transform overflow should be correct. Our
@@ -8771,7 +8762,7 @@ nsIFrame::FinishAndStoreOverflow(nsOverflowAreas& aOverflowAreas,
       }
     }
   } else {
-    Properties().Delete(nsIFrame::PreTransformOverflowAreasProperty());
+    DeleteProperty(nsIFrame::PreTransformOverflowAreasProperty());
   }
 
   /* Revert the size change in case some caller is depending on this. */
@@ -8803,7 +8794,7 @@ nsIFrame::RecomputePerspectiveChildrenOverflow(const nsIFrame* aStartFrame)
       }
       if (child->HasPerspective()) {
         nsOverflowAreas* overflow = 
-          child->Properties().Get(nsIFrame::InitialOverflowProperty());
+          child->GetProperty(nsIFrame::InitialOverflowProperty());
         nsRect bounds(nsPoint(0, 0), child->GetSize());
         if (overflow) {
           nsOverflowAreas overflowCopy = *overflow;
@@ -8915,7 +8906,7 @@ GetIBSplitSiblingForAnonymousBlock(const nsIFrame* aFrame)
    * property.
    */
   nsIFrame *ibSplitSibling =
-    aFrame->Properties().Get(nsIFrame::IBSplitPrevSibling());
+    aFrame->GetProperty(nsIFrame::IBSplitPrevSibling());
   NS_ASSERTION(ibSplitSibling, "Broken frame tree?");
   return ibSplitSibling;
 }
@@ -9825,7 +9816,7 @@ nsFrame::BoxReflow(nsBoxLayoutState&        aState,
 nsBoxLayoutMetrics*
 nsFrame::BoxMetrics() const
 {
-  nsBoxLayoutMetrics* metrics = Properties().Get(BoxMetricsProperty());
+  nsBoxLayoutMetrics* metrics = GetProperty(BoxMetricsProperty());
   NS_ASSERTION(metrics, "A box layout method was called but InitBoxMetrics was never called");
   return metrics;
 }
@@ -10067,6 +10058,24 @@ nsFrame::HasCSSTransitions()
   auto collection =
     AnimationCollection<CSSTransition>::GetAnimationCollection(this);
   return collection && collection->mAnimations.Length() > 0;
+}
+
+size_t
+nsIFrame::SizeOfFramePropertiesForTree(MallocSizeOf aMallocSizeOf) const
+{
+  size_t result = 0;
+
+    result += mProperties.SizeOfExcludingThis(aMallocSizeOf);
+
+  FrameChildListIterator iter(this);
+  while (!iter.IsDone()) {
+    for (const nsIFrame* f : iter.CurrentList()) {
+       result += f->SizeOfFramePropertiesForTree(aMallocSizeOf);
+     }
+     iter.Next();
+   }
+
+  return result;
 }
 
 // Box layout debugging

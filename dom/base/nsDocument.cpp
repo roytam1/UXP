@@ -11943,7 +11943,8 @@ nsIDocument::DocAddSizeOfExcludingThis(nsWindowSizes* aWindowSizes) const
                                        &aWindowSizes->mLayoutPresShellSize,
                                        &aWindowSizes->mLayoutStyleSetsSize,
                                        &aWindowSizes->mLayoutTextRunsSize,
-                                       &aWindowSizes->mLayoutPresContextSize);
+                                       &aWindowSizes->mLayoutPresContextSize,
+                                       &aWindowSizes->mLayoutFramePropertiesSize);
   }
 
   aWindowSizes->mPropertyTablesSize +=

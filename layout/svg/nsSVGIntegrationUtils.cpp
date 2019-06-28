@@ -75,7 +75,7 @@ public:
 private:
 
   static nsRect GetPreEffectsVisualOverflowRect(nsIFrame* aFrame) {
-    nsRect* r = aFrame->Properties().Get(nsIFrame::PreEffectsBBoxProperty());
+    nsRect* r = aFrame->GetProperty(nsIFrame::PreEffectsBBoxProperty());
     if (r) {
       return *r;
     }
@@ -113,8 +113,7 @@ private:
     NS_ASSERTION(aFrame->GetParent()->StyleContext()->GetPseudo() ==
                    nsCSSAnonBoxes::mozAnonymousBlock,
                  "How did we getting here, then?");
-    NS_ASSERTION(!aFrame->Properties().Get(
-                   aFrame->PreTransformOverflowAreasProperty()),
+    NS_ASSERTION(!aFrame->GetProperty(aFrame->PreTransformOverflowAreasProperty()),
                  "GetVisualOverflowRect() won't return the pre-effects rect!");
     return aFrame->GetVisualOverflowRect();
   }

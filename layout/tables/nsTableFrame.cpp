@@ -272,13 +272,12 @@ nsTableFrame::RegisterPositionedTablePart(nsIFrame* aFrame)
   tableFrame = static_cast<nsTableFrame*>(tableFrame->FirstContinuation());
 
   // Retrieve the positioned parts array for this table.
-  FrameProperties props = tableFrame->Properties();
-  FrameTArray* positionedParts = props.Get(PositionedTablePartArray());
+  FrameTArray* positionedParts = tableFrame->GetProperty(PositionedTablePartArray());
 
   // Lazily create the array if it doesn't exist yet.
   if (!positionedParts) {
     positionedParts = new FrameTArray;
-    props.Set(PositionedTablePartArray(), positionedParts);
+    tableFrame->SetProperty(PositionedTablePartArray(), positionedParts);
   }
 
   // Add this frame to the list.
@@ -302,8 +301,7 @@ nsTableFrame::UnregisterPositionedTablePart(nsIFrame* aFrame,
   tableFrame = static_cast<nsTableFrame*>(tableFrame->FirstContinuation());
 
   // Retrieve the positioned parts array for this table.
-  FrameProperties props = tableFrame->Properties();
-  FrameTArray* positionedParts = props.Get(PositionedTablePartArray());
+  FrameTArray* positionedParts = tableFrame->GetProperty(PositionedTablePartArray());
 
   // Remove the frame.
   MOZ_ASSERT(positionedParts && positionedParts->Contains(aFrame),
@@ -1992,7 +1990,7 @@ nsTableFrame::FixupPositionedTableParts(nsPresContext*           aPresContext,
                                         ReflowOutput&     aDesiredSize,
                                         const ReflowInput& aReflowInput)
 {
-  FrameTArray* positionedParts = Properties().Get(PositionedTablePartArray());
+  FrameTArray* positionedParts = GetProperty(PositionedTablePartArray());
   if (!positionedParts) {
     return;
   }
@@ -2653,13 +2651,18 @@ nsTableFrame::GetUsedMargin() const
 NS_DECLARE_FRAME_PROPERTY_DELETABLE(TableBCProperty, BCPropertyData)
 
 BCPropertyData*
-nsTableFrame::GetBCProperty(bool aCreateIfNecessary) const
+nsTableFrame::GetBCProperty() const
 {
-  FrameProperties props = Properties();
-  BCPropertyData* value = props.Get(TableBCProperty());
-  if (!value && aCreateIfNecessary) {
+  return GetProperty(TableBCProperty());
+}
+
+BCPropertyData*
+nsTableFrame::GetOrCreateBCProperty()
+{
+  BCPropertyData* value = GetProperty(TableBCProperty());
+  if (!value) {
     value = new BCPropertyData();
-    props.Set(TableBCProperty(), value);
+    SetProperty(TableBCProperty(), value);
   }
 
   return value;
@@ -4103,7 +4106,7 @@ nsTableFrame::AddBCDamageArea(const TableArea& aValue)
 
   SetNeedToCalcBCBorders(true);
   // Get the property
-  BCPropertyData* value = GetBCProperty(true);
+  BCPropertyData* value = GetOrCreateBCProperty();
   if (value) {
 #ifdef DEBUG
     VerifyNonNegativeDamageRect(value->mDamageArea);
@@ -4143,7 +4146,7 @@ nsTableFrame::SetFullBCDamageArea()
 
   SetNeedToCalcBCBorders(true);
 
-  BCPropertyData* value = GetBCProperty(true);
+  BCPropertyData* value = GetOrCreateBCProperty();
   if (value) {
     value->mDamageArea = TableArea(0, 0, GetColCount(), GetRowCount());
   }
@@ -4310,7 +4313,7 @@ BCMapCellInfo::BCMapCellInfo(nsTableFrame* aTableFrame)
   : mTableFrame(aTableFrame)
   , mNumTableRows(aTableFrame->GetRowCount())
   , mNumTableCols(aTableFrame->GetColCount())
-  , mTableBCData(mTableFrame->Properties().Get(TableBCProperty()))
+  , mTableBCData(mTableFrame->GetProperty(TableBCProperty()))
   , mTableWM(aTableFrame->StyleContext())
 {
   ResetCellInfo();
