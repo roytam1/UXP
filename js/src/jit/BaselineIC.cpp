@@ -42,8 +42,8 @@
 #include "jit/shared/Lowering-shared-inl.h"
 #include "vm/EnvironmentObject-inl.h"
 #include "vm/Interpreter-inl.h"
+#include "vm/NativeObject-inl.h"
 #include "vm/StringObject-inl.h"
-#include "vm/UnboxedObject-inl.h"
 
 using mozilla::DebugOnly;
 
@@ -732,11 +732,6 @@ LastPropertyForSetProp(JSObject* obj)
     if (obj->isNative())
         return obj->as<NativeObject>().lastProperty();
 
-    if (obj->is<UnboxedPlainObject>()) {
-        UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando();
-        return expando ? expando->lastProperty() : nullptr;
-    }
-
     return nullptr;
 }
 
@@ -1153,56 +1148,6 @@ TryAttachNativeOrUnboxedGetValueElemStub(JSContext* cx, HandleScript script, jsb
 
     ICStub* monitorStub = stub->fallbackMonitorStub()->firstMonitorStub();
 
-    if (obj->is<UnboxedPlainObject>() && holder == obj) {
-        const UnboxedLayout::Property* property = obj->as<UnboxedPlainObject>().layout().lookup(id);
-
-        // Once unboxed objects support symbol-keys, we need to change the following accordingly
-        MOZ_ASSERT_IF(!keyVal.isString(), !property);
-
-        if (property) {
-            if (!cx->runtime()->jitSupportsFloatingPoint)
-                return true;
-
-            RootedPropertyName name(cx, JSID_TO_ATOM(id)->asPropertyName());
-            ICGetElemNativeCompiler<PropertyName*> compiler(cx, ICStub::GetElem_UnboxedPropertyName,
-                                                            monitorStub, obj, holder,
-                                                            name,
-                                                            ICGetElemNativeStub::UnboxedProperty,
-                                                            needsAtomize, property->offset +
-                                                            UnboxedPlainObject::offsetOfData(),
-                                                            property->type);
-            ICStub* newStub = compiler.getStub(compiler.getStubSpace(script));
-            if (!newStub)
-                return false;
-
-            stub->addNewStub(newStub);
-            *attached = true;
-            return true;
-        }
-
-        Shape* shape = obj->as<UnboxedPlainObject>().maybeExpando()->lookup(cx, id);
-        if (!shape->hasDefaultGetter() || !shape->hasSlot())
-            return true;
-
-        bool isFixedSlot;
-        uint32_t offset;
-        GetFixedOrDynamicSlotOffset(shape, &isFixedSlot, &offset);
-
-        ICGetElemNativeStub::AccessType acctype =
-            isFixedSlot ? ICGetElemNativeStub::FixedSlot
-                        : ICGetElemNativeStub::DynamicSlot;
-        ICGetElemNativeCompiler<T> compiler(cx, getGetElemStubKind<T>(ICStub::GetElem_NativeSlotName),
-                                            monitorStub, obj, holder, key,
-                                            acctype, needsAtomize, offset);
-        ICStub* newStub = compiler.getStub(compiler.getStubSpace(script));
-        if (!newStub)
-            return false;
-
-        stub->addNewStub(newStub);
-        *attached = true;
-        return true;
-    }
-
     if (!holder->isNative())
         return true;
 
@@ -1450,7 +1395,7 @@ TryAttachGetElemStub(JSContext* cx, JSScript* script, jsbytecode* pc, ICGetElem_
     }
 
     // Check for NativeObject[id] and UnboxedPlainObject[id] shape-optimizable accesses.
-    if (obj->isNative() || obj->is<UnboxedPlainObject>()) {
+    if (obj->isNative()) {
         RootedScript rootedScript(cx, script);
         if (rhs.isString()) {
             if (!TryAttachNativeOrUnboxedGetValueElemStub<PropertyName*>(cx, rootedScript, pc, stub,
@@ -1862,14 +1807,6 @@ ICGetElemNativeCompiler<T>::generateStubCode(MacroAssembler& masm)
     Register holderReg;
     if (obj_ == holder_) {
         holderReg = objReg;
-
-        if (obj_->is<UnboxedPlainObject>() && acctype_ != ICGetElemNativeStub::UnboxedProperty) {
-            // The property will be loaded off the unboxed expando.
-            masm.push(R1.scratchReg());
-            popR1 = true;
-            holderReg = R1.scratchReg();
-            masm.loadPtr(Address(objReg, UnboxedPlainObject::offsetOfExpando()), holderReg);
-        }
     } else {
         // Shape guard holder.
         if (regs.empty()) {
@@ -1920,13 +1857,6 @@ ICGetElemNativeCompiler<T>::generateStubCode(MacroAssembler& masm)
         if (popR1)
             masm.addToStackPtr(ImmWord(sizeof(size_t)));
 
-    } else if (acctype_ == ICGetElemNativeStub::UnboxedProperty) {
-        masm.load32(Address(ICStubReg, ICGetElemNativeSlotStub<T>::offsetOfOffset()),
-                    scratchReg);
-        masm.loadUnboxedProperty(BaseIndex(objReg, scratchReg, TimesOne), unboxedType_,
-                                 TypedOrValueRegister(R0));
-        if (popR1)
-            masm.addToStackPtr(ImmWord(sizeof(size_t)));
     } else {
         MOZ_ASSERT(acctype_ == ICGetElemNativeStub::NativeGetter ||
                    acctype_ == ICGetElemNativeStub::ScriptedGetter);
@@ -2672,18 +2602,6 @@ BaselineScript::noteArrayWriteHole(uint32_t pcOffset)
 //
 // SetElem_DenseOrUnboxedArray
 //
-
-template <typename T>
-void
-EmitUnboxedPreBarrierForBaseline(MacroAssembler &masm, T address, JSValueType type)
-{
-    if (type == JSVAL_TYPE_OBJECT)
-        EmitPreBarrier(masm, address, MIRType::Object);
-    else if (type == JSVAL_TYPE_STRING)
-        EmitPreBarrier(masm, address, MIRType::String);
-    else
-        MOZ_ASSERT(!UnboxedTypeNeedsPreBarrier(type));
-}
 
 bool
 ICSetElem_DenseOrUnboxedArray::Compiler::generateStubCode(MacroAssembler& masm)
@@ -4131,18 +4049,7 @@ TryAttachSetValuePropStub(JSContext* cx, HandleScript script, jsbytecode* pc, IC
         return true;
 
     if (!obj->isNative()) {
-        if (obj->is<UnboxedPlainObject>()) {
-            UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando();
-            if (expando) {
-                shape = expando->lookup(cx, name);
-                if (!shape)
-                    return true;
-            } else {
-                return true;
-            }
-        } else {
-            return true;
-        }
+        return true;
     }
 
     size_t chainDepth;
@@ -4293,40 +4200,6 @@ TryAttachSetAccessorPropStub(JSContext* cx, HandleScript script, jsbytecode* pc,
 }
 
 static bool
-TryAttachUnboxedSetPropStub(JSContext* cx, HandleScript script,
-                            ICSetProp_Fallback* stub, HandleId id,
-                            HandleObject obj, HandleValue rhs, bool* attached)
-{
-    MOZ_ASSERT(!*attached);
-
-    if (!cx->runtime()->jitSupportsFloatingPoint)
-        return true;
-
-    if (!obj->is<UnboxedPlainObject>())
-        return true;
-
-    const UnboxedLayout::Property* property = obj->as<UnboxedPlainObject>().layout().lookup(id);
-    if (!property)
-        return true;
-
-    ICSetProp_Unboxed::Compiler compiler(cx, obj->group(),
-                                         property->offset + UnboxedPlainObject::offsetOfData(),
-                                         property->type);
-    ICUpdatedStub* newStub = compiler.getStub(compiler.getStubSpace(script));
-    if (!newStub)
-        return false;
-    if (compiler.needsUpdateStubs() && !newStub->addUpdateStubForValue(cx, script, obj, id, rhs))
-        return false;
-
-    stub->addNewStub(newStub);
-
-    StripPreliminaryObjectStubs(cx, stub);
-
-    *attached = true;
-    return true;
-}
-
-static bool
 TryAttachTypedObjectSetPropStub(JSContext* cx, HandleScript script,
                                 ICSetProp_Fallback* stub, HandleId id,
                                 HandleObject obj, HandleValue rhs, bool* attached)
@@ -4409,12 +4282,6 @@ DoSetPropFallback(JSContext* cx, BaselineFrame* frame, ICSetProp_Fallback* stub_
         return false;
     RootedReceiverGuard oldGuard(cx, ReceiverGuard(obj));
 
-    if (obj->is<UnboxedPlainObject>()) {
-        MOZ_ASSERT(!oldShape);
-        if (UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando())
-            oldShape = expando->lastProperty();
-    }
-
     bool attached = false;
     // There are some reasons we can fail to attach a stub that are temporary.
     // We want to avoid calling noteUnoptimizableAccess() if the reason we
@@ -4479,15 +4346,6 @@ DoSetPropFallback(JSContext* cx, BaselineFrame* frame, ICSetProp_Fallback* stub_
         lhs.isObject() &&
         !TryAttachSetValuePropStub(cx, script, pc, stub, obj, oldShape, oldGroup,
                                    name, id, rhs, &attached))
-    {
-        return false;
-    }
-    if (attached)
-        return true;
-
-    if (!attached &&
-        lhs.isObject() &&
-        !TryAttachUnboxedSetPropStub(cx, script, stub, id, obj, rhs, &attached))
     {
         return false;
     }
@@ -4578,20 +4436,7 @@ GuardGroupAndShapeMaybeUnboxedExpando(MacroAssembler& masm, JSObject* obj,
 
     // Guard against shape or expando shape.
     masm.loadPtr(Address(ICStubReg, offsetOfShape), scratch);
-    if (obj->is<UnboxedPlainObject>()) {
-        Address expandoAddress(object, UnboxedPlainObject::offsetOfExpando());
-        masm.branchPtr(Assembler::Equal, expandoAddress, ImmWord(0), failure);
-        Label done;
-        masm.push(object);
-        masm.loadPtr(expandoAddress, object);
-        masm.branchTestObjShape(Assembler::Equal, object, scratch, &done);
-        masm.pop(object);
-        masm.jump(failure);
-        masm.bind(&done);
-        masm.pop(object);
-    } else {
-        masm.branchTestObjShape(Assembler::NotEqual, object, scratch, failure);
-    }
+    masm.branchTestObjShape(Assembler::NotEqual, object, scratch, failure);
 }
 
 bool
@@ -4630,13 +4475,7 @@ ICSetProp_Native::Compiler::generateStubCode(MacroAssembler& masm)
     regs.takeUnchecked(objReg);
 
     Register holderReg;
-    if (obj_->is<UnboxedPlainObject>()) {
-        // We are loading off the expando object, so use that for the holder.
-        holderReg = regs.takeAny();
-        masm.loadPtr(Address(objReg, UnboxedPlainObject::offsetOfExpando()), holderReg);
-        if (!isFixedSlot_)
-            masm.loadPtr(Address(holderReg, NativeObject::offsetOfSlots()), holderReg);
-    } else if (isFixedSlot_) {
+    if (isFixedSlot_) {
         holderReg = objReg;
     } else {
         holderReg = regs.takeAny();
@@ -4773,31 +4612,17 @@ ICSetPropNativeAddCompiler::generateStubCode(MacroAssembler& masm)
     regs.add(R0);
     regs.takeUnchecked(objReg);
 
-    if (obj_->is<UnboxedPlainObject>()) {
-        holderReg = regs.takeAny();
-        masm.loadPtr(Address(objReg, UnboxedPlainObject::offsetOfExpando()), holderReg);
+    // Write the object's new shape.
+    Address shapeAddr(objReg, ShapedObject::offsetOfShape());
+    EmitPreBarrier(masm, shapeAddr, MIRType::Shape);
+    masm.loadPtr(Address(ICStubReg, ICSetProp_NativeAdd::offsetOfNewShape()), scratch);
+    masm.storePtr(scratch, shapeAddr);
 
-        // Write the expando object's new shape.
-        Address shapeAddr(holderReg, ShapedObject::offsetOfShape());
-        EmitPreBarrier(masm, shapeAddr, MIRType::Shape);
-        masm.loadPtr(Address(ICStubReg, ICSetProp_NativeAdd::offsetOfNewShape()), scratch);
-        masm.storePtr(scratch, shapeAddr);
-
-        if (!isFixedSlot_)
-            masm.loadPtr(Address(holderReg, NativeObject::offsetOfSlots()), holderReg);
+    if (isFixedSlot_) {
+        holderReg = objReg;
     } else {
-        // Write the object's new shape.
-        Address shapeAddr(objReg, ShapedObject::offsetOfShape());
-        EmitPreBarrier(masm, shapeAddr, MIRType::Shape);
-        masm.loadPtr(Address(ICStubReg, ICSetProp_NativeAdd::offsetOfNewShape()), scratch);
-        masm.storePtr(scratch, shapeAddr);
-
-        if (isFixedSlot_) {
-            holderReg = objReg;
-        } else {
-            holderReg = regs.takeAny();
-            masm.loadPtr(Address(objReg, NativeObject::offsetOfSlots()), holderReg);
-        }
+        holderReg = regs.takeAny();
+        masm.loadPtr(Address(objReg, NativeObject::offsetOfSlots()), holderReg);
     }
 
     // Perform the store.  No write barrier required since this is a new
@@ -4822,70 +4647,6 @@ ICSetPropNativeAddCompiler::generateStubCode(MacroAssembler& masm)
     // Failure case - jump to next stub
     masm.bind(&failureUnstow);
     EmitUnstowICValues(masm, 2);
-
-    masm.bind(&failure);
-    EmitStubGuardFailure(masm);
-    return true;
-}
-
-bool
-ICSetProp_Unboxed::Compiler::generateStubCode(MacroAssembler& masm)
-{
-    MOZ_ASSERT(engine_ == Engine::Baseline);
-
-    Label failure;
-
-    // Guard input is an object.
-    masm.branchTestObject(Assembler::NotEqual, R0, &failure);
-
-    AllocatableGeneralRegisterSet regs(availableGeneralRegs(2));
-    Register scratch = regs.takeAny();
-
-    // Unbox and group guard.
-    Register object = masm.extractObject(R0, ExtractTemp0);
-    masm.loadPtr(Address(ICStubReg, ICSetProp_Unboxed::offsetOfGroup()), scratch);
-    masm.branchPtr(Assembler::NotEqual, Address(object, JSObject::offsetOfGroup()), scratch,
-                   &failure);
-
-    if (needsUpdateStubs()) {
-        // Stow both R0 and R1 (object and value).
-        EmitStowICValues(masm, 2);
-
-        // Move RHS into R0 for TypeUpdate check.
-        masm.moveValue(R1, R0);
-
-        // Call the type update stub.
-        if (!callTypeUpdateIC(masm, sizeof(Value)))
-            return false;
-
-        // Unstow R0 and R1 (object and key)
-        EmitUnstowICValues(masm, 2);
-
-        // The TypeUpdate IC may have smashed object. Rederive it.
-        masm.unboxObject(R0, object);
-
-        // Trigger post barriers here on the values being written. Fields which
-        // objects can be written to also need update stubs.
-        LiveGeneralRegisterSet saveRegs;
-        saveRegs.add(R0);
-        saveRegs.add(R1);
-        saveRegs.addUnchecked(object);
-        saveRegs.add(ICStubReg);
-        emitPostWriteBarrierSlot(masm, object, R1, scratch, saveRegs);
-    }
-
-    // Compute the address being written to.
-    masm.load32(Address(ICStubReg, ICSetProp_Unboxed::offsetOfFieldOffset()), scratch);
-    BaseIndex address(object, scratch, TimesOne);
-
-    EmitUnboxedPreBarrierForBaseline(masm, address, fieldType_);
-    masm.storeUnboxedProperty(address, fieldType_,
-                              ConstantOrRegister(TypedOrValueRegister(R1)), &failure);
-
-    // The RHS has to be in R0.
-    masm.moveValue(R1, R0);
-
-    EmitReturnFromIC(masm);
 
     masm.bind(&failure);
     EmitStubGuardFailure(masm);
@@ -5652,7 +5413,7 @@ TryAttachCallStub(JSContext* cx, ICCall_Fallback* stub, HandleScript script, jsb
             if (!thisObject)
                 return false;
 
-            if (thisObject->is<PlainObject>() || thisObject->is<UnboxedPlainObject>())
+            if (thisObject->is<PlainObject>())
                 templateObject = thisObject;
         }
 

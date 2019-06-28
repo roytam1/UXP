@@ -285,10 +285,6 @@ class ObjectMemoryView : public MDefinitionVisitorDefaultNoop
     void visitGuardShape(MGuardShape* ins);
     void visitFunctionEnvironment(MFunctionEnvironment* ins);
     void visitLambda(MLambda* ins);
-
-  private:
-    void storeOffset(MInstruction* ins, size_t offset, MDefinition* value);
-    void loadOffset(MInstruction* ins, size_t offset);
 };
 
 const char* ObjectMemoryView::phaseName = "Scalar Replacement of Object";
@@ -628,35 +624,6 @@ ObjectMemoryView::visitLambda(MLambda* ins)
     // In order to recover the lambda we need to recover the scope chain, as the
     // lambda is holding it.
     ins->setIncompleteObject();
-}
-
-void
-ObjectMemoryView::storeOffset(MInstruction* ins, size_t offset, MDefinition* value)
-{
-    // Clone the state and update the slot value.
-    MOZ_ASSERT(state_->hasOffset(offset));
-    state_ = BlockState::Copy(alloc_, state_);
-    if (!state_) {
-        oom_ = true;
-        return;
-    }
-
-    state_->setOffset(offset, value);
-    ins->block()->insertBefore(ins, state_);
-
-    // Remove original instruction.
-    ins->block()->discard(ins);
-}
-
-void
-ObjectMemoryView::loadOffset(MInstruction* ins, size_t offset)
-{
-    // Replace load by the slot value.
-    MOZ_ASSERT(state_->hasOffset(offset));
-    ins->replaceAllUsesWith(state_->getOffset(offset));
-
-    // Remove original instruction.
-    ins->block()->discard(ins);
 }
 
 static bool
