@@ -36,3 +36,16 @@ MOZ_ARG_DISABLE_BOOL(sync,
     MOZ_SERVICES_SYNC=,
     MOZ_SERVICES_SYNC=1)
 
+dnl ========================================================
+dnl = Disable Lightweight Themes
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(personas,
+[  --disable-personas           Disable lightweight theme support],
+    MOZ_PERSONAS=,
+    MOZ_PERSONAS=1)
+
+if test -n "$MOZ_PERSONAS"; then
+    AC_DEFINE(MOZ_PERSONAS)
+fi
+
+AC_SUBST(MOZ_PERSONAS)
