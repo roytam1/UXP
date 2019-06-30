@@ -3643,7 +3643,7 @@ js::NewCopiedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group,
     if (!obj)
         return nullptr;
 
-    DenseElementResult result = obj->setOrExtendDenseElements(cx->asJSContext(), 0, vp, length, updateTypes);
+    DenseElementResult result = obj->setOrExtendDenseElements(cx, 0, vp, length, updateTypes);
     if (result == DenseElementResult::Failure)
         return nullptr;
     MOZ_ASSERT(result == DenseElementResult::Success);

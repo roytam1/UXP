@@ -1150,7 +1150,7 @@ class NativeObject : public ShapedObject
     }
 
     inline DenseElementResult
-    setOrExtendDenseElements(JSContext* cx, uint32_t start, const Value* vp, uint32_t count,
+    setOrExtendDenseElements(ExclusiveContext* cx, uint32_t start, const Value* vp, uint32_t count,
                              ShouldUpdateTypes updateTypes = ShouldUpdateTypes::Update);
 
     bool shouldConvertDoubleElements() {
