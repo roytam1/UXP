@@ -29,7 +29,7 @@
 
 #include "nsIAtom.h"
 #include "nsHtml5AtomTable.h"
-#include "nsString.h"
+#include "nsHtml5String.h"
 #include "nsNameSpaceManager.h"
 #include "nsIContent.h"
 #include "nsTraceRefcnt.h"
@@ -160,11 +160,11 @@ nsHtml5StateSnapshot::~nsHtml5StateSnapshot()
 {
   MOZ_COUNT_DTOR(nsHtml5StateSnapshot);
   for (int32_t i = 0; i < stack.length; i++) {
-    stack[i]->release();
+    stack[i]->release(nullptr);
   }
   for (int32_t i = 0; i < listOfActiveFormattingElements.length; i++) {
     if (listOfActiveFormattingElements[i]) {
-      listOfActiveFormattingElements[i]->release();
+      listOfActiveFormattingElements[i]->release(nullptr);
     }
   }
 }

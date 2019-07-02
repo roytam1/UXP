@@ -339,14 +339,17 @@ IsObjectValueInCompartment(const Value& v, JSCompartment* comp);
 #endif
 
 // Operations which change an object's dense elements can either succeed, fail,
-// or be unable to complete. For native objects, the latter is used when the
-// object's elements must become sparse instead. The enum below is used for
-// such operations, and for similar operations on unboxed arrays and methods
-// that work on both kinds of objects.
+// or be unable to complete. The latter is used when the object's elements must
+// become sparse instead. The enum below is used for such operations.
 enum class DenseElementResult {
     Failure,
     Success,
     Incomplete
+};
+
+enum class ShouldUpdateTypes {
+    Update,
+    DontUpdate
 };
 
 /*
@@ -466,11 +469,6 @@ class NativeObject : public ShapedObject
     // object to a non-native one. This leaves the object with a type and shape
     // that are (temporarily) inconsistent.
     void setLastPropertyMakeNonNative(Shape* shape);
-
-    // As for setLastProperty(), but changes the class associated with the
-    // object to a native one. The object's type has already been changed, and
-    // this brings the shape into sync with it.
-    void setLastPropertyMakeNative(ExclusiveContext* cx, Shape* shape);
 
     // Newly-created TypedArrays that map a SharedArrayBuffer are
     // marked as shared by giving them an ObjectElements that has the
@@ -1146,6 +1144,10 @@ class NativeObject : public ShapedObject
         memmove(elements_ + dstStart, elements_ + srcStart, count * sizeof(HeapSlot));
         elementsRangeWriteBarrierPost(dstStart, count);
     }
+
+    inline DenseElementResult
+    setOrExtendDenseElements(JSContext* cx, uint32_t start, const Value* vp, uint32_t count,
+                             ShouldUpdateTypes updateTypes = ShouldUpdateTypes::Update);
 
     bool shouldConvertDoubleElements() {
         return getElementsHeader()->shouldConvertDoubleElements();

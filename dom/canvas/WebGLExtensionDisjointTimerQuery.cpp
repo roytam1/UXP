@@ -40,7 +40,7 @@ void
 WebGLExtensionDisjointTimerQuery::DeleteQueryEXT(WebGLQuery* query) const
 {
     const char funcName[] = "deleteQueryEXT";
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return;
 
     mContext->DeleteQuery(query, funcName);
@@ -50,7 +50,7 @@ bool
 WebGLExtensionDisjointTimerQuery::IsQueryEXT(const WebGLQuery* query) const
 {
     const char funcName[] = "isQueryEXT";
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return false;
 
     return mContext->IsQuery(query, funcName);
@@ -60,7 +60,7 @@ void
 WebGLExtensionDisjointTimerQuery::BeginQueryEXT(GLenum target, WebGLQuery& query) const
 {
     const char funcName[] = "beginQueryEXT";
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return;
 
     mContext->BeginQuery(target, query, funcName);
@@ -70,7 +70,7 @@ void
 WebGLExtensionDisjointTimerQuery::EndQueryEXT(GLenum target) const
 {
     const char funcName[] = "endQueryEXT";
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return;
 
     mContext->EndQuery(target, funcName);
@@ -80,7 +80,7 @@ void
 WebGLExtensionDisjointTimerQuery::QueryCounterEXT(WebGLQuery& query, GLenum target) const
 {
     const char funcName[] = "queryCounterEXT";
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return;
 
     if (!mContext->ValidateObject(funcName, query))
@@ -95,7 +95,7 @@ WebGLExtensionDisjointTimerQuery::GetQueryEXT(JSContext* cx, GLenum target, GLen
 {
     const char funcName[] = "getQueryEXT";
     retval.setNull();
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return;
 
     mContext->GetQuery(cx, target, pname, retval, funcName);
@@ -108,7 +108,7 @@ WebGLExtensionDisjointTimerQuery::GetQueryObjectEXT(JSContext* cx,
 {
     const char funcName[] = "getQueryObjectEXT";
     retval.setNull();
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return;
 
     mContext->GetQueryParameter(cx, query, pname, retval, funcName);

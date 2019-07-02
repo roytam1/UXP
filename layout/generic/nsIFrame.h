@@ -24,7 +24,7 @@
 #include <stdio.h>
 
 #include "CaretAssociationHint.h"
-#include "FramePropertyTable.h"
+#include "FrameProperties.h"
 #include "mozilla/layout/FrameChildList.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/WritingModes.h"
@@ -1005,8 +1005,8 @@ public:
 #define NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(prop, type) \
   NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(prop, mozilla::SmallValueHolder<type>)
 
-  NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(IBSplitSibling, nsIFrame)
-  NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(IBSplitPrevSibling, nsIFrame)
+  NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(IBSplitSibling, nsContainerFrame)
+  NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(IBSplitPrevSibling, nsContainerFrame)
 
   NS_DECLARE_FRAME_PROPERTY_DELETABLE(NormalPositionProperty, nsPoint)
   NS_DECLARE_FRAME_PROPERTY_DELETABLE(ComputedOffsetProperty, nsMargin)
@@ -1059,7 +1059,7 @@ public:
 
   mozilla::FrameBidiData GetBidiData()
   {
-    return Properties().Get(BidiDataProperty());
+    return GetProperty(BidiDataProperty());
   }
 
   nsBidiLevel GetBaseLevel()
@@ -1073,7 +1073,7 @@ public:
   }
 
   nsTArray<nsIContent*>* GetGenConPseudos() {
-    return Properties().Get(GenConProperty());
+    return GetProperty(GenConProperty());
   }
 
   /**
@@ -1534,7 +1534,7 @@ public:
 
   bool RefusedAsyncAnimation() const
   {
-    return Properties().Get(RefusedAsyncAnimationProperty());
+    return GetProperty(RefusedAsyncAnimationProperty());
   }
 
   /**
@@ -3061,9 +3061,53 @@ public:
     return mContent == aParentContent;
   }
 
-  FrameProperties Properties() const {
-    return FrameProperties(PresContext()->PropertyTable(), this);
-  }
+/**
+ * Support for reading and writing properties on the frame.
+ * These call through to the frame's FrameProperties object, if it
+ * exists, but avoid creating it if no property is ever set.
+ */
+template<typename T>
+FrameProperties::PropertyType<T>
+GetProperty(FrameProperties::Descriptor<T> aProperty,
+            bool* aFoundResult = nullptr) const
+{
+  return mProperties.Get(aProperty, aFoundResult);
+}
+
+template<typename T>
+bool HasProperty(FrameProperties::Descriptor<T> aProperty) const
+{
+    return mProperties.Has(aProperty);
+}
+
+template<typename T>
+void SetProperty(FrameProperties::Descriptor<T> aProperty,
+                 FrameProperties::PropertyType<T> aValue)
+{
+  mProperties.Set(aProperty, aValue, this);
+}
+
+template<typename T>
+FrameProperties::PropertyType<T>
+RemoveProperty(FrameProperties::Descriptor<T> aProperty,
+               bool* aFoundResult = nullptr)
+{
+  return mProperties.Remove(aProperty, aFoundResult);
+}
+
+template<typename T>
+void DeleteProperty(FrameProperties::Descriptor<T> aProperty)
+{
+  mProperties.Delete(aProperty, this);
+}
+
+void DeleteAllProperties()
+{
+  mProperties.DeleteAll(this);
+}
+
+// Reports size of the FrameProperties for this frame and its descendants
+size_t SizeOfFramePropertiesForTree(mozilla::MallocSizeOf aMallocSizeOf) const;
 
   /**
    * Return true if and only if this frame obeys visibility:hidden.
@@ -3423,7 +3467,7 @@ public:
    */
   bool FrameIsNonFirstInIBSplit() const {
     return (GetStateBits() & NS_FRAME_PART_OF_IBSPLIT) &&
-      FirstContinuation()->Properties().Get(nsIFrame::IBSplitPrevSibling());
+      FirstContinuation()->GetProperty(nsIFrame::IBSplitPrevSibling());
   }
 
   /**
@@ -3432,7 +3476,7 @@ public:
    */
   bool FrameIsNonLastInIBSplit() const {
     return (GetStateBits() & NS_FRAME_PART_OF_IBSPLIT) &&
-      FirstContinuation()->Properties().Get(nsIFrame::IBSplitSibling());
+      FirstContinuation()->GetProperty(nsIFrame::IBSplitSibling());
   }
 
   /**
@@ -3514,11 +3558,11 @@ private:
                                       DestroyPaintedPresShellList)
   
   nsTArray<nsWeakPtr>* PaintedPresShellList() {
-    nsTArray<nsWeakPtr>* list = Properties().Get(PaintedPresShellsProperty());
+    nsTArray<nsWeakPtr>* list = GetProperty(PaintedPresShellsProperty());
     
     if (!list) {
       list = new nsTArray<nsWeakPtr>();
-      Properties().Set(PaintedPresShellsProperty(), list);
+      SetProperty(PaintedPresShellsProperty(), list);
     }
     
     return list;
@@ -3534,6 +3578,11 @@ protected:
   }
 
   nsFrameState     mState;
+
+ /**
+  * List of properties attached to the frame.
+  */
+ FrameProperties  mProperties;
 
   // When there is an overflow area only slightly larger than mRect,
   // we store a set of four 1-byte deltas from the edges of mRect

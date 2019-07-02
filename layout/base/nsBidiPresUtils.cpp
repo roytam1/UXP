@@ -753,7 +753,6 @@ nsBidiPresUtils::ResolveParagraph(BidiParagraphData* aBpd)
   nsIContent* content = nullptr;
   int32_t     contentTextLength = 0;
 
-  FramePropertyTable* propTable = aBpd->mPresContext->PropertyTable();
   nsLineBox* currentLine = nullptr;
   
 #ifdef DEBUG
@@ -809,7 +808,7 @@ nsBidiPresUtils::ResolveParagraph(BidiParagraphData* aBpd)
     }
     precedingControl = kBidiLevelNone;
     lastEmbedingLevel = embeddingLevel;
-    propTable->Set(frame, nsIFrame::BidiDataProperty(), bidiData);
+    frame->SetProperty(nsIFrame::BidiDataProperty(), bidiData);
   };
 
   for (; ;) {
@@ -1787,7 +1786,7 @@ nsBidiPresUtils::RemoveBidiContinuation(BidiParagraphData *aBpd,
     if (frame != NS_BIDI_CONTROL_FRAME) {
       // Make the frame and its continuation ancestors fluid,
       // so they can be reused or deleted by normal reflow code
-      frame->Properties().Set(nsIFrame::BidiDataProperty(), bidiData);
+      frame->SetProperty(nsIFrame::BidiDataProperty(), bidiData);
       frame->AddStateBits(NS_FRAME_IS_BIDI);
       while (frame) {
         nsIFrame* prev = frame->GetPrevContinuation();

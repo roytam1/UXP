@@ -22,12 +22,14 @@ WebGLExtensionLoseContext::~WebGLExtensionLoseContext()
 void
 WebGLExtensionLoseContext::LoseContext()
 {
+    if (!mContext) return;
     mContext->LoseContext();
 }
 
 void
 WebGLExtensionLoseContext::RestoreContext()
 {
+    if (!mContext) return;
     mContext->RestoreContext();
 }
 

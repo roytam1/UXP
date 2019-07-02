@@ -32,7 +32,7 @@
 
 #include "nsIAtom.h"
 #include "nsHtml5AtomTable.h"
-#include "nsString.h"
+#include "nsHtml5String.h"
 #include "nsIContent.h"
 #include "nsTraceRefcnt.h"
 #include "jArray.h"
@@ -113,7 +113,8 @@ nsHtml5Tokenizer::setInterner(nsHtml5AtomTable* interner)
 }
 
 void 
-nsHtml5Tokenizer::initLocation(nsString* newPublicId, nsString* newSystemId)
+nsHtml5Tokenizer::initLocation(nsHtml5String newPublicId,
+                               nsHtml5String newSystemId)
 {
   this->systemId = newSystemId;
   this->publicId = newPublicId;
@@ -222,10 +223,11 @@ nsHtml5Tokenizer::emitOrAppendCharRefBuf(int32_t returnState)
   }
 }
 
-nsString* 
+nsHtml5String
 nsHtml5Tokenizer::strBufToString()
 {
-  nsString* str = nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, tokenHandler);
+  nsHtml5String str =
+    nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, tokenHandler);
   clearStrBufAfterUse();
   return str;
 }
@@ -350,7 +352,7 @@ void
 nsHtml5Tokenizer::addAttributeWithValue()
 {
   if (attributeName) {
-    nsString* val = strBufToString();
+    nsHtml5String val = strBufToString();
     if (mViewSource) {
       mViewSource->MaybeLinkifyAttributeValue(attributeName, val);
     }
@@ -2091,11 +2093,8 @@ nsHtml5Tokenizer::stateLoop(int32_t state, char16_t c, int32_t pos, char16_t* bu
               default: {
                 tokenHandler->characters(nsHtml5Tokenizer::LT_SOLIDUS, 0, 2);
                 emitStrBuf();
-                if (c == '\0') {
-                  emitReplacementCharacter(buf, pos);
-                } else {
-                  cstart = pos;
-                }
+                cstart = pos;
+                reconsume = true;
                 state = P::transition(mViewSource, returnState, reconsume, pos);
                 NS_HTML5_CONTINUE(stateloop);
               }
@@ -3496,11 +3495,11 @@ nsHtml5Tokenizer::initDoctypeFields()
   clearStrBufAfterUse();
   doctypeName = nsHtml5Atoms::emptystring;
   if (systemIdentifier) {
-    nsHtml5Portability::releaseString(systemIdentifier);
+    systemIdentifier.Release();
     systemIdentifier = nullptr;
   }
   if (publicIdentifier) {
-    nsHtml5Portability::releaseString(publicIdentifier);
+    publicIdentifier.Release();
     publicIdentifier = nullptr;
   }
   forceQuirks = false;
@@ -3662,11 +3661,11 @@ nsHtml5Tokenizer::eof()
           errEofInDoctype();
           doctypeName = nsHtml5Atoms::emptystring;
           if (systemIdentifier) {
-            nsHtml5Portability::releaseString(systemIdentifier);
+            systemIdentifier.Release();
             systemIdentifier = nullptr;
           }
           if (publicIdentifier) {
-            nsHtml5Portability::releaseString(publicIdentifier);
+            publicIdentifier.Release();
             publicIdentifier = nullptr;
           }
           forceQuirks = true;
@@ -3896,14 +3895,14 @@ nsHtml5Tokenizer::emitDoctypeToken(int32_t pos)
   cstart = pos + 1;
   tokenHandler->doctype(doctypeName, publicIdentifier, systemIdentifier, forceQuirks);
   doctypeName = nullptr;
-  nsHtml5Portability::releaseString(publicIdentifier);
+  publicIdentifier.Release();
   publicIdentifier = nullptr;
-  nsHtml5Portability::releaseString(systemIdentifier);
+  systemIdentifier.Release();
   systemIdentifier = nullptr;
 }
 
 bool 
-nsHtml5Tokenizer::internalEncodingDeclaration(nsString* internalCharset)
+nsHtml5Tokenizer::internalEncodingDeclaration(nsHtml5String internalCharset)
 {
   if (encodingDeclarationHandler) {
     return encodingDeclarationHandler->internalEncodingDeclaration(internalCharset);
@@ -3938,11 +3937,11 @@ nsHtml5Tokenizer::end()
   strBuf = nullptr;
   doctypeName = nullptr;
   if (systemIdentifier) {
-    nsHtml5Portability::releaseString(systemIdentifier);
+    systemIdentifier.Release();
     systemIdentifier = nullptr;
   }
   if (publicIdentifier) {
-    nsHtml5Portability::releaseString(publicIdentifier);
+    publicIdentifier.Release();
     publicIdentifier = nullptr;
   }
   if (tagName) {
@@ -4041,13 +4040,13 @@ nsHtml5Tokenizer::loadState(nsHtml5Tokenizer* other)
   } else {
     doctypeName = nsHtml5Portability::newLocalFromLocal(other->doctypeName, interner);
   }
-  nsHtml5Portability::releaseString(systemIdentifier);
+  systemIdentifier.Release();
   if (!other->systemIdentifier) {
     systemIdentifier = nullptr;
   } else {
     systemIdentifier = nsHtml5Portability::newStringFromString(other->systemIdentifier);
   }
-  nsHtml5Portability::releaseString(publicIdentifier);
+  publicIdentifier.Release();
   if (!other->publicIdentifier) {
     publicIdentifier = nullptr;
   } else {

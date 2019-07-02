@@ -2000,7 +2000,7 @@ struct MOZ_STACK_CLASS nsGridContainerFrame::GridReflowInput
       ++fragment;
       firstInFlow = pif;
     }
-    mSharedGridData = firstInFlow->Properties().Get(SharedGridData::Prop());
+    mSharedGridData = firstInFlow->GetProperty(SharedGridData::Prop());
     MOZ_ASSERT(mSharedGridData, "first-in-flow must have SharedGridData");
 
     // Find the start row for this fragment and undo breaks after that row
@@ -2809,7 +2809,7 @@ nsGridContainerFrame::GridItemCB(nsIFrame* aChild)
 {
   MOZ_ASSERT((aChild->GetStateBits() & NS_FRAME_OUT_OF_FLOW) &&
              aChild->IsAbsolutelyPositioned());
-  nsRect* cb = aChild->Properties().Get(GridItemContainingBlockRect());
+  nsRect* cb = aChild->GetProperty(GridItemContainingBlockRect());
   MOZ_ASSERT(cb, "this method must only be called on grid items, and the grid "
                  "container should've reflowed this item by now and set up cb");
   return *cb;
@@ -2836,7 +2836,7 @@ nsGridContainerFrame::AddImplicitNamedAreas(
         // Lazily create the ImplicitNamedAreas.
         if (!areas) {
           areas = new ImplicitNamedAreas;
-          Properties().Set(ImplicitNamedAreasProperty(), areas);
+          SetProperty(ImplicitNamedAreasProperty(), areas);
         }
 
         mozilla::css::GridNamedArea area;
@@ -2868,7 +2868,7 @@ nsGridContainerFrame::InitImplicitNamedAreas(const nsStylePosition* aStyle)
   AddImplicitNamedAreas(aStyle->mGridTemplateColumns.mLineNameLists);
   AddImplicitNamedAreas(aStyle->mGridTemplateRows.mLineNameLists);
   if (areas && areas->Count() == 0) {
-    Properties().Delete(ImplicitNamedAreasProperty());
+    DeleteProperty(ImplicitNamedAreasProperty());
   }
 }
 
@@ -3711,7 +3711,7 @@ MeasuringReflow(nsIFrame*           aChild,
   }
 #ifdef DEBUG
   // This will suppress various CRAZY_SIZE warnings for this reflow.
-  parent->Properties().Set(
+  parent->SetProperty(
     nsContainerFrame::DebugReflowingWithInfiniteISize(), true);
 #endif
   auto wm = aChild->GetWritingMode();
@@ -3724,10 +3724,10 @@ MeasuringReflow(nsIFrame*           aChild,
   }
   if (aBMinSizeClamp != NS_MAXSIZE) {
     riFlags |= ReflowInput::B_CLAMP_MARGIN_BOX_MIN_SIZE;
-    aChild->Properties().Set(nsIFrame::BClampMarginBoxMinSizeProperty(),
+    aChild->SetProperty(nsIFrame::BClampMarginBoxMinSizeProperty(),
                              aBMinSizeClamp);
   } else {
-    aChild->Properties().Delete(nsIFrame::BClampMarginBoxMinSizeProperty());
+    aChild->DeleteProperty(nsIFrame::BClampMarginBoxMinSizeProperty());
   }
   ReflowInput childRI(pc, *rs, aChild, aAvailableSize, &aCBSize, riFlags);
   ReflowOutput childSize(childRI);
@@ -3738,7 +3738,7 @@ MeasuringReflow(nsIFrame*           aChild,
   parent->FinishReflowChild(aChild, pc, childSize, &childRI, wm,
                             LogicalPoint(wm), nsSize(), flags);
 #ifdef DEBUG
-    parent->Properties().Delete(nsContainerFrame::DebugReflowingWithInfiniteISize());
+    parent->DeleteProperty(nsContainerFrame::DebugReflowingWithInfiniteISize());
 #endif
   return childSize.BSize(wm);
 }
@@ -5253,9 +5253,9 @@ nsGridContainerFrame::ReflowInFlowChild(nsIFrame*              aChild,
         baselineAdjust = -baselineAdjust;
       }
       if (baselineAdjust != nscoord(0)) {
-        aChild->Properties().Set(aProp, baselineAdjust);
+        aChild->SetProperty(aProp, baselineAdjust);
       } else {
-        aChild->Properties().Delete(aProp);
+        aChild->DeleteProperty(aProp);
       }
     };
     SetProp(eLogicalAxisBlock, isOrthogonal ? IBaselinePadProperty() :
@@ -5292,10 +5292,10 @@ nsGridContainerFrame::ReflowInFlowChild(nsIFrame*              aChild,
     auto childBAxis = GetOrthogonalAxis(childIAxis);
     if (aGridItemInfo->mState[childBAxis] & ItemState::eClampMarginBoxMinSize) {
       flags |= ReflowInput::B_CLAMP_MARGIN_BOX_MIN_SIZE;
-      aChild->Properties().Set(BClampMarginBoxMinSizeProperty(),
-                               childCBSize.BSize(childWM));
+      aChild->SetProperty(BClampMarginBoxMinSizeProperty(),
+                          childCBSize.BSize(childWM));
     } else {
-      aChild->Properties().Delete(BClampMarginBoxMinSizeProperty());
+      aChild->DeleteProperty(BClampMarginBoxMinSizeProperty());
     }
     if ((aGridItemInfo->mState[childIAxis] & ItemState::eApplyAutoMinSize)) {
       flags |= ReflowInput::I_APPLY_AUTO_MIN_SIZE;
@@ -5313,11 +5313,11 @@ nsGridContainerFrame::ReflowInFlowChild(nsIFrame*              aChild,
   // A table-wrapper needs to propagate the CB size we give it to its
   // inner table frame later.  @see nsTableWrapperFrame::InitChildReflowInput.
   if (childType == nsGkAtoms::tableWrapperFrame) {
-    const auto& props = aChild->Properties();
-    LogicalSize* cb = props.Get(nsTableWrapperFrame::GridItemCBSizeProperty());
+    LogicalSize* cb =
+      aChild->GetProperty(nsTableWrapperFrame::GridItemCBSizeProperty());
     if (!cb) {
       cb = new LogicalSize(childWM);
-      props.Set(nsTableWrapperFrame::GridItemCBSizeProperty(), cb);
+      aChild->SetProperty(nsTableWrapperFrame::GridItemCBSizeProperty(), cb);
     }
     *cb = percentBasis;
   }
@@ -5337,9 +5337,9 @@ nsGridContainerFrame::ReflowInFlowChild(nsIFrame*              aChild,
       }
     }
     if (stretch) {
-      aChild->Properties().Set(FragStretchBSizeProperty(), *aStretchBSize);
+      aChild->SetProperty(FragStretchBSizeProperty(), *aStretchBSize);
     } else {
-      aChild->Properties().Delete(FragStretchBSizeProperty());
+      aChild->DeleteProperty(FragStretchBSizeProperty());
     }
   }
 
@@ -5951,10 +5951,10 @@ nsGridContainerFrame::ReflowChildren(GridReflowInput&     aState,
         LogicalRect itemCB =
           aState.ContainingBlockForAbsPos(area, gridOrigin, gridCB);
         // nsAbsoluteContainingBlock::Reflow uses physical coordinates.
-        nsRect* cb = child->Properties().Get(GridItemContainingBlockRect());
+        nsRect* cb = child->GetProperty(GridItemContainingBlockRect());
         if (!cb) {
           cb = new nsRect;
-          child->Properties().Set(GridItemContainingBlockRect(), cb);
+          child->SetProperty(GridItemContainingBlockRect(), cb);
         }
         *cb = itemCB.GetPhysicalRect(wm, gridCBPhysicalSize);
       }
@@ -6044,7 +6044,7 @@ nsGridContainerFrame::Reflow(nsPresContext*           aPresContext,
           f = next;
         }
         if (overflowContainers->IsEmpty()) {
-          Properties().Delete(OverflowContainersProperty());
+          DeleteProperty(OverflowContainersProperty());
         }
         MergeSortedExcessOverflowContainers(moveToEOC);
       }
@@ -6355,7 +6355,7 @@ nsGridContainerFrame::Reflow(nsPresContext*           aPresContext,
       Move(colTrackStates),
       Move(colRemovedRepeatTracks),
       gridReflowInput.mColFunctions.mRepeatAutoStart);
-    Properties().Set(GridColTrackInfo(), colInfo);
+    SetProperty(GridColTrackInfo(), colInfo);
 
     uint32_t rowTrackCount = gridReflowInput.mRows.mSizes.Length();
     nsTArray<nscoord> rowTrackPositions(rowTrackCount);
@@ -6390,7 +6390,7 @@ nsGridContainerFrame::Reflow(nsPresContext*           aPresContext,
       Move(rowTrackStates),
       Move(rowRemovedRepeatTracks),
       gridReflowInput.mRowFunctions.mRepeatAutoStart);
-    Properties().Set(GridRowTrackInfo(), rowInfo);
+    SetProperty(GridRowTrackInfo(), rowInfo);
 
     if (prevInFlow) {
       // This frame is fragmenting rows from a previous frame, so patch up
@@ -6399,7 +6399,7 @@ nsGridContainerFrame::Reflow(nsPresContext*           aPresContext,
       // FIXME: This can be streamlined and/or removed when bug 1151204 lands.
 
       ComputedGridTrackInfo* priorRowInfo =
-        prevInFlow->Properties().Get(GridRowTrackInfo());
+        prevInFlow->GetProperty(GridRowTrackInfo());
 
       // Adjust track positions based on the first track in this fragment.
       if (priorRowInfo->mPositions.Length() >
@@ -6421,7 +6421,7 @@ nsGridContainerFrame::Reflow(nsPresContext*           aPresContext,
         Move(priorRowInfo->mStates),
         Move(priorRowInfo->mRemovedRepeatTracks),
         priorRowInfo->mRepeatFirstTrack);
-      prevInFlow->Properties().Set(GridRowTrackInfo(), revisedPriorRowInfo);
+      prevInFlow->SetProperty(GridRowTrackInfo(), revisedPriorRowInfo);
     }
 
     // Generate the line info properties. We need to provide the number of
@@ -6448,7 +6448,7 @@ nsGridContainerFrame::Reflow(nsPresContext*           aPresContext,
       Move(columnLineNames),
       gridColTemplate.mRepeatAutoLineNameListBefore,
       gridColTemplate.mRepeatAutoLineNameListAfter);
-    Properties().Set(GridColumnLineInfo(), columnLineInfo);
+    SetProperty(GridColumnLineInfo(), columnLineInfo);
 
     // Generate row lines next.
     capacity = gridReflowInput.mRows.mSizes.Length();
@@ -6469,25 +6469,25 @@ nsGridContainerFrame::Reflow(nsPresContext*           aPresContext,
       Move(rowLineNames),
       gridRowTemplate.mRepeatAutoLineNameListBefore,
       gridRowTemplate.mRepeatAutoLineNameListAfter);
-    Properties().Set(GridRowLineInfo(), rowLineInfo);
+    SetProperty(GridRowLineInfo(), rowLineInfo);
 
     // Generate area info for explicit areas. Implicit areas are handled
     // elsewhere.
     if (gridReflowInput.mGridStyle->mGridTemplateAreas) {
       nsTArray<css::GridNamedArea>* areas = new nsTArray<css::GridNamedArea>(
           gridReflowInput.mGridStyle->mGridTemplateAreas->mNamedAreas);
-      Properties().Set(ExplicitNamedAreasProperty(), areas);
+      SetProperty(ExplicitNamedAreasProperty(), areas);
     } else {
-      Properties().Delete(ExplicitNamedAreasProperty());
+      DeleteProperty(ExplicitNamedAreasProperty());
     }
   }
 
   if (!prevInFlow) {
-    SharedGridData* sharedGridData = Properties().Get(SharedGridData::Prop());
+    SharedGridData* sharedGridData = GetProperty(SharedGridData::Prop());
     if (!NS_FRAME_IS_FULLY_COMPLETE(aStatus)) {
       if (!sharedGridData) {
         sharedGridData = new SharedGridData;
-        Properties().Set(SharedGridData::Prop(), sharedGridData);
+        SetProperty(SharedGridData::Prop(), sharedGridData);
       }
       sharedGridData->mCols.mSizes.Clear();
       sharedGridData->mCols.mSizes.SwapElements(gridReflowInput.mCols.mSizes);
@@ -6522,7 +6522,7 @@ nsGridContainerFrame::Reflow(nsPresContext*           aPresContext,
       sharedGridData->mGenerateComputedGridInfo =
           HasAnyStateBits(NS_STATE_GRID_GENERATE_COMPUTED_VALUES);
     } else if (sharedGridData && !GetNextInFlow()) {
-      Properties().Delete(SharedGridData::Prop());
+      DeleteProperty(SharedGridData::Prop());
     }
   }
 
@@ -7142,10 +7142,10 @@ nsGridContainerFrame::GetGridFrameWithComputedInfo(nsIFrame* aFrame)
   nsGridContainerFrame* gridFrame = GetGridContainerFrame(aFrame);
   if (gridFrame) {
     // if any of our properties are missing, generate them
-    bool reflowNeeded = (!gridFrame->Properties().Has(GridColTrackInfo()) ||
-                         !gridFrame->Properties().Has(GridRowTrackInfo()) ||
-                         !gridFrame->Properties().Has(GridColumnLineInfo()) ||
-                         !gridFrame->Properties().Has(GridRowLineInfo()));
+    bool reflowNeeded = (!gridFrame->HasProperty(GridColTrackInfo()) ||
+                         !gridFrame->HasProperty(GridRowTrackInfo()) ||
+                         !gridFrame->HasProperty(GridColumnLineInfo()) ||
+                         !gridFrame->HasProperty(GridRowLineInfo()));
 
     if (reflowNeeded) {
       // Trigger a reflow that generates additional grid property data.
@@ -7161,13 +7161,13 @@ nsGridContainerFrame::GetGridFrameWithComputedInfo(nsIFrame* aFrame)
 
       // Assert the grid properties are present
       MOZ_ASSERT(!gridFrame ||
-                  gridFrame->Properties().Has(GridColTrackInfo()));
+                  gridFrame->HasProperty(GridColTrackInfo()));
       MOZ_ASSERT(!gridFrame ||
-                  gridFrame->Properties().Has(GridRowTrackInfo()));
+                  gridFrame->HasProperty(GridRowTrackInfo()));
       MOZ_ASSERT(!gridFrame ||
-                  gridFrame->Properties().Has(GridColumnLineInfo()));
+                  gridFrame->HasProperty(GridColumnLineInfo()));
       MOZ_ASSERT(!gridFrame ||
-                  gridFrame->Properties().Has(GridRowLineInfo()));
+                  gridFrame->HasProperty(GridRowLineInfo()));
     }
   }
 

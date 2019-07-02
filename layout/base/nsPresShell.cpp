@@ -1306,19 +1306,6 @@ PresShell::Destroy()
   // Destroy the frame manager. This will destroy the frame hierarchy
   mFrameConstructor->WillDestroyFrameTree();
 
-  // Destroy all frame properties (whose destruction was suppressed
-  // while destroying the frame tree, but which might contain more
-  // frames within the properties.
-  if (mPresContext) {
-    // Clear out the prescontext's property table -- since our frame tree is
-    // now dead, we shouldn't be looking up any more properties in that table.
-    // We want to do this before we call DetachShell() on the prescontext, so
-    // property destructors can usefully call GetPresShell() on the
-    // prescontext.
-    mPresContext->PropertyTable()->DeleteAll();
-  }
-
-
   NS_WARNING_ASSERTION(!mWeakFrames,
                        "Weak frames alive after destroying FrameManager");
   while (mWeakFrames) {
@@ -2047,7 +2034,7 @@ PresShell::NotifyDestroyingFrame(nsIFrame* aFrame)
     }
 
     // Remove frame properties
-    mPresContext->NotifyDestroyingFrame(aFrame);
+    aFrame->DeleteAllProperties();
 
     if (aFrame == mCurrentEventFrame) {
       mCurrentEventContent = aFrame->GetContent();
@@ -2076,8 +2063,7 @@ PresShell::NotifyDestroyingFrame(nsIFrame* aFrame)
     // frame from FrameLayerBuilder::DisplayItemData::mFrameList -- otherwise
     // the DisplayItemData destructor will use the destroyed frame when it
     // tries to remove it from the (array) value of this property.
-    mPresContext->PropertyTable()->
-      Delete(aFrame, FrameLayerBuilder::LayerManagerDataProperty());
+      aFrame->DeleteProperty( FrameLayerBuilder::LayerManagerDataProperty());
   }
 }
 
@@ -10929,11 +10915,12 @@ PresShell::GetRootPresShell()
 
 void
 PresShell::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
-                                  nsArenaMemoryStats *aArenaObjectsSize,
-                                  size_t *aPresShellSize,
-                                  size_t *aStyleSetsSize,
-                                  size_t *aTextRunsSize,
-                                  size_t *aPresContextSize)
+                                  nsArenaMemoryStats* aArenaObjectsSize,
+                                  size_t* aPresShellSize,
+                                  size_t* aStyleSetsSize,
+                                  size_t* aTextRunsSize,
+                                  size_t* aPresContextSize,
+                                  size_t* aFramePropertiesSize)
 {
   mFrameArena.AddSizeOfExcludingThis(aMallocSizeOf, aArenaObjectsSize);
   *aPresShellSize += aMallocSizeOf(this);
@@ -10953,6 +10940,12 @@ PresShell::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
   *aTextRunsSize += SizeOfTextRuns(aMallocSizeOf);
 
   *aPresContextSize += mPresContext->SizeOfIncludingThis(aMallocSizeOf);
+
+  nsIFrame* rootFrame = mFrameConstructor->GetRootFrame();
+  if (rootFrame) {
+    *aFramePropertiesSize +=
+      rootFrame->SizeOfFramePropertiesForTree(aMallocSizeOf);
+  }
 }
 
 size_t

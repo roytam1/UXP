@@ -6281,8 +6281,8 @@ ParseNode::getConstantValue(ExclusiveContext* cx, AllowConstantObjects allowObje
         }
         MOZ_ASSERT(idx == count);
 
-        JSObject* obj = ObjectGroup::newArrayObject(cx, values.begin(), values.length(),
-                                                    newKind, arrayKind);
+        ArrayObject* obj = ObjectGroup::newArrayObject(cx, values.begin(), values.length(),
+                                                       newKind, arrayKind);
         if (!obj)
             return false;
 

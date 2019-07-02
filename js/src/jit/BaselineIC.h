@@ -22,7 +22,6 @@
 #include "jit/SharedICRegisters.h"
 #include "js/GCVector.h"
 #include "vm/ArrayObject.h"
-#include "vm/UnboxedObject.h"
 
 namespace js {
 namespace jit {
@@ -892,54 +891,6 @@ class ICGetElem_Dense : public ICMonitoredStub
     };
 };
 
-class ICGetElem_UnboxedArray : public ICMonitoredStub
-{
-    friend class ICStubSpace;
-
-    GCPtrObjectGroup group_;
-
-    ICGetElem_UnboxedArray(JitCode* stubCode, ICStub* firstMonitorStub, ObjectGroup* group);
-
-  public:
-    static ICGetElem_UnboxedArray* Clone(JSContext* cx, ICStubSpace* space,
-                                         ICStub* firstMonitorStub, ICGetElem_UnboxedArray& other);
-
-    static size_t offsetOfGroup() {
-        return offsetof(ICGetElem_UnboxedArray, group_);
-    }
-
-    GCPtrObjectGroup& group() {
-        return group_;
-    }
-
-    class Compiler : public ICStubCompiler {
-      ICStub* firstMonitorStub_;
-      RootedObjectGroup group_;
-      JSValueType elementType_;
-
-      protected:
-        MOZ_MUST_USE bool generateStubCode(MacroAssembler& masm);
-
-        virtual int32_t getKey() const {
-            return static_cast<int32_t>(engine_) |
-                  (static_cast<int32_t>(kind) << 1) |
-                  (static_cast<int32_t>(elementType_) << 17);
-        }
-
-      public:
-        Compiler(JSContext* cx, ICStub* firstMonitorStub, ObjectGroup* group)
-          : ICStubCompiler(cx, ICStub::GetElem_UnboxedArray, Engine::Baseline),
-            firstMonitorStub_(firstMonitorStub),
-            group_(cx, group),
-            elementType_(group->unboxedLayoutDontCheckGeneration().elementType())
-        {}
-
-        ICStub* getStub(ICStubSpace* space) {
-            return newStub<ICGetElem_UnboxedArray>(space, getStubCode(), firstMonitorStub_, group_);
-        }
-    };
-};
-
 // Accesses scalar elements of a typed array or typed object.
 class ICGetElem_TypedArray : public ICStub
 {
@@ -1115,9 +1066,7 @@ class ICSetElem_DenseOrUnboxedArray : public ICUpdatedStub
           : ICStubCompiler(cx, ICStub::SetElem_DenseOrUnboxedArray, Engine::Baseline),
             shape_(cx, shape),
             group_(cx, group),
-            unboxedType_(shape
-                         ? JSVAL_TYPE_MAGIC
-                         : group->unboxedLayoutDontCheckGeneration().elementType())
+            unboxedType_(JSVAL_TYPE_MAGIC)
         {}
 
         ICUpdatedStub* getStub(ICStubSpace* space) {
@@ -1225,9 +1174,7 @@ class ICSetElemDenseOrUnboxedArrayAddCompiler : public ICStubCompiler {
         : ICStubCompiler(cx, ICStub::SetElem_DenseOrUnboxedArrayAdd, Engine::Baseline),
           obj_(cx, obj),
           protoChainDepth_(protoChainDepth),
-          unboxedType_(obj->is<UnboxedArrayObject>()
-                       ? obj->as<UnboxedArrayObject>().elementType()
-                       : JSVAL_TYPE_MAGIC)
+          unboxedType_(JSVAL_TYPE_MAGIC)
     {}
 
     template <size_t ProtoChainDepth>
@@ -1875,8 +1822,7 @@ class ICSetProp_Native : public ICUpdatedStub
         virtual int32_t getKey() const {
             return static_cast<int32_t>(engine_) |
                   (static_cast<int32_t>(kind) << 1) |
-                  (static_cast<int32_t>(isFixedSlot_) << 17) |
-                  (static_cast<int32_t>(obj_->is<UnboxedPlainObject>()) << 18);
+                  (static_cast<int32_t>(isFixedSlot_) << 17);
         }
 
         MOZ_MUST_USE bool generateStubCode(MacroAssembler& masm);
@@ -1981,7 +1927,6 @@ class ICSetPropNativeAddCompiler : public ICStubCompiler
         return static_cast<int32_t>(engine_) |
               (static_cast<int32_t>(kind) << 1) |
               (static_cast<int32_t>(isFixedSlot_) << 17) |
-              (static_cast<int32_t>(obj_->is<UnboxedPlainObject>()) << 18) |
               (static_cast<int32_t>(protoChainDepth_) << 19);
     }
 
@@ -2006,10 +1951,7 @@ class ICSetPropNativeAddCompiler : public ICStubCompiler
             newGroup = nullptr;
 
         RootedShape newShape(cx);
-        if (obj_->isNative())
-            newShape = obj_->as<NativeObject>().lastProperty();
-        else
-            newShape = obj_->as<UnboxedPlainObject>().maybeExpando()->lastProperty();
+        newShape = obj_->as<NativeObject>().lastProperty();
 
         return newStub<ICSetProp_NativeAddImpl<ProtoChainDepth>>(
             space, getStubCode(), oldGroup_, shapes, newShape, newGroup, offset_);
@@ -2870,10 +2812,10 @@ class ICCall_StringSplit : public ICMonitoredStub
     uint32_t pcOffset_;
     GCPtrString expectedStr_;
     GCPtrString expectedSep_;
-    GCPtrObject templateObject_;
+    GCPtrArrayObject templateObject_;
 
     ICCall_StringSplit(JitCode* stubCode, ICStub* firstMonitorStub, uint32_t pcOffset, JSString* str,
-                       JSString* sep, JSObject* templateObject)
+                       JSString* sep, ArrayObject* templateObject)
       : ICMonitoredStub(ICStub::Call_StringSplit, stubCode, firstMonitorStub),
         pcOffset_(pcOffset), expectedStr_(str), expectedSep_(sep),
         templateObject_(templateObject)
@@ -2900,7 +2842,7 @@ class ICCall_StringSplit : public ICMonitoredStub
         return expectedSep_;
     }
 
-    GCPtrObject& templateObject() {
+    GCPtrArrayObject& templateObject() {
         return templateObject_;
     }
 
@@ -2910,7 +2852,7 @@ class ICCall_StringSplit : public ICMonitoredStub
         uint32_t pcOffset_;
         RootedString expectedStr_;
         RootedString expectedSep_;
-        RootedObject templateObject_;
+        RootedArrayObject templateObject_;
 
         MOZ_MUST_USE bool generateStubCode(MacroAssembler& masm);
 
@@ -2921,13 +2863,13 @@ class ICCall_StringSplit : public ICMonitoredStub
 
       public:
         Compiler(JSContext* cx, ICStub* firstMonitorStub, uint32_t pcOffset, HandleString str,
-                 HandleString sep, HandleValue templateObject)
+                 HandleString sep, HandleArrayObject templateObject)
           : ICCallStubCompiler(cx, ICStub::Call_StringSplit),
             firstMonitorStub_(firstMonitorStub),
             pcOffset_(pcOffset),
             expectedStr_(cx, str),
             expectedSep_(cx, sep),
-            templateObject_(cx, &templateObject.toObject())
+            templateObject_(cx, templateObject)
         { }
 
         ICStub* getStub(ICStubSpace* space) {

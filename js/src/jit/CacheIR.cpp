@@ -10,8 +10,7 @@
 #include "jit/IonCaches.h"
 
 #include "jsobjinlines.h"
-
-#include "vm/UnboxedObject-inl.h"
+#include "vm/NativeObject-inl.h"
 
 using namespace js;
 using namespace js::jit;
@@ -59,10 +58,6 @@ GetPropIRGenerator::tryAttachStub(Maybe<CacheIRWriter>& writer)
         if (!emitted_ && !tryAttachObjectLength(*writer, obj, objId))
             return false;
         if (!emitted_ && !tryAttachNative(*writer, obj, objId))
-            return false;
-        if (!emitted_ && !tryAttachUnboxed(*writer, obj, objId))
-            return false;
-        if (!emitted_ && !tryAttachUnboxedExpando(*writer, obj, objId))
             return false;
         if (!emitted_ && !tryAttachTypedObject(*writer, obj, objId))
             return false;
@@ -163,19 +158,9 @@ GeneratePrototypeGuards(CacheIRWriter& writer, JSObject* obj, JSObject* holder, 
 }
 
 static void
-TestMatchingReceiver(CacheIRWriter& writer, JSObject* obj, Shape* shape, ObjOperandId objId,
-                     Maybe<ObjOperandId>* expandoId)
+TestMatchingReceiver(CacheIRWriter& writer, JSObject* obj, Shape* shape, ObjOperandId objId)
 {
-    if (obj->is<UnboxedPlainObject>()) {
-        writer.guardGroup(objId, obj->group());
-
-        if (UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando()) {
-            expandoId->emplace(writer.guardAndLoadUnboxedExpando(objId));
-            writer.guardShape(expandoId->ref(), expando->lastProperty());
-        } else {
-            writer.guardNoUnboxedExpando(objId);
-        }
-    } else if (obj->is<UnboxedArrayObject>() || obj->is<TypedObject>()) {
+    if (obj->is<TypedObject>()) {
         writer.guardGroup(objId, obj->group());
     } else {
         Shape* shape = obj->maybeShape();
@@ -188,8 +173,7 @@ static void
 EmitReadSlotResult(CacheIRWriter& writer, JSObject* obj, JSObject* holder,
                    Shape* shape, ObjOperandId objId)
 {
-    Maybe<ObjOperandId> expandoId;
-    TestMatchingReceiver(writer, obj, shape, objId, &expandoId);
+    TestMatchingReceiver(writer, obj, shape, objId);
 
     ObjOperandId holderId;
     if (obj != holder) {
@@ -212,9 +196,6 @@ EmitReadSlotResult(CacheIRWriter& writer, JSObject* obj, JSObject* holder,
                 lastObjId = protoId;
             }
         }
-    } else if (obj->is<UnboxedPlainObject>()) {
-        holder = obj->as<UnboxedPlainObject>().maybeExpando();
-        holderId = *expandoId;
     } else {
         holderId = objId;
     }
@@ -262,51 +243,6 @@ GetPropIRGenerator::tryAttachNative(CacheIRWriter& writer, HandleObject obj, Obj
         MOZ_CRASH("Bad NativeGetPropCacheability");
     }
 
-    return true;
-}
-
-bool
-GetPropIRGenerator::tryAttachUnboxed(CacheIRWriter& writer, HandleObject obj, ObjOperandId objId)
-{
-    MOZ_ASSERT(!emitted_);
-
-    if (!obj->is<UnboxedPlainObject>())
-        return true;
-
-    const UnboxedLayout::Property* property = obj->as<UnboxedPlainObject>().layout().lookup(name_);
-    if (!property)
-        return true;
-
-    if (!cx_->runtime()->jitSupportsFloatingPoint)
-        return true;
-
-    writer.guardGroup(objId, obj->group());
-    writer.loadUnboxedPropertyResult(objId, property->type,
-                                     UnboxedPlainObject::offsetOfData() + property->offset);
-    emitted_ = true;
-    preliminaryObjectAction_ = PreliminaryObjectAction::Unlink;
-    return true;
-}
-
-bool
-GetPropIRGenerator::tryAttachUnboxedExpando(CacheIRWriter& writer, HandleObject obj, ObjOperandId objId)
-{
-    MOZ_ASSERT(!emitted_);
-
-    if (!obj->is<UnboxedPlainObject>())
-        return true;
-
-    UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando();
-    if (!expando)
-        return true;
-
-    Shape* shape = expando->lookup(cx_, NameToId(name_));
-    if (!shape || !shape->hasDefaultGetter() || !shape->hasSlot())
-        return true;
-
-    emitted_ = true;
-
-    EmitReadSlotResult(writer, obj, obj, shape, objId);
     return true;
 }
 
@@ -364,13 +300,6 @@ GetPropIRGenerator::tryAttachObjectLength(CacheIRWriter& writer, HandleObject ob
 
         writer.guardClass(objId, GuardClassKind::Array);
         writer.loadInt32ArrayLengthResult(objId);
-        emitted_ = true;
-        return true;
-    }
-
-    if (obj->is<UnboxedArrayObject>()) {
-        writer.guardClass(objId, GuardClassKind::UnboxedArray);
-        writer.loadUnboxedArrayLengthResult(objId);
         emitted_ = true;
         return true;
     }

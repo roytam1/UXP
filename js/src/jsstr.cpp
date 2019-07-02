@@ -2369,7 +2369,7 @@ js::str_replace_string_raw(JSContext* cx, HandleString string, HandleString patt
 }
 
 // ES 2016 draft Mar 25, 2016 21.1.3.17 steps 4, 8, 12-18.
-static JSObject*
+static ArrayObject*
 SplitHelper(JSContext* cx, HandleLinearString str, uint32_t limit, HandleLinearString sep,
             HandleObjectGroup group)
 {
@@ -2466,7 +2466,7 @@ SplitHelper(JSContext* cx, HandleLinearString str, uint32_t limit, HandleLinearS
 }
 
 // Fast-path for splitting a string into a character array via split("").
-static JSObject*
+static ArrayObject*
 CharSplitHelper(JSContext* cx, HandleLinearString str, uint32_t limit, HandleObjectGroup group)
 {
     size_t strLength = str->length();
@@ -2491,7 +2491,7 @@ CharSplitHelper(JSContext* cx, HandleLinearString str, uint32_t limit, HandleObj
 }
 
 // ES 2016 draft Mar 25, 2016 21.1.3.17 steps 4, 8, 12-18.
-JSObject*
+ArrayObject*
 js::str_split_string(JSContext* cx, HandleObjectGroup group, HandleString str, HandleString sep, uint32_t limit)
 
 {

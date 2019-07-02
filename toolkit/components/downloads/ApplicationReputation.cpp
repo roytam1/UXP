@@ -467,7 +467,7 @@ static const char16_t* kBinaryFileExtensions[] = {
     u".isp", // IIS config
     //u".isu", // InstallShield
     u".jar", // Java
-    u".jnlp", // Java
+    //u".jnlp", // Java
     //u".job", // Windows
     u".js", // JavaScript script
     u".jse", // JScript

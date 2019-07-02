@@ -480,27 +480,26 @@ GetOrCreateFilterProperty(nsIFrame* aFrame)
   if (!effects->HasFilters())
     return nullptr;
 
-  FrameProperties props = aFrame->Properties();
-  nsSVGFilterProperty *prop = props.Get(nsSVGEffects::FilterProperty());
+  nsSVGFilterProperty *prop =
+    aFrame->GetProperty(nsSVGEffects::FilterProperty());
   if (prop)
     return prop;
   prop = new nsSVGFilterProperty(effects->mFilters, aFrame);
   NS_ADDREF(prop);
-  props.Set(nsSVGEffects::FilterProperty(), prop);
+  aFrame->SetProperty(nsSVGEffects::FilterProperty(), prop);
   return prop;
 }
 
 static nsSVGMaskProperty*
 GetOrCreateMaskProperty(nsIFrame* aFrame)
 {
-  FrameProperties props = aFrame->Properties();
-  nsSVGMaskProperty *prop = props.Get(nsSVGEffects::MaskProperty());
+  nsSVGMaskProperty *prop = aFrame->GetProperty(nsSVGEffects::MaskProperty());
   if (prop)
     return prop;
 
   prop = new nsSVGMaskProperty(aFrame);
   NS_ADDREF(prop);
-  props.Set(nsSVGEffects::MaskProperty(), prop);
+  aFrame->SetProperty(nsSVGEffects::MaskProperty(), prop);
   return prop;
 }
 
@@ -512,13 +511,12 @@ GetEffectProperty(nsIURI* aURI, nsIFrame* aFrame,
   if (!aURI)
     return nullptr;
 
-  FrameProperties props = aFrame->Properties();
-  T* prop = props.Get(aProperty);
+  T* prop = aFrame->GetProperty(aProperty);
   if (prop)
     return prop;
   prop = new T(aURI, aFrame, false);
   NS_ADDREF(prop);
-  props.Set(aProperty, prop);
+  aFrame->SetProperty(aProperty, prop);
   return prop;
 }
 
@@ -553,11 +551,11 @@ nsSVGEffects::GetPaintingPropertyForURI(nsIURI* aURI, nsIFrame* aFrame,
   if (!aURI)
     return nullptr;
 
-  FrameProperties props = aFrame->Properties();
-  nsSVGEffects::URIObserverHashtable *hashtable = props.Get(aProperty);
+  nsSVGEffects::URIObserverHashtable *hashtable =
+    aFrame->GetProperty(aProperty);
   if (!hashtable) {
     hashtable = new nsSVGEffects::URIObserverHashtable();
-    props.Set(aProperty, hashtable);
+    aFrame->SetProperty(aProperty, hashtable);
   }
   nsSVGPaintingProperty* prop =
     static_cast<nsSVGPaintingProperty*>(hashtable->GetWeak(aURI));
@@ -689,16 +687,15 @@ nsSVGEffects::UpdateEffects(nsIFrame* aFrame)
   NS_ASSERTION(aFrame->GetContent()->IsElement(),
                "aFrame's content should be an element");
 
-  FrameProperties props = aFrame->Properties();
-  props.Delete(FilterProperty());
-  props.Delete(MaskProperty());
-  props.Delete(ClipPathProperty());
-  props.Delete(MarkerBeginProperty());
-  props.Delete(MarkerMiddleProperty());
-  props.Delete(MarkerEndProperty());
-  props.Delete(FillProperty());
-  props.Delete(StrokeProperty());
-  props.Delete(BackgroundImageProperty());
+  aFrame->DeleteProperty(FilterProperty());
+  aFrame->DeleteProperty(MaskProperty());
+  aFrame->DeleteProperty(ClipPathProperty());
+  aFrame->DeleteProperty(MarkerBeginProperty());
+  aFrame->DeleteProperty(MarkerMiddleProperty());
+  aFrame->DeleteProperty(MarkerEndProperty());
+  aFrame->DeleteProperty(FillProperty());
+  aFrame->DeleteProperty(StrokeProperty());
+  aFrame->DeleteProperty(BackgroundImageProperty());
 
   // Ensure that the filter is repainted correctly
   // We can't do that in DoUpdate as the referenced frame may not be valid
@@ -725,7 +722,7 @@ nsSVGEffects::GetFilterProperty(nsIFrame* aFrame)
   if (!aFrame->StyleEffects()->HasFilters())
     return nullptr;
 
-  return aFrame->Properties().Get(FilterProperty());
+  return aFrame->GetProperty(FilterProperty());
 }
 
 void
@@ -835,7 +832,7 @@ nsSVGEffects::InvalidateRenderingObservers(nsIFrame* aFrame)
     return;
 
   // If the rendering has changed, the bounds may well have changed too:
-  aFrame->Properties().Delete(nsSVGUtils::ObjectBoundingBoxProperty());
+  aFrame->DeleteProperty(nsSVGUtils::ObjectBoundingBoxProperty());
 
   nsSVGRenderingObserverList *observerList =
     GetObserverList(content->AsElement());
@@ -864,7 +861,7 @@ nsSVGEffects::InvalidateDirectRenderingObservers(Element* aElement, uint32_t aFl
   nsIFrame* frame = aElement->GetPrimaryFrame();
   if (frame) {
     // If the rendering has changed, the bounds may well have changed too:
-    frame->Properties().Delete(nsSVGUtils::ObjectBoundingBoxProperty());
+    frame->DeleteProperty(nsSVGUtils::ObjectBoundingBoxProperty());
   }
 
   if (aElement->HasRenderingObservers()) {
