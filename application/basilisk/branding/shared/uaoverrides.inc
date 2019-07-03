@@ -38,6 +38,9 @@ pref("@GUAO_PREF@.dailymotion.com","Mozilla/5.0 (@OS_SLICE@ rv:52.0) @GK_SLICE@ 
 
 // UA-Sniffing domains below have indicated no interest in supporting Pale Moon (BOO!)
 pref("@GUAO_PREF@.whatsapp.com","Mozilla/5.0 (@OS_SLICE@ rv:61.0) @GK_SLICE@ Firefox/61.0");
+pref("@GUAO_PREF@.web.whatsapp.com","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36");
+
+);
 
 // UA-sniffing domains that are "app/vendor-specific" and do not like Pale Moon
 
