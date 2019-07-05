@@ -53,8 +53,10 @@
         titlemodifier_privatebrowsing="&mainWindow.titlemodifier; &mainWindow.titlePrivateBrowsingSuffix;"
 #endif
         titlemenuseparator="&mainWindow.titlemodifiermenuseparator;"
+#ifdef MOZ_PERSONAS
         lightweightthemes="true"
         lightweightthemesfooter="browser-bottombox"
+#endif
         windowtype="navigator:browser"
         macanimationtype="document"
         screenX="4" screenY="4"

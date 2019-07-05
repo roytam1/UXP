@@ -289,7 +289,7 @@ DoTypeUpdateFallback(JSContext* cx, BaselineFrame* frame, ICUpdatedStub* stub, H
       case ICStub::SetProp_Native:
       case ICStub::SetProp_NativeAdd:
       case ICStub::SetProp_Unboxed: {
-        MOZ_ASSERT(obj->isNative() || obj->is<UnboxedPlainObject>());
+        MOZ_ASSERT(obj->isNative());
         jsbytecode* pc = stub->getChainFallback()->icEntry()->pc(script);
         if (*pc == JSOP_SETALIASEDVAR || *pc == JSOP_INITALIASEDLEXICAL)
             id = NameToId(EnvironmentCoordinateName(cx->caches.envCoordinateNameCache, script, pc));
