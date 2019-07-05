@@ -6928,6 +6928,8 @@
         document.getElementById("alltabs_undoCloseTab").disabled =
           SessionStore.getClosedTabCount(window) == 0;
 
+        var tabcontainer = gBrowser.tabContainer;
+
         // Listen for changes in the tab bar.
         tabcontainer.addEventListener("TabAttrModified", this, false);
         tabcontainer.addEventListener("TabClose", this, false);
