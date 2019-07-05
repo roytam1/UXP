@@ -6925,21 +6925,20 @@
     <handlers>
       <handler event="popupshowing">
       <![CDATA[
-          document.getElementById("alltabs_undoCloseTab").disabled =
-            SessionStore.getClosedTabCount(window) == 0;
+        document.getElementById("alltabs_undoCloseTab").disabled =
+          SessionStore.getClosedTabCount(window) == 0;
 
-          // Listen for changes in the tab bar.
-          tabcontainer.addEventListener("TabAttrModified", this, false);
-          tabcontainer.addEventListener("TabClose", this, false);
-          tabcontainer.mTabstrip.addEventListener("scroll", this, false);
+        // Listen for changes in the tab bar.
+        tabcontainer.addEventListener("TabAttrModified", this, false);
+        tabcontainer.addEventListener("TabClose", this, false);
+        tabcontainer.mTabstrip.addEventListener("scroll", this, false);
 
-          let tabs = gBrowser.visibleTabs;
-          for (var i = 0; i < tabs.length; i++) {
-            if (!tabs[i].pinned)
-              this._createTabMenuItem(tabs[i]);
-          }
-          this._updateTabsVisibilityStatus();
+        let tabs = gBrowser.visibleTabs;
+        for (var i = 0; i < tabs.length; i++) {
+          if (!tabs[i].pinned)
+            this._createTabMenuItem(tabs[i]);
         }
+        this._updateTabsVisibilityStatus();
       ]]></handler>
 
       <handler event="popuphidden">
