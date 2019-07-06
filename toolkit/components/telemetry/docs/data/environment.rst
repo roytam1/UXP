@@ -31,7 +31,6 @@ Structure:
         vendor: <string>, // e.g. "Mozilla"
         platformVersion: <string>, // e.g. "35.0"
         xpcomAbi: <string>, // e.g. "x86-msvc"
-        hotfixVersion: <string>, // e.g. "20141211.01"
       },
       settings: {
         addonCompatibilityCheckEnabled: <bool>, // Whether application compatibility is respected for add-ons
