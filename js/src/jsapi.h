@@ -5438,15 +5438,15 @@ class JSErrorNotes
     ~JSErrorNotes();
 
     // Add an note to the given position.
-    bool addNoteASCII(JSContext* cx,
+    bool addNoteASCII(js::ExclusiveContext* cx,
                       const char* filename, unsigned lineno, unsigned column,
                       JSErrorCallback errorCallback, void* userRef,
                       const unsigned errorNumber, ...);
-    bool addNoteLatin1(JSContext* cx,
+    bool addNoteLatin1(js::ExclusiveContext* cx,
                        const char* filename, unsigned lineno, unsigned column,
                        JSErrorCallback errorCallback, void* userRef,
                        const unsigned errorNumber, ...);
-    bool addNoteUTF8(JSContext* cx,
+    bool addNoteUTF8(js::ExclusiveContext* cx,
                      const char* filename, unsigned lineno, unsigned column,
                      JSErrorCallback errorCallback, void* userRef,
                      const unsigned errorNumber, ...);
