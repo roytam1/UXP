@@ -161,6 +161,11 @@ public:
   }
 
   /**
+   * Return true if we have no properties, otherwise return false.
+   */
+  bool IsEmpty() const { return mProperties.IsEmpty(); }
+
+  /**
    * Set a property value. This requires a linear search through
    * the properties of the frame. Any existing value for the property
    * is destroyed.
@@ -241,6 +246,28 @@ public:
   {
     DeleteInternal(aProperty, aFrame);
   }
+
+  /**
+   * Call @aFunction for each property or until @aFunction returns false.
+   */
+  template<class F>
+  void ForEach(F aFunction) const
+  {
+#ifdef DEBUG
+    size_t len = mProperties.Length();
+#endif
+    for (const auto& prop : mProperties) {
+      bool shouldContinue = aFunction(prop.mProperty, prop.mValue);
+#ifdef DEBUG
+    MOZ_ASSERT(len == mProperties.Length(),
+               "frame property list was modified by ForEach callback!");
+#endif
+      if (!shouldContinue) {
+        return;
+      }
+    }
+  }
+
   /**
    * Remove and destroy all property values for the frame.
    */
