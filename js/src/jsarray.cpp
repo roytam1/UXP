@@ -1048,7 +1048,7 @@ struct StringSeparatorOp
 
 template <typename SeparatorOp>
 static bool
-ArrayJoinDenseKernel(JSContext* cx, SeparatorOp sepOp, HandleNativeObject obj, uint64_t length,
+ArrayJoinDenseKernel(JSContext* cx, SeparatorOp sepOp, HandleNativeObject obj, uint32_t length,
                      StringBuffer& sb, uint32_t* numProcessed)
 {
     // This loop handles all elements up to initializedLength. If
