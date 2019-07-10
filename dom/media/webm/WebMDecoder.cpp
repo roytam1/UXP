@@ -41,7 +41,7 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
   }
 
   const bool isWebMAudio = aMIMETypeExcludingCodecs.EqualsASCII("audio/webm");
-  const bool isWebMVideo = aMIMETypeExcludingCodecs.EqualsASCII("video/webm");
+  const bool isWebMVideo = aMIMETypeExcludingCodecs.EqualsASCII("video/webm") || aMIMETypeExcludingCodecs.EqualsASCII("video/x-matroska") ;
   if (!isWebMAudio && !isWebMVideo) {
     return false;
   }
@@ -74,6 +74,11 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
       continue;
     }
 #endif
+
+    if (IsH264CodecString(codec)) {
+      continue;
+    }
+
     // Some unsupported codec.
     return false;
   }
