@@ -53,28 +53,6 @@ var snapshotFormatters = {
     if (data.updateChannel)
       $("updatechannel-box").textContent = data.updateChannel;
 
-    let statusText = stringBundle().GetStringFromName("multiProcessStatus.unknown");
-
-    // Whitelist of known values with string descriptions:
-    switch (data.autoStartStatus) {
-      case 0:
-      case 1:
-      case 2:
-      case 4:
-      case 6:
-      case 7:
-      case 8:
-        statusText = stringBundle().GetStringFromName("multiProcessStatus." + data.autoStartStatus);
-        break;
-
-      case 10:
-        statusText = (Services.appinfo.OS == "Darwin" ? "OS X 10.6 - 10.8" : "Windows XP");
-        break;
-    }
-
-    $("multiprocess-box").textContent = stringBundle().formatStringFromName("multiProcessWindows",
-      [data.numRemoteWindows, data.numTotalWindows, statusText], 3);
-
     $("safemode-box").textContent = data.safeMode;
   },
 
