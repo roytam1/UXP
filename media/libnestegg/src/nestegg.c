@@ -157,6 +157,7 @@ enum ebml_type_enum {
 #define TRACK_ID_AV1                "V_AV1"
 #define TRACK_ID_VORBIS             "A_VORBIS"
 #define TRACK_ID_OPUS               "A_OPUS"
+#define TRACK_ID_AVC1               "V_MPEG4/ISO/AVC"
 
 /* Track Encryption */
 #define CONTENT_ENC_ALGO_AES        5
@@ -2401,6 +2402,9 @@ nestegg_track_codec_id(nestegg * ctx, unsigned int track)
   if (strcmp(codec_id, TRACK_ID_OPUS) == 0)
     return NESTEGG_CODEC_OPUS;
 
+  if (strcmp(codec_id, TRACK_ID_AVC1) == 0)
+    return NESTEGG_CODEC_AVC1;
+
   return NESTEGG_CODEC_UNKNOWN;
 }
 
@@ -2459,7 +2463,8 @@ nestegg_track_codec_data(nestegg * ctx, unsigned int track, unsigned int item,
     return -1;
 
   if (nestegg_track_codec_id(ctx, track) != NESTEGG_CODEC_VORBIS &&
-      nestegg_track_codec_id(ctx, track) != NESTEGG_CODEC_OPUS)
+      nestegg_track_codec_id(ctx, track) != NESTEGG_CODEC_OPUS &&
+      nestegg_track_codec_id(ctx, track) != NESTEGG_CODEC_AVC1)
     return -1;
 
   if (ne_get_binary(entry->codec_private, &codec_private) != 0)

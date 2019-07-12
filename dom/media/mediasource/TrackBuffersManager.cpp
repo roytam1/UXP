@@ -814,6 +814,8 @@ TrackBuffersManager::CreateDemuxerforMIMEType()
   ShutdownDemuxers();
 
   if (mType.LowerCaseEqualsLiteral("video/webm") ||
+      mType.LowerCaseEqualsLiteral("video/x-matroska") ||
+      mType.LowerCaseEqualsLiteral("audio/x-matroska") ||
       mType.LowerCaseEqualsLiteral("audio/webm")) {
     mInputDemuxer = new WebMDemuxer(mCurrentInputBuffer, true /* IsMediaSource*/ );
     return;

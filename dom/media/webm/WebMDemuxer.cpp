@@ -326,6 +326,20 @@ WebMDemuxer::ReadMetadata()
         case NESTEGG_CODEC_AV1:
           mInfo.mVideo.mMimeType = "video/webm; codecs=av1";
           break;
+        case NESTEGG_CODEC_AVC1: {
+          mInfo.mVideo.mMimeType = "video/webm; codecs=avc1";
+
+          unsigned char* data = 0;
+          size_t length = 0;
+          r = nestegg_track_codec_data(context, track, 0, &data, &length);
+          if (r == -1) {
+            return NS_ERROR_FAILURE;
+          }
+
+          mInfo.mVideo.mExtraData = new MediaByteBuffer(length);
+          mInfo.mVideo.mExtraData->AppendElements(data, length);
+          break;
+	}
         default:
           NS_WARNING("Unknown WebM video codec");
           return NS_ERROR_FAILURE;
@@ -662,6 +676,9 @@ WebMDemuxer::GetNextPacket(TrackInfo::TrackType aType, MediaRawDataQueue *aSampl
           isKeyframe = AOMDecoder::IsKeyframe(sample);
           break;
 #endif
+        case NESTEGG_CODEC_AVC1:
+         isKeyframe = nestegg_packet_has_keyframe(holder->Packet());
+           break;
         default:
           NS_WARNING("Cannot detect keyframes in unknown WebM video codec");
           return NS_ERROR_FAILURE;
@@ -682,7 +699,7 @@ WebMDemuxer::GetNextPacket(TrackInfo::TrackType aType, MediaRawDataQueue *aSampl
             dimensions = AOMDecoder::GetFrameSize(sample);
             break;
 #endif
-          }
+         }
           if (mLastSeenFrameSize.isSome()
               && (dimensions != mLastSeenFrameSize.value())) {
             mInfo.mVideo.mDisplay = dimensions;
@@ -749,6 +766,11 @@ WebMDemuxer::GetNextPacket(TrackInfo::TrackType aType, MediaRawDataQueue *aSampl
     if (aType == TrackInfo::kVideoTrack) {
       sample->mTrackInfo = mSharedVideoTrackInfo;
     }
+
+    if (mVideoCodec == NESTEGG_CODEC_AVC1) {
+      sample->mExtraData = mInfo.mVideo.mExtraData;
+    }
+
     aSamples->Push(sample);
   }
   return NS_OK;

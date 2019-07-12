@@ -161,9 +161,9 @@ public:
   }
 
   /**
-  * Return true if we have no properties, otherwise return false.
-  */
- bool IsEmpty() const { return mProperties.IsEmpty(); }
+   * Return true if we have no properties, otherwise return false.
+   */
+  bool IsEmpty() const { return mProperties.IsEmpty(); }
 
   /**
    * Set a property value. This requires a linear search through
@@ -246,20 +246,22 @@ public:
   {
     DeleteInternal(aProperty, aFrame);
   }
-  
-   /**
+
+  /**
    * Call @aFunction for each property or until @aFunction returns false.
    */
   template<class F>
   void ForEach(F aFunction) const
   {
 #ifdef DEBUG
-   size_t len = mProperties.Length();
+    size_t len = mProperties.Length();
 #endif
     for (const auto& prop : mProperties) {
       bool shouldContinue = aFunction(prop.mProperty, prop.mValue);
-      MOZ_ASSERT(len == mProperties.Length(),
-                 "frame property list was modified by ForEach callback!");
+#ifdef DEBUG
+    MOZ_ASSERT(len == mProperties.Length(),
+               "frame property list was modified by ForEach callback!");
+#endif
       if (!shouldContinue) {
         return;
       }
