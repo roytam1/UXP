@@ -15,6 +15,7 @@
 #include "nsMemory.h"
 #include "nsStringBuffer.h"
 
+#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "mozilla/dom/StructuredCloneTags.h"
 // for mozilla::dom::workers::kJSPrincipalsDebugToken
 #include "mozilla/dom/workers/Workers.h"
@@ -22,6 +23,7 @@
 
 using namespace mozilla;
 using namespace mozilla::ipc;
+using namespace mozilla::dom;
 
 NS_IMETHODIMP_(MozExternalRefCountType)
 nsJSPrincipals::AddRef()

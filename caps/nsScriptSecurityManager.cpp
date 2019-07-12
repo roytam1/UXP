@@ -59,6 +59,7 @@
 #include "mozIApplication.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/dom/BindingUtils.h"
+#include "mozilla/dom/ContentParent.h"
 #include <stdint.h>
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/ClearOnShutdown.h"
@@ -70,6 +71,7 @@
 
 using namespace mozilla;
 using namespace mozilla::dom;
+using namespace mozilla::ipc;
 
 nsIIOService    *nsScriptSecurityManager::sIOService = nullptr;
 nsIStringBundle *nsScriptSecurityManager::sStrBundle = nullptr;
