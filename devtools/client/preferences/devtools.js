@@ -21,9 +21,6 @@ pref("devtools.loader.hotreload", false);
 pref("devtools.toolbar.enabled", true);
 pref("devtools.toolbar.visible", false);
 
-// Enable DevTools WebIDE by default
-pref("devtools.webide.enabled", true);
-
 // Toolbox preferences
 pref("devtools.toolbox.footer.height", 250);
 pref("devtools.toolbox.sidebar.width", 500);
