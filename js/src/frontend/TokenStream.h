@@ -571,6 +571,11 @@ class MOZ_STACK_CLASS TokenStream
 #endif
     }
 
+    const Token& nextToken() const {
+        MOZ_ASSERT(hasLookahead());
+        return tokens[(cursor + 1) & ntokensMask];
+    }
+
     // Advance to the next token.  If the token stream encountered an error,
     // return false.  Otherwise return true and store the token kind in |*ttp|.
     MOZ_MUST_USE bool getToken(TokenKind* ttp, Modifier modifier = None) {
@@ -1017,10 +1022,6 @@ class MOZ_STACK_CLASS TokenStream
     void updateLineInfoForEOL();
     void updateFlagsForEOL();
 
-    const Token& nextToken() const {
-        MOZ_ASSERT(hasLookahead());
-        return tokens[(cursor + 1) & ntokensMask];
-    }
 
     bool hasLookahead() const { return lookahead > 0; }
 
