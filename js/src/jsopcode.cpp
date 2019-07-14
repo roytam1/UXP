@@ -132,7 +132,8 @@ js::StackUses(JSScript* script, jsbytecode* pc)
         return 2 + GET_ARGC(pc) + 1;
       default:
         /* stack: fun, this, [argc arguments] */
-        MOZ_ASSERT(op == JSOP_CALL || op == JSOP_EVAL || op == JSOP_CALLITER ||
+        MOZ_ASSERT(op == JSOP_CALL || op == JSOP_CALL_IGNORES_RV || op == JSOP_EVAL ||
+                   op == JSOP_CALLITER ||
                    op == JSOP_STRICTEVAL || op == JSOP_FUNCALL || op == JSOP_FUNAPPLY);
         return 2 + GET_ARGC(pc);
     }
@@ -1363,6 +1364,7 @@ ExpressionDecompiler::decompilePC(jsbytecode* pc)
       case JSOP_NEWTARGET:
         return write("new.target");
       case JSOP_CALL:
+      case JSOP_CALL_IGNORES_RV:
       case JSOP_CALLITER:
       case JSOP_FUNCALL:
         return decompilePCForStackOperand(pc, -int32_t(GET_ARGC(pc) + 2)) &&
@@ -1662,7 +1664,7 @@ DecompileArgumentFromStack(JSContext* cx, int formalIndex, char** res)
 
     /* Don't handle getters, setters or calls from fun.call/fun.apply. */
     JSOp op = JSOp(*current);
-    if (op != JSOP_CALL && op != JSOP_NEW)
+    if (op != JSOP_CALL && op != JSOP_CALL_IGNORES_RV && op != JSOP_NEW)
         return true;
 
     if (static_cast<unsigned>(formalIndex) >= GET_ARGC(current))
@@ -1725,6 +1727,8 @@ js::CallResultEscapes(jsbytecode* pc)
 
     if (*pc == JSOP_CALL)
         pc += JSOP_CALL_LENGTH;
+    else if (*pc == JSOP_CALL_IGNORES_RV)
+        pc += JSOP_CALL_IGNORES_RV_LENGTH;
     else if (*pc == JSOP_SPREADCALL)
         pc += JSOP_SPREADCALL_LENGTH;
     else

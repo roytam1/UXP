@@ -470,7 +470,13 @@ js::InternalCallOrConstruct(JSContext* cx, const CallArgs& args, MaybeConstruct 
 
     if (fun->isNative()) {
         MOZ_ASSERT_IF(construct, !fun->isConstructor());
-        return CallJSNative(cx, fun->native(), args);
+        JSNative native = fun->native();
+        if (!construct && args.ignoresReturnValue()) {
+            const JSJitInfo* jitInfo = fun->jitInfo();
+            if (jitInfo && jitInfo->type() == JSJitInfo::IgnoresReturnValueNative)
+                native = jitInfo->ignoresReturnValueMethod;
+        }
+        return CallJSNative(cx, native, args);
     }
 
     if (!JSFunction::getOrCreateScript(cx, fun))
@@ -2974,6 +2980,7 @@ CASE(JSOP_FUNAPPLY)
 
 CASE(JSOP_NEW)
 CASE(JSOP_CALL)
+CASE(JSOP_CALL_IGNORES_RV)
 CASE(JSOP_CALLITER)
 CASE(JSOP_SUPERCALL)
 CASE(JSOP_FUNCALL)
@@ -2982,10 +2989,11 @@ CASE(JSOP_FUNCALL)
         cx->runtime()->spsProfiler.updatePC(script, REGS.pc);
 
     MaybeConstruct construct = MaybeConstruct(*REGS.pc == JSOP_NEW || *REGS.pc == JSOP_SUPERCALL);
+    bool ignoresReturnValue = *REGS.pc == JSOP_CALL_IGNORES_RV;
     unsigned argStackSlots = GET_ARGC(REGS.pc) + construct;
 
     MOZ_ASSERT(REGS.stackDepth() >= 2u + GET_ARGC(REGS.pc));
-    CallArgs args = CallArgsFromSp(argStackSlots, REGS.sp, construct);
+    CallArgs args = CallArgsFromSp(argStackSlots, REGS.sp, construct, ignoresReturnValue);
 
     JSFunction* maybeFun;
     bool isFunction = IsFunctionObject(args.calleev(), &maybeFun);

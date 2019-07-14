@@ -3298,6 +3298,12 @@ BaselineCompiler::emit_JSOP_CALL()
 }
 
 bool
+BaselineCompiler::emit_JSOP_CALL_IGNORES_RV()
+{
+    return emitCall();
+}
+
+bool
 BaselineCompiler::emit_JSOP_CALLITER()
 {
     return emitCall();
