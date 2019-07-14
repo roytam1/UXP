@@ -561,6 +561,10 @@ class SyntaxParseHandler
                node == NodeParenthesizedName;
     }
 
+    bool isArgumentsAnyParentheses(Node node, ExclusiveContext* cx) {
+        return node == NodeUnparenthesizedArgumentsName || node == NodeParenthesizedArgumentsName;
+    }
+
     bool isEvalAnyParentheses(Node node, ExclusiveContext* cx) {
         return node == NodeUnparenthesizedEvalName || node == NodeParenthesizedEvalName;
     }
@@ -571,7 +575,7 @@ class SyntaxParseHandler
 
         if (isEvalAnyParentheses(node, cx))
             return js_eval_str;
-        if (node == NodeUnparenthesizedArgumentsName || node == NodeParenthesizedArgumentsName)
+        if (isArgumentsAnyParentheses(node, cx))
             return js_arguments_str;
         return nullptr;
     }

@@ -878,6 +878,10 @@ class FullParseHandler
         return node->isKind(PNK_NAME);
     }
 
+    bool isArgumentsAnyParentheses(ParseNode* node, ExclusiveContext* cx) {
+        return node->isKind(PNK_NAME) && node->pn_atom == cx->names().arguments;
+    }
+
     bool isEvalAnyParentheses(ParseNode* node, ExclusiveContext* cx) {
         return node->isKind(PNK_NAME) && node->pn_atom == cx->names().eval;
     }
@@ -888,7 +892,7 @@ class FullParseHandler
 
         if (isEvalAnyParentheses(node, cx))
             return js_eval_str;
-        if (node->pn_atom == cx->names().arguments)
+        if (isArgumentsAnyParentheses(node, cx))
             return js_arguments_str;
         return nullptr;
     }
