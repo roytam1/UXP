@@ -863,9 +863,19 @@ class JSScript : public js::gc::TenuredCell
     //   |
     //   preludeStart_
     //
+    // And, in the case of class constructors, an additional postlude offset
+    // is used for use with toString.
+    //
+    //   class C { constructor() { this.field = 42; } }
+    //   ^         ^                                 ^ ^
+    //   |         |                                 | `---------`
+    //   |         sourceStart_                      sourceEnd_  |
+    //   |                                                       |
+    //   preludeStart_                                           postludeEnd_
     uint32_t        sourceStart_;
     uint32_t        sourceEnd_;
     uint32_t        preludeStart_;
+    uint32_t        postludeEnd_;
 
     // Number of times the script has been called or has had backedges taken.
     // When running in ion, also increased for any inlined scripts. Reset if
@@ -1027,7 +1037,7 @@ class JSScript : public js::gc::TenuredCell
     // instead of private to suppress -Wunused-private-field compiler warnings.
   protected:
 #if JS_BITS_PER_WORD == 32
-    uint32_t padding;
+    // Currently no padding is needed.
 #endif
 
     //
@@ -1037,8 +1047,9 @@ class JSScript : public js::gc::TenuredCell
   public:
     static JSScript* Create(js::ExclusiveContext* cx,
                             const JS::ReadOnlyCompileOptions& options,
-                            js::HandleObject sourceObject, uint32_t sourceStart,
-                            uint32_t sourceEnd, uint32_t preludeStart);
+                            js::HandleObject sourceObject,
+                            uint32_t sourceStart, uint32_t sourceEnd,
+                            uint32_t preludeStart, uint32_t postludeEnd);
 
     void initCompartment(js::ExclusiveContext* cx);
 
@@ -1185,8 +1196,12 @@ class JSScript : public js::gc::TenuredCell
         return sourceEnd_;
     }
 
-    size_t preludeStart() const {
+    uint32_t preludeStart() const {
         return preludeStart_;
+    }
+
+    uint32_t postludeEnd() const {
+        return postludeEnd_;
     }
 
     bool noScriptRval() const {
@@ -1519,7 +1534,7 @@ class JSScript : public js::gc::TenuredCell
     bool mayReadFrameArgsDirectly();
 
     static JSFlatString* sourceData(JSContext* cx, JS::HandleScript script);
-    static JSFlatString* sourceDataWithPrelude(JSContext* cx, JS::HandleScript script);
+    static JSFlatString* sourceDataForToString(JSContext* cx, JS::HandleScript script);
     
     static bool loadSource(JSContext* cx, js::ScriptSource* ss, bool* worked);
 
@@ -1533,6 +1548,8 @@ class JSScript : public js::gc::TenuredCell
     bool mutedErrors() const { return scriptSource()->mutedErrors(); }
     const char* filename() const { return scriptSource()->filename(); }
     const char* maybeForwardedFilename() const { return maybeForwardedScriptSource()->filename(); }
+
+    void setDefaultClassConstructorSpan(JSObject* sourceObject, uint32_t start, uint32_t end);
 
   public:
 
@@ -1939,8 +1956,7 @@ class LazyScript : public gc::TenuredCell
     // instead of private to suppress -Wunused-private-field compiler warnings.
   protected:
 #if JS_BITS_PER_WORD == 32
-    // uint32_t padding;
-    // Currently no padding is needed.
+    uint32_t padding;
 #endif
 
   private:
@@ -1989,6 +2005,7 @@ class LazyScript : public gc::TenuredCell
     uint32_t begin_;
     uint32_t end_;
     uint32_t preludeStart_;
+    uint32_t postludeEnd_;
     // Line and column of |begin_| position, that is the position where we
     // start parsing.
     uint32_t lineno_;
@@ -2213,11 +2230,19 @@ class LazyScript : public gc::TenuredCell
     uint32_t preludeStart() const {
         return preludeStart_;
     }
+    uint32_t postludeEnd() const {
+        return postludeEnd_;
+    }
     uint32_t lineno() const {
         return lineno_;
     }
     uint32_t column() const {
         return column_;
+    }
+
+    void setPostludeEnd(uint32_t postludeEnd) {
+        MOZ_ASSERT(postludeEnd_ >= end_);
+        postludeEnd_ = postludeEnd;
     }
 
     bool hasUncompiledEnclosingScript() const;

@@ -85,6 +85,31 @@ class ParseContext : public Nestable<ParseContext>
         }
     };
 
+    class ClassStatement : public Statement
+    {
+        FunctionBox* constructorBox_;
+
+      public:
+        explicit ClassStatement(ParseContext* pc)
+          : Statement(pc, StatementKind::Class),
+            constructorBox_(nullptr)
+        { }
+
+        void clearConstructorBoxForAbortedSyntaxParse(FunctionBox* funbox) {
+            MOZ_ASSERT(constructorBox_ == funbox);
+            constructorBox_ = nullptr;
+        }
+
+        void setConstructorBox(FunctionBox* funbox) {
+            MOZ_ASSERT(!constructorBox_);
+            constructorBox_ = funbox;
+        }
+
+        FunctionBox* constructorBox() const {
+            return constructorBox_;
+        }
+    };
+
     // The intra-function scope stack.
     //
     // Tracks declared and used names within a scope.
@@ -432,6 +457,11 @@ class ParseContext : public Nestable<ParseContext>
         return Statement::findNearest<T>(innermostStatement_, predicate);
     }
 
+    template <typename T>
+    T* findInnermostStatement() {
+        return Statement::findNearest<T>(innermostStatement_);
+    }
+
     AtomVector& positionalFormalParameterNames() {
         return *positionalFormalParameterNames_;
     }
@@ -530,6 +560,13 @@ inline bool
 ParseContext::Statement::is<ParseContext::LabelStatement>() const
 {
     return kind_ == StatementKind::Label;
+}
+
+template <>
+inline bool
+ParseContext::Statement::is<ParseContext::ClassStatement>() const
+{
+    return kind_ == StatementKind::Class;
 }
 
 template <typename T>

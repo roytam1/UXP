@@ -141,7 +141,8 @@ StatementKindIsBraced(StatementKind kind)
            kind == StatementKind::Switch ||
            kind == StatementKind::Try ||
            kind == StatementKind::Catch ||
-           kind == StatementKind::Finally;
+           kind == StatementKind::Finally ||
+           kind == StatementKind::Class;
 }
 
 void
@@ -472,6 +473,7 @@ FunctionBox::FunctionBox(ExclusiveContext* cx, LifoAlloc& alloc, ObjectBox* trac
     startLine(1),
     startColumn(0),
     preludeStart(preludeStart),
+    postludeEnd(0),
     length(0),
     generatorKindBits_(GeneratorKindAsBits(generatorKind)),
     asyncKindBits_(AsyncKindAsBits(asyncKind)),
@@ -542,10 +544,16 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
         allowNewTarget_ = true;
         allowSuperProperty_ = fun->allowSuperProperty();
 
-        if (kind == DerivedClassConstructor) {
-            setDerivedClassConstructor();
-            allowSuperCall_ = true;
-            needsThisTDZChecks_ = true;
+        if (kind == ClassConstructor || kind == DerivedClassConstructor) {
+            auto stmt = enclosing->findInnermostStatement<ParseContext::ClassStatement>();
+            MOZ_ASSERT(stmt);
+            stmt->setConstructorBox(this);
+
+            if (kind == DerivedClassConstructor) {
+                setDerivedClassConstructor();
+                allowSuperCall_ = true;
+                needsThisTDZChecks_ = true;
+            }
         }
 
         if (isGenexpLambda)
@@ -562,6 +570,16 @@ FunctionBox::initWithEnclosingParseContext(ParseContext* enclosing, FunctionSynt
         };
 
         inWith_ = enclosing->findInnermostStatement(isWith);
+    }
+}
+
+void
+FunctionBox::resetForAbortedSyntaxParse(ParseContext* enclosing, FunctionSyntaxKind kind)
+{
+    if (kind == ClassConstructor || kind == DerivedClassConstructor) {
+        auto stmt = enclosing->findInnermostStatement<ParseContext::ClassStatement>();
+        MOZ_ASSERT(stmt);
+        stmt->clearConstructorBoxForAbortedSyntaxParse(this);
     }
 }
 
@@ -3389,6 +3407,7 @@ Parser<FullParseHandler>::trySyntaxParseInnerFunction(ParseNode* pn, HandleFunct
                 // correctness.
                 parser->clearAbortedSyntaxParse();
                 usedNames.rewind(token);
+                funbox->resetForAbortedSyntaxParse(pc, kind);
                 MOZ_ASSERT_IF(parser->context->isJSContext(),
                               !parser->context->asJSContext()->isExceptionPending());
                 break;
@@ -3670,14 +3689,14 @@ Parser<ParseHandler>::functionFormalParametersAndBody(InHandling inHandling,
             error(JSMSG_CURLY_AFTER_BODY);
             return false;
         }
-        funbox->bufEnd = pos().end;
+        funbox->setEnd(pos().end);
     } else {
 #if !JS_HAS_EXPR_CLOSURES
         MOZ_ASSERT(kind == Arrow);
 #endif
         if (tokenStream.hadError())
             return false;
-        funbox->bufEnd = pos().end;
+        funbox->setEnd(pos().end);
         if (kind == Statement && !matchOrInsertSemicolonAfterExpression())
             return false;
     }
@@ -6935,6 +6954,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_CLASS));
 
+    uint32_t classStartOffset = pos().begin;
     bool savedStrictness = setLocalStrictMode(true);
 
     TokenKind tt;
@@ -6960,16 +6980,20 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
         tokenStream.ungetToken();
     }
 
+    // Push a ParseContext::ClassStatement to keep track of the constructor
+    // funbox.
+    ParseContext::ClassStatement classStmt(pc);
+
     RootedAtom propAtom(context);
 
     // A named class creates a new lexical scope with a const binding of the
-    // class name.
-    Maybe<ParseContext::Statement> classStmt;
-    Maybe<ParseContext::Scope> classScope;
+    // class name for the "inner name".
+    Maybe<ParseContext::Statement> innerScopeStmt;
+    Maybe<ParseContext::Scope> innerScope;
     if (name) {
-        classStmt.emplace(pc, StatementKind::Block);
-        classScope.emplace(this);
-        if (!classScope->init(pc))
+        innerScopeStmt.emplace(pc, StatementKind::Block);
+        innerScope.emplace(this);
+        if (!innerScope->init(pc))
             return null();
     }
 
@@ -6996,7 +7020,6 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
     if (!classMethods)
         return null();
 
-    bool seenConstructor = false;
     for (;;) {
         TokenKind tt;
         if (!tokenStream.getToken(&tt))
@@ -7048,16 +7071,17 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
             propType = PropertyType::GetterNoExpressionClosure;
         if (propType == PropertyType::Setter)
             propType = PropertyType::SetterNoExpressionClosure;
-        if (!isStatic && propAtom == context->names().constructor) {
+
+        bool isConstructor = !isStatic && propAtom == context->names().constructor;
+        if (isConstructor) {
             if (propType != PropertyType::Method) {
                 errorAt(nameOffset, JSMSG_BAD_METHOD_DEF);
                 return null();
             }
-            if (seenConstructor) {
+            if (classStmt.constructorBox()) {
                 errorAt(nameOffset, JSMSG_DUPLICATE_PROPERTY, "constructor");
                 return null();
             }
-            seenConstructor = true;
             propType = hasHeritage ? PropertyType::DerivedConstructor : PropertyType::Constructor;
         } else if (isStatic && propAtom == context->names().prototype) {
             errorAt(nameOffset, JSMSG_BAD_METHOD_DEF);
@@ -7082,7 +7106,12 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
             if (!tokenStream.isCurrentTokenType(TOK_RB))
                 funName = propAtom;
         }
-        Node fn = methodDefinition(nameOffset, propType, funName);
+
+        // Calling toString on constructors need to return the source text for
+        // the entire class. The end offset is unknown at this point in
+        // parsing and will be amended when class parsing finishes below.
+        Node fn = methodDefinition(isConstructor ? classStartOffset : nameOffset,
+                                   propType, funName);
         if (!fn)
             return null();
 
@@ -7091,6 +7120,15 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
         JSOp op = JSOpFromPropertyType(propType);
         if (!handler.addClassMethodDefinition(classMethods, propName, fn, op, isStatic))
             return null();
+    }
+
+    // Amend the postlude offset for the constructor now that we've finished
+    // parsing the class.
+    uint32_t classEndOffset = pos().end;
+    if (FunctionBox* ctorbox = classStmt.constructorBox()) {
+        if (ctorbox->function()->isInterpretedLazy())
+            ctorbox->function()->lazyScript()->setPostludeEnd(classEndOffset);
+        ctorbox->postludeEnd = classEndOffset;
     }
 
     Node nameNode = null();
@@ -7104,15 +7142,15 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
         if (!innerName)
             return null();
 
-        Node classBlock = finishLexicalScope(*classScope, classMethods);
+        Node classBlock = finishLexicalScope(*innerScope, classMethods);
         if (!classBlock)
             return null();
 
         methodsOrBlock = classBlock;
 
         // Pop the inner scope.
-        classScope.reset();
-        classStmt.reset();
+        innerScope.reset();
+        innerScopeStmt.reset();
 
         Node outerName = null();
         if (classContext == ClassStatement) {
@@ -7132,7 +7170,8 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
 
     MOZ_ALWAYS_TRUE(setLocalStrictMode(savedStrictness));
 
-    return handler.newClass(nameNode, classHeritage, methodsOrBlock);
+    return handler.newClass(nameNode, classHeritage, methodsOrBlock,
+                            TokenPos(classStartOffset, classEndOffset));
 }
 
 template <class ParseHandler>
@@ -8388,7 +8427,7 @@ Parser<ParseHandler>::generatorComprehensionLambda(unsigned begin)
     uint32_t end = pos().end;
     handler.setBeginPosition(comp, begin);
     handler.setEndPosition(comp, end);
-    genFunbox->bufEnd = end;
+    genFunbox->setEnd(end);
     handler.addStatementToList(body, comp);
     handler.setEndPosition(body, end);
     handler.setBeginPosition(genfn, begin);
