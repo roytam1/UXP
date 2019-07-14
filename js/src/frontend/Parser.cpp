@@ -4363,20 +4363,6 @@ Parser<FullParseHandler>::checkDestructuringAssignmentArray(ParseNode* arrayPatt
  * In the first case, other code parses the pattern as an arbitrary
  * primaryExpr, and then, here in checkDestructuringAssignmentPattern, verify
  * that the tree is a valid AssignmentPattern.
- *
- * In assignment-like contexts, we parse the pattern with
- * pc->inDestructuringDecl clear, so the lvalue expressions in the pattern are
- * parsed normally. identifierReference() links variable references into the
- * appropriate use chains; creates placeholder definitions; and so on.
- * checkDestructuringAssignmentPattern won't bind any new names and we
- * specialize lvalues as appropriate.
- *
- * In declaration-like contexts, the normal variable reference processing
- * would just be an obstruction, because we're going to define the names that
- * appear in the property value positions as new variables anyway. In this
- * case, we parse the pattern in destructuringDeclaration() with
- * pc->inDestructuringDecl set, which directs identifierReference() to leave
- * whatever name nodes it creates unconnected.
  */
 template <>
 bool
@@ -4399,39 +4385,19 @@ Parser<FullParseHandler>::checkDestructuringAssignmentPattern(ParseNode* pattern
     return isDestructuring;
 }
 
-class AutoClearInDestructuringDecl
-{
-    ParseContext* pc_;
-    Maybe<DeclarationKind> saved_;
-
-  public:
-    explicit AutoClearInDestructuringDecl(ParseContext* pc)
-      : pc_(pc),
-        saved_(pc->inDestructuringDecl)
-    {
-        pc->inDestructuringDecl = Nothing();
-        if (saved_ && *saved_ == DeclarationKind::FormalParameter)
-            pc->functionBox()->hasParameterExprs = true;
-    }
-
-    ~AutoClearInDestructuringDecl() {
-        pc_->inDestructuringDecl = saved_;
-    }
-};
-
 template <typename ParseHandler>
 typename ParseHandler::Node
-Parser<ParseHandler>::bindingInitializer(Node lhs, YieldHandling yieldHandling)
+Parser<ParseHandler>::bindingInitializer(Node lhs, DeclarationKind kind,
+                                         YieldHandling yieldHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_ASSIGN));
 
-    Node rhs;
-    {
-        AutoClearInDestructuringDecl autoClear(pc);
-        rhs = assignExpr(InAllowed, yieldHandling, TripledotProhibited);
-        if (!rhs)
-            return null();
-    }
+    if (kind == DeclarationKind::FormalParameter)
+        pc->functionBox()->hasParameterExprs = true;
+
+    Node rhs = assignExpr(InAllowed, yieldHandling, TripledotProhibited);
+    if (!rhs)
+        return null();
 
     handler.checkAndSetIsDirectRHSAnonFunction(rhs);
 
@@ -4449,7 +4415,7 @@ template <typename ParseHandler>
 typename ParseHandler::Node
 Parser<ParseHandler>::bindingIdentifier(DeclarationKind kind, YieldHandling yieldHandling)
 {
-    Rooted<PropertyName*> name(context, bindingIdentifier(yieldHandling));
+    RootedPropertyName name(context, bindingIdentifier(yieldHandling));
     if (!name)
         return null();
 
@@ -4492,6 +4458,7 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
     if (!literal)
         return null();
 
+    Maybe<DeclarationKind> declKind = Some(kind);
     RootedAtom propAtom(context);
     for (;;) {
         TokenKind tt;
@@ -4505,7 +4472,7 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
         tokenStream.ungetToken();
 
         PropertyType propType;
-        Node propName = propertyName(yieldHandling, literal, &propType, &propAtom);
+        Node propName = propertyName(yieldHandling, declKind, literal, &propType, &propAtom);
         if (!propName)
             return null();
 
@@ -4524,7 +4491,7 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
                 return null();
 
             Node bindingExpr = hasInitializer
-                               ? bindingInitializer(binding, yieldHandling)
+                               ? bindingInitializer(binding, kind, yieldHandling)
                                : binding;
             if (!bindingExpr)
                 return null();
@@ -4553,7 +4520,7 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
 
             tokenStream.consumeKnownToken(TOK_ASSIGN);
 
-            Node bindingExpr = bindingInitializer(binding, yieldHandling);
+            Node bindingExpr = bindingInitializer(binding, kind, yieldHandling);
             if (!bindingExpr)
                 return null();
 
@@ -4633,7 +4600,9 @@ Parser<ParseHandler>::arrayBindingPattern(DeclarationKind kind, YieldHandling yi
              if (!tokenStream.matchToken(&hasInitializer, TOK_ASSIGN))
                  return null();
 
-             Node element = hasInitializer ? bindingInitializer(binding, yieldHandling) : binding;
+             Node element = hasInitializer
+                            ? bindingInitializer(binding, kind, yieldHandling)
+                            : binding;
              if (!element)
                  return null();
 
@@ -4680,17 +4649,9 @@ Parser<ParseHandler>::destructuringDeclaration(DeclarationKind kind, YieldHandli
     MOZ_ASSERT(tokenStream.isCurrentTokenType(tt));
     MOZ_ASSERT(tt == TOK_LB || tt == TOK_LC);
 
-    Node pattern;
-    {
-        pc->inDestructuringDecl = Some(kind);
-        if (tt == TOK_LB)
-            pattern = arrayBindingPattern(kind, yieldHandling);
-        else
-            pattern = objectBindingPattern(kind, yieldHandling);
-        pc->inDestructuringDecl = Nothing();
-    }
-
-    return pattern;
+    return tt == TOK_LB
+           ? arrayBindingPattern(kind, yieldHandling)
+           : objectBindingPattern(kind, yieldHandling);
 }
 
 template <typename ParseHandler>
@@ -7066,13 +7027,9 @@ Parser<ParseHandler>::tryStatement(YieldHandling yieldHandling)
                     return null();
                 }
 
-                RootedPropertyName param(context, bindingIdentifier(yieldHandling));
-                if (!param)
-                    return null();
-                catchName = newName(param);
+                catchName = bindingIdentifier(DeclarationKind::SimpleCatchParameter,
+                                              yieldHandling);
                 if (!catchName)
-                    return null();
-                if (!noteDeclaredName(param, DeclarationKind::SimpleCatchParameter, pos()))
                     return null();
                 break;
               }
@@ -7301,6 +7258,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
     if (!classMethods)
         return null();
 
+    Maybe<DeclarationKind> declKind = Nothing();
     for (;;) {
         TokenKind tt;
         if (!tokenStream.getToken(&tt))
@@ -7335,7 +7293,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
             return null();
             
         PropertyType propType;
-        Node propName = propertyName(yieldHandling, classMethods, &propType, &propAtom);
+        Node propName = propertyName(yieldHandling, declKind, classMethods, &propType, &propAtom);
         if (!propName)
             return null();
 
@@ -8419,13 +8377,9 @@ Parser<ParseHandler>::assignExpr(InHandling inHandling, YieldHandling yieldHandl
     if (!possibleErrorInner.checkForExpressionError())
         return null();
 
-    Node rhs;
-    {
-        AutoClearInDestructuringDecl autoClear(pc);
-        rhs = assignExpr(inHandling, yieldHandling, TripledotProhibited);
-        if (!rhs)
-            return null();
-    }
+    Node rhs = assignExpr(inHandling, yieldHandling, TripledotProhibited);
+    if (!rhs)
+        return null();
 
     if (kind == PNK_ASSIGN)
         handler.checkAndSetIsDirectRHSAnonFunction(rhs);
@@ -9370,7 +9324,7 @@ Parser<ParseHandler>::identifierReference(Handle<PropertyName*> name)
     if (!pn)
         return null();
 
-    if (!pc->inDestructuringDecl && !noteUsedName(name))
+    if (!noteUsedName(name))
         return null();
 
     return pn;
@@ -9533,7 +9487,8 @@ DoubleToAtom(ExclusiveContext* cx, double value)
 
 template <typename ParseHandler>
 typename ParseHandler::Node
-Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
+Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
+                                   const Maybe<DeclarationKind>& maybeDecl, Node propList,
                                    PropertyType* propType, MutableHandleAtom propAtom)
 {
     TokenKind ltok;
@@ -9594,7 +9549,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
         break;
 
       case TOK_LB:
-        propName = computedPropertyName(yieldHandling, propList);
+        propName = computedPropertyName(yieldHandling, maybeDecl, propList);
         if (!propName)
             return null();
         break;
@@ -9652,7 +9607,7 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
         if (tt == TOK_LB) {
             tokenStream.consumeKnownToken(TOK_LB);
 
-            return computedPropertyName(yieldHandling, propList);
+            return computedPropertyName(yieldHandling, maybeDecl, propList);
         }
 
         // Not an accessor property after all.
@@ -9722,28 +9677,25 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling, Node propList,
 
 template <typename ParseHandler>
 typename ParseHandler::Node
-Parser<ParseHandler>::computedPropertyName(YieldHandling yieldHandling, Node literal)
+Parser<ParseHandler>::computedPropertyName(YieldHandling yieldHandling,
+                                           const Maybe<DeclarationKind>& maybeDecl,
+                                           Node literal)
 {
     uint32_t begin = pos().begin;
 
-    Node assignNode;
-    {
-        // Turn off the inDestructuringDecl flag when parsing computed property
-        // names. In short, when parsing 'let {[x + y]: z} = obj;', noteUsedName()
-        // should be called on x and y, but not on z. See the comment on
-        // Parser<>::checkDestructuringAssignmentPattern() for details.
-        AutoClearInDestructuringDecl autoClear(pc);
-        assignNode = assignExpr(InAllowed, yieldHandling, TripledotProhibited);
-        if (!assignNode)
-            return null();
+    if (maybeDecl) {
+        if (*maybeDecl == DeclarationKind::FormalParameter)
+            pc->functionBox()->hasParameterExprs = true;
+    } else {
+        handler.setListFlag(literal, PNX_NONCONST);
     }
 
-    MUST_MATCH_TOKEN(TOK_RB, JSMSG_COMP_PROP_UNTERM_EXPR);
-    Node propname = handler.newComputedName(assignNode, begin, pos().end);
-    if (!propname)
+    Node assignNode = assignExpr(InAllowed, yieldHandling, TripledotProhibited);
+    if (!assignNode)
         return null();
-    handler.setListFlag(literal, PNX_NONCONST);
-    return propname;
+
+    MUST_MATCH_TOKEN(TOK_RB, JSMSG_COMP_PROP_UNTERM_EXPR);
+    return handler.newComputedName(assignNode, begin, pos().end);
 }
 
 template <typename ParseHandler>
@@ -9760,6 +9712,7 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
 
     bool seenPrototypeMutation = false;
     bool seenCoverInitializedName = false;
+    Maybe<DeclarationKind> declKind = Nothing();
     RootedAtom propAtom(context);
     for (;;) {
         TokenKind tt;
@@ -9773,7 +9726,7 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
         tokenStream.ungetToken();
 
         PropertyType propType;
-        Node propName = propertyName(yieldHandling, literal, &propType, &propAtom);
+        Node propName = propertyName(yieldHandling, declKind, literal, &propType, &propAtom);
         if (!propName)
             return null();
 
@@ -9867,15 +9820,9 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
                 possibleError->setPendingExpressionErrorAt(pos(), JSMSG_COLON_AFTER_ID);
             }
 
-            Node rhs;
-            {
-                // Clearing `inDestructuringDecl` allows name use to be noted
-                // in Parser::identifierReference. See bug 1255167.
-                AutoClearInDestructuringDecl autoClear(pc);
-                rhs = assignExpr(InAllowed, yieldHandling, TripledotProhibited);
-                if (!rhs)
-                    return null();
-            }
+            Node rhs = assignExpr(InAllowed, yieldHandling, TripledotProhibited);
+            if (!rhs)
+                return null();
 
             handler.checkAndSetIsDirectRHSAnonFunction(rhs);
 
