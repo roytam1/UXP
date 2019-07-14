@@ -354,8 +354,6 @@
 @RESPATH@/browser/components/nsSetDefaultBrowser.js
 @RESPATH@/browser/components/devtools-startup.manifest
 @RESPATH@/browser/components/devtools-startup.js
-@RESPATH@/browser/components/webideCli.js
-@RESPATH@/browser/components/webideComponents.manifest
 @RESPATH@/browser/components/browser-newtab.xpt
 @RESPATH@/browser/components/aboutNewTabService.js
 @RESPATH@/browser/components/NewTabComponents.manifest
@@ -610,11 +608,6 @@
 @RESPATH@/browser/chrome/icons/default/default32.png
 @RESPATH@/browser/chrome/icons/default/default48.png
 #endif
-
-; [Webide Files]
-@RESPATH@/browser/chrome/webide@JAREXT@
-@RESPATH@/browser/chrome/webide.manifest
-@RESPATH@/browser/@PREF_DIR@/webide-prefs.js
 
 ; DevTools
 @RESPATH@/browser/chrome/devtools@JAREXT@
