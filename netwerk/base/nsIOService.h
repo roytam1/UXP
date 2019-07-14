@@ -94,6 +94,8 @@ public:
 
     static bool BlockToplevelDataUriNavigations();
 
+    static bool BlockFTPSubresources();
+
     // Used to trigger a recheck of the captive portal status
     nsresult RecheckCaptivePortal();
 private:
@@ -174,6 +176,8 @@ private:
     bool                                 mNetworkNotifyChanged;
 
     static bool                          sBlockToplevelDataUriNavigations;
+
+    static bool                          sBlockFTPSubresources;
 
     // Time a network tearing down started.
     mozilla::Atomic<PRIntervalTime> mNetTearingDownStarted;
