@@ -77,7 +77,7 @@ var snapshotFormatters = {
         break;
     }
 
-    $("multiprocess-box").textContent = data.numRemoteWindows + "/" + data.numTotalWindows + " (" statusText + ")";
+    $("multiprocess-box").textContent = data.numRemoteWindows + "/" + data.numTotalWindows + " (" + statusText + ")";
 
     $("safemode-box").textContent = data.safeMode;
   },
