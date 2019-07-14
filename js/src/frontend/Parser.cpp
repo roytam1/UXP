@@ -4367,9 +4367,20 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
             break;
 
         if (tt == TOK_TRIPLEDOT) {
-            // TODO: rest-binding property
-            error(JSMSG_UNEXPECTED_TOKEN, "property name", TokenKindToDesc(tt));
-            return null();
+            // rest-binding property
+            tokenStream.consumeKnownToken(TOK_TRIPLEDOT);
+            uint32_t begin = pos().begin;
+
+            TokenKind tt;
+            if (!tokenStream.getToken(&tt))
+                return null();
+
+            Node inner = bindingIdentifierOrPattern(kind, yieldHandling, tt);
+            if (!inner)
+                return null();
+
+            if (!handler.addSpreadProperty(literal, begin, inner))
+                return null();
         } else {
             TokenPos namePos = tokenStream.nextToken().pos;
 
@@ -4439,6 +4450,10 @@ Parser<ParseHandler>::objectBindingPattern(DeclarationKind kind, YieldHandling y
             return null();
         if (!matched)
             break;
+        if (tt == TOK_TRIPLEDOT) {
+            error(JSMSG_REST_WITH_COMMA);
+            return null();
+        }
     }
 
     MUST_MATCH_TOKEN_MOD_WITH_REPORT(TOK_RC, TokenStream::None,
@@ -9693,9 +9708,22 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
             break;
 
         if (tt == TOK_TRIPLEDOT) {
-            // TODO: object spread
-            error(JSMSG_UNEXPECTED_TOKEN, "property name", TokenKindToDesc(tt));
-            return null();
+            // object spread
+            tokenStream.consumeKnownToken(TOK_TRIPLEDOT);
+            uint32_t begin = pos().begin;
+
+            TokenPos innerPos;
+            if (!tokenStream.peekTokenPos(&innerPos, TokenStream::Operand))
+                return null();
+
+            Node inner = assignExpr(InAllowed, yieldHandling, TripledotProhibited,
+                                    possibleError);
+            if (!inner)
+                return null();
+            if (possibleError)
+                checkDestructuringAssignmentTarget(inner, innerPos, possibleError);
+            if (!handler.addSpreadProperty(literal, begin, inner))
+                return null();
         } else {
             TokenPos namePos = tokenStream.nextToken().pos;
 
@@ -9860,6 +9888,8 @@ Parser<ParseHandler>::objectLiteral(YieldHandling yieldHandling, PossibleError* 
             return null();
         if (!matched)
             break;
+        if (tt == TOK_TRIPLEDOT && possibleError)
+            possibleError->setPendingDestructuringErrorAt(pos(), JSMSG_REST_WITH_COMMA);
     }
 
     MUST_MATCH_TOKEN_MOD_WITH_REPORT(TOK_RC, TokenStream::None,
