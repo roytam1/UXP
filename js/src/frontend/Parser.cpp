@@ -757,7 +757,15 @@ ParserBase::reportNoOffset(ParseReportKind kind, bool strict, unsigned errorNumb
 }
 
 template <>
-bool
+inline bool
+Parser<FullParseHandler>::abortIfSyntaxParser()
+{
+    handler.disableSyntaxParser();
+    return true;
+}
+
+template <>
+inline bool
 Parser<SyntaxParseHandler>::abortIfSyntaxParser()
 {
     abortedSyntaxParse = true;
@@ -4522,14 +4530,6 @@ Parser<ParseHandler>::arrayBindingPattern(DeclarationKind kind, YieldHandling yi
 
     handler.setEndPosition(literal, pos().end);
     return literal;
-}
-
-template <>
-bool
-Parser<SyntaxParseHandler>::checkDestructuringAssignmentPattern(Node pattern,
-                                                                PossibleError* possibleError /* = nullptr */)
-{
-    return abortIfSyntaxParser();
 }
 
 template <typename ParseHandler>
