@@ -422,6 +422,8 @@ WebMDemuxer::ReadMetadata()
         mInfo.mAudio.mMimeType = "audio/opus";
         OpusDataDecoder::AppendCodecDelay(mInfo.mAudio.mCodecSpecificConfig,
             media::TimeUnit::FromNanoseconds(params.codec_delay).ToMicroseconds());
+      } else if (mAudioCodec == NESTEGG_CODEC_AAC) {
+        mInfo.mAudio.mMimeType = "audio/mp4a-latm";
       }
       mSeekPreroll = params.seek_preroll;
       mInfo.mAudio.mRate = params.rate;
