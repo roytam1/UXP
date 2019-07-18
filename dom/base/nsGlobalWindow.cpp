@@ -2504,8 +2504,7 @@ nsGlobalWindow::WouldReuseInnerWindow(nsIDocument* aNewDocument)
   }
 
   bool equal;
-  if (NS_SUCCEEDED(mDoc->NodePrincipal()->Equals(aNewDocument->NodePrincipal(),
-                                                 &equal)) &&
+  if (NS_SUCCEEDED(mDoc->NodePrincipal()->EqualsConsideringDomain(aNewDocument->NodePrincipal(), &equal)) &&
       equal) {
     // The origin is the same.
     return true;
