@@ -113,19 +113,19 @@ include $(topsrcdir)/toolkit/mozapps/installer/packager.mk
 
 ifeq (bundle, $(MOZ_FS_LAYOUT))
 BINPATH = $(_BINPATH)
-DEFINES += -DAPPNAME=$(_APPNAME)
+DEFINES += -DAPPNAME='$(_APPNAME)'
 else
 # Every other platform just winds up in dist/bin
 BINPATH = bin
 endif
-DEFINES += -DBINPATH=$(BINPATH)
+DEFINES += -DBINPATH='$(BINPATH)'
 
 ifeq (cocoa,$(MOZ_WIDGET_TOOLKIT))
 RESPATH = $(_APPNAME)/Contents/Resources
 else
 RESPATH = $(BINPATH)
 endif
-DEFINES += -DRESPATH=$(RESPATH)
+DEFINES += -DRESPATH='$(RESPATH)'
 
 AB = $(firstword $(subst -, ,$(AB_CD)))
 DEFINES += -DAB=$(AB)
@@ -173,7 +173,7 @@ endif
 
 package-compare:: $(MOZ_PKG_MANIFEST)
 ifdef MOZ_PKG_MANIFEST_P
-	cd $(DIST); find $(PKGCOMP_FIND_OPTS) $(FINDPATH) -type f | sort > bin-list.txt
+	cd $(DIST); find $(PKGCOMP_FIND_OPTS) '$(FINDPATH)' -type f | sort > bin-list.txt
 	grep '^$(BINPATH)' $(MOZ_PKG_MANIFEST) | sed -e 's/^\///' | sort > $(DIST)/pack-list.txt
 	-diff -u $(DIST)/pack-list.txt $(DIST)/bin-list.txt
 	rm -f $(DIST)/pack-list.txt $(DIST)/bin-list.txt
