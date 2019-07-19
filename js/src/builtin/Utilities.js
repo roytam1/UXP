@@ -254,7 +254,7 @@ function CopyDataProperties(target, source, excluded) {
 
         // We abbreviate this by calling propertyIsEnumerable which is faster
         // and returns false for not defined properties.
-        if (!callFunction(std_Object_hasOwnProperty, key, excluded) && callFunction(std_Object_propertyIsEnumerable, source, key))
+        if (!callFunction(std_Object_hasOwnProperty, excluded, key) && callFunction(std_Object_propertyIsEnumerable, source, key))
             _DefineDataProperty(target, key, source[key]);
     }
 
