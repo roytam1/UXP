@@ -51,8 +51,6 @@ WebGLTexture::ImageInfo::Clear()
 WebGLTexture::ImageInfo&
 WebGLTexture::ImageInfo::operator =(const ImageInfo& a)
 {
-    MOZ_ASSERT(a.IsDefined());
-
     Mutable(mFormat) = a.mFormat;
     Mutable(mWidth) = a.mWidth;
     Mutable(mHeight) = a.mHeight;
@@ -1214,6 +1212,12 @@ WebGLTexture::TexParameter(TexTarget texTarget, GLenum pname, const FloatOrInt& 
         mContext->gl->fTexParameteri(texTarget.get(), pname, clamped.i);
     else
         mContext->gl->fTexParameterf(texTarget.get(), pname, clamped.f);
+}
+
+void WebGLTexture::Truncate() {
+  for (auto& cur : mImageInfoArr) {
+    SetImageInfo(&cur, ImageInfo());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
