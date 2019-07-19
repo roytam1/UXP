@@ -504,9 +504,13 @@ nsHttpConnectionMgr::UpdateParam(nsParamName name, uint16_t value)
 }
 
 nsresult
-nsHttpConnectionMgr::ProcessPendingQ(nsHttpConnectionInfo *ci)
+nsHttpConnectionMgr::ProcessPendingQ(nsHttpConnectionInfo* aCI)
 {
-    LOG(("nsHttpConnectionMgr::ProcessPendingQ [ci=%s]\n", ci->HashKey().get()));
+    LOG(("nsHttpConnectionMgr::ProcessPendingQ [ci=%s]\n", aCI->HashKey().get()));
+    RefPtr<nsHttpConnectionInfo> ci;
+    if (aCI) {
+        ci = aCI->Clone();
+    }    
     return PostEvent(&nsHttpConnectionMgr::OnMsgProcessPendingQ, 0, ci);
 }
 
