@@ -127,14 +127,7 @@ let gDevToolsBrowserMethods = [
   "openConnectScreen",
 
   // Used by browser-sets.inc, command
-  //         itself, webide widget
-  "openWebIDE",
-
-  // Used by browser-sets.inc, command
   "openContentProcessToolbox",
-
-  // Used by webide.js
-  "moveWebIDEWidgetInNavbar",
 
   // Used by browser.js
   "registerBrowserWindow",
@@ -146,10 +139,6 @@ let gDevToolsBrowserMethods = [
   "forgetBrowserWindow"
 ];
 this.gDevToolsBrowser = {
-  // Used by webide.js
-  get isWebIDEInitialized() {
-    return browser.isWebIDEInitialized;
-  },
   // Used by a test (should be removed)
   get _trackedBrowserWindows() {
     return browser._trackedBrowserWindows;

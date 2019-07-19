@@ -997,7 +997,7 @@ public:
 #define NS_DECLARE_FRAME_PROPERTY_WITH_DTOR_NEVER_CALLED(prop, type)  \
   static void AssertOnDestroyingProperty##prop(type*) {               \
     MOZ_ASSERT_UNREACHABLE("Frame property " #prop " should never "   \
-                           "be destroyed by the FramePropertyTable"); \
+                           "be destroyed by the FrameProperties class"); \
   }                                                                   \
   NS_DECLARE_FRAME_PROPERTY_WITH_DTOR(prop, type,                     \
                                       AssertOnDestroyingProperty##prop)

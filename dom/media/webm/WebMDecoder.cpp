@@ -82,6 +82,10 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
       continue;
     }
 
+    if (IsAACCodecString(codec)) {
+      continue;
+    }
+
     // Some unsupported codec.
     return false;
   }

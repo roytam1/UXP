@@ -19,6 +19,8 @@
 #include "nsJSPrincipals.h"
 #include "nsIEffectiveTLDService.h"
 #include "nsIClassInfoImpl.h"
+#include "nsIObjectInputStream.h"
+#include "nsIObjectOutputStream.h"
 #include "nsIProtocolHandler.h"
 #include "nsError.h"
 #include "nsIContentSecurityPolicy.h"

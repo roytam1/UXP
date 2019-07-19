@@ -34,12 +34,7 @@ EXPORTS.mozilla = [
 ]
 
 SOURCES += [
-    # Compile this separately since nsExceptionHandler.h conflicts
-    # with something from nsNullPrincipal.cpp.
     'BasePrincipal.cpp',
-]
-
-UNIFIED_SOURCES += [
     'DomainPolicy.cpp',
     'nsJSPrincipals.cpp',
     'nsNullPrincipal.cpp',

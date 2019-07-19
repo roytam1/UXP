@@ -14,6 +14,7 @@
 #include "nsError.h"
 #include "nsEscape.h"
 #include "nsNetUtil.h"
+#include "nsIURL.h"
 #include "nsString.h"
 #include "nsQueryObject.h"
 
