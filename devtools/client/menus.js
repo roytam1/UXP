@@ -86,17 +86,6 @@ exports.menuitems = [
     },
     checkbox: true
   },
-  { id: "menu_webide",
-    l10nKey: "webide",
-    disabled: true,
-    oncommand() {
-      gDevToolsBrowser.openWebIDE();
-    },
-    key: {
-      id: "webide",
-      modifiers: "shift"
-    }
-  },
   { id: "menu_browserToolbox",
     l10nKey: "browserToolboxMenu",
     disabled: true,

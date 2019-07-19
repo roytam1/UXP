@@ -177,23 +177,6 @@ Telemetry.prototype = {
       histogram: "DEVTOOLS_ABOUTDEBUGGING_OPENED_COUNT",
       timerHistogram: "DEVTOOLS_ABOUTDEBUGGING_TIME_ACTIVE_SECONDS"
     },
-    webide: {
-      histogram: "DEVTOOLS_WEBIDE_OPENED_COUNT",
-      timerHistogram: "DEVTOOLS_WEBIDE_TIME_ACTIVE_SECONDS"
-    },
-    webideProjectEditor: {
-      histogram: "DEVTOOLS_WEBIDE_PROJECT_EDITOR_OPENED_COUNT",
-      timerHistogram: "DEVTOOLS_WEBIDE_PROJECT_EDITOR_TIME_ACTIVE_SECONDS"
-    },
-    webideProjectEditorSave: {
-      histogram: "DEVTOOLS_WEBIDE_PROJECT_EDITOR_SAVE_COUNT",
-    },
-    webideNewProject: {
-      histogram: "DEVTOOLS_WEBIDE_NEW_PROJECT_COUNT",
-    },
-    webideImportProject: {
-      histogram: "DEVTOOLS_WEBIDE_IMPORT_PROJECT_COUNT",
-    },
     custom: {
       histogram: "DEVTOOLS_CUSTOM_OPENED_COUNT",
       timerHistogram: "DEVTOOLS_CUSTOM_TIME_ACTIVE_SECONDS"

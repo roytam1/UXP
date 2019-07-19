@@ -110,14 +110,16 @@ MediaSource::IsTypeSupported(const nsAString& aType, DecoderDoctorDiagnostics* a
     }
     return NS_OK;
   }
-  if (mimeType.EqualsASCII("video/webm")) {
+  if (mimeType.EqualsASCII("video/webm") ||
+      mimeType.EqualsASCII("video/x-matroska")) {
     if (!(Preferences::GetBool("media.mediasource.webm.enabled", false) ||
           IsWebMForced(aDiagnostics))) {
       return NS_ERROR_DOM_NOT_SUPPORTED_ERR;
     }
     return NS_OK;
   }
-  if (mimeType.EqualsASCII("audio/webm")) {
+  if (mimeType.EqualsASCII("audio/webm") ||
+      mimeType.EqualsASCII("audio/x-matroska")) {
     if (!(Preferences::GetBool("media.mediasource.webm.enabled", false) ||
           Preferences::GetBool("media.mediasource.webm.audio.enabled", true))) {
       return NS_ERROR_DOM_NOT_SUPPORTED_ERR;

@@ -1988,6 +1988,13 @@ pref("network.generic-ntlm-auth.workstation", "WORKSTATION");
 //   2 - allow the cross-origin authentication as well.
 pref("network.auth.subresource-http-auth-allow", 2);
 
+// Sub-resources HTTP-authentication for cross-origin images:
+// true - presenting the http auth. dialog for cross-origin images is allowed.
+// false - suppress the http auth. dialog for cross-origin images.
+// If network.auth.subresource-http-auth-allow has a value of 0 or 1, this pref
+// does not have any effect.
+pref("network.auth.subresource-http-img-XO-auth", false);
+
 // This preference controls whether to allow sending default credentials (SSO) to
 // NTLM/Negotiate servers allowed in the "trusted uri" list when navigating them
 // in a Private Browsing window.
@@ -5447,6 +5454,9 @@ pref("layout.css.servo.enabled", true);
 // Please note that manually entering a data: URI in the
 // URL-Bar will not be blocked when flipping this pref.
 pref("security.data_uri.block_toplevel_data_uri_navigations", true);
+
+// If true, all FTP subresource loads will be blocked.
+pref("security.block_ftp_subresources", true);
 
 // Disable Storage api in release builds.
 #ifdef NIGHTLY_BUILD

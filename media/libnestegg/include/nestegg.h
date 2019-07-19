@@ -72,6 +72,8 @@ extern "C" {
 #define NESTEGG_CODEC_VP9     2       /**< Track uses Google On2 VP9 codec. */
 #define NESTEGG_CODEC_OPUS    3       /**< Track uses Xiph Opus codec. */
 #define NESTEGG_CODEC_AV1     4       /**< Track uses AOMedia AV1 codec. */
+#define NESTEGG_CODEC_AVC1    5       /**< Track uses AVC1 'h264' */
+#define NESTEGG_CODEC_AAC     6       /**< Track uses AAC 'mp4a' */
 #define NESTEGG_CODEC_UNKNOWN INT_MAX /**< Track uses unknown codec. */
 
 #define NESTEGG_VIDEO_MONO              0 /**< Track is mono video. */

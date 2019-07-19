@@ -123,8 +123,6 @@ DEFAULTS = dict(
         'extensions.blocklist.enabled': False,
         'extensions.blocklist.url':
             'http://127.0.0.1/extensions-dummy/blocklistURL',
-        'extensions.hotfix.url':
-            'http://127.0.0.1/extensions-dummy/hotfixURL',
         'extensions.update.enabled': False,
         'extensions.webservice.discoverURL':
             'http://127.0.0.1/extensions-dummy/discoveryURL',

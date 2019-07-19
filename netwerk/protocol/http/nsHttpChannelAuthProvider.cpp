@@ -95,6 +95,8 @@ nsHttpChannelAuthProvider::~nsHttpChannelAuthProvider()
 uint32_t nsHttpChannelAuthProvider::sAuthAllowPref =
     SUBRESOURCE_AUTH_DIALOG_ALLOW_ALL;
 
+bool nsHttpChannelAuthProvider::sImgCrossOriginAuthAllowPref = false;
+
 void
 nsHttpChannelAuthProvider::InitializePrefs()
 {
@@ -102,6 +104,9 @@ nsHttpChannelAuthProvider::InitializePrefs()
   mozilla::Preferences::AddUintVarCache(&sAuthAllowPref,
                                         "network.auth.subresource-http-auth-allow",
                                         SUBRESOURCE_AUTH_DIALOG_ALLOW_ALL);
+  mozilla::Preferences::AddBoolVarCache(&sImgCrossOriginAuthAllowPref,
+                                        "network.auth.subresource-http-img-XO-auth",
+                                        false);
 }
 
 NS_IMETHODIMP
@@ -867,15 +872,15 @@ nsHttpChannelAuthProvider::GetCredentialsForChallenge(const char *challenge,
             else if (authFlags & nsIHttpAuthenticator::IDENTITY_ENCRYPTED)
                 level = nsIAuthPrompt2::LEVEL_PW_ENCRYPTED;
 
-            // Depending on the pref setting, the authentication dialog may be
+            // Depending on the pref settings, the authentication dialog may be
             // blocked for all sub-resources, blocked for cross-origin
             // sub-resources, or always allowed for sub-resources.
-            // For more details look at the bug 647010.
-            // BlockPrompt will set mCrossOrigin parameter as well.
+            // If always allowed, image prompts may still be blocked by pref.
+            // BlockPrompt() will set the mCrossOrigin parameter as well.
             if (BlockPrompt()) {
                 LOG(("nsHttpChannelAuthProvider::GetCredentialsForChallenge: "
-                     "Prompt is blocked [this=%p pref=%d]\n",
-                      this, sAuthAllowPref));
+                     "Prompt is blocked [this=%p pref=%d img-pref=%d]\n",
+                     this, sAuthAllowPref, sImgCrossOriginAuthAllowPref));
                 return NS_ERROR_ABORT;
             }
 
@@ -983,7 +988,15 @@ nsHttpChannelAuthProvider::BlockPrompt()
         // the sub-resources only if they are not cross-origin.
         return !topDoc && !xhr && mCrossOrigin;
     case SUBRESOURCE_AUTH_DIALOG_ALLOW_ALL:
-        // Allow the http-authentication dialog.
+        // Allow the http-authentication dialog for subresources.
+        // If the pref network.auth.subresource-http-img-XO-auth is set to false,
+        // the http authentication dialog for image subresources is still blocked.
+        if (!sImgCrossOriginAuthAllowPref &&
+            loadInfo &&
+            ((loadInfo->GetExternalContentPolicyType() == nsIContentPolicy::TYPE_IMAGE) ||
+             (loadInfo->GetExternalContentPolicyType() == nsIContentPolicy::TYPE_IMAGESET))) {
+            return true;
+        }
         return false;
     default:
         // This is an invalid value.

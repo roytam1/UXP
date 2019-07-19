@@ -179,10 +179,11 @@ private:
 
     RefPtr<nsHttpHandler>           mHttpHandler;  // keep gHttpHandler alive
 
-    // A variable holding the preference settings to whether to open HTTP
+    // Variables holding the preference settings for whether to open HTTP
     // authentication credentials dialogs for sub-resources and cross-origin
     // sub-resources.
     static uint32_t                   sAuthAllowPref;
+    static bool                       sImgCrossOriginAuthAllowPref;
     nsCOMPtr<nsICancelable>           mGenerateCredentialsCancelable;
 };
 

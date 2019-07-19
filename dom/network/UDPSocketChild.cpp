@@ -172,18 +172,27 @@ UDPSocketChild::Bind(nsIUDPSocketInternal* aSocket,
 
   NS_ENSURE_ARG(aSocket);
 
-  mSocket = aSocket;
-  AddIPDLReference();
+  if (NS_IsMainThread()) {
+    if (!gNeckoChild->SendPUDPSocketConstructor(
+            this, IPC::Principal(aPrincipal), mFilterName)) {
+      return NS_ERROR_FAILURE;
+    }
+  } else {
+    if (!mBackgroundManager) {
+      return NS_ERROR_NOT_AVAILABLE;
+    }
 
-  if (mBackgroundManager) {
     // If we want to support a passed-in principal here we'd need to
     // convert it to a PrincipalInfo
     MOZ_ASSERT(!aPrincipal);
-    mBackgroundManager->SendPUDPSocketConstructor(this, void_t(), mFilterName);
-  } else {
-    gNeckoChild->SendPUDPSocketConstructor(this, IPC::Principal(aPrincipal),
-                                           mFilterName);
+    if (!mBackgroundManager->SendPUDPSocketConstructor(
+            this, void_t(), mFilterName)) {
+      return NS_ERROR_FAILURE;
+    }
   }
+
+  mSocket = aSocket;
+  AddIPDLReference();
 
   SendBind(UDPAddressInfo(nsCString(aHost), aPort), aAddressReuse, aLoopback,
            recvBufferSize, sendBufferSize);

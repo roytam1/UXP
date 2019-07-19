@@ -20,6 +20,8 @@
 #include "nsIClassInfoImpl.h"
 #include "nsNetCID.h"
 #include "nsError.h"
+#include "nsIObjectInputStream.h"
+#include "nsIObjectOutputStream.h"
 #include "nsIScriptSecurityManager.h"
 #include "nsPrincipal.h"
 #include "nsScriptSecurityManager.h"

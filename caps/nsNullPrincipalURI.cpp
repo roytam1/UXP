@@ -6,14 +6,20 @@
 
 #include "nsNullPrincipalURI.h"
 
+#include "mozilla/ArrayUtils.h"
+
 #include "mozilla/DebugOnly.h"
 #include "mozilla/MemoryReporting.h"
+#include "mozilla/Services.h"
+#include "mozilla/Unused.h"
 
 #include "mozilla/ipc/URIParams.h"
 
 #include "nsEscape.h"
 #include "nsCRT.h"
 #include "nsIUUIDGenerator.h"
+
+using namespace mozilla;
 
 ////////////////////////////////////////////////////////////////////////////////
 //// nsNullPrincipalURI

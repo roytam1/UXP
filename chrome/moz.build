@@ -17,7 +17,7 @@ EXPORTS.mozilla.chrome += [
     'RegistryMessageUtils.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsChromeProtocolHandler.cpp',
     'nsChromeRegistry.cpp',
     'nsChromeRegistryChrome.cpp',

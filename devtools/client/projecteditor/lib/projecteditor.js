@@ -31,7 +31,6 @@ require("devtools/client/projecteditor/lib/plugins/new/new");
 require("devtools/client/projecteditor/lib/plugins/rename/rename");
 require("devtools/client/projecteditor/lib/plugins/save/save");
 require("devtools/client/projecteditor/lib/plugins/image-view/plugin");
-require("devtools/client/projecteditor/lib/plugins/app-manager/plugin");
 require("devtools/client/projecteditor/lib/plugins/status-bar/plugin");
 
 // Uncomment to enable logging.

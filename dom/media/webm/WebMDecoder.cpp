@@ -42,7 +42,10 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
 
   const bool isWebMAudio = aMIMETypeExcludingCodecs.EqualsASCII("audio/webm");
   const bool isWebMVideo = aMIMETypeExcludingCodecs.EqualsASCII("video/webm");
-  if (!isWebMAudio && !isWebMVideo) {
+  const bool isMatroskaAudio = aMIMETypeExcludingCodecs.EqualsASCII("audio/x-matroska") ;
+  const bool isMatroskaVideo = aMIMETypeExcludingCodecs.EqualsASCII("video/x-matroska") ;
+
+  if (!isWebMAudio && !isWebMVideo && !isMatroskaAudio && !isMatroskaVideo) {
     return false;
   }
 
@@ -63,7 +66,7 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
     }
     // Note: Only accept VP8/VP9 in a video content type, not in an audio
     // content type.
-    if (isWebMVideo &&
+    if ((isWebMVideo || isMatroskaVideo) &&
         (codec.EqualsLiteral("vp8") || codec.EqualsLiteral("vp8.0") ||
          codec.EqualsLiteral("vp9") || codec.EqualsLiteral("vp9.0"))) {
 
@@ -74,6 +77,15 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
       continue;
     }
 #endif
+
+    if (IsH264CodecString(codec)) {
+      continue;
+    }
+
+    if (IsAACCodecString(codec)) {
+      continue;
+    }
+
     // Some unsupported codec.
     return false;
   }

@@ -697,6 +697,9 @@ ContainerParser::CreateForMIMEType(const nsACString& aType)
   if (aType.LowerCaseEqualsLiteral("video/webm") || aType.LowerCaseEqualsLiteral("audio/webm")) {
     return new WebMContainerParser(aType);
   }
+  if (aType.LowerCaseEqualsLiteral("video/x-matroska") || aType.LowerCaseEqualsLiteral("audio/x-matroska")) {
+    return new WebMContainerParser(aType);
+  }
 
 #ifdef MOZ_FMP4
   if (aType.LowerCaseEqualsLiteral("video/mp4") || aType.LowerCaseEqualsLiteral("audio/mp4")) {

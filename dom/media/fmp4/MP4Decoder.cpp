@@ -172,7 +172,8 @@ bool
 MP4Decoder::IsH264(const nsACString& aMimeType)
 {
   return aMimeType.EqualsLiteral("video/mp4") ||
-         aMimeType.EqualsLiteral("video/avc");
+         aMimeType.EqualsLiteral("video/avc") ||
+	 aMimeType.EqualsLiteral("video/webm; codecs=avc1");
 }
 
 /* static */

@@ -2504,8 +2504,7 @@ nsGlobalWindow::WouldReuseInnerWindow(nsIDocument* aNewDocument)
   }
 
   bool equal;
-  if (NS_SUCCEEDED(mDoc->NodePrincipal()->Equals(aNewDocument->NodePrincipal(),
-                                                 &equal)) &&
+  if (NS_SUCCEEDED(mDoc->NodePrincipal()->EqualsConsideringDomain(aNewDocument->NodePrincipal(), &equal)) &&
       equal) {
     // The origin is the same.
     return true;
@@ -9335,7 +9334,7 @@ nsGlobalWindow::EnterModalState()
 
     topWin->mSuspendedDoc = topDoc;
     if (topDoc) {
-      topDoc->SuppressEventHandling(nsIDocument::eEvents);
+      topDoc->SuppressEventHandling(nsIDocument::eAnimationsOnly);
     }
 
     nsGlobalWindow* inner = topWin->GetCurrentInnerWindowInternal();
@@ -9372,7 +9371,7 @@ nsGlobalWindow::LeaveModalState()
 
     if (topWin->mSuspendedDoc) {
       nsCOMPtr<nsIDocument> currentDoc = topWin->GetExtantDoc();
-      topWin->mSuspendedDoc->UnsuppressEventHandlingAndFireEvents(nsIDocument::eEvents,
+      topWin->mSuspendedDoc->UnsuppressEventHandlingAndFireEvents(nsIDocument::eAnimationsOnly,
                                                                   currentDoc == topWin->mSuspendedDoc);
       topWin->mSuspendedDoc = nullptr;
     }
