@@ -373,8 +373,12 @@ nsHttpConnectionMgr::VerifyTraffic()
 nsresult
 nsHttpConnectionMgr::DoShiftReloadConnectionCleanup(nsHttpConnectionInfo *aCI)
 {
+    RefPtr<nsHttpConnectionInfo> ci;
+    if (aCI) {
+      ci = aCI->Clone();
+    }
     return PostEvent(&nsHttpConnectionMgr::OnMsgDoShiftReloadConnectionCleanup,
-                     0, aCI);
+                     0, ci);
 }
 
 class SpeculativeConnectArgs : public ARefBase
