@@ -1332,6 +1332,7 @@ pref("image.animation_mode",                "normal");
 pref("security.fileuri.strict_origin_policy", true);
 
 // Treat all file URIs as having a unique origin.
+// Only has an effect if strict origin policy is true.
 pref("security.fileuri.unique_origin", true);
 
 // If this pref is true, prefs in the logging.config branch will be cleared on
