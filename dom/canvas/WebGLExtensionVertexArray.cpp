@@ -25,7 +25,7 @@ WebGLExtensionVertexArray::~WebGLExtensionVertexArray()
 already_AddRefed<WebGLVertexArray>
 WebGLExtensionVertexArray::CreateVertexArrayOES()
 {
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return nullptr;
 
     return mContext->CreateVertexArray();
@@ -34,7 +34,7 @@ WebGLExtensionVertexArray::CreateVertexArrayOES()
 void
 WebGLExtensionVertexArray::DeleteVertexArrayOES(WebGLVertexArray* array)
 {
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return;
 
     mContext->DeleteVertexArray(array);
@@ -43,7 +43,7 @@ WebGLExtensionVertexArray::DeleteVertexArrayOES(WebGLVertexArray* array)
 bool
 WebGLExtensionVertexArray::IsVertexArrayOES(const WebGLVertexArray* array)
 {
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return false;
 
     return mContext->IsVertexArray(array);
@@ -52,7 +52,7 @@ WebGLExtensionVertexArray::IsVertexArrayOES(const WebGLVertexArray* array)
 void
 WebGLExtensionVertexArray::BindVertexArrayOES(WebGLVertexArray* array)
 {
-    if (mIsLost)
+    if (mIsLost || !mContext)
         return;
 
     mContext->BindVertexArray(array);

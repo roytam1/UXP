@@ -6,8 +6,8 @@
 #ifndef WEBGLOBJECTMODEL_H_
 #define WEBGLOBJECTMODEL_H_
 
+#include "mozilla/WeakPtr.h"
 #include "nsCycleCollectionNoteChild.h"
-
 #include "WebGLTypes.h"
 
 namespace mozilla {
@@ -24,7 +24,7 @@ class WebGLContext;
 class WebGLContextBoundObject
 {
 public:
-    WebGLContext* const mContext;
+    const WeakPtr<WebGLContext> mContext;
 private:
     const uint32_t mContextGeneration;
 
