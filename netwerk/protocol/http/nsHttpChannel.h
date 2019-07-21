@@ -126,7 +126,7 @@ public:
                           const nsID& aChannelId,
                           nsContentPolicyType aContentPolicyType) override;
 
-    nsresult OnPush(const nsACString &uri, Http2PushedStreamWrapper *pushedStream);
+    nsresult OnPush(const nsACString &uri, Http2PushedStream *pushedStream);
 
     static bool IsRedirectStatus(uint32_t status);
 
@@ -448,7 +448,7 @@ private:
     nsresult OpenCacheInputStream(nsICacheEntry* cacheEntry, bool startBuffering,
                                   bool checkingAppCacheEntry);
 
-    void SetPushedStream(Http2PushedStreamWrapper *stream);
+    void SetPushedStream(Http2PushedStream *stream);
 
     void SetDoNotTrack();
 
@@ -578,10 +578,9 @@ private:
     nsTArray<nsContinueRedirectionFunc> mRedirectFuncStack;
 
     // Needed for accurate DNS timing
-    RefPtr<nsDNSPrefetch>             mDNSPrefetch;
+    RefPtr<nsDNSPrefetch>           mDNSPrefetch;
 
-    RefPtr<Http2PushedStreamWrapper>  mPushedStream;
-    
+    Http2PushedStream                 *mPushedStream;
     // True if the channel's principal was found on a phishing, malware, or
     // tracking (if tracking protection is enabled) blocklist
     bool                              mLocalBlocklist;

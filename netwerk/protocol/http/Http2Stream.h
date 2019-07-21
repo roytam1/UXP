@@ -28,7 +28,6 @@ class Http2Decompressor;
 class Http2Stream
   : public nsAHttpSegmentReader
   , public nsAHttpSegmentWriter
-  , public SupportsWeakPtr<Http2Stream>
 {
 public:
   NS_DECL_NSAHTTPSEGMENTREADER

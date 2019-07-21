@@ -30,8 +30,8 @@ class CallChannelOnPush final : public Runnable {
                     Http2PushedStream *pushStream)
     : mAssociatedChannel(associatedChannel)
     , mPushedURI(pushedURI)
+    , mPushedStream(pushStream)
   {
-    mPushedStreamWrapper = new Http2PushedStreamWrapper(pushStream);
   }
 
   NS_IMETHOD Run() override
@@ -40,93 +40,20 @@ class CallChannelOnPush final : public Runnable {
     RefPtr<nsHttpChannel> channel;
     CallQueryInterface(mAssociatedChannel, channel.StartAssignment());
     MOZ_ASSERT(channel);
-    if (channel && NS_SUCCEEDED(channel->OnPush(mPushedURI, mPushedStreamWrapper))) {
+    if (channel && NS_SUCCEEDED(channel->OnPush(mPushedURI, mPushedStream))) {
       return NS_OK;
     }
 
     LOG3(("Http2PushedStream Orphan %p failed OnPush\n", this));
-    mPushedStreamWrapper->OnPushFailed();
+    mPushedStream->OnPushFailed();
     return NS_OK;
   }
 
 private:
   nsCOMPtr<nsIHttpChannelInternal> mAssociatedChannel;
   const nsCString mPushedURI;
-  RefPtr<Http2PushedStreamWrapper> mPushedStreamWrapper;
+  Http2PushedStream *mPushedStream;
 };
-
-// Because WeakPtr isn't thread-safe we must ensure that the object is destroyed
-// on the socket thread, so any Release() called on a different thread is
-// dispatched to the socket thread.
-bool Http2PushedStreamWrapper::DispatchRelease() {
-  if (PR_GetCurrentThread() == gSocketThread) {
-    return false;
-  }
-
-  gSocketTransportService->Dispatch(
-      NewNonOwningRunnableMethod(this, &Http2PushedStreamWrapper::Release),
-      NS_DISPATCH_NORMAL);
-
-  return true;
-}
-
-NS_IMPL_ADDREF(Http2PushedStreamWrapper)
-NS_IMETHODIMP_(MozExternalRefCountType)
-Http2PushedStreamWrapper::Release() {
-  nsrefcnt count = mRefCnt - 1;
-  if (DispatchRelease()) {
-    // Redispatched to the socket thread.
-    return count;
-  }
-
-  MOZ_ASSERT(0 != mRefCnt, "dup release");
-  count = --mRefCnt;
-  NS_LOG_RELEASE(this, count, "Http2PushedStreamWrapper");
-
-  if (0 == count) {
-    mRefCnt = 1;
-    delete (this);
-    return 0;
-  }
-
-  return count;
-}
-
-NS_INTERFACE_MAP_BEGIN(Http2PushedStreamWrapper)
-NS_INTERFACE_MAP_END
-
-Http2PushedStreamWrapper::Http2PushedStreamWrapper(
-    Http2PushedStream* aPushStream) {
-  MOZ_ASSERT(PR_GetCurrentThread() == gSocketThread, "not on socket thread");
-  mStream = aPushStream;
-  mRequestString = aPushStream->GetRequestString();
-}
-
-Http2PushedStreamWrapper::~Http2PushedStreamWrapper() {
-  MOZ_ASSERT(PR_GetCurrentThread() == gSocketThread, "not on socket thread");
-}
-
-Http2PushedStream* Http2PushedStreamWrapper::GetStream() {
-  MOZ_ASSERT(PR_GetCurrentThread() == gSocketThread, "not on socket thread");
-  if (mStream) {
-    Http2Stream* stream = mStream;
-    return static_cast<Http2PushedStream*>(stream);
-  }
-  return nullptr;
-}
-
-void Http2PushedStreamWrapper::OnPushFailed() {
-  if (PR_GetCurrentThread() == gSocketThread) {
-    if (mStream) {
-      Http2Stream* stream = mStream;
-      static_cast<Http2PushedStream*>(stream)->OnPushFailed();
-    }
-  } else {
-    gSocketTransportService->Dispatch(
-        NewRunnableMethod(this, &Http2PushedStreamWrapper::OnPushFailed),
-        NS_DISPATCH_NORMAL);
-  }
-}
 
 //////////////////////////////////////////
 // Http2PushedStream

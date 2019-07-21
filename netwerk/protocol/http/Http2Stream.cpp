@@ -442,14 +442,12 @@ Http2Stream::ParseHttpRequestHeaders(const char *buf,
       requestContext->GetSpdyPushCache(&cache);
     }
 
-    RefPtr<Http2PushedStreamWrapper> pushedStreamWrapper;
     Http2PushedStream *pushedStream = nullptr;
 
     // If a push stream is attached to the transaction via onPush, match only with that
     // one. This occurs when a push was made with in conjunction with a nsIHttpPushListener
     nsHttpTransaction *trans = mTransaction->QueryHttpTransaction();
-    if (trans && (pushedStreamWrapper = trans->TakePushedStream()) &&
-        (pushedStream = pushedStreamWrapper->GetStream())) {
+    if (trans && (pushedStream = trans->TakePushedStream())) {
       if (pushedStream->mSession == mSession) {
         LOG3(("Pushed Stream match based on OnPush correlation %p", pushedStream));
       } else {
