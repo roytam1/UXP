@@ -748,7 +748,7 @@ js::ExpandErrorArgumentsVA(ExclusiveContext* cx, JSErrorCallback callback,
 }
 
 bool
-js::ExpandErrorArgumentsVA(JSContext* cx, JSErrorCallback callback,
+js::ExpandErrorArgumentsVA(ExclusiveContext* cx, JSErrorCallback callback,
                            void* userRef, const unsigned errorNumber,
                            const char16_t** messageArgs,
                            ErrorArgumentsType argumentsType,

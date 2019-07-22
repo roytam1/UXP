@@ -622,7 +622,7 @@ ExpandErrorArgumentsVA(ExclusiveContext* cx, JSErrorCallback callback,
                        JSErrorReport* reportp, va_list ap);
 
 extern bool
-ExpandErrorArgumentsVA(JSContext* cx, JSErrorCallback callback,
+ExpandErrorArgumentsVA(ExclusiveContext* cx, JSErrorCallback callback,
                        void* userRef, const unsigned errorNumber,
                        const char16_t** messageArgs,
                        ErrorArgumentsType argumentsType,
