@@ -888,7 +888,8 @@ WebConsoleActor.prototype =
     let evalResult = evalInfo.result;
     let helperResult = evalInfo.helperResult;
 
-    let result, errorDocURL, errorMessage, errorGrip = null, frame = null;
+    let result, errorDocURL, errorMessage, errorNotes = null, errorGrip = null,
+        frame = null;
     if (evalResult) {
       if ("return" in evalResult) {
         result = evalResult.return;
@@ -943,6 +944,23 @@ WebConsoleActor.prototype =
             };
           }
         } catch (ex) {}
+
+        try {
+          let notes = error.errorNotes;
+          if (notes && notes.length) {
+            errorNotes = [];
+            for (let note of notes) {
+              errorNotes.push({
+                messageBody: this._createStringGrip(note.message),
+                frame: {
+                  source: note.fileName,
+                  line: note.lineNumber,
+                  column: note.columnNumber,
+                }
+              });
+            }
+          }
+        } catch (ex) {}
       }
     }
 
@@ -967,6 +985,7 @@ WebConsoleActor.prototype =
       exceptionDocURL: errorDocURL,
       frame,
       helperResult: helperResult,
+      notes: errorNotes,
     };
   },
 
@@ -1500,6 +1519,23 @@ WebConsoleActor.prototype =
       lineText = lineText.substr(0, DebuggerServer.LONG_STRING_INITIAL_LENGTH);
     }
 
+    let notesArray = null;
+    let notes = aPageError.notes;
+    if (notes && notes.length) {
+      notesArray = [];
+      for (let i = 0, len = notes.length; i < len; i++) {
+        let note = notes.queryElementAt(i, Ci.nsIScriptErrorNote);
+        notesArray.push({
+          messageBody: this._createStringGrip(note.errorMessage),
+          frame: {
+            source: note.sourceName,
+            line: note.lineNumber,
+            column: note.columnNumber,
+          }
+        });
+      }
+    }
+
     return {
       errorMessage: this._createStringGrip(aPageError.errorMessage),
       errorMessageName: aPageError.errorMessageName,
@@ -1516,7 +1552,8 @@ WebConsoleActor.prototype =
       strict: !!(aPageError.flags & aPageError.strictFlag),
       info: !!(aPageError.flags & aPageError.infoFlag),
       private: aPageError.isFromPrivateWindow,
-      stacktrace: stack
+      stacktrace: stack,
+      notes: notesArray,
     };
   },
 

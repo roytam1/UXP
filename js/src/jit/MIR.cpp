@@ -1970,7 +1970,7 @@ WrappedFunction::WrappedFunction(JSFunction* fun)
 
 MCall*
 MCall::New(TempAllocator& alloc, JSFunction* target, size_t maxArgc, size_t numActualArgs,
-           bool construct, bool isDOMCall)
+           bool construct, bool ignoresReturnValue, bool isDOMCall)
 {
     WrappedFunction* wrappedTarget = target ? new(alloc) WrappedFunction(target) : nullptr;
     MOZ_ASSERT(maxArgc >= numActualArgs);
@@ -1979,7 +1979,7 @@ MCall::New(TempAllocator& alloc, JSFunction* target, size_t maxArgc, size_t numA
         MOZ_ASSERT(!construct);
         ins = new(alloc) MCallDOMNative(wrappedTarget, numActualArgs);
     } else {
-        ins = new(alloc) MCall(wrappedTarget, numActualArgs, construct);
+        ins = new(alloc) MCall(wrappedTarget, numActualArgs, construct, ignoresReturnValue);
     }
     if (!ins->init(alloc, maxArgc + NumNonArgumentOperands))
         return nullptr;
@@ -2628,40 +2628,6 @@ jit::EqualTypes(MIRType type1, TemporaryTypeSet* typeset1,
 
     // Typesets should equal.
     return typeset1->equals(typeset2);
-}
-
-// Tests whether input/inputTypes can always be stored to an unboxed
-// object/array property with the given unboxed type.
-bool
-jit::CanStoreUnboxedType(TempAllocator& alloc,
-                         JSValueType unboxedType, MIRType input, TypeSet* inputTypes)
-{
-    TemporaryTypeSet types;
-
-    switch (unboxedType) {
-      case JSVAL_TYPE_BOOLEAN:
-      case JSVAL_TYPE_INT32:
-      case JSVAL_TYPE_DOUBLE:
-      case JSVAL_TYPE_STRING:
-        types.addType(TypeSet::PrimitiveType(unboxedType), alloc.lifoAlloc());
-        break;
-
-      case JSVAL_TYPE_OBJECT:
-        types.addType(TypeSet::AnyObjectType(), alloc.lifoAlloc());
-        types.addType(TypeSet::NullType(), alloc.lifoAlloc());
-        break;
-
-      default:
-        MOZ_CRASH("Bad unboxed type");
-    }
-
-    return TypeSetIncludes(&types, input, inputTypes);
-}
-
-static bool
-CanStoreUnboxedType(TempAllocator& alloc, JSValueType unboxedType, MDefinition* value)
-{
-    return CanStoreUnboxedType(alloc, unboxedType, value->type(), value->resultTypeSet());
 }
 
 bool

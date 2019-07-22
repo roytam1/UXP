@@ -129,6 +129,11 @@ IsFunctionInStrictMode(JSFunction* fun)
     return IsAsmJSStrictModeModuleOrFunction(fun);
 }
 
+static bool
+IsNewerTypeFunction(JSFunction* fun) {
+    return fun->isArrow() || fun->isGenerator() || fun->isAsync() || fun->isMethod();
+}
+
 // Beware: this function can be invoked on *any* function! That includes
 // natives, strict mode functions, bound functions, arrow functions,
 // self-hosted functions and constructors, asm.js functions, functions with
@@ -142,7 +147,9 @@ ArgumentsRestrictions(JSContext* cx, HandleFunction fun)
     // a strict mode function, or a bound function.
     // TODO (bug 1057208): ensure semantics are correct for all possible
     // pairings of callee/caller.
-    if (fun->isBuiltin() || IsFunctionInStrictMode(fun) || fun->isBoundFunction()) {
+    if (fun->isBuiltin() || IsFunctionInStrictMode(fun) ||
+        fun->isBoundFunction() || IsNewerTypeFunction(fun))
+    {
         ThrowTypeErrorBehavior(cx);
         return false;
     }
@@ -229,7 +236,9 @@ CallerRestrictions(JSContext* cx, HandleFunction fun)
     // a strict mode function, or a bound function.
     // TODO (bug 1057208): ensure semantics are correct for all possible
     // pairings of callee/caller.
-    if (fun->isBuiltin() || IsFunctionInStrictMode(fun) || fun->isBoundFunction()) {
+    if (fun->isBuiltin() || IsFunctionInStrictMode(fun) ||
+        fun->isBoundFunction() || IsNewerTypeFunction(fun))
+    {
         ThrowTypeErrorBehavior(cx);
         return false;
     }
@@ -275,6 +284,8 @@ CallerGetterImpl(JSContext* cx, const CallArgs& args)
     }
 
     RootedObject caller(cx, iter.callee(cx));
+    if (caller->is<JSFunction>() && caller->as<JSFunction>().isAsync())
+        caller = GetWrappedAsyncFunction(&caller->as<JSFunction>());
     if (!cx->compartment()->wrap(cx, &caller))
         return false;
 
@@ -295,6 +306,8 @@ CallerGetterImpl(JSContext* cx, const CallArgs& args)
         }
 
         JSFunction* callerFun = &callerObj->as<JSFunction>();
+        if (IsWrappedAsyncFunction(callerFun))
+            callerFun = GetUnwrappedAsyncFunction(callerFun);
         MOZ_ASSERT(!callerFun->isBuiltin(), "non-builtin iterator returned a builtin?");
 
         if (callerFun->strict()) {
@@ -366,7 +379,7 @@ ResolveInterpretedFunctionPrototype(JSContext* cx, HandleFunction fun, HandleId 
     if (isStarGenerator)
         objProto = GlobalObject::getOrCreateStarGeneratorObjectPrototype(cx, global);
     else
-        objProto = fun->global().getOrCreateObjectPrototype(cx);
+        objProto = GlobalObject::getOrCreateObjectPrototype(cx, global);
     if (!objProto)
         return false;
 
@@ -463,7 +476,7 @@ fun_resolve(JSContext* cx, HandleObject obj, HandleId id, bool* resolvedp)
             if (fun->hasResolvedLength())
                 return true;
 
-            if (!fun->getUnresolvedLength(cx, &v))
+            if (!JSFunction::getUnresolvedLength(cx, fun, &v))
                 return false;
         } else {
             if (fun->hasResolvedName())
@@ -808,12 +821,13 @@ CreateFunctionPrototype(JSContext* cx, JSProtoKey key)
                                              sourceObject,
                                              begin,
                                              ss->length(),
-                                             0));
+                                             0,
+                                             ss->length()));
     if (!script || !JSScript::initFunctionPrototype(cx, script, functionProto))
         return nullptr;
 
     functionProto->initScript(script);
-    ObjectGroup* protoGroup = functionProto->getGroup(cx);
+    ObjectGroup* protoGroup = JSObject::getGroup(cx, functionProto);
     if (!protoGroup)
         return nullptr;
 
@@ -847,6 +861,28 @@ CreateFunctionPrototype(JSContext* cx, JSProtoKey key)
                            SingletonObject));
     if (!throwTypeError || !PreventExtensions(cx, throwTypeError))
         return nullptr;
+
+    // The "length" property of %ThrowTypeError% is non-configurable, adjust
+    // the default property attributes accordingly.
+    Rooted<PropertyDescriptor> nonConfigurableDesc(cx);
+    nonConfigurableDesc.setAttributes(JSPROP_PERMANENT | JSPROP_IGNORE_READONLY |
+                                      JSPROP_IGNORE_ENUMERATE | JSPROP_IGNORE_VALUE);
+
+    RootedId lengthId(cx, NameToId(cx->names().length));
+    ObjectOpResult lengthResult;
+    if (!NativeDefineProperty(cx, throwTypeError, lengthId, nonConfigurableDesc, lengthResult))
+        return nullptr;
+    MOZ_ASSERT(lengthResult);
+
+    // Non-standard: Also change "name" to non-configurable. ECMAScript defines
+    // %ThrowTypeError% as an anonymous function, i.e. it shouldn't actually
+    // get an own "name" property. To be consistent with other built-in,
+    // anonymous functions, we don't delete %ThrowTypeError%'s "name" property.
+    RootedId nameId(cx, NameToId(cx->names().name));
+    ObjectOpResult nameResult;
+    if (!NativeDefineProperty(cx, throwTypeError, nameId, nonConfigurableDesc, nameResult))
+        return nullptr;
+    MOZ_ASSERT(nameResult);
 
     self->setThrowTypeError(throwTypeError);
 
@@ -886,80 +922,10 @@ const Class JSFunction::class_ = {
 
 const Class* const js::FunctionClassPtr = &JSFunction::class_;
 
-/* Find the body of a function (not including braces). */
-bool
-js::FindBody(JSContext* cx, HandleFunction fun, HandleLinearString src, size_t* bodyStart,
-             size_t* bodyEnd)
-{
-    // We don't need principals, since those are only used for error reporting.
-    CompileOptions options(cx);
-    options.setFileAndLine("internal-findBody", 0);
-
-    // For asm.js/wasm modules, there's no script.
-    if (fun->hasScript())
-        options.setVersion(fun->nonLazyScript()->getVersion());
-
-    AutoKeepAtoms keepAtoms(cx->perThreadData);
-
-    AutoStableStringChars stableChars(cx);
-    if (!stableChars.initTwoByte(cx, src))
-        return false;
-
-    const mozilla::Range<const char16_t> srcChars = stableChars.twoByteRange();
-    TokenStream ts(cx, options, srcChars.begin().get(), srcChars.length(), nullptr);
-    int nest = 0;
-    bool onward = true;
-    // Skip arguments list.
-    do {
-        TokenKind tt;
-        if (!ts.getToken(&tt))
-            return false;
-        switch (tt) {
-          case TOK_NAME:
-          case TOK_YIELD:
-            if (nest == 0)
-                onward = false;
-            break;
-          case TOK_LP:
-            nest++;
-            break;
-          case TOK_RP:
-            if (--nest == 0)
-                onward = false;
-            break;
-          default:
-            break;
-        }
-    } while (onward);
-    TokenKind tt;
-    if (!ts.getToken(&tt))
-        return false;
-    if (tt == TOK_ARROW) {
-        if (!ts.getToken(&tt))
-            return false;
-    }
-    bool braced = tt == TOK_LC;
-    MOZ_ASSERT_IF(fun->isExprBody(), !braced);
-    *bodyStart = ts.currentToken().pos.begin;
-    if (braced)
-        *bodyStart += 1;
-    mozilla::RangedPtr<const char16_t> end = srcChars.end();
-    if (end[-1] == '}') {
-        end--;
-    } else {
-        MOZ_ASSERT(!braced);
-        for (; unicode::IsSpaceOrBOM2(end[-1]); end--)
-            ;
-    }
-    *bodyEnd = end - srcChars.begin();
-    MOZ_ASSERT(*bodyStart <= *bodyEnd);
-    return true;
-}
-
 JSString*
 js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
 {
-    if (fun->isInterpretedLazy() && !fun->getOrCreateScript(cx))
+    if (fun->isInterpretedLazy() && !JSFunction::getOrCreateScript(cx, fun))
         return nullptr;
 
     if (IsAsmJSModule(fun))
@@ -989,7 +955,13 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
     }
 
     bool funIsNonArrowLambda = fun->isLambda() && !fun->isArrow();
-    bool haveSource = fun->isInterpreted() && !fun->isSelfHostedBuiltin();
+
+    // Default class constructors are self-hosted, but have their source
+    // objects overridden to refer to the span of the class statement or
+    // expression. Non-default class constructors are never self-hosted. So,
+    // all class constructors always have source.
+    bool haveSource = fun->isInterpreted() && (fun->isClassConstructor() ||
+                                               !fun->isSelfHostedBuiltin());
 
     // If we're not in pretty mode, put parentheses around lambda functions
     // so that eval returns lambda, not function statement.
@@ -1030,7 +1002,7 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
     };
 
     if (haveSource) {
-        Rooted<JSFlatString*> src(cx, script->sourceDataWithPrelude(cx));
+        Rooted<JSFlatString*> src(cx, JSScript::sourceDataForToString(cx, script));
         if (!src)
             return nullptr;
 
@@ -1041,7 +1013,20 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
             if (!out.append(")"))
                 return nullptr;
         }
-    } else if (fun->isInterpreted() && !fun->isSelfHostedBuiltin()) {
+    } else if (fun->isInterpreted() &&
+               (!fun->isSelfHostedBuiltin() ||
+                fun->infallibleIsDefaultClassConstructor(cx)))
+    {
+        // Default class constructors should always haveSource except;
+        //
+        // 1. Source has been discarded for the whole compartment.
+        //
+        // 2. The source is marked as "lazy", i.e., retrieved on demand, and
+        // the embedding has not provided a hook to retrieve sources.
+        MOZ_ASSERT_IF(fun->infallibleIsDefaultClassConstructor(cx),
+                      !cx->runtime()->sourceHook ||
+                      !script->scriptSource()->sourceRetrievable() ||
+                      fun->compartment()->behaviors().discardSource());
         if (!AppendPrelude() ||
             !out.append("() {\n    ") ||
             !out.append("[sourceless code]") ||
@@ -1050,29 +1035,16 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
             return nullptr;
         }
     } else {
-        MOZ_ASSERT(!fun->isExprBody());
 
-        bool derived = fun->infallibleIsDefaultClassConstructor(cx);
-        if (derived && fun->isDerivedClassConstructor()) {
-            if (!AppendPrelude() ||
-                !out.append("(...args) {\n    ") ||
-                !out.append("super(...args);\n}"))
-            {
-                return nullptr;
-            }
-        } else {
-            if (!AppendPrelude() ||
-                !out.append("() {\n    "))
-                return nullptr;
+        if (!AppendPrelude() ||
+            !out.append("() {\n    "))
+            return nullptr;
 
-            if (!derived) {
-                if (!out.append("[native code]"))
-                    return nullptr;
-            }
+        if (!out.append("[native code]"))
+            return nullptr;
 
-            if (!out.append("\n}"))
-                return nullptr;
-        }
+        if (!out.append("\n}"))
+            return nullptr;
     }
     return out.finishString();
 }
@@ -1301,34 +1273,33 @@ JSFunction::isDerivedClassConstructor()
     return derived;
 }
 
-bool
-JSFunction::getLength(JSContext* cx, uint16_t* length)
+/* static */ bool
+JSFunction::getLength(JSContext* cx, HandleFunction fun, uint16_t* length)
 {
-    JS::RootedFunction self(cx, this);
-    MOZ_ASSERT(!self->isBoundFunction());
-    if (self->isInterpretedLazy() && !self->getOrCreateScript(cx))
+    MOZ_ASSERT(!fun->isBoundFunction());
+    if (fun->isInterpretedLazy() && !getOrCreateScript(cx, fun))
         return false;
 
-    *length = self->isNative() ? self->nargs() : self->nonLazyScript()->funLength();
+    *length = fun->isNative() ? fun->nargs() : fun->nonLazyScript()->funLength();
     return true;
 }
 
-bool
-JSFunction::getUnresolvedLength(JSContext* cx, MutableHandleValue v)
+/* static */ bool
+JSFunction::getUnresolvedLength(JSContext* cx, HandleFunction fun, MutableHandleValue v)
 {
-    MOZ_ASSERT(!IsInternalFunctionObject(*this));
-    MOZ_ASSERT(!hasResolvedLength());
+    MOZ_ASSERT(!IsInternalFunctionObject(*fun));
+    MOZ_ASSERT(!fun->hasResolvedLength());
 
     // Bound functions' length can have values up to MAX_SAFE_INTEGER, so
     // they're handled differently from other functions.
-    if (isBoundFunction()) {
-        MOZ_ASSERT(getExtendedSlot(BOUND_FUN_LENGTH_SLOT).isNumber());
-        v.set(getExtendedSlot(BOUND_FUN_LENGTH_SLOT));
+    if (fun->isBoundFunction()) {
+        MOZ_ASSERT(fun->getExtendedSlot(BOUND_FUN_LENGTH_SLOT).isNumber());
+        v.set(fun->getExtendedSlot(BOUND_FUN_LENGTH_SLOT));
         return true;
     }
 
     uint16_t length;
-    if (!getLength(cx, &length))
+    if (!JSFunction::getLength(cx, fun, &length))
         return false;
 
     v.setInt32(length);
@@ -1385,13 +1356,11 @@ GetBoundFunctionArguments(const JSFunction* boundFun)
 }
 
 const js::Value&
-JSFunction::getBoundFunctionArgument(JSContext* cx, unsigned which) const
+JSFunction::getBoundFunctionArgument(unsigned which) const
 {
     MOZ_ASSERT(which < getBoundFunctionArgumentCount());
 
-    RootedArrayObject boundArgs(cx, GetBoundFunctionArguments(this));
-    RootedValue res(cx);
-    return boundArgs->getDenseElement(which);
+    return GetBoundFunctionArguments(this)->getDenseElement(which);
 }
 
 size_t
@@ -1428,7 +1397,7 @@ JSFunction::createScriptForLazilyInterpretedFunction(JSContext* cx, HandleFuncti
         }
 
         if (fun != lazy->functionNonDelazifying()) {
-            if (!lazy->functionDelazifying(cx))
+            if (!LazyScript::functionDelazifying(cx, lazy))
                 return false;
             script = lazy->functionNonDelazifying()->nonLazyScript();
             if (!script)

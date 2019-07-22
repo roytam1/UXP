@@ -286,18 +286,18 @@ endif
 ifdef MOZ_SIGN_PREPARED_PACKAGE_CMD
   ifeq (Darwin, $(OS_ARCH))
     MAKE_PACKAGE    = $(or $(call MAKE_SIGN_EME_VOUCHER,$(STAGEPATH)$(MOZ_PKG_DIR)$(_BINPATH)/$(MOZ_CHILD_PROCESS_NAME).app/Contents/MacOS,$(STAGEPATH)$(MOZ_PKG_DIR)$(_RESPATH)),true) \
-                      && (cd $(STAGEPATH)$(MOZ_PKG_DIR)$(_RESPATH) && $(CREATE_PRECOMPLETE_CMD)) \
-                      && cd ./$(PKG_DMG_SOURCE) && $(MOZ_SIGN_PREPARED_PACKAGE_CMD) $(MOZ_MACBUNDLE_NAME) \
+                      && (cd '$(STAGEPATH)$(MOZ_PKG_DIR)$(_RESPATH)' && $(CREATE_PRECOMPLETE_CMD)) \
+                      && cd ./$(PKG_DMG_SOURCE) && $(MOZ_SIGN_PREPARED_PACKAGE_CMD) '$(MOZ_MACBUNDLE_NAME)' \
                       && cd $(PACKAGE_BASE_DIR) && $(INNER_MAKE_PACKAGE)
   else
     MAKE_PACKAGE    = $(MOZ_SIGN_PREPARED_PACKAGE_CMD) $(MOZ_PKG_DIR) \
                       && $(or $(call MAKE_SIGN_EME_VOUCHER,$(STAGEPATH)$(MOZ_PKG_DIR)),true) \
-                      && (cd $(STAGEPATH)$(MOZ_PKG_DIR)$(_RESPATH) && $(CREATE_PRECOMPLETE_CMD)) \
+                      && (cd '$(STAGEPATH)$(MOZ_PKG_DIR)$(_RESPATH)' && $(CREATE_PRECOMPLETE_CMD)) \
                       && $(INNER_MAKE_PACKAGE)
   endif #Darwin
 
 else
-  MAKE_PACKAGE    = (cd $(STAGEPATH)$(MOZ_PKG_DIR)$(_RESPATH) && $(CREATE_PRECOMPLETE_CMD)) && $(INNER_MAKE_PACKAGE)
+  MAKE_PACKAGE    = (cd '$(STAGEPATH)$(MOZ_PKG_DIR)$(_RESPATH)' && $(CREATE_PRECOMPLETE_CMD)) && $(INNER_MAKE_PACKAGE)
 endif
 
 ifdef MOZ_SIGN_PACKAGE_CMD

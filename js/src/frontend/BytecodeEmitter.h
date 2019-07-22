@@ -171,6 +171,11 @@ struct JumpList {
     void patchAll(jsbytecode* code, JumpTarget target);
 };
 
+enum class ValueUsage {
+    WantValue,
+    IgnoreValue
+};
+
 struct MOZ_STACK_CLASS BytecodeEmitter
 {
     class TDZCheckCache;
@@ -356,7 +361,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool maybeSetSourceMap();
     void tellDebuggerAboutCompiledScript(ExclusiveContext* cx);
 
-    inline TokenStream* tokenStream();
+    inline TokenStream& tokenStream();
 
     BytecodeVector& code() const { return current->code; }
     jsbytecode* code(ptrdiff_t offset) const { return current->code.begin() + offset; }
@@ -434,10 +439,12 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     };
 
     // Emit code for the tree rooted at pn.
-    MOZ_MUST_USE bool emitTree(ParseNode* pn, EmitLineNumberNote emitLineNote = EMIT_LINENOTE);
+    MOZ_MUST_USE bool emitTree(ParseNode* pn, ValueUsage valueUsage = ValueUsage::WantValue,
+                               EmitLineNumberNote emitLineNote = EMIT_LINENOTE);
 
     // Emit code for the tree rooted at pn with its own TDZ cache.
-    MOZ_MUST_USE bool emitTreeInBranch(ParseNode* pn);
+    MOZ_MUST_USE bool emitTreeInBranch(ParseNode* pn,
+                                       ValueUsage valueUsage = ValueUsage::WantValue);
 
     // Emit global, eval, or module code for tree rooted at body. Always
     // encompasses the entire source.
@@ -532,6 +539,8 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_NEVER_INLINE MOZ_MUST_USE bool emitFunction(ParseNode* pn, bool needsProto = false);
     MOZ_NEVER_INLINE MOZ_MUST_USE bool emitObject(ParseNode* pn);
+
+    MOZ_MUST_USE bool replaceNewInitWithNewObject(JSObject* obj, ptrdiff_t offset);
 
     MOZ_MUST_USE bool emitHoistedFunctionsInList(ParseNode* pn);
 
@@ -660,6 +669,10 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     // []/{} expression).
     MOZ_MUST_USE bool emitSetOrInitializeDestructuring(ParseNode* target, DestructuringFlavor flav);
 
+    // emitDestructuringObjRestExclusionSet emits the property exclusion set
+    // for the rest-property in an object pattern.
+    MOZ_MUST_USE bool emitDestructuringObjRestExclusionSet(ParseNode* pattern);
+
     // emitDestructuringOps assumes the to-be-destructured value has been
     // pushed on the stack and emits code to destructure each part of a [] or
     // {} lhs expression.
@@ -676,6 +689,15 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     // Throw a TypeError if the value atop the stack isn't convertible to an
     // object, with no overall effect on the stack.
     MOZ_MUST_USE bool emitRequireObjectCoercible();
+
+    enum class CopyOption {
+        Filtered, Unfiltered
+    };
+
+    // Calls either the |CopyDataProperties| or the
+    // |CopyDataPropertiesUnfiltered| intrinsic function, consumes three (or
+    // two in the latter case) elements from the stack.
+    MOZ_MUST_USE bool emitCopyDataProperties(CopyOption option);
 
     // emitIterator expects the iterable to already be on the stack.
     // It will replace that stack value with the corresponding iterator
@@ -724,16 +746,18 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitRightAssociative(ParseNode* pn);
     MOZ_MUST_USE bool emitLeftAssociative(ParseNode* pn);
     MOZ_MUST_USE bool emitLogical(ParseNode* pn);
-    MOZ_MUST_USE bool emitSequenceExpr(ParseNode* pn);
+    MOZ_MUST_USE bool emitSequenceExpr(ParseNode* pn,
+                                       ValueUsage valueUsage = ValueUsage::WantValue);
 
     MOZ_NEVER_INLINE MOZ_MUST_USE bool emitIncOrDec(ParseNode* pn);
 
-    MOZ_MUST_USE bool emitConditionalExpression(ConditionalExpression& conditional);
+    MOZ_MUST_USE bool emitConditionalExpression(ConditionalExpression& conditional,
+                                                ValueUsage valueUsage = ValueUsage::WantValue);
 
     MOZ_MUST_USE bool isRestParameter(ParseNode* pn, bool* result);
     MOZ_MUST_USE bool emitOptimizeSpread(ParseNode* arg0, JumpList* jmp, bool* emitted);
 
-    MOZ_MUST_USE bool emitCallOrNew(ParseNode* pn);
+    MOZ_MUST_USE bool emitCallOrNew(ParseNode* pn, ValueUsage valueUsage = ValueUsage::WantValue);
     MOZ_MUST_USE bool emitSelfHostedCallFunction(ParseNode* pn);
     MOZ_MUST_USE bool emitSelfHostedResumeGenerator(ParseNode* pn);
     MOZ_MUST_USE bool emitSelfHostedForceInterpreter(ParseNode* pn);

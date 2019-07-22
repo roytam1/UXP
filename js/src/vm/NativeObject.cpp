@@ -672,10 +672,10 @@ NativeObject::maybeDensifySparseElements(js::ExclusiveContext* cx, HandleNativeO
              */
             if (shape != obj->lastProperty()) {
                 shape = shape->previous();
-                if (!obj->removeProperty(cx, id))
+                if (!NativeObject::removeProperty(cx, obj, id))
                     return DenseElementResult::Failure;
             } else {
-                if (!obj->removeProperty(cx, id))
+                if (!NativeObject::removeProperty(cx, obj, id))
                     return DenseElementResult::Failure;
                 shape = obj->lastProperty();
             }
@@ -691,7 +691,7 @@ NativeObject::maybeDensifySparseElements(js::ExclusiveContext* cx, HandleNativeO
      * flag so that we will not start using sparse indexes again if we need
      * to grow the object.
      */
-    if (!obj->clearFlag(cx, BaseShape::INDEXED))
+    if (!NativeObject::clearFlag(cx, obj, BaseShape::INDEXED))
         return DenseElementResult::Failure;
 
     return DenseElementResult::Success;
@@ -996,23 +996,22 @@ NativeObject::freeSlot(ExclusiveContext* cx, uint32_t slot)
     setSlot(slot, UndefinedValue());
 }
 
-Shape*
-NativeObject::addDataProperty(ExclusiveContext* cx, jsid idArg, uint32_t slot, unsigned attrs)
+/* static */ Shape*
+NativeObject::addDataProperty(ExclusiveContext* cx, HandleNativeObject obj,
+                              jsid idArg, uint32_t slot, unsigned attrs)
 {
     MOZ_ASSERT(!(attrs & (JSPROP_GETTER | JSPROP_SETTER)));
-    RootedNativeObject self(cx, this);
     RootedId id(cx, idArg);
-    return addProperty(cx, self, id, nullptr, nullptr, slot, attrs, 0);
+    return addProperty(cx, obj, id, nullptr, nullptr, slot, attrs, 0);
 }
 
-Shape*
-NativeObject::addDataProperty(ExclusiveContext* cx, HandlePropertyName name,
-                              uint32_t slot, unsigned attrs)
+/* static */ Shape*
+NativeObject::addDataProperty(ExclusiveContext* cx, HandleNativeObject obj,
+                              HandlePropertyName name, uint32_t slot, unsigned attrs)
 {
     MOZ_ASSERT(!(attrs & (JSPROP_GETTER | JSPROP_SETTER)));
-    RootedNativeObject self(cx, this);
     RootedId id(cx, NameToId(name));
-    return addProperty(cx, self, id, nullptr, nullptr, slot, attrs, 0);
+    return addProperty(cx, obj, id, nullptr, nullptr, slot, attrs, 0);
 }
 
 template <AllowGC allowGC>
@@ -1046,7 +1045,7 @@ CallAddPropertyHook(ExclusiveContext* cx, HandleNativeObject obj, HandleShape sh
 
         RootedId id(cx, shape->propid());
         if (!CallJSAddPropertyOp(cx->asJSContext(), addProperty, obj, id, value)) {
-            obj->removeProperty(cx, shape->propid());
+            NativeObject::removeProperty(cx, obj, shape->propid());
             return false;
         }
     }
@@ -1118,7 +1117,7 @@ PurgeProtoChain(ExclusiveContext* cx, JSObject* objArg, HandleId id)
 
         shape = obj->as<NativeObject>().lookup(cx, id);
         if (shape)
-            return obj->as<NativeObject>().shadowingShapeChange(cx, *shape);
+            return NativeObject::shadowingShapeChange(cx, obj.as<NativeObject>(), *shape);
 
         obj = obj->staticPrototype();
     }
@@ -2529,7 +2528,7 @@ js::NativeDeleteProperty(JSContext* cx, HandleNativeObject obj, HandleId id,
 
         obj->setDenseElementHole(cx, JSID_TO_INT(id));
     } else {
-        if (!obj->removeProperty(cx, id))
+        if (!NativeObject::removeProperty(cx, obj, id))
             return false;
     }
 

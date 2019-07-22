@@ -34,6 +34,7 @@ function EvaluationResult(props) {
     id: messageId,
     exceptionDocURL,
     frame,
+    notes,
   } = message;
 
   let messageBody;
@@ -57,6 +58,7 @@ function EvaluationResult(props) {
     serviceContainer,
     exceptionDocURL,
     frame,
+    notes,
   };
   return Message(childProps);
 }

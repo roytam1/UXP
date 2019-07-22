@@ -10,6 +10,8 @@
 #include "mozilla/SizePrintfMacros.h"
 #include "mozilla/TemplateLib.h"
 
+#include "jsfriendapi.h"
+#include "jsfun.h"
 #include "jslibmath.h"
 #include "jstypes.h"
 
@@ -321,7 +323,14 @@ DoTypeUpdateFallback(JSContext* cx, BaselineFrame* frame, ICUpdatedStub* stub, H
         MOZ_CRASH("Invalid stub");
     }
 
-    return stub->addUpdateStubForValue(cx, script /* = outerScript */, obj, id, value);
+    if (!stub->addUpdateStubForValue(cx, script /* = outerScript */, obj, id, value)) {
+        // The calling JIT code assumes this function is infallible (for
+        // instance we may reallocate dynamic slots before calling this),
+        // so ignore OOMs if we failed to attach a stub.
+        cx->recoverFromOutOfMemory();
+    }
+
+    return true;
 }
 
 typedef bool (*DoTypeUpdateFallbackFn)(JSContext*, BaselineFrame*, ICUpdatedStub*, HandleValue,
@@ -2253,14 +2262,20 @@ DenseOrUnboxedArraySetElemStubExists(JSContext* cx, ICStub::Kind kind,
     for (ICStubConstIterator iter = stub->beginChainConst(); !iter.atEnd(); iter++) {
         if (kind == ICStub::SetElem_DenseOrUnboxedArray && iter->isSetElem_DenseOrUnboxedArray()) {
             ICSetElem_DenseOrUnboxedArray* nstub = iter->toSetElem_DenseOrUnboxedArray();
-            if (obj->maybeShape() == nstub->shape() && obj->getGroup(cx) == nstub->group())
+            if (obj->maybeShape() == nstub->shape() &&
+                JSObject::getGroup(cx, obj) == nstub->group())
+            {
                 return true;
+            }
         }
 
         if (kind == ICStub::SetElem_DenseOrUnboxedArrayAdd && iter->isSetElem_DenseOrUnboxedArrayAdd()) {
             ICSetElem_DenseOrUnboxedArrayAdd* nstub = iter->toSetElem_DenseOrUnboxedArrayAdd();
-            if (obj->getGroup(cx) == nstub->group() && SetElemAddHasSameShapes(nstub, obj))
+            if (JSObject::getGroup(cx, obj) == nstub->group() &&
+                SetElemAddHasSameShapes(nstub, obj))
+            {
                 return true;
+            }
         }
     }
     return false;
@@ -2446,7 +2461,7 @@ DoSetElemFallback(JSContext* cx, BaselineFrame* frame, ICSetElem_Fallback* stub_
                                                   &addingCase, &protoDepth))
         {
             RootedShape shape(cx, obj->maybeShape());
-            RootedObjectGroup group(cx, obj->getGroup(cx));
+            RootedObjectGroup group(cx, JSObject::getGroup(cx, obj));
             if (!group)
                 return false;
 
@@ -4277,7 +4292,7 @@ DoSetPropFallback(JSContext* cx, BaselineFrame* frame, ICSetProp_Fallback* stub_
     if (!obj)
         return false;
     RootedShape oldShape(cx, obj->maybeShape());
-    RootedObjectGroup oldGroup(cx, obj->getGroup(cx));
+    RootedObjectGroup oldGroup(cx, JSObject::getGroup(cx, obj));
     if (!oldGroup)
         return false;
     RootedReceiverGuard oldGuard(cx, ReceiverGuard(obj));
@@ -5175,14 +5190,13 @@ GetTemplateObjectForNative(JSContext* cx, HandleFunction target, const CallArgs&
 
     if (native == js::array_slice) {
         if (args.thisv().isObject()) {
-            JSObject* obj = &args.thisv().toObject();
+            RootedObject obj(cx, &args.thisv().toObject());
             if (!obj->isSingleton()) {
                 if (obj->group()->maybePreliminaryObjects()) {
                     *skipAttach = true;
                     return true;
                 }
-                res.set(NewFullyAllocatedArrayTryReuseGroup(cx, &args.thisv().toObject(), 0,
-                                                            TenuredObject));
+                res.set(NewFullyAllocatedArrayTryReuseGroup(cx, obj, 0, TenuredObject));
                 return !!res;
             }
         }
@@ -5489,11 +5503,17 @@ TryAttachCallStub(JSContext* cx, ICCall_Fallback* stub, HandleScript script, jsb
             MOZ_ASSERT_IF(templateObject, !templateObject->group()->maybePreliminaryObjects());
         }
 
+        bool ignoresReturnValue = false;
+        if (op == JSOP_CALL_IGNORES_RV && fun->isNative()) {
+            const JSJitInfo* jitInfo = fun->jitInfo();
+            ignoresReturnValue = jitInfo && jitInfo->type() == JSJitInfo::IgnoresReturnValueNative;
+        }
+
         JitSpew(JitSpew_BaselineIC, "  Generating Call_Native stub (fun=%p, cons=%s, spread=%s)",
                 fun.get(), constructing ? "yes" : "no", isSpread ? "yes" : "no");
         ICCall_Native::Compiler compiler(cx, stub->fallbackMonitorStub()->firstMonitorStub(),
-                                         fun, templateObject, constructing, isSpread,
-                                         script->pcToOffset(pc));
+                                         fun, templateObject, constructing, ignoresReturnValue,
+                                         isSpread, script->pcToOffset(pc));
         ICStub* newStub = compiler.getStub(compiler.getStubSpace(script));
         if (!newStub)
             return false;
@@ -5596,12 +5616,14 @@ DoCallFallback(JSContext* cx, BaselineFrame* frame, ICCall_Fallback* stub_, uint
 
     MOZ_ASSERT(argc == GET_ARGC(pc));
     bool constructing = (op == JSOP_NEW);
+    bool ignoresReturnValue = (op == JSOP_CALL_IGNORES_RV);
 
     // Ensure vp array is rooted - we may GC in here.
     size_t numValues = argc + 2 + constructing;
     AutoArrayRooter vpRoot(cx, numValues, vp);
 
-    CallArgs callArgs = CallArgsFromSp(argc + constructing, vp + numValues, constructing);
+    CallArgs callArgs = CallArgsFromSp(argc + constructing, vp + numValues, constructing,
+                                       ignoresReturnValue);
     RootedValue callee(cx, vp[0]);
 
     // Handle funapply with JSOP_ARGUMENTS
@@ -5631,6 +5653,7 @@ DoCallFallback(JSContext* cx, BaselineFrame* frame, ICCall_Fallback* stub_, uint
             return false;
     } else {
         MOZ_ASSERT(op == JSOP_CALL ||
+                   op == JSOP_CALL_IGNORES_RV ||
                    op == JSOP_CALLITER ||
                    op == JSOP_FUNCALL ||
                    op == JSOP_FUNAPPLY ||
@@ -6681,7 +6704,12 @@ ICCall_Native::Compiler::generateStubCode(MacroAssembler& masm)
     // stub and use that instead of the original one.
     masm.callWithABI(Address(ICStubReg, ICCall_Native::offsetOfNative()));
 #else
-    masm.callWithABI(Address(callee, JSFunction::offsetOfNativeOrScript()));
+    if (ignoresReturnValue_) {
+        masm.loadPtr(Address(callee, JSFunction::offsetOfJitInfo()), callee);
+        masm.callWithABI(Address(callee, JSJitInfo::offsetOfIgnoresReturnValueNative()));
+    } else {
+        masm.callWithABI(Address(callee, JSFunction::offsetOfNativeOrScript()));
+    }
 #endif
 
     // Test for failure.
@@ -7961,7 +7989,7 @@ ICUpdatedStub*
 ICSetElemDenseOrUnboxedArrayAddCompiler::getStubSpecific(ICStubSpace* space,
                                                          Handle<ShapeVector> shapes)
 {
-    RootedObjectGroup group(cx, obj_->getGroup(cx));
+    RootedObjectGroup group(cx, JSObject::getGroup(cx, obj_));
     if (!group)
         return nullptr;
     Rooted<JitCode*> stubCode(cx, getStubCode());
@@ -8098,7 +8126,7 @@ ICSetProp_Native::ICSetProp_Native(JitCode* stubCode, ObjectGroup* group, Shape*
 ICSetProp_Native*
 ICSetProp_Native::Compiler::getStub(ICStubSpace* space)
 {
-    RootedObjectGroup group(cx, obj_->getGroup(cx));
+    RootedObjectGroup group(cx, JSObject::getGroup(cx, obj_));
     if (!group)
         return nullptr;
 

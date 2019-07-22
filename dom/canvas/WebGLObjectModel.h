@@ -8,7 +8,6 @@
 
 #include "mozilla/WeakPtr.h"
 #include "nsCycleCollectionNoteChild.h"
-
 #include "WebGLTypes.h"
 
 namespace mozilla {

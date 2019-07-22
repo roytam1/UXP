@@ -140,6 +140,10 @@ pageError.set("Reference Error", `
   foo()
 `);
 
+pageError.set("Redeclaration Error", `
+  let a, a;
+`);
+
 module.exports = {
   consoleApi,
   evaluationResult,

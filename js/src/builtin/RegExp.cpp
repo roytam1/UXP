@@ -140,12 +140,12 @@ ExecuteRegExpImpl(JSContext* cx, RegExpStatics* res, RegExpShared& re, HandleLin
 
 /* Legacy ExecuteRegExp behavior is baked into the JSAPI. */
 bool
-js::ExecuteRegExpLegacy(JSContext* cx, RegExpStatics* res, RegExpObject& reobj,
+js::ExecuteRegExpLegacy(JSContext* cx, RegExpStatics* res, Handle<RegExpObject*> reobj,
                         HandleLinearString input, size_t* lastIndex, bool test,
                         MutableHandleValue rval)
 {
     RegExpGuard shared(cx);
-    if (!reobj.getShared(cx, &shared))
+    if (!RegExpObject::getShared(cx, reobj, &shared))
         return false;
 
     ScopedMatchPairs matches(&cx->tempLifoAlloc());
@@ -801,7 +801,7 @@ const JSFunctionSpec js::regexp_methods[] = {
     name(JSContext* cx, unsigned argc, Value* vp)                               \
     {                                                                           \
         CallArgs args = CallArgsFromVp(argc, vp);                               \
-        RegExpStatics* res = cx->global()->getRegExpStatics(cx);                \
+        RegExpStatics* res = GlobalObject::getRegExpStatics(cx, cx->global());  \
         if (!res)                                                               \
             return false;                                                       \
         code;                                                                   \
@@ -827,7 +827,7 @@ DEFINE_STATIC_GETTER(static_paren9_getter,       STATIC_PAREN_GETTER_CODE(9))
     static bool                                                                 \
     name(JSContext* cx, unsigned argc, Value* vp)                               \
     {                                                                           \
-        RegExpStatics* res = cx->global()->getRegExpStatics(cx);                \
+        RegExpStatics* res = GlobalObject::getRegExpStatics(cx, cx->global());  \
         if (!res)                                                               \
             return false;                                                       \
         code;                                                                   \
@@ -838,7 +838,7 @@ static bool
 static_input_setter(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    RegExpStatics* res = cx->global()->getRegExpStatics(cx);
+    RegExpStatics* res = GlobalObject::getRegExpStatics(cx, cx->global());
     if (!res)
         return false;
 
@@ -918,12 +918,12 @@ ExecuteRegExp(JSContext* cx, HandleObject regexp, HandleString string,
     Rooted<RegExpObject*> reobj(cx, &regexp->as<RegExpObject>());
 
     RegExpGuard re(cx);
-    if (!reobj->getShared(cx, &re))
+    if (!RegExpObject::getShared(cx, reobj, &re))
         return RegExpRunStatus_Error;
 
     RegExpStatics* res;
     if (staticsUpdate == UpdateRegExpStatics) {
-        res = cx->global()->getRegExpStatics(cx);
+        res = GlobalObject::getRegExpStatics(cx, cx->global());
         if (!res)
             return RegExpRunStatus_Error;
     } else {
@@ -1725,7 +1725,7 @@ js::intrinsic_GetElemBaseForLambda(JSContext* cx, unsigned argc, Value* vp)
     if (!fun->isInterpreted() || fun->isClassConstructor())
         return true;
 
-    JSScript* script = fun->getOrCreateScript(cx);
+    JSScript* script = JSFunction::getOrCreateScript(cx, fun);
     if (!script)
         return false;
 
@@ -1800,7 +1800,7 @@ js::intrinsic_GetStringDataProperty(JSContext* cx, unsigned argc, Value* vp)
         return false;
 
     RootedValue v(cx);
-    if (HasDataProperty(cx, nobj, AtomToId(atom), v.address()) && v.isString())
+    if (GetPropertyPure(cx, nobj, AtomToId(atom), v.address()) && v.isString())
         args.rval().set(v);
     else
         args.rval().setUndefined();

@@ -164,7 +164,7 @@ MapIteratorObject::kind() const
     return MapObject::IteratorKind(i);
 }
 
-bool
+/* static */ bool
 GlobalObject::initMapIteratorProto(JSContext* cx, Handle<GlobalObject*> global)
 {
     Rooted<JSObject*> base(cx, GlobalObject::getOrCreateIteratorPrototype(cx, global));
@@ -924,7 +924,7 @@ SetIteratorObject::kind() const
     return SetObject::IteratorKind(i);
 }
 
-bool
+/* static */ bool
 GlobalObject::initSetIteratorProto(JSContext* cx, Handle<GlobalObject*> global)
 {
     Rooted<JSObject*> base(cx, GlobalObject::getOrCreateIteratorPrototype(cx, global));

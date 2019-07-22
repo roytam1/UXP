@@ -306,7 +306,7 @@ InterpreterStack::pushInlineFrame(JSContext* cx, InterpreterRegs& regs, const Ca
     MOZ_ASSERT(regs.sp == args.end());
     MOZ_ASSERT(callee->nonLazyScript() == script);
 
-    script->ensureNonLazyCanonicalFunction(cx);
+    script->ensureNonLazyCanonicalFunction();
 
     InterpreterFrame* prev = regs.fp();
     jsbytecode* prevpc = regs.pc;
@@ -336,13 +336,13 @@ InterpreterStack::resumeGeneratorCallFrame(JSContext* cx, InterpreterRegs& regs,
                                            HandleObject envChain)
 {
     MOZ_ASSERT(callee->isGenerator());
-    RootedScript script(cx, callee->getOrCreateScript(cx));
+    RootedScript script(cx, JSFunction::getOrCreateScript(cx, callee));
     InterpreterFrame* prev = regs.fp();
     jsbytecode* prevpc = regs.pc;
     Value* prevsp = regs.sp;
     MOZ_ASSERT(prev);
 
-    script->ensureNonLazyCanonicalFunction(cx);
+    script->ensureNonLazyCanonicalFunction();
 
     LifoAlloc::Mark mark = allocator_.mark();
 

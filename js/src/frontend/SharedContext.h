@@ -38,6 +38,7 @@ enum class StatementKind : uint8_t
     ForOfLoop,
     DoLoop,
     WhileLoop,
+    Class,
 
     // Used only by BytecodeEmitter.
     Spread
@@ -450,7 +451,8 @@ class FunctionBox : public ObjectBox, public SharedContext
     uint32_t        bufEnd;
     uint32_t        startLine;
     uint32_t        startColumn;
-    uint32_t        preludeStart;
+    uint32_t        toStringStart;
+    uint32_t        toStringEnd;
     uint16_t        length;
 
     uint8_t         generatorKindBits_;     /* The GeneratorKind of this function. */
@@ -473,11 +475,14 @@ class FunctionBox : public ObjectBox, public SharedContext
     bool            usesThis:1;             /* contains 'this' */
     bool            usesReturn:1;           /* contains a 'return' statement */
     bool            hasRest_:1;             /* has rest parameter */
+    bool            isExprBody_:1;          /* arrow function with expression
+                                             * body or expression closure:
+                                             * function(x) x*x */
 
     FunctionContextFlags funCxFlags;
 
     FunctionBox(ExclusiveContext* cx, LifoAlloc& alloc, ObjectBox* traceListHead, JSFunction* fun,
-                uint32_t preludeStart, Directives directives, bool extraWarnings,
+                uint32_t toStringStart, Directives directives, bool extraWarnings,
                 GeneratorKind generatorKind, FunctionAsyncKind asyncKind);
 
     MutableHandle<LexicalScope::Data*> namedLambdaBindings() {
@@ -546,6 +551,11 @@ class FunctionBox : public ObjectBox, public SharedContext
         hasRest_ = true;
     }
 
+    bool isExprBody() const { return isExprBody_; }
+    void setIsExprBody() {
+        isExprBody_ = true;
+    }
+
     void setGeneratorKind(GeneratorKind kind) {
         // A generator kind can be set at initialization, or when "yield" is
         // first seen.  In both cases the transition can only happen from
@@ -593,6 +603,14 @@ class FunctionBox : public ObjectBox, public SharedContext
     void setStart(const TokenStream& tokenStream) {
         bufStart = tokenStream.currentToken().pos.begin;
         tokenStream.srcCoords.lineNumAndColumnIndex(bufStart, &startLine, &startColumn);
+    }
+
+    void setEnd(uint32_t end) {
+        // For all functions except class constructors, the buffer and
+        // toString ending positions are the same. Class constructors override
+        // the toString ending position with the end of the class definition.
+        bufEnd = end;
+        toStringEnd = end;
     }
 
     void trace(JSTracer* trc) override;

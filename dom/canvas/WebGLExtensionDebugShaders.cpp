@@ -29,7 +29,9 @@ WebGLExtensionDebugShaders::GetTranslatedShaderSource(const WebGLShader& shader,
 {
     retval.SetIsVoid(true);
 
-    if (mIsLost || !mContext) return;
+    if (mIsLost || !mContext) {
+        return;
+    }
 
     if (!mContext->ValidateObject("getShaderTranslatedSource: shader", shader))
         return;

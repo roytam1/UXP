@@ -602,7 +602,7 @@ js::ArraySetLength(JSContext* cx, Handle<ArrayObject*> arr, HandleId id,
         // for..in iteration over the array. Keys deleted before being reached
         // during the iteration must not be visited, and suppressing them here
         // would be too costly.
-        ObjectGroup* arrGroup = arr->getGroup(cx);
+        ObjectGroup* arrGroup = JSObject::getGroup(cx, arr);
         if (MOZ_UNLIKELY(!arrGroup))
             return false;
         if (!arr->isIndexed() && !MOZ_UNLIKELY(arrGroup->hasAllFlags(OBJECT_FLAG_ITERATED))) {
@@ -1285,7 +1285,7 @@ InitArrayElements(JSContext* cx, HandleObject obj, uint32_t start,
     if (count == 0)
         return true;
 
-    ObjectGroup* group = obj->getGroup(cx);
+    ObjectGroup* group = JSObject::getGroup(cx, obj);
     if (!group)
         return false;
 
@@ -1662,11 +1662,11 @@ MatchNumericComparator(JSContext* cx, const Value& v)
     if (!obj.is<JSFunction>())
         return Match_None;
 
-    JSFunction* fun = &obj.as<JSFunction>();
+    RootedFunction fun(cx, &obj.as<JSFunction>());
     if (!fun->isInterpreted() || fun->isClassConstructor())
         return Match_None;
 
-    JSScript* script = fun->getOrCreateScript(cx);
+    JSScript* script = JSFunction::getOrCreateScript(cx, fun);
     if (!script)
         return Match_Failure;
 
@@ -2144,7 +2144,7 @@ ArrayShiftDenseKernel(JSContext* cx, HandleObject obj, MutableHandleValue rval)
     if (ObjectMayHaveExtraIndexedProperties(obj))
         return DenseElementResult::Incomplete;
 
-    RootedObjectGroup group(cx, obj->getGroup(cx));
+    RootedObjectGroup group(cx, JSObject::getGroup(cx, obj));
     if (MOZ_UNLIKELY(!group))
         return DenseElementResult::Failure;
 
@@ -2340,7 +2340,7 @@ CanOptimizeForDenseStorage(HandleObject arr, uint32_t startingIndex, uint32_t co
      * deleted if a hole is moved from one location to another location not yet
      * visited.  See bug 690622.
      */
-    ObjectGroup* arrGroup = arr->getGroup(cx);
+    ObjectGroup* arrGroup = JSObject::getGroup(cx, arr);
     if (!arrGroup) {
         cx->recoverFromOutOfMemory();
         return false;
@@ -2380,13 +2380,6 @@ CopyDenseElements(JSContext* cx, NativeObject* dst, NativeObject* src,
     return DenseElementResult::Success;
 }
 
-/* ES 2016 draft Mar 25, 2016 22.1.3.26. */
-bool
-js::array_splice(JSContext* cx, unsigned argc, Value* vp)
-{
-    return array_splice_impl(cx, argc, vp, true);
-}
-
 static inline bool
 ArraySpliceCopy(JSContext* cx, HandleObject arr, HandleObject obj,
                 uint32_t actualStart, uint32_t actualDeleteCount)
@@ -2416,8 +2409,8 @@ ArraySpliceCopy(JSContext* cx, HandleObject arr, HandleObject obj,
     return SetLengthProperty(cx, arr, actualDeleteCount);
 }
 
-bool
-js::array_splice_impl(JSContext* cx, unsigned argc, Value* vp, bool returnValueIsUsed)
+static bool
+array_splice_impl(JSContext* cx, unsigned argc, Value* vp, bool returnValueIsUsed)
 {
     AutoSPSEntry pseudoFrame(cx->runtime(), "Array.prototype.splice");
     CallArgs args = CallArgsFromVp(argc, vp);
@@ -2665,6 +2658,19 @@ js::array_splice_impl(JSContext* cx, unsigned argc, Value* vp, bool returnValueI
         args.rval().setObject(*arr);
 
     return true;
+}
+
+/* ES 2016 draft Mar 25, 2016 22.1.3.26. */
+bool
+js::array_splice(JSContext* cx, unsigned argc, Value* vp)
+{
+    return array_splice_impl(cx, argc, vp, true);
+}
+
+static bool
+array_splice_noRetVal(JSContext* cx, unsigned argc, Value* vp)
+{
+    return array_splice_impl(cx, argc, vp, false);
 }
 
 struct SortComparatorIndexes
@@ -3084,6 +3090,15 @@ array_of(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
+const JSJitInfo js::array_splice_info = {
+  { (JSJitGetterOp)array_splice_noRetVal },
+  { 0 }, /* unused */
+  { 0 }, /* unused */
+  JSJitInfo::IgnoresReturnValueNative,
+  JSJitInfo::AliasEverything,
+  JSVAL_TYPE_UNDEFINED,
+};
+
 static const JSFunctionSpec array_methods[] = {
 #if JS_HAS_TOSOURCE
     JS_FN(js_toSource_str,      array_toSource,     0,0),
@@ -3099,7 +3114,7 @@ static const JSFunctionSpec array_methods[] = {
     JS_INLINABLE_FN("pop",      array_pop,          0,0, ArrayPop),
     JS_INLINABLE_FN("shift",    array_shift,        0,0, ArrayShift),
     JS_FN("unshift",            array_unshift,      1,0),
-    JS_INLINABLE_FN("splice",   array_splice,       2,0, ArraySplice),
+    JS_FNINFO("splice",         array_splice,       &array_splice_info, 2,0),
 
     /* Pythonic sequence methods. */
     JS_SELF_HOSTED_FN("concat",      "ArrayConcat",      1,0),
@@ -3246,7 +3261,7 @@ static JSObject*
 CreateArrayPrototype(JSContext* cx, JSProtoKey key)
 {
     MOZ_ASSERT(key == JSProto_Array);
-    RootedObject proto(cx, cx->global()->getOrCreateObjectPrototype(cx));
+    RootedObject proto(cx, GlobalObject::getOrCreateObjectPrototype(cx, cx->global()));
     if (!proto)
         return nullptr;
 
@@ -3266,7 +3281,7 @@ CreateArrayPrototype(JSContext* cx, JSProtoKey key)
                                                               metadata));
     if (!arrayProto ||
         !JSObject::setSingleton(cx, arrayProto) ||
-        !arrayProto->setDelegate(cx) ||
+        !JSObject::setDelegate(cx, arrayProto) ||
         !AddLengthProperty(cx, arrayProto))
     {
         return nullptr;
@@ -3586,7 +3601,7 @@ js::NewPartlyAllocatedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup g
 // will have unknown property types.
 template <uint32_t maxLength>
 static inline ArrayObject*
-NewArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length,
+NewArrayTryReuseGroup(JSContext* cx, HandleObject obj, size_t length,
                       NewObjectKind newKind = GenericObject)
 {
     if (!obj->is<ArrayObject>())
@@ -3595,7 +3610,7 @@ NewArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length,
     if (obj->staticPrototype() != cx->global()->maybeGetArrayPrototype())
         return NewArray<maxLength>(cx, length, nullptr, newKind);
 
-    RootedObjectGroup group(cx, obj->getGroup(cx));
+    RootedObjectGroup group(cx, JSObject::getGroup(cx, obj));
     if (!group)
         return nullptr;
 
@@ -3603,14 +3618,14 @@ NewArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length,
 }
 
 ArrayObject*
-js::NewFullyAllocatedArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length,
+js::NewFullyAllocatedArrayTryReuseGroup(JSContext* cx, HandleObject obj, size_t length,
                                         NewObjectKind newKind)
 {
     return NewArrayTryReuseGroup<UINT32_MAX>(cx, obj, length, newKind);
 }
 
 ArrayObject*
-js::NewPartlyAllocatedArrayTryReuseGroup(JSContext* cx, JSObject* obj, size_t length)
+js::NewPartlyAllocatedArrayTryReuseGroup(JSContext* cx, HandleObject obj, size_t length)
 {
     return NewArrayTryReuseGroup<ArrayObject::EagerAllocationMaxLength>(cx, obj, length);
 }
@@ -3643,7 +3658,7 @@ js::NewCopiedArrayTryUseGroup(ExclusiveContext* cx, HandleObjectGroup group,
     if (!obj)
         return nullptr;
 
-    DenseElementResult result = obj->setOrExtendDenseElements(cx->asJSContext(), 0, vp, length, updateTypes);
+    DenseElementResult result = obj->setOrExtendDenseElements(cx, 0, vp, length, updateTypes);
     if (result == DenseElementResult::Failure)
         return nullptr;
     MOZ_ASSERT(result == DenseElementResult::Success);

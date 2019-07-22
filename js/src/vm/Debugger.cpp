@@ -224,7 +224,7 @@ EnsureFunctionHasScript(JSContext* cx, HandleFunction fun)
 {
     if (fun->isInterpretedLazy()) {
         AutoCompartment ac(cx, fun);
-        return !!fun->getOrCreateScript(cx);
+        return !!JSFunction::getOrCreateScript(cx, fun);
     }
     return true;
 }
@@ -2234,7 +2234,7 @@ Debugger::appendAllocationSite(JSContext* cx, HandleObject obj, HandleSavedFrame
     RootedAtom ctorName(cx);
     {
         AutoCompartment ac(cx, obj);
-        if (!obj->constructorDisplayAtom(cx, &ctorName))
+        if (!JSObject::constructorDisplayAtom(cx, obj, &ctorName))
             return false;
     }
 
@@ -7227,8 +7227,8 @@ static const JSFunctionSpec DebuggerSource_methods[] = {
 /* static */ NativeObject*
 DebuggerFrame::initClass(JSContext* cx, HandleObject dbgCtor, HandleObject obj)
 {
-    Rooted<GlobalObject*> global(cx, &obj->as<GlobalObject>());
-    RootedObject objProto(cx, global->getOrCreateObjectPrototype(cx));
+    Handle<GlobalObject*> global = obj.as<GlobalObject>();
+    RootedObject objProto(cx, GlobalObject::getOrCreateObjectPrototype(cx, global));
 
     return InitClass(cx, dbgCtor, objProto, &class_, construct, 0, properties_,
                      methods_, nullptr, nullptr);
@@ -8666,6 +8666,14 @@ DebuggerObject::errorMessageNameGetter(JSContext *cx, unsigned argc, Value* vp)
 }
 
 /* static */ bool
+DebuggerObject::errorNotesGetter(JSContext *cx, unsigned argc, Value* vp)
+{
+    THIS_DEBUGOBJECT(cx, argc, vp, "get errorNotes", args, object)
+
+    return DebuggerObject::getErrorNotes(cx, object, args.rval());
+}
+
+/* static */ bool
 DebuggerObject::errorLineNumberGetter(JSContext *cx, unsigned argc, Value* vp)
 {
     THIS_DEBUGOBJECT(cx, argc, vp, "get errorLineNumber", args, object)
@@ -9324,6 +9332,7 @@ const JSPropertySpec DebuggerObject::properties_[] = {
     JS_PSG("global", DebuggerObject::globalGetter, 0),
     JS_PSG("allocationSite", DebuggerObject::allocationSiteGetter, 0),
     JS_PSG("errorMessageName", DebuggerObject::errorMessageNameGetter, 0),
+    JS_PSG("errorNotes", DebuggerObject::errorNotesGetter, 0),
     JS_PSG("errorLineNumber", DebuggerObject::errorLineNumberGetter, 0),
     JS_PSG("errorColumnNumber", DebuggerObject::errorColumnNumberGetter, 0),
     JS_PSG("isProxy", DebuggerObject::isProxyGetter, 0),
@@ -9376,8 +9385,8 @@ const JSFunctionSpec DebuggerObject::methods_[] = {
 /* static */ NativeObject*
 DebuggerObject::initClass(JSContext* cx, HandleObject obj, HandleObject debugCtor)
 {
-    Rooted<GlobalObject*> global(cx, &obj->as<GlobalObject>());
-    RootedObject objProto(cx, global->getOrCreateObjectPrototype(cx));
+    Handle<GlobalObject*> global = obj.as<GlobalObject>();
+    RootedObject objProto(cx, GlobalObject::getOrCreateObjectPrototype(cx, global));
 
     RootedNativeObject objectProto(cx, InitClass(cx, debugCtor, objProto, &class_,
                                                  construct, 0, properties_,
@@ -9611,7 +9620,7 @@ DebuggerObject::getBoundArguments(JSContext* cx, HandleDebuggerObject object,
     if (!result.resize(length))
         return false;
     for (size_t i = 0; i < length; i++) {
-        result[i].set(referent->getBoundFunctionArgument(cx, i));
+        result[i].set(referent->getBoundFunctionArgument(i));
         if (!dbg->wrapDebuggeeValue(cx, result[i]))
             return false;
     }
@@ -9691,6 +9700,30 @@ DebuggerObject::getErrorMessageName(JSContext* cx, HandleDebuggerObject object,
         return false;
 
     result.set(str);
+    return true;
+}
+
+/* static */ bool
+DebuggerObject::getErrorNotes(JSContext* cx, HandleDebuggerObject object,
+                              MutableHandleValue result)
+{
+    RootedObject referent(cx, object->referent());
+    JSErrorReport* report;
+    if (!getErrorReport(cx, referent, report))
+        return false;
+
+    if (!report) {
+        result.setUndefined();
+        return true;
+    }
+
+    RootedObject errorNotesArray(cx, CreateErrorNotesArray(cx, report));
+    if (!errorNotesArray)
+        return false;
+
+    if (!cx->compartment()->wrap(cx, &errorNotesArray))
+        return false;
+    result.setObject(*errorNotesArray);
     return true;
 }
 
@@ -10577,8 +10610,8 @@ const JSFunctionSpec DebuggerEnvironment::methods_[] = {
 /* static */ NativeObject*
 DebuggerEnvironment::initClass(JSContext* cx, HandleObject dbgCtor, HandleObject obj)
 {
-    Rooted<GlobalObject*> global(cx, &obj->as<GlobalObject>());
-    RootedObject objProto(cx, global->getOrCreateObjectPrototype(cx));
+    Handle<GlobalObject*> global = obj.as<GlobalObject>();
+    RootedObject objProto(cx, GlobalObject::getOrCreateObjectPrototype(cx, global));
 
     return InitClass(cx, dbgCtor, objProto, &DebuggerEnvironment::class_, construct, 0,
                      properties_, methods_, nullptr, nullptr);
@@ -10774,7 +10807,8 @@ DebuggerEnvironment::getVariable(JSContext* cx, HandleDebuggerEnvironment enviro
         //
         // See wrapDebuggeeValue for how the sentinel values are wrapped.
         if (referent->is<DebugEnvironmentProxy>()) {
-            if (!referent->as<DebugEnvironmentProxy>().getMaybeSentinelValue(cx, id, result))
+            Rooted<DebugEnvironmentProxy*> env(cx, &referent->as<DebugEnvironmentProxy>());
+            if (!DebugEnvironmentProxy::getMaybeSentinelValue(cx, env, id, result))
                 return false;
         } else {
             if (!GetProperty(cx, referent, referent, id, result))
@@ -10942,9 +10976,9 @@ JS_DefineDebuggerObject(JSContext* cx, HandleObject obj)
         memoryProto(cx);
     RootedObject debuggeeWouldRunProto(cx);
     RootedValue debuggeeWouldRunCtor(cx);
-    Rooted<GlobalObject*> global(cx, &obj->as<GlobalObject>());
+    Handle<GlobalObject*> global = obj.as<GlobalObject>();
 
-    objProto = global->getOrCreateObjectPrototype(cx);
+    objProto = GlobalObject::getOrCreateObjectPrototype(cx, global);
     if (!objProto)
         return false;
     debugProto = InitClass(cx, obj,

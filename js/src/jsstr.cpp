@@ -461,9 +461,13 @@ ToStringForStringFunction(JSContext* cx, HandleValue thisv)
         RootedObject obj(cx, &thisv.toObject());
         if (obj->is<StringObject>()) {
             StringObject* nobj = &obj->as<StringObject>();
-            Rooted<jsid> id(cx, NameToId(cx->names().toString));
-            if (ClassMethodIsNative(cx, nobj, &StringObject::class_, id, str_toString))
+            // We have to make sure that the ToPrimitive call from ToString
+            // would be unobservable.
+            if (HasNoToPrimitiveMethodPure(nobj, cx) &&
+                HasNativeMethodPure(nobj, cx->names().toString, str_toString, cx))
+            {
                 return nobj->unbox();
+            }
         }
     } else if (thisv.isNullOrUndefined()) {
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_CANT_CONVERT_TO,
@@ -2901,8 +2905,8 @@ StringObject::assignInitialShape(ExclusiveContext* cx, Handle<StringObject*> obj
 {
     MOZ_ASSERT(obj->empty());
 
-    return obj->addDataProperty(cx, cx->names().length, LENGTH_SLOT,
-                                JSPROP_PERMANENT | JSPROP_READONLY);
+    return NativeObject::addDataProperty(cx, obj, cx->names().length, LENGTH_SLOT,
+                                         JSPROP_PERMANENT | JSPROP_READONLY);
 }
 
 JSObject*
@@ -2910,17 +2914,20 @@ js::InitStringClass(JSContext* cx, HandleObject obj)
 {
     MOZ_ASSERT(obj->isNative());
 
-    Rooted<GlobalObject*> global(cx, &obj->as<GlobalObject>());
+    Handle<GlobalObject*> global = obj.as<GlobalObject>();
 
     Rooted<JSString*> empty(cx, cx->runtime()->emptyString);
-    RootedObject proto(cx, global->createBlankPrototype(cx, &StringObject::class_));
-    if (!proto || !proto->as<StringObject>().init(cx, empty))
+    RootedObject proto(cx, GlobalObject::createBlankPrototype(cx, global, &StringObject::class_));
+    if (!proto)
+        return nullptr;
+    Handle<StringObject*> protoObj = proto.as<StringObject>();
+    if (!StringObject::init(cx, protoObj, empty))
         return nullptr;
 
     /* Now create the String function. */
     RootedFunction ctor(cx);
-    ctor = global->createConstructor(cx, StringConstructor, cx->names().String, 1,
-                                     AllocKind::FUNCTION, &jit::JitInfo_String);
+    ctor = GlobalObject::createConstructor(cx, StringConstructor, cx->names().String, 1,
+                                           AllocKind::FUNCTION, &jit::JitInfo_String);
     if (!ctor)
         return nullptr;
 
