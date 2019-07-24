@@ -654,7 +654,7 @@ VectorToKeyIterator(JSContext* cx, HandleObject obj, unsigned flags, AutoIdVecto
 {
     MOZ_ASSERT(!(flags & JSITER_FOREACH));
 
-    if (obj->isSingleton() && !obj->setIteratedSingleton(cx))
+    if (obj->isSingleton() && !JSObject::setIteratedSingleton(cx, obj))
         return false;
     MarkObjectGroupFlags(cx, obj, OBJECT_FLAG_ITERATED);
 
@@ -698,7 +698,7 @@ VectorToValueIterator(JSContext* cx, HandleObject obj, unsigned flags, AutoIdVec
 {
     MOZ_ASSERT(flags & JSITER_FOREACH);
 
-    if (obj->isSingleton() && !obj->setIteratedSingleton(cx))
+    if (obj->isSingleton() && !JSObject::setIteratedSingleton(cx, obj))
         return false;
     MarkObjectGroupFlags(cx, obj, OBJECT_FLAG_ITERATED);
 
@@ -921,7 +921,7 @@ js::CreateItrResultObject(JSContext* cx, HandleValue value, bool done)
     // FIXME: We can cache the iterator result object shape somewhere.
     AssertHeapIsIdle(cx);
 
-    RootedObject proto(cx, cx->global()->getOrCreateObjectPrototype(cx));
+    RootedObject proto(cx, GlobalObject::getOrCreateObjectPrototype(cx, cx->global()));
     if (!proto)
         return nullptr;
 
@@ -1497,7 +1497,7 @@ GlobalObject::initIteratorProto(JSContext* cx, Handle<GlobalObject*> global)
     if (global->getReservedSlot(ITERATOR_PROTO).isObject())
         return true;
 
-    RootedObject proto(cx, global->createBlankPrototype<PlainObject>(cx));
+    RootedObject proto(cx, GlobalObject::createBlankPrototype<PlainObject>(cx, global));
     if (!proto || !DefinePropertiesAndFunctions(cx, proto, nullptr, iterator_proto_methods))
         return false;
 
@@ -1516,7 +1516,8 @@ GlobalObject::initArrayIteratorProto(JSContext* cx, Handle<GlobalObject*> global
         return false;
 
     const Class* cls = &ArrayIteratorPrototypeClass;
-    RootedObject proto(cx, global->createBlankPrototypeInheriting(cx, cls, iteratorProto));
+    RootedObject proto(cx, GlobalObject::createBlankPrototypeInheriting(cx, global, cls,
+                                                                        iteratorProto));
     if (!proto ||
         !DefinePropertiesAndFunctions(cx, proto, nullptr, array_iterator_methods) ||
         !DefineToStringTag(cx, proto, cx->names().ArrayIterator))
@@ -1539,7 +1540,8 @@ GlobalObject::initStringIteratorProto(JSContext* cx, Handle<GlobalObject*> globa
         return false;
 
     const Class* cls = &StringIteratorPrototypeClass;
-    RootedObject proto(cx, global->createBlankPrototypeInheriting(cx, cls, iteratorProto));
+    RootedObject proto(cx, GlobalObject::createBlankPrototypeInheriting(cx, global, cls,
+                                                                        iteratorProto));
     if (!proto ||
         !DefinePropertiesAndFunctions(cx, proto, nullptr, string_iterator_methods) ||
         !DefineToStringTag(cx, proto, cx->names().StringIterator))
@@ -1560,7 +1562,8 @@ js::InitLegacyIteratorClass(JSContext* cx, HandleObject obj)
         return &global->getPrototype(JSProto_Iterator).toObject();
 
     RootedObject iteratorProto(cx);
-    iteratorProto = global->createBlankPrototype(cx, &PropertyIteratorObject::class_);
+    iteratorProto = GlobalObject::createBlankPrototype(cx, global,
+                                                       &PropertyIteratorObject::class_);
     if (!iteratorProto)
         return nullptr;
 
@@ -1572,7 +1575,7 @@ js::InitLegacyIteratorClass(JSContext* cx, HandleObject obj)
     ni->init(nullptr, nullptr, 0 /* flags */, 0, 0);
 
     Rooted<JSFunction*> ctor(cx);
-    ctor = global->createConstructor(cx, IteratorConstructor, cx->names().Iterator, 2);
+    ctor = GlobalObject::createConstructor(cx, IteratorConstructor, cx->names().Iterator, 2);
     if (!ctor)
         return nullptr;
     if (!LinkConstructorAndPrototype(cx, ctor, iteratorProto))
@@ -1593,7 +1596,8 @@ js::InitStopIterationClass(JSContext* cx, HandleObject obj)
 {
     Handle<GlobalObject*> global = obj.as<GlobalObject>();
     if (!global->getPrototype(JSProto_StopIteration).isObject()) {
-        RootedObject proto(cx, global->createBlankPrototype(cx, &StopIterationObject::class_));
+        RootedObject proto(cx, GlobalObject::createBlankPrototype(cx, global,
+                                                                  &StopIterationObject::class_));
         if (!proto || !FreezeObject(cx, proto))
             return nullptr;
 

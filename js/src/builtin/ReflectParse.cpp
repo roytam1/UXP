@@ -3044,7 +3044,12 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
             MOZ_ASSERT(pn->pn_pos.encloses(next->pn_pos));
 
             RootedValue expr(cx);
-            expr.setString(next->pn_atom);
+            if (next->isKind(PNK_RAW_UNDEFINED)) {
+                expr.setUndefined();
+            } else {
+                MOZ_ASSERT(next->isKind(PNK_TEMPLATE_STRING));
+                expr.setString(next->pn_atom);
+            }
             cooked.infallibleAppend(expr);
         }
 
@@ -3136,6 +3141,7 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
       case PNK_TRUE:
       case PNK_FALSE:
       case PNK_NULL:
+      case PNK_RAW_UNDEFINED:
         return literal(pn, dst);
 
       case PNK_YIELD_STAR:
@@ -3216,6 +3222,8 @@ ASTSerializer::property(ParseNode* pn, MutableHandleValue dst)
         return expression(pn->pn_kid, &val) &&
                builder.prototypeMutation(val, &pn->pn_pos, dst);
     }
+    if (pn->isKind(PNK_SPREAD))
+        return expression(pn, dst);
 
     PropKind kind;
     switch (pn->getOp()) {
@@ -3276,6 +3284,10 @@ ASTSerializer::literal(ParseNode* pn, MutableHandleValue dst)
         val.setNull();
         break;
 
+      case PNK_RAW_UNDEFINED:
+        val.setUndefined();
+        break;
+
       case PNK_TRUE:
         val.setBoolean(true);
         break;
@@ -3332,6 +3344,16 @@ ASTSerializer::objectPattern(ParseNode* pn, MutableHandleValue dst)
         return false;
 
     for (ParseNode* propdef = pn->pn_head; propdef; propdef = propdef->pn_next) {
+        if (propdef->isKind(PNK_SPREAD)) {
+            RootedValue target(cx);
+            RootedValue spread(cx);
+            if (!pattern(propdef->pn_kid, &target))
+                return false;
+            if(!builder.spreadExpression(target, &propdef->pn_pos, &spread))
+                return false;
+            elts.infallibleAppend(spread);
+            continue;
+        }
         LOCAL_ASSERT(propdef->isKind(PNK_MUTATEPROTO) != propdef->isOp(JSOP_INITPROP));
 
         RootedValue key(cx);
@@ -3407,12 +3429,7 @@ ASTSerializer::function(ParseNode* pn, ASTType type, MutableHandleValue dst)
         : GeneratorStyle::None;
 
     bool isAsync = pn->pn_funbox->isAsync();
-    bool isExpression =
-#if JS_HAS_EXPR_CLOSURES
-        func->isExprBody();
-#else
-        false;
-#endif
+    bool isExpression = pn->pn_funbox->isExprBody();
 
     RootedValue id(cx);
     RootedAtom funcAtom(cx, func->explicitName());

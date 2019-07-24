@@ -129,10 +129,10 @@ RegExpSharedReadBarrier(JSContext* cx, RegExpShared* shared)
         shared->unmarkGray();
 }
 
-bool
-RegExpObject::getShared(JSContext* cx, RegExpGuard* g)
+/* static */ bool
+RegExpObject::getShared(JSContext* cx, Handle<RegExpObject*> regexp, RegExpGuard* g)
 {
-    if (RegExpShared* shared = maybeShared()) {
+    if (RegExpShared* shared = regexp->maybeShared()) {
         // Fetching a RegExpShared from an object requires a read
         // barrier, as the shared pointer might be weak.
         RegExpSharedReadBarrier(cx, shared);
@@ -141,7 +141,7 @@ RegExpObject::getShared(JSContext* cx, RegExpGuard* g)
         return true;
     }
 
-    return createShared(cx, g);
+    return createShared(cx, regexp, g);
 }
 
 /* static */ bool
@@ -199,7 +199,7 @@ RegExpObject::trace(JSTracer* trc, JSObject* obj)
 static JSObject*
 CreateRegExpPrototype(JSContext* cx, JSProtoKey key)
 {
-    return cx->global()->createBlankPrototype(cx, &RegExpObject::protoClass_);
+    return GlobalObject::createBlankPrototype(cx, cx->global(), &RegExpObject::protoClass_);
 }
 
 static const ClassOps RegExpObjectClassOps = {
@@ -279,16 +279,14 @@ RegExpObject::create(ExclusiveContext* cx, HandleAtom source, RegExpFlag flags,
     return regexp;
 }
 
-bool
-RegExpObject::createShared(JSContext* cx, RegExpGuard* g)
+/* static */ bool
+RegExpObject::createShared(JSContext* cx, Handle<RegExpObject*> regexp, RegExpGuard* g)
 {
-    Rooted<RegExpObject*> self(cx, this);
-
-    MOZ_ASSERT(!maybeShared());
-    if (!cx->compartment()->regExps.get(cx, getSource(), getFlags(), g))
+    MOZ_ASSERT(!regexp->maybeShared());
+    if (!cx->compartment()->regExps.get(cx, regexp->getSource(), regexp->getFlags(), g))
         return false;
 
-    self->setShared(**g);
+    regexp->setShared(**g);
     return true;
 }
 
@@ -300,7 +298,8 @@ RegExpObject::assignInitialShape(ExclusiveContext* cx, Handle<RegExpObject*> sel
     JS_STATIC_ASSERT(LAST_INDEX_SLOT == 0);
 
     /* The lastIndex property alone is writable but non-configurable. */
-    return self->addDataProperty(cx, cx->names().lastIndex, LAST_INDEX_SLOT, JSPROP_PERMANENT);
+    return NativeObject::addDataProperty(cx, self, cx->names().lastIndex, LAST_INDEX_SLOT,
+                                         JSPROP_PERMANENT);
 }
 
 void
@@ -891,11 +890,12 @@ RegExpShared::dumpBytecode(JSContext* cx, bool match_only, HandleLinearString in
     return true;
 }
 
-bool
-RegExpObject::dumpBytecode(JSContext* cx, bool match_only, HandleLinearString input)
+/* static */ bool
+RegExpObject::dumpBytecode(JSContext* cx, Handle<RegExpObject*> regexp,
+                           bool match_only, HandleLinearString input)
 {
     RegExpGuard g(cx);
-    if (!getShared(cx, &g))
+    if (!getShared(cx, regexp, &g))
         return false;
 
     return g.re()->dumpBytecode(cx, match_only, input);
@@ -1430,7 +1430,7 @@ js::CloneRegExpObject(JSContext* cx, JSObject* obj_)
     Rooted<JSAtom*> source(cx, regex->getSource());
 
     RegExpGuard g(cx);
-    if (!regex->getShared(cx, &g))
+    if (!RegExpObject::getShared(cx, regex, &g))
         return nullptr;
 
     clone->initAndZeroLastIndex(source, g->getFlags(), cx);

@@ -1331,6 +1331,10 @@ pref("image.animation_mode",                "normal");
 // Same-origin policy for file URIs, "false" is traditional
 pref("security.fileuri.strict_origin_policy", true);
 
+// Treat all file URIs as having a unique origin.
+// Only has an effect if strict origin policy is true.
+pref("security.fileuri.unique_origin", true);
+
 // If this pref is true, prefs in the logging.config branch will be cleared on
 // startup. This is done so that setting a log-file and log-modules at runtime
 // doesn't persist across restarts leading to huge logfile and low disk space.

@@ -477,7 +477,7 @@ intrinsic_FinishBoundFunctionInit(JSContext* cx, unsigned argc, Value* vp)
     // Try to avoid invoking the resolve hook.
     if (targetObj->is<JSFunction>() && !targetObj->as<JSFunction>().hasResolvedLength()) {
         RootedValue targetLength(cx);
-        if (!targetObj->as<JSFunction>().getUnresolvedLength(cx, &targetLength))
+        if (!JSFunction::getUnresolvedLength(cx, targetObj.as<JSFunction>(), &targetLength))
             return false;
 
         length = Max(0.0, targetLength.toNumber() - argCount);
@@ -2154,7 +2154,7 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_INLINABLE_FN("std_Array_slice",           array_slice,                  2,0, ArraySlice),
     JS_FN("std_Array_sort",                      array_sort,                   1,0),
     JS_FN("std_Array_reverse",                   array_reverse,                0,0),
-    JS_INLINABLE_FN("std_Array_splice",          array_splice,                 2,0, ArraySplice),
+    JS_FNINFO("std_Array_splice",                array_splice, &array_splice_info, 2,0),
 
     JS_FN("std_Date_now",                        date_now,                     0,0),
     JS_FN("std_Date_valueOf",                    date_valueOf,                 0,0),
@@ -3008,7 +3008,7 @@ JSRuntime::cloneSelfHostedFunctionScript(JSContext* cx, HandlePropertyName name,
     MOZ_ASSERT(targetFun->isInterpretedLazy());
     MOZ_ASSERT(targetFun->isSelfHostedBuiltin());
 
-    RootedScript sourceScript(cx, sourceFun->getOrCreateScript(cx));
+    RootedScript sourceScript(cx, JSFunction::getOrCreateScript(cx, sourceFun));
     if (!sourceScript)
         return false;
 

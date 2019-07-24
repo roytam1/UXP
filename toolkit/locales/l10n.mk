@@ -112,13 +112,13 @@ repackage-zip: UNPACKAGE='$(ZIP_IN)'
 repackage-zip:  libs-$(AB_CD)
 # call a hook for apps to put their uninstall helper.exe into the package
 	$(UNINSTALLER_PACKAGE_HOOK)
-	$(PYTHON) $(MOZILLA_DIR)/toolkit/mozapps/installer/l10n-repack.py $(STAGEDIST) $(DIST)/xpi-stage/locale-$(AB_CD) \
+	$(PYTHON) $(MOZILLA_DIR)/toolkit/mozapps/installer/l10n-repack.py '$(STAGEDIST)' $(DIST)/xpi-stage/locale-$(AB_CD) \
 		$(MOZ_PKG_EXTRAL10N) \
 		$(if $(filter omni,$(MOZ_PACKAGER_FORMAT)),$(if $(NON_OMNIJAR_FILES),--non-resource $(NON_OMNIJAR_FILES)))
 
 ifeq (cocoa,$(MOZ_WIDGET_TOOLKIT))
 ifneq (en,$(LPROJ_ROOT))
-	mv $(STAGEDIST)/en.lproj $(STAGEDIST)/$(LPROJ_ROOT).lproj
+	mv '$(STAGEDIST)'/en.lproj '$(STAGEDIST)'/$(LPROJ_ROOT).lproj
 endif
 endif
 
@@ -133,7 +133,7 @@ endif
 # packaging done, undo l10n stuff
 ifneq (en,$(LPROJ_ROOT))
 ifeq (cocoa,$(MOZ_WIDGET_TOOLKIT))
-	mv $(STAGEDIST)/$(LPROJ_ROOT).lproj $(STAGEDIST)/en.lproj
+	mv '$(STAGEDIST)'/$(LPROJ_ROOT).lproj '$(STAGEDIST)'/en.lproj
 endif
 endif
 	$(NSINSTALL) -D $(DIST)/$(PKG_PATH)
@@ -197,7 +197,7 @@ endif
 generate-snippet-%:
 	$(PYTHON) $(MOZILLA_DIR)/tools/update-packaging/generatesnippet.py \
           --mar-path=$(ABS_DIST)/update \
-          --application-ini-file=$(STAGEDIST)/application.ini \
+          --application-ini-file='$(STAGEDIST)'/application.ini \
           --locale=$* \
           --product=$(MOZ_PKG_APPNAME) \
           --platform=$(MOZ_PKG_PLATFORM) \

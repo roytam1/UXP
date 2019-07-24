@@ -830,7 +830,7 @@ class FastCallGuard
 
         if (useIon_ && fun_) {
             if (!script_) {
-                script_ = fun_->getOrCreateScript(cx);
+                script_ = JSFunction::getOrCreateScript(cx, fun_);
                 if (!script_)
                     return false;
             }

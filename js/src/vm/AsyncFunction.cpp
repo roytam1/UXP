@@ -118,7 +118,7 @@ js::WrapAsyncFunctionWithProto(JSContext* cx, HandleFunction unwrapped, HandleOb
 
     RootedAtom funName(cx, unwrapped->explicitName());
     uint16_t length;
-    if (!unwrapped->getLength(cx, &length))
+    if (!JSFunction::getLength(cx, unwrapped, &length))
         return nullptr;
 
     // Steps 3 (partially).

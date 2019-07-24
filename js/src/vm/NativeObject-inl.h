@@ -236,7 +236,7 @@ NativeObject::ensureDenseElements(ExclusiveContext* cx, uint32_t index, uint32_t
 }
 
 inline DenseElementResult
-NativeObject::setOrExtendDenseElements(JSContext* cx, uint32_t start, const Value* vp,
+NativeObject::setOrExtendDenseElements(ExclusiveContext* cx, uint32_t start, const Value* vp,
                                        uint32_t count,
                                        ShouldUpdateTypes updateTypes)
 {

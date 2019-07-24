@@ -2310,7 +2310,7 @@ ValueToScript(JSContext* cx, HandleValue v, JSFunction** funp = nullptr)
         return nullptr;
     }
 
-    JSScript* script = fun->getOrCreateScript(cx);
+    JSScript* script = JSFunction::getOrCreateScript(cx, fun);
     if (!script)
         return nullptr;
 
@@ -2550,6 +2550,14 @@ SrcNotes(JSContext* cx, HandleScript script, Sprinter* sp)
                 return false;
             break;
 
+          case SRC_CLASS_SPAN: {
+            unsigned startOffset = GetSrcNoteOffset(sn, 0);
+            unsigned endOffset = GetSrcNoteOffset(sn, 1);
+            if (!sp->jsprintf(" %u %u", startOffset, endOffset))
+                return false;
+            break;
+          }
+
           default:
             MOZ_ASSERT_UNREACHABLE("unrecognized srcnote");
         }
@@ -2689,7 +2697,7 @@ DisassembleScript(JSContext* cx, HandleScript script, HandleFunction fun,
             if (sp->put(" CONSTRUCTOR") < 0)
                 return false;
         }
-        if (fun->isExprBody()) {
+        if (script->isExprBody()) {
             if (sp->put(" EXPRESSION_CLOSURE") < 0)
                 return false;
         }
@@ -2726,7 +2734,7 @@ DisassembleScript(JSContext* cx, HandleScript script, HandleFunction fun,
 
                 RootedFunction fun(cx, &obj->as<JSFunction>());
                 if (fun->isInterpreted()) {
-                    RootedScript script(cx, fun->getOrCreateScript(cx));
+                    RootedScript script(cx, JSFunction::getOrCreateScript(cx, fun));
                     if (script) {
                         if (!DisassembleScript(cx, script, fun, lines, recursive, sourceNotes, sp))
                             return false;
@@ -3488,8 +3496,8 @@ GroupOf(JSContext* cx, unsigned argc, JS::Value* vp)
         JS_ReportErrorASCII(cx, "groupOf: object expected");
         return false;
     }
-    JSObject* obj = &args[0].toObject();
-    ObjectGroup* group = obj->getGroup(cx);
+    RootedObject obj(cx, &args[0].toObject());
+    ObjectGroup* group = JSObject::getGroup(cx, obj);
     if (!group)
         return false;
     args.rval().set(JS_NumberValue(double(uintptr_t(group) >> 3)));
@@ -5403,7 +5411,7 @@ DumpScopeChain(JSContext* cx, unsigned argc, Value* vp)
             ReportUsageErrorASCII(cx, callee, "Argument must be an interpreted function");
             return false;
         }
-        script = fun->getOrCreateScript(cx);
+        script = JSFunction::getOrCreateScript(cx, fun);
     } else {
         script = obj->as<ModuleObject>().script();
     }
@@ -6417,6 +6425,14 @@ CreateLastWarningObject(JSContext* cx, JSErrorReport* report)
 
     RootedValue columnVal(cx, Int32Value(report->column));
     if (!DefineProperty(cx, warningObj, cx->names().columnNumber, columnVal))
+        return false;
+
+    RootedObject notesArray(cx, CreateErrorNotesArray(cx, report));
+    if (!notesArray)
+        return false;
+
+    RootedValue notesArrayVal(cx, ObjectValue(*notesArray));
+    if (!DefineProperty(cx, warningObj, cx->names().notes, notesArrayVal))
         return false;
 
     GetShellContext(cx)->lastWarning.setObject(*warningObj);

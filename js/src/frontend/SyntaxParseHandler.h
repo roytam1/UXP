@@ -9,6 +9,8 @@
 
 #include "mozilla/Attributes.h"
 
+#include <string.h>
+
 #include "frontend/ParseNode.h"
 #include "frontend/TokenStream.h"
 
@@ -94,9 +96,12 @@ class SyntaxParseHandler
 
         // Nodes representing unparenthesized names.
         NodeUnparenthesizedArgumentsName,
-        NodeUnparenthesizedAsyncName,
         NodeUnparenthesizedEvalName,
         NodeUnparenthesizedName,
+
+        // Node representing the "async" name, which may actually be a
+        // contextual keyword.
+        NodePotentialAsyncKeyword,
 
         // Valuable for recognizing potential destructuring patterns.
         NodeUnparenthesizedArray,
@@ -183,8 +188,8 @@ class SyntaxParseHandler
         lastAtom = name;
         if (name == cx->names().arguments)
             return NodeUnparenthesizedArgumentsName;
-        if (name == cx->names().async)
-            return NodeUnparenthesizedAsyncName;
+        if (pos.begin + strlen("async") == pos.end && name == cx->names().async)
+            return NodePotentialAsyncKeyword;
         if (name == cx->names().eval)
             return NodeUnparenthesizedEvalName;
         return NodeUnparenthesizedName;
@@ -219,6 +224,7 @@ class SyntaxParseHandler
 
     Node newThisLiteral(const TokenPos& pos, Node thisName) { return NodeGeneric; }
     Node newNullLiteral(const TokenPos& pos) { return NodeGeneric; }
+    Node newRawUndefinedLiteral(const TokenPos& pos) { return NodeGeneric; }
 
     template <class Boxer>
     Node newRegExp(RegExpObject* reobj, const TokenPos& pos, Boxer& boxer) { return NodeGeneric; }
@@ -233,6 +239,10 @@ class SyntaxParseHandler
 
     Node newTypeof(uint32_t begin, Node kid) {
         return NodeUnparenthesizedUnary;
+    }
+
+    Node newNullary(ParseNodeKind kind, JSOp op, const TokenPos& pos) {
+        return NodeGeneric;
     }
 
     Node newUnary(ParseNodeKind kind, JSOp op, uint32_t begin, Node kid) {
@@ -279,7 +289,7 @@ class SyntaxParseHandler
     Node newObjectLiteral(uint32_t begin) { return NodeUnparenthesizedObject; }
     Node newClassMethodList(uint32_t begin) { return NodeGeneric; }
     Node newClassNames(Node outer, Node inner, const TokenPos& pos) { return NodeGeneric; }
-    Node newClass(Node name, Node heritage, Node methodBlock) { return NodeGeneric; }
+    Node newClass(Node name, Node heritage, Node methodBlock, const TokenPos& pos) { return NodeGeneric; }
 
     Node newNewTarget(Node newHolder, Node targetHolder) { return NodeGeneric; }
     Node newPosHolder(const TokenPos& pos) { return NodeGeneric; }
@@ -288,6 +298,7 @@ class SyntaxParseHandler
     MOZ_MUST_USE bool addPrototypeMutation(Node literal, uint32_t begin, Node expr) { return true; }
     MOZ_MUST_USE bool addPropertyDefinition(Node literal, Node name, Node expr) { return true; }
     MOZ_MUST_USE bool addShorthand(Node literal, Node name, Node expr) { return true; }
+    MOZ_MUST_USE bool addSpreadProperty(Node literal, uint32_t begin, Node inner) { return true; }
     MOZ_MUST_USE bool addObjectMethodDefinition(Node literal, Node name, Node fn, JSOp op) { return true; }
     MOZ_MUST_USE bool addClassMethodDefinition(Node literal, Node name, Node fn, JSOp op, bool isStatic) { return true; }
     Node newYieldExpression(uint32_t begin, Node value, Node gen) { return NodeGeneric; }
@@ -301,6 +312,16 @@ class SyntaxParseHandler
     void addCaseStatementToList(Node list, Node stmt) {}
     MOZ_MUST_USE bool prependInitialYield(Node stmtList, Node gen) { return true; }
     Node newEmptyStatement(const TokenPos& pos) { return NodeEmptyStatement; }
+
+    Node newExportDeclaration(Node kid, const TokenPos& pos) {
+        return NodeGeneric;
+    }
+    Node newExportFromDeclaration(uint32_t begin, Node exportSpecSet, Node moduleSpec) {
+        return NodeGeneric;
+    }
+    Node newExportDefaultDeclaration(Node kid, Node maybeBinding, const TokenPos& pos) {
+        return NodeGeneric;
+    }
 
     Node newSetThis(Node thisName, Node value) { return value; }
 
@@ -497,7 +518,7 @@ class SyntaxParseHandler
             return NodeParenthesizedArgumentsName;
         if (node == NodeUnparenthesizedEvalName)
             return NodeParenthesizedEvalName;
-        if (node == NodeUnparenthesizedName || node == NodeUnparenthesizedAsyncName)
+        if (node == NodeUnparenthesizedName || node == NodePotentialAsyncKeyword)
             return NodeParenthesizedName;
 
         if (node == NodeUnparenthesizedArray)
@@ -528,9 +549,9 @@ class SyntaxParseHandler
 
     bool isUnparenthesizedName(Node node) {
         return node == NodeUnparenthesizedArgumentsName ||
-               node == NodeUnparenthesizedAsyncName ||
                node == NodeUnparenthesizedEvalName ||
-               node == NodeUnparenthesizedName;
+               node == NodeUnparenthesizedName ||
+               node == NodePotentialAsyncKeyword;
     }
 
     bool isNameAnyParentheses(Node node) {
@@ -541,9 +562,11 @@ class SyntaxParseHandler
                node == NodeParenthesizedName;
     }
 
-    bool nameIsEvalAnyParentheses(Node node, ExclusiveContext* cx) {
-        MOZ_ASSERT(isNameAnyParentheses(node),
-                   "must only call this function on known names");
+    bool isArgumentsAnyParentheses(Node node, ExclusiveContext* cx) {
+        return node == NodeUnparenthesizedArgumentsName || node == NodeParenthesizedArgumentsName;
+    }
+
+    bool isEvalAnyParentheses(Node node, ExclusiveContext* cx) {
         return node == NodeUnparenthesizedEvalName || node == NodeParenthesizedEvalName;
     }
 
@@ -551,17 +574,15 @@ class SyntaxParseHandler
         MOZ_ASSERT(isNameAnyParentheses(node),
                    "must only call this method on known names");
 
-        if (nameIsEvalAnyParentheses(node, cx))
+        if (isEvalAnyParentheses(node, cx))
             return js_eval_str;
-        if (node == NodeUnparenthesizedArgumentsName || node == NodeParenthesizedArgumentsName)
+        if (isArgumentsAnyParentheses(node, cx))
             return js_arguments_str;
         return nullptr;
     }
 
-    bool nameIsUnparenthesizedAsync(Node node, ExclusiveContext* cx) {
-        MOZ_ASSERT(isNameAnyParentheses(node),
-                   "must only call this function on known names");
-        return node == NodeUnparenthesizedAsyncName;
+    bool isAsyncKeyword(Node node, ExclusiveContext* cx) {
+        return node == NodePotentialAsyncKeyword;
     }
 
     PropertyName* maybeDottedProperty(Node node) {

@@ -525,18 +525,6 @@ js::obj_toString(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
-
-bool
-js::obj_valueOf(JSContext* cx, unsigned argc, Value* vp)
-{
-    CallArgs args = CallArgsFromVp(argc, vp);
-    RootedObject obj(cx, ToObject(cx, args.thisv()));
-    if (!obj)
-        return false;
-    args.rval().setObject(*obj);
-    return true;
-}
-
 static bool
 obj_setPrototypeOf(JSContext* cx, unsigned argc, Value* vp)
 {
@@ -1301,7 +1289,7 @@ static const JSFunctionSpec object_methods[] = {
 #endif
     JS_FN(js_toString_str,             obj_toString,                0,0),
     JS_SELF_HOSTED_FN(js_toLocaleString_str, "Object_toLocaleString", 0, 0),
-    JS_FN(js_valueOf_str,              obj_valueOf,                 0,0),
+    JS_SELF_HOSTED_FN(js_valueOf_str,  "Object_valueOf",            0,0),
 #if JS_HAS_OBJ_WATCHPOINT
     JS_FN(js_watch_str,                obj_watch,                   2,0),
     JS_FN(js_unwatch_str,              obj_unwatch,                 1,0),
@@ -1420,8 +1408,8 @@ FinishObjectClassInit(JSContext* cx, JS::HandleObject ctor, JS::HandleObject pro
      * only set the [[Prototype]] if it hasn't already been set.
      */
     Rooted<TaggedProto> tagged(cx, TaggedProto(proto));
-    if (global->shouldSplicePrototype(cx)) {
-        if (!global->splicePrototype(cx, global->getClass(), tagged))
+    if (global->shouldSplicePrototype()) {
+        if (!JSObject::splicePrototype(cx, global, global->getClass(), tagged))
             return false;
     }
     return true;

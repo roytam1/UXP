@@ -699,6 +699,7 @@ class IonBuilder
     MOZ_MUST_USE bool jsop_funapplyarguments(uint32_t argc);
     MOZ_MUST_USE bool jsop_funapplyarray(uint32_t argc);
     MOZ_MUST_USE bool jsop_call(uint32_t argc, bool constructing);
+    MOZ_MUST_USE bool jsop_call(uint32_t argc, bool constructing, bool ignoresReturnValue);
     MOZ_MUST_USE bool jsop_eval(uint32_t argc);
     MOZ_MUST_USE bool jsop_ifeq(JSOp op);
     MOZ_MUST_USE bool jsop_try();
@@ -820,7 +821,6 @@ class IonBuilder
     InliningStatus inlineArrayPush(CallInfo& callInfo);
     InliningStatus inlineArraySlice(CallInfo& callInfo);
     InliningStatus inlineArrayJoin(CallInfo& callInfo);
-    InliningStatus inlineArraySplice(CallInfo& callInfo);
 
     // Math natives.
     InliningStatus inlineMathAbs(CallInfo& callInfo);
@@ -1352,16 +1352,21 @@ class CallInfo
     MDefinition* newTargetArg_;
     MDefinitionVector args_;
 
-    bool constructing_;
-    bool setter_;
+    bool constructing_:1;
+
+    // True if the caller does not use the return value.
+    bool ignoresReturnValue_:1;
+
+    bool setter_:1;
 
   public:
-    CallInfo(TempAllocator& alloc, bool constructing)
+    CallInfo(TempAllocator& alloc, bool constructing, bool ignoresReturnValue)
       : fun_(nullptr),
         thisArg_(nullptr),
         newTargetArg_(nullptr),
         args_(alloc),
         constructing_(constructing),
+        ignoresReturnValue_(ignoresReturnValue),
         setter_(false)
     { }
 
@@ -1370,6 +1375,7 @@ class CallInfo
 
         fun_ = callInfo.fun();
         thisArg_ = callInfo.thisArg();
+        ignoresReturnValue_ = callInfo.ignoresReturnValue();
 
         if (constructing())
             newTargetArg_ = callInfo.getNewTarget();
@@ -1464,6 +1470,10 @@ class CallInfo
 
     bool constructing() const {
         return constructing_;
+    }
+
+    bool ignoresReturnValue() const {
+        return ignoresReturnValue_;
     }
 
     void setNewTarget(MDefinition* newTarget) {

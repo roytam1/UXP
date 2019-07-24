@@ -215,6 +215,16 @@ WebGLRenderbuffer::RenderbufferStorage(const char* funcName, uint32_t samples,
     if (error) {
         const char* errorName = mContext->ErrorName(error);
         mContext->GenerateWarning("%s generated error %s", funcName, errorName);
+        if (error == LOCAL_GL_OUT_OF_MEMORY) {
+          // Truncate.
+          mSamples = 0;
+          mFormat = nullptr;
+          mWidth = 0;
+          mHeight = 0;
+          mImageDataStatus = WebGLImageDataStatus::NoImageData;
+
+          InvalidateStatusOfAttachedFBs();
+        }
         return;
     }
 

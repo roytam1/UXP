@@ -483,7 +483,8 @@ class RegExpObject : public NativeObject
 
     static bool isOriginalFlagGetter(JSNative native, RegExpFlag* mask);
 
-    bool getShared(JSContext* cx, RegExpGuard* g);
+    static MOZ_MUST_USE bool getShared(JSContext* cx, Handle<RegExpObject*> regexp,
+                                       RegExpGuard* g);
 
     void setShared(RegExpShared& shared) {
         MOZ_ASSERT(!maybeShared());
@@ -500,7 +501,8 @@ class RegExpObject : public NativeObject
     void initAndZeroLastIndex(HandleAtom source, RegExpFlag flags, ExclusiveContext* cx);
 
 #ifdef DEBUG
-    bool dumpBytecode(JSContext* cx, bool match_only, HandleLinearString input);
+    static MOZ_MUST_USE bool dumpBytecode(JSContext* cx, Handle<RegExpObject*> regexp,
+                                          bool match_only, HandleLinearString input);
 #endif
 
   private:
@@ -508,7 +510,8 @@ class RegExpObject : public NativeObject
      * Precondition: the syntax for |source| has already been validated.
      * Side effect: sets the private field.
      */
-    bool createShared(JSContext* cx, RegExpGuard* g);
+    static MOZ_MUST_USE bool createShared(JSContext* cx, Handle<RegExpObject*> regexp,
+                                          RegExpGuard* g);
     RegExpShared* maybeShared() const {
         return static_cast<RegExpShared*>(NativeObject::getPrivate(PRIVATE_SLOT));
     }
@@ -531,7 +534,7 @@ inline bool
 RegExpToShared(JSContext* cx, HandleObject obj, RegExpGuard* g)
 {
     if (obj->is<RegExpObject>())
-        return obj->as<RegExpObject>().getShared(cx, g);
+        return RegExpObject::getShared(cx, obj.as<RegExpObject>(), g);
 
     return Proxy::regexp_toShared(cx, obj, g);
 }

@@ -3218,13 +3218,13 @@ ByteSizeOfScript(JSContext*cx, unsigned argc, Value* vp)
         return false;
     }
 
-    JSFunction* fun = &args[0].toObject().as<JSFunction>();
+    RootedFunction fun(cx, &args[0].toObject().as<JSFunction>());
     if (fun->isNative()) {
         JS_ReportErrorASCII(cx, "Argument must be a scripted function");
         return false;
     }
 
-    RootedScript script(cx, fun->getOrCreateScript(cx));
+    RootedScript script(cx, JSFunction::getOrCreateScript(cx, fun));
     if (!script)
         return false;
 
@@ -3319,7 +3319,8 @@ GetConstructorName(JSContext* cx, unsigned argc, Value* vp)
     }
 
     RootedAtom name(cx);
-    if (!args[0].toObject().constructorDisplayAtom(cx, &name))
+    RootedObject obj(cx, &args[0].toObject());
+    if (!JSObject::constructorDisplayAtom(cx, obj, &name))
         return false;
 
     if (name) {
@@ -4023,7 +4024,7 @@ DisRegExp(JSContext* cx, unsigned argc, Value* vp)
             return false;
     }
 
-    if (!reobj->dumpBytecode(cx, match_only, input))
+    if (!RegExpObject::dumpBytecode(cx, reobj, match_only, input))
         return false;
 
     args.rval().setUndefined();
@@ -4039,6 +4040,32 @@ IsConstructor(JSContext* cx, unsigned argc, Value* vp)
         args.rval().setBoolean(false);
     else
         args.rval().setBoolean(IsConstructor(args[0]));
+    return true;
+}
+
+static bool
+GetErrorNotes(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    if (!args.requireAtLeast(cx, "getErrorNotes", 1))
+        return false;
+
+    if (!args[0].isObject() || !args[0].toObject().is<ErrorObject>()) {
+        args.rval().setNull();
+        return true;
+    }
+
+    JSErrorReport* report = args[0].toObject().as<ErrorObject>().getErrorReport();
+    if (!report) {
+        args.rval().setNull();
+        return true;
+    }
+
+    RootedObject notesArray(cx, CreateErrorNotesArray(cx, report));
+    if (!notesArray)
+        return false;
+
+    args.rval().setObject(*notesArray);
     return true;
 }
 
@@ -4575,6 +4602,10 @@ static const JSFunctionSpecWithHelp FuzzingUnsafeTestingFunctions[] = {
 "disRegExp(regexp[, match_only[, input]])",
 "  Dumps RegExp bytecode."),
 #endif
+
+    JS_FN_HELP("getErrorNotes", GetErrorNotes, 1, 0,
+"getErrorNotes(error)",
+"  Returns an array of error notes."),
 
     JS_FS_HELP_END
 };

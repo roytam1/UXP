@@ -446,10 +446,11 @@ Scope::is<LexicalScope>() const
 }
 
 //
-// Scope corresponding to a function. Holds formal parameter names and, if the
-// function parameters contain no expressions that might possibly be
-// evaluated, the function's var bindings.  For example, in these functions,
-// the FunctionScope will store a/b/c bindings but not d/e/f bindings:
+// Scope corresponding to a function. Holds formal parameter names, special
+// internal names (see FunctionScope::isSpecialName), and, if the function
+// parameters contain no expressions that might possibly be evaluated, the
+// function's var bindings. For example, in these functions, the FunctionScope
+// will store a/b/c bindings but not d/e/f bindings:
 //
 //   function f1(a, b) {
 //     var c;
@@ -561,6 +562,8 @@ class FunctionScope : public Scope
     uint32_t numPositionalFormalParameters() const {
         return data().nonPositionalFormalStart;
     }
+
+    static bool isSpecialName(ExclusiveContext* cx, JSAtom* name);
 
     static Shape* getEmptyEnvironmentShape(ExclusiveContext* cx, bool hasParameterExprs);
 };

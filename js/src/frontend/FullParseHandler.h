@@ -10,6 +10,8 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/PodOperations.h"
 
+#include <string.h>
+
 #include "frontend/ParseNode.h"
 #include "frontend/SharedContext.h"
 
@@ -181,6 +183,10 @@ class FullParseHandler
         return new_<NullLiteral>(pos);
     }
 
+    ParseNode* newRawUndefinedLiteral(const TokenPos& pos) {
+        return new_<RawUndefinedLiteral>(pos);
+    }
+
     // The Boxer object here is any object that can allocate ObjectBoxes.
     // Specifically, a Boxer has a .newObjectBox(T) method that accepts a
     // Rooted<RegExpObject*> argument and returns an ObjectBox*.
@@ -296,10 +302,9 @@ class FullParseHandler
     }
 
     MOZ_MUST_USE bool addSpreadElement(ParseNode* literal, uint32_t begin, ParseNode* inner) {
-        TokenPos pos(begin, inner->pn_pos.end);
-        ParseNode* spread = new_<UnaryNode>(PNK_SPREAD, JSOP_NOP, pos, inner);
+        ParseNode* spread = newSpread(begin, inner);
         if (!spread)
-            return null();
+            return false;
         literal->append(spread);
         literal->pn_xflags |= PNX_ARRAYHOLESPREAD | PNX_NONCONST;
         return true;
@@ -327,8 +332,10 @@ class FullParseHandler
         return literal;
     }
 
-    ParseNode* newClass(ParseNode* name, ParseNode* heritage, ParseNode* methodBlock) {
-        return new_<ClassNode>(name, heritage, methodBlock);
+    ParseNode* newClass(ParseNode* name, ParseNode* heritage, ParseNode* methodBlock,
+                        const TokenPos& pos)
+    {
+        return new_<ClassNode>(name, heritage, methodBlock, pos);
     }
     ParseNode* newClassMethodList(uint32_t begin) {
         return new_<ListNode>(PNK_CLASSMETHODLIST, TokenPos(begin, begin + 1));
@@ -385,6 +392,18 @@ class FullParseHandler
         if (!propdef)
             return false;
         literal->append(propdef);
+        return true;
+    }
+
+    MOZ_MUST_USE bool addSpreadProperty(ParseNode* literal, uint32_t begin, ParseNode* inner) {
+        MOZ_ASSERT(literal->isKind(PNK_OBJECT));
+        MOZ_ASSERT(literal->isArity(PN_LIST));
+
+        setListFlag(literal, PNX_NONCONST);
+        ParseNode* spread = newSpread(begin, inner);
+        if (!spread)
+            return false;
+        literal->append(spread);
         return true;
     }
 
@@ -870,29 +889,29 @@ class FullParseHandler
         return node->isKind(PNK_NAME);
     }
 
-    bool nameIsEvalAnyParentheses(ParseNode* node, ExclusiveContext* cx) {
-        MOZ_ASSERT(isNameAnyParentheses(node),
-                   "must only call this function on known names");
+    bool isArgumentsAnyParentheses(ParseNode* node, ExclusiveContext* cx) {
+        return node->isKind(PNK_NAME) && node->pn_atom == cx->names().arguments;
+    }
 
-        return node->pn_atom == cx->names().eval;
+    bool isEvalAnyParentheses(ParseNode* node, ExclusiveContext* cx) {
+        return node->isKind(PNK_NAME) && node->pn_atom == cx->names().eval;
     }
 
     const char* nameIsArgumentsEvalAnyParentheses(ParseNode* node, ExclusiveContext* cx) {
         MOZ_ASSERT(isNameAnyParentheses(node),
                    "must only call this function on known names");
 
-        if (nameIsEvalAnyParentheses(node, cx))
+        if (isEvalAnyParentheses(node, cx))
             return js_eval_str;
-        if (node->pn_atom == cx->names().arguments)
+        if (isArgumentsAnyParentheses(node, cx))
             return js_arguments_str;
         return nullptr;
     }
 
-    bool nameIsUnparenthesizedAsync(ParseNode* node, ExclusiveContext* cx) {
-        MOZ_ASSERT(isNameAnyParentheses(node),
-                   "must only call this function on known names");
-
-        return node->pn_atom == cx->names().async;
+    bool isAsyncKeyword(ParseNode* node, ExclusiveContext* cx) {
+        return node->isKind(PNK_NAME) &&
+               node->pn_pos.begin + strlen("async") == node->pn_pos.end &&
+               node->pn_atom == cx->names().async;
     }
 
     bool isCall(ParseNode* pn) {

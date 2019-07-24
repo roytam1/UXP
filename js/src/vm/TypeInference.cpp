@@ -1319,7 +1319,8 @@ js::EnsureTrackPropertyTypes(JSContext* cx, JSObject* obj, jsid id)
         AutoEnterAnalysis enter(cx);
         if (obj->hasLazyGroup()) {
             AutoEnterOOMUnsafeRegion oomUnsafe;
-            if (!obj->getGroup(cx)) {
+            RootedObject objRoot(cx, obj);
+            if (!JSObject::getGroup(cx, objRoot)) {
                 oomUnsafe.crash("Could not allocate ObjectGroup in EnsureTrackPropertyTypes");
                 return;
             }
@@ -1338,9 +1339,12 @@ HeapTypeSetKey::instantiate(JSContext* cx)
 {
     if (maybeTypes())
         return true;
-    if (object()->isSingleton() && !object()->singleton()->getGroup(cx)) {
-        cx->clearPendingException();
-        return false;
+    if (object()->isSingleton()) {
+        RootedObject obj(cx, object()->singleton());
+        if (!JSObject::getGroup(cx, obj)) {
+            cx->clearPendingException();
+            return false;
+        }
     }
     JSObject* obj = object()->isSingleton() ? object()->singleton() : nullptr;
     maybeTypes_ = object()->maybeGroup()->getProperty(cx, obj, id());
@@ -2941,7 +2945,8 @@ ObjectGroup::clearNewScript(ExclusiveContext* cx, ObjectGroup* replacement /* = 
 
         // Mark the constructing function as having its 'new' script cleared, so we
         // will not try to construct another one later.
-        if (!newScript->function()->setNewScriptCleared(cx))
+        RootedFunction fun(cx, newScript->function());
+        if (!JSObject::setNewScriptCleared(cx, fun))
             cx->recoverFromOutOfMemory();
     }
 
@@ -3088,7 +3093,7 @@ js::AddClearDefiniteGetterSetterForPrototypeChain(JSContext* cx, ObjectGroup* gr
      */
     RootedObject proto(cx, group->proto().toObjectOrNull());
     while (proto) {
-        ObjectGroup* protoGroup = proto->getGroup(cx);
+        ObjectGroup* protoGroup = JSObject::getGroup(cx, proto);
         if (!protoGroup) {
             cx->recoverFromOutOfMemory();
             return false;
@@ -3712,7 +3717,8 @@ TypeNewScript::maybeAnalyze(JSContext* cx, ObjectGroup* group, bool* regenerate,
     Vector<Initializer> initializerVector(cx);
 
     RootedPlainObject templateRoot(cx, templateObject());
-    if (!jit::AnalyzeNewScriptDefiniteProperties(cx, function(), group, templateRoot, &initializerVector))
+    RootedFunction fun(cx, function());
+    if (!jit::AnalyzeNewScriptDefiniteProperties(cx, fun, group, templateRoot, &initializerVector))
         return false;
 
     if (!group->newScript())

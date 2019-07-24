@@ -378,6 +378,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_TRUE:
       case PNK_FALSE:
       case PNK_NULL:
+      case PNK_RAW_UNDEFINED:
       case PNK_THIS:
       case PNK_ELISION:
       case PNK_NUMBER:
@@ -468,6 +469,7 @@ IsEffectless(ParseNode* node)
            node->isKind(PNK_TEMPLATE_STRING) ||
            node->isKind(PNK_NUMBER) ||
            node->isKind(PNK_NULL) ||
+           node->isKind(PNK_RAW_UNDEFINED) ||
            node->isKind(PNK_FUNCTION) ||
            node->isKind(PNK_GENEXP);
 }
@@ -492,6 +494,7 @@ Boolish(ParseNode* pn)
 
       case PNK_FALSE:
       case PNK_NULL:
+      case PNK_RAW_UNDEFINED:
         return Falsy;
 
       case PNK_VOID: {
@@ -1342,15 +1345,8 @@ FoldElement(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>&
     if (!name)
         return true;
 
-    // Also don't optimize if the name doesn't map directly to its id for TI's
-    // purposes.
-    if (NameToId(name) != IdToTypeId(NameToId(name)))
-        return true;
-
     // Optimization 3: We have expr["foo"] where foo is not an index.  Convert
     // to a property access (like expr.foo) that optimizes better downstream.
-    // Don't bother with this for names that TI considers to be indexes, to
-    // simplify downstream analysis.
     ParseNode* dottedAccess = parser.handler.newPropertyAccess(expr, name, node->pn_pos.end);
     if (!dottedAccess)
         return false;
@@ -1643,6 +1639,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_TRUE:
       case PNK_FALSE:
       case PNK_NULL:
+      case PNK_RAW_UNDEFINED:
       case PNK_ELISION:
       case PNK_NUMBER:
       case PNK_DEBUGGER:
