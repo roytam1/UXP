@@ -106,6 +106,8 @@
       <preference id="general.smoothScroll.scrollbars"               name="general.smoothScroll.scrollbars"               type="bool"/>
       <preference id="general.smoothScroll.scrollbars.durationMinMS" name="general.smoothScroll.scrollbars.durationMinMS" type="int"/>
       <preference id="general.smoothScroll.scrollbars.durationMaxMS" name="general.smoothScroll.scrollbars.durationMaxMS" type="int"/>
+      
+      <preference id="mousewheel.default.delta_multiplier_y"         name="mousewheel.default.delta_multiplier_y"         type="int"/>
     </preferences>
 
 #ifdef HAVE_SHELL_SERVICE
@@ -444,6 +446,13 @@
             <textbox type="number" size="4" max="2000"
                      preference="general.smoothScroll.scrollbars.durationMaxMS"/>
             <label flex="1">ms.</label>
+          </hbox>
+          
+          <hbox align="center">
+            <label value="&smoothscroll.overall.yspeed.label;"/>
+            <textbox type="number" size="3" min="1" max="999"
+                     preference="mousewheel.default.delta_multiplier_y"/>
+            <label flex="1">%.</label>
           </hbox>
         </groupbox>  
         </tabpanel>
