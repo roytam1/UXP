@@ -13,23 +13,25 @@ define(function (require, exports, module) {
 
   const json = document.getElementById("json");
 
-  let jsonData;
-
-  try {
-    jsonData = JSON.parse(json.textContent);
-  } catch (err) {
-    jsonData = err + "";
-  }
-
   // Application state object.
   let input = {
     jsonText: json.textContent,
     jsonPretty: null,
-    json: jsonData,
     headers: window.headers,
     tabActive: 0,
     prettified: false
   };
+
+  // Remove BOM, if present.
+  if (input.jsonText.startsWith("\ufeff")) {
+    input.jsonText = input.jsonText.slice(1);
+  }
+
+  try {
+    input.json = JSON.parse(input.jsonText);
+  } catch (err) {
+    input.json = err;
+  }
 
   json.remove();
 
@@ -59,7 +61,7 @@ define(function (require, exports, module) {
         theApp.setState({jsonText: input.jsonText});
       } else {
         if (!input.jsonPretty) {
-          input.jsonPretty = JSON.stringify(jsonData, null, "  ");
+          input.jsonPretty = JSON.stringify(input.json, null, "  ");
         }
         theApp.setState({jsonText: input.jsonPretty});
       }
