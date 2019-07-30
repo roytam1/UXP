@@ -30,6 +30,7 @@ pre {
 
 #json {
   display: none;
+  white-space: pre-wrap;
 }
 
 /******************************************************************************/
@@ -42,10 +43,4 @@ body.theme-dark {
 
 .theme-dark pre {
   background-color: var(--theme-body-background);
-}
-
-/******************************************************************************/
-/* Fixes for quirks mode */  
-table {
-  font: inherit;
 }
