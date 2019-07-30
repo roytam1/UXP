@@ -12,7 +12,6 @@ define(function (require, exports, module) {
   const { MainTabbedArea } = createFactories(require("./components/main-tabbed-area"));
 
   const json = document.getElementById("json");
-  const headers = document.getElementById("headers");
 
   let jsonData;
 
@@ -27,13 +26,12 @@ define(function (require, exports, module) {
     jsonText: json.textContent,
     jsonPretty: null,
     json: jsonData,
-    headers: JSON.parse(headers.textContent),
+    headers: window.headers,
     tabActive: 0,
     prettified: false
   };
 
   json.remove();
-  headers.remove();
 
   /**
    * Application actions/commands. This list implements all commands
