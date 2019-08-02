@@ -202,7 +202,6 @@ public:
 
   /**
    * Get a property value. This requires a linear search through
-   * lookup (using the frame as the key) and a linear search through
    * the properties of the frame. If the frame has no such property,
    * returns zero-filled result, which means null for pointers and
    * zero for integers and floating point types.
