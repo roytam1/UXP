@@ -1871,6 +1871,20 @@ nsresult HTMLMediaElement::LoadResource()
   // Set the media element's CORS mode only when loading a resource
   mCORSMode = AttrValueToCORSMode(GetParsedAttr(nsGkAtoms::crossorigin));
 
+#ifdef MOZ_EME
+  bool isBlob = false;
+  if (mMediaKeys &&
+      Preferences::GetBool("media.eme.mse-only", true) &&
+      // We only want mediaSource URLs, but they are BlobURL, so we have to
+      // check the schema and abort if they are not MediaStream or real Blob.
+      (NS_FAILED(mLoadingSrc->SchemeIs(BLOBURI_SCHEME, &isBlob)) ||
+       !isBlob ||
+       IsMediaStreamURI(mLoadingSrc) ||
+       IsBlobURI(mLoadingSrc))) {
+    return NS_ERROR_DOM_NOT_SUPPORTED_ERR;
+  }
+#endif
+
   HTMLMediaElement* other = LookupMediaElementURITable(mLoadingSrc);
   if (other && other->mDecoder) {
     // Clone it.
@@ -4000,7 +4014,6 @@ nsresult HTMLMediaElement::FinishDecoderSetup(MediaDecoder* aDecoder,
       return NS_ERROR_FAILURE;
     }
   }
-#endif
 
   MediaEventSource<void>* waitingForKeyProducer = mDecoder->WaitingForKeyEvent();
   // Not every decoder will produce waitingForKey events, only add ones that can
@@ -4008,6 +4021,7 @@ nsresult HTMLMediaElement::FinishDecoderSetup(MediaDecoder* aDecoder,
     mWaitingForKeyListener = waitingForKeyProducer->Connect(
       AbstractThread::MainThread(), this, &HTMLMediaElement::CannotDecryptWaitingForKey);
   }
+#endif
 
   if (mChannelLoader) {
     mChannelLoader->Done();
@@ -6476,7 +6490,6 @@ HTMLMediaElement::GetTopLevelPrincipal()
   principal = doc->NodePrincipal();
   return principal.forget();
 }
-#endif //MOZ_EME
 
 void
 HTMLMediaElement::CannotDecryptWaitingForKey()
@@ -6495,6 +6508,7 @@ HTMLMediaElement::CannotDecryptWaitingForKey()
     UpdateReadyStateInternal();
   }
 }
+#endif //MOZ_EME
 
 NS_IMETHODIMP HTMLMediaElement::WindowAudioCaptureChanged(bool aCapture)
 {
