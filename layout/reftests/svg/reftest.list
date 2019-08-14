@@ -140,6 +140,7 @@ random == dynamic-use-nested-01b.svg dynamic-use-nested-01-ref.svg
 == fragmentIdentifier-01.xhtml pass.svg
 == linked-filter-01.svg pass.svg
 == linked-pattern-01.svg pass.svg
+pref(layout.css.devPixelsPerPx,"1.0") == svg-blurry-with-subpixel-position.html svg-blurry-with-subpixel-position-ref.html
 == use-01.svg pass.svg
 == use-01-extref.svg pass.svg
 == use-02-extref.svg use-02-extref-ref.svg
