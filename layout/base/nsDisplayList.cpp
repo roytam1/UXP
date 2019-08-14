@@ -5917,6 +5917,12 @@ nsDisplayTransform::GetResultingTransformMatrixInternal(const FrameTransformProp
     frame && frame->IsSVGTransformed(&svgTransform, &transformFromSVGParent);
   bool hasTransformFromSVGParent =
     hasSVGTransforms && !transformFromSVGParent.IsIdentity();
+
+  // An SVG frame should not have its translation rounded.
+  // Note it's possible that the SVG frame doesn't have an SVG
+  // transform but only has a CSS transform.
+  bool shouldRound = !(frame && frame->IsFrameOfType(nsIFrame::eSVG));
+
   /* Transformed frames always have a transform, or are preserving 3d (and might still have perspective!) */
   if (aProperties.mTransformList) {
     result = nsStyleTransformMatrix::ReadTransforms(aProperties.mTransformList->mHead,
@@ -5994,7 +6000,7 @@ nsDisplayTransform::GetResultingTransformMatrixInternal(const FrameTransformProp
     // Otherwise we need to manually translate into our parent's coordinate
     // space.
     if (frame->IsTransformed()) {
-      nsLayoutUtils::PostTranslate(result, frame->GetPosition(), aAppUnitsPerPixel, !hasSVGTransforms);
+      nsLayoutUtils::PostTranslate(result, frame->GetPosition(), aAppUnitsPerPixel, shouldRound);
     }
     Matrix4x4 parent =
       GetResultingTransformMatrixInternal(props,
@@ -6005,7 +6011,7 @@ nsDisplayTransform::GetResultingTransformMatrixInternal(const FrameTransformProp
   }
 
   if (aFlags & OFFSET_BY_ORIGIN) {
-    nsLayoutUtils::PostTranslate(result, aOrigin, aAppUnitsPerPixel, !hasSVGTransforms);
+    nsLayoutUtils::PostTranslate(result, aOrigin, aAppUnitsPerPixel, shouldRound);
   }
 
   return result;
