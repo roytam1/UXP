@@ -1006,6 +1006,9 @@ nsSVGOuterSVGAnonChildFrame::IsSVGTransformed(Matrix* aOwnTransform,
     if (ownMatrix.HasNonTranslation()) {
       // Note: viewBox, currentScale and currentTranslate should only
       // produce a rectilinear transform.
+      MOZ_ASSERT(ownMatrix.IsRectilinear(),
+                 "Non-rectilinear transform will break the following logic");
+      
       // The nsDisplayTransform code will apply this transform to our frame,
       // including to our frame position.  We don't want our frame position to
       // be scaled though, so we need to correct for that in the transform.
