@@ -5918,11 +5918,16 @@ nsDisplayTransform::GetResultingTransformMatrixInternal(const FrameTransformProp
   bool hasTransformFromSVGParent =
     hasSVGTransforms && !transformFromSVGParent.IsIdentity();
 
+  bool shouldRound = true;
+
   // An SVG frame should not have its translation rounded.
   // Note it's possible that the SVG frame doesn't have an SVG
   // transform but only has a CSS transform.
-  bool shouldRound = !(frame && frame->IsFrameOfType(nsIFrame::eSVG));
-
+  if (frame && frame->HasAnyStateBits(NS_FRAME_SVG_LAYOUT) &&
+      !(frame->GetType() == nsGkAtoms::svgOuterSVGAnonChildFrame)) {
+    shouldRound = false;
+  }
+  
   /* Transformed frames always have a transform, or are preserving 3d (and might still have perspective!) */
   if (aProperties.mTransformList) {
     result = nsStyleTransformMatrix::ReadTransforms(aProperties.mTransformList->mHead,
