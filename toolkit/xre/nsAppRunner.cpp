@@ -2174,9 +2174,9 @@ SelectProfile(nsIProfileLock* *aResult, nsIToolkitProfileService* aProfileSvc, n
     return ShowProfileManager(aProfileSvc, aNative);
   }
 
-#ifndef MOZ_DEV_EDITION
-  // If the only existing profile is the dev-edition-profile and this is not
-  // Developer Edition, then no valid profiles were found.
+  // Dev edition leftovers:
+  // If the only existing profile is the dev-edition-profile,
+  // then no valid profiles were found.
   if (count == 1) {
     nsCOMPtr<nsIToolkitProfile> deProfile;
     // GetSelectedProfile will auto-select the only profile if there's just one
@@ -2187,7 +2187,6 @@ SelectProfile(nsIProfileLock* *aResult, nsIToolkitProfileService* aProfileSvc, n
       count = 0;
     }
   }
-#endif
 
   if (!count) {
     gDoMigration = true;
@@ -2196,25 +2195,15 @@ SelectProfile(nsIProfileLock* *aResult, nsIToolkitProfileService* aProfileSvc, n
     // create a default profile
     nsCOMPtr<nsIToolkitProfile> profile;
     nsresult rv = aProfileSvc->CreateProfile(nullptr, // choose a default dir for us
-#ifdef MOZ_DEV_EDITION
-                                             NS_LITERAL_CSTRING("dev-edition-default"),
-#else
                                              NS_LITERAL_CSTRING("default"),
-#endif
                                              getter_AddRefs(profile));
     if (NS_SUCCEEDED(rv)) {
-#ifndef MOZ_DEV_EDITION
       aProfileSvc->SetDefaultProfile(profile);
-#endif
       aProfileSvc->Flush();
       rv = profile->Lock(nullptr, aResult);
       if (NS_SUCCEEDED(rv)) {
         if (aProfileName)
-#ifdef MOZ_DEV_EDITION
-          aProfileName->AssignLiteral("dev-edition-default");
-#else
           aProfileName->AssignLiteral("default");
-#endif
         return NS_OK;
       }
     }

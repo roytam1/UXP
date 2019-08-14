@@ -5569,10 +5569,6 @@ if test "$ACCESSIBILITY" -a "$MOZ_ENABLE_GTK" ; then
     AC_DEFINE_UNQUOTED(ATK_REV_VERSION, $ATK_REV_VERSION)
 fi
 
-if test -n "$MOZ_DEV_EDITION"; then
-    AC_DEFINE(MOZ_DEV_EDITION)
-fi
-
 if test "$MOZ_DEBUG"; then
     A11Y_LOG=1
 fi

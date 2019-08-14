@@ -304,16 +304,6 @@ var ProcessHangMonitor = {
         }
       }];
 
-    if (AppConstants.MOZ_DEV_EDITION && report.hangType == report.SLOW_SCRIPT) {
-      buttons.push({
-        label: bundle.getString("processHang.button_debug.label"),
-        accessKey: bundle.getString("processHang.button_debug.accessKey"),
-        callback: function() {
-          ProcessHangMonitor.debugScript(win);
-        }
-      });
-    }
-
     nb.appendNotification(bundle.getString("processHang.label"),
                           "process-hang",
                           "chrome://browser/skin/slowStartup-16.png",

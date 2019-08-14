@@ -1009,12 +1009,7 @@ pref("services.sync.syncedTabs.showRemoteIcons", true);
 
 pref("services.sync.sendTabToDevice.enabled", true);
 
-// Developer edition preferences
-#ifdef MOZ_DEV_EDITION
-sticky_pref("lightweightThemes.selectedThemeID", "firefox-devedition@mozilla.org");
-#else
 sticky_pref("lightweightThemes.selectedThemeID", "");
-#endif
 
 // Whether the character encoding menu is under the main Firefox button. This
 // preference is a string so that localizers can alter it.
