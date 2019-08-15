@@ -23,6 +23,7 @@
 #include "nsNetUtil.h"
 #include "nsReadableUtils.h"
 #include "mozcontainer.h"
+#include "mozilla/Preferences.h"
 
 #include "nsFilePicker.h"
 
@@ -175,6 +176,7 @@ nsFilePicker::nsFilePicker()
   , mFileChooserDelegate(nullptr)
 #endif
 {
+  mUseNativeFileChooser = Preferences::GetBool("widget.allow-gtk-native-file-chooser", false);
 }
 
 nsFilePicker::~nsFilePicker()
@@ -613,7 +615,7 @@ nsFilePicker::GtkFileChooserNew(
         GtkFileChooserAction,
         const gchar *, const gchar *))
       dlsym(RTLD_DEFAULT, "gtk_file_chooser_native_new");
-  if (sGtkFileChooserNativeNewPtr != nullptr) {
+  if (mUseNativeFileChooser && sGtkFileChooserNativeNewPtr != nullptr) {
     return (*sGtkFileChooserNativeNewPtr)(title, parent, action, accept_label, nullptr);
   }
   if (accept_label == nullptr) {
@@ -633,7 +635,7 @@ nsFilePicker::GtkFileChooserShow(void *file_chooser)
 {
   static auto sGtkNativeDialogShowPtr = (void (*)(void *))
       dlsym(RTLD_DEFAULT, "gtk_native_dialog_show");
-  if (sGtkNativeDialogShowPtr != nullptr) {
+  if (mUseNativeFileChooser && sGtkNativeDialogShowPtr != nullptr) {
     (*sGtkNativeDialogShowPtr)(file_chooser);
   } else {
     g_signal_connect(file_chooser, "destroy", G_CALLBACK(OnDestroy), this);
@@ -646,7 +648,7 @@ nsFilePicker::GtkFileChooserDestroy(void *file_chooser)
 {
   static auto sGtkNativeDialogDestroyPtr = (void (*)(void *))
     dlsym(RTLD_DEFAULT, "gtk_native_dialog_destroy");
-  if (sGtkNativeDialogDestroyPtr != nullptr) {
+  if (mUseNativeFileChooser && sGtkNativeDialogDestroyPtr != nullptr) {
     (*sGtkNativeDialogDestroyPtr)(file_chooser);
   } else {
     gtk_widget_destroy(GTK_WIDGET(file_chooser));
@@ -659,7 +661,7 @@ nsFilePicker::GtkFileChooserSetModal(void *file_chooser,
 {
   static auto sGtkNativeDialogSetModalPtr = (void (*)(void *, gboolean))
     dlsym(RTLD_DEFAULT, "gtk_native_dialog_set_modal");
-  if (sGtkNativeDialogSetModalPtr != nullptr) {
+  if (mUseNativeFileChooser && sGtkNativeDialogSetModalPtr != nullptr) {
     (*sGtkNativeDialogSetModalPtr)(file_chooser, modal);
   } else {
     GtkWindow *window = GTK_WINDOW(file_chooser);

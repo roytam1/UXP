@@ -4020,6 +4020,12 @@ pref("autocomplete.ungrab_during_mode_switch", true);
 // toggling to use the XUL filepicker
 pref("ui.allow_platform_file_picker", true);
 
+// Allow for using the native GTK file picker. If the application is not run
+// with GTK_USE_PORTAL=1 this pref has no effect.
+#ifdef MOZ_WIDGET_GTK
+pref("widget.allow-gtk-native-file-chooser", false);
+#endif
+
 pref("helpers.global_mime_types_file", "/etc/mime.types");
 pref("helpers.global_mailcap_file", "/etc/mailcap");
 pref("helpers.private_mime_types_file", "~/.mime.types");

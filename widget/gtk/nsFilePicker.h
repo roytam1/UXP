@@ -86,6 +86,7 @@ private:
 #if (MOZ_WIDGET_GTK == 3)
   GtkFileChooserWidget *mFileChooserDelegate;
 #endif
+  bool mUseNativeFileChooser;
 };
 
 #endif
