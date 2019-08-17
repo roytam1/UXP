@@ -198,9 +198,7 @@ var CustomizableUIInternal = {
       "add-ons-button",
     ];
 
-    if (!AppConstants.MOZ_DEV_EDITION) {
-      panelPlacements.splice(-1, 0, "developer-button");
-    }
+    panelPlacements.splice(-1, 0, "developer-button");
 
     let showCharacterEncoding = Services.prefs.getComplexValue(
       "browser.menu.showCharacterEncoding",
@@ -224,10 +222,6 @@ var CustomizableUIInternal = {
       "downloads-button",
       "home-button",
     ];
-
-    if (AppConstants.MOZ_DEV_EDITION) {
-      navbarPlacements.splice(2, 0, "developer-button");
-    }
 
     // Place this last, when createWidget is called for pocket, it will
     // append to the toolbar.

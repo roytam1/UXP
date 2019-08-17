@@ -461,7 +461,11 @@ PlacesController.prototype = {
             if (parentNode) {
               if (PlacesUtils.nodeIsTagQuery(parentNode))
                 nodeData["tagChild"] = true;
-              else if (this.hasCachedLivemarkInfo(parentNode))
+            }
+          } else {
+            var parentNode = node.parent;
+            if (parentNode) {
+              if (this.hasCachedLivemarkInfo(parentNode))
                 nodeData["livemarkChild"] = true;
             }
           }
