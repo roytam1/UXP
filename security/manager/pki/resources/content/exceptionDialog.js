@@ -31,7 +31,7 @@ function initExceptionDialog() {
     if (args[0].location) {
       // We were pre-seeded with a location.
       document.getElementById("locationTextBox").value = args[0].location;
-      document.getElementById('checkCertButton').disabled = false;
+      document.getElementById("checkCertButton").disabled = false;
 
       if (args[0].sslStatus) {
         gSSLStatus = args[0].sslStatus;
@@ -108,15 +108,17 @@ function checkCert() {
 /**
  * Build and return a URI, based on the information supplied in the
  * Certificate Location fields
+ *
+ * @returns {nsIURI}
+ *          URI constructed from the information supplied on success, null
+ *          otherwise.
  */
 function getURI() {
   // Use fixup service instead of just ioservice's newURI since it's quite
   // likely that the host will be supplied without a protocol prefix, resulting
   // in malformed uri exceptions being thrown.
-  let fus = Components.classes["@mozilla.org/docshell/urifixup;1"]
-                      .getService(Components.interfaces.nsIURIFixup);
   let locationTextBox = document.getElementById("locationTextBox");
-  let uri = fus.createFixupURI(locationTextBox.value, 0);
+  let uri = Services.uriFixup.createFixupURI(locationTextBox.value, 0);
 
   if (!uri) {
     return null;
@@ -150,7 +152,7 @@ function resetDialog() {
  * Called by input textboxes to manage UI state
  */
 function handleTextChange() {
-  var checkCertButton = document.getElementById('checkCertButton');
+  var checkCertButton = document.getElementById("checkCertButton");
   checkCertButton.disabled = !(document.getElementById("locationTextBox").value);
   if (gNeedReset) {
     gNeedReset = false;
@@ -218,8 +220,7 @@ function updateCertStatus() {
       pe.checked = !inPrivateBrowsing;
 
       setText("headerDescription", gPKIBundle.getString("addExceptionInvalidHeader"));
-    }
-    else {
+    } else {
       shortDesc = "addExceptionValidShort";
       longDesc  = "addExceptionValidLong";
       gDialog.getButton("extra1").disabled = true;
@@ -231,11 +232,8 @@ function updateCertStatus() {
     document.getElementById("viewCertButton").disabled = false;
 
     // Notify observers about the availability of the certificate
-    Components.classes["@mozilla.org/observer-service;1"]
-              .getService(Components.interfaces.nsIObserverService)
-              .notifyObservers(null, "cert-exception-ui-ready", null);
-  }
-  else if (gChecking) {
+    Services.obs.notifyObservers(null, "cert-exception-ui-ready");
+  } else if (gChecking) {
     shortDesc = "addExceptionCheckingShort";
     longDesc  = "addExceptionCheckingLong2";
     // We're checking the certificate, so we disable the Get Certificate
@@ -245,8 +243,7 @@ function updateCertStatus() {
     document.getElementById("viewCertButton").disabled = true;
     gDialog.getButton("extra1").disabled = true;
     document.getElementById("permanent").disabled = true;
-  }
-  else {
+  } else {
     shortDesc = "addExceptionNoCertShort";
     longDesc  = "addExceptionNoCertLong2";
     // We're done checking the certificate, so allow the user to check it again.
