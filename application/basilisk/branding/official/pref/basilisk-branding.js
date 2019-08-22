@@ -11,7 +11,7 @@
 #define BRANDING_RELNOTESPATH releasenotes.shtml
 #define BRANDING_FIRSTRUNPATH firstrun/
 #define BRANDING_APPUPDATEURL aus.@BRANDING_BASEURL@
-#define BRANDING_APPUPDATEPATH ?application=%PRODUCT%&version=%VERSION%&arch=%BUILD_TARGET%&buildid=%BUILD_ID%&channel=%CHANNEL%
+#define BRANDING_APPUPDATEPATH ?application=%PRODUCT%&version=%VERSION%&arch=%BUILD_TARGET%&toolkit=%WIDGET_TOOLKIT%&buildid=%BUILD_ID%&channel=%CHANNEL%
 
 // Shared Branding Preferences
 // XXX: These should REALLY go back to application preferences
