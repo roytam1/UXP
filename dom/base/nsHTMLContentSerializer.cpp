@@ -301,6 +301,7 @@ nsHTMLContentSerializer::AppendElementStart(Element* aElement,
   
 NS_IMETHODIMP 
 nsHTMLContentSerializer::AppendElementEnd(Element* aElement,
+                                          Element* aOriginalElement /* unused */,
                                           nsAString& aStr)
 {
   NS_ENSURE_ARG(aElement);
