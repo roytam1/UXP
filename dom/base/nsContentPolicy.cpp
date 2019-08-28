@@ -22,6 +22,7 @@
 #include "nsIDOMWindow.h"
 #include "nsITabChild.h"
 #include "nsIContent.h"
+#include "nsIImageLoadingContent.h"
 #include "nsILoadContext.h"
 #include "nsCOMArray.h"
 #include "nsContentUtils.h"
@@ -145,6 +146,16 @@ nsContentPolicy::CheckPolicy(CPMethod          policyMethod,
                                          decision);
 
         if (NS_SUCCEEDED(rv) && NS_CP_REJECTED(*decision)) {
+            // If we are blocking an image, we have to let the
+            // ImageLoadingContent know that we blocked the load.
+            if (externalType == nsIContentPolicy::TYPE_IMAGE ||
+                externalType == nsIContentPolicy::TYPE_IMAGESET) {
+              nsCOMPtr<nsIImageLoadingContent> img =
+                do_QueryInterface(requestingContext);
+              if (img) {
+                img->SetBlockedRequest(*decision);
+              }
+            }
             /* policy says no, no point continuing to check */
             return NS_OK;
         }
@@ -193,6 +204,16 @@ nsContentPolicy::CheckPolicy(CPMethod          policyMethod,
                                                      decision);
 
         if (NS_SUCCEEDED(rv) && NS_CP_REJECTED(*decision)) {
+            // If we are blocking an image, we have to let the
+            // ImageLoadingContent know that we blocked the load.
+            if (externalType == nsIContentPolicy::TYPE_IMAGE ||
+                externalType == nsIContentPolicy::TYPE_IMAGESET) {
+              nsCOMPtr<nsIImageLoadingContent> img =
+                do_QueryInterface(requestingContext);
+              if (img) {
+                img->SetBlockedRequest(*decision);
+              }
+            }
             /* policy says no, no point continuing to check */
             return NS_OK;
         }

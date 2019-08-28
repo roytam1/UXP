@@ -78,18 +78,6 @@ var gMainPane = {
     setEventListener("chooseFolder", "command",
                      gMainPane.chooseFolder);
 
-    if (AppConstants.MOZ_DEV_EDITION) {
-      let uAppData = OS.Constants.Path.userApplicationDataDir;
-      let ignoreSeparateProfile = OS.Path.join(uAppData, "ignore-dev-edition-profile");
-
-      setEventListener("separateProfileMode", "command", gMainPane.separateProfileModeChange);
-      let separateProfileModeCheckbox = document.getElementById("separateProfileMode");
-      setEventListener("getStarted", "click", gMainPane.onGetStarted);
-
-      OS.File.stat(ignoreSeparateProfile).then(() => separateProfileModeCheckbox.checked = false,
-                                               () => separateProfileModeCheckbox.checked = true);
-    }
-
     // Notify observers that the UI is now ready
     Components.classes["@mozilla.org/observer-service;1"]
               .getService(Components.interfaces.nsIObserverService)
@@ -99,71 +87,6 @@ var gMainPane = {
   enableE10SChange: function ()
   {
     // **STUB**
-  },
-
-  separateProfileModeChange: function ()
-  {
-    if (AppConstants.MOZ_DEV_EDITION) {
-      function quitApp() {
-        Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit |  Ci.nsIAppStartup.eRestartNotSameProfile);
-      }
-      function revertCheckbox(error) {
-        separateProfileModeCheckbox.checked = !separateProfileModeCheckbox.checked;
-        if (error) {
-          Cu.reportError("Failed to toggle separate profile mode: " + error);
-        }
-      }
-      function createOrRemoveSpecialDevEditionFile(onSuccess) {
-        let uAppData = OS.Constants.Path.userApplicationDataDir;
-        let ignoreSeparateProfile = OS.Path.join(uAppData, "ignore-dev-edition-profile");
-
-        if (separateProfileModeCheckbox.checked) {
-          OS.File.remove(ignoreSeparateProfile).then(onSuccess, revertCheckbox);
-        } else {
-          OS.File.writeAtomic(ignoreSeparateProfile, new Uint8Array()).then(onSuccess, revertCheckbox);
-        }
-      }
-
-      let separateProfileModeCheckbox = document.getElementById("separateProfileMode");
-      let button_index = confirmRestartPrompt(separateProfileModeCheckbox.checked,
-                                              0, false, true);
-      switch (button_index) {
-        case CONFIRM_RESTART_PROMPT_CANCEL:
-          revertCheckbox();
-          return;
-        case CONFIRM_RESTART_PROMPT_RESTART_NOW:
-          const Cc = Components.classes, Ci = Components.interfaces;
-          let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"]
-                             .createInstance(Ci.nsISupportsPRBool);
-          Services.obs.notifyObservers(cancelQuit, "quit-application-requested",
-                                        "restart");
-          if (!cancelQuit.data) {
-            createOrRemoveSpecialDevEditionFile(quitApp);
-            return;
-          }
-
-          // Revert the checkbox in case we didn't quit
-          revertCheckbox();
-          return;
-        case CONFIRM_RESTART_PROMPT_RESTART_LATER:
-          createOrRemoveSpecialDevEditionFile();
-          return;
-      }
-    }
-  },
-
-  onGetStarted: function (aEvent) {
-    if (AppConstants.MOZ_DEV_EDITION) {
-      const Cc = Components.classes, Ci = Components.interfaces;
-      let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
-                  .getService(Ci.nsIWindowMediator);
-      let win = wm.getMostRecentWindow("navigator:browser");
-
-      if (win) {
-        let accountsTab = win.gBrowser.addTab("about:accounts?action=signin&entrypoint=dev-edition-setup");
-        win.gBrowser.selectedTab = accountsTab;
-      }
-    }
   },
 
   // HOME PAGE

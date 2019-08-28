@@ -425,22 +425,6 @@ nsToolkitProfileService::Init()
 
     nsToolkitProfile* currentProfile = nullptr;
 
-#ifdef MOZ_DEV_EDITION
-    nsCOMPtr<nsIFile> ignoreSeparateProfile;
-    rv = mAppData->Clone(getter_AddRefs(ignoreSeparateProfile));
-    if (NS_FAILED(rv))
-        return rv;
-
-    rv = ignoreSeparateProfile->AppendNative(NS_LITERAL_CSTRING("ignore-dev-edition-profile"));
-    if (NS_FAILED(rv))
-        return rv;
-
-    bool shouldIgnoreSeparateProfile;
-    rv = ignoreSeparateProfile->Exists(&shouldIgnoreSeparateProfile);
-    if (NS_FAILED(rv))
-        return rv;
-#endif
-
     unsigned int c = 0;
     bool foundAuroraDefault = false;
     for (c = 0; true; ++c) {
@@ -501,34 +485,7 @@ nsToolkitProfileService::Init()
             mChosen = currentProfile;
             this->SetDefaultProfile(currentProfile);
         }
-#ifdef MOZ_DEV_EDITION
-        // Use the dev-edition-default profile if this is an Aurora build and
-        // ignore-dev-edition-profile is not present.
-        if (name.EqualsLiteral("dev-edition-default") && !shouldIgnoreSeparateProfile) {
-            mChosen = currentProfile;
-            foundAuroraDefault = true;
-        }
-#endif
     }
-
-#ifdef MOZ_DEV_EDITION
-    if (!foundAuroraDefault && !shouldIgnoreSeparateProfile) {
-        // If a single profile exists, it may not be already marked as default.
-        // Do it now to avoid problems when we create the dev-edition-default profile.
-        if (!mChosen && mFirst && !mFirst->mNext)
-            this->SetDefaultProfile(mFirst);
-
-        // Create a default profile for aurora, if none was found.
-        nsCOMPtr<nsIToolkitProfile> profile;
-        rv = CreateProfile(nullptr,
-                           NS_LITERAL_CSTRING("dev-edition-default"),
-                           getter_AddRefs(profile));
-        if (NS_FAILED(rv)) return rv;
-        mChosen = profile;
-        rv = Flush();
-        if (NS_FAILED(rv)) return rv;
-    }
-#endif
 
     if (!mChosen && mFirst && !mFirst->mNext) // only one profile
         mChosen = mFirst;

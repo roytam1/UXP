@@ -231,11 +231,7 @@ pref("devtools.dom.enabled", false);
 pref("devtools.webaudioeditor.inspectorWidth", 300);
 
 // Default theme ("dark" or "light")
-#ifdef MOZ_DEV_EDITION
-sticky_pref("devtools.theme", "dark");
-#else
 sticky_pref("devtools.theme", "light");
-#endif
 
 // Web console filters
 pref("devtools.webconsole.filter.error", true);
@@ -353,13 +349,8 @@ pref("devtools.editor.autocomplete", true);
 // version for each user.
 pref("devtools.telemetry.tools.opened.version", "{}");
 
-// Enable the JSON View tool (an inspector for application/json documents) on
-// Nightly and Dev. Edition.
-#ifdef RELEASE_OR_BETA
-pref("devtools.jsonview.enabled", false);
-#else
+// Enable the JSON View tool (an inspector for application/json documents)
 pref("devtools.jsonview.enabled", true);
-#endif
 
 // Enable the HTML responsive design mode for all channels.
 pref("devtools.responsive.html.enabled", true);

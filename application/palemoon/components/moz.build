@@ -20,10 +20,8 @@ DIRS += [
     'search',
     'sessionstore',
     'shell',
+    'statusbar',
 ]
-
-if CONFIG['MOZ_BROWSER_STATUSBAR']:
-    DIRS += ['statusbar']
 
 if CONFIG['MOZ_SERVICES_SYNC']:
     DIRS += ['sync']
