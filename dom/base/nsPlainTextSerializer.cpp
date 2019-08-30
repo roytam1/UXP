@@ -390,6 +390,7 @@ nsPlainTextSerializer::AppendElementStart(Element* aElement,
  
 NS_IMETHODIMP 
 nsPlainTextSerializer::AppendElementEnd(Element* aElement,
+                                        Element* aOriginalElement /* unused */,
                                         nsAString& aStr)
 {
   NS_ENSURE_ARG(aElement);

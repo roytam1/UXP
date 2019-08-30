@@ -31,6 +31,7 @@ class nsHTMLContentSerializer final : public nsXHTMLContentSerializer {
                                 nsAString& aStr) override;
 
   NS_IMETHOD AppendElementEnd(mozilla::dom::Element* aElement,
+                              mozilla::dom::Element* aOriginalElement,
                               nsAString& aStr) override;
 
   NS_IMETHOD AppendDocumentStart(nsIDocument *aDocument,
