@@ -682,6 +682,15 @@ pref("plugins.update.notifyUser", false);
 //Enable tri-state option (Always/Never/Ask)
 pref("plugins.click_to_play", true);
 
+// Platform pref is to enable all plugins by default.
+// Uncomment this pref to default to click-to-play
+// pref("plugin.default.state", 1);
+
+// Don't load plugin instances with no src declared.
+// These prefs are documented in detail in all.js.
+pref("plugins.favorfallback.mode", "follow-ctp");
+pref("plugins.favorfallback.rules", "nosrc");
+
 #ifdef XP_WIN
 pref("browser.preferences.instantApply", false);
 #else
