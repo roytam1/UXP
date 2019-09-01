@@ -718,9 +718,9 @@ nsObjectLoadingContent::UnbindFromTree(bool aDeep, bool aNullParent)
   if (mType == eType_Plugin) {
     nsIDocument* doc = thisContent->GetComposedDoc();
     if (doc && doc->IsActive()) {
-    nsCOMPtr<nsIRunnable> ev = new nsSimplePluginEvent(doc,
-                                                       NS_LITERAL_STRING("PluginRemoved"));
-    NS_DispatchToCurrentThread(ev);
+      nsCOMPtr<nsIRunnable> ev = new nsSimplePluginEvent(doc,
+                                                         NS_LITERAL_STRING("PluginRemoved"));
+      NS_DispatchToCurrentThread(ev);
     }
   }
 }
