@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2005-2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
+ * Copyright (c) 2019 Moonchild Productions
  * Portions of comments Copyright 2004-2010 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
@@ -680,6 +681,22 @@ public class Tokenizer implements Locator {
      *
      * @param specialTokenizerState
      *            the tokenizer state to set
+     */
+    public void setState(int specialTokenizerState) {
+        this.stateSave = specialTokenizerState;
+        this.endTagExpectation = null;
+        this.endTagExpectationAsArray = null;
+    }
+
+    // [NOCPP[
+
+    /**
+     * Sets the tokenizer state and the associated element name. This should
+     * only ever used to put the tokenizer into one of the states that have
+     * a special end tag expectation. For use from the tokenizer test harness.
+     *
+     * @param specialTokenizerState
+     *            the tokenizer state to set
      * @param endTagExpectation
      *            the expected end tag for transitioning back to normal
      */
@@ -694,6 +711,8 @@ public class Tokenizer implements Locator {
                 asArray.length, interner);
         endTagExpectationToArray();
     }
+
+    // ]NOCPP]
 
     /**
      * Sets the tokenizer state and the associated element name. This should
@@ -3759,11 +3778,17 @@ public class Tokenizer implements Locator {
                         c = checkChar(buf, pos);
                         /*
                          * ASSERT! when entering this state, set index to 0 and
-                         * call clearStrBufBeforeUse() assert (contentModelElement !=
-                         * null); Let's implement the above without lookahead.
-                         * strBuf is the 'temporary buffer'.
+                         * call clearStrBufBeforeUse(); Let's implement the above
+                         * without lookahead. strBuf is the 'temporary buffer'.
                          */
-                        if (index < endTagExpectationAsArray.length) {
+                        if (endTagExpectationAsArray == null) {
+                            tokenHandler.characters(Tokenizer.LT_SOLIDUS,
+                                    0, 2);
+                            cstart = pos;
+                            reconsume = true;
+                            state = transition(state, returnState, reconsume, pos);
+                            continue stateloop;
+                        } else if (index < endTagExpectationAsArray.length) {
                             char e = endTagExpectationAsArray[index];
                             char folded = c;
                             if (c >= 'A' && c <= 'Z') {

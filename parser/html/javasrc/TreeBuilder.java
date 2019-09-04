@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
+ * Copyright (c) 2018-2019 Moonchild Productions
  * Portions of comments Copyright 2004-2008 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
@@ -640,8 +641,7 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                 );
                 currentPtr++;
                 stack[currentPtr] = node;
-                tokenizer.setStateAndEndTagExpectation(Tokenizer.DATA,
-                        contextName);
+                tokenizer.setState(Tokenizer.DATA);
                 // The frameset-ok flag is set even though <frameset> never
                 // ends up being allowed as HTML frameset in the fragment case.
                 mode = FRAMESET_OK;
@@ -671,8 +671,7 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                 );
                 currentPtr++;
                 stack[currentPtr] = node;
-                tokenizer.setStateAndEndTagExpectation(Tokenizer.DATA,
-                        contextName);
+                tokenizer.setState(Tokenizer.DATA);
                 // The frameset-ok flag is set even though <frameset> never
                 // ends up being allowed as HTML frameset in the fragment case.
                 mode = FRAMESET_OK;
@@ -691,23 +690,18 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                 resetTheInsertionMode();
                 formPointer = getFormPointerForContext(contextNode);
                 if ("title" == contextName || "textarea" == contextName) {
-                    tokenizer.setStateAndEndTagExpectation(Tokenizer.RCDATA,
-                            contextName);
+                    tokenizer.setState(Tokenizer.RCDATA);
                 } else if ("style" == contextName || "xmp" == contextName
                         || "iframe" == contextName || "noembed" == contextName
                         || "noframes" == contextName
                         || (scriptingEnabled && "noscript" == contextName)) {
-                    tokenizer.setStateAndEndTagExpectation(Tokenizer.RAWTEXT,
-                            contextName);
+                    tokenizer.setState(Tokenizer.RAWTEXT);
                 } else if ("plaintext" == contextName) {
-                    tokenizer.setStateAndEndTagExpectation(Tokenizer.PLAINTEXT,
-                            contextName);
+                    tokenizer.setState(Tokenizer.PLAINTEXT);
                 } else if ("script" == contextName) {
-                    tokenizer.setStateAndEndTagExpectation(
-                            Tokenizer.SCRIPT_DATA, contextName);
+                    tokenizer.setState(Tokenizer.SCRIPT_DATA);
                 } else {
-                    tokenizer.setStateAndEndTagExpectation(Tokenizer.DATA,
-                            contextName);
+                    tokenizer.setState(Tokenizer.DATA);
                 }
             }
             contextName = null;

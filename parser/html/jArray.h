@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2008-2015 Mozilla Foundation
+ * Copyright (c) 2019 Moonchild Productions
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -44,32 +45,66 @@ struct staticJArray {
   }
 };
 
-template<class T, class L>
-struct jArray {
+template <class T, class L>
+class autoJArray;
+
+template <class T, class L>
+class jArray {
+  friend class autoJArray<T, L>;
+
+private:
   T* arr;
+
+public:
   L length;
+
   static jArray<T,L> newJArray(L const len) {
     MOZ_ASSERT(len >= 0, "Negative length.");
     jArray<T,L> newArray = { new T[size_t(len)], len };
     return newArray;
   }
+
   static jArray<T,L> newFallibleJArray(L const len) {
     MOZ_ASSERT(len >= 0, "Negative length.");
     T* a = new (mozilla::fallible) T[size_t(len)];
     jArray<T,L> newArray = { a, a ? len : 0 };
     return newArray;
   }
-  operator T*() { return arr; }
+
+  operator T*() {
+    return arr;
+  }
+  
   T& operator[] (L const index) {
     MOZ_ASSERT(index >= 0, "Array access with negative index.");
     MOZ_ASSERT(index < length, "Array index out of bounds.");
     return arr[index];
   }
+
   void operator=(staticJArray<T,L>& other) {
     arr = (T*)other.arr;
     length = other.length;
   }
-};
+
+  MOZ_IMPLICIT jArray(decltype(nullptr))
+    : arr(nullptr)
+    , length(0)
+  {
+  }
+
+  jArray()
+    : arr(nullptr)
+    , length(0)
+  {
+  }
+
+private:
+  jArray(T* aArr, L aLength) 
+    : arr(aArr)
+    , length(aLength)
+  {
+  }
+}; // class jArray
 
 template<class T, class L>
 class autoJArray {

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2005-2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
+ * Copyright (c) 2019 Moonchild Productions
  * Portions of comments Copyright 2004-2010 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
@@ -143,7 +144,7 @@ class nsHtml5Tokenizer
     void setInterner(nsHtml5AtomTable* interner);
     void initLocation(nsHtml5String newPublicId, nsHtml5String newSystemId);
     bool isViewingXmlSource();
-    void setStateAndEndTagExpectation(int32_t specialTokenizerState, nsIAtom* endTagExpectation);
+    void setState(int32_t specialTokenizerState);
     void setStateAndEndTagExpectation(int32_t specialTokenizerState, nsHtml5ElementName* endTagExpectation);
   private:
     void endTagExpectationToArray();
