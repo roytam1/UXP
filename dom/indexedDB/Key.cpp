@@ -201,8 +201,11 @@ Key::ToLocaleBasedKey(Key& aTarget, const nsCString& aLocale) const
 }
 
 nsresult
-Key::EncodeJSValInternal(JSContext* aCx, JS::Handle<JS::Value> aVal,
-                         uint8_t aTypeOffset, uint16_t aRecursionDepth)
+Key::EncodeJSValInternal(JSContext* aCx,
+                         JS::Handle<JS::Value> aVal,
+                         uint8_t aTypeOffset,
+                         uint16_t aRecursionDepth,
+                         bool aCallGetters)
 {
   static_assert(eMaxType * kMaxArrayCollapse < 256,
                 "Unable to encode jsvals.");
@@ -257,13 +260,18 @@ Key::EncodeJSValInternal(JSContext* aCx, JS::Handle<JS::Value> aVal,
 
       for (uint32_t index = 0; index < length; index++) {
         JS::Rooted<JS::Value> val(aCx);
-        if (!JS_GetElement(aCx, obj, index, &val)) {
+        bool ok = aCallGetters ? JS_GetElement(aCx, obj, index, &val)
+                               : JS_GetOwnElement(aCx, obj, index, &val);
+        if (!ok) {
           IDB_REPORT_INTERNAL_ERR();
           return NS_ERROR_DOM_INDEXEDDB_UNKNOWN_ERR;
         }
 
-        nsresult rv = EncodeJSValInternal(aCx, val, aTypeOffset,
-                                          aRecursionDepth + 1);
+        nsresult rv = EncodeJSValInternal(aCx,
+                                          val,
+                                          aTypeOffset,
+                                          aRecursionDepth + 1,
+                                          aCallGetters);
         if (NS_FAILED(rv)) {
           return rv;
         }
@@ -406,9 +414,10 @@ Key::DecodeJSValInternal(const unsigned char*& aPos, const unsigned char* aEnd,
 nsresult
 Key::EncodeJSVal(JSContext* aCx,
                  JS::Handle<JS::Value> aVal,
-                 uint8_t aTypeOffset)
+                 uint8_t aTypeOffset,
+                 bool aCallGetters)
 {
-  return EncodeJSValInternal(aCx, aVal, aTypeOffset, 0);
+  return EncodeJSValInternal(aCx, aVal, aTypeOffset, 0, aCallGetters);
 }
 
 void
@@ -741,7 +750,8 @@ Key::SetFromValueArray(mozIStorageValueArray* aValues,
 
 nsresult
 Key::SetFromJSVal(JSContext* aCx,
-                  JS::Handle<JS::Value> aVal)
+                  JS::Handle<JS::Value> aVal,
+                  bool aCallGetters)
 {
   mBuffer.Truncate();
 
@@ -750,7 +760,7 @@ Key::SetFromJSVal(JSContext* aCx,
     return NS_OK;
   }
 
-  nsresult rv = EncodeJSVal(aCx, aVal, 0);
+  nsresult rv = EncodeJSVal(aCx, aVal, 0, aCallGetters);
   if (NS_FAILED(rv)) {
     Unset();
     return rv;
@@ -793,9 +803,15 @@ Key::ToJSVal(JSContext* aCx,
 }
 
 nsresult
-Key::AppendItem(JSContext* aCx, bool aFirstOfArray, JS::Handle<JS::Value> aVal)
+Key::AppendItem(JSContext* aCx,
+                bool aFirstOfArray,
+                JS::Handle<JS::Value> aVal,
+                bool aCallGetters)
 {
-  nsresult rv = EncodeJSVal(aCx, aVal, aFirstOfArray ? eMaxType : 0);
+  nsresult rv = EncodeJSVal(aCx,
+                            aVal,
+                            aFirstOfArray ? eMaxType : 0,
+                            aCallGetters);
   if (NS_FAILED(rv)) {
     Unset();
     return rv;

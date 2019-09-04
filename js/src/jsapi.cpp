@@ -2011,6 +2011,28 @@ JS_GetOwnUCPropertyDescriptor(JSContext* cx, HandleObject obj, const char16_t* n
 }
 
 JS_PUBLIC_API(bool)
+JS_GetOwnElement(JSContext* cx, JS::HandleObject obj, uint32_t index, JS::MutableHandleValue vp)
+{
+    RootedId id(cx);
+    if (!IndexToId(cx, index, &id)) {
+        return false;
+    }
+
+    Rooted<PropertyDescriptor> desc(cx);
+    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &desc)) {
+        return false;
+    }
+
+    if (desc.object() && desc.isDataDescriptor()) {
+        vp.set(desc.value());
+    } else {
+        vp.setUndefined();
+    }
+
+    return true;
+}
+
+JS_PUBLIC_API(bool)
 JS_GetPropertyDescriptorById(JSContext* cx, HandleObject obj, HandleId id,
                              MutableHandle<PropertyDescriptor> desc)
 {

@@ -372,11 +372,13 @@ KeyPath::AppendStringWithValidation(const nsAString& aString)
 }
 
 nsresult
-KeyPath::ExtractKey(JSContext* aCx, const JS::Value& aValue, Key& aKey) const
+KeyPath::ExtractKey(JSContext* aCx,
+                    const JS::Value& aValue,
+                    Key& aKey,
+                    bool aCallGetters) const
 {
   uint32_t len = mStrings.Length();
   JS::Rooted<JS::Value> value(aCx);
-
   aKey.Unset();
 
   for (uint32_t i = 0; i < len; ++i) {
@@ -388,7 +390,10 @@ KeyPath::ExtractKey(JSContext* aCx, const JS::Value& aValue, Key& aKey) const
       return rv;
     }
 
-    if (NS_FAILED(aKey.AppendItem(aCx, IsArray() && i == 0, value))) {
+    if (NS_FAILED(aKey.AppendItem(aCx,
+                                  IsArray() && i == 0,
+                                  value,
+                                  aCallGetters))) {
       NS_ASSERTION(aKey.IsUnset(), "Encoding error should unset");
       return NS_ERROR_DOM_INDEXEDDB_DATA_ERR;
     }
@@ -437,9 +442,12 @@ KeyPath::ExtractKeyAsJSVal(JSContext* aCx, const JS::Value& aValue,
 }
 
 nsresult
-KeyPath::ExtractOrCreateKey(JSContext* aCx, const JS::Value& aValue,
-                            Key& aKey, ExtractOrCreateKeyCallback aCallback,
-                            void* aClosure) const
+KeyPath::ExtractOrCreateKey(JSContext* aCx,
+                            const JS::Value& aValue,
+                            Key& aKey,
+                            ExtractOrCreateKeyCallback aCallback,
+                            void* aClosure,
+                            bool aCallGetters) const
 {
   NS_ASSERTION(IsString(), "This doesn't make sense!");
 
@@ -455,7 +463,7 @@ KeyPath::ExtractOrCreateKey(JSContext* aCx, const JS::Value& aValue,
     return rv;
   }
 
-  if (NS_FAILED(aKey.AppendItem(aCx, false, value))) {
+  if (NS_FAILED(aKey.AppendItem(aCx, false, value, aCallGetters))) {
     NS_ASSERTION(aKey.IsUnset(), "Should be unset");
     return value.isUndefined() ? NS_OK : NS_ERROR_DOM_INDEXEDDB_DATA_ERR;
   }

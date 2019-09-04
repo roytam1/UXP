@@ -482,13 +482,13 @@ IDBFactory::Cmp(JSContext* aCx, JS::Handle<JS::Value> aFirst,
                 JS::Handle<JS::Value> aSecond, ErrorResult& aRv)
 {
   Key first, second;
-  nsresult rv = first.SetFromJSVal(aCx, aFirst);
+  nsresult rv = first.SetFromJSVal(aCx, aFirst, /* aCallGetters */ true);
   if (NS_FAILED(rv)) {
     aRv.Throw(rv);
     return 0;
   }
 
-  rv = second.SetFromJSVal(aCx, aSecond);
+  rv = second.SetFromJSVal(aCx, aSecond, /* aCallGetters */ true);
   if (NS_FAILED(rv)) {
     aRv.Throw(rv);
     return 0;

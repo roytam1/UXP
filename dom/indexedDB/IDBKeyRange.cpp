@@ -24,7 +24,7 @@ GetKeyFromJSVal(JSContext* aCx,
                 JS::Handle<JS::Value> aVal,
                 Key& aKey)
 {
-  nsresult rv = aKey.SetFromJSVal(aCx, aVal);
+  nsresult rv = aKey.SetFromJSVal(aCx, aVal, /* aCallGetters */ true);
   if (NS_FAILED(rv)) {
     MOZ_ASSERT(NS_ERROR_GET_MODULE(rv) == NS_ERROR_MODULE_DOM_INDEXEDDB);
     return rv;
