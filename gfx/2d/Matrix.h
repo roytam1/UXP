@@ -734,8 +734,7 @@ public:
     // Initialize a double-buffered array of points in homogenous space with
     // the input rectangle, aRect.
     Point4DTyped<UnknownUnits, F> points[2][kTransformAndClipRectMaxVerts];
-    Point4DTyped<UnknownUnits, F>* dstPointStart = points[0];
-    Point4DTyped<UnknownUnits, F>* dstPoint = dstPointStart;
+    Point4DTyped<UnknownUnits, F>* dstPoint = points[0];
 
     *dstPoint++ = TransformPoint(Point4DTyped<UnknownUnits, F>(aRect.x, aRect.y, 0, 1));
     *dstPoint++ = TransformPoint(Point4DTyped<UnknownUnits, F>(aRect.XMost(), aRect.y, 0, 1));
@@ -755,11 +754,11 @@ public:
     // points[1].
     for (int plane=0; plane < 4; plane++) {
       planeNormals[plane].Normalize();
-      Point4DTyped<UnknownUnits, F>* srcPoint = dstPointStart;
+      Point4DTyped<UnknownUnits, F>* srcPoint = points[plane & 1];
       Point4DTyped<UnknownUnits, F>* srcPointEnd = dstPoint;
 
-      dstPointStart = points[~plane & 1];
-      dstPoint = dstPointStart;
+      dstPoint = points[~plane & 1];
+      Point4DTyped<UnknownUnits, F>* dstPointStart = dstPoint;
 
       Point4DTyped<UnknownUnits, F>* prevPoint = srcPointEnd - 1;
       F prevDot = planeNormals[plane].DotProduct(*prevPoint);
@@ -788,10 +787,10 @@ public:
       }
     }
 
-    Point4DTyped<UnknownUnits, F>* srcPoint = dstPointStart;
-    Point4DTyped<UnknownUnits, F>* srcPointEnd = dstPoint;
-    size_t vertCount = 0;
-    while (srcPoint < srcPointEnd) {
+    size_t dstPointCount = 0;
+    size_t srcPointCount = dstPoint - points[0];
+    for (Point4DTyped<UnknownUnits, F>* srcPoint = points[0]; srcPoint < points[0] + srcPointCount; srcPoint++) {
+
       PointTyped<TargetUnits, F> p;
       if (srcPoint->w == 0.0) {
         // If a point lies on the intersection of the clipping planes at
@@ -801,13 +800,12 @@ public:
         p = srcPoint->As2DPoint();
       }
       // Emit only unique points
-      if (vertCount == 0 || p != aVerts[vertCount - 1]) {
-        aVerts[vertCount++] = p;
+      if (dstPointCount == 0 || p != aVerts[dstPointCount - 1]) {
+        aVerts[dstPointCount++] = p;
       }
-      srcPoint++;
     }
 
-    return vertCount;
+    return dstPointCount;
   }
 
   static const int kTransformAndClipRectMaxVerts = 32;
