@@ -22,11 +22,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit MetaScanner.java instead and regenerate.
- */
-
 #ifndef nsHtml5MetaScanner_h
 #define nsHtml5MetaScanner_h
 

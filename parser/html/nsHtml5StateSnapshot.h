@@ -21,11 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit StateSnapshot.java instead and regenerate.
- */
-
 #ifndef nsHtml5StateSnapshot_h
 #define nsHtml5StateSnapshot_h
 

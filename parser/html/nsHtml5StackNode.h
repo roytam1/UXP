@@ -22,11 +22,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit StackNode.java instead and regenerate.
- */
-
 #ifndef nsHtml5StackNode_h
 #define nsHtml5StackNode_h
 

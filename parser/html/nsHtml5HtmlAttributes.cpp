@@ -22,11 +22,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit HtmlAttributes.java instead and regenerate.
- */
-
 #define nsHtml5HtmlAttributes_cpp__
 
 #include "nsIAtom.h"

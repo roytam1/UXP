@@ -24,11 +24,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit Tokenizer.java instead and regenerate.
- */
-
 #ifndef nsHtml5Tokenizer_h
 #define nsHtml5Tokenizer_h
 

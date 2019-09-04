@@ -21,11 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit ElementName.java instead and regenerate.
- */
-
 #ifndef nsHtml5ElementName_h
 #define nsHtml5ElementName_h
 
