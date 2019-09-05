@@ -641,13 +641,22 @@ nsCSPHostSrc::permits(nsIURI* aUri, const nsAString& aNonce, bool aWasRedirected
   // just a specific scheme, the parser should generate a nsCSPSchemeSource.
   NS_ASSERTION((!mHost.IsEmpty()), "host can not be the empty string");
 
+  // Before we can check if the host matches, we have to
+  // extract the host part from aUri.
+  nsAutoCString uriHost;
+  nsresult rv = aUri->GetAsciiHost(uriHost);
+  NS_ENSURE_SUCCESS(rv, false);
+
+  nsString decodedUriHost;
+  CSP_PercentDecodeStr(NS_ConvertUTF8toUTF16(uriHost), decodedUriHost);
+
   // 2) host matching: Enforce a single *
   if (mHost.EqualsASCII("*")) {
     // The single ASTERISK character (*) does not match a URI's scheme of a type
     // designating a globally unique identifier (such as blob:, data:, or filesystem:)
-    // At the moment firefox does not support filesystem; but for future compatibility
+    // At the moment UXP does not support "filesystem:" but for future compatibility
     // we support it in CSP according to the spec, see: 4.2.2 Matching Source Expressions
-    // Note, that whitelisting any of these schemes would call nsCSPSchemeSrc::permits().
+    // Note: whitelisting any of these schemes would call nsCSPSchemeSrc::permits().
     bool isBlobScheme =
       (NS_SUCCEEDED(aUri->SchemeIs("blob", &isBlobScheme)) && isBlobScheme);
     bool isDataScheme =
@@ -658,20 +667,15 @@ nsCSPHostSrc::permits(nsIURI* aUri, const nsAString& aNonce, bool aWasRedirected
     if (isBlobScheme || isDataScheme || isFileScheme) {
       return false;
     }
-    return true;
+
+    // If no scheme is present there also won't be a port and folder to check
+    // which means we can return early.
+    if (mScheme.IsEmpty()) {
+      return true;
+    }
   }
-
-  // Before we can check if the host matches, we have to
-  // extract the host part from aUri.
-  nsAutoCString uriHost;
-  nsresult rv = aUri->GetAsciiHost(uriHost);
-  NS_ENSURE_SUCCESS(rv, false);
-
-  nsString decodedUriHost;
-  CSP_PercentDecodeStr(NS_ConvertUTF8toUTF16(uriHost), decodedUriHost);
-
   // 4.5) host matching: Check if the allowed host starts with a wilcard.
-  if (mHost.First() == '*') {
+  else if (mHost.First() == '*') {
     NS_ASSERTION(mHost[1] == '.', "Second character needs to be '.' whenever host starts with '*'");
 
     // Eliminate leading "*", but keeping the FULL STOP (.) thereafter before checking
