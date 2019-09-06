@@ -112,7 +112,9 @@ nsThreadPool::PutEvent(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags)
   bool killThread = false;
   {
     MutexAutoLock lock(mMutex);
-    if (mThreads.Count() < (int32_t)mThreadLimit) {
+    if (mShutdown) {
+      killThread = true;  // we're in shutdown, kill the thread
+    } else if (mThreads.Count() < (int32_t)mThreadLimit) {
       mThreads.AppendObject(thread);
     } else {
       killThread = true;  // okay, we don't need this thread anymore

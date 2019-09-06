@@ -513,8 +513,19 @@ nsCSPContext::GetAllowsInline(nsContentPolicyType aContentType,
   for (uint32_t i = 0; i < mPolicies.Length(); i++) {
     bool allowed =
       mPolicies[i]->allows(aContentType, CSP_UNSAFE_INLINE, EmptyString(), aParserCreated) ||
-      mPolicies[i]->allows(aContentType, CSP_NONCE, aNonce, aParserCreated) ||
-      mPolicies[i]->allows(aContentType, CSP_HASH, aContent, aParserCreated);
+      mPolicies[i]->allows(aContentType, CSP_NONCE, aNonce, aParserCreated);
+      
+    // If the inlined script or style is allowed by either unsafe-inline or the
+    // nonce, go ahead and shortcut this loop.
+    if (allowed) {
+      continue;
+    }
+    
+    // Check if the csp-hash matches against the hash of the script.
+    // If we don't have any content to check, block the script.
+    if (!aContent.IsEmpty()) {
+      allowed = mPolicies[i]->allows(aContentType, CSP_HASH, aContent, aParserCreated);
+    }
 
     if (!allowed) {
       // policy is violoated: deny the load unless policy is report only and

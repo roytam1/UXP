@@ -3084,29 +3084,39 @@ class TypeConstraintClearDefiniteGetterSetter : public TypeConstraint
 };
 
 bool
-js::AddClearDefiniteGetterSetterForPrototypeChain(JSContext* cx, ObjectGroup* group, HandleId id)
+js::AddClearDefiniteGetterSetterForPrototypeChain(JSContext* cx,
+                                                  DPAConstraintInfo& constraintInfo,
+                                                  ObjectGroup* group,
+                                                  HandleId id,
+                                                  bool* added)
 {
     /*
      * Ensure that if the properties named here could have a getter, setter or
      * a permanent property in any transitive prototype, the definite
      * properties get cleared from the group.
      */
+     
+    *added = false;
+    
     RootedObject proto(cx, group->proto().toObjectOrNull());
     while (proto) {
         ObjectGroup* protoGroup = JSObject::getGroup(cx, proto);
         if (!protoGroup) {
-            cx->recoverFromOutOfMemory();
             return false;
         }
         if (protoGroup->unknownProperties())
-            return false;
+            return true;
         HeapTypeSet* protoTypes = protoGroup->getProperty(cx, proto, id);
-        if (!protoTypes || protoTypes->nonDataProperty() || protoTypes->nonWritableProperty())
+        if (!protoTypes)
             return false;
-        if (!protoTypes->addConstraint(cx, cx->typeLifoAlloc().new_<TypeConstraintClearDefiniteGetterSetter>(group)))
+        if (protoTypes->nonDataProperty() || protoTypes->nonWritableProperty())
+            return true;
+        if (!constraintInfo.addProtoConstraint(proto, id))
             return false;
         proto = proto->staticPrototype();
     }
+    
+    *added = true;
     return true;
 }
 
@@ -3612,6 +3622,43 @@ struct DestroyTypeNewScript
 
 } // namespace
 
+bool DPAConstraintInfo::finishConstraints(JSContext* cx, ObjectGroup* group) {
+  for (const ProtoConstraint& constraint : protoConstraints_) {
+    ObjectGroup* protoGroup = constraint.proto->group();
+
+    // Note: we rely on the group's type information being unchanged since
+    // AddClearDefiniteGetterSetterForPrototypeChain.
+
+    bool unknownProperties = protoGroup->unknownProperties();
+    MOZ_RELEASE_ASSERT(!unknownProperties);
+
+    HeapTypeSet* protoTypes =
+        protoGroup->getProperty(cx, constraint.proto, constraint.id);
+    MOZ_RELEASE_ASSERT(protoTypes);
+
+    MOZ_ASSERT(!protoTypes->nonDataProperty());
+    MOZ_ASSERT(!protoTypes->nonWritableProperty());
+
+    if (!protoTypes->addConstraint(
+            cx,
+            cx->typeLifoAlloc().new_<TypeConstraintClearDefiniteGetterSetter>(
+                group))) {
+      ReportOutOfMemory(cx);
+      return false;
+    }
+  }
+
+  for (const InliningConstraint& constraint : inliningConstraints_) {
+    if (!AddClearDefiniteFunctionUsesInScript(cx, group, constraint.caller,
+                                              constraint.callee)) {
+      ReportOutOfMemory(cx);
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool
 TypeNewScript::maybeAnalyze(JSContext* cx, ObjectGroup* group, bool* regenerate, bool force)
 {
@@ -3715,10 +3762,17 @@ TypeNewScript::maybeAnalyze(JSContext* cx, ObjectGroup* group, bool* regenerate,
         return false;
 
     Vector<Initializer> initializerVector(cx);
+    
+    DPAConstraintInfo constraintInfo(cx);
 
     RootedPlainObject templateRoot(cx, templateObject());
     RootedFunction fun(cx, function());
-    if (!jit::AnalyzeNewScriptDefiniteProperties(cx, fun, group, templateRoot, &initializerVector))
+    if (!jit::AnalyzeNewScriptDefiniteProperties(cx,
+                                                 constraintInfo,
+                                                 fun,
+                                                 group,
+                                                 templateRoot,
+                                                 &initializerVector))
         return false;
 
     if (!group->newScript())
@@ -3772,6 +3826,14 @@ TypeNewScript::maybeAnalyze(JSContext* cx, ObjectGroup* group, bool* regenerate,
         // The definite properties analysis found exactly the properties that
         // are held in common by the preliminary objects. No further analysis
         // is needed.
+
+        if (!constraintInfo.finishConstraints(cx, group)) {
+            return false;
+        }
+        if (!group->newScript()) {
+            return true;
+        }
+
         group->addDefiniteProperties(cx, templateObject()->lastProperty());
 
         destroyNewScript.group = nullptr;
@@ -3792,6 +3854,16 @@ TypeNewScript::maybeAnalyze(JSContext* cx, ObjectGroup* group, bool* regenerate,
                                                                   initialFlags);
     if (!initialGroup)
         return false;
+
+    // Add the constraints. Use the initialGroup as group referenced by the
+    // constraints because that's the group that will have the TypeNewScript
+    // associated with it. See the detachNewScript and setNewScript calls below.
+    if (!constraintInfo.finishConstraints(cx, initialGroup)) {
+        return false;
+    }
+    if (!group->newScript()) {
+        return true;
+    }
 
     initialGroup->addDefiniteProperties(cx, templateObject()->lastProperty());
     group->addDefiniteProperties(cx, prefixShape);
