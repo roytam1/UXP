@@ -179,7 +179,7 @@ if test "$GNU_CC"; then
     CFLAGS="$CFLAGS -fno-math-errno"
     CXXFLAGS="$CXXFLAGS -fno-exceptions -fno-math-errno"
 
-    if test "$CPU_ARCH" = x86; then
+    if test "$CPU_ARCH" = "x86" -o "$CPU_ARCH" = "x86_64"; then
       CFLAGS="$CFLAGS -msse2 -mfpmath=sse"
       CXXFLAGS="$CXXFLAGS -msse2 -mfpmath=sse"
     fi
