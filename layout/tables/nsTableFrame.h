@@ -324,7 +324,8 @@ public:
   // border to the results of these functions.
   virtual nscoord GetMinISize(nsRenderingContext *aRenderingContext) override;
   virtual nscoord GetPrefISize(nsRenderingContext *aRenderingContext) override;
-  virtual IntrinsicISizeOffsetData IntrinsicISizeOffsets() override;
+  IntrinsicISizeOffsetData IntrinsicISizeOffsets(nscoord aPercentageBasis =
+                                                 NS_UNCONSTRAINEDSIZE) override;
 
   virtual mozilla::LogicalSize
   ComputeSize(nsRenderingContext*         aRenderingContext,

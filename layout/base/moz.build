@@ -13,6 +13,9 @@ with Files('Display*'):
 with Files('FrameLayerBuilder.*'):
     BUG_COMPONENT = ('Core', 'Layout: View Rendering')
 
+with Files('LayoutConstants.*'):
+    BUG_COMPONENT = ('Core', 'Layout: View Rendering')
+
 with Files('LayerState.*'):
     BUG_COMPONENT = ('Core', 'Layout: View Rendering')
 
@@ -63,6 +66,7 @@ EXPORTS += [
     'FrameLayerBuilder.h',
     'FrameProperties.h',
     'LayerState.h',
+    'LayoutConstants.h',
     'LayoutLogging.h',
     'nsArenaMemoryStats.h',
     'nsBidi.h',
