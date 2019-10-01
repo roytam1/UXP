@@ -9,6 +9,9 @@
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/IntegerTypeTraits.h"
 #include "mozilla/Span.h"
+#ifdef XP_SOLARIS
+#include <unistd.h>
+#endif
 
 #ifndef MOZILLA_INTERNAL_API
 #error Cannot use internal string classes without MOZILLA_INTERNAL_API defined. Use the frozen header nsStringAPI.h instead.
@@ -587,6 +590,17 @@ public:
     const char* fmt = aRadix == 10 ? "%d" : aRadix == 8 ? "%o" : "%x";
     AppendPrintf(fmt, aInteger);
   }
+#ifdef XP_SOLARIS
+  void AppendInt(pid_t aInteger)
+  { 
+   AppendPrintf("%lu", aInteger);
+  }
+  void AppendInt(pid_t aInteger, int aRadix)
+  {
+    const char* fmt = aRadix == 10 ? "%lu" : aRadix == 8 ? "%lo" : "%lx";
+    AppendPrintf(fmt, aInteger);
+  }
+#endif  
   void AppendInt(uint32_t aInteger)
   {
     AppendPrintf("%u", aInteger);
