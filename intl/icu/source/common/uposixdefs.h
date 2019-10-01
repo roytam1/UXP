@@ -54,7 +54,7 @@
  *
  * z/OS needs this definition for timeval and to get usleep.
  */
-#if !defined(_XOPEN_SOURCE_EXTENDED)
+#if !defined(_XOPEN_SOURCE_EXTENDED) && (U_PLATFORM != U_PF_SOLARIS)
 #   define _XOPEN_SOURCE_EXTENDED 1
 #endif
 

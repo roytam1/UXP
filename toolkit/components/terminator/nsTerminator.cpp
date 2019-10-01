@@ -385,7 +385,11 @@ nsTerminator::StartWatchdog()
   }
 
   UniquePtr<Options> options(new Options());
+#if !defined(XP_SOLARIS)
   const PRIntervalTime ticksDuration = PR_MillisecondsToInterval(1000);
+#else
+  const PRIntervalTime ticksDuration = 1000;
+#endif  
   options->crashAfterTicks = crashAfterMS / ticksDuration;
 
   DebugOnly<PRThread*> watchdogThread = CreateSystemThread(RunWatchdog,

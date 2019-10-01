@@ -2883,8 +2883,10 @@ event_global_setup_locks_(const int enable_locks)
 #endif
 	if (evsig_global_setup_locks_(enable_locks) < 0)
 		return -1;
+#ifndef OS_SOLARIS
 	if (evutil_secure_rng_global_setup_locks_(enable_locks) < 0)
 		return -1;
+#endif	
 	return 0;
 }
 #endif

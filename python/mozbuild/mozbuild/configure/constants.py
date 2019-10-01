@@ -23,6 +23,7 @@ OS = EnumString.subclass(
     'iOS',
     'NetBSD',
     'OpenBSD',
+    'SunOS',
     'OSX',
     'WINNT',
 )
@@ -35,6 +36,7 @@ Kernel = EnumString.subclass(
     'Linux',
     'NetBSD',
     'OpenBSD',
+    'SunOS',
     'WINNT',
 )
 
@@ -97,6 +99,7 @@ kernel_preprocessor_checks = {
     'Linux': '__linux__',
     'NetBSD': '__NetBSD__',
     'OpenBSD': '__OpenBSD__',
+    'SunOS': '__sun__',
     'WINNT': '_WIN32 || __CYGWIN__',
 }
 

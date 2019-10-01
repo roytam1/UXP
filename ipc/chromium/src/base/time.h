@@ -64,6 +64,10 @@ class TimeDelta {
     return delta_;
   }
 
+#if defined(OS_SOLARIS)
+  struct timespec ToTimeSpec() const;
+#endif
+
   // Returns the time delta in some unit. The F versions return a floating
   // point value, the "regular" versions return a rounded-down value.
   int InDays() const;
@@ -226,6 +230,9 @@ class Time {
   static Time FromDoubleT(double dt);
   double ToDoubleT() const;
 
+#if defined(OS_SOLARIS)
+  struct timeval ToTimeVal() const;
+#endif  
 
 #if defined(OS_WIN)
   static Time FromFileTime(FILETIME ft);
