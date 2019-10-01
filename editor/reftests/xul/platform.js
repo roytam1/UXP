@@ -13,6 +13,8 @@ if (/Windows/.test(ua)) {
 }
 else if (/Linux/.test(ua))
   id = "linux";
+else if (/SunOS/.test(ua))
+  id = "linux";	
 else if (/Mac OS X/.test(ua))
   id = "mac";
 

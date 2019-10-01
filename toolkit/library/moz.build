@@ -270,6 +270,12 @@ if CONFIG['MOZ_ENABLE_STARTUP_NOTIFICATION']:
 if CONFIG['MOZ_ENABLE_LIBPROXY']:
     OS_LIBS += CONFIG['MOZ_LIBPROXY_LIBS']
 
+if CONFIG['OS_ARCH'] == 'SunOS':
+    OS_LIBS += [
+        'elf',
+        'demangle',
+    ]
+
 if CONFIG['OS_ARCH'] == 'FreeBSD':
     OS_LIBS += [
         'util',

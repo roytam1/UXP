@@ -1,6 +1,5 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -12,8 +11,14 @@
 #if defined(sparc) || defined(__sparc__)
 
 extern "C" nsresult ATTRIBUTE_USED
-PrepareAndDispatch(nsXPTCStubBase* self, uint64_t methodIndex, uint64_t* args)
+PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint32_t* args)
 {
+
+    typedef struct {
+        uint32_t hi;
+        uint32_t lo;
+    } DU;               // have to move 64 bit entities as 32 bit halves since
+                        // stack slots are not guaranteed 16 byte aligned
 
 #define PARAM_BUFFER_COUNT     16
 
@@ -36,12 +41,9 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint64_t methodIndex, uint64_t* args)
         dispatchParams = new nsXPTCMiniVariant[paramCount];
     else
         dispatchParams = paramBuffer;
-
     NS_ASSERTION(dispatchParams,"no place for params");
-    if (!dispatchParams)
-        return NS_ERROR_OUT_OF_MEMORY;
 
-    uint64_t* ap = args;
+    uint32_t* ap = args;
     for(i = 0; i < paramCount; i++, ap++)
     {
         const nsXPTParamInfo& param = info->GetParam(i);
@@ -50,25 +52,31 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint64_t methodIndex, uint64_t* args)
 
         if(param.IsOut() || !type.IsArithmetic())
         {
-            dp->val.p = (void*) *ap;
+            if (type == nsXPTType::T_JSVAL)
+                dp->val.p = *((void**) *ap);
+            else
+                dp->val.p = (void*) *ap;
             continue;
         }
         // else
         switch(type)
         {
-        case nsXPTType::T_BOOL   : dp->val.b   = *((int64_t*)  ap);      break;
-        case nsXPTType::T_CHAR   : dp->val.c   = *((uint64_t*) ap);      break;
-        case nsXPTType::T_WCHAR  : dp->val.wc  = *((int64_t*) ap);       break;
-        case nsXPTType::T_I8     : dp->val.i8  = *((int64_t*)  ap);      break;
-        case nsXPTType::T_I16    : dp->val.i16 = *((int64_t*) ap);       break;
-        case nsXPTType::T_I32    : dp->val.i32 = *((int64_t*) ap);       break;
-        case nsXPTType::T_I64    : dp->val.i64 = *((int64_t*) ap);       break;
-        case nsXPTType::T_U8     : dp->val.u8  = *((uint64_t*) ap);      break;
-        case nsXPTType::T_U16    : dp->val.u16 = *((uint64_t*)ap);       break;
-        case nsXPTType::T_U32    : dp->val.u32 = *((uint64_t*)ap);       break;
-        case nsXPTType::T_U64    : dp->val.u64 = *((uint64_t*) ap);      break;
-        case nsXPTType::T_FLOAT  : dp->val.f   = ((float*)   ap)[1];     break;
-        case nsXPTType::T_DOUBLE : dp->val.d   = *((double*) ap);        break;
+        case nsXPTType::T_I8     : dp->val.i8  = *((int32_t*) ap);       break;
+        case nsXPTType::T_I16    : dp->val.i16 = *((int32_t*) ap);       break;
+        case nsXPTType::T_I32    : dp->val.i32 = *((int32_t*) ap);       break;
+        case nsXPTType::T_DOUBLE :
+        case nsXPTType::T_U64    :
+        case nsXPTType::T_I64    : ((DU *)dp)->hi = ((DU *)ap)->hi; 
+                                   ((DU *)dp)->lo = ((DU *)ap)->lo;
+                                   ap++;
+                                   break;
+        case nsXPTType::T_U8     : dp->val.u8  = *((uint32_t*)ap);       break;
+        case nsXPTType::T_U16    : dp->val.u16 = *((uint32_t*)ap);       break;
+        case nsXPTType::T_U32    : dp->val.u32 = *((uint32_t*)ap);       break;
+        case nsXPTType::T_FLOAT  : dp->val.f   = *((float*)   ap);       break;
+        case nsXPTType::T_BOOL   : dp->val.b   = *((uint32_t*)ap);       break;
+        case nsXPTType::T_CHAR   : dp->val.c   = *((uint32_t*)ap);       break;
+        case nsXPTType::T_WCHAR  : dp->val.wc  = *((int32_t*) ap);       break;
         default:
             NS_ERROR("bad type");
             break;
@@ -85,13 +93,8 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint64_t methodIndex, uint64_t* args)
 
 extern "C" nsresult SharedStub(int, int*);
 
-/*
- * Avoid GCC stack protector to wipe out imput registers since the compiler
- * thinks the function takes no arguments.
- */
-
 #define STUB_ENTRY(n) \
-nsresult __attribute__((__optimize__("no-stack-protector"))) nsXPTCStubBase::Stub##n() \
+nsresult nsXPTCStubBase::Stub##n() \
 { \
 	int dummy; /* defeat tail-call optimization */ \
 	return SharedStub(n, &dummy); \

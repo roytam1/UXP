@@ -13,6 +13,10 @@
 #include <float.h>
 #endif
 
+#if defined(XP_SOLARIS)
+#include <ieeefp.h>
+#endif	
+
 #include "js/TypeDecls.h"
 #include "js/Value.h"
 #include "js/RootingAPI.h"

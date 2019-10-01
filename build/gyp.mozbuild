@@ -89,6 +89,7 @@ flavors = {
     'Android': 'android',
     'Linux': 'linux',
     'Darwin': 'mac' if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa' else 'ios',
+    'SunOS': 'solaris',
     'GNU/kFreeBSD': 'freebsd',
     'DragonFly': 'dragonfly',
     'FreeBSD': 'freebsd',

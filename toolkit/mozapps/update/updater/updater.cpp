@@ -3648,6 +3648,88 @@ int add_dir_entries(const NS_tchar *dirpath, ActionList *list)
   return rv;
 }
 
+#elif defined(XP_SOLARIS)
+int add_dir_entries(const NS_tchar *dirpath, ActionList *list)
+{
+  int rv = OK;
+  NS_tchar foundpath[MAXPATHLEN];
+  struct {
+    dirent dent_buffer;
+    char chars[MAXNAMLEN];
+  } ent_buf;
+  struct dirent* ent;
+  mozilla::UniquePtr<NS_tchar[]> searchpath(get_full_path(dirpath));
+
+  DIR* dir = opendir(searchpath.get());
+  if (!dir) {
+    LOG(("add_dir_entries error on opendir: " LOG_S ", err: %d", searchpath.get(),
+         errno));
+    return UNEXPECTED_FILE_OPERATION_ERROR;
+  }
+
+  while (readdir_r(dir, (dirent *)&ent_buf, &ent) == 0 && ent) {
+    if ((strcmp(ent->d_name, ".") == 0) ||
+        (strcmp(ent->d_name, "..") == 0))
+      continue;
+
+    NS_tsnprintf(foundpath, sizeof(foundpath)/sizeof(foundpath[0]),
+                 NS_T("%s%s"), searchpath.get(), ent->d_name);
+    struct stat64 st_buf;
+    int test = stat64(foundpath, &st_buf);
+    if (test) {
+      closedir(dir);
+      return UNEXPECTED_FILE_OPERATION_ERROR;
+    }
+    if (S_ISDIR(st_buf.st_mode)) {
+      NS_tsnprintf(foundpath, sizeof(foundpath)/sizeof(foundpath[0]),
+                   NS_T("%s/"), foundpath);
+      // Recurse into the directory.
+      rv = add_dir_entries(foundpath, list);
+      if (rv) {
+        LOG(("add_dir_entries error: " LOG_S ", err: %d", foundpath, rv));
+        closedir(dir);
+        return rv;
+      }
+    } else {
+      // Add the file to be removed to the ActionList.
+      NS_tchar *quotedpath = get_quoted_path(get_relative_path(foundpath));
+      if (!quotedpath) {
+        closedir(dir);
+        return PARSE_ERROR;
+      }
+
+      Action *action = new RemoveFile();
+      rv = action->Parse(quotedpath);
+      if (rv) {
+        LOG(("add_dir_entries Parse error on recurse: " LOG_S ", err: %d",
+             quotedpath, rv));
+        closedir(dir);
+        return rv;
+      }
+
+      list->Append(action);
+    }
+  }
+  closedir(dir);
+
+  // Add the directory to be removed to the ActionList.
+  NS_tchar *quotedpath = get_quoted_path(get_relative_path(dirpath));
+  if (!quotedpath)
+    return PARSE_ERROR;
+
+  Action *action = new RemoveDir();
+  rv = action->Parse(quotedpath);
+  if (rv) {
+    LOG(("add_dir_entries Parse error on close: " LOG_S ", err: %d",
+         quotedpath, rv));
+  }
+  else {
+    list->Append(action);
+  }
+
+  return rv;
+}
+
 #else
 
 int add_dir_entries(const NS_tchar *dirpath, ActionList *list)

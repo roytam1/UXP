@@ -32,7 +32,7 @@
 
       // nsIAccessible::name
       var applicationName = "";
-      if (LINUX) {
+      if (LINUX || SOLARIS) {
         applicationName = appInfo.name;
       } else {
         try {

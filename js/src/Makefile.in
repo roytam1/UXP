@@ -138,6 +138,17 @@ distclean::
 
 CFLAGS += $(MOZ_ZLIB_CFLAGS)
 
+ifeq ($(OS_ARCH),SunOS)
+ifeq ($(TARGET_CPU),sparc)
+
+ifdef GNU_CC
+CFLAGS   += -mcpu=v9
+CXXFLAGS += -mcpu=v9
+endif #GNU_CC
+
+endif
+endif
+
 $(LIBRARY_NAME).pc: js.pc
 	cp $^ $@
 
