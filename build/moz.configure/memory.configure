@@ -58,6 +58,9 @@ def jemalloc_os_define(jemalloc, target):
             return 'MOZ_MEMORY_DARWIN'
         if target.kernel in ('kFreeBSD', 'FreeBSD', 'NetBSD'):
             return 'MOZ_MEMORY_BSD'
+        if target.kernel == 'SunOS':
+            return 'MOZ_MEMORY_SOLARIS'
+
         die('--enable-jemalloc is not supported on %s', target.kernel)
 
 set_define(jemalloc_os_define, '1')
