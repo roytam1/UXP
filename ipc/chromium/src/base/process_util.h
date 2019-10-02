@@ -44,10 +44,12 @@ typedef PROCESSENTRY32 ProcessEntry;
 typedef IO_COUNTERS IoCounters;
 #elif defined(OS_POSIX)
 // TODO(port): we should not rely on a Win32 structure.
+// Using NAME_MAX here would raise POSIX compliance issues 
+// (see Mozilla bug 1364865).
 struct ProcessEntry {
   int pid;
   int ppid;
-  char szExeFile[NAME_MAX + 1];
+  char szExeFile[_POSIX_PATH_MAX + 1];
 };
 
 struct IoCounters {
