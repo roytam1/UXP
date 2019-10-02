@@ -133,6 +133,10 @@ std::string SysInfo::OperatingSystemName() {
   return std::string(info.sysname);
 }
 
+// Solaris <sys/utsname.h> contains "extern struct utsname utsname;" 
+// As a consequence, any use of utsname has to be proceeded with struct on 
+// Solaris. See Mozilla bugs 758483 and 1353332.
+
 // static
 std::string SysInfo::CPUArchitecture() {
 #if !defined(XP_SOLARIS)	

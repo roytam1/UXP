@@ -45,6 +45,12 @@ if CONFIG['OS_ARCH'] == 'OpenBSD':
     ]
     DEFINES['USE_SNDIO'] = True
 
+if CONFIG['OS_ARCH'] == 'SunOS':
+    SOURCES += [
+        'cubeb_sun.c',
+    ]
+    DEFINES['USE_SUN'] = True
+
 if CONFIG['OS_TARGET'] == 'Darwin':
     SOURCES += [
         'cubeb_audiounit.cpp',
