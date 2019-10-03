@@ -1158,8 +1158,24 @@ L_ffi_closure_SYSV_inner$stub:
 	.byte	0x7c	/* .sleb128 -4; CIE Data Alignment Factor */
 	.byte	0x8	/* CIE RA Column */
 #ifdef __PIC__
-	.byte	0x1	/* .uleb128 0x1; Augmentation size */
-	.byte	0x1b	/* FDE Encoding (pcrel sdata4) */
+# if defined __sun__ && defined __svr4__
+/* 32-bit Solaris 2/x86 uses datarel encoding for PIC.  GNU ld before 2.22
+   doesn't correctly sort .eh_frame_hdr with mixed encodings, so match this.  */
+#  define FDE_ENCODING		0x30	/* datarel */
+#  define FDE_ENCODE(X)		X@GOTOFF
+# else
+#  define FDE_ENCODING		0x1b	/* pcrel sdata4 */
+#  if defined HAVE_AS_X86_PCREL
+#   define FDE_ENCODE(X)	X-.
+#  else
+#   define FDE_ENCODE(X)	X@rel
+#  endif
+# endif
+#else
+# define FDE_ENCODING		0	/* absolute */
+# define FDE_ENCODE(X)		X
+.byte	0x1	/* .uleb128 0x1; Augmentation size */
+.byte   FDE_ENCODING
 #endif
 	.byte	0xc	/* DW_CFA_def_cfa CFA = r4 + 4 = 4(%esp) */
 	.byte	0x4	/* .uleb128 0x4 */
@@ -1176,7 +1192,7 @@ L_ffi_closure_SYSV_inner$stub:
 #if defined __PIC__ && defined HAVE_AS_X86_PCREL
 	.long	.LFB1-.	/* FDE initial location */
 #else
-	.long	.LFB1
+	.long	FDE_ENCODE(.LFB1)
 #endif
 	.long	.LFE1-.LFB1	/* FDE address range */
 #ifdef __PIC__
@@ -1207,7 +1223,7 @@ L_ffi_closure_SYSV_inner$stub:
 #if defined __PIC__ && defined HAVE_AS_X86_PCREL
 	.long	.LFB3-.	/* FDE initial location */
 #else
-	.long	.LFB3
+	.long	FDE_ENCODE(.LFB3)
 #endif
 	.long	.LFE3-.LFB3	/* FDE address range */
 #ifdef __PIC__
@@ -1240,7 +1256,7 @@ L_ffi_closure_SYSV_inner$stub:
 #if defined __PIC__ && defined HAVE_AS_X86_PCREL
 	.long	.LFB4-.	/* FDE initial location */
 #else
-	.long	.LFB4
+	.long	FDE_ENCODE(.LFB4)
 #endif
 	.long	.LFE4-.LFB4	/* FDE address range */
 #ifdef __PIC__
@@ -1278,7 +1294,7 @@ L_ffi_closure_SYSV_inner$stub:
 #if defined __PIC__ && defined HAVE_AS_X86_PCREL
 	.long	.LFB5-.	/* FDE initial location */
 #else
-	.long	.LFB5
+	.long	FDE_ENCODE(.LFB5)
 #endif
 	.long	.LFE5-.LFB5	/* FDE address range */
 #ifdef __PIC__
