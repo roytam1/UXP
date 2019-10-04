@@ -779,7 +779,8 @@ exports.CSS_PROPERTIES = {
       "column-gap"
     ],
     "supports": [
-      6
+      6,
+      8
     ],
     "values": [
       "-moz-calc",
@@ -5434,7 +5435,8 @@ exports.CSS_PROPERTIES = {
       "column-gap"
     ],
     "supports": [
-      6
+      6,
+      8
     ],
     "values": [
       "-moz-calc",
