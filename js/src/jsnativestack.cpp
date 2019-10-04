@@ -73,7 +73,8 @@ js::GetNativeStackBaseImpl()
 
 JS_STATIC_ASSERT(JS_STACK_GROWTH_DIRECTION < 0);
 
-void js::GetNativeStackBaseImpl()
+void* 
+js::GetNativeStackBaseImpl()
 {
 	 stack_t st;
 	 stack_getbounds(&st);

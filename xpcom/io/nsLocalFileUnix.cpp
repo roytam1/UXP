@@ -1608,7 +1608,6 @@ nsLocalFile::IsExecutable(bool* aResult)
   }
 #endif
   if (*aResult || errno == EACCES) {
-  if (*aResult || errno == EACCES) {
     return NS_OK;
   }
   return NSRESULT_FOR_ERRNO();

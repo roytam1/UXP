@@ -225,7 +225,6 @@ static void fpehandler(int signum, siginfo_t *si, void *context)
 #endif
 #endif
 }
-}
 #endif
 
 void InstallSignalHandlers(const char *aProgname)

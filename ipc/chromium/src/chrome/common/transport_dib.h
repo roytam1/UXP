@@ -15,7 +15,7 @@
 
 #if defined(OS_WIN)
 #include <windows.h>
-#elif defined(OS_LINUX)
+#elif defined(OS_LINUX) || defined(OS_SOLARIS)
 #include "chrome/common/x11_util.h"
 #endif
 

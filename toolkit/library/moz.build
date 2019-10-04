@@ -274,6 +274,7 @@ if CONFIG['OS_ARCH'] == 'SunOS':
     OS_LIBS += [
         'elf',
         'demangle',
+        'sendfile',
     ]
 
 if CONFIG['OS_ARCH'] == 'FreeBSD':

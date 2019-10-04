@@ -63,7 +63,7 @@ elif CONFIG['OS_TARGET'] == 'SunOS':
     if CONFIG['CPU_ARCH'] == 'x86_64':
         SOURCES += ['/nsprpub/pr/src/md/unix/os_SunOS_x86_64.s']
     elif CONFIG['CPU_ARCH'] == 'x86':
-        SOURCES += ['/nsprpub/pr/src/md/unix/os_SunOS/x86.s']
+        SOURCES += ['/nsprpub/pr/src/md/unix/os_SunOS_x86.s']
 elif CONFIG['OS_TARGET'] == 'WINNT':
     OS_LIBS += [
         'advapi32',

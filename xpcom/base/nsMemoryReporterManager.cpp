@@ -1151,7 +1151,7 @@ ResidentPeakDistinguishedAmount(int64_t* aN)
 #ifdef XP_MACOSX
     *aN = usage.ru_maxrss;
 #elif defined(XP_SOLARIS)
-    *aN = usage.ru.maxrss * getpagesize();    
+    *aN = usage.ru_maxrss * getpagesize();    
 #else
     *aN = usage.ru_maxrss * 1024;
 #endif

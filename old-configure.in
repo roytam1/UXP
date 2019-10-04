@@ -1206,7 +1206,7 @@ case "$target" in
     fi
     ;;
 
-*-solaris*
+*-solaris*)
     MOZ_FIX_LINK_PATHS="-L${DIST}/bin"
     ;;
 

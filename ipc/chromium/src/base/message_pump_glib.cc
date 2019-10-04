@@ -138,7 +138,7 @@ MessagePumpForUI::MessagePumpForUI()
   int flags = fcntl(fds[0], F_GETFL,0);
   if (flags == -1)
     flags = 0;
-  fntl(fds[0], F_SETFL, flags | O_NDELAY);
+  fcntl(fds[0], F_SETFL, flags | O_NDELAY);
 #endif
   wakeup_pipe_read_  = fds[0];
   wakeup_pipe_write_ = fds[1];
