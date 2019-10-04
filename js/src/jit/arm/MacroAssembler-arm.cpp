@@ -3462,8 +3462,8 @@ MacroAssemblerARMCompat::storePayload(const Value& val, const Address& dest)
     ScratchRegisterScope scratch(asMasm());
     SecondScratchRegisterScope scratch2(asMasm());
 
-    if (val.isMarkable())
-        ma_mov(ImmGCPtr(val.toMarkablePointer()), scratch);
+    if (val.isGCThing())
+        ma_mov(ImmGCPtr(val.toGCThing()), scratch);
     else
         ma_mov(Imm32(val.toNunboxPayload()), scratch);
     ma_str(scratch, ToPayload(dest), scratch2);
