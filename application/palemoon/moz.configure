@@ -5,3 +5,49 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 include('../../toolkit/moz.configure')
+
+# configure.in is unreliable on Solaris. The build system only picks up about 
+# half the boolean values defined there. Doing this instead 
+# works consistently. Most of the ones that use AC_DEFINE without a 
+# MOZ_ARG_BOOL in this directory's configure.in fail, but all the ones in 
+# old-configure.in work just fine and say there's a duplicate if I try and
+# define them here.
+
+if target_is_solaris:
+
+    set_define('HAVE_SIDEBAR', True)
+    set_config('HAVE_SIDEBAR', True)
+
+    set_define('MC_PALEMOON', True)
+    set_config('MC_PALEMOON', True)
+    
+    set_define('MOZ_PHOENIX', True)
+    set_config('MOZ_PHOENIX', True)
+    
+    set_define('MOZ_PERSONAS', True)
+    set_config('MOZ_PERSONAS', True)
+
+#    set_define('MOZ_DEVTOOLS', True)
+#    set_config('MOZ_DEVTOOLS', True)
+
+    set_define('MOZ_PHOENIX_EXTENSIONS', True)
+    set_config('MOZ_PHOENIX_EXTENSIONS', True)
+
+    set_define('MOZ_SERVICES_COMMON', True)
+    set_config('MOZ_SERVICES_COMMON', True)
+
+#    set_define('MOZ_SERVICES_SYNC', True)
+#    set_config('MOZ_SERVICES_SYNC', True)
+
+#    set_define('MOZ_JSDOWNLOADS', True)
+#    set_config('MOZ_JSDOWNLOADS', True)
+
+#    set_define('MOZ_WEBGL_CONFORMANT', True)
+#    set_config('MOZ_WEBGL_CONFORMANT', True)
+
+#    set_define('MOZ_ADDON_SIGNING', False)
+#    set_config('MOZ_ADDON_SIGNING', False)
+
+#    set_define('MOZ_REQUIRE_SIGNING', False)
+#    set_config('MOZ_REQUIRE_SIGNING', False) 
+
