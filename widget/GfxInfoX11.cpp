@@ -192,7 +192,7 @@ GfxInfo::GetData()
     // and a buffer as some kind of workaround. They've been implementing
     // missing functions lately, though, so this may not be needed much longer.
 
-#if defined(XP_SOLARIS)
+#ifndef strcasestr
 #define strcasestr PL_strcasestr
 #endif    
 

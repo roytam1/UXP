@@ -39,28 +39,7 @@
 #include "base/command_line.h"
 #include "base/process.h"
 
-#if defined(OS_WIN)
-typedef PROCESSENTRY32 ProcessEntry;
-typedef IO_COUNTERS IoCounters;
-#elif defined(OS_POSIX)
-// TODO(port): we should not rely on a Win32 structure.
-// Using NAME_MAX here would raise POSIX compliance issues 
-// (see Mozilla bug 1364865).
-struct ProcessEntry {
-  int pid;
-  int ppid;
-  char szExeFile[_POSIX_PATH_MAX + 1];
-};
-
-struct IoCounters {
-  unsigned long long ReadOperationCount;
-  unsigned long long WriteOperationCount;
-  unsigned long long OtherOperationCount;
-  unsigned long long ReadTransferCount;
-  unsigned long long WriteTransferCount;
-  unsigned long long OtherTransferCount;
-};
-
+#if defined(OS_POSIX)
 #include "base/file_descriptor_shuffle.h"
 #endif
 
