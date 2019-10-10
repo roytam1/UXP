@@ -24,7 +24,7 @@
 #include "mozilla/UniquePtr.h"
 
 // This macro checks that the _EVENT_SIZEOF_* constants defined in
-// ipc/chromiume/src/third_party/<platform>/event2/event-config.h are correct.
+// ipc/chromium/src/third_party/<platform>/event2/event-config.h are correct.
 #if defined(_EVENT_SIZEOF_SHORT)
 #define CHECK_EVENT_SIZEOF(TYPE, type) \
     static_assert(_EVENT_SIZEOF_##TYPE == sizeof(type), \

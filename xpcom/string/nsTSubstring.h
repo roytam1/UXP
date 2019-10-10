@@ -9,7 +9,12 @@
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/IntegerTypeTraits.h"
 #include "mozilla/Span.h"
-#ifdef XP_SOLARIS
+
+// Solaris defines pid_t to be long on ILP32 and int on LP64. I checked in 
+// sys/types.h. AMD64 and SPARC64 builds don't need this fix at all, 
+// while all 32-bit builds do.
+
+#if defined(XP_SOLARIS) && !defined(__LP64__)
 #include <unistd.h>
 #endif
 
@@ -590,7 +595,7 @@ public:
     const char* fmt = aRadix == 10 ? "%d" : aRadix == 8 ? "%o" : "%x";
     AppendPrintf(fmt, aInteger);
   }
-#ifdef XP_SOLARIS
+#if defined(XP_SOLARIS) && !defined(__LP64__)
   void AppendInt(pid_t aInteger)
   { 
    AppendPrintf("%lu", aInteger);

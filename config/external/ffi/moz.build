@@ -64,13 +64,20 @@ else:
     if CONFIG['INTEL_ARCHITECTURE'] and CONFIG['OS_TARGET'] != 'SunOS':
         DEFINES['HAVE_AS_X86_PCREL'] = True
 
+# Which is why they apparently don't do this anymore on amd64.
+
+    if CONFIG['FFI_TARGET'] == 'X86_64' and CONFIG['OS_TARGET'] == 'SunOS':
+        DEFINES['HAVE_AS_X86_PCREL'] = True
+
     # Don't bother setting EH_FRAME_FLAGS on Windows.
     # Quoted defines confuse msvcc.sh, and the value isn't used there.
     if CONFIG['OS_TARGET'] != 'WINNT':
         # Solaris seems to require EH_FRAME to be writable even on x86.
         # It works fine most of the time and there's no rule against it, 
         # but it causes a lot of weird problems.
-        if CONFIG['FFI_TARGET'] == 'ARM' or CONFIG['OS_ARCH'] == 'SunOS':
+        if CONFIG['FFI_TARGET'] == 'ARM':
+            DEFINES['EH_FRAME_FLAGS'] = '"aw"'
+        elif CONFIG['FFI_TARGET'] == 'X86' and CONFIG['OS_TARGET'] == 'SunOS':
             DEFINES['EH_FRAME_FLAGS'] = '"aw"'
         else:
             DEFINES['EH_FRAME_FLAGS'] = '"a"'

@@ -417,11 +417,7 @@
 #define _EVENT_SIZEOF_LONG_LONG 8
 
 /* The size of `pthread_t', as computed by sizeof. */
-#ifdef __LP64__
-#define _EVENT_SIZEOF_PTHREAD_T 8
-#else
 #define _EVENT_SIZEOF_PTHREAD_T 4
-#endif
 
 /* The size of `short', as computed by sizeof. */
 #define _EVENT_SIZEOF_SHORT 2
