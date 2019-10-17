@@ -1206,8 +1206,12 @@ case "$target" in
     fi
     ;;
 
-*-solaris*)
-    MOZ_FIX_LINK_PATHS="-L${DIST}/bin"
+i*86-*-solaris*)
+    MOZ_FIX_LINK_PATHS="-L${DIST}/bin -R'\$\$ORIGIN':/usr/gcc/7/lib"
+    ;;
+
+x86_64-*-solaris*)
+    MOZ_FIX_LINK_PATHS="-L${DIST}/bin -R'\$\$ORIGIN':/usr/gcc/7/lib/amd64"
     ;;
 
 esac
