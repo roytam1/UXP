@@ -26,11 +26,7 @@
 #  include <sys/syscall.h>
 #  include <sys/types.h>
 #  include <unistd.h>
-static pid_t
-gettid()
-{
-    return syscall(__NR_gettid);
-}
+#  define gettid() static_cast<pid_t>(syscall(SYS_gettid))
 # endif
 
 #else

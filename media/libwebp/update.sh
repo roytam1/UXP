@@ -38,6 +38,7 @@ cp $1/src/demux/demux.c demux
 mkdir -p dsp
 cp $1/src/dsp/*.h dsp
 cp $1/src/dsp/alpha_processing.c dsp
+cp $1/src/dsp/alpha_processing_neon.c dsp
 cp $1/src/dsp/alpha_processing_sse2.c dsp
 cp $1/src/dsp/alpha_processing_sse41.c dsp
 cp $1/src/dsp/dec.c dsp
@@ -46,6 +47,7 @@ cp $1/src/dsp/dec_neon.c dsp
 cp $1/src/dsp/dec_sse2.c dsp
 cp $1/src/dsp/dec_sse41.c dsp
 cp $1/src/dsp/filters.c dsp
+cp $1/src/dsp/filters_neon.c dsp
 cp $1/src/dsp/filters_sse2.c dsp
 cp $1/src/dsp/lossless.c dsp
 cp $1/src/dsp/lossless_neon.c dsp
@@ -58,6 +60,7 @@ cp $1/src/dsp/upsampling_neon.c dsp
 cp $1/src/dsp/upsampling_sse2.c dsp
 cp $1/src/dsp/upsampling_sse41.c dsp
 cp $1/src/dsp/yuv.c dsp
+cp $1/src/dsp/yuv_neon.c dsp
 cp $1/src/dsp/yuv_sse2.c dsp
 cp $1/src/dsp/yuv_sse41.c dsp
 

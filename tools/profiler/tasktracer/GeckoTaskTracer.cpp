@@ -20,22 +20,16 @@
 
 #include <stdarg.h>
 
-// We need a definition of gettid(), but glibc doesn't provide a
+// We need a definition of gettid(), but older glibc versions don't provide a
 // wrapper for it.
 #if defined(__GLIBC__)
 #include <unistd.h>
 #include <sys/syscall.h>
-static inline pid_t gettid()
-{
-  return (pid_t) syscall(SYS_gettid);
-}
+#define gettid() static_cast<pid_t>(syscall(SYS_gettid))
 #elif defined(XP_MACOSX)
 #include <unistd.h>
 #include <sys/syscall.h>
-static inline pid_t gettid()
-{
-  return (pid_t) syscall(SYS_thread_selfid);
-}
+#define gettid() static_cast<pid_t>(syscall(SYS_thread_selfid))
 #elif defined(LINUX)
 #include <sys/types.h>
 pid_t gettid();
