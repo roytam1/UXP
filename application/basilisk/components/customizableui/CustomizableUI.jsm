@@ -38,6 +38,7 @@ const kPrefCustomizationState        = "browser.uiCustomization.state";
 const kPrefCustomizationAutoAdd      = "browser.uiCustomization.autoAdd";
 const kPrefCustomizationDebug        = "browser.uiCustomization.debug";
 const kPrefDrawInTitlebar            = "browser.tabs.drawInTitlebar";
+const kPrefWebIDEInNavbar            = "devtools.webide.widget.inNavbarByDefault";
 
 const kExpectedWindowURL = "chrome://browser/content/browser.xul";
 
@@ -222,6 +223,10 @@ var CustomizableUIInternal = {
       "downloads-button",
       "home-button",
     ];
+
+    if (Services.prefs.getBoolPref(kPrefWebIDEInNavbar)) {
+      navbarPlacements.push("webide-button");
+    }
 
     // Place this last, when createWidget is called for pocket, it will
     // append to the toolbar.

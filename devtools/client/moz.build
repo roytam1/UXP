@@ -34,6 +34,7 @@ DIRS += [
     'themes',
     'webaudioeditor',
     'webconsole',
+    'webide',
 ]
 
 # Shim old theme paths used by DevTools add-ons
