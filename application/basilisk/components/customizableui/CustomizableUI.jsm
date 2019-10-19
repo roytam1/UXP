@@ -224,9 +224,11 @@ var CustomizableUIInternal = {
       "home-button",
     ];
 
+   try {
     if (Services.prefs.getBoolPref(kPrefWebIDEInNavbar)) {
       navbarPlacements.push("webide-button");
     }
+   } catch(e) {}
 
     // Place this last, when createWidget is called for pocket, it will
     // append to the toolbar.
