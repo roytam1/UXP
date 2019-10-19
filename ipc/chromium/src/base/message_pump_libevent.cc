@@ -8,7 +8,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#if defined(OS_SOLARIS)
+#ifdef OS_SOLARIS
 #include <sys/stat.h>
 #endif
 #if defined(ANDROID) || defined(OS_POSIX)

@@ -202,7 +202,7 @@ TimeTicks TimeTicks::HighResNow() {
   return Now();
 }
 
-#if defined(OS_SOLARIS)
+#ifdef OS_SOLARIS
 struct timespec TimeDelta::ToTimeSpec() const {
   int64_t microseconds = InMicroseconds();
   time_t seconds = 0;

@@ -9,11 +9,11 @@
 #ifndef nsContentUtils_h___
 #define nsContentUtils_h___
 
-#if defined(XP_WIN)
+#ifdef XP_WIN
 #include <float.h>
 #endif
 
-#if defined(XP_SOLARIS)
+#ifdef XP_SOLARIS
 #include <ieeefp.h>
 #endif	
 

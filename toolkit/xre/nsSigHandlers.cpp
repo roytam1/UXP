@@ -32,7 +32,7 @@
 #endif
 #endif
 
-#if defined(XP_SOLARIS)
+#ifdef XP_SOLARIS
 #include <sys/resource.h>
 #include <ucontext.h>
 #endif
@@ -286,7 +286,7 @@ void InstallSignalHandlers(const char *aProgname)
   }
 #endif
 
-#if defined(XP_SOLARIS)
+#ifdef XP_SOLARIS
 #define NOFILES 512
 
     // Boost Solaris file descriptors

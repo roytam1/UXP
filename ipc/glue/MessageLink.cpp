@@ -278,7 +278,7 @@ ProcessLink::OnChannelOpened()
 
 #ifdef DEBUG
         if (mExistingListener) {
-#if defined(XP_SOLARIS)		
+#ifdef XP_SOLARIS		
 	    std::queue<Message> pending;
 #else
             queue<Message> pending;
@@ -298,7 +298,7 @@ void
 ProcessLink::OnTakeConnectedChannel()
 {
     AssertIOThread();
-#if defined(XP_SOLARIS)
+#ifdef XP_SOLARIS
     std::queue<Message> pending;
 #else 
     queue<Message> pending;

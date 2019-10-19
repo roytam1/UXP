@@ -19,7 +19,7 @@
 #include "nsIPrefService.h"
 
 #define LOCAL_PLUGIN_DLL_SUFFIX ".so"
-#if defined(XP_SOLARIS)
+#ifdef XP_SOLARIS
 #define DEFAULT_X11_PATH "/usr/openwin/lib"
 #elif defined(LINUX)
 #define DEFAULT_X11_PATH "/usr/X11R6/lib/"
@@ -94,7 +94,7 @@ static bool LoadExtraSharedLib(const char *name, char **soname, bool tryToGetSon
 
 #define PLUGIN_MAX_NUMBER_OF_EXTRA_LIBS 32
 #define PREF_PLUGINS_SONAME "plugin.soname.list"
-#if defined (XP_SOLARIS)
+#ifdef XP_SOLARIS
 #define DEFAULT_EXTRA_LIBS_LIST "libXt" LOCAL_PLUGIN_DLL_SUFFIX ":libXext" LOCAL_PLUGIN_DLL_SUFFIX ":libXm" LOCAL_PLUGIN_DLL_SUFFIX
 #else
 #define DEFAULT_EXTRA_LIBS_LIST "libXt" LOCAL_PLUGIN_DLL_SUFFIX ":libXext" LOCAL_PLUGIN_DLL_SUFFIX

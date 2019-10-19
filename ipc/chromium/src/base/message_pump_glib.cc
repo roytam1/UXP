@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <math.h>
 
-#if defined(OS_SOLARIS)
+#ifdef OS_SOLARIS
 #include <unistd.h>
 #endif
 #include <gtk/gtk.h>
@@ -134,7 +134,7 @@ MessagePumpForUI::MessagePumpForUI()
   // Create our wakeup pipe, which is used to flag when work was scheduled.
   int fds[2];
   CHECK(pipe(fds) == 0);
-#if defined(OS_SOLARIS)
+#ifdef OS_SOLARIS
   int flags = fcntl(fds[0], F_GETFL,0);
   if (flags == -1)
     flags = 0;
@@ -324,7 +324,7 @@ void MessagePumpForUI::ScheduleWork() {
   // variables as we would then need locks all over.  This ensures that if
   // we are sleeping in a poll that we will wake up.
   char msg = '!';
-#if defined(OS_SOLARIS)
+#ifdef OS_SOLARIS
   char buf[32];
   while (HANDLE_EINTR(read(wakeup_pipe_read_, &buf, 32)));
 #endif  
