@@ -1257,6 +1257,9 @@ IDBDatabase::LastRelease()
   AssertIsOnOwningThread();
 
   CloseInternal();
+  
+  // Make sure that file actors created after the database was closed are expired.
+  ExpireFileActors(/* aExpireAll */ true);
 
   if (mBackgroundActor) {
     mBackgroundActor->SendDeleteMeInternal();
