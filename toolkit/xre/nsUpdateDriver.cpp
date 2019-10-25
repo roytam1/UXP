@@ -75,21 +75,26 @@ GetUpdateLog()
 #endif
 
 static nsresult
-GetCurrentWorkingDir(char *buf, size_t size)
+GetCurrentWorkingDir(nsACString& aOutPath)
 {
   // Cannot use NS_GetSpecialDirectory because XPCOM is not yet initialized.
-  // This code is duplicated from xpcom/io/SpecialSystemDirectory.cpp:
-
+  
+  // Just in case junk has been passed in.
+  aOutPath.Truncate();
+  
 #if defined(XP_WIN)
   wchar_t wpath[MAX_PATH];
-  if (!_wgetcwd(wpath, size))
+  if (!_wgetcwd(wpath, ArrayLength(wpath)))
     return NS_ERROR_FAILURE;
-  NS_ConvertUTF16toUTF8 path(wpath);
-  strncpy(buf, path.get(), size);
+  CopyUTF16toUTF8(nsDependentString(wpath), aOutPath);
 #else
-  if(!getcwd(buf, size))
+  char path[MAXPATHLEN];
+  if (!getcwd(path, ArrayLength(path))) {
     return NS_ERROR_FAILURE;
+  }
+  aOutPath = path;
 #endif
+
   return NS_OK;
 }
 
@@ -535,8 +540,8 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
     return;
 
   // Get the current working directory.
-  char workingDirPath[MAXPATHLEN];
-  rv = GetCurrentWorkingDir(workingDirPath, sizeof(workingDirPath));
+  nsAutoCString workingDirPath;
+  rv = GetCurrentWorkingDir(workingDirPath);
   if (NS_FAILED(rv))
     return;
 
@@ -565,7 +570,7 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
   argv[3] = (char*) applyToDir.get();
   argv[4] = (char*) pid.get();
   if (appArgc) {
-    argv[5] = workingDirPath;
+    argv[5] = (char*) workingDirPath.get();
     argv[6] = (char*) appFilePath.get();
     for (int i = 1; i < appArgc; ++i)
       argv[6 + i] = appArgv[i];
@@ -743,8 +748,8 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   }
 
   // Get the current working directory.
-  char workingDirPath[MAXPATHLEN];
-  rv = GetCurrentWorkingDir(workingDirPath, sizeof(workingDirPath));
+  nsAutoCString workingDirPath;
+  rv = GetCurrentWorkingDir(workingDirPath);
   if (NS_FAILED(rv))
     return;
 
@@ -786,7 +791,7 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   argv[3] = (char*) applyToDir.get();
   argv[4] = (char*) pid.get();
   if (restart && appArgc) {
-    argv[5] = workingDirPath;
+    argv[5] = (char*) workingDirPath.get();
     argv[6] = (char*) appFilePath.get();
     for (int i = 1; i < appArgc; ++i)
       argv[6 + i] = appArgv[i];

@@ -3224,6 +3224,12 @@ nsGlobalWindow::SetNewDocument(nsIDocument* aDocument,
         newInnerWindow->mLocalStorage = nullptr;
         newInnerWindow->mSessionStorage = nullptr;
 
+        newInnerWindow->mPerformance = nullptr;
+
+        // This must be called after nulling the internal objects because
+        // we might recreate them here by calling the getter methods, and
+        // store them into the JS slots. If we null them after, the slot
+        // values and the objects will be out of sync.
         newInnerWindow->ClearDocumentDependentSlots(cx);
       }
     } else {
@@ -3364,10 +3370,16 @@ nsGlobalWindow::InnerSetNewDocument(JSContext* aCx, nsIDocument* aDocument)
   }
 
   mDoc = aDocument;
-  ClearDocumentDependentSlots(aCx);
   mFocusedNode = nullptr;
   mLocalStorage = nullptr;
   mSessionStorage = nullptr;
+  mPerformance = nullptr;
+
+  // This must be called after nulling the internal objects because we might
+  // recreate them here by calling the getter methods, and store them into the JS
+  // slots. If we null them after, the slot values and the objects will be
+  // out of sync.
+  ClearDocumentDependentSlots(aCx);
 
 #ifdef DEBUG
   mLastOpenedURI = aDocument->GetDocumentURI();
