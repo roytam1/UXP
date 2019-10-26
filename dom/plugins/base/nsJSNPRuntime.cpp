@@ -248,7 +248,6 @@ const static js::ObjectOps sNPObjectJSWrapperObjectOps = {
     nullptr, // setProperty
     nullptr, // getOwnPropertyDescriptor
     nullptr, // deleteProperty
-    nullptr, nullptr, // watch/unwatch
     nullptr, // getElements
     NPObjWrapper_Enumerate,
     nullptr,

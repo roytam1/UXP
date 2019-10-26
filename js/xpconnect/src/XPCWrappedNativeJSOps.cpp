@@ -924,8 +924,6 @@ const js::ObjectOps XPC_WN_ObjectOpsWithEnumerate = {
     nullptr,  // setProperty
     nullptr,  // getOwnPropertyDescriptor
     nullptr,  // deleteProperty
-    nullptr,  // watch
-    nullptr,  // unwatch
     nullptr,  // getElements
     XPC_WN_JSOp_Enumerate,
     nullptr,  // funToString
