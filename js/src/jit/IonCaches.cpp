@@ -3232,7 +3232,7 @@ SetPropertyIC::tryAttachStub(JSContext* cx, HandleScript outerScript, IonScript*
     MOZ_ASSERT(!*emitted);
     MOZ_ASSERT(!*tryNativeAddSlot);
 
-    if (!canAttachStub() || obj->watched())
+    if (!canAttachStub())
         return true;
 
     // Fail cache emission if the object is frozen
@@ -3895,9 +3895,6 @@ IsDenseElementSetInlineable(JSObject* obj, const Value& idval, const ConstantOrR
                             bool needsTypeBarrier, bool* checkTypeset)
 {
     if (!obj->is<ArrayObject>())
-        return false;
-
-    if (obj->watched())
         return false;
 
     if (!idval.isInt32())

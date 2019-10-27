@@ -282,7 +282,6 @@ class MOZ_RAII AutoSetNewObjectMetadata : private JS::CustomAutoRooter
 namespace js {
 class DebugEnvironments;
 class ObjectWeakMap;
-class WatchpointMap;
 class WeakMapBase;
 } // namespace js
 
@@ -811,8 +810,6 @@ struct JSCompartment
     void sweepBreakpoints(js::FreeOp* fop);
 
   public:
-    js::WatchpointMap* watchpointMap;
-
     js::ScriptCountsMap* scriptCountsMap;
 
     js::DebugScriptMap* debugScriptMap;
