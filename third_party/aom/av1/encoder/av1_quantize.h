@@ -79,10 +79,7 @@ typedef struct {
   DECLARE_ALIGNED(16, int16_t,
                   u_dequant_QTX[QINDEX_RANGE][8]);  // 8: SIMD width
   DECLARE_ALIGNED(16, int16_t,
-                  v_dequant_QTX[QINDEX_RANGE][8]);              // 8: SIMD width
-  DECLARE_ALIGNED(16, int16_t, y_dequant_Q3[QINDEX_RANGE][8]);  // 8: SIMD width
-  DECLARE_ALIGNED(16, int16_t, u_dequant_Q3[QINDEX_RANGE][8]);  // 8: SIMD width
-  DECLARE_ALIGNED(16, int16_t, v_dequant_Q3[QINDEX_RANGE][8]);  // 8: SIMD width
+                  v_dequant_QTX[QINDEX_RANGE][8]);  // 8: SIMD width
 } Dequants;
 
 struct AV1_COMP;
@@ -124,6 +121,7 @@ void av1_quantize_dc_facade(const tran_low_t *coeff_ptr, intptr_t n_coeffs,
                             tran_low_t *dqcoeff_ptr, uint16_t *eob_ptr,
                             const SCAN_ORDER *sc, const QUANT_PARAM *qparam);
 
+#if CONFIG_AV1_HIGHBITDEPTH
 void av1_highbd_quantize_fp_facade(const tran_low_t *coeff_ptr,
                                    intptr_t n_coeffs, const MACROBLOCK_PLANE *p,
                                    tran_low_t *qcoeff_ptr,
@@ -144,6 +142,7 @@ void av1_highbd_quantize_dc_facade(const tran_low_t *coeff_ptr,
                                    tran_low_t *dqcoeff_ptr, uint16_t *eob_ptr,
                                    const SCAN_ORDER *sc,
                                    const QUANT_PARAM *qparam);
+#endif
 
 #ifdef __cplusplus
 }  // extern "C"

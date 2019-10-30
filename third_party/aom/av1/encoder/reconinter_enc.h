@@ -18,6 +18,7 @@
 #include "av1/common/onyxc_int.h"
 #include "av1/common/convolve.h"
 #include "av1/common/warped_motion.h"
+#include "av1/common/reconinter.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,14 +30,8 @@ void av1_enc_build_inter_predictor(const AV1_COMMON *cm, MACROBLOCKD *xd,
                                    int plane_from, int plane_to);
 
 void av1_build_inter_predictor(const uint8_t *src, int src_stride, uint8_t *dst,
-                               int dst_stride, const MV *src_mv,
-                               const struct scale_factors *sf, int w, int h,
-                               ConvolveParams *conv_params,
-                               InterpFilters interp_filters,
-                               const WarpTypesAllowed *warp_types, int p_col,
-                               int p_row, int plane, int ref,
-                               mv_precision precision, int x, int y,
-                               const MACROBLOCKD *xd, int can_use_previous);
+                               int dst_stride, const MV *src_mv, int x, int y,
+                               InterPredParams *inter_pred_params);
 
 // Detect if the block have sub-pixel level motion vectors
 // per component.
@@ -99,8 +94,7 @@ void av1_build_obmc_inter_predictors_sb(const AV1_COMMON *cm, MACROBLOCKD *xd,
 
 void av1_build_inter_predictors_for_planes_single_buf(
     MACROBLOCKD *xd, BLOCK_SIZE bsize, int plane_from, int plane_to, int mi_row,
-    int mi_col, int ref, uint8_t *ext_dst[3], int ext_dst_stride[3],
-    int can_use_previous);
+    int mi_col, int ref, uint8_t *ext_dst[3], int ext_dst_stride[3]);
 
 void av1_build_wedge_inter_predictor_from_buf(MACROBLOCKD *xd, BLOCK_SIZE bsize,
                                               int plane_from, int plane_to,

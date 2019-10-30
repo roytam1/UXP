@@ -158,11 +158,6 @@ static const arg_def_t verbosearg =
     ARG_DEF("v", "verbose", 0, "Show encoder parameters");
 static const arg_def_t psnrarg =
     ARG_DEF(NULL, "psnr", 0, "Show PSNR in status line");
-#if CONFIG_FILEOPTIONS
-static const arg_def_t use_cfg = ARG_DEF("c", "cfg", 1, "Config file to use");
-static const arg_def_t ext_partition =
-    ARG_DEF(NULL, "ext-partition", 1, "corresponds to extended partitions");
-#endif
 
 static const struct arg_enum_list test_decode_enum[] = {
   { "off", TEST_DECODE_OFF },
@@ -205,9 +200,6 @@ static const arg_def_t input_chroma_subsampling_y = ARG_DEF(
     NULL, "input-chroma-subsampling-y", 1, "chroma subsampling y value.");
 
 static const arg_def_t *main_args[] = { &help,
-#if CONFIG_FILEOPTIONS
-                                        &use_cfg,
-#endif
                                         &debugmode,
                                         &outputfile,
                                         &codecarg,
@@ -396,7 +388,7 @@ static const arg_def_t arnr_strength =
 static const struct arg_enum_list tuning_enum[] = {
   { "psnr", AOM_TUNE_PSNR },
   { "ssim", AOM_TUNE_SSIM },
-#ifdef CONFIG_DIST_8X8
+#if CONFIG_DIST_8X8
   { "cdef-dist", AOM_TUNE_CDEF_DIST },
   { "daala-dist", AOM_TUNE_DAALA_DIST },
 #endif
@@ -411,7 +403,7 @@ static const arg_def_t max_intra_rate_pct =
 
 #if CONFIG_AV1_ENCODER
 static const arg_def_t cpu_used_av1 =
-    ARG_DEF(NULL, "cpu-used", 1, "CPU Used (0..8)");
+    ARG_DEF(NULL, "cpu-used", 1, "CPU Used (0..5)");
 static const arg_def_t rowmtarg =
     ARG_DEF(NULL, "row-mt", 1,
             "Enable row based multi-threading (0: off, 1: on (default))");
@@ -421,7 +413,12 @@ static const arg_def_t tile_rows =
     ARG_DEF(NULL, "tile-rows", 1, "Number of tile rows to use, log2");
 static const arg_def_t enable_tpl_model =
     ARG_DEF(NULL, "enable-tpl-model", 1,
-            "RDO modulation based on frame temporal dependency");
+            "RDO based on frame temporal dependency "
+            "(0: off, 1: backward source based, 2: forward 2-pass");
+static const arg_def_t enable_keyframe_filtering =
+    ARG_DEF(NULL, "enable-keyframe-filtering", 1,
+            "Apply temporal filtering on key frame "
+            "(0: false, 1: true (default)");
 static const arg_def_t tile_width =
     ARG_DEF(NULL, "tile-width", 1, "Tile widths (comma separated)");
 static const arg_def_t tile_height =
@@ -432,10 +429,10 @@ static const arg_def_t enable_cdef =
     ARG_DEF(NULL, "enable-cdef", 1,
             "Enable the constrained directional enhancement filter (0: false, "
             "1: true (default))");
-static const arg_def_t enable_restoration =
-    ARG_DEF(NULL, "enable-restoration", 1,
-            "Enable the loop restoration filter (0: false, "
-            "1: true (default))");
+static const arg_def_t enable_restoration = ARG_DEF(
+    NULL, "enable-restoration", 1,
+    "Enable the loop restoration filter (0: false (default in Realtime mode), "
+    "1: true (default in Non-realtime mode))");
 static const arg_def_t enable_rect_partitions =
     ARG_DEF(NULL, "enable-rect-partitions", 1,
             "Enable rectangular partitions "
@@ -450,7 +447,9 @@ static const arg_def_t enable_1to4_partitions =
 static const arg_def_t min_partition_size =
     ARG_DEF(NULL, "min-partition-size", 4,
             "Set min partition size "
-            "(4:4x4, 8:8x8, 16:16x16, 32:32x32, 64:64x64, 128:128x128)");
+            "(4:4x4, 8:8x8, 16:16x16, 32:32x32, 64:64x64, 128:128x128)."
+            "On frame with 4k+ resolutions or higher speed settings, the min "
+            "partition size will have a minimum of 8.");
 static const arg_def_t max_partition_size =
     ARG_DEF(NULL, "max-partition-size", 128,
             "Set max partition size "
@@ -459,6 +458,10 @@ static const arg_def_t enable_dual_filter =
     ARG_DEF(NULL, "enable-dual-filter", 1,
             "Enable dual filter "
             "(0: false, 1: true (default))");
+static const arg_def_t enable_chroma_deltaq =
+    ARG_DEF(NULL, "enable-chroma-deltaq", 1,
+            "Enable chroma delta quant "
+            "(0: false (default), 1: true)");
 static const arg_def_t enable_intra_edge_filter =
     ARG_DEF(NULL, "enable-intra-edge-filter", 1,
             "Enable intra edge filtering "
@@ -471,7 +474,7 @@ static const arg_def_t enable_tx64 =
     ARG_DEF(NULL, "enable-tx64", 1,
             "Enable 64-pt transform (0: false, 1: true (default))");
 static const arg_def_t tx_size_search_method =
-    ARG_DEF(NULL, "tx-size-search-method", 0,
+    ARG_DEF(NULL, "tx-size-search-method", 1,
             "Set transform block size search method "
             "(0: Full RD (default), 1: Fast RD, 2: use largest allowed)");
 static const arg_def_t enable_flip_idtx =
@@ -535,8 +538,14 @@ static const arg_def_t enable_cfl_intra =
     ARG_DEF(NULL, "enable-cfl-intra", 1,
             "Enable chroma from luma intra prediction mode "
             "(0: false, 1: true (default))");
+static const arg_def_t force_video_mode =
+    ARG_DEF(NULL, "force-video-mode", 1,
+            "Force video mode (0: false, 1: true (default))");
 static const arg_def_t enable_obmc = ARG_DEF(
     NULL, "enable-obmc", 1, "Enable OBMC (0: false, 1: true (default))");
+static const arg_def_t enable_overlay =
+    ARG_DEF(NULL, "enable-overlay", 1,
+            "Enable coding overlay frames (0: false, 1: true (default))");
 static const arg_def_t enable_palette =
     ARG_DEF(NULL, "enable-palette", 1,
             "Enable palette prediction mode (0: false, 1: true (default))");
@@ -578,6 +587,10 @@ static const arg_def_t mode_cost_upd_freq =
     ARG_DEF(NULL, "mode-cost-upd-freq", 1,
             "Update freq for mode costs"
             "0: SB, 1: SB Row per Tile, 2: Tile");
+static const arg_def_t mv_cost_upd_freq =
+    ARG_DEF(NULL, "mv-cost-upd-freq", 1,
+            "Update freq for mv costs"
+            "0: SB, 1: SB Row per Tile, 2: Tile, 3: Off");
 #if CONFIG_DIST_8X8
 static const arg_def_t enable_dist_8x8 =
     ARG_DEF(NULL, "enable-dist-8x8", 1,
@@ -631,7 +644,7 @@ static const arg_def_t aq_mode = ARG_DEF(
     "3: cyclic refresh)");
 static const arg_def_t deltaq_mode =
     ARG_DEF(NULL, "deltaq-mode", 1,
-            "Delta qindex mode (0: off (default), 1: deltaq pred efficiency, "
+            "Delta qindex mode (0: off, 1: deltaq pred efficiency (default), "
             "2: deltaq perceptual)");
 static const arg_def_t deltalf_mode = ARG_DEF(
     NULL, "delta-lf-mode", 1, "Enable delta-lf-mode (0: off (default), 1: on)");
@@ -667,6 +680,11 @@ static const arg_def_t target_seq_level_idx =
             "xy: Target level index for the OP. "
             "E.g. \"0\" means target level index 0 for the 0th OP; "
             "\"1021\" means target level index 21 for the 10th OP.");
+static const arg_def_t set_min_cr =
+    ARG_DEF(NULL, "min-cr", 1,
+            "Set minimum compression ratio. Take integer values. Default is 0. "
+            "If non-zero, encoder will try to keep the compression ratio of "
+            "each frame to be higher than the given value divided by 100.");
 
 static const struct arg_enum_list color_primaries_enum[] = {
   { "bt709", AOM_CICP_CP_BT_709 },
@@ -786,6 +804,7 @@ static const arg_def_t *av1_args[] = { &cpu_used_av1,
                                        &tile_cols,
                                        &tile_rows,
                                        &enable_tpl_model,
+                                       &enable_keyframe_filtering,
                                        &arnr_maxframes,
                                        &arnr_strength,
                                        &tune_metric,
@@ -802,6 +821,7 @@ static const arg_def_t *av1_args[] = { &cpu_used_av1,
                                        &min_partition_size,
                                        &max_partition_size,
                                        &enable_dual_filter,
+                                       &enable_chroma_deltaq,
                                        &enable_intra_edge_filter,
                                        &enable_order_hint,
                                        &enable_tx64,
@@ -821,7 +841,9 @@ static const arg_def_t *av1_args[] = { &cpu_used_av1,
                                        &enable_smooth_intra,
                                        &enable_paeth_intra,
                                        &enable_cfl_intra,
+                                       &force_video_mode,
                                        &enable_obmc,
+                                       &enable_overlay,
                                        &enable_palette,
                                        &enable_intrabc,
                                        &enable_angle_delta,
@@ -836,6 +858,7 @@ static const arg_def_t *av1_args[] = { &cpu_used_av1,
                                        &quant_b_adapt,
                                        &coeff_cost_upd_freq,
                                        &mode_cost_upd_freq,
+                                       &mv_cost_upd_freq,
 #if CONFIG_DIST_8X8
                                        &enable_dist_8x8,
 #endif
@@ -870,6 +893,7 @@ static const arg_def_t *av1_args[] = { &cpu_used_av1,
                                        &enable_ref_frame_mvs,
                                        &target_seq_level_idx,
                                        &set_tier_mask,
+                                       &set_min_cr,
                                        &bitdeptharg,
                                        &inbitdeptharg,
                                        &input_chroma_subsampling_x,
@@ -886,6 +910,7 @@ static const int av1_arg_ctrl_map[] = { AOME_SET_CPUUSED,
                                         AV1E_SET_TILE_COLUMNS,
                                         AV1E_SET_TILE_ROWS,
                                         AV1E_SET_ENABLE_TPL_MODEL,
+                                        AV1E_SET_ENABLE_KEYFRAME_FILTERING,
                                         AOME_SET_ARNR_MAXFRAMES,
                                         AOME_SET_ARNR_STRENGTH,
                                         AOME_SET_TUNING,
@@ -902,6 +927,7 @@ static const int av1_arg_ctrl_map[] = { AOME_SET_CPUUSED,
                                         AV1E_SET_MIN_PARTITION_SIZE,
                                         AV1E_SET_MAX_PARTITION_SIZE,
                                         AV1E_SET_ENABLE_DUAL_FILTER,
+                                        AV1E_SET_ENABLE_CHROMA_DELTAQ,
                                         AV1E_SET_ENABLE_INTRA_EDGE_FILTER,
                                         AV1E_SET_ENABLE_ORDER_HINT,
                                         AV1E_SET_ENABLE_TX64,
@@ -921,7 +947,9 @@ static const int av1_arg_ctrl_map[] = { AOME_SET_CPUUSED,
                                         AV1E_SET_ENABLE_SMOOTH_INTRA,
                                         AV1E_SET_ENABLE_PAETH_INTRA,
                                         AV1E_SET_ENABLE_CFL_INTRA,
+                                        AV1E_SET_FORCE_VIDEO_MODE,
                                         AV1E_SET_ENABLE_OBMC,
+                                        AV1E_SET_ENABLE_OVERLAY,
                                         AV1E_SET_ENABLE_PALETTE,
                                         AV1E_SET_ENABLE_INTRABC,
                                         AV1E_SET_ENABLE_ANGLE_DELTA,
@@ -936,6 +964,7 @@ static const int av1_arg_ctrl_map[] = { AOME_SET_CPUUSED,
                                         AV1E_SET_QUANT_B_ADAPT,
                                         AV1E_SET_COEFF_COST_UPD_FREQ,
                                         AV1E_SET_MODE_COST_UPD_FREQ,
+                                        AV1E_SET_MV_COST_UPD_FREQ,
 #if CONFIG_DIST_8X8
                                         AV1E_SET_ENABLE_DIST_8X8,
 #endif
@@ -970,6 +999,7 @@ static const int av1_arg_ctrl_map[] = { AOME_SET_CPUUSED,
                                         AV1E_SET_ENABLE_REF_FRAME_MVS,
                                         AV1E_SET_TARGET_SEQ_LEVEL_IDX,
                                         AV1E_SET_TIER_MASK,
+                                        AV1E_SET_MIN_CR,
                                         0 };
 #endif  // CONFIG_AV1_ENCODER
 
@@ -1085,15 +1115,11 @@ static void validate_positive_rational(const char *msg,
 /* Parses global config arguments into the AvxEncoderConfig. Note that
  * argv is modified and overwrites all parsed arguments.
  */
-static void parse_global_config(struct AvxEncoderConfig *global, int argc,
-                                char ***argv) {
+static void parse_global_config(struct AvxEncoderConfig *global, char ***argv) {
   char **argi, **argj;
   struct arg arg;
   const int num_encoder = get_aom_encoder_count();
   char **argv_local = (char **)*argv;
-#if CONFIG_FILEOPTIONS
-  int argc_local = argc;
-#endif
   if (num_encoder < 1) die("Error: no valid encoder available\n");
 
   /* Initialize default parameters */
@@ -1103,27 +1129,8 @@ static void parse_global_config(struct AvxEncoderConfig *global, int argc,
   global->color_type = I420;
   global->csp = AOM_CSP_UNKNOWN;
 
-#if CONFIG_FILEOPTIONS
-  const char *cfg = NULL;
-  int cfg_included = 0;
-#endif
   for (argi = argj = argv_local; (*argj = *argi); argi += arg.argv_step) {
     arg.argv_step = 1;
-
-#if CONFIG_FILEOPTIONS
-    if (arg_match(&arg, &use_cfg, argi)) {
-      if (cfg_included) continue;
-      cfg = arg.val;
-
-      arg_cfg(&argc_local, &argv_local, cfg);
-
-      *argj = *argi = *argv_local;
-      argj = argi = argv_local;
-      *argv = argv_local;
-      cfg_included = 1;
-      continue;
-    }
-#endif
     if (arg_match(&arg, &help, argi)) {
       show_help(stdout, 0);
       exit(EXIT_SUCCESS);
@@ -1539,10 +1546,11 @@ static int parse_stream_params(struct AvxEncoderConfig *global,
     } else if (arg_match(&arg, &tile_height, argi)) {
       config->cfg.tile_height_count =
           arg_parse_list(&arg, config->cfg.tile_heights, MAX_TILE_HEIGHTS);
-#if CONFIG_FILEOPTIONS
-    } else if (arg_match(&arg, &ext_partition, argi)) {
-      config->cfg.cfg.ext_partition = !!arg_parse_uint(&arg) > 0;
-#endif
+    } else if (global->usage == AOM_USAGE_REALTIME &&
+               arg_match(&arg, &enable_restoration, argi)) {
+      if (arg_parse_uint(&arg) == 1) {
+        warn("non-zero %s option ignored in realtime mode.\n", arg.name);
+      }
     } else {
       int i, match = 0;
       for (i = 0; ctrl_args[i]; i++) {
@@ -1557,7 +1565,7 @@ static int parse_stream_params(struct AvxEncoderConfig *global,
     }
   }
   config->use_16bit_internal =
-      config->cfg.g_bit_depth > AOM_BITS_8 || !CONFIG_LOWBITDEPTH;
+      config->cfg.g_bit_depth > AOM_BITS_8 || FORCE_HIGHBITDEPTH_DECODING;
   return eos_mark_found;
 }
 
@@ -1814,7 +1822,7 @@ static void initialize_encoder(struct stream_state *stream,
 #if CONFIG_AV1_DECODER
   if (global->test_decode != TEST_DECODE_OFF) {
     const AvxInterface *decoder = get_aom_decoder_by_name(global->codec->name);
-    aom_codec_dec_cfg_t cfg = { 0, 0, 0, CONFIG_LOWBITDEPTH, { 1 } };
+    aom_codec_dec_cfg_t cfg = { 0, 0, 0, !FORCE_HIGHBITDEPTH_DECODING };
     aom_codec_dec_init(&stream->decoder, decoder->codec_interface(), &cfg, 0);
 
     if (strcmp(global->codec->name, "av1") == 0) {
@@ -2152,13 +2160,9 @@ int main(int argc, const char **argv_) {
    * codec.
    */
   argv = argv_dup(argc - 1, argv_ + 1);
-  parse_global_config(&global, argc, &argv);
+  parse_global_config(&global, &argv);
 
-#if CONFIG_FILEOPTIONS
-  if (argc < 2) usage_exit();
-#else
   if (argc < 3) usage_exit();
-#endif
 
   switch (global.color_type) {
     case I420: input.fmt = AOM_IMG_FMT_I420; break;

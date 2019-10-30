@@ -136,7 +136,7 @@ static void subtract_average_c(const uint16_t *src, int16_t *dst, int width,
 
 CFL_SUB_AVG_FN(c)
 
-static INLINE int cfl_idx_to_alpha(int alpha_idx, int joint_sign,
+static INLINE int cfl_idx_to_alpha(uint8_t alpha_idx, int8_t joint_sign,
                                    CFL_PRED_TYPE pred_type) {
   const int alpha_sign = (pred_type == CFL_PRED_U) ? CFL_SIGN_U(joint_sign)
                                                    : CFL_SIGN_V(joint_sign);
@@ -160,6 +160,7 @@ static INLINE void cfl_predict_lbd_c(const int16_t *ac_buf_q3, uint8_t *dst,
 
 CFL_PREDICT_FN(c, lbd)
 
+#if CONFIG_AV1_HIGHBITDEPTH
 void cfl_predict_hbd_c(const int16_t *ac_buf_q3, uint16_t *dst, int dst_stride,
                        int alpha_q3, int bit_depth, int width, int height) {
   for (int j = 0; j < height; j++) {
@@ -173,6 +174,7 @@ void cfl_predict_hbd_c(const int16_t *ac_buf_q3, uint16_t *dst, int dst_stride,
 }
 
 CFL_PREDICT_FN(c, hbd)
+#endif
 
 static void cfl_compute_parameters(MACROBLOCKD *const xd, TX_SIZE tx_size) {
   CFL_CTX *const cfl = &xd->cfl;
@@ -180,7 +182,7 @@ static void cfl_compute_parameters(MACROBLOCKD *const xd, TX_SIZE tx_size) {
   assert(cfl->are_parameters_computed == 0);
 
   cfl_pad(cfl, tx_size_wide[tx_size], tx_size_high[tx_size]);
-  get_subtract_average_fn(tx_size)(cfl->recon_buf_q3, cfl->ac_buf_q3);
+  cfl_get_subtract_average_fn(tx_size)(cfl->recon_buf_q3, cfl->ac_buf_q3);
   cfl->are_parameters_computed = 1;
 }
 
@@ -196,13 +198,15 @@ void cfl_predict_block(MACROBLOCKD *const xd, uint8_t *dst, int dst_stride,
       cfl_idx_to_alpha(mbmi->cfl_alpha_idx, mbmi->cfl_alpha_signs, plane - 1);
   assert((tx_size_high[tx_size] - 1) * CFL_BUF_LINE + tx_size_wide[tx_size] <=
          CFL_BUF_SQUARE);
+#if CONFIG_AV1_HIGHBITDEPTH
   if (is_cur_buf_hbd(xd)) {
     uint16_t *dst_16 = CONVERT_TO_SHORTPTR(dst);
-    get_predict_hbd_fn(tx_size)(cfl->ac_buf_q3, dst_16, dst_stride, alpha_q3,
-                                xd->bd);
+    cfl_get_predict_hbd_fn(tx_size)(cfl->ac_buf_q3, dst_16, dst_stride,
+                                    alpha_q3, xd->bd);
     return;
   }
-  get_predict_lbd_fn(tx_size)(cfl->ac_buf_q3, dst, dst_stride, alpha_q3);
+#endif
+  cfl_get_predict_lbd_fn(tx_size)(cfl->ac_buf_q3, dst, dst_stride, alpha_q3);
 }
 
 static void cfl_luma_subsampling_420_lbd_c(const uint8_t *input,
@@ -248,6 +252,7 @@ static void cfl_luma_subsampling_444_lbd_c(const uint8_t *input,
   }
 }
 
+#if CONFIG_AV1_HIGHBITDEPTH
 static void cfl_luma_subsampling_420_hbd_c(const uint16_t *input,
                                            int input_stride,
                                            uint16_t *output_q3, int width,
@@ -290,9 +295,11 @@ static void cfl_luma_subsampling_444_hbd_c(const uint16_t *input,
     output_q3 += CFL_BUF_LINE;
   }
 }
+#endif
 
 CFL_GET_SUBSAMPLE_FUNCTION(c)
 
+#if CONFIG_AV1_HIGHBITDEPTH
 static INLINE cfl_subsample_hbd_fn cfl_subsampling_hbd(TX_SIZE tx_size,
                                                        int sub_x, int sub_y) {
   if (sub_x == 1) {
@@ -303,6 +310,7 @@ static INLINE cfl_subsample_hbd_fn cfl_subsampling_hbd(TX_SIZE tx_size,
   }
   return cfl_get_luma_subsampling_444_hbd(tx_size);
 }
+#endif
 
 static INLINE cfl_subsample_lbd_fn cfl_subsampling_lbd(TX_SIZE tx_size,
                                                        int sub_x, int sub_y) {
@@ -348,7 +356,7 @@ static void cfl_store(CFL_CTX *cfl, const uint8_t *input, int input_stride,
   // Store the input into the CfL pixel buffer
   uint16_t *recon_buf_q3 =
       cfl->recon_buf_q3 + (store_row * CFL_BUF_LINE + store_col);
-
+#if CONFIG_AV1_HIGHBITDEPTH
   if (use_hbd) {
     cfl_subsampling_hbd(tx_size, sub_x, sub_y)(CONVERT_TO_SHORTPTR(input),
                                                input_stride, recon_buf_q3);
@@ -356,6 +364,10 @@ static void cfl_store(CFL_CTX *cfl, const uint8_t *input, int input_stride,
     cfl_subsampling_lbd(tx_size, sub_x, sub_y)(input, input_stride,
                                                recon_buf_q3);
   }
+#else
+  (void)use_hbd;
+  cfl_subsampling_lbd(tx_size, sub_x, sub_y)(input, input_stride, recon_buf_q3);
+#endif
 }
 
 // Adjust the row and column of blocks smaller than 8X8, as chroma-referenced

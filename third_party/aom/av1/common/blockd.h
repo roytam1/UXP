@@ -37,6 +37,8 @@ extern "C" {
 
 #define MAX_DIFFWTD_MASK_BITS 1
 
+#define INTERINTRA_WEDGE_SIGN 0
+
 // DIFFWTD_MASK_TYPES should not surpass 1 << MAX_DIFFWTD_MASK_BITS
 enum {
   DIFFWTD_38 = 0,
@@ -190,8 +192,11 @@ typedef struct RD_STATS {
   int zero_rate;
 #if CONFIG_RD_DEBUG
   int txb_coeff_cost[MAX_MB_PLANE];
-  int txb_coeff_cost_map[MAX_MB_PLANE][TXB_COEFF_COST_MAP_SIZE]
-                        [TXB_COEFF_COST_MAP_SIZE];
+  // TODO(jingning): Temporary solution to silence stack over-size warning
+  // in handle_inter_mode. This should be fixed after rate-distortion
+  // optimization refactoring.
+  int16_t txb_coeff_cost_map[MAX_MB_PLANE][TXB_COEFF_COST_MAP_SIZE]
+                            [TXB_COEFF_COST_MAP_SIZE];
 #endif  // CONFIG_RD_DEBUG
 } RD_STATS;
 
@@ -199,8 +204,8 @@ typedef struct RD_STATS {
 // sent together in functions related to interinter compound modes
 typedef struct {
   uint8_t *seg_mask;
-  int wedge_index;
-  int wedge_sign;
+  int8_t wedge_index;
+  int8_t wedge_sign;
   DIFFWTD_MASK_TYPE mask_type;
   COMPOUND_TYPE type;
 } INTERINTER_COMPOUND_DATA;
@@ -209,40 +214,23 @@ typedef struct {
 #define TXK_TYPE_BUF_LEN 64
 // This structure now relates to 4x4 block regions.
 typedef struct MB_MODE_INFO {
-  PALETTE_MODE_INFO palette_mode_info;
-  WarpedMotionParams wm_params;
   // interinter members
   INTERINTER_COMPOUND_DATA interinter_comp;
-  FILTER_INTRA_MODE_INFO filter_intra_mode_info;
+  WarpedMotionParams wm_params;
   int_mv mv[2];
-  // Only for INTER blocks
-  InterpFilters interp_filters;
-  // TODO(debargha): Consolidate these flags
-  int interintra_wedge_index;
-  int interintra_wedge_sign;
-  int overlappable_neighbors[2];
   int current_qindex;
-  int delta_lf_from_base;
-  int delta_lf[FRAME_LF_COUNT];
+  // Only for INTER blocks
+  int_interpfilters interp_filters;
+  // TODO(debargha): Consolidate these flags
 #if CONFIG_RD_DEBUG
   RD_STATS rd_stats;
   int mi_row;
   int mi_col;
 #endif
-  int num_proj_ref;
-
-  // Index of the alpha Cb and alpha Cr combination
-  int cfl_alpha_idx;
-  // Joint sign of alpha Cb and alpha Cr
-  int cfl_alpha_signs;
-
-  // Indicate if masked compound is used(1) or not(0).
-  int comp_group_idx;
-  // If comp_group_idx=0, indicate if dist_wtd_comp(0) or avg_comp(1) is used.
-  int compound_idx;
 #if CONFIG_INSPECTION
   int16_t tx_skip[TXK_TYPE_BUF_LEN];
 #endif
+  PALETTE_MODE_INFO palette_mode_info;
   // Common for both INTER and INTRA blocks
   BLOCK_SIZE sb_type;
   PREDICTION_MODE mode;
@@ -252,21 +240,34 @@ typedef struct MB_MODE_INFO {
   INTERINTRA_MODE interintra_mode;
   MOTION_MODE motion_mode;
   PARTITION_TYPE partition;
-  TX_TYPE txk_type[TXK_TYPE_BUF_LEN];
   MV_REFERENCE_FRAME ref_frame[2];
-  int8_t use_wedge_interintra;
+  FILTER_INTRA_MODE_INFO filter_intra_mode_info;
   int8_t skip;
-  int8_t skip_mode;
   uint8_t inter_tx_size[INTER_TX_SIZE_BUF_LEN];
   TX_SIZE tx_size;
-  int8_t segment_id;
-  int8_t seg_id_predicted;  // valid only when temporal_update is enabled
-  uint8_t use_intrabc;
+  int8_t delta_lf_from_base;
+  int8_t delta_lf[FRAME_LF_COUNT];
+  int8_t interintra_wedge_index;
   // The actual prediction angle is the base angle + (angle_delta * step).
   int8_t angle_delta[PLANE_TYPES];
   /* deringing gain *per-superblock* */
-  int8_t cdef_strength;
-  uint8_t ref_mv_idx;
+  // Joint sign of alpha Cb and alpha Cr
+  int8_t cfl_alpha_signs;
+  // Index of the alpha Cb and alpha Cr combination
+  uint8_t cfl_alpha_idx;
+  uint8_t num_proj_ref;
+  uint8_t overlappable_neighbors[2];
+  // If comp_group_idx=0, indicate if dist_wtd_comp(0) or avg_comp(1) is used.
+  uint8_t compound_idx;
+  uint8_t use_wedge_interintra : 1;
+  uint8_t segment_id : 3;
+  uint8_t seg_id_predicted : 1;  // valid only when temporal_update is enabled
+  uint8_t skip_mode : 1;
+  uint8_t use_intrabc : 1;
+  uint8_t ref_mv_idx : 2;
+  // Indicate if masked compound is used(1) or not(0).
+  uint8_t comp_group_idx : 1;
+  int8_t cdef_strength : 4;
 } MB_MODE_INFO;
 
 static INLINE int is_intrabc_block(const MB_MODE_INFO *mbmi) {
@@ -411,16 +412,10 @@ typedef struct macroblockd_plane {
 
   qm_val_t *seg_iqmatrix[MAX_SEGMENTS][TX_SIZES_ALL];
   qm_val_t *seg_qmatrix[MAX_SEGMENTS][TX_SIZES_ALL];
-
-  // the 'dequantizers' below are not literal dequantizer values.
-  // They're used by encoder RDO to generate ad-hoc lambda values.
-  // They use a hardwired Q3 coeff shift and do not necessarily match
-  // the TX scale in use.
-  const int16_t *dequant_Q3;
 } MACROBLOCKD_PLANE;
 
-#define BLOCK_OFFSET(x, i) \
-  ((x) + (i) * (1 << (tx_size_wide_log2[0] + tx_size_high_log2[0])))
+#define BLOCK_OFFSET(i) \
+  ((i) * (1 << (tx_size_wide_log2[0] + tx_size_high_log2[0])))
 
 typedef struct {
   DECLARE_ALIGNED(16, InterpKernel, vfilter);
@@ -500,6 +495,9 @@ typedef struct macroblockd {
   MB_MODE_INFO *chroma_left_mbmi;
   MB_MODE_INFO *chroma_above_mbmi;
 
+  uint8_t *tx_type_map;
+  int tx_type_map_stride;
+
   int up_available;
   int left_available;
   int chroma_up_available;
@@ -561,7 +559,7 @@ typedef struct macroblockd {
   // filtering level) and code the delta between previous superblock's delta
   // lf and current delta lf. It is equivalent to the delta between previous
   // superblock's actual lf and current lf.
-  int delta_lf_from_base;
+  int8_t delta_lf_from_base;
   // For this experiment, we have four frame filter levels for different plane
   // and direction. So, to support the per superblock update, we need to add
   // a few more params as below.
@@ -575,7 +573,7 @@ typedef struct macroblockd {
   // SEG_LVL_ALT_LF_Y_H = 2;
   // SEG_LVL_ALT_LF_U   = 3;
   // SEG_LVL_ALT_LF_V   = 4;
-  int delta_lf[FRAME_LF_COUNT];
+  int8_t delta_lf[FRAME_LF_COUNT];
   int cdef_preset[4];
 
   DECLARE_ALIGNED(16, uint8_t, seg_mask[2 * MAX_SB_SQUARE]);
@@ -676,6 +674,22 @@ static const int av1_ext_tx_used[EXT_TX_SET_TYPES][TX_TYPES] = {
   { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
 };
 
+static const uint16_t av1_reduced_intra_tx_used_flag[INTRA_MODES] = {
+  0x080F,  // DC_PRED:       0000 1000 0000 1111
+  0x040F,  // V_PRED:        0000 0100 0000 1111
+  0x080F,  // H_PRED:        0000 1000 0000 1111
+  0x020F,  // D45_PRED:      0000 0010 0000 1111
+  0x080F,  // D135_PRED:     0000 1000 0000 1111
+  0x040F,  // D113_PRED:     0000 0100 0000 1111
+  0x080F,  // D157_PRED:     0000 1000 0000 1111
+  0x080F,  // D203_PRED:     0000 1000 0000 1111
+  0x040F,  // D67_PRED:      0000 0100 0000 1111
+  0x080F,  // SMOOTH_PRED:   0000 1000 0000 1111
+  0x040F,  // SMOOTH_V_PRED: 0000 0100 0000 1111
+  0x080F,  // SMOOTH_H_PRED: 0000 1000 0000 1111
+  0x0C0E,  // PAETH_PRED:    0000 1100 0000 1110
+};
+
 static const uint16_t av1_ext_tx_used_flag[EXT_TX_SET_TYPES] = {
   0x0001,  // 0000 0000 0000 0001
   0x0201,  // 0000 0010 0000 0001
@@ -683,6 +697,11 @@ static const uint16_t av1_ext_tx_used_flag[EXT_TX_SET_TYPES] = {
   0x0E0F,  // 0000 1110 0000 1111
   0x0FFF,  // 0000 1111 1111 1111
   0xFFFF,  // 1111 1111 1111 1111
+};
+
+static const TxSetType av1_ext_tx_set_lookup[2][2] = {
+  { EXT_TX_SET_DTT4_IDTX_1DDCT, EXT_TX_SET_DTT4_IDTX },
+  { EXT_TX_SET_ALL16, EXT_TX_SET_DTT9_IDTX_1DDCT },
 };
 
 static INLINE TxSetType av1_get_ext_tx_set_type(TX_SIZE tx_size, int is_inter,
@@ -694,13 +713,7 @@ static INLINE TxSetType av1_get_ext_tx_set_type(TX_SIZE tx_size, int is_inter,
   if (use_reduced_set)
     return is_inter ? EXT_TX_SET_DCT_IDTX : EXT_TX_SET_DTT4_IDTX;
   const TX_SIZE tx_size_sqr = txsize_sqr_map[tx_size];
-  if (is_inter) {
-    return (tx_size_sqr == TX_16X16 ? EXT_TX_SET_DTT9_IDTX_1DDCT
-                                    : EXT_TX_SET_ALL16);
-  } else {
-    return (tx_size_sqr == TX_16X16 ? EXT_TX_SET_DTT4_IDTX
-                                    : EXT_TX_SET_DTT4_IDTX_1DDCT);
-  }
+  return av1_ext_tx_set_lookup[is_inter][tx_size_sqr == TX_16X16];
 }
 
 // Maps tx set types to the indices.
@@ -739,7 +752,6 @@ static INLINE TX_SIZE tx_size_from_tx_mode(BLOCK_SIZE bsize, TX_MODE tx_mode) {
     return largest_tx_size;
 }
 
-extern const int16_t dr_intra_derivative[90];
 static const uint8_t mode_to_angle_map[] = {
   0, 90, 180, 45, 135, 113, 157, 203, 67, 0, 0, 0, 0,
 };
@@ -790,41 +802,71 @@ static INLINE BLOCK_SIZE get_plane_block_size(BLOCK_SIZE bsize,
   return ss_size_lookup[bsize][subsampling_x][subsampling_y];
 }
 
+/*
+ * Logic to generate the lookup tables:
+ *
+ * TX_SIZE txs = max_txsize_rect_lookup[bsize];
+ * for (int level = 0; level < MAX_VARTX_DEPTH - 1; ++level)
+ *   txs = sub_tx_size_map[txs];
+ * const int tx_w_log2 = tx_size_wide_log2[txs] - MI_SIZE_LOG2;
+ * const int tx_h_log2 = tx_size_high_log2[txs] - MI_SIZE_LOG2;
+ * const int bw_uint_log2 = mi_size_wide_log2[bsize];
+ * const int stride_log2 = bw_uint_log2 - tx_w_log2;
+ */
 static INLINE int av1_get_txb_size_index(BLOCK_SIZE bsize, int blk_row,
                                          int blk_col) {
-  TX_SIZE txs = max_txsize_rect_lookup[bsize];
-  for (int level = 0; level < MAX_VARTX_DEPTH - 1; ++level)
-    txs = sub_tx_size_map[txs];
-  const int tx_w_log2 = tx_size_wide_log2[txs] - MI_SIZE_LOG2;
-  const int tx_h_log2 = tx_size_high_log2[txs] - MI_SIZE_LOG2;
-  const int bw_log2 = mi_size_wide_log2[bsize];
-  const int stride_log2 = bw_log2 - tx_w_log2;
+  static const uint8_t tw_w_log2_table[BLOCK_SIZES_ALL] = {
+    0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 0, 1, 1, 2, 2, 3,
+  };
+  static const uint8_t tw_h_log2_table[BLOCK_SIZES_ALL] = {
+    0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 1, 0, 2, 1, 3, 2,
+  };
+  static const uint8_t stride_log2_table[BLOCK_SIZES_ALL] = {
+    0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 2, 2, 0, 1, 0, 1, 0, 1,
+  };
   const int index =
-      ((blk_row >> tx_h_log2) << stride_log2) + (blk_col >> tx_w_log2);
+      ((blk_row >> tw_h_log2_table[bsize]) << stride_log2_table[bsize]) +
+      (blk_col >> tw_w_log2_table[bsize]);
   assert(index < INTER_TX_SIZE_BUF_LEN);
   return index;
 }
 
+#if CONFIG_INSPECTION
+/*
+ * Here is the logic to generate the lookup tables:
+ *
+ * TX_SIZE txs = max_txsize_rect_lookup[bsize];
+ * for (int level = 0; level < MAX_VARTX_DEPTH; ++level)
+ *   txs = sub_tx_size_map[txs];
+ * const int tx_w_log2 = tx_size_wide_log2[txs] - MI_SIZE_LOG2;
+ * const int tx_h_log2 = tx_size_high_log2[txs] - MI_SIZE_LOG2;
+ * const int bw_uint_log2 = mi_size_wide_log2[bsize];
+ * const int stride_log2 = bw_uint_log2 - tx_w_log2;
+ */
 static INLINE int av1_get_txk_type_index(BLOCK_SIZE bsize, int blk_row,
                                          int blk_col) {
-  TX_SIZE txs = max_txsize_rect_lookup[bsize];
-  for (int level = 0; level < MAX_VARTX_DEPTH; ++level)
-    txs = sub_tx_size_map[txs];
-  const int tx_w_log2 = tx_size_wide_log2[txs] - MI_SIZE_LOG2;
-  const int tx_h_log2 = tx_size_high_log2[txs] - MI_SIZE_LOG2;
-  const int bw_uint_log2 = mi_size_wide_log2[bsize];
-  const int stride_log2 = bw_uint_log2 - tx_w_log2;
+  static const uint8_t tw_w_log2_table[BLOCK_SIZES_ALL] = {
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 0, 0, 1, 1, 2, 2,
+  };
+  static const uint8_t tw_h_log2_table[BLOCK_SIZES_ALL] = {
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 0, 0, 1, 1, 2, 2,
+  };
+  static const uint8_t stride_log2_table[BLOCK_SIZES_ALL] = {
+    0, 0, 1, 1, 1, 2, 2, 1, 2, 2, 1, 2, 2, 2, 3, 3, 0, 2, 0, 2, 0, 2,
+  };
   const int index =
-      ((blk_row >> tx_h_log2) << stride_log2) + (blk_col >> tx_w_log2);
+      ((blk_row >> tw_h_log2_table[bsize]) << stride_log2_table[bsize]) +
+      (blk_col >> tw_w_log2_table[bsize]);
   assert(index < TXK_TYPE_BUF_LEN);
   return index;
 }
+#endif  // CONFIG_INSPECTION
 
-static INLINE void update_txk_array(TX_TYPE *txk_type, BLOCK_SIZE bsize,
-                                    int blk_row, int blk_col, TX_SIZE tx_size,
+static INLINE void update_txk_array(MACROBLOCKD *const xd, int blk_row,
+                                    int blk_col, TX_SIZE tx_size,
                                     TX_TYPE tx_type) {
-  const int txk_type_idx = av1_get_txk_type_index(bsize, blk_row, blk_col);
-  txk_type[txk_type_idx] = tx_type;
+  const int stride = xd->tx_type_map_stride;
+  xd->tx_type_map[blk_row * stride + blk_col] = tx_type;
 
   const int txw = tx_size_wide_unit[tx_size];
   const int txh = tx_size_high_unit[tx_size];
@@ -837,71 +879,83 @@ static INLINE void update_txk_array(TX_TYPE *txk_type, BLOCK_SIZE bsize,
     const int tx_unit = tx_size_wide_unit[TX_16X16];
     for (int idy = 0; idy < txh; idy += tx_unit) {
       for (int idx = 0; idx < txw; idx += tx_unit) {
-        const int this_index =
-            av1_get_txk_type_index(bsize, blk_row + idy, blk_col + idx);
-        txk_type[this_index] = tx_type;
+        xd->tx_type_map[(blk_row + idy) * stride + blk_col + idx] = tx_type;
       }
     }
   }
 }
 
-static INLINE TX_TYPE av1_get_tx_type(PLANE_TYPE plane_type,
-                                      const MACROBLOCKD *xd, int blk_row,
+static INLINE TX_TYPE av1_get_tx_type(const MACROBLOCKD *xd,
+                                      PLANE_TYPE plane_type, int blk_row,
                                       int blk_col, TX_SIZE tx_size,
                                       int reduced_tx_set) {
   const MB_MODE_INFO *const mbmi = xd->mi[0];
-  const struct macroblockd_plane *const pd = &xd->plane[plane_type];
-  const TxSetType tx_set_type =
-      av1_get_ext_tx_set_type(tx_size, is_inter_block(mbmi), reduced_tx_set);
+  if (xd->lossless[mbmi->segment_id] || txsize_sqr_up_map[tx_size] > TX_32X32) {
+    return DCT_DCT;
+  }
 
   TX_TYPE tx_type;
-  if (xd->lossless[mbmi->segment_id] || txsize_sqr_up_map[tx_size] > TX_32X32) {
-    tx_type = DCT_DCT;
+  if (plane_type == PLANE_TYPE_Y) {
+    tx_type = xd->tx_type_map[blk_row * xd->tx_type_map_stride + blk_col];
   } else {
-    if (plane_type == PLANE_TYPE_Y) {
-      const int txk_type_idx =
-          av1_get_txk_type_index(mbmi->sb_type, blk_row, blk_col);
-      tx_type = mbmi->txk_type[txk_type_idx];
-    } else if (is_inter_block(mbmi)) {
+    if (is_inter_block(mbmi)) {
       // scale back to y plane's coordinate
+      const struct macroblockd_plane *const pd = &xd->plane[plane_type];
       blk_row <<= pd->subsampling_y;
       blk_col <<= pd->subsampling_x;
-      const int txk_type_idx =
-          av1_get_txk_type_index(mbmi->sb_type, blk_row, blk_col);
-      tx_type = mbmi->txk_type[txk_type_idx];
+      tx_type = xd->tx_type_map[blk_row * xd->tx_type_map_stride + blk_col];
     } else {
       // In intra mode, uv planes don't share the same prediction mode as y
       // plane, so the tx_type should not be shared
       tx_type = intra_mode_to_tx_type(mbmi, PLANE_TYPE_UV);
     }
+    const TxSetType tx_set_type =
+        av1_get_ext_tx_set_type(tx_size, is_inter_block(mbmi), reduced_tx_set);
+    if (!av1_ext_tx_used[tx_set_type][tx_type]) tx_type = DCT_DCT;
   }
   assert(tx_type < TX_TYPES);
-  if (!av1_ext_tx_used[tx_set_type][tx_type]) return DCT_DCT;
+  assert(av1_ext_tx_used[av1_get_ext_tx_set_type(tx_size, is_inter_block(mbmi),
+                                                 reduced_tx_set)][tx_type]);
   return tx_type;
 }
 
 void av1_setup_block_planes(MACROBLOCKD *xd, int ss_x, int ss_y,
                             const int num_planes);
 
+/*
+ * Logic to generate the lookup table:
+ *
+ * TX_SIZE tx_size = max_txsize_rect_lookup[bsize];
+ * int depth = 0;
+ * while (depth < MAX_TX_DEPTH && tx_size != TX_4X4) {
+ *   depth++;
+ *   tx_size = sub_tx_size_map[tx_size];
+ * }
+ */
 static INLINE int bsize_to_max_depth(BLOCK_SIZE bsize) {
-  TX_SIZE tx_size = max_txsize_rect_lookup[bsize];
-  int depth = 0;
-  while (depth < MAX_TX_DEPTH && tx_size != TX_4X4) {
-    depth++;
-    tx_size = sub_tx_size_map[tx_size];
-  }
-  return depth;
+  static const uint8_t bsize_to_max_depth_table[BLOCK_SIZES_ALL] = {
+    0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  };
+  return bsize_to_max_depth_table[bsize];
 }
 
+/*
+ * Logic to generate the lookup table:
+ *
+ * TX_SIZE tx_size = max_txsize_rect_lookup[bsize];
+ * assert(tx_size != TX_4X4);
+ * int depth = 0;
+ * while (tx_size != TX_4X4) {
+ *   depth++;
+ *   tx_size = sub_tx_size_map[tx_size];
+ * }
+ * assert(depth < 10);
+ */
 static INLINE int bsize_to_tx_size_cat(BLOCK_SIZE bsize) {
-  TX_SIZE tx_size = max_txsize_rect_lookup[bsize];
-  assert(tx_size != TX_4X4);
-  int depth = 0;
-  while (tx_size != TX_4X4) {
-    depth++;
-    tx_size = sub_tx_size_map[tx_size];
-    assert(depth < 10);
-  }
+  static const uint8_t bsize_to_tx_size_depth_table[BLOCK_SIZES_ALL] = {
+    0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 2, 2, 3, 3, 4, 4,
+  };
+  const int depth = bsize_to_tx_size_depth_table[bsize];
   assert(depth <= MAX_TX_CATS);
   return depth - 1;
 }
@@ -1013,10 +1067,7 @@ static INLINE int is_motion_variation_allowed_bsize(BLOCK_SIZE bsize) {
 
 static INLINE int is_motion_variation_allowed_compound(
     const MB_MODE_INFO *mbmi) {
-  if (!has_second_ref(mbmi))
-    return 1;
-  else
-    return 0;
+  return !has_second_ref(mbmi);
 }
 
 // input: log2 of length, 0(4), 1(8), ...
@@ -1053,25 +1104,13 @@ motion_mode_allowed(const WarpedMotionParams *gm_params, const MACROBLOCKD *xd,
   }
 }
 
-static INLINE void assert_motion_mode_valid(MOTION_MODE mode,
-                                            const WarpedMotionParams *gm_params,
-                                            const MACROBLOCKD *xd,
-                                            const MB_MODE_INFO *mbmi,
-                                            int allow_warped_motion) {
-  const MOTION_MODE last_motion_mode_allowed =
-      motion_mode_allowed(gm_params, xd, mbmi, allow_warped_motion);
-
-  // Check that the input mode is not illegal
-  if (last_motion_mode_allowed < mode)
-    assert(0 && "Illegal motion mode selected");
-}
-
 static INLINE int is_neighbor_overlappable(const MB_MODE_INFO *mbmi) {
   return (is_inter_block(mbmi));
 }
 
 static INLINE int av1_allow_palette(int allow_screen_content_tools,
                                     BLOCK_SIZE sb_type) {
+  assert(sb_type < BLOCK_SIZES_ALL);
   return allow_screen_content_tools && block_size_wide[sb_type] <= 64 &&
          block_size_high[sb_type] <= 64 && sb_type >= BLOCK_8X8;
 }

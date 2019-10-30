@@ -33,6 +33,14 @@
 #define FEATURE_SMS_SPLIT_MODEL_FLAG \
   (FEATURE_SMS_NONE_FLAG | FEATURE_SMS_SPLIT_FLAG)
 
+void av1_intra_mode_cnn_partition(const AV1_COMMON *const cm, MACROBLOCK *x,
+                                  int bsize, int label_idx,
+                                  int *partition_none_allowed,
+                                  int *partition_horz_allowed,
+                                  int *partition_vert_allowed,
+                                  int *do_rectangular_split,
+                                  int *do_square_split);
+
 // Performs a simple_motion_search with a single reference frame and extract
 // the variance of residues. Then use the features to determine whether we want
 // to go straight to splitting without trying PARTITION_NONE
@@ -45,13 +53,14 @@ void av1_simple_motion_search_based_split(
 // Performs a simple_motion_search with two reference frames and extract
 // the variance of residues. Then use the features to determine whether we want
 // to prune some partitions.
-void av1_simple_motion_search_prune_part(
-    AV1_COMP *const cpi, MACROBLOCK *x, PC_TREE *pc_tree, int mi_row,
-    int mi_col, BLOCK_SIZE bsize, int *partition_none_allowed,
-    int *partition_horz_allowed, int *partition_vert_allowed,
-    int *do_square_split, int *do_rectangular_split, int *prune_horz,
-    int *prune_vert);
+void av1_simple_motion_search_prune_rect(AV1_COMP *const cpi, MACROBLOCK *x,
+                                         PC_TREE *pc_tree, int mi_row,
+                                         int mi_col, BLOCK_SIZE bsize,
+                                         int *partition_horz_allowed,
+                                         int *partition_vert_allowed,
+                                         int *prune_horz, int *prune_vert);
 
+#if !CONFIG_REALTIME_ONLY
 // Early terminates PARTITION_NONE using simple_motion_search features and the
 // rate, distortion, and rdcost of PARTITION_NONE. This is only called when:
 //  - The frame is a show frame
@@ -65,17 +74,8 @@ void av1_simple_motion_search_early_term_none(AV1_COMP *const cpi,
                                               const RD_STATS *none_rdc,
                                               int *early_terminate);
 
-// Early terminates after PARTITION_NONE in firstpass of two pass partition
-// search.
-void av1_firstpass_simple_motion_search_early_term(AV1_COMP *const cpi,
-                                                   MACROBLOCK *x,
-                                                   PC_TREE *pc_tree, int mi_row,
-                                                   int mi_col, BLOCK_SIZE bsize,
-                                                   const RD_STATS *none_rdc,
-                                                   int *do_square_split);
-
 // Get the features for selecting the max and min partition size. Currently this
-// performs simple_motion_search on 16X16 subblocks of the currnet superblock,
+// performs simple_motion_search on 16X16 subblocks of the current superblock,
 // and then extract the statistics of sse and motion vectors as features.
 void av1_get_max_min_partition_features(AV1_COMP *const cpi, MACROBLOCK *x,
                                         int mi_row, int mi_col,
@@ -93,14 +93,6 @@ void av1_ml_early_term_after_split(AV1_COMP *const cpi, MACROBLOCK *const x,
                                    int64_t *split_block_rd, int mi_row,
                                    int mi_col,
                                    int *const terminate_partition_search);
-
-// Use data from first partition pass to emit split_scores and none_scores.
-// Returns 0 if the firstpass data is not valid, 1  otherwise.
-// split_score indicates confidence of picking split partition;
-// none_score indicates confidence of picking none partition;
-int av1_ml_prune_2pass_split_partition(const PC_TREE_STATS *pc_tree_stats,
-                                       BLOCK_SIZE bsize, int *split_score,
-                                       int *none_score);
 
 // Use the rdcost ratio and source var ratio to prune PARTITION_HORZ and
 // PARTITION_VERT.
@@ -139,6 +131,7 @@ int av1_ml_predict_breakout(const AV1_COMP *const cpi, BLOCK_SIZE bsize,
                             const MACROBLOCK *const x,
                             const RD_STATS *const rd_stats,
                             unsigned int pb_source_variance);
+#endif  // !CONFIG_REALTIME_ONLY
 
 // A simplified version of set_offsets meant to be used for
 // simple_motion_search.
@@ -177,19 +170,14 @@ static INLINE void set_offsets_for_motion_search(const AV1_COMP *const cpi,
 
   // Set up source buffers.
   av1_setup_src_planes(x, cpi->source, mi_row, mi_col, num_planes, bsize);
-
-  // R/D setup.
-  x->rdmult = cpi->rd.RDMULT;
 }
 
 static INLINE void init_simple_motion_search_mvs(PC_TREE *pc_tree) {
   av1_zero(pc_tree->mv_ref_fulls);
 
   av1_zero(pc_tree->sms_none_feat);
-  av1_zero(pc_tree->sms_split_feat);
   av1_zero(pc_tree->sms_rect_feat);
   av1_zero(pc_tree->sms_none_valid);
-  av1_zero(pc_tree->sms_split_valid);
   av1_zero(pc_tree->sms_rect_valid);
 
   if (pc_tree->block_size >= BLOCK_8X8) {
@@ -212,15 +200,14 @@ static INLINE int is_full_sb(AV1_COMMON *const cm, int mi_row, int mi_col,
 static INLINE int use_auto_max_partition(AV1_COMP *const cpi,
                                          BLOCK_SIZE sb_size, int mi_row,
                                          int mi_col) {
+  assert(IMPLIES(cpi->gf_group.size > 0,
+                 cpi->gf_group.index < cpi->gf_group.size));
   AV1_COMMON *const cm = &cpi->common;
-
   return !frame_is_intra_only(cm) &&
          cpi->sf.auto_max_partition_based_on_simple_motion != NOT_IN_USE &&
          sb_size == BLOCK_128X128 && is_full_sb(cm, mi_row, mi_col, sb_size) &&
-         cpi->twopass.gf_group.update_type[cpi->twopass.gf_group.index] !=
-             OVERLAY_UPDATE &&
-         cpi->twopass.gf_group.update_type[cpi->twopass.gf_group.index] !=
-             INTNL_OVERLAY_UPDATE;
+         cpi->gf_group.update_type[cpi->gf_group.index] != OVERLAY_UPDATE &&
+         cpi->gf_group.update_type[cpi->gf_group.index] != INTNL_OVERLAY_UPDATE;
 }
 
 #endif  // AOM_AV1_ENCODER_PARTITION_STRATEGY_H_

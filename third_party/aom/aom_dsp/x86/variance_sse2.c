@@ -144,6 +144,7 @@ static INLINE void variance8_sse2(const uint8_t *src, const int src_stride,
                                   __m128i *const sum) {
   assert(h <= 128);  // May overflow for larger height.
   *sum = _mm_setzero_si128();
+  *sse = _mm_setzero_si128();
   for (int i = 0; i < h; i++) {
     const __m128i s = load8_8to16_sse2(src);
     const __m128i r = load8_8to16_sse2(ref);
@@ -234,6 +235,14 @@ static INLINE void variance128_sse2(const uint8_t *src, const int src_stride,
     src += src_stride;
     ref += ref_stride;
   }
+}
+
+void aom_get8x8var_sse2(const uint8_t *src_ptr, int src_stride,
+                        const uint8_t *ref_ptr, int ref_stride,
+                        unsigned int *sse, int *sum) {
+  __m128i vsse, vsum;
+  variance8_sse2(src_ptr, src_stride, ref_ptr, ref_stride, 8, &vsse, &vsum);
+  variance_final_128_pel_sse2(vsse, vsum, sse, sum);
 }
 
 #define AOM_VAR_NO_LOOP_SSE2(bw, bh, bits, max_pixels)                        \
@@ -542,30 +551,23 @@ void aom_upsampled_pred_sse2(MACROBLOCKD *xd, const struct AV1Common *const cm,
           pre_buf->buf0 + (pos_y >> SCALE_SUBPEL_BITS) * pre_buf->stride +
           (pos_x >> SCALE_SUBPEL_BITS);
 
+      InterPredParams inter_pred_params;
       const SubpelParams subpel_params = { sf->x_step_q4, sf->y_step_q4,
                                            pos_x & SCALE_SUBPEL_MASK,
                                            pos_y & SCALE_SUBPEL_MASK };
 
-      // Get warp types.
-      const WarpedMotionParams *const wm =
-          &xd->global_motion[mi->ref_frame[ref_num]];
-      const int is_global = is_global_mv_block(mi, wm->wmtype);
-      WarpTypesAllowed warp_types;
-      warp_types.global_warp_allowed = is_global;
-      warp_types.local_warp_allowed = mi->motion_mode == WARPED_CAUSAL;
-
       // Get convolve parameters.
-      ConvolveParams conv_params = get_conv_params(0, plane, xd->bd);
-      const InterpFilters filters =
+      inter_pred_params.conv_params = get_conv_params(0, plane, xd->bd);
+      const int_interpfilters filters =
           av1_broadcast_interp_filter(EIGHTTAP_REGULAR);
+      av1_init_inter_params(
+          &inter_pred_params, width, height, mi_y >> pd->subsampling_y,
+          mi_x >> pd->subsampling_x, pd->subsampling_x, pd->subsampling_y,
+          xd->bd, is_cur_buf_hbd(xd), mi->use_intrabc, sf, filters);
 
       // Get the inter predictor.
-      const int build_for_obmc = 0;
       av1_make_inter_predictor(pre, pre_buf->stride, comp_pred, width,
-                               &subpel_params, sf, width, height, &conv_params,
-                               filters, &warp_types, mi_x >> pd->subsampling_x,
-                               mi_y >> pd->subsampling_y, plane, ref_num, mi,
-                               build_for_obmc, xd, cm->allow_warped_motion);
+                               &inter_pred_params, &subpel_params);
 
       return;
     }
