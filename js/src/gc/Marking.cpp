@@ -2846,10 +2846,9 @@ struct UnmarkGrayTracer : public JS::CallbackTracer
  *
  * There is an additional complication for certain kinds of edges that are not
  * contained explicitly in the source object itself, such as from a weakmap key
- * to its value, and from an object being watched by a watchpoint to the
- * watchpoint's closure. These "implicit edges" are represented in some other
- * container object, such as the weakmap or the watchpoint itself. In these
- * cases, calling unmark gray on an object won't find all of its children.
+ * to its value. These "implicit edges" are represented in some other
+ * container object, such as the weakmap itself. In these cases, calling unmark
+ * gray on an object won't find all of its children.
  *
  * Handling these implicit edges has two parts:
  * - A special pass enumerating all of the containers that know about the

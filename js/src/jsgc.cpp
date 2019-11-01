@@ -207,7 +207,6 @@
 #include "jsscript.h"
 #include "jstypes.h"
 #include "jsutil.h"
-#include "jswatchpoint.h"
 #include "jsweakmap.h"
 #ifdef XP_WIN
 # include "jswin.h"
@@ -2392,11 +2391,6 @@ GCRuntime::updatePointersToRelocatedCells(Zone* zone, AutoLockForExclusiveAccess
         Debugger::markIncomingCrossCompartmentEdges(&trc);
 
         WeakMapBase::markAll(zone, &trc);
-        for (CompartmentsInZoneIter c(zone); !c.done(); c.next()) {
-            c->trace(&trc);
-            if (c->watchpointMap)
-                c->watchpointMap->markAll(&trc);
-        }
 
         // Mark all gray roots, making sure we call the trace callback to get the
         // current set.
@@ -2405,7 +2399,6 @@ GCRuntime::updatePointersToRelocatedCells(Zone* zone, AutoLockForExclusiveAccess
     }
 
     // Sweep everything to fix up weak pointers
-    WatchpointMap::sweepAll(rt);
     Debugger::sweepAll(rt->defaultFreeOp());
     jit::JitRuntime::SweepJitcodeGlobalTable(rt);
     rt->gc.sweepZoneAfterCompacting(zone);
@@ -3850,10 +3843,6 @@ GCRuntime::markWeakReferences(gcstats::Phase phase)
             for (ZoneIterT zone(rt); !zone.done(); zone.next())
                 markedAny |= WeakMapBase::markZoneIteratively(zone, &marker);
         }
-        for (CompartmentsIterT<ZoneIterT> c(rt); !c.done(); c.next()) {
-            if (c->watchpointMap)
-                markedAny |= c->watchpointMap->markIteratively(&marker);
-        }
         markedAny |= Debugger::markAllIteratively(&marker);
         markedAny |= jit::JitRuntime::MarkJitcodeGlobalTableIteratively(&marker);
 
@@ -4624,9 +4613,6 @@ GCRuntime::beginSweepingZoneGroup(AutoLockForExclusiveAccess& lock)
 
             // Bug 1071218: the following two methods have not yet been
             // refactored to work on a single zone-group at once.
-
-            // Collect watch points associated with unreachable objects.
-            WatchpointMap::sweepAll(rt);
 
             // Detach unreachable debuggers and global objects from each other.
             Debugger::sweepAll(&fop);

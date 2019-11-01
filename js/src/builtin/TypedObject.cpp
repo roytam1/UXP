@@ -2215,7 +2215,6 @@ const ObjectOps TypedObject::objectOps_ = {
     TypedObject::obj_setProperty,
     TypedObject::obj_getOwnPropertyDescriptor,
     TypedObject::obj_deleteProperty,
-    nullptr, nullptr, /* watch/unwatch */
     nullptr,   /* getElements */
     TypedObject::obj_enumerate,
     nullptr, /* thisValue */

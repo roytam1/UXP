@@ -315,13 +315,6 @@ class JS_FRIEND_API(SecurityWrapper) : public Base
     virtual bool regexp_toShared(JSContext* cx, HandleObject proxy, RegExpGuard* g) const override;
     virtual bool boxedValue_unbox(JSContext* cx, HandleObject proxy, MutableHandleValue vp) const override;
 
-    // Allow isCallable and isConstructor. They used to be class-level, and so could not be guarded
-    // against.
-
-    virtual bool watch(JSContext* cx, JS::HandleObject proxy, JS::HandleId id,
-                       JS::HandleObject callable) const override;
-    virtual bool unwatch(JSContext* cx, JS::HandleObject proxy, JS::HandleId id) const override;
-
     /*
      * Allow our subclasses to select the superclass behavior they want without
      * needing to specify an exact superclass.

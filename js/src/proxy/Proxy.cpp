@@ -505,20 +505,6 @@ Proxy::boxedValue_unbox(JSContext* cx, HandleObject proxy, MutableHandleValue vp
 JSObject * const TaggedProto::LazyProto = reinterpret_cast<JSObject*>(0x1);
 
 /* static */ bool
-Proxy::watch(JSContext* cx, JS::HandleObject proxy, JS::HandleId id, JS::HandleObject callable)
-{
-    JS_CHECK_RECURSION(cx, return false);
-    return proxy->as<ProxyObject>().handler()->watch(cx, proxy, id, callable);
-}
-
-/* static */ bool
-Proxy::unwatch(JSContext* cx, JS::HandleObject proxy, JS::HandleId id)
-{
-    JS_CHECK_RECURSION(cx, return false);
-    return proxy->as<ProxyObject>().handler()->unwatch(cx, proxy, id);
-}
-
-/* static */ bool
 Proxy::getElements(JSContext* cx, HandleObject proxy, uint32_t begin, uint32_t end,
                    ElementAdder* adder)
 {
@@ -699,18 +685,6 @@ js::proxy_Construct(JSContext* cx, unsigned argc, Value* vp)
 }
 
 bool
-js::proxy_Watch(JSContext* cx, HandleObject obj, HandleId id, HandleObject callable)
-{
-    return Proxy::watch(cx, obj, id, callable);
-}
-
-bool
-js::proxy_Unwatch(JSContext* cx, HandleObject obj, HandleId id)
-{
-    return Proxy::unwatch(cx, obj, id);
-}
-
-bool
 js::proxy_GetElements(JSContext* cx, HandleObject proxy, uint32_t begin, uint32_t end,
                       ElementAdder* adder)
 {
@@ -750,7 +724,6 @@ const ObjectOps js::ProxyObjectOps = {
     js::proxy_SetProperty,
     js::proxy_GetOwnPropertyDescriptor,
     js::proxy_DeleteProperty,
-    js::proxy_Watch, js::proxy_Unwatch,
     js::proxy_GetElements,
     nullptr,  /* enumerate */
     js::proxy_FunToString
