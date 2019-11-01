@@ -120,6 +120,57 @@ S4EStatusService.prototype =
   },
 
   buildBinding: function() {
+  
+    // Object.prototype.watch() shim, based on Eli Grey's polyfill    
+    // object.watch
+    if (!this._window.XULBrowserWindow.watch) {
+      Object.defineProperty(this._window.XULBrowserWindow, "watch", {
+        enumerable: false,
+        configurable: true,
+        writable: false,
+        value: function (prop, handler) {
+          var oldval = this[prop],
+              newval = oldval,
+              getter = function () {
+                return newval;
+              },
+              setter = function (val) {
+                oldval = newval;
+                return newval = handler.call(this, prop, oldval, val);
+              }
+            ;
+
+          try {
+            if (delete this[prop]) { // can't watch constants
+              Object.defineProperty(this, prop, {
+                get: getter,
+                set: setter,
+                enumerable: true,
+                configurable: true
+              });
+            }
+          } catch(e) {
+            // This fails fatally on non-configurable props, so just
+            // ignore errors if it does.
+          }
+        }
+      });
+    }
+
+    // object.unwatch
+    if (!this._window.XULBrowserWindow.unwatch) {
+      Object.defineProperty(this._window.XULBrowserWindow, "unwatch", {
+        enumerable: false,
+        configurable: true,
+        writable: false,
+        value: function (prop) {
+          var val = this[prop];
+          delete this[prop]; // remove accessors
+          this[prop] = val;
+        }
+      });
+    }
+  
     let XULBWPropHandler = function(prop, oldval, newval) {
       CU.reportError("Attempt to modify XULBrowserWindow." + prop);
       return oldval;
@@ -139,21 +190,6 @@ S4EStatusService.prototype =
       this._window.XULBrowserWindow[prop] = this[prop].bind(this);
       this._window.XULBrowserWindow.watch(prop, XULBWPropHandler);
     }, this);
-
-    let XULBWHandler = function(prop, oldval, newval) {
-      if(!newval)
-      {
-        return newval;
-      }
-      CU.reportError("XULBrowserWindow changed. Updating S4E bindings.");
-      this._window.setTimeout(function(self)
-      {
-        self.buildBinding();
-      }, 0, this);
-      return newval;
-    };
-
-    this._window.watch("XULBrowserWindow", XULBWHandler);
   },
 
   destroy: function()
