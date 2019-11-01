@@ -134,7 +134,7 @@ std::string SysInfo::OperatingSystemName() {
 }
 
 // Solaris <sys/utsname.h> contains "extern struct utsname utsname;" 
-// As a consequence, any use of utsname has to be proceeded with struct on 
+// As a consequence, any use of utsname has to be preceded with struct on 
 // Solaris. See Mozilla bugs 758483 and 1353332.
 
 // static

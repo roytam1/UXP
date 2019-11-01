@@ -4,7 +4,7 @@
 
 EXTRA_DEPS += $(topsrcdir)/toolkit/library/libxul.mk
 
-ifeq (Linux,$(OS_ARCH))	
+ifeq (Linux,$(OS_ARCH))
 ifneq (Android,$(OS_TARGET))
 OS_LDFLAGS += -Wl,-version-script,symverscript
 

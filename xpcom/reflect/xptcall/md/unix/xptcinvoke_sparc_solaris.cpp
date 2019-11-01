@@ -104,22 +104,32 @@ invoke_copy_to_stack(uint32_t* d, uint32_t paramCount, nsXPTCVariant* s)
         }
         switch(l_s->type)
         {
-        case nsXPTType::T_I8     : *((int32_t*)   l_d) = l_s->val.i8;          break;
-        case nsXPTType::T_I16    : *((int32_t*)  l_d) = l_s->val.i16;         break;
-        case nsXPTType::T_I32    : *((int32_t*)  l_d) = l_s->val.i32;         break;
+        case nsXPTType::T_I8     : *((int32_t*)   l_d) = l_s->val.i8;
+	break;
+        case nsXPTType::T_I16    : *((int32_t*)  l_d) = l_s->val.i16;
+	break;
+        case nsXPTType::T_I32    : *((int32_t*)  l_d) = l_s->val.i32;
+	break;
         case nsXPTType::T_I64    : 
         case nsXPTType::T_U64    : 
         case nsXPTType::T_DOUBLE : *((uint32_t*) l_d++) = ((DU *)l_s)->hi;
 				   if (regCount < 5) regCount++;
                                    *((uint32_t*) l_d) = ((DU *)l_s)->lo;
                                    break;
-        case nsXPTType::T_U8     : *((uint32_t*) l_d) = l_s->val.u8;          break;
-        case nsXPTType::T_U16    : *((uint32_t*) l_d) = l_s->val.u16;         break;
-        case nsXPTType::T_U32    : *((uint32_t*) l_d) = l_s->val.u32;         break;
-        case nsXPTType::T_FLOAT  : *((float*)  l_d) = l_s->val.f;           break;
-        case nsXPTType::T_BOOL   : *((uint32_t*) l_d) = l_s->val.b;           break;
-        case nsXPTType::T_CHAR   : *((uint32_t*) l_d) = l_s->val.c;           break;
-        case nsXPTType::T_WCHAR  : *((int32_t*)  l_d) = l_s->val.wc;          break;
+        case nsXPTType::T_U8     : *((uint32_t*) l_d) = l_s->val.u8;
+	break;
+        case nsXPTType::T_U16    : *((uint32_t*) l_d) = l_s->val.u16;         
+	break;
+        case nsXPTType::T_U32    : *((uint32_t*) l_d) = l_s->val.u32;
+	break;
+        case nsXPTType::T_FLOAT  : *((float*)  l_d) = l_s->val.f;
+	break;
+        case nsXPTType::T_BOOL   : *((uint32_t*) l_d) = l_s->val.b;           
+	break;
+        case nsXPTType::T_CHAR   : *((uint32_t*) l_d) = l_s->val.c;
+	break;
+        case nsXPTType::T_WCHAR  : *((int32_t*)  l_d) = l_s->val.wc;
+	break;
         default:
             // all the others are plain pointer types
             *((void**)l_d) = l_s->val.p;
