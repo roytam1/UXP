@@ -1131,6 +1131,42 @@ nsDisplayTableItem::ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
   nsDisplayItem::ComputeInvalidationRegion(aBuilder, aGeometry, aInvalidRegion);
 }
 
+// A display item that draws all collapsed borders for a table.
+class nsDisplayTableBorderCollapse : public nsDisplayTableItem {
+public:
+  nsDisplayTableBorderCollapse(nsDisplayListBuilder* aBuilder,
+                               nsTableFrame* aFrame)
+    : nsDisplayTableItem(aBuilder, aFrame) {
+    MOZ_COUNT_CTOR(nsDisplayTableBorderCollapse);
+    }
+#ifdef NS_BUILD_REFCNT_LOGGING
+  virtual ~nsDisplayTableBorderCollapse() {
+    MOZ_COUNT_DTOR(nsDisplayTableBorderCollapse);
+  }
+#endif
+
+  virtual void Paint(nsDisplayListBuilder* aBuilder,
+                     nsRenderingContext* aCtx) override;
+  NS_DISPLAY_DECL_NAME("TableBorderCollapse", TYPE_TABLE_BORDER_COLLAPSE)
+};
+
+void
+nsDisplayTableBorderCollapse::Paint(nsDisplayListBuilder* aBuilder,
+                                    nsRenderingContext* aCtx)
+{
+  nsPoint pt = ToReferenceFrame();
+  DrawTarget* drawTarget = aCtx->GetDrawTarget();
+
+  gfxPoint devPixelOffset =
+    nsLayoutUtils::PointToGfxPoint(pt, mFrame->PresContext()->AppUnitsPerDevPixel());
+
+  AutoRestoreTransform autoRestoreTransform(drawTarget);
+  drawTarget->SetTransform(
+      drawTarget->GetTransform().PreTranslate(ToPoint(devPixelOffset)));
+
+  static_cast<nsTableFrame*>(mFrame)->PaintBCBorders(*drawTarget, mVisibleRect - pt);
+}
+
 class nsDisplayTableBorderBackground : public nsDisplayTableItem {
 public:
   nsDisplayTableBorderBackground(nsDisplayListBuilder* aBuilder,
@@ -1150,20 +1186,6 @@ public:
   NS_DISPLAY_DECL_NAME("TableBorderBackground", TYPE_TABLE_BORDER_BACKGROUND)
 };
 
-#ifdef DEBUG
-static bool
-IsFrameAllowedInTable(nsIAtom* aType)
-{
-  return IS_TABLE_CELL(aType) ||
-         nsGkAtoms::tableRowFrame == aType ||
-         nsGkAtoms::tableRowGroupFrame == aType ||
-         nsGkAtoms::scrollFrame == aType ||
-         nsGkAtoms::tableFrame == aType ||
-         nsGkAtoms::tableColFrame == aType ||
-         nsGkAtoms::tableColGroupFrame == aType;
-}
-#endif
-
 void
 nsDisplayTableBorderBackground::Paint(nsDisplayListBuilder* aBuilder,
                                       nsRenderingContext* aCtx)
@@ -1173,25 +1195,6 @@ nsDisplayTableBorderBackground::Paint(nsDisplayListBuilder* aBuilder,
                                ToReferenceFrame());
 
   nsDisplayTableItemGeometry::UpdateDrawResult(this, result);
-}
-
-static int32_t
-GetTablePartRank(nsDisplayItem* aItem)
-{
-  nsIAtom* type = aItem->Frame()->GetType();
-  if (type == nsGkAtoms::tableFrame)
-    return 0;
-  if (type == nsGkAtoms::tableRowGroupFrame)
-    return 1;
-  if (type == nsGkAtoms::tableRowFrame)
-    return 2;
-  return 3;
-}
-
-static bool CompareByTablePartRank(nsDisplayItem* aItem1, nsDisplayItem* aItem2,
-                                     void* aClosure)
-{
-  return GetTablePartRank(aItem1) <= GetTablePartRank(aItem2);
 }
 
 /* static */ void
@@ -1206,8 +1209,63 @@ nsTableFrame::GenericTraversal(nsDisplayListBuilder* aBuilder, nsFrame* aFrame,
   // stacking context, in which case the child won't use its passed-in
   // BorderBackground list anyway. It does affect cell borders though; this
   // lets us get cell borders into the nsTableFrame's BorderBackground list.
+  for (nsIFrame* kid : aFrame->GetChildList(kColGroupList)) {
+    aFrame->BuildDisplayListForChild(aBuilder, kid, aDirtyRect, aLists);
+  }
+
   for (nsIFrame* kid : aFrame->PrincipalChildList()) {
     aFrame->BuildDisplayListForChild(aBuilder, kid, aDirtyRect, aLists);
+  }
+}
+
+static void
+PaintRowBackground(nsTableRowFrame* aRow,
+                   nsIFrame* aFrame,
+                   nsDisplayListBuilder* aBuilder,
+                   const nsDisplayListSet& aLists,
+                   const nsPoint& aOffset = nsPoint())
+{
+  // Compute background rect by iterating all cell frame.
+  for (nsTableCellFrame* cell = aRow->GetFirstCell(); cell; cell = cell->GetNextCell()) {
+    auto cellRect = cell->GetRectRelativeToSelf() + cell->GetNormalPosition() + aOffset;
+    nsDisplayBackgroundImage::AppendBackgroundItemsToTop(aBuilder, aFrame, cellRect,
+                                                         aLists.BorderBackground(),
+                                                         true, nullptr,
+                                                         aFrame->GetRectRelativeToSelf());
+  }
+}
+
+static void
+PaintRowGroupBackground(nsTableRowGroupFrame* aRowGroup,
+                        nsIFrame* aFrame,
+                        nsDisplayListBuilder* aBuilder,
+                        const nsDisplayListSet& aLists)
+{
+  for (nsTableRowFrame* row = aRowGroup->GetFirstRow(); row; row = row->GetNextRow()) {
+    PaintRowBackground(row, aFrame, aBuilder, aLists, row->GetNormalPosition());
+  }
+}
+
+static void
+PaintRowGroupBackgroundByColIdx(nsTableRowGroupFrame* aRowGroup,
+                                nsIFrame* aFrame,
+                                nsDisplayListBuilder* aBuilder,
+                                const nsDisplayListSet& aLists,
+                                const nsTArray<int32_t>& aColIdx,
+                                const nsPoint& aOffset)
+{
+  for (nsTableRowFrame* row = aRowGroup->GetFirstRow(); row; row = row->GetNextRow()) {
+    for (nsTableCellFrame* cell = row->GetFirstCell(); cell; cell = cell->GetNextCell()) {
+      int32_t curColIdx;
+      cell->GetColIndex(curColIdx);
+      if (aColIdx.Contains(curColIdx)) {
+        auto cellRect = cell->GetRectRelativeToSelf() + cell->GetNormalPosition() + row->GetNormalPosition() + aOffset;
+        nsDisplayBackgroundImage::AppendBackgroundItemsToTop(aBuilder, aFrame, cellRect,
+                                                             aLists.BorderBackground(),
+                                                             true, nullptr,
+                                                             aFrame->GetRectRelativeToSelf());
+      }
+    }
   }
 }
 
@@ -1216,21 +1274,8 @@ nsTableFrame::DisplayGenericTablePart(nsDisplayListBuilder* aBuilder,
                                       nsFrame* aFrame,
                                       const nsRect& aDirtyRect,
                                       const nsDisplayListSet& aLists,
-                                      nsDisplayTableItem* aDisplayItem,
                                       DisplayGenericTablePartTraversal aTraversal)
 {
-  nsDisplayList eventsBorderBackground;
-  // If we need to sort the event backgrounds, then we'll put descendants'
-  // display items into their own set of lists.
-  bool sortEventBackgrounds = aDisplayItem && aBuilder->IsForEventDelivery();
-  nsDisplayListCollection separatedCollection;
-  const nsDisplayListSet* lists = sortEventBackgrounds ? &separatedCollection : &aLists;
-
-  nsAutoPushCurrentTableItem pushTableItem;
-  if (aDisplayItem) {
-    pushTableItem.Push(aBuilder, aDisplayItem);
-  }
-
   if (aFrame->IsVisibleForPainting(aBuilder)) {
     nsDisplayTableItem* currentItem = aBuilder->GetCurrentTableItem();
     // currentItem may be null, when none of the table parts have a
@@ -1242,70 +1287,77 @@ nsTableFrame::DisplayGenericTablePart(nsDisplayListBuilder* aBuilder,
     // Paint the outset box-shadows for the table frames
     bool hasBoxShadow = aFrame->StyleEffects()->mBoxShadow != nullptr;
     if (hasBoxShadow) {
-      lists->BorderBackground()->AppendNewToTop(
+      aLists.BorderBackground()->AppendNewToTop(
         new (aBuilder) nsDisplayBoxShadowOuter(aBuilder, aFrame));
     }
 
-    // Create dedicated background display items per-frame when we're
-    // handling events.
-    // XXX how to handle collapsed borders?
-    if (aBuilder->IsForEventDelivery()) {
+    if (aFrame->GetType() == nsGkAtoms::tableRowGroupFrame) {
+      nsTableRowGroupFrame* rowGroup = static_cast<nsTableRowGroupFrame*>(aFrame);
+      PaintRowGroupBackground(rowGroup, aFrame, aBuilder, aLists);
+    } else if (aFrame->GetType() == nsGkAtoms::tableRowFrame) {
+      nsTableRowFrame* row = static_cast<nsTableRowFrame*>(aFrame);
+      PaintRowBackground(row, aFrame, aBuilder, aLists);
+    } else if (aFrame->GetType() == nsGkAtoms::tableColGroupFrame) {
+      // Compute background rect by iterating all cell frame.
+      nsTableColGroupFrame* colGroup = static_cast<nsTableColGroupFrame*>(aFrame);
+      // Collecting column index.
+      AutoTArray<int32_t, 1> colIdx;
+      for (nsTableColFrame* col = colGroup->GetFirstColumn(); col; col = col->GetNextCol()) {
+        colIdx.AppendElement(col->GetColIndex());
+      }
+
+      nsTableFrame* table = colGroup->GetTableFrame();
+      RowGroupArray rowGroups;
+      table->OrderRowGroups(rowGroups);
+      for (nsTableRowGroupFrame* rowGroup : rowGroups) {
+        auto offset = rowGroup->GetNormalPosition() - colGroup->GetNormalPosition();
+        PaintRowGroupBackgroundByColIdx(rowGroup, aFrame, aBuilder, aLists, colIdx, offset);
+      }
+    } else if (aFrame->GetType() == nsGkAtoms::tableColFrame) {
+      // Compute background rect by iterating all cell frame.
+      nsTableColFrame* col = static_cast<nsTableColFrame*>(aFrame);
+      AutoTArray<int32_t, 1> colIdx;
+      colIdx.AppendElement(col->GetColIndex());
+
+      nsTableFrame* table = col->GetTableFrame();
+      RowGroupArray rowGroups;
+      table->OrderRowGroups(rowGroups);
+      for (nsTableRowGroupFrame* rowGroup : rowGroups) {
+        auto offset = rowGroup->GetNormalPosition() -
+                      col->GetNormalPosition() -
+                      col->GetTableColGroupFrame()->GetNormalPosition();
+        PaintRowGroupBackgroundByColIdx(rowGroup, aFrame, aBuilder, aLists, colIdx, offset);
+      }
+    } else {
       nsDisplayBackgroundImage::AppendBackgroundItemsToTop(aBuilder, aFrame,
                                                            aFrame->GetRectRelativeToSelf(),
-                                                           lists->BorderBackground());
+                                                           aLists.BorderBackground());
     }
 
     // Paint the inset box-shadows for the table frames
     if (hasBoxShadow) {
-      lists->BorderBackground()->AppendNewToTop(
+      aLists.BorderBackground()->AppendNewToTop(
         new (aBuilder) nsDisplayBoxShadowInner(aBuilder, aFrame));
     }
   }
 
-  aTraversal(aBuilder, aFrame, aDirtyRect, *lists);
+  aTraversal(aBuilder, aFrame, aDirtyRect, aLists);
 
-  if (sortEventBackgrounds) {
-    // Ensure that the table frame event background goes before the
-    // table rowgroups event backgrounds, before the table row event backgrounds,
-    // before everything else (cells and their blocks)
-    separatedCollection.BorderBackground()->Sort(CompareByTablePartRank, nullptr);
-    separatedCollection.MoveTo(aLists);
+  if (aFrame->IsVisibleForPainting(aBuilder)) {
+    if (aFrame->GetType() == nsGkAtoms::tableFrame) {
+      nsTableFrame* table = static_cast<nsTableFrame*>(aFrame);
+      // In the collapsed border model, overlay all collapsed borders.
+      if (table->IsBorderCollapse()) {
+        aLists.BorderBackground()->AppendNewToTop(
+          new (aBuilder) nsDisplayTableBorderCollapse(aBuilder, table));
+      } else {
+        aLists.BorderBackground()->AppendNewToTop(
+          new (aBuilder) nsDisplayBorder(aBuilder, table));
+      }
+    }
   }
 
   aFrame->DisplayOutline(aBuilder, aLists);
-}
-
-static bool
-AnyTablePartHasBorderOrBackground(nsIFrame* aStart, nsIFrame* aEnd)
-{
-  for (nsIFrame* f = aStart; f != aEnd; f = f->GetNextSibling()) {
-    NS_ASSERTION(IsFrameAllowedInTable(f->GetType()), "unexpected frame type");
-
-    if (FrameHasBorderOrBackground(f))
-      return true;
-
-    nsTableCellFrame *cellFrame = do_QueryFrame(f);
-    if (cellFrame)
-      continue;
-
-    if (AnyTablePartHasBorderOrBackground(f->PrincipalChildList().FirstChild(), nullptr))
-      return true;
-  }
-
-  return false;
-}
-
-static void
-UpdateItemForColGroupBackgrounds(nsDisplayTableItem* item,
-                                 const nsFrameList& aFrames) {
-  for (nsFrameList::Enumerator e(aFrames); !e.AtEnd(); e.Next()) {
-    nsTableColGroupFrame* cg = static_cast<nsTableColGroupFrame*>(e.get());
-    item->UpdateForFrameBackground(cg);
-    for (nsTableColFrame* colFrame = cg->GetFirstColumn(); colFrame;
-         colFrame = colFrame->GetNextCol()) {
-      item->UpdateForFrameBackground(colFrame);
-    }
-  }
 }
 
 // table paint code is concerned primarily with borders and bg color
@@ -1317,35 +1369,7 @@ nsTableFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
 {
   DO_GLOBAL_REFLOW_COUNT_DSP_COLOR("nsTableFrame", NS_RGB(255,128,255));
 
-  nsDisplayTableItem* item = nullptr;
-  if (IsVisibleInSelection(aBuilder)) {
-    nsMargin deflate = GetDeflationForBackground(PresContext());
-    if (StyleVisibility()->IsVisible()) {
-      // If 'deflate' is (0,0,0,0) then we can paint the table background
-      // in its own display item, so do that to take advantage of
-      // opacity and visibility optimizations
-      if (deflate == nsMargin(0, 0, 0, 0)) {
-        DisplayBackgroundUnconditional(aBuilder, aLists, false);
-      }
-    }
-
-    // This background is created if any of the table parts are visible,
-    // or if we're doing event handling (since DisplayGenericTablePart
-    // needs the item for the |sortEventBackgrounds|-dependent code).
-    // Specific visibility decisions are delegated to the table background
-    // painter, which handles borders and backgrounds for the table.
-    if (aBuilder->IsForEventDelivery() ||
-        AnyTablePartHasBorderOrBackground(this, GetNextSibling()) ||
-        AnyTablePartHasBorderOrBackground(mColGroups.FirstChild(), nullptr)) {
-      item = new (aBuilder) nsDisplayTableBorderBackground(aBuilder, this,
-          deflate != nsMargin(0, 0, 0, 0));
-      aLists.BorderBackground()->AppendNewToTop(item);
-    }
-  }
-  DisplayGenericTablePart(aBuilder, this, aDirtyRect, aLists, item);
-  if (item) {
-    UpdateItemForColGroupBackgrounds(item, mColGroups);
-  }
+  DisplayGenericTablePart(aBuilder, this, aDirtyRect, aLists);
 }
 
 nsMargin
