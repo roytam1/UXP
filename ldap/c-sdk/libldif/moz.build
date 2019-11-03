@@ -3,29 +3,21 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-include('/ldap/ldap-sdk.mozbuild')
+include('../common.mozbuild')
 
-SharedLibrary('prldap60')
+SharedLibrary('ldif60')
 
 SOURCES += [
-    'ldappr-dns.c',
-    'ldappr-error.c',
-    'ldappr-io.c',
-    'ldappr-public.c',
-    'ldappr-threads.c',
+    'line64.c'
+]
+
+LOCAL_INCLUDES += [
+    '../include'
 ]
 
 if CONFIG['OS_ARCH'] == 'WINNT':
-    DEFFILE = SRCDIR + '/libprldap.def'
+    DEFFILE = SRCDIR + '/libldif.def'
 
 DEFINES['USE_WAITPID'] = True
 DEFINES['NEEDPROTOS'] = True
 
-LOCAL_INCLUDES += [
-    '/ldap/c-sdk/include'
-]
-
-USE_LIBS += [
-    'ldap60',
-    'nspr'
-]
