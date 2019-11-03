@@ -2264,6 +2264,11 @@ MOZ_PLACES=1
 MOZ_SERVICES_HEALTHREPORT=1
 MOZ_SERVICES_SYNC=1
 MOZ_USERINFO=1
+MOZ_MAILNEWS=
+MOZ_LDAP_XPCOM=
+MOZ_MORK=
+MOZ_MAPI_SUPPORT=
+MOZ_INCOMPLETE_EXTERNAL_LINKAGE=
 
 case "$target_os" in
     mingw*)
@@ -2810,6 +2815,64 @@ x86_64 | arm | aarch64 | x86 | ppc* | ia64)
     ;;
 
 esac
+
+dnl =========================================================
+dnl = Don't fold mailnews related comps into libXUL
+dnl =========================================================
+MOZ_ARG_ENABLE_BOOL(incomplete-external-linkage,
+[  --enable-incomplete-external-linkage Don't fold *comps into libXUL which is currently badly busted so don't even bother with it ],
+    MOZ_INCOMPLETE_EXTERNAL_LINKAGE=1,
+    MOZ_INCOMPLETE_EXTERNAL_LINKAGE= )
+
+AC_SUBST(MOZ_INCOMPLETE_EXTERNAL_LINKAGE)
+
+dnl ========================================================
+dnl = Enable MailNews
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(mailnews,
+[  --enable-mailnews          Enable the mailnews core backend],
+    MOZ_MAILNEWS=1,
+    MOZ_MAILNEWS=)
+
+if test -n "$MOZ_MAILNEWS"; then
+    MOZ_MORK=1
+    MOZ_LDAP_XPCOM=1
+    if test "$_WIN32_MSVC"; then
+        MOZ_MAPI_SUPPORT=1
+    fi
+    AC_DEFINE(MOZ_MAILNEWS)
+    AC_DEFINE(MOZ_MORK)
+fi
+
+AC_SUBST(MOZ_MAILNEWS)
+AC_SUBST(MOZ_MORK)
+
+dnl =========================================================
+dnl = LDAP
+dnl =========================================================
+MOZ_ARG_DISABLE_BOOL(ldap,
+[  --disable-ldap          Disable LDAP support],
+    MOZ_LDAP_XPCOM= )
+
+if test -n "$MOZ_LDAP_XPCOM"; then
+    AC_DEFINE(MOZ_LDAP_XPCOM)
+fi
+
+AC_SUBST(MOZ_LDAP_XPCOM)
+
+dnl =========================================================
+dnl = MAPI support (Windows only)
+dnl =========================================================
+
+MOZ_ARG_DISABLE_BOOL(mapi,
+[  --disable-mapi          Disable MAPI support],
+    MOZ_MAPI_SUPPORT= )
+
+if test -n "$MOZ_MAPI_SUPPORT"; then
+    AC_DEFINE(MOZ_MAPI_SUPPORT)
+fi
+
+AC_SUBST(MOZ_MAPI_SUPPORT)
 
 dnl ========================================================
 dnl = Enable WebRTC code

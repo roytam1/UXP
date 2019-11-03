@@ -68,7 +68,7 @@ EXTRA_JS_MODULES += [
 ]
 
 LOCAL_INCLUDES += [
-  '/mozilla/netwerk/base'
+  '/netwerk/base'
 ]
 
 FINAL_LIBRARY = 'mail'
