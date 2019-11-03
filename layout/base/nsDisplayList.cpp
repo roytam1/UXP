@@ -80,6 +80,8 @@
 #include "nsPluginFrame.h"
 #include "DisplayItemScrollClip.h"
 #include "nsSVGMaskFrame.h"
+#include "nsTableCellFrame.h"
+#include "nsTableColFrame.h"
 
 // GetCurrentTime is defined in winbase.h as zero argument macro forwarding to
 // GetTickCount().
@@ -2632,7 +2634,8 @@ nsDisplayBackgroundImage::AppendBackgroundItemsToTop(nsDisplayListBuilder* aBuil
                                                      nsDisplayList* aList,
                                                      bool aAllowWillPaintBorderOptimization,
                                                      nsStyleContext* aStyleContext,
-                                                     const nsRect& aBackgroundOriginRect)
+                                                     const nsRect& aBackgroundOriginRect,
+                                                     nsIFrame* aSecondaryReferenceFrame)
 {
   nsStyleContext* bgSC = aStyleContext;
   const nsStyleBackground* bg = nullptr;
@@ -2752,8 +2755,17 @@ nsDisplayBackgroundImage::AppendBackgroundItemsToTop(nsDisplayListBuilder* aBuil
       new (aBuilder) nsDisplayBackgroundImage(aBuilder, aFrame, i, bgOriginRect, bg);
 
     if (bgItem->ShouldFixToViewport(aBuilder)) {
-      thisItemList.AppendNewToTop(
-        nsDisplayFixedPosition::CreateForFixedBackground(aBuilder, aFrame, bgItem, i));
+      if (aSecondaryReferenceFrame) {
+        thisItemList.AppendNewToTop(
+          nsDisplayTableFixedPosition::CreateForFixedBackground(aBuilder,
+                                                                aSecondaryReferenceFrame,
+                                                                bgItem,
+                                                                i,
+                                                                aFrame));
+      } else {
+        thisItemList.AppendNewToTop(
+          nsDisplayFixedPosition::CreateForFixedBackground(aBuilder, aFrame, bgItem, i));
+      }
     } else {
       thisItemList.AppendNewToTop(bgItem);
     }
@@ -5275,6 +5287,51 @@ bool nsDisplayFixedPosition::TryMerge(nsDisplayItem* aItem) {
     return false;
   MergeFromTrackingMergedFrames(other);
   return true;
+}
+
+TableType
+GetTableTypeFromFrame(nsIFrame* aFrame)
+{
+  nsIAtom* type = aFrame->GetType();
+  if (type == nsGkAtoms::tableFrame) {
+    return TableType::TABLE;
+  } else if (type == nsGkAtoms::tableColFrame) {
+    return TableType::TABLE_COL;
+  } else if (type == nsGkAtoms::tableColGroupFrame) {
+    return TableType::TABLE_COL_GROUP;
+  } else if (type == nsGkAtoms::tableRowFrame) {
+    return TableType::TABLE_ROW;
+  } else if (type == nsGkAtoms::tableRowGroupFrame) {
+    return TableType::TABLE_ROW_GROUP;
+  } else if (type == nsGkAtoms::tableCellFrame) {
+    return TableType::TABLE_CELL;
+  } else {
+    MOZ_ASSERT_UNREACHABLE("Invalid frame.");
+    return TableType::TABLE;
+  }
+}
+
+nsDisplayTableFixedPosition::nsDisplayTableFixedPosition(nsDisplayListBuilder* aBuilder,
+                                                         nsIFrame* aFrame,
+                                                         nsDisplayList* aList,
+                                                         uint32_t aIndex,
+                                                         nsIFrame* aAncestorFrame)
+  : nsDisplayFixedPosition(aBuilder, aFrame, aList, aIndex)
+  , mTableType(GetTableTypeFromFrame(aAncestorFrame))
+{
+}
+
+/* static */ nsDisplayTableFixedPosition*
+nsDisplayTableFixedPosition::CreateForFixedBackground(nsDisplayListBuilder* aBuilder,
+                                                      nsIFrame* aFrame,
+                                                      nsDisplayBackgroundImage* aImage,
+                                                      uint32_t aIndex,
+                                                      nsIFrame* aAncestorFrame)
+{
+  nsDisplayList temp;
+  temp.AppendToTop(aImage);
+
+  return new (aBuilder) nsDisplayTableFixedPosition(aBuilder, aFrame, &temp, aIndex + 1, aAncestorFrame);
 }
 
 nsDisplayStickyPosition::nsDisplayStickyPosition(nsDisplayListBuilder* aBuilder,

@@ -1194,13 +1194,14 @@ PaintRowBackground(nsTableRowFrame* aRow,
                    const nsDisplayListSet& aLists,
                    const nsPoint& aOffset = nsPoint())
 {
-  // Compute background rect by iterating all cell frame.
+  // Compute background rect by iterating over all cell frames.
   for (nsTableCellFrame* cell = aRow->GetFirstCell(); cell; cell = cell->GetNextCell()) {
     auto cellRect = cell->GetRectRelativeToSelf() + cell->GetNormalPosition() + aOffset;
     nsDisplayBackgroundImage::AppendBackgroundItemsToTop(aBuilder, aFrame, cellRect,
                                                          aLists.BorderBackground(),
                                                          true, nullptr,
-                                                         aFrame->GetRectRelativeToSelf());
+                                                         aFrame->GetRectRelativeToSelf(),
+                                                         cell);
   }
 }
 
@@ -1232,7 +1233,8 @@ PaintRowGroupBackgroundByColIdx(nsTableRowGroupFrame* aRowGroup,
         nsDisplayBackgroundImage::AppendBackgroundItemsToTop(aBuilder, aFrame, cellRect,
                                                              aLists.BorderBackground(),
                                                              true, nullptr,
-                                                             aFrame->GetRectRelativeToSelf());
+                                                             aFrame->GetRectRelativeToSelf(),
+                                                             cell);
       }
     }
   }
