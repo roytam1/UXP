@@ -1,0 +1,108 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"
+
+[scriptable, uuid(a72dab4b-b3bd-471e-9a38-1b242b385459)]
+interface  nsIDBFolderInfo : nsISupports {
+  attribute long flags;
+
+  /**
+   * Or's aFlags into flags.
+   *
+   * @param - the flags(s) to set
+   *
+   * @return - the resulting flags.
+   */
+  long  orFlags(in long aFlags);
+  /**
+   * And's aFlags with flags, set flags to the result
+   *
+   * @param             the flags(s) to AND
+   *
+   * @return            the resulting flags.
+   */
+  long  andFlags(in long aFlags);
+
+  /**
+   * Allows us to keep track of the highwater mark
+   *
+   * @param aNewKey     If larger than the current highwater
+   *                    mark, sets the highwater mark to aNewKey.
+   */
+  void  onKeyAdded(in nsMsgKey aNewKey);
+
+  attribute nsMsgKey highWater;
+  attribute nsMsgKey expiredMark;
+  attribute long long folderSize;
+  attribute unsigned long folderDate;
+  void changeNumUnreadMessages(in long aDelta);
+  void changeNumMessages(in long aDelta);
+
+  // numUnreadMessages and numMessages will never return negative numbers. 0 means 'no msgs'.
+  attribute long numUnreadMessages;
+  attribute long numMessages;
+
+  attribute long long expungedBytes;
+  attribute long imapUidValidity;
+  attribute unsigned long version;
+  attribute long imapTotalPendingMessages;
+  attribute long imapUnreadPendingMessages;
+
+  attribute nsMsgViewTypeValue viewType;
+  attribute nsMsgViewFlagsTypeValue viewFlags;
+  attribute nsMsgViewSortTypeValue sortType;
+  attribute nsMsgViewSortOrderValue sortOrder;
+
+  void changeExpungedBytes(in long aDelta);
+
+  /**
+   * Gets a string property from the folder.
+   *
+   * @param propertyName The name of the property for the value to retrieve.
+   */
+  ACString getCharProperty(in string propertyName);
+
+  /**
+   * Sets a string property from the folder.
+   *
+   * @param propertyName   The name of the property for which to set a value
+   * @param propertyValue  The new value of the property.
+   */
+  void setCharProperty(in string aPropertyName, in ACString aPropertyValue);
+  void setUint32Property(in string propertyName, in unsigned long propertyValue);
+  void setInt64Property(in string propertyName, in long long propertyValue);
+  unsigned long getUint32Property(in string propertyName, in unsigned long defaultValue);
+  long long     getInt64Property(in string propertyName, in long long defaultValue);
+  boolean getBooleanProperty(in string propertyName, in boolean defaultValue);
+  void setBooleanProperty(in string propertyName, in boolean aPropertyValue);
+  nsIDBFolderInfo	GetTransferInfo();
+  void	initFromTransferInfo(in nsIDBFolderInfo transferInfo);
+
+  /**
+   * Gets/Sets the current character set for the folder. If there is no
+   * specific character set for the folder, it will return an empty string.
+   */
+  attribute ACString characterSet;
+
+  /**
+   * Returns the effective character set on the folder. If there is no specific
+   * set defined for the folder, it will return the default character set.
+   */
+  readonly attribute ACString effectiveCharacterSet;
+
+  attribute boolean characterSetOverride;
+
+  attribute AString locale;
+  attribute AString mailboxName;
+
+
+  AString getProperty(in string propertyName);
+  void setProperty(in string propertyName, in AString propertyStr);
+
+  attribute string knownArtsSet;
+  attribute ACString folderName;
+};

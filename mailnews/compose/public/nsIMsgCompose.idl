@@ -1,0 +1,307 @@
+/* -*- Mode: idl; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIMsgCompFields.idl"
+#include "nsIMsgComposeParams.idl"
+#include "nsIMsgSendListener.idl"
+
+%{C++
+#include "nsStringGlue.h"
+%}
+
+interface nsIMsgSend;
+interface nsIMsgIdentity;
+interface nsIMsgProgress;
+interface nsIDocShell;
+interface mozIDOMWindowProxy;
+interface nsIEditor;
+interface nsIMsgWindow;
+
+typedef long MSG_ComposeSaveType;
+
+[scriptable, uuid(6953e50a-7531-11d3-85fe-006008948010)]
+interface nsIMsgCompSaveType {
+    const long File     = 0;
+    const long Template = 1;
+    const long Draft    = 2;
+};
+
+typedef long MSG_DeliverMode;
+
+[scriptable, uuid(a9f27dd7-8f89-4de3-8fbf-41b789c16ee5)]
+interface nsIMsgCompDeliverMode {
+    const long Now = 0;
+    const long Later = 1;
+    const long Save = 2;
+    const long SaveAs = 3;
+    const long SaveAsDraft = 4;
+    const long SaveAsTemplate = 5;
+    const long SendUnsent = 6;
+    const long AutoSaveAsDraft = 7;
+    const long Background = 8;
+};
+
+[scriptable, uuid(f38ea280-e090-11d3-a449-e3153319347c)]
+interface nsIMsgCompSendFormat {
+    const long AskUser = 4;     /* Hack: Bug 44512. If this is 0 and passed
+                                   as results.action to the askSendFormat
+                                   dialog, the args object gets destroyed.*/
+    const long PlainText = 1;
+    const long HTML = 2;
+    const long Both = 3;
+};
+
+[scriptable, uuid(9638af92-1dd1-11b2-bef1-ca5fee0abc62)]
+interface nsIMsgCompConvertible/*ToTXT*/ {
+    const long Plain = 1;  // Like 4.x: Only <html>, <p>, <br>, ...
+    const long Yes = 2;  // *Minor* alterations of the look: <ol>, <dd>, ...
+    const long Altering = 3;  /* Look altered: <strong>, <i>, <h1>, ...
+                                 Can be expressed in plaintext, but not in
+                                 the way it looked in the HTML composer. */
+    const long No = 4;  /* Will lose data: <font>, ...
+                           Really *requires* visual formatting or
+                           is not supported by our HTML->TXT converter. */
+    /* The values here have meaning, they are "levels":
+       convertible({a; b}) == max(convertible({a}), convertible({b}))
+       must be true, i.e. the higher value counts. */
+};
+
+[scriptable, uuid(6ce49b2a-07dc-4783-b307-9a355423163f)]
+interface nsIMsgComposeStateListener : nsISupports
+{
+	/* ... */
+	void        NotifyComposeFieldsReady();
+	void        ComposeProcessDone(in nsresult aResult);
+	void        SaveInFolderDone(in string folderName);
+	void        NotifyComposeBodyReady();
+};
+
+[scriptable, uuid(061aae23-7e0a-4818-9a15-1b5db3ceb7f4)]
+interface nsIMsgComposeNotificationType
+{
+    const long ComposeFieldsReady = 0;
+    const long ComposeProcessDone = 1;
+    const long SaveInFolderDone   = 2;
+    const long ComposeBodyReady   = 3;
+};
+
+native nsString(nsString);
+[ref] native nsStringRef(nsString);
+
+[scriptable, uuid(c6544b6b-06dd-43ac-89b5-949d7c81bb7b)]
+interface nsIMsgCompose : nsIMsgSendListener {
+
+  /**
+   * Initializes the msg compose object.
+   *
+   * @param aParams   An nsIMsgComposeParams object containing the initial
+   *                  details for the compose.
+   * @param aWindow   The optional window associated with this compose object.
+   * @param aDocShell The optional docShell of the editor element that is used
+   *                  for composing.
+   */
+  void initialize(in nsIMsgComposeParams aParams,
+                  [optional] in mozIDOMWindowProxy aWindow,
+                  [optional] in nsIDocShell aDocShell); 
+
+  /* ... */
+  void SetDocumentCharset(in string charset);
+  
+  /* ... */
+  void RegisterStateListener(in nsIMsgComposeStateListener stateListener);
+
+  /* ... */
+  void UnregisterStateListener(in nsIMsgComposeStateListener stateListener);
+
+  /* ... */
+  void SendMsg(in MSG_DeliverMode deliverMode, in nsIMsgIdentity identity, in string accountKey, in nsIMsgWindow aMsgWindow, in nsIMsgProgress progress);
+
+  /**
+   * After all Compose preparations are complete, send the prepared message to
+   * the server. This exists primarily to allow an override of the sending to
+   * use a non-SMTP method for send.
+   *
+   * @param deliverMode One of the nsIMsgCompDeliverMode values.
+   * @param identity The message identity.
+   * @param accountKey The message account key.
+   */
+  void sendMsgToServer(in MSG_DeliverMode deliverMode,
+                       in nsIMsgIdentity identity,
+                       in string accountKey);
+
+  /* ... */
+  void CloseWindow();
+
+  /* ... */
+  void abort();
+    
+  /* ... */
+  void quoteMessage(in string msgURI);
+
+  /*
+    AttachmentPrettyName will return only the leafName if the it's a file URL.
+    It will also convert the filename to Unicode assuming it's in  the file system 
+    charset. In case of URL, |charset| parameter will be used in the conversion.
+    This UI utility function should probably go into it's own class
+  */
+  AUTF8String AttachmentPrettyName(in AUTF8String url, in string charset);
+
+  /**
+   * Expand all mailing lists in the relevant compose fields to include the
+   * members of their output. This method will additionally update the
+   * popularity field of cards in the addressing header.
+   */
+  void expandMailingLists();
+
+  /**
+   * Returns how we should send this message in terms of HTML, plaintext, or
+   * both. Note that this method should not be called until after mailing lists
+   * have been expanded if correct results are desired.
+   *
+   * @param aConvertible The convertability of the body (from
+   *                     nsIMsgCompConvertible).
+   * @return             The HTML action to use (from nsIMsgCompSendFormat).
+   */
+  long determineHTMLAction(in long aConvertible);
+
+  /**
+   * The level of "convertibility" of the message body (whole HTML document)
+   * to plaintext.
+   *
+   * @return a value from nsIMsgCompConvertible.
+   */
+  long bodyConvertible();
+
+  /**
+   * The identity currently selected for the message compose object. When set
+   * this may change the signature on a message being composed. Note that
+   * typically SendMsg will be called with the same identity as is set here, but
+   * if it is different the SendMsg version will overwrite this identity.
+   */
+  attribute nsIMsgIdentity identity;
+
+  /* Check if the composing mail headers (and identity) can be converted to a mail charset.
+  */
+  boolean checkCharsetConversion(in nsIMsgIdentity identity, out string fallbackCharset);
+
+  /* The message send object. This is created by default to be the SMTP server
+   * in sendMsgToServer, but if that method is overridden, set the actual
+   * value used here.
+   */
+  attribute nsIMsgSend messageSend;
+
+  /*
+   * Clear the messageSend object to break any circular references
+   */
+   void clearMessageSend();
+
+  /* ... */
+  attribute nsIEditor editor;
+
+	/* ... */
+  readonly attribute mozIDOMWindowProxy domWindow;
+
+	/* ... */
+  readonly attribute nsIMsgCompFields compFields;
+    
+	/* ... */
+  readonly attribute boolean composeHTML;
+
+	/* ... */
+  attribute MSG_ComposeType type;
+
+	/* ... */
+  readonly attribute long wrapLength;
+
+  /* by reading this value, you can determine if yes or not the message has been mofified
+     by the user. When you set this value to false, you reset the modification count
+     of the body to 0 (clean).
+  */
+  attribute boolean bodyModified;
+
+  /* The body string is stored as a byte string in comp fields, but is converted to
+   * UTF16 when fetched by GetBody(). Fetch the body without conversion.
+   */
+  readonly attribute ACString bodyRaw;
+
+  /**
+   *  Init the editor THIS USED TO BE [noscript]
+   *  Now, this is called after editor is created,
+   *  which is triggered by loading startup url from JS.
+   *  The completion of document loading is detected by observing 
+   *  the "obs_documentCreated" command
+   */
+  void initEditor(in nsIEditor editor, in mozIDOMWindowProxy contentWindow);
+
+  /* The following functions are for internal use, essentially for the listener */
+
+  /* ... */
+  [noscript] void setCiteReference(in nsString citeReference);
+
+  /* Set the URI of the folder where the message has been saved */
+  attribute string savedFolderURI;
+
+  /* Append the signature defined in the identity to the msgBody */
+  [noscript] void processSignature(in nsIMsgIdentity identity,
+                                   in boolean aQuoted,
+                                   inout nsString aMsgBody);
+
+  /* set any reply flags on the original message's folder */
+  [noscript] void processReplyFlags();
+  [noscript] void rememberQueuedDisposition();
+
+  /* ... */
+  [noscript] void convertAndLoadComposeWindow(in nsStringRef aPrefix,
+                                              in nsStringRef aBuf, 
+                                              in nsStringRef aSignature,
+                                              in boolean aQuoted,
+                                              in boolean aHTMLEditor);
+
+  /* Tell the doc state listeners that the doc state has changed
+   * aNotificationType is from nsIMsgComposeNotificationType
+   */
+  [noscript] void notifyStateListeners(in long aNotificationType, in nsresult aResult);
+
+  /* Retreive the progress object */
+  readonly attribute nsIMsgProgress progress;
+  
+	/* ... */
+  [noscript] void buildBodyMessageAndSignature();
+  
+	/* ... */
+  [noscript] void buildQuotedMessageAndSignature();
+
+ 	/* ... */
+  [noscript] void getQuotingToFollow(out boolean quotingToFollow);
+
+  readonly attribute string originalMsgURI;
+
+  attribute boolean deleteDraft;
+
+  /* true when the compose window is in the process of inserting quoted content
+     (i.e. via reply, forward inline or a quoting operation) into the document 
+   */
+  attribute boolean insertingQuotedContent;
+
+  /* for easier use of nsIMsgSendListener */
+  void addMsgSendListener(in nsIMsgSendListener sendListener);
+
+  /* for easier use of nsIMsgSendListener */
+  void removeMsgSendListener(in nsIMsgSendListener sendListener);
+
+  /// Access during mail-set-sender observer if needed, see nsIMsgCompDeliverMode.
+  readonly attribute MSG_DeliverMode deliverMode;
+
+};
+
+/* send listener interface */
+[scriptable, uuid(ad6ee068-b225-47f9-a50e-8e48440282ca)]
+interface nsIMsgComposeSendListener : nsISupports {
+
+  void setMsgCompose(in nsIMsgCompose msgCompose);
+  void setDeliverMode(in MSG_DeliverMode deliverMode);
+ 
+};

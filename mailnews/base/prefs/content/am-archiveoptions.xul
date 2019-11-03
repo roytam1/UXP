@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/accountManage.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/messenger.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/folderPane.css" type="text/css"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/am-archiveoptions.dtd" >
+
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        id="archive-options"
+        title="&dialogTitle.label;"
+        width="350" height="350"
+        persist="width height"
+        onload="onLoadArchiveOptions();"
+        ondialogaccept="onAcceptArchiveOptions();">
+
+  <script type="application/javascript" src="chrome://messenger/content/am-archiveoptions.js"/>
+
+  <vbox flex="1">
+    <label>&archiveGranularityPrefix.label;</label>
+    <radiogroup id="archiveGranularity">
+      <radio label="&archiveFlat.label;" accesskey="&archiveFlat.accesskey;"
+             class="indent"/>
+      <radio label="&archiveYearly.label;"
+             accesskey="&archiveYearly.accesskey;" class="indent"/>
+      <radio label="&archiveMonthly.label;"
+             accesskey="&archiveMonthly.accesskey;" class="indent"/>
+    </radiogroup>
+    <checkbox id="archiveKeepFolderStructure"
+              label="&keepFolderStructure.label;"
+              accesskey="&keepFolderStructure.accesskey;"/>
+
+    <groupbox flex="1">
+      <caption label="&archiveExample.label;"/>
+      <tree id="archiveTree" hidecolumnpicker="true" disabled="true" flex="1">
+        <treecols>
+          <treecol primary="true" hideheader="true" flex="1"
+                   id="folderNameCol"/>
+        </treecols>
+        <treechildren>
+          <treeitem class="root">
+            <treerow>
+              <treecell properties="specialFolder-Archive"
+                        label="&archiveFolderName.label;"/>
+            </treerow>
+            <treechildren>
+              <treeitem id="folders">
+                <treerow>
+                  <treecell label="&inboxFolderName.label;"/>
+                </treerow>
+              </treeitem>
+              <treeitem class="year">
+                <treerow>
+                  <treecell label="2010"/>
+                </treerow>
+                <treechildren>
+                  <treeitem class="month">
+                    <treerow>
+                      <treecell label="2010-11"/>
+                    </treerow>
+                    <treechildren/>
+                  </treeitem>
+                  <treeitem class="month">
+                    <treerow>
+                      <treecell label="2010-12"/>
+                    </treerow>
+                    <treechildren/>
+                  </treeitem>
+                </treechildren>
+              </treeitem>
+              <treeitem class="year">
+                <treerow>
+                  <treecell label="2011"/>
+                </treerow>
+                <treechildren>
+                  <treeitem class="month">
+                    <treerow>
+                      <treecell label="2011-01"/>
+                    </treerow>
+                    <treechildren/>
+                  </treeitem>
+                  <treeitem class="month">
+                    <treerow>
+                      <treecell label="2011-02"/>
+                    </treerow>
+                    <treechildren/>
+                  </treeitem>
+                </treechildren>
+              </treeitem>
+            </treechildren>
+          </treeitem>
+        </treechildren>
+      </tree>
+    </groupbox>
+  </vbox>
+</dialog>

@@ -1,0 +1,38 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIPop3Protocol;
+interface nsIMsgFolder;
+interface nsIUrlListener;
+interface nsIMsgWindow;
+
+[scriptable, uuid(8494584a-49b7-49df-9001-80ccdd0b50aa)]
+interface nsIPop3IncomingServer : nsISupports {
+  attribute boolean leaveMessagesOnServer;
+  attribute boolean headersOnly;
+  attribute boolean deleteMailLeftOnServer;
+  attribute boolean dotFix;
+  attribute unsigned long pop3CapabilityFlags;
+  attribute boolean deleteByAgeFromServer;
+  attribute long numDaysToLeaveOnServer;
+  attribute nsIPop3Protocol runningProtocol;
+  // client adds uidls to mark one by one, then calls markMessages
+  void addUidlToMark(in string aUidl, in int32_t newStatus);
+  void markMessages();
+  attribute boolean authenticated;
+  /* account to which this server defers storage, for global inbox */
+  attribute ACString deferredToAccount;
+  // whether get new mail in deferredToAccount gets
+  // new mail with this server.
+  attribute boolean deferGetNewMail;
+  void downloadMailFromServers(
+    [array, size_is(count)]in nsIPop3IncomingServer aServers,
+    in unsigned long count, in nsIMsgWindow aMsgWindow,
+    in nsIMsgFolder aFolder, in nsIUrlListener aListener);
+};
+
+

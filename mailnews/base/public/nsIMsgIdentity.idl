@@ -1,0 +1,250 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIFile.idl"
+
+/**
+ * This interface contains all the personal outgoing mail information
+ * for a given person.
+ * Each identity is identified by a key, which is the <id> string in
+ * the identity preferences, such as in mail.identity.<id>.replyTo.
+ */
+[scriptable, uuid(9dede9a0-f6fc-4afc-8fc9-a6af52414b3d)]
+interface nsIMsgIdentity : nsISupports {
+  /**
+   * Internal preferences ID.
+   */
+  attribute ACString key;
+
+  /**
+   * Label describing this identity. May be empty.
+   */
+  attribute AString label;
+
+  /**
+   * Pretty display name to identify this specific identity. Will return a
+   * composed string like "fullname <email> (label)".
+   */
+  readonly attribute AString identityName;
+
+  /**
+   * User's full name, i.e. John Doe.
+   */
+  attribute AString fullName;
+
+  /**
+   * User's e-mail address, i.e. john@doe.com.
+   */
+  attribute ACString email;
+
+  /**
+   * Formats fullName and email into the proper string to use as sender:
+   * name <email>
+   */
+  readonly attribute AString fullAddress;
+
+  /**
+   * Optional replyTo address, i.e. johnNOSPAM@doe.com.
+   */
+  attribute AUTF8String replyTo;
+
+  /**
+   * Optional organization.
+   */
+  attribute AString organization;
+
+  /**
+   * Should we compose with HTML by default?
+   */
+  attribute boolean composeHtml;
+
+  /**
+   * Should we attach a signature from file?
+   */
+  attribute boolean attachSignature;
+
+  /**
+   * Should we attach a vcard by default?
+   */
+  attribute boolean attachVCard;
+
+  /**
+   * Should we automatically quote the original message?
+   */
+  attribute boolean autoQuote;
+
+  /**
+   * What should our quoting preference be?
+   */
+  attribute long replyOnTop;
+
+  /**
+   * Should our signature be at the end of the quoted text when replying
+   * above it?
+   */
+  attribute boolean sigBottom;
+
+  /**
+   * Include a signature when forwarding a message?
+   */
+  attribute boolean sigOnForward;
+
+  /**
+   * Include a signature when replying to a message?
+   */
+  attribute boolean sigOnReply;
+
+  /**
+   * The current signature file.
+   */
+  attribute nsIFile signature;
+
+  /**
+   * Modification time of the signature file.
+   */
+  attribute long signatureDate;
+
+  /**
+   * Signature text if not read from file; format depends on htmlSigFormat.
+   */
+  attribute AString htmlSigText;
+
+  /**
+   * Does htmlSigText contain HTML? Use plain text if false.
+   */
+  attribute boolean htmlSigFormat;
+
+  /**
+   * Suppress the double-dash signature separator
+   */
+  attribute boolean suppressSigSep;
+
+  /**
+   * The encoded string representing the vcard.
+   */
+  attribute ACString escapedVCard;
+
+  attribute boolean doFcc;
+  /// URI for the fcc (Sent) folder
+  attribute ACString fccFolder;
+  attribute boolean fccReplyFollowsParent;
+
+  /**
+   * @{
+   * these attributes control whether the special folder pickers for
+   * fcc, drafts,archives, and templates are set to pick between servers
+   * (e.g., Sent on accountName) or to pick any folder on any account.
+   * "0" means choose between servers; "1" means use the full folder picker.
+   */
+  attribute ACString fccFolderPickerMode;
+  attribute ACString draftsFolderPickerMode;
+  attribute ACString archivesFolderPickerMode;
+  attribute ACString tmplFolderPickerMode;
+  /** @} */
+
+  // Don't call bccSelf, bccOthers, and bccList directly, they are 
+  // only used for migration and backward compatability. Use doBcc
+  // and doBccList instead.
+  attribute boolean bccSelf;
+  attribute boolean bccOthers;
+  attribute ACString bccList;
+
+  attribute boolean doCc;
+  attribute AUTF8String doCcList;
+
+  attribute boolean doBcc;
+  attribute AUTF8String doBccList;
+  /**
+   * @{
+   * URIs for the special folders (drafts, templates, archive)
+   */
+  attribute ACString draftFolder;
+  attribute ACString archiveFolder;
+  attribute ACString stationeryFolder;
+  /** @} */
+
+  attribute boolean archiveEnabled;
+  /**
+   * @{
+   * This attribute and constants control the granularity of sub-folders of the
+   * Archives folder - either messages go in the single archive folder, or a
+   * yearly archive folder, or in a monthly archive folder with a yearly
+   * parent folder. If the server doesn't support folders that both contain
+   * messages and have sub-folders, we will ignore this setting.
+   */
+  attribute long archiveGranularity;
+  const long singleArchiveFolder = 0;
+  const long perYearArchiveFolders = 1;
+  const long perMonthArchiveFolders = 2;
+  /// Maintain the source folder name when creating Archive subfolders
+  attribute boolean archiveKeepFolderStructure;
+  /** @} */
+
+  attribute boolean showSaveMsgDlg;
+  attribute ACString directoryServer;
+  attribute boolean overrideGlobalPref;
+  /**
+   * If this is false, don't append the user's domain
+   * to an autocomplete address with no matches
+   */
+   attribute boolean autocompleteToMyDomain;
+  /**
+   * valid determines if the UI should use this identity
+   * and the wizard uses this to determine whether or not
+   * to ask the user to complete all the fields
+   */
+  attribute boolean valid;
+
+  /**
+   * this is really dangerous. this destroys all pref values
+   * do not call this unless you know what you're doing!
+   */
+  void clearAllValues();
+
+  /**
+   * the preferred smtp server for this identity.
+   * if this is set, this the smtp server that should be used
+   * for the message send
+   */
+  attribute ACString smtpServerKey;
+
+  /**
+   * default request for return receipt option for this identity
+   * if this is set, the Return Receipt menu item on the compose
+   * window will be checked
+   */
+  readonly attribute boolean requestReturnReceipt;
+  readonly attribute long receiptHeaderType;
+
+  /**
+   * default request for DSN option for this identity
+   * if this is set, the DSN menu item on the compose
+   * window will be checked
+   */
+  readonly attribute boolean requestDSN;
+
+  /* copy the attributes of the identity we pass in */
+  void copy(in nsIMsgIdentity identity);
+
+  /** 
+   * these generic getter / setters, useful for extending mailnews 
+   * note, these attributes persist across sessions
+   */
+  AString getUnicharAttribute(in string name);
+  void setUnicharAttribute(in string name, in AString value);
+
+  ACString getCharAttribute(in string name);
+  void setCharAttribute(in string name, in ACString value);
+
+  boolean getBoolAttribute(in string name);
+  void setBoolAttribute(in string name, in boolean value);
+
+  long getIntAttribute(in string name);
+  void setIntAttribute(in string name, in long value);
+
+  /* useful for debugging */
+  AString toString();
+};

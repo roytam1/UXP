@@ -1,0 +1,80 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"
+#include "nsIImapUrl.idl"
+
+interface nsIMsgMailNewsUrl;
+
+[scriptable, uuid(6ffb6a92-e43a-405f-92ea-92cf81a5e17b)]
+
+interface nsIImapMessageSink : nsISupports {
+  // set up messge download output stream
+  void setupMsgWriteStream(in nsIFile aFile, in boolean aAppendDummyEnvelope);
+
+  /**
+   * Used by the imap protocol code to notify the core backend code about
+   * downloaded imap messages.
+   *
+   * @param aAdoptedMsgLine  a string with a lot of message lines,
+   *                         separated by native line terminators.
+   * @param aUidOfMsg        IMAP UID of the fetched message.
+   * @param aImapUrl         IMAP Url used to fetch the message.
+   */
+  void parseAdoptedMsgLine(in string aAdoptedMsgLine, in nsMsgKey aUidOfMsg,
+                           in nsIImapUrl aImapUrl);
+
+  /**
+   * Notify the backend that the imap protocol is done downloading a message
+   *
+   * @param aUidOfMsg           IMAP UID of the fetched message.
+   * @param aMarkMsgRead        Set the SEEN flag on the message.
+   * @param aImapUrl            IMAP Url used to fetch the message.
+   * @param aUpdatedMessageSize if this parameter is not -1, the stored size of the message
+   *                            should be set to this value to reflect the actual size of
+   *                            the downloaded message.
+   */
+  void normalEndMsgWriteStream(in nsMsgKey aUidOfMessage,
+                               in boolean aMarkMsgRead, in nsIImapUrl aImapUrl,
+                               in long aUpdatedMessageSize);
+
+  void abortMsgWriteStream();
+
+  void beginMessageUpload();
+
+  /**
+   *  Notify the message sink that one or more flags have changed
+   *  For Condstore servers, also update the highestMod Sequence
+   *  @param   aFlags         - The new flags for the message
+   *  @param   aKeywords        keywords for the message
+   *  @param   aMessageKey    - The UID of the message that changed
+   *  @param   aHighestModSeq - The highest mod seq the parser has seen
+   *                            for this folder
+  **/
+  void notifyMessageFlags(in unsigned long aFlags, in ACString aKeywords,
+                          in nsMsgKey aMessageKey,
+                          in unsigned long long aHighestModSeq);
+
+  void notifyMessageDeleted(in string aOnlineFolderName,in boolean aDeleteAllMsgs,in string aMsgIdString);
+
+  void getMessageSizeFromDB(in string aId, out unsigned long aSize);
+
+  void setContentModified(in nsIImapUrl aImapUrl, in nsImapContentModifiedType aModified);
+  
+  /**
+   * For a message stored in a file, get the message metadata needed to copy
+   * that message to an imap folder
+   *
+   * @param aRunningUrl  message URL
+   * @param aDate        message date
+   * @param aKeywords    message custom keywords (if supported by the server),
+   *                     including messages tags and junk status
+   *
+   * @return             message flags
+   */
+  unsigned long getCurMoveCopyMessageInfo(in nsIImapUrl aRunningUrl, 
+                                          out PRTime aDate, out ACString aKeywords);
+};

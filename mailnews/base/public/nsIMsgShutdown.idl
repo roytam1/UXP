@@ -1,0 +1,69 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+interface nsIUrlListener;
+interface nsIMsgWindow;
+interface nsIWebProgressListener;
+
+[scriptable, uuid(D1B43428-B631-4629-B691-AB0E01A2DB4B)]
+interface nsIMsgShutdownTask : nsISupports
+{
+  /**
+   * Inform the caller wheter or not the task needs to be run. This method
+   * gives the task the flexibility to cancel running a task on shutdown
+   * if nothing needs to be run.
+   */
+  readonly attribute boolean needsToRunTask;
+
+  /**
+   * At shutdown-time, this function will be called to all registered implementors.
+   * Shutdown will be temporarily postponed until |OnStopRequest()| has been called
+   * on the passed in url-listener. 
+   * @param inUrlListener The URL listener to report events to.
+   * @param inMsgWindow The current message window to allow for posing dialogs.
+   * @return If the shutdown URL was run or not. If the URL is running, the task
+   *         will be responsible for notifying |inUrlListener| when the task is completed.
+   */
+  boolean doShutdownTask(in nsIUrlListener inUrlListener, in nsIMsgWindow inMsgWindow);
+  
+  /**
+   * Get the displayable name of the current task. This textual information will be
+   * shown to the user so they know what shutdown task is being performed.
+   * @return The name of the current task being performed.
+   */
+  AString getCurrentTaskName();
+};
+
+[scriptable, uuid(483C8ABB-ECF9-48A3-A394-2C604B603BD5)]
+interface nsIMsgShutdownService : nsISupports
+{
+  /**
+   * Get the number of tasks that will need to be processed at shutdown time.
+   * @return The number of shutdown tasks to do.
+   */ 
+  long getNumTasks();
+  
+  /**
+   * Start the shutdown tasks. 
+   */
+  void startShutdownTasks();
+  
+  /**
+   * Tell the service to stop running tasks and go ahead and shutdown the application.
+   */
+  void cancelShutdownTasks();
+  
+  /**
+   * Set the shutdown listener.
+   */
+  void setShutdownListener(in nsIWebProgressListener inListener);
+  
+  /**
+   * Set the status text of the shutdown progress dialog.
+   */
+  void setStatusText(in AString inStatusString);
+};
+
+

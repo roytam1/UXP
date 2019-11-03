@@ -1,0 +1,26 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIMsgSearchValidityTable.idl"
+
+typedef long nsMsgSearchValidityScope;
+
+[scriptable, uuid(6A352055-DE6E-49d2-A256-89E0B9EC405E)]
+interface nsIMsgSearchValidityManager : nsISupports {
+    nsIMsgSearchValidityTable getTable(in nsMsgSearchValidityScope scope);
+
+    /**
+     * Given a search attribute (which is an internal numerical id), return
+     * the string name that you can use as a key to look up the localized
+     * string in the search-attributes.properties file.
+     *
+     * @param aSearchAttribute  attribute type from interface nsMsgSearchAttrib
+     *
+     * @return                  localization-friendly string representation
+     *                          of the attribute
+     */
+    AString getAttributeProperty(in nsMsgSearchAttribValue aSearchAttribute);
+};

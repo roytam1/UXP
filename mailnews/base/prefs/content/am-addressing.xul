@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xul-overlay href="chrome://messenger/content/am-addressingOverlay.xul"?>
+
+<!DOCTYPE page SYSTEM "chrome://messenger/locale/am-addressing.dtd">
+
+<page xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+      title="&addressing.label;"
+      onload="onLoad();">
+  <vbox flex="1" style="overflow: auto;">
+    <dialogheader title="&addressing.label;"/>
+    <vbox id="compositionAndAddressing"/>
+  </vbox>
+</page>

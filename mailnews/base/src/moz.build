@@ -1,0 +1,82 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXPORTS += [
+    'nsMailDirServiceDefs.h',
+    'nsMsgRDFDataSource.h',
+    'nsMsgRDFUtils.h',
+]
+
+SOURCES += [
+    'MailNewsDLF.cpp',
+    'MailnewsLoadContextInfo.cpp',
+    'nsCidProtocolHandler.cpp',
+    'nsCopyMessageStreamListener.cpp',
+    'nsMailDirProvider.cpp',
+    'nsMessenger.cpp',
+    'nsMessengerBootstrap.cpp',
+    'nsMessengerContentHandler.cpp',
+    'nsMsgAccount.cpp',
+    'nsMsgAccountManager.cpp',
+    'nsMsgAccountManagerDS.cpp',
+    'nsMsgBiffManager.cpp',
+    'nsMsgContentPolicy.cpp',
+    'nsMsgCopyService.cpp',
+    'nsMsgDBView.cpp',
+    'nsMsgFolderCache.cpp',
+    'nsMsgFolderCacheElement.cpp',
+    'nsMsgFolderCompactor.cpp',
+    'nsMsgFolderDataSource.cpp',
+    'nsMsgFolderNotificationService.cpp',
+    'nsMsgGroupThread.cpp',
+    'nsMsgGroupView.cpp',
+    'nsMsgMailSession.cpp',
+    'nsMsgOfflineManager.cpp',
+    'nsMsgProgress.cpp',
+    'nsMsgPurgeService.cpp',
+    'nsMsgQuickSearchDBView.cpp',
+    'nsMsgRDFDataSource.cpp',
+    'nsMsgRDFUtils.cpp',
+    'nsMsgSearchDBView.cpp',
+    'nsMsgServiceProvider.cpp',
+    'nsMsgSpecialViews.cpp',
+    'nsMsgStatusFeedback.cpp',
+    'nsMsgTagService.cpp',
+    'nsMsgThreadedDBView.cpp',
+    'nsMsgWindow.cpp',
+    'nsMsgXFViewThread.cpp',
+    'nsMsgXFVirtualFolderDBView.cpp',
+    'nsSpamSettings.cpp',
+    'nsStatusBarBiffManager.cpp',
+    'nsSubscribableServer.cpp',
+    'nsSubscribeDataSource.cpp',
+]
+
+if CONFIG['NS_PRINTING']:
+    SOURCES += ['nsMsgPrintEngine.cpp']
+
+if CONFIG['OS_ARCH'] == 'WINNT':
+    SOURCES += ['nsMessengerWinIntegration.cpp']
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('gtk2', 'gtk3', 'qt'):
+    SOURCES += ['nsMessengerUnixIntegration.cpp']
+elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    SOURCES += ['nsMessengerOSXIntegration.mm']
+
+EXTRA_COMPONENTS += [
+    'folderLookupService.js',
+    'msgAsyncPrompter.js',
+    'msgBase.manifest',
+    'msgOAuth2Module.js',
+    'newMailNotificationService.js',
+    'nsMailNewsCommandLineHandler.js',
+]
+
+EXTRA_JS_MODULES += [
+    'virtualFolderWrapper.js',
+]
+
+FINAL_LIBRARY = 'mail'
+

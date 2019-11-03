@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/accountManage.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/messenger.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/folderMenus.css" type="text/css"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/am-server-advanced.dtd">
+
+<dialog
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="&serverAdvanced.label;"
+        buttons="accept,cancel"
+        onload="onLoad();"
+        ondialogaccept="return onOk();">
+
+  <script type="application/javascript"
+          src="chrome://messenger/content/am-server-advanced.js"/>
+  <stringbundle id="bundle_prefs"
+                src="chrome://messenger/locale/prefs.properties"/>
+
+    <label id="serverPrettyName"/>
+
+    <separator class="thin"/>
+
+    <!-- IMAP Panel -->
+    <vbox id="imapPanel">
+      <hbox align="center">
+        <label value="&serverDirectory.label;"
+               accesskey="&serverDirectory.accesskey;"
+               control="serverDirectory"/>
+        <textbox amsa_persist="true" id="serverDirectory"/>
+      </hbox>
+
+      <checkbox amsa_persist="true" id="usingSubscription"
+                label="&usingSubscription.label;"
+                accesskey="&usingSubscription.accesskey;"/>
+
+      <checkbox amsa_persist="true" id="dualUseFolders"
+                label="&dualUseFolders.label;"
+                accesskey="&dualUseFolders.accesskey;"/>
+
+      <separator class="groove"/>
+      <row>
+        <hbox align="center">
+          <label control="maximumConnectionsNumber"
+                 value="&maximumConnectionsNumber.label;"
+                 accesskey="&maximumConnectionsNumber.accesskey;"/>
+          <textbox amsa_persist="true" size="3" type="number"
+                   min="1" max="1000" id="maximumConnectionsNumber"/>
+        </hbox>
+      </row>
+
+      <separator class="groove"/>
+      <description>&namespaceDesc.label;</description>
+      <grid>
+        <columns>
+          <column/>
+          <column/>
+          <column/>
+        </columns>
+        <rows>
+          <row align="center">
+            <separator class="indent"/>
+            <label control="personalNamespace" value="&personalNamespace.label;"
+                   accesskey="&personalNamespace.accesskey;"/>
+            <textbox amsa_persist="true" id="personalNamespace" />
+          </row>
+          <row align="center">
+            <separator class="indent"/>
+            <label control="publicNamespace" value="&publicNamespace.label;"
+                   accesskey="&publicNamespace.accesskey;"/>
+            <textbox amsa_persist="true" id="publicNamespace"/>
+          </row>
+          <row align="center">
+            <separator class="indent"/>
+            <label control="otherUsersNamespace" value="&otherUsersNamespace.label;"
+                   accesskey="&otherUsersNamespace.accesskey;"/>
+            <textbox amsa_persist="true" id="otherUsersNamespace"/>
+          </row>
+        </rows>
+      </grid>
+      <grid>
+        <columns>
+          <column/>
+          <column/>
+        </columns>
+        <rows>
+          <row align="center">
+            <separator class="indent"/>
+            <checkbox amsa_persist="true" id="overrideNamespaces"
+                      label="&overrideNamespaces.label;"
+                      accesskey="&overrideNamespaces.accesskey;"/>
+          </row>
+        </rows>
+      </grid>
+    </vbox>
+
+
+    <!-- POP3 Panel -->
+    <vbox id="pop3Panel">
+      <label flex="1" control="folderStorage">&pop3DeferringDesc.label;</label>
+      <hbox align="center">
+        <radiogroup id="folderStorage"
+                    orient="horizontal"
+                    amsa_persist="true"
+                    onselect="updateInboxAccount(this.selectedIndex == 1);">
+          <rows>
+            <row>
+              <radio id="deferToCurrentAccount"
+                     value="currentAccount"
+                     label="&accountInbox.label;"
+                     accesskey="&accountInbox.accesskey;"/>
+            </row>
+            <row>
+              <vbox>
+              <hbox>
+              <radio id="deferToOtherAccount"
+                     value="otherAccount"
+                     label="&deferToServer.label;"
+                     accesskey="&deferToServer.accesskey;">
+              </radio>
+              <menulist id="deferredServerFolderPicker"
+                        class="folderMenuItem"
+                        aria-labelledby="deferToServer">
+                <menupopup id="deferredServerPopup"
+                           type="folder"
+                           expandFolders="false"
+                           mode="deferred"
+                           oncommand="this.selectFolder(event.target._folder);"/>
+              </menulist>
+              </hbox>
+              <checkbox amsa_persist="true" id="deferGetNewMail"
+                        label="&deferGetNewMail.label;" class="indent"
+                        accesskey="&deferGetNewMail.accesskey;"/>
+              </vbox>
+            </row>
+          </rows>
+        </radiogroup>
+      </hbox>
+
+    </vbox>
+</dialog>

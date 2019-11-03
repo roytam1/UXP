@@ -1,0 +1,143 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
+
+<!DOCTYPE window [
+<!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd" >
+%brandDTD;
+<!ENTITY % importDTD SYSTEM "chrome://messenger/locale/importDialog.dtd" >
+%importDTD;
+]>
+
+<window xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        onload="OnLoadImportDialog()"
+#ifdef XP_MACOSX
+        style="width: &window.macWidth; !important;"
+#else
+        style="width: &window.width; !important;"
+#endif
+        title="&importDialog.windowTitle;">
+
+  <stringbundle id="bundle_importMsgs" src="chrome://messenger/locale/importMsgs.properties"/>
+  <stringbundle id="bundle_addressbook" src="chrome://messenger/locale/addressbook/addressBook.properties"/>
+  <stringbundle id="bundle_vcardImportMsgs" src="chrome://messenger/locale/vCardImportMsgs.properties"/>
+  <stringbundle id="bundle_feeds" src="chrome://messenger-newsblog/locale/newsblog.properties"/>
+  <script type="application/javascript" src="chrome://messenger/content/importDialog.js"/>
+  <script type="application/javascript" src="chrome://messenger-newsblog/content/feed-subscriptions.js"/>
+
+  <keyset id="dialogKeys"/>
+
+  <hbox class="box-header" id="header"
+       title="&importTitle.label;"
+       description="&importShortDesc.label;"/>
+
+  <deck id="stateDeck" selectedIndex="0" style="min-height: 30em">
+    <vbox class="wizard-box">
+      <description>&importDescription1.label;</description>
+      <description>&importDescription2.label;</description>
+      <separator/>
+      <radiogroup id="importFields">
+        <radio id="allRadio"
+               value="all"
+               label="&importAll.label;"
+               accesskey="&importAll.accesskey;"/>
+        <separator/>
+        <label control="importFields">&select.label;</label>
+        <separator class="thin"/>
+        <vbox class="indent">
+          <radio id="addressbookRadio"
+                 value="addressbook"
+                 label="&importAddressbook.label;"
+                 accesskey="&importAddressbook.accesskey;"/>
+          <radio id="mailRadio"
+                 value="mail"
+                 label="&importMail.label;"
+                 accesskey="&importMail.accesskey;"/>
+          <radio id="feedsRadio"
+                 value="feeds"
+                 label="&importFeeds.label;"
+                 accesskey="&importFeeds.accesskey;"/>
+          <radio id="settingsRadio"
+                 value="settings"
+                 label="&importSettings.label;"
+                 accesskey="&importSettings.accesskey;"/>
+          <radio id="filtersRadio"
+                 value="filters"
+                 label="&importFilters.label;"
+                 accesskey="&importFilters.accesskey;"/>
+        </vbox>
+      </radiogroup>
+    </vbox>
+    <vbox class="wizard-box">
+      <deck id="modulesFound"
+            selectedIndex="0">
+        <vbox>
+          <deck id="selectDescriptionDeck"
+                selectedIndex="0">
+            <label control="moduleList"
+                   value="&selectDescription.label;"
+                   accesskey="&selectDescription.accesskey;"/>
+            <label control="moduleList"
+                   value="&selectDescriptionB.label;"
+                   accesskey="&selectDescription.accesskey;"/>
+          </deck>
+          <listbox id="moduleList" flex="3"
+                   onselect="ImportSelectionChanged(); enableAdvance();"/>
+        </vbox>
+        <label>&noModulesFound.label;</label>
+      </deck>
+      <grid flex="1">
+        <columns><column flex="1"/></columns>
+        <rows>
+          <row>
+            <description control="moduleList" id="description" class="box-padded"/>
+          </row>
+          <row>
+            <hbox id="acctName-box" flex="1" style="visibility: hidden;">
+              <label control="acctName" class="box-padded"
+                     accesskey="&acctName.accesskey;"
+                     value="&acctName.label;"/>
+              <textbox id="acctName" clickSelectsAll="true"/>
+            </hbox>
+          </row>
+        </rows>
+      </grid>
+    </vbox>
+    <vbox class="wizard-box">
+      <spacer flex="1"/>
+      <groupbox>
+        <caption id="progressTitle" label="&title.label;"/>
+        <label class="indent" id="progressStatus" value="&processing.label;"/>
+        <vbox class="box-padded">
+          <progressmeter id="progressMeter" mode="determined" value="5"/>
+        </vbox>
+      </groupbox>
+    </vbox>
+    <vbox class="wizard-box">
+      <description id="status"/>
+      <hbox style="overflow: auto" class="inset" flex="1">
+        <description id="results" flex="1"/>
+      </hbox>
+    </vbox>
+  </deck>
+
+  <separator/>
+
+  <separator class="groove"/>
+
+  <hbox class="box-padded">
+    <spacer flex="1"/>
+    <button id="back" label="&back.label;" disabled="true"
+            oncommand="back();"/>
+    <button id="forward" label="&forward.label;" nextval="&forward.label;" finishedval="&finish.label;"
+            oncommand="next();"/>
+    <separator orient="vertical"/>
+    <button id="cancel" label="&cancel.label;"
+            oncommand="close();"/>
+  </hbox>
+
+</window>

@@ -1,0 +1,74 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+[scriptable, uuid(290412eb-5824-4087-8984-05450c9397be)]
+interface nsIImapFlagAndUidState : nsISupports
+{
+  readonly attribute long numberOfMessages;
+  readonly attribute long numberOfRecentMessages;
+
+  /**
+   * If a full update, the total number of deleted messages
+   * in the folder; if a partial update, the number of deleted
+   * messages in the partial update
+   **/
+  readonly attribute long numberOfDeletedMessages;
+
+  /**
+   * If this is true, instead of fetching 1:* (FLAGS), and putting all
+   * UIDs and flags in the array, we only fetched the uids and flags
+   * that changed since the last time we were selected on this folder.
+   * This means we have a sparse array, and should not assume missing
+   * UIDs have been deleted.
+   **/
+  readonly attribute boolean partialUIDFetch;
+
+  /**
+   * Set of flags the server supports storing per message. See nsImapCore.h
+   * for the set of flags.
+   */
+  readonly attribute unsigned short supportedUserFlags;
+
+  /**
+   * OR's the  passed in flags with the previous flags because we want to
+   * accumulate the FLAGS and PERMANENTFLAGS response.
+   *
+   * @param aFlags - flags to OR with current flags.
+   */
+  void orSupportedUserFlags(in unsigned short aFlags);
+
+  void getUidOfMessage(in long zeroBasedIndex, out unsigned long result);
+  void getMessageFlags(in long zeroBasedIndex, out unsigned short result);
+  void setMessageFlags(in long zeroBasedIndex, in unsigned short flags);
+  void expungeByIndex(in unsigned long zeroBasedIndex);
+  void addUidFlagPair(in unsigned long uid, in unsigned short flags, in unsigned long zeroBasedIndex);
+  void addUidCustomFlagPair(in unsigned long uid, in string customFlag);
+  string getCustomFlags(in unsigned long uid); // returns space-separated keywords
+  void reset();
+  void clearCustomFlags(in unsigned long uid);
+  /**
+   * Adds custom attributes to a hash table for the purpose of storing them
+   * them.
+   * @param aUid   UID of the associated msg
+   * @param aCustomAttributeName   Name of the custom attribute value
+   * @param aCustomAttributeValue   Value of the attribute,
+   */
+  void setCustomAttribute(in unsigned long aUid,
+                          in ACString aCustomAttributeName,
+                          in ACString aCustomAttributeValue);
+
+  /**
+   * Gets the custom attributes from the hash table where they were stored earlier
+   * them.
+   * @param aUid   UID of the associated msg
+   * @param aCustomAttributeName   Name of the custom attribute value
+   * @param aCustomAttributeValue   Value of the attribute,
+   */
+  ACString getCustomAttribute(in unsigned long aUid,
+                              in ACString aCustomAttributeName);
+};
+

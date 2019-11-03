@@ -1,0 +1,47 @@
+/* -*- Mode: idl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIPrompt.idl"
+
+
+[scriptable, uuid(2ec81175-bc65-44b9-ba87-462bc3f938db)]
+interface nsIMsgProcessReport : nsISupports {
+
+  attribute boolean proceeded;
+  attribute nsresult error;
+  attribute wstring message;
+  
+  void reset();
+};
+
+[scriptable, uuid(428c5bde-29f5-4bfe-830a-ec795a1c2975)]
+interface nsIMsgSendReport : nsISupports {
+
+  const long process_Current = -1;
+  const long process_BuildMessage = 0;
+  const long process_NNTP = 1;
+  const long process_SMTP = 2;
+  const long process_Copy = 3;
+  const long process_Filter = 4;
+  const long process_FCC = 5;
+  
+  attribute long deliveryMode;      /* see nsMsgDeliverMode in nsIMsgSend.idl for valid value */
+  attribute long currentProcess;
+
+  void reset();
+  
+  void setProceeded(in long process, in boolean proceeded);
+  void setError(in long process, in nsresult error, in boolean overwriteError);
+  void setMessage(in long process, in wstring message, in boolean overwriteMessage);
+  
+  nsIMsgProcessReport getProcessReport(in long process);
+  
+  /* Display Report will ananlyze data collected during the send and will show the most appropriate error.
+     Also it will return the error code. In case of no error or if the error has been canceld, it will return
+     NS_OK.
+  */
+  nsresult displayReport(in nsIPrompt prompt, in boolean showErrorOnly, in boolean dontShowReportTwice);
+};

@@ -1,0 +1,147 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+#include "nsISupports.idl"
+#include "nsIMsgCompose.idl"
+#include "nsIMsgComposeParams.idl"
+
+interface nsIURI;
+interface nsIDocShell;
+interface nsIMsgWindow;
+interface nsIMsgIdentity;
+interface nsIMsgIncomingServer;
+interface nsIMsgDBHdr;
+
+[scriptable, uuid(041782bf-e523-444b-a268-d90868fd2b50)]
+interface nsIMsgComposeService : nsISupports {
+
+  /* we need a msg window because when we forward inline we may need progress */
+  void OpenComposeWindow(in string msgComposeWindowURL,
+                         in nsIMsgDBHdr msgHdr,
+                         in string originalMsgURI,
+                         in MSG_ComposeType type, 
+                         in MSG_ComposeFormat format,
+                         in nsIMsgIdentity identity, 
+                         in nsIMsgWindow aMsgWindow);
+
+  /**
+   * Open a compose window given a mailto url and (optionally) an identity.
+   *
+   * @param aMsgComposeWindowURL Can be null in most cases. If you have your
+   *                             own chrome url you want to use in bringing up a
+   *                             compose window, pass it in here.
+   * @param aURI                 The mailto url you want to use as the
+   *                             foundation for the data inside the compose
+   *                             window.
+   * @param aIdentity            An optional identity to send the message from.
+   */
+  void OpenComposeWindowWithURI(in string msgComposeWindowURL,
+                                in nsIURI aURI,
+                                [optional] in nsIMsgIdentity aIdentity);
+
+  /* ... */
+  void OpenComposeWindowWithParams(in string msgComposeWindowURL, in nsIMsgComposeParams params);
+
+  /**
+   * Creates an nsIMsgCompose instance and initalizes it.
+   *
+   * @param aParams   An nsIMsgComposeParams object containing the initial
+   *                  details for the compose.
+   * @param aWindow   The optional window associated with this compose object.
+   * @param aDocShell The optional docShell of the editor element that is used
+   *                  for composing.
+   */
+  nsIMsgCompose initCompose(in nsIMsgComposeParams aParams,
+                            [optional] in mozIDOMWindowProxy aWindow,
+                            [optional] in nsIDocShell aDocShell);
+
+  /**
+  * defaultIdentity
+  *
+  * @return the default identity, in case no identity has been setup yet, will return null
+  */
+  readonly attribute nsIMsgIdentity defaultIdentity;
+
+  /* This function is use for debugging purpose only and may go away at anytime without warning */
+  void TimeStamp(in string label, in boolean resetTime);  
+  
+  /* This attribute is use for debugging purposes for determining whether to PR_LOG or not */
+  readonly attribute boolean logComposePerformance;
+
+  [noscript] boolean determineComposeHTML(in nsIMsgIdentity aIdentity, in MSG_ComposeFormat aFormat);
+
+  /** 
+   * given a mailto url, parse the attributes and turn them into a nsIMsgComposeParams object
+   * @return nsIMsgComposeParams which corresponds to the passed in mailto url
+   */
+  nsIMsgComposeParams getParamsForMailto(in nsIURI aURI); 
+
+  /**
+   * @{
+   * These constants control how to forward messages in forwardMessage.
+   * kForwardAsDefault uses value of pref "mail.forward_message_mode".
+   */
+  const unsigned long kForwardAsDefault = 0;
+  const unsigned long kForwardAsAttachment = 1;
+  const unsigned long kForwardInline = 2;
+  /** @} */
+
+  /**
+   * Allow filters to automatically forward a message to the given address(es).
+   * @param forwardTo the address(es) to forward to
+   * @param msgHdr the header of the message being replied to
+   * @param msgWindow message window to use
+   * @param server server to use for determining which account to send from
+   * @param aForwardType - How to forward the message one of 3 values:
+   *                       kForwardAsDefault, kForwardInline, or
+   *                       kForwardAsAttachment.
+   */
+  void forwardMessage(in AString forwardTo, in nsIMsgDBHdr msgHdr,
+                      in nsIMsgWindow msgWindow, in nsIMsgIncomingServer server,
+                      in unsigned long aForwardType);
+
+  /**
+   * Allow filters to automatically reply to a message. The reply message is
+   * based on the given template.
+   * @param msgHdr the header of the message being replied to
+   * @param templateUri uri of the template to base ther reply on
+   * @param msgWindow message window to use
+   * @param server server to use for determining which account to send from
+   */
+  void replyWithTemplate(in nsIMsgDBHdr msgHdr, in string templateUri,
+                         in nsIMsgWindow msgWindow, in nsIMsgIncomingServer server);
+
+  /** 
+   * The docShell of each editor element used for composing should be registered
+   * with this service. docShells passed to initCompose get registered
+   * automatically. The registrations are typically used to get the msgCompose
+   * window when determining what remote content to allow to be displayed.
+   *
+   * @param aDocShell The nsIDocShell of the editor element. 
+   * @param aMsgCompose The compose object associated with the compose window
+   */
+  void registerComposeDocShell(in nsIDocShell aDocShell,
+                               in nsIMsgCompose aMsgCompose);
+
+  /** 
+   * When an editor docShell is being closed, you should
+   * unregister it from this service. nsIMsgCompose normally calls this
+   * automatically for items passed to initCompose.
+   *
+   * @param aDocShell The nsIDocShell of the editor element. 
+   */
+  void unregisterComposeDocShell(in nsIDocShell aDocShell);
+  
+  /**
+   * For a given docShell, returns the nsIMsgCompose object associated with it.
+   *
+   * @param aDocShell The nsIDocShell of the editor element. 
+   *
+   * @return NS_ERROR_FAILURE if we could not find a nsIMsgCompose for
+   *         the passed in docShell.
+   */
+  nsIMsgCompose getMsgComposeForDocShell(in nsIDocShell aDocShell);
+};

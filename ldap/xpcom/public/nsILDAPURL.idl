@@ -1,0 +1,132 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsIURI.idl"
+
+%{C++
+#define NS_LDAPURL_CONTRACTID "@mozilla.org/network/ldap-url;1"
+%}
+
+/**
+ * Strings in methods inherited from nsIURI, which are using XPIDL
+ * |string| types, are expected to be UTF8 encoded. All such strings
+ * in this interface, except attribute types (e.g. "cn"), should in fact
+ * be UTF8. It's important to remember that attributes can not be UTF8,
+ * they can only be of a limited subset of ASCII (see RFC 2251).
+ */
+
+[scriptable, uuid(8e3a6d33-2e68-40ba-8f94-6ac03f69066e)]
+interface nsILDAPURL : nsIURI {
+    /**
+     * Initialize an LDAP URL
+     *
+     * @param aUrlType       - one of the URLTYPE_ flags @seealso nsIStandardURL
+     * @param aDefaultPort   - if the port parsed from the URL string matches
+     *                         this port, then the port will be removed from the
+     *                         canonical form of the URL.
+     * @param aSpec          - URL string.
+     * @param aOriginCharset - the charset from which this URI string
+     *                         originated.  this corresponds to the charset
+     *                         that should be used when communicating this
+     *                         URI to an origin server, for example.  if
+     *                         null, then provide aBaseURI implements this
+     *                         interface, the origin charset of aBaseURI will
+     *                         be assumed, otherwise defaulting to UTF-8 (i.e.,
+     *                         no charset transformation from aSpec).
+     * @param aBaseURI       - if null, aSpec must specify an absolute URI.
+     *                         otherwise, aSpec will be resolved relative
+     *                         to aBaseURI.
+     */
+    void init(in unsigned long aUrlType,
+              in long aDefaultPort,
+              in AUTF8String aSpec,
+              in string aOriginCharset,
+              in nsIURI aBaseURI);
+
+    /**
+     * The distinguished name of the URL (ie the base DN for the search).
+     * This string is expected to be a valid UTF8 string.
+     *
+     * for the getter:
+     *
+     * @exception NS_ERROR_NULL_POINTER     NULL pointer to GET method
+     * @exception NS_ERROR_OUT_OF_MEMORY	Ran out of memory
+     */
+    attribute AUTF8String dn;
+
+    /**
+     * The attributes to get for this URL, in comma-separated format. If the
+     * list is empty, all attributes are requested.
+     */
+    attribute ACString attributes;
+
+    /**
+     * Add one attribute to the array of attributes to request. If the
+     * attribute is already in our array, this becomes a noop.
+     *
+     * @param aAttribute          An LDAP attribute (e.g. "cn")
+     */
+    void addAttribute(in ACString aAttribute);
+
+    /**
+     * Remove one attribute from the array of attributes to request. If
+     * the attribute didn't exist in the array, this becomes a noop.
+     *
+     * @param aAttribute                    An LDAP attribute (e.g. "cn")
+     * @exception NS_ERROR_OUT_OF_MEMORY	Ran out of memory
+     */
+    void removeAttribute(in ACString aAttribute);
+
+    /**
+     * Test if an attribute is in our list of attributes already
+     *
+     * @param aAttribute                    An LDAP attribute (e.g. "cn")
+     * @return boolean                      Truth value
+     * @exception NS_ERROR_NULL_POINTER     NULL pointer to GET method
+     */
+    boolean hasAttribute(in ACString aAttribute);
+
+    /**
+     * The scope of the search.  defaults to SCOPE_BASE. 
+     *
+     * @exception NS_ERROR_NULL_POINTER     NULL pointer to GET method
+     * @exception NS_ERROR_MALFORMED_URI	Illegal base to SET method
+     */
+    attribute long scope;
+
+    /**
+     * Search just the base object
+     */
+    const long SCOPE_BASE = 0;
+    
+    /** 
+     * Search only the children of the base object
+     */
+    const long SCOPE_ONELEVEL = 1;
+
+    /**
+     * Search the entire subtree under and including the base object
+     */
+    const long SCOPE_SUBTREE = 2;
+
+    /**
+     * The search filter. "(objectClass=*)" is the default.
+     */
+    attribute AUTF8String filter;
+
+    /**
+     * Any options defined for this URL (check options using a bitwise and)
+     * 
+     * @exception NS_ERROR_NULL_POINTER     NULL pointer to GET method
+     * @exception NS_ERROR_OUT_OF_MEMORY    Ran out of memory
+     */
+    attribute unsigned long options;
+
+    /**
+     * If this is set/true, this is an ldaps: URL, not an ldap: URL
+     */
+    const unsigned long OPT_SECURE = 0x01;
+};

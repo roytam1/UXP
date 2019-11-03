@@ -1,0 +1,78 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXPORTS += [
+    'nsImapMoveCoalescer.h',
+    'nsMsgCompressIStream.h',
+    'nsMsgCompressOStream.h',
+    'nsMsgDBFolder.h',
+    'nsMsgDBFolderAtomList.h',
+    'nsMsgI18N.h',
+    'nsMsgIdentity.h',
+    'nsMsgIncomingServer.h',
+    'nsMsgKeyArray.h',
+    'nsMsgKeySet.h',
+    'nsMsgLineBuffer.h',
+    'nsMsgMailNewsUrl.h',
+    'nsMsgProtocol.h',
+    'nsMsgReadStateTxn.h',
+    'nsMsgTxn.h',
+    'nsMsgUtils.h',
+]
+
+EXPORTS.mozilla.mailnews += [
+    'ServiceList.h',
+    'Services.h',
+]
+
+SOURCES += [
+    'nsImapMoveCoalescer.cpp',
+    'nsMsgCompressIStream.cpp',
+    'nsMsgCompressOStream.cpp',
+    'nsMsgDBFolder.cpp',
+    'nsMsgFileStream.cpp',
+    'nsMsgI18N.cpp',
+    'nsMsgIdentity.cpp',
+    'nsMsgIncomingServer.cpp',
+    'nsMsgKeyArray.cpp',
+    'nsMsgKeySet.cpp',
+    'nsMsgLineBuffer.cpp',
+    'nsMsgMailNewsUrl.cpp',
+    'nsMsgProtocol.cpp',
+    'nsMsgReadStateTxn.cpp',
+    'nsMsgTxn.cpp',
+    'nsMsgUtils.cpp',
+    'nsStopwatch.cpp',
+    'Services.cpp',
+]
+
+EXTRA_JS_MODULES += [
+    'ABQueryUtils.jsm',
+    'errUtils.js',
+    'folderUtils.jsm',
+    'hostnameUtils.jsm',
+    'IOUtils.js',
+    'iteratorUtils.jsm',
+    'jsTreeSelection.js',
+    'JXON.js',
+    'mailnewsMigrator.js',
+    'mailServices.js',
+    'msgDBCacheManager.js',
+    'OAuth2.jsm',
+    'OAuth2Providers.jsm',
+    'StringBundle.js',
+    'templateUtils.js',
+    'traceHelper.js',
+]
+
+LOCAL_INCLUDES += [
+  '/mozilla/netwerk/base'
+]
+
+FINAL_LIBRARY = 'mail'
+
+Library('msgbsutl_s')
+
+DEFINES['_IMPL_NS_MSG_BASE'] = True

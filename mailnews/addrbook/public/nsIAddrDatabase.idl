@@ -1,0 +1,311 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsIAddrDBAnnouncer.idl"
+#include "nsIAbCard.idl"
+#include "nsIAbDirectory.idl"
+
+interface nsIFile;
+interface nsIMdbTableRowCursor;
+interface nsIMdbEnv;
+interface nsIMdbRow;
+interface nsIArray;
+interface nsISimpleEnumerator;
+
+%{C++
+// this is the prefix we for attributes that are specific
+// to the mozilla addressbook, and weren't in 4.x and aren't specified in
+// RFC 2789.  used when exporting and import LDIF
+// see nsTextAddress.cpp, nsAddressBook.cpp
+#define MOZ_AB_LDIF_PREFIX "mozilla"
+
+// note, GeneratedName is not a real column
+// if you change any of this, make sure to change 
+// Get / Set CardValue in nsAbCardProperty.cpp
+#define kPhoneticNameColumn       "_PhoneticName"
+#define kAddressCharSetColumn     "AddrCharSet"
+#define kMailListName             "ListName"
+#define kMailListNickName         "ListNickName"
+#define kMailListDescription      "ListDescription"
+#define kMailListTotalAddresses   "ListTotalAddresses"
+// not shown in the UI
+#define kLowerPriEmailColumn      "LowercasePrimaryEmail"
+#define kLower2ndEmailColumn      "LowercaseSecondEmail"
+
+// Palm Integration
+#define  CARD_ATTRIB_PALMID "PalmRecId"
+#define  CARD_ATTRIB_DISPLAY "DisplayName"
+
+%}
+
+[scriptable, uuid(20d4c6c3-0460-403e-aa9c-813654641566)]
+interface nsAddrDBCommitType 
+{
+  const long kLargeCommit = 1;
+  const long kSessionCommit = 2;
+  const long kCompressCommit = 3;
+};
+
+[scriptable, uuid(c54973e4-d251-4b93-a0d0-81a616225061)]
+interface nsIAddrDatabase : nsIAddrDBAnnouncer {
+
+  /**
+   * Path to the address book database that this instance represents.
+   */
+  attribute nsIFile dbPath;
+  nsIAddrDatabase open(in nsIFile dbFile, in boolean create, in boolean upgrading);
+             
+  void close(in boolean forceCommit);
+
+  /**
+   * Open the MDB database synchronously creating it if required. If
+   * successful, this routine will set up the m_mdbStore and m_mdbEnv of the
+   * database object so other database calls can work.
+   *
+   * @param     dbName                      The location of the database file
+   *                                        to open.
+   * @param     create                      If set to true, will create the
+   *                                        database file if it does not
+   *                                        already exist.
+   * @exception NS_ERROR_FILE_NOT_FOUND     The file was not found at the
+   *                                        specified location (and create was
+   *                                        false).
+   * @exception NS_ERROR_FILE_ACCESS_DENIED The file could not be opened as
+   *                                        access was denied.
+   */
+  void openMDB(in nsIFile dbName, in boolean create);
+  void closeMDB(in boolean commit);
+
+  void commit(in unsigned long commitType);
+  void forceClosed();
+
+  /**
+   * Create a new card and add to the database
+   *
+   * @param     aNewCard       the card to be added
+   * @param     aNotify        if set to true, all the listeners of the
+   *                           database will be notified.
+   * @param     aParent        parent directory or mailing list to which the
+   *                           card is added. If set to null, listeners of the
+   *                           database will not be notified of card creation.
+   */
+  void createNewCardAndAddToDB(in nsIAbCard aNewCard, in boolean aNotify, in nsIAbDirectory aParent);
+
+  void createNewListCardAndAddToDB(in nsIAbDirectory list, in unsigned long listRowID, in nsIAbCard newCard, in boolean aNotify);
+
+  /**
+   * Create a new mailing list and add to the database
+   *
+   * @param     aNewList       the mailing list to be added.
+   * @param     aNotify        if set to true, all the listeners of the
+   *                           database will be notified.
+   * @param     aParent        parent directory to which the mailing list
+   *                           is added. If set to null, listeners of the database
+   *                           will not be notified of mailing list creation.
+   */
+  void createMailListAndAddToDB(in nsIAbDirectory aNewList, in boolean aNotify, in nsIAbDirectory aParent);
+
+  /**
+   * Enumerate the cards in the directory. The enumerator will return the
+   * cards associated with mailing lists too.
+   *
+   * @param directory the directory of which to enumerate the cards.
+   * @return an enumerator.
+   */
+  nsISimpleEnumerator enumerateCards(in nsIAbDirectory directory);
+
+  /**
+   * Enumerate the cards associated with the mailing lists in the directory.
+   *
+   * @param directory the directory of which to enumerate the cards.
+   * @return an enumerator.
+   */
+  nsISimpleEnumerator enumerateListAddresses(in nsIAbDirectory directory);
+
+  void getMailingListsFromDB(in nsIAbDirectory parentDir);
+
+  /**
+   * Delete a card from the database.
+   *
+   * @param     aCard          the card to be deleted.
+   * @param     aNotify        if set to true, all the listeners of the
+   *                           database will be notified.
+   * @param     aParent        parent directory from which the card
+   *                           is to be deleted. If set to null, listeners of
+   *                           the database will not be notified of card deletion.
+   */
+  void deleteCard(in nsIAbCard aCard, in boolean aNotify, in nsIAbDirectory aParent);
+
+  /**
+   * Edit a card in the database.
+   *
+   * @param     aCard          the card to be edited.
+   * @param     aNotify        if set to true, all the listeners of the
+   *                           database will be notified.
+   * @param     aParent        parent directory in which the card
+   *                           is to be edited. If set to null, listeners of
+   *                           the database will not be notified of card entry
+   *                           change.
+   */
+  void editCard(in nsIAbCard aCard, in boolean aNotify, in nsIAbDirectory aParent);
+  boolean containsCard(in nsIAbCard card);
+  /**
+   * Deletes a mailing list from the directory
+   *
+   * @param aMailList         The nsIAbDirectory implementation of the mailing
+   *                          list that is to be deleted.
+   * @param aParent           The parent of the mailing list that is being
+   *                          deleted. If this is supplied, then a notification
+   *                          of card entry change in the database will be made.
+   */
+  void deleteMailList(in nsIAbDirectory aMailList,
+                      [optional] in nsIAbDirectory aParent);
+  void editMailList(in nsIAbDirectory mailList, in nsIAbCard listCard, in boolean aNotify);
+  boolean containsMailList(in nsIAbDirectory mailList);
+  void deleteCardFromMailList(in nsIAbDirectory mailList, in nsIAbCard card, in boolean aNotify);
+
+  /**
+   * Gets the first card which matches the attribute/value pair supplied.
+   *
+   * @param  aDirectory       The current nsIAbDirectory associated with this
+   *                          instance of the database.
+   * @param  aName            The attribute to look up the value in.
+   * @param  aUTF8Value       The value to look up in UTF8 format.
+   * @param  aCaseInsensitive Set to true for case-insenstive matching.
+   * @result                  Returns an nsIAbCard if one is found, otherwise
+   *                          NULL.
+   */
+  nsIAbCard getCardFromAttribute(in nsIAbDirectory aDirectory, in string aName,
+                                 in AUTF8String aUTF8Value,
+                                 in boolean aCaseInsensitive);
+
+  /**
+   * Gets all cards which matches the attribute/value pair supplied.
+   *
+   * @param  aDirectory       The current nsIAbDirectory associated with this
+   *                          instance of the database.
+   * @param  aName            The attribute to look up the value in.
+   * @param  aUTF8Value       The value to look up in UTF8 format.
+   * @param  aCaseInsensitive Set to true for case-insenstive matching.
+   * @result                  Returns an nsISimpleEnumerator of nsIAbCard
+   *                          instances.
+   */
+  nsISimpleEnumerator getCardsFromAttribute(in nsIAbDirectory aDirectory,
+                                            in string aName,
+                                            in AUTF8String uUTF8Value,
+                                            in boolean aCaseInsensitive);
+
+  boolean findMailListbyUnicodeName(in wstring listName);
+
+  void getCardCount(out uint32_t count);
+
+  [noscript] readonly attribute nsIMdbRow newRow;
+  [noscript] readonly attribute nsIMdbRow newListRow;
+  [noscript] void addCardRowToDB(in nsIMdbRow newRow);
+  [noscript] void addLdifListMember(in nsIMdbRow row, in string value);
+  [noscript] void addFirstName(in nsIMdbRow row, in string value);
+  [noscript] void addLastName(in nsIMdbRow row, in string value);
+  [noscript] void addPhoneticFirstName(in nsIMdbRow row, in string value);
+  [noscript] void addPhoneticLastName(in nsIMdbRow row, in string value);
+  [noscript] void addDisplayName(in nsIMdbRow row, in string value);
+  [noscript] void addNickName(in nsIMdbRow row, in string value);
+  [noscript] void addPrimaryEmail(in nsIMdbRow row, in string value);
+  [noscript] void add2ndEmail(in nsIMdbRow row, in string value);
+  [noscript] void addWorkPhone(in nsIMdbRow row, in string value);
+  [noscript] void addHomePhone(in nsIMdbRow row, in string value);
+  [noscript] void addFaxNumber(in nsIMdbRow row, in string value);
+  [noscript] void addPagerNumber(in nsIMdbRow row, in string value);
+  [noscript] void addCellularNumber(in nsIMdbRow row, in string value);
+  [noscript] void addWorkPhoneType(in nsIMdbRow row, in string value);
+  [noscript] void addHomePhoneType(in nsIMdbRow row, in string value);
+  [noscript] void addFaxNumberType(in nsIMdbRow row, in string value);
+  [noscript] void addPagerNumberType(in nsIMdbRow row, in string value);
+  [noscript] void addCellularNumberType(in nsIMdbRow row, in string value);
+  [noscript] void addHomeAddress(in nsIMdbRow row, in string value);
+  [noscript] void addHomeAddress2(in nsIMdbRow row, in string value);
+  [noscript] void addHomeCity(in nsIMdbRow row, in string value);
+  [noscript] void addHomeState(in nsIMdbRow row, in string value);
+  [noscript] void addHomeZipCode(in nsIMdbRow row, in string value);
+  [noscript] void addHomeCountry(in nsIMdbRow row, in string value);
+  [noscript] void addWorkAddress(in nsIMdbRow row, in string value);
+  [noscript] void addWorkAddress2(in nsIMdbRow row, in string value);
+  [noscript] void addWorkCity(in nsIMdbRow row, in string value);
+  [noscript] void addWorkState(in nsIMdbRow row, in string value);
+  [noscript] void addWorkZipCode(in nsIMdbRow row, in string value);
+  [noscript] void addWorkCountry(in nsIMdbRow row, in string value);
+  [noscript] void addJobTitle(in nsIMdbRow row, in string value);
+  [noscript] void addDepartment(in nsIMdbRow row, in string value);
+  [noscript] void addCompany(in nsIMdbRow row, in string value);
+  [noscript] void addAimScreenName(in nsIMdbRow row, in string value);
+  [noscript] void addAnniversaryYear(in nsIMdbRow row, in string value);
+  [noscript] void addAnniversaryMonth(in nsIMdbRow row, in string value);
+  [noscript] void addAnniversaryDay(in nsIMdbRow row, in string value);
+  [noscript] void addSpouseName(in nsIMdbRow row, in string value);
+  [noscript] void addFamilyName(in nsIMdbRow row, in string value);
+  [noscript] void addDefaultAddress(in nsIMdbRow row, in string value);
+  [noscript] void addCategory(in nsIMdbRow row, in string value);
+  [noscript] void addWebPage1(in nsIMdbRow row, in string value);
+  [noscript] void addWebPage2(in nsIMdbRow row, in string value);
+  [noscript] void addBirthYear(in nsIMdbRow row, in string value);
+  [noscript] void addBirthMonth(in nsIMdbRow row, in string value);
+  [noscript] void addBirthDay(in nsIMdbRow row, in string value);
+  [noscript] void addCustom1(in nsIMdbRow row, in string value);
+  [noscript] void addCustom2(in nsIMdbRow row, in string value);
+  [noscript] void addCustom3(in nsIMdbRow row, in string value);
+  [noscript] void addCustom4(in nsIMdbRow row, in string value);
+  [noscript] void addNotes(in nsIMdbRow row, in string value);
+  [noscript] void addPreferMailFormat(in nsIMdbRow row, in unsigned long value);
+  [noscript] void addPopularityIndex(in nsIMdbRow row, in unsigned long value);
+
+  [noscript] void addListName(in nsIMdbRow row, in string value);
+  [noscript] void addListNickName(in nsIMdbRow row, in string value);
+  [noscript] void addListDescription(in nsIMdbRow row, in string value);
+  [noscript] void addListDirNode(in nsIMdbRow listRow);
+
+  /**
+   * use for getting and setting generic string attributes
+   * like _AimScreenName
+   */
+  void setCardValue(in nsIAbCard card, in string name, in wstring value, in boolean notify);
+  wstring getCardValue(in nsIAbCard card, in string name);
+
+  /**
+   * Returns an array of the deleted cards currently stored in the mork file.
+   */
+  readonly attribute nsIArray deletedCardList;
+
+  /**
+   * Returns the count of the deleted card currently stored in the mork file.
+   */
+  readonly attribute unsigned long deletedCardCount;
+
+  /**
+   * Add the column representing the card to the mailing list row
+   * in the database.
+   *
+   * @param     aPCard         the card to be added.
+   * @param     aPListRow      the row to which the column will be added.
+   * @param     aPos           the position of the card in the mailing list.
+   * @param     aPNewCard      a pointer to hold the new card added to the row.
+   * @param     aInMailingList If set to true, the card is already present
+   *                           in the mailing list
+   * @param     aParent        parent mailing list to which the card
+   *                           is added. If set to null, listeners of the
+   *                           database will not be notified of card creation.
+   * @param     aRoot          If the card is created while creating a new mailing 
+   *                           list, its set to the parent addressbook.
+   *                           Set to null in other case.
+   */
+  void AddListCardColumnsToRow(in nsIAbCard aPCard,
+                               in nsIMdbRow aPListRow,
+                               in unsigned long aPos,
+                               out nsIAbCard aPNewCard,
+                               in boolean aInMailingList,
+                               in nsIAbDirectory aParent,
+                               in nsIAbDirectory aRoot);
+  void InitCardFromRow(in nsIAbCard aNewCard,in nsIMdbRow aCardRow);
+  void SetListAddressTotal(in nsIMdbRow aListRow, in uint32_t aTotal);
+  nsIMdbRow FindRowByCard(in nsIAbCard aCard);
+};

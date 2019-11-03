@@ -1,0 +1,152 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIFile;
+interface nsIMsgNewsFolder;
+interface nsINNTPProtocol;
+interface nsNNTPProtocol;
+interface nsIChannel;
+interface nsIURI;
+interface nsIMsgWindow;
+
+[scriptable, uuid(077620ed-c6c4-4d4d-bed5-4d041f924002)]
+interface nsINntpIncomingServer : nsISupports {
+    /* the on-disk path to the newsrc file for this server */
+    attribute nsIFile newsrcFilePath;
+
+    /* the newsrc root path (the directories all the newsrc files live) */
+    attribute nsIFile newsrcRootPath;
+    
+    /* ask the user before downloading more than maxArticles? */
+    attribute boolean notifyOn;
+
+    /* the max articles to download */
+    attribute long maxArticles;
+
+    /* when we don't download all, do we mark the rest read? */
+    attribute boolean markOldRead;
+
+    /* abbreviate the newsgroup names in the folder pane? */
+    attribute boolean abbreviate;
+
+    /* do we use a single login per server or do we login per group */
+    attribute boolean singleSignon;
+
+    /** the server charset and it may be needed to display newsgroup folder
+     *  names correctly 
+     **/
+    attribute ACString charset;
+
+    /* the server keeps track of all the newsgroups we are subscribed to */
+    void addNewsgroup(in AString name);
+    void removeNewsgroup(in AString name);
+
+    void writeNewsrcFile();
+
+    attribute boolean newsrcHasChanged;
+
+    /**
+     * The maximum number of connections to make to the server.
+     *
+     * This preference (internally max_cached_connections) controls how many
+     * connections we can make. A negative connection count is treated as only
+     * one connection, while 0 (the default) loads the default number of
+     * connections, presently 2.
+     */
+    attribute long maximumConnectionsNumber;
+
+    void displaySubscribedGroup(in nsIMsgNewsFolder msgFolder,
+                                in long firstMessage, in long lastMessage,
+                                in long totalMessages);
+
+
+    /**
+     * Get a new NNTP channel to run the URI.
+     *
+     * If the server has used up all of its connections, this will place the URI
+     * in the queue to be run when one is freed.
+     *
+     * @param uri    The URI to run.
+     * @param window The standard message window object.
+     */
+    nsIChannel getNntpChannel(in nsIURI uri, in nsIMsgWindow window);
+    /**
+     * Enqueues a URI to be run when we have a free connection.
+     *
+     * If there is one already free, it will be immediately started.
+     *
+     * @param uri      The URI to run.
+     * @param window   The standard message window object.
+     * @param consumer An argument to be passed to nsINNTPProtocol:LoadNewUrl.
+     */
+    void loadNewsUrl(in nsIURI uri, in nsIMsgWindow window,
+                     in nsISupports consumer);
+
+    /**
+     * Remove a connection from our connection cache.
+     *
+     * @param aNntpConnection The connection to be removed.
+     */
+    void removeConnection(in nsINNTPProtocol aNntpConnection);
+
+    /**
+     * Load the next URI in the queue to the given connection.
+     *
+     * @param aNntpConnection The newly-freed connection.
+     */
+    [noscript] void prepareForNextUrl(in nsNNTPProtocol aNntpConnection);
+
+    /**
+     * Returns whether or not the server has subscribed to the given newsgroup.
+     *
+     * Note that the name here is intended to be escaped; however, since `%' is
+     * not a legal newsgroup name, it is possibly safe to pass in an unescaped
+     * newsgroup name.
+     */
+    boolean containsNewsgroup(in AUTF8String escapedName);
+
+    void subscribeToNewsgroup(in AUTF8String name);
+
+    /* used for the subscribe dialog.
+       name is encoded in |charset|  (attribute declared above) */
+    [noscript] void addNewsgroupToList(in string name);
+
+    attribute boolean supportsExtensions;
+    void addExtension(in string extension);
+    boolean queryExtension(in string extension);
+
+    attribute boolean postingAllowed;
+    attribute boolean pushAuth;
+    attribute unsigned long lastUpdatedTime;
+    
+    void addPropertyForGet(in string name, in string value);
+    string queryPropertyForGet(in string name);
+    
+    void addSearchableGroup(in AString name);
+    boolean querySearchableGroup(in AString name);
+    
+    void addSearchableHeader(in string headerName);
+    boolean querySearchableHeader(in string headerName);
+
+    /**
+     * Returns the folder corresponding to the given group.
+     *
+     * Note that this name is expected to be unescaped.
+     * @note If the group does not exist, a bogus news folder will be returned.
+     *       DO NOT call this method unless you are sure that the newsgroup
+     *       is subscribed to (e.g., by containsNewsgroup)
+     */
+    nsIMsgNewsFolder findGroup(in AUTF8String name);
+
+    readonly attribute AUTF8String firstGroupNeedingExtraInfo;
+    void setGroupNeedsExtraInfo(in AUTF8String name, in boolean needsExtraInfo);
+
+    void groupNotFound(in nsIMsgWindow window, in AString group,
+                       in boolean opening);
+
+    void setPrettyNameForGroup(in AString name, in AString prettyName);
+};

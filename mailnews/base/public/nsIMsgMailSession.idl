@@ -1,0 +1,79 @@
+/* -*- Mode: IDL; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+/*
+ * The mail session is a replacement for the old 4.x MSG_Master object. It
+ * contains mail session generic information such as the account manager, etc
+ * I'm starting this off as an empty interface and as people feel they need to
+ * add more information to it, they can. I think this is a better approach
+ * than trying to port over the old MSG_Master in its entirety as that had a
+ * lot of cruft in it....
+ */
+
+#include "nsIFolderListener.idl"
+
+interface nsIFile;
+interface nsIMsgWindow;
+interface nsIMsgUserFeedbackListener;
+interface nsIMsgMailNewsUrl;
+
+[scriptable, uuid(577ead34-553e-4cd6-b484-76ff6662082d)]
+interface nsIMsgMailSession : nsISupports {
+  void Shutdown();
+
+  /**
+   * Adds a listener to be notified when folders update.
+   *
+   * @param  aListener    The listener to add.
+   * @param  aNotifyFlags A combination of flags detailing on which operations
+   *                      to notify the listener. See nsIFolderListener.idl for
+   *                      details.
+   */
+  void AddFolderListener(in nsIFolderListener aListener,
+                         in folderListenerNotifyFlagValue aNotifyFlags);
+  /**
+   * Removes a listener from the folder notification list.
+   *
+   * @param  aListener    The listener to remove.
+   */
+  void RemoveFolderListener(in nsIFolderListener aListener);
+
+  /**
+   * Adds a listener to be notified of alert or prompt style feedback that
+   * should go to the user.
+   *
+   * @param  aListener    The listener to add.
+   */
+  void addUserFeedbackListener(in nsIMsgUserFeedbackListener aListener);
+
+  /**
+   * Removes a user feedback listener.
+   *
+   * @param  aListener    The listener to remove.
+   */
+  void removeUserFeedbackListener(in nsIMsgUserFeedbackListener aListener);
+
+  /**
+   * Call to alert the listeners of the message. If there are no listeners,
+   * or the listeners do not handle the alert, then this function will present
+   * the user with a modal dialog if aMsgWindow isn't null.
+   *
+   * @param aMessage    The localized message string to alert.
+   * @param aUrl        Optional mailnews url which is relevant to the operation
+   *                    which caused the alert to be generated.
+   */
+  void alertUser(in AString aMessage, [optional] in nsIMsgMailNewsUrl aUrl);
+
+  readonly attribute nsIMsgWindow topmostMsgWindow;
+  void AddMsgWindow(in nsIMsgWindow msgWindow);
+  void RemoveMsgWindow(in nsIMsgWindow msgWindow);
+  boolean IsFolderOpenInWindow(in nsIMsgFolder folder);
+
+  string ConvertMsgURIToMsgURL(in string  aURI, in nsIMsgWindow aMsgWindow);
+  nsIFile getDataFilesDir(in string dirName);
+};
+

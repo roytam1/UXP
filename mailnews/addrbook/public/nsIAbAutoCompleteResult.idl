@@ -1,0 +1,36 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsIAutoCompleteResult.idl"
+
+interface nsIAbCard;
+
+/**
+ * This interface is used to extend the nsIAutoCompleteResult interface to
+ * provide extra facilities for obtaining more details of the results of
+ * an address book search.
+ */
+[scriptable, uuid(c0d35623-f719-4e43-ae24-573e393f87f9)]
+interface nsIAbAutoCompleteResult : nsIAutoCompleteResult {
+  /**
+   * Get the card from the result at the given index
+   */
+  nsIAbCard getCardAt(in long index);
+
+  /**
+   * Gets the email to use for the card within the result at the given index.
+   * This is the email that was matched against for the card where there are
+   * multiple email addresses on a card.
+   *
+   * @param index  Index of the autocomplete result to return the value for.
+   * @result       The email address to use from the card.
+   */
+  AString getEmailToUse(in long index);
+
+  /**
+   * The template used to build the query for this search. Optional.
+   */
+  attribute AString modelQuery;
+};

@@ -1,0 +1,124 @@
+/* -*- Mode: idl; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+[scriptable, uuid(d17d2d60-ec3a-46de-8bd1-24c77dd9b87b)]
+interface nsIMsgAttachment : nsISupports {
+
+  /**
+   * name attribute
+   *
+   * @Attachment real name, will be sent with the attachment's header.
+   * @If no name has been provided, a name will be generated using the url.
+   */
+  attribute AString   name;
+
+  /**
+   * url attribute
+   *
+   * @specify where the attachment live (localy or remotely)
+   */
+  attribute AUTF8String  url;
+
+  /**
+   * urlCharset attribute
+   *
+   * @specify the Charset of url  (used to convert url to Unicode after 
+   *  unescaping)
+   */
+  attribute ACString    urlCharset;
+
+
+  /**
+   * temporary attribute
+   *
+   * @If set to true, the file pointed by the url will be destroyed when this object is destroyed.
+   * @This is only for local attachment.
+   */
+  attribute boolean temporary;
+
+  /**
+   * Are we storing this attachment via a cloud provider and linking to it?
+   */
+  attribute boolean sendViaCloud;
+
+  /**
+   * Cloud provider account key for this attachment, if any.
+   */
+  attribute ACString cloudProviderKey;
+
+  /**
+   * This allows the compose front end code to put whatever html annotation
+   * it wants for the cloud part, e.g., with expiration time, etc.
+   */
+  attribute AString htmlAnnotation;
+
+  /**
+   * contentLocation attribute
+   *
+   * @Specify the origin url of the attachment, used normally when attaching
+   * a locally saved html document, but also used for cloud files.
+   */
+  attribute ACString contentLocation;
+  
+  /**
+   * contentType attribute
+   *
+   * @Specify the content-type of the attachment, this does not include extra content-type parameters. If
+   * @you need to specify extra information, use contentTypeParam, charset, macType or macCreator.
+   * @If ommitted, it will be determined base on either the name, the url or the content of the file.
+   */
+  attribute string    contentType;
+
+  /**
+   * contentTypeParam attribute
+   *
+   * @Specify the any content-type parameter (other than the content-type itself, charset, macType or macCreator).
+   * @It will be added to the content-type during the send/save operation.
+   */
+  attribute string    contentTypeParam;
+  
+  /**
+   * charset attribute
+   *
+   * @Specify the charset of the attachment. It will be added to the content-type during the
+   * @send/save operation
+   * @If omitted, will be determined automatically (if possible).
+   */
+  attribute string    charset;
+
+  /**
+   * size attribute
+   *
+   * @Specify the size of the attachment.
+   */
+  attribute int64_t   size;
+
+  /**
+   * macType attribute
+   *
+   * @Specify the Mac file type of the attachment. It will be added to the content-type during the
+   * @send/save operation
+   * @If omitted, will be determined automatically on Macintosh OS.
+   */
+  attribute string    macType;
+
+  /**
+   * macCreator attribute
+   *
+   * @Specify the Mac file creator of the attachment. It will be added to the content-type during the
+   * @send/save operation
+   * @If omitted, will be determined automatically on Macintosh OS.
+   */
+  attribute string    macCreator;
+
+  /**
+    * equalsUrl
+    *
+    * @ determines if both attachments have the same url.
+    */
+  boolean equalsUrl(in nsIMsgAttachment attachment);
+};

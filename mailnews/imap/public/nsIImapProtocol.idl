@@ -1,0 +1,71 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIURI;
+interface nsIImapUrl;
+interface nsIImapProtocol;
+interface nsIImapIncomingServer;
+interface nsIMsgFolder;
+interface nsIImapHostSessionList;
+interface nsIMsgWindow;
+interface nsIImapFlagAndUidState;
+
+[scriptable, uuid(290412eb-5824-4087-8984-05450c9397be)]
+interface nsIImapProtocol : nsISupports {
+  void LoadImapUrl(in nsIURI aUrl, in nsISupports aConsumer);
+
+  /**
+   * IsBusy returns true if the connection is currently processing a url
+   * and false otherwise.
+   */
+  void IsBusy(out boolean aIsConnectionBusy,
+              out boolean isInboxConnection);
+
+  /** Protocol instance examines the url, looking at the host name,
+   * user name and folder the action would be on in order to figure out
+   * if it can process this url. I decided to push the semantics about
+   * whether a connection can handle a url down into the connection level
+   * instead of in the connection cache.
+   */
+  void CanHandleUrl(in nsIImapUrl aImapUrl, out boolean aCanRunUrl,
+                    out boolean hasToWait);
+
+  /**
+   * Initialize a protocol object.
+   * @param aHostSessionList host session list service
+   * @param aServer imap server the protocol object will be talking to
+   */
+  void Initialize(in nsIImapHostSessionList aHostSessionList, in nsIImapIncomingServer aServer);
+
+  void NotifyBodysToDownload(out unsigned long keys, in unsigned long count);
+  // methods to get data from the imap parser flag state.
+  void GetFlagsForUID(in unsigned long uid, out boolean foundIt, out unsigned short flags, out string customFlags);
+  void GetSupportedUserFlags(out unsigned short flags);
+
+  void GetRunningImapURL(out nsIImapUrl aImapUrl);
+
+  void GetRunningUrl(out nsIURI aUrl);
+
+  readonly attribute nsIImapFlagAndUidState flagAndUidState;
+  /**
+   * Tell thread to die - only call from the UI thread
+   *
+   * @param aIsSafeToClose false if we're dropping a timed out connection.
+   */
+  void tellThreadToDie(in boolean aIsSafeToClose);
+
+  // Get last active time stamp
+  void GetLastActiveTimeStamp(out PRTime aTimeStamp);
+
+  void pseudoInterruptMsgLoad(in nsIMsgFolder imapFolder, in nsIMsgWindow aMsgWindow, out boolean interrupted);
+  void GetSelectedMailboxName(out string folderName);
+  // Reset folder connection to authenticated state
+  void ResetToAuthenticatedState();
+
+  void OverrideConnectionInfo(in wstring pHost, in unsigned short pPort, in string pCookieData);
+};
+

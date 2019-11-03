@@ -1,0 +1,63 @@
+/* -*- Mode: IDL; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMsgAsyncPromptListener;
+
+/**
+ * The nsIMsgAsyncPrompter is intended to provide a way to make asynchoronous
+ * message prompts into synchronous ones - so that the user is only prompted
+ * with one at a time.
+ */
+[scriptable, uuid(15f67d0f-947a-4a1e-8f72-6ab7162b4b9c)]
+interface nsIMsgAsyncPrompter : nsISupports {
+  /**
+   * Queues an async prompt request. If there are none queued then this will be
+   * actioned straight away, otherwise the prompt will be queued for action
+   * once previous prompt(s) have been cleared.
+   *
+   * Queued prompts using the same aKey may be amalgamated into one prompt to
+   * save repeated prompts to the user.
+   *
+   * @param aKey    A key to determine whether or not the queued prompts can
+   *                be combined.
+   * @param aPromptImmediately If the user is retrying a failed password, we
+   *                           need to prompt right away, even if there is a
+   *                           prompt up, or prompts queued up. Note that
+   *                           immediately may not be synchronously, on OS/X.
+   * @param aCaller An nsIMsgAsyncPromptListener to call back to when the prompt
+   *                is ready to be made.
+   */
+  void queueAsyncAuthPrompt(in ACString aKey, in boolean aPromptImmediately,
+                            in nsIMsgAsyncPromptListener aCaller);
+};
+
+/**
+ * This is used in combination with nsIMsgAsyncPrompter.
+ */
+[scriptable, uuid(fb5307a3-39d0-462e-92c8-c5c288a2612f)]
+interface nsIMsgAsyncPromptListener : nsISupports {
+  /**
+   * Called when the listener should do its prompt. The listener
+   * should not return until the prompt is complete.
+   *
+   * @return  True if there is auth information available following the prompt,
+   *          false otherwise.
+   */
+  boolean onPromptStart();
+
+  /**
+   * Called in the case that the queued prompt was combined with another and
+   * there is now authentication information available.
+   */
+  void onPromptAuthAvailable();
+
+  /**
+   * Called in the case that the queued prompt was combined with another but
+   * the prompt was canceled.
+   */
+  void onPromptCanceled();
+};

@@ -1,0 +1,570 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/**
+ * @defgroup msgdb Mailnews message database
+ * This module is the access point to locally-stored databases.
+ *
+ * These databases are stored in .msf files. Each file contains useful cached
+ * information, like the message id or references, as well as the cc header or
+ * tag information. This cached information is encapsulated in nsIMsgDBHdr.
+ *
+ * Also included is threading information, mostly encapsulated in nsIMsgThread.
+ * The final component is the database folder info, which contains information
+ * on the view and basic information also stored in the folder cache such as the
+ * name or most recent update.
+ *
+ * What this module does not do is access individual messages. Access is
+ * strictly controlled by the nsIMsgFolder objects and their backends.
+ * @{
+ */
+#include "nsISupports.idl"
+#include "nsIDBChangeAnnouncer.idl"
+
+%{C++
+#include "nsTArray.h"
+%}
+
+interface nsIMutableArray;
+interface nsIMsgDatabase;
+interface nsIMsgDBView;
+interface nsIDBChangeListener;
+interface nsIMsgDBHdr;
+interface nsISimpleEnumerator;
+interface nsIMsgThread;
+interface nsIDBFolderInfo;
+interface nsIMsgOfflineImapOperation;
+interface nsIMsgFolder;
+interface nsIMsgKeyArray;
+interface nsIFile;
+interface nsIArray;
+
+typedef unsigned long nsMsgRetainByPreference;
+
+
+[scriptable, uuid(fe8b7cec-eec8-4bcd-82ff-d8bb23cef3da)]
+
+interface nsIMsgRetentionSettings : nsISupports
+{
+  const unsigned long nsMsgRetainAll = 1;
+  const unsigned long nsMsgRetainByAge = 2;
+  const unsigned long nsMsgRetainByNumHeaders = 3;
+
+  attribute boolean useServerDefaults;
+  attribute nsMsgRetainByPreference retainByPreference;
+  attribute unsigned long daysToKeepHdrs;
+  attribute unsigned long numHeadersToKeep;
+
+  // this is for keeping offline bodies.
+  attribute boolean cleanupBodiesByDays;
+  attribute unsigned long daysToKeepBodies;
+
+  /**
+   * Should retention settings be applied to flagged/starred messages?
+   * If false, flagged messages are never automatically deleted.
+   */
+  attribute boolean applyToFlaggedMessages;
+};
+
+[scriptable, uuid(86a9da90-14f1-11d5-a5c0-0060b0fc04b7)]
+interface nsIMsgDownloadSettings : nsISupports
+{
+  attribute boolean useServerDefaults;
+  attribute boolean downloadByDate;
+  attribute boolean downloadUnreadOnly;
+  attribute unsigned long ageLimitOfMsgsToDownload;
+};
+
+typedef long nsMsgDBCommit;
+
+[scriptable, uuid(15431853-e448-45dc-8978-9958bf74d9b7)]
+
+interface nsMsgDBCommitType 
+{
+  const long kLargeCommit = 1;
+  const long kSessionCommit = 2;
+  const long kCompressCommit = 3;
+};
+
+[ref] native nsMsgKeyArrayRef(nsTArray<nsMsgKey>);
+[ptr] native nsMsgKeyArrayPtr(nsTArray<nsMsgKey>);
+
+/**
+ * A service to open mail databases and manipulate listeners automatically.
+ *
+ * The contract ID for this component is
+ * <tt>\@mozilla.org/msgDatabase/msgDBService;1</tt>.
+ */
+[scriptable, uuid(4cbbf024-3760-402d-89f3-6ababafeb07d)]
+interface nsIMsgDBService : nsISupports
+{
+  /**
+   * Opens a database for a given folder.
+   *
+   * This method is preferred over nsIMsgDBService::openMailDBFromFile if the
+   * caller has an actual nsIMsgFolder around. If the database detects that it
+   * is unreadable or out of date (using nsIMsgDatabase::outOfDate) it will
+   * destroy itself and prepare to be rebuilt, unless aLeaveInvalidDB is true.
+   *
+   * If one gets a NS_MSG_ERROR_FOLDER_SUMMARY_MISSING message, then one
+   * should call nsIMsgDBService::createNewDB to create the new database.
+   *
+   * @param aFolder         The folder whose database should be returned.
+   * @param aLeaveInvalidDB Whether or not the database should be deleted if it
+   *                        is invalid.
+   * @return                A new nsIMsgDatabase object representing the folder
+   *                        database that was opened.
+   * @exception NS_ERROR_FILE_TARGET_DOES_NOT_EXIST
+   *                        The file could not be created.
+   * @exception NS_MSG_ERROR_FOLDER_SUMMARY_OUT_OF_DATE
+   *                        The database is present (and was opened), but the
+   *                        summary file is out of date.
+   * @exception NS_MSG_ERROR_FOLDER_SUMMARY_MISSING
+   *                        The database is present, but the summary file is
+   *                        missing.
+   * @see nsIMsgDatabase::Open
+   * @see nsIMsgDBService::createNewDB
+   */
+  nsIMsgDatabase openFolderDB(in nsIMsgFolder aFolder,
+                              in boolean aLeaveInvalidDB);
+
+  /**
+   * This is the same as a synchronous open in terms of params and errors.
+   * But to finish opening the db, the caller must call
+   * nsIMsgDBService::OpenMore repeatedly until the open is finished.
+   * @see nsIMsgDBService::openFolderDB
+   * @see nsIMsgDBService::openMore
+   */
+  nsIMsgDatabase asyncOpenFolderDB(in nsIMsgFolder aFolder,
+                                   in boolean aLeaveInvalidDB);
+
+  /**
+   * Continues the open process for a db opened with
+   * nsIMsgDBService::asyncOpenFolderDB. Returns true if the db is ready
+   * to use, false if openMore needs to be called again.
+   * This will throw the same kinds of exceptions as openFolderDB.
+   * @param aTimeHint approximate number of milliseconds to spend
+   *                  before returning. This is more of a floor than
+                      a ceiling, since we can't guarantee that there
+                      won't be one big chunk that we can't interrupt.
+   * @return true if db is ready to use, false if openMore needs to
+   *         be called again.
+   * @see nsIMsgDBService::openFolderDB
+   */
+  boolean openMore(in nsIMsgDatabase aDB, in unsigned long aTimeHint);
+
+  /**
+   * Creates a new database for the given folder.
+   *
+   * If the database already exists, it will return the database, emit a
+   * warning, but not fully initialize it. For this reason, it should only be
+   * used when it is known that the database does not exist, such as when
+   * nsIMsgDBService::openFolderDB throws an error.
+   *
+   * @see nsIMsgDBService::openFolderDB
+   */
+  nsIMsgDatabase createNewDB(in nsIMsgFolder aFolder);
+
+  /**
+   * Opens or creates a database for a given file.
+   *
+   * This method should only be used if the caller does not have a folder
+   * instance, because the resulting db and message headers retrieved from the
+   * database would not know their owning folder, which limits their usefulness.
+   * For this reason, one should use nsIMsgDBService::openFolderDB instead
+   * except under special circumstances.
+   *
+   * Unlike nsIMsgDBService::openFolderDB, there is no corresponding method to
+   * create a new database if opening the database failed. However, this method
+   * will never throw NS_MSG_ERROR_FOLDER_SUMMARY_MISSING, so no corresponding
+   * method is needed.
+   *
+   * @param aFile           The file for which the database should be returned.
+   * @param aFolder         Folder the db corresponds to (may be null)
+   * @param aCreate         Whether or not the file should be created.
+   * @param aLeaveInvalidDB Whether or not the database should be deleted if it
+   *                        is invalid.
+   * @return                A new nsIMsgDatabase object encapsulating the file
+   *                        passed in.
+   * @exception NS_ERROR_FILE_TARGET_DOES_NOT_EXIST
+   *                        The file could not be created.
+   * @see nsIMsgDBService::openFolderDB
+   * @see nsIMsgDatabase::Open
+   */
+  nsIMsgDatabase openMailDBFromFile(in nsIFile aFile,
+                                    in nsIMsgFolder aFolder,
+                                    in boolean aCreate,
+                                    in boolean aLeaveInvalidDB);
+  /**
+   * Adds the given listener to the listener set for the folder.
+   *
+   * Since the message database will likely be opened and closed many times, by
+   * registering using this method, one will be guaranteed to see all subsequent
+   * modifications. This will also add the listener to the database if it is
+   * already opened.
+   *
+   * @param aFolder         The folder to add a listener to.
+   * @param aListener       The listener to add the folder to.
+   */
+  void registerPendingListener(in nsIMsgFolder aFolder,
+                               in nsIDBChangeListener aListener);
+  /**
+   * Removes the listener from all folder listener sets.
+   *
+   * @param aListener       The listener to remove.
+   * @exception NS_ERROR_FAILURE
+   *                        The listener is not registered.
+   */
+  void unregisterPendingListener(in nsIDBChangeListener aListener);
+
+  /**
+   * Get the db for a folder, if already open.
+   *
+   * @param aFolder   The folder to get the cached (open) db for.
+   *
+   * @returns         null if the db isn't open, otherwise the db.
+   */
+  nsIMsgDatabase cachedDBForFolder(in nsIMsgFolder aFolder);
+
+  /**
+   * Close the db for a folder, if already open.
+   *
+   * @param aFolder   The folder to close the cached (open) db for.
+   */
+  void forceFolderDBClosed(in nsIMsgFolder aFolder);
+
+  /// an enumerator to iterate over the open dbs.
+  readonly attribute nsIArray openDBs;
+};
+
+[scriptable, uuid(b64e66f8-4717-423a-be42-482658fb2199)]
+interface nsIMsgDatabase : nsIDBChangeAnnouncer {
+  void Close(in boolean aForceCommit);
+
+  void Commit(in nsMsgDBCommit commitType);
+  // Force closed is evil, and we should see if we can do without it.
+  // In 4.x, it was mainly used to remove corrupted databases.
+  void ForceClosed();
+  void clearCachedHdrs();
+  void resetHdrCacheSize(in unsigned long size);
+
+  readonly attribute nsIDBFolderInfo  dBFolderInfo;
+
+  /// Size of the database file in bytes.
+  readonly attribute long long databaseSize;
+
+  /// Folder this db was opened on.
+  readonly attribute nsIMsgFolder folder;
+
+  /**
+   * This is used when deciding which db's to close to free up memory
+   * and other resources in an LRU manner. It doesn't track every operation
+   * on every object from the db, but high level things like open, commit,
+   * and perhaps some of the list methods. Commit should be a proxy for all
+   * the mutation methods.
+   *
+   * I'm allowing clients to set the last use time as well, so that
+   * nsIMsgFolder.msgDatabase can set the last use time.
+   */
+  attribute PRTime lastUseTime;
+
+  // get a message header for the given key. Caller must release()!
+
+  nsIMsgDBHdr GetMsgHdrForKey(in nsMsgKey key);
+  nsIMsgDBHdr getMsgHdrForMessageID(in string messageID);
+
+  /**
+   * get a message header for a Gmail message with the given X-GM-MSGID.
+   */
+  nsIMsgDBHdr GetMsgHdrForGMMsgID(in string aGmailMessageID);
+  //Returns whether or not this database contains the given key
+  boolean ContainsKey(in nsMsgKey key);
+
+/**
+ * Must call AddNewHdrToDB after creating. The idea is that you create
+ * a new header, fill in its properties, and then call AddNewHdrToDB.
+ * AddNewHdrToDB will send notifications to any listeners.
+ *
+ * @param aKey msgKey for the new header. If aKey is nsMsgKey_None,
+ *             we will auto-assign a new key.
+ */
+  nsIMsgDBHdr CreateNewHdr(in nsMsgKey aKey);
+
+  void AddNewHdrToDB(in nsIMsgDBHdr newHdr, in boolean notify);
+
+  nsIMsgDBHdr CopyHdrFromExistingHdr(in nsMsgKey key, in nsIMsgDBHdr existingHdr, in boolean addHdrToDB);
+
+  /**
+   * Returns all message keys stored in the database.
+   * Keys are returned in the order as stored in the database.
+   * The caller should sort them if it needs to.
+   */
+  void ListAllKeys(in nsIMsgKeyArray array);
+
+  nsISimpleEnumerator EnumerateMessages();
+  nsISimpleEnumerator ReverseEnumerateMessages();
+  nsISimpleEnumerator EnumerateThreads();
+
+  /**
+   * Get an enumerator for use with nextMatchingHdrs. The enumerator
+   * will only return messages that match the passed-in search terms.
+   *
+   * @param     searchTerms       array of search terms to evaluate.
+   * @param     reverse           start at the end, defaults to false.
+   *
+   * @returns   an enumerator for passing into nextMatchingHdrs
+   */
+  nsISimpleEnumerator getFilterEnumerator(in nsIArray searchTerms,
+                                          [optional] in boolean reverse);
+
+  /**
+   * Get the next N matching headers using a filter enumerator
+   * obtained by calling getFilterEnumerator.
+   *
+   * @param     enumerator -      This *must* be a filter enumerator
+   * @param     numHdrsToLookAt   if non 0, the number of hdrs to advance the
+   *                              enumerator before returning.
+   * @param     maxResults        if non 0, the max results to return.
+   * @param     matchingHdrs      if non null, array of matching hdrs.
+   * @param     numMatches        if non null, the number of matching hdrs.
+   *
+   * @returns   false, if done, true if more hdrs to look at.
+   */
+  boolean nextMatchingHdrs(in nsISimpleEnumerator enumerator,
+                           in long numHdrsToLookAt,
+                           in long maxResults,
+                           in nsIMutableArray matchingHdrs,
+                           out long numMatches);
+
+
+  // count the total and unread msgs, and adjust global count if needed
+  void syncCounts();
+
+  nsIMsgThread GetThreadContainingMsgHdr(in nsIMsgDBHdr msgHdr) ;
+
+  // helpers for user command functions like delete, mark read, etc.
+
+  void MarkHdrRead(in nsIMsgDBHdr msgHdr, in boolean bRead,
+                         in nsIDBChangeListener instigator);
+
+  void MarkHdrReplied(in nsIMsgDBHdr msgHdr, in boolean bReplied,
+                         in nsIDBChangeListener instigator);
+
+  void MarkHdrMarked(in nsIMsgDBHdr msgHdr, in boolean mark,
+                         in nsIDBChangeListener instigator);
+  /**
+   * Remove the new status from a message.
+   *
+   * @param aMsgHdr        The database reference header for the message
+   * @param aInstigator    Reference to original calling object
+   */
+  void MarkHdrNotNew(in nsIMsgDBHdr aMsgHdr,
+                     in nsIDBChangeListener aInstigator);
+
+  // MDN support
+  void MarkMDNNeeded(in nsMsgKey key, in boolean bNeeded,
+                           in nsIDBChangeListener instigator);
+
+  // MarkMDNneeded only used when mail server is a POP3 server
+  // or when the IMAP server does not support user defined
+  // PERMANENTFLAGS
+  boolean IsMDNNeeded(in nsMsgKey key);
+
+  void MarkMDNSent(in nsMsgKey key, in boolean bNeeded,
+                         in nsIDBChangeListener instigator);
+  boolean IsMDNSent(in nsMsgKey key);
+
+// methods to get and set docsets for ids.
+  void MarkRead(in nsMsgKey key, in boolean bRead, 
+                      in nsIDBChangeListener instigator);
+
+  void MarkReplied(in nsMsgKey key, in boolean bReplied, 
+                         in nsIDBChangeListener instigator);
+
+  void MarkForwarded(in nsMsgKey key, in boolean bForwarded, 
+                           in nsIDBChangeListener instigator);
+
+  void MarkHasAttachments(in nsMsgKey key, in boolean bHasAttachments, 
+                                in nsIDBChangeListener instigator);
+
+  void MarkThreadRead(in nsIMsgThread thread, in nsIDBChangeListener instigator,
+                      out unsigned long aCount,
+                      [array, size_is(aCount)] out nsMsgKey aKeys);
+
+  /// Mark the specified thread ignored.
+  void MarkThreadIgnored(in nsIMsgThread thread, in nsMsgKey threadKey,
+                         in boolean bIgnored,
+                         in nsIDBChangeListener instigator);
+
+  /// Mark the specified thread watched.
+  void MarkThreadWatched(in nsIMsgThread thread, in nsMsgKey threadKey,
+                         in boolean bWatched,
+                         in nsIDBChangeListener instigator);
+
+  /// Mark the specified subthread ignored.
+  void MarkHeaderKilled(in nsIMsgDBHdr msg, in boolean bIgnored,
+                        in nsIDBChangeListener instigator);
+
+  /// Is the message read.
+  boolean IsRead(in nsMsgKey key);
+  /// Is the message part of an ignored thread.
+  boolean IsIgnored(in nsMsgKey key);
+  /// Is the message part of a watched thread.
+  boolean IsWatched(in nsMsgKey key);
+  /// Is the message flagged/starred.
+  boolean IsMarked(in nsMsgKey key);
+  /// Does the message have attachments.
+  boolean HasAttachments(in nsMsgKey key);
+
+  void MarkAllRead(out unsigned long aCount,
+                   [array, size_is(aCount)] out nsMsgKey aKeys);
+
+  void deleteMessages(in unsigned long aNumKeys,
+                      [array, size_is(aNumKeys)] in nsMsgKey nsMsgKeys,
+                      in nsIDBChangeListener instigator);
+  void DeleteMessage(in nsMsgKey key, 
+                           in nsIDBChangeListener instigator,
+                           in boolean commit);
+  void DeleteHeader(in nsIMsgDBHdr msgHdr, in nsIDBChangeListener instigator,
+                          in boolean commit, in boolean notify);
+
+  // lower level routine that doesn't remove hdr from thread or adjust counts
+  void RemoveHeaderMdbRow(in nsIMsgDBHdr msgHdr);
+
+  void UndoDelete(in nsIMsgDBHdr msgHdr);
+
+  void MarkMarked(in nsMsgKey key, in boolean mark,
+                        in nsIDBChangeListener instigator);
+  void MarkOffline(in nsMsgKey key, in boolean offline,
+                         in nsIDBChangeListener instigator);
+  void SetLabel(in nsMsgKey key, in nsMsgLabelValue label);
+  void setStringProperty(in nsMsgKey aKey, in string aProperty, in string aValue);
+  /**
+   * Set the value of a string property in a message header
+   *
+   * @param msgHdr    Header of the message whose property will be changed
+   * @param aProperty the property to change
+   * @param aValue    new value for the property
+   */
+  void setStringPropertyByHdr(in nsIMsgDBHdr msgHdr, in string aProperty, in string aValue);
+
+  /**
+   * Set the value of a uint32 property in a message header.
+   *
+   * @param aMsgHdr   header of the message whose property will be changed
+   * @param aProperty the property to change
+   * @param aValue    new value for the property
+   */
+  void setUint32PropertyByHdr(in nsIMsgDBHdr aMsgHdr,
+                              in string aProperty, in unsigned long aValue);
+
+  void MarkImapDeleted(in nsMsgKey key, in boolean deleted,
+                             in nsIDBChangeListener instigator);
+
+  readonly attribute nsMsgKey FirstNew;
+
+  attribute nsIMsgRetentionSettings msgRetentionSettings;
+  // purge unwanted message headers and/or bodies. If deleteViaFolder is
+  // true, we'll call nsIMsgFolder::DeleteMessages to delete the messages.
+  // Otherwise, we'll just delete them from the db.
+  void applyRetentionSettings(in nsIMsgRetentionSettings aMsgRetentionSettings, 
+                              in boolean aDeleteViaFolder);
+
+  attribute nsIMsgDownloadSettings msgDownloadSettings;
+
+  boolean HasNew();
+  void ClearNewList(in boolean notify);
+  void AddToNewList(in nsMsgKey key);
+
+  // used mainly to force the timestamp of a local mail folder db to
+  // match the time stamp of the corresponding berkeley mail folder,
+  // but also useful to tell the summary to mark itself invalid
+  // Also, if a local folder is being reparsed, summary will be invalid
+  // until the reparsing is done.
+  attribute boolean summaryValid;
+
+  // batching - can be used to cache file stream for local mail,
+  // and perhaps to use the mdb batching mechanism as well.
+  void StartBatch();
+  void EndBatch();
+  // offline operations - we could move these into an offline operation interface
+  // but it would have to be in nsMailDatabase, since local folders can be move destinations
+  nsIMsgOfflineImapOperation GetOfflineOpForKey(in nsMsgKey messageKey, in boolean create);
+  void  RemoveOfflineOp(in nsIMsgOfflineImapOperation op);
+  nsISimpleEnumerator EnumerateOfflineOps();
+  [noscript] void ListAllOfflineOpIds(in nsMsgKeyArrayPtr offlineOpIds);
+  [noscript] void ListAllOfflineDeletes(in nsMsgKeyArrayPtr offlineDeletes);
+  void ListAllOfflineMsgs(in nsIMsgKeyArray aKeys);
+
+  void setAttributeOnPendingHdr(in nsIMsgDBHdr pendingHdr, in string property,
+                                  in string propertyVal);
+
+  void setUint32AttributeOnPendingHdr(in nsIMsgDBHdr pendingHdr, in string property,
+                                  in unsigned long propertyVal);
+
+  /**
+   * Sets a pending 64 bit attribute, which tells the DB that when a message
+   * which looks like the pendingHdr (e.g., same message-id) is added to the
+   * db, set the passed in property and value on the new header. This is
+   * usually because we've copied an imap message to a different folder, and
+   * want to carry forward attributes from the original message to the copy,
+   * but don't have the message hdr for the copy yet so we can't set
+   * attributes directly.
+   *
+   * @param aPendingHdr usually the source of the copy.
+   * @param aProperty name of property to set.
+   * @param aPropertyVal 64 bit value of property to set.
+   */
+  void setUint64AttributeOnPendingHdr(in nsIMsgDBHdr aPendingHdr,
+                                      in string aProperty,
+                                      in unsigned long long aPropertyVal);
+
+  /**
+   * Given a message header with its message-id set, update any pending
+   *  attributes on the header.
+   *
+   * @param aNewHdr a new header that may have pending attributes.
+   */
+  void updatePendingAttributes(in nsIMsgDBHdr aNewHdr);
+
+  readonly attribute nsMsgKey lowWaterArticleNum;
+  readonly attribute nsMsgKey highWaterArticleNum;
+  attribute nsMsgKey nextPseudoMsgKey;   //for undo-redo of move pop->imap
+  readonly attribute nsMsgKey nextFakeOfflineMsgKey; // for saving "fake" offline msg hdrs
+  // for sorting
+  void createCollationKey(in AString sourceString, out unsigned long aCount,
+                          [array, size_is(aCount)] out octet aKey);
+  long compareCollationKeys(in unsigned long aLen1,
+                            [array, size_is(aLen1)] in octet key1,
+                            in unsigned long aLen2,
+                            [array, size_is(aLen2)] in octet key2);
+
+  // when creating a view, the default sort order and view flags 
+  // use these for the default.  (this allows news to override, so that
+  // news can be threaded by default)
+  readonly attribute nsMsgViewFlagsTypeValue defaultViewFlags;
+  readonly attribute nsMsgViewSortTypeValue  defaultSortType;
+  readonly attribute nsMsgViewSortOrderValue defaultSortOrder;
+
+  // for msg hdr hash table allocation. controllable by caller to improve folder loading preformance.
+  attribute unsigned long msgHdrCacheSize;
+
+  /**
+   * The list of messages currently in the NEW state.
+   * 
+   * If there are no such messages, a null pointer may be returned.
+   * the caller should free when done using free.
+   */
+  void getNewList(out unsigned long count, [array, size_is(count)] out nsMsgKey newKeys);
+  
+  // These are used for caching search hits in a db, to speed up saved search folders.
+  nsISimpleEnumerator getCachedHits(in string aSearchFolderUri);
+  void refreshCache(in string aSearchFolderUri, in unsigned long aNumKeys, [array, size_is (aNumKeys)] in nsMsgKey aNewHits,
+     out unsigned long aNumBadHits, [array, size_is(aNumBadHits)] out nsMsgKey aStaleHits);
+  void updateHdrInCache(in string aSearchFolderUri, in nsIMsgDBHdr aHdr, in boolean aAdd);
+  boolean hdrIsInCache(in string aSearchFolderUri, in nsIMsgDBHdr aHdr);
+
+};
+/** @} */

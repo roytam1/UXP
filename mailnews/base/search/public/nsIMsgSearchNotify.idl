@@ -1,0 +1,31 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMsgDBHdr;
+interface nsIMsgSearchSession;
+interface nsIMsgFolder;
+
+// when a search is run, this interface is passed in as a listener
+// on the search.
+[scriptable, uuid(ca37784d-352b-4c39-8ccb-0abc1a93f681)]
+interface nsIMsgSearchNotify : nsISupports
+{
+  void onSearchHit(in nsIMsgDBHdr header, in nsIMsgFolder folder);
+
+  // notification that a search has finished.
+  void onSearchDone(in nsresult status);
+  /*
+   * until we can encode searches with a URI, this will be an
+   * out-of-bound way to connect a set of search terms to a datasource
+   */
+
+  /*
+   * called when a new search begins
+   */
+  void onNewSearch();
+};
+

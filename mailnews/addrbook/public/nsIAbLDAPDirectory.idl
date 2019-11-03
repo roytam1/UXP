@@ -1,0 +1,112 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMutableArray;
+interface nsIFile;
+interface nsIAddrDatabase;
+interface nsIAbLDAPAttributeMap;
+interface nsILDAPURL;
+
+%{C++
+#define kLDAPDirectoryRoot         "moz-abldapdirectory://"
+#define kLDAPDirectoryRootLen      22
+%}
+
+/**
+ * XXX This should really inherit from nsIAbDirectory, and some day it will.
+ * But for now, doing that complicates implementation.
+ */
+[scriptable, uuid(90dde295-e354-4d58-Add8-f9b29a95942d)]
+interface nsIAbLDAPDirectory : nsISupports
+{
+  /**
+   * If set, these arrays of nsILDAPControls are passed through to the
+   * nsILDAPOperation that searchExt is called on.
+   */
+  attribute nsIMutableArray searchServerControls;
+  attribute nsIMutableArray searchClientControls;
+
+  /**
+   * The Replication File Name to use.
+   */
+  attribute ACString replicationFileName;
+
+  /**
+   * The version of LDAP protocol in use.
+   */
+  attribute unsigned long protocolVersion;
+
+  /**
+   * The SASL mechanism to use to authenticate to the LDAP server
+   * If this is an empty string, then a simple bind will be performed
+   * A non-zero string is assumed to be the name of the SASL mechanism.
+   * Currently the only supported mechanism is GSSAPI
+   */
+  attribute ACString saslMechanism;
+  
+  /**
+   * The AuthDN to use to access the server.
+   */
+  attribute AUTF8String authDn;
+
+  /**
+   * The maximum number of matches that the server will return per a search.
+   */
+  attribute long maxHits;
+
+  /**
+   * The Last Change Number used for replication.
+   */
+  attribute long lastChangeNumber;
+
+  /**
+   * The LDAP server's scoping of the lastChangeNumber.
+   */
+  attribute ACString dataVersion;
+
+  /**
+   * The attribute map that is associated with this directory's server.
+   */
+  readonly attribute nsIAbLDAPAttributeMap attributeMap;
+
+  /**
+   * The LDAP URL for this directory. Note that this differs from
+   * nsIAbDirectory::URI. This attribute will give you a true ldap
+   * url, e.g. ldap://localhost:389/ whereas the uri will give you the
+   * directories rdf uri, e.g. moz-abldapdirectory://<pref base name>/.
+   */
+  attribute nsILDAPURL lDAPURL;
+
+  /**
+   * The replication (offline) file that this database uses.
+   */
+  readonly attribute nsIFile replicationFile;
+
+  /**
+   * A database that is set up for the replication file.
+   */
+  readonly attribute nsIAddrDatabase replicationDatabase;
+
+  /**
+   * The LDAP attributes used to build the Relative Distinguished Name
+   * of new cards, in the form of a comma separated list.
+   *
+   * The default is to use the common name (cn) attribute.
+   */
+  attribute ACString rdnAttributes;
+
+  /**
+   * The LDAP objectClass values added to cards when they are created/added,
+   * in the form of a comma separated list.
+   *
+   * The default is to use the following classes:
+   * top,person,organizationalPerson,inetOrgPerson,mozillaAbPersonAlpha
+   */
+  attribute ACString objectClasses;
+
+};
+

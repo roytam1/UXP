@@ -1,0 +1,42 @@
+/* -*- Mode: IDL; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsITreeView.idl"
+
+interface nsIMsgDBHdr;
+
+    /* //TODO JavaDoc
+       When implementing a js custom column handler (of type nsITreeView) you must implement the following
+       functions:
+       1. isEditable
+       2. GetCellProperties
+       3. GetImageSrc
+       4. GetCellText
+       5. CycleCell
+       6. GetSortStringForRow
+       7. GetSortLongForRow
+       8. isString
+       
+       You can, at your option, implement 
+       9.  GetRowProperties.
+
+       With Bug 1192696, Grouped By Sort was implemented for custom columns.
+       Implementers should consider that the value returned by GetSortStringForRow
+       will be displayed in the grouped header row, as well as be used as the
+       sort string.
+
+      If implementing a c++ custom column handler, you must define all 
+      nsITreeView and nsIMsgCustomColumnHandler methods.
+    */
+
+
+[scriptable, uuid(00f75b13-3ac4-4a17-a8b9-c6e4dd1b3f32)]
+interface nsIMsgCustomColumnHandler : nsITreeView
+{
+  AString getSortStringForRow(in nsIMsgDBHdr aHdr);
+  unsigned long getSortLongForRow(in nsIMsgDBHdr aHdr);
+  boolean isString();
+}; 
+

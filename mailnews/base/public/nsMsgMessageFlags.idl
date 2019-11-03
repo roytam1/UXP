@@ -1,0 +1,173 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+typedef unsigned long nsMsgMessageFlagType;
+
+/// Flags about a single message.
+[scriptable,uuid(1ea3acdb-7b9f-4e35-9513-76e0a0cc6baa)]
+interface nsMsgMessageFlags
+{
+  /// This message has been read
+  const nsMsgMessageFlagType Read            = 0x00000001;
+  
+  /// A reply to this message has been successfully sent
+  const nsMsgMessageFlagType Replied         = 0x00000002;
+  
+  /// This message has been flagged
+  const nsMsgMessageFlagType Marked          = 0x00000004;
+
+  /**
+   * This message has already gone, but the folder hasn't been compacted yet.
+   * Since actually removing a message from a folder is a semi-expensive
+   * operation, we tend to delay it; messages with this bit set will be removed
+   * the next time folder compaction is done.  Once this bit is set, it never
+   * gets un-set.
+   */
+  const nsMsgMessageFlagType Expunged        = 0x00000008;
+
+  /**
+   * The subject of this message has "Re:" on the front.  The folder summary
+   * uniquifies all of the strings in it, and to help this, any string which
+   * begins with "Re:" has that stripped first.  This bit is then set, so that
+   * when presenting the message, we know to put it back (since the "Re:" is
+   * not itself stored in the file.)
+   */
+  const nsMsgMessageFlagType HasRe           = 0x00000010;
+
+  /// The children of this sub-thread are folded in the display
+  const nsMsgMessageFlagType Elided          = 0x00000020;
+
+  /// The message is a feed, originally downloaded in a server.type=rss account
+  const nsMsgMessageFlagType FeedMsg         = 0x00000040;
+
+  /// This news article or IMAP message is present in the disk cache
+  const nsMsgMessageFlagType Offline         = 0x00000080;
+
+  /// This thread is being watched
+  const nsMsgMessageFlagType Watched         = 0x00000100;
+
+  /// This message's sender has been authenticated when sending this message
+  const nsMsgMessageFlagType SenderAuthed    = 0x00000200;
+
+  /**
+   * This message's body is only the first ten or so of the message, and we
+   * need to add a link to let the user download the rest of it from the POP
+   * server.
+   */
+  const nsMsgMessageFlagType Partial         = 0x00000400;
+
+  /**
+   * This message is queued for delivery.  This only ever gets set on messages
+   * in the queue folder, but is used to protect against the case of othe
+   * messages having made their way in there somehow -- if some other program
+   * put a message in the queue, we don't want to later deliver it!
+   */
+  const nsMsgMessageFlagType Queued          = 0x00000800;
+
+  /// This message has been forwarded
+  const nsMsgMessageFlagType Forwarded       = 0x00001000;
+
+  /**
+   * These are used to remember the message priority in the mozilla status
+   * flags, so we can regenerate a priority after a rule (or user) has changed
+   * it. They are not returned in MSG_MessageLine.flags, just in mozilla-status,
+   * so if you need more non-persistent flags, you could share these bits. But
+   * it would be wrong.
+   */
+  const nsMsgMessageFlagType Priorities      = 0x0000E000;
+
+  /// This message is new since the last time the folder was closed
+  const nsMsgMessageFlagType New             = 0x00010000;
+
+  /// This thread has been ignored
+  const nsMsgMessageFlagType Ignored         = 0x00040000;
+
+  /// This IMAP message has been marked deleted on the server
+  const nsMsgMessageFlagType IMAPDeleted     = 0x00200000;
+
+  /**
+   * This message has requested to send a message delivery notification to its
+   * sender
+   */
+  const nsMsgMessageFlagType MDNReportNeeded = 0x00400000;
+
+  /**
+   * A message delivery notification has been sent for this message. No more
+   * reports should be sent.
+   */
+  const nsMsgMessageFlagType MDNReportSent   = 0x00800000;
+
+  /// This message is a template
+  const nsMsgMessageFlagType Template        = 0x01000000;
+
+  /// This message has files attached to it
+  const nsMsgMessageFlagType Attachment      = 0x10000000;
+
+  /**
+   * These are used to remember the message labels in the mozilla status2
+   * flags. so we can regenerate a priority after a  rule (or user) has changed
+   * it. They are not returned in nsMsgHdr.flags, just in mozilla-status2, so
+   * if you need more non-persistent flags, you could share these bits. But it
+   * would be wrong.
+   */
+  const nsMsgMessageFlagType Labels          = 0x0E000000;
+
+  // We're trying to reserve the high byte of the flags for view flags, so,
+  // don't add flags to the high byte if possible.
+
+  /// The list of all message flags to not write to disk
+  const nsMsgMessageFlagType RuntimeOnly     = Elided;
+};
+
+typedef unsigned long nsMsgProcessingFlagType;
+
+/**
+ * Definitions of processing flags. These flags are not saved to the database.
+ * They are used to define states for message processing. Any changes
+ * to these flags need to be supported in the key sets in nsMsgDBFolder
+ */
+[scriptable,uuid(1f7d642b-de2a-45f0-a27f-9c9ce0b741d8)]
+interface nsMsgProcessingFlags
+{
+  /// This message needs junk classification
+  const nsMsgProcessingFlagType ClassifyJunk   = 0x00000001;
+
+  /// This message needs traits classification
+  const nsMsgProcessingFlagType ClassifyTraits = 0x00000002;
+
+  /// This message has completed any needed traits classification
+  const nsMsgProcessingFlagType TraitsDone     = 0x00000004;
+
+  /// This message has completed any needed postPlugin filtering
+  const nsMsgProcessingFlagType FiltersDone    = 0x00000008;
+
+  /// This message has a move scheduled by filters
+  const nsMsgProcessingFlagType FilterToMove   = 0x00000010;
+
+  /**
+   * This message is new to the folder and has yet to be reported via the
+   *  msgsClassified notification. This flag is required because the previously
+   *  used mechanism relied on the database's list of new messages and its
+   *  concept of 'new' is overloaded and has user-visible ramifications.  This
+   *  led to messages potentially being considered multiple times.
+   *
+   * Unfortunately none of the Done processing flags above are suitable for our
+   *  needs because they are not consistently applied and basically constitute
+   *  memory leaks (which makes the not consistently applied thing a good
+   *  thing.)
+   *
+   * I suspect we cannot reliably convert the Done flags above to our use case
+   *  either because of the situation where the user quits the program after the
+   *  messages are added but before the messages are processed.  Since the
+   *  processing flags are suppression flags, assuming the 'new' status is
+   *  persisted to the next time we are run, then this would represent a
+   *  change in behaviour.  I would need to exactly understand the new semantics
+   *  to know for sure though.
+   */
+  const nsMsgProcessingFlagType NotReportedClassified = 0x00000020;
+
+  /// Number of processing flags
+  const nsMsgProcessingFlagType NumberOfFlags  = 6;
+};

@@ -1,0 +1,350 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"
+
+interface nsIMsgWindow;
+interface nsIFile;
+
+/**
+ * This interface is still very much under development, and is not yet stable.
+ */
+
+[scriptable, uuid(e2e56690-a676-11d6-80c9-00008646b737)]
+interface nsIMsgFilterPlugin : nsISupports
+{
+    /**
+     * Do any necessary cleanup: flush and close any open files, etc.
+     */
+    void shutdown();
+
+    /**
+     * Some protocols (ie IMAP) can, as an optimization, avoid
+     * downloading all message header lines.  If your plugin doesn't need
+     * any more than the minimal set, it can return false for this attribute.
+     */     
+    readonly attribute boolean shouldDownloadAllHeaders;
+
+};
+
+/*
+ * These interfaces typically implement a Bayesian classifier of messages.
+ *
+ * Two sets of interfaces may be used: the older junk-only interfaces, and
+ * the newer trait-oriented interfaces that treat junk classification as
+ * one of a set of classifications to accomplish.
+ */
+
+[scriptable, uuid(b15a0f9c-df07-4af0-9ba8-80dca68ac35d)]
+interface nsIJunkMailClassificationListener : nsISupports
+{
+  /**
+   * Inform a listener of a message's classification as junk. At the end
+   * of a batch of classifications, signify end of batch by calling with
+   * null aMsgURI (other parameters are don't care)
+   *
+   * @param aMsgURI          URI of the message that was classified.
+   * @param aClassification  classification of message as UNCLASSIFIED, GOOD,
+   *                         or JUNK.
+   * @param aJunkPercent     indicator of degree of uncertainty, with 100 being
+   *                         probably junk, and 0 probably good
+   */
+  void onMessageClassified(in string aMsgURI,
+                           in nsMsgJunkStatus aClassification,
+                           in uint32_t aJunkPercent);
+};
+
+[scriptable, uuid(AF247D07-72F0-482d-9EAB-5A786407AA4C)]
+interface nsIMsgTraitClassificationListener : nsISupports
+{
+  /**
+   * Inform a listener of a message's match to traits. The list
+   * of traits being matched is in aTraits. Corresponding
+   * indicator of match (percent) is in aPercents. At the end
+   * of a batch of classifications, signify end of batch by calling with
+   * null aMsgURI (other parameters are don't care)
+   *
+   * @param aMsgURI      URI of the message that was classified
+   * @param aTraitCount  length of aTraits and aPercents arrays
+   * @param aTraits      array of matched trait ids
+   * @param aPercents    array of percent match (0 is unmatched, 100 is fully
+   *                     matched) of the trait with the corresponding array
+   *                     index in aTraits
+   */
+  void onMessageTraitsClassified(in string aMsgURI,
+    in unsigned long aTraitCount,
+    [array, size_is(aTraitCount)] in unsigned long aTraits,
+    [array, size_is(aTraitCount)] in unsigned long aPercents);
+};
+
+[scriptable, uuid(12667532-88D1-44a7-AD48-F73719BE5C92)]
+interface nsIMsgTraitDetailListener : nsISupports
+{
+  /**
+   * Inform a listener of details of a message's match to traits.
+   * This returns the tokens that were used in the calculation,
+   * the calculated percent probability that each token matches the trait,
+   * and a running estimate (starting with the strongest tokens) of the
+   * combined total probability that a message matches the trait, when
+   * only tokens stronger than the current token are used.
+   *
+   * @param aMsgURI         URI of the message that was classified
+   * @param aProTrait       trait id of pro trait for the calculation
+   * @param tokenCount      length of arrays that follow
+   * @param tokenStrings    the string for a particular token
+   * @param tokenPercents   calculated probability that a message with that token
+   *                        matches the trait
+   * @param runningPercents calculated probability that the message matches the
+   *                        trait, accounting for this token and all stronger tokens.
+   */
+  void onMessageTraitDetails(in string aMsgUri,
+    in unsigned long aProTrait,
+    in unsigned long tokenCount,
+    [array, size_is(tokenCount)] in wstring tokenStrings,
+    [array, size_is(tokenCount)] in unsigned long tokenPercents,
+    [array, size_is(tokenCount)] in unsigned long runningPercents);
+};
+
+[scriptable, uuid(8EA5BBCA-F735-4d43-8541-D203D8E2FF2F)]
+interface nsIJunkMailPlugin : nsIMsgFilterPlugin
+{
+    /**
+     * Message classifications.
+     */
+    const nsMsgJunkStatus UNCLASSIFIED = 0;
+    const nsMsgJunkStatus GOOD = 1;
+    const nsMsgJunkStatus JUNK = 2;
+
+    /**
+     * Message junk score constants. Junkscore can only be one of these two
+     * values (or not set).
+     */
+    const nsMsgJunkScore IS_SPAM_SCORE = 100; // junk
+    const nsMsgJunkScore IS_HAM_SCORE = 0; // not junk
+
+    /**
+     * Trait ids for junk analysis. These values are fixed to ensure
+     * backwards compatibility with existing junk-oriented classification
+     * code.
+     */
+     
+    const unsigned long GOOD_TRAIT = 1; // good
+    const unsigned long JUNK_TRAIT = 2; // junk
+
+    /**
+     * Given a message URI, determine what its current classification is
+     * according to the current training set.
+     */
+    void classifyMessage(in string aMsgURI, in nsIMsgWindow aMsgWindow,
+                         in nsIJunkMailClassificationListener aListener);
+
+    void classifyMessages(in unsigned long aCount,
+                          [array, size_is(aCount)] in string aMsgURIs,
+                          in nsIMsgWindow aMsgWindow,
+                          in nsIJunkMailClassificationListener aListener);
+    
+    /**
+     * Given a message URI, evaluate its relative match to a list of
+     * traits according to the current training set.
+     *
+     * @param aMsgURI          URI of the message to be evaluated
+     * @param aTraitCount      length of aProTraits, aAntiTraits arrays
+     * @param aProTraits       array of trait ids for trained messages that
+     *                         match the tested trait (for example,
+     *                         JUNK_TRAIT if testing for junk)
+     * @param aAntiTraits      array of trait ids for trained messages that
+     *                         do not match the tested trait (for example,
+     *                         GOOD_TRAIT if testing for junk)
+     * @param aTraitListener   trait-oriented callback listener (may be null)
+     * @param aMsgWindow       current message window (may be null)
+     * @param aJunkListener    junk-oriented callback listener (may be null)
+     */
+
+    void classifyTraitsInMessage(
+           in string aMsgURI,
+           in unsigned long aTraitCount,
+           [array, size_is(aTraitCount)] in unsigned long aProTraits,
+           [array, size_is(aTraitCount)] in unsigned long aAntiTraits,
+           in nsIMsgTraitClassificationListener aTraitListener,
+           [optional] in nsIMsgWindow aMsgWindow,
+           [optional] in nsIJunkMailClassificationListener aJunkListener);
+
+    /**
+     * Given an array of message URIs, evaluate their relative match to a
+     * list of traits according to the current training set.
+     *
+     * @param aCount           Number of messages to evaluate
+     * @param aMsgURIs         array of URIs of the messages to be evaluated
+     * @param aTraitCount      length of aProTraits, aAntiTraits arrays
+     * @param aProTraits       array of trait ids for trained messages that
+     *                         match the tested trait (for example,
+     *                         JUNK_TRAIT if testing for junk)
+     * @param aAntiTraits      array of trait ids for trained messages that
+     *                         do not match the tested trait (for example,
+     *                         GOOD_TRAIT if testing for junk)
+     * @param aTraitListener   trait-oriented callback listener (may be null)
+     * @param aMsgWindow       current message window (may be null)
+     * @param aJunkListener    junk-oriented callback listener (may be null)
+     */
+
+    void classifyTraitsInMessages(
+           in unsigned long aCount,
+           [array, size_is(aCount)] in string aMsgURIs,
+           in unsigned long aTraitCount,
+           [array, size_is(aTraitCount)] in unsigned long aProTraits,
+           [array, size_is(aTraitCount)] in unsigned long aAntiTraits,
+           in nsIMsgTraitClassificationListener aTraitListener,
+           [optional] in nsIMsgWindow aMsgWindow,
+           [optional] in nsIJunkMailClassificationListener aJunkListener);
+
+    /**
+     * Called when a user forces the classification of a message. Should
+     * cause the training set to be updated appropriately.
+     *
+     * @arg aMsgURI                     URI of the message to be classified
+     * @arg aOldUserClassification      Was it previous manually classified 
+     *                                  by the user?  If so, how?
+     * @arg aNewClassification          New manual classification.
+     * @arg aListener                   Callback (may be null)
+     */
+    void setMessageClassification(
+        in string aMsgURI, in nsMsgJunkStatus aOldUserClassification,
+        in nsMsgJunkStatus aNewClassification,
+        in nsIMsgWindow aMsgWindow,
+        in nsIJunkMailClassificationListener aListener);
+
+    /**
+     * Called when a user forces a change in the classification of a message.
+     * Should cause the training set to be updated appropriately.
+     *
+     * @param aMsgURI           URI of the message to be classified
+     * @param aOldCount         length of aOldTraits array
+     * @param aOldTraits        array of trait IDs of the old
+     *                          message classification(s), if any
+     * @param aNewCount         length of aNewTraits array
+     * @param aNewTraits        array of trait IDs of the new
+     *                          message classification(s), if any
+     * @param aTraitListener    trait-oriented listener (may be null)
+     * @param aMsgWindow        current message window (may be null)
+     * @param aJunkListener     junk-oriented listener (may be null)
+     */
+    void setMsgTraitClassification(
+        in string aMsgURI,
+        in unsigned long aOldCount,
+        [array, size_is(aOldCount)] in unsigned long  aOldTraits,
+        in unsigned long aNewCount,
+        [array, size_is(aNewCount)] in unsigned long  aNewTraits,
+        [optional] in nsIMsgTraitClassificationListener aTraitListener,
+        [optional] in nsIMsgWindow aMsgWindow,
+        [optional] in nsIJunkMailClassificationListener aJunkListener);
+
+    readonly attribute boolean userHasClassified;
+ 
+    /** Removes the training file and clears out any in memory training tokens. 
+        User must retrain after doing this.
+    **/
+    void resetTrainingData();
+
+    /**
+     * Given a message URI, return a list of tokens and their contribution to
+     * the analysis of a message's match to a trait according to the
+     * current training set.
+     *
+     * @param aMsgURI          URI of the message to be evaluated
+     * @param aProTrait        trait id for trained messages that match the
+     *                         tested trait (for example, JUNK_TRAIT if testing
+     *                         for junk)
+     * @param aAntiTrait       trait id for trained messages that do not match
+     *                         the tested trait (for example, GOOD_TRAIT
+     *                         if testing for junk)
+     * @param aListener        callback listener for results
+     * @param aMsgWindow       current message window (may be null)
+     */
+    void detailMessage(
+        in string aMsgURI,
+        in unsigned long aProTrait,
+        in unsigned long aAntiTrait,
+        in nsIMsgTraitDetailListener aListener,
+        [optional] in nsIMsgWindow aMsgWindow);
+
+};
+
+/**
+ * The nsIMsgCorpus interface manages a corpus of mail data used for
+ * statistical analysis of messages.
+ */
+[scriptable, uuid(70BAD26F-DFD4-41bd-8FAB-4C09B9C1E845)]
+interface nsIMsgCorpus : nsISupports
+{
+  /**
+   * Clear the corpus data for a trait id.
+   *
+   * @param aTrait       trait id
+   */
+   void clearTrait(in unsigned long aTrait);
+
+  /**
+   * Update corpus data from a file.
+   *
+   * @param aFile       the file with the data, in the format:
+   *
+   *                    Format of the trait file for version 1:
+   *                    [0xFCA93601]  (the 01 is the version)
+   *                    for each trait to write:
+   *                    [id of trait to write] (0 means end of list)
+   *                    [number of messages per trait]
+   *                    for each token with non-zero count
+   *                    [count]
+   *                    [length of word]word
+   *
+   * @param aIsAdd      should the data be added, or removed? True if
+   *                    adding, false if removing.
+   *
+   * @param aRemapCount number of items in the parallel arrays aFromTraits,
+   *                    aToTraits. These arrays allow conversion of the
+   *                    trait id stored in the file (which may be originated
+   *                    externally) to the trait id used in the local corpus
+   *                    (which is defined locally using nsIMsgTraitService, and
+   *                    mapped by that interface to a globally unique trait
+   *                    id string).
+   *
+   * @param aFromTraits array of trait ids used in aFile. If aFile contains
+   *                    trait ids that are not in this array, they are not
+   *                    remapped, but assummed to be local trait ids.
+   *
+   * @param aToTraits   array of trait ids, corresponding to elements of
+   *                    aFromTraits, that represent the local trait ids to
+   *                    be used in storing data from aFile into the local corpus.
+   */
+  void updateData(in nsIFile aFile, in boolean aIsAdd,
+                  [optional] in unsigned long aRemapCount,
+                  [optional, array, size_is(aRemapCount)] in unsigned long aFromTraits,
+                  [optional, array, size_is(aRemapCount)] in unsigned long aToTraits);
+
+  /**
+   * Get the corpus count for a token as a string.
+   *
+   * @param aWord    string of characters representing the token
+   * @param aTrait   trait id
+   *
+   * @return         count of that token in the corpus
+   *
+   */
+  unsigned long getTokenCount(in AUTF8String aWord, in unsigned long aTrait);
+
+  /**
+   * Gives information on token and message count information in the
+   * training data corpus.
+   *
+   * @param aTrait           trait id (may be null)
+   * @param aMessageCount    count of messages that have been trained with aTrait
+   *
+   * @return                 token count for all traits
+   */
+
+  unsigned long corpusCounts(in unsigned long aTrait, out unsigned long aMessageCount);
+};

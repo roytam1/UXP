@@ -1,0 +1,68 @@
+<?xml version="1.0"?> 
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://communicator/skin/" type="text/css"?> 
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/fieldMapImport.dtd">
+
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        buttons="accept,cancel"
+        title="&fieldMapImport.title;"
+        style="&fieldMapImport.size;"
+        ondialogaccept="FieldImportOKButton();"
+        onload="OnLoadFieldMapImport();">
+
+  <script type="application/javascript" src="chrome://messenger/content/fieldMapImport.js"/>
+
+  <hbox align="center">
+    <label value="&fieldMapImport.recordNumber;"/>
+    <label id="recordNumber"/>
+    <spacer flex="1"/>
+    <button id="previous" oncommand="Browse(-1);"
+            label="&fieldMapImport.previous.label;"
+            accesskey="&fieldMapImport.previous.accesskey;"/>
+    <button id="next" oncommand="Browse(1);" 
+            label="&fieldMapImport.next.label;"
+            accesskey="&fieldMapImport.next.accesskey;"/>      
+  </hbox>
+
+  <hbox align="center">
+    <checkbox id="skipFirstRecord"
+              label="&fieldMapImport.skipFirstRecord.label;"
+              accesskey="&fieldMapImport.skipFirstRecord.accessKey;"/>
+  </hbox>
+
+  <separator class="thin"/>
+  <label control="fieldList">&fieldMapImport.text;</label>
+  <separator class="thin"/>
+
+  <!-- field list -->
+  <hbox flex="1">
+    <listbox id="fieldList" flex="1" onselect="disableMoveButtons();"
+             onclick="itemClicked(event);">
+      <listcols>
+        <listcol flex="7"/>
+        <listcol flex="13"/>
+      </listcols>
+
+      <listhead>
+        <listheader id="fieldNameHeader" label="&fieldMapImport.fieldListTitle;"/>
+        <listheader id="sampleDataHeader" label="&fieldMapImport.dataTitle;"/>
+      </listhead>
+    </listbox>
+
+    <vbox>
+      <spacer flex="1"/>
+      <button id="upButton" class="up" label="&fieldMapImport.up.label;"
+              accesskey="&fieldMapImport.up.accesskey;"
+              oncommand="moveItem(true);"/>
+      <button id="downButton" class="down" label="&fieldMapImport.down.label;"
+              accesskey="&fieldMapImport.down.accesskey;"
+              oncommand="moveItem(false);"/>
+      <spacer flex="1"/>
+    </vbox>
+  </hbox>
+
+</dialog>

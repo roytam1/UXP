@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!--
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
+
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        style="padding: 20px; width: 350px"
+        onload="onLoad()"
+        buttons="cancel"
+        ondialogcancel="return onCancel();">
+
+  <script type="application/javascript" src="chrome://messenger/content/shutdownWindow.js"/>
+  <stringbundle id="bundle_shutdown" src="chrome://messenger/locale/shutdownWindow.properties"/>
+  
+  <vbox align="center">
+    <label id="shutdownStatus_label" value="" />
+    <separator class="thin" />
+  </vbox>
+  
+  <progressmeter id="shutdown_progressmeter" mode="determined" />
+  
+  <vbox align="center">
+    <label id="shutdownTask_label" value="" />
+    <separator class="thick" />
+  </vbox>
+  
+</dialog>

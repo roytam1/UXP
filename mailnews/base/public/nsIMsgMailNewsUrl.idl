@@ -1,0 +1,201 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIURL.idl"
+
+interface nsIFile;
+interface nsIUrlListener;
+interface nsIMsgStatusFeedback;
+interface nsIMsgIncomingServer;
+interface nsIMsgWindow;
+interface nsILoadGroup;
+interface nsIMsgSearchSession;
+interface nsICacheEntry;
+interface nsIMimeHeaders;
+interface nsIStreamListener;
+interface nsIMsgFolder;
+interface nsIMsgHeaderSink;
+interface nsIMsgDBHdr;
+interface nsIDocShellLoadInfo;
+interface nsIDocShell; 
+
+[scriptable, uuid(995455ba-5bb4-4643-8d70-2b877a2e1320)]
+interface nsIMsgMailNewsUrl : nsIURL {
+  ///////////////////////////////////////////////////////////////////////////////
+  // Eventually we'd like to push this type of functionality up into nsIURI.
+  // The idea is to allow the "application" (the part of the code which wants to 
+  // run a url in order to perform some action) to register itself as a listener
+  // on url. As a url listener, the app will be informed when the url begins to run
+  // and when the url is finished. 
+  ////////////////////////////////////////////////////////////////////////////////
+  void RegisterListener (in nsIUrlListener aUrlListener);
+  void UnRegisterListener (in nsIUrlListener aUrlListener);
+
+  readonly attribute nsIURI baseURI;
+
+  // if you really want to know what the current state of the url is (running or not
+  // running) you should look into becoming a urlListener...
+  void SetUrlState(in boolean runningUrl, in nsresult aStatusCode);
+  void GetUrlState(out boolean runningUrl);
+
+  // These are used by cloneInternal to determine the disposition of the uri
+  // ref when cloning. They should match the RefHandlingEnum enums defined,
+  // for example, in nsStandardURI.h but are not strictly required to do so.
+
+  /// Ignore the ref field, replacing with blank.
+  const unsigned long IGNORE_REF = 0;
+
+  /// Keep the existing ref field.
+  const unsigned long HONOR_REF = 1;
+
+  /// Replace the ref field with a new value.
+  const unsigned long REPLACE_REF = 2;
+
+  /**
+   * The general clone method that other clone methods use.
+   *
+   * This class should NOT be called except from classes that override
+   * a base class.
+   *
+   * @param aRefHandlingMode  one of the Ref constants defined above.
+   * @param aNewRef           the new reference, if needed.
+   * @return                  a cloned version of the current object.
+   */
+  nsIURI cloneInternal(in unsigned long aRefHandlingMode, in AUTF8String aNewRef);
+
+  readonly attribute nsIMsgIncomingServer server;
+
+  /**
+   * The folder associated with this url.
+   * 
+   * @exception NS_ERROR_FAILURE    May be thrown if the url does not
+   *                                relate to a folder, e.g. standalone
+   *                                .eml messages.
+   */
+  attribute nsIMsgFolder folder;
+
+  attribute nsIMsgStatusFeedback statusFeedback;
+
+  /**
+   * The maximum progress for this URL. This might be a count, or it might
+   * be a number of bytes. A value of -1 indicates that this is unknown.
+   */
+  attribute long long maxProgress;
+
+  attribute nsIMsgWindow msgWindow;
+
+  // current mime headers if reading message
+  attribute nsIMimeHeaders mimeHeaders;
+
+  // the load group is computed from the msgWindow
+  readonly attribute nsILoadGroup loadGroup;
+
+  // search session, if we're running a search.
+  attribute nsIMsgSearchSession searchSession;
+  attribute boolean updatingFolder;
+  attribute boolean msgIsInLocalCache;
+  attribute boolean suppressErrorMsgs; // used to avoid displaying biff error messages
+
+  attribute nsICacheEntry memCacheEntry;
+
+  const unsigned long eCopy     = 0;
+  const unsigned long eMove     = 1;
+  const unsigned long eDisplay  = 2;
+  boolean IsUrlType(in unsigned long type);
+  nsIStreamListener getSaveAsListener(in boolean addDummyEnvelope, in nsIFile aFile);
+
+  // typically the header sink is tied to the nsIMsgWindow, but in certain circumstances, a consumer
+  // may chose to provide its own header sink for this url
+  attribute nsIMsgHeaderSink msgHeaderSink;
+
+  /// Returns true if the URI is for a message (e.g., imap-message://)
+  readonly attribute boolean isMessageUri;
+
+  /**
+   * Loads the URI in a docshell. This will give priority to loading the
+   * URI in the passed-in docshell. If it can't be loaded there
+   * however, the URL dispatcher will go through its normal process of content
+   * loading.
+   *
+   * @param docshell     The docshell that will consume the load.
+   *
+   * @param loadInfo     This is the extended load info for this load. This
+   *                     most often will be null, but if you need to do
+   *                     additional setup for this load you can get a loadInfo
+   *                     object by calling createLoadInfo. Once you have this
+   *                     object you can set the needed properties on it and
+   *                     then pass it to loadURI.
+   *
+   * @param aLoadFlags   Flags to modify load behaviour. Flags are defined in
+   *                     nsIWebNavigation. Note that using flags outside
+   *                     LOAD_FLAGS_MASK is only allowed if passing in a
+   *                     non-null loadInfo. And even some of those might not
+   *                     be allowed. Use at your own risk. See nsIDocShell.idl
+   */
+   void loadURI(in nsIDocShell docshell,
+                in nsIDocShellLoadInfo loadInfo,
+                in unsigned long aLoadFlags);
+
+};
+
+//////////////////////////////////////////////////////////////////////////////////
+// This is a very small interface which I'm grouping with the mailnewsUrl interface.
+// Several url types (mailbox, imap, nntp) have similar properties because they can
+// represent mail messages. For instance, these urls can be have URI 
+// equivalents which represent a message. 
+// We want to provide the app the ability to get the URI for the 
+// url. This URI to URL mapping doesn't exist for all mailnews urls...hence I'm
+// grouping it into a separate interface...
+//////////////////////////////////////////////////////////////////////////////////
+
+[scriptable, uuid(388a37ec-2e1a-4a4f-9d8b-189bedf1bda2)]
+interface nsIMsgMessageUrl : nsISupports {
+  // get and set the RDF URI associated with the url. Note, not all urls have
+  // had uri's set on them so be prepared to handle cases where this string is empty.
+  attribute string uri;
+  // used by imap, pop and nntp in order to implement save message to disk
+  attribute nsIFile messageFile;
+  attribute boolean AddDummyEnvelope;  
+  attribute boolean canonicalLineEnding;
+  attribute string originalSpec;
+
+  // This is used when creating a principal for the URL.
+  readonly attribute AUTF8String principalSpec;
+  
+  /**
+   *  A message db header for that message.
+   *  
+   *  @note This attribute is not guaranteed to be set, so callers that
+   *  actually require an nsIMsgDBHdr will need to use the uri attribute
+   *  on this interface to get the  appropriate nsIMsgMessageService and
+   *  then get the header from there.
+   */
+  attribute nsIMsgDBHdr messageHeader;
+};
+
+//////////////////////////////////////////////////////////////////////////////////
+// This is a very small interface which I'm grouping with the mailnewsUrl interface.
+// I want to isolate out all the I18N specific information that may be associated with
+// any given mailnews url. This gives I18N their own "sandbox" of routines they can add
+// and tweak as they see fit. For now it contains mostly charset information.
+//////////////////////////////////////////////////////////////////////////////////
+
+[scriptable, uuid(D71E0785-2862-11d4-98C1-001083010E9B)]
+interface nsIMsgI18NUrl : nsISupports {
+
+  /**
+   * the charset associated with a folder for this url.
+   * 
+   * @exception NS_ERROR_FAILURE    May be thrown if the url does not
+   *                                relate to a folder, e.g. standalone
+   *                                .eml messages.
+   */
+  readonly attribute string folderCharset;
+  readonly attribute boolean folderCharsetOverride;
+  // the charsetOverRide is a charset the user may have specified via the menu for
+  // a particular message
+  attribute string charsetOverRide;
+};

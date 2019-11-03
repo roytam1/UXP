@@ -1,0 +1,97 @@
+/* -*- Mode: idl; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+#include "nsISupports.idl"
+
+interface nsIOutputStream;
+interface nsIMsgIncomingServer;
+interface nsIMsgDBHdr;
+interface nsIFile;
+
+[scriptable, uuid(1772BE95-FDA9-4dfd-A663-8AF92C1E3024)]
+interface nsISpamSettings: nsISupports {
+  /**
+   * 0 for nothing, 100 for highest
+   */
+  attribute long level; 
+
+  attribute boolean moveOnSpam;
+  readonly attribute boolean markAsReadOnSpam;
+
+  /**
+   * Most consumers will just use spamFolderURI rather than accessing any of
+   * target attributes directly.
+   */
+  attribute long moveTargetMode;
+  const long MOVE_TARGET_MODE_ACCOUNT = 0;
+  const long MOVE_TARGET_MODE_FOLDER = 1;
+  attribute string actionTargetAccount;
+  attribute string actionTargetFolder;
+
+  /**
+   * built from moveTargetMode, actionTargetAccount, actionTargetFolder
+   */
+  readonly attribute string spamFolderURI;
+
+  attribute boolean purge;
+  /**
+   * interval, in days
+   */
+  attribute long purgeInterval;
+
+  attribute boolean useWhiteList;
+  attribute string whiteListAbURI;
+
+  /**
+   * Should we do something when the user manually marks a message as junk?
+   */
+  readonly attribute boolean manualMark;
+
+  /**
+   * With manualMark true, which action (move to the Junk folder, or delete)
+   * should we take when the user marks a message as junk.
+   */
+  readonly attribute long manualMarkMode;
+  const long MANUAL_MARK_MODE_MOVE = 0;
+  const long MANUAL_MARK_MODE_DELETE = 1;
+
+  /**
+   * integrate with server-side spam detection programs
+   */
+  attribute boolean useServerFilter;
+  attribute ACString serverFilterName;
+  readonly attribute nsIFile serverFilterFile;
+  const long TRUST_POSITIVES = 1;
+  const long TRUST_NEGATIVES = 2;
+  attribute long serverFilterTrustFlags;
+
+  // for logging
+  readonly attribute boolean loggingEnabled;
+  attribute nsIOutputStream logStream;
+  void logJunkHit(in nsIMsgDBHdr aMsgHdr, in boolean aMoveMessage);
+  void logJunkString(in string aLogText);
+  void clone(in nsISpamSettings aSpamSettings); 
+
+  // aServer -> spam settings are associated with a particular server
+  void initialize(in nsIMsgIncomingServer aServer);
+
+  /**
+   * check if junk processing for a message should be bypassed
+   *
+   * Typically this is determined by comparing message to: address
+   * to a whitelist of known good addresses or domains.
+   *
+   * @param aMsgHdr  database header representing the message.
+   *
+   * @return         true  if this message is whitelisted, and junk
+   *                       processing should be bypassed
+   *
+   *                 false otherwise (including in case of error)
+   */
+  boolean checkWhiteList(in nsIMsgDBHdr aMsgHdr);
+
+};

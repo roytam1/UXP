@@ -1,0 +1,35 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "nsISupports.idl"
+#include "nsIMsgQuotingOutputStreamListener.idl"
+#include "nsIChannel.idl"
+#include "nsIMimeStreamConverter.idl"
+
+interface nsIMsgDBHdr;
+
+[scriptable, uuid(f79b1d55-f546-4ed5-9f75-9428e35c4eff)]
+interface nsIMsgQuote : nsISupports {
+
+ /**
+  * Quote a particular message specified by its URI.
+  *
+  * @param charset optional parameter - if set, force the message to be
+  *                quoted using this particular charset
+  */
+  void quoteMessage(in string msgURI, in boolean quoteHeaders,
+                    in nsIMsgQuotingOutputStreamListener streamListener,
+                    in string charset, in boolean headersOnly,
+                    in nsIMsgDBHdr aOrigHdr);
+
+  readonly attribute nsIMimeStreamConverterListener quoteListener;
+  readonly attribute nsIChannel quoteChannel;
+  readonly attribute nsIMsgQuotingOutputStreamListener streamListener;
+};
+
+[scriptable, uuid(1EC75AD9-88DE-11d3-989D-001083010E9B)]
+interface nsIMsgQuoteListener : nsIMimeStreamConverterListener
+{
+  attribute nsIMsgQuote msgQuote;
+};

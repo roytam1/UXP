@@ -1,0 +1,25 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+SOURCES += [
+    'ImportCharSet.cpp',
+    'ImportOutFile.cpp',
+    'ImportTranslate.cpp',
+    'nsImportABDescriptor.cpp',
+    'nsImportAddressBooks.cpp',
+    'nsImportEmbeddedImageData.cpp',
+    'nsImportEncodeScan.cpp',
+    'nsImportFieldMap.cpp',
+    'nsImportMail.cpp',
+    'nsImportMailboxDescriptor.cpp',
+    'nsImportMimeEncode.cpp',
+    'nsImportScanFile.cpp',
+    'nsImportService.cpp',
+    'nsImportStringBundle.cpp',
+    'nsImportTranslator.cpp',
+]
+
+FINAL_LIBRARY = 'import'
+

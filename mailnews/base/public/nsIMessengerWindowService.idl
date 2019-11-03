@@ -1,0 +1,17 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"
+
+[scriptable, uuid(113a1a5a-1dd2-11b2-b1b7-a85ccc06c8ce)]
+interface nsIMessengerWindowService : nsISupports {
+    /* aWindowType --> the type of window you want to create. i.e. "mail:3pane"
+       aFolderURI --> the folder resource you want pre-selected (if any)
+     aMsgKey --> a particular message you may want selected in that folder (if any)
+  */ 
+  void openMessengerWindowWithUri(in string aWindowType, in string aFolderURI, in nsMsgKey aMsgKey);
+};
+

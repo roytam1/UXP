@@ -1,0 +1,236 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIMsgAccount.idl"
+#include "nsIMsgIdentity.idl"
+#include "nsIMsgIncomingServer.idl"
+#include "nsIIncomingServerListener.idl"
+#include "nsIMsgFolder.idl"
+
+interface nsIMsgFolderCache;
+interface nsIFolderListener;
+
+[scriptable, uuid(d5ab0eea-49c5-42f2-b2e6-8ad306606d8b)]
+interface nsIMsgAccountManager : nsISupports {
+
+  nsIMsgAccount createAccount();
+  /*
+   * Return the account with the provided key, or null if none found.
+   */
+  nsIMsgAccount getAccount(in ACString key);
+
+  /**
+   * Removes the account from the list of accounts.
+   *
+   * @param aAccount      the account to remove
+   * @param aRemoveFiles  remove data directory (local directory) of this account
+   */
+  void removeAccount(in nsIMsgAccount aAccount, [optional] in boolean aRemoveFiles);
+
+  /*
+   * creates a new identity and assigns it a new, unique "key"
+   */
+  nsIMsgIdentity createIdentity();
+
+  /*
+   * creates a new server and assigns it a new, unique "key"
+   * the given type will be used to construct a ContractID
+   *
+   *  @param type "imap", "pop3", "nntp", "movemail", "none", "rss", "generic"
+   * (suffix of contract ID @mozilla.org/messenger/server;1?type= )
+   */
+  nsIMsgIncomingServer createIncomingServer(in ACString username,
+                                            in ACString hostname,
+                                            in ACString type);
+
+  /**
+   * Removes the server from the list of servers
+   * 
+   * @param aServer        server to remove
+   * @param aRemoveFiles   remove directory from profile
+   *
+   * @throws NS_ERROR_FAILURE if server not found 
+   */
+  void removeIncomingServer(in nsIMsgIncomingServer aServer, 
+                            in boolean aRemoveFiles);
+  /*
+   * get the identity with the given key
+   * if the identity does not exist, it will be created
+   */
+  nsIMsgIdentity getIdentity(in ACString key);
+
+  /*
+   * Gets the existing incoming server with the given key
+   * if the server's type does not exist in the preference,
+   * an error is returned/thrown
+   */
+  nsIMsgIncomingServer getIncomingServer(in ACString key);
+
+  /* account list stuff */
+
+  /* defaultAccount should always be set if there are any accounts
+   * in the account manager. You can only set the defaultAccount to an
+   * account already in the account manager */
+  attribute nsIMsgAccount defaultAccount;
+
+  /**
+   * Ordered list of all accounts, by the order they are in the prefs.
+   * Accounts with hidden servers are not returned.
+   * array of nsIMsgAccount
+   */
+  readonly attribute nsIArray accounts;
+
+  /* list of all identities in all accounts
+   * array of nsIMsgIdentity
+   */
+  readonly attribute nsIArray allIdentities;
+
+  /* list of all servers in all accounts, except for hidden and IM servers
+   * array of nsIMsgIncomingServer
+   */
+  readonly attribute nsIArray allServers;
+
+  /* summary of summary files folder cache */
+  readonly attribute nsIMsgFolderCache folderCache;
+
+  /* are we shutting down */
+  readonly attribute boolean shutdownInProgress;
+
+  /**
+   * for preventing unauthenticated users from seeing header information 
+   */
+  attribute boolean userNeedsToAuthenticate;
+  /*
+   * search for the server with the given username, hostname, and type
+   * the type is the same as is specified in the preferences,
+   * i.e. "imap", "pop3", "none", or "nntp"
+   */
+  nsIMsgIncomingServer
+      FindServer(in ACString userName, in ACString hostname, in ACString type);
+
+  /*
+   * search for the server with the given uri
+   * an analog to FindServer()
+   * The boolean flag selects whether we compare input against the    
+   * 'realhostname' and 'realuserName' pref settings.
+   */
+  nsIMsgIncomingServer
+      findServerByURI(in nsIURI aURI, in boolean aRealFlag);
+
+  /*
+   * Same as FindServer() except it compares the input values against
+   * 'realhostname' and 'realuserName' pref settings.
+   */
+  nsIMsgIncomingServer
+      findRealServer(in ACString userName, in ACString hostname, in ACString type, in long port );
+
+  /**
+   * find the index of this server in the (ordered) list of accounts
+   */
+  long FindServerIndex(in nsIMsgIncomingServer server);
+
+  /**
+   * Finds an account for the given incoming server.
+   *
+   * @param server  An incoming server to find the account for.
+   * @return        If found, the nsIMsgAccount representing the account found.
+   *                Otherwise returns null.
+   */
+  nsIMsgAccount FindAccountForServer(in nsIMsgIncomingServer server);
+
+  /* given a server, return all identities in accounts that have this server
+   * returns an array of nsIMsgIdentity
+   */
+  nsIArray getIdentitiesForServer(in nsIMsgIncomingServer server);
+
+  /**
+   * given a server, return the first identity in accounts that have this server
+   */
+  nsIMsgIdentity getFirstIdentityForServer(in nsIMsgIncomingServer server);
+
+  /* given an identity, return all servers in accounts that have
+   * this identity
+   * returns an array of nsIMsgIncomingServer
+   */
+  nsIArray getServersForIdentity(in nsIMsgIdentity identity);
+
+  /* there is a special server "Local Folders" that is guaranteed to exist.
+   * this will allow you to get */
+  attribute nsIMsgIncomingServer localFoldersServer;
+
+  // Create the account for that special server.
+  void createLocalMailAccount();
+  
+  /* load accounts kicks off the creation of all accounts. You do not need
+   * to call this and all accounts should be loaded lazily if you use any
+   * of the above.
+   */
+  void LoadAccounts();
+
+  void setSpecialFolders();
+
+  void loadVirtualFolders();
+
+  /* unload accounts frees all the account manager data structures */
+  void UnloadAccounts();
+
+  void WriteToFolderCache(in nsIMsgFolderCache folderCache);
+  void saveVirtualFolders();
+  void closeCachedConnections();
+  void shutdownServers();
+
+  void CleanupOnExit();
+  void SetFolderDoingEmptyTrash(in nsIMsgFolder folder);
+  boolean GetEmptyTrashInProgress();
+
+  void SetFolderDoingCleanupInbox(in nsIMsgFolder folder);
+  boolean GetCleanupInboxInProgress();
+
+  void addRootFolderListener(in nsIFolderListener listener);
+  void removeRootFolderListener(in nsIFolderListener listener);
+
+  // these are going away in favor of add/removeRootFolderListener
+  void addIncomingServerListener(in nsIIncomingServerListener serverListener);
+  void removeIncomingServerListener(in nsIIncomingServerListener serverListener);
+
+  // these are going away in favor of nsIMsgFolder::NotifyEvent(in nsIAtom event);
+  void notifyServerLoaded(in nsIMsgIncomingServer server);
+  void notifyServerUnloaded(in nsIMsgIncomingServer server);
+  void notifyServerChanged(in nsIMsgIncomingServer server);
+
+  // force account info out to prefs file
+  void saveAccountInfo();
+
+  ACString getChromePackageName(in ACString aExtensionName);
+
+  /// Enumerate all incoming servers and their folders and return in an array.
+  readonly attribute nsIArray allFolders;
+
+  /**
+   * Iterates over all folders looking for one with the passed in path,
+   * and returns the uri for the matching folder. In the future,
+   * the folder lookup service will provide this functionality.
+   *
+   * @param aLocalPath path of the folder whose uri we want.
+   * @return the URI of the folder that corresponds to aLocalPath
+   */
+  ACString folderUriForPath(in nsIFile aLocalPath);
+
+  // Used to sort servers (accounts) for e.g. the folder pane
+  long getSortOrder(in nsIMsgIncomingServer server);
+};
+
+%{C++
+#define MAILNEWS_ACCOUNTMANAGER_EXTENSIONS "mailnews-accountmanager-extensions"
+%}
+
+[scriptable, uuid(70032DE0-CD59-41ba-839D-FC1B65367EE7)]
+interface nsIMsgAccountManagerExtension : nsISupports
+{
+  readonly attribute ACString name;   // examples:  mdn
+  boolean showPanel(in nsIMsgIncomingServer server);
+  readonly attribute ACString chromePackageName;  // example:  messenger, chrome://messenger/content/am-mdn.xul and chrome://messenger/locale/am-mdn.properties
+};

@@ -1,0 +1,92 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXPORTS += [
+    'mimecont.h',
+    'mimecryp.h',
+    'mimecth.h',
+    'mimehdrs.h',
+    'mimei.h',
+    'mimeleaf.h',
+    'mimemoz2.h',
+    'mimemsig.h',
+    'mimemult.h',
+    'mimeobj.h',
+    'mimepbuf.h',
+    'mimetext.h',
+    'modlmime.h',
+    'modmimee.h',
+    'nsMimeStringResources.h',
+    'nsStreamConverter.h',
+]
+
+SOURCES += [
+    'comi18n.cpp',
+    'mimebuf.cpp',
+    'mimecms.cpp',
+    'mimecom.cpp',
+    'mimecont.cpp',
+    'mimecryp.cpp',
+    'mimecth.cpp',
+    'mimedrft.cpp',
+    'mimeebod.cpp',
+    'mimeenc.cpp',
+    'mimeeobj.cpp',
+    'mimehdrs.cpp',
+    'MimeHeaderParser.cpp',
+    'mimei.cpp',
+    'mimeiimg.cpp',
+    'mimeleaf.cpp',
+    'mimemalt.cpp',
+    'mimemapl.cpp',
+    'mimemcms.cpp',
+    'mimemdig.cpp',
+    'mimemmix.cpp',
+    'mimemoz2.cpp',
+    'mimempar.cpp',
+    'mimemrel.cpp',
+    'mimemsg.cpp',
+    'mimemsig.cpp',
+    'mimemult.cpp',
+    'mimeobj.cpp',
+    'mimepbuf.cpp',
+    'mimesun.cpp',
+    'mimetenr.cpp',
+    'mimetext.cpp',
+    'mimeTextHTMLParsed.cpp',
+    'mimethpl.cpp',
+    'mimethsa.cpp',
+    'mimethtm.cpp',
+    'mimetpfl.cpp',
+    'mimetpla.cpp',
+    'mimetric.cpp',
+    'mimeunty.cpp',
+    'nsCMS.cpp',
+    'nsCMSSecureMessage.cpp',
+    'nsMimeObjectClassAccess.cpp',
+    'nsSimpleMimeConverterStub.cpp',
+    'nsStreamConverter.cpp',
+]
+
+LOCAL_INCLUDES += [
+     '/mozilla/security/certverifier',
+     '/mozilla/security/manager/ssl',
+     '/mozilla/security/pkix/include',
+]
+
+EXTRA_COMPONENTS += [
+    'mimeJSComponents.js',
+    'msgMime.manifest',
+]
+
+EXTRA_JS_MODULES += [
+    'extraMimeParsers.jsm',
+    'jsmime.jsm',
+    'mimeParser.jsm'
+]
+
+FINAL_LIBRARY = 'mail'
+
+DEFINES['ENABLE_SMIME'] = True

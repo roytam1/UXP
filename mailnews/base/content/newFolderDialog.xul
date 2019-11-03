@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/messenger.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/folderMenus.css" type="text/css"?>
+
+<!DOCTYPE dialog [
+<!ENTITY % newFolderDTD SYSTEM "chrome://messenger/locale/newFolderDialog.dtd">%newFolderDTD;
+]>
+
+<dialog xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="&newFolderDialog.title;"
+        onload="onLoad();"
+        buttonlabelaccept="&accept.label;"
+        buttonaccesskeyaccept="&accept.accesskey;"
+        ondialogaccept="return onOK();">
+
+  <stringbundleset id="stringbundleset"/>
+  <script type="application/javascript" src="chrome://messenger/content/newFolderDialog.js"/>
+
+    <label value="&name.label;" accesskey="&name.accesskey;" control="name"/>
+    <textbox id="name" oninput="doEnabling();"/>
+
+    <separator/>
+
+    <label value="&description.label;" accesskey="&description.accesskey;" control="msgNewFolderPicker"/>
+
+    <menulist id="msgNewFolderPicker" class="folderMenuItem"
+                 displayformat="verbose">
+      <menupopup id="MsgNewFolderPopup" type="folder" showFileHereLabel="true"
+                 class="menulist-menupopup"
+                 mode="newFolder"
+                 oncommand="onFolderSelect(event)"/>
+    </menulist>
+
+    <vbox id="newFolderTypeBox">
+
+      <separator class="thin"/>
+
+      <label value="&folderRestriction1.label;"/>
+      <label value="&folderRestriction2.label;"/>
+
+      <separator class="thin"/>
+
+      <radiogroup id="folderGroup" orient="horizontal" class="indent">
+        <radio oncommand="onFoldersOnly();" label="&foldersOnly.label;"/>
+        <radio oncommand="onMessagesOnly();" label="&messagesOnly.label;" selected="true"/>
+      </radiogroup>
+
+    </vbox>
+
+</dialog>

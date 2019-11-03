@@ -1,0 +1,27 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+SOURCES += [
+    'nsNewsDownloadDialogArgs.cpp',
+    'nsNewsDownloader.cpp',
+    'nsNewsFolder.cpp',
+    'nsNewsUtils.cpp',
+    'nsNNTPArticleList.cpp',
+    'nsNntpIncomingServer.cpp',
+    'nsNntpMockChannel.cpp',
+    'nsNNTPNewsgroupList.cpp',
+    'nsNNTPNewsgroupPost.cpp',
+    'nsNNTPProtocol.cpp',
+    'nsNntpService.cpp',
+    'nsNntpUrl.cpp',
+]
+
+EXTRA_COMPONENTS += [
+    'nsNewsAutoCompleteSearch.js',
+    'nsNewsAutoCompleteSearch.manifest',
+]
+
+FINAL_LIBRARY = 'mail'
+

@@ -1,0 +1,169 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"
+
+interface nsIMsgWindow;
+interface nsIMsgMailNewsUrl;
+interface nsIImapProtocol;
+interface nsIImapUrl;
+interface nsIImapMockChannel;
+
+/**
+ * nsIImapServerSink is designed to be used as a proxy to the application's UI
+ * thread from the running IMAP threads.
+ */
+[scriptable, uuid(2160c641-e4fa-4bbc-ab8b-d9ba45069027)]
+interface nsIImapServerSink : nsISupports {
+  /**
+   * Check if the given folder path is a possible IMAP mailbox.
+   * @param folderPath folder path to check
+   * @param hierarchyDelimiter IMAP hierarchy delimiter in canonical format,
+   *                           i.e., hierarchy delimiter has been replaced
+   *                           with '/'
+   * @param boxFlags IMAP folder flags (for subscription, namespaces etc.)
+   * @return true if it's a new mailbox
+   */
+  boolean possibleImapMailbox(in ACString folderPath,
+                              in char hierarchyDelimiter, in long boxFlags);
+  boolean folderNeedsACLInitialized(in ACString folderPath);
+  void addFolderRights(in ACString folderPath, in ACString userName, in ACString rights);
+  void refreshFolderRights(in ACString folderPath);
+  void discoveryDone();
+  void onlineFolderDelete(in ACString folderName);
+  void onlineFolderCreateFailed(in ACString aFolderName);
+  void onlineFolderRename(in nsIMsgWindow msgWindow, in ACString oldName, in ACString newName);
+  boolean folderIsNoSelect(in ACString folderName);
+  void setFolderAdminURL(in ACString folderName, in ACString adminUrl);
+  boolean folderVerifiedOnline(in ACString folderName);
+
+  void setCapability(in unsigned long long capability);
+  /// RFC 2971 ID server response
+  void setServerID(in ACString aServerID);
+  boolean loadNextQueuedUrl(in nsIImapProtocol protocol);
+
+  /**
+   * Prepare to retry the given URL.
+   * @param imapUrl the url we're going to retry
+   * @return channel to associate with the url. We return this because access
+   *         to the channel should only happen on the ui thread.
+   */
+  nsIImapMockChannel prepareToRetryUrl(in nsIImapUrl imapUrl);
+
+  /**
+   * Suspend the url. This puts it at the end of the queue. If the queue is
+   * empty, the url will get resumed immediately. Currently, the plan is
+   * do this when we have to download a lot of headers in chunks, though we
+   * could find other uses for it.
+   * @param imapUrl url to suspend
+   */
+  void suspendUrl(in nsIImapUrl aImapUrl);
+
+  /**
+   * Retry the given URL.
+   * @param imapUrl url to retry
+   * @param channel the channel to associate with the url
+   */
+  void retryUrl(in nsIImapUrl imapUrl, in nsIImapMockChannel channel);
+
+  /**
+   * If previous URL failed, this gives server chance to abort URLs with same
+   * mock channel.
+   */
+  void abortQueuedUrls();
+  AString getImapStringByName(in string msgName);
+  /**
+   * Alerts the user that the login to the IMAP server failed. Asks whether the
+   * connection should: retry, cancel, or request a new password.
+   *
+   * @param aMsgWindow The message window associated with this action (cannot
+   *                   be null).
+   * @return           The button pressed. 0 for retry, 1 for cancel,
+   *                   2 for enter a new password.
+   */
+  int32_t promptLoginFailed(in nsIMsgWindow aMsgWindow);
+
+  /**
+   * Alerts the user with the given string (FE = 'Front End').
+   *
+   * @param aAlertString The string to alert the user with.
+   * @param aUrl         The running url.
+   */
+  void fEAlert(in AString aAlertString, in nsIMsgMailNewsUrl aUrl);
+
+  /**
+   * Alerts the user with a localized string. It will attempt to fill in
+   * the hostname into the string if necessary.
+   *
+   * @param aMsgName  The id of the string to present to the user..
+   * @param aUrl    The running url.
+   */
+  void fEAlertWithName(in string aMsgName, in nsIMsgMailNewsUrl aUrl);
+  /**
+   * Takes a response from the server and prepends it with IMAP_SERVER_SAID 
+   *
+   * @param aServerString  The string to alert the user with.
+   * @param url            The running url.
+   */
+  void fEAlertFromServer(in ACString aServerString, in nsIMsgMailNewsUrl aUrl);
+
+  void commitNamespaces();
+
+  /**
+   * Returns a password via the out param, if we were able to prompt for one,
+   * or had one stored.
+   * If there is already a password prompt up, we return false, but we
+   * ask the async prompt service to notify us when we can put up a prompt.
+   * When that notification is received, we prompt the user and set the
+   * password on the protocol object, and signal a monitor that the imap
+   * thread should be waiting on.
+   *
+   * rv is NS_MSG_PASSWORD_PROMPT_CANCELLED if the user cancels the
+   * password prompt. That's not an exception, however.
+   *
+   * @param aProtocol imap protocol object requesting the password.
+   * @param aNewPasswordRequested Forces password prompt immediately
+   * @param aPassword returns the password, unless we had to prompt or use the,
+   *                  login manager and there was already a prompt up.
+   */
+  void asyncGetPassword(in nsIImapProtocol aProtocol,
+                        in boolean aNewPasswordRequested,
+                        out ACString aPassword);
+
+  attribute boolean userAuthenticated;
+  void setMailServerUrls(in ACString manageMailAccount, in ACString manageLists, in ACString manageFilters);
+
+  /** Used by the imap thread when upgrading from the socketType
+   * trySTARTTLS.
+   * @param aSucceeded whether STARTTLS succeeded. If it did, the server
+   * will set the socket type to alwaysSTARTTLS, otherwise plain.
+   */
+  void UpdateTrySTARTTLSPref(in boolean aSucceeded);
+
+  readonly attribute ACString arbitraryHeaders;
+  void forgetPassword();
+
+  readonly attribute boolean showAttachmentsInline;
+  string cramMD5Hash(in string decodedChallenge, in string key);
+  /// String to send to the imap server as the login user name.
+  readonly attribute ACString loginUsername;
+  /// String to send to the imap server as the user name.
+  readonly attribute ACString originalUsername;
+  /// Internal pref key, unique over all servers
+  readonly attribute ACString serverKey;
+  /// password for server login
+  readonly attribute ACString serverPassword;
+  /// remove a connection to the server
+  void removeServerConnection(in nsIImapProtocol aProtocol);
+  /// is the imap server shutting down?
+  readonly attribute boolean serverShuttingDown;
+  /// reset the connection for a particular folder
+  void resetServerConnection(in ACString aFolderName);
+  /// tell the server if listing using lsub command
+  void setServerDoingLsub(in boolean aDoingLsub);
+  /// set force select string
+  void SetServerForceSelect(in ACString forceSelect);
+};

@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/filterDialog.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/folderPane.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/folderMenus.css" type="text/css"?>
+
+<?xul-overlay href="chrome://messenger/content/searchTermOverlay.xul"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/FilterEditor.dtd">
+
+<dialog id="FilterEditor"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  title="&window.title;"
+  style="&filterEditorDialog.dimensions;"
+  windowtype="mailnews:filtereditor"
+  persist="width height screenX screenY"
+  buttons="accept,cancel"
+  onload="filterEditorOnLoad();"
+  onunload="filterEditorOnUnload();"
+  ondialogaccept="return onAccept();">
+
+  <dummy class="usesMailWidgets"/>
+  <stringbundleset id="stringbundleset">
+    <stringbundle id="bundle_messenger" src="chrome://messenger/locale/messenger.properties"/>
+    <stringbundle id="bundle_filter" src="chrome://messenger/locale/filter.properties"/>
+    <stringbundle id="bundle_search" src="chrome://messenger/locale/search.properties"/>
+  </stringbundleset>
+
+  <script type="application/javascript" src="chrome://messenger/content/mailWindowOverlay.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/mailCommands.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/FilterEditor.js"/>
+
+  <commandset>
+    <command id="cmd_updateFilterType" oncommand="updateFilterType();"/>
+    <command id="cmd_updateClassificationMenu" oncommand="gFilterTypeSelector.updateClassificationMenu();"/>
+  </commandset>
+
+  <vbox>
+    <hbox align="center">
+      <label value="&filterName.label;" accesskey="&filterName.accesskey;" control="filterName"/>
+      <textbox flex="1" id="filterName"/>
+      <spacer flex="1"/>
+    </hbox>
+  </vbox>
+
+  <separator class="thin"/>
+
+  <vbox flex="1">
+    <groupbox>
+      <caption label="&contextDesc.label;"/>
+      <grid>
+        <columns>
+          <column/>
+          <column/>
+        </columns>
+        <rows>
+          <row>
+            <checkbox id="runManual"
+                      label="&contextManual.label;"
+                      accesskey="&contextManual.accesskey;"
+                      command="cmd_updateFilterType"/>
+          </row>
+          <row>
+            <checkbox id="runIncoming"
+                      label="&contextIncomingMail.label;"
+                      accesskey="&contextIncomingMail.accesskey;"
+                      command="cmd_updateClassificationMenu"/>
+            <menulist id="pluginsRunOrder"
+                      command="cmd_updateFilterType">
+              <menupopup>
+                <menuitem id="runBeforePlugins"
+                          label="&contextBeforeCls.label;"/>
+                <menuitem id="runAfterPlugins"
+                          label="&contextAfterCls.label;"/>
+              </menupopup>
+            </menulist>
+          </row>
+          <row>
+            <checkbox id="runArchive"
+                      label="&contextArchive.label;"
+                      accesskey="&contextArchive.accesskey;"
+                      command="cmd_updateFilterType"/>
+          </row>
+          <row>
+            <checkbox id="runOutgoing"
+                      label="&contextOutgoing.label;"
+                      accesskey="&contextOutgoing.accesskey;"
+                      command="cmd_updateFilterType"/>
+          </row>
+        </rows>
+      </grid>
+    </groupbox>
+
+    <vbox id="searchTermListBox" flex="1"/>
+  </vbox>
+
+  <splitter id="gray_horizontal_splitter" persist="state"/>
+
+  <vbox flex="1">
+    <label value="&filterActionDesc.label;"
+           accesskey="&filterActionDesc.accesskey;"
+           control="filterActionList"/>
+    <listbox id="filterActionList" flex="1" rows="4" minheight="35%"
+             onfocus="setLastActionFocus();" focusedAction="0">
+      <listcols>
+        <listcol flex="&filterActionTypeFlexValue;"/>
+        <listcol flex="&filterActionTargetFlexValue;"/>
+        <listcol class="filler"/>
+      </listcols>
+    </listbox>
+  </vbox>
+
+  <vbox id="statusbar" style="visibility: hidden;">
+    <hbox align="center">
+      <label>
+        &filterActionOrderWarning.label;
+      </label>
+      <label class="text-link" onclick="showActionsOrder();">&filterActionOrder.label;</label>
+    </hbox>
+  </vbox>
+</dialog>

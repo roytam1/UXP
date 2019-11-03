@@ -1,0 +1,28 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIMsgMailView.idl"
+
+///////////////////////////////////////////////////////////////////////////////
+// A mail view list is a list of mail views a particular implementor provides
+///////////////////////////////////////////////////////////////////////////////
+
+typedef long nsMsgMailViewListFileAttribValue;
+
+[scriptable, uuid(6DD798D7-9528-49e6-9447-3AAF14D2D36F)]
+interface nsIMsgMailViewList : nsISupports {
+
+    readonly attribute unsigned long mailViewCount;
+
+    nsIMsgMailView getMailViewAt(in unsigned long mailViewIndex);
+
+    void addMailView(in nsIMsgMailView mailView); 
+    void removeMailView(in nsIMsgMailView mailView);
+
+    nsIMsgMailView createMailView();
+
+    void save();    
+};

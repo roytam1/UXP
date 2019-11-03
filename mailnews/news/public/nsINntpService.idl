@@ -1,0 +1,50 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIUrlListener.idl"
+#include "nsINntpIncomingServer.idl"
+#include "MailNewsTypes2.idl"
+
+interface nsIURI;
+interface nsIFile;
+interface nsIMsgWindow;
+interface nsIMsgFolder;
+interface nsICacheStorage;
+
+[scriptable, uuid(dc5cadb0-966c-4ef1-a4c8-cc1e48d1ac61)]
+interface nsINntpService : nsISupports {
+  
+  /* newsgroupsList is a comma separated list of newsgroups, which may be
+   * in news://host/group or group form
+   * "news://host/group1,news://host/group2" or "group1,group2"
+   *
+   * newsgroupsHeaderVal is a comma separated list of groups in the group form
+   * "group1,group2"
+   *
+   * newshostHeaderVal is a single hostname.
+   * "host"
+   */
+  void generateNewsHeaderValsForPosting(in ACString newsgroupsList, out string newsgroupsHeaderVal, out string newshostHeaderVal);
+
+  nsIURI postMessage(in nsIFile aFileToPost, in string newsgroupNames, in string aAccountKey, in nsIUrlListener aUrlListener, in nsIMsgWindow aMsgWindow);
+
+  nsIURI getNewNews(in nsINntpIncomingServer nntpServer, in string uri, in boolean getOld, in nsIUrlListener aUrlListener, in nsIMsgWindow aMsgWindow);
+
+  nsIURI cancelMessage(in string cancelURL, in string messageURI, in nsISupports aConsumer, in nsIUrlListener aUrlListener, in nsIMsgWindow aMsgWindow);
+ 
+  void getListOfGroupsOnServer(in nsINntpIncomingServer nntpServer, in nsIMsgWindow aMsgWindow, in boolean getOnlyNew);
+
+  nsIURI fetchMessage(in nsIMsgFolder newsFolder, in nsMsgKey key, in nsIMsgWindow aMsgWindow, in nsISupports aConsumer, in nsIUrlListener aUrlListener);
+
+  void downloadNewsgroupsForOffline(in nsIMsgWindow aMsgWindow, in nsIUrlListener aListener);
+  /** 
+   * can handle news-message:// and news:// 
+   */
+  void decomposeNewsURI(in string uri, out nsIMsgFolder folder, out nsMsgKey key);
+
+  // handle to the cache session used by news....
+  readonly attribute nsICacheStorage cacheStorage;
+};

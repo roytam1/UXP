@@ -1,0 +1,76 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMsgWindow;
+interface nsIMsgIncomingServer;
+interface nsIRDFResource;
+interface nsIRDFNode;
+interface nsISimpleEnumerator;
+
+[scriptable, uuid(61a08c3a-1dd2-11b2-b64f-c4b2de1cf129)]
+interface nsISubscribeDataSource : nsISupports {
+    readonly attribute boolean hasObservers;
+    void NotifyObservers(in nsIRDFResource subject, in nsIRDFResource property, in nsIRDFNode object, in boolean isAssert, in boolean isChange);
+};
+
+[scriptable, uuid(f337b84a-1dd1-11b2-97c7-fb8b2e3f2280)]
+interface nsISubscribeListener : nsISupports {
+  void OnDonePopulating();
+};
+
+[scriptable, uuid(14b8597a-755b-4e93-b364-e0903801e6ea)]
+interface nsISubscribableServer : nsISupports {
+  attribute nsISubscribeListener subscribeListener;
+  attribute char delimiter;
+
+  void startPopulating(in nsIMsgWindow aMsgWindow, in boolean forceToServer, in boolean getOnlyNew);
+  void startPopulatingWithUri(in nsIMsgWindow aMsgWindow, in boolean forceToServer, in string uri);
+  void stopPopulating(in nsIMsgWindow aMsgWindow);
+
+  // return true if state changed, false otherwise
+  boolean setState(in AUTF8String path, in boolean state);
+
+  void subscribeCleanup();
+
+  void subscribe(in wstring name);
+  void unsubscribe(in wstring name);
+
+    void commitSubscribeChanges();
+
+    // other stuff
+  void setIncomingServer(in nsIMsgIncomingServer server);
+  void addTo(in AUTF8String aName, in boolean addAsSubscribed,
+            in boolean aSubscribable, in boolean aChangeIfExists);
+  void setAsSubscribed(in AUTF8String path);
+  void updateSubscribed();
+  void setShowFullName(in boolean showFullName);
+
+  // if path is null, use the root
+  boolean hasChildren(in AUTF8String path);
+  // if path is null, use the root
+  boolean isSubscribed(in AUTF8String path);
+  // if path is null, use the root
+  boolean isSubscribable(in AUTF8String path);
+  // if path is null, use the root
+  AString getLeafName(in AUTF8String path);
+
+  /**
+   * Returns the children underneath the specified uri (path).
+   *
+   * @param  aPath  The server's uri; If this is null or empty, then the
+   *                root server uri will be used.
+   * @return        Enumerator containing the children.
+   */
+  nsISimpleEnumerator getChildren(in AUTF8String aPath);
+  // if path is null, use the root
+  AUTF8String getFirstChildURI(in AUTF8String path);
+
+  // for searching
+  void setSearchValue(in AString searchValue);
+  readonly attribute boolean supportsSubscribeSearch;
+};
+

@@ -1,0 +1,35 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMsgFolder;
+
+/**
+ * This service provides a way to lookup any nsIMsgFolder.
+ *
+ * When looking up folders by URL, note that the URL must be encoded to be a
+ * valid folder URL. Of particular note are the following requirements:
+ * - invalid characters in paths must be percent-encoded
+ * - the URL MUST NOT have a trailing slash (excepting root folders)
+ * - the case must match the expected value exactly
+ * An example of a valid URL is thus:
+ * imap://someuser%40google.com@imap.google.com/INBOX
+ *
+ * The contractid for this service is "@mozilla.org/mail/folder-lookup;1".
+ */
+[scriptable,uuid(f5ed5997-3945-48fc-a59d-d2191a94bb60)]
+interface nsIFolderLookupService : nsISupports
+{
+  /**
+   * Returns a folder with the given URL or null if no such folder exists.
+   *
+   * @param aUrl The folder URL
+   */
+  nsIMsgFolder getFolderForURL(in ACString aUrl);
+};
+
+%{C++
+#define NSIFLS_CONTRACTID "@mozilla.org/mail/folder-lookup;1"
+%}

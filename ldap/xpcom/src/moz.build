@@ -1,0 +1,53 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+SOURCES += [
+    'nsLDAPBERElement.cpp',
+    'nsLDAPBERValue.cpp',
+    'nsLDAPConnection.cpp',
+    'nsLDAPControl.cpp',
+    'nsLDAPMessage.cpp',
+    'nsLDAPModification.cpp',
+    'nsLDAPOperation.cpp',
+    'nsLDAPProtocolModule.cpp',
+    'nsLDAPSecurityGlue.cpp',
+    'nsLDAPServer.cpp',
+    'nsLDAPService.cpp',
+    'nsLDAPURL.cpp',
+]
+
+if CONFIG['MOZ_PREF_EXTENSIONS']:
+    SOURCES += ['nsLDAPSyncQuery.cpp']
+    DEFINES['MOZ_PREF_EXTENSIONS'] = True
+
+EXTRA_COMPONENTS += [
+    'ldapComponents.manifest',
+    'nsLDAPProtocolHandler.js',
+]
+
+USE_LIBS += [
+    'ldapsdks',
+]
+
+if CONFIG['MOZ_INCOMPLETE_EXTERNAL_LINKAGE']:
+    XPCOMBinaryComponent('mozldap')
+    USE_LIBS += [
+        'nspr',
+        'xpcomglue_s',
+        'xul',
+    ]
+# js needs to come after xul for now, because it is an archive and its content
+# is discarded when it comes first.
+    USE_LIBS += [
+        'js',
+    ]
+else:
+    Library('mozldap')
+    FINAL_LIBRARY = 'xul'
+
+LOCAL_INCLUDES += [
+    '/ldap/c-sdk/include',
+]
+

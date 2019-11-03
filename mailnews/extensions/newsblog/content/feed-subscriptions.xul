@@ -1,0 +1,235 @@
+<?xml version="1.0"?>
+<!-- -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+   - This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/folderPane.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/folderMenus.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger-newsblog/skin/feed-subscriptions.css" type="text/css"?>
+
+<!DOCTYPE window [
+  <!ENTITY % feedDTD SYSTEM "chrome://messenger-newsblog/locale/feed-subscriptions.dtd">
+    %feedDTD;
+  <!ENTITY % certDTD SYSTEM "chrome://pippki/locale/certManager.dtd">
+    %certDTD;
+]>
+
+<window id="subscriptionsDialog"
+        flex="1"
+        title="&feedSubscriptions.label;"
+        windowtype="Mail:News-BlogSubscriptions"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        xmlns:nc="http://home.netscape.com/NC-rdf#"
+        persist="width height screenX screenY sizemode"
+        onload="FeedSubscriptions.onLoad();"
+        onclose="return FeedSubscriptions.onClose();"
+        onkeypress="FeedSubscriptions.onKeyPress(event);"
+        onmousedown="FeedSubscriptions.onMouseDown(event);">
+
+  <script type="application/javascript"
+          src="chrome://messenger/content/specialTabs.js"/>
+  <script type="application/javascript"
+          src="chrome://messenger-newsblog/content/feed-subscriptions.js"/>
+
+  <keyset id="extensionsKeys">
+    <key id="key_close"
+         key="&cmd.close.commandKey;"
+         modifiers="accel"
+         oncommand="window.close();"/>
+    <key id="key_close2"
+         keycode="VK_ESCAPE"
+         oncommand="window.close();"/>
+  </keyset>
+
+  <stringbundle id="bundle_newsblog"
+                src="chrome://messenger-newsblog/locale/newsblog.properties"/>
+  <stringbundle id="bundle_brand"
+                src="chrome://branding/locale/brand.properties"/>
+
+  <vbox flex="1" id="contentPane">
+    <hbox align="right">
+      <label id="learnMore"
+             class="text-link"
+             crop="end"
+             value="&learnMore.label;"
+             href="https://support.mozilla.org/kb/how-subscribe-news-feeds-and-blogs"/>
+    </hbox>
+
+    <tree id="rssSubscriptionsList"
+          treelines="true"
+          flex="1"
+          hidecolumnpicker="true"
+          onselect="FeedSubscriptions.onSelect();"
+          seltype="single">
+      <treecols>
+        <treecol id="folderNameCol"
+                 flex="2"
+                 primary="true"
+                 hideheader="true"/>
+      </treecols>
+      <treechildren id="subscriptionChildren"
+                    ondragstart="FeedSubscriptions.onDragStart(event);"
+                    ondragover="FeedSubscriptions.onDragOver(event);"/>
+    </tree>
+
+    <hbox id="rssFeedInfoBox">
+      <vbox flex="1">
+        <grid flex="1">
+          <columns>
+            <column/>
+            <column flex="1"/>
+          </columns>
+          <rows>
+            <row>
+              <hbox align="right" valign="middle">
+                <label id="nameLabel"
+                       accesskey="&feedTitle.accesskey;"
+                       control="nameValue"
+                       value="&feedTitle.label;"/>
+              </hbox>
+              <textbox id="nameValue"
+                       clickSelectsAll="true"/>
+            </row>
+            <row>
+              <hbox align="right" valign="middle">
+                <label id="locationLabel"
+                       accesskey="&feedLocation.accesskey;"
+                       control="locationValue"
+                       value="&feedLocation.label;"/>
+              </hbox>
+              <hbox>
+                <textbox id="locationValue"
+                         flex="1"
+                         class="uri-element"
+                         placeholder="&feedLocation.placeholder;"
+                         clickSelectsAll="true"
+                         onfocus="FeedSubscriptions.setSummaryFocus();"
+                         onblur="FeedSubscriptions.setSummaryFocus();"/>
+                <hbox align="center">
+                  <label id="locationValidate"
+                         collapsed="true"
+                         class="text-link"
+                         crop="end"
+                         value="&locationValidate.label;"
+                         onclick="FeedSubscriptions.checkValidation(event);"/>
+                </hbox>
+              </hbox>
+            </row>
+            <row>
+              <hbox align="right" valign="middle">
+                <label id="feedFolderLabel"
+                       value="&feedFolder.label;"
+                       accesskey="&feedFolder.accesskey;"
+                       control="selectFolder"/>
+              </hbox>
+              <hbox>
+                <menulist id="selectFolder"
+                          flex="1"
+                          class="folderMenuItem"
+                          hidden="true">
+                  <menupopup id="selectFolderPopup"
+                             class="menulist-menupopup"
+                             type="folder"
+                             mode="feeds"
+                             showFileHereLabel="true"
+                             showAccountsFileHere="true"
+                             oncommand="FeedSubscriptions.setNewFolder(event)"/>
+                </menulist>
+                <textbox id="selectFolderValue"
+                         flex="1"
+                         readonly="true"
+                         onkeypress="FeedSubscriptions.onClickSelectFolderValue(event)"
+                         onclick="FeedSubscriptions.onClickSelectFolderValue(event)"/>
+              </hbox>
+            </row>
+          </rows>
+        </grid>
+        <checkbox id="quickMode"
+                  accesskey="&quickMode.accesskey;"
+                  label="&quickMode.label;"
+                  oncommand="FeedSubscriptions.setSummary(this.checked)"/>
+        <checkbox id="autotagEnable"
+                  accesskey="&autotagEnable.accesskey;"
+                  label="&autotagEnable.label;"
+                  oncommand="FeedSubscriptions.setCategoryPrefs(this)"/>
+        <hbox>
+            <checkbox id="autotagUsePrefix"
+                      class="indent"
+                      accesskey="&autotagUsePrefix.accesskey;"
+                      label="&autotagUsePrefix.label;"
+                      oncommand="FeedSubscriptions.setCategoryPrefs(this)"/>
+            <textbox id="autotagPrefix"
+                     placeholder="&autoTagPrefix.placeholder;"
+                     clickSelectsAll="true"/>
+        </hbox>
+        <separator class="thin"/>
+      </vbox>
+    </hbox>
+
+    <hbox id="statusContainerBox"
+          align="center"
+          valign="middle">
+      <vbox flex="1">
+        <description id="statusText"/>
+      </vbox>
+      <spacer flex="1"/>
+      <label id="validationText"
+             collapsed="true"
+             class="text-link"
+             crop="end"
+             value="&validateText.label;"
+             onclick="FeedSubscriptions.checkValidation(event);"/>
+      <button id="addCertException"
+              collapsed="true"
+              label="&certmgr.addException.label;"
+              accesskey="&certmgr.addException.accesskey;"
+              oncommand="FeedSubscriptions.addCertExceptionDialog();"/>
+      <progressmeter id="progressMeter"
+                     collapsed="true"
+                     mode="determined"
+                     value="0"/>
+    </hbox>
+
+    <hbox align="end">
+      <hbox class="actionButtons" flex="1">
+        <button id="addFeed"
+                label="&button.addFeed.label;"
+                accesskey="&button.addFeed.accesskey;"
+                oncommand="FeedSubscriptions.addFeed();"/>
+
+        <button id="editFeed"
+                disabled="true"
+                label="&button.updateFeed.label;"
+                accesskey="&button.updateFeed.accesskey;"
+                oncommand="FeedSubscriptions.editFeed();"/>
+
+        <button id="removeFeed"
+                disabled="true"
+                label="&button.removeFeed.label;"
+                accesskey="&button.removeFeed.accesskey;"
+                oncommand="FeedSubscriptions.removeFeed(true);"/>
+
+        <button id="importOPML"
+                label="&button.importOPML.label;"
+                accesskey="&button.importOPML.accesskey;"
+                oncommand="FeedSubscriptions.importOPML();"/>
+
+        <button id="exportOPML"
+                label="&button.exportOPML.label;"
+                accesskey="&button.exportOPML.accesskey;"
+                tooltiptext="&button.exportOPML.tooltip;"
+                oncommand="FeedSubscriptions.exportOPML(event);"/>
+
+        <spacer flex="1"/>
+
+        <button id="close"
+                label="&button.close.label;"
+                icon="close"
+                oncommand="if (FeedSubscriptions.onClose()) window.close();"/>
+      </hbox>
+    </hbox>
+  </vbox>
+</window>

@@ -1,0 +1,25 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsIMsgSendReport.idl"
+#include "nsISupports.idl"
+
+interface nsIMsgCompFields;
+interface nsIMsgIdentity;
+interface nsIOutputStream;
+
+/* Security interface */
+[scriptable, uuid(245f2adc-410e-4bdb-91e2-a7bb42d61787)]
+interface nsIMsgComposeSecure : nsISupports 
+{
+    // requiresCryptoEncapsulation --> returns true if the current message send requires us to go through
+	// some encryption work. In the case of false, you can disregard the compose secure object.
+    boolean requiresCryptoEncapsulation(in nsIMsgIdentity aIdentity, in nsIMsgCompFields aCompFields);
+
+    void beginCryptoEncapsulation(in nsIOutputStream aStream, in string aRecipients, in nsIMsgCompFields aCompFields, in nsIMsgIdentity aIdentity, in nsIMsgSendReport sendReport, in boolean aIsDraft);
+    void finishCryptoEncapsulation(in boolean aAbort, in nsIMsgSendReport sendReport);
+    void mimeCryptoWriteBlock(in string aBuf, in long aLen);
+};

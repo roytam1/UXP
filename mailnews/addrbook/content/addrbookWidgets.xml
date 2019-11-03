@@ -1,0 +1,439 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<bindings id="addrbookBindings"
+          xmlns="http://www.mozilla.org/xbl"
+          xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+          xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="addrbooks-menupopup"
+           extends="chrome://global/content/bindings/popup.xml#popup">
+    <implementation implements="nsIAbListener">
+      <!-- A cache of nsIAbDirectory objects. -->
+      <field name="_directories">[]</field>
+
+      <!-- Represents the nsIAbDirectory attribute used as the value of the
+           parent menulist. Defaults to URI but can be e.g. dirPrefId -->
+      <field name="_value">this.getAttribute("value") || "URI"</field>
+
+      <constructor>
+        <![CDATA[
+          Components.utils.import("resource:///modules/mailServices.js");
+          // Init the address book cache.
+          const nsIAbDirectory = Components.interfaces.nsIAbDirectory;
+          let directories = MailServices.ab.directories;
+          while (directories && directories.hasMoreElements()) {
+            var ab = directories.getNext();
+            if (ab instanceof nsIAbDirectory && this._matches(ab))
+              this._directories.push(ab);
+          }
+
+          this._directories.sort(this._compare);
+
+          // Now create menuitems for all displayed directories.
+          var menulist = this.parentNode;
+          var value = this._value;
+          this._directories.forEach(function (ab) {
+            menulist.appendItem(ab.dirName, ab[value]);
+          });
+          if (this.hasAttribute("none")) {
+            // Create a dummy menuitem representing no selection.
+            this._directories.unshift(null);
+            menulist.insertItemAt(0, this.getAttribute("none"), "");
+          }
+
+          // Attempt to select the persisted or otherwise first directory.
+          menulist.value = menulist.value;
+          if (!menulist.selectedItem && this.hasChildNodes())
+            menulist.selectedIndex = 0;
+
+          const nsIAbListener = Components.interfaces.nsIAbListener;
+          // Add a listener so we can update correctly if the list should change
+          MailServices.ab.addAddressBookListener(this,
+                                                 nsIAbListener.itemAdded |
+                                                 nsIAbListener.directoryRemoved |
+                                                 nsIAbListener.itemChanged);
+        ]]>
+      </constructor>
+
+      <destructor>
+        <![CDATA[
+          Components.utils.import("resource:///modules/mailServices.js");
+          MailServices.ab.removeAddressBookListener(this);
+
+          // Empty out anything in the list.
+          while (this.hasChildNodes())
+            this.lastChild.remove();
+        ]]>
+      </destructor>
+
+      <!-- nsIAbListener methods -->
+      <method name="onItemAdded">
+        <parameter name="aParentDir"/>
+        <parameter name="aItem"/>
+        <body><![CDATA[
+          // Are we interested in this new directory?
+          if (aItem instanceof Components.interfaces.nsIAbDirectory &&
+              !aItem.isMailList && this._matches(aItem)) {
+            this._directories.push(aItem);
+            this._directories.sort(this._compare);
+            // Insert the new menuitem at the position to which it was sorted.
+            this.parentNode.insertItemAt(this._directories.indexOf(aItem),
+                                         aItem.dirName, aItem[this._value]);
+          }
+        ]]></body>
+      </method>
+
+      <method name="onItemRemoved">
+        <parameter name="aParentDir"/>
+        <parameter name="aItem"/>
+        <body><![CDATA[
+          if (aItem instanceof Components.interfaces.nsIAbDirectory &&
+              !aItem.isMailList) {
+            // Find the item in the list to remove
+            // We can't use indexOf here because we need loose equality
+            for (var index = this._directories.length; --index >= 0; )
+              if (this._directories[index] == aItem)
+                break;
+            if (index != -1)
+              // Are we removing the selected directory?
+              if (this.parentNode.selectedItem ==
+                  this.removeChild(this.childNodes[index]))
+                // If so, try to select the first directory, if available.
+                if (this.hasChildNodes())
+                  this.firstChild.doCommand();
+                else
+                  this.parentNode.selectedItem = null;
+          }
+        ]]></body>
+      </method>
+
+      <method name="onItemPropertyChanged">
+        <parameter name="aItem"/>
+        <parameter name="aProperty"/>
+        <parameter name="aOldValue"/>
+        <parameter name="aNewValue"/>
+        <body><![CDATA[
+          if (aItem instanceof Components.interfaces.nsIAbDirectory &&
+              !aItem.isMailList) {
+            // Find the item in the list to rename.
+            // We can't use indexOf here because we need loose equality
+            for (var oldIndex = this._directories.length; --oldIndex >= 0; )
+              if (this._directories[oldIndex] == aItem)
+                break;
+            if (oldIndex != -1) {
+              // Cache the matching item so that we can use indexOf next time.
+              aItem = this._directories[oldIndex];
+              var child = this.childNodes[oldIndex];
+              child.label = aItem.dirName;
+              this._directories.sort(this._compare);
+              // Reorder the menuitems if renaming changed the directory index.
+              var newIndex = this._directories.indexOf(aItem);
+              if (newIndex < oldIndex)
+                this.insertBefore(child, this.childNodes[newIndex]);
+              else if (newIndex > oldIndex)
+                this.insertBefore(child, this.childNodes[newIndex].nextSibling);
+            }
+          }
+        ]]></body>
+      </method>
+
+      <!-- Private methods -->
+      <!-- Tests to see whether this directory should display in the list. -->
+      <method name="_matches">
+        <parameter name="ab"/>
+        <body><![CDATA[
+          // This condition is used for instance when creating cards
+          if (this.getAttribute("writable") == "true" && ab.readOnly)
+            return false;
+
+          // This condition is used for instance when creating mailing lists
+          if (this.getAttribute("supportsmaillists") == "true" &&
+              !ab.supportsMailingLists)
+            return false;
+
+          return this.getAttribute(ab.isRemote ? "localonly" : "remoteonly") != "true";
+        ]]></body>
+      </method>
+
+      <!-- Used to sort directories in order -->
+      <method name="_compare">
+        <parameter name="a"/>
+        <parameter name="b"/>
+        <body><![CDATA[
+          // Null at the very top.
+          if (!a)
+            return -1;
+
+          if (!b)
+            return 1;
+
+          // Personal at the top.
+          const kPersonalAddressbookURI = "moz-abmdbdirectory://abook.mab";
+          if (a.URI == kPersonalAddressbookURI)
+            return -1;
+
+          if (b.URI == kPersonalAddressbookURI)
+            return 1;
+
+          // Collected at the bottom.
+          const kCollectedAddressbookURI = "moz-abmdbdirectory://history.mab";
+          if (a.URI == kCollectedAddressbookURI)
+            return 1;
+
+          if (b.URI == kCollectedAddressbookURI)
+            return -1;
+
+          // Sort books of the same type by name.
+          if (a.dirType == b.dirType)
+            return a.dirName.localeCompare(b.dirName);
+
+          // If one of the dirTypes is PAB and the other is something else,
+          // then the other will go below the one of type PAB.
+          const PABDirectory = 2;
+          if (a.dirType == PABDirectory)
+            return -1;
+
+          if (b.dirType == PABDirectory)
+            return 1;
+
+          // Sort anything else by the dir type.
+          return a.dirType - b.dirType;
+        ]]></body>
+      </method>
+    </implementation>
+  </binding>
+
+  <binding id="map-list"
+           extends="chrome://global/content/bindings/popup.xml#popup">
+    <implementation>
+      <property name="mapURL" readonly="true">
+        <getter><![CDATA[
+          return this._createMapItURL();
+        ]]></getter>
+      </property>
+
+      <constructor>
+        <![CDATA[
+          this._setWidgetDisabled(true);
+        ]]>
+      </constructor>
+
+      <!--
+        Initializes the necessary address data from an addressbook card.
+        @param aCard        A nsIAbCard to get the address data from.
+        @param aAddrPrefix  A prefix of the card properties to use. Use "Home" or "Work".
+        -->
+      <method name="initMapAddressFromCard">
+        <parameter name="aCard"/>
+        <parameter name="aAddrPrefix"/>
+        <body><![CDATA[
+          let mapItURLFormat = this._getMapURLPref(0);
+          let doNotShowMap = !mapItURLFormat || !aAddrPrefix || !aCard;
+          this._setWidgetDisabled(doNotShowMap);
+          if (doNotShowMap)
+            return;
+
+          this.setAttribute("map_address1", aCard.getProperty(aAddrPrefix + "Address"));
+          this.setAttribute("map_address2", aCard.getProperty(aAddrPrefix + "Address2"));
+          this.setAttribute("map_city"    , aCard.getProperty(aAddrPrefix + "City"));
+          this.setAttribute("map_state"   , aCard.getProperty(aAddrPrefix + "State"));
+          this.setAttribute("map_zip"     , aCard.getProperty(aAddrPrefix + "ZipCode"));
+          this.setAttribute("map_country" , aCard.getProperty(aAddrPrefix + "Country"));
+        ]]></body>
+      </method>
+
+      <!--
+        Initializes the necessary address data from passed in values.
+        -->
+      <method name="initMapAddress">
+        <parameter name="aAddr1"/>
+        <parameter name="aAddr2"/>
+        <parameter name="aCity"/>
+        <parameter name="aState"/>
+        <parameter name="aZip"/>
+        <parameter name="aCountry"/>
+        <body><![CDATA[
+          let mapItURLFormat = this._getMapURLPref(0);
+          let doNotShowMap = !mapItURLFormat || !(aAddr1 + aAddr2 + aCity + aState + aZip + aCountry);
+          this._setWidgetDisabled(doNotShowMap);
+          if (doNotShowMap)
+            return;
+
+          this.setAttribute("map_address1", aAddr1);
+          this.setAttribute("map_address2", aAddr2);
+          this.setAttribute("map_city"    , aCity);
+          this.setAttribute("map_state"   , aState);
+          this.setAttribute("map_zip"     , aZip);
+          this.setAttribute("map_country" , aCountry);
+        ]]></body>
+      </method>
+
+      <!--
+        Sets the disabled/enabled state of the parent widget (e.g. a button).
+        -->
+      <method name="_setWidgetDisabled">
+        <parameter name="aDisabled"/>
+        <body><![CDATA[
+          this.parentNode.disabled = aDisabled;
+        ]]></body>
+      </method>
+
+      <!--
+        Returns the Map service URL from localized pref. Returns null if there
+        is none at the given index.
+        @param aIndex  The index of the service to return. 0 is the default service.
+        -->
+      <method name="_getMapURLPref">
+        <parameter name="aIndex"/>
+        <body><![CDATA[
+          let url = null;
+          if (!aIndex) {
+            url = Services.prefs.getComplexValue("mail.addr_book.mapit_url.format",
+                                                 Components.interfaces.nsIPrefLocalizedString).data;
+          } else {
+            try {
+              url = Services.prefs.getComplexValue("mail.addr_book.mapit_url." + aIndex + ".format",
+                                                   Components.interfaces.nsIPrefLocalizedString).data;
+            } catch (e) { }
+          }
+
+          return url;
+        ]]></body>
+      </method>
+
+      <!--
+        Builds menuitem elements representing map services defined in prefs
+        and attaches them to the specified button.
+        -->
+      <method name="_listMapServices">
+        <body><![CDATA[
+          let index = 1;
+          let itemFound = true;
+          let defaultFound = false;
+          const kUserIndex = 100;
+          let aMapList = this;
+          while (aMapList.hasChildNodes()) {
+            aMapList.lastChild.remove();
+          }
+
+          let defaultUrl = this._getMapURLPref(0);
+
+          // Creates the menuitem with supplied data.
+          function addMapService(aUrl, aName) {
+            let item = document.createElement("menuitem");
+            item.setAttribute("url", aUrl);
+            item.setAttribute("label", aName);
+            item.setAttribute("type", "radio");
+            item.setAttribute("name", "mapit_service");
+            if (aUrl == defaultUrl)
+              item.setAttribute("checked", "true");
+            aMapList.appendChild(item);
+          }
+
+          // Generates a useful generic name by cutting out only the host address.
+          function generateName(aUrl) {
+            return new URL(aUrl).hostname;
+          }
+
+          // Add all defined map services as menuitems.
+          while (itemFound) {
+            let urlName;
+            let urlTemplate = this._getMapURLPref(index);
+            if (!urlTemplate) {
+              itemFound = false;
+            } else {
+              // Name is not mandatory, generate one if not found.
+              try {
+                urlName = Services.prefs.getComplexValue("mail.addr_book.mapit_url." + index + ".name",
+                                                         Components.interfaces.nsIPrefLocalizedString).data;
+              } catch (e) {
+                urlName = generateName(urlTemplate);
+              }
+            }
+            if (itemFound) {
+              addMapService(urlTemplate, urlName);
+              index++;
+              if (urlTemplate == defaultUrl)
+                defaultFound = true;
+            } else if (index < kUserIndex) {
+              // After iterating the base region provided urls, check for user defined ones.
+              index = kUserIndex;
+              itemFound = true;
+            }
+          }
+          if (!defaultFound) {
+            // If user had put a customized map URL into mail.addr_book.mapit_url.format
+            // preserve it as a new map service named with the URL.
+            // 'index' now points to the first unused entry in prefs.
+            let defaultName = generateName(defaultUrl);
+            addMapService(defaultUrl, defaultName);
+            Services.prefs.setCharPref("mail.addr_book.mapit_url." + index + ".format",
+                                        defaultUrl);
+            Services.prefs.setCharPref("mail.addr_book.mapit_url." + index + ".name",
+                                        defaultName);
+          }
+        ]]></body>
+      </method>
+
+      <!--
+        Save user selected mapping service.
+        @param aItem  The chosen menuitem with map service.
+        -->
+      <method name="_chooseMapService">
+        <parameter name="aItem"/>
+        <body><![CDATA[
+          // Save selected URL as the default.
+          let defaultUrl = Components.classes["@mozilla.org/pref-localizedstring;1"]
+                                     .createInstance(Components.interfaces.nsIPrefLocalizedString);
+          defaultUrl.data = aItem.getAttribute("url");
+          Services.prefs.setComplexValue("mail.addr_book.mapit_url.format",
+                                         Components.interfaces.nsIPrefLocalizedString, defaultUrl);
+        ]]></body>
+      </method>
+
+      <!--
+        Generate map URL in the href attribute.
+        -->
+      <method name="_createMapItURL">
+        <body><![CDATA[
+          let urlFormat = this._getMapURLPref(0);
+          if (!urlFormat)
+            return null;
+
+          let address1 = this.getAttribute("map_address1");
+          let address2 = this.getAttribute("map_address2");
+          let city     = this.getAttribute("map_city");
+          let state    = this.getAttribute("map_state");
+          let zip      = this.getAttribute("map_zip");
+          let country  = this.getAttribute("map_country");
+
+          urlFormat = urlFormat.replace("@A1", encodeURIComponent(address1));
+          urlFormat = urlFormat.replace("@A2", encodeURIComponent(address2));
+          urlFormat = urlFormat.replace("@CI", encodeURIComponent(city));
+          urlFormat = urlFormat.replace("@ST", encodeURIComponent(state));
+          urlFormat = urlFormat.replace("@ZI", encodeURIComponent(zip));
+          urlFormat = urlFormat.replace("@CO", encodeURIComponent(country));
+
+          return urlFormat;
+        ]]></body>
+      </method>
+    </implementation>
+
+    <handlers>
+      <handler event="command">
+        <![CDATA[
+          this._chooseMapService(event.target);
+          event.stopPropagation();
+        ]]>
+      </handler>
+      <handler event="popupshowing">
+        <![CDATA[
+          this._listMapServices();
+        ]]>
+      </handler>
+    </handlers>
+  </binding>
+</bindings>

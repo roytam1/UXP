@@ -1,0 +1,23 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+// this is a service -there's only one Offline Manager, because you can only do one operation at a time
+// (go online or offline).
+
+interface nsIMsgWindow;
+
+[scriptable, uuid(5e885fec-09b0-11d5-a5bf-0060b0fc04b7)]
+interface nsIMsgOfflineManager : nsISupports 
+{
+  attribute nsIMsgWindow window; // should be a progress window.
+  attribute boolean inProgress;  // an online->offine or online->offline operation in progress.
+                                 // the offline menu should be disabled.
+  void goOnline(in boolean sendUnsentMessages, in boolean playbackOfflineImapOperations, in nsIMsgWindow aMsgWindow);
+  void synchronizeForOffline(in boolean downloadNews, in boolean downloadMail, in boolean sendUnsentMessages, 
+                            in boolean goOfflineWhenDone, in nsIMsgWindow aMsgWindow);
+};
+

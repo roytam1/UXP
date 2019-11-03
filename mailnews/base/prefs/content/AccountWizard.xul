@@ -1,0 +1,371 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/accountWizard.css" type="text/css"?>
+
+<!DOCTYPE wizard SYSTEM "chrome://messenger/locale/AccountWizard.dtd">
+
+<wizard id="AccountWizard" title="&windowTitle.label;"
+        onwizardcancel="return onCancel();"
+        onwizardfinish="return FinishAccount();"
+#ifdef MOZ_THUNDERBIRD
+        onload="onAccountWizardLoad(); initAccountWizardTB(window.arguments);"
+#else
+        onload="onAccountWizardLoad();"
+#endif
+        style="&accountWizard.size;"
+        xmlns:nc="http://home.netscape.com/NC-rdf#"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <stringbundle id="bundle_prefs" src="chrome://messenger/locale/prefs.properties"/>
+  <stringbundle id="bundle_messenger" src="chrome://messenger/locale/messenger.properties"/>
+  <script type="application/javascript" src="chrome://messenger/content/accountUtils.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/amUtils.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/AccountWizard.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/ispUtils.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/aw-accounttype.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/aw-identity.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/aw-incoming.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/aw-outgoing.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/aw-accname.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/aw-done.js"/>
+
+  <!-- Account Type page : Displays choices of mail and news accounts that user can create -->
+  <wizardpage id="accounttype" pageid="accounttype"
+              label="&accountTypeTitle.label;"
+              onpageshow="document.documentElement.canAdvance = true;"
+              onpageadvanced="return acctTypePageUnload();">
+    <vbox flex="1">
+      <description>&accountSetupInfo2.label;</description>
+      <description>&accountTypeDesc2.label;</description>
+      <label control="acctyperadio">&accountTypeDirections.label;</label>
+      <separator/>
+      <radiogroup id="acctyperadio" >
+#ifndef MOZ_THUNDERBIRD
+        <radio id="mailaccount" value="mailaccount"
+               label="&accountTypeMail.label;" accesskey="&accountTypeMail.accesskey;"
+               selected="true"/>
+#endif
+        <vbox datasources="rdf:ispdefaults" 
+              containment="http://home.netscape.com/NC-rdf#providers"
+              id="ispBox"
+              ref="NC:ispinfo">
+          <template>
+            <rule nc:wizardShow="true">
+              <radio uri="..."
+                     value="rdf:http://home.netscape.com/NC-rdf#wizardShortName"
+                     label="rdf:http://home.netscape.com/NC-rdf#wizardLongName"
+                     accesskey="rdf:http://home.netscape.com/NC-rdf#wizardLongNameAccesskey"/>
+            </rule>
+         </template>
+        </vbox>
+        <radio id="newsaccount" value="newsaccount"
+               label="&accountTypeNews.label;" accesskey="&accountTypeNews.accesskey;"/>
+      </radiogroup>
+    </vbox>
+  </wizardpage>
+
+  <!-- Identity page : Collects user's full name and email address -->
+  <wizardpage id="identitypage" pageid="identitypage"
+              label="&identityTitle.label;"
+              onpageshow="return identityPageInit();"
+              onpageadvanced="return identityPageUnload();">
+    <vbox flex="1">
+      <description>&identityDesc.label;</description>
+      <separator/>
+      <description>&fullnameDesc.label; &fullnameExample.label;</description>
+      <separator class="thin"/>
+      <hbox align="center">
+        <label class="awIdentityLabel" value="&fullnameLabel.label;"
+               accesskey="&fullnameLabel.accesskey;" control="fullName"/>
+        <textbox mailtype="identity" wsm_persist="true" name="fullName" id="fullName" flex="1" oninput="identityPageValidate();"/>
+      </hbox>
+      <separator/>  
+      <grid>
+        <columns>
+          <column flex="1"/>
+        </columns>
+        <rows>
+          <row>
+            <description id="emailDescText"/> 
+          </row>
+          <separator class="thin"/>
+          <row>
+            <hbox align="center">
+              <label class="awIdentityLabel" id="emailFieldLabel" value="&emailLabel.label;"
+                     accesskey="&emailLabel.accesskey;" control="email"/>
+              <hbox class="uri-element" align="center" flex="1">
+                <textbox wsm_persist="true" mailtype="identity" name="email"
+                         oninput="identityPageValidate();"
+                         id="email" flex="6" class="uri-element"/>
+                <label id="postEmailText"/>
+              </hbox>
+            </hbox>
+          </row>
+        </rows>
+      </grid>
+    </vbox>
+  </wizardpage>
+
+  <!-- Incoming page : User can choose to create mail account of his choice, POP3 or IMAP -->
+  <!-- Collects incoming server name and login name. -->
+  <!-- Login name is prefilled with user id from the email address provided in identity page -->
+  <!-- User can enter a login name here if it is different from the user id of his/her email address -->
+  <wizardpage id="incomingpage" pageid="incomingpage"
+              label="&incomingTitle.label;"
+              onpageshow="return incomingPageInit();"
+              onpageadvanced="return incomingPageUnload();">
+    <vbox flex="1">
+        <vbox id="serverTypeBox">
+        <label control="servertype">&incomingServerTypeDesc.label;</label>
+          <separator class="thin"/>
+          <hbox align="center" class="serverDataBox">
+            <!-- The initial value for the servertype radiogroup is set in onInit() -->
+            <radiogroup id="servertype" wsm_persist="true" orient="horizontal">
+                <radio group="servertype" value="pop3" id="pop3" label="&popType.label;" 
+                       wsm_persist="true" oncommand="setServerType();" accesskey="&popType.accesskey;"/>
+                <radio group="servertype" value="imap" id="imap" label="&imapType.label;"
+                       wsm_persist="true" oncommand="setServerType();" accesskey="&imapType.accesskey;"/>
+            </radiogroup>
+            <label id="serverPortLabel" control="serverPort" 
+                   accesskey="&portNum.accesskey;"
+                   value="&portNum.label;"/>
+            <textbox id="serverPort" type="number" size="3" max="65535"/>
+            <label id="defaultPortLabel" value="&defaultPortLabel.label;"/>
+            <label id="defaultPortValue" value="&defaultPortValue.label;"/>
+          </hbox>
+          <separator/>
+        </vbox>
+
+        <vbox id="incomingServerbox">
+          <description>&incomingServer.description;</description>
+          <hbox align="center" class="serverDataBox">
+            <label class="label, serverLabel"
+                   value="&incomingServer.label;"
+                   accesskey="&incomingServer.accesskey;"
+                   control="incomingServer"/>
+            <textbox wsm_persist="true"
+                     id="incomingServer"
+                     flex="1"
+                     class="uri-element"
+                     oninput="incomingPageValidate();"/>
+          </hbox>
+          <hbox id="leaveMsgsOnSrvrBox" class="indent">
+            <checkbox id="leaveMessagesOnServer"
+                      label="&leaveMsgsOnSrvr.label;"
+                      accesskey="&leaveMsgsOnSrvr.accesskey;"
+                      wsm_persist="true"
+                      oncommand="setServerPrefs(this);"
+                      checked="true"/>
+          </hbox>
+          <separator/>
+        </vbox>
+        <description>&incomingUsername.description;</description>
+        <separator class="thin"/>
+        <hbox align="center">
+          <label class="label"
+                 value="&incomingUsername.label;"
+                 style="width: 8em;"
+                 accesskey="&incomingUsername.accesskey;"
+                 control="username"/>
+          <textbox id="username"
+                   wsm_persist="true"
+                   flex="1"
+                   oninput="incomingPageValidate();"/>
+        </hbox>
+        <vbox id="deferStorageBox">
+            <separator class="groove"/>
+            <description> &deferStorageDesc.label;</description>
+            <hbox>
+              <checkbox id="deferStorage"
+                        label="&deferStorage.label;"
+                        accesskey="&deferStorage.accesskey;"
+                        checked="true"
+                        wsm_persist="true"
+                        oncommand="setServerPrefs(this);"/>
+            </hbox>
+        </vbox>
+    </vbox>
+  </wizardpage>
+
+  <!-- Outgoing page : Collects outgoing server name and login name. -->
+  <!-- Outgoing server name is collected if there isn't one already -->
+  <!-- Login name is prefilled with user id from the email address provided in identity page -->
+  <!-- User can enter a login name here if it is different from the user id of his/her email address -->
+  <wizardpage id="outgoingpage" pageid="outgoingpage"
+              label="&outgoingTitle.label;"
+              onpageshow="return outgoingPageInit();"
+              onpageadvanced="return outgoingPageUnload();">
+    <vbox flex="1">
+      <vbox id="noSmtp">
+        <description>&outgoingServer.description;</description>
+        <hbox align="center" class="serverDataBox">
+          <label class="label, serverLabel"
+                 value="&outgoingServer.label;"
+                 accesskey="&outgoingServer.accesskey;"
+                 control="smtphostname"/>
+          <textbox id="smtphostname"
+                   wsm_persist="true"
+                   flex="1"
+                   class="uri-element"
+                   oninput="outgoingPageValidate();"/>
+        </hbox>
+      </vbox>
+
+      <vbox id="haveSmtp">
+        <description id="smtpStaticText1"
+                     style="width: 200px;"
+                     prefix="&haveSmtp1.prefix;"
+                     suffix="&haveSmtp1.suffix3; &modifyOutgoing.suffix;">*</description>
+      </vbox>
+
+      <vbox id="loginSet1">
+        <description>&outgoingUsername.description;</description>
+        <separator class="thin"/>
+        <hbox align="center">
+          <label class="label"
+                 value="&outgoingUsername.label;"
+                 style="width: 8em;"
+                 accesskey="&outgoingUsername.accesskey;"
+                 control="smtpusername"/>
+          <textbox id="smtpusername" wsm_persist="true" flex="1"/>
+        </hbox>
+      </vbox>
+
+      <vbox id="loginSet2" hidden="true">
+        <description id="smtpStaticText2" style="width: 200px;" prefix="&haveSmtp2.prefix;"
+                     suffix="&haveSmtp2.suffix3; &modifyOutgoing.suffix;">*</description>
+      </vbox>
+
+      <vbox id="loginSet3" hidden="true">
+        <description id="smtpStaticText3" style="width: 200px;" prefix="&haveSmtp3.prefix;"
+                     suffix="&haveSmtp3.suffix3; &modifyOutgoing.suffix;">*</description>
+      </vbox>
+
+    </vbox>
+  </wizardpage>
+
+  <!-- News Server page : Collects the News groups server name -->
+  <wizardpage id="newsserver" pageid="newsserver"
+              label="&incomingTitle.label;"
+              onpageshow="return incomingPageInit();"
+              onpageadvanced="return incomingPageUnload();">
+    <vbox flex="1">
+      <description>&newsServerNameDesc.label;</description>
+      <separator class="thin"/>
+      <hbox align="center">
+        <label control="newsServer" value="&newsServerLabel.label;" accesskey="&newsServerLabel.accesskey;" style="width: 8em;"/>
+        <textbox id="newsServer"
+                 wsm_persist="true"
+                 flex="1"
+                 class="uri-element"
+                 oninput="incomingPageValidate();"/>
+      </hbox>
+    </vbox>
+  </wizardpage>
+
+  <!-- Account name page : User gets a choice to enter a pretty name for the account -->
+  <!-- Defaults : Mail account -> Email address, Newsgroup account -> Newsgroup server name -->
+  <wizardpage id="accnamepage" pageid="accnamepage" 
+              label="&accnameTitle.label;"
+              onpageshow="return acctNamePageInit();"
+              onpageadvanced="return acctNamePageUnload();">
+    <vbox flex="1">
+      <description>&accnameDesc.label;</description>
+      <separator class="thin"/>
+      <hbox align="center">
+        <label class="label" value="&accnameLabel.label;" style="width: 8em;"
+               accesskey="&accnameLabel.accesskey;" control="prettyName"/>
+        <textbox id="prettyName" size="40" wsm_persist="true" flex="1" oninput="acctNamePageValidate();"/>
+      </hbox>
+    </vbox>
+  </wizardpage>
+
+  <!-- Done page : this page summarizes information collected to create a mail/news account -->
+  <wizardpage id="done" pageid="done" 
+              label="&completionTitle.label;"
+              onpageshow="return donePageInit();">
+    <vbox flex="1">
+      <description>&completionText.label;</description>
+      <separator class="thin"/>
+      <grid>
+        <columns>
+          <column/>
+          <column flex="1"/>
+        </columns>
+        <rows>
+          <row align="center" id="account.name">
+            <label class="label" flex="1" id="account.name.label" value="&accnameLabel.label;"/>
+            <label class="label" id="account.name.text"/>
+          </row>
+          <row align="center" id="identity.email">
+            <label class="label" flex="1" id="identity.email.label" value="&emailLabel.label;"/>
+            <label class="label" id="identity.email.text"/>
+          </row>
+          <row align="center" id="server.username">
+            <label class="label" flex="1" id="server.username.label" value="&incomingUsername.label;"/>
+            <label class="label" id="server.username.text"/>
+          </row>
+          <row align="center" id="server.name">
+            <label class="label" flex="1" id="server.name.label" value="&serverNamePrefix.label;"/>
+            <label class="label" id="server.name.text"/>
+          </row>
+          <row align="center" id="server.type">
+            <label class="label" flex="1" id="server.type.label" value="&serverTypePrefix.label;"/>
+            <label class="label" id="server.type.text"/>
+          </row>
+          <row align="center" id="server.port">
+            <label class="label" id="server.port.label" flex="1" value="&portNum.label;"/>
+            <label class="label" id="server.port.text"/>
+          </row>
+          <row align="center" id="newsServer.name">
+            <label class="label" flex="1" id="newsServer.name.label" value="&newsServerNamePrefix.label;"/>
+            <label class="label" id="newsServer.name.text"/>
+          </row>
+          <row align="center" id="smtpServer.username">
+            <label class="label" flex="1" id="smtpServer.username.label" value="&outgoingUsername.label;"/>
+            <label class="label" id="smtpServer.username.text"/>
+          </row>
+          <row align="center" id="smtpServer.name">
+            <label class="label" flex="1" id="smtpServer.name.label" value="&smtpServerNamePrefix.label;"/>
+            <label class="label" id="smtpServer.name.text"/>
+          </row>
+        </rows>
+      </grid>
+      <separator/>
+      <hbox id="downloadMsgsBox">
+        <checkbox id="downloadMsgs"
+                  label="&downloadOnLogin.label;"
+                  accesskey="&downloadOnLogin.accesskey;"
+                  hidden="true"
+                  checked="true"/>
+      </hbox>
+      <spacer flex="1"/>
+#ifndef XP_MACOSX
+      <description>&clickFinish.label;</description>
+#else
+      <description>&clickFinish.labelMac;</description>
+#endif
+    </vbox>
+  </wizardpage>
+
+  <wizardpage id="ispPage1"/>
+  <wizardpage id="ispPage2"/>
+  <wizardpage id="ispPage3"/>
+  <wizardpage id="ispPage4"/>
+  <wizardpage id="ispPage5"/>
+  <wizardpage id="ispPage6"/>
+  <wizardpage id="ispPage7"/>
+  <wizardpage id="ispPage8"/>
+  <wizardpage id="ispPage9"/>
+  <wizardpage id="ispPage10"/>
+  <wizardpage id="ispPage11"/>
+  <wizardpage id="ispPage12"/>
+  <wizardpage id="ispPage13"/>
+  <wizardpage id="ispPage14"/>
+  <wizardpage id="ispPage15"/>
+  <wizardpage id="ispPage16"/>
+
+</wizard>

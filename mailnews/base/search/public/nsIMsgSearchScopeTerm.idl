@@ -1,0 +1,20 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsIMsgSearchSession.idl"
+
+interface nsIMsgFolder;
+interface nsIMsgDBHdr;
+interface nsILineInputStream;
+interface nsIInputStream;
+
+[scriptable, uuid(934672c3-9b8f-488a-935d-87b4023fa0be)]
+interface nsIMsgSearchScopeTerm : nsISupports {
+  nsIInputStream getInputStream(in nsIMsgDBHdr aHdr);
+  void closeInputStream();
+  readonly attribute nsIMsgFolder folder;
+  readonly attribute nsIMsgSearchSession searchSession;
+};
+

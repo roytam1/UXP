@@ -1,0 +1,40 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "nsISupports.idl"
+
+interface nsIFile;
+interface nsIAddrDatabase;
+
+[scriptable, uuid(7afaa95f-0b1c-4d8a-a65f-bb5073ed6d39)]    
+interface nsIAbLDIFService : nsISupports {
+
+  /**
+   * Determine if a file is likely to be an LDIF file based on field
+   * names that commonly appear in LDIF files.
+   *
+   * @param       aSrc   The file to examine
+   *
+   * @return      true if the file appears to be of LDIF type,
+   *              false otherwise
+   */
+  boolean isLDIFFile(in nsIFile aSrc);
+
+  /**
+   * Imports a file into the specified address book.
+   *
+   * @param       aDb             The address book to import addresses into.
+   *
+   * @param       aSrc            The file to import addresses from.
+   *
+   * @param       aStoreLocAsHome Stores the address as a home rather than work
+   *                              address.
+   *
+   * @param       aProgress       May be null, but if a pointer is supplied,
+   *                              then it will be updated regularly with the
+   *                              current position of reading from the file.
+   *
+   */
+  void importLDIFFile(in nsIAddrDatabase aDb, in nsIFile aSrc, in boolean aStoreLocAsHome, inout unsigned long aProgress);
+};

@@ -1,0 +1,132 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIMsgFolder.idl"
+
+%{C++
+#include "nsTArray.h"
+%}
+
+interface nsIMsgWindow;
+interface nsINntpIncomingServer;
+
+[ref] native nsMsgKeyArrayRef(nsTArray<nsMsgKey>);
+
+[scriptable, uuid(9a12c3a5-9de5-4c57-ace3-d51802b525a9)]
+interface nsIMsgNewsFolder : nsISupports {
+  readonly attribute AString unicodeName;
+  /**|rawName| is an 8-bit string to represent the name of a newsgroup used by 
+   * a news server. It's offered for the convenience of callers so that they 
+   * don't have to convert |unicodeName| to the server-side name when 
+   * communicating with a news server.  It's US-ASCII except for some 
+   * 'stand-alone' Chinese news servers that use GB2312 for newsgroup names 
+   * violating RFC 1036. For those servers, it's GB2312. However, it can be any
+   * other single and multibyte encoding in principle. The encoding of this 
+   * string is stored in |nsINntpIncomingServer| because that's a server-wide
+   * property.
+   **/
+  [noscript] readonly attribute ACString rawName;
+  readonly attribute nsINntpIncomingServer nntpServer;
+  attribute boolean saveArticleOffline;
+
+  /**
+   * @name Authentication methods
+   * NNTP authentication is slightly wonky, due to edge cases that are not seen
+   * in other protocols. Authentication is not necessary; if authentication is
+   * used, it could be configured on a per-group basis or even require only a
+   * username and not a password.
+   *
+   * Since passwords could be per-group, it is necessary to refer to passwords
+   * using the methods on this interface and not nsIMsgIncomingServer. Passwords
+   * for the server as a whole are found via the root folder. If the server is
+   * configured to use single sign-on (the default), asking any group for its
+   * password will result in the server's password, otherwise, each group stores
+   * its password individually.
+   *
+   * Due to this setup, most of the password management functions on
+   * nsIMsgIncomingServer do not correctly work. The only one that would affect
+   * the passwords stored on folders correctly is forgetPassword; using any
+   * other on a news server would result in inconsistent state.
+   *
+   * Before requesting either the username or password for authentication, it is
+   * first necessary to call getAuthenticationCredentials. If the method returns
+   * true, then groupUsername and groupPassword are appropriately set up for
+   * necessary authentication; if not, then authentication must be stopped.
+   */
+  /// @{
+
+  /**
+   * Gets the authentication credentials, returning if the results are valid.
+   *
+   * If mustPrompt is true, then the user will always be asked for the
+   * credentials. Otherwise, if mayPrompt is true, then the user will be asked
+   * for credentials if there are no saved credentials. If mayPrompt is false,
+   * then no prompt will be shown, even if there are no saved credentials.
+   *
+   * If this method returns true, then groupUsername and groupPassword will
+   * contain non-empty results that could be used for authentication. If this
+   * method returns false, then the values of groupUsername and groupPassword
+   * will be cleared if they had previously been set. This could happen if
+   * mustPrompt were true and the user decided to cancel the authentication
+   * prompt.
+   *
+   * Note that this method will be executed synchronously; if an async prompt
+   * is wanted, it is the responsibility of the caller to manage it explicitly
+   * with nsIMsgAsyncPrompter.
+   */
+  bool getAuthenticationCredentials(in nsIMsgWindow aMsgWindow,
+    in bool mayPrompt, in bool mustPrompt);
+
+  /// The username that should be used for this group
+  attribute ACString groupUsername;
+
+  /// The password that should be used for this group
+  attribute ACString groupPassword;
+
+  /// Forgets saved authentication credentials permanently.
+  void forgetAuthenticationCredentials();
+  /// @}
+  
+  void moveFolder(in nsIMsgFolder aNewsgroupToMove, in nsIMsgFolder aRefNewsgroup, in int32_t aOrientation);
+
+  nsIMsgFolder addNewsgroup(in AUTF8String newsgroupName, in ACString setStr);
+
+  void setReadSetFromStr(in ACString setStr);
+
+  readonly attribute ACString newsrcLine;
+  readonly attribute ACString optionLines;
+  readonly attribute ACString unsubscribedNewsgroupLines;
+  void SetNewsrcHasChanged(in boolean newsrcHasChanged);
+  void updateSummaryFromNNTPInfo(in long oldest, in long youngest, in long total);
+  void removeMessage(in nsMsgKey key); 
+  [noscript] void removeMessages(in nsMsgKeyArrayRef aMsgKeys);
+  void cancelComplete();
+  void cancelFailed();
+
+  ACString getMessageIdForKey(in nsMsgKey key);
+
+  void getNextNMessages(in nsIMsgWindow aMsgWindow);
+  void notifyDownloadedLine(in string line, in nsMsgKey key);
+  void notifyFinishedDownloadinghdrs();
+
+  /**
+   * Retrieves the database, but does not cache it in mDatabase.
+   *
+   * This is useful for operations that shouldn't hold open the database.
+   */
+  nsIMsgDatabase getDatabaseWithoutCache();
+
+  /**
+   * Requests that a message be canceled.
+   *
+   * Note that, before sending the news cancel, this method will check to make
+   * sure that the user has proper permission to cancel the message.
+   *
+   * @param aMsgHdr     The header of the message to be canceled.
+   * @param aMsgWindow  The standard message window object, for error dialogs.
+   */
+  void cancelMessage(in nsIMsgDBHdr aMsgHdr, in nsIMsgWindow aMsgWindow);
+};

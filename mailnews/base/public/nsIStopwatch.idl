@@ -1,0 +1,44 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "nsISupports.idl"
+
+/**
+ * Simple stopwatch mechanism for determining the amount of wall-clock time and
+ * CPU time (user + system) that has elapsed.  It is not fancy.  It is either
+ * running or it is not.  If you want coherent cpu and real time values, then
+ * you had better stop it first.  It does not keep counting when stopped,
+ * although one could add a resumeRetroactive or something to accomplish that.
+ */
+[scriptable, uuid(7a671d6e-d48f-4a4f-b87e-644815a5e381)]
+interface nsIStopwatch : nsISupports {
+  /**
+   * Start the stopwatch; all counters are reset to zero.  If you want to
+   * keep the already accumulated values, use resume instead.
+   */
+  void start();
+
+  /**
+   * Stop the stopwatch.
+   */
+  void stop();
+
+  /**
+   * Resume the stopwatch without clearing the existing counters.  Any time
+   * already accumulated on cpuTime/realTime will be kept.
+   */
+  void resume();
+
+  /**
+   * The total CPU time (user + system) in seconds accumulated between calls to
+   * start/resume and stop.  You have to stop the stopwatch to cause this value
+   * to update.
+   */
+  readonly attribute double cpuTimeSeconds;
+  /**
+   * The total wall clock time in seconds accumulated between calls to
+   * start/resume and stop.  You have to stop the stopwatch to cause this value
+   * to update.
+   */
+  readonly attribute double realTimeSeconds;
+};

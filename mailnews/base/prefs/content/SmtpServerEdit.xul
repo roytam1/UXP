@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="chrome://messenger/skin/messenger.css" type="text/css"?>
+<?xul-overlay href="chrome://messenger/content/smtpEditOverlay.xul"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/smtpEditOverlay.dtd">
+
+<dialog title="&smtpEditTitle.label;"
+        xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        onload="onLoad();"
+        ondialogaccept="return onAccept();">
+  <stringbundle id="bundle_prefs"
+                src="chrome://messenger/locale/prefs.properties"/>
+  <stringbundle id="bundle_brand"
+                src="chrome://branding/locale/brand.properties"/>
+  <stringbundle id="bundle_messenger"
+                src="chrome://messenger/locale/messenger.properties"/>
+  <script type="application/javascript"
+          src="chrome://messenger/content/SmtpServerEdit.js"/>
+  <vbox id="smtpServerEditor"/>
+</dialog>
