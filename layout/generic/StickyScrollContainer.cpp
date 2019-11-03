@@ -176,6 +176,14 @@ StickyScrollContainer::ComputeStickyLimits(nsIFrame* aFrame, nsRect* aStick,
   nsRect rect =
     nsLayoutUtils::GetAllInFlowRectsUnion(aFrame, aFrame->GetParent());
 
+  // Note: Table row groups aren't supposed to be containing blocks, but we treat
+  // them as such anyway.
+  // Not having this basically disables position:sticky on table cells, which
+  // would be really unfortunate, and doesn't match what other browsers do.
+  if (cbFrame != scrolledFrame && cbFrame->GetType() == nsGkAtoms::tableRowGroupFrame) {
+    cbFrame = cbFrame->GetContainingBlock();
+  }
+
   // Containing block limits for the position of aFrame relative to its parent.
   // The margin box of the sticky element stays within the content box of the
   // contaning-block element.
