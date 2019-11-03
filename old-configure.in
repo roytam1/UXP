@@ -3151,6 +3151,23 @@ fi
 AC_SUBST(MOZ_PULSEAUDIO)
 
 dnl ========================================================
+dnl = Enable sndio
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(sndio,
+[  --enable-sndio       Enable sndio support],
+    MOZ_SNDIO=1,
+    MOZ_SNDIO= )
+
+if test -n "$MOZ_SNDIO"; then
+    AC_DEFINE(MOZ_SNDIO)
+    MOZ_CHECK_HEADER([sndio.h], [],
+        AC_MSG_ERROR(
+            [--enable-sndio specified but it requires sndio development headers]))
+    AC_DEFINE(MOZ_SNDIO)
+fi
+AC_SUBST(MOZ_SNDIO)
+
+dnl ========================================================
 dnl NegotiateAuth
 dnl ========================================================
 

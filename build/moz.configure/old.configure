@@ -215,6 +215,7 @@ def old_configure_options(*options):
     '--enable-pref-extensions',
     '--enable-private-build',
     '--enable-pulseaudio',
+    '--enable-sndio',
     '--enable-raw',
     '--enable-readline',
     '--enable-reflow-perf',

@@ -241,7 +241,7 @@ OS_LIBS += CONFIG['ICONV_LIBS']
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('cocoa', 'uikit'):
     OS_LIBS += CONFIG['TK_LIBS']
 
-if CONFIG['OS_ARCH'] == 'OpenBSD':
+if CONFIG['MOZ_SNDIO']:
     OS_LIBS += [
         'sndio',
     ]

@@ -39,7 +39,7 @@ if CONFIG['MOZ_JACK']:
     ]
     DEFINES['USE_JACK'] = True
 
-if CONFIG['OS_ARCH'] == 'OpenBSD':
+if CONFIG['MOZ_SNDIO']:
     SOURCES += [
         'cubeb_sndio.c',
     ]
