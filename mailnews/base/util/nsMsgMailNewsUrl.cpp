@@ -82,7 +82,6 @@ NS_INTERFACE_MAP_BEGIN(nsMsgMailNewsUrl)
   NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIMsgMailNewsUrl)
   NS_INTERFACE_MAP_ENTRY(nsIMsgMailNewsUrl)
   NS_INTERFACE_MAP_ENTRY(nsIURL)
-  NS_INTERFACE_MAP_ENTRY(nsIURIWithQuery)
   NS_INTERFACE_MAP_ENTRY(nsIURI)
   NS_INTERFACE_MAP_ENTRY_CONDITIONAL(nsIURIWithPrincipal, !m_isPrincipalURL)
 NS_INTERFACE_MAP_END
@@ -126,6 +125,8 @@ NS_IMETHODIMP nsMsgMailNewsUrl::GetPrincipalUri(nsIURI **aPrincipalURI)
     return NS_ERROR_NULL_POINTER;
   return m_principal->GetURI(aPrincipalURI);
 }
+
+// NS_IMPL_ISUPPORTS(nsMsgMailNewsUrl, nsIMsgMailNewsUrl, nsIURL, nsIURI)
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Begin nsIMsgMailNewsUrl specific support
