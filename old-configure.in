@@ -2837,15 +2837,22 @@ MOZ_ARG_ENABLE_BOOL(mailnews,
 if test -n "$MOZ_MAILNEWS"; then
     MOZ_MORK=1
     MOZ_LDAP_XPCOM=1
-    if test "$_WIN32_MSVC"; then
+
+    if test "$OS_ARCH" == "WINNT"; then
         MOZ_MAPI_SUPPORT=1
+    else
+      MOZ_MOVEMAIL=1
+      HAVE_MOVEMAIL=1
+      AC_DEFINE(HAVE_MOVEMAIL)
     fi
+
     AC_DEFINE(MOZ_MAILNEWS)
     AC_DEFINE(MOZ_MORK)
 fi
 
 AC_SUBST(MOZ_MAILNEWS)
 AC_SUBST(MOZ_MORK)
+AC_SUBST(MOZ_MOVEMAIL)
 
 dnl =========================================================
 dnl = LDAP
