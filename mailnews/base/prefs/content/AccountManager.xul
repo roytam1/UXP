@@ -35,7 +35,7 @@
         <treechildren id="account-tree-children"/>
       </tree>
 
-#ifdef MOZ_THUNDERBIRD
+#if defined(MOZ_THUNDERBIRD) && defined(HYPE_ICEDOVE)
       <button id="accountActionsButton" type="menu"
               label="&accountActionsButton.label;"
               accesskey="&accountActionsButton.accesskey;">

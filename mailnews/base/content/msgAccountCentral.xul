@@ -153,7 +153,7 @@
       <spacer id="CreateAccount.spacer" flex="1" collapsed="true"/>
       <row id="CreateAccount" class="acctCentralRow" collapsed="true">
         <hbox>
-#ifdef MOZ_THUNDERBIRD
+#if defined(MOZ_THUNDERBIRD) && defined(HYPE_ICEDOVE)
           <label class="acctCentralText"
                  value="&newAcct.label;"
                  chromedir="&locale.dir;"/>
@@ -165,7 +165,7 @@
 #endif
         </hbox>
       </row>
-#ifdef MOZ_THUNDERBIRD
+#if defined(MOZ_THUNDERBIRD) && defined(HYPE_ICEDOVE)
       <row id="CreateAccounts" class="acctCentralRow" collapsed="true">
         <vbox id="CreateAccountsList">
           <label id="CreateAccountMail"

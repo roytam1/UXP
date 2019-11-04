@@ -65,7 +65,7 @@ messenger.jar:
     content/messenger/smtpEditOverlay.js                                       (base/prefs/content/smtpEditOverlay.js)
     content/messenger/removeAccount.xul                                        (base/prefs/content/removeAccount.xul)
     content/messenger/removeAccount.js                                         (base/prefs/content/removeAccount.js)
-#ifdef MOZ_THUNDERBIRD
+#if defined(MOZ_THUNDERBIRD) && defined(HYPE_ICEDOVE)
     content/messenger/accountcreation/accountConfig.js                         (base/prefs/content/accountcreation/accountConfig.js)
     content/messenger/accountcreation/createInBackend.js                       (base/prefs/content/accountcreation/createInBackend.js)
     content/messenger/accountcreation/emailWizard.js                           (base/prefs/content/accountcreation/emailWizard.js)
