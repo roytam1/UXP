@@ -13,7 +13,10 @@ var gChecking;
 var gBroken;
 var gNeedReset;
 
-Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+const {interfaces: Ci, classes: Cc, results: Cr, utils: Cu} = Components;
+
+Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
 
 
 function initExceptionDialog() {
@@ -286,8 +289,8 @@ function addException() {
     return;
   }
 
-  var overrideService = Components.classes["@mozilla.org/security/certoverride;1"]
-                                  .getService(Components.interfaces.nsICertOverrideService);
+  var overrideService = Cc["@mozilla.org/security/certoverride;1"]
+                          .getService(Ci.nsICertOverrideService);
   var flags = 0;
   if (gSSLStatus.isUntrusted) {
     flags |= overrideService.ERROR_UNTRUSTED;
