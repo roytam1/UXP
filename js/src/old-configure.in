@@ -933,6 +933,14 @@ case "$target" in
     fi
     ;;
 
+i*86-*-solaris*)
+    MOZ_FIX_LINK_PATHS="-L${DIST}/bin -R'\$\$ORIGIN':/usr/gcc/7/lib"
+    ;;
+
+x86_64-*-solaris*)
+    MOZ_FIX_LINK_PATHS="-L${DIST}/bin -R'\$\$ORIGIN':/usr/gcc/7/lib/amd64"
+    ;;
+
 esac
 
 dnl Only one oddball right now (QNX), but this gives us flexibility

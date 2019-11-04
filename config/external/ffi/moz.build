@@ -35,8 +35,16 @@ else:
         'FFI_NO_RAW_API': True,
         'HAVE_AS_ASCII_PSEUDO_OP': True,
         'HAVE_AS_STRING_PSEUDO_OP': True,
-        'HAVE_AS_X86_64_UNWIND_SECTION_TYPE': True,
     })
+
+# This should NEVER be true on 32-bit x86 systems. It's called x86_64 unwind 
+# section type for a reason. By rights the way it was before should have broken
+# all 32-bit builds on x86.
+
+    if CONFIG['FFI_TARGET'] == 'X86':
+        DEFINES['HAVE_AS_X86_64_UNWIND_SECTION_TYPE'] = False
+    else:
+        DEFINES['HAVE_AS_X86_64_UNWIND_SECTION_TYPE'] = True
 
     if CONFIG['MOZ_DEBUG']:
         DEFINES['FFI_DEBUG'] = True
@@ -49,13 +57,27 @@ else:
     if CONFIG['OS_TARGET'] not in ('WINNT', 'Darwin'):
         DEFINES['HAVE_HIDDEN_VISIBILITY_ATTRIBUTE'] = True
 
-    if CONFIG['INTEL_ARCHITECTURE']:
+# Solaris uses datarel encoding for x86. This causes a lot of really stupid 
+# problems, like the vast majority of x86 assembler not being considered PIC 
+# on Solaris.
+
+    if CONFIG['INTEL_ARCHITECTURE'] and CONFIG['OS_TARGET'] != 'SunOS':
+        DEFINES['HAVE_AS_X86_PCREL'] = True
+
+# Which is why they apparently don't do this anymore on amd64.
+
+    if CONFIG['FFI_TARGET'] == 'X86_64' and CONFIG['OS_TARGET'] == 'SunOS':
         DEFINES['HAVE_AS_X86_PCREL'] = True
 
     # Don't bother setting EH_FRAME_FLAGS on Windows.
     # Quoted defines confuse msvcc.sh, and the value isn't used there.
     if CONFIG['OS_TARGET'] != 'WINNT':
+        # Solaris seems to require EH_FRAME to be writable even on x86.
+        # It works fine most of the time and there's no rule against it, 
+        # but it causes a lot of weird problems.
         if CONFIG['FFI_TARGET'] == 'ARM':
+            DEFINES['EH_FRAME_FLAGS'] = '"aw"'
+        elif CONFIG['FFI_TARGET'] == 'X86' and CONFIG['OS_TARGET'] == 'SunOS':
             DEFINES['EH_FRAME_FLAGS'] = '"aw"'
         else:
             DEFINES['EH_FRAME_FLAGS'] = '"a"'

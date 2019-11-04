@@ -283,7 +283,9 @@ typedef long ssize_t;
 #define JEMALLOC_RECYCLE
 
 #ifndef MOZ_MEMORY_WINDOWS
+#ifndef MOZ_MEMORY_SOLARIS
 #include <sys/cdefs.h>
+#endif
 #ifndef __DECONST
 #  define __DECONST(type, var)	((type)(uintptr_t)(const void *)(var))
 #endif
@@ -309,7 +311,7 @@ __FBSDID("$FreeBSD: head/lib/libc/stdlib/malloc.c 180599 2008-07-18 19:35:44Z ja
 #endif
 #include <sys/time.h>
 #include <sys/types.h>
-#if !defined(MOZ_MEMORY_ANDROID)
+#if !defined(MOZ_MEMORY_SOLARIS) && !defined(MOZ_MEMORY_ANDROID)
 #include <sys/sysctl.h>
 #endif
 #include <sys/uio.h>
@@ -409,6 +411,10 @@ void *_mmap(void *addr, size_t length, int prot, int flags,
 #define mmap _mmap
 #define munmap(a, l) syscall(SYS_munmap, a, l)
 #endif
+#endif
+
+#if defined(MOZ_MEMORY_SOLARIS) && defined(MAP_ALIGN) && !defined(JEMALLOC_NEVER_USES_MAP_ALIGN)
+#define JEMALLOC_USES_MAP_ALIGN	 /* Required on Solaris 10. Might improve performance elsewhere. */
 #endif
 
 #ifndef __DECONST
@@ -1037,7 +1043,7 @@ static const bool config_recycle = false;
  * will abort.
  * Platform specific page size conditions copied from js/public/HeapAPI.h
  */
-#if (defined(__FreeBSD__)) && \
+#if (defined(SOLARIS) || defined(__FreeBSD__)) && \
     (defined(__sparc) || defined(__sparcv9) || defined(__ia64))
 #define pagesize_2pow			((size_t) 13)
 #elif defined(__powerpc64__)
@@ -2645,8 +2651,13 @@ pages_purge(void *addr, size_t length)
 #      define JEMALLOC_MADV_PURGE MADV_FREE
 #      define JEMALLOC_MADV_ZEROS false
 #    endif
+#ifdef MOZ_MEMORY_SOLARIS
+        int err = posix_madvise(addr, length, JEMALLOC_MADV_PURGE);
+	unzeroed = (JEMALLOC_MADV_ZEROS == false || err != 0);
+#else
 	int err = madvise(addr, length, JEMALLOC_MADV_PURGE);
 	unzeroed = (JEMALLOC_MADV_ZEROS == false || err != 0);
+#endif
 #    undef JEMALLOC_MADV_PURGE
 #    undef JEMALLOC_MADV_ZEROS
 #  endif
@@ -3602,9 +3613,14 @@ arena_purge(arena_t *arena, bool all)
 #endif
 
 #ifndef MALLOC_DECOMMIT
+#ifdef MOZ_MEMORY_SOLARIS
+        posix_madvise((void*)((uintptr_t)chunk + (i << pagesize_2pow)),
+                (npages << pagesize_2pow),MADV_FREE);
+#else
 				madvise((void *)((uintptr_t)chunk + (i <<
 				    pagesize_2pow)), (npages << pagesize_2pow),
 				    MADV_FREE);
+#endif
 #  ifdef MALLOC_DOUBLE_PURGE
 				madvised = true;
 #  endif
@@ -5125,6 +5141,13 @@ malloc_ncpus(void)
 	else
 		return (n);
 }
+#elif (defined(MOZ_MEMORY_SOLARIS))
+
+static inline unsigned
+malloc_ncpus(void)
+{
+	return sysconf(_SC_NPROCESSORS_ONLN);
+}
 #elif (defined(MOZ_MEMORY_WINDOWS))
 static inline unsigned
 malloc_ncpus(void)
@@ -5921,8 +5944,14 @@ RETURN:
 #define MOZ_MEMORY_ELF
 #endif
 
+#ifdef MOZ_MEMORY_SOLARIS
+#  if (defined(__GNUC__))
+__attribute__((noinline))
+#  endif
+#else
 #if (defined(MOZ_MEMORY_ELF))
 __attribute__((visibility ("hidden")))
+#endif
 #endif
 #endif /* MOZ_REPLACE_MALLOC */
 

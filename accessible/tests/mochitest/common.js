@@ -59,6 +59,7 @@ const nsIPropertyElement = Components.interfaces.nsIPropertyElement;
 
 const MAC = (navigator.platform.indexOf("Mac") != -1);
 const LINUX = (navigator.platform.indexOf("Linux") != -1);
+const SOLARIS = (navigator.platform.indexOf("SunOS") != -1);
 const WIN = (navigator.platform.indexOf("Win") != -1);
 
 ////////////////////////////////////////////////////////////////////////////////

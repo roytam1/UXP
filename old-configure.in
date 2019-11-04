@@ -765,7 +765,7 @@ case "$host" in
     HOST_CFLAGS="$HOST_CFLAGS -DXP_UNIX"
     HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O3}"
     ;;
-
+ 
 *)
     HOST_CFLAGS="$HOST_CFLAGS -DXP_UNIX"
     HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O2}"
@@ -1204,6 +1204,14 @@ case "$target" in
     if test "$LIBRUNPATH"; then
         DSO_LDOPTS="-R$LIBRUNPATH $DSO_LDOPTS"
     fi
+    ;;
+
+i*86-*-solaris*)
+    MOZ_FIX_LINK_PATHS="-L${DIST}/bin -R'\$\$ORIGIN':/usr/gcc/7/lib"
+    ;;
+
+x86_64-*-solaris*)
+    MOZ_FIX_LINK_PATHS="-L${DIST}/bin -R'\$\$ORIGIN':/usr/gcc/7/lib/amd64"
     ;;
 
 esac
@@ -3143,6 +3151,23 @@ fi
 AC_SUBST(MOZ_PULSEAUDIO)
 
 dnl ========================================================
+dnl = Enable sndio
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(sndio,
+[  --enable-sndio       Enable sndio support],
+    MOZ_SNDIO=1,
+    MOZ_SNDIO= )
+
+if test -n "$MOZ_SNDIO"; then
+    AC_DEFINE(MOZ_SNDIO)
+    MOZ_CHECK_HEADER([sndio.h], [],
+        AC_MSG_ERROR(
+            [--enable-sndio specified but it requires sndio development headers]))
+    AC_DEFINE(MOZ_SNDIO)
+fi
+AC_SUBST(MOZ_SNDIO)
+
+dnl ========================================================
 dnl NegotiateAuth
 dnl ========================================================
 
@@ -4225,7 +4250,7 @@ if test -f "${srcdir}/${MOZ_BUILD_APP}/configure.in" ; then
     _subconfigure_config_args="$ac_configure_args"
   }
   tmpscript=`$PYTHON -c 'import os, tempfile; print tempfile.mktemp(prefix="subscript.").replace(os.sep, "/")'` || exit 1
-  m4 "${srcdir}/build/autoconf/subconfigure.m4" \
+  ${TOOLCHAIN_PREFIX}m4 "${srcdir}/build/autoconf/subconfigure.m4" \
      "${srcdir}/build/autoconf/altoptions.m4" \
      "${srcdir}/${MOZ_BUILD_APP}/configure.in" > $tmpscript
   . $tmpscript

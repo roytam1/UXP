@@ -16,6 +16,9 @@
 #include "nsDebug.h"
 #include "nsISupportsImpl.h"
 #include "nsXULAppAPI.h"
+#if defined(__sun__) || defined(__sun)
+#include <unistd.h>
+#endif
 
 using namespace mozilla;
 using namespace std;
@@ -267,9 +270,19 @@ ProcessLink::OnChannelOpened()
         MonitorAutoLock lock(*mChan->mMonitor);
 
         mExistingListener = mTransport->set_listener(this);
+
+// The queue we want here is defined in the namespace 'std' on Solaris, which
+// also has another function called queue in a different namespace. Need to
+// determine whether queue is defined in 'std' on other supported platforms 
+// before possibly removing ifdefs.	
+
 #ifdef DEBUG
         if (mExistingListener) {
+#ifdef XP_SOLARIS		
+	    std::queue<Message> pending;
+#else
             queue<Message> pending;
+#endif	    
             mExistingListener->GetQueuedMessages(pending);
             MOZ_ASSERT(pending.empty());
         }
@@ -285,8 +298,11 @@ void
 ProcessLink::OnTakeConnectedChannel()
 {
     AssertIOThread();
-
+#ifdef XP_SOLARIS
+    std::queue<Message> pending;
+#else 
     queue<Message> pending;
+#endif    
     {
         MonitorAutoLock lock(*mChan->mMonitor);
 

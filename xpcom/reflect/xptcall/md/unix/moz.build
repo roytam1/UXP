@@ -46,6 +46,21 @@ if CONFIG['OS_ARCH'] in ('Linux', 'FreeBSD'):
             'xptcstubs_ipf64.cpp'
         ]
 
+# Without the need to accomodate the Sun compiler, Solaris/GCC support is pretty
+# standard, actually. Not all that different from Linux.
+
+if CONFIG['OS_ARCH'] == 'SunOS':
+    if CONFIG['OS_TEST'] == 'x86_64':
+            SOURCES += [
+                'xptcinvoke_asm_x86_64_unix.S',
+                'xptcinvoke_x86_64_solaris.cpp',
+                'xptcstubs_x86_64_linux.cpp'
+            ]
+    elif '86' in CONFIG['OS_TEST']:
+            SOURCES += [
+                'xptcinvoke_gcc_x86_unix.cpp',
+                'xptcstubs_gcc_x86_unix.cpp'
+            ]
 
 if CONFIG['OS_TEST'] == 'alpha':
     if CONFIG['OS_ARCH'] in ('Linux', 'FreeBSD', 'NetBSD'):
@@ -186,7 +201,11 @@ if CONFIG['OS_ARCH'] == 'OpenBSD' and CONFIG['OS_TEST'] == 'sparc':
         'xptcstubs_sparc_openbsd.cpp',
     ]
 
-if CONFIG['OS_ARCH'] in ('OpenBSD', 'FreeBSD') and CONFIG['OS_TEST'] == 'sparc64':
+# Mozilla discovered at some point that Solaris and Linux can also use these 
+# files for 64-bit SPARC with no ill effects, so basically the entire mess that
+# was there before is no longer needed.
+
+if CONFIG['OS_ARCH'] in ('OpenBSD', 'FreeBSD', 'SunOS') and CONFIG['OS_TEST'] == 'sparc64':
     SOURCES += [
         'xptcinvoke_asm_sparc64_openbsd.s',
         'xptcinvoke_sparc64_openbsd.cpp',
@@ -194,6 +213,17 @@ if CONFIG['OS_ARCH'] in ('OpenBSD', 'FreeBSD') and CONFIG['OS_TEST'] == 'sparc64
         'xptcstubs_sparc64_openbsd.cpp',
     ]
 
+# As for the 32-bit SPARC build? That would look like the Linux version with 
+# one file changed.
+
+if CONFIG['OS_ARCH'] == 'SunOS' and CONFIG['OS_TEST'] == 'sparc':
+    SOURCES += [
+        'xptcinvoke_asm_sparc_solaris_GCC3.s',
+        'xptcinvoke_sparc_solaris.cpp',
+        'xptcstubs_asm_sparc_solaris.s',
+        'xptcstubs_sparc_solaris.cpp',
+    ]
+        
 if CONFIG['OS_ARCH'] == 'Linux':
     if CONFIG['OS_TEST'] == 's390':
         SOURCES += [

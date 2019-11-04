@@ -9,9 +9,13 @@
 #ifndef nsContentUtils_h___
 #define nsContentUtils_h___
 
-#if defined(XP_WIN)
+#ifdef XP_WIN
 #include <float.h>
 #endif
+
+#ifdef XP_SOLARIS
+#include <ieeefp.h>
+#endif	
 
 #include "js/TypeDecls.h"
 #include "js/Value.h"

@@ -85,8 +85,13 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint64_t methodIndex, uint64_t* args)
 
 extern "C" nsresult SharedStub(int, int*);
 
+/*
+ * Avoid GCC stack protector to wipe out imput registers since the compiler
+ * thinks the function takes no arguments.
+ */
+
 #define STUB_ENTRY(n) \
-nsresult nsXPTCStubBase::Stub##n() \
+nsresult __attribute__((__optimize__("no-stack-protector"))) nsXPTCStubBase::Stub##n() \
 { \
 	int dummy; /* defeat tail-call optimization */ \
 	return SharedStub(n, &dummy); \

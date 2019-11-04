@@ -450,6 +450,12 @@ RealBreak()
     ".object_arch armv4t\n"
 #endif
     "BKPT #0");
+#elif defined(__sun)
+#if defined (__i386__) || defined(__i386) || defined(__x86_64__)
+  asm("int $3");
+#else
+  raise(SIGTRAP);
+#endif
 #else
 #warning do not know how to break on this platform
 #endif
@@ -524,6 +530,8 @@ Break(const char* aMsg)
   RealBreak();
 #elif defined(__arm__)
   RealBreak();
+#elif defined(__sun)
+  RealBreak();  
 #else
 #warning do not know how to break on this platform
 #endif

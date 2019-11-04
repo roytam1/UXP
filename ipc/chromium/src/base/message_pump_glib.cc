@@ -9,6 +9,9 @@
 #include <fcntl.h>
 #include <math.h>
 
+#ifdef OS_SOLARIS
+#include <unistd.h>
+#endif
 #include <gtk/gtk.h>
 #include <glib.h>
 
@@ -131,6 +134,12 @@ MessagePumpForUI::MessagePumpForUI()
   // Create our wakeup pipe, which is used to flag when work was scheduled.
   int fds[2];
   CHECK(pipe(fds) == 0);
+#ifdef OS_SOLARIS
+  int flags = fcntl(fds[0], F_GETFL,0);
+  if (flags == -1)
+    flags = 0;
+  fcntl(fds[0], F_SETFL, flags | O_NDELAY);
+#endif
   wakeup_pipe_read_  = fds[0];
   wakeup_pipe_write_ = fds[1];
   wakeup_gpollfd_->fd = wakeup_pipe_read_;
@@ -238,11 +247,15 @@ bool MessagePumpForUI::HandleCheck() {
   // whether there was data, so this read shouldn't block.
   if (wakeup_gpollfd_->revents & G_IO_IN) {
     pipe_full_ = false;
-
+#ifndef OS_SOLARIS
     char msg;
     if (HANDLE_EINTR(read(wakeup_pipe_read_, &msg, 1)) != 1 || msg != '!') {
       NOTREACHED() << "Error reading from the wakeup pipe.";
     }
+#else
+    char buf[32];
+    while (HANDLE_EINTR(read(wakeup_pipe_read_, &buf, 32)));
+#endif
     // Since we ate the message, we need to record that we have more work,
     // because HandleCheck() may be called without HandleDispatch being called
     // afterwards.
@@ -311,6 +324,10 @@ void MessagePumpForUI::ScheduleWork() {
   // variables as we would then need locks all over.  This ensures that if
   // we are sleeping in a poll that we will wake up.
   char msg = '!';
+#ifdef OS_SOLARIS
+  char buf[32];
+  while (HANDLE_EINTR(read(wakeup_pipe_read_, &buf, 32)));
+#endif  
   if (HANDLE_EINTR(write(wakeup_pipe_write_, &msg, 1)) != 1) {
     NOTREACHED() << "Could not write to the UI message loop wakeup pipe!";
   }

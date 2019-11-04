@@ -241,7 +241,7 @@ OS_LIBS += CONFIG['ICONV_LIBS']
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('cocoa', 'uikit'):
     OS_LIBS += CONFIG['TK_LIBS']
 
-if CONFIG['OS_ARCH'] == 'OpenBSD':
+if CONFIG['MOZ_SNDIO']:
     OS_LIBS += [
         'sndio',
     ]
@@ -269,6 +269,13 @@ if CONFIG['MOZ_ENABLE_STARTUP_NOTIFICATION']:
 
 if CONFIG['MOZ_ENABLE_LIBPROXY']:
     OS_LIBS += CONFIG['MOZ_LIBPROXY_LIBS']
+
+if CONFIG['OS_ARCH'] == 'SunOS':
+    OS_LIBS += [
+        'elf',
+        'demangle',
+        'sendfile',
+    ]
 
 if CONFIG['OS_ARCH'] == 'FreeBSD':
     OS_LIBS += [

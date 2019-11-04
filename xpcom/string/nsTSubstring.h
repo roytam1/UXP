@@ -10,6 +10,14 @@
 #include "mozilla/IntegerTypeTraits.h"
 #include "mozilla/Span.h"
 
+// Solaris defines pid_t to be long on ILP32 and int on LP64. I checked in 
+// sys/types.h. AMD64 and SPARC64 builds don't need this fix at all, 
+// while all 32-bit builds do.
+
+#if defined(XP_SOLARIS) && !defined(__LP64__)
+#include <unistd.h>
+#endif
+
 #ifndef MOZILLA_INTERNAL_API
 #error Cannot use internal string classes without MOZILLA_INTERNAL_API defined. Use the frozen header nsStringAPI.h instead.
 #endif
@@ -587,6 +595,17 @@ public:
     const char* fmt = aRadix == 10 ? "%d" : aRadix == 8 ? "%o" : "%x";
     AppendPrintf(fmt, aInteger);
   }
+#if defined(XP_SOLARIS) && !defined(__LP64__)
+  void AppendInt(pid_t aInteger)
+  { 
+   AppendPrintf("%lu", aInteger);
+  }
+  void AppendInt(pid_t aInteger, int aRadix)
+  {
+    const char* fmt = aRadix == 10 ? "%lu" : aRadix == 8 ? "%lo" : "%lx";
+    AppendPrintf(fmt, aInteger);
+  }
+#endif  
   void AppendInt(uint32_t aInteger)
   {
     AppendPrintf("%u", aInteger);

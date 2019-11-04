@@ -187,6 +187,15 @@ GfxInfo::GetData()
         note.AppendLiteral(" -- texture_from_pixmap");
     note.Append('\n');
 
+    // illumos/Solaris 10 libc lacks a strcasestr function, but NSPR has 
+    // one. A lot of programs just implement one on the spot or use strstr 
+    // and a buffer as some kind of workaround. They've been implementing
+    // missing functions lately, though, so this may not be needed much longer.
+
+#ifndef strcasestr
+#define strcasestr PL_strcasestr
+#endif    
+
     // determine the major OpenGL version. That's the first integer in the version string.
     mGLMajorVersion = strtol(mVersion.get(), 0, 10);
 

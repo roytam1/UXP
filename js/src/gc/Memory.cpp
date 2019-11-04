@@ -415,8 +415,15 @@ InitMemorySubsystem()
 static inline void*
 MapMemoryAt(void* desired, size_t length, int prot = PROT_READ | PROT_WRITE,
             int flags = MAP_PRIVATE | MAP_ANON, int fd = -1, off_t offset = 0)
+
+// Solaris manages 64-bit address space in a different manner from every other
+// AMD64 operating system, but fortunately the fix is the same one 
+// required for every operating system on 64-bit SPARC, Itanium, and ARM. 
+// Most people's intuition failed them here and they thought this couldn't
+// possibly be correct on AMD64, but for Solaris/illumos it is.	
+	
 {
-#if defined(__ia64__) || (defined(__sparc64__) && defined(__NetBSD__)) || defined(__aarch64__)
+#if defined(__ia64__) || (defined(__sparc64__) && defined(__NetBSD__)) || defined(__aarch64__) || (defined(__sun) && defined(__x86_64__))
     MOZ_ASSERT((0xffff800000000000ULL & (uintptr_t(desired) + length - 1)) == 0);
 #endif
     void* region = mmap(desired, length, prot, flags, fd, offset);
@@ -466,7 +473,7 @@ MapMemory(size_t length, int prot = PROT_READ | PROT_WRITE,
         return nullptr;
     }
     return region;
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || (defined(__sun) && defined(__x86_64__))
    /*
     * There might be similar virtual address issue on arm64 which depends on
     * hardware and kernel configurations. But the work around is slightly
@@ -678,7 +685,11 @@ MarkPagesUnused(void* p, size_t size)
         return false;
 
     MOZ_ASSERT(OffsetFromAligned(p, pageSize) == 0);
-    int result = madvise(p, size, MADV_DONTNEED);
+#ifdef XP_SOLARIS
+     int result = posix_madvise(p, size, POSIX_MADV_DONTNEED);
+#else
+     int result = madvise(p, size, MADV_DONTNEED);
+#endif
     return result != -1;
 }
 
