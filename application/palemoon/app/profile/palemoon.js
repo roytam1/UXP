@@ -21,6 +21,12 @@
 #endif
 #endif
 
+#ifdef XP_WIN
+lock_pref("browser.tabs.remote", false);
+lock_pref("browser.tabs.remote.force-enable", false);
+lock_pref("extensions.e10sBlocksEnabling", true);
+#endif
+
 pref("browser.chromeURL","chrome://browser/content/");
 pref("browser.hiddenWindowChromeURL", "chrome://browser/content/hiddenWindow.xul");
 
