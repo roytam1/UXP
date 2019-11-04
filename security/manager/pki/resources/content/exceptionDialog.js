@@ -235,7 +235,7 @@ function updateCertStatus() {
     document.getElementById("viewCertButton").disabled = false;
 
     // Notify observers about the availability of the certificate
-    Services.obs.notifyObservers(null, "cert-exception-ui-ready");
+    Services.obs.notifyObservers(null, "cert-exception-ui-ready", null);
   } else if (gChecking) {
     shortDesc = "addExceptionCheckingShort";
     longDesc  = "addExceptionCheckingLong2";
