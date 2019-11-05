@@ -95,7 +95,10 @@ function readFromXML(clientConfigXML)
                 "secure" : Ci.nsMsgAuthMethod.passwordEncrypted,
                 "GSSAPI" : Ci.nsMsgAuthMethod.GSSAPI,
                 "NTLM" : Ci.nsMsgAuthMethod.NTLM,
-                "OAuth2" : Ci.nsMsgAuthMethod.OAuth2 });
+#ifdef MOZ_MAILNEWS_OAUTH2
+                "OAuth2" : Ci.nsMsgAuthMethod.OAuth2
+#endif
+              });
           break; // take first that we support
         } catch (e) { exception = e; }
       }
@@ -176,7 +179,9 @@ function readFromXML(clientConfigXML)
                 "secure" : Ci.nsMsgAuthMethod.passwordEncrypted,
                 "GSSAPI" : Ci.nsMsgAuthMethod.GSSAPI,
                 "NTLM" : Ci.nsMsgAuthMethod.NTLM,
+#ifdef MOZ_MAILNEWS_OAUTH2
                 "OAuth2" : Ci.nsMsgAuthMethod.OAuth2,
+#endif
               });
 
           break; // take first that we support

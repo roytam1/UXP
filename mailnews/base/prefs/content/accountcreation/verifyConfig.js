@@ -30,7 +30,9 @@
  */
 
 Components.utils.import("resource:///modules/mailServices.js");
+#ifdef MOZ_MAILNEWS_OAUTH2
 Components.utils.import("resource://gre/modules/OAuth2Providers.jsm");
+#endif
 
 if (typeof gEmailWizardLogger == "undefined") {
   Cu.import("resource:///modules/gloda/log4moz.js");
@@ -74,6 +76,7 @@ function verifyConfig(config, alter, msgWindow, successCallback, errorCallback)
                            config.incoming.auth);
   inServer.authMethod = config.incoming.auth;
 
+#ifdef MOZ_MAILNEWS_OAUTH2
   try {
     // Lookup issuer if needed.
     if (config.incoming.auth == Ci.nsMsgAuthMethod.OAuth2 ||
@@ -100,6 +103,9 @@ function verifyConfig(config, alter, msgWindow, successCallback, errorCallback)
 
     if (inServer.password ||
         inServer.authMethod == Ci.nsMsgAuthMethod.OAuth2)
+#else
+    if (inServer.password)
+#endif
       verifyLogon(config, inServer, alter, msgWindow,
                   successCallback, errorCallback);
     else {

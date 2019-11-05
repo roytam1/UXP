@@ -797,7 +797,11 @@ nsresult nsImapProtocol::SetupWithUrl(nsIURI * aURL, nsISupports* aConsumer)
     server->GetRealHostName(m_realHostName);
     int32_t authMethod;
     (void) server->GetAuthMethod(&authMethod);
+#ifdef MOZ_MAILNEWS_OAUTH2
     InitPrefAuthMethods(authMethod, server);
+#else
+    InitPrefAuthMethods(authMethod);
+#endif
     (void) server->GetSocketType(&m_socketType);
     bool shuttingDown;
     (void) imapServer->GetShuttingDown(&shuttingDown);
@@ -5563,8 +5567,12 @@ void nsImapProtocol::EscapeUserNamePasswordString(const char *strToEscape, nsCSt
   }
 }
 
+#ifdef MOZ_MAILNEWS_OAUTH2
 void nsImapProtocol::InitPrefAuthMethods(int32_t authMethodPrefValue,
                                          nsIMsgIncomingServer *aServer)
+#else
+void nsImapProtocol::InitPrefAuthMethods(int32_t authMethodPrefValue)
+#endif
 {
     // for m_prefAuthMethods, using the same flags as server capablities.
     switch (authMethodPrefValue)
@@ -5608,11 +5616,16 @@ void nsImapProtocol::InitPrefAuthMethods(int32_t authMethodPrefValue,
             kHasAuthLoginCapability | kHasAuthPlainCapability |
             kHasCRAMCapability | kHasAuthGssApiCapability |
             kHasAuthNTLMCapability | kHasAuthMSNCapability |
+#ifdef MOZ_MAILNEWS_OAUTH2
             kHasAuthExternalCapability | kHasXOAuth2Capability;
         break;
       case nsMsgAuthMethod::OAuth2:
         m_prefAuthMethods = kHasXOAuth2Capability;
+#else
+            kHasAuthExternalCapability;
+#endif
         break;
+
     }
 
     if (m_prefAuthMethods & kHasXOAuth2Capability)
@@ -5639,12 +5652,21 @@ nsresult nsImapProtocol::ChooseAuthMethod()
 
   MOZ_LOG(IMAP, LogLevel::Debug, ("IMAP auth: server caps 0x%llx, pref 0x%llx, failed 0x%llx, avail caps 0x%llx",
         serverCaps, m_prefAuthMethods, m_failedAuthMethods, availCaps));
+#ifdef MOZ_MAILNEWS_OAUTH2
   MOZ_LOG(IMAP, LogLevel::Debug, ("(GSSAPI = 0x%llx, CRAM = 0x%llx, NTLM = 0x%llx, "
         "MSN = 0x%llx, PLAIN = 0x%llx,\n  LOGIN = 0x%llx, old-style IMAP login = 0x%llx"
         ", auth external IMAP login = 0x%llx, OAUTH2 = 0x%llx)",
         kHasAuthGssApiCapability, kHasCRAMCapability, kHasAuthNTLMCapability,
         kHasAuthMSNCapability, kHasAuthPlainCapability, kHasAuthLoginCapability,
         kHasAuthOldLoginCapability, kHasAuthExternalCapability, kHasXOAuth2Capability));
+#else
+  MOZ_LOG(IMAP, LogLevel::Debug, ("(GSSAPI = 0x%llx, CRAM = 0x%llx, NTLM = 0x%llx, "
+        "MSN = 0x%llx, PLAIN = 0x%llx,\n  LOGIN = 0x%llx, old-style IMAP login = 0x%llx"
+        ", auth external IMAP login = 0x%llx",
+        kHasAuthGssApiCapability, kHasCRAMCapability, kHasAuthNTLMCapability,
+        kHasAuthMSNCapability, kHasAuthPlainCapability, kHasAuthLoginCapability,
+        kHasAuthOldLoginCapability, kHasAuthExternalCapability));
+#endif
 
   if (kHasAuthExternalCapability & availCaps)
     m_currentAuthMethod = kHasAuthExternalCapability;
@@ -5656,8 +5678,10 @@ nsresult nsImapProtocol::ChooseAuthMethod()
     m_currentAuthMethod = kHasAuthNTLMCapability;
   else if (kHasAuthMSNCapability & availCaps)
     m_currentAuthMethod = kHasAuthMSNCapability;
+#ifdef MOZ_MAILNEWS_OAUTH2
   else if (kHasXOAuth2Capability & availCaps)
     m_currentAuthMethod = kHasXOAuth2Capability;
+#endif
   else if (kHasAuthPlainCapability & availCaps)
     m_currentAuthMethod = kHasAuthPlainCapability;
   else if (kHasAuthLoginCapability & availCaps)
@@ -5933,6 +5957,7 @@ nsresult nsImapProtocol::AuthLogin(const char *userName, const nsCString &passwo
     NS_ENSURE_SUCCESS(rv, rv);
     ParseIMAPandCheckForNewMail();
   }
+#ifdef MOZ_MAILNEWS_OAUTH2
   else if (flag & kHasXOAuth2Capability)
   {
     MOZ_LOG(IMAP, LogLevel::Debug, ("XOAUTH2 auth"));
@@ -5960,6 +5985,7 @@ nsresult nsImapProtocol::AuthLogin(const char *userName, const nsCString &passwo
     NS_ENSURE_SUCCESS(rv, rv);
     ParseIMAPandCheckForNewMail();
   }
+#endif
   else if (flag & kHasAuthNoneCapability)
   {
     // TODO What to do? "login <username>" like POP?
@@ -8617,7 +8643,9 @@ bool nsImapProtocol::TryToLogon()
       // Get password
       if (m_currentAuthMethod != kHasAuthGssApiCapability && // GSSAPI uses no pw in apps
           m_currentAuthMethod != kHasAuthExternalCapability &&
+#ifdef MOZ_MAILNEWS_OAUTH2
           m_currentAuthMethod != kHasXOAuth2Capability &&
+#endif
           m_currentAuthMethod != kHasAuthNoneCapability)
       {
           rv = GetPassword(password, newPasswordRequested);
@@ -8654,6 +8682,7 @@ bool nsImapProtocol::TryToLogon()
             break;
           }
 
+#ifdef MOZ_MAILNEWS_OAUTH2
           if (m_prefAuthMethods & kHasXOAuth2Capability)
           {
             // OAuth2 failed. We don't have an error message for this, and we
@@ -8662,6 +8691,7 @@ bool nsImapProtocol::TryToLogon()
             AlertUserEventUsingName("imapUnknownHostError");
             break;
           }
+#endif
 
           // The reason that we failed might be a wrong password, so
           // ask user what to do

@@ -50,8 +50,10 @@ AccountConfig.prototype =
    */
   incomingAlternatives : null,
   outgoingAlternatives : null,
+#ifdef MOZ_MAILNEWS_OAUTH2
   // OAuth2 configuration, if needed.
   oauthSettings : null,
+#endif
   // just an internal string to refer to this. Do not show to user.
   id : null,
   // who created the config.

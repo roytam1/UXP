@@ -7,7 +7,9 @@
 #define nsSmtpProtocol_h___
 
 #include "mozilla/Attributes.h"
+#ifdef MOZ_MAILNEWS_OAUTH2
 #include "msgIOAuth2Module.h"
+#endif
 #include "nsMsgProtocol.h"
 #include "nsIStreamListener.h"
 #include "nsISmtpUrl.h"
@@ -19,8 +21,10 @@
 #include "nsCOMPtr.h"
 #include "nsTArray.h"
 
+#ifdef MOZ_MAILNEWS_OAUTH2
 class nsIVariant;
 class nsIWritableVariant;
+#endif
 
  /* states of the machine
  */
@@ -50,9 +54,11 @@ SMTP_AUTH_PROCESS_STATE,                            // 21
 SMTP_AUTH_CRAM_MD5_CHALLENGE_RESPONSE,              // 22
 SMTP_SEND_AUTH_GSSAPI_FIRST,                        // 23
 SMTP_SEND_AUTH_GSSAPI_STEP,                         // 24
+#ifdef MOZ_MAILNEWS_OAUTH2
 SMTP_SUSPENDED,                                     // 25
 SMTP_AUTH_OAUTH2_STEP,                              // 26
 SMTP_AUTH_OAUTH2_RESPONSE,                          // 27
+#endif
 } SmtpState;
 
 // State Flags (Note, I use the word state in terms of storing 
@@ -75,6 +81,7 @@ SMTP_AUTH_OAUTH2_RESPONSE,                          // 27
 #define SMTP_AUTH_CRAM_MD5_ENABLED      0x00002000
 #define SMTP_AUTH_NTLM_ENABLED          0x00004000
 #define SMTP_AUTH_MSN_ENABLED           0x00008000
+#ifdef MOZ_MAILNEWS_OAUTH2
 #define SMTP_AUTH_OAUTH2_ENABLED        0x00010000
 // sum of all above auth mechanisms
 #define SMTP_AUTH_ANY                   0x0001FF00
@@ -82,13 +89,24 @@ SMTP_AUTH_OAUTH2_RESPONSE,                          // 27
 #define SMTP_AUTH                       0x00020000
 // No login necessary (pref)
 #define SMTP_AUTH_NONE_ENABLED          0x00040000
+#else
+#define SMTP_AUTH_ANY                   0x0000FF00
+#define SMTP_AUTH                       0x00010000
+#define SMTP_AUTH_NONE_ENABLED          0x00020000
+#endif
 
+#ifdef MOZ_MAILNEWS_OAUTH2
 class nsSmtpProtocol : public nsMsgAsyncWriteProtocol,
                        public msgIOAuth2ModuleListener
+#else
+class nsSmtpProtocol : public nsMsgAsyncWriteProtocol
+#endif
 {
 public:
     NS_DECL_ISUPPORTS_INHERITED
+#ifdef MOZ_MAILNEWS_OAUTH2
     NS_DECL_MSGIOAUTH2MODULELISTENER
+#endif
 
     // Creating a protocol instance requires the URL which needs to be run.
     nsSmtpProtocol(nsIURI * aURL);
@@ -182,7 +200,9 @@ private:
     nsresult AuthLoginStep1();
     nsresult AuthLoginStep2();
     nsresult AuthLoginResponse(nsIInputStream * stream, uint32_t length);
+#ifdef MOZ_MAILNEWS_OAUTH2
     nsresult AuthOAuth2Step1();
+#endif
 
     nsresult SendTLSResponse();
     nsresult SendMailResponse();
@@ -217,9 +237,11 @@ private:
     int32_t m_failedAuthMethods; // ditto
     int32_t m_currentAuthMethod; // exactly one capability flag, or 0
 
+#ifdef MOZ_MAILNEWS_OAUTH2
     // The support module for OAuth2 logon, only present if OAuth2 is enabled
     // and working.
     nsCOMPtr<msgIOAuth2Module> mOAuth2Support;
+#endif
 };
 
 #endif  // nsSmtpProtocol_h___

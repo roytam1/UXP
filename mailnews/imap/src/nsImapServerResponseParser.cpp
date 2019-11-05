@@ -2250,8 +2250,10 @@ void nsImapServerResponseParser::capability_data()
         fCapabilityFlag |= kHasAuthMSNCapability;
       else if (token.Equals("AUTH=EXTERNAL", nsCaseInsensitiveCStringComparator()))
         fCapabilityFlag |= kHasAuthExternalCapability;
+#ifdef MOZ_MAILNEWS_OAUTH2
       else if (token.Equals("AUTH=XOAUTH2", nsCaseInsensitiveCStringComparator()))
         fCapabilityFlag |= kHasXOAuth2Capability;
+#endif
       else if (token.Equals("STARTTLS", nsCaseInsensitiveCStringComparator()))
         fCapabilityFlag |= kHasStartTLSCapability;
       else if (token.Equals("LOGINDISABLED", nsCaseInsensitiveCStringComparator()))

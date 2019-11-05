@@ -139,7 +139,9 @@
                 <menuitem id="authMethod-kerberos" value="5"/>
                 <menuitem id="authMethod-ntlm" value="6"/>
                 <menuitem id="authMethod-external" value="7"/>
+#ifdef MOZ_MAILNEWS_OAUTH2
                 <menuitem id="authMethod-oauth2" value="10"/>
+#endif
                 <menuitem id="authMethod-anysecure" value="8"/>
                 <menuitem id="authMethod-any" value="9"/>
               </menupopup>

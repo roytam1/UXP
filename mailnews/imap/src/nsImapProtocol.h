@@ -463,8 +463,11 @@ private:
 
   // login related methods.
   nsresult GetPassword(nsCString &password, bool aNewPasswordRequested);
-  void InitPrefAuthMethods(int32_t authMethodPrefValue,
-                           nsIMsgIncomingServer *aServer);
+#ifdef MOZ_MAILNEWS_OAUTH2
+  void InitPrefAuthMethods(int32_t authMethodPrefValue, nsIMsgIncomingServer *aServer);
+#else
+  void InitPrefAuthMethods(int32_t authMethodPrefValue);
+#endif
   nsresult ChooseAuthMethod();
   void MarkAuthMethodAsFailed(eIMAPCapabilityFlags failedAuthMethod);
   void ResetAuthMethods();
@@ -675,7 +678,9 @@ private:
 
   nsString m_emptyMimePartString;
 
+#ifdef MOZ_MAILNEWS_OAUTH2
   RefPtr<mozilla::mailnews::OAuth2ThreadHelper> mOAuth2Support;
+#endif
 };
 
 // This small class is a "mock" channel because it is a mockery of the imap channel's implementation...

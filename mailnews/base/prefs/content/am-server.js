@@ -31,7 +31,9 @@ function onInit(aPageId, aServerId)
     setupImapDeleteUI(aServerId);
 
   // TLS Cert (External) and OAuth2 are only supported on IMAP.
+#ifdef MOZ_MAILNEWS_OAUTH2
   document.getElementById("authMethod-oauth2").hidden = (serverType != "imap");
+#endif
   document.getElementById("authMethod-external").hidden = (serverType != "imap");
 
   // "STARTTLS, if available" is vulnerable to MITM attacks so we shouldn't
@@ -83,7 +85,9 @@ function initServerType()
   setLabelFromStringBundle("authMethod-kerberos", "authKerberos");
   setLabelFromStringBundle("authMethod-external", "authExternal");
   setLabelFromStringBundle("authMethod-ntlm", "authNTLM");
+#ifdef MOZ_MAILNEWS_OAUTH2
   setLabelFromStringBundle("authMethod-oauth2", "authOAuth2");
+#endif
   setLabelFromStringBundle("authMethod-anysecure", "authAnySecure");
   setLabelFromStringBundle("authMethod-any", "authAny");
   setLabelFromStringBundle("authMethod-password-encrypted",

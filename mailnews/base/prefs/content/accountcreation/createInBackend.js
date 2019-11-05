@@ -28,10 +28,12 @@ function createAccountInBackend(config)
   if (config.rememberPassword && config.incoming.password.length)
     rememberPassword(inServer, config.incoming.password);
 
+#ifdef MOZ_MAILNEWS_OAUTH2
   if (inServer.authMethod == Ci.nsMsgAuthMethod.OAuth2) {
     inServer.setCharValue("oauth2.scope", config.oauthSettings.scope);
     inServer.setCharValue("oauth2.issuer", config.oauthSettings.issuer);
   }
+#endif
 
   // SSL
   if (config.incoming.socketType == 1) // plain
@@ -107,6 +109,7 @@ function createAccountInBackend(config)
         rememberPassword(outServer, config.incoming.password);
     }
 
+#ifdef MOZ_MAILNEWS_OAUTH2
     if (outServer.authMethod == Ci.nsMsgAuthMethod.OAuth2) {
       let pref = "mail.smtpserver." + outServer.key + ".";
       Services.prefs.setCharPref(pref + "oauth2.scope",
@@ -114,6 +117,7 @@ function createAccountInBackend(config)
       Services.prefs.setCharPref(pref + "oauth2.issuer",
                                  config.oauthSettings.issuer);
     }
+#endif
 
     if (config.outgoing.socketType == 1) // no SSL
       outServer.socketType = Ci.nsMsgSocketType.plain;

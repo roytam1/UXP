@@ -3,11 +3,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+if CONFIG['MOZ_MAILNEWS_OAUTH2']:
+  XPIDL_SOURCES += ['msgIOAuth2Module.idl']
+
 XPIDL_SOURCES += [
     'MailNewsTypes2.idl',
     'mozINewMailListener.idl',
     'mozINewMailNotificationService.idl',
-    'msgIOAuth2Module.idl',
     'nsICopyMessageListener.idl',
     'nsICopyMsgStreamListener.idl',
     'nsIFolderListener.idl',

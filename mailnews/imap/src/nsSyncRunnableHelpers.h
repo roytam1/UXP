@@ -8,8 +8,11 @@
 #include "nsThreadUtils.h"
 #include "nsProxyRelease.h"
 
+#ifdef MOZ_MAILNEWS_OAUTH2
 #include "mozilla/Monitor.h"
 #include "msgIOAuth2Module.h"
+#endif
+
 #include "nsIStreamListener.h"
 #include "nsIInterfaceRequestor.h"
 #include "nsIImapMailFolderSink.h"
@@ -110,6 +113,7 @@ private:
   nsCOMPtr<nsIImapProtocolSink> mReceiver;
 };
 
+#ifdef MOZ_MAILNEWS_OAUTH2
 class msgIOAuth2Module;
 class nsIMsgIncomingServer;
 class nsIVariant;
@@ -142,5 +146,6 @@ private:
 
 } // namespace mailnews
 } // namespace mozilla
+#endif
 
 #endif // nsSyncRunnableHelpers_h

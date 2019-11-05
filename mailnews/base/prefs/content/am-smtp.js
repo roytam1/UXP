@@ -140,9 +140,11 @@ var gSmtpServerListWindow =
                   ? "authPasswordCleartextViaSSL"
                   : "authPasswordCleartextInsecurely";
         break;
+#ifdef MOZ_MAILNEWS_OAUTH2
       case AuthMethod.OAuth2:
         authStr = "authOAuth2";
         break;
+#endif
       default:
         // leave empty
         Components.utils.reportError("Warning: unknown value for smtpserver... authMethod: " +

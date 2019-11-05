@@ -60,11 +60,13 @@ function guessConfig(domain, progressCallback, successCallback, errorCallback,
   assert(typeof(successCallback) == "function", "need successCallback");
   assert(typeof(errorCallback) == "function", "need errorCallback");
 
+#ifdef MOZ_MAILNEWS_OAUTH2
   // Servers that we know enough that they support OAuth2 do not need guessing.
   if (resultConfig.incoming.auth == Ci.nsMsgAuthMethod.OAuth2) {
     successCallback(resultConfig);
     return null;
   }
+#endif
 
   if (!resultConfig)
     resultConfig = new AccountConfig();

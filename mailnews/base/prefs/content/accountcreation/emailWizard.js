@@ -6,7 +6,9 @@
 Components.utils.import("resource:///modules/mailServices.js");
 Components.utils.import("resource://gre/modules/Services.jsm");
 Components.utils.import("resource:///modules/hostnameUtils.jsm");
+#ifdef MOZ_MAILNEWS_OAUTH2
 Components.utils.import("resource://gre/modules/OAuth2Providers.jsm");
+#endif
 
 /**
  * This is the dialog opened by menu File | New account | Mail... .
@@ -184,7 +186,9 @@ EmailConfigWizard.prototype =
         "authPasswordEncrypted");
     setLabelFromStringBundle("in-authMethod-kerberos", "authKerberos");
     setLabelFromStringBundle("in-authMethod-ntlm", "authNTLM");
+#ifdef MOZ_MAILNEWS_OAUTH2
     setLabelFromStringBundle("in-authMethod-oauth2", "authOAuth2");
+#endif
     setLabelFromStringBundle("out-authMethod-no", "authNo");
     setLabelFromStringBundle("out-authMethod-password-cleartext",
         "authPasswordCleartextViaSSL"); // will warn about insecure later
@@ -1014,7 +1018,11 @@ EmailConfigWizard.prototype =
     e("incoming_ssl").value = sanitize.enum(config.incoming.socketType,
                                             [ 0, 1, 2, 3 ], 0);
     e("incoming_authMethod").value = sanitize.enum(config.incoming.auth,
+#ifdef MOZ_MAILNEWS_OAUTH2
                                                    [ 0, 3, 4, 5, 6, 10 ], 0);
+#else
+                                                   [ 0, 3, 4, 5, 6 ], 0);
+#endif
     e("incoming_username").value = config.incoming.username;
     if (config.incoming.port) {
       e("incoming_port").value = config.incoming.port;
@@ -1023,6 +1031,7 @@ EmailConfigWizard.prototype =
     }
     this.fillPortDropdown(config.incoming.type);
 
+#ifdef MOZ_MAILNEWS_OAUTH2
     // If the hostname supports OAuth2 and imap is enabled, enable OAuth2.
     let iDetails = OAuth2Providers.getHostnameDetails(config.incoming.hostname);
     gEmailWizardLogger.info("OAuth2 details for incoming hostname " +
@@ -1035,6 +1044,7 @@ EmailConfigWizard.prototype =
       // store them in the base configuration.
       this._currentConfig.oauthSettings = config.oauthSettings;
     }
+#endif
 
     // outgoing server
     e("outgoing_hostname").value = config.outgoing.hostname;
@@ -1052,6 +1062,7 @@ EmailConfigWizard.prototype =
       this.adjustOutgoingPortToSSLAndProtocol(config);
     }
 
+#ifdef MOZ_MAILNEWS_OAUTH2
     // If the hostname supports OAuth2 and imap is enabled, enable OAuth2.
     let oDetails = OAuth2Providers.getHostnameDetails(config.outgoing.hostname);
     gEmailWizardLogger.info("OAuth2 details for outgoing hostname " +
@@ -1064,6 +1075,7 @@ EmailConfigWizard.prototype =
       // store them in the base configuration.
       this._currentConfig.oauthSettings = config.oauthSettings;
     }
+#endif
 
     // populate fields even if existingServerKey, in case user changes back
     if (config.outgoing.existingServerKey) {
@@ -1614,10 +1626,12 @@ EmailConfigWizard.prototype =
         self._currentConfig.incoming.username = successfulConfig.incoming.username;
         self._currentConfig.outgoing.username = successfulConfig.outgoing.username;
 
+#ifdef MOZ_MAILNEWS_OAUTH2
         // We loaded dynamic client registration, fill this data back in to the
         // config set.
         if (successfulConfig.oauthSettings)
           self._currentConfig.oauthSettings = successfulConfig.oauthSettings;
+#endif
 
         self.finish();
       },

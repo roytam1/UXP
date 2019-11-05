@@ -309,6 +309,7 @@ def old_configure_options(*options):
     '--enable-calendar',
     '--enable-incomplete-external-linkage',
     '--enable-mailnews',
+    '--enable-mailnews-oauth2',
     
     # Below are configure flags used by Pale Moon
     '--disable-browser-statusbar',

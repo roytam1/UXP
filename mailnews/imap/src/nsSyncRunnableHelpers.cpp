@@ -457,7 +457,7 @@ NS_SYNCRUNNABLEMETHOD1(ImapServerSink, ResetServerConnection, const nsACString &
 NS_SYNCRUNNABLEMETHOD1(ImapServerSink, SetServerDoingLsub, bool)
 NS_SYNCRUNNABLEMETHOD1(ImapServerSink, SetServerForceSelect, const nsACString &)
 
-
+#ifdef MOZ_MAILNEWS_OAUTH2
 namespace mozilla {
 namespace mailnews {
 
@@ -598,3 +598,4 @@ nsresult OAuth2ThreadHelper::OnFailure(nsresult aError)
 
 } // namespace mailnews
 } // namespace mozilla
+#endif

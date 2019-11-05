@@ -53,7 +53,9 @@ function initSmtpSettings(server) {
         "authPasswordCleartextInsecurely");
     setLabelFromStringBundle("authMethod-kerberos", "authKerberos");
     setLabelFromStringBundle("authMethod-ntlm", "authNTLM");
+#ifdef MOZ_MAILNEWS_OAUTH2
     setLabelFromStringBundle("authMethod-oauth2", "authOAuth2");
+#endif
     setLabelFromStringBundle("authMethod-anysecure", "authAnySecure");
     setLabelFromStringBundle("authMethod-any", "authAny");
 

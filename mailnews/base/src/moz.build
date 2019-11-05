@@ -68,11 +68,14 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
 EXTRA_COMPONENTS += [
     'folderLookupService.js',
     'msgAsyncPrompter.js',
-    'msgBase.manifest',
-    'msgOAuth2Module.js',
     'newMailNotificationService.js',
     'nsMailNewsCommandLineHandler.js',
 ]
+
+if CONFIG['MOZ_MAILNEWS_OAUTH2']:
+    EXTRA_COMPONENTS += ['msgOAuth2Module.js']
+
+EXTRA_PP_COMPONENTS += ['msgBase.manifest']
 
 EXTRA_JS_MODULES += [
     'virtualFolderWrapper.js',

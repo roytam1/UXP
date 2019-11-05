@@ -2265,6 +2265,7 @@ MOZ_SERVICES_HEALTHREPORT=1
 MOZ_SERVICES_SYNC=1
 MOZ_USERINFO=1
 MOZ_MAILNEWS=
+MOZ_MAILNEWS_OAUTH2=
 MOZ_LDAP_XPCOM=
 MOZ_MORK=
 MOZ_MAPI_SUPPORT=
@@ -2835,6 +2836,7 @@ MOZ_ARG_ENABLE_BOOL(mailnews,
     MOZ_MAILNEWS=)
 
 if test -n "$MOZ_MAILNEWS"; then
+    MOZ_MAILNEWS_OAUTH2=1
     MOZ_MORK=1
     MOZ_LDAP_XPCOM=1
 
@@ -2853,6 +2855,20 @@ fi
 AC_SUBST(MOZ_MAILNEWS)
 AC_SUBST(MOZ_MORK)
 AC_SUBST(MOZ_MOVEMAIL)
+
+dnl =========================================================
+dnl = Mailnews OAuth2 Support
+dnl =========================================================
+MOZ_ARG_DISABLE_BOOL(mailnews-oauth2,
+[  --disable-mailnews-oauth2         Disable oauth2 support in mailnews],
+    MOZ_MAILNEWS_OAUTH2=,
+    MOZ_MAILNEWS_OAUTH2=1)
+
+if test -n "$MOZ_MAILNEWS_OAUTH2"; then
+  AC_DEFINE(MOZ_MAILNEWS_OAUTH2)
+fi
+
+AC_SUBST(MOZ_MAILNEWS_OAUTH2)
 
 dnl =========================================================
 dnl = LDAP
