@@ -562,15 +562,12 @@ nsFrame::Init(nsIContent*       aContent,
   }
   if (disp->mPosition == NS_STYLE_POSITION_STICKY &&
       !aPrevInFlow &&
-      !(mState & NS_FRAME_IS_NONDISPLAY) &&
-      !disp->IsInnerTableStyle()) {
+      !(mState & NS_FRAME_IS_NONDISPLAY)) {
     // Note that we only add first continuations, but we really only
     // want to add first continuation-or-ib-split-siblings.  But since we
     // don't yet know if we're a later part of a block-in-inline split,
     // we'll just add later members of a block-in-inline split here, and
     // then StickyScrollContainer will remove them later.
-    // We don't currently support relative positioning of inner table
-    // elements (bug 35168), so exclude them from sticky positioning too.
     StickyScrollContainer* ssc =
       StickyScrollContainer::GetStickyScrollContainerForFrame(this);
     if (ssc) {
@@ -6629,6 +6626,9 @@ GetNearestBlockContainer(nsIFrame* frame)
   // Since the parent of such a block is either a normal block or
   // another such pseudo, this shouldn't cause anything bad to happen.
   // Also the anonymous blocks inside table cells are not containing blocks.
+  //
+  // If we ever start skipping table row groups from being containing blocks,
+  // we need to remove the containing block assignment in StickyScrollContainer .
   while (frame->IsFrameOfType(nsIFrame::eLineParticipant) ||
          frame->IsBlockWrapper() ||
          // Table rows are not containing blocks either

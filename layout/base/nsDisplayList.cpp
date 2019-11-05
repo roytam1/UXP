@@ -80,6 +80,8 @@
 #include "nsPluginFrame.h"
 #include "DisplayItemScrollClip.h"
 #include "nsSVGMaskFrame.h"
+#include "nsTableCellFrame.h"
+#include "nsTableColFrame.h"
 
 // GetCurrentTime is defined in winbase.h as zero argument macro forwarding to
 // GetTickCount().
@@ -2631,11 +2633,17 @@ nsDisplayBackgroundImage::AppendBackgroundItemsToTop(nsDisplayListBuilder* aBuil
                                                      const nsRect& aBackgroundRect,
                                                      nsDisplayList* aList,
                                                      bool aAllowWillPaintBorderOptimization,
-                                                     nsStyleContext* aStyleContext)
+                                                     nsStyleContext* aStyleContext,
+                                                     const nsRect& aBackgroundOriginRect,
+                                                     nsIFrame* aSecondaryReferenceFrame)
 {
   nsStyleContext* bgSC = aStyleContext;
   const nsStyleBackground* bg = nullptr;
   nsRect bgRect = aBackgroundRect + aBuilder->ToReferenceFrame(aFrame);
+  nsRect bgOriginRect = bgRect;
+  if (!aBackgroundOriginRect.IsEmpty()) {
+    bgOriginRect = aBackgroundOriginRect + aBuilder->ToReferenceFrame(aFrame);
+  }
   nsPresContext* presContext = aFrame->PresContext();
   bool isThemed = aFrame->IsThemed();
   if (!isThemed) {
@@ -2743,12 +2751,31 @@ nsDisplayBackgroundImage::AppendBackgroundItemsToTop(nsDisplayListBuilder* aBuil
     }
 
     nsDisplayList thisItemList;
-    nsDisplayBackgroundImage* bgItem =
-      new (aBuilder) nsDisplayBackgroundImage(aBuilder, aFrame, i, bgRect, bg);
-
+    nsDisplayBackgroundImage* bgItem;
+    if (aSecondaryReferenceFrame) {
+      bgItem =
+        new (aBuilder) nsDisplayTableBackgroundImage(aBuilder,
+                                                     aFrame,
+                                                     i,
+                                                     bgOriginRect,
+                                                     bg,
+                                                     aSecondaryReferenceFrame);
+    } else {
+      bgItem =
+        new (aBuilder) nsDisplayBackgroundImage(aBuilder, aFrame, i, bgOriginRect, bg);
+    }
     if (bgItem->ShouldFixToViewport(aBuilder)) {
-      thisItemList.AppendNewToTop(
-        nsDisplayFixedPosition::CreateForFixedBackground(aBuilder, aFrame, bgItem, i));
+      if (aSecondaryReferenceFrame) {
+        thisItemList.AppendNewToTop(
+          nsDisplayTableFixedPosition::CreateForFixedBackground(aBuilder,
+                                                                aSecondaryReferenceFrame,
+                                                                bgItem,
+                                                                i,
+                                                                aFrame));
+      } else {
+        thisItemList.AppendNewToTop(
+          nsDisplayFixedPosition::CreateForFixedBackground(aBuilder, aFrame, bgItem, i));
+      }
     } else {
       thisItemList.AppendNewToTop(bgItem);
     }
@@ -2889,7 +2916,7 @@ nsDisplayBackgroundImage::ImageLayerization
 nsDisplayBackgroundImage::ShouldCreateOwnLayer(nsDisplayListBuilder* aBuilder,
                                                LayerManager* aManager)
 {
-  nsIFrame* backgroundStyleFrame = nsCSSRendering::FindBackgroundStyleFrame(mFrame);
+  nsIFrame* backgroundStyleFrame = nsCSSRendering::FindBackgroundStyleFrame(StyleFrame());
   if (ActiveLayerTracker::IsBackgroundPositionAnimated(aBuilder,
                                                        backgroundStyleFrame)) {
     return WHENEVER_POSSIBLE;
@@ -3144,16 +3171,16 @@ nsDisplayBackgroundImage::PaintInternal(nsDisplayListBuilder* aBuilder,
   StyleGeometryBox clip = mBackgroundStyle->mImage.mLayers[mLayer].mClip;
 
   if (clip == StyleGeometryBox::Text) {
-    if (!GenerateAndPushTextMask(mFrame, aCtx, mBackgroundRect, aBuilder)) {
+    if (!GenerateAndPushTextMask(StyleFrame(), aCtx, mBackgroundRect, aBuilder)) {
       return;
     }
   }
 
   nsCSSRendering::PaintBGParams params =
-    nsCSSRendering::PaintBGParams::ForSingleLayer(*mFrame->PresContext(),
+    nsCSSRendering::PaintBGParams::ForSingleLayer(*StyleFrame()->PresContext(),
                                                   *aCtx,
                                                   aBounds, mBackgroundRect,
-                                                  mFrame, flags, mLayer,
+                                                  StyleFrame(), flags, mLayer,
                                                   CompositionOp::OP_OVER);
   params.bgClipRect = aClipRect;
   image::DrawResult result =
@@ -3253,6 +3280,27 @@ nsDisplayBackgroundImage::GetPerFrameKey()
 {
   return (mLayer << nsDisplayItem::TYPE_BITS) |
     nsDisplayItem::GetPerFrameKey();
+}
+
+nsDisplayTableBackgroundImage::nsDisplayTableBackgroundImage(nsDisplayListBuilder* aBuilder,
+                                                             nsIFrame* aFrame,
+                                                             uint32_t aLayer,
+                                                             const nsRect& aBackgroundRect,
+                                                             const nsStyleBackground* aBackgroundStyle,
+                                                             nsIFrame* aCellFrame)
+  : nsDisplayBackgroundImage(aBuilder, aFrame, aLayer, aBackgroundRect, aBackgroundStyle)
+  , mStyleFrame(aFrame)
+  , mTableType(GetTableTypeFromFrame(mStyleFrame))
+{
+  mFrame = aCellFrame;
+}
+
+bool
+nsDisplayTableBackgroundImage::IsInvalid(nsRect& aRect)
+{
+  bool result = mStyleFrame ? mStyleFrame->IsInvalid(aRect) : false;
+  aRect += ToReferenceFrame();
+  return result;
 }
 
 nsDisplayThemedBackground::nsDisplayThemedBackground(nsDisplayListBuilder* aBuilder,
@@ -5270,6 +5318,51 @@ bool nsDisplayFixedPosition::TryMerge(nsDisplayItem* aItem) {
     return false;
   MergeFromTrackingMergedFrames(other);
   return true;
+}
+
+TableType
+GetTableTypeFromFrame(nsIFrame* aFrame)
+{
+  nsIAtom* type = aFrame->GetType();
+  if (type == nsGkAtoms::tableFrame) {
+    return TableType::TABLE;
+  } else if (type == nsGkAtoms::tableColFrame) {
+    return TableType::TABLE_COL;
+  } else if (type == nsGkAtoms::tableColGroupFrame) {
+    return TableType::TABLE_COL_GROUP;
+  } else if (type == nsGkAtoms::tableRowFrame) {
+    return TableType::TABLE_ROW;
+  } else if (type == nsGkAtoms::tableRowGroupFrame) {
+    return TableType::TABLE_ROW_GROUP;
+  } else if (type == nsGkAtoms::tableCellFrame) {
+    return TableType::TABLE_CELL;
+  } else {
+    MOZ_ASSERT_UNREACHABLE("Invalid frame.");
+    return TableType::TABLE;
+  }
+}
+
+nsDisplayTableFixedPosition::nsDisplayTableFixedPosition(nsDisplayListBuilder* aBuilder,
+                                                         nsIFrame* aFrame,
+                                                         nsDisplayList* aList,
+                                                         uint32_t aIndex,
+                                                         nsIFrame* aAncestorFrame)
+  : nsDisplayFixedPosition(aBuilder, aFrame, aList, aIndex)
+  , mTableType(GetTableTypeFromFrame(aAncestorFrame))
+{
+}
+
+/* static */ nsDisplayTableFixedPosition*
+nsDisplayTableFixedPosition::CreateForFixedBackground(nsDisplayListBuilder* aBuilder,
+                                                      nsIFrame* aFrame,
+                                                      nsDisplayBackgroundImage* aImage,
+                                                      uint32_t aIndex,
+                                                      nsIFrame* aAncestorFrame)
+{
+  nsDisplayList temp;
+  temp.AppendToTop(aImage);
+
+  return new (aBuilder) nsDisplayTableFixedPosition(aBuilder, aFrame, &temp, aIndex + 1, aAncestorFrame);
 }
 
 nsDisplayStickyPosition::nsDisplayStickyPosition(nsDisplayListBuilder* aBuilder,
