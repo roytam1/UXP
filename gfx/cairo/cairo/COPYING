@@ -1,10 +1,10 @@
 Cairo is free software.
 
 This (modified) version of the cairo implementation is available to be
-redistributed and/or modified under the terms of either the Mozilla
-Public License (MPL) version 2.0.  Some files in the original cairo
-source code are available under more liberal terms, but we believe that
-in all cases, each file may be used under the MPL 2.0.
+redistributed and/or modified under the terms the Mozilla Public License
+(MPL) version 2.0.  Some files in the original cairo source code are
+available under more liberal terms, but we believe that in all cases,
+each file may be used under the MPL 2.0.
 
 Where the original code was not explicitly MPL licensed, the original
 more liberal license information and copyright has been retained for

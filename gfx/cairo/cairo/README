@@ -1,3 +1,8 @@
+Important note: the source code included in this directory is a subset
+of the library, insofar as is needed to supply functionality to the
+UXP source. For the complete and unmodified source of Cairo, please
+go to the website indicated below.
+
 Cairo - Multi-platform 2D graphics library
 http://cairographics.org
 
