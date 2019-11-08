@@ -103,7 +103,6 @@ NS_IMPL_ISUPPORTS(DOMStorageManager,
 DOMStorageManager::DOMStorageManager(DOMStorage::StorageType aType)
   : mCaches(8)
   , mType(aType)
-  , mLowDiskSpace(false)
 {
   DOMStorageObserver* observer = DOMStorageObserver::Self();
   NS_ASSERTION(observer, "No DOMStorageObserver, cannot observe private data delete notifications!");
@@ -563,22 +562,6 @@ DOMStorageManager::Observe(const char* aTopic,
     // For case caches are still referenced - clear them completely
     ClearCaches(DOMStorageCache::kUnloadComplete, pattern, EmptyCString());
     mCaches.Clear();
-    return NS_OK;
-  }
-
-  if (!strcmp(aTopic, "low-disk-space")) {
-    if (mType == LocalStorage) {
-      mLowDiskSpace = true;
-    }
-
-    return NS_OK;
-  }
-
-  if (!strcmp(aTopic, "no-low-disk-space")) {
-    if (mType == LocalStorage) {
-      mLowDiskSpace = false;
-    }
-
     return NS_OK;
   }
 

@@ -477,20 +477,6 @@ void StartForceQuitWatchdog(hal::ShutdownMode aMode, int32_t aTimeoutSecs);
 void FactoryReset(mozilla::dom::FactoryResetReason& aReason);
 
 /**
- * Start monitoring disk space for low space situations.
- *
- * This API is currently only allowed to be used from the main process.
- */
-void StartDiskSpaceWatcher();
-
-/**
- * Stop monitoring disk space for low space situations.
- *
- * This API is currently only allowed to be used from the main process.
- */
-void StopDiskSpaceWatcher();
-
-/**
  * Get total system memory of device being run on in bytes.
  *
  * Returns 0 if we are unable to determine this information from /proc/meminfo.

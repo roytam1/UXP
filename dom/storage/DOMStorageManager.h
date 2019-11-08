@@ -102,12 +102,6 @@ private:
 
   const DOMStorage::StorageType mType;
 
-  // If mLowDiskSpace is true it indicates a low device storage situation and
-  // so no localStorage writes are allowed. sessionStorage writes are still
-  // allowed.
-  bool mLowDiskSpace;
-  bool IsLowDiskSpace() const { return mLowDiskSpace; };
-
   void ClearCaches(uint32_t aUnloadFlags,
                    const OriginAttributesPattern& aPattern,
                    const nsACString& aKeyPrefix);

@@ -66,9 +66,6 @@ function finishTest()
     resetWasm();
     resetExperimental();
     resetTesting();
-
-    SpecialPowers.notifyObserversInParentProcess(null, "disk-space-watcher",
-                                                 "free");
   }
 
   SpecialPowers.removeFiles();

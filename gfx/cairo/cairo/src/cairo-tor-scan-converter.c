@@ -1,4 +1,3 @@
-/* -*- Mode: c; tab-width: 8; c-basic-offset: 4; indent-tabs-mode: t; -*- */
 /* glitter-paths - polygon scan converter
  *
  * Copyright (c) 2008  M Joonas Pihlaja
@@ -25,12 +24,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
 /* This is the Glitter paths scan converter incorporated into cairo.
  * The source is from commit 734c53237a867a773640bd5b64816249fa1730f8
  * of
  *
  *   http://gitweb.freedesktop.org/?p=users/joonas/glitter-paths
  */
+
 /* Glitter-paths is a stand alone polygon rasteriser derived from
  * David Turner's reimplementation of Tor Anderssons's 15x17
  * supersampling rasteriser from the Apparition graphics library.  The

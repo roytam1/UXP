@@ -11,7 +11,6 @@
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/Unused.h"
-#include "nsIDiskSpaceWatcher.h"
 #include "nsThreadUtils.h"
 
 namespace mozilla {
@@ -319,22 +318,6 @@ private:
       InfallibleTArray<nsCString> scopes;
       db->GetOriginsHavingData(&scopes);
       mozilla::Unused << mParent->SendOriginsHavingData(scopes);
-    }
-
-    // We need to check if the device is in a low disk space situation, so
-    // we can forbid in that case any write in localStorage.
-    nsCOMPtr<nsIDiskSpaceWatcher> diskSpaceWatcher =
-      do_GetService("@mozilla.org/toolkit/disk-space-watcher;1");
-    if (!diskSpaceWatcher) {
-      return NS_OK;
-    }
-
-    bool lowDiskSpace = false;
-    diskSpaceWatcher->GetIsDiskFull(&lowDiskSpace);
-
-    if (lowDiskSpace) {
-      mozilla::Unused << mParent->SendObserve(
-        nsDependentCString("low-disk-space"), EmptyString(), EmptyCString());
     }
 
     return NS_OK;
