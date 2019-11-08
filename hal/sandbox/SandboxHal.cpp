@@ -352,18 +352,6 @@ FactoryReset(FactoryResetReason& aReason)
   }
 }
 
-void
-StartDiskSpaceWatcher()
-{
-  NS_RUNTIMEABORT("StartDiskSpaceWatcher() can't be called from sandboxed contexts.");
-}
-
-void
-StopDiskSpaceWatcher()
-{
-  NS_RUNTIMEABORT("StopDiskSpaceWatcher() can't be called from sandboxed contexts.");
-}
-
 bool IsHeadphoneEventFromInputDev()
 {
   NS_RUNTIMEABORT("IsHeadphoneEventFromInputDev() cannot be called from sandboxed contexts.");

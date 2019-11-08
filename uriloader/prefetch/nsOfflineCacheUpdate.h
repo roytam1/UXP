@@ -375,7 +375,6 @@ private:
 
     bool mDisabled;
     bool mUpdateRunning;
-    bool mLowFreeSpace;
 };
 
 #endif

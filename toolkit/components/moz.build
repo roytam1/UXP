@@ -24,7 +24,6 @@ DIRS += [
     'contextualidentity',
     'cookie',
     'crashmonitor',
-    'diskspacewatcher',
     'downloads',
     'exthelper',
     'filewatcher',

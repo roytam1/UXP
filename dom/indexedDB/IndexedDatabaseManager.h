@@ -7,8 +7,6 @@
 #ifndef mozilla_dom_indexeddatabasemanager_h__
 #define mozilla_dom_indexeddatabasemanager_h__
 
-#include "nsIObserver.h"
-
 #include "js/TypeDecls.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/dom/quota/PersistenceType.h"
@@ -43,8 +41,7 @@ class FileManagerInfo;
 } // namespace indexedDB
 
 class IndexedDatabaseManager final
-  : public nsIObserver
-  , public nsITimerCallback
+  : public nsITimerCallback
 {
   typedef mozilla::dom::quota::PersistenceType PersistenceType;
   typedef mozilla::dom::quota::QuotaManager QuotaManager;
@@ -62,7 +59,6 @@ public:
   };
 
   NS_DECL_ISUPPORTS
-  NS_DECL_NSIOBSERVER
   NS_DECL_NSITIMERCALLBACK
 
   // Returns a non-owning reference.
@@ -83,16 +79,6 @@ public:
 #else
   {
     return sIsMainProcess;
-  }
-#endif
-
-  static bool
-  InLowDiskSpaceMode()
-#ifdef DEBUG
-  ;
-#else
-  {
-    return !!sLowDiskSpaceMode;
   }
 #endif
 
@@ -244,7 +230,6 @@ private:
   static bool sFullSynchronousMode;
   static LazyLogModule sLoggingModule;
   static Atomic<LoggingMode> sLoggingMode;
-  static mozilla::Atomic<bool> sLowDiskSpaceMode;
 };
 
 } // namespace dom
