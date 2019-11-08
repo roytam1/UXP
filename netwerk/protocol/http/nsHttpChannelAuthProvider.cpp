@@ -96,6 +96,7 @@ uint32_t nsHttpChannelAuthProvider::sAuthAllowPref =
     SUBRESOURCE_AUTH_DIALOG_ALLOW_ALL;
 
 bool nsHttpChannelAuthProvider::sImgCrossOriginAuthAllowPref = false;
+bool nsHttpChannelAuthProvider::sConfirmAuthPref = false;
 
 void
 nsHttpChannelAuthProvider::InitializePrefs()
@@ -106,6 +107,9 @@ nsHttpChannelAuthProvider::InitializePrefs()
                                         SUBRESOURCE_AUTH_DIALOG_ALLOW_ALL);
   mozilla::Preferences::AddBoolVarCache(&sImgCrossOriginAuthAllowPref,
                                         "network.auth.subresource-http-img-XO-auth",
+                                        false);
+  mozilla::Preferences::AddBoolVarCache(&sConfirmAuthPref,
+                                        "network.auth.confirmAuth.enabled",
                                         false);
 }
 
@@ -1450,10 +1454,15 @@ nsHttpChannelAuthProvider::ConfirmAuth(const nsString &bundleKey,
                                        bool            doYesNoPrompt)
 {
     // skip prompting the user if
-    //   1) we've already prompted the user
-    //   2) we're not a toplevel channel
-    //   3) the userpass length is less than the "phishy" threshold
+    //   1) prompts are disabled by preference
+    //   2) we've already prompted the user
+    //   3) we're not a toplevel channel
+    //   4) the userpass length is less than the "phishy" threshold
 
+    if (!sConfirmAuthPref) {
+      return true;
+    }
+    
     uint32_t loadFlags;
     nsresult rv = mAuthChannel->GetLoadFlags(&loadFlags);
     if (NS_FAILED(rv))
