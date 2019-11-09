@@ -22,12 +22,13 @@ Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("resource:///modules/XPCOMUtils.jsm");
 
 const SOURCE = "https://chromium.googlesource.com/chromium/src/net/+/master/http/transport_security_state_static.json?format=TEXT";
+const TOOL_IDENTIFIER = "UXP HSTS preload list verifier"
 const OUTPUT = "nsSTSPreloadList.inc";
 const ERROR_OUTPUT = "nsSTSPreloadList.errors";
 const MINIMUM_REQUIRED_MAX_AGE = 60 * 60 * 24 * 7 * 18;
 const MAX_CONCURRENT_REQUESTS = 15;
-const MAX_RETRIES = 3;
-const REQUEST_TIMEOUT = 30 * 1000;
+const MAX_RETRIES = 2;
+const REQUEST_TIMEOUT = 10 * 1000;
 const ERROR_NONE = "no error";
 const ERROR_CONNECTING_TO_HOST = "could not connect to host";
 const ERROR_NO_HSTS_HEADER = "did not receive HSTS header";
@@ -189,7 +190,8 @@ function getHSTSStatus(host, resultList) {
             .createInstance(Ci.nsIXMLHttpRequest);
   var inResultList = false;
   var uri = "https://" + host.name + "/";
-  req.open("GET", uri, true);
+  req.open("HEAD", uri, true);
+  req.setRequestHeader("X-Automated-Tool", TOOL_IDENTIFIER);
   req.timeout = REQUEST_TIMEOUT;
 
   let errorhandler = (evt) => {
@@ -324,6 +326,7 @@ function shouldRetry(response) {
 function getHSTSStatuses(inHosts, outStatuses) {
   var expectedOutputLength = inHosts.length;
   var tmpOutput = [];
+  var procCount = 0;
   for (var i = 0; i < MAX_CONCURRENT_REQUESTS && inHosts.length > 0; i++) {
     let host = inHosts.shift();
     dump("spinning off request to '" + host.name + "' (remaining retries: " +
@@ -332,6 +335,8 @@ function getHSTSStatuses(inHosts, outStatuses) {
   }
 
   while (outStatuses.length != expectedOutputLength) {
+    procCount++;
+    if (procCount % 200 == 0) gc();
     waitForAResponse(tmpOutput);
     var response = tmpOutput.shift();
     dump("request to '" + response.name + "' finished\n");
@@ -343,7 +348,7 @@ function getHSTSStatuses(inHosts, outStatuses) {
 
     if (inHosts.length > 0) {
       let host = inHosts.shift();
-      dump("spinning off request to '" + host.name + "' (remaining retries: " +
+      dump("[" + procCount + "] spinning off request to '" + host.name + "' (remaining retries: " +
            host.retries + ")\n");
       getHSTSStatus(host, tmpOutput);
     }
@@ -381,15 +386,14 @@ function readCurrentList(filename) {
 }
 
 function combineLists(newHosts, currentHosts) {
+  let newHostsSet = new Set();
+
+  for (let newHost of newHosts) {
+    newHostsSet.add(newHost.name);
+  }
+
   for (let currentHost in currentHosts) {
-    let found = false;
-    for (let newHost of newHosts) {
-      if (newHost.name == currentHost) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
+    if (!newHostsSet.has(currentHost)) {
       newHosts.push({ name: currentHost, retries: MAX_RETRIES });
     }
   }
