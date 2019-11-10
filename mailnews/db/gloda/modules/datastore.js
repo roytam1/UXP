@@ -1030,17 +1030,6 @@ var GlodaDatastore = {
 
     var dbConnection;
 
-    // Report about the size of the database through telemetry (if there's a
-    // database, naturally).
-    if (dbFile.exists()) {
-      try {
-        let h = Services.telemetry.getHistogramById("THUNDERBIRD_GLODA_SIZE_MB");
-        h.add(dbFile.fileSize/1048576);
-      } catch (e) {
-        this._log.warn("Couldn't report telemetry", e);
-      }
-    }
-
     // Create the file if it does not exist
     if (!dbFile.exists()) {
       this._log.debug("Creating database because it doesn't exist.");
