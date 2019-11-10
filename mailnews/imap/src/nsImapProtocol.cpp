@@ -6160,7 +6160,11 @@ void nsImapProtocol::UploadMessageFromFile (nsIFile* file,
     if (NS_FAILED(rv)) goto done;
 
     if (!useLiteralPlus)
-      ParseIMAPandCheckForNewMail();
+    {
+       ParseIMAPandCheckForNewMail();
+      if (!GetServerStateParser().LastCommandSuccessful())
+        goto done;
+    }
 
     totalSize = fileSize;
     readCount = 0;
