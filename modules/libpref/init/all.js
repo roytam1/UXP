@@ -5496,4 +5496,5 @@ pref("dom.storageManager.enabled", false);
 pref("prompts.authentication_dialog_abuse_limit", 0);
 
 // Whether module scripts (<script type="module">) are enabled for content.
-pref("dom.moduleScripts.enabled", false);
+pref("dom.moduleScripts.enabled", true);
+
