@@ -115,6 +115,7 @@ public:
 
   PRTime m_receivedTime;
   uint16_t              m_body_lines;
+  uint16_t              m_lastLineBlank;
 
   bool                  m_IgnoreXMozillaStatus;
 

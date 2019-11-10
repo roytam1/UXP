@@ -734,6 +734,7 @@ nsFolderCompactState::OnStopRequest(nsIRequest *request, nsISupports *ctxt,
   }
   else
   {
+    // XXX TODO: Error checking and handling missing here.
     EndCopy(nullptr, status);
     if (m_curIndex >= m_size)
     {
@@ -754,6 +755,8 @@ nsFolderCompactState::OnStopRequest(nsIRequest *request, nsISupports *ctxt,
   return status;
 }
 
+// XXX TODO: This function is sadly lacking all status checking, it always
+// returns NS_OK and moves onto the next message.
 NS_IMETHODIMP
 nsFolderCompactState::OnDataAvailable(nsIRequest *request, nsISupports *ctxt,
                                       nsIInputStream *inStr,
@@ -784,7 +787,7 @@ nsFolderCompactState::OnDataAvailable(nsIRequest *request, nsISupports *ctxt,
       {
         (void) m_curSrcHdr->GetFlags(&msgFlags);
         (void) m_curSrcHdr->GetStatusOffset(&statusOffset);
-        
+
         if (statusOffset == 0)
           m_needStatusLine = true;
         // x-mozilla-status lines should be at the start of the headers, and the code
@@ -794,7 +797,7 @@ nsFolderCompactState::OnDataAvailable(nsIRequest *request, nsISupports *ctxt,
         {
           checkForKeyword = false;
           NS_ASSERTION(false, "status offset past end of read buffer size");
-          
+
         }
       }
     }
@@ -802,18 +805,18 @@ nsFolderCompactState::OnDataAvailable(nsIRequest *request, nsISupports *ctxt,
   }
   uint32_t maxReadCount, readCount, writeCount;
   uint32_t bytesWritten;
-  
+
   while (NS_SUCCEEDED(rv) && (int32_t) count > 0)
   {
     maxReadCount = count > sizeof(m_dataBuffer) - 1 ? sizeof(m_dataBuffer) - 1 : count;
     writeCount = 0;
     rv = inStr->Read(m_dataBuffer, maxReadCount, &readCount);
-    
+
     // if status offset is past the number of bytes we read, it's probably bogus,
     // and we shouldn't do any of the keyword stuff.
     if (statusOffset + X_MOZILLA_STATUS_LEN > readCount)
       checkForKeyword = false;
-    
+
     if (NS_SUCCEEDED(rv))
     {
       if (checkForKeyword)
@@ -967,7 +970,7 @@ nsFolderCompactState::OnDataAvailable(nsIRequest *request, nsISupports *ctxt,
       {
         NS_ASSERTION(false, "bad block offset");
         // not sure what to do to handle this.
-      
+
       }
       m_fileStream->Write(m_dataBuffer + blockOffset, readCount - blockOffset, &bytesWritten);
       writeCount += bytesWritten;
@@ -1131,7 +1134,6 @@ done:
   }
   return rv;
 }
- 
 
 nsresult
 nsOfflineStoreCompactState::FinishCompact()
@@ -1226,6 +1228,10 @@ nsFolderCompactState::EndCopy(nsISupports *url, nsresult aStatus)
     return NS_OK;
   }
 
+  /* Messages need to have trailing blank lines */
+  uint32_t bytesWritten;
+  (void) m_fileStream->Write(MSG_LINEBREAK, MSG_LINEBREAK_LEN, &bytesWritten);
+
   /**
    * Done with the current message; copying the existing message header
    * to the new database.
@@ -1255,7 +1261,7 @@ nsFolderCompactState::EndCopy(nsISupports *url, nsresult aStatus)
       msgSize += m_addedHeaderSize;
       newMsgHdr->SetMessageSize(msgSize);
     }
-    m_totalMsgSize += msgSize;
+    m_totalMsgSize += msgSize + MSG_LINEBREAK_LEN;
   }
 
 //  m_db->Commit(nsMsgDBCommitType::kLargeCommit);  // no sense commiting until the end
@@ -1345,4 +1351,3 @@ nsOfflineStoreCompactState::OnDataAvailable(nsIRequest *request, nsISupports *ct
   }
   return rv;
 }
-

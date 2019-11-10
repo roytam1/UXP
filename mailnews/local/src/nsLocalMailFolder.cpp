@@ -2117,7 +2117,6 @@ nsresult nsMsgLocalMailFolder::WriteStartOfNewMessage()
 
 nsresult nsMsgLocalMailFolder::InitCopyMsgHdrAndFileStream()
 {
-  nsCOMPtr<nsIMsgPluggableStore> msgStore;
   nsresult rv = GetMsgStore(getter_AddRefs(mCopyState->m_msgStore));
   NS_ENSURE_SUCCESS(rv, rv);
   bool reusable;
@@ -2387,16 +2386,10 @@ NS_IMETHODIMP nsMsgLocalMailFolder::EndCopy(bool aCopySucceeded)
   nsCOMPtr <nsISeekableStream> seekableStream(do_QueryInterface(mCopyState->m_fileStream));
   if (seekableStream)
   {
-    if (mCopyState->m_dummyEnvelopeNeeded)
-    {
-      uint32_t bytesWritten;
-      seekableStream->Seek(nsISeekableStream::NS_SEEK_END, 0);
-      mCopyState->m_fileStream->Write(MSG_LINEBREAK, MSG_LINEBREAK_LEN, &bytesWritten);
-      if (mCopyState->m_parseMsgState)
-        mCopyState->m_parseMsgState->ParseAFolderLine(CRLF, MSG_LINEBREAK_LEN);
-    }
-    rv = mCopyState->m_msgStore->FinishNewMessage(mCopyState->m_fileStream,
-                                                  mCopyState->m_newHdr);
+    seekableStream->Seek(nsISeekableStream::NS_SEEK_END, 0);
+    rv = FinishNewLocalMessage(mCopyState->m_fileStream, mCopyState->m_newHdr,
+                               mCopyState->m_msgStore,
+                               mCopyState->m_parseMsgState);
     if (NS_SUCCEEDED(rv) && mCopyState->m_newHdr)
       mCopyState->m_newHdr->GetMessageKey(&mCopyState->m_curDstKey);
     if (multipleCopiesFinished)
@@ -2714,13 +2707,9 @@ NS_IMETHODIMP nsMsgLocalMailFolder::EndMessage(nsMsgKey key)
   nsCOMPtr <nsISeekableStream> seekableStream = do_QueryInterface(mCopyState->m_fileStream, &rv);
   NS_ENSURE_SUCCESS(rv, rv);
   seekableStream->Seek(nsISeekableStream::NS_SEEK_END, 0);
-  uint32_t bytesWritten;
-  mCopyState->m_fileStream->Write(MSG_LINEBREAK, MSG_LINEBREAK_LEN, &bytesWritten);
-  if (mCopyState->m_parseMsgState)
-    mCopyState->m_parseMsgState->ParseAFolderLine(CRLF, MSG_LINEBREAK_LEN);
-
-  rv = mCopyState->m_msgStore->FinishNewMessage(mCopyState->m_fileStream,
-                                                mCopyState->m_newHdr);
+  rv = FinishNewLocalMessage(mCopyState->m_fileStream, mCopyState->m_newHdr,
+                             mCopyState->m_msgStore,
+                             mCopyState->m_parseMsgState);
   mCopyState->m_fileStream->Close();
   mCopyState->m_fileStream = nullptr; // all done with the file stream
 
@@ -3739,7 +3728,7 @@ nsMsgLocalMailFolder::AddMessageBatch(uint32_t aMessageCount,
       outFileStream->Write(aMessages[i], messageLen, &bytesWritten);
       newMailParser->BufferInput(aMessages[i], messageLen);
 
-      msgStore->FinishNewMessage(outFileStream, newHdr);
+      FinishNewLocalMessage(outFileStream, newHdr, msgStore, newMailParser);
       outFileStream->Close();
       outFileStream = nullptr;
       newMailParser->OnStopRequest(nullptr, nullptr, NS_OK);
@@ -3750,6 +3739,19 @@ nsMsgLocalMailFolder::AddMessageBatch(uint32_t aMessageCount,
   }
   ReleaseSemaphore(static_cast<nsIMsgLocalMailFolder*>(this));
   return rv;
+}
+
+nsresult
+nsMsgLocalMailFolder::FinishNewLocalMessage(nsIOutputStream *aOutputStream,
+                                            nsIMsgDBHdr *aNewHdr,
+                                            nsIMsgPluggableStore *aMsgStore,
+                                            nsParseMailMessageState *aParseMsgState)
+{
+  uint32_t bytesWritten;
+  aOutputStream->Write(MSG_LINEBREAK, MSG_LINEBREAK_LEN, &bytesWritten);
+  if (aParseMsgState)
+    aParseMsgState->ParseAFolderLine(MSG_LINEBREAK, MSG_LINEBREAK_LEN);
+  return aMsgStore->FinishNewMessage(aOutputStream, aNewHdr);
 }
 
 NS_IMETHODIMP
