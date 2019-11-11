@@ -2639,6 +2639,7 @@ nsMsgComposeAndSend::InitCompositionFields(nsMsgCompFields *fields,
             aType == nsIMsgCompType::Reply ||
             aType == nsIMsgCompType::ReplyAll ||
             aType == nsIMsgCompType::ReplyToGroup ||
+            aType == nsIMsgCompType::ReplyToList ||
             aType == nsIMsgCompType::ReplyToSender ||
             aType == nsIMsgCompType::ReplyToSenderAndGroup ||
             aType == nsIMsgCompType::ReplyWithTemplate )
