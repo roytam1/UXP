@@ -365,91 +365,13 @@ nsresult nsMapiHook::BlindSendMail (unsigned long aSession, nsIMsgCompFields * a
   return rv ;
 }
 
-// this is used to populate comp fields with Unicode data
-nsresult nsMapiHook::PopulateCompFields(lpnsMapiMessage aMessage,
-                                    nsIMsgCompFields * aCompFields)
-{
-  nsresult rv = NS_OK ;
-
-  if (aMessage->lpOriginator)
-    aCompFields->SetFrom (NS_ConvertASCIItoUTF16((char *) aMessage->lpOriginator->lpszAddress));
-
-  nsAutoString To ;
-  nsAutoString Cc ;
-  nsAutoString Bcc ;
-
-  NS_NAMED_LITERAL_STRING(Comma, ",");
-
-  if (aMessage->lpRecips)
-  {
-    for (int i=0 ; i < (int) aMessage->nRecipCount ; i++)
-    {
-      if (aMessage->lpRecips[i].lpszAddress || aMessage->lpRecips[i].lpszName)
-      {
-        const char *addressWithoutType = (aMessage->lpRecips[i].lpszAddress)
-          ? aMessage->lpRecips[i].lpszAddress : aMessage->lpRecips[i].lpszName;
-        if (!PL_strncasecmp(addressWithoutType, "SMTP:", 5))
-          addressWithoutType += 5;
-        switch (aMessage->lpRecips[i].ulRecipClass)
-        {
-        case MAPI_TO :
-          if (!To.IsEmpty())
-            To += Comma;
-          To.Append(NS_ConvertASCIItoUTF16(addressWithoutType));
-          break;
-
-        case MAPI_CC :
-          if (!Cc.IsEmpty())
-            Cc += Comma;
-          Cc.Append(NS_ConvertASCIItoUTF16(addressWithoutType));
-          break;
-
-        case MAPI_BCC :
-          if (!Bcc.IsEmpty())
-            Bcc += Comma;
-          Bcc.Append(NS_ConvertASCIItoUTF16(addressWithoutType));
-          break;
-        }
-      }
-    }
-  }
-
-  MOZ_LOG(MAPI, mozilla::LogLevel::Debug, ("to: %s cc: %s bcc: %s \n", NS_ConvertUTF16toUTF8(To).get(), NS_ConvertUTF16toUTF8(Cc).get(), NS_ConvertUTF16toUTF8(Bcc).get()));
-  // set To, Cc, Bcc
-  aCompFields->SetTo (To) ;
-  aCompFields->SetCc (Cc) ;
-  aCompFields->SetBcc (Bcc) ;
-
-  // set subject
-  if (aMessage->lpszSubject)
-    aCompFields->SetSubject(NS_ConvertASCIItoUTF16(aMessage->lpszSubject));
-
-  // handle attachments as File URL
-  rv = HandleAttachments (aCompFields, aMessage->nFileCount, aMessage->lpFiles, true) ;
-  if (NS_FAILED(rv)) return rv ;
-
-  // set body
-  if (aMessage->lpszNoteText)
-  {
-      nsString Body;
-      CopyASCIItoUTF16(aMessage->lpszNoteText, Body);
-      if (Body.IsEmpty() || Body.Last() != '\n')
-        Body.AppendLiteral(CRLF);
-
-      // This is needed when Simple MAPI is used without a compose window.
-      // See bug 1366196.
-      if (Body.Find("<html>") == kNotFound)
-        aCompFields->SetForcePlainText(true);
-
-      rv = aCompFields->SetBody(Body) ;
-  }
-  return rv ;
-}
-
 nsresult nsMapiHook::HandleAttachments (nsIMsgCompFields * aCompFields, int32_t aFileCount,
-                                        lpnsMapiFileDesc aFiles, BOOL aIsUnicode)
+                                        lpnsMapiFileDesc aFiles)
 {
     nsresult rv = NS_OK ;
+    // Do nothing if there are no files to process.
+    if (!aFiles || aFileCount <= 0)
+        return NS_OK;
 
     nsAutoCString Attachments ;
     nsAutoCString TempFiles ;
@@ -464,10 +386,7 @@ nsresult nsMapiHook::HandleAttachments (nsIMsgCompFields * aCompFields, int32_t 
         if (aFiles[i].lpszPathName)
         {
             // check if attachment exists
-            if (aIsUnicode)
-                pFile->InitWithPath (nsDependentString(aFiles[i].lpszPathName));
-            else
-                pFile->InitWithNativePath (nsDependentCString((const char*)aFiles[i].lpszPathName));
+            pFile->InitWithNativePath(nsDependentCString((const char*)aFiles[i].lpszPathName));
 
             bool bExist ;
             rv = pFile->Exists(&bExist) ;
@@ -490,16 +409,16 @@ nsresult nsMapiHook::HandleAttachments (nsIMsgCompFields * aCompFields, int32_t 
             // rename or copy the existing temp file with the real file name
 
             nsAutoString leafName ;
+            nsAutoCString platformCharSet;
             // convert to Unicode using Platform charset
             // leafName already contains a unicode leafName from lpszPathName. If we were given
             // a value for lpszFileName, use it. Otherwise stick with leafName
             if (aFiles[i].lpszFileName)
             {
-              nsAutoString wholeFileName;
-                if (aIsUnicode)
-                    wholeFileName.Assign(aFiles[i].lpszFileName);
-                else
-                    ConvertToUnicode(nsMsgI18NFileSystemCharset(), (char *) aFiles[i].lpszFileName, wholeFileName);
+                nsAutoString wholeFileName;
+              if (platformCharSet.IsEmpty())
+                platformCharSet.Assign(nsMsgI18NFileSystemCharset());
+              rv = ConvertToUnicode(platformCharSet.get(), (char *) aFiles[i].lpszFileName, wholeFileName);
                 // need to find the last '\' and find the leafname from that.
                 int32_t lastSlash = wholeFileName.RFindChar(char16_t('\\'));
                 if (lastSlash != kNotFound)
@@ -629,7 +548,7 @@ nsresult nsMapiHook::PopulateCompFieldsWithConversion(lpnsMapiMessage aMessage,
   }
 
   // handle attachments as File URL
-  rv = HandleAttachments (aCompFields, aMessage->nFileCount, aMessage->lpFiles, false) ;
+  rv = HandleAttachments(aCompFields, aMessage->nFileCount, aMessage->lpFiles);
   if (NS_FAILED(rv)) return rv ;
 
   // set body
