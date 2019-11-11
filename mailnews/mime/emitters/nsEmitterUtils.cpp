@@ -54,7 +54,6 @@ EmitThisHeaderForPrefSetting(int32_t dispType, const char *header)
         (!strcmp(header, HEADER_FOLLOWUP_TO)) ||
         (!strcmp(header, HEADER_CC)) ||
         (!strcmp(header, HEADER_ORGANIZATION)) ||
-        (!strcmp(header, HEADER_REPLY_TO)) ||
         (!strcmp(header, HEADER_BCC))
        )
        return true;
