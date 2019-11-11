@@ -95,7 +95,7 @@ nsresult nsMailtoUrl::ParseMailtoUrl(char * searchPart)
       nsCString decodedName;
       MsgUnescapeString(nsDependentCString(token), 0, decodedName);
 
-      if (decodedName.Length() == 0)
+      if (decodedName.IsEmpty())
         break;
 
       switch (NS_ToUpper(decodedName.First()))
