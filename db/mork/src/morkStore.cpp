@@ -775,7 +775,7 @@ morkStore::OidToYarn(morkEnv* ev, const mdbOid& inOid, mdbYarn* outYarn)
     morkAtomAidMap* map = &atomSpace->mAtomSpace_AtomAids;
     atom = map->GetAid(ev, (mork_aid) inOid.mOid_Id);
   }
-  atom->GetYarn(outYarn); // note this is safe even when atom==nil
+  morkAtom::GetYarn(atom, outYarn);
 
   return ev->Good();
 }
@@ -823,10 +823,10 @@ morkStore::TokenToString(morkEnv* ev, mdb_token inToken, mdbYarn* outTokenName)
   {
     morkBookAtom* atom = 0;
     morkAtomSpace* space = mStore_GroundColumnSpace;
-    if ( space )
+    if ( space ) {
       atom = space->mAtomSpace_AtomAids.GetAid(ev, (mork_aid) inToken);
-      
-    atom->GetYarn(outTokenName); // note this is safe even when atom==nil
+    }
+    morkAtom::GetYarn(atom, outTokenName);
   }
   else // token is an "immediate" single byte string representation?
     this->SmallTokenToOneByteYarn(ev, inToken, outTokenName);
