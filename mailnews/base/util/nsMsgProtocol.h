@@ -31,9 +31,6 @@ class nsIMsgMailNewsUrl;
 class nsMsgFilePostHelper;
 class nsIProxyInfo;
 
-#undef  IMETHOD_VISIBILITY
-#define IMETHOD_VISIBILITY NS_VISIBILITY_DEFAULT
-
 // This is a helper class used to encapsulate code shared between all of the
 // mailnews protocol objects (imap, news, pop, smtp, etc.) In particular,
 // it unifies the core networking code for the protocols. My hope is that
@@ -232,8 +229,5 @@ protected:
 
   virtual nsresult CloseSocket() override; 
 };
-
-#undef  IMETHOD_VISIBILITY
-#define IMETHOD_VISIBILITY NS_VISIBILITY_HIDDEN
 
 #endif /* nsMsgProtocol_h__ */

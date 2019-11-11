@@ -34,9 +34,6 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-#undef  IMETHOD_VISIBILITY
-#define IMETHOD_VISIBILITY NS_VISIBILITY_DEFAULT
-
 class NS_MSG_BASE nsMsgMailNewsUrl : public nsIMsgMailNewsUrl,
                                      public nsIURIWithPrincipal
 {
@@ -79,8 +76,5 @@ protected:
 
   nsTObserverArray<nsCOMPtr<nsIUrlListener> > mUrlListeners;
 };
-
-#undef  IMETHOD_VISIBILITY
-#define IMETHOD_VISIBILITY NS_VISIBILITY_HIDDEN
 
 #endif /* nsMsgMailNewsUrl_h___ */
