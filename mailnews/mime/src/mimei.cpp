@@ -731,7 +731,7 @@ mime_find_class (const char *content_type, MimeHeaders *hdrs,
           // Allowing them would leak the plain text in case the part is
           // cleverly hidden and the decrypted content gets included in
           // replies and forwards.
-          clazz = (MimeObjectClass *)&mimeExternalObjectClass;
+          clazz = (MimeObjectClass *)&mimeSuppressedCryptoClass;
           return clazz;
         }
 
@@ -951,9 +951,14 @@ mime_create (const char *content_type, MimeHeaders *hdrs,
           (clazz != (MimeObjectClass *)&mimeInlineTextRichtextClass) &&
           (clazz != (MimeObjectClass *)&mimeInlineTextEnrichedClass) &&
           (clazz != (MimeObjectClass *)&mimeMessageClass) &&
-          (clazz != (MimeObjectClass *)&mimeInlineImageClass) )
+          (clazz != (MimeObjectClass *)&mimeInlineImageClass) ) {
       // not a special inline type, so show as attachment
-      clazz = (MimeObjectClass *)&mimeExternalObjectClass;
+      // However, mimeSuppressedCryptoClass is treated identically as
+      // mimeExternalObjectClass, let's not lose that type information.
+      if (clazz != (MimeObjectClass *)&mimeSuppressedCryptoClass) {
+        clazz = (MimeObjectClass *)&mimeExternalObjectClass;
+      }
+    }
   }
 
   /* If the option `Show Attachments Inline' is off, now would be the time to change our mind... */
@@ -1217,21 +1222,6 @@ mime_crypto_object_p(MimeHeaders *hdrs, bool clearsigned_counts, MimeDisplayOpti
   else if (clearsigned_counts &&
        clazz == ((MimeObjectClass *)&mimeMultipartSignedCMSClass))
   return true;
-  else
-  return false;
-}
-
-/* Whether the given object has written out the HTML version of its headers
-   in such a way that it will have a "crypto stamp" next to the headers.  If
-   this is true, then the child must write out its HTML slightly differently
-   to take this into account...
- */
-bool
-mime_crypto_stamped_p(MimeObject *obj)
-{
-  if (!obj) return false;
-  if (mime_typep (obj, (MimeObjectClass *) &mimeMessageClass))
-  return ((MimeMessage *) obj)->crypto_stamped_p;
   else
   return false;
 }

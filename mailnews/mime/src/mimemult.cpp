@@ -43,6 +43,7 @@ extern "C" MimeObjectClass mimeMultipartRelatedClass;
 extern "C" MimeObjectClass mimeMultipartSignedClass;
 extern "C" MimeObjectClass mimeInlineTextVCardClass;
 extern "C" MimeExternalObjectClass mimeExternalObjectClass;
+extern "C" MimeSuppressedCryptoClass mimeSuppressedCryptoClass;
 
 #if defined(DEBUG) && defined(XP_UNIX)
 static int MimeMultipart_debug_print (MimeObject *, PRFileDesc *, int32_t);
@@ -471,7 +472,9 @@ MimeMultipart_create_child(MimeObject *obj)
               part functions set correctly */
            !mime_typep(body, (MimeObjectClass*) &mimeMultipartClass)
 #endif
-    &&        ! (mime_typep(body, (MimeObjectClass*)&mimeExternalObjectClass) && !strcmp(body->content_type, "text/x-vcard"))
+      &&   !((mime_typep(body, (MimeObjectClass *)&mimeExternalObjectClass) ||
+             mime_typep(body, (MimeObjectClass *)&mimeSuppressedCryptoClass)) &&
+           !strcmp(body->content_type, "text/x-vcard"))
        )
     {
     status = obj->options->decompose_file_init_fn ( obj->options->stream_closure, mult->hdrs );
@@ -575,7 +578,9 @@ MimeMultipart_close_child(MimeObject *object)
                       part functions set correctly */
                    !mime_typep(kid,(MimeObjectClass*) &mimeMultipartClass)
 #endif
-                                  && !(mime_typep(kid, (MimeObjectClass*)&mimeExternalObjectClass) && !strcmp(kid->content_type, "text/x-vcard"))
+           &&      !((mime_typep(kid, (MimeObjectClass *)&mimeExternalObjectClass) ||
+                       mime_typep(kid, (MimeObjectClass *)&mimeSuppressedCryptoClass)) &&
+                   !strcmp(kid->content_type, "text/x-vcard"))
            )
         {
           status = object->options->decompose_file_close_fn ( object->options->stream_closure );
