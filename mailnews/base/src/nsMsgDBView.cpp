@@ -400,10 +400,12 @@ nsresult nsMsgDBView::FetchAuthor(nsIMsgDBHdr * aHdr, nsAString &aSenderString)
   nsCString headerCharset;
   aHdr->GetEffectiveCharset(headerCharset);
 
-  nsCString emailAddress;
   nsString name;
-  ExtractFirstAddress(EncodedHeader(author, headerCharset.get()), name,
-    emailAddress);
+  nsCString emailAddress;
+  nsCOMArray<msgIAddressObject> addresses = EncodedHeader(author, headerCharset.get());
+  bool multipleAuthors = addresses.Length() > 1;
+
+  ExtractFirstAddress(addresses, name, emailAddress);
 
   if (showCondensedAddresses)
     GetDisplayNameInAddressBook(emailAddress, aSenderString);
@@ -427,6 +429,12 @@ nsresult nsMsgDBView::FetchAuthor(nsIMsgDBHdr * aHdr, nsAString &aSenderString)
         aSenderString.Append('>');
       }
     }
+  }
+
+  if (multipleAuthors)
+  {
+    aSenderString.AppendLiteral(" ");
+    aSenderString.Append(GetString(u"andOthers"));
   }
 
   UpdateCachedName(aHdr, "sender_name", aSenderString);
