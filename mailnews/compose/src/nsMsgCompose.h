@@ -33,7 +33,7 @@ struct nsMsgMailList;
 
 class nsMsgCompose : public nsIMsgCompose, public nsSupportsWeakReference
 {
- public: 
+ public:
 
   nsMsgCompose();
 
@@ -93,7 +93,7 @@ protected:
   nsresult MoveToAboveQuote(void);
   nsresult MoveToBeginningOfDocument(void);
   nsresult MoveToEndOfDocument(void);
-  nsresult ReplaceFileURLs(nsAutoString &sigData);
+  nsresult ReplaceFileURLs(nsString &sigData);
   nsresult DataURLForFileURL(const nsAString &aFileURL, nsAString &aDataURL);
 
 // 3 = To, Cc, Bcc
@@ -105,10 +105,10 @@ protected:
    */
   nsresult LookupAddressBook(RecipientsArray &recipientList);
   bool IsLastWindow();
- 
+
        // Helper function. Parameters are not checked.
   bool                                      mConvertStructs;    // for TagConvertible
-  
+
   nsCOMPtr<nsIEditor>                       m_editor;
   mozIDOMWindowProxy                        *m_window;
   nsCOMPtr<nsIDocShell>                     mDocShell;
@@ -147,7 +147,7 @@ protected:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
-// THIS IS THE CLASS THAT IS THE STREAM Listener OF THE HTML OUPUT
+// THIS IS THE CLASS THAT IS THE STREAM Listener OF THE HTML OUTPUT
 // FROM LIBMIME. THIS IS FOR QUOTING
 ////////////////////////////////////////////////////////////////////////////////////
 class QuotingOutputStreamListener : public nsIMsgQuotingOutputStreamListener
@@ -199,7 +199,7 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
-// This is the listener class for the send operation. We have to create this class 
+// This is the listener class for the send operation. We have to create this class
 // to listen for message send completion and eventually notify the caller
 ////////////////////////////////////////////////////////////////////////////////////
 class nsMsgComposeSendListener : public nsIMsgComposeSendListener, public nsIMsgSendListener, public nsIMsgCopyServiceListener, public nsIWebProgressListener
@@ -215,10 +215,10 @@ public:
 
   // nsIMsgSendListener interface
   NS_DECL_NSIMSGSENDLISTENER
-  
+
   // nsIMsgCopyServiceListener interface
   NS_DECL_NSIMSGCOPYSERVICELISTENER
-  
+
   // nsIWebProgressListener interface
   NS_DECL_NSIWEBPROGRESSLISTENER
 

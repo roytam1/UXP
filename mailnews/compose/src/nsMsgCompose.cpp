@@ -4350,45 +4350,52 @@ nsMsgCompose::LoadDataFromFile(nsIFile *file, nsString &sigData,
  * images loaded into the editor are available on send.
  */
 nsresult
-nsMsgCompose::ReplaceFileURLs(nsAutoString &aData)
+nsMsgCompose::ReplaceFileURLs(nsString &aData)
 {
   int32_t fPos;
-  int32_t offset = -1;
+  int32_t offset = -1;  // We're using RFind(), so offset -1 is from the very right.
+
+  // XXX This code is rather incomplete since it looks for "file://" even
+  // outside tags.
   while ((fPos = aData.RFind("file://", true, offset)) != kNotFound) {
-    if (fPos != kNotFound && fPos > 0) {
-      char16_t q = aData.CharAt(fPos - 1);
-      bool quoted = (q == '"' || q == '\'');
-      int32_t end = kNotFound;
-      if (quoted) {
-        end = aData.FindChar(q, fPos);
-      }
-      else {
-        int32_t spacePos = aData.FindChar(' ', fPos);
-        int32_t gtPos = aData.FindChar('>', fPos);
-        if (gtPos != kNotFound && spacePos != kNotFound) {
-          end = (spacePos < gtPos) ? spacePos : gtPos;
-        }
-        else if (gtPos == kNotFound && spacePos != kNotFound) {
-          end = spacePos;
-        }
-        else if (gtPos != kNotFound && spacePos == kNotFound) {
-          end = gtPos;
-        }
-      }
-      if (end == kNotFound) {
-        break;
-      }
-      nsString fileURL;
-      fileURL = Substring(aData, fPos, end - fPos);
-      nsString dataURL;
-      nsresult rv = DataURLForFileURL(fileURL, dataURL);
-      // If this one failed, maybe because the file wasn't found,
-      // continue to process the next one.
-      if (NS_SUCCEEDED(rv)) {
-        aData.Replace(fPos, end - fPos, dataURL);
-      }
-      offset = fPos - 1;
+    bool quoted = false;
+    char16_t q = 'x';  // initialise to anything to keep compilers happy.
+    if (fPos > 0) {
+      q = aData.CharAt(fPos - 1);
+      quoted = (q == '"' || q == '\'');
     }
+    int32_t end = kNotFound;
+    if (quoted) {
+      end = aData.FindChar(q, fPos);
+    }
+    else {
+      int32_t spacePos = aData.FindChar(' ', fPos);
+      int32_t gtPos = aData.FindChar('>', fPos);
+      if (gtPos != kNotFound && spacePos != kNotFound) {
+        end = (spacePos < gtPos) ? spacePos : gtPos;
+      }
+      else if (gtPos == kNotFound && spacePos != kNotFound) {
+        end = spacePos;
+      }
+      else if (gtPos != kNotFound && spacePos == kNotFound) {
+        end = gtPos;
+      }
+    }
+    if (end == kNotFound) {
+      break;
+    }
+    nsString fileURL;
+    fileURL = Substring(aData, fPos, end - fPos);
+    nsString dataURL;
+    nsresult rv = DataURLForFileURL(fileURL, dataURL);
+    // If this one failed, maybe because the file wasn't found,
+    // continue to process the next one.
+    if (NS_SUCCEEDED(rv)) {
+      aData.Replace(fPos, end - fPos, dataURL);
+    }
+    if (fPos == 0)
+      break;
+    offset = fPos - 1;
   }
   return NS_OK;
 }
