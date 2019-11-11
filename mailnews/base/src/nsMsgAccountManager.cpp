@@ -654,9 +654,9 @@ nsMsgAccountManager::RemoveAccount(nsIMsgAccount *aAccount,
     return rv;
   }
 
-  // if it's the default, clear the default account
+  // If it's the default, choose a new default account.
   if (m_defaultAccount.get() == aAccount)
-    SetDefaultAccount(nullptr);
+    AutosetDefaultAccount();
 
   // XXX - need to figure out if this is the last time this server is
   // being used, and only send notification then.
@@ -727,7 +727,9 @@ nsMsgAccountManager::OutputAccountsPref()
                                 mAccountKeyList.get());
 }
 
-/* get the default account. If no default account, pick the first account */
+/**
+ * Get the default account. If no default account, return null.
+ */
 NS_IMETHODIMP
 nsMsgAccountManager::GetDefaultAccount(nsIMsgAccount **aDefaultAccount)
 {
@@ -737,74 +739,72 @@ nsMsgAccountManager::GetDefaultAccount(nsIMsgAccount **aDefaultAccount)
   NS_ENSURE_SUCCESS(rv, rv);
 
   if (!m_defaultAccount) {
-    uint32_t count = m_accounts.Length();
-    if (!count) {
-      *aDefaultAccount = nullptr;
-      return NS_ERROR_FAILURE;
-    }
-
     nsCString defaultKey;
     rv = m_prefs->GetCharPref(PREF_MAIL_ACCOUNTMANAGER_DEFAULTACCOUNT, getter_Copies(defaultKey));
 
-    if (NS_SUCCEEDED(rv))
+    if (NS_SUCCEEDED(rv)) {
       rv = GetAccount(defaultKey, getter_AddRefs(m_defaultAccount));
-
-    if (NS_FAILED(rv) || !m_defaultAccount) {
-      nsCOMPtr<nsIMsgAccount> firstAccount;
-      uint32_t index;
-      bool foundValidDefaultAccount = false;
-      for (index = 0; index < count; index++) {
-        nsCOMPtr<nsIMsgAccount> account(m_accounts[index]);
-
-        // get incoming server
-        nsCOMPtr <nsIMsgIncomingServer> server;
-        // server could be null if created by an unloaded extension
-        (void) account->GetIncomingServer(getter_AddRefs(server));
-
-        bool canBeDefaultServer = false;
-        if (server)
-        {
-          server->GetCanBeDefaultServer(&canBeDefaultServer);
-          if (!firstAccount)
-            firstAccount = account;
-        }
-
-        // if this can serve as default server, set it as default and
-        // break out of the loop.
-        if (canBeDefaultServer) {
-          SetDefaultAccount(account);
-          foundValidDefaultAccount = true;
-          break;
-        }
-      }
-
-      if (!foundValidDefaultAccount) {
-        // Get the first account and use it.
-        // We need to fix this scenario, e.g. in bug 342632.
-        NS_WARNING("No valid default account found.");
-        if (firstAccount) {
-          NS_WARNING("Just using the first one (FIXME).");
-          SetDefaultAccount(firstAccount);
-        }
+      if (NS_SUCCEEDED(rv) && m_defaultAccount) {
+        bool canBeDefault = false;
+        rv = CheckDefaultAccount(m_defaultAccount, canBeDefault);
+        if (NS_FAILED(rv) || !canBeDefault)
+          m_defaultAccount = nullptr;
       }
     }
   }
 
-  if (!m_defaultAccount) {
-    // Absolutely no usable account found. Error out.
-    NS_ERROR("Default account is null, when not expected!");
-    *aDefaultAccount = nullptr;
-    return NS_ERROR_FAILURE;
+  NS_IF_ADDREF(*aDefaultAccount = m_defaultAccount);
+  return NS_OK;
+}
+
+/**
+ * Check if the given account can be default.
+ */
+nsresult
+nsMsgAccountManager::CheckDefaultAccount(nsIMsgAccount *aAccount, bool &aCanBeDefault)
+{
+  aCanBeDefault = false;
+  nsCOMPtr<nsIMsgIncomingServer> server;
+  // Server could be null if created by an unloaded extension.
+  nsresult rv = aAccount->GetIncomingServer(getter_AddRefs(server));
+  NS_ENSURE_SUCCESS(rv, rv);
+  if (server) {
+    // Check if server can be default.
+    rv = server->GetCanBeDefaultServer(&aCanBeDefault);
   }
-  NS_ADDREF(*aDefaultAccount = m_defaultAccount);
+  return rv;
+}
+
+/**
+ * Pick the first account that can be default and make it the default.
+ */
+nsresult
+nsMsgAccountManager::AutosetDefaultAccount()
+{
+  for (nsIMsgAccount* account : m_accounts) {
+    bool canBeDefault = false;
+    nsresult rv = CheckDefaultAccount(account, canBeDefault);
+    if (NS_SUCCEEDED(rv) && canBeDefault) {
+      return SetDefaultAccount(account);
+    }
+  }
   return NS_OK;
 }
 
 NS_IMETHODIMP
 nsMsgAccountManager::SetDefaultAccount(nsIMsgAccount *aDefaultAccount)
 {
+  if (!aDefaultAccount)
+    return NS_ERROR_INVALID_ARG;
+
   if (m_defaultAccount != aDefaultAccount)
   {
+    bool canBeDefault = false;
+    nsresult rv = CheckDefaultAccount(aDefaultAccount, canBeDefault);
+    if (NS_FAILED(rv) || !canBeDefault) {
+      // Report failure if we were explicitly asked to use an unusable server.
+      return NS_ERROR_INVALID_ARG;
+    }
     nsCOMPtr<nsIMsgAccount> oldAccount = m_defaultAccount;
     m_defaultAccount = aDefaultAccount;
     (void) setDefaultAccountPref(aDefaultAccount);
@@ -3677,7 +3677,7 @@ nsMsgAccountManager::GetSortOrder(nsIMsgIncomingServer* aServer, int32_t* aSortO
   if (NS_SUCCEEDED(rv) && defaultAccount) {
     nsCOMPtr<nsIMsgIncomingServer> defaultServer;
     rv = m_defaultAccount->GetIncomingServer(getter_AddRefs(defaultServer));
-    if (NS_SUCCEEDED(rv) && defaultServer && (aServer == defaultServer)) {
+    if (NS_SUCCEEDED(rv) && (aServer == defaultServer)) {
       *aSortOrder = 0;
       return NS_OK;
     }
