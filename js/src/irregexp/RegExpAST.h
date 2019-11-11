@@ -360,6 +360,7 @@ class RegExpCapture : public RegExpTree
     virtual int min_match() { return body_->min_match(); }
     virtual int max_match() { return body_->max_match(); }
     RegExpTree* body() { return body_; }
+    void set_body(RegExpTree* body) { body_ = body; }
     int index() { return index_; }
     static int StartRegister(int index) { return index * 2; }
     static int EndRegister(int index) { return index * 2 + 1; }
@@ -369,25 +370,29 @@ class RegExpCapture : public RegExpTree
     int index_;
 };
 
-class RegExpLookahead : public RegExpTree
+class RegExpLookaround : public RegExpTree
 {
   public:
-    RegExpLookahead(RegExpTree* body,
-                    bool is_positive,
-                    int capture_count,
-                    int capture_from)
+    enum Type { LOOKAHEAD, LOOKBEHIND };
+
+    RegExpLookaround(RegExpTree* body,
+                     bool is_positive,
+                     int capture_count,
+                     int capture_from,
+                     Type type)
       : body_(body),
         is_positive_(is_positive),
         capture_count_(capture_count),
-        capture_from_(capture_from)
+        capture_from_(capture_from),
+        type_(type)
     {}
 
     virtual void* Accept(RegExpVisitor* visitor, void* data);
     virtual RegExpNode* ToNode(RegExpCompiler* compiler,
                                RegExpNode* on_success);
-    virtual RegExpLookahead* AsLookahead();
+    virtual RegExpLookaround* AsLookaround();
     virtual Interval CaptureRegisters();
-    virtual bool IsLookahead();
+    virtual bool IsLookaround();
     virtual bool IsAnchoredAtStart();
     virtual int min_match() { return 0; }
     virtual int max_match() { return 0; }
@@ -395,12 +400,14 @@ class RegExpLookahead : public RegExpTree
     bool is_positive() { return is_positive_; }
     int capture_count() { return capture_count_; }
     int capture_from() { return capture_from_; }
+    Type type() { return type_; }
 
   private:
     RegExpTree* body_;
     bool is_positive_;
     int capture_count_;
     int capture_from_;
+    Type type_;
 };
 
 typedef InfallibleVector<RegExpCapture*, 1> RegExpCaptureVector;
@@ -417,8 +424,14 @@ class RegExpBackReference : public RegExpTree
                                RegExpNode* on_success);
     virtual RegExpBackReference* AsBackReference();
     virtual bool IsBackReference();
-    virtual int min_match() { return 0; }
-    virtual int max_match() { return capture_->max_match(); }
+    virtual int min_match() override { return 0; }
+    // The capture may not be completely parsed yet, if the reference occurs
+    // before the capture. In the ordinary case, nothing has been captured yet,
+    // so the back reference must have the length 0. If the back reference is
+    // inside a lookbehind, effectively making it a forward reference, we return
+    virtual int max_match() override {
+      return capture_->body() ? capture_->max_match() : 0;
+    }
     int index() { return capture_->index(); }
     RegExpCapture* capture() { return capture_; }
   private:

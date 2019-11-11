@@ -582,7 +582,7 @@ NativeRegExpMacroAssembler::CheckAtStart(Label* on_at_start)
 }
 
 void
-NativeRegExpMacroAssembler::CheckNotAtStart(Label* on_not_at_start)
+NativeRegExpMacroAssembler::CheckNotAtStart(int cp_offset, Label* on_not_at_start)
 {
     JitSpew(SPEW_PREFIX "CheckNotAtStart");
 
@@ -673,7 +673,7 @@ NativeRegExpMacroAssembler::CheckGreedyLoop(Label* on_tos_equals_current_positio
 }
 
 void
-NativeRegExpMacroAssembler::CheckNotBackReference(int start_reg, Label* on_no_match)
+NativeRegExpMacroAssembler::CheckNotBackReference(int start_reg, bool read_backward, Label* on_no_match)
 {
     JitSpew(SPEW_PREFIX "CheckNotBackReference(%d)", start_reg);
 
@@ -744,8 +744,8 @@ NativeRegExpMacroAssembler::CheckNotBackReference(int start_reg, Label* on_no_ma
 }
 
 void
-NativeRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg, Label* on_no_match,
-                                                            bool unicode)
+NativeRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg, bool read_backward,
+                                                            Label* on_no_match, bool unicode)
 {
     JitSpew(SPEW_PREFIX "CheckNotBackReferenceIgnoreCase(%d, %d)", start_reg, unicode);
 

@@ -250,16 +250,16 @@ RegExpCapture::CaptureRegisters()
 }
 
 // ----------------------------------------------------------------------------
-// RegExpLookahead
+// RegExpLookaround
 
 Interval
-RegExpLookahead::CaptureRegisters()
+RegExpLookaround::CaptureRegisters()
 {
     return body()->CaptureRegisters();
 }
 
 bool
-RegExpLookahead::IsAnchoredAtStart()
+RegExpLookaround::IsAnchoredAtStart()
 {
-    return is_positive() && body()->IsAnchoredAtStart();
+    return is_positive() && type() == LOOKAHEAD && body()->IsAnchoredAtStart();
 }
