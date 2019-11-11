@@ -393,8 +393,8 @@ EmailConfigWizard.prototype =
   /**
    * Start from beginning with possibly new email address.
    */
-  onStartOver : function()
-  {
+  onStartOver : function() {
+    this._currentConfig = null;
     if (this._abortable) {
       this.onStop();
     }
@@ -640,8 +640,9 @@ EmailConfigWizard.prototype =
     self._abortable = guessConfig(domain,
       function(type, hostname, port, ssl, done, config) // progress
       {
-        gEmailWizardLogger.info("progress callback host " + hostname +
-                                " port " +  port + " type " + type);
+        var msg = hostname + ":" + port + " ssl=" + ssl + " " +
+                  type + ": progress callback";
+        gEmailWizardLogger.info(msg);
       },
       function(config) // success
       {

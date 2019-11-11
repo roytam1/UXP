@@ -63,52 +63,49 @@ function fetchConfigFromISP(domain, emailAddress, successCallback,
     return;
   }
 
-  let url1 = "http://autoconfig." + sanitize.hostname(domain) +
-             "/mail/config-v1.1.xml";
+  let conf1 = "autoconfig." + sanitize.hostname(domain) +
+              "/mail/config-v1.1.xml";
   // .well-known/ <http://tools.ietf.org/html/draft-nottingham-site-meta-04>
-  let url2 = "http://" + sanitize.hostname(domain) +
-             "/.well-known/autoconfig/mail/config-v1.1.xml";
+  let conf2 = sanitize.hostname(domain) +
+              "/.well-known/autoconfig/mail/config-v1.1.xml";
+  // This list is sorted by decreasing priority
+  var urls = ["https://" + conf1, "https://" + conf2];
+  if (!Services.prefs.getBoolPref("mailnews.auto_config.fetchFromISP.sslOnly")) {
+    urls.push("http://" + conf1, "http://" + conf2);
+  }
   let sucAbortable = new SuccessiveAbortable();
-  var time = Date.now();
   var urlArgs = { emailaddress: emailAddress };
   if (!Services.prefs.getBoolPref(
       "mailnews.auto_config.fetchFromISP.sendEmailAddress")) {
     delete urlArgs.emailaddress;
   }
-  let fetch1 = new FetchHTTP(url1, urlArgs, false,
-    function(result)
-    {
-      successCallback(readFromXML(result));
-    },
-    function(e1) // fetch1 failed
-    {
-      ddump("fetchisp 1 <" + url1 + "> took " + (Date.now() - time) +
-          "ms and failed with " + e1);
-      time = Date.now();
-      if (e1 instanceof CancelledException)
-      {
-        errorCallback(e1);
-        return;
-      }
+  var time;
 
-      let fetch2 = new FetchHTTP(url2, urlArgs, false,
-        function(result)
-        {
-          successCallback(readFromXML(result));
-        },
-        function(e2)
-        {
-          ddump("fetchisp 2 <" + url2 + "> took " + (Date.now() - time) +
-              "ms and failed with " + e2);
-          // return the error for the primary call,
-          // unless the fetch was cancelled
-          errorCallback(e2 instanceof CancelledException ? e2 : e1);
-        });
-      sucAbortable.current = fetch2;
-      fetch2.start();
-    });
-  sucAbortable.current = fetch1;
-  fetch1.start();
+  let success = function(result) {
+    successCallback(readFromXML(result));
+  };
+
+  let error = function(i, e) {
+    ddump("fetchisp " + i + " <" + urls[i] + "> took " +
+          (Date.now() - time) + "ms and failed with " + e);
+
+    if (i == urls.length - 1 || // implies all fetches failed
+        e instanceof CancelledException) {
+      errorCallback(e);
+      return;
+    }
+    let fetch = new FetchHTTP(urls[i + 1], urlArgs, false, success,
+                              function(e) { error(i + 1, e) });
+    sucAbortable.current = fetch;
+    time = Date.now();
+    fetch.start();
+  };
+
+  let fetch = new FetchHTTP(urls[0], urlArgs, false, success,
+                            function(e) { error(0, e) });
+  sucAbortable.current = fetch;
+  time = Date.now();
+  fetch.start();
   return sucAbortable;
 }
 

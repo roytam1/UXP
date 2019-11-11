@@ -870,13 +870,46 @@ pref("mailnews.emptyTrash.dontAskAgain", false);
 pref("mailnews.auto_config_url", "https://live.mozillamessaging.com/autoconfig/v1.1/");
 // Added in bug 551519. Remove when bug 545866 is fixed.
 pref("mailnews.mx_service_url", "https://live.mozillamessaging.com/dns/mx/");
-// Allow to contact ISP (email address domain)
-// This happens via insecure means (HTTP), so the config cannot be trusted,
-// and also contains the email address
+// Allow to contact the ISP (email address domain).
+// This may happen via insecure means (HTTP) susceptible to eavesdropping
+// and MitM (see mailnews.auto_config.fetchFromISP.sslOnly below).
 pref("mailnews.auto_config.fetchFromISP.enabled", true);
-// Allow the fetch from ISP via HTTP, but not the email address
+// Allow the username to be sent to the ISP when fetching.
+// Note that the username will leak in plaintext if a non-SSL fetch is
+// performed.
 pref("mailnews.auto_config.fetchFromISP.sendEmailAddress", true);
+// Allow only SSL channels when fetching config from ISP.
+// If false, an active attacker can block SSL fetches and then
+// MITM the HTTP fetch, determining the config that is shown to the user.
+// However:
+// 1. The user still needs to explicitly approve the false config.
+// 2. Most hosters that offer this ISP config do so on HTTP and not on HTTPS.
+//    That's because they direct customer domains (HTTP) to their provider
+//    config (HTTPS). If you set this to true, you simply break this mechanism.
+//    You will simply not get most configs.
+// 3. There are guess config and AutoDiscover config mechanisms which
+//    have the exact same problem. In order to mitigate those additional
+//    vectors, set the following prefs accordingly:
+//     * mailnews.auto_config.guess.sslOnly = true
+//     * mailnews.auto_config.fetchFromExchange.enabled = false
+// Not all mail servers support SSL so enabling this option might lock
+// you out from your ISP. This especially affect internal mail servers.
+pref("mailnews.auto_config.fetchFromISP.sslOnly", false);
+// Whether we will attempt to guess the account configuration based on
+// protocol default ports and common domain practices
+// (e.g. {mail,pop,imap,smtp}.<email-domain>).
 pref("mailnews.auto_config.guess.enabled", true);
+// Allow only SSL configs when guessing.
+// An attacker could block SSL to force plaintext and thus be able to
+// eavesdrop. Compared to mailnews.auto_config.fetchFromISP.sslOnly
+// the attacker cannot determine the config, just pick which one it
+// likes best among those Thunderbird generates for the user based on
+// the email address.
+// Not all mail servers support SSL so enabling this option might lock
+// you out from your ISP. This especially affect internal mail servers.
+pref("mailnews.auto_config.guess.sslOnly", false);
+// The timeout (in seconds) for each guess
+pref("mailnews.auto_config.guess.timeout", 10);
 
 // -- Summary Database options
 // dontPreserveOnCopy: a space separated list of properties that are not

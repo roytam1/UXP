@@ -6,8 +6,6 @@
 Cu.import("resource:///modules/gloda/log4moz.js");
 Cu.import("resource://gre/modules/Services.jsm");
 
-var TIMEOUT = 10; // in seconds
-
 // This is a bit ugly - we set outgoingDone to false
 // when emailWizard.js cancels the outgoing probe because the user picked
 // an outoing server. It does this by poking the probeAbortable object,
@@ -411,6 +409,7 @@ HostDetector.prototype =
         { "imap" : IMAP, "pop3" : POP, "smtp" : SMTP }, UNKNOWN);
     if (!port)
       port = UNKNOWN;
+    var ssl_only = Services.prefs.getBoolPref("mailnews.auto_config.guess.sslOnly");
     var ssl = ConvertSocketTypeToSSL(socketType);
     this._cancel = false;
     this._log.info("doing auto detect for protocol " + protocol +
@@ -434,8 +433,13 @@ HostDetector.prototype =
       for (let j = 0; j < hostEntries.length; j++)
       {
         let hostTry = hostEntries[j]; // from getHostEntry()
+        if (ssl_only && hostTry.ssl == NONE)
+          continue;
         hostTry.hostname = hostname;
         hostTry.status = kNotTried;
+        hostTry.desc = hostTry.hostname + ":" + hostTry.port +
+                       " ssl=" + hostTry.ssl + " " +
+                       protocolToString(hostTry.protocol);
         this._hostsToTry.push(hostTry);
       }
     }
@@ -453,21 +457,25 @@ HostDetector.prototype =
     if (this._cancel)
       return;
     var me = this;
-    for (let i = 0; i < this._hostsToTry.length; i++)
-    {
-      let thisTry = this._hostsToTry[i]; // {HostTry}
-      if (thisTry.status != kNotTried)
-        continue;
-      this._log.info("poking at " + thisTry.hostname + " port " +
-          thisTry.port + " ssl "+ thisTry.ssl + " protocol " +
-          protocolToString(thisTry.protocol));
-      if (i == 0) // showing 50 servers at once is pointless
-        this.mProgressCallback(thisTry);
+    var timeout = Services.prefs.getIntPref("mailnews.auto_config.guess.timeout");
+    // We assume we'll resolve the same proxy for all tries, and
+    // proceed to use the first resolved proxy for all tries. This
+    // assumption is generally sound, but not always: mechanisms like
+    // the pref network.proxy.no_proxies_on can make imap.domain and
+    // pop.domain resolve differently.
+    doProxy(this._hostsToTry[0].hostname, function(proxy) {
+      for (let i = 0; i < me._hostsToTry.length; i++) {
+        let thisTry = me._hostsToTry[i]; // {HostTry}
+        if (thisTry.status != kNotTried)
+          continue;
+        me._log.info(thisTry.desc + ": initializing probe...");
+        if (i == 0) // showing 50 servers at once is pointless
+          me.mProgressCallback(thisTry);
 
-      thisTry.abortable = SocketUtil(
+        thisTry.abortable = SocketUtil(
           thisTry.hostname, thisTry.port, thisTry.ssl,
-          thisTry.commands, TIMEOUT,
-          new SSLErrorHandler(thisTry, this._log),
+          thisTry.commands, timeout, proxy,
+          new SSLErrorHandler(thisTry, me._log),
           function(wiredata) // result callback
           {
             if (me._cancel)
@@ -480,12 +488,14 @@ HostDetector.prototype =
           {
             if (me._cancel)
               return; // who set cancel to true already called mErrorCallback()
-            me._log.warn(e);
+            me._log.warn(thisTry.desc + ": " + e);
             thisTry.status = kFailed;
             me._checkFinished();
-          });
-      thisTry.status = kOngoing;
-    }
+          }
+        );
+        thisTry.status = kOngoing;
+      }
+    });
   },
 
   /**
@@ -507,7 +517,7 @@ HostDetector.prototype =
       if (thisTry._gotCertError == Ci.nsICertOverrideService.ERROR_UNTRUSTED ||
           thisTry._gotCertError == Ci.nsICertOverrideService.ERROR_TIME)
       {
-        this._log.info("TRYING AGAIN, hopefully with exception recorded");
+        this._log.info(thisTry.desc + ": TRYING AGAIN, hopefully with exception recorded");
         thisTry._gotCertError = 0;
         thisTry.selfSignedCert = true; // _next_ run gets this exception
         thisTry.status = kNotTried; // try again (with exception)
@@ -518,22 +528,20 @@ HostDetector.prototype =
 
     if (wiredata == null || wiredata === undefined)
     {
-      this._log.info("no data");
+      this._log.info(thisTry.desc + ": no data");
       thisTry.status = kFailed;
       return;
     }
-    this._log.info("wiredata: " + wiredata.join(""));
+    this._log.info(thisTry.desc + ": wiredata: " + wiredata.join(""));
     thisTry.authMethods =
         this._advertisesAuthMethods(thisTry.protocol, wiredata);
     if (thisTry.ssl == TLS && !this._hasTLS(thisTry, wiredata))
     {
-      this._log.info("STARTTLS wanted, but not offered");
+      this._log.info(thisTry.desc + ": STARTTLS wanted, but not offered");
       thisTry.status = kFailed;
       return;
     }
-    this._log.info("success with " + thisTry.hostname + ":" +
-        thisTry.port + " " + protocolToString(thisTry.protocol) +
-        " ssl " + thisTry.ssl +
+    this._log.info(thisTry.desc + ": success" +
         (thisTry.selfSignedCert ? " (selfSignedCert)" : ""));
     thisTry.status = kSuccess;
 
@@ -542,7 +550,8 @@ HostDetector.prototype =
       // earlier we get into an infinite loop, probably because the cert
       // remembering is temporary and the next try gets a new connection which
       // isn't covered by that temporariness.
-      this._log.info("clearing validity override for " + thisTry.hostname);
+      this._log.info(thisTry.desc + ": clearing validity override for " +
+                     thisTry.hostname);
       Cc["@mozilla.org/security/certoverride;1"]
         .getService(Ci.nsICertOverrideService)
         .clearValidityOverride(thisTry.hostname, thisTry.port);
@@ -1016,13 +1025,14 @@ SSLErrorHandler.prototype =
  * @param commands {Array of String}: protocol commands
  *          to send to the server.
  * @param timeout {Integer} seconds to wait for a server response, then cancel.
+ * @param proxy {nsIProxyInfo} The proxy to use (or null to not use any).
  * @param sslErrorHandler {SSLErrorHandler}
  * @param resultCallback {function(wiredata)} This function will
  *            be called with the result string array from the server
  *            or null if no communication occurred.
  * @param errorCallback {function(e)}
  */
-function SocketUtil(hostname, port, ssl, commands, timeout,
+function SocketUtil(hostname, port, ssl, commands, timeout, proxy,
                     sslErrorHandler, resultCallback, errorCallback)
 {
   assert(commands && commands.length, "need commands");
@@ -1061,7 +1071,7 @@ function SocketUtil(hostname, port, ssl, commands, timeout,
   var socketTypeName = ssl == SSL ? "ssl" : (ssl == TLS ? "starttls" : null);
   var transport = transportService.createTransport([socketTypeName],
                                                    ssl == NONE ? 0 : 1,
-                                                   hostname, port, null);
+                                                   hostname, port, proxy);
 
   transport.setTimeout(Ci.nsISocketTransport.TIMEOUT_CONNECT, timeout);
   transport.setTimeout(Ci.nsISocketTransport.TIMEOUT_READ_WRITE, timeout);
@@ -1145,3 +1155,38 @@ SocketAbortable.prototype.cancel = function(ex)
   }
 }
 
+/**
+ * Resolve a proxy for some domain and expose it via a callback.
+ *
+ * @param hostname {String} The hostname which a proxy will be resolved for
+ * @param resultCallback {function(proxyInfo)}
+ *   Called after the proxy has been resolved for hostname.
+ *   proxy {nsIProxyInfo} The resolved proxy, or null if none were found
+ *         for hostname
+ */
+function doProxy(hostname, resultCallback) {
+  // This implements the nsIProtocolProxyCallback interface:
+  function ProxyResolveCallback() { }
+  ProxyResolveCallback.prototype = {
+    onProxyAvailable(req, uri, proxy, status) {
+      // Anything but a SOCKS proxy will be unusable for email.
+      if (proxy != null && proxy.type != "socks" &&
+          proxy.type != "socks4") {
+        proxy = null;
+      }
+      resultCallback(proxy);
+    },
+  };
+  var proxyService = Cc["@mozilla.org/network/protocol-proxy-service;1"]
+                     .getService(Ci.nsIProtocolProxyService);
+  // Use some arbitrary scheme just because it is required...
+  var uri = Services.io.newURI("http://" + hostname);
+  // ... we'll ignore it any way. We prefer SOCKS since that's the
+  // only thing we can use for email protocols.
+  var proxyFlags = Ci.nsIProtocolProxyService.RESOLVE_IGNORE_URI_SCHEME |
+                   Ci.nsIProtocolProxyService.RESOLVE_PREFER_SOCKS_PROXY;
+  if (Services.prefs.getBoolPref("network.proxy.socks_remote_dns")) {
+    proxyFlags |= Ci.nsIProtocolProxyService.RESOLVE_ALWAYS_TUNNEL;
+  }
+  proxyService.asyncResolve(uri, proxyFlags, new ProxyResolveCallback());
+}
