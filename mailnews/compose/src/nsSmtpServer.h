@@ -30,12 +30,16 @@ private:
     nsCString mKey;
     nsCOMPtr<nsIPrefBranch> mPrefBranch;
     nsCOMPtr<nsIPrefBranch> mDefPrefBranch;
-                                                                                                                                               
+
     nsresult getPrefs();
     void getIntPrefWithDefault(const char *prefName, int32_t *val,
                                int32_t defval);
     nsresult GetPasswordWithoutUI();
     nsCString GetServerURIInternal(const bool aIncludeUsername);
+
+  nsresult OnUserOrHostNameChanged(const nsACString& oldName,
+                                   const nsACString& newName,
+                                   bool hostnameChanged);
 
     nsCString m_password;
     bool m_logonFailed;
