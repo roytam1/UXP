@@ -1366,8 +1366,6 @@ static const mozilla::Module::CategoryEntry kMailNewsCategories[] = {
   // Mail View Entries
   // mdn Entries
   // i18n Entries
-  { NS_TITLE_BUNDLE_CATEGORY, "chrome://messenger/locale/charsetTitles.properties", "" },
-  { NS_DATA_BUNDLE_CATEGORY, "resource://gre-resources/charsetData.properties", "" },
   NS_UCONV_REG_UNREG("UTF-7", NS_UTF7TOUNICODE_CID, NS_UNICODETOUTF7_CID)
   NS_UCONV_REG_UNREG("x-imap4-modified-utf7", NS_MUTF7TOUNICODE_CID, NS_UNICODETOMUTF7_CID)
   // Tokenizer Entries
