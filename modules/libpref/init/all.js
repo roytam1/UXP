@@ -5494,3 +5494,7 @@ pref("dom.storageManager.enabled", false);
 // >0 = suppress further prompts after the user has canceled the dialog n times
 // See application preferences for appropriate defaults.
 pref("prompts.authentication_dialog_abuse_limit", 0);
+
+// Whether module scripts (<script type="module">) are enabled for content.
+pref("dom.moduleScripts.enabled", true);
+
