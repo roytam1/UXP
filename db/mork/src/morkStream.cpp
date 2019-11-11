@@ -410,10 +410,10 @@ void morkStream::NewNullStreamBufferError(morkEnv* ev) const
 { ev->NewError("null stream buffer"); }
 
 void morkStream::NewCantReadSinkError(morkEnv* ev) const
-{ ev->NewError("cant read stream sink"); }
+{ ev->NewError("can not read stream sink"); }
 
 void morkStream::NewCantWriteSourceError(morkEnv* ev) const
-{ ev->NewError("cant write stream source"); }
+{ ev->NewError("can not write stream source"); }
 
 void morkStream::NewPosBeyondEofError(morkEnv* ev) const
 { ev->NewError("stream pos beyond eof"); }
