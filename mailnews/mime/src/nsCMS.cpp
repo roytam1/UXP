@@ -75,7 +75,7 @@ void nsCMSMessage::destructorSafeDestroyNSSReference()
 
 NS_IMETHODIMP nsCMSMessage::VerifySignature()
 {
-  return CommonVerifySignature(nullptr, 0);
+  return CommonVerifySignature(nullptr, 0, 0);
 }
 
 NSSCMSSignerInfo* nsCMSMessage::GetTopLevelSignerInfo()
@@ -210,15 +210,21 @@ NS_IMETHODIMP nsCMSMessage::GetEncryptionCert(nsIX509Cert **ecert)
     return NS_ERROR_NOT_IMPLEMENTED;
 }
 
-NS_IMETHODIMP nsCMSMessage::VerifyDetachedSignature(unsigned char* aDigestData, uint32_t aDigestDataLen)
+NS_IMETHODIMP
+nsCMSMessage::VerifyDetachedSignature(unsigned char* aDigestData,
+                                      uint32_t aDigestDataLen,
+                                      int16_t aDigestType)
 {
   if (!aDigestData || !aDigestDataLen)
     return NS_ERROR_FAILURE;
 
-  return CommonVerifySignature(aDigestData, aDigestDataLen);
+  return CommonVerifySignature(aDigestData, aDigestDataLen, aDigestType);
 }
 
-nsresult nsCMSMessage::CommonVerifySignature(unsigned char* aDigestData, uint32_t aDigestDataLen)
+nsresult
+nsCMSMessage::CommonVerifySignature(unsigned char* aDigestData,
+                                    uint32_t aDigestDataLen,
+                                    int16_t aDigestType)
 {
   nsNSSShutDownPreventionLock locker;
   if (isAlreadyShutDown())
@@ -239,8 +245,20 @@ nsresult nsCMSMessage::CommonVerifySignature(unsigned char* aDigestData, uint32_
 
   cinfo = NSS_CMSMessage_ContentLevel(m_cmsMsg, 0);
   if (cinfo) {
-    // I don't like this hard cast. We should check in some way, that we really have this type.
-    sigd = (NSSCMSSignedData*)NSS_CMSContentInfo_GetContent(cinfo);
+    switch (NSS_CMSContentInfo_GetContentTypeTag(cinfo)) {
+      case SEC_OID_PKCS7_SIGNED_DATA:
+        sigd = reinterpret_cast<NSSCMSSignedData*>(NSS_CMSContentInfo_GetContent(cinfo));
+        break;
+
+      case SEC_OID_PKCS7_ENVELOPED_DATA:
+      case SEC_OID_PKCS7_ENCRYPTED_DATA:
+      case SEC_OID_PKCS7_DIGESTED_DATA:
+      default: {
+        MOZ_LOG(gPIPNSSLog, LogLevel::Debug, ("nsCMSMessage::CommonVerifySignature - unexpected ContentTypeTag\n"));
+        rv = NS_ERROR_CMS_VERIFY_NO_CONTENT_INFO;
+        goto loser;
+      }
+    }
   }
 
   if (!sigd) {
@@ -251,11 +269,29 @@ nsresult nsCMSMessage::CommonVerifySignature(unsigned char* aDigestData, uint32_
 
   if (aDigestData && aDigestDataLen)
   {
+    SECOidTag oidTag;
     SECItem digest;
     digest.data = aDigestData;
     digest.len = aDigestDataLen;
 
-    if (NSS_CMSSignedData_SetDigestValue(sigd, SEC_OID_SHA1, &digest)) {
+    if (NSS_CMSSignedData_HasDigests(sigd)) {
+      SECAlgorithmID **existingAlgs = NSS_CMSSignedData_GetDigestAlgs(sigd);
+      if (existingAlgs) {
+        while (*existingAlgs) {
+          SECAlgorithmID *alg = *existingAlgs;
+          SECOidTag algOIDTag = SECOID_FindOIDTag(&alg->algorithm);
+          NSS_CMSSignedData_SetDigestValue(sigd, algOIDTag, NULL);
+          ++existingAlgs;
+        }
+      }
+    }
+
+    if (!GetIntHashToOidHash(aDigestType, oidTag)) {
+      rv = NS_ERROR_CMS_VERIFY_BAD_DIGEST;
+      goto loser;
+    }
+
+    if (NSS_CMSSignedData_SetDigestValue(sigd, oidTag, &digest)) {
       MOZ_LOG(gPIPNSSLog, LogLevel::Debug, ("nsCMSMessage::CommonVerifySignature - bad digest\n"));
       rv = NS_ERROR_CMS_VERIFY_BAD_DIGEST;
       goto loser;
@@ -357,17 +393,19 @@ loser:
 NS_IMETHODIMP nsCMSMessage::AsyncVerifySignature(
                               nsISMimeVerificationListener *aListener)
 {
-  return CommonAsyncVerifySignature(aListener, nullptr, 0);
+  return CommonAsyncVerifySignature(aListener, nullptr, 0, 0);
 }
 
 NS_IMETHODIMP nsCMSMessage::AsyncVerifyDetachedSignature(
                               nsISMimeVerificationListener *aListener,
-                              unsigned char* aDigestData, uint32_t aDigestDataLen)
+                              unsigned char* aDigestData,
+                              uint32_t aDigestDataLen,
+                              int16_t aDigestType)
 {
   if (!aDigestData || !aDigestDataLen)
     return NS_ERROR_FAILURE;
 
-  return CommonAsyncVerifySignature(aListener, aDigestData, aDigestDataLen);
+  return CommonAsyncVerifySignature(aListener, aDigestData, aDigestDataLen, aDigestType);
 }
 
 class SMimeVerificationTask final : public CryptoTask
@@ -375,12 +413,15 @@ class SMimeVerificationTask final : public CryptoTask
 public:
   SMimeVerificationTask(nsICMSMessage *aMessage,
                         nsISMimeVerificationListener *aListener,
-                        unsigned char *aDigestData, uint32_t aDigestDataLen)
+                        unsigned char *aDigestData,
+                        uint32_t aDigestDataLen,
+                        int16_t aDigestType)
   {
     MOZ_ASSERT(NS_IsMainThread());
     mMessage = aMessage;
     mListener = aListener;
     mDigestData.Assign(reinterpret_cast<char *>(aDigestData), aDigestDataLen);
+    mDigestType = aDigestType;
   }
 
 private:
@@ -393,7 +434,7 @@ private:
     if (!mDigestData.IsEmpty()) {
       rv = mMessage->VerifyDetachedSignature(
         reinterpret_cast<uint8_t*>(const_cast<char *>(mDigestData.get())),
-        mDigestData.Length());
+        mDigestData.Length(), mDigestType);
     } else {
       rv = mMessage->VerifySignature();
     }
@@ -411,12 +452,14 @@ private:
   nsCOMPtr<nsICMSMessage> mMessage;
   nsCOMPtr<nsISMimeVerificationListener> mListener;
   nsCString mDigestData;
+  int16_t mDigestType;
 };
 
 nsresult nsCMSMessage::CommonAsyncVerifySignature(nsISMimeVerificationListener *aListener,
-                                                  unsigned char* aDigestData, uint32_t aDigestDataLen)
+                                                  unsigned char* aDigestData, uint32_t aDigestDataLen,
+                                                  int16_t aDigestType)
 {
-  RefPtr<CryptoTask> task = new SMimeVerificationTask(this, aListener, aDigestData, aDigestDataLen);
+  RefPtr<CryptoTask> task = new SMimeVerificationTask(this, aListener, aDigestData, aDigestDataLen, aDigestType);
   return task->Dispatch("SMimeVerify");
 }
 
@@ -620,6 +663,51 @@ loser:
   return rv;
 }
 
+bool nsCMSMessage::IsAllowedHash(const int16_t aCryptoHashInt)
+{
+  switch (aCryptoHashInt) {
+    case nsICryptoHash::SHA1:
+    case nsICryptoHash::SHA256:
+    case nsICryptoHash::SHA384:
+    case nsICryptoHash::SHA512:
+      return true;
+    case nsICryptoHash::MD2:
+    case nsICryptoHash::MD5:
+    default:
+      return false;
+  }
+}
+
+bool nsCMSMessage::GetIntHashToOidHash(const int16_t aCryptoHashInt, SECOidTag &aOidTag)
+{
+  bool rv = true;
+
+  switch (aCryptoHashInt) {
+    case nsICryptoHash::MD2:
+      aOidTag = SEC_OID_MD2;
+      break;
+    case nsICryptoHash::MD5:
+      aOidTag = SEC_OID_MD5;
+      break;
+    case nsICryptoHash::SHA1:
+      aOidTag = SEC_OID_SHA1;
+      break;
+    case nsICryptoHash::SHA256:
+      aOidTag = SEC_OID_SHA256;
+      break;
+    case nsICryptoHash::SHA384:
+      aOidTag = SEC_OID_SHA384;
+      break;
+    case nsICryptoHash::SHA512:
+      aOidTag = SEC_OID_SHA512;
+      break;
+    default:
+      rv = false;
+  }
+
+  return rv;
+}
+
 NS_IMETHODIMP
 nsCMSMessage::CreateSigned(nsIX509Cert* aSigningCert, nsIX509Cert* aEncryptCert,
                            unsigned char* aDigestData, uint32_t aDigestDataLen,
@@ -647,20 +735,8 @@ nsCMSMessage::CreateSigned(nsIX509Cert* aSigningCert, nsIX509Cert* aEncryptCert,
   }
 
   SECOidTag digestType;
-  switch (aDigestType) {
-    case nsICryptoHash::SHA1:
-      digestType = SEC_OID_SHA1;
-      break;
-    case nsICryptoHash::SHA256:
-      digestType = SEC_OID_SHA256;
-      break;
-    case nsICryptoHash::SHA384:
-      digestType = SEC_OID_SHA384;
-      break;
-    case nsICryptoHash::SHA512:
-      digestType = SEC_OID_SHA512;
-      break;
-    default:
+  if (!IsAllowedHash(aDigestType) ||
+      !GetIntHashToOidHash(aDigestType, digestType)) {
       return NS_ERROR_INVALID_ARG;
   }
 
