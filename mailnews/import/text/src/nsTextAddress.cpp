@@ -21,7 +21,6 @@
 #include "TextDebugLog.h"
 #include "plstr.h"
 #include "msgCore.h"
-#include <algorithm>
 
 #ifndef MOZILLA_INTERNAL_API
 #include "nsMsgI18N.h"

@@ -6,7 +6,6 @@
 #include <tchar.h>
 #include "nsWabAddressBook.h"
 #include "mozilla/Logging.h"
-#include <algorithm>
 
 #ifdef PR_LOGGING
 static PRLogModuleInfo* gWabAddressBookLog

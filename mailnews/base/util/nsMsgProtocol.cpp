@@ -36,9 +36,7 @@
 #include "nsIMsgIncomingServer.h"
 #include "nsIInputStreamPump.h"
 #include "nsMimeTypes.h"
-#include "nsAlgorithm.h"
 #include "mozilla/Services.h"
-#include <algorithm>
 #include "nsContentSecurityManager.h"
 
 #undef PostMessage // avoid to collision with WinUser.h

@@ -12,6 +12,7 @@
 #include "nsImapUrl.h"
 #include "nsStringGlue.h"
 #include "nsServiceManagerUtils.h"
+#include <algorithm>
 
 //////////////////// nsIMAPNamespace  /////////////////////////////////////////////////////////////
 

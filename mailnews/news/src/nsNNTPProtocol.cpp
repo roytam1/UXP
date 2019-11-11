@@ -31,7 +31,6 @@
 #include "mozilla/mailnews/MimeHeaderParser.h"
 
 #include "prprf.h"
-#include <algorithm>
 
 /* include event sink interfaces for news */
 

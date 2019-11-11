@@ -8,7 +8,6 @@
 #include "nsAbView.h"
 #include "nsISupports.h"
 #include "nsCOMPtr.h"
-#include "nsIServiceManager.h"
 #include "nsIAbCard.h"
 #include "nsILocale.h"
 #include "nsILocaleService.h"
@@ -26,7 +25,7 @@
 #include "nsIStringBundle.h"
 #include "nsIPrefLocalizedString.h"
 #include "nsArrayUtils.h"
-#include "nsIAddrDatabase.h" // for kPriEmailColumn
+#include "nsIAddrDatabase.h" // for kPhoneticNameColumn
 #include "nsMsgUtils.h"
 #include "mozilla/Services.h"
 
