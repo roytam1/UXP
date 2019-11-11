@@ -251,10 +251,6 @@ nsMsgXFVirtualFolderDBView::OnSearchHit(nsIMsgDBHdr* aMsgHdr, nsIMsgFolder *aFol
   NS_ENSURE_ARG(aMsgHdr);
   NS_ENSURE_ARG(aFolder);
 
-  nsCOMPtr<nsIMsgDatabase> dbToUse;
-  nsCOMPtr<nsIDBFolderInfo> folderInfo;
-  aFolder->GetDBFolderInfoAndDB(getter_AddRefs(folderInfo), getter_AddRefs(dbToUse));
-
   if (m_curFolderGettingHits != aFolder && m_doingSearch && !m_doingQuickSearch)
   {
     m_curFolderHasCachedHits = false;
@@ -267,11 +263,16 @@ nsMsgXFVirtualFolderDBView::OnSearchHit(nsIMsgDBHdr* aMsgHdr, nsIMsgFolder *aFol
     m_curFolderStartKeyIndex = m_keys.Length();
   }
   bool hdrInCache = false;
-  nsCString searchUri;
   if (!m_doingQuickSearch)
   {
-    m_viewFolder->GetURI(searchUri);
-    dbToUse->HdrIsInCache(searchUri.get(), aMsgHdr, &hdrInCache);    
+    nsCOMPtr<nsIMsgDatabase> dbToUse;
+    nsCOMPtr<nsIDBFolderInfo> dummyInfo;
+    nsresult rv = aFolder->GetDBFolderInfoAndDB(getter_AddRefs(dummyInfo), getter_AddRefs(dbToUse));
+    if (NS_SUCCEEDED(rv)) {
+      nsCString searchUri;
+      m_viewFolder->GetURI(searchUri);
+      dbToUse->HdrIsInCache(searchUri.get(), aMsgHdr, &hdrInCache);
+    }  
   }
   if (!m_doingSearch || !m_curFolderHasCachedHits || !hdrInCache)
   {
