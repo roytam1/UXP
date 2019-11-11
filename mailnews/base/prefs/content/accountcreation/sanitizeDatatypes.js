@@ -198,8 +198,6 @@ function MalformedException(msgID, uncheckedBadValue)
   var stringBundle = getStringBundle(
       "chrome://messenger/locale/accountCreationUtil.properties");
   var msg = stringBundle.GetStringFromName(msgID);
-  if (kDebug)
-    msg += " (bad value: " + new String(uncheckedBadValue) + ")";
   Exception.call(this, msg);
 }
 MalformedException.prototype = Object.create(Exception.prototype);

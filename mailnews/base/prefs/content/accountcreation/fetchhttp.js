@@ -159,17 +159,14 @@ FetchHTTP.prototype =
     else
     {
       success = false;
-      try
-      {
-        errorCode = this._request.status;
-        errorStr = this._request.statusText;
-      } catch (e) {
-        // If we can't resolve the hostname in DNS etc., .statusText throws
-        errorCode = -2;
+      errorCode = this._request.status;
+      if (errorCode == 0) {
         errorStr = getStringBundle(
-                   "chrome://messenger/locale/accountCreationUtil.properties")
-                   .GetStringFromName("cannot_contact_server.error");
+            "chrome://messenger/locale/accountCreationUtil.properties")
+            .GetStringFromName("cannot_contact_server.error");
         ddump(errorStr);
+      } else {
+        errorStr = this._request.statusText;
       }
     }
 
