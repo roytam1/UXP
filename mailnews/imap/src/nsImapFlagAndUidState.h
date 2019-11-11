@@ -20,7 +20,7 @@ class nsImapFlagAndUidState : public nsIImapFlagAndUidState
 {
 public:
     NS_DECL_THREADSAFE_ISUPPORTS
-    nsImapFlagAndUidState(int numberOfMessages);
+    explicit nsImapFlagAndUidState(int numberOfMessages);
 
     NS_DECL_NSIIMAPFLAGANDUIDSTATE
 

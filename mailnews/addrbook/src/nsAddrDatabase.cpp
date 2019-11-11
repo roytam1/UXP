@@ -2507,7 +2507,7 @@ public:
     NS_DECL_NSIADDRDBLISTENER
     // nsAddrDBEnumerator methods:
 
-    nsAddrDBEnumerator(nsAddrDatabase* aDb);
+    explicit nsAddrDBEnumerator(nsAddrDatabase* aDb);
     void Clear();
 protected:
     virtual ~nsAddrDBEnumerator();

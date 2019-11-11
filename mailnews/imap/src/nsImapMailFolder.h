@@ -115,7 +115,7 @@ class nsImapMailFolder;
 class nsMsgIMAPFolderACL
 {
 public:
-  nsMsgIMAPFolderACL(nsImapMailFolder *folder);
+  explicit nsMsgIMAPFolderACL(nsImapMailFolder *folder);
   ~nsMsgIMAPFolderACL();
 
   bool SetFolderRightsForUser(const nsACString& userName, const nsACString& rights);

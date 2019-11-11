@@ -993,7 +993,7 @@ bool nsImportGenericMail::CreateFolder(nsIMsgFolder **ppFolder)
 class GetSubFoldersRunnable : public mozilla::Runnable
 {
 public:
-  GetSubFoldersRunnable(nsIMsgFolder *aFolder);
+  explicit GetSubFoldersRunnable(nsIMsgFolder *aFolder);
   NS_DECL_NSIRUNNABLE
 private:
   nsCOMPtr<nsIMsgFolder> m_folder;
@@ -1182,7 +1182,7 @@ nsresult ProxyCreateSubfolder(nsIMsgFolder *aFolder, const nsAString &aName)
 class ForceDBClosedRunnable : public mozilla::Runnable
 {
 public:
-  ForceDBClosedRunnable(nsIMsgFolder *aFolder);
+  explicit ForceDBClosedRunnable(nsIMsgFolder *aFolder);
   NS_DECL_NSIRUNNABLE
 protected:
   nsCOMPtr<nsIMsgFolder> m_folder;

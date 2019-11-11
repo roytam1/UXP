@@ -40,7 +40,7 @@ struct CorpusToken;
  */
 class TokenEnumeration {
 public:
-    TokenEnumeration(PLDHashTable* table);
+    explicit TokenEnumeration(PLDHashTable* table);
     bool hasMoreTokens();
     BaseToken* nextToken();
 
@@ -96,7 +96,7 @@ public:
     BaseToken* add(const char* word);
 
 protected:
-    TokenHash(uint32_t entrySize);
+    explicit TokenHash(uint32_t entrySize);
     PLArenaPool mWordPool;
     uint32_t mEntrySize;
     PLDHashTable mTokenTable;

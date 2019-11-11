@@ -133,7 +133,7 @@ protected:
 class nsMsgMailboxParser : public nsIStreamListener, public nsParseMailMessageState, public nsMsgLineBuffer
 {
 public:
-  nsMsgMailboxParser(nsIMsgFolder *);
+  explicit nsMsgMailboxParser(nsIMsgFolder *);
   nsMsgMailboxParser();
   nsresult Init();
 

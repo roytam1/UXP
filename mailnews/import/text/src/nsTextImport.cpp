@@ -51,7 +51,7 @@ PRLogModuleInfo* TEXTIMPORTLOGMODULE;
 class ImportAddressImpl final : public nsIImportAddressBooks
 {
 public:
-  ImportAddressImpl(nsIStringBundle* aStringBundle);
+  explicit ImportAddressImpl(nsIStringBundle* aStringBundle);
 
   static nsresult Create(nsIImportAddressBooks** aImport,
                          nsIStringBundle *aStringBundle);

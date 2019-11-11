@@ -29,7 +29,7 @@ private:
     NS_DECL_ISUPPORTS
     NS_DECL_NSISIMPLEENUMERATOR
 
-    AppendingEnumerator(nsISimpleEnumerator* aBase);
+    explicit AppendingEnumerator(nsISimpleEnumerator* aBase);
 
   private:
     ~AppendingEnumerator() {}

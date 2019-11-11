@@ -30,7 +30,7 @@ static NS_DEFINE_IID(kISupportsIID, NS_ISUPPORTS_IID);
 class ImportVCardAddressImpl : public nsIImportAddressBooks
 {
 public:
-  ImportVCardAddressImpl(nsIStringBundle* aStringBundle); 
+  explicit ImportVCardAddressImpl(nsIStringBundle* aStringBundle);
 
   static nsresult Create(
       nsIImportAddressBooks** aImport, nsIStringBundle* aStringBundle);

@@ -32,7 +32,7 @@ public:
   NS_DECL_NSICMSMESSAGE2
 
   nsCMSMessage();
-  nsCMSMessage(NSSCMSMessage* aCMSMsg);
+  explicit nsCMSMessage(NSSCMSMessage* aCMSMsg);
   nsresult Init();
 
   void referenceContext(nsIInterfaceRequestor* aContext) {m_ctx = aContext;}
