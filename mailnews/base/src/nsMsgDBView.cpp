@@ -870,6 +870,24 @@ nsresult nsMsgDBView::FetchLabel(nsIMsgDBHdr *aHdr, nsAString &aLabelString)
   return NS_OK;
 }
 
+/**
+ * Lowercase the email and remove a possible plus addressing part.
+ * E.g. John+test@example.com -> john@example.com.
+ */
+static void
+ToLowerCaseDropPlusAddessing(nsCString& aEmail)
+{
+  ToLowerCase(aEmail);
+  int32_t indPlus;
+  if ((indPlus = aEmail.FindChar('+')) == kNotFound)
+    return;
+  int32_t indAt;
+  indAt = aEmail.FindChar('@', indPlus);
+  if (indAt == kNotFound)
+    return;
+  aEmail.ReplaceLiteral(indPlus, indAt - indPlus, "");
+}
+
 bool nsMsgDBView::IsOutgoingMsg(nsIMsgDBHdr* aHdr)
 {
   nsString author;
@@ -878,7 +896,7 @@ bool nsMsgDBView::IsOutgoingMsg(nsIMsgDBHdr* aHdr)
   nsCString emailAddress;
   nsString name;
   ExtractFirstAddress(DecodedHeader(author), name, emailAddress);
-
+  ToLowerCaseDropPlusAddessing(emailAddress);
   return mEmails.Contains(emailAddress);
 }
 
@@ -2340,12 +2358,16 @@ NS_IMETHODIMP nsMsgDBView::Open(nsIMsgFolder *folder, nsMsgViewSortTypeValue sor
 
     nsCString email;
     identity->GetEmail(email);
-    if (!email.IsEmpty())
+    if (!email.IsEmpty()) {
+      ToLowerCaseDropPlusAddessing(email);
       mEmails.PutEntry(email);
+    }
 
     identity->GetReplyTo(email);
-    if (!email.IsEmpty())
+    if (!email.IsEmpty()) {
+      ToLowerCaseDropPlusAddessing(email);
       mEmails.PutEntry(email);
+    }
   }
   return NS_OK;
 }
