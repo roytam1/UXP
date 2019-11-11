@@ -50,8 +50,6 @@ PRLogModuleInfo *MAILBOX;
 nsMailboxProtocol::nsMailboxProtocol(nsIURI * aURI)
     : nsMsgProtocol(aURI)
 {
-  m_lineStreamBuffer =nullptr;
-
   // initialize the pr log if it hasn't been initialiezed already
   if (!MAILBOX)
     MAILBOX = PR_NewLogModule("MAILBOX");
@@ -59,8 +57,6 @@ nsMailboxProtocol::nsMailboxProtocol(nsIURI * aURI)
 
 nsMailboxProtocol::~nsMailboxProtocol()
 {
-  // free our local state
-  delete m_lineStreamBuffer;
 }
 
 nsresult nsMailboxProtocol::OpenMultipleMsgTransport(uint64_t offset, int32_t size)

@@ -271,7 +271,6 @@ nsNNTPProtocol::nsNNTPProtocol(nsINntpIncomingServer *aServer, nsIURI *aURL,
     NNTP = PR_NewLogModule("NNTP");
 
   m_ProxyServer = nullptr;
-  m_lineStreamBuffer = nullptr;
   m_responseText = nullptr;
   m_dataBuf = nullptr;
 
@@ -304,9 +303,6 @@ nsNNTPProtocol::~nsNNTPProtocol()
   if (m_nntpServer) {
     m_nntpServer->WriteNewsrcFile();
     m_nntpServer->RemoveConnection(this);
-  }
-  if (m_lineStreamBuffer) {
-     delete m_lineStreamBuffer;
   }
   if (mUpdateTimer) {
     mUpdateTimer->Cancel();
