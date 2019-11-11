@@ -237,7 +237,7 @@ public:
   void DiscoverMailboxSpec(nsImapMailboxSpec * adoptedBoxSpec);
   void AlertUserEventUsingName(const char* aMessageId);
   void AlertUserEvent(const char * message);
-  void AlertUserEventFromServer(const char * aServerEvent);
+  void AlertUserEventFromServer(const char * aServerEvent, bool aForIdle = false);
 
   void ProgressEventFunctionUsingName(const char* aMsgId);
   void ProgressEventFunctionUsingNameWithString(const char* aMsgName, const char *
@@ -316,6 +316,7 @@ private:
   // finish processng a url and it is set whenever we call Load on a url
   bool m_urlInProgress;
   nsCOMPtr<nsIImapUrl> m_runningUrl; // the nsIImapURL that is currently running
+  nsCOMPtr<nsIImapUrl> m_runningUrlLatest;
   nsImapAction m_imapAction;  // current imap action associated with this connnection...
 
   nsCString             m_hostName;
@@ -371,6 +372,7 @@ private:
   RefPtr<ImapMailFolderSinkProxy> m_imapMailFolderSink;
   RefPtr<ImapMessageSinkProxy>    m_imapMessageSink;
   RefPtr<ImapServerSinkProxy>     m_imapServerSink;
+  RefPtr<ImapServerSinkProxy>     m_imapServerSinkLatest;
   RefPtr<ImapProtocolSinkProxy>   m_imapProtocolSink;
 
   // helper function to setup imap sink interface proxies

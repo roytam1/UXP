@@ -655,6 +655,7 @@ nsImapProtocol::SetupSinkProxy()
       res = m_runningUrl->GetImapServerSink(getter_AddRefs(aImapServerSink));
       if (aImapServerSink) {
         m_imapServerSink = new ImapServerSinkProxy(aImapServerSink);
+        m_imapServerSinkLatest =  m_imapServerSink;
       } else {
         return NS_ERROR_ILLEGAL_VALUE;
       }
@@ -695,6 +696,7 @@ nsresult nsImapProtocol::SetupWithUrl(nsIURI * aURL, nsISupports* aConsumer)
   if (aURL)
   {
     m_runningUrl = do_QueryInterface(aURL, &rv);
+    m_runningUrlLatest = m_runningUrl;
     if (NS_FAILED(rv)) return rv;
     nsCOMPtr<nsIMsgMailNewsUrl> mailnewsUrl = do_QueryInterface(m_runningUrl);
     nsCOMPtr<nsIMsgIncomingServer> server = do_QueryReferent(m_server);
@@ -1425,6 +1427,11 @@ nsImapProtocol::ImapThreadMainLoop()
                 == nsImapServerResponseParser::kFolderSelected)
         {
           Idle(); // for now, lets just do it. We'll probably want to use a timer
+          if (!m_idle)
+          {
+            // Server rejected IDLE. Treat like IDLE not enabled or available.
+            m_imapMailFolderSink = nullptr;
+          }
         }
         else // if not idle, don't need to remember folder sink
           m_imapMailFolderSink = nullptr;
@@ -5105,14 +5112,26 @@ nsImapProtocol::AlertUserEvent(const char * message)
 }
 
 void
-nsImapProtocol::AlertUserEventFromServer(const char * aServerEvent)
+nsImapProtocol::AlertUserEventFromServer(const char * aServerEvent, bool aForIdle)
 {
-    if (m_imapServerSink && aServerEvent)
+  if (aServerEvent)
+  {
+    // If called due to BAD/NO imap IDLE response, the server sink and running url
+    // are typically null when IDLE command is sent. So use the stored latest
+    // values for these so that the error alert notification occurs.
+    if (aForIdle && !m_imapServerSink && !m_runningUrl && m_imapServerSinkLatest)
+    {
+      nsCOMPtr<nsIMsgMailNewsUrl> mailnewsUrl = do_QueryInterface(m_runningUrlLatest);
+      m_imapServerSinkLatest->FEAlertFromServer(nsDependentCString(aServerEvent),
+                                                mailnewsUrl);
+    }
+    else if (m_imapServerSink)
     {
       nsCOMPtr<nsIMsgMailNewsUrl> mailnewsUrl = do_QueryInterface(m_runningUrl);
       m_imapServerSink->FEAlertFromServer(nsDependentCString(aServerEvent),
                                           mailnewsUrl);
     }
+  }
 }
 
 void nsImapProtocol::ResetProgressInfo()
@@ -7882,10 +7901,12 @@ void nsImapProtocol::Idle()
   nsresult rv = SendData(command.get());
   if (NS_SUCCEEDED(rv))
   {
+    // we'll just get back a continuation char at first.
+    // + idling...
+    ParseIMAPandCheckForNewMail();
+    if (GetServerStateParser().LastCommandSuccessful())
+    {
       m_idle = true;
-      // we'll just get back a continuation char at first.
-      // + idling...
-      ParseIMAPandCheckForNewMail();
       // this will cause us to get notified of data or the socket getting closed.
       // That notification will occur on the socket transport thread - we just
       // need to poke a monitor so the imap thread will do a blocking read
@@ -7893,6 +7914,11 @@ void nsImapProtocol::Idle()
       nsCOMPtr <nsIAsyncInputStream> asyncInputStream = do_QueryInterface(m_inputStream);
       if (asyncInputStream)
         asyncInputStream->AsyncWait(this, 0, 0, nullptr);
+    }
+    else
+    {
+      m_idle = false;
+    }
   }
 }
 
