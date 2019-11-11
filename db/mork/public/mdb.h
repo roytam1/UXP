@@ -2306,7 +2306,7 @@ public:
   // } ----- end attribute methods -----
 
   // { ----- begin cell seeking methods -----
-  NS_IMETHOD SeekCell( // same as SetRow() followed by MakeCell()
+  NS_IMETHOD SeekCell(
     nsIMdbEnv* ev, // context
     mdb_pos inPos, // position of cell in row sequence
     mdb_column* outColumn, // column for this particular cell
