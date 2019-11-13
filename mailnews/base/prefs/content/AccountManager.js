@@ -899,9 +899,6 @@ function updateButtons(tree, account) {
  * Called only by Thunderbird.
  */
 function initAccountActionsButtons(menupopup) {
-  if (!Services.prefs.getBoolPref("mail.chat.enabled"))
-    document.getElementById("accountActionsAddIMAccount").hidden = true;
-
   updateItems(
     document.getElementById("accounttree"),
     getCurrentAccount(),
@@ -1485,9 +1482,6 @@ var gAccountTree = {
       // Other accounts can still be shown properly if they are valid.
       try {
         server = account.incomingServer;
-
-        if (server.type == "im" && !Services.prefs.getBoolPref("mail.chat.enabled"))
-          continue;
 
         accountName = server.prettyName;
 

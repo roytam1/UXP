@@ -40,15 +40,12 @@ nsStatusBarBiffManager::~nsStatusBarBiffManager()
 }
 
 #define NEW_MAIL_PREF_BRANCH             "mail.biff."
-#define CHAT_PREF_BRANCH                 "mail.chat."
 #define FEED_PREF_BRANCH                 "mail.feed."
 #define PREF_PLAY_SOUND                  "play_sound"
 #define PREF_SOUND_URL                   "play_sound.url"
 #define PREF_SOUND_TYPE                  "play_sound.type"
 #define SYSTEM_SOUND_TYPE 0
 #define CUSTOM_SOUND_TYPE 1
-#define PREF_CHAT_ENABLED                "mail.chat.enabled"
-#define PLAY_CHAT_NOTIFICATION_SOUND     "play-chat-notification-sound"
 
 nsresult nsStatusBarBiffManager::Init()
 {
@@ -66,16 +63,6 @@ nsresult nsStatusBarBiffManager::Init()
 
   nsCOMPtr<nsIPrefBranch> pref(do_GetService(NS_PREFSERVICE_CONTRACTID, &rv));
   NS_ENSURE_SUCCESS(rv, rv);
-
-  bool chatEnabled = false;
-  if (NS_SUCCEEDED(rv))
-    rv = pref->GetBoolPref(PREF_CHAT_ENABLED, &chatEnabled);
-  if (NS_SUCCEEDED(rv) && chatEnabled) {
-    nsCOMPtr<nsIObserverService> observerService =
-      mozilla::services::GetObserverService();
-    if (observerService)
-      observerService->AddObserver(this, PLAY_CHAT_NOTIFICATION_SOUND, false);
-  }
 
   mInitialized = true;
   return NS_OK;
@@ -237,7 +224,7 @@ nsStatusBarBiffManager::Observe(nsISupports *aSubject,
                                 const char *aTopic,
                                 const char16_t *aData)
 {
-  return PlayBiffSound(CHAT_PREF_BRANCH);
+  return NS_OK;
 }
 
 // nsIStatusBarBiffManager method....

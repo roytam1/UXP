@@ -51,11 +51,8 @@
 #include <Carbon/Carbon.h>
 #import <Cocoa/Cocoa.h>
 
-#define kChatEnabledPref "mail.chat.enabled"
 #define kBiffAnimateDockIconPref "mail.biff.animate_dock_icon"
 #define kMaxDisplayCount 10
-#define kNewChatMessageTopic "new-directed-incoming-message"
-#define kUnreadImCountChangedTopic "unread-im-count-changed"
 
 using namespace mozilla::mailnews;
 
@@ -162,7 +159,6 @@ nsMessengerOSXIntegration::nsMessengerOSXIntegration()
   mBiffStateAtom = MsgGetAtom("BiffState");
   mNewMailReceivedAtom = MsgGetAtom("NewMailReceived");
   mUnreadTotal = 0;
-  mUnreadChat = 0;
 }
 
 nsMessengerOSXIntegration::~nsMessengerOSXIntegration()
@@ -231,14 +227,7 @@ nsMessengerOSXIntegration::Observe(nsISupports* aSubject, const char* aTopic, co
     if (NS_SUCCEEDED(rv)) {
       observerService->RemoveObserver(this, "mail-startup-done");
 
-      bool chatEnabled = false;
       nsCOMPtr<nsIPrefBranch> pref(do_GetService(NS_PREFSERVICE_CONTRACTID, &rv));
-      if (NS_SUCCEEDED(rv))
-        rv = pref->GetBoolPref(kChatEnabledPref, &chatEnabled);
-      if (NS_SUCCEEDED(rv) && chatEnabled) {
-        observerService->AddObserver(this, kNewChatMessageTopic, false);
-        observerService->AddObserver(this, kUnreadImCountChangedTopic, false);
-      }
     }
 
     // Register with the new mail service for changes to the unread message count
@@ -260,20 +249,9 @@ nsMessengerOSXIntegration::Observe(nsISupports* aSubject, const char* aTopic, co
     return mailSession->AddFolderListener(this, nsIFolderListener::boolPropertyChanged | nsIFolderListener::intPropertyChanged);
   }
 
-  if (!strcmp(aTopic, kNewChatMessageTopic)) {
-    // We don't have to bother about checking if the window is already focused
-    // before attempting to bounce the dock icon, as BounceDockIcon is
-    // implemented by a getAttention call which won't do anything if the window
-    // requesting attention is already focused.
-    return BounceDockIcon();
-  }
-
   if (!strcmp(aTopic, kUnreadImCountChangedTopic)) {
     nsresult rv;
     nsCOMPtr<nsISupportsPRInt32> unreadCount = do_QueryInterface(aSubject, &rv);
-    NS_ENSURE_SUCCESS(rv, rv);
-
-    rv = unreadCount->GetData(&mUnreadChat);
     NS_ENSURE_SUCCESS(rv, rv);
 
     return BadgeDockIcon();
@@ -515,7 +493,7 @@ nsMessengerOSXIntegration::BadgeDockIcon()
 {
   NS_OBJC_BEGIN_TRY_ABORT_BLOCK_NSRESULT;
 
-  int32_t unreadCount = mUnreadTotal + mUnreadChat;
+  int32_t unreadCount = mUnreadTotal;
   // If count is less than one, we should restore the original dock icon.
   if (unreadCount < 1)
   {

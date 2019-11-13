@@ -13,7 +13,7 @@ SMIMEService.prototype = {
   showPanel: function(server) {
     // don't show the panel for news, rss, or local accounts
     return (server.type != "nntp" && server.type != "rss" &&
-            server.type != "im" && server.type != "none");
+            server.type != "none");
   },
 
   QueryInterface: XPCOMUtils.generateQI([Components.interfaces.nsIMsgAccountManagerExtension]),

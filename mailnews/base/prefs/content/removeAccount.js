@@ -39,12 +39,6 @@ function onLoad(event) {
     document.getElementById("removeDataPossibility").collapsed = true;
   }
 
-  if (gServer.type == "im") {
-    let dataCheckbox = document.getElementById("removeData");
-    dataCheckbox.label = dataCheckbox.getAttribute("labelChat");
-    dataCheckbox.accessKey = dataCheckbox.getAttribute("accesskeyChat");
-  }
-
   enableRemove();
   window.sizeToContent();
 }
@@ -80,8 +74,6 @@ function showInfo() {
   // TODO: bug 1238271, this should use showFor attributes if possible.
   if (gServer.type == "imap" || gServer.type == "nntp") {
     document.getElementById("serverAccount").collapsed = false;
-  } else if (gServer.type == "im") {
-    document.getElementById("chatAccount").collapsed = false;
   } else {
     document.getElementById("localAccount").collapsed = false;
   }

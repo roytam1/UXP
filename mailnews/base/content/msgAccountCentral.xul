@@ -173,11 +173,6 @@
                  value="&emailSectionHdr.label;"
                  chromedir="&locale.dir;"
                  onclick="CreateNewAccountTB('mail');"/>
-          <label id="CreateAccountChat"
-                 class="acctCentralNewAcctText acctCentralLinkText"
-                 value="&chat.label;"
-                 chromedir="&locale.dir;"
-                 onclick="openIMAccountWizard();"/>
           <label id="CreateAccountNewsgroups"
                  class="acctCentralNewAcctText acctCentralLinkText"
                  value="&newsSectionHdr.label;"
