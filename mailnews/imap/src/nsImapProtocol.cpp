@@ -5626,6 +5626,7 @@ void nsImapProtocol::InitPrefAuthMethods(int32_t authMethodPrefValue)
 
     }
 
+#ifdef MOZ_MAILNEWS_OAUTH2
     if (m_prefAuthMethods & kHasXOAuth2Capability)
       mOAuth2Support = new mozilla::mailnews::OAuth2ThreadHelper(aServer);
 
@@ -5633,6 +5634,7 @@ void nsImapProtocol::InitPrefAuthMethods(int32_t authMethodPrefValue)
     if (m_prefAuthMethods & kHasXOAuth2Capability &&
         (!mOAuth2Support || !mOAuth2Support->SupportsOAuth2()))
       m_prefAuthMethods &= ~kHasXOAuth2Capability;
+#endif
 
     NS_ASSERTION(m_prefAuthMethods != kCapabilityUndefined,
          "IMAP: InitPrefAuthMethods() didn't work");
