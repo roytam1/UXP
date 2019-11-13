@@ -11,7 +11,7 @@
 #define BRANDING_RELNOTESPATH releasenotes.shtml
 #define BRANDING_FIRSTRUNPATH firstrun/
 #define BRANDING_APPUPDATEURL aus.@BRANDING_BASEURL@
-#define BRANDING_APPUPDATEPATH ?application=%PRODUCT%&version=%VERSION%&arch=%BUILD_TARGET%&buildid=%BUILD_ID%&channel=%CHANNEL%
+#define BRANDING_APPUPDATEPATH ?application=%PRODUCT%&version=%VERSION%&arch=%BUILD_TARGET%&toolkit=%WIDGET_TOOLKIT%&buildid=%BUILD_ID%&channel=%CHANNEL%
 
 // Shared Branding Preferences
 // XXX: These should REALLY go back to application preferences
@@ -24,6 +24,9 @@ pref("startup.homepage_welcome_url.additional", "");
 
 // Version release notes
 pref("app.releaseNotesURL", "http://@BRANDING_SITEURL@/@BRANDING_RELNOTESPATH@");
+
+// base url for web-based feedback pages
+pref("app.feedback.baseURL", "https://forum.palemoon.org/viewforum.php?f=61");
 
 // Vendor home page
 pref("app.vendorURL", "http://@BRANDING_SITEURL@/");

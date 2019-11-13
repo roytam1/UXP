@@ -28,9 +28,9 @@ pre {
   font-family: var(--monospace-font-family);
 }
 
-#json,
-#headers {
+#json {
   display: none;
+  white-space: pre-wrap;
 }
 
 /******************************************************************************/

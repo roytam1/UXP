@@ -1,3 +1,4 @@
+atomic.h
 nspr.h
 plarena.h
 plarenas.h
@@ -909,7 +910,9 @@ signal.h
 SimpleGameSound.h
 SIOUX.h
 size_t.h
+#ifdef MOZ_SNDIO
 sndio.h
+#endif
 someincludefile.h
 Sound.h
 soundcard.h

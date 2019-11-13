@@ -408,7 +408,6 @@ const ObjectOps ModuleEnvironmentObject::objectOps_ = {
     ModuleEnvironmentObject::setProperty,
     ModuleEnvironmentObject::getOwnPropertyDescriptor,
     ModuleEnvironmentObject::deleteProperty,
-    nullptr, nullptr,                                    /* watch/unwatch */
     nullptr,                                             /* getElements */
     ModuleEnvironmentObject::enumerate,
     nullptr
@@ -491,7 +490,7 @@ ModuleEnvironmentObject::createImportBinding(JSContext* cx, HandleAtom importNam
 {
     RootedId importNameId(cx, AtomToId(importName));
     RootedId localNameId(cx, AtomToId(localName));
-    RootedModuleEnvironmentObject env(cx, module->environment());
+    RootedModuleEnvironmentObject env(cx, &module->initialEnvironment());
     if (!importBindings().putNew(cx, importNameId, env, localNameId)) {
         ReportOutOfMemory(cx);
         return false;
@@ -790,7 +789,6 @@ static const ObjectOps WithEnvironmentObjectOps = {
     with_SetProperty,
     with_GetOwnPropertyDescriptor,
     with_DeleteProperty,
-    nullptr, nullptr,    /* watch/unwatch */
     nullptr,             /* getElements */
     nullptr,             /* enumerate (native enumeration of target doesn't work) */
     nullptr,
@@ -1159,7 +1157,6 @@ static const ObjectOps RuntimeLexicalErrorObjectObjectOps = {
     lexicalError_SetProperty,
     lexicalError_GetOwnPropertyDescriptor,
     lexicalError_DeleteProperty,
-    nullptr, nullptr,    /* watch/unwatch */
     nullptr,             /* getElements */
     nullptr,             /* enumerate (native enumeration of target doesn't work) */
     nullptr,             /* this */

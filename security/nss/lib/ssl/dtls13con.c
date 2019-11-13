@@ -11,6 +11,12 @@
 #include "sslimpl.h"
 #include "sslproto.h"
 
+#ifdef _MSC_VER
+#if _MSC_VER < 1900
+#define inline 
+#endif
+#endif
+
 SECStatus
 dtls13_InsertCipherTextHeader(const sslSocket *ss, ssl3CipherSpec *cwSpec,
                               sslBuffer *wrBuf, PRBool *needsLength)
@@ -482,7 +488,7 @@ dtls13_HandleAck(sslSocket *ss, sslBuffer *databuf)
          * for the holddown period to process retransmitted Finisheds.
          */
         if (!ss->sec.isServer && (ss->ssl3.hs.ws == idle_handshake)) {
-            ssl_CipherSpecReleaseByEpoch(ss, CipherSpecRead,
+            ssl_CipherSpecReleaseByEpoch(ss, ssl_secret_read,
                                          TrafficKeyHandshake);
         }
     }
@@ -509,6 +515,6 @@ dtls13_HolddownTimerCb(sslSocket *ss)
 {
     SSL_TRC(10, ("%d: SSL3[%d]: holddown timer fired",
                  SSL_GETPID(), ss->fd));
-    ssl_CipherSpecReleaseByEpoch(ss, CipherSpecRead, TrafficKeyHandshake);
+    ssl_CipherSpecReleaseByEpoch(ss, ssl_secret_read, TrafficKeyHandshake);
     ssl_ClearPRCList(&ss->ssl3.hs.dtlsRcvdHandshake, NULL);
 }

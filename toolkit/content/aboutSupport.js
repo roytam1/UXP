@@ -53,6 +53,32 @@ var snapshotFormatters = {
     if (data.updateChannel)
       $("updatechannel-box").textContent = data.updateChannel;
 
+    let statusText = "unknown status";
+
+    // Whitelist of known values with string descriptions:
+    switch (data.autoStartStatus) {
+      case 0:
+        statusText = "Enabled by user"; break;
+      case 1:
+        statusText = "Enabled by default"; break;
+      case 2:
+        statusText = "Disabled"; break;
+      case 4:
+        statusText = "Disabled by accessibility tools"; break;
+      case 6:
+        statusText = "Disabled by unsupported text input"; break;
+      case 7:
+        statusText = "Disabled by add-ons"; break;
+      case 8:
+        statusText = "Disabled forcibly"; break;
+
+      case 10:
+        statusText = (Services.appinfo.OS == "Darwin" ? "OS X 10.6 - 10.8" : "Windows XP");
+        break;
+    }
+
+    $("multiprocess-box").textContent = data.numRemoteWindows + "/" + data.numTotalWindows + " (" + statusText + ")";
+
     $("safemode-box").textContent = data.safeMode;
   },
 

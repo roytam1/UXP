@@ -38,6 +38,7 @@ const kPrefCustomizationState        = "browser.uiCustomization.state";
 const kPrefCustomizationAutoAdd      = "browser.uiCustomization.autoAdd";
 const kPrefCustomizationDebug        = "browser.uiCustomization.debug";
 const kPrefDrawInTitlebar            = "browser.tabs.drawInTitlebar";
+const kPrefWebIDEInNavbar            = "devtools.webide.widget.inNavbarByDefault";
 
 const kExpectedWindowURL = "chrome://browser/content/browser.xul";
 
@@ -198,9 +199,7 @@ var CustomizableUIInternal = {
       "add-ons-button",
     ];
 
-    if (!AppConstants.MOZ_DEV_EDITION) {
-      panelPlacements.splice(-1, 0, "developer-button");
-    }
+    panelPlacements.splice(-1, 0, "developer-button");
 
     let showCharacterEncoding = Services.prefs.getComplexValue(
       "browser.menu.showCharacterEncoding",
@@ -225,9 +224,11 @@ var CustomizableUIInternal = {
       "home-button",
     ];
 
-    if (AppConstants.MOZ_DEV_EDITION) {
-      navbarPlacements.splice(2, 0, "developer-button");
+   try {
+    if (Services.prefs.getBoolPref(kPrefWebIDEInNavbar)) {
+      navbarPlacements.push("webide-button");
     }
+   } catch(e) {}
 
     // Place this last, when createWidget is called for pocket, it will
     // append to the toolbar.

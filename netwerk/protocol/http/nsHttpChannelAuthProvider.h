@@ -185,6 +185,9 @@ private:
     static uint32_t                   sAuthAllowPref;
     static bool                       sImgCrossOriginAuthAllowPref;
     nsCOMPtr<nsICancelable>           mGenerateCredentialsCancelable;
+    
+    // Variable holding the preference for anti-spoof auth confirmation prompts.
+    static bool                       sConfirmAuthPref;
 };
 
 } // namespace net

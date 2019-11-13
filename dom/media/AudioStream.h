@@ -17,6 +17,10 @@
 #include "mozilla/UniquePtr.h"
 #include "CubebUtils.h"
 #include "soundtouch/SoundTouchFactory.h"
+#ifdef XP_SOLARIS
+#include "soundtouch/SoundTouch.h"
+#endif
+
 
 namespace mozilla {
 

@@ -26,11 +26,7 @@
 #  include <sys/syscall.h>
 #  include <sys/types.h>
 #  include <unistd.h>
-static pid_t
-gettid()
-{
-    return syscall(__NR_gettid);
-}
+#  define gettid() static_cast<pid_t>(syscall(SYS_gettid))
 # endif
 
 #else
@@ -69,6 +65,20 @@ js::GetNativeStackBaseImpl()
     return static_cast<void*>(pTib->StackBase);
 
 # endif
+}
+
+#elif defined(XP_SOLARIS)
+
+#include <ucontext.h>
+
+JS_STATIC_ASSERT(JS_STACK_GROWTH_DIRECTION < 0);
+
+void* 
+js::GetNativeStackBaseImpl()
+{
+	 stack_t st;
+	 stack_getbounds(&st);
+	 return static_cast<char*>(st.ss_sp) + st.ss_size;
 }
 
 #elif defined(XP_LINUX) && !defined(ANDROID) && defined(__GLIBC__)

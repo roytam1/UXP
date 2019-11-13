@@ -32,7 +32,7 @@
       this.invoke = function openMenu_invoke()
       {
         var tree;
-        if (LINUX) {
+        if (LINUX || SOLARIS) {
           tree =
             { PARENT_MENUITEM: [ ] };
 
@@ -51,7 +51,7 @@
       this.finalCheck = function openMenu_finalCheck()
       {
         var tree;
-        if (LINUX) {
+        if (LINUX || SOLARIS) {
           tree =
             { PARENT_MENUITEM: [
               { MENUITEM: [ ] },

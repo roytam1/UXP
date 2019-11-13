@@ -8,6 +8,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #if defined(OS_MACOSX)
 #include <sched.h>
 #endif
@@ -39,8 +40,16 @@
 #include "mozilla/ipc/Faulty.h"
 #endif
 
-// Work around possible OS limitations.
+// Use OS specific iovec array limit where it's possible
+#if defined(IOV_MAX)
+static const size_t kMaxIOVecSize = IOV_MAX;
+// IOV_MAX isn't defined on Android, but the hard-coded 256 works well.
+#elif defined(ANDROID)
 static const size_t kMaxIOVecSize = 256;
+// On all other platforms, fallback to 16 (_XOPEN_IOV_MAX) as a safe bet.
+#else
+static const size_t kMaxIOVecSize = 16;
+#endif
 
 #ifdef MOZ_TASK_TRACER
 #include "GeckoTaskTracerImpl.h"

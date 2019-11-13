@@ -130,24 +130,5 @@ SecurityWrapper<Base>::defineProperty(JSContext* cx, HandleObject wrapper, Handl
     return Base::defineProperty(cx, wrapper, id, desc, result);
 }
 
-template <class Base>
-bool
-SecurityWrapper<Base>::watch(JSContext* cx, HandleObject proxy,
-                             HandleId id, HandleObject callable) const
-{
-    ReportUnwrapDenied(cx);
-    return false;
-}
-
-template <class Base>
-bool
-SecurityWrapper<Base>::unwatch(JSContext* cx, HandleObject proxy,
-                               HandleId id) const
-{
-    ReportUnwrapDenied(cx);
-    return false;
-}
-
-
 template class js::SecurityWrapper<Wrapper>;
 template class js::SecurityWrapper<CrossCompartmentWrapper>;

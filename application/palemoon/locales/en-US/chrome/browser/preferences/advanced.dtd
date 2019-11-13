@@ -147,3 +147,5 @@
 <!ENTITY smoothscroll.pagekeys.duration     "Page up/down scroll duration:">
 <!ENTITY smoothscroll.scrollbar.label       "Smooth scroll with scrollbars">
 <!ENTITY smoothscroll.scrollbar.duration    "Scrollbar smooth scroll duration:">
+
+<!ENTITY smoothscroll.overall.yspeed.label  "Overall smooth scroll speed:">

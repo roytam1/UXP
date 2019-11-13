@@ -59,6 +59,7 @@ class nsXMLContentSerializer : public nsIContentSerializer {
                                 nsAString& aStr) override;
 
   NS_IMETHOD AppendElementEnd(mozilla::dom::Element* aElement,
+                              mozilla::dom::Element* aOriginalElement,
                               nsAString& aStr) override;
 
   NS_IMETHOD Flush(nsAString& aStr) override { return NS_OK; }
@@ -263,6 +264,7 @@ class nsXMLContentSerializer : public nsIContentSerializer {
    * @return boolean  true if the element can be output
    */
   virtual bool CheckElementEnd(mozilla::dom::Element* aElement,
+                               mozilla::dom::Element* aOriginalElement,
                                bool& aForceFormat,
                                nsAString& aStr);
 

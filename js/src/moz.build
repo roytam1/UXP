@@ -291,7 +291,6 @@ UNIFIED_SOURCES += [
     'jspropertytree.cpp',
     'jsscript.cpp',
     'jsstr.cpp',
-    'jswatchpoint.cpp',
     'jsweakmap.cpp',
     'perf/jsperf.cpp',
     'proxy/BaseProxyHandler.cpp',
@@ -719,6 +718,14 @@ if CONFIG['OS_ARCH'] == 'FreeBSD':
 if CONFIG['OS_ARCH'] == 'Linux':
     OS_LIBS += [
         'dl',
+    ]
+
+if CONFIG['OS_ARCH'] == 'SunOS':
+    OS_LIBS += [
+        'posix4',
+        'dl',
+        'nsl',
+        'socket',
     ]
 
 OS_LIBS += CONFIG['REALTIME_LIBS']

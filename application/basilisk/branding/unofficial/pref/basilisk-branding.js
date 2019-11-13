@@ -19,7 +19,10 @@ pref("startup.homepage_welcome_url", "");
 pref("startup.homepage_welcome_url.additional", "");
 
 // Version release notes
-pref("app.releaseNotesURL", "about:blank");
+pref("app.releaseNotesURL", "https://rtfreesoft.blogspot.com/search/label/serpent");
+
+// base url for web-based feedback pages
+pref("app.feedback.baseURL", "https://msfn.org/board/topic/177125-my-build-of-new-moon-temp-name-aka-pale-moon-fork-targetting-xp/?do=getNewComment");
 
 // Vendor home page
 pref("app.vendorURL", "about:");

@@ -7,7 +7,7 @@
 interface nsIURI;
 interface nsIInputStream;
 
-[scriptable, uuid(5799251f-5b55-4df7-a9e7-0c27812c469a)]
+[scriptable, uuid(72599f7a-3712-4b93-90e9-86127006cd68)]
 interface nsISearchSubmission : nsISupports
 {
   /**
@@ -20,6 +20,12 @@ interface nsISearchSubmission : nsISupports
    * The URI to submit a search to.
    */
   readonly attribute nsIURI uri;
+  
+  /**
+   * The POST data associated with a search submission as an
+   * application/x-www-form-urlencoded string. May be null.
+   */
+  readonly attribute AString postDataString;
 };
 
 [scriptable, uuid(620bd920-0491-48c8-99a8-d6047e64802d)]

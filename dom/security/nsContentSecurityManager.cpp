@@ -10,6 +10,7 @@
 #include "nsIStreamListener.h"
 #include "nsCDefaultURIFixup.h"
 #include "nsIURIFixup.h"
+#include "nsIImageLoadingContent.h"
 
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/TabChild.h"
@@ -123,7 +124,7 @@ nsContentSecurityManager::CheckFTPSubresourceLoad(nsIChannel* aChannel)
 
   nsCOMPtr<nsIURI> uri;
   nsresult rv = NS_GetFinalChannelURI(aChannel, getter_AddRefs(uri));
-  NS_ENSURE_SUCCESS(rv, rv); 
+  NS_ENSURE_SUCCESS(rv, rv);
   if (!uri) {
     return NS_OK;
   }
@@ -801,6 +802,8 @@ nsContentSecurityManager::CheckChannel(nsIChannel* aChannel)
     // within nsCorsListenerProxy
     rv = DoCheckLoadURIChecks(uri, loadInfo);
     NS_ENSURE_SUCCESS(rv, rv);
+    // TODO: Bug 1371237
+    // consider calling SetBlockedRequest in nsContentSecurityManager::CheckChannel
   }
 
   return NS_OK;

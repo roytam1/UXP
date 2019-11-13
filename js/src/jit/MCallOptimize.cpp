@@ -285,8 +285,6 @@ IonBuilder::inlineNativeCall(CallInfo& callInfo, JSFunction* target)
         return inlineGuardToClass(callInfo, &SetIteratorObject::class_);
       case InlinableNative::IntrinsicGuardToStringIterator:
         return inlineGuardToClass(callInfo, &StringIteratorObject::class_);
-      case InlinableNative::IntrinsicIsListIterator:
-        return inlineHasClass(callInfo, &ListIteratorObject::class_);
       case InlinableNative::IntrinsicDefineDataProperty:
         return inlineDefineDataProperty(callInfo);
       case InlinableNative::IntrinsicObjectHasPrototype:
@@ -778,7 +776,7 @@ IonBuilder::inlineArraySlice(CallInfo& callInfo)
     if (clasp != &ArrayObject::class_)
         return InliningStatus_NotInlined;
 
-    // Watch out for indexed properties on the object or its prototype.
+    // Watch out for extra indexed properties on the object or its prototype.
     if (ElementAccessHasExtraIndexedProperty(this, obj)) {
         trackOptimizationOutcome(TrackedOutcome::ProtoIndexedProps);
         return InliningStatus_NotInlined;

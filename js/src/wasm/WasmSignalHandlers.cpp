@@ -130,11 +130,16 @@ class AutoSetHandlingSegFault
 #  define EPC_sig(p) ((p)->sc_pc)
 #  define RFP_sig(p) ((p)->sc_regs[30])
 # endif
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__sun)
 # if defined(__linux__)
 #  define XMM_sig(p,i) ((p)->uc_mcontext.fpregs->_xmm[i])
 #  define EIP_sig(p) ((p)->uc_mcontext.gregs[REG_EIP])
-# else
+# else // defined(__sun)
+/* See https://www.illumos.org/issues/5876. They keep arguing over whether 
+ * <ucontext.h> should provide the register index defines in regset.h or 
+ * require applications to request them specifically, and we need them here. */
+#include <ucontext.h>
+#include <sys/regset.h>
 #  define XMM_sig(p,i) ((p)->uc_mcontext.fpregs.fp_reg_set.fpchip_state.xmm[i])
 #  define EIP_sig(p) ((p)->uc_mcontext.gregs[REG_PC])
 # endif

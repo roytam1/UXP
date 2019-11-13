@@ -233,13 +233,13 @@ nsNodeInfoManager::GetNodeInfo(nsIAtom *aName, nsIAtom *aPrefix,
   NodeInfo::NodeInfoInner tmpKey(aName, aPrefix, aNamespaceID, aNodeType,
                                  aExtraName);
 
-    uint32_t index =
-      GetNodeInfoInnerHashValue(&tmpKey) % RECENTLY_USED_NODEINFOS_SIZE;
-    NodeInfo* ni = mRecentlyUsedNodeInfos[index];
-    if (ni && NodeInfoInnerKeyCompare(&(ni->mInner), &tmpKey)) {
+  uint32_t index =
+    GetNodeInfoInnerHashValue(&tmpKey) % RECENTLY_USED_NODEINFOS_SIZE;
+  NodeInfo* ni = mRecentlyUsedNodeInfos[index];
+  if (ni && NodeInfoInnerKeyCompare(&(ni->mInner), &tmpKey)) {
     RefPtr<NodeInfo> nodeInfo = ni;
     return nodeInfo.forget();
-    }
+  }
 
   void *node = PL_HashTableLookup(mNodeInfoHash, &tmpKey);
 

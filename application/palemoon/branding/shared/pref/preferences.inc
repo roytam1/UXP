@@ -12,8 +12,6 @@ pref("browser.identity.ssl_domain_display", 1); //show domain verified SSL (blue
 
 // ===| Application Update Service |===========================================
 
-pref("app.update.url", "https://aus.palemoon.org/?application=%PRODUCT%&version=%VERSION%&arch=%BUILD_TARGET%&buildid=%BUILD_ID%&channel=%CHANNEL%");
-
 // The time interval between the downloading of mar file chunks in the
 // background (in seconds)
 pref("app.update.download.backgroundInterval", 600);

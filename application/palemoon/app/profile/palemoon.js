@@ -21,6 +21,12 @@
 #endif
 #endif
 
+#ifdef XP_WIN
+lock_pref("browser.tabs.remote", false);
+lock_pref("browser.tabs.remote.force-enable", false);
+lock_pref("extensions.e10sBlocksEnabling", true);
+#endif
+
 pref("browser.chromeURL","chrome://browser/content/");
 pref("browser.hiddenWindowChromeURL", "chrome://browser/content/hiddenWindow.xul");
 
@@ -76,10 +82,10 @@ pref("browser.dictionaries.download.url", "https://@AM_DOMAIN@/dictionaries/");
 pref("browser.getdevtools.url","https://@AM_DOMAIN@/?component=integration&type=external&request=devtools");
 
 // Feedback URL
-pref("browser.feedback.url", "https://forum.palemoon.org");
+pref("browser.feedback.url", "https://msfn.org/board/topic/177125-my-build-of-new-moon-temp-name-aka-pale-moon-fork-targetting-xp/?do=getNewComment");
 
 // Help button in slow startup dialog
-pref("browser.slowstartup.help.url", "http://www.palemoon.org/support/slowstartup.shtml");
+pref("browser.slowstartup.help.url", "https://support.mozilla.org/en-US/kb/firefox-takes-long-time-start-up");
 
 // Whether to escape to a content-less page if a user presses "Get me out of here"
 // on a network error page (e.g. cert error)
@@ -160,7 +166,7 @@ pref("app.update.silent", false);
 pref("app.update.staging.enabled", true);
 
 // Update service URL:
-pref("app.update.url", "https://aus.palemoon.org/?application=%PRODUCT%&version=%VERSION%&arch=%BUILD_TARGET%&buildid=%BUILD_ID%&channel=%CHANNEL%");
+pref("app.update.url", "https://aus.palemoon.org/?application=%PRODUCT%&version=%VERSION%&arch=%BUILD_TARGET%&toolkit=%WIDGET_TOOLKIT%&buildid=%BUILD_ID%&channel=%CHANNEL%");
 // app.update.url.manual is in branding section
 // app.update.url.details is in branding section
 
@@ -682,6 +688,15 @@ pref("plugins.update.notifyUser", false);
 //Enable tri-state option (Always/Never/Ask)
 pref("plugins.click_to_play", true);
 
+// Platform pref is to enable all plugins by default.
+// Uncomment this pref to default to click-to-play
+// pref("plugin.default.state", 1);
+
+// Don't load plugin instances with no src declared.
+// These prefs are documented in detail in all.js.
+pref("plugins.favorfallback.mode", "follow-ctp");
+pref("plugins.favorfallback.rules", "nosrc");
+
 #ifdef XP_WIN
 pref("browser.preferences.instantApply", false);
 #else
@@ -924,7 +939,7 @@ pref("browser.zoom.siteSpecific", true);
 pref("browser.zoom.updateBackgroundTabs", true);
 
 // base URL for web-based support pages
-pref("app.support.baseURL", "http://www.palemoon.org/support/");
+pref("app.support.baseURL", "https://rtfreesoft.blogspot.com/p/browser-help.html#");
 
 // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
 pref("security.alternate_certificate_error_page", "certerror");
@@ -1082,6 +1097,8 @@ pref("browser.pagethumbnails.capturing_disabled", false);
 
 // enables showing basic placeholders for missing thumbnails
 pref("browser.newtabpage.thumbnailPlaceholder", false);
+
+pref("privacy.usercontext.about_newtab_segregation.enabled", false);
 
 // number of columns of newtab grid
 pref("browser.newtabpage.columns", 4);

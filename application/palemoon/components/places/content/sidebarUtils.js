@@ -40,7 +40,7 @@ var SidebarUtils = {
     var openInTabs = isContainer &&
                      (aEvent.button == 1 ||
                       (aEvent.button == 0 && modifKey)) &&
-                     PlacesUtils.hasChildURIs(tbo.view.nodeForTreeIndex(cell.row));
+                     PlacesUtils.hasChildURIs(tbo.view.nodeForTreeIndex(cell.row), true);
 
     if (aEvent.button == 0 && isContainer && !openInTabs) {
       tbo.view.toggleOpenState(cell.row);

@@ -23,7 +23,7 @@ namespace mozilla
 [ref] native nsCStringTArrayRef(nsTArray<nsCString>);
 [ref] native mozillaPkixTime(mozilla::pkix::Time);
 
-[scriptable, uuid(275127f8-dbd7-4681-afbf-6df0c6587a01)]
+[scriptable, uuid(233908bd-6741-4474-a6e1-f298c6ce9eaf)]
 interface nsISiteSecurityService : nsISupports
 {
     const uint32_t HEADER_HSTS = 0;
@@ -98,15 +98,21 @@ interface nsISiteSecurityService : nsISupports
      * Given a header type, removes state relating to that header of a host,
      * including the includeSubdomains state that would affect subdomains.
      * This essentially removes the state for the domain tree rooted at this
-     * host.
+     * host. If any preloaded information is present for that host, that
+     * information will then be used instead of any other previously existing
+     * state, unless the force parameter is set.
+     *
      * @param aType   the type of security state in question
      * @param aURI    the URI of the target host
      * @param aFlags  options for this request as defined in nsISocketProvider:
      *                  NO_PERMANENT_STORAGE
+     * @param force   if set, forces no-HSTS state by writing a knockout value,
+     *                overriding any preload list state
      */
     void removeState(in uint32_t aType,
                      in nsIURI aURI,
-                     in uint32_t aFlags);
+                     in uint32_t aFlags,
+                     [optional] in boolean force);
 
     /**
      * See isSecureURI

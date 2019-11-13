@@ -718,9 +718,9 @@ nsObjectLoadingContent::UnbindFromTree(bool aDeep, bool aNullParent)
   if (mType == eType_Plugin) {
     nsIDocument* doc = thisContent->GetComposedDoc();
     if (doc && doc->IsActive()) {
-    nsCOMPtr<nsIRunnable> ev = new nsSimplePluginEvent(doc,
-                                                       NS_LITERAL_STRING("PluginRemoved"));
-    NS_DispatchToCurrentThread(ev);
+      nsCOMPtr<nsIRunnable> ev = new nsSimplePluginEvent(doc,
+                                                         NS_LITERAL_STRING("PluginRemoved"));
+      NS_DispatchToCurrentThread(ev);
     }
   }
 }
@@ -3625,6 +3625,14 @@ nsObjectLoadingContent::HasGoodFallback() {
         if (child->IsHTMLElement(nsGkAtoms::video)) {
           return true;
         }
+      }
+    }
+
+    // RULE "nosrc":
+    // Use fallback content if the object has not specified a src URI.
+    if (rulesList[i].EqualsLiteral("nosrc")) {
+      if (!mOriginalURI) {
+        return true;
       }
     }
 

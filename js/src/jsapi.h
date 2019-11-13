@@ -2922,6 +2922,9 @@ extern JS_PUBLIC_API(bool)
 JS_GetOwnUCPropertyDescriptor(JSContext* cx, JS::HandleObject obj, const char16_t* name, size_t namelen,
                               JS::MutableHandle<JS::PropertyDescriptor> desc);
 
+extern JS_PUBLIC_API(bool)
+JS_GetOwnElement(JSContext* cx, JS::HandleObject obj, uint32_t index, JS::MutableHandleValue vp);
+
 /**
  * Like JS_GetOwnPropertyDescriptorById, but also searches the prototype chain
  * if no own property is found directly on obj. The object on which the

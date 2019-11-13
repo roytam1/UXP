@@ -19,7 +19,7 @@
 #ifndef STDOUT_FILENO
 #define STDOUT_FILENO 1
 #endif
-#elif defined(OS_LINUX) || defined(__GLIBC__)
+#elif defined(OS_LINUX) || defined(OS_SOLARIS) || defined(__GLIBC__)
 #include <dirent.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -39,26 +39,7 @@
 #include "base/command_line.h"
 #include "base/process.h"
 
-#if defined(OS_WIN)
-typedef PROCESSENTRY32 ProcessEntry;
-typedef IO_COUNTERS IoCounters;
-#elif defined(OS_POSIX)
-// TODO(port): we should not rely on a Win32 structure.
-struct ProcessEntry {
-  int pid;
-  int ppid;
-  char szExeFile[NAME_MAX + 1];
-};
-
-struct IoCounters {
-  unsigned long long ReadOperationCount;
-  unsigned long long WriteOperationCount;
-  unsigned long long OtherOperationCount;
-  unsigned long long ReadTransferCount;
-  unsigned long long WriteTransferCount;
-  unsigned long long OtherTransferCount;
-};
-
+#if defined(OS_POSIX)
 #include "base/file_descriptor_shuffle.h"
 #endif
 

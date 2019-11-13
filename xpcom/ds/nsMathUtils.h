@@ -11,6 +11,11 @@
 #include <cmath>
 #include <float.h>
 
+#ifdef XP_SOLARIS
+#include <math.h>
+#include <ieeefp.h>
+#endif
+
 /*
  * round
  */

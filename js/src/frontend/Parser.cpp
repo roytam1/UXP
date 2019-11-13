@@ -1620,8 +1620,10 @@ Parser<ParseHandler>::propagateFreeNamesAndMarkClosedOverBindings(ParseContext::
     if (handler.canSkipLazyClosedOverBindings()) {
         // Scopes are nullptr-delimited in the LazyScript closed over bindings
         // array.
-        while (JSAtom* name = handler.nextLazyClosedOverBinding())
-            scope.lookupDeclaredName(name)->value()->setClosedOver();
+        while (JSAtom* name = handler.nextLazyClosedOverBinding()) {
+            DeclaredNamePtr p = scope.lookupDeclaredName(name);
+            if(p) p->value()->setClosedOver();
+        }
         return true;
     }
 

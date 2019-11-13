@@ -18,6 +18,7 @@
 #include "aom/aom_codec.h"
 #include "aom/aom_image.h"
 #include "aom/aom_integer.h"
+#include "aom_ports/mem.h"
 #include "aom_ports/msvc.h"
 
 #if CONFIG_AV1_ENCODER
@@ -76,6 +77,16 @@ enum VideoFileType {
   FILE_TYPE_Y4M,
   FILE_TYPE_WEBM
 };
+
+// Used in lightfield example.
+enum {
+  YUV1D,  // 1D tile output for conformance test.
+  YUV,    // Tile output in YUV format.
+  NV12,   // Tile output in NV12 format.
+} UENUM1BYTE(OUTPUT_FORMAT);
+
+// The fourcc for large_scale_tile encoding is "LSTC".
+#define LST_FOURCC 0x4354534c
 
 struct FileTypeDetectionBuffer {
   char buf[4];
@@ -142,6 +153,7 @@ typedef struct AvxInterface {
 int get_aom_encoder_count(void);
 const AvxInterface *get_aom_encoder_by_index(int i);
 const AvxInterface *get_aom_encoder_by_name(const char *name);
+const AvxInterface *get_aom_lst_encoder(void);
 
 int get_aom_decoder_count(void);
 const AvxInterface *get_aom_decoder_by_index(int i);
@@ -155,7 +167,12 @@ double sse_to_psnr(double samples, double peak, double mse);
 void aom_img_upshift(aom_image_t *dst, const aom_image_t *src, int input_shift);
 void aom_img_downshift(aom_image_t *dst, const aom_image_t *src,
                        int down_shift);
+void aom_shift_img(unsigned int output_bit_depth, aom_image_t **img_ptr,
+                   aom_image_t **img_shifted_ptr);
 void aom_img_truncate_16_to_8(aom_image_t *dst, const aom_image_t *src);
+
+// Output in NV12 format.
+void aom_img_write_nv12(const aom_image_t *img, FILE *file);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -654,6 +654,19 @@ nsScriptLoader::CheckContentPolicy(nsIDocument* aDocument,
 }
 
 bool
+nsScriptLoader::ModuleScriptsEnabled()
+{
+  static bool sEnabledForContent = false;
+  static bool sCachedPref = false;
+  if (!sCachedPref) {
+    sCachedPref = true;
+    Preferences::AddBoolVarCache(&sEnabledForContent, "dom.moduleScripts.enabled", false);
+  }
+
+  return nsContentUtils::IsChromeDoc(mDocument) || sEnabledForContent;
+}
+
+bool
 nsScriptLoader::ModuleMapContainsModule(nsModuleLoadRequest *aRequest) const
 {
   // Returns whether we have fetched, or are currently fetching, a module script
@@ -1230,15 +1243,27 @@ nsScriptLoader::StartLoad(nsScriptLoadRequest *aRequest, const nsAString &aType,
   nsCOMPtr<nsIInterfaceRequestor> prompter(do_QueryInterface(docshell));
 
   nsSecurityFlags securityFlags;
-  // TODO: the spec currently gives module scripts different CORS behaviour to
-  // classic scripts.
-  securityFlags = aRequest->mCORSMode == CORS_NONE
-    ? nsILoadInfo::SEC_ALLOW_CROSS_ORIGIN_DATA_IS_NULL
-    : nsILoadInfo::SEC_REQUIRE_CORS_DATA_INHERITS;
-  if (aRequest->mCORSMode == CORS_ANONYMOUS) {
-    securityFlags |= nsILoadInfo::SEC_COOKIES_SAME_ORIGIN;
-  } else if (aRequest->mCORSMode == CORS_USE_CREDENTIALS) {
-    securityFlags |= nsILoadInfo::SEC_COOKIES_INCLUDE;
+  if (aRequest->IsModuleRequest()) {
+    // According to the spec, module scripts have different behaviour to classic
+    // scripts and always use CORS.
+    securityFlags = nsILoadInfo::SEC_REQUIRE_CORS_DATA_INHERITS;
+    if (aRequest->mCORSMode == CORS_NONE) {
+      securityFlags |= nsILoadInfo::SEC_COOKIES_OMIT;
+    } else if (aRequest->mCORSMode == CORS_ANONYMOUS) {
+      securityFlags |= nsILoadInfo::SEC_COOKIES_SAME_ORIGIN;
+    } else {
+      MOZ_ASSERT(aRequest->mCORSMode == CORS_USE_CREDENTIALS);
+      securityFlags |= nsILoadInfo::SEC_COOKIES_INCLUDE;
+    }
+  } else {
+    securityFlags = aRequest->mCORSMode == CORS_NONE
+      ? nsILoadInfo::SEC_ALLOW_CROSS_ORIGIN_DATA_IS_NULL
+      : nsILoadInfo::SEC_REQUIRE_CORS_DATA_INHERITS;
+    if (aRequest->mCORSMode == CORS_ANONYMOUS) {
+      securityFlags |= nsILoadInfo::SEC_COOKIES_SAME_ORIGIN;
+    } else if (aRequest->mCORSMode == CORS_USE_CREDENTIALS) {
+      securityFlags |= nsILoadInfo::SEC_COOKIES_INCLUDE;
+    }
   }
   securityFlags |= nsILoadInfo::SEC_ALLOW_CHROME;
 
@@ -1434,7 +1459,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
 
   nsCOMPtr<nsIContent> scriptContent = do_QueryInterface(aElement);
 
-  // Step 12. Check that the script is not an eventhandler
+  // Step 13. Check that the script is not an eventhandler
   if (IsScriptEventHandler(scriptContent)) {
     return false;
   }
@@ -1448,8 +1473,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
 
   nsScriptKind scriptKind = nsScriptKind::Classic;
   if (!type.IsEmpty()) {
-    // Support type="module" only for chrome documents.
-    if (nsContentUtils::IsChromeDoc(mDocument) && type.LowerCaseEqualsASCII("module")) {
+    if (ModuleScriptsEnabled() && type.LowerCaseEqualsASCII("module")) {
       scriptKind = nsScriptKind::Module;
     } else {
       NS_ENSURE_TRUE(ParseTypeAttribute(type, &version), false);
@@ -1469,7 +1493,18 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     }
   }
 
-  // Step 14. in the HTML5 spec
+  // "In modern user agents that support module scripts, the script element with
+  // the nomodule attribute will be ignored".
+  // "The nomodule attribute must not be specified on module scripts (and will
+  // be ignored if it is)."
+  if (ModuleScriptsEnabled() &&
+      scriptKind == nsScriptKind::Classic &&
+      scriptContent->IsHTMLElement() &&
+      scriptContent->HasAttr(kNameSpaceID_None, nsGkAtoms::nomodule)) {
+    return false;
+  }
+
+  // Step 15. and later in the HTML5 spec
   nsresult rv = NS_OK;
   RefPtr<nsScriptLoadRequest> request;
   if (aElement->GetScriptExternal()) {
@@ -1577,7 +1612,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       }
       return false;
     }
-    if (!aElement->GetParserCreated() && !request->IsModuleRequest()) {
+    if (!aElement->GetParserCreated()) {
       // Violate the HTML5 spec in order to make LABjs and the "order" plug-in
       // for RequireJS work with their Gecko-sniffed code path. See
       // http://lists.w3.org/Archives/Public/public-html/2010Oct/0088.html
@@ -2768,7 +2803,7 @@ nsScriptLoader::PreloadURI(nsIURI *aURI, const nsAString &aCharset,
   }
 
   // TODO: Preload module scripts.
-  if (nsContentUtils::IsChromeDoc(mDocument) && aType.LowerCaseEqualsASCII("module")) {
+  if (ModuleScriptsEnabled() && aType.LowerCaseEqualsASCII("module")) {
     return;
   }
 

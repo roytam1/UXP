@@ -175,6 +175,11 @@ LOCAL_INCLUDES += [
 if CONFIG['NSS_DISABLE_DBM']:
     DEFINES['NSS_DISABLE_DBM'] = '1'
 
+if CONFIG['_MSC_VER']:
+    # prevent "fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj"
+    # when compiling nsSiteSecurityService.cpp
+    CXXFLAGS += ['-bigobj']
+
 DEFINES['SSL_DISABLE_DEPRECATED_CIPHER_SUITE_NAMES'] = 'True'
 DEFINES['NSS_ENABLE_ECC'] = 'True'
 for var in ('DLL_PREFIX', 'DLL_SUFFIX'):

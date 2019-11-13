@@ -321,10 +321,17 @@ this.Utils = {
    *        could not be loaded, the first argument will be undefined.
    */
   jsonLoad: Task.async(function*(filePath, that, callback) {
-    let path = OS.Path.join(OS.Constants.Path.profileDir, "weave", filePath + ".json");
+    let path;
+    try {
+      path = OS.Path.normalize(OS.Path.join(OS.Constants.Path.profileDir, "weave", filePath + ".json"));
+    } catch (e) {
+      if (that._log) {
+        that._log.debug("Path join error: " + e);
+      }
+    }
 
     if (that._log) {
-      that._log.trace("Loading json from disk: " + filePath);
+      that._log.trace("Loading json from disk: " + path);
     }
 
     let json;
@@ -341,8 +348,9 @@ this.Utils = {
         }
       }
     }
-
-    callback.call(that, json);
+    if (callback) {
+      callback.call(that, json);
+    }
   }),
 
   /**

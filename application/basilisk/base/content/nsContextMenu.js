@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+Components.utils.import("resource://gre/modules/ContextualIdentityService.jsm");
 Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
 Components.utils.import("resource://gre/modules/InlineSpellChecker.jsm");
 Components.utils.import("resource://gre/modules/LoginManagerContextMenu.jsm");
@@ -140,11 +141,28 @@ nsContextMenu.prototype = {
       this.onPlainTextLink = true;
     }
 
+    var inContainer = false;
+    if (gContextMenuContentData.userContextId) {
+      inContainer = true;
+      var item = document.getElementById("context-openlinkincontainertab");
+
+      item.setAttribute("data-usercontextid", gContextMenuContentData.userContextId);
+
+      var label =
+        ContextualIdentityService.getUserContextLabel(gContextMenuContentData.userContextId);
+      item.setAttribute("label",
+         gBrowserBundle.formatStringFromName("userContextOpenLink.label",
+                                             [label], 1));
+    }
+
     var shouldShow = this.onSaveableLink || isMailtoInternal || this.onPlainTextLink;
     var isWindowPrivate = PrivateBrowsingUtils.isWindowPrivate(window);
+    var showContainers = Services.prefs.getBoolPref("privacy.userContext.enabled");
     this.showItem("context-openlink", shouldShow && !isWindowPrivate);
     this.showItem("context-openlinkprivate", shouldShow);
-    this.showItem("context-openlinkintab", shouldShow);
+    this.showItem("context-openlinkintab", shouldShow && !inContainer);
+    this.showItem("context-openlinkincontainertab", shouldShow && inContainer);
+    this.showItem("context-openlinkinusercontext-menu", shouldShow && !isWindowPrivate && showContainers);
     this.showItem("context-openlinkincurrent", this.onPlainTextLink);
     this.showItem("context-sep-open", shouldShow);
   },
@@ -935,6 +953,13 @@ nsContextMenu.prototype = {
       params[p] = extra[p];
     }
 
+    // If we want to change userContextId, we must be sure that we don't
+    // propagate the referrer.
+    if ("userContextId" in params &&
+        params.userContextId != gContextMenuContentData.userContextId) {
+      params.noReferrer = true;
+    }
+
     return params;
   },
 
@@ -952,7 +977,7 @@ nsContextMenu.prototype = {
   },
 
   // Open linked-to URL in a new tab.
-  openLinkInTab: function() {
+  openLinkInTab: function(event) {
     urlSecurityCheck(this.linkURL, this.principal);
     let referrerURI = gContextMenuContentData.documentURIObject;
 
@@ -973,6 +998,7 @@ nsContextMenu.prototype = {
 
     let params = {
       allowMixedContent: persistAllowMixedContentInChildTab,
+      userContextId: parseInt(event.target.getAttribute('data-usercontextid')),
     };
 
     openLinkIn(this.linkURL, "tab", this._openLinkInParameters(params));
@@ -1747,5 +1773,9 @@ nsContextMenu.prototype = {
                                                          selectedText]);
     menuItem.label = menuLabel;
     menuItem.accessKey = gNavigatorBundle.getString("contextMenuSearch.accesskey");
+  },
+  createContainerMenu: function(aEvent) {
+    return createUserContextMenu(aEvent, true,
+                                 gContextMenuContentData.userContextId);
   },
 };

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2005-2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
+ * Copyright (c) 2019 Moonchild Productions
  * Portions of comments Copyright 2004-2010 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
@@ -21,11 +22,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- */
-
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit Tokenizer.java instead and regenerate.
  */
 
 #define nsHtml5Tokenizer_cpp__
@@ -127,15 +123,11 @@ nsHtml5Tokenizer::isViewingXmlSource()
 }
 
 void 
-nsHtml5Tokenizer::setStateAndEndTagExpectation(int32_t specialTokenizerState, nsIAtom* endTagExpectation)
+nsHtml5Tokenizer::setState(int32_t specialTokenizerState)
 {
   this->stateSave = specialTokenizerState;
-  if (specialTokenizerState == NS_HTML5TOKENIZER_DATA) {
-    return;
-  }
-  autoJArray<char16_t,int32_t> asArray = nsHtml5Portability::newCharArrayFromLocal(endTagExpectation);
-  this->endTagExpectation = nsHtml5ElementName::elementNameByBuffer(asArray, 0, asArray.length, interner);
-  endTagExpectationToArray();
+  this->endTagExpectation = nullptr;
+  this->endTagExpectationAsArray = nullptr;
 }
 
 void 
@@ -1062,9 +1054,6 @@ nsHtml5Tokenizer::stateLoop(int32_t state, char16_t c, int32_t pos, char16_t* bu
           }
           c = checkChar(buf, pos);
           switch(c) {
-            case '\0': {
-              NS_HTML5_BREAK(stateloop);
-            }
             case '-': {
               clearStrBufAfterOneHyphen();
               state = P::transition(mViewSource, NS_HTML5TOKENIZER_COMMENT_START, reconsume, pos);
@@ -1469,9 +1458,6 @@ nsHtml5Tokenizer::stateLoop(int32_t state, char16_t c, int32_t pos, char16_t* bu
           NS_HTML5_BREAK(stateloop);
         }
         c = checkChar(buf, pos);
-        if (c == '\0') {
-          NS_HTML5_BREAK(stateloop);
-        }
         switch(c) {
           case ' ':
           case '\t':
@@ -1479,7 +1465,8 @@ nsHtml5Tokenizer::stateLoop(int32_t state, char16_t c, int32_t pos, char16_t* bu
           case '\r':
           case '\f':
           case '<':
-          case '&': {
+          case '&':
+          case '\0': {
             emitOrAppendCharRefBuf(returnState);
             if (!(returnState & NS_HTML5TOKENIZER_DATA_AND_RCDATA_MASK)) {
               cstart = pos;
@@ -1527,9 +1514,6 @@ nsHtml5Tokenizer::stateLoop(int32_t state, char16_t c, int32_t pos, char16_t* bu
             NS_HTML5_BREAK(stateloop);
           }
           c = checkChar(buf, pos);
-          if (c == '\0') {
-            NS_HTML5_BREAK(stateloop);
-          }
           int32_t hilo = 0;
           if (c <= 'z') {
             const int32_t* row = nsHtml5NamedCharactersAccel::HILO_ACCEL[c];
@@ -1564,9 +1548,6 @@ nsHtml5Tokenizer::stateLoop(int32_t state, char16_t c, int32_t pos, char16_t* bu
             NS_HTML5_BREAK(stateloop);
           }
           c = checkChar(buf, pos);
-          if (c == '\0') {
-            NS_HTML5_BREAK(stateloop);
-          }
           entCol++;
           for (; ; ) {
             if (hi < lo) {
@@ -2040,7 +2021,13 @@ nsHtml5Tokenizer::stateLoop(int32_t state, char16_t c, int32_t pos, char16_t* bu
             NS_HTML5_BREAK(stateloop);
           }
           c = checkChar(buf, pos);
-          if (index < endTagExpectationAsArray.length) {
+          if (!endTagExpectationAsArray) {
+            tokenHandler->characters(nsHtml5Tokenizer::LT_SOLIDUS, 0, 2);
+            cstart = pos;
+            reconsume = true;
+            state = P::transition(mViewSource, returnState, reconsume, pos);
+            NS_HTML5_CONTINUE(stateloop);
+          } else if (index < endTagExpectationAsArray.length) {
             char16_t e = endTagExpectationAsArray[index];
             char16_t folded = c;
             if (c >= 'A' && c <= 'Z') {

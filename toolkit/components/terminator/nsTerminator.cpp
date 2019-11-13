@@ -30,7 +30,7 @@
 #include "nsIObserverService.h"
 #include "nsIPrefService.h"
 
-#if defined(XP_WIN)
+#ifdef XP_WIN
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -385,7 +385,11 @@ nsTerminator::StartWatchdog()
   }
 
   UniquePtr<Options> options(new Options());
+#ifdef XP_SOLARIS
   const PRIntervalTime ticksDuration = PR_MillisecondsToInterval(1000);
+#else
+  const PRIntervalTime ticksDuration = 1000;
+#endif  
   options->crashAfterTicks = crashAfterMS / ticksDuration;
 
   DebugOnly<PRThread*> watchdogThread = CreateSystemThread(RunWatchdog,

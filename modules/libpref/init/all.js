@@ -732,12 +732,19 @@ pref("gfx.layerscope.port", 23456);
 // This should be use to quickly find which slow paths are used by test cases.
 pref("gfx.perf-warnings.enabled", false);
 
-// 0 = Off, 1 = Full, 2 = Tagged Images Only.
+// Color Management System
+// 0 = Off, 1 = All Images, 2 = Tagged Images Only.
 // See eCMSMode in gfx/thebes/gfxPlatform.h
+// Enabled by default on Windows and Mac, disabled elsewhere
+#if defined(XP_WIN) || defined(XP_MACOSX)
 pref("gfx.color_management.mode", 2);
+#else
+pref("gfx.color_management.mode", 0);
+#endif
 pref("gfx.color_management.display_profile", "");
 pref("gfx.color_management.rendering_intent", 0);
 pref("gfx.color_management.enablev4", true);
+
 
 pref("gfx.downloadable_fonts.enabled", true);
 pref("gfx.downloadable_fonts.fallback_delay", 3000);
@@ -1998,6 +2005,12 @@ pref("network.auth.subresource-http-auth-allow", 2);
 // If network.auth.subresource-http-auth-allow has a value of 0 or 1, this pref
 // does not have any effect.
 pref("network.auth.subresource-http-img-XO-auth", false);
+
+// Whether or not to show anti-spoof confirmation prompts when navigating to a
+// URL with user info.
+// true - display extra confirmation prompt ("You are about to log in to...")
+// false - do not display extra confirmation prompt (default)
+pref("network.auth.confirmAuth.enabled", false);
 
 // This preference controls whether to allow sending default credentials (SSO) to
 // NTLM/Negotiate servers allowed in the "trusted uri" list when navigating them
@@ -4020,6 +4033,12 @@ pref("autocomplete.ungrab_during_mode_switch", true);
 // toggling to use the XUL filepicker
 pref("ui.allow_platform_file_picker", true);
 
+// Allow for using the native GTK file picker. If the application is not run
+// with GTK_USE_PORTAL=1 this pref has no effect.
+#ifdef MOZ_WIDGET_GTK
+pref("widget.allow-gtk-native-file-chooser", false);
+#endif
+
 pref("helpers.global_mime_types_file", "/etc/mime.types");
 pref("helpers.global_mailcap_file", "/etc/mailcap");
 pref("helpers.private_mime_types_file", "~/.mime.types");
@@ -5475,3 +5494,7 @@ pref("dom.storageManager.enabled", false);
 // >0 = suppress further prompts after the user has canceled the dialog n times
 // See application preferences for appropriate defaults.
 pref("prompts.authentication_dialog_abuse_limit", 0);
+
+// Whether module scripts (<script type="module">) are enabled for content.
+pref("dom.moduleScripts.enabled", true);
+

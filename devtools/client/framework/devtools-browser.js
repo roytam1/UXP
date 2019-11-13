@@ -123,6 +123,23 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
       win.DeveloperToolbar.show(false).catch(console.error);
     }
 
+    // Enable WebIDE?
+    let webIDEEnabled = Services.prefs.getBoolPref("devtools.webide.enabled");
+    idEls = [
+      "appmenu_webide",
+      "menu_webide"
+    ];
+    idEls.forEach(function (idEl) {
+      toggleMenuItem(idEl, webIDEEnabled);
+    });
+
+    let showWebIDEWidget = Services.prefs.getBoolPref("devtools.webide.widget.enabled");
+    if (webIDEEnabled && showWebIDEWidget) {
+      gDevToolsBrowser.installWebIDEWidget();
+    } else {
+      gDevToolsBrowser.uninstallWebIDEWidget();
+    }
+
     // Enable Browser Toolbox?
     let chromeEnabled = Services.prefs.getBoolPref("devtools.chrome.enabled");
     let devtoolsRemoteEnabled = Services.prefs.getBoolPref("devtools.debugger.remote-enabled");
@@ -330,9 +347,7 @@ var gDevToolsBrowser = exports.gDevToolsBrowser = {
       viewId: "PanelUI-developer",
       shortcutId: "key_devToolboxMenuItem",
       tooltiptext: "developer-button.tooltiptext2",
-      defaultArea: AppConstants.MOZ_DEV_EDITION ?
-                     CustomizableUI.AREA_NAVBAR :
-                     CustomizableUI.AREA_PANEL,
+      defaultArea: CustomizableUI.AREA_PANEL,
       onViewShowing: function (aEvent) {
         // Populate the subview with whatever menuitems are in the developer
         // menu. We skip menu elements, because the menu panel has no way

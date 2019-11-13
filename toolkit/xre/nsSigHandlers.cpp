@@ -32,6 +32,11 @@
 #endif
 #endif
 
+#ifdef XP_SOLARIS
+#include <sys/resource.h>
+#include <ucontext.h>
+#endif
+
 static const char* gProgname = "huh?";
 
 // Note: some tests manipulate this value.
@@ -193,6 +198,32 @@ static void fpehandler(int signum, siginfo_t *si, void *context)
   *mxcsr &= ~SSE_STATUS_FLAGS; /* clear all pending SSE exceptions */
 #endif
 #endif
+#ifdef XP_SOLARIS
+  ucontext_t *uc = (ucontext_t *)context;
+
+#if defined(__i386)
+  uint32_t *cw = &uc->uc_mcontext.fpregs.fp_reg_set.fpchip_state.state[0];
+  *cw |= FPU_EXCEPTION_MASK;
+
+  uint32_t *sw = &uc->uc_mcontext.fpregs.fp_reg_set.fpchip_state.state[1];
+  *sw &= ~FPU_STATUS_FLAGS;
+
+  /* address of the instruction that caused the exception */
+  uint32_t *ip = &uc->uc_mcontext.fpregs.fp_reg_set.fpchip_state.state[3];
+  uc->uc_mcontext.gregs[REG_PC] = *ip;
+#endif
+#if defined(__amd64__)
+  uint16_t *cw = &uc->uc_mcontext.fpregs.fp_reg_set.fpchip_state.cw;
+  *cw |= FPU_EXCEPTION_MASK;
+
+  uint16_t *sw = &uc->uc_mcontext.fpregs.fp_reg_set.fpchip_state.sw;
+  *sw &= ~FPU_STATUS_FLAGS;
+
+  uint32_t *mxcsr = &uc->uc_mcontext.fpregs.fp_reg_set.fpchip_state.mxcsr;
+  *mxcsr |= SSE_EXCEPTION_MASK; /* disable all SSE exceptions */
+  *mxcsr &= ~SSE_STATUS_FLAGS; /* clear all pending SSE exceptions */
+#endif
+#endif
 }
 #endif
 
@@ -254,6 +285,31 @@ void InstallSignalHandlers(const char *aProgname)
     setrlimit(RLIMIT_AS, &r);
   }
 #endif
+
+#ifdef XP_SOLARIS
+#define NOFILES 512
+
+    // Boost Solaris file descriptors
+    {
+	struct rlimit rl;
+	
+	if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
+
+	    if (rl.rlim_cur < NOFILES) {
+		rl.rlim_cur = NOFILES;
+
+		if (setrlimit(RLIMIT_NOFILE, &rl) < 0) {
+		    perror("setrlimit(RLIMIT_NOFILE)");
+		    fprintf(stderr, "Cannot exceed hard limit for open files");
+		}
+#if defined(DEBUG)
+	    	if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
+		    printf("File descriptors set to %d\n", rl.rlim_cur);
+#endif //DEBUG
+	    }
+    }
+#endif //XP_SOLARIS
+
 
 #if defined(MOZ_WIDGET_GTK) && (GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 6))
   const char *assertString = PR_GetEnv("XPCOM_DEBUG_BREAK");

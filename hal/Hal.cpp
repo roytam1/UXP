@@ -855,22 +855,6 @@ void FactoryReset(mozilla::dom::FactoryResetReason& aReason)
   PROXY_IF_SANDBOXED(FactoryReset(aReason));
 }
 
-void
-StartDiskSpaceWatcher()
-{
-  AssertMainProcess();
-  AssertMainThread();
-  PROXY_IF_SANDBOXED(StartDiskSpaceWatcher());
-}
-
-void
-StopDiskSpaceWatcher()
-{
-  AssertMainProcess();
-  AssertMainThread();
-  PROXY_IF_SANDBOXED(StopDiskSpaceWatcher());
-}
-
 uint32_t
 GetTotalSystemMemory()
 {

@@ -34,7 +34,8 @@ typedef void (*PrefReader)(void       *closure,
                            PrefValue   val,
                            PrefType    type,
                            bool        defPref,
-                           bool        stickyPref);
+                           bool        stickyPref,
+                           bool        lockPref);
 
 /**
  * Report any errors or warnings we encounter during parsing.
@@ -62,6 +63,7 @@ typedef struct PrefParseState {
     PrefType    vtype;      /* PREF_STRING,INT,BOOL          */
     bool        fdefault;   /* true if (default) pref        */
     bool        fstickydefault; /* true if (sticky) pref     */
+    bool        flock;      /* true if pref to be locked     */
 } PrefParseState;
 
 /**

@@ -53,6 +53,7 @@ class nsXHTMLContentSerializer : public nsXMLContentSerializer {
                                  nsAString& aStr) override;
 
   virtual bool CheckElementEnd(mozilla::dom::Element* aContent,
+                               mozilla::dom::Element* aOriginalElement,
                                bool& aForceFormat,
                                nsAString& aStr) override;
 

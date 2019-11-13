@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2007-2011 Mozilla Foundation
+ * Copyright (c) 2019 Moonchild Productions
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
  * copy of this software and associated documentation files (the "Software"), 
@@ -19,11 +20,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
  * DEALINGS IN THE SOFTWARE.
- */
-
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit StackNode.java instead and regenerate.
  */
 
 #ifndef nsHtml5StackNode_h
@@ -60,6 +56,7 @@ class nsHtml5Portability;
 class nsHtml5StackNode
 {
   public:
+    int32_t idxInTreeBuilder;
     int32_t flags;
     nsIAtom* name;
     nsIAtom* popName;
@@ -79,12 +76,28 @@ class nsHtml5StackNode
     bool isSpecial();
     bool isFosterParenting();
     bool isHtmlIntegrationPoint();
-    nsHtml5StackNode(int32_t flags, int32_t ns, nsIAtom* name, nsIContentHandle* node, nsIAtom* popName, nsHtml5HtmlAttributes* attributes);
-    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHandle* node);
-    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHandle* node, nsHtml5HtmlAttributes* attributes);
-    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHandle* node, nsIAtom* popName);
-    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIAtom* popName, nsIContentHandle* node);
-    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHandle* node, nsIAtom* popName, bool markAsIntegrationPoint);
+    explicit nsHtml5StackNode(int32_t idxInTreeBuilder);
+    void setValues(int32_t flags,
+                   int32_t ns,
+                   nsIAtom* name,
+                   nsIContentHandle* node,
+                   nsIAtom* popName,
+                   nsHtml5HtmlAttributes* attributes);
+    void setValues(nsHtml5ElementName* elementName, nsIContentHandle* node);
+    void setValues(nsHtml5ElementName* elementName,
+                   nsIContentHandle* node,
+                   nsHtml5HtmlAttributes* attributes);
+    void setValues(nsHtml5ElementName* elementName,
+                   nsIContentHandle* node,
+                   nsIAtom* popName);
+    void setValues(nsHtml5ElementName* elementName,
+                   nsIAtom* popName,
+                   nsIContentHandle* node);
+    void setValues(nsHtml5ElementName* elementName,
+                   nsIContentHandle* node,
+                   nsIAtom* popName,
+                   bool markAsIntegrationPoint);
+
   private:
     static int32_t prepareSvgFlags(int32_t flags);
     static int32_t prepareMathFlags(int32_t flags, bool markAsIntegrationPoint);
@@ -92,7 +105,8 @@ class nsHtml5StackNode
     ~nsHtml5StackNode();
     void dropAttributes();
     void retain();
-    void release();
+    void release(nsHtml5TreeBuilder* owningTreeBuilder);
+    bool isUnused();
     static void initializeStatics();
     static void releaseStatics();
 };

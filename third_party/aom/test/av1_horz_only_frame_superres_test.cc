@@ -30,9 +30,9 @@ const int kPerfIters = 1000;
 const int kVPad = 32;
 const int kHPad = 32;
 
+using libaom_test::ACMRandom;
 using ::testing::make_tuple;
 using ::testing::tuple;
-using libaom_test::ACMRandom;
 
 template <typename Pixel>
 class TestImage {
@@ -300,6 +300,7 @@ TEST_P(LowBDConvolveHorizRSTest, DISABLED_Speed) { SpeedTest(); }
 INSTANTIATE_TEST_CASE_P(SSE4_1, LowBDConvolveHorizRSTest,
                         ::testing::Values(av1_convolve_horiz_rs_sse4_1));
 
+#if CONFIG_AV1_HIGHBITDEPTH
 typedef void (*HighBDConvolveHorizRsFunc)(const uint16_t *src, int src_stride,
                                           uint16_t *dst, int dst_stride, int w,
                                           int h, const int16_t *x_filters,
@@ -358,5 +359,6 @@ INSTANTIATE_TEST_CASE_P(
     SSE4_1, HighBDConvolveHorizRSTest,
     ::testing::Combine(::testing::Values(av1_highbd_convolve_horiz_rs_sse4_1),
                        ::testing::ValuesIn(kBDs)));
+#endif  // CONFIG_AV1_HIGHBITDEPTH
 
 }  // namespace

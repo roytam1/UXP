@@ -583,6 +583,19 @@ FontFaceSet::StartLoad(gfxUserFontEntry* aUserFontEntry,
   nsCOMPtr<nsIStreamLoader> streamLoader;
   nsCOMPtr<nsILoadGroup> loadGroup(mDocument->GetDocumentLoadGroup());
 
+  // We're determining the security flags for font loading here based on
+  // scheme, because we want to allow fonts to be loaded using file:
+  // even if unique origins for file: access is enforced (allow CORS
+  // bypass in this case).
+  uint32_t securityFlags = 0;
+  bool isFile = false;
+  if (NS_SUCCEEDED(aFontFaceSrc->mURI->SchemeIs("file", &isFile)) &&
+      isFile) {
+    securityFlags = nsILoadInfo::SEC_ALLOW_CROSS_ORIGIN_DATA_INHERITS;
+  } else {
+    securityFlags = nsILoadInfo::SEC_REQUIRE_CORS_DATA_INHERITS;
+  }
+
   nsCOMPtr<nsIChannel> channel;
   // Note we are calling NS_NewChannelWithTriggeringPrincipal() with both a
   // node and a principal.  This is because the document where the font is
@@ -592,7 +605,7 @@ FontFaceSet::StartLoad(gfxUserFontEntry* aUserFontEntry,
                                             aFontFaceSrc->mURI,
                                             mDocument,
                                             aUserFontEntry->GetPrincipal(),
-                                            nsILoadInfo::SEC_REQUIRE_CORS_DATA_INHERITS,
+                                            securityFlags,
                                             nsIContentPolicy::TYPE_FONT,
                                             loadGroup);
   NS_ENSURE_SUCCESS(rv, rv);

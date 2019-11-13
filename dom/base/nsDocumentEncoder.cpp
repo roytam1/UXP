@@ -82,7 +82,9 @@ protected:
                                       nsAString& aStr,
                                       bool aDontSerializeRoot,
                                       uint32_t aMaxLength = 0);
-  nsresult SerializeNodeEnd(nsINode* aNode, nsAString& aStr);
+  nsresult SerializeNodeEnd(nsINode* aOriginalNode,
+                            nsAString& aStr,
+                            nsINode* aFixupNode = nullptr);
   // This serializes the content of aNode.
   nsresult SerializeToStringIterative(nsINode* aNode,
                                       nsAString& aStr);
@@ -405,14 +407,37 @@ nsDocumentEncoder::SerializeNodeStart(nsINode* aNode,
 }
 
 nsresult
-nsDocumentEncoder::SerializeNodeEnd(nsINode* aNode,
-                                    nsAString& aStr)
+nsDocumentEncoder::SerializeNodeEnd(nsINode* aOriginalNode,
+                                    nsAString& aStr,
+                                    nsINode* aFixupNode)
 {
-  if (!IsVisibleNode(aNode))
+  if (!IsVisibleNode(aOriginalNode))
     return NS_OK;
 
-  if (aNode->IsElement()) {
-    mSerializer->AppendElementEnd(aNode->AsElement(), aStr);
+  nsINode* node = nullptr;
+  nsCOMPtr<nsINode> fixedNodeKungfuDeathGrip;
+
+  // Caller didn't do fixup, so we'll do it ourselves
+  if (!aFixupNode) {
+    aFixupNode = aOriginalNode;
+    if (mNodeFixup) {
+      bool dummy;
+      nsCOMPtr<nsIDOMNode> domNodeIn = do_QueryInterface(aOriginalNode);
+      nsCOMPtr<nsIDOMNode> domNodeOut;
+      mNodeFixup->FixupNode(domNodeIn, &dummy, getter_AddRefs(domNodeOut));
+      fixedNodeKungfuDeathGrip = do_QueryInterface(domNodeOut);
+      node = fixedNodeKungfuDeathGrip;
+    }
+  }
+
+  // Fall back to original node if needed.
+  if (!node)
+    node = aOriginalNode;
+
+  if (node->IsElement()) {
+    mSerializer->AppendElementEnd(node->AsElement(),
+                                  aOriginalNode->AsElement(),
+                                  aStr);
   }
   return NS_OK;
 }
@@ -481,7 +506,7 @@ nsDocumentEncoder::SerializeToStringRecursive(nsINode* aNode,
   }
 
   if (!aDontSerializeRoot) {
-    rv = SerializeNodeEnd(maybeFixedNode, aStr);
+    rv = SerializeNodeEnd(aNode, aStr, maybeFixedNode);
     NS_ENSURE_SUCCESS(rv, rv);
   }
 

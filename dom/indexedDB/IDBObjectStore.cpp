@@ -1084,7 +1084,7 @@ IDBObjectStore::AppendIndexUpdateInfo(
 
   if (!aMultiEntry) {
     Key key;
-    rv = aKeyPath.ExtractKey(aCx, aVal, key);
+    rv = aKeyPath.ExtractKey(aCx, aVal, key, /* aCallGetters */ false);
 
     // If an index's keyPath doesn't match an object, we ignore that object.
     if (rv == NS_ERROR_DOM_INDEXEDDB_DATA_ERR || key.IsUnset()) {
@@ -1114,7 +1114,7 @@ IDBObjectStore::AppendIndexUpdateInfo(
   }
 
   bool isArray;
-  if (!JS_IsArrayObject(aCx, val, &isArray)) {
+  if (NS_WARN_IF(!JS_IsArrayObject(aCx, val, &isArray))) {
     IDB_REPORT_INTERNAL_ERR();
     return NS_ERROR_DOM_INDEXEDDB_UNKNOWN_ERR;
   }
@@ -1127,14 +1127,31 @@ IDBObjectStore::AppendIndexUpdateInfo(
     }
 
     for (uint32_t arrayIndex = 0; arrayIndex < arrayLength; arrayIndex++) {
-      JS::Rooted<JS::Value> arrayItem(aCx);
-      if (NS_WARN_IF(!JS_GetElement(aCx, array, arrayIndex, &arrayItem))) {
+      JS::RootedId indexId(aCx);
+      if (NS_WARN_IF(!JS_IndexToId(aCx, arrayIndex, &indexId))) {
+        IDB_REPORT_INTERNAL_ERR();
+        return NS_ERROR_DOM_INDEXEDDB_UNKNOWN_ERR;
+      }
+
+      bool hasOwnProperty;
+      if (NS_WARN_IF(
+              !JS_HasOwnPropertyById(aCx, array, indexId, &hasOwnProperty))) {
+        IDB_REPORT_INTERNAL_ERR();
+        return NS_ERROR_DOM_INDEXEDDB_UNKNOWN_ERR;
+      }
+
+      if (!hasOwnProperty) {
+        continue;
+      }
+
+      JS::RootedValue arrayItem(aCx);
+      if (NS_WARN_IF(!JS_GetPropertyById(aCx, array, indexId, &arrayItem))) {
         IDB_REPORT_INTERNAL_ERR();
         return NS_ERROR_DOM_INDEXEDDB_UNKNOWN_ERR;
       }
 
       Key value;
-      if (NS_FAILED(value.SetFromJSVal(aCx, arrayItem)) ||
+      if (NS_FAILED(value.SetFromJSVal(aCx, arrayItem, /* aCallGetters */ false)) ||
           value.IsUnset()) {
         // Not a value we can do anything with, ignore it.
         continue;
@@ -1153,7 +1170,7 @@ IDBObjectStore::AppendIndexUpdateInfo(
   }
   else {
     Key value;
-    if (NS_FAILED(value.SetFromJSVal(aCx, val)) ||
+    if (NS_FAILED(value.SetFromJSVal(aCx, val, /* aCallGetters */ false)) ||
         value.IsUnset()) {
       // Not a value we can do anything with, ignore it.
       return NS_OK;
@@ -1324,12 +1341,12 @@ IDBObjectStore::GetAddInfo(JSContext* aCx,
 
   if (!HasValidKeyPath()) {
     // Out-of-line keys must be passed in.
-    rv = aKey.SetFromJSVal(aCx, aKeyVal);
+    rv = aKey.SetFromJSVal(aCx, aKeyVal, /* aCallGetters */ true);
     if (NS_FAILED(rv)) {
       return rv;
     }
   } else if (!isAutoIncrement) {
-    rv = GetKeyPath().ExtractKey(aCx, aValue, aKey);
+    rv = GetKeyPath().ExtractKey(aCx, aValue, aKey, /* aCallGetters */ false);
     if (NS_FAILED(rv)) {
       return rv;
     }
@@ -1368,7 +1385,8 @@ IDBObjectStore::GetAddInfo(JSContext* aCx,
                                          aValue,
                                          aKey,
                                          &GetAddInfoCallback,
-                                         &data);
+                                         &data,
+                                         /* aCallGetters */ false);
   } else {
     rv = GetAddInfoCallback(aCx, &data);
   }

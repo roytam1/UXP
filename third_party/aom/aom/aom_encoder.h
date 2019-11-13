@@ -41,7 +41,7 @@ extern "C" {
  * fields to structures
  */
 #define AOM_ENCODER_ABI_VERSION \
-  (5 + AOM_CODEC_ABI_VERSION) /**<\hideinitializer*/
+  (6 + AOM_CODEC_ABI_VERSION) /**<\hideinitializer*/
 
 /*! \brief Encoder capabilities bitfield
  *
@@ -74,7 +74,7 @@ extern "C" {
  * This structure is able to hold a reference to any fixed size buffer.
  */
 typedef struct aom_fixed_buf {
-  void *buf;       /**< Pointer to the data */
+  void *buf;       /**< Pointer to the data. Does NOT own the data! */
   size_t sz;       /**< Length of the buffer, in chars */
 } aom_fixed_buf_t; /**< alias for struct aom_fixed_buf */
 
@@ -97,10 +97,14 @@ typedef uint32_t aom_codec_frame_flags_t;
 /*!\brief frame can be dropped without affecting the stream (no future frame
  * depends on this one) */
 #define AOM_FRAME_IS_DROPPABLE 0x2
-/*!\brief frame should be decoded but will not be shown */
-#define AOM_FRAME_IS_INVISIBLE 0x4
-/*!\brief this is a fragment of the encoded frame */
-#define AOM_FRAME_IS_FRAGMENT 0x8
+/*!\brief this is an INTRA_ONLY frame */
+#define AOM_FRAME_IS_INTRAONLY 0x10
+/*!\brief this is an S-frame */
+#define AOM_FRAME_IS_SWITCH 0x20
+/*!\brief this is an error-resilient frame */
+#define AOM_FRAME_IS_ERROR_RESILIENT 0x40
+/*!\brief this is a key-frame dependent recovery-point frame */
+#define AOM_FRAME_IS_DELAYED_RANDOM_ACCESS_POINT 0x80
 
 /*!\brief Error Resilient flags
  *
@@ -402,8 +406,7 @@ typedef struct aom_codec_enc_cfg {
    * upscaling after the encode/decode process. Taking control of upscaling and
    * using restoration filters should allow it to outperform normal resizing.
    *
-   * Mode 0 is SUPERRES_NONE, mode 1 is SUPERRES_FIXED, mode 2 is
-   * SUPERRES_RANDOM and mode 3 is SUPERRES_QTHRESH.
+   * Valid values are 0 to 4 as defined in enum SUPERRES_MODE.
    */
   unsigned int rc_superres_mode;
 
@@ -720,11 +723,6 @@ typedef struct aom_codec_enc_cfg {
    * The number of heights specified is given by tile_height_count
    */
   int tile_heights[MAX_TILE_HEIGHTS];
-
-  /*!\brief Options defined per config file
-   *
-   */
-  cfg_options_t cfg;
 } aom_codec_enc_cfg_t; /**< alias for struct aom_codec_enc_cfg */
 
 /*!\brief Initialize an encoder instance
@@ -857,6 +855,11 @@ aom_codec_err_t aom_codec_enc_config_set(aom_codec_ctx_t *ctx,
  *     must be freed via call to free().
  */
 aom_fixed_buf_t *aom_codec_get_global_headers(aom_codec_ctx_t *ctx);
+
+/*!\brief usage parameter analogous to AV1 GOOD QUALITY mode. */
+#define AOM_USAGE_GOOD_QUALITY (0)
+/*!\brief usage parameter analogous to AV1 REALTIME mode. */
+#define AOM_USAGE_REALTIME (1)
 
 /*!\brief Encode a frame
  *

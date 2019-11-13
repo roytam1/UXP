@@ -375,7 +375,6 @@ void
 DynamicAtom::GCAtomTableLocked(const MutexAutoLock& aProofOfLock,
                                GCKind aKind)
 {
-
   MOZ_ASSERT(NS_IsMainThread());
   for (uint32_t i = 0; i < RECENTLY_USED_MAIN_THREAD_ATOM_CACHE_SIZE; ++i) {
     sRecentlyUsedMainThreadAtoms[i] = nullptr;
@@ -733,8 +732,8 @@ NS_AtomizeMainThread(const nsAString& aUTF16String)
     if (length == key.mLength &&
         (memcmp(atom->GetUTF16String(),
                 key.mUTF16String, length * sizeof(char16_t)) == 0)) {
-       retVal = atom;
-       return retVal.forget();
+      retVal = atom;
+      return retVal.forget();
     }
   }
 

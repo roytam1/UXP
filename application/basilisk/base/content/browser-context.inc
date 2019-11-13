@@ -51,11 +51,23 @@
                 label="&openLinkCmdInCurrent.label;"
                 accesskey="&openLinkCmdInCurrent.accesskey;"
                 oncommand="gContextMenu.openLinkInCurrent();"/>
-# label is dynamically set.
+# label and data-usercontextid are dynamically set.
+      <menuitem id="context-openlinkincontainertab"
+                accesskey="&openLinkCmdInTab.accesskey;"
+                oncommand="gContextMenu.openLinkInTab(event);"/>
       <menuitem id="context-openlinkintab"
                 label="&openLinkCmdInTab.label;"
                 accesskey="&openLinkCmdInTab.accesskey;"
-                oncommand="gContextMenu.openLinkInTab();"/>
+                data-usercontextid="0"
+                oncommand="gContextMenu.openLinkInTab(event);"/>
+
+      <menu id="context-openlinkinusercontext-menu"
+            label="&openLinkCmdInContainerTab.label;"
+            accesskey="&openLinkCmdInContainerTab.accesskey;"
+            hidden="true">
+        <menupopup oncommand="gContextMenu.openLinkInTab(event);"
+                   onpopupshowing="return gContextMenu.createContainerMenu(event);" />
+      </menu>
 
       <menuitem id="context-openlink"
                 label="&openLinkCmd.label;"

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
+ * Copyright (c) 2019 Moonchild Productions
  * Portions of comments Copyright 2004-2008 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
@@ -21,11 +22,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- */
-
-/*
- * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
- * Please edit TreeBuilder.java instead and regenerate.
  */
 
 #ifndef nsHtml5TreeBuilder_h
@@ -88,6 +84,9 @@ class nsHtml5TreeBuilder : public nsAHtml5TreeBuilderState
     nsIContentHandle* contextNode;
     autoJArray<int32_t,int32_t> templateModeStack;
     int32_t templateModePtr;
+    autoJArray<nsHtml5StackNode*, int32_t> stackNodes;
+    int32_t stackNodesIdx;
+    int32_t numStackNodes;
     autoJArray<nsHtml5StackNode*,int32_t> stack;
     int32_t currentPtr;
     autoJArray<nsHtml5StackNode*,int32_t> listOfActiveFormattingElements;
@@ -187,6 +186,33 @@ class nsHtml5TreeBuilder : public nsAHtml5TreeBuilderState
     void addAttributesToHtml(nsHtml5HtmlAttributes* attributes);
     void pushHeadPointerOntoStack();
     void reconstructTheActiveFormattingElements();
+
+  public:
+    void notifyUnusedStackNode(int32_t idxInStackNodes);
+
+  private:
+    nsHtml5StackNode* getUnusedStackNode();
+    nsHtml5StackNode* createStackNode(int32_t flags,
+                                      int32_t ns,
+                                      nsIAtom* name,
+                                      nsIContentHandle* node,
+                                      nsIAtom* popName,
+                                      nsHtml5HtmlAttributes* attributes);
+    nsHtml5StackNode* createStackNode(nsHtml5ElementName* elementName,
+                                      nsIContentHandle* node);
+    nsHtml5StackNode* createStackNode(nsHtml5ElementName* elementName,
+                                      nsIContentHandle* node,
+                                      nsHtml5HtmlAttributes* attributes);
+    nsHtml5StackNode* createStackNode(nsHtml5ElementName* elementName,
+                                      nsIContentHandle* node,
+                                      nsIAtom* popName);
+    nsHtml5StackNode* createStackNode(nsHtml5ElementName* elementName,
+                                      nsIAtom* popName,
+                                      nsIContentHandle* node);
+    nsHtml5StackNode* createStackNode(nsHtml5ElementName* elementName,
+                                      nsIContentHandle* node,
+                                      nsIAtom* popName,
+                                      bool markAsIntegrationPoint);
     void insertIntoFosterParent(nsIContentHandle* child);
     nsIContentHandle* createAndInsertFosterParentedElement(int32_t ns, nsIAtom* name, nsHtml5HtmlAttributes* attributes);
     nsIContentHandle* createAndInsertFosterParentedElement(int32_t ns, nsIAtom* name, nsHtml5HtmlAttributes* attributes, nsIContentHandle* form);

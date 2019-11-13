@@ -1968,8 +1968,6 @@ const js::ObjectOps sInterfaceObjectClassObjectOps = {
   nullptr, /* setProperty */
   nullptr, /* getOwnPropertyDescriptor */
   nullptr, /* deleteProperty */
-  nullptr, /* watch */
-  nullptr, /* unwatch */
   nullptr, /* getElements */
   nullptr, /* enumerate */
   InterfaceObjectToString, /* funToString */

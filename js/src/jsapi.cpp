@@ -39,7 +39,6 @@
 #include "jsstr.h"
 #include "jstypes.h"
 #include "jsutil.h"
-#include "jswatchpoint.h"
 #include "jsweakmap.h"
 #include "jswrapper.h"
 
@@ -2008,6 +2007,28 @@ JS_GetOwnUCPropertyDescriptor(JSContext* cx, HandleObject obj, const char16_t* n
         return false;
     RootedId id(cx, AtomToId(atom));
     return JS_GetOwnPropertyDescriptorById(cx, obj, id, desc);
+}
+
+JS_PUBLIC_API(bool)
+JS_GetOwnElement(JSContext* cx, JS::HandleObject obj, uint32_t index, JS::MutableHandleValue vp)
+{
+    RootedId id(cx);
+    if (!IndexToId(cx, index, &id)) {
+        return false;
+    }
+
+    Rooted<PropertyDescriptor> desc(cx);
+    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &desc)) {
+        return false;
+    }
+
+    if (desc.object() && desc.isDataDescriptor()) {
+        vp.set(desc.value());
+    } else {
+        vp.setUndefined();
+    }
+
+    return true;
 }
 
 JS_PUBLIC_API(bool)

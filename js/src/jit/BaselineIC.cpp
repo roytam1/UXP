@@ -4053,9 +4053,6 @@ TryAttachSetValuePropStub(JSContext* cx, HandleScript script, jsbytecode* pc, IC
 {
     MOZ_ASSERT(!*attached);
 
-    if (obj->watched())
-        return true;
-
     RootedShape shape(cx);
     RootedObject holder(cx);
     if (!EffectlesslyLookupProperty(cx, obj, id, &holder, &shape))
@@ -4150,9 +4147,6 @@ TryAttachSetAccessorPropStub(JSContext* cx, HandleScript script, jsbytecode* pc,
 {
     MOZ_ASSERT(!*attached);
     MOZ_ASSERT(!*isTemporarilyUnoptimizable);
-
-    if (obj->watched())
-        return true;
 
     RootedShape shape(cx);
     RootedObject holder(cx);

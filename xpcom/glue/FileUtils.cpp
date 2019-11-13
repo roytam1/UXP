@@ -532,7 +532,7 @@ mozilla::ReadAheadFile(mozilla::pathstr_t aFilePath, const size_t aOffset,
   if (!aOutFd) {
     CloseHandle(fd);
   }
-#elif defined(LINUX) && !defined(ANDROID) || defined(XP_MACOSX)
+#elif defined(LINUX) && !defined(ANDROID) || defined(XP_MACOSX) || defined(XP_SOLARIS)
   if (!aFilePath) {
     if (aOutFd) {
       *aOutFd = -1;

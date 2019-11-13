@@ -871,9 +871,6 @@ pref("app.support.baseURL", "https://support.mozilla.org/1/firefox/%VERSION%/%OS
 // a11y conflicts with e10s support page
 pref("app.support.e10sAccessibilityUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/accessibility-ppt");
 
-// base url for web-based feedback pages
-pref("app.feedback.baseURL", "https://forum.palemoon.org/viewforum.php?f=61");
-
 // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
 pref("security.alternate_certificate_error_page", "certerror");
 
@@ -1009,12 +1006,7 @@ pref("services.sync.syncedTabs.showRemoteIcons", true);
 
 pref("services.sync.sendTabToDevice.enabled", true);
 
-// Developer edition preferences
-#ifdef MOZ_DEV_EDITION
-sticky_pref("lightweightThemes.selectedThemeID", "firefox-devedition@mozilla.org");
-#else
 sticky_pref("lightweightThemes.selectedThemeID", "");
-#endif
 
 // Whether the character encoding menu is under the main Firefox button. This
 // preference is a string so that localizers can alter it.
@@ -1225,6 +1217,17 @@ pref("media.gmp-provider.enabled", true);
 pref("privacy.trackingprotection.ui.enabled", true);
 #else
 pref("privacy.trackingprotection.ui.enabled", false);
+#endif
+
+// Enable Contextual Identity Containers
+#ifdef NIGHTLY_BUILD
+pref("privacy.userContext.enabled", true);
+pref("privacy.userContext.ui.enabled", true);
+pref("privacy.usercontext.about_newtab_segregation.enabled", true);
+#else
+pref("privacy.userContext.enabled", false);
+pref("privacy.userContext.ui.enabled", false);
+pref("privacy.usercontext.about_newtab_segregation.enabled", false);
 #endif
 
 #ifndef RELEASE_OR_BETA

@@ -30,11 +30,11 @@ extern "C" {
  * types, removing or reassigning enums, adding/removing/rearranging
  * fields to structures
  */
-#define AOM_IMAGE_ABI_VERSION (4) /**<\hideinitializer*/
+#define AOM_IMAGE_ABI_VERSION (6) /**<\hideinitializer*/
 
-#define AOM_IMG_FMT_PLANAR 0x100       /**< Image is a planar format. */
-#define AOM_IMG_FMT_UV_FLIP 0x200      /**< V plane precedes U in memory. */
-#define AOM_IMG_FMT_HAS_ALPHA 0x400    /**< Image has an alpha channel. */
+#define AOM_IMG_FMT_PLANAR 0x100  /**< Image is a planar format. */
+#define AOM_IMG_FMT_UV_FLIP 0x200 /**< V plane precedes U in memory. */
+/** 0x400 used to signal alpha channel, skipping for backwards compatibility. */
 #define AOM_IMG_FMT_HIGHBITDEPTH 0x800 /**< Image uses 16bit framebuffer. */
 
 /*!\brief List of supported image formats */
@@ -48,8 +48,8 @@ typedef enum aom_img_fmt {
   AOM_IMG_FMT_AOMI420 = AOM_IMG_FMT_PLANAR | 4,
   AOM_IMG_FMT_I422 = AOM_IMG_FMT_PLANAR | 5,
   AOM_IMG_FMT_I444 = AOM_IMG_FMT_PLANAR | 6,
-  AOM_IMG_FMT_444A = AOM_IMG_FMT_PLANAR | AOM_IMG_FMT_HAS_ALPHA | 6,
   AOM_IMG_FMT_I42016 = AOM_IMG_FMT_I420 | AOM_IMG_FMT_HIGHBITDEPTH,
+  AOM_IMG_FMT_YV1216 = AOM_IMG_FMT_YV12 | AOM_IMG_FMT_HIGHBITDEPTH,
   AOM_IMG_FMT_I42216 = AOM_IMG_FMT_I422 | AOM_IMG_FMT_HIGHBITDEPTH,
   AOM_IMG_FMT_I44416 = AOM_IMG_FMT_I444 | AOM_IMG_FMT_HIGHBITDEPTH,
 } aom_img_fmt_t; /**< alias for enum aom_img_fmt */
@@ -137,6 +137,16 @@ typedef enum aom_chroma_sample_position {
   AOM_CSP_RESERVED = 3          /**< Reserved value */
 } aom_chroma_sample_position_t; /**< alias for enum aom_transfer_function */
 
+/*!\brief Array of aom_metadata structs for an image. */
+typedef struct aom_metadata_array aom_metadata_array_t;
+
+/*!\brief Metadata payload. */
+typedef struct aom_metadata {
+  uint8_t type;     /**< Metadata type */
+  uint8_t *payload; /**< Metadata payload data */
+  size_t sz;        /**< Metadata payload size */
+} aom_metadata_t;
+
 /**\brief Image Descriptor */
 typedef struct aom_image {
   aom_img_fmt_t fmt;                 /**< Image Format */
@@ -169,9 +179,8 @@ typedef struct aom_image {
 #define AOM_PLANE_Y 0       /**< Y (Luminance) plane */
 #define AOM_PLANE_U 1       /**< U (Chroma) plane */
 #define AOM_PLANE_V 2       /**< V (Chroma) plane */
-#define AOM_PLANE_ALPHA 3   /**< A (Transparency) plane */
-  unsigned char *planes[4]; /**< pointer to the top left pixel for each plane */
-  int stride[4];            /**< stride between rows for each plane */
+  unsigned char *planes[3]; /**< pointer to the top left pixel for each plane */
+  int stride[3];            /**< stride between rows for each plane */
   size_t sz;                /**< data size */
 
   int bps; /**< bits per sample (for packed formats) */
@@ -189,6 +198,9 @@ typedef struct aom_image {
   int img_data_owner;      /**< private */
   int self_allocd;         /**< private */
 
+  aom_metadata_array_t
+      *metadata; /**< Metadata payloads associated with the image. */
+
   void *fb_priv; /**< Frame buffer data associated with the image. */
 } aom_image_t;   /**< alias for struct aom_image */
 
@@ -203,7 +215,7 @@ typedef struct aom_image_rect {
 /*!\brief Open a descriptor, allocating storage for the underlying image
  *
  * Returns a descriptor for storing an image of the given format. The
- * storage for the descriptor is allocated on the heap.
+ * storage for the image is allocated on the heap.
  *
  * \param[in]    img       Pointer to storage for descriptor. If this parameter
  *                         is NULL, the storage for the descriptor will be
@@ -212,7 +224,7 @@ typedef struct aom_image_rect {
  * \param[in]    d_w       Width of the image
  * \param[in]    d_h       Height of the image
  * \param[in]    align     Alignment, in bytes, of the image buffer and
- *                         each row in the image(stride).
+ *                         each row in the image (stride).
  *
  * \return Returns a pointer to the initialized image descriptor. If the img
  *         parameter is non-null, the value of the img parameter will be
@@ -225,7 +237,7 @@ aom_image_t *aom_img_alloc(aom_image_t *img, aom_img_fmt_t fmt,
 /*!\brief Open a descriptor, using existing storage for the underlying image
  *
  * Returns a descriptor for storing an image of the given format. The
- * storage for descriptor has been allocated elsewhere, and a descriptor is
+ * storage for the image has been allocated elsewhere, and a descriptor is
  * desired to "wrap" that storage.
  *
  * \param[in]    img       Pointer to storage for descriptor. If this parameter
@@ -234,7 +246,8 @@ aom_image_t *aom_img_alloc(aom_image_t *img, aom_img_fmt_t fmt,
  * \param[in]    fmt       Format for the image
  * \param[in]    d_w       Width of the image
  * \param[in]    d_h       Height of the image
- * \param[in]    align     Alignment, in bytes, of each row in the image.
+ * \param[in]    align     Alignment, in bytes, of each row in the image
+ *                         (stride).
  * \param[in]    img_data  Storage to use for the image
  *
  * \return Returns a pointer to the initialized image descriptor. If the img
@@ -249,7 +262,7 @@ aom_image_t *aom_img_wrap(aom_image_t *img, aom_img_fmt_t fmt, unsigned int d_w,
  * border
  *
  * Returns a descriptor for storing an image of the given format and its
- * borders. The storage for the descriptor is allocated on the heap.
+ * borders. The storage for the image is allocated on the heap.
  *
  * \param[in]    img        Pointer to storage for descriptor. If this parameter
  *                          is NULL, the storage for the descriptor will be
@@ -258,8 +271,8 @@ aom_image_t *aom_img_wrap(aom_image_t *img, aom_img_fmt_t fmt, unsigned int d_w,
  * \param[in]    d_w        Width of the image
  * \param[in]    d_h        Height of the image
  * \param[in]    align      Alignment, in bytes, of the image buffer and
- *                          each row in the image(stride).
- * \param[in]    size_align Alignment, in bytes, of the image width and height.
+ *                          each row in the image (stride).
+ * \param[in]    size_align Alignment, in pixels, of the image width and height.
  * \param[in]    border     A border that is padded on four sides of the image.
  *
  * \return Returns a pointer to the initialized image descriptor. If the img
@@ -323,6 +336,52 @@ int aom_img_plane_width(const aom_image_t *img, int plane);
  * \param[in]    plane     Plane index
  */
 int aom_img_plane_height(const aom_image_t *img, int plane);
+
+/*!\brief Add metadata to image.
+ *
+ * Adds metadata to aom_image_t.
+ * Function makes a copy of the provided data parameter.
+ *
+ * \param[in]    img       Image descriptor
+ * \param[in]    type      Metadata type
+ * \param[in]    data      Metadata contents
+ * \param[in]    sz        Metadata contents size
+ */
+int aom_img_add_metadata(aom_image_t *img, uint8_t type, uint8_t *data,
+                         size_t sz);
+
+/*!\brief Remove metadata from image.
+ *
+ * Removes all metadata in image metadata list and sets metadata list pointer
+ * to NULL.
+ * Returns the number of deleted metadata structs.
+ *
+ * \param[in]    img       Image descriptor
+ */
+size_t aom_img_remove_metadata(aom_image_t *img);
+
+/*!\brief Allocate memory for aom_metadata struct.
+ *
+ * Allocates memory for aom_metadata struct and sets its type. Optionally
+ * allocates storage for the metadata payload and copies the payload data
+ * into the aom_metadata struct:
+ *   - When sz is > 0 and data is NULL, allocates metadata payload buffer of sz.
+ *   - When sz is > 0 and data is non-NULL, a metadata payload buffer of sz
+ *     is allocated and sz bytes are copied from data into the payload buffer.
+ *
+ * \param[in]    type      Metadata type
+ * \param[in]    data      Metadata data pointer
+ * \param[in]    sz        Metadata size
+ */
+aom_metadata_t *aom_img_metadata_alloc(uint8_t type, uint8_t *data, size_t sz);
+
+/*!\brief Free metadata struct.
+ *
+ * Free metadata struct and its buffer.
+ *
+ * \param[in]    metadata       Metadata struct pointer
+ */
+int aom_img_metadata_free(aom_metadata_t *metadata);
 
 #ifdef __cplusplus
 }  // extern "C"

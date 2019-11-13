@@ -184,6 +184,11 @@ FileAsTypedArray(JSContext* cx, JS::HandleString pathnameStr)
                 return nullptr;
             JS_ReportErrorUTF8(cx, "can't seek start of %s", pathname.ptr());
         } else {
+            if (len > INT32_MAX) {
+                JS_ReportErrorUTF8(cx, "file %s is too large for a Uint8Array",
+                                   pathname.ptr());
+                return nullptr;
+            }        
             obj = JS_NewUint8Array(cx, len);
             if (!obj)
                 return nullptr;

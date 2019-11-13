@@ -144,12 +144,12 @@ aom_codec_err_t aom_codec_enc_init_multi_ver(
 
 aom_codec_err_t aom_codec_enc_config_default(aom_codec_iface_t *iface,
                                              aom_codec_enc_cfg_t *cfg,
-                                             unsigned int usage) {
+                                             unsigned int reserved) {
   aom_codec_err_t res;
   aom_codec_enc_cfg_map_t *map;
   int i;
 
-  if (!iface || !cfg || usage > INT_MAX)
+  if (!iface || !cfg || reserved > INT_MAX)
     res = AOM_CODEC_INVALID_PARAM;
   else if (!(iface->caps & AOM_CODEC_CAP_ENCODER))
     res = AOM_CODEC_INCAPABLE;
@@ -158,18 +158,13 @@ aom_codec_err_t aom_codec_enc_config_default(aom_codec_iface_t *iface,
 
     for (i = 0; i < iface->enc.cfg_map_count; ++i) {
       map = iface->enc.cfg_maps + i;
-      if (map->usage == (int)usage) {
+      if (map->usage == (int)reserved) {
         *cfg = map->cfg;
-        cfg->g_usage = usage;
+        cfg->g_usage = reserved;
         res = AOM_CODEC_OK;
         break;
       }
     }
-  }
-
-  /* default values */
-  if (cfg) {
-    cfg->cfg.ext_partition = 1;
   }
 
   return res;
@@ -190,8 +185,11 @@ aom_codec_err_t aom_codec_enc_config_default(aom_codec_iface_t *iface,
 
 #if HAVE_FEXCEPT && CONFIG_DEBUG
 #define FLOATING_POINT_SET_EXCEPTIONS \
-  const int float_excepts = feenableexcept(FE_DIVBYZERO);
-#define FLOATING_POINT_RESTORE_EXCEPTIONS feenableexcept(float_excepts);
+  const int float_excepts =           \
+      feenableexcept(FE_DIVBYZERO | FE_UNDERFLOW | FE_OVERFLOW);
+#define FLOATING_POINT_RESTORE_EXCEPTIONS \
+  fedisableexcept(FE_ALL_EXCEPT);         \
+  feenableexcept(float_excepts);
 #else
 #define FLOATING_POINT_SET_EXCEPTIONS
 #define FLOATING_POINT_RESTORE_EXCEPTIONS

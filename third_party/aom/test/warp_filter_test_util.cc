@@ -149,7 +149,7 @@ void AV1WarpFilterTest::RunSpeedTest(warp_affine_func test_impl) {
   int do_average = 0;
 
   conv_params = get_conv_params_no_round(do_average, 0, dsta, out_w, 1, bd);
-  conv_params.use_jnt_comp_avg = 0;
+  conv_params.use_dist_wtd_comp_avg = 0;
 
   const int num_loops = 1000000000 / (out_w + out_h);
   aom_usec_timer timer;
@@ -222,9 +222,9 @@ void AV1WarpFilterTest::RunCheckOutput(warp_affine_func test_impl) {
                 conv_params = get_conv_params(0, 0, bd);
               }
               if (jj >= 4) {
-                conv_params.use_jnt_comp_avg = 0;
+                conv_params.use_dist_wtd_comp_avg = 0;
               } else {
-                conv_params.use_jnt_comp_avg = 1;
+                conv_params.use_dist_wtd_comp_avg = 1;
                 conv_params.fwd_offset = quant_dist_lookup_table[ii][jj][0];
                 conv_params.bck_offset = quant_dist_lookup_table[ii][jj][1];
               }
@@ -236,9 +236,9 @@ void AV1WarpFilterTest::RunCheckOutput(warp_affine_func test_impl) {
                     get_conv_params_no_round(do_average, 0, dstb, out_w, 1, bd);
               }
               if (jj >= 4) {
-                conv_params.use_jnt_comp_avg = 0;
+                conv_params.use_dist_wtd_comp_avg = 0;
               } else {
-                conv_params.use_jnt_comp_avg = 1;
+                conv_params.use_dist_wtd_comp_avg = 1;
                 conv_params.fwd_offset = quant_dist_lookup_table[ii][jj][0];
                 conv_params.bck_offset = quant_dist_lookup_table[ii][jj][1];
               }
@@ -276,6 +276,7 @@ void AV1WarpFilterTest::RunCheckOutput(warp_affine_func test_impl) {
 }
 }  // namespace AV1WarpFilter
 
+#if CONFIG_AV1_HIGHBITDEPTH
 namespace AV1HighbdWarpFilter {
 ::testing::internal::ParamGenerator<HighbdWarpTestParams> BuildParams(
     highbd_warp_affine_func filter) {
@@ -342,7 +343,7 @@ void AV1HighbdWarpFilterTest::RunSpeedTest(highbd_warp_affine_func test_impl) {
   sub_x = 0;
   sub_y = 0;
   int do_average = 0;
-  conv_params.use_jnt_comp_avg = 0;
+  conv_params.use_dist_wtd_comp_avg = 0;
   conv_params = get_conv_params_no_round(do_average, 0, dsta, out_w, 1, bd);
 
   const int num_loops = 1000000000 / (out_w + out_h);
@@ -419,9 +420,9 @@ void AV1HighbdWarpFilterTest::RunCheckOutput(
                 conv_params = get_conv_params(0, 0, bd);
               }
               if (jj >= 4) {
-                conv_params.use_jnt_comp_avg = 0;
+                conv_params.use_dist_wtd_comp_avg = 0;
               } else {
-                conv_params.use_jnt_comp_avg = 1;
+                conv_params.use_dist_wtd_comp_avg = 1;
                 conv_params.fwd_offset = quant_dist_lookup_table[ii][jj][0];
                 conv_params.bck_offset = quant_dist_lookup_table[ii][jj][1];
               }
@@ -436,9 +437,9 @@ void AV1HighbdWarpFilterTest::RunCheckOutput(
                     get_conv_params_no_round(do_average, 0, dstb, out_w, 1, bd);
               }
               if (jj >= 4) {
-                conv_params.use_jnt_comp_avg = 0;
+                conv_params.use_dist_wtd_comp_avg = 0;
               } else {
-                conv_params.use_jnt_comp_avg = 1;
+                conv_params.use_dist_wtd_comp_avg = 1;
                 conv_params.fwd_offset = quant_dist_lookup_table[ii][jj][0];
                 conv_params.bck_offset = quant_dist_lookup_table[ii][jj][1];
               }
@@ -477,4 +478,5 @@ void AV1HighbdWarpFilterTest::RunCheckOutput(
   delete[] dstb;
 }
 }  // namespace AV1HighbdWarpFilter
+#endif  // CONFIG_AV1_HIGHBITDEPTH
 }  // namespace libaom_test

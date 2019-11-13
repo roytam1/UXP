@@ -86,7 +86,8 @@ static sslOptions ssl_defaults = {
     .enableTls13CompatMode = PR_FALSE,
     .enableDtlsShortHeader = PR_FALSE,
     .enableHelloDowngradeCheck = PR_FALSE,
-    .enableV2CompatibleHello = PR_FALSE
+    .enableV2CompatibleHello = PR_FALSE,
+    .enablePostHandshakeAuth = PR_FALSE
 };
 
 /*
@@ -842,6 +843,10 @@ SSL_OptionSet(PRFileDesc *fd, PRInt32 which, PRIntn val)
             ss->opt.enableV2CompatibleHello = val;
             break;
 
+        case SSL_ENABLE_POST_HANDSHAKE_AUTH:
+            ss->opt.enablePostHandshakeAuth = val;
+            break;
+
         default:
             PORT_SetError(SEC_ERROR_INVALID_ARGS);
             rv = SECFailure;
@@ -990,6 +995,9 @@ SSL_OptionGet(PRFileDesc *fd, PRInt32 which, PRIntn *pVal)
         case SSL_ENABLE_V2_COMPATIBLE_HELLO:
             val = ss->opt.enableV2CompatibleHello;
             break;
+        case SSL_ENABLE_POST_HANDSHAKE_AUTH:
+            val = ss->opt.enablePostHandshakeAuth;
+            break;
         default:
             PORT_SetError(SEC_ERROR_INVALID_ARGS);
             rv = SECFailure;
@@ -1121,6 +1129,9 @@ SSL_OptionGetDefault(PRInt32 which, PRIntn *pVal)
             break;
         case SSL_ENABLE_V2_COMPATIBLE_HELLO:
             val = ssl_defaults.enableV2CompatibleHello;
+            break;
+        case SSL_ENABLE_POST_HANDSHAKE_AUTH:
+            val = ssl_defaults.enablePostHandshakeAuth;
             break;
         default:
             PORT_SetError(SEC_ERROR_INVALID_ARGS);
@@ -1323,6 +1334,10 @@ SSL_OptionSetDefault(PRInt32 which, PRIntn val)
 
         case SSL_ENABLE_V2_COMPATIBLE_HELLO:
             ssl_defaults.enableV2CompatibleHello = val;
+            break;
+
+        case SSL_ENABLE_POST_HANDSHAKE_AUTH:
+            ssl_defaults.enablePostHandshakeAuth = val;
             break;
 
         default:
@@ -3644,6 +3659,7 @@ ssl_SetDefaultsFromEnvironment(void)
         char *ev;
         firsttime = 0;
 #ifdef DEBUG
+        ssl_trace_iob = NULL;
         ev = PR_GetEnvSecure("SSLDEBUGFILE");
         if (ev && ev[0]) {
             ssl_trace_iob = fopen(ev, "w");
@@ -3665,6 +3681,7 @@ ssl_SetDefaultsFromEnvironment(void)
         }
 #endif /* DEBUG */
 #ifdef NSS_ALLOW_SSLKEYLOGFILE
+        ssl_keylog_iob = NULL;
         ev = PR_GetEnvSecure("SSLKEYLOGFILE");
         if (ev && ev[0]) {
             ssl_keylog_iob = fopen(ev, "a");
@@ -4024,20 +4041,32 @@ struct {
     void *function;
 } ssl_experimental_functions[] = {
 #ifndef SSL_DISABLE_EXPERIMENTAL_API
+    EXP(AeadDecrypt),
+    EXP(AeadEncrypt),
+    EXP(DestroyAead),
+    EXP(DestroyResumptionTokenInfo),
+    EXP(EnableESNI),
+    EXP(EncodeESNIKeys),
+    EXP(GetCurrentEpoch),
     EXP(GetExtensionSupport),
+    EXP(GetResumptionTokenInfo),
     EXP(HelloRetryRequestCallback),
     EXP(InstallExtensionHooks),
+    EXP(HkdfExtract),
+    EXP(HkdfExpandLabel),
+    EXP(HkdfExpandLabelWithMech),
     EXP(KeyUpdate),
+    EXP(MakeAead),
+    EXP(RecordLayerData),
+    EXP(RecordLayerWriteCallback),
+    EXP(SecretCallback),
+    EXP(SendCertificateRequest),
     EXP(SendSessionTicket),
+    EXP(SetESNIKeyPair),
     EXP(SetMaxEarlyDataSize),
-    EXP(SetupAntiReplay),
     EXP(SetResumptionTokenCallback),
     EXP(SetResumptionToken),
-    EXP(GetResumptionTokenInfo),
-    EXP(DestroyResumptionTokenInfo),
-    EXP(SetESNIKeyPair),
-    EXP(EncodeESNIKeys),
-    EXP(EnableESNI),
+    EXP(SetupAntiReplay),
 #endif
     { "", NULL }
 };

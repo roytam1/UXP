@@ -72,7 +72,10 @@ public:
   Parse(const Nullable<OwningStringOrStringSequence>& aValue, KeyPath* aKeyPath);
 
   nsresult
-  ExtractKey(JSContext* aCx, const JS::Value& aValue, Key& aKey) const;
+  ExtractKey(JSContext* aCx,
+             const JS::Value& aValue,
+             Key& aKey,
+             bool aCallGetters) const;
 
   nsresult
   ExtractKeyAsJSVal(JSContext* aCx, const JS::Value& aValue,
@@ -82,9 +85,12 @@ public:
   (*ExtractOrCreateKeyCallback)(JSContext* aCx, void* aClosure);
 
   nsresult
-  ExtractOrCreateKey(JSContext* aCx, const JS::Value& aValue, Key& aKey,
+  ExtractOrCreateKey(JSContext* aCx,
+                     const JS::Value& aValue,
+                     Key& aKey,
                      ExtractOrCreateKeyCallback aCallback,
-                     void* aClosure) const;
+                     void* aClosure,
+                     bool aCallGetters) const;
 
   inline bool IsValid() const {
     return mType != NONEXISTENT;

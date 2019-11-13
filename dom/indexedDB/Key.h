@@ -203,7 +203,7 @@ public:
   }
 
   nsresult
-  SetFromJSVal(JSContext* aCx, JS::Handle<JS::Value> aVal);
+  SetFromJSVal(JSContext* aCx, JS::Handle<JS::Value> aVal, bool aCallGetters);
 
   nsresult
   ToJSVal(JSContext* aCx, JS::MutableHandle<JS::Value> aVal) const;
@@ -212,7 +212,10 @@ public:
   ToJSVal(JSContext* aCx, JS::Heap<JS::Value>& aVal) const;
 
   nsresult
-  AppendItem(JSContext* aCx, bool aFirstOfArray, JS::Handle<JS::Value> aVal);
+  AppendItem(JSContext* aCx,
+             bool aFirstOfArray,
+             JS::Handle<JS::Value> aVal,
+             bool aCallGetters);
 
   nsresult
   ToLocaleBasedKey(Key& aTarget, const nsCString& aLocale) const;
@@ -283,7 +286,10 @@ private:
 
   // Encoding functions. These append the encoded value to the end of mBuffer
   nsresult
-  EncodeJSVal(JSContext* aCx, JS::Handle<JS::Value> aVal, uint8_t aTypeOffset);
+  EncodeJSVal(JSContext* aCx,
+              JS::Handle<JS::Value> aVal,
+              uint8_t aTypeOffset,
+              bool aCallGetters);
 
   void
   EncodeString(const nsAString& aString, uint8_t aTypeOffset);
@@ -331,7 +337,8 @@ private:
   EncodeJSValInternal(JSContext* aCx,
                       JS::Handle<JS::Value> aVal,
                       uint8_t aTypeOffset,
-                      uint16_t aRecursionDepth);
+                      uint16_t aRecursionDepth,
+                      bool aCallGetters);
 
   static nsresult
   DecodeJSValInternal(const unsigned char*& aPos,

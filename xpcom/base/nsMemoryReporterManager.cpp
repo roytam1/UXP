@@ -317,6 +317,85 @@ VsizeMaxContiguousDistinguishedAmount(int64_t* aN)
 }
 #endif // FreeBSD
 
+#elif defined(XP_SOLARIS)
+
+#include <procfs.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+static void
+XMappingIter(int64_t& aVsize, int64_t& aResident)
+{
+  aVsize = -1;
+  aResident = -1;
+  int mapfd = open("/proc/self/xmap", O_RDONLY);
+  struct stat st;
+  prxmap_t* prmapp = nullptr;
+  if (mapfd >= 0) {
+    if (!fstat(mapfd, &st)) {
+      int nmap = st.st_size / sizeof(prxmap_t);
+      while (1) {
+        // stat(2) on /proc/<pid>/xmap returns an incorrect value,
+        // prior to the release of Solaris 11.
+        // Here is a workaround for it.
+        nmap *= 2;
+        prmapp = (prxmap_t*)malloc((nmap + 1) * sizeof(prxmap_t));
+        if (!prmapp) {
+          // out of memory
+          break;
+        }
+        int n = pread(mapfd, prmapp, (nmap + 1) * sizeof(prxmap_t), 0);
+        if (n < 0) {
+          break;
+        }
+        if (nmap >= n / sizeof(prxmap_t)) {
+          aVsize = 0;
+          aResident = 0;
+          for (int i = 0; i < n / sizeof(prxmap_t); i++) {
+            aVsize += prmapp[i].pr_size;
+            aResident += prmapp[i].pr_rss * prmapp[i].pr_pagesize;
+          }
+          break;
+        }
+        free(prmapp);
+      }
+      free(prmapp);
+    }
+    close(mapfd);
+  }
+}
+
+#define HAVE_VSIZE_AND_RESIDENT_REPORTERS 1
+static MOZ_MUST_USE nsresult
+VsizeDistinguishedAmount(int64_t* aN)
+{
+  int64_t vsize, resident;
+  XMappingIter(vsize, resident);
+  if (vsize == -1) {
+    return NS_ERROR_FAILURE;
+  }
+  *aN = vsize;
+  return NS_OK;
+}
+
+static MOZ_MUST_USE nsresult
+ResidentDistinguishedAmount(int64_t* aN)
+{
+  int64_t vsize, resident;
+  XMappingIter(vsize, resident);
+  if (resident == -1) {
+    return NS_ERROR_FAILURE;
+  }
+  *aN = resident;
+  return NS_OK;
+}
+
+static MOZ_MUST_USE nsresult
+ResidentFastDistinguishedAmount(int64_t* aN)
+{
+  return ResidentDistinguishedAmount(aN);
+}
+
 #elif defined(XP_MACOSX)
 
 #include <mach/mach_init.h>
@@ -1066,9 +1145,13 @@ ResidentPeakDistinguishedAmount(int64_t* aN)
   if (0 == getrusage(RUSAGE_SELF, &usage)) {
     // The units for ru_maxrrs:
     // - Mac: bytes
+    // - Solaris: pages? But some sources it actually always returns 0, so
+    //   check for that
     // - Linux, {Net/Open/Free}BSD, DragonFly: KiB
 #ifdef XP_MACOSX
     *aN = usage.ru_maxrss;
+#elif defined(XP_SOLARIS)
+    *aN = usage.ru_maxrss * getpagesize();    
 #else
     *aN = usage.ru_maxrss * 1024;
 #endif

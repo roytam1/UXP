@@ -20,20 +20,6 @@
 static const int crc_bits = 16;
 static const int block_size_bits = 3;
 
-static void hash_table_clear_all(hash_table *p_hash_table) {
-  if (p_hash_table->p_lookup_table == NULL) {
-    return;
-  }
-  int max_addr = 1 << (crc_bits + block_size_bits);
-  for (int i = 0; i < max_addr; i++) {
-    if (p_hash_table->p_lookup_table[i] != NULL) {
-      aom_vector_destroy(p_hash_table->p_lookup_table[i]);
-      aom_free(p_hash_table->p_lookup_table[i]);
-      p_hash_table->p_lookup_table[i] = NULL;
-    }
-  }
-}
-
 // TODO(youzhou@microsoft.com): is higher than 8 bits screen content supported?
 // If yes, fix this function
 static void get_pixels_in_1D_char_array_by_block_2x2(uint8_t *y_src, int stride,
@@ -111,17 +97,40 @@ void av1_hash_table_init(hash_table *p_hash_table, MACROBLOCK *x) {
     x->g_crc_initialized = 1;
   }
   p_hash_table->p_lookup_table = NULL;
+#if CONFIG_DEBUG
+  p_hash_table->has_content = 0;
+#endif
+}
+
+void av1_hash_table_clear_all(hash_table *p_hash_table) {
+  if (p_hash_table->p_lookup_table == NULL) {
+    return;
+  }
+  int max_addr = 1 << (crc_bits + block_size_bits);
+  for (int i = 0; i < max_addr; i++) {
+    if (p_hash_table->p_lookup_table[i] != NULL) {
+      aom_vector_destroy(p_hash_table->p_lookup_table[i]);
+      aom_free(p_hash_table->p_lookup_table[i]);
+      p_hash_table->p_lookup_table[i] = NULL;
+    }
+  }
+#if CONFIG_DEBUG
+  p_hash_table->has_content = 0;
+#endif
 }
 
 void av1_hash_table_destroy(hash_table *p_hash_table) {
-  hash_table_clear_all(p_hash_table);
+  av1_hash_table_clear_all(p_hash_table);
   aom_free(p_hash_table->p_lookup_table);
   p_hash_table->p_lookup_table = NULL;
+#if CONFIG_DEBUG
+  p_hash_table->has_content = 0;
+#endif
 }
 
 void av1_hash_table_create(hash_table *p_hash_table) {
   if (p_hash_table->p_lookup_table != NULL) {
-    hash_table_clear_all(p_hash_table);
+    av1_hash_table_clear_all(p_hash_table);
     return;
   }
   const int max_addr = 1 << (crc_bits + block_size_bits);
@@ -129,6 +138,9 @@ void av1_hash_table_create(hash_table *p_hash_table) {
       (Vector **)aom_malloc(sizeof(p_hash_table->p_lookup_table[0]) * max_addr);
   memset(p_hash_table->p_lookup_table, 0,
          sizeof(p_hash_table->p_lookup_table[0]) * max_addr);
+#if CONFIG_DEBUG
+  p_hash_table->has_content = 0;
+#endif
 }
 
 static void hash_table_add_to_table(hash_table *p_hash_table,
@@ -147,7 +159,8 @@ static void hash_table_add_to_table(hash_table *p_hash_table,
   }
 }
 
-int32_t av1_hash_table_count(hash_table *p_hash_table, uint32_t hash_value) {
+int32_t av1_hash_table_count(const hash_table *p_hash_table,
+                             uint32_t hash_value) {
   if (p_hash_table->p_lookup_table[hash_value] == NULL) {
     return 0;
   } else {
@@ -169,8 +182,10 @@ int32_t av1_has_exact_match(hash_table *p_hash_table, uint32_t hash_value1,
   Iterator iterator =
       aom_vector_begin(p_hash_table->p_lookup_table[hash_value1]);
   Iterator last = aom_vector_end(p_hash_table->p_lookup_table[hash_value1]);
-  for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
-    if ((*(block_hash *)iterator_get(&iterator)).hash_value2 == hash_value2) {
+  for (; !aom_iterator_equals(&iterator, &last);
+       aom_iterator_increment(&iterator)) {
+    if ((*(block_hash *)aom_iterator_get(&iterator)).hash_value2 ==
+        hash_value2) {
       return 1;
     }
   }
@@ -392,8 +407,9 @@ void av1_get_block_hash_value(uint8_t *y_src, int stride, int block_size,
                               uint32_t *hash_value1, uint32_t *hash_value2,
                               int use_highbitdepth, MACROBLOCK *x) {
   uint32_t to_hash[4];
-  const int add_value = hash_block_size_to_index(block_size) << crc_bits;
+  int add_value = hash_block_size_to_index(block_size);
   assert(add_value >= 0);
+  add_value <<= crc_bits;
   const int crc_mask = (1 << crc_bits) - 1;
 
   // 2x2 subblock hash values in current CU

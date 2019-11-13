@@ -9,6 +9,8 @@
 #include "WebGLBuffer.h"
 #include "WebGLVertexArray.h"
 
+#include "mozilla/CheckedInt.h"
+
 namespace mozilla {
 
 WebGLRefPtr<WebGLBuffer>*
@@ -344,6 +346,16 @@ WebGLContext::BufferData(GLenum target, WebGLsizeiptr size, GLenum usage)
         return;
 
     ////
+
+    const auto checkedSize = CheckedInt<size_t>(size);
+    if (!checkedSize.isValid())
+      return ErrorOutOfMemory("%s: Size too large for platform.", funcName);
+     
+#if defined(XP_MACOSX)
+    if (gl->WorkAroundDriverBugs() && size > 1200000000) {
+      return ErrorOutOfMemory("Allocations larger than 1200000000 fail on MacOS.");
+    }
+#endif
 
     const UniqueBuffer zeroBuffer(calloc(size, 1));
     if (!zeroBuffer)

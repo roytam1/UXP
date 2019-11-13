@@ -2445,16 +2445,12 @@ function BrowserOnAboutPageLoad(doc) {
 
     // Inject search engine and snippets URL.
     let docElt = doc.documentElement;
-    // set the following attributes BEFORE searchEngineURL, which triggers to
-    // show the snippets when it's set.
-    docElt.setAttribute("snippetsURL", AboutHomeUtils.snippetsURL);
     if (AboutHomeUtils.showKnowYourRights) {
       docElt.setAttribute("showKnowYourRights", "true");
       // Set pref to indicate we've shown the notification.
       let currentVersion = Services.prefs.getIntPref("browser.rights.version");
       Services.prefs.setBoolPref("browser.rights." + currentVersion + ".shown", true);
     }
-    docElt.setAttribute("snippetsVersion", AboutHomeUtils.snippetsVersion);
 
     function updateSearchEngine() {
       let engine = AboutHomeUtils.defaultSearchEngine;
@@ -5346,6 +5342,9 @@ function handleDroppedLink(event, urlOrLinks, name)
 
   let lastLocationChange = gBrowser.selectedBrowser.lastLocationChange;
 
+  let userContextId = gBrowser.selectedBrowser
+                      .getAttribute("usercontextid") || 0;
+
   let inBackground = Services.prefs.getBoolPref("browser.tabs.loadInBackground");
   if (event.shiftKey)
     inBackground = !inBackground;
@@ -5364,6 +5363,7 @@ function handleDroppedLink(event, urlOrLinks, name)
         replace: true,
         allowThirdPartyFixup: false,
         postDatas,
+        userContextId,
       });
     }
   });

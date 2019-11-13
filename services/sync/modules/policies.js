@@ -60,20 +60,60 @@ SyncScheduler.prototype = {
   },
 
   // nextSync is in milliseconds, but prefs can't hold that much
-  get nextSync() Svc.Prefs.get("nextSync", 0) * 1000,
-  set nextSync(value) Svc.Prefs.set("nextSync", Math.floor(value / 1000)),
+  get nextSync() {
+    if (Svc.Prefs) {
+      return Svc.Prefs.get("nextSync", 0) * 1000
+    }
+  },
+  set nextSync(value) {
+    if (Svc.Prefs) {
+      Svc.Prefs.set("nextSync", Math.floor(value / 1000))
+    }
+  },
 
-  get syncInterval() Svc.Prefs.get("syncInterval", this.singleDeviceInterval),
-  set syncInterval(value) Svc.Prefs.set("syncInterval", value),
+  get syncInterval() {
+    if (Svc.Prefs) {
+      return Svc.Prefs.get("syncInterval", this.singleDeviceInterval)
+    }
+  },
+  set syncInterval(value) {
+    if (Svc.Prefs) {
+      Svc.Prefs.set("syncInterval", value)
+    }
+  },
 
-  get syncThreshold() Svc.Prefs.get("syncThreshold", SINGLE_USER_THRESHOLD),
-  set syncThreshold(value) Svc.Prefs.set("syncThreshold", value),
+  get syncThreshold() {
+    if (Svc.Prefs) {
+      return Svc.Prefs.get("syncThreshold", SINGLE_USER_THRESHOLD)
+    }
+  },
+  set syncThreshold(value) {
+    if (Svc.Prefs) {
+      Svc.Prefs.set("syncThreshold", value)
+    }
+  },
 
-  get globalScore() Svc.Prefs.get("globalScore", 0),
-  set globalScore(value) Svc.Prefs.set("globalScore", value),
+  get globalScore() {
+    if (Svc.Prefs) {
+      return Svc.Prefs.get("globalScore", 0)
+    }
+  },
+  set globalScore(value) {
+    if (Svc.Prefs) {
+      Svc.Prefs.set("globalScore", value)
+    }
+  },
 
-  get numClients() Svc.Prefs.get("numClients", 0),
-  set numClients(value) Svc.Prefs.set("numClients", value),
+  get numClients() {
+    if (Svc.Prefs) {
+      return Svc.Prefs.get("numClients", 0)
+    }
+  },
+  set numClients(value) {
+    if (Svc.Prefs) {
+      Svc.Prefs.set("numClients", value)
+    }
+  },
 
   init: function init() {
     this._log.level = Log.Level[Svc.Prefs.get("log.logger.service.main")];
@@ -523,7 +563,7 @@ SyncScheduler.prototype = {
   },
 
   get isBlocked() {
-    let until = Svc.Prefs.get("scheduler.blocked-until");
+    let until = Svc.Prefs ? Svc.Prefs.get("scheduler.blocked-until") : undefined;
     if (until === undefined) {
       return false;
     }
@@ -770,19 +810,19 @@ ErrorHandler.prototype = {
   },
 
   get currentAlertMode() {
-    return Svc.Prefs.get("errorhandler.alert.mode");
+    return Svc.Prefs ? Svc.Prefs.get("errorhandler.alert.mode") : undefined;
   },
 
   set currentAlertMode(str) {
-    return Svc.Prefs.set("errorhandler.alert.mode", str);
+    return Svc.Prefs ? Svc.Prefs.set("errorhandler.alert.mode", str) : undefined;
   },
 
   get earliestNextAlert() {
-    return Svc.Prefs.get("errorhandler.alert.earliestNext", 0) * 1000;
+    return Svc.Prefs ? Svc.Prefs.get("errorhandler.alert.earliestNext", 0) * 1000 : undefined;
   },
 
   set earliestNextAlert(msec) {
-    return Svc.Prefs.set("errorhandler.alert.earliestNext", msec / 1000);
+    return Svc.Prefs ? Svc.Prefs.set("errorhandler.alert.earliestNext", msec / 1000) : undefined;
   },
 
   clearServerAlerts: function () {

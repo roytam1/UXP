@@ -17,6 +17,7 @@ import platform
 import tempfile
 
 from hashlib import sha256
+from gtests.common.wycheproof.genTestVectors import generate_test_vectors
 
 DEVNULL = open(os.devnull, 'wb')
 cwd = os.path.dirname(os.path.abspath(__file__))
@@ -38,18 +39,16 @@ def run_tests(test, cycles="standard", env={}, silent=False):
     subprocess.check_call(command, env=os_env, stdout=stdout, stderr=stderr)
 
 class cfAction(argparse.Action):
-    docker_command = ["docker"]
+    docker_command = None
     restorecon = None
 
     def __call__(self, parser, args, values, option_string=None):
-        if not args.noroot:
-            self.setDockerCommand()
+        self.setDockerCommand(args)
 
         if values:
             files = [os.path.relpath(os.path.abspath(x), start=cwd) for x in values]
         else:
             files = self.modifiedFiles()
-        files = [os.path.join('/home/worker/nss', x) for x in files]
 
         # First check if we can run docker.
         try:
@@ -57,9 +56,16 @@ class cfAction(argparse.Action):
                 subprocess.check_call(
                     self.docker_command + ["images"], stdout=f)
         except:
-            print("Please install docker and start the docker daemon.")
-            sys.exit(1)
+            self.docker_command = None
 
+        if self.docker_command is None:
+            print("warning: running clang-format directly, which isn't guaranteed to be correct")
+            command = [cwd + "/automation/clang-format/run_clang_format.sh"] + files
+            repr(command)
+            subprocess.call(command)
+            return
+
+        files = [os.path.join('/home/worker/nss', x) for x in files]
         docker_image = 'clang-format-service:latest'
         cf_docker_folder = cwd + "/automation/clang-format"
 
@@ -112,11 +118,17 @@ class cfAction(argparse.Action):
         subprocess.check_call(command)
         return
 
-    def setDockerCommand(self):
+    def setDockerCommand(self, args):
+        from distutils.spawn import find_executable
         if platform.system() == "Linux":
-            from distutils.spawn import find_executable
-            self.restorecon = find_executable('restorecon')
-            self.docker_command = ["sudo"] + self.docker_command
+            self.restorecon = find_executable("restorecon")
+        dcmd = find_executable("docker")
+        if dcmd is not None:
+            self.docker_command = [dcmd]
+            if not args.noroot:
+                self.docker_command = ["sudo"] + self.docker_command
+        else:
+            self.docker_command = None
 
     def modifiedFiles(self):
         files = []
@@ -212,6 +224,13 @@ class commandsAction(argparse.Action):
         for c in commandsAction.commands:
             print(c)
 
+class wycheproofAction(argparse.Action):
+
+    def __call__(self, parser, args, values, option_string=None):
+        generate_test_vectors()
+        clangFormat = cfAction(None, None, None)
+        clangFormat(None, args, None)
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
@@ -269,6 +288,18 @@ def parse_arguments():
         'mach-commands',
         nargs='*',
         action=commandsAction)
+
+    parser_wycheproof = subparsers.add_parser(
+        'wycheproof',
+        help="generate wycheproof test headers")
+    parser_wycheproof.add_argument(
+        '--noroot',
+        help='On linux, suppress the use of \'sudo\' for running docker.',
+        action='store_true')
+    parser_wycheproof.add_argument(
+        'wycheproof',
+        nargs='*',
+        action=wycheproofAction)
 
     commandsAction.commands = [c for c in subparsers.choices]
     return parser.parse_args()

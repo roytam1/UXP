@@ -22,11 +22,15 @@
 extern "C" {
 #endif
 
+#define EOB_FACTOR 325
+#define SKIP_EOB_FACTOR_ADJUST 200
+
 typedef struct QUANT_PARAM {
   int log_scale;
   TX_SIZE tx_size;
   const qm_val_t *qmatrix;
   const qm_val_t *iqmatrix;
+  int use_quant_b_adapt;
 } QUANT_PARAM;
 
 typedef void (*AV1_QUANT_FACADE)(const tran_low_t *coeff_ptr, intptr_t n_coeffs,
@@ -67,7 +71,7 @@ typedef struct {
 
 // The Dequants structure is used only for internal quantizer setup in
 // av1_quantize.c.
-// Fields are sufffixed according to whether or not they're expressed in
+// Fields are suffixed according to whether or not they're expressed in
 // the same coefficient shift/precision as TX or a fixed Q3 format.
 typedef struct {
   DECLARE_ALIGNED(16, int16_t,
@@ -75,10 +79,7 @@ typedef struct {
   DECLARE_ALIGNED(16, int16_t,
                   u_dequant_QTX[QINDEX_RANGE][8]);  // 8: SIMD width
   DECLARE_ALIGNED(16, int16_t,
-                  v_dequant_QTX[QINDEX_RANGE][8]);              // 8: SIMD width
-  DECLARE_ALIGNED(16, int16_t, y_dequant_Q3[QINDEX_RANGE][8]);  // 8: SIMD width
-  DECLARE_ALIGNED(16, int16_t, u_dequant_Q3[QINDEX_RANGE][8]);  // 8: SIMD width
-  DECLARE_ALIGNED(16, int16_t, v_dequant_Q3[QINDEX_RANGE][8]);  // 8: SIMD width
+                  v_dequant_QTX[QINDEX_RANGE][8]);  // 8: SIMD width
 } Dequants;
 
 struct AV1_COMP;
@@ -120,6 +121,7 @@ void av1_quantize_dc_facade(const tran_low_t *coeff_ptr, intptr_t n_coeffs,
                             tran_low_t *dqcoeff_ptr, uint16_t *eob_ptr,
                             const SCAN_ORDER *sc, const QUANT_PARAM *qparam);
 
+#if CONFIG_AV1_HIGHBITDEPTH
 void av1_highbd_quantize_fp_facade(const tran_low_t *coeff_ptr,
                                    intptr_t n_coeffs, const MACROBLOCK_PLANE *p,
                                    tran_low_t *qcoeff_ptr,
@@ -140,6 +142,7 @@ void av1_highbd_quantize_dc_facade(const tran_low_t *coeff_ptr,
                                    tran_low_t *dqcoeff_ptr, uint16_t *eob_ptr,
                                    const SCAN_ORDER *sc,
                                    const QUANT_PARAM *qparam);
+#endif
 
 #ifdef __cplusplus
 }  // extern "C"

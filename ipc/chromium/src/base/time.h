@@ -28,7 +28,7 @@
 
 #include "base/basictypes.h"
 
-#if defined(OS_WIN)
+#ifdef OS_WIN
 // For FILETIME in FromFileTime, until it moves to a new converter class.
 // See TODO(iyengar) below.
 #include <windows.h>
@@ -63,6 +63,10 @@ class TimeDelta {
   int64_t ToInternalValue() const {
     return delta_;
   }
+
+#ifdef OS_SOLARIS
+  struct timespec ToTimeSpec() const;
+#endif
 
   // Returns the time delta in some unit. The F versions return a floating
   // point value, the "regular" versions return a rounded-down value.
@@ -226,8 +230,11 @@ class Time {
   static Time FromDoubleT(double dt);
   double ToDoubleT() const;
 
+#ifdef OS_SOLARIS
+  struct timeval ToTimeVal() const;
+#endif  
 
-#if defined(OS_WIN)
+#ifdef OS_WIN
   static Time FromFileTime(FILETIME ft);
   FILETIME ToFileTime() const;
 #endif

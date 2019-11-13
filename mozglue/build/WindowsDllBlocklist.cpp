@@ -231,6 +231,9 @@ static DllBlockInfo sWindowsDllBlocklist[] = {
   // Comodo IS old versions, startup crash on 64-bit, bug 1140397
   { "guard64.dll", MAKE_VERSION(6, 3, 0, 0) },
 
+  // 360 Safeguard/360 Total Security causes a11y crashes, bug 1536227.
+  { "safemon64.dll", ALL_VERSIONS },
+
   { nullptr, 0 }
 };
 

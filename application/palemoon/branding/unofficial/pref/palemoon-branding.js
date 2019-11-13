@@ -3,8 +3,8 @@
 #include ../../shared/pref/preferences.inc
 #include ../../shared/pref/uaoverrides.inc
 
-pref("startup.homepage_override_url","http://www.palemoon.org/unofficial.shtml");
-pref("app.releaseNotesURL", "http://www.palemoon.org/releasenotes.shtml");
+pref("startup.homepage_override_url","");
+pref("app.releaseNotesURL", "https://rtfreesoft.blogspot.com/search/label/newmoon");
 
 // Updates disabled
 pref("app.update.enabled", false);

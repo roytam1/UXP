@@ -330,20 +330,21 @@ nsSiteSecurityService::SetHSTSState(uint32_t aType,
                                     uint32_t flags,
                                     SecurityPropertyState aHSTSState)
 {
-  // If max-age is zero, that's an indication to immediately remove the
-  // security state, so here's a shortcut.
-  if (!maxage) {
-    return RemoveState(aType, aSourceURI, flags);
+  // Exit early if STS not enabled
+  if (!mUseStsService) {
+    return NS_OK;
+  }
+
+  // If max-age is zero, the host is no longer considered HSTS. If the host was
+  // preloaded, we store an entry indicating that this host is not HSTS, causing
+  // the preloaded information to be ignored.
+  if (maxage == 0) {
+    return RemoveState(aType, aSourceURI, flags, true);
   }
 
   MOZ_ASSERT((aHSTSState == SecurityPropertySet ||
               aHSTSState == SecurityPropertyNegative),
       "HSTS State must be SecurityPropertySet or SecurityPropertyNegative");
-
-  // Exit early if STS not enabled
-  if (!mUseStsService) {
-    return NS_OK;
-  }
 
   int64_t expiretime = ExpireTimeFromMaxAge(maxage);
   SiteHSTSState siteState(expiretime, aHSTSState, includeSubdomains);
@@ -367,7 +368,7 @@ nsSiteSecurityService::SetHSTSState(uint32_t aType,
 
 NS_IMETHODIMP
 nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI,
-                                   uint32_t aFlags)
+                                   uint32_t aFlags, bool force = false)
 {
    // Child processes are not allowed direct access to this.
    if (!XRE_IsParentProcess()) {
@@ -387,8 +388,9 @@ nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI,
   mozilla::DataStorageType storageType = isPrivate
                                          ? mozilla::DataStorage_Private
                                          : mozilla::DataStorage_Persistent;
-  // If this host is in the preload list, we have to store a knockout entry.
-  if (GetPreloadListEntry(hostname.get())) {
+  // If this host is in the preload list, we have to store a knockout entry
+  // if it's explicitly forced to not be HSTS anymore
+  if (force && GetPreloadListEntry(hostname.get())) {
     SSSLOG(("SSS: storing knockout entry for %s", hostname.get()));
     SiteHSTSState siteState(0, SecurityPropertyKnockout, false);
     nsAutoCString stateString;
@@ -769,7 +771,10 @@ nsSiteSecurityService::ProcessPKPHeader(nsIURI* aSourceURI,
     return NS_ERROR_FAILURE;
   }
 
-  // if maxAge == 0 we must delete all state, for now no hole-punching
+  // If maxAge == 0, we remove dynamic HPKP state for this host. Due to
+  // architectural constraints, if this host was preloaded, any future lookups
+  // will use the preloaded state (i.e. we can't store a "this host is not HPKP"
+  // entry like we can for HSTS).
   if (maxAge == 0) {
     return RemoveState(aType, aSourceURI, aFlags);
   }

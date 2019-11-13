@@ -861,7 +861,7 @@ void ff_h264_pred_init_arm(H264PredContext *h, int codec_id,
                            const int bit_depth, const int chroma_format_idc) {}
 void ff_h264_pred_init_mips(H264PredContext *h, int codec_id,
                             const int bit_depth, const int chroma_format_idc) {}
-void ff_me_cmp_init_static(void) {}
+//void ff_me_cmp_init_static(void) {}
 int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options) { return 0; }
 void ff_frame_thread_encoder_free(AVCodecContext *avctx) {}
 int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFrame *frame, int *got_packet_ptr) { return 0; }

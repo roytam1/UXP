@@ -67,6 +67,9 @@
 #define alloca _alloca
 #endif
 #endif
+#ifdef XP_SOLARIS
+#include <alloca.h>
+#endif
 
 using std::max;
 using std::min;
