@@ -196,7 +196,9 @@ EmailConfigWizard.prototype =
         "authPasswordEncrypted");
     setLabelFromStringBundle("out-authMethod-kerberos", "authKerberos");
     setLabelFromStringBundle("out-authMethod-ntlm", "authNTLM");
+#ifdef MOZ_MAILNEWS_OAUTH2
     setLabelFromStringBundle("out-authMethod-oauth2", "authOAuth2");
+#endif
 
     e("incoming_port").value = gStringsBundle.getString("port_auto");
     this.fillPortDropdown("smtp");
