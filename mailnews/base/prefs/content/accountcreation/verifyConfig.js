@@ -76,8 +76,8 @@ function verifyConfig(config, alter, msgWindow, successCallback, errorCallback)
                            config.incoming.auth);
   inServer.authMethod = config.incoming.auth;
 
-#ifdef MOZ_MAILNEWS_OAUTH2
   try {
+#ifdef MOZ_MAILNEWS_OAUTH2
     // Lookup issuer if needed.
     if (config.incoming.auth == Ci.nsMsgAuthMethod.OAuth2 ||
         config.outgoing.auth == Ci.nsMsgAuthMethod.OAuth2) {
