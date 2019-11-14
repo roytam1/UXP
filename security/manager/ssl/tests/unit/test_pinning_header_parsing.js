@@ -98,6 +98,7 @@ const REPORT_URI = "report-uri=\"https://www.example.com/report/\";";
 const UNRECOGNIZED_DIRECTIVE = "unreconized-dir=12343;";
 
 function run_test() {
+  Services.prefs.setBoolPref("security.cert_pinning.hpkp.enabled", true);
   Services.prefs.setIntPref("security.cert_pinning.enforcement_level", 2);
   Services.prefs.setIntPref("security.cert_pinning.max_max_age_seconds", MAX_MAX_AGE_SECONDS);
   Services.prefs.setBoolPref("security.cert_pinning.process_headers_from_non_builtin_roots", true);
@@ -138,4 +139,9 @@ function run_test() {
   checkPassSettingPin(VALID_PIN1 + GOOD_MAX_AGE + BACKUP_PIN2 + REPORT_URI + INCLUDE_SUBDOMAINS);
   checkPassSettingPin(INCLUDE_SUBDOMAINS + VALID_PIN1 + GOOD_MAX_AGE + BACKUP_PIN2);
   checkPassSettingPin(GOOD_MAX_AGE + VALID_PIN1 + BACKUP_PIN1 + UNRECOGNIZED_DIRECTIVE);
+  
+  Services.prefs.clearUserPref("security.cert_pinning.hpkp.enabled");
+  Services.prefs.clearUserPref("security.cert_pinning.enforcement_level");
+  Services.prefs.clearUserPref("security.cert_pinning.max_max_age_seconds");
+  Services.prefs.clearUserPref("security.cert_pinning.process_headers_from_non_builtin_roots");
 }
