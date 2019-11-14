@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Copyright (c) 2010-2017 The OTS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,6 +12,9 @@
 #include <vector>
 
 namespace ots {
+
+const size_t kMaxCFF1ArgumentStack = 48;
+const size_t kMaxCFF2ArgumentStack = 513;
 
 // Validates all charstrings in |char_strings_index|. Charstring is a small
 // language for font hinting defined in Adobe Technical Note #5177.
@@ -34,17 +37,14 @@ namespace ots {
 //  local_subrs: A Local Subrs associated with Top DICT. Can be NULL.
 //  cff_table: A buffer which contains actual byte code of charstring, global
 //             subroutines and local subroutines.
-bool ValidateType2CharStringIndex(
-    Font *font,
-    const CFFIndex &char_strings_index,
+bool ValidateCFFCharStrings(
+    OpenTypeCFF& cff,
     const CFFIndex &global_subrs_index,
-    const std::map<uint16_t, uint8_t> &fd_select,
-    const std::vector<CFFIndex *> &local_subrs_per_font,
-    const CFFIndex *local_subrs,
     Buffer *cff_table);
 
 // The list of Operators. See Appendix. A in Adobe Technical Note #5177.
-enum Type2CharStringOperator {
+// and https://docs.microsoft.com/en-us/typography/opentype/spec/cff2charstr
+enum CharStringOperator {
   kHStem = 1,
   kVStem = 3,
   kVMoveTo = 4,
@@ -55,6 +55,8 @@ enum Type2CharStringOperator {
   kCallSubr = 10,
   kReturn = 11,
   kEndChar = 14,
+  kVSIndex = 15,
+  kBlend = 16,
   kHStemHm = 18,
   kHintMask = 19,
   kCntrMask = 20,
