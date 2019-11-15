@@ -8,7 +8,7 @@ EXPORTS += [
     'src/xz.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'src/xz_crc32.c',
     'src/xz_crc64.c',
     'src/xz_dec_bcj.c',
