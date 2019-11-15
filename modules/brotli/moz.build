@@ -14,7 +14,7 @@ EXPORTS.brotli += [
     'include/brotli/types.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'common/dictionary.c',
     'common/transform.c',
     'dec/bit_reader.c',
@@ -36,7 +36,7 @@ Library('brotli')
 
 HostProgram('brotli')
 
-HOST_SOURCES += UNIFIED_SOURCES
+HOST_SOURCES += SOURCES
 
 HOST_SOURCES += [
     'enc/backward_references.c',
