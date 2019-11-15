@@ -7,7 +7,7 @@
 with Files('**'):
     BUG_COMPONENT = ('Core', 'Graphics: Text')
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'src/table_tags.cc',
     'src/variable_length.cc',
     'src/woff2_common.cc',

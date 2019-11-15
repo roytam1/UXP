@@ -10,24 +10,33 @@ EXPORTS += [
 
 FINAL_LIBRARY = 'js'
 
-if CONFIG['GNU_CXX']:
+if CONFIG['CC_TYPE'] in ('clang', 'gcc'):
     CXXFLAGS += [
         '-Wno-parentheses',
         '-Wno-sign-compare',
     ]
 
-if CONFIG['CLANG_CXX']:
+if CONFIG['CC_TYPE'] == 'clang':
     CXXFLAGS += [
         '-Wno-dangling-else',
     ]
 
-if CONFIG['_MSC_VER']:
+if CONFIG['CC_TYPE'] in ('msvc', 'clang-cl'):
     CXXFLAGS += [
-        '-wd4018', # signed/unsigned mismatch
         '-wd4146', # unary minus operator applied to unsigned type
         '-wd4305', # truncation from 'double' to 'const float'
         '-wd4723', # potential divide by 0
         '-wd4756', # overflow in constant arithmetic
+    ]
+
+if CONFIG['CC_TYPE'] == 'msvc':
+    CXXFLAGS += [
+        '-wd4018', # signed/unsigned mismatch
+    ]
+
+if CONFIG['CC_TYPE'] == 'clang-cl':
+    CXXFLAGS += [
+        '-Wno-sign-compare', # signed/unsigned mismatch
     ]
 
 SOURCES += [
@@ -44,7 +53,6 @@ SOURCES += [
     'e_log2.cpp',
     'e_pow.cpp',
     'e_sinh.cpp',
-    'e_sqrt.cpp',
     'k_exp.cpp',
     's_asinh.cpp',
     's_atan.cpp',
