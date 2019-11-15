@@ -18,7 +18,7 @@ function parseURLData(aData) {
   let result = {};
   aData.split(/[?#]/, 2)[1].split("&").forEach(function (aParam) {
     let [key, value] = aParam.split("=");
-    result[key] = value;
+    result[key] = decodeURIComponent(value);
   });
   return result;
 }
