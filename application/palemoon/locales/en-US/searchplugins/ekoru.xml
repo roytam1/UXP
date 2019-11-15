@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+    <ShortName>Ekoru</ShortName>
+    <Description>Ekoru - fight climate change with every search</Description>
+    <InputEncoding>UTF-8</InputEncoding>
+    <LongName>Ekoru Search</LongName>
+    <Image height="16" width="16" type="image/x-icon">data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABMLAAATCwAAAAAAAAAAAAAAAAAAxKIkAKyyPgLUmhFN2JkKwtKfEObJoxrvyaQb8NCgEenTmQvTzJQRe8CUHg/FlBYAkpLMAAAAAAAAAAAAxaEoABa5/wDUng9Z1aAJ562pI/96skP+Y7RQ9mS1Uvh3tEX/qaoi/82eB/rOmQycyJQaEsqWFQAAAAAAAAAAANagBwDSnxA606EJ45OuNP9Qt1neQbVYdDyyWDs/s1dDQrdcgFC6ZN2Psjj/zKQF/s2fCoqunzsIt54sDv9tAADQnSQN158IsJ+tKv9Ot1XiRq9QPuShCg63qiY9uqsnPt2fEA1Cs2MyTLtt0JyyLP/OpQTrvKUcR6enKnnMnhce2J4NUMalEfJht1T+Q7RTc7yqIjaKt07BZsBv+GnAbveAu1q6q687Jz65cE9hu2D1vakO/8ilCoiRqjKNw6AaddyhCKOprCX/Sblf2oesM0CTtkTMT8SC6z7Fj347xpRrSMiQ2nLAcKpxrUsYS71wx6KxK//Opge2gqs2d7ykGb7dpAjdkK82/0S1WqqxrCNzar9q/z3EioS3aWABMtSuADrKoHBVypPToLBFFUW9d6OLtkP/zKgKx3+uNW26phfk2aUG+YaxO/9Es1mHq64sj1jDfP8+wYJmQ9G0J0DOqmNBzqOrWMmRkp+WKwZCvnuniLZI/8enCrt8rz1xv6YW99mlBfuJsTr/RLRbd7KtJ4JiwnT/QMODlVLHmgtMzaNRWcmTXIC+chFEum0kRMN/2pqzO//FqA+Sd68/iMWjE/jcpgbilq80/0K4Yoi/qRxQhrlS+kLGi+ZDvHxMZpdOBGWRPAJGu3YnPcSEql/CcP+1rh/wqakiUISuNrzQogzc3KQHpLarH/9Rt1vCg6gzIK6vJ7Z1vmH/RsWK7UHDi7o9xYm0QMeM4VfEfP+hszT9w6gWilOzU1GfrCbz1qEKldajD0vTpgrweLNE+EK0WF3Cqhsota8jupi2QPt/u1r/eb1c/4u5TP+rsSruwKwXh2axRjJ4sTzHxaUQ59ifEDnMoSkJ2qIJobioGf9gtE/hQbRUTbKoJxW+qx1YuasdkbusGZ7CrBh8vaocOk+xUDR2sDu7vacT/tagCoOvmU8C1qAQANSfFifXnwjMtKgd/2qzRe5Os1CaQbNTTT2yUjRBsFI3QLJST1aySI2GrjDhwqUQ/9afCLDTnBwU1J0XALqZOwDhowAA0p4VLdafCazGpA/zpaoi/4yuLvt7rzTyfK408o2sLfuwqBn/0aMH8digCZbRnBgb1Z0OAK2OZwAAAAAAqIddAMqeEADHmyAM1Z4OUdegB6bUoQbe0aIH+NGiB/vWoAjj1Z8IqdafD0zQoyEI06MYAAAAAAAAAAAAwA8AAIAHAACAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIABAADAAwAA4AcAAA==</Image>
+    <Url type="text/html" method="get" template="https://www.ekoru.org/?ext=palemoon&amp;q={searchTerms}"/>
+    <Url type="application/x-suggestions+json" template="https://ac.ekoru.org/?ext=palemoon&amp;q={searchTerms}"/>
+</OpenSearchDescription>
