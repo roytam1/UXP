@@ -31,6 +31,7 @@ function checkStateRead(aSubject, aTopic, aData) {
 }
 
 function run_test() {
+  Services.prefs.setBoolPref("security.cert_pinning.hpkp.enabled", true);
   let profileDir = do_get_profile();
   let stateFile = profileDir.clone();
   stateFile.append(SSS_STATE_FILE_NAME);

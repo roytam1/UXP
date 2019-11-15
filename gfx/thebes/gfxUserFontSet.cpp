@@ -180,18 +180,9 @@ public:
 
     virtual ots::TableAction GetTableAction(uint32_t aTag) override {
         // Preserve Graphite, color glyph and SVG tables
-        if (
-#ifdef RELEASE_OR_BETA // For Beta/Release, also allow OT Layout tables through
-                     // unchecked, and rely on harfbuzz to handle them safely.
-            aTag == TRUETYPE_TAG('G', 'D', 'E', 'F') ||
+        if (aTag == TRUETYPE_TAG('G', 'D', 'E', 'F') ||
             aTag == TRUETYPE_TAG('G', 'P', 'O', 'S') ||
             aTag == TRUETYPE_TAG('G', 'S', 'U', 'B') ||
-#endif
-            aTag == TRUETYPE_TAG('S', 'i', 'l', 'f') ||
-            aTag == TRUETYPE_TAG('S', 'i', 'l', 'l') ||
-            aTag == TRUETYPE_TAG('G', 'l', 'o', 'c') ||
-            aTag == TRUETYPE_TAG('G', 'l', 'a', 't') ||
-            aTag == TRUETYPE_TAG('F', 'e', 'a', 't') ||
             aTag == TRUETYPE_TAG('S', 'V', 'G', ' ') ||
             aTag == TRUETYPE_TAG('C', 'O', 'L', 'R') ||
             aTag == TRUETYPE_TAG('C', 'P', 'A', 'L')) {

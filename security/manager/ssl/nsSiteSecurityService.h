@@ -152,6 +152,7 @@ private:
   bool mUsePreloadList;
   bool mUseStsService;
   int64_t mPreloadListTimeOffset;
+  bool mHPKPEnabled;
   bool mProcessPKPHeadersFromNonBuiltInRoots;
   RefPtr<mozilla::DataStorage> mSiteStateStorage;
   RefPtr<mozilla::DataStorage> mPreloadStateStorage;

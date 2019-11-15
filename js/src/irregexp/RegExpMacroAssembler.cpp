@@ -226,32 +226,37 @@ InterpretedRegExpMacroAssembler::CheckGreedyLoop(jit::Label* on_tos_equals_curre
 }
 
 void
-InterpretedRegExpMacroAssembler::CheckNotAtStart(jit::Label* on_not_at_start)
+InterpretedRegExpMacroAssembler::CheckNotAtStart(int cp_offset, jit::Label* on_not_at_start)
 {
-    Emit(BC_CHECK_NOT_AT_START, 0);
+    Emit(BC_CHECK_NOT_AT_START, cp_offset);
     EmitOrLink(on_not_at_start);
 }
 
 void
-InterpretedRegExpMacroAssembler::CheckNotBackReference(int start_reg, jit::Label* on_no_match)
+InterpretedRegExpMacroAssembler::CheckNotBackReference(int start_reg, bool read_backward,
+                                                       jit::Label* on_no_match)
 {
     MOZ_ASSERT(start_reg >= 0);
     MOZ_ASSERT(start_reg <= kMaxRegister);
-    Emit(BC_CHECK_NOT_BACK_REF, start_reg);
+    Emit(read_backward ? BC_CHECK_NOT_BACK_REF_BACKWARD : BC_CHECK_NOT_BACK_REF,
+         start_reg);
     EmitOrLink(on_no_match);
 }
 
 void
 InterpretedRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg,
+                                                                 bool read_backward,
                                                                  jit::Label* on_no_match,
                                                                  bool unicode)
 {
     MOZ_ASSERT(start_reg >= 0);
     MOZ_ASSERT(start_reg <= kMaxRegister);
     if (unicode)
-        Emit(BC_CHECK_NOT_BACK_REF_NO_CASE_UNICODE, start_reg);
+        Emit(read_backward ? BC_CHECK_NOT_BACK_REF_NO_CASE_BACKWARD_UNICODE : BC_CHECK_NOT_BACK_REF_NO_CASE_UNICODE,
+             start_reg);
     else
-        Emit(BC_CHECK_NOT_BACK_REF_NO_CASE, start_reg);
+        Emit(read_backward ? BC_CHECK_NOT_BACK_REF_NO_CASE_BACKWARD : BC_CHECK_NOT_BACK_REF_NO_CASE,
+             start_reg);
     EmitOrLink(on_no_match);
 }
 

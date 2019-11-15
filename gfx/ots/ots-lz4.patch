@@ -1,7 +1,8 @@
 diff --git a/gfx/ots/src/glat.cc b/gfx/ots/src/glat.cc
 --- a/gfx/ots/src/glat.cc
 +++ b/gfx/ots/src/glat.cc
-@@ -5,7 +5,7 @@
+@@ -4,9 +4,9 @@
+ 
  #include "glat.h"
  
  #include "gloc.h"
@@ -10,10 +11,12 @@ diff --git a/gfx/ots/src/glat.cc b/gfx/ots/src/glat.cc
  #include <list>
  
  namespace ots {
-@@ -201,14 +201,15 @@ bool OpenTypeGLAT_v3::Parse(const uint8_t* data, size_t length,
-         return DropGraphite("Illegal nested compression");
+ 
+@@ -212,16 +212,17 @@ bool OpenTypeGLAT_v3::Parse(const uint8_
+         return DropGraphite("Decompressed size exceeds 30MB: %gMB",
+                             decompressed_size / (1024.0 * 1024.0));
        }
-       std::vector<uint8_t> decompressed(this->compHead & FULL_SIZE);
+       std::vector<uint8_t> decompressed(decompressed_size);
 -      int ret = LZ4_decompress_safe_partial(
 +      size_t outputSize = 0;
 +      bool ret = mozilla::Compression::LZ4::decompressPartial(
@@ -23,7 +26,7 @@ diff --git a/gfx/ots/src/glat.cc b/gfx/ots/src/glat.cc
 +          reinterpret_cast<char*>(decompressed.data()),
            decompressed.size(),  // target output size
 -          decompressed.size());  // output buffer size
--      if (ret != decompressed.size()) {
+-      if (ret < 0 || unsigned(ret) != decompressed.size()) {
 -        return DropGraphite("Decompression failed with error code %d", ret);
 +          &outputSize);  // return output size
 +      if (!ret || outputSize != decompressed.size()) {
@@ -31,10 +34,12 @@ diff --git a/gfx/ots/src/glat.cc b/gfx/ots/src/glat.cc
        }
        return this->Parse(decompressed.data(), decompressed.size(), true);
      }
+     default:
 diff --git a/gfx/ots/src/silf.cc b/gfx/ots/src/silf.cc
 --- a/gfx/ots/src/silf.cc
 +++ b/gfx/ots/src/silf.cc
-@@ -5,7 +5,7 @@
+@@ -4,9 +4,9 @@
+ 
  #include "silf.h"
  
  #include "name.h"
@@ -43,10 +48,12 @@ diff --git a/gfx/ots/src/silf.cc b/gfx/ots/src/silf.cc
  #include <cmath>
  
  namespace ots {
-@@ -39,14 +39,15 @@ bool OpenTypeSILF::Parse(const uint8_t* data, size_t length,
-           return DropGraphite("Illegal nested compression");
+ 
+@@ -50,16 +50,17 @@ bool OpenTypeSILF::Parse(const uint8_t* 
+           return DropGraphite("Decompressed size exceeds 30MB: %gMB",
+                               decompressed_size / (1024.0 * 1024.0));
          }
-         std::vector<uint8_t> decompressed(this->compHead & FULL_SIZE);
+         std::vector<uint8_t> decompressed(decompressed_size);
 -        int ret = LZ4_decompress_safe_partial(
 +        size_t outputSize = 0;
 +        bool ret = mozilla::Compression::LZ4::decompressPartial(
@@ -56,7 +63,7 @@ diff --git a/gfx/ots/src/silf.cc b/gfx/ots/src/silf.cc
 +            reinterpret_cast<char*>(decompressed.data()),
              decompressed.size(),  // target output size
 -            decompressed.size());  // output buffer size
--        if (ret != decompressed.size()) {
+-        if (ret < 0 || unsigned(ret) != decompressed.size()) {
 -          return DropGraphite("Decompression failed with error code %d", ret);
 +            &outputSize);   // return output size
 +        if (!ret || outputSize != decompressed.size()) {
@@ -64,3 +71,4 @@ diff --git a/gfx/ots/src/silf.cc b/gfx/ots/src/silf.cc
          }
          return this->Parse(decompressed.data(), decompressed.size(), true);
        }
+       default:

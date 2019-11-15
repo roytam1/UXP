@@ -14,14 +14,18 @@ const SJS_URL = "https://example.com/browser/devtools/client/webconsole/" +
                 "test/test_hpkp-invalid-headers.sjs";
 const LEARN_MORE_URI = "https://developer.mozilla.org/docs/Web/Security/" +
                        "Public_Key_Pinning" + DOCS_GA_PARAMS;
+const HPKP_ENABLED_PREF = "security.cert_pinning.hpkp.enabled";
 const NON_BUILTIN_ROOT_PREF = "security.cert_pinning.process_headers_from_" +
                               "non_builtin_roots";
 
 add_task(function* () {
   registerCleanupFunction(() => {
+    Services.prefs.clearUserPref(HPKP_ENABLED_PREF);
     Services.prefs.clearUserPref(NON_BUILTIN_ROOT_PREF);
   });
 
+  Services.prefs.setBoolPref(HPKP_ENABLED_PREF, true);
+  
   yield loadTab(TEST_URI);
 
   let hud = yield openConsole();

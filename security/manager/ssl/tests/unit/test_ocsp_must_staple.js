@@ -28,6 +28,7 @@ function add_tests() {
                 PRErrorCodeSuccess, true);
 
   add_test(() => {
+    Services.prefs.setBoolPref("security.cert_pinning.hpkp.enabled", true);
     Services.prefs.setIntPref("security.cert_pinning.enforcement_level", 1);
     Services.prefs.setBoolPref("security.cert_pinning.process_headers_from_non_builtin_roots", true);
     let uri = Services.io.newURI("https://ocsp-stapling-must-staple-ee-with-must-staple-int.example.com",
@@ -45,6 +46,7 @@ function add_tests() {
 
     // Clear accumulated state.
     ssservice.removeState(Ci.nsISiteSecurityService.HEADER_HPKP, uri, 0);
+    Services.prefs.clearUserPref("security.cert_pinning.hpkp.enabled");
     Services.prefs.clearUserPref("security.cert_pinning.process_headers_from_non_builtin_roots");
     Services.prefs.clearUserPref("security.cert_pinning.enforcement_level");
     run_next_test();

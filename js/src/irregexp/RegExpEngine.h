@@ -119,7 +119,7 @@ InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* chars, size_t
   VISIT(Atom)                                                        \
   VISIT(Quantifier)                                                  \
   VISIT(Capture)                                                     \
-  VISIT(Lookahead)                                                   \
+  VISIT(Lookaround)                                                  \
   VISIT(BackReference)                                               \
   VISIT(Empty)                                                       \
   VISIT(Text)
@@ -763,15 +763,19 @@ class TextNode : public SeqRegExpNode
 {
   public:
     TextNode(TextElementVector* elements,
+             bool read_backward,
              RegExpNode* on_success)
       : SeqRegExpNode(on_success),
-        elements_(elements)
+        elements_(elements),
+        read_backward_(read_backward)
     {}
 
     TextNode(RegExpCharacterClass* that,
+             bool read_backward,
              RegExpNode* on_success)
       : SeqRegExpNode(on_success),
-        elements_(alloc()->newInfallible<TextElementVector>(*alloc()))
+        elements_(alloc()->newInfallible<TextElementVector>(*alloc())),
+        read_backward_(read_backward)
     {
         elements_->append(TextElement::CharClass(that));
     }
@@ -784,6 +788,7 @@ class TextNode : public SeqRegExpNode
                                       int characters_filled_in,
                                       bool not_at_start);
     TextElementVector& elements() { return *elements_; }
+    bool read_backward() { return read_backward_; }
     void MakeCaseIndependent(bool is_ascii, bool unicode);
     virtual int GreedyLoopTextLength();
     virtual RegExpNode* GetSuccessorOfOmnivorousTextNode(
@@ -814,6 +819,7 @@ class TextNode : public SeqRegExpNode
                       int* checked_up_to);
     int Length();
     TextElementVector* elements_;
+    bool read_backward_;
 };
 
 class AssertionNode : public SeqRegExpNode
@@ -882,15 +888,18 @@ class BackReferenceNode : public SeqRegExpNode
   public:
     BackReferenceNode(int start_reg,
                       int end_reg,
+                      bool read_backward,
                       RegExpNode* on_success)
       : SeqRegExpNode(on_success),
         start_reg_(start_reg),
-        end_reg_(end_reg)
+        end_reg_(end_reg),
+        read_backward_(read_backward)
     {}
 
     virtual void Accept(NodeVisitor* visitor);
     int start_register() { return start_reg_; }
     int end_register() { return end_reg_; }
+    bool read_backward() { return read_backward_; }
     virtual void Emit(RegExpCompiler* compiler, Trace* trace);
     virtual int EatsAtLeast(int still_to_find,
                             int recursion_depth,
@@ -909,6 +918,7 @@ class BackReferenceNode : public SeqRegExpNode
   private:
     int start_reg_;
     int end_reg_;
+    bool read_backward_;
 };
 
 class EndNode : public RegExpNode
@@ -1053,6 +1063,7 @@ class ChoiceNode : public RegExpNode
     void set_being_calculated(bool b) { being_calculated_ = b; }
     virtual bool try_to_emit_quick_check_for_alternative(int i) { return true; }
     virtual RegExpNode* FilterASCII(int depth, bool ignore_case, bool unicode);
+    virtual bool read_backward() { return false; }
 
   protected:
     int GreedyLoopTextLengthForAlternative(GuardedAlternative* alternative);
@@ -1111,11 +1122,13 @@ class NegativeLookaheadChoiceNode : public ChoiceNode
 class LoopChoiceNode : public ChoiceNode
 {
   public:
-    explicit LoopChoiceNode(LifoAlloc* alloc, bool body_can_be_zero_length)
+    explicit LoopChoiceNode(LifoAlloc* alloc, bool body_can_be_zero_length,
+                            bool read_backward)
       : ChoiceNode(alloc, 2),
         loop_node_(nullptr),
         continue_node_(nullptr),
-        body_can_be_zero_length_(body_can_be_zero_length)
+        body_can_be_zero_length_(body_can_be_zero_length),
+        read_backward_(read_backward)
     {}
 
     void AddLoopAlternative(GuardedAlternative alt);
@@ -1133,6 +1146,7 @@ class LoopChoiceNode : public ChoiceNode
     RegExpNode* loop_node() { return loop_node_; }
     RegExpNode* continue_node() { return continue_node_; }
     bool body_can_be_zero_length() { return body_can_be_zero_length_; }
+    virtual bool read_backward() { return read_backward_; }
     virtual void Accept(NodeVisitor* visitor);
     virtual RegExpNode* FilterASCII(int depth, bool ignore_case, bool unicode);
 
@@ -1147,6 +1161,7 @@ class LoopChoiceNode : public ChoiceNode
     RegExpNode* loop_node_;
     RegExpNode* continue_node_;
     bool body_can_be_zero_length_;
+    bool read_backward_;
 };
 
 // Improve the speed that we scan for an initial point where a non-anchored
@@ -1422,8 +1437,8 @@ class Trace
     }
 
     TriBool at_start() { return at_start_; }
-    void set_at_start(bool at_start) {
-        at_start_ = at_start ? TRUE_VALUE : FALSE_VALUE;
+    void set_at_start(TriBool at_start) {
+        at_start_ = at_start;
     }
     jit::Label* backtrack() { return backtrack_; }
     jit::Label* loop_label() { return loop_label_; }

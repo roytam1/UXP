@@ -222,8 +222,8 @@ irregexp::InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* cha
             }
             break;
           BYTECODE(LOAD_CURRENT_CHAR) {
-            size_t pos = current + (insn >> BYTECODE_SHIFT);
-            if (pos >= length) {
+            int pos = current + (insn >> BYTECODE_SHIFT);
+            if (pos >= (int)length || pos < 0) {
                 pc = byteCode + Load32Aligned(pc + 4);
             } else {
                 current_char = chars[pos];
@@ -238,8 +238,8 @@ irregexp::InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* cha
             break;
           }
           BYTECODE(LOAD_2_CURRENT_CHARS) {
-            size_t pos = current + (insn >> BYTECODE_SHIFT);
-            if (pos + 2 > length) {
+            int pos = current + (insn >> BYTECODE_SHIFT);
+            if (pos + 2 > (int)length || pos < 0) {
                 pc = byteCode + Load32Aligned(pc + 4);
             } else {
                 CharT next = chars[pos + 1];
@@ -425,6 +425,30 @@ irregexp::InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* cha
             pc += BC_CHECK_NOT_BACK_REF_LENGTH;
             break;
           }
+          BYTECODE(CHECK_NOT_BACK_REF_BACKWARD) {
+            int from = registers[insn >> BYTECODE_SHIFT];
+            int len = registers[(insn >> BYTECODE_SHIFT) + 1] - from;
+            if (from < 0 || len <= 0) {
+                pc += BC_CHECK_NOT_BACK_REF_BACKWARD_LENGTH;
+                break;
+            }
+            if (int(current) - len < 0) {
+                pc = byteCode + Load32Aligned(pc + 4);
+                break;
+            } else {
+                int i;
+                for (i = 0; i < len; i++) {
+                    if (chars[from + i] != chars[int(current) - len + i]) {
+                        pc = byteCode + Load32Aligned(pc + 4);
+                        break;
+                    }
+                }
+                if (i < len) break;
+                current -= len;
+            }
+            pc += BC_CHECK_NOT_BACK_REF_BACKWARD_LENGTH;
+            break;
+          }
           BYTECODE(CHECK_NOT_BACK_REF_NO_CASE) {
             int from = registers[insn >> BYTECODE_SHIFT];
             int len = registers[(insn >> BYTECODE_SHIFT) + 1] - from;
@@ -465,6 +489,46 @@ irregexp::InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* cha
             }
             break;
           }
+          BYTECODE(CHECK_NOT_BACK_REF_NO_CASE_BACKWARD) {
+            int from = registers[insn >> BYTECODE_SHIFT];
+            int len = registers[(insn >> BYTECODE_SHIFT) + 1] - from;
+            if (from < 0 || len <= 0) {
+                pc += BC_CHECK_NOT_BACK_REF_NO_CASE_BACKWARD_LENGTH;
+                break;
+            }
+            if (int(current) - len < 0) {
+                pc = byteCode + Load32Aligned(pc + 4);
+                break;
+            }
+            if (CaseInsensitiveCompareStrings(chars + from, chars + int(current) - len, len * sizeof(CharT))) {
+                current -= len;
+                pc += BC_CHECK_NOT_BACK_REF_NO_CASE_BACKWARD_LENGTH;
+            } else {
+                pc = byteCode + Load32Aligned(pc + 4);
+            }
+            break;
+
+          }
+          BYTECODE(CHECK_NOT_BACK_REF_NO_CASE_BACKWARD_UNICODE) {
+            int from = registers[insn >> BYTECODE_SHIFT];
+            int len = registers[(insn >> BYTECODE_SHIFT) + 1] - from;
+            if (from < 0 || len <= 0) {
+                pc += BC_CHECK_NOT_BACK_REF_NO_CASE_BACKWARD_LENGTH;
+                break;
+            }
+            if (int(current) - len < 0) {
+                pc = byteCode + Load32Aligned(pc + 4);
+                break;
+            }
+            if (CaseInsensitiveCompareUCStrings(chars + from, chars + int(current) - len, len * sizeof(CharT))) {
+                current -= len;
+                pc += BC_CHECK_NOT_BACK_REF_NO_CASE_BACKWARD_LENGTH;
+            } else {
+                pc = byteCode + Load32Aligned(pc + 4);
+            }
+            break;
+
+          }
           BYTECODE(CHECK_AT_START)
             if (current == 0)
                 pc = byteCode + Load32Aligned(pc + 4);
@@ -472,7 +536,7 @@ irregexp::InterpretCode(JSContext* cx, const uint8_t* byteCode, const CharT* cha
                 pc += BC_CHECK_AT_START_LENGTH;
             break;
           BYTECODE(CHECK_NOT_AT_START)
-            if (current == 0)
+            if (current + (insn >> BYTECODE_SHIFT) == 0)
                 pc += BC_CHECK_NOT_AT_START_LENGTH;
             else
                 pc = byteCode + Load32Aligned(pc + 4);

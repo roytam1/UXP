@@ -1198,7 +1198,7 @@ BrowserGlue.prototype = {
   },
 
   _migrateUI: function BG__migrateUI() {
-    const UI_VERSION = 19;
+    const UI_VERSION = 20;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul#";
     let currentUIVersion = 0;
     try {
@@ -1432,6 +1432,11 @@ BrowserGlue.prototype = {
       catch (ex) {}
     }
 #endif
+
+    if (currentUIVersion < 20) {
+      // HPKP change of UI preference; reset enforcement level
+      Services.prefs.clearUserPref("security.cert_pinning.enforcement_level");
+    }
 
     // Update the migration version.
     Services.prefs.setIntPref("browser.migration.version", UI_VERSION);

@@ -41,6 +41,7 @@ const NON_ISSUED_KEY_HASH = "KHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAN=";
 const PINNING_ROOT_KEY_HASH = "VCIlmPM9NkgFQtrs4Oa5TeFcDu6MWRTKSNdePEhOgD8=";
 
 function run_test() {
+  Services.prefs.setBoolPref("security.cert_pinning.hpkp.enabled", true);
   Services.prefs.setIntPref("security.cert_pinning.enforcement_level", 2);
 
   let stateFile = profileDir.clone();

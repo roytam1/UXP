@@ -105,9 +105,10 @@ class MOZ_STACK_CLASS NativeRegExpMacroAssembler final : public RegExpMacroAssem
     void CheckCharacterGT(char16_t limit, jit::Label* on_greater);
     void CheckCharacterLT(char16_t limit, jit::Label* on_less);
     void CheckGreedyLoop(jit::Label* on_tos_equals_current_position);
-    void CheckNotAtStart(jit::Label* on_not_at_start);
-    void CheckNotBackReference(int start_reg, jit::Label* on_no_match);
-    void CheckNotBackReferenceIgnoreCase(int start_reg, jit::Label* on_no_match, bool unicode);
+    void CheckNotAtStart(int cp_offset, jit::Label* on_not_at_start);
+    void CheckNotBackReference(int start_reg, bool read_backward, jit::Label* on_no_match);
+    void CheckNotBackReferenceIgnoreCase(int start_reg, bool read_backward,
+                                         jit::Label* on_no_match, bool unicode);
     void CheckNotCharacter(unsigned c, jit::Label* on_not_equal);
     void CheckNotCharacterAfterAnd(unsigned c, unsigned and_with, jit::Label* on_not_equal);
     void CheckNotCharacterAfterMinusAnd(char16_t c, char16_t minus, char16_t and_with,

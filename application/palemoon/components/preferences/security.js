@@ -18,7 +18,6 @@ var gSecurityPane = {
   {
     this._pane = document.getElementById("paneSecurity");
     this._initMasterPasswordUI();
-    this._initHPKPUI();
   },
 
   // ADD-ONS
@@ -233,31 +232,5 @@ var gSecurityPane = {
     document.documentElement.openWindow("Toolkit:PasswordManager",
                                         "chrome://passwordmgr/content/passwordManager.xul",
                                         "", null);
-  },
-  
-  _initHPKPUI: function() {
-    let checkbox = document.getElementById("enableHPKP");
-    let HPKPpref = document.getElementById("security.cert_pinning.enforcement_level");
-
-    if (HPKPpref.value == 0) {
-      checkbox.checked = false;
-    } else {
-      checkbox.checked = true;
-    }
-  },
-      
-  /**
-   * Updates the HPKP enforcement level to the proper value depending on checkbox
-   * state.
-   */
-  updateHPKPPref: function() {
-    let checkbox = document.getElementById("enableHPKP");
-    let HPKPpref = document.getElementById("security.cert_pinning.enforcement_level");
-    
-    if (checkbox.checked) {
-      HPKPpref.value = 2;
-    } else {
-      HPKPpref.value = 0;
-    }
   }
 };

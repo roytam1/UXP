@@ -70,4 +70,5 @@ if CONFIG['MOZ_RTSP']:
 
 LOCAL_INCLUDES += [
     '!/netwerk/dns',
+    '/modules/brotli/dec',
 ]

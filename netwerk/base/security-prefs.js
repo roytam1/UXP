@@ -132,6 +132,14 @@ pref("security.cert_pinning.process_headers_from_non_builtin_roots", false);
 // blacking themselves out by setting a bad pin.  (60 days by default)
 // https://tools.ietf.org/html/rfc7469#section-4.1
 pref("security.cert_pinning.max_max_age_seconds", 5184000);
+// Controls whether or not HPKP (the HTTP Public Key Pinning header) is enabled.
+// If true, the header is processed and collected HPKP information is consulted
+// when looking for pinning information.
+// If false, the header is not processed and collected HPKP information is not
+// consulted when looking for pinning information. Preloaded pins are not
+// affected by this preference.
+// Default: false
+pref("security.cert_pinning.hpkp.enabled", false);
 
 // If a request is mixed-content, send an HSTS priming request to attempt to
 // see if it is available over HTTPS.

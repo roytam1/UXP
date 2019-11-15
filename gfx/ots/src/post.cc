@@ -9,8 +9,6 @@
 // post - PostScript
 // http://www.microsoft.com/typography/otspec/post.htm
 
-#define TABLE_NAME "post"
-
 namespace ots {
 
 bool OpenTypePOST::Parse(const uint8_t *data, size_t length) {

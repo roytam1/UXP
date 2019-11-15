@@ -25,7 +25,7 @@ bool OpenTypeGLOC::Parse(const uint8_t* data, size_t length) {
   if (this->version >> 16 != 1) {
     return DropGraphite("Unsupported table version: %u", this->version >> 16);
   }
-  if (!table.ReadU16(&this->flags) || this->flags > 3) {
+  if (!table.ReadU16(&this->flags) || this->flags > 0b11) {
     return DropGraphite("Failed to read valid flags");
   }
   if (!table.ReadU16(&this->numAttribs)) {

@@ -12,6 +12,7 @@
 var { ForgetAboutSite } = Cu.import("resource://gre/modules/ForgetAboutSite.jsm", {});
 
 do_register_cleanup(() => {
+  Services.prefs.clearUserPref("security.cert_pinning.hpkp.enabled");
   Services.prefs.clearUserPref("security.cert_pinning.enforcement_level");
   Services.prefs.clearUserPref(
     "security.cert_pinning.process_headers_from_non_builtin_roots");
@@ -26,6 +27,7 @@ const GOOD_MAX_AGE = `max-age=${GOOD_MAX_AGE_SECONDS};`;
 
 do_get_profile(); // must be done before instantiating nsIX509CertDB
 
+Services.prefs.setBoolPref("security.cert_pinning.hpkp.enabled", true);
 Services.prefs.setIntPref("security.cert_pinning.enforcement_level", 2);
 Services.prefs.setBoolPref(
   "security.cert_pinning.process_headers_from_non_builtin_roots", true);
@@ -43,6 +45,26 @@ var uri = Services.io.newURI("https://a.pinning2.example.com", null, null);
 // necessary domain name.
 var sslStatus = new FakeSSLStatus(constructCertFromFile(
   "test_pinning_dynamic/a.pinning2.example.com-pinningroot.pem"));
+
+  // Test that with HPKP disabled, processing HPKP headers results in no
+  // information being saved.
+  add_task(async function() {
+    Services.prefs.setBoolPref("security.cert_pinning.hpkp.enabled", false);
+    sss.processHeader(
+      Ci.nsISiteSecurityService.HEADER_HPKP,
+      uri,
+      GOOD_MAX_AGE + VALID_PIN + BACKUP_PIN,
+      secInfo,
+      0,
+      Ci.nsISiteSecurityService.SOURCE_ORGANIC_REQUEST
+    );
+
+    Services.prefs.setBoolPref("security.cert_pinning.hpkp.enabled", true);
+    Assert.ok(
+      !sss.isSecureURI(Ci.nsISiteSecurityService.HEADER_HPKP, uri, 0),
+      "a.pinning.example.com should not be HPKP"
+    );
+  });
 
 // Test the normal case of processing HSTS and HPKP headers for
 // a.pinning2.example.com, using "Forget About Site" on a.pinning2.example.com,

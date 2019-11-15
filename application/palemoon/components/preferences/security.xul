@@ -46,9 +46,9 @@
       <preference id="network.stricttransportsecurity.enabled"
                   name="network.stricttransportsecurity.enabled"
                   type="bool"/>
-      <preference id="security.cert_pinning.enforcement_level"
-                  name="security.cert_pinning.enforcement_level"
-                  type="int"/>
+      <preference id="security.cert_pinning.hpkp.enabled"
+                  name="security.cert_pinning.hpkp.enabled"
+                  type="bool"/>
       
       <!-- Opportunistic Encryption -->
                   
@@ -150,7 +150,7 @@
         <checkbox id="enableHPKP"
                   label="&enableHPKP.label;"
                   accesskey="&enableHPKP.accesskey;"
-                  oncommand="gSecurityPane.updateHPKPPref();"/>
+                  preference="security.cert_pinning.hpkp.enabled"/>
       </vbox>
     </groupbox>
     
