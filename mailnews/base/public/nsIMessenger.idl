@@ -1,0 +1,141 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsrootidl.idl"
+#include "nsIMsgWindow.idl"
+#include "nsIMsgIdentity.idl"
+
+interface nsIMsgDBHdr;
+interface nsIDOMWindow;
+interface mozIDOMWindowProxy;
+interface nsITransactionManager;
+interface nsIMsgMessageService;
+interface nsIFile;
+interface nsIUrlListener;
+
+[scriptable, uuid(01b967c8-b289-4e32-ad46-6eb7c89d4106)]
+interface nsIMessenger : nsISupports {
+
+    const long eUnknown = 0;
+    const long eDeleteMsg = 1;
+    const long eMoveMsg = 2;
+    const long eCopyMsg = 3;
+    const long eMarkAllMsg = 4;
+
+    void setDisplayCharset(in ACString aCharset);
+
+    readonly attribute nsITransactionManager transactionManager;
+
+    void setWindow(in mozIDOMWindowProxy ptr, in nsIMsgWindow msgWindow);
+
+    void addMsgUrlToNavigateHistory(in ACString aURL);
+    void openURL(in ACString aURL);
+
+    /** load a custom message by url, e.g load a attachment as a email
+      */
+    void loadURL(in mozIDOMWindowProxy ptr, in ACString aURL);
+
+    void launchExternalURL(in ACString aURL);
+
+    boolean canUndo();
+    boolean canRedo();
+    unsigned long getUndoTransactionType();
+    unsigned long getRedoTransactionType();
+    void undo(in nsIMsgWindow msgWindow);
+    void redo(in nsIMsgWindow msgWindow);
+    void setDocumentCharset(in ACString characterSet);
+    /**
+     * Saves a given message to a file or template.
+     *
+     * @param aURI         The URI of the message to save
+     * @param aAsFile      If true, save as file, otherwise save as a template
+     * @param aIdentity    When saving as a template, this is used to determine
+     *                     the location to save the template to.
+     * @param aMsgFilename When saving as a file, the filename to save the
+     *                     message as, or the default filename for the file
+     *                     picker.
+     * @param aBypassFilePicker
+     *                     If not specified or false, this function will show
+     *                     a file picker when saving as a file. If true, no
+     *                     file picker will be shown.
+     */
+    void saveAs(in ACString aURI, in boolean aAsFile,
+                in nsIMsgIdentity aIdentity, in AString aMsgFilename,
+                [optional] in boolean aBypassFilePicker);
+
+    /**
+     * Save the given messages as files in a folder - the user will be prompted
+     * for which folder to use.
+     * @param count message count
+     * @param filenameArray the filenames to use
+     * @param messageUriArray uris of the messages to save
+     */
+    void saveMessages(in unsigned long count,
+                      [array, size_is(count)] in wstring filenameArray,
+                      [array, size_is(count)] in string messageUriArray);
+
+    void openAttachment(in ACString contentTpe, in ACString url, in ACString displayName, in ACString messageUri, in boolean isExternalAttachment);
+    void saveAttachment(in ACString contentTpe, in ACString url, in ACString displayName, in ACString messageUri, in boolean isExternalAttachment);
+    void saveAllAttachments(in unsigned long count, [array, size_is(count)] in string contentTypeArray,
+                            [array, size_is(count)] in string urlArray, [array, size_is(count)] in string displayNameArray,
+                            [array, size_is(count)] in string messageUriArray);
+    
+    void saveAttachmentToFile(in nsIFile aFile, in ACString aUrl, in ACString aMessageUri, 
+                              in ACString aContentType, in nsIUrlListener aListener);
+
+    /**
+     * For a single message and attachments, save these attachments to a file, and
+     *  remove from the message. No warning windows will appear, so this is
+     *  suitable for use in test and filtering.
+     *
+     * @param aDestFolder       Folder to save files in
+     * @param aCount            Number of attachments to save
+     * @param aContentTypeArray Content types of the attachments
+     * @param aUrlArray         Urls for the attachments
+     * @param aDisplayNameArray Files names to save attachments to. Unique
+     *                           names will be created if needed.
+     * @param aMessageUriArray  Uri for the source message
+     * @param aListener         Listener to inform of start and stop of detach
+     */
+    void detachAttachmentsWOPrompts(in nsIFile aDestFolder,
+                                    in unsigned long aCount,
+                                    [array, size_is(aCount)] in string aContentTypeArray,
+                                    [array, size_is(aCount)] in string aUrlArray,
+                                    [array, size_is(aCount)] in string aDisplayNameArray,
+                                    [array, size_is(aCount)] in string aMessageUriArray,
+                                    in nsIUrlListener aListener);
+
+    void detachAttachment(in string contentTpe, in string url, in string displayName, in string messageUri, in boolean saveFirst, [optional] in boolean withoutWarning);
+    void detachAllAttachments(in unsigned long count, [array, size_is(count)] in string contentTypeArray,
+                             [array, size_is(count)] in string urlArray, [array, size_is(count)] in string displayNameArray,
+                             [array, size_is(count)] in string messageUriArray, in boolean saveFirst, [optional] in boolean withoutWarning);
+    // saveAttachmentToFolder is used by the drag and drop code to drop an attachment to a destination folder
+    // We need to return the actual file path (including the filename).
+    nsIFile saveAttachmentToFolder(in ACString contentType, in ACString url, in ACString displayName, in ACString messageUri, in nsIFile aDestFolder);
+
+    readonly attribute ACString lastDisplayedMessageUri;
+
+    nsIMsgMessageService messageServiceFromURI(in ACString aUri);
+    nsIMsgDBHdr msgHdrFromURI(in ACString aUri);
+    // For back forward history, we need a list of visited messages,
+    // and where we are in the list.
+    
+    // aPos is relative to the current history cursor - 1 is forward, -1 is back.
+    // Unfortunately, you must call this before navigating to this position,
+    // because calling this has the side effect of making us adjust our current
+    // history pos, and *not* adding the loaded message to the history queue.
+    ACString getMsgUriAtNavigatePos(in long aPos);
+    ACString getFolderUriAtNavigatePos(in long aPos);
+    attribute long navigatePos;
+    // If caller just wants the count and cur pos, they can pass in a null history pointer, which will be more efficient
+    // if they want a list suitable for display in a back/forward menu drop down, they should pass in a aHistory pointer,
+    // and they'll get returned an array with strings containing something like subject and sender of the message - 
+    // other possible info is the folder containing the message, and the preview text, if available.
+    void getNavigateHistory(out unsigned long aCurPos, out unsigned long aCount, [array, size_is(aCount)] out string aHistory);
+
+    AString formatFileSize(in unsigned long long aPos, [optional] in boolean aUseKB);
+};
+

@@ -1,0 +1,79 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsMsgSearchCore.idl"
+
+/**
+ * describes a custom term added to a message search or filter
+ */
+[scriptable,uuid(925DB5AA-21AF-494c-8652-984BC7BAD13A)]
+interface nsIMsgSearchCustomTerm : nsISupports
+{
+  /**
+   * globally unique string to identify this search term.
+   * recommended form: ExtensionName@example.com#TermName
+   * Commas and quotes are not allowed, the id must not
+   * parse to an integer, and names of standard search
+   * attributes in SearchAttribEntryTable in nsMsgSearchTerm.cpp
+   * are not allowed.
+   */
+  readonly attribute ACString id;
+
+  /// name to display in term list. This should be localized. */
+  readonly attribute AString name;
+
+  /// Does this term need the message body?
+  readonly attribute boolean needsBody;
+
+  /**
+   * Is this custom term enabled?
+   *
+   * @param scope          search scope (nsMsgSearchScope)
+   * @param op             search operator (nsMsgSearchOp). If null, determine
+   *                       if term is available for any operator.
+   *
+   * @return               true if enabled
+   */
+  boolean getEnabled(in nsMsgSearchScopeValue scope,
+                     in nsMsgSearchOpValue op);
+
+  /**
+   * Is this custom term available?
+   *
+   * @param scope          search scope (nsMsgSearchScope)
+   * @param op             search operator (nsMsgSearchOp). If null, determine
+   *                       if term is available for any operator.
+   *
+   * @return               true if available
+   */
+  boolean getAvailable(in nsMsgSearchScopeValue scope,
+                       in nsMsgSearchOpValue op);
+
+  /**
+   * List the valid operators for this term.
+   *
+   * @param scope          search scope (nsMsgSearchScope)
+   * @param length         object to hold array length
+   *
+   * @return               array of operators
+   */
+  void getAvailableOperators(in nsMsgSearchScopeValue scope,
+                             out unsigned long length,
+                             [retval, array, size_is(length)]
+                             out nsMsgSearchOpValue operators);
+
+  /**
+   * Apply the custom search term to a message
+   *
+   * @param msgHdr       header database reference representing the message
+   * @param searchValue  user-set value to use in the search
+   * @param searchOp     search operator (Contains, IsHigherThan, etc.)
+   *
+   * @return             true if the term matches the message, else false
+   */
+
+  boolean match(in nsIMsgDBHdr msgHdr,
+                in AUTF8String searchValue,
+                in nsMsgSearchOpValue searchOp);
+};

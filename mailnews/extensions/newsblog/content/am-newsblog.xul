@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/accountManage.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger-newsblog/skin/feed-subscriptions.css" type="text/css"?>
+
+<!DOCTYPE page [
+<!ENTITY %         newsblogDTD SYSTEM "chrome://messenger-newsblog/locale/am-newsblog.dtd" >
+%newsblogDTD;
+<!ENTITY %             feedDTD SYSTEM "chrome://messenger-newsblog/locale/feed-subscriptions.dtd" >
+%feedDTD;
+<!ENTITY %   accountNoIdentDTD SYSTEM "chrome://messenger/locale/am-serverwithnoidentities.dtd" >
+%accountNoIdentDTD;
+<!ENTITY % accountServerTopDTD SYSTEM "chrome://messenger/locale/am-server-top.dtd">
+%accountServerTopDTD;
+]>
+
+<page xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+      class="color-dialog"
+      title="&accountTitle.label;"
+      onload="parent.onPanelLoaded('am-newsblog.xul');">
+
+  <script type="application/javascript"
+          src="chrome://messenger/content/AccountManager.js"/>
+  <script type="application/javascript"
+          src="chrome://messenger-newsblog/content/am-newsblog.js"/>
+  <script type="application/javascript"
+          src="chrome://messenger-newsblog/content/newsblogOverlay.js"/>
+  <script type="application/javascript"
+          src="chrome://messenger/content/amUtils.js"/>
+  <script type="application/javascript"
+          src="chrome://messenger/content/am-prefs.js"/>
+
+  <vbox flex="1" style="overflow: auto;">
+
+    <dialogheader id="am-newsblog-title" defaultTitle="&accountTitle.label;"/>
+
+    <description class="secDesc">&accountSettingsDesc.label;</description>
+
+    <hbox align="center">
+      <label value="&accountName.label;"
+             accesskey="&accountName.accesskey;"
+             control="server.prettyName"/>
+      <textbox id="server.prettyName"
+               wsm_persist="true"
+               size="30"
+               prefstring="mail.server.%serverkey%.name"/>
+    </hbox>
+
+    <separator class="thin"/>
+
+    <groupbox>
+      <caption label="&serverSettings.label;"/>
+
+      <checkbox id="server.loginAtStartUp"
+                wsm_persist="true"
+                label="&loginAtStartup.label;"
+                accesskey="&loginAtStartup.accesskey;"
+                prefattribute="value"
+                prefstring="mail.server.%serverkey%.login_at_startup"/>
+
+      <hbox align="center">
+        <checkbox id="server.doBiff"
+                  wsm_persist="true"
+                  label="&biffStart.label;"
+                  accesskey="&biffStart.accesskey;"
+                  oncommand="onCheckItem('server.biffMinutes', [this.id]);"
+                  prefattribute="value"
+                  prefstring="mail.server.%serverkey%.check_new_mail"/>
+        <textbox id="server.biffMinutes"
+                 wsm_persist="true"
+                 type="number"
+                 size="3"
+                 min="1"
+                 increment="1"
+                 preftype="int"
+                 prefstring="mail.server.%serverkey%.check_time"
+                 aria-labelledby="server.doBiff server.biffMinutes biffEnd"/>
+        <label id="biffEnd"
+             value="&biffEnd.label;"
+             control="server.biffMinutes"/>
+      </hbox>
+
+      <checkbox id="server.quickMode"
+                wsm_persist="true"
+                genericattr="true"
+                label="&useQuickMode.label;"
+                accesskey="&useQuickMode.accesskey;"
+                preftype="bool"
+                prefattribute="value"
+                prefstring="mail.server.%serverkey%.quickMode"/>
+
+      <checkbox id="autotagEnable"
+                accesskey="&autotagEnable.accesskey;"
+                label="&autotagEnable.label;"
+                oncommand="setCategoryPrefs(this)"/>
+      <hbox>
+          <checkbox id="autotagUsePrefix"
+                    class="indent"
+                    accesskey="&autotagUsePrefix.accesskey;"
+                    label="&autotagUsePrefix.label;"
+                    oncommand="setCategoryPrefs(this)"/>
+          <textbox id="autotagPrefix"
+                   placeholder="&autoTagPrefix.placeholder;"
+                   clickSelectsAll="true"
+                   onchange="setCategoryPrefs(this)"/>
+      </hbox>
+    </groupbox>
+
+    <separator class="thin"/>
+
+    <groupbox>
+      <caption label="&messageStorage.label;"/>
+
+      <checkbox id="server.emptyTrashOnExit"
+                wsm_persist="true"
+                label="&emptyTrashOnExit.label;"
+                accesskey="&emptyTrashOnExit.accesskey;"
+                prefattribute="value"
+                prefstring="mail.server.%serverkey%.empty_trash_on_exit"/>
+
+      <separator class="thin"/>
+
+      <vbox>
+        <label value="&localPath.label;" control="server.localPath"/>
+        <hbox align="center">
+          <textbox readonly="true"
+                   wsm_persist="true"
+                   flex="1"
+                   id="server.localPath"
+                   datatype="nsIFile"
+                   prefstring="mail.server.%serverkey%.directory"
+                   class="uri-element"/>
+          <button id="browseForLocalFolder"
+                  label="&browseFolder.label;"
+                  filepickertitle="&localFolderPicker.label;"
+                  accesskey="&browseFolder.accesskey;"
+                  oncommand="BrowseForLocalFolders();"/>
+        </hbox>
+      </vbox>
+
+    </groupbox>
+
+    <separator class="thin"/>
+
+    <hbox align="center">
+      <spacer flex="1"/>
+      <button label="&manageSubscriptions.label;"
+              accesskey="&manageSubscriptions.accesskey;"
+              oncommand="openSubscriptionsDialog(gServer.rootFolder);"/>
+    </hbox>
+  </vbox>
+</page>

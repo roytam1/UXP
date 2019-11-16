@@ -1,0 +1,49 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+/*
+    Because imap protocol connections (which are channels) run through a cache,
+    it isn't always the case that when you want to run a url, you actually get
+    a connection back right away. Often times, the url goes into a queue until
+    a connection becomes available.
+
+    Unfortunately, if we want to be a truly pluggable protocol with necko, necko
+    requires the ability to get a channel back right away when it wants to run 
+    a url. It doesn't let you wait until an imap connection becomes available.
+
+    So I've created the notion of a "mock channel". This mock channel is what
+    gets returned to necko (or other callers) when they ask the imap service
+    for a new channel for a url. The mock channel has "mock" implementations
+    of nsIChannel. Eventually, when we actually assign the url to a real
+    channel, we set the real channel on the mock channel. From that point forward,
+    the mock channel forwards channel calls directly to the real channel.
+
+    In short, this class is how I'm solving the problem where necko wants
+    a channel back as soon as they ask for when with the fact that it
+    may be a while until the url is loaded into a connection.
+ */
+
+#include "nsISupports.idl"
+#include "nsIChannel.idl"
+
+interface nsIStreamListener;
+interface nsIProgressEventSink;
+interface nsIURI;
+interface nsIImapProtocol;
+
+[scriptable, uuid(e0178cd5-d37b-4bde-9ab8-752083536225)]
+
+interface nsIImapMockChannel : nsIChannel
+{
+  attribute nsIProgressEventSink progressEventSink;
+  void GetChannelListener(out nsIStreamListener aChannelListener);
+  void GetChannelContext(out nsISupports aChannelContext);
+  void Close();
+  void setImapProtocol(in nsIImapProtocol aProtocol);
+  [noscript] void setSecurityInfo(in nsISupports securityInfo);
+
+  void setURI(in nsIURI uri);
+};

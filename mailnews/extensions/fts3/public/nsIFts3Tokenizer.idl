@@ -1,0 +1,15 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface mozIStorageConnection;
+
+[scriptable, uuid(136c88ea-7003-4fe8-8835-333fd18e598c)]
+interface nsIFts3Tokenizer : nsISupports {
+    // register FTS3 tokenizer module for "mozporter" tokenizer
+    // mozporter is based by porter tokenizer with bi-gram tokenizer for CJK
+    void registerTokenizer(in mozIStorageConnection connection);
+};

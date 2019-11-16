@@ -1,0 +1,105 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIURI;
+interface nsIImapUrl;
+interface nsIImapProtocol;
+interface nsIMsgFolder;
+interface nsIMsgWindow;
+
+typedef long nsMsgImapDeleteModel;
+
+[scriptable, uuid(bbfc33de-fe89-11d3-a564-0060b0fc04b7)]
+interface nsMsgImapDeleteModels
+{
+  const long IMAPDelete = 0;    /* delete with a big red x */
+  const long MoveToTrash = 1;   /* delete moves message to the trash */
+  const long DeleteNoTrash = 2; /* delete is shift delete - don't create or use trash */
+};
+
+[scriptable, uuid(ea6a0765-07b8-40df-924c-9004ed707251)]
+interface nsIImapIncomingServer : nsISupports {
+
+  attribute long maximumConnectionsNumber;
+  attribute ACString forceSelect;
+  attribute long timeOutLimits;
+  attribute ACString adminUrl;
+  attribute ACString serverDirectory;
+  /// RFC 2971 ID response stored as a pref
+  attribute ACString serverIDPref;
+  attribute boolean cleanupInboxOnExit;
+  attribute nsMsgImapDeleteModel deleteModel;
+  attribute boolean dualUseFolders;
+  attribute long emptyTrashThreshhold;
+  attribute ACString personalNamespace;
+  attribute ACString publicNamespace;
+  attribute ACString otherUsersNamespace;
+  attribute boolean offlineDownload;
+  attribute boolean overrideNamespaces;
+  attribute boolean usingSubscription;
+  attribute ACString manageMailAccountUrl;
+  attribute boolean fetchByChunks;
+  attribute boolean mimePartsOnDemand;
+  attribute boolean sendID;
+  attribute boolean isAOLServer;
+  attribute boolean capabilityACL;
+  attribute boolean capabilityQuota;
+  attribute boolean useIdle;
+  attribute boolean checkAllFoldersForNew;
+
+  /// Is this a GMail Server?
+  attribute boolean isGMailServer;
+
+  /**
+   * See IMAP RFC 4551
+   **/
+  attribute boolean useCondStore;
+
+  /**
+   * See IMAP RFC 4978
+   */
+  attribute boolean useCompressDeflate;
+
+  attribute AString trashFolderName;
+
+  attribute boolean downloadBodiesOnGetNewMail;
+  attribute boolean autoSyncOfflineStores;
+
+  /// Max age of messages we will autosync to, or keep in offline store.
+  attribute long autoSyncMaxAgeDays;
+
+  void GetImapConnectionAndLoadUrl(in nsIImapUrl aImapUrl,
+                                   in nsISupports aConsumer);
+
+  void RemoveConnection(in nsIImapProtocol aImapConnection);
+  void ResetNamespaceReferences();
+  void pseudoInterruptMsgLoad(in nsIMsgFolder aImapFolder, in nsIMsgWindow aMsgWindow, out boolean interrupted);
+  void ResetConnection(in ACString folderName);
+  void CloseConnectionForFolder(in nsIMsgFolder aMsgFolder);
+  void reDiscoverAllFolders();
+  nsIURI subscribeToFolder(in AString name, in boolean subscribe);
+  void GetNewMessagesForNonInboxFolders(in nsIMsgFolder aRootFolder,
+                                        in nsIMsgWindow aWindow,
+                                        in boolean forceAllFolders,
+                                        in boolean performingBiff);
+  /**
+   * Get the password from the nsIMsgIncomingServer. May prompt the user
+   * if there's no password in the password manager or cached in the 
+   * server object.
+   * @param aWindow  msgWindow to associate the password prompt with
+   * @return Password string.
+   * @exception NS_ERROR_FAILURE  The password could not be obtained.
+   * @note NS_MSG_PASSWORD_PROMPT_CANCELLED is a success code that is returned
+   *       if the prompt was presented to the user but the user cancelled the
+   *       prompt.
+   */
+  ACString PromptPassword(in nsIMsgWindow aWindow);
+  attribute boolean doingLsub;
+
+  ACString getUriWithNamespacePrefixIfNecessary(in long namespaceType, in ACString originalUri);
+  attribute boolean shuttingDown;
+};

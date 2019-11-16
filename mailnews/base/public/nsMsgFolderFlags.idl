@@ -1,0 +1,115 @@
+/*-*- Mode: IDL; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// This must be limited to unsigned long (uint32_t, no uint64_t)
+// as long as nsIMsgFolder exposes the 'flags' property which contains
+// all the flags values. The callers are used to do
+// (folder.flags & nsMsgFolderFlags.<flagname>) in Javascript
+// which cuts the value to 32bit only. See bug 813459.
+typedef unsigned long nsMsgFolderFlagType;
+
+/// Flags about a folder or a newsgroup.
+[scriptable,uuid(440cd0fc-b4b3-4a0f-a492-92fbe7920588)]
+interface nsMsgFolderFlags {
+  /**
+   * @name Folder Type Flags
+   * These flags define the type of folder. Exactly one will be set.
+   * @{
+   */
+  /// This folder is a newsgroup folder.
+  const nsMsgFolderFlagType Newsgroup       = 0x00000001;
+  /// Used to be for a folder that is a news server (NewsHost).
+  const nsMsgFolderFlagType Unused3         = 0x00000002;
+  /// This folder is a mail folder.
+  const nsMsgFolderFlagType Mail            = 0x00000004;
+  /** @} */
+
+  /** Whether this is a directory: NewsHosts are always directories;
+   *  NewsGroups can be directories if we are in ``show all groups'' mode;
+   *  Mail folders will have this bit if they are really directories, not files.
+   *  (Note that directories may have zero children.)
+   */
+  const nsMsgFolderFlagType Directory       = 0x00000008;
+  /** Whether the children of this folder are currently hidden in the listing.
+   *  This will only be present if the nsMsgFolderFlags::Directory bit is on.
+   */
+  const nsMsgFolderFlagType Elided          = 0x00000010;
+  /// Whether this is a virtual search folder
+  const nsMsgFolderFlagType Virtual         = 0x00000020;
+
+  /** @name News Folder Flags
+   *  These flags only occur in folders which have
+   *  the nsMsgFolderFlags::Newsgroup bit set, and do
+   *  not have the nsMsgFolderFlags::Directory or
+   *  nsMsgFolderFlags::Elided bits set.
+   *  @{
+   */
+  /// Used to be for folders representing a subscribed newsgroup (Subscribed).
+  const nsMsgFolderFlagType Unused5         = 0x00000040;
+  /// Used to be for new newsgroups added by the `Check New Groups' command.
+  const nsMsgFolderFlagType Unused2         = 0x00000080;
+  /** @} */
+
+  /** @name Mail Folder Flags
+   *  These flags only occur in folders which have
+   *  the nsMsgFolderFlags::Mail bit set, and do
+   *  not have the nsMsgFolderFlags::Directory or
+   *  nsMsgFolderFlags::Elided bits set.
+   *  @{
+   */
+  /// Whether this is the trash folder.
+  const nsMsgFolderFlagType Trash           = 0x00000100;
+  /// Whether this is a folder that sent mail gets delivered to.
+  const nsMsgFolderFlagType SentMail        = 0x00000200;
+  /// Whether this is the folder in which unfinished, unsent messages are saved for later editing.
+  const nsMsgFolderFlagType Drafts          = 0x00000400;
+  /// Whether this is the folder in which messages are queued for later delivery.
+  const nsMsgFolderFlagType Queue           = 0x00000800;
+  /// Whether this is the primary inbox folder.
+  const nsMsgFolderFlagType Inbox           = 0x00001000;
+  /// Whether this folder on online IMAP
+  const nsMsgFolderFlagType ImapBox         = 0x00002000;
+  /// Whether this is an archive folder
+  const nsMsgFolderFlagType Archive         = 0x00004000;
+  /// This used to be used for virtual newsgroups
+  const nsMsgFolderFlagType Unused1         = 0x00008000;
+  /// Used to be for categories
+  const nsMsgFolderFlagType Unused4         = 0x00010000;
+  /// Used to be for new msgs in a folder
+  const nsMsgFolderFlagType Unused7         = 0x00020000;
+  /// Used to be for a folder that is an IMAP server (ImapServer)
+  const nsMsgFolderFlagType Unused6         = 0x00040000;
+  /// This folder is an IMAP personal folder
+  const nsMsgFolderFlagType ImapPersonal    = 0x00080000;
+  /// This folder is an IMAP public folder
+  const nsMsgFolderFlagType ImapPublic      = 0x00100000;
+  /// This folder is another user's IMAP folder.  Think of it like a folder that someone would share.
+  const nsMsgFolderFlagType ImapOtherUser   = 0x00200000;
+  /// Whether this is the template folder
+  const nsMsgFolderFlagType Templates       = 0x00400000;
+  /// This folder is one of your personal folders that is shared with other users
+  const nsMsgFolderFlagType PersonalShared  = 0x00800000;
+  /// This folder is an IMAP \\Noselect folder
+  const nsMsgFolderFlagType ImapNoselect    = 0x01000000;
+  /// This folder created offline (this is never set in current code,
+  /// but it is still checked for and obeyed if found on a folder.
+  const nsMsgFolderFlagType CreatedOffline  = 0x02000000;
+  /// This imap folder cannot have children :-(
+  const nsMsgFolderFlagType ImapNoinferiors = 0x04000000;
+  /// This folder configured for offline use
+  const nsMsgFolderFlagType Offline         = 0x08000000;
+  /// This folder has offline events to play back
+  const nsMsgFolderFlagType OfflineEvents   = 0x10000000;
+  /// This folder is checked for new messages
+  const nsMsgFolderFlagType CheckNew        = 0x20000000;
+  /// This folder is for spam messages
+  const nsMsgFolderFlagType Junk            = 0x40000000;
+  /// This folder is in favorites view
+  const nsMsgFolderFlagType Favorite        = 0x80000000;
+  /// Special-use folders
+  const nsMsgFolderFlagType SpecialUse = Inbox|Drafts|Trash|SentMail|
+                                         Templates|Junk|Archive|Queue;
+  /** @} */
+};

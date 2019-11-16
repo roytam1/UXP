@@ -1,0 +1,62 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+DIRS += [
+    'addrbook',
+    'base',
+    'compose',
+    'db/gloda',
+    'db/msgdb',
+    'extensions',
+    'imap/public',
+    'imap/src',
+    'import/public',
+    'import/src',
+    'import/text/src',
+    'import/vcard/src',
+    'intl',
+    'jsaccount',
+    'local/public',
+    'local/src',
+    'mime',
+    'news',
+]
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    DIRS += [
+        'import/applemail/src',
+    ]
+
+if CONFIG['OS_ARCH'] == 'WINNT':
+    DIRS += [ 'import/becky/src' ]
+
+    if CONFIG['MOZ_MAPI_SUPPORT']:
+        DIRS += ['import/outlook/src']
+
+    if not CONFIG['GNU_CC']:
+        DIRS += [
+            'import/oexpress',
+            'import/winlivemail',
+        ]
+
+if CONFIG['MOZ_MAPI_SUPPORT']:
+    DIRS += [
+        'mapi/mapiDLL',
+        'mapi/mapihook',
+    ]
+
+DIRS += [
+    'build',
+    'import/build',
+]
+
+DEFINES['OS_ARCH'] = CONFIG['OS_ARCH']
+DEFINES['MOZ_WIDGET_TOOLKIT'] = CONFIG['MOZ_WIDGET_TOOLKIT']
+
+JAR_MANIFESTS += ['jar.mn']
+
+JS_PREFERENCE_PP_FILES += [
+    'mailnews.js',
+]

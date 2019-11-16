@@ -1,0 +1,94 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+textbox[type="glodacomplete"] {
+  -moz-binding: url("chrome://global/content/bindings/autocomplete.xml#autocomplete");
+}
+
+panel[type="glodacomplete-richlistbox"] {
+  -moz-binding: url("chrome://gloda/content/glodacomplete.xml#glodacomplete-rich-result-popup");
+}
+
+.autocomplete-richlistbox {
+  -moz-binding: url("chrome://global/content/bindings/autocomplete.xml#autocomplete-richlistbox");
+  -moz-user-focus: ignore;
+  -moz-appearance: none;
+}
+
+.autocomplete-richlistbox > scrollbox {
+  overflow-x: hidden !important;
+}
+
+.explanation, .gloda-single-identity {
+  margin-inline-start: 1em;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.ac-comment {
+  font-size: 1.1em;
+  margin-inline-start: 0;
+}
+
+.ac-url-text {
+  color: -moz-nativehyperlinktext;
+  font-size: 0.95em;
+}
+
+span.ac-emphasize-text {
+  font-weight: bold;
+}
+
+.ac-url-text[selected="true"] {
+  color: inherit !important;
+}
+
+.gloda-single-identity[selected="true"] .ac-url{
+  color: white;
+}
+
+.parameters {
+  font-style: italic;
+  margin-inline-start: 1em;
+}
+
+.autocomplete-richlistitem[type="gloda-single-tag"] {
+  -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-single-tag-item");
+  overflow: -moz-hidden-unscrollable;
+}
+
+.autocomplete-richlistitem[type="gloda-single-identity"] {
+  -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-single-identity-item");
+  -moz-box-orient: vertical;
+  overflow: -moz-hidden-unscrollable;
+}
+
+.autocomplete-richlistitem[type="gloda-fulltext-single"] {
+  -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-fulltext-single-item");
+  overflow: -moz-hidden-unscrollable;
+}
+
+.autocomplete-richlistitem[type="gloda-fulltext-any"] {
+  -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-fulltext-any-item");
+  overflow: -moz-hidden-unscrollable;
+}
+
+.autocomplete-richlistitem[type="gloda-fulltext-all"] {
+  -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-fulltext-all-item");
+  overflow: -moz-hidden-unscrollable;
+}
+
+richlistitem[type="gloda-contact-chunk"] {
+  -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-contact-chunk");
+  -moz-box-orient: vertical;
+  overflow: -moz-hidden-unscrollable;
+}
+
+.autocomplete-richlistitem[type="gloda-multi"] {
+  -moz-binding: url("chrome://gloda/content/glodacomplete.xml#gloda-multi-item");
+  -moz-box-orient: vertical;
+  overflow: -moz-hidden-unscrollable;
+}
+
+/* .autocomplete-history-dropmarker wants to be optional, but we don't care */

@@ -1,0 +1,55 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXPORTS += [
+    'nsComposeStrings.h',
+    'nsMsgAttachmentHandler.h',
+    'nsMsgCompFields.h',
+    'nsMsgCompose.h',
+    'nsMsgSend.h',
+]
+
+SOURCES += [
+    'nsComposeStrings.cpp',
+    'nsMsgAttachment.cpp',
+    'nsMsgAttachmentHandler.cpp',
+    'nsMsgCompFields.cpp',
+    'nsMsgCompose.cpp',
+    'nsMsgComposeContentHandler.cpp',
+    'nsMsgComposeParams.cpp',
+    'nsMsgComposeProgressParams.cpp',
+    'nsMsgComposeService.cpp',
+    'nsMsgCompUtils.cpp',
+    'nsMsgCopy.cpp',
+    'nsMsgPrompts.cpp',
+    'nsMsgQuote.cpp',
+    'nsMsgSend.cpp',
+    'nsMsgSendLater.cpp',
+    'nsMsgSendPart.cpp',
+    'nsMsgSendReport.cpp',
+    'nsSmtpProtocol.cpp',
+    'nsSmtpServer.cpp',
+    'nsSmtpService.cpp',
+    'nsSmtpUrl.cpp',
+    'nsURLFetcher.cpp',
+]
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    SOURCES += [
+        'nsMsgAppleDoubleEncode.cpp',
+        'nsMsgAppleEncode.cpp',
+    ]
+    EXPORTS += [
+        'nsMsgAppleCodes.h',
+        'nsMsgAppleDouble.h',
+    ]
+
+EXTRA_COMPONENTS += [
+    'nsSMTPProtocolHandler.js',
+    'nsSMTPProtocolHandler.manifest',
+]
+
+FINAL_LIBRARY = 'mail'
+

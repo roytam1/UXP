@@ -1,0 +1,29 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+%{C++
+#include "nsVCardObj.h"
+%}
+
+[ptr] native VObject_ptr(VObject);
+[ptr] native VObjectIterator_ptr(VObjectIterator);
+[ptr] native const_char_ptr(const char);
+
+[uuid(8b6ae917-676d-4f1f-bbad-2ecc9be0d9b1)]
+interface nsIMsgVCardService : nsISupports {
+  [noscript, notxpcom] void cleanVObject(in VObject_ptr o);
+  [noscript, notxpcom] VObject_ptr nextVObjectInList(in VObject_ptr o);
+  [noscript, notxpcom] VObject_ptr parse_MIME(in string input, in unsigned long len);
+  [noscript, notxpcom] charPtr fakeCString(in VObject_ptr o);
+  [noscript, notxpcom] VObject_ptr isAPropertyOf(in VObject_ptr o, in string id);
+  [noscript, notxpcom] charPtr writeMemoryVObjects(in string s, out long len, in VObject_ptr list, in boolean expandSpaces);
+  [noscript, notxpcom] VObject_ptr nextVObject(in VObjectIterator_ptr i);
+  [noscript, notxpcom] void initPropIterator(in VObjectIterator_ptr i, in VObject_ptr o);
+  [noscript, notxpcom] long moreIteration(in VObjectIterator_ptr i);
+  [noscript, notxpcom] const_char_ptr vObjectName(in VObject_ptr o);
+  [noscript, notxpcom] charPtr vObjectAnyValue(in VObject_ptr o);
+};

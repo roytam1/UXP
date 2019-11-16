@@ -1,0 +1,58 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsILDAPBERValue;
+interface nsIArray;
+
+[scriptable, uuid(f64ef501-0623-11d6-a7f2-b65476fc49dc)]
+interface nsILDAPModification : nsISupports
+{
+  /**
+   * The operation to perform.
+   */
+  attribute long operation;
+
+  /**
+   * Add operation
+   */
+  const long MOD_ADD = 0x00;
+
+  /**
+   * Delete operation
+   */
+  const long MOD_DELETE = 0x01;
+
+  /**
+   * Replace operation
+   */
+  const long MOD_REPLACE = 0x02;
+
+  /**
+   * Values are BER encoded
+   */
+  const long MOD_BVALUES = 0x80;
+
+  /**
+   * The attribute to modify.
+   */
+  attribute ACString type;
+
+  /**
+   * The array of values this modification sets for the attribute
+   */
+  attribute nsIArray values;
+
+  /** 
+   * Function that allows all the attributes to be set at the same
+   * time to avoid multiple function calls.
+   */
+  void setUpModification(in long aOperation, in ACString aType,
+                         in nsIArray aValues);
+
+  void setUpModificationOneValue(in long aOperation, in ACString aType,
+                                 in nsILDAPBERValue aValue);
+};

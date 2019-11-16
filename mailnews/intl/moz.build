@@ -1,0 +1,35 @@
+# -*- Mode: python; c-basic-offset: 4; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+XPIDL_SOURCES += [
+    'nsICharsetConverterManager.idl',
+]
+
+UNIFIED_SOURCES += [
+    'nsCharsetAlias.cpp',
+    'nsCharsetConverterManager.cpp',
+    'nsMUTF7ToUnicode.cpp',
+    'nsUnicodeToMUTF7.cpp',
+    'nsUnicodeToUTF7.cpp',
+    'nsUTF7ToUnicode.cpp',
+]
+
+XPIDL_MODULE = 'commuconv'
+
+LOCAL_INCLUDES += [
+    '/intl/locale',
+]
+
+GENERATED_FILES += [
+    'charsetalias.properties.h',
+]
+charsetalias = GENERATED_FILES['charsetalias.properties.h']
+charsetalias.script = '../../intl/locale/props2arrays.py'
+charsetalias.inputs = ['charsetalias.properties']
+
+FINAL_LIBRARY = 'mail'
+
+JAR_MANIFESTS += ['jar.mn']

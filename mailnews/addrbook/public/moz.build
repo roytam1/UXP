@@ -1,0 +1,47 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+XPIDL_SOURCES += [
+    'nsIAbAddressCollector.idl',
+    'nsIAbAutoCompleteResult.idl',
+    'nsIAbBooleanExpression.idl',
+    'nsIAbCard.idl',
+    'nsIAbCollection.idl',
+    'nsIAbDirectory.idl',
+    'nsIAbDirectoryQuery.idl',
+    'nsIAbDirectoryQueryProxy.idl',
+    'nsIAbDirectorySearch.idl',
+    'nsIAbDirFactory.idl',
+    'nsIAbDirFactoryService.idl',
+    'nsIAbDirSearchListener.idl',
+    'nsIAbItem.idl',
+    'nsIAbLDAPAttributeMap.idl',
+    'nsIAbLDIFService.idl',
+    'nsIAbListener.idl',
+    'nsIAbManager.idl',
+    'nsIAbMDBDirectory.idl',
+    'nsIAbView.idl',
+    'nsIAddbookUrl.idl',
+    'nsIAddrDatabase.idl',
+    'nsIAddrDBAnnouncer.idl',
+    'nsIAddrDBListener.idl',
+    'nsIMsgVCardService.idl',
+]
+
+if CONFIG['MOZ_LDAP_XPCOM']:
+    XPIDL_SOURCES += [
+        'nsIAbLDAPCard.idl',
+        'nsIAbLDAPDirectory.idl',
+        'nsIAbLDAPReplicationData.idl',
+        'nsIAbLDAPReplicationQuery.idl',
+        'nsIAbLDAPReplicationService.idl',
+    ]
+
+XPIDL_MODULE = 'addrbook'
+
+EXPORTS += [
+    'nsAbBaseCID.h',
+]
+

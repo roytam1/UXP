@@ -1,0 +1,94 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+directory {
+  display: block;
+}
+
+section {
+  display:block; 
+  margin: 15px 20px;
+}
+
+sectiontitle {
+  display:block; 
+  font-weight:bold; 
+  font-family:verdana; 
+  font-size:small;
+}
+
+labelrow {
+  display:block;
+}
+
+label {
+  display:inline; 
+  font-family:verdana; 
+  font-size:small;
+}
+
+GeneratedName {
+  display:block; 
+  font-weight:bold; 
+  font-family:verdana; 
+  margin-top: 20px;
+  margin-bottom: 3px;
+  margin-inline-end: 10px;
+  margin-inline-start: 10px;
+}
+
+FirstName, LastName, 
+HomeAddress, HomeAddress2, HomeCountry,
+WorkAddress, WorkAddress2, WorkCountry,
+JobTitle, Department, Company, Notes {
+  display: block; 
+  font-family: verdana; 
+  font-size: small;
+}
+
+DisplayName, NickName,
+WorkPhone, HomePhone, FaxNumber, PagerNumber, CellularNumber,
+HomeCity, HomeState, HomeZipCode,
+WorkCity, WorkState, WorkZipCode, 
+Custom1, Custom2, Custom3, Custom4 {
+  display: inline; 
+  font-family: verdana; 
+  font-size: small;
+}
+
+PrimaryEmail, SecondEmail,
+WebPage1, WebPage2 {
+  display: block;
+  font-family: verdana;
+  font-size: small;
+  text-decoration: underline;
+  color: #666666;
+}
+
+separator {
+  display: block;
+  border-bottom: 1px solid #000000;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  margin-inline-end: 0px;
+  margin-inline-start: 10px;
+}
+
+table {
+  display: table;
+}
+
+tr {
+  display: table-row;
+}
+
+td {
+  display: table-cell; 
+  vertical-align: top;
+}
+
+PreferMailFormat {
+  display: none;
+}
+

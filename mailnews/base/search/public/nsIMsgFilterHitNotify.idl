@@ -1,0 +1,27 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMsgFilter;
+interface nsIMsgWindow;
+
+///////////////////////////////////////////////////////////////////////////////
+// nsIMsgFilterHitNotify is an interface designed to make evaluating filters
+// easier. Clients typically open a filter list and ask the filter list to
+// evaluate the filters for a particular message, and pass in an
+// interface pointer to be notified of hits. The filter list will call the
+// ApplyFilterHit method on the interface pointer in case of hits, along with
+// the desired action and value.
+// return value is used to indicate whether the
+// filter list should continue trying to apply filters or not. 
+//
+///////////////////////////////////////////////////////////////////////////////
+
+[scriptable, uuid(c9f15174-1f3f-11d3-a51b-0060b0fc04b7)]
+interface nsIMsgFilterHitNotify : nsISupports {
+    boolean applyFilterHit(in nsIMsgFilter filter, in nsIMsgWindow msgWindow);
+};
+

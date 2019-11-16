@@ -1,0 +1,33 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXPORTS += [
+    'nsImapCore.h',
+]
+
+SOURCES += [
+    'nsAutoSyncManager.cpp',
+    'nsAutoSyncState.cpp',
+    'nsIMAPBodyShell.cpp',
+    'nsImapFlagAndUidState.cpp',
+    'nsIMAPGenericParser.cpp',
+    'nsIMAPHostSessionList.cpp',
+    'nsImapIncomingServer.cpp',
+    'nsImapMailFolder.cpp',
+    'nsIMAPNamespace.cpp',
+    'nsImapOfflineSync.cpp',
+    'nsImapProtocol.cpp',
+    'nsImapSearchResults.cpp',
+    'nsImapServerResponseParser.cpp',
+    'nsImapService.cpp',
+    'nsImapStringBundle.cpp',
+    'nsImapUndoTxn.cpp',
+    'nsImapUrl.cpp',
+    'nsImapUtils.cpp',
+    'nsSyncRunnableHelpers.cpp',
+]
+
+FINAL_LIBRARY = 'mail'
+

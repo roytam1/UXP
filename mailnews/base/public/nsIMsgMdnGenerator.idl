@@ -1,0 +1,81 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"
+
+interface nsIMsgWindow;
+interface nsIMsgFolder;
+interface nsIMimeHeaders;
+
+typedef long EDisposeType;
+typedef long ReceiptHdrType;
+typedef long MDNIncorporateType;
+
+%{C++
+#define NS_MSGMDNGENERATOR_CONTRACTID \
+  "@mozilla.org/messenger-mdn/generator;1"
+
+#define NS_MSGMDNGENERATOR_CID                    \
+{ /* ec917b13-8f73-4d4d-9146-d7f7aafe9076 */      \
+ 0xec917b13, 0x8f73, 0x4d4d,                      \
+ { 0x91, 0x46, 0xd7, 0xf7, 0xaa, 0xfe, 0x90, 0x76 }}
+%}
+
+[scriptable, uuid(440EA3DE-DACA-4886-9875-84E6CD7D7927)]
+interface nsIMsgMdnGenerator : nsISupports
+{
+    const EDisposeType eDisplayed = 0;
+    const EDisposeType eDispatched = 1;
+    const EDisposeType eProcessed = 2;
+    const EDisposeType eDeleted = 3;
+    const EDisposeType eDenied = 4;
+    const EDisposeType eFailed = 5;
+    
+    const ReceiptHdrType eDntType = 0;
+    const ReceiptHdrType eRrtType = 1;
+    const ReceiptHdrType eDntRrtType = 2;
+    
+    const MDNIncorporateType eIncorporateInbox = 0;
+    const MDNIncorporateType eIncorporateSent = 1;
+    
+    
+    /**
+     * Prepare the sending of a mdn reply, and checks the prefs whether a
+     * reply should be send. Might send the message automatically if the
+     * prefs say it should.
+     * @param eType   One of EDisposeType above, indicating the action that led
+     *                to sending the mdn reply
+     * @param aWindow The window the message was displayed in, acting as parent
+     *                for any (error) dialogs
+     * @param folder  The folder the message is in
+     * @param key     the message key
+     * @param headers the message headers
+     * @param autoAction  true if the request action led to sending the mdn
+     *                reply was an automatic action, false if it was user initiated
+     * @returns true if the user needs to be asked for permission
+     *          false in other cases (whether the message was sent or denied)
+     */
+    boolean process(in EDisposeType eType, in nsIMsgWindow aWindow,
+                    in nsIMsgFolder folder, in nsMsgKey key, 
+                    in nsIMimeHeaders headers, in boolean autoAction);
+
+    /**
+     * Must be called when the user was asked for permission and agreed to
+     * sending the mdn reply. 
+     * May only be called when |process| returned |true|. Behaviour is
+     * unspecified in other cases
+     */
+    void userAgreed();
+
+    /**
+     * Must be called when the user was asked for permission and declined to
+     * send the mdn reply. 
+     * Will mark the message so that the user won't be asked next time.
+     * May only be called when |process| returned |true|. Behaviour is
+     * unspecified in other cases.
+     */
+    void userDeclined();
+};

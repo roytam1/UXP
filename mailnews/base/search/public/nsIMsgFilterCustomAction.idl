@@ -1,0 +1,90 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsMsgFilterCore.idl"
+
+interface nsIArray;
+interface nsIMsgCopyServiceListener;
+interface nsIMsgWindow;
+
+/**
+ * describes a custom action added to a message filter
+ */
+[scriptable,uuid(4699C41E-3671-436e-B6AE-4FD8106747E4)]
+interface nsIMsgFilterCustomAction : nsISupports
+{
+  /* globally unique string to identify this filter action.
+   * recommended form: ExtensionName@example.com#ActionName
+   */
+  readonly attribute ACString id;
+
+  /* action name to display in action list. This should be localized. */
+  readonly attribute AString name;
+
+  /**
+   * Is this custom action valid for a particular filter type? 
+   *
+   * @param type    the filter type
+   * @param scope   the search scope
+   *
+   * @return        true if valid
+   */
+  boolean isValidForType(in nsMsgFilterTypeType type, in nsMsgSearchScopeValue scope);
+
+  /**
+   * After the user inputs a particular action value for the action, determine
+   * if that value is valid.
+   *
+   * @param actionValue          The value entered.
+   * @param actionFolder         Folder in the filter list
+   * @param filterType           Filter Type (Manual, OfflineMail, etc.)
+   *
+   * @return errorMessage        A localized message to display if invalid
+   *                             Set to null if the actionValue is valid
+   */
+  AUTF8String validateActionValue(in AUTF8String actionValue,
+                                  in nsIMsgFolder actionFolder,
+                                  in nsMsgFilterTypeType filterType);
+
+  /* allow duplicate actions in the same filter list? Default No. */
+  attribute boolean allowDuplicates;
+
+  /*
+   * The custom action itself
+   *
+   * Generally for the apply method, folder-based methods give correct
+   * results and are preferred if available. Otherwise, be careful
+   * that the action does correct notifications to maintain counts, and correct
+   * manipulations of both IMAP and local non-database storage of message
+   * metadata.
+   */
+
+  /**
+   * Apply the custom action to an array of messages
+   *
+   * @param msgHdrs      array of nsIMsgDBHdr objects of messages
+   * @param actionValue  user-set value to use in the action
+   * @param copyListener calling method (filterType Manual only)
+   * @param filterType   type of filter being applied
+   * @param msgWindow    message window
+   */
+
+  void apply(in nsIArray msgHdrs /* nsIMsgDBHdr array */,
+             in AUTF8String actionValue,
+             in nsIMsgCopyServiceListener copyListener,
+             in nsMsgFilterTypeType filterType,
+             in nsIMsgWindow msgWindow);
+
+  /* does this action start an async action? If so, a copy listener must
+   * be used to continue filter processing after the action. This only
+   * applies to after-the-fact (manual) filters. Call OnStopCopy when done
+   * using the copyListener to continue.
+   */
+  readonly attribute boolean isAsync;
+
+  /// Does this action need the message body?
+  readonly attribute boolean needsBody;
+};
+
+

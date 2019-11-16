@@ -1,0 +1,16 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIFile;
+
+[scriptable, uuid(6d744e7f-2218-45c6-8734-998a56cb3c6d)]
+interface nsIRssIncomingServer : nsISupports {
+  // Path to the subscriptions data source for this RSS server
+  readonly attribute nsIFile subscriptionsDataSourcePath;
+
+  // Path to the feed items data source for this RSS server
+  readonly attribute nsIFile feedItemsDataSourcePath;
+};

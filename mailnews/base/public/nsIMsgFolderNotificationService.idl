@@ -1,0 +1,98 @@
+/* -*- Mode: IDL; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"
+
+interface nsIMsgDBHdr;
+interface nsIMsgFolder;
+interface nsIMsgFolderListener;
+interface nsIArray;
+
+typedef unsigned long msgFolderListenerFlag;
+
+[scriptable, uuid(e54a592c-2f23-4771-9670-bdb9d4f5dbbd)]
+interface nsIMsgFolderNotificationService : nsISupports {
+  /**
+   * @name Notification flags
+   * These flags determine which notifications will be sent.
+   * @{
+   */
+  /// nsIMsgFolderListener::msgAdded notification
+  const msgFolderListenerFlag msgAdded = 0x1;
+
+  /// nsIMsgFolderListener::msgsDeleted notification
+  const msgFolderListenerFlag msgsDeleted = 0x2;
+
+  /// nsIMsgFolderListener::msgsMoveCopyCompleted notification
+  const msgFolderListenerFlag msgsMoveCopyCompleted = 0x4;
+
+  /// nsIMsgFolderListener::msgsClassified notification
+  const msgFolderListenerFlag msgsClassified = 0x8;
+
+  /// nsIMsgFolderListener::folderAdded notification
+  const msgFolderListenerFlag folderAdded = 0x8000;
+
+  /// nsIMsgFolderListener::folderDeleted notification
+  const msgFolderListenerFlag folderDeleted = 0x1000;
+
+  /// nsIMsgFolderListener::folderMoveCopyCompleted notification
+  const msgFolderListenerFlag folderMoveCopyCompleted = 0x2000;
+
+  /// nsIMsgFolderListener::folderRenamed notification
+  const msgFolderListenerFlag folderRenamed = 0x4000;
+
+  /// nsIMsgFolderListener::itemEvent notification
+  const msgFolderListenerFlag itemEvent = 0x1000000;
+
+  /// nsIMsgFolderListener::msgKeyChanged notification
+  const msgFolderListenerFlag msgKeyChanged = 0x2000000;
+
+  /** @} */
+
+  readonly attribute boolean hasListeners;
+  void addListener(in nsIMsgFolderListener aListener,
+                   in msgFolderListenerFlag flags);
+  void removeListener(in nsIMsgFolderListener aListener);
+
+  // message-specific functions
+  // single message for added, array for delete/move/copy
+  void notifyMsgAdded(in nsIMsgDBHdr aMsg);
+  void notifyMsgsClassified(in nsIArray aMsgs,
+                            in boolean aJunkProcessed,
+                            in boolean aTraitProcessed);
+  void notifyMsgsDeleted(in nsIArray aMsgs);
+  void notifyMsgsMoveCopyCompleted(in boolean aMove, 
+                                   in nsIArray aSrcMsgs, 
+                                   in nsIMsgFolder aDestFolder,
+                                   in nsIArray aDestMsgs);
+
+  /**
+   * Notify listeners that the msg key for a header has changed. Currently,
+   * this is used when we create a header for an offline imap move result,
+   * without knowing what the ultimate UID will be. When we download the
+   * headers for the new message, we replace the old "pseudo" header with
+   * a new header that has the correct UID/message key, by cloning the pseudo
+   * header, which maintains all the existing header attributes.
+   *
+   * @param aOldKey The fake UID. The header with this key has been removed
+   *                by the time this is called.
+   * @param aNewHdr The header that replaces the header with aOldKey.
+   */
+  void notifyMsgKeyChanged(in nsMsgKey aOldKey, in nsIMsgDBHdr aNewHdr);
+  // folder specific functions
+  // single folders, all the time
+  void notifyFolderAdded(in nsIMsgFolder aFolder);
+  void notifyFolderDeleted(in nsIMsgFolder aFolder);
+  void notifyFolderMoveCopyCompleted(in boolean aMove,
+                                     in nsIMsgFolder aSrcFolder,
+                                     in nsIMsgFolder aDestFolder);
+  void notifyFolderRenamed(in nsIMsgFolder aOrigFolder,
+                           in nsIMsgFolder aNewFolder);
+
+  // extensibility hook
+  void notifyItemEvent(in nsISupports aItem,
+                       in ACString aEvent,
+                       in nsISupports aData);
+};

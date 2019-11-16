@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+
+<!--
+
+ This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/msgSynchronize.dtd" >
+<dialog	xmlns:NC="http://home.netscape.com/NC-rdf#"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        id="msg-synchronizer" 
+        title="&MsgSynchronize.label;"
+        onload="OnLoad();"
+        style="width: 35em;"
+        ondialogaccept="return syncOkButton();">
+
+<script type="application/javascript" src="chrome://messenger/content/msgSynchronize.js"/>
+
+    <keyset id="keyset"/>
+    <label hidden="true" wsm_persist="true" id="server.type"/>
+
+    <description class="desc">&MsgSyncDesc.label;</description>
+    <separator class="thin"/>
+    <label value="&MsgSyncDirections.label;"/>
+
+    <vbox class="indent" align="start">
+        <checkbox id="syncMail" hidable="true" hidefor="movemail,pop3" label="&syncTypeMail.label;"
+                  accesskey="&syncTypeMail.accesskey;"/>
+        <checkbox id="syncNews" label="&syncTypeNews.label;" accesskey="&syncTypeNews.accesskey;"/>
+    </vbox>
+    <vbox align="start">
+        <checkbox id="sendMessage" label="&sendMessage.label;" accesskey="&sendMessage.accesskey;"/>
+        <checkbox id="workOffline" label="&workOffline.label;" accesskey="&workOffline.accesskey;"/>
+    </vbox>
+    <separator class="thin"/>
+    <hbox align="right">
+        <button id="select" label="&selectButton.label;" accesskey="&selectButton.accesskey;"
+                oncommand="OnSelect();"/>
+    </hbox>
+</dialog>

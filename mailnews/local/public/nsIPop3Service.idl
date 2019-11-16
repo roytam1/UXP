@@ -1,0 +1,128 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIUrlListener.idl"
+#include "nsIPop3IncomingServer.idl"
+#include "nsIMsgFolder.idl"
+
+interface nsIURI;
+interface nsIMsgWindow;
+interface nsIMsgFolder;
+
+[scriptable, uuid(7302fd8e-946f-4ae3-9468-0fb3a7706c51)]
+interface nsIPop3ServiceListener : nsISupports {
+  /**
+   * Notification that a pop3 download has started.
+   *
+   * @param aFolder folder in which the download is started.
+   */
+  void onDownloadStarted(in nsIMsgFolder aFolder);
+
+  /**
+   * Notification about download progress.
+   *
+   * @param aFolder folder in which the download is happening.
+   * @param aNumDownloaded number of the messages that have been downloaded.
+   * @param aTotalToDownload total number of messages to download.
+   */
+  void onDownloadProgress(in nsIMsgFolder aFolder,
+                          in unsigned long aNumDownloaded,
+                          in unsigned long aTotalToDownload);
+
+  /**
+   * Notification that a download has completed.
+   *
+   * @param aFolder folder to which the download has completed.
+   * @param aNumberOfMessages number of the messages that were downloaded.
+   */
+  void onDownloadCompleted(in nsIMsgFolder aFolder,
+                           in unsigned long aNumberOfMessages);
+};
+
+/*
+ * The Pop3 Service is an interface designed to make building and running
+ * pop3 urls easier.
+ */
+[scriptable, uuid(96d3cc14-a842-4cdf-98f8-a4cc695f8b3b)]
+interface nsIPop3Service : nsISupports {
+  /*
+   * All of these functions build pop3 urls and run them. If you want
+   * a handle on the running task, pass in a valid nsIURI ptr. You can later
+   * interrupt this action by asking the netlib service manager to interrupt
+   * the url you are given back. Remember to release aURL when you are
+   * done with it. Pass nullptr in for aURL if you
+   * don't care about the returned URL.
+   */
+
+  /*
+   * right now getting new mail doesn't require any user specific data.
+   * We use the default current identity for this information. I suspect that
+   * we'll eventually pass in an identity to this call so you can get
+   * mail on different pop3 accounts....
+   */
+
+  nsIURI GetNewMail(in nsIMsgWindow aMsgWindow, in nsIUrlListener aUrlListener,
+                    in nsIMsgFolder aInbox, in nsIPop3IncomingServer popServer);
+
+  nsIURI CheckForNewMail(in nsIMsgWindow aMsgWindow, in nsIUrlListener aUrlListener,
+                         in nsIMsgFolder inbox, in nsIPop3IncomingServer popServer);
+
+  /**
+   * Verify that we can logon
+   *
+   * @param  aServer - pop3 server we're logging on to.
+   * @param  aUrlListener - gets called back with success or failure.
+   * @param aMsgWindow    - nsIMsgWindow to use for notification callbacks.
+   * @return - the url that we run.
+   *
+   */
+  nsIURI verifyLogon(in nsIMsgIncomingServer aServer,
+                     in nsIUrlListener aUrlListener,
+                     in nsIMsgWindow aMsgWindow);
+
+  /**
+   * Add a listener for pop3 events like message download. This is
+   * used by the activity manager.
+   *
+   * @param aListener listener that gets notified of pop3 events.
+   */
+  void addListener(in nsIPop3ServiceListener aListener);
+
+  /**
+   * Remove a listener for pop3 events like message download.
+   *
+   * @param aListener listener to remove.
+   */
+  void removeListener(in nsIPop3ServiceListener aListener);
+
+  /**
+   * Send the notification that a pop3 download has started.
+   * This is called from the nsIPop3Sink code.
+   *
+   * @param aFolder folder in which the download is started.
+   */
+  void notifyDownloadStarted(in nsIMsgFolder aFolder);
+
+  /**
+   * Send notification about download progress.
+   *
+   * @param aFolder folder in which the download is happening.
+   * @param aNumDownloaded number of the messages that have been downloaded.
+   * @param aTotalToDownload total number of messages to download.
+   */
+  void notifyDownloadProgress(in nsIMsgFolder aFolder,
+                              in unsigned long aNumDownloaded,
+                              in unsigned long aTotalToDownload);
+  /**
+   * Send the notification that a download has completed.
+   * This is called from the nsIPop3Sink code.
+   *
+   * @param aFolder folder to which the download has completed.
+   * @param aNumberOfMessages number of the messages that were downloaded.
+   */
+  void notifyDownloadCompleted(in nsIMsgFolder aFolder,
+                               in unsigned long aNumberOfMessages);
+};

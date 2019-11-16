@@ -1,0 +1,130 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMsgFolder;
+interface nsIArray;
+interface nsIMutableArray;
+
+[scriptable, uuid(7512f927-b8f0-48c4-b101-03e859e61281)]
+interface nsIAutoSyncState : nsISupports {
+
+  /**
+   * Auto-Sync states.
+   *
+   * ***WARNING***: If you change these, be sure to update stateStrings in
+   * nsAutoSyncState.cpp. If you do not, out-of-bounds memory accesses may
+   * happen.
+   */
+
+  /** sync'd and no pending messages */
+  const long stCompletedIdle = 0;     
+
+  /** STATUS issued. Will check to see if  any counts changed since last STATUS */
+  const long stStatusIssued = 1;
+
+  /**
+   * Status found new messages. Update should be issued next. Status most
+   * likely was issued by non-autosync code (e.g., check other folders for
+   * new messages).
+   */
+  const long stUpdateNeeded = 2;
+
+  /** Update issued. Will figure out if there are any bodies to download */
+  const long stUpdateIssued = 3;
+
+  /** Message body download in progress */
+  const long stDownloadInProgress = 4;
+
+  /** ready to download the next group of messages */
+  const long stReadyToDownload = 5;
+
+  /**
+   * Puts the download queue offset to its previous position. 
+   */
+  void rollback();
+  
+  /**
+   * Clears the download queue. Resets the offsets.
+   */
+  void resetDownloadQ();
+  
+  /**
+   * Rollbacks the offset to the previous position and
+   * changes the state to ready-to-download.
+   */
+  void tryCurrentGroupAgain(in unsigned long aRetryCount);
+  
+  /**
+   * Resets the retry counter.
+   */
+  void resetRetryCounter();
+  
+  /**
+   * Tests whether the given folder has the same imap server. 
+   */
+  boolean isSibling(in nsIAutoSyncState aAnotherStateObj);
+
+  /**
+   * Update the folder to find new message headers to download
+   */
+  void updateFolder();
+
+  /**
+   * Downloads the bodies of the given messages from the server.
+   */
+  void downloadMessagesForOffline(in nsIArray aMessageList);
+
+  /**
+   * Populates the given array with the keys of the messages that will 
+   * be downloaded next.
+   *
+   * @param aSuggestedGroupSizeLimit suggested size per group in bytes
+   * @param aActualGroupSize total size of the messages in bytes in the group
+   */
+  nsIMutableArray getNextGroupOfMessages(in unsigned long aSuggestedGroupSizeLimit, 
+                                         out unsigned long aActualGroupSize);
+  
+  /**
+   * Iterates through the existing headers of the folder to find 
+   * the messages not downloaded yet. 
+   *
+   * @param aNumberOfHeadersToProcess number of headers to be processed
+   *                                  at this pass
+   *
+   * @return the number of headers left to process
+   */
+  unsigned long processExistingHeaders(in unsigned long aNumberOfHeadersToProcess);
+
+  /**
+   * Last time the existing headers are completely processed. 
+   */
+  [noscript]readonly attribute PRTime lastSyncTime;
+  
+  /**
+   * Last time the owner folder is updated.
+   */
+  [noscript]attribute PRTime lastUpdateTime;
+  
+  /**
+   * Download operation state. 
+   */
+  attribute long state;
+  
+  /**
+   * Number of messages waiting to be downloaded.
+   */
+  readonly attribute long pendingMessageCount;
+  
+  /**
+   * Total number of messages in the download queue.
+   */
+  readonly attribute long totalMessageCount;
+  
+  /**
+   * The folder this auto-sync object is related to.
+   */
+  readonly attribute nsIMsgFolder ownerFolder;
+};

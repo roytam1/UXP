@@ -1,0 +1,86 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMsgDBHdr;
+interface nsIMsgIdentity;
+
+/**
+ * Implement this interface and add to nsIMsgSendLater to receive notifications
+ * of send later actions.
+ */
+[scriptable, uuid(a7bc603b-d0da-4959-a82f-4b99c138b9f4)]
+interface nsIMsgSendLaterListener : nsISupports {
+  /**
+   * Notify the observer that the operation of sending messages later has
+   * started.
+   *
+   * @param aTotalMessageCount  Number of messages to be sent. This will not
+   *                            change over the time we are doing this sequence.
+   */
+  void onStartSending(in unsigned long aTotalMessageCount);
+
+  /**
+   * Notify the observer that the next message send/copy is starting and
+   * provide details about the message.
+   *
+   * @param aCurrentMessage      The current message number that is being sent.
+   * @param aTotalMessageCount   The total number of messages that we are
+   *                             trying to send.
+   * @param aMessageHeader       The header information for the message that is
+   *                             being sent.
+   * @param aMessageIdentity     The identity being used to send the message.
+   */
+  void onMessageStartSending(in unsigned long aCurrentMessage,
+                             in unsigned long aTotalMessageCount,
+                             in nsIMsgDBHdr aMessageHeader,
+                             in nsIMsgIdentity aIdentity);
+
+  /**
+   * Notify the observer of the current progress of sending a message. The one
+   * function covers sending the message over the network and copying to the
+   * appropriate sent folder.
+   *
+   * @param aCurrentMessage      The current message number that is being sent.
+   * @param aTotalMessageCount   The total number of messages that we are
+   *                             trying to send.
+   * @param aMessageSendPercent  The percentage of the message sent (0 to 100)
+   * @param aMessageCopyPercent  The percentage of the copy completed (0 to
+   *                             100). If there is no copy for this message,
+   *                             this may be set to 100 at the same time as
+   *                             aMessageSendPercent.
+   */
+  void onMessageSendProgress(in unsigned long aCurrentMessage,
+                             in unsigned long aTotalMessageCount,
+                             in unsigned long aMessageSendPercent,
+                             in unsigned long aMessageCopyPercent);
+
+  /**
+   * Notify the observer of an error in the send message later function.
+   *
+   * @param aCurrentMessage      The current message number that is being sent.
+   * @param aMessageHeader       The header information for the message that is
+   *                             being sent.
+   * @param aStatus              The error status code.
+   * @param aMsg                 A text string describing the error.
+   */
+  void onMessageSendError(in unsigned long aCurrentMessage,
+                          in nsIMsgDBHdr aMessageHeader,
+                          in nsresult aStatus,
+                          in wstring aMsg);
+
+  /**
+   * Notify the observer that the send unsent messages operation has finished.
+   * This is called regardless of the success/failure of the operation.
+   *
+   * @param aStatus     Status code for the message send.
+   * @param aMsg        A text string describing the error.
+   * @param aTotalTried Total number of messages that were attempted to be sent.
+   * @param aSuccessful How many messages were successfully sent.
+   */
+  void onStopSending(in nsresult aStatus, in wstring aMsg,
+                     in unsigned long aTotalTried, in unsigned long aSuccessful);
+};

@@ -1,0 +1,40 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "nsISupports.idl"
+#include "domstubs.idl"
+#include "nsIPrompt.idl"
+#include "nsIWebProgressListener.idl"
+
+interface mozIDOMWindowProxy;
+interface nsIMsgWindow;
+
+[scriptable, uuid(6d6fe91d-7f9a-4552-9737-9f74b0e75538)]
+interface nsIMsgProgress: nsIWebProgressListener {
+
+  /** 
+   * Open the progress dialog, you can specify parameters through an xpcom object
+   */
+  void openProgressDialog(in mozIDOMWindowProxy parent,
+                          in nsIMsgWindow aMsgWindow,
+                          in string dialogURL,
+                          in boolean inDisplayModal,
+                          in nsISupports parameters);
+
+  /* Close the progress dialog */
+  void closeProgressDialog(in boolean forceClose);
+  
+  /* Register a Web Progress Listener */
+  void registerListener(in nsIWebProgressListener listener);
+
+  /* Unregister a Web Progress Listener */
+  void unregisterListener(in nsIWebProgressListener listener);
+  
+  /* Indicated if the user asked to cancel the current process */
+  attribute boolean processCanceledByUser;
+
+  attribute nsIMsgWindow msgWindow;
+};
+
+

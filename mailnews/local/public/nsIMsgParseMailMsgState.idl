@@ -1,0 +1,48 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"  // for nsMsgKey typedef
+
+interface nsIMsgDatabase;
+interface nsIMsgDBHdr;
+
+typedef long nsMailboxParseState;
+
+[scriptable, uuid(0d44646c-0759-43a2-954d-dc2a9a9660ec)]
+interface nsIMsgParseMailMsgState : nsISupports {
+    attribute unsigned long long envelopePos;
+    void SetMailDB(in nsIMsgDatabase aDatabase);
+    /*
+     * Set a backup mail database, whose data will be read during parsing to
+     * attempt to recover message metadata
+     *
+     * @param aDatabase   the backup database
+     */
+    void SetBackupMailDB(in nsIMsgDatabase aDatabase);
+    void Clear();
+
+    void ParseAFolderLine(in string line, in unsigned long lineLength);
+    /// db header for message we're currently parsing
+    attribute nsIMsgDBHdr newMsgHdr;
+    void FinishHeader();
+
+    long GetAllHeaders(out string headers);
+    readonly attribute string headers;
+    attribute nsMailboxParseState state;
+    /* these are nsMailboxParseState */
+    const long ParseEnvelopeState=0;
+    const long ParseHeadersState=1;
+    const long ParseBodyState=2;
+
+    /**
+     * Set the key to be used for the new message header.
+     *
+     * @param aNewKey  the new db key
+     *
+     */
+    void setNewKey(in nsMsgKey aKey);
+};
+

@@ -1,0 +1,32 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIWebProgressListener;
+interface nsIAbLDAPDirectory;
+
+/**
+ * this service does replication of an LDAP directory to a local Mork AB Database.
+ */
+[scriptable, uuid(3f499c70-5ceb-4b91-8b7f-62c366859383)]
+interface nsIAbLDAPReplicationService: nsISupports {
+   
+   /**
+     * Start Replication of given LDAP directory represented by the URI
+     */
+    void startReplication(in nsIAbLDAPDirectory aDirectory,
+			  in nsIWebProgressListener progressListener);
+
+   /**
+     * Cancel Replication of given LDAP directory represented by the URI
+     */
+    void cancelReplication(in nsIAbLDAPDirectory aDirectory);
+  
+   /**
+     * callback when replication is done, failure or success
+     */
+    void done(in boolean aSuccess);
+};
+

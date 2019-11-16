@@ -1,0 +1,405 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+ * The nsIMsgSend method will create an RFC822 message and send it all in one operation 
+ * as well as providing the ability to save disk files for later use. The mode of delivery 
+ * can also be specified for the "Send Later", "Drafts" and "Templates" operations. (NOTE: 
+ * This method could easily be broken in to a few different calls. Currently, this method 
+ * does several functions depending on the arguments passed in, but this could easily lead 
+ * to confusion. This is something that very well may change as time allows). 
+ */
+#include "nsISupports.idl"
+#include "nsrootidl.idl"
+#include "nsIMsgIdentity.idl"
+#include "nsIMsgCompFields.idl"
+#include "nsIMsgSendListener.idl"
+#include "nsIMsgSendReport.idl"
+#include "domstubs.idl"
+#include "nsIPrompt.idl"
+#include "MailNewsTypes2.idl"
+#include "nsIMsgComposeParams.idl"
+
+interface nsIMsgProgress;
+interface nsIURI;
+interface nsIRequest;
+interface nsIMsgDBHdr;
+interface nsIMsgHdr;
+interface nsIFile;
+interface nsIOutputStream;
+interface nsIMsgComposeSecure;
+interface nsIMsgStatusFeedback;
+interface nsIEditor;
+interface nsIArray;
+interface nsIMsgAttachmentHandler;
+interface mozIDOMWindowProxy;
+
+typedef long nsMsgDeliverMode;
+
+[scriptable, uuid(c658cd1f-dc4a-43c0-911c-c6d3e569ca7e)]
+interface nsIMsgAttachmentData : nsISupports
+{
+  /// The URL to attach.
+  attribute nsIURI url;
+
+  /**
+   * The type to which this document should be
+   * converted.  Legal values are NULL, TEXT_PLAIN
+   * and APPLICATION_POSTSCRIPT (which are macros
+   * defined in net.h); other values are ignored.
+   */
+  attribute ACString desiredType;
+
+  /**
+   * The type of the URL if known, otherwise empty. For example, if
+   * you were attaching a temp file which was known to contain HTML data,
+   * you would pass in TEXT_HTML as the realType, to override whatever type
+   * the name of the tmp file might otherwise indicate.
+   */
+  attribute ACString realType;
+
+  /// Goes along with real_type.
+  attribute ACString realEncoding; 
+
+  /**
+   * The original name of this document, which will eventually show up in the
+   * Content-Disposition header. For example, if you had copied a document to a
+   * tmp file, this would be the original, human-readable name of the document.
+   */
+  attribute ACString realName;
+  /**
+   * If you put a string here, it will show up as the Content-Description
+   * header. This can be any explanatory text; it's not a file name.
+   */
+  attribute ACString description;
+
+  /// mac-specific info
+  attribute ACString xMacType;
+
+  /// mac-specific info
+  attribute ACString xMacCreator;
+};
+
+/**
+ * When we have downloaded a URL to a tmp file for attaching, this
+ * represents everything we learned about it (and did to it) in the
+ * process.
+ */
+[scriptable, uuid(c552345d-c74b-40b0-a673-79bb461e920b)]
+interface nsIMsgAttachedFile : nsISupports
+{
+  /// Where it came from on the network (or even elsewhere on the local disk.)
+  attribute nsIURI origUrl;
+
+  /// The tmp file in which the (possibly converted) data now resides.
+  attribute nsIFile tmpFile;
+
+  /// The type of the data in file_name (not necessarily the same as the type of orig_url.)
+  attribute ACString type;
+
+  /**
+   * The encoding of the tmp file. This will be set only if the original
+   * document had an encoding already; we don't do base64 encoding and so forth
+   * until it's time to assemble a full MIME message of all parts.
+   */
+  attribute ACString encoding;
+  /// For Content-Description header.
+  attribute ACString description;
+
+  /// X-Mozilla-Cloud-Part, if any.
+  attribute ACString cloudPartInfo;
+
+  attribute ACString xMacType;    // mac-specific info 
+  attribute ACString xMacCreator; // mac-specific info 
+  attribute ACString realName;      // The real name of the file. 
+
+  /**
+   * Some statistics about the data that was written to the file, so that when
+   * it comes time to compose a MIME message, we can make an informed decision
+   * about what Content-Transfer-Encoding would be best for this attachment.
+   * (If it's encoded already, we ignore this information and ship it as-is.)
+   */
+  attribute unsigned long size;
+  attribute unsigned long unprintableCount;
+  attribute unsigned long highbitCount;
+  attribute unsigned long ctlCount;
+  attribute unsigned long nullCount;
+  attribute unsigned long maxLineLength;
+};
+
+/**
+ * This interface is used by Outlook import to shuttle embedded
+ * image information over to nsIMsgSend's createRFC822Message method via
+ * the aEmbbeddedObjects parameter.
+ */
+[scriptable, uuid(5d2c6554-b4c8-4d68-b864-50e0df929707)]
+interface nsIMsgEmbeddedImageData : nsISupports
+{
+  attribute nsIURI uri;
+  attribute ACString cid;
+  attribute ACString name;
+};
+
+%{ C++
+// Forward declaration
+class nsMsgAttachmentHandler;
+#include "nsAutoPtr.h"
+#include "nsTArray.h"
+%}
+
+[ptr] native nsMsgAttachedFile(nsMsgAttachedFile);
+[ptr] native nsMsgAttachmentHandlerArray(nsTArray<RefPtr<nsMsgAttachmentHandler>>);
+
+[scriptable, uuid(747fdfa2-1754-4282-ab26-1e55fd8de13c)]
+interface nsIMsgSend : nsISupports
+{
+  //
+  // This is the primary interface for creating and sending RFC822 messages
+  // in the new architecture. Currently, this method supports many arguments
+  // that change the behavior of the operation. This will change in time to 
+  // be separate calls that will be more singluar in nature.
+  //
+  // NOTE: when aEditor is non-null, a multipart related MHTML message will 
+  // be created
+  //
+
+  /// Send the message straight away.
+  const nsMsgDeliverMode nsMsgDeliverNow = 0;
+  /**
+   * Queue the message for sending later, but then wait for the user to
+   * request to send it.
+   */
+  const nsMsgDeliverMode nsMsgQueueForLater = 1;
+  const nsMsgDeliverMode nsMsgSave = 2;
+  const nsMsgDeliverMode nsMsgSaveAs = 3;
+  const nsMsgDeliverMode nsMsgSaveAsDraft = 4;
+  const nsMsgDeliverMode nsMsgSaveAsTemplate = 5;
+  const nsMsgDeliverMode nsMsgSendUnsent = 6;
+
+  /// Queue the message in the unsent folder and send it in the background.
+  const nsMsgDeliverMode nsMsgDeliverBackground = 8;
+
+  /**
+   * Create an rfc822 message and send it.
+   * @param aEditor nsIEditor instance that contains message. May be a dummy,
+   *                especially in the case of import.
+   * @param aUserIdentity identity to send from.
+   * @param aAccountKey account we're sending message from. May be null.
+   * @param aFields composition fields from addressing widget
+   * @param aIsDigest is this a digest message?
+   * @param aDontDeliver Set to false by the import code - used when we're
+   *                     trying to create a message from parts.
+   * @param aMode delivery mode
+   * @param aMsgToReplace e.g., when saving a draft over an old draft. May be 0
+   * @param aBodyType content type of message body
+   * @param aBody message body text (should have native line endings)
+   * @param aAttachments Array of nsIMsgAttachmentData
+   * @param aPreloadedAttachments Array of nsIMsgAttachedFile
+   * @param aParentWindow compose window; may be null.
+   * @param aProgress where to send progress info; may be null.
+   * @param aListener optional listener for send progress
+   * @param aPassword optional smtp server password
+   * @param aOriginalMsgURI may be null.
+   * @param aType see nsIMsgComposeParams.idl
+   */
+    void createAndSendMessage(in nsIEditor aEditor,
+                              in nsIMsgIdentity aUserIdentity,
+                              in string aAccountKey,
+                              in nsIMsgCompFields aFields,
+                              in boolean aIsDigest,
+                              in boolean aDontDeliver,
+                              in nsMsgDeliverMode aMode,
+                              in nsIMsgDBHdr aMsgToReplace,
+                              in string aBodyType,
+                              in ACString aBody,
+                              in nsIArray aAttachments,
+                              in nsIArray aPreloadedAttachments,
+                              in mozIDOMWindowProxy aParentWindow,
+                              in nsIMsgProgress aProgress,
+                              in nsIMsgSendListener aListener,
+                              in string aPassword,
+                              in AUTF8String aOriginalMsgURI,
+                              in MSG_ComposeType aType);
+
+  /**
+   * Creates a file containing an rfc822 message, using the passed information.
+   * aListener's OnStopSending method will get called with the file the message
+   * was stored in. OnStopSending may be called sync or async, depending on
+   * content, so you need to handle both cases.
+   *
+   * @param aUserIdentity    The user identity to use for sending this email.
+   * @param aFields          An nsIMsgCompFields object containing information
+   *                         on who to send the message to.
+   * @param aBodyType content type of message body
+   * @param aBody message body text (should have native line endings)
+   * @param aCreateAsDraft If true, this message will be put in a drafts folder
+   * @param aAttachments Array of nsIMsgAttachmentData
+   * @param aEmbeddedObjects Array of nsIDomNode objects for MHTML messages.
+   *                         Primarily used for embedded images.
+   *                         Almost all methods can be noops, but
+   *                         GetNodeValue should return the
+   *                         cid of the embedded object.
+   * @param aListener listener for msg creation progress and resulting file.
+   */
+  void createRFC822Message(in nsIMsgIdentity aUserIdentity,
+                           in nsIMsgCompFields aFields,
+                           in string aBodyType,
+                           in ACString aBody,
+                           in boolean aCreateAsDraft,
+                           in nsIArray aAttachments,
+                           in nsIArray aEmbeddedObjects,
+                           in nsIMsgSendListener aListener);
+
+  /**
+   * Sends a file to the specified composition fields, via the user identity
+   * provided.
+   *
+   * @param aUserIdentity    The user identity to use for sending this email.
+   * @param aAccountKey      The key of the account that this message relates
+   *                         to.
+   * @param aFields          An nsIMsgCompFields object containing information
+   *                         on who to send the message to.
+   * @param aSendIFile       A reference to the file to send.
+   * @param aDeleteSendFileOnCompletion
+   *                         Set to true if you want the send file deleted once
+   *                         the message has been sent.
+   * @param aDigest_p        If this is a multipart message, this param
+   *                         specifies whether the message is in digest or mixed
+   *                         format.
+   * @param aMode            The delivery mode for sending the message (see
+   *                         above for values).
+   * @param aMsgToReplace    A message header representing a message to be
+   *                         replaced by the one sent, this param may be null.
+   * @param aListener        An nsIMsgSendListener to receive feedback on the
+   *                         current send status. This parameter can also
+   *                         support the nsIMsgCopyServiceListener interface to
+   *                         receive notifications of copy finishing e.g. after
+   *                         saving a message to the sent mail folder.
+   *                         This param may be null.
+   * @param aStatusFeedback  A feedback listener for slightly different feedback
+   *                         on the message send status. This param may be null.
+   * @param aPassword        Pass this in to prevent a dialog if the password
+   *                         is needed for secure transmission.
+   */
+  void sendMessageFile(in nsIMsgIdentity       aUserIdentity,
+                       in string               aAccountKey,
+                       in nsIMsgCompFields     aFields,
+                       in nsIFile              aSendIFile,
+                       in boolean              aDeleteSendFileOnCompletion,
+                       in boolean              aDigest_p,
+                       in nsMsgDeliverMode     aMode,
+                       in nsIMsgDBHdr          aMsgToReplace,
+                       in nsIMsgSendListener   aListener,
+                       in nsIMsgStatusFeedback aStatusFeedback,
+                       in string               aPassword
+                       ); 
+
+    /* Abort current send/save operation */
+    void abort();
+
+    /**
+     * Report a send failure.
+     *
+     * @param aFailureCode     The failure code of the send operation. See
+     *                         nsComposeStrings.h for possible values. NS_OK is a possible
+     *                         value as well; if passed, the function won't prompt the user     *                         but will still about the session.
+     * @param aErrorMsg        The appropriate error string for the failure.
+     * @result                 A modified result value in the case a user action results in
+     *                         a different way to handle the failure.
+     */
+    nsresult fail(in nsresult aFailureCode, in wstring aErrorMsg);
+
+    /* Disable UI notification (alert message) */
+    void setGUINotificationState(in boolean aEnableFlag);
+
+    /* Crypto */
+    void BeginCryptoEncapsulation();
+
+    /* retreive the last send process report*/
+    readonly attribute nsIMsgSendReport sendReport; 
+
+    /* methods for send listener ... */
+    void notifyListenerOnStartSending(in string aMsgID, in unsigned long aMsgSize);
+    void notifyListenerOnProgress(in string aMsgID, in unsigned long aProgress, in unsigned long aProgressMax);
+    void notifyListenerOnStatus(in string aMsgID, in wstring aMsg);
+    void notifyListenerOnStopSending(in string aMsgID, in nsresult aStatus, in wstring aMsg, in nsIFile returnFile);
+    void deliverAsMailExit(in nsIURI aUrl, in nsresult aExitCode);
+    void deliverAsNewsExit(in nsIURI aUrl, in nsresult aExitCode);
+    
+    void sendDeliveryCallback(in nsIURI aUrl, in boolean inIsNewsDelivery, in nsresult aExitCode);
+
+    /* methods for copy listener ... */
+    void notifyListenerOnStartCopy(); 
+    void notifyListenerOnProgressCopy(in unsigned long aProgress, in unsigned long aProgressMax);
+    void notifyListenerOnStopCopy(in nsresult aStatus);
+    void getMessageId(out ACString messageID);
+    /// When saving as draft, the folder uri we saved to.
+    readonly attribute ACString folderUri;
+
+    /**
+     * After a draft is saved, use this to get the mime part number for the dom
+     * node in the editor embedded object list with the passed in index.
+     *
+     * @param aDomIndex - index in the editor dom embedded object list of
+     * the part we're interested in. These are generally images.
+     *
+     * @return the mime part number for that object.
+     */
+    ACString getPartForDomIndex(in long aDomIndex);
+
+    attribute nsMsgKey messageKey;
+
+    nsIPrompt getDefaultPrompt();
+
+    /* process attachment */
+    void gatherMimeAttachments();
+    readonly attribute boolean processAttachmentsSynchronously;
+    [noscript] nsMsgAttachmentHandlerArray getAttachmentHandlers();
+    readonly attribute unsigned long attachmentCount;
+    attribute unsigned long pendingAttachmentCount;
+    readonly attribute nsMsgDeliverMode deliveryMode;
+
+    nsIMsgProgress getProgress();
+
+    nsIOutputStream getOutputStream();
+
+    attribute nsIRequest runningRequest;
+
+    attribute nsresult status;
+
+    attribute nsIMsgComposeSecure cryptoclosure;
+
+    /// Access the local copy of the composition fields.
+    readonly attribute nsIMsgCompFields sendCompFields;
+
+    /// The message body.
+    readonly attribute AString sendBody;
+
+    /// The type of the message body (typically text/plain or text/html).
+    readonly attribute ACString sendBodyType;
+
+    /// The identity to use to send the message.
+    readonly attribute nsIMsgIdentity identity;
+
+    /**
+     * Get a handler for an attachment by its index.
+     * The lifetime of the attachment is dependent on the existence
+     * of the underlying send object, so do not hold onto these
+     * attachment handlers.
+     *
+     * @param index  Index used to specify a particular attachment.
+     *
+     * @return       Attachment handler with information about the attachment.
+     */
+    nsIMsgAttachmentHandler getAttachment(in unsigned long index);
+
+    /// The folder name to which the message will be saved,
+    /// used by error reporting.
+    attribute AString savedToFolderName;
+
+    /// Should we deliver this message (versus saving as a file)?
+    attribute boolean dontDeliver;
+
+};

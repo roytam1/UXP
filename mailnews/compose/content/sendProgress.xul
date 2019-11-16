@@ -1,0 +1,50 @@
+<?xml version="1.0"?> 
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/messengercompose/sendProgress.dtd">
+
+<dialog id="sendProgress"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="&sendDialog.title;"
+        style="width: 56ch;"
+        onload="onLoad();"
+        onunload="onUnload();"
+        buttons="cancel"
+        ondialogcancel="return onCancel();">
+
+  <script type="application/javascript"
+          src="chrome://messenger/content/messengercompose/sendProgress.js"/>
+  <stringbundle id="sendProgressStringBundle"
+                src="chrome://messenger/locale/messengercompose/sendProgress.properties"/>
+
+    <grid flex="1">
+      <columns>
+        <column/>
+        <column flex="1"/>
+      </columns>
+
+      <rows>
+        <row>
+          <hbox pack="end">
+            <label value="&status.label;"/>
+          </hbox>
+          <label id="dialog.status" crop="center"/>
+        </row>
+        <row class="thin-separator">
+          <hbox pack="end">
+            <label value="&progress.label;"/>
+          </hbox>
+          <progressmeter id="dialog.progress" mode="normal" value="0"/>
+          <hbox pack="end">
+            <label id="dialog.progressText"/>
+          </hbox>
+        </row>
+      </rows>
+    </grid>
+
+</dialog>

@@ -1,0 +1,97 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "msgIStructuredHeaders.idl"
+
+interface nsIMsgAttachment;
+interface nsISimpleEnumerator;
+
+/**
+ * A collection of headers and other attributes for building a mail message.
+ */
+[scriptable, uuid(10928477-4F24-4357-9397-FBD847F46F0A)]
+interface nsIMsgCompFields : msgIWritableStructuredHeaders {
+
+  attribute AString from;
+  attribute AString replyTo;
+  attribute AString to;
+  attribute AString cc;
+  attribute AString bcc;
+  readonly attribute bool hasRecipients;
+
+  attribute AString fcc;
+  attribute AString fcc2;
+
+  attribute AString newsgroups;
+  attribute string  newspostUrl;
+  attribute AString followupTo;
+
+  attribute AString subject;
+
+  attribute AString organization;
+  attribute string  references;
+  attribute string  priority;
+  attribute string  messageId;
+  attribute string  characterSet;
+  readonly attribute string defaultCharacterSet;
+
+  attribute AString templateName;
+  attribute string  draftId;
+
+  attribute boolean returnReceipt;
+  attribute long receiptHeaderType;
+  attribute boolean DSN;
+  attribute boolean attachVCard;
+  attribute boolean forcePlainText;
+  attribute boolean useMultipartAlternative;
+  attribute boolean bodyIsAsciiOnly;
+  attribute boolean forceMsgEncoding;
+  /// Status of manually-activated attachment reminder.
+  attribute boolean attachmentReminder;
+  /// Delivery format for the mail being composed
+  /// (auto = 4, text = 1, html = 2, text and html = 3).
+  attribute long deliveryFormat;
+  attribute string contentLanguage;
+  /// This is populated with the key of the identity which created the draft or template.
+  attribute string creatorIdentityKey;
+
+  /**
+   * Beware that when setting this property, your body must be properly wrapped,
+   * and the line endings must match MSG_LINEBREAK, namely "\r\n" on Windows
+   * and "\n" on Linux and OSX.
+   */
+  attribute AString body;
+
+  readonly attribute nsISimpleEnumerator attachments;
+  void addAttachment(in nsIMsgAttachment attachment);
+  void removeAttachment(in nsIMsgAttachment attachment);
+  void removeAttachments();
+
+  /**
+   * This function will split the recipients into an array.
+   *
+   * @param aRecipients       The recipients list to split.
+   * @param aEmailAddressOnly Set to true to drop display names from the results
+   *                          array.
+   * @param aLength           The length of the aResult array.
+   * @param aResult           An array of the recipients.
+   */
+  void splitRecipients(in AString aRecipients, in boolean aEmailAddressOnly,
+                       out unsigned long aLength,
+                       [array, size_is(aLength), retval] out wstring aResult);
+
+  void ConvertBodyToPlainText();
+
+  /**
+   * Indicates whether we need to check if the current |DocumentCharset|
+   * can represent all the characters in the message body. It should be
+   * initialized to true and set to false when 'Send Anyway' is selected
+   * by a user. (bug 249530)
+   */
+  attribute boolean needToCheckCharset;
+
+  attribute nsISupports securityInfo;
+};
+

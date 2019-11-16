@@ -1,0 +1,36 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsMsgSearchCore.idl"
+
+interface nsIMsgFolder;
+
+[scriptable, uuid(783758a0-cdb5-11dc-95ff-0800200c9a66)]
+interface nsIMsgSearchValue : nsISupports {
+    // type of object
+    attribute nsMsgSearchAttribValue attrib;
+
+    // accessing these will throw an exception if the above
+    // attribute does not match the type!
+    attribute AString str;
+    attribute nsMsgPriorityValue priority;
+    attribute PRTime date;
+     // see nsMsgMessageFlags.idl and nsMsgFolderFlags.idl
+    attribute unsigned long status;
+    attribute unsigned long size;
+    attribute nsMsgKey msgKey;
+    attribute long age; // in days
+    attribute nsIMsgFolder folder;
+    attribute nsMsgLabelValue label;
+    attribute nsMsgJunkStatus junkStatus;
+    /*
+     * junkPercent is set by the message filter plugin, and is approximately
+     *             proportional to the probability that a message is junk.
+     *             (range 0-100, 100 is junk)
+     */
+    attribute unsigned long junkPercent;
+
+    AString toString();
+};

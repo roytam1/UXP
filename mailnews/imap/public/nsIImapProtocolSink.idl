@@ -1,0 +1,32 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+interface nsIMsgWindow;
+interface nsIMsgMailNewsUrl;
+
+/**
+ * Helper interface that contains operations MUST be proxied
+ * over UI thread.
+ */
+[scriptable, uuid(1217cd9d-7678-4026-b323-0d4b45816af0)]
+interface nsIImapProtocolSink : nsISupports {
+  
+  /**
+   * Does general cleanup for the imap protocol object.
+   */
+  void closeStreams();
+  /**
+   * Get the msg window associated with a url
+   *
+   * @param aUrl url whose msgWindow we want.
+   * @returns msgWindow associated with url.
+   */
+  nsIMsgWindow getUrlWindow(in nsIMsgMailNewsUrl aUrl);
+
+  /**
+   * Setup main thread proxies.
+   */
+  void setupMainThreadProxies();
+};

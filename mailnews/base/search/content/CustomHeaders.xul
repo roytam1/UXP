@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<?xml-stylesheet href="chrome://communicator/skin/" type="text/css"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/CustomHeaders.dtd">
+<dialog id="customHeadersDialog"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        onload="onLoad();"
+        ondialogaccept="return onOk();"
+        ondialogextra1="onAddHeader();"
+        ondialogextra2="onRemoveHeader();"
+        style="width: 30em; height: 25em;"
+        persist="width height screenX screenY"
+        title="&window.title;"
+        buttons="accept,cancel,extra1,extra2">
+
+  <stringbundleset id="stringbundleset">
+  <stringbundle id="bundle_filter" src="chrome://messenger/locale/filter.properties"/>
+  <stringbundle id="bundle_custom" src="chrome://messenger/locale/custom.properties"/>
+  </stringbundleset>
+
+  <script type="application/javascript" src="chrome://messenger/content/CustomHeaders.js"/>
+
+  <grid flex="1">
+    <columns>
+      <column flex="1"/>
+      <column/>
+    </columns>
+    <rows>
+      <row>
+        <label accesskey="&newMsgHeader.accesskey;" control="headerInput" value="&newMsgHeader.label;"/>
+      </row>
+      <row>
+        <textbox id="headerInput" onfocus="this.select();" oninput="onTextInput();"/>
+      </row>
+
+      <row flex="1">
+        <vbox>
+          <listbox id="headerList" flex="1" onselect="updateRemoveButton();" />
+        </vbox>
+
+        <vbox>
+          <button id="addButton"
+                  label="&addButton.label;"
+                  accesskey="&addButton.accesskey;"
+                  dlgtype="extra1"/>
+          <button id="removeButton"
+                  label="&removeButton.label;"
+                  accesskey="&removeButton.accesskey;"
+                  dlgtype="extra2"/>
+        </vbox>
+      </row>
+    </rows>
+  </grid>
+</dialog>

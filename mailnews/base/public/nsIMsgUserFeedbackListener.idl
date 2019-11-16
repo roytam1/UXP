@@ -1,0 +1,28 @@
+/* -*- Mode: IDL; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIMsgMailNewsUrl;
+
+/**
+ * Implement this interface to subscribe to errors and warnings passed out via
+ * nsIMsgMailSession.
+ */
+[scriptable, uuid(5e909ffa-77fe-4ce3-bf3c-06c54596d03d)]
+interface nsIMsgUserFeedbackListener : nsISupports {
+  /**
+   * Called when an alert from a protocol level implementation is generated.
+   *
+   * @param aMessage    The localized message string to alert.
+   * @param aUrl        Optional mailnews url which is relevant to the operation
+   *                    which caused the alert to be generated.
+   * @return            True if you serviced the alert and it does not need
+   *                    to be prompted to the user separately.
+   *                    Note: The caller won't prompt if msgWindow in aUrl is
+   *                    null, regardless of the value returned.
+   */
+  boolean onAlert(in AString aMessage, [optional] in nsIMsgMailNewsUrl aUrl);
+};

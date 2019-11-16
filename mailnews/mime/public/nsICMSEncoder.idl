@@ -1,0 +1,30 @@
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+%{ C++
+typedef void (*NSSCMSContentCallback)(void *arg, const char *buf, unsigned long len);
+
+#define NS_CMSENCODER_CONTRACTID "@mozilla.org/nsCMSEncoder;1"
+%}
+
+native NSSCMSContentCallback(NSSCMSContentCallback);
+
+interface nsICMSMessage;
+
+/**
+ * nsICMSEncoder
+ *  Interface to Encode an CMS message
+ */
+[uuid(17dc4fb4-e379-4e56-a4a4-57cdcc74816f)]
+interface nsICMSEncoder : nsISupports
+{
+  void start(in nsICMSMessage aMsg, in NSSCMSContentCallback cb, in voidPtr arg);
+  void update(in string aBuf, in long aLen);
+  void finish();
+  void encode(in nsICMSMessage aMsg);
+};
+

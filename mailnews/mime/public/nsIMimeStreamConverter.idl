@@ -1,0 +1,93 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsrootidl.idl"
+#include "nsIMimeHeaders.idl"
+#include "nsIMsgIdentity.idl"
+#include "nsIMsgHdr.idl"
+
+interface nsIURI;
+
+typedef long nsMimeOutputType;
+
+[scriptable, uuid(fdc2956e-d558-43fb-bfdd-fb9511229aa5)]
+interface nsMimeOutput
+{
+  const long nsMimeMessageSplitDisplay = 0;
+  const long nsMimeMessageHeaderDisplay = 1;
+  const long nsMimeMessageBodyDisplay = 2;
+  const long nsMimeMessageQuoting = 3;
+  const long nsMimeMessageBodyQuoting = 4;
+  const long nsMimeMessageRaw = 5;
+  const long nsMimeMessageDraftOrTemplate = 6;
+  const long nsMimeMessageEditorTemplate = 7;
+  const long nsMimeMessagePrintOutput = 9;
+  const long nsMimeMessageSaveAs = 10;
+  const long nsMimeMessageSource = 11;
+  const long nsMimeMessageFilterSniffer = 12;
+  const long nsMimeMessageDecrypt = 13;
+  const long nsMimeMessageAttach = 14;
+  const long nsMimeUnknown = 15;
+};
+
+[scriptable, uuid(FA81CAA0-6261-11d3-8311-00805F2A0107)]
+interface nsIMimeStreamConverterListener : nsISupports{
+      void onHeadersReady(in nsIMimeHeaders headers);
+};
+
+/**
+ * This interface contains mailnews mime specific information for stream
+ * converters. Most of the code is just stuff that has been moved out
+ * of nsIStreamConverter.idl to make it more generic.
+ */
+[scriptable, uuid(d894c833-29c5-495b-880c-9a9f847bfdc9)]
+interface nsIMimeStreamConverter : nsISupports {
+
+  /**
+   * Set the desired mime output type on the converer.
+   */
+  void SetMimeOutputType(in nsMimeOutputType aType);
+
+  void GetMimeOutputType(out nsMimeOutputType aOutFormat);
+
+  /**
+   * This is needed by libmime for MHTML link processing...the url is the URL
+   * string associated with this input stream.
+   */
+  void SetStreamURI(in nsIURI aURI);
+
+  /**
+   * Used to extract headers while parsing a message.
+   */
+  void SetMimeHeadersListener(in nsIMimeStreamConverterListener listener, in nsMimeOutputType aType);
+
+  /**
+   * This is used for forward inline, both as a filter action, and from the UI.
+   */
+  attribute boolean forwardInline;
+
+  /**
+   * This is used for a forward inline filter action. When streaming is done,
+   * we won't open a compose window with the editor contents.
+   */
+  attribute boolean forwardInlineFilter;
+
+  /**
+   * Address for the forward inline filter to forward the message to.
+   */
+  attribute AString forwardToAddress;
+  /**
+   * Use the opposite compose format, used for forward inline.
+   */
+  attribute boolean overrideComposeFormat;
+
+  /**
+   * This is used for OpenDraft, OpenEditorTemplate and Forward inline (which use OpenDraft)
+   */
+  attribute nsIMsgIdentity identity;
+  attribute string originalMsgURI;
+  attribute nsIMsgDBHdr origMsgHdr;
+};

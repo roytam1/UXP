@@ -1,0 +1,63 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsMsgSearchCore.idl"
+
+typedef long nsMsgFilterTypeType;
+
+[scriptable,uuid(b963a9c6-3a75-4d91-9f79-7186418d4d2d)]
+interface nsMsgFilterType {
+    /* these longs are all actually of type nsMsgFilterTypeType */
+  const long None             = 0x00;
+  const long InboxRule        = 0x01;
+  const long InboxJavaScript  = 0x02;
+  const long Inbox            = InboxRule | InboxJavaScript;
+  const long NewsRule         = 0x04;
+  const long NewsJavaScript   = 0x08;
+  const long News             = NewsRule | NewsJavaScript;
+  const long Incoming         = Inbox | News;
+  const long Manual           = 0x10;
+  const long PostPlugin       = 0x20; // After bayes filtering
+  const long PostOutgoing     = 0x40; // After sending
+  const long Archive          = 0x80; // Before archiving
+  const long All              = Incoming | Manual;
+};
+
+typedef long nsMsgFilterMotionValue;
+
+typedef long nsMsgFilterIndex;
+
+typedef long nsMsgRuleActionType;
+
+[scriptable, uuid(7726FE79-AFA3-4a39-8292-733AEE288737)]
+interface nsMsgFilterAction {
+
+    // Custom Action.
+    const long Custom=-1;
+    /* if you change these, you need to update filter.properties,
+       look for filterActionX */
+    /* these longs are all actually of type nsMsgFilterActionType */
+    const long None=0;        /* uninitialized state */
+    const long MoveToFolder=1;
+    const long ChangePriority=2;
+    const long Delete=3;
+    const long MarkRead=4;
+    const long KillThread=5;
+    const long WatchThread=6;
+    const long MarkFlagged=7;
+    const long Label=8;
+    const long Reply=9;
+    const long Forward=10;
+    const long StopExecution=11;
+    const long DeleteFromPop3Server=12;
+    const long LeaveOnPop3Server=13;
+    const long JunkScore=14;
+    const long FetchBodyFromPop3Server=15;
+    const long CopyToFolder=16;
+    const long AddTag=17;
+    const long KillSubthread=18;
+    const long MarkUnread=19;
+};
+

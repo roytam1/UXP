@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!DOCTYPE overlay SYSTEM "chrome://messenger/locale/searchTermOverlay.dtd">
+
+<overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <script type="application/javascript"
+          src="chrome://messenger/content/searchTermOverlay.js"/>
+  <script type="application/javascript"
+          src="chrome://messenger/content/dateFormat.js"/>
+
+  <vbox id="searchTermListBox">
+
+    <radiogroup id="booleanAndGroup" orient="horizontal" value="and"
+                oncommand="booleanChanged(event);">
+      <radio value="and" label="&matchAll.label;"
+             accesskey="&matchAll.accesskey;"/>
+      <radio value="or" label="&matchAny.label;"
+             accesskey="&matchAny.accesskey;"/>
+      <radio value="matchAll" id="matchAllItem" label="&matchAllMsgs.label;"
+             accesskey="&matchAllMsgs.accesskey;"/>
+    </radiogroup>
+
+    <hbox flex="1">
+      <hbox id="searchterms"/>
+      <listbox flex="1" id="searchTermList" rows="4" minheight="35%">
+        <listcols>
+          <listcol flex="&searchTermListAttributesFlexValue;"/>
+          <listcol flex="&searchTermListOperatorsFlexValue;"/>
+          <listcol flex="&searchTermListValueFlexValue;"/>
+          <listcol class="filler"/>
+        </listcols>
+
+        <!-- this is what the listitems will look like:
+          <listitem id="searchListItem">
+            <listcell allowevents="true">
+              <searchattribute id="searchAttr1" for="searchOp1,searchValue1" flex="1"/>
+            </listcell>
+            <listcell allowevents="true">
+              <searchoperator id="searchOp1" opfor="searchValue1" flex="1"/>
+            </listcell>
+            <listcell allowevents="true" >
+              <searchvalue id="searchValue1" flex="1"/>
+            </listcell>
+            <listcell>
+              <button label="add"/>
+              <button label="remove"/>
+            </listcell>
+          </listitem>
+          <listitem>
+            <listcell label="the.."/>
+            <listcell label="contains.."/>
+            <listcell label="text here"/>
+            <listcell label="+/-"/>
+          </listitem>
+        -->
+      </listbox>
+
+    </hbox>
+  </vbox>
+
+</overlay>

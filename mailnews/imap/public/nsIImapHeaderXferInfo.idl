@@ -1,0 +1,23 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "MailNewsTypes2.idl"
+
+[scriptable, uuid(38f8f784-b092-11d6-ba4b-00108335942a)]
+interface nsIImapHeaderInfo : nsISupports {
+    attribute nsMsgKey  msgUid;
+    attribute long      msgSize;
+    [noscript] void getMsgHdrs ([shared] out string aMsgHdrs); // this doesn't copy the msgHdrs
+    void cacheLine(in string line, in unsigned long uid);
+    void resetCache();
+};
+
+[scriptable, uuid(f0842eda-af29-4ecd-82e1-fba91bd65d66)]
+interface nsIImapHeaderXferInfo : nsISupports {
+  readonly attribute long numHeaders;
+  nsIImapHeaderInfo  getHeader(in long hdrIndex);
+};
+

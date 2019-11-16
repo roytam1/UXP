@@ -1,0 +1,25 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+[ptr] native Pop3UidlEntryArrayRef(nsTArray<Pop3UidlEntry*>);
+
+%{C++
+#include "nsTArray.h"
+struct Pop3UidlEntry;
+%}
+
+[scriptable, uuid(3aff0550-87de-4337-9bc1-c84eb5462afe)]
+interface nsIPop3Protocol : nsISupports {
+  /* aUidl is an array of pointers to Pop3UidlEntry's. That structure is
+   * currently defined in nsPop3Protocol.h, perhaps it should be here
+   * instead...
+   */
+  [noscript] void markMessages(in Pop3UidlEntryArrayRef aUidl);
+  boolean checkMessage(in string aUidl);
+};
+
+

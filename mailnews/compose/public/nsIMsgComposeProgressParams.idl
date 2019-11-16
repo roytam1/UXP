@@ -1,0 +1,16 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "nsISupports.idl"
+#include "nsIMsgCompose.idl"
+
+[scriptable, uuid(1e0e7c00-3e4c-11d5-9daa-f88d288130fc)]
+interface nsIMsgComposeProgressParams: nsISupports {
+
+  /* message subject */
+  attribute wstring subject;
+  
+  /* delivery mode */
+  attribute MSG_DeliverMode deliveryMode;
+};

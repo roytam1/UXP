@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/markByDate.dtd">
+
+<dialog
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  title="&messageMarkByDate.label;"
+  buttons="accept,cancel"
+  onload="onLoad();"
+  ondialogaccept="return onAccept();">
+
+  <script type="application/javascript" src="chrome://messenger/content/markByDate.js"/>
+  <script type="application/javascript" src="chrome://messenger/content/dateFormat.js"/>
+
+  <hbox align="center" pack="end">
+    <label control="lowerDate"
+           value="&markByDateLower.label;"
+           accesskey="&markByDateLower.accesskey;"/>
+    <textbox size="11" id="lowerDate"/>
+  </hbox>
+  <hbox align="center" pack="end">
+    <label control="upperDate"
+           value="&markByDateUpper.label;"
+           accesskey="&markByDateUpper.accesskey;"/>
+    <textbox size="11" id="upperDate"/>
+  </hbox>
+
+</dialog>

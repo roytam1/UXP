@@ -1,0 +1,40 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsILDAPMessage;
+
+interface nsILDAPConnection;
+
+/** 
+ * A callback interface to be implemented by any objects that want to 
+ * receive results from an nsILDAPOperation (ie nsILDAPMessages) as they
+ * come in.
+ */
+[scriptable, uuid(dc721d4b-3ff2-4387-a80c-5e29545f774a)]
+interface nsILDAPMessageListener : nsISupports
+{
+    /**
+     * Messages received are passed back via this function.
+     *
+     * @arg aMessage  The message that was returned, NULL if none was.
+     *
+     * XXX semantics of NULL?
+     */
+    void onLDAPMessage(in nsILDAPMessage aMessage);
+
+    /**
+     * Notify the listener that the Init has completed, passing
+     * in the results from the connection initialization. The
+     * Reason for this is to allow us to do asynchronous DNS
+     * lookups, preresolving hostnames.
+     *
+     * @arg aConn     The LDAP connection in question
+     * @arg aStatus   The result from the LDAP connection init
+     */
+    void onLDAPInit(in nsILDAPConnection aConn, in nsresult aStatus);
+};

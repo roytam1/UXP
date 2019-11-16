@@ -1,0 +1,81 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "nsISupports.idl"
+#include "nsrootidl.idl"
+
+interface nsIOutputStream;
+interface nsIInputStream;
+interface nsIURI;
+interface nsIStreamListener;
+interface nsIChannel;
+
+[scriptable, uuid(eb9beb09-44de-4ad2-a560-f572b1afd534)]
+interface nsMimeHeaderDisplayTypes
+{
+    const long MicroHeaders = 0;
+    const long NormalHeaders = 1;
+    const long AllHeaders = 2;
+};
+
+%{C++
+#define NS_IMIME_MISC_STATUS_KEY       "@mozilla.org/MimeMiscStatus;1?type="
+%}
+
+[scriptable, uuid(7a57166f-2891-4122-9a74-6c3fab0caac3)]
+interface nsIMimeEmitter : nsISupports {
+
+    // Output listener to allow access to it from mime.
+    attribute nsIStreamListener outputListener;
+
+    // These will be called to start and stop the total operation.
+    void initialize(in nsIURI url, in nsIChannel aChannel, in long aFormat);
+    void complete();
+
+    // Set the output stream/listener for processed data.
+    void setPipe(in nsIInputStream inputStream, in nsIOutputStream outStream);
+
+    // Header handling routines.
+    void startHeader(in boolean rootMailHeader, in boolean headerOnly,
+                     [const] in string msgID, [const] in string outCharset);
+    void addHeaderField([const] in string field, [const] in string value);
+    void addAllHeaders(in ACString allheaders);
+
+    /**
+     * Write the HTML Headers for the current attachment.
+     * Note: Book case this with an EndHeader call.
+     *
+     * @param name The name of this attachment.
+     */
+    void writeHTMLHeaders([const] in AUTF8String name);
+
+    /**
+     * Finish writing the headers for the current attachment.
+     *
+     * @param name The name of this attachment.
+     */
+    void endHeader([const] in AUTF8String name);
+
+    void updateCharacterSet([const] in string aCharset);
+
+    // Attachment handling routines.
+    void startAttachment([const] in AUTF8String name,
+                         [const] in string contentType,
+                         [const] in string url, in boolean aNotDownloaded);
+    void addAttachmentField([const] in string field, [const] in string value);
+    void endAttachment();
+
+    void endAllAttachments();
+
+    // Body handling routines.
+    void startBody(in boolean bodyOnly, [const] in string msgID, [const] in string outCharset);
+    void writeBody([const] in AUTF8String buf, out uint32_t amountWritten);
+    void endBody();
+
+    // Generic write routine. This is necessary for output that
+    // libmime needs to pass through without any particular parsing
+    // involved (i.e. decoded images, HTML Body Text, etc...
+    void write([const] in ACString buf, out uint32_t amountWritten);
+    void utilityWrite([const] in string buf);
+};

@@ -1,0 +1,24 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Statically link against the CRT, so that we don't go hunting around for it
+# and not find it when we're loaded into explorer.exe or similar
+GeckoSharedLibrary('mozMapi32', msvcrt='static', linkage=None)
+
+SOURCES += [
+    'MapiDll.cpp',
+]
+
+OS_LIBS += [
+    'ole32',
+]
+
+DEFINES['UNICODE'] = True
+DEFINES['_UNICODE'] = True
+
+if not CONFIG['MOZ_INCOMPLETE_EXTERNAL_LINKAGE']:
+    DEFINES['MOZILLA_INTERNAL_API'] = True
+
+DEFFILE	= SRCDIR + '/Mapi32.def'

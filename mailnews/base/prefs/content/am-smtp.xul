@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+
+<?xml-stylesheet href="chrome://messenger/skin/accountManage.css" type="text/css"?>
+
+<!DOCTYPE page SYSTEM "chrome://messenger/locale/am-advanced.dtd">
+
+<page xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+      title="&smtpServer.label;"
+      onload="gSmtpServerListWindow.onLoad();">
+  <script type="application/javascript"
+          src="chrome://messenger/content/amUtils.js"/>
+  <script type="application/javascript"
+          src="chrome://messenger/content/am-smtp.js"/>
+
+  <stringbundle id="bundle_messenger"
+                src="chrome://messenger/locale/messenger.properties"/>
+
+  <vbox flex="1" style="overflow: auto;">
+    <dialogheader title="&smtpServer.label;"/>
+
+    <label control="smtpList">&smtpDescription.label;</label>
+    <separator class="thin"/>
+
+    <hbox flex="1">
+      <listbox id="smtpList"
+               onselect="gSmtpServerListWindow.onSelectionChanged(event);"
+               ondblclick="gSmtpServerListWindow.onEditServer(event);"
+               flex="1"/>
+
+      <vbox>
+        <button id="addButton"
+                oncommand="gSmtpServerListWindow.onAddServer(event);"
+                label="&smtpListAdd.label;"
+                accesskey="&smtpListAdd.accesskey;"/>
+        <button id="editButton"
+                oncommand="gSmtpServerListWindow.onEditServer(event);"
+                label="&smtpListEdit.label;"
+                accesskey="&smtpListEdit.accesskey;"/>
+        <separator/>
+        <button id="deleteButton" disabled="true"
+                oncommand="gSmtpServerListWindow.onDeleteServer(event);"
+                label="&smtpListDelete.label;"
+                accesskey="&smtpListDelete.accesskey;"/>
+        <button id="setDefaultButton" disabled="true"
+                oncommand="gSmtpServerListWindow.onSetDefaultServer(event);"
+                label="&smtpListSetDefault.label;"
+                accesskey="&smtpListSetDefault.accesskey;"/>
+      </vbox>
+    </hbox>
+
+    <separator/>
+
+    <label class="header">&serverDetails.label;</label>
+    <hbox id="smtpServerInfoBox">
+      <stack flex="1" class="inset">
+        <spacer id="backgroundBox"/>
+        <grid>
+          <columns>
+            <column/>
+            <column flex="1"/>
+          </columns>
+          <rows>
+            <row align="center">
+              <hbox pack="end">
+                <label id="descriptionLabel"
+                       value="&serverDescription.label;"
+                       control="descriptionValue"/>
+              </hbox>
+              <textbox id="descriptionValue" readonly="true" class="plain"/>
+            </row>
+            <row align="center">
+              <hbox pack="end">
+                <label id="nameLabel" value="&serverName.label;" control="nameValue"/>
+              </hbox>
+              <textbox id="nameValue" readonly="true" class="plain"/>
+            </row>
+            <row align="center">
+              <hbox pack="end">
+                <label id="portLabel" value="&serverPort.label;" control="portValue"/>
+              </hbox>
+              <textbox id="portValue" readonly="true" class="plain"/>
+            </row>
+            <row align="center">
+              <hbox pack="end">
+                <label id="userNameLabel" value="&userName.label;" control="userNameValue"/>
+              </hbox>
+              <textbox id="userNameValue" readonly="true" class="plain"/>
+            </row>
+            <row align="center">
+              <hbox pack="end">
+                <label id="authMethodLabel" value="&authMethod.label;" control="authMethodValue"/>
+              </hbox>
+              <textbox id="authMethodValue" readonly="true" class="plain"/>
+            </row>
+            <row align="center">
+              <hbox pack="end">
+                <label id="connectionSecurityLabel" value="&connectionSecurity.label;"
+                       control="useSecureConnectionValue"/>
+              </hbox>
+              <textbox id="useSecureConnectionValue" readonly="true" class="plain"/>
+            </row>
+          </rows>
+        </grid>
+      </stack>
+    </hbox>
+    <separator flex="1"/>
+  </vbox>
+</page>

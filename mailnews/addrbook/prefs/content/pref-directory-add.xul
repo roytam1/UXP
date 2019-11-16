@@ -1,0 +1,152 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?xml-stylesheet href="chrome://messenger/skin/" type="text/css"?>
+
+<!DOCTYPE dialog SYSTEM "chrome://messenger/locale/addressbook/pref-directory-add.dtd">
+
+<dialog id="addDirectory"
+        style="width: &newDirectoryWidth;"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        onload="Startup();"
+        onunload="onUnload();"
+        buttons="accept,cancel"
+        ondialogaccept="return onAccept();"
+        ondialogcancel="return onCancel();">
+
+  <script type="application/javascript" src="chrome://messenger/content/addressbook/pref-directory-add.js"/>
+  <stringbundle id="bundle_addressBook" src="chrome://messenger/locale/addressbook/addressBook.properties"/>
+  <stringbundle id="bundle_replication" src="chrome://messenger/locale/addressbook/replicationProgress.properties"/>
+
+  <keyset id="keyset"/>
+  <vbox id="editDirectory">
+
+    <tabbox style="margin:5px">
+      <tabs id="directoryTabBox">
+        <tab label="&General.tab;"/>
+        <tab label="&Offline.tab;"/>
+        <tab label="&Advanced.tab;"/>
+      </tabs>
+   
+      <tabpanels id="directoryTabPanels" flex="1">
+          <vbox>
+             <grid flex="1">
+                 <columns>
+                     <column/>
+                     <column flex="1"/>
+                     <column/>
+                 </columns>
+
+                 <rows>
+                     <row align="center">
+                         <label value="&directoryName.label;" accesskey="&directoryName.accesskey;" 
+                                control="description"/>
+                         <textbox id="description" flex="1"/>
+                         <spacer flex="1"/>
+                     </row>
+                     <row align="center">
+                         <label value="&directoryHostname.label;" accesskey="&directoryHostname.accesskey;"
+                                control="hostname"/>
+                         <textbox id="hostname" flex="1" disableiflocked="true" class="uri-element"/>
+                         <spacer flex="1"/>
+                     </row>
+                     <row align="center">
+                         <label value="&directoryBaseDN.label;" 
+                                accesskey="&directoryBaseDN.accesskey;"
+                                control="basedn"/>
+                         <vbox>
+                           <textbox id="basedn" disableiflocked="true" class="uri-element"/>
+                         </vbox>
+                         <button label="&findButton.label;" 
+                                 accesskey="&findButton.accesskey;" disabled="true"/>
+                     </row>
+                     <row align="center">
+                         <label value="&portNumber.label;"
+                                accesskey="&portNumber.accesskey;"
+                                control="port"/>
+                         <hbox>
+                             <textbox id="port" type="number" size="5" min="1"
+                                       max="65535" hidespinbuttons="true"
+                                       disableiflocked="true"/>
+                         </hbox>
+                     </row>
+                     <row align="center">
+                         <label value="&directoryLogin.label;"
+                                accesskey="&directoryLogin.accesskey;"
+                                control="login"/>
+                         <textbox id="login" flex="1" class="uri-element"/>
+                     </row>
+                 </rows>
+             </grid>
+             <separator/>
+             <checkbox id="secure" label="&directorySecure.label;"
+                       accesskey="&directorySecure.accesskey;"
+                       oncommand="onSecure();" disableiflocked="true"/>
+          </vbox>
+          <vbox>
+              <description>&offlineText.label;</description>
+              <separator/>
+              <hbox>
+                  <button id="download" oncommand="DownloadNow();"/>
+                  <spacer flex="1"/>
+              </hbox>
+              <description id="downloadWarningMsg" hidden="true" class="error"/>
+              <description id="replicationProgressText" hidden="true"/>
+              
+              <progressmeter id="replicationProgressMeter" mode="normal" value="0" hidden="true"/>
+          </vbox>
+          <grid>
+             <columns>
+               <column/>
+               <column flex="1"/>
+             </columns>
+
+             <rows>
+               <row align="center">
+                 <label value="&return.label;"
+                        accesskey="&return.accesskey;"
+                        control="results"/>
+                 <hbox align="center">
+                   <textbox id="results" type="number" size="10" min="1"
+                            max="2147483647" increment="10"/>
+                   <label value="&results.label;"/>
+                 </hbox>
+               </row>
+               <row align="center">
+                 <label value="&scope.label;" control="scope" accesskey="&scope.accesskey;"/>
+                 <radiogroup id="scope" orient="horizontal">
+                   <radio id="one" value="1" label="&scopeOneLevel.label;"
+                          disableiflocked="true" accesskey="&scopeOneLevel.accesskey;"/>
+                   <radio id="sub" value="2" label="&scopeSubtree.label;"
+                          disableiflocked="true" accesskey="&scopeSubtree.accesskey;"/>
+                 </radiogroup>
+               </row>
+               <row>
+                 <label value="&searchFilter.label;"
+                        accesskey="&searchFilter.accesskey;"
+                        control="search"/>
+                 <textbox id="search" multiline="true" flex="1" disableiflocked="true"/>
+              </row>
+              <row align="center">
+                <label value="&saslMechanism.label;" control="saslMechanism" accesskey="&saslMechanism.accesskey;"/>
+                <menulist id="saslMechanism">
+                  <menupopup>
+                    <menuitem id="Simple" value="" 
+                              label="&saslOff.label;"
+                              accesskey="&saslOff.accesskey;"/>
+                    <menuitem id="GSSAPI" value="GSSAPI" 
+                              label="&saslGSSAPI.label;"
+                              accesskey="&saslGSSAPI.accesskey;"/>
+                  </menupopup>
+                </menulist>
+              </row>
+            </rows>
+          </grid>
+      </tabpanels>
+    </tabbox>
+  </vbox>
+  
+</dialog>
+        
