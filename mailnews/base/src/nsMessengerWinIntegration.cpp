@@ -56,6 +56,7 @@
 
 #define NOTIFICATIONCLASSNAME "MailBiffNotificationMessageWindow"
 #define UNREADMAILNODEKEY "Software\\Microsoft\\Windows\\CurrentVersion\\UnreadMail\\"
+#define SHELL32_DLL NS_LITERAL_CSTRING("shell32.dll")
 #define DOUBLE_QUOTE "\""
 #define MAIL_COMMANDLINE_ARG " -mail"
 #define IDI_MAILBIFF 32576
@@ -355,6 +356,31 @@ nsMessengerWinIntegration::Init()
     do_GetService(NS_DIRECTORY_SERVICE_CONTRACTID, &rv);
   NS_ENSURE_SUCCESS(rv,rv);
 
+  // get path strings needed for unread mail count update
+  nsCOMPtr<nsIFile> systemDir;
+  rv = directoryService->Get(NS_OS_SYSTEM_DIR,
+                             NS_GET_IID(nsIFile),
+                             getter_AddRefs(systemDir));
+  NS_ENSURE_SUCCESS(rv,rv);
+
+  // get path to shell dll.
+  nsAutoCString shellFile;
+  rv = systemDir->GetNativePath(shellFile);
+  NS_ENSURE_SUCCESS(rv,rv);
+
+  mShellDllPath.Assign(shellFile + NS_LITERAL_CSTRING("\\") + SHELL32_DLL);
+
+  // load shell dll. If no such dll found, return
+  HMODULE hModule = ::LoadLibrary(mShellDllPath.get());
+  if (!hModule)
+    return NS_OK;
+
+  // get process addresses for the unread mail count functions
+
+  if (hModule) {
+    mSHQueryUserNotificationState = (fnSHQueryUserNotificationState)GetProcAddress(hModule, "SHQueryUserNotificationState");
+  }
+
   nsCOMPtr<nsIFile> profilePath;
   rv = directoryService->Get(NS_APP_USER_PROFILE_50_DIR,
                              NS_GET_IID(nsIFile),
@@ -483,10 +509,10 @@ nsresult nsMessengerWinIntegration::ShowNewAlertNotification(bool aUserInitiated
     prefBranch->GetBoolPref(SHOW_ALERT_PREF, &showAlert);
 
   // check if we are allowed to show a notification
-  if (showAlert) {
-    QUERY_USER_NOTIFICATION_STATE qstate;
+  if (showAlert && mSHQueryUserNotificationState) {
+    MOZ_QUERY_USER_NOTIFICATION_STATE qstate;
 
-    if (SUCCEEDED(SHQueryUserNotificationState(&qstate))) {
+    if (SUCCEEDED(mSHQueryUserNotificationState(&qstate))) {
       if (qstate != QUNS_ACCEPTS_NOTIFICATIONS) {
         showAlert = false;
       }
