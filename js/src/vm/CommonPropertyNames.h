@@ -97,6 +97,7 @@
     macro(displayURL, displayURL, "displayURL") \
     macro(do, do_, "do") \
     macro(done, done, "done") \
+    macro(dotall, dotall, "dotall") \
     macro(dotGenerator, dotGenerator, ".generator") \
     macro(dotThis, dotThis, ".this") \
     macro(each, each, "each") \

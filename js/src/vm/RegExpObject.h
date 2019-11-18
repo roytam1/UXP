@@ -53,16 +53,18 @@ enum RegExpFlag
     MultilineFlag   = 0x04,
     StickyFlag      = 0x08,
     UnicodeFlag     = 0x10,
+    DotAllFlag      = 0x20,
 
     NoFlags         = 0x00,
-    AllFlags        = 0x1f
+    AllFlags        = 0x3f
 };
 
 static_assert(IgnoreCaseFlag == REGEXP_IGNORECASE_FLAG &&
               GlobalFlag == REGEXP_GLOBAL_FLAG &&
               MultilineFlag == REGEXP_MULTILINE_FLAG &&
               StickyFlag == REGEXP_STICKY_FLAG &&
-              UnicodeFlag == REGEXP_UNICODE_FLAG,
+              UnicodeFlag == REGEXP_UNICODE_FLAG &&
+              DotAllFlag == REGEXP_DOTALL_FLAG,
               "Flag values should be in sync with self-hosted JS");
 
 enum RegExpRunStatus
@@ -193,6 +195,7 @@ class RegExpShared
     bool multiline() const              { return flags & MultilineFlag; }
     bool sticky() const                 { return flags & StickyFlag; }
     bool unicode() const                { return flags & UnicodeFlag; }
+    bool dotall() const                 { return flags & DotAllFlag; }
 
     bool isCompiled(CompilationMode mode, bool latin1,
                     ForceByteCodeEnum force = DontForceByteCode) const {
@@ -480,6 +483,7 @@ class RegExpObject : public NativeObject
     bool multiline() const  { return getFlags() & MultilineFlag; }
     bool sticky() const     { return getFlags() & StickyFlag; }
     bool unicode() const    { return getFlags() & UnicodeFlag; }
+    bool dotall() const     { return getFlags() & DotAllFlag; }
 
     static bool isOriginalFlagGetter(JSNative native, RegExpFlag* mask);
 

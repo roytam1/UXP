@@ -49,6 +49,7 @@ JS_STATIC_ASSERT(GlobalFlag == JSREG_GLOB);
 JS_STATIC_ASSERT(MultilineFlag == JSREG_MULTILINE);
 JS_STATIC_ASSERT(StickyFlag == JSREG_STICKY);
 JS_STATIC_ASSERT(UnicodeFlag == JSREG_UNICODE);
+JS_STATIC_ASSERT(DotAllFlag == JSREG_DOTALL);
 
 RegExpObject*
 js::RegExpAlloc(ExclusiveContext* cx, HandleObject proto /* = nullptr */)
@@ -267,7 +268,7 @@ RegExpObject::create(ExclusiveContext* cx, HandleAtom source, RegExpFlag flags,
         tokenStream = dummyTokenStream.ptr();
     }
 
-    if (!irregexp::ParsePatternSyntax(*tokenStream, alloc, source, flags & UnicodeFlag))
+    if (!irregexp::ParsePatternSyntax(*tokenStream, alloc, source, flags & UnicodeFlag, flags & DotAllFlag))
         return nullptr;
 
     Rooted<RegExpObject*> regexp(cx, RegExpAlloc(cx));
@@ -1017,7 +1018,7 @@ RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString inpu
     irregexp::RegExpCompileData data;
     if (!irregexp::ParsePattern(dummyTokenStream, cx->tempLifoAlloc(), pattern,
                                 multiline(), mode == MatchOnly, unicode(), ignoreCase(),
-                                global(), sticky(), &data))
+                                global(), sticky(), dotall(), &data))
     {
         return false;
     }
