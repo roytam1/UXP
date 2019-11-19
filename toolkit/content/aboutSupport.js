@@ -278,6 +278,18 @@ var snapshotFormatters = {
                      ? data.windowLayerManagerType
                      : "BasicLayers (" + strings.GetStringFromName("mainThreadNoOMTC") + ")";
     addRow("features", "compositing", compositor);
+    
+    let acceleratedWindows = data.numAcceleratedWindows + "/" + data.numTotalWindows;
+    if (data.windowLayerManagerType) {
+      acceleratedWindows += " " + data.windowLayerManagerType;
+    }
+    if (data.windowLayerManagerRemote) {
+      acceleratedWindows += " (OMTC)";
+    }
+    if (data.numAcceleratedWindowsMessage) {
+      acceleratedWindows += " " + localizedMsg(data.numAcceleratedWindowsMessage);
+    }
+    addRow("features", "acceleratedWindows", acceleratedWindows);
     delete data.windowLayerManagerRemote;
     delete data.windowLayerManagerType;
     delete data.numTotalWindows;
