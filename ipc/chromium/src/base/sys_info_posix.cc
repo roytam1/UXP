@@ -121,11 +121,11 @@ std::wstring SysInfo::GetEnvVar(const wchar_t* var) {
 
 // static
 std::string SysInfo::OperatingSystemName() {
-#ifndef XP_SOLARIS)	
+#ifndef XP_SOLARIS
   utsname info;
 #else
   struct utsname info;
-#endif  
+#endif
   if (uname(&info) < 0) {
     NOTREACHED();
     return "";
@@ -133,17 +133,17 @@ std::string SysInfo::OperatingSystemName() {
   return std::string(info.sysname);
 }
 
-// Solaris <sys/utsname.h> contains "extern struct utsname utsname;" 
-// As a consequence, any use of utsname has to be preceded with struct on 
+// Solaris <sys/utsname.h> contains "extern struct utsname utsname;"
+// As a consequence, any use of utsname has to be preceded with struct on
 // Solaris. See Mozilla bugs 758483 and 1353332.
 
 // static
 std::string SysInfo::CPUArchitecture() {
-#ifndef XP_SOLARIS	
+#ifndef XP_SOLARIS
   utsname info;
 #else
   struct utsname info;
-#endif  
+#endif
   if (uname(&info) < 0) {
     NOTREACHED();
     return "";
