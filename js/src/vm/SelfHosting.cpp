@@ -857,6 +857,24 @@ intrinsic_NewStringIterator(JSContext* cx, unsigned argc, Value* vp)
 }
 
 static bool
+intrinsic_NewRegExpStringIterator(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 0);
+
+    RootedObject proto(cx, GlobalObject::getOrCreateRegExpStringIteratorPrototype(cx, cx->global()));
+    if (!proto)
+        return false;
+
+    JSObject* obj = NewObjectWithGivenProto(cx, &RegExpStringIteratorObject::class_, proto);
+    if (!obj)
+        return false;
+
+    args.rval().setObject(*obj);
+    return true;
+}
+
+static bool
 intrinsic_SetCanonicalName(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
@@ -2288,6 +2306,8 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_INLINABLE_FN("GuardToStringIterator",
                     intrinsic_GuardToBuiltin<StringIteratorObject>, 1,0,
                     IntrinsicGuardToStringIterator),
+    JS_FN("GuardToRegExpStringIterator",
+          intrinsic_GuardToBuiltin<RegExpStringIteratorObject>, 1,0),
 
     JS_FN("_CreateMapIterationResultPair", intrinsic_CreateMapIterationResultPair, 0, 0),
     JS_INLINABLE_FN("_GetNextMapEntryForIterator", intrinsic_GetNextMapEntryForIterator, 2,0,
@@ -2305,6 +2325,9 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("NewStringIterator",       intrinsic_NewStringIterator,       0,0),
     JS_FN("CallStringIteratorMethodIfWrapped",
           CallNonGenericSelfhostedMethod<Is<StringIteratorObject>>,     2,0),
+    JS_FN("NewRegExpStringIterator", intrinsic_NewRegExpStringIterator, 0,0),
+    JS_FN("CallRegExpStringIteratorMethodIfWrapped",
+          CallNonGenericSelfhostedMethod<Is<RegExpStringIteratorObject>>, 2,0),
 
     JS_FN("IsStarGeneratorObject",
           intrinsic_IsInstanceOfBuiltin<StarGeneratorObject>,           1,0),
