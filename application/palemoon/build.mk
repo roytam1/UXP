@@ -6,13 +6,16 @@ installer:
 	@$(MAKE) -C application/palemoon/installer installer
 
 package:
-	@$(MAKE) -C application/palemoon/installer
+	@$(MAKE) -C application/palemoon/installer make-archive
+
+mozpackage:
+	@$(MAKE) -C application/palemoon/installer make-package
 
 package-compare:
 	@$(MAKE) -C application/palemoon/installer package-compare
 
 stage-package:
-	@$(MAKE) -C application/palemoon/installer stage-package
+	@$(MAKE) -C application/palemoon/installer stage-package make-buildinfo-file
 
 install::
 	@$(MAKE) -C application/palemoon/installer install
