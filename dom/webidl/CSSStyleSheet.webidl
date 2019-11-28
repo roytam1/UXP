@@ -23,7 +23,7 @@ interface CSSStyleSheet : StyleSheet {
   [ChromeOnly, BinaryName="parsingModeDOM"]
   readonly attribute CSSStyleSheetParsingMode parsingMode;
   [Throws, NeedsSubjectPrincipal]
-  unsigned long insertRule(DOMString rule, unsigned long index);
+  unsigned long insertRule(DOMString rule, optional unsigned long index = 0);
   [Throws, NeedsSubjectPrincipal]
   void deleteRule(unsigned long index);
 };
