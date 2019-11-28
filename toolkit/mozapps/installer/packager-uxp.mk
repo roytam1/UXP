@@ -6,11 +6,11 @@
 # very much still dependent on them
 include $(MOZILLA_DIR)/toolkit/mozapps/installer/packager.mk
 
-# This is currently only used on Windows and Linux
+# This is currently only used on Windows, Linux, and Solaris
 # on other platforms such as Mac will fall back to the orginal
 # mozilla packaging
 make-archive:
-ifeq (,$(filter Linux WINNT,$(OS_ARCH)))
+ifeq (,$(filter SunOS Linux WINNT,$(OS_ARCH)))
 	$(MAKE) make-package
 else
 	$(MAKE) stage-package make-buildinfo-file
