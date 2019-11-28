@@ -249,14 +249,6 @@ nsMessengerOSXIntegration::Observe(nsISupports* aSubject, const char* aTopic, co
     return mailSession->AddFolderListener(this, nsIFolderListener::boolPropertyChanged | nsIFolderListener::intPropertyChanged);
   }
 
-  if (!strcmp(aTopic, kUnreadImCountChangedTopic)) {
-    nsresult rv;
-    nsCOMPtr<nsISupportsPRInt32> unreadCount = do_QueryInterface(aSubject, &rv);
-    NS_ENSURE_SUCCESS(rv, rv);
-
-    return BadgeDockIcon();
-  }
-
   return NS_OK;
 }
 
