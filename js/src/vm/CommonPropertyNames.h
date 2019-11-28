@@ -282,6 +282,7 @@
     macro(RegExpFlagsGetter, RegExpFlagsGetter, "RegExpFlagsGetter") \
     macro(RegExpMatcher, RegExpMatcher, "RegExpMatcher") \
     macro(RegExpSearcher, RegExpSearcher, "RegExpSearcher") \
+    macro(RegExpStringIterator, RegExpStringIterator, "RegExp String Iterator") \
     macro(RegExpTester, RegExpTester, "RegExpTester") \
     macro(RegExp_prototype_Exec, RegExp_prototype_Exec, "RegExp_prototype_Exec") \
     macro(Reify, Reify, "Reify") \

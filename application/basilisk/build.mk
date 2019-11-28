@@ -6,13 +6,16 @@ installer:
 	@$(MAKE) -C application/basilisk/installer installer
 
 package:
-	@$(MAKE) -C application/basilisk/installer
+	@$(MAKE) -C application/basilisk/installer make-archive
+
+mozpackage:
+	@$(MAKE) -C application/basilisk/installer make-package
 
 package-compare:
 	@$(MAKE) -C application/basilisk/installer package-compare
 
 stage-package:
-	@$(MAKE) -C application/basilisk/installer stage-package
+	@$(MAKE) -C application/basilisk/installer stage-package make-buildinfo-file
 
 sdk:
 	@$(MAKE) -C application/basilisk/installer make-sdk

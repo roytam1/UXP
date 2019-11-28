@@ -151,6 +151,12 @@ class StringIteratorObject : public JSObject
     static const Class class_;
 };
 
+class RegExpStringIteratorObject : public JSObject
+{
+  public:
+    static const Class class_;
+};
+
 bool
 GetIterator(JSContext* cx, HandleObject obj, unsigned flags, MutableHandleObject objp);
 
