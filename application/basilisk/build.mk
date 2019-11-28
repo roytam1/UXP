@@ -8,8 +8,11 @@ installer:
 package:
 	@$(MAKE) -C application/basilisk/installer make-archive
 
+l10n-package:
+	@$(MAKE) -C application/palemoon/installer make-langpack
+
 mozpackage:
-	@$(MAKE) -C application/basilisk/installer make-package
+	@$(MAKE) -C application/basilisk/installer
 
 package-compare:
 	@$(MAKE) -C application/basilisk/installer package-compare

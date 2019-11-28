@@ -156,9 +156,16 @@ endif
 endif
 endif
 
-
-libs::
+# Builds using the hybrid FasterMake/RecursiveMake backend will
+# fail to produce a langpack. See bug 1255096.
+make-langpack:
+ifeq (,$(filter FasterMake+RecursiveMake,$(BUILD_BACKENDS)))
 	$(MAKE) -C $(DEPTH)/application/palemoon/locales langpack
+else
+	@echo WARNING: "Language Pack was not generated due to using the hybrid FasterMake/RecursiveMake backend." >&2
+endif
+
+libs:: make-langpack
 
 ifeq (WINNT,$(OS_ARCH))
 PKGCOMP_FIND_OPTS =

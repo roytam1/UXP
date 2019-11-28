@@ -1080,6 +1080,15 @@ class Stage_Package(MachCommandBase):
         return self._run_make(directory=".", target='stage-package', ensure_exit_code=False)
 
 @CommandProvider
+class L10n_Package(MachCommandBase):
+    """Build and package l10n as a language pack xpi."""
+
+    @Command('langpack', category='post-build',
+        description='Build and package l10n as a language pack.')
+    def l10n_package(self):
+        return self._run_make(directory=".", target='l10n-package', ensure_exit_code=False)
+
+@CommandProvider
 class Package(MachCommandBase):
     """Package the built product for distribution."""
 
