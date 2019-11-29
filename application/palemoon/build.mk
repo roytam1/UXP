@@ -8,8 +8,11 @@ installer:
 package:
 	@$(MAKE) -C application/palemoon/installer make-archive
 
+l10n-package:
+	@$(MAKE) -C application/palemoon/installer make-langpack
+
 mozpackage:
-	@$(MAKE) -C application/palemoon/installer make-package
+	@$(MAKE) -C application/palemoon/installer
 
 package-compare:
 	@$(MAKE) -C application/palemoon/installer package-compare
