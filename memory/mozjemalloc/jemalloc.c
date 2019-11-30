@@ -381,10 +381,6 @@ void *_mmap(void *addr, size_t length, int prot, int flags,
 #define __DECONST(type, var) ((type)(uintptr_t)(const void *)(var))
 #endif
 
-#ifdef MOZ_MEMORY_WINDOWS
-   /* MSVC++ does not support C99 variable-length arrays. */
-#  define RB_NO_C99_VARARRAYS
-#endif
 #include "rb.h"
 
 #ifdef MALLOC_DEBUG
