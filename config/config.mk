@@ -107,7 +107,7 @@ ifeq ($(HOST_OS_ARCH),WINNT)
     # This means we're in comm-central's topsrcdir, so we need to adjust
     # WIN_TOP_SRC (which points to mozilla's topsrcdir) for the substitution
     # to win_srcdir.
-		cc_WIN_TOP_SRC := $(WIN_TOP_SRC:%/mozilla=%)
+    cc_WIN_TOP_SRC := $(WIN_TOP_SRC:%$(subst $(topsrcdir),,$(MOZILLA_DIR))=%)
     win_srcdir := $(subst $(topsrcdir),$(cc_WIN_TOP_SRC),$(srcdir))
   endif
   BUILD_TOOLS = $(WIN_TOP_SRC)/build/unix
