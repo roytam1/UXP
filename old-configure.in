@@ -975,10 +975,10 @@ case "$target" in
             dnl target arch has already been set.
             changequote(,)
             if test -z `echo $CFLAGS | grep -i [-/]arch:`; then
-              CFLAGS="$CFLAGS -arch:SSE2"
+              CFLAGS="$CFLAGS -arch:IA32"
             fi
             if test -z `echo $CXXFLAGS | grep -i [-/]arch:`; then
-              CXXFLAGS="$CXXFLAGS -arch:SSE2"
+              CXXFLAGS="$CXXFLAGS -arch:IA32"
             fi
             changequote([,])
             SSE_FLAGS="-arch:SSE"
