@@ -5488,12 +5488,6 @@ MALLOC_OUT:
 	pthread_atfork(_malloc_prefork, _malloc_postfork, _malloc_postfork);
 #endif
 
-#if defined(NEEDS_PTHREAD_MMAP_UNALIGNED_TSD)
-	if (pthread_key_create(&mmap_unaligned_tsd, NULL) != 0) {
-		malloc_printf("<jemalloc>: Error in pthread_key_create()\n");
-	}
-#endif
-
 #if defined(MOZ_MEMORY_DARWIN) && !defined(MOZ_REPLACE_MALLOC)
 	/*
 	* Overwrite the default memory allocator to use jemalloc everywhere.
