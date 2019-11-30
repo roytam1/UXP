@@ -5949,6 +5949,7 @@ malloc_usable_size_impl(MALLOC_USABLE_SIZE_CONST_PTR void *ptr)
 	return (isalloc_validate(ptr));
 }
 
+#ifdef MALLOC_STATS
 MOZ_JEMALLOC_API void
 jemalloc_stats_impl(jemalloc_stats_t *stats)
 {
@@ -6091,7 +6092,7 @@ jemalloc_stats_impl(jemalloc_stats_t *stats)
 	assert(stats->mapped >= stats->allocated + stats->waste +
 				stats->page_cache + stats->bookkeeping);
 }
-
+#endif // MALLOC_STATS
 #ifdef MALLOC_DOUBLE_PURGE
 
 /* Explicitly remove all of this chunk's MADV_FREE'd pages from memory. */
