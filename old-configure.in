@@ -3774,6 +3774,8 @@ if test -n "$MOZ_BUNDLED_FONTS"; then
   AC_DEFINE(MOZ_BUNDLED_FONTS)
 fi
 
+AC_SUBST(MOZ_BUNDLED_FONTS)
+
 dnl ========================================================
 dnl Verify MAR signatures
 dnl ========================================================

@@ -19,6 +19,9 @@ DIRS += [
     'themes',
 ]
 
+if CONFIG['MOZ_BUNDLED_FONTS']:
+    DIRS += ['fonts']
+
 if CONFIG['MOZ_JETPACK']:
     DIRS += ['jetpack']
 
