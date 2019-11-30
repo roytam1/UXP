@@ -24,12 +24,7 @@ def Libxul(name):
 
     DELAYLOAD_DLLS += [
         'comdlg32.dll',
-        'dbghelp.dll',
         'netapi32.dll',
-        'PowrProf.dll',
-        'psapi.dll',
-        'rasapi32.dll',
-        'rasdlg.dll',
         'secur32.dll',
         'wininet.dll',
         'winspool.drv'
@@ -62,11 +57,6 @@ def Libxul(name):
 
     if CONFIG['MOZ_NEEDS_LIBATOMIC']:
         OS_LIBS += ['atomic']
-
-    # This option should go away in bug 1290972, but we need to wait until
-    # Rust 1.12 has been released.
-    if CONFIG['MOZ_RUST'] and CONFIG['OS_ARCH'] == 'Darwin':
-        LDFLAGS += ['-Wl,-no_compact_unwind']
 
 Libxul('xul')
 
