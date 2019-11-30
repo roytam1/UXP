@@ -181,9 +181,6 @@
 
 #if defined(MOZ_MEMORY_LINUX) && !defined(MOZ_MEMORY_ANDROID)
 #define	_GNU_SOURCE /* For mremap(2). */
-#if 0 /* Enable in order to test decommit code on Linux. */
-#  define MALLOC_DECOMMIT
-#endif
 #endif
 
 #include <sys/types.h>
@@ -442,46 +439,6 @@ void *_mmap(void *addr, size_t length, int prot, int flags,
 #define PIC
 #ifdef MOZ_MEMORY_DARWIN
 #  define NO_TLS
-#endif
-#if 0
-#ifdef __i386__
-#  define QUANTUM_2POW_MIN	4
-#  define SIZEOF_PTR_2POW	2
-#  define CPU_SPINWAIT		__asm__ volatile("pause")
-#endif
-#ifdef __ia64__
-#  define QUANTUM_2POW_MIN	4
-#  define SIZEOF_PTR_2POW	3
-#endif
-#ifdef __alpha__
-#  define QUANTUM_2POW_MIN	4
-#  define SIZEOF_PTR_2POW	3
-#  define NO_TLS
-#endif
-#ifdef __sparc64__
-#  define QUANTUM_2POW_MIN	4
-#  define SIZEOF_PTR_2POW	3
-#  define NO_TLS
-#endif
-#ifdef __amd64__
-#  define QUANTUM_2POW_MIN	4
-#  define SIZEOF_PTR_2POW	3
-#  define CPU_SPINWAIT		__asm__ volatile("pause")
-#endif
-#ifdef __arm__
-#  define QUANTUM_2POW_MIN	3
-#  define SIZEOF_PTR_2POW	2
-#  define NO_TLS
-#endif
-#ifdef __mips__
-#  define QUANTUM_2POW_MIN	3
-#  define SIZEOF_PTR_2POW	2
-#  define NO_TLS
-#endif
-#ifdef __powerpc__
-#  define QUANTUM_2POW_MIN	4
-#  define SIZEOF_PTR_2POW	2
-#endif
 #endif
 
 #define	SIZEOF_PTR		(1U << SIZEOF_PTR_2POW)

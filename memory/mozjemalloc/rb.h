@@ -1,7 +1,7 @@
 /******************************************************************************
  *
  * Copyright (C) 2008 Jason Evans <jasone@FreeBSD.org>.
- * Copyright (C) 2015-2018 Mark Straver <moonchild@palemoon.org>
+ * Copyright (C) 2015-2019 Mark Straver <moonchild@palemoon.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -71,11 +71,6 @@
 
 #ifndef RB_H_
 #define	RB_H_
-
-#if 0
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/lib/libc/stdlib/rb.h 178995 2008-05-14 18:33:13Z jasone $");
-#endif
 
 /* Node structure. */
 #define	rb_node(a_type)							\
