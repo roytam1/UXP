@@ -58,6 +58,9 @@ class Clobberer(object):
         if not os.path.isfile(self.src_clobber):
             self.src_clobber = os.path.join(topsrcdir, 'mozilla', 'CLOBBER')
 
+        if not os.path.isfile(self.src_clobber):
+            self.src_clobber = os.path.join(topsrcdir, 'platform', 'CLOBBER')
+
         assert os.path.isfile(self.src_clobber)
 
     def clobber_needed(self):
