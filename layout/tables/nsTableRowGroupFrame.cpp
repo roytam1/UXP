@@ -164,7 +164,7 @@ DisplayRows(nsDisplayListBuilder* aBuilder, nsFrame* aFrame,
   // Don't try to use the row cursor if we have to descend into placeholders;
   // we might have rows containing placeholders, where the row's overflow
   // area doesn't intersect the dirty rect but we need to descend into the row
-  // to see out of flows.
+  // to see out-of-flows.
   // Note that we really want to check ShouldDescendIntoFrame for all
   // the rows in |f|, but that's exactly what we're trying to avoid, so we
   // approximate it by checking it for |f|: if it's true for any row
@@ -173,11 +173,11 @@ DisplayRows(nsDisplayListBuilder* aBuilder, nsFrame* aFrame,
     nullptr : f->GetFirstRowContaining(aDirtyRect.y, &overflowAbove);
 
   if (kid) {
-    // have a cursor, use it
+    // If we have a cursor, use it
     while (kid) {
-      if (kid->GetRect().y - overflowAbove >= aDirtyRect.YMost() &&
-          kid->GetNormalRect().y - overflowAbove >= aDirtyRect.YMost())
+      if (kid->GetRect().y - overflowAbove >= aDirtyRect.YMost()) {
         break;
+      }
       f->BuildDisplayListForChild(aBuilder, kid, aDirtyRect, aLists);
       kid = kid->GetNextSibling();
     }
@@ -1911,12 +1911,12 @@ nsTableRowGroupFrame::GetFirstRowContaining(nscoord aY, nscoord* aOverflowAbove)
   // encountering a row whose overflowArea.YMost() is <= aY but which has
   // a row above it containing cell(s) that span to include aY.
   while (cursorIndex > 0 &&
-         cursorFrame->GetNormalRect().YMost() + property->mOverflowBelow > aY) {
+         cursorFrame->GetRect().YMost() + property->mOverflowBelow > aY) {
     --cursorIndex;
     cursorFrame = property->mFrames[cursorIndex];
   }
   while (cursorIndex + 1 < frameCount &&
-         cursorFrame->GetNormalRect().YMost() + property->mOverflowBelow <= aY) {
+         cursorFrame->GetRect().YMost() + property->mOverflowBelow <= aY) {
     ++cursorIndex;
     cursorFrame = property->mFrames[cursorIndex];
   }
@@ -1929,13 +1929,11 @@ nsTableRowGroupFrame::GetFirstRowContaining(nscoord aY, nscoord* aOverflowAbove)
 bool
 nsTableRowGroupFrame::FrameCursorData::AppendFrame(nsIFrame* aFrame)
 {
-  // Relative positioning can cause table parts to move, but we will still paint
-  // the backgrounds for the parts under them at their 'normal' position. That
-  // means that we must consider the overflow rects at both positions. For
-  // example, if we use relative positioning to move a row-spanning cell, we
-  // will still paint the row background for that cell at its normal position,
-  // which will overflow the row.
-  // XXX(seth): This probably isn't correct in the presence of transforms.
+  // Relative positioning can cause table parts to move, which can cause issues
+  // with the cursor position to know which rows can be skipped.
+  // To make this work, use the max difference between the frame's rect and the
+  // union of the frame's "normal" position and the overflow rect to cover the
+  // area of relatively positioned elements even if they are out of order.
   nsRect positionedOverflowRect = aFrame->GetVisualOverflowRect();
   nsPoint positionedToNormal = aFrame->GetNormalPosition() - aFrame->GetPosition();
   nsRect normalOverflowRect = positionedOverflowRect + positionedToNormal;
