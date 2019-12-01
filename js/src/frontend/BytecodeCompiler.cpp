@@ -727,5 +727,5 @@ frontend::CompileStandaloneAsyncFunction(JSContext* cx, MutableHandleFunction fu
 
     BytecodeCompiler compiler(cx, cx->tempLifoAlloc(), options, srcBuf, emptyGlobalScope,
                               TraceLogger_ParserCompileFunction);
-    return compiler.compileStandaloneFunction(fun, StarGenerator, AsyncFunction, parameterListEnd);
+    return compiler.compileStandaloneFunction(fun, NotGenerator, AsyncFunction, parameterListEnd);
 }
