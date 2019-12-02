@@ -2703,9 +2703,22 @@ nsDisplayBackgroundImage::AppendBackgroundItemsToTop(nsDisplayListBuilder* aBuil
                               bg->BottomLayer(), bgRect,
                               useWillPaintBorderOptimization);
     }
-    bgItemList.AppendNewToTop(
-        new (aBuilder) nsDisplayBackgroundColor(aBuilder, aFrame, bgRect, bg,
-                                                drawBackgroundColor ? color : NS_RGBA(0, 0, 0, 0)));
+    if (aSecondaryReferenceFrame) {
+      bgItemList.AppendNewToTop(
+          new (aBuilder) nsDisplayTableBackgroundColor(aBuilder,
+                                                       aSecondaryReferenceFrame,
+                                                       bgRect,
+                                                       bg,
+                                                       drawBackgroundColor ? color : NS_RGBA(0, 0, 0, 0),
+                                                       aFrame));
+    } else {
+      bgItemList.AppendNewToTop(
+          new (aBuilder) nsDisplayBackgroundColor(aBuilder,
+                                                  aFrame,
+                                                  bgRect,
+                                                  bg,
+                                                  drawBackgroundColor ? color : NS_RGBA(0, 0, 0, 0)));
+    }
   }
 
   if (isThemed) {
