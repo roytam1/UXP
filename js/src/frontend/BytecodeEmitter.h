@@ -98,15 +98,15 @@ struct CGScopeNoteList {
     void finish(ScopeNoteArray* array, uint32_t prologueLength);
 };
 
-struct CGYieldOffsetList {
+struct CGYieldAndAwaitOffsetList {
     Vector<uint32_t> list;
     uint32_t numYields;
     uint32_t numAwaits;
-    explicit CGYieldOffsetList(ExclusiveContext* cx) : list(cx), numYields(0), numAwaits(0) {}
+    explicit CGYieldAndAwaitOffsetList(ExclusiveContext* cx) : list(cx), numYields(0), numAwaits(0) {}
 
     MOZ_MUST_USE bool append(uint32_t offset) { return list.append(offset); }
     size_t length() const { return list.length(); }
-    void finish(YieldOffsetArray& array, uint32_t prologueLength);
+    void finish(YieldAndAwaitOffsetArray& array, uint32_t prologueLength);
 };
 
 static size_t MaxBytecodeLength = INT32_MAX;
@@ -237,10 +237,10 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     CGScopeNoteList  scopeNoteList;  /* list of emitted block scope notes */
 
     /*
-     * For each yield op, map the yield index (stored as bytecode operand) to
-     * the offset of the next op.
+     * For each yield or await op, map the yield and await index (stored as
+     * bytecode operand) to the offset of the next op.
      */
-    CGYieldOffsetList yieldOffsetList;
+    CGYieldAndAwaitOffsetList yieldAndAwaitOffsetList;
 
     uint16_t        typesetCount;   /* Number of JOF_TYPESET opcodes generated */
 
