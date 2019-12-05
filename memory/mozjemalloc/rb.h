@@ -1,7 +1,7 @@
 /******************************************************************************
  *
  * Copyright (C) 2008 Jason Evans <jasone@FreeBSD.org>.
- * Copyright (C) 2015-2018 Mark Straver <moonchild@palemoon.org>
+ * Copyright (C) 2015-2019 Mark Straver <moonchild@palemoon.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,7 +36,6 @@
  *   (Optional.)
  *   #define SIZEOF_PTR ...
  *   #define SIZEOF_PTR_2POW ...
- *   #define RB_NO_C99_VARARRAYS
  *
  *   (Optional, see assert(3).)
  *   #define NDEBUG
@@ -71,11 +70,6 @@
 
 #ifndef RB_H_
 #define	RB_H_
-
-#if 0
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/lib/libc/stdlib/rb.h 178995 2008-05-14 18:33:13Z jasone $");
-#endif
 
 /* Node structure. */
 #define	rb_node(a_type)							\
@@ -774,39 +768,26 @@ a_prefix##remove(a_tree_type *tree, a_type *node) {			\
  * effort.
  */
 
-#ifdef RB_NO_C99_VARARRAYS
-   /*
-    * Avoid using variable-length arrays, at the cost of using more stack space.
-    * Size the path arrays such that they are always large enough, even if a
-    * tree consumes all of memory.  Since each node must contain a minimum of
-    * two pointers, there can never be more nodes than:
-    *
-    *   1 << ((SIZEOF_PTR<<3) - (SIZEOF_PTR_2POW+1))
-    *
-    * Since the depth of a tree is limited to 3*lg(#nodes), the maximum depth
-    * is:
-    *
-    *   (3 * ((SIZEOF_PTR<<3) - (SIZEOF_PTR_2POW+1)))
-    *
-    * This works out to a maximum depth of 87 and 180 for 32- and 64-bit
-    * systems, respectively (approximatly 348 and 1440 bytes, respectively).
-    */
-#  define rbp_compute_f_height(a_type, a_field, a_tree)
-#  define rbp_f_height	(3 * ((SIZEOF_PTR<<3) - (SIZEOF_PTR_2POW+1)))
-#  define rbp_compute_fr_height(a_type, a_field, a_tree)
-#  define rbp_fr_height	(3 * ((SIZEOF_PTR<<3) - (SIZEOF_PTR_2POW+1)))
-#else
-#  define rbp_compute_f_height(a_type, a_field, a_tree)			\
-    /* Compute the maximum possible tree depth (3X the black height). */\
-    unsigned rbp_f_height;						\
-    rbp_black_height(a_type, a_field, a_tree, rbp_f_height);		\
-    rbp_f_height *= 3;
-#  define rbp_compute_fr_height(a_type, a_field, a_tree)		\
-    /* Compute the maximum possible tree depth (3X the black height). */\
-    unsigned rbp_fr_height;						\
-    rbp_black_height(a_type, a_field, a_tree, rbp_fr_height);		\
-    rbp_fr_height *= 3;
-#endif
+/*
+ * Avoid using variable-length arrays.
+ * Size the path arrays such that they are always large enough, even if a
+ * tree consumes all of memory. Since each node must contain a minimum of
+ * two pointers, there can never be more nodes than:
+ *
+ *   1 << ((SIZEOF_PTR<<3) - (SIZEOF_PTR_2POW+1))
+ *
+ * Since the depth of a tree is limited to 3*lg(#nodes), the maximum depth
+ * is:
+ *
+ *   (3 * ((SIZEOF_PTR<<3) - (SIZEOF_PTR_2POW+1)))
+ *
+ * This works out to a maximum depth of 87 and 180 for 32- and 64-bit
+ * systems, respectively (approximatly 348 and 1440 bytes, respectively).
+ */
+#define rbp_compute_f_height(a_type, a_field, a_tree)
+#define rbp_f_height	(3 * ((SIZEOF_PTR<<3) - (SIZEOF_PTR_2POW+1)))
+#define rbp_compute_fr_height(a_type, a_field, a_tree)
+#define rbp_fr_height	(3 * ((SIZEOF_PTR<<3) - (SIZEOF_PTR_2POW+1)))
 
 #define	rb_foreach_begin(a_type, a_field, a_tree, a_var) {		\
     rbp_compute_f_height(a_type, a_field, a_tree)			\
