@@ -2543,6 +2543,12 @@ WorkerPrivateParent<Derived>::DisableDebugger()
 
   WorkerPrivate* self = ParentAsWorkerPrivate();
 
+  // RegisterDebugger might have been dispatched but not completed.
+  // Wait for its execution to complete before unregistering.
+  if (!NS_IsMainThread()) {
+    self->WaitForIsDebuggerRegistered(true);
+  }
+
   if (NS_FAILED(UnregisterWorkerDebugger(self))) {
     NS_WARNING("Failed to unregister worker debugger!");
   }
