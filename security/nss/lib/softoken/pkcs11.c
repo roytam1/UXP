@@ -2674,8 +2674,9 @@ sftk_CloseAllSessions(SFTKSlot *slot, PRBool logout)
             } else {
                 SKIP_AFTER_FORK(PZ_Unlock(lock));
             }
-            if (session)
-                sftk_FreeSession(session);
+            if (session) {
+                sftk_DestroySession(session);
+            }
         } while (session != NULL);
     }
     return CKR_OK;
@@ -3910,8 +3911,6 @@ NSC_CloseSession(CK_SESSION_HANDLE hSession)
     if (sftkqueue_is_queued(session, hSession, slot->head, slot->sessHashSize)) {
         sessionFound = PR_TRUE;
         sftkqueue_delete(session, hSession, slot->head, slot->sessHashSize);
-        session->refCount--; /* can't go to zero while we hold the reference */
-        PORT_Assert(session->refCount > 0);
     }
     PZ_Unlock(lock);
 
@@ -3932,6 +3931,8 @@ NSC_CloseSession(CK_SESSION_HANDLE hSession)
         if (session->info.flags & CKF_RW_SESSION) {
             (void)PR_ATOMIC_DECREMENT(&slot->rwSessionCount);
         }
+        sftk_DestroySession(session);
+        session = NULL;
     }
 
     sftk_FreeSession(session);
