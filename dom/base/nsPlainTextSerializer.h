@@ -81,6 +81,7 @@ private:
   void Write(const nsAString& aString);
   bool IsInPre();
   bool IsInOL();
+  bool IsInOLOrUL() const;
   bool IsCurrentNodeConverted();
   bool MustSuppressLeaf();
 
@@ -218,8 +219,7 @@ private:
   uint32_t          mIgnoreAboveIndex;
 
   // The stack for ordered lists
-  int32_t         *mOLStack;
-  uint32_t         mOLStackIndex;
+  AutoTArray<int32_t, 100> mOLStack;
 
   uint32_t         mULCount;
 
