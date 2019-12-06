@@ -271,6 +271,7 @@ public:
 
   PACResolver()
     : mStatus(NS_ERROR_FAILURE)
+    , mMutex("PACResolver::Mutex")
   {
   }
 
@@ -279,9 +280,15 @@ public:
                               nsIDNSRecord *record,
                               nsresult status) override
   {
-    if (mTimer) {
-      mTimer->Cancel();
-      mTimer = nullptr;
+    nsCOMPtr<nsITimer> timer;
+    {
+      MutexAutoLock lock(mMutex);
+      timer.swap(mTimer);
+      mRequest = nullptr;
+    }
+    
+    if (timer) {
+      timer->Cancel();
     }
 
     mRequest = nullptr;
@@ -293,9 +300,15 @@ public:
   // nsITimerCallback
   NS_IMETHOD Notify(nsITimer *timer) override
   {
-    if (mRequest)
-      mRequest->Cancel(NS_ERROR_NET_TIMEOUT);
-    mTimer = nullptr;
+    nsCOMPtr<nsICancelable> request;
+    {
+      MutexAutoLock lock(mMutex);
+      request.swap(mRequest);
+      mTimer = nullptr;
+    }
+    if (request) {
+      request->Cancel(NS_ERROR_NET_TIMEOUT);
+    }
     return NS_OK;
   }
 
@@ -303,6 +316,7 @@ public:
   nsCOMPtr<nsICancelable> mRequest;
   nsCOMPtr<nsIDNSRecord>  mResponse;
   nsCOMPtr<nsITimer>      mTimer;
+  Mutex                   mMutex;
 
 private:
   ~PACResolver() {}
