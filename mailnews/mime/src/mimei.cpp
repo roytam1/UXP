@@ -725,21 +725,20 @@ mime_find_class (const char *content_type, MimeHeaders *hdrs,
     else if (!PL_strcasecmp(content_type, APPLICATION_XPKCS7_MIME)
              || !PL_strcasecmp(content_type, APPLICATION_PKCS7_MIME)) {
 
-        if (Preferences::GetBool("mailnews.p7m_subparts_external", false) &&
-            opts->is_child) {
-          // We do not allow encrypted parts except as top level.
-          // Allowing them would leak the plain text in case the part is
-          // cleverly hidden and the decrypted content gets included in
-          // replies and forwards.
-          clazz = (MimeObjectClass *)&mimeSuppressedCryptoClass;
-          return clazz;
-        }
-
-        char *ct = (hdrs ? MimeHeaders_get(hdrs, HEADER_CONTENT_TYPE,
-                                           false, false)
-                           : nullptr);
-        char *st = (ct ? MimeHeaders_get_parameter(ct, "smime-type", NULL, NULL)
-                         : nullptr);
+      if (Preferences::GetBool("mailnews.p7m_subparts_external", true) &&
+          opts->is_child) {
+        // We do not allow encrypted parts except as top level.
+        // Allowing them would leak the plain text in case the part is
+        // cleverly hidden and the decrypted content gets included in
+        // replies and forwards.
+        clazz = (MimeObjectClass *)&mimeSuppressedCryptoClass;
+      } else {
+        char *ct =
+            hdrs ? MimeHeaders_get(hdrs, HEADER_CONTENT_TYPE, false, false)
+                 : nullptr;
+        char *st =
+            ct ? MimeHeaders_get_parameter(ct, "smime-type", nullptr, nullptr)
+               : nullptr;
 
         /* by default, assume that it is an encrypted message */
         clazz = (MimeObjectClass *)&mimeEncryptedCMSClass;
@@ -747,9 +746,8 @@ mime_find_class (const char *content_type, MimeHeaders *hdrs,
         /* if the smime-type parameter says that it's a certs-only or
            compressed file, then show it as an attachment, however
            (MimeEncryptedCMS doesn't handle these correctly) */
-        if (st &&
-            (!PL_strcasecmp(st, "certs-only") ||
-             !PL_strcasecmp(st, "compressed-data")))
+        if (st && (!PL_strcasecmp(st, "certs-only") ||
+                   !PL_strcasecmp(st, "compressed-data")))
           clazz = (MimeObjectClass *)&mimeExternalObjectClass;
         else {
           /* look at the file extension... less reliable, but still covered
@@ -763,14 +761,14 @@ mime_find_class (const char *content_type, MimeHeaders *hdrs,
               prefBranch->GetBoolPref("mailnews.p7m_external", &p7mExternal);
             if (suf &&
                 ((!PL_strcasecmp(suf, ".p7m") && p7mExternal) ||
-                 !PL_strcasecmp(suf, ".p7c") ||
-                 !PL_strcasecmp(suf, ".p7z")))
+                 !PL_strcasecmp(suf, ".p7c") || !PL_strcasecmp(suf, ".p7z")))
               clazz = (MimeObjectClass *)&mimeExternalObjectClass;
           }
           PR_Free(name);
         }
         PR_Free(st);
         PR_Free(ct);
+      }
     }
 #endif
     /* A few types which occur in the real world and which we would otherwise
