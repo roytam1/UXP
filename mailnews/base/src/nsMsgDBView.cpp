@@ -1136,6 +1136,8 @@ nsresult nsMsgDBView::UpdateDisplayMessage(nsMsgViewIndex viewPosition)
       NS_ENSURE_SUCCESS(rv,rv);
 
       nsString subject;
+      if (viewPosition >= (nsMsgViewIndex)m_flags.Length())
+        return NS_MSG_INVALID_DBVIEW_INDEX;
       FetchSubject(msgHdr, m_flags[viewPosition], subject);
 
       nsCString keywords;
@@ -1148,6 +1150,8 @@ nsresult nsMsgDBView::UpdateDisplayMessage(nsMsgViewIndex viewPosition)
 
       if (folder)
       {
+        if (viewPosition >= (nsMsgViewIndex)m_keys.Length())
+          return NS_MSG_INVALID_DBVIEW_INDEX;
         rv = folder->SetLastMessageLoaded(m_keys[viewPosition]);
         NS_ENSURE_SUCCESS(rv,rv);
       }
@@ -1175,6 +1179,8 @@ NS_IMETHODIMP nsMsgDBView::LoadMessageByViewIndex(nsMsgViewIndex aViewIndex)
     nsCOMPtr<nsIMessenger> messenger (do_QueryReferent(mMessengerWeak));
     NS_ENSURE_TRUE(messenger, NS_ERROR_FAILURE);
     messenger->OpenURL(uri);
+    if (aViewIndex >= (nsMsgViewIndex)m_keys.Length())
+      return NS_MSG_INVALID_DBVIEW_INDEX;
     m_currentlyDisplayedMsgKey = m_keys[aViewIndex];
     m_currentlyDisplayedMsgUri = uri;
     m_currentlyDisplayedViewIndex = aViewIndex;
