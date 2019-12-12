@@ -49,6 +49,7 @@ const GMP_PLUGINS = [
     homepageURL:     "http://www.openh264.org/",
     optionsURL:      "chrome://mozapps/content/extensions/gmpPrefs.xul"
   },
+/*
   {
     id:              EME_ADOBE_ID,
     name:            "eme-adobe_name",
@@ -58,11 +59,12 @@ const GMP_PLUGINS = [
     optionsURL:      "chrome://mozapps/content/extensions/gmpPrefs.xul",
     isEME:           true
   },
+*/
   {
     id:              WIDEVINE_ID,
-    name:            "widevine_name",
+    name:            "widevine_description",
     // Describe the purpose of both CDMs in the same way.
-    description:     "widevine_description2",
+    description:     "eme-adobe_description",
     licenseURL:      "https://www.google.com/policies/privacy/",
     homepageURL:     "https://www.widevine.com/",
     optionsURL:      "chrome://mozapps/content/extensions/gmpPrefs.xul",
