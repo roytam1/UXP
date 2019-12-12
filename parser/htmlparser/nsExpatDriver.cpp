@@ -30,6 +30,7 @@
 #include "nsContentUtils.h"
 #include "nsNullPrincipal.h"
 
+#include "mozilla/IntegerTypeTraits.h"
 #include "mozilla/Logging.h"
 
 using mozilla::fallible;
@@ -40,6 +41,9 @@ using mozilla::LogLevel;
 static const char16_t kUTF16[] = { 'U', 'T', 'F', '-', '1', '6', '\0' };
 
 static mozilla::LazyLogModule gExpatDriverLog("expatdriver");
+
+// The maximum tree depth used for XML-based files (xml/svg/etc.)
+static const uint16_t sMaxXMLDepth = 2048;
 
 /***************************** EXPAT CALL BACKS ******************************/
 // The callback handlers that get called from the expat parser.
@@ -338,9 +342,6 @@ NS_IMPL_CYCLE_COLLECTING_RELEASE(nsExpatDriver)
 
 NS_IMPL_CYCLE_COLLECTION(nsExpatDriver, mSink, mExtendedSink)
 
-// We store the tagdepth in a Uint8, so make sure the limit fits in a Uint8.
-PR_STATIC_ASSERT(MAX_XML_TREE_DEPTH <= UINT8_MAX);
-
 nsExpatDriver::nsExpatDriver()
   : mExpatParser(nullptr),
     mInCData(false),
@@ -381,7 +382,12 @@ nsExpatDriver::HandleStartElement(const char16_t *aValue,
   }
 
   if (mSink) {
-    if (++mTagDepth == MAX_XML_TREE_DEPTH) {
+    // Sanity check: Make sure the limit fits in the type the tag depth tracker
+    // was declared as.
+    static_assert(sMaxXMLDepth <= mozilla::MaxValue<decltype(nsExpatDriver::mTagDepth)>::value,
+                  "Maximum XML parsing depth type mismatch: value too large.");
+
+    if (++mTagDepth >= sMaxXMLDepth) {
       MaybeStopParser(NS_ERROR_HTMLPARSER_HIERARCHYTOODEEP);
       return;
     }
