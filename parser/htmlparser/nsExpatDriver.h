@@ -16,9 +16,6 @@
 #include "nsIParser.h"
 #include "nsCycleCollectionParticipant.h"
 
-// Tree depth limit for XML-based files (xml/svg/etc.)
-#define MAX_XML_TREE_DEPTH 200
-
 class nsIExpatSink;
 class nsIExtendedExpatSink;
 struct nsCatalogData;
@@ -123,13 +120,14 @@ private:
   // Necko
   bool             mIsFinalChunk;
   
-  uint8_t          mTagDepth;
+  // The depth of nested parsing we are currently at
+  uint16_t         mTagDepth;
 
   nsresult         mInternalState;
 
   // The length of the data in Expat's buffer (in number of PRUnichars).
   uint32_t         mExpatBuffered;
-
+  
   // These sinks all refer the same conceptual object. mOriginalSink is
   // identical with the nsIContentSink* passed to WillBuildModel, and exists
   // only to avoid QI-ing back to nsIContentSink*.
