@@ -3785,10 +3785,12 @@ Parser<ParseHandler>::functionStmt(uint32_t toStringStart, YieldHandling yieldHa
 
     GeneratorKind generatorKind = NotGenerator;
     if (tt == TOK_MUL) {
+#ifdef RELEASE_OR_BETA
         if (asyncKind != SyncFunction) {
             error(JSMSG_ASYNC_GENERATOR);
             return null();
         }
+#endif
         generatorKind = StarGenerator;
         if (!tokenStream.getToken(&tt))
             return null();
@@ -3857,10 +3859,12 @@ Parser<ParseHandler>::functionExpr(uint32_t toStringStart, InvokedPrediction inv
         return null();
 
     if (tt == TOK_MUL) {
+#ifdef RELEASE_OR_BETA
         if (asyncKind != SyncFunction) {
             error(JSMSG_ASYNC_GENERATOR);
             return null();
         }
+#endif
         generatorKind = StarGenerator;
         if (!tokenStream.getToken(&tt))
             return null();
@@ -9468,11 +9472,6 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
 
     bool isGenerator = false;
     bool isAsync = false;
-    if (ltok == TOK_MUL) {
-        isGenerator = true;
-        if (!tokenStream.getToken(&ltok))
-            return null();
-    }
 
     if (ltok == TOK_ASYNC) {
         // AsyncMethod[Yield, Await]:
@@ -9500,9 +9499,16 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
         }
     }
 
-    if (isAsync && isGenerator) {
-        error(JSMSG_ASYNC_GENERATOR);
-        return null();
+    if (ltok == TOK_MUL) {
+#ifdef RELEASE_OR_BETA
+        if (isAsync) {
+            error(JSMSG_ASYNC_GENERATOR);
+            return null();
+        }
+#endif
+        isGenerator = true;
+        if (!tokenStream.getToken(&ltok))
+            return null();
     }
 
     propAtom.set(nullptr);

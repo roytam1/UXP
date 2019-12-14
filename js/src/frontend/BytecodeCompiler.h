@@ -85,6 +85,12 @@ CompileStandaloneAsyncFunction(JSContext* cx, MutableHandleFunction fun,
                                mozilla::Maybe<uint32_t> parameterListEnd);
 
 MOZ_MUST_USE bool
+CompileStandaloneAsyncGenerator(JSContext* cx, MutableHandleFunction fun,
+                                const ReadOnlyCompileOptions& options,
+                                JS::SourceBufferHolder& srcBuf,
+                                mozilla::Maybe<uint32_t> parameterListEnd);
+
+MOZ_MUST_USE bool
 CompileAsyncFunctionBody(JSContext* cx, MutableHandleFunction fun,
                          const ReadOnlyCompileOptions& options,
                          Handle<PropertyNameVector> formals, JS::SourceBufferHolder& srcBuf);
