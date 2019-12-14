@@ -6548,29 +6548,6 @@ Parser<ParseHandler>::returnStatement(YieldHandling yieldHandling)
 
 template <typename ParseHandler>
 typename ParseHandler::Node
-Parser<ParseHandler>::newYieldExpression(uint32_t begin, typename ParseHandler::Node expr,
-                                         bool isYieldStar)
-{
-    Node generator = newDotGeneratorName();
-    if (!generator)
-        return null();
-    if (isYieldStar)
-        return handler.newYieldStarExpression(begin, expr, generator);
-    return handler.newYieldExpression(begin, expr, generator);
-}
-
-template <typename ParseHandler>
-typename ParseHandler::Node
-Parser<ParseHandler>::newAwaitExpression(uint32_t begin, typename ParseHandler::Node expr)
-{
-    Node generator = newDotGeneratorName();
-    if (!generator)
-        return null();
-    return handler.newAwaitExpression(begin, expr, generator);
-}
-
-template <typename ParseHandler>
-typename ParseHandler::Node
 Parser<ParseHandler>::yieldExpression(InHandling inHandling)
 {
     MOZ_ASSERT(tokenStream.isCurrentTokenType(TOK_YIELD));
@@ -6617,7 +6594,9 @@ Parser<ParseHandler>::yieldExpression(InHandling inHandling)
             if (!exprNode)
                 return null();
         }
-        return newYieldExpression(begin, exprNode, kind == PNK_YIELD_STAR);
+        if (kind == PNK_YIELD_STAR)
+            return handler.newYieldStarExpression(begin, exprNode);
+        return handler.newYieldExpression(begin, exprNode);
       }
 
       case NotGenerator:
@@ -6694,7 +6673,7 @@ Parser<ParseHandler>::yieldExpression(InHandling inHandling)
                 return null();
         }
 
-        return newYieldExpression(begin, exprNode);
+        return handler.newYieldExpression(begin, exprNode);
       }
     }
 
@@ -8449,7 +8428,7 @@ Parser<ParseHandler>::unaryExpr(YieldHandling yieldHandling, TripledotHandling t
             if (!kid)
                 return null();
             pc->lastAwaitOffset = begin;
-            return newAwaitExpression(begin, kid);
+            return handler.newAwaitExpression(begin, kid);
         }
       }
 
@@ -8707,7 +8686,7 @@ Parser<ParseHandler>::comprehensionTail(GeneratorKind comprehensionKind)
         return handler.newArrayPush(begin, bodyExpr);
 
     MOZ_ASSERT(comprehensionKind == StarGenerator);
-    Node yieldExpr = newYieldExpression(begin, bodyExpr);
+    Node yieldExpr = handler.newYieldExpression(begin, bodyExpr);
     if (!yieldExpr)
         return null();
     yieldExpr = handler.parenthesize(yieldExpr);
