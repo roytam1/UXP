@@ -353,6 +353,7 @@
     _(Rest)                         \
     _(TypeOfV)                      \
     _(ToAsync)                      \
+    _(ToAsyncGen)                   \
     _(ToIdV)                        \
     _(Floor)                        \
     _(FloorF)                       \
