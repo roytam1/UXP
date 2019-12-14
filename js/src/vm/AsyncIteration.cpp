@@ -315,6 +315,53 @@ AsyncGeneratorObject::create(JSContext* cx, HandleFunction asyncGen, HandleValue
     return asyncGenObj;
 }
 
+static MOZ_MUST_USE bool
+InternalEnqueue(JSContext* cx, HandleArrayObject queue, HandleValue val)
+{
+    uint32_t length;
+    if (!GetLengthProperty(cx, queue, &length))
+        return false;
+
+    if (length >= MAX_ARRAY_INDEX) {
+        ReportOutOfMemory(cx);
+        return false;
+    }
+
+    if (!DefineElement(cx, queue, length, val))
+        return false;
+    return SetLengthProperty(cx, queue, length + 1);
+}
+
+static MOZ_MUST_USE bool
+InternalDequeue(JSContext* cx, HandleArrayObject queue, MutableHandleValue val)
+{
+    uint32_t length;
+    if (!GetLengthProperty(cx, queue, &length))
+        return false;
+
+    MOZ_ASSERT(length != 0, "Queue should not be empty here");
+
+    if (!GetElement(cx, queue, queue, 0, val))
+        return false;
+
+    uint32_t newlength = length - 1;
+    RootedValue tmp(cx);
+    for (uint32_t i = 0; i < newlength; i++) {
+        if (!GetElement(cx, queue, queue, i + 1, &tmp))
+            return false;
+        if (!DefineElement(cx, queue, i, tmp))
+            return false;
+    }
+    ObjectOpResult result;
+    if (!DeleteElement(cx, queue, newlength, result))
+        return false;
+    if (!result) {
+        RootedId id(cx, INT_TO_JSID(newlength));
+        return result.reportError(cx, queue, id);
+    }
+    return SetLengthProperty(cx, queue, newlength);
+}
+
 /* static */ MOZ_MUST_USE bool
 AsyncGeneratorObject::enqueueRequest(JSContext* cx, Handle<AsyncGeneratorObject*> asyncGenObj,
                                      Handle<AsyncGeneratorRequest*> request)
@@ -339,11 +386,8 @@ AsyncGeneratorObject::enqueueRequest(JSContext* cx, Handle<AsyncGeneratorObject*
     }
 
     RootedArrayObject queue(cx, asyncGenObj->queue());
-
-    FixedInvokeArgs<1> args(cx);
-    args[0].setObject(*request);
-    args.setThis(ObjectValue(*queue));
-    return CallJSNative(cx, array_push, args);
+    RootedValue requestVal(cx, ObjectValue(*request));
+    return InternalEnqueue(cx, queue, requestVal);
 }
 
 /* static */ AsyncGeneratorRequest*
@@ -356,13 +400,11 @@ AsyncGeneratorObject::dequeueRequest(JSContext* cx, Handle<AsyncGeneratorObject*
     }
 
     RootedArrayObject queue(cx, asyncGenObj->queue());
-
-    FixedInvokeArgs<0> args(cx);
-    args.setThis(ObjectValue(*queue));
-    if (!CallJSNative(cx, array_shift, args))
+    RootedValue requestVal(cx);
+    if (!InternalDequeue(cx, queue, &requestVal))
         return nullptr;
 
-    return &args.rval().toObject().as<AsyncGeneratorRequest>();
+    return &requestVal.toObject().as<AsyncGeneratorRequest>();
 }
 
 /* static */ AsyncGeneratorRequest*
