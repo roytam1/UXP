@@ -1940,7 +1940,6 @@ CASE(EnableInterruptsPseudoOpcode)
 CASE(JSOP_NOP)
 CASE(JSOP_NOP_DESTRUCTURING)
 CASE(JSOP_UNUSED126)
-CASE(JSOP_UNUSED210)
 CASE(JSOP_UNUSED211)
 CASE(JSOP_TRY_DESTRUCTURING_ITERCLOSE)
 CASE(JSOP_UNUSED221)
@@ -3596,6 +3595,17 @@ CASE(JSOP_TOASYNCGEN)
 }
 END_CASE(JSOP_TOASYNCGEN)
 
+CASE(JSOP_TOASYNCITER)
+{
+    ReservedRooted<JSObject*> iter(&rootObject1, &REGS.sp[-1].toObject());
+    JSObject* asyncIter = CreateAsyncFromSyncIterator(cx, iter);
+    if (!asyncIter)
+        goto error;
+
+    REGS.sp[-1].setObject(*asyncIter);
+}
+END_CASE(JSOP_TOASYNCITER)
+
 CASE(JSOP_SETFUNNAME)
 {
     MOZ_ASSERT(REGS.stackDepth() >= 2);
@@ -5138,6 +5148,10 @@ js::ThrowCheckIsObject(JSContext* cx, CheckIsObjectKind kind)
         break;
       case CheckIsObjectKind::GetIterator:
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_GET_ITER_RETURNED_PRIMITIVE);
+        break;
+      case CheckIsObjectKind::GetAsyncIterator:
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                  JSMSG_GET_ASYNC_ITER_RETURNED_PRIMITIVE);
         break;
       default:
         MOZ_CRASH("Unknown kind");
