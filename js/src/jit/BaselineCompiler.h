@@ -197,6 +197,8 @@ namespace jit {
     _(JSOP_RUNONCE)            \
     _(JSOP_REST)               \
     _(JSOP_TOASYNC)            \
+    _(JSOP_TOASYNCGEN)         \
+    _(JSOP_TOASYNCITER)        \
     _(JSOP_TOID)               \
     _(JSOP_TOSTRING)           \
     _(JSOP_TABLESWITCH)        \
@@ -208,6 +210,7 @@ namespace jit {
     _(JSOP_GENERATOR)          \
     _(JSOP_INITIALYIELD)       \
     _(JSOP_YIELD)              \
+    _(JSOP_AWAIT)              \
     _(JSOP_DEBUGAFTERYIELD)    \
     _(JSOP_FINALYIELDRVAL)     \
     _(JSOP_RESUME)             \
@@ -256,9 +259,9 @@ class BaselineCompiler : public BaselineCompilerSpecific
     // equivalent positions when debug mode is off.
     CodeOffset postDebugPrologueOffset_;
 
-    // For each INITIALYIELD or YIELD op, this Vector maps the yield index
-    // to the bytecode offset of the next op.
-    Vector<uint32_t>            yieldOffsets_;
+    // For each INITIALYIELD or YIELD or AWAIT op, this Vector maps the yield
+    // index to the bytecode offset of the next op.
+    Vector<uint32_t>            yieldAndAwaitOffsets_;
 
     // Whether any on stack arguments are modified.
     bool modifiesArguments_;
@@ -350,7 +353,7 @@ class BaselineCompiler : public BaselineCompilerSpecific
 
     MOZ_MUST_USE bool addPCMappingEntry(bool addIndexEntry);
 
-    MOZ_MUST_USE bool addYieldOffset();
+    MOZ_MUST_USE bool addYieldAndAwaitOffset();
 
     void getEnvironmentCoordinateObject(Register reg);
     Address getEnvironmentCoordinateAddressFromObject(Register objReg, Register reg);

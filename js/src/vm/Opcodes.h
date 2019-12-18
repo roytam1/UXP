@@ -1962,7 +1962,15 @@
      *   Stack: this => this
      */ \
     macro(JSOP_CHECKTHISREINIT,191,"checkthisreinit",NULL,1,  1,  1,  JOF_BYTE) \
-    macro(JSOP_UNUSED192,     192,"unused192",   NULL,    1,  0,  0,  JOF_BYTE) \
+    /*
+     * Pops the top of stack value as 'unwrapped', converts it to async
+     * generator 'wrapped', and pushes 'wrapped' back on the stack.
+     *   Category: Statements
+     *   Type: Generator
+     *   Operands:
+     *   Stack: unwrapped => wrapped
+     */ \
+    macro(JSOP_TOASYNCGEN,    192, "toasyncgen", NULL,    1,  1,  1, JOF_BYTE) \
     \
     /*
      * Pops the top two values on the stack as 'propval' and 'obj', pushes
@@ -2065,7 +2073,7 @@
      * interpretation.
      *   Category: Statements
      *   Type: Generator
-     *   Operands: uint24_t yieldIndex
+     *   Operands: uint24_t yieldAndAwaitIndex
      *   Stack: generator =>
      */ \
     macro(JSOP_INITIALYIELD,  202,"initialyield", NULL,   4,  1,  1,  JOF_UINT24) \
@@ -2074,7 +2082,7 @@
      * returns 'rval1'. Pushes sent value from 'send()' onto the stack.
      *   Category: Statements
      *   Type: Generator
-     *   Operands: uint24_t yieldIndex
+     *   Operands: uint24_t yieldAndAwaitIndex
      *   Stack: rval1, gen => rval2
      */ \
     macro(JSOP_YIELD,         203,"yield",       NULL,    4,  2,  1,  JOF_UINT24) \
@@ -2129,8 +2137,24 @@
      *   Stack: =>
      */ \
     macro(JSOP_DEBUGAFTERYIELD,  208, "debugafteryield",  NULL,  1,  0,  0,  JOF_BYTE) \
-    macro(JSOP_UNUSED209,     209, "unused209",    NULL,  1,  0,  0,  JOF_BYTE) \
-    macro(JSOP_UNUSED210,     210, "unused210",    NULL,  1,  0,  0,  JOF_BYTE) \
+    /*
+     * Pops the generator and the return value 'promise', stops interpretation
+     * and returns 'promise'. Pushes resolved value onto the stack.
+     *   Category: Statements
+     *   Type: Generator
+     *   Operands: uint24_t yieldAndAwaitIndex
+     *   Stack: promise, gen => resolved
+     */ \
+    macro(JSOP_AWAIT,         209, "await",        NULL,  4,  2,  1,  JOF_UINT24) \
+    /*
+     * Pops the iterator from the top of the stack, and create async iterator
+     * from it and push the async iterator back onto the stack.
+     *   Category: Statements
+     *   Type: Generator
+     *   Operands:
+     *   Stack: iter => asynciter
+     */ \
+    macro(JSOP_TOASYNCITER,   210, "toasynciter",  NULL,  1,  1,  1,  JOF_BYTE) \
     macro(JSOP_UNUSED211,     211, "unused211",    NULL,  1,  0,  0,  JOF_BYTE) \
     /*
      * Initializes generator frame, creates a generator and pushes it on the

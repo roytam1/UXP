@@ -32,7 +32,6 @@
 #include "js/Vector.h"
 #include "proxy/ScriptedProxyHandler.h"
 #include "vm/ArgumentsObject.h"
-#include "vm/AsyncFunction.h"
 #include "vm/DebuggerMemory.h"
 #include "vm/GeneratorObject.h"
 #include "vm/SPSProfiler.h"
@@ -1560,16 +1559,11 @@ CheckResumptionValue(JSContext* cx, AbstractFramePtr frame, const Maybe<HandleVa
                      JSTrapStatus status, MutableHandleValue vp)
 {
     if (status == JSTRAP_RETURN && frame && frame.isFunctionFrame()) {
-        // Don't let a { return: ... } resumption value make a generator or
-        // async function violate the iterator protocol. The return value from
+        // Don't let a { return: ... } resumption value make a generator
+        // function violate the iterator protocol. The return value from
         // such a frame must have the form { done: <bool>, value: <anything> }.
         RootedFunction callee(cx, frame.callee());
-        if (callee->isAsync()) {
-            if (!CheckAsyncResumptionValue(cx, vp)) {
-                JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DEBUG_BAD_AWAIT);
-                return false;
-            }
-        } else if (callee->isStarGenerator()) {
+        if (callee->isStarGenerator()) {
             if (!CheckStarGeneratorResumptionValue(cx, vp)) {
                 JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DEBUG_BAD_YIELD);
                 return false;
@@ -7356,7 +7350,8 @@ DebuggerFrame::getEnvironment(JSContext* cx, HandleDebuggerFrame frame,
 /* static */ bool
 DebuggerFrame::getIsGenerator(HandleDebuggerFrame frame)
 {
-    return DebuggerFrame::getReferent(frame).script()->isGenerator();
+    return DebuggerFrame::getReferent(frame).script()->isStarGenerator() ||
+           DebuggerFrame::getReferent(frame).script()->isLegacyGenerator();
 }
 
 /* static */ bool

@@ -27,6 +27,7 @@
 #include "builtin/MapObject.h"
 #include "builtin/ModuleObject.h"
 #include "builtin/Object.h"
+#include "builtin/Promise.h"
 #include "builtin/Reflect.h"
 #include "builtin/SelfHostingDefines.h"
 #include "builtin/SIMD.h"
@@ -2135,6 +2136,105 @@ intrinsic_PromiseResolve(JSContext* cx, unsigned argc, Value* vp)
     return true;
 }
 
+static bool
+intrinsic_CreatePendingPromise(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 0);
+    RootedObject promise(cx, PromiseObject::createSkippingExecutor(cx));
+    if (!promise)
+        return false;
+    args.rval().setObject(*promise);
+    return true;
+}
+
+static bool
+intrinsic_CreatePromiseResolvedWith(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+    RootedObject promise(cx, PromiseObject::unforgeableResolve(cx, args[0]));
+    if (!promise)
+        return false;
+    args.rval().setObject(*promise);
+    return true;
+}
+
+static bool
+intrinsic_CreatePromiseRejectedWith(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 1);
+    RootedObject promise(cx, PromiseObject::unforgeableReject(cx, args[0]));
+    if (!promise)
+        return false;
+    args.rval().setObject(*promise);
+    return true;
+}
+
+static bool
+intrinsic_ResolvePromise(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 2);
+    Rooted<PromiseObject*> promise(cx, &args[0].toObject().as<PromiseObject>());
+    if (!PromiseObject::resolve(cx, promise, args[1]))
+        return false;
+    args.rval().setUndefined();
+    return true;
+}
+
+static bool
+intrinsic_RejectPromise(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() == 2);
+    Rooted<PromiseObject*> promise(cx, &args[0].toObject().as<PromiseObject>());
+    if (!PromiseObject::reject(cx, promise, args[1]))
+        return false;
+    args.rval().setUndefined();
+    return true;
+}
+
+static bool
+intrinsic_CallOriginalPromiseThen(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() >= 2);
+
+    RootedObject promise(cx, &args[0].toObject());
+    Value val = args[1];
+    RootedObject onResolvedObj(cx, val.isUndefined() ? nullptr : val.toObjectOrNull());
+    val = args.get(2);
+    RootedObject onRejectedObj(cx, val.isUndefined() ? nullptr : val.toObjectOrNull());
+
+    RootedObject resultPromise(cx, JS::CallOriginalPromiseThen(cx, promise, onResolvedObj,
+                                                               onRejectedObj));
+    if (!resultPromise)
+        return false;
+    args.rval().setObject(*resultPromise);
+    return true;
+}
+
+static bool
+intrinsic_AddPromiseReactions(JSContext* cx, unsigned argc, Value* vp)
+{
+    CallArgs args = CallArgsFromVp(argc, vp);
+    MOZ_ASSERT(args.length() >= 2);
+
+    RootedObject promise(cx, &args[0].toObject());
+    Value val = args[1];
+    RootedObject onResolvedObj(cx, val.isUndefined() ? nullptr : val.toObjectOrNull());
+    val = args.get(2);
+    RootedObject onRejectedObj(cx, val.isUndefined() ? nullptr : val.toObjectOrNull());
+
+    bool result = JS::AddPromiseReactions(cx, promise, onResolvedObj, onRejectedObj);
+    if (!result)
+        return false;
+    args.rval().setUndefined();
+    return true;
+}
+
 // The self-hosting global isn't initialized with the normal set of builtins.
 // Instead, individual C++-implemented functions that're required by
 // self-hosted code are defined as global functions. Accessing these
@@ -2535,6 +2635,14 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_FN("NewModuleNamespace", intrinsic_NewModuleNamespace, 2, 0),
     JS_FN("AddModuleNamespaceBinding", intrinsic_AddModuleNamespaceBinding, 4, 0),
     JS_FN("ModuleNamespaceExports", intrinsic_ModuleNamespaceExports, 1, 0),
+
+    JS_FN("CreatePendingPromise", intrinsic_CreatePendingPromise, 0, 0),
+    JS_FN("CreatePromiseResolvedWith", intrinsic_CreatePromiseResolvedWith, 1, 0),
+    JS_FN("CreatePromiseRejectedWith", intrinsic_CreatePromiseRejectedWith, 1, 0),
+    JS_FN("ResolvePromise", intrinsic_ResolvePromise, 2, 0),
+    JS_FN("RejectPromise", intrinsic_RejectPromise, 2, 0),
+    JS_FN("AddPromiseReactions", intrinsic_AddPromiseReactions, 3, 0),
+    JS_FN("CallOriginalPromiseThen", intrinsic_CallOriginalPromiseThen, 3, 0),
 
     JS_FN("IsPromiseObject", intrinsic_IsInstanceOfBuiltin<PromiseObject>, 1, 0),
     JS_FN("CallPromiseMethodIfWrapped", CallNonGenericSelfhostedMethod<Is<PromiseObject>>, 2, 0),
@@ -3005,7 +3113,8 @@ JSRuntime::cloneSelfHostedFunctionScript(JSContext* cx, HandlePropertyName name,
         return false;
     // JSFunction::generatorKind can't handle lazy self-hosted functions, so we make sure there
     // aren't any.
-    MOZ_ASSERT(!sourceFun->isGenerator());
+    MOZ_ASSERT(!sourceFun->isStarGenerator() && !sourceFun->isLegacyGenerator() &&
+               !sourceFun->isAsync());
     MOZ_ASSERT(targetFun->isExtended());
     MOZ_ASSERT(targetFun->isInterpretedLazy());
     MOZ_ASSERT(targetFun->isSelfHostedBuiltin());

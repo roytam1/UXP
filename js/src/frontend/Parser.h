@@ -12,6 +12,7 @@
 #include "mozilla/Array.h"
 #include "mozilla/Maybe.h"
 
+#include "jsiter.h"
 #include "jspubtd.h"
 
 #include "frontend/BytecodeCompiler.h"
@@ -496,10 +497,6 @@ class ParseContext : public Nestable<ParseContext>
         return sc_->isFunctionBox() ? sc_->asFunctionBox()->generatorKind() : NotGenerator;
     }
 
-    bool isGenerator() const {
-        return generatorKind() != NotGenerator;
-    }
-
     bool isLegacyGenerator() const {
         return generatorKind() == LegacyGenerator;
     }
@@ -510,6 +507,10 @@ class ParseContext : public Nestable<ParseContext>
 
     bool isAsync() const {
         return sc_->isFunctionBox() && sc_->asFunctionBox()->isAsync();
+    }
+
+    bool needsDotGeneratorName() const {
+        return isStarGenerator() || isLegacyGenerator() || isAsync();
     }
 
     FunctionAsyncKind asyncKind() const {
@@ -818,7 +819,9 @@ class ParserBase : public StrictModeGetter
     // whether it's prohibited due to strictness, JS version, or occurrence
     // inside a star generator.
     bool yieldExpressionsSupported() {
-        return (versionNumber() >= JSVERSION_1_7 || pc->isGenerator()) && !pc->isAsync();
+        return (versionNumber() >= JSVERSION_1_7 && !pc->isAsync()) ||
+               pc->isStarGenerator() ||
+               pc->isLegacyGenerator();
     }
 
     virtual bool strictMode() { return pc->sc()->strict(); }
@@ -1108,8 +1111,6 @@ class Parser final : public ParserBase, private JS::AutoGCRooter
 
     inline Node newName(PropertyName* name);
     inline Node newName(PropertyName* name, TokenPos pos);
-    inline Node newYieldExpression(uint32_t begin, Node expr, bool isYieldStar = false);
-    inline Node newAwaitExpression(uint32_t begin, Node expr);
 
     inline bool abortIfSyntaxParser();
 
@@ -1196,6 +1197,7 @@ class Parser final : public ParserBase, private JS::AutoGCRooter
 
     Node forStatement(YieldHandling yieldHandling);
     bool forHeadStart(YieldHandling yieldHandling,
+                      IteratorKind iterKind,
                       ParseNodeKind* forHeadKind,
                       Node* forInitialPart,
                       mozilla::Maybe<ParseContext::Scope>& forLetImpliedScope,

@@ -39,6 +39,7 @@
 #include "jit/Ion.h"
 #include "jit/IonAnalysis.h"
 #include "vm/AsyncFunction.h"
+#include "vm/AsyncIteration.h"
 #include "vm/Debugger.h"
 #include "vm/GeneratorObject.h"
 #include "vm/Opcodes.h"
@@ -1938,9 +1939,7 @@ CASE(EnableInterruptsPseudoOpcode)
 /* Various 1-byte no-ops. */
 CASE(JSOP_NOP)
 CASE(JSOP_NOP_DESTRUCTURING)
-CASE(JSOP_UNUSED192)
-CASE(JSOP_UNUSED209)
-CASE(JSOP_UNUSED210)
+CASE(JSOP_UNUSED126)
 CASE(JSOP_UNUSED211)
 CASE(JSOP_TRY_DESTRUCTURING_ITERCLOSE)
 CASE(JSOP_UNUSED221)
@@ -3584,6 +3583,29 @@ CASE(JSOP_TOASYNC)
 }
 END_CASE(JSOP_TOASYNC)
 
+CASE(JSOP_TOASYNCGEN)
+{
+    ReservedRooted<JSFunction*> unwrapped(&rootFunction0,
+                                          &REGS.sp[-1].toObject().as<JSFunction>());
+    JSObject* wrapped = WrapAsyncGenerator(cx, unwrapped);
+    if (!wrapped)
+        goto error;
+
+    REGS.sp[-1].setObject(*wrapped);
+}
+END_CASE(JSOP_TOASYNCGEN)
+
+CASE(JSOP_TOASYNCITER)
+{
+    ReservedRooted<JSObject*> iter(&rootObject1, &REGS.sp[-1].toObject());
+    JSObject* asyncIter = CreateAsyncFromSyncIterator(cx, iter);
+    if (!asyncIter)
+        goto error;
+
+    REGS.sp[-1].setObject(*asyncIter);
+}
+END_CASE(JSOP_TOASYNCITER)
+
 CASE(JSOP_SETFUNNAME)
 {
     MOZ_ASSERT(REGS.stackDepth() >= 2);
@@ -3994,6 +4016,7 @@ CASE(JSOP_INITIALYIELD)
 }
 
 CASE(JSOP_YIELD)
+CASE(JSOP_AWAIT)
 {
     MOZ_ASSERT(!cx->isExceptionPending());
     MOZ_ASSERT(REGS.fp()->isFunctionFrame());
@@ -5125,6 +5148,10 @@ js::ThrowCheckIsObject(JSContext* cx, CheckIsObjectKind kind)
         break;
       case CheckIsObjectKind::GetIterator:
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_GET_ITER_RETURNED_PRIMITIVE);
+        break;
+      case CheckIsObjectKind::GetAsyncIterator:
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                  JSMSG_GET_ASYNC_ITER_RETURNED_PRIMITIVE);
         break;
       default:
         MOZ_CRASH("Unknown kind");

@@ -10,6 +10,7 @@
 #define frontend_BytecodeEmitter_h
 
 #include "jscntxt.h"
+#include "jsiter.h"
 #include "jsopcode.h"
 #include "jsscript.h"
 
@@ -98,15 +99,15 @@ struct CGScopeNoteList {
     void finish(ScopeNoteArray* array, uint32_t prologueLength);
 };
 
-struct CGYieldOffsetList {
+struct CGYieldAndAwaitOffsetList {
     Vector<uint32_t> list;
     uint32_t numYields;
     uint32_t numAwaits;
-    explicit CGYieldOffsetList(ExclusiveContext* cx) : list(cx), numYields(0), numAwaits(0) {}
+    explicit CGYieldAndAwaitOffsetList(ExclusiveContext* cx) : list(cx), numYields(0), numAwaits(0) {}
 
     MOZ_MUST_USE bool append(uint32_t offset) { return list.append(offset); }
     size_t length() const { return list.length(); }
-    void finish(YieldOffsetArray& array, uint32_t prologueLength);
+    void finish(YieldAndAwaitOffsetArray& array, uint32_t prologueLength);
 };
 
 static size_t MaxBytecodeLength = INT32_MAX;
@@ -227,8 +228,22 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     EmitterScope*    varEmitterScope;
     NestableControl* innermostNestableControl;
-    EmitterScope*    innermostEmitterScope;
+    EmitterScope*    innermostEmitterScope_;
     TDZCheckCache*   innermostTDZCheckCache;
+
+#ifdef DEBUG
+    bool unstableEmitterScope;
+
+    friend class AutoCheckUnstableEmitterScope;
+#endif
+
+    EmitterScope* innermostEmitterScope() const {
+        MOZ_ASSERT(!unstableEmitterScope);
+        return innermostEmitterScopeNoCheck();
+    }
+    EmitterScope* innermostEmitterScopeNoCheck() const {
+        return innermostEmitterScope_;
+    }
 
     CGConstList      constList;      /* constants to be included with the script */
     CGObjectList     objectList;     /* list of emitted objects */
@@ -237,10 +252,10 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     CGScopeNoteList  scopeNoteList;  /* list of emitted block scope notes */
 
     /*
-     * For each yield op, map the yield index (stored as bytecode operand) to
-     * the offset of the next op.
+     * For each yield or await op, map the yield and await index (stored as
+     * bytecode operand) to the offset of the next op.
      */
-    CGYieldOffsetList yieldOffsetList;
+    CGYieldAndAwaitOffsetList yieldAndAwaitOffsetList;
 
     uint16_t        typesetCount;   /* Number of JOF_TYPESET opcodes generated */
 
@@ -318,7 +333,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter
                                                                     EmitterScope* source);
 
     mozilla::Maybe<NameLocation> locationOfNameBoundInFunctionScope(JSAtom* name) {
-        return locationOfNameBoundInFunctionScope(name, innermostEmitterScope);
+        return locationOfNameBoundInFunctionScope(name, innermostEmitterScope());
     }
 
     void setVarEmitterScope(EmitterScope* emitterScope) {
@@ -606,17 +621,29 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitPrepareIteratorResult();
     MOZ_MUST_USE bool emitFinishIteratorResult(bool done);
     MOZ_MUST_USE bool iteratorResultShape(unsigned* shape);
+    MOZ_MUST_USE bool emitToIteratorResult(bool done);
 
+    MOZ_MUST_USE bool emitGetDotGeneratorInInnermostScope() {
+        return emitGetDotGeneratorInScope(*innermostEmitterScope());
+    }
+    MOZ_MUST_USE bool emitGetDotGeneratorInScope(EmitterScope& currentScope);
+
+    MOZ_MUST_USE bool emitInitialYield(ParseNode* pn);
     MOZ_MUST_USE bool emitYield(ParseNode* pn);
     MOZ_MUST_USE bool emitYieldOp(JSOp op);
-    MOZ_MUST_USE bool emitYieldStar(ParseNode* iter, ParseNode* gen);
-
+    MOZ_MUST_USE bool emitYieldStar(ParseNode* iter);
+    MOZ_MUST_USE bool emitAwaitInInnermostScope() {
+        return emitAwaitInScope(*innermostEmitterScope());
+    }
+    MOZ_MUST_USE bool emitAwaitInInnermostScope(ParseNode* pn);
+    MOZ_MUST_USE bool emitAwaitInScope(EmitterScope& currentScope);
     MOZ_MUST_USE bool emitPropLHS(ParseNode* pn);
     MOZ_MUST_USE bool emitPropOp(ParseNode* pn, JSOp op);
     MOZ_MUST_USE bool emitPropIncDec(ParseNode* pn);
 
     MOZ_MUST_USE bool emitAsyncWrapperLambda(unsigned index, bool isArrow);
-    MOZ_MUST_USE bool emitAsyncWrapper(unsigned index, bool needsHomeObject, bool isArrow);
+    MOZ_MUST_USE bool emitAsyncWrapper(unsigned index, bool needsHomeObject, bool isArrow,
+                                       bool isStarGenerator);
 
     MOZ_MUST_USE bool emitComputedPropertyName(ParseNode* computedPropName);
 
@@ -703,11 +730,22 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     // It will replace that stack value with the corresponding iterator
     MOZ_MUST_USE bool emitIterator();
 
+    MOZ_MUST_USE bool emitAsyncIterator();
+
     // Pops iterator from the top of the stack. Pushes the result of |.next()|
     // onto the stack.
-    MOZ_MUST_USE bool emitIteratorNext(ParseNode* pn, bool allowSelfHosted = false);
-    MOZ_MUST_USE bool emitIteratorClose(CompletionKind completionKind = CompletionKind::Normal,
-                                        bool allowSelfHosted = false);
+    MOZ_MUST_USE bool emitIteratorNext(ParseNode* pn, IteratorKind kind = IteratorKind::Sync,
+                                       bool allowSelfHosted = false);
+    MOZ_MUST_USE bool emitIteratorCloseInScope(EmitterScope& currentScope,
+                                               IteratorKind iterKind = IteratorKind::Sync,
+                                               CompletionKind completionKind = CompletionKind::Normal,
+                                               bool allowSelfHosted = false);
+    MOZ_MUST_USE bool emitIteratorCloseInInnermostScope(IteratorKind iterKind = IteratorKind::Sync,
+                                                        CompletionKind completionKind = CompletionKind::Normal,
+                                                        bool allowSelfHosted = false) {
+        return emitIteratorCloseInScope(*innermostEmitterScope(), iterKind, completionKind,
+                                        allowSelfHosted);
+    }
 
     template <typename InnerEmitter>
     MOZ_MUST_USE bool wrapWithDestructuringIteratorCloseTryNote(int32_t iterDepth,
@@ -803,6 +841,31 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitSuperElemOperands(ParseNode* pn,
                                             EmitElemOption opts = EmitElemOption::Get);
     MOZ_MUST_USE bool emitSuperElemOp(ParseNode* pn, JSOp op, bool isCall = false);
+};
+
+class MOZ_RAII AutoCheckUnstableEmitterScope {
+#ifdef DEBUG
+    bool prev_;
+    BytecodeEmitter* bce_;
+#endif
+
+  public:
+    AutoCheckUnstableEmitterScope() = delete;
+    explicit AutoCheckUnstableEmitterScope(BytecodeEmitter* bce)
+#ifdef DEBUG
+      : bce_(bce)
+#endif
+    {
+#ifdef DEBUG
+        prev_ = bce_->unstableEmitterScope;
+        bce_->unstableEmitterScope = true;
+#endif
+    }
+    ~AutoCheckUnstableEmitterScope() {
+#ifdef DEBUG
+        bce_->unstableEmitterScope = prev_;
+#endif
+    }
 };
 
 } /* namespace frontend */
