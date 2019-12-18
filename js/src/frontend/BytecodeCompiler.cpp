@@ -727,5 +727,18 @@ frontend::CompileStandaloneAsyncFunction(JSContext* cx, MutableHandleFunction fu
 
     BytecodeCompiler compiler(cx, cx->tempLifoAlloc(), options, srcBuf, emptyGlobalScope,
                               TraceLogger_ParserCompileFunction);
+    return compiler.compileStandaloneFunction(fun, NotGenerator, AsyncFunction, parameterListEnd);
+}
+
+bool
+frontend::CompileStandaloneAsyncGenerator(JSContext* cx, MutableHandleFunction fun,
+                                          const ReadOnlyCompileOptions& options,
+                                          JS::SourceBufferHolder& srcBuf,
+                                          Maybe<uint32_t> parameterListEnd)
+{
+    RootedScope emptyGlobalScope(cx, &cx->global()->emptyGlobalScope());
+
+    BytecodeCompiler compiler(cx, cx->tempLifoAlloc(), options, srcBuf, emptyGlobalScope,
+                              TraceLogger_ParserCompileFunction);
     return compiler.compileStandaloneFunction(fun, StarGenerator, AsyncFunction, parameterListEnd);
 }

@@ -25,6 +25,7 @@
 #include "jit/VMFunctions.h"
 #include "js/UniquePtr.h"
 #include "vm/AsyncFunction.h"
+#include "vm/AsyncIteration.h"
 #include "vm/EnvironmentObject.h"
 #include "vm/Interpreter.h"
 #include "vm/TraceLogging.h"
@@ -43,7 +44,7 @@ using mozilla::AssertedCast;
 
 BaselineCompiler::BaselineCompiler(JSContext* cx, TempAllocator& alloc, JSScript* script)
   : BaselineCompilerSpecific(cx, alloc, script),
-    yieldOffsets_(cx),
+    yieldAndAwaitOffsets_(cx),
     modifiesArguments_(false)
 {
 }
@@ -210,7 +211,7 @@ BaselineCompiler::compile()
                             pcMappingIndexEntries.length(),
                             pcEntries.length(),
                             bytecodeTypeMapEntries,
-                            yieldOffsets_.length(),
+                            yieldAndAwaitOffsets_.length(),
                             traceLoggerToggleOffsets_.length()),
         JS::DeletePolicy<BaselineScript>(cx->runtime()));
     if (!baselineScript) {
@@ -275,7 +276,7 @@ BaselineCompiler::compile()
     // searches for the sought entry when queries are in linear order.
     bytecodeMap[script->nTypeSets()] = 0;
 
-    baselineScript->copyYieldEntries(script, yieldOffsets_);
+    baselineScript->copyYieldAndAwaitEntries(script, yieldAndAwaitOffsets_);
 
     if (compileDebugInstrumentation_)
         baselineScript->setHasDebugInstrumentation();
@@ -3914,6 +3915,50 @@ BaselineCompiler::emit_JSOP_TOASYNC()
     return true;
 }
 
+typedef JSObject* (*ToAsyncGenFn)(JSContext*, HandleFunction);
+static const VMFunction ToAsyncGenInfo =
+    FunctionInfo<ToAsyncGenFn>(js::WrapAsyncGenerator, "ToAsyncGen");
+
+bool
+BaselineCompiler::emit_JSOP_TOASYNCGEN()
+{
+    frame.syncStack(0);
+    masm.unboxObject(frame.addressOfStackValue(frame.peek(-1)), R0.scratchReg());
+
+    prepareVMCall();
+    pushArg(R0.scratchReg());
+
+    if (!callVM(ToAsyncGenInfo))
+        return false;
+
+    masm.tagValue(JSVAL_TYPE_OBJECT, ReturnReg, R0);
+    frame.pop();
+    frame.push(R0);
+    return true;
+}
+
+typedef JSObject* (*ToAsyncIterFn)(JSContext*, HandleObject);
+static const VMFunction ToAsyncIterInfo =
+    FunctionInfo<ToAsyncIterFn>(js::CreateAsyncFromSyncIterator, "ToAsyncIter");
+
+bool
+BaselineCompiler::emit_JSOP_TOASYNCITER()
+{
+    frame.syncStack(0);
+    masm.unboxObject(frame.addressOfStackValue(frame.peek(-1)), R0.scratchReg());
+
+    prepareVMCall();
+    pushArg(R0.scratchReg());
+
+    if (!callVM(ToAsyncIterInfo))
+        return false;
+
+    masm.tagValue(JSVAL_TYPE_OBJECT, ReturnReg, R0);
+    frame.pop();
+    frame.push(R0);
+    return true;
+}
+
 typedef bool (*ThrowObjectCoercibleFn)(JSContext*, HandleValue);
 static const VMFunction ThrowObjectCoercibleInfo =
     FunctionInfo<ThrowObjectCoercibleFn>(ThrowObjectCoercible, "ThrowObjectCoercible");
@@ -4180,27 +4225,28 @@ BaselineCompiler::emit_JSOP_GENERATOR()
 }
 
 bool
-BaselineCompiler::addYieldOffset()
+BaselineCompiler::addYieldAndAwaitOffset()
 {
-    MOZ_ASSERT(*pc == JSOP_INITIALYIELD || *pc == JSOP_YIELD);
+    MOZ_ASSERT(*pc == JSOP_INITIALYIELD || *pc == JSOP_YIELD || *pc == JSOP_AWAIT);
 
-    uint32_t yieldIndex = GET_UINT24(pc);
+    uint32_t yieldAndAwaitIndex = GET_UINT24(pc);
 
-    while (yieldIndex >= yieldOffsets_.length()) {
-        if (!yieldOffsets_.append(0))
+    while (yieldAndAwaitIndex >= yieldAndAwaitOffsets_.length()) {
+        if (!yieldAndAwaitOffsets_.append(0))
             return false;
     }
 
-    static_assert(JSOP_INITIALYIELD_LENGTH == JSOP_YIELD_LENGTH,
-                  "code below assumes INITIALYIELD and YIELD have same length");
-    yieldOffsets_[yieldIndex] = script->pcToOffset(pc + JSOP_YIELD_LENGTH);
+    static_assert(JSOP_INITIALYIELD_LENGTH == JSOP_YIELD_LENGTH &&
+                  JSOP_INITIALYIELD_LENGTH == JSOP_AWAIT_LENGTH,
+                  "code below assumes INITIALYIELD and YIELD and AWAIT have same length");
+    yieldAndAwaitOffsets_[yieldAndAwaitIndex] = script->pcToOffset(pc + JSOP_YIELD_LENGTH);
     return true;
 }
 
 bool
 BaselineCompiler::emit_JSOP_INITIALYIELD()
 {
-    if (!addYieldOffset())
+    if (!addYieldAndAwaitOffset())
         return false;
 
     frame.syncStack(0);
@@ -4210,7 +4256,8 @@ BaselineCompiler::emit_JSOP_INITIALYIELD()
     masm.unboxObject(frame.addressOfStackValue(frame.peek(-1)), genObj);
 
     MOZ_ASSERT(GET_UINT24(pc) == 0);
-    masm.storeValue(Int32Value(0), Address(genObj, GeneratorObject::offsetOfYieldIndexSlot()));
+    masm.storeValue(Int32Value(0),
+                    Address(genObj, GeneratorObject::offsetOfYieldAndAwaitIndexSlot()));
 
     Register envObj = R0.scratchReg();
     Address envChainSlot(genObj, GeneratorObject::offsetOfEnvironmentChainSlot());
@@ -4239,7 +4286,7 @@ static const VMFunction NormalSuspendInfo =
 bool
 BaselineCompiler::emit_JSOP_YIELD()
 {
-    if (!addYieldOffset())
+    if (!addYieldAndAwaitOffset())
         return false;
 
     // Store generator in R0.
@@ -4256,7 +4303,7 @@ BaselineCompiler::emit_JSOP_YIELD()
         // generator is in the closing state, see GeneratorObject::suspend.
 
         masm.storeValue(Int32Value(GET_UINT24(pc)),
-                        Address(genObj, GeneratorObject::offsetOfYieldIndexSlot()));
+                        Address(genObj, GeneratorObject::offsetOfYieldAndAwaitIndexSlot()));
 
         Register envObj = R0.scratchReg();
         Address envChainSlot(genObj, GeneratorObject::offsetOfEnvironmentChainSlot());
@@ -4286,6 +4333,12 @@ BaselineCompiler::emit_JSOP_YIELD()
 
     masm.loadValue(frame.addressOfStackValue(frame.peek(-1)), JSReturnOperand);
     return emitReturn();
+}
+
+bool
+BaselineCompiler::emit_JSOP_AWAIT()
+{
+    return emit_JSOP_YIELD();
 }
 
 typedef bool (*DebugAfterYieldFn)(JSContext*, BaselineFrame*);
@@ -4507,16 +4560,17 @@ BaselineCompiler::emit_JSOP_RESUME()
     masm.pushValue(retVal);
 
     if (resumeKind == GeneratorObject::NEXT) {
-        // Determine the resume address based on the yieldIndex and the
-        // yieldIndex -> native table in the BaselineScript.
+        // Determine the resume address based on the yieldAndAwaitIndex and the
+        // yieldAndAwaitIndex -> native table in the BaselineScript.
         masm.load32(Address(scratch1, BaselineScript::offsetOfYieldEntriesOffset()), scratch2);
         masm.addPtr(scratch2, scratch1);
-        masm.unboxInt32(Address(genObj, GeneratorObject::offsetOfYieldIndexSlot()), scratch2);
+        masm.unboxInt32(Address(genObj, GeneratorObject::offsetOfYieldAndAwaitIndexSlot()),
+                        scratch2);
         masm.loadPtr(BaseIndex(scratch1, scratch2, ScaleFromElemWidth(sizeof(uintptr_t))), scratch1);
 
         // Mark as running and jump to the generator's JIT code.
-        masm.storeValue(Int32Value(GeneratorObject::YIELD_INDEX_RUNNING),
-                        Address(genObj, GeneratorObject::offsetOfYieldIndexSlot()));
+        masm.storeValue(Int32Value(GeneratorObject::YIELD_AND_AWAIT_INDEX_RUNNING),
+                        Address(genObj, GeneratorObject::offsetOfYieldAndAwaitIndexSlot()));
         masm.jump(scratch1);
     } else {
         MOZ_ASSERT(resumeKind == GeneratorObject::THROW || resumeKind == GeneratorObject::CLOSE);

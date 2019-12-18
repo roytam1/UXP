@@ -561,7 +561,8 @@ enum class CheckIsObjectKind : uint8_t {
     IteratorNext,
     IteratorReturn,
     IteratorThrow,
-    GetIterator
+    GetIterator,
+    GetAsyncIterator
 };
 
 bool
