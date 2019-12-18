@@ -139,13 +139,14 @@ if os_bsd or os_linux or os_solaris:
         ]
 
 if os_solaris:
-   SOURCES += [
+    SOURCES += [
        'src/base/atomicops_internals_x86_gcc.cc',
        'src/base/process_util_linux.cc',
        'src/base/time_posix.cc',
 ]
-
-LOCAL_INCLUDES += ['src/third_party/libevent/linux']
+    
+elif not CONFIG['MOZ_SYSTEM_LIBEVENT']:
+    LOCAL_INCLUDES += ['src/third_party/libevent/linux']
 
 ost = CONFIG['OS_TEST']
 if '86' not in ost and 'arm' not in ost and 'aarch64' != ost and 'mips' not in ost:
