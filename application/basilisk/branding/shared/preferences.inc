@@ -23,4 +23,4 @@ pref("app.update.badgeWaitTime", 0);
 pref("devtools.selfxss.count", 100);
 
 // 
-pref("general.useragent.appVersionIsBuildID", true);
+pref("general.useragent.appVersionIsBuildID", false);
