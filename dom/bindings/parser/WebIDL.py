@@ -2851,9 +2851,9 @@ class IDLWrapperType(IDLType):
         return set()
 
 
-class IDLPromiseType(IDLParametrizedType):
+class IDLPromiseType(IDLParameterizedType):
     def __init__(self, location, innerType):
-        IDLParametrizedType.__init__(self, location, "Promise", innerType)
+        IDLParameterizedType.__init__(self, location, "Promise", innerType)
 
     def __eq__(self, other):
         return (isinstance(other, IDLPromiseType) and
@@ -6439,7 +6439,7 @@ class Parser(Tokenizer):
 
         if p[1].name == "Promise":
             raise WebIDLError("Promise used without saying what it's "
-                              "parametrized over",
+                              "parameterized over",
                               [self.getLocation(p, 1)])
 
         type = None
