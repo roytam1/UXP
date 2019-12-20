@@ -11,9 +11,8 @@ EXPORTS.mozilla.dom += [
     'PromiseWorkerProxy.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'Promise.cpp',
-    'PromiseCallback.cpp',
     'PromiseDebugging.cpp',
 ]
 

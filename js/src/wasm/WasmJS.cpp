@@ -1640,7 +1640,6 @@ WebAssembly_toSource(JSContext* cx, unsigned argc, Value* vp)
 }
 #endif
 
-#ifdef SPIDERMONKEY_PROMISE
 static bool
 Nop(JSContext* cx, unsigned argc, Value* vp)
 {
@@ -1914,7 +1913,6 @@ WebAssembly_instantiate(JSContext* cx, unsigned argc, Value* vp)
     callArgs.rval().setObject(*promise);
     return true;
 }
-#endif
 
 static bool
 WebAssembly_validate(JSContext* cx, unsigned argc, Value* vp)
@@ -1949,10 +1947,8 @@ static const JSFunctionSpec WebAssembly_static_methods[] =
 #if JS_HAS_TOSOURCE
     JS_FN(js_toSource_str, WebAssembly_toSource, 0, 0),
 #endif
-#ifdef SPIDERMONKEY_PROMISE
     JS_FN("compile", WebAssembly_compile, 1, 0),
     JS_FN("instantiate", WebAssembly_instantiate, 2, 0),
-#endif
     JS_FN("validate", WebAssembly_validate, 1, 0),
     JS_FS_END
 };

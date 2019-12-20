@@ -36,6 +36,10 @@ pref("app.update.url.manual", "about:");
 // supplied in the "An update is available" page of the update wizard.
 pref("app.update.url.details", "about:");
 
+// Provide UA Gecko and Firefox slices for web compatibility
+pref("general.useragent.compatMode.firefox",true);
+pref("general.useragent.compatMode.gecko",true);
+
 // Switch Application Updates off for unofficial branding
 pref("app.update.enabled", false);
 

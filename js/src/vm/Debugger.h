@@ -1256,12 +1256,10 @@ class DebuggerObject : public NativeObject
                                                     MutableHandleDebuggerObject result);
     static MOZ_MUST_USE bool getScriptedProxyHandler(JSContext* cx, HandleDebuggerObject object,
                                                      MutableHandleDebuggerObject result);
-#ifdef SPIDERMONKEY_PROMISE
     static MOZ_MUST_USE bool getPromiseValue(JSContext* cx, HandleDebuggerObject object,
                                              MutableHandleValue result);
     static MOZ_MUST_USE bool getPromiseReason(JSContext* cx, HandleDebuggerObject object,
                                               MutableHandleValue result);
-#endif // SPIDERMONKEY_PROMISE
 
     // Methods
     static MOZ_MUST_USE bool isExtensible(JSContext* cx, HandleDebuggerObject object,
@@ -1311,16 +1309,12 @@ class DebuggerObject : public NativeObject
     bool isArrowFunction() const;
     bool isGlobal() const;
     bool isScriptedProxy() const;
-#ifdef SPIDERMONKEY_PROMISE
     bool isPromise() const;
-#endif // SPIDERMONKEY_PROMISE
     JSAtom* name() const;
     JSAtom* displayName() const;
-#ifdef SPIDERMONKEY_PROMISE
     JS::PromiseState promiseState() const;
     double promiseLifetime() const;
     double promiseTimeToResolution() const;
-#endif // SPIDERMONKEY_PROMISE
 
   private:
     enum {
@@ -1332,9 +1326,7 @@ class DebuggerObject : public NativeObject
     static const ClassOps classOps_;
 
     static const JSPropertySpec properties_[];
-#ifdef SPIDERMONKEY_PROMISE
     static const JSPropertySpec promiseProperties_[];
-#endif // SPIDERMONKEY_PROMISE
     static const JSFunctionSpec methods_[];
 
     JSObject* referent() const {
@@ -1345,14 +1337,10 @@ class DebuggerObject : public NativeObject
 
     Debugger* owner() const;
 
-#ifdef SPIDERMONKEY_PROMISE
     PromiseObject* promise() const;
-#endif // SPIDERMONKEY_PROMISE
 
     static MOZ_MUST_USE bool requireGlobal(JSContext* cx, HandleDebuggerObject object);
-#ifdef SPIDERMONKEY_PROMISE
     static MOZ_MUST_USE bool requirePromise(JSContext* cx, HandleDebuggerObject object);
-#endif // SPIDERMONKEY_PROMISE
 
     static MOZ_MUST_USE bool construct(JSContext* cx, unsigned argc, Value* vp);
 
@@ -1379,7 +1367,6 @@ class DebuggerObject : public NativeObject
     static MOZ_MUST_USE bool isProxyGetter(JSContext* cx, unsigned argc, Value* vp);
     static MOZ_MUST_USE bool proxyTargetGetter(JSContext* cx, unsigned argc, Value* vp);
     static MOZ_MUST_USE bool proxyHandlerGetter(JSContext* cx, unsigned argc, Value* vp);
-#ifdef SPIDERMONKEY_PROMISE
     static MOZ_MUST_USE bool isPromiseGetter(JSContext* cx, unsigned argc, Value* vp);
     static MOZ_MUST_USE bool promiseStateGetter(JSContext* cx, unsigned argc, Value* vp);
     static MOZ_MUST_USE bool promiseValueGetter(JSContext* cx, unsigned argc, Value* vp);
@@ -1390,7 +1377,6 @@ class DebuggerObject : public NativeObject
     static MOZ_MUST_USE bool promiseResolutionSiteGetter(JSContext* cx, unsigned argc, Value* vp);
     static MOZ_MUST_USE bool promiseIDGetter(JSContext* cx, unsigned argc, Value* vp);
     static MOZ_MUST_USE bool promiseDependentPromisesGetter(JSContext* cx, unsigned argc, Value* vp);
-#endif // SPIDERMONKEY_PROMISE
 
     // JSNative methods
     static MOZ_MUST_USE bool isExtensibleMethod(JSContext* cx, unsigned argc, Value* vp);
