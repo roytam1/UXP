@@ -1597,11 +1597,7 @@ class IDLInterface(IDLInterfaceOrNamespace):
 
                 args = attr.args() if attr.hasArgs() else []
 
-                if self.identifier.name == "Promise":
-                    promiseType = BuiltinTypes[IDLBuiltinType.Types.any]
-                else:
-                    promiseType = None
-                retType = IDLWrapperType(self.location, self, promiseType)
+                retType = IDLWrapperType(self.location, self)
 
                 if identifier == "Constructor" or identifier == "ChromeConstructor":
                     name = "constructor"
@@ -1988,7 +1984,8 @@ class IDLType(IDLObject):
         'callback',
         'union',
         'sequence',
-        'record'
+        'record',
+        'promise'
         )
 
     def __init__(self, location, name):
@@ -2142,9 +2139,8 @@ class IDLUnresolvedType(IDLType):
         Unresolved types are interface types
     """
 
-    def __init__(self, location, name, promiseInnerType=None):
+    def __init__(self, location, name):
         IDLType.__init__(self, location, name)
-        self._promiseInnerType = promiseInnerType
 
     def isComplete(self):
         return False
@@ -2171,11 +2167,8 @@ class IDLUnresolvedType(IDLType):
             assert self.name.name == obj.identifier.name
             return IDLCallbackType(self.location, obj)
 
-        if self._promiseInnerType and not self._promiseInnerType.isComplete():
-            self._promiseInnerType = self._promiseInnerType.complete(scope)
-
         name = self.name.resolve(scope, None)
-        return IDLWrapperType(self.location, obj, self._promiseInnerType)
+        return IDLWrapperType(self.location, obj)
 
     def isDistinguishableFrom(self, other):
         raise TypeError("Can't tell whether an unresolved type is or is not "
@@ -2285,7 +2278,9 @@ class IDLNullableType(IDLParameterizedType):
         return self.inner.isInterface()
 
     def isPromise(self):
-        return self.inner.isPromise()
+        # There is no such thing as a nullable Promise.
+        assert not self.inner.isPromise()
+        return False
 
     def isCallbackInterface(self):
         return self.inner.isCallbackInterface()
@@ -2698,13 +2693,11 @@ class IDLTypedef(IDLObjectWithIdentifier):
 
 
 class IDLWrapperType(IDLType):
-    def __init__(self, location, inner, promiseInnerType=None):
+    def __init__(self, location, inner):
         IDLType.__init__(self, location, inner.identifier.name)
         self.inner = inner
         self._identifier = inner.identifier
         self.builtin = False
-        assert not promiseInnerType or inner.identifier.name == "Promise"
-        self._promiseInnerType = promiseInnerType
 
     def __eq__(self, other):
         return (isinstance(other, IDLWrapperType) and
@@ -2754,14 +2747,6 @@ class IDLWrapperType(IDLType):
     def isEnum(self):
         return isinstance(self.inner, IDLEnum)
 
-    def isPromise(self):
-        return (isinstance(self.inner, IDLInterface) and
-                self.inner.identifier.name == "Promise")
-
-    def promiseInnerType(self):
-        assert self.isPromise()
-        return self._promiseInnerType
-
     def isSerializable(self):
         if self.isInterface():
             if self.inner.isExternal():
@@ -2793,8 +2778,6 @@ class IDLWrapperType(IDLType):
             assert False
 
     def isDistinguishableFrom(self, other):
-        if self.isPromise():
-            return False
         if other.isPromise():
             return False
         if other.isUnion():
@@ -2841,10 +2824,6 @@ class IDLWrapperType(IDLType):
             # Let's say true, though ideally we'd only do this when
             # exposureSet contains the primary global's name.
             return True
-        if (self.isPromise() and
-            # Check the internal type
-            not self.promiseInnerType().unroll().isExposedInAllOf(exposureSet)):
-            return False
         return iface.exposureSet.issuperset(exposureSet)
 
     def _getDependentObjects(self):
@@ -2870,6 +2849,45 @@ class IDLWrapperType(IDLType):
         if self.isDictionary():
             return set([self.inner])
         return set()
+
+
+class IDLPromiseType(IDLParameterizedType):
+    def __init__(self, location, innerType):
+        IDLParameterizedType.__init__(self, location, "Promise", innerType)
+
+    def __eq__(self, other):
+        return (isinstance(other, IDLPromiseType) and
+                self.promiseInnerType() == other.promiseInnerType())
+
+    def __str__(self):
+        return self.inner.__str__() + "Promise"
+
+    def isPromise(self):
+        return True
+
+    def promiseInnerType(self):
+        return self.inner
+
+    def tag(self):
+        return IDLType.Tags.promise
+
+    def complete(self, scope):
+        self.inner = self.promiseInnerType().complete(scope)
+        return self
+
+    def unroll(self):
+        # We do not unroll our inner.  Just stop at ourselves.  That
+        # lets us add headers for both ourselves and our inner as
+        # needed.
+        return self
+
+    def isDistinguishableFrom(self, other):
+        # Promises are not distinguishable from anything.
+        return False
+
+    def isExposedInAllOf(self, exposureSet):
+        # Check the internal type
+        return self.promiseInnerType().unroll().isExposedInAllOf(exposureSet)
 
 
 class IDLBuiltinType(IDLType):
@@ -3990,7 +4008,9 @@ class IDLAttribute(IDLInterfaceMember):
             raise WebIDLError("An attribute with [PutForwards] must have an "
                               "interface type as its type", [self.location])
 
-        if not self.type.isInterface() and self.getExtendedAttribute("SameObject"):
+        if (not self.type.isInterface() and
+            not self.type.isPromise() and
+            self.getExtendedAttribute("SameObject")):
             raise WebIDLError("An attribute with [SameObject] must have an "
                               "interface type as its type", [self.location])
 
@@ -6394,17 +6414,13 @@ class Parser(Tokenizer):
         type = IDLSequenceType(self.getLocation(p, 1), innerType)
         p[0] = self.handleNullable(type, p[5])
 
-    # Note: Promise<void> is allowed, so we want to parametrize on
-    # ReturnType, not Type.  Also, we want this to end up picking up
-    # the Promise interface for now, hence the games with IDLUnresolvedType.
+    # Note: Promise<void> is allowed, so we want to parameterize on
+    # ReturnType, not Type. Promise types can't be null, hence no "Null" in there.
     def p_NonAnyTypePromiseType(self, p):
         """
-            NonAnyType : PROMISE LT ReturnType GT Null
+            NonAnyType : PROMISE LT ReturnType GT
         """
-        innerType = p[3]
-        promiseIdent = IDLUnresolvedIdentifier(self.getLocation(p, 1), "Promise")
-        type = IDLUnresolvedType(self.getLocation(p, 1), promiseIdent, p[3])
-        p[0] = self.handleNullable(type, p[5])
+        p[0] = IDLPromiseType(self.getLocation(p, 1), p[3])
 
     def p_NonAnyTypeRecordType(self, p):
         """
@@ -6423,7 +6439,7 @@ class Parser(Tokenizer):
 
         if p[1].name == "Promise":
             raise WebIDLError("Promise used without saying what it's "
-                              "parametrized over",
+                              "parameterized over",
                               [self.getLocation(p, 1)])
 
         type = None
