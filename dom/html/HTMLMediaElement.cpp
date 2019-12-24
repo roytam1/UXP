@@ -3480,6 +3480,7 @@ NS_IMETHODIMP HTMLMediaElement::Play()
     return NS_OK;
   }
 
+  ErrorResult rv;
   RefPtr<Promise> toBeIgnored = PlayInternal(rv);
   if (rv.Failed()) {
     return rv.StealNSResult();
