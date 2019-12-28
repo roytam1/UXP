@@ -704,7 +704,11 @@ public:
   virtual void BeginLoad() override;
   virtual void EndLoad() override;
 
-  virtual void SetReadyStateInternal(ReadyState rs) override;
+  // Set the readystate of the document. If updateTimingInformation is true,
+  // this will record relevant timestamps in the document's performance timing.
+  // Some consumers like document.open() don't want to do that.
+  virtual void SetReadyStateInternal(ReadyState rs,
+                                     bool updateTimingInformation = true) override;
 
   virtual void ContentStateChanged(nsIContent* aContent,
                                    mozilla::EventStates aStateMask)
@@ -914,6 +918,14 @@ public:
     MOZ_ASSERT(mAnimationsPaused);
     --mAnimationsPaused;
     UpdateFrameRequestCallbackSchedulingState();
+  }
+
+  void SetLoadEventFiring(bool aFiring) override { mLoadEventFiring = aFiring; }
+
+  bool SkipLoadEventAfterClose() override {
+    bool skip = mSkipLoadEventAfterClose;
+    mSkipLoadEventAfterClose = false;
+    return skip;
   }
 
   virtual nsIDocument* GetTemplateContentsOwner() override;
@@ -1255,6 +1267,11 @@ protected:
    */
   Element* GetTitleElement();
 
+  /**
+   * Perform tree disconnection needed by ResetToURI and document.open()
+   */
+  void DisconnectNodeTree();
+
 public:
   // Get our title
   virtual void GetTitle(nsString& aTitle) override;
@@ -1458,6 +1475,20 @@ public:
   // additional sheets and sheets from the nsStyleSheetService.
   bool mStyleSetFilled:1;
 
+  // The HTML spec has a "iframe load in progress" flag, but that doesn't seem
+  // to have the right semantics. See <https://github.com/whatwg/html/issues/4292>.
+  // What we have instead is a flag that is set while the window's 'load' event is
+  // firing if this document is the window's document.
+  bool mLoadEventFiring : 1;
+
+  // The HTML spec has a "mute iframe load" flag, but that doesn't seem to have
+  // the right semantics. See <https://github.com/whatwg/html/issues/4292>.
+  // What we have instead is a flag that is set if completion of our document
+  // via document.close() should skip firing the load event. Note that this
+  // flag is only relevant for HTML documents, but lives here for reasons that
+  // are documented above on SkipLoadEventAfterClose().
+  bool mSkipLoadEventAfterClose : 1;
+
   uint8_t mPendingFullscreenRequests;
 
   uint8_t mXMLDeclarationBits;
@@ -1615,11 +1646,6 @@ private:
   // Set to true when the document is possibly controlled by the ServiceWorker.
   // Used to prevent multiple requests to ServiceWorkerManager.
   bool mMaybeServiceWorkerControlled;
-
-#ifdef DEBUG
-public:
-  bool mWillReparent;
-#endif
 };
 
 class nsDocumentOnStack

@@ -166,11 +166,11 @@ EventListenerManager::~EventListenerManager()
   // XXX azakai: Is there any reason to not just call Disconnect
   //             from right here, if not previously called?
   NS_ASSERTION(!mTarget, "didn't call Disconnect");
-  RemoveAllListeners();
+  RemoveAllListenersSilently();
 }
 
 void
-EventListenerManager::RemoveAllListeners()
+EventListenerManager::RemoveAllListenersSilently()
 {
   if (mClearingListeners) {
     return;
@@ -1329,7 +1329,7 @@ void
 EventListenerManager::Disconnect()
 {
   mTarget = nullptr;
-  RemoveAllListeners();
+  RemoveAllListenersSilently();
 }
 
 void
@@ -1732,6 +1732,21 @@ EventListenerManager::IsApzAwareEvent(nsIAtom* aEvent)
         nsContentUtils::GetDocShellForEventTarget(mTarget));
   }
   return false;
+}
+
+void
+EventListenerManager::RemoveAllListeners()
+{
+  while (!mListeners.IsEmpty()) {
+    size_t idx = mListeners.Length() - 1;
+    nsCOMPtr<nsIAtom> type = mListeners.ElementAt(idx).mTypeAtom;
+    EventMessage message = mListeners.ElementAt(idx).mEventMessage;
+    mListeners.RemoveElementAt(idx);
+    NotifyEventListenerRemoved(type);
+    if (IsDeviceType(message)) {
+      DisableDevice(message);
+    }
+  }
 }
 
 already_AddRefed<nsIScriptGlobalObject>

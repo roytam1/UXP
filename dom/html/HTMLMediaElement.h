@@ -16,7 +16,6 @@
 #include "DecoderTraits.h"
 #include "nsIAudioChannelAgent.h"
 #include "mozilla/Attributes.h"
-#include "mozilla/dom/Promise.h"
 #include "mozilla/dom/TextTrackManager.h"
 #include "mozilla/WeakPtr.h"
 #include "MediaDecoder.h"
@@ -78,6 +77,7 @@ namespace dom {
 
 class MediaError;
 class MediaSource;
+class Promise;
 class TextTrackList;
 class AudioTrackList;
 class VideoTrackList;
@@ -549,7 +549,7 @@ public:
     SetHTMLBoolAttr(nsGkAtoms::loop, aValue, aRv);
   }
 
-  void Play(ErrorResult& aRv);
+  already_AddRefed<Promise> Play(ErrorResult& aRv);
 
   void Pause(ErrorResult& aRv);
 
@@ -835,7 +835,7 @@ protected:
     nsTArray<Pair<nsString, RefPtr<MediaInputPort>>> mTrackPorts;
   };
 
-  nsresult PlayInternal();
+  already_AddRefed<Promise> PlayInternal(ErrorResult& aRv);
 
   /** Use this method to change the mReadyState member, so required
    * events can be fired.
@@ -981,6 +981,7 @@ protected:
   void AbortExistingLoads();
 
   /**
+   * These are the dedicated media source failure steps.
    * Called when all potential resources are exhausted. Changes network
    * state to NETWORK_NO_SOURCE, and sends error event with code
    * MEDIA_ERR_SRC_NOT_SUPPORTED.
@@ -1285,6 +1286,8 @@ protected:
   void MaybeNotifyMediaResumed(SuspendTypes aSuspend);
 
   class nsAsyncEventRunner;
+  class nsNotifyAboutPlayingRunner;
+  class nsResolveOrRejectPendingPlayPromisesRunner;
   using nsGenericHTMLElement::DispatchEvent;
   // For nsAsyncEventRunner.
   nsresult DispatchEvent(const nsAString& aName);
@@ -1292,6 +1295,24 @@ protected:
   // Open unsupported types media with the external app when the media element
   // triggers play() after loaded fail. eg. preload the data before start play.
   void OpenUnsupportedMediaWithExternalAppIfNeeded() const;
+
+  // This method moves the mPendingPlayPromises into a temperate object. So the
+  // mPendingPlayPromises is cleared after this method call.
+  nsTArray<RefPtr<Promise>> TakePendingPlayPromises();
+
+  // This method snapshots the mPendingPlayPromises by TakePendingPlayPromises()
+  // and queues a task to resolve them.
+  void AsyncResolvePendingPlayPromises();
+
+  // This method snapshots the mPendingPlayPromises by TakePendingPlayPromises()
+  // and queues a task to reject them.
+  void AsyncRejectPendingPlayPromises(nsresult aError);
+
+  // This method snapshots the mPendingPlayPromises by TakePendingPlayPromises()
+  // and queues a task to resolve them also to dispatch a "playing" event.
+  void NotifyAboutPlaying();
+
+  already_AddRefed<Promise> CreateDOMPromise(ErrorResult& aRv) const;
 
   // The current decoder. Load() has been called on this decoder.
   // At most one of mDecoder and mSrcStream can be non-null.
@@ -1684,6 +1705,17 @@ private:
   Visibility mVisibilityState;
 
   UniquePtr<ErrorSink> mErrorSink;
+
+  // A list of pending play promises. The elements are pushed during the play()
+  // method call and are resolved/rejected during further playback steps.
+  nsTArray<RefPtr<Promise>> mPendingPlayPromises;
+
+  // A list of already-dispatched but not yet run
+  // nsResolveOrRejectPendingPlayPromisesRunners.
+  // Runners whose Run() method is called remove themselves from this list.
+  // We keep track of these because the load algorithm resolves/rejects all
+  // already-dispatched pending play promises.
+  nsTArray<nsResolveOrRejectPendingPlayPromisesRunner*> mPendingPlayPromisesRunners;
 };
 
 } // namespace dom

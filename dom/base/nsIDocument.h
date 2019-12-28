@@ -909,10 +909,6 @@ public:
    */
   nsresult GetSrcdocData(nsAString& aSrcdocData);
 
-  bool DidDocumentOpen() {
-    return mDidDocumentOpen;
-  }
-
   already_AddRefed<mozilla::dom::AnonymousContent>
   InsertAnonymousContent(mozilla::dom::Element& aElement,
                          mozilla::ErrorResult& aError);
@@ -1448,7 +1444,7 @@ public:
   virtual void EndLoad() = 0;
 
   enum ReadyState { READYSTATE_UNINITIALIZED = 0, READYSTATE_LOADING = 1, READYSTATE_INTERACTIVE = 3, READYSTATE_COMPLETE = 4};
-  virtual void SetReadyStateInternal(ReadyState rs) = 0;
+  virtual void SetReadyStateInternal(ReadyState rs, bool updateTimingInformation = true) = 0;
   ReadyState GetReadyStateEnum()
   {
     return mReadyState;
@@ -2185,6 +2181,19 @@ public:
   void ForceEnableXULXBL() {
     mAllowXULXBL = eTriTrue;
   }
+
+  /**
+   * Flag whether we're about to fire the window's load event for this document.
+   */
+  virtual void SetLoadEventFiring(bool aFiring) = 0;
+
+  /**
+   * Test whether we should be firing a load event for this document after a
+   * document.close().
+   * This method should only be called at the point when the load event is about
+   * to be fired, since it resets `skip`.
+   */
+  virtual bool SkipLoadEventAfterClose() = 0;
 
   /**
    * Returns the template content owner document that owns the content of
@@ -3145,11 +3154,6 @@ protected:
 
   // Whether the document was created by a srcdoc iframe.
   bool mIsSrcdocDocument : 1;
-
-  // Records whether we've done a document.open. If this is true, it's possible
-  // for nodes from this document to have outdated wrappers in their wrapper
-  // caches.
-  bool mDidDocumentOpen : 1;
 
   // Whether this document has a display document and thus is considered to
   // be a resource document.  Normally this is the same as !!mDisplayDocument,
