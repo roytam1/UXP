@@ -10,10 +10,11 @@ var EXPORTED_SYMBOLS = ["OAuth2"];
 
 var {classes: Cc, interfaces: Ci, results: Cr, utils: Cu} = Components;
 
-Cu.import("resource://gre/modules/Http.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/gloda/log4moz.js");
+
+Cu.importGlobalProperties(["fetch"]);
 
 // Only allow one connecting window per endpoint.
 var gConnecting = {};
@@ -181,49 +182,48 @@ OAuth2.prototype = {
     // @see RFC 6749 section 4.1.3. Access Token Request
     // @see RFC 6749 section 6. Refreshing an Access Token
 
-        let params = [
-            ["client_id", this.consumerKey],
-            ["client_secret", this.consumerSecret],
-        ];
+       let data = new URLSearchParams();
+       data.append("client_id", this.consumerKey);
+       data.append("client_secret", this.consumerSecret);
 
        if (aRefresh) {
-            params.push(["grant_type", "refresh_token"]);
-            params.push(["refresh_token", aCode]);
+         data.append("grant_type", "refresh_token");
+         data.append("refresh_token", aCode);
        } else {
-            params.push(["grant_type", "authorization_code"]);
-            params.push(["code", aCode]);
-            params.push(["redirect_uri", this.completionURI]);
+         data.append("grant_type", "authorization_code");
+         data.append("code", aCode);
+         data.append("redirect_uri", this.completionURI);
         }
 
-        let options = {
-          postData: params,
-          onLoad: this.onAccessTokenReceived.bind(this),
-          onError: this.onAccessTokenFailed.bind(this)
-        }
-        httpRequest(this.tokenURI, options);
-    },
-
-    onAccessTokenFailed: function onAccessTokenFailed(aError, aData) {
-        if (aError != "offline") {
-            this.refreshToken = null;
-        }
-        this.connectFailureCallback(aData);
-    },
-
-    onAccessTokenReceived: function onRequestTokenReceived(aData) {
-        let result = JSON.parse(aData);
-
+    this.log.info(
+      `Making access token request to the token endpoint: ${this.tokenURI}`
+    );
+    fetch(this.tokenURI, {
+      method: "POST",
+      cache: "no-cache",
+      body: data,
+    })
+      .then(response => response.json())
+      .then(result => {
+        this.log.info("The authorization server issued an access token.");
         this.accessToken = result.access_token;
         if ("refresh_token" in result) {
-            this.refreshToken = result.refresh_token;
+          this.refreshToken = result.refresh_token;
         }
         if ("expires_in" in result) {
-            this.tokenExpires = (new Date()).getTime() + (result.expires_in * 1000);
+          this.tokenExpires = new Date().getTime() + result.expires_in * 1000;
         } else {
-            this.tokenExpires = Number.MAX_VALUE;
+          this.tokenExpires = Number.MAX_VALUE;
         }
         this.tokenType = result.token_type;
-
         this.connectSuccessCallback();
+      })
+      .catch(err => {
+        // Getting an access token failed.
+        this.log.info(
+          `The authorization server returned an error response: ${err}`
+        );
+        this.connectFailureCallback(err);
+      });
     }
 };
