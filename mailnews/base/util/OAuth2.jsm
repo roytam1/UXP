@@ -66,25 +66,31 @@ OAuth2.prototype = {
     },
 
     requestAuthorization: function requestAuthorization() {
-        let params = [
-            ["response_type", "code"],
-            ["client_id", this.consumerKey],
-            ["redirect_uri", this.completionURI],
-        ];
-        // The scope can be optional.
+    let params = new URLSearchParams({
+      response_type: "code",
+      client_id: this.consumerKey,
+      redirect_uri: this.completionURI,
+    });
+
+    // The scope is optional.
         if (this.scope) {
-            params.push(["scope", this.scope]);
+          params.append("scope", this.scope);
         }
 
-        // Add extra parameters
-        params.push(...this.extraAuthParams);
+    for (let [name, value] of this.extraAuthParams) {
+      params.append(name, value);
+    }
 
-        // Now map the parameters to a string
-        params = params.map(([k,v]) => k + "=" + encodeURIComponent(v)).join("&");
+    let authEndpointURI = this.authURI + "?" + params.toString();
+    this.log.info(
+      "Interacting with the resource owner to obtain an authorization grant " +
+        "from the authorization endpoint: " +
+        authEndpointURI
+    );
 
         this._browserRequest = {
             account: this,
-            url: this.authURI + "?" + params,
+            url: authEndpointURI,
             _active: true,
             iconURI: "",
             cancelled: function() {
@@ -187,17 +193,20 @@ OAuth2.prototype = {
        data.append("client_secret", this.consumerSecret);
 
        if (aRefresh) {
+       this.log.info(
+         `Making a refresh request to the token endpoint: ${this.tokenURI}`
+       );
          data.append("grant_type", "refresh_token");
          data.append("refresh_token", aCode);
        } else {
+       this.log.info(
+         `Making access token request to the token endpoint: ${this.tokenURI}`
+       );
          data.append("grant_type", "authorization_code");
          data.append("code", aCode);
          data.append("redirect_uri", this.completionURI);
         }
 
-    this.log.info(
-      `Making access token request to the token endpoint: ${this.tokenURI}`
-    );
     fetch(this.tokenURI, {
       method: "POST",
       cache: "no-cache",
@@ -205,6 +214,18 @@ OAuth2.prototype = {
     })
       .then(response => response.json())
       .then(result => {
+        if ("error" in result) {
+          // RFC 6749 section 5.2. Error Response
+          this.log.info(
+            `The authorization server returned an error response: ${JSON.stringify(
+              result
+            )}`
+          );
+          this.connectFailureCallback(result);
+          return;
+        }
+
+        // RFC 6749 section 5.1. Successful Response
         this.log.info("The authorization server issued an access token.");
         this.accessToken = result.access_token;
         if ("refresh_token" in result) {
@@ -215,14 +236,10 @@ OAuth2.prototype = {
         } else {
           this.tokenExpires = Number.MAX_VALUE;
         }
-        this.tokenType = result.token_type;
         this.connectSuccessCallback();
       })
       .catch(err => {
-        // Getting an access token failed.
-        this.log.info(
-          `The authorization server returned an error response: ${err}`
-        );
+        this.log.info(`Connection to authorization server failed: ${err}`);
         this.connectFailureCallback(err);
       });
     }
