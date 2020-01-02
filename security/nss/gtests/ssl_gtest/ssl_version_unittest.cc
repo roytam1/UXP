@@ -55,6 +55,10 @@ TEST_P(TlsConnectGeneric, ServerNegotiateTls12) {
 // two validate that we can also detect fallback using the
 // SSL_SetDowngradeCheckVersion() API.
 TEST_F(TlsConnectTest, TestDowngradeDetectionToTls11) {
+  client_->SetVersionRange(SSL_LIBRARY_VERSION_TLS_1_0,
+                           SSL_LIBRARY_VERSION_TLS_1_2);
+  server_->SetVersionRange(SSL_LIBRARY_VERSION_TLS_1_0,
+                           SSL_LIBRARY_VERSION_TLS_1_2);
   client_->SetOption(SSL_ENABLE_HELLO_DOWNGRADE_CHECK, PR_TRUE);
   MakeTlsFilter<TlsClientHelloVersionSetter>(client_,
                                              SSL_LIBRARY_VERSION_TLS_1_1);
@@ -116,11 +120,11 @@ TEST_F(TlsConnectTest, TestDowngradeDetectionToTls10) {
 
 TEST_F(TlsConnectTest, TestFallbackFromTls12) {
   client_->SetOption(SSL_ENABLE_HELLO_DOWNGRADE_CHECK, PR_TRUE);
-  client_->SetDowngradeCheckVersion(SSL_LIBRARY_VERSION_TLS_1_2);
   client_->SetVersionRange(SSL_LIBRARY_VERSION_TLS_1_1,
                            SSL_LIBRARY_VERSION_TLS_1_1);
   server_->SetVersionRange(SSL_LIBRARY_VERSION_TLS_1_1,
                            SSL_LIBRARY_VERSION_TLS_1_2);
+  client_->SetDowngradeCheckVersion(SSL_LIBRARY_VERSION_TLS_1_2);
   ConnectExpectAlert(client_, kTlsAlertIllegalParameter);
   client_->CheckErrorCode(SSL_ERROR_RX_MALFORMED_SERVER_HELLO);
   server_->CheckErrorCode(SSL_ERROR_ILLEGAL_PARAMETER_ALERT);
@@ -267,6 +271,13 @@ TEST_F(TlsConnectStreamTls13, Tls14ClientHelloWithSupportedVersions) {
   ASSERT_TRUE(capture->extension().Read(0, 2, &version));
   // This way we don't need to change with new draft version.
   ASSERT_LT(static_cast<uint32_t>(SSL_LIBRARY_VERSION_TLS_1_2), version);
+}
+
+// Offer 1.3 but with ClientHello.legacy_version == SSL 3.0. This
+// causes a protocol version alert.  See RFC 8446 Appendix D.5.
+TEST_F(TlsConnectStreamTls13, Ssl30ClientHelloWithSupportedVersions) {
+  MakeTlsFilter<TlsClientHelloVersionSetter>(client_, SSL_LIBRARY_VERSION_3_0);
+  ConnectExpectAlert(server_, kTlsAlertProtocolVersion);
 }
 
 }  // namespace nss_test

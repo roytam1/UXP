@@ -20,7 +20,8 @@ SECStatus SSLInt_IncrementClientHandshakeVersion(PRFileDesc *fd);
 SECStatus SSLInt_UpdateSSLv2ClientRandom(PRFileDesc *fd, uint8_t *rnd,
                                          size_t rnd_len, uint8_t *msg,
                                          size_t msg_len);
-
+SECStatus SSLInt_GetHandshakeRandoms(PRFileDesc *fd, SSL3Random client_random,
+                                     SSL3Random server_random);
 PRBool SSLInt_ExtensionNegotiated(PRFileDesc *fd, PRUint16 ext);
 void SSLInt_ClearSelfEncryptKey();
 void SSLInt_SetSelfEncryptMacKey(PK11SymKey *key);
@@ -39,18 +40,9 @@ SECStatus SSLInt_AdvanceWriteSeqNum(PRFileDesc *fd, PRUint64 to);
 SECStatus SSLInt_AdvanceReadSeqNum(PRFileDesc *fd, PRUint64 to);
 SECStatus SSLInt_AdvanceWriteSeqByAWindow(PRFileDesc *fd, PRInt32 extra);
 SSLKEAType SSLInt_GetKEAType(SSLNamedGroup group);
-SECStatus SSLInt_GetEpochs(PRFileDesc *fd, PRUint16 *readEpoch,
-                           PRUint16 *writeEpoch);
-
-SECStatus SSLInt_SetCipherSpecChangeFunc(PRFileDesc *fd,
-                                         sslCipherSpecChangedFunc func,
-                                         void *arg);
-PRUint16 SSLInt_CipherSpecToEpoch(const ssl3CipherSpec *spec);
-PK11SymKey *SSLInt_CipherSpecToKey(const ssl3CipherSpec *spec);
-SSLCipherAlgorithm SSLInt_CipherSpecToAlgorithm(const ssl3CipherSpec *spec);
-const PRUint8 *SSLInt_CipherSpecToIv(const ssl3CipherSpec *spec);
-void SSLInt_SetTicketLifetime(uint32_t lifetime);
+SECStatus SSLInt_HasPendingHandshakeData(PRFileDesc *fd, PRBool *pending);
 SECStatus SSLInt_SetSocketMaxEarlyDataSize(PRFileDesc *fd, uint32_t size);
-void SSLInt_RolloverAntiReplay(void);
+SECStatus SSLInt_TweakChannelInfoForDC(PRFileDesc *fd, PRBool changeAuthKeyBits,
+                                       PRBool changeScheme);
 
 #endif  // ndef libssl_internals_h_

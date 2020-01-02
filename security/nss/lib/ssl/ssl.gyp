@@ -35,6 +35,7 @@
         'sslinit.c',
         'sslmutex.c',
         'sslnonce.c',
+        'sslprimitive.c',
         'sslreveal.c',
         'sslsecur.c',
         'sslsnce.c',
@@ -48,6 +49,7 @@
         'tls13hashstate.c',
         'tls13hkdf.c',
         'tls13replay.c',
+        'tls13subcerts.c',
       ],
       'conditions': [
         [ 'OS=="win"', {
@@ -68,9 +70,9 @@
             'UNSAFE_FUZZER_MODE',
           ],
         }],
-        [ 'OS=="dragonfly" or OS=="freebsd" or OS=="netbsd" or OS=="openbsd" or OS=="linux"', {
-          'cflags': [
-            '-std=gnu99',
+        [ 'enable_sslkeylogfile==1', {
+          'defines': [
+            'NSS_ALLOW_SSLKEYLOGFILE',
           ],
         }],
       ],
@@ -92,11 +94,6 @@
       }
     }
   ],
-  'target_defaults': {
-    'defines': [
-      'NSS_ALLOW_SSLKEYLOGFILE=1'
-    ]
-  },
   'variables': {
     'module': 'nss'
   }
