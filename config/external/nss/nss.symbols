@@ -111,6 +111,7 @@ CERT_FreeNicknames
 CERT_GenTime2FormattedAscii_Util
 CERT_GetCertChainFromCert
 CERT_GetCertEmailAddress
+CERT_GetCertificateDer
 CERT_GetCertificateRequestExtensions
 CERT_GetCertTimes
 CERT_GetCertTrust
@@ -176,6 +177,7 @@ HASH_Create
 HASH_Destroy
 HASH_End
 HASH_GetHashObject
+HASH_GetHashOidTagByHashType
 HASH_GetType
 HASH_HashBuf
 HASH_ResultLenByOidTag
@@ -344,6 +346,7 @@ PK11_FindCertsFromNickname
 PK11_FindKeyByAnyCert
 PK11_FindKeyByDERCert
 PK11_FindKeyByKeyID
+PK11_FindRawCertsWithSubject
 PK11_FindSlotByName
 PK11_FindSlotsByNames
 PK11_FreeSlot
@@ -361,6 +364,7 @@ PK11_GetBestSlot
 PK11_GetBestSlotMultiple
 PK11_GetBlockSize
 PK11_GetCertFromPrivateKey
+PK11_GetCertsMatchingPrivateKey
 PK11_GetDefaultArray
 PK11_GetDefaultFlags
 PK11_GetDisabledReason
