@@ -2472,6 +2472,13 @@ nsresult nsNNTPProtocol::PasswordResponse()
   return NS_ERROR_FAILURE;
 }
 
+NS_IMETHODIMP nsNNTPProtocol::OnPromptStartAsync(nsIMsgAsyncPromptCallback *aCallback)
+{
+  bool result = false;
+  OnPromptStart(&result);
+  return aCallback->OnAuthResult(result);
+}
+
 NS_IMETHODIMP nsNNTPProtocol::OnPromptStart(bool *authAvailable)
 {
   NS_ENSURE_ARG_POINTER(authAvailable);
