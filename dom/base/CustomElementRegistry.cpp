@@ -174,30 +174,6 @@ CustomElementRegistry::IsCustomElementEnabled(JSContext* aCx, JSObject* aObject)
          Preferences::GetBool("dom.webcomponents.enabled");
 }
 
-/* static */ already_AddRefed<CustomElementRegistry>
-CustomElementRegistry::Create(nsPIDOMWindowInner* aWindow)
-{
-  MOZ_ASSERT(aWindow);
-  MOZ_ASSERT(aWindow->IsInnerWindow());
-
-  if (!aWindow->GetDocShell()) {
-    return nullptr;
-  }
-
-  if (!IsCustomElementEnabled()) {
-    return nullptr;
-  }
-
-  RefPtr<CustomElementRegistry> customElementRegistry =
-    new CustomElementRegistry(aWindow);
-
-  if (!customElementRegistry->Init()) {
-    return nullptr;
-  }
-
-  return customElementRegistry.forget();
-}
-
 /* static */ void
 CustomElementRegistry::ProcessTopElementQueue()
 {
@@ -240,6 +216,10 @@ CustomElementRegistry::CustomElementRegistry(nsPIDOMWindowInner* aWindow)
  , mIsCustomDefinitionRunning(false)
  , mIsBackupQueueProcessing(false)
 {
+  MOZ_ASSERT(aWindow);
+  MOZ_ASSERT(aWindow->IsInnerWindow());
+  MOZ_ALWAYS_TRUE(mConstructors.init());
+
   mozilla::HoldJSObjects(this);
 
   if (!sProcessingStack) {
@@ -252,12 +232,6 @@ CustomElementRegistry::CustomElementRegistry(nsPIDOMWindowInner* aWindow)
 CustomElementRegistry::~CustomElementRegistry()
 {
   mozilla::DropJSObjects(this);
-}
-
-bool
-CustomElementRegistry::Init()
-{
-  return mConstructors.init();
 }
 
 CustomElementDefinition*
