@@ -2746,6 +2746,9 @@ public:
   static bool
   IsWebComponentsEnabled() { return sIsWebComponentsEnabled; }
 
+  static bool
+  IsCustomElementsEnabled() { return sIsCustomElementsEnabled; }
+
 private:
   static bool InitializeEventTable();
 
@@ -2854,6 +2857,7 @@ private:
   static bool sIsFrameTimingPrefEnabled;
   static bool sIsExperimentalAutocompleteEnabled;
   static bool sIsWebComponentsEnabled;
+  static bool sIsCustomElementsEnabled;
   static bool sEncodeDecodeURLHash;
   static bool sGettersDecodeURLHash;
   static bool sPrivacyResistFingerprinting;
