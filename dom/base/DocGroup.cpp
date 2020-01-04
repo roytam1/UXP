@@ -46,6 +46,9 @@ DocGroup::DocGroup(TabGroup* aTabGroup, const nsACString& aKey)
 DocGroup::~DocGroup()
 {
   MOZ_ASSERT(mDocuments.IsEmpty());
+  if (!NS_IsMainThread()) {
+     NS_ReleaseOnMainThread(mReactionsStack.forget());
+  }
   mTabGroup->mDocGroups.RemoveEntry(mKey);
 }
 
