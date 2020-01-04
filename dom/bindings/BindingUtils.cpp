@@ -16,6 +16,7 @@
 #include "mozilla/SizePrintfMacros.h"
 #include "mozilla/Unused.h"
 #include "mozilla/UseCounter.h"
+#include "mozilla/dom/DocGroup.h"
 
 #include "AccessCheck.h"
 #include "jsfriendapi.h"
@@ -3403,6 +3404,28 @@ GetDesiredProto(JSContext* aCx, const JS::CallArgs& aCallArgs,
 
   aDesiredProto.set(&protoVal.toObject());
   return true;
+}
+
+CustomElementReactionsStack*
+GetCustomElementReactionsStack(JS::Handle<JSObject*> aObj)
+{
+  // This might not be the right object, if there are wrappers. Unwrap if we can.
+  JSObject* obj = js::CheckedUnwrap(aObj);
+  if (!obj) {
+    return nullptr;
+  }
+
+  nsGlobalWindow* window = xpc::WindowGlobalOrNull(obj);
+  if (!window) {
+    return nullptr;
+  }
+
+  DocGroup* docGroup = window->AsInner()->GetDocGroup();
+  if (!docGroup) {
+    return nullptr;
+  }
+
+  return docGroup->CustomElementReactionsStack();
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#htmlconstructor

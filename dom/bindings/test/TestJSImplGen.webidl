@@ -794,6 +794,10 @@ interface TestJSImplInterface {
   [Throws] attribute boolean throwingAttr;
   [GetterThrows] attribute boolean throwingGetterAttr;
   [SetterThrows] attribute boolean throwingSetterAttr;
+  [CEReactions] void ceReactionsMethod();
+  [CEReactions] void ceReactionsMethodOverload();
+  [CEReactions] void ceReactionsMethodOverload(DOMString bar);
+  [CEReactions] attribute boolean ceReactionsAttr;
   // NeedsSubjectPrincipal not supported on JS-implemented things for
   // now, because we always pass in the caller principal anyway.
   //  [NeedsSubjectPrincipal] void needsSubjectPrincipalMethod();
