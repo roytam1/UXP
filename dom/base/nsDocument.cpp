@@ -5395,14 +5395,6 @@ nsDocument::CreateElement(const nsAString& aTagName,
   }
 
   const nsString* is = nullptr;
-  if (aOptions.IsElementCreationOptions()) {
-    // Throw NotFoundError if 'is' is not-null and definition is null
-    is = CheckCustomElementName(aOptions.GetAsElementCreationOptions(),
-      needsLowercase ? lcTagName : aTagName, mDefaultElementType, rv);
-    if (rv.Failed()) {
-      return nullptr;
-    }
-  }
 
   RefPtr<Element> elem = CreateElem(
     needsLowercase ? lcTagName : aTagName, nullptr, mDefaultElementType, is);
@@ -5443,14 +5435,6 @@ nsDocument::CreateElementNS(const nsAString& aNamespaceURI,
   }
 
   const nsString* is = nullptr;
-  if (aOptions.IsElementCreationOptions()) {
-    // Throw NotFoundError if 'is' is not-null and definition is null
-    is = CheckCustomElementName(aOptions.GetAsElementCreationOptions(),
-                                aQualifiedName, nodeInfo->NamespaceID(), rv);
-    if (rv.Failed()) {
-      return nullptr;
-    }
-  }
 
   nsCOMPtr<Element> element;
   rv = NS_NewElement(getter_AddRefs(element), nodeInfo.forget(),
@@ -12755,30 +12739,6 @@ nsIDocument::UpdateStyleBackendType()
     mStyleBackendType = StyleBackendType::Servo;
   }
 #endif
-}
-
-const nsString*
-nsDocument::CheckCustomElementName(const ElementCreationOptions& aOptions,
-                                   const nsAString& aLocalName,
-                                   uint32_t aNamespaceID,
-                                   ErrorResult& rv)
-{
-  // only check aOptions if 'is' is passed and the webcomponents preference
-  // is enabled
-  if (!aOptions.mIs.WasPassed() ||
-      !CustomElementRegistry::IsCustomElementEnabled()) {
-      return nullptr;
-  }
-
-  const nsString* is = &aOptions.mIs.Value();
-
-  // Throw NotFoundError if 'is' is not-null and definition is null
-  if (!nsContentUtils::LookupCustomElementDefinition(this, aLocalName,
-                                                     aNamespaceID, is)) {
-      rv.Throw(NS_ERROR_DOM_NOT_FOUND_ERR);
-  }
-
-  return is;
 }
 
 Selection*
