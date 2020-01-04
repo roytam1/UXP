@@ -4083,6 +4083,11 @@ class IDLAttribute(IDLInterfaceMember):
             raise WebIDLError("Attribute returns a type that is not exposed "
                               "everywhere where the attribute is exposed",
                               [self.location])
+        if self.getExtendedAttribute("CEReactions"):
+            if self.readonly:
+                raise WebIDLError("[CEReactions] is not allowed on "
+                                  "readonly attributes",
+                                  [self.location])
 
     def handleExtendedAttribute(self, attr):
         identifier = attr.identifier()
@@ -4253,6 +4258,10 @@ class IDLAttribute(IDLInterfaceMember):
                 raise WebIDLError("[Unscopable] is only allowed on non-static "
                                   "attributes and operations",
                                   [attr.location, self.location])
+        elif identifier == "CEReactions":
+            if not attr.noArguments():
+                raise WebIDLError("[CEReactions] must take no arguments",
+                                  [attr.location])
         elif (identifier == "Pref" or
               identifier == "Deprecated" or
               identifier == "SetterThrows" or
@@ -4982,6 +4991,15 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
             if self.isStatic():
                 raise WebIDLError("[Unscopable] is only allowed on non-static "
                                   "attributes and operations",
+                                  [attr.location, self.location])
+        elif identifier == "CEReactions":
+            if not attr.noArguments():
+                raise WebIDLError("[CEReactions] must take no arguments",
+                                  [attr.location])
+
+            if self.isSpecial() and not self.isSetter() and not self.isDeleter():
+                raise WebIDLError("[CEReactions] is only allowed on operation, "
+                                  "attribute, setter, and deleter",
                                   [attr.location, self.location])
         elif (identifier == "Throws" or
               identifier == "NewObject" or
