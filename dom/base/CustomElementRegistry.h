@@ -66,6 +66,18 @@ private:
   CustomElementData* mOwnerData;
 };
 
+class CustomElementConstructor final : public CallbackFunction
+{
+public:
+  explicit CustomElementConstructor(CallbackFunction* aOther)
+    : CallbackFunction(aOther)
+  {
+    MOZ_ASSERT(JS::IsConstructor(mCallback));
+  }
+
+  already_AddRefed<Element> Construct(const char* aExecutionReason, ErrorResult& aRv);
+};
+
 // Each custom element has an associated callback queue and an element is
 // being created flag.
 struct CustomElementData
@@ -114,7 +126,7 @@ struct CustomElementDefinition
 {
   CustomElementDefinition(nsIAtom* aType,
                           nsIAtom* aLocalName,
-                          JSObject* aConstructor,
+                          Function* aConstructor,
                           JSObject* aPrototype,
                           mozilla::dom::LifecycleCallbacks* aCallbacks,
                           uint32_t aDocOrder);
@@ -126,7 +138,7 @@ struct CustomElementDefinition
   nsCOMPtr<nsIAtom> mLocalName;
 
   // The custom element constructor.
-  JS::Heap<JSObject *> mConstructor;
+  RefPtr<CustomElementConstructor> mConstructor;
 
   // The prototype to use for new custom elements of this type.
   JS::Heap<JSObject *> mPrototype;
@@ -156,7 +168,7 @@ public:
   }
 
   virtual ~CustomElementReaction() = default;
-  virtual void Invoke(Element* aElement) = 0;
+  virtual void Invoke(Element* aElement, ErrorResult& aRv) = 0;
   virtual void Traverse(nsCycleCollectionTraversalCallback& aCb) const
   {
   }
@@ -176,7 +188,7 @@ public:
   }
 
 private:
-   virtual void Invoke(Element* aElement) override;
+   virtual void Invoke(Element* aElement, ErrorResult& aRv) override;
 };
 
 class CustomElementCallbackReaction final : public CustomElementReaction
@@ -196,7 +208,7 @@ class CustomElementCallbackReaction final : public CustomElementReaction
     }
 
   private:
-    virtual void Invoke(Element* aElement) override;
+    virtual void Invoke(Element* aElement, ErrorResult& aRv) override;
     UniquePtr<CustomElementCallback> mCustomElementCallback;
 };
 
@@ -258,7 +270,7 @@ private:
    * Invoke custom element reactions
    * https://html.spec.whatwg.org/multipage/scripting.html#invoke-custom-element-reactions
    */
-  void InvokeReactions(ElementQueue* aElementQueue);
+  void InvokeReactions(ElementQueue* aElementQueue, nsIGlobalObject* aGlobal);
 
   void Enqueue(Element* aElement, CustomElementReaction* aReaction);
 
@@ -326,7 +338,11 @@ public:
   void GetCustomPrototype(nsIAtom* aAtom,
                           JS::MutableHandle<JSObject*> aPrototype);
 
-  void Upgrade(Element* aElement, CustomElementDefinition* aDefinition);
+  /**
+   * Upgrade an element.
+   * https://html.spec.whatwg.org/multipage/scripting.html#upgrades
+   */
+  void Upgrade(Element* aElement, CustomElementDefinition* aDefinition, ErrorResult& aRv);
 
 private:
   ~CustomElementRegistry();
