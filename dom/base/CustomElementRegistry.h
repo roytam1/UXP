@@ -357,7 +357,7 @@ public:
    * Upgrade an element.
    * https://html.spec.whatwg.org/multipage/scripting.html#upgrades
    */
-  void Upgrade(Element* aElement, CustomElementDefinition* aDefinition, ErrorResult& aRv);
+  static void Upgrade(Element* aElement, CustomElementDefinition* aDefinition, ErrorResult& aRv);
 
 private:
   ~CustomElementRegistry();
