@@ -38,6 +38,12 @@ struct LifecycleCallbackArgs
   nsString namespaceURI;
 };
 
+struct LifecycleAdoptedCallbackArgs
+{
+  nsCOMPtr<nsIDocument> mOldDocument;
+  nsCOMPtr<nsIDocument> mNewDocument;
+};
+
 class CustomElementCallback
 {
 public:
@@ -54,6 +60,13 @@ public:
     mArgs = aArgs;
   }
 
+  void SetAdoptedCallbackArgs(LifecycleAdoptedCallbackArgs& aAdoptedCallbackArgs)
+  {
+    MOZ_ASSERT(mType == nsIDocument::eAdopted,
+      "Arguments are only used by adopted callback.");
+    mAdoptedCallbackArgs = aAdoptedCallbackArgs;
+  }
+
 private:
   // The this value to use for invocation of the callback.
   RefPtr<Element> mThisObject;
@@ -63,6 +76,7 @@ private:
   // Arguments to be passed to the callback,
   // used by the attribute changed callback.
   LifecycleCallbackArgs mArgs;
+  LifecycleAdoptedCallbackArgs mAdoptedCallbackArgs;
   // CustomElementData that contains this callback in the
   // callback queue.
   CustomElementData* mOwnerData;
@@ -365,6 +379,7 @@ public:
   static void EnqueueLifecycleCallback(nsIDocument::ElementCallbackType aType,
                                        Element* aCustomElement,
                                        LifecycleCallbackArgs* aArgs,
+                                       LifecycleAdoptedCallbackArgs* aAdoptedCallbackArgs,
                                        CustomElementDefinition* aDefinition);
 
   void GetCustomPrototype(nsIAtom* aAtom,
@@ -381,7 +396,9 @@ private:
 
   static UniquePtr<CustomElementCallback> CreateCustomElementCallback(
     nsIDocument::ElementCallbackType aType, Element* aCustomElement,
-    LifecycleCallbackArgs* aArgs, CustomElementDefinition* aDefinition);
+    LifecycleCallbackArgs* aArgs,
+    LifecycleAdoptedCallbackArgs* aAdoptedCallbackArgs,
+    CustomElementDefinition* aDefinition);
 
   /**
    * Registers an unresolved custom element that is a candidate for

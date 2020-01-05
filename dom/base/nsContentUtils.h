@@ -126,6 +126,7 @@ class EventTarget;
 class IPCDataTransfer;
 class IPCDataTransferItem;
 struct LifecycleCallbackArgs;
+struct LifecycleAdoptedCallbackArgs;
 class NodeInfo;
 class nsIContentChild;
 class nsIContentParent;
@@ -2734,6 +2735,7 @@ public:
   static void EnqueueLifecycleCallback(nsIDocument::ElementCallbackType aType,
                                        Element* aCustomElement,
                                        mozilla::dom::LifecycleCallbackArgs* aArgs = nullptr,
+                                       mozilla::dom::LifecycleAdoptedCallbackArgs* aAdoptedCallbackArgs = nullptr,
                                        mozilla::dom::CustomElementDefinition* aDefinition = nullptr);
 
   static void GetCustomPrototype(nsIDocument* aDoc,
