@@ -4037,3 +4037,11 @@ Element::UpdateIntersectionObservation(DOMIntersectionObserver* aObserver, int32
   }
   return false;
 }
+
+void
+Element::SetCustomElementData(CustomElementData* aData)
+{
+  nsDOMSlots *slots = DOMSlots();
+  MOZ_ASSERT(!slots->mCustomElementData, "Custom element data may not be changed once set.");
+  slots->mCustomElementData = aData;
+}
