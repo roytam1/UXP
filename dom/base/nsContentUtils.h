@@ -2723,6 +2723,11 @@ public:
   static void SetupCustomElement(Element* aElement,
                                  const nsAString* aTypeExtension = nullptr);
 
+  static mozilla::dom::CustomElementDefinition*
+  GetElementDefinitionIfObservingAttr(Element* aCustomElement,
+                                      nsIAtom* aExtensionType,
+                                      nsIAtom* aAttrName);
+
   static void EnqueueLifecycleCallback(nsIDocument* aDoc,
                                        nsIDocument::ElementCallbackType aType,
                                        Element* aCustomElement,
