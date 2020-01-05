@@ -1685,13 +1685,12 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
   }
 
   nsIDocument* composedDoc = GetComposedDoc();
-  if (composedDoc) {
-    // Attached callback must be enqueued whenever custom element is inserted into a
-    // document and this document has a browsing context.
-    if (GetCustomElementData() && composedDoc->GetDocShell()) {
-      // Enqueue an attached callback for the custom element.
+  if (CustomElementRegistry::IsCustomElementEnabled() && composedDoc) {
+    // Connected callback must be enqueued whenever a custom element becomes
+    // connected.
+    if (GetCustomElementData()) {
       nsContentUtils::EnqueueLifecycleCallback(
-        composedDoc, nsIDocument::eAttached, this);
+        composedDoc, nsIDocument::eConnected, this);
     }
   }
 
@@ -2586,7 +2585,7 @@ Element::SetAttrAndNotify(int32_t aNamespaceID,
 
   UpdateState(aNotify);
 
-  if (nsContentUtils::IsWebComponentsEnabled()) {
+  if (CustomElementRegistry::IsCustomElementEnabled()) {
     if (CustomElementData* data = GetCustomElementData()) {
       if (CustomElementDefinition* definition =
             nsContentUtils::GetElementDefinitionIfObservingAttr(this,
@@ -2853,7 +2852,7 @@ Element::UnsetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 
   UpdateState(aNotify);
 
-  if (nsContentUtils::IsWebComponentsEnabled()) {
+  if (CustomElementRegistry::IsCustomElementEnabled()) {
     if (CustomElementData* data = GetCustomElementData()) {
       if (CustomElementDefinition* definition =
             nsContentUtils::GetElementDefinitionIfObservingAttr(this,
