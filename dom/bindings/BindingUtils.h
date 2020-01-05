@@ -3433,7 +3433,7 @@ GetCustomElementReactionsStack(JS::Handle<JSObject*> aObj);
 // that constructor function.
 already_AddRefed<nsGenericHTMLElement>
 CreateHTMLElement(const GlobalObject& aGlobal, const JS::CallArgs& aCallArgs,
-                  ErrorResult& aRv);
+                  JS::Handle<JSObject*> aGivenProto, ErrorResult& aRv);
 
 void
 SetDocumentAndPageUseCounter(JSContext* aCx, JSObject* aObject,
