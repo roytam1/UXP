@@ -3554,6 +3554,8 @@ CreateHTMLElement(const GlobalObject& aGlobal, const JS::CallArgs& aCallArgs,
     newElement->SetCustomElementData(
       new CustomElementData(definition->mType, CustomElementData::State::eCustom));
 
+    newElement->SetCustomElementDefinition(definition);
+
     return newElement.forget();
   }
 
