@@ -5368,6 +5368,9 @@ pref("narrate.filter-voices", true);
 
 pref("dom.audiochannel.mutedByDefault", false);
 
+// HTML <dialog> element
+pref("dom.dialog_element.enabled", false);
+
 // Enable <details> and <summary> tags.
 pref("dom.details_element.enabled", true);
 
