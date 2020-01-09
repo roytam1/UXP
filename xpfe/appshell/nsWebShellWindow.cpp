@@ -323,7 +323,7 @@ nsWebShellWindow::RequestWindowClose(nsIWidget* aWidget)
     RefPtr<nsPresContext> presContext = presShell->GetPresContext();
 
     nsEventStatus status = nsEventStatus_eIgnore;
-    WidgetMouseEvent event(true, eWindowClose, nullptr,
+    WidgetMouseEvent event(true, eClose, nullptr,
                            WidgetMouseEvent::eReal);
     if (NS_SUCCEEDED(eventTarget->DispatchDOMEvent(&event, nullptr, presContext, &status)) &&
         status == nsEventStatus_eConsumeNoDefault)
@@ -759,7 +759,7 @@ bool nsWebShellWindow::ExecuteCloseHandler()
       contentViewer->GetPresContext(getter_AddRefs(presContext));
 
       nsEventStatus status = nsEventStatus_eIgnore;
-      WidgetMouseEvent event(true, eWindowClose, nullptr,
+      WidgetMouseEvent event(true, eClose, nullptr,
                              WidgetMouseEvent::eReal);
 
       nsresult rv =

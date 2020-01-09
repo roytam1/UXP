@@ -126,8 +126,13 @@ void TDStretch::setParameters(int aSampleRate, int aSequenceMS,
                               int aSeekWindowMS, int aOverlapMS)
 {
     // accept only positive parameter values - if zero or negative, use old values instead
-    if (aSampleRate > 0)   this->sampleRate = aSampleRate;
-    if (aOverlapMS > 0)    this->overlapMs = aOverlapMS;
+    if (aSampleRate > 0)
+    {
+        if (aSampleRate > 192000) ST_THROW_RT_ERROR("Error: Excessive samplerate");
+        this->sampleRate = aSampleRate;
+    }
+
+    if (aOverlapMS > 0) this->overlapMs = aOverlapMS;
 
     if (aSequenceMS > 0)
     {

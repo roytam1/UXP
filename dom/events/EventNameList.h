@@ -172,6 +172,10 @@ EVENT(click,
       eMouseClick,
       EventNameType_All,
       eMouseEventClass)
+EVENT(close,
+      eClose,
+      EventNameType_HTMLXUL,
+      eBasicEventClass)
 EVENT(contextmenu,
       eContextMenu,
       EventNameType_HTMLXUL,
@@ -773,10 +777,6 @@ NON_IDL_EVENT(command,
               eXULCommand,
               EventNameType_XUL,
               eInputEventClass)
-NON_IDL_EVENT(close,
-              eWindowClose,
-              EventNameType_XUL,
-              eBasicEventClass)
 NON_IDL_EVENT(popupshowing,
               eXULPopupShowing,
               EventNameType_XUL,
