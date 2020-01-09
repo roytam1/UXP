@@ -274,6 +274,12 @@ class MOZ_NON_MEMMOVABLE Heap : public js::HeapBase<T>
 
     T* unsafeGet() { return &ptr; }
 
+    void set(const T& newPtr) {
+        T tmp = ptr;
+        ptr = newPtr;
+        post(tmp, ptr);
+    }
+
     explicit operator bool() const {
         return bool(js::BarrierMethods<T>::asGCThingOrNull(ptr));
     }
@@ -285,12 +291,6 @@ class MOZ_NON_MEMMOVABLE Heap : public js::HeapBase<T>
     void init(const T& newPtr) {
         ptr = newPtr;
         post(GCPolicy<T>::initial(), ptr);
-    }
-
-    void set(const T& newPtr) {
-        T tmp = ptr;
-        ptr = newPtr;
-        post(tmp, ptr);
     }
 
     void post(const T& prev, const T& next) {
@@ -1172,13 +1172,13 @@ class PersistentRooted : public js::PersistentRootedBase<T>,
         return ptr;
     }
 
-  private:
     template <typename U>
     void set(U&& value) {
         MOZ_ASSERT(initialized());
         ptr = mozilla::Forward<U>(value);
     }
 
+  private:
     // See the comment above Rooted::ptr.
     using MaybeWrapped = typename mozilla::Conditional<
         MapTypeToRootKind<T>::kind == JS::RootKind::Traceable,
