@@ -3910,5 +3910,14 @@ xmlns="http://www.mozilla.org/2006/addons-blocklist">
       <driverVersion>8.15.10.1994</driverVersion>
       <driverVersionComparator>EQUAL</driverVersionComparator>
     </gfxBlacklistEntry>
+    <gfxBlacklistEntry blockID="g2000">
+      <vendor>nouveau</vendor>
+      <devices>
+        <device>NV96</device>
+      </devices>
+      <feature>FEATURE_CANVAS2D_ACCELERATION</feature>
+      <feature>FEATURE_OPENGL_LAYERS</feature>
+      <featureStatus>FEATURE_BLOCKED_DEVICE</featureStatus>
+    </gfxBlacklistEntry>
   </gfxItems>
 </blocklist>

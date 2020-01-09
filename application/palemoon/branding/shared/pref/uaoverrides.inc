@@ -34,11 +34,11 @@ pref("@GUAO_PREF@.outlook.com","Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLI
 pref("@GUAO_PREF@.web.de","Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.aol.com","Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.calendar.yahoo.com","Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
-pref("@GUAO_PREF@.google.com","Mozilla/5.0 (@OS_SLICE@ rv:52.9) @GK_SLICE@ @GRE_VERSION_SLICE@ Firefox/52.9 @PM_SLICE@");
+pref("@GUAO_PREF@.google.com","Mozilla/5.0 (@OS_SLICE@ rv:71.0) @GK_SLICE@ Firefox/71.0 @PM_SLICE@");
 pref("@GUAO_PREF@.googlevideos.com","Mozilla/5.0 (@OS_SLICE@ rv:38.9) @GK_SLICE@ @GRE_VERSION_SLICE@ Firefox/38.9 @PM_SLICE@");
-pref("@GUAO_PREF@.gstatic.com","Mozilla/5.0 (@OS_SLICE@ rv:31.9) @GK_SLICE@ @GRE_VERSION_SLICE@ Firefox/31.9 @PM_SLICE@");
+pref("@GUAO_PREF@.gstatic.com","Mozilla/5.0 (@OS_SLICE@ rv:71.0) @GK_SLICE@ Firefox/71.0 @PM_SLICE@");
 pref("@GUAO_PREF@.yahoo.com","Mozilla/5.0 (@OS_SLICE@ rv:99.9) @GK_SLICE@ Firefox/99.9 (Pale Moon)");
-pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:42.0) @GK_SLICE@ Firefox/42.0 @PM_SLICE@");
+pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:60.0) @GK_SLICE@ Firefox/60.0 @PM_SLICE@");
 pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:42.0) @GK_SLICE@ Firefox/42.0");
 pref("@GUAO_PREF@.dropbox.com","Mozilla/5.0 (@OS_SLICE@ rv:99.9) @GK_SLICE@ Firefox/99.9 (Pale Moon)");
 
@@ -65,6 +65,8 @@ pref("@GUAO_PREF@.deviantart.net","Mozilla/5.0 (@OS_SLICE@ rv:@GRE_VERSION@) @GR
 pref("@GUAO_PREF@.altibox.dk","Mozilla/5.0 (@OS_SLICE@ rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 pref("@GUAO_PREF@.altibox.no","Mozilla/5.0 (@OS_SLICE@ rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 pref("@GUAO_PREF@.firefox.com","Mozilla/5.0 (@OS_SLICE@ rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
+pref("@GUAO_PREF@.mozilla.org","Mozilla/5.0 (@OS_SLICE@ rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
+pref("@GUAO_PREF@.mozilla.com","Mozilla/5.0 (@OS_SLICE@ rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 
 // UA-Sniffing domains below have indicated no interest in supporting Pale Moon (BOO!)
 pref("@GUAO_PREF@.humblebundle.com","Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
