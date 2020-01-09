@@ -300,6 +300,10 @@ struct InputContext final
    * compatibility with webapps relying on key listeners. */
   bool mMayBeIMEUnaware;
 
+  /* Whether the owning document of the input element has been loaded
+   * in private browsing mode. */
+  bool mInPrivateBrowsing;
+
   bool IsOriginMainProcess() const
   {
     return mOrigin == ORIGIN_MAIN;
