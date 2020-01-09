@@ -530,8 +530,11 @@ nsHttpNegotiateAuth::GenerateCredentials(nsIHttpAuthenticableChannel *authChanne
             challenge++;
         len = strlen(challenge);
 
+        if (!len)
+            return NS_ERROR_UNEXPECTED;
+
         // strip off any padding (see bug 230351)
-        while (challenge[len - 1] == '=')
+        while (len && challenge[len - 1] == '=')
             len--;
 
         //
