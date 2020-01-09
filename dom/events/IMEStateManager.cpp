@@ -297,7 +297,7 @@ IMEStateManager::OnDestroyPresContext(nsPresContext* aPresContext)
     IMEState newState = GetNewIMEState(sPresContext, nullptr);
     InputContextAction action(InputContextAction::CAUSE_UNKNOWN,
                               InputContextAction::LOST_FOCUS);
-    SetIMEState(newState, nullptr, sWidget, action);
+    SetIMEState(newState, nullptr, nullptr, sWidget, action);
   }
   sWidget = nullptr;
   sContent = nullptr;
@@ -352,7 +352,7 @@ IMEStateManager::OnRemoveContent(nsPresContext* aPresContext,
     IMEState newState = GetNewIMEState(sPresContext, nullptr);
     InputContextAction action(InputContextAction::CAUSE_UNKNOWN,
                               InputContextAction::LOST_FOCUS);
-    SetIMEState(newState, nullptr, sWidget, action);
+    SetIMEState(newState, aPresContext, nullptr, sWidget, action);
   }
 
   sWidget = nullptr;
@@ -542,7 +542,7 @@ IMEStateManager::OnChangeFocusInternal(nsPresContext* aPresContext,
     }
 
     // Update IME state for new focus widget
-    SetIMEState(newState, aContent, newWidget, aAction);
+    SetIMEState(newState, aPresContext, aContent, newWidget, aAction);
   }
 
   sActiveTabParent = newTabParent;
@@ -704,7 +704,7 @@ IMEStateManager::OnClickInEditor(nsPresContext* aPresContext,
 
   InputContextAction action(cause, InputContextAction::FOCUS_NOT_CHANGED);
   IMEState newState = GetNewIMEState(aPresContext, aContent);
-  SetIMEState(newState, aContent, widget, action);
+  SetIMEState(newState, aPresContext, aContent, widget, action);
 }
 
 // static
@@ -912,7 +912,7 @@ IMEStateManager::UpdateIMEState(const IMEState& aNewIMEState,
   if (updateIMEState) {
     InputContextAction action(InputContextAction::CAUSE_UNKNOWN,
                               InputContextAction::FOCUS_NOT_CHANGED);
-    SetIMEState(aNewIMEState, aContent, widget, action);
+    SetIMEState(aNewIMEState, sPresContext, aContent, widget, action);
     if (NS_WARN_IF(widget->Destroyed())) {
       MOZ_LOG(sISMLog, LogLevel::Error,
         ("  UpdateIMEState(), widget has gone during setting input context"));
@@ -1022,8 +1022,8 @@ IMEStateManager::SetInputContextForChildProcess(
   MOZ_LOG(sISMLog, LogLevel::Info,
     ("SetInputContextForChildProcess(aTabParent=0x%p, "
      "aInputContext={ mIMEState={ mEnabled=%s, mOpen=%s }, "
-     "mHTMLInputType=\"%s\", mHTMLInputInputmode=\"%s\", mActionHint=\"%s\" }, "
-     "aAction={ mCause=%s, mAction=%s }), "
+     "mHTMLInputType=\"%s\", mHTMLInputInputmode=\"%s\", mActionHint=\"%s\", "
+     "mInPrivateBrowsing=%s }, aAction={ mCause=%s, mAction=%s }), "
      "sPresContext=0x%p (available: %s), sWidget=0x%p (available: %s), "
      "sActiveTabParent=0x%p",
      aTabParent, GetIMEStateEnabledName(aInputContext.mIMEState.mEnabled),
@@ -1031,6 +1031,7 @@ IMEStateManager::SetInputContextForChildProcess(
      NS_ConvertUTF16toUTF8(aInputContext.mHTMLInputType).get(),
      NS_ConvertUTF16toUTF8(aInputContext.mHTMLInputInputmode).get(),
      NS_ConvertUTF16toUTF8(aInputContext.mActionHint).get(),
+     GetBoolName(aInputContext.mInPrivateBrowsing),
      GetActionCauseName(aAction.mCause),
      GetActionFocusChangeName(aAction.mFocusChange),
      sPresContext.get(), GetBoolName(CanHandleWith(sPresContext)),
@@ -1070,6 +1071,7 @@ IMEStateManager::SetInputContextForChildProcess(
 // static
 void
 IMEStateManager::SetIMEState(const IMEState& aState,
+                             nsPresContext* aPresContext,
                              nsIContent* aContent,
                              nsIWidget* aWidget,
                              InputContextAction aAction)
@@ -1090,6 +1092,10 @@ IMEStateManager::SetIMEState(const IMEState& aState,
   context.mIMEState = aState;
   context.mMayBeIMEUnaware = context.mIMEState.IsEditable() &&
     sCheckForIMEUnawareWebApps && MayBeIMEUnawareWebApp(aContent);
+  
+  context.mInPrivateBrowsing =
+    aPresContext &&
+    nsContentUtils::IsInPrivateBrowsing(aPresContext->Document());
 
   if (aContent &&
       aContent->IsAnyOfHTMLElements(nsGkAtoms::input, nsGkAtoms::textarea)) {
@@ -1175,7 +1181,8 @@ IMEStateManager::SetInputContext(nsIWidget* aWidget,
   MOZ_LOG(sISMLog, LogLevel::Info,
     ("SetInputContext(aWidget=0x%p, aInputContext={ "
      "mIMEState={ mEnabled=%s, mOpen=%s }, mHTMLInputType=\"%s\", "
-     "mHTMLInputInputmode=\"%s\", mActionHint=\"%s\" }, "
+     "mHTMLInputInputmode=\"%s\", mActionHint=\"%s\", "
+     "mInPrivateBrowsing=%s }, "
      "aAction={ mCause=%s, mAction=%s }), sActiveTabParent=0x%p",
      aWidget,
      GetIMEStateEnabledName(aInputContext.mIMEState.mEnabled),
@@ -1183,6 +1190,7 @@ IMEStateManager::SetInputContext(nsIWidget* aWidget,
      NS_ConvertUTF16toUTF8(aInputContext.mHTMLInputType).get(),
      NS_ConvertUTF16toUTF8(aInputContext.mHTMLInputInputmode).get(),
      NS_ConvertUTF16toUTF8(aInputContext.mActionHint).get(),
+     GetBoolName(aInputContext.mInPrivateBrowsing),
      GetActionCauseName(aAction.mCause),
      GetActionFocusChangeName(aAction.mFocusChange),
      sActiveTabParent.get()));

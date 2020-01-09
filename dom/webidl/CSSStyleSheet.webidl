@@ -26,4 +26,12 @@ interface CSSStyleSheet : StyleSheet {
   unsigned long insertRule(DOMString rule, optional unsigned long index = 0);
   [Throws, NeedsSubjectPrincipal]
   void deleteRule(unsigned long index);
+
+  // Non-standard WebKit things, see https://github.com/w3c/csswg-drafts/pull/3900.
+  [Throws, NeedsSubjectPrincipal, BinaryName="cssRules"]
+  readonly attribute CSSRuleList rules;
+  [Throws, NeedsSubjectPrincipal, BinaryName="deleteRule"]
+  void removeRule(optional unsigned long index = 0);
+  [Throws, NeedsSubjectPrincipal]
+  long addRule(optional DOMString selector = "undefined", optional DOMString style = "undefined", optional unsigned long index);
 };

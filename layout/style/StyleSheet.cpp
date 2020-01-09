@@ -259,6 +259,32 @@ StyleSheet::DeleteRule(uint32_t aIndex,
   FORWARD_INTERNAL(DeleteRuleInternal, (aIndex, aRv))
 }
 
+int32_t
+StyleSheet::AddRule(const nsAString& aSelector, const nsAString& aBlock,
+                    const Optional<uint32_t>& aIndex,
+                    nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv)
+{
+  if (!AreRulesAvailable(aSubjectPrincipal, aRv)) {
+    return -1;
+  }
+
+  nsAutoString rule;
+  rule.Append(aSelector);
+  rule.AppendLiteral(" { ");
+  if (!aBlock.IsEmpty()) {
+    rule.Append(aBlock);
+    rule.Append(' ');
+  }
+  rule.Append('}');
+
+  auto index =
+      aIndex.WasPassed() ? aIndex.Value() : GetCssRules(aSubjectPrincipal, aRv)->Length();
+
+  FORWARD_INTERNAL(InsertRuleInternal, (rule, index, aRv));
+  // As per Microsoft documentation, always return -1.
+  return -1;
+}
+
 #undef FORWARD_INTERNAL
 
 void

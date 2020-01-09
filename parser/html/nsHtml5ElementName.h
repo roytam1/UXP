@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2008-2014 Mozilla Foundation
- * Copyright (c) 2019 Moonchild Productions
+ * Copyright (c) 2020 Moonchild Productions
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
  * copy of this software and associated documentation files (the "Software"), 
@@ -279,6 +279,7 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_CANVAS;
     static nsHtml5ElementName* ELT_DIVIDE;
     static nsHtml5ElementName* ELT_DEGREE;
+    static nsHtml5ElementName* ELT_DIALOG;
     static nsHtml5ElementName* ELT_DOMAIN;
     static nsHtml5ElementName* ELT_EXISTS;
     static nsHtml5ElementName* ELT_FETILE;
@@ -355,9 +356,9 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_MACTION;
     static nsHtml5ElementName* ELT_MSUBSUP;
     static nsHtml5ElementName* ELT_NOEMBED;
+    static nsHtml5ElementName* ELT_PICTURE;
     static nsHtml5ElementName* ELT_POLYGON;
     static nsHtml5ElementName* ELT_PATTERN;
-    static nsHtml5ElementName* ELT_PICTURE;
     static nsHtml5ElementName* ELT_PRODUCT;
     static nsHtml5ElementName* ELT_SETDIFF;
     static nsHtml5ElementName* ELT_SECTION;
