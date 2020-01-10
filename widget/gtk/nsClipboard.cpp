@@ -120,20 +120,9 @@ NS_IMETHODIMP
 nsClipboard::Observe(nsISupports *aSubject, const char *aTopic, const char16_t *aData)
 {
     if (strcmp(aTopic, "quit-application") == 0) {
-        // application is going to quit, save clipboard content
-        Store();
+        // Application is going to quit, save clipboard content
+        gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
         gdk_window_remove_filter(nullptr, selection_request_filter, nullptr);
-    }
-    return NS_OK;
-}
-
-nsresult
-nsClipboard::Store(void)
-{
-    // Ask the clipboard manager to store the current clipboard content
-    if (mGlobalTransferable) {
-        GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-        gtk_clipboard_store(clipboard);
     }
     return NS_OK;
 }
@@ -152,9 +141,6 @@ nsClipboard::SetData(nsITransferable *aTransferable,
         return NS_OK;
     }
 
-    // Clear out the clipboard in order to set the new data
-    EmptyClipboard(aWhichClipboard);
-
     // List of suported targets
     GtkTargetList *list = gtk_target_list_new(nullptr, 0);
 
@@ -163,8 +149,12 @@ nsClipboard::SetData(nsITransferable *aTransferable,
 
     nsresult rv =
         aTransferable->FlavorsTransferableCanExport(getter_AddRefs(flavors));
-    if (!flavors || NS_FAILED(rv))
+    if (!flavors || NS_FAILED(rv)) {
+        // Clear references to the any old data and let GTK know that it is no
+        // longer available.
+        EmptyClipboard(aWhichClipboard);
         return NS_ERROR_FAILURE;
+    }
 
     // Add all the flavors to this widget's supported type.
     bool imagesAdded = false;
@@ -232,8 +222,10 @@ nsClipboard::SetData(nsITransferable *aTransferable,
         }
 
         rv = NS_OK;
-    }
-    else {  
+    } else {
+        // Clear references to the any old data and let GTK know that it is no
+        // longer available.
+        EmptyClipboard(aWhichClipboard);
         rv = NS_ERROR_FAILURE;
     }
 
@@ -373,6 +365,23 @@ nsClipboard::GetData(nsITransferable *aTransferable, int32_t aWhichClipboard)
 NS_IMETHODIMP
 nsClipboard::EmptyClipboard(int32_t aWhichClipboard)
 {
+  if (aWhichClipboard == kSelectionClipboard) {
+    if (mSelectionTransferable) {
+      gtk_clipboard_clear(gtk_clipboard_get(GDK_SELECTION_PRIMARY));
+      MOZ_ASSERT(!mSelectionTransferable);
+    }
+  } else {
+    if (mGlobalTransferable) {
+      gtk_clipboard_clear(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+      MOZ_ASSERT(!mGlobalTransferable);
+    }
+  }
+
+  return NS_OK;
+}
+
+void
+nsClipboard::ClearTransferable(int32_t aWhichClipboard) {
     if (aWhichClipboard == kSelectionClipboard) {
         if (mSelectionOwner) {
             mSelectionOwner->LosingOwnership(mSelectionTransferable);
@@ -387,8 +396,6 @@ nsClipboard::EmptyClipboard(int32_t aWhichClipboard)
         }
         mGlobalTransferable = nullptr;
     }
-
-    return NS_OK;
 }
 
 NS_IMETHODIMP
@@ -652,7 +659,7 @@ nsClipboard::SelectionClearEvent(GtkClipboard *aGtkClipboard)
     else
         return; // THAT AIN'T NO CLIPBOARD I EVER HEARD OF
 
-    EmptyClipboard(whichClipboard);
+    ClearTransferable(whichClipboard);
 }
 
 void
