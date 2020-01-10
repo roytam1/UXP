@@ -8,6 +8,7 @@
 
 #include "PSMRunnable.h"
 #include "mozilla/Casting.h"
+#include "mozilla/net/DNS.h"
 #include "nsComponentManagerUtils.h"
 #include "nsIArray.h"
 #include "nsICertOverrideService.h"
@@ -681,8 +682,10 @@ GetSubjectAltNames(CERTCertificate* nssCert, nsString& allNames)
 
       case certIPAddress:
         {
-          char buf[INET6_ADDRSTRLEN];
+          // According to DNS.h, this includes space for the null-terminator
+          char buf[net::kNetAddrMaxCStrBufSize] = {0};
           PRNetAddr addr;
+          memset(&addr, 0, sizeof(addr));
           if (current->name.other.len == 4) {
             addr.inet.family = PR_AF_INET;
             memcpy(&addr.inet.ip, current->name.other.data, current->name.other.len);

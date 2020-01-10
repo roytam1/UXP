@@ -399,25 +399,21 @@ class MOZ_NON_PARAM alignas(8) Value
         data.asBits = bitsFromTagAndPayload(JSVAL_TAG_MAGIC, payload);
     }
 
-    bool setNumber(uint32_t ui) {
+    void setNumber(uint32_t ui) {
         if (ui > JSVAL_INT_MAX) {
             setDouble((double)ui);
-            return false;
         } else {
             setInt32((int32_t)ui);
-            return true;
         }
     }
 
-    bool setNumber(double d) {
+    void setNumber(double d) {
         int32_t i;
         if (mozilla::NumberIsInt32(d, &i)) {
             setInt32(i);
-            return true;
+        } else {
+            setDouble(d);
         }
-
-        setDouble(d);
-        return false;
     }
 
     void setObjectOrNull(JSObject* arg) {
@@ -1406,25 +1402,29 @@ class ValueOperations
 template <class Outer>
 class MutableValueOperations : public ValueOperations<Outer>
 {
-    JS::Value& value() { return static_cast<Outer*>(this)->get(); }
+  protected:
+    void set(const JS::Value& v) {
+      // Call Outer::set to trigger any barriers.
+      static_cast<Outer*>(this)->set(v);
+    }
 
   public:
-    void setNull() { value().setNull(); }
-    void setUndefined() { value().setUndefined(); }
-    void setInt32(int32_t i) { value().setInt32(i); }
-    void setDouble(double d) { value().setDouble(d); }
+    void setNull() { set(JS::NullValue()); }
+    void setUndefined() { set(JS::UndefinedValue()); }
+    void setInt32(int32_t i) { set(JS::Int32Value(i)); }
+    void setDouble(double d) { set(JS::DoubleValue(d)); }
     void setNaN() { setDouble(JS::GenericNaN()); }
-    void setBoolean(bool b) { value().setBoolean(b); }
-    void setMagic(JSWhyMagic why) { value().setMagic(why); }
-    bool setNumber(uint32_t ui) { return value().setNumber(ui); }
-    bool setNumber(double d) { return value().setNumber(d); }
-    void setString(JSString* str) { this->value().setString(str); }
-    void setSymbol(JS::Symbol* sym) { this->value().setSymbol(sym); }
-    void setObject(JSObject& obj) { this->value().setObject(obj); }
-    void setObjectOrNull(JSObject* arg) { this->value().setObjectOrNull(arg); }
-    void setPrivate(void* ptr) { this->value().setPrivate(ptr); }
-    void setPrivateUint32(uint32_t ui) { this->value().setPrivateUint32(ui); }
-    void setPrivateGCThing(js::gc::Cell* cell) { this->value().setPrivateGCThing(cell); }
+    void setBoolean(bool b) { set(JS::BooleanValue(b)); }
+    void setMagic(JSWhyMagic why) { set(JS::MagicValue(why)); }
+    void setNumber(uint32_t ui) { set(JS::NumberValue(ui)); }
+    void setNumber(double d) { set(JS::NumberValue(d)); }
+    void setString(JSString* str) { set(JS::StringValue(str)); }
+    void setSymbol(JS::Symbol* sym) { set(JS::SymbolValue(sym)); }
+    void setObject(JSObject& obj) { set(JS::ObjectValue(obj)); }
+    void setObjectOrNull(JSObject* arg) { set(JS::ObjectOrNullValue(arg)); }
+    void setPrivate(void* ptr) { set(JS::PrivateValue(ptr)); }
+    void setPrivateUint32(uint32_t ui) { set(JS::PrivateUint32Value(ui)); }
+    void setPrivateGCThing(js::gc::Cell* cell) { set(JS::PrivateGCThingValue(cell)); }
 };
 
 /*
@@ -1432,55 +1432,28 @@ class MutableValueOperations : public ValueOperations<Outer>
  * type-querying, value-extracting, and mutating operations.
  */
 template <>
-class HeapBase<JS::Value> : public ValueOperations<JS::Heap<JS::Value> >
+class HeapBase<JS::Value> : public MutableValueOperations<JS::Heap<JS::Value> >
 {
     typedef JS::Heap<JS::Value> Outer;
 
     friend class ValueOperations<Outer>;
 
-    void setBarriered(const JS::Value& v) {
-        *static_cast<JS::Heap<JS::Value>*>(this) = v;
-    }
-
   public:
-    void setNull() { setBarriered(JS::NullValue()); }
-    void setUndefined() { setBarriered(JS::UndefinedValue()); }
-    void setInt32(int32_t i) { setBarriered(JS::Int32Value(i)); }
-    void setDouble(double d) { setBarriered(JS::DoubleValue(d)); }
-    void setNaN() { setDouble(JS::GenericNaN()); }
-    void setBoolean(bool b) { setBarriered(JS::BooleanValue(b)); }
-    void setMagic(JSWhyMagic why) { setBarriered(JS::MagicValue(why)); }
-    void setString(JSString* str) { setBarriered(JS::StringValue(str)); }
-    void setSymbol(JS::Symbol* sym) { setBarriered(JS::SymbolValue(sym)); }
-    void setObject(JSObject& obj) { setBarriered(JS::ObjectValue(obj)); }
-    void setPrivateGCThing(js::gc::Cell* cell) { setBarriered(JS::PrivateGCThingValue(cell)); }
-
-    bool setNumber(uint32_t ui) {
+    void setNumber(uint32_t ui) {
         if (ui > JSVAL_INT_MAX) {
-            setDouble((double)ui);
-            return false;
+            this->setDouble((double)ui);
         } else {
-            setInt32((int32_t)ui);
-            return true;
+            this->setInt32((int32_t)ui);
         }
     }
 
-    bool setNumber(double d) {
+    void setNumber(double d) {
         int32_t i;
         if (mozilla::NumberIsInt32(d, &i)) {
-            setInt32(i);
-            return true;
+            this->setInt32(i);
+        } else {
+            this->setDouble(d);
         }
-
-        setDouble(d);
-        return false;
-    }
-
-    void setObjectOrNull(JSObject* arg) {
-        if (arg)
-            setObject(*arg);
-        else
-            setNull();
     }
 };
 
