@@ -39,12 +39,11 @@ private:
     static GdkAtom               GetSelectionAtom (int32_t aWhichClipboard);
     static GtkSelectionData     *GetTargets       (GdkAtom aWhichClipboard);
 
-    // Save global clipboard content to gtk
-    nsresult                     Store            (void);
-
     // Get our hands on the correct transferable, given a specific
     // clipboard
     nsITransferable             *GetTransferable  (int32_t aWhichClipboard);
+
+    void ClearTransferable(int32_t aWhichClipboard);
 
     // Hang on to our owners and transferables so we can transfer data
     // when asked.
