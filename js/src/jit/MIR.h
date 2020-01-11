@@ -9490,12 +9490,6 @@ class MStoreElementHole
     TRIVIAL_NEW_WRAPPERS
     NAMED_OPERANDS((0, object), (1, elements), (2, index), (3, value))
 
-    AliasSet getAliasSet() const override {
-        // StoreElementHole can update the initialized length, the array length
-        // or reallocate obj->elements.
-        return AliasSet::Store(AliasSet::ObjectFields | AliasSet::Element);
-    }
-
     ALLOW_CLONE(MStoreElementHole)
 };
 
@@ -9526,9 +9520,6 @@ class MFallibleStoreElement
     TRIVIAL_NEW_WRAPPERS
     NAMED_OPERANDS((0, object), (1, elements), (2, index), (3, value))
 
-    AliasSet getAliasSet() const override {
-        return AliasSet::Store(AliasSet::ObjectFields | AliasSet::Element);
-    }
     bool strict() const {
         return strict_;
     }
