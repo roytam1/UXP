@@ -24,6 +24,11 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+/*
+ * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
+ * Please edit TreeBuilder.java instead and regenerate.
+ */
+
 #ifndef nsHtml5TreeBuilder_h
 #define nsHtml5TreeBuilder_h
 

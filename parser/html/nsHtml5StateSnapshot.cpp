@@ -21,6 +21,11 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+/*
+ * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
+ * Please edit StateSnapshot.java instead and regenerate.
+ */
+
 #define nsHtml5StateSnapshot_cpp__
 
 #include "nsIAtom.h"

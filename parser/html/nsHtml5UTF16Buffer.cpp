@@ -21,6 +21,11 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+/*
+ * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
+ * Please edit UTF16Buffer.java instead and regenerate.
+ */
+
 #define nsHtml5UTF16Buffer_cpp__
 
 #include "nsIAtom.h"

@@ -24,6 +24,11 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+/*
+ * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
+ * Please edit Tokenizer.java instead and regenerate.
+ */
+
 #define nsHtml5Tokenizer_cpp__
 
 #include "nsIAtom.h"
