@@ -19,7 +19,7 @@
 #include "nsTArray.h"
 #include "nsThreadUtils.h"
 
-#if defined(DEBUG) || !defined(RELEASE_OR_BETA)
+#if defined(DEBUG)
 #define PROMISE_DEBUG
 #endif
 
