@@ -5409,13 +5409,7 @@ pref("dom.node.rootNode.enabled", true);
 // Default media volume
 pref("media.default_volume", "1.0");
 
-// Once bug 1276272 is resolved, we will trun this preference to default ON in
-// non-release channels.
-#ifdef RELEASE_OR_BETA
-pref("media.seekToNextFrame.enabled", false);
-#else
 pref("media.seekToNextFrame.enabled", true);
-#endif
 
 // return the maximum number of cores that navigator.hardwareCurrency returns
 pref("dom.maxHardwareConcurrency", 16);
