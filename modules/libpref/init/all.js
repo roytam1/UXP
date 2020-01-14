@@ -215,15 +215,13 @@ pref("dom.requestIdleCallback.enabled", true);
 // See WD https://www.w3.org/TR/intersection-observer/
 pref("dom.intersectionObserver.enabled", true);
 
+#ifdef MOZ_GAMEPAD
 // Whether the Gamepad API is enabled
 pref("dom.gamepad.enabled", true);
 pref("dom.gamepad.test.enabled", false);
-#ifdef RELEASE_OR_BETA
 pref("dom.gamepad.non_standard_events.enabled", false);
-#else
-pref("dom.gamepad.non_standard_events.enabled", true);
-#endif
 pref("dom.gamepad.extensions.enabled", false);
+#endif
 
 // Whether the KeyboardEvent.code is enabled
 pref("dom.keyboardevent.code.enabled", true);
