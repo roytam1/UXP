@@ -2457,8 +2457,6 @@ public class Tokenizer implements Locator {
                         }
                         c = checkChar(buf, pos);
                         switch (c) {
-                            case '\u0000':
-                                break stateloop;
                             case '-':
                                 clearStrBufAfterOneHyphen();
                                 state = transition(state, Tokenizer.COMMENT_START, reconsume, pos);
@@ -2963,9 +2961,6 @@ public class Tokenizer implements Locator {
                         break stateloop;
                     }
                     c = checkChar(buf, pos);
-                    if (c == '\u0000') {
-                        break stateloop;
-                    }
                     /*
                      * Unlike the definition is the spec, this state does not
                      * return a value and never requires the caller to
@@ -2991,6 +2986,7 @@ public class Tokenizer implements Locator {
                         case '\u000C':
                         case '<':
                         case '&':
+                        case '\u0000':
                             emitOrAppendCharRefBuf(returnState);
                             if ((returnState & DATA_AND_RCDATA_MASK) == 0) {
                                 cstart = pos;
@@ -3044,9 +3040,6 @@ public class Tokenizer implements Locator {
                             break stateloop;
                         }
                         c = checkChar(buf, pos);
-                        if (c == '\u0000') {
-                            break stateloop;
-                        }
                         /*
                          * The data structure is as follows:
                          *
@@ -3122,9 +3115,6 @@ public class Tokenizer implements Locator {
                             break stateloop;
                         }
                         c = checkChar(buf, pos);
-                        if (c == '\u0000') {
-                            break stateloop;
-                        }
                         entCol++;
                         /*
                          * Consume the maximum number of characters possible,
