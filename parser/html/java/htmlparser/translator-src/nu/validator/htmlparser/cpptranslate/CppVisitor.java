@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2007 Júlio Vilmar Gesser.
  * Copyright (C) 2008 Mozilla Foundation
- * 
+ *
  * This file is part of HTML Parser C++ Translator. It was derived from DumpVisitor
  * which was part of Java 1.5 parser and Abstract Syntax Tree and came with the following notice:
  *
@@ -22,6 +22,13 @@
  * Created on 05/10/2006
  */
 package nu.validator.htmlparser.cpptranslate;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import japa.parser.ast.BlockComment;
 import japa.parser.ast.CompilationUnit;
@@ -110,13 +117,6 @@ import japa.parser.ast.type.Type;
 import japa.parser.ast.type.VoidType;
 import japa.parser.ast.type.WildcardType;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
 /**
  * @author Julio Vilmar Gesser
  * @author Henri Sivonen
@@ -158,7 +158,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
             indented = false;
             buf.append(arg);
         }
-        
+
         public void print(String arg) {
             if (!indented) {
                 makeIndent();
@@ -187,7 +187,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
     }
 
     private boolean supportErrorReporting = true;
-    
+
     protected SourcePrinter printer = new SourcePrinter();
 
     private SourcePrinter staticInitializerPrinter = new SourcePrinter();
@@ -221,11 +221,11 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
     private Set<String> labels = null;
 
     private boolean destructor;
-    
+
     protected boolean inStatic = false;
 
     private boolean reportTransitions = false;
-    
+
     private int stateLoopCallCount = 0;
 
     /**
@@ -571,7 +571,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
         } else {
             for (int i = 0; i < n.getArrayCount(); i++) {
                 if (inStatic) {
-                    printer.print(cppTypes.staticArrayTemplate());                    
+                    printer.print(cppTypes.staticArrayTemplate());
                 } else {
                     if (auto()) {
                         printer.print(cppTypes.autoArrayTemplate());
@@ -644,10 +644,10 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                             printer.print("::");
                             declarator.getId().accept(this, arg);
 
-                            printer.print(" = ");                    
-                            
+                            printer.print(" = ");
+
                             declarator.getInit().accept(this, arg);
-                           
+
                             printer.printLn(";");
                             printer = staticInitializerPrinter;
                         } else {
@@ -660,7 +660,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
 
                             printer.printLn(" = 0;");
                             printer = staticInitializerPrinter;
-                            
+
                             staticReleases.add("delete[] "
                                     + declarator.getId().getName());
 
@@ -686,7 +686,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                         declarator.getId().accept(this, arg);
                         printer.print("_DATA[] = ");
                         declarator.getInit().accept(this, arg);
-                        printer.printLn(";");                        
+                        printer.printLn(";");
                         printer.print(cppTypes.staticArrayTemplate());
                         printer.print("<");
                         suppressPointer = true;
@@ -751,7 +751,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                         printer.printLn(";");
                         printer = staticInitializerPrinter;
                     }
-                    
+
                     if ("AttributeName".equals(n.getType().toString())) {
                         printer.print("ATTR_");
                         staticReleases.add("delete ATTR_"
@@ -1257,6 +1257,10 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                 && "Portability".equals(n.getScope().toString())) {
             n.getArgs().get(0).accept(this, arg);
             printer.print(".release()");
+        } else if ("releaseString".equals(n.getName())
+                && "Portability".equals(n.getScope().toString())) {
+            n.getArgs().get(0).accept(this, arg);
+            printer.print(".Release()");
         } else if ("deleteArray".equals(n.getName())
                 && "Portability".equals(n.getScope().toString())) {
             printer.print("delete[] ");
@@ -1554,6 +1558,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                 || n.getName().startsWith("maybeWarn")
                 || n.getName().startsWith("note")
                 || "releaseArray".equals(n.getName())
+                || "releaseString".equals(n.getName())
                 || "deleteArray".equals(n.getName())
                 || "delete".equals(n.getName())) {
             return;
@@ -1588,7 +1593,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                 printer.printLn();
             }
         }
-        
+
         printTypeParameters(n.getTypeParameters(), arg);
         if (n.getTypeParameters() != null) {
             printer.print(" ");
@@ -1769,7 +1774,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                     } else {
                         throw new RuntimeException("Bad assertion message string.");
                     }
-                }                
+                }
                 printer.print("\"");
             }
             printer.print(");");
@@ -1857,7 +1862,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
             printer.print(cppTypes.transition());
             printer.print("(");
             printer.print(cppTypes.firstTransitionArg());
-            printer.print(", ");            
+            printer.print(", ");
             args.get(1).accept(this, arg);
             printer.print(", ");
             args.get(2).accept(this, arg);
@@ -1884,7 +1889,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
         }
         return false;
     }
-    
+
     private boolean isCompletedCharacterReference(Expression e) {
         if (!reportTransitions) {
             return false;
@@ -1898,7 +1903,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
         }
         return false;
     }
-    
+
     private boolean isDroppedExpression(Expression e) {
         if (e instanceof MethodCallExpr) {
             MethodCallExpr methodCallExpr = (MethodCallExpr) e;
@@ -2130,7 +2135,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                 if (statements != null && statements.size() == 1) {
                     statements.get(0).accept(this, arg);
                 } else {
-                    then.accept(this, arg);                    
+                    then.accept(this, arg);
                 }
             } else {
                 then.accept(this, arg);
@@ -2191,7 +2196,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
             }
         }
     }
-    
+
     private void formatCondition(Expression expr, LocalSymbolTable arg) {
         if (expr instanceof BinaryExpr) {
             BinaryExpr binExpr = (BinaryExpr) expr;

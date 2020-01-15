@@ -97,7 +97,7 @@ public class CppTypes {
     }
 
     private static final String[] TREE_BUILDER_INCLUDES = { "nsContentUtils",
-            "nsIAtom", "nsHtml5AtomTable", "nsITimer", "nsString",
+            "nsIAtom", "nsHtml5AtomTable", "nsITimer", "nsHtml5String",
             "nsNameSpaceManager", "nsIContent", "nsTraceRefcnt", "jArray",
             "nsHtml5DocumentMode", "nsHtml5ArrayCopy", "nsHtml5Parser",
             "nsHtml5Atoms", "nsHtml5TreeOperation", "nsHtml5StateSnapshot",
@@ -107,14 +107,14 @@ public class CppTypes {
             "mozilla/Likely", "nsIContentHandle", "nsHtml5OplessBuilder" };
 
     private static final String[] TOKENIZER_INCLUDES = { "nsIAtom",
-            "nsHtml5AtomTable", "nsString", "nsIContent", "nsTraceRefcnt",
+            "nsHtml5AtomTable", "nsHtml5String", "nsIContent", "nsTraceRefcnt",
             "jArray", "nsHtml5DocumentMode", "nsHtml5ArrayCopy",
             "nsHtml5NamedCharacters", "nsHtml5NamedCharactersAccel",
             "nsHtml5Atoms", "nsAHtml5TreeBuilderState", "nsHtml5Macros",
             "nsHtml5Highlighter", "nsHtml5TokenizerLoopPolicies" };
 
     private static final String[] INCLUDES = { "nsIAtom", "nsHtml5AtomTable",
-            "nsString", "nsNameSpaceManager", "nsIContent", "nsTraceRefcnt",
+            "nsHtml5String", "nsNameSpaceManager", "nsIContent", "nsTraceRefcnt",
             "jArray", "nsHtml5ArrayCopy", "nsAHtml5TreeBuilderState",
             "nsHtml5Atoms", "nsHtml5ByteReadable", "nsIUnicodeDecoder",
             "nsHtml5Macros", "nsIContentHandle" };
@@ -181,7 +181,7 @@ public class CppTypes {
 
     /**
      * Only used for named characters.
-     * 
+     *
      * @return
      */
     public String unsignedShortType() {
@@ -193,7 +193,7 @@ public class CppTypes {
     }
 
     public String stringType() {
-        return "nsString*";
+        return "nsHtml5String";
     }
 
     public String localType() {
@@ -422,7 +422,7 @@ public class CppTypes {
     public String unlikely() {
         return "MOZ_UNLIKELY";
     }
-    
+
     public String completedCharacterReference() {
         return "P::completedNamedCharacterReference(mViewSource)";
     }
@@ -434,7 +434,7 @@ public class CppTypes {
     public String assertionMacro() {
         return "MOZ_ASSERT";
     }
-    
+
     public String releaseAssertionMacro() {
         return "MOZ_RELEASE_ASSERT";
     }
