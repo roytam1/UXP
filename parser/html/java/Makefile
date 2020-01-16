@@ -38,4 +38,7 @@ clean-javaparser:: \
 clean-htmlparser:: \
 ; rm -rf htmlparser/bin translator.jar
 
-clean:: clean-javaparser clean-htmlparser
+clean-javasrc:: \
+; rm -rf ../javasrc
+
+clean:: clean-javaparser clean-htmlparser clean-javasrc
