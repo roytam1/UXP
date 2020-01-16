@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2008-2011 Mozilla Foundation
- * Copyright (c) 2019 Moonchild Productions
+ * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2020 Binary Outcast
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
  * copy of this software and associated documentation files (the "Software"), 
@@ -65,7 +66,7 @@ class nsHtml5HtmlAttributes
     int32_t mode;
     int32_t length;
     autoJArray<nsHtml5AttributeName*,int32_t> names;
-    autoJArray<nsHtml5String, int32_t> values;
+    autoJArray<nsHtml5String,int32_t> values;
     autoJArray<int32_t,int32_t> lines;
   public:
     explicit nsHtml5HtmlAttributes(int32_t mode);
@@ -79,9 +80,7 @@ class nsHtml5HtmlAttributes
     nsHtml5String getValueNoBoundsCheck(int32_t index);
     nsHtml5AttributeName* getAttributeNameNoBoundsCheck(int32_t index);
     int32_t getLineNoBoundsCheck(int32_t index);
-    void addAttribute(nsHtml5AttributeName* name,
-                      nsHtml5String value,
-                      int32_t line);
+    void addAttribute(nsHtml5AttributeName* name, nsHtml5String value, int32_t line);
     void clear(int32_t m);
     void releaseValue(int32_t i);
     void clearWithoutReleasingContents();
