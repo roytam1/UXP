@@ -49,10 +49,11 @@ js/src/autom4te.cache
 js/src/tests/results-*.html
 js/src/tests/results-*.txt
 
-# Java HTML5 parser bins
+# Java HTML5 parser codegen artifacts
 parser/html/java/htmlparser/bin/
 parser/html/java/javaparser/bin/
 parser/html/java/*.jar
+parser/html/javasrc/
 
 # Ignore the files and directory that Eclipse IDE creates
 .project
