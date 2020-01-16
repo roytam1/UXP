@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2005-2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
+ * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2020 Binary Outcast
  * Portions of comments Copyright 2004-2010 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
