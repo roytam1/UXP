@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2005-2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
- * Copyright (c) 2019 Moonchild Productions
+ * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2020 Binary Outcast
  * Portions of comments Copyright 2004-2010 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
@@ -22,6 +23,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ */
+
+/*
+ * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
+ * Please edit Tokenizer.java instead and regenerate.
  */
 
 #define nsHtml5Tokenizer_cpp__
@@ -109,8 +115,7 @@ nsHtml5Tokenizer::setInterner(nsHtml5AtomTable* interner)
 }
 
 void 
-nsHtml5Tokenizer::initLocation(nsHtml5String newPublicId,
-                               nsHtml5String newSystemId)
+nsHtml5Tokenizer::initLocation(nsHtml5String newPublicId, nsHtml5String newSystemId)
 {
   this->systemId = newSystemId;
   this->publicId = newPublicId;
@@ -215,11 +220,10 @@ nsHtml5Tokenizer::emitOrAppendCharRefBuf(int32_t returnState)
   }
 }
 
-nsHtml5String
+nsHtml5String 
 nsHtml5Tokenizer::strBufToString()
 {
-  nsHtml5String str =
-    nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, tokenHandler);
+  nsHtml5String str = nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, tokenHandler);
   clearStrBufAfterUse();
   return str;
 }

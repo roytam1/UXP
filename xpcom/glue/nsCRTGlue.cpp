@@ -321,30 +321,6 @@ set_stderr_callback(StderrCallback aCallback)
   sStderrCallback = aCallback;
 }
 
-#if defined(ANDROID) && !defined(RELEASE_OR_BETA)
-static FILE* sStderrCopy = nullptr;
-
-void
-stderr_to_file(const char* aFmt, va_list aArgs)
-{
-  vfprintf(sStderrCopy, aFmt, aArgs);
-}
-
-void
-copy_stderr_to_file(const char* aFile)
-{
-  if (sStderrCopy) {
-    return;
-  }
-  size_t buflen = strlen(aFile) + 16;
-  char* buf = (char*)malloc(buflen);
-  snprintf(buf, buflen, "%s.%u", aFile, (uint32_t)getpid());
-  sStderrCopy = fopen(buf, "w");
-  free(buf);
-  set_stderr_callback(stderr_to_file);
-}
-#endif
-
 #ifdef HAVE_VA_COPY
 #define VARARGS_ASSIGN(foo, bar)        VA_COPY(foo,bar)
 #elif defined(HAVE_VA_LIST_AS_ARRAY)
