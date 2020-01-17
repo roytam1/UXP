@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2008-2015 Mozilla Foundation
- * Copyright (c) 2019 Moonchild Productions
+ * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2020 Binary Outcast
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
  * copy of this software and associated documentation files (the "Software"), 
@@ -20,6 +21,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
  * DEALINGS IN THE SOFTWARE.
+ */
+
+/*
+ * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
+ * Please edit MetaScanner.java instead and regenerate.
  */
 
 #define nsHtml5MetaScanner_cpp__
@@ -782,8 +788,7 @@ nsHtml5MetaScanner::handleTagInner()
     return true;
   }
   if (!!content && httpEquivState == NS_HTML5META_SCANNER_HTTP_EQUIV_CONTENT_TYPE) {
-    nsHtml5String extract =
-      nsHtml5TreeBuilder::extractCharsetFromContent(content, treeBuilder);
+    nsHtml5String extract = nsHtml5TreeBuilder::extractCharsetFromContent(content, treeBuilder);
     if (!extract) {
       return false;
     }

@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
- * Copyright (c) 2020 Moonchild Productions
+ * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2020 Binary Outcast
  * Portions of comments Copyright 2004-2008 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
@@ -22,6 +23,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ */
+
+/*
+ * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
+ * Please edit TreeBuilder.java instead and regenerate.
  */
 
 #ifndef nsHtml5TreeBuilder_h
@@ -102,10 +108,7 @@ class nsHtml5TreeBuilder : public nsAHtml5TreeBuilderState
     bool isSrcdocDocument;
   public:
     void startTokenization(nsHtml5Tokenizer* self);
-    void doctype(nsIAtom* name,
-                 nsHtml5String publicIdentifier,
-                 nsHtml5String systemIdentifier,
-                 bool forceQuirks);
+    void doctype(nsIAtom* name, nsHtml5String publicIdentifier, nsHtml5String systemIdentifier, bool forceQuirks);
     void comment(char16_t* buf, int32_t start, int32_t length);
     void characters(const char16_t* buf, int32_t start, int32_t length);
     void zeroOriginatingReplacementCharacter();
@@ -121,8 +124,7 @@ class nsHtml5TreeBuilder : public nsAHtml5TreeBuilderState
     bool isTemplateModeStackEmpty();
     bool isSpecialParentInForeign(nsHtml5StackNode* stackNode);
   public:
-    static nsHtml5String extractCharsetFromContent(nsHtml5String attributeValue,
-                                                   nsHtml5TreeBuilder* tb);
+    static nsHtml5String extractCharsetFromContent(nsHtml5String attributeValue, nsHtml5TreeBuilder* tb);
   private:
     void checkMetaCharset(nsHtml5HtmlAttributes* attributes);
   public:
@@ -139,16 +141,9 @@ class nsHtml5TreeBuilder : public nsAHtml5TreeBuilderState
     void generateImpliedEndTagsExceptFor(nsIAtom* name);
     void generateImpliedEndTags();
     bool isSecondOnStackBody();
-    void documentModeInternal(nsHtml5DocumentMode m,
-                              nsHtml5String publicIdentifier,
-                              nsHtml5String systemIdentifier,
-                              bool html4SpecificAdditionalErrorChecks);
-    bool isAlmostStandards(nsHtml5String publicIdentifier,
-                           nsHtml5String systemIdentifier);
-    bool isQuirky(nsIAtom* name,
-                  nsHtml5String publicIdentifier,
-                  nsHtml5String systemIdentifier,
-                  bool forceQuirks);
+    void documentModeInternal(nsHtml5DocumentMode m, nsHtml5String publicIdentifier, nsHtml5String systemIdentifier, bool html4SpecificAdditionalErrorChecks);
+    bool isAlmostStandards(nsHtml5String publicIdentifier, nsHtml5String systemIdentifier);
+    bool isQuirky(nsIAtom* name, nsHtml5String publicIdentifier, nsHtml5String systemIdentifier, bool forceQuirks);
     void closeTheCell(int32_t eltPos);
     int32_t findLastInTableScopeTdTh();
     void clearStackBackTo(int32_t eltPos);
@@ -261,9 +256,7 @@ class nsHtml5TreeBuilder : public nsAHtml5TreeBuilderState
     void markMalformedIfScript(nsIContentHandle* elt);
     void start(bool fragmentMode);
     void end();
-    void appendDoctypeToDocument(nsIAtom* name,
-                                 nsHtml5String publicIdentifier,
-                                 nsHtml5String systemIdentifier);
+    void appendDoctypeToDocument(nsIAtom* name, nsHtml5String publicIdentifier, nsHtml5String systemIdentifier);
     void elementPushed(int32_t ns, nsIAtom* name, nsIContentHandle* node);
     void elementPopped(int32_t ns, nsIAtom* name, nsIContentHandle* node);
   public:

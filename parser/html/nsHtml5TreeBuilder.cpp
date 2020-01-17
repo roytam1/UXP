@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
- * Copyright (c) 2020 Moonchild Productions
+ * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2020 Binary Outcast
  * Portions of comments Copyright 2004-2008 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
  *
@@ -22,6 +23,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ */
+
+/*
+ * THIS IS A GENERATED FILE. PLEASE DO NOT EDIT.
+ * Please edit TreeBuilder.java instead and regenerate.
  */
 
 #define nsHtml5TreeBuilder_cpp__
@@ -129,12 +135,7 @@ nsHtml5TreeBuilder::startTokenization(nsHtml5Tokenizer* self)
       formPointer = getFormPointerForContext(contextNode);
       if (nsHtml5Atoms::title == contextName || nsHtml5Atoms::textarea == contextName) {
         tokenizer->setState(NS_HTML5TOKENIZER_RCDATA);
-      } else if (nsHtml5Atoms::style == contextName ||
-                 nsHtml5Atoms::xmp == contextName ||
-                 nsHtml5Atoms::iframe == contextName ||
-                 nsHtml5Atoms::noembed == contextName ||
-                 nsHtml5Atoms::noframes == contextName ||
-                 (scriptingEnabled && nsHtml5Atoms::noscript == contextName)) {
+      } else if (nsHtml5Atoms::style == contextName || nsHtml5Atoms::xmp == contextName || nsHtml5Atoms::iframe == contextName || nsHtml5Atoms::noembed == contextName || nsHtml5Atoms::noframes == contextName || (scriptingEnabled && nsHtml5Atoms::noscript == contextName)) {
         tokenizer->setState(NS_HTML5TOKENIZER_RAWTEXT);
       } else if (nsHtml5Atoms::plaintext == contextName) {
         tokenizer->setState(NS_HTML5TOKENIZER_PLAINTEXT);
@@ -158,10 +159,7 @@ nsHtml5TreeBuilder::startTokenization(nsHtml5Tokenizer* self)
 }
 
 void 
-nsHtml5TreeBuilder::doctype(nsIAtom* name,
-                            nsHtml5String publicIdentifier,
-                            nsHtml5String systemIdentifier,
-                            bool forceQuirks)
+nsHtml5TreeBuilder::doctype(nsIAtom* name, nsHtml5String publicIdentifier, nsHtml5String systemIdentifier, bool forceQuirks)
 {
   needToDropLF = false;
   if (!isInForeign() && mode == NS_HTML5TREE_BUILDER_INITIAL) {
@@ -2007,8 +2005,7 @@ nsHtml5TreeBuilder::isSpecialParentInForeign(nsHtml5StackNode* stackNode)
 }
 
 nsHtml5String 
-nsHtml5TreeBuilder::extractCharsetFromContent(nsHtml5String attributeValue,
-                                              nsHtml5TreeBuilder* tb)
+nsHtml5TreeBuilder::extractCharsetFromContent(nsHtml5String attributeValue, nsHtml5TreeBuilder* tb)
 {
   int32_t charsetState = NS_HTML5TREE_BUILDER_CHARSET_INITIAL;
   int32_t start = -1;
@@ -2197,8 +2194,7 @@ nsHtml5TreeBuilder::extractCharsetFromContent(nsHtml5String attributeValue,
     if (end == -1) {
       end = buffer.length;
     }
-    charset =
-      nsHtml5Portability::newStringFromBuffer(buffer, start, end - start, tb);
+    charset = nsHtml5Portability::newStringFromBuffer(buffer, start, end - start, tb);
   }
   return charset;
 }
@@ -2206,8 +2202,7 @@ nsHtml5TreeBuilder::extractCharsetFromContent(nsHtml5String attributeValue,
 void 
 nsHtml5TreeBuilder::checkMetaCharset(nsHtml5HtmlAttributes* attributes)
 {
-  nsHtml5String charset =
-    attributes->getValue(nsHtml5AttributeName::ATTR_CHARSET);
+  nsHtml5String charset = attributes->getValue(nsHtml5AttributeName::ATTR_CHARSET);
   if (charset) {
     if (tokenizer->internalEncodingDeclaration(charset)) {
       requestSuspension();
@@ -2218,11 +2213,9 @@ nsHtml5TreeBuilder::checkMetaCharset(nsHtml5HtmlAttributes* attributes)
   if (!nsHtml5Portability::lowerCaseLiteralEqualsIgnoreAsciiCaseString("content-type", attributes->getValue(nsHtml5AttributeName::ATTR_HTTP_EQUIV))) {
     return;
   }
-  nsHtml5String content =
-    attributes->getValue(nsHtml5AttributeName::ATTR_CONTENT);
+  nsHtml5String content = attributes->getValue(nsHtml5AttributeName::ATTR_CONTENT);
   if (content) {
-    nsHtml5String extract =
-      nsHtml5TreeBuilder::extractCharsetFromContent(content, this);
+    nsHtml5String extract = nsHtml5TreeBuilder::extractCharsetFromContent(content, this);
     if (extract) {
       if (tokenizer->internalEncodingDeclaration(extract)) {
         requestSuspension();
@@ -3229,11 +3222,7 @@ nsHtml5TreeBuilder::isSecondOnStackBody()
 }
 
 void 
-nsHtml5TreeBuilder::documentModeInternal(
-  nsHtml5DocumentMode m,
-  nsHtml5String publicIdentifier,
-  nsHtml5String systemIdentifier,
-  bool html4SpecificAdditionalErrorChecks)
+nsHtml5TreeBuilder::documentModeInternal(nsHtml5DocumentMode m, nsHtml5String publicIdentifier, nsHtml5String systemIdentifier, bool html4SpecificAdditionalErrorChecks)
 {
   if (isSrcdocDocument) {
     quirks = false;
@@ -3245,8 +3234,7 @@ nsHtml5TreeBuilder::documentModeInternal(
 }
 
 bool 
-nsHtml5TreeBuilder::isAlmostStandards(nsHtml5String publicIdentifier,
-                                      nsHtml5String systemIdentifier)
+nsHtml5TreeBuilder::isAlmostStandards(nsHtml5String publicIdentifier, nsHtml5String systemIdentifier)
 {
   if (nsHtml5Portability::lowerCaseLiteralEqualsIgnoreAsciiCaseString("-//w3c//dtd xhtml 1.0 transitional//en", publicIdentifier)) {
     return true;
@@ -3266,10 +3254,7 @@ nsHtml5TreeBuilder::isAlmostStandards(nsHtml5String publicIdentifier,
 }
 
 bool 
-nsHtml5TreeBuilder::isQuirky(nsIAtom* name,
-                             nsHtml5String publicIdentifier,
-                             nsHtml5String systemIdentifier,
-                             bool forceQuirks)
+nsHtml5TreeBuilder::isQuirky(nsIAtom* name, nsHtml5String publicIdentifier, nsHtml5String systemIdentifier, bool forceQuirks)
 {
   if (forceQuirks) {
     return true;
@@ -4186,8 +4171,7 @@ nsHtml5TreeBuilder::appendToCurrentNodeAndPushElementMayFosterMathML(nsHtml5Elem
 bool 
 nsHtml5TreeBuilder::annotationXmlEncodingPermitsHtml(nsHtml5HtmlAttributes* attributes)
 {
-  nsHtml5String encoding =
-    attributes->getValue(nsHtml5AttributeName::ATTR_ENCODING);
+  nsHtml5String encoding = attributes->getValue(nsHtml5AttributeName::ATTR_ENCODING);
   if (!encoding) {
     return false;
   }
