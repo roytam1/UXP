@@ -25,7 +25,9 @@
 
 package nu.validator.htmlparser.impl;
 
-import nu.validator.htmlparser.annotation.Auto;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+
 import nu.validator.htmlparser.annotation.IdType;
 import nu.validator.htmlparser.annotation.Local;
 import nu.validator.htmlparser.annotation.NsUri;
@@ -33,9 +35,6 @@ import nu.validator.htmlparser.annotation.Prefix;
 import nu.validator.htmlparser.annotation.QName;
 import nu.validator.htmlparser.common.Interner;
 import nu.validator.htmlparser.common.XmlViolationPolicy;
-
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
 
 /**
  * Be careful with this class. QName is the name in from HTML tokenization.
@@ -46,13 +45,9 @@ import org.xml.sax.SAXException;
  */
 public final class HtmlAttributes implements Attributes {
 
-    // [NOCPP[
-
     private static final AttributeName[] EMPTY_ATTRIBUTENAMES = new AttributeName[0];
 
     private static final String[] EMPTY_STRINGS = new String[0];
-
-    // ]NOCPP]
 
     public static final HtmlAttributes EMPTY_ATTRIBUTES = new HtmlAttributes(
             AttributeName.HTML);
@@ -61,13 +56,9 @@ public final class HtmlAttributes implements Attributes {
 
     private int length;
 
-    private @Auto AttributeName[] names;
+    private AttributeName[] names;
 
-    private @Auto String[] values; // XXX perhaps make this @NoLength?
-    
-    // CPPONLY: private @Auto int[] lines; // XXX perhaps make this @NoLength?
-
-    // [NOCPP[
+    private String[] values;
 
     private String idValue;
 
@@ -77,21 +68,15 @@ public final class HtmlAttributes implements Attributes {
 
     private String[] xmlnsValues;
 
-    // ]NOCPP]
-
     public HtmlAttributes(int mode) {
         this.mode = mode;
         this.length = 0;
         /*
          * The length of 5 covers covers 98.3% of elements
-         * according to Hixie, but lets round to the next power of two for
-         * jemalloc.
+         * according to Hixie.
          */
-        this.names = new AttributeName[8];
-        this.values = new String[8];
-        // CPPONLY: this.lines = new int[8];
-
-        // [NOCPP[
+        this.names = new AttributeName[5];
+        this.values = new String[5];
 
         this.idValue = null;
 
@@ -101,25 +86,6 @@ public final class HtmlAttributes implements Attributes {
 
         this.xmlnsValues = HtmlAttributes.EMPTY_STRINGS;
 
-        // ]NOCPP]
-    }
-    /*
-    public HtmlAttributes(HtmlAttributes other) {
-        this.mode = other.mode;
-        this.length = other.length;
-        this.names = new AttributeName[other.length];
-        this.values = new String[other.length];
-        // [NOCPP[
-        this.idValue = other.idValue;
-        this.xmlnsLength = other.xmlnsLength;
-        this.xmlnsNames = new AttributeName[other.xmlnsLength];
-        this.xmlnsValues = new String[other.xmlnsLength];
-        // ]NOCPP]
-    }
-    */
-
-    void destructor() {
-        clear(0);
     }
     
     /**
@@ -161,7 +127,6 @@ public final class HtmlAttributes implements Attributes {
      * @return the local name at index
      */
     public @Local String getLocalNameNoBoundsCheck(int index) {
-        // CPPONLY: assert index < length && index >= 0: "Index out of bounds";
         return names[index].getLocal(mode);
     }
 
@@ -171,7 +136,6 @@ public final class HtmlAttributes implements Attributes {
      * @return the namespace URI at index
      */
     public @NsUri String getURINoBoundsCheck(int index) {
-        // CPPONLY: assert index < length && index >= 0: "Index out of bounds";
         return names[index].getUri(mode);
     }
 
@@ -181,7 +145,6 @@ public final class HtmlAttributes implements Attributes {
      * @return the namespace prefix at index
      */
     public @Prefix String getPrefixNoBoundsCheck(int index) {
-        // CPPONLY: assert index < length && index >= 0: "Index out of bounds";
         return names[index].getPrefix(mode);
     }
 
@@ -191,7 +154,6 @@ public final class HtmlAttributes implements Attributes {
      * @return the attribute value at index
      */
     public String getValueNoBoundsCheck(int index) {
-        // CPPONLY: assert index < length && index >= 0: "Index out of bounds";
         return values[index];
     }
 
@@ -201,21 +163,9 @@ public final class HtmlAttributes implements Attributes {
      * @return the attribute name at index
      */
     public AttributeName getAttributeNameNoBoundsCheck(int index) {
-        // CPPONLY: assert index < length && index >= 0: "Index out of bounds";
         return names[index];
     }
 
-    // CPPONLY: /**
-    // CPPONLY: * Obtains a line number without bounds check.
-    // CPPONLY: * @param index a valid attribute index
-    // CPPONLY: * @return the line number at index or -1 if unknown
-    // CPPONLY: */
-    // CPPONLY: public int getLineNoBoundsCheck(int index) {
-    // CPPONLY: assert index < length && index >= 0: "Index out of bounds";
-    // CPPONLY: return lines[index];
-    // CPPONLY: }
-
-    // [NOCPP[
     
     /**
      * Variant of <code>getQName(int index)</code> without bounds check.
@@ -404,15 +354,9 @@ public final class HtmlAttributes implements Attributes {
         }
     }
 
-    // ]NOCPP]
-
     void addAttribute(AttributeName name, String value
-            // [NOCPP[
             , XmlViolationPolicy xmlnsPolicy
-            // ]NOCPP]
-            // CPPONLY: , int line
     ) throws SAXException {
-        // [NOCPP[
         if (name == AttributeName.ID) {
             idValue = value;
         }
@@ -441,8 +385,6 @@ public final class HtmlAttributes implements Attributes {
             }
         }
 
-        // ]NOCPP]
-
         if (names.length == length) {
             int newLen = length << 1; // The first growth covers virtually
             // 100% of elements according to
@@ -453,53 +395,25 @@ public final class HtmlAttributes implements Attributes {
             String[] newValues = new String[newLen];
             System.arraycopy(values, 0, newValues, 0, values.length);
             values = newValues;
-            // CPPONLY: int[] newLines = new int[newLen];
-            // CPPONLY: System.arraycopy(lines, 0, newLines, 0, lines.length);
-            // CPPONLY: lines = newLines;
         }
         names[length] = name;
         values[length] = value;
-        // CPPONLY: lines[length] = line;
         length++;
     }
 
     void clear(int m) {
         for (int i = 0; i < length; i++) {
-            names[i].release();
             names[i] = null;
-            Portability.releaseString(values[i]);
             values[i] = null;
         }
         length = 0;
         mode = m;
-        // [NOCPP[
         idValue = null;
         for (int i = 0; i < xmlnsLength; i++) {
             xmlnsNames[i] = null;
             xmlnsValues[i] = null;
         }
         xmlnsLength = 0;
-        // ]NOCPP]
-    }
-    
-    /**
-     * This is used in C++ to release special <code>isindex</code>
-     * attribute values whose ownership is not transferred.
-     */
-    void releaseValue(int i) {
-        Portability.releaseString(values[i]);        
-    }
-    
-    /**
-     * This is only used for <code>AttributeName</code> ownership transfer
-     * in the isindex case to avoid freeing custom names twice in C++.
-     */
-    void clearWithoutReleasingContents() {
-        for (int i = 0; i < length; i++) {
-            names[i] = null;
-            values[i] = null;
-        }
-        length = 0;
     }
 
     boolean contains(AttributeName name) {
@@ -508,13 +422,11 @@ public final class HtmlAttributes implements Attributes {
                 return true;
             }
         }
-        // [NOCPP[
         for (int i = 0; i < xmlnsLength; i++) {
             if (name.equalsAnother(xmlnsNames[i])) {
                 return true;
             }
         }
-        // ]NOCPP]
         return false;
     }
 
@@ -529,27 +441,20 @@ public final class HtmlAttributes implements Attributes {
     public HtmlAttributes cloneAttributes(Interner interner)
             throws SAXException {
         assert (length == 0
-                // [NOCPP[
                 && xmlnsLength == 0
-                // ]NOCPP]
                 )
                 || mode == 0 || mode == 3;
         HtmlAttributes clone = new HtmlAttributes(0);
         for (int i = 0; i < length; i++) {
-            clone.addAttribute(names[i].cloneAttributeName(interner),
-                    Portability.newStringFromString(values[i])
-                    // [NOCPP[
+            clone.addAttribute(names[i],
+                    values[i]
                     , XmlViolationPolicy.ALLOW
-                    // ]NOCPP]
-                    // CPPONLY: , lines[i]
             );
         }
-        // [NOCPP[
         for (int i = 0; i < xmlnsLength; i++) {
             clone.addAttribute(xmlnsNames[i], xmlnsValues[i],
                     XmlViolationPolicy.ALLOW);
         }
-        // ]NOCPP]
         return clone; // XXX!!!
     }
 
@@ -568,9 +473,10 @@ public final class HtmlAttributes implements Attributes {
             for (int j = 0; j < otherLength; j++) {
                 if (ownLocal == other.names[j].getLocal(AttributeName.HTML)) {
                     found = true;
-                    if (!Portability.stringEqualsString(values[i], other.values[j])) {
+                    if (!values[i].equals(other.values[j])) {
                         return false;
                     }
+                    break;
                 }
             }
             if (!found) {
@@ -579,9 +485,7 @@ public final class HtmlAttributes implements Attributes {
         }
         return true;
     }
-    
-    // [NOCPP[
-    
+
     void processNonNcNames(TreeBuilder<?> treeBuilder, XmlViolationPolicy namePolicy) throws SAXException {
         for (int i = 0; i < length; i++) {
             AttributeName attName = names[i];
@@ -613,8 +517,4 @@ public final class HtmlAttributes implements Attributes {
             }
         }
     }
-
-
-    // ]NOCPP]
-    
 }

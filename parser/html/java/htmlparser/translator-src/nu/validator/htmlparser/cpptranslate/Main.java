@@ -37,18 +37,17 @@
 
 package nu.validator.htmlparser.cpptranslate;
 
-import japa.parser.JavaParser;
-import japa.parser.ParseException;
-import japa.parser.ast.CompilationUnit;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+
+import japa.parser.JavaParser;
+import japa.parser.ParseException;
+import japa.parser.ast.CompilationUnit;
 
 public class Main {
 
@@ -58,7 +57,6 @@ public class Main {
         "MetaScanner",
         "AttributeName",
         "ElementName",
-        "HtmlAttributes",
         "StackNode",
         "UTF16Buffer",
         "StateSnapshot",
@@ -71,7 +69,6 @@ public class Main {
         "MetaScanner",
         "AttributeName",
         "ElementName",
-        "HtmlAttributes",
         "StackNode",
         "UTF16Buffer",
         "StateSnapshot",

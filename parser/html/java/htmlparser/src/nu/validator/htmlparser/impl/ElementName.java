@@ -192,6 +192,11 @@ public final class ElementName
         assert this.flags == (TreeBuilder.OTHER | NOT_INTERNED);
     }
 
+    // CPPONLY: public static final ElementName ISINDEX = new ElementName("isindex", "isindex", TreeBuilder.ISINDEX | SPECIAL);
+    // [NOCPP[
+    public static final ElementName ISINDEX = new ElementName("isindex", "isindex", TreeBuilder.OTHER);
+    // ]NOCPP]
+
     // START CODE ONLY USED FOR GENERATING CODE uncomment and run to regenerate
 
 //    /**
@@ -421,6 +426,9 @@ public final class ElementName
 //        }
 //        for (int i = 0; i < ELEMENT_NAMES.length; i++) {
 //            ElementName el = ELEMENT_NAMES[i];
+//            if ("isindex".equals(el.name)) {
+//                continue;
+//            }
 //            System.out.println("public static final ElementName "
 //                    + el.constName() + " = new ElementName" + el.toString()
 //                    + ";");
@@ -438,6 +446,7 @@ public final class ElementName
 //        }
 //        System.out.println("};");
 //    }
+
 
     // START GENERATED CODE
     public static final ElementName AND = new ElementName("and", "and", TreeBuilder.OTHER);
@@ -828,7 +837,6 @@ public final class ElementName
     public static final ElementName APPROX = new ElementName("approx", "approx", TreeBuilder.OTHER);
     public static final ElementName FECOLORMATRIX = new ElementName("fecolormatrix", "feColorMatrix", TreeBuilder.OTHER);
     public static final ElementName FECONVOLVEMATRIX = new ElementName("feconvolvematrix", "feConvolveMatrix", TreeBuilder.OTHER);
-    public static final ElementName ISINDEX = new ElementName("isindex", "isindex", TreeBuilder.ISINDEX | SPECIAL);
     public static final ElementName MATRIX = new ElementName("matrix", "matrix", TreeBuilder.OTHER);
     public static final ElementName APPLY = new ElementName("apply", "apply", TreeBuilder.OTHER);
     public static final ElementName BODY = new ElementName("body", "body", TreeBuilder.BODY | SPECIAL | OPTIONAL_END_TAG);
