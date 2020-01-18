@@ -117,7 +117,7 @@ public class CppTypes {
             "nsHtml5String", "nsNameSpaceManager", "nsIContent", "nsTraceRefcnt",
             "jArray", "nsHtml5ArrayCopy", "nsAHtml5TreeBuilderState",
             "nsHtml5Atoms", "nsHtml5ByteReadable", "nsIUnicodeDecoder",
-            "nsHtml5Macros", "nsIContentHandle" };
+            "nsHtml5Macros", "nsIContentHandle", "nsHtml5Portability" };
 
     private static final String[] OTHER_DECLATIONS = {};
 

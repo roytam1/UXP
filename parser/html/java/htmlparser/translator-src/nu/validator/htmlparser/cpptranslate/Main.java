@@ -52,11 +52,11 @@ import japa.parser.ast.CompilationUnit;
 public class Main {
 
     static final String[] H_LIST = {
+        "AttributeName",
+        "ElementName",
         "Tokenizer",
         "TreeBuilder",
         "MetaScanner",
-        "AttributeName",
-        "ElementName",
         "StackNode",
         "UTF16Buffer",
         "StateSnapshot",
@@ -64,11 +64,11 @@ public class Main {
     };
     
     private static final String[] CPP_LIST = {
+        "AttributeName",
+        "ElementName",
         "Tokenizer",
         "TreeBuilder",
         "MetaScanner",
-        "AttributeName",
-        "ElementName",
         "StackNode",
         "UTF16Buffer",
         "StateSnapshot",

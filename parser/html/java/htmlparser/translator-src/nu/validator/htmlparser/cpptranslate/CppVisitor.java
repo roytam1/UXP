@@ -331,13 +331,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
         } else if ("errorHandler".equals(n.getName())) {
             printer.print(cppTypes.errorHandler());
         } else {
-            String prefixedName = javaClassName + "." + n.getName();
-            String constant = symbolTable.cppDefinesByJavaNames.get(prefixedName);
-            if (constant != null) {
-                printer.print(constant);
-            } else {
-                printer.print(n.getName());
-            }
+            printer.print(n.getName());
         }
     }
 
@@ -736,10 +730,14 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                         printer.print(" ");
                         printer.print(className);
                         printer.print("::");
-                        if ("AttributeName".equals(n.getType().toString())) {
-                            printer.print("ATTR_");
-                        } else if ("ElementName".equals(n.getType().toString())) {
-                            printer.print("ELT_");
+                        String clazzName = n.getType().toString();
+                        String field = declarator.getId().toString();
+                        if (symbolTable.isAttributeOrElementName(clazzName, field)) {
+                            if ("AttributeName".equals(clazzName)) {
+                                printer.print("ATTR_");
+                            } else if ("ElementName".equals(clazzName)) {
+                                printer.print("ELT_");
+                            }
                         }
                         declarator.getId().accept(this, arg);
                         printer.print(" = ");
@@ -1080,21 +1078,14 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                     printer.print("->");
                 }
             } else {
-                String prefixedName = clazzName + "." + field;
-                String constant = symbolTable.cppDefinesByJavaNames.get(prefixedName);
-                if (constant != null) {
-                    printer.print(constant);
-                    return;
-                } else {
-                    printer.print(cppTypes.classPrefix());
-                    printer.print(clazzName);
-                    printer.print("::");
-                    if (symbolTable.isNotAnAttributeOrElementName(field)) {
-                        if ("AttributeName".equals(clazzName)) {
-                            printer.print("ATTR_");
-                        } else if ("ElementName".equals(clazzName)) {
-                            printer.print("ELT_");
-                        }
+                printer.print(cppTypes.classPrefix());
+                printer.print(clazzName);
+                printer.print("::");
+                if (symbolTable.isAttributeOrElementName(clazzName, field)) {
+                    if ("AttributeName".equals(clazzName)) {
+                        printer.print("ATTR_");
+                    } else if ("ElementName".equals(clazzName)) {
+                        printer.print("ELT_");
                     }
                 }
             }
