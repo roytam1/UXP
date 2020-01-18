@@ -31,6 +31,7 @@ import nu.validator.htmlparser.annotation.NoLength;
 import nu.validator.htmlparser.annotation.NsUri;
 import nu.validator.htmlparser.annotation.Prefix;
 import nu.validator.htmlparser.annotation.QName;
+import nu.validator.htmlparser.annotation.Unsigned;
 import nu.validator.htmlparser.annotation.Virtual;
 import nu.validator.htmlparser.common.Interner;
 
@@ -278,7 +279,7 @@ public final class AttributeName
             // ]NOCPP]
             , Interner interner) {
         // XXX deal with offset
-        int hash = AttributeName.bufToHash(buf, length);
+        @Unsigned int hash = AttributeName.bufToHash(buf, length);
         int index = Arrays.binarySearch(AttributeName.ATTRIBUTE_HASHES, hash);
         if (index < 0) {
             return AttributeName.createAttributeName(
@@ -312,9 +313,9 @@ public final class AttributeName
      * @param len
      * @return
      */
-    private static int bufToHash(@NoLength char[] buf, int len) {
-        int hash2 = 0;
-        int hash = len;
+    private static @Unsigned int bufToHash(@NoLength char[] buf, int len) {
+        @Unsigned int hash2 = 0;
+        @Unsigned int hash = len;
         hash <<= 5;
         hash += buf[0] - 0x60;
         int j = len;
@@ -396,7 +397,7 @@ public final class AttributeName
             @Local @NoLength String[] local, @Prefix @NoLength String[] prefix
             // [NOCPP[
             , int flags
-    // ]NOCPP]        
+    // ]NOCPP]
     ) {
         this.uri = uri;
         this.local = local;

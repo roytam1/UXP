@@ -192,6 +192,10 @@ public class CppTypes {
         return "int32_t";
     }
 
+    public String unsignedIntType() {
+        return "uint32_t";
+    }
+
     public String stringType() {
         return "nsHtml5String";
     }

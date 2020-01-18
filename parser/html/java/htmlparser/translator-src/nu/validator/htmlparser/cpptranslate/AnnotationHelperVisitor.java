@@ -72,6 +72,10 @@ public class AnnotationHelperVisitor<T> extends VoidVisitorAdapter<T> {
         return hasAnnotation("NoLength");
     }
 
+    protected boolean unsigned() {
+        return hasAnnotation("Unsigned");
+    }
+
     protected boolean auto() {
         return hasAnnotation("Auto");
     }

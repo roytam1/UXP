@@ -548,7 +548,11 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
             case Float:
                 throw new IllegalStateException("Unsupported primitive.");
             case Int:
-                printer.print(cppTypes.intType());
+                if (unsigned()) {
+                    printer.print(cppTypes.unsignedIntType());
+                } else {
+                    printer.print(cppTypes.intType());
+                }
                 break;
             case Long:
                 throw new IllegalStateException("Unsupported primitive.");
