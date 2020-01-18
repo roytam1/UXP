@@ -25,6 +25,9 @@
 package nu.validator.htmlparser.impl;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 import nu.validator.htmlparser.annotation.Inline;
 import nu.validator.htmlparser.annotation.Local;
@@ -254,6 +257,24 @@ public final class AttributeName
         return arr;
     }
 
+    @Inline static int levelOrderBinarySearch(int[] data, int key) {
+        int n = data.length;
+        int i = 0;
+
+        while (i < n) {
+            int val = data[i];
+            if (val < key) {
+                i = 2 * i + 2;
+            } else if (val > key) {
+                i = 2 * i + 1;
+            } else {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     /**
      * Returns an attribute name by buffer.
      * 
@@ -277,7 +298,9 @@ public final class AttributeName
             , Interner interner) {
         // XXX deal with offset
         @Unsigned int hash = AttributeName.bufToHash(buf, length);
-        int index = Arrays.binarySearch(AttributeName.ATTRIBUTE_HASHES, hash);
+        int[] hashes;
+        hashes = AttributeName.ATTRIBUTE_HASHES;
+        int index = levelOrderBinarySearch(hashes, hash);
         if (index < 0) {
             return null;
         }
@@ -685,6 +708,25 @@ public final class AttributeName
 //        return bufToHash(name.toCharArray(), name.length());
 //    }
 //
+//    private static void fillLevelOrderArray(List<AttributeName> sorted, int depth,
+//                                            int rootIdx, AttributeName[] levelOrder) {
+//        if (rootIdx >= levelOrder.length) {
+//            return;
+//        }
+//
+//        if (depth > 0) {
+//            fillLevelOrderArray(sorted, depth - 1, rootIdx * 2 + 1, levelOrder);
+//        }
+//
+//        if (!sorted.isEmpty()) {
+//            levelOrder[rootIdx] = sorted.remove(0);
+//        }
+//
+//        if (depth > 0) {
+//            fillLevelOrderArray(sorted, depth - 1, rootIdx * 2 + 2, levelOrder);
+//        }
+//    }
+//
 //    /**
 //     * Regenerate self
 //     *
@@ -713,15 +755,22 @@ public final class AttributeName
 //                    + att.constName() + " = new AttributeName" + att.toString()
 //                    + ";");
 //        }
+//
+//        LinkedList<AttributeName> sortedNames = new LinkedList<AttributeName>();
+//        Collections.addAll(sortedNames, ATTRIBUTE_NAMES);
+//        AttributeName[] levelOrder = new AttributeName[ATTRIBUTE_NAMES.length];
+//        int bstDepth = (int) Math.ceil(Math.log(ATTRIBUTE_NAMES.length) / Math.log(2));
+//        fillLevelOrderArray(sortedNames, bstDepth, 0, levelOrder);
+//
 //        System.out.println("private final static @NoLength AttributeName[] ATTRIBUTE_NAMES = {");
-//        for (int i = 0; i < ATTRIBUTE_NAMES.length; i++) {
-//            AttributeName att = ATTRIBUTE_NAMES[i];
+//        for (int i = 0; i < levelOrder.length; i++) {
+//            AttributeName att = levelOrder[i];
 //            System.out.println(att.constName() + ",");
 //        }
 //        System.out.println("};");
 //        System.out.println("private final static int[] ATTRIBUTE_HASHES = {");
-//        for (int i = 0; i < ATTRIBUTE_NAMES.length; i++) {
-//            AttributeName att = ATTRIBUTE_NAMES[i];
+//        for (int i = 0; i < levelOrder.length; i++) {
+//            AttributeName att = levelOrder[i];
 //            System.out.println(Integer.toString(att.hash()) + ",");
 //        }
 //        System.out.println("};");
