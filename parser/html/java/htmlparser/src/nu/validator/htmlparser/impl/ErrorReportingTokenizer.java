@@ -22,16 +22,16 @@
 
 package nu.validator.htmlparser.impl;
 
+import java.util.HashMap;
+
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+
 import nu.validator.htmlparser.annotation.Inline;
 import nu.validator.htmlparser.annotation.NoLength;
 import nu.validator.htmlparser.common.TokenHandler;
 import nu.validator.htmlparser.common.TransitionHandler;
 import nu.validator.htmlparser.common.XmlViolationPolicy;
-
-import java.util.HashMap;
-
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
 
 public class ErrorReportingTokenizer extends Tokenizer {
 
@@ -388,7 +388,7 @@ public class ErrorReportingTokenizer extends Tokenizer {
                 && ElementName.IFRAME != endTagExpectation) {
             err((stateSave == Tokenizer.DATA ? "CDATA" : "RCDATA")
                     + " element \u201C"
-                    + endTagExpectation.name
+                    + endTagExpectation.getName()
                     + "\u201D contained the string \u201C</\u201D, but it was not the start of the end tag. (HTML4-only error)");
         }
     }

@@ -29,17 +29,17 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+
 import nu.validator.htmlparser.common.TokenHandler;
 import nu.validator.htmlparser.impl.ElementName;
 import nu.validator.htmlparser.impl.ErrorReportingTokenizer;
 import nu.validator.htmlparser.impl.HtmlAttributes;
 import nu.validator.htmlparser.impl.Tokenizer;
 import nu.validator.htmlparser.io.Driver;
-
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
 
 public class TokenPrinter implements TokenHandler, ErrorHandler {
 
@@ -94,7 +94,7 @@ public class TokenPrinter implements TokenHandler, ErrorHandler {
     public void endTag(ElementName eltName) throws SAXException {
         try {
             writer.write(')');
-            writer.write(eltName.name);
+            writer.write(eltName.getName());
             writer.write('\n');
         } catch (IOException e) {
             throw new SAXException(e);
@@ -117,7 +117,7 @@ public class TokenPrinter implements TokenHandler, ErrorHandler {
             throws SAXException {
         try {
             writer.write('(');
-            writer.write(eltName.name);
+            writer.write(eltName.getName());
             writer.write('\n');
             for (int i = 0; i < attributes.getLength(); i++) {
                 writer.write('A');

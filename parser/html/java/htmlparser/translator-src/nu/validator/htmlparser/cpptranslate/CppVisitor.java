@@ -448,8 +448,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
         printer.print("#include \"");
         printer.print(className);
         printer.printLn(".h\"");
-        if ("AttributeName".equals(javaClassName)
-                || "ElementName".equals(javaClassName)) {
+        if ("AttributeName".equals(javaClassName)) {
             printer.print("#include \"");
             printer.print(cppTypes.classPrefix());
             printer.print("Releasable");
@@ -1387,8 +1386,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
 
         suppressPointer = true;
         printTypeArgs(n.getTypeArgs(), arg);
-        if ("createAttributeName".equals(currentMethod)
-                || "elementNameByBuffer".equals(currentMethod)) {
+        if ("createAttributeName".equals(currentMethod)) {
             printer.print(cppTypes.classPrefix());
             printer.print("Releasable");
             printer.print(n.getType().getName());
