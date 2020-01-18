@@ -78,7 +78,7 @@ class nsHtml5AttributeName
     static nsIAtom** SAME_LOCAL(nsIAtom* name);
     static nsHtml5AttributeName* nameByBuffer(char16_t* buf, int32_t offset, int32_t length, nsHtml5AtomTable* interner);
   private:
-    static int32_t bufToHash(char16_t* buf, int32_t len);
+    static uint32_t bufToHash(char16_t* buf, int32_t len);
     int32_t* uri;
     nsIAtom** local;
     nsIAtom** prefix;
