@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2016 Mozilla Foundation
+ * Copyright (c) 2008-2017 Mozilla Foundation
  * Copyright (c) 2018-2020 Moonchild Productions
  * Copyright (c) 2020 Binary Outcast
  *
@@ -127,24 +127,40 @@ public final class ElementName
     }
 
     /**
-     * This method has to return a unique integer for each well-known
+     * This method has to return a unique positive integer for each well-known
      * lower-cased element name.
      *
      * @param buf
      * @param len
      * @return
      */
-    private static @Unsigned int bufToHash(@NoLength char[] buf, int len) {
-        @Unsigned int hash = len;
-        hash <<= 5;
-        hash += buf[0] - 0x60;
-        int j = len;
-        for (int i = 0; i < 4 && j > 0; i++) {
-            j--;
-            hash <<= 5;
-            hash += buf[j] - 0x60;
+    @Inline private static @Unsigned int bufToHash(@NoLength char[] buf, int length) {
+        @Unsigned int len = length;
+        @Unsigned int first = buf[0];
+        first <<= 19;
+        @Unsigned int second = 1 << 23;
+        @Unsigned int third = 0;
+        @Unsigned int fourth = 0;
+        @Unsigned int fifth = 0;
+        if (length >= 4) {
+            second = buf[length - 4];
+            second <<= 4;
+            third = buf[length - 3];
+            third <<= 9;
+            fourth = buf[length - 2];
+            fourth <<= 14;
+            fifth = buf[length - 1];
+            fifth <<= 24;
+        } else if (length == 3) {
+            second = buf[1];
+            second <<= 4;
+            third = buf[2];
+            third <<= 9;
+        } else if (length == 2) {
+            second = buf[1];
+            second <<= 24;
         }
-        return hash;
+        return len + first + second + third + fourth + fifth;
     }
 
     private ElementName(@Local String name, @Local String camelCaseName,
@@ -386,11 +402,18 @@ public final class ElementName
 //     */
 //    public static void main(String[] args) {
 //        Arrays.sort(ELEMENT_NAMES);
-//        for (int i = 1; i < ELEMENT_NAMES.length; i++) {
-//            if (ELEMENT_NAMES[i].hash() == ELEMENT_NAMES[i - 1].hash()) {
-//                System.err.println("Hash collision: " + ELEMENT_NAMES[i].name
-//                        + ", " + ELEMENT_NAMES[i - 1].name);
+//        for (int i = 0; i < ELEMENT_NAMES.length; i++) {
+//            int hash = ELEMENT_NAMES[i].hash();
+//            if (hash < 0) {
+//                System.err.println("Negative hash: " + ELEMENT_NAMES[i].name);
 //                return;
+//            }
+//            for (int j = i + 1; j < ELEMENT_NAMES.length; j++) {
+//                if (hash == ELEMENT_NAMES[j].hash()) {
+//                    System.err.println("Hash collision: " + ELEMENT_NAMES[i].name
+//                            + ", " + ELEMENT_NAMES[j].name);
+//                    return;
+//                }
 //            }
 //        }
 //        for (int i = 0; i < ELEMENT_NAMES.length; i++) {

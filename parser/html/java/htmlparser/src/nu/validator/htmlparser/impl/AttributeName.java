@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2011 Mozilla Foundation
+ * Copyright (c) 2008-2017 Mozilla Foundation
  * Copyright (c) 2018-2020 Moonchild Productions
  * Copyright (c) 2020 Binary Outcast
  *
@@ -26,6 +26,7 @@ package nu.validator.htmlparser.impl;
 
 import java.util.Arrays;
 
+import nu.validator.htmlparser.annotation.Inline;
 import nu.validator.htmlparser.annotation.Local;
 import nu.validator.htmlparser.annotation.NoLength;
 import nu.validator.htmlparser.annotation.NsUri;
@@ -306,27 +307,43 @@ public final class AttributeName
     }
 
     /**
-     * This method has to return a unique integer for each well-known
+     * This method has to return a unique positive integer for each well-known
      * lower-cased attribute name.
      * 
      * @param buf
      * @param len
      * @return
      */
-    private static @Unsigned int bufToHash(@NoLength char[] buf, int len) {
-        @Unsigned int hash2 = 0;
-        @Unsigned int hash = len;
-        hash <<= 5;
-        hash += buf[0] - 0x60;
-        int j = len;
-        for (int i = 0; i < 4 && j > 0; i++) {
-            j--;
-            hash <<= 5;
-            hash += buf[j] - 0x60;
-            hash2 <<= 6;
-            hash2 += buf[i] - 0x5F;
+    @Inline private static @Unsigned int bufToHash(@NoLength char[] buf, int length) {
+        @Unsigned int len = length;
+        @Unsigned int first = buf[0];
+        first <<= 19;
+        @Unsigned int second = 1 << 23;
+        @Unsigned int third = 0;
+        @Unsigned int fourth = 0;
+        @Unsigned int fifth = 0;
+        @Unsigned int sixth = 0;
+        if (length >= 4) {
+            second = buf[length - 4];
+            second <<= 4;
+            third = buf[1];
+            third <<= 9;
+            fourth = buf[length - 2];
+            fourth <<= 14;
+            fifth = buf[3];
+            fifth <<= 24;
+            sixth = buf[length - 1];
+            sixth <<= 11;
+        } else if (length == 3) {
+            second = buf[1];
+            second <<= 4;
+            third = buf[2];
+            third <<= 9;
+        } else if (length == 2) {
+            second = buf[1];
+            second <<= 24;
         }
-        return hash ^ hash2;
+        return len + first + second + third + fourth + fifth + sixth;
     }
 
     /**
@@ -691,12 +708,19 @@ public final class AttributeName
 //     */
 //    public static void main(String[] args) {
 //        Arrays.sort(ATTRIBUTE_NAMES);
-//        for (int i = 1; i < ATTRIBUTE_NAMES.length; i++) {
-//            if (ATTRIBUTE_NAMES[i].hash() == ATTRIBUTE_NAMES[i - 1].hash()) {
-//                System.err.println("Hash collision: "
-//                        + ATTRIBUTE_NAMES[i].getLocal(HTML) + ", "
-//                        + ATTRIBUTE_NAMES[i - 1].getLocal(HTML));
+//        for (int i = 0; i < ATTRIBUTE_NAMES.length; i++) {
+//            int hash = ATTRIBUTE_NAMES[i].hash();
+//            if (hash < 0) {
+//                System.err.println("Negative hash: " + ATTRIBUTE_NAMES[i].local[0]);
 //                return;
+//            }
+//            for (int j = i + 1; j < ATTRIBUTE_NAMES.length; j++) {
+//                if (hash == ATTRIBUTE_NAMES[j].hash()) {
+//                    System.err.println(
+//                            "Hash collision: " + ATTRIBUTE_NAMES[i].local[0] + ", "
+//                                    + ATTRIBUTE_NAMES[j].local[0]);
+//                    return;
+//                }
 //            }
 //        }
 //        for (int i = 0; i < ATTRIBUTE_NAMES.length; i++) {
