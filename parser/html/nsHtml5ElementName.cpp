@@ -55,9 +55,7 @@
 #include "nsHtml5Portability.h"
 
 #include "nsHtml5ElementName.h"
-#include "nsHtml5ReleasableElementName.h"
 
-nsHtml5ElementName* nsHtml5ElementName::ELT_NULL_ELEMENT_NAME = nullptr;
 int32_t 
 nsHtml5ElementName::getGroup()
 {
@@ -65,9 +63,9 @@ nsHtml5ElementName::getGroup()
 }
 
 bool 
-nsHtml5ElementName::isCustom()
+nsHtml5ElementName::isInterned()
 {
-  return (flags & NS_HTML5ELEMENT_NAME_CUSTOM);
+  return !(flags & NS_HTML5ELEMENT_NAME_NOT_INTERNED);
 }
 
 nsHtml5ElementName* 
@@ -76,12 +74,12 @@ nsHtml5ElementName::elementNameByBuffer(char16_t* buf, int32_t offset, int32_t l
   uint32_t hash = nsHtml5ElementName::bufToHash(buf, length);
   int32_t index = nsHtml5ElementName::ELEMENT_HASHES.binarySearch(hash);
   if (index < 0) {
-    return new nsHtml5ReleasableElementName(nsHtml5Portability::newLocalNameFromBuffer(buf, offset, length, interner));
+    return nullptr;
   } else {
     nsHtml5ElementName* elementName = nsHtml5ElementName::ELEMENT_NAMES[index];
     nsIAtom* name = elementName->name;
     if (!nsHtml5Portability::localEqualsBuffer(name, buf, offset, length)) {
-      return new nsHtml5ReleasableElementName(nsHtml5Portability::newLocalNameFromBuffer(buf, offset, length, interner));
+      return nullptr;
     }
     return elementName;
   }
@@ -97,17 +95,12 @@ nsHtml5ElementName::nsHtml5ElementName(nsIAtom* name, nsIAtom* camelCaseName, in
 }
 
 
-nsHtml5ElementName::nsHtml5ElementName(nsIAtom* name)
-  : name(name),
-    camelCaseName(name),
-    flags(NS_HTML5TREE_BUILDER_OTHER | NS_HTML5ELEMENT_NAME_CUSTOM)
+nsHtml5ElementName::nsHtml5ElementName()
+  : name(nullptr),
+    camelCaseName(nullptr),
+    flags(NS_HTML5TREE_BUILDER_OTHER | NS_HTML5ELEMENT_NAME_NOT_INTERNED)
 {
   MOZ_COUNT_CTOR(nsHtml5ElementName);
-}
-
-void 
-nsHtml5ElementName::release()
-{
 }
 
 
@@ -116,10 +109,12 @@ nsHtml5ElementName::~nsHtml5ElementName()
   MOZ_COUNT_DTOR(nsHtml5ElementName);
 }
 
-nsHtml5ElementName* 
-nsHtml5ElementName::cloneElementName(nsHtml5AtomTable* interner)
+void 
+nsHtml5ElementName::setNameForNonInterned(nsIAtom* name)
 {
-  return this;
+  this->name = name;
+  this->camelCaseName = name;
+  MOZ_ASSERT(this->flags == (NS_HTML5TREE_BUILDER_OTHER | NS_HTML5ELEMENT_NAME_NOT_INTERNED));
 }
 
 nsHtml5ElementName* nsHtml5ElementName::ELT_AND = nullptr;
@@ -526,7 +521,6 @@ staticJArray<int32_t,int32_t> nsHtml5ElementName::ELEMENT_HASHES = { ELEMENT_HAS
 void
 nsHtml5ElementName::initializeStatics()
 {
-  ELT_NULL_ELEMENT_NAME = new nsHtml5ElementName(nullptr);
   ELT_AND = new nsHtml5ElementName(nsHtml5Atoms::and_, nsHtml5Atoms::and_, NS_HTML5TREE_BUILDER_OTHER);
   ELT_ARG = new nsHtml5ElementName(nsHtml5Atoms::arg, nsHtml5Atoms::arg, NS_HTML5TREE_BUILDER_OTHER);
   ELT_ABS = new nsHtml5ElementName(nsHtml5Atoms::abs, nsHtml5Atoms::abs, NS_HTML5TREE_BUILDER_OTHER);
@@ -1329,7 +1323,6 @@ nsHtml5ElementName::initializeStatics()
 void
 nsHtml5ElementName::releaseStatics()
 {
-  delete ELT_NULL_ELEMENT_NAME;
   delete ELT_AND;
   delete ELT_ARG;
   delete ELT_ABS;

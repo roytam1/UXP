@@ -59,18 +59,28 @@ class nsHtml5Portability;
 
 class nsHtml5ElementName
 {
-  public:
-    static nsHtml5ElementName* ELT_NULL_ELEMENT_NAME;
+  private:
     nsIAtom* name;
     nsIAtom* camelCaseName;
+  public:
     int32_t flags;
+    inline nsIAtom* getName()
+    {
+      return name;
+    }
+
+    inline nsIAtom* getCamelCaseName()
+    {
+      return camelCaseName;
+    }
+
     inline int32_t getFlags()
     {
       return flags;
     }
 
     int32_t getGroup();
-    bool isCustom();
+    bool isInterned();
     static nsHtml5ElementName* elementNameByBuffer(char16_t* buf, int32_t offset, int32_t length, nsHtml5AtomTable* interner);
   private:
     inline static uint32_t bufToHash(char16_t* buf, int32_t length)
@@ -104,12 +114,10 @@ class nsHtml5ElementName
     }
 
     nsHtml5ElementName(nsIAtom* name, nsIAtom* camelCaseName, int32_t flags);
-  protected:
-    explicit nsHtml5ElementName(nsIAtom* name);
   public:
-    virtual void release();
-    virtual ~nsHtml5ElementName();
-    virtual nsHtml5ElementName* cloneElementName(nsHtml5AtomTable* interner);
+    nsHtml5ElementName();
+    ~nsHtml5ElementName();
+    void setNameForNonInterned(nsIAtom* name);
     static nsHtml5ElementName* ELT_AND;
     static nsHtml5ElementName* ELT_ARG;
     static nsHtml5ElementName* ELT_ABS;
@@ -517,7 +525,7 @@ class nsHtml5ElementName
 };
 
 #define NS_HTML5ELEMENT_NAME_GROUP_MASK 127
-#define NS_HTML5ELEMENT_NAME_CUSTOM (1 << 30)
+#define NS_HTML5ELEMENT_NAME_NOT_INTERNED (1 << 30)
 #define NS_HTML5ELEMENT_NAME_SPECIAL (1 << 29)
 #define NS_HTML5ELEMENT_NAME_FOSTER_PARENTING (1 << 28)
 #define NS_HTML5ELEMENT_NAME_SCOPING (1 << 27)

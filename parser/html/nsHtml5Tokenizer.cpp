@@ -97,6 +97,7 @@ nsHtml5Tokenizer::nsHtml5Tokenizer(nsHtml5TreeBuilder* tokenHandler, bool viewin
     bmpChar(jArray<char16_t,int32_t>::newJArray(1)),
     astralChar(jArray<char16_t,int32_t>::newJArray(2)),
     tagName(nullptr),
+    nonInternedTagName(new nsHtml5ElementName()),
     attributeName(nullptr),
     doctypeName(nullptr),
     publicIdentifier(nullptr),
@@ -279,6 +280,10 @@ void
 nsHtml5Tokenizer::strBufToElementNameString()
 {
   tagName = nsHtml5ElementName::elementNameByBuffer(strBuf, 0, strBufLen, interner);
+  if (!tagName) {
+    nonInternedTagName->setNameForNonInterned(nsHtml5Portability::newLocalNameFromBuffer(strBuf, 0, strBufLen, interner));
+    tagName = nonInternedTagName;
+  }
   clearStrBufAfterUse();
 }
 
@@ -307,7 +312,6 @@ nsHtml5Tokenizer::emitCurrentTagToken(bool selfClosing, int32_t pos)
       tokenHandler->startTag(tagName, attrs, selfClosing);
     }
   }
-  tagName->release();
   tagName = nullptr;
   if (newAttributesEachTime) {
     attributes = nullptr;
@@ -3935,10 +3939,8 @@ nsHtml5Tokenizer::end()
     publicIdentifier.Release();
     publicIdentifier = nullptr;
   }
-  if (tagName) {
-    tagName->release();
-    tagName = nullptr;
-  }
+  tagName = nullptr;
+  nonInternedTagName->setNameForNonInterned(nullptr);
   if (attributeName) {
     attributeName->release();
     attributeName = nullptr;
@@ -3983,7 +3985,6 @@ nsHtml5Tokenizer::resetToDataState()
   shouldSuspend = false;
   initDoctypeFields();
   if (tagName) {
-    tagName->release();
     tagName = nullptr;
   }
   if (attributeName) {
@@ -4043,13 +4044,13 @@ nsHtml5Tokenizer::loadState(nsHtml5Tokenizer* other)
   } else {
     publicIdentifier = nsHtml5Portability::newStringFromString(other->publicIdentifier);
   }
-  if (tagName) {
-    tagName->release();
-  }
   if (!other->tagName) {
     tagName = nullptr;
+  } else if (other->tagName->isInterned()) {
+    tagName = other->tagName;
   } else {
-    tagName = other->tagName->cloneElementName(interner);
+    nonInternedTagName->setNameForNonInterned(nsHtml5Portability::newLocalFromLocal(other->tagName->getName(), interner));
+    tagName = nonInternedTagName;
   }
   if (attributeName) {
     attributeName->release();
@@ -4087,6 +4088,8 @@ nsHtml5Tokenizer::setEncodingDeclarationHandler(nsHtml5StreamParser* encodingDec
 nsHtml5Tokenizer::~nsHtml5Tokenizer()
 {
   MOZ_COUNT_DTOR(nsHtml5Tokenizer);
+  delete nonInternedTagName;
+  nonInternedTagName = nullptr;
   delete attributes;
   attributes = nullptr;
 }
