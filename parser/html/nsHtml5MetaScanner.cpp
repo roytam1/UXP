@@ -49,7 +49,6 @@
 #include "nsHtml5TreeBuilder.h"
 #include "nsHtml5AttributeName.h"
 #include "nsHtml5ElementName.h"
-#include "nsHtml5HtmlAttributes.h"
 #include "nsHtml5StackNode.h"
 #include "nsHtml5UTF16Buffer.h"
 #include "nsHtml5StateSnapshot.h"

@@ -51,7 +51,6 @@ class nsHtml5Tokenizer;
 class nsHtml5TreeBuilder;
 class nsHtml5MetaScanner;
 class nsHtml5AttributeName;
-class nsHtml5HtmlAttributes;
 class nsHtml5UTF16Buffer;
 class nsHtml5StateSnapshot;
 class nsHtml5Portability;
@@ -118,6 +117,7 @@ class nsHtml5ElementName
     nsHtml5ElementName();
     ~nsHtml5ElementName();
     void setNameForNonInterned(nsIAtom* name);
+    static nsHtml5ElementName* ELT_ISINDEX;
     static nsHtml5ElementName* ELT_AND;
     static nsHtml5ElementName* ELT_ARG;
     static nsHtml5ElementName* ELT_ABS;
@@ -506,7 +506,6 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_APPROX;
     static nsHtml5ElementName* ELT_FECOLORMATRIX;
     static nsHtml5ElementName* ELT_FECONVOLVEMATRIX;
-    static nsHtml5ElementName* ELT_ISINDEX;
     static nsHtml5ElementName* ELT_MATRIX;
     static nsHtml5ElementName* ELT_APPLY;
     static nsHtml5ElementName* ELT_BODY;

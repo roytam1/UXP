@@ -48,7 +48,6 @@
 #include "nsHtml5TreeBuilder.h"
 #include "nsHtml5MetaScanner.h"
 #include "nsHtml5AttributeName.h"
-#include "nsHtml5HtmlAttributes.h"
 #include "nsHtml5StackNode.h"
 #include "nsHtml5UTF16Buffer.h"
 #include "nsHtml5StateSnapshot.h"
@@ -117,6 +116,7 @@ nsHtml5ElementName::setNameForNonInterned(nsIAtom* name)
   MOZ_ASSERT(this->flags == (NS_HTML5TREE_BUILDER_OTHER | NS_HTML5ELEMENT_NAME_NOT_INTERNED));
 }
 
+nsHtml5ElementName* nsHtml5ElementName::ELT_ISINDEX = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_AND = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_ARG = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_ABS = nullptr;
@@ -505,7 +505,6 @@ nsHtml5ElementName* nsHtml5ElementName::ELT_VIEW = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_APPROX = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_FECOLORMATRIX = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_FECONVOLVEMATRIX = nullptr;
-nsHtml5ElementName* nsHtml5ElementName::ELT_ISINDEX = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_MATRIX = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_APPLY = nullptr;
 nsHtml5ElementName* nsHtml5ElementName::ELT_BODY = nullptr;
@@ -521,6 +520,7 @@ staticJArray<int32_t,int32_t> nsHtml5ElementName::ELEMENT_HASHES = { ELEMENT_HAS
 void
 nsHtml5ElementName::initializeStatics()
 {
+  ELT_ISINDEX = new nsHtml5ElementName(nsHtml5Atoms::isindex, nsHtml5Atoms::isindex, NS_HTML5TREE_BUILDER_ISINDEX | NS_HTML5ELEMENT_NAME_SPECIAL);
   ELT_AND = new nsHtml5ElementName(nsHtml5Atoms::and_, nsHtml5Atoms::and_, NS_HTML5TREE_BUILDER_OTHER);
   ELT_ARG = new nsHtml5ElementName(nsHtml5Atoms::arg, nsHtml5Atoms::arg, NS_HTML5TREE_BUILDER_OTHER);
   ELT_ABS = new nsHtml5ElementName(nsHtml5Atoms::abs, nsHtml5Atoms::abs, NS_HTML5TREE_BUILDER_OTHER);
@@ -909,7 +909,6 @@ nsHtml5ElementName::initializeStatics()
   ELT_APPROX = new nsHtml5ElementName(nsHtml5Atoms::approx, nsHtml5Atoms::approx, NS_HTML5TREE_BUILDER_OTHER);
   ELT_FECOLORMATRIX = new nsHtml5ElementName(nsHtml5Atoms::fecolormatrix, nsHtml5Atoms::feColorMatrix, NS_HTML5TREE_BUILDER_OTHER);
   ELT_FECONVOLVEMATRIX = new nsHtml5ElementName(nsHtml5Atoms::feconvolvematrix, nsHtml5Atoms::feConvolveMatrix, NS_HTML5TREE_BUILDER_OTHER);
-  ELT_ISINDEX = new nsHtml5ElementName(nsHtml5Atoms::isindex, nsHtml5Atoms::isindex, NS_HTML5TREE_BUILDER_ISINDEX | NS_HTML5ELEMENT_NAME_SPECIAL);
   ELT_MATRIX = new nsHtml5ElementName(nsHtml5Atoms::matrix, nsHtml5Atoms::matrix, NS_HTML5TREE_BUILDER_OTHER);
   ELT_APPLY = new nsHtml5ElementName(nsHtml5Atoms::apply, nsHtml5Atoms::apply, NS_HTML5TREE_BUILDER_OTHER);
   ELT_BODY = new nsHtml5ElementName(nsHtml5Atoms::body, nsHtml5Atoms::body, NS_HTML5TREE_BUILDER_BODY | NS_HTML5ELEMENT_NAME_SPECIAL | NS_HTML5ELEMENT_NAME_OPTIONAL_END_TAG);
@@ -1323,6 +1322,7 @@ nsHtml5ElementName::initializeStatics()
 void
 nsHtml5ElementName::releaseStatics()
 {
+  delete ELT_ISINDEX;
   delete ELT_AND;
   delete ELT_ARG;
   delete ELT_ABS;
@@ -1711,7 +1711,6 @@ nsHtml5ElementName::releaseStatics()
   delete ELT_APPROX;
   delete ELT_FECOLORMATRIX;
   delete ELT_FECONVOLVEMATRIX;
-  delete ELT_ISINDEX;
   delete ELT_MATRIX;
   delete ELT_APPLY;
   delete ELT_BODY;
