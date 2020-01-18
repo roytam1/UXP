@@ -44,11 +44,12 @@
 #include "nsIUnicodeDecoder.h"
 #include "nsHtml5Macros.h"
 #include "nsIContentHandle.h"
+#include "nsHtml5Portability.h"
 
-#include "nsHtml5Tokenizer.h"
-#include "nsHtml5TreeBuilder.h"
 #include "nsHtml5AttributeName.h"
 #include "nsHtml5ElementName.h"
+#include "nsHtml5Tokenizer.h"
+#include "nsHtml5TreeBuilder.h"
 #include "nsHtml5StackNode.h"
 #include "nsHtml5UTF16Buffer.h"
 #include "nsHtml5StateSnapshot.h"
@@ -67,17 +68,17 @@ staticJArray<char16_t,int32_t> nsHtml5MetaScanner::CONTENT_TYPE = { CONTENT_TYPE
 
 nsHtml5MetaScanner::nsHtml5MetaScanner(nsHtml5TreeBuilder* tb)
   : readable(nullptr),
-    metaState(NS_HTML5META_SCANNER_NO),
+    metaState(NO),
     contentIndex(INT32_MAX),
     charsetIndex(INT32_MAX),
     httpEquivIndex(INT32_MAX),
     contentTypeIndex(INT32_MAX),
-    stateSave(NS_HTML5META_SCANNER_DATA),
+    stateSave(DATA),
     strBufLen(0),
     strBuf(jArray<char16_t,int32_t>::newJArray(36)),
     content(nullptr),
     charset(nullptr),
-    httpEquivState(NS_HTML5META_SCANNER_HTTP_EQUIV_NOT_SEEN),
+    httpEquivState(HTTP_EQUIV_NOT_SEEN),
     treeBuilder(tb)
 {
   MOZ_COUNT_CTOR(nsHtml5MetaScanner);
@@ -98,7 +99,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
   bool reconsume = false;
   stateloop: for (; ; ) {
     switch(state) {
-      case NS_HTML5META_SCANNER_DATA: {
+      case DATA: {
         for (; ; ) {
           if (reconsume) {
             reconsume = false;
@@ -110,7 +111,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               NS_HTML5_BREAK(stateloop);
             }
             case '<': {
-              state = NS_HTML5META_SCANNER_TAG_OPEN;
+              state = nsHtml5MetaScanner::TAG_OPEN;
               NS_HTML5_BREAK(dataloop);
             }
             default: {
@@ -120,7 +121,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
         }
         dataloop_end: ;
       }
-      case NS_HTML5META_SCANNER_TAG_OPEN: {
+      case TAG_OPEN: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -129,30 +130,30 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             }
             case 'm':
             case 'M': {
-              metaState = NS_HTML5META_SCANNER_M;
-              state = NS_HTML5META_SCANNER_TAG_NAME;
+              metaState = M;
+              state = nsHtml5MetaScanner::TAG_NAME;
               NS_HTML5_BREAK(tagopenloop);
             }
             case '!': {
-              state = NS_HTML5META_SCANNER_MARKUP_DECLARATION_OPEN;
+              state = nsHtml5MetaScanner::MARKUP_DECLARATION_OPEN;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '\?':
             case '/': {
-              state = NS_HTML5META_SCANNER_SCAN_UNTIL_GT;
+              state = nsHtml5MetaScanner::SCAN_UNTIL_GT;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '>': {
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
               if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-                metaState = NS_HTML5META_SCANNER_NO;
-                state = NS_HTML5META_SCANNER_TAG_NAME;
+                metaState = NO;
+                state = nsHtml5MetaScanner::TAG_NAME;
                 NS_HTML5_BREAK(tagopenloop);
               }
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               reconsume = true;
               NS_HTML5_CONTINUE(stateloop);
             }
@@ -160,7 +161,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
         }
         tagopenloop_end: ;
       }
-      case NS_HTML5META_SCANNER_TAG_NAME: {
+      case TAG_NAME: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -171,53 +172,53 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             case '\t':
             case '\n':
             case '\f': {
-              state = NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::BEFORE_ATTRIBUTE_NAME;
               NS_HTML5_BREAK(tagnameloop);
             }
             case '/': {
-              state = NS_HTML5META_SCANNER_SELF_CLOSING_START_TAG;
+              state = nsHtml5MetaScanner::SELF_CLOSING_START_TAG;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '>': {
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             case 'e':
             case 'E': {
-              if (metaState == NS_HTML5META_SCANNER_M) {
-                metaState = NS_HTML5META_SCANNER_E;
+              if (metaState == M) {
+                metaState = E;
               } else {
-                metaState = NS_HTML5META_SCANNER_NO;
+                metaState = NO;
               }
               continue;
             }
             case 't':
             case 'T': {
-              if (metaState == NS_HTML5META_SCANNER_E) {
-                metaState = NS_HTML5META_SCANNER_T;
+              if (metaState == E) {
+                metaState = T;
               } else {
-                metaState = NS_HTML5META_SCANNER_NO;
+                metaState = NO;
               }
               continue;
             }
             case 'a':
             case 'A': {
-              if (metaState == NS_HTML5META_SCANNER_T) {
-                metaState = NS_HTML5META_SCANNER_A;
+              if (metaState == T) {
+                metaState = A;
               } else {
-                metaState = NS_HTML5META_SCANNER_NO;
+                metaState = NO;
               }
               continue;
             }
             default: {
-              metaState = NS_HTML5META_SCANNER_NO;
+              metaState = NO;
               continue;
             }
           }
         }
         tagnameloop_end: ;
       }
-      case NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_NAME: {
+      case BEFORE_ATTRIBUTE_NAME: {
         for (; ; ) {
           if (reconsume) {
             reconsume = false;
@@ -235,14 +236,14 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               continue;
             }
             case '/': {
-              state = NS_HTML5META_SCANNER_SELF_CLOSING_START_TAG;
+              state = nsHtml5MetaScanner::SELF_CLOSING_START_TAG;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '>': {
               if (handleTag()) {
                 NS_HTML5_BREAK(stateloop);
               }
-              state = NS_HTML5META_SCANNER_DATA;
+              state = DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             case 'c':
@@ -251,7 +252,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               charsetIndex = 0;
               httpEquivIndex = INT32_MAX;
               contentTypeIndex = INT32_MAX;
-              state = NS_HTML5META_SCANNER_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::ATTRIBUTE_NAME;
               NS_HTML5_BREAK(beforeattributenameloop);
             }
             case 'h':
@@ -260,7 +261,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               charsetIndex = INT32_MAX;
               httpEquivIndex = 0;
               contentTypeIndex = INT32_MAX;
-              state = NS_HTML5META_SCANNER_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::ATTRIBUTE_NAME;
               NS_HTML5_BREAK(beforeattributenameloop);
             }
             default: {
@@ -268,14 +269,14 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               charsetIndex = INT32_MAX;
               httpEquivIndex = INT32_MAX;
               contentTypeIndex = INT32_MAX;
-              state = NS_HTML5META_SCANNER_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::ATTRIBUTE_NAME;
               NS_HTML5_BREAK(beforeattributenameloop);
             }
           }
         }
         beforeattributenameloop_end: ;
       }
-      case NS_HTML5META_SCANNER_ATTRIBUTE_NAME: {
+      case ATTRIBUTE_NAME: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -286,28 +287,28 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             case '\t':
             case '\n':
             case '\f': {
-              state = NS_HTML5META_SCANNER_AFTER_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::AFTER_ATTRIBUTE_NAME;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '/': {
-              state = NS_HTML5META_SCANNER_SELF_CLOSING_START_TAG;
+              state = nsHtml5MetaScanner::SELF_CLOSING_START_TAG;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '=': {
               strBufLen = 0;
               contentTypeIndex = 0;
-              state = NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_VALUE;
+              state = nsHtml5MetaScanner::BEFORE_ATTRIBUTE_VALUE;
               NS_HTML5_BREAK(attributenameloop);
             }
             case '>': {
               if (handleTag()) {
                 NS_HTML5_BREAK(stateloop);
               }
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
-              if (metaState == NS_HTML5META_SCANNER_A) {
+              if (metaState == A) {
                 if (c >= 'A' && c <= 'Z') {
                   c += 0x20;
                 }
@@ -333,7 +334,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
         }
         attributenameloop_end: ;
       }
-      case NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_VALUE: {
+      case BEFORE_ATTRIBUTE_VALUE: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -347,30 +348,30 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               continue;
             }
             case '\"': {
-              state = NS_HTML5META_SCANNER_ATTRIBUTE_VALUE_DOUBLE_QUOTED;
+              state = nsHtml5MetaScanner::ATTRIBUTE_VALUE_DOUBLE_QUOTED;
               NS_HTML5_BREAK(beforeattributevalueloop);
             }
             case '\'': {
-              state = NS_HTML5META_SCANNER_ATTRIBUTE_VALUE_SINGLE_QUOTED;
+              state = nsHtml5MetaScanner::ATTRIBUTE_VALUE_SINGLE_QUOTED;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '>': {
               if (handleTag()) {
                 NS_HTML5_BREAK(stateloop);
               }
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
               handleCharInAttributeValue(c);
-              state = NS_HTML5META_SCANNER_ATTRIBUTE_VALUE_UNQUOTED;
+              state = nsHtml5MetaScanner::ATTRIBUTE_VALUE_UNQUOTED;
               NS_HTML5_CONTINUE(stateloop);
             }
           }
         }
         beforeattributevalueloop_end: ;
       }
-      case NS_HTML5META_SCANNER_ATTRIBUTE_VALUE_DOUBLE_QUOTED: {
+      case ATTRIBUTE_VALUE_DOUBLE_QUOTED: {
         for (; ; ) {
           if (reconsume) {
             reconsume = false;
@@ -383,7 +384,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             }
             case '\"': {
               handleAttributeValue();
-              state = NS_HTML5META_SCANNER_AFTER_ATTRIBUTE_VALUE_QUOTED;
+              state = nsHtml5MetaScanner::AFTER_ATTRIBUTE_VALUE_QUOTED;
               NS_HTML5_BREAK(attributevaluedoublequotedloop);
             }
             default: {
@@ -394,7 +395,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
         }
         attributevaluedoublequotedloop_end: ;
       }
-      case NS_HTML5META_SCANNER_AFTER_ATTRIBUTE_VALUE_QUOTED: {
+      case AFTER_ATTRIBUTE_VALUE_QUOTED: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -405,22 +406,22 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             case '\t':
             case '\n':
             case '\f': {
-              state = NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::BEFORE_ATTRIBUTE_NAME;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '/': {
-              state = NS_HTML5META_SCANNER_SELF_CLOSING_START_TAG;
+              state = nsHtml5MetaScanner::SELF_CLOSING_START_TAG;
               NS_HTML5_BREAK(afterattributevaluequotedloop);
             }
             case '>': {
               if (handleTag()) {
                 NS_HTML5_BREAK(stateloop);
               }
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
-              state = NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::BEFORE_ATTRIBUTE_NAME;
               reconsume = true;
               NS_HTML5_CONTINUE(stateloop);
             }
@@ -428,7 +429,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
         }
         afterattributevaluequotedloop_end: ;
       }
-      case NS_HTML5META_SCANNER_SELF_CLOSING_START_TAG: {
+      case SELF_CLOSING_START_TAG: {
         c = read();
         switch(c) {
           case -1: {
@@ -438,17 +439,17 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             if (handleTag()) {
               NS_HTML5_BREAK(stateloop);
             }
-            state = NS_HTML5META_SCANNER_DATA;
+            state = nsHtml5MetaScanner::DATA;
             NS_HTML5_CONTINUE(stateloop);
           }
           default: {
-            state = NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_NAME;
+            state = nsHtml5MetaScanner::BEFORE_ATTRIBUTE_NAME;
             reconsume = true;
             NS_HTML5_CONTINUE(stateloop);
           }
         }
       }
-      case NS_HTML5META_SCANNER_ATTRIBUTE_VALUE_UNQUOTED: {
+      case ATTRIBUTE_VALUE_UNQUOTED: {
         for (; ; ) {
           if (reconsume) {
             reconsume = false;
@@ -464,7 +465,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             case '\n':
             case '\f': {
               handleAttributeValue();
-              state = NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::BEFORE_ATTRIBUTE_NAME;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '>': {
@@ -472,7 +473,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               if (handleTag()) {
                 NS_HTML5_BREAK(stateloop);
               }
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
@@ -482,7 +483,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
           }
         }
       }
-      case NS_HTML5META_SCANNER_AFTER_ATTRIBUTE_NAME: {
+      case AFTER_ATTRIBUTE_NAME: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -497,13 +498,13 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             }
             case '/': {
               handleAttributeValue();
-              state = NS_HTML5META_SCANNER_SELF_CLOSING_START_TAG;
+              state = nsHtml5MetaScanner::SELF_CLOSING_START_TAG;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '=': {
               strBufLen = 0;
               contentTypeIndex = 0;
-              state = NS_HTML5META_SCANNER_BEFORE_ATTRIBUTE_VALUE;
+              state = nsHtml5MetaScanner::BEFORE_ATTRIBUTE_VALUE;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '>': {
@@ -511,26 +512,26 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               if (handleTag()) {
                 NS_HTML5_BREAK(stateloop);
               }
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             case 'c':
             case 'C': {
               contentIndex = 0;
               charsetIndex = 0;
-              state = NS_HTML5META_SCANNER_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::ATTRIBUTE_NAME;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
               contentIndex = INT32_MAX;
               charsetIndex = INT32_MAX;
-              state = NS_HTML5META_SCANNER_ATTRIBUTE_NAME;
+              state = nsHtml5MetaScanner::ATTRIBUTE_NAME;
               NS_HTML5_CONTINUE(stateloop);
             }
           }
         }
       }
-      case NS_HTML5META_SCANNER_MARKUP_DECLARATION_OPEN: {
+      case MARKUP_DECLARATION_OPEN: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -538,11 +539,11 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               NS_HTML5_BREAK(stateloop);
             }
             case '-': {
-              state = NS_HTML5META_SCANNER_MARKUP_DECLARATION_HYPHEN;
+              state = nsHtml5MetaScanner::MARKUP_DECLARATION_HYPHEN;
               NS_HTML5_BREAK(markupdeclarationopenloop);
             }
             default: {
-              state = NS_HTML5META_SCANNER_SCAN_UNTIL_GT;
+              state = nsHtml5MetaScanner::SCAN_UNTIL_GT;
               reconsume = true;
               NS_HTML5_CONTINUE(stateloop);
             }
@@ -550,7 +551,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
         }
         markupdeclarationopenloop_end: ;
       }
-      case NS_HTML5META_SCANNER_MARKUP_DECLARATION_HYPHEN: {
+      case MARKUP_DECLARATION_HYPHEN: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -558,11 +559,11 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               NS_HTML5_BREAK(stateloop);
             }
             case '-': {
-              state = NS_HTML5META_SCANNER_COMMENT_START;
+              state = nsHtml5MetaScanner::COMMENT_START;
               NS_HTML5_BREAK(markupdeclarationhyphenloop);
             }
             default: {
-              state = NS_HTML5META_SCANNER_SCAN_UNTIL_GT;
+              state = nsHtml5MetaScanner::SCAN_UNTIL_GT;
               reconsume = true;
               NS_HTML5_CONTINUE(stateloop);
             }
@@ -570,7 +571,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
         }
         markupdeclarationhyphenloop_end: ;
       }
-      case NS_HTML5META_SCANNER_COMMENT_START: {
+      case COMMENT_START: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -578,22 +579,22 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               NS_HTML5_BREAK(stateloop);
             }
             case '-': {
-              state = NS_HTML5META_SCANNER_COMMENT_START_DASH;
+              state = nsHtml5MetaScanner::COMMENT_START_DASH;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '>': {
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
-              state = NS_HTML5META_SCANNER_COMMENT;
+              state = nsHtml5MetaScanner::COMMENT;
               NS_HTML5_BREAK(commentstartloop);
             }
           }
         }
         commentstartloop_end: ;
       }
-      case NS_HTML5META_SCANNER_COMMENT: {
+      case COMMENT: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -601,7 +602,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               NS_HTML5_BREAK(stateloop);
             }
             case '-': {
-              state = NS_HTML5META_SCANNER_COMMENT_END_DASH;
+              state = nsHtml5MetaScanner::COMMENT_END_DASH;
               NS_HTML5_BREAK(commentloop);
             }
             default: {
@@ -611,7 +612,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
         }
         commentloop_end: ;
       }
-      case NS_HTML5META_SCANNER_COMMENT_END_DASH: {
+      case COMMENT_END_DASH: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -619,18 +620,18 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               NS_HTML5_BREAK(stateloop);
             }
             case '-': {
-              state = NS_HTML5META_SCANNER_COMMENT_END;
+              state = nsHtml5MetaScanner::COMMENT_END;
               NS_HTML5_BREAK(commentenddashloop);
             }
             default: {
-              state = NS_HTML5META_SCANNER_COMMENT;
+              state = nsHtml5MetaScanner::COMMENT;
               NS_HTML5_CONTINUE(stateloop);
             }
           }
         }
         commentenddashloop_end: ;
       }
-      case NS_HTML5META_SCANNER_COMMENT_END: {
+      case COMMENT_END: {
         for (; ; ) {
           c = read();
           switch(c) {
@@ -638,40 +639,40 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               NS_HTML5_BREAK(stateloop);
             }
             case '>': {
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             case '-': {
               continue;
             }
             default: {
-              state = NS_HTML5META_SCANNER_COMMENT;
+              state = nsHtml5MetaScanner::COMMENT;
               NS_HTML5_CONTINUE(stateloop);
             }
           }
         }
       }
-      case NS_HTML5META_SCANNER_COMMENT_START_DASH: {
+      case COMMENT_START_DASH: {
         c = read();
         switch(c) {
           case -1: {
             NS_HTML5_BREAK(stateloop);
           }
           case '-': {
-            state = NS_HTML5META_SCANNER_COMMENT_END;
+            state = nsHtml5MetaScanner::COMMENT_END;
             NS_HTML5_CONTINUE(stateloop);
           }
           case '>': {
-            state = NS_HTML5META_SCANNER_DATA;
+            state = nsHtml5MetaScanner::DATA;
             NS_HTML5_CONTINUE(stateloop);
           }
           default: {
-            state = NS_HTML5META_SCANNER_COMMENT;
+            state = nsHtml5MetaScanner::COMMENT;
             NS_HTML5_CONTINUE(stateloop);
           }
         }
       }
-      case NS_HTML5META_SCANNER_ATTRIBUTE_VALUE_SINGLE_QUOTED: {
+      case ATTRIBUTE_VALUE_SINGLE_QUOTED: {
         for (; ; ) {
           if (reconsume) {
             reconsume = false;
@@ -684,7 +685,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
             }
             case '\'': {
               handleAttributeValue();
-              state = NS_HTML5META_SCANNER_AFTER_ATTRIBUTE_VALUE_QUOTED;
+              state = nsHtml5MetaScanner::AFTER_ATTRIBUTE_VALUE_QUOTED;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
@@ -694,7 +695,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
           }
         }
       }
-      case NS_HTML5META_SCANNER_SCAN_UNTIL_GT: {
+      case SCAN_UNTIL_GT: {
         for (; ; ) {
           if (reconsume) {
             reconsume = false;
@@ -706,7 +707,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
               NS_HTML5_BREAK(stateloop);
             }
             case '>': {
-              state = NS_HTML5META_SCANNER_DATA;
+              state = nsHtml5MetaScanner::DATA;
               NS_HTML5_CONTINUE(stateloop);
             }
             default: {
@@ -724,7 +725,7 @@ nsHtml5MetaScanner::stateLoop(int32_t state)
 void 
 nsHtml5MetaScanner::handleCharInAttributeValue(int32_t c)
 {
-  if (metaState == NS_HTML5META_SCANNER_A) {
+  if (metaState == A) {
     if (contentIndex == CONTENT.length || charsetIndex == CHARSET.length) {
       addToBuffer(c);
     } else if (httpEquivIndex == HTTP_EQUIV.length) {
@@ -751,7 +752,7 @@ nsHtml5MetaScanner::addToBuffer(int32_t c)
 void 
 nsHtml5MetaScanner::handleAttributeValue()
 {
-  if (metaState != NS_HTML5META_SCANNER_A) {
+  if (metaState != A) {
     return;
   }
   if (contentIndex == CONTENT.length && !content) {
@@ -762,8 +763,8 @@ nsHtml5MetaScanner::handleAttributeValue()
     charset = nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, treeBuilder);
     return;
   }
-  if (httpEquivIndex == HTTP_EQUIV.length && httpEquivState == NS_HTML5META_SCANNER_HTTP_EQUIV_NOT_SEEN) {
-    httpEquivState = (contentTypeIndex == CONTENT_TYPE.length) ? NS_HTML5META_SCANNER_HTTP_EQUIV_CONTENT_TYPE : NS_HTML5META_SCANNER_HTTP_EQUIV_OTHER;
+  if (httpEquivIndex == HTTP_EQUIV.length && httpEquivState == HTTP_EQUIV_NOT_SEEN) {
+    httpEquivState = (contentTypeIndex == CONTENT_TYPE.length) ? HTTP_EQUIV_CONTENT_TYPE : HTTP_EQUIV_OTHER;
     return;
   }
 }
@@ -776,7 +777,7 @@ nsHtml5MetaScanner::handleTag()
   content = nullptr;
   charset.Release();
   charset = nullptr;
-  httpEquivState = NS_HTML5META_SCANNER_HTTP_EQUIV_NOT_SEEN;
+  httpEquivState = HTTP_EQUIV_NOT_SEEN;
   return stop;
 }
 
@@ -786,7 +787,7 @@ nsHtml5MetaScanner::handleTagInner()
   if (!!charset && tryCharset(charset)) {
     return true;
   }
-  if (!!content && httpEquivState == NS_HTML5META_SCANNER_HTTP_EQUIV_CONTENT_TYPE) {
+  if (!!content && httpEquivState == HTTP_EQUIV_CONTENT_TYPE) {
     nsHtml5String extract = nsHtml5TreeBuilder::extractCharsetFromContent(content, treeBuilder);
     if (!extract) {
       return false;

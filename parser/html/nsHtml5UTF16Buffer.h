@@ -44,14 +44,15 @@
 #include "nsIUnicodeDecoder.h"
 #include "nsHtml5Macros.h"
 #include "nsIContentHandle.h"
+#include "nsHtml5Portability.h"
 
 class nsHtml5StreamParser;
 
+class nsHtml5AttributeName;
+class nsHtml5ElementName;
 class nsHtml5Tokenizer;
 class nsHtml5TreeBuilder;
 class nsHtml5MetaScanner;
-class nsHtml5AttributeName;
-class nsHtml5ElementName;
 class nsHtml5StateSnapshot;
 class nsHtml5Portability;
 
@@ -76,8 +77,6 @@ class nsHtml5UTF16Buffer
 
 #include "nsHtml5UTF16BufferHSupplement.h"
 };
-
-
 
 #endif
 
