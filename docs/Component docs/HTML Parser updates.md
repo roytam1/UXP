@@ -4,11 +4,11 @@ Our html5 parser is based on the java html5 parser from [Validator.nu](http://ab
 
 ## Stages
 Updating the parser code consists of 3 stages:
-- Making updates to the html parser source in java
+- Make updates to the html parser source in java
 - Let the java parser regenerate part of its own code after the change
 - Translate the java source to C++
 
-This process was best explained in the [following Bugzilla comment](https://bugzilla.mozilla.org/show_bug.cgi?id=1378079#c6), which explain how to add a new attribute name to html5, inserted in this document for convenience:
+This process was best explained in the [following Bugzilla comment](https://bugzilla.mozilla.org/show_bug.cgi?id=1378079#c6), which explain how to add a new attribute name ("is") to html5, inserted in this document for convenience:
 
 >> Is
 >> there any documentation on how to add a new nsHtml5AttributeName?
