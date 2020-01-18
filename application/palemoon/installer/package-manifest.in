@@ -229,7 +229,7 @@
 @RESPATH@/browser/defaults/permissions
 @RESPATH@/browser/@PREF_DIR@/palemoon.js
 @RESPATH@/browser/@PREF_DIR@/palemoon-branding.js
-@RESPATH@/greprefs.js
+@RESPATH@/goanna.js
 @RESPATH@/defaults/autoconfig/prefcalls.js
 
 ; Warning: changing the path to channel-prefs.js can cause bugs (Bug 756325)
