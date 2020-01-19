@@ -1329,7 +1329,8 @@ nsIDocument::nsIDocument()
     mFrameRequestCallbacksScheduled(false),
     mBidiOptions(IBMBIDI_DEFAULT_BIDI_OPTIONS),
     mPartID(0),
-    mUserHasInteracted(false)
+    mUserHasInteracted(false),
+    mThrowOnDynamicMarkupInsertionCounter(0)
 {
   SetIsInDocument();
 
