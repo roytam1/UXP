@@ -369,7 +369,7 @@ public final class ElementName
 //     */
 //    @Override public String toString() {
 //        return "(\"" + name + "\", \"" + camelCaseName + "\", \n// CPP"
-//                + "ONLY: " + htmlCreator(name) + ",\n//CPP" + "ONLY: "
+//                + "ONLY: " + htmlCreator(name) + ",\n// CPP" + "ONLY: "
 //                + svgCreator(camelCaseName) + ", \n" + decomposedFlags() + ")";
 //    }
 //
