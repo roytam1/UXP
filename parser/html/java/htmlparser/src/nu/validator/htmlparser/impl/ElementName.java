@@ -672,6 +672,10 @@ public final class ElementName
 
     // START GENERATED CODE
     public static final ElementName AND = new ElementName("and", "and", TreeBuilder.OTHER);
+    public static final ElementName CONTENT = new ElementName("content", "content", TreeBuilder.OTHER);
+    public static final ElementName DATA = new ElementName("data", "data", TreeBuilder.OTHER);
+    public static final ElementName DATALIST = new ElementName("datalist", "datalist", TreeBuilder.OTHER);
+    public static final ElementName SHADOW = new ElementName("shadow", "shadow", TreeBuilder.OTHER);
     public static final ElementName ARG = new ElementName("arg", "arg", TreeBuilder.OTHER);
     public static final ElementName ABS = new ElementName("abs", "abs", TreeBuilder.OTHER);
     public static final ElementName BIG = new ElementName("big", "big", TreeBuilder.B_OR_BIG_OR_CODE_OR_EM_OR_I_OR_S_OR_SMALL_OR_STRIKE_OR_STRONG_OR_TT_OR_U);
@@ -1324,6 +1328,10 @@ public final class ElementName
     RUBY,
     TBODY,
     AND,
+    CONTENT,
+    DATA,
+    DATALIST,
+    SHADOW,
     ABS,
     BDO,
     COL,
