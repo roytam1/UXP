@@ -186,6 +186,7 @@ class nsHtml5ElementName
     }
 
     static nsHtml5ElementName* ELT_ISINDEX;
+    static nsHtml5ElementName* ELT_ANNOTATION_XML;
     static nsHtml5ElementName* ELT_AND;
     static nsHtml5ElementName* ELT_ARG;
     static nsHtml5ElementName* ELT_ABS;
@@ -387,7 +388,6 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_TBREAK;
     static nsHtml5ElementName* ELT_TRACK;
     static nsHtml5ElementName* ELT_DL;
-    static nsHtml5ElementName* ELT_ANNOTATION_XML;
     static nsHtml5ElementName* ELT_CSYMBOL;
     static nsHtml5ElementName* ELT_CURL;
     static nsHtml5ElementName* ELT_FACTORIAL;
