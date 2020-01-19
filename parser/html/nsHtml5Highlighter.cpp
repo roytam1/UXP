@@ -79,13 +79,16 @@ nsHtml5Highlighter::Start(const nsAutoString& aTitle)
 
   mOpQueue.AppendElement()->Init(STANDARDS_MODE);
 
-  nsIContent** root = CreateElement(nsHtml5Atoms::html, nullptr, nullptr);
+  // <html> uses NS_NewHTMLSharedElement creator
+  nsIContent** root =
+    CreateElement(nsHtml5Atoms::html, nullptr, nullptr, NS_NewHTMLSharedElement);
   mOpQueue.AppendElement()->Init(eTreeOpAppendToDocument, root);
   mStack.AppendElement(root);
 
-  Push(nsGkAtoms::head, nullptr);
+  // <head> uses NS_NewHTMLSharedElement creator
+  Push(nsGkAtoms::head, nullptr, NS_NewHTMLSharedElement);
 
-  Push(nsGkAtoms::title, nullptr);
+  Push(nsGkAtoms::title, nullptr, NS_NewHTMLTitleElement);
   // XUL will add the "Source of: " prefix.
   uint32_t length = aTitle.Length();
   if (length > INT32_MAX) {
@@ -94,7 +97,9 @@ nsHtml5Highlighter::Start(const nsAutoString& aTitle)
   AppendCharacters(aTitle.BeginReading(), 0, (int32_t)length);
   Pop(); // title
 
-  Push(nsGkAtoms::link, nsHtml5ViewSourceUtils::NewLinkAttributes());
+  Push(nsGkAtoms::link,
+       nsHtml5ViewSourceUtils::NewLinkAttributes(),
+       NS_NewHTMLLinkElement);
 
   mOpQueue.AppendElement()->Init(eTreeOpUpdateStyleSheet, CurrentNode());
 
@@ -102,12 +107,14 @@ nsHtml5Highlighter::Start(const nsAutoString& aTitle)
 
   Pop(); // head
 
-  Push(nsGkAtoms::body, nsHtml5ViewSourceUtils::NewBodyAttributes());
+  Push(nsGkAtoms::body,
+       nsHtml5ViewSourceUtils::NewBodyAttributes(),
+       NS_NewHTMLBodyElement);
 
   nsHtml5HtmlAttributes* preAttrs = new nsHtml5HtmlAttributes(0);
   nsHtml5String preId = nsHtml5Portability::newStringFromLiteral("line1");
   preAttrs->addAttribute(nsHtml5AttributeName::ATTR_ID, preId, -1);
-  Push(nsGkAtoms::pre, preAttrs);
+  Push(nsGkAtoms::pre, preAttrs, NS_NewHTMLPreElement);
 
   StartCharacters();
 
@@ -492,7 +499,7 @@ void
 nsHtml5Highlighter::StartSpan()
 {
   FlushChars();
-  Push(nsGkAtoms::span, nullptr);
+  Push(nsGkAtoms::span, nullptr, NS_NewHTMLSpanElement);
   ++mInlinesOpen;
 }
 
@@ -516,7 +523,7 @@ nsHtml5Highlighter::StartCharacters()
 {
   NS_PRECONDITION(!mInCharacters, "Already in characters!");
   FlushChars();
-  Push(nsGkAtoms::span, nullptr);
+  Push(nsGkAtoms::span, nullptr, NS_NewHTMLSpanElement);
   mCurrentRun = CurrentNode();
   mInCharacters = true;
 }
@@ -537,7 +544,7 @@ void
 nsHtml5Highlighter::StartA()
 {
   FlushChars();
-  Push(nsGkAtoms::a, nullptr);
+  Push(nsGkAtoms::a, nullptr, NS_NewHTMLAnchorElement);
   AddClass(sAttributeValue);
   ++mInlinesOpen;
 }
@@ -579,7 +586,7 @@ nsHtml5Highlighter::FlushChars()
             mCStart = i;
           }
           ++mLineNumber;
-          Push(nsGkAtoms::span, nullptr);
+          Push(nsGkAtoms::span, nullptr, NS_NewHTMLSpanElement);
           nsHtml5TreeOperation* treeOp = mOpQueue.AppendElement();
           NS_ASSERTION(treeOp, "Tree op allocation failed.");
           treeOp->InitAddLineNumberId(CurrentNode(), mLineNumber);
@@ -656,16 +663,20 @@ nsHtml5Highlighter::AllocateContentHandle()
 nsIContent**
 nsHtml5Highlighter::CreateElement(nsIAtom* aName,
                                   nsHtml5HtmlAttributes* aAttributes,
-                                  nsIContent** aIntendedParent)
+                                  nsIContent** aIntendedParent,
+                                  mozilla::dom::HTMLContentCreatorFunction aCreator)
 {
   NS_PRECONDITION(aName, "Got null name.");
+  nsHtml5ContentCreatorFunction creator;
+  creator.html = aCreator;
   nsIContent** content = AllocateContentHandle();
   mOpQueue.AppendElement()->Init(kNameSpaceID_XHTML,
                                  aName,
                                  aAttributes,
                                  content,
                                  aIntendedParent,
-                                 true);
+                                 true,
+                                 creator);
   return content;
 }
 
@@ -678,10 +689,13 @@ nsHtml5Highlighter::CurrentNode()
 
 void
 nsHtml5Highlighter::Push(nsIAtom* aName,
-                         nsHtml5HtmlAttributes* aAttributes)
+                         nsHtml5HtmlAttributes* aAttributes,
+                         mozilla::dom::HTMLContentCreatorFunction aCreator)
 {
   NS_PRECONDITION(mStack.Length() >= 1, "Pushing without root.");
-  nsIContent** elt = CreateElement(aName, aAttributes, CurrentNode()); // Don't inline below!
+  nsIContent** elt = CreateElement(aName, aAttributes,
+                                   CurrentNode(),
+                                   aCreator); // Don't inline below!
   mOpQueue.AppendElement()->Init(eTreeOpAppend, elt, CurrentNode());
   mStack.AppendElement(elt);
 }
