@@ -480,7 +480,15 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                 name = cppTypes.stringType();
             }
         } else if ("T".equals(name) || "Object".equals(name)) {
-            name = cppTypes.nodeType();
+            if (htmlCreator()) {
+                name = cppTypes.htmlCreatorType();
+            } else if (svgCreator()) {
+                name = cppTypes.svgCreatorType();
+            } else if (creator()) {
+                name = cppTypes.creatorType();
+            } else {
+                name = cppTypes.nodeType();
+            }
         } else if ("TokenHandler".equals(name)) {
             name = cppTypes.classPrefix() + "TreeBuilder*";
         } else if ("EncodingDeclarationHandler".equals(name)) {
@@ -1073,6 +1081,9 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                 if ("DocumentMode".equals(scope.toString())) {
                     // printer.print(cppTypes.documentModeType());
                     // printer.print(".");
+                } else if ("creator".equals(scope.toString()) || "this.creator".equals(scope.toString())) {
+                    scope.accept(this, arg);
+                    printer.print(".");
                 } else {
                     scope.accept(this, arg);
                     printer.print("->");
@@ -1324,7 +1335,8 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                     if (clazzName == null) {
                         scope.accept(this, arg);
                         if ("length".equals(n.getName())
-                                || "charAt".equals(n.getName())) {
+                                || "charAt".equals(n.getName())
+                                || "creator".equals(scope.toString())) {
                             printer.print(".");
                         } else {
                             printer.print("->");

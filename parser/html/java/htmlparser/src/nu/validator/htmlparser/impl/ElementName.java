@@ -24,10 +24,21 @@
 
 package nu.validator.htmlparser.impl;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+// uncomment to regenerate self
+//import java.io.BufferedReader;
+//import java.io.File;
+//import java.io.FileInputStream;
+//import java.io.IOException;
+//import java.io.InputStreamReader;
+//import java.util.Arrays;
+//import java.util.Collections;
+//import java.util.HashMap;
+//import java.util.LinkedList;
+//import java.util.List;
+//import java.util.Map;
+//import java.util.Map.Entry;
+//import java.util.regex.Matcher;
+//import java.util.regex.Pattern;
 
 import nu.validator.htmlparser.annotation.Inline;
 import nu.validator.htmlparser.annotation.Local;
@@ -46,14 +57,14 @@ public final class ElementName
     public static final int GROUP_MASK = 127;
 
     /**
-     * Indicates that the element is not a pre-interned element. Forbidden
-     * on preinterned elements.
+     * Indicates that the element is not a pre-interned element. Forbidden on
+     * preinterned elements.
      */
     public static final int NOT_INTERNED = (1 << 30);
 
     /**
-     * Indicates that the element is in the "special" category. This bit
-     * should not be pre-set on MathML or SVG specials--only on HTML specials.
+     * Indicates that the element is in the "special" category. This bit should
+     * not be pre-set on MathML or SVG specials--only on HTML specials.
      */
     public static final int SPECIAL = (1 << 29);
 
@@ -64,8 +75,8 @@ public final class ElementName
     public static final int FOSTER_PARENTING = (1 << 28);
 
     /**
-     * The element is scoping. This bit should be pre-set on elements
-     * that are scoping as HTML.
+     * The element is scoping. This bit should be pre-set on elements that are
+     * scoping as HTML.
      */
     public static final int SCOPING = (1 << 27);
 
@@ -93,6 +104,10 @@ public final class ElementName
 
     private @Local String camelCaseName;
 
+    // CPPONLY: private @HtmlCreator Object htmlCreator;
+
+    // CPPONLY: private @SvgCreator Object svgCreator;
+
     /**
      * The lowest 7 bits are the dispatch group. The high bits are flags.
      */
@@ -105,6 +120,14 @@ public final class ElementName
     @Inline public @Local String getCamelCaseName() {
         return camelCaseName;
     }
+
+    // CPPONLY: @Inline public @HtmlCreator Object getHtmlCreator() {
+    // CPPONLY: return htmlCreator;
+    // CPPONLY: }
+
+    // CPPONLY: @Inline public @SvgCreator Object getSvgCreator() {
+    // CPPONLY: return svgCreator;
+    // CPPONLY: }
 
     @Inline public int getFlags() {
         return flags;
@@ -136,7 +159,8 @@ public final class ElementName
         return -1;
     }
 
-    @Inline static ElementName elementNameByBuffer(@NoLength char[] buf, int offset, int length, Interner interner) {
+    @Inline static ElementName elementNameByBuffer(@NoLength char[] buf,
+            int offset, int length, Interner interner) {
         @Unsigned int hash = ElementName.bufToHash(buf, length);
         int[] hashes;
         hashes = ElementName.ELEMENT_HASHES;
@@ -161,7 +185,8 @@ public final class ElementName
      * @param len
      * @return
      */
-    @Inline private static @Unsigned int bufToHash(@NoLength char[] buf, int length) {
+    @Inline private static @Unsigned int bufToHash(@NoLength char[] buf,
+            int length) {
         @Unsigned int len = length;
         @Unsigned int first = buf[0];
         first <<= 19;
@@ -191,15 +216,21 @@ public final class ElementName
     }
 
     private ElementName(@Local String name, @Local String camelCaseName,
+            // CPPONLY: @HtmlCreator Object htmlCreator, @SvgCreator Object
+            // CPPONLY: svgCreator,
             int flags) {
         this.name = name;
         this.camelCaseName = camelCaseName;
+        // CPPONLY: this.htmlCreator = htmlCreator;
+        // CPPONLY: this.svgCreator = svgCreator;
         this.flags = flags;
     }
 
     public ElementName() {
         this.name = null;
         this.camelCaseName = null;
+        // CPPONLY: this.htmlCreator = NS_NewHTMLUnknownElement;
+        // CPPONLY: this.svgCreator = NS_NewSVGUnknownElement;
         this.flags = TreeBuilder.OTHER | NOT_INTERNED;
     }
 
@@ -207,31 +238,139 @@ public final class ElementName
         // The translator adds refcount debug code here.
     }
 
-    @Inline public void setNameForNonInterned(@Local String name) {
+    @Inline public void setNameForNonInterned(@Local String name
+    // CPPONLY: , boolean custom
+    ) {
         // No need to worry about refcounting the local name, because in the
         // C++ case the scoped atom table remembers its own atoms.
         this.name = name;
         this.camelCaseName = name;
+        // CPPONLY: if (custom) {
+        // CPPONLY: this.htmlCreator = NS_NewCustomElement;
+        // CPPONLY: } else {
+        // CPPONLY: this.htmlCreator = NS_NewHTMLUnknownElement;
+        // CPPONLY: }
         // The assertion below relies on TreeBuilder.OTHER being zero!
         // TreeBuilder.OTHER isn't referenced here, because it would create
         // a circular C++ header dependency given that this method is inlined.
         assert this.flags == ElementName.NOT_INTERNED;
     }
 
-    // CPPONLY: public static final ElementName ISINDEX = new ElementName("isindex", "isindex", TreeBuilder.ISINDEX | SPECIAL);
+    // CPPONLY: @Inline public boolean isCustom() {
+    // CPPONLY: return this.htmlCreator == NS_NewCustomElement;
+    // CPPONLY: }
+
+    // CPPONLY: public static final ElementName ISINDEX = new ElementName(
+    // CPPONLY:        "isindex", "isindex",
+    // CPPONLY:         NS_NewHTMLUnknownElement, NS_NewSVGUnknownElement, 
+    // CPPONLY:         TreeBuilder.ISINDEX | SPECIAL);
     // [NOCPP[
     public static final ElementName ISINDEX = new ElementName("isindex", "isindex", TreeBuilder.OTHER);
     // ]NOCPP]
 
-    public static final ElementName ANNOTATION_XML = new ElementName("annotation-xml", "annotation-xml", TreeBuilder.ANNOTATION_XML | SCOPING_AS_MATHML);
+    public static final ElementName ANNOTATION_XML = new ElementName(
+            "annotation-xml", "annotation-xml",
+            // CPPONLY: NS_NewHTMLUnknownElement, NS_NewSVGUnknownElement,
+            TreeBuilder.ANNOTATION_XML | SCOPING_AS_MATHML);
 
     // START CODE ONLY USED FOR GENERATING CODE uncomment and run to regenerate
 
+//    private static final Pattern HTML_TAG_DEF = Pattern.compile(
+//            "^HTML_TAG\\(([^,]+),\\s*([^,]+),\\s*[^,]+\\).*$");
+//
+//    private static final Pattern HTML_HTMLELEMENT_TAG_DEF = Pattern.compile(
+//            "^HTML_HTMLELEMENT_TAG\\(([^\\)]+)\\).*$");
+//
+//    private static final Pattern SVG_TAG_DEF = Pattern.compile(
+//            "^SVG_(?:FROM_PARSER_)?TAG\\(([^,]+),\\s*([^\\)]+)\\).*$");
+//
+//    private static final Map<String, String> htmlMap = new HashMap<String, String>();
+//
+//    private static final Map<String, String> svgMap = new HashMap<String, String>();
+//
+//    private static void ingestHtmlTags(File htmlList) throws IOException {
+//        // This doesn't need to be efficient, so let's make it easy to write.
+//        BufferedReader htmlReader = new BufferedReader(
+//                new InputStreamReader(new FileInputStream(htmlList), "utf-8"));
+//        try {
+//            String line;
+//            while ((line = htmlReader.readLine()) != null) {
+//                if (!line.startsWith("HTML_")) {
+//                    continue;
+//                }
+//                if (line.startsWith("HTML_OTHER")) {
+//                    continue;
+//                }
+//                Matcher m = HTML_TAG_DEF.matcher(line);
+//                if (m.matches()) {
+//                    String iface = m.group(2);
+//                    if ("Unknown".equals(iface)) {
+//                        continue;
+//                    }
+//                    htmlMap.put(m.group(1), "NS_NewHTML" + iface + "Element");
+//                } else {
+//                    m = HTML_HTMLELEMENT_TAG_DEF.matcher(line);
+//                    if (!m.matches()) {
+//                        throw new RuntimeException(
+//                                "Malformed HTML element definition: " + line);
+//                    }
+//                    htmlMap.put(m.group(1), "NS_NewHTMLElement");
+//                }
+//            }
+//        } finally {
+//            htmlReader.close();
+//        }
+//    }
+//
+//    private static void ingestSvgTags(File svgList) throws IOException {
+//        // This doesn't need to be efficient, so let's make it easy to write.
+//        BufferedReader svgReader = new BufferedReader(
+//                new InputStreamReader(new FileInputStream(svgList), "utf-8"));
+//        try {
+//            String line;
+//            while ((line = svgReader.readLine()) != null) {
+//                if (!line.startsWith("SVG_")) {
+//                    continue;
+//                }
+//                Matcher m = SVG_TAG_DEF.matcher(line);
+//                if (!m.matches()) {
+//                    throw new RuntimeException(
+//                            "Malformed SVG element definition: " + line);
+//                }
+//                String name = m.group(1);
+//                if ("svgSwitch".equals(name)) {
+//                    name = "switch";
+//                }
+//                svgMap.put(name, "NS_NewSVG" + m.group(2) + "Element");
+//            }
+//        } finally {
+//            svgReader.close();
+//        }
+//    }
+//
+//    private static String htmlCreator(String name) {
+//        String creator = htmlMap.remove(name);
+//        if (creator != null) {
+//            return creator;
+//        }
+//        return "NS_NewHTMLUnknownElement";
+//    }
+//
+//    private static String svgCreator(String name) {
+//        String creator = svgMap.remove(name);
+//        if (creator != null) {
+//            return creator;
+//        }
+//        return "NS_NewSVGUnknownElement";
+//    }
+//
 //    /**
 //     * @see java.lang.Object#toString()
 //     */
 //    @Override public String toString() {
-//        return "(\"" + name + "\", \"" + camelCaseName + "\", " + decomposedFlags() + ")";
+//        return "(\"" + name + "\", \"" + camelCaseName + "\", \n// CPP"
+//                + "ONLY: " + htmlCreator(name) + ",\n//CPP" + "ONLY: "
+//                + svgCreator(camelCaseName) + ", \n" + decomposedFlags() + ")";
 //    }
 //
 //    private String decomposedFlags() {
@@ -264,7 +403,9 @@ public final class ElementName
 //            char c = name.charAt(i);
 //            if (c == '-') {
 //            //  if (!"annotation-xml".equals(name)) {
-//            //      throw new RuntimeException("Non-annotation-xml element name with hyphen: " + name);
+//            //      throw new RuntimeException(
+//            //              "Non-annotation-xml element name with hyphen: "
+//            //                      + name);
 //            //  }
 //                buf[i] = '_';
 //            } else if (c >= '0' && c <= '9') {
@@ -456,9 +597,23 @@ public final class ElementName
 //    /**
 //     * Regenerate self
 //     *
-//     * @param args
+//     * The args should be the paths to m-c files
+//     * parser/htmlparser/nsHTMLTagList.h and dom/svg/SVGTagList.h.
 //     */
 //    public static void main(String[] args) {
+//        File htmlList = new File(args[0]);
+//        File svgList = new File(args[1]);
+//        try {
+//            ingestHtmlTags(htmlList);
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//        try {
+//            ingestSvgTags(svgList);
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//
 //        Arrays.sort(ELEMENT_NAMES);
 //        for (int i = 0; i < ELEMENT_NAMES.length; i++) {
 //            int hash = ELEMENT_NAMES[i].hash();
@@ -468,8 +623,9 @@ public final class ElementName
 //            }
 //            for (int j = i + 1; j < ELEMENT_NAMES.length; j++) {
 //                if (hash == ELEMENT_NAMES[j].hash()) {
-//                    System.err.println("Hash collision: " + ELEMENT_NAMES[i].name
-//                            + ", " + ELEMENT_NAMES[j].name);
+//                    System.err.println(
+//                            "Hash collision: " + ELEMENT_NAMES[i].name + ", "
+//                                    + ELEMENT_NAMES[j].name);
 //                    return;
 //                }
 //            }
@@ -479,18 +635,20 @@ public final class ElementName
 //            if ("isindex".equals(el.name)) {
 //                continue;
 //            }
-//            System.out.println("public static final ElementName "
-//                    + el.constName() + " = new ElementName" + el.toString()
-//                    + ";");
+//            System.out.println(
+//                    "public static final ElementName " + el.constName()
+//                            + " = new ElementName" + el.toString() + ";");
 //        }
 //
 //        LinkedList<ElementName> sortedNames = new LinkedList<ElementName>();
 //        Collections.addAll(sortedNames, ELEMENT_NAMES);
 //        ElementName[] levelOrder = new ElementName[ELEMENT_NAMES.length];
-//        int bstDepth = (int) Math.ceil(Math.log(ELEMENT_NAMES.length) / Math.log(2));
+//        int bstDepth = (int) Math.ceil(
+//                Math.log(ELEMENT_NAMES.length) / Math.log(2));
 //        fillLevelOrderArray(sortedNames, bstDepth, 0, levelOrder);
 //
-//        System.out.println("private final static @NoLength ElementName[] ELEMENT_NAMES = {");
+//        System.out.println(
+//                "private final static @NoLength ElementName[] ELEMENT_NAMES = {");
 //        for (int i = 0; i < levelOrder.length; i++) {
 //            ElementName el = levelOrder[i];
 //            System.out.println(el.constName() + ",");
@@ -502,6 +660,13 @@ public final class ElementName
 //            System.out.println(Integer.toString(el.hash()) + ",");
 //        }
 //        System.out.println("};");
+//
+//        for (Entry<String, String> entry : htmlMap.entrySet()) {
+//            System.err.println("Missing HTML element: " + entry.getKey());
+//        }
+//        for (Entry<String, String> entry : svgMap.entrySet()) {
+//            System.err.println("Missing SVG element: " + entry.getKey());
+//        }
 //    }
 
 
