@@ -464,7 +464,6 @@ nsHtml5TreeOperation::CreateSVGElement(
   mozilla::dom::SVGContentCreatorFunction aCreator)
 {
   nsCOMPtr<nsIContent> newElement;
-  if (MOZ_LIKELY(aNodeInfoManager->SVGEnabled())) {
     RefPtr<dom::NodeInfo> nodeInfo = aNodeInfoManager->GetNodeInfo(
       aName, nullptr, kNameSpaceID_SVG, nsIDOMNode::ELEMENT_NODE);
     MOZ_ASSERT(nodeInfo, "Got null nodeinfo.");
@@ -472,19 +471,6 @@ nsHtml5TreeOperation::CreateSVGElement(
     mozilla::DebugOnly<nsresult> rv =
       aCreator(getter_AddRefs(newElement), nodeInfo.forget(), aFromParser);
     MOZ_ASSERT(NS_SUCCEEDED(rv) && newElement);
-  } else {
-    RefPtr<dom::NodeInfo> nodeInfo = aNodeInfoManager->GetNodeInfo(
-      aName, nullptr, kNameSpaceID_disabled_SVG, nsIDOMNode::ELEMENT_NODE);
-    MOZ_ASSERT(nodeInfo, "Got null nodeinfo.");
-
-    // The mismatch between NS_NewXMLElement and SVGContentCreatorFunction
-    // argument types is annoying.
-    nsCOMPtr<dom::Element> xmlElement;
-    mozilla::DebugOnly<nsresult> rv =
-      NS_NewXMLElement(getter_AddRefs(xmlElement), nodeInfo.forget());
-    MOZ_ASSERT(NS_SUCCEEDED(rv) && xmlElement);
-    newElement = xmlElement;
-  }
 
   dom::Element* newContent = newElement->AsElement();
   aBuilder->HoldElement(newElement.forget());
@@ -524,7 +510,6 @@ nsHtml5TreeOperation::CreateMathMLElement(nsIAtom* aName,
                                           nsHtml5DocumentBuilder* aBuilder)
 {
   nsCOMPtr<dom::Element> newElement;
-  if (MOZ_LIKELY(aNodeInfoManager->MathMLEnabled())) {
     RefPtr<dom::NodeInfo> nodeInfo = aNodeInfoManager->GetNodeInfo(
       aName, nullptr, kNameSpaceID_MathML, nsIDOMNode::ELEMENT_NODE);
     NS_ASSERTION(nodeInfo, "Got null nodeinfo.");
@@ -532,15 +517,6 @@ nsHtml5TreeOperation::CreateMathMLElement(nsIAtom* aName,
     mozilla::DebugOnly<nsresult> rv =
       NS_NewMathMLElement(getter_AddRefs(newElement), nodeInfo.forget());
     MOZ_ASSERT(NS_SUCCEEDED(rv) && newElement);
-  } else {
-    RefPtr<dom::NodeInfo> nodeInfo = aNodeInfoManager->GetNodeInfo(
-      aName, nullptr, kNameSpaceID_disabled_MathML, nsIDOMNode::ELEMENT_NODE);
-    NS_ASSERTION(nodeInfo, "Got null nodeinfo.");
-
-    mozilla::DebugOnly<nsresult> rv =
-      NS_NewXMLElement(getter_AddRefs(newElement), nodeInfo.forget());
-    MOZ_ASSERT(NS_SUCCEEDED(rv) && newElement);
-  }
 
   dom::Element* newContent = newElement;
   aBuilder->HoldElement(newElement.forget());
