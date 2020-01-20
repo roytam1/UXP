@@ -2712,6 +2712,12 @@ public:
   static bool HttpsStateIsModern(nsIDocument* aDocument);
 
   /**
+   * Try to upgrade an element.
+   * https://html.spec.whatwg.org/multipage/custom-elements.html#concept-try-upgrade
+   */
+  static void TryToUpgradeElement(Element* aElement);
+
+  /**
    * Looking up a custom element definition.
    * https://html.spec.whatwg.org/#look-up-a-custom-element-definition
    */
@@ -2720,6 +2726,9 @@ public:
                                   const nsAString& aLocalName,
                                   uint32_t aNameSpaceID,
                                   nsIAtom* aTypeAtom);
+
+  static void RegisterUnresolvedElement(Element* aElement, nsIAtom* aTypeName);
+  static void UnregisterUnresolvedElement(Element* aElement);
 
   static mozilla::dom::CustomElementDefinition*
   GetElementDefinitionIfObservingAttr(Element* aCustomElement,
