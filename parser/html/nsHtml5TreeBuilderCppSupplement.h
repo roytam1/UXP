@@ -70,6 +70,7 @@ nsHtml5TreeBuilder::~nsHtml5TreeBuilder()
 nsIContentHandle*
 nsHtml5TreeBuilder::createElement(int32_t aNamespace,
                                   nsIAtom* aName,
+                                  nsHtml5HtmlAttributes* aAttributes,
                                   nsIContentHandle* aIntendedParent,
                                   nsHtml5ContentCreatorFunction aCreator)
 {
