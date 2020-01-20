@@ -150,13 +150,12 @@ is_power_of_two(int v)
 }
 
 static void
-DestroySurface(EGLSurface oldSurface) {
-    if (oldSurface != EGL_NO_SURFACE) {
-        sEGLLibrary.fMakeCurrent(EGL_DISPLAY(),
-                                 EGL_NO_SURFACE, EGL_NO_SURFACE,
-                                 EGL_NO_CONTEXT);
-        sEGLLibrary.fDestroySurface(EGL_DISPLAY(), oldSurface);
+DestroySurface(const EGLSurface surf) {
+    if (!surf) {
+        // Nothing to do.
+        return;
     }
+    sEGLLibrary.fDestroySurface(EGL_DISPLAY(), surf);
 }
 
 static EGLSurface
@@ -223,7 +222,7 @@ GLContextEGL::~GLContextEGL()
     sEGLLibrary.fDestroyContext(EGL_DISPLAY(), mContext);
     sEGLLibrary.UnsetCachedCurrentContext();
 
-    mozilla::gl::DestroySurface(mSurface);
+    DestroySurface(mSurface);
 }
 
 bool
@@ -247,12 +246,7 @@ GLContextEGL::Init()
     if (!InitWithPrefix("gl", true))
         return false;
 
-    bool current = MakeCurrent();
-    if (!current) {
-        gfx::LogFailure(NS_LITERAL_CSTRING(
-            "Couldn't get device attachments for device."));
-        return false;
-    }
+    MOZ_ASSERT(IsCurrent());
 
     static_assert(sizeof(GLint) >= sizeof(int32_t), "GLint is smaller than int32_t");
     mMaxTextureImageSize = INT32_MAX;
@@ -303,7 +297,10 @@ GLContextEGL::ReleaseTexImage()
 }
 
 void
-GLContextEGL::SetEGLSurfaceOverride(EGLSurface surf) {
+GLContextEGL::SetEGLSurfaceOverride(const EGLSurface surf) {
+
+    MOZ_ASSERT(!surf || surf != mSurface);
+
     if (Screen()) {
         /* Blit `draw` to `read` if we need to, before we potentially juggle
           * `read` around. If we don't, we might attach a different `read`,
@@ -314,12 +311,17 @@ GLContextEGL::SetEGLSurfaceOverride(EGLSurface surf) {
     }
 
     mSurfaceOverride = surf;
-    DebugOnly<bool> ok = MakeCurrent(true);
-    MOZ_ASSERT(ok);
+    MOZ_ALWAYS_TRUE(MakeCurrent(true));
 }
 
 bool
 GLContextEGL::MakeCurrentImpl(bool aForce) {
+    if (IsDestroyed()) {
+        //Clear and exit
+        sEGLLibrary.fMakeCurrent(EGL_DISPLAY(), nullptr, nullptr, nullptr);
+        return false;
+    }
+    
     bool succeeded = true;
 
     // Assume that EGL has the same problem as WGL does,
@@ -373,7 +375,7 @@ GLContextEGL::IsCurrent() {
 }
 
 bool
-GLContextEGL::RenewSurface(nsIWidget* aWidget) {
+GLContextEGL::RenewSurface(nsIWidget* const aWidget) {
     if (!mOwnsContext) {
         return false;
     }
@@ -389,13 +391,12 @@ GLContextEGL::RenewSurface(nsIWidget* aWidget) {
 
 void
 GLContextEGL::ReleaseSurface() {
-    if (mOwnsContext) {
-        mozilla::gl::DestroySurface(mSurface);
+    if (!mOwnsContext) {
+        return;
     }
-    if (mSurface == mSurfaceOverride) {
-        mSurfaceOverride = EGL_NO_SURFACE;
-    }
-    mSurface = EGL_NO_SURFACE;
+    
+    DestroySurface(mSurface);
+    mSurface = nullptr;
 }
 
 bool

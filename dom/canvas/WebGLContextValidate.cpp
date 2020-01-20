@@ -440,6 +440,13 @@ WebGLContext::InitAndValidateGL(FailureReason* const out_failReason)
 {
     MOZ_RELEASE_ASSERT(gl, "GFX: GL not initialized");
 
+    if (!gl->MakeCurrent(true)) {
+        MOZ_ASSERT(false);
+        *out_failReason = { "FEATURE_FAILURE_WEBGL_MAKECURRENT",
+                            "Failed to MakeCurrent for init." };
+        return false;
+    }
+
     // Unconditionally create a new format usage authority. This is
     // important when restoring contexts and extensions need to add
     // formats back into the authority.
