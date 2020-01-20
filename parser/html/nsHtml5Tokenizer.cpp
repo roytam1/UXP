@@ -285,13 +285,13 @@ nsHtml5Tokenizer::strBufToElementNameString()
     if (nsHtml5Portability::localEqualsBuffer(annotationName, strBuf, 0, strBufLen)) {
       tagName = nsHtml5ElementName::ELT_ANNOTATION_XML;
     } else {
-      nonInternedTagName->setNameForNonInterned(nsHtml5Portability::newLocalNameFromBuffer(strBuf, 0, strBufLen, interner));
+      nonInternedTagName->setNameForNonInterned(nsHtml5Portability::newLocalNameFromBuffer(strBuf, 0, strBufLen, interner), true);
       tagName = nonInternedTagName;
     }
   } else {
     tagName = nsHtml5ElementName::elementNameByBuffer(strBuf, 0, strBufLen, interner);
     if (!tagName) {
-      nonInternedTagName->setNameForNonInterned(nsHtml5Portability::newLocalNameFromBuffer(strBuf, 0, strBufLen, interner));
+      nonInternedTagName->setNameForNonInterned(nsHtml5Portability::newLocalNameFromBuffer(strBuf, 0, strBufLen, interner), false);
       tagName = nonInternedTagName;
     }
   }
@@ -3960,7 +3960,7 @@ nsHtml5Tokenizer::end()
     publicIdentifier = nullptr;
   }
   tagName = nullptr;
-  nonInternedTagName->setNameForNonInterned(nullptr);
+  nonInternedTagName->setNameForNonInterned(nullptr, false);
   attributeName = nullptr;
   nonInternedAttributeName->setNameForNonInterned(nullptr);
   tokenHandler->endTokenization();
@@ -4064,7 +4064,7 @@ nsHtml5Tokenizer::loadState(nsHtml5Tokenizer* other)
   } else if (other->tagName->isInterned()) {
     tagName = other->tagName;
   } else {
-    nonInternedTagName->setNameForNonInterned(nsHtml5Portability::newLocalFromLocal(other->tagName->getName(), interner));
+    nonInternedTagName->setNameForNonInterned(nsHtml5Portability::newLocalFromLocal(other->tagName->getName(), interner), other->tagName->isCustom());
     tagName = nonInternedTagName;
   }
   if (!other->attributeName) {

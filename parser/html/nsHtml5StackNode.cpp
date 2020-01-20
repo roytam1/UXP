@@ -45,6 +45,7 @@
 #include "nsHtml5Macros.h"
 #include "nsIContentHandle.h"
 #include "nsHtml5Portability.h"
+#include "nsHtml5ContentCreatorFunction.h"
 
 #include "nsHtml5AttributeName.h"
 #include "nsHtml5ElementName.h"
@@ -87,15 +88,22 @@ nsHtml5StackNode::isHtmlIntegrationPoint()
   return (flags & nsHtml5ElementName::HTML_INTEGRATION_POINT);
 }
 
+mozilla::dom::HTMLContentCreatorFunction 
+nsHtml5StackNode::getHtmlCreator()
+{
+  return htmlCreator;
+}
 
-nsHtml5StackNode::nsHtml5StackNode(int32_t flags, int32_t ns, nsIAtom* name, nsIContentHandle* node, nsIAtom* popName, nsHtml5HtmlAttributes* attributes)
+
+nsHtml5StackNode::nsHtml5StackNode(int32_t flags, int32_t ns, nsIAtom* name, nsIContentHandle* node, nsIAtom* popName, nsHtml5HtmlAttributes* attributes, mozilla::dom::HTMLContentCreatorFunction htmlCreator)
   : flags(flags),
     name(name),
     popName(popName),
     ns(ns),
     node(node),
     attributes(attributes),
-    refcount(1)
+    refcount(1),
+    htmlCreator(htmlCreator)
 {
   MOZ_COUNT_CTOR(nsHtml5StackNode);
 }
@@ -108,7 +116,8 @@ nsHtml5StackNode::nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHa
     ns(kNameSpaceID_XHTML),
     node(node),
     attributes(nullptr),
-    refcount(1)
+    refcount(1),
+    htmlCreator(nullptr)
 {
   MOZ_COUNT_CTOR(nsHtml5StackNode);
   MOZ_ASSERT(elementName->isInterned(), "Don't use this constructor for custom elements.");
@@ -122,7 +131,8 @@ nsHtml5StackNode::nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHa
     ns(kNameSpaceID_XHTML),
     node(node),
     attributes(attributes),
-    refcount(1)
+    refcount(1),
+    htmlCreator(elementName->getHtmlCreator())
 {
   MOZ_COUNT_CTOR(nsHtml5StackNode);
   MOZ_ASSERT(elementName->isInterned(), "Don't use this constructor for custom elements.");
@@ -136,7 +146,8 @@ nsHtml5StackNode::nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHa
     ns(kNameSpaceID_XHTML),
     node(node),
     attributes(nullptr),
-    refcount(1)
+    refcount(1),
+    htmlCreator(nullptr)
 {
   MOZ_COUNT_CTOR(nsHtml5StackNode);
 }
@@ -149,7 +160,8 @@ nsHtml5StackNode::nsHtml5StackNode(nsHtml5ElementName* elementName, nsIAtom* pop
     ns(kNameSpaceID_SVG),
     node(node),
     attributes(nullptr),
-    refcount(1)
+    refcount(1),
+    htmlCreator(nullptr)
 {
   MOZ_COUNT_CTOR(nsHtml5StackNode);
 }
@@ -162,7 +174,8 @@ nsHtml5StackNode::nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHa
     ns(kNameSpaceID_MathML),
     node(node),
     attributes(nullptr),
-    refcount(1)
+    refcount(1),
+    htmlCreator(nullptr)
 {
   MOZ_COUNT_CTOR(nsHtml5StackNode);
 }

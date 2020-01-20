@@ -44,6 +44,7 @@
 #include "nsIUnicodeDecoder.h"
 #include "nsHtml5Macros.h"
 #include "nsIContentHandle.h"
+#include "nsHtml5ContentCreatorFunction.h"
 
 class nsHtml5StreamParser;
 
