@@ -2391,7 +2391,7 @@ public abstract class TreeBuilder<T> implements TokenHandler,
                             // CPPONLY:    }
                             // CPPONLY:    attributes.clearWithoutReleasingContents();
                             // CPPONLY:    appendVoidElementToCurrentMayFoster(
-                            // CPPONLY:            "input",
+                            // CPPONLY:            ElementName.INPUT,
                             // CPPONLY:            inputAttributes, formPointer);
                             // CPPONLY:    pop(); // label
                             // CPPONLY:    appendVoidElementToCurrentMayFoster(
