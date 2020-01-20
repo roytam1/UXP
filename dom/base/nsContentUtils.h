@@ -2719,10 +2719,7 @@ public:
     LookupCustomElementDefinition(nsIDocument* aDoc,
                                   const nsAString& aLocalName,
                                   uint32_t aNameSpaceID,
-                                  const nsAString* aIs = nullptr);
-
-  static void SetupCustomElement(Element* aElement,
-                                 const nsAString* aTypeExtension = nullptr);
+                                  nsIAtom* aTypeAtom);
 
   static mozilla::dom::CustomElementDefinition*
   GetElementDefinitionIfObservingAttr(Element* aCustomElement,
