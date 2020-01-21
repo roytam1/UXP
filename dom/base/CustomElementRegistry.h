@@ -49,8 +49,7 @@ class CustomElementCallback
 public:
   CustomElementCallback(Element* aThisObject,
                         nsIDocument::ElementCallbackType aCallbackType,
-                        CallbackFunction* aCallback,
-                        CustomElementData* aOwnerData);
+                        CallbackFunction* aCallback);
   void Traverse(nsCycleCollectionTraversalCallback& aCb) const;
   void Call();
   void SetArgs(LifecycleCallbackArgs& aArgs)
@@ -77,9 +76,6 @@ private:
   // used by the attribute changed callback.
   LifecycleCallbackArgs mArgs;
   LifecycleAdoptedCallbackArgs mAdoptedCallbackArgs;
-  // CustomElementData that contains this callback in the
-  // callback queue.
-  CustomElementData* mOwnerData;
 };
 
 class CustomElementConstructor final : public CallbackFunction
@@ -113,11 +109,6 @@ struct CustomElementData
   explicit CustomElementData(nsIAtom* aType);
   CustomElementData(nsIAtom* aType, State aState);
 
-  // Element is being created flag as described in the custom elements spec.
-  bool mElementIsBeingCreated;
-  // Flag to determine if the created callback has been invoked, thus it
-  // determines if other callbacks can be enqueued.
-  bool mCreatedCallbackInvoked;
   // Custom element state as described in the custom element spec.
   State mState;
   // custom element reaction queue as described in the custom element spec.
