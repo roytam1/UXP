@@ -937,7 +937,7 @@ GLContextGLX::MakeCurrentImpl(bool aForce)
           Unused << XPending(mDisplay);
         }
         if (IsDestroyed()) {
-            MOZ_ALWAYS_TRUE(mGLX->xMakeCurrent(mDisplay, X11None, nullptr);
+            MOZ_ALWAYS_TRUE(mGLX->xMakeCurrent(mDisplay, X11None, nullptr));
             return false; // We did not MakeCurrent mContext, but that's what we wanted!
         }
 
