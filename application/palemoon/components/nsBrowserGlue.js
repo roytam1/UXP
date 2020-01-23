@@ -1198,7 +1198,7 @@ BrowserGlue.prototype = {
   },
 
   _migrateUI: function BG__migrateUI() {
-    const UI_VERSION = 20;
+    const UI_VERSION = 21;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul#";
     let currentUIVersion = 0;
     try {
@@ -1397,12 +1397,6 @@ BrowserGlue.prototype = {
       this._notifyNotificationsUpgrade();
     }
 
-    if (this._dirty)
-      this._dataSource.QueryInterface(Ci.nsIRDFRemoteDataSource).Flush();
-
-    delete this._rdf;
-    delete this._dataSource;
-
     if (currentUIVersion < 18) {
       // Make sure the doNotTrack value conforms to the conversion from
       // three-state to two-state. (This reverts a setting of "please track me"
@@ -1437,6 +1431,34 @@ BrowserGlue.prototype = {
       // HPKP change of UI preference; reset enforcement level
       Services.prefs.clearUserPref("security.cert_pinning.enforcement_level");
     }
+
+    if (currentUIVersion < 21) {
+      // Remove key4.db and cert9.db if those files exist
+      // XXX: Remove this code block once we actually start using them.
+      let dsCertFile = Cc["@mozilla.org/file/directory_service;1"]
+                    .getService(Ci.nsIProperties)
+                    .get("ProfD", Ci.nsIFile);
+      dsKeyFile = dsCertFile.clone();
+      dsCertFile.append("cert9.db");
+      if (dsCertFile.exists()) {
+        try {
+          dsCertFile.remove(false);
+        } catch(e) { }
+      }
+      dsKeyFile.append("key4.db");
+      if (dsKeyFile.exists()) {
+        try {
+          dsKeyFile.remove(false);
+        } catch(e) { }
+      }
+    }
+    
+    // Clear out dirty storage
+    if (this._dirty)
+      this._dataSource.QueryInterface(Ci.nsIRDFRemoteDataSource).Flush();
+
+    delete this._rdf;
+    delete this._dataSource;
 
     // Update the migration version.
     Services.prefs.setIntPref("browser.migration.version", UI_VERSION);
