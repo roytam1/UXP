@@ -311,21 +311,21 @@ private:
   void Enqueue(Element* aElement, CustomElementReaction* aReaction);
 
 private:
-  class ProcessBackupQueueRunnable : public mozilla::Runnable {
+  class BackupQueueMicroTask final : public mozilla::MicroTaskRunnable {
     public:
-      explicit ProcessBackupQueueRunnable(CustomElementReactionsStack* aReactionStack)
-        : mReactionStack(aReactionStack)
+      explicit BackupQueueMicroTask(CustomElementReactionsStack* aReactionStack)
+        : MicroTaskRunnable()
+        , mReactionStack(aReactionStack)
       {
         MOZ_ASSERT(!mReactionStack->mIsBackupQueueProcessing,
                    "mIsBackupQueueProcessing should be initially false");
         mReactionStack->mIsBackupQueueProcessing = true;
       }
 
-      NS_IMETHOD Run() override
+      virtual void Run(AutoSlowOperation& aAso) override
       {
         mReactionStack->InvokeBackupQueue();
         mReactionStack->mIsBackupQueueProcessing = false;
-        return NS_OK;
       }
 
     private:
