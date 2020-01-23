@@ -139,6 +139,9 @@ nsContentSecurityManager::CheckFTPSubresourceLoad(nsIChannel* aChannel)
   nsIPrincipal* triggeringPrincipal = loadInfo->TriggeringPrincipal();
   nsCOMPtr<nsIURI> tURI;
   triggeringPrincipal->GetURI(getter_AddRefs(tURI));
+  if(!tURI) {
+    return NS_OK;
+  }
   bool isTrigFtpURI = (NS_SUCCEEDED(tURI->SchemeIs("ftp", &isTrigFtpURI)) && isTrigFtpURI);
   if (isTrigFtpURI) {
     return NS_OK;
