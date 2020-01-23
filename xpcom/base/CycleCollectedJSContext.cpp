@@ -79,6 +79,7 @@
 #include "nsCycleCollectionParticipant.h"
 #include "nsCycleCollector.h"
 #include "nsDOMJSUtils.h"
+#include "nsDOMMutationObserver.h"
 #include "nsJSUtils.h"
 #include "nsWrapperCache.h"
 
@@ -438,6 +439,7 @@ CycleCollectedJSContext::CycleCollectedJSContext()
   , mJSHolders(256)
   , mDoingStableStates(false)
   , mDisableMicroTaskCheckpoint(false)
+  , mMicroTaskLevel(0)
   , mOutOfMemoryState(OOMState::OK)
   , mLargeAllocationFailureState(OOMState::OK)
 {
@@ -1379,7 +1381,7 @@ CycleCollectedJSContext::AfterProcessTask(uint32_t aRecursionDepth)
   // Step 4.1: Execute microtasks.
   if (!mDisableMicroTaskCheckpoint) {
     if (NS_IsMainThread()) {
-      nsContentUtils::PerformMainThreadMicroTaskCheckpoint();
+      PerformMainThreadMicroTaskCheckpoint();
       Promise::PerformMicroTaskCheckpoint();
     } else {
       Promise::PerformWorkerMicroTaskCheckpoint();
@@ -1657,6 +1659,14 @@ CycleCollectedJSContext::DispatchToMicroTask(already_AddRefed<nsIRunnable> aRunn
   MOZ_ASSERT(runnable);
 
   mPromiseMicroTaskQueue.push(runnable.forget());
+}
+
+void
+CycleCollectedJSContext::PerformMainThreadMicroTaskCheckpoint()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsDOMMutationObserver::HandleMutations();
 }
 
 void
