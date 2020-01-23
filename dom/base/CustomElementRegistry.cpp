@@ -1034,6 +1034,8 @@ CustomElementReactionsStack::InvokeBackupQueue()
     // we don't need to pass global object for error reporting.
     InvokeReactions(&mBackupQueue, nullptr);
   }
+  MOZ_ASSERT(mBackupQueue.IsEmpty(),
+             "There are still some reactions in BackupQueue not being consumed!?!");
 }
 
 void
@@ -1050,15 +1052,14 @@ CustomElementReactionsStack::InvokeReactions(ElementQueue* aElementQueue,
   for (uint32_t i = 0; i < aElementQueue->Length(); ++i) {
     Element* element = aElementQueue->ElementAt(i);
 
-    if (!element) {
-      continue;
-    }
+    // ElementQueue hold a element's strong reference, it should not be a nullptr.
+    MOZ_ASSERT(element);
 
     RefPtr<CustomElementData> elementData = element->GetCustomElementData();
     if (!elementData) {
       // This happens when the document is destroyed and the element is already
       // unlinked, no need to fire the callbacks in this case.
-      return;
+      continue;
     }
 
     auto& reactions = elementData->mReactionQueue;
