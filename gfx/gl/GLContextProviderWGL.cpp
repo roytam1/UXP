@@ -314,20 +314,17 @@ GLContextWGL::Init()
     if (!mDC || !mContext)
         return false;
 
-    // see bug 929506 comment 29. wglGetProcAddress requires a current context.
-    if (!sWGLLib.fMakeCurrent(mDC, mContext))
-        return false;
-
     SetupLookupFunction();
-    if (!InitWithPrefix("gl", true))
-        return false;
-
-    return true;
+    return InitWithPrefix("gl", true);
 }
 
 bool
 GLContextWGL::MakeCurrentImpl(bool aForce)
 {
+    if (IsDestroyed()) {
+        MOZ_ALWAYS_TRUE(sWGLLib.fMakeCurrent(0, 0));
+    }
+    
     BOOL succeeded = true;
 
     // wglGetCurrentContext seems to just pull the HGLRC out

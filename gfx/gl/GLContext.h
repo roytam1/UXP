@@ -353,6 +353,7 @@ public:
 protected:
     bool mIsOffscreen;
     bool mContextLost;
+    bool mIsDestroyed = false;
 
     /**
      * mVersion store the OpenGL's version, multiplied by 100. For example, if
@@ -3265,7 +3266,7 @@ public:
 #endif
         return MakeCurrentImpl(aForce);
     }
-
+    
     virtual bool Init() = 0;
 
     virtual bool SetupLookupFunction() = 0;
@@ -3273,8 +3274,7 @@ public:
     virtual void ReleaseSurface() {}
 
     bool IsDestroyed() {
-        // MarkDestroyed will mark all these as null.
-        return mSymbols.fUseProgram == nullptr;
+        return mIsDestroyed;
     }
 
     GLContext* GetSharedContext() { return mSharedContext; }

@@ -638,7 +638,7 @@
 ; All the pref files must be part of base to prevent migration bugs
 @RESPATH@/browser/@PREF_DIR@/basilisk.js
 @RESPATH@/browser/@PREF_DIR@/basilisk-branding.js
-@RESPATH@/greprefs.js
+@RESPATH@/goanna.js
 @RESPATH@/defaults/autoconfig/prefcalls.js
 @RESPATH@/browser/defaults/permissions
 

@@ -318,7 +318,7 @@ class OmniJarSubFormatter(PiecemealFormatter):
                      path[1] in ['pref', 'preferences'])
         return path[0] in [
             'modules',
-            'greprefs.js',
+            'goanna.js',
             'hyphenation',
             'update.locale',
         ] or path[0] in STARTUP_CACHE_PATHS

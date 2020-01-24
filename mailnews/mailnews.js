@@ -450,7 +450,7 @@ pref("mail.server.default.valid", true);
 pref("mail.server.default.abbreviate", true);
 pref("mail.server.default.isSecure", false);
 pref("mail.server.default.authMethod", 3); // cleartext password. @see nsIMsgIncomingServer.authMethod.
-pref("mail.server.default.socketType", 0); // @see nsIMsgIncomingServer.socketType
+pref("mail.server.default.socketType", 3); // SSL/TLS. @see nsIMsgIncomingServer.socketType
 pref("mail.server.default.override_namespaces", true);
 pref("mail.server.default.deferred_to_account", "");
 
@@ -579,7 +579,7 @@ pref("mail.smtp.useMatchingDomainServer", false);
 pref("mail.smtp.useMatchingHostNameServer", false);
 
 pref("mail.smtpserver.default.authMethod", 3); // cleartext password. @see nsIMsgIncomingServer.authMethod.
-pref("mail.smtpserver.default.try_ssl", 0); // @see nsISmtpServer.socketType
+pref("mail.smtpserver.default.try_ssl", 3); // SSL/TLS. @see nsISmtpServer.socketType
 
 // For the next 3 prefs, see <http://www.bucksch.org/1/projects/mozilla/16507>
 pref("mail.display_glyph", true);   // TXT->HTML :-) etc. in viewer

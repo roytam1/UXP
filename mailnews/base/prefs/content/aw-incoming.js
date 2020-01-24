@@ -158,7 +158,10 @@ function setServerType()
   var serverType = document.getElementById("servertype").value;
   var deferStorageBox = document.getElementById("deferStorageBox");
   var leaveMessages = document.getElementById("leaveMsgsOnSrvrBox");
-  var port = serverType == "pop3" ? 110 : 143;
+
+  // pop3 110 (unsecure) 995 (SSL)
+  // imap 143 (unsecure) 993 (SSL)
+  var port = serverType == "pop3" ? 995 : 993;
 
   document.getElementById("serverPort").value = port;
   document.getElementById("defaultPortValue").value = port;
