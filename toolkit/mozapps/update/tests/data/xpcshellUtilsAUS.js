@@ -839,7 +839,7 @@ function setupTestCommon() {
   if (!grePrefsFile.exists()) {
     grePrefsFile.create(Ci.nsIFile.DIRECTORY_TYPE, PERMS_DIRECTORY);
   }
-  grePrefsFile.append("greprefs.js");
+  grePrefsFile.append("goanna.js");
   if (!grePrefsFile.exists()) {
     grePrefsFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, PERMS_FILE);
   }

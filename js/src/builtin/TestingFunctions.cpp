@@ -3862,10 +3862,10 @@ ConvertRegExpTreeToObject(JSContext* cx, irregexp::RegExpTree* tree)
             return nullptr;
         return obj;
     }
-    if (tree->IsLookaround()) {
-        if (!StringProp(cx, obj, "type", "Lookaround"))
+    if (tree->IsLookahead()) {
+        if (!StringProp(cx, obj, "type", "Lookahead"))
             return nullptr;
-        irregexp::RegExpLookaround* t = tree->AsLookaround();
+        irregexp::RegExpLookahead* t = tree->AsLookahead();
         if (!BooleanProp(cx, obj, "is_positive", t->is_positive()))
             return nullptr;
         if (!TreeProp(cx, obj, "body", t->body()))

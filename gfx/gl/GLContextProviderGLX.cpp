@@ -894,20 +894,12 @@ GLContextGLX::~GLContextGLX()
         return;
     }
 
-    // see bug 659842 comment 76
-#ifdef DEBUG
-    bool success =
-#endif
-    mGLX->xMakeCurrent(mDisplay, X11None, nullptr);
-    MOZ_ASSERT(success,
-               "glXMakeCurrent failed to release GL context before we call "
-               "glXDestroyContext!");
-
     mGLX->xDestroyContext(mDisplay, mContext);
 
     if (mDeleteDrawable) {
         mGLX->xDestroyPixmap(mDisplay, mDrawable);
     }
+    MOZ_ASSERT(!mOverrideDrawable);
 }
 
 
@@ -943,6 +935,10 @@ GLContextGLX::MakeCurrentImpl(bool aForce)
           // Read into the event queue to ensure that Mesa receives a
           // DRI2InvalidateBuffers event before drawing. See bug 1280653.
           Unused << XPending(mDisplay);
+        }
+        if (IsDestroyed()) {
+            MOZ_ALWAYS_TRUE(mGLX->xMakeCurrent(mDisplay, X11None, nullptr));
+            return false; // We did not MakeCurrent mContext, but that's what we wanted!
         }
 
         succeeded = mGLX->xMakeCurrent(mDisplay, mDrawable, mContext);
@@ -1017,16 +1013,18 @@ GLContextGLX::GetWSIInfo(nsCString* const out) const
 bool
 GLContextGLX::OverrideDrawable(GLXDrawable drawable)
 {
-    if (Screen())
+    if (Screen()) {
         Screen()->AssureBlitted();
-    Bool result = mGLX->xMakeCurrent(mDisplay, drawable, mContext);
-    return result;
+    }
+    mOverrideDrawable = Some(drawable);
+    return MakeCurrent(true);
 }
 
 bool
 GLContextGLX::RestoreDrawable()
 {
-    return mGLX->xMakeCurrent(mDisplay, mDrawable, mContext);
+    mOverrideDrawable = Nothing();
+    return MakeCurrent(true);
 }
 
 GLContextGLX::GLContextGLX(

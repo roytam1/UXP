@@ -58,7 +58,7 @@ if os_win:
         'src/chrome/common/process_watcher_win.cc',
         'src/chrome/common/transport_dib_win.cc',
     ]
-elif not CONFIG['MOZ_SYSTEM_LIBEVENT']:
+else:
     DIRS += ['src/third_party']
 
 if os_posix:
@@ -143,9 +143,9 @@ if os_solaris:
        'src/base/atomicops_internals_x86_gcc.cc',
        'src/base/process_util_linux.cc',
        'src/base/time_posix.cc',
-]
+    ]
     
-elif not CONFIG['MOZ_SYSTEM_LIBEVENT']:
+else:
     LOCAL_INCLUDES += ['src/third_party/libevent/linux']
 
 ost = CONFIG['OS_TEST']
