@@ -9536,9 +9536,11 @@ nsContentUtils::TryToUpgradeElement(Element* aElement)
   NodeInfo* nodeInfo = aElement->NodeInfo();
   RefPtr<nsIAtom> typeAtom =
     aElement->GetCustomElementData()->GetCustomElementType();
+
+  MOZ_ASSERT(nodeInfo->NameAtom()->Equals(nodeInfo->LocalName()));
   CustomElementDefinition* definition =
     nsContentUtils::LookupCustomElementDefinition(nodeInfo->GetDocument(),
-                                                  nodeInfo->LocalName(),
+                                                  nodeInfo->NameAtom(),
                                                   nodeInfo->NamespaceID(),
                                                   typeAtom);
   if (definition) {
@@ -9553,7 +9555,7 @@ nsContentUtils::TryToUpgradeElement(Element* aElement)
 
 /* static */ CustomElementDefinition*
 nsContentUtils::LookupCustomElementDefinition(nsIDocument* aDoc,
-                                              const nsAString& aLocalName,
+                                              nsIAtom* aNameAtom,
                                               uint32_t aNameSpaceID,
                                               nsIAtom* aTypeAtom)
 {
@@ -9577,7 +9579,7 @@ nsContentUtils::LookupCustomElementDefinition(nsIDocument* aDoc,
     return nullptr;
   }
 
-  return registry->LookupCustomElementDefinition(aLocalName, aTypeAtom);
+  return registry->LookupCustomElementDefinition(aNameAtom, aTypeAtom);
 }
 
 /* static */ void

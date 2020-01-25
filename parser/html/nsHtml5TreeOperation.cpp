@@ -433,8 +433,9 @@ nsHtml5TreeOperation::CreateHTMLElement(
       RefPtr<nsIAtom> typeAtom =
         isValue.IsEmpty() ? tagAtom : NS_Atomize(isValue);
 
+      MOZ_ASSERT(nodeInfo->NameAtom()->Equals(nodeInfo->LocalName()));
       definition = nsContentUtils::LookupCustomElementDefinition(document,
-        nodeInfo->LocalName(), nodeInfo->NamespaceID(), typeAtom);
+        nodeInfo->NameAtom(), nodeInfo->NamespaceID(), typeAtom);
 
       if (definition) {
         willExecuteScript = true;
