@@ -231,9 +231,6 @@ public:
     bool SupportsPluginDirectDXGIDrawing();
 
 protected:
-    bool AccelerateLayersByDefault() override {
-      return true;
-    }
     void GetAcceleratedCompositorBackends(nsTArray<mozilla::layers::LayersBackend>& aBackends) override;
     virtual void GetPlatformCMSOutputProfile(void* &mem, size_t &size) override;
 

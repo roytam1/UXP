@@ -372,12 +372,6 @@ gfxPlatformMac::ReadAntiAliasingThreshold()
     return threshold;
 }
 
-bool
-gfxPlatformMac::AccelerateLayersByDefault()
-{
-  return true;
-}
-
 // This is the renderer output callback function, called on the vsync thread
 static CVReturn VsyncCallback(CVDisplayLinkRef aDisplayLink,
                               const CVTimeStamp* aNow,

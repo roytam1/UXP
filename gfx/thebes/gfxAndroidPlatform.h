@@ -72,11 +72,6 @@ public:
       return true;
     }
 
-protected:
-    bool AccelerateLayersByDefault() override {
-      return true;
-    }
-
 private:
     gfxImageFormat mOffscreenFormat;
 };
