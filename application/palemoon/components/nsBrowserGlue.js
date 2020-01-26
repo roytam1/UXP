@@ -1198,7 +1198,7 @@ BrowserGlue.prototype = {
   },
 
   _migrateUI: function BG__migrateUI() {
-    const UI_VERSION = 21;
+    const UI_VERSION = 22;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul#";
     let currentUIVersion = 0;
     try {
@@ -1452,6 +1452,19 @@ BrowserGlue.prototype = {
         } catch(e) { }
       }
     }
+
+    if (currentUIVersion < 22) {
+      if (Services.prefs.prefHasUserValue("layers.acceleration.disabled")) {
+        let HWADisabled = Service.prefs.getBoolPref("layers.acceleration.disabled");
+        Services.prefs.setBoolPref("layers.acceleration.enabled") = !HWADisabled;
+        Services.prefs.setBoolPref("gfx.direct2d.disabled") = HWADisabled;
+      }
+      if (Services.prefs.getBoolPref("layers.acceleration.force-enabled", false)) {
+        Services.prefs.setBoolPref("layers.acceleration.force", true);
+      }
+      Services.prefs.clearUserPref("layers.acceleration.disabled");
+      Services.prefs.clearUserPref("layers.acceleration.force-enabled");
+    }  
     
     // Clear out dirty storage
     if (this._dirty)

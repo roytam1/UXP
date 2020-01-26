@@ -31,7 +31,7 @@
 
       <preference id="general.autoScroll"              name="general.autoScroll"              type="bool"/>
       <preference id="general.smoothScroll"            name="general.smoothScroll"            type="bool"/>
-      <preference id="layers.acceleration.disabled"    name="layers.acceleration.disabled"    type="bool"   inverted="true"
+      <preference id="layers.acceleration.enabled"     name="layers.acceleration.enabled"     type="bool"
                   onchange="gAdvancedPane.updateHardwareAcceleration()"/>
 #ifdef XP_WIN
       <preference id="gfx.direct2d.disabled"           name="gfx.direct2d.disabled"           type="bool"   inverted="true"/>
@@ -152,16 +152,27 @@
                       label="&useAutoScroll.label;"
                       accesskey="&useAutoScroll.accesskey;"
                       preference="general.autoScroll"/>
-            <checkbox id="allowHWAccel"
-                      label="&allowHWAccel.label;"
-                      accesskey="&allowHWAccel.accesskey;"
-                      preference="layers.acceleration.disabled"/>
             <checkbox id="checkSpelling"
                       label="&checkSpelling.label;"
                       accesskey="&checkSpelling.accesskey;"
                       onsyncfrompreference="return gAdvancedPane.readCheckSpelling();"
                       onsynctopreference="return gAdvancedPane.writeCheckSpelling();"
                       preference="layout.spellcheckDefault"/>
+          </groupbox>
+
+          <!-- Hardware Acceleration -->
+          <groupbox id="browsingGroup" align="start">
+            <caption label="&HWAccel.label;"/>
+            <label>&restartRequired.label;</label>
+            <checkbox id="allowHWAccel"
+                      label="&allowHWAccel.label;"
+                      accesskey="&allowHWAccel.accesskey;"
+                      preference="layers.acceleration.enabled"/>
+#ifdef XP_LINUX
+            <checkbox id="forceHWAccel" class="indent"
+                      label="&forceHWAccel.label;"
+                      preference="layers.acceleration.force"/>
+#endif
           </groupbox>
 
 #ifdef HAVE_SHELL_SERVICE
