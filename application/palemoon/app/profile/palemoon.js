@@ -863,7 +863,7 @@ pref("browser.sessionstore.restore_pinned_tabs_on_demand", false);
 // 0 = standard behavior: pull fully from cache
 // 1 = perform a soft refresh when restoring a tab (check network)
 // 2 = perform a hard refresh when restoring a tab (bypass cache completely)
-pref("browser.sessionstore.cache_behavior", 0);
+pref("browser.sessionstore.cache_behavior", 1);
 // Pale Moon: Allow exact positioning of windows to previous locations, even
 // if they would be outside of the screen bounds
 pref("browser.sessionstore.exactPos", false);
