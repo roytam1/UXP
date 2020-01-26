@@ -181,7 +181,7 @@ private:
     bool                mStorReplyReceived; // FALSE if waiting for STOR
                                             // completion status from server
     bool 		mRlist1xxReceived; // TRUE if the server has sent a
-                                           // LIST 1xx response.
+    					   // LIST 1xx response.
     bool		mRstor1xxReceived; // TRUE if the server has sent a
     					   // STOR 1xx response.
     bool		mRretr1xxReceived; // TRUE if the server has sent a
