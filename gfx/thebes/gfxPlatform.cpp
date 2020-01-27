@@ -2175,7 +2175,11 @@ gfxPlatform::CanUseHardwareVideoDecoding()
 bool
 gfxPlatform::AccelerateLayersByDefault()
 {
-#if defined(MOZ_GL_PROVIDER) || defined(MOZ_WIDGET_UIKIT)
+  // Note: add any new platform defines here that should get HWA by default.
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_UIKIT)
+  return true;
+#elif defined(MOZ_GL_PROVIDER)
+  // GL provider manually declared
   return true;
 #else
   return false;
