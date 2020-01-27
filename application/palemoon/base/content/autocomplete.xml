@@ -449,12 +449,14 @@
 
           var cancel = false;
 
-          let { AppConstants } =
-              Components.utils.import("resource://gre/modules/AppConstants.jsm", {});
           // Catch any keys that could potentially move the caret. Ctrl can be
           // used in combination with these keys on Windows and Linux; and Alt
           // can be used on OS X, so make sure the unused one isn't used.
-          let metaKey = AppConstants.platform == "macosx" ? aEvent.ctrlKey : aEvent.altKey;
+#ifdef XP_MACOSX
+          let metaKey = aEvent.ctrlKey;
+#else
+          let metaKey = aEvent.altKey;
+#endif
           if (!this.disableKeyNavigation && !metaKey) {
             switch (aEvent.keyCode) {
               case KeyEvent.DOM_VK_LEFT:
@@ -492,11 +494,11 @@
               cancel = this.mController.handleEscape();
               break;
             case KeyEvent.DOM_VK_RETURN:
-              if (AppConstants.platform == "macosx") {
-                // Prevent the default action, since it will beep on Mac
-                if (aEvent.metaKey)
-                  aEvent.preventDefault();
-              }
+#ifdef XP_MACOSX
+              // Prevent the default action, since it will beep on Mac
+              if (aEvent.metaKey)
+                aEvent.preventDefault();
+#endif
               this.mEnterEvent = aEvent;
               if (this.mController.selection) {
                 this._selectionDetails = {
@@ -507,15 +509,19 @@
               cancel = this.handleEnter();
               break;
             case KeyEvent.DOM_VK_DELETE:
-              if (AppConstants.platform == "macosx" && !aEvent.shiftKey) {
+#ifdef XP_MACOSX
+              if (!aEvent.shiftKey) {
                 break;
               }
+#endif
               cancel = this.handleDelete();
               break;
             case KeyEvent.DOM_VK_BACK_SPACE:
-              if (AppConstants.platform == "macosx" && aEvent.shiftKey) {
+#ifdef XP_MACOSX
+              if (aEvent.shiftKey) {
                 cancel = this.handleDelete();
               }
+#endif
               break;
             case KeyEvent.DOM_VK_DOWN:
             case KeyEvent.DOM_VK_UP:
@@ -523,9 +529,9 @@
                 this.toggleHistoryPopup();
               break;
             case KeyEvent.DOM_VK_F4:
-              if (AppConstants.platform != "macosx") {
-                this.toggleHistoryPopup();
-              }
+#ifndef XP_MACOSX
+              this.toggleHistoryPopup();
+#endif
               break;
           }
 
