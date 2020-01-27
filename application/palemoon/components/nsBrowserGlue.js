@@ -1456,8 +1456,8 @@ BrowserGlue.prototype = {
     if (currentUIVersion < 22) {
       if (Services.prefs.prefHasUserValue("layers.acceleration.disabled")) {
         let HWADisabled = Service.prefs.getBoolPref("layers.acceleration.disabled");
-        Services.prefs.setBoolPref("layers.acceleration.enabled") = !HWADisabled;
-        Services.prefs.setBoolPref("gfx.direct2d.disabled") = HWADisabled;
+        Services.prefs.setBoolPref("layers.acceleration.enabled", !HWADisabled);
+        Services.prefs.setBoolPref("gfx.direct2d.disabled", HWADisabled);
       }
       if (Services.prefs.getBoolPref("layers.acceleration.force-enabled", false)) {
         Services.prefs.setBoolPref("layers.acceleration.force", true);
