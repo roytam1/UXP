@@ -6,16 +6,14 @@
 
 Library('icu')
 
-if CONFIG['MOZ_SYSTEM_ICU']:
-    OS_LIBS += CONFIG['MOZ_ICU_LIBS']
+DIRS += [
+    'common',
+    'data',
+    'i18n',
+]
+
+if CONFIG['MOZ_ICU_DATA_ARCHIVE']:
+    DIRS += ['stubdata']
+    USE_LIBS += ['icustubdata']
 else:
-    DIRS += [
-        'common',
-        'data',
-        'i18n',
-    ]
-    if CONFIG['MOZ_ICU_DATA_ARCHIVE']:
-        DIRS += ['stubdata']
-        USE_LIBS += ['icustubdata']
-    else:
-        USE_LIBS += ['icudata']
+    USE_LIBS += ['icudata']

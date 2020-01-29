@@ -8,19 +8,6 @@ dnl ICU library, as well as a few other things.
 AC_DEFUN([MOZ_CONFIG_ICU], [
 
 ICU_LIB_NAMES=
-MOZ_SYSTEM_ICU=
-MOZ_ARG_WITH_BOOL(system-icu,
-[  --with-system-icu
-                          Use system ICU (located with pkgconfig)],
-    MOZ_SYSTEM_ICU=1)
-
-if test -n "$MOZ_SYSTEM_ICU"; then
-    PKG_CHECK_MODULES(MOZ_ICU, icu-i18n >= 58.1)
-    CFLAGS="$CFLAGS $MOZ_ICU_CFLAGS"
-    CXXFLAGS="$CXXFLAGS $MOZ_ICU_CFLAGS"
-fi
-
-AC_SUBST(MOZ_SYSTEM_ICU)
 
 dnl We always use ICU.
 USE_ICU=1
@@ -51,7 +38,7 @@ if test -n "$USE_ICU"; then
     dnl We also don't do it on Windows because sometimes the file goes
     dnl missing -- possibly due to overzealous antivirus software? --
     dnl which prevents the browser from starting up :(
-    if test -z "$JS_STANDALONE" -a -z "$MOZ_SYSTEM_ICU" -a "$OS_TARGET" != WINNT -a "$MOZ_WIDGET_TOOLKIT" != "android"; then
+    if test -z "$JS_STANDALONE" -a "$OS_TARGET" != WINNT -a "$MOZ_WIDGET_TOOLKIT" != "android"; then
         MOZ_ICU_DATA_ARCHIVE=1
     else
         MOZ_ICU_DATA_ARCHIVE=
@@ -64,7 +51,7 @@ AC_SUBST(USE_ICU)
 AC_SUBST(ICU_DATA_FILE)
 AC_SUBST(MOZ_ICU_DATA_ARCHIVE)
 
-if test -n "$USE_ICU" -a -z "$MOZ_SYSTEM_ICU"; then
+if test -n "$USE_ICU"; then
     if test -z "$YASM" -a -z "$GNU_AS" -a "$COMPILE_ENVIRONMENT"; then
       AC_MSG_ERROR([Building ICU requires either yasm or a GNU assembler. If you do not have either of those available for this platform you must use --without-intl-api])
     fi
