@@ -42,15 +42,6 @@ if test "$MOZ_BUILD_APP" != js || test -n "$JS_STANDALONE"; then
   _IS_OUTER_CONFIGURE=1
 fi
 
-MOZ_ARG_WITH_BOOL(system-nspr,
-[  --with-system-nspr      Use an NSPR that is already built and installed.
-                          Use the 'nspr-config' script in the current path,
-                          or look for the script in the directories given with
-                          --with-nspr-exec-prefix or --with-nspr-prefix.
-                          (Those flags are only checked if you specify
-                          --with-system-nspr.)],
-    _USE_SYSTEM_NSPR=1 )
-
 JS_POSIX_NSPR=unset
 ifdef([CONFIGURING_JS],[
     if test -n "$JS_STANDALONE"; then
@@ -71,7 +62,6 @@ ifdef([CONFIGURING_JS],[
 ])
 
 dnl Pass at most one of
-dnl   --with-system-nspr
 dnl   --with-nspr-cflags/libs
 dnl   --enable-nspr-build
 dnl   --enable-posix-nspr-emulation
@@ -79,10 +69,6 @@ dnl   --enable-posix-nspr-emulation
 AC_MSG_CHECKING([NSPR selection])
 nspr_opts=
 which_nspr=default
-if test -n "$_USE_SYSTEM_NSPR"; then
-    nspr_opts="x$nspr_opts"
-    which_nspr="system"
-fi
 if test -n "$NSPR_CFLAGS" -o -n "$NSPR_LIBS"; then
     nspr_opts="x$nspr_opts"
     which_nspr="command-line"
@@ -136,11 +122,7 @@ fi
 # anything itself.
 if test -n "$_IS_OUTER_CONFIGURE"; then
 
-if test -n "$_USE_SYSTEM_NSPR"; then
-    AM_PATH_NSPR($NSPR_MINVER, [MOZ_SYSTEM_NSPR=1], [AC_MSG_ERROR([you do not have NSPR installed or your version is older than $NSPR_MINVER.])])
-fi
-
-if test -n "$MOZ_SYSTEM_NSPR" -o -n "$NSPR_CFLAGS" -o -n "$NSPR_LIBS"; then
+if test -n "$NSPR_CFLAGS" -o -n "$NSPR_LIBS"; then
     _SAVE_CFLAGS=$CFLAGS
     CFLAGS="$CFLAGS $NSPR_CFLAGS"
     AC_TRY_COMPILE([#include "prtypes.h"],
@@ -178,19 +160,7 @@ AC_SUBST(NSPR_INCLUDE_DIR)
 AC_SUBST(NSPR_LIB_DIR)
 
 PKGCONF_REQUIRES_PRIVATE="Requires.private: nspr"
-if test -n "$MOZ_SYSTEM_NSPR"; then
-    _SAVE_CFLAGS=$CFLAGS
-    CFLAGS="$CFLAGS $NSPR_CFLAGS"
-    AC_TRY_COMPILE([#include "prlog.h"],
-                [#ifndef PR_STATIC_ASSERT
-                 #error PR_STATIC_ASSERT not defined
-                 #endif],
-                ,
-                AC_MSG_ERROR([system NSPR does not support PR_STATIC_ASSERT]))
-    CFLAGS=$_SAVE_CFLAGS
-    # piggy back on $MOZ_SYSTEM_NSPR to set a variable for the nspr check for js.pc
-    PKGCONF_REQUIRES_PRIVATE="Requires.private: nspr >= $NSPR_MINVER"
-elif test -n "$JS_POSIX_NSPR"; then
+if test -n "$JS_POSIX_NSPR"; then
     PKGCONF_REQUIRES_PRIVATE=
 fi
 AC_SUBST([PKGCONF_REQUIRES_PRIVATE])

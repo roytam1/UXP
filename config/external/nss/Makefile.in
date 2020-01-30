@@ -3,8 +3,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-ifndef MOZ_SYSTEM_NSS
-
 CC_WRAPPER =
 CXX_WRAPPER =
 
@@ -475,4 +473,3 @@ endif # MOZ_FOLD_LIBS
 # security/nss/lib/ckfw/builtins. See bug #836220.
 libs-nss/lib$(if $(MOZ_FOLD_LIBS),/ckfw): $(call mkdir_deps,$(DEPTH)/security/nss/lib/ckfw/builtins)
 
-endif

@@ -6,14 +6,11 @@
 
 Library('crmf')
 
-if CONFIG['MOZ_SYSTEM_NSS']:
-    OS_LIBS += [l for l in CONFIG['NSS_LIBS'] if l.startswith('-L')]
-else:
-    USE_LIBS += [
-        # The dependency on nss is not real, but is required to force the
-        # parent directory being built before this one. This has no
-        # practical effect on linkage, since the only thing linking crmf
-        # will need nss anyways.
-        'nss',
-        'static:/security/nss/lib/crmf/crmf',
-    ]
+USE_LIBS += [
+    # The dependency on nss is not real, but is required to force the
+    # parent directory being built before this one. This has no
+    # practical effect on linkage, since the only thing linking crmf
+    # will need nss anyways.
+    'nss',
+    'static:/security/nss/lib/crmf/crmf',
+]
