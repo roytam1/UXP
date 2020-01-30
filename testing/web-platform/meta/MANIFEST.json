@@ -15394,6 +15394,10 @@
         "url": "/dom/events/EventTarget-removeEventListener.html"
       },
       {
+	"path": "dom/events/event-disabled-dynamic.html",
+	"url": "/dom/events/event-disabled-dynamic.html"
+      },
+      {
         "path": "dom/events/ProgressEvent.html",
         "url": "/dom/events/ProgressEvent.html"
       },

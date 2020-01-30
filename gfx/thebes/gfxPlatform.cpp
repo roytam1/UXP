@@ -571,40 +571,6 @@ gfxPlatform::Init()
       }
     }
 
-    // Drop a note in the crash report if we end up forcing an option that could
-    // destabilize things.  New items should be appended at the end (of an existing
-    // or in a new section), so that we don't have to know the version to interpret
-    // these cryptic strings.
-    {
-      nsAutoCString forcedPrefs;
-      // D2D prefs
-      forcedPrefs.AppendPrintf("FP(D%d%d",
-                               gfxPrefs::Direct2DDisabled(),
-                               gfxPrefs::Direct2DForceEnabled());
-      // Layers prefs
-      forcedPrefs.AppendPrintf("-L%d%d%d%d",
-                               gfxPrefs::LayersAMDSwitchableGfxEnabled(),
-                               gfxPrefs::LayersAccelerationDisabledDoNotUseDirectly(),
-                               gfxPrefs::LayersAccelerationForceEnabledDoNotUseDirectly(),
-                               gfxPrefs::LayersD3D11ForceWARP());
-      // WebGL prefs
-      forcedPrefs.AppendPrintf("-W%d%d%d%d%d%d%d%d",
-                               gfxPrefs::WebGLANGLEForceD3D11(),
-                               gfxPrefs::WebGLANGLEForceWARP(),
-                               gfxPrefs::WebGLDisabled(),
-                               gfxPrefs::WebGLDisableANGLE(),
-                               gfxPrefs::WebGLDXGLEnabled(),
-                               gfxPrefs::WebGLForceEnabled(),
-                               gfxPrefs::WebGLForceLayersReadback(),
-                               gfxPrefs::WebGLForceMSAA());
-      // Prefs that don't fit into any of the other sections
-      forcedPrefs.AppendPrintf("-T%d%d%d%d) ",
-                               gfxPrefs::AndroidRGB16Force(),
-                               gfxPrefs::CanvasAzureAccelerated(),
-                               gfxPrefs::DisableGralloc(),
-                               gfxPrefs::ForceShmemTiles());
-    }
-
     InitMoz2DLogging();
 
     gGfxPlatformPrefsLock = new Mutex("gfxPlatform::gGfxPlatformPrefsLock");
@@ -2171,7 +2137,7 @@ gfxPlatform::InitCompositorAccelerationPrefs()
                          FeatureStatus::Blocked,
                          "Acceleration blocked by platform"))
   {
-    if (gfxPrefs::LayersAccelerationDisabledDoNotUseDirectly()) {
+    if (!gfxPrefs::LayersAccelerationEnabledDoNotUseDirectly()) {
       feature.UserDisable("Disabled by pref",
                           NS_LITERAL_CSTRING("FEATURE_FAILURE_COMP_PREF"));
     } else if (acceleratedEnv && *acceleratedEnv == '0') {
@@ -2185,8 +2151,9 @@ gfxPlatform::InitCompositorAccelerationPrefs()
   }
 
   // This has specific meaning elsewhere, so we always record it.
-  if (gfxPrefs::LayersAccelerationForceEnabledDoNotUseDirectly()) {
-    feature.UserForceEnable("Force-enabled by pref");
+  if (gfxPrefs::LayersAccelerationEnabledDoNotUseDirectly() &&
+      gfxPrefs::LayersAccelerationForceEnabledDoNotUseDirectly()) {
+    feature.UserForceEnable("Force-enabled by prefs");
   }
 
   // Safe mode trumps everything.
@@ -2208,7 +2175,11 @@ gfxPlatform::CanUseHardwareVideoDecoding()
 bool
 gfxPlatform::AccelerateLayersByDefault()
 {
-#if defined(MOZ_GL_PROVIDER) || defined(MOZ_WIDGET_UIKIT)
+  // Note: add any new platform defines here that should get HWA by default.
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_UIKIT)
+  return true;
+#elif defined(MOZ_GL_PROVIDER)
+  // GL provider manually declared
   return true;
 #else
   return false;

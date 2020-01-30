@@ -390,6 +390,45 @@ public:
 
   Directionality GetComputedDirectionality() const;
 
+  /**
+   * Gets the custom element data used by web components custom element.
+   * Custom element data is created at the first attempt to enqueue a callback.
+   *
+   * @return The custom element data or null if none.
+   */
+  inline CustomElementData* GetCustomElementData() const
+  {
+    nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
+    if (slots) {
+      return slots->mCustomElementData;
+    }
+    return nullptr;
+  }
+
+  /**
+   * Sets the custom element data, ownership of the
+   * callback data is taken by this element.
+   *
+   * @param aData The custom element data.
+   */
+  void SetCustomElementData(CustomElementData* aData);
+
+  /**
+   * Gets the custom element definition used by web components custom element.
+   *
+   * @return The custom element definition or null if element is not a custom
+   *         element or custom element is not defined yet.
+   */
+  CustomElementDefinition* GetCustomElementDefinition() const;
+
+  /**
+   * Sets the custom element definition, called when custom element is created
+   * or upgraded.
+   *
+   * @param aDefinition The custom element definition.
+   */
+  void SetCustomElementDefinition(CustomElementDefinition* aDefinition);
+
 protected:
   /**
    * Method to get the _intrinsic_ content state of this element.  This is the
@@ -814,7 +853,7 @@ public:
 
   ShadowRoot *FastGetShadowRoot() const
   {
-    nsDOMSlots* slots = GetExistingDOMSlots();
+    nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
     return slots ? slots->mShadowRoot.get() : nullptr;
   }
 

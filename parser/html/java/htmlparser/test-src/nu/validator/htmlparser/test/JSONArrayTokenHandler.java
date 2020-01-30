@@ -23,11 +23,6 @@
 
 package nu.validator.htmlparser.test;
 
-import nu.validator.htmlparser.common.TokenHandler;
-import nu.validator.htmlparser.impl.ElementName;
-import nu.validator.htmlparser.impl.HtmlAttributes;
-import nu.validator.htmlparser.impl.Tokenizer;
-
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -37,6 +32,11 @@ import com.sdicons.json.model.JSONBoolean;
 import com.sdicons.json.model.JSONNull;
 import com.sdicons.json.model.JSONObject;
 import com.sdicons.json.model.JSONString;
+
+import nu.validator.htmlparser.common.TokenHandler;
+import nu.validator.htmlparser.impl.ElementName;
+import nu.validator.htmlparser.impl.HtmlAttributes;
+import nu.validator.htmlparser.impl.Tokenizer;
 
 public class JSONArrayTokenHandler implements TokenHandler, ErrorHandler {
 
@@ -102,7 +102,7 @@ public class JSONArrayTokenHandler implements TokenHandler, ErrorHandler {
     }
 
     public void endTag(ElementName eltName) throws SAXException {
-        String name = eltName.name;
+        String name = eltName.getName();
         flushCharacters();
         JSONArray token = new JSONArray();
         token.getValue().add(END_TAG);
@@ -123,7 +123,7 @@ public class JSONArrayTokenHandler implements TokenHandler, ErrorHandler {
 
     public void startTag(ElementName eltName, HtmlAttributes attributes,
             boolean selfClosing) throws SAXException {
-        String name = eltName.name;
+        String name = eltName.getName();
         flushCharacters();
         JSONArray token = new JSONArray();
         token.getValue().add(START_TAG);

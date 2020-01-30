@@ -14,6 +14,7 @@ EXPORTS += [
     'SVGContentUtils.h',
     'SVGPreserveAspectRatio.h',
     'SVGStringList.h',
+    'SVGTagList.h',
 ]
 
 EXPORTS.mozilla.dom += [
@@ -39,6 +40,7 @@ EXPORTS.mozilla.dom += [
     'SVGDefsElement.h',
     'SVGDescElement.h',
     'SVGDocument.h',
+    'SVGElementFactory.h',
     'SVGEllipseElement.h',
     'SVGFEBlendElement.h',
     'SVGFEColorMatrixElement.h',

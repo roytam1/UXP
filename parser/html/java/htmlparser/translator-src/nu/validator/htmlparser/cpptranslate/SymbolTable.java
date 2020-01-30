@@ -38,11 +38,13 @@
 package nu.validator.htmlparser.cpptranslate;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class SymbolTable {
     
-    public final Map<String, String> cppDefinesByJavaNames = new HashMap<String, String>();
+    private final Set<StringPair> primitiveConstants = new HashSet<StringPair>();
 
     private final Map<StringPair, Type> fields = new HashMap<StringPair, Type>();
     
@@ -51,17 +53,24 @@ public class SymbolTable {
     /**
      * This is a sad hack to work around the fact the there's no real symbol
      * table yet.
-     * 
-     * @param name
+     *
+     * @param field
      * @return
      */
-    public boolean isNotAnAttributeOrElementName(String name) {
-        return !("ATTRIBUTE_HASHES".equals(name)
-                || "ATTRIBUTE_NAMES".equals(name)
-                || "ELEMENT_HASHES".equals(name)
-                || "ELEMENT_NAMES".equals(name) || "ALL_NO_NS".equals(name));
+    public boolean isAttributeOrElementName(String klazz, String field) {
+        if (isPrimitiveConstant(klazz, field)) {
+            return false;
+        }
+        return !("ATTRIBUTE_HASHES".equals(field)
+                || "ATTRIBUTE_NAMES".equals(field)
+                || "ELEMENT_HASHES".equals(field)
+                || "ELEMENT_NAMES".equals(field) || "ALL_NO_NS".equals(field));
     }
-    
+
+    public void addPrimitiveConstant(String klazz, String field) {
+        primitiveConstants.add(new StringPair(klazz, field));
+    }
+
     public void putFieldType(String klazz, String field, Type type) {
         fields.put(new StringPair(klazz, field), type);
     }
@@ -69,7 +78,11 @@ public class SymbolTable {
     public void putMethodReturnType(String klazz, String method, Type type) {
         methodReturns.put(new StringPair(klazz, method), type);
     }
-    
+
+    public boolean isPrimitiveConstant(String klazz, String field) {
+        return primitiveConstants.contains(new StringPair(klazz, field));
+    }
+
     public Type getFieldType(String klazz, String field) {
         return fields.get(new StringPair(klazz, field));
     }

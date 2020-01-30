@@ -793,17 +793,6 @@ nsGenericDOMDataNode::SetXBLInsertionParent(nsIContent* aContent)
   }
 }
 
-CustomElementData *
-nsGenericDOMDataNode::GetCustomElementData() const
-{
-  return nullptr;
-}
-
-void
-nsGenericDOMDataNode::SetCustomElementData(CustomElementData* aData)
-{
-}
-
 bool
 nsGenericDOMDataNode::IsNodeOfType(uint32_t aFlags) const
 {

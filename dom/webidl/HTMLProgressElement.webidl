@@ -11,10 +11,11 @@
  * and create derivative works of this document.
  */
 
+[HTMLConstructor]
 interface HTMLProgressElement : HTMLElement {
-           [SetterThrows]
+           [CEReactions, SetterThrows]
            attribute double value;
-           [SetterThrows]
+           [CEReactions, SetterThrows]
            attribute double max;
   readonly attribute double position;
   readonly attribute NodeList labels;

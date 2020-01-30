@@ -556,8 +556,8 @@ class basic_compositor_video(PageloaderTest):
     sps_profile_interval = 1
     sps_profile_entries = 2000000
     preferences = {'full-screen-api.allow-trusted-requests-only': False,
-                   'layers.acceleration.force-enabled': False,
-                   'layers.acceleration.disabled': True,
+                   'layers.acceleration.force': False,
+                   'layers.acceleration.enabled': False,
                    'layout.frame_rate': 0,
                    'docshell.event_starvation_delay_hint': 1,
                    'full-screen-api.warning.timeout': 500,

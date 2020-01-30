@@ -11,11 +11,12 @@
  * and create derivative works of this document.
  */
 
+[HTMLConstructor]
 interface HTMLFieldSetElement : HTMLElement {
-  [SetterThrows]
+  [CEReactions, SetterThrows]
            attribute boolean disabled;
   readonly attribute HTMLFormElement? form;
-  [SetterThrows]
+  [CEReactions, SetterThrows]
            attribute DOMString name;
 
   readonly attribute DOMString type;

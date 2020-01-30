@@ -45,15 +45,16 @@
 #include "nsIUnicodeDecoder.h"
 #include "nsHtml5Macros.h"
 #include "nsIContentHandle.h"
+#include "nsHtml5Portability.h"
+#include "nsHtml5ContentCreatorFunction.h"
 
 class nsHtml5StreamParser;
 
+class nsHtml5AttributeName;
+class nsHtml5ElementName;
 class nsHtml5Tokenizer;
 class nsHtml5TreeBuilder;
 class nsHtml5MetaScanner;
-class nsHtml5AttributeName;
-class nsHtml5ElementName;
-class nsHtml5HtmlAttributes;
 class nsHtml5UTF16Buffer;
 class nsHtml5StateSnapshot;
 class nsHtml5Portability;
@@ -62,7 +63,6 @@ class nsHtml5Portability;
 class nsHtml5StackNode
 {
   public:
-    int32_t idxInTreeBuilder;
     int32_t flags;
     nsIAtom* name;
     nsIAtom* popName;
@@ -71,6 +71,7 @@ class nsHtml5StackNode
     nsHtml5HtmlAttributes* attributes;
   private:
     int32_t refcount;
+    mozilla::dom::HTMLContentCreatorFunction htmlCreator;
   public:
     inline int32_t getFlags()
     {
@@ -82,28 +83,13 @@ class nsHtml5StackNode
     bool isSpecial();
     bool isFosterParenting();
     bool isHtmlIntegrationPoint();
-    explicit nsHtml5StackNode(int32_t idxInTreeBuilder);
-    void setValues(int32_t flags,
-                   int32_t ns,
-                   nsIAtom* name,
-                   nsIContentHandle* node,
-                   nsIAtom* popName,
-                   nsHtml5HtmlAttributes* attributes);
-    void setValues(nsHtml5ElementName* elementName, nsIContentHandle* node);
-    void setValues(nsHtml5ElementName* elementName,
-                   nsIContentHandle* node,
-                   nsHtml5HtmlAttributes* attributes);
-    void setValues(nsHtml5ElementName* elementName,
-                   nsIContentHandle* node,
-                   nsIAtom* popName);
-    void setValues(nsHtml5ElementName* elementName,
-                   nsIAtom* popName,
-                   nsIContentHandle* node);
-    void setValues(nsHtml5ElementName* elementName,
-                   nsIContentHandle* node,
-                   nsIAtom* popName,
-                   bool markAsIntegrationPoint);
-
+    mozilla::dom::HTMLContentCreatorFunction getHtmlCreator();
+    nsHtml5StackNode(int32_t flags, int32_t ns, nsIAtom* name, nsIContentHandle* node, nsIAtom* popName, nsHtml5HtmlAttributes* attributes, mozilla::dom::HTMLContentCreatorFunction htmlCreator);
+    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHandle* node);
+    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHandle* node, nsHtml5HtmlAttributes* attributes);
+    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHandle* node, nsIAtom* popName);
+    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIAtom* popName, nsIContentHandle* node);
+    nsHtml5StackNode(nsHtml5ElementName* elementName, nsIContentHandle* node, nsIAtom* popName, bool markAsIntegrationPoint);
   private:
     static int32_t prepareSvgFlags(int32_t flags);
     static int32_t prepareMathFlags(int32_t flags, bool markAsIntegrationPoint);
@@ -111,13 +97,10 @@ class nsHtml5StackNode
     ~nsHtml5StackNode();
     void dropAttributes();
     void retain();
-    void release(nsHtml5TreeBuilder* owningTreeBuilder);
-    bool isUnused();
+    void release();
     static void initializeStatics();
     static void releaseStatics();
 };
-
-
 
 #endif
 

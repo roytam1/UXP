@@ -204,7 +204,7 @@ config = {
         "reftest-no-accel": {
             "options": ["--suite=reftest",
                         "--setpref=gfx.direct2d.disabled=true",
-                        "--setpref=layers.acceleration.disabled=true"],
+                        "--setpref=layers.acceleration.enabled=false"],
             "tests": ["tests/reftest/tests/layout/reftests/reftest.list"]
         },
     },

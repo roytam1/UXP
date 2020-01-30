@@ -331,13 +331,7 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
         } else if ("errorHandler".equals(n.getName())) {
             printer.print(cppTypes.errorHandler());
         } else {
-            String prefixedName = javaClassName + "." + n.getName();
-            String constant = symbolTable.cppDefinesByJavaNames.get(prefixedName);
-            if (constant != null) {
-                printer.print(constant);
-            } else {
-                printer.print(n.getName());
-            }
+            printer.print(n.getName());
         }
     }
 
@@ -448,14 +442,6 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
         printer.print("#include \"");
         printer.print(className);
         printer.printLn(".h\"");
-        if ("AttributeName".equals(javaClassName)
-                || "ElementName".equals(javaClassName)) {
-            printer.print("#include \"");
-            printer.print(cppTypes.classPrefix());
-            printer.print("Releasable");
-            printer.print(javaClassName);
-            printer.printLn(".h\"");
-        }
         printer.printLn();
     }
 
@@ -494,7 +480,15 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                 name = cppTypes.stringType();
             }
         } else if ("T".equals(name) || "Object".equals(name)) {
-            name = cppTypes.nodeType();
+            if (htmlCreator()) {
+                name = cppTypes.htmlCreatorType();
+            } else if (svgCreator()) {
+                name = cppTypes.svgCreatorType();
+            } else if (creator()) {
+                name = cppTypes.creatorType();
+            } else {
+                name = cppTypes.nodeType();
+            }
         } else if ("TokenHandler".equals(name)) {
             name = cppTypes.classPrefix() + "TreeBuilder*";
         } else if ("EncodingDeclarationHandler".equals(name)) {
@@ -548,7 +542,11 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
             case Float:
                 throw new IllegalStateException("Unsupported primitive.");
             case Int:
-                printer.print(cppTypes.intType());
+                if (unsigned()) {
+                    printer.print(cppTypes.unsignedIntType());
+                } else {
+                    printer.print(cppTypes.intType());
+                }
                 break;
             case Long:
                 throw new IllegalStateException("Unsupported primitive.");
@@ -740,10 +738,14 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                         printer.print(" ");
                         printer.print(className);
                         printer.print("::");
-                        if ("AttributeName".equals(n.getType().toString())) {
-                            printer.print("ATTR_");
-                        } else if ("ElementName".equals(n.getType().toString())) {
-                            printer.print("ELT_");
+                        String clazzName = n.getType().toString();
+                        String field = declarator.getId().toString();
+                        if (symbolTable.isAttributeOrElementName(clazzName, field)) {
+                            if ("AttributeName".equals(clazzName)) {
+                                printer.print("ATTR_");
+                            } else if ("ElementName".equals(clazzName)) {
+                                printer.print("ELT_");
+                            }
                         }
                         declarator.getId().accept(this, arg);
                         printer.print(" = ");
@@ -1079,26 +1081,22 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                 if ("DocumentMode".equals(scope.toString())) {
                     // printer.print(cppTypes.documentModeType());
                     // printer.print(".");
+                } else if ("creator".equals(scope.toString()) || "this.creator".equals(scope.toString())) {
+                    scope.accept(this, arg);
+                    printer.print(".");
                 } else {
                     scope.accept(this, arg);
                     printer.print("->");
                 }
             } else {
-                String prefixedName = clazzName + "." + field;
-                String constant = symbolTable.cppDefinesByJavaNames.get(prefixedName);
-                if (constant != null) {
-                    printer.print(constant);
-                    return;
-                } else {
-                    printer.print(cppTypes.classPrefix());
-                    printer.print(clazzName);
-                    printer.print("::");
-                    if (symbolTable.isNotAnAttributeOrElementName(field)) {
-                        if ("AttributeName".equals(clazzName)) {
-                            printer.print("ATTR_");
-                        } else if ("ElementName".equals(clazzName)) {
-                            printer.print("ELT_");
-                        }
+                printer.print(cppTypes.classPrefix());
+                printer.print(clazzName);
+                printer.print("::");
+                if (symbolTable.isAttributeOrElementName(clazzName, field)) {
+                    if ("AttributeName".equals(clazzName)) {
+                        printer.print("ATTR_");
+                    } else if ("ElementName".equals(clazzName)) {
+                        printer.print("ELT_");
                     }
                 }
             }
@@ -1337,7 +1335,8 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
                     if (clazzName == null) {
                         scope.accept(this, arg);
                         if ("length".equals(n.getName())
-                                || "charAt".equals(n.getName())) {
+                                || "charAt".equals(n.getName())
+                                || "creator".equals(scope.toString())) {
                             printer.print(".");
                         } else {
                             printer.print("->");
@@ -1383,19 +1382,12 @@ public class CppVisitor extends AnnotationHelperVisitor<LocalSymbolTable> {
 
         suppressPointer = true;
         printTypeArgs(n.getTypeArgs(), arg);
-        if ("createAttributeName".equals(currentMethod)
-                || "elementNameByBuffer".equals(currentMethod)) {
-            printer.print(cppTypes.classPrefix());
-            printer.print("Releasable");
-            printer.print(n.getType().getName());
-        } else {
-            n.getType().accept(this, arg);
-        }
+        n.getType().accept(this, arg);
         suppressPointer = false;
 
         if ("AttributeName".equals(n.getType().getName())) {
             List<Expression> args = n.getArgs();
-            while (args.size() > 3) {
+            while (args != null && args.size() > 3) {
                 args.remove(3);
             }
         }

@@ -1582,7 +1582,7 @@ class IDLInterface(IDLInterfaceOrNamespace):
                                       [self.location])
 
                 self._noInterfaceObject = True
-            elif identifier == "Constructor" or identifier == "NamedConstructor" or identifier == "ChromeConstructor":
+            elif identifier == "Constructor" or identifier == "NamedConstructor" or identifier == "ChromeConstructor" or identifier == "HTMLConstructor":
                 if identifier == "Constructor" and not self.hasInterfaceObject():
                     raise WebIDLError(str(identifier) + " and NoInterfaceObject are incompatible",
                                       [self.location])
@@ -1595,11 +1595,20 @@ class IDLInterface(IDLInterfaceOrNamespace):
                     raise WebIDLError(str(identifier) + " and NoInterfaceObject are incompatible",
                                       [self.location])
 
+                if identifier == "HTMLConstructor":
+                    if not self.hasInterfaceObject():
+                        raise WebIDLError(str(identifier) + " and NoInterfaceObject are incompatible",
+                                          [self.location])
+
+                    if not attr.noArguments():
+                        raise WebIDLError(str(identifier) + " must take no arguments",
+                                          [attr.location])
+
                 args = attr.args() if attr.hasArgs() else []
 
                 retType = IDLWrapperType(self.location, self)
 
-                if identifier == "Constructor" or identifier == "ChromeConstructor":
+                if identifier == "Constructor" or identifier == "ChromeConstructor" or identifier == "HTMLConstructor":
                     name = "constructor"
                     allowForbidden = True
                 else:
@@ -1610,7 +1619,8 @@ class IDLInterface(IDLInterfaceOrNamespace):
                                                            allowForbidden=allowForbidden)
 
                 method = IDLMethod(self.location, methodIdentifier, retType,
-                                   args, static=True)
+                                   args, static=True,
+                                   htmlConstructor=(identifier == "HTMLConstructor"))
                 # Constructors are always NewObject and are always
                 # assumed to be able to throw (since there's no way to
                 # indicate otherwise) and never have any other
@@ -1622,7 +1632,7 @@ class IDLInterface(IDLInterfaceOrNamespace):
                     method.addExtendedAttributes(
                         [IDLExtendedAttribute(self.location, ("ChromeOnly",))])
 
-                if identifier == "Constructor" or identifier == "ChromeConstructor":
+                if identifier == "Constructor" or identifier == "ChromeConstructor" or identifier == "HTMLConstructor":
                     method.resolve(self)
                 else:
                     # We need to detect conflicts for NamedConstructors across
@@ -4073,6 +4083,11 @@ class IDLAttribute(IDLInterfaceMember):
             raise WebIDLError("Attribute returns a type that is not exposed "
                               "everywhere where the attribute is exposed",
                               [self.location])
+        if self.getExtendedAttribute("CEReactions"):
+            if self.readonly:
+                raise WebIDLError("[CEReactions] is not allowed on "
+                                  "readonly attributes",
+                                  [self.location])
 
     def handleExtendedAttribute(self, attr):
         identifier = attr.identifier()
@@ -4243,6 +4258,10 @@ class IDLAttribute(IDLInterfaceMember):
                 raise WebIDLError("[Unscopable] is only allowed on non-static "
                                   "attributes and operations",
                                   [attr.location, self.location])
+        elif identifier == "CEReactions":
+            if not attr.noArguments():
+                raise WebIDLError("[CEReactions] must take no arguments",
+                                  [attr.location])
         elif (identifier == "Pref" or
               identifier == "Deprecated" or
               identifier == "SetterThrows" or
@@ -4537,7 +4556,7 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
                  static=False, getter=False, setter=False, creator=False,
                  deleter=False, specialType=NamedOrIndexed.Neither,
                  legacycaller=False, stringifier=False, jsonifier=False,
-                 maplikeOrSetlikeOrIterable=None):
+                 maplikeOrSetlikeOrIterable=None, htmlConstructor=False):
         # REVIEW: specialType is NamedOrIndexed -- wow, this is messed up.
         IDLInterfaceMember.__init__(self, location, identifier,
                                     IDLInterfaceMember.Tags.Method)
@@ -4567,6 +4586,10 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
         self._jsonifier = jsonifier
         assert maplikeOrSetlikeOrIterable is None or isinstance(maplikeOrSetlikeOrIterable, IDLMaplikeOrSetlikeOrIterableBase)
         self.maplikeOrSetlikeOrIterable = maplikeOrSetlikeOrIterable
+        assert isinstance(htmlConstructor, bool)
+        # The identifier of a HTMLConstructor must be 'constructor'.
+        assert not htmlConstructor or identifier.name == "constructor"
+        self._htmlConstructor = htmlConstructor
         self._specialType = specialType
         self._unforgeable = False
         self.dependsOn = "Everything"
@@ -4667,6 +4690,9 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
                 self.isStringifier() or
                 self.isJsonifier())
 
+    def isHTMLConstructor(self):
+        return self._htmlConstructor
+
     def hasOverloads(self):
         return self._hasOverloads
 
@@ -4722,6 +4748,8 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
         assert not method.isStringifier()
         assert not self.isJsonifier()
         assert not method.isJsonifier()
+        assert not self.isHTMLConstructor()
+        assert not method.isHTMLConstructor()
 
         return self
 
@@ -4963,6 +4991,15 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
             if self.isStatic():
                 raise WebIDLError("[Unscopable] is only allowed on non-static "
                                   "attributes and operations",
+                                  [attr.location, self.location])
+        elif identifier == "CEReactions":
+            if not attr.noArguments():
+                raise WebIDLError("[CEReactions] must take no arguments",
+                                  [attr.location])
+
+            if self.isSpecial() and not self.isSetter() and not self.isDeleter():
+                raise WebIDLError("[CEReactions] is only allowed on operation, "
+                                  "attribute, setter, and deleter",
                                   [attr.location, self.location])
         elif (identifier == "Throws" or
               identifier == "NewObject" or

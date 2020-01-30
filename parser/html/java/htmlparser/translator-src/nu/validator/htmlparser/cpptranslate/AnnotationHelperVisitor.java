@@ -72,6 +72,10 @@ public class AnnotationHelperVisitor<T> extends VoidVisitorAdapter<T> {
         return hasAnnotation("NoLength");
     }
 
+    protected boolean unsigned() {
+        return hasAnnotation("Unsigned");
+    }
+
     protected boolean auto() {
         return hasAnnotation("Auto");
     }
@@ -86,6 +90,18 @@ public class AnnotationHelperVisitor<T> extends VoidVisitorAdapter<T> {
 
     protected boolean characterName() {
         return hasAnnotation("CharacterName");
+    }
+
+    protected boolean creator() {
+        return hasAnnotation("Creator");
+    }
+
+    protected boolean htmlCreator() {
+        return hasAnnotation("HtmlCreator");
+    }
+
+    protected boolean svgCreator() {
+        return hasAnnotation("SvgCreator");
     }
 
     private boolean hasAnnotation(String anno) {

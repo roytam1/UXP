@@ -29,9 +29,6 @@ if CONFIG['HOST_OS_ARCH'] != 'WINNT':
     # while the program here is in C.
     HostProgram('nsinstall_real', c_only=True)
 
-if CONFIG['MOZ_SYSTEM_ICU']:
-    DEFINES['MOZ_SYSTEM_ICU'] = True
-
 PYTHON_UNIT_TESTS += [
     'tests/test_mozbuild_reading.py',
     'tests/unit-expandlibs.py',

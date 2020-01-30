@@ -14,7 +14,8 @@ class nsIContent;
 class nsHtml5TreeOpExecutor;
 class nsHtml5DocumentBuilder;
 
-enum eHtml5TreeOperation {
+enum eHtml5TreeOperation
+{
   eTreeOpUninitialized,
   // main HTML5 ops
   eTreeOpAppend,
@@ -24,8 +25,11 @@ enum eHtml5TreeOperation {
   eTreeOpAppendToDocument,
   eTreeOpAddAttributes,
   eTreeOpDocumentMode,
-  eTreeOpCreateElementNetwork,
-  eTreeOpCreateElementNotNetwork,
+  eTreeOpCreateHTMLElementNetwork,
+  eTreeOpCreateHTMLElementNotNetwork,
+  eTreeOpCreateSVGElementNetwork,
+  eTreeOpCreateSVGElementNotNetwork,
+  eTreeOpCreateMathMLElement,
   eTreeOpSetFormElement,
   eTreeOpAppendText,
   eTreeOpAppendIsindexPrompt,
@@ -139,16 +143,34 @@ class nsHtml5TreeOperation {
                                  nsIContent* aTable,
                                  nsHtml5DocumentBuilder* aBuilder);
 
+    static void SetHTMLElementAttributes(mozilla::dom::Element* aElement,
+                                         nsIAtom* aName,
+                                         nsHtml5HtmlAttributes* aAttributes);
+
     static nsresult AddAttributes(nsIContent* aNode,
                                   nsHtml5HtmlAttributes* aAttributes,
                                   nsHtml5DocumentBuilder* aBuilder);
 
-    static nsIContent* CreateElement(int32_t aNs,
-                                     nsIAtom* aName,
-                                     nsHtml5HtmlAttributes* aAttributes,
-                                     mozilla::dom::FromParser aFromParser,
-                                     nsNodeInfoManager* aNodeInfoManager,
-                                     nsHtml5DocumentBuilder* aBuilder);
+    static nsIContent* CreateHTMLElement(
+      nsIAtom* aName,
+      nsHtml5HtmlAttributes* aAttributes,
+      mozilla::dom::FromParser aFromParser,
+      nsNodeInfoManager* aNodeInfoManager,
+      nsHtml5DocumentBuilder* aBuilder,
+      mozilla::dom::HTMLContentCreatorFunction aCreator);
+
+    static nsIContent* CreateSVGElement(
+      nsIAtom* aName,
+      nsHtml5HtmlAttributes* aAttributes,
+      mozilla::dom::FromParser aFromParser,
+      nsNodeInfoManager* aNodeInfoManager,
+      nsHtml5DocumentBuilder* aBuilder,
+      mozilla::dom::SVGContentCreatorFunction aCreator);
+
+    static nsIContent* CreateMathMLElement(nsIAtom* aName,
+                                           nsHtml5HtmlAttributes* aAttributes,
+                                           nsNodeInfoManager* aNodeInfoManager,
+                                           nsHtml5DocumentBuilder* aBuilder);
 
     static void SetFormElement(nsIContent* aNode, nsIContent* aParent);
 
@@ -284,22 +306,31 @@ class nsHtml5TreeOperation {
       mOne.node = static_cast<nsIContent**>(aNode);
       mTwo.state = nullptr;
     }
-    
-    inline void Init(int32_t aNamespace, 
-                     nsIAtom* aName, 
+
+    inline void Init(int32_t aNamespace,
+                     nsIAtom* aName,
                      nsHtml5HtmlAttributes* aAttributes,
                      nsIContentHandle* aTarget,
                      nsIContentHandle* aIntendedParent,
-                     bool aFromNetwork)
+                     bool aFromNetwork,
+                     nsHtml5ContentCreatorFunction aCreator)
     {
       NS_PRECONDITION(mOpCode == eTreeOpUninitialized,
         "Op code must be uninitialized when initializing.");
       NS_PRECONDITION(aName, "Initialized tree op with null name.");
       NS_PRECONDITION(aTarget, "Initialized tree op with null target node.");
-      mOpCode = aFromNetwork ?
-                eTreeOpCreateElementNetwork :
-                eTreeOpCreateElementNotNetwork;
-      mFour.integer = aNamespace;
+      if (aNamespace == kNameSpaceID_XHTML) {
+        mOpCode = aFromNetwork ? eTreeOpCreateHTMLElementNetwork
+                               : eTreeOpCreateHTMLElementNotNetwork;
+        mFour.htmlCreator = aCreator.html;
+      } else if (aNamespace == kNameSpaceID_SVG) {
+        mOpCode = aFromNetwork ? eTreeOpCreateSVGElementNetwork
+                               : eTreeOpCreateSVGElementNotNetwork;
+        mFour.svgCreator = aCreator.svg;
+      } else {
+        MOZ_ASSERT(aNamespace == kNameSpaceID_MathML);
+        mOpCode = eTreeOpCreateMathMLElement;
+      }
       mFive.node = static_cast<nsIContent**>(aIntendedParent);
       mOne.node = static_cast<nsIContent**>(aTarget);
       mTwo.atom = aName;
@@ -507,6 +538,8 @@ class nsHtml5TreeOperation {
       nsAHtml5TreeBuilderState*       state;
       int32_t                         integer;
       nsresult                        result;
+      mozilla::dom::HTMLContentCreatorFunction htmlCreator;
+      mozilla::dom::SVGContentCreatorFunction svgCreator;
     } mOne, mTwo, mThree, mFour, mFive;
 };
 

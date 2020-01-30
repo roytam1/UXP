@@ -23,6 +23,8 @@
 
 package nu.validator.htmlparser.sax;
 
+import org.xml.sax.SAXException;
+
 import nu.validator.htmlparser.impl.HtmlAttributes;
 import nu.validator.htmlparser.impl.TreeBuilder;
 import nu.validator.saxtree.Characters;
@@ -34,11 +36,7 @@ import nu.validator.saxtree.Element;
 import nu.validator.saxtree.Node;
 import nu.validator.saxtree.ParentNode;
 
-import org.xml.sax.SAXException;
-
 class SAXTreeBuilder extends TreeBuilder<Element> {
-
-    private static final char[] ISINDEX_PROMPT = "This is a searchable index. Enter search keywords: ".toCharArray();
 
     private Document document;
 
@@ -63,14 +61,6 @@ class SAXTreeBuilder extends TreeBuilder<Element> {
     @Override
     protected void appendCharacters(Element parent, char[] buf, int start, int length) {
         parent.appendChild(new Characters(tokenizer, buf, start, length));
-    }
-
-    /**
-     * @see nu.validator.htmlparser.impl.TreeBuilder#appendIsindexPrompt(java.lang.Object)
-     */
-    @Override protected void appendIsindexPrompt(Element parent)
-            throws SAXException {
-        parent.appendChild(new Characters(tokenizer, ISINDEX_PROMPT, 0, ISINDEX_PROMPT.length));
     }
 
     @Override

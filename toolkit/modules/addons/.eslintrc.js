@@ -8,7 +8,6 @@ module.exports = { // eslint-disable-line no-undef
     "addMessageListener": false,
     "removeEventListener": false,
     "sendAsyncMessage": false,
-    "AddonManagerPermissions": false,
 
     "initialProcessData": true,
   },

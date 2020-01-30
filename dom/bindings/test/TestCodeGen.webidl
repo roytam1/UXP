@@ -947,6 +947,10 @@ interface TestInterface {
   [NeedsSubjectPrincipal] attribute boolean needsSubjectPrincipalAttr;
   [NeedsCallerType] void needsCallerTypeMethod();
   [NeedsCallerType] attribute boolean needsCallerTypeAttr;
+  [CEReactions] void ceReactionsMethod();
+  [CEReactions] void ceReactionsMethodOverload();
+  [CEReactions] void ceReactionsMethodOverload(DOMString bar);
+  [CEReactions] attribute boolean ceReactionsAttr;
   legacycaller short(unsigned long arg1, TestInterface arg2);
   void passArgsWithDefaults(optional long arg1,
                             optional TestInterface? arg2 = null,
@@ -1261,4 +1265,17 @@ interface TestWorkerExposedInterface {
   [NeedsSubjectPrincipal] attribute boolean needsSubjectPrincipalAttr;
   [NeedsCallerType] void needsCallerTypeMethod();
   [NeedsCallerType] attribute boolean needsCallerTypeAttr;
+};
+
+[HTMLConstructor]
+interface TestHTMLConstructorInterface {
+};
+
+interface TestCEReactionsInterface {
+  [CEReactions] setter creator void (unsigned long index, long item);
+  [CEReactions] setter creator void (DOMString name, DOMString item);
+  [CEReactions] deleter void (DOMString name);
+  getter long item(unsigned long index);
+  getter DOMString (DOMString name);
+  readonly attribute unsigned long length;
 };

@@ -479,9 +479,13 @@ Element::WrapObject(JSContext *aCx, JS::Handle<JSObject*> aGivenProto)
     if (data) {
       // If this is a registered custom element then fix the prototype.
       nsContentUtils::GetCustomPrototype(OwnerDoc(), NodeInfo()->NamespaceID(),
-                                         data->mType, &customProto);
+                                         data->GetCustomElementType(), &customProto);
       if (customProto &&
           NodePrincipal()->SubsumesConsideringDomain(nsContentUtils::ObjectPrincipal(customProto))) {
+        // The custom element prototype could be in different compartment.
+        if (!JS_WrapObject(aCx, &customProto)) {
+          return nullptr;
+        }
         // Just go ahead and create with the right proto up front.  Set
         // customProto to null to flag that we don't need to do any post-facto
         // proto fixups here.
@@ -1595,7 +1599,7 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
 #endif
   {
     if (aBindingParent) {
-      nsDOMSlots *slots = DOMSlots();
+      nsExtendedDOMSlots* slots = ExtendedDOMSlots();
 
       slots->mBindingParent = aBindingParent; // Weak, so no addref happens.
     }
@@ -1618,7 +1622,7 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
     }
     ShadowRoot* parentContainingShadow = aParent->GetContainingShadow();
     if (parentContainingShadow) {
-      DOMSlots()->mContainingShadow = parentContainingShadow;
+      ExtendedDOMSlots()->mContainingShadow = parentContainingShadow;
     }
   }
 
@@ -1684,14 +1688,17 @@ Element::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
     SetSubtreeRootPointer(aParent->SubtreeRoot());
   }
 
-  nsIDocument* composedDoc = GetComposedDoc();
-  if (composedDoc) {
-    // Attached callback must be enqueued whenever custom element is inserted into a
-    // document and this document has a browsing context.
-    if (GetCustomElementData() && composedDoc->GetDocShell()) {
-      // Enqueue an attached callback for the custom element.
-      nsContentUtils::EnqueueLifecycleCallback(
-        composedDoc, nsIDocument::eAttached, this);
+  if (CustomElementRegistry::IsCustomElementEnabled() && IsInComposedDoc()) {
+    // Connected callback must be enqueued whenever a custom element becomes
+    // connected.
+    CustomElementData* data = GetCustomElementData();
+    if (data) {
+      if (data->mState == CustomElementData::State::eCustom) {
+        nsContentUtils::EnqueueLifecycleCallback(nsIDocument::eConnected, this);
+      } else {
+        // Step 7.7.2.2 https://dom.spec.whatwg.org/#concept-node-insert
+        nsContentUtils::TryToUpgradeElement(this);
+      }
     }
   }
 
@@ -1986,12 +1993,21 @@ Element::UnbindFromTree(bool aDeep, bool aNullParent)
 
     document->ClearBoxObjectFor(this);
 
-    // Detached must be enqueued whenever custom element is removed from
-    // the document and this document has a browsing context.
-    if (GetCustomElementData() && document->GetDocShell()) {
-      // Enqueue a detached callback for the custom element.
-      nsContentUtils::EnqueueLifecycleCallback(
-        document, nsIDocument::eDetached, this);
+     // Disconnected must be enqueued whenever a connected custom element becomes
+     // disconnected.
+    if (CustomElementRegistry::IsCustomElementEnabled()) {
+      CustomElementData* data  = GetCustomElementData();
+      if (data) {
+        if (data->mState == CustomElementData::State::eCustom) {
+          nsContentUtils::EnqueueLifecycleCallback(nsIDocument::eDisconnected,
+                                                   this);
+        } else {
+          // Remove an unresolved custom element that is a candidate for
+          // upgrade when a custom element is disconnected.
+          // We will make sure it's shadow-including tree order in bug 1326028.
+          nsContentUtils::UnregisterUnresolvedElement(this);
+        }
+      }
     }
   }
 
@@ -2007,7 +2023,7 @@ Element::UnbindFromTree(bool aDeep, bool aNullParent)
   }
 #endif
 
-  nsDOMSlots* slots = GetExistingDOMSlots();
+  nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
   if (slots) {
     if (clearBindingParent) {
       slots->mBindingParent = nullptr;
@@ -2055,7 +2071,7 @@ Element::UnbindFromTree(bool aDeep, bool aNullParent)
 nsICSSDeclaration*
 Element::GetSMILOverrideStyle()
 {
-  Element::nsDOMSlots *slots = DOMSlots();
+  Element::nsExtendedDOMSlots* slots = ExtendedDOMSlots();
 
   if (!slots->mSMILOverrideStyle) {
     slots->mSMILOverrideStyle = new nsDOMCSSAttributeDeclaration(this, true);
@@ -2067,7 +2083,7 @@ Element::GetSMILOverrideStyle()
 DeclarationBlock*
 Element::GetSMILOverrideStyleDeclaration()
 {
-  Element::nsDOMSlots *slots = GetExistingDOMSlots();
+  Element::nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
   return slots ? slots->mSMILOverrideStyleDeclaration.get() : nullptr;
 }
 
@@ -2075,7 +2091,7 @@ nsresult
 Element::SetSMILOverrideStyleDeclaration(DeclarationBlock* aDeclaration,
                                          bool aNotify)
 {
-  Element::nsDOMSlots *slots = DOMSlots();
+  Element::nsExtendedDOMSlots* slots = ExtendedDOMSlots();
 
   slots->mSMILOverrideStyleDeclaration = aDeclaration;
 
@@ -2586,19 +2602,32 @@ Element::SetAttrAndNotify(int32_t aNamespaceID,
 
   UpdateState(aNotify);
 
-  nsIDocument* ownerDoc = OwnerDoc();
-  if (ownerDoc && GetCustomElementData()) {
-    nsCOMPtr<nsIAtom> oldValueAtom = oldValue->GetAsAtom();
-    nsCOMPtr<nsIAtom> newValueAtom = valueForAfterSetAttr.GetAsAtom();
-    LifecycleCallbackArgs args = {
-      nsDependentAtomString(aName),
-      aModType == nsIDOMMutationEvent::ADDITION ?
-        NullString() : nsDependentAtomString(oldValueAtom),
-      nsDependentAtomString(newValueAtom)
-    };
+  if (CustomElementRegistry::IsCustomElementEnabled()) {
+    if (CustomElementData* data = GetCustomElementData()) {
+      if (CustomElementDefinition* definition =
+            nsContentUtils::GetElementDefinitionIfObservingAttr(this,
+                                                                data->GetCustomElementType(),
+                                                                aName)) {
+        MOZ_ASSERT(data->mState == CustomElementData::State::eCustom,
+                   "AttributeChanged callback should fire only if "
+                   "custom element state is custom");
+        nsCOMPtr<nsIAtom> oldValueAtom = oldValue->GetAsAtom();
+        nsCOMPtr<nsIAtom> newValueAtom = valueForAfterSetAttr.GetAsAtom();
+        nsAutoString ns;
+        nsContentUtils::NameSpaceManager()->GetNameSpaceURI(aNamespaceID, ns);
 
-    nsContentUtils::EnqueueLifecycleCallback(
-      ownerDoc, nsIDocument::eAttributeChanged, this, &args);
+        LifecycleCallbackArgs args = {
+          nsDependentAtomString(aName),
+          aModType == nsIDOMMutationEvent::ADDITION ?
+            NullString() : nsDependentAtomString(oldValueAtom),
+          nsDependentAtomString(newValueAtom),
+          (ns.IsEmpty() ? NullString() : ns)
+        };
+
+        nsContentUtils::EnqueueLifecycleCallback(nsIDocument::eAttributeChanged,
+          this, &args, nullptr, definition);
+      }
+    }
   }
 
   if (aCallAfterSetAttr) {
@@ -2843,17 +2872,30 @@ Element::UnsetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 
   UpdateState(aNotify);
 
-  nsIDocument* ownerDoc = OwnerDoc();
-  if (ownerDoc && GetCustomElementData()) {
-    nsCOMPtr<nsIAtom> oldValueAtom = oldValue.GetAsAtom();
-    LifecycleCallbackArgs args = {
-      nsDependentAtomString(aName),
-      nsDependentAtomString(oldValueAtom),
-      NullString()
-    };
+  if (CustomElementRegistry::IsCustomElementEnabled()) {
+    if (CustomElementData* data = GetCustomElementData()) {
+      if (CustomElementDefinition* definition =
+            nsContentUtils::GetElementDefinitionIfObservingAttr(this,
+                                                                data->GetCustomElementType(),
+                                                                aName)) {
+        MOZ_ASSERT(data->mState == CustomElementData::State::eCustom,
+                   "AttributeChanged callback should fire only if "
+                   "custom element state is custom");
+        nsAutoString ns;
+        nsContentUtils::NameSpaceManager()->GetNameSpaceURI(aNameSpaceID, ns);
 
-    nsContentUtils::EnqueueLifecycleCallback(
-      ownerDoc, nsIDocument::eAttributeChanged, this, &args);
+        nsCOMPtr<nsIAtom> oldValueAtom = oldValue.GetAsAtom();
+        LifecycleCallbackArgs args = {
+          nsDependentAtomString(aName),
+          nsDependentAtomString(oldValueAtom),
+          NullString(),
+          (ns.IsEmpty() ? NullString() : ns)
+        };
+
+        nsContentUtils::EnqueueLifecycleCallback(nsIDocument::eAttributeChanged,
+          this, &args, nullptr, definition);
+      }
+    }
   }
 
   if (aNotify) {
@@ -3988,7 +4030,7 @@ Element::ClearDataset()
 nsDataHashtable<nsRefPtrHashKey<DOMIntersectionObserver>, int32_t>*
 Element::RegisteredIntersectionObservers()
 {
-  nsDOMSlots* slots = DOMSlots();
+  nsExtendedDOMSlots* slots = ExtendedDOMSlots();
   return &slots->mRegisteredIntersectionObservers;
 }
 
@@ -4036,4 +4078,32 @@ Element::UpdateIntersectionObservation(DOMIntersectionObserver* aObserver, int32
     return true;
   }
   return false;
+}
+
+void
+Element::SetCustomElementData(CustomElementData* aData)
+{
+  nsExtendedDOMSlots *slots = ExtendedDOMSlots();
+  MOZ_ASSERT(!slots->mCustomElementData, "Custom element data may not be changed once set.");
+  slots->mCustomElementData = aData;
+}
+
+CustomElementDefinition*
+Element::GetCustomElementDefinition() const
+{
+  CustomElementData* data = GetCustomElementData();
+  if (!data) {
+    return nullptr;
+  }
+
+  return data->GetCustomElementDefinition();
+}
+
+void
+Element::SetCustomElementDefinition(CustomElementDefinition* aDefinition)
+{
+  CustomElementData* data = GetCustomElementData();
+  MOZ_ASSERT(data);
+
+  data->SetCustomElementDefinition(aDefinition);
 }

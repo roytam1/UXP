@@ -2014,22 +2014,9 @@ esac
 
 MOZ_CONFIG_NSPR()
 
-dnl ========================================================
-dnl = If NSS was not detected in the system,
-dnl = use the one in the source tree (mozilla/security/nss)
-dnl ========================================================
-
-MOZ_ARG_WITH_BOOL(system-nss,
-[  --with-system-nss       Use system installed NSS],
-    _USE_SYSTEM_NSS=1 )
-
-if test -n "$_USE_SYSTEM_NSS"; then
-    AM_PATH_NSS(3.41, [MOZ_SYSTEM_NSS=1], [AC_MSG_ERROR([you don't have NSS installed or your version is too old])])
-fi
-
-if test -z "$MOZ_SYSTEM_NSS"; then
-   NSS_CFLAGS="-I${DIST}/include/nss"
-fi
+# TODO: We need to find a better place to define this include
+NSS_CFLAGS="-I${DIST}/include/nss"
+AC_SUBST(NSS_CFLAGS)
 
 if test -z "$SKIP_LIBRARY_CHECKS"; then
 dnl system JPEG support
@@ -5489,10 +5476,6 @@ AC_SUBST_LIST(MOZ_BZ2_LIBS)
 AC_SUBST_LIST(MOZ_PNG_CFLAGS)
 AC_SUBST_LIST(MOZ_PNG_LIBS)
 
-AC_SUBST(MOZ_SYSTEM_NSPR)
-
-AC_SUBST(MOZ_SYSTEM_NSS)
-
 HOST_CMFLAGS=-fobjc-exceptions
 HOST_CMMFLAGS=-fobjc-exceptions
 OS_COMPILE_CMFLAGS=-fobjc-exceptions
@@ -5672,8 +5655,6 @@ MC_BASILISK=$MC_BASILISK
 MC_PALEMOON=$MC_PALEMOON
 MOZ_EME=$MOZ_EME
 MOZ_WEBRTC=$MOZ_WEBRTC
-MOZ_SYSTEM_NSS=$MOZ_SYSTEM_NSS
-MOZ_SYSTEM_NSPR=$MOZ_SYSTEM_NSPR
 MOZ_SYSTEM_JPEG=$MOZ_SYSTEM_JPEG
 MOZ_SYSTEM_ZLIB=$MOZ_SYSTEM_ZLIB
 MOZ_SYSTEM_BZ2=$MOZ_SYSTEM_BZ2
