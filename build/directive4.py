@@ -37,7 +37,6 @@ if ('MOZ_OFFICIAL_BRANDING' in listConfig) or (strBrandingDirectory.endswith("br
             'MOZ_SYSTEM_ZLIB',
             'MOZ_SYSTEM_BZ2',
             'MOZ_SYSTEM_LIBVPX',
-            'MOZ_SYSTEM_SQLITE',
             'MOZ_SYSTEM_JEMALLOC'
         ]
         
