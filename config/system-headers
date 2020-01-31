@@ -1288,15 +1288,6 @@ QtSparql/qsparqlresult.h
 #if MOZ_TREE_PIXMAN!=1
 pixman.h
 #endif
-#if MOZ_SYSTEM_LIBVPX==1
-vpx/svc_context.h
-vpx/vpx_codec.h
-vpx/vpx_decoder.h
-vpx/vpx_encoder.h
-vpx/vp8cx.h
-vpx/vp8dx.h
-vpx_mem/vpx_mem.h
-#endif
 gst/gst.h
 gst/app/gstappsink.h
 gst/app/gstappsrc.h
