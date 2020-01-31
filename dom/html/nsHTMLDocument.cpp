@@ -1013,26 +1013,6 @@ nsHTMLDocument::SetDomain(const nsAString& aDomain, ErrorResult& rv)
   rv = NodePrincipal()->SetDomain(newURI);
 }
 
-nsGenericHTMLElement*
-nsHTMLDocument::GetBody()
-{
-  Element* html = GetHtmlElement();
-  if (!html) {
-    return nullptr;
-  }
-
-  for (nsIContent* child = html->GetFirstChild();
-       child;
-       child = child->GetNextSibling()) {
-    if (child->IsHTMLElement(nsGkAtoms::body) ||
-        child->IsHTMLElement(nsGkAtoms::frameset)) {
-      return static_cast<nsGenericHTMLElement*>(child);
-    }
-  }
-
-  return nullptr;
-}
-
 NS_IMETHODIMP
 nsHTMLDocument::GetBody(nsIDOMHTMLElement** aBody)
 {
@@ -1052,31 +1032,6 @@ nsHTMLDocument::SetBody(nsIDOMHTMLElement* aBody)
   ErrorResult rv;
   SetBody(static_cast<nsGenericHTMLElement*>(newBody.get()), rv);
   return rv.StealNSResult();
-}
-
-void
-nsHTMLDocument::SetBody(nsGenericHTMLElement* newBody, ErrorResult& rv)
-{
-  nsCOMPtr<Element> root = GetRootElement();
-
-  // The body element must be either a body tag or a frameset tag. And we must
-  // have a html root tag, otherwise GetBody will not return the newly set
-  // body.
-  if (!newBody ||
-      !newBody->IsAnyOfHTMLElements(nsGkAtoms::body, nsGkAtoms::frameset) ||
-      !root || !root->IsHTMLElement() ||
-      !root->IsHTMLElement(nsGkAtoms::html)) {
-    rv.Throw(NS_ERROR_DOM_HIERARCHY_REQUEST_ERR);
-    return;
-  }
-
-  // Use DOM methods so that we pass through the appropriate security checks.
-  nsCOMPtr<Element> currentBody = GetBodyElement();
-  if (currentBody) {
-    root->ReplaceChild(*newBody, *currentBody, rv);
-  } else {
-    root->AppendChild(*newBody, rv);
-  }
 }
 
 NS_IMETHODIMP
@@ -1446,6 +1401,11 @@ nsHTMLDocument::Open(JSContext* cx,
     return nullptr;
   }
 
+  if (ShouldThrowOnDynamicMarkupInsertion()) {
+    aError.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return nullptr;
+  }
+
   // Set up the content type for insertion
   nsAutoCString contentType;
   contentType.AssignLiteral("text/html");
@@ -1653,6 +1613,11 @@ nsHTMLDocument::Close(ErrorResult& rv)
     return;
   }
 
+  if (ShouldThrowOnDynamicMarkupInsertion()) {
+    rv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return;
+  }
+
   if (!mParser || !mParser->IsScriptCreated()) {
     return;
   }
@@ -1725,6 +1690,10 @@ nsHTMLDocument::WriteCommon(JSContext *cx,
   if (!IsHTMLDocument() || mDisableDocWrite || !IsMasterDocument()) {
     // No calling document.write*() on XHTML!
 
+    return NS_ERROR_DOM_INVALID_STATE_ERR;
+  }
+
+  if (ShouldThrowOnDynamicMarkupInsertion()) {
     return NS_ERROR_DOM_INVALID_STATE_ERR;
   }
 

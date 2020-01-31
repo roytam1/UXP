@@ -22,9 +22,9 @@
 
 package nu.validator.htmlparser.impl;
 
-import nu.validator.htmlparser.annotation.NoLength;
-
 import org.xml.sax.SAXException;
+
+import nu.validator.htmlparser.annotation.NoLength;
 
 /**
  * A common superclass for tree builders that coalesce their text nodes.
@@ -46,13 +46,6 @@ public abstract class CoalescingTreeBuilder<T> extends TreeBuilder<T> {
     @Override protected final void appendCharacters(T parent, char[] buf, int start,
             int length) throws SAXException {
         appendCharacters(parent, new String(buf, start, length));
-    }
-
-    /**
-     * @see nu.validator.htmlparser.impl.TreeBuilder#appendIsindexPrompt(java.lang.Object)
-     */
-    @Override protected void appendIsindexPrompt(T parent) throws SAXException {
-        appendCharacters(parent, "This is a searchable index. Enter search keywords: ");
     }
 
     protected abstract void appendCharacters(T parent, String text) throws SAXException;

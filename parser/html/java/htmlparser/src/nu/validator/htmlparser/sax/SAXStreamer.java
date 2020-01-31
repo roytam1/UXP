@@ -23,26 +23,24 @@
 
 package nu.validator.htmlparser.sax;
 
-import nu.validator.htmlparser.impl.HtmlAttributes;
-import nu.validator.htmlparser.impl.TreeBuilder;
-
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.ext.LexicalHandler;
 
-class SAXStreamer extends TreeBuilder<Attributes>{
+import nu.validator.htmlparser.impl.HtmlAttributes;
+import nu.validator.htmlparser.impl.TreeBuilder;
 
-    private static final char[] ISINDEX_PROMPT = "This is a searchable index. Enter search keywords: ".toCharArray();
+class SAXStreamer extends TreeBuilder<Attributes>{
 
     private ContentHandler contentHandler = null;
     private LexicalHandler lexicalHandler = null;
-    
+
     SAXStreamer() {
         super();
     }
-    
+
     @Override
     protected void addAttributesToElement(Attributes element, HtmlAttributes attributes) throws SAXException {
         Attributes existingAttrs = element;
@@ -57,14 +55,6 @@ class SAXStreamer extends TreeBuilder<Attributes>{
     @Override
     protected void appendCharacters(Attributes parent, char[] buf, int start, int length) throws SAXException {
         contentHandler.characters(buf, start, length);
-    }
-
-    /**
-     * @see nu.validator.htmlparser.impl.TreeBuilder#appendIsindexPrompt(java.lang.Object)
-     */
-    @Override protected void appendIsindexPrompt(Attributes parent)
-            throws SAXException {
-        contentHandler.characters(ISINDEX_PROMPT, 0, ISINDEX_PROMPT.length);
     }
 
     @Override

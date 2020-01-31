@@ -187,13 +187,6 @@ MOZ_SAFE_BROWSING:
   false,
 #endif
 
-  MOZ_SYSTEM_NSS:
-#ifdef MOZ_SYSTEM_NSS
-  true,
-#else
-  false,
-#endif
-
   MOZ_PLACES:
 #ifdef MOZ_PLACES
   true,

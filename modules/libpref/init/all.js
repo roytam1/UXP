@@ -4505,25 +4505,22 @@ pref("network.tcp.keepalive.probe_count", 4);
 #endif
 
 // Whether to disable acceleration for all widgets.
-pref("layers.acceleration.disabled", false);
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
+// On Linux this is disabled by default for known issues with "free" drivers
+pref("layers.acceleration.enabled", false);
+#else
+pref("layers.acceleration.enabled", true);
+#endif
+// Whether to force acceleration on, ignoring blacklists.
+// This requires layers.acceleration.enabled to be set to true
+pref("layers.acceleration.force", false);
+
 // Preference that when switched at runtime will run a series of benchmarks
 // and output the result to stderr.
 pref("layers.bench.enabled", false);
 
 #if defined(XP_WIN) && defined(NIGHTLY_BUILD)
 pref("layers.gpu-process.dev.enabled", true);
-#endif
-
-// Whether to force acceleration on, ignoring blacklists.
-#ifdef ANDROID
-// bug 838603 -- on Android, accidentally blacklisting OpenGL layers
-// means a startup crash for everyone.
-// Temporarily force-enable GL compositing.  This is default-disabled
-// deep within the bowels of the widgetry system.  Remove me when GL
-// compositing isn't default disabled in widget/android.
-pref("layers.acceleration.force-enabled", true);
-#else
-pref("layers.acceleration.force-enabled", false);
 #endif
 
 pref("layers.acceleration.draw-fps", false);
@@ -5335,9 +5332,6 @@ pref("dom.audiochannel.mutedByDefault", false);
 
 // HTML <dialog> element
 pref("dom.dialog_element.enabled", false);
-
-// Enable <details> and <summary> tags.
-pref("dom.details_element.enabled", true);
 
 // Secure Element API
 #ifdef MOZ_SECUREELEMENT

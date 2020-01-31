@@ -1747,6 +1747,71 @@ class CGClassConstructor(CGAbstractStaticMethod):
         else:
             ctorName = self.descriptor.interface.identifier.name
 
+        # [HTMLConstructor] for custom element
+        # This needs to live in bindings code because it directly examines
+        # newtarget and the callee function to do HTMLConstructor specific things.
+        if self._ctor.isHTMLConstructor():
+            htmlConstructorSanityCheck = dedent("""
+                // The newTarget might be a cross-compartment wrapper. Get the underlying object
+                // so we can do the spec's object-identity checks.
+                JS::Rooted<JSObject*> newTarget(cx, js::CheckedUnwrap(&args.newTarget().toObject()));
+                if (!newTarget) {
+                  return ThrowErrorMessage(cx, MSG_ILLEGAL_CONSTRUCTOR);
+                }
+
+                // Step 2 of https://html.spec.whatwg.org/multipage/dom.html#htmlconstructor.
+                // Enter the compartment of our underlying newTarget object, so we end
+                // up comparing to the constructor object for our interface from that global.
+                {
+                  JSAutoCompartment ac(cx, newTarget);
+                  JS::Handle<JSObject*> constructor(GetConstructorObjectHandle(cx));
+                  if (!constructor) {
+                    return false;
+                  }
+                  if (newTarget == constructor) {
+                    return ThrowErrorMessage(cx, MSG_ILLEGAL_CONSTRUCTOR);
+                  }
+                }
+
+                """)
+
+            # If we are unable to get desired prototype from newTarget, then we
+            # fall back to the interface prototype object from newTarget's realm.
+            htmlConstructorFallback = dedent("""
+                if (!desiredProto) {
+                  // Step 7 of https://html.spec.whatwg.org/multipage/dom.html#htmlconstructor.
+                  // This fallback behavior is designed to match analogous behavior for the
+                  // JavaScript built-ins. So we enter the compartment of our underlying
+                  // newTarget object and fall back to the prototype object from that global.
+                  // XXX The spec says to use GetFunctionRealm(), which is not actually
+                  // the same thing as what we have here (e.g. in the case of scripted callable proxies
+                  // whose target is not same-compartment with the proxy, or bound functions, etc).
+                  // https://bugzilla.mozilla.org/show_bug.cgi?id=1317658
+                  {
+                    JSAutoCompartment ac(cx, newTarget);
+                    desiredProto = GetProtoObjectHandle(cx);
+                    if (!desiredProto) {
+                        return false;
+                    }
+                  }
+
+                  // desiredProto is in the compartment of the underlying newTarget object.
+                  // Wrap it into the context compartment.
+                  if (!JS_WrapObject(cx, &desiredProto)) {
+                    return false;
+                  }
+                }
+                """)
+        else:
+            htmlConstructorSanityCheck = ""
+            htmlConstructorFallback = ""
+
+
+        # If we're a constructor, "obj" may not be a function, so calling
+        # XrayAwareCalleeGlobal() on it is not safe.  Of course in the
+        # constructor case either "obj" is an Xray or we're already in the
+        # content compartment, not the Xray compartment, so just
+        # constructing the GlobalObject from "obj" is fine.
         preamble = fill(
             """
             JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
@@ -1757,19 +1822,41 @@ class CGClassConstructor(CGAbstractStaticMethod):
               // Adding more relocations
               return ThrowConstructorWithoutNew(cx, "${ctorName}");
             }
+
+            GlobalObject global(cx, obj);
+            if (global.Failed()) {
+              return false;
+            }
+
+            $*{htmlConstructorSanityCheck}
             JS::Rooted<JSObject*> desiredProto(cx);
             if (!GetDesiredProto(cx, args, &desiredProto)) {
               return false;
             }
+            $*{htmlConstructorFallback}
             """,
             chromeOnlyCheck=chromeOnlyCheck,
-            ctorName=ctorName)
+            ctorName=ctorName,
+            htmlConstructorSanityCheck=htmlConstructorSanityCheck,
+            htmlConstructorFallback=htmlConstructorFallback)
 
-        name = self._ctor.identifier.name
-        nativeName = MakeNativeName(self.descriptor.binaryNameFor(name))
-        callGenerator = CGMethodCall(nativeName, True, self.descriptor,
-                                     self._ctor, isConstructor=True,
-                                     constructorName=ctorName)
+        if  self._ctor.isHTMLConstructor():
+            signatures = self._ctor.signatures()
+            assert len(signatures) == 1
+            # Given that HTMLConstructor takes no args, we can just codegen a
+            # call to CreateHTMLElement() in BindingUtils which reuses the
+            # factory thing in HTMLContentSink. Then we don't have to implement
+            # Constructor on all the HTML elements.
+            callGenerator = CGPerSignatureCall(signatures[0][0], signatures[0][1],
+                                               "CreateHTMLElement", True,
+                                               self.descriptor, self._ctor,
+                                               isConstructor=True)
+        else:
+            name = self._ctor.identifier.name
+            nativeName = MakeNativeName(self.descriptor.binaryNameFor(name))
+            callGenerator = CGMethodCall(nativeName, True, self.descriptor,
+                                         self._ctor, isConstructor=True,
+                                         constructorName=ctorName)
         return preamble + "\n" + callGenerator.define()
 
 
@@ -7386,7 +7473,7 @@ class CGPerSignatureCall(CGThing):
     def __init__(self, returnType, arguments, nativeMethodName, static,
                  descriptor, idlNode, argConversionStartsAt=0, getter=False,
                  setter=False, isConstructor=False, useCounterName=None,
-                 resultVar=None):
+                 resultVar=None, objectName="obj"):
         assert idlNode.isMethod() == (not getter and not setter)
         assert idlNode.isAttr() == (getter or setter)
         # Constructors are always static
@@ -7440,25 +7527,22 @@ class CGPerSignatureCall(CGThing):
 
         argsPre = []
         if idlNode.isStatic():
-            # If we're a constructor, "obj" may not be a function, so calling
-            # XrayAwareCalleeGlobal() on it is not safe.  Of course in the
-            # constructor case either "obj" is an Xray or we're already in the
-            # content compartment, not the Xray compartment, so just
-            # constructing the GlobalObject from "obj" is fine.
-            if isConstructor:
-                objForGlobalObject = "obj"
-            else:
-                objForGlobalObject = "xpc::XrayAwareCalleeGlobal(obj)"
-            cgThings.append(CGGeneric(fill(
-                """
-                GlobalObject global(cx, ${obj});
-                if (global.Failed()) {
-                  return false;
-                }
+            # If we're a constructor, the GlobalObject struct will be created in
+            # CGClassConstructor.
+            if not isConstructor:
+                cgThings.append(CGGeneric(dedent(
+                    """
+                    GlobalObject global(cx, xpc::XrayAwareCalleeGlobal(obj));
+                    if (global.Failed()) {
+                      return false;
+                    }
 
-                """,
-                obj=objForGlobalObject)))
+                    """)))
+
             argsPre.append("global")
+
+        if isConstructor and idlNode.isHTMLConstructor():
+            argsPre.extend(["args", "desiredProto"])
 
         # For JS-implemented interfaces we do not want to base the
         # needsCx decision on the types involved, just on our extended
@@ -7587,6 +7671,17 @@ class CGPerSignatureCall(CGThing):
             cgThings.append(
                 CGIfWrapper(CGList(xraySteps),
                             "objIsXray"))
+
+        if (idlNode.getExtendedAttribute('CEReactions') is not None and
+            not getter):
+            cgThings.append(CGGeneric(fill(
+                """
+                CustomElementReactionsStack* reactionsStack = GetCustomElementReactionsStack(${obj});
+                Maybe<AutoCEReaction> ceReaction;
+                if (reactionsStack) {
+                    ceReaction.emplace(reactionsStack, cx);
+                }
+                """, obj=objectName)))
 
         # If this is a method that was generated by a maplike/setlike
         # interface, use the maplike/setlike generator to fill in the body.
@@ -10985,7 +11080,8 @@ class CGProxySpecialOperation(CGPerSignatureCall):
         # CGPerSignatureCall won't do any argument conversion of its own.
         CGPerSignatureCall.__init__(self, returnType, arguments, nativeName,
                                     False, descriptor, operation,
-                                    len(arguments), resultVar=resultVar)
+                                    len(arguments), resultVar=resultVar,
+                                    objectName="proxy")
 
         if operation.isSetter() or operation.isCreator():
             # arguments[0] is the index or name of the item that we're setting.
@@ -13755,12 +13851,18 @@ class CGBindingRoot(CGThing):
             iface = desc.interface
             return any(m.getExtendedAttribute("Deprecated") for m in iface.members + [iface])
 
+        def descriptorHasCEReactions(desc):
+            iface = desc.interface
+            return any(m.getExtendedAttribute("CEReactions") for m in iface.members + [iface])
+
         bindingHeaders["nsIDocument.h"] = any(
             descriptorDeprecated(d) for d in descriptors)
         bindingHeaders["mozilla/Preferences.h"] = any(
             descriptorRequiresPreferences(d) for d in descriptors)
         bindingHeaders["mozilla/dom/DOMJSProxyHandler.h"] = any(
             d.concrete and d.proxy for d in descriptors)
+        bindingHeaders["mozilla/dom/CustomElementRegistry.h"] = any(
+            descriptorHasCEReactions(d) for d in descriptors)
 
         def descriptorHasChromeOnly(desc):
             ctor = desc.interface.ctor()

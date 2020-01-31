@@ -180,6 +180,12 @@ private:
     bool                mRetryPass;     // retrying the password
     bool                mStorReplyReceived; // FALSE if waiting for STOR
                                             // completion status from server
+    bool 		mRlist1xxReceived; // TRUE if the server has sent a
+    					   // LIST 1xx response.
+    bool		mRstor1xxReceived; // TRUE if the server has sent a
+    					   // STOR 1xx response.
+    bool		mRretr1xxReceived; // TRUE if the server has sent a
+					   // RETR 1xx response.
     nsresult            mInternalError; // represents internal state errors
     bool                mReconnectAndLoginAgain;
     bool                mCacheConnection;

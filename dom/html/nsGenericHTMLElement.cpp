@@ -497,7 +497,7 @@ nsGenericHTMLElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
   // We need to consider a labels element is moved to another subtree
   // with different root, it needs to update labels list and its root
   // as well.
-  nsDOMSlots* slots = GetExistingDOMSlots();
+  nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
   if (slots && slots->mLabelsList) {
     slots->mLabelsList->MaybeResetRoot(SubtreeRoot());
   }
@@ -524,7 +524,7 @@ nsGenericHTMLElement::UnbindFromTree(bool aDeep, bool aNullParent)
 
   // We need to consider a labels element is removed from tree,
   // it needs to update labels list and its root as well.
-  nsDOMSlots* slots = GetExistingDOMSlots();
+  nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
   if (slots && slots->mLabelsList) {
     slots->mLabelsList->MaybeResetRoot(SubtreeRoot());
   }
@@ -1730,7 +1730,7 @@ nsGenericHTMLElement::Labels()
 {
   MOZ_ASSERT(IsLabelable(),
              "Labels() only allow labelable elements to use it.");
-  nsDOMSlots* slots = DOMSlots();
+  nsExtendedDOMSlots* slots = ExtendedDOMSlots();
 
   if (!slots->mLabelsList) {
     slots->mLabelsList = new nsLabelsNodeList(SubtreeRoot(), MatchLabelsElement,

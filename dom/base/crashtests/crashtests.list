@@ -209,3 +209,4 @@ load 1230422.html
 load 1251361.html
 load 1304437.html
 pref(clipboard.autocopy,true) load 1385272-1.html
+pref(dom.webcomponents.customelements.enabled,true) load 1341693.html

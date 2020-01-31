@@ -37,7 +37,6 @@
 
 package nu.validator.htmlparser.cpptranslate;
 
-import java.util.LinkedList;
 import java.util.List;
 
 import japa.parser.ast.body.FieldDeclaration;
@@ -45,12 +44,9 @@ import japa.parser.ast.body.MethodDeclaration;
 import japa.parser.ast.body.ModifierSet;
 import japa.parser.ast.body.Parameter;
 import japa.parser.ast.body.VariableDeclarator;
-import japa.parser.ast.expr.IntegerLiteralExpr;
-import japa.parser.ast.expr.MethodCallExpr;
 import japa.parser.ast.stmt.BlockStmt;
 import japa.parser.ast.type.PrimitiveType;
 import japa.parser.ast.type.ReferenceType;
-import japa.parser.ast.type.Type;
 
 public class HVisitor extends CppVisitor {
 
@@ -59,8 +55,6 @@ public class HVisitor extends CppVisitor {
     }
 
     private Visibility previousVisibility = Visibility.NONE;
-
-    private List<String> defines = new LinkedList<String>();
 
     /**
      * @see nu.validator.htmlparser.cpptranslate.CppVisitor#printMethodNamespace()
@@ -145,10 +139,10 @@ public class HVisitor extends CppVisitor {
      */
     @Override protected void endClassDeclaration() {
         printModifiers(ModifierSet.PUBLIC | ModifierSet.STATIC);
-        printer.printLn("void initializeStatics();");        
+        printer.printLn("void initializeStatics();");
         printModifiers(ModifierSet.PUBLIC | ModifierSet.STATIC);
-        printer.printLn("void releaseStatics();");        
-        
+        printer.printLn("void releaseStatics();");
+
         printer.unindent();
         printer.unindent();
         
@@ -160,13 +154,6 @@ public class HVisitor extends CppVisitor {
         }
         
         printer.printLn("};");
-        printer.printLn();
-
-        for (String define : defines) {
-            printer.printLn(define);
-        }
-        
-        printer.printLn();
         printer.printLn();
         printer.printLn("#endif");
     }
@@ -226,18 +213,16 @@ public class HVisitor extends CppVisitor {
                 throw new IllegalStateException(
                         "More than one variable declared by one declarator.");
             }
-            String name = javaClassName + "." + declarator.getId().getName();
-            String value = declarator.getInit().toString();
-            if ("Integer.MAX_VALUE".equals(value)) {
-                value = cppTypes.maxInteger();
-            }
-            String longName = definePrefix + declarator.getId().getName();
-            if (symbolTable.cppDefinesByJavaNames.containsKey(name)) {
-                throw new IllegalStateException(
-                        "Duplicate #define constant local name: " + name);
-            }
-            symbolTable.cppDefinesByJavaNames.put(name, longName);
-            defines.add("#define " + longName + " " + value);
+            printModifiers(modifiers);
+            printer.print("const ");
+            n.getType().accept(this, arg);
+            printer.print(" ");
+            declarator.getId().accept(this, arg);
+            printer.print(" = ");
+            declarator.getInit().accept(this, arg);
+            printer.printLn(";");
+            printer.printLn();
+            symbolTable.addPrimitiveConstant(javaClassName, declarator.getId().toString());
         } else {
             if (n.getType() instanceof ReferenceType) {
                 ReferenceType rt = (ReferenceType) n.getType();

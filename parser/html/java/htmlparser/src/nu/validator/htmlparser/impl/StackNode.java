@@ -45,6 +45,11 @@ final class StackNode<T> {
 
     private int refcount = 1;
 
+    /*
+     *  Only valid for formatting elements
+     */
+    // CPPONLY: private @HtmlCreator Object htmlCreator;
+
     // [NOCPP[
 
     private final TaintableLocatorImpl locator;
@@ -87,6 +92,10 @@ final class StackNode<T> {
     
     // ]NOCPP]
 
+    // CPPONLY: public @HtmlCreator Object getHtmlCreator() {
+    // CPPONLY:     return htmlCreator;
+    // CPPONLY: }
+
     /**
      * Constructor for copying. This doesn't take another <code>StackNode</code>
      * because in C++ the caller is reponsible for reobtaining the local names
@@ -100,9 +109,10 @@ final class StackNode<T> {
      * @param attributes
      */
     StackNode(int flags, @NsUri String ns, @Local String name, T node,
-            @Local String popName, HtmlAttributes attributes
+            @Local String popName, HtmlAttributes attributes,
+            // CPPONLY: @HtmlCreator Object htmlCreator
             // [NOCPP[
-            , TaintableLocatorImpl locator
+            TaintableLocatorImpl locator
     // ]NOCPP]
     ) {
         this.flags = flags;
@@ -112,6 +122,10 @@ final class StackNode<T> {
         this.node = node;
         this.attributes = attributes;
         this.refcount = 1;
+        /*
+         * Need to track creator for formatting elements when copying.
+         */
+        // CPPONLY: this.htmlCreator = htmlCreator;
         // [NOCPP[
         this.locator = locator;
         // ]NOCPP]
@@ -129,13 +143,17 @@ final class StackNode<T> {
     // ]NOCPP]
     ) {
         this.flags = elementName.getFlags();
-        this.name = elementName.name;
-        this.popName = elementName.name;
+        this.name = elementName.getName();
+        this.popName = elementName.getName();
         this.ns = "http://www.w3.org/1999/xhtml";
         this.node = node;
         this.attributes = null;
         this.refcount = 1;
-        assert !elementName.isCustom() : "Don't use this constructor for custom elements.";
+        assert elementName.isInterned() : "Don't use this constructor for custom elements.";
+        /*
+         * Not used for formatting elements, so no need to track creator.
+         */
+        // CPPONLY: this.htmlCreator = null;
         // [NOCPP[
         this.locator = locator;
         // ]NOCPP]
@@ -154,13 +172,18 @@ final class StackNode<T> {
     // ]NOCPP]
     ) {
         this.flags = elementName.getFlags();
-        this.name = elementName.name;
-        this.popName = elementName.name;
+        this.name = elementName.getName();
+        this.popName = elementName.getName();
         this.ns = "http://www.w3.org/1999/xhtml";
         this.node = node;
         this.attributes = attributes;
         this.refcount = 1;
-        assert !elementName.isCustom() : "Don't use this constructor for custom elements.";
+        assert elementName.isInterned() : "Don't use this constructor for custom elements.";
+        /*
+         * Need to track creator for formatting elements in order to be able
+         * to clone them.
+         */
+        // CPPONLY: this.htmlCreator = elementName.getHtmlCreator();
         // [NOCPP[
         this.locator = locator;
         // ]NOCPP]
@@ -179,12 +202,16 @@ final class StackNode<T> {
     // ]NOCPP]
     ) {
         this.flags = elementName.getFlags();
-        this.name = elementName.name;
+        this.name = elementName.getName();
         this.popName = popName;
         this.ns = "http://www.w3.org/1999/xhtml";
         this.node = node;
         this.attributes = null;
         this.refcount = 1;
+        /*
+         * Not used for formatting elements, so no need to track creator.
+         */
+        // CPPONLY: this.htmlCreator = null;
         // [NOCPP[
         this.locator = locator;
         // ]NOCPP]
@@ -206,12 +233,16 @@ final class StackNode<T> {
     // ]NOCPP]
     ) {
         this.flags = prepareSvgFlags(elementName.getFlags());
-        this.name = elementName.name;
+        this.name = elementName.getName();
         this.popName = popName;
         this.ns = "http://www.w3.org/2000/svg";
         this.node = node;
         this.attributes = null;
         this.refcount = 1;
+        /*
+         * Not used for formatting elements, so no need to track creator.
+         */
+        // CPPONLY: this.htmlCreator = null;
         // [NOCPP[
         this.locator = locator;
         // ]NOCPP]
@@ -233,12 +264,16 @@ final class StackNode<T> {
     ) {
         this.flags = prepareMathFlags(elementName.getFlags(),
                 markAsIntegrationPoint);
-        this.name = elementName.name;
+        this.name = elementName.getName();
         this.popName = popName;
         this.ns = "http://www.w3.org/1998/Math/MathML";
         this.node = node;
         this.attributes = null;
         this.refcount = 1;
+        /*
+         * Not used for formatting elements, so no need to track creator.
+         */
+        // CPPONLY: this.htmlCreator = null;
         // [NOCPP[
         this.locator = locator;
         // ]NOCPP]

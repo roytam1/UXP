@@ -222,7 +222,8 @@ config = {
         },
         "reftest-no-accel": {
             "options": ["--suite=reftest",
-                        "--setpref=layers.acceleration.force-enabled=disabled"],
+                        "--setpref=layers.acceleration.enabled=disabled",
+                        "--setpref=layers.acceleration.force=disabled"],
             "tests": ["tests/reftest/tests/layout/reftests/reftest.list"]},
     },
     "all_xpcshell_suites": {

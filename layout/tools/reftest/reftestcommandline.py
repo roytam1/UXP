@@ -323,7 +323,8 @@ class DesktopArgumentsParser(ReftestArgumentsParser):
 
     def _prefs_gpu(self):
         if mozinfo.os != "win":
-            return ["layers.acceleration.force-enabled=true"]
+            return ["layers.acceleration.enabled=true",
+                    "layers.acceleration.force=true"]
         return []
 
     def validate(self, options, reftest):
