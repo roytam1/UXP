@@ -8,7 +8,6 @@ this.EXPORTED_SYMBOLS = ["ShellService"];
 
 const { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "WindowsRegistry",
@@ -26,20 +25,17 @@ var ShellServiceInternal = {
    * environments.
    */
   get canSetDesktopBackground() {
-    if (AppConstants.platform == "win" ||
-        AppConstants.platform == "macosx") {
-      return true;
+#ifdef XP_LINUX
+    if (this.shellService) {
+      let linuxShellService = this.shellService
+                                  .QueryInterface(Ci.nsIGNOMEShellService);
+      return linuxShellService.canSetDesktopBackground;
     }
-
-    if (AppConstants.platform == "linux") {
-      if (this.shellService) {
-        let linuxShellService = this.shellService
-                                    .QueryInterface(Ci.nsIGNOMEShellService);
-        return linuxShellService.canSetDesktopBackground;
-      }
-    }
-
+#elif defined(XP_WIN) || defined(XP_MACOSX)
+    return true;
+#else
     return false;
+#endif
   },
 
   /**
@@ -60,18 +56,18 @@ var ShellServiceInternal = {
       return false;
     }
 
-    if (AppConstants.platform == "win") {
-      let optOutValue = WindowsRegistry.readRegKey(Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,
-                                                   "Software\\Mozilla\\PaleMoon",
-                                                   "DefaultBrowserOptOut");
-      WindowsRegistry.removeRegKey(Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,
-                                   "Software\\Mozilla\\PaleMoon",
-                                   "DefaultBrowserOptOut");
-      if (optOutValue == "True") {
-        Services.prefs.setBoolPref("browser.shell.checkDefaultBrowser", false);
-        return false;
-      }
+#ifdef XP_WIN
+    let optOutValue = WindowsRegistry.readRegKey(Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,
+                                                 "Software\\Mozilla\\PaleMoon",
+                                                 "DefaultBrowserOptOut");
+    WindowsRegistry.removeRegKey(Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,
+                                 "Software\\Mozilla\\PaleMoon",
+                                 "DefaultBrowserOptOut");
+    if (optOutValue == "True") {
+      Services.prefs.setBoolPref("browser.shell.checkDefaultBrowser", false);
+      return false;
     }
+#endif
 
     return true;
   },

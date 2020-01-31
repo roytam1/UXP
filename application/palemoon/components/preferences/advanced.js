@@ -51,6 +51,8 @@ var gAdvancedPane = {
     this.updateActualCacheSize();
     this.updateActualAppCacheSize();
 
+    this.updateHWADisplay();
+
     // Notify observers that the UI is now ready
     Services.obs.notifyObservers(window, "advanced-pane-loaded", null);
   },
@@ -156,11 +158,20 @@ var gAdvancedPane = {
   updateHardwareAcceleration: function()
   {
 #ifdef XP_WIN
-    var fromPref = document.getElementById("layers.acceleration.disabled");
+    var fromPref = document.getElementById("layers.acceleration.enabled");
     var toPref = document.getElementById("gfx.direct2d.disabled");
-    toPref.value = fromPref.value;
+    toPref.value = !fromPref.value;
 #endif
+    this.updateHWADisplay();
   },
+
+  updateHWADisplay: function()
+  {
+#ifdef XP_LINUX
+    let HWA = document.getElementById("layers.acceleration.enabled");
+    document.getElementById("forceHWAccel").disabled = !HWA.value;
+#endif
+  },  
 
   // DATA CHOICES TAB
 
