@@ -44,7 +44,6 @@ export:: $(export-preqs)
 		-DMOZ_SYSTEM_HUNSPELL=$(MOZ_SYSTEM_HUNSPELL) \
 		-DMOZ_SYSTEM_BZ2=$(MOZ_SYSTEM_BZ2) \
 		-DMOZ_SYSTEM_ZLIB=$(MOZ_SYSTEM_ZLIB) \
-		-DMOZ_SYSTEM_PNG=$(MOZ_SYSTEM_PNG) \
 		-DMOZ_SYSTEM_JPEG=$(MOZ_SYSTEM_JPEG) \
 		-DMOZ_SYSTEM_LIBVPX=$(MOZ_SYSTEM_LIBVPX) \
 		$(srcdir)/system-headers $(srcdir)/stl-headers | $(PERL) $(topsrcdir)/nsprpub/config/make-system-wrappers.pl system_wrappers

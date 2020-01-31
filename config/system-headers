@@ -1253,9 +1253,6 @@ soundtouch/SoundTouchFactory.h
 #if MOZ_LIBAV_FFT==1
 libavcodec/avfft.h
 #endif
-#if MOZ_SYSTEM_PNG==1
-png.h
-#endif
 #if MOZ_SYSTEM_ZLIB==1
 zlib.h
 #endif
