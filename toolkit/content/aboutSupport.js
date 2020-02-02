@@ -10,7 +10,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Troubleshoot.jsm");
 Cu.import("resource://gre/modules/ResetProfile.jsm");
-Cu.import("resource://gre/modules/AppConstants.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "PluralForm",
                                   "resource://gre/modules/PluralForm.jsm");
@@ -42,7 +41,7 @@ var snapshotFormatters = {
     $("os-box").textContent = data.osVersion;
     $("binary-box").textContent = Services.dirsvc.get("XREExeF", Ci.nsIFile).path;
     $("supportLink").href = data.supportURL;
-    let version = AppConstants.MOZ_APP_VERSION_DISPLAY;
+    let version = Services.appinfo.version;
     if (data.versionArch) {
       version += " (" + data.versionArch + ")";
     }
@@ -197,23 +196,23 @@ var snapshotFormatters = {
       delete data.info;
     }
 
-    if (AppConstants.NIGHTLY_BUILD) {
-      let windowUtils = window.QueryInterface(Ci.nsIInterfaceRequestor)
-                              .getInterface(Ci.nsIDOMWindowUtils);
-      let gpuProcessPid = windowUtils.gpuProcessPid;
+#ifdef NIGHTLY_BUILD
+    let windowUtils = window.QueryInterface(Ci.nsIInterfaceRequestor)
+                            .getInterface(Ci.nsIDOMWindowUtils);
+    let gpuProcessPid = windowUtils.gpuProcessPid;
 
-      if (gpuProcessPid != -1) {
-        let gpuProcessKillButton = $.new("button");
+    if (gpuProcessPid != -1) {
+      let gpuProcessKillButton = $.new("button");
 
-        gpuProcessKillButton.addEventListener("click", function() {
-          windowUtils.terminateGPUProcess();
-        });
+      gpuProcessKillButton.addEventListener("click", function() {
+        windowUtils.terminateGPUProcess();
+      });
 
-        gpuProcessKillButton.textContent = strings.GetStringFromName("gpuProcessKillButton");
-        addRow("diagnostics", "GPUProcessPid", gpuProcessPid);
-        addRow("diagnostics", "GPUProcess", [gpuProcessKillButton]);
-      }
+      gpuProcessKillButton.textContent = strings.GetStringFromName("gpuProcessKillButton");
+      addRow("diagnostics", "GPUProcessPid", gpuProcessPid);
+      addRow("diagnostics", "GPUProcess", [gpuProcessKillButton]);
     }
+#endif
 
     // graphics-failures-tbody tbody
     if ("failures" in data) {
@@ -583,15 +582,15 @@ function copyRawDataToClipboard(button) {
       Cc["@mozilla.org/widget/clipboard;1"].
         getService(Ci.nsIClipboard).
         setData(transferable, null, Ci.nsIClipboard.kGlobalClipboard);
-      if (AppConstants.platform == "android") {
-        // Present a toast notification.
-        let message = {
-          type: "Toast:Show",
-          message: stringBundle().GetStringFromName("rawDataCopied"),
-          duration: "short"
-        };
-        Services.androidBridge.handleGeckoMessage(message);
-      }
+#ifdef MOZ_WIDGET_ANDROID
+      // Present a toast notification.
+      let message = {
+        type: "Toast:Show",
+        message: stringBundle().GetStringFromName("rawDataCopied"),
+        duration: "short"
+      };
+      Services.androidBridge.handleGeckoMessage(message);
+#endif
     });
   }
   catch (err) {
@@ -637,15 +636,15 @@ function copyContentsToClipboard() {
                     .getService(Ci.nsIClipboard);
   clipboard.setData(transferable, null, clipboard.kGlobalClipboard);
 
-  if (AppConstants.platform == "android") {
-    // Present a toast notification.
-    let message = {
-      type: "Toast:Show",
-      message: stringBundle().GetStringFromName("textCopied"),
-      duration: "short"
-    };
-    Services.androidBridge.handleGeckoMessage(message);
-  }
+#ifdef MOZ_WIDGET_ANDROID
+  // Present a toast notification.
+  let message = {
+    type: "Toast:Show",
+    message: stringBundle().GetStringFromName("textCopied"),
+    duration: "short"
+  };
+  Services.androidBridge.handleGeckoMessage(message);
+#endif
 }
 
 // Return the plain text representation of an element.  Do a little bit
@@ -654,10 +653,10 @@ function createTextForElement(elem) {
   let serializer = new Serializer();
   let text = serializer.serialize(elem);
 
+#ifdef XP_WIN
   // Actual CR/LF pairs are needed for some Windows text editors.
-  if (AppConstants.platform == "win") {
-    text = text.replace(/\n/g, "\r\n");
-  }
+  text = text.replace(/\n/g, "\r\n");
+#endif
 
   return text;
 }
