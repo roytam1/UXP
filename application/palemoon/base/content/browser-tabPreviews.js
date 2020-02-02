@@ -667,6 +667,15 @@ var allTabs = {
 
     this._currentFilter = this.filterField.value;
 
+    let hidePinnedTabs = gPrefService.getBoolPref("browser.allTabs.hidePinnedTabs");
+    if (hidePinnedTabs) {
+      let regularTabsList = Array.filter(this.previews, function (preview) !preview._tab.pinned);
+      // Show pinned tabs if we don't have any regular tabs
+      if (regularTabsList.length == 0) {
+        hidePinnedTabs = false;
+      }
+    }
+
     var filter = this._currentFilter.split(/\s+/g);
     this._visible = 0;
     Array.forEach(this.previews, function (preview) {
@@ -681,7 +690,7 @@ var allTabs = {
         for (let i = 0; i < filter.length; i++)
           matches += tabstring.includes(filter[i]);
       }
-      if (matches < filter.length || tab.hidden) {
+      if (matches < filter.length || tab.hidden || (hidePinnedTabs && tab.pinned)) {
         preview.hidden = true;
       }
       else {
