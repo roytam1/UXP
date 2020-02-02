@@ -74,7 +74,6 @@ EXTRA_JS_MODULES += [
     'RemotePageManager.jsm',
     'RemoteSecurityUI.jsm',
     'RemoteWebProgress.jsm',
-    'ResetProfile.jsm',
     'ResponsivenessMonitor.jsm',
     'secondscreen/PresentationApp.jsm',
     'secondscreen/RokuApp.jsm',
@@ -93,7 +92,6 @@ EXTRA_JS_MODULES += [
     'Task.jsm',
     'Timer.jsm',
     'WebChannel.jsm',
-    'WindowDraggingUtils.jsm',
     'ZipUtils.jsm',
 ]
 EXTRA_JS_MODULES.third_party.jsesc += ['third_party/jsesc/jsesc.js']
@@ -101,8 +99,10 @@ EXTRA_JS_MODULES.sessionstore += ['sessionstore/Utils.jsm']
 
 EXTRA_PP_JS_MODULES += [
     'NewTabUtils.jsm',
+    'ResetProfile.jsm',
     'Troubleshoot.jsm',
     'UpdateUtils.jsm',
+    'WindowDraggingUtils.jsm',
 ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('windows', 'cocoa'):
@@ -120,7 +120,7 @@ EXTRA_PP_JS_MODULES += [
 ]
 
 if 'Android' != CONFIG['OS_TARGET']:
-    EXTRA_JS_MODULES += [
+    EXTRA_PP_JS_MODULES += [
         'LightweightThemeConsumer.jsm',
     ]
 

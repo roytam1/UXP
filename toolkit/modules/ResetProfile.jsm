@@ -9,14 +9,21 @@ this.EXPORTED_SYMBOLS = ["ResetProfile"];
 const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/AppConstants.jsm");
 
-// For Basilisk and Pale Moon
-// Hard-code MOZ_APP_NAME to firefox because of hard-coded type in migrator.
-const MOZ_APP_NAME = (((AppConstants.MOZ_APP_NAME == "basilisk")
-                         || (AppConstants.MOZ_APP_NAME == "palemoon"))
-                     ? "firefox" : AppConstants.MOZ_APP_NAME);
-const MOZ_BUILD_APP = AppConstants.MOZ_BUILD_APP;
+// We need to tell the migrator that many different applications are Mozilla applications
+#ifdef MOZ_PHOENIX
+const MOZ_APP_NAME = "firefox";
+const MOZ_BUILD_APP = "browser";
+#elifdef MOZ_THUNDERBIRD
+const MOZ_APP_NAME = "thunderbird";
+const MOZ_BUILD_APP = "mail";
+#elif defined(MOZ_SUITE) && !defined(BINOC_BOREALIS)
+const MOZ_APP_NAME = "seamonkey";
+const MOZ_BUILD_APP = "suite";
+#else
+#expand const MOZ_APP_NAME = "__MOZ_APP_NAME__";
+#expand const MOZ_BUILD_APP = "__MOZ_BUILD_APP__".match(/([^\/]*)\/*$/)[1];
+#endif
 
 this.ResetProfile = {
   /**
