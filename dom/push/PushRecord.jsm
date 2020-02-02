@@ -9,7 +9,6 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const Cr = Components.results;
 
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/Preferences.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
@@ -145,13 +144,14 @@ PushRecord.prototype = {
       return Date.now();
     }
 
-    if (AppConstants.MOZ_ANDROID_HISTORY) {
-      let result = yield Messaging.sendRequestForResult({
-        type: "History:GetPrePathLastVisitedTimeMilliseconds",
-        prePath: this.uri.prePath,
-      });
-      return result == 0 ? -Infinity : result;
-    }
+#ifdef MOZ_ANDROID_HISTORY
+    let result = yield Messaging.sendRequestForResult({
+      type: "History:GetPrePathLastVisitedTimeMilliseconds",
+      prePath: this.uri.prePath,
+    });
+
+    return result == 0 ? -Infinity : result;
+#endif
 
     // Places History transition types that can fire a
     // `pushsubscriptionchange` event when the user visits a site with expired push
