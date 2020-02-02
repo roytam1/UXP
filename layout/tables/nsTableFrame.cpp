@@ -1319,7 +1319,7 @@ nsTableFrame::DisplayGenericTablePart(nsDisplayListBuilder* aBuilder,
                     col->GetTableColGroupFrame()->GetNormalPosition();
       PaintRowGroupBackgroundByColIdx(rowGroup, aFrame, aBuilder, aLists, colIdx, offset);
     }
-  } else {
+  } else if (isVisible) {
     nsDisplayBackgroundImage::AppendBackgroundItemsToTop(aBuilder, aFrame,
                                                          aFrame->GetRectRelativeToSelf(),
                                                          aLists.BorderBackground());
