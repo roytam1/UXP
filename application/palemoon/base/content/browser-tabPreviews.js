@@ -216,6 +216,15 @@ var ctrlTab = {
       }
     }
 
+    let hidePinnedTabs = gPrefService.getBoolPref("browser.ctrlTab.hidePinnedTabs");
+    if (hidePinnedTabs) {
+      regularTabsList = list.filter(function (tab) !tab.pinned);
+      // Don't hide pinned tabs if we only have 1 regular tab
+      if (regularTabsList.length > 1) {
+        list = regularTabsList;
+      }
+    }
+
     return this._tabList = list;
   },
 

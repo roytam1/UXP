@@ -469,6 +469,7 @@ pref("browser.tabs.delayHidingAudioPlayingIconMS", 3000);
 
 pref("browser.allTabs.previews", true);
 pref("browser.ctrlTab.previews", true);
+pref("browser.ctrlTab.hidePinnedTabs", false);
 pref("browser.ctrlTab.recentlyUsedLimit", 7);
 
 // By default, do not export HTML at shutdown.
