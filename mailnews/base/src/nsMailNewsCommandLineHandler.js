@@ -8,7 +8,6 @@ var Cr = Components.results;
 
 Components.utils.import("resource://gre/modules/Services.jsm");
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
 
 var MAPI_STARTUP_ARG = "MapiStartup";
 var MESSAGE_ID_PARAM = "?messageid=";
@@ -88,8 +87,8 @@ var nsMailNewsCommandLineHandler =
         aCommandLine.preventDefault = true;
         MailUtils.displayMessage(msgHdr);
       }
-      else if (AppConstants.MOZ_APP_NAME == "seamonkey" &&
-               /\.(eml|msg)$/i.test(mailURL)) {
+#ifdef MOZ_SUITE
+      else if (/\.(eml|msg)$/i.test(mailURL)) {
         try {
           let file = aCommandLine.resolveFile(mailURL);
           // No point in trying to open a file if it doesn't exist or is empty
@@ -109,6 +108,7 @@ var nsMailNewsCommandLineHandler =
         catch (e) {
         }
       }
+#endif
       else {
         dump("Unrecognized URL: " + mailURL + "\n");
         Services.console.logStringMessage("Unrecognized URL: " + mailURL);
