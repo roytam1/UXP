@@ -740,7 +740,7 @@ nsTableCellFrame::GetColSpan()
     dom::Element* elem = mContent->AsElement();
     const nsAttrValue* attr = elem->GetParsedAttr(
       MOZ_UNLIKELY(elem->IsMathMLElement()) ? nsGkAtoms::columnspan_
-                                              : nsGkAtoms::colspan);
+                                            : nsGkAtoms::colspan);
     // Note that we don't need to check the tag name, because only table cells
     // (including MathML <mtd>) and table headers parse the "colspan" attribute
     // into an integer.
