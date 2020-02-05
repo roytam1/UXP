@@ -5,8 +5,6 @@
 const C = Components.classes;
 const I = Components.interfaces;
 
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
-
 const ToolkitProfileService = "@mozilla.org/toolkit/profile-service;1";
 
 var gProfileService;
@@ -118,12 +116,12 @@ function checkCurrentInput(currentInput)
 
   if (!errorMessage) {
     finishText.className = "";
-    if (AppConstants.platform == "macosx") {
-      finishText.firstChild.data = gProfileManagerBundle.getString("profileFinishTextMac");
-    }
-    else {
-      finishText.firstChild.data = gProfileManagerBundle.getString("profileFinishText");
-    }
+    finishText.firstChild.data = gProfileManagerBundle
+#ifdef XP_MACOSX
+                                .getString("profileFinishTextMac");
+#else
+                                .getString("profileFinishText");
+#endif
     canAdvance = true;
   }
   else {
