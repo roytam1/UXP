@@ -770,10 +770,10 @@ GMPParent::ReadChromiumManifestFile(nsIFile* aFile)
 RefPtr<GenericPromise>
 GMPParent::ParseChromiumManifest(nsString aJSON)
 {
+#ifdef MOZ_EME
   LOGD("%s: for '%s'", __FUNCTION__, NS_LossyConvertUTF16toASCII(aJSON).get());
 
   MOZ_ASSERT(NS_IsMainThread());
-#ifdef MOZ_EME
   mozilla::dom::WidevineCDMManifest m;
   if (!m.Init(aJSON)) {
     return GenericPromise::CreateAndReject(NS_ERROR_FAILURE, __func__);

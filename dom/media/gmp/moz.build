@@ -128,10 +128,10 @@ if CONFIG['MOZ_EME']:
         'GMPCDMProxy.cpp',
     ]
 
-DIRS += [
-    'rlz',
-    'widevine-adapter',
-]
+DIRS += ['rlz']
+
+if CONFIG['MOZ_EME']:
+    DIRS += ['widevine-adapter']
 
 IPDL_SOURCES += [
   'GMPTypes.ipdlh',
