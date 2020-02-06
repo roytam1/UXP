@@ -46,7 +46,7 @@ this.OpenLocationLastURL = function OpenLocationLastURL(aWindow) {
 }
 
 OpenLocationLastURL.prototype = {
-  isPrivate: function OpenLocationLastURL_isPrivate() {
+  isPrivate: function () {
     // Assume not in private browsing mode, unless the browser window is
     // in private mode.
     if (!this.window)

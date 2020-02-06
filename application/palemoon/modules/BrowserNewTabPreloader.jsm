@@ -49,18 +49,18 @@ function clearTimer(timer) {
 }
 
 this.BrowserNewTabPreloader = {
-  init: function Preloader_init() {
+  init: function () {
     Initializer.start();
   },
 
-  uninit: function Preloader_uninit() {
+  uninit: function () {
     Initializer.stop();
     HostFrame.destroy();
     Preferences.uninit();
     HiddenBrowsers.uninit();
   },
 
-  newTab: function Preloader_newTab(aTab) {
+  newTab: function (aTab) {
     let win = aTab.ownerDocument.defaultView;
     if (win.gBrowser) {
       let utils = win.QueryInterface(Ci.nsIInterfaceRequestor)
@@ -83,12 +83,12 @@ var Initializer = {
   _timer: null,
   _observing: false,
 
-  start: function Initializer_start() {
+  start: function () {
     Services.obs.addObserver(this, TOPIC_DELAYED_STARTUP, false);
     this._observing = true;
   },
 
-  stop: function Initializer_stop() {
+  stop: function () {
     this._timer = clearTimer(this._timer);
 
     if (this._observing) {
@@ -97,7 +97,7 @@ var Initializer = {
     }
   },
 
-  observe: function Initializer_observe(aSubject, aTopic, aData) {
+  observe: function (aSubject, aTopic, aData) {
     if (aTopic == TOPIC_DELAYED_STARTUP) {
       Services.obs.removeObserver(this, TOPIC_DELAYED_STARTUP);
       this._observing = false;
@@ -108,11 +108,11 @@ var Initializer = {
     }
   },
 
-  _startTimer: function Initializer_startTimer() {
+  _startTimer: function () {
     this._timer = createTimer(this, PRELOADER_INIT_DELAY_MS);
   },
 
-  _startPreloader: function Initializer_startPreloader() {
+  _startPreloader: function () {
     Preferences.init();
     if (Preferences.enabled) {
       HiddenBrowsers.init();
@@ -133,19 +133,19 @@ var Preferences = {
     return this._enabled;
   },
 
-  init: function Preferences_init() {
+  init: function () {
     this._branch = Services.prefs.getBranch(PREF_BRANCH);
     this._branch.addObserver("", this, false);
   },
 
-  uninit: function Preferences_uninit() {
+  uninit: function () {
     if (this._branch) {
       this._branch.removeObserver("", this);
       this._branch = null;
     }
   },
 
-  observe: function Preferences_observe() {
+  observe: function () {
     let prevEnabled = this._enabled;
     this._enabled = null;
 
