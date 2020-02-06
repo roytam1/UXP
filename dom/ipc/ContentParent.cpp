@@ -51,8 +51,6 @@
 #include "mozilla/dom/ServiceWorkerRegistrar.h"
 #include "mozilla/dom/power/PowerManagerService.h"
 #include "mozilla/dom/Permissions.h"
-#include "mozilla/dom/PresentationParent.h"
-#include "mozilla/dom/PPresentationParent.h"
 #include "mozilla/dom/PushNotifier.h"
 #include "mozilla/dom/FlyWebPublishedServerIPC.h"
 #include "mozilla/dom/quota/QuotaManagerService.h"
@@ -3121,27 +3119,6 @@ ContentParent::DeallocPStorageParent(PStorageParent* aActor)
   DOMStorageDBParent* child = static_cast<DOMStorageDBParent*>(aActor);
   child->ReleaseIPDLReference();
   return true;
-}
-
-PPresentationParent*
-ContentParent::AllocPPresentationParent()
-{
-  RefPtr<PresentationParent> actor = new PresentationParent();
-  return actor.forget().take();
-}
-
-bool
-ContentParent::DeallocPPresentationParent(PPresentationParent* aActor)
-{
-  RefPtr<PresentationParent> actor =
-  dont_AddRef(static_cast<PresentationParent*>(aActor));
-  return true;
-}
-
-bool
-ContentParent::RecvPPresentationConstructor(PPresentationParent* aActor)
-{
-  return static_cast<PresentationParent*>(aActor)->Init(mChildID);
 }
 
 PFlyWebPublishedServerParent*

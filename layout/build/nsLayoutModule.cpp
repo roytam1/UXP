@@ -184,14 +184,9 @@ static void Shutdown();
 #include "mozilla/dom/time/TimeService.h"
 #include "StreamingProtocolService.h"
 
-#include "nsIPresentationService.h"
-
 #include "MediaManager.h"
 
 #include "GMPService.h"
-
-#include "mozilla/dom/PresentationDeviceManager.h"
-#include "mozilla/dom/PresentationTCPSessionTransport.h"
 
 #include "nsScriptError.h"
 
@@ -236,16 +231,6 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(HTMLEditor)
 #define TRANSFORMIIX_NODESET_CONTRACTID \
 "@mozilla.org/transformiix-nodeset;1"
 
-// PresentationDeviceManager
-/* e1e79dec-4085-4994-ac5b-744b016697e6 */
-#define PRESENTATION_DEVICE_MANAGER_CID \
-{ 0xe1e79dec, 0x4085, 0x4994, { 0xac, 0x5b, 0x74, 0x4b, 0x01, 0x66, 0x97, 0xe6 } }
-
-#define PRESENTATION_TCP_SESSION_TRANSPORT_CID \
-{ 0xc9d023f4, 0x6228, 0x4c07, { 0x8b, 0x1d, 0x9c, 0x19, 0x57, 0x3f, 0xaa, 0x27 } }
-
-already_AddRefed<nsIPresentationService> NS_CreatePresentationService();
-
 // Factory Constructor
 NS_GENERIC_FACTORY_CONSTRUCTOR(txMozillaXSLTProcessor)
 NS_GENERIC_FACTORY_CONSTRUCTOR(XPathEvaluator)
@@ -289,11 +274,7 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIStreamingProtocolControllerService,
 
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIMediaManagerService,
                                          MediaManager::GetInstance)
-NS_GENERIC_FACTORY_CONSTRUCTOR(PresentationDeviceManager)
 NS_GENERIC_FACTORY_CONSTRUCTOR(TextInputProcessor)
-NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsIPresentationService,
-                                         NS_CreatePresentationService)
-NS_GENERIC_FACTORY_CONSTRUCTOR(PresentationTCPSessionTransport)
 NS_GENERIC_FACTORY_CONSTRUCTOR(PushNotifier)
 
 //-----------------------------------------------------------------------------
@@ -719,10 +700,6 @@ NS_DEFINE_NAMED_CID(NS_ACCESSIBILITY_SERVICE_CID);
 
 NS_DEFINE_NAMED_CID(GECKO_MEDIA_PLUGIN_SERVICE_CID);
 
-NS_DEFINE_NAMED_CID(PRESENTATION_SERVICE_CID);
-NS_DEFINE_NAMED_CID(PRESENTATION_DEVICE_MANAGER_CID);
-NS_DEFINE_NAMED_CID(PRESENTATION_TCP_SESSION_TRANSPORT_CID);
-
 NS_DEFINE_NAMED_CID(TEXT_INPUT_PROCESSOR_CID);
 
 NS_DEFINE_NAMED_CID(NS_SCRIPTERROR_CID);
@@ -981,9 +958,6 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
 #ifdef ACCESSIBILITY
   { &kNS_ACCESSIBILITY_SERVICE_CID, false, nullptr, CreateA11yService },
 #endif
-  { &kPRESENTATION_SERVICE_CID, false, nullptr, nsIPresentationServiceConstructor },
-  { &kPRESENTATION_DEVICE_MANAGER_CID, false, nullptr, PresentationDeviceManagerConstructor },
-  { &kPRESENTATION_TCP_SESSION_TRANSPORT_CID, false, nullptr, PresentationTCPSessionTransportConstructor },
   { &kTEXT_INPUT_PROCESSOR_CID, false, nullptr, TextInputProcessorConstructor },
   { &kNS_SCRIPTERROR_CID, false, nullptr, nsScriptErrorConstructor },
   { nullptr }
@@ -1113,9 +1087,6 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { "@mozilla.org/accessibleRetrieval;1", &kNS_ACCESSIBILITY_SERVICE_CID },
 #endif
   { "@mozilla.org/gecko-media-plugin-service;1",  &kGECKO_MEDIA_PLUGIN_SERVICE_CID },
-  { PRESENTATION_SERVICE_CONTRACTID, &kPRESENTATION_SERVICE_CID },
-  { PRESENTATION_DEVICE_MANAGER_CONTRACTID, &kPRESENTATION_DEVICE_MANAGER_CID },
-  { PRESENTATION_TCP_SESSION_TRANSPORT_CONTRACTID, &kPRESENTATION_TCP_SESSION_TRANSPORT_CID },
   { "@mozilla.org/text-input-processor;1", &kTEXT_INPUT_PROCESSOR_CID },
   { NS_SCRIPTERROR_CONTRACTID, &kNS_SCRIPTERROR_CID },
   { nullptr }
@@ -1134,8 +1105,6 @@ static const mozilla::Module::CategoryEntry kLayoutCategories[] = {
   { "clear-origin-attributes-data", "QuotaManagerService", "service," QUOTAMANAGER_SERVICE_CONTRACTID },
   { OBSERVER_TOPIC_IDLE_DAILY, "QuotaManagerService", QUOTAMANAGER_SERVICE_CONTRACTID },
   CONTENTDLF_CATEGORIES
-  { "profile-after-change", "PresentationDeviceManager", PRESENTATION_DEVICE_MANAGER_CONTRACTID },
-  { "profile-after-change", "PresentationService", PRESENTATION_SERVICE_CONTRACTID },
   { nullptr }
 };
 
