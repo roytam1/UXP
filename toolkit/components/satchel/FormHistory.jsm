@@ -91,7 +91,6 @@ const Cr = Components.results;
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
 
 XPCOMUtils.defineLazyServiceGetter(this, "uuidService",
                                    "@mozilla.org/uuid-generator;1",
@@ -102,7 +101,11 @@ const DAY_IN_MS  = 86400000; // 1 day in milliseconds
 const MAX_SEARCH_TOKENS = 10;
 const NOOP = function noop() {};
 
-var supportsDeletedTable = AppConstants.platform == "android";
+#ifdef MOZ_WIDGET_ANDROID
+var supportsDeletedTable = true;
+#else
+var supportsDeletedTable = false;
+#endif
 
 var Prefs = {
   initialized: false,
