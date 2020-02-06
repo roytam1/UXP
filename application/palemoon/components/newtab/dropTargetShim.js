@@ -204,7 +204,7 @@ var gDropTargetShim = {
    * Gets the positions of all cell nodes.
    * @return The (cached) cell positions.
    */
-  _getCellPositions: function DropTargetShim_getCellPositions() {
+  _getCellPositions: function () {
     if (this._cellPositions)
       return this._cellPositions;
 

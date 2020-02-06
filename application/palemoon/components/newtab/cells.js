@@ -81,7 +81,7 @@ Cell.prototype = {
    * Checks whether the cell contains a pinned site.
    * @return Whether the cell contains a pinned site.
    */
-  containsPinnedSite: function Cell_containsPinnedSite() {
+  containsPinnedSite: function () {
     let site = this.site;
     return site && site.isPinned();
   },
@@ -90,14 +90,14 @@ Cell.prototype = {
    * Checks whether the cell contains a site (is empty).
    * @return Whether the cell is empty.
    */
-  isEmpty: function Cell_isEmpty() {
+  isEmpty: function () {
     return !this.site;
   },
 
   /**
    * Handles all cell events.
    */
-  handleEvent: function Cell_handleEvent(aEvent) {
+  handleEvent: function (aEvent) {
     // We're not responding to external drag/drop events
     // when our parent window is in private browsing mode.
     if (inPrivateBrowsingMode() && !gDrag.draggedSite)

@@ -22,7 +22,7 @@ var gUndoDialog = {
   /**
    * Initializes the undo dialog.
    */
-  init: function UndoDialog_init() {
+  init: function () {
     this._undoContainer = document.getElementById("newtab-undo-container");
     this._undoContainer.addEventListener("click", this, false);
     this._undoButton = document.getElementById("newtab-undo-button");
@@ -34,7 +34,7 @@ var gUndoDialog = {
    * Shows the undo dialog.
    * @param aSite The site that just got removed.
    */
-  show: function UndoDialog_show(aSite) {
+  show: function (aSite) {
     if (this._undoData)
       clearTimeout(this._undoData.timeout);
 
@@ -54,7 +54,7 @@ var gUndoDialog = {
   /**
    * Hides the undo dialog.
    */
-  hide: function UndoDialog_hide() {
+  hide: function () {
     if (!this._undoData)
       return;
 
@@ -70,7 +70,7 @@ var gUndoDialog = {
    * The undo dialog event handler.
    * @param aEvent The event to handle.
    */
-  handleEvent: function UndoDialog_handleEvent(aEvent) {
+  handleEvent: function (aEvent) {
     switch (aEvent.target.id) {
       case "newtab-undo-button":
         this._undo();
@@ -87,7 +87,7 @@ var gUndoDialog = {
   /**
    * Undo the last blocked site.
    */
-  _undo: function UndoDialog_undo() {
+  _undo: function () {
     if (!this._undoData)
       return;
 
@@ -105,7 +105,7 @@ var gUndoDialog = {
   /**
    * Undo all blocked sites.
    */
-  _undoAll: function UndoDialog_undoAll() {
+  _undoAll: function () {
     NewTabUtils.undoAll(function() {
       gUpdater.updateGrid();
       this.hide();

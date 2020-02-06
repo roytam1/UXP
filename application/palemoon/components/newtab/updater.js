@@ -14,7 +14,7 @@ var gUpdater = {
    * This removes old, moves existing and creates new sites to fill gaps.
    * @param aCallback The callback to call when finished.
    */
-  updateGrid: function Updater_updateGrid(aCallback) {
+  updateGrid: function (aCallback) {
     let links = gLinks.getLinks().slice(0, gGrid.cells.length);
 
     // Find all sites that remain in the grid.
@@ -50,7 +50,7 @@ var gUpdater = {
    * @param aLinks The array of links to find sites for.
    * @return Array of sites mapped to the given links (can contain null values).
    */
-  _findRemainingSites: function Updater_findRemainingSites(aLinks) {
+  _findRemainingSites: function (aLinks) {
     let map = {};
 
     // Create a map to easily retrieve the site for a given URL.
@@ -69,7 +69,7 @@ var gUpdater = {
    * Freezes the given sites' positions.
    * @param aSites The array of sites to freeze.
    */
-  _freezeSitePositions: function Updater_freezeSitePositions(aSites) {
+  _freezeSitePositions: function (aSites) {
     aSites.forEach(function (aSite) {
       if (aSite)
         gTransformation.freezeSitePosition(aSite);
@@ -80,7 +80,7 @@ var gUpdater = {
    * Moves the given sites' DOM nodes to their new positions.
    * @param aSites The array of sites to move.
    */
-  _moveSiteNodes: function Updater_moveSiteNodes(aSites) {
+  _moveSiteNodes: function (aSites) {
     let cells = gGrid.cells;
 
     // Truncate the given array of sites to not have more sites than cells.
@@ -112,7 +112,7 @@ var gUpdater = {
    * @param aSites The array of sites to re-arrange.
    * @param aCallback The callback to call when finished.
    */
-  _rearrangeSites: function Updater_rearrangeSites(aSites, aCallback) {
+  _rearrangeSites: function (aSites, aCallback) {
     let options = {callback: aCallback, unfreeze: true};
     gTransformation.rearrangeSites(aSites, options);
   },
@@ -123,7 +123,7 @@ var gUpdater = {
    * @param aSites The array of sites remaining in the grid.
    * @param aCallback The callback to call when finished.
    */
-  _removeLegacySites: function Updater_removeLegacySites(aSites, aCallback) {
+  _removeLegacySites: function (aSites, aCallback) {
     let batch = [];
 
     // Delete sites that were removed from the grid.
@@ -152,7 +152,7 @@ var gUpdater = {
    * @param aLinks The array of links.
    * @param aCallback The callback to call when finished.
    */
-  _fillEmptyCells: function Updater_fillEmptyCells(aLinks, aCallback) {
+  _fillEmptyCells: function (aLinks, aCallback) {
     let {cells, sites} = gGrid;
 
     // Find empty cells and fill them.
