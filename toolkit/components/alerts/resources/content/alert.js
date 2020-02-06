@@ -4,7 +4,6 @@
 
 var {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 /*
@@ -26,10 +25,15 @@ const NS_ALERT_HORIZONTAL = 1;
 const NS_ALERT_LEFT = 2;
 const NS_ALERT_TOP = 4;
 
-const WINDOW_MARGIN = AppConstants.platform == "win" ? 0 : 10;
-const BODY_TEXT_LIMIT = 200;
-const WINDOW_SHADOW_SPREAD = AppConstants.platform == "win" ? 10 : 0;
+#ifdef XP_WIN
+const WINDOW_MARGIN = 0;
+const WINDOW_SHADOW_SPREAD = 10;
+#else
+const WINDOW_MARGIN = 10;
+const WINDOW_SHADOW_SPREAD = 0;
+#endif
 
+const BODY_TEXT_LIMIT = 200;
 
 var gOrigin = 0; // Default value: alert from bottom right.
 var gReplacedWindow = null;
