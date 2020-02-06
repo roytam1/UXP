@@ -97,7 +97,7 @@ const kPrefBranch = Services.prefs.getBranch("browser.download.");
 var PrefObserver = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
                                          Ci.nsISupportsWeakReference]),
-  getPref: function PO_getPref(name) {
+  getPref: function (name) {
     try {
       switch (typeof this.prefs[name]) {
         case "boolean":
@@ -106,12 +106,12 @@ var PrefObserver = {
     } catch (ex) { }
     return this.prefs[name];
   },
-  observe: function PO_observe(aSubject, aTopic, aData) {
+  observe: function (aSubject, aTopic, aData) {
     if (this.prefs.hasOwnProperty(aData)) {
       return this[aData] = this.getPref(aData);
     }
   },
-  register: function PO_register(prefs) {
+  register: function (prefs) {
     this.prefs = prefs;
     kPrefBranch.addObserver("", this, true);
     for (let key in prefs) {
@@ -138,9 +138,9 @@ PrefObserver.register({
  * and provides shared methods for all the instances of the user interface.
  */
 this.DownloadsCommon = {
-  log: function DC_log(...aMessageArgs) {
+  log: function (...aMessageArgs) {
     delete this.log;
-    this.log = function DC_log(...aMessageArgs) {
+    this.log = function (...aMessageArgs) {
       if (!PrefObserver.debug) {
         return;
       }
@@ -149,9 +149,9 @@ this.DownloadsCommon = {
     this.log.apply(this, aMessageArgs);
   },
 
-  error: function DC_error(...aMessageArgs) {
+  error: function (...aMessageArgs) {
     delete this.error;
-    this.error = function DC_error(...aMessageArgs) {
+    this.error = function (...aMessageArgs) {
       if (!PrefObserver.debug) {
         return;
       }
@@ -205,7 +205,7 @@ this.DownloadsCommon = {
    * @return Formatted string, for example "30s" or "2h".  The returned value is
    *         maximum three characters long, at least in English.
    */
-  formatTimeLeft: function DC_formatTimeLeft(aSeconds)
+  formatTimeLeft: function (aSeconds)
   {
     // Decide what text to show for the time
     let seconds = Math.round(aSeconds);
@@ -259,7 +259,7 @@ this.DownloadsCommon = {
    * @param aWindow
    *        The browser window which owns the download button.
    */
-  getData: function DC_getData(aWindow) {
+  getData: function (aWindow) {
     if (PrivateBrowsingUtils.isWindowPrivate(aWindow)) {
       return PrivateDownloadsData;
     } else {
@@ -277,7 +277,7 @@ this.DownloadsCommon = {
    *        called, and we must ensure to register our listeners before the
    *        getService call for the Download Manager returns.
    */
-  initializeAllDataLinks: function DC_initializeAllDataLinks(aDownloadManagerService) {
+  initializeAllDataLinks: function (aDownloadManagerService) {
     DownloadsData.initializeDataLink(aDownloadManagerService);
     PrivateDownloadsData.initializeDataLink(aDownloadManagerService);
   },
@@ -286,7 +286,7 @@ this.DownloadsCommon = {
    * Terminates the data link for both the private and non-private downloads
    * data objects.
    */
-  terminateAllDataLinks: function DC_terminateAllDataLinks() {
+  terminateAllDataLinks: function () {
     DownloadsData.terminateDataLink();
     PrivateDownloadsData.terminateDataLink();
   },
@@ -299,7 +299,7 @@ this.DownloadsCommon = {
    *        True to load only active downloads from the database.
    */
   ensureAllPersistentDataLoaded:
-  function DC_ensureAllPersistentDataLoaded(aActiveOnly) {
+  function (aActiveOnly) {
     DownloadsData.ensurePersistentDataLoaded(aActiveOnly);
   },
 
@@ -308,7 +308,7 @@ this.DownloadsCommon = {
    * PrivateDownloadsIndicatorData objects, depending on the privacy status of
    * the window in question.
    */
-  getIndicatorData: function DC_getIndicatorData(aWindow) {
+  getIndicatorData: function (aWindow) {
     if (PrivateBrowsingUtils.isWindowPrivate(aWindow)) {
       return PrivateDownloadsIndicatorData;
     } else {
@@ -326,7 +326,7 @@ this.DownloadsCommon = {
    *        The number of items on the top of the downloads list to exclude
    *        from the summary.
    */
-  getSummary: function DC_getSummary(aWindow, aNumToExclude)
+  getSummary: function (aWindow, aNumToExclude)
   {
     if (PrivateBrowsingUtils.isWindowPrivate(aWindow)) {
       if (this._privateSummary) {
@@ -465,7 +465,7 @@ this.DownloadsCommon = {
    *        downloads. This is a floating point value to help get sub-second
    *        accuracy for current and future estimates.
    */
-  smoothSeconds: function DC_smoothSeconds(aSeconds, aLastSeconds)
+  smoothSeconds: function (aSeconds, aLastSeconds)
   {
     // We apply an algorithm similar to the DownloadUtils.getTimeLeft function,
     // though tailored to a single time estimation for all downloads.  We never
@@ -503,7 +503,7 @@ this.DownloadsCommon = {
    * @param aOwnerWindow
    *        the window with which this action is associated.
    */
-  openDownloadedFile: function DC_openDownloadedFile(aFile, aMimeInfo, aOwnerWindow) {
+  openDownloadedFile: function (aFile, aMimeInfo, aOwnerWindow) {
     if (!(aFile instanceof Ci.nsIFile))
       throw new Error("aFile must be a nsIFile object");
     if (aMimeInfo && !(aMimeInfo instanceof Ci.nsIMIMEInfo))
@@ -572,7 +572,7 @@ this.DownloadsCommon = {
    * @param aFile
    *        a downloaded file.
    */
-  showDownloadedFile: function DC_showDownloadedFile(aFile) {
+  showDownloadedFile: function (aFile) {
     if (!(aFile instanceof Ci.nsIFile))
       throw new Error("aFile must be a nsIFile object");
     try {
@@ -669,7 +669,7 @@ DownloadsDataCtor.prototype = {
   /**
    * Stops receiving events for current downloads and cancels any pending read.
    */
-  terminateDataLink: function DD_terminateDataLink()
+  terminateDataLink: function ()
   {
     Cu.reportError("terminateDataLink not applicable with JS Transfers");
     return;
@@ -698,7 +698,7 @@ DownloadsDataCtor.prototype = {
   /**
    * Asks the back-end to remove finished downloads from the list.
    */
-  removeFinished: function DD_removeFinished()
+  removeFinished: function ()
   {
     let promiseList = Downloads.getList(this._isPrivate ? Downloads.PRIVATE
                                                         : Downloads.PUBLIC);
@@ -804,7 +804,7 @@ DownloadsDataCtor.prototype = {
    *        DownloadsView object to be added.  This reference must be passed to
    *        removeView before termination.
    */
-  addView: function DD_addView(aView)
+  addView: function (aView)
   {
     this._views.push(aView);
     this._updateView(aView);
@@ -816,7 +816,7 @@ DownloadsDataCtor.prototype = {
    * @param aView
    *        DownloadsView object to be removed.
    */
-  removeView: function DD_removeView(aView)
+  removeView: function (aView)
   {
     let index = this._views.indexOf(aView);
     if (index != -1) {
@@ -830,7 +830,7 @@ DownloadsDataCtor.prototype = {
    * @param aView
    *        DownloadsView object to be initialized.
    */
-  _updateView: function DD_updateView(aView)
+  _updateView: function (aView)
   {
     // Indicate to the view that a batch loading operation is in progress.
     aView.onDataLoadStarting();
@@ -857,7 +857,7 @@ DownloadsDataCtor.prototype = {
   /**
    * Clears the loaded data.
    */
-  clear: function DD_clear()
+  clear: function ()
   {
     this._terminateDataAccess();
     this.dataItems = {};
@@ -890,7 +890,7 @@ DownloadsDataCtor.prototype = {
    * @return New or existing data item, or null if the item was deleted from the
    *         list of available downloads.
    */
-  _getOrAddDataItem: function DD_getOrAddDataItem(aSource, aMayReuseGUID)
+  _getOrAddDataItem: function (aSource, aMayReuseGUID)
   {
     let downloadGuid = (aSource instanceof Ci.nsIDownload)
                        ? aSource.guid
@@ -920,7 +920,7 @@ DownloadsDataCtor.prototype = {
    *
    * This method can be called at most once per download identifier.
    */
-  _removeDataItem: function DD_removeDataItem(aDownloadId)
+  _removeDataItem: function (aDownloadId)
   {
     if (aDownloadId in this.dataItems) {
       let dataItem = this.dataItems[aDownloadId];
@@ -961,7 +961,7 @@ DownloadsDataCtor.prototype = {
    *        True to load only active downloads from the database.
    */
   ensurePersistentDataLoaded:
-  function DD_ensurePersistentDataLoaded(aActiveOnly)
+  function (aActiveOnly)
   {
     if (this == PrivateDownloadsData) {
       Cu.reportError("ensurePersistentDataLoaded should not be called on PrivateDownloadsData");
@@ -1022,7 +1022,7 @@ DownloadsDataCtor.prototype = {
   /**
    * Cancels any pending data access and ensures views are notified.
    */
-  _terminateDataAccess: function DD_terminateDataAccess()
+  _terminateDataAccess: function ()
   {
     if (this._pendingStatement) {
       this._pendingStatement.cancel();
@@ -1039,7 +1039,7 @@ DownloadsDataCtor.prototype = {
   //////////////////////////////////////////////////////////////////////////////
   //// mozIStorageStatementCallback
 
-  handleResult: function DD_handleResult(aResultSet)
+  handleResult: function (aResultSet)
   {
     for (let row = aResultSet.getNextRow();
          row;
@@ -1051,13 +1051,13 @@ DownloadsDataCtor.prototype = {
     }
   },
 
-  handleError: function DD_handleError(aError)
+  handleError: function (aError)
   {
     DownloadsCommon.error("Database statement execution error (",
                           aError.result, "): ", aError.message);
   },
 
-  handleCompletion: function DD_handleCompletion(aReason)
+  handleCompletion: function (aReason)
   {
     DownloadsCommon.log("Loading all downloads from database completed with reason:",
                         aReason);
@@ -1083,7 +1083,7 @@ DownloadsDataCtor.prototype = {
   //////////////////////////////////////////////////////////////////////////////
   //// nsIObserver
 
-  observe: function DD_observe(aSubject, aTopic, aData)
+  observe: function (aSubject, aTopic, aData)
   {
     switch (aTopic) {
       case "download-manager-remove-download-guid":
@@ -1121,7 +1121,7 @@ DownloadsDataCtor.prototype = {
   //////////////////////////////////////////////////////////////////////////////
   //// nsIDownloadProgressListener
 
-  onDownloadStateChange: function DD_onDownloadStateChange(aOldState, aDownload)
+  onDownloadStateChange: function (aOldState, aDownload)
   {
     if (aDownload.isPrivate != this._isPrivate) {
       // Ignore the downloads with a privacy status other than what we are
@@ -1202,7 +1202,7 @@ DownloadsDataCtor.prototype = {
     }
   },
 
-  onProgressChange: function DD_onProgressChange(aWebProgress, aRequest,
+  onProgressChange: function (aWebProgress, aRequest,
                                                   aCurSelfProgress,
                                                   aMaxSelfProgress,
                                                   aCurTotalProgress,
@@ -1259,7 +1259,7 @@ DownloadsDataCtor.prototype = {
    * @param aType
    *        Set to "start" for new downloads, "finish" for completed downloads.
    */
-  _notifyDownloadEvent: function DD_notifyDownloadEvent(aType)
+  _notifyDownloadEvent: function (aType)
   {
     DownloadsCommon.log("Attempting to notify that a new download has started or finished.");
     if (DownloadsCommon.useToolkitUI) {
@@ -1329,7 +1329,7 @@ const DownloadsViewPrototype = {
    *        View object to be added.  This reference must be
    *        passed to removeView before termination.
    */
-  addView: function DVP_addView(aView)
+  addView: function (aView)
   {
     // Start receiving events when the first of our views is registered.
     if (this._views.length == 0) {
@@ -1350,7 +1350,7 @@ const DownloadsViewPrototype = {
    * @param aView
    *        View object to be updated.
    */
-  refreshView: function DVP_refreshView(aView)
+  refreshView: function (aView)
   {
     // Update immediately even if we are still loading data asynchronously.
     // Subclasses must provide these two functions!
@@ -1364,7 +1364,7 @@ const DownloadsViewPrototype = {
    * @param aView
    *        View object to be removed.
    */
-  removeView: function DVP_removeView(aView)
+  removeView: function (aView)
   {
     let index = this._views.indexOf(aView);
     if (index != -1) {
@@ -1392,7 +1392,7 @@ const DownloadsViewPrototype = {
   /**
    * Called before multiple downloads are about to be loaded.
    */
-  onDataLoadStarting: function DVP_onDataLoadStarting()
+  onDataLoadStarting: function ()
   {
     this._loading = true;
   },
@@ -1400,7 +1400,7 @@ const DownloadsViewPrototype = {
   /**
    * Called after data loading finished.
    */
-  onDataLoadCompleted: function DVP_onDataLoadCompleted()
+  onDataLoadCompleted: function ()
   {
     this._loading = false;
   },
@@ -1412,7 +1412,7 @@ const DownloadsViewPrototype = {
    *
    * @note Subclasses should override this.
    */
-  onDataInvalidated: function DVP_onDataInvalidated()
+  onDataInvalidated: function ()
   {
     throw Components.results.NS_ERROR_NOT_IMPLEMENTED;
   },
@@ -1481,7 +1481,7 @@ const DownloadsViewPrototype = {
    *
    * @note Subclasses should override this.
    */
-  _refreshProperties: function DID_refreshProperties()
+  _refreshProperties: function ()
   {
     throw Components.results.NS_ERROR_NOT_IMPLEMENTED;
   },
@@ -1491,7 +1491,7 @@ const DownloadsViewPrototype = {
    *
    * @note Subclasses should override this.
    */
-  _updateView: function DID_updateView()
+  _updateView: function ()
   {
     throw Components.results.NS_ERROR_NOT_IMPLEMENTED;
   }
@@ -1523,7 +1523,7 @@ DownloadsIndicatorDataCtor.prototype = {
    * @param aView
    *        DownloadsIndicatorView object to be removed.
    */
-  removeView: function DID_removeView(aView)
+  removeView: function (aView)
   {
     DownloadsViewPrototype.removeView.call(this, aView);
 
@@ -1535,7 +1535,7 @@ DownloadsIndicatorDataCtor.prototype = {
   //////////////////////////////////////////////////////////////////////////////
   //// Callback functions from DownloadsData
 
-  onDataLoadCompleted: function DID_onDataLoadCompleted()
+  onDataLoadCompleted: function ()
   {
     DownloadsViewPrototype.onDataLoadCompleted.call(this);
     this._updateViews();
@@ -1546,7 +1546,7 @@ DownloadsIndicatorDataCtor.prototype = {
    * entered Private Browsing Mode and the database backend changed).
    * References to existing data should be discarded.
    */
-  onDataInvalidated: function DID_onDataInvalidated()
+  onDataInvalidated: function ()
   {
     this._itemCount = 0;
   },
@@ -1612,7 +1612,7 @@ DownloadsIndicatorDataCtor.prototype = {
   /**
    * Computes aggregate values and propagates the changes to our views.
    */
-  _updateViews: function DID_updateViews()
+  _updateViews: function ()
   {
     // Do not update the status indicators during batch loads of download items.
     if (this._loading) {
@@ -1629,7 +1629,7 @@ DownloadsIndicatorDataCtor.prototype = {
    * @param aView
    *        DownloadsIndicatorView object to be updated.
    */
-  _updateView: function DID_updateView(aView)
+  _updateView: function (aView)
   {
     aView.hasDownloads = this._hasDownloads;
     aView.counter = this._counter;
@@ -1681,7 +1681,7 @@ DownloadsIndicatorDataCtor.prototype = {
   /**
    * Computes aggregate values based on the current state of downloads.
    */
-  _refreshProperties: function DID_refreshProperties()
+  _refreshProperties: function ()
   {
     let summary =
       DownloadsCommon.summarizeDownloads(this._activeDownloads());
@@ -1780,7 +1780,7 @@ DownloadsSummaryData.prototype = {
    * @param aView
    *        DownloadsSummary view to be removed.
    */
-  removeView: function DSD_removeView(aView)
+  removeView: function (aView)
   {
     DownloadsViewPrototype.removeView.call(this, aView);
 
@@ -1796,13 +1796,13 @@ DownloadsSummaryData.prototype = {
   //// DownloadsViewPrototype for more information on what these functions
   //// are used for.
 
-  onDataLoadCompleted: function DSD_onDataLoadCompleted()
+  onDataLoadCompleted: function ()
   {
     DownloadsViewPrototype.onDataLoadCompleted.call(this);
     this._updateViews();
   },
 
-  onDataInvalidated: function DSD_onDataInvalidated()
+  onDataInvalidated: function ()
   {
     this._dataItems = [];
   },
@@ -1839,7 +1839,7 @@ DownloadsSummaryData.prototype = {
   /**
    * Computes aggregate values and propagates the changes to our views.
    */
-  _updateViews: function DSD_updateViews()
+  _updateViews: function ()
   {
     // Do not update the status indicators during batch loads of download items.
     if (this._loading) {
@@ -1856,7 +1856,7 @@ DownloadsSummaryData.prototype = {
    * @param aView
    *        DownloadsIndicatorView object to be updated.
    */
-  _updateView: function DSD_updateView(aView)
+  _updateView: function (aView)
   {
     aView.showingProgress = this._showingProgress;
     aView.percentComplete = this._percentComplete;
@@ -1885,7 +1885,7 @@ DownloadsSummaryData.prototype = {
   /**
    * Computes aggregate values based on the current state of downloads.
    */
-  _refreshProperties: function DSD_refreshProperties()
+  _refreshProperties: function ()
   {
     // Pre-load summary with default values.
     let summary =

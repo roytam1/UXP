@@ -60,7 +60,7 @@ DownloadsUI.prototype = {
   //////////////////////////////////////////////////////////////////////////////
   //// nsIDownloadManagerUI
 
-  show: function DUI_show(aWindowContext, aDownload, aReason, aUsePrivateUI)
+  show: function (aWindowContext, aDownload, aReason, aUsePrivateUI)
   {
     if (DownloadsCommon.useToolkitUI && !PrivateBrowsingUtils.isWindowPrivate(aWindowContext)) {
       this._toolkitUI.show(aWindowContext, aDownload, aReason, aUsePrivateUI);
@@ -101,7 +101,7 @@ DownloadsUI.prototype = {
     return DownloadsCommon.useToolkitUI ? this._toolkitUI.visible : true;
   },
 
-  getAttention: function DUI_getAttention()
+  getAttention: function ()
   {
     if (DownloadsCommon.useToolkitUI) {
       this._toolkitUI.getAttention();
@@ -112,7 +112,7 @@ DownloadsUI.prototype = {
    * Helper function that opens the download manager UI.
    */
   _showDownloadManagerUI:
-  function DUI_showDownloadManagerUI(aWindowContext, aUsePrivateUI)
+  function (aWindowContext, aUsePrivateUI)
   {
     // If we weren't given a window context, try to find a browser window
     // to use as our parent - and if that doesn't work, error out and give up.
