@@ -25,21 +25,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "ReaderMode",
   "resource://gre/modules/ReaderMode.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Readerable",
   "resource://gre/modules/Readerable.jsm");
-XPCOMUtils.defineLazyGetter(this, "SimpleServiceDiscovery", function() {
-  let ssdp = Cu.import("resource://gre/modules/SimpleServiceDiscovery.jsm", {}).SimpleServiceDiscovery;
-  // Register targets
-  ssdp.registerDevice({
-    id: "roku:ecp",
-    target: "roku:ecp",
-    factory: function(aService) {
-      Cu.import("resource://gre/modules/RokuApp.jsm");
-      return new RokuApp(aService);
-    },
-    types: ["video/mp4"],
-    extensions: ["mp4"]
-  });
-  return ssdp;
-});
 
 // TabChildGlobal
 var global = this;
@@ -92,19 +77,6 @@ addMessageListener("Browser:Reload", function(message) {
 
 addMessageListener("MixedContent:ReenableProtection", function() {
   docShell.mixedContentChannel = null;
-});
-
-addMessageListener("SecondScreen:tab-mirror", function(message) {
-  if (!Services.prefs.getBoolPref("browser.casting.enabled")) {
-    return;
-  }
-  let app = SimpleServiceDiscovery.findAppForService(message.data.service);
-  if (app) {
-    let width = content.innerWidth;
-    let height = content.innerHeight;
-    let viewport = {cssWidth: width, cssHeight: height, width: width, height: height};
-    app.mirror(function() {}, content, viewport, function() {}, content);
-  }
 });
 
 var AboutHomeListener = {

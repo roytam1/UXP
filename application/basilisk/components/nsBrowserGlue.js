@@ -56,7 +56,6 @@ XPCOMUtils.defineLazyServiceGetter(this, "AlertsService", "@mozilla.org/alerts-s
   ["RemotePrompt", "resource:///modules/RemotePrompt.jsm"],
   ["SessionStore", "resource:///modules/sessionstore/SessionStore.jsm"],
   ["ShellService", "resource:///modules/ShellService.jsm"],
-  ["SimpleServiceDiscovery", "resource://gre/modules/SimpleServiceDiscovery.jsm"],
   ["TabCrashHandler", "resource:///modules/ContentCrashHandlers.jsm"],
   ["Task", "resource://gre/modules/Task.jsm"],
   ["URLBarZoom", "resource:///modules/URLBarZoom.jsm"],
@@ -1017,32 +1016,8 @@ BrowserGlue.prototype = {
     }
   },
 
-  _initServiceDiscovery: function () {
-    if (!Services.prefs.getBoolPref("browser.casting.enabled")) {
-      return;
-    }
-    var rokuDevice = {
-      id: "roku:ecp",
-      target: "roku:ecp",
-      factory: function(aService) {
-        Cu.import("resource://gre/modules/RokuApp.jsm");
-        return new RokuApp(aService);
-      },
-      types: ["video/mp4"],
-      extensions: ["mp4"]
-    };
-
-    // Register targets
-    SimpleServiceDiscovery.registerDevice(rokuDevice);
-
-    // Search for devices continuously every 120 seconds
-    SimpleServiceDiscovery.search(120 * 1000);
-  },
-
   // All initial windows have opened.
   _onWindowsRestored: function BG__onWindowsRestored() {
-    this._initServiceDiscovery();
-
     // Show update notification, if needed.
     if (Services.prefs.prefHasUserValue("app.update.postupdate"))
       this._showUpdateNotification();

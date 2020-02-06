@@ -436,8 +436,7 @@
 
             <menu id="tools-menu"
                   label="&toolsMenu.label;"
-                  accesskey="&toolsMenu.accesskey;"
-                  onpopupshowing="mirrorShow(this)">
+                  accesskey="&toolsMenu.accesskey;">
               <menupopup id="menu_ToolsPopup"
 #ifdef MOZ_SERVICES_SYNC
                          onpopupshowing="gSyncUI.updateUI();"
@@ -486,13 +485,6 @@
                         key="key_viewInfo"
 #endif
                         command="View:PageInfo"/>
-              <menu id="menu_mirrorTabCmd"
-                    hidden="true"
-                    accesskey="&mirrorTabCmd.accesskey;"
-                    label="&mirrorTabCmd.label;">
-                <menupopup id="menu_mirrorTab-popup"
-                           onpopupshowing="populateMirrorTabMenu(this)"/>
-              </menu>
               <menuseparator id="prefSep"/>
               <menuitem id="menu_preferences"
                         label="&preferencesCmd2.label;"
