@@ -42,7 +42,7 @@ var gEditItemOverlay = {
   /**
    * Determines the initial data for the item edited or added by this dialog
    */
-  _determineInfo: function EIO__determineInfo(aInfo) {
+  _determineInfo: function (aInfo) {
     // hidden rows
     if (aInfo && aInfo.hiddenRows)
       this._hiddenRows = aInfo.hiddenRows;
@@ -55,7 +55,7 @@ var gEditItemOverlay = {
     this._onPanelReady = aInfo && aInfo.onPanelReady;
   },
 
-  _showHideRows: function EIO__showHideRows() {
+  _showHideRows: function () {
     var isBookmark = this._itemId != -1 &&
                      this._itemType == Ci.nsINavBookmarksService.TYPE_BOOKMARK;
     var isQuery = false;
@@ -102,7 +102,7 @@ var gEditItemOverlay = {
    *        * forceReadOnly - set this flag to initialize the panel to its
    *          read-only (view) mode even if the given item is editable.
    */
-  initPanel: function EIO_initPanel(aFor, aInfo) {
+  initPanel: function (aFor, aInfo) {
     // For sanity ensure that the implementer has uninited the panel before
     // trying to init it again, or we could end up leaking due to observers.
     if (this._initialized)
@@ -266,7 +266,7 @@ var gEditItemOverlay = {
    * @return the new menu item.
    */
   _appendFolderItemToMenupopup:
-  function EIO__appendFolderItemToMenuList(aMenupopup, aFolderId) {
+  function (aMenupopup, aFolderId) {
     // First make sure the folders-separator is visible
     this._element("foldersSeparator").hidden = false;
 
@@ -279,7 +279,7 @@ var gEditItemOverlay = {
     return folderMenuItem;
   },
 
-  _initFolderMenuList: function EIO__initFolderMenuList(aSelectedFolder) {
+  _initFolderMenuList: function (aSelectedFolder) {
     // clean up first
     var menupopup = this._folderMenuList.menupopup;
     while (menupopup.childNodes.length > 6)
@@ -345,7 +345,7 @@ var gEditItemOverlay = {
     this._folderMenuList.disabled = this._readOnly;
   },
 
-  QueryInterface: function EIO_QueryInterface(aIID) {
+  QueryInterface: function (aIID) {
     if (aIID.equals(Ci.nsIDOMEventListener) ||
         aIID.equals(Ci.nsINavBookmarkObserver) ||
         aIID.equals(Ci.nsISupports))
@@ -354,11 +354,11 @@ var gEditItemOverlay = {
     throw Cr.NS_ERROR_NO_INTERFACE;
   },
 
-  _element: function EIO__element(aID) {
+  _element: function (aID) {
     return document.getElementById("editBMPanel_" + aID);
   },
 
-  _editorTransactionManagerClear: function EIO__editorTransactionManagerClear(aItem) {
+  _editorTransactionManagerClear: function (aItem) {
     // Clear the editor's undo stack
     let transactionManager;
     try {
@@ -378,7 +378,7 @@ var gEditItemOverlay = {
     }
   },
 
-  _getItemStaticTitle: function EIO__getItemStaticTitle() {
+  _getItemStaticTitle: function () {
     if (this._titleOverride)
       return this._titleOverride;
 
@@ -392,14 +392,14 @@ var gEditItemOverlay = {
     return title;
   },
 
-  _initNamePicker: function EIO_initNamePicker() {
+  _initNamePicker: function () {
     var namePicker = this._element("namePicker");
     namePicker.value = this._getItemStaticTitle();
     namePicker.readOnly = this._readOnly;
     this._editorTransactionManagerClear(namePicker);
   },
 
-  uninitPanel: function EIO_uninitPanel(aHideCollapsibleElements) {
+  uninitPanel: function (aHideCollapsibleElements) {
     if (aHideCollapsibleElements) {
       // hide the folder tree if it was previously visible
       var folderTreeRow = this._element("folderTreeRow");
@@ -438,18 +438,18 @@ var gEditItemOverlay = {
     this._readOnly = false;
   },
 
-  onTagsFieldBlur: function EIO_onTagsFieldBlur() {
+  onTagsFieldBlur: function () {
     if (this._updateTags()) // if anything has changed
       this._mayUpdateFirstEditField("tagsField");
   },
 
-  _updateTags: function EIO__updateTags() {
+  _updateTags: function () {
     if (this._multiEdit)
       return this._updateMultipleTagsForItems();
     return this._updateSingleTagForItem();
   },
 
-  _updateSingleTagForItem: function EIO__updateSingleTagForItem() {
+  _updateSingleTagForItem: function () {
     var currentTags = PlacesUtils.tagging.getTagsForURI(this._uri);
     var tags = this._getTagsArrayFromTagField();
     if (tags.length > 0 || currentTags.length > 0) {
@@ -494,7 +494,7 @@ var gEditItemOverlay = {
     *        the id of the field that may be set (without the "editBMPanel_"
     *        prefix)
     */
-  _mayUpdateFirstEditField: function EIO__mayUpdateFirstEditField(aNewField) {
+  _mayUpdateFirstEditField: function (aNewField) {
     // * The first-edit-field behavior is not applied in the multi-edit case
     // * if this._firstEditedField is already set, this is not the first field,
     //   so there's nothing to do
@@ -509,7 +509,7 @@ var gEditItemOverlay = {
     prefs.setCharPref("browser.bookmarks.editDialog.firstEditField", aNewField);
   },
 
-  _updateMultipleTagsForItems: function EIO__updateMultipleTagsForItems() {
+  _updateMultipleTagsForItems: function () {
     var tags = this._getTagsArrayFromTagField();
     if (tags.length > 0 || this._allTags.length > 0) {
       var tagsToRemove = [];
@@ -562,7 +562,7 @@ var gEditItemOverlay = {
     return false;
   },
 
-  onNamePickerBlur: function EIO_onNamePickerBlur() {
+  onNamePickerBlur: function () {
     if (this._itemId == -1)
       return;
 
@@ -582,7 +582,7 @@ var gEditItemOverlay = {
     }
   },
 
-  onDescriptionFieldBlur: function EIO_onDescriptionFieldBlur() {
+  onDescriptionFieldBlur: function () {
     var description = this._element("descriptionField").value;
     if (description != PlacesUIUtils.getItemDescription(this._itemId)) {
       var annoObj = { name   : PlacesUIUtils.DESCRIPTION_ANNO,
@@ -595,7 +595,7 @@ var gEditItemOverlay = {
     }
   },
 
-  onLocationFieldBlur: function EIO_onLocationFieldBlur() {
+  onLocationFieldBlur: function () {
     var uri;
     try {
       uri = PlacesUIUtils.createFixedURI(this._element("locationField").value);
@@ -609,7 +609,7 @@ var gEditItemOverlay = {
     }
   },
 
-  onKeywordFieldBlur: function EIO_onKeywordFieldBlur() {
+  onKeywordFieldBlur: function () {
     let oldKeyword = this._keyword;
     let keyword = this._keyword = this._element("keywordField").value;
     if (keyword != oldKeyword) {
@@ -622,7 +622,7 @@ var gEditItemOverlay = {
   },
 
   onLoadInSidebarCheckboxCommand:
-  function EIO_onLoadInSidebarCheckboxCommand() {
+  function () {
     let annoObj = { name : PlacesUIUtils.LOAD_IN_SIDEBAR_ANNO };
     if (this._element("loadInSidebarCheckbox").checked)
       annoObj.value = true;
@@ -630,7 +630,7 @@ var gEditItemOverlay = {
     PlacesUtils.transactionManager.doTransaction(txn);
   },
 
-  toggleFolderTreeVisibility: function EIO_toggleFolderTreeVisibility() {
+  toggleFolderTreeVisibility: function () {
     var expander = this._element("foldersExpander");
     var folderTreeRow = this._element("folderTreeRow");
     if (!folderTreeRow.collapsed) {
@@ -664,7 +664,7 @@ var gEditItemOverlay = {
   },
 
   _getFolderIdFromMenuList:
-  function EIO__getFolderIdFromMenuList() {
+  function () {
     var selectedItem = this._folderMenuList.selectedItem;
     NS_ASSERT("folderId" in selectedItem,
               "Invalid menuitem in the folders-menulist");
@@ -680,7 +680,7 @@ var gEditItemOverlay = {
    *        The identifier of the bookmarks folder.
    */
   _getFolderMenuItem:
-  function EIO__getFolderMenuItem(aFolderId) {
+  function (aFolderId) {
     var menupopup = this._folderMenuList.menupopup;
 
     for (let i = 0; i < menupopup.childNodes.length; i++) {
@@ -696,7 +696,7 @@ var gEditItemOverlay = {
     return this._appendFolderItemToMenupopup(menupopup, aFolderId);
   },
 
-  onFolderMenuListCommand: function EIO_onFolderMenuListCommand(aEvent) {
+  onFolderMenuListCommand: function (aEvent) {
     // Set a selectedIndex attribute to show special icons
     this._folderMenuList.setAttribute("selectedIndex",
                                       this._folderMenuList.selectedIndex);
@@ -739,7 +739,7 @@ var gEditItemOverlay = {
     }
   },
 
-  onFolderTreeSelect: function EIO_onFolderTreeSelect() {
+  onFolderTreeSelect: function () {
     var selectedNode = this._folderTree.selectedNode;
 
     // Disable the "New Folder" button if we cannot create a new folder
@@ -759,7 +759,7 @@ var gEditItemOverlay = {
   },
 
   _markFolderAsRecentlyUsed:
-  function EIO__markFolderAsRecentlyUsed(aFolderId) {
+  function (aFolderId) {
     var txns = [];
 
     // Expire old unused recent folders
@@ -789,7 +789,7 @@ var gEditItemOverlay = {
    *          with the transaction manager.
    */
   _getLastUsedAnnotationObject:
-  function EIO__getLastUsedAnnotationObject(aLastUsed) {
+  function (aLastUsed) {
     var anno = { name: LAST_USED_ANNO,
                  type: Ci.nsIAnnotationService.TYPE_INT32,
                  flags: 0,
@@ -799,7 +799,7 @@ var gEditItemOverlay = {
     return anno;
   },
 
-  _rebuildTagsSelectorList: function EIO__rebuildTagsSelectorList() {
+  _rebuildTagsSelectorList: function () {
     var tagsSelector = this._element("tagsSelector");
     var tagsSelectorRow = this._element("tagsSelectorRow");
     if (tagsSelectorRow.collapsed)
@@ -842,7 +842,7 @@ var gEditItemOverlay = {
     }
   },
 
-  toggleTagsSelector: function EIO_toggleTagsSelector() {
+  toggleTagsSelector: function () {
     var tagsSelector = this._element("tagsSelector");
     var tagsSelectorRow = this._element("tagsSelectorRow");
     var expander = this._element("tagsSelectorExpander");
@@ -869,14 +869,14 @@ var gEditItemOverlay = {
    *
    * @return Array of tag strings found in the field value.
    */
-  _getTagsArrayFromTagField: function EIO__getTagsArrayFromTagField() {
+  _getTagsArrayFromTagField: function () {
     let tags = this._element("tagsField").value;
     return tags.trim()
                .split(/\s*,\s*/) // Split on commas and remove spaces.
                .filter(function (tag) tag.length > 0); // Kill empty tags.
   },
 
-  newFolder: function EIO_newFolder() {
+  newFolder: function () {
     var ip = this._folderTree.insertionPoint;
 
     // default to the bookmarks menu folder
@@ -897,7 +897,7 @@ var gEditItemOverlay = {
   },
 
   // nsIDOMEventListener
-  handleEvent: function EIO_nsIDOMEventListener(aEvent) {
+  handleEvent: function (aEvent) {
     switch (aEvent.type) {
     case "CheckboxStateChange":
       // Update the tags field when items are checked/unchecked in the listbox
@@ -927,7 +927,7 @@ var gEditItemOverlay = {
   },
 
   // nsINavBookmarkObserver
-  onItemChanged: function EIO_onItemChanged(aItemId, aProperty,
+  onItemChanged: function (aItemId, aProperty,
                                             aIsAnnotationProperty, aValue,
                                             aLastModified, aItemType) {
     if (aProperty == "tags") {
@@ -1038,7 +1038,7 @@ var gEditItemOverlay = {
     }
   },
 
-  onItemMoved: function EIO_onItemMoved(aItemId, aOldParent, aOldIndex,
+  onItemMoved: function (aItemId, aOldParent, aOldIndex,
                                         aNewParent, aNewIndex, aItemType) {
     if (aItemId != this._itemId ||
         aNewParent == this._getFolderIdFromMenuList())
@@ -1051,7 +1051,7 @@ var gEditItemOverlay = {
     this._folderMenuList.selectedItem = folderItem;
   },
 
-  onItemAdded: function EIO_onItemAdded(aItemId, aParentId, aIndex, aItemType,
+  onItemAdded: function (aItemId, aParentId, aIndex, aItemType,
                                         aURI) {
     this._lastNewItem = aItemId;
   },

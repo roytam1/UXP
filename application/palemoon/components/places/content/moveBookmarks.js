@@ -22,7 +22,7 @@ var gMoveBookmarksDialog = {
       PlacesUIUtils.allBookmarksFolderId;
   },
 
-  onOK: function MBD_onOK(aEvent) {
+  onOK: function (aEvent) {
     var selectedNode = this.foldersTree.selectedNode;
     NS_ASSERT(selectedNode,
               "selectedNode must be set in a single-selection tree with initial selection set");
@@ -46,7 +46,7 @@ var gMoveBookmarksDialog = {
     }
   },
 
-  newFolder: function MBD_newFolder() {
+  newFolder: function () {
     // The command is disabled when the tree is not focused
     this.foldersTree.focus();
     goDoCommand("placesCmd_new:folder");
