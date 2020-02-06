@@ -233,7 +233,7 @@ var gAdvancedPane = {
     Visitor.prototype = {
       expected: 0,
       sum: 0,
-      QueryInterface: function listener_qi(iid) {
+      QueryInterface: function (iid) {
         if (iid.equals(Components.interfaces.nsISupports) ||
             iid.equals(Components.interfaces.nsICacheStorageVisitor)) {
           return this;

@@ -575,7 +575,7 @@ var gCookiesWindow = {
     removeSelectedCookies.disabled = !hasRows || !hasSelection;
   },
 
-  performDeletion: function gCookiesWindow_performDeletion(deleteItems) {
+  performDeletion: function (deleteItems) {
     var psvc = Components.classes["@mozilla.org/preferences-service;1"]
                          .getService(Components.interfaces.nsIPrefBranch);
     var blockFutureCookies = false;
@@ -883,7 +883,7 @@ var gCookiesWindow = {
     }
   },
 
-  _updateRemoveAllButton: function gCookiesWindow__updateRemoveAllButton() {
+  _updateRemoveAllButton: function () {
     let removeAllCookies = document.getElementById("removeAllCookies");
     removeAllCookies.disabled = this._view._rowCount == 0;
 

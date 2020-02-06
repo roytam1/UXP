@@ -112,7 +112,7 @@ var gPrivacyPane = {
   /**
    * Initialize the history mode menulist based on the privacy preferences
    */
-  initializeHistoryMode: function PPP_initializeHistoryMode()
+  initializeHistoryMode: function ()
   {
     let mode;
     let getVal = function (aPref)
@@ -133,7 +133,7 @@ var gPrivacyPane = {
   /**
    * Update the selected pane based on the history mode menulist
    */
-  updateHistoryModePane: function PPP_updateHistoryModePane()
+  updateHistoryModePane: function ()
   {
     let selectedIndex = -1;
     switch (document.getElementById("historyMode").value) {
@@ -154,7 +154,7 @@ var gPrivacyPane = {
    * Update the private browsing auto-start pref and the history mode
    * micro-management prefs based on the history mode menulist
    */
-  updateHistoryModePrefs: function PPP_updateHistoryModePrefs()
+  updateHistoryModePrefs: function ()
   {
     let pref = document.getElementById("browser.privatebrowsing.autostart");
     switch (document.getElementById("historyMode").value) {
@@ -187,7 +187,7 @@ var gPrivacyPane = {
    * Update the privacy micro-management controls based on the
    * value of the private browsing auto-start checkbox.
    */
-  updatePrivacyMicroControls: function PPP_updatePrivacyMicroControls()
+  updatePrivacyMicroControls: function ()
   {
     if (document.getElementById("historyMode").value == "custom") {
       let disabled = this._autoStartPrivateBrowsing =
@@ -229,7 +229,7 @@ var gPrivacyPane = {
   /**
    * Initialize the starting state for the auto-start private browsing mode pref reverter.
    */
-  initAutoStartPrivateBrowsingReverter: function PPP_initAutoStartPrivateBrowsingReverter()
+  initAutoStartPrivateBrowsingReverter: function ()
   {
     let mode = document.getElementById("historyMode");
     let autoStart = document.getElementById("privateBrowsingAutoStart");
@@ -239,7 +239,7 @@ var gPrivacyPane = {
 
   _lastMode: null,
   _lasCheckState: null,
-  updateAutostart: function PPP_updateAutostart() {
+  updateAutostart: function () {
       let mode = document.getElementById("historyMode");
       let autoStart = document.getElementById("privateBrowsingAutoStart");
       let pref = document.getElementById("browser.privatebrowsing.autostart");
