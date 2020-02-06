@@ -22,7 +22,7 @@ var tabPreviews = {
     return this.height = Math.round(this.width * this.aspectRatio);
   },
 
-  init: function tabPreviews_init() {
+  init: function () {
     if (this._selectedTab)
       return;
     this._selectedTab = gBrowser.selectedTab;
@@ -31,7 +31,7 @@ var tabPreviews = {
     gBrowser.tabContainer.addEventListener("SSTabRestored", this, false);
   },
 
-  get: function tabPreviews_get(aTab) {
+  get: function (aTab) {
     let uri = aTab.linkedBrowser.currentURI.spec;
 
     if (aTab.__thumbnail_lastURI &&
@@ -52,7 +52,7 @@ var tabPreviews = {
     return this.capture(aTab, !aTab.hasAttribute("busy"));
   },
 
-  capture: function tabPreviews_capture(aTab, aStore) {
+  capture: function (aTab, aStore) {
     var thumbnail = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
     thumbnail.mozOpaque = true;
     thumbnail.height = this.height;
@@ -75,7 +75,7 @@ var tabPreviews = {
     return thumbnail;
   },
 
-  handleEvent: function tabPreviews_handleEvent(event) {
+  handleEvent: function (event) {
     switch (event.type) {
       case "TabSelect":
         if (this._selectedTab &&
@@ -228,7 +228,7 @@ var ctrlTab = {
     return this._tabList = list;
   },
 
-  init: function ctrlTab_init() {
+  init: function () {
     if (!this._recentlyUsedTabs) {
       tabPreviews.init();
 
@@ -237,13 +237,13 @@ var ctrlTab = {
     }
   },
 
-  uninit: function ctrlTab_uninit() {
+  uninit: function () {
     this._recentlyUsedTabs = null;
     this._init(false);
   },
 
   prefName: "browser.ctrlTab.previews",
-  readPref: function ctrlTab_readPref() {
+  readPref: function () {
     var enable =
       gPrefService.getBoolPref(this.prefName) &&
       (!gPrefService.prefHasUserValue("browser.ctrlTab.disallowForScreenReaders") ||
@@ -258,7 +258,7 @@ var ctrlTab = {
     this.readPref();
   },
 
-  updatePreviews: function ctrlTab_updatePreviews() {
+  updatePreviews: function () {
     for (let i = 0; i < this.previews.length; i++)
       this.updatePreview(this.previews[i], this.tabList[i]);
 
@@ -267,7 +267,7 @@ var ctrlTab = {
       PluralForm.get(this.tabCount, showAllLabel).replace("#1", this.tabCount);
   },
 
-  updatePreview: function ctrlTab_updatePreview(aPreview, aTab) {
+  updatePreview: function (aPreview, aTab) {
     if (aPreview == this.showAllButton)
       return;
 
@@ -301,7 +301,7 @@ var ctrlTab = {
     }
   },
 
-  advanceFocus: function ctrlTab_advanceFocus(aForward) {
+  advanceFocus: function (aForward) {
     let selectedIndex = Array.indexOf(this.previews, this.selected);
     do {
       selectedIndex += aForward ? 1 : -1;
@@ -325,12 +325,12 @@ var ctrlTab = {
     }
   },
 
-  _mouseOverFocus: function ctrlTab_mouseOverFocus(aPreview) {
+  _mouseOverFocus: function (aPreview) {
     if (this._trackMouseOver)
       aPreview.focus();
   },
 
-  pick: function ctrlTab_pick(aPreview) {
+  pick: function (aPreview) {
     if (!this.tabCount)
       return;
 
@@ -342,17 +342,17 @@ var ctrlTab = {
       this.close(select._tab);
   },
 
-  showAllTabs: function ctrlTab_showAllTabs(aPreview) {
+  showAllTabs: function (aPreview) {
     this.close();
     document.getElementById("Browser:ShowAllTabs").doCommand();
   },
 
-  remove: function ctrlTab_remove(aPreview) {
+  remove: function (aPreview) {
     if (aPreview._tab)
       gBrowser.removeTab(aPreview._tab);
   },
 
-  attachTab: function ctrlTab_attachTab(aTab, aPos) {
+  attachTab: function (aTab, aPos) {
     if (aPos == 0)
       this._recentlyUsedTabs.unshift(aTab);
     else if (aPos)
@@ -360,13 +360,13 @@ var ctrlTab = {
     else
       this._recentlyUsedTabs.push(aTab);
   },
-  detachTab: function ctrlTab_detachTab(aTab) {
+  detachTab: function (aTab) {
     var i = this._recentlyUsedTabs.indexOf(aTab);
     if (i >= 0)
       this._recentlyUsedTabs.splice(i, 1);
   },
 
-  open: function ctrlTab_open() {
+  open: function () {
     if (this.isOpen)
       return;
 
@@ -385,7 +385,7 @@ var ctrlTab = {
     }, 200, this);
   },
 
-  _openPanel: function ctrlTab_openPanel() {
+  _openPanel: function () {
     tabPreviewPanelHelper.opening(this);
 
     this.panel.width = Math.min(screen.availWidth * .99,
@@ -396,7 +396,7 @@ var ctrlTab = {
                                  false);
   },
 
-  close: function ctrlTab_close(aTabToSelect) {
+  close: function (aTabToSelect) {
     if (!this.isOpen)
       return;
 
@@ -413,7 +413,7 @@ var ctrlTab = {
     this.panel.hidePopup();
   },
 
-  setupGUI: function ctrlTab_setupGUI() {
+  setupGUI: function () {
     this.selected.focus();
     this._selectedIndex = -1;
 
@@ -426,7 +426,7 @@ var ctrlTab = {
     }, 0, this);
   },
 
-  suspendGUI: function ctrlTab_suspendGUI() {
+  suspendGUI: function () {
     document.removeEventListener("keyup", this, true);
 
     Array.forEach(this.previews, function (preview) {
@@ -436,7 +436,7 @@ var ctrlTab = {
     this._tabList = null;
   },
 
-  onKeyPress: function ctrlTab_onKeyPress(event) {
+  onKeyPress: function (event) {
     var isOpen = this.isOpen;
 
     if (isOpen) {
@@ -481,7 +481,7 @@ var ctrlTab = {
     }
   },
 
-  removeClosingTabFromUI: function ctrlTab_removeClosingTabFromUI(aTab) {
+  removeClosingTabFromUI: function (aTab) {
     if (this.tabCount == 2) {
       this.close();
       return;
@@ -503,7 +503,7 @@ var ctrlTab = {
     }
   },
 
-  handleEvent: function ctrlTab_handleEvent(event) {
+  handleEvent: function (event) {
     switch (event.type) {
       case "TabAttrModified":
         // tab attribute modified (e.g. label, crop, busy, image, selected)
@@ -536,7 +536,7 @@ var ctrlTab = {
     }
   },
 
-  _init: function ctrlTab__init(enable) {
+  _init: function (enable) {
     var toggleEventListener = enable ? "addEventListener" : "removeEventListener";
 
     var tabContainer = gBrowser.tabContainer;
@@ -587,7 +587,7 @@ var allTabs = {
   get previews () this.container.getElementsByClassName("allTabs-preview"),
   get isOpen () this.panel.state == "open" || this.panel.state == "showing",
 
-  init: function allTabs_init() {
+  init: function () {
     if (this._initiated)
       return;
     this._initiated = true;
@@ -604,7 +604,7 @@ var allTabs = {
     gBrowser.tabContainer.addEventListener("TabClose", this, false);
   },
 
-  uninit: function allTabs_uninit() {
+  uninit: function () {
     if (!this._initiated)
       return;
 
@@ -620,7 +620,7 @@ var allTabs = {
   },
 
   prefName: "browser.allTabs.previews",
-  readPref: function allTabs_readPref() {
+  readPref: function () {
     var allTabsButton = this.toolbarButton;
     if (!allTabsButton)
       return;
@@ -638,7 +638,7 @@ var allTabs = {
     this.readPref();
   },
 
-  pick: function allTabs_pick(aPreview) {
+  pick: function (aPreview) {
     if (!aPreview)
       aPreview = this._firstVisiblePreview;
     if (aPreview)
@@ -647,12 +647,12 @@ var allTabs = {
     this.close();
   },
 
-  closeTab: function allTabs_closeTab(event) {
+  closeTab: function (event) {
     this.filterField.focus();
     gBrowser.removeTab(event.currentTarget._targetPreview._tab);
   },
 
-  filter: function allTabs_filter() {
+  filter: function () {
     if (this._currentFilter == this.filterField.value)
       return;
 
@@ -694,7 +694,7 @@ var allTabs = {
     this._reflow();
   },
 
-  open: function allTabs_open() {
+  open: function () {
     var allTabsButton = this.toolbarButton;
     if (allTabsButton &&
         allTabsButton.getAttribute("type") == "menu") {
@@ -722,11 +722,11 @@ var allTabs = {
     this.panel.openPopup(gBrowser, "overlap", 0, 0, false, true);
   },
 
-  close: function allTabs_close() {
+  close: function () {
     this.panel.hidePopup();
   },
 
-  setupGUI: function allTabs_setupGUI() {
+  setupGUI: function () {
     this.filterField.focus();
     this.filterField.placeholder = this.filterField.tooltipText;
 
@@ -739,7 +739,7 @@ var allTabs = {
     document.getElementById("Browser:ShowAllTabs").setAttribute("disabled", "true");
   },
 
-  suspendGUI: function allTabs_suspendGUI() {
+  suspendGUI: function () {
     this.filterField.placeholder = "";
     this.filterField.value = "";
     this._currentFilter = null;
@@ -755,7 +755,7 @@ var allTabs = {
     }, 300);
   },
 
-  handleEvent: function allTabs_handleEvent(event) {
+  handleEvent: function (event) {
     if (event.type.startsWith("Tab")) {
       var tab = event.target;
       if (event.type != "TabOpen")
@@ -828,7 +828,7 @@ var allTabs = {
     return null;
   },
 
-  _reflow: function allTabs_reflow() {
+  _reflow: function () {
     this._updateTabCloseButton();
 
     const CONTAINER_MAX_WIDTH = this._maxPanelWidth * .95;
@@ -887,14 +887,14 @@ var allTabs = {
     this.container.maxHeight = rows * outerHeight;
   },
 
-  _addPreview: function allTabs_addPreview(aTab) {
+  _addPreview: function (aTab) {
     var preview = document.createElement("button");
     preview.className = "allTabs-preview";
     preview._tab = aTab;
     this.container.lastChild.appendChild(preview);
   },
 
-  _removePreview: function allTabs_removePreview(aPreview) {
+  _removePreview: function (aPreview) {
     var updateUI = (this.isOpen && !aPreview.hidden);
     aPreview._tab = null;
     aPreview.parentNode.removeChild(aPreview);
@@ -905,7 +905,7 @@ var allTabs = {
     }
   },
 
-  _getPreview: function allTabs_getPreview(aTab) {
+  _getPreview: function (aTab) {
     var previews = this.previews;
     for (let i = 0; i < previews.length; i++)
       if (previews[i]._tab == aTab)
@@ -913,7 +913,7 @@ var allTabs = {
     return null;
   },
 
-  _updateTabCloseButton: function allTabs_updateTabCloseButton(event) {
+  _updateTabCloseButton: function (event) {
     if (event && event.target == this.tabCloseButton)
       return;
 
@@ -950,7 +950,7 @@ var allTabs = {
     }
   },
 
-  _updatePreview: function allTabs_updatePreview(aPreview) {
+  _updatePreview: function (aPreview) {
     aPreview.setAttribute("label", aPreview._tab.label);
     aPreview.setAttribute("tooltiptext", aPreview._tab.label);
     aPreview.setAttribute("crop", aPreview._tab.crop);
@@ -975,7 +975,7 @@ var allTabs = {
     aPreview.appendChild(thumbnail);
   },
 
-  _onKeyPress: function allTabs_onKeyPress(event) {
+  _onKeyPress: function (event) {
     if (event.eventPhase == event.CAPTURING_PHASE) {
       this._onCapturingKeyPress(event);
       return;
@@ -1010,7 +1010,7 @@ var allTabs = {
     }
   },
 
-  _onCapturingKeyPress: function allTabs_onCapturingKeyPress(event) {
+  _onCapturingKeyPress: function (event) {
     switch (event.keyCode) {
       case event.DOM_VK_UP:
       case event.DOM_VK_DOWN:
@@ -1028,7 +1028,7 @@ var allTabs = {
     }
   },
 
-  _advanceFocusVertically: function allTabs_advanceFocusVertically(event) {
+  _advanceFocusVertically: function (event) {
     var preview = document.activeElement;
     if (!preview || preview.parentNode.parentNode != this.container)
       return;

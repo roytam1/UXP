@@ -2502,7 +2502,7 @@ function BrowserOnAboutPageLoad(doc) {
  * Handle command events bubbling up from error page content
  */
 var BrowserOnClick = {
-  handleEvent: function BrowserOnClick_handleEvent(aEvent) {
+  handleEvent: function (aEvent) {
     if (!aEvent.isTrusted || // Don't trust synthetic events
         aEvent.button == 2 || aEvent.target.localName != "button") {
       return;
@@ -2524,7 +2524,7 @@ var BrowserOnClick = {
     }
   },
 
-  onAboutCertError: function BrowserOnClick_onAboutCertError(aTargetElm, aOwnerDoc) {
+  onAboutCertError: function (aTargetElm, aOwnerDoc) {
     let elmId = aTargetElm.getAttribute("id");
     let isTopFrame = (aOwnerDoc.defaultView.parent === aOwnerDoc.defaultView);
 
@@ -2565,14 +2565,14 @@ var BrowserOnClick = {
     }
   },
 
-  onAboutNetError: function BrowserOnClick_onAboutNetError(aTargetElm, aOwnerDoc) {
+  onAboutNetError: function (aTargetElm, aOwnerDoc) {
     let elmId = aTargetElm.getAttribute("id");
     if (elmId != "errorTryAgain" || !/e=netOffline/.test(aOwnerDoc.documentURI))
       return;
     Services.io.offline = false;
   },
 
-  onAboutHome: function BrowserOnClick_onAboutHome(aTargetElm, aOwnerDoc) {
+  onAboutHome: function (aTargetElm, aOwnerDoc) {
     let elmId = aTargetElm.getAttribute("id");
 
     switch (elmId) {
@@ -3113,7 +3113,7 @@ const BrowserSearch = {
    * the default engine's search form otherwise. For Mac, opens a new window
    * or focuses an existing window, if necessary.
    */
-  webSearch: function BrowserSearch_webSearch() {
+  webSearch: function () {
 #ifdef XP_MACOSX
     if (window.location.href != getBrowserURL()) {
       var win = getTopWin();
@@ -3164,7 +3164,7 @@ const BrowserSearch = {
    * @return string Name of the search engine used to perform a search or null
    *         if a search was not performed.
    */
-  loadSearch: function BrowserSearch_search(searchText, useNewTab, purpose) {
+  loadSearch: function (searchText, useNewTab, purpose) {
     var engine;
 
     // If the search bar is visible, use the current engine, otherwise, fall
@@ -3211,7 +3211,7 @@ const BrowserSearch = {
     return document.getElementById("searchbar");
   },
 
-  loadAddEngines: function BrowserSearch_loadAddEngines() {
+  loadAddEngines: function () {
     var newWindowPref = gPrefService.getIntPref("browser.link.open_newwindow");
     var where = newWindowPref == 3 ? "tab" : "window";
     var searchEnginesURL = formatURL("browser.search.searchEnginesURL", true);
@@ -3637,7 +3637,7 @@ function updateCharacterEncodingMenuState()
   }
 }
 
-var XULBrowserWindow = {
+var XULBrowserWindow = { 
   // Stored Status, Link and Loading values
   status: "",
   defaultStatus: "",
@@ -4130,7 +4130,7 @@ var XULBrowserWindow = {
   },
 
   // simulate all change notifications after switching tabs
-  onUpdateCurrentBrowser: function XWB_onUpdateCurrentBrowser(aStateFlags, aStatus, aMessage, aTotalProgress) {
+  onUpdateCurrentBrowser: function (aStateFlags, aStatus, aMessage, aTotalProgress) {
     if (FullZoom.updateBackgroundTabs)
       FullZoom.onLocationChange(gBrowser.currentURI, true);
     var nsIWebProgressListener = Components.interfaces.nsIWebProgressListener;
@@ -4654,7 +4654,7 @@ var AudioIndicator = {
 }
 
 var TabsOnTop = {
-  init: function TabsOnTop_init() {
+  init: function () {
     Services.prefs.addObserver(this._prefName, this, false);
 // Pale Moon: Stop Being a Derp, Mozilla (#3)
     // Only show the toggle UI if the user disabled tabs on top.
@@ -4664,7 +4664,7 @@ var TabsOnTop = {
 //    }
   },
 
-  uninit: function TabsOnTop_uninit() {
+  uninit: function () {
     Services.prefs.removeObserver(this._prefName, this);
   },
 
@@ -6940,7 +6940,7 @@ function getBrowser() gBrowser;
 function getNavToolbox() gNavToolbox;
 
 var gPrivateBrowsingUI = {
-  init: function PBUI_init() {
+  init: function () {
     // Do nothing for normal windows
     if (!PrivateBrowsingUtils.isWindowPrivate(window)) {
       return;

@@ -589,7 +589,7 @@ var gContiguousSelectionTreeHelper = {
    *         view
    * @return The new view
    */
-  setTree: function CSTH_setTree(aTreeElement, aProtoTreeView)
+  setTree: function (aTreeElement, aProtoTreeView)
   {
     this._tree = aTreeElement;
     var newView = this._makeTreeView(aProtoTreeView || aTreeElement.view);
@@ -604,7 +604,7 @@ var gContiguousSelectionTreeHelper = {
    *
    * @return The row index of the grippy
    */
-  getGrippyRow: function CSTH_getGrippyRow()
+  getGrippyRow: function ()
   {
     var sel = this.tree.view.selection;
     var rangeCount = sel.getRangeCount();
@@ -626,7 +626,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed dragover event
    */
-  ondragover: function CSTH_ondragover(aEvent)
+  ondragover: function (aEvent)
   {
     // Without this when dragging on Windows the mouse cursor is a "no" sign.
     // This makes it a drop symbol.
@@ -653,7 +653,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed dragstart event
    */
-  ondragstart: function CSTH_ondragstart(aEvent)
+  ondragstart: function (aEvent)
   {
     var tbo = this.tree.treeBoxObject;
     var clickedRow = tbo.getRowAt(aEvent.clientX, aEvent.clientY);
@@ -688,7 +688,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed keypress event
    */
-  onkeypress: function CSTH_onkeypress(aEvent)
+  onkeypress: function (aEvent)
   {
     var grippyRow = this.getGrippyRow();
     var tbo = this.tree.treeBoxObject;
@@ -749,7 +749,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed mousedown event
    */
-  onmousedown: function CSTH_onmousedown(aEvent)
+  onmousedown: function (aEvent)
   {
     var tbo = this.tree.treeBoxObject;
     var clickedRow = tbo.getRowAt(aEvent.clientX, aEvent.clientY);
@@ -771,7 +771,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEndRow
    *        The range [0, aEndRow] will be selected.
    */
-  rangedSelect: function CSTH_rangedSelect(aEndRow)
+  rangedSelect: function (aEndRow)
   {
     var tbo = this.tree.treeBoxObject;
     if (aEndRow < 0)
@@ -784,7 +784,7 @@ var gContiguousSelectionTreeHelper = {
   /**
    * Scrolls the tree so that the grippy row is in the center of the view.
    */
-  scrollToGrippy: function CSTH_scrollToGrippy()
+  scrollToGrippy: function ()
   {
     var rowCount = this.tree.view.rowCount;
     var tbo = this.tree.treeBoxObject;
@@ -817,14 +817,14 @@ var gContiguousSelectionTreeHelper = {
    * @param aProtoTreeView
    *        Used as the new view's prototype if specified
    */
-  _makeTreeView: function CSTH__makeTreeView(aProtoTreeView)
+  _makeTreeView: function (aProtoTreeView)
   {
     var view = aProtoTreeView;
     var that = this;
 
     //XXXadw: When Alex gets the grippy icon done, this may or may not change,
     //        depending on how we style it.
-    view.isSeparator = function CSTH_View_isSeparator(aRow)
+    view.isSeparator = function (aRow)
     {
       return aRow === that.getGrippyRow();
     };
@@ -832,7 +832,7 @@ var gContiguousSelectionTreeHelper = {
     // rowCount includes the grippy row.
     view.__defineGetter__("_rowCount", view.__lookupGetter__("rowCount"));
     view.__defineGetter__("rowCount",
-      function CSTH_View_rowCount()
+      function ()
       {
         return this._rowCount + 1;
       });
