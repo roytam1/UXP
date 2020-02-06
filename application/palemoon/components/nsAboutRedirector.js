@@ -80,7 +80,7 @@ AboutRedirector.prototype = {
   /**
    * Gets the module name from the given URI.
    */
-  _getModuleName: function AboutRedirector__getModuleName(aURI) {
+  _getModuleName: function (aURI) {
     // Strip out the first ? or #, and anything following it
     let name = (/[^?#]+/.exec(aURI.path))[0];
     return name.toLowerCase();
