@@ -49,14 +49,14 @@ var Utilities = {
     return this.windowMediator;
   },
 
-  makeURI: function fuelutil_makeURI(aSpec) {
+  makeURI: function (aSpec) {
     if (!aSpec)
       return null;
     var ios = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
     return ios.newURI(aSpec, null, null);
   },
 
-  free: function fuelutil_free() {
+  free: function () {
     delete this.bookmarks;
     delete this.bookmarksObserver;
     delete this.annotations;
@@ -103,12 +103,12 @@ Window.prototype = {
    * Helper used to setup event handlers on the XBL element. Note that the events
    * are actually dispatched to tabs, so we capture them.
    */
-  _watch: function win_watch(aType) {
+  _watch: function (aType) {
     this._tabbrowser.tabContainer.addEventListener(aType, this,
                                                    /* useCapture = */ true);
   },
 
-  handleEvent: function win_handleEvent(aEvent) {
+  handleEvent: function (aEvent) {
     this._events.dispatch(aEvent.type, getBrowserTab(this, aEvent.originalTarget.linkedBrowser));
   },
 
@@ -124,7 +124,7 @@ Window.prototype = {
     return getBrowserTab(this, this._tabbrowser.selectedBrowser);
   },
 
-  open: function win_open(aURI) {
+  open: function (aURI) {
     return getBrowserTab(this, this._tabbrowser.addTab(aURI.spec).linkedBrowser);
   },
 
@@ -192,12 +192,12 @@ BrowserTab.prototype = {
   /*
    * Helper used to setup event handlers on the XBL element
    */
-  _watch: function bt_watch(aType) {
+  _watch: function (aType) {
     this._browser.addEventListener(aType, this,
                                    /* useCapture = */ true);
   },
 
-  handleEvent: function bt_handleEvent(aEvent) {
+  handleEvent: function (aEvent) {
     if (aEvent.type == "load") {
       if (!(aEvent.originalTarget instanceof Ci.nsIDOMDocument))
         return;
@@ -211,29 +211,29 @@ BrowserTab.prototype = {
   /*
    * Helper used to determine the index offset of the browsertab
    */
-  _getTab: function bt_gettab() {
+  _getTab: function () {
     var tabs = this._tabbrowser.tabs;
     return tabs[this.index] || null;
   },
 
-  load: function bt_load(aURI) {
+  load: function (aURI) {
     this._browser.loadURI(aURI.spec, null, null);
   },
 
-  focus: function bt_focus() {
+  focus: function () {
     this._tabbrowser.selectedTab = this._getTab();
     this._tabbrowser.focus();
   },
 
-  close: function bt_close() {
+  close: function () {
     this._tabbrowser.removeTab(this._getTab());
   },
 
-  moveBefore: function bt_movebefore(aBefore) {
+  moveBefore: function (aBefore) {
     this._tabbrowser.moveTabTo(this._getTab(), aBefore.index);
   },
 
-  moveToEnd: function bt_moveend() {
+  moveToEnd: function () {
     this._tabbrowser.moveTabTo(this._getTab(), this._tabbrowser.browsers.length);
   },
 
@@ -252,21 +252,21 @@ Annotations.prototype = {
     return Utilities.annotations.getItemAnnotationNames(this._id);
   },
 
-  has: function ann_has(aName) {
+  has: function (aName) {
     return Utilities.annotations.itemHasAnnotation(this._id, aName);
   },
 
-  get: function ann_get(aName) {
+  get: function (aName) {
     if (this.has(aName))
       return Utilities.annotations.getItemAnnotation(this._id, aName);
     return null;
   },
 
-  set: function ann_set(aName, aValue, aExpiration) {
+  set: function (aName, aValue, aExpiration) {
     Utilities.annotations.setItemAnnotation(this._id, aName, aValue, 0, aExpiration);
   },
 
-  remove: function ann_remove(aName) {
+  remove: function (aName) {
     if (aName)
       Utilities.annotations.removeItemAnnotation(this._id, aName);
   },
@@ -308,33 +308,33 @@ BookmarksObserver.prototype = {
   onEndUpdateBatch: function () {},
   onItemVisited: function () {},
 
-  onItemAdded: function bo_onItemAdded(aId, aFolder, aIndex, aItemType, aURI) {
+  onItemAdded: function (aId, aFolder, aIndex, aItemType, aURI) {
     this._rootEvents.dispatch("add", aId);
     this._dispatchToEvents("addchild", aId, this._folderEventsDict[aFolder]);
   },
 
-  onItemRemoved: function bo_onItemRemoved(aId, aFolder, aIndex) {
+  onItemRemoved: function (aId, aFolder, aIndex) {
     this._rootEvents.dispatch("remove", aId);
     this._dispatchToEvents("remove", aId, this._eventsDict[aId]);
     this._dispatchToEvents("removechild", aId, this._folderEventsDict[aFolder]);
   },
 
-  onItemChanged: function bo_onItemChanged(aId, aProperty, aIsAnnotationProperty, aValue) {
+  onItemChanged: function (aId, aProperty, aIsAnnotationProperty, aValue) {
     this._rootEvents.dispatch("change", aProperty);
     this._dispatchToEvents("change", aProperty, this._eventsDict[aId]);
   },
 
-  onItemMoved: function bo_onItemMoved(aId, aOldParent, aOldIndex, aNewParent, aNewIndex) {
+  onItemMoved: function (aId, aOldParent, aOldIndex, aNewParent, aNewIndex) {
     this._dispatchToEvents("move", aId, this._eventsDict[aId]);
   },
 
-  _dispatchToEvents: function bo_dispatchToEvents(aEvent, aData, aEvents) {
+  _dispatchToEvents: function (aEvent, aData, aEvents) {
     if (aEvents) {
       aEvents.dispatch(aEvent, aData);
     }
   },
 
-  _addListenerToDict: function bo_addListenerToDict(aId, aEvent, aListener, aDict) {
+  _addListenerToDict: function (aId, aEvent, aListener, aDict) {
     var events = aDict[aId];
     if (!events) {
       events = new Events();
@@ -343,7 +343,7 @@ BookmarksObserver.prototype = {
     events.addListener(aEvent, aListener);
   },
 
-  _removeListenerFromDict: function bo_removeListenerFromDict(aId, aEvent, aListener, aDict) {
+  _removeListenerFromDict: function (aId, aEvent, aListener, aDict) {
     var events = aDict[aId];
     if (!events) {
       return;
@@ -354,27 +354,27 @@ BookmarksObserver.prototype = {
     }
   },
 
-  addListener: function bo_addListener(aId, aEvent, aListener) {
+  addListener: function (aId, aEvent, aListener) {
     this._addListenerToDict(aId, aEvent, aListener, this._eventsDict);
   },
 
-  removeListener: function bo_removeListener(aId, aEvent, aListener) {
+  removeListener: function (aId, aEvent, aListener) {
     this._removeListenerFromDict(aId, aEvent, aListener, this._eventsDict);
   },
 
-  addFolderListener: function addFolderListener(aId, aEvent, aListener) {
+  addFolderListener: function (aId, aEvent, aListener) {
     this._addListenerToDict(aId, aEvent, aListener, this._folderEventsDict);
   },
 
-  removeFolderListener: function removeFolderListener(aId, aEvent, aListener) {
+  removeFolderListener: function (aId, aEvent, aListener) {
     this._removeListenerFromDict(aId, aEvent, aListener, this._folderEventsDict);
   },
 
-  addRootListener: function addRootListener(aEvent, aListener) {
+  addRootListener: function (aEvent, aListener) {
     this._rootEvents.addListener(aEvent, aListener);
   },
 
-  removeRootListener: function removeRootListener(aEvent, aListener) {
+  removeRootListener: function (aEvent, aListener) {
     this._rootEvents.removeListener(aEvent, aListener);
   },
 
@@ -408,10 +408,10 @@ function Bookmark(aId, aParent, aType) {
   // Our _events object forwards to bookmarksObserver.
   var self = this;
   this._events = {
-    addListener: function bookmarkevents_al(aEvent, aListener) {
+    addListener: function (aEvent, aListener) {
       Utilities.bookmarksObserver.addListener(self._id, aEvent, aListener);
     },
-    removeListener: function bookmarkevents_rl(aEvent, aListener) {
+    removeListener: function (aEvent, aListener) {
       Utilities.bookmarksObserver.removeListener(self._id, aEvent, aListener);
     },
     QueryInterface: XPCOMUtils.generateQI([Ci.extIEvents])
@@ -479,7 +479,7 @@ Bookmark.prototype = {
     return this._events;
   },
 
-  remove : function bm_remove() {
+  remove : function () {
     Utilities.bookmarks.removeItem(this._id);
   },
 
@@ -528,7 +528,7 @@ function BookmarkFolder(aId, aParent) {
 
   var self = this;
   this._events = {
-    addListener: function bmfevents_al(aEvent, aListener) {
+    addListener: function (aEvent, aListener) {
       if (self._parent) {
         if (/child$/.test(aEvent)) {
           Utilities.bookmarksObserver.addFolderListener(self._id, aEvent, aListener);
@@ -541,7 +541,7 @@ function BookmarkFolder(aId, aParent) {
         Utilities.bookmarksObserver.addRootListener(aEvent, aListener);
       }
     },
-    removeListener: function bmfevents_rl(aEvent, aListener) {
+    removeListener: function (aEvent, aListener) {
       if (self._parent) {
         if (/child$/.test(aEvent)) {
           Utilities.bookmarksObserver.removeFolderListener(self._id, aEvent, aListener);
@@ -633,25 +633,25 @@ BookmarkFolder.prototype = {
     return items;
   },
 
-  addBookmark: function bmf_addbm(aTitle, aUri) {
+  addBookmark: function (aTitle, aUri) {
     var newBookmarkID = Utilities.bookmarks.insertBookmark(this._id, aUri, Utilities.bookmarks.DEFAULT_INDEX, aTitle);
     var newBookmark = new Bookmark(newBookmarkID, this, "bookmark");
     return newBookmark;
   },
 
-  addSeparator: function bmf_addsep() {
+  addSeparator: function () {
     var newBookmarkID = Utilities.bookmarks.insertSeparator(this._id, Utilities.bookmarks.DEFAULT_INDEX);
     var newBookmark = new Bookmark(newBookmarkID, this, "separator");
     return newBookmark;
   },
 
-  addFolder: function bmf_addfolder(aTitle) {
+  addFolder: function (aTitle) {
     var newFolderID = Utilities.bookmarks.createFolder(this._id, aTitle, Utilities.bookmarks.DEFAULT_INDEX);
     var newFolder = new BookmarkFolder(newFolderID, this);
     return newFolder;
   },
 
-  remove: function bmf_remove() {
+  remove: function () {
     Utilities.bookmarks.removeItem(this._id);
   },
 
@@ -662,7 +662,7 @@ BookmarkFolder.prototype = {
   onItemRemoved : function () {},
   onItemChanged : function () {},
 
-  onItemMoved: function bf_onItemMoved(aId, aOldParent, aOldIndex, aNewParent, aNewIndex) {
+  onItemMoved: function (aId, aOldParent, aOldIndex, aNewParent, aNewIndex) {
     if (this._id == aId) {
       this._parent = new BookmarkFolder(aNewParent, Utilities.bookmarks.getFolderIdForItem(aNewParent));
     }
@@ -718,7 +718,7 @@ BookmarkRoots.prototype = {
 // See bug 386535.
 var gSingleton = null;
 var ApplicationFactory = {
-  createInstance: function af_ci(aOuter, aIID) {
+  createInstance: function (aOuter, aIID) {
     if (aOuter != null)
       throw Components.results.NS_ERROR_NO_AGGREGATION;
 
