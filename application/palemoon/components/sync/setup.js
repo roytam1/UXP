@@ -138,7 +138,7 @@ var gSyncSetup = {
     }
   },
 
-  resetPassphrase: function resetPassphrase() {
+  resetPassphrase: function () {
     // Apply the existing form fields so that
     // Weave.Service.changePassphrase() has the necessary credentials.
     Weave.Service.identity.account = document.getElementById("existingAccountName").value;
@@ -595,7 +595,7 @@ var gSyncSetup = {
     return false;
   },
 
-  startPairing: function startPairing() {
+  startPairing: function () {
     this.pairDeviceErrorRow.hidden = true;
     // When onAbort is called, Weave may already be gone.
     const JPAKE_ERROR_USERABORT = Weave.JPAKE_ERROR_USERABORT;
@@ -605,11 +605,11 @@ var gSyncSetup = {
       onPaired: function onPaired() {
         self.wizard.pageIndex = INTRO_PAGE;
       },
-      onComplete: function onComplete() {
+      onComplete: function () {
         // This method will never be called since SendCredentialsController
         // will take over after the wizard completes.
       },
-      onAbort: function onAbort(error) {
+      onAbort: function (error) {
         delete self._jpakeclient;
 
         // Aborted by user, ignore. The window is almost certainly going to close
@@ -636,7 +636,7 @@ var gSyncSetup = {
     jpakeclient.pairWithPIN(pin, expectDelay);
   },
 
-  completePairing: function completePairing() {
+  completePairing: function () {
     if (!this._jpakeclient) {
       // The channel was aborted while we were setting up the account
       // locally. XXX TODO should we do anything here, e.g. tell
@@ -660,15 +660,15 @@ var gSyncSetup = {
 
     let self = this;
     this._jpakeclient = new Weave.JPAKEClient({
-      displayPIN: function displayPIN(pin) {
+      displayPIN: function (pin) {
         document.getElementById("easySetupPIN1").value = pin.slice(0, 4);
         document.getElementById("easySetupPIN2").value = pin.slice(4, 8);
         document.getElementById("easySetupPIN3").value = pin.slice(8);
       },
 
-      onPairingStart: function onPairingStart() {},
+      onPairingStart: function () {},
 
-      onComplete: function onComplete(credentials) {
+      onComplete: function (credentials) {
         Weave.Service.identity.account = credentials.account;
         Weave.Service.identity.basicPassword = credentials.password;
         Weave.Service.identity.syncKey = credentials.synckey;
@@ -676,7 +676,7 @@ var gSyncSetup = {
         gSyncSetup.wizardFinish();
       },
 
-      onAbort: function onAbort(error) {
+      onAbort: function (error) {
         delete self._jpakeclient;
 
         // Ignore if wizard is aborted.
@@ -1017,7 +1017,7 @@ var gSyncSetup = {
     this._setFeedback(element, success, str);
   },
 
-  loadCaptcha: function loadCaptcha() {
+  loadCaptcha: function () {
     let captchaURI = Weave.Service.miscAPI + "captcha_html";
     // First check for NoScript and whitelist the right sites.
     this._handleNoScript(true);

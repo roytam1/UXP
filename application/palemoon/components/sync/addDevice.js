@@ -17,7 +17,7 @@ const DEVICE_CONNECTED_PAGE = 2;
 
 var gSyncAddDevice = {
 
-  init: function init() {
+  init: function () {
     this.pin1.setAttribute("maxlength", PIN_PART_LENGTH);
     this.pin2.setAttribute("maxlength", PIN_PART_LENGTH);
     this.pin3.setAttribute("maxlength", PIN_PART_LENGTH);
@@ -34,7 +34,7 @@ var gSyncAddDevice = {
     Weave.Service.scheduler.scheduleNextSync(0);
   },
 
-  onPageShow: function onPageShow() {
+  onPageShow: function () {
     this.wizard.getButton("back").hidden = true;
 
     switch (this.wizard.pageIndex) {
@@ -60,7 +60,7 @@ var gSyncAddDevice = {
     }
   },
 
-  onWizardAdvance: function onWizardAdvance() {
+  onWizardAdvance: function () {
     switch (this.wizard.pageIndex) {
       case ADD_DEVICE_PAGE:
         this.startTransfer();
@@ -72,21 +72,21 @@ var gSyncAddDevice = {
     return true;
   },
 
-  startTransfer: function startTransfer() {
+  startTransfer: function () {
     this.errorRow.hidden = true;
     // When onAbort is called, Weave may already be gone.
     const JPAKE_ERROR_USERABORT = Weave.JPAKE_ERROR_USERABORT;
 
     let self = this;
     let jpakeclient = this._jpakeclient = new Weave.JPAKEClient({
-      onPaired: function onPaired() {
+      onPaired: function () {
         let credentials = {account:   Weave.Service.identity.account,
                            password:  Weave.Service.identity.basicPassword,
                            synckey:   Weave.Service.identity.syncKey,
                            serverURL: Weave.Service.serverURL};
         jpakeclient.sendAndComplete(credentials);
       },
-      onComplete: function onComplete() {
+      onComplete: function () {
         delete self._jpakeclient;
         self.wizard.pageIndex = DEVICE_CONNECTED_PAGE;
 
@@ -94,7 +94,7 @@ var gSyncAddDevice = {
         // device with which we just paired.
         Weave.Service.scheduler.scheduleNextSync(Weave.Service.scheduler.activeInterval);
       },
-      onAbort: function onAbort(error) {
+      onAbort: function (error) {
         delete self._jpakeclient;
 
         // Aborted by user, ignore.
@@ -118,7 +118,7 @@ var gSyncAddDevice = {
     jpakeclient.pairWithPIN(pin, expectDelay);
   },
 
-  onWizardBack: function onWizardBack() {
+  onWizardBack: function () {
     if (this.wizard.pageIndex != SYNC_KEY_PAGE)
       return true;
 
@@ -126,7 +126,7 @@ var gSyncAddDevice = {
     return false;
   },
 
-  onWizardCancel: function onWizardCancel() {
+  onWizardCancel: function () {
     if (this._jpakeclient) {
       this._jpakeclient.abort();
       delete this._jpakeclient;
@@ -134,7 +134,7 @@ var gSyncAddDevice = {
     return true;
   },
 
-  onTextBoxInput: function onTextBoxInput(textbox) {
+  onTextBoxInput: function (textbox) {
     if (textbox && textbox.value.length == PIN_PART_LENGTH)
       this.nextFocusEl[textbox.id].focus();
 
@@ -143,7 +143,7 @@ var gSyncAddDevice = {
                               && this.pin3.value.length == PIN_PART_LENGTH);
   },
 
-  goToSyncKeyPage: function goToSyncKeyPage() {
+  goToSyncKeyPage: function () {
     this.wizard.pageIndex = SYNC_KEY_PAGE;
   }
 

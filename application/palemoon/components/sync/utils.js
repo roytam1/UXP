@@ -30,13 +30,13 @@ var gSyncUtils = {
       openUILinkIn(url, "tab");
   },
 
-  changeName: function changeName(input) {
+  changeName: function (input) {
     // Make sure to update to a modified name, e.g., empty-string -> default
     Weave.Service.clientsEngine.localName = input.value;
     input.value = Weave.Service.clientsEngine.localName;
   },
 
-  openChange: function openChange(type, duringSetup) {
+  openChange: function (type, duringSetup) {
     // Just re-show the dialog if it's already open
     let openedDialog = Services.wm.getMostRecentWindow("Sync:" + type);
     if (openedDialog != null) {
