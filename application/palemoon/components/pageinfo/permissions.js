@@ -18,21 +18,21 @@ var gPrefs;
 var gUsageRequest;
 
 var gPermObj = {
-  image: function getImageDefaultPermission()
+  image: function ()
   {
     if (gPrefs.getIntPref("permissions.default.image") == IMAGE_DENY) {
       return DENY;
     }
     return ALLOW;
   },
-  popup: function getPopupDefaultPermission()
+  popup: function ()
   {
     if (gPrefs.getBoolPref("dom.disable_open_during_load")) {
       return DENY;
     }
     return ALLOW;
   },
-  cookie: function getCookieDefaultPermission()
+  cookie: function ()
   {
     if (gPrefs.getIntPref("network.cookie.cookieBehavior") == COOKIE_DENY) {
       return DENY;
@@ -42,28 +42,28 @@ var gPermObj = {
     }
     return ALLOW;
   },
-  "desktop-notification": function getNotificationDefaultPermission()
+  "desktop-notification": function ()
   {
     if (!gPrefs.getBoolPref("dom.webnotifications.enabled")) {
       return DENY;
     }
     return UNKNOWN;
   },
-  install: function getInstallDefaultPermission()
+  install: function ()
   {
     if (Services.prefs.getBoolPref("xpinstall.whitelist.required")) {
       return DENY;
     }
     return ALLOW;
   },
-  geo: function getGeoDefaultPermissions()
+  geo: function ()
   {
     if (!gPrefs.getBoolPref("geo.enabled")) {
       return DENY;
     }
     return ALLOW;
   },
-  plugins: function getPluginsDefaultPermissions()
+  plugins: function ()
   {
     return UNKNOWN;
   },
