@@ -9,15 +9,15 @@ var SubscribeHandler = {
    */
   _feedWriter: null,
   
-  init: function () {
+  init: function() {
     this._feedWriter = new BrowserFeedWriter();
   },
 
-  writeContent: function () {
+  writeContent: function() {
     this._feedWriter.writeContent();
   },
 
-  uninit: function () {
+  uninit: function() {
     this._feedWriter.close();
   }
 };

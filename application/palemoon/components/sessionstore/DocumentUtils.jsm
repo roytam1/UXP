@@ -25,7 +25,7 @@ this.DocumentUtils = {
    * @return object
    *         Form data encoded in an object.
    */
-  getFormData: function (aDocument) {
+  getFormData: function(aDocument) {
     let formNodes = aDocument.evaluate(
       XPathGenerator.restorableFormNodes,
       aDocument,
@@ -117,7 +117,7 @@ this.DocumentUtils = {
    * @param  aData
    *         Object defining form data.
    */
-  mergeFormData: function (aDocument, aData) {
+  mergeFormData: function(aDocument, aData) {
     if ("xpath" in aData) {
       for each (let [xpath, value] in Iterator(aData.xpath)) {
         let node = XPathGenerator.resolve(aDocument, xpath);
@@ -155,7 +155,7 @@ this.DocumentUtils = {
    *         DOMDocument node belongs to. If not defined, node.ownerDocument
    *         is used.
    */
-  restoreFormValue: function (aNode, aValue, aDocument) {
+  restoreFormValue: function(aNode, aValue, aDocument) {
     aDocument = aDocument || aNode.ownerDocument;
 
     let eventType;

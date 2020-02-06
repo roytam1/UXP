@@ -48,7 +48,7 @@ var gGrid = {
    * Initializes the grid.
    * @param aSelector The query selector of the grid.
    */
-  init: function () {
+  init: function() {
     this._node = document.getElementById("newtab-grid");
     this._gridDefaultContent = this._node.lastChild;
     this._createSiteFragment();
@@ -65,7 +65,7 @@ var gGrid = {
    * @param aCell The cell that will contain the new site.
    * @return The newly created site.
    */
-  createSite: function (aLink, aCell) {
+  createSite: function(aLink, aCell) {
     let node = aCell.node;
     node.appendChild(this._siteFragment.cloneNode(true));
     return new Site(node.firstElementChild, aLink);
@@ -74,21 +74,21 @@ var gGrid = {
   /**
    * Handles all grid events.
    */
-  handleEvent: function (aEvent) {
+  handleEvent: function(aEvent) {
     // Any specific events should go here.
   },
 
   /**
    * Locks the grid to block all pointer events.
    */
-  lock: function () {
+  lock: function() {
     this.node.setAttribute("locked", "true");
   },
 
   /**
    * Unlocks the grid to allow all pointer events.
    */
-  unlock: function () {
+  unlock: function() {
     this.node.removeAttribute("locked");
   },
 
@@ -142,7 +142,7 @@ var gGrid = {
   /**
    * Creates the DOM fragment that is re-used when creating sites.
    */
-  _createSiteFragment: function () {
+  _createSiteFragment: function() {
     let site = document.createElementNS(HTML_NAMESPACE, "div");
     site.classList.add("newtab-site");
     site.setAttribute("draggable", "true");
@@ -167,7 +167,7 @@ var gGrid = {
    * Test a tile at a given position for being pinned or history
    * @param position Position in sites array
    */
-  _isHistoricalTile: function (aPos) {
+  _isHistoricalTile: function(aPos) {
     let site = this.sites[aPos];
     return site && (site.isPinned() || site.link && site.link.type == "history");
   }

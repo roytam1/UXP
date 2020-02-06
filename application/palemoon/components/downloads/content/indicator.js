@@ -59,7 +59,7 @@ const DownloadsButton = {
    *       startup time, and in particular should not cause the Download Manager
    *       service to start.
    */
-  initializeIndicator: function ()
+  initializeIndicator: function()
   {
     this._update();
   },
@@ -77,7 +77,7 @@ const DownloadsButton = {
    * placeholder is an ordinary button defined in the browser window that can be
    * moved freely between the toolbars and the customization palette.
    */
-  customizeStart: function ()
+  customizeStart: function()
   {
     // Hide the indicator and prevent it to be displayed as a temporary anchor
     // during customization, even if requested using the getAnchor method.
@@ -98,7 +98,7 @@ const DownloadsButton = {
   /**
    * This function is called when toolbar customization ends.
    */
-  customizeDone: function ()
+  customizeDone: function()
   {
     this._customizing = false;
     this._update();
@@ -114,7 +114,7 @@ const DownloadsButton = {
    *       input/output it performs, and in particular should not cause the
    *       Download Manager service to start.
    */
-  _update: function () {
+  _update: function() {
     this._updatePositionInternal();
 
     if (!DownloadsCommon.useToolkitUI) {
@@ -131,7 +131,7 @@ const DownloadsButton = {
    * that the panel doesn't flicker because we move the DOM element to which
    * it's anchored.
    */
-  updatePosition: function ()
+  updatePosition: function()
   {
     if (!this._anchorRequested) {
       this._updatePositionInternal();
@@ -144,7 +144,7 @@ const DownloadsButton = {
    *
    * @return Anchor element, or null if the indicator is not visible.
    */
-  _updatePositionInternal: function ()
+  _updatePositionInternal: function()
   {
     let indicator = DownloadsIndicatorView.indicator;
     if (!indicator) {
@@ -187,7 +187,7 @@ const DownloadsButton = {
    *        Called once the indicator overlay has loaded. Gets a boolean
    *        argument representing the indicator visibility.
    */
-  checkIsVisible: function (aCallback)
+  checkIsVisible: function(aCallback)
   {
     function DB_CEV_callback() {
       if (!this._placeholder) {
@@ -215,7 +215,7 @@ const DownloadsButton = {
    *        panel should be anchored, or null if an anchor is not available (for
    *        example because both the tab bar and the navigation bar are hidden).
    */
-  getAnchor: function (aCallback)
+  getAnchor: function(aCallback)
   {
     // Do not allow anchoring the panel to the element while customizing.
     if (this._customizing) {
@@ -235,7 +235,7 @@ const DownloadsButton = {
   /**
    * Allows the temporary anchor to be hidden.
    */
-  releaseAnchor: function ()
+  releaseAnchor: function()
   {
     this._anchorRequested = false;
     this._updatePositionInternal();
@@ -284,7 +284,7 @@ const DownloadsIndicatorView = {
   /**
    * Prepares the downloads indicator to be displayed.
    */
-  ensureInitialized: function ()
+  ensureInitialized: function()
   {
     if (this._initialized) {
       return;
@@ -298,7 +298,7 @@ const DownloadsIndicatorView = {
   /**
    * Frees the internal resources related to the indicator.
    */
-  ensureTerminated: function ()
+  ensureTerminated: function()
   {
     if (!this._initialized) {
       return;
@@ -320,7 +320,7 @@ const DownloadsIndicatorView = {
    * Ensures that the user interface elements required to display the indicator
    * are loaded, then invokes the given callback.
    */
-  _ensureOperational: function (aCallback)
+  _ensureOperational: function(aCallback)
   {
     if (this._operational) {
       aCallback();
@@ -359,7 +359,7 @@ const DownloadsIndicatorView = {
    * @param aType
    *        Set to "start" for new downloads, "finish" for completed downloads.
    */
-  showEventNotification: function (aType)
+  showEventNotification: function(aType)
   {
     if (!this._initialized) {
       return;
@@ -386,7 +386,7 @@ const DownloadsIndicatorView = {
       let indicator = this.indicator;
       indicator.setAttribute("notification", aType);
       this._notificationTimeout = setTimeout(
-        function () indicator.removeAttribute("notification"), 1000);
+        function() indicator.removeAttribute("notification"), 1000);
     }
 
     this._ensureOperational(DIV_SEN_callback.bind(this));
@@ -516,13 +516,13 @@ const DownloadsIndicatorView = {
   //////////////////////////////////////////////////////////////////////////////
   //// User interface event functions
 
-  onWindowUnload: function ()
+  onWindowUnload: function()
   {
     // This function is registered as an event listener, we can't use "this".
     DownloadsIndicatorView.ensureTerminated();
   },
 
-  onCommand: function (aEvent)
+  onCommand: function(aEvent)
   {
     if (DownloadsCommon.useToolkitUI) {
       // The panel won't suppress attention for us, we need to clear now.
@@ -535,12 +535,12 @@ const DownloadsIndicatorView = {
     aEvent.stopPropagation();
   },
 
-  onDragOver: function (aEvent)
+  onDragOver: function(aEvent)
   {
     browserDragAndDrop.dragOver(aEvent);
   },
 
-  onDrop: function (aEvent)
+  onDrop: function(aEvent)
   {
     let dt = aEvent.dataTransfer;
     // If dragged item is from our source, do not try to

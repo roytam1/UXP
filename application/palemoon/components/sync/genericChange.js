@@ -29,7 +29,7 @@ var Change = {
     return this._dialogType == "UpdatePassphrase";
   },
 
-  onLoad: function () {
+  onLoad: function() {
     /* Load labels */
     let introText = document.getElementById("introText");
     let introText2 = document.getElementById("introText2");
@@ -112,16 +112,16 @@ var Change = {
             .setAttribute("label", document.title);
   },
 
-  _clearStatus: function () {
+  _clearStatus: function() {
     this._status.value = "";
     this._statusIcon.removeAttribute("status");
   },
 
-  _updateStatus: function (str, state) {
+  _updateStatus: function(str, state) {
      this._updateStatusWithString(this._str(str), state);
   },
   
-  _updateStatusWithString: function (string, state) {
+  _updateStatusWithString: function(string, state) {
     this._statusRow.hidden = false;
     this._status.value = string;
     this._statusIcon.setAttribute("status", state);
@@ -148,13 +148,13 @@ var Change = {
     }
   },
 
-  doGeneratePassphrase: function () {
+  doGeneratePassphrase: function() {
     let passphrase = Weave.Utils.generatePassphrase();
     this._passphraseBox.value = Weave.Utils.hyphenatePassphrase(passphrase);
     this._dialog.getButton("finish").disabled = false;
   },
 
-  doChangePassphrase: function () {
+  doChangePassphrase: function() {
     let pp = Weave.Utils.normalizePassphrase(this._passphraseBox.value);
     if (this._updatingPassphrase) {
       Weave.Service.identity.syncKey = pp;
@@ -179,7 +179,7 @@ var Change = {
     return false;
   },
 
-  doChangePassword: function () {
+  doChangePassword: function() {
     if (this._currentPasswordInvalid) {
       Weave.Service.identity.basicPassword = this._firstBox.value;
       if (Weave.Service.login()) {
@@ -202,7 +202,7 @@ var Change = {
     return false;
   },
 
-  validate: function (event) {
+  validate: function(event) {
     let valid = false;
     let errorString = "";
 
@@ -228,7 +228,7 @@ var Change = {
     this._dialog.getButton("finish").disabled = !valid;
   },
 
-  _str: function (str) {
+  _str: function(str) {
     return this._stringBundle.GetStringFromName(str);
   }
 };

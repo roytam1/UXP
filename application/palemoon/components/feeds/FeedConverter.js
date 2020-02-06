@@ -127,7 +127,7 @@ FeedConverter.prototype = {
   /**
    * See nsIStreamConverter.idl
    */
-  convert: function (sourceStream, sourceType, destinationType, 
+  convert: function(sourceStream, sourceType, destinationType, 
                                context) {
     throw Cr.NS_ERROR_NOT_IMPLEMENTED;
   },
@@ -135,7 +135,7 @@ FeedConverter.prototype = {
   /**
    * See nsIStreamConverter.idl
    */
-  asyncConvertData: function (sourceType, destinationType,
+  asyncConvertData: function(sourceType, destinationType,
                                                  listener, context) {
     this._listener = listener;
   },
@@ -148,7 +148,7 @@ FeedConverter.prototype = {
   /** 
    * Release our references to various things once we're done using them.
    */
-  _releaseHandles: function () {
+  _releaseHandles: function() {
     this._listener = null;
     this._request = null;
     this._processor = null;
@@ -157,7 +157,7 @@ FeedConverter.prototype = {
   /**
    * See nsIFeedResultListener.idl
    */
-  handleResult: function (result) {
+  handleResult: function(result) {
     // Feeds come in various content types, which our feed sniffer coerces to
     // the maybe.feed type. However, feeds are used as a transport for 
     // different data types, e.g. news/blogs (traditional feed), video/audio
@@ -270,7 +270,7 @@ FeedConverter.prototype = {
   /**
    * See nsIStreamListener.idl
    */
-  onDataAvailable: function (request, context, inputStream, 
+  onDataAvailable: function(request, context, inputStream, 
                                                sourceOffset, count) {
     if (this._processor)
       this._processor.onDataAvailable(request, context, inputStream,
@@ -280,7 +280,7 @@ FeedConverter.prototype = {
   /**
    * See nsIRequestObserver.idl
    */
-  onStartRequest: function (request, context) {
+  onStartRequest: function(request, context) {
     var channel = request.QueryInterface(Ci.nsIChannel);
 
     // Check for a header that tells us there was no sniffing
@@ -323,7 +323,7 @@ FeedConverter.prototype = {
   /**
    * See nsIRequestObserver.idl
    */
-  onStopRequest: function (request, context, status) {
+  onStopRequest: function(request, context, status) {
     if (this._processor)
       this._processor.onStopRequest(request, context, status);
   },
@@ -331,7 +331,7 @@ FeedConverter.prototype = {
   /**
    * See nsISupports.idl
    */
-  QueryInterface: function (iid) {
+  QueryInterface: function(iid) {
     if (iid.equals(Ci.nsIFeedResultListener) ||
         iid.equals(Ci.nsIStreamConverter) ||
         iid.equals(Ci.nsIStreamListener) ||
@@ -366,7 +366,7 @@ FeedResultService.prototype = {
   /**
    * See nsIFeedResultService.idl
    */
-  addToClientReader: function (spec, title, subtitle, feedType) {
+  addToClientReader: function(spec, title, subtitle, feedType) {
     var prefs =   
         Cc["@mozilla.org/preferences-service;1"].
         getService(Ci.nsIPrefBranch);
@@ -432,7 +432,7 @@ FeedResultService.prototype = {
   /**
    * See nsIFeedResultService.idl
    */
-  addFeedResult: function (feedResult) {
+  addFeedResult: function(feedResult) {
     NS_ASSERT(feedResult.uri != null, "null URI!");
     NS_ASSERT(feedResult.uri != null, "null feedResult!");
     var spec = feedResult.uri.spec;
@@ -444,7 +444,7 @@ FeedResultService.prototype = {
   /**
    * See nsIFeedResultService.idl
    */
-  getFeedResult: function (uri) {
+  getFeedResult: function(uri) {
     NS_ASSERT(uri != null, "null URI!");
     var resultList = this._results[uri.spec];
     for (var i in resultList) {
@@ -457,7 +457,7 @@ FeedResultService.prototype = {
   /**
    * See nsIFeedResultService.idl
    */
-  removeFeedResult: function (uri) {
+  removeFeedResult: function(uri) {
     NS_ASSERT(uri != null, "null URI!");
     var resultList = this._results[uri.spec];
     if (!resultList)
@@ -478,13 +478,13 @@ FeedResultService.prototype = {
       delete this._results[uri.spec];
   },
 
-  createInstance: function (outer, iid) {
+  createInstance: function(outer, iid) {
     if (outer != null)
       throw Cr.NS_ERROR_NO_AGGREGATION;
     return this.QueryInterface(iid);
   },
   
-  QueryInterface: function (iid) {
+  QueryInterface: function(iid) {
     if (iid.equals(Ci.nsIFeedResultService) ||
         iid.equals(Ci.nsIFactory) ||
         iid.equals(Ci.nsISupports))
@@ -500,7 +500,7 @@ FeedResultService.prototype = {
 function GenericProtocolHandler() {
 }
 GenericProtocolHandler.prototype = {
-  _init: function (scheme) {
+  _init: function(scheme) {
     var ios = 
       Cc["@mozilla.org/network/io-service;1"].
       getService(Ci.nsIIOService);
@@ -520,11 +520,11 @@ GenericProtocolHandler.prototype = {
     return this._http.defaultPort;
   },
   
-  allowPort: function (port, scheme) {
+  allowPort: function(port, scheme) {
     return this._http.allowPort(port, scheme);
   },
   
-  newURI: function (spec, originalCharset, baseURI) {
+  newURI: function(spec, originalCharset, baseURI) {
     // Feed URIs can be either nested URIs of the form feed:realURI (in which
     // case we create a nested URI for the realURI) or feed://example.com, in
     // which case we create a nested URI for the real protocol which is http.
@@ -548,7 +548,7 @@ GenericProtocolHandler.prototype = {
     return uri;
   },
   
-  newChannel2: function (aUri, aLoadInfo) {
+  newChannel2: function(aUri, aLoadInfo) {
     var inner = aUri.QueryInterface(Ci.nsINestedURI).innerURI;
     var channel = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService).
@@ -562,7 +562,7 @@ GenericProtocolHandler.prototype = {
   },
   
 
-  QueryInterface: function (iid) {
+  QueryInterface: function(iid) {
     if (iid.equals(Ci.nsIProtocolHandler) ||
         iid.equals(Ci.nsISupports))
       return this;

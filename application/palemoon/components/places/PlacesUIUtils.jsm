@@ -42,11 +42,11 @@ this.PlacesUIUtils = {
    *          The string spec of the URI
    * @returns A URI object for the spec.
    */
-  createFixedURI: function (aSpec) {
+  createFixedURI: function(aSpec) {
     return URIFixup.createFixupURI(aSpec, Ci.nsIURIFixup.FIXUP_FLAG_NONE);
   },
 
-  getFormattedString: function (key, params) {
+  getFormattedString: function(key, params) {
     return bundle.formatStringFromName(key, params, params.length);
   },
 
@@ -65,17 +65,17 @@ this.PlacesUIUtils = {
    * @see https://developer.mozilla.org/en/Localization_and_Plurals
    * @return The localized plural string.
    */
-  getPluralString: function (aKey, aNumber, aParams) {
+  getPluralString: function(aKey, aNumber, aParams) {
     let str = PluralForm.get(aNumber, bundle.GetStringFromName(aKey));
 
     // Replace #1 with aParams[0], #2 with aParams[1], and so on.
-    return str.replace(/\#(\d+)/g, function (matchedId, matchedNumber) {
+    return str.replace(/\#(\d+)/g, function(matchedId, matchedNumber) {
       let param = aParams[parseInt(matchedNumber, 10) - 1];
       return param !== undefined ? param : matchedId;
     });
   },
 
-  getString: function (key) {
+  getString: function(key) {
     return bundle.GetStringFromName(key);
   },
 
@@ -103,7 +103,7 @@ this.PlacesUIUtils = {
    * @see this._copyableAnnotations for the list of copyable annotations.
    */
   _getURIItemCopyTransaction:
-  function (aData, aContainer, aIndex)
+  function(aData, aContainer, aIndex)
   {
     let transactions = [];
     if (aData.dateAdded) {
@@ -120,7 +120,7 @@ this.PlacesUIUtils = {
     let keyword = aData.keyword || null;
     let annos = [];
     if (aData.annos) {
-      annos = aData.annos.filter(function (aAnno) {
+      annos = aData.annos.filter(function(aAnno) {
         return this._copyableAnnotations.indexOf(aAnno.name) != -1;
       }, this);
     }
@@ -231,7 +231,7 @@ this.PlacesUIUtils = {
 
     let annos = [];
     if (aData.annos) {
-      annos = aData.annos.filter(function (aAnno) {
+      annos = aData.annos.filter(function(aAnno) {
         return this._copyableAnnotations.indexOf(aAnno.name) != -1;
       }, this);
     }
@@ -257,7 +257,7 @@ this.PlacesUIUtils = {
    * @see this._copyableAnnotations for the list of copyable annotations.
    */
   _getLivemarkCopyTransaction:
-  function (aData, aContainer, aIndex)
+  function(aData, aContainer, aIndex)
   {
     if (!aData.livemark || !aData.annos) {
       throw new Error("node is not a livemark");
@@ -266,7 +266,7 @@ this.PlacesUIUtils = {
     let feedURI, siteURI;
     let annos = [];
     if (aData.annos) {
-      annos = aData.annos.filter(function (aAnno) {
+      annos = aData.annos.filter(function(aAnno) {
         if (aAnno.name == PlacesUtils.LMANNO_FEEDURI) {
           feedURI = PlacesUtils._uri(aAnno.value);
         }
@@ -291,7 +291,7 @@ this.PlacesUIUtils = {
    * @note Maybe this should be removed later, see bug 1072833.
    */
   _isLivemark:
-  function (aItemId)
+  function(aItemId)
   {
     // Since this check may be done on each dragover event, it's worth maintaining
     // a cache.
@@ -344,7 +344,7 @@ this.PlacesUIUtils = {
    *          the move/insert.
    */
   makeTransaction:
-  function (data, type, container, index, copy)
+  function(data, type, container, index, copy)
   {
     switch (data.type) {
       case PlacesUtils.TYPE_X_MOZ_PLACE_CONTAINER:
@@ -399,7 +399,7 @@ this.PlacesUIUtils = {
    * @return true if any transaction has been performed, false otherwise.
    */
   showBookmarkDialog:
-  function (aInfo, aParentWindow) {
+  function(aInfo, aParentWindow) {
     // Preserve size attributes differently based on the fact the dialog has
     // a folder picker or not, since it needs more horizontal space than the
     // other controls.
@@ -415,7 +415,7 @@ this.PlacesUIUtils = {
     return ("performed" in aInfo && aInfo.performed);
   },
 
-  _getTopBrowserWin: function () {
+  _getTopBrowserWin: function() {
     return RecentWindow.getMostRecentBrowserWindow();
   },
 
@@ -425,7 +425,7 @@ this.PlacesUIUtils = {
    *        a DOM node
    * @return the closet ancestor places view if exists, null otherwsie.
    */
-  getViewForNode: function (aNode) {
+  getViewForNode: function(aNode) {
     let node = aNode;
 
     // The view for a <menu> of which its associated menupopup is a places
@@ -454,7 +454,7 @@ this.PlacesUIUtils = {
    * organizer.  If this is not called visits will be marked as
    * TRANSITION_LINK.
    */
-  markPageAsTyped: function (aURL) {
+  markPageAsTyped: function(aURL) {
     PlacesUtils.history.markPageAsTyped(this.createFixedURI(aURL));
   },
 
@@ -465,7 +465,7 @@ this.PlacesUIUtils = {
    * personal toolbar, and bookmarks from within the places organizer.
    * If this is not called visits will be marked as TRANSITION_LINK.
    */
-  markPageAsFollowedBookmark: function (aURL) {
+  markPageAsFollowedBookmark: function(aURL) {
     PlacesUtils.history.markPageAsFollowedBookmark(this.createFixedURI(aURL));
   },
 
@@ -475,7 +475,7 @@ this.PlacesUIUtils = {
    * This is actually used to distinguish user-initiated visits in frames
    * so automatic visits can be correctly ignored.
    */
-  markPageAsFollowedLink: function (aURL) {
+  markPageAsFollowedLink: function(aURL) {
     PlacesUtils.history.markPageAsFollowedLink(this.createFixedURI(aURL));
   },
 
@@ -489,7 +489,7 @@ this.PlacesUIUtils = {
    * @return true if it's safe to open the node in the browser, false otherwise.
    *
    */
-  checkURLSecurity: function (aURINode, aWindow) {
+  checkURLSecurity: function(aURINode, aWindow) {
     if (PlacesUtils.nodeIsBookmark(aURINode))
       return true;
 
@@ -516,7 +516,7 @@ this.PlacesUIUtils = {
    * @returns A description string if a META element was discovered with a
    *          "description" or "httpequiv" attribute, empty string otherwise.
    */
-  getDescriptionFromDocument: function (doc) {
+  getDescriptionFromDocument: function(doc) {
     var metaElements = doc.getElementsByTagName("META");
     for (var i = 0; i < metaElements.length; ++i) {
       if (metaElements[i].name.toLowerCase() == "description" ||
@@ -534,7 +534,7 @@ this.PlacesUIUtils = {
    * @returns the description of the given item, or an empty string if it is
    * not set.
    */
-  getItemDescription: function (aItemId) {
+  getItemDescription: function(aItemId) {
     if (PlacesUtils.annotations.itemHasAnnotation(aItemId, this.DESCRIPTION_ANNO))
       return PlacesUtils.annotations.getItemAnnotation(aItemId, this.DESCRIPTION_ANNO);
     return "";
@@ -548,7 +548,7 @@ this.PlacesUIUtils = {
    *        a node, except the root node of a query.
    * @return true if the aNode represents a removable entry, false otherwise.
    */
-  canUserRemove: function (aNode) {
+  canUserRemove: function(aNode) {
     let parentNode = aNode.parent;
     if (!parentNode)
       throw new Error("canUserRemove doesn't accept root nodes");
@@ -594,7 +594,7 @@ this.PlacesUIUtils = {
    * @note livemark "folders" are considered read-only (but see bug 1072833).
    * @return true if aItemId points to a read-only folder, false otherwise.
    */
-  isContentsReadOnly: function (aNodeOrItemId) {
+  isContentsReadOnly: function(aNodeOrItemId) {
     let itemId;
     if (typeof(aNodeOrItemId) == "number") {
       itemId = aNodeOrItemId;
@@ -631,7 +631,7 @@ this.PlacesUIUtils = {
    * Gives the user a chance to cancel loading lots of tabs at once
    */
   _confirmOpenInTabs:
-  function (numTabsToOpen, aWindow) {
+  function(numTabsToOpen, aWindow) {
     const WARN_ON_OPEN_PREF = "browser.tabs.warnOnOpen";
     var reallyOpen = true;
 
@@ -673,7 +673,7 @@ this.PlacesUIUtils = {
   /** aItemsToOpen needs to be an array of objects of the form:
     * {uri: string, isBookmark: boolean}
     */
-  _openTabset: function (aItemsToOpen, aEvent, aWindow) {
+  _openTabset: function(aItemsToOpen, aEvent, aWindow) {
     if (!aItemsToOpen.length)
       return;
 
@@ -722,7 +722,7 @@ this.PlacesUIUtils = {
   },
 
   openLiveMarkNodesInTabs:
-  function (aNode, aEvent, aView) {
+  function(aNode, aEvent, aView) {
     let window = aView.ownerWindow;
 
     PlacesUtils.livemarks.getLivemark({id: aNode.itemId})
@@ -741,7 +741,7 @@ this.PlacesUIUtils = {
   },
 
   openContainerNodeInTabs:
-  function (aNode, aEvent, aView) {
+  function(aNode, aEvent, aView) {
     let window = aView.ownerWindow;
 
     let urlsToOpen = PlacesUtils.getURLsForContainerNode(aNode);
@@ -750,7 +750,7 @@ this.PlacesUIUtils = {
     }
   },
 
-  openURINodesInTabs: function (aNodes, aEvent, aView) {
+  openURINodesInTabs: function(aNodes, aEvent, aView) {
     let window = aView.ownerWindow;
 
     let urlsToOpen = [];
@@ -775,7 +775,7 @@ this.PlacesUIUtils = {
    *          The controller associated with aNode.
    */
   openNodeWithEvent:
-  function (aNode, aEvent, aView) {
+  function(aNode, aEvent, aView) {
     let window = aView.ownerWindow;
     this._openNodeIn(aNode, window.whereToOpenLink(aEvent, false, true), window);
   },
@@ -785,12 +785,12 @@ this.PlacesUIUtils = {
    * web panel.
    * see also openUILinkIn
    */
-  openNodeIn: function (aNode, aWhere, aView, aPrivate) {
+  openNodeIn: function(aNode, aWhere, aView, aPrivate) {
     let window = aView.ownerWindow;
     this._openNodeIn(aNode, aWhere, window, aPrivate);
   },
 
-  _openNodeIn: function (aNode, aWhere, aWindow, aPrivate=false) {
+  _openNodeIn: function(aNode, aWhere, aWindow, aPrivate=false) {
     if (aNode && PlacesUtils.nodeIsURI(aNode) &&
         this.checkURLSecurity(aNode, aWindow)) {
       let isBookmark = PlacesUtils.nodeIsBookmark(aNode);
@@ -831,11 +831,11 @@ this.PlacesUIUtils = {
    *
    * @note this is not supposed be perfect, so use it only for UI purposes.
    */
-  guessUrlSchemeForUI: function (aUrlString) {
+  guessUrlSchemeForUI: function(aUrlString) {
     return aUrlString.substr(0, aUrlString.indexOf(":"));
   },
 
-  getBestTitle: function (aNode, aDoNotCutTitle) {
+  getBestTitle: function(aNode, aDoNotCutTitle) {
     var title;
     if (!aNode.title && PlacesUtils.nodeIsURI(aNode)) {
       // if node title is empty, try to set the label using host and filename
@@ -1016,7 +1016,7 @@ this.PlacesUIUtils = {
     // Create a new left pane folder.
     var callback = {
       // Helper to create an organizer special query.
-      create_query: function (aQueryName, aParentId, aQueryUrl) {
+      create_query: function(aQueryName, aParentId, aQueryUrl) {
         let itemId = bs.insertBookmark(aParentId,
                                        PlacesUtils._uri(aQueryUrl),
                                        bs.DEFAULT_INDEX,
@@ -1033,7 +1033,7 @@ this.PlacesUIUtils = {
       },
 
       // Helper to create an organizer special folder.
-      create_folder: function (aFolderName, aParentId, aIsRoot) {
+      create_folder: function(aFolderName, aParentId, aIsRoot) {
               // Left Pane Root Folder.
         let folderId = bs.createFolder(aParentId,
                                        queries[aFolderName].title,
@@ -1057,7 +1057,7 @@ this.PlacesUIUtils = {
         return folderId;
       },
 
-      runBatched: function (aUserData) {
+      runBatched: function(aUserData) {
         delete PlacesUIUtils.leftPaneQueries;
         PlacesUIUtils.leftPaneQueries = { };
 
@@ -1125,7 +1125,7 @@ this.PlacesUIUtils = {
    * @param aItemId id of a container
    * @returns the name of the query, or empty string if not a left-pane query
    */
-  getLeftPaneQueryNameFromId: function (aItemId) {
+  getLeftPaneQueryNameFromId: function(aItemId) {
     var queryName = "";
     // If the let pane hasn't been built, use the annotation service
     // directly, to avoid building the left pane too early.
@@ -1170,7 +1170,7 @@ this.PlacesUIUtils = {
    * @return The URL with the fragment at the end
    */
   getImageURLForResolution:
-  function (aWindow, aURL, aWidth, aHeight) {
+  function(aWindow, aURL, aWidth, aHeight) {
     return aURL;
   }
 };

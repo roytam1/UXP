@@ -30,7 +30,7 @@ var PlacesOrganizer = {
     this._places.place = "place:excludeItems=1&expandQueries=0&folder=" + leftPaneRoot;
   },
 
-  selectLeftPaneQuery: function (aQueryName) {
+  selectLeftPaneQuery: function(aQueryName) {
     var itemId = PlacesUIUtils.leftPaneQueries[aQueryName];
     this._places.selectItems([itemId]);
     // Forcefully expand all-bookmarks
@@ -38,7 +38,7 @@ var PlacesOrganizer = {
       PlacesUtils.asContainer(this._places.selectedNode).containerOpen = true;
   },
 
-  init: function () {
+  init: function() {
     ContentArea.init();
 
     this._places = document.getElementById("placesList");
@@ -91,7 +91,7 @@ var PlacesOrganizer = {
     ContentArea.focus();
   },
 
-  QueryInterface: function (aIID) {
+  QueryInterface: function(aIID) {
     if (aIID.equals(Components.interfaces.nsIDOMEventListener) ||
         aIID.equals(Components.interfaces.nsISupports))
       return this;
@@ -99,7 +99,7 @@ var PlacesOrganizer = {
     throw new Components.Exception("", Components.results.NS_NOINTERFACE);
   },
 
-  handleEvent: function (aEvent) {
+  handleEvent: function(aEvent) {
     if (aEvent.type != "AppCommand")
       return;
 
@@ -119,7 +119,7 @@ var PlacesOrganizer = {
     }
   },
 
-  destroy: function () {
+  destroy: function() {
   },
 
   _location: null,
@@ -161,13 +161,13 @@ var PlacesOrganizer = {
   _backHistory: [],
   _forwardHistory: [],
 
-  back: function () {
+  back: function() {
     this._forwardHistory.unshift(this.location);
     var historyEntry = this._backHistory.shift();
     this._location = null;
     this.location = historyEntry;
   },
-  forward: function () {
+  forward: function() {
     this._backHistory.unshift(this.location);
     var historyEntry = this._forwardHistory.shift();
     this._location = null;
@@ -185,7 +185,7 @@ var PlacesOrganizer = {
    *          deleting its text, this will be false.
    */
   _cachedLeftPaneSelectedURI: null,
-  onPlaceSelected: function (resetSearchBox) {
+  onPlaceSelected: function(resetSearchBox) {
     // Don't change the right-hand pane contents when there's no selection.
     if (!this._places.hasSelection)
       return;
@@ -243,7 +243,7 @@ var PlacesOrganizer = {
    * @param   aNode
    *          the node to set up scope from
    */
-  _setSearchScopeForNode: function (aNode) {
+  _setSearchScopeForNode: function(aNode) {
     let itemId = aNode.itemId;
 
     // Set default buttons status.
@@ -279,7 +279,7 @@ var PlacesOrganizer = {
    * @param   aEvent
    *          The mouse event.
    */
-  onPlacesListClick: function (aEvent) {
+  onPlacesListClick: function(aEvent) {
     // Only handle clicks on tree children.
     if (aEvent.target.localName != "treechildren")
       return;
@@ -299,7 +299,7 @@ var PlacesOrganizer = {
   /**
    * Handle focus changes on the places list and the current content view.
    */
-  updateDetailsPane: function () {
+  updateDetailsPane: function() {
     if (!ContentArea.currentViewOptions.showDetailsPane)
       return;
     let view = PlacesUIUtils.getViewForNode(document.activeElement);
@@ -310,7 +310,7 @@ var PlacesOrganizer = {
     }
   },
 
-  openFlatContainer: function (aContainer) {
+  openFlatContainer: function(aContainer) {
     if (aContainer.itemId != -1)
       this._places.selectItems([aContainer.itemId]);
     else if (PlacesUtils.nodeIsQuery(aContainer))
@@ -321,7 +321,7 @@ var PlacesOrganizer = {
    * Returns the options associated with the query currently loaded in the
    * main places pane.
    */
-  getCurrentOptions: function () {
+  getCurrentOptions: function() {
     return PlacesUtils.asQuery(ContentArea.currentView.result.root).queryOptions;
   },
 
@@ -329,14 +329,14 @@ var PlacesOrganizer = {
    * Returns the queries associated with the query currently loaded in the
    * main places pane.
    */
-  getCurrentQueries: function () {
+  getCurrentQueries: function() {
     return PlacesUtils.asQuery(ContentArea.currentView.result.root).getQueries();
   },
 
   /**
    * Open a file-picker and import the selected file into the bookmarks store
    */
-  importFromFile: function () {
+  importFromFile: function() {
     let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
     let fpCallback = function fpCallback_done(aResult) {
       if (aResult != Ci.nsIFilePicker.returnCancel && fp.fileURL) {
@@ -355,7 +355,7 @@ var PlacesOrganizer = {
   /**
    * Allows simple exporting of bookmarks.
    */
-  exportBookmarks: function () {
+  exportBookmarks: function() {
     let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
     let fpCallback = function fpCallback_done(aResult) {
       if (aResult != Ci.nsIFilePicker.returnCancel) {
@@ -375,7 +375,7 @@ var PlacesOrganizer = {
   /**
    * Populates the restore menu with the dates of the backups available.
    */
-  populateRestoreMenu: function () {
+  populateRestoreMenu: function() {
     let restorePopup = document.getElementById("fileRestorePopup");
 
     let dateSvc = Cc["@mozilla.org/intl/scriptabledateformat;1"].
@@ -432,7 +432,7 @@ var PlacesOrganizer = {
   /**
    * Called when a menuitem is selected from the restore menu.
    */
-  onRestoreMenuItemClick: function (aMenuItem) {
+  onRestoreMenuItemClick: function(aMenuItem) {
     Task.spawn(function() {
       let backupName = aMenuItem.getAttribute("value");
       let backupFilePaths = yield PlacesBackups.getBackupFiles();
@@ -449,7 +449,7 @@ var PlacesOrganizer = {
    * Called when 'Choose File...' is selected from the restore menu.
    * Prompts for a file and restores bookmarks to those in the file.
    */
-  onRestoreBookmarksFromFile: function () {
+  onRestoreBookmarksFromFile: function() {
     let dirSvc = Cc["@mozilla.org/file/directory_service;1"].
                  getService(Ci.nsIProperties);
     let backupsDir = dirSvc.get("Desk", Ci.nsILocalFile);
@@ -472,7 +472,7 @@ var PlacesOrganizer = {
   /**
    * Restores bookmarks from a JSON file.
    */
-  restoreBookmarksFromFile: function (aFile) {
+  restoreBookmarksFromFile: function(aFile) {
     // check file extension
     let filePath = aFile.path;
     if (!filePath.toLowerCase().endsWith("json") &&
@@ -498,7 +498,7 @@ var PlacesOrganizer = {
     });
   },
 
-  _showErrorAlert: function (aMsg) {
+  _showErrorAlert: function(aMsg) {
     var brandShortName = document.getElementById("brandStrings").
                                   getString("brandShortName");
 
@@ -512,7 +512,7 @@ var PlacesOrganizer = {
    * The file is a JSON serialization of bookmarks, tags and any annotations
    * of those items.
    */
-  backupBookmarks: function () {
+  backupBookmarks: function() {
     let dirSvc = Cc["@mozilla.org/file/directory_service;1"].
                  getService(Ci.nsIProperties);
     let backupsDir = dirSvc.get("Desk", Ci.nsILocalFile);
@@ -534,7 +534,7 @@ var PlacesOrganizer = {
 
   _paneDisabled: false,
   _setDetailsFieldsDisabledState:
-  function (aDisabled) {
+  function(aDisabled) {
     if (aDisabled) {
       document.getElementById("paneElementsBroadcaster")
               .setAttribute("disabled", "true");
@@ -546,7 +546,7 @@ var PlacesOrganizer = {
   },
 
   _detectAndSetDetailsPaneMinimalState:
-  function (aNode) {
+  function(aNode) {
     /**
      * The details of simple folder-items (as opposed to livemarks) or the
      * of livemark-children are not likely to fill the infoBox anyway,
@@ -576,14 +576,14 @@ var PlacesOrganizer = {
         infoBox.setAttribute("minimal", "true");
       infoBox.removeAttribute("wasminimal");
       infoBoxExpanderWrapper.hidden =
-        this._additionalInfoFields.every(function (id)
+        this._additionalInfoFields.every(function(id)
           document.getElementById(id).collapsed);
     }
     additionalInfoBroadcaster.hidden = infoBox.getAttribute("minimal") == "true";
   },
 
   // NOT YET USED
-  updateThumbnailProportions: function () {
+  updateThumbnailProportions: function() {
     var previewBox = document.getElementById("previewBox");
     var canvas = document.getElementById("itemThumbnail");
     var height = previewBox.boxObject.height;
@@ -592,7 +592,7 @@ var PlacesOrganizer = {
     canvas.height = height;
   },
 
-  _fillDetailsPane: function (aNodeList) {
+  _fillDetailsPane: function(aNodeList) {
     var infoBox = document.getElementById("infoBox");
     var detailsDeck = document.getElementById("detailsDeck");
 
@@ -716,7 +716,7 @@ var PlacesOrganizer = {
   },
 
   // NOT YET USED
-  _updateThumbnail: function () {
+  _updateThumbnail: function() {
     var bo = document.getElementById("previewBox").boxObject;
     var width  = bo.width;
     var height = bo.height;
@@ -737,7 +737,7 @@ var PlacesOrganizer = {
     ctx.restore();
   },
 
-  toggleAdditionalInfoFields: function () {
+  toggleAdditionalInfoFields: function() {
     var infoBox = document.getElementById("infoBox");
     var infoBoxExpander = document.getElementById("infoBoxExpander");
     var infoBoxExpanderLabel = document.getElementById("infoBoxExpanderLabel");
@@ -762,7 +762,7 @@ var PlacesOrganizer = {
   /**
    * Save the current search (or advanced query) to the bookmarks root.
    */
-  saveSearch: function () {
+  saveSearch: function() {
     // Get the place: uri for the query.
     // If the advanced query builder is showing, use that.
     var options = this.getCurrentOptions();
@@ -840,7 +840,7 @@ var PlacesSearchBox = {
    * @param   filterString
    *          The text to search for.
    */
-  search: function (filterString) {
+  search: function(filterString) {
     var PO = PlacesOrganizer;
     // If the user empties the search box manually, reset it and load all
     // contents of the current scope.
@@ -909,7 +909,7 @@ var PlacesSearchBox = {
   /**
    * Finds across all history, downloads or all bookmarks.
    */
-  findAll: function () {
+  findAll: function() {
     switch (this.filterCollection) {
       case "history":
         PlacesQueryBuilder.setScope("history");
@@ -929,7 +929,7 @@ var PlacesSearchBox = {
    * @param   aTitle
    *          The title of the current collection.
    */
-  updateCollectionTitle: function (aTitle) {
+  updateCollectionTitle: function(aTitle) {
     let title = "";
     // This is needed when a user performs a folder-specific search
     // using the scope bar, removes the search-string, and unfocuses
@@ -978,14 +978,14 @@ var PlacesSearchBox = {
   /**
    * Focus the search box
    */
-  focus: function () {
+  focus: function() {
     this.searchFilter.focus();
   },
 
   /**
    * Set up the gray text in the search bar as the Places View loads.
    */
-  init: function () {
+  init: function() {
     this.updateCollectionTitle();
   },
 
@@ -999,13 +999,13 @@ var PlacesSearchBox = {
     return this.searchFilter.value = value;
   },
 
-  showSearchUI: function () {
+  showSearchUI: function() {
     // Hide the advanced search controls when the user hasn't searched
     var searchModifiers = document.getElementById("searchModifiers");
     searchModifiers.hidden = false;
   },
 
-  hideSearchUI: function () {
+  hideSearchUI: function() {
     var searchModifiers = document.getElementById("searchModifiers");
     searchModifiers.hidden = true;
   }
@@ -1024,7 +1024,7 @@ var PlacesQueryBuilder = {
    * @param   aButton
    *          the scope button that was selected
    */
-  onScopeSelected: function (aButton) {
+  onScopeSelected: function(aButton) {
     switch (aButton.id) {
       case "scopeBarHistory":
         this.setScope("history");
@@ -1054,7 +1054,7 @@ var PlacesQueryBuilder = {
    *          The search scope: "bookmarks", "collection", "downloads" or
    *          "history".
    */
-  setScope: function (aScope) {
+  setScope: function(aScope) {
     // Determine filterCollection, folders, and scopeButtonId based on aScope.
     var filterCollection;
     var folders = [];
@@ -1130,7 +1130,7 @@ var ViewMenu = {
    * @returns The element for the caller to insert new items before,
    *          null if the caller should just append to the popup.
    */
-  _clean: function (popup, startID, endID) {
+  _clean: function(popup, startID, endID) {
     if (endID)
       NS_ASSERT(startID, "meaningless to have valid endID and null startID");
     if (startID) {
@@ -1179,7 +1179,7 @@ var ViewMenu = {
    *          If propertyPrefix is null, the column label is used as label and
    *          no accesskey is assigned.
    */
-  fillWithColumns: function (event, startID, endID, type, propertyPrefix) {
+  fillWithColumns: function(event, startID, endID, type, propertyPrefix) {
     var popup = event.target;
     var pivot = this._clean(popup, startID, endID);
 
@@ -1242,7 +1242,7 @@ var ViewMenu = {
   /**
    * Set up the content of the view menu.
    */
-  populateSortMenu: function (event) {
+  populateSortMenu: function(event) {
     this.fillWithColumns(event, "viewUnsorted", "directionSeparator", "radio", "view.sortBy.");
 
     var sortColumn = this._getSortColumn();
@@ -1273,7 +1273,7 @@ var ViewMenu = {
    * @param   element
    *          The menuitem element for the column
    */
-  showHideColumn: function (element) {
+  showHideColumn: function(element) {
     var column = element.column;
 
     var splitter = column.nextSibling;
@@ -1296,7 +1296,7 @@ var ViewMenu = {
    * Gets the last column that was sorted.
    * @returns  the currently sorted column, null if there is no sorted column.
    */
-  _getSortColumn: function () {
+  _getSortColumn: function() {
     var content = document.getElementById("placeContent");
     var cols = content.columns;
     for (var i = 0; i < cols.count; ++i) {
@@ -1319,7 +1319,7 @@ var ViewMenu = {
    *
    * If both aColumnID and aDirection are null, the view will be unsorted.
    */
-  setSortColumn: function (aColumn, aDirection) {
+  setSortColumn: function(aColumn, aDirection) {
     var result = document.getElementById("placeContent").result;
     if (!aColumn && !aDirection) {
       result.sortingMode = Ci.nsINavHistoryQueryOptions.SORT_BY_NONE;
@@ -1380,7 +1380,7 @@ var ViewMenu = {
 var ContentArea = {
   _specialViews: new Map(),
 
-  init: function () {
+  init: function() {
     this._deck = document.getElementById("placesViewsDeck");
     this._toolbar = document.getElementById("placesToolbar");
     ContentTree.init();
@@ -1397,7 +1397,7 @@ var ContentArea = {
    * @return the view to be used for loading aQueryString.
    */
   getContentViewForQueryString:
-  function (aQueryString) {
+  function(aQueryString) {
     try {
       if (this._specialViews.has(aQueryString)) {
         let { view, options } = this._specialViews.get(aQueryString);
@@ -1427,7 +1427,7 @@ var ContentArea = {
    * @see ContentTree.viewOptions for supported options and default values.
    */
   setContentViewForQueryString:
-  function (aQueryString, aView, aOptions) {
+  function(aQueryString, aView, aOptions) {
     if (!aQueryString ||
         typeof aView != "object" && typeof aView != "function")
       throw new Components.Exception("Invalid arguments",
@@ -1468,7 +1468,7 @@ var ContentArea = {
   /**
    * Applies view options.
    */
-  _setupView: function () {
+  _setupView: function() {
     let options = this.currentViewOptions;
 
     // showDetailsPane.
@@ -1512,7 +1512,7 @@ var ContentArea = {
 };
 
 var ContentTree = {
-  init: function () {
+  init: function() {
     this._view = document.getElementById("placeContent");
   },
 
@@ -1523,12 +1523,12 @@ var ContentTree = {
     toolbarSet: "back-button, forward-button, organizeButton, viewMenu, maintenanceButton, libraryToolbarSpacer, searchFilter"
   }),
 
-  openSelectedNode: function (aEvent) {
+  openSelectedNode: function(aEvent) {
     let view = this.view;
     PlacesUIUtils.openNodeWithEvent(view.selectedNode, aEvent, view);
   },
 
-  onClick: function (aEvent) {
+  onClick: function(aEvent) {
     let node = this.view.selectedNode;
     if (node) {
       let doubleClick = aEvent.button == 0 && aEvent.detail == 2;
@@ -1546,7 +1546,7 @@ var ContentTree = {
     }
   },
 
-  onKeyPress: function (aEvent) {
+  onKeyPress: function(aEvent) {
     if (aEvent.keyCode == KeyEvent.DOM_VK_RETURN)
       this.openSelectedNode(aEvent);
   }

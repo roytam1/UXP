@@ -40,7 +40,7 @@ XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
 
 function DownloadsUI()
 {
-  XPCOMUtils.defineLazyGetter(this, "_toolkitUI", function () {
+  XPCOMUtils.defineLazyGetter(this, "_toolkitUI", function() {
     // Create Toolkit's nsIDownloadManagerUI implementation.
     return Components.classesByID["{7dfdf0d1-aff6-4a34-bad1-d0fe74601642}"]
                      .getService(Ci.nsIDownloadManagerUI);
@@ -60,7 +60,7 @@ DownloadsUI.prototype = {
   //////////////////////////////////////////////////////////////////////////////
   //// nsIDownloadManagerUI
 
-  show: function (aWindowContext, aDownload, aReason, aUsePrivateUI)
+  show: function(aWindowContext, aDownload, aReason, aUsePrivateUI)
   {
     if (DownloadsCommon.useToolkitUI && !PrivateBrowsingUtils.isWindowPrivate(aWindowContext)) {
       this._toolkitUI.show(aWindowContext, aDownload, aReason, aUsePrivateUI);
@@ -101,7 +101,7 @@ DownloadsUI.prototype = {
     return DownloadsCommon.useToolkitUI ? this._toolkitUI.visible : true;
   },
 
-  getAttention: function ()
+  getAttention: function()
   {
     if (DownloadsCommon.useToolkitUI) {
       this._toolkitUI.getAttention();
@@ -112,7 +112,7 @@ DownloadsUI.prototype = {
    * Helper function that opens the download manager UI.
    */
   _showDownloadManagerUI:
-  function (aWindowContext, aUsePrivateUI)
+  function(aWindowContext, aUsePrivateUI)
   {
     // If we weren't given a window context, try to find a browser window
     // to use as our parent - and if that doesn't work, error out and give up.

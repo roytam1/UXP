@@ -15,7 +15,7 @@ Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 function nsSetDefaultBrowser() {}
 
 nsSetDefaultBrowser.prototype = {
-  handle: function (aCmdline) {
+  handle: function(aCmdline) {
     if (aCmdline.handleFlag("setDefaultBrowser", false)) {
       ShellService.setDefaultBrowser(true, true);
     }

@@ -25,7 +25,7 @@ this.RecentWindow = {
    *            Omit the property to search in both groups.
    *        * allowPopups: true if popup windows are permissable.
    */
-  getMostRecentBrowserWindow: function (aOptions) {
+  getMostRecentBrowserWindow: function(aOptions) {
     let checkPrivacy = typeof aOptions == "object" &&
                        "private" in aOptions;
 

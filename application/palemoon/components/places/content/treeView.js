@@ -47,7 +47,7 @@ PlacesTreeView.prototype = {
   /**
    * This is called once both the result and the tree are set.
    */
-  _finishInit: function () {
+  _finishInit: function() {
     let selection = this.selection;
     if (selection)
       selection.selectEventsSuppressed = true;
@@ -88,7 +88,7 @@ PlacesTreeView.prototype = {
    *
    * @return true if aContainer is a plain container, false otherwise.
    */
-  _isPlainContainer: function (aContainer) {
+  _isPlainContainer: function(aContainer) {
     // Livemarks are always plain containers.
     if (this._controller.hasCachedLivemarkInfo(aContainer))
       return true;
@@ -137,7 +137,7 @@ PlacesTreeView.prototype = {
    *         otherwise.
    */
   _getRowForNode:
-  function (aNode, aForceBuild, aParentRow, aNodeIndex) {
+  function(aNode, aForceBuild, aParentRow, aNodeIndex) {
     if (aNode == this._rootNode)
       throw new Error("The root node is never visible");
 
@@ -206,7 +206,7 @@ PlacesTreeView.prototype = {
    *        Row number.
    * @return [parentNode, parentRow]
    */
-  _getParentByChildRow: function (aChildRow) {
+  _getParentByChildRow: function(aChildRow) {
     let node = this._getNodeForRow(aChildRow);
     let parent = (node === null) ? this._rootNode : node.parent;
 
@@ -221,7 +221,7 @@ PlacesTreeView.prototype = {
   /**
    * Gets the node at a given row.
    */
-  _getNodeForRow: function (aRow) {
+  _getNodeForRow: function(aRow) {
     if (aRow < 0) {
       return null;
     }
@@ -267,7 +267,7 @@ PlacesTreeView.prototype = {
    * @return the number of rows which were inserted.
    */
   _buildVisibleSection:
-  function (aContainer, aFirstChildRow, aToOpen)
+  function(aContainer, aFirstChildRow, aToOpen)
   {
     // There's nothing to do if the container is closed.
     if (!aContainer.containerOpen)
@@ -333,7 +333,7 @@ PlacesTreeView.prototype = {
    * will count the node itself plus any child node following it.
    */
   _countVisibleRowsForNodeAtRow:
-  function (aNodeRow) {
+  function(aNodeRow) {
     let node = this._rows[aNodeRow];
 
     // If it's not listed yet, we know that it's a leaf node (instanceof also
@@ -353,7 +353,7 @@ PlacesTreeView.prototype = {
   },
 
   _getSelectedNodesInRange:
-  function (aFirstRow, aLastRow) {
+  function(aFirstRow, aLastRow) {
     let selection = this.selection;
     let rc = selection.getRangeCount();
     if (rc == 0)
@@ -404,7 +404,7 @@ PlacesTreeView.prototype = {
    *         found, -1 otherwise.
    */
   _getNewRowForRemovedNode:
-  function (aUpdatedContainer, aOldNode) {
+  function(aUpdatedContainer, aOldNode) {
     if (aOldNode == undefined) {
       return -1;
     }
@@ -449,7 +449,7 @@ PlacesTreeView.prototype = {
    *        The container which was updated.
    */
   _restoreSelection:
-  function (aNodesInfo, aUpdatedContainer) {
+  function(aNodesInfo, aUpdatedContainer) {
     if (aNodesInfo.length == 0)
       return;
 
@@ -485,7 +485,7 @@ PlacesTreeView.prototype = {
       this._tree.ensureRowIsVisible(scrollToRow);
   },
 
-  _convertPRTimeToString: function (aTime) {
+  _convertPRTimeToString: function(aTime) {
     const MS_PER_MINUTE = 60000;
     const MS_PER_DAY = 86400000;
     let timeMs = aTime / 1000; // PRTime is in microseconds
@@ -524,7 +524,7 @@ PlacesTreeView.prototype = {
   COLUMN_TYPE_PARENTFOLDER: 10,
   COLUMN_TYPE_PARENTFOLDERPATH: 11,
 
-  _getColumnType: function (aColumn) {
+  _getColumnType: function(aColumn) {
     let columnType = aColumn.element.getAttribute("anonid") || aColumn.id;
 
     switch (columnType) {
@@ -554,7 +554,7 @@ PlacesTreeView.prototype = {
     return this.COLUMN_TYPE_UNKNOWN;
   },
 
-  _sortTypeToColumnType: function (aSortType) {
+  _sortTypeToColumnType: function(aSortType) {
     switch (aSortType) {
       case Ci.nsINavHistoryQueryOptions.SORT_BY_TITLE_ASCENDING:
         return [this.COLUMN_TYPE_TITLE, false];
@@ -600,7 +600,7 @@ PlacesTreeView.prototype = {
   },
 
   // nsINavHistoryResultObserver
-  nodeInserted: function (aParentNode, aNode, aNewIndex) {
+  nodeInserted: function(aParentNode, aNode, aNewIndex) {
     NS_ASSERT(this._result, "Got a notification but have no result!");
     if (!this._tree || !this._result)
       return;
@@ -674,7 +674,7 @@ PlacesTreeView.prototype = {
    * However, we won't do this when sorted by date because dates will never
    * change for visits, and date sorting is the only time things are collapsed.
    */
-  nodeRemoved: function (aParentNode, aNode, aOldIndex) {
+  nodeRemoved: function(aParentNode, aNode, aOldIndex) {
     NS_ASSERT(this._result, "Got a notification but have no result!");
     if (!this._tree || !this._result)
       return;
@@ -727,7 +727,7 @@ PlacesTreeView.prototype = {
   },
 
   nodeMoved:
-  function (aNode, aOldParent, aOldIndex, aNewParent, aNewIndex) {
+  function(aNode, aOldParent, aOldIndex, aNewParent, aNewIndex) {
     NS_ASSERT(this._result, "Got a notification but have no result!");
     if (!this._tree || !this._result)
       return;
@@ -773,7 +773,7 @@ PlacesTreeView.prototype = {
     }
   },
 
-  _invalidateCellValue: function (aNode,
+  _invalidateCellValue: function(aNode,
                                                           aColumnType) {
     NS_ASSERT(this._result, "Got a notification but have no result!");
     if (!this._tree || !this._result)
@@ -800,7 +800,7 @@ PlacesTreeView.prototype = {
     }
   },
 
-  _populateLivemarkContainer: function (aNode) {
+  _populateLivemarkContainer: function(aNode) {
     PlacesUtils.livemarks.getLivemark({ id: aNode.itemId })
       .then(aLivemark => {
         let placesNode = aNode;
@@ -816,20 +816,20 @@ PlacesTreeView.prototype = {
       }, Components.utils.reportError);
   },
 
-  nodeTitleChanged: function (aNode, aNewTitle) {
+  nodeTitleChanged: function(aNode, aNewTitle) {
     this._invalidateCellValue(aNode, this.COLUMN_TYPE_TITLE);
   },
 
-  nodeURIChanged: function (aNode, aNewURI) {
+  nodeURIChanged: function(aNode, aNewURI) {
     this._invalidateCellValue(aNode, this.COLUMN_TYPE_URI);
   },
 
-  nodeIconChanged: function (aNode) {
+  nodeIconChanged: function(aNode) {
     this._invalidateCellValue(aNode, this.COLUMN_TYPE_TITLE);
   },
 
   nodeHistoryDetailsChanged:
-  function (aNode, aUpdatedVisitDate,
+  function(aNode, aUpdatedVisitDate,
                                          aUpdatedVisitCount) {
     if (aNode.parent && this._controller.hasCachedLivemarkInfo(aNode.parent)) {
       // Find the node in the parent.
@@ -849,15 +849,15 @@ PlacesTreeView.prototype = {
     this._invalidateCellValue(aNode, this.COLUMN_TYPE_VISITCOUNT);
   },
 
-  nodeTagsChanged: function (aNode) {
+  nodeTagsChanged: function(aNode) {
     this._invalidateCellValue(aNode, this.COLUMN_TYPE_TAGS);
   },
 
-  nodeKeywordChanged: function (aNode, aNewKeyword) {
+  nodeKeywordChanged: function(aNode, aNewKeyword) {
     this._invalidateCellValue(aNode, this.COLUMN_TYPE_KEYWORD);
   },
 
-  nodeAnnotationChanged: function (aNode, aAnno) {
+  nodeAnnotationChanged: function(aNode, aAnno) {
     if (aAnno == PlacesUIUtils.DESCRIPTION_ANNO) {
       this._invalidateCellValue(aNode, this.COLUMN_TYPE_DESCRIPTION);
     }
@@ -873,17 +873,17 @@ PlacesTreeView.prototype = {
     }
   },
 
-  nodeDateAddedChanged: function (aNode, aNewValue) {
+  nodeDateAddedChanged: function(aNode, aNewValue) {
     this._invalidateCellValue(aNode, this.COLUMN_TYPE_DATEADDED);
   },
 
   nodeLastModifiedChanged:
-  function (aNode, aNewValue) {
+  function(aNode, aNewValue) {
     this._invalidateCellValue(aNode, this.COLUMN_TYPE_LASTMODIFIED);
   },
 
   containerStateChanged:
-  function (aNode, aOldState, aNewState) {
+  function(aNode, aOldState, aNewState) {
     this.invalidateContainer(aNode);
 
     if (PlacesUtils.nodeIsFolder(aNode) ||
@@ -914,7 +914,7 @@ PlacesTreeView.prototype = {
     }
   },
 
-  invalidateContainer: function (aContainer) {
+  invalidateContainer: function(aContainer) {
     NS_ASSERT(this._result, "Need to have a result to update");
     if (!this._tree)
       return;
@@ -1020,7 +1020,7 @@ PlacesTreeView.prototype = {
   },
 
   _columns: [],
-  _findColumnByType: function (aColumnType) {
+  _findColumnByType: function(aColumnType) {
     if (this._columns[aColumnType])
       return this._columns[aColumnType];
 
@@ -1039,7 +1039,7 @@ PlacesTreeView.prototype = {
     return null;
   },
 
-  sortingChanged: function (aSortingMode) {
+  sortingChanged: function(aSortingMode) {
     if (!this._tree || !this._result)
       return;
 
@@ -1068,7 +1068,7 @@ PlacesTreeView.prototype = {
   },
 
   _inBatchMode: false,
-  batching: function (aToggleMode) {
+  batching: function(aToggleMode) {
     if (this._inBatchMode != aToggleMode) {
       this._inBatchMode = this.selection.selectEventsSuppressed = aToggleMode;
       if (this._inBatchMode) {
@@ -1107,14 +1107,14 @@ PlacesTreeView.prototype = {
     return val;
   },
 
-  nodeForTreeIndex: function (aIndex) {
+  nodeForTreeIndex: function(aIndex) {
     if (aIndex > this._rows.length)
       throw Cr.NS_ERROR_INVALID_ARG;
 
     return this._getNodeForRow(aIndex);
   },
 
-  treeIndexForNode: function (aNode) {
+  treeIndexForNode: function(aNode) {
     // The API allows passing invisible nodes.
     try {
       return this._getRowForNode(aNode, true);
@@ -1124,7 +1124,7 @@ PlacesTreeView.prototype = {
     return Ci.nsINavHistoryResultTreeViewer.INDEX_INVISIBLE;
   },
 
-  _getResourceForNode: function (aNode)
+  _getResourceForNode: function(aNode)
   {
     let uri = aNode.uri;
     NS_ASSERT(uri, "if there is no uri, we can't persist the open state");
@@ -1139,7 +1139,7 @@ PlacesTreeView.prototype = {
   getRowProperties: function() { return ""; },
 
   getCellProperties:
-  function (aRow, aColumn) {
+  function(aRow, aColumn) {
     // for anonid-trees, we need to add the column-type manually
     var props = "";
     let columnType = aColumn.element.getAttribute("anonid");
@@ -1220,7 +1220,7 @@ PlacesTreeView.prototype = {
 
   getColumnProperties: function(aColumn) { return ""; },
 
-  isContainer: function (aRow) {
+  isContainer: function(aRow) {
     // Only leaf nodes aren't listed in the rows array.
     let node = this._rows[aRow];
     if (node === undefined)
@@ -1245,7 +1245,7 @@ PlacesTreeView.prototype = {
     return false;
   },
 
-  isContainerOpen: function (aRow) {
+  isContainerOpen: function(aRow) {
     if (this._flatList)
       return false;
 
@@ -1253,7 +1253,7 @@ PlacesTreeView.prototype = {
     return this._rows[aRow].containerOpen;
   },
 
-  isContainerEmpty: function (aRow) {
+  isContainerEmpty: function(aRow) {
     if (this._flatList)
       return true;
 
@@ -1267,18 +1267,18 @@ PlacesTreeView.prototype = {
     return !node.hasChildren;
   },
 
-  isSeparator: function (aRow) {
+  isSeparator: function(aRow) {
     // All separators are listed in the rows array.
     let node = this._rows[aRow];
     return node && PlacesUtils.nodeIsSeparator(node);
   },
 
-  isSorted: function () {
+  isSorted: function() {
     return this._result.sortingMode !=
            Ci.nsINavHistoryQueryOptions.SORT_BY_NONE;
   },
 
-  canDrop: function (aRow, aOrientation, aDataTransfer) {
+  canDrop: function(aRow, aOrientation, aDataTransfer) {
     if (!this._result)
       throw Cr.NS_ERROR_UNEXPECTED;
 
@@ -1290,7 +1290,7 @@ PlacesTreeView.prototype = {
     return ip && PlacesControllerDragHelper.canDrop(ip, aDataTransfer);
   },
 
-  _getInsertionPoint: function (index, orientation) {
+  _getInsertionPoint: function(index, orientation) {
     let container = this._result.root;
     let dropNearItemId = -1;
     // When there's no selection, assume the container is the container
@@ -1361,7 +1361,7 @@ PlacesTreeView.prototype = {
                               dropNearItemId);
   },
 
-  drop: function (aRow, aOrientation, aDataTransfer) {
+  drop: function(aRow, aOrientation, aDataTransfer) {
     // We are responsible for translating the |index| and |orientation|
     // parameters into a container id and index within the container,
     // since this information is specific to the tree view.
@@ -1372,12 +1372,12 @@ PlacesTreeView.prototype = {
     PlacesControllerDragHelper.currentDropTarget = null;
   },
 
-  getParentIndex: function (aRow) {
+  getParentIndex: function(aRow) {
     let [parentNode, parentRow] = this._getParentByChildRow(aRow);
     return parentRow;
   },
 
-  hasNextSibling: function (aRow, aAfterIndex) {
+  hasNextSibling: function(aRow, aAfterIndex) {
     if (aRow == this._rows.length - 1) {
       // The last row has no sibling.
       return false;
@@ -1407,7 +1407,7 @@ PlacesTreeView.prototype = {
 
   getLevel: function(aRow) this._getNodeForRow(aRow).indentLevel,
 
-  getImageSrc: function (aRow, aColumn) {
+  getImageSrc: function(aRow, aColumn) {
     // Only the title column has an image.
     if (this._getColumnType(aColumn) != this.COLUMN_TYPE_TITLE)
       return "";
@@ -1418,7 +1418,7 @@ PlacesTreeView.prototype = {
   getProgressMode: function(aRow, aColumn) { },
   getCellValue: function(aRow, aColumn) { },
 
-  getCellText: function (aRow, aColumn) {
+  getCellText: function(aRow, aColumn) {
     let node = this._getNodeForRow(aRow);
     switch (this._getColumnType(aColumn)) {
       case this.COLUMN_TYPE_TITLE:
@@ -1515,7 +1515,7 @@ PlacesTreeView.prototype = {
     return "";
   },
 
-  setTree: function (aTree) {
+  setTree: function(aTree) {
     // If we are replacing the tree during a batch, there is a concrete risk
     // that the treeView goes out of sync, thus it's safer to end the batch now.
     // This is a no-op if we are not batching.
@@ -1538,7 +1538,7 @@ PlacesTreeView.prototype = {
     }
   },
 
-  toggleOpenState: function (aRow) {
+  toggleOpenState: function(aRow) {
     if (!this._result)
       throw Cr.NS_ERROR_UNEXPECTED;
 
@@ -1565,7 +1565,7 @@ PlacesTreeView.prototype = {
     node.containerOpen = !node.containerOpen;
   },
 
-  cycleHeader: function (aColumn) {
+  cycleHeader: function(aColumn) {
     if (!this._result)
       throw Cr.NS_ERROR_UNEXPECTED;
 
@@ -1697,7 +1697,7 @@ PlacesTreeView.prototype = {
     this._result.sortingMode = newSort;
   },
 
-  isEditable: function (aRow, aColumn) {
+  isEditable: function(aRow, aColumn) {
     // At this point we only support editing the title field.
     if (aColumn.index != 0)
       return false;
@@ -1740,7 +1740,7 @@ PlacesTreeView.prototype = {
     return true;
   },
 
-  setCellText: function (aRow, aColumn, aText) {
+  setCellText: function(aRow, aColumn, aText) {
     // We may only get here if the cell is editable.
     let node = this._rows[aRow];
     if (node.title != aText) {
@@ -1749,7 +1749,7 @@ PlacesTreeView.prototype = {
     }
   },
 
-  toggleCutNode: function (aNode, aValue) {
+  toggleCutNode: function(aNode, aValue) {
     let currentVal = this._cuttingNodes.has(aNode);
     if (currentVal != aValue) {
       if (aValue)

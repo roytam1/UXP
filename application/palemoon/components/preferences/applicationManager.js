@@ -10,7 +10,7 @@ var Ci = Components.interfaces;
 var gAppManagerDialog = {
   _removed: [],
 
-  init: function () {
+  init: function() {
     this.handlerInfo = window.arguments[0];
 
     var bundle = document.getElementById("appManagerBundle");
@@ -44,7 +44,7 @@ var gAppManagerDialog = {
     list.selectedIndex = 0;
   },
 
-  onOK: function () {
+  onOK: function() {
     if (!this._removed.length) {
       // return early to avoid calling the |store| method.
       return;
@@ -56,11 +56,11 @@ var gAppManagerDialog = {
     this.handlerInfo.store();
   },
 
-  onCancel: function () {
+  onCancel: function() {
     // do nothing
   },
 
-  remove: function () {
+  remove: function() {
     var list = document.getElementById("appList");
     this._removed.push(list.selectedItem.app);
     var index = list.selectedIndex;
@@ -78,7 +78,7 @@ var gAppManagerDialog = {
     }
   },
 
-  onSelect: function () {
+  onSelect: function() {
     var list = document.getElementById("appList");
     if (!list.selectedItem) {
       document.getElementById("remove").disabled = true;

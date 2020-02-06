@@ -78,7 +78,7 @@ Notification.prototype = {
   /**
    * Removes the notification and updates the popup accordingly if needed.
    */
-  remove: function () {
+  remove: function() {
     this.owner.remove(this);
   },
 
@@ -178,7 +178,7 @@ PopupNotifications.prototype = {
    * @returns the corresponding Notification object, or null if no such
    *          notification exists.
    */
-  getNotification: function (id, browser) {
+  getNotification: function(id, browser) {
     let n = null;
     let notifications = this._getNotificationsForBrowser(browser || this.tabbrowser.selectedBrowser);
     notifications.some(function(x) x.id == id && (n = x));
@@ -292,7 +292,7 @@ PopupNotifications.prototype = {
    *                     opens the URL in a new tab.
    * @returns the Notification object corresponding to the added notification.
    */
-  show: function (browser, id, message, anchorID,
+  show: function(browser, id, message, anchorID,
                                          mainAction, secondaryActions, options) {
     function isInvalidAction(a) {
       return !a || !(typeof(a.callback) == "function") || !a.label || !a.accessKey;
@@ -362,13 +362,13 @@ PopupNotifications.prototype = {
    * Called by the consumer to indicate that a browser's location has changed,
    * so that we can update the active notifications accordingly.
    */
-  locationChange: function (aBrowser) {
+  locationChange: function(aBrowser) {
     if (!aBrowser)
       throw "PopupNotifications_locationChange: invalid browser";
 
     let notifications = this._getNotificationsForBrowser(aBrowser);
 
-    notifications = notifications.filter(function (notification) {
+    notifications = notifications.filter(function(notification) {
       // The persistWhileVisible option allows an open notification to persist
       // across location changes
       if (notification.options.persistWhileVisible &&
@@ -415,7 +415,7 @@ PopupNotifications.prototype = {
    * @param notification
    *        The Notification object to remove.
    */
-  remove: function (notification) {
+  remove: function(notification) {
     this._remove(notification);
     
     if (notification.browser.docShell.isActive) {
@@ -424,7 +424,7 @@ PopupNotifications.prototype = {
     }
   },
 
-  handleEvent: function (aEvent) {
+  handleEvent: function(aEvent) {
     switch (aEvent.type) {
       case "popuphidden":
         this._onPopupHidden(aEvent);
@@ -434,7 +434,7 @@ PopupNotifications.prototype = {
         let self = this;
         // setTimeout(..., 0) needed, otherwise openPopup from "activate" event
         // handler results in the popup being hidden again for some reason...
-        this.window.setTimeout(function () {
+        this.window.setTimeout(function() {
           self._update();
         }, 0);
         break;
@@ -459,7 +459,7 @@ PopupNotifications.prototype = {
     return this.tabbrowser.selectedBrowser ? this._getNotificationsForBrowser(this.tabbrowser.selectedBrowser) : [];
   },
 
-  _remove: function (notification) {
+  _remove: function(notification) {
     // This notification may already be removed, in which case let's just fail
     // silently.
     let notifications = this._getNotificationsForBrowser(notification.browser);
@@ -481,7 +481,7 @@ PopupNotifications.prototype = {
   /**
    * Dismisses the notification without removing it.
    */
-  _dismiss: function () {
+  _dismiss: function() {
     let browser = this.panel.firstChild &&
                   this.panel.firstChild.notification.browser;
     if (typeof this.panel.hidePopup === "function") {
@@ -494,7 +494,7 @@ PopupNotifications.prototype = {
   /**
    * Hides the notification popup.
    */
-  _hidePanel: function () {
+  _hidePanel: function() {
     this._ignoreDismissal = true;
     if (typeof this.panel.hidePopup === "function") {
       this.panel.hidePopup();
@@ -505,7 +505,7 @@ PopupNotifications.prototype = {
   /**
    * Removes all notifications from the notification popup.
    */
-  _clearPanel: function () {
+  _clearPanel: function() {
     let popupnotification;
     while ((popupnotification = this.panel.lastChild)) {
       this.panel.removeChild(popupnotification);
@@ -536,12 +536,12 @@ PopupNotifications.prototype = {
     }
   },
 
-  _refreshPanel: function (notificationsToShow) {
+  _refreshPanel: function(notificationsToShow) {
     this._clearPanel();
 
     const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
-    notificationsToShow.forEach(function (n) {
+    notificationsToShow.forEach(function(n) {
       let doc = this.window.document;
 
       // Append "-notification" to the ID to try to avoid ID conflicts with other stuff
@@ -584,7 +584,7 @@ PopupNotifications.prototype = {
       popupnotification.notification = n;
 
       if (n.secondaryActions) {
-        n.secondaryActions.forEach(function (a) {
+        n.secondaryActions.forEach(function(a) {
           let item = doc.createElementNS(XUL_NS, "menuitem");
           item.setAttribute("label", a.label);
           item.setAttribute("accesskey", a.accessKey);
@@ -653,10 +653,10 @@ PopupNotifications.prototype = {
     }
   },
 
-  _showPanel: function (notificationsToShow, anchorElement) {
+  _showPanel: function(notificationsToShow, anchorElement) {
     this.panel.hidden = false;
 
-    notificationsToShow.forEach(function (n) {
+    notificationsToShow.forEach(function(n) {
       this._fireCallback(n, NOTIFICATION_EVENT_SHOWING);
     }, this);
     this._refreshPanel(notificationsToShow);
@@ -686,12 +686,12 @@ PopupNotifications.prototype = {
     // On OS X and Linux we need a different panel arrow color for
     // click-to-play plugins, so copy the popupid and use css.
     this.panel.setAttribute("popupid", this.panel.firstChild.getAttribute("popupid"));
-    notificationsToShow.forEach(function (n) {
+    notificationsToShow.forEach(function(n) {
       // Remember the time the notification was shown for the security delay.
       n.timeShown = this.window.performance.now();
     }, this);
     this.panel.openPopup(anchorElement, "bottomcenter topleft");
-    notificationsToShow.forEach(function (n) {
+    notificationsToShow.forEach(function(n) {
       this._fireCallback(n, NOTIFICATION_EVENT_SHOWN);
     }, this);
   },
@@ -709,7 +709,7 @@ PopupNotifications.prototype = {
    *                       if there are no notifications to show. Otherwise,
    *                       currently displayed notifications will be left alone.
    */
-  _update: function (notifications, anchor, dismissShowing = false) {
+  _update: function(notifications, anchor, dismissShowing = false) {
     let useIconBox = this.iconBox && (!anchor || anchor.parentNode == this.iconBox);
     if (useIconBox) {
       // hide icons of the previous tab.
@@ -747,7 +747,7 @@ PopupNotifications.prototype = {
       }
 
       // Also filter out notifications that have been dismissed.
-      notificationsToShow = notifications.filter(function (n) {
+      notificationsToShow = notifications.filter(function(n) {
         return !n.dismissed && n.anchorElement == anchorElement &&
                !n.options.neverShow;
       });
@@ -777,7 +777,7 @@ PopupNotifications.prototype = {
     }
   },
 
-  _showIcons: function (aCurrentNotifications) {
+  _showIcons: function(aCurrentNotifications) {
     for (let notification of aCurrentNotifications) {
       let anchorElm = notification.anchorElement;
       if (anchorElm) {
@@ -786,7 +786,7 @@ PopupNotifications.prototype = {
     }
   },
 
-  _hideIcons: function () {
+  _hideIcons: function() {
     let icons = this.iconBox.querySelectorAll(ICON_SELECTOR);
     for (let icon of icons) {
       icon.removeAttribute(ICON_ATTRIBUTE_SHOWING);
@@ -796,7 +796,7 @@ PopupNotifications.prototype = {
   /**
    * Gets and sets notifications for the browser.
    */
-  _getNotificationsForBrowser: function (browser) {
+  _getNotificationsForBrowser: function(browser) {
     let notifications = popupNotificationsMap.get(browser);
     if (!notifications) {
       // Initialize the WeakMap for the browser so callers can reference/manipulate the array.
@@ -805,12 +805,12 @@ PopupNotifications.prototype = {
     }
     return notifications;
   },
-  _setNotificationsForBrowser: function (browser, notifications) {
+  _setNotificationsForBrowser: function(browser, notifications) {
     popupNotificationsMap.set(browser, notifications);
     return notifications;
   },
 
-  _onIconBoxCommand: function (event) {
+  _onIconBoxCommand: function(event) {
     // Left click, space or enter only
     let type = event.type;
     if (type == "click" && event.button != 0)
@@ -832,10 +832,10 @@ PopupNotifications.prototype = {
     this._reshowNotifications(anchor);
   },
 
-  _reshowNotifications: function (anchor, browser) {
+  _reshowNotifications: function(anchor, browser) {
     // Mark notifications anchored to this anchor as un-dismissed
     let notifications = this._getNotificationsForBrowser(browser || this.tabbrowser.selectedBrowser);
-    notifications.forEach(function (n) {
+    notifications.forEach(function(n) {
       if (n.anchorElement == anchor)
         n.dismissed = false;
     });
@@ -844,7 +844,7 @@ PopupNotifications.prototype = {
     this._update(notifications, anchor);
   },
 
-  _swapBrowserNotifications: function (ourBrowser, otherBrowser) {
+  _swapBrowserNotifications: function(ourBrowser, otherBrowser) {
     // When swaping browser docshells (e.g. dragging tab to new window) we need
     // to update our notification map.
 
@@ -890,7 +890,7 @@ PopupNotifications.prototype = {
       other._update(ourNotifications, ourNotifications[0].anchorElement);
   },
 
-  _fireCallback: function (n, event, ...args) {
+  _fireCallback: function(n, event, ...args) {
     try {
       if (n.options.eventCallback)
         return n.options.eventCallback.call(n, event, ...args);
@@ -900,7 +900,7 @@ PopupNotifications.prototype = {
     return undefined;
   },
 
-  _onPopupHidden: function (event) {
+  _onPopupHidden: function(event) {
     if (event.target != this.panel || this._ignoreDismissal)
       return;
 
@@ -911,7 +911,7 @@ PopupNotifications.prototype = {
 
     let notifications = this._getNotificationsForBrowser(browser);
     // Mark notifications as dismissed and call dismissal callbacks
-    Array.forEach(this.panel.childNodes, function (nEl) {
+    Array.forEach(this.panel.childNodes, function(nEl) {
       let notificationObj = nEl.notification;
       // Never call a dismissal handler on a notification that's been removed.
       if (notifications.indexOf(notificationObj) == -1)
@@ -932,7 +932,7 @@ PopupNotifications.prototype = {
     this._update();
   },
 
-  _onButtonCommand: function (event) {
+  _onButtonCommand: function(event) {
     let notificationEl = getNotificationFromElement(event.originalTarget);
 
     if (!notificationEl)
@@ -968,7 +968,7 @@ PopupNotifications.prototype = {
     this._update();
   },
 
-  _onMenuCommand: function (event) {
+  _onMenuCommand: function(event) {
     let target = event.originalTarget;
     if (!target.action || !target.notification)
       throw "menucommand target has no associated action/notification";
@@ -988,7 +988,7 @@ PopupNotifications.prototype = {
     this._update();
   },
 
-  _notify: function (topic) {
+  _notify: function(topic) {
     Services.obs.notifyObservers(null, "PopupNotifications-" + topic, "");
   },
 };

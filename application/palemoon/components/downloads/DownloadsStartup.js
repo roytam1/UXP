@@ -82,7 +82,7 @@ DownloadsStartup.prototype = {
   //////////////////////////////////////////////////////////////////////////////
   //// nsIObserver
 
-  observe: function (aSubject, aTopic, aData)
+  observe: function(aSubject, aTopic, aData)
   {
     switch (aTopic) {
       case "profile-after-change":
@@ -259,7 +259,7 @@ DownloadsStartup.prototype = {
   /**
    * Ensures that persistent download data is reloaded at the appropriate time.
    */
-  _ensureDataLoaded: function ()
+  _ensureDataLoaded: function()
   {
     if (!this._downloadsServiceInitialized) {
       return;

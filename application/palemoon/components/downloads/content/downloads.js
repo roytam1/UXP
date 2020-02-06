@@ -122,7 +122,7 @@ const DownloadsPanel = {
    * @param aCallback
    *        Called when initialization is complete.
    */
-  initialize: function (aCallback)
+  initialize: function(aCallback)
   {
     DownloadsCommon.log("Attempting to initialize DownloadsPanel for a window.");
     if (this._state != this.kStateUninitialized) {
@@ -164,7 +164,7 @@ const DownloadsPanel = {
    * downloads.  The downloads panel can be reopened later, even after this
    * function has been called.
    */
-  terminate: function ()
+  terminate: function()
   {
     DownloadsCommon.log("Attempting to terminate DownloadsPanel for a window.");
     if (this._state == this.kStateUninitialized) {
@@ -214,7 +214,7 @@ const DownloadsPanel = {
    * initialized the first time this method is called, and the panel is shown
    * only when data is ready.
    */
-  showPanel: function ()
+  showPanel: function()
   {
     DownloadsCommon.log("Opening the downloads panel.");
 
@@ -229,7 +229,7 @@ const DownloadsPanel = {
       // called while another window is closing (like the window for selecting
       // whether to save or open the file), and that would cause the panel to
       // close immediately.
-      setTimeout(function () DownloadsPanel._openPopupIfDataReady(), 0);
+      setTimeout(function() DownloadsPanel._openPopupIfDataReady(), 0);
     }.bind(this));
 
     DownloadsCommon.log("Waiting for the downloads panel to appear.");
@@ -240,7 +240,7 @@ const DownloadsPanel = {
    * Hides the downloads panel, if visible, but keeps the internal state so that
    * the panel can be reopened quickly if required.
    */
-  hidePanel: function ()
+  hidePanel: function()
   {
     DownloadsCommon.log("Closing the downloads panel.");
 
@@ -297,7 +297,7 @@ const DownloadsPanel = {
    * Handles the mousemove event for the panel, which disables focusring
    * visualization.
    */
-  handleEvent: function (aEvent)
+  handleEvent: function(aEvent)
   {
     if (aEvent.type == "mousemove") {
       this.keyFocusing = false;
@@ -310,7 +310,7 @@ const DownloadsPanel = {
   /**
    * Called after data loading finished.
    */
-  onViewLoadCompleted: function ()
+  onViewLoadCompleted: function()
   {
     this._openPopupIfDataReady();
   },
@@ -318,13 +318,13 @@ const DownloadsPanel = {
   //////////////////////////////////////////////////////////////////////////////
   //// User interface event functions
 
-  onWindowUnload: function ()
+  onWindowUnload: function()
   {
     // This function is registered as an event listener, we can't use "this".
     DownloadsPanel.terminate();
   },
 
-  onPopupShown: function (aEvent)
+  onPopupShown: function(aEvent)
   {
     // Ignore events raised by nested popups.
     if (aEvent.target != aEvent.currentTarget) {
@@ -346,7 +346,7 @@ const DownloadsPanel = {
     this._focusPanel();
   },
 
-  onPopupHidden: function (aEvent)
+  onPopupHidden: function(aEvent)
   {
     // Ignore events raised by nested popups.
     if (aEvent.target != aEvent.currentTarget) {
@@ -375,7 +375,7 @@ const DownloadsPanel = {
   /**
    * Shows or focuses the user interface dedicated to downloads history.
    */
-  showDownloadsHistory: function ()
+  showDownloadsHistory: function()
   {
     DownloadsCommon.log("Showing download history.");
     // Hide the panel before showing another window, otherwise focus will return
@@ -393,7 +393,7 @@ const DownloadsPanel = {
    * removed in _unattachEventListeners. This is called automatically after the
    * panel has successfully loaded.
    */
-  _attachEventListeners: function ()
+  _attachEventListeners: function()
   {
     // Handle keydown to support accel-V.
     this.panel.addEventListener("keydown", this._onKeyDown.bind(this), false);
@@ -406,7 +406,7 @@ const DownloadsPanel = {
    * Unattach event listeners that were added in _attachEventListeners. This
    * is called automatically on panel termination.
    */
-  _unattachEventListeners: function ()
+  _unattachEventListeners: function()
   {
     this.panel.removeEventListener("keydown", this._onKeyDown.bind(this),
                                    false);
@@ -414,7 +414,7 @@ const DownloadsPanel = {
                                    false);
   },
 
-  _onKeyPress: function (aEvent)
+  _onKeyPress: function(aEvent)
   {
     // Handle unmodified keys only.
     if (aEvent.altKey || aEvent.ctrlKey || aEvent.shiftKey || aEvent.metaKey) {
@@ -462,7 +462,7 @@ const DownloadsPanel = {
    * as the the accel-V "paste" event, which initiates a file download if the
    * pasted item can be resolved to a URI.
    */
-  _onKeyDown: function (aEvent)
+  _onKeyDown: function(aEvent)
   {
     // If the footer is focused and the downloads list has at least 1 element
     // in it, focus the last element in the list when going up.
@@ -516,7 +516,7 @@ const DownloadsPanel = {
    * Move focus to the main element in the downloads panel, unless another
    * element in the panel is already focused.
    */
-  _focusPanel: function ()
+  _focusPanel: function()
   {
     // We may be invoked while the panel is still waiting to be shown.
     if (this._state != this.kStateShown) {
@@ -539,7 +539,7 @@ const DownloadsPanel = {
   /**
    * Opens the downloads panel when data is ready to be displayed.
    */
-  _openPopupIfDataReady: function ()
+  _openPopupIfDataReady: function()
   {
     // We don't want to open the popup if we already displayed it, or if we are
     // still loading data.
@@ -627,7 +627,7 @@ const DownloadsOverlayLoader = {
    *        Invoked when loading is completed.  If the overlay is already
    *        loaded, the function is called immediately.
    */
-  ensureOverlayLoaded: function (aOverlay, aCallback)
+  ensureOverlayLoaded: function(aOverlay, aCallback)
   {
     // The overlay is already loaded, invoke the callback immediately.
     if (aOverlay in this._loadedOverlays) {
@@ -663,7 +663,7 @@ const DownloadsOverlayLoader = {
    * and/or loading more overlays as needed.  In most cases, there will be a
    * single request for one overlay, that will be processed immediately.
    */
-  processPendingRequests: function ()
+  processPendingRequests: function()
   {
     // Re-process all the currently pending requests, yet allow more requests
     // to be appended at the end of the array if we're not ready for them.
@@ -721,7 +721,7 @@ const DownloadsView = {
   /**
    * Called when the number of items in the list changes.
    */
-  _itemCountChanged: function ()
+  _itemCountChanged: function()
   {
     DownloadsCommon.log("The downloads item count has changed - we are tracking",
                         this._downloads.length, "downloads in total.");
@@ -766,7 +766,7 @@ const DownloadsView = {
   /**
    * Called before multiple downloads are about to be loaded.
    */
-  onDataLoadStarting: function ()
+  onDataLoadStarting: function()
   {
     DownloadsCommon.log("onDataLoadStarting called for DownloadsView.");
     this.loading = true;
@@ -775,7 +775,7 @@ const DownloadsView = {
   /**
    * Called after data loading finished.
    */
-  onDataLoadCompleted: function ()
+  onDataLoadCompleted: function()
   {
     DownloadsCommon.log("onDataLoadCompleted called for DownloadsView.");
 
@@ -795,7 +795,7 @@ const DownloadsView = {
    * entering Private Browsing Mode).  References to existing data should be
    * discarded.
    */
-  onDataInvalidated: function ()
+  onDataInvalidated: function()
   {
     DownloadsCommon.log("Downloads data has been invalidated. Cleaning up",
                         "DownloadsView.");
@@ -952,7 +952,7 @@ const DownloadsView = {
    * @param aCommand
    *        The command to be performed.
    */
-  onDownloadCommand: function (aEvent, aCommand)
+  onDownloadCommand: function(aEvent, aCommand)
   {
     let target = aEvent.target;
     while (target.nodeName != "richlistitem") {
@@ -961,7 +961,7 @@ const DownloadsView = {
     DownloadsView.controllerForElement(target).doCommand(aCommand);
   },
 
-  onDownloadClick: function (aEvent)
+  onDownloadClick: function(aEvent)
   {
     // Handle primary clicks only, and exclude the action button.
     if (aEvent.button == 0 &&
@@ -973,7 +973,7 @@ const DownloadsView = {
   /**
    * Handles keypress events on a download item.
    */
-  onDownloadKeyPress: function (aEvent)
+  onDownloadKeyPress: function(aEvent)
   {
     // Pressing the key on buttons should not invoke the action because the
     // event has already been handled by the button itself.
@@ -997,12 +997,12 @@ const DownloadsView = {
   /**
    * Mouse listeners to handle selection on hover.
    */
-  onDownloadMouseOver: function (aEvent)
+  onDownloadMouseOver: function(aEvent)
   {
     if (aEvent.originalTarget.parentNode == this.richListBox)
       this.richListBox.selectedItem = aEvent.originalTarget;
   },
-  onDownloadMouseOut: function (aEvent)
+  onDownloadMouseOut: function(aEvent)
   {
     if (aEvent.originalTarget.parentNode == this.richListBox) {
       // If the destination element is outside of the richlistitem, clear the
@@ -1016,7 +1016,7 @@ const DownloadsView = {
     }
   },
 
-  onDownloadContextMenu: function (aEvent)
+  onDownloadContextMenu: function(aEvent)
   {
     let element = this.richListBox.selectedItem;
     if (!element) {
@@ -1030,7 +1030,7 @@ const DownloadsView = {
     contextMenu.setAttribute("state", element.getAttribute("state"));
   },
 
-  onDownloadDragStart: function (aEvent)
+  onDownloadDragStart: function(aEvent)
   {
     let element = this.richListBox.selectedItem;
     if (!element) {
@@ -1113,12 +1113,12 @@ const DownloadsViewController = {
   //////////////////////////////////////////////////////////////////////////////
   //// Initialization and termination
 
-  initialize: function ()
+  initialize: function()
   {
     window.controllers.insertControllerAt(0, this);
   },
 
-  terminate: function ()
+  terminate: function()
   {
     window.controllers.removeController(this);
   },
@@ -1126,7 +1126,7 @@ const DownloadsViewController = {
   //////////////////////////////////////////////////////////////////////////////
   //// nsIController
 
-  supportsCommand: function (aCommand)
+  supportsCommand: function(aCommand)
   {
     // Firstly, determine if this is a command that we can handle.
     if (!(aCommand in this.commands) &&
@@ -1143,7 +1143,7 @@ const DownloadsViewController = {
     return !!element;
   },
 
-  isCommandEnabled: function (aCommand)
+  isCommandEnabled: function(aCommand)
   {
     // Handle commands that are not selection-specific.
     if (aCommand == "downloadsCmd_clearList") {
@@ -1156,7 +1156,7 @@ const DownloadsViewController = {
                                    .isCommandEnabled(aCommand);
   },
 
-  doCommand: function (aCommand)
+  doCommand: function(aCommand)
   {
     // If this command is not selection-specific, execute it.
     if (aCommand in this.commands) {
@@ -1172,12 +1172,12 @@ const DownloadsViewController = {
     }
   },
 
-  onEvent: function () { },
+  onEvent: function() { },
 
   //////////////////////////////////////////////////////////////////////////////
   //// Other functions
 
-  updateCommands: function ()
+  updateCommands: function()
   {
     Object.keys(this.commands).forEach(goUpdateCommand);
     Object.keys(DownloadsViewItemController.prototype.commands)
@@ -1192,7 +1192,7 @@ const DownloadsViewController = {
    * the currently selected item in the list.
    */
   commands: {
-    downloadsCmd_clearList: function ()
+    downloadsCmd_clearList: function()
     {
       DownloadsCommon.getData(window).removeFinished();
     }
@@ -1213,7 +1213,7 @@ function DownloadsViewItemController(download) {
 }
 
 DownloadsViewItemController.prototype = {
-  isCommandEnabled: function (aCommand)
+  isCommandEnabled: function(aCommand)
   {
     switch (aCommand) {
       case "downloadsCmd_open": {
@@ -1252,7 +1252,7 @@ DownloadsViewItemController.prototype = {
     return false;
   },
 
-  doCommand: function (aCommand)
+  doCommand: function(aCommand)
   {
     if (this.isCommandEnabled(aCommand)) {
       this.commands[aCommand].apply(this);
@@ -1268,20 +1268,20 @@ DownloadsViewItemController.prototype = {
    * In commands, the "this" identifier points to the controller item.
    */
   commands: {
-    cmd_delete: function ()
+    cmd_delete: function()
     {
       DownloadsCommon.removeAndFinalizeDownload(this.download);
       PlacesUtils.bhistory.removePage(
                              NetUtil.newURI(this.download.source.url));
     },
 
-    downloadsCmd_cancel: function ()
+    downloadsCmd_cancel: function()
     {
       this.download.cancel().catch(() => {});
       this.download.removePartialData().catch(Cu.reportError);
     },
 
-    downloadsCmd_open: function ()
+    downloadsCmd_open: function()
     {
       this.download.launch().catch(Cu.reportError);
 
@@ -1293,7 +1293,7 @@ DownloadsViewItemController.prototype = {
       DownloadsPanel.hidePanel();
     },
 
-    downloadsCmd_show: function ()
+    downloadsCmd_show: function()
     {
       let file = new FileUtils.File(this.download.target.path);
       DownloadsCommon.showDownloadedFile(file);
@@ -1306,7 +1306,7 @@ DownloadsViewItemController.prototype = {
       DownloadsPanel.hidePanel();
     },
 
-    downloadsCmd_pauseResume: function ()
+    downloadsCmd_pauseResume: function()
     {
       if (this.download.stopped) {
         this.download.start();
@@ -1315,29 +1315,29 @@ DownloadsViewItemController.prototype = {
       }
     },
 
-    downloadsCmd_retry: function ()
+    downloadsCmd_retry: function()
     {
       this.download.start().catch(() => {});
     },
 
-    downloadsCmd_openReferrer: function ()
+    downloadsCmd_openReferrer: function()
     {
       openURL(this.download.source.referrer);
     },
 
-    downloadsCmd_copyLocation: function ()
+    downloadsCmd_copyLocation: function()
     {
       let clipboard = Cc["@mozilla.org/widget/clipboardhelper;1"]
                       .getService(Ci.nsIClipboardHelper);
       clipboard.copyString(this.download.source.url, document);
     },
 
-    downloadsCmd_doDefault: function ()
+    downloadsCmd_doDefault: function()
     {
       const nsIDM = Ci.nsIDownloadManager;
 
       // Determine the default command for the current item.
-      let defaultCommand = function () {
+      let defaultCommand = function() {
         switch (DownloadsCommon.stateOfDownload(this.download)) {
           case nsIDM.DOWNLOAD_NOTSTARTED:       return "downloadsCmd_cancel";
           case nsIDM.DOWNLOAD_FINISHED:         return "downloadsCmd_open";
@@ -1478,7 +1478,7 @@ const DownloadsSummary = {
    * @param aEvent
    *        The keydown event being handled.
    */
-  onKeyDown: function (aEvent)
+  onKeyDown: function(aEvent)
   {
     if (aEvent.charCode == " ".charCodeAt(0) ||
         aEvent.keyCode == KeyEvent.DOM_VK_ENTER ||
@@ -1493,7 +1493,7 @@ const DownloadsSummary = {
    * @param aEvent
    *        The click event being handled.
    */
-  onClick: function (aEvent)
+  onClick: function(aEvent)
   {
     DownloadsPanel.showDownloadsHistory();
   },
@@ -1569,7 +1569,7 @@ const DownloadsFooter = {
    * is visible, focus it. If not, focus the "Show All Downloads"
    * button.
    */
-  focus: function ()
+  focus: function()
   {
     if (this._showingSummary) {
       DownloadsSummary.focus();

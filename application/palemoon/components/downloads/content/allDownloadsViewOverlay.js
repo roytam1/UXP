@@ -213,7 +213,7 @@ HistoryDownloadElementShell.prototype = {
    * be activated when entering the visible area.  Session downloads are always
    * active.
    */
-  ensureActive: function () {
+  ensureActive: function() {
     if (!this._active) {
       this._active = true;
       this.element.setAttribute("active", true);
@@ -305,7 +305,7 @@ HistoryDownloadElementShell.prototype = {
   },
 
   /* nsIController */
-  isCommandEnabled: function (aCommand) {
+  isCommandEnabled: function(aCommand) {
     // The only valid command for inactive elements is cmd_delete.
     if (!this.active && aCommand != "cmd_delete")
       return false;
@@ -340,7 +340,7 @@ HistoryDownloadElementShell.prototype = {
   },
 
   /* nsIController */
-  doCommand: function (aCommand) {
+  doCommand: function(aCommand) {
     switch (aCommand) {
       case "downloadsCmd_open": {
         let file = new FileUtils.File(this.download.target.path);
@@ -391,7 +391,7 @@ HistoryDownloadElementShell.prototype = {
   // Returns whether or not the download handled by this shell should
   // show up in the search results for the given term.  Both the display
   // name for the download and the url are searched.
-  matchesSearchTerm: function (aTerm) {
+  matchesSearchTerm: function(aTerm) {
     if (!aTerm)
       return true;
     aTerm = aTerm.toLowerCase();
@@ -401,7 +401,7 @@ HistoryDownloadElementShell.prototype = {
 
   // Handles return keypress on the element (the keypress listener is
   // set in the DownloadsPlacesView object).
-  doDefaultCommand: function () {
+  doDefaultCommand: function() {
     function getDefaultCommandForState(aState) {
       switch (aState) {
         case nsIDM.DOWNLOAD_FINISHED:
@@ -435,7 +435,7 @@ HistoryDownloadElementShell.prototype = {
    * existence of the target file already, we can do it now and then update
    * the commands as needed.
    */
-  onSelect: function () {
+  onSelect: function() {
     if (!this.active)
       return;
 
@@ -775,7 +775,7 @@ DownloadsPlacesView.prototype = {
     }
   },
 
-  _removeElement: function (aElement) {
+  _removeElement: function(aElement) {
     // If the element was selected exclusively, select its next
     // sibling first, if not, try for previous sibling, if any.
     if ((aElement.nextSibling || aElement.previousSibling) &&
@@ -796,7 +796,7 @@ DownloadsPlacesView.prototype = {
   },
 
   _removeHistoryDownloadFromView:
-  function (aPlacesNode) {
+  function(aPlacesNode) {
     let downloadURI = aPlacesNode.uri;
     let shellsForURI = this._downloadElementsShellsForURI.get(downloadURI);
     if (shellsForURI) {
@@ -857,7 +857,7 @@ DownloadsPlacesView.prototype = {
   },
 
   _ensureVisibleElementsAreActive:
-  function () {
+  function() {
     if (!this.active || this._ensureVisibleTimer || !this._richlistbox.firstChild)
       return;
 
@@ -964,12 +964,12 @@ DownloadsPlacesView.prototype = {
   get hasSelection() this.selectedNodes.length > 0,
 
   containerStateChanged:
-  function (aNode, aOldState, aNewState) {
+  function(aNode, aOldState, aNewState) {
     this.invalidateContainer(aNode)
   },
 
   invalidateContainer:
-  function (aContainer) {
+  function(aContainer) {
     if (aContainer != this._resultNode)
       throw new Error("Unexpected container node");
     if (!aContainer.containerOpen)
@@ -1015,7 +1015,7 @@ DownloadsPlacesView.prototype = {
     goUpdateDownloadCommands();
   },
 
-  _appendDownloadsFragment: function (aDOMFragment) {
+  _appendDownloadsFragment: function(aDOMFragment) {
     // Workaround multiple reflows hang by removing the richlistbox
     // and adding it back when we're done.
 
@@ -1037,11 +1037,11 @@ DownloadsPlacesView.prototype = {
     }
   },
 
-  nodeInserted: function (aParent, aPlacesNode) {
+  nodeInserted: function(aParent, aPlacesNode) {
     this._addDownloadData(null, aPlacesNode);
   },
 
-  nodeRemoved: function (aParent, aPlacesNode, aOldIndex) {
+  nodeRemoved: function(aParent, aPlacesNode, aOldIndex) {
     this._removeHistoryDownloadFromView(aPlacesNode);
   },
 
@@ -1086,7 +1086,7 @@ DownloadsPlacesView.prototype = {
    * data is done loading.  However, if the selection has changed in-between,
    * we assume the user has already started using the view and give up.
    */
-  _ensureInitialSelection: function () {
+  _ensureInitialSelection: function() {
     // Either they're both null, or the selection has not changed in between.
     if (this._richlistbox.selectedItem == this._initiallySelectedElement) {
       let firstDownloadElement = this._richlistbox.firstChild;
@@ -1106,7 +1106,7 @@ DownloadsPlacesView.prototype = {
   },
 
   onDataLoadStarting: function() { },
-  onDataLoadCompleted: function () {
+  onDataLoadCompleted: function() {
     this._ensureInitialSelection();
   },
 
@@ -1126,7 +1126,7 @@ DownloadsPlacesView.prototype = {
     this._removeSessionDownloadFromView(download);
   },
 
-  supportsCommand: function (aCommand) {
+  supportsCommand: function(aCommand) {
     if (DOWNLOAD_VIEW_SUPPORTED_COMMANDS.indexOf(aCommand) != -1) {
       // The clear-downloads command may be performed by the toolbar-button,
       // which can be focused on OS X.  Thus enable this command even if the
@@ -1144,7 +1144,7 @@ DownloadsPlacesView.prototype = {
     return false;
   },
 
-  isCommandEnabled: function (aCommand) {
+  isCommandEnabled: function(aCommand) {
     switch (aCommand) {
       case "cmd_copy":
         return this._richlistbox.selectedItems.length > 0;
@@ -1161,7 +1161,7 @@ DownloadsPlacesView.prototype = {
     }
   },
 
-  _canClearDownloads: function () {
+  _canClearDownloads: function() {
     // Downloads can be cleared if there's at least one removable download in
     // the list (either a history download or a completed session download).
     // Because history downloads are always removable and are listed after the
@@ -1177,7 +1177,7 @@ DownloadsPlacesView.prototype = {
   },
 
   _copySelectedDownloadsToClipboard:
-  function () {
+  function() {
     let urls = [for (element of this._richlistbox.selectedItems)
                 element._shell.download.source.url];
 
@@ -1186,7 +1186,7 @@ DownloadsPlacesView.prototype = {
       .copyString(urls.join("\n"), document);
   },
 
-  _getURLFromClipboardData: function () {
+  _getURLFromClipboardData: function() {
     let trans = Cc["@mozilla.org/widget/transferable;1"].
                 createInstance(Ci.nsITransferable);
     trans.init(null);
@@ -1210,19 +1210,19 @@ DownloadsPlacesView.prototype = {
     return ["", ""];
   },
 
-  _canDownloadClipboardURL: function () {
+  _canDownloadClipboardURL: function() {
     let [url, name] = this._getURLFromClipboardData();
     return url != "";
   },
 
-  _downloadURLFromClipboard: function () {
+  _downloadURLFromClipboard: function() {
     let [url, name] = this._getURLFromClipboardData();
     let browserWin = RecentWindow.getMostRecentBrowserWindow();
     let initiatingDoc = browserWin ? browserWin.document : document;
     DownloadURL(url, name, initiatingDoc);
   },
 
-  doCommand: function (aCommand) {
+  doCommand: function(aCommand) {
     // Commands may be invoked with keyboard shortcuts even if disabled.
     if (!this.isCommandEnabled(aCommand)) {
       return;
@@ -1263,7 +1263,7 @@ DownloadsPlacesView.prototype = {
 
   onEvent: function() { },
 
-  onContextMenu: function (aEvent)
+  onContextMenu: function(aEvent)
   {
     let element = this._richlistbox.selectedItem;
     if (!element || !element._shell)
@@ -1283,7 +1283,7 @@ DownloadsPlacesView.prototype = {
     return true;
   },
 
-  onKeyPress: function (aEvent) {
+  onKeyPress: function(aEvent) {
     let selectedElements = this._richlistbox.selectedItems;
     if (aEvent.keyCode == KeyEvent.DOM_VK_RETURN) {
       // In the content tree, opening bookmarks by pressing return is only
@@ -1304,7 +1304,7 @@ DownloadsPlacesView.prototype = {
     }
   },
 
-  onDoubleClick: function (aEvent) {
+  onDoubleClick: function(aEvent) {
     if (aEvent.button != 0)
       return;
 
@@ -1317,11 +1317,11 @@ DownloadsPlacesView.prototype = {
       element._shell.doDefaultCommand();
   },
 
-  onScroll: function () {
+  onScroll: function() {
     this._ensureVisibleElementsAreActive();
   },
 
-  onSelect: function () {
+  onSelect: function() {
     goUpdateDownloadCommands();
 
     let selectedElements = this._richlistbox.selectedItems;
@@ -1331,7 +1331,7 @@ DownloadsPlacesView.prototype = {
     }
   },
 
-  onDragStart: function (aEvent) {
+  onDragStart: function(aEvent) {
     // TODO Bug 831358: Support d&d for multiple selection.
     // For now, we just drag the first element.
     let selectedItem = this._richlistbox.selectedItem;
@@ -1357,7 +1357,7 @@ DownloadsPlacesView.prototype = {
     dt.addElement(selectedItem);
   },
 
-  onDragOver: function (aEvent) {
+  onDragOver: function(aEvent) {
     let types = aEvent.dataTransfer.types;
     if (types.contains("text/uri-list") ||
         types.contains("text/x-moz-url") ||
@@ -1366,7 +1366,7 @@ DownloadsPlacesView.prototype = {
     }
   },
 
-  onDrop: function (aEvent) {
+  onDrop: function(aEvent) {
     let dt = aEvent.dataTransfer;
     // If dragged item is from our source, do not try to
     // redownload already downloaded file.

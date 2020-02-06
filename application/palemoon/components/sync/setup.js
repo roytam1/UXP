@@ -58,7 +58,7 @@ var gSyncSetup = {
     return document.getElementById("existingServer").selectedIndex == 0;
   },
 
-  init: function () {
+  init: function() {
     let obs = [
       ["weave:service:change-passphrase", "onResetPassphrase"],
       ["weave:service:login:start",       "onLoginStart"],
@@ -80,7 +80,7 @@ var gSyncSetup = {
     addRem(true);
     window.addEventListener("unload", function() addRem(false), false);
 
-    window.setTimeout(function () {
+    window.setTimeout(function() {
       // Force Service to be loaded so that engines are registered.
       // See Bug 670082.
       Weave.Service;
@@ -118,14 +118,14 @@ var gSyncSetup = {
                                            .getAttribute("accesskey");
   },
 
-  startNewAccountSetup: function () {
+  startNewAccountSetup: function() {
     if (!Weave.Utils.ensureMPUnlocked())
       return false;
     this._settingUpNew = true;
     this.wizard.pageIndex = NEW_ACCOUNT_START_PAGE;
   },
 
-  useExistingAccount: function () {
+  useExistingAccount: function() {
     if (!Weave.Utils.ensureMPUnlocked())
       return false;
     this._settingUpNew = false;
@@ -138,7 +138,7 @@ var gSyncSetup = {
     }
   },
 
-  resetPassphrase: function () {
+  resetPassphrase: function() {
     // Apply the existing form fields so that
     // Weave.Service.changePassphrase() has the necessary credentials.
     Weave.Service.identity.account = document.getElementById("existingAccountName").value;
@@ -170,22 +170,22 @@ var gSyncSetup = {
     gSyncUtils.resetPassphrase(true);
   },
 
-  onResetPassphrase: function () {
+  onResetPassphrase: function() {
     document.getElementById("existingPassphrase").value =
       Weave.Utils.hyphenatePassphrase(Weave.Service.identity.syncKey);
     this.checkFields();
     this.wizard.advance();
   },
 
-  onLoginStart: function () {
+  onLoginStart: function() {
     this.toggleLoginFeedback(false);
   },
 
-  onLoginEnd: function () {
+  onLoginEnd: function() {
     this.toggleLoginFeedback(true);
   },
 
-  sendCredentialsAfterSync: function () {
+  sendCredentialsAfterSync: function() {
     let send = function() {
       Services.obs.removeObserver("weave:service:sync:finish", send);
       Services.obs.removeObserver("weave:service:sync:error", send);
@@ -199,7 +199,7 @@ var gSyncSetup = {
     Services.obs.addObserver("weave:service:sync:error", send, false);
   },
 
-  toggleLoginFeedback: function (stop) {
+  toggleLoginFeedback: function(stop) {
     document.getElementById("login-throbber").hidden = stop;
     let password = document.getElementById("existingPasswordFeedbackRow");
     let server = document.getElementById("existingServerFeedbackRow");
@@ -228,7 +228,7 @@ var gSyncSetup = {
     this._setFeedbackMessage(feedback, false, Weave.Status.login);
   },
 
-  setupInitialSync: function () {
+  setupInitialSync: function() {
     let action = document.getElementById("mergeChoiceRadio").selectedItem.id;
     switch (action) {
       case "resetClient":
@@ -245,11 +245,11 @@ var gSyncSetup = {
   },
 
   // fun with validation!
-  checkFields: function () {
+  checkFields: function() {
     this.wizard.canAdvance = this.readyToAdvance();
   },
 
-  readyToAdvance: function () {
+  readyToAdvance: function() {
     switch (this.wizard.pageIndex) {
       case INTRO_PAGE:
         return false;
@@ -290,11 +290,11 @@ var gSyncSetup = {
                               this.pin3.value.length == PIN_PART_LENGTH);
   },
 
-  onEmailInput: function () {
+  onEmailInput: function() {
     // Check account validity when the user stops typing for 1 second.
     if (this._checkAccountTimer)
       window.clearTimeout(this._checkAccountTimer);
-    this._checkAccountTimer = window.setTimeout(function () {
+    this._checkAccountTimer = window.setTimeout(function() {
       gSyncSetup.checkAccount();
     }, 1000);
   },
@@ -334,7 +334,7 @@ var gSyncSetup = {
     this.checkFields();
   },
 
-  onPasswordChange: function () {
+  onPasswordChange: function() {
     let password = document.getElementById("weavePassword");
     let pwconfirm = document.getElementById("weavePasswordConfirm");
     let [valid, errorString] = gSyncUtils.validatePassword(password, pwconfirm);
@@ -417,7 +417,7 @@ var gSyncSetup = {
     }
   },
 
-  onWizardAdvance: function () {
+  onWizardAdvance: function() {
     // Check pageIndex so we don't prompt before the Sync setup wizard appears.
     // This is a fallback in case the Master Password gets locked mid-wizard.
     if ((this.wizard.pageIndex >= 0) &&
@@ -506,7 +506,7 @@ var gSyncSetup = {
     return true;
   },
 
-  onWizardBack: function () {
+  onWizardBack: function() {
     switch (this.wizard.pageIndex) {
       case NEW_ACCOUNT_START_PAGE:
       case EXISTING_ACCOUNT_LOGIN_PAGE:
@@ -533,7 +533,7 @@ var gSyncSetup = {
     return true;
   },
 
-  wizardFinish: function () {
+  wizardFinish: function() {
     this.setupInitialSync();
 
     if (this.wizardType == "pair") {
@@ -568,7 +568,7 @@ var gSyncSetup = {
     window.close();
   },
 
-  onWizardCancel: function () {
+  onWizardCancel: function() {
     if (this._resettingSync)
       return;
 
@@ -577,7 +577,7 @@ var gSyncSetup = {
     Weave.Service.startOver();
   },
 
-  onSyncOptions: function () {
+  onSyncOptions: function() {
     this._beforeOptionsPage = this.wizard.pageIndex;
     this.wizard.pageIndex = OPTIONS_PAGE;
   },
@@ -595,7 +595,7 @@ var gSyncSetup = {
     return false;
   },
 
-  startPairing: function () {
+  startPairing: function() {
     this.pairDeviceErrorRow.hidden = true;
     // When onAbort is called, Weave may already be gone.
     const JPAKE_ERROR_USERABORT = Weave.JPAKE_ERROR_USERABORT;
@@ -605,11 +605,11 @@ var gSyncSetup = {
       onPaired: function onPaired() {
         self.wizard.pageIndex = INTRO_PAGE;
       },
-      onComplete: function () {
+      onComplete: function() {
         // This method will never be called since SendCredentialsController
         // will take over after the wizard completes.
       },
-      onAbort: function (error) {
+      onAbort: function(error) {
         delete self._jpakeclient;
 
         // Aborted by user, ignore. The window is almost certainly going to close
@@ -636,7 +636,7 @@ var gSyncSetup = {
     jpakeclient.pairWithPIN(pin, expectDelay);
   },
 
-  completePairing: function () {
+  completePairing: function() {
     if (!this._jpakeclient) {
       // The channel was aborted while we were setting up the account
       // locally. XXX TODO should we do anything here, e.g. tell
@@ -649,7 +649,7 @@ var gSyncSetup = {
     this._jpakeclient.controller = controller;
   },
 
-  startEasySetup: function () {
+  startEasySetup: function() {
     // Don't do anything if we have a client already (e.g. we went to
     // Sync Options and just came back).
     if (this._jpakeclient)
@@ -660,15 +660,15 @@ var gSyncSetup = {
 
     let self = this;
     this._jpakeclient = new Weave.JPAKEClient({
-      displayPIN: function (pin) {
+      displayPIN: function(pin) {
         document.getElementById("easySetupPIN1").value = pin.slice(0, 4);
         document.getElementById("easySetupPIN2").value = pin.slice(4, 8);
         document.getElementById("easySetupPIN3").value = pin.slice(8);
       },
 
-      onPairingStart: function () {},
+      onPairingStart: function() {},
 
-      onComplete: function (credentials) {
+      onComplete: function(credentials) {
         Weave.Service.identity.account = credentials.account;
         Weave.Service.identity.basicPassword = credentials.password;
         Weave.Service.identity.syncKey = credentials.synckey;
@@ -676,7 +676,7 @@ var gSyncSetup = {
         gSyncSetup.wizardFinish();
       },
 
-      onAbort: function (error) {
+      onAbort: function(error) {
         delete self._jpakeclient;
 
         // Ignore if wizard is aborted.
@@ -696,7 +696,7 @@ var gSyncSetup = {
     this._jpakeclient.receiveNoPIN();
   },
 
-  abortEasySetup: function () {
+  abortEasySetup: function() {
     document.getElementById("easySetupPIN1").value = "";
     document.getElementById("easySetupPIN2").value = "";
     document.getElementById("easySetupPIN3").value = "";
@@ -707,7 +707,7 @@ var gSyncSetup = {
     delete this._jpakeclient;
   },
 
-  manualSetup: function () {
+  manualSetup: function() {
     this.abortEasySetup();
     this.wizard.pageIndex = EXISTING_ACCOUNT_LOGIN_PAGE;
   },
@@ -715,7 +715,7 @@ var gSyncSetup = {
   // _handleNoScript is needed because it blocks the captcha. So we temporarily
   // allow the necessary sites so that we can verify the user is in fact a human.
   // This was done with the help of Giorgio (NoScript author). See bug 508112.
-  _handleNoScript: function (addExceptions) {
+  _handleNoScript: function(addExceptions) {
     // if NoScript isn't installed, or is disabled, bail out.
     let ns = Cc["@maone.net/noscript-service;1"];
     if (ns == null)
@@ -739,7 +739,7 @@ var gSyncSetup = {
     }
   },
 
-  onExistingServerCommand: function () {
+  onExistingServerCommand: function() {
     let control = document.getElementById("existingServer");
     if (control.selectedIndex == 0) {
       control.removeAttribute("editable");
@@ -755,16 +755,16 @@ var gSyncSetup = {
     this.checkFields();
   },
 
-  onExistingServerInput: function () {
+  onExistingServerInput: function() {
     // Check custom server validity when the user stops typing for 1 second.
     if (this._existingServerTimer)
       window.clearTimeout(this._existingServerTimer);
-    this._existingServerTimer = window.setTimeout(function () {
+    this._existingServerTimer = window.setTimeout(function() {
       gSyncSetup.checkFields();
     }, 1000);
   },
 
-  onServerCommand: function () {
+  onServerCommand: function() {
     setVisibility(document.getElementById("TOSRow"), this._usingMainServers);
     let control = document.getElementById("server");
     if (!this._usingMainServers) {
@@ -788,16 +788,16 @@ var gSyncSetup = {
     this.checkFields();
   },
 
-  onServerInput: function () {
+  onServerInput: function() {
     // Check custom server validity when the user stops typing for 1 second.
     if (this._checkServerTimer)
       window.clearTimeout(this._checkServerTimer);
-    this._checkServerTimer = window.setTimeout(function () {
+    this._checkServerTimer = window.setTimeout(function() {
       gSyncSetup.checkServer();
     }, 1000);
   },
 
-  checkServer: function () {
+  checkServer: function() {
     delete this._checkServerTimer;
     let el = document.getElementById("server");
     let valid = false;
@@ -819,7 +819,7 @@ var gSyncSetup = {
     this.checkFields();
   },
 
-  _validateServer: function (element) {
+  _validateServer: function(element) {
     let valid = false;
     let val = element.value;
     if (!val)
@@ -865,7 +865,7 @@ var gSyncSetup = {
     return valid;
   },
 
-  _handleChoice: function () {
+  _handleChoice: function() {
     let desc = document.getElementById("mergeChoiceRadio").selectedIndex;
     document.getElementById("chosenActionDeck").selectedIndex = desc;
     switch (desc) {
@@ -994,7 +994,7 @@ var gSyncSetup = {
 
   // sets class and string on a feedback element
   // if no property string is passed in, we clear label/style
-  _setFeedback: function (element, success, string) {
+  _setFeedback: function(element, success, string) {
     element.hidden = success || !string;
     let classname = success ? "success" : "error";
     let image = element.getElementsByAttribute("class", "statusIcon")[0];
@@ -1004,7 +1004,7 @@ var gSyncSetup = {
   },
 
   // shim
-  _setFeedbackMessage: function (element, success, string) {
+  _setFeedbackMessage: function(element, success, string) {
     let str = "";
     if (string) {
       try {
@@ -1017,7 +1017,7 @@ var gSyncSetup = {
     this._setFeedback(element, success, str);
   },
 
-  loadCaptcha: function () {
+  loadCaptcha: function() {
     let captchaURI = Weave.Service.miscAPI + "captcha_html";
     // First check for NoScript and whitelist the right sites.
     this._handleNoScript(true);
@@ -1043,7 +1043,7 @@ var gSyncSetup = {
   onProgressChange: function() {},
   onStatusChange: function() {},
   onSecurityChange: function() {},
-  onLocationChange: function () {}
+  onLocationChange: function() {}
 };
 
 // Define lazy getters for various XUL elements.
@@ -1056,12 +1056,12 @@ var gSyncSetup = {
  "pin2",
  "pin3",
  "pairDeviceErrorRow",
- "pairDeviceThrobber"].forEach(function (id) {
+ "pairDeviceThrobber"].forEach(function(id) {
   XPCOMUtils.defineLazyGetter(gSyncSetup, id, function() {
     return document.getElementById(id);
   });
 });
-XPCOMUtils.defineLazyGetter(gSyncSetup, "nextFocusEl", function () {
+XPCOMUtils.defineLazyGetter(gSyncSetup, "nextFocusEl", function() {
   return {pin1: this.pin2,
           pin2: this.pin3,
           pin3: this.wizard.getButton("next")};

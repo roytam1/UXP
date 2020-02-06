@@ -30,7 +30,7 @@ var gBrowserThumbnails = {
    */
   _tabEvents: ["TabClose", "TabSelect"],
 
-  init: function () {
+  init: function() {
     // Bug 863512 - Make page thumbnails work in electrolysis
     if (gMultiProcessBrowser)
       return;
@@ -47,14 +47,14 @@ var gBrowserThumbnails = {
     this._sslDiskCacheEnabled =
       Services.prefs.getBoolPref(this.PREF_DISK_CACHE_SSL);
 
-    this._tabEvents.forEach(function (aEvent) {
+    this._tabEvents.forEach(function(aEvent) {
       gBrowser.tabContainer.addEventListener(aEvent, this, false);
     }, this);
 
     this._timeouts = new WeakMap();
   },
 
-  uninit: function () {
+  uninit: function() {
     // Bug 863512 - Make page thumbnails work in electrolysis
     if (gMultiProcessBrowser)
       return;
@@ -63,12 +63,12 @@ var gBrowserThumbnails = {
     gBrowser.removeTabsProgressListener(this);
     Services.prefs.removeObserver(this.PREF_DISK_CACHE_SSL, this);
 
-    this._tabEvents.forEach(function (aEvent) {
+    this._tabEvents.forEach(function(aEvent) {
       gBrowser.tabContainer.removeEventListener(aEvent, this, false);
     }, this);
   },
 
-  handleEvent: function (aEvent) {
+  handleEvent: function(aEvent) {
     switch (aEvent.type) {
       case "scroll":
         let browser = aEvent.currentTarget;
@@ -85,13 +85,13 @@ var gBrowserThumbnails = {
     }
   },
 
-  observe: function () {
+  observe: function() {
     this._sslDiskCacheEnabled =
       Services.prefs.getBoolPref(this.PREF_DISK_CACHE_SSL);
   },
 
   filterForThumbnailExpiration:
-  function (aCallback) {
+  function(aCallback) {
     // Tycho: aCallback([browser.currentURI.spec for (browser of gBrowser.browsers)]);
     let result = [];
     for (let browser of gBrowser.browsers) {
@@ -103,25 +103,25 @@ var gBrowserThumbnails = {
   /**
    * State change progress listener for all tabs.
    */
-  onStateChange: function (aBrowser, aWebProgress,
+  onStateChange: function(aBrowser, aWebProgress,
                                                    aRequest, aStateFlags, aStatus) {
     if (aStateFlags & Ci.nsIWebProgressListener.STATE_STOP &&
         aStateFlags & Ci.nsIWebProgressListener.STATE_IS_NETWORK)
       this._delayedCapture(aBrowser);
   },
 
-  _capture: function (aBrowser) {
+  _capture: function(aBrowser) {
     if (this._shouldCapture(aBrowser))
       PageThumbs.captureAndStore(aBrowser);
   },
 
-  _delayedCapture: function (aBrowser) {
+  _delayedCapture: function(aBrowser) {
     if (this._timeouts.has(aBrowser))
       clearTimeout(this._timeouts.get(aBrowser));
     else
       aBrowser.addEventListener("scroll", this, true);
 
-    let timeout = setTimeout(function () {
+    let timeout = setTimeout(function() {
       this._clearTimeout(aBrowser);
       this._capture(aBrowser);
     }.bind(this), this._captureDelayMS);
@@ -129,7 +129,7 @@ var gBrowserThumbnails = {
     this._timeouts.set(aBrowser, timeout);
   },
 
-  _shouldCapture: function (aBrowser) {
+  _shouldCapture: function(aBrowser) {
     // Capture only if it's the currently selected tab.
     if (aBrowser != gBrowser.selectedBrowser)
       return false;
@@ -193,7 +193,7 @@ var gBrowserThumbnails = {
     return true;
   },
 
-  _clearTimeout: function (aBrowser) {
+  _clearTimeout: function(aBrowser) {
     if (this._timeouts.has(aBrowser)) {
       aBrowser.removeEventListener("scroll", this, false);
       clearTimeout(this._timeouts.get(aBrowser));

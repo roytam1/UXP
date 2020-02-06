@@ -107,7 +107,7 @@ var BookmarkPropertiesPanel = {
    * This method returns the correct label for the dialog's "accept"
    * button based on the variant of the dialog.
    */
-  _getAcceptLabel: function () {
+  _getAcceptLabel: function() {
     if (this._action == ACTION_ADD) {
       if (this._URIs.length)
         return this._strings.getString("dialogAcceptLabelAddMulti");
@@ -127,7 +127,7 @@ var BookmarkPropertiesPanel = {
    * This method returns the correct title for the current variant
    * of this dialog.
    */
-  _getDialogTitle: function () {
+  _getDialogTitle: function() {
     if (this._action == ACTION_ADD) {
       if (this._itemType == BOOKMARK_ITEM)
         return this._strings.getString("dialogTitleAddBookmark");
@@ -150,7 +150,7 @@ var BookmarkPropertiesPanel = {
   /**
    * Determines the initial data for the item edited or added by this dialog
    */
-  _determineItemInfo: function () {
+  _determineItemInfo: function() {
     var dialogInfo = window.arguments[0];
     this._action = dialogInfo.action == "add" ? ACTION_ADD : ACTION_EDIT;
     this._hiddenRows = dialogInfo.hiddenRows ? dialogInfo.hiddenRows : [];
@@ -294,7 +294,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns a title string
    */
-  _getURITitleFromHistory: function (aURI) {
+  _getURITitleFromHistory: function(aURI) {
     NS_ASSERT(aURI instanceof Ci.nsIURI);
 
     // get the title from History
@@ -390,7 +390,7 @@ var BookmarkPropertiesPanel = {
   }),
 
   // nsIDOMEventListener
-  handleEvent: function (aEvent) {
+  handleEvent: function(aEvent) {
     var target = aEvent.target;
     switch (aEvent.type) {
       case "input":
@@ -413,7 +413,7 @@ var BookmarkPropertiesPanel = {
     }
   },
 
-  _beginBatch: function () {
+  _beginBatch: function() {
     if (this._batching)
       return;
 
@@ -421,7 +421,7 @@ var BookmarkPropertiesPanel = {
     this._batching = true;
   },
 
-  _endBatch: function () {
+  _endBatch: function() {
     if (!this._batching)
       return;
 
@@ -429,7 +429,7 @@ var BookmarkPropertiesPanel = {
     this._batching = false;
   },
 
-  _fillEditProperties: function () {
+  _fillEditProperties: function() {
     gEditItemOverlay.initPanel(this._itemId,
                                { hiddenRows: this._hiddenRows,
                                  forceReadOnly: this._readOnly });
@@ -449,7 +449,7 @@ var BookmarkPropertiesPanel = {
   }),
 
   // nsISupports
-  QueryInterface: function (aIID) {
+  QueryInterface: function(aIID) {
     if (aIID.equals(Ci.nsIDOMEventListener) ||
         aIID.equals(Ci.nsISupports))
       return this;
@@ -457,11 +457,11 @@ var BookmarkPropertiesPanel = {
     throw Cr.NS_NOINTERFACE;
   },
 
-  _element: function (aID) {
+  _element: function(aID) {
     return document.getElementById("editBMPanel_" + aID);
   },
 
-  onDialogUnload: function () {
+  onDialogUnload: function() {
     // gEditItemOverlay does not exist anymore here, so don't rely on it.
     this._mutationObserver.disconnect();
     delete this._mutationObserver;
@@ -478,7 +478,7 @@ var BookmarkPropertiesPanel = {
         .removeEventListener("input", this, false);
   },
 
-  onDialogAccept: function () {
+  onDialogAccept: function() {
     // We must blur current focused element to save its changes correctly
     document.commandDispatcher.focusedElement.blur();
     // The order here is important! We have to uninit the panel first, otherwise
@@ -488,7 +488,7 @@ var BookmarkPropertiesPanel = {
     window.arguments[0].performed = true;
   },
 
-  onDialogCancel: function () {
+  onDialogCancel: function() {
     // The order here is important! We have to uninit the panel first, otherwise
     // changes done as part of Undo may change the panel contents and by
     // that force it to commit more transactions.
@@ -503,7 +503,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns  true if the input is valid, false otherwise
    */
-  _inputIsValid: function () {
+  _inputIsValid: function() {
     if (this._itemType == BOOKMARK_ITEM &&
         !this._containsValidURI("locationField"))
       return false;
@@ -522,7 +522,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns true if the textbox contains a valid URI string, false otherwise
    */
-  _containsValidURI: function (aTextboxID) {
+  _containsValidURI: function(aTextboxID) {
     try {
       var value = this._element(aTextboxID).value;
       if (value) {
@@ -540,7 +540,7 @@ var BookmarkPropertiesPanel = {
    * The container-identifier and insertion-index are returned separately in
    * the form of [containerIdentifier, insertionIndex]
    */
-  _getInsertionPointDetails: function () {
+  _getInsertionPointDetails: function() {
     var containerId = this._defaultInsertionPoint.itemId;
     var indexInContainer = this._defaultInsertionPoint.index;
 
@@ -552,7 +552,7 @@ var BookmarkPropertiesPanel = {
    * various fields and opening arguments of the dialog.
    */
   _getCreateNewBookmarkTransaction:
-  function (aContainer, aIndex) {
+  function(aContainer, aIndex) {
     var annotations = [];
     var childTransactions = [];
 
@@ -598,7 +598,7 @@ var BookmarkPropertiesPanel = {
    * Returns a childItems-transactions array representing the URIList with
    * which the dialog has been opened.
    */
-  _getTransactionsForURIList: function () {
+  _getTransactionsForURIList: function() {
     var transactions = [];
     for (var i = 0; i < this._URIs.length; ++i) {
       var uri = this._URIs[i];
@@ -616,7 +616,7 @@ var BookmarkPropertiesPanel = {
    * various fields and opening arguments of the dialog.
    */
   _getCreateNewFolderTransaction:
-  function (aContainer, aIndex) {
+  function(aContainer, aIndex) {
     var annotations = [];
     var childItemsTransactions;
     if (this._URIs.length)
@@ -635,7 +635,7 @@ var BookmarkPropertiesPanel = {
    * the various fields and opening arguments of the dialog.
    */
   _getCreateNewLivemarkTransaction:
-  function (aContainer, aIndex) {
+  function(aContainer, aIndex) {
     return new PlacesCreateLivemarkTransaction(this._feedURI, this._siteURI,
                                                this._title,
                                                aContainer, aIndex);

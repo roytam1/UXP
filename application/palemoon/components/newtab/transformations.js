@@ -33,7 +33,7 @@ var gTransformation = {
    * @param aNode The DOM node.
    * @return A Rect instance with the position.
    */
-  getNodePosition: function (aNode) {
+  getNodePosition: function(aNode) {
     let {left, top, width, height} = aNode.getBoundingClientRect();
     return new Rect(left + scrollX, top + scrollY, width, height);
   },
@@ -43,8 +43,8 @@ var gTransformation = {
    * @param aNode The node to fade.
    * @param aCallback The callback to call when finished.
    */
-  fadeNodeIn: function (aNode, aCallback) {
-    this._setNodeOpacity(aNode, 1, function () {
+  fadeNodeIn: function(aNode, aCallback) {
+    this._setNodeOpacity(aNode, 1, function() {
       // Clear the style property.
       aNode.style.opacity = "";
 
@@ -58,7 +58,7 @@ var gTransformation = {
    * @param aNode The node to fade.
    * @param aCallback The callback to call when finished.
    */
-  fadeNodeOut: function (aNode, aCallback) {
+  fadeNodeOut: function(aNode, aCallback) {
     this._setNodeOpacity(aNode, 0, aCallback);
   },
 
@@ -67,7 +67,7 @@ var gTransformation = {
    * @param aSite The site to fade.
    * @param aCallback The callback to call when finished.
    */
-  showSite: function (aSite, aCallback) {
+  showSite: function(aSite, aCallback) {
     this.fadeNodeIn(aSite.node, aCallback);
   },
 
@@ -76,7 +76,7 @@ var gTransformation = {
    * @param aSite The site to fade.
    * @param aCallback The callback to call when finished.
    */
-  hideSite: function (aSite, aCallback) {
+  hideSite: function(aSite, aCallback) {
     this.fadeNodeOut(aSite.node, aCallback);
   },
 
@@ -85,7 +85,7 @@ var gTransformation = {
    * @param aSite The site to re-position.
    * @param aPosition The desired position for the given site.
    */
-  setSitePosition: function (aSite, aPosition) {
+  setSitePosition: function(aSite, aPosition) {
     let style = aSite.node.style;
     let {top, left} = aPosition;
 
@@ -97,7 +97,7 @@ var gTransformation = {
    * Freezes a site in its current position by positioning it absolute.
    * @param aSite The site to freeze.
    */
-  freezeSitePosition: function (aSite) {
+  freezeSitePosition: function(aSite) {
     if (this._isFrozen(aSite))
       return;
 
@@ -114,7 +114,7 @@ var gTransformation = {
    * Unfreezes a site by removing its absolute positioning.
    * @param aSite The site to unfreeze.
    */
-  unfreezeSitePosition: function (aSite) {
+  unfreezeSitePosition: function(aSite) {
     if (!this._isFrozen(aSite))
       return;
 
@@ -131,7 +131,7 @@ var gTransformation = {
    *        unfreeze - unfreeze the site after sliding
    *        callback - the callback to call when finished
    */
-  slideSiteTo: function (aSite, aTarget, aOptions) {
+  slideSiteTo: function(aSite, aTarget, aOptions) {
     let currentPosition = this.getNodePosition(aSite.node);
     let targetPosition = this.getNodePosition(aTarget.node)
     let callback = aOptions && aOptions.callback;
@@ -168,13 +168,13 @@ var gTransformation = {
    *        unfreeze - unfreeze the site after rearranging
    *        callback - the callback to call when finished
    */
-  rearrangeSites: function (aSites, aOptions) {
+  rearrangeSites: function(aSites, aOptions) {
     let batch = [];
     let cells = gGrid.cells;
     let callback = aOptions && aOptions.callback;
     let unfreeze = aOptions && aOptions.unfreeze;
 
-    aSites.forEach(function (aSite, aIndex) {
+    aSites.forEach(function(aSite, aIndex) {
       // Do not re-arrange empty cells or the dragged site.
       if (!aSite || aSite == gDrag.draggedSite)
         return;
@@ -206,7 +206,7 @@ var gTransformation = {
    * @param aCallback The callback to call when finished.
    */
   _whenTransitionEnded:
-    function (aNode, aProperties, aCallback) {
+    function(aNode, aProperties, aCallback) {
 
     let props = new Set(aProperties);
     aNode.addEventListener("transitionend", function onEnd(e) {
@@ -222,7 +222,7 @@ var gTransformation = {
    * @param aNode The node to get the opacity value from.
    * @return The node's opacity value.
    */
-  _getNodeOpacity: function (aNode) {
+  _getNodeOpacity: function(aNode) {
     let cstyle = window.getComputedStyle(aNode, null);
     return cstyle.getPropertyValue("opacity");
   },
@@ -234,7 +234,7 @@ var gTransformation = {
    * @param aCallback The callback to call when finished.
    */
   _setNodeOpacity:
-    function (aNode, aOpacity, aCallback) {
+    function(aNode, aOpacity, aCallback) {
 
     if (this._getNodeOpacity(aNode) == aOpacity) {
       if (aCallback)
@@ -254,7 +254,7 @@ var gTransformation = {
    * @param aIndex The target cell's index.
    * @param aOptions Options that are directly passed to slideSiteTo().
    */
-  _moveSite: function (aSite, aIndex, aOptions) {
+  _moveSite: function(aSite, aIndex, aOptions) {
     this.freezeSitePosition(aSite);
     this.slideSiteTo(aSite, gGrid.cells[aIndex], aOptions);
   },
@@ -264,7 +264,7 @@ var gTransformation = {
    * @param aSite The site to check.
    * @return Whether the given site is frozen.
    */
-  _isFrozen: function (aSite) {
+  _isFrozen: function(aSite) {
     return aSite.node.hasAttribute("frozen");
   }
 };

@@ -22,7 +22,7 @@ var gPrivacyPane = {
    * label of the "Clear Now..." button.
    * Also restores the previously selected tab or tab index passed as argument.
    */
-  init: function ()
+  init: function()
   {
     this._inited = true;
     var privacyPrefs = document.getElementById("privacyPrefs");
@@ -47,7 +47,7 @@ var gPrivacyPane = {
    * Stores the identity of the current tab in preferences so that the selected
    * tab can be persisted between openings of the preferences window.
    */
-  tabSelectionChanged: function ()
+  tabSelectionChanged: function()
   {
     if (!this._inited)
       return;
@@ -112,10 +112,10 @@ var gPrivacyPane = {
   /**
    * Initialize the history mode menulist based on the privacy preferences
    */
-  initializeHistoryMode: function ()
+  initializeHistoryMode: function()
   {
     let mode;
-    let getVal = function (aPref)
+    let getVal = function(aPref)
       document.getElementById(aPref).value;
 
     if (this._checkDefaultValues(this.prefsForDefault)) {
@@ -133,7 +133,7 @@ var gPrivacyPane = {
   /**
    * Update the selected pane based on the history mode menulist
    */
-  updateHistoryModePane: function ()
+  updateHistoryModePane: function()
   {
     let selectedIndex = -1;
     switch (document.getElementById("historyMode").value) {
@@ -154,7 +154,7 @@ var gPrivacyPane = {
    * Update the private browsing auto-start pref and the history mode
    * micro-management prefs based on the history mode menulist
    */
-  updateHistoryModePrefs: function ()
+  updateHistoryModePrefs: function()
   {
     let pref = document.getElementById("browser.privatebrowsing.autostart");
     switch (document.getElementById("historyMode").value) {
@@ -187,13 +187,13 @@ var gPrivacyPane = {
    * Update the privacy micro-management controls based on the
    * value of the private browsing auto-start checkbox.
    */
-  updatePrivacyMicroControls: function ()
+  updatePrivacyMicroControls: function()
   {
     if (document.getElementById("historyMode").value == "custom") {
       let disabled = this._autoStartPrivateBrowsing =
         document.getElementById("privateBrowsingAutoStart").checked;
       this.dependentControls
-          .forEach(function (aElement)
+          .forEach(function(aElement)
                    document.getElementById(aElement).disabled = disabled);
 
       const Ci = Components.interfaces;
@@ -229,7 +229,7 @@ var gPrivacyPane = {
   /**
    * Initialize the starting state for the auto-start private browsing mode pref reverter.
    */
-  initAutoStartPrivateBrowsingReverter: function ()
+  initAutoStartPrivateBrowsingReverter: function()
   {
     let mode = document.getElementById("historyMode");
     let autoStart = document.getElementById("privateBrowsingAutoStart");
@@ -239,7 +239,7 @@ var gPrivacyPane = {
 
   _lastMode: null,
   _lasCheckState: null,
-  updateAutostart: function () {
+  updateAutostart: function() {
       let mode = document.getElementById("historyMode");
       let autoStart = document.getElementById("privateBrowsingAutoStart");
       let pref = document.getElementById("browser.privatebrowsing.autostart");
@@ -331,7 +331,7 @@ var gPrivacyPane = {
    * enables/disables the rest of the cookie UI accordingly, returning true
    * if cookies are enabled.
    */
-  readAcceptCookies: function ()
+  readAcceptCookies: function()
   {
     var pref = document.getElementById("network.cookie.cookieBehavior");
     var acceptThirdPartyLabel = document.getElementById("acceptThirdPartyLabel");
@@ -352,7 +352,7 @@ var gPrivacyPane = {
    * Enables/disables the "keep until" label and menulist in response to the
    * "accept cookies" checkbox being checked or unchecked.
    */
-  writeAcceptCookies: function ()
+  writeAcceptCookies: function()
   {
     var accept = document.getElementById("acceptCookies");
     var acceptThirdPartyMenu = document.getElementById("acceptThirdPartyMenu");
@@ -367,7 +367,7 @@ var gPrivacyPane = {
   /**
    * Converts between network.cookie.cookieBehavior and the third-party cookie UI
    */
-  readAcceptThirdPartyCookies: function ()
+  readAcceptThirdPartyCookies: function()
   {
     var pref = document.getElementById("network.cookie.cookieBehavior");
     switch (pref.value)
@@ -385,7 +385,7 @@ var gPrivacyPane = {
     }
   },
   
-  writeAcceptThirdPartyCookies: function ()
+  writeAcceptThirdPartyCookies: function()
   {
     var accept = document.getElementById("acceptThirdPartyMenu").selectedItem;
     switch (accept.value)
@@ -404,7 +404,7 @@ var gPrivacyPane = {
   /**
    * Displays fine-grained, per-site preferences for cookies.
    */
-  showCookieExceptions: function ()
+  showCookieExceptions: function()
   {
     var bundlePreferences = document.getElementById("bundlePreferences");
     var params = { blockVisible   : true, 
@@ -422,7 +422,7 @@ var gPrivacyPane = {
   /**
    * Displays all the user's cookies in a dialog.
    */  
-  showCookies: function (aCategory)
+  showCookies: function(aCategory)
   {
     document.documentElement.openWindow("Browser:Cookies",
                                         "chrome://browser/content/preferences/cookies.xul",
@@ -442,7 +442,7 @@ var gPrivacyPane = {
   /**
    * Displays the Clear Private Data settings dialog.
    */
-  showClearPrivateDataSettings: function ()
+  showClearPrivateDataSettings: function()
   {
     document.documentElement.openSubDialog("chrome://browser/content/preferences/sanitize.xul",
                                            "", null);
@@ -453,7 +453,7 @@ var gPrivacyPane = {
    * Displays a dialog from which individual parts of private data may be
    * cleared.
    */
-  clearPrivateDataNow: function (aClearEverything)
+  clearPrivateDataNow: function(aClearEverything)
   {
     var ts = document.getElementById("privacy.sanitize.timeSpan");
     var timeSpanOrig = ts.value;
@@ -475,7 +475,7 @@ var gPrivacyPane = {
    * Enables or disables the "Settings..." button depending
    * on the privacy.sanitize.sanitizeOnShutdown preference value
    */
-  _updateSanitizeSettingsButton: function () {
+  _updateSanitizeSettingsButton: function() {
     var settingsButton = document.getElementById("clearDataSettings");
     var sanitizeOnShutdownPref = document.getElementById("privacy.sanitize.sanitizeOnShutdown");
     

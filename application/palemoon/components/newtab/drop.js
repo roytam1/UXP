@@ -21,7 +21,7 @@ var gDrop = {
    * Handles the 'dragenter' event.
    * @param aCell The drop target cell.
    */
-  enter: function (aCell) {
+  enter: function(aCell) {
     this._delayedRearrange(aCell);
   },
 
@@ -30,7 +30,7 @@ var gDrop = {
    * @param aCell The drop target cell.
    * @param aEvent The 'dragexit' event.
    */
-  exit: function (aCell, aEvent) {
+  exit: function(aCell, aEvent) {
     if (aEvent.dataTransfer && !aEvent.dataTransfer.mozUserCancelled) {
       this._delayedRearrange();
     } else {
@@ -45,7 +45,7 @@ var gDrop = {
    * @param aCell The drop target cell.
    * @param aEvent The 'dragexit' event.
    */
-  drop: function (aCell, aEvent) {
+  drop: function(aCell, aEvent) {
     // The cell that is the drop target could contain a pinned site. We need
     // to find out where that site has gone and re-pin it there.
     if (aCell.containsPinnedSite())
@@ -64,11 +64,11 @@ var gDrop = {
    * Re-pins all pinned sites in their (new) positions.
    * @param aCell The drop target cell.
    */
-  _repinSitesAfterDrop: function (aCell) {
+  _repinSitesAfterDrop: function(aCell) {
     let sites = gDropPreview.rearrange(aCell);
 
     // Filter out pinned sites.
-    let pinnedSites = sites.filter(function (aSite) {
+    let pinnedSites = sites.filter(function(aSite) {
       return aSite && aSite.isPinned();
     });
 
@@ -81,7 +81,7 @@ var gDrop = {
    * @param aCell The drop target cell.
    * @param aEvent The 'dragexit' event.
    */
-  _pinDraggedSite: function (aCell, aEvent) {
+  _pinDraggedSite: function(aCell, aEvent) {
     let index = aCell.index;
     let draggedSite = gDrag.draggedSite;
 
@@ -105,7 +105,7 @@ var gDrop = {
    * Time a rearrange with a little delay.
    * @param aCell The drop target cell.
    */
-  _delayedRearrange: function (aCell) {
+  _delayedRearrange: function(aCell) {
     // The last drop target didn't change so there's no need to re-arrange.
     if (this._lastDropTarget == aCell)
       return;
@@ -127,7 +127,7 @@ var gDrop = {
   /**
    * Cancels a timed rearrange, if any.
    */
-  _cancelDelayedArrange: function () {
+  _cancelDelayedArrange: function() {
     if (this._rearrangeTimeout) {
       clearTimeout(this._rearrangeTimeout);
       this._rearrangeTimeout = null;
@@ -138,7 +138,7 @@ var gDrop = {
    * Rearrange all sites in the grid depending on the current drop target.
    * @param aCell The drop target cell.
    */
-  _rearrange: function (aCell) {
+  _rearrange: function(aCell) {
     let sites = gGrid.sites;
 
     // We need to rearrange the grid only if there's a current drop target.
