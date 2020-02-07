@@ -18,7 +18,6 @@ Cu.import("resource://gre/modules/NotificationDB.jsm");
   ["AppConstants", "resource://gre/modules/AppConstants.jsm"],
   ["BrowserUsageTelemetry", "resource:///modules/BrowserUsageTelemetry.jsm"],
   ["BrowserUtils", "resource://gre/modules/BrowserUtils.jsm"],
-  ["CastingApps", "resource:///modules/CastingApps.jsm"],
   ["CharsetMenu", "resource://gre/modules/CharsetMenu.jsm"],
   ["Color", "resource://gre/modules/Color.jsm"],
   ["ContentSearch", "resource:///modules/ContentSearch.jsm"],
@@ -41,7 +40,6 @@ Cu.import("resource://gre/modules/NotificationDB.jsm");
   ["RecentWindow", "resource:///modules/RecentWindow.jsm"],
   ["SessionStore", "resource:///modules/sessionstore/SessionStore.jsm"],
   ["ShortcutUtils", "resource://gre/modules/ShortcutUtils.jsm"],
-  ["SimpleServiceDiscovery", "resource://gre/modules/SimpleServiceDiscovery.jsm"],
   ["SitePermissions", "resource:///modules/SitePermissions.jsm"],
   ["TabCrashHandler", "resource:///modules/ContentCrashHandlers.jsm"],
   ["Task", "resource://gre/modules/Task.jsm"],
@@ -3021,35 +3019,6 @@ function getDefaultHomePage() {
 function BrowserFullScreen()
 {
   window.fullScreen = !window.fullScreen;
-}
-
-function mirrorShow(popup) {
-  let services = [];
-  if (Services.prefs.getBoolPref("browser.casting.enabled")) {
-    services = CastingApps.getServicesForMirroring();
-  }
-  popup.ownerDocument.getElementById("menu_mirrorTabCmd").hidden = !services.length;
-}
-
-function mirrorMenuItemClicked(event) {
-  gBrowser.selectedBrowser.messageManager.sendAsyncMessage("SecondScreen:tab-mirror",
-                                                           {service: event.originalTarget._service});
-}
-
-function populateMirrorTabMenu(popup) {
-  popup.innerHTML = null;
-  if (!Services.prefs.getBoolPref("browser.casting.enabled")) {
-    return;
-  }
-  let doc = popup.ownerDocument;
-  let services = CastingApps.getServicesForMirroring();
-  services.forEach(service => {
-    let item = doc.createElement("menuitem");
-    item.setAttribute("label", service.friendlyName);
-    item._service = service;
-    item.addEventListener("command", mirrorMenuItemClicked);
-    popup.appendChild(item);
-  });
 }
 
 function getWebNavigation()
