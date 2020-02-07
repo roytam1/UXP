@@ -8,7 +8,6 @@ const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
 
 const PERMISSION_SAVE_LOGINS = "login-saving";
 
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Timer.jsm");
@@ -113,12 +112,12 @@ LoginManager.prototype = {
 
 
   _initStorage() {
-    let contractID;
-    if (AppConstants.platform == "android") {
-      contractID = "@mozilla.org/login-manager/storage/mozStorage;1";
-    } else {
-      contractID = "@mozilla.org/login-manager/storage/json;1";
-    }
+#ifdef MOZ_WIDGET_ANDROID
+    let contractID = "@mozilla.org/login-manager/storage/mozStorage;1";
+#else
+    let contractID = "@mozilla.org/login-manager/storage/json;1";
+#endif
+
     try {
       let catMan = Cc["@mozilla.org/categorymanager;1"].
                    getService(Ci.nsICategoryManager);

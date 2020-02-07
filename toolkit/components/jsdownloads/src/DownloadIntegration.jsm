@@ -28,8 +28,7 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "AsyncShutdown",
                                   "resource://gre/modules/AsyncShutdown.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
-                                  "resource://gre/modules/AppConstants.jsm");
+
 XPCOMUtils.defineLazyModuleGetter(this, "DeferredTask",
                                   "resource://gre/modules/DeferredTask.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Downloads",
@@ -696,8 +695,11 @@ this.DownloadIntegration = {
       fileExtension = match[1];
     }
 
-    let isWindowsExe = AppConstants.platform == "win" &&
-      fileExtension.toLowerCase() == "exe";
+#ifdef XP_WIN
+    let isWindowsExe = fileExtension.toLowerCase() == "exe";
+#else
+    let isWindowsExe = false;
+#endif
 
     // Ask for confirmation if the file is executable, except for .exe on
     // Windows where the operating system will show the prompt based on the

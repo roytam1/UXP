@@ -12,8 +12,6 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "Deprecated",
                                   "resource://gre/modules/Deprecated.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
-                                  "resource://gre/modules/AppConstants.jsm");
 
 const DB_VERSION = 4;
 const DAY_IN_MS  = 86400000; // 1 day in milliseconds
@@ -351,26 +349,26 @@ FormHistory.prototype = {
     },
 
     moveToDeletedTable : function moveToDeletedTable(values, params) {
-        if (AppConstants.platform == "android") {
-            this.log("Moving entries to deleted table.");
+#ifdef MOZ_WIDGET_ANDROID
+      this.log("Moving entries to deleted table.");
 
-            let stmt;
+      let stmt;
 
-            try {
-                // Move the entries to the deleted items table.
-                let query = "INSERT INTO moz_deleted_formhistory (guid, timeDeleted) ";
-                if (values) query += values;
-                stmt = this.dbCreateStatement(query, params);
-                stmt.execute();
-            } catch (e) {
-                this.log("Moving deleted entries failed: " + e);
-                throw e;
-            } finally {
-                if (stmt) {
-                    stmt.reset();
-                }
-            }
-        }
+      try {
+          // Move the entries to the deleted items table.
+          let query = "INSERT INTO moz_deleted_formhistory (guid, timeDeleted) ";
+          if (values) query += values;
+          stmt = this.dbCreateStatement(query, params);
+          stmt.execute();
+      } catch (e) {
+          this.log("Moving deleted entries failed: " + e);
+          throw e;
+      } finally {
+          if (stmt) {
+              stmt.reset();
+          }
+      }
+#endif
     },
 
     get dbConnection() {

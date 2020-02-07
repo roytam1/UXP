@@ -1585,17 +1585,28 @@ BrowserGlue.prototype = {
     const SMART_BOOKMARKS_VERSION = 4;
     const SMART_BOOKMARKS_ANNO = "Places/SmartBookmark";
     const SMART_BOOKMARKS_PREF = "browser.places.smartBookmarksVersion";
+    const SMART_BOOKMARKS_MAX_PREF = "browser.places.smartBookmarks.max";
+    const SMART_BOOKMARKS_OLDMAX_PREF = "browser.places.smartBookmarks.old-max";
 
-    // TODO bug 399268: should this be a pref?
-    const MAX_RESULTS = 10;
+    const MAX_RESULTS = Services.prefs.getIntPref(SMART_BOOKMARKS_MAX_PREF, 10);
+    let OLD_MAX_RESULTS = Services.prefs.getIntPref(SMART_BOOKMARKS_OLDMAX_PREF, 10);
 
     // Get current smart bookmarks version.  If not set, create them.
     let smartBookmarksCurrentVersion = Services.prefs.getIntPref(SMART_BOOKMARKS_PREF, 0);
 
-    // If version is current or smart bookmarks are disabled, just bail out.
+    // If version is current and max hasn't changed or smart bookmarks are disabled, just bail out.
     if (smartBookmarksCurrentVersion == -1 ||
-        smartBookmarksCurrentVersion >= SMART_BOOKMARKS_VERSION) {
+        (smartBookmarksCurrentVersion >= SMART_BOOKMARKS_VERSION &&
+         OLD_MAX_RESULTS == MAX_RESULTS)) {
       return;
+    }
+    
+    // We're going to recreate the smart bookmarks and set the current max, so store it.
+    if (Services.prefs.prefHasUserValue(SMART_BOOKMARKS_MAX_PREF)) {
+      Services.prefs.setIntPref(SMART_BOOKMARKS_OLDMAX_PREF, MAX_RESULTS);
+    } else {
+      // The max value is default, no need to track the temp value.
+      Services.prefs.clearUserPref(SMART_BOOKMARKS_OLDMAX_PREF);
     }
 
     let batch = {

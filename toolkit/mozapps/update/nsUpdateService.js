@@ -12,7 +12,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 Cu.import("resource://gre/modules/FileUtils.jsm", this);
 Cu.import("resource://gre/modules/Services.jsm", this);
 Cu.import("resource://gre/modules/ctypes.jsm", this);
-Cu.import("resource://gre/modules/AppConstants.jsm", this);
 Cu.importGlobalProperties(["XMLHttpRequest"]);
 
 const UPDATESERVICE_CID = Components.ID("{B3C290A6-3943-4B89-8BBE-C01EB7B3B311}");
@@ -219,10 +218,7 @@ function closeHandle(handle) {
  * @return The Win32 handle to the mutex.
  */
 function createMutex(aName, aAllowExisting = true) {
-  if (AppConstants.platform != "win") {
-    throw Cr.NS_ERROR_NOT_IMPLEMENTED;
-  }
-
+#ifdef XP_WIN
   const INITIAL_OWN = 1;
   const ERROR_ALREADY_EXISTS = 0xB7;
   let lib = ctypes.open("kernel32.dll");
@@ -246,6 +242,9 @@ function createMutex(aName, aAllowExisting = true) {
   }
 
   return handle;
+#else
+  throw Cr.NS_ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 /**
@@ -257,10 +256,7 @@ function createMutex(aName, aAllowExisting = true) {
  * @return Global mutex path
  */
 function getPerInstallationMutexName(aGlobal = true) {
-  if (AppConstants.platform != "win") {
-    throw Cr.NS_ERROR_NOT_IMPLEMENTED;
-  }
-
+#ifdef XP_WIN
   let hasher = Cc["@mozilla.org/security/hash;1"].
                createInstance(Ci.nsICryptoHash);
   hasher.init(hasher.SHA1);
@@ -274,6 +270,9 @@ function getPerInstallationMutexName(aGlobal = true) {
 
   hasher.update(data, data.length);
   return (aGlobal ? "Global\\" : "") + "MozillaUpdateMutex-" + hasher.finish(true);
+#else
+  throw Cr.NS_ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 /**
@@ -285,13 +284,14 @@ function getPerInstallationMutexName(aGlobal = true) {
  * @return true if this instance holds the update mutex
  */
 function hasUpdateMutex() {
-  if (AppConstants.platform != "win") {
-    return true;
-  }
+#ifdef XP_WIN
   if (!gUpdateMutexHandle) {
     gUpdateMutexHandle = createMutex(getPerInstallationMutexName(true), false);
   }
   return !!gUpdateMutexHandle;
+#else
+  return true;
+#endif
 }
 
 /**
@@ -322,10 +322,7 @@ function areDirectoryEntriesWriteable(aDir) {
  * @return true if elevation is required, false otherwise
  */
 function getElevationRequired() {
-  if (AppConstants.platform != "macosx") {
-    return false;
-  }
-
+#ifdef XP_MACOSX
   try {
     // Recursively check that the application bundle (and its descendants) can
     // be written to.
@@ -344,6 +341,7 @@ function getElevationRequired() {
   }
   LOG("getElevationRequired - able to write to application bundle, elevation " +
       "not required");
+#endif
   return false;
 }
 
@@ -355,85 +353,86 @@ function getElevationRequired() {
  * @return true if an update can be applied, false otherwise
  */
 function getCanApplyUpdates() {
-  if (AppConstants.platform != "macosx") {
-    try {
-      let updateTestFile = getUpdateFile([FILE_UPDATE_TEST]);
-      LOG("getCanApplyUpdates - testing write access " + updateTestFile.path);
-      testWriteAccess(updateTestFile, false);
-      if (AppConstants.platform == "win") {
-        // Example windowsVersion:  Windows XP == 5.1
-        let windowsVersion = Services.sysinfo.getProperty("version");
-        LOG("getCanApplyUpdates - windowsVersion = " + windowsVersion);
+#ifndef XP_MACOSX
+  try {
+    let updateTestFile = getUpdateFile([FILE_UPDATE_TEST]);
+    LOG("getCanApplyUpdates - testing write access " + updateTestFile.path);
+    testWriteAccess(updateTestFile, false);
 
-        /**
-         * For Vista, updates can be performed to a location requiring admin
-         * privileges by requesting elevation via the UAC prompt when launching
-         * updater.exe if the appDir is under the Program Files directory
-         * (e.g. C:\Program Files\) and UAC is turned on and  we can elevate
-         * (e.g. user has a split token).
-         *
-         * Note: this does note attempt to handle the case where UAC is turned on
-         * and the installation directory is in a restricted location that
-         * requires admin privileges to update other than Program Files.
-         */
-        let userCanElevate = false;
+#ifdef XP_WIN
+    // Example windowsVersion:  Windows XP == 5.1
+    let windowsVersion = Services.sysinfo.getProperty("version");
+    LOG("getCanApplyUpdates - windowsVersion = " + windowsVersion);
 
-        if (parseFloat(windowsVersion) >= 6) {
-          try {
-            // KEY_UPDROOT will fail and throw an exception if
-            // appDir is not under the Program Files, so we rely on that
-            let dir = Services.dirsvc.get(KEY_UPDROOT, Ci.nsIFile);
-            // appDir is under Program Files, so check if the user can elevate
-            userCanElevate = Services.appinfo.QueryInterface(Ci.nsIWinAppHelper).
-                             userCanElevate;
-            LOG("getCanApplyUpdates - on Vista, userCanElevate: " + userCanElevate);
-          }
-          catch (ex) {
-            // When the installation directory is not under Program Files,
-            // fall through to checking if write access to the
-            // installation directory is available.
-            LOG("getCanApplyUpdates - on Vista, appDir is not under Program Files");
-          }
-        }
+    /**
+     * For Vista, updates can be performed to a location requiring admin
+     * privileges by requesting elevation via the UAC prompt when launching
+     * updater.exe if the appDir is under the Program Files directory
+     * (e.g. C:\Program Files\) and UAC is turned on and  we can elevate
+     * (e.g. user has a split token).
+     *
+     * Note: this does note attempt to handle the case where UAC is turned on
+     * and the installation directory is in a restricted location that
+     * requires admin privileges to update other than Program Files.
+     */
+    let userCanElevate = false;
 
-        /**
-         * On Windows, we no longer store the update under the app dir.
-         *
-         * If we are on Windows (including Vista, if we can't elevate) we need to
-         * to check that we can create and remove files from the actual app
-         * directory (like C:\Program Files\Mozilla Firefox).  If we can't
-         * (because this user is not an adminstrator, for example) canUpdate()
-         * should return false.
-         *
-         * For Vista, we perform this check to enable updating the  application
-         * when the user has write access to the installation directory under the
-         * following scenarios:
-         * 1) the installation directory is not under Program Files
-         *    (e.g. C:\Program Files)
-         * 2) UAC is turned off
-         * 3) UAC is turned on and the user is not an admin
-         *    (e.g. the user does not have a split token)
-         * 4) UAC is turned on and the user is already elevated, so they can't be
-         *    elevated again
-         */
-        if (!userCanElevate) {
-          // if we're unable to create the test file this will throw an exception.
-          let appDirTestFile = getAppBaseDir();
-          appDirTestFile.append(FILE_UPDATE_TEST);
-          LOG("getCanApplyUpdates - testing write access " + appDirTestFile.path);
-          if (appDirTestFile.exists()) {
-            appDirTestFile.remove(false);
-          }
-          appDirTestFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
-          appDirTestFile.remove(false);
-        }
+    if (parseFloat(windowsVersion) >= 6) {
+      try {
+        // KEY_UPDROOT will fail and throw an exception if
+        // appDir is not under the Program Files, so we rely on that
+        let dir = Services.dirsvc.get(KEY_UPDROOT, Ci.nsIFile);
+        // appDir is under Program Files, so check if the user can elevate
+        userCanElevate = Services.appinfo.QueryInterface(Ci.nsIWinAppHelper).
+                         userCanElevate;
+        LOG("getCanApplyUpdates - on Vista, userCanElevate: " + userCanElevate);
       }
-    } catch (e) {
-      LOG("getCanApplyUpdates - unable to apply updates. Exception: " + e);
-      // No write privileges to install directory
-      return false;
+      catch (ex) {
+        // When the installation directory is not under Program Files,
+        // fall through to checking if write access to the
+        // installation directory is available.
+        LOG("getCanApplyUpdates - on Vista, appDir is not under Program Files");
+      }
     }
-  } 
+
+    /**
+     * On Windows, we no longer store the update under the app dir.
+     *
+     * If we are on Windows (including Vista, if we can't elevate) we need to
+     * to check that we can create and remove files from the actual app
+     * directory (like C:\Program Files\Mozilla Firefox).  If we can't
+     * (because this user is not an adminstrator, for example) canUpdate()
+     * should return false.
+     *
+     * For Vista, we perform this check to enable updating the  application
+     * when the user has write access to the installation directory under the
+     * following scenarios:
+     * 1) the installation directory is not under Program Files
+     *    (e.g. C:\Program Files)
+     * 2) UAC is turned off
+     * 3) UAC is turned on and the user is not an admin
+     *    (e.g. the user does not have a split token)
+     * 4) UAC is turned on and the user is already elevated, so they can't be
+     *    elevated again
+     */
+    if (!userCanElevate) {
+      // if we're unable to create the test file this will throw an exception.
+      let appDirTestFile = getAppBaseDir();
+      appDirTestFile.append(FILE_UPDATE_TEST);
+      LOG("getCanApplyUpdates - testing write access " + appDirTestFile.path);
+      if (appDirTestFile.exists()) {
+        appDirTestFile.remove(false);
+      }
+      appDirTestFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
+      appDirTestFile.remove(false);
+    }
+#endif // XP_WIN
+  } catch (e) {
+    LOG("getCanApplyUpdates - unable to apply updates. Exception: " + e);
+    // No write privileges to install directory
+    return false;
+  }
+#endif // !XP_MACOSX
 
   LOG("getCanApplyUpdates - able to apply updates");
   return true;
@@ -454,27 +453,29 @@ XPCOMUtils.defineLazyGetter(this, "gCanStageUpdatesSession", function aus_gCSUS(
 
   try {
     let updateTestFile;
-    if (AppConstants.platform == "macosx") {
-      updateTestFile = getUpdateFile([FILE_UPDATE_TEST]);
-    } else {
-      updateTestFile = getInstallDirRoot();
-      updateTestFile.append(FILE_UPDATE_TEST);
-    }
+#ifdef XP_MACOSX
+    updateTestFile = getUpdateFile([FILE_UPDATE_TEST]);
+#else
+    updateTestFile = getInstallDirRoot();
+    updateTestFile.append(FILE_UPDATE_TEST);
+#endif
+
     LOG("gCanStageUpdatesSession - testing write access " +
         updateTestFile.path);
     testWriteAccess(updateTestFile, true);
-    if (AppConstants.platform != "macosx") {
-      // On all platforms except Mac, we need to test the parent directory as
-      // well, as we need to be able to move files in that directory during the
-      // replacing step.
-      updateTestFile = getInstallDirRoot().parent;
-      updateTestFile.append(FILE_UPDATE_TEST);
-      LOG("gCanStageUpdatesSession - testing write access " +
-          updateTestFile.path);
-      updateTestFile.createUnique(Ci.nsILocalFile.DIRECTORY_TYPE,
-                                  FileUtils.PERMS_DIRECTORY);
-      updateTestFile.remove(false);
-    }
+
+#ifndef XP_MACOSX
+    // On all platforms except Mac, we need to test the parent directory as
+    // well, as we need to be able to move files in that directory during the
+    // replacing step.
+    updateTestFile = getInstallDirRoot().parent;
+    updateTestFile.append(FILE_UPDATE_TEST);
+    LOG("gCanStageUpdatesSession - testing write access " +
+        updateTestFile.path);
+    updateTestFile.createUnique(Ci.nsILocalFile.DIRECTORY_TYPE,
+                                FileUtils.PERMS_DIRECTORY);
+    updateTestFile.remove(false);
+#endif // !XP_MACOSX
   } catch (e) {
     LOG("gCanStageUpdatesSession - unable to stage updates. Exception: " +
         e);
@@ -593,10 +594,10 @@ function getAppBaseDir() {
  */
 function getInstallDirRoot() {
   let dir = getAppBaseDir();
-  if (AppConstants.platform == "macosx") {
-    // On Mac, we store the Updated.app directory inside the bundle directory.
-    dir = dir.parent.parent;
-  }
+#ifdef XP_MACOSX
+  // On Mac, we store the Updated.app directory inside the bundle directory.
+  dir = dir.parent.parent;
+#endif
   return dir;
 }
 
@@ -879,31 +880,33 @@ function handleUpdateFailure(update, errorCode) {
     let cancelations = Services.prefs.getIntPref(PREF_APP_UPDATE_CANCELATIONS, 0);
     cancelations++;
     Services.prefs.setIntPref(PREF_APP_UPDATE_CANCELATIONS, cancelations);
-    if (AppConstants.platform == "macosx") {
-      let osxCancelations = Services.prefs.getIntPref(PREF_APP_UPDATE_CANCELATIONS_OSX, 0);
-      osxCancelations++;
-      Services.prefs.setIntPref(PREF_APP_UPDATE_CANCELATIONS_OSX,
-                                osxCancelations);
-      let maxCancels = Services.prefs.getIntPref(
-                               PREF_APP_UPDATE_CANCELATIONS_OSX_MAX,
-                               DEFAULT_CANCELATIONS_OSX_MAX);
-      // Prevent the preference from setting a value greater than 5.
-      maxCancels = Math.min(maxCancels, 5);
-      if (osxCancelations >= maxCancels) {
-        cleanupActiveUpdate();
-      } else {
-        writeStatusFile(getUpdatesDir(),
-                        update.state = STATE_PENDING_ELEVATE);
-      }
-      update.statusText = gUpdateBundle.GetStringFromName("elevationFailure");
-      update.QueryInterface(Ci.nsIWritablePropertyBag);
-      update.setProperty("patchingFailed", "elevationFailure");
-      let prompter = Cc["@mozilla.org/updates/update-prompt;1"].
-                 createInstance(Ci.nsIUpdatePrompt);
-      prompter.showUpdateError(update);
+
+#ifdef XP_MACOSX
+    let osxCancelations = Services.prefs.getIntPref(PREF_APP_UPDATE_CANCELATIONS_OSX, 0);
+    osxCancelations++;
+    Services.prefs.setIntPref(PREF_APP_UPDATE_CANCELATIONS_OSX,
+                              osxCancelations);
+    let maxCancels = Services.prefs.getIntPref(
+                             PREF_APP_UPDATE_CANCELATIONS_OSX_MAX,
+                             DEFAULT_CANCELATIONS_OSX_MAX);
+    // Prevent the preference from setting a value greater than 5.
+    maxCancels = Math.min(maxCancels, 5);
+    if (osxCancelations >= maxCancels) {
+      cleanupActiveUpdate();
     } else {
-      writeStatusFile(getUpdatesDir(), update.state = STATE_PENDING);
+      writeStatusFile(getUpdatesDir(),
+                      update.state = STATE_PENDING_ELEVATE);
     }
+    update.statusText = gUpdateBundle.GetStringFromName("elevationFailure");
+    update.QueryInterface(Ci.nsIWritablePropertyBag);
+    update.setProperty("patchingFailed", "elevationFailure");
+    let prompter = Cc["@mozilla.org/updates/update-prompt;1"].
+               createInstance(Ci.nsIUpdatePrompt);
+    prompter.showUpdateError(update);
+#else
+    writeStatusFile(getUpdatesDir(), update.state = STATE_PENDING);
+#endif
+
     return true;
   }
 
@@ -1483,12 +1486,15 @@ UpdateService.prototype = {
         Services.obs.removeObserver(this, topic);
         Services.prefs.removeObserver(PREF_APP_UPDATE_LOG, this);
 
-        if (AppConstants.platform == "win" && gUpdateMutexHandle) {
+#ifdef XP_WIN
+        if (gUpdateMutexHandle) {
           // If we hold the update mutex, let it go!
           // The OS would clean this up sometime after shutdown,
           // but that would have no guarantee on timing.
           closeHandle(gUpdateMutexHandle);
         }
+#endif
+
         if (this._retryTimer) {
           this._retryTimer.cancel();
         }
@@ -1845,7 +1851,8 @@ UpdateService.prototype = {
     });
 
     let update = minorUpdate || majorUpdate;
-    if (AppConstants.platform == "macosx" && update) {
+#ifdef XP_MACOSX
+    if (update) {
       if (getElevationRequired()) {
         let installAttemptVersion = Services.prefs.getCharPref(
                                             PREF_APP_UPDATE_ELEVATE_VERSION,
@@ -1895,6 +1902,7 @@ UpdateService.prototype = {
         }
       }
     }
+#endif
 
     return update;
   },
@@ -2890,11 +2898,11 @@ Downloader.prototype = {
 
     LOG("Downloader:_verifyDownload downloaded size == expected size.");
 
+#ifdef MOZ_VERIFY_MAR_SIGNATURE
     // The hash check is not necessary when mar signatures are used to verify
     // the downloaded mar file.
-    if (AppConstants.MOZ_VERIFY_MAR_SIGNATURE) {
-      return true;
-    }
+    return true;
+#endif
 
     let fileStream = Cc["@mozilla.org/network/file-input-stream;1"].
                      createInstance(Ci.nsIFileInputStream);

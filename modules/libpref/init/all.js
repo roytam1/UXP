@@ -4972,8 +4972,6 @@ pref("dom.forms.inputmode", true);
 // InputMethods for soft keyboards in B2G
 pref("dom.mozInputMethod.enabled", false);
 
-pref("dom.flyweb.enabled", false);
-
 // Enable mapped array buffer by default.
 pref("dom.mapped_arraybuffer.enabled", true);
 

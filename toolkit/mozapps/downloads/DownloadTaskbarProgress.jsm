@@ -16,7 +16,6 @@ const Cu = Components.utils;
 const Cr = Components.results;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/AppConstants.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Services",
                                   "resource://gre/modules/Services.jsm");
 
@@ -177,33 +176,33 @@ var DownloadTaskbarProgressUpdater =
    */
   _setActiveWindow: function DTPU_setActiveWindow(aWindow, aIsDownloadWindow)
   {
-    if (AppConstants.platform == "win") {
-      // Clear out the taskbar for the old active window. (If there was no active
-      // window, this is a no-op.)
-      this._clearTaskbar();
+#ifdef XP_WIN
+    // Clear out the taskbar for the old active window. (If there was no active
+    // window, this is a no-op.)
+    this._clearTaskbar();
 
-      this._activeWindowIsDownloadWindow = aIsDownloadWindow;
-      if (aWindow) {
-        // Get the taskbar progress for this window
-        let docShell = aWindow.QueryInterface(Ci.nsIInterfaceRequestor).
-                         getInterface(Ci.nsIWebNavigation).
-                         QueryInterface(Ci.nsIDocShellTreeItem).treeOwner.
-                         QueryInterface(Ci.nsIInterfaceRequestor).
-                         getInterface(Ci.nsIXULWindow).docShell;
-        let taskbarProgress = this._taskbar.getTaskbarProgress(docShell);
-        this._activeTaskbarProgress = taskbarProgress;
+    this._activeWindowIsDownloadWindow = aIsDownloadWindow;
+    if (aWindow) {
+      // Get the taskbar progress for this window
+      let docShell = aWindow.QueryInterface(Ci.nsIInterfaceRequestor).
+                       getInterface(Ci.nsIWebNavigation).
+                       QueryInterface(Ci.nsIDocShellTreeItem).treeOwner.
+                       QueryInterface(Ci.nsIInterfaceRequestor).
+                       getInterface(Ci.nsIXULWindow).docShell;
+      let taskbarProgress = this._taskbar.getTaskbarProgress(docShell);
+      this._activeTaskbarProgress = taskbarProgress;
 
-        this._updateTaskbar();
-        // _onActiveWindowUnload is idempotent, so we don't need to check whether
-        // we've already set this before or not.
-        aWindow.addEventListener("unload", function () {
-          DownloadTaskbarProgressUpdater._onActiveWindowUnload(taskbarProgress);
-        }, false);
-      }
-      else {
-        this._activeTaskbarProgress = null;
-      }
+      this._updateTaskbar();
+      // _onActiveWindowUnload is idempotent, so we don't need to check whether
+      // we've already set this before or not.
+      aWindow.addEventListener("unload", function () {
+        DownloadTaskbarProgressUpdater._onActiveWindowUnload(taskbarProgress);
+      }, false);
     }
+    else {
+      this._activeTaskbarProgress = null;
+    }
+#endif
   },
 
   // / Current state displayed on the active window's taskbar item
@@ -213,14 +212,15 @@ var DownloadTaskbarProgressUpdater =
 
   _shouldSetState: function DTPU_shouldSetState()
   {
-    if (AppConstants.platform == "win") {
-      // If the active window is not the download manager window, set the state
-      // only if it is normal or indeterminate.
-      return this._activeWindowIsDownloadWindow ||
-             (this._taskbarState == Ci.nsITaskbarProgress.STATE_NORMAL ||
-              this._taskbarState == Ci.nsITaskbarProgress.STATE_INDETERMINATE);
-    }
+#ifdef XP_WIN
+    // If the active window is not the download manager window, set the state
+    // only if it is normal or indeterminate.
+    return this._activeWindowIsDownloadWindow ||
+           (this._taskbarState == Ci.nsITaskbarProgress.STATE_NORMAL ||
+            this._taskbarState == Ci.nsITaskbarProgress.STATE_INDETERMINATE);
+#else
     return true;
+#endif
   },
 
   /**

@@ -4,7 +4,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 const C = Components.classes;
@@ -135,8 +134,9 @@ function onProfilesKey(aEvent)
   switch ( aEvent.keyCode )
   {
   case KeyEvent.DOM_VK_BACK_SPACE:
-    if (AppConstants.platform != "macosx")
-      break;
+#ifndef XP_MACOSX
+    break;
+#endif
   case KeyEvent.DOM_VK_DELETE:
     ConfirmDelete();
     break;

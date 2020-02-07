@@ -8,15 +8,14 @@
 
 "use strict";
 
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 this.EXPORTED_SYMBOLS = ["OSCrypto"];
 
 var OSCrypto = {};
 
-if (AppConstants.platform == "win") {
-  Services.scriptloader.loadSubScript("resource://gre/modules/OSCrypto_win.js", this);
-} else {
-  throw new Error("OSCrypto.jsm isn't supported on this platform");
-}
+#ifdef XP_WIN
+Services.scriptloader.loadSubScript("resource://gre/modules/OSCrypto_win.js", this);
+#else
+throw new Error("OSCrypto.jsm isn't supported on this platform");
+#endif

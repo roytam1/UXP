@@ -22,7 +22,6 @@ const Cu = Components.utils;
 const Cr = Components.results;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/AppConstants.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "OS",
                                   "resource://gre/modules/osfile.jsm");
@@ -186,17 +185,17 @@ this.DownloadPrompter.prototype = {
     switch (aPromptType) {
       case this.ON_QUIT:
         title = s.quitCancelDownloadsAlertTitle;
-        if (AppConstants.platform != "macosx") {
-          message = aDownloadsCount > 1
-                    ? s.quitCancelDownloadsAlertMsgMultiple(aDownloadsCount)
-                    : s.quitCancelDownloadsAlertMsg;
-          cancelButton = s.dontQuitButtonWin;
-        } else {
-          message = aDownloadsCount > 1
-                    ? s.quitCancelDownloadsAlertMsgMacMultiple(aDownloadsCount)
-                    : s.quitCancelDownloadsAlertMsgMac;
-          cancelButton = s.dontQuitButtonMac;
-        }
+#ifdef XP_MACOSX
+        message = aDownloadsCount > 1
+                  ? s.quitCancelDownloadsAlertMsgMacMultiple(aDownloadsCount)
+                  : s.quitCancelDownloadsAlertMsgMac;
+        cancelButton = s.dontQuitButtonMac;
+#else
+        message = aDownloadsCount > 1
+                  ? s.quitCancelDownloadsAlertMsgMultiple(aDownloadsCount)
+                  : s.quitCancelDownloadsAlertMsg;
+        cancelButton = s.dontQuitButtonWin;
+#endif
         break;
       case this.ON_OFFLINE:
         title = s.offlineCancelDownloadsAlertTitle;
