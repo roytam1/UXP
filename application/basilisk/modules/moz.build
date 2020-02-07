@@ -9,7 +9,6 @@ EXTRA_JS_MODULES += [
     'AboutNewTab.jsm',
     'AttributionCode.jsm',
     'BrowserUsageTelemetry.jsm',
-    'CastingApps.jsm',
     'ContentClick.jsm',
     'ContentCrashHandlers.jsm',
     'ContentLinkHandler.jsm',
