@@ -116,11 +116,10 @@ function checkCurrentInput(currentInput)
 
   if (!errorMessage) {
     finishText.className = "";
-    finishText.firstChild.data = gProfileManagerBundle
 #ifdef XP_MACOSX
-                                .getString("profileFinishTextMac");
+    finishText.firstChild.data = gProfileManagerBundle.getString("profileFinishTextMac");
 #else
-                                .getString("profileFinishText");
+    finishText.firstChild.data = gProfileManagerBundle.getString("profileFinishText");
 #endif
     canAdvance = true;
   }
