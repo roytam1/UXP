@@ -22,7 +22,9 @@
 #include "GMPUtils.h"
 #include "prio.h"
 #include "base/task.h"
+#ifdef MOZ_EME
 #include "widevine-adapter/WidevineAdapter.h"
+#endif
 
 using namespace mozilla::ipc;
 
@@ -254,9 +256,13 @@ GMPChild::AnswerStartPlugin(const nsString& aAdapter)
     return false;
   }
 
+#ifdef MOZ_EME
   bool isWidevine = aAdapter.EqualsLiteral("widevine");
 
   GMPAdapter* adapter = (isWidevine) ? new WidevineAdapter() : nullptr;
+#else
+  GMPAdapter* adapter = nullptr;
+#endif
   if (!mGMPLoader->Load(libPath.get(),
                         libPath.Length(),
                         mNodeId.BeginWriting(),

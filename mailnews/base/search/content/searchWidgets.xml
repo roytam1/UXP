@@ -224,7 +224,7 @@
             let identitiesRaw = MailServices.accounts
               .getIdentitiesForServer(gFilterList.folder.server);
             let identities = Array.from(this.fixIterator(identitiesRaw,
-                                                         Ci.nsIMsgIdentity));
+                                                         Components.interfaces.nsIMsgIdentity));
 
             if (identities.length == 0) { // typically if this is Local Folders
               if (MailServices.accounts.defaultAccount)

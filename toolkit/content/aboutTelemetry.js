@@ -19,9 +19,6 @@ Cu.import("resource://gre/modules/Preferences.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
 
-XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
-                                  "resource://gre/modules/AppConstants.jsm");
-
 const Telemetry = Services.telemetry;
 const bundle = Services.strings.createBundle(
   "chrome://global/locale/aboutTelemetry.properties");
@@ -236,17 +233,17 @@ var Settings = {
     let elements = document.getElementsByClassName("change-data-choices-link");
     for (let el of elements) {
       el.addEventListener("click", function() {
-        if (AppConstants.platform == "android") {
-          Cu.import("resource://gre/modules/Messaging.jsm");
-          Messaging.sendRequest({
-            type: "Settings:Show",
-            resource: "preferences_privacy",
-          });
-        } else {
-          // Show the data choices preferences on desktop.
-          let mainWindow = getMainWindowWithPreferencesPane();
-          mainWindow.openAdvancedPreferences("dataChoicesTab");
-        }
+#ifdef MOZ_WIDGET_ANDROID
+        Cu.import("resource://gre/modules/Messaging.jsm");
+        Messaging.sendRequest({
+          type: "Settings:Show",
+          resource: "preferences_privacy",
+        });
+#else
+        // Show the data choices preferences on desktop.
+        let mainWindow = getMainWindowWithPreferencesPane();
+        mainWindow.openAdvancedPreferences("dataChoicesTab");
+#endif
       }, false);
     }
   },

@@ -35,8 +35,6 @@ EXPORTS += [
     'GMPAudioDecoderProxy.h',
     'GMPAudioHost.h',
     'GMPCallbackBase.h',
-    'GMPCDMCallbackProxy.h',
-    'GMPCDMProxy.h',
     'GMPChild.h',
     'GMPContentChild.h',
     'GMPContentParent.h',
@@ -73,6 +71,12 @@ EXPORTS += [
     'GMPVideoPlaneImpl.h',
 ]
 
+if CONFIG['MOZ_EME']:
+    EXPORTS += [
+        'GMPCDMCallbackProxy.h',
+        'GMPCDMProxy.h',
+    ]
+
 # We link GMPLoader into xul on B2G/Fennec as its code does not need to be
 # covered by a DRM vendor's voucher.
 if CONFIG['OS_TARGET'] == 'Android':
@@ -87,8 +91,6 @@ UNIFIED_SOURCES += [
     'GMPAudioDecoderChild.cpp',
     'GMPAudioDecoderParent.cpp',
     'GMPAudioHost.cpp',
-    'GMPCDMCallbackProxy.cpp',
-    'GMPCDMProxy.cpp',
     'GMPChild.cpp',
     'GMPContentChild.cpp',
     'GMPContentParent.cpp',
@@ -120,10 +122,16 @@ UNIFIED_SOURCES += [
     'GMPVideoPlaneImpl.cpp',
 ]
 
-DIRS += [
-    'rlz',
-    'widevine-adapter',
-]
+if CONFIG['MOZ_EME']:
+    UNIFIED_SOURCES += [
+        'GMPCDMCallbackProxy.cpp',
+        'GMPCDMProxy.cpp',
+    ]
+
+DIRS += ['rlz']
+
+if CONFIG['MOZ_EME']:
+    DIRS += ['widevine-adapter']
 
 IPDL_SOURCES += [
   'GMPTypes.ipdlh',

@@ -19,8 +19,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
-                                  "resource://gre/modules/AppConstants.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
                                   "resource://gre/modules/BrowserUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "ExtensionUtils",
@@ -846,9 +844,9 @@ var onBeforeRequest = {
   get allowedOptions() {
     delete this.allowedOptions;
     this.allowedOptions = ["blocking"];
-    if (!AppConstants.RELEASE_OR_BETA) {
-      this.allowedOptions.push("requestBody");
-    }
+#ifndef RELEASE_OR_BETA
+    this.allowedOptions.push("requestBody");
+#endif
     return this.allowedOptions;
   },
   addListener(callback, filter = null, opt_extraInfoSpec = null) {

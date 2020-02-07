@@ -74,7 +74,6 @@ class Connection;
 } // namespace network
 
 class PowerManager;
-class Presentation;
 class LegacyMozTCPSocket;
 class StorageManager;
 
@@ -210,8 +209,6 @@ public:
   system::AudioChannelManager* GetMozAudioChannelManager(ErrorResult& aRv);
 #endif // MOZ_AUDIO_CHANNEL_MANAGER
 
-  Presentation* GetPresentation(ErrorResult& aRv);
-
   bool SendBeacon(const nsAString& aUrl,
                   const Nullable<ArrayBufferViewOrBlobOrStringOrFormData>& aData,
                   ErrorResult& aRv);
@@ -288,7 +285,6 @@ private:
   RefPtr<time::TimeManager> mTimeManager;
   RefPtr<ServiceWorkerContainer> mServiceWorkerContainer;
   nsCOMPtr<nsPIDOMWindowInner> mWindow;
-  RefPtr<Presentation> mPresentation;
 #ifdef MOZ_GAMEPAD
   RefPtr<GamepadServiceTest> mGamepadServiceTest;
 #endif

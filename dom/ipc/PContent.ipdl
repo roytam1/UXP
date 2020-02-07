@@ -43,7 +43,6 @@ include protocol PJavaScript;
 include protocol PRemoteSpellcheckEngine;
 include protocol PWebBrowserPersistDocument;
 include protocol PWebrtcGlobal;
-include protocol PPresentation;
 include protocol PVideoDecoderManager;
 include protocol PFlyWebPublishedServer;
 include DOMTypes;
@@ -260,7 +259,6 @@ nested(upto inside_cpow) sync protocol PContent
     manages PRemoteSpellcheckEngine;
     manages PWebBrowserPersistDocument;
     manages PWebrtcGlobal;
-    manages PPresentation;
     manages PFlyWebPublishedServer;
 
 both:
@@ -481,18 +479,6 @@ child:
     async UpdateWindow(uintptr_t aChildId);
 
     /**
-     * Notify the child that presentation receiver has been launched with the
-     * correspondent iframe.
-     */
-    async NotifyPresentationReceiverLaunched(PBrowser aIframe, nsString aSessionId);
-
-    /**
-     * Notify the child that the info about a presentation receiver needs to be
-     * cleaned up.
-     */
-    async NotifyPresentationReceiverCleanUp(nsString aSessionId);
-
-    /**
      * Notify the child that cache is emptied.
      */
     async NotifyEmptyHTTPCache();
@@ -681,8 +667,6 @@ parent:
     async PMedia();
 
     async PWebrtcGlobal();
-
-    async PPresentation();
 
     async PFlyWebPublishedServer(nsString name, FlyWebPublishOptions params);
 

@@ -11,9 +11,9 @@ Our own managed and maintained code should adhere to this guide where possible o
 ## General formatting rules
 The following formatting rules apply to all code:
 - Always use spaces for indentation, never use tabs!
-- Put a space between a keyword and parenthesis, e.g. `if (`.
+- Put a space between a keyword and parenthesis, e.g. `if (`. Do _not_ put a space between a function/type-assignment name and its parenthesis, e.g. `function(somevar)` or `int32_t(somevar)`.
 - Put a space between variables and operators, e.g. `a == b`.
-- Put a space after a comma or semicolon in variable lists, e.g. `function (a, b, c)` or `for (i = 1; i < 10; i++)`.
+- Put a space after a comma or semicolon in variable lists, e.g. `function(a, b, c)` or `for (i = 1; i < 10; i++)`.
 - Indentation of scopes is 2 spaces.
 - Indentation of long lines is variable-aligned or expression-aligned (see "long line wrapping")
 - Conditional defines are always placed on column 1. This is also true for nested defines.

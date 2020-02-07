@@ -285,15 +285,7 @@ WEBIDL_FILES = [
     'MediaDeviceInfo.webidl',
     'MediaDevices.webidl',
     'MediaElementAudioSourceNode.webidl',
-    'MediaEncryptedEvent.webidl',
     'MediaError.webidl',
-    'MediaKeyError.webidl',
-    'MediaKeyMessageEvent.webidl',
-    'MediaKeys.webidl',
-    'MediaKeySession.webidl',
-    'MediaKeysRequestStatus.webidl',
-    'MediaKeyStatusMap.webidl',
-    'MediaKeySystemAccess.webidl',
     'MediaList.webidl',
     'MediaQueryList.webidl',
     'MediaRecorder.webidl',
@@ -361,13 +353,6 @@ WEBIDL_FILES = [
     'PopupBoxObject.webidl',
     'Position.webidl',
     'PositionError.webidl',
-    'Presentation.webidl',
-    'PresentationAvailability.webidl',
-    'PresentationConnection.webidl',
-    'PresentationConnectionList.webidl',
-    'PresentationDeviceInfoManager.webidl',
-    'PresentationReceiver.webidl',
-    'PresentationRequest.webidl',
     'ProcessingInstruction.webidl',
     'ProfileTimelineMarker.webidl',
     'Promise.webidl',
@@ -565,7 +550,6 @@ WEBIDL_FILES = [
     'WebKitCSSMatrix.webidl',
     'WebSocket.webidl',
     'WheelEvent.webidl',
-    'WidevineCDMManifest.webidl',
     'WifiOptions.webidl',
     'WindowOrWorkerGlobalScope.webidl',
     'WindowRoot.webidl',
@@ -591,6 +575,19 @@ WEBIDL_FILES = [
     'XULDocument.webidl',
     'XULElement.webidl',
 ]
+
+if CONFIG['MOZ_EME']:
+    WEBIDL_FILES += [
+        'MediaEncryptedEvent.webidl',
+        'MediaKeyError.webidl',
+        'MediaKeyMessageEvent.webidl',
+        'MediaKeys.webidl',
+        'MediaKeySession.webidl',
+        'MediaKeysRequestStatus.webidl',
+        'MediaKeyStatusMap.webidl',
+        'MediaKeySystemAccess.webidl',
+        'WidevineCDMManifest.webidl',
+    ]
 
 if CONFIG['MOZ_WEBEXTENSIONS']:
   WEBIDL_FILES += ['AddonManager.webidl']
@@ -705,8 +702,6 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     'PluginCrashedEvent.webidl',
     'PopStateEvent.webidl',
     'PopupBlockedEvent.webidl',
-    'PresentationConnectionAvailableEvent.webidl',
-    'PresentationConnectionCloseEvent.webidl',
     'ProgressEvent.webidl',
     'RecordErrorEvent.webidl',
     'ScrollViewChangeEvent.webidl',

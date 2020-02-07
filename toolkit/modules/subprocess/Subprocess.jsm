@@ -18,17 +18,16 @@ let EXPORTED_SYMBOLS = ["Subprocess"];
 
 var {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/subprocess/subprocess_common.jsm");
 
-if (AppConstants.platform == "win") {
-  XPCOMUtils.defineLazyModuleGetter(this, "SubprocessImpl",
-                                    "resource://gre/modules/subprocess/subprocess_win.jsm");
-} else {
-  XPCOMUtils.defineLazyModuleGetter(this, "SubprocessImpl",
-                                    "resource://gre/modules/subprocess/subprocess_unix.jsm");
-}
+#ifdef XP_WIN
+XPCOMUtils.defineLazyModuleGetter(this, "SubprocessImpl",
+                                  "resource://gre/modules/subprocess/subprocess_win.jsm");
+#else
+XPCOMUtils.defineLazyModuleGetter(this, "SubprocessImpl",
+                                  "resource://gre/modules/subprocess/subprocess_unix.jsm");
+#endif
 
 /**
  * Allows for creation of and communication with OS-level sub-processes.

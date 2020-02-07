@@ -209,7 +209,7 @@ public:
   /** set the desired size returned by this frame during its last reflow */
   inline void SetDesiredSize(const ReflowOutput & aDesiredSize);
 
-  bool GetContentEmpty();
+  bool GetContentEmpty() const;
   void SetContentEmpty(bool aContentEmpty);
 
   bool HasPctOverBSize();
@@ -246,6 +246,10 @@ public:
   virtual void InvalidateFrame(uint32_t aDisplayItemKey = 0) override;
   virtual void InvalidateFrameWithRect(const nsRect& aRect, uint32_t aDisplayItemKey = 0) override;
   virtual void InvalidateFrameForRemoval() override { InvalidateFrameSubtree(); }
+  
+  bool ShouldPaintBordersAndBackgrounds() const;
+  
+  bool ShouldPaintBackground(nsDisplayListBuilder* aBuilder);
 
 protected:
   virtual LogicalSides
@@ -283,7 +287,7 @@ inline void nsTableCellFrame::SetDesiredSize(const ReflowOutput & aDesiredSize)
   mDesiredSize = aDesiredSize.Size(wm).ConvertTo(GetWritingMode(), wm);
 }
 
-inline bool nsTableCellFrame::GetContentEmpty()
+inline bool nsTableCellFrame::GetContentEmpty() const
 {
   return HasAnyStateBits(NS_TABLE_CELL_CONTENT_EMPTY);
 }

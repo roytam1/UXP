@@ -12,7 +12,6 @@ var gToolboxSheet = false;
 var gPaletteBox = null;
 
 Components.utils.import("resource://gre/modules/Services.jsm");
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
 
 function onLoad()
 {
@@ -213,10 +212,10 @@ function wrapToolbarItems()
 {
   forEachCustomizableToolbar(function (toolbar) {
     Array.forEach(toolbar.childNodes, function (item) {
-      if (AppConstants.platform == "macosx") {
-        if (item.firstChild && item.firstChild.localName == "menubar")
-          return;
-      }
+#ifdef XP_MACOSX
+      if (item.firstChild && item.firstChild.localName == "menubar")
+        return;
+#endif
       if (isToolbarItem(item)) {
         let wrapper = wrapToolbarItem(item);
         cleanupItemForToolbar(item, wrapper);
