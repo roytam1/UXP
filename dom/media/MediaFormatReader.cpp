@@ -4,7 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef MOZ_EME
 #include "mozilla/CDMProxy.h"
+#endif
+
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/dom/HTMLMediaElement.h"
 #include "mozilla/Preferences.h"
@@ -611,7 +614,6 @@ private:
   nsTArray<uint8_t> mInitData;
   nsString mInitDataType;
 };
-#endif
 
 void
 MediaFormatReader::SetCDMProxy(CDMProxy* aProxy)
@@ -624,6 +626,7 @@ MediaFormatReader::SetCDMProxy(CDMProxy* aProxy)
   });
   OwnerThread()->Dispatch(r.forget());
 }
+#endif // MOZ_EME
 
 bool
 MediaFormatReader::IsWaitingOnCDMResource() {

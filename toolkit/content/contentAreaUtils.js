@@ -24,8 +24,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "Task",
                                   "resource://gre/modules/Task.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Deprecated",
                                   "resource://gre/modules/Deprecated.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
-                                  "resource://gre/modules/AppConstants.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
                                   "resource://gre/modules/NetUtil.jsm");
 
@@ -1161,10 +1159,10 @@ function getNormalizedLeafName(aFile, aDefaultExtension)
   if (!aDefaultExtension)
     return aFile;
 
-  if (AppConstants.platform == "win") {
-    // Remove trailing dots and spaces on windows
-    aFile = aFile.replace(/[\s.]+$/, "");
-  }
+#ifdef XP_WIN
+  // Remove trailing dots and spaces on windows
+  aFile = aFile.replace(/[\s.]+$/, "");
+#endif
 
   // Remove leading dots
   aFile = aFile.replace(/^\.+/, "");

@@ -8,7 +8,6 @@ this.EXPORTED_SYMBOLS = ["UpdateUtils"];
 
 const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
@@ -33,9 +32,8 @@ this.UpdateUtils = {
    *        Whether or not to include the partner bits. Default: true.
    */
   getUpdateChannel(aIncludePartners = true) {
-    let channel = defaults.getCharPref("app.update.channel",
-                                       AppConstants.MOZ_UPDATE_CHANNEL);
     let defaults = Services.prefs.getDefaultBranch(null);
+#expand    let channel = defaults.getCharPref("app.update.channel", "__MOZ_UPDATE_CHANNEL__");
 
     if (aIncludePartners) {
       try {
@@ -132,49 +130,48 @@ XPCOMUtils.defineLazyGetter(UpdateUtils, "Locale", function() {
  * Provides adhoc system capability information for application update.
  */
 XPCOMUtils.defineLazyGetter(this, "gSystemCapabilities", function aus_gSC() {
-  if (AppConstants.platform == "win") {
-    const PF_MMX_INSTRUCTIONS_AVAILABLE = 3; // MMX
-    const PF_XMMI_INSTRUCTIONS_AVAILABLE = 6; // SSE
-    const PF_XMMI64_INSTRUCTIONS_AVAILABLE = 10; // SSE2
-    const PF_SSE3_INSTRUCTIONS_AVAILABLE = 13; // SSE3
+#ifdef XP_WIN
+  const PF_MMX_INSTRUCTIONS_AVAILABLE = 3; // MMX
+  const PF_XMMI_INSTRUCTIONS_AVAILABLE = 6; // SSE
+  const PF_XMMI64_INSTRUCTIONS_AVAILABLE = 10; // SSE2
+  const PF_SSE3_INSTRUCTIONS_AVAILABLE = 13; // SSE3
 
-    let lib = ctypes.open("kernel32.dll");
-    let IsProcessorFeaturePresent = lib.declare("IsProcessorFeaturePresent",
-                                                ctypes.winapi_abi,
-                                                ctypes.int32_t, /* success */
-                                                ctypes.uint32_t); /* DWORD */
-    let instructionSet = "unknown";
-    try {
-      if (IsProcessorFeaturePresent(PF_SSE3_INSTRUCTIONS_AVAILABLE)) {
-        instructionSet = "SSE3";
-      } else if (IsProcessorFeaturePresent(PF_XMMI64_INSTRUCTIONS_AVAILABLE)) {
-        instructionSet = "SSE2";
-      } else if (IsProcessorFeaturePresent(PF_XMMI_INSTRUCTIONS_AVAILABLE)) {
-        instructionSet = "SSE";
-      } else if (IsProcessorFeaturePresent(PF_MMX_INSTRUCTIONS_AVAILABLE)) {
-        instructionSet = "MMX";
-      }
-    } catch (e) {
-      instructionSet = "error";
-      Cu.reportError("Error getting processor instruction set. " +
-                     "Exception: " + e);
-    }
-
-    lib.close();
-    return instructionSet;
-  }
-
-  if (AppConstants == "linux") {
-    let instructionSet = "unknown";
-    if (navigator.cpuHasSSE2) {
+  let lib = ctypes.open("kernel32.dll");
+  let IsProcessorFeaturePresent = lib.declare("IsProcessorFeaturePresent",
+                                              ctypes.winapi_abi,
+                                              ctypes.int32_t, /* success */
+                                              ctypes.uint32_t); /* DWORD */
+  let instructionSet = "unknown";
+  try {
+    if (IsProcessorFeaturePresent(PF_SSE3_INSTRUCTIONS_AVAILABLE)) {
+      instructionSet = "SSE3";
+    } else if (IsProcessorFeaturePresent(PF_XMMI64_INSTRUCTIONS_AVAILABLE)) {
       instructionSet = "SSE2";
+    } else if (IsProcessorFeaturePresent(PF_XMMI_INSTRUCTIONS_AVAILABLE)) {
+      instructionSet = "SSE";
+    } else if (IsProcessorFeaturePresent(PF_MMX_INSTRUCTIONS_AVAILABLE)) {
+      instructionSet = "MMX";
     }
-    return instructionSet;
+  } catch (e) {
+    instructionSet = "error";
+    Cu.reportError("Error getting processor instruction set. " +
+                   "Exception: " + e);
   }
 
+  lib.close();
+  return instructionSet;
+#elifdef XP_LINUX
+  let instructionSet = "unknown";
+  if (navigator.cpuHasSSE2) {
+    instructionSet = "SSE2";
+  }
+  return instructionSet;
+#else
   return "NA"
+#endif
 });
 
+#ifdef XP_WIN
 /* Windows only getter that returns the processor architecture. */
 XPCOMUtils.defineLazyGetter(this, "gWinCPUArch", function aus_gWinCPUArch() {
   // Get processor architecture
@@ -239,6 +236,7 @@ XPCOMUtils.defineLazyGetter(this, "gWinCPUArch", function aus_gWinCPUArch() {
 
   return arch;
 });
+#endif
 
 XPCOMUtils.defineLazyGetter(UpdateUtils, "ABI", function() {
   let abi = null;
@@ -249,19 +247,20 @@ XPCOMUtils.defineLazyGetter(UpdateUtils, "ABI", function() {
     Cu.reportError("XPCOM ABI unknown");
   }
 
-  if (AppConstants.platform == "macosx") {
-    // Mac universal build should report a different ABI than either macppc
-    // or mactel.
-    let macutils = Cc["@mozilla.org/xpcom/mac-utils;1"].
-                   getService(Ci.nsIMacUtils);
+#ifdef XP_MACOSX
+  // Mac universal build should report a different ABI than either macppc
+  // or mactel.
+  let macutils = Cc["@mozilla.org/xpcom/mac-utils;1"].
+                 getService(Ci.nsIMacUtils);
 
-    if (macutils.isUniversalBinary) {
-      abi += "-u-" + macutils.architecturesInBinary;
-    }
-  } else if (AppConstants.platform == "win") {
-    // Windows build should report the CPU architecture that it's running on.
-    abi += "-" + gWinCPUArch;
+  if (macutils.isUniversalBinary) {
+    abi += "-u-" + macutils.architecturesInBinary;
   }
+#elifdef XP_WIN
+  // Windows build should report the CPU architecture that it's running on.
+  abi += "-" + gWinCPUArch;
+#endif
+
   return abi;
 });
 
@@ -275,95 +274,96 @@ XPCOMUtils.defineLazyGetter(UpdateUtils, "OSVersion", function() {
     Cu.reportError("OS Version unknown.");
   }
 
+#ifdef XP_WIN
   if (osVersion) {
-    if (AppConstants.platform == "win") {
-      const BYTE = ctypes.uint8_t;
-      const WORD = ctypes.uint16_t;
-      const DWORD = ctypes.uint32_t;
-      const WCHAR = ctypes.char16_t;
-      const BOOL = ctypes.int;
+    const BYTE = ctypes.uint8_t;
+    const WORD = ctypes.uint16_t;
+    const DWORD = ctypes.uint32_t;
+    const WCHAR = ctypes.char16_t;
+    const BOOL = ctypes.int;
 
-      // This structure is described at:
-      // http://msdn.microsoft.com/en-us/library/ms724833%28v=vs.85%29.aspx
-      const SZCSDVERSIONLENGTH = 128;
-      const OSVERSIONINFOEXW = new ctypes.StructType('OSVERSIONINFOEXW',
-          [
-          {dwOSVersionInfoSize: DWORD},
-          {dwMajorVersion: DWORD},
-          {dwMinorVersion: DWORD},
-          {dwBuildNumber: DWORD},
-          {dwPlatformId: DWORD},
-          {szCSDVersion: ctypes.ArrayType(WCHAR, SZCSDVERSIONLENGTH)},
-          {wServicePackMajor: WORD},
-          {wServicePackMinor: WORD},
-          {wSuiteMask: WORD},
-          {wProductType: BYTE},
-          {wReserved: BYTE}
-          ]);
+    // This structure is described at:
+    // http://msdn.microsoft.com/en-us/library/ms724833%28v=vs.85%29.aspx
+    const SZCSDVERSIONLENGTH = 128;
+    const OSVERSIONINFOEXW = new ctypes.StructType('OSVERSIONINFOEXW',
+        [
+        {dwOSVersionInfoSize: DWORD},
+        {dwMajorVersion: DWORD},
+        {dwMinorVersion: DWORD},
+        {dwBuildNumber: DWORD},
+        {dwPlatformId: DWORD},
+        {szCSDVersion: ctypes.ArrayType(WCHAR, SZCSDVERSIONLENGTH)},
+        {wServicePackMajor: WORD},
+        {wServicePackMinor: WORD},
+        {wSuiteMask: WORD},
+        {wProductType: BYTE},
+        {wReserved: BYTE}
+        ]);
 
-      // This structure is described at:
-      // http://msdn.microsoft.com/en-us/library/ms724958%28v=vs.85%29.aspx
-      const SYSTEM_INFO = new ctypes.StructType('SYSTEM_INFO',
-          [
-          {wProcessorArchitecture: WORD},
-          {wReserved: WORD},
-          {dwPageSize: DWORD},
-          {lpMinimumApplicationAddress: ctypes.voidptr_t},
-          {lpMaximumApplicationAddress: ctypes.voidptr_t},
-          {dwActiveProcessorMask: DWORD.ptr},
-          {dwNumberOfProcessors: DWORD},
-          {dwProcessorType: DWORD},
-          {dwAllocationGranularity: DWORD},
-          {wProcessorLevel: WORD},
-          {wProcessorRevision: WORD}
-          ]);
+    // This structure is described at:
+    // http://msdn.microsoft.com/en-us/library/ms724958%28v=vs.85%29.aspx
+    const SYSTEM_INFO = new ctypes.StructType('SYSTEM_INFO',
+        [
+        {wProcessorArchitecture: WORD},
+        {wReserved: WORD},
+        {dwPageSize: DWORD},
+        {lpMinimumApplicationAddress: ctypes.voidptr_t},
+        {lpMaximumApplicationAddress: ctypes.voidptr_t},
+        {dwActiveProcessorMask: DWORD.ptr},
+        {dwNumberOfProcessors: DWORD},
+        {dwProcessorType: DWORD},
+        {dwAllocationGranularity: DWORD},
+        {wProcessorLevel: WORD},
+        {wProcessorRevision: WORD}
+        ]);
 
-      let kernel32 = false;
+    let kernel32 = false;
+    try {
+      kernel32 = ctypes.open("Kernel32");
+    } catch (e) {
+      Cu.reportError("Unable to open kernel32! " + e);
+      osVersion += ".unknown (unknown)";
+    }
+
+    if (kernel32) {
       try {
-        kernel32 = ctypes.open("Kernel32");
-      } catch (e) {
-        Cu.reportError("Unable to open kernel32! " + e);
-        osVersion += ".unknown (unknown)";
-      }
-
-      if (kernel32) {
+        // Get Service pack info
         try {
-          // Get Service pack info
-          try {
-            let GetVersionEx = kernel32.declare("GetVersionExW",
-                                                ctypes.default_abi,
-                                                BOOL,
-                                                OSVERSIONINFOEXW.ptr);
-            let winVer = OSVERSIONINFOEXW();
-            winVer.dwOSVersionInfoSize = OSVERSIONINFOEXW.size;
+          let GetVersionEx = kernel32.declare("GetVersionExW",
+                                              ctypes.default_abi,
+                                              BOOL,
+                                              OSVERSIONINFOEXW.ptr);
+          let winVer = OSVERSIONINFOEXW();
+          winVer.dwOSVersionInfoSize = OSVERSIONINFOEXW.size;
 
-            if (0 !== GetVersionEx(winVer.address())) {
-              osVersion += "." + winVer.wServicePackMajor +
-                           "." + winVer.wServicePackMinor;
-            } else {
-              Cu.reportError("Unknown failure in GetVersionEX (returned 0)");
-              osVersion += ".unknown";
-            }
-          } catch (e) {
-            Cu.reportError("Error getting service pack information. Exception: " + e);
+          if (0 !== GetVersionEx(winVer.address())) {
+            osVersion += "." + winVer.wServicePackMajor +
+                         "." + winVer.wServicePackMinor;
+          } else {
+            Cu.reportError("Unknown failure in GetVersionEX (returned 0)");
             osVersion += ".unknown";
           }
-        } finally {
-          kernel32.close();
+        } catch (e) {
+          Cu.reportError("Error getting service pack information. Exception: " + e);
+          osVersion += ".unknown";
         }
-
-        // Add processor architecture
-        osVersion += " (" + gWinCPUArch + ")";
+      } finally {
+        kernel32.close();
       }
-    }
 
-    try {
-      osVersion += " (" + Services.sysinfo.getProperty("secondaryLibrary") + ")";
+      // Add processor architecture
+      osVersion += " (" + gWinCPUArch + ")";
     }
-    catch (e) {
-      // Not all platforms have a secondary widget library, so an error is nothing to worry about.
-    }
-    osVersion = encodeURIComponent(osVersion);
   }
+
+  try {
+    osVersion += " (" + Services.sysinfo.getProperty("secondaryLibrary") + ")";
+  }
+  catch (e) {
+    // Not all platforms have a secondary widget library, so an error is nothing to worry about.
+  }
+  osVersion = encodeURIComponent(osVersion);
+#endif
+
   return osVersion;
 });

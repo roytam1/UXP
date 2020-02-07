@@ -10,7 +10,6 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const Cr = Components.results;
 
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/Preferences.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Timer.jsm");
@@ -24,14 +23,14 @@ const {
 const {PushDB} = Cu.import("resource://gre/modules/PushDB.jsm");
 
 const CONNECTION_PROTOCOLS = (function() {
-  if ('android' != AppConstants.MOZ_WIDGET_TOOLKIT) {
+#ifdef MOZ_WIDGET_ANDROID
+    const {PushServiceAndroidGCM} = Cu.import("resource://gre/modules/PushServiceAndroidGCM.jsm");
+    return [PushServiceAndroidGCM];
+#else
     const {PushServiceWebSocket} = Cu.import("resource://gre/modules/PushServiceWebSocket.jsm");
     const {PushServiceHttp2} = Cu.import("resource://gre/modules/PushServiceHttp2.jsm");
     return [PushServiceWebSocket, PushServiceHttp2];
-  } else {
-    const {PushServiceAndroidGCM} = Cu.import("resource://gre/modules/PushServiceAndroidGCM.jsm");
-    return [PushServiceAndroidGCM];
-  }
+#endif
 })();
 
 XPCOMUtils.defineLazyServiceGetter(this, "gPushNotifier",

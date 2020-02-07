@@ -275,6 +275,7 @@ function output(sortedStatuses, currentList) {
     writeTo(getExpirationTimeString(), fos);
     writeTo(PREFIX, fos);
 
+    dump("INFO: Removing error-state sites from list\n");
     for (let status in sortedStatuses) {
       // If we've encountered an error for this entry (other than the site not
       // sending an HSTS header), be safe and remove it from the list
@@ -283,28 +284,30 @@ function output(sortedStatuses, currentList) {
           status.error != ERROR_NO_HSTS_HEADER &&
           status.error != ERROR_MAX_AGE_TOO_LOW &&
           status.name in currentList) {
-        dump("INFO: error connecting to or processing " + status.name + " - dropping from list\n");
+        // dump("INFO: error connecting to or processing " + status.name + " - dropping from list\n");
         writeTo(status.name + ": " + errorToString(status) + "\n", eos);
         status.maxAge = 0;
       }
     }
 
     // Filter out entries we aren't including.
+    dump("INFO: Filtering out entries we aren't including...\n");
     var includedStatuses = sortedStatuses.filter(function (status) {
       if (status.maxAge < MINIMUM_REQUIRED_MAX_AGE && !status.forceInclude) {
-        dump("INFO: " + status.name + " NOT ON the preload list\n");
+        // dump("INFO: " + status.name + " NOT ON the preload list\n");
         writeTo(status.name + ": " + errorToString(status) + "\n", eos);
         return false;
       }
 
-      dump("INFO: " + status.name + " ON the preload list\n");
+      // dump("INFO: " + status.name + " ON the preload list\n");
       if (status.forceInclude && status.error != ERROR_NONE) {
         writeTo(status.name + ": " + errorToString(status) + " (error "
                 + "ignored - included regardless)\n", eos);
       }
       return true;
     });
-
+    
+    dump("INFO: Writing statuses to file...\n");
     for (var status of includedStatuses) {
       writeEntry(status, fos);
     }

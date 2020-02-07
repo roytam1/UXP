@@ -2101,51 +2101,6 @@ if test "${BZ2_DIR}" -a -d "${BZ2_DIR}" -a "$MOZ_SYSTEM_BZ2" = 1; then
     MOZ_BZ2_LIBS="-L${BZ2_DIR}/lib ${MOZ_BZ2_LIBS}"
 fi
 
-dnl ========================================================
-dnl system PNG Support
-dnl ========================================================
-MOZ_ARG_WITH_STRING(system-png,
-[  --with-system-png[=PFX]
-                          Use system libpng [installed at prefix PFX]],
-    PNG_DIR=$withval)
-
-_SAVE_CFLAGS=$CFLAGS
-_SAVE_LDFLAGS=$LDFLAGS
-_SAVE_LIBS=$LIBS
-if test -n "${PNG_DIR}" -a "${PNG_DIR}" != "yes"; then
-    CFLAGS="-I${PNG_DIR}/include $CFLAGS"
-    LDFLAGS="-L${PNG_DIR}/lib $LDFLAGS"
-fi
-if test -z "$PNG_DIR" -o "$PNG_DIR" = no; then
-    MOZ_SYSTEM_PNG=
-else
-    AC_CHECK_LIB(png, png_get_valid, [MOZ_SYSTEM_PNG=1 MOZ_PNG_LIBS="-lpng"],
-                 AC_MSG_ERROR([--with-system-png requested but no working libpng found]))
-    AC_CHECK_LIB(png, png_get_acTL, ,
-                 AC_MSG_ERROR([--with-system-png won't work because the system's libpng doesn't have APNG support]))
-fi
-if test "$MOZ_SYSTEM_PNG" = 1; then
-    AC_TRY_COMPILE([ #include <stdio.h>
-                     #include <sys/types.h>
-                     #include <png.h> ],
-                   [ #if PNG_LIBPNG_VER < $MOZPNG
-                     #error "Insufficient libpng version ($MOZPNG required)."
-                     #endif
-                     #ifndef PNG_UINT_31_MAX
-                     #error "Insufficient libpng version."
-                     #endif ],
-                   MOZ_SYSTEM_PNG=1,
-                   AC_MSG_ERROR([--with-system-png requested but no working libpng found]))
-fi
-CFLAGS=$_SAVE_CFLAGS
-LDFLAGS=$_SAVE_LDFLAGS
-LIBS=$_SAVE_LIBS
-
-if test "${PNG_DIR}" -a -d "${PNG_DIR}" -a "$MOZ_SYSTEM_PNG" = 1; then
-    MOZ_PNG_CFLAGS="-I${PNG_DIR}/include"
-    MOZ_PNG_LIBS="-L${PNG_DIR}/lib ${MOZ_PNG_LIBS}"
-fi
-
 fi # SKIP_LIBRARY_CHECKS
 
 dnl ========================================================
@@ -2946,25 +2901,12 @@ dnl ========================================================
 dnl = EME support
 dnl ========================================================
 
-MOZ_ARG_ENABLE_STRING(eme,
-[  --enable-eme[=widevine]  Enable support for Encrypted Media Extensions  ],
-    MOZ_EME_ARGS=$enableval)
+MOZ_ARG_ENABLE_BOOL(eme,
+[  --enable-eme           Enable support for Encrypted Media Extensions  ],
+    MOZ_EME=1,
+    MOZ_EME=)
 
-if test "$MOZ_EME_ARGS"; then
-    if test "$MOZ_EME_ARGS" = "no"; then
-        dnl EME explicitly disabled with --disable-eme
-        MOZ_EME=
-    elif test "$MOZ_EME_ARGS" = "yes"; then
-        dnl EME explicitly enabled with --enable-eme
-        MOZ_EME=1
-    else
-        dnl EME explicitly enabled with --enable-eme=<args>
-        MOZ_EME=1
-        MOZ_EME_MODULES=`echo $MOZ_EME_ARGS | sed -e 's/,/ /g'`
-    fi
-fi
 
-AC_SUBST_SET(MOZ_EME_MODULES)
 if test -n "$MOZ_EME"; then
     if test -z "$MOZ_FMP4"; then
         AC_MSG_ERROR([Encrypted Media Extension support requires Fragmented MP4 support])
@@ -2972,12 +2914,7 @@ if test -n "$MOZ_EME"; then
     AC_DEFINE(MOZ_EME)
 fi
 
-dnl ========================================================
-dnl system libvpx Support
-dnl ========================================================
-MOZ_ARG_WITH_BOOL(system-libvpx,
-[  --with-system-libvpx    Use system libvpx (located with pkgconfig)],
-    MOZ_SYSTEM_LIBVPX=1)
+AC_SUBST(MOZ_EME)
 
 MOZ_LIBVPX_CFLAGS=
 MOZ_LIBVPX_LIBS=
@@ -2986,35 +2923,6 @@ if test -n "$MOZ_VPX_ERROR_CONCEALMENT" ; then
     AC_DEFINE(MOZ_VPX_ERROR_CONCEALMENT)
 fi
 
-_SAVE_CFLAGS=$CFLAGS
-_SAVE_LIBS=$LIBS
-if test -n "$MOZ_SYSTEM_LIBVPX"; then
-    dnl ============================
-    dnl === libvpx Version check ===
-    dnl ============================
-    dnl Check to see if we have a system libvpx package.
-    PKG_CHECK_MODULES(MOZ_LIBVPX, vpx >= 1.5.0)
-
-    CFLAGS="$CFLAGS $MOZ_LIBVPX_CFLAGS"
-    LIBS="$LIBS $MOZ_LIBVPX_LIBS"
-
-    MOZ_CHECK_HEADER([vpx/vpx_decoder.h], [],
-     [AC_MSG_ERROR([Couldn't find vpx/vpx_decoder.h which is required for build with system libvpx. Use --without-system-libvpx to build with in-tree libvpx.])])
-
-    AC_CHECK_LIB(vpx, vpx_codec_dec_init_ver, [],
-     [AC_MSG_ERROR([--with-system-libvpx requested but symbol vpx_codec_dec_init_ver not found])])
-
-    MOZ_CHECK_HEADER([vpx_mem/vpx_mem.h],
-     [AC_CHECK_FUNC(vpx_mem_set_functions)])
-    if test "$ac_cv_header_vpx_mem_vpx_mem_h" = no -o \
-            "$ac_cv_func_vpx_mem_set_functions" = no; then
-        AC_DEFINE(MOZ_VPX_NO_MEM_REPORTING)
-    fi
-fi
-CFLAGS=$_SAVE_CFLAGS
-LIBS=$_SAVE_LIBS
-
-AC_SUBST(MOZ_SYSTEM_LIBVPX)
 AC_SUBST_LIST(MOZ_LIBVPX_CFLAGS)
 AC_SUBST_LIST(MOZ_LIBVPX_LIBS)
 
@@ -3846,175 +3754,6 @@ else
         AC_MSG_ERROR([Cannot build Firefox with --disable-feeds.])
     fi
 fi
-
-dnl ========================================================
-dnl Check for sqlite
-dnl ========================================================
-
-MOZ_SYSTEM_SQLITE=
-MOZ_ARG_ENABLE_BOOL(system-sqlite,
-[  --enable-system-sqlite  Use system sqlite (located with pkgconfig)],
-MOZ_SYSTEM_SQLITE=1,
-MOZ_SYSTEM_SQLITE= )
-
-if test -n "$MOZ_SYSTEM_SQLITE"
-then
-    dnl ============================
-    dnl === SQLite Version check ===
-    dnl ============================
-    dnl Check to see if the system SQLite package is new enough.
-    PKG_CHECK_MODULES(SQLITE, sqlite3 >= $SQLITE_VERSION)
-
-    dnl ==================================
-    dnl === SQLITE_SECURE_DELETE check ===
-    dnl ==================================
-    dnl Check to see if the system SQLite package is compiled with
-    dnl SQLITE_SECURE_DELETE enabled.
-    AC_MSG_CHECKING(for SQLITE_SECURE_DELETE support in system SQLite)
-    _SAVE_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $SQLITE_CFLAGS"
-    _SAVE_LIBS="$LIBS"
-    LIBS="$LIBS $SQLITE_LIBS"
-    AC_CACHE_VAL(ac_cv_sqlite_secure_delete,[
-        AC_TRY_RUN([
-            #include "sqlite3.h"
-
-            int main(int argc, char **argv){
-              return !sqlite3_compileoption_used("SQLITE_SECURE_DELETE");
-            }],
-            ac_cv_sqlite_secure_delete=yes,
-            ac_cv_sqlite_secure_delete=no,
-            ac_cv_sqlite_secure_delete=no
-        )
-    ])
-    AC_MSG_RESULT($ac_cv_sqlite_secure_delete)
-    CFLAGS="$_SAVE_CFLAGS"
-    LIBS="$_SAVE_LIBS"
-    if test "x$ac_cv_sqlite_secure_delete" = "xno"; then
-        AC_MSG_ERROR([System SQLite library is not compiled with SQLITE_SECURE_DELETE.])
-    fi
-
-    dnl ===============================
-    dnl === SQLITE_THREADSAFE check ===
-    dnl ===============================
-    dnl Check to see if the system SQLite package is compiled with
-    dnl SQLITE_THREADSAFE enabled.
-    AC_MSG_CHECKING(for SQLITE_THREADSAFE support in system SQLite)
-    _SAVE_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $SQLITE_CFLAGS"
-    _SAVE_LIBS="$LIBS"
-    LIBS="$LIBS $SQLITE_LIBS"
-    AC_CACHE_VAL(ac_cv_sqlite_threadsafe,[
-        AC_TRY_RUN([
-            #include "sqlite3.h"
-
-            int main(int argc, char **argv){
-              return !sqlite3_compileoption_used("SQLITE_THREADSAFE=1");
-            }],
-            ac_cv_sqlite_threadsafe=yes,
-            ac_cv_sqlite_threadsafe=no,
-            ac_cv_sqlite_threadsafe=no
-        )
-    ])
-    AC_MSG_RESULT($ac_cv_sqlite_threadsafe)
-    CFLAGS="$_SAVE_CFLAGS"
-    LIBS="$_SAVE_LIBS"
-    if test "x$ac_cv_sqlite_threadsafe" = "xno"; then
-        AC_MSG_ERROR([System SQLite library is not compiled with SQLITE_THREADSAFE.])
-    fi
-
-    dnl ================================
-    dnl === SQLITE_ENABLE_FTS3 check ===
-    dnl ================================
-    dnl check to see if the system SQLite package is compiled with
-    dnl SQLITE_ENABLE_FTS3 enabled.
-    AC_MSG_CHECKING(for SQLITE_ENABLE_FTS3 support in system SQLite)
-    _SAVE_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $SQLITE_CFLAGS"
-    _SAVE_LIBS="$LIBS"
-    LIBS="$LIBS $SQLITE_LIBS"
-    AC_CACHE_VAL(ac_cv_sqlite_enable_fts3,[
-        AC_TRY_RUN([
-            #include "sqlite3.h"
-
-            int main(int argc, char **argv){
-              return !sqlite3_compileoption_used("SQLITE_ENABLE_FTS3");
-            }],
-            ac_cv_sqlite_enable_fts3=yes,
-            ac_cv_sqlite_enable_fts3=no,
-            ac_cv_sqlite_enable_fts3=no
-        )
-    ])
-    AC_MSG_RESULT($ac_cv_sqlite_enable_fts3)
-    CFLAGS="$_SAVE_CFLAGS"
-    LIBS="$_SAVE_LIBS"
-    if test "x$ac_cv_sqlite_enable_fts3" = "xno"; then
-        AC_MSG_ERROR([System SQLite library is not compiled with SQLITE_ENABLE_FTS3.])
-    fi
-
-    dnl =========================================
-    dnl === SQLITE_ENABLE_UNLOCK_NOTIFY check ===
-    dnl =========================================
-    dnl check to see if the system SQLite package is compiled with
-    dnl SQLITE_ENABLE_UNLOCK_NOTIFY enabled.
-    AC_MSG_CHECKING(for SQLITE_ENABLE_UNLOCK_NOTIFY support in system SQLite)
-    _SAVE_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $SQLITE_CFLAGS"
-    _SAVE_LIBS="$LIBS"
-    LIBS="$LIBS $SQLITE_LIBS"
-    AC_CACHE_VAL(ac_cv_sqlite_enable_unlock_notify,[
-        AC_TRY_RUN([
-            #include "sqlite3.h"
-
-            int main(int argc, char **argv){
-              return !sqlite3_compileoption_used("SQLITE_ENABLE_UNLOCK_NOTIFY");
-            }],
-            ac_cv_sqlite_enable_unlock_notify=yes,
-            ac_cv_sqlite_enable_unlock_notify=no,
-            ac_cv_sqlite_enable_unlock_notify=no
-        )
-    ])
-    AC_MSG_RESULT($ac_cv_sqlite_enable_unlock_notify)
-    CFLAGS="$_SAVE_CFLAGS"
-    LIBS="$_SAVE_LIBS"
-    if test "x$ac_cv_sqlite_enable_unlock_notify" = "xno"; then
-        AC_MSG_ERROR([System SQLite library is not compiled with SQLITE_ENABLE_UNLOCK_NOTIFY.])
-    fi
-
-    dnl =========================================
-    dnl === SQLITE_ENABLE_DBSTAT_VTAB check ===
-    dnl =========================================
-    dnl check to see if the system SQLite package is compiled with
-    dnl SQLITE_ENABLE_DBSTAT_VTAB.
-    AC_MSG_CHECKING(for SQLITE_ENABLE_DBSTAT_VTAB support in system SQLite)
-    _SAVE_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $SQLITE_CFLAGS"
-    _SAVE_LIBS="$LIBS"
-    LIBS="$LIBS $SQLITE_LIBS"
-    AC_CACHE_VAL(ac_cv_sqlite_dbstat_vtab,[
-        AC_TRY_RUN([
-            #include "sqlite3.h"
-
-            int main(int argc, char **argv){
-              return !sqlite3_compileoption_used("SQLITE_ENABLE_DBSTAT_VTAB");
-            }],
-            ac_cv_sqlite_dbstat_vtab=yes,
-            ac_cv_sqlite_dbstat_vtab=no,
-            ac_cv_sqlite_dbstat_vtab=no
-        )
-    ])
-    AC_MSG_RESULT($ac_cv_sqlite_dbstat_vtab)
-    CFLAGS="$_SAVE_CFLAGS"
-    LIBS="$_SAVE_LIBS"
-    if test "x$ac_cv_sqlite_dbstat_vtab" = "xno"; then
-        AC_MSG_ERROR([System SQLite library is not compiled with SQLITE_ENABLE_DBSTAT_VTAB.])
-    fi
-fi
-
-if test -n "$MOZ_SYSTEM_SQLITE"; then
-    AC_DEFINE(MOZ_SYSTEM_SQLITE)
-fi
-AC_SUBST(MOZ_SYSTEM_SQLITE)
 
 dnl ========================================================
 dnl = Enable Google safe browsing (anti-phishing)
@@ -5548,7 +5287,6 @@ AC_SUBST(MOZ_VORBIS)
 AC_SUBST(MOZ_TREMOR)
 AC_SUBST(MOZ_FFVPX)
 AC_SUBST_LIST(FFVPX_ASFLAGS)
-AC_SUBST(MOZ_EME)
 AC_SUBST(MOZ_VPX_ERROR_CONCEALMENT)
 AC_SUBST(VPX_USE_YASM)
 AC_SUBST_LIST(VPX_ASFLAGS)

@@ -800,12 +800,6 @@ private:
 
   virtual bool DeallocPStorageParent(PStorageParent* aActor) override;
 
-  virtual PPresentationParent* AllocPPresentationParent() override;
-
-  virtual bool DeallocPPresentationParent(PPresentationParent* aActor) override;
-
-  virtual bool RecvPPresentationConstructor(PPresentationParent* aActor) override;
-
   virtual PFlyWebPublishedServerParent*
     AllocPFlyWebPublishedServerParent(const nsString& name,
                                       const FlyWebPublishOptions& params) override;

@@ -4,32 +4,32 @@
 
 function closeWindow(aClose, aPromptFunction)
 {
-  let { AppConstants } = Components.utils.import("resource://gre/modules/AppConstants.jsm");
-
+#ifdef XP_MACOSX
   // Closing the last window doesn't quit the application on OS X.
-  if (AppConstants.platform != "macosx") {
-    var windowCount = 0;
-    var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-                       .getService(Components.interfaces.nsIWindowMediator);
-    var e = wm.getEnumerator(null);
-
-    while (e.hasMoreElements()) {
-      var w = e.getNext();
-      if (w.closed) {
-        continue;
-      }
-      if (++windowCount == 2)
-        break;
-    }
-
-    // If we're down to the last window and someone tries to shut down, check to make sure we can!
-    if (windowCount == 1 && !canQuitApplication("lastwindow"))
-      return false;
-    if (windowCount != 1 && typeof(aPromptFunction) == "function" && !aPromptFunction())
-      return false;
-  } else if (typeof(aPromptFunction) == "function" && !aPromptFunction()) {
+  if (typeof(aPromptFunction) == "function" && !aPromptFunction()) {
     return false;
   }
+#else
+  var windowCount = 0;
+  var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+                     .getService(Components.interfaces.nsIWindowMediator);
+  var e = wm.getEnumerator(null);
+
+  while (e.hasMoreElements()) {
+    var w = e.getNext();
+    if (w.closed) {
+      continue;
+    }
+    if (++windowCount == 2)
+      break;
+  }
+
+  // If we're down to the last window and someone tries to shut down, check to make sure we can!
+  if (windowCount == 1 && !canQuitApplication("lastwindow"))
+    return false;
+  if (windowCount != 1 && typeof(aPromptFunction) == "function" && !aPromptFunction())
+    return false;
+#endif
 
   if (aClose) {
     window.close();

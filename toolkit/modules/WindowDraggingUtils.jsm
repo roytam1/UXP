@@ -2,9 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-Components.utils.import("resource://gre/modules/AppConstants.jsm");
-
-const HAVE_CSS_WINDOW_DRAG_SUPPORT = ["win", "macosx"].includes(AppConstants.platform);
+#if defined(XP_WIN) || defined(XP_MACOSX)
+const HAVE_CSS_WINDOW_DRAG_SUPPORT = true;
+#else
+const HAVE_CSS_WINDOW_DRAG_SUPPORT = false;
+#endif
 
 this.EXPORTED_SYMBOLS = [ "WindowDraggingElement" ];
 
@@ -62,12 +64,13 @@ WindowDraggingElement.prototype = {
         if (!this.shouldDrag(aEvent))
           return;
 
-        if (/^gtk/i.test(AppConstants.MOZ_WIDGET_TOOLKIT)) {
-          // On GTK, there is a toolkit-level function which handles
-          // window dragging, which must be used.
-          this._window.beginWindowMove(aEvent, isPanel ? this._elem : null);
-          break;
-        }
+#ifdef MOZ_WIDGET_GTK
+        // On GTK, there is a toolkit-level function which handles
+        // window dragging, which must be used.
+        this._window.beginWindowMove(aEvent, isPanel ? this._elem : null);
+        break;
+#endif
+
         if (isPanel) {
           let screenRect = this._elem.getOuterScreenRect();
           this._deltaX = aEvent.screenX - screenRect.left;

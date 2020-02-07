@@ -150,8 +150,6 @@
 #endif
 
 #include "mozilla/dom/File.h"
-#include "mozilla/dom/PPresentationChild.h"
-#include "mozilla/dom/PresentationIPCService.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 
 #ifdef MOZ_WEBSPEECH
@@ -1417,20 +1415,6 @@ ContentChild::SendPBlobConstructor(PBlobChild* aActor,
   return PContentChild::SendPBlobConstructor(aActor, aParams);
 }
 
-PPresentationChild*
-ContentChild::AllocPPresentationChild()
-{
-  MOZ_CRASH("We should never be manually allocating PPresentationChild actors");
-  return nullptr;
-}
-
-bool
-ContentChild::DeallocPPresentationChild(PPresentationChild* aActor)
-{
-  delete aActor;
-  return true;
-}
-
 PFlyWebPublishedServerChild*
 ContentChild::AllocPFlyWebPublishedServerChild(const nsString& name,
                                                const FlyWebPublishOptions& params)
@@ -1444,35 +1428,6 @@ ContentChild::DeallocPFlyWebPublishedServerChild(PFlyWebPublishedServerChild* aA
 {
   RefPtr<FlyWebPublishedServerChild> actor =
     dont_AddRef(static_cast<FlyWebPublishedServerChild*>(aActor));
-  return true;
-}
-
-bool
-ContentChild::RecvNotifyPresentationReceiverLaunched(PBrowserChild* aIframe,
-                                                     const nsString& aSessionId)
-{
-  nsCOMPtr<nsIDocShell> docShell =
-    do_GetInterface(static_cast<TabChild*>(aIframe)->WebNavigation());
-  NS_WARNING_ASSERTION(docShell, "WebNavigation failed");
-
-  nsCOMPtr<nsIPresentationService> service =
-    do_GetService(PRESENTATION_SERVICE_CONTRACTID);
-  NS_WARNING_ASSERTION(service, "presentation service is missing");
-
-  Unused << NS_WARN_IF(NS_FAILED(static_cast<PresentationIPCService*>(service.get())->MonitorResponderLoading(aSessionId, docShell)));
-
-  return true;
-}
-
-bool
-ContentChild::RecvNotifyPresentationReceiverCleanUp(const nsString& aSessionId)
-{
-  nsCOMPtr<nsIPresentationService> service =
-    do_GetService(PRESENTATION_SERVICE_CONTRACTID);
-  NS_WARNING_ASSERTION(service, "presentation service is missing");
-
-  Unused << NS_WARN_IF(NS_FAILED(service->UntrackSessionInfo(aSessionId, nsIPresentationService::ROLE_RECEIVER)));
-
   return true;
 }
 

@@ -12,10 +12,13 @@ EXTRA_COMPONENTS += [
 EXTRA_JS_MODULES += [
     'PushCrypto.jsm',
     'PushDB.jsm',
-    'PushRecord.jsm',
-    'PushService.jsm',
     'PushServiceHttp2.jsm',
     'PushServiceWebSocket.jsm',
+]
+
+EXTRA_PP_JS_MODULES += [
+    'PushRecord.jsm',
+    'PushService.jsm',
 ]
 
 MOCHITEST_MANIFESTS += [

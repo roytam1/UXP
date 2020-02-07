@@ -40,7 +40,6 @@
 #include "mozilla/dom/FlyWebPublishedServer.h"
 #include "mozilla/dom/FlyWebService.h"
 #include "mozilla/dom/Permissions.h"
-#include "mozilla/dom/Presentation.h"
 #include "mozilla/dom/ServiceWorkerContainer.h"
 #include "mozilla/dom/StorageManager.h"
 #include "mozilla/dom/TCPSocket.h"
@@ -67,8 +66,6 @@
 #include "nsIAppsService.h"
 #include "mozIApplication.h"
 #include "WidgetUtils.h"
-#include "nsIPresentationService.h"
-
 #include "mozilla/dom/MediaDevices.h"
 #include "MediaManager.h"
 
@@ -218,7 +215,6 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(Navigator)
 #ifdef MOZ_EME
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mMediaKeySystemAccessManager)
 #endif
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPresentation)
 #ifdef MOZ_GAMEPAD
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mGamepadServiceTest)
 #endif
@@ -282,10 +278,6 @@ Navigator::Invalidate()
 
   if (mTimeManager) {
     mTimeManager = nullptr;
-  }
-
-  if (mPresentation) {
-    mPresentation = nullptr;
   }
 
   mServiceWorkerContainer = nullptr;
@@ -1930,20 +1922,6 @@ Navigator::RequestMediaKeySystemAccess(const nsAString& aKeySystem,
   return promise.forget();
 }
 #endif
-
-Presentation*
-Navigator::GetPresentation(ErrorResult& aRv)
-{
-  if (!mPresentation) {
-    if (!mWindow) {
-      aRv.Throw(NS_ERROR_UNEXPECTED);
-      return nullptr;
-    }
-    mPresentation = Presentation::Create(mWindow);
-  }
-
-  return mPresentation;
-}
 
 } // namespace dom
 } // namespace mozilla
