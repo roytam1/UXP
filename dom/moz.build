@@ -52,7 +52,6 @@ DIRS += [
     'fetch',
     'filehandle',
     'filesystem',
-    'flyweb',
     'gamepad',
     'geolocation',
     'grid',
