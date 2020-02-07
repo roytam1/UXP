@@ -5,7 +5,6 @@
 /** * =================== SAVED SIGNONS CODE =================== ***/
 const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
 
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
@@ -486,9 +485,13 @@ function HandleSignonKeyPress(e) {
   if (signonsTree.getAttribute("editing")) {
     return;
   }
+
+#ifdef XP_MACOSX
   if (e.keyCode == KeyboardEvent.DOM_VK_DELETE ||
-      (AppConstants.platform == "macosx" &&
-       e.keyCode == KeyboardEvent.DOM_VK_BACK_SPACE)) {
+      e.keyCode == KeyboardEvent.DOM_VK_BACK_SPACE) {
+#else
+  if (e.keyCode == KeyboardEvent.DOM_VK_DELETE) {
+#endif
     DeleteSignon();
   }
 }

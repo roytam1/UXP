@@ -4,7 +4,6 @@
 
 const {utils: Cu, interfaces: Ci, classes: Cc, results: Cr} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/AppConstants.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "EnableDelayHelper",
                                   "resource://gre/modules/SharedPromptUtils.jsm");
@@ -408,22 +407,22 @@ nsUnknownContentTypeDialog.prototype = {
     // is now caught properly in the caller of validateLeafName.
     var createdFile = DownloadPaths.createNiceUniqueFile(aLocalFolder);
 
-    if (AppConstants.platform == "win") {
-      let ext;
-      try {
-        // We can fail here if there's no primary extension set
-        ext = "." + this.mLauncher.MIMEInfo.primaryExtension;
-      } catch (e) { }
+#ifdef XP_WIN
+    let ext;
+    try {
+      // We can fail here if there's no primary extension set
+      ext = "." + this.mLauncher.MIMEInfo.primaryExtension;
+    } catch (e) { }
 
-      // Append a file extension if it's an executable that doesn't have one
-      // but make sure we actually have an extension to add
-      let leaf = createdFile.leafName;
-      if (ext && leaf.slice(-ext.length) != ext && createdFile.isExecutable()) {
-        createdFile.remove(false);
-        aLocalFolder.leafName = leaf + ext;
-        createdFile = DownloadPaths.createNiceUniqueFile(aLocalFolder);
-      }
+    // Append a file extension if it's an executable that doesn't have one
+    // but make sure we actually have an extension to add
+    let leaf = createdFile.leafName;
+    if (ext && leaf.slice(-ext.length) != ext && createdFile.isExecutable()) {
+      createdFile.remove(false);
+      aLocalFolder.leafName = leaf + ext;
+      createdFile = DownloadPaths.createNiceUniqueFile(aLocalFolder);
     }
+#endif
 
     return createdFile;
   },
@@ -639,22 +638,22 @@ nsUnknownContentTypeDialog.prototype = {
 
   // Returns true if opening the default application makes sense.
   openWithDefaultOK: function() {
-    // The checking is different on Windows...
-    if (AppConstants.platform == "win") {
-      // Windows presents some special cases.
-      // We need to prevent use of "system default" when the file is
-      // executable (so the user doesn't launch nasty programs downloaded
-      // from the web), and, enable use of "system default" if it isn't
-      // executable (because we will prompt the user for the default app
-      // in that case).
+#ifdef XP_WIN
+    // Windows presents some special cases.
+    // We need to prevent use of "system default" when the file is
+    // executable (so the user doesn't launch nasty programs downloaded
+    // from the web), and, enable use of "system default" if it isn't
+    // executable (because we will prompt the user for the default app
+    // in that case).
 
-      //  Default is Ok if the file isn't executable (and vice-versa).
-      return !this.mLauncher.targetFileIsExecutable;
-    }
+    //  Default is Ok if the file isn't executable (and vice-versa).
+    return !this.mLauncher.targetFileIsExecutable;
+#else
     // On other platforms, default is Ok if there is a default app.
     // Note that nsIMIMEInfo providers need to ensure that this holds true
     // on each platform.
     return this.mLauncher.MIMEInfo.hasDefaultHandler;
+#endif
   },
 
   // Set "default" application description field.
@@ -675,10 +674,11 @@ nsUnknownContentTypeDialog.prototype = {
 
   // getPath:
   getPath: function (aFile) {
-    if (AppConstants.platform == "macosx") {
-      return aFile.leafName || aFile.path;
-    }
+#ifdef XP_MACOSX
+    return aFile.leafName || aFile.path;
+#else
     return aFile.path;
+#endif
   },
 
   // initAppAndSaveToDiskValues:
@@ -980,19 +980,20 @@ nsUnknownContentTypeDialog.prototype = {
   // Retrieve the pretty description from the file
   getFileDisplayName: function getFileDisplayName(file)
   {
-    if (AppConstants.platform == "win") {
-      if (file instanceof Components.interfaces.nsILocalFileWin) {
-        try {
-          return file.getVersionInfoField("FileDescription");
-        } catch (e) {}
-      }
-    } else if (AppConstants.platform == "macosx") {
-      if (file instanceof Components.interfaces.nsILocalFileMac) {
-        try {
-          return file.bundleDisplayName;
-        } catch (e) {}
-      }
+#ifdef XP_WIN
+    if (file instanceof Components.interfaces.nsILocalFileWin) {
+      try {
+        return file.getVersionInfoField("FileDescription");
+      } catch (e) {}
     }
+#elifdef XP_MACOSX
+    if (file instanceof Components.interfaces.nsILocalFileMac) {
+      try {
+        return file.bundleDisplayName;
+      } catch (e) {}
+    }
+#endif
+
     return file.leafName;
   },
 
@@ -1006,10 +1007,11 @@ nsUnknownContentTypeDialog.prototype = {
       var otherHandler = this.dialogElement("otherHandler");
       otherHandler.removeAttribute("hidden");
       otherHandler.setAttribute("path", this.getPath(this.chosenApp.executable));
-      if (AppConstants.platform == "win")
-        otherHandler.label = this.getFileDisplayName(this.chosenApp.executable);
-      else
-        otherHandler.label = this.chosenApp.name;
+#ifdef XP_WIN
+      otherHandler.label = this.getFileDisplayName(this.chosenApp.executable);
+#else
+      otherHandler.label = this.chosenApp.name;
+#endif
       this.dialogElement("openHandler").selectedIndex = 1;
       this.dialogElement("openHandler").setAttribute("lastSelectedItemID", "otherHandler");
 
@@ -1025,50 +1027,49 @@ nsUnknownContentTypeDialog.prototype = {
   },
   // chooseApp:  Open file picker and prompt user for application.
   chooseApp: function() {
-    if (AppConstants.platform == "win") {
-      // Protect against the lack of an extension
-      var fileExtension = "";
-      try {
-        fileExtension = this.mLauncher.MIMEInfo.primaryExtension;
-      } catch(ex) {
-      }
+#ifdef XP_WIN
+    // Protect against the lack of an extension
+    var fileExtension = "";
+    try {
+      fileExtension = this.mLauncher.MIMEInfo.primaryExtension;
+    } catch(ex) {
+    }
 
-      // Try to use the pretty description of the type, if one is available.
-      var typeString = this.mLauncher.MIMEInfo.description;
+    // Try to use the pretty description of the type, if one is available.
+    var typeString = this.mLauncher.MIMEInfo.description;
 
-      if (!typeString) {
-        // If there is none, use the extension to
-        // identify the file, e.g. "ZIP file"
-        if (fileExtension) {
-          typeString =
-            this.dialogElement("strings").
-            getFormattedString("fileType", [fileExtension.toUpperCase()]);
-        } else {
-          // If we can't even do that, just give up and show the MIME type.
-          typeString = this.mLauncher.MIMEInfo.MIMEType;
-        }
-      }
-
-      var params = {};
-      params.title =
-        this.dialogElement("strings").getString("chooseAppFilePickerTitle");
-      params.description = typeString;
-      params.filename    = this.mLauncher.suggestedFileName;
-      params.mimeInfo    = this.mLauncher.MIMEInfo;
-      params.handlerApp  = null;
-
-      this.mDialog.openDialog("chrome://global/content/appPicker.xul", null,
-                              "chrome,modal,centerscreen,titlebar,dialog=yes",
-                              params);
-
-      if (params.handlerApp &&
-          params.handlerApp.executable &&
-          params.handlerApp.executable.isFile()) {
-        // Remember the file they chose to run.
-        this.chosenApp = params.handlerApp;
+    if (!typeString) {
+      // If there is none, use the extension to
+      // identify the file, e.g. "ZIP file"
+      if (fileExtension) {
+        typeString =
+          this.dialogElement("strings").
+          getFormattedString("fileType", [fileExtension.toUpperCase()]);
+      } else {
+        // If we can't even do that, just give up and show the MIME type.
+        typeString = this.mLauncher.MIMEInfo.MIMEType;
       }
     }
-    else {
+
+    var params = {};
+    params.title =
+      this.dialogElement("strings").getString("chooseAppFilePickerTitle");
+    params.description = typeString;
+    params.filename    = this.mLauncher.suggestedFileName;
+    params.mimeInfo    = this.mLauncher.MIMEInfo;
+    params.handlerApp  = null;
+
+    this.mDialog.openDialog("chrome://global/content/appPicker.xul", null,
+                            "chrome,modal,centerscreen,titlebar,dialog=yes",
+                            params);
+
+    if (params.handlerApp &&
+        params.handlerApp.executable &&
+        params.handlerApp.executable.isFile()) {
+      // Remember the file they chose to run.
+      this.chosenApp = params.handlerApp;
+    }
+#else
 #if MOZ_WIDGET_GTK == 3
       var nsIApplicationChooser = Components.interfaces.nsIApplicationChooser;
       var appChooser = Components.classes["@mozilla.org/applicationchooser;1"]
@@ -1103,6 +1104,7 @@ nsUnknownContentTypeDialog.prototype = {
         this.chosenApp = localHandlerApp;
       }
 #endif // MOZ_WIDGET_GTK == 3
+#endif // XP_WIN
     }
     this.finishChooseApp();
   },

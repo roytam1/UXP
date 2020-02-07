@@ -32,11 +32,11 @@ XPIDL_MODULE = 'loginmgr'
 EXTRA_COMPONENTS += [
     'crypto-SDR.js',
     'nsLoginInfo.js',
-    'nsLoginManager.js',
     'nsLoginManagerPrompter.js',
 ]
 
 EXTRA_PP_COMPONENTS += [
+    'nsLoginManager.js',
     'passwordmgr.manifest',
 ]
 
@@ -46,8 +46,9 @@ EXTRA_JS_MODULES += [
     'LoginManagerContent.jsm',
     'LoginManagerParent.jsm',
     'LoginRecipes.jsm',
-    'OSCrypto.jsm',
 ]
+
+EXTRA_PP_JS_MODULES += ['OSCrypto.jsm']
 
 if CONFIG['OS_TARGET'] == 'Android':
     EXTRA_COMPONENTS += [
