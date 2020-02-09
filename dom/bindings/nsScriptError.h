@@ -14,8 +14,13 @@
 #include "jsapi.h"
 #include "js/RootingAPI.h"
 
+#include "jswrapper.h"
+#include "nsCOMArray.h"
+#include "nsContentUtils.h"
+#include "nsCycleCollectionParticipant.h"
 #include "nsIScriptError.h"
 #include "nsString.h"
+#include "nsStringFwd.h"
 
 class nsScriptErrorNote final : public nsIScriptErrorNote {
  public:
