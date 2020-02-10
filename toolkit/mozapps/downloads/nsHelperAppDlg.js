@@ -638,6 +638,7 @@ nsUnknownContentTypeDialog.prototype = {
 
   // Returns true if opening the default application makes sense.
   openWithDefaultOK: function() {
+    // The checking is different on Windows...
 #ifdef XP_WIN
     // Windows presents some special cases.
     // We need to prevent use of "system default" when the file is
@@ -675,7 +676,7 @@ nsUnknownContentTypeDialog.prototype = {
   // getPath:
   getPath: function (aFile) {
 #ifdef XP_MACOSX
-    return aFile.leafName || aFile.path;
+      return aFile.leafName || aFile.path;
 #else
     return aFile.path;
 #endif
@@ -1007,11 +1008,13 @@ nsUnknownContentTypeDialog.prototype = {
       var otherHandler = this.dialogElement("otherHandler");
       otherHandler.removeAttribute("hidden");
       otherHandler.setAttribute("path", this.getPath(this.chosenApp.executable));
+
 #ifdef XP_WIN
       otherHandler.label = this.getFileDisplayName(this.chosenApp.executable);
 #else
       otherHandler.label = this.chosenApp.name;
 #endif
+
       this.dialogElement("openHandler").selectedIndex = 1;
       this.dialogElement("openHandler").setAttribute("lastSelectedItemID", "otherHandler");
 
@@ -1069,43 +1072,42 @@ nsUnknownContentTypeDialog.prototype = {
       // Remember the file they chose to run.
       this.chosenApp = params.handlerApp;
     }
-#else
+#else // XP_WIN
 #if MOZ_WIDGET_GTK == 3
-      var nsIApplicationChooser = Components.interfaces.nsIApplicationChooser;
-      var appChooser = Components.classes["@mozilla.org/applicationchooser;1"]
-                                 .createInstance(nsIApplicationChooser);
-      appChooser.init(this.mDialog, this.dialogElement("strings").getString("chooseAppFilePickerTitle"));
-      var contentTypeDialogObj = this;
-      let appChooserCallback = function appChooserCallback_done(aResult) {
-        if (aResult) {
-           contentTypeDialogObj.chosenApp = aResult.QueryInterface(Components.interfaces.nsILocalHandlerApp);
-        }
-        contentTypeDialogObj.finishChooseApp();
-      };
-      appChooser.open(this.mLauncher.MIMEInfo.MIMEType, appChooserCallback);
-      // The finishChooseApp is called from appChooserCallback
-      return;
-#else
-      var nsIFilePicker = Components.interfaces.nsIFilePicker;
-      var fp = Components.classes["@mozilla.org/filepicker;1"]
-                         .createInstance(nsIFilePicker);
-      fp.init(this.mDialog,
-              this.dialogElement("strings").getString("chooseAppFilePickerTitle"),
-              nsIFilePicker.modeOpen);
-
-      fp.appendFilters(nsIFilePicker.filterApps);
-
-      if (fp.show() == nsIFilePicker.returnOK && fp.file) {
-        // Remember the file they chose to run.
-        var localHandlerApp =
-          Components.classes["@mozilla.org/uriloader/local-handler-app;1"].
-                     createInstance(Components.interfaces.nsILocalHandlerApp);
-        localHandlerApp.executable = fp.file;
-        this.chosenApp = localHandlerApp;
+    var nsIApplicationChooser = Components.interfaces.nsIApplicationChooser;
+    var appChooser = Components.classes["@mozilla.org/applicationchooser;1"]
+                               .createInstance(nsIApplicationChooser);
+    appChooser.init(this.mDialog, this.dialogElement("strings").getString("chooseAppFilePickerTitle"));
+    var contentTypeDialogObj = this;
+    let appChooserCallback = function appChooserCallback_done(aResult) {
+      if (aResult) {
+         contentTypeDialogObj.chosenApp = aResult.QueryInterface(Components.interfaces.nsILocalHandlerApp);
       }
+      contentTypeDialogObj.finishChooseApp();
+    };
+    appChooser.open(this.mLauncher.MIMEInfo.MIMEType, appChooserCallback);
+    // The finishChooseApp is called from appChooserCallback
+    return;
+#else // MOZ_WIDGET_GTK == 3
+    var nsIFilePicker = Components.interfaces.nsIFilePicker;
+    var fp = Components.classes["@mozilla.org/filepicker;1"]
+                       .createInstance(nsIFilePicker);
+    fp.init(this.mDialog,
+            this.dialogElement("strings").getString("chooseAppFilePickerTitle"),
+            nsIFilePicker.modeOpen);
+
+    fp.appendFilters(nsIFilePicker.filterApps);
+
+    if (fp.show() == nsIFilePicker.returnOK && fp.file) {
+      // Remember the file they chose to run.
+      var localHandlerApp =
+        Components.classes["@mozilla.org/uriloader/local-handler-app;1"].
+                   createInstance(Components.interfaces.nsILocalHandlerApp);
+      localHandlerApp.executable = fp.file;
+      this.chosenApp = localHandlerApp;
+    }
 #endif // MOZ_WIDGET_GTK == 3
 #endif // XP_WIN
-    }
     this.finishChooseApp();
   },
 
