@@ -1620,6 +1620,16 @@ nsComputedDOMStyle::DoGetFontFeatureSettings()
 }
 
 already_AddRefed<CSSValue>
+nsComputedDOMStyle::DoGetFontVariationSettings()
+{
+  // TODO: This is still a stub, always returning "normal"
+  RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
+
+  val->SetIdent(eCSSKeyword_normal);
+  return val.forget();
+}
+
+already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetFontKerning()
 {
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
