@@ -8,6 +8,7 @@
 #define mozilla_dom_WebIDLGlobalNameHash_h__
 
 #include "js/RootingAPI.h"
+#include "nsString.h"
 #include "nsTArray.h"
 
 namespace mozilla {

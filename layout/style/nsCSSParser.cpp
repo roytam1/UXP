@@ -1056,6 +1056,7 @@ protected:
   bool ParseOneFamily(nsAString& aFamily, bool& aOneKeyword, bool& aQuoted);
   bool ParseFamily(nsCSSValue& aValue);
   bool ParseFontFeatureSettings(nsCSSValue& aValue);
+  bool ParseFontVariationSettings(nsCSSValue& aValue);
   bool ParseFontSrc(nsCSSValue& aValue);
   bool ParseFontSrcFormat(InfallibleTArray<nsCSSValue>& values);
   bool ParseFontRanges(nsCSSValue& aValue);
@@ -12092,6 +12093,8 @@ CSSParserImpl::ParseSingleValuePropertyByFunction(nsCSSValue& aValue,
       return ParseFontVariantNumeric(aValue);
     case eCSSProperty_font_feature_settings:
       return ParseFontFeatureSettings(aValue);
+    case eCSSProperty_font_variation_settings:
+      return ParseFontVariationSettings(aValue);
     case eCSSProperty_font_weight:
       return ParseFontWeight(aValue);
     case eCSSProperty_image_orientation:
@@ -15312,6 +15315,19 @@ CSSParserImpl::ParseFontFeatureSettings(nsCSSValue& aValue)
     cur = cur->mNext;
   }
 
+  return true;
+}
+
+bool
+CSSParserImpl::ParseFontVariationSettings(nsCSSValue& aValue)
+{
+  // TODO: Actually implement this.
+  
+  // This stub is here because websites insist on considering this
+  // very hardware-dependent and O.S.-variable low-level font-control
+  // as a "critical feature" which it isn't as there is 0 guarantee
+  // that font variation settings are supported or honored by any
+  // operating system used by the client.
   return true;
 }
 

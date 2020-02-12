@@ -1109,6 +1109,12 @@ class CGHeaders(CGWrapper):
         # Now find all the things we'll need as arguments because we
         # need to wrap or unwrap them.
         bindingHeaders = set()
+
+        # KeyframeAnimationOptions.webidl is doing something VERY screwy and
+        # Unified Building really sucks so directly include this
+        if prefix == "KeyframeAnimationOptionsBinding":
+          bindingHeaders.add("mozilla/dom/PrimitiveConversions.h")
+
         declareIncludes = set(declareIncludes)
 
         def addHeadersForType((t, dictionary)):

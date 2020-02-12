@@ -4,8 +4,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "jswrapper.h"
 #include "WebIDLGlobalNameHash.h"
 #include "js/GCAPI.h"
+#include "XrayWrapper.h"
+#include "XPCWrapper.h"
+#include "mozilla/dom/Selection.h"
 #include "mozilla/HashFunctions.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/dom/DOMJSProxyHandler.h"
