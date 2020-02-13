@@ -295,7 +295,7 @@ this.PlacesUIUtils = {
   {
     // Since this check may be done on each dragover event, it's worth maintaining
     // a cache.
-    let self = PUIU__isLivemark;
+    let self = this._isLivemark;
     if (!("ids" in self)) {
       const LIVEMARK_ANNO = PlacesUtils.LMANNO_FEEDURI;
 
