@@ -10882,6 +10882,7 @@ nsCSSFrameConstructor::ProcessChildren(nsFrameConstructorState& aState,
     // no?  And if we cared we could look through the item list
     // instead of groveling through the framelist here..
     nsStyleContext *frameStyleContext = aFrame->StyleContext();
+#ifdef DEBUG
     // Report a warning for non-GC frames, for chrome:
     if (!aFrame->IsGeneratedContentFrame() &&
         mPresShell->GetPresContext()->IsChrome()) {
@@ -10900,6 +10901,7 @@ nsCSSFrameConstructor::ProcessChildren(nsFrameConstructorState& aState,
                                       message,
                                       params, ArrayLength(params));
     }
+#endif
 
     RefPtr<nsStyleContext> blockSC = mPresShell->StyleSet()->
       ResolveAnonymousBoxStyle(nsCSSAnonBoxes::mozXULAnonymousBlock,
