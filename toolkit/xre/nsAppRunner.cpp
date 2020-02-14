@@ -4139,45 +4139,49 @@ XRE_InitCommandLine(int aArgc, char* aArgv[])
   delete[] canonArgs;
 #endif
 
-  const char *path = nullptr;
-  ArgResult ar = CheckArg("greomni", true, &path);
-  if (ar == ARG_BAD) {
-    PR_fprintf(PR_STDERR, 
-               "Error: argument --greomni requires a path argument or the "
-               "--osint argument was specified with the --greomni argument "
-               "which is invalid.\n");
-    return NS_ERROR_FAILURE;
-  }
+  if (PR_GetEnv("UXP_CUSTOM_OMNI")) {
+    // Process CLI parameters for specifying custom omnijars
+    const char *path = nullptr;
+    ArgResult ar = CheckArg("greomni", true, &path);
+    if (ar == ARG_BAD) {
+      PR_fprintf(PR_STDERR, 
+                 "Error: argument --greomni requires a path argument or the "
+                 "--osint argument was specified with the --greomni argument "
+                 "which is invalid.\n");
+      return NS_ERROR_FAILURE;
+    }
 
-  if (!path)
-    return rv;
+    if (!path)
+      return rv;
 
-  nsCOMPtr<nsIFile> greOmni;
-  rv = XRE_GetFileFromPath(path, getter_AddRefs(greOmni));
-  if (NS_FAILED(rv)) {
-    PR_fprintf(PR_STDERR, "Error: argument --greomni requires a valid path\n");
-    return rv;
-  }
+    nsCOMPtr<nsIFile> greOmni;
+    rv = XRE_GetFileFromPath(path, getter_AddRefs(greOmni));
+    if (NS_FAILED(rv)) {
+      PR_fprintf(PR_STDERR, "Error: argument --greomni requires a valid path\n");
+      return rv;
+    }
 
-  ar = CheckArg("appomni", true, &path);
-  if (ar == ARG_BAD) {
-    PR_fprintf(PR_STDERR,
-               "Error: argument --appomni requires a path argument or the "
-               "--osint argument was specified with the --appomni argument "
-               "which is invalid.\n");
-    return NS_ERROR_FAILURE;
-  }
+    ar = CheckArg("appomni", true, &path);
+    if (ar == ARG_BAD) {
+      PR_fprintf(PR_STDERR,
+                 "Error: argument --appomni requires a path argument or the "
+                 "--osint argument was specified with the --appomni argument "
+                 "which is invalid.\n");
+      return NS_ERROR_FAILURE;
+    }
 
-  nsCOMPtr<nsIFile> appOmni;
-  if (path) {
-      rv = XRE_GetFileFromPath(path, getter_AddRefs(appOmni));
-      if (NS_FAILED(rv)) {
-        PR_fprintf(PR_STDERR, "Error: argument --appomni requires a valid path\n");
-        return rv;
-      }
-  }
+    nsCOMPtr<nsIFile> appOmni;
+    if (path) {
+        rv = XRE_GetFileFromPath(path, getter_AddRefs(appOmni));
+        if (NS_FAILED(rv)) {
+          PR_fprintf(PR_STDERR, "Error: argument --appomni requires a valid path\n");
+          return rv;
+        }
+    }
 
-  mozilla::Omnijar::Init(greOmni, appOmni);
+    mozilla::Omnijar::Init(greOmni, appOmni);
+  } // UXP_CUSTOM_OMNI
+
   return rv;
 }
 
