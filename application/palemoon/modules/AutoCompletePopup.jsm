@@ -42,7 +42,13 @@ var AutoCompleteTreeView = {
   getParentIndex: function(idx)      { return -1; },
   hasNextSibling: function(idx, after) { return idx < this.results.length - 1 },
   toggleOpenState: function(idx)     { },
-  getCellProperties: function(idx, column) { return this.results[idx].style || ""; },
+  getCellProperties: function(idx, column) {
+    if (this.results && this.results[idx]) {
+      return this.results[idx].style || "";
+    } else {
+      return "";
+    }
+  },
   getRowProperties: function(idx)    { return ""; },
   getImageSrc: function(idx, column) { return null; },
   getProgressMode : function(idx, column) { },

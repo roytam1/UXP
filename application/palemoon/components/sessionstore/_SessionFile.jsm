@@ -44,11 +44,11 @@ XPCOMUtils.defineLazyModuleGetter(this, "console",
   "resource://gre/modules/Console.jsm");
 
 // An encoder to UTF-8.
-XPCOMUtils.defineLazyGetter(this, "gEncoder", function () {
+XPCOMUtils.defineLazyGetter(this, "gEncoder", function() {
   return new TextEncoder();
 });
 // A decoder.
-XPCOMUtils.defineLazyGetter(this, "gDecoder", function () {
+XPCOMUtils.defineLazyGetter(this, "gDecoder", function() {
   return new TextDecoder();
 });
 
@@ -57,37 +57,37 @@ this._SessionFile = {
    * A promise fulfilled once initialization (either synchronous or
    * asynchronous) is complete.
    */
-  promiseInitialized: function SessionFile_initialized() {
+  promiseInitialized: function() {
     return SessionFileInternal.promiseInitialized;
   },
   /**
    * Read the contents of the session file, asynchronously.
    */
-  read: function SessionFile_read() {
+  read: function() {
     return SessionFileInternal.read();
   },
   /**
    * Read the contents of the session file, synchronously.
    */
-  syncRead: function SessionFile_syncRead() {
+  syncRead: function() {
     return SessionFileInternal.syncRead();
   },
   /**
    * Write the contents of the session file, asynchronously.
    */
-  write: function SessionFile_write(aData) {
+  write: function(aData) {
     return SessionFileInternal.write(aData);
   },
   /**
    * Create a backup copy, asynchronously.
    */
-  createBackupCopy: function SessionFile_createBackupCopy() {
+  createBackupCopy: function() {
     return SessionFileInternal.createBackupCopy();
   },
   /**
    * Wipe the contents of the session file, asynchronously.
    */
-  wipe: function SessionFile_wipe() {
+  wipe: function() {
     return SessionFileInternal.wipe();
   }
 };
@@ -105,7 +105,7 @@ const TaskUtils = {
    * @return {Promise} A promise behaving as |promise|, but with additional
    * logging in case of uncaught error.
    */
-  captureErrors: function captureErrors(promise) {
+  captureErrors: function(promise) {
     return promise.then(
       null,
       function onError(reason) {
@@ -152,7 +152,7 @@ var SessionFileInternal = {
    *        A path to read the file from.
    * @returns string if successful, undefined otherwise.
    */
-  readAuxSync: function ssfi_readAuxSync(aPath) {
+  readAuxSync: function(aPath) {
     let text;
     try {
       let file = new FileUtils.File(aPath);
@@ -184,7 +184,7 @@ var SessionFileInternal = {
    * happened between backup and write), attempt to read the sessionstore.bak
    * instead.
    */
-  syncRead: function ssfi_syncRead() {
+  syncRead: function() {
     // First read the sessionstore.js.
     let text = this.readAuxSync(this.path);
     if (typeof text === "undefined") {
@@ -204,9 +204,9 @@ var SessionFileInternal = {
    *        incrementally updated by the worker process.
    * @returns string if successful, undefined otherwise.
    */
-  readAux: function ssfi_readAux(aPath, aReadOptions) {
+  readAux: function(aPath, aReadOptions) {
     let self = this;
-    return TaskUtils.spawn(function () {
+    return TaskUtils.spawn(function() {
       let text;
       try {
         let bytes = yield OS.File.read(aPath, undefined, aReadOptions);
@@ -228,7 +228,7 @@ var SessionFileInternal = {
    * happened between backup and write), attempt to read the sessionstore.bak
    * instead.
    */
-  read: function ssfi_read() {
+  read: function() {
     let self = this;
     return TaskUtils.spawn(function task() {
       // Specify |outExecutionDuration| option to hold the combined duration of
@@ -253,7 +253,7 @@ var SessionFileInternal = {
     });
   },
 
-  write: function ssfi_write(aData) {
+  write: function(aData) {
     let refObj = {};
     let self = this;
     return TaskUtils.spawn(function task() {
@@ -268,7 +268,7 @@ var SessionFileInternal = {
     });
   },
 
-  createBackupCopy: function ssfi_createBackupCopy() {
+  createBackupCopy: function() {
     let backupCopyOptions = {
       outExecutionDuration: null
     };
@@ -285,7 +285,7 @@ var SessionFileInternal = {
     });
   },
 
-  wipe: function ssfi_wipe() {
+  wipe: function() {
     let self = this;
     return TaskUtils.spawn(function task() {
       try {
@@ -308,7 +308,7 @@ var SessionFileInternal = {
     });
   },
 
-  _isNoSuchFile: function ssfi_isNoSuchFile(aReason) {
+  _isNoSuchFile: function(aReason) {
     return aReason instanceof OS.File.Error && aReason.becauseNoSuchFile;
   }
 };

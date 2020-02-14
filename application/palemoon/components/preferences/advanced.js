@@ -16,7 +16,7 @@ var gAdvancedPane = {
   /**
    * Brings the appropriate tab to the front and initializes various bits of UI.
    */
-  init: function ()
+  init: function()
   {
     this._inited = true;
     var advancedPrefs = document.getElementById("advancedPrefs");
@@ -61,7 +61,7 @@ var gAdvancedPane = {
    * Stores the identity of the current tab in preferences so that the selected
    * tab can be persisted between openings of the preferences window.
    */
-  tabSelectionChanged: function ()
+  tabSelectionChanged: function()
   {
     if (!this._inited)
       return;
@@ -109,7 +109,7 @@ var gAdvancedPane = {
    * the current value to enable proper pref restoration if the checkbox is
    * never changed.
    */
-  readCheckSpelling: function ()
+  readCheckSpelling: function()
   {
     var pref = document.getElementById("layout.spellcheckDefault");
     this._storedSpellCheck = pref.value;
@@ -122,7 +122,7 @@ var gAdvancedPane = {
    * preserving the preference's "hidden" value if the preference is
    * unchanged and represents a value not strictly allowed in UI.
    */
-  writeCheckSpelling: function ()
+  writeCheckSpelling: function()
   {
     var checkbox = document.getElementById("checkSpelling");
     return checkbox.checked ? (this._storedSpellCheck == 2 ? 2 : 1) : 0;
@@ -132,7 +132,7 @@ var gAdvancedPane = {
    * security.OCSP.enabled is an integer value for legacy reasons.
    * A value of 1 means OCSP is enabled. Any other value means it is disabled.
    */
-  readEnableOCSP: function ()
+  readEnableOCSP: function()
   {
     var preference = document.getElementById("security.OCSP.enabled");
     // This is the case if the preference is the default value.
@@ -145,7 +145,7 @@ var gAdvancedPane = {
   /**
    * See documentation for readEnableOCSP.
    */
-  writeEnableOCSP: function ()
+  writeEnableOCSP: function()
   {
     var checkbox = document.getElementById("enableOCSP");
     return checkbox.checked ? 1 : 0;
@@ -178,7 +178,7 @@ var gAdvancedPane = {
   /**
    * opening links behind a modal dialog is poor form. Work around flawed text-link handling here.
    */
-  openTextLink: function (evt) {
+  openTextLink: function(evt) {
     let where = Services.prefs.getBoolPref("browser.preferences.instantApply") ? "tab" : "window";
     openUILinkIn(evt.target.getAttribute("href"), where);
     evt.preventDefault();
@@ -187,7 +187,7 @@ var gAdvancedPane = {
   /**
    * Set up or hide the Learn More links for various data collection options
    */
-  _setupLearnMoreLink: function (pref, element) {
+  _setupLearnMoreLink: function(pref, element) {
     // set up the Learn More link with the correct URL
     let url = Services.prefs.getCharPref(pref);
     let el = document.getElementById(element);
@@ -212,14 +212,14 @@ var gAdvancedPane = {
   /**
    * Displays a dialog in which proxy settings may be changed.
    */
-  showConnections: function ()
+  showConnections: function()
   {
     document.documentElement.openSubDialog("chrome://browser/content/preferences/connection.xul",
                                            "", null);
   },
 
   // Retrieves the amount of space currently used by disk cache
-  updateActualCacheSize: function ()
+  updateActualCacheSize: function()
   {
     var sum = 0;
     function updateUI(consumption) {
@@ -233,7 +233,7 @@ var gAdvancedPane = {
     Visitor.prototype = {
       expected: 0,
       sum: 0,
-      QueryInterface: function listener_qi(iid) {
+      QueryInterface: function(iid) {
         if (iid.equals(Components.interfaces.nsISupports) ||
             iid.equals(Components.interfaces.nsICacheStorageVisitor)) {
           return this;
@@ -266,10 +266,10 @@ var gAdvancedPane = {
   },
 
   // Retrieves the amount of space currently used by offline cache
-  updateActualAppCacheSize: function ()
+  updateActualAppCacheSize: function()
   {
     var visitor = {
-      onCacheStorageInfo: function (aEntryCount, aConsumption, aCapacity, aDiskDirectory)
+      onCacheStorageInfo: function(aEntryCount, aConsumption, aCapacity, aDiskDirectory)
       {
         var actualSizeLabel = document.getElementById("actualAppCacheSize");
         var sizeStrings = DownloadUtils.convertByteUnits(aConsumption);
@@ -286,14 +286,14 @@ var gAdvancedPane = {
     storage.asyncVisitStorage(visitor, false);
   },
 
-  updateCacheSizeUI: function (smartSizeEnabled)
+  updateCacheSizeUI: function(smartSizeEnabled)
   {
     document.getElementById("useCacheBefore").disabled = smartSizeEnabled;
     document.getElementById("cacheSize").disabled = smartSizeEnabled;
     document.getElementById("useCacheAfter").disabled = smartSizeEnabled;
   },
 
-  readSmartSizeEnabled: function ()
+  readSmartSizeEnabled: function()
   {
     // The smart_size.enabled preference element is inverted="true", so its
     // value is the opposite of the actual pref value
@@ -305,7 +305,7 @@ var gAdvancedPane = {
    * Converts the cache size from units of KB to units of MB and returns that
    * value.
    */
-  readCacheSize: function ()
+  readCacheSize: function()
   {
     var preference = document.getElementById("browser.cache.disk.capacity");
     return preference.value / 1024;
@@ -315,7 +315,7 @@ var gAdvancedPane = {
    * Converts the cache size as specified in UI (in MB) to KB and returns that
    * value.
    */
-  writeCacheSize: function ()
+  writeCacheSize: function()
   {
     var cacheSize = document.getElementById("cacheSize");
     var intValue = parseInt(cacheSize.value, 10);
@@ -325,7 +325,7 @@ var gAdvancedPane = {
   /**
    * Clears the cache.
    */
-  clearCache: function ()
+  clearCache: function()
   {
     var cache = Components.classes["@mozilla.org/netwerk/cache-storage-service;1"]
                                  .getService(Components.interfaces.nsICacheStorageService);
@@ -338,7 +338,7 @@ var gAdvancedPane = {
   /**
    * Clears the application cache.
    */
-  clearOfflineAppCache: function ()
+  clearOfflineAppCache: function()
   {
     Components.utils.import("resource:///modules/offlineAppCache.jsm");
     OfflineAppCacheHelper.clear();
@@ -389,7 +389,7 @@ var gAdvancedPane = {
   },
 
   // XXX: duplicated in browser.js
-  _getOfflineAppUsage: function (perm, groups)
+  _getOfflineAppUsage: function(perm, groups)
   {
     var cacheService = Components.classes["@mozilla.org/network/application-cache-service;1"].
                        getService(Components.interfaces.nsIApplicationCacheService);
@@ -414,7 +414,7 @@ var gAdvancedPane = {
   /**
    * Updates the list of offline applications
    */
-  updateOfflineApps: function ()
+  updateOfflineApps: function()
   {
     var pm = Components.classes["@mozilla.org/permissionmanager;1"]
                        .getService(Components.interfaces.nsIPermissionManager);
@@ -560,7 +560,7 @@ var gAdvancedPane = {
    *                   iii   0/1/2  f       false
    *                   iii   0/1/2  *t*     *true*
    */
-  updateReadPrefs: function ()
+  updateReadPrefs: function()
   {
     var enabledPref = document.getElementById("app.update.enabled");
     var autoPref = document.getElementById("app.update.auto");
@@ -592,7 +592,7 @@ var gAdvancedPane = {
    * Sets the pref values based on the selected item of the radiogroup,
    * and sets the disabled state of the warnIncompatible checkbox accordingly.
    */
-  updateWritePrefs: function ()
+  updateWritePrefs: function()
   {
     var enabledPref = document.getElementById("app.update.enabled");
     var autoPref = document.getElementById("app.update.auto");
@@ -641,7 +641,7 @@ var gAdvancedPane = {
    * 2                        Checked           Warn if there are incompatibilities,
    *                                            or the update is major.
    */
-  readAddonWarn: function ()
+  readAddonWarn: function()
   {
     var preference = document.getElementById("app.update.mode");
     var warn = preference.value != 0;
@@ -654,7 +654,7 @@ var gAdvancedPane = {
    * themes" checkbox into the integer preference which represents it,
    * returning that value.
    */
-  writeAddonWarn: function ()
+  writeAddonWarn: function()
   {
     var warnIncompatible = document.getElementById("warnIncompatible");
     return !warnIncompatible.checked ? 0 : gAdvancedPane._modePreference;
@@ -663,7 +663,7 @@ var gAdvancedPane = {
   /**
    * Displays the history of installed updates.
    */
-  showUpdates: function ()
+  showUpdates: function()
   {
     var prompter = Components.classes["@mozilla.org/updates/update-prompt;1"]
                              .createInstance(Components.interfaces.nsIUpdatePrompt);
@@ -688,7 +688,7 @@ var gAdvancedPane = {
   /**
    * Displays the user's certificates and associated options.
    */
-  showCertificates: function ()
+  showCertificates: function()
   {
     document.documentElement.openWindow("mozilla:certmanager",
                                         "chrome://pippki/content/certManager.xul",
@@ -698,7 +698,7 @@ var gAdvancedPane = {
   /**
    * Displays a dialog from which the user can manage his security devices.
    */
-  showSecurityDevices: function ()
+  showSecurityDevices: function()
   {
     document.documentElement.openWindow("mozilla:devicemanager",
                                         "chrome://pippki/content/device_manager.xul",

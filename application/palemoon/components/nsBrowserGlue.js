@@ -68,7 +68,7 @@ const BOOKMARKS_BACKUP_MAX_BACKUPS = 10;
 // Factory object
 const BrowserGlueServiceFactory = {
   _instance: null,
-  createInstance: function BGSF_createInstance(outer, iid) {
+  createInstance: function(outer, iid) {
     if (outer != null)
       throw Components.results.NS_ERROR_NO_AGGREGATION;
     return this._instance == null ?
@@ -113,7 +113,7 @@ BrowserGlue.prototype = {
   _isPlacesDatabaseLocked: false,
   _migrationImportsDefaultBookmarks: false,
 
-  _setPrefToSaveSession: function BG__setPrefToSaveSession(aForce) {
+  _setPrefToSaveSession: function(aForce) {
     if (!this._saveSession && !aForce)
       return;
 
@@ -126,7 +126,7 @@ BrowserGlue.prototype = {
   },
 
 #ifdef MOZ_SERVICES_SYNC
-  _setSyncAutoconnectDelay: function BG__setSyncAutoconnectDelay() {
+  _setSyncAutoconnectDelay: function() {
     // Assume that a non-zero value for services.sync.autoconnectDelay should override
     if (Services.prefs.prefHasUserValue("services.sync.autoconnectDelay")) {
       let prefDelay = Services.prefs.getIntPref("services.sync.autoconnectDelay");
@@ -150,7 +150,7 @@ BrowserGlue.prototype = {
 #endif
 
   // nsIObserver implementation 
-  observe: function BG_observe(subject, topic, data) {
+  observe: function(subject, topic, data) {
     switch (topic) {
       case "notifications-open-settings":
         this._openPermissions(subject);
@@ -312,7 +312,7 @@ BrowserGlue.prototype = {
     }
   },
 
-  _syncSearchEngines: function () {
+  _syncSearchEngines: function() {
     // Only do this if the search service is already initialized. This function
     // gets called in finalUIStartup and from a browser-search-service observer,
     // to catch both cases (search service initialization occurring before and
@@ -323,7 +323,7 @@ BrowserGlue.prototype = {
   },
 
   // initialization (called on application startup) 
-  _init: function BG__init() {
+  _init: function() {
     let os = Services.obs;
     os.addObserver(this, "notifications-open-settings", false);
     os.addObserver(this, "prefservice:after-app-defaults", false);
@@ -356,7 +356,7 @@ BrowserGlue.prototype = {
   },
 
   // cleanup (called on application shutdown)
-  _dispose: function BG__dispose() {
+  _dispose: function() {
     let os = Services.obs;
     os.removeObserver(this, "notifications-open-settings");
     os.removeObserver(this, "prefservice:after-app-defaults");
@@ -391,7 +391,7 @@ BrowserGlue.prototype = {
     } catch (ex) {}
   },
 
-  _onAppDefaults: function BG__onAppDefaults() {
+  _onAppDefaults: function() {
     // apply distribution customizations (prefs)
     // other customizations are applied in _finalUIStartup()
     this._distributionCustomizer.applyPrefDefaults();
@@ -399,7 +399,7 @@ BrowserGlue.prototype = {
 
   // runs on startup, before the first command line handler is invoked
   // (i.e. before the first window is opened)
-  _finalUIStartup: function BG__finalUIStartup() {
+  _finalUIStartup: function() {
     this._sanitizer.onStartup();
     // check if we're in safe mode
     if (Services.appinfo.inSafeMode) {
@@ -433,11 +433,11 @@ BrowserGlue.prototype = {
     Services.obs.notifyObservers(null, "browser-ui-startup-complete", "");
   },
 
-  _setUpUserAgentOverrides: function BG__setUpUserAgentOverrides() {
+  _setUpUserAgentOverrides: function() {
     UserAgentOverrides.init();
 
     if (Services.prefs.getBoolPref("general.useragent.complexOverride.moodle")) {
-      UserAgentOverrides.addComplexOverride(function (aHttpChannel, aOriginalUA) {
+      UserAgentOverrides.addComplexOverride(function(aHttpChannel, aOriginalUA) {
         let cookies;
         try {
           cookies = aHttpChannel.getRequestHeader("Cookie");
@@ -449,7 +449,7 @@ BrowserGlue.prototype = {
     }
   },
 
-  _trackSlowStartup: function () {
+  _trackSlowStartup: function() {
     if (Services.startup.interrupted ||
         Services.prefs.getBoolPref("browser.slowStartup.notificationDisabled"))
       return;
@@ -475,7 +475,7 @@ BrowserGlue.prototype = {
     Services.prefs.setIntPref("browser.slowStartup.samples", samples);
   },
 
-  _showSlowStartupNotification: function () {
+  _showSlowStartupNotification: function() {
     let win = this.getMostRecentBrowserWindow();
     if (!win)
       return;
@@ -487,14 +487,14 @@ BrowserGlue.prototype = {
       {
         label:     win.gNavigatorBundle.getString("slowStartup.helpButton.label"),
         accessKey: win.gNavigatorBundle.getString("slowStartup.helpButton.accesskey"),
-        callback: function () {
+        callback: function() {
           win.openUILinkIn(Services.prefs.getCharPref("browser.slowstartup.help.url"), "tab");
         }
       },
       {
         label:     win.gNavigatorBundle.getString("slowStartup.disableNotificationButton.label"),
         accessKey: win.gNavigatorBundle.getString("slowStartup.disableNotificationButton.accesskey"),
-        callback: function () {
+        callback: function() {
           Services.prefs.setBoolPref("browser.slowStartup.notificationDisabled", true);
         }
       }
@@ -507,7 +507,7 @@ BrowserGlue.prototype = {
   },
 
   // the first browser window has finished initializing
-  _onFirstWindowLoaded: function BG__onFirstWindowLoaded() {
+  _onFirstWindowLoaded: function() {
 #ifdef XP_WIN
     // For windows seven, initialize the jump list module.
     const WINTASKBAR_CONTRACTID = "@mozilla.org/windows-taskbar;1";
@@ -529,7 +529,7 @@ BrowserGlue.prototype = {
    * All components depending on Places should be shut down in
    * _onPlacesShutdown() and not here.
    */
-  _onProfileShutdown: function BG__onProfileShutdown() {
+  _onProfileShutdown: function() {
     BrowserNewTabPreloader.uninit();
     UserAgentOverrides.uninit();
 #ifdef MOZ_WEBRTC
@@ -541,7 +541,7 @@ BrowserGlue.prototype = {
   },
 
   // All initial windows have opened.
-  _onWindowsRestored: function BG__onWindowsRestored() {
+  _onWindowsRestored: function() {
     // Show update notification, if needed.
     if (Services.prefs.prefHasUserValue("app.update.postupdate"))
       this._showUpdateNotification();
@@ -644,7 +644,7 @@ BrowserGlue.prototype = {
     }
   },
 
-  _onQuitRequest: function BG__onQuitRequest(aCancelQuit, aQuitType) {
+  _onQuitRequest: function(aCancelQuit, aQuitType) {
     // If user has already dismissed quit request, then do nothing
     if ((aCancelQuit instanceof Ci.nsISupportsPRBool) && aCancelQuit.data)
       return;
@@ -776,7 +776,7 @@ BrowserGlue.prototype = {
     }
   },
 
-  _showUpdateNotification: function BG__showUpdateNotification() {
+  _showUpdateNotification: function() {
     Services.prefs.clearUserPref("app.update.postupdate");
 
     var um = Cc["@mozilla.org/updates/update-manager;1"].
@@ -877,7 +877,7 @@ BrowserGlue.prototype = {
     }
   },
 
-  _showPluginUpdatePage: function BG__showPluginUpdatePage() {
+  _showPluginUpdatePage: function() {
     // Pale Moon: disable this functionality from BrowserGlue, people are 
     // already notified if they visit a page with an outdated plugin, and
     // they can check properly from the plugins page as well. 
@@ -912,7 +912,7 @@ BrowserGlue.prototype = {
    *   Set to true by safe-mode dialog to indicate we must restore default
    *   bookmarks.
    */
-  _initPlaces: function BG__initPlaces(aInitialMigrationPerformed) {
+  _initPlaces: function(aInitialMigrationPerformed) {
     // We must instantiate the history service since it will tell us if we
     // need to import or restore bookmarks due to first-run, corruption or
     // forced migration (due to a major schema change).
@@ -1078,7 +1078,7 @@ BrowserGlue.prototype = {
    * - export bookmarks as HTML, if so configured.
    * - finalize components depending on Places.
    */
-  _onPlacesShutdown: function BG__onPlacesShutdown() {
+  _onPlacesShutdown: function() {
     this._sanitizer.onShutdown();
     PageThumbs.uninit();
 
@@ -1134,7 +1134,7 @@ BrowserGlue.prototype = {
    * Determine whether to backup bookmarks or not.
    * @return true if bookmarks should be backed up, false if not.
    */
-  _shouldBackupBookmarks: function BG__shouldBackupBookmarks() {
+  _shouldBackupBookmarks: function() {
     let lastBackupFile = PlacesBackups.getMostRecent();
 
     // Should backup bookmarks if there are no backups or the maximum interval between
@@ -1146,7 +1146,7 @@ BrowserGlue.prototype = {
   /**
    * Backup bookmarks.
    */
-  _backupBookmarks: function BG__backupBookmarks() {
+  _backupBookmarks: function() {
     return Task.spawn(function() {
       // Backup bookmarks if there are no backups or the maximum interval between
       // backups elapsed.
@@ -1163,7 +1163,7 @@ BrowserGlue.prototype = {
   /**
    * Show the notificationBox for a locked places database.
    */
-  _showPlacesLockedNotificationBox: function BG__showPlacesLockedNotificationBox() {
+  _showPlacesLockedNotificationBox: function() {
     var applicationName = gBrandBundle.GetStringFromName("brandShortName");
     var placesBundle = Services.strings.createBundle("chrome://browser/locale/places/places.properties");
     var title = placesBundle.GetStringFromName("lockPrompt.title");
@@ -1197,7 +1197,7 @@ BrowserGlue.prototype = {
     notification.persistence = -1; // Until user closes it
   },
 
-  _migrateUI: function BG__migrateUI() {
+  _migrateUI: function() {
     const UI_VERSION = 22;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul#";
     let currentUIVersion = 0;
@@ -1477,7 +1477,7 @@ BrowserGlue.prototype = {
     Services.prefs.setIntPref("browser.migration.version", UI_VERSION);
   },
 
-  _hasExistingNotificationPermission: function BG__hasExistingNotificationPermission() {
+  _hasExistingNotificationPermission: function() {
     let enumerator = Services.perms.enumerator;
     while (enumerator.hasMoreElements()) {
       let permission = enumerator.getNext().QueryInterface(Ci.nsIPermission);
@@ -1488,7 +1488,7 @@ BrowserGlue.prototype = {
     return false;
   },
 
-  _notifyNotificationsUpgrade: function BG__notifyNotificationsUpgrade() {
+  _notifyNotificationsUpgrade: function() {
     if (!this._hasExistingNotificationPermission()) {
       return;
     }
@@ -1533,14 +1533,14 @@ BrowserGlue.prototype = {
     return false;
   },
 
-  _getPersist: function BG__getPersist(aSource, aProperty) {
+  _getPersist: function(aSource, aProperty) {
     var target = this._dataSource.GetTarget(aSource, aProperty, true);
     if (target instanceof Ci.nsIRDFLiteral)
       return target.Value;
     return null;
   },
 
-  _setPersist: function BG__setPersist(aSource, aProperty, aTarget) {
+  _setPersist: function(aSource, aProperty, aTarget) {
     this._dirty = true;
     try {
       var oldTarget = this._dataSource.GetTarget(aSource, aProperty, true);
@@ -1570,12 +1570,12 @@ BrowserGlue.prototype = {
   // public nsIBrowserGlue members
   // ------------------------------
 
-  sanitize: function BG_sanitize(aParentWindow) {
+  sanitize: function(aParentWindow) {
     this._sanitizer.sanitize(aParentWindow);
   },
 
   ensurePlacesDefaultQueriesInitialized:
-  function BG_ensurePlacesDefaultQueriesInitialized() {
+  function() {
     // This is actual version of the smart bookmarks, must be increased every
     // time smart bookmarks change.
     // When adding a new smart bookmark below, its newInVersion property must
@@ -1610,7 +1610,7 @@ BrowserGlue.prototype = {
     }
 
     let batch = {
-      runBatched: function BG_EPDQI_runBatched() {
+      runBatched: function() {
         let menuIndex = 0;
         let toolbarIndex = 0;
         let bundle = Services.strings.createBundle("chrome://browser/locale/places/places.properties");
@@ -1658,7 +1658,7 @@ BrowserGlue.prototype = {
         // we will use these informations to create the new version at the same
         // position.
         let smartBookmarkItemIds = PlacesUtils.annotations.getItemsWithAnnotation(SMART_BOOKMARKS_ANNO);
-        smartBookmarkItemIds.forEach(function (itemId) {
+        smartBookmarkItemIds.forEach(function(itemId) {
           let queryId = PlacesUtils.annotations.getItemAnnotation(itemId, SMART_BOOKMARKS_ANNO);
           if (queryId in smartBookmarks) {
             let smartBookmark = smartBookmarks[queryId];
@@ -1732,7 +1732,7 @@ BrowserGlue.prototype = {
   },
 
   // this returns the most recent non-popup browser window
-  getMostRecentBrowserWindow: function BG_getMostRecentBrowserWindow() {
+  getMostRecentBrowserWindow: function() {
     return RecentWindow.getMostRecentBrowserWindow();
   },
 
@@ -1748,7 +1748,7 @@ BrowserGlue.prototype = {
    * lesser evil than sending a tab to a specific device (from e.g. Fennec)
    * and having nothing happen on the receiving end.
    */
-  _onDisplaySyncURI: function _onDisplaySyncURI(data) {
+  _onDisplaySyncURI: function(data) {
     try {
       let tabbrowser = RecentWindow.getMostRecentBrowserWindow({private: false}).gBrowser;
 
@@ -1778,7 +1778,7 @@ ContentPermissionPrompt.prototype = {
 
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIContentPermissionPrompt]),
 
-  _getChromeWindow: function CPP_getChromeWindow(aWindow) {
+  _getChromeWindow: function(aWindow) {
     var chromeWin = aWindow
       .QueryInterface(Ci.nsIInterfaceRequestor)
       .getInterface(Ci.nsIWebNavigation)
@@ -1790,7 +1790,7 @@ ContentPermissionPrompt.prototype = {
     return chromeWin;
   },
 
-  _getBrowserForRequest: function (aRequest) {
+  _getBrowserForRequest: function(aRequest) {
     let requestingWindow = aRequest.window.top;
     // find the requesting browser or iframe
     let browser = requestingWindow.QueryInterface(Ci.nsIInterfaceRequestor)
@@ -1814,7 +1814,7 @@ ContentPermissionPrompt.prototype = {
    * @param aAnchorId              The id for the PopupNotification anchor.
    * @param aOptions               Options for the PopupNotification
    */
-  _showPrompt: function CPP_showPrompt(aRequest, aMessage, aPermission, aActions,
+  _showPrompt: function(aRequest, aMessage, aPermission, aActions,
                                        aNotificationId, aAnchorId, aOptions) {
     function onFullScreen() {
       popup.remove();
@@ -2005,7 +2005,7 @@ ContentPermissionPrompt.prototype = {
                      "web-notifications-notification-icon", options);
   },
 
-  _promptPointerLock: function CPP_promtPointerLock(aRequest, autoAllow) {
+  _promptPointerLock: function(aRequest, autoAllow) {
     let requestingURI = aRequest.principal.URI;
 
     let originString = requestingURI.schemeIs("file") ? requestingURI.path : requestingURI.host;
@@ -2042,7 +2042,7 @@ ContentPermissionPrompt.prototype = {
                      "pointerLock-notification-icon", null);
   },
 
-  prompt: function CPP_prompt(request) {
+  prompt: function(request) {
     // Only allow exactly one permission rquest here.
     let types = request.types.QueryInterface(Ci.nsIArray);
     if (types.length != 1) {

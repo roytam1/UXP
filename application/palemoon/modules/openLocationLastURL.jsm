@@ -15,14 +15,14 @@ var prefSvc = Components.classes["@mozilla.org/preferences-service;1"]
 var gOpenLocationLastURLData = "";
 
 var observer = {
-  QueryInterface: function (aIID) {
+  QueryInterface: function(aIID) {
     if (aIID.equals(Components.interfaces.nsIObserver) ||
         aIID.equals(Components.interfaces.nsISupports) ||
         aIID.equals(Components.interfaces.nsISupportsWeakReference))
       return this;
     throw Components.results.NS_NOINTERFACE;
   },
-  observe: function (aSubject, aTopic, aData) {
+  observe: function(aSubject, aTopic, aData) {
     switch (aTopic) {
       case "last-pb-context-exited":
         gOpenLocationLastURLData = "";
@@ -46,7 +46,7 @@ this.OpenLocationLastURL = function OpenLocationLastURL(aWindow) {
 }
 
 OpenLocationLastURL.prototype = {
-  isPrivate: function OpenLocationLastURL_isPrivate() {
+  isPrivate: function() {
     // Assume not in private browsing mode, unless the browser window is
     // in private mode.
     if (!this.window)

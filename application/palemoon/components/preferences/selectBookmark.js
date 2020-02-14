@@ -15,7 +15,7 @@
  * closes.
  */ 
 var SelectBookmarkDialog = {
-  init: function SBD_init() {
+  init: function() {
     document.getElementById("bookmarks").place =
       "place:queryType=1&folder=" + PlacesUIUtils.allBookmarksFolderId;
 
@@ -27,7 +27,7 @@ var SelectBookmarkDialog = {
    * Update the disabled state of the OK button as the user changes the 
    * selection within the view. 
    */
-  selectionChanged: function SBD_selectionChanged() {
+  selectionChanged: function() {
     var accept = document.documentElement.getButton("accept");
     var bookmarks = document.getElementById("bookmarks");
     var disableAcceptButton = true;
@@ -38,7 +38,7 @@ var SelectBookmarkDialog = {
     accept.disabled = disableAcceptButton;
   },
 
-  onItemDblClick: function SBD_onItemDblClick() {
+  onItemDblClick: function() {
     var bookmarks = document.getElementById("bookmarks");
     var selectedNode = bookmarks.selectedNode;
     if (selectedNode && PlacesUtils.nodeIsURI(selectedNode)) {
@@ -54,7 +54,7 @@ var SelectBookmarkDialog = {
    * User accepts their selection. Set all the selected URLs or the contents
    * of the selected folder as the list of homepages.
    */
-  accept: function SBD_accept() {
+  accept: function() {
     var bookmarks = document.getElementById("bookmarks");
     NS_ASSERT(bookmarks.hasSelection,
               "Should not be able to accept dialog if there is no selected URL!");

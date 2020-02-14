@@ -63,12 +63,12 @@ DistributionCustomizer.prototype = {
     return this._ioSvc;
   },
 
-  _makeURI: function DIST__makeURI(spec) {
+  _makeURI: function(spec) {
     return this._ioSvc.newURI(spec, null, null);
   },
 
   _parseBookmarksSection:
-  function DIST_parseBookmarksSection(parentId, section) {
+  function(parentId, section) {
     let keys = [];
     for (let i in enumerate(this._ini.getKeys(section)))
       keys.push(i);
@@ -177,7 +177,7 @@ DistributionCustomizer.prototype = {
   },
 
   _customizationsApplied: false,
-  applyCustomizations: function DIST_applyCustomizations() {
+  applyCustomizations: function() {
     this._customizationsApplied = true;
     if (!this._iniFile)
       return this._checkCustomizationComplete();
@@ -190,7 +190,7 @@ DistributionCustomizer.prototype = {
   },
 
   _bookmarksApplied: false,
-  applyBookmarks: function DIST_applyBookmarks() {
+  applyBookmarks: function() {
     this._bookmarksApplied = true;
     if (!this._iniFile)
       return this._checkCustomizationComplete();
@@ -230,7 +230,7 @@ DistributionCustomizer.prototype = {
   },
 
   _prefDefaultsApplied: false,
-  applyPrefDefaults: function DIST_applyPrefDefaults() {
+  applyPrefDefaults: function() {
     this._prefDefaultsApplied = true;
     if (!this._iniFile)
       return this._checkCustomizationComplete();
@@ -321,7 +321,7 @@ DistributionCustomizer.prototype = {
     return this._checkCustomizationComplete();
   },
 
-  _checkCustomizationComplete: function DIST__checkCustomizationComplete() {
+  _checkCustomizationComplete: function() {
     let prefDefaultsApplied = this._prefDefaultsApplied || !this._iniFile;
     if (this._customizationsApplied && this._bookmarksApplied &&
         prefDefaultsApplied) {

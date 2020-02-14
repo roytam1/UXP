@@ -12,7 +12,7 @@ Cu.import("resource://gre/modules/DownloadUtils.jsm");
 
 var gSyncQuota = {
 
-  init: function init() {
+  init: function() {
     this.bundle = document.getElementById("quotaStrings");
     let caption = document.getElementById("treeCaption");
     caption.firstChild.nodeValue = this.bundle.getString("quota.treeCaption.label");
@@ -24,9 +24,9 @@ var gSyncQuota = {
     this.loadData();
   },
 
-  loadData: function loadData() {
+  loadData: function() {
     this._usage_req = Weave.Service.getStorageInfo(Weave.INFO_COLLECTION_USAGE,
-                                                   function (error, usage) {
+                                                   function(error, usage) {
       delete gSyncQuota._usage_req;
       // displayUsageData handles null values, so no need to check 'error'.
       gUsageTreeView.displayUsageData(usage);
@@ -36,7 +36,7 @@ var gSyncQuota = {
     let bundle = this.bundle;
 
     this._quota_req = Weave.Service.getStorageInfo(Weave.INFO_QUOTA,
-                                                   function (error, quota) {
+                                                   function(error, quota) {
       delete gSyncQuota._quota_req;
 
       if (error) {
@@ -57,7 +57,7 @@ var gSyncQuota = {
     });
   },
 
-  onCancel: function onCancel() {
+  onCancel: function() {
     if (this._usage_req) {
       this._usage_req.abort();
     }
@@ -67,7 +67,7 @@ var gSyncQuota = {
     return true;
   },
 
-  onAccept: function onAccept() {
+  onAccept: function() {
     let engines = gUsageTreeView.getEnginesToDisable();
     for each (let engine in engines) {
       Weave.Service.engineManager.get(engine).enabled = false;
@@ -80,7 +80,7 @@ var gSyncQuota = {
     return this.onCancel();
   },
 
-  convertKB: function convertKB(value) {
+  convertKB: function(value) {
     return DownloadUtils.convertByteUnits(value * 1024);
   }
 
@@ -98,7 +98,7 @@ var gUsageTreeView = {
   _collections: [],
   _byname: {},
 
-  init: function init() {
+  init: function() {
     let retrievingLabel = gSyncQuota.bundle.getString("quota.retrieving.label");
     for each (let engine in Weave.Service.engineManager.getEnabled()) {
       if (this._ignored[engine.name])
@@ -122,7 +122,7 @@ var gUsageTreeView = {
     }
   },
 
-  _collectionTitle: function _collectionTitle(engine) {
+  _collectionTitle: function(engine) {
     try {
       return gSyncQuota.bundle.getString(
         "collection." + engine.prefName + ".label");
@@ -134,7 +134,7 @@ var gUsageTreeView = {
   /*
    * Process the quota information as returned by info/collection_usage.
    */
-  displayUsageData: function displayUsageData(data) {
+  displayUsageData: function(data) {
     for each (let coll in this._collections) {
       coll.size = 0;
       // If we couldn't retrieve any data, just blank out the label.
@@ -157,7 +157,7 @@ var gUsageTreeView = {
   /*
    * Handle click events on the tree.
    */
-  onTreeClick: function onTreeClick(event) {
+  onTreeClick: function(event) {
     if (event.button == 2)
       return;
 
@@ -169,7 +169,7 @@ var gUsageTreeView = {
   /*
    * Toggle enabled state of an engine.
    */
-  toggle: function toggle(row) {
+  toggle: function(row) {
     // Update the tree
     let collection = this._collections[row];
     collection.enabled = !collection.enabled;
@@ -180,7 +180,7 @@ var gUsageTreeView = {
    * Return a list of engines (or rather their pref names) that should be
    * disabled.
    */
-  getEnginesToDisable: function getEnginesToDisable() {
+  getEnginesToDisable: function() {
     // Tycho: return [coll.name for each (coll in this._collections) if (!coll.enabled)];
     let engines = [];
     for each (let coll in this._collections) {
@@ -216,7 +216,7 @@ var gUsageTreeView = {
     return this._collections[row].enabled;
   },
 
-  getCellText: function getCellText(row, col) {
+  getCellText: function(row, col) {
     let collection = this._collections[row];
     switch (col.id) {
       case "collection":
@@ -228,7 +228,7 @@ var gUsageTreeView = {
     }
   },
 
-  setTree: function setTree(tree) {
+  setTree: function(tree) {
     this.treeBox = tree;
   },
 
@@ -237,7 +237,7 @@ var gUsageTreeView = {
   selectionChanged: function() {},
   cycleCell: function(row, col) {},
   isEditable: function(row, col) { return false; },
-  isSelectable: function (row, col) { return false; },
+  isSelectable: function(row, col) { return false; },
   setCellValue: function(row, col, value) {},
   setCellText: function(row, col, value) {},
   performAction: function(action) {},

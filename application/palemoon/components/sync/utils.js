@@ -15,7 +15,7 @@ var gSyncUtils = {
   },
 
   // opens in a new window if we're in a modal prefwindow world, in a new tab otherwise
-  _openLink: function (url) {
+  _openLink: function(url) {
     let thisDocEl = document.documentElement,
         openerDocEl = window.opener && window.opener.document.documentElement;
     if (thisDocEl.id == "accountSetup" && window.opener &&
@@ -30,13 +30,13 @@ var gSyncUtils = {
       openUILinkIn(url, "tab");
   },
 
-  changeName: function changeName(input) {
+  changeName: function(input) {
     // Make sure to update to a modified name, e.g., empty-string -> default
     Weave.Service.clientsEngine.localName = input.value;
     input.value = Weave.Service.clientsEngine.localName;
   },
 
-  openChange: function openChange(type, duringSetup) {
+  openChange: function(type, duringSetup) {
     // Just re-show the dialog if it's already open
     let openedDialog = Services.wm.getMostRecentWindow("Sync:" + type);
     if (openedDialog != null) {
@@ -51,34 +51,34 @@ var gSyncUtils = {
                                         type, duringSetup);
   },
 
-  changePassword: function () {
+  changePassword: function() {
     if (Weave.Utils.ensureMPUnlocked())
       this.openChange("ChangePassword");
   },
 
-  resetPassphrase: function (duringSetup) {
+  resetPassphrase: function(duringSetup) {
     if (Weave.Utils.ensureMPUnlocked())
       this.openChange("ResetPassphrase", duringSetup);
   },
 
-  updatePassphrase: function () {
+  updatePassphrase: function() {
     if (Weave.Utils.ensureMPUnlocked())
       this.openChange("UpdatePassphrase");
   },
 
-  resetPassword: function () {
+  resetPassword: function() {
     this._openLink(Weave.Service.pwResetURL);
   },
 
-  openToS: function () {
+  openToS: function() {
     this._openLink(Weave.Svc.Prefs.get("termsURL"));
   },
 
-  openPrivacyPolicy: function () {
+  openPrivacyPolicy: function() {
     this._openLink(Weave.Svc.Prefs.get("privacyURL"));
   },
 
-  openFirstSyncProgressPage: function () {
+  openFirstSyncProgressPage: function() {
     this._openLink("about:sync-progress");
   },
 
@@ -190,7 +190,7 @@ var gSyncUtils = {
    * 
    * returns [valid, errorString]
    */
-  validatePassword: function (el1, el2) {
+  validatePassword: function(el1, el2) {
     let valid = false;
     let val1 = el1.value;
     let val2 = el2 ? el2.value : "";

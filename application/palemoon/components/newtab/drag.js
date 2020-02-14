@@ -33,7 +33,7 @@ var gDrag = {
    * @param aSite The site that's being dragged.
    * @param aEvent The 'dragstart' event.
    */
-  start: function Drag_start(aSite, aEvent) {
+  start: function(aSite, aEvent) {
     this._draggedSite = aSite;
 
     // Mark nodes as being dragged.
@@ -66,7 +66,7 @@ var gDrag = {
    * @param aSite The site that's being dragged.
    * @param aEvent The 'drag' event.
    */
-  drag: function Drag_drag(aSite, aEvent) {
+  drag: function(aSite, aEvent) {
     // Get the viewport size.
     let {clientWidth, clientHeight} = document.documentElement;
 
@@ -90,7 +90,7 @@ var gDrag = {
    * @param aSite The site that's being dragged.
    * @param aEvent The 'dragend' event.
    */
-  end: function Drag_end(aSite, aEvent) {
+  end: function(aSite, aEvent) {
     let nodes = gGrid.node.querySelectorAll("[dragged]")
     for (let i = 0; i < nodes.length; i++)
       nodes[i].removeAttribute("dragged");
@@ -106,7 +106,7 @@ var gDrag = {
    * @param aEvent The drag event to check.
    * @return Whether we should handle this drag and drop operation.
    */
-  isValid: function Drag_isValid(aEvent) {
+  isValid: function(aEvent) {
     let link = gDragDataHelper.getLinkFromDragEvent(aEvent);
 
     // Check that the drag data is non-empty.
@@ -125,7 +125,7 @@ var gDrag = {
    * @param aSite The site that's being dragged.
    * @param aEvent The 'dragstart' event.
    */
-  _setDragData: function Drag_setDragData(aSite, aEvent) {
+  _setDragData: function(aSite, aEvent) {
     let {url, title} = aSite;
 
     let dt = aEvent.dataTransfer;
