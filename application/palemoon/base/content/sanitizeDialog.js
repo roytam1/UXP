@@ -35,7 +35,7 @@ var gSanitizePromptDialog = {
     return document.getElementById("sanitizeEverythingWarningBox");
   },
 
-  init: function ()
+  init: function()
   {
     // This is used by selectByTimespan() to determine if the window has loaded.
     this._inited = true;
@@ -69,7 +69,7 @@ var gSanitizePromptDialog = {
       this.warningBox.hidden = true;
   },
 
-  selectByTimespan: function ()
+  selectByTimespan: function()
   {
     // This method is the onselect handler for the duration dropdown.  As a
     // result it's called a couple of times before onload calls init().
@@ -99,7 +99,7 @@ var gSanitizePromptDialog = {
       window.document.documentElement.getAttribute("noneverythingtitle");
   },
 
-  sanitize: function ()
+  sanitize: function()
   {
     // Update pref values before handing off to the sanitizer (bug 453440)
     this.updatePrefs();
@@ -136,7 +136,7 @@ var gSanitizePromptDialog = {
    *                          True means the item list visibility status should not
    *                          be changed.
    */
-  prepareWarning: function (aDontShowItemList) {
+  prepareWarning: function(aDontShowItemList) {
     // If the date and time-aware locale warning string is ever used again,
     // initialize it here.  Currently we use the no-visits warning string,
     // which does not include date and time.  See bug 480169 comment 48.
@@ -160,7 +160,7 @@ var gSanitizePromptDialog = {
    * Called when the value of a preference element is synced from the actual
    * pref.  Enables or disables the OK button appropriately.
    */
-  onReadGeneric: function ()
+  onReadGeneric: function()
   {
     var found = false;
 
@@ -193,7 +193,7 @@ var gSanitizePromptDialog = {
    * (i.e., Windows).  We must therefore manually set the prefs from their
    * corresponding preference elements.
    */
-  updatePrefs : function ()
+  updatePrefs : function()
   {
     var tsPref = document.getElementById("privacy.sanitize.timeSpan");
     Sanitizer.prefs.setIntPref("timeSpan", this.selectedTimespan);
@@ -214,7 +214,7 @@ var gSanitizePromptDialog = {
   /**
    * Check if all of the history items have been selected like the default status.
    */
-  hasNonSelectedItems: function () {
+  hasNonSelectedItems: function() {
     let checkboxes = document.querySelectorAll("#itemList > [preference]");
     for (let i = 0; i < checkboxes.length; ++i) {
       let pref = document.getElementById(checkboxes[i].getAttribute("preference"));
@@ -227,7 +227,7 @@ var gSanitizePromptDialog = {
   /**
    * Show the history items list.
    */
-  showItemList: function () {
+  showItemList: function() {
     var itemList = document.getElementById("itemList");
     var expanderButton = document.getElementById("detailsExpander");
 
@@ -242,7 +242,7 @@ var gSanitizePromptDialog = {
   /**
    * Hide the history items list.
    */
-  hideItemList: function () {
+  hideItemList: function() {
     var itemList = document.getElementById("itemList");
     var expanderButton = document.getElementById("detailsExpander");
 
@@ -256,7 +256,7 @@ var gSanitizePromptDialog = {
   /**
    * Called by the item list expander button to toggle the list's visibility.
    */
-  toggleItemList: function ()
+  toggleItemList: function()
   {
     var itemList = document.getElementById("itemList");
 
@@ -282,7 +282,7 @@ var gSanitizePromptDialog = {
     return this._placesTree;
   },
 
-  init: function ()
+  init: function()
   {
     // This is used by selectByTimespan() to determine if the window has loaded.
     this._inited = true;
@@ -315,7 +315,7 @@ var gSanitizePromptDialog = {
    * the tree to duration values, and this.durationStartTimes, which maps
    * duration values to their corresponding start times.
    */
-  initDurationDropdown: function ()
+  initDurationDropdown: function()
   {
     // First, calculate the start times for each duration.
     this.durationStartTimes = {};
@@ -379,7 +379,7 @@ var gSanitizePromptDialog = {
   /**
    * If the Places tree is not set up, sets it up.  Otherwise does nothing.
    */
-  ensurePlacesTreeIsInited: function ()
+  ensurePlacesTreeIsInited: function()
   {
     if (this._placesTreeIsInited)
       return;
@@ -420,7 +420,7 @@ var gSanitizePromptDialog = {
    * the tree that are contained in the selected duration.  If clearing
    * everything, the warning panel is shown instead.
    */
-  selectByTimespan: function ()
+  selectByTimespan: function()
   {
     // This method is the onselect handler for the duration dropdown.  As a
     // result it's called a couple of times before onload calls init().
@@ -467,7 +467,7 @@ var gSanitizePromptDialog = {
     document.documentElement.getButton("accept").disabled = durRow < 0;
   },
 
-  sanitize: function ()
+  sanitize: function()
   {
     // Update pref values before handing off to the sanitizer (bug 453440)
     this.updatePrefs();
@@ -515,7 +515,7 @@ var gSanitizePromptDialog = {
    * for garbage collection, we need to break the reference cycle between the
    * two.
    */
-  unload: function ()
+  unload: function()
   {
     let result = this.placesTree.getResult();
     result.removeObserver(this.placesTree.view);
@@ -533,7 +533,7 @@ var gSanitizePromptDialog = {
    * @param aEvent
    *        The event captured in the event handler.
    */
-  grippyMoved: function (aEventName, aEvent)
+  grippyMoved: function(aEventName, aEvent)
   {
     gContiguousSelectionTreeHelper[aEventName](aEvent);
     var lastSelRow = gContiguousSelectionTreeHelper.getGrippyRow() - 1;
@@ -589,7 +589,7 @@ var gContiguousSelectionTreeHelper = {
    *         view
    * @return The new view
    */
-  setTree: function CSTH_setTree(aTreeElement, aProtoTreeView)
+  setTree: function(aTreeElement, aProtoTreeView)
   {
     this._tree = aTreeElement;
     var newView = this._makeTreeView(aProtoTreeView || aTreeElement.view);
@@ -604,7 +604,7 @@ var gContiguousSelectionTreeHelper = {
    *
    * @return The row index of the grippy
    */
-  getGrippyRow: function CSTH_getGrippyRow()
+  getGrippyRow: function()
   {
     var sel = this.tree.view.selection;
     var rangeCount = sel.getRangeCount();
@@ -626,7 +626,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed dragover event
    */
-  ondragover: function CSTH_ondragover(aEvent)
+  ondragover: function(aEvent)
   {
     // Without this when dragging on Windows the mouse cursor is a "no" sign.
     // This makes it a drop symbol.
@@ -653,7 +653,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed dragstart event
    */
-  ondragstart: function CSTH_ondragstart(aEvent)
+  ondragstart: function(aEvent)
   {
     var tbo = this.tree.treeBoxObject;
     var clickedRow = tbo.getRowAt(aEvent.clientX, aEvent.clientY);
@@ -688,7 +688,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed keypress event
    */
-  onkeypress: function CSTH_onkeypress(aEvent)
+  onkeypress: function(aEvent)
   {
     var grippyRow = this.getGrippyRow();
     var tbo = this.tree.treeBoxObject;
@@ -749,7 +749,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed mousedown event
    */
-  onmousedown: function CSTH_onmousedown(aEvent)
+  onmousedown: function(aEvent)
   {
     var tbo = this.tree.treeBoxObject;
     var clickedRow = tbo.getRowAt(aEvent.clientX, aEvent.clientY);
@@ -771,7 +771,7 @@ var gContiguousSelectionTreeHelper = {
    * @param aEndRow
    *        The range [0, aEndRow] will be selected.
    */
-  rangedSelect: function CSTH_rangedSelect(aEndRow)
+  rangedSelect: function(aEndRow)
   {
     var tbo = this.tree.treeBoxObject;
     if (aEndRow < 0)
@@ -784,7 +784,7 @@ var gContiguousSelectionTreeHelper = {
   /**
    * Scrolls the tree so that the grippy row is in the center of the view.
    */
-  scrollToGrippy: function CSTH_scrollToGrippy()
+  scrollToGrippy: function()
   {
     var rowCount = this.tree.view.rowCount;
     var tbo = this.tree.treeBoxObject;
@@ -817,14 +817,14 @@ var gContiguousSelectionTreeHelper = {
    * @param aProtoTreeView
    *        Used as the new view's prototype if specified
    */
-  _makeTreeView: function CSTH__makeTreeView(aProtoTreeView)
+  _makeTreeView: function(aProtoTreeView)
   {
     var view = aProtoTreeView;
     var that = this;
 
     //XXXadw: When Alex gets the grippy icon done, this may or may not change,
     //        depending on how we style it.
-    view.isSeparator = function CSTH_View_isSeparator(aRow)
+    view.isSeparator = function(aRow)
     {
       return aRow === that.getGrippyRow();
     };
@@ -832,7 +832,7 @@ var gContiguousSelectionTreeHelper = {
     // rowCount includes the grippy row.
     view.__defineGetter__("_rowCount", view.__lookupGetter__("rowCount"));
     view.__defineGetter__("rowCount",
-      function CSTH_View_rowCount()
+      function()
       {
         return this._rowCount + 1;
       });

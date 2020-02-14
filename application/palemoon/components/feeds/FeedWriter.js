@@ -149,12 +149,12 @@ FeedWriter.prototype = {
   _mimeSvc      : Cc["@mozilla.org/mime;1"].
                   getService(Ci.nsIMIMEService),
 
-  _getPropertyAsBag: function FW__getPropertyAsBag(container, property) {
+  _getPropertyAsBag: function(container, property) {
     return container.fields.getProperty(property).
                      QueryInterface(Ci.nsIPropertyBag2);
   },
 
-  _getPropertyAsString: function FW__getPropertyAsString(container, property) {
+  _getPropertyAsString: function(container, property) {
     try {
       return container.fields.getPropertyAsAString(property);
     }
@@ -163,7 +163,7 @@ FeedWriter.prototype = {
     return "";
   },
 
-  _setContentText: function FW__setContentText(id, text) {
+  _setContentText: function(id, text) {
     this._contentSandbox.element = this._document.getElementById(id);
     this._contentSandbox.textNode = text.createDocumentFragment(this._contentSandbox.element);
     var codeStr =
@@ -190,7 +190,7 @@ FeedWriter.prototype = {
    *          The URI spec to set as the href
    */
   _safeSetURIAttribute: 
-  function FW__safeSetURIAttribute(element, attribute, uri) {
+  function(element, attribute, uri) {
     var secman = Cc["@mozilla.org/scriptsecuritymanager;1"].
                  getService(Ci.nsIScriptSecurityManager);    
     const flags = Ci.nsIScriptSecurityManager.DISALLOW_INHERIT_PRINCIPAL;
@@ -243,7 +243,7 @@ FeedWriter.prototype = {
    * @param aElement
    *        the XUL element to call doCommand() on.
    */
-  _safeDoCommand: function FW___safeDoCommand(aElement) {
+  _safeDoCommand: function(aElement) {
     this._contentSandbox.element = aElement;
     Cu.evalInSandbox("element.doCommand();", this._contentSandbox);
     this._contentSandbox.element = null;
@@ -268,16 +268,16 @@ FeedWriter.prototype = {
     return this.__bundle;
   },
 
-  _getFormattedString: function FW__getFormattedString(key, params) {
+  _getFormattedString: function(key, params) {
     return this._bundle.formatStringFromName(key, params, params.length);
   },
   
-  _getString: function FW__getString(key) {
+  _getString: function(key) {
     return this._bundle.GetStringFromName(key);
   },
 
   /* Magic helper methods to be used instead of xbl properties */
-  _getSelectedItemFromMenulist: function FW__getSelectedItemFromList(aList) {
+  _getSelectedItemFromMenulist: function(aList) {
     var node = aList.firstChild.firstChild;
     while (node) {
       if (node.localName == "menuitem" && node.getAttribute("selected") == "true")
@@ -289,7 +289,7 @@ FeedWriter.prototype = {
     return null;
   },
 
-  _setCheckboxCheckedState: function FW__setCheckboxCheckedState(aCheckbox, aValue) {
+  _setCheckboxCheckedState: function(aCheckbox, aValue) {
     // see checkbox.xml, xbl bindings are not applied within the sandbox!
     this._contentSandbox.checkbox = aCheckbox;
     var codeStr;
@@ -315,7 +315,7 @@ FeedWriter.prototype = {
    * @param   dateString
    *          A date as extracted from a feed entry. (entry.updated)
    */
-  _parseDate: function FW__parseDate(dateString) {
+  _parseDate: function(dateString) {
     // Convert the date into the user's local time zone
     dateObj = new Date(dateString);
 
@@ -334,7 +334,7 @@ FeedWriter.prototype = {
    * Returns the feed type.
    */
   __feedType: null,
-  _getFeedType: function FW__getFeedType() {
+  _getFeedType: function() {
     if (this.__feedType != null)
       return this.__feedType;
 
@@ -352,7 +352,7 @@ FeedWriter.prototype = {
   /**
    * Maps a feed type to a maybe-feed mimetype.
    */
-  _getMimeTypeForFeedType: function FW__getMimeTypeForFeedType() {
+  _getMimeTypeForFeedType: function() {
     switch (this._getFeedType()) {
       case Ci.nsIFeed.TYPE_VIDEO:
         return TYPE_MAYBE_VIDEO_FEED;
@@ -370,7 +370,7 @@ FeedWriter.prototype = {
    * @param   container
    *          The feed container
    */
-  _setTitleText: function FW__setTitleText(container) {
+  _setTitleText: function(container) {
     if (container.title) {
       var title = container.title.plainText();
       this._setContentText(TITLE_ID, container.title);
@@ -390,7 +390,7 @@ FeedWriter.prototype = {
    * @param   container
    *          The feed container
    */
-  _setTitleImage: function FW__setTitleImage(container) {
+  _setTitleImage: function(container) {
     try {
       var parts = container.image;
       
@@ -432,7 +432,7 @@ FeedWriter.prototype = {
    * @param   container
    *          The container of entries in the feed
    */
-  _writeFeedContent: function FW__writeFeedContent(container) {
+  _writeFeedContent: function(container) {
     // Build the actual feed content
     var feed = container.QueryInterface(Ci.nsIFeed);
     if (feed.items.length == 0)
@@ -532,7 +532,7 @@ FeedWriter.prototype = {
    *        The URL string from which to create a display name
    * @returns a string
    */
-  _getURLDisplayName: function FW__getURLDisplayName(aURL) {
+  _getURLDisplayName: function(aURL) {
     var url = makeURI(aURL);
     url.QueryInterface(Ci.nsIURL);
     if (url == null || url.fileName.length == 0)
@@ -548,7 +548,7 @@ FeedWriter.prototype = {
    *          FeedEntry with enclosures
    * @returns element
    */
-  _buildEnclosureDiv: function FW__buildEnclosureDiv(entry) {
+  _buildEnclosureDiv: function(entry) {
     var enclosuresDiv = this._document.createElementNS(HTML_NS, "div");
     enclosuresDiv.className = "enclosures";
 
@@ -628,7 +628,7 @@ FeedWriter.prototype = {
    * @returns A valid nsIFeedContainer object containing the contents of
    *          the feed.
    */
-  _getContainer: function FW__getContainer(result) {
+  _getContainer: function(result) {
     var feedService = 
         Cc["@mozilla.org/browser/feeds/result-service;1"].
         getService(Ci.nsIFeedResultService);
@@ -668,7 +668,7 @@ FeedWriter.prototype = {
    *          A nsIFile to look up the name of
    * @returns The display name of the application represented by the file.
    */
-  _getFileDisplayName: function FW__getFileDisplayName(file) {
+  _getFileDisplayName: function(file) {
 #ifdef XP_WIN
     if (file instanceof Ci.nsILocalFileWin) {
       try {
@@ -710,7 +710,7 @@ FeedWriter.prototype = {
    * Helper method to get an element in the XBL binding where the handler
    * selection UI lives
    */
-  _getUIElement: function FW__getUIElement(id) {
+  _getUIElement: function(id) {
     return this._document.getAnonymousElementByAttribute(
       this._document.getElementById("feedSubscribeLine"), "anonid", id);
   },
@@ -720,7 +720,7 @@ FeedWriter.prototype = {
    * @param aCallback the callback method, passes in true if a feed reader was
    *        selected, false otherwise.
    */
-  _chooseClientApp: function FW__chooseClientApp(aCallback) {
+  _chooseClientApp: function(aCallback) {
     try {
       let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
       let fpCallback = function fpCallback_done(aResult) {
@@ -766,7 +766,7 @@ FeedWriter.prototype = {
     }
   },
 
-  _setAlwaysUseCheckedState: function FW__setAlwaysUseCheckedState(feedType) {
+  _setAlwaysUseCheckedState: function(feedType) {
     var checkbox = this._getUIElement("alwaysUse");
     if (checkbox) {
       var alwaysUse = false;
@@ -781,7 +781,7 @@ FeedWriter.prototype = {
     }
   },
 
-  _setSubscribeUsingLabel: function FW__setSubscribeUsingLabel() {
+  _setSubscribeUsingLabel: function() {
     var stringLabel = "subscribeFeedUsing";
     switch (this._getFeedType()) {
       case Ci.nsIFeed.TYPE_VIDEO:
@@ -800,7 +800,7 @@ FeedWriter.prototype = {
     Cu.evalInSandbox(codeStr, this._contentSandbox);
   },
 
-  _setAlwaysUseLabel: function FW__setAlwaysUseLabel() {
+  _setAlwaysUseLabel: function() {
     var checkbox = this._getUIElement("alwaysUse");
     if (checkbox) {
       if (this._handlersMenuList) {
@@ -864,7 +864,7 @@ FeedWriter.prototype = {
     }
   },
 
-  _setSelectedHandler: function FW__setSelectedHandler(feedType) {
+  _setSelectedHandler: function(feedType) {
     var prefs =   
         Cc["@mozilla.org/preferences-service;1"].
         getService(Ci.nsIPrefBranch);
@@ -927,7 +927,7 @@ FeedWriter.prototype = {
     }
   },
 
-  _initSubscriptionUI: function FW__initSubscriptionUI() {
+  _initSubscriptionUI: function() {
     var handlersMenuPopup = this._getUIElement("handlersMenuPopup");
     if (!handlersMenuPopup)
       return;
@@ -1105,7 +1105,7 @@ FeedWriter.prototype = {
    * @param aWindow 
    *        The window of the document invoking the BrowserFeedWriter
    */
-  _getOriginalURI: function FW__getOriginalURI(aWindow) {
+  _getOriginalURI: function(aWindow) {
     var chan = aWindow.QueryInterface(Ci.nsIInterfaceRequestor).
                getInterface(Ci.nsIWebNavigation).
                QueryInterface(Ci.nsIDocShell).currentDocumentChannel;
@@ -1135,7 +1135,7 @@ FeedWriter.prototype = {
   _handlersMenuList: null,
 
   // BrowserFeedWriter WebIDL methods
-  init: function FW_init(aWindow) {
+  init: function(aWindow) {
     var window = aWindow;
     this._feedURI = this._getOriginalURI(window);
     if (!this._feedURI)
@@ -1171,7 +1171,7 @@ FeedWriter.prototype = {
     prefs.addObserver(PREF_AUDIO_SELECTED_APP, this, false);
   },
 
-  writeContent: function FW_writeContent() {
+  writeContent: function() {
     if (!this._window)
       return;
 
@@ -1190,7 +1190,7 @@ FeedWriter.prototype = {
     }
   },
 
-  close: function FW_close() {
+  close: function() {
     this._getUIElement("handlersMenuPopup")
         .removeEventListener("command", this, false);
     this._getUIElement("subscribeButton")
@@ -1220,7 +1220,7 @@ FeedWriter.prototype = {
     this.__contentSandbox = null;
   },
 
-  _removeFeedFromCache: function FW__removeFeedFromCache() {
+  _removeFeedFromCache: function() {
     if (this._feedURI) {
       var feedService = Cc["@mozilla.org/browser/feeds/result-service;1"].
                         getService(Ci.nsIFeedResultService);
@@ -1229,7 +1229,7 @@ FeedWriter.prototype = {
     }
   },
 
-  subscribe: function FW_subscribe() {
+  subscribe: function() {
     var feedType = this._getFeedType();
 
     // Subscribe to the feed using the selected handler and save prefs
@@ -1313,7 +1313,7 @@ FeedWriter.prototype = {
   },
 
   // nsIObserver
-  observe: function FW_observe(subject, topic, data) {
+  observe: function(subject, topic, data) {
     if (!this._window) {
       // this._window is null unless this.init was called with a trusted
       // window object.
@@ -1356,7 +1356,7 @@ FeedWriter.prototype = {
    *       to the icon url.  See Bug 358878 for details.
    */
   _setFaviconForWebReader:
-  function FW__setFaviconForWebReader(aReaderUrl, aMenuItem) {
+  function(aReaderUrl, aMenuItem) {
     var readerURI = makeURI(aReaderUrl);
     if (!/^https?$/.test(readerURI.scheme)) {
       // Don't try to get a favicon for non http(s) URIs.
@@ -1374,7 +1374,7 @@ FeedWriter.prototype = {
     this._faviconService.setAndFetchFaviconForPage(readerURI, faviconURI, false,
       usePrivateBrowsing ? this._faviconService.FAVICON_LOAD_PRIVATE
                          : this._faviconService.FAVICON_LOAD_NON_PRIVATE,
-      function (aURI, aDataLen, aData, aMimeType) {
+      function(aURI, aDataLen, aData, aMimeType) {
         if (aDataLen > 0) {
           var dataURL = "data:" + aMimeType + ";base64," +
                         btoa(String.fromCharCode.apply(null, aData));

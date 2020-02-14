@@ -107,7 +107,7 @@ var BookmarkPropertiesPanel = {
    * This method returns the correct label for the dialog's "accept"
    * button based on the variant of the dialog.
    */
-  _getAcceptLabel: function BPP__getAcceptLabel() {
+  _getAcceptLabel: function() {
     if (this._action == ACTION_ADD) {
       if (this._URIs.length)
         return this._strings.getString("dialogAcceptLabelAddMulti");
@@ -127,7 +127,7 @@ var BookmarkPropertiesPanel = {
    * This method returns the correct title for the current variant
    * of this dialog.
    */
-  _getDialogTitle: function BPP__getDialogTitle() {
+  _getDialogTitle: function() {
     if (this._action == ACTION_ADD) {
       if (this._itemType == BOOKMARK_ITEM)
         return this._strings.getString("dialogTitleAddBookmark");
@@ -150,7 +150,7 @@ var BookmarkPropertiesPanel = {
   /**
    * Determines the initial data for the item edited or added by this dialog
    */
-  _determineItemInfo: function BPP__determineItemInfo() {
+  _determineItemInfo: function() {
     var dialogInfo = window.arguments[0];
     this._action = dialogInfo.action == "add" ? ACTION_ADD : ACTION_EDIT;
     this._hiddenRows = dialogInfo.hiddenRows ? dialogInfo.hiddenRows : [];
@@ -294,7 +294,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns a title string
    */
-  _getURITitleFromHistory: function BPP__getURITitleFromHistory(aURI) {
+  _getURITitleFromHistory: function(aURI) {
     NS_ASSERT(aURI instanceof Ci.nsIURI);
 
     // get the title from History
@@ -305,7 +305,7 @@ var BookmarkPropertiesPanel = {
    * This method should be called by the onload of the Bookmark Properties
    * dialog to initialize the state of the panel.
    */
-  onDialogLoad: Task.async(function* BPP_onDialogLoad() {
+  onDialogLoad: Task.async(function* () {
     this._determineItemInfo();
 
     document.title = this._getDialogTitle();
@@ -390,7 +390,7 @@ var BookmarkPropertiesPanel = {
   }),
 
   // nsIDOMEventListener
-  handleEvent: function BPP_handleEvent(aEvent) {
+  handleEvent: function(aEvent) {
     var target = aEvent.target;
     switch (aEvent.type) {
       case "input":
@@ -413,7 +413,7 @@ var BookmarkPropertiesPanel = {
     }
   },
 
-  _beginBatch: function BPP__beginBatch() {
+  _beginBatch: function() {
     if (this._batching)
       return;
 
@@ -421,7 +421,7 @@ var BookmarkPropertiesPanel = {
     this._batching = true;
   },
 
-  _endBatch: function BPP__endBatch() {
+  _endBatch: function() {
     if (!this._batching)
       return;
 
@@ -429,13 +429,13 @@ var BookmarkPropertiesPanel = {
     this._batching = false;
   },
 
-  _fillEditProperties: function BPP__fillEditProperties() {
+  _fillEditProperties: function() {
     gEditItemOverlay.initPanel(this._itemId,
                                { hiddenRows: this._hiddenRows,
                                  forceReadOnly: this._readOnly });
   },
 
-  _fillAddProperties: Task.async(function* BPP__fillAddProperties() {
+  _fillAddProperties: Task.async(function* () {
     yield this._createNewItem();
     // Edit the new item
     gEditItemOverlay.initPanel(this._itemId,
@@ -449,7 +449,7 @@ var BookmarkPropertiesPanel = {
   }),
 
   // nsISupports
-  QueryInterface: function BPP_QueryInterface(aIID) {
+  QueryInterface: function(aIID) {
     if (aIID.equals(Ci.nsIDOMEventListener) ||
         aIID.equals(Ci.nsISupports))
       return this;
@@ -457,11 +457,11 @@ var BookmarkPropertiesPanel = {
     throw Cr.NS_NOINTERFACE;
   },
 
-  _element: function BPP__element(aID) {
+  _element: function(aID) {
     return document.getElementById("editBMPanel_" + aID);
   },
 
-  onDialogUnload: function BPP_onDialogUnload() {
+  onDialogUnload: function() {
     // gEditItemOverlay does not exist anymore here, so don't rely on it.
     this._mutationObserver.disconnect();
     delete this._mutationObserver;
@@ -478,7 +478,7 @@ var BookmarkPropertiesPanel = {
         .removeEventListener("input", this, false);
   },
 
-  onDialogAccept: function BPP_onDialogAccept() {
+  onDialogAccept: function() {
     // We must blur current focused element to save its changes correctly
     document.commandDispatcher.focusedElement.blur();
     // The order here is important! We have to uninit the panel first, otherwise
@@ -488,7 +488,7 @@ var BookmarkPropertiesPanel = {
     window.arguments[0].performed = true;
   },
 
-  onDialogCancel: function BPP_onDialogCancel() {
+  onDialogCancel: function() {
     // The order here is important! We have to uninit the panel first, otherwise
     // changes done as part of Undo may change the panel contents and by
     // that force it to commit more transactions.
@@ -503,7 +503,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns  true if the input is valid, false otherwise
    */
-  _inputIsValid: function BPP__inputIsValid() {
+  _inputIsValid: function() {
     if (this._itemType == BOOKMARK_ITEM &&
         !this._containsValidURI("locationField"))
       return false;
@@ -522,7 +522,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns true if the textbox contains a valid URI string, false otherwise
    */
-  _containsValidURI: function BPP__containsValidURI(aTextboxID) {
+  _containsValidURI: function(aTextboxID) {
     try {
       var value = this._element(aTextboxID).value;
       if (value) {
@@ -540,7 +540,7 @@ var BookmarkPropertiesPanel = {
    * The container-identifier and insertion-index are returned separately in
    * the form of [containerIdentifier, insertionIndex]
    */
-  _getInsertionPointDetails: function BPP__getInsertionPointDetails() {
+  _getInsertionPointDetails: function() {
     var containerId = this._defaultInsertionPoint.itemId;
     var indexInContainer = this._defaultInsertionPoint.index;
 
@@ -552,7 +552,7 @@ var BookmarkPropertiesPanel = {
    * various fields and opening arguments of the dialog.
    */
   _getCreateNewBookmarkTransaction:
-  function BPP__getCreateNewBookmarkTransaction(aContainer, aIndex) {
+  function(aContainer, aIndex) {
     var annotations = [];
     var childTransactions = [];
 
@@ -598,7 +598,7 @@ var BookmarkPropertiesPanel = {
    * Returns a childItems-transactions array representing the URIList with
    * which the dialog has been opened.
    */
-  _getTransactionsForURIList: function BPP__getTransactionsForURIList() {
+  _getTransactionsForURIList: function() {
     var transactions = [];
     for (var i = 0; i < this._URIs.length; ++i) {
       var uri = this._URIs[i];
@@ -616,7 +616,7 @@ var BookmarkPropertiesPanel = {
    * various fields and opening arguments of the dialog.
    */
   _getCreateNewFolderTransaction:
-  function BPP__getCreateNewFolderTransaction(aContainer, aIndex) {
+  function(aContainer, aIndex) {
     var annotations = [];
     var childItemsTransactions;
     if (this._URIs.length)
@@ -635,7 +635,7 @@ var BookmarkPropertiesPanel = {
    * the various fields and opening arguments of the dialog.
    */
   _getCreateNewLivemarkTransaction:
-  function BPP__getCreateNewLivemarkTransaction(aContainer, aIndex) {
+  function(aContainer, aIndex) {
     return new PlacesCreateLivemarkTransaction(this._feedURI, this._siteURI,
                                                this._title,
                                                aContainer, aIndex);
@@ -644,7 +644,7 @@ var BookmarkPropertiesPanel = {
   /**
    * Dialog-accept code-path for creating a new item (any type)
    */
-  _createNewItem: Task.async(function* BPP__getCreateItemTransaction() {
+  _createNewItem: Task.async(function* () {
     var [container, index] = this._getInsertionPointDetails();
     var txn;
 

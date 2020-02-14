@@ -11,12 +11,12 @@ var gPluginHandler = {
   PLUGIN_SCRIPTED_STATE_FIRED: 1,
   PLUGIN_SCRIPTED_STATE_DONE: 2,
 
-  getPluginUI: function (plugin, anonid) {
+  getPluginUI: function(plugin, anonid) {
     return plugin.ownerDocument.
            getAnonymousElementByAttribute(plugin, "anonid", anonid);
   },
 
-  _getPluginInfo: function (pluginElement) {
+  _getPluginInfo: function(pluginElement) {
     let pluginHost = Cc["@mozilla.org/plugin/host;1"].getService(Ci.nsIPluginHost);
     pluginElement.QueryInterface(Ci.nsIObjectLoadingContent);
 
@@ -63,7 +63,7 @@ var gPluginHandler = {
   },
 
   // Map the plugin's name to a filtered version more suitable for user UI.
-  makeNicePluginName : function (aName) {
+  makeNicePluginName : function(aName) {
     if (aName == "Shockwave Flash")
       return "Adobe Flash";
 
@@ -76,7 +76,7 @@ var gPluginHandler = {
     return newName;
   },
 
-  isTooSmall : function (plugin, overlay) {
+  isTooSmall : function(plugin, overlay) {
     // Is the <object>'s size too small to hold what we want to show?
     let pluginRect = plugin.getBoundingClientRect();
     // XXX bug 446693. The text-shadow on the submitted-report text at
@@ -88,7 +88,7 @@ var gPluginHandler = {
     return overflows;
   },
 
-  addLinkClickCallback: function (linkNode, callbackName /*callbackArgs...*/) {
+  addLinkClickCallback: function(linkNode, callbackName /*callbackArgs...*/) {
     // XXX just doing (callback)(arg) was giving a same-origin error. bug?
     let self = this;
     let callbackArgs = Array.prototype.slice.call(arguments).slice(2);
@@ -269,12 +269,12 @@ var gPluginHandler = {
     }
   },
 
-  isKnownPlugin: function PH_isKnownPlugin(objLoadingContent) {
+  isKnownPlugin: function(objLoadingContent) {
     return (objLoadingContent.getContentTypeForMIMEType(objLoadingContent.actualType) ==
             Ci.nsIObjectLoadingContent.TYPE_PLUGIN);
   },
 
-  canActivatePlugin: function PH_canActivatePlugin(objLoadingContent) {
+  canActivatePlugin: function(objLoadingContent) {
     // if this isn't a known plugin, we can't activate it
     // (this also guards pluginHost.getPermissionStringForType against
     // unexpected input)
@@ -307,7 +307,7 @@ var gPluginHandler = {
       overlay.style.visibility = "hidden";
   },
 
-  stopPlayPreview: function PH_stopPlayPreview(aPlugin, aPlayPlugin) {
+  stopPlayPreview: function(aPlugin, aPlayPlugin) {
     let objLoadingContent = aPlugin.QueryInterface(Ci.nsIObjectLoadingContent);
     if (objLoadingContent.activated)
       return;
@@ -319,28 +319,28 @@ var gPluginHandler = {
   },
 
   // Callback for user clicking on a disabled plugin
-  managePlugins: function (aEvent) {
+  managePlugins: function(aEvent) {
     BrowserOpenAddonsMgr("addons://list/plugin");
   },
 
   // Callback for user clicking on the link in a click-to-play plugin
   // (where the plugin has an update)
-  openPluginUpdatePage: function (aEvent) {
+  openPluginUpdatePage: function(aEvent) {
     openURL(Services.urlFormatter.formatURLPref("plugins.update.url"));
   },
 
   // Callback for user clicking a "reload page" link
-  reloadPage: function (browser) {
+  reloadPage: function(browser) {
     browser.reload();
   },
 
   // Callback for user clicking the help icon
-  openHelpPage: function () {
+  openHelpPage: function() {
     openHelpLink("plugin-crashed", false);
   },
 
   // Event listener for click-to-play plugins.
-  _handleClickToPlayEvent: function PH_handleClickToPlayEvent(aPlugin) {
+  _handleClickToPlayEvent: function(aPlugin) {
     let doc = aPlugin.ownerDocument;
     let browser = gBrowser.getBrowserForDocument(doc.defaultView.top.document);
     let pluginHost = Cc["@mozilla.org/plugin/host;1"].getService(Ci.nsIPluginHost);
@@ -372,7 +372,7 @@ var gPluginHandler = {
   },
 
   _overlayClickListener: {
-    handleEvent: function PH_handleOverlayClick(aEvent) {
+    handleEvent: function(aEvent) {
       let plugin = document.getBindingParent(aEvent.target);
       let contentWindow = plugin.ownerDocument.defaultView.top;
       // gBrowser.getBrowserForDocument does not exist in the case where we
@@ -399,7 +399,7 @@ var gPluginHandler = {
     }
   },
 
-  _handlePlayPreviewEvent: function PH_handlePlayPreviewEvent(aPlugin) {
+  _handlePlayPreviewEvent: function(aPlugin) {
     let doc = aPlugin.ownerDocument;
     let browser = gBrowser.getBrowserForDocument(doc.defaultView.top.document);
     let pluginHost = Cc["@mozilla.org/plugin/host;1"].getService(Ci.nsIPluginHost);
@@ -441,7 +441,7 @@ var gPluginHandler = {
     }
   },
 
-  reshowClickToPlayNotification: function PH_reshowClickToPlayNotification() {
+  reshowClickToPlayNotification: function() {
     let browser = gBrowser.selectedBrowser;
     let contentWindow = browser.contentWindow;
     let cwu = contentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
@@ -459,7 +459,7 @@ var gPluginHandler = {
     gPluginHandler._showClickToPlayNotification(browser);
   },
 
-  _clickToPlayNotificationEventCallback: function PH_ctpEventCallback(event) {
+  _clickToPlayNotificationEventCallback: function(event) {
     if (event == "showing") {
       gPluginHandler._makeCenterActions(this);
     }
@@ -470,7 +470,7 @@ var gPluginHandler = {
     }
   },
 
-  _makeCenterActions: function PH_makeCenterActions(notification) {
+  _makeCenterActions: function(notification) {
     let contentWindow = notification.browser.contentWindow;
     let cwu = contentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
                            .getInterface(Ci.nsIDOMWindowUtils);
@@ -533,7 +533,7 @@ var gPluginHandler = {
    * and activate plugins if necessary.
    * aNewState should be either "allownow" "allowalways" or "block"
    */
-  _updatePluginPermission: function PH_setPermissionForPlugins(aNotification, aPluginInfo, aNewState) {
+  _updatePluginPermission: function(aNotification, aPluginInfo, aNewState) {
     let permission;
     let expireType;
     let expireTime;
@@ -598,7 +598,7 @@ var gPluginHandler = {
     }
   },
 
-  _showClickToPlayNotification: function PH_showClickToPlayNotification(aBrowser, aPrimaryPlugin) {
+  _showClickToPlayNotification: function(aBrowser, aPrimaryPlugin) {
     let notification = PopupNotifications.getNotification("click-to-play-plugins", aBrowser);
 
     let contentWindow = aBrowser.contentWindow;
@@ -664,7 +664,7 @@ var gPluginHandler = {
 
   // Crashed-plugin event listener. Called for every instance of a
   // plugin in content.
-  pluginInstanceCrashed: function (plugin, aEvent) {
+  pluginInstanceCrashed: function(plugin, aEvent) {
     // Ensure the plugin and event are of the right type.
     if (!(aEvent instanceof Ci.nsIDOMDataContainerEvent))
       return;

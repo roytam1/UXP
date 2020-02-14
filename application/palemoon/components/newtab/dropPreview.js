@@ -16,7 +16,7 @@ var gDropPreview = {
    * @param aCell The drop target cell.
    * @return The re-arranged array of sites.
    */
-  rearrange: function DropPreview_rearrange(aCell) {
+  rearrange: function(aCell) {
     let sites = gGrid.sites;
 
     // Insert the dragged site into the current grid.
@@ -34,7 +34,7 @@ var gDropPreview = {
    * @param aSites The array of sites to insert into.
    * @param aCell The drop target cell.
    */
-  _insertDraggedSite: function DropPreview_insertDraggedSite(aSites, aCell) {
+  _insertDraggedSite: function(aSites, aCell) {
     let dropIndex = aCell.index;
     let draggedSite = gDrag.draggedSite;
 
@@ -61,13 +61,13 @@ var gDropPreview = {
    * @param aCell The drop target cell.
    */
   _repositionPinnedSites:
-    function DropPreview_repositionPinnedSites(aSites, aCell) {
+    function(aSites, aCell) {
 
     // Collect all pinned sites.
     let pinnedSites = this._filterPinnedSites(aSites, aCell);
 
     // Correct pinned site positions.
-    pinnedSites.forEach(function (aSite) {
+    pinnedSites.forEach(function(aSite) {
       aSites[aSites.indexOf(aSite)] = aSites[aSite.cell.index];
       aSites[aSite.cell.index] = aSite;
     }, this);
@@ -85,14 +85,14 @@ var gDropPreview = {
    * @param aCell The drop target cell.
    * @return The filtered array of sites.
    */
-  _filterPinnedSites: function DropPreview_filterPinnedSites(aSites, aCell) {
+  _filterPinnedSites: function(aSites, aCell) {
     let draggedSite = gDrag.draggedSite;
 
     // When dropping on a cell that contains a pinned site make sure that all
     // pinned cells surrounding the drop target are moved as well.
     let range = this._getPinnedRange(aCell);
 
-    return aSites.filter(function (aSite, aIndex) {
+    return aSites.filter(function(aSite, aIndex) {
       // The site must be valid, pinned and not the dragged site.
       if (!aSite || aSite == draggedSite || !aSite.isPinned())
         return false;
@@ -109,7 +109,7 @@ var gDropPreview = {
    * @param aCell The drop target cell.
    * @return The range of pinned cells.
    */
-  _getPinnedRange: function DropPreview_getPinnedRange(aCell) {
+  _getPinnedRange: function(aCell) {
     let dropIndex = aCell.index;
     let range = {start: dropIndex, end: dropIndex};
 
@@ -139,7 +139,7 @@ var gDropPreview = {
    * @return Whether there is an overflowed pinned cell.
    */
   _hasOverflowedPinnedSite:
-    function DropPreview_hasOverflowedPinnedSite(aSites, aCell) {
+    function(aSites, aCell) {
 
     // If the drop target isn't pinned there's no way a pinned site has been
     // pushed out of the grid so we can just exit here.
@@ -166,7 +166,7 @@ var gDropPreview = {
    * @param aCell The drop target cell.
    */
   _repositionOverflowedPinnedSite:
-    function DropPreview_repositionOverflowedPinnedSite(aSites, aCell) {
+    function(aSites, aCell) {
 
     // Try to find a lower-priority cell (empty or containing an unpinned site).
     let index = this._indexOfLowerPrioritySite(aSites, aCell);
@@ -197,7 +197,7 @@ var gDropPreview = {
    * @return The cell's index.
    */
   _indexOfLowerPrioritySite:
-    function DropPreview_indexOfLowerPrioritySite(aSites, aCell) {
+    function(aSites, aCell) {
 
     let cells = gGrid.cells;
     let dropIndex = aCell.index;

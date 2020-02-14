@@ -69,7 +69,7 @@ SessionStartup.prototype = {
   /**
    * Initialize the component
    */
-  init: function sss_init() {
+  init: function() {
     // do not need to initialize anything in auto-started private browsing sessions
     if (PrivateBrowsingUtils.permanentPrivateBrowsing) {
       this._initialized = true;
@@ -88,14 +88,14 @@ SessionStartup.prototype = {
   },
 
   // Wrap a string as a nsISupports
-  _createSupportsString: function ssfi_createSupportsString(aData) {
+  _createSupportsString: function(aData) {
     let string = Cc["@mozilla.org/supports-string;1"]
                    .createInstance(Ci.nsISupportsString);
     string.data = aData;
     return string;
   },
 
-  _onSessionFileRead: function sss_onSessionFileRead(aStateString) {
+  _onSessionFileRead: function(aStateString) {
     if (this._initialized) {
       // Initialization is complete, nothing else to do
       return;
@@ -174,7 +174,7 @@ SessionStartup.prototype = {
   /**
    * Handle notifications
    */
-  observe: function sss_observe(aSubject, aTopic, aData) {
+  observe: function(aSubject, aTopic, aData) {
     switch (aTopic) {
     case "app-startup":
       Services.obs.addObserver(this, "final-ui-startup", true);
@@ -225,7 +225,7 @@ SessionStartup.prototype = {
    * session file synchronously.
    * @returns bool
    */
-  doRestore: function sss_doRestore() {
+  doRestore: function() {
     this._ensureInitialized();
     return this._willRestore();
   },
@@ -234,7 +234,7 @@ SessionStartup.prototype = {
    * Determines whether there is a pending session restore.
    * @returns bool
    */
-  _willRestore: function () {
+  _willRestore: function() {
     return this._sessionType == Ci.nsISessionStartup.RECOVER_SESSION ||
            this._sessionType == Ci.nsISessionStartup.RESUME_SESSION;
   },
@@ -272,7 +272,7 @@ SessionStartup.prototype = {
   // Ensure that initialization is complete.
   // If initialization is not complete yet, fall back to a synchronous
   // initialization and kill ongoing asynchronous initialization
-  _ensureInitialized: function sss__ensureInitialized() {
+  _ensureInitialized: function() {
     try {
       if (this._initialized) {
         // Initialization is complete, nothing else to do

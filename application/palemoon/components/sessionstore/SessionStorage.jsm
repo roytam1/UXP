@@ -20,7 +20,7 @@ this.SessionStorage = {
    * @param aFullData
    *        always return privacy sensitive data (use with care)
    */
-  serialize: function ssto_serialize(aDocShell, aFullData) {
+  serialize: function(aDocShell, aFullData) {
     return DomStorage.read(aDocShell, aFullData);
   },
 
@@ -31,7 +31,7 @@ this.SessionStorage = {
    * @param aStorageData
    *        Storage data to be restored
    */
-  deserialize: function ssto_deserialize(aDocShell, aStorageData) {
+  deserialize: function(aDocShell, aStorageData) {
     DomStorage.write(aDocShell, aStorageData);
   }
 };
@@ -46,7 +46,7 @@ var DomStorage = {
    * @param aFullData
    *        Always return privacy sensitive data (use with care)
    */
-  read: function DomStorage_read(aDocShell, aFullData) {
+  read: function(aDocShell, aFullData) {
     let data = {};
     let isPinned = aDocShell.isAppTab;
     let shistory = aDocShell.sessionHistory;
@@ -81,7 +81,7 @@ var DomStorage = {
    * @param aStorageData
    *        Storage data to be restored
    */
-  write: function DomStorage_write(aDocShell, aStorageData) {
+  write: function(aDocShell, aStorageData) {
     for (let [host, data] in Iterator(aStorageData)) {
       let uri = Services.io.newURI(host, null, null);
       let principal = Services.scriptSecurityManager.getDocShellCodebasePrincipal(uri, aDocShell);
@@ -116,7 +116,7 @@ var DomStorage = {
    * @param aDocShell
    *        A tab's docshell (containing the sessionStorage)
    */
-  _readEntry: function DomStorage_readEntry(aPrincipal, aDocShell) {
+  _readEntry: function(aPrincipal, aDocShell) {
     let hostData = {};
     let storage;
 
@@ -152,7 +152,7 @@ var History = {
    * @param aDocShell
    *        That tab's docshell
    */
-  getPrincipalForEntry: function History_getPrincipalForEntry(aHistory,
+  getPrincipalForEntry: function(aHistory,
                                                               aIndex,
                                                               aDocShell) {
     try {

@@ -5,7 +5,7 @@
 Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
 
 var ContentAreaDownloadsView = {
-  init: function CADV_init() {
+  init: function() {
     let view = new DownloadsPlacesView(document.getElementById("downloadsRichListBox"));
     // Do not display the Places downloads in private windows
     if (!PrivateBrowsingUtils.isWindowPrivate(window)) {

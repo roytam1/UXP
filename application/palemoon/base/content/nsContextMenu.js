@@ -13,7 +13,7 @@ function nsContextMenu(aXulMenu, aIsShift) {
 
 // Prototype for nsContextMenu "class."
 nsContextMenu.prototype = {
-  initMenu: function CM_initMenu(aXulMenu, aIsShift) {
+  initMenu: function(aXulMenu, aIsShift) {
     // Get contextual info.
     this.setTarget(document.popupNode, document.popupRangeParent,
                    document.popupRangeOffset);
@@ -40,14 +40,14 @@ nsContextMenu.prototype = {
     this.initItems();
   },
 
-  hiding: function CM_hiding() {
+  hiding: function() {
     gContextMenuContentData = null;
     InlineSpellCheckerUI.clearSuggestionsFromMenu();
     InlineSpellCheckerUI.clearDictionaryListFromMenu();
     InlineSpellCheckerUI.uninit();
   },
 
-  initItems: function CM_initItems() {
+  initItems: function() {
     this.initPageMenuSeparator();
     this.initOpenItems();
     this.initNavigationItems();
@@ -61,11 +61,11 @@ nsContextMenu.prototype = {
     this.initClickToPlayItems();
   },
 
-  initPageMenuSeparator: function CM_initPageMenuSeparator() {
+  initPageMenuSeparator: function() {
     this.showItem("page-menu-separator", this.hasPageMenu);
   },
 
-  initOpenItems: function CM_initOpenItems() {
+  initOpenItems: function() {
     var isMailtoInternal = false;
     if (this.onMailtoLink) {
       var mailtoHandler = Cc["@mozilla.org/uriloader/external-protocol-service;1"].
@@ -114,7 +114,7 @@ nsContextMenu.prototype = {
     this.showItem("context-sep-open", shouldShow);
   },
 
-  initNavigationItems: function CM_initNavigationItems() {
+  initNavigationItems: function() {
     var shouldShow = !(this.isContentSelected || this.onLink || this.onImage ||
                        this.onCanvas || this.onVideo || this.onAudio ||
                        this.onTextInput);
@@ -136,7 +136,7 @@ nsContextMenu.prototype = {
     //this.setItemAttrFromNode( "context-stop", "disabled", "canStop" );
   },
 
-  initLeaveDOMFullScreenItems: function CM_initLeaveFullScreenItem() {
+  initLeaveDOMFullScreenItems: function() {
     // only show the option if the user is in DOM fullscreen
     var shouldShow = (this.target.ownerDocument.mozFullScreenElement != null);
     this.showItem("context-leave-dom-fullscreen", shouldShow);
@@ -146,7 +146,7 @@ nsContextMenu.prototype = {
         this.showItem("context-media-sep-commands", true);
   },
 
-  initSaveItems: function CM_initSaveItems() {
+  initSaveItems: function() {
     var shouldShow = !(this.onTextInput || this.onLink ||
                        this.isContentSelected || this.onImage ||
                        this.onCanvas || this.onVideo || this.onAudio);
@@ -172,7 +172,7 @@ nsContextMenu.prototype = {
     this.setItemAttr("context-sendaudio", "disabled", !this.mediaURL);
   },
 
-  initViewItems: function CM_initViewItems() {
+  initViewItems: function() {
     // View source is always OK, unless in directory listing.
     this.showItem("context-viewpartialsource-selection",
                   this.isContentSelected);
@@ -236,7 +236,7 @@ nsContextMenu.prototype = {
     this.showItem("context-viewimageinfo", this.onImage);
   },
 
-  initMiscItems: function CM_initMiscItems() {
+  initMiscItems: function() {
     // Use "Bookmark This Link" if on a link.
     this.showItem("context-bookmarkpage",
                   !(this.isContentSelected || this.onTextInput || this.onLink ||
@@ -426,7 +426,7 @@ nsContextMenu.prototype = {
     this.showItem("context-sep-ctp", this.onCTPPlugin);
   },
 
-  inspectNode: function CM_inspectNode() {
+  inspectNode: function() {
     let {devtools} = Cu.import("resource://devtools/shared/Loader.jsm", {});
     let gBrowser = this.browser.ownerDocument.defaultView.gBrowser;
     let target = devtools.TargetFactory.forTab(gBrowser.selectedTab);
@@ -442,7 +442,7 @@ nsContextMenu.prototype = {
   },
 
   // Set various context menu attributes based on the state of the world.
-  setTarget: function (aNode, aRangeParent, aRangeOffset) {
+  setTarget: function(aNode, aRangeParent, aRangeOffset) {
     const xulNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
     if (aNode.namespaceURI == xulNS ||
         aNode.nodeType == Node.DOCUMENT_NODE ||
@@ -750,7 +750,7 @@ nsContextMenu.prototype = {
   },
 
   // Open linked-to URL in a new window.
-  openLink : function () {
+  openLink : function() {
     var doc = this.target.ownerDocument;
     urlSecurityCheck(this.linkURL, doc.nodePrincipal);
     openLinkIn(this.linkURL, "window",
@@ -762,7 +762,7 @@ nsContextMenu.prototype = {
   },
 
   // Open linked-to URL in a new private window.
-  openLinkInPrivateWindow : function () {
+  openLinkInPrivateWindow : function() {
     var doc = this.target.ownerDocument;
     urlSecurityCheck(this.linkURL, doc.nodePrincipal);
     openLinkIn(this.linkURL, "window",
@@ -884,11 +884,11 @@ nsContextMenu.prototype = {
             "This feature cannot be used, because it hasn't found " + 
             "an appropriate window.");
       } else {
-        new Promise.resolve({then: function (resolve) {
+        new Promise.resolve({then: function(resolve) {
           target.toBlob((blob) => {
             resolve(win.URL.createObjectURL(blob));
           })
-        }}).then(function (blobURL) {
+        }}).then(function(blobURL) {
           openUILink(blobURL, e, { disallowInheritPrincipal: true,
                                    referrerURI: doc.documentURIObject });
         }, Components.utils.reportError);
@@ -905,7 +905,7 @@ nsContextMenu.prototype = {
     }
   },
 
-  saveVideoFrameAsImage: function () {
+  saveVideoFrameAsImage: function() {
     let referrerURI = document.documentURIObject;
     let isPrivate = PrivateBrowsingUtils.isBrowserPrivate(this.browser);
 
@@ -931,7 +931,7 @@ nsContextMenu.prototype = {
                  isPrivate);
   },
 
-  fullScreenVideo: function () {
+  fullScreenVideo: function() {
     let video = this.target;
     if (document.mozFullScreenEnabled)
       video.mozRequestFullScreen();
@@ -1008,7 +1008,7 @@ nsContextMenu.prototype = {
   },
 
   // Save URL of clicked-on frame.
-  saveFrame: function () {
+  saveFrame: function() {
     saveDocument(this.target.ownerDocument);
   },
 
@@ -1027,7 +1027,7 @@ nsContextMenu.prototype = {
     saveAsListener.prototype = {
       extListener: null, 
 
-      onStartRequest: function saveLinkAs_onStartRequest(aRequest, aContext) {
+      onStartRequest: function(aRequest, aContext) {
 
         // if the timer fired, the error status will have been caused by that,
         // and we'll be restarting in onStopRequest, so no reason to notify
@@ -1065,7 +1065,7 @@ nsContextMenu.prototype = {
         this.extListener.onStartRequest(aRequest, aContext);
       }, 
 
-      onStopRequest: function saveLinkAs_onStopRequest(aRequest, aContext, 
+      onStopRequest: function(aRequest, aContext, 
                                                        aStatusCode) {
         if (aStatusCode == NS_ERROR_SAVE_LINK_AS_TIMEOUT) {
           // do it the old fashioned way, which will pick the best filename
@@ -1076,7 +1076,7 @@ nsContextMenu.prototype = {
           this.extListener.onStopRequest(aRequest, aContext, aStatusCode);
       },
 
-      onDataAvailable: function saveLinkAs_onDataAvailable(aRequest, aContext,
+      onDataAvailable: function(aRequest, aContext,
                                                            aInputStream,
                                                            aOffset, aCount) {
         this.extListener.onDataAvailable(aRequest, aContext, aInputStream,
@@ -1086,7 +1086,7 @@ nsContextMenu.prototype = {
 
     function callbacks() {}
     callbacks.prototype = {
-      getInterface: function sLA_callbacks_getInterface(aIID) {
+      getInterface: function(aIID) {
         if (aIID.equals(Ci.nsIAuthPrompt) || aIID.equals(Ci.nsIAuthPrompt2)) {
           // If the channel demands authentication prompt, we must cancel it
           // because the save-as-timer would expire and cancel the channel
@@ -1105,7 +1105,7 @@ nsContextMenu.prototype = {
     // we give up waiting for the filename. 
     function timerCallback() {}
     timerCallback.prototype = {
-      notify: function sLA_timer_notify(aTimer) {
+      notify: function(aTimer) {
         channel.cancel(NS_ERROR_SAVE_LINK_AS_TIMEOUT);
         return;
       }
@@ -1195,11 +1195,11 @@ nsContextMenu.prototype = {
             "This feature cannot be used, because it hasn't found " + 
             "an appropriate window.");
       } else {
-        new Promise.resolve({then: function (resolve) {
+        new Promise.resolve({then: function(resolve) {
           target.toBlob((blob) => {
           resolve(win.URL.createObjectURL(blob));
         })
-        }}).then(function (blobURL) {
+        }}).then(function(blobURL) {
           saveImageURL(blobURL, "canvas.png", "SaveImageTitle",
                        true, false, referrerURI, null, null, null,
                        isPrivate);
@@ -1375,7 +1375,7 @@ nsContextMenu.prototype = {
     return !document.commandDispatcher.focusedWindow.getSelection().isCollapsed;
   },
 
-  toString: function () {
+  toString: function() {
     return "contextMenu.target     = " + this.target + "\n" +
            "contextMenu.onImage    = " + this.onImage + "\n" +
            "contextMenu.onLink     = " + this.onLink + "\n" +
@@ -1427,7 +1427,7 @@ nsContextMenu.prototype = {
   // Determines whether or not the separator with the specified ID should be
   // shown or not by determining if there are any non-hidden items between it
   // and the previous separator.
-  shouldShowSeparator: function (aSeparatorID) {
+  shouldShowSeparator: function(aSeparatorID) {
     var separator = document.getElementById(aSeparatorID);
     if (separator) {
       var sibling = separator.previousSibling;
@@ -1465,11 +1465,11 @@ nsContextMenu.prototype = {
     openUILinkIn(uri, where);
   },
 
-  bookmarkThisPage: function CM_bookmarkThisPage() {
+  bookmarkThisPage: function() {
     window.top.PlacesCommandHook.bookmarkPage(this.browser, PlacesUtils.bookmarksMenuFolderId, true);
   },
 
-  bookmarkLink: function CM_bookmarkLink() {
+  bookmarkLink: function() {
     var linkText;
     // If selected text is found to match valid URL pattern.
     if (this.onPlainTextLink)
@@ -1480,7 +1480,7 @@ nsContextMenu.prototype = {
                                               linkText);
   },
 
-  addBookmarkForFrame: function CM_addBookmarkForFrame() {
+  addBookmarkForFrame: function() {
     var doc = this.target.ownerDocument;
     var uri = doc.documentURIObject;
 
@@ -1507,23 +1507,23 @@ nsContextMenu.prototype = {
     }
   },
 
-  savePageAs: function CM_savePageAs() {
+  savePageAs: function() {
     saveDocument(this.browser.contentDocument);
   },
 
-  sendPage: function CM_sendPage() {
+  sendPage: function() {
     MailIntegration.sendLinkForWindow(this.browser.contentWindow);  
   },
 
-  printFrame: function CM_printFrame() {
+  printFrame: function() {
     PrintUtils.print(this.target.ownerDocument.defaultView);
   },
 
-  switchPageDirection: function CM_switchPageDirection() {
+  switchPageDirection: function() {
     SwitchDocumentDirection(this.browser.contentWindow);
   },
 
-  mediaCommand : function CM_mediaCommand(command, data) {
+  mediaCommand : function(command, data) {
     var media = this.target;
 
     switch (command) {
@@ -1560,7 +1560,7 @@ nsContextMenu.prototype = {
     }
   },
 
-  copyMediaLocation : function () {
+  copyMediaLocation : function() {
     var clipboard = Cc["@mozilla.org/widget/clipboardhelper;1"].
                     getService(Ci.nsIClipboardHelper);
     clipboard.copyString(this.mediaURL, document);

@@ -19,7 +19,7 @@ const BROWSER_SUGGEST_PREF = "browser.search.suggest.enabled";
 var gEngineView = null;
 
 var gEngineManagerDialog = {
-  init: function engineManager_init() {
+  init: function() {
     gEngineView = new EngineView(new EngineStore());
 
     var suggestEnabled = Services.prefs.getBoolPref(BROWSER_SUGGEST_PREF);
@@ -31,12 +31,12 @@ var gEngineManagerDialog = {
     Services.obs.addObserver(this, "browser-search-engine-modified", false);
   },
 
-  destroy: function engineManager_destroy() {
+  destroy: function() {
     // Remove the observer
     Services.obs.removeObserver(this, "browser-search-engine-modified");
   },
 
-  observe: function engineManager_observe(aEngine, aTopic, aVerb) {
+  observe: function(aEngine, aTopic, aVerb) {
     if (aTopic == "browser-search-engine-modified") {
       aEngine.QueryInterface(Ci.nsISearchEngine);
       switch (aVerb) {
@@ -57,7 +57,7 @@ var gEngineManagerDialog = {
     }
   },
 
-  onOK: function engineManager_onOK() {
+  onOK: function() {
     // Set the preference
     var newSuggestEnabled = document.getElementById("enableSuggest").checked;
     Services.prefs.setBoolPref(BROWSER_SUGGEST_PREF, newSuggestEnabled);
@@ -66,23 +66,23 @@ var gEngineManagerDialog = {
     gEngineView._engineStore.commit();
   },
 
-  onRestoreDefaults: function engineManager_onRestoreDefaults() {
+  onRestoreDefaults: function() {
     var num = gEngineView._engineStore.restoreDefaultEngines();
     gEngineView.rowCountChanged(0, num);
     gEngineView.invalidate();
   },
 
-  showRestoreDefaults: function engineManager_showRestoreDefaults(val) {
+  showRestoreDefaults: function(val) {
     document.documentElement.getButton("extra2").disabled = !val;
   },
 
-  loadAddEngines: function engineManager_loadAddEngines() {
+  loadAddEngines: function() {
     this.onOK();
     window.opener.BrowserSearch.loadAddEngines();
     window.close();
   },
 
-  remove: function engineManager_remove() {
+  remove: function() {
     gEngineView._engineStore.removeEngine(gEngineView.selectedEngine);
     var index = gEngineView.selectedIndex;
     gEngineView.rowCountChanged(index, -1);
@@ -97,7 +97,7 @@ var gEngineManagerDialog = {
    * @param aDir
    *        -1 to move the selected engine down, +1 to move it up.
    */
-  bump: function engineManager_move(aDir) {
+  bump: function(aDir) {
     var selectedEngine = gEngineView.selectedEngine;
     var newIndex = gEngineView.selectedIndex - aDir;
 
@@ -110,7 +110,7 @@ var gEngineManagerDialog = {
     document.getElementById("engineList").focus();
   },
 
-  editKeyword: Task.async(function* engineManager_editKeyword() {
+  editKeyword: Task.async(function* () {
     var selectedEngine = gEngineView.selectedEngine;
     if (!selectedEngine)
       return;
@@ -157,7 +157,7 @@ var gEngineManagerDialog = {
     }
   }),
 
-  onSelect: function engineManager_onSelect() {
+  onSelect: function() {
     // Buttons only work if an engine is selected and it's not the last engine,
     // the latter is true when the selected is first and last at the same time.
     var lastSelected = (gEngineView.selectedIndex == gEngineView.lastIndex);
@@ -197,7 +197,7 @@ function EngineMoveOp(aEngineClone, aNewIndex) {
 EngineMoveOp.prototype = {
   _engine: null,
   _newIndex: null,
-  commit: function EMO_commit() {
+  commit: function() {
     Services.search.moveEngine(this._engine, this._newIndex);
   }
 }
@@ -209,7 +209,7 @@ function EngineRemoveOp(aEngineClone) {
 }
 EngineRemoveOp.prototype = {
   _engine: null,
-  commit: function ERO_commit() {
+  commit: function() {
     Services.search.removeEngine(this._engine);
   }
 }
@@ -223,7 +223,7 @@ function EngineUnhideOp(aEngineClone, aNewIndex) {
 EngineUnhideOp.prototype = {
   _engine: null,
   _newIndex: null,
-  commit: function EUO_commit() {
+  commit: function() {
     this._engine.hidden = false;
     Services.search.moveEngine(this._engine, this._newIndex);
   }
@@ -241,7 +241,7 @@ EngineChangeOp.prototype = {
   _engine: null,
   _prop: null,
   _newValue: null,
-  commit: function ECO_commit() {
+  commit: function() {
     this._engine[this._prop] = this._newValue;
   }
 }
@@ -253,7 +253,7 @@ function EngineStore() {
   this._ops = [];
 
   // check if we need to disable the restore defaults button
-  var someHidden = this._defaultEngines.some(function (e) e.hidden);
+  var someHidden = this._defaultEngines.some(function(e) e.hidden);
   gEngineManagerDialog.showRestoreDefaults(someHidden);
 }
 EngineStore.prototype = {
@@ -269,11 +269,11 @@ EngineStore.prototype = {
     return val;
   },
 
-  _getIndexForEngine: function ES_getIndexForEngine(aEngine) {
+  _getIndexForEngine: function(aEngine) {
     return this._engines.indexOf(aEngine);
   },
 
-  _getEngineByName: function ES_getEngineByName(aName) {
+  _getEngineByName: function(aName) {
     for each (var engine in this._engines)
       if (engine.name == aName)
         return engine;
@@ -281,7 +281,7 @@ EngineStore.prototype = {
     return null;
   },
 
-  _cloneEngine: function ES_cloneEngine(aEngine) {
+  _cloneEngine: function(aEngine) {
     var clonedObj={};
     for (var i in aEngine)
       clonedObj[i] = aEngine[i];
@@ -290,11 +290,11 @@ EngineStore.prototype = {
   },
 
   // Callback for Array's some(). A thisObj must be passed to some()
-  _isSameEngine: function ES_isSameEngine(aEngineClone) {
+  _isSameEngine: function(aEngineClone) {
     return aEngineClone.originalEngine == this.originalEngine;
   },
 
-  commit: function ES_commit() {
+  commit: function() {
     var currentEngine = this._cloneEngine(Services.search.currentEngine);
     for (var i = 0; i < this._ops.length; i++)
       this._ops[i].commit();
@@ -306,11 +306,11 @@ EngineStore.prototype = {
       Services.search.currentEngine = currentEngine.originalEngine;
   },
 
-  addEngine: function ES_addEngine(aEngine) {
+  addEngine: function(aEngine) {
     this._engines.push(this._cloneEngine(aEngine));
   },
 
-  moveEngine: function ES_moveEngine(aEngine, aNewIndex) {
+  moveEngine: function(aEngine, aNewIndex) {
     if (aNewIndex < 0 || aNewIndex > this._engines.length - 1)
       throw new Error("ES_moveEngine: invalid aNewIndex!");
     var index = this._getIndexForEngine(aEngine);
@@ -327,7 +327,7 @@ EngineStore.prototype = {
     this._ops.push(new EngineMoveOp(aEngine, aNewIndex));
   },
 
-  removeEngine: function ES_removeEngine(aEngine) {
+  removeEngine: function(aEngine) {
     var index = this._getIndexForEngine(aEngine);
     if (index == -1)
       throw new Error("invalid engine?");
@@ -338,7 +338,7 @@ EngineStore.prototype = {
       gEngineManagerDialog.showRestoreDefaults(true);
   },
 
-  restoreDefaultEngines: function ES_restoreDefaultEngines() {
+  restoreDefaultEngines: function() {
     var added = 0;
 
     for (var i = 0; i < this._defaultEngines.length; ++i) {
@@ -358,7 +358,7 @@ EngineStore.prototype = {
     return added;
   },
 
-  changeEngine: function ES_changeEngine(aEngine, aProp, aNewValue) {
+  changeEngine: function(aEngine, aProp, aNewValue) {
     var index = this._getIndexForEngine(aEngine);
     if (index == -1)
       throw new Error("invalid engine?");
@@ -367,8 +367,8 @@ EngineStore.prototype = {
     this._ops.push(new EngineChangeOp(aEngine, aProp, aNewValue));
   },
 
-  reloadIcons: function ES_reloadIcons() {
-    this._engines.forEach(function (e) {
+  reloadIcons: function() {
+    this._engines.forEach(function(e) {
       e.uri = e.originalEngine.uri;
     });
   }
@@ -398,19 +398,19 @@ EngineView.prototype = {
   },
 
   // Helpers
-  rowCountChanged: function (index, count) {
+  rowCountChanged: function(index, count) {
     this.tree.rowCountChanged(index, count);
   },
 
-  invalidate: function () {
+  invalidate: function() {
     this.tree.invalidate();
   },
 
-  ensureRowIsVisible: function (index) {
+  ensureRowIsVisible: function(index) {
     this.tree.ensureRowIsVisible(index);
   },
 
-  getSourceIndexFromDrag: function (dataTransfer) {
+  getSourceIndexFromDrag: function(dataTransfer) {
     return parseInt(dataTransfer.getData(ENGINE_FLAVOR));
   },
 

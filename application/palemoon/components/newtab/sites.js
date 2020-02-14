@@ -55,7 +55,7 @@ Site.prototype = {
    * @param aIndex The pinned index (optional).
    * @return true if link changed type after pin
    */
-  pin: function Site_pin(aIndex) {
+  pin: function(aIndex) {
     if (typeof aIndex == "undefined")
       aIndex = this.cell.index;
 
@@ -71,7 +71,7 @@ Site.prototype = {
   /**
    * Unpins the site and calls the given callback when done.
    */
-  unpin: function Site_unpin() {
+  unpin: function() {
     if (this.isPinned()) {
       this._updateAttributes(false);
       gPinnedLinks.unpin(this._link);
@@ -83,7 +83,7 @@ Site.prototype = {
    * Checks whether this site is pinned.
    * @return Whether this site is pinned.
    */
-  isPinned: function Site_isPinned() {
+  isPinned: function() {
     return gPinnedLinks.isPinned(this._link);
   },
 
@@ -91,7 +91,7 @@ Site.prototype = {
    * Blocks the site (removes it from the grid) and calls the given callback
    * when done.
    */
-  block: function Site_block() {
+  block: function() {
     if (!gBlockedLinks.isBlocked(this._link)) {
       gUndoDialog.show(this);
       gBlockedLinks.block(this._link);
@@ -104,7 +104,7 @@ Site.prototype = {
    * @param aSelector The query selector.
    * @return The DOM node we found.
    */
-  _querySelector: function Site_querySelector(aSelector) {
+  _querySelector: function(aSelector) {
     return this.node.querySelector(aSelector);
   },
 
@@ -113,7 +113,7 @@ Site.prototype = {
    * pinned or unpinned.
    * @param aPinned Whether this site is now pinned or unpinned.
    */
-  _updateAttributes: function (aPinned) {
+  _updateAttributes: function(aPinned) {
     let control = this._querySelector(".newtab-control-pin");
 
     if (aPinned) {
@@ -139,7 +139,7 @@ Site.prototype = {
   /**
    * Checks for and modifies link at campaign end time
    */
-  _checkLinkEndTime: function Site_checkLinkEndTime() {
+  _checkLinkEndTime: function() {
     if (this.link.endTime && this.link.endTime < Date.now()) {
        let oldUrl = this.url;
        // chop off the path part from url
@@ -155,7 +155,7 @@ Site.prototype = {
   /**
    * Renders the site's data (fills the HTML fragment).
    */
-  _render: function Site_render() {
+  _render: function() {
     // first check for end time, as it may modify the link
     this._checkLinkEndTime();
     // setup display variables
@@ -189,7 +189,7 @@ Site.prototype = {
    * Since the newtab may be preloaded long before it's displayed,
    * check for changed conditions and re-render if needed
    */
-  onFirstVisible: function Site_onFirstVisible() {
+  onFirstVisible: function() {
     if (this.link.endTime && this.link.endTime < Date.now()) {
       // site needs to change landing url and background image
       this._render();
@@ -203,7 +203,7 @@ Site.prototype = {
    * Captures the site's thumbnail in the background, but only if there's no
    * existing thumbnail and the page allows background captures.
    */
-  captureIfMissing: function Site_captureIfMissing() {
+  captureIfMissing: function() {
     if (!document.hidden && !this.link.imageURI) {
       BackgroundPageThumbs.captureIfMissing(this.url);
     }
@@ -212,7 +212,7 @@ Site.prototype = {
   /**
    * Refreshes the thumbnail for the site.
    */
-  refreshThumbnail: function Site_refreshThumbnail() {
+  refreshThumbnail: function() {
     let link = this.link;
 
     let thumbnail = this._querySelector(".newtab-thumbnail.thumbnail");
@@ -249,7 +249,7 @@ Site.prototype = {
   /**
    * Adds event handlers for the site and its buttons.
    */
-  _addEventHandlers: function Site_addEventHandlers() {
+  _addEventHandlers: function() {
     // Register drag-and-drop event handlers.
     this._node.addEventListener("dragstart", this, false);
     this._node.addEventListener("dragend", this, false);
@@ -259,7 +259,7 @@ Site.prototype = {
   /**
    * Speculatively opens a connection to the current site.
    */
-  _speculativeConnect: function Site_speculativeConnect() {
+  _speculativeConnect: function() {
     let sc = Services.io.QueryInterface(Ci.nsISpeculativeConnect);
     let uri = Services.io.newURI(this.url, null, null);
     try {
@@ -272,7 +272,7 @@ Site.prototype = {
   /**
    * Record interaction with site using telemetry.
    */
-  _recordSiteClicked: function Site_recordSiteClicked(aIndex) {
+  _recordSiteClicked: function(aIndex) {
     if (Services.prefs.prefHasUserValue("browser.newtabpage.rows") ||
         Services.prefs.prefHasUserValue("browser.newtabpage.columns") ||
         aIndex > 8) {
@@ -297,7 +297,7 @@ Site.prototype = {
   /**
    * Handles site click events.
    */
-  onClick: function Site_onClick(aEvent) {
+  onClick: function(aEvent) {
     let action;
     let pinned = this.isPinned();
     let tileIndex = this.cell.index;
@@ -336,7 +336,7 @@ Site.prototype = {
   /**
    * Handles all site events.
    */
-  handleEvent: function Site_handleEvent(aEvent) {
+  handleEvent: function(aEvent) {
     switch (aEvent.type) {
       case "mouseover":
         this._node.removeEventListener("mouseover", this, false);

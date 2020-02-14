@@ -73,19 +73,19 @@ const NS_ERROR_DOM_SYNTAX_ERR = NS_ERROR_MODULE_DOM + 12;
 function WebContentConverter() {
 }
 WebContentConverter.prototype = {
-  convert: function WCC_convert() { },
-  asyncConvertData: function WCC_asyncConvertData() { },
-  onDataAvailable: function WCC_onDataAvailable() { },
-  onStopRequest: function WCC_onStopRequest() { },
+  convert: function() { },
+  asyncConvertData: function() { },
+  onDataAvailable: function() { },
+  onStopRequest: function() { },
   
-  onStartRequest: function WCC_onStartRequest(request, context) {
+  onStartRequest: function(request, context) {
     var wccr = 
         Cc[WCCR_CONTRACTID].
         getService(Ci.nsIWebContentConverterService);
     wccr.loadPreferredHandler(request);
   },
   
-  QueryInterface: function WCC_QueryInterface(iid) {
+  QueryInterface: function(iid) {
     if (iid.equals(Ci.nsIStreamConverter) ||
         iid.equals(Ci.nsIStreamListener) ||
         iid.equals(Ci.nsISupports))
@@ -95,13 +95,13 @@ WebContentConverter.prototype = {
 };
 
 var WebContentConverterFactory = {
-  createInstance: function WCCF_createInstance(outer, iid) {
+  createInstance: function(outer, iid) {
     if (outer != null)
       throw Cr.NS_ERROR_NO_AGGREGATION;
     return new WebContentConverter().QueryInterface(iid);
   },
     
-  QueryInterface: function WCC_QueryInterface(iid) {
+  QueryInterface: function(iid) {
     if (iid.equals(Ci.nsIFactory) ||
         iid.equals(Ci.nsISupports))
       return this;
@@ -125,7 +125,7 @@ ServiceInfo.prototype = {
   /**
    * See nsIHandlerApp
    */
-  equals: function SI_equals(aHandlerApp) {
+  equals: function(aHandlerApp) {
     if (!aHandlerApp)
       throw Cr.NS_ERROR_NULL_POINTER;
 
@@ -154,11 +154,11 @@ ServiceInfo.prototype = {
   /**
    * See nsIWebContentHandlerInfo
    */
-  getHandlerURI: function SI_getHandlerURI(uri) {
+  getHandlerURI: function(uri) {
     return this._uri.replace(/%s/gi, encodeURIComponent(uri));
   },
   
-  QueryInterface: function SI_QueryInterface(iid) {
+  QueryInterface: function(iid) {
     if (iid.equals(Ci.nsIWebContentHandlerInfo) ||
         iid.equals(Ci.nsISupports))
       return this;
@@ -180,11 +180,11 @@ WebContentConverterRegistrar.prototype = {
     return WebContentConverterRegistrar.prototype.stringBundle = sb;
   },
 
-  _getFormattedString: function WCCR__getFormattedString(key, params) {
+  _getFormattedString: function(key, params) {
     return this.stringBundle.formatStringFromName(key, params, params.length);
   },
   
-  _getString: function WCCR_getString(key) {
+  _getString: function(key) {
     return this.stringBundle.GetStringFromName(key);
   },
 
@@ -192,7 +192,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentConverterService
    */
   getAutoHandler: 
-  function WCCR_getAutoHandler(contentType) {
+  function(contentType) {
     contentType = this._resolveContentType(contentType);
     if (contentType in this._autoHandleContentTypes)
       return this._autoHandleContentTypes[contentType];
@@ -203,7 +203,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentConverterService
    */
   setAutoHandler:
-  function WCCR_setAutoHandler(contentType, handler) {
+  function(contentType, handler) {
     if (handler && !this._typeIsRegistered(contentType, handler.uri))
       throw Cr.NS_ERROR_NOT_AVAILABLE;
       
@@ -226,7 +226,7 @@ WebContentConverterRegistrar.prototype = {
    * Update the internal data structure (not persistent)
    */
   _setAutoHandler:
-  function WCCR__setAutoHandler(contentType, handler) {
+  function(contentType, handler) {
     if (handler) 
       this._autoHandleContentTypes[contentType] = handler;
     else if (contentType in this._autoHandleContentTypes)
@@ -237,7 +237,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentConverterService
    */
   getWebContentHandlerByURI:
-  function WCCR_getWebContentHandlerByURI(contentType, uri) {
+  function(contentType, uri) {
     var handlers = this.getContentHandlers(contentType, { });
     for (var i = 0; i < handlers.length; ++i) {
       if (handlers[i].uri == uri) 
@@ -250,7 +250,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentConverterService
    */
   loadPreferredHandler: 
-  function WCCR_loadPreferredHandler(request) {
+  function(request) {
     var channel = request.QueryInterface(Ci.nsIChannel);
     var contentType = this._resolveContentType(channel.contentType);
     var handler = this.getAutoHandler(contentType);
@@ -269,7 +269,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentConverterService
    */
   removeProtocolHandler: 
-  function WCCR_removeProtocolHandler(aProtocol, aURITemplate) {
+  function(aProtocol, aURITemplate) {
     var eps = Cc["@mozilla.org/uriloader/external-protocol-service;1"].
               getService(Ci.nsIExternalProtocolService);
     var handlerInfo = eps.getProtocolHandlerInfo(aProtocol);
@@ -292,7 +292,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentConverterService
    */
   removeContentHandler: 
-  function WCCR_removeContentHandler(contentType, uri) {
+  function(contentType, uri) {
     function notURI(serviceInfo) {
       return serviceInfo.uri != uri;
     }
@@ -326,7 +326,7 @@ WebContentConverterRegistrar.prototype = {
    * @returns The resolved contentType value. 
    */
   _resolveContentType: 
-  function WCCR__resolveContentType(contentType) {
+  function(contentType) {
     if (contentType in this._mappings)
       return this._mappings[contentType];
     return contentType;
@@ -339,7 +339,7 @@ WebContentConverterRegistrar.prototype = {
   },
 
   _checkAndGetURI:
-  function WCCR_checkAndGetURI(aURIString, aContentWindow)
+  function(aURIString, aContentWindow)
   {
     try {
       let baseURI = aContentWindow.document.baseURIObject;
@@ -382,7 +382,7 @@ WebContentConverterRegistrar.prototype = {
    * @return true if it is already registered, false otherwise.
    */
   _protocolHandlerRegistered:
-  function WCCR_protocolHandlerRegistered(aProtocol, aURITemplate) {
+  function(aProtocol, aURITemplate) {
     var eps = Cc["@mozilla.org/uriloader/external-protocol-service;1"].
               getService(Ci.nsIExternalProtocolService);
     var handlerInfo = eps.getProtocolHandlerInfo(aProtocol);
@@ -401,7 +401,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentHandlerRegistrar
    */
   registerProtocolHandler: 
-  function WCCR_registerProtocolHandler(aProtocol, aURIString, aTitle, aContentWindow) {
+  function(aProtocol, aURIString, aTitle, aContentWindow) {
     LOG("registerProtocolHandler(" + aProtocol + "," + aURIString + "," + aTitle + ")");
 
     var uri = this._checkAndGetURI(aURIString, aContentWindow);
@@ -455,7 +455,7 @@ WebContentConverterRegistrar.prototype = {
       protocolInfo: { protocol: aProtocol, uri: uri.spec, name: aTitle },
 
       callback:
-        function WCCR_addProtocolHandlerButtonCallback(aNotification, aButtonInfo) {
+        function(aNotification, aButtonInfo) {
           var protocol = aButtonInfo.protocolInfo.protocol;
           var uri      = aButtonInfo.protocolInfo.uri;
           var name     = aButtonInfo.protocolInfo.name;
@@ -496,7 +496,7 @@ WebContentConverterRegistrar.prototype = {
    * prompt the user to confirm the registration.
    */
   registerContentHandler: 
-  function WCCR_registerContentHandler(aContentType, aURIString, aTitle, aContentWindow) {
+  function(aContentType, aURIString, aTitle, aContentWindow) {
     LOG("registerContentHandler(" + aContentType + "," + aURIString + "," + aTitle + ")");
 
     // Check against the type blacklist.
@@ -526,7 +526,7 @@ WebContentConverterRegistrar.prototype = {
    * Returns the browser chrome window in which the content window is in
    */
   _getBrowserWindowForContentWindow:
-  function WCCR__getBrowserWindowForContentWindow(aContentWindow) {
+  function(aContentWindow) {
     return aContentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
                          .getInterface(Ci.nsIWebNavigation)
                          .QueryInterface(Ci.nsIDocShellTreeItem)
@@ -547,7 +547,7 @@ WebContentConverterRegistrar.prototype = {
    *        (i.e. the content window of a frame/iframe).
    */
   _getBrowserForContentWindow:
-  function WCCR__getBrowserForContentWindow(aBrowserWindow, aContentWindow) {
+  function(aBrowserWindow, aContentWindow) {
     // This depends on pseudo APIs of browser.js and tabbrowser.xml
     aContentWindow = aContentWindow.top;
     var browsers = aBrowserWindow.gBrowser.browsers;
@@ -579,7 +579,7 @@ WebContentConverterRegistrar.prototype = {
    * @return true if a notification has been appended, false otherwise.
    */
   _appendFeedReaderNotification:
-  function WCCR__appendFeedReaderNotification(aURI, aName, aNotificationBox) {
+  function(aURI, aName, aNotificationBox) {
     var uriSpec = aURI.spec;
     var notificationValue = "feed reader notification: " + uriSpec;
     var notificationIcon = aURI.prePath + "/favicon.ico";
@@ -603,7 +603,7 @@ WebContentConverterRegistrar.prototype = {
 
         /* static */
         callback:
-        function WCCR__addFeedReaderButtonCallback(aNotification, aButtonInfo) {
+        function(aNotification, aButtonInfo) {
           var uri = aButtonInfo.feedReaderInfo.uri;
           var name = aButtonInfo.feedReaderInfo.name;
           var outer = aButtonInfo._outer;
@@ -645,7 +645,7 @@ WebContentConverterRegistrar.prototype = {
    *    browser.contentHandlers.title0 = Foo 2.0alphr
    */
   _saveContentHandlerToPrefs: 
-  function WCCR__saveContentHandlerToPrefs(contentType, uri, title) {
+  function(contentType, uri, title) {
     var ps = 
         Cc["@mozilla.org/preferences-service;1"].
         getService(Ci.nsIPrefService);
@@ -685,7 +685,7 @@ WebContentConverterRegistrar.prototype = {
    * @param   uri
    *          The uri of the 
    */
-  _typeIsRegistered: function WCCR__typeIsRegistered(contentType, uri) {
+  _typeIsRegistered: function(contentType, uri) {
     if (!(contentType in this._contentTypes))
       return false;
       
@@ -705,7 +705,7 @@ WebContentConverterRegistrar.prototype = {
    * @returns A contract id to construct a converter to convert between the 
    *          contentType and *\/*.
    */
-  _getConverterContractID: function WCCR__getConverterContractID(contentType) {
+  _getConverterContractID: function(contentType) {
     const template = "@mozilla.org/streamconv;1?from=%s&to=*/*";
     return template.replace(/%s/, contentType);
   },
@@ -721,7 +721,7 @@ WebContentConverterRegistrar.prototype = {
    *          the human readable name of the web service
    */
   _registerContentHandler:
-  function WCCR__registerContentHandler(contentType, uri, title) {
+  function(contentType, uri, title) {
     this._updateContentTypeHandlerMap(contentType, uri, title);
     this._saveContentHandlerToPrefs(contentType, uri, title);
 
@@ -754,7 +754,7 @@ WebContentConverterRegistrar.prototype = {
    *          The human readable name of the web service
    */
   _updateContentTypeHandlerMap: 
-  function WCCR__updateContentTypeHandlerMap(contentType, uri, title) {
+  function(contentType, uri, title) {
     if (!(contentType in this._contentTypes))
       this._contentTypes[contentType] = [];
 
@@ -776,7 +776,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentConverterService
    */
   getContentHandlers: 
-  function WCCR_getContentHandlers(contentType, countRef) {
+  function(contentType, countRef) {
     countRef.value = 0;
     if (!(contentType in this._contentTypes))
       return [];
@@ -790,7 +790,7 @@ WebContentConverterRegistrar.prototype = {
    * See nsIWebContentConverterService
    */
   resetHandlersForType: 
-  function WCCR_resetHandlersForType(contentType) {
+  function(contentType) {
     // currently unused within the tree, so only useful for extensions; previous
     // impl. was buggy (and even infinite-looped!), so I argue that this is a
     // definite improvement
@@ -833,7 +833,7 @@ WebContentConverterRegistrar.prototype = {
    * Load the auto handler, content handler and protocol tables from 
    * preferences.
    */
-  _init: function WCCR__init() {
+  _init: function() {
     var ps = 
         Cc["@mozilla.org/preferences-service;1"].
         getService(Ci.nsIPrefService);
@@ -883,7 +883,7 @@ WebContentConverterRegistrar.prototype = {
   /**
    * See nsIObserver
    */
-  observe: function WCCR_observe(subject, topic, data) {
+  observe: function(subject, topic, data) {
     var os = 
         Cc["@mozilla.org/observer-service;1"].
         getService(Ci.nsIObserverService);
@@ -901,7 +901,7 @@ WebContentConverterRegistrar.prototype = {
   /**
    * See nsIFactory
    */
-  createInstance: function WCCR_createInstance(outer, iid) {
+  createInstance: function(outer, iid) {
     if (outer != null)
       throw Cr.NS_ERROR_NO_AGGREGATION;
     return this.QueryInterface(iid);

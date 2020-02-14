@@ -148,7 +148,7 @@ this.WinTaskbarJumpList =
    * Startup, shutdown, and update
    */ 
 
-  startup: function WTBJL_startup() {
+  startup: function() {
     // exit if this isn't win7 or higher.
     if (!this._initTaskbar())
       return;
@@ -175,7 +175,7 @@ this.WinTaskbarJumpList =
     this._updateTimer();
   },
 
-  update: function WTBJL_update() {
+  update: function() {
     // are we disabled via prefs? don't do anything!
     if (!this._enabled)
       return;
@@ -184,7 +184,7 @@ this.WinTaskbarJumpList =
     this._buildList();
   },
 
-  _shutdown: function WTBJL__shutdown() {
+  _shutdown: function() {
     this._shuttingDown = true;
 
     // Correctly handle a clear history on shutdown.  If there are no
@@ -197,7 +197,7 @@ this.WinTaskbarJumpList =
     this._free();
   },
 
-  _shortcutMaintenance: function WTBJL__maintenace() {
+  _shortcutMaintenance: function() {
     _winShellService.shortcutMaintenance();
   },
 
@@ -212,11 +212,11 @@ this.WinTaskbarJumpList =
    */
 
   _pendingStatements: {},
-  _hasPendingStatements: function WTBJL__hasPendingStatements() {
+  _hasPendingStatements: function() {
     return Object.keys(this._pendingStatements).length > 0;
   },
 
-  _buildList: function WTBJL__buildList() {
+  _buildList: function() {
     if (this._hasPendingStatements()) {
       // We were requested to update the list while another update was in
       // progress, this could happen at shutdown, idle or privatebrowsing.
@@ -255,7 +255,7 @@ this.WinTaskbarJumpList =
    * Taskbar api wrappers
    */ 
 
-  _startBuild: function WTBJL__startBuild() {
+  _startBuild: function() {
     var removedItems = Cc["@mozilla.org/array;1"].
                        createInstance(Ci.nsIMutableArray);
     this._builder.abortListBuild();
@@ -267,16 +267,16 @@ this.WinTaskbarJumpList =
     return false;
   },
 
-  _commitBuild: function WTBJL__commitBuild() {
+  _commitBuild: function() {
     if (!this._hasPendingStatements() && !this._builder.commitListBuild()) {
       this._builder.abortListBuild();
     }
   },
 
-  _buildTasks: function WTBJL__buildTasks() {
+  _buildTasks: function() {
     var items = Cc["@mozilla.org/array;1"].
                 createInstance(Ci.nsIMutableArray);
-    this._tasks.forEach(function (task) {
+    this._tasks.forEach(function(task) {
       if ((this._shuttingDown && !task.close) || (!this._shuttingDown && !task.open))
         return;
       var item = this._getHandlerAppItem(task.title, task.description,
@@ -288,12 +288,12 @@ this.WinTaskbarJumpList =
       this._builder.addListToBuild(this._builder.JUMPLIST_CATEGORY_TASKS, items);
   },
 
-  _buildCustom: function WTBJL__buildCustom(title, items) {
+  _buildCustom: function(title, items) {
     if (items.length > 0)
       this._builder.addListToBuild(this._builder.JUMPLIST_CATEGORY_CUSTOMLIST, items, title);
   },
 
-  _buildFrequent: function WTBJL__buildFrequent() {
+  _buildFrequent: function() {
     // If history is empty, just bail out.
     if (!PlacesUtils.history.hasHistoryEntries) {
       return;
@@ -313,7 +313,7 @@ this.WinTaskbarJumpList =
     this._pendingStatements[LIST_TYPE.FREQUENT] = this._getHistoryResults(
       Ci.nsINavHistoryQueryOptions.SORT_BY_VISITCOUNT_DESCENDING,
       this._maxItemCount,
-      function (aResult) {
+      function(aResult) {
         if (!aResult) {
           delete this._pendingStatements[LIST_TYPE.FREQUENT];
           // The are no more results, build the list.
@@ -333,7 +333,7 @@ this.WinTaskbarJumpList =
     );
   },
 
-  _buildRecent: function WTBJL__buildRecent() {
+  _buildRecent: function() {
     // If history is empty, just bail out.
     if (!PlacesUtils.history.hasHistoryEntries) {
       return;
@@ -348,7 +348,7 @@ this.WinTaskbarJumpList =
     this._pendingStatements[LIST_TYPE.RECENT] = this._getHistoryResults(
       Ci.nsINavHistoryQueryOptions.SORT_BY_DATE_DESCENDING,
       this._maxItemCount * 2,
-      function (aResult) {
+      function(aResult) {
         if (!aResult) {
           // The are no more results, build the list.
           this._buildCustom(_getString("taskbar.recent.label"), items);
@@ -378,7 +378,7 @@ this.WinTaskbarJumpList =
     );
   },
 
-  _deleteActiveJumpList: function WTBJL__deleteAJL() {
+  _deleteActiveJumpList: function() {
     this._builder.deleteActiveList();
   },
 
@@ -386,7 +386,7 @@ this.WinTaskbarJumpList =
    * Jump list item creation helpers
    */
 
-  _getHandlerAppItem: function WTBJL__getHandlerAppItem(name, description, 
+  _getHandlerAppItem: function(name, description, 
                                                         args, iconIndex, 
                                                         faviconPageUri) {
     var file = Services.dirsvc.get("XREExeF", Ci.nsILocalFile);
@@ -408,7 +408,7 @@ this.WinTaskbarJumpList =
     return item;
   },
 
-  _getSeparatorItem: function WTBJL__getSeparatorItem() {
+  _getSeparatorItem: function() {
     var item = Cc["@mozilla.org/windows-jumplistseparator;1"].
                createInstance(Ci.nsIJumpListSeparator);
     return item;
@@ -419,7 +419,7 @@ this.WinTaskbarJumpList =
    */
 
   _getHistoryResults:
-  function WTBLJL__getHistoryResults(aSortingMode, aLimit, aCallback, aScope) {
+  function(aSortingMode, aLimit, aCallback, aScope) {
     var options = PlacesUtils.history.getNewQueryOptions();
     options.maxResults = aLimit;
     options.sortingMode = aSortingMode;
@@ -428,7 +428,7 @@ this.WinTaskbarJumpList =
     // Return the pending statement to the caller, to allow cancelation.
     return PlacesUtils.history.QueryInterface(Ci.nsPIPlacesDatabase)
                               .asyncExecuteLegacyQueries([query], 1, options, {
-      handleResult: function (aResultSet) {
+      handleResult: function(aResultSet) {
         for (let row; (row = aResultSet.getNextRow());) {
           try {
             aCallback.call(aScope,
@@ -438,17 +438,17 @@ this.WinTaskbarJumpList =
           } catch (e) {}
         }
       },
-      handleError: function (aError) {
+      handleError: function(aError) {
         Components.utils.reportError(
           "Async execution error (" + aError.result + "): " + aError.message);
       },
-      handleCompletion: function (aReason) {
+      handleCompletion: function(aReason) {
         aCallback.call(WinTaskbarJumpList, null);
       },
     });
   },
 
-  _clearHistory: function WTBJL__clearHistory(items) {
+  _clearHistory: function(items) {
     if (!items)
       return;
     var URIsToRemove = [];
@@ -471,7 +471,7 @@ this.WinTaskbarJumpList =
    * Prefs utilities
    */ 
 
-  _refreshPrefs: function WTBJL__refreshPrefs() {
+  _refreshPrefs: function() {
     this._enabled = _prefs.getBoolPref(PREF_TASKBAR_ENABLED);
     this._showFrequent = _prefs.getBoolPref(PREF_TASKBAR_FREQUENT);
     this._showRecent = _prefs.getBoolPref(PREF_TASKBAR_RECENT);
@@ -483,7 +483,7 @@ this.WinTaskbarJumpList =
    * Init and shutdown utilities
    */ 
 
-  _initTaskbar: function WTBJL__initTaskbar() {
+  _initTaskbar: function() {
     this._builder = _taskbarService.createJumpListBuilder();
     if (!this._builder || !this._builder.available)
       return false;
@@ -491,7 +491,7 @@ this.WinTaskbarJumpList =
     return true;
   },
 
-  _initObs: function WTBJL__initObs() {
+  _initObs: function() {
     // If the browser is closed while in private browsing mode, the "exit"
     // notification is fired on quit-application-granted.
     // History cleanup can happen at profile-change-teardown.
@@ -500,13 +500,13 @@ this.WinTaskbarJumpList =
     _prefs.addObserver("", this, false);
   },
  
-  _freeObs: function WTBJL__freeObs() {
+  _freeObs: function() {
     Services.obs.removeObserver(this, "profile-before-change");
     Services.obs.removeObserver(this, "browser:purge-session-history");
     _prefs.removeObserver("", this);
   },
 
-  _updateTimer: function WTBJL__updateTimer() {
+  _updateTimer: function() {
     if (this._enabled && !this._shuttingDown && !this._timer) {
       this._timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
       this._timer.initWithCallback(this,
@@ -520,7 +520,7 @@ this.WinTaskbarJumpList =
   },
 
   _hasIdleObserver: false,
-  _updateIdleObserver: function WTBJL__updateIdleObserver() {
+  _updateIdleObserver: function() {
     if (this._enabled && !this._shuttingDown && !this._hasIdleObserver) {
       _idle.addIdleObserver(this, IDLE_TIMEOUT_SECONDS);
       this._hasIdleObserver = true;
@@ -531,7 +531,7 @@ this.WinTaskbarJumpList =
     }
   },
 
-  _free: function WTBJL__free() {
+  _free: function() {
     this._freeObs();
     this._updateTimer();
     this._updateIdleObserver();
@@ -542,13 +542,13 @@ this.WinTaskbarJumpList =
    * Notification handlers
    */
 
-  notify: function WTBJL_notify(aTimer) {
+  notify: function(aTimer) {
     // Add idle observer on the first notification so it doesn't hit startup.
     this._updateIdleObserver();
     this.update();
   },
 
-  observe: function WTBJL_observe(aSubject, aTopic, aData) {
+  observe: function(aSubject, aTopic, aData) {
     switch (aTopic) {
       case "nsPref:changed":
         if (this._enabled == true && !_prefs.getBoolPref(PREF_TASKBAR_ENABLED))
