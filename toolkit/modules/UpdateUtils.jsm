@@ -256,9 +256,6 @@ XPCOMUtils.defineLazyGetter(UpdateUtils, "ABI", function() {
   if (macutils.isUniversalBinary) {
     abi += "-u-" + macutils.architecturesInBinary;
   }
-#elifdef XP_WIN
-  // Windows build should report the CPU architecture that it's running on.
-  abi += "-" + gWinCPUArch;
 #endif
 
   return abi;

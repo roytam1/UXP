@@ -74,8 +74,7 @@ nsTableCellFrame::Init(nsIContent*       aContent,
   if (aPrevInFlow) {
     // Set the column index
     nsTableCellFrame* cellFrame = (nsTableCellFrame*)aPrevInFlow;
-    int32_t           colIndex;
-    cellFrame->GetColIndex(colIndex);
+    uint32_t colIndex = cellFrame->ColIndex();
     SetColIndex(colIndex);
   }
 }
@@ -169,34 +168,6 @@ nsTableCellFrame::NeedsToObserve(const ReflowInput& aReflowInput)
 }
 
 nsresult
-nsTableCellFrame::GetRowIndex(int32_t &aRowIndex) const
-{
-  nsresult result;
-  nsTableRowFrame* row = static_cast<nsTableRowFrame*>(GetParent());
-  if (row) {
-    aRowIndex = row->GetRowIndex();
-    result = NS_OK;
-  }
-  else {
-    aRowIndex = 0;
-    result = NS_ERROR_NOT_INITIALIZED;
-  }
-  return result;
-}
-
-nsresult
-nsTableCellFrame::GetColIndex(int32_t &aColIndex) const
-{
-  if (GetPrevInFlow()) {
-    return static_cast<nsTableCellFrame*>(FirstInFlow())->GetColIndex(aColIndex);
-  }
-  else {
-    aColIndex = mColIndex;
-    return  NS_OK;
-  }
-}
-
-nsresult
 nsTableCellFrame::AttributeChanged(int32_t         aNameSpaceID,
                                    nsIAtom*        aAttribute,
                                    int32_t         aModType)
@@ -224,13 +195,13 @@ nsTableCellFrame::DidSetStyleContext(nsStyleContext* aOldStyleContext)
   nsTableFrame* tableFrame = GetTableFrame();
   if (tableFrame->IsBorderCollapse() &&
       tableFrame->BCRecalcNeeded(aOldStyleContext, StyleContext())) {
-    int32_t colIndex, rowIndex;
-    GetColIndex(colIndex);
-    GetRowIndex(rowIndex);
+    uint32_t colIndex = ColIndex();
+    uint32_t rowIndex = RowIndex();
     // row span needs to be clamped as we do not create rows in the cellmap
     // which do not have cells originating in them
     TableArea damageArea(colIndex, rowIndex, GetColSpan(),
-      std::min(GetRowSpan(), tableFrame->GetRowCount() - rowIndex));
+      std::min(static_cast<uint32_t>(GetRowSpan()),
+               tableFrame->GetRowCount() - rowIndex));
     tableFrame->AddBCDamageArea(damageArea);
   }
 }
@@ -820,14 +791,13 @@ CalcUnpaginatedBSize(nsTableCellFrame& aCellFrame,
   nsTableRowGroupFrame* firstRGInFlow =
     static_cast<nsTableRowGroupFrame*>(row->GetParent());
 
-  int32_t rowIndex;
-  firstCellInFlow->GetRowIndex(rowIndex);
+  uint32_t rowIndex = firstCellInFlow->RowIndex();
   int32_t rowSpan = aTableFrame.GetEffectiveRowSpan(*firstCellInFlow);
 
   nscoord computedBSize = firstTableInFlow->GetRowSpacing(rowIndex,
                                                           rowIndex + rowSpan - 1);
   computedBSize -= aBlockDirBorderPadding;
-  int32_t rowX;
+  uint32_t rowX;
   for (row = firstRGInFlow->GetFirstRow(), rowX = 0; row; row = row->GetNextRow(), rowX++) {
     if (rowX > rowIndex + rowSpan - 1) {
       break;
@@ -1042,12 +1012,7 @@ nsTableCellFrame::AccessibleType()
 NS_IMETHODIMP
 nsTableCellFrame::GetCellIndexes(int32_t &aRowIndex, int32_t &aColIndex)
 {
-  nsresult res = GetRowIndex(aRowIndex);
-  if (NS_FAILED(res))
-  {
-    aColIndex = 0;
-    return res;
-  }
+  aRowIndex = RowIndex();
   aColIndex = mColIndex;
   return  NS_OK;
 }
