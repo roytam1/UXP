@@ -183,7 +183,10 @@ public:
   NS_IMETHOD GetCellIndexes(int32_t &aRowIndex, int32_t &aColIndex) override;
 
   /** return the mapped cell's row index (starting at 0 for the first row) */
-  virtual nsresult GetRowIndex(int32_t &aRowIndex) const override;
+  uint32_t RowIndex() const
+  {
+    return static_cast<nsTableRowFrame*>(GetParent())->GetRowIndex();
+  }
 
   /**
    * return the cell's specified col span. this is what was specified in the
@@ -194,7 +197,16 @@ public:
   int32_t GetColSpan();
 
   /** return the cell's column index (starting at 0 for the first column) */
-  virtual nsresult GetColIndex(int32_t &aColIndex) const override;
+  uint32_t ColIndex() const
+  {
+    // NOTE: We copy this from previous continuations, and we don't ever have
+    // dynamic updates when tables split, so our mColIndex always matches our
+    // first continuation's.
+    MOZ_ASSERT(static_cast<nsTableCellFrame*>(FirstContinuation())->mColIndex ==
+               mColIndex,
+               "mColIndex out of sync with first continuation");
+    return mColIndex;
+  }
   void SetColIndex(int32_t aColIndex);
 
   /** return the available isize given to this frame during its last reflow */
@@ -246,9 +258,9 @@ public:
   virtual void InvalidateFrame(uint32_t aDisplayItemKey = 0) override;
   virtual void InvalidateFrameWithRect(const nsRect& aRect, uint32_t aDisplayItemKey = 0) override;
   virtual void InvalidateFrameForRemoval() override { InvalidateFrameSubtree(); }
-  
+
   bool ShouldPaintBordersAndBackgrounds() const;
-  
+
   bool ShouldPaintBackground(nsDisplayListBuilder* aBuilder);
 
 protected:
