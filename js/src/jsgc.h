@@ -1357,8 +1357,10 @@ class ZoneList
     ZoneList& operator=(const ZoneList& other) = delete;
 };
 
+#ifdef MOZ_DEVTOOLS_SERVER
 JSObject*
 NewMemoryStatisticsObject(JSContext* cx);
+#endif
 
 struct MOZ_RAII AutoAssertNoNurseryAlloc
 {

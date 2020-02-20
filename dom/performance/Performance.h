@@ -96,8 +96,10 @@ public:
 
   IMPL_EVENT_HANDLER(resourcetimingbufferfull)
 
+#ifdef MOZ_DEVTOOLS_SERVER
   virtual void GetMozMemory(JSContext *aCx,
                             JS::MutableHandle<JSObject*> aObj) = 0;
+#endif
 
   virtual nsDOMNavigationTiming* GetDOMTiming() const = 0;
 

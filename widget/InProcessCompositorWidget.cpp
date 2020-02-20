@@ -5,10 +5,6 @@
 #include "InProcessCompositorWidget.h"
 #include "nsBaseWidget.h"
 
-#if defined(MOZ_WIDGET_ANDROID) && !defined(MOZ_WIDGET_SUPPORTS_OOP_COMPOSITING)
-#include "mozilla/widget/AndroidCompositorWidget.h"
-#endif
-
 namespace mozilla {
 namespace widget {
 
@@ -19,11 +15,7 @@ namespace widget {
 CompositorWidget::CreateLocal(const CompositorWidgetInitData& aInitData, nsIWidget* aWidget)
 {
   MOZ_ASSERT(aWidget);
-#ifdef MOZ_WIDGET_ANDROID
-  return new AndroidCompositorWidget(static_cast<nsBaseWidget*>(aWidget));
-#else
   return new InProcessCompositorWidget(static_cast<nsBaseWidget*>(aWidget));
-#endif
 }
 #endif
 

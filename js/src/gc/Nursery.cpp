@@ -505,7 +505,10 @@ js::Nursery::collect(JSRuntime* rt, JS::gcreason::Reason reason)
     if (!isEnabled())
         return;
 
+#ifdef MOZ_DEVTOOLS_SERVER
+    // No need to obsessively track this without devtools
     rt->gc.incMinorGcNumber();
+#endif
 
     rt->gc.stats.beginNurseryCollection(reason);
     TraceMinorGCStart();

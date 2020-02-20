@@ -17,7 +17,6 @@ EXPORTS.mozilla.plugins += [
     'BrowserStreamParent.h',
     'ChildAsyncCall.h',
     'ChildTimer.h',
-    'NPEventAndroid.h',
     'NPEventOSX.h',
     'NPEventUnix.h',
     'NPEventWindows.h',

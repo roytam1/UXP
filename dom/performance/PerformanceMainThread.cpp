@@ -11,6 +11,7 @@
 namespace mozilla {
 namespace dom {
 
+
 NS_IMPL_CYCLE_COLLECTION_CLASS(PerformanceMainThread)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(PerformanceMainThread,
@@ -18,8 +19,10 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(PerformanceMainThread,
 NS_IMPL_CYCLE_COLLECTION_UNLINK(mTiming,
                                 mNavigation,
                                 mDocEntry)
+#ifdef MOZ_DEVTOOLS_SERVER
   tmp->mMozMemory = nullptr;
   mozilla::DropJSObjects(this);
+#endif
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(PerformanceMainThread,
@@ -31,7 +34,9 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN_INHERITED(PerformanceMainThread,
                                                 Performance)
+#ifdef MOZ_DEVTOOLS_SERVER
   NS_IMPL_CYCLE_COLLECTION_TRACE_JS_MEMBER_CALLBACK(mMozMemory)
+#endif
 NS_IMPL_CYCLE_COLLECTION_TRACE_END
 
 NS_IMPL_ADDREF_INHERITED(PerformanceMainThread, Performance)
@@ -55,9 +60,12 @@ PerformanceMainThread::PerformanceMainThread(nsPIDOMWindowInner* aWindow,
 
 PerformanceMainThread::~PerformanceMainThread()
 {
+#ifdef MOZ_DEVTOOLS_SERVER
   mozilla::DropJSObjects(this);
+#endif
 }
 
+#ifdef MOZ_DEVTOOLS_SERVER
 void
 PerformanceMainThread::GetMozMemory(JSContext *aCx,
                                     JS::MutableHandle<JSObject*> aObj)
@@ -71,6 +79,7 @@ PerformanceMainThread::GetMozMemory(JSContext *aCx,
 
   aObj.set(mMozMemory);
 }
+#endif
 
 PerformanceTiming*
 PerformanceMainThread::Timing()

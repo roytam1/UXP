@@ -58,7 +58,6 @@ enum class OperatingSystem {
   OSX10_10,
   OSX10_11,
   OSX10_12,
-  Android,
   Ios
 };
 
@@ -281,12 +280,6 @@ ParseDriverVersion(const nsAString& aVersion, uint64_t *aNumericVersion)
   if (d < 0 || d > 0xffff) return false;
 
   *aNumericVersion = GFX_DRIVER_VERSION(a, b, c, d);
-  MOZ_ASSERT(*aNumericVersion != GfxDriverInfo::allDriverVersions);
-  return true;
-#elif defined(ANDROID)
-  // Can't use aVersion.ToInteger() because that's not compiled into our code
-  // unless we have XPCOM_GLUE_AVOID_NSPR disabled.
-  *aNumericVersion = atoi(NS_LossyConvertUTF16toASCII(aVersion).get());
   MOZ_ASSERT(*aNumericVersion != GfxDriverInfo::allDriverVersions);
   return true;
 #else

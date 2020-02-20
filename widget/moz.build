@@ -6,9 +6,10 @@
 
 toolkit = CONFIG['MOZ_WIDGET_TOOLKIT']
 
-if toolkit in ('cocoa', 'android', 'uikit'):
+if toolkit in ('cocoa', 'uikit'):
     DIRS += [toolkit]
-if toolkit in ('android', 'gtk2', 'gtk3'):
+
+if toolkit in ('gtk2', 'gtk3'):
     EXPORTS += ['nsIPrintDialogService.h']
 
 if toolkit == 'windows':
@@ -40,8 +41,6 @@ elif toolkit == 'cocoa':
         'nsINativeMenuService.h',
         'nsIPrintDialogService.h',
     ]
-
-TEST_DIRS += ['tests']
 
 # Don't build the DSO under the 'build' directory as windows does.
 #
@@ -221,20 +220,14 @@ if toolkit in ('cocoa', 'windows'):
         'nsBaseClipboard.cpp',
     ]
 
-if toolkit in {'gtk2', 'gtk3', 'cocoa', 'windows',
-               'android', 'uikit'}:
-    UNIFIED_SOURCES += [
-        'nsBaseFilePicker.cpp',
-    ]
+if toolkit in {'gtk2', 'gtk3', 'cocoa', 'windows', 'uikit'}:
+    UNIFIED_SOURCES += ['nsBaseFilePicker.cpp']
 
 if toolkit in ('gtk2', 'gtk3', 'windows', 'cocoa'):
-    UNIFIED_SOURCES += [
-        'nsNativeTheme.cpp',
-    ]
+    UNIFIED_SOURCES += ['nsNativeTheme.cpp']
+
 if toolkit == 'gtk3':
-    XPIDL_SOURCES += [
-        'nsIApplicationChooser.idl',
-    ]
+    XPIDL_SOURCES += ['nsIApplicationChooser.idl']
 
 DEFINES['MOZ_CROSS_PROCESS_IME'] = True
 
