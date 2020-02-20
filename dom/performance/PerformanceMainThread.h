@@ -20,12 +20,8 @@ public:
                         nsITimedChannel* aChannel);
 
   NS_DECL_ISUPPORTS_INHERITED
-#ifdef MOZ_DEVTOOLS_SERVER
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(PerformanceMainThread,
                                                          Performance)
-#else
-  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(PerformanceMainThread, Performance)
-#endif
 
   virtual PerformanceTiming* Timing() override;
 

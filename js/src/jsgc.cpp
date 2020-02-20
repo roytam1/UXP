@@ -6776,9 +6776,9 @@ js::gc::NextCellUniqueId(JSRuntime* rt)
     return rt->gc.nextCellUniqueId();
 }
 
-#ifdef MOZ_DEVTOOLS_SERVER
 namespace js {
 namespace gc {
+#ifdef MOZ_DEVTOOLS_SERVER
 namespace MemInfo {
 
 static bool
@@ -6994,6 +6994,7 @@ NewMemoryInfoObject(JSContext* cx)
 
     return obj;
 }
+#endif // MOZ_DEVTOOLS_SERVER
 
 const char*
 StateName(State state)
@@ -7033,7 +7034,6 @@ AutoEmptyNursery::AutoEmptyNursery(JSRuntime *rt)
 
 } /* namespace gc */
 } /* namespace js */
-#endif
 
 #ifdef DEBUG
 void

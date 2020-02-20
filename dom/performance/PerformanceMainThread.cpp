@@ -11,7 +11,7 @@
 namespace mozilla {
 namespace dom {
 
-#ifdef MOZ_DEVTOOLS_SERVER
+
 NS_IMPL_CYCLE_COLLECTION_CLASS(PerformanceMainThread)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(PerformanceMainThread,
@@ -19,8 +19,10 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(PerformanceMainThread,
 NS_IMPL_CYCLE_COLLECTION_UNLINK(mTiming,
                                 mNavigation,
                                 mDocEntry)
+#ifdef MOZ_DEVTOOLS_SERVER
   tmp->mMozMemory = nullptr;
   mozilla::DropJSObjects(this);
+#endif
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(PerformanceMainThread,
@@ -32,15 +34,13 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN_INHERITED(PerformanceMainThread,
                                                 Performance)
+#ifdef MOZ_DEVTOOLS_SERVER
   NS_IMPL_CYCLE_COLLECTION_TRACE_JS_MEMBER_CALLBACK(mMozMemory)
+#endif
 NS_IMPL_CYCLE_COLLECTION_TRACE_END
 
 NS_IMPL_ADDREF_INHERITED(PerformanceMainThread, Performance)
 NS_IMPL_RELEASE_INHERITED(PerformanceMainThread, Performance)
-#else
-NS_IMPL_CYCLE_COLLECTION_INHERITED(PerformanceMainThread, Performance
-                                   mTiming, mNavigation, mDocEntry)
-#endif
 
 // QueryInterface implementation for PerformanceMainThread
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(PerformanceMainThread)
