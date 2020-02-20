@@ -20,8 +20,12 @@ public:
                         nsITimedChannel* aChannel);
 
   NS_DECL_ISUPPORTS_INHERITED
+#ifdef MOZ_DEVTOOLS_SERVER
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS_INHERITED(PerformanceMainThread,
                                                          Performance)
+#else
+  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(PerformanceMainThread, Performance)
+#endif
 
   virtual PerformanceTiming* Timing() override;
 
@@ -34,8 +38,10 @@ public:
 
   DOMHighResTimeStamp CreationTime() const override;
 
+#ifdef MOZ_DEVTOOLS_SERVER
   virtual void GetMozMemory(JSContext *aCx,
                             JS::MutableHandle<JSObject*> aObj) override;
+#endif
 
   virtual nsDOMNavigationTiming* GetDOMTiming() const override
   {
@@ -79,7 +85,9 @@ protected:
   nsCOMPtr<nsITimedChannel> mChannel;
   RefPtr<PerformanceTiming> mTiming;
   RefPtr<PerformanceNavigation> mNavigation;
+#ifdef MOZ_DEVTOOLS_SERVER
   JS::Heap<JSObject*> mMozMemory;
+#endif
 };
 
 } // namespace dom

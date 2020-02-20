@@ -6776,6 +6776,7 @@ js::gc::NextCellUniqueId(JSRuntime* rt)
     return rt->gc.nextCellUniqueId();
 }
 
+#ifdef MOZ_DEVTOOLS_SERVER
 namespace js {
 namespace gc {
 namespace MemInfo {
@@ -7032,6 +7033,7 @@ AutoEmptyNursery::AutoEmptyNursery(JSRuntime *rt)
 
 } /* namespace gc */
 } /* namespace js */
+#endif
 
 #ifdef DEBUG
 void

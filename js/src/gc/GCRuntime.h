@@ -741,7 +741,9 @@ class GCRuntime
     void removeBlackRootsTracer(JSTraceDataOp traceOp, void* data);
 
     void setMaxMallocBytes(size_t value);
+#ifdef MOZ_DEVTOOLS_SERVER
     int32_t getMallocBytes() const { return mallocBytesUntilGC; }
+#endif
     void resetMallocBytes();
     bool isTooMuchMalloc() const { return mallocBytesUntilGC <= 0; }
     void updateMallocCounter(JS::Zone* zone, size_t nbytes);

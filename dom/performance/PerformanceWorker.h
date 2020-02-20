@@ -43,11 +43,13 @@ public:
 
   DOMHighResTimeStamp CreationTime() const override;
 
+#ifdef MOZ_DEVTOOLS_SERVER
   virtual void GetMozMemory(JSContext *aCx,
                             JS::MutableHandle<JSObject*> aObj) override
   {
     MOZ_CRASH("This should not be called on workers.");
   }
+#endif
 
   virtual nsDOMNavigationTiming* GetDOMTiming() const override
   {
