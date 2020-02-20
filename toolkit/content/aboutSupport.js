@@ -564,42 +564,6 @@ function sortedArrayFromObject(obj) {
   return tuples;
 }
 
-function copyRawDataToClipboard(button) {
-  if (button)
-    button.disabled = true;
-  try {
-    Troubleshoot.snapshot(function (snapshot) {
-      if (button)
-        button.disabled = false;
-      let str = Cc["@mozilla.org/supports-string;1"].
-                createInstance(Ci.nsISupportsString);
-      str.data = JSON.stringify(snapshot, undefined, 2);
-      let transferable = Cc["@mozilla.org/widget/transferable;1"].
-                         createInstance(Ci.nsITransferable);
-      transferable.init(getLoadContext());
-      transferable.addDataFlavor("text/unicode");
-      transferable.setTransferData("text/unicode", str, str.data.length * 2);
-      Cc["@mozilla.org/widget/clipboard;1"].
-        getService(Ci.nsIClipboard).
-        setData(transferable, null, Ci.nsIClipboard.kGlobalClipboard);
-#ifdef MOZ_WIDGET_ANDROID
-      // Present a toast notification.
-      let message = {
-        type: "Toast:Show",
-        message: stringBundle().GetStringFromName("rawDataCopied"),
-        duration: "short"
-      };
-      Services.androidBridge.handleGeckoMessage(message);
-#endif
-    });
-  }
-  catch (err) {
-    if (button)
-      button.disabled = false;
-    throw err;
-  }
-}
-
 function getLoadContext() {
   return window.QueryInterface(Ci.nsIInterfaceRequestor)
                .getInterface(Ci.nsIWebNavigation)
@@ -911,9 +875,6 @@ function setupEventListeners() {
 #endif
   $("reset-box-button").addEventListener("click", function(event) {
     ResetProfile.openConfirmationDialog(window);
-  });
-  $("copy-raw-data-to-clipboard").addEventListener("click", function(event) {
-    copyRawDataToClipboard(this);
   });
   $("copy-to-clipboard").addEventListener("click", function(event) {
     copyContentsToClipboard();
