@@ -30,7 +30,6 @@ namespace widget {
 
 class WinCompositorWidget;
 class X11CompositorWidget;
-class AndroidCompositorWidget;
 class CompositorWidgetInitData;
 
 // Gecko widgets usually need to communicate with the CompositorWidget with
@@ -56,12 +55,9 @@ class CompositorWidgetChild;
 class WidgetRenderingContext
 {
 public:
-#if defined(XP_MACOSX)
+#ifdef XP_MACOSX
   WidgetRenderingContext() : mLayerManager(nullptr) {}
   layers::LayerManagerComposite* mLayerManager;
-#elif defined(MOZ_WIDGET_ANDROID)
-  WidgetRenderingContext() : mCompositor(nullptr) {}
-  layers::Compositor* mCompositor;
 #endif
 };
 
@@ -260,9 +256,6 @@ public:
     return nullptr;
   }
   virtual X11CompositorWidget* AsX11() {
-    return nullptr;
-  }
-  virtual AndroidCompositorWidget* AsAndroid() {
     return nullptr;
   }
 
