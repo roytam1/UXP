@@ -111,7 +111,7 @@ struct NPAudioDeviceChangeDetailsIPC
 typedef HWND NativeWindowHandle;
 #elif defined(MOZ_X11)
 typedef XID NativeWindowHandle;
-#elif defined(XP_DARWIN) || defined(ANDROID)
+#elif defined(XP_DARWIN)
 typedef intptr_t NativeWindowHandle; // never actually used, will always be 0
 #else
 #error Need NativeWindowHandle for this platform
@@ -736,8 +736,6 @@ struct ParamTraits<mozilla::plugins::NPAudioDeviceChangeDetailsIPC>
 #  include "mozilla/plugins/NPEventOSX.h"
 #elif defined(XP_WIN)
 #  include "mozilla/plugins/NPEventWindows.h"
-#elif defined(ANDROID)
-#  include "mozilla/plugins/NPEventAndroid.h"
 #elif defined(XP_UNIX)
 #  include "mozilla/plugins/NPEventUnix.h"
 #else

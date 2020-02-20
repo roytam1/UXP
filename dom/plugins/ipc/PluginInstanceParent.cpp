@@ -265,9 +265,6 @@ PluginInstanceParent::AnswerNPN_GetValue_NPNVnetscapeWindow(NativeWindowHandle* 
     XID id;
 #elif defined(XP_DARWIN)
     intptr_t id;
-#elif defined(ANDROID)
-    // TODO: Need Android impl
-    int id;
 #else
 #warning Implement me
 #endif

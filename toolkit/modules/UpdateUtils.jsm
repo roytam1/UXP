@@ -3,6 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #filter substitution
+#if !MOZ_PKG_SPECIAL
+#define MOZ_PKG_SPECIAL false
+#endif
 
 this.EXPORTED_SYMBOLS = ["UpdateUtils"];
 
@@ -70,6 +73,7 @@ this.UpdateUtils = {
     url = url.replace(/%VERSION%/g, Services.appinfo.version);
     url = url.replace(/%BUILD_ID%/g, Services.appinfo.appBuildID);
     url = url.replace(/%BUILD_TARGET%/g, Services.appinfo.OS + "_" + this.ABI);
+    url = url.replace(/%BUILD_SPECIAL%/g, "@MOZ_PKG_SPECIAL@");
     url = url.replace(/%OS_VERSION%/g, this.OSVersion);
     url = url.replace(/%WIDGET_TOOLKIT%/g, "@MOZ_WIDGET_TOOLKIT@");
     url = url.replace(/%CHANNEL%/g, this.UpdateChannel);

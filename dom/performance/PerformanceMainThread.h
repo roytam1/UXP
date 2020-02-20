@@ -34,8 +34,10 @@ public:
 
   DOMHighResTimeStamp CreationTime() const override;
 
+#ifdef MOZ_DEVTOOLS_SERVER
   virtual void GetMozMemory(JSContext *aCx,
                             JS::MutableHandle<JSObject*> aObj) override;
+#endif
 
   virtual nsDOMNavigationTiming* GetDOMTiming() const override
   {
@@ -79,7 +81,9 @@ protected:
   nsCOMPtr<nsITimedChannel> mChannel;
   RefPtr<PerformanceTiming> mTiming;
   RefPtr<PerformanceNavigation> mNavigation;
+#ifdef MOZ_DEVTOOLS_SERVER
   JS::Heap<JSObject*> mMozMemory;
+#endif
 };
 
 } // namespace dom

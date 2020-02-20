@@ -280,8 +280,6 @@ BlacklistOSToOperatingSystem(const nsAString& os)
     return OperatingSystem::OSX10_11;
   else if (os.EqualsLiteral("Darwin 16"))
     return OperatingSystem::OSX10_12;
-  else if (os.EqualsLiteral("Android"))
-    return OperatingSystem::Android;
   // For historical reasons, "All" in blocklist means "All Windows"
   else if (os.EqualsLiteral("All"))
     return OperatingSystem::Windows;
@@ -697,7 +695,7 @@ GfxInfoBase::FindBlocklistedDeviceInList(const nsTArray<GfxDriverInfo>& info,
       }
     }
 
-#if defined(XP_WIN) || defined(ANDROID)
+#ifdef XP_WIN
     uint64_t driverVersion;
     ParseDriverVersion(adapterDriverVersionString, &driverVersion);
 #endif
@@ -736,7 +734,7 @@ GfxInfoBase::FindBlocklistedDeviceInList(const nsTArray<GfxDriverInfo>& info,
         continue;
     }
 
-#if defined(XP_WIN) || defined(ANDROID)
+#ifdef XP_WIN
     switch (info[i].mComparisonOp) {
     case DRIVER_LESS_THAN:
       match = driverVersion < info[i].mDriverVersion;

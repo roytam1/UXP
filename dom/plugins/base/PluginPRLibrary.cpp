@@ -21,43 +21,10 @@ static int gNotOptimized;
 #define CALLING_CONVENTION_HACK
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidBridge.h"
-#include "android_npapi.h"
-#include <android/log.h>
-#undef ALOG
-#define ALOG(args...) __android_log_print(ANDROID_LOG_INFO, "GeckoJavaEnv", ## args)
-#endif
-
 using namespace mozilla::layers;
 
 namespace mozilla {
-#ifdef MOZ_WIDGET_ANDROID
-nsresult
-PluginPRLibrary::NP_Initialize(NPNetscapeFuncs* bFuncs,
-			       NPPluginFuncs* pFuncs, NPError* error)
-{
-  JNIEnv* env = jni::GetEnvForThread();
-
-  mozilla::AutoLocalJNIFrame jniFrame(env);
-
-  if (mNP_Initialize) {
-    *error = mNP_Initialize(bFuncs, pFuncs, env);
-  } else {
-    NP_InitializeFunc pfNP_Initialize = (NP_InitializeFunc)
-      PR_FindFunctionSymbol(mLibrary, "NP_Initialize");
-    if (!pfNP_Initialize)
-      return NS_ERROR_FAILURE;
-    *error = pfNP_Initialize(bFuncs, pFuncs, env);
-  }
-
-  // Save pointers to functions that get called through PluginLibrary itself.
-  mNPP_New = pFuncs->newp;
-  mNPP_ClearSiteData = pFuncs->clearsitedata;
-  mNPP_GetSitesWithData = pFuncs->getsiteswithdata;
-  return NS_OK;
-}
-#elif defined(XP_UNIX) && !defined(XP_MACOSX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 nsresult
 PluginPRLibrary::NP_Initialize(NPNetscapeFuncs* bFuncs,
                                NPPluginFuncs* pFuncs, NPError* error)
