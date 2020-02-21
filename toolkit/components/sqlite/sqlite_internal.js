@@ -20,14 +20,7 @@ var SharedAll = require(
   "resource://gre/modules/osfile/osfile_shared_allthreads.jsm");
 
 // Open the sqlite3 library.
-var path;
-if (SharedAll.Constants.Sys.Name === "Android") {
-  path = ctypes.libraryName("sqlite3");
-} else if (SharedAll.Constants.Win) {
-  path = ctypes.libraryName("nss3");
-} else {
-  path = SharedAll.Constants.Path.libxul;
-}
+var path = ctypes.libraryName("mozsqlite3");
 
 var lib;
 try {
