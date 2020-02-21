@@ -110,10 +110,12 @@ ScaledFontDWrite::ScaledFontDWrite(IDWriteFontFace *aFontFace, Float aSize,
     , mUseEmbeddedBitmap(aUseEmbeddedBitmap)
     , mForceGDIMode(aForceGDIMode)
 {
+#ifdef USE_SKIA
   mStyle = SkFontStyle(aStyle->weight,
                        DWriteFontStretchFromStretch(aStyle->stretch),
                        aStyle->style == NS_FONT_STYLE_NORMAL ?
                        SkFontStyle::kUpright_Slant : SkFontStyle::kItalic_Slant);
+#endif
 }
 
 already_AddRefed<Path>
