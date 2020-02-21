@@ -440,6 +440,7 @@ LIB_SUFFIX=a
 IMPORT_LIB_SUFFIX=
 DIRENT_INO=d_ino
 MOZ_USER_DIR=".mozilla"
+MOZ_DEVTOOLS_SERVER=1
 
 MOZ_FIX_LINK_PATHS="-Wl,-rpath-link,${DIST}/bin -Wl,-rpath-link,${prefix}/lib"
 
@@ -1914,6 +1915,20 @@ dnl = Misc. Options
 dnl =
 dnl ========================================================
 MOZ_ARG_HEADER(Misc. Options)
+
+dnl ========================================================
+dnl = Disable Mozilla Developer Tools (server)
+dnl ========================================================
+MOZ_ARG_DISABLE_BOOL(devtools-server,
+[  --disable-devtools-server         Disable Mozilla Developer Tools (server)],
+    MOZ_DEVTOOLS_SERVER=,
+    MOZ_DEVTOOLS_SERVER=1)
+
+if test -n "$MOZ_DEVTOOLS_SERVER"; then
+    AC_DEFINE(MOZ_DEVTOOLS_SERVER)
+fi
+
+AC_SUBST(MOZ_DEVTOOLS_SERVER)
 
 if test -z "$SKIP_COMPILER_CHECKS"; then
 dnl ========================================================
