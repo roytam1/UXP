@@ -22,6 +22,7 @@
 #include "jit/SharedICRegisters.h"
 #include "js/GCVector.h"
 #include "vm/ArrayObject.h"
+#include "vm/UnboxedObject.h"
 
 namespace js {
 namespace jit {
@@ -1822,7 +1823,8 @@ class ICSetProp_Native : public ICUpdatedStub
         virtual int32_t getKey() const {
             return static_cast<int32_t>(engine_) |
                   (static_cast<int32_t>(kind) << 1) |
-                  (static_cast<int32_t>(isFixedSlot_) << 17);
+                  (static_cast<int32_t>(isFixedSlot_) << 17) |
+                  (static_cast<int32_t>(obj_->is<UnboxedPlainObject>()) << 18);
         }
 
         MOZ_MUST_USE bool generateStubCode(MacroAssembler& masm);
@@ -1927,6 +1929,7 @@ class ICSetPropNativeAddCompiler : public ICStubCompiler
         return static_cast<int32_t>(engine_) |
               (static_cast<int32_t>(kind) << 1) |
               (static_cast<int32_t>(isFixedSlot_) << 17) |
+              (static_cast<int32_t>(obj_->is<UnboxedPlainObject>()) << 18) |
               (static_cast<int32_t>(protoChainDepth_) << 19);
     }
 
@@ -1951,7 +1954,10 @@ class ICSetPropNativeAddCompiler : public ICStubCompiler
             newGroup = nullptr;
 
         RootedShape newShape(cx);
-        newShape = obj_->as<NativeObject>().lastProperty();
+        if (obj_->isNative())
+            newShape = obj_->as<NativeObject>().lastProperty();
+        else
+            newShape = obj_->as<UnboxedPlainObject>().maybeExpando()->lastProperty();
 
         return newStub<ICSetProp_NativeAddImpl<ProtoChainDepth>>(
             space, getStubCode(), oldGroup_, shapes, newShape, newGroup, offset_);

@@ -16,7 +16,7 @@ using namespace js;
 using namespace js::jit;
 
 // OperandLocation represents the location of an OperandId. The operand is
-// either in a register or on the stack.
+// either in a register or on the stack, and is either boxed or unboxed.
 class OperandLocation
 {
   public:
@@ -815,6 +815,36 @@ BaselineCacheIRCompiler::emitGuardSpecificObject()
 }
 
 bool
+BaselineCacheIRCompiler::emitGuardNoUnboxedExpando()
+{
+    Register obj = allocator.useRegister(masm, reader.objOperandId());
+
+    FailurePath* failure;
+    if (!addFailurePath(&failure))
+        return false;
+
+    Address expandoAddr(obj, UnboxedPlainObject::offsetOfExpando());
+    masm.branchPtr(Assembler::NotEqual, expandoAddr, ImmWord(0), failure->label());
+    return true;
+}
+
+bool
+BaselineCacheIRCompiler::emitGuardAndLoadUnboxedExpando()
+{
+    Register obj = allocator.useRegister(masm, reader.objOperandId());
+    Register output = allocator.defineRegister(masm, reader.objOperandId());
+
+    FailurePath* failure;
+    if (!addFailurePath(&failure))
+        return false;
+
+    Address expandoAddr(obj, UnboxedPlainObject::offsetOfExpando());
+    masm.loadPtr(expandoAddr, output);
+    masm.branchTestPtr(Assembler::Zero, output, output, failure->label());
+    return true;
+}
+
+bool
 BaselineCacheIRCompiler::emitLoadFixedSlotResult()
 {
     Register obj = allocator.useRegister(masm, reader.objOperandId());
@@ -837,6 +867,26 @@ BaselineCacheIRCompiler::emitLoadDynamicSlotResult()
     masm.loadPtr(Address(obj, NativeObject::offsetOfSlots()), obj);
     masm.loadValue(BaseIndex(obj, scratch, TimesOne), R0);
     emitEnterTypeMonitorIC();
+    return true;
+}
+
+bool
+BaselineCacheIRCompiler::emitLoadUnboxedPropertyResult()
+{
+    Register obj = allocator.useRegister(masm, reader.objOperandId());
+    AutoScratchRegister scratch(allocator, masm);
+
+    JSValueType fieldType = reader.valueType();
+
+    Address fieldOffset(stubAddress(reader.stubOffset()));
+    masm.load32(fieldOffset, scratch);
+    masm.loadUnboxedProperty(BaseIndex(obj, scratch, TimesOne), fieldType, R0);
+
+    if (fieldType == JSVAL_TYPE_OBJECT)
+        emitEnterTypeMonitorIC();
+    else
+        emitReturnFromIC();
+
     return true;
 }
 

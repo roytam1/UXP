@@ -529,6 +529,18 @@ class GetPropertyIC : public IonCache
                                       HandleObject obj, HandleId id, void* returnAddr,
                                       bool* emitted);
 
+    MOZ_MUST_USE bool tryAttachUnboxed(JSContext* cx, HandleScript outerScript, IonScript* ion,
+                                       HandleObject obj, HandleId id, void* returnAddr,
+                                       bool* emitted);
+
+    MOZ_MUST_USE bool tryAttachUnboxedExpando(JSContext* cx, HandleScript outerScript,
+                                              IonScript* ion, HandleObject obj, HandleId id,
+                                              void* returnAddr, bool* emitted);
+
+    MOZ_MUST_USE bool tryAttachUnboxedArrayLength(JSContext* cx, HandleScript outerScript,
+                                                  IonScript* ion, HandleObject obj, HandleId id,
+                                                  void* returnAddr, bool* emitted);
+
     MOZ_MUST_USE bool tryAttachTypedArrayLength(JSContext* cx, HandleScript outerScript,
                                                 IonScript* ion, HandleObject obj, HandleId id,
                                                 bool* emitted);

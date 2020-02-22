@@ -25,7 +25,6 @@
 #include "builtin/Eval.h"
 #include "builtin/TypedObject.h"
 #include "gc/Nursery.h"
-#include "gc/StoreBuffer-inl.h"
 #include "irregexp/NativeRegExpMacroAssembler.h"
 #include "jit/AtomicOperations.h"
 #include "jit/BaselineCompiler.h"
@@ -3029,7 +3028,7 @@ CodeGenerator::visitStoreSlotV(LStoreSlotV* lir)
 
 static void
 GuardReceiver(MacroAssembler& masm, const ReceiverGuard& guard,
-              Register obj, Register scratch, Label* miss)
+              Register obj, Register scratch, Label* miss, bool checkNullExpando)
 {
     if (guard.group) {
         masm.branchTestObjGroup(Assembler::NotEqual, obj, guard.group, miss);
@@ -3051,11 +3050,13 @@ CodeGenerator::emitGetPropertyPolymorphic(LInstruction* ins, Register obj, Regis
 
         Label next;
         masm.comment("GuardReceiver");
-        GuardReceiver(masm, receiver, obj, scratch, &next);
+        GuardReceiver(masm, receiver, obj, scratch, &next, /* checkNullExpando = */ false);
 
         if (receiver.shape) {
             masm.comment("loadTypedOrValue");
-            Register target = obj;
+            // If this is an unboxed expando access, GuardReceiver loaded the
+            // expando object into scratch.
+            Register target = receiver.group ? scratch : obj;
 
             Shape* shape = mir->shape(i);
             if (shape->slot() < shape->numFixedSlots()) {
@@ -3121,10 +3122,12 @@ CodeGenerator::emitSetPropertyPolymorphic(LInstruction* ins, Register obj, Regis
         ReceiverGuard receiver = mir->receiver(i);
 
         Label next;
-        GuardReceiver(masm, receiver, obj, scratch, &next);
+        GuardReceiver(masm, receiver, obj, scratch, &next, /* checkNullExpando = */ false);
 
         if (receiver.shape) {
-            Register target = obj;
+            // If this is an unboxed expando access, GuardReceiver loaded the
+            // expando object into scratch.
+            Register target = receiver.group ? scratch : obj;
 
             Shape* shape = mir->shape(i);
             if (shape->slot() < shape->numFixedSlots()) {
@@ -3290,7 +3293,7 @@ CodeGenerator::visitGuardReceiverPolymorphic(LGuardReceiverPolymorphic* lir)
         const ReceiverGuard& receiver = mir->receiver(i);
 
         Label next;
-        GuardReceiver(masm, receiver, obj, temp, &next);
+        GuardReceiver(masm, receiver, obj, temp, &next, /* checkNullExpando = */ true);
 
         if (i == mir->numReceivers() - 1) {
             bailoutFrom(&next, lir->snapshot());
@@ -8379,6 +8382,11 @@ CodeGenerator::visitStoreUnboxedPointer(LStoreUnboxedPointer* lir)
     }
 }
 
+typedef bool (*ConvertUnboxedObjectToNativeFn)(JSContext*, JSObject*);
+static const VMFunction ConvertUnboxedPlainObjectToNativeInfo =
+    FunctionInfo<ConvertUnboxedObjectToNativeFn>(UnboxedPlainObject::convertToNative,
+                                                 "UnboxedPlainObject::convertToNative");
+
 typedef bool (*ArrayPopShiftFn)(JSContext*, HandleObject, MutableHandleValue);
 static const VMFunction ArrayPopDenseInfo =
     FunctionInfo<ArrayPopShiftFn>(jit::ArrayPopDense, "ArrayPopDense");
@@ -8671,11 +8679,11 @@ CodeGenerator::visitIteratorStartO(LIteratorStartO* lir)
     masm.loadPtr(Address(niTemp, offsetof(NativeIterator, guard_array)), temp2);
 
     // Compare object with the first receiver guard. The last iterator can only
-    // match for native objects.
+    // match for native objects and unboxed objects.
     {
         Address groupAddr(temp2, offsetof(ReceiverGuard, group));
         Address shapeAddr(temp2, offsetof(ReceiverGuard, shape));
-        Label guardDone, shapeMismatch;
+        Label guardDone, shapeMismatch, noExpando;
         masm.loadObjShape(obj, temp1);
         masm.branchPtr(Assembler::NotEqual, shapeAddr, temp1, &shapeMismatch);
 
@@ -8687,6 +8695,12 @@ CodeGenerator::visitIteratorStartO(LIteratorStartO* lir)
         masm.bind(&shapeMismatch);
         masm.loadObjGroup(obj, temp1);
         masm.branchPtr(Assembler::NotEqual, groupAddr, temp1, ool->entry());
+        masm.loadPtr(Address(obj, UnboxedPlainObject::offsetOfExpando()), temp1);
+        masm.branchTestPtr(Assembler::Zero, temp1, temp1, &noExpando);
+        branchIfNotEmptyObjectElements(temp1, ool->entry());
+        masm.loadObjShape(temp1, temp1);
+        masm.bind(&noExpando);
+        masm.branchPtr(Assembler::NotEqual, shapeAddr, temp1, ool->entry());
         masm.bind(&guardDone);
     }
 

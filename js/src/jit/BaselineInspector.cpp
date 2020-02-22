@@ -104,11 +104,19 @@ AddReceiver(const ReceiverGuard& receiver,
 static bool
 GetCacheIRReceiverForNativeReadSlot(ICCacheIR_Monitored* stub, ReceiverGuard* receiver)
 {
-    // We match:
+    // We match either:
     //
     //   GuardIsObject 0
     //   GuardShape 0
     //   LoadFixedSlotResult 0 or LoadDynamicSlotResult 0
+    //
+    // or
+    //
+    //   GuardIsObject 0
+    //   GuardGroup 0
+    //   1: GuardAndLoadUnboxedExpando 0
+    //   GuardShape 1
+    //   LoadFixedSlotResult 1 or LoadDynamicSlotResult 1
 
     *receiver = ReceiverGuard();
     CacheIRReader reader(stub->stubInfo());
@@ -117,12 +125,43 @@ GetCacheIRReceiverForNativeReadSlot(ICCacheIR_Monitored* stub, ReceiverGuard* re
     if (!reader.matchOp(CacheOp::GuardIsObject, objId))
         return false;
 
+    if (reader.matchOp(CacheOp::GuardGroup, objId)) {
+        receiver->group = stub->stubInfo()->getStubField<ObjectGroup*>(stub, reader.stubOffset());
+
+        if (!reader.matchOp(CacheOp::GuardAndLoadUnboxedExpando, objId))
+            return false;
+        objId = reader.objOperandId();
+    }
+
     if (reader.matchOp(CacheOp::GuardShape, objId)) {
         receiver->shape = stub->stubInfo()->getStubField<Shape*>(stub, reader.stubOffset());
         return reader.matchOpEither(CacheOp::LoadFixedSlotResult, CacheOp::LoadDynamicSlotResult);
     }
 
     return false;
+}
+
+static bool
+GetCacheIRReceiverForUnboxedProperty(ICCacheIR_Monitored* stub, ReceiverGuard* receiver)
+{
+    // We match:
+    //
+    //   GuardIsObject 0
+    //   GuardGroup 0
+    //   LoadUnboxedPropertyResult 0 ..
+
+    *receiver = ReceiverGuard();
+    CacheIRReader reader(stub->stubInfo());
+
+    ObjOperandId objId = ObjOperandId(0);
+    if (!reader.matchOp(CacheOp::GuardIsObject, objId))
+        return false;
+
+    if (!reader.matchOp(CacheOp::GuardGroup, objId))
+        return false;
+    receiver->group = stub->stubInfo()->getStubField<ObjectGroup*>(stub, reader.stubOffset());
+
+    return reader.matchOp(CacheOp::LoadUnboxedPropertyResult, objId);
 }
 
 bool
@@ -143,7 +182,8 @@ BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receiv
     while (stub->next()) {
         ReceiverGuard receiver;
         if (stub->isCacheIR_Monitored()) {
-            if (!GetCacheIRReceiverForNativeReadSlot(stub->toCacheIR_Monitored(), &receiver))
+            if (!GetCacheIRReceiverForNativeReadSlot(stub->toCacheIR_Monitored(), &receiver) &&
+                !GetCacheIRReceiverForUnboxedProperty(stub->toCacheIR_Monitored(), &receiver))
             {
                 receivers.clear();
                 return true;
@@ -151,6 +191,8 @@ BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receiv
         } else if (stub->isSetProp_Native()) {
             receiver = ReceiverGuard(stub->toSetProp_Native()->group(),
                                      stub->toSetProp_Native()->shape());
+        } else if (stub->isSetProp_Unboxed()) {
+            receiver = ReceiverGuard(stub->toSetProp_Unboxed()->group(), nullptr);
         } else {
             receivers.clear();
             return true;

@@ -87,10 +87,13 @@ class ObjOperandId : public OperandId
     _(GuardClass)                         \
     _(GuardSpecificObject)                \
     _(GuardNoDetachedTypedObjects)        \
+    _(GuardNoUnboxedExpando)              \
+    _(GuardAndLoadUnboxedExpando)         \
     _(LoadObject)                         \
     _(LoadProto)                          \
     _(LoadFixedSlotResult)                \
     _(LoadDynamicSlotResult)              \
+    _(LoadUnboxedPropertyResult)          \
     _(LoadTypedObjectResult)              \
     _(LoadInt32ArrayLengthResult)         \
     _(LoadArgumentsObjectLengthResult)    \
@@ -271,6 +274,15 @@ class MOZ_RAII CacheIRWriter
     void guardNoDetachedTypedObjects() {
         writeOp(CacheOp::GuardNoDetachedTypedObjects);
     }
+    void guardNoUnboxedExpando(ObjOperandId obj) {
+        writeOpWithOperandId(CacheOp::GuardNoUnboxedExpando, obj);
+    }
+    ObjOperandId guardAndLoadUnboxedExpando(ObjOperandId obj) {
+        ObjOperandId res(nextOperandId_++);
+        writeOpWithOperandId(CacheOp::GuardAndLoadUnboxedExpando, obj);
+        writeOperandId(res);
+        return res;
+    }
 
     ObjOperandId loadObject(JSObject* obj) {
         ObjOperandId res(nextOperandId_++);
@@ -294,6 +306,11 @@ class MOZ_RAII CacheIRWriter
     }
     void loadDynamicSlotResult(ObjOperandId obj, size_t offset) {
         writeOpWithOperandId(CacheOp::LoadDynamicSlotResult, obj);
+        addStubWord(offset, StubField::GCType::NoGCThing);
+    }
+    void loadUnboxedPropertyResult(ObjOperandId obj, JSValueType type, size_t offset) {
+        writeOpWithOperandId(CacheOp::LoadUnboxedPropertyResult, obj);
+        buffer_.writeByte(uint32_t(type));
         addStubWord(offset, StubField::GCType::NoGCThing);
     }
     void loadTypedObjectResult(ObjOperandId obj, uint32_t offset, TypedThingLayout layout,
@@ -389,6 +406,9 @@ class MOZ_RAII GetPropIRGenerator
     PreliminaryObjectAction preliminaryObjectAction_;
 
     MOZ_MUST_USE bool tryAttachNative(CacheIRWriter& writer, HandleObject obj, ObjOperandId objId);
+    MOZ_MUST_USE bool tryAttachUnboxed(CacheIRWriter& writer, HandleObject obj, ObjOperandId objId);
+    MOZ_MUST_USE bool tryAttachUnboxedExpando(CacheIRWriter& writer, HandleObject obj,
+                                              ObjOperandId objId);
     MOZ_MUST_USE bool tryAttachTypedObject(CacheIRWriter& writer, HandleObject obj,
                                            ObjOperandId objId);
     MOZ_MUST_USE bool tryAttachObjectLength(CacheIRWriter& writer, HandleObject obj,

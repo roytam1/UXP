@@ -375,7 +375,7 @@ class AliasSet {
         Element           = 1 << 1, // A Value member of obj->elements or
                                     // a typed object.
         UnboxedElement    = 1 << 2, // An unboxed scalar or reference member of
-                                    // typed object.
+                                    // typed object or unboxed object.
         DynamicSlot       = 1 << 3, // A Value member of obj->slots.
         FixedSlot         = 1 << 4, // A Value member of obj->fixedSlots().
         DOMProperty       = 1 << 5, // A DOM property
@@ -3758,9 +3758,14 @@ class MObjectState
 {
   private:
     uint32_t numSlots_;
-    uint32_t numFixedSlots_;
+    uint32_t numFixedSlots_;        // valid if isUnboxed() == false.
+    OperandIndexMap* operandIndex_; // valid if isUnboxed() == true.
 
-    MObjectState(JSObject *templateObject);
+    bool isUnboxed() const {
+        return operandIndex_ != nullptr;
+    }
+
+    MObjectState(JSObject *templateObject, OperandIndexMap* operandIndex);
     explicit MObjectState(MObjectState* state);
 
     MOZ_MUST_USE bool init(TempAllocator& alloc, MDefinition* obj);
@@ -3818,6 +3823,18 @@ class MObjectState
     }
     void setDynamicSlot(uint32_t slot, MDefinition* def) {
         setSlot(slot + numFixedSlots(), def);
+    }
+
+    // Interface reserved for unboxed objects.
+    bool hasOffset(uint32_t offset) const {
+        MOZ_ASSERT(isUnboxed());
+        return offset < operandIndex_->map.length() && operandIndex_->map[offset] != 0;
+    }
+    MDefinition* getOffset(uint32_t offset) const {
+        return getOperand(operandIndex_->map[offset]);
+    }
+    void setOffset(uint32_t offset, MDefinition* def) {
+        replaceOperand(operandIndex_->map[offset], def);
     }
 
     MOZ_MUST_USE bool writeRecoverData(CompactBufferWriter& writer) const override;

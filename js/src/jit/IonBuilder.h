@@ -1050,6 +1050,19 @@ class IonBuilder
     ResultWithOOM<bool> testNotDefinedProperty(MDefinition* obj, jsid id);
 
     uint32_t getDefiniteSlot(TemporaryTypeSet* types, PropertyName* name, uint32_t* pnfixed);
+    uint32_t getUnboxedOffset(TemporaryTypeSet* types, PropertyName* name,
+                              JSValueType* punboxedType);
+    MInstruction* loadUnboxedProperty(MDefinition* obj, size_t offset, JSValueType unboxedType,
+                                      BarrierKind barrier, TemporaryTypeSet* types);
+    MInstruction* loadUnboxedValue(MDefinition* elements, size_t elementsOffset,
+                                   MDefinition* scaledOffset, JSValueType unboxedType,
+                                   BarrierKind barrier, TemporaryTypeSet* types);
+    MInstruction* storeUnboxedProperty(MDefinition* obj, size_t offset, JSValueType unboxedType,
+                                       MDefinition* value);
+    MInstruction* storeUnboxedValue(MDefinition* obj,
+                                    MDefinition* elements, int32_t elementsOffset,
+                                    MDefinition* scaledOffset, JSValueType unboxedType,
+                                    MDefinition* value, bool preBarrier = true);
     MOZ_MUST_USE bool checkPreliminaryGroups(MDefinition *obj);
     MOZ_MUST_USE bool freezePropTypeSets(TemporaryTypeSet* types,
                                          JSObject* foundProto, PropertyName* name);

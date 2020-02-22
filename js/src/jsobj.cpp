@@ -42,7 +42,6 @@
 #include "frontend/BytecodeCompiler.h"
 #include "gc/Marking.h"
 #include "gc/Policy.h"
-#include "gc/StoreBuffer-inl.h"
 #include "jit/BaselineJIT.h"
 #include "js/MemoryMetrics.h"
 #include "js/Proxy.h"
@@ -54,6 +53,7 @@
 #include "vm/RegExpStaticsObject.h"
 #include "vm/Shape.h"
 #include "vm/TypedArrayCommon.h"
+#include "vm/UnboxedObject-inl.h"
 
 #include "jsatominlines.h"
 #include "jsboolinlines.h"

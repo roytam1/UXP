@@ -4783,14 +4783,15 @@ MCreateThisWithTemplate::canRecoverOnBailout() const
 
 MObjectState::MObjectState(MObjectState* state)
   : numSlots_(state->numSlots_),
-    numFixedSlots_(state->numFixedSlots_)
+    numFixedSlots_(state->numFixedSlots_),
+    operandIndex_(state->operandIndex_)
 {
     // This instruction is only used as a summary for bailout paths.
     setResultType(MIRType::Object);
     setRecoveredOnBailout();
 }
 
-MObjectState::MObjectState(JSObject* templateObject)
+MObjectState::MObjectState(JSObject *templateObject, OperandIndexMap* operandIndex)
 {
     // This instruction is only used as a summary for bailout paths.
     setResultType(MIRType::Object);
@@ -4801,6 +4802,8 @@ MObjectState::MObjectState(JSObject* templateObject)
     NativeObject* nativeObject = &templateObject->as<NativeObject>();
     numSlots_ = nativeObject->slotSpan();
     numFixedSlots_ = nativeObject->numFixedSlots();
+
+    operandIndex_ = operandIndex;
 }
 
 JSObject*
@@ -4860,7 +4863,7 @@ MObjectState::New(TempAllocator& alloc, MDefinition* obj)
     JSObject* templateObject = templateObjectOf(obj);
     MOZ_ASSERT(templateObject, "Unexpected object creation.");
 
-    MObjectState* res = new(alloc) MObjectState(templateObject);
+    MObjectState* res = new(alloc) MObjectState(templateObject, nullptr);
     if (!res || !res->init(alloc, obj))
         return nullptr;
     return res;

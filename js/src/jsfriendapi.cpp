@@ -268,7 +268,7 @@ js::GetBuiltinClass(JSContext* cx, HandleObject obj, ESClass* cls)
     if (MOZ_UNLIKELY(obj->is<ProxyObject>()))
         return Proxy::getBuiltinClass(cx, obj, cls);
 
-    if (obj->is<PlainObject>())
+    if (obj->is<PlainObject>() || obj->is<UnboxedPlainObject>())
         *cls = ESClass::Object;
     else if (obj->is<ArrayObject>())
         *cls = ESClass::Array;
