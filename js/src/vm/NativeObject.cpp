@@ -994,22 +994,23 @@ NativeObject::freeSlot(ExclusiveContext* cx, uint32_t slot)
     setSlot(slot, UndefinedValue());
 }
 
-/* static */ Shape*
-NativeObject::addDataProperty(ExclusiveContext* cx, HandleNativeObject obj,
-                              jsid idArg, uint32_t slot, unsigned attrs)
+Shape*
+NativeObject::addDataProperty(ExclusiveContext* cx, jsid idArg, uint32_t slot, unsigned attrs)
 {
     MOZ_ASSERT(!(attrs & (JSPROP_GETTER | JSPROP_SETTER)));
+    RootedNativeObject self(cx, this);
     RootedId id(cx, idArg);
-    return addProperty(cx, obj, id, nullptr, nullptr, slot, attrs, 0);
+    return addProperty(cx, self, id, nullptr, nullptr, slot, attrs, 0);
 }
 
-/* static */ Shape*
-NativeObject::addDataProperty(ExclusiveContext* cx, HandleNativeObject obj,
-                              HandlePropertyName name, uint32_t slot, unsigned attrs)
+Shape*
+NativeObject::addDataProperty(ExclusiveContext* cx, HandlePropertyName name,
+                              uint32_t slot, unsigned attrs)
 {
     MOZ_ASSERT(!(attrs & (JSPROP_GETTER | JSPROP_SETTER)));
+    RootedNativeObject self(cx, this);
     RootedId id(cx, NameToId(name));
-    return addProperty(cx, obj, id, nullptr, nullptr, slot, attrs, 0);
+    return addProperty(cx, self, id, nullptr, nullptr, slot, attrs, 0);
 }
 
 template <AllowGC allowGC>

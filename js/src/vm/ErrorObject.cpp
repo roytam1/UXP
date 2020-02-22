@@ -29,11 +29,11 @@ js::ErrorObject::assignInitialShape(ExclusiveContext* cx, Handle<ErrorObject*> o
 {
     MOZ_ASSERT(obj->empty());
 
-    if (!NativeObject::addDataProperty(cx, obj, cx->names().fileName, FILENAME_SLOT, 0))
+    if (!obj->addDataProperty(cx, cx->names().fileName, FILENAME_SLOT, 0))
         return nullptr;
-    if (!NativeObject::addDataProperty(cx, obj, cx->names().lineNumber, LINENUMBER_SLOT, 0))
+    if (!obj->addDataProperty(cx, cx->names().lineNumber, LINENUMBER_SLOT, 0))
         return nullptr;
-    return NativeObject::addDataProperty(cx, obj, cx->names().columnNumber, COLUMNNUMBER_SLOT, 0);
+    return obj->addDataProperty(cx, cx->names().columnNumber, COLUMNNUMBER_SLOT, 0);
 }
 
 /* static */ bool
@@ -57,7 +57,7 @@ js::ErrorObject::init(JSContext* cx, Handle<ErrorObject*> obj, JSExnType type,
     // |new Error()|.
     RootedShape messageShape(cx);
     if (message) {
-        messageShape = NativeObject::addDataProperty(cx, obj, cx->names().message, MESSAGE_SLOT, 0);
+        messageShape = obj->addDataProperty(cx, cx->names().message, MESSAGE_SLOT, 0);
         if (!messageShape)
             return false;
         MOZ_ASSERT(messageShape->slot() == MESSAGE_SLOT);
