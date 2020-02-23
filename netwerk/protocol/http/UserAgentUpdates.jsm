@@ -143,14 +143,9 @@ this.UserAgentUpdates = {
       // try to load next one if the previous load failed
       return prevLoad ? prevLoad.then(null, tryNext) : tryNext();
     }, null).then(null, (ex) => {
-#ifdef MOZ_WIDGET_ANDROID
-      // Make one last attempt to read from the Fennec APK root.
-      return readChannel("resource://android/" + FILE_UPDATES);
-#else
-      // All previous (non-Android) load attempts have failed, so we bail.
+      // All previous load attempts have failed, so we bail.
       throw new Error("UserAgentUpdates: Failed to load " + FILE_UPDATES +
                        ex + "\n" + ex.stack);
-#endif
     }).then((update) => {
       // Apply update if loading was successful
       this._applyUpdate(update);

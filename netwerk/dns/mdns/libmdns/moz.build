@@ -31,11 +31,6 @@ else:
         'fallback/MulticastDNS.jsm',
     ]
 
-    if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-        EXTRA_JS_MODULES += [
-            'MulticastDNSAndroid.jsm',
-        ]
-
 UNIFIED_SOURCES += [
     'nsDNSServiceInfo.cpp',
     'nsMulticastDNSModule.cpp',
