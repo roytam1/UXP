@@ -183,9 +183,7 @@ LogMessageForProtocol(const char* aTopLevelProtocol, base::ProcessId aOtherPid,
                              aOtherPid, aTopLevelProtocol,
                              aContextDescription,
                              StringFromIPCMessageType(aMessageId));
-#ifdef ANDROID
-  __android_log_write(ANDROID_LOG_INFO, "GeckoIPC", logMessage.get());
-#endif
+
   fputs(logMessage.get(), stderr);
 }
 
