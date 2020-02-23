@@ -13,7 +13,7 @@
 // we don't compile one of these detection methods. The detection code here is
 // based on the CPU detection in libtheora.
 
-#  if defined(__linux__) || defined(ANDROID)
+#  if defined(__linux__)
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
@@ -125,7 +125,7 @@ check_neon(void)
 }
 #    endif
 
-#  endif // defined(__linux__) || defined(ANDROID)
+#  endif // defined(__linux__)
 
 namespace mozilla {
   namespace arm_private {

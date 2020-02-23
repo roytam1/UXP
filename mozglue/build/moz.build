@@ -4,31 +4,22 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Build mozglue as a shared lib on Windows, OSX and Android.
+# Build mozglue as a shared lib on Windows, OSX.
 # If this is ever changed, update MOZ_SHARED_MOZGLUE in browser/installer/Makefile.in
-if CONFIG['OS_TARGET'] in ('WINNT', 'Darwin', 'Android'):
+if CONFIG['OS_TARGET'] in ('WINNT', 'Darwin'):
     SharedLibrary('mozglue')
 else:
     Library('mozglue')
 
 SDK_LIBRARY = True
 
-if CONFIG['OS_TARGET'] == 'Android':
-    SOURCES += [
-        'BionicGlue.cpp',
-    ]
-
 if CONFIG['MOZ_ASAN']:
-    SOURCES += [
-        'AsanOptions.cpp',
-    ]
+    SOURCES += ['AsanOptions.cpp']
 
 if CONFIG['OS_TARGET'] == 'WINNT':
     DEFFILE = 'mozglue.def'
     # We'll break the DLL blocklist if we immediately load user32.dll
-    DELAYLOAD_DLLS += [
-        'user32.dll',
-    ]
+    DELAYLOAD_DLLS += ['user32.dll']
 
 if not CONFIG['JS_STANDALONE']:
 
@@ -38,21 +29,13 @@ if not CONFIG['JS_STANDALONE']:
     else:
         # Temporary, until bug 662814 lands
         NO_VISIBILITY_FLAGS = True
-        SOURCES += [
-            'dummy.cpp',
-        ]
+        SOURCES += ['dummy.cpp']
 
     if CONFIG['OS_TARGET'] == 'WINNT':
-        LOCAL_INCLUDES += [
-            '/memory/build',
-        ]
-        SOURCES += [
-            'WindowsDllBlocklist.cpp',
-        ]
+        LOCAL_INCLUDES += ['/memory/build']
+        SOURCES += ['WindowsDllBlocklist.cpp']
         DISABLE_STL_WRAPPING = True
-        OS_LIBS += [
-            'version',
-        ]
+        OS_LIBS += ['version']
 
     EXPORTS.mozilla += [
         'arm.h',
@@ -62,28 +45,18 @@ if not CONFIG['JS_STANDALONE']:
     ]
 
     if CONFIG['CPU_ARCH'].startswith('x86'):
-        SOURCES += [
-            'SSE.cpp',
-        ]
+        SOURCES += ['SSE.cpp']
 
     if CONFIG['CPU_ARCH'] == 'arm':
-        SOURCES += [
-            'arm.cpp',
-        ]
+        SOURCES += ['arm.cpp']
 
     if CONFIG['CPU_ARCH'].startswith('mips'):
-        SOURCES += [
-            'mips.cpp',
-        ]
+        SOURCES += ['mips.cpp']
 
     if CONFIG['MOZ_LINKER']:
-        USE_LIBS += [
-            'zlib',
-        ]
+        USE_LIBS += ['zlib']
 
-USE_LIBS += [
-    'mfbt',
-]
+USE_LIBS += ['mfbt']
 
 DEFINES['IMPL_MFBT'] = True
 LIBRARY_DEFINES['MOZ_HAS_MOZGLUE'] = True

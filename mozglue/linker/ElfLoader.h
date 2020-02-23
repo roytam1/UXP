@@ -471,14 +471,6 @@ private:
    * is used to resolve wrapped functions. */
   RefPtr<LibHandle> self_elf;
 
-#if defined(ANDROID)
-  /* System loader handle for the libc. This is used to resolve weak symbols
-   * that some libcs contain that the Android linker won't dlsym(). Normally,
-   * we wouldn't treat non-Android differently, but glibc uses versioned
-   * symbols which this linker doesn't support. */
-  RefPtr<LibHandle> libc;
-#endif
-
   /* Bookkeeping */
   typedef std::vector<LibHandle *> LibHandleList;
   LibHandleList handles;

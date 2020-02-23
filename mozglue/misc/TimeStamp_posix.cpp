@@ -206,7 +206,7 @@ TimeStamp::Now(bool aHighResolution)
   return TimeStamp(ClockTimeNs());
 }
 
-#if defined(XP_LINUX) || defined(ANDROID)
+#ifdef XP_LINUX
 
 // Calculates the amount of jiffies that have elapsed since boot and up to the
 // starttime value of a specific process as found in its /proc/*/stat file.

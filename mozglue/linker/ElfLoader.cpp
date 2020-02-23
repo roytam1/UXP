@@ -18,23 +18,6 @@
 #include "Logging.h"
 #include <inttypes.h>
 
-#if defined(ANDROID)
-#include <sys/syscall.h>
-
-#include <android/api-level.h>
-#if __ANDROID_API__ < 8
-/* Android API < 8 doesn't provide sigaltstack */
-
-extern "C" {
-
-inline int sigaltstack(const stack_t *ss, stack_t *oss) {
-  return syscall(__NR_sigaltstack, ss, oss);
-}
-
-} /* extern "C" */
-#endif /* __ANDROID_API__ */
-#endif /* ANDROID */
-
 #ifdef __ARM_EABI__
 extern "C" MOZ_EXPORT const void *
 __gnu_Unwind_Find_exidx(void *pc, int *pcount) __attribute__((weak));
@@ -348,16 +331,6 @@ SystemElf::GetMappable() const
   const char *path = GetPath();
   if (!path)
     return nullptr;
-#ifdef ANDROID
-  /* On Android, if we don't have the full path, try in /system/lib */
-  const char *name = LeafName(path);
-  std::string systemPath;
-  if (name == path) {
-    systemPath = "/system/lib/";
-    systemPath += path;
-    path = systemPath.c_str();
-  }
-#endif
 
   return MappableFile::Create(path);
 }
@@ -550,17 +523,9 @@ void
 ElfLoader::Init()
 {
   Dl_info info;
-  /* On Android < 4.1 can't reenter dl* functions. So when the library
-   * containing this code is dlopen()ed, it can't call dladdr from a
-   * static initializer. */
   if (dladdr(_DYNAMIC, &info) != 0) {
     self_elf = LoadedElf::Create(info.dli_fname, info.dli_fbase);
   }
-#if defined(ANDROID)
-  if (dladdr(FunctionPtr(syscall), &info) != 0) {
-    libc = LoadedElf::Create(info.dli_fname, info.dli_fbase);
-  }
-#endif
 }
 
 ElfLoader::~ElfLoader()
@@ -573,9 +538,6 @@ ElfLoader::~ElfLoader()
 
   /* Release self_elf and libc */
   self_elf = nullptr;
-#if defined(ANDROID)
-  libc = nullptr;
-#endif
 
   /* Build up a list of all library handles with direct (external) references.
    * We actually skip system library handles because we want to keep at least
@@ -962,88 +924,6 @@ ElfLoader::DebuggerHelper::Remove(ElfLoader::link_map *map)
   dbg->r_brk();
 }
 
-#if defined(ANDROID)
-/* As some system libraries may be calling signal() or sigaction() to
- * set a SIGSEGV handler, effectively breaking MappableSeekableZStream,
- * or worse, restore our SIGSEGV handler with wrong flags (which using
- * signal() will do), we want to hook into the system's sigaction() to
- * replace it with our own wrapper instead, so that our handler is never
- * replaced. We used to only do that with libraries this linker loads,
- * but it turns out at least one system library does call signal() and
- * breaks us (libsc-a3xx.so on the Samsung Galaxy S4).
- * As libc's signal (bsd_signal/sysv_signal, really) calls sigaction
- * under the hood, instead of calling the signal system call directly,
- * we only need to hook sigaction. This is true for both bionic and
- * glibc.
- */
-
-/* libc's sigaction */
-extern "C" int
-sigaction(int signum, const struct sigaction *act,
-          struct sigaction *oldact);
-
-/* Simple reimplementation of sigaction. This is roughly equivalent
- * to the assembly that comes in bionic, but not quite equivalent to
- * glibc's implementation, so we only use this on Android. */
-int
-sys_sigaction(int signum, const struct sigaction *act,
-              struct sigaction *oldact)
-{
-  return syscall(__NR_sigaction, signum, act, oldact);
-}
-
-/* Replace the first instructions of the given function with a jump
- * to the given new function. */
-template <typename T>
-static bool
-Divert(T func, T new_func)
-{
-  void *ptr = FunctionPtr(func);
-  uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
-
-#if defined(__i386__)
-  // A 32-bit jump is a 5 bytes instruction.
-  EnsureWritable w(ptr, 5);
-  *reinterpret_cast<unsigned char *>(addr) = 0xe9; // jmp
-  *reinterpret_cast<intptr_t *>(addr + 1) =
-    reinterpret_cast<uintptr_t>(new_func) - addr - 5; // target displacement
-  return true;
-#elif defined(__arm__)
-  const unsigned char trampoline[] = {
-                            // .thumb
-    0x46, 0x04,             // nop
-    0x78, 0x47,             // bx pc
-    0x46, 0x04,             // nop
-                            // .arm
-    0x04, 0xf0, 0x1f, 0xe5, // ldr pc, [pc, #-4]
-                            // .word <new_func>
-  };
-  const unsigned char *start;
-  if (addr & 0x01) {
-    /* Function is thumb, the actual address of the code is without the
-     * least significant bit. */
-    addr--;
-    /* The arm part of the trampoline needs to be 32-bit aligned */
-    if (addr & 0x02)
-      start = trampoline;
-    else
-      start = trampoline + 2;
-  } else {
-    /* Function is arm, we only need the arm part of the trampoline */
-    start = trampoline + 6;
-  }
-
-  size_t len = sizeof(trampoline) - (start - trampoline);
-  EnsureWritable w(reinterpret_cast<void *>(addr), len + sizeof(void *));
-  memcpy(reinterpret_cast<void *>(addr), start, len);
-  *reinterpret_cast<void **>(addr + len) = FunctionPtr(new_func);
-  cacheflush(addr, addr + len + sizeof(void *), 0);
-  return true;
-#else
-  return false;
-#endif
-}
-#else
 #define sys_sigaction sigaction
 template <typename T>
 static bool
@@ -1051,7 +931,7 @@ Divert(T func, T new_func)
 {
   return false;
 }
-#endif
+
 
 namespace {
 
@@ -1144,48 +1024,6 @@ SEGVHandler::FinishInitialization()
 
   sigaction_func libc_sigaction;
 
-#if defined(ANDROID)
-  /* Android > 4.4 comes with a sigaction wrapper in a LD_PRELOADed library
-   * (libsigchain) for ART. That wrapper kind of does the same trick as we
-   * do, so we need extra care in handling it.
-   * - Divert the libc's sigaction, assuming the LD_PRELOADed library uses
-   *   it under the hood (which is more or less true according to the source
-   *   of that library, since it's doing a lookup in RTLD_NEXT)
-   * - With the LD_PRELOADed library in place, all calls to sigaction from
-   *   from system libraries will go to the LD_PRELOADed library.
-   * - The LD_PRELOADed library calls to sigaction go to our __wrap_sigaction.
-   * - The calls to sigaction from libraries faulty.lib loads are sent to
-   *   the LD_PRELOADed library.
-   * In practice, for signal handling, this means:
-   * - The signal handler registered to the kernel is ours.
-   * - Our handler redispatches to the LD_PRELOADed library's if there's a
-   *   segfault we don't handle.
-   * - The LD_PRELOADed library redispatches according to whatever system
-   *   library or faulty.lib-loaded library set with sigaction.
-   *
-   * When there is no sigaction wrapper in place:
-   * - Divert the libc's sigaction.
-   * - Calls to sigaction from system library and faulty.lib-loaded libraries
-   *   all go to the libc's sigaction, which end up in our __wrap_sigaction.
-   * - The signal handler registered to the kernel is ours.
-   * - Our handler redispatches according to whatever system library or
-   *   faulty.lib-loaded library set with sigaction.
-   */
-  void *libc = dlopen("libc.so", RTLD_GLOBAL | RTLD_LAZY);
-  if (libc) {
-    /*
-     * Lollipop bionic only has a small trampoline in sigaction, with the real
-     * work happening in __sigaction. Divert there instead of sigaction if it exists.
-     * Bug 1154803
-     */
-    libc_sigaction = reinterpret_cast<sigaction_func>(dlsym(libc, "__sigaction"));
-
-    if (!libc_sigaction) {
-      libc_sigaction =
-        reinterpret_cast<sigaction_func>(dlsym(libc, "sigaction"));
-    }
-  } else
-#endif
   {
     libc_sigaction = sigaction;
   }
