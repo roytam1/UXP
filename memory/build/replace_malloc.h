@@ -13,7 +13,7 @@
  * environment variables to the library path:
  *   - LD_PRELOAD on Linux,
  *   - DYLD_INSERT_LIBRARIES on OSX,
- *   - MOZ_REPLACE_MALLOC_LIB on Windows and Android.
+ *   - MOZ_REPLACE_MALLOC_LIB on Windows.
  *
  * An initialization function is called before any malloc replacement
  * function, and has the following declaration:

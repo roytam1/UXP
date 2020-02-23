@@ -58,26 +58,13 @@
  *   zone allocator anyways. Jemalloc-specific functions are also left
  *   unprefixed.
  *
- * - On Android and Gonk, all functions are left unprefixed. Additionally,
- *   C++ allocation functions (operator new/delete) are also exported and
- *   unprefixed.
- *
  * - On other systems (mostly Linux), all functions are left unprefixed.
  *
- * Only Android and Gonk add C++ allocation functions.
  *
  * Proper exporting of the various functions is done with the MOZ_MEMORY_API
  * and MOZ_JEMALLOC_API macros. MOZ_MEMORY_API is meant to be used for malloc
  * implementation and duplication functions, while MOZ_JEMALLOC_API is
  * dedicated to jemalloc specific functions.
- *
- *
- * All these functions are meant to be called with no prefix from Gecko code.
- * In most cases, this is because that's how they are available at runtime.
- * However, on Android, this relies on faulty.lib (the custom dynamic linker)
- * resolving mozglue symbols before libc symbols, which is guaranteed by the
- * way faulty.lib works (it respects the DT_NEEDED order, and libc always
- * appears after mozglue ; which we double check when building anyways)
  *
  *
  * Within libmozglue (when MOZ_MEMORY_IMPL is defined), all the functions
@@ -133,9 +120,6 @@
 #      endif
 #    else
 #      define MOZ_MEMORY_API MFBT_API
-#      if defined(MOZ_WIDGET_ANDROID)
-#        define MOZ_WRAP_NEW_DELETE
-#      endif
 #    endif
 #  endif
 #  ifdef XP_WIN
@@ -182,15 +166,6 @@
 #define strdup_impl    mozmem_dup_impl(strdup)
 #ifdef XP_WIN
 #  define wcsdup_impl  mozmem_dup_impl(wcsdup)
-#endif
-
-/* String functions */
-#ifdef ANDROID
-/* Bug 801571 and Bug 879668, libstagefright uses vasprintf, causing malloc()/
- * free() to be mismatched between bionic and mozglue implementation.
- */
-#define vasprintf_impl  mozmem_dup_impl(vasprintf)
-#define asprintf_impl   mozmem_dup_impl(asprintf)
 #endif
 
 /* Jemalloc specific function */

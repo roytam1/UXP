@@ -36,6 +36,6 @@ if CONFIG['MOZ_GLUE_IN_PROGRAM']:
     DIST_INSTALL = True
 
 # Keep jemalloc separated when mozglue is statically linked
-if CONFIG['MOZ_MEMORY'] and CONFIG['OS_TARGET'] in ('WINNT', 'Darwin', 'Android'):
+if CONFIG['MOZ_MEMORY'] and CONFIG['OS_TARGET'] in ('WINNT', 'Darwin'):
     FINAL_LIBRARY = 'mozglue'
 
