@@ -636,20 +636,6 @@ static_assert(IsSame<Decay<int[1]>::Type, int*>::value,
 static_assert(IsSame<Decay<void(int)>::Type, void(*)(int)>::value,
               "decaying void(int) must return void(*)(int)");
 
-/*
- * Android's broken [u]intptr_t inttype macros are broken because its PRI*PTR
- * macros are defined as "ld", but sizeof(long) is 8 and sizeof(intptr_t)
- * is 4 on 32-bit Android. We redefine Android's PRI*PTR macros in
- * IntegerPrintfMacros.h and assert here that our new definitions match the
- * actual type sizes seen at compile time.
- */
-#if defined(ANDROID) && !defined(__LP64__)
-static_assert(mozilla::IsSame<int, intptr_t>::value,
-              "emulated PRI[di]PTR definitions will be wrong");
-static_assert(mozilla::IsSame<unsigned int, uintptr_t>::value,
-              "emulated PRI[ouxX]PTR definitions will be wrong");
-#endif
-
 int
 main()
 {
