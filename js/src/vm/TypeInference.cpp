@@ -1999,6 +1999,17 @@ TypeSet::ObjectKey::watchStateChangeForTypedArrayData(CompilerConstraintList* co
                                     ConstraintDataFreezeObjectForTypedArrayData(tarray)));
 }
 
+void
+TypeSet::ObjectKey::watchStateChangeForUnboxedConvertedToNative(CompilerConstraintList* constraints)
+{
+    HeapTypeSetKey objectProperty = property(JSID_EMPTY);
+    LifoAlloc* alloc = constraints->alloc();
+
+    typedef CompilerConstraintInstance<ConstraintDataFreezeObjectForUnboxedConvertedToNative> T;
+    constraints->add(alloc->new_<T>(alloc, objectProperty,
+                                    ConstraintDataFreezeObjectForUnboxedConvertedToNative()));
+}
+
 static void
 ObjectStateChange(ExclusiveContext* cxArg, ObjectGroup* group, bool markingUnknown)
 {
@@ -3573,6 +3584,7 @@ PreliminaryObjectArrayWithTemplate::maybeAnalyze(ExclusiveContext* cx, ObjectGro
         }
     }
 
+    TryConvertToUnboxedLayout(cx, enter, shape(), group, preliminaryObjects);
     if (group->maybeUnboxedLayout())
         return;
 
@@ -3900,6 +3912,10 @@ TypeNewScript::maybeAnalyze(JSContext* cx, ObjectGroup* group, bool* regenerate,
         }
         PodCopy(initializerList, initializerVector.begin(), initializerVector.length());
     }
+
+    // Try to use an unboxed representation for the group.
+    if (!TryConvertToUnboxedLayout(cx, enter, templateObject()->lastProperty(), group, preliminaryObjects))
+        return false;
 
     js_delete(preliminaryObjects);
     preliminaryObjects = nullptr;

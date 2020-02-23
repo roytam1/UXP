@@ -158,11 +158,8 @@ SortComparatorIntegerIds(jsid a, jsid b, bool* lessOrEqualp)
 }
 
 static bool
-EnumerateNativeProperties(JSContext* cx,
-                          HandleNativeObject pobj,
-						  unsigned flags,
-						  Maybe<IdSet>& ht,
-                          AutoIdVector* props)
+EnumerateNativeProperties(JSContext* cx, HandleNativeObject pobj, unsigned flags, Maybe<IdSet>& ht,
+                          AutoIdVector* props, Handle<UnboxedPlainObject*> unboxed = nullptr)
 {
     bool enumerateSymbols;
     if (flags & JSITER_SYMBOLSONLY) {
@@ -221,6 +218,16 @@ EnumerateNativeProperties(JSContext* cx,
             PodCopy(tmp.begin(), ids, n);
 
             if (!MergeSort(ids, n, tmp.begin(), SortComparatorIntegerIds))
+                return false;
+        }
+
+        if (unboxed) {
+            // If |unboxed| is set then |pobj| is the expando for an unboxed
+            // plain object we are enumerating. Add the unboxed properties
+            // themselves here since they are all property names that were
+            // given to the object before any of the expando's properties.
+            MOZ_ASSERT(pobj->is<UnboxedExpandoObject>());
+            if (!EnumerateExtraProperties(cx, unboxed, flags, ht, props))
                 return false;
         }
 
@@ -349,12 +356,22 @@ Snapshot(JSContext* cx, HandleObject pobj_, unsigned flags, AutoIdVector* props)
 
     do {
         if (pobj->getOpsEnumerate()) {
-            if (!EnumerateExtraProperties(cx, pobj, flags, ht, props))
-                return false;
-
-            if (pobj->isNative()) {
-                if (!EnumerateNativeProperties(cx, pobj.as<NativeObject>(), flags, ht, props))
+            if (pobj->is<UnboxedPlainObject>() && pobj->as<UnboxedPlainObject>().maybeExpando()) {
+                // Special case unboxed objects with an expando object.
+                RootedNativeObject expando(cx, pobj->as<UnboxedPlainObject>().maybeExpando());
+                if (!EnumerateNativeProperties(cx, expando, flags, ht, props,
+                                               pobj.as<UnboxedPlainObject>()))
+                {
                     return false;
+                }
+            } else {
+                if (!EnumerateExtraProperties(cx, pobj, flags, ht, props))
+                    return false;
+
+                if (pobj->isNative()) {
+                    if (!EnumerateNativeProperties(cx, pobj.as<NativeObject>(), flags, ht, props))
+                        return false;
+                }
             }
         } else if (pobj->isNative()) {
             // Give the object a chance to resolve all lazy properties
@@ -769,6 +786,11 @@ CanCompareIterableObjectToCache(JSObject* obj)
 {
     if (obj->isNative())
         return obj->as<NativeObject>().hasEmptyElements();
+    if (obj->is<UnboxedPlainObject>()) {
+        if (UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando())
+            return expando->hasEmptyElements();
+        return true;
+    }
     return false;
 }
 

@@ -53,7 +53,6 @@
 #include "vm/RegExpStaticsObject.h"
 #include "vm/Shape.h"
 #include "vm/TypedArrayCommon.h"
-#include "vm/UnboxedObject-inl.h"
 
 #include "jsatominlines.h"
 #include "jsboolinlines.h"
@@ -869,6 +868,9 @@ static inline JSObject*
 CreateThisForFunctionWithGroup(JSContext* cx, HandleObjectGroup group,
                                NewObjectKind newKind)
 {
+    if (group->maybeUnboxedLayout() && newKind != SingletonObject)
+        return UnboxedPlainObject::create(cx, group, newKind);
+
     if (TypeNewScript* newScript = group->newScript()) {
         if (newScript->analyzed()) {
             // The definite properties analysis has been performed for this
@@ -1157,27 +1159,46 @@ static bool
 GetScriptPlainObjectProperties(JSContext* cx, HandleObject obj,
                                MutableHandle<IdValueVector> properties)
 {
-    MOZ_ASSERT(obj->is<PlainObject>());
-    PlainObject* nobj = &obj->as<PlainObject>();
+    if (obj->is<PlainObject>()) {
+        PlainObject* nobj = &obj->as<PlainObject>();
 
-    if (!properties.appendN(IdValuePair(), nobj->slotSpan()))
-        return false;
-
-    for (Shape::Range<NoGC> r(nobj->lastProperty()); !r.empty(); r.popFront()) {
-        Shape& shape = r.front();
-        MOZ_ASSERT(shape.isDataDescriptor());
-        uint32_t slot = shape.slot();
-        properties[slot].get().id = shape.propid();
-        properties[slot].get().value = nobj->getSlot(slot);
-    }
-
-    for (size_t i = 0; i < nobj->getDenseInitializedLength(); i++) {
-        Value v = nobj->getDenseElement(i);
-        if (!v.isMagic(JS_ELEMENTS_HOLE) && !properties.append(IdValuePair(INT_TO_JSID(i), v)))
+        if (!properties.appendN(IdValuePair(), nobj->slotSpan()))
             return false;
+
+        for (Shape::Range<NoGC> r(nobj->lastProperty()); !r.empty(); r.popFront()) {
+            Shape& shape = r.front();
+            MOZ_ASSERT(shape.isDataDescriptor());
+            uint32_t slot = shape.slot();
+            properties[slot].get().id = shape.propid();
+            properties[slot].get().value = nobj->getSlot(slot);
+        }
+
+        for (size_t i = 0; i < nobj->getDenseInitializedLength(); i++) {
+            Value v = nobj->getDenseElement(i);
+            if (!v.isMagic(JS_ELEMENTS_HOLE) && !properties.append(IdValuePair(INT_TO_JSID(i), v)))
+                return false;
+        }
+
+        return true;
     }
 
-    return true;
+    if (obj->is<UnboxedPlainObject>()) {
+        UnboxedPlainObject* nobj = &obj->as<UnboxedPlainObject>();
+
+        const UnboxedLayout& layout = nobj->layout();
+        if (!properties.appendN(IdValuePair(), layout.properties().length()))
+            return false;
+
+        for (size_t i = 0; i < layout.properties().length(); i++) {
+            const UnboxedLayout::Property& property = layout.properties()[i];
+            properties[i].get().id = NameToId(property.name);
+            properties[i].get().value = nobj->getValue(property);
+        }
+
+        return true;
+    }
+
+    MOZ_CRASH("Bad object kind");
 }
 
 static bool
@@ -1199,9 +1220,8 @@ js::DeepCloneObjectLiteral(JSContext* cx, HandleObject obj, NewObjectKind newKin
     /* NB: Keep this in sync with XDRObjectLiteral. */
     MOZ_ASSERT_IF(obj->isSingleton(),
                   cx->compartment()->behaviors().getSingletonsAsTemplates());
-    MOZ_ASSERT(obj->is<PlainObject>() ||
-               obj->is<ArrayObject>() ||
-			   obj->is<UnboxedArrayObject>());
+    MOZ_ASSERT(obj->is<PlainObject>() || obj->is<UnboxedPlainObject>() ||
+               obj->is<ArrayObject>() || obj->is<UnboxedArrayObject>());
     MOZ_ASSERT(newKind != SingletonObject);
 
     if (obj->is<ArrayObject>() || obj->is<UnboxedArrayObject>()) {
@@ -1320,6 +1340,7 @@ js::XDRObjectLiteral(XDRState<mode>* xdr, MutableHandleObject obj)
     {
         if (mode == XDR_ENCODE) {
             MOZ_ASSERT(obj->is<PlainObject>() ||
+                       obj->is<UnboxedPlainObject>() ||
                        obj->is<ArrayObject>() ||
                        obj->is<UnboxedArrayObject>());
             isArray = (obj->is<ArrayObject>() || obj->is<UnboxedArrayObject>()) ? 1 : 0;
@@ -2315,6 +2336,11 @@ js::LookupOwnPropertyPure(ExclusiveContext* cx, JSObject* obj, jsid id, Shape** 
         // us the resolve hook won't define a property with this id.
         if (ClassMayResolveId(cx->names(), obj->getClass(), id, obj))
             return false;
+    } else if (obj->is<UnboxedPlainObject>()) {
+        if (obj->as<UnboxedPlainObject>().containsUnboxedOrExpandoProperty(cx, id)) {
+            MarkNonNativePropertyFound<NoGC>(propp);
+            return true;
+        }
     } else if (obj->is<UnboxedArrayObject>()) {
         if (obj->as<UnboxedArrayObject>().containsProperty(cx, id)) {
             MarkNonNativePropertyFound<NoGC>(propp);
@@ -2576,6 +2602,11 @@ js::SetPrototype(JSContext* cx, HandleObject obj, HandleObject proto, JS::Object
             break;
     }
 
+    // Convert unboxed objects to their native representations before changing
+    // their prototype/group, as they depend on the group for their layout.
+    if (!MaybeConvertUnboxedObjectToNative(cx, obj))
+        return false;
+
     Rooted<TaggedProto> taggedProto(cx, TaggedProto(proto));
     if (!SetClassAndProto(cx, obj, obj->getClass(), taggedProto))
         return false;
@@ -2598,6 +2629,9 @@ js::PreventExtensions(JSContext* cx, HandleObject obj, ObjectOpResult& result, I
 
     if (!obj->nonProxyIsExtensible())
         return result.succeed();
+
+    if (!MaybeConvertUnboxedObjectToNative(cx, obj))
+        return false;
 
     // Force lazy properties to be resolved.
     AutoIdVector props(cx);
@@ -3610,6 +3644,12 @@ JSObject::allocKindForTenure(const js::Nursery& nursery) const
     // Proxies that are CrossCompartmentWrappers may be nursery allocated.
     if (IsProxy(this))
         return as<ProxyObject>().allocKindForTenure();
+
+    // Unboxed plain objects are sized according to the data they store.
+    if (is<UnboxedPlainObject>()) {
+        size_t nbytes = as<UnboxedPlainObject>().layoutDontCheckGeneration().size();
+        return GetGCObjectKindForBytes(UnboxedPlainObject::offsetOfData() + nbytes);
+    }
 
     // Unboxed arrays use inline data if their size is small enough.
     if (is<UnboxedArrayObject>()) {

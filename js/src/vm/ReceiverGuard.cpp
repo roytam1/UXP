@@ -7,6 +7,7 @@
 #include "vm/ReceiverGuard.h"
 
 #include "builtin/TypedObject.h"
+#include "vm/UnboxedObject.h"
 #include "jsobjinlines.h"
 
 using namespace js;

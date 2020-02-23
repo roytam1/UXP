@@ -611,7 +611,7 @@ IonBuilder::inlineArrayPopShift(CallInfo& callInfo, MArrayPopShift::Mode mode)
         OBJECT_FLAG_LENGTH_OVERFLOW |
         OBJECT_FLAG_ITERATED;
 
-    MDefinition* obj = callInfo.thisArg();
+    MDefinition* obj = convertUnboxedObjects(callInfo.thisArg());
     TemporaryTypeSet* thisTypes = obj->resultTypeSet();
     if (!thisTypes)
         return InliningStatus_NotInlined;
@@ -700,7 +700,7 @@ IonBuilder::inlineArrayPush(CallInfo& callInfo)
         return InliningStatus_NotInlined;
     }
 
-    MDefinition* obj = callInfo.thisArg();
+    MDefinition* obj = convertUnboxedObjects(callInfo.thisArg());
     MDefinition* value = callInfo.getArg(0);
     if (PropertyWriteNeedsTypeBarrier(alloc(), constraints(), current,
                                       &obj, nullptr, &value, /* canModify = */ false))
@@ -773,7 +773,7 @@ IonBuilder::inlineArraySlice(CallInfo& callInfo)
         return InliningStatus_NotInlined;
     }
 
-    MDefinition* obj = callInfo.thisArg();
+    MDefinition* obj = convertUnboxedObjects(callInfo.thisArg());
 
     // Ensure |this| and result are objects.
     if (getInlineReturnType() != MIRType::Object)
@@ -2097,7 +2097,7 @@ IonBuilder::inlineDefineDataProperty(CallInfo& callInfo)
     if (callInfo.argc() != 3)
         return InliningStatus_NotInlined;
 
-    MDefinition* obj = callInfo.getArg(0);
+    MDefinition* obj = convertUnboxedObjects(callInfo.getArg(0));
     MDefinition* id = callInfo.getArg(1);
     MDefinition* value = callInfo.getArg(2);
 
