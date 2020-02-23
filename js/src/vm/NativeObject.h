@@ -339,17 +339,14 @@ IsObjectValueInCompartment(const Value& v, JSCompartment* comp);
 #endif
 
 // Operations which change an object's dense elements can either succeed, fail,
-// or be unable to complete. The latter is used when the object's elements must
-// become sparse instead. The enum below is used for such operations.
+// or be unable to complete. For native objects, the latter is used when the
+// object's elements must become sparse instead. The enum below is used for
+// such operations, and for similar operations on unboxed arrays and methods
+// that work on both kinds of objects.
 enum class DenseElementResult {
     Failure,
     Success,
     Incomplete
-};
-
-enum class ShouldUpdateTypes {
-    Update,
-    DontUpdate
 };
 
 /*
@@ -1153,10 +1150,6 @@ class NativeObject : public ShapedObject
         memmove(elements_ + dstStart, elements_ + srcStart, count * sizeof(HeapSlot));
         elementsRangeWriteBarrierPost(dstStart, count);
     }
-
-    inline DenseElementResult
-    setOrExtendDenseElements(ExclusiveContext* cx, uint32_t start, const Value* vp, uint32_t count,
-                             ShouldUpdateTypes updateTypes = ShouldUpdateTypes::Update);
 
     bool shouldConvertDoubleElements() {
         return getElementsHeader()->shouldConvertDoubleElements();

@@ -5789,6 +5789,46 @@ jit::ElementAccessIsDenseNative(CompilerConstraintList* constraints,
     return clasp && clasp->isNative() && !IsTypedArrayClass(clasp);
 }
 
+JSValueType
+jit::UnboxedArrayElementType(CompilerConstraintList* constraints, MDefinition* obj,
+                             MDefinition* id)
+{
+    if (obj->mightBeType(MIRType::String))
+        return JSVAL_TYPE_MAGIC;
+
+    if (id && id->type() != MIRType::Int32 && id->type() != MIRType::Double)
+        return JSVAL_TYPE_MAGIC;
+
+    TemporaryTypeSet* types = obj->resultTypeSet();
+    if (!types || types->unknownObject())
+        return JSVAL_TYPE_MAGIC;
+
+    JSValueType elementType = JSVAL_TYPE_MAGIC;
+    for (unsigned i = 0; i < types->getObjectCount(); i++) {
+        TypeSet::ObjectKey* key = types->getObject(i);
+        if (!key)
+            continue;
+
+        if (key->unknownProperties() || !key->isGroup())
+            return JSVAL_TYPE_MAGIC;
+
+        if (key->clasp() != &UnboxedArrayObject::class_)
+            return JSVAL_TYPE_MAGIC;
+
+        const UnboxedLayout &layout = key->group()->unboxedLayout();
+
+        if (layout.nativeGroup())
+            return JSVAL_TYPE_MAGIC;
+
+        if (elementType == layout.elementType() || elementType == JSVAL_TYPE_MAGIC)
+            elementType = layout.elementType();
+        else
+            return JSVAL_TYPE_MAGIC;
+    }
+
+    return elementType;
+}
+
 bool
 jit::ElementAccessIsTypedArray(CompilerConstraintList* constraints,
                                MDefinition* obj, MDefinition* id,
@@ -5946,6 +5986,11 @@ ObjectSubsumes(TypeSet::ObjectKey* first, TypeSet::ObjectKey* second)
 
         return firstElements.maybeTypes() && secondElements.maybeTypes() &&
                firstElements.maybeTypes()->equals(secondElements.maybeTypes());
+    }
+
+    if (first->clasp() == &UnboxedArrayObject::class_) {
+        return first->group()->unboxedLayout().elementType() ==
+               second->group()->unboxedLayout().elementType();
     }
 
     return false;

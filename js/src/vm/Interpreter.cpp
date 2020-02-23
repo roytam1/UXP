@@ -4979,7 +4979,7 @@ js::NewObjectOperation(JSContext* cx, HandleScript script, jsbytecode* pc,
             newKind = TenuredObject;
     }
 
-    RootedPlainObject obj(cx);
+    RootedObject obj(cx);
 
     if (*pc == JSOP_NEWOBJECT) {
         RootedPlainObject baseObject(cx, &script->getObject(pc)->as<PlainObject>());
@@ -5047,6 +5047,9 @@ js::NewArrayOperation(JSContext* cx, HandleScript script, jsbytecode* pc, uint32
 
         if (group->shouldPreTenure() || group->maybePreliminaryObjects())
             newKind = TenuredObject;
+
+        if (group->maybeUnboxedLayout())
+            return UnboxedArrayObject::create(cx, group, length, newKind);
     }
 
     ArrayObject* obj = NewDenseFullyAllocatedArray(cx, length, nullptr, newKind);
@@ -5057,6 +5060,9 @@ js::NewArrayOperation(JSContext* cx, HandleScript script, jsbytecode* pc, uint32
         MOZ_ASSERT(obj->isSingleton());
     } else {
         obj->setGroup(group);
+
+        if (PreliminaryObjectArray* preliminaryObjects = group->maybePreliminaryObjects())
+            preliminaryObjects->registerNewObject(obj);
     }
 
     return obj;
@@ -5068,6 +5074,12 @@ js::NewArrayOperationWithTemplate(JSContext* cx, HandleObject templateObject)
     MOZ_ASSERT(!templateObject->isSingleton());
 
     NewObjectKind newKind = templateObject->group()->shouldPreTenure() ? TenuredObject : GenericObject;
+
+    if (templateObject->is<UnboxedArrayObject>()) {
+        uint32_t length = templateObject->as<UnboxedArrayObject>().length();
+        RootedObjectGroup group(cx, templateObject->group());
+        return UnboxedArrayObject::create(cx, group, length, newKind);
+    }
 
     ArrayObject* obj = NewDenseFullyAllocatedArray(cx, templateObject->as<ArrayObject>().length(),
                                                    nullptr, newKind);

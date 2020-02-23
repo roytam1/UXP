@@ -19,7 +19,7 @@ ReceiverGuard::ReceiverGuard(JSObject* obj)
             group = obj->group();
             if (UnboxedExpandoObject* expando = obj->as<UnboxedPlainObject>().maybeExpando())
                 shape = expando->lastProperty();
-        } else if (obj->is<TypedObject>()) {
+        } else if (obj->is<UnboxedArrayObject>() || obj->is<TypedObject>()) {
             group = obj->group();
         } else {
             shape = obj->maybeShape();
@@ -34,7 +34,7 @@ ReceiverGuard::ReceiverGuard(ObjectGroup* group, Shape* shape)
         const Class* clasp = group->clasp();
         if (clasp == &UnboxedPlainObject::class_) {
             // Keep both group and shape.
-        } else if (IsTypedObjectClass(clasp)) {
+        } else if (clasp == &UnboxedArrayObject::class_ || IsTypedObjectClass(clasp)) {
             this->shape = nullptr;
         } else {
             this->group = nullptr;
@@ -49,8 +49,8 @@ HeapReceiverGuard::keyBits(JSObject* obj)
         // Both the group and shape need to be guarded for unboxed plain objects.
         return obj->as<UnboxedPlainObject>().maybeExpando() ? 0 : 1;
     }
-    if (obj->is<TypedObject>()) {
-        // Only the group needs to be guarded for typed objects.
+    if (obj->is<UnboxedArrayObject>() || obj->is<TypedObject>()) {
+        // Only the group needs to be guarded for unboxed arrays and typed objects.
         return 2;
     }
     // Other objects only need the shape to be guarded.

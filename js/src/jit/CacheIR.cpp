@@ -175,7 +175,7 @@ TestMatchingReceiver(CacheIRWriter& writer, JSObject* obj, Shape* shape, ObjOper
         } else {
             writer.guardNoUnboxedExpando(objId);
         }
-    } else if (obj->is<TypedObject>()) {
+    } else if (obj->is<UnboxedArrayObject>() || obj->is<TypedObject>()) {
         writer.guardGroup(objId, obj->group());
     } else {
         Shape* shape = obj->maybeShape();
@@ -364,6 +364,13 @@ GetPropIRGenerator::tryAttachObjectLength(CacheIRWriter& writer, HandleObject ob
 
         writer.guardClass(objId, GuardClassKind::Array);
         writer.loadInt32ArrayLengthResult(objId);
+        emitted_ = true;
+        return true;
+    }
+
+    if (obj->is<UnboxedArrayObject>()) {
+        writer.guardClass(objId, GuardClassKind::UnboxedArray);
+        writer.loadUnboxedArrayLengthResult(objId);
         emitted_ = true;
         return true;
     }

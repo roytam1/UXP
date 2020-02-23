@@ -1355,7 +1355,7 @@ RNewArray::recover(JSContext* cx, SnapshotIterator& iter) const
     RootedValue result(cx);
     RootedObjectGroup group(cx, templateObject->group());
 
-    ArrayObject* resultObject = NewFullyAllocatedArrayTryUseGroup(cx, group, count_);
+    JSObject* resultObject = NewFullyAllocatedArrayTryUseGroup(cx, group, count_);
     if (!resultObject)
         return false;
 

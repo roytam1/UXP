@@ -96,6 +96,7 @@ class ObjOperandId : public OperandId
     _(LoadUnboxedPropertyResult)          \
     _(LoadTypedObjectResult)              \
     _(LoadInt32ArrayLengthResult)         \
+    _(LoadUnboxedArrayLengthResult)       \
     _(LoadArgumentsObjectLengthResult)    \
     _(LoadUndefinedResult)
 
@@ -127,6 +128,7 @@ struct StubField {
 enum class GuardClassKind
 {
     Array,
+    UnboxedArray,
     MappedArguments,
     UnmappedArguments,
 };
@@ -324,6 +326,9 @@ class MOZ_RAII CacheIRWriter
     }
     void loadInt32ArrayLengthResult(ObjOperandId obj) {
         writeOpWithOperandId(CacheOp::LoadInt32ArrayLengthResult, obj);
+    }
+    void loadUnboxedArrayLengthResult(ObjOperandId obj) {
+        writeOpWithOperandId(CacheOp::LoadUnboxedArrayLengthResult, obj);
     }
     void loadArgumentsObjectLengthResult(ObjOperandId obj) {
         writeOpWithOperandId(CacheOp::LoadArgumentsObjectLengthResult, obj);

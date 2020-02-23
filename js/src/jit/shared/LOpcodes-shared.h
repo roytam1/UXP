@@ -266,6 +266,10 @@
     _(PostWriteElementBarrierV)     \
     _(InitializedLength)            \
     _(SetInitializedLength)         \
+    _(UnboxedArrayLength)           \
+    _(UnboxedArrayInitializedLength) \
+    _(IncrementUnboxedArrayInitializedLength) \
+    _(SetUnboxedArrayInitializedLength) \
     _(BoundsCheck)                  \
     _(BoundsCheckRange)             \
     _(BoundsCheckLower)             \

@@ -787,6 +787,9 @@ BaselineCacheIRCompiler::emitGuardClass()
       case GuardClassKind::Array:
         clasp = &ArrayObject::class_;
         break;
+      case GuardClassKind::UnboxedArray:
+        clasp = &UnboxedArrayObject::class_;
+        break;
       case GuardClassKind::MappedArguments:
         clasp = &MappedArgumentsObject::class_;
         break;
@@ -993,6 +996,19 @@ BaselineCacheIRCompiler::emitLoadInt32ArrayLengthResult()
     // Guard length fits in an int32.
     masm.branchTest32(Assembler::Signed, scratch, scratch, failure->label());
     masm.tagValue(JSVAL_TYPE_INT32, scratch, R0);
+
+    // The int32 type was monitored when attaching the stub, so we can
+    // just return.
+    emitReturnFromIC();
+    return true;
+}
+
+bool
+BaselineCacheIRCompiler::emitLoadUnboxedArrayLengthResult()
+{
+    Register obj = allocator.useRegister(masm, reader.objOperandId());
+    masm.load32(Address(obj, UnboxedArrayObject::offsetOfLength()), R0.scratchReg());
+    masm.tagValue(JSVAL_TYPE_INT32, R0.scratchReg(), R0);
 
     // The int32 type was monitored when attaching the stub, so we can
     // just return.

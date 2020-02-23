@@ -2509,7 +2509,7 @@ TemporaryTypeSet::propertyNeedsBarrier(CompilerConstraintList* constraints, jsid
 bool
 js::ClassCanHaveExtraProperties(const Class* clasp)
 {
-    if (clasp == &UnboxedPlainObject::class_)
+    if (clasp == &UnboxedPlainObject::class_ || clasp == &UnboxedArrayObject::class_)
         return false;
     return clasp->getResolve()
         || clasp->getOpsLookupProperty()
@@ -3400,7 +3400,7 @@ JSFunction::setTypeForScriptedFunction(ExclusiveContext* cx, HandleFunction fun,
 /////////////////////////////////////////////////////////////////////
 
 void
-PreliminaryObjectArray::registerNewObject(PlainObject* res)
+PreliminaryObjectArray::registerNewObject(JSObject* res)
 {
     // The preliminary object pointers are weak, and won't be swept properly
     // during nursery collections, so the preliminary objects need to be
@@ -3418,7 +3418,7 @@ PreliminaryObjectArray::registerNewObject(PlainObject* res)
 }
 
 void
-PreliminaryObjectArray::unregisterObject(PlainObject* obj)
+PreliminaryObjectArray::unregisterObject(JSObject* obj)
 {
     for (size_t i = 0; i < COUNT; i++) {
         if (objects[i] == obj) {
