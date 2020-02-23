@@ -2106,15 +2106,14 @@ js::ArrayShiftMoveElements(NativeObject* obj)
     MOZ_ASSERT_IF(obj->is<ArrayObject>(), obj->as<ArrayObject>().lengthIsWritable());
 
     size_t initlen = obj->getDenseInitializedLength();
-    
-    if (initlen > 0) {
-      /*
-       * At this point the length and initialized length have already been
-       * decremented and the result fetched, so just shift the array elements
-       * themselves.
-       */
-      obj->moveDenseElementsNoPreBarrier(0, 1, initlen);
-    }
+    MOZ_ASSERT(initlen > 0);
+
+    /*
+     * At this point the length and initialized length have already been
+     * decremented and the result fetched, so just shift the array elements
+     * themselves.
+     */
+    obj->moveDenseElementsNoPreBarrier(0, 1, initlen);
 }
 
 static inline void
