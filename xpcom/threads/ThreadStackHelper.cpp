@@ -46,19 +46,6 @@
 #include <pthread.h>
 #endif
 
-#ifdef ANDROID
-#ifndef SYS_gettid
-#define SYS_gettid __NR_gettid
-#endif
-#if defined(__arm__) && !defined(__NR_rt_tgsigqueueinfo)
-// Some NDKs don't define this constant even though the kernel supports it.
-#define __NR_rt_tgsigqueueinfo (__NR_SYSCALL_BASE+363)
-#endif
-#ifndef SYS_rt_tgsigqueueinfo
-#define SYS_rt_tgsigqueueinfo __NR_rt_tgsigqueueinfo
-#endif
-#endif
-
 namespace mozilla {
 
 void

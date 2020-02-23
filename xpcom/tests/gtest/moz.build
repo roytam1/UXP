@@ -48,9 +48,8 @@ UNIFIED_SOURCES += [
     'TestXPIDLString.cpp',
 ]
 
-if CONFIG['MOZ_DEBUG'] and CONFIG['OS_ARCH'] not in ('WINNT') and CONFIG['OS_TARGET'] != 'Android':
+if CONFIG['MOZ_DEBUG'] and CONFIG['OS_ARCH'] not in ('WINNT'):
     # FIXME bug 523392: TestDeadlockDetector doesn't like Windows
-    # Bug 1054249: Doesn't work on Android
     UNIFIED_SOURCES += [
         'TestDeadlockDetector.cpp',
         'TestDeadlockDetectorScalability.cpp',

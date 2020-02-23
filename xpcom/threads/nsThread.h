@@ -264,7 +264,7 @@ protected:
   bool mCanInvokeJS;
 };
 
-#if defined(XP_UNIX) && !defined(ANDROID) && !defined(DEBUG) && HAVE_UALARM \
+#if defined(XP_UNIX) && !defined(DEBUG) && HAVE_UALARM \
   && defined(_GNU_SOURCE)
 # define MOZ_CANARY
 

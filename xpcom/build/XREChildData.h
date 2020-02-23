@@ -20,13 +20,10 @@ class GMPLoader;
  */
 struct XREChildData
 {
-#if !defined(MOZ_WIDGET_ANDROID)
   /**
    * Used to load the GMP binary.
    */
   mozilla::UniquePtr<mozilla::gmp::GMPLoader> gmpLoader;
-#endif
-
 };
 
 #endif // XREChildData_h

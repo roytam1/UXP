@@ -39,13 +39,13 @@ nsresult NS_CopyUnicodeToNative(const nsAString& aInput, nsACString& aOutput);
  * a real function. On Mac OS X it's always UTF-8 while on Windows
  * and other platforms (e.g. OS2), it's never UTF-8.
  */
-#if defined(XP_UNIX) && !defined(XP_MACOSX) && !defined(ANDROID)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 bool NS_IsNativeUTF8();
 #else
 inline bool
 NS_IsNativeUTF8()
 {
-#if defined(XP_MACOSX) || defined(ANDROID)
+#if defined(XP_MACOSX)
   return true;
 #else
   return false;

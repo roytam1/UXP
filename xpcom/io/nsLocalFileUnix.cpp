@@ -62,12 +62,6 @@
 static nsresult MacErrorMapper(OSErr inErr);
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "GeneratedJNIWrappers.h"
-#include "nsIMIMEService.h"
-#include <linux/magic.h>
-#endif
-
 #ifdef MOZ_ENABLE_CONTENTACTION
 #include <contentaction/contentaction.h>
 #endif
@@ -1064,12 +1058,6 @@ nsLocalFile::Remove(bool aRecursive)
       }
       rv = file->Remove(aRecursive);
 
-#ifdef ANDROID
-      // See bug 580434 - Bionic gives us just deleted files
-      if (rv == NS_ERROR_FILE_TARGET_DOES_NOT_EXIST) {
-        continue;
-      }
-#endif
       if (NS_FAILED(rv)) {
         return rv;
       }
@@ -1193,19 +1181,7 @@ nsLocalFile::SetPermissions(uint32_t aPermissions)
   if (chmod(mPath.get(), aPermissions) >= 0) {
     return NS_OK;
   }
-#if defined(ANDROID) && defined(STATFS)
-  // For the time being, this is restricted for use by Android, but we
-  // will figure out what to do for all platforms in bug 638503
-  struct STATFS sfs;
-  if (STATFS(mPath.get(), &sfs) < 0) {
-    return NSRESULT_FOR_ERRNO();
-  }
 
-  // if this is a FAT file system we can't set file permissions
-  if (sfs.f_type == MSDOS_SUPER_MAGIC) {
-    return NS_OK;
-  }
-#endif
   return NSRESULT_FOR_ERRNO();
 }
 
@@ -1237,20 +1213,7 @@ nsLocalFile::SetFileSize(int64_t aFileSize)
 {
   CHECK_mPath();
 
-#if defined(ANDROID)
-  /* no truncate on bionic */
-  int fd = open(mPath.get(), O_WRONLY);
-  if (fd == -1) {
-    return NSRESULT_FOR_ERRNO();
-  }
-
-  int ret = ftruncate(fd, (off_t)aFileSize);
-  close(fd);
-
-  if (ret == -1) {
-    return NSRESULT_FOR_ERRNO();
-  }
-#elif defined(HAVE_TRUNCATE64)
+#if defined(HAVE_TRUNCATE64)
   if (truncate64(mPath.get(), (off64_t)aFileSize) == -1) {
     return NSRESULT_FOR_ERRNO();
   }
@@ -2013,23 +1976,6 @@ nsLocalFile::Launch()
   }
 
   return NS_ERROR_FAILURE;
-#elif defined(MOZ_WIDGET_ANDROID)
-  // Try to get a mimetype, if this fails just use the file uri alone
-  nsresult rv;
-  nsAutoCString type;
-  nsCOMPtr<nsIMIMEService> mimeService(do_GetService("@mozilla.org/mime;1", &rv));
-  if (NS_SUCCEEDED(rv)) {
-    rv = mimeService->GetTypeFromFile(this, type);
-  }
-
-  nsAutoCString fileUri = NS_LITERAL_CSTRING("file://") + mPath;
-  return java::GeckoAppShell::OpenUriExternal(
-    NS_ConvertUTF8toUTF16(fileUri),
-    NS_ConvertUTF8toUTF16(type),
-    EmptyString(),
-    EmptyString(),
-    EmptyString(),
-    EmptyString()) ? NS_OK : NS_ERROR_FAILURE;
 #elif defined(MOZ_WIDGET_COCOA)
   CFURLRef url;
   if (NS_SUCCEEDED(GetCFURL(&url))) {

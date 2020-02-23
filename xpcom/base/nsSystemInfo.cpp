@@ -35,7 +35,7 @@
 #include <dlfcn.h>
 #endif
 
-#if defined (XP_LINUX) && !defined (ANDROID)
+#if defined (XP_LINUX)
 #include <unistd.h>
 #include <fstream>
 #include "mozilla/Tokenizer.h"
@@ -43,17 +43,6 @@
 
 #include <map>
 #include <string>
-#endif
-
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidBridge.h"
-#include "mozilla/dom/ContentChild.h"
-#endif
-
-#ifdef ANDROID
-extern "C" {
-NS_EXPORT int android_sdk_version;
-}
 #endif
 
 #ifdef XP_MACOSX
@@ -67,7 +56,7 @@ NS_EXPORT int android_sdk_version;
 // only happens well after that point.
 uint32_t nsSystemInfo::gUserUmask = 0;
 
-#if defined (XP_LINUX) && !defined (ANDROID)
+#ifdef XP_LINUX
 static void
 SimpleParseKeyValuePairs(const std::string& aFilename,
                          std::map<nsCString, nsCString>& aKeyValuePairs)
@@ -491,7 +480,7 @@ nsSystemInfo::Init()
   }
   MOZ_ASSERT(sizeof(sysctlValue32) == len);
 
-#elif defined (XP_LINUX) && !defined (ANDROID)
+#elif defined(XP_LINUX)
   // Get vendor, family, model, stepping, physical cores, L3 cache size
   // from /proc/cpuinfo file
   {
@@ -727,108 +716,8 @@ nsSystemInfo::Init()
   }
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-  AndroidSystemInfo info;
-  if (XRE_IsContentProcess()) {
-    dom::ContentChild* child = dom::ContentChild::GetSingleton();
-    if (child) {
-      child->SendGetAndroidSystemInfo(&info);
-      SetupAndroidInfo(info);
-    }
-  } else {
-    GetAndroidSystemInfo(&info);
-    SetupAndroidInfo(info);
-  }
-#endif
-
   return NS_OK;
 }
-
-#ifdef MOZ_WIDGET_ANDROID
-// Prerelease versions of Android use a letter instead of version numbers.
-// Unfortunately this breaks websites due to the user agent.
-// Chrome works around this by hardcoding an Android version when a
-// numeric version can't be obtained. We're doing the same.
-// This version will need to be updated whenever there is a new official
-// Android release.
-// See: https://cs.chromium.org/chromium/src/base/sys_info_android.cc?l=61
-#define DEFAULT_ANDROID_VERSION "6.0.99"
-
-/* static */
-void
-nsSystemInfo::GetAndroidSystemInfo(AndroidSystemInfo* aInfo)
-{
-  MOZ_ASSERT(XRE_IsParentProcess());
-
-  if (!mozilla::AndroidBridge::Bridge()) {
-    aInfo->sdk_version() = 0;
-    return;
-  }
-
-  nsAutoString str;
-  if (mozilla::AndroidBridge::Bridge()->GetStaticStringField(
-      "android/os/Build", "MODEL", str)) {
-    aInfo->device() = str;
-  }
-  if (mozilla::AndroidBridge::Bridge()->GetStaticStringField(
-      "android/os/Build", "MANUFACTURER", str)) {
-    aInfo->manufacturer() = str;
-  }
-  if (mozilla::AndroidBridge::Bridge()->GetStaticStringField(
-      "android/os/Build$VERSION", "RELEASE", str)) {
-    int major_version;
-    int minor_version;
-    int bugfix_version;
-    int num_read = sscanf(NS_ConvertUTF16toUTF8(str).get(), "%d.%d.%d", &major_version, &minor_version, &bugfix_version);
-    if (num_read == 0) {
-      aInfo->release_version() = NS_LITERAL_STRING(DEFAULT_ANDROID_VERSION);
-    } else {
-      aInfo->release_version() = str;
-    }
-  }
-  if (mozilla::AndroidBridge::Bridge()->GetStaticStringField(
-      "android/os/Build", "HARDWARE", str)) {
-    aInfo->hardware() = str;
-  }
-  int32_t sdk_version;
-  if (!mozilla::AndroidBridge::Bridge()->GetStaticIntField(
-      "android/os/Build$VERSION", "SDK_INT", &sdk_version)) {
-    sdk_version = 0;
-  }
-  aInfo->sdk_version() = sdk_version;
-  aInfo->isTablet() = java::GeckoAppShell::IsTablet();
-}
-
-void
-nsSystemInfo::SetupAndroidInfo(const AndroidSystemInfo& aInfo)
-{
-  if (!aInfo.device().IsEmpty()) {
-    SetPropertyAsAString(NS_LITERAL_STRING("device"), aInfo.device());
-  }
-  if (!aInfo.manufacturer().IsEmpty()) {
-    SetPropertyAsAString(NS_LITERAL_STRING("manufacturer"), aInfo.manufacturer());
-  }
-  if (!aInfo.release_version().IsEmpty()) {
-    SetPropertyAsAString(NS_LITERAL_STRING("release_version"), aInfo.release_version());
-  }
-  SetPropertyAsBool(NS_LITERAL_STRING("tablet"), aInfo.isTablet());
-  // NSPR "version" is the kernel version. For Android we want the Android version.
-  // Rename SDK version to version and put the kernel version into kernel_version.
-  nsAutoString str;
-  nsresult rv = GetPropertyAsAString(NS_LITERAL_STRING("version"), str);
-  if (NS_SUCCEEDED(rv)) {
-    SetPropertyAsAString(NS_LITERAL_STRING("kernel_version"), str);
-  }
-  // When AndroidBridge is not available (eg. in xpcshell tests), sdk_version is 0.
-  if (aInfo.sdk_version() != 0) {
-    android_sdk_version = aInfo.sdk_version();
-    if (android_sdk_version >= 8 && !aInfo.hardware().IsEmpty()) {
-      SetPropertyAsAString(NS_LITERAL_STRING("hardware"), aInfo.hardware());
-    }
-    SetPropertyAsInt32(NS_LITERAL_STRING("version"), android_sdk_version);
-  }
-}
-#endif // MOZ_WIDGET_ANDROID
 
 void
 nsSystemInfo::SetInt32Property(const nsAString& aPropertyName,

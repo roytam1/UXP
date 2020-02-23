@@ -226,7 +226,7 @@ mozilla::ReadAheadLib(nsIFile* aFile)
     return;
   }
   ReadAheadLib(path.get());
-#elif defined(LINUX) && !defined(ANDROID) || defined(XP_MACOSX)
+#elif defined(LINUX) || defined(XP_MACOSX)
   nsAutoCString nativePath;
   if (!aFile || NS_FAILED(aFile->GetNativePath(nativePath))) {
     return;
@@ -245,7 +245,7 @@ mozilla::ReadAheadFile(nsIFile* aFile, const size_t aOffset,
     return;
   }
   ReadAheadFile(path.get(), aOffset, aCount, aOutFd);
-#elif defined(LINUX) && !defined(ANDROID) || defined(XP_MACOSX)
+#elif defined(LINUX) || defined(XP_MACOSX)
   nsAutoCString nativePath;
   if (!aFile || NS_FAILED(aFile->GetNativePath(nativePath))) {
     return;
@@ -256,7 +256,7 @@ mozilla::ReadAheadFile(nsIFile* aFile, const size_t aOffset,
 
 #endif // !defined(XPCOM_GLUE)
 
-#if defined(LINUX) && !defined(ANDROID)
+#if defined(LINUX)
 
 static const unsigned int bufsize = 4096;
 
@@ -382,7 +382,7 @@ mozilla::ReadAhead(mozilla::filedesc_t aFd, const size_t aOffset,
   // Restore the file pointer
   SetFilePointerEx(aFd, fpOriginal, nullptr, FILE_BEGIN);
 
-#elif defined(LINUX) && !defined(ANDROID)
+#elif defined(LINUX)
 
   readahead(aFd, aOffset, aCount);
 
@@ -405,7 +405,7 @@ mozilla::ReadAheadLib(mozilla::pathstr_t aFilePath)
   }
 #if defined(XP_WIN)
   ReadAheadFile(aFilePath);
-#elif defined(LINUX) && !defined(ANDROID)
+#elif defined(LINUX)
   int fd = open(aFilePath, O_RDONLY);
   if (fd < 0) {
     return;
@@ -532,7 +532,7 @@ mozilla::ReadAheadFile(mozilla::pathstr_t aFilePath, const size_t aOffset,
   if (!aOutFd) {
     CloseHandle(fd);
   }
-#elif defined(LINUX) && !defined(ANDROID) || defined(XP_MACOSX) || defined(XP_SOLARIS)
+#elif defined(LINUX) || defined(XP_MACOSX) || defined(XP_SOLARIS)
   if (!aFilePath) {
     if (aOutFd) {
       *aOutFd = -1;
