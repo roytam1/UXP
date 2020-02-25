@@ -4,17 +4,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
-BROWSER_CHROME_MANIFESTS += ['tests/browser/browser.ini']
-MOCHITEST_MANIFESTS += ['tests/mochitest/mochitest.ini']
-MOCHITEST_CHROME_MANIFESTS += ['tests/chrome/chrome.ini']
-
-TESTING_JS_MODULES += [
-    'tests/MockDocument.jsm',
-    'tests/PromiseTestUtils.jsm',
-    'tests/xpcshell/TestIntegration.jsm',
-]
-
 SPHINX_TREES['toolkit_modules'] = 'docs'
 
 EXTRA_JS_MODULES += [

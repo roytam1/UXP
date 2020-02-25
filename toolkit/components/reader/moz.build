@@ -11,9 +11,7 @@ EXTRA_JS_MODULES += [
   'ReaderMode.jsm'
 ]
 
-EXTRA_PP_JS_MODULES += [
-  'Readerable.jsm'
-]
+EXTRA_PP_JS_MODULES += ['Readerable.jsm']
 
 EXTRA_JS_MODULES.reader = [
   'JSDOMParser.js',
@@ -21,10 +19,3 @@ EXTRA_JS_MODULES.reader = [
   'ReaderWorker.js',
   'ReaderWorker.jsm'
 ]
-
-BROWSER_CHROME_MANIFESTS += [
-  'test/browser.ini'
-]
-
-with Files('**'):
-    BUG_COMPONENT = ('Toolkit', 'Reader Mode')

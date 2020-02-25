@@ -7,17 +7,6 @@
 if CONFIG['MOZ_PHOENIX']:
     DEFINES['MOZ_BUILD_APP_IS_BROWSER'] = True
 
-MOCHITEST_MANIFESTS += ['test/mochitest.ini', 'test/mochitest/mochitest.ini']
-MOCHITEST_CHROME_MANIFESTS += ['test/chrome/chrome.ini']
-BROWSER_CHROME_MANIFESTS += ['test/browser/browser.ini']
-XPCSHELL_TESTS_MANIFESTS += ['test/unit/xpcshell.ini']
-
-TESTING_JS_MODULES += [
-    # Make this file available from the "resource:" URI of the test environment.
-    'test/browser/form_basic.html',
-    'test/LoginTestUtils.jsm',
-]
-
 XPIDL_SOURCES += [
     'nsILoginInfo.idl',
     'nsILoginManager.idl',
@@ -74,6 +63,3 @@ if CONFIG['MOZ_PHOENIX']:
     ]
 
 JAR_MANIFESTS += ['jar.mn']
-
-with Files('**'):
-    BUG_COMPONENT = ('Toolkit', 'Password Manager')

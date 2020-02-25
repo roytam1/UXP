@@ -51,12 +51,3 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     DIRS += ['system/windowsproxy']
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
     DIRS += ['system/androidproxy']
-
-with Files('mozapps/installer/windows/*'):
-    BUG_COMPONENT = ('Toolkit', 'NSIS Installer')
-
-with Files('pluginproblem/*'):
-    BUG_COMPONENT = ('Core', 'Plug-ins')
-
-with Files('mozapps/preferences/*'):
-    BUG_COMPONENT = ('Toolkit', 'Preferences')
