@@ -50,7 +50,6 @@ DIRS += [
     'reader',
     'remotebrowserutils',
     'reflect',
-    'sqlite',
     'startup',
     'statusfilter',
     'telemetry',
