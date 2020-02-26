@@ -4,22 +4,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+XPIDL_SOURCES += ['nsIFileView.idl']
+
 XPIDL_MODULE = 'filepicker'
-XPIDL_SOURCES += [
-    'nsIFileView.idl',
-]
-SOURCES += [
-    'nsFileView.cpp',
-]
-EXTRA_COMPONENTS += [
-    'nsFilePicker.js',
-]
-EXTRA_PP_COMPONENTS += [
-    'nsFilePicker.manifest',
-]
-XPCSHELL_TESTS_MANIFESTS += [
-    'test/unit/xpcshell.ini',
-]
+
+SOURCES += ['nsFileView.cpp']
+
+EXTRA_COMPONENTS += ['nsFilePicker.js']
+
+EXTRA_PP_COMPONENTS += ['nsFilePicker.manifest']
+
 FINAL_LIBRARY = 'xul'
 
 JAR_MANIFESTS += ['jar.mn']

@@ -25,21 +25,7 @@ SOURCES += [
     'Hal.cpp',
 ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    LOCAL_INCLUDES += [
-        '/widget/android',
-    ]
-    UNIFIED_SOURCES += [
-        'android/AndroidAlarm.cpp',
-        'android/AndroidSensor.cpp',
-        'fallback/FallbackPower.cpp',
-        'linux/LinuxMemory.cpp',
-    ]
-    # AndroidHal.cpp cannot be built in unified mode because it relies on HalImpl.h.
-    SOURCES += [
-        'android/AndroidHal.cpp',
-    ]
-elif CONFIG['OS_TARGET'] == 'Linux':
+if CONFIG['OS_TARGET'] == 'Linux':
     UNIFIED_SOURCES += [
         'fallback/FallbackAlarm.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
@@ -117,11 +103,9 @@ UNIFIED_SOURCES += [
     'fallback/FallbackWakeLocks.cpp',
 ]
 
-# Fallbacks for backends implemented on Android only.
-if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
-    UNIFIED_SOURCES += [
-        'fallback/FallbackNetwork.cpp',
-    ]
+UNIFIED_SOURCES += [
+    'fallback/FallbackNetwork.cpp',
+]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
     UNIFIED_SOURCES += [

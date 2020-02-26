@@ -217,6 +217,10 @@ class LIRGenerator : public LIRGeneratorSpecific
     void visitTypedObjectDescr(MTypedObjectDescr* ins);
     void visitInitializedLength(MInitializedLength* ins);
     void visitSetInitializedLength(MSetInitializedLength* ins);
+    void visitUnboxedArrayLength(MUnboxedArrayLength* ins);
+    void visitUnboxedArrayInitializedLength(MUnboxedArrayInitializedLength* ins);
+    void visitIncrementUnboxedArrayInitializedLength(MIncrementUnboxedArrayInitializedLength* ins);
+    void visitSetUnboxedArrayInitializedLength(MSetUnboxedArrayInitializedLength* ins);
     void visitNot(MNot* ins);
     void visitBoundsCheck(MBoundsCheck* ins);
     void visitBoundsCheckLower(MBoundsCheckLower* ins);
@@ -229,6 +233,7 @@ class LIRGenerator : public LIRGeneratorSpecific
     void visitFallibleStoreElement(MFallibleStoreElement* ins);
     void visitStoreUnboxedObjectOrNull(MStoreUnboxedObjectOrNull* ins);
     void visitStoreUnboxedString(MStoreUnboxedString* ins);
+    void visitConvertUnboxedObjectToNative(MConvertUnboxedObjectToNative* ins);
     void visitEffectiveAddress(MEffectiveAddress* ins);
     void visitArrayPopShift(MArrayPopShift* ins);
     void visitArrayPush(MArrayPush* ins);
@@ -252,6 +257,8 @@ class LIRGenerator : public LIRGeneratorSpecific
     void visitGuardObject(MGuardObject* ins);
     void visitGuardString(MGuardString* ins);
     void visitGuardReceiverPolymorphic(MGuardReceiverPolymorphic* ins);
+    void visitGuardUnboxedExpando(MGuardUnboxedExpando* ins);
+    void visitLoadUnboxedExpando(MLoadUnboxedExpando* ins);
     void visitPolyInlineGuard(MPolyInlineGuard* ins);
     void visitAssertRange(MAssertRange* ins);
     void visitCallGetProperty(MCallGetProperty* ins);

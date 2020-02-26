@@ -6,16 +6,9 @@
 
 XPIDL_MODULE = 'update'
 
-XPCSHELL_TESTS_MANIFESTS += ['tests/unit/xpcshell.ini']
-
-XPIDL_SOURCES += [
-    'nsIUpdateTimerManager.idl',
-]
+XPIDL_SOURCES += ['nsIUpdateTimerManager.idl']
 
 EXTRA_COMPONENTS += [
     'nsUpdateTimerManager.js',
     'nsUpdateTimerManager.manifest',
 ]
-
-with Files('**'):
-    BUG_COMPONENT = ('Toolkit', 'Application Update')

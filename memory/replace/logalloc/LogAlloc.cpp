@@ -54,16 +54,6 @@ GetTid()
 #endif
 }
 
-#ifdef ANDROID
-/* See mozglue/android/APKOpen.cpp */
-extern "C" MOZ_EXPORT __attribute__((weak))
-void* __dso_handle;
-
-/* Android doesn't have pthread_atfork defined in pthread.h */
-extern "C" MOZ_EXPORT
-int pthread_atfork(void (*)(void), void (*)(void), void (*)(void));
-#endif
-
 class LogAllocBridge : public ReplaceMallocBridge
 {
   virtual void InitDebugFd(mozilla::DebugFdRegistry& aRegistry) override {

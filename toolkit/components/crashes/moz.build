@@ -19,13 +19,8 @@ TESTING_JS_MODULES += [
     'CrashManagerTest.jsm',
 ]
 
-XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
-
 XPIDL_MODULE = 'toolkit_crashservice'
 
 XPIDL_SOURCES += [
     'nsICrashService.idl',
 ]
-
-with Files('**'):
-    BUG_COMPONENT = ('Toolkit', 'Breakpad Integration')

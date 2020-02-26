@@ -4,15 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-if CONFIG['OS_ARCH'] == 'WINNT':
-    TEST_DIRS += ['test/win']
-
-MOCHITEST_MANIFESTS += ['test/mochitest.ini']
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']
-
-XPIDL_SOURCES += [
-    'nsINativeAppSupport.idl',
-]
+XPIDL_SOURCES += ['nsINativeAppSupport.idl']
 
 if CONFIG['OS_ARCH'] == 'WINNT':
     XPIDL_SOURCES += [
@@ -27,9 +19,7 @@ if CONFIG['MOZ_INSTRUMENT_EVENT_LOOP']:
     EXPORTS += ['EventTracer.h']
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
-    UNIFIED_SOURCES += [
-        'nsNativeAppSupportWin.cpp',
-    ]
+    UNIFIED_SOURCES += ['nsNativeAppSupportWin.cpp']
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
     UNIFIED_SOURCES += [
         'MacApplicationDelegate.mm',
@@ -45,29 +35,16 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'uikit':
         'UIKitDirProvider.mm',
     ]
 elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
-    UNIFIED_SOURCES += [
-        'nsNativeAppSupportUnix.cpp',
-    ]
+    UNIFIED_SOURCES += ['nsNativeAppSupportUnix.cpp']
 else:
-    UNIFIED_SOURCES += [
-        'nsNativeAppSupportDefault.cpp',
-    ]
+    UNIFIED_SOURCES += ['nsNativeAppSupportDefault.cpp']
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gtk3':
-    UNIFIED_SOURCES += [
-        'nsGDKErrorHandler.cpp',
-    ]
+    UNIFIED_SOURCES += ['nsGDKErrorHandler.cpp']
 
 if CONFIG['MOZ_X11']:
     EXPORTS += ['nsX11ErrorHandler.h']
-    UNIFIED_SOURCES += [
-        'nsX11ErrorHandler.cpp',
-    ]
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    UNIFIED_SOURCES += [
-        'nsAndroidStartup.cpp',
-    ]
+    UNIFIED_SOURCES += ['nsX11ErrorHandler.cpp']
 
 UNIFIED_SOURCES += [
     'CreateAppData.cpp',
@@ -97,10 +74,10 @@ if CONFIG['MOZ_INSTRUMENT_EVENT_LOOP']:
     ]
 
 if CONFIG['MOZ_UPDATER']:
-    if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
-        UNIFIED_SOURCES += [
-            'nsUpdateDriver.cpp',
-        ]
+    DEFINES['MOZ_UPDATER'] = True
+    UNIFIED_SOURCES += [
+        'nsUpdateDriver.cpp',
+    ]
 
 include('/ipc/chromium/chromium-config.mozbuild')
 
@@ -109,20 +86,17 @@ FINAL_LIBRARY = 'xul'
 if CONFIG['MOZ_GL_DEFAULT_PROVIDER'] == 'GLX':
     DEFINES['USE_GLX_TEST'] = True
 
-for var in ('MOZ_APP_NAME', 'MOZ_APP_BASENAME', 'MOZ_APP_VERSION', 'OS_TARGET',
+for var in ('MOZ_APP_NAME',
+            'MOZ_APP_BASENAME',
+            'MOZ_APP_VERSION',
+            'OS_TARGET',
             'MOZ_WIDGET_TOOLKIT'):
     DEFINES[var] = '"%s"' % CONFIG[var]
-
-if CONFIG['MOZ_UPDATER'] and CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
-    DEFINES['MOZ_UPDATER'] = True
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     DEFINES['WIN32_LEAN_AND_MEAN'] = True
     DEFINES['UNICODE'] = True
     DEFINES['_UNICODE'] = True
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    DEFINES['ANDROID_PACKAGE_NAME'] = '"%s"' % CONFIG['ANDROID_PACKAGE_NAME']
 
 if CONFIG['TARGET_XPCOM_ABI']:
     DEFINES['TARGET_OS_ABI'] = '"%s_%s"' % (CONFIG['OS_TARGET'],
@@ -167,9 +141,7 @@ if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
     CXXFLAGS += CONFIG['MOZ_PANGO_CFLAGS']
 
 DEFINES['TOPOBJDIR'] = TOPOBJDIR
-FINAL_TARGET_PP_FILES += [
-    'platform.ini'
-]
+FINAL_TARGET_PP_FILES += ['platform.ini']
 
 if CONFIG['GNU_CXX']:
     CXXFLAGS += ['-Wno-error=shadow']

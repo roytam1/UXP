@@ -280,26 +280,18 @@ NS_IMETHODIMP nsAlertsService::CloseAlert(const nsAString& aAlertName,
 // nsIAlertsDoNotDisturb
 NS_IMETHODIMP nsAlertsService::GetManualDoNotDisturb(bool* aRetVal)
 {
-#ifdef MOZ_WIDGET_ANDROID
-  return NS_ERROR_NOT_IMPLEMENTED;
-#else
   nsCOMPtr<nsIAlertsDoNotDisturb> alertsDND(GetDNDBackend());
   NS_ENSURE_TRUE(alertsDND, NS_ERROR_NOT_IMPLEMENTED);
   return alertsDND->GetManualDoNotDisturb(aRetVal);
-#endif
 }
 
 NS_IMETHODIMP nsAlertsService::SetManualDoNotDisturb(bool aDoNotDisturb)
 {
-#ifdef MOZ_WIDGET_ANDROID
-  return NS_ERROR_NOT_IMPLEMENTED;
-#else
   nsCOMPtr<nsIAlertsDoNotDisturb> alertsDND(GetDNDBackend());
   NS_ENSURE_TRUE(alertsDND, NS_ERROR_NOT_IMPLEMENTED);
 
   nsresult rv = alertsDND->SetManualDoNotDisturb(aDoNotDisturb);
   return rv;
-#endif
 }
 
 already_AddRefed<nsIAlertsDoNotDisturb>

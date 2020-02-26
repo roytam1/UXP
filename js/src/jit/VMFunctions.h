@@ -622,7 +622,7 @@ template<bool Equal>
 bool StringsEqual(JSContext* cx, HandleString left, HandleString right, bool* res);
 
 MOZ_MUST_USE bool ArrayPopDense(JSContext* cx, HandleObject obj, MutableHandleValue rval);
-MOZ_MUST_USE bool ArrayPushDense(JSContext* cx, HandleArrayObject obj, HandleValue v, uint32_t* length);
+MOZ_MUST_USE bool ArrayPushDense(JSContext* cx, HandleObject obj, HandleValue v, uint32_t* length);
 MOZ_MUST_USE bool ArrayShiftDense(JSContext* cx, HandleObject obj, MutableHandleValue rval);
 JSString* ArrayJoin(JSContext* cx, HandleObject array, HandleString sep);
 
@@ -745,8 +745,8 @@ ForcedRecompile(JSContext* cx);
 JSString* StringReplace(JSContext* cx, HandleString string, HandleString pattern,
                         HandleString repl);
 
-MOZ_MUST_USE bool SetDenseElement(JSContext* cx, HandleNativeObject obj, int32_t index,
-                                  HandleValue value, bool strict);
+MOZ_MUST_USE bool SetDenseOrUnboxedArrayElement(JSContext* cx, HandleObject obj, int32_t index,
+                                                HandleValue value, bool strict);
 
 void AssertValidObjectPtr(JSContext* cx, JSObject* obj);
 void AssertValidObjectOrNullPtr(JSContext* cx, JSObject* obj);

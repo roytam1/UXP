@@ -76,9 +76,7 @@ private:
   void* mBuf;
   size_t mSize;
   int mLockCount;
-#if defined(ANDROID)
-  int mFd;
-#elif defined(XP_DARWIN)
+#ifdef XP_DARWIN
   bool mHeap;
 #elif defined(XP_WIN)
   bool mHeap;

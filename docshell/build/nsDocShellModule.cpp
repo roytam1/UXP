@@ -25,10 +25,6 @@
 #ifdef MOZ_ENABLE_DBUS
 #include "nsDBusHandlerApp.h"
 #endif
-#if defined(MOZ_WIDGET_ANDROID)
-#include "nsExternalSharingAppService.h"
-#include "nsExternalURLHandlerService.h"
-#endif
 
 // session history
 #include "nsSHEntry.h"
@@ -85,10 +81,6 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(PlatformLocalHandlerApp_t)
 #ifdef MOZ_ENABLE_DBUS
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsDBusHandlerApp)
 #endif
-#if defined(MOZ_WIDGET_ANDROID)
-NS_GENERIC_FACTORY_CONSTRUCTOR(nsExternalSharingAppService)
-NS_GENERIC_FACTORY_CONSTRUCTOR(nsExternalURLHandlerService)
-#endif
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(ContentHandlerService, Init)
 
 // session history
@@ -114,10 +106,6 @@ NS_DEFINE_NAMED_CID(NS_LOCALHANDLERAPP_CID);
 #ifdef MOZ_ENABLE_DBUS
 NS_DEFINE_NAMED_CID(NS_DBUSHANDLERAPP_CID);
 #endif
-#if defined(MOZ_WIDGET_ANDROID)
-NS_DEFINE_NAMED_CID(NS_EXTERNALSHARINGAPPSERVICE_CID);
-NS_DEFINE_NAMED_CID(NS_EXTERNALURLHANDLERSERVICE_CID);
-#endif
 NS_DEFINE_NAMED_CID(NS_SHENTRY_CID);
 NS_DEFINE_NAMED_CID(NS_SHTRANSACTION_CID);
 NS_DEFINE_NAMED_CID(NS_SHISTORY_CID);
@@ -142,10 +130,6 @@ const mozilla::Module::CIDEntry kDocShellCIDs[] = {
   { &kNS_LOCALHANDLERAPP_CID, false, nullptr, PlatformLocalHandlerApp_tConstructor },
 #ifdef MOZ_ENABLE_DBUS
   { &kNS_DBUSHANDLERAPP_CID, false, nullptr, nsDBusHandlerAppConstructor },
-#endif
-#if defined(MOZ_WIDGET_ANDROID)
-  { &kNS_EXTERNALSHARINGAPPSERVICE_CID, false, nullptr, nsExternalSharingAppServiceConstructor },
-  { &kNS_EXTERNALURLHANDLERSERVICE_CID, false, nullptr, nsExternalURLHandlerServiceConstructor },
 #endif
   { &kNS_SHENTRY_CID, false, nullptr, nsSHEntryConstructor },
   { &kNS_SHTRANSACTION_CID, false, nullptr, nsSHTransactionConstructor },
@@ -183,9 +167,7 @@ const mozilla::Module::ContractIDEntry kDocShellContracts[] = {
   { NS_ABOUT_MODULE_CONTRACTID_PREFIX "performance", &kNS_ABOUT_REDIRECTOR_MODULE_CID },
   { NS_ABOUT_MODULE_CONTRACTID_PREFIX "plugins", &kNS_ABOUT_REDIRECTOR_MODULE_CID },
   { NS_ABOUT_MODULE_CONTRACTID_PREFIX "serviceworkers", &kNS_ABOUT_REDIRECTOR_MODULE_CID },
-#ifndef ANDROID
   { NS_ABOUT_MODULE_CONTRACTID_PREFIX "profiles", &kNS_ABOUT_REDIRECTOR_MODULE_CID },
-#endif
   { NS_ABOUT_MODULE_CONTRACTID_PREFIX "srcdoc", &kNS_ABOUT_REDIRECTOR_MODULE_CID },
   { NS_ABOUT_MODULE_CONTRACTID_PREFIX "support", &kNS_ABOUT_REDIRECTOR_MODULE_CID },
   { NS_ABOUT_MODULE_CONTRACTID_PREFIX "telemetry", &kNS_ABOUT_REDIRECTOR_MODULE_CID },
@@ -205,10 +187,6 @@ const mozilla::Module::ContractIDEntry kDocShellContracts[] = {
   { NS_LOCALHANDLERAPP_CONTRACTID, &kNS_LOCALHANDLERAPP_CID },
 #ifdef MOZ_ENABLE_DBUS
   { NS_DBUSHANDLERAPP_CONTRACTID, &kNS_DBUSHANDLERAPP_CID },
-#endif
-#if defined(MOZ_WIDGET_ANDROID)
-  { NS_EXTERNALSHARINGAPPSERVICE_CONTRACTID, &kNS_EXTERNALSHARINGAPPSERVICE_CID },
-  { NS_EXTERNALURLHANDLERSERVICE_CONTRACTID, &kNS_EXTERNALURLHANDLERSERVICE_CID },
 #endif
   { NS_SHENTRY_CONTRACTID, &kNS_SHENTRY_CID },
   { NS_SHTRANSACTION_CONTRACTID, &kNS_SHTRANSACTION_CID },

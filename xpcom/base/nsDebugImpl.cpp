@@ -19,10 +19,6 @@
 #include "prerr.h"
 #include "prenv.h"
 
-#ifdef ANDROID
-#include <android/log.h>
-#endif
-
 #ifdef _WIN32
 /* for getenv() */
 #include <stdlib.h>
@@ -355,10 +351,6 @@ NS_DebugBreak(uint32_t aSeverity, const char* aStr, const char* aExpr,
   if (aSeverity != NS_DEBUG_WARNING) {
     fprintf(stderr, "\07");
   }
-#endif
-
-#ifdef ANDROID
-  __android_log_print(ANDROID_LOG_INFO, "Gecko", "%s", buf.buffer);
 #endif
 
   // Write the message to stderr unless it's a warning and MOZ_IGNORE_WARNINGS

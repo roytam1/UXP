@@ -4,9 +4,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-BROWSER_CHROME_MANIFESTS += ['tests/browser/browser.ini']
-
 XPIDL_MODULE = 'toolkit_perfmonitoring'
+
+XPIDL_SOURCES += ['nsIPerformanceStats.idl']
+
+EXPORTS += ['nsPerformanceStats.h']
+
+LOCAL_INCLUDES += ['/dom/base']
+
+UNIFIED_SOURCES += ['nsPerformanceStats.cpp']
 
 EXTRA_JS_MODULES += [
     'AddonWatcher.jsm',
@@ -14,22 +20,6 @@ EXTRA_JS_MODULES += [
     'PerformanceStats.jsm',
     'PerformanceWatcher-content.js',
     'PerformanceWatcher.jsm',
-]
-
-XPIDL_SOURCES += [
-    'nsIPerformanceStats.idl',
-]
-
-UNIFIED_SOURCES += [
-    'nsPerformanceStats.cpp'
-]
-
-EXPORTS += [
-    'nsPerformanceStats.h'
-]
-
-LOCAL_INCLUDES += [
-    '/dom/base',
 ]
 
 FINAL_LIBRARY = 'xul'

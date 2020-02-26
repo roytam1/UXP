@@ -20,15 +20,8 @@ using namespace mozilla;
 
 /* Function used to report library mappings from the custom linker to Gecko
  * crash reporter */
-#ifdef ANDROID
-extern "C" {
-  void report_mapping(char *name, void *base, uint32_t len, uint32_t offset);
-  void delete_mapping(const char *name);
-}
-#else
 #define report_mapping(...)
 #define delete_mapping(...)
-#endif
 
 const Ehdr *Ehdr::validate(const void *buf)
 {
@@ -162,13 +155,10 @@ CustomElf::Load(Mappable *mappable, const char *path, int flags)
         break;
       case PT_GNU_STACK:
         debug_phdr("PT_GNU_STACK", phdr);
-// Skip on Android until bug 706116 is fixed
-#ifndef ANDROID
         if (phdr->p_flags & PF_X) {
           ERROR("%s: Executable stack is not supported", elf->GetPath());
           return nullptr;
         }
-#endif
         break;
 #ifdef __ARM_EABI__
       case PT_ARM_EXIDX:

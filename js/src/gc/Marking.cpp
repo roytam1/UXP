@@ -18,7 +18,6 @@
 #include "builtin/ModuleObject.h"
 #include "gc/GCInternals.h"
 #include "gc/Policy.h"
-#include "gc/StoreBuffer-inl.h"
 #include "jit/IonCode.h"
 #include "js/SliceBudget.h"
 #include "vm/ArgumentsObject.h"
@@ -29,6 +28,7 @@
 #include "vm/Shape.h"
 #include "vm/Symbol.h"
 #include "vm/TypedArrayObject.h"
+#include "vm/UnboxedObject.h"
 #include "wasm/WasmJS.h"
 
 #include "jscompartmentinlines.h"
@@ -37,6 +37,7 @@
 
 #include "gc/Nursery-inl.h"
 #include "vm/String-inl.h"
+#include "vm/UnboxedObject-inl.h"
 
 using namespace js;
 using namespace js::gc;
@@ -1394,6 +1395,14 @@ js::ObjectGroup::traceChildren(JSTracer* trc)
     if (maybePreliminaryObjects())
         maybePreliminaryObjects()->trace(trc);
 
+    if (maybeUnboxedLayout())
+        unboxedLayout().trace(trc);
+
+    if (ObjectGroup* unboxedGroup = maybeOriginalUnboxedGroup()) {
+        TraceManuallyBarrieredEdge(trc, &unboxedGroup, "group_original_unboxed_group");
+        setOriginalUnboxedGroup(unboxedGroup);
+    }
+
     if (JSObject* descr = maybeTypeDescr()) {
         TraceManuallyBarrieredEdge(trc, &descr, "group_type_descr");
         setTypeDescr(&descr->as<TypeDescr>());
@@ -1426,6 +1435,12 @@ js::GCMarker::lazilyMarkChildren(ObjectGroup* group)
 
     if (group->maybePreliminaryObjects())
         group->maybePreliminaryObjects()->trace(this);
+
+    if (group->maybeUnboxedLayout())
+        group->unboxedLayout().trace(this);
+
+    if (ObjectGroup* unboxedGroup = group->maybeOriginalUnboxedGroup())
+        traverseEdge(group, unboxedGroup);
 
     if (TypeDescr* descr = group->maybeTypeDescr())
         traverseEdge(group, static_cast<JSObject*>(descr));
@@ -1463,6 +1478,23 @@ CallTraceHook(Functor f, JSTracer* trc, JSObject* obj, CheckGeneration check, Ar
         InlineTypedObject& tobj = obj->as<InlineTypedObject>();
         if (tobj.typeDescr().hasTraceList()) {
             VisitTraceList(f, tobj.typeDescr().traceList(), tobj.inlineTypedMemForGC(),
+                           mozilla::Forward<Args>(args)...);
+        }
+
+        return nullptr;
+    }
+
+    if (clasp == &UnboxedPlainObject::class_) {
+        JSObject** pexpando = obj->as<UnboxedPlainObject>().addressOfExpando();
+        if (*pexpando)
+            f(pexpando, mozilla::Forward<Args>(args)...);
+
+        UnboxedPlainObject& unboxed = obj->as<UnboxedPlainObject>();
+        const UnboxedLayout& layout = check == CheckGeneration::DoChecks
+                                      ? unboxed.layout()
+                                      : unboxed.layoutDontCheckGeneration();
+        if (layout.traceList()) {
+            VisitTraceList(f, layout.traceList(), unboxed.data(),
                            mozilla::Forward<Args>(args)...);
         }
 
@@ -2261,6 +2293,18 @@ static inline void
 TraceWholeCell(TenuringTracer& mover, JSObject* object)
 {
     mover.traceObject(object);
+
+    // Additionally trace the expando object attached to any unboxed plain
+    // objects. Baseline and Ion can write properties to the expando while
+    // only adding a post barrier to the owning unboxed object. Note that
+    // it isn't possible for a nursery unboxed object to have a tenured
+    // expando, so that adding a post barrier on the original object will
+    // capture any tenured->nursery edges in the expando as well.
+
+    if (object->is<UnboxedPlainObject>()) {
+        if (UnboxedExpandoObject* expando = object->as<UnboxedPlainObject>().maybeExpando())
+            expando->traceChildren(&mover);
+    }
 }
 
 static inline void
@@ -2504,6 +2548,8 @@ js::TenuringTracer::moveObjectToTenured(JSObject* dst, JSObject* src, AllocKind 
         InlineTypedObject::objectMovedDuringMinorGC(this, dst, src);
     } else if (src->is<TypedArrayObject>()) {
         tenuredSize += TypedArrayObject::objectMovedDuringMinorGC(this, dst, src, dstKind);
+    } else if (src->is<UnboxedArrayObject>()) {
+        tenuredSize += UnboxedArrayObject::objectMovedDuringMinorGC(this, dst, src, dstKind);
     } else if (src->is<ArgumentsObject>()) {
         tenuredSize += ArgumentsObject::objectMovedDuringMinorGC(this, dst, src);
     } else if (src->is<ProxyObject>()) {

@@ -343,12 +343,6 @@ FifoWatcher::OpenFd()
     return -1;
   }
 
-#ifdef ANDROID
-  // Android runs with a umask, so we need to chmod our fifo to make it
-  // world-writable.
-  chmod(path.get(), 0666);
-#endif
-
   int fd;
   do {
     // The fifo will block until someone else has written to it.  In
@@ -428,23 +422,11 @@ FifoWatcher::OnFileCanReadWithoutBlocking(int aFd)
 
 #endif // XP_UNIX }
 
-// In Android case, this function will open a file named aFilename under
-// /data/local/tmp/"aFoldername".
-// Otherwise, it will open a file named aFilename under "NS_OS_TEMP_DIR".
+// This will open a file named aFilename under "NS_OS_TEMP_DIR".
 /* static */ nsresult
 nsDumpUtils::OpenTempFile(const nsACString& aFilename, nsIFile** aFile,
                           const nsACString& aFoldername, Mode aMode)
 {
-#ifdef ANDROID
-  // For Android, first try the downloads directory which is world-readable
-  // rather than the temp directory which is not.
-  if (!*aFile) {
-    char* env = PR_GetEnv("DOWNLOADS_DIRECTORY");
-    if (env) {
-      NS_NewNativeLocalFile(nsCString(env), /* followLinks = */ true, aFile);
-    }
-  }
-#endif
   nsresult rv;
   if (!*aFile) {
     rv = NS_GetSpecialDirectory(NS_OS_TEMP_DIR, aFile);
@@ -452,32 +434,6 @@ nsDumpUtils::OpenTempFile(const nsACString& aFilename, nsIFile** aFile,
       return rv;
     }
   }
-
-#ifdef ANDROID
-  // /data/local/tmp is a true tmp directory; anyone can create a file there,
-  // but only the user which created the file can remove it.  We want non-root
-  // users to be able to remove these files, so we write them into a
-  // subdirectory of the temp directory and chmod 777 that directory.
-  if (aFoldername != EmptyCString()) {
-    rv = (*aFile)->AppendNative(aFoldername);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
-
-    // It's OK if this fails; that probably just means that the directory
-    // already exists.
-    Unused << (*aFile)->Create(nsIFile::DIRECTORY_TYPE, 0777);
-
-    nsAutoCString dirPath;
-    rv = (*aFile)->GetNativePath(dirPath);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
-
-    while (chmod(dirPath.get(), 0777) == -1 && errno == EINTR) {
-    }
-  }
-#endif
 
   nsCOMPtr<nsIFile> file(*aFile);
 
@@ -494,20 +450,6 @@ nsDumpUtils::OpenTempFile(const nsACString& aFilename, nsIFile** aFile,
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
-
-#ifdef ANDROID
-  // Make this file world-read/writable; the permissions passed to the
-  // CreateUnique call above are not sufficient on Android, which runs with a
-  // umask.
-  nsAutoCString path;
-  rv = file->GetNativePath(path);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  while (chmod(path.get(), 0666) == -1 && errno == EINTR) {
-  }
-#endif
 
   return NS_OK;
 }

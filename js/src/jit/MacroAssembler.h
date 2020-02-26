@@ -36,6 +36,7 @@
 #include "vm/ProxyObject.h"
 #include "vm/Shape.h"
 #include "vm/TypedArrayObject.h"
+#include "vm/UnboxedObject.h"
 
 using mozilla::FloatingPoint;
 
@@ -1625,6 +1626,20 @@ class MacroAssembler : public MacroAssemblerSpecific
     void storeToTypedFloatArray(Scalar::Type arrayType, FloatRegister value, const Address& dest,
                                 unsigned numElems = 0);
 
+    // Load a property from an UnboxedPlainObject or UnboxedArrayObject.
+    template <typename T>
+    void loadUnboxedProperty(T address, JSValueType type, TypedOrValueRegister output);
+
+    // Store a property to an UnboxedPlainObject, without triggering barriers.
+    // If failure is null, the value definitely has a type suitable for storing
+    // in the property.
+    template <typename T>
+    void storeUnboxedProperty(T address, JSValueType type,
+                              const ConstantOrRegister& value, Label* failure);
+
+    void checkUnboxedArrayCapacity(Register obj, const RegisterOrInt32Constant& index,
+                                   Register temp, Label* failure);
+
     Register extractString(const Address& address, Register scratch) {
         return extractObject(address, scratch);
     }
@@ -1700,6 +1715,8 @@ class MacroAssembler : public MacroAssemblerSpecific
     void initTypedArraySlots(Register obj, Register temp, Register lengthReg,
                              LiveRegisterSet liveRegs, Label* fail,
                              TypedArrayObject* templateObj, TypedArrayLength lengthKind);
+
+    void initUnboxedObjectContents(Register object, UnboxedPlainObject* templateObject);
 
     void newGCString(Register result, Register temp, Label* fail);
     void newGCFatInlineString(Register result, Register temp, Label* fail);

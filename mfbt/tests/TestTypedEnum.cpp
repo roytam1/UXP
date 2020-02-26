@@ -12,8 +12,7 @@
 
 // A rough feature check for is_literal_type. Not very carefully checked.
 // Feel free to amend as needed.
-// We leave ANDROID out because it's using stlport which doesn't have std::is_literal_type.
-#if __cplusplus >= 201103L && !defined(ANDROID)
+#if __cplusplus >= 201103L
 #  if defined(__clang__)
      /*
       * Per Clang documentation, "Note that marketing version numbers should not

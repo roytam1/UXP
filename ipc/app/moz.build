@@ -4,21 +4,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Any changes that affect Android need to be made in pie/moz.build as well.
+GeckoProgram(CONFIG['MOZ_CHILD_PROCESS_NAME'], linkage='dependent')
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    Program(CONFIG['MOZ_CHILD_PROCESS_NAME'])
-    SOURCES += [
-        'MozillaRuntimeMainAndroid.cpp',
-    ]
-
-    DIRS += ['pie']
-else:
-    GeckoProgram(CONFIG['MOZ_CHILD_PROCESS_NAME'], linkage='dependent')
-
-    SOURCES += [
-        'MozillaRuntimeMain.cpp',
-    ]
+SOURCES += [
+    'MozillaRuntimeMain.cpp',
+]
 
 include('/ipc/chromium/chromium-config.mozbuild')
 
@@ -29,13 +19,12 @@ LOCAL_INCLUDES += [
 
 # We link GMPLoader into plugin-container on desktop so that its code is
 # covered by the desktop DRM vendor's voucher.
-if CONFIG['OS_TARGET'] != 'Android':
-    SOURCES += [
-        '../../dom/media/gmp/GMPLoader.cpp',
-    ]
-    USE_LIBS += [
-        'rlz',
-    ]
+SOURCES += [
+    '../../dom/media/gmp/GMPLoader.cpp',
+]
+USE_LIBS += [
+    'rlz',
+]
 
 # DELAYLOAD_DLLS in this block ensures that the DLL blocklist is functional
 if CONFIG['OS_ARCH'] == 'WINNT':

@@ -27,10 +27,6 @@
 // The tickler only applies to wifi on mobile right now. Hopefully it
 // can also be restricted to particular handset models in the future.
 
-#if defined(ANDROID)
-#define MOZ_USE_WIFI_TICKLER
-#endif
-
 #include "mozilla/Attributes.h"
 #include "nsISupports.h"
 #include <stdint.h>

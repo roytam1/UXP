@@ -17,5 +17,3 @@ FINAL_LIBRARY = 'xul'
 LOCAL_INCLUDES += [
     '/js/xpconnect/loader',
 ]
-
-MOCHITEST_CHROME_MANIFESTS += ['chrome.ini']

@@ -7,11 +7,6 @@
 #include "nsDeviceChannel.h"
 #include "nsDeviceCaptureProvider.h"
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "mozilla/Preferences.h"
-#include "AndroidCaptureProvider.h"
-#endif
-
 using namespace mozilla;
 
 // Copied from image/decoders/icon/nsIconURI.cpp
@@ -112,9 +107,6 @@ nsDeviceChannel::OpenContentStream(bool aAsync,
     extractAttributeValue(spec.get(), "camera=", buffer);
     captureParams.camera = buffer.ToInteger(&err);
     captureParams.bpp = 32;
-#ifdef MOZ_WIDGET_ANDROID
-    capture = GetAndroidCaptureProvider();
-#endif
   } else if (kNotFound != spec.Find(NS_LITERAL_CSTRING("type=video/x-raw-yuv"),
                                     true,
                                     0,
@@ -138,11 +130,6 @@ nsDeviceChannel::OpenContentStream(bool aAsync,
     captureParams.bpp = 32;
     captureParams.timeLimit = 0;
     captureParams.frameLimit = 60000;
-#ifdef MOZ_WIDGET_ANDROID
-    // only enable if "device.camera.enabled" is true.
-    if (Preferences::GetBool("device.camera.enabled", false) == true)
-      capture = GetAndroidCaptureProvider();
-#endif
   } else {
     return NS_ERROR_NOT_IMPLEMENTED;
   }

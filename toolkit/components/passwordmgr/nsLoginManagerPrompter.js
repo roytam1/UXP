@@ -19,8 +19,7 @@ const LoginInfo =
 const BRAND_BUNDLE = "chrome://branding/locale/brand.properties";
 
 /**
- * Constants for password prompt telemetry.
- * Mirrored in mobile/android/components/LoginManagerPrompter.js */
+ * Constants for password prompt telemetry. */
 const PROMPT_DISPLAYED = 0;
 
 const PROMPT_ADD_OR_UPDATE = 1;

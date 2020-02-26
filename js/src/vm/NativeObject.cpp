@@ -388,6 +388,33 @@ NativeObject::setLastPropertyMakeNonNative(Shape* shape)
     shape_ = shape;
 }
 
+void
+NativeObject::setLastPropertyMakeNative(ExclusiveContext* cx, Shape* shape)
+{
+    MOZ_ASSERT(getClass()->isNative());
+    MOZ_ASSERT(shape->getObjectClass()->isNative());
+    MOZ_ASSERT(!shape->inDictionary());
+
+    // This method is used to convert unboxed objects into native objects. In
+    // this case, the shape_ field was previously used to store other data and
+    // this should be treated as an initialization.
+    shape_.init(shape);
+
+    slots_ = nullptr;
+    elements_ = emptyObjectElements;
+
+    size_t oldSpan = shape->numFixedSlots();
+    size_t newSpan = shape->slotSpan();
+
+    initializeSlotRange(0, oldSpan);
+
+    // A failure at this point will leave the object as a mutant, and we
+    // can't recover.
+    AutoEnterOOMUnsafeRegion oomUnsafe;
+    if (oldSpan != newSpan && !updateSlotsForSpan(cx, oldSpan, newSpan))
+        oomUnsafe.crash("NativeObject::setLastPropertyMakeNative");
+}
+
 bool
 NativeObject::setSlotSpan(ExclusiveContext* cx, uint32_t span)
 {
@@ -994,22 +1021,23 @@ NativeObject::freeSlot(ExclusiveContext* cx, uint32_t slot)
     setSlot(slot, UndefinedValue());
 }
 
-/* static */ Shape*
-NativeObject::addDataProperty(ExclusiveContext* cx, HandleNativeObject obj,
-                              jsid idArg, uint32_t slot, unsigned attrs)
+Shape*
+NativeObject::addDataProperty(ExclusiveContext* cx, jsid idArg, uint32_t slot, unsigned attrs)
 {
     MOZ_ASSERT(!(attrs & (JSPROP_GETTER | JSPROP_SETTER)));
+    RootedNativeObject self(cx, this);
     RootedId id(cx, idArg);
-    return addProperty(cx, obj, id, nullptr, nullptr, slot, attrs, 0);
+    return addProperty(cx, self, id, nullptr, nullptr, slot, attrs, 0);
 }
 
-/* static */ Shape*
-NativeObject::addDataProperty(ExclusiveContext* cx, HandleNativeObject obj,
-                              HandlePropertyName name, uint32_t slot, unsigned attrs)
+Shape*
+NativeObject::addDataProperty(ExclusiveContext* cx, HandlePropertyName name,
+                              uint32_t slot, unsigned attrs)
 {
     MOZ_ASSERT(!(attrs & (JSPROP_GETTER | JSPROP_SETTER)));
+    RootedNativeObject self(cx, this);
     RootedId id(cx, NameToId(name));
-    return addProperty(cx, obj, id, nullptr, nullptr, slot, attrs, 0);
+    return addProperty(cx, self, id, nullptr, nullptr, slot, attrs, 0);
 }
 
 template <AllowGC allowGC>

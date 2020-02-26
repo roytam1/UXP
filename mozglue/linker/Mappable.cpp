@@ -15,9 +15,6 @@
 
 #include "mozilla/UniquePtr.h"
 
-#ifdef ANDROID
-#include <linux/ashmem.h>
-#endif
 #include <sys/stat.h>
 #include <errno.h>
 #include "ElfLoader.h"
@@ -263,7 +260,6 @@ MappableExtractFile::Create(const char *name, Zip *zip, Zip::Stream *stream)
  * _MappableBuffer is a buffer which content can be mapped at different
  * locations in the virtual address space.
  * On Linux, uses a (deleted) temporary file on a tmpfs for sharable content.
- * On Android, uses ashmem.
  */
 class _MappableBuffer: public MappedPtr
 {
@@ -275,57 +271,7 @@ public:
   static _MappableBuffer *Create(const char *name, size_t length)
   {
     AutoCloseFD fd;
-#ifdef ANDROID
-    /* On Android, initialize an ashmem region with the given length */
-    fd = open("/" ASHMEM_NAME_DEF, O_RDWR, 0600);
-    if (fd == -1)
-      return nullptr;
-    char str[ASHMEM_NAME_LEN];
-    strlcpy(str, name, sizeof(str));
-    ioctl(fd, ASHMEM_SET_NAME, str);
-    if (ioctl(fd, ASHMEM_SET_SIZE, length))
-      return nullptr;
 
-    /* The Gecko crash reporter is confused by adjacent memory mappings of
-     * the same file and chances are we're going to map from the same file
-     * descriptor right away. To avoid problems with the crash reporter,
-     * create an empty anonymous page before or after the ashmem mapping,
-     * depending on how mappings grow in the address space.
-     */
-#if defined(__arm__)
-    void *buf = ::mmap(nullptr, length + PAGE_SIZE, PROT_READ | PROT_WRITE,
-                       MAP_SHARED, fd, 0);
-    if (buf != MAP_FAILED) {
-      ::mmap(AlignedEndPtr(reinterpret_cast<char *>(buf) + length, PAGE_SIZE),
-             PAGE_SIZE, PROT_NONE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      DEBUG_LOG("Decompression buffer of size 0x%x in ashmem \"%s\", mapped @%p",
-                length, str, buf);
-      return new _MappableBuffer(fd.forget(), buf, length);
-    }
-#elif defined(__i386__)
-    size_t anon_mapping_length = length + PAGE_SIZE;
-    void *buf = ::mmap(nullptr, anon_mapping_length, PROT_NONE,
-                       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (buf != MAP_FAILED) {
-      char *first_page = reinterpret_cast<char *>(buf);
-      char *map_page = first_page + PAGE_SIZE;
-
-      void *actual_buf = ::mmap(map_page, length, PROT_READ | PROT_WRITE,
-                                MAP_FIXED | MAP_SHARED, fd, 0);
-      if (actual_buf == MAP_FAILED) {
-        ::munmap(buf, anon_mapping_length);
-        DEBUG_LOG("Fixed allocation of decompression buffer at %p failed", map_page);
-        return nullptr;
-      }
-
-      DEBUG_LOG("Decompression buffer of size 0x%x in ashmem \"%s\", mapped @%p",
-                length, str, actual_buf);
-      return new _MappableBuffer(fd.forget(), actual_buf, length);
-    }
-#else
-#error need to add a case for your CPU
-#endif
-#else
     /* On Linux, use /dev/shm as base directory for temporary files, assuming
      * it's on tmpfs */
     /* TODO: check that /dev/shm is tmpfs */
@@ -344,36 +290,15 @@ public:
                 length, path, buf);
       return new _MappableBuffer(fd.forget(), buf, length);
     }
-#endif
+
     return nullptr;
   }
 
   void *mmap(const void *addr, size_t length, int prot, int flags, off_t offset)
   {
     MOZ_ASSERT(fd != -1);
-#ifdef ANDROID
-    /* Mapping ashmem MAP_PRIVATE is like mapping anonymous memory, even when
-     * there is content in the ashmem */
-    if (flags & MAP_PRIVATE) {
-      flags &= ~MAP_PRIVATE;
-      flags |= MAP_SHARED;
-    }
-#endif
     return ::mmap(const_cast<void *>(addr), length, prot, flags, fd, offset);
   }
-
-#ifdef ANDROID
-  ~_MappableBuffer() {
-    /* Free the additional page we allocated. See _MappableBuffer::Create */
-#if defined(__arm__)
-    ::munmap(AlignedEndPtr(*this + GetLength(), PAGE_SIZE), PAGE_SIZE);
-#elif defined(__i386__)
-    ::munmap(*this - PAGE_SIZE, GetLength() + PAGE_SIZE);
-#else
-#error need to add a case for your CPU
-#endif
-  }
-#endif
 
 private:
   _MappableBuffer(int fd, void *buf, size_t length)
@@ -440,15 +365,6 @@ MappableDeflate::mmap(const void *addr, size_t length, int prot, int flags, off_
       }
     }
   }
-#if defined(ANDROID) && defined(__arm__)
-  if (prot & PROT_EXEC) {
-    /* We just extracted data that may be executed in the future.
-     * We thus need to ensure Instruction and Data cache coherency. */
-    DEBUG_LOG("cacheflush(%p, %p)", *buffer + offset, *buffer + (offset + length));
-    cacheflush(reinterpret_cast<uintptr_t>(*buffer + offset),
-               reinterpret_cast<uintptr_t>(*buffer + (offset + length)), 0);
-  }
-#endif
 
   return MemoryRange(buffer->mmap(addr, length, prot, flags, offset), length);
 }
@@ -611,15 +527,6 @@ MappableSeekableZStream::ensure(const void *addr)
     if (!zStream.DecompressChunk(*buffer + chunkStart, chunk, length))
       return false;
 
-#if defined(ANDROID) && defined(__arm__)
-    if (map->prot & PROT_EXEC) {
-      /* We just extracted data that may be executed in the future.
-       * We thus need to ensure Instruction and Data cache coherency. */
-      DEBUG_LOG("cacheflush(%p, %p)", *buffer + chunkStart, *buffer + (chunkStart + length));
-      cacheflush(reinterpret_cast<uintptr_t>(*buffer + chunkStart),
-                 reinterpret_cast<uintptr_t>(*buffer + (chunkStart + length)), 0);
-    }
-#endif
     /* Only count if we haven't already decompressed parts of the chunk */
     if (chunkAvail[chunk] == 0)
       chunkAvailNum++;

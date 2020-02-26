@@ -5,15 +5,7 @@
 #ifndef Elfxx_h
 #define Elfxx_h
 
-/**
- * Android system headers have two different elf.h file. The one under linux/
- * is the most complete on older android API versions.
- */
-#if defined(ANDROID) && __ANDROID_API__ < 21
-#include <linux/elf.h>
-#else
 #include <elf.h>
-#endif
 #include <endian.h>
 
 #if defined(__ARM_EABI__) && !defined(PT_ARM_EXIDX)

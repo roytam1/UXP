@@ -99,10 +99,6 @@
 #include "nsWindowsHelpers.h"
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "FennecJNIWrappers.h"
-#endif
-
 #include "mozilla/Preferences.h"
 #include "mozilla/ipc/URIUtils.h"
 
@@ -322,36 +318,6 @@ static nsresult GetDownloadDirectory(nsIFile **_directory,
                                          getter_AddRefs(dir));
     NS_ENSURE_SUCCESS(rv, rv);
   }
-#elif defined(ANDROID)
-  // We ask Java for the temporary download directory. The directory will be
-  // different depending on whether we have the permission to write to the
-  // public download directory or not.
-  // In the case where we do not have the permission we will start the
-  // download to the app cache directory and later move it to the final
-  // destination after prompting for the permission.
-  jni::String::LocalRef downloadDir;
-  if (jni::IsFennec()) {
-    downloadDir = java::DownloadsIntegration::GetTemporaryDownloadDirectory();
-  }
-
-  nsresult rv;
-  if (downloadDir) {
-    nsCOMPtr<nsIFile> ldir;
-    rv = NS_NewNativeLocalFile(downloadDir->ToCString(),
-                               true, getter_AddRefs(ldir));
-
-    NS_ENSURE_SUCCESS(rv, rv);
-    dir = do_QueryInterface(ldir);
-
-    // If we're not checking for availability we're done.
-    if (aSkipChecks) {
-      dir.forget(_directory);
-      return NS_OK;
-    }
-  }
-  else {
-    return NS_ERROR_FAILURE;
-  }
 #else
   // On all other platforms, we default to the systems temporary directory.
   nsresult rv = NS_GetSpecialDirectory(NS_OS_TEMP_DIR, getter_AddRefs(dir));
@@ -523,9 +489,6 @@ static const nsExtraMimeTypeEntry extraMimeEntries[] =
   { APPLICATION_POSTSCRIPT, "ps,eps,ai", "Postscript File" },
   { APPLICATION_XJAVASCRIPT, "js", "Javascript Source File" },
   { APPLICATION_XJAVASCRIPT, "jsm", "Javascript Module Source File" },
-#ifdef MOZ_WIDGET_ANDROID
-  { "application/vnd.android.package-archive", "apk", "Android Package" },
-#endif
   { IMAGE_ART, "art", "ART Image" },
   { IMAGE_BMP, "bmp", "BMP Image" },
   { IMAGE_GIF, "gif", "GIF Image" },
@@ -1795,13 +1758,7 @@ void nsExternalAppHandler::SendStatusChange(ErrorType type, nsresult rv, nsIRequ
     case NS_ERROR_FILE_ACCESS_DENIED:
         if (type == kWriteError) {
           // Attempt to write without sufficient permissions.
-#if defined(ANDROID)
-          // On Android (and Gonk), this means the SD card is present but
-          // unavailable (read-only).
-          msgId.AssignLiteral("SDAccessErrorCardReadOnly");
-#else
           msgId.AssignLiteral("accessError");
-#endif
         } else {
           msgId.AssignLiteral("launchError");
         }
@@ -1815,14 +1772,6 @@ void nsExternalAppHandler::SendStatusChange(ErrorType type, nsresult rv, nsIRequ
           msgId.AssignLiteral("helperAppNotFound");
           break;
         }
-#if defined(ANDROID)
-        else if (type == kWriteError) {
-          // On Android (and Gonk), this means the SD card is missing (not in
-          // SD slot).
-          msgId.AssignLiteral("SDAccessErrorCardMissing");
-          break;
-        }
-#endif
         MOZ_FALLTHROUGH;
 
     default:

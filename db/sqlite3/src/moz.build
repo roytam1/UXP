@@ -63,10 +63,6 @@ if CONFIG['MOZ_DEBUG']:
     DEFINES['SQLITE_DEBUG'] = 1
     DEFINES['SQLITE_ENABLE_API_ARMOR'] = True
 
-if CONFIG['OS_TARGET'] == 'Android':
-    # default to user readable only to fit Android security model
-    DEFINES['SQLITE_DEFAULT_FILE_PERMISSIONS'] = '0600'
-
 # Force using malloc_usable_size when building with jemalloc because _msize
 # causes assertions on Win64. See bug 719579.
 if CONFIG['OS_ARCH'] == 'WINNT' and CONFIG['MOZ_MEMORY']:
@@ -82,10 +78,7 @@ DEFINES['SQLITE_OMIT_DECLTYPE'] = True
 # performance and doesn't suffer from a full separate tmp partition.
 # Exclude 32bit platforms due to address space fragmentation issues.
 # System Sqlite is managed through a PRAGMA instead.
-if CONFIG['OS_TARGET'] == 'Android':
-    # On Android there's no tmp partition, so always use a MEMORY temp store.
-    DEFINES['SQLITE_TEMP_STORE'] = 3
-elif CONFIG['HAVE_64BIT_BUILD']:
+if CONFIG['HAVE_64BIT_BUILD']:
     # On 64bit platforms default to a MEMORY temp store for performance.
     DEFINES['SQLITE_TEMP_STORE'] = 2
 

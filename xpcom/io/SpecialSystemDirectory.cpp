@@ -220,13 +220,8 @@ GetRegWindowsAppDataFolder(bool aLocal, nsIFile** aFile)
 static nsresult
 GetUnixHomeDir(nsIFile** aFile)
 {
-#if defined(ANDROID)
-  // XXX no home dir on android; maybe we should return the sdcard if present?
-  return NS_ERROR_FAILURE;
-#else
   return NS_NewNativeLocalFile(nsDependentCString(PR_GetEnv("HOME")),
                                true, aFile);
-#endif
 }
 
 /*

@@ -4,32 +4,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-DIRS += [
-    'modules',
-]
-
-MOCHITEST_CHROME_MANIFESTS += ['tests/mochi/chrome.ini']
-XPCSHELL_TESTS_MANIFESTS += ['tests/xpcshell/xpcshell.ini']
-
-SOURCES += [
-    'NativeOSFileInternals.cpp',
-]
+DIRS += ['modules']
 
 XPIDL_MODULE = 'toolkit_osfile'
 
-XPIDL_SOURCES += [
-    'nsINativeOSFileInternals.idl',
-]
+XPIDL_SOURCES += ['nsINativeOSFileInternals.idl']
 
-EXPORTS.mozilla += [
-    'NativeOSFileInternals.h',
-]
+EXPORTS.mozilla += ['NativeOSFileInternals.h']
 
-EXTRA_PP_JS_MODULES += [
-    'osfile.jsm',
-]
+SOURCES += ['NativeOSFileInternals.cpp']
+
+EXTRA_PP_JS_MODULES += ['osfile.jsm']
 
 FINAL_LIBRARY = 'xul'
-
-with Files('**'):
-    BUG_COMPONENT = ('Toolkit', 'OS.File')

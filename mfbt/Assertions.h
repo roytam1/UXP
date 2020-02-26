@@ -66,9 +66,6 @@ __declspec(dllimport) void* __stdcall GetCurrentProcess(void);
 #else
 #  include <signal.h>
 #endif
-#ifdef ANDROID
-#  include <android/log.h>
-#endif
 
 /*
  * MOZ_STATIC_ASSERT may be used to assert a condition *at compile time* in C.
@@ -158,33 +155,22 @@ static MOZ_COLD MOZ_ALWAYS_INLINE void
 MOZ_ReportAssertionFailure(const char* aStr, const char* aFilename, int aLine)
   MOZ_PRETEND_NORETURN_FOR_STATIC_ANALYSIS
 {
-#ifdef ANDROID
-  __android_log_print(ANDROID_LOG_FATAL, "MOZ_Assert",
-                      "Assertion failure: %s, at %s:%d\n",
-                      aStr, aFilename, aLine);
-#else
   fprintf(stderr, "Assertion failure: %s, at %s:%d\n", aStr, aFilename, aLine);
 #if defined (MOZ_DUMP_ASSERTION_STACK)
   nsTraceRefcnt::WalkTheStack(stderr);
 #endif
   fflush(stderr);
-#endif
 }
 
 static MOZ_COLD MOZ_ALWAYS_INLINE void
 MOZ_ReportCrash(const char* aStr, const char* aFilename, int aLine)
   MOZ_PRETEND_NORETURN_FOR_STATIC_ANALYSIS
 {
-#ifdef ANDROID
-  __android_log_print(ANDROID_LOG_FATAL, "MOZ_CRASH",
-                      "Hit MOZ_CRASH(%s) at %s:%d\n", aStr, aFilename, aLine);
-#else
   fprintf(stderr, "Hit MOZ_CRASH(%s) at %s:%d\n", aStr, aFilename, aLine);
 #if defined(MOZ_DUMP_ASSERTION_STACK)
   nsTraceRefcnt::WalkTheStack(stderr);
 #endif
   fflush(stderr);
-#endif
 }
 
 /**

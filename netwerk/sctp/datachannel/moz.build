@@ -25,9 +25,7 @@ LOCAL_INCLUDES += [
 
 DEFINES['INET'] = 1
 DEFINES['SCTP_DEBUG'] = 1
-
-if CONFIG['OS_TARGET'] != 'Android':
-    DEFINES['INET6'] = 1
+DEFINES['INET6'] = 1
 
 if CONFIG['OS_TARGET'] == 'WINNT':
     DEFINES['__Userspace_os_Windows'] = 1

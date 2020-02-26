@@ -107,13 +107,9 @@ static const char * prefList[] = {
 
 // Cache sizes, in KB
 const int32_t DEFAULT_CACHE_SIZE = 250 * 1024;  // 250 MB
-#ifdef ANDROID
-const int32_t MAX_CACHE_SIZE = 200 * 1024;      // 200 MB
-const int32_t OLD_MAX_CACHE_SIZE = 200 * 1024;  // 200 MB
-#else
 const int32_t MAX_CACHE_SIZE = 350 * 1024;      // 350 MB
 const int32_t OLD_MAX_CACHE_SIZE = 1024 * 1024; //   1 GB
-#endif
+
 // Default cache size was 50 MB for many years until FF 4:
 const int32_t PRE_GECKO_2_0_DEFAULT_CACHE_SIZE = 50 * 1024;
 
@@ -593,17 +589,8 @@ SmartCacheSize(const uint32_t availKB, bool shouldUseOldMaxSmartSize)
         avail10MBs = 50;
     }
 
-#ifdef ANDROID
-    // On Android, smaller/older devices may have very little storage and
-    // device owners may be sensitive to storage footprint: Use a smaller
-    // percentage of available space and a smaller minimum.
-
-    // 20% of space up to 500 MB (10 MB min)
-    sz10MBs += std::max<uint32_t>(1, static_cast<uint32_t>(avail10MBs * .2));
-#else
     // 40% of space up to 500 MB (50 MB min)
     sz10MBs += std::max<uint32_t>(5, static_cast<uint32_t>(avail10MBs * .4));
-#endif
 
     return std::min<uint32_t>(maxSize, sz10MBs * 10 * 1024);
 }

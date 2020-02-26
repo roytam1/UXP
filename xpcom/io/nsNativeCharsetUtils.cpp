@@ -7,9 +7,9 @@
 #include "xpcom-private.h"
 
 //-----------------------------------------------------------------------------
-// XP_MACOSX or ANDROID
+// XP_MACOSX
 //-----------------------------------------------------------------------------
-#if defined(XP_MACOSX) || defined(ANDROID)
+#if defined(XP_MACOSX)
 
 #include "nsAString.h"
 #include "nsReadableUtils.h"

@@ -226,13 +226,6 @@ nsStatusReporterManager::DumpReports()
     return rv;
   }
 
-#ifdef ANDROID
-  rv = srFinalFile->AppendNative(NS_LITERAL_CSTRING("status-reports"));
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-#endif
-
   rv = srFinalFile->AppendNative(filename);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;

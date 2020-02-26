@@ -5,26 +5,14 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 NO_VISIBILITY_FLAGS = True
 
-EXPORTS.mozilla += [
-    'VolatileBuffer.h',
-]
+EXPORTS.mozilla += ['VolatileBuffer.h']
 
-if CONFIG['OS_TARGET'] == 'Android':
-    UNIFIED_SOURCES += [
-        'VolatileBufferAshmem.cpp',
-    ]
-elif CONFIG['OS_TARGET'] == 'Darwin':
-    UNIFIED_SOURCES += [
-        'VolatileBufferOSX.cpp',
-    ]
+if CONFIG['OS_TARGET'] == 'Darwin':
+    UNIFIED_SOURCES += ['VolatileBufferOSX.cpp']
 elif CONFIG['OS_TARGET'] == 'WINNT':
-    UNIFIED_SOURCES += [
-        'VolatileBufferWindows.cpp',
-    ]
+    UNIFIED_SOURCES += ['VolatileBufferWindows.cpp']
 else:
-    UNIFIED_SOURCES += [
-        'VolatileBufferFallback.cpp',
-    ]
+    UNIFIED_SOURCES += ['VolatileBufferFallback.cpp']
 
 FINAL_LIBRARY = 'xul'
 

@@ -19,12 +19,7 @@
 #undef LOG
 #endif
 
-#ifdef ANDROID
-#include "android/log.h"
-#define LOG(...) __android_log_print(ANDROID_LOG_INFO, "Gecko:DumpUtils", ## __VA_ARGS__)
-#else
 #define LOG(...)
-#endif
 
 #ifdef XP_UNIX // {
 
@@ -189,9 +184,8 @@ public:
 
   /**
    * This function creates a new unique file based on |aFilename| in a
-   * world-readable temp directory. This is the system temp directory
-   * or, in the case of Android, the downloads directory. If |aFile| is
-   * non-null, it is assumed to point to a folder, and that folder is used
+   * world-readable temp directory. This is the system temp directory. 
+   * If |aFile| is non-null, it is assumed to point to a folder, and that folder is used
    * instead.
    */
   static nsresult OpenTempFile(const nsACString& aFilename,

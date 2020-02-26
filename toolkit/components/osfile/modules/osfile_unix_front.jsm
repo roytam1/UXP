@@ -204,10 +204,7 @@
       * The time stamp resolution is 1 second at best, but might be worse
       * depending on the platform.
       *
-      * WARNING: This method is not implemented on Android/B2G. On Android/B2G,
-      * you should use File.setDates instead.
-      *
-      * @param {Date,number=} accessDate The last access date. If numeric,
+       * @param {Date,number=} accessDate The last access date. If numeric,
       * milliseconds since epoch. If omitted or null, then the current date
       * will be used.
       * @param {Date,number=} modificationDate The last modification date. If
@@ -217,14 +214,12 @@
       * @throws {TypeError} In case of invalid parameters.
       * @throws {OS.File.Error} In case of I/O error.
       */
-     if (SharedAll.Constants.Sys.Name != "Android") {
-       File.prototype.setDates = function(accessDate, modificationDate) {
-         let {value, ptr} = datesToTimevals(accessDate, modificationDate);
-         throw_on_negative("setDates",
-           UnixFile.futimes(this.fd, ptr),
-           this._path);
-       };
-     }
+     File.prototype.setDates = function(accessDate, modificationDate) {
+       let {value, ptr} = datesToTimevals(accessDate, modificationDate);
+       throw_on_negative("setDates",
+         UnixFile.futimes(this.fd, ptr),
+         this._path);
+     };
 
      /**
       * Flushes the file's buffers and causes all buffered data
@@ -576,7 +571,7 @@
        if (UnixFile.splice) {
          const BUFSIZE = 1 << 17;
 
-         // An implementation of |pump| using |splice| (for Linux/Android)
+         // An implementation of |pump| using |splice| (for Linux)
          pump = function pump_splice(source, dest, options = {}) {
            let nbytes = options.nbytes > 0 ? options.nbytes : Infinity;
            let pipe = [];
