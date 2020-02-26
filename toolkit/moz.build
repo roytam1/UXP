@@ -30,16 +30,15 @@ if CONFIG['MOZ_WEBEXTENSIONS']:
 else:
     DIRS += ['mozapps/extensions']
 
-if CONFIG['MOZ_UPDATER'] and CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
+if CONFIG['MOZ_UPDATER']:
     DIRS += ['mozapps/update']
-
-if CONFIG['MOZ_UPDATER'] and CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
-# Including mozapps/update/common-standalone allows the maintenance service
-# to be built so the maintenance service can be used for things other than
-# updating applications.
-    DIRS += [
-        'mozapps/update/common-standalone',
-    ]
+    if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
+    # Including mozapps/update/common-standalone allows the maintenance service
+    # to be built so the maintenance service can be used for things other than
+    # updating applications.
+        DIRS += [
+            'mozapps/update/common-standalone',
+        ]
 
 DIRS += ['xre']
 
@@ -49,5 +48,3 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
     DIRS += ['system/osxproxy']
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     DIRS += ['system/windowsproxy']
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    DIRS += ['system/androidproxy']

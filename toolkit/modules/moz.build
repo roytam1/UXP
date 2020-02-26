@@ -105,16 +105,14 @@ EXTRA_PP_JS_MODULES += [
     'Services.jsm',
 ]
 
-if 'Android' != CONFIG['OS_TARGET']:
-    EXTRA_PP_JS_MODULES += [
-        'LightweightThemeConsumer.jsm',
-    ]
 
-    DIRS += [
-        'subprocess',
-    ]
-else:
-    DEFINES['ANDROID'] = True
+EXTRA_PP_JS_MODULES += [
+    'LightweightThemeConsumer.jsm',
+]
+
+DIRS += [
+    'subprocess',
+]
 
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':

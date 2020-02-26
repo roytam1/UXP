@@ -69,11 +69,10 @@ if CONFIG['MOZ_WEBEXTENSIONS']:
 
 DIRS += ['mozintl']
 
-if not CONFIG['MOZ_FENNEC']:
-    DIRS += ['narrate', 'viewsource'];
+DIRS += ['narrate', 'viewsource'];
 
-    if CONFIG['NS_PRINTING']:
-        DIRS += ['printing']
+if CONFIG['NS_PRINTING']:
+    DIRS += ['printing']
 
 if CONFIG['BUILD_CTYPES']:
     DIRS += ['ctypes']
@@ -97,13 +96,11 @@ if CONFIG['MOZ_URL_CLASSIFIER']:
 
 DIRS += ['captivedetect']
 
-if CONFIG['OS_TARGET'] != 'Android':
-    DIRS += ['terminator']
+DIRS += ['terminator']
 
 DIRS += ['build']
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
-    EXTRA_COMPONENTS += [
-        'nsDefaultCLH.js',
-        'nsDefaultCLH.manifest',
-    ]
+EXTRA_COMPONENTS += [
+    'nsDefaultCLH.js',
+    'nsDefaultCLH.manifest',
+]

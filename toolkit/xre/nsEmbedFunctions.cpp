@@ -266,17 +266,9 @@ XRE_InitChildProcess(int aArgc,
   NS_ENSURE_ARG_POINTER(aArgv[0]);
   MOZ_ASSERT(aChildData);
 
-#if !defined(MOZ_WIDGET_ANDROID)
   // On non-Fennec Gecko, the GMPLoader code resides in plugin-container,
   // and we must forward it through to the GMP code here.
   GMPProcessChild::SetGMPLoader(aChildData->gmpLoader.get());
-#else
-  // On Fennec, the GMPLoader's code resides inside XUL (because for the time
-  // being GMPLoader relies upon NSPR, which we can't use in plugin-container
-  // on Android), so we create it here inside XUL and pass it to the GMP code.
-  UniquePtr<GMPLoader> loader = CreateGMPLoader(nullptr);
-  GMPProcessChild::SetGMPLoader(loader.get());
-#endif
 
 #if defined(XP_WIN)
   // From the --attach-console support in nsNativeAppSupportWin.cpp, but

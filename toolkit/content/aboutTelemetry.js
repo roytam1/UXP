@@ -233,17 +233,9 @@ var Settings = {
     let elements = document.getElementsByClassName("change-data-choices-link");
     for (let el of elements) {
       el.addEventListener("click", function() {
-#ifdef MOZ_WIDGET_ANDROID
-        Cu.import("resource://gre/modules/Messaging.jsm");
-        Messaging.sendRequest({
-          type: "Settings:Show",
-          resource: "preferences_privacy",
-        });
-#else
         // Show the data choices preferences on desktop.
         let mainWindow = getMainWindowWithPreferencesPane();
         mainWindow.openAdvancedPreferences("dataChoicesTab");
-#endif
       }, false);
     }
   },

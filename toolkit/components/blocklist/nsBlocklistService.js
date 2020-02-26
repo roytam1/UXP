@@ -1125,9 +1125,6 @@ Blocklist.prototype = {
 
   /* See nsIBlocklistService */
   getPluginBlocklistState: function(plugin, appVersion, toolkitVersion) {
-#ifdef MOZ_WIDGET_ANDROID
-    return Ci.nsIBlocklistService.STATE_NOT_BLOCKED;
-#endif
     if (!this._isBlocklistLoaded())
       this._loadBlocklist();
     return this._getPluginBlocklistState(plugin, this._pluginEntries,

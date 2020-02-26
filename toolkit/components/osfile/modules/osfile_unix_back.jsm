@@ -372,14 +372,14 @@
        // Two variants of |getwd| which allocate the memory
        // dynamically.
 
-       // Linux/Android version
+       // Linux version
        libc.declareLazyFFI(SysFile,  "get_current_dir_name",
                            "get_current_dir_name", ctypes.default_abi,
                            /*return*/ Type.out_path.releaseWithLazy(() =>
                              SysFile.free
                            ));
 
-       // MacOS/BSD version (will return NULL on Linux/Android)
+       // MacOS/BSD version (will return NULL on Linux)
        libc.declareLazyFFI(SysFile,  "getwd_auto",
                            "getwd", ctypes.default_abi,
                            /*return*/ Type.out_path.releaseWithLazy(() =>
@@ -520,13 +520,13 @@
                     /*fd_out*/ Type.fd,
                     /*off_out*/Type.off_t.in_ptr,
                     /*len*/    Type.size_t,
-                    /*flags*/  Type.unsigned_int); // Linux/Android-specific
+                    /*flags*/  Type.unsigned_int); // Linux-specific
 
        libc.declareLazyFFI(SysFile,  "statfs",
                                "statfs", ctypes.default_abi,
                     /*return*/ Type.negativeone_or_nothing,
                     /*path*/   Type.path,
-                    /*buf*/    Type.statvfs.out_ptr); // Android,B2G
+                    /*buf*/    Type.statvfs.out_ptr); // Other platforms
 
        libc.declareLazyFFI(SysFile,  "statvfs",
                                "statvfs", ctypes.default_abi,

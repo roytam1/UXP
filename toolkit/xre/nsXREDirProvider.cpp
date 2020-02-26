@@ -1340,10 +1340,6 @@ nsXREDirProvider::GetUserDataDirectoryHome(nsIFile** aFile, bool aLocal)
   if (!homeDir || !*homeDir)
     return NS_ERROR_FAILURE;
 
-#ifdef ANDROID /* We want (ProfD == ProfLD) on Android. */
-  aLocal = false;
-#endif
-
   if (aLocal) {
     // If $XDG_CACHE_HOME is defined use it, otherwise use $HOME/.cache.
     const char* cacheHome = getenv("XDG_CACHE_HOME");
@@ -1550,15 +1546,6 @@ nsXREDirProvider::AppendProfilePath(nsIFile* aFile,
   }
   NS_ENSURE_SUCCESS(rv, rv);
 
-#elif defined(ANDROID)
-  // The directory used for storing profiles
-  // The parent of this directory is set in GetUserDataDirectoryHome
-  // XXX: handle gAppData->profile properly
-  // XXXsmaug ...and the rest of the profile creation!
-  MOZ_ASSERT(!aAppName,
-             "Profile creation for external applications is not implemented!");
-  rv = aFile->AppendNative(nsDependentCString("mozilla"));
-  NS_ENSURE_SUCCESS(rv, rv);
 #elif defined(XP_UNIX)
   nsAutoCString folder;
   // Make it hidden (by starting with "."), except when local (the

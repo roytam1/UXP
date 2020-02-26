@@ -46,11 +46,6 @@ if CONFIG['MOZ_X11']:
     EXPORTS += ['nsX11ErrorHandler.h']
     UNIFIED_SOURCES += ['nsX11ErrorHandler.cpp']
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    UNIFIED_SOURCES += [
-        'nsAndroidStartup.cpp',
-    ]
-
 UNIFIED_SOURCES += [
     'CreateAppData.cpp',
     'nsConsoleWriter.cpp',
@@ -79,10 +74,10 @@ if CONFIG['MOZ_INSTRUMENT_EVENT_LOOP']:
     ]
 
 if CONFIG['MOZ_UPDATER']:
-    if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
-        UNIFIED_SOURCES += [
-            'nsUpdateDriver.cpp',
-        ]
+    DEFINES['MOZ_UPDATER'] = True
+    UNIFIED_SOURCES += [
+        'nsUpdateDriver.cpp',
+    ]
 
 include('/ipc/chromium/chromium-config.mozbuild')
 
@@ -98,16 +93,10 @@ for var in ('MOZ_APP_NAME',
             'MOZ_WIDGET_TOOLKIT'):
     DEFINES[var] = '"%s"' % CONFIG[var]
 
-if CONFIG['MOZ_UPDATER'] and CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
-    DEFINES['MOZ_UPDATER'] = True
-
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     DEFINES['WIN32_LEAN_AND_MEAN'] = True
     DEFINES['UNICODE'] = True
     DEFINES['_UNICODE'] = True
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    DEFINES['ANDROID_PACKAGE_NAME'] = '"%s"' % CONFIG['ANDROID_PACKAGE_NAME']
 
 if CONFIG['TARGET_XPCOM_ABI']:
     DEFINES['TARGET_OS_ABI'] = '"%s_%s"' % (CONFIG['OS_TARGET'],

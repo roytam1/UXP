@@ -599,16 +599,6 @@ function copyContentsToClipboard() {
   let clipboard = Cc["@mozilla.org/widget/clipboard;1"]
                     .getService(Ci.nsIClipboard);
   clipboard.setData(transferable, null, clipboard.kGlobalClipboard);
-
-#ifdef MOZ_WIDGET_ANDROID
-  // Present a toast notification.
-  let message = {
-    type: "Toast:Show",
-    message: stringBundle().GetStringFromName("textCopied"),
-    duration: "short"
-  };
-  Services.androidBridge.handleGeckoMessage(message);
-#endif
 }
 
 // Return the plain text representation of an element.  Do a little bit

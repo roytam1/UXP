@@ -85,12 +85,6 @@ DIRS += [
     '/xpfe/appshell'
 ]
 
-# This needs to be built after the gfx/ directory
-# to ensure all dependencies for skia (e.g. mozalloc, xpcom)
-# have been built
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    DIRS += ['/other-licenses/skia-npapi']
-
 if CONFIG['MOZ_UNIVERSALCHARDET']:
     DIRS += ['/extensions/universalchardet']
 
@@ -143,7 +137,7 @@ DIRS += [
 if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
     DIRS += ['/toolkit/system/gnome']
 
-if CONFIG['ENABLE_MARIONETTE'] or CONFIG['MOZ_WIDGET_TOOLKIT'] not in ('android'):
+if CONFIG['ENABLE_MARIONETTE']:
     DIRS += [
         '/testing/firefox-ui',
         '/testing/marionette',

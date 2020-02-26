@@ -10,7 +10,7 @@
 #endif
 #include "nsToolkitCompsCID.h"
 #include "nsFindService.h"
-#if defined(MOZ_UPDATER) && !defined(MOZ_WIDGET_ANDROID)
+#ifdef MOZ_UPDATER
 #include "nsUpdateDriver.h"
 #endif
 
@@ -50,13 +50,8 @@
 #include "NativeFileWatcherNotSupported.h"
 #endif // (XP_WIN)
 
-#if !defined(MOZ_WIDGET_ANDROID)
 #define MOZ_HAS_TERMINATOR
-#endif
-
-#if defined(MOZ_HAS_TERMINATOR)
 #include "nsTerminator.h"
-#endif
 
 #define MOZ_HAS_PERFSTATS
 
@@ -125,7 +120,7 @@ nsUrlClassifierDBServiceConstructor(nsISupports *aOuter, REFNSIID aIID,
 #endif
 
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsBrowserStatusFilter)
-#if defined(MOZ_UPDATER) && !defined(MOZ_WIDGET_ANDROID)
+#ifdef MOZ_UPDATER
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsUpdateProcessor)
 #endif
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(FinalizationWitnessService, Init)
@@ -166,7 +161,7 @@ NS_DEFINE_NAMED_CID(NS_URLCLASSIFIERSTREAMUPDATER_CID);
 NS_DEFINE_NAMED_CID(NS_URLCLASSIFIERUTILS_CID);
 #endif
 NS_DEFINE_NAMED_CID(NS_BROWSERSTATUSFILTER_CID);
-#if defined(MOZ_UPDATER) && !defined(MOZ_WIDGET_ANDROID)
+#ifdef MOZ_UPDATER
 NS_DEFINE_NAMED_CID(NS_UPDATEPROCESSOR_CID);
 #endif
 NS_DEFINE_NAMED_CID(FINALIZATIONWITNESSSERVICE_CID);
@@ -206,7 +201,7 @@ static const Module::CIDEntry kToolkitCIDs[] = {
   { &kNS_URLCLASSIFIERUTILS_CID, false, nullptr, nsUrlClassifierUtilsConstructor },
 #endif
   { &kNS_BROWSERSTATUSFILTER_CID, false, nullptr, nsBrowserStatusFilterConstructor },
-#if defined(MOZ_UPDATER) && !defined(MOZ_WIDGET_ANDROID)
+#ifdef MOZ_UPDATER
   { &kNS_UPDATEPROCESSOR_CID, false, nullptr, nsUpdateProcessorConstructor },
 #endif
   { &kFINALIZATIONWITNESSSERVICE_CID, false, nullptr, FinalizationWitnessServiceConstructor },
@@ -248,7 +243,7 @@ static const Module::ContractIDEntry kToolkitContracts[] = {
   { NS_URLCLASSIFIERUTILS_CONTRACTID, &kNS_URLCLASSIFIERUTILS_CID },
 #endif
   { NS_BROWSERSTATUSFILTER_CONTRACTID, &kNS_BROWSERSTATUSFILTER_CID },
-#if defined(MOZ_UPDATER) && !defined(MOZ_WIDGET_ANDROID)
+#ifdef MOZ_UPDATER
   { NS_UPDATEPROCESSOR_CONTRACTID, &kNS_UPDATEPROCESSOR_CID },
 #endif
   { FINALIZATIONWITNESSSERVICE_CONTRACTID, &kFINALIZATIONWITNESSSERVICE_CID },
