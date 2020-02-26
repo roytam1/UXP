@@ -27,10 +27,6 @@
 #include "mozilla/UniquePtr.h"
 #include "MainThreadUtils.h"
 
-#if defined(ANDROID) && defined(DEBUG)
-#include <android/log.h>
-#endif
-
 template<typename T> class nsTHashtable;
 template<typename T> class nsPtrHashKey;
 

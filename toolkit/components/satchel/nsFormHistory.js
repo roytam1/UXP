@@ -349,26 +349,6 @@ FormHistory.prototype = {
     },
 
     moveToDeletedTable : function moveToDeletedTable(values, params) {
-#ifdef MOZ_WIDGET_ANDROID
-      this.log("Moving entries to deleted table.");
-
-      let stmt;
-
-      try {
-          // Move the entries to the deleted items table.
-          let query = "INSERT INTO moz_deleted_formhistory (guid, timeDeleted) ";
-          if (values) query += values;
-          stmt = this.dbCreateStatement(query, params);
-          stmt.execute();
-      } catch (e) {
-          this.log("Moving deleted entries failed: " + e);
-          throw e;
-      } finally {
-          if (stmt) {
-              stmt.reset();
-          }
-      }
-#endif
     },
 
     get dbConnection() {

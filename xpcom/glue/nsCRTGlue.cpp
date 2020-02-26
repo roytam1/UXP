@@ -22,11 +22,6 @@
 #include "mozilla/UniquePtr.h"
 #endif
 
-#ifdef ANDROID
-#include <android/log.h>
-#include <unistd.h>
-#endif
-
 using namespace mozilla;
 
 const char*
@@ -364,20 +359,6 @@ vprintf_stderr(const char* aFmt, va_list aArgs)
   vfprintf(fp, aFmt, aArgs);
 
   fclose(fp);
-}
-
-#elif defined(ANDROID)
-void
-vprintf_stderr(const char* aFmt, va_list aArgs)
-{
-  if (sStderrCallback) {
-    va_list argsCpy;
-    VARARGS_ASSIGN(argsCpy, aArgs);
-    sStderrCallback(aFmt, aArgs);
-    va_end(argsCpy);
-  }
-
-  __android_log_vprint(ANDROID_LOG_INFO, "Gecko", aFmt, aArgs);
 }
 #else
 void

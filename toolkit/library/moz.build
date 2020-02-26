@@ -178,7 +178,7 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         'winspool',
     ]
 
-if CONFIG['OS_ARCH'] == 'Linux' and CONFIG['OS_TARGET'] != 'Android':
+if CONFIG['OS_ARCH'] == 'Linux':
     OS_LIBS += [
         'rt',
     ]

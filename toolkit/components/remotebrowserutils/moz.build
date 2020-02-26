@@ -8,5 +8,3 @@ EXTRA_COMPONENTS += [
     'remotebrowserutils.manifest',
     'RemoteWebNavigation.js',
 ]
-
-BROWSER_CHROME_MANIFESTS += ['tests/browser/browser.ini']

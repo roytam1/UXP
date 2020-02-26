@@ -985,7 +985,6 @@ nsFormFillController::Focus(nsIDOMEvent* aEvent)
     return NS_OK;
   }
 
-#ifndef ANDROID
   nsCOMPtr<nsIFormControl> formControl = do_QueryInterface(mFocusedInputNode);
   MOZ_ASSERT(formControl);
 
@@ -995,7 +994,6 @@ nsFormFillController::Focus(nsIDOMEvent* aEvent)
       && formControl->GetType() == NS_FORM_INPUT_PASSWORD) {
     ShowPopup();
   }
-#endif
 
   mContextMenuFiredBeforeFocus = false;
   return NS_OK;

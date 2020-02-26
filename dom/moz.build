@@ -55,6 +55,7 @@ DIRS += [
     'gamepad',
     'geolocation',
     'grid',
+    'heapsnapshot',
     'html',
     'json',
     'jsurl',

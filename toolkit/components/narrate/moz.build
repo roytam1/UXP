@@ -9,5 +9,3 @@ EXTRA_JS_MODULES.narrate = [
   'Narrator.jsm',
   'VoiceSelect.jsm'
 ]
-
-BROWSER_CHROME_MANIFESTS += ['test/browser.ini']

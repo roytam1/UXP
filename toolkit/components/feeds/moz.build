@@ -4,8 +4,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MOCHITEST_CHROME_MANIFESTS += ['test/chrome.ini']
-
 XPIDL_SOURCES += [
     'nsIFeed.idl',
     'nsIFeedContainer.idl',
@@ -24,8 +22,4 @@ XPIDL_MODULE = 'feeds'
 EXTRA_COMPONENTS += [
     'FeedProcessor.js',
     'FeedProcessor.manifest',
-]
-
-XPCSHELL_TESTS_MANIFESTS += [
-    'test/xpcshell.ini'
 ]

@@ -49,7 +49,7 @@
                       _XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED) &&           \
                       !(_POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700)
 
-#if defined(XP_LINUX) && !defined(ANDROID) && defined(_GNU_SOURCE)
+#if defined(XP_LINUX) && defined(_GNU_SOURCE)
 #define HAVE_SCHED_SETAFFINITY
 #endif
 

@@ -24,14 +24,11 @@
  * LD_PRELOAD or DYLD_INSERT_LIBRARIES on Linux/OSX. On this platform,
  * the replacement functions are defined as variable pointers to the
  * function resolved with GetProcAddress() instead of weak definitions
- * of functions. On Android, the same needs to happen as well, because
- * the Android linker doesn't handle weak linking with non LD_PRELOADed
- * libraries, but LD_PRELOADing is not very convenient on Android, with
- * the zygote.
+ * of functions.
  */
 #ifdef XP_DARWIN
 #  define MOZ_REPLACE_WEAK __attribute__((weak_import))
-#elif defined(XP_WIN) || defined(MOZ_WIDGET_ANDROID)
+#elif defined(XP_WIN)
 #  define MOZ_NO_REPLACE_FUNC_DECL
 #elif defined(__GNUC__)
 #  define MOZ_REPLACE_WEAK __attribute__((weak))
@@ -65,24 +62,6 @@ replace_malloc_init_funcs()
     if (handle) {
 #define MALLOC_DECL(name, ...) \
   replace_ ## name = (replace_ ## name ## _impl_t *) GetProcAddress(handle, "replace_" # name);
-
-#  define MALLOC_FUNCS MALLOC_FUNCS_ALL
-#include "malloc_decls.h"
-    }
-  }
-}
-#  elif defined(MOZ_WIDGET_ANDROID)
-#    include <dlfcn.h>
-#    include <stdlib.h>
-static void
-replace_malloc_init_funcs()
-{
-  const char *replace_malloc_lib = getenv("MOZ_REPLACE_MALLOC_LIB");
-  if (replace_malloc_lib && *replace_malloc_lib) {
-    void *handle = dlopen(replace_malloc_lib, RTLD_LAZY);
-    if (handle) {
-#define MALLOC_DECL(name, ...) \
-  replace_ ## name = (replace_ ## name ## _impl_t *) dlsym(handle, "replace_" # name);
 
 #  define MALLOC_FUNCS MALLOC_FUNCS_ALL
 #include "malloc_decls.h"

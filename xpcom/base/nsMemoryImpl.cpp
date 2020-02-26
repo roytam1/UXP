@@ -14,16 +14,6 @@
 #include "nsCOMPtr.h"
 #include "mozilla/Services.h"
 
-#ifdef ANDROID
-#include <stdio.h>
-
-// Minimum memory threshold for a device to be considered
-// a low memory platform. This value has be in sync with
-// Java's equivalent threshold, defined in
-// mobile/android/base/util/HardwareUtils.java
-#define LOW_MEMORY_THRESHOLD_KB (384 * 1024)
-#endif
-
 static nsMemoryImpl sGlobalMemory;
 
 NS_IMPL_QUERY_INTERFACE(nsMemoryImpl, nsIMemory)
@@ -37,31 +27,8 @@ nsMemoryImpl::HeapMinimize(bool aImmediate)
 NS_IMETHODIMP
 nsMemoryImpl::IsLowMemoryPlatform(bool* aResult)
 {
-#ifdef ANDROID
-  static int sLowMemory = -1; // initialize to unknown, lazily evaluate to 0 or 1
-  if (sLowMemory == -1) {
-    sLowMemory = 0; // assume "not low memory" in case file operations fail
-    *aResult = false;
-
-    // check if MemTotal from /proc/meminfo is less than LOW_MEMORY_THRESHOLD_KB
-    FILE* fd = fopen("/proc/meminfo", "r");
-    if (!fd) {
-      return NS_OK;
-    }
-    uint64_t mem = 0;
-    int rv = fscanf(fd, "MemTotal: %llu kB", &mem);
-    if (fclose(fd)) {
-      return NS_OK;
-    }
-    if (rv != 1) {
-      return NS_OK;
-    }
-    sLowMemory = (mem < LOW_MEMORY_THRESHOLD_KB) ? 1 : 0;
-  }
-  *aResult = (sLowMemory == 1);
-#else
   *aResult = false;
-#endif
+
   return NS_OK;
 }
 

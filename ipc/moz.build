@@ -6,6 +6,7 @@
 
 DIRS += [
     'chromium',
+    'contentproc',
     'glue',
     'ipdl',
     'testshell',
@@ -13,9 +14,6 @@ DIRS += [
 
 if CONFIG['MOZ_ENABLE_DBUS']:
     DIRS += ['dbus']
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'android':
-    DIRS += ['contentproc']
 
 if CONFIG['OS_ARCH'] == 'WINNT':
     DIRS += ['mscom']

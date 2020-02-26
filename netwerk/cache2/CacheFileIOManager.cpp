@@ -49,11 +49,7 @@ namespace net {
 #define kRemoveTrashStartDelay   60000 // in milliseconds
 #define kSmartSizeUpdateInterval 60000 // in milliseconds
 
-#ifdef ANDROID
-const uint32_t kMaxCacheSizeKB = 200*1024; // 200 MB
-#else
 const uint32_t kMaxCacheSizeKB = 350*1024; // 350 MB
-#endif
 
 bool
 CacheFileHandle::DispatchRelease()
@@ -1280,37 +1276,6 @@ CacheFileIOManager::OnProfile()
 
   CacheObserver::ParentDirOverride(getter_AddRefs(directory));
 
-#if defined(MOZ_WIDGET_ANDROID)
-  nsCOMPtr<nsIFile> profilelessDirectory;
-  char* cachePath = getenv("CACHE_DIRECTORY");
-  if (!directory && cachePath && *cachePath) {
-    rv = NS_NewNativeLocalFile(nsDependentCString(cachePath),
-                               true, getter_AddRefs(directory));
-    if (NS_SUCCEEDED(rv)) {
-      // Save this directory as the profileless path.
-      rv = directory->Clone(getter_AddRefs(profilelessDirectory));
-      NS_ENSURE_SUCCESS(rv, rv);
-
-      // Add profile leaf name to the directory name to distinguish
-      // multiple profiles Fennec supports.
-      nsCOMPtr<nsIFile> profD;
-      rv = NS_GetSpecialDirectory(NS_APP_USER_PROFILE_50_DIR,
-                                  getter_AddRefs(profD));
-
-      nsAutoCString leafName;
-      if (NS_SUCCEEDED(rv)) {
-        rv = profD->GetNativeLeafName(leafName);
-      }
-      if (NS_SUCCEEDED(rv)) {
-        rv = directory->AppendNative(leafName);
-      }
-      if (NS_FAILED(rv)) {
-        directory = nullptr;
-      }
-    }
-  }
-#endif
-
   if (!directory) {
     rv = NS_GetSpecialDirectory(NS_APP_CACHE_PARENT_DIR,
                                 getter_AddRefs(directory));
@@ -1328,15 +1293,6 @@ CacheFileIOManager::OnProfile()
 
   // All functions return a clone.
   ioMan->mCacheDirectory.swap(directory);
-
-#if defined(MOZ_WIDGET_ANDROID)
-  if (profilelessDirectory) {
-    rv = profilelessDirectory->Append(NS_LITERAL_STRING("cache2"));
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
-
-  ioMan->mCacheProfilelessDirectory.swap(profilelessDirectory);
-#endif
 
   if (ioMan->mCacheDirectory) {
     CacheIndex::Init(ioMan->mCacheDirectory);
@@ -2390,23 +2346,6 @@ void CacheFileIOManager::GetCacheDirectory(nsIFile** result)
 
   ioMan->mCacheDirectory->Clone(result);
 }
-
-#if defined(MOZ_WIDGET_ANDROID)
-
-// static
-void CacheFileIOManager::GetProfilelessCacheDirectory(nsIFile** result)
-{
-  *result = nullptr;
-
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
-  if (!ioMan || !ioMan->mCacheProfilelessDirectory) {
-    return;
-  }
-
-  ioMan->mCacheProfilelessDirectory->Clone(result);
-}
-
-#endif
 
 // static
 nsresult
@@ -4019,17 +3958,8 @@ SmartCacheSize(const uint32_t availKB)
     avail10MBs = 50;
   }
 
-#ifdef ANDROID
-  // On Android, smaller/older devices may have very little storage and
-  // device owners may be sensitive to storage footprint: Use a smaller
-  // percentage of available space and a smaller minimum.
-
-  // 20% of space up to 500 MB (10 MB min)
-  sz10MBs += std::max<uint32_t>(1, static_cast<uint32_t>(avail10MBs * .2));
-#else
   // 40% of space up to 500 MB (50 MB min)
   sz10MBs += std::max<uint32_t>(5, static_cast<uint32_t>(avail10MBs * .4));
-#endif
 
   return std::min<uint32_t>(maxSize, sz10MBs * 10 * 1024);
 }

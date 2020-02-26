@@ -3064,9 +3064,8 @@ nsSocketTransport::PRFileDescAutoLock::SetKeepaliveVals(bool aEnabled,
 
 #elif defined(XP_UNIX)
     // Not all *nix OSes support the following setsockopt() options
-    // ... but we assume they are supported in the Android kernel;
     // build errors will tell us if they are not.
-#if defined(ANDROID) || defined(TCP_KEEPIDLE)
+#ifdef TCP_KEEPIDLE
     // Idle time until first keepalive probe; interval between ack'd probes; seconds.
     int err = setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE,
                          &aIdleTime, sizeof(aIdleTime));
@@ -3077,7 +3076,7 @@ nsSocketTransport::PRFileDescAutoLock::SetKeepaliveVals(bool aEnabled,
     }
 
 #endif
-#if defined(ANDROID) || defined(TCP_KEEPINTVL)
+#ifdef TCP_KEEPINTVL
     // Interval between unack'd keepalive probes; seconds.
     err = setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL,
                         &aRetryInterval, sizeof(aRetryInterval));
@@ -3088,7 +3087,7 @@ nsSocketTransport::PRFileDescAutoLock::SetKeepaliveVals(bool aEnabled,
     }
 
 #endif
-#if defined(ANDROID) || defined(TCP_KEEPCNT)
+#ifdef TCP_KEEPCNT
     // Number of unack'd keepalive probes before connection times out.
     err = setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT,
                      &aProbeCount, sizeof(aProbeCount));

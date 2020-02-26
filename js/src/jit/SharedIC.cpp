@@ -27,7 +27,6 @@
 #endif
 #include "jit/VMFunctions.h"
 #include "vm/Interpreter.h"
-#include "vm/NativeObject-inl.h"
 
 #include "jit/MacroAssembler-inl.h"
 #include "vm/Interpreter-inl.h"
@@ -284,6 +283,11 @@ ICStub::trace(JSTracer* trc)
       case ICStub::GetElem_Dense: {
         ICGetElem_Dense* getElemStub = toGetElem_Dense();
         TraceEdge(trc, &getElemStub->shape(), "baseline-getelem-dense-shape");
+        break;
+      }
+      case ICStub::GetElem_UnboxedArray: {
+        ICGetElem_UnboxedArray* getElemStub = toGetElem_UnboxedArray();
+        TraceEdge(trc, &getElemStub->group(), "baseline-getelem-unboxed-array-group");
         break;
       }
       case ICStub::GetElem_TypedArray: {
@@ -2244,7 +2248,9 @@ IsCacheableProtoChain(JSObject* obj, JSObject* holder, bool isDOMProxy)
     if (!isDOMProxy && !obj->isNative()) {
         if (obj == holder)
             return false;
-        if (!obj->is<TypedObject>())
+        if (!obj->is<UnboxedPlainObject>() &&
+            !obj->is<UnboxedArrayObject>() &&
+            !obj->is<TypedObject>())
         {
             return false;
         }
@@ -2572,6 +2578,12 @@ CheckHasNoSuchProperty(JSContext* cx, JSObject* obj, PropertyName* name,
         } else if (curObj != obj) {
             // Non-native objects are only handled as the original receiver.
             return false;
+        } else if (curObj->is<UnboxedPlainObject>()) {
+            if (curObj->as<UnboxedPlainObject>().containsUnboxedOrExpandoProperty(cx, NameToId(name)))
+                return false;
+        } else if (curObj->is<UnboxedArrayObject>()) {
+            if (name == cx->names().length)
+                return false;
         } else if (curObj->is<TypedObject>()) {
             if (curObj->as<TypedObject>().typeDescr().hasProperty(cx->names(), NameToId(name)))
                 return false;
@@ -2836,15 +2848,34 @@ GuardReceiverObject(MacroAssembler& masm, ReceiverGuard guard,
 {
     Address groupAddress(ICStubReg, receiverGuardOffset + HeapReceiverGuard::offsetOfGroup());
     Address shapeAddress(ICStubReg, receiverGuardOffset + HeapReceiverGuard::offsetOfShape());
+    Address expandoAddress(object, UnboxedPlainObject::offsetOfExpando());
 
     if (guard.group) {
         masm.loadPtr(groupAddress, scratch);
         masm.branchTestObjGroup(Assembler::NotEqual, object, scratch, failure);
+
+        if (guard.group->clasp() == &UnboxedPlainObject::class_ && !guard.shape) {
+            // Guard the unboxed object has no expando object.
+            masm.branchPtr(Assembler::NotEqual, expandoAddress, ImmWord(0), failure);
+        }
     }
 
     if (guard.shape) {
         masm.loadPtr(shapeAddress, scratch);
-        masm.branchTestObjShape(Assembler::NotEqual, object, scratch, failure);
+        if (guard.group && guard.group->clasp() == &UnboxedPlainObject::class_) {
+            // Guard the unboxed object has a matching expando object.
+            masm.branchPtr(Assembler::Equal, expandoAddress, ImmWord(0), failure);
+            Label done;
+            masm.push(object);
+            masm.loadPtr(expandoAddress, object);
+            masm.branchTestObjShape(Assembler::Equal, object, scratch, &done);
+            masm.pop(object);
+            masm.jump(failure);
+            masm.bind(&done);
+            masm.pop(object);
+        } else {
+            masm.branchTestObjShape(Assembler::NotEqual, object, scratch, failure);
+        }
     }
 }
 
@@ -4228,7 +4259,8 @@ DoNewObject(JSContext* cx, void* payload, ICNewObject_Fallback* stub, MutableHan
                 return false;
 
             if (!stub->invalid() &&
-                !templateObject->as<PlainObject>().hasDynamicSlots())
+                (templateObject->is<UnboxedPlainObject>() ||
+                 !templateObject->as<PlainObject>().hasDynamicSlots()))
             {
                 JitCode* code = GenerateNewObjectWithTemplateCode(cx, templateObject);
                 if (!code)

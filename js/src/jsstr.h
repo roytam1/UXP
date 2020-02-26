@@ -465,7 +465,7 @@ FileEscapedString(FILE* fp, const char* chars, size_t length, uint32_t quote)
     return res;
 }
 
-ArrayObject*
+JSObject*
 str_split_string(JSContext* cx, HandleObjectGroup group, HandleString str, HandleString sep,
                  uint32_t limit);
 

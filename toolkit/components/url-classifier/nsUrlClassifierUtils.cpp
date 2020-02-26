@@ -83,9 +83,7 @@ namespace safebrowsing {
 static PlatformType
 GetPlatformType()
 {
-#if defined(ANDROID)
-  return ANDROID_PLATFORM;
-#elif defined(XP_MACOSX)
+#if defined(XP_MACOSX)
   return OSX_PLATFORM;
 #elif defined(XP_LINUX)
   return LINUX_PLATFORM;

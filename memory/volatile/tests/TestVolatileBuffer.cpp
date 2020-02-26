@@ -6,13 +6,7 @@
 #include "mozilla/VolatileBuffer.h"
 #include <string.h>
 
-#if defined(ANDROID)
-#include <fcntl.h>
-#include <linux/ashmem.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#elif defined(XP_DARWIN)
+#ifdef XP_DARWIN
 #include <mach/mach.h>
 #endif
 

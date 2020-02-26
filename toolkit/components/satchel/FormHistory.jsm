@@ -101,11 +101,7 @@ const DAY_IN_MS  = 86400000; // 1 day in milliseconds
 const MAX_SEARCH_TOKENS = 10;
 const NOOP = function noop() {};
 
-#ifdef MOZ_WIDGET_ANDROID
-var supportsDeletedTable = true;
-#else
 var supportsDeletedTable = false;
-#endif
 
 var Prefs = {
   initialized: false,

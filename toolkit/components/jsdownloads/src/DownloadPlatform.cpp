@@ -30,10 +30,6 @@
 #include "../../../../xpcom/io/CocoaFileUtils.h"
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "FennecJNIWrappers.h"
-#endif
-
 #ifdef MOZ_WIDGET_GTK
 #include <gtk/gtk.h>
 #endif
@@ -101,21 +97,15 @@ CFURLRef CreateCFURLFromNSIURI(nsIURI *aURI) {
 nsresult DownloadPlatform::DownloadDone(nsIURI* aSource, nsIURI* aReferrer, nsIFile* aTarget,
                                         const nsACString& aContentType, bool aIsPrivate)
 {
-#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_ANDROID) \
- || defined(MOZ_WIDGET_GTK)
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
 
   nsAutoString path;
   if (aTarget && NS_SUCCEEDED(aTarget->GetPath(path))) {
-#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_ANDROID)
+#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
     // On Windows and Gtk, add the download to the system's "recent documents"
     // list, with a pref to disable.
     {
       bool addToRecentDocs = Preferences::GetBool(PREF_BDM_ADDTORECENTDOCS);
-#ifdef MOZ_WIDGET_ANDROID
-      if (jni::IsFennec() && addToRecentDocs) {
-        java::DownloadsIntegration::ScanMedia(path, aContentType);
-      }
-#else
       if (addToRecentDocs && !aIsPrivate) {
 #ifdef XP_WIN
         ::SHAddToRecentDocs(SHARD_PATHW, path.get());
@@ -130,7 +120,7 @@ nsresult DownloadPlatform::DownloadDone(nsIURI* aSource, nsIURI* aReferrer, nsIF
         }
 #endif
       }
-#endif
+
 #ifdef MOZ_ENABLE_GIO
       // Use GIO to store the source URI for later display in the file manager.
       GFile* gio_file = g_file_new_for_path(NS_ConvertUTF16toUTF8(path).get());

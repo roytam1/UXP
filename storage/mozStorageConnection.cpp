@@ -1955,10 +1955,6 @@ Connection::RemoveProgressHandler(mozIStorageProgressHandler **_oldHandler)
 NS_IMETHODIMP
 Connection::SetGrowthIncrement(int32_t aChunkSize, const nsACString &aDatabaseName)
 {
-  // Bug 597215: Disk space is extremely limited on Android
-  // so don't preallocate space. This is also not effective
-  // on log structured file systems used by Android devices
-#if !defined(ANDROID) && !defined(MOZ_PLATFORM_MAEMO)
   // Don't preallocate if less than 500MiB is available.
   int64_t bytesAvailable;
   nsresult rv = mDatabaseFile->GetDiskSpaceAvailable(&bytesAvailable);
@@ -1972,7 +1968,7 @@ Connection::SetGrowthIncrement(int32_t aChunkSize, const nsACString &aDatabaseNa
                                                       : nullptr,
                                SQLITE_FCNTL_CHUNK_SIZE,
                                &aChunkSize);
-#endif
+
   return NS_OK;
 }
 

@@ -70,10 +70,6 @@ XPCOMUtils.defineLazyServiceGetter(this, "gMIMEService",
 XPCOMUtils.defineLazyServiceGetter(this, "gExternalProtocolService",
                                    "@mozilla.org/uriloader/external-protocol-service;1",
                                    "nsIExternalProtocolService");
-#ifdef MOZ_WIDGET_ANDROID
-XPCOMUtils.defineLazyModuleGetter(this, "RuntimePermissions",
-                                  "resource://gre/modules/RuntimePermissions.jsm");
-#endif
 
 XPCOMUtils.defineLazyGetter(this, "gParentalControlsService", function() {
   if ("@mozilla.org/parental-controls-service;1" in Cc) {
@@ -299,14 +295,10 @@ this.DownloadIntegration = {
         aDownload.hasBlockedData) {
       return true;
     }
-#if defined(MOZ_WIDGET_ANDROID)
-    // On Android we store all history.
-    return true;
-#else
+
     // On Desktop, stopped downloads for which we don't need to track the
     // presence of a ".part" file are only retained in the browser history.
     return false;
-#endif
   },
 
   /**
@@ -332,16 +324,8 @@ this.DownloadIntegration = {
     } else {
       directoryPath = this._getDirectory("DfltDwnld");
     }
+
 #elifdef XP_UNIX
-#ifdef MOZ_WIDGET_ANDROID
-    // Android doesn't have a $HOME directory, and by default we only have
-    // write access to /data/data/org.mozilla.{$APP} and /sdcard
-    directoryPath = gEnvironment.get("DOWNLOADS_DIRECTORY");
-    if (!directoryPath) {
-      throw new Components.Exception("DOWNLOADS_DIRECTORY is not set.",
-                                     Cr.NS_ERROR_FILE_UNRECOGNIZED_PATH);
-    }
-#else
     // For Linux, use XDG download dir, with a fallback to Home/Downloads
     // if the XDG user dirs are disabled.
     try {
@@ -349,7 +333,6 @@ this.DownloadIntegration = {
     } catch(e) {
       directoryPath = yield this._createDownloadsDirectory("Home");
     }
-#endif
 #else
     directoryPath = yield this._createDownloadsDirectory("Home");
 #endif
@@ -403,8 +386,6 @@ this.DownloadIntegration = {
     let directoryPath = null;
 #ifdef XP_MACOSX
     directoryPath = yield this.getPreferredDownloadsDirectory();
-#elifdef MOZ_WIDGET_ANDROID
-    directoryPath = yield this.getSystemDownloadsDirectory();
 #else
     directoryPath = this._getDirectory("TmpD");
 #endif
@@ -443,12 +424,7 @@ this.DownloadIntegration = {
    * @resolves The boolean indicates to block downloads or not.
    */
   shouldBlockForRuntimePermissions() {
-#ifdef MOZ_WIDGET_ANDROID
-    return RuntimePermissions.waitForPermissions(RuntimePermissions.WRITE_EXTERNAL_STORAGE)
-                             .then(permissionGranted => !permissionGranted);
-#else
     return Promise.resolve(false);
-#endif
   },
 
   /**

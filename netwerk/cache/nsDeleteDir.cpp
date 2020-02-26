@@ -235,18 +235,11 @@ nsDeleteDir::DeleteDir(nsIFile *dirIn, bool moveToTrash, uint32_t delay)
     if (!leaf.Length())
       return NS_ERROR_FAILURE;
 
-#if defined(MOZ_WIDGET_ANDROID)
-    nsCOMPtr<nsIFile> parent;
-    rv = trash->GetParent(getter_AddRefs(parent));
-    if (NS_FAILED(rv))
-      return rv;
-    rv = dir->MoveToNative(parent, leaf);
-#else
     // Important: must rename directory w/o changing parent directory: else on
     // NTFS we'll wait (with cache lock) while nsIFile's ACL reset walks file
     // tree: was hanging GUI for *minutes* on large cache dirs.
     rv = dir->MoveToNative(nullptr, leaf);
-#endif
+
     if (NS_FAILED(rv))
       return rv;
   } else {
@@ -269,21 +262,6 @@ nsresult
 nsDeleteDir::GetTrashDir(nsIFile *target, nsCOMPtr<nsIFile> *result)
 {
   nsresult rv;
-#if defined(MOZ_WIDGET_ANDROID)
-  // Try to use the app cache folder for cache trash on Android
-  char* cachePath = getenv("CACHE_DIRECTORY");
-  if (cachePath) {
-    rv = NS_NewNativeLocalFile(nsDependentCString(cachePath),
-                               true, getter_AddRefs(*result));
-    if (NS_FAILED(rv))
-      return rv;
-
-    // Add a sub folder with the cache folder name
-    nsAutoCString leaf;
-    rv = target->GetNativeLeafName(leaf);
-    (*result)->AppendNative(leaf);
-  } else
-#endif
   {
     rv = target->Clone(getter_AddRefs(*result));
   }
@@ -318,11 +296,9 @@ nsDeleteDir::RemoveOldTrashes(nsIFile *cacheDir)
     return rv;
 
   nsCOMPtr<nsIFile> parent;
-#if defined(MOZ_WIDGET_ANDROID)
-  rv = trash->GetParent(getter_AddRefs(parent));
-#else
+
   rv = cacheDir->GetParent(getter_AddRefs(parent));
-#endif
+
   if (NS_FAILED(rv))
     return rv;
 

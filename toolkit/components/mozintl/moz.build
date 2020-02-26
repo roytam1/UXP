@@ -4,16 +4,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-XPCSHELL_TESTS_MANIFESTS += ['test/xpcshell.ini']
-
-XPIDL_SOURCES += [
-    'mozIMozIntl.idl',
-]
+XPIDL_SOURCES += ['mozIMozIntl.idl']
 
 XPIDL_MODULE = 'mozintl'
 
-SOURCES += [
-    'MozIntl.cpp',
-]
+SOURCES += ['MozIntl.cpp']
 
 FINAL_LIBRARY = 'xul'

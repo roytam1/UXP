@@ -5,7 +5,6 @@
 EXTRA_DEPS += $(topsrcdir)/toolkit/library/libxul.mk
 
 ifeq (Linux,$(OS_ARCH))
-ifneq (Android,$(OS_TARGET))
 OS_LDFLAGS += -Wl,-version-script,symverscript
 
 symverscript: $(topsrcdir)/toolkit/library/symverscript.in
@@ -13,7 +12,6 @@ symverscript: $(topsrcdir)/toolkit/library/symverscript.in
 		-DVERSION='xul$(MOZILLA_SYMBOLVERSION)' $< -o $@)
 
 EXTRA_DEPS += symverscript
-endif
 endif
 
 ifdef MOZ_WEBRTC

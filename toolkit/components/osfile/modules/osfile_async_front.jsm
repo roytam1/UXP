@@ -728,26 +728,19 @@ File.prototype = {
   }
 };
 
-
-if (SharedAll.Constants.Sys.Name != "Android") {
-   /**
-   * Set the last access and modification date of the file.
-   * The time stamp resolution is 1 second at best, but might be worse
-   * depending on the platform.
-   *
-   * WARNING: This method is not implemented on Android. On Android,
-   * you should use File.setDates instead.
-   *
-   * @return {promise}
-   * @rejects {TypeError}
-   * @rejects {OS.File.Error}
-   */
-  File.prototype.setDates = function(accessDate, modificationDate) {
-    return Scheduler.post("File_prototype_setDates",
-      [this._fdmsg, accessDate, modificationDate], this);
-  };
-}
-
+ /**
+ * Set the last access and modification date of the file.
+ * The time stamp resolution is 1 second at best, but might be worse
+ * depending on the platform.
+ *
+ * @return {promise}
+ * @rejects {TypeError}
+ * @rejects {OS.File.Error}
+ */
+File.prototype.setDates = function(accessDate, modificationDate) {
+  return Scheduler.post("File_prototype_setDates",
+    [this._fdmsg, accessDate, modificationDate], this);
+};
 
 /**
  * Open a file asynchronously.

@@ -100,11 +100,6 @@
  *******************************************************************************
  */
 
-#ifdef MOZ_MEMORY_ANDROID
-#define NO_TLS
-#define _pthread_self() pthread_self()
-#endif
-
 /*
  * On Linux, we use madvise(MADV_DONTNEED) to release memory back to the
  * operating system.  If we release 1MB of live pages with MADV_DONTNEED, our
@@ -174,7 +169,7 @@
 #  define MALLOC_SYSV
 #endif
 
-#if defined(MOZ_MEMORY_LINUX) && !defined(MOZ_MEMORY_ANDROID)
+#ifdef MOZ_MEMORY_LINUX
 #define	_GNU_SOURCE /* For mremap(2). */
 #endif
 
@@ -501,7 +496,7 @@ static bool malloc_initialized = false;
 /* No init lock for Windows. */
 #elif defined(MOZ_MEMORY_DARWIN)
 static malloc_mutex_t init_lock = {OS_SPINLOCK_INIT};
-#elif defined(MOZ_MEMORY_LINUX) && !defined(MOZ_MEMORY_ANDROID)
+#elif defined(MOZ_MEMORY_LINUX)
 static malloc_mutex_t init_lock = PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
 #else
 static malloc_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -1377,12 +1372,6 @@ void	(*_malloc_message)(const char *p1, const char *p2, const char *p3,
 #  define assert(e)
 #endif
 
-#ifdef MOZ_MEMORY_ANDROID
-// Android's pthread.h does not declare pthread_atfork() until SDK 21.
-extern MOZ_EXPORT
-int pthread_atfork(void (*)(void), void (*)(void), void(*)(void));
-#endif
-
 #if defined(MOZ_JEMALLOC_HARD_ASSERTS)
 #  define RELEASE_ASSERT(assertion) do {	\
 	if (!(assertion)) {			\
@@ -1408,7 +1397,7 @@ malloc_mutex_init(malloc_mutex_t *mutex)
 		return (true);
 #elif defined(MOZ_MEMORY_DARWIN)
 	mutex->lock = OS_SPINLOCK_INIT;
-#elif defined(MOZ_MEMORY_LINUX) && !defined(MOZ_MEMORY_ANDROID)
+#elif defined(MOZ_MEMORY_LINUX)
 	pthread_mutexattr_t attr;
 	if (pthread_mutexattr_init(&attr) != 0)
 		return (true);
@@ -1462,7 +1451,7 @@ malloc_spin_init(malloc_spinlock_t *lock)
 		return (true);
 #elif defined(MOZ_MEMORY_DARWIN)
 	lock->lock = OS_SPINLOCK_INIT;
-#elif defined(MOZ_MEMORY_LINUX) && !defined(MOZ_MEMORY_ANDROID)
+#elif defined(MOZ_MEMORY_LINUX)
 	pthread_mutexattr_t attr;
 	if (pthread_mutexattr_init(&attr) != 0)
 		return (true);

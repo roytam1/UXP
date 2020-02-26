@@ -96,19 +96,32 @@ VectorAppendNoDuplicate(S& list, T value)
 
 static bool
 AddReceiver(const ReceiverGuard& receiver,
-            BaselineInspector::ReceiverVector& receivers)
+            BaselineInspector::ReceiverVector& receivers,
+            BaselineInspector::ObjectGroupVector& convertUnboxedGroups)
 {
+    if (receiver.group && receiver.group->maybeUnboxedLayout()) {
+        if (receiver.group->unboxedLayout().nativeGroup())
+            return VectorAppendNoDuplicate(convertUnboxedGroups, receiver.group);
+    }
     return VectorAppendNoDuplicate(receivers, receiver);
 }
 
 static bool
 GetCacheIRReceiverForNativeReadSlot(ICCacheIR_Monitored* stub, ReceiverGuard* receiver)
 {
-    // We match:
+    // We match either:
     //
     //   GuardIsObject 0
     //   GuardShape 0
     //   LoadFixedSlotResult 0 or LoadDynamicSlotResult 0
+    //
+    // or
+    //
+    //   GuardIsObject 0
+    //   GuardGroup 0
+    //   1: GuardAndLoadUnboxedExpando 0
+    //   GuardShape 1
+    //   LoadFixedSlotResult 1 or LoadDynamicSlotResult 1
 
     *receiver = ReceiverGuard();
     CacheIRReader reader(stub->stubInfo());
@@ -116,6 +129,14 @@ GetCacheIRReceiverForNativeReadSlot(ICCacheIR_Monitored* stub, ReceiverGuard* re
     ObjOperandId objId = ObjOperandId(0);
     if (!reader.matchOp(CacheOp::GuardIsObject, objId))
         return false;
+
+    if (reader.matchOp(CacheOp::GuardGroup, objId)) {
+        receiver->group = stub->stubInfo()->getStubField<ObjectGroup*>(stub, reader.stubOffset());
+
+        if (!reader.matchOp(CacheOp::GuardAndLoadUnboxedExpando, objId))
+            return false;
+        objId = reader.objOperandId();
+    }
 
     if (reader.matchOp(CacheOp::GuardShape, objId)) {
         receiver->shape = stub->stubInfo()->getStubField<Shape*>(stub, reader.stubOffset());
@@ -125,13 +146,40 @@ GetCacheIRReceiverForNativeReadSlot(ICCacheIR_Monitored* stub, ReceiverGuard* re
     return false;
 }
 
+static bool
+GetCacheIRReceiverForUnboxedProperty(ICCacheIR_Monitored* stub, ReceiverGuard* receiver)
+{
+    // We match:
+    //
+    //   GuardIsObject 0
+    //   GuardGroup 0
+    //   LoadUnboxedPropertyResult 0 ..
+
+    *receiver = ReceiverGuard();
+    CacheIRReader reader(stub->stubInfo());
+
+    ObjOperandId objId = ObjOperandId(0);
+    if (!reader.matchOp(CacheOp::GuardIsObject, objId))
+        return false;
+
+    if (!reader.matchOp(CacheOp::GuardGroup, objId))
+        return false;
+    receiver->group = stub->stubInfo()->getStubField<ObjectGroup*>(stub, reader.stubOffset());
+
+    return reader.matchOp(CacheOp::LoadUnboxedPropertyResult, objId);
+}
+
 bool
-BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receivers)
+BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receivers,
+                                          ObjectGroupVector& convertUnboxedGroups)
 {
     // Return a list of the receivers seen by the baseline IC for the current
     // op. Empty lists indicate no receivers are known, or there was an
-    // uncacheable access.
+    // uncacheable access. convertUnboxedGroups is used for unboxed object
+    // groups which have been seen, but have had instances converted to native
+    // objects and should be eagerly converted by Ion.
     MOZ_ASSERT(receivers.empty());
+    MOZ_ASSERT(convertUnboxedGroups.empty());
 
     if (!hasBaselineScript())
         return true;
@@ -143,7 +191,8 @@ BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receiv
     while (stub->next()) {
         ReceiverGuard receiver;
         if (stub->isCacheIR_Monitored()) {
-            if (!GetCacheIRReceiverForNativeReadSlot(stub->toCacheIR_Monitored(), &receiver))
+            if (!GetCacheIRReceiverForNativeReadSlot(stub->toCacheIR_Monitored(), &receiver) &&
+                !GetCacheIRReceiverForUnboxedProperty(stub->toCacheIR_Monitored(), &receiver))
             {
                 receivers.clear();
                 return true;
@@ -151,12 +200,14 @@ BaselineInspector::maybeInfoForPropertyOp(jsbytecode* pc, ReceiverVector& receiv
         } else if (stub->isSetProp_Native()) {
             receiver = ReceiverGuard(stub->toSetProp_Native()->group(),
                                      stub->toSetProp_Native()->shape());
+        } else if (stub->isSetProp_Unboxed()) {
+            receiver = ReceiverGuard(stub->toSetProp_Unboxed()->group(), nullptr);
         } else {
             receivers.clear();
             return true;
         }
 
-        if (!AddReceiver(receiver, receivers))
+        if (!AddReceiver(receiver, receivers, convertUnboxedGroups))
             return false;
 
         stub = stub->next();
@@ -538,7 +589,7 @@ BaselineInspector::getTemplateObjectForNative(jsbytecode* pc, Native native)
 
 bool
 BaselineInspector::isOptimizableCallStringSplit(jsbytecode* pc, JSString** strOut, JSString** sepOut,
-                                                ArrayObject** objOut)
+                                                JSObject** objOut)
 {
     if (!hasBaselineScript())
         return false;
@@ -649,12 +700,14 @@ bool
 BaselineInspector::commonGetPropFunction(jsbytecode* pc, JSObject** holder, Shape** holderShape,
                                          JSFunction** commonGetter, Shape** globalShape,
                                          bool* isOwnProperty,
-                                         ReceiverVector& receivers)
+                                         ReceiverVector& receivers,
+                                         ObjectGroupVector& convertUnboxedGroups)
 {
     if (!hasBaselineScript())
         return false;
 
     MOZ_ASSERT(receivers.empty());
+    MOZ_ASSERT(convertUnboxedGroups.empty());
 
     *holder = nullptr;
     const ICEntry& entry = icEntryFromPC(pc);
@@ -666,7 +719,7 @@ BaselineInspector::commonGetPropFunction(jsbytecode* pc, JSObject** holder, Shap
         {
             ICGetPropCallGetter* nstub = static_cast<ICGetPropCallGetter*>(stub);
             bool isOwn = nstub->isOwnGetter();
-            if (!isOwn && !AddReceiver(nstub->receiverGuard(), receivers))
+            if (!isOwn && !AddReceiver(nstub->receiverGuard(), receivers, convertUnboxedGroups))
                 return false;
 
             if (!*holder) {
@@ -698,19 +751,21 @@ BaselineInspector::commonGetPropFunction(jsbytecode* pc, JSObject** holder, Shap
     if (!*holder)
         return false;
 
-    MOZ_ASSERT(*isOwnProperty == (receivers.empty()));
+    MOZ_ASSERT(*isOwnProperty == (receivers.empty() && convertUnboxedGroups.empty()));
     return true;
 }
 
 bool
 BaselineInspector::commonSetPropFunction(jsbytecode* pc, JSObject** holder, Shape** holderShape,
                                          JSFunction** commonSetter, bool* isOwnProperty,
-                                         ReceiverVector& receivers)
+                                         ReceiverVector& receivers,
+                                         ObjectGroupVector& convertUnboxedGroups)
 {
     if (!hasBaselineScript())
         return false;
 
     MOZ_ASSERT(receivers.empty());
+    MOZ_ASSERT(convertUnboxedGroups.empty());
 
     *holder = nullptr;
     const ICEntry& entry = icEntryFromPC(pc);
@@ -719,7 +774,7 @@ BaselineInspector::commonSetPropFunction(jsbytecode* pc, JSObject** holder, Shap
         if (stub->isSetProp_CallScripted() || stub->isSetProp_CallNative()) {
             ICSetPropCallSetter* nstub = static_cast<ICSetPropCallSetter*>(stub);
             bool isOwn = nstub->isOwnSetter();
-            if (!isOwn && !AddReceiver(nstub->receiverGuard(), receivers))
+            if (!isOwn && !AddReceiver(nstub->receiverGuard(), receivers, convertUnboxedGroups))
                 return false;
 
             if (!*holder) {

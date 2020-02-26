@@ -576,13 +576,6 @@ public:
       return rv;
     }
 
-  #ifdef ANDROID
-    rv = reportsFinalFile->AppendNative(NS_LITERAL_CSTRING("memory-reports"));
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
-  #endif
-
     rv = reportsFinalFile->AppendNative(mReportsFilename);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
@@ -748,9 +741,8 @@ nsMemoryInfoDumper::DumpMemoryInfoToTempDir(const nsAString& aIdentifier,
 
   nsCOMPtr<nsIFile> reportsTmpFile;
   nsresult rv;
-  // In Android case, this function will open a file named aFilename under
-  // specific folder (/data/local/tmp/memory-reports). Otherwise, it will
-  // open a file named aFilename under "NS_OS_TEMP_DIR".
+
+  // This will open a file named aFilename under "NS_OS_TEMP_DIR".
   rv = nsDumpUtils::OpenTempFile(NS_LITERAL_CSTRING("incomplete-") +
                                  reportsFinalFilename,
                                  getter_AddRefs(reportsTmpFile),

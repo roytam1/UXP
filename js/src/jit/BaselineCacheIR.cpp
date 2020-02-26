@@ -16,7 +16,7 @@ using namespace js;
 using namespace js::jit;
 
 // OperandLocation represents the location of an OperandId. The operand is
-// either in a register or on the stack.
+// either in a register or on the stack, and is either boxed or unboxed.
 class OperandLocation
 {
   public:
@@ -787,6 +787,9 @@ BaselineCacheIRCompiler::emitGuardClass()
       case GuardClassKind::Array:
         clasp = &ArrayObject::class_;
         break;
+      case GuardClassKind::UnboxedArray:
+        clasp = &UnboxedArrayObject::class_;
+        break;
       case GuardClassKind::MappedArguments:
         clasp = &MappedArgumentsObject::class_;
         break;
@@ -815,6 +818,36 @@ BaselineCacheIRCompiler::emitGuardSpecificObject()
 }
 
 bool
+BaselineCacheIRCompiler::emitGuardNoUnboxedExpando()
+{
+    Register obj = allocator.useRegister(masm, reader.objOperandId());
+
+    FailurePath* failure;
+    if (!addFailurePath(&failure))
+        return false;
+
+    Address expandoAddr(obj, UnboxedPlainObject::offsetOfExpando());
+    masm.branchPtr(Assembler::NotEqual, expandoAddr, ImmWord(0), failure->label());
+    return true;
+}
+
+bool
+BaselineCacheIRCompiler::emitGuardAndLoadUnboxedExpando()
+{
+    Register obj = allocator.useRegister(masm, reader.objOperandId());
+    Register output = allocator.defineRegister(masm, reader.objOperandId());
+
+    FailurePath* failure;
+    if (!addFailurePath(&failure))
+        return false;
+
+    Address expandoAddr(obj, UnboxedPlainObject::offsetOfExpando());
+    masm.loadPtr(expandoAddr, output);
+    masm.branchTestPtr(Assembler::Zero, output, output, failure->label());
+    return true;
+}
+
+bool
 BaselineCacheIRCompiler::emitLoadFixedSlotResult()
 {
     Register obj = allocator.useRegister(masm, reader.objOperandId());
@@ -837,6 +870,26 @@ BaselineCacheIRCompiler::emitLoadDynamicSlotResult()
     masm.loadPtr(Address(obj, NativeObject::offsetOfSlots()), obj);
     masm.loadValue(BaseIndex(obj, scratch, TimesOne), R0);
     emitEnterTypeMonitorIC();
+    return true;
+}
+
+bool
+BaselineCacheIRCompiler::emitLoadUnboxedPropertyResult()
+{
+    Register obj = allocator.useRegister(masm, reader.objOperandId());
+    AutoScratchRegister scratch(allocator, masm);
+
+    JSValueType fieldType = reader.valueType();
+
+    Address fieldOffset(stubAddress(reader.stubOffset()));
+    masm.load32(fieldOffset, scratch);
+    masm.loadUnboxedProperty(BaseIndex(obj, scratch, TimesOne), fieldType, R0);
+
+    if (fieldType == JSVAL_TYPE_OBJECT)
+        emitEnterTypeMonitorIC();
+    else
+        emitReturnFromIC();
+
     return true;
 }
 
@@ -943,6 +996,19 @@ BaselineCacheIRCompiler::emitLoadInt32ArrayLengthResult()
     // Guard length fits in an int32.
     masm.branchTest32(Assembler::Signed, scratch, scratch, failure->label());
     masm.tagValue(JSVAL_TYPE_INT32, scratch, R0);
+
+    // The int32 type was monitored when attaching the stub, so we can
+    // just return.
+    emitReturnFromIC();
+    return true;
+}
+
+bool
+BaselineCacheIRCompiler::emitLoadUnboxedArrayLengthResult()
+{
+    Register obj = allocator.useRegister(masm, reader.objOperandId());
+    masm.load32(Address(obj, UnboxedArrayObject::offsetOfLength()), R0.scratchReg());
+    masm.tagValue(JSVAL_TYPE_INT32, R0.scratchReg(), R0);
 
     // The int32 type was monitored when attaching the stub, so we can
     // just return.

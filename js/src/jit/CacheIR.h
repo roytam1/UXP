@@ -87,12 +87,16 @@ class ObjOperandId : public OperandId
     _(GuardClass)                         \
     _(GuardSpecificObject)                \
     _(GuardNoDetachedTypedObjects)        \
+    _(GuardNoUnboxedExpando)              \
+    _(GuardAndLoadUnboxedExpando)         \
     _(LoadObject)                         \
     _(LoadProto)                          \
     _(LoadFixedSlotResult)                \
     _(LoadDynamicSlotResult)              \
+    _(LoadUnboxedPropertyResult)          \
     _(LoadTypedObjectResult)              \
     _(LoadInt32ArrayLengthResult)         \
+    _(LoadUnboxedArrayLengthResult)       \
     _(LoadArgumentsObjectLengthResult)    \
     _(LoadUndefinedResult)
 
@@ -124,6 +128,7 @@ struct StubField {
 enum class GuardClassKind
 {
     Array,
+    UnboxedArray,
     MappedArguments,
     UnmappedArguments,
 };
@@ -271,6 +276,15 @@ class MOZ_RAII CacheIRWriter
     void guardNoDetachedTypedObjects() {
         writeOp(CacheOp::GuardNoDetachedTypedObjects);
     }
+    void guardNoUnboxedExpando(ObjOperandId obj) {
+        writeOpWithOperandId(CacheOp::GuardNoUnboxedExpando, obj);
+    }
+    ObjOperandId guardAndLoadUnboxedExpando(ObjOperandId obj) {
+        ObjOperandId res(nextOperandId_++);
+        writeOpWithOperandId(CacheOp::GuardAndLoadUnboxedExpando, obj);
+        writeOperandId(res);
+        return res;
+    }
 
     ObjOperandId loadObject(JSObject* obj) {
         ObjOperandId res(nextOperandId_++);
@@ -296,6 +310,11 @@ class MOZ_RAII CacheIRWriter
         writeOpWithOperandId(CacheOp::LoadDynamicSlotResult, obj);
         addStubWord(offset, StubField::GCType::NoGCThing);
     }
+    void loadUnboxedPropertyResult(ObjOperandId obj, JSValueType type, size_t offset) {
+        writeOpWithOperandId(CacheOp::LoadUnboxedPropertyResult, obj);
+        buffer_.writeByte(uint32_t(type));
+        addStubWord(offset, StubField::GCType::NoGCThing);
+    }
     void loadTypedObjectResult(ObjOperandId obj, uint32_t offset, TypedThingLayout layout,
                                uint32_t typeDescr) {
         MOZ_ASSERT(uint32_t(layout) <= UINT8_MAX);
@@ -307,6 +326,9 @@ class MOZ_RAII CacheIRWriter
     }
     void loadInt32ArrayLengthResult(ObjOperandId obj) {
         writeOpWithOperandId(CacheOp::LoadInt32ArrayLengthResult, obj);
+    }
+    void loadUnboxedArrayLengthResult(ObjOperandId obj) {
+        writeOpWithOperandId(CacheOp::LoadUnboxedArrayLengthResult, obj);
     }
     void loadArgumentsObjectLengthResult(ObjOperandId obj) {
         writeOpWithOperandId(CacheOp::LoadArgumentsObjectLengthResult, obj);
@@ -389,6 +411,9 @@ class MOZ_RAII GetPropIRGenerator
     PreliminaryObjectAction preliminaryObjectAction_;
 
     MOZ_MUST_USE bool tryAttachNative(CacheIRWriter& writer, HandleObject obj, ObjOperandId objId);
+    MOZ_MUST_USE bool tryAttachUnboxed(CacheIRWriter& writer, HandleObject obj, ObjOperandId objId);
+    MOZ_MUST_USE bool tryAttachUnboxedExpando(CacheIRWriter& writer, HandleObject obj,
+                                              ObjOperandId objId);
     MOZ_MUST_USE bool tryAttachTypedObject(CacheIRWriter& writer, HandleObject obj,
                                            ObjOperandId objId);
     MOZ_MUST_USE bool tryAttachObjectLength(CacheIRWriter& writer, HandleObject obj,

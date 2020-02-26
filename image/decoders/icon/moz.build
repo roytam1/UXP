@@ -25,8 +25,5 @@ if CONFIG['OS_ARCH'] == 'WINNT':
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
     platform = 'mac'
 
-if CONFIG['OS_TARGET'] == 'Android':
-    platform = 'android'
-
 if platform:
     LOCAL_INCLUDES += [platform]

@@ -4,23 +4,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-with Files('*'):
-    BUG_COMPONENT = ('Toolkit', 'Download Manager')
-
-with Files('ApplicationReputation.*'):
-    BUG_COMPONENT = ('Toolkit', 'Safe Browsing')
-
-with Files('chromium/*'):
-    BUG_COMPONENT = ('Toolkit', 'Safe Browsing')
-
-with Files('generate_csd.sh'):
-    BUG_COMPONENT = ('Toolkit', 'Safe Browsing')
-
-with Files('nsIApplicationReputation.idl'):
-    BUG_COMPONENT = ('Toolkit', 'Safe Browsing')
-
-XPCSHELL_TESTS_MANIFESTS += ['test/unit/xpcshell.ini']
-
 XPIDL_SOURCES += [
     'nsIApplicationReputation.idl',
     'nsIDownload.idl',
@@ -31,14 +14,10 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'downloads'
 
-UNIFIED_SOURCES += [
-    'nsDownloadManager.cpp'
-]
+UNIFIED_SOURCES += ['nsDownloadManager.cpp']
 
 # SQLFunctions.cpp cannot be built in unified mode because of Windows headers.
-SOURCES += [
-    'SQLFunctions.cpp',
-]
+SOURCES += ['SQLFunctions.cpp']
 
 if CONFIG['MOZ_URL_CLASSIFIER']:
     UNIFIED_SOURCES += [
@@ -49,9 +28,7 @@ if CONFIG['MOZ_URL_CLASSIFIER']:
 if CONFIG['OS_ARCH'] == 'WINNT':
     # Can't build unified because we need CreateEvent which some IPC code
     # included in LoadContext ends up undefining.
-    SOURCES += [
-        'nsDownloadScanner.cpp',
-    ]
+    SOURCES += ['nsDownloadScanner.cpp']
 
 # The Communicator Downloads Manager uses its own DownloadManagerUI
 # component and it can't be guaranteed that its implimentation will override

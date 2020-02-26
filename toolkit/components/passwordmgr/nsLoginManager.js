@@ -112,11 +112,7 @@ LoginManager.prototype = {
 
 
   _initStorage() {
-#ifdef MOZ_WIDGET_ANDROID
-    let contractID = "@mozilla.org/login-manager/storage/mozStorage;1";
-#else
     let contractID = "@mozilla.org/login-manager/storage/json;1";
-#endif
 
     try {
       let catMan = Cc["@mozilla.org/categorymanager;1"].

@@ -871,8 +871,6 @@ TEST(TArray, test_swap) {
   }
 }
 
-// Bug 1171296: Disabled on andoid due to crashes.
-#if !defined(ANDROID)
 TEST(TArray, test_fallible)
 {
   // Test that FallibleTArray works properly; that is, it never OOMs, but
@@ -909,7 +907,6 @@ TEST(TArray, test_fallible)
   ASSERT_TRUE(oomed) << "Didn't OOM or crash?  nsTArray::SetCapacity"
                         "must be lying.";
 }
-#endif
 
 TEST(TArray, test_conversion_operator) {
   FallibleTArray<int> f;

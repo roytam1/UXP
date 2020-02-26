@@ -2213,32 +2213,8 @@ Engine.prototype = {
     this.lazySerializeTask.arm();
   },
 
-#ifdef ANDROID
-  get _defaultMobileResponseType() {
-    let type = URLTYPE_SEARCH_HTML;
-
-    let sysInfo = Cc["@mozilla.org/system-info;1"].getService(Ci.nsIPropertyBag2);
-    let isTablet = sysInfo.get("tablet");
-    if (isTablet && this.supportsResponseType("application/x-moz-tabletsearch")) {
-      // Check for a tablet-specific search URL override
-      type = "application/x-moz-tabletsearch";
-    } else if (!isTablet && this.supportsResponseType("application/x-moz-phonesearch")) {
-      // Check for a phone-specific search URL override
-      type = "application/x-moz-phonesearch";
-    }
-
-    delete this._defaultMobileResponseType;
-    return this._defaultMobileResponseType = type;
-  },
-#endif
-
   // from nsISearchEngine
   getSubmission: function SRCH_ENG_getSubmission(aData, aResponseType, aPurpose) {
-#ifdef ANDROID
-    if (!aResponseType) {
-      aResponseType = this._defaultMobileResponseType;
-    }
-#endif
     if (!aResponseType) {
       aResponseType = URLTYPE_SEARCH_HTML;
     }
@@ -2272,11 +2248,6 @@ Engine.prototype = {
 
   // from nsISearchEngine
   getResultDomain: function SRCH_ENG_getResultDomain(aResponseType) {
-#ifdef ANDROID
-    if (!aResponseType) {
-      aResponseType = this._defaultMobileResponseType;
-    }
-#endif
     if (!aResponseType) {
       aResponseType = URLTYPE_SEARCH_HTML;
     }
@@ -2293,11 +2264,7 @@ Engine.prototype = {
    * Returns URL parsing properties used by _buildParseSubmissionMap.
    */
   getURLParsingInfo: function () {
-#ifdef ANDROID
-    let responseType = this._defaultMobileResponseType;
-#else
     let responseType = URLTYPE_SEARCH_HTML;
-#endif
 
     LOG("getURLParsingInfo: responseType: \"" + responseType + "\"");
 

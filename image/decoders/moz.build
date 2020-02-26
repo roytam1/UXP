@@ -16,8 +16,6 @@ if CONFIG['OS_ARCH'] == 'WINNT':
 
 if toolkit == 'cocoa':
     DIRS += ['icon/mac', 'icon']
-elif toolkit == 'android':
-    DIRS += ['icon/android', 'icon']
 
 UNIFIED_SOURCES += [
     'EXIF.cpp',

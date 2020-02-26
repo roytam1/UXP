@@ -134,11 +134,6 @@ nsLocaleService::nsLocaleService(void)
 
         bool lc_temp_valid = lc_temp != nullptr;
 
-#if defined(MOZ_WIDGET_ANDROID)
-        // Treat the "C" env as nothing useful. See Bug 1095298.
-        lc_temp_valid = lc_temp_valid && strcmp(lc_temp, "C") != 0;
-#endif
-
         if (lc_temp_valid) {
             result = nsPosixLocale::GetXPLocale(lc_temp, xpLocale);
             CopyASCIItoUTF16(lc_temp, platformLocale);

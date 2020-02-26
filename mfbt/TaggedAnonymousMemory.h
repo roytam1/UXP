@@ -39,28 +39,6 @@
 
 #include "mozilla/Types.h"
 
-#ifdef ANDROID
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-MFBT_API void
-MozTagAnonymousMemory(const void* aPtr, size_t aLength, const char* aTag);
-
-MFBT_API void*
-MozTaggedAnonymousMmap(void* aAddr, size_t aLength, int aProt, int aFlags,
-                         int aFd, off_t aOffset, const char* aTag);
-
-MFBT_API int
-MozTaggedMemoryIsSupported(void);
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
-
-#else // ANDROID
-
 static inline void
 MozTagAnonymousMemory(const void* aPtr, size_t aLength, const char* aTag)
 {
@@ -78,8 +56,6 @@ MozTaggedMemoryIsSupported(void)
 {
   return 0;
 }
-
-#endif // ANDROID
 
 #endif // !XP_WIN
 

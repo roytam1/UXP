@@ -21,10 +21,6 @@
 #include <gtk/gtk.h>
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidBridge.h"
-#endif
-
 #include "mozilla/Services.h"
 
 #include "nsCRT.h"
@@ -478,9 +474,6 @@ ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
   NS_NAMED_LITERAL_STRING(kOsVersion, "osversion");
   NS_NAMED_LITERAL_STRING(kABI, "abi");
   NS_NAMED_LITERAL_STRING(kProcess, "process");
-#if defined(MOZ_WIDGET_ANDROID)
-  NS_NAMED_LITERAL_STRING(kTablet, "tablet");
-#endif
 
   NS_NAMED_LITERAL_STRING(kMain, "main");
   NS_NAMED_LITERAL_STRING(kContent, "content");
@@ -557,14 +550,6 @@ ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
   nsTextFormatter::ssprintf(osVersion, u"%ld.%ld",
                             gtk_major_version,
                             gtk_minor_version);
-#elif defined(MOZ_WIDGET_ANDROID)
-  bool isTablet = false;
-  if (mozilla::AndroidBridge::Bridge()) {
-    mozilla::AndroidBridge::Bridge()->GetStaticStringField("android/os/Build$VERSION",
-                                                           "RELEASE",
-                                                           osVersion);
-    isTablet = java::GeckoAppShell::IsTablet();
-  }
 #endif
 
   if (XRE_IsContentProcess()) {
@@ -665,9 +650,7 @@ ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
     TriState stOs = eUnspecified;
     TriState stABI = eUnspecified;
     TriState stProcess = eUnspecified;
-#if defined(MOZ_WIDGET_ANDROID)
-    TriState stTablet = eUnspecified;
-#endif
+
     int flags = 0;
 
     while ((token = nsCRT::strtok(whitespace, kWhitespace, &whitespace)) &&
@@ -684,14 +667,6 @@ ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
           CheckVersionFlag(kGeckoVersion, wtoken, geckoVersion, stGeckoVersion)) {
         continue;
       }
-
-#if defined(MOZ_WIDGET_ANDROID)
-      bool tablet = false;
-      if (CheckFlag(kTablet, wtoken, tablet)) {
-        stTablet = (tablet == isTablet) ? eOK : eBad;
-        continue;
-      }
-#endif
 
       if (directive->contentflags) {
         bool flag;
@@ -737,9 +712,6 @@ ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
         stGeckoVersion == eBad ||
         stOs == eBad ||
         stOsVersion == eBad ||
-#ifdef MOZ_WIDGET_ANDROID
-        stTablet == eBad ||
-#endif
         stABI == eBad ||
         stProcess == eBad) {
       continue;

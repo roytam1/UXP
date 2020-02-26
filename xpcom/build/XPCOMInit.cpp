@@ -570,13 +570,11 @@ NS_InitXPCOM2(nsIServiceManager** aResult,
     return rv;
   }
 
-#ifndef ANDROID
   // If the locale hasn't already been setup by our embedder,
   // get us out of the "C" locale and into the system
   if (strcmp(setlocale(LC_ALL, nullptr), "C") == 0) {
     setlocale(LC_ALL, "");
   }
-#endif
 
 #if defined(XP_UNIX)
   NS_StartupNativeCharsetUtils();
