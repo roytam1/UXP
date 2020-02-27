@@ -1260,9 +1260,10 @@ FoldCatch(ExclusiveContext* cx, ParseNode* node, Parser<FullParseHandler>& parse
     MOZ_ASSERT(node->isKind(PNK_CATCH));
     MOZ_ASSERT(node->isArity(PN_TERNARY));
 
-    ParseNode*& declPattern = node->pn_kid1;
-    if (!Fold(cx, &declPattern, parser, inGenexpLambda))
-        return false;
+    if (ParseNode*& declPattern = node->pn_kid1) {
+        if (!Fold(cx, &declPattern, parser, inGenexpLambda))
+            return false;
+    }
 
     if (ParseNode*& cond = node->pn_kid2) {
         if (!FoldCondition(cx, &cond, parser, inGenexpLambda))
