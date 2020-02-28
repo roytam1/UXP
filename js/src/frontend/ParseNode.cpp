@@ -409,13 +409,14 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
         return PushResult::Recyclable;
       }
 
-      // A catch node has first kid as catch-variable pattern, the second kid
-      // as catch condition (which, if non-null, records the |<cond>| in
-      // SpiderMonkey's |catch (e if <cond>)| extension), and third kid as the
-      // statements in the catch block.
+      // A catch node has an (optional) first kid as catch-variable pattern,
+      // the second kid as (optional) catch condition (which, records the
+      // |<cond>| in SpiderMonkey's |catch (e if <cond>)| extension), and
+      // third kid as the statements in the catch block.
       case PNK_CATCH: {
         MOZ_ASSERT(pn->isArity(PN_TERNARY));
-        stack->push(pn->pn_kid1);
+        if (pn->pn_kid1)
+            stack->push(pn->pn_kid1);
         if (pn->pn_kid2)
             stack->push(pn->pn_kid2);
         stack->push(pn->pn_kid3);
