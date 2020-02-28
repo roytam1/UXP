@@ -760,15 +760,7 @@ static int ShouldDrop(size_t len) {
     nr_socket_short_term_violation_time = TimeStamp::Now();
 #endif
 
-// Bug 1013007
-#if !EARLY_BETA_OR_EARLIER
     return R_WOULDBLOCK;
-#else
-    MOZ_ASSERT(false,
-               "Short term global rate limit for STUN requests exceeded. Go "
-               "bug bcampen@mozilla.com if you weren't intentionally "
-               "spamming ICE candidates, or don't know what that means.");
-#endif
   }
 
   if (sustained.getTokens(UINT32_MAX) < len) {
@@ -777,15 +769,8 @@ static int ShouldDrop(size_t len) {
 #ifdef MOZILLA_INTERNAL_API
     nr_socket_long_term_violation_time = TimeStamp::Now();
 #endif
-// Bug 1013007
-#if !EARLY_BETA_OR_EARLIER
+
     return R_WOULDBLOCK;
-#else
-    MOZ_ASSERT(false,
-               "Long term global rate limit for STUN requests exceeded. Go "
-               "bug bcampen@mozilla.com if you weren't intentionally "
-               "spamming ICE candidates, or don't know what that means.");
-#endif
   }
 
   // Take len tokens from both buckets.
