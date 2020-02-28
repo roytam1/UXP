@@ -166,6 +166,7 @@ def old_configure_options(*options):
     '--enable-cookies',
     '--enable-cpp-rtti',
     '--enable-crashreporter',
+    '--enable-dbm',
     '--enable-dbus',
     '--enable-debug-js-modules',
     '--enable-jetpack',

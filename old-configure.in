@@ -2168,6 +2168,7 @@ MOZ_PLACES=1
 MOZ_SERVICES_HEALTHREPORT=1
 MOZ_SERVICES_SYNC=1
 MOZ_USERINFO=1
+NSS_DISABLE_DBM=
 MOZ_MAILNEWS=
 MOZ_MAILNEWS_OAUTH2=
 MOZ_LDAP_XPCOM=
@@ -2707,6 +2708,22 @@ x86_64 | arm | aarch64 | x86 | ppc* | ia64)
     ;;
 
 esac
+
+dnl =========================================================
+dnl = NSS DBM (BerkeleyDB) Support
+dnl = NOTE: Because we don't expressly control the name of
+dnl = this var --disable-dbm means NSS_DISABLE_DBM=1
+dnl =========================================================
+MOZ_ARG_DISABLE_BOOL(dbm,
+[  --disable-dbm         Disable DBM support in nss],
+    NSS_DISABLE_DBM=1,
+    NSS_DISABLE_DBM=)
+
+if test -n "$NSS_DISABLE_DBM"; then
+  AC_DEFINE(NSS_DISABLE_DBM)
+fi
+
+AC_SUBST(NSS_DISABLE_DBM)
 
 dnl =========================================================
 dnl = Don't fold mailnews related comps into libXUL
