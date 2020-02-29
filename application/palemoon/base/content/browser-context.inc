@@ -85,6 +85,12 @@
                     name="playbackrate"
                     checked="true"
                     oncommand="gContextMenu.mediaCommand('playbackRate', 1.0);"/>
+          <menuitem id="context-media-playbackrate-125x"
+                    label="&mediaPlaybackRate125x.label;"
+                    accesskey="&mediaPlaybackRate125x.accesskey;"
+                    type="radio"
+                    name="playbackrate"
+                    oncommand="gContextMenu.mediaCommand('playbackRate', 1.25);"/>
           <menuitem id="context-media-playbackrate-150x"
                     label="&mediaPlaybackRate150x.label;"
                     accesskey="&mediaPlaybackRate150x.accesskey;"
