@@ -7,15 +7,16 @@
 const {classes: Cc, interfaces: Ci, results: Cr, utils: Cu, manager: Cm} =
   Components;
 
-this.EXPORTED_SYMBOLS = [ "EME_ADOBE_ID",
-                          "GMP_PLUGIN_IDS",
+this.EXPORTED_SYMBOLS = [ "GMP_PLUGIN_IDS",
                           "GMPPrefs",
                           "GMPUtils",
+                          "EME_ADOBE_ID",
                           "OPEN_H264_ID",
                           "WIDEVINE_ID" ];
 
 Cu.import("resource://gre/modules/Preferences.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/AppConstants.jsm");
 
 // GMP IDs
 const OPEN_H264_ID  = "gmp-gmpopenh264";
@@ -72,32 +73,24 @@ this.GMPUtils = {
       return true;
     }
     if (aPlugin.id == EME_ADOBE_ID) {
-#if defined(XP_WIN)
-      // Windows Vista and later only supported by Adobe EME.
-      return true;
-#else
-      return false;
-#endif
+      // Windows XP and later only supported by Adobe EME.
+      return AppConstants.isPlatformAndVersionAtLeast("win", "5");
     } else if (aPlugin.id == WIDEVINE_ID) {
-
-#if defined(XP_WIN) || defined(XP_LINUX) || defined(XP_MACOSX)
       // The Widevine plugin is available for Windows versions Vista and later,
       // Mac OSX, and Linux.
-      return true;
-#else
-      return false;
-#endif
+      return AppConstants.isPlatformAndVersionAtLeast("win", "6") ||
+             AppConstants.platform == "macosx" ||
+             AppConstants.platform == "linux";
     }
 
     return true;
   },
 
   _is32bitModeMacOS: function() {
-#ifdef XP_MACOSX
+    if (AppConstants.platform != "macosx") {
+      return false;
+    }
     return Services.appinfo.XPCOMABI.split("-")[0] == "x86";
-#else
-    return false;
-#endif
   },
 
   /**

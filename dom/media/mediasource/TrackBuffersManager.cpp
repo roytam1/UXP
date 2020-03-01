@@ -84,7 +84,7 @@ private:
   nsTArray<uint8_t> mInitData;
   nsString mInitDataType;
 };
-#endif // MOZ_EME
+#endif
 
 TrackBuffersManager::TrackBuffersManager(MediaSourceDecoder* aParentDecoder,
                                          const nsACString& aType)

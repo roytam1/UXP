@@ -43,13 +43,11 @@ GMPDecryptorParent::~GMPDecryptorParent()
 bool
 GMPDecryptorParent::RecvSetDecryptorId(const uint32_t& aId)
 {
-#ifdef MOZ_EME
   if (!mIsOpen) {
     NS_WARNING("Trying to use a dead GMP decrypter!");
     return false;
   }
   mCallback->SetDecryptorId(aId);
-#endif
   return true;
 }
 
@@ -204,7 +202,6 @@ bool
 GMPDecryptorParent::RecvSetSessionId(const uint32_t& aCreateSessionId,
                                      const nsCString& aSessionId)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvSetSessionId(token=%u, sessionId='%s')",
         this, aCreateSessionId, aSessionId.get()));
 
@@ -213,7 +210,6 @@ GMPDecryptorParent::RecvSetSessionId(const uint32_t& aCreateSessionId,
     return false;
   }
   mCallback->SetSessionId(aCreateSessionId, aSessionId);
-#endif
   return true;
 }
 
@@ -221,7 +217,6 @@ bool
 GMPDecryptorParent::RecvResolveLoadSessionPromise(const uint32_t& aPromiseId,
                                                   const bool& aSuccess)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvResolveLoadSessionPromise(promiseId=%u)",
         this, aPromiseId));
 
@@ -230,14 +225,12 @@ GMPDecryptorParent::RecvResolveLoadSessionPromise(const uint32_t& aPromiseId,
     return false;
   }
   mCallback->ResolveLoadSessionPromise(aPromiseId, aSuccess);
-#endif
   return true;
 }
 
 bool
 GMPDecryptorParent::RecvResolvePromise(const uint32_t& aPromiseId)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvResolvePromise(promiseId=%u)",
         this, aPromiseId));
 
@@ -246,7 +239,6 @@ GMPDecryptorParent::RecvResolvePromise(const uint32_t& aPromiseId)
     return false;
   }
   mCallback->ResolvePromise(aPromiseId);
-#endif
   return true;
 }
 
@@ -274,7 +266,6 @@ GMPDecryptorParent::RecvRejectPromise(const uint32_t& aPromiseId,
                                       const GMPDOMException& aException,
                                       const nsCString& aMessage)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvRejectPromise(promiseId=%u, exception=%d, msg='%s')",
         this, aPromiseId, aException, aMessage.get()));
 
@@ -283,11 +274,10 @@ GMPDecryptorParent::RecvRejectPromise(const uint32_t& aPromiseId,
     return false;
   }
   mCallback->RejectPromise(aPromiseId, GMPExToNsresult(aException), aMessage);
-#endif
   return true;
 }
 
-#ifdef MOZ_EME
+
 static dom::MediaKeyMessageType
 ToMediaKeyMessageType(GMPSessionMessageType aMessageType) {
   switch (aMessageType) {
@@ -298,14 +288,12 @@ ToMediaKeyMessageType(GMPSessionMessageType aMessageType) {
     default: return dom::MediaKeyMessageType::License_request;
   };
 };
-#endif
 
 bool
 GMPDecryptorParent::RecvSessionMessage(const nsCString& aSessionId,
                                        const GMPSessionMessageType& aMessageType,
                                        nsTArray<uint8_t>&& aMessage)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvSessionMessage(sessionId='%s', type=%d, msg='%s')",
         this, aSessionId.get(), aMessageType, ToBase64(aMessage).get()));
 
@@ -314,7 +302,6 @@ GMPDecryptorParent::RecvSessionMessage(const nsCString& aSessionId,
     return false;
   }
   mCallback->SessionMessage(aSessionId, ToMediaKeyMessageType(aMessageType), aMessage);
-#endif
   return true;
 }
 
@@ -322,7 +309,6 @@ bool
 GMPDecryptorParent::RecvExpirationChange(const nsCString& aSessionId,
                                          const double& aExpiryTime)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvExpirationChange(sessionId='%s', expiry=%lf)",
         this, aSessionId.get(), aExpiryTime));
 
@@ -331,14 +317,12 @@ GMPDecryptorParent::RecvExpirationChange(const nsCString& aSessionId,
     return false;
   }
   mCallback->ExpirationChange(aSessionId, aExpiryTime);
-#endif
   return true;
 }
 
 bool
 GMPDecryptorParent::RecvSessionClosed(const nsCString& aSessionId)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvSessionClosed(sessionId='%s')",
         this, aSessionId.get()));
 
@@ -347,7 +331,6 @@ GMPDecryptorParent::RecvSessionClosed(const nsCString& aSessionId)
     return false;
   }
   mCallback->SessionClosed(aSessionId);
-#endif
   return true;
 }
 
@@ -357,7 +340,6 @@ GMPDecryptorParent::RecvSessionError(const nsCString& aSessionId,
                                      const uint32_t& aSystemCode,
                                      const nsCString& aMessage)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvSessionError(sessionId='%s', exception=%d, sysCode=%d, msg='%s')",
         this, aSessionId.get(),
         aException, aSystemCode, aMessage.get()));
@@ -370,11 +352,9 @@ GMPDecryptorParent::RecvSessionError(const nsCString& aSessionId,
                           GMPExToNsresult(aException),
                           aSystemCode,
                           aMessage);
-#endif
   return true;
 }
 
-#ifdef MOZ_EME
 static dom::MediaKeyStatus
 ToMediaKeyStatus(GMPMediaKeyStatus aStatus) {
   switch (aStatus) {
@@ -388,13 +368,11 @@ ToMediaKeyStatus(GMPMediaKeyStatus aStatus) {
     default: return dom::MediaKeyStatus::Internal_error;
   }
 }
-#endif
 
 bool
 GMPDecryptorParent::RecvBatchedKeyStatusChanged(const nsCString& aSessionId,
                                                 InfallibleTArray<GMPKeyInformation>&& aKeyInfos)
 {
-#ifdef MOZ_EME
   LOGD(("GMPDecryptorParent[%p]::RecvBatchedKeyStatusChanged(sessionId='%s', KeyInfos len='%d')",
         this, aSessionId.get(), aKeyInfos.Length()));
 
@@ -414,11 +392,9 @@ GMPDecryptorParent::RecvBatchedKeyStatusChanged(const nsCString& aSessionId,
     }
     mCallback->BatchedKeyStatusChanged(aSessionId, cdmKeyInfos);
   }
-#endif
   return true;
 }
 
-#ifdef MOZ_EME
 DecryptStatus
 ToDecryptStatus(GMPErr aError)
 {
@@ -429,14 +405,12 @@ ToDecryptStatus(GMPErr aError)
     default: return GenericErr;
   }
 }
-#endif
 
 bool
 GMPDecryptorParent::RecvDecrypted(const uint32_t& aId,
                                   const GMPErr& aErr,
                                   InfallibleTArray<uint8_t>&& aBuffer)
 {
-#ifdef MOZ_EME
   LOGV(("GMPDecryptorParent[%p]::RecvDecrypted(id=%d, err=%d)",
         this, aId, aErr));
 
@@ -445,7 +419,6 @@ GMPDecryptorParent::RecvDecrypted(const uint32_t& aId,
     return false;
   }
   mCallback->Decrypted(aId, ToDecryptStatus(aErr), aBuffer);
-#endif
   return true;
 }
 
