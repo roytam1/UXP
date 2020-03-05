@@ -423,6 +423,8 @@ items are mutually exclusive. -->
 <!ENTITY mediaPlaybackRate050x.accesskey "S">
 <!ENTITY mediaPlaybackRate100x.label "Normal Speed">
 <!ENTITY mediaPlaybackRate100x.accesskey "N">
+<!ENTITY mediaPlaybackRate125x.label "Increased Speed (1.25×)">
+<!ENTITY mediaPlaybackRate125x.accesskey "I">
 <!ENTITY mediaPlaybackRate150x.label "High Speed (1.5×)">
 <!ENTITY mediaPlaybackRate150x.accesskey "H">
 <!-- LOCALIZATION NOTE: "Ludicrous Speed" is a reference to the
