@@ -2168,6 +2168,7 @@ MOZ_PLACES=1
 MOZ_SERVICES_HEALTHREPORT=1
 MOZ_SERVICES_SYNC=1
 MOZ_USERINFO=1
+NSS_DISABLE_DBM=
 MOZ_MAILNEWS=
 MOZ_MAILNEWS_OAUTH2=
 MOZ_LDAP_XPCOM=
@@ -2235,19 +2236,6 @@ if test -f "${srcdir}/${MOZ_BUILD_APP}/confvars.sh" ; then
 else
   AC_MSG_RESULT([no])
 fi
-
-# Allow influencing configure with a defines.sh script.
-. "${srcdir}/build/defines.sh"
-
-# If we're not building a release build, define EARLY_BETA_OR_EARLIER if it is
-# set in defines.sh
-if test "$BUILDING_RELEASE"; then
-  # Override value in defines.sh, if any
-  EARLY_BETA_OR_EARLIER=
-elif test "$EARLY_BETA_OR_EARLIER"; then
-  AC_DEFINE(EARLY_BETA_OR_EARLIER)
-fi
-AC_SUBST(EARLY_BETA_OR_EARLIER)
 
 # Allow someone to change MOZ_APP_NAME and MOZ_APP_BASENAME in mozconfig
 MOZ_ARG_WITH_STRING(app-name,
@@ -2720,6 +2708,22 @@ x86_64 | arm | aarch64 | x86 | ppc* | ia64)
     ;;
 
 esac
+
+dnl =========================================================
+dnl = NSS DBM (BerkeleyDB) Support
+dnl = NOTE: Because we don't expressly control the name of
+dnl = this var --disable-dbm means NSS_DISABLE_DBM=1
+dnl =========================================================
+MOZ_ARG_DISABLE_BOOL(dbm,
+[  --disable-dbm         Disable DBM support in nss],
+    NSS_DISABLE_DBM=1,
+    NSS_DISABLE_DBM=)
+
+if test -n "$NSS_DISABLE_DBM"; then
+  AC_DEFINE(NSS_DISABLE_DBM)
+fi
+
+AC_SUBST(NSS_DISABLE_DBM)
 
 dnl =========================================================
 dnl = Don't fold mailnews related comps into libXUL

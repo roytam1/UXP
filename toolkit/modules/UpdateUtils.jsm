@@ -164,12 +164,6 @@ XPCOMUtils.defineLazyGetter(this, "gSystemCapabilities", function aus_gSC() {
 
   lib.close();
   return instructionSet;
-#elifdef XP_LINUX
-  let instructionSet = "unknown";
-  if (navigator.cpuHasSSE2) {
-    instructionSet = "SSE2";
-  }
-  return instructionSet;
 #else
   return "NA"
 #endif

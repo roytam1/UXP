@@ -75,7 +75,7 @@ if CONFIG['MOZ_MAILNEWS_OAUTH2']:
     EXTRA_COMPONENTS += ['msgOAuth2Module.js']
 
 EXTRA_PP_COMPONENTS += [
-    'msgBase.manifest'
+    'msgBase.manifest',
     'nsMailNewsCommandLineHandler.js',
 ]
 
