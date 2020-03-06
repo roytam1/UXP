@@ -95,7 +95,7 @@ SessionStartup.prototype = {
   /**
    * Initialize the component
    */
-  init: function sss_init() {
+  init: function() {
     Services.obs.notifyObservers(null, "sessionstore-init-started", null);
     StartupPerformance.init();
 
@@ -113,7 +113,7 @@ SessionStartup.prototype = {
   },
 
   // Wrap a string as a nsISupports
-  _createSupportsString: function ssfi_createSupportsString(aData) {
+  _createSupportsString: function(aData) {
     let string = Cc["@mozilla.org/supports-string;1"]
                    .createInstance(Ci.nsISupportsString);
     string.data = aData;
@@ -232,7 +232,7 @@ SessionStartup.prototype = {
   /**
    * Handle notifications
    */
-  observe: function sss_observe(aSubject, aTopic, aData) {
+  observe: function(aSubject, aTopic, aData) {
     switch (aTopic) {
     case "app-startup":
       Services.obs.addObserver(this, "final-ui-startup", true);
@@ -281,7 +281,7 @@ SessionStartup.prototype = {
    * called after initialization has completed.
    * @returns bool
    */
-  doRestore: function sss_doRestore() {
+  doRestore: function() {
     return this._willRestore();
   },
 
