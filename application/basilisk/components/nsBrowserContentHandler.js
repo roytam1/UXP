@@ -276,7 +276,7 @@ nsBrowserContentHandler.prototype = {
   classID: Components.ID("{5d0ce354-df01-421a-83fb-7ead0990c24e}"),
 
   _xpcom_factory: {
-    createInstance: function bch_factory_ci(outer, iid) {
+    createInstance: function(outer, iid) {
       if (outer)
         throw Components.results.NS_ERROR_NO_AGGREGATION;
       return gBrowserContentHandler.QueryInterface(iid);
@@ -304,7 +304,7 @@ nsBrowserContentHandler.prototype = {
                                           nsICommandLineValidator]),
 
   /* nsICommandLineHandler */
-  handle : function bch_handle(cmdLine) {
+  handle : function(cmdLine) {
     if (cmdLine.handleFlag("browser", false)) {
       // Passing defaultArgs, so use NO_EXTERNAL_URIS
       openWindow(null, this.chromeURL, "_blank",
@@ -565,7 +565,7 @@ nsBrowserContentHandler.prototype = {
 
   mFeatures : null,
 
-  getFeatures : function bch_features(cmdLine) {
+  getFeatures : function(cmdLine) {
     if (this.mFeatures === null) {
       this.mFeatures = "";
 
@@ -593,7 +593,7 @@ nsBrowserContentHandler.prototype = {
 
   /* nsIContentHandler */
 
-  handleContent : function bch_handleContent(contentType, context, request) {
+  handleContent : function(contentType, context, request) {
     try {
       var webNavInfo = Components.classes["@mozilla.org/webnavigation-info;1"]
                                  .getService(nsIWebNavigationInfo);
@@ -611,7 +611,7 @@ nsBrowserContentHandler.prototype = {
   },
 
   /* nsICommandLineValidator */
-  validate : function bch_validate(cmdLine) {
+  validate : function(cmdLine) {
     // Other handlers may use osint so only handle the osint flag if the url
     // flag is also present and the command line is valid.
     var osintFlagIdx = cmdLine.findFlag("osint", false);
@@ -676,7 +676,7 @@ nsDefaultCommandLineHandler.prototype = {
   classID: Components.ID("{47cd0651-b1be-4a0f-b5c4-10e5a573ef71}"),
 
   /* nsISupports */
-  QueryInterface : function dch_QI(iid) {
+  QueryInterface : function(iid) {
     if (!iid.equals(nsISupports) &&
         !iid.equals(nsICommandLineHandler))
       throw Components.results.NS_ERROR_NO_INTERFACE;
@@ -687,7 +687,7 @@ nsDefaultCommandLineHandler.prototype = {
   _haveProfile: false,
 
   /* nsICommandLineHandler */
-  handle : function dch_handle(cmdLine) {
+  handle : function(cmdLine) {
     // The -url flag is inserted by the operating system when the default
     // application handler is used. We check for default browser to remove
     // instances where users explicitly decide to "open with" the browser.
