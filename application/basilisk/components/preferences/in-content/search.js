@@ -345,15 +345,15 @@ EngineStore.prototype = {
     return val;
   },
 
-  _getIndexForEngine: function ES_getIndexForEngine(aEngine) {
+  _getIndexForEngine: function(aEngine) {
     return this._engines.indexOf(aEngine);
   },
 
-  _getEngineByName: function ES_getEngineByName(aName) {
+  _getEngineByName: function(aName) {
     return this._engines.find(engine => engine.name == aName);
   },
 
-  _cloneEngine: function ES_cloneEngine(aEngine) {
+  _cloneEngine: function(aEngine) {
     var clonedObj={};
     for (var i in aEngine)
       clonedObj[i] = aEngine[i];
@@ -363,15 +363,15 @@ EngineStore.prototype = {
   },
 
   // Callback for Array's some(). A thisObj must be passed to some()
-  _isSameEngine: function ES_isSameEngine(aEngineClone) {
+  _isSameEngine: function(aEngineClone) {
     return aEngineClone.originalEngine == this.originalEngine;
   },
 
-  addEngine: function ES_addEngine(aEngine) {
+  addEngine: function(aEngine) {
     this._engines.push(this._cloneEngine(aEngine));
   },
 
-  moveEngine: function ES_moveEngine(aEngine, aNewIndex) {
+  moveEngine: function(aEngine, aNewIndex) {
     if (aNewIndex < 0 || aNewIndex > this._engines.length - 1)
       throw new Error("ES_moveEngine: invalid aNewIndex!");
     var index = this._getIndexForEngine(aEngine);
@@ -388,7 +388,7 @@ EngineStore.prototype = {
     Services.search.moveEngine(aEngine.originalEngine, aNewIndex);
   },
 
-  removeEngine: function ES_removeEngine(aEngine) {
+  removeEngine: function(aEngine) {
     if (this._engines.length == 1) {
       throw new Error("Cannot remove last engine!");
     }
@@ -407,7 +407,7 @@ EngineStore.prototype = {
     return index;
   },
 
-  restoreDefaultEngines: function ES_restoreDefaultEngines() {
+  restoreDefaultEngines: function() {
     var added = 0;
 
     for (var i = 0; i < this._defaultEngines.length; ++i) {
@@ -436,7 +436,7 @@ EngineStore.prototype = {
     return added;
   },
 
-  changeEngine: function ES_changeEngine(aEngine, aProp, aNewValue) {
+  changeEngine: function(aEngine, aProp, aNewValue) {
     var index = this._getIndexForEngine(aEngine);
     if (index == -1)
       throw new Error("invalid engine?");
@@ -445,7 +445,7 @@ EngineStore.prototype = {
     aEngine.originalEngine[aProp] = aNewValue;
   },
 
-  reloadIcons: function ES_reloadIcons() {
+  reloadIcons: function() {
     this._engines.forEach(function (e) {
       e.uri = e.originalEngine.uri;
     });
