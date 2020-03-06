@@ -391,7 +391,7 @@ var gEditItemOverlay = {
     return folderMenuItem;
   },
 
-  _initFolderMenuList: function EIO__initFolderMenuList(aSelectedFolder) {
+  _initFolderMenuList: function(aSelectedFolder) {
     // clean up first
     var menupopup = this._folderMenuList.menupopup;
     while (menupopup.childNodes.length > 6)

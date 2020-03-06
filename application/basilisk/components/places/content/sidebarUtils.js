@@ -5,7 +5,7 @@
 Components.utils.import("resource://gre/modules/AppConstants.jsm");
 
 var SidebarUtils = {
-  handleTreeClick: function SU_handleTreeClick(aTree, aEvent, aGutterSelect) {
+  handleTreeClick: function(aTree, aEvent, aGutterSelect) {
     // right-clicks are not handled here
     if (aEvent.button == 2)
       return;
@@ -59,7 +59,7 @@ var SidebarUtils = {
     }
   },
 
-  handleTreeKeyPress: function SU_handleTreeKeyPress(aEvent) {
+  handleTreeKeyPress: function(aEvent) {
     // XXX Bug 627901: Post Fx4, this method should take a tree parameter.
     let tree = aEvent.target;
     let node = tree.selectedNode;
@@ -73,7 +73,7 @@ var SidebarUtils = {
    * The following function displays the URL of a node that is being
    * hovered over.
    */
-  handleTreeMouseMove: function SU_handleTreeMouseMove(aEvent) {
+  handleTreeMouseMove: function(aEvent) {
     if (aEvent.target.localName != "treechildren")
       return;
 
@@ -95,7 +95,7 @@ var SidebarUtils = {
       this.setMouseoverURL("");
   },
 
-  setMouseoverURL: function SU_setMouseoverURL(aURL) {
+  setMouseoverURL: function(aURL) {
     // When the browser window is closed with an open sidebar, the sidebar
     // unload event happens after the browser's one.  In this case
     // top.XULBrowserWindow has been nullified already.
