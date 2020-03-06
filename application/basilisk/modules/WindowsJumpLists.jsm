@@ -376,7 +376,7 @@ this.WinTaskbarJumpList =
     );
   },
 
-  _deleteActiveJumpList:() {
+  _deleteActiveJumpList:function() {
     this._builder.deleteActiveList();
   },
 
