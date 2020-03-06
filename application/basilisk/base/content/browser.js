@@ -3359,7 +3359,7 @@ const BrowserSearch = {
    * the default engine's search form otherwise. For Mac, opens a new window
    * or focuses an existing window, if necessary.
    */
-  webSearch: function BrowserSearch_webSearch() {
+  webSearch: function() {
     if (window.location.href != getBrowserURL()) {
       var win = getTopWin();
       if (win) {
@@ -3470,7 +3470,7 @@ const BrowserSearch = {
    * @return string Name of the search engine used to perform a search or null
    *         if a search was not performed.
    */
-  loadSearch: function BrowserSearch_search(searchText, useNewTab, purpose) {
+  loadSearch: function(searchText, useNewTab, purpose) {
     let engine = BrowserSearch._loadSearch(searchText, useNewTab, purpose);
     if (!engine) {
       return null;
@@ -3508,7 +3508,7 @@ const BrowserSearch = {
     return formatURL("browser.search.searchEnginesURL", true);
   },
 
-  loadAddEngines: function BrowserSearch_loadAddEngines() {
+  loadAddEngines: function() {
     var newWindowPref = gPrefService.getIntPref("browser.link.open_newwindow");
     var where = newWindowPref == 3 ? "tab" : "window";
     openUILinkIn(this.searchEnginesURL, where);
@@ -4303,7 +4303,7 @@ var XULBrowserWindow = {
   },
 
   // simulate all change notifications after switching tabs
-  onUpdateCurrentBrowser: function XWB_onUpdateCurrentBrowser(aStateFlags, aStatus, aMessage, aTotalProgress) {
+  onUpdateCurrentBrowser: function(aStateFlags, aStatus, aMessage, aTotalProgress) {
     if (FullZoom.updateBackgroundTabs)
       FullZoom.onLocationChange(gBrowser.currentURI, true);
     var nsIWebProgressListener = Components.interfaces.nsIWebProgressListener;
@@ -4666,7 +4666,7 @@ nsBrowserAccess.prototype = {
     return newWindow;
   },
 
-  openURIInFrame: function browser_openURIInFrame(aURI, aParams, aWhere, aFlags) {
+  openURIInFrame: function(aURI, aParams, aWhere, aFlags) {
     if (aWhere != Ci.nsIBrowserDOMWindow.OPEN_NEWTAB) {
       dump("Error: openURIInFrame can only open in new tabs");
       return null;
@@ -7191,7 +7191,7 @@ function getNavToolbox() {
 }
 
 var gPrivateBrowsingUI = {
-  init: function PBUI_init() {
+  init: function() {
     // Do nothing for normal windows
     if (!PrivateBrowsingUtils.isWindowPrivate(window)) {
       return;
@@ -7429,7 +7429,7 @@ var TabContextMenu = {
       }
     });
   },
-  updateContextMenu: function updateContextMenu(aPopupMenu) {
+  updateContextMenu: function(aPopupMenu) {
     this.contextTab = aPopupMenu.triggerNode.localName == "tab" ?
                       aPopupMenu.triggerNode : gBrowser.selectedTab;
     let disabled = gBrowser.tabs.length == 1;

@@ -16,7 +16,7 @@ var gDropPreview = {
    * @param aCell The drop target cell.
    * @return The re-arranged array of sites.
    */
-  rearrange: function DropPreview_rearrange(aCell) {
+  rearrange: function(aCell) {
     let sites = gGrid.sites;
 
     // Insert the dragged site into the current grid.
@@ -34,7 +34,7 @@ var gDropPreview = {
    * @param aSites The array of sites to insert into.
    * @param aCell The drop target cell.
    */
-  _insertDraggedSite: function DropPreview_insertDraggedSite(aSites, aCell) {
+  _insertDraggedSite: function(aSites, aCell) {
     let dropIndex = aCell.index;
     let draggedSite = gDrag.draggedSite;
 
@@ -85,7 +85,7 @@ var gDropPreview = {
    * @param aCell The drop target cell.
    * @return The filtered array of sites.
    */
-  _filterPinnedSites: function DropPreview_filterPinnedSites(aSites, aCell) {
+  _filterPinnedSites: function(aSites, aCell) {
     let draggedSite = gDrag.draggedSite;
 
     // When dropping on a cell that contains a pinned site make sure that all
@@ -109,7 +109,7 @@ var gDropPreview = {
    * @param aCell The drop target cell.
    * @return The range of pinned cells.
    */
-  _getPinnedRange: function DropPreview_getPinnedRange(aCell) {
+  _getPinnedRange: function(aCell) {
     let dropIndex = aCell.index;
     let range = {start: dropIndex, end: dropIndex};
 

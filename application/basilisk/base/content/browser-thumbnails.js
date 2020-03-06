@@ -28,7 +28,7 @@ var gBrowserThumbnails = {
    */
   _tabEvents: ["TabClose", "TabSelect"],
 
-  init: function Thumbnails_init() {
+  init: function() {
     PageThumbs.addExpirationFilter(this);
     gBrowser.addTabsProgressListener(this);
     Services.prefs.addObserver(this.PREF_DISK_CACHE_SSL, this, false);
@@ -43,7 +43,7 @@ var gBrowserThumbnails = {
     this._timeouts = new WeakMap();
   },
 
-  uninit: function Thumbnails_uninit() {
+  uninit: function() {
     PageThumbs.removeExpirationFilter(this);
     gBrowser.removeTabsProgressListener(this);
     Services.prefs.removeObserver(this.PREF_DISK_CACHE_SSL, this);
@@ -53,7 +53,7 @@ var gBrowserThumbnails = {
     }, this);
   },
 
-  handleEvent: function Thumbnails_handleEvent(aEvent) {
+  handleEvent: function(aEvent) {
     switch (aEvent.type) {
       case "scroll":
         let browser = aEvent.currentTarget;
@@ -70,7 +70,7 @@ var gBrowserThumbnails = {
     }
   },
 
-  observe: function Thumbnails_observe() {
+  observe: function() {
     this._sslDiskCacheEnabled =
       Services.prefs.getBoolPref(this.PREF_DISK_CACHE_SSL);
   },
@@ -83,14 +83,14 @@ var gBrowserThumbnails = {
   /**
    * State change progress listener for all tabs.
    */
-  onStateChange: function Thumbnails_onStateChange(aBrowser, aWebProgress,
+  onStateChange: function(aBrowser, aWebProgress,
                                                    aRequest, aStateFlags, aStatus) {
     if (aStateFlags & Ci.nsIWebProgressListener.STATE_STOP &&
         aStateFlags & Ci.nsIWebProgressListener.STATE_IS_NETWORK)
       this._delayedCapture(aBrowser);
   },
 
-  _capture: function Thumbnails_capture(aBrowser) {
+  _capture: function(aBrowser) {
     // Only capture about:newtab top sites.
     if (this._topSiteURLs.indexOf(aBrowser.currentURI.spec) == -1)
       return;
@@ -101,7 +101,7 @@ var gBrowserThumbnails = {
     });
   },
 
-  _delayedCapture: function Thumbnails_delayedCapture(aBrowser) {
+  _delayedCapture: function(aBrowser) {
     if (this._timeouts.has(aBrowser))
       clearTimeout(this._timeouts.get(aBrowser));
     else
@@ -115,7 +115,7 @@ var gBrowserThumbnails = {
     this._timeouts.set(aBrowser, timeout);
   },
 
-  _shouldCapture: function Thumbnails_shouldCapture(aBrowser, aCallback) {
+  _shouldCapture: function(aBrowser, aCallback) {
     // Capture only if it's the currently selected tab.
     if (aBrowser != gBrowser.selectedBrowser) {
       aCallback(false);
@@ -132,7 +132,7 @@ var gBrowserThumbnails = {
     }, []);
   },
 
-  _clearTimeout: function Thumbnails_clearTimeout(aBrowser) {
+  _clearTimeout: function(aBrowser) {
     if (this._timeouts.has(aBrowser)) {
       aBrowser.removeEventListener("scroll", this, false);
       clearTimeout(this._timeouts.get(aBrowser));
