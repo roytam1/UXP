@@ -167,7 +167,7 @@ ChromeProfileMigrator.prototype.getLastUsedDate =
   };
 
 Object.defineProperty(ChromeProfileMigrator.prototype, "sourceProfiles", {
-  get: function Chrome_sourceProfiles() {
+  get: function() {
     if ("__sourceProfiles" in this)
       return this.__sourceProfiles;
 
@@ -220,7 +220,7 @@ Object.defineProperty(ChromeProfileMigrator.prototype, "sourceProfiles", {
 });
 
 Object.defineProperty(ChromeProfileMigrator.prototype, "sourceHomePageURL", {
-  get: function Chrome_sourceHomePageURL() {
+  get: function() {
     let prefsFile = this._chromeUserDataFolder.clone();
     prefsFile.append("Preferences");
     if (prefsFile.exists()) {
@@ -243,7 +243,7 @@ Object.defineProperty(ChromeProfileMigrator.prototype, "sourceHomePageURL", {
 });
 
 Object.defineProperty(ChromeProfileMigrator.prototype, "sourceLocked", {
-  get: function Chrome_sourceLocked() {
+  get: function() {
     // There is an exclusive lock on some SQLite databases. Assume they are locked for now.
     return true;
   },

@@ -148,7 +148,7 @@ this.MigratorPrototype = {
    *        aProfile is a value returned by the sourceProfiles getter (see
    *        above).
    */
-  getResources: function MP_getResources(/* aProfile */) {
+  getResources: function(/* aProfile */) {
     throw new Error("getResources must be overridden");
   },
 
@@ -203,7 +203,7 @@ this.MigratorPrototype = {
    *
    * @see nsIBrowserProfileMigrator
    */
-  getMigrateData: function MP_getMigrateData(aProfile) {
+  getMigrateData: function(aProfile) {
     let resources = this._getMaybeCachedResources(aProfile);
     if (!resources) {
       return [];
@@ -212,7 +212,7 @@ this.MigratorPrototype = {
     return types.reduce((a, b) => { a |= b; return a }, 0);
   },
 
-  getBrowserKey: function MP_getBrowserKey() {
+  getBrowserKey: function() {
     return this.contractID.match(/\=([^\=]+)$/)[1];
   },
 
@@ -222,7 +222,7 @@ this.MigratorPrototype = {
    *
    * @see nsIBrowserProfileMigrator
    */
-  migrate: function MP_migrate(aItems, aStartup, aProfile) {
+  migrate: function(aItems, aStartup, aProfile) {
     let resources = this._getMaybeCachedResources(aProfile);
     if (resources.length == 0)
       throw new Error("migrate called for a non-existent source");
@@ -426,7 +426,7 @@ this.MigratorPrototype = {
   },
 
   /** * PRIVATE STUFF - DO NOT OVERRIDE ***/
-  _getMaybeCachedResources: function PMB__getMaybeCachedResources(aProfile) {
+  _getMaybeCachedResources: function(aProfile) {
     let profileKey = aProfile ? aProfile.id : "";
     if (this._resourcesByProfile) {
       if (profileKey in this._resourcesByProfile)
@@ -487,7 +487,7 @@ this.MigrationUtils = Object.freeze({
    *        the callback function passed to |migrate|.
    * @return the wrapped function.
    */
-  wrapMigrateFunction: function MU_wrapMigrateFunction(aFunction, aCallback) {
+  wrapMigrateFunction: function(aFunction, aCallback) {
     return function() {
       let success = false;
       try {
@@ -520,7 +520,7 @@ this.MigrationUtils = Object.freeze({
    *
    * @see nsIStringBundle
    */
-  getLocalizedString: function MU_getLocalizedString(aKey, aReplacements) {
+  getLocalizedString: function(aKey, aReplacements) {
     aKey = aKey.replace(/_(canary|chromium)$/, "_chrome");
 
     const OVERRIDES = {
@@ -678,7 +678,7 @@ this.MigrationUtils = Object.freeze({
    * @return profile migrator implementing nsIBrowserProfileMigrator, if it can
    *         import any data, null otherwise.
    */
-  getMigrator: function MU_getMigrator(aKey) {
+  getMigrator: function(aKey) {
     let migrator = null;
     if (this._migrators.has(aKey)) {
       migrator = this._migrators.get(aKey);
@@ -1071,7 +1071,7 @@ this.MigrationUtils = Object.freeze({
   /**
    * Cleans up references to migrators and nsIProfileInstance instances.
    */
-  finishMigration: function MU_finishMigration() {
+  finishMigration: function() {
     gMigrators = null;
     gProfileStartup = null;
     gMigrationBundle = null;
