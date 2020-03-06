@@ -59,7 +59,6 @@
 #ifdef XP_WIN32
 @BINPATH@/uninstall/helper.exe
 #endif
-@RESPATH@/update.locale
 #ifdef MOZ_UPDATER
 @RESPATH@/updater.ini
 #endif
