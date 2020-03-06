@@ -273,8 +273,8 @@ Applies to `*.js` and `*.jsm`.
       }
     }, false);
   ```
-- 
-- 
+- Use a single space between `{` `}` braces in empty js objects.
+
 ### Flow control
 Flow control expressions should follow the following guidelines:
 - Scopes have their opening braces on the expression line
@@ -282,6 +282,7 @@ Flow control expressions should follow the following guidelines:
 - Any alternative flow control paths are generally started with an expression on the closing brace line. The logic behind this is that you should keep the flow control level visually the same for the executed code blocks with no breaks (a closing brace on its own line means "done").
 - Case statements are indented by 2 on a new line with the case expression on its own line.
 - Flow control default scopes are always placed at the bottom.
+
 #### if..else
 `if..else` statements example:
 ```JavaScript
@@ -357,7 +358,6 @@ switch (variable) {
 ```
 #### try..catch
 - When using `try..catch` blocks, the use of optional catch binding is discouraged. Please always include the error variable.
-- Use a single space between `{` `}` braces in empty code blocks.
 
 `try..catch` flow control examples:
 ```JavaScript
@@ -371,7 +371,8 @@ try {
 
 try {
   do_something();
-} catch(e) { }
+} catch(e) {
+}
 
 try {
   do_something();
@@ -387,6 +388,11 @@ try {
   // No error processing
   do_something_else();
 }
+
+// No closing brace on its own line
+try {
+  do_something();
+} catch(ex) { }
 ```
 
 ### Long line wrapping
@@ -423,11 +429,12 @@ somelongvariable = somelongexpression ?
 
 Cu.import("resource:///modules/DownloadsCommon.jsm", {})
   .DownloadsCommon.initializeAllDataLinks();
+
+let sessionStartup = Cc["@mozilla.org/browser/sessionstartup;1"]
+                       .getService(Ci.nsISessionStartup);
 ```
 
 ## XUL and other XML-derivatives 
 Applies to `*.xul`, `*.html`, `*.xhtml`.
 ## IDL
 Applies to `*.idl`, `*.xpidl` and `*.webidl`.
-
-
