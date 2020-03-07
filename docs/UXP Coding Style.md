@@ -356,6 +356,32 @@ switch (variable) {
     code_for_default;
 }
 ```
+Alternatively (braced):
+```JavaScript
+switch (variable) {
+  case value1: {
+    // Comment describing 1
+    code_for_1;
+    code_for_1;
+    break;
+  }
+  case value2: {
+    code_for_2;
+    code_for_2;
+    // fallthrough
+  }
+  case value3:
+  case value4: {
+    code_for_3_and_4;
+    break;
+  }
+  default: {
+    code_for_default;
+    code_for_default;
+  }
+}
+```
+
 #### try..catch
 - When using `try..catch` blocks, the use of optional catch binding is discouraged. Please always include the error variable.
 
@@ -400,6 +426,7 @@ If statements on a single line become overly long, they should be split into mul
 - Binary operators (including ternary) must be left on their original lines if the line break happens around the operator. The second line should start in the same column as the start of the expression in the first line.
 - Lists of variables (e.g. when calling or declaring a function) should be split at the wrapping column.
 - Long OOP calls should be split at the period with the period on the start of the new line, indented to the column of the first object, filling to the wrapping column where possible.
+- When breaking assignments/operations/logic, break right after the operator (`=`, `+`, `&&`, `||`, etc.)
 
 WRONG:
 ```JavaScript
@@ -411,6 +438,10 @@ if (somelongvariable == somelongothervariable
 
 somelongvariable = somelongexpression ? somevalue1
   : somevalue2;
+
+var iShouldntBeUsingThisLongOfAVarName
+  = someValueToAdd + someValueToAdd + someValueToAdd
+    + someValueToAdd;
 
 Cu.import("resource:///modules/DownloadsCommon.jsm", {}).
           DownloadsCommon.initializeAllDataLinks();
@@ -426,6 +457,10 @@ if (somelongvariable == somelongothervariable ||
 somelongvariable = somelongexpression ?
                    somevalue1 :
                    somevalue2;
+
+var iShouldntBeUsingThisLongOfAVarName =
+  someValueToAdd + someValueToAdd + someValueToAdd +
+  someValueToAdd;
 
 Cu.import("resource:///modules/DownloadsCommon.jsm", {})
   .DownloadsCommon.initializeAllDataLinks();
