@@ -5,7 +5,7 @@
 
 var WebrtcIndicator = {
   init: function () {
-    let temp = {};
+    let temp = { };
     Cu.import("resource:///modules/webrtcUI.jsm", temp);
     this.UIModule = temp.webrtcUI;
 
@@ -35,14 +35,16 @@ var WebrtcIndicator = {
   },
 
   clearPopup: function (aPopup) {
-    while (aPopup.lastChild)
+    while (aPopup.lastChild) {
       aPopup.removeChild(aPopup.lastChild);
+    }
   },
 
   menuCommand: function (aMenuitem) {
     let streamData = this._menuitemData.get(aMenuitem);
-    if (!streamData)
+    if (!streamData) {
       return;
+    }
 
     let browserWindow = streamData.browser.ownerDocument.defaultView;
     if (streamData.tab) {
