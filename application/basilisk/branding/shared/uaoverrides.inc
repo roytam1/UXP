@@ -24,8 +24,8 @@ pref("@GUAO_PREF@.accounts.firefox.com", "Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION
 pref("@GUAO_PREF@.addons.mozilla.org", "Mozilla/5.0 (@OS_SLICE@ rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 
 // Required for domains that have proven unresponsive to requests from users
-pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:42.0) @GK_SLICE@ Firefox/42.0 @APP_SLICE@");
-pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:42.0) @GK_SLICE@ Firefox/42.0");
+pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:62.0) @GK_SLICE@ Firefox/62.0 @APP_SLICE@");
+pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (@OS_SLICE@ rv:62.0) @GK_SLICE@ Firefox/62.0");
 pref("@GUAO_PREF@.netflix.com","Mozilla/5.0 (@OS_SLICE@ rv:42.0) @GK_SLICE@ Firefox/42.0 @APP_SLICE@");
 
 // The never-ending Facebook debacle...
@@ -37,7 +37,7 @@ pref("@GUAO_PREF@.dailymotion.com","Mozilla/5.0 (@OS_SLICE@ rv:52.0) @GK_SLICE@ 
 // The following requires native mode. Or it blocks.. "too old firefox", breakage, etc.
 
 // UA-Sniffing domains below have indicated no interest in supporting Pale Moon (BOO!)
-pref("@GUAO_PREF@.whatsapp.com","Mozilla/5.0 (@OS_SLICE@ rv:61.0) @GK_SLICE@ Firefox/61.0");
+pref("@GUAO_PREF@.whatsapp.com","Mozilla/5.0 (@OS_SLICE@ rv:68.0) @GK_SLICE@ Firefox/68.0");
 
 // UA-sniffing domains that are "app/vendor-specific" and do not like Pale Moon
 
