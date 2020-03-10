@@ -328,7 +328,7 @@ var ctrlTab = {
       selectedIndex += aForward ? 1 : -1;
       if (selectedIndex < 0) {
         selectedIndex = this.previews.length - 1;
-      } else if (selectedIndex >= this.previews.length)
+      } else if (selectedIndex >= this.previews.length) {
         selectedIndex = 0;
       }
     } while (this.previews[selectedIndex].hidden);

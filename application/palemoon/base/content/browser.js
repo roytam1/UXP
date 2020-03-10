@@ -4222,7 +4222,7 @@ var LinkTargetDisplay = {
   _timer: 0,
 
   get _isVisible () {
-    return XULBrowserWindow.statusTextField.label != "",
+    return XULBrowserWindow.statusTextField.label != "";
   },
 
   update: function() {
