@@ -43,7 +43,7 @@ addMessageListener("Browser:HideSessionRestoreButton", function (message) {
   let doc = content.document;
   let container;
   if (doc.documentURI.toLowerCase() == "about:home" &&
-      (container = doc.getElementById("sessionRestoreContainer"))){
+      (container = doc.getElementById("sessionRestoreContainer"))) {
     container.hidden = true;
   }
 });
@@ -67,7 +67,8 @@ var handleContentContextMenu = function (event) {
     let plugin = null;
     try {
       plugin = event.target.QueryInterface(Ci.nsIObjectLoadingContent);
-    } catch (e) {}
+    } catch(e) {
+    }
     if (plugin && plugin.displayedType == Ci.nsIObjectLoadingContent.TYPE_PLUGIN) {
       // Don't open a context menu for plugins.
       return;
@@ -76,10 +77,11 @@ var handleContentContextMenu = function (event) {
     defaultPrevented = false;
   }
 
-  if (defaultPrevented)
+  if (defaultPrevented) {
     return;
+  }
 
-  let addonInfo = {};
+  let addonInfo = { };
   let subject = {
     event: event,
     addonInfo: addonInfo,
@@ -106,8 +108,8 @@ var handleContentContextMenu = function (event) {
   // if per element referrer is enabled, the element referrer overrules
   // the document wide referrer
   if (Services.prefs.getBoolPref("network.http.enablePerElementReferrer")) {
-    let referrerAttrValue = Services.netUtils.parseAttributePolicyString(event.target.
-                            getAttribute("referrerpolicy"));
+    let referrerAttrValue = Services.netUtils.parseAttributePolicyString(
+                              event.target.getAttribute("referrerpolicy"));
     if (referrerAttrValue !== Ci.nsIHttpChannel.REFERRER_POLICY_UNSET) {
       referrerPolicy = referrerAttrValue;
     }
@@ -128,12 +130,15 @@ var handleContentContextMenu = function (event) {
         imageCache.findEntryProperties(event.target.currentURI, doc);
       try {
         contentType = props.get("type", Ci.nsISupportsCString).data;
-      } catch (e) {}
+      } catch(e) {
+      }
       try {
         contentDisposition =
           props.get("content-disposition", Ci.nsISupportsCString).data;
-      } catch (e) {}
-    } catch (e) {}
+      } catch(e) {
+      }
+    } catch(e) {
+    }
   }
 
   let selectionInfo = BrowserUtils.getSelectionDetails(content);
@@ -158,7 +163,7 @@ var handleContentContextMenu = function (event) {
     contentDisposition: contentDisposition,
     selectionInfo: selectionInfo,
     loginFillInfo,
-    parentAllowsMixedContent,
+    parentAllowsMixedContent
   };
 }
 
@@ -167,11 +172,11 @@ Cc["@mozilla.org/eventlistenerservice;1"]
   .addSystemEventListener(global, "contextmenu", handleContentContextMenu, false);
 
 // Lazily load the finder code
-addMessageListener("Finder:Initialize", function () {
+addMessageListener("Finder:Initialize", function() {
   let {RemoteFinderListener} = Cu.import("resource://gre/modules/RemoteFinder.jsm", {});
   new RemoteFinderListener(global);
 });
 
 addEventListener("DOMWebNotificationClicked", function(event) {
-  sendAsyncMessage("DOMWebNotificationClicked", {});
+  sendAsyncMessage("DOMWebNotificationClicked", { });
 }, false);

@@ -17,21 +17,21 @@ nsContextMenu.prototype = {
     // Get contextual info.
     this.setTarget(document.popupNode, document.popupRangeParent,
                    document.popupRangeOffset);
-    if (!this.shouldDisplay)
+    if (!this.shouldDisplay) {
       return;
+    }
 
     this.hasPageMenu = false;
     if (!aIsShift) {
-      this.hasPageMenu = PageMenu.maybeBuildAndAttachMenu(this.target,
-                                                          aXulMenu);
+      this.hasPageMenu = PageMenu.maybeBuildAndAttachMenu(this.target, aXulMenu);
     }
 
     this.isFrameImage = document.getElementById("isFrameImage");
     this.ellipsis = "\u2026";
     try {
-      this.ellipsis = gPrefService.getComplexValue("intl.ellipsis",
-                                                   Ci.nsIPrefLocalizedString).data;
-    } catch (e) { }
+      this.ellipsis = gPrefService.getComplexValue("intl.ellipsis", Ci.nsIPrefLocalizedString).data;
+    } catch(e) {
+    }
 
     this.isContentSelected = this.isContentSelection();
     this.onPlainTextLink = false;
@@ -68,9 +68,9 @@ nsContextMenu.prototype = {
   initOpenItems: function() {
     var isMailtoInternal = false;
     if (this.onMailtoLink) {
-      var mailtoHandler = Cc["@mozilla.org/uriloader/external-protocol-service;1"].
-                          getService(Ci.nsIExternalProtocolService).
-                          getProtocolHandlerInfo("mailto");
+      var mailtoHandler = Cc["@mozilla.org/uriloader/external-protocol-service;1"]
+                            .getService(Ci.nsIExternalProtocolService)
+                            .getProtocolHandlerInfo("mailto");
       isMailtoInternal = (!mailtoHandler.alwaysAskBeforeHandling &&
                           mailtoHandler.preferredAction == Ci.nsIHandlerInfo.useHelperApp &&
                           (mailtoHandler.preferredApplicationHandler instanceof Ci.nsIWebHandlerApp));
@@ -87,15 +87,16 @@ nsContextMenu.prototype = {
       if (/^(?:https?|ftp):/i.test(linkText)) {
         try {
           uri = makeURI(linkText);
-        } catch (ex) {}
-      }
-      // Check if this could be a valid url, just missing the protocol.
-      else if (/^[-a-z\d\.]+\.[-a-z\d]{2,}[-_=~:#%&\?\w\/\.]*$/i.test(linkText)) {
+        } catch(ex) {
+        }
+      } else if (/^[-a-z\d\.]+\.[-a-z\d]{2,}[-_=~:#%&\?\w\/\.]*$/i.test(linkText)) {
+        // Check if this could be a valid url, just missing the protocol.
         let uriFixup = Cc["@mozilla.org/docshell/urifixup;1"]
                          .getService(Ci.nsIURIFixup);
         try {
           uri = uriFixup.createFixupURI(linkText, uriFixup.FIXUP_FLAG_NONE);
-        } catch (ex) {}
+        } catch(ex) {
+        }
       }
 
       if (uri && uri.host) {
@@ -142,8 +143,9 @@ nsContextMenu.prototype = {
     this.showItem("context-leave-dom-fullscreen", shouldShow);
 
     // Explicitly show if in DOM fullscreen, but do not hide it has already been shown
-    if (shouldShow)
-        this.showItem("context-media-sep-commands", true);
+    if (shouldShow) {
+      this.showItem("context-media-sep-commands", true);
+    }
   },
 
   initSaveItems: function() {
@@ -199,8 +201,9 @@ nsContextMenu.prototype = {
 #ifdef HAVE_SHELL_SERVICE
     // Only enable Set as Desktop Background if we can get the shell service.
     var shell = getShellService();
-    if (shell)
+    if (shell) {
       haveSetDesktopBackground = shell.canSetDesktopBackground;
+    }
 #endif
     this.showItem("context-setDesktopBackground",
                   haveSetDesktopBackground && this.onLoadedImage);
@@ -268,10 +271,11 @@ nsContextMenu.prototype = {
 
     // Hide menu entries for images, show otherwise
     if (this.inFrame) {
-      if (BrowserUtils.mimeTypeIsTextBased(this.target.ownerDocument.contentType))
+      if (BrowserUtils.mimeTypeIsTextBased(this.target.ownerDocument.contentType)) {
         this.isFrameImage.removeAttribute('hidden');
-      else
+      } else {
         this.isFrameImage.setAttribute('hidden', 'true');
+      }
     }
 
     // BiDi UI
@@ -297,15 +301,14 @@ nsContextMenu.prototype = {
     // suggestion list
     this.showItem("spell-suggestions-separator", onMisspelling || showUndo);
     if (onMisspelling) {
-      var suggestionsSeparator =
-        document.getElementById("spell-add-to-dictionary");
+      var suggestionsSeparator = document.getElementById("spell-add-to-dictionary");
       var numsug =
         InlineSpellCheckerUI.addSuggestionsToMenu(suggestionsSeparator.parentNode,
                                                   suggestionsSeparator, 5);
       this.showItem("spell-no-suggestions", numsug == 0);
-    }
-    else
+    } else {
       this.showItem("spell-no-suggestions", false);
+    }
 
     // dictionary list
     this.showItem("spell-dictionaries", canSpell && InlineSpellCheckerUI.enabled);
@@ -314,15 +317,14 @@ nsContextMenu.prototype = {
       var dictSep = document.getElementById("spell-language-separator");
       InlineSpellCheckerUI.addDictionaryListToMenu(dictMenu, dictSep);
       this.showItem("spell-add-dictionaries-main", false);
-    }
-    else if (this.onEditableArea) {
+    } else if (this.onEditableArea) {
       // when there is no spellchecker but we might be able to spellcheck
       // add the add to dictionaries item. This will ensure that people
       // with no dictionaries will be able to download them
       this.showItem("spell-add-dictionaries-main", true);
-    }
-    else
+    } else {
       this.showItem("spell-add-dictionaries-main", false);
+    }
   },
 
   initClipboardItems: function() {
@@ -335,8 +337,7 @@ nsContextMenu.prototype = {
     this.showItem("context-undo", this.onTextInput);
     this.showItem("context-sep-undo", this.onTextInput);
     this.showItem("context-cut", this.onTextInput);
-    this.showItem("context-copy",
-                  this.isContentSelected || this.onTextInput);
+    this.showItem("context-copy", this.isContentSelected || this.onTextInput);
     this.showItem("context-paste", this.onTextInput);
     this.showItem("context-delete", this.onTextInput);
     this.showItem("context-sep-paste", this.onTextInput);
@@ -370,7 +371,8 @@ nsContextMenu.prototype = {
     this.setItemAttr("context-copyvideourl",  "disabled", !this.mediaURL);
     this.setItemAttr("context-copyaudiourl",  "disabled", !this.mediaURL);
     this.showItem("context-sep-copyimage", this.onImage ||
-                  this.onVideo || this.onAudio);
+                                           this.onVideo ||
+                                           this.onAudio);
   },
 
   initMediaPlayerItems: function() {
@@ -436,7 +438,7 @@ nsContextMenu.prototype = {
     return gDevTools.showToolbox(target, "inspector").then(function(toolbox) {
       let inspector = toolbox.getCurrentPanel();
 
-      this.browser.messageManager.sendAsyncMessage("debug:inspect", {}, {node: this.target});
+      this.browser.messageManager.sendAsyncMessage("debug:inspect", { }, { node: this.target });
       inspector.walker.findInspectingNode().then(nodeFront => {
         inspector.selection.setNodeFront(nodeFront, "browser-context-menu");
       });
@@ -488,13 +490,13 @@ nsContextMenu.prototype = {
     this.target = aNode;
 
     this.browser = this.target.ownerDocument.defaultView
-                                .QueryInterface(Ci.nsIInterfaceRequestor)
-                                .getInterface(Ci.nsIWebNavigation)
-                                .QueryInterface(Ci.nsIDocShell)
-                                .chromeEventHandler;
+                              .QueryInterface(Ci.nsIInterfaceRequestor)
+                              .getInterface(Ci.nsIWebNavigation)
+                              .QueryInterface(Ci.nsIDocShell)
+                              .chromeEventHandler;
 
     // Check if we are in a synthetic document (stand alone image, video, etc.).
-    this.inSyntheticDoc =  this.target.ownerDocument.mozSyntheticDocument;
+    this.inSyntheticDoc = this.target.ownerDocument.mozSyntheticDocument;
     // First, do checks for nodes that never have children.
     if (this.target.nodeType == Node.ELEMENT_NODE) {
       // See if the user clicked on an image.
@@ -504,19 +506,19 @@ nsContextMenu.prototype = {
 
         var request =
           this.target.getRequest(Ci.nsIImageLoadingContent.CURRENT_REQUEST);
-        if (request && (request.imageStatus & request.STATUS_SIZE_AVAILABLE))
+        if (request && (request.imageStatus & request.STATUS_SIZE_AVAILABLE)) {
           this.onLoadedImage = true;
-        if (request && (request.imageStatus & request.STATUS_LOAD_COMPLETE))
+        }
+        if (request && (request.imageStatus & request.STATUS_LOAD_COMPLETE)) {
           this.onCompletedImage = true;
+        }
 
         this.mediaURL = this.target.currentURI.spec;
-      }
-      else if (this.target instanceof HTMLCanvasElement) {
+      } else if (this.target instanceof HTMLCanvasElement) {
         this.onCanvas = true;
-      }
-      else if (this.target instanceof HTMLVideoElement) {
+      } else if (this.target instanceof HTMLVideoElement) {
         this.mediaURL = this.target.currentSrc || this.target.src;
-        // Firefox always creates a HTMLVideoElement when loading an ogg file
+        // Pale Moon always creates a HTMLVideoElement when loading an ogg file
         // directly. If the media is actually audio, be smarter and provide a
         // context menu with audio operations.
         if (this.target.readyState >= this.target.HAVE_METADATA &&
@@ -525,12 +527,10 @@ nsContextMenu.prototype = {
         } else {
           this.onVideo = true;
         }
-      }
-      else if (this.target instanceof HTMLAudioElement) {
+      } else if (this.target instanceof HTMLAudioElement) {
         this.onAudio = true;
         this.mediaURL = this.target.currentSrc || this.target.src;
-      }
-      else if (this.target instanceof HTMLInputElement ) {
+      } else if (this.target instanceof HTMLInputElement ) {
         this.onTextInput = this.isTargetATextBox(this.target);
         // Allow spellchecking UI on all text and search inputs.
         if (this.onTextInput && ! this.target.readOnly &&
@@ -540,16 +540,14 @@ nsContextMenu.prototype = {
           InlineSpellCheckerUI.initFromEvent(aRangeParent, aRangeOffset);
         }
         this.onKeywordField = this.isTargetAKeywordField(this.target);
-      }
-      else if (this.target instanceof HTMLTextAreaElement) {
+      } else if (this.target instanceof HTMLTextAreaElement) {
         this.onTextInput = true;
         if (!this.target.readOnly) {
           this.onEditableArea = true;
           InlineSpellCheckerUI.init(this.target.QueryInterface(Ci.nsIDOMNSEditableElement).editor);
           InlineSpellCheckerUI.initFromEvent(aRangeParent, aRangeOffset);
         }
-      }
-      else if (this.target instanceof HTMLHtmlElement) {
+      } else if (this.target instanceof HTMLHtmlElement) {
         var bodyElt = this.target.ownerDocument.body;
         if (bodyElt) {
           let computedURL;
@@ -565,8 +563,7 @@ nsContextMenu.prototype = {
                                               computedURL);
           }
         }
-      }
-      else if ((this.target instanceof HTMLEmbedElement ||
+      } else if ((this.target instanceof HTMLEmbedElement ||
                 this.target instanceof HTMLObjectElement ||
                 this.target instanceof HTMLAppletElement) &&
                this.target.displayedType == HTMLObjectElement.TYPE_NULL &&
@@ -575,8 +572,7 @@ nsContextMenu.prototype = {
       }
 
       this.canSpellCheck = this._isSpellCheckEnabled(this.target);
-    }
-    else if (this.target.nodeType == Node.TEXT_NODE) {
+    } else if (this.target.nodeType == Node.TEXT_NODE) {
       // For text nodes, look at the parent node to determine the spellcheck attribute.
       this.canSpellCheck = this.target.parentNode &&
                            this._isSpellCheckEnabled(this.target);
@@ -617,26 +613,24 @@ nsContextMenu.prototype = {
               // this.principal.checkMayLoad(this.linkURI, false, true);
               this.linkDownload = elem.download;
             }
+          } catch(ex) {
           }
-          catch (ex) {}          
         }
 
         // Background image?  Don't bother if we've already found a
         // background image further down the hierarchy.  Otherwise,
         // we look for the computed background-image style.
-        if (!this.hasBGImage &&
-            !this._hasMultipleBGImages) {
+        if (!this.hasBGImage && !this._hasMultipleBGImages) {
           let bgImgUrl;
           try {
             bgImgUrl = this.getComputedURL(elem, "background-image");
             this._hasMultipleBGImages = false;
-          } catch (e) {
+          } catch(e) {
             this._hasMultipleBGImages = true;
           }
           if (bgImgUrl) {
             this.hasBGImage = true;
-            this.bgImageURL = makeURLAbsolute(elem.baseURI,
-                                              bgImgUrl);
+            this.bgImageURL = makeURLAbsolute(elem.baseURI, bgImgUrl);
           }
         }
       }
@@ -648,8 +642,9 @@ nsContextMenu.prototype = {
     const NS_MathML = "http://www.w3.org/1998/Math/MathML";
     if ((this.target.nodeType == Node.TEXT_NODE &&
          this.target.parentNode.namespaceURI == NS_MathML)
-         || (this.target.namespaceURI == NS_MathML))
+         || (this.target.namespaceURI == NS_MathML)) {
       this.onMathML = true;
+    }
 
     // See if the user clicked in a frame.
     var docDefaultView = this.target.ownerDocument.defaultView;
@@ -675,8 +670,7 @@ nsContextMenu.prototype = {
               this.getComputedStyle(this.target, "-moz-user-modify") == "read-write") {
             isEditable = true;
           }
-        }
-        catch(ex) {
+        } catch(ex) {
           // If someone built with composer disabled, we can't get an editing session.
         }
 
@@ -691,7 +685,7 @@ nsContextMenu.prototype = {
           this.inSrcdocFrame     = false;
           this.hasBGImage        = false;
           this.isDesignMode      = true;
-          this.onEditableArea = true;
+          this.onEditableArea    = true;
           InlineSpellCheckerUI.init(editingSession.getEditorForWindow(win));
           var canSpell = InlineSpellCheckerUI.canSpellCheck && this.canSpellCheck;
           InlineSpellCheckerUI.initFromEvent(aRangeParent, aRangeOffset);
@@ -706,21 +700,23 @@ nsContextMenu.prototype = {
   getComputedStyle: function(aElem, aProp) {
     return aElem.ownerDocument
                 .defaultView
-                .getComputedStyle(aElem, "").getPropertyValue(aProp);
+                .getComputedStyle(aElem, "")
+                .getPropertyValue(aProp);
   },
 
   // Returns a "url"-type computed style attribute value, with the url() stripped.
   getComputedURL: function(aElem, aProp) {
     var url = aElem.ownerDocument
-                   .defaultView.getComputedStyle(aElem, "")
+                   .defaultView
+                   .getComputedStyle(aElem, "")
                    .getPropertyCSSValue(aProp);
     if (url instanceof CSSValueList) {
-      if (url.length != 1)
+      if (url.length != 1) {
         throw "found multiple URLs";
+      }
       url = url[0];
     }
-    return url.primitiveType == CSSPrimitiveValue.CSS_URI ?
-           url.getStringValue() : null;
+    return url.primitiveType == CSSPrimitiveValue.CSS_URI ? url.getStringValue() : null;
   },
 
   // Returns true if clicked-on link targets a resource that can be saved.
@@ -728,10 +724,10 @@ nsContextMenu.prototype = {
     // We don't do the Right Thing for news/snews yet, so turn them off
     // until we do.
     return this.linkProtocol && !(
-             this.linkProtocol == "mailto"     ||
+             this.linkProtocol == "mailto" ||
              this.linkProtocol == "javascript" ||
-             this.linkProtocol == "news"       ||
-             this.linkProtocol == "snews"      );
+             this.linkProtocol == "news" ||
+             this.linkProtocol == "snews");
   },
 
   _isSpellCheckEnabled: function(aNode) {
@@ -869,8 +865,9 @@ nsContextMenu.prototype = {
                      this.browser.contentPrincipal,
                      Ci.nsIScriptSecurityManager.DISALLOW_SCRIPT);
 
-    if (this.target instanceof Ci.nsIImageLoadingContent)
+    if (this.target instanceof Ci.nsIImageLoadingContent) {
       this.target.forceReload();
+    }
   },
 
   // Change current window to the URL of the image, video, or audio.
@@ -886,7 +883,8 @@ nsContextMenu.prototype = {
             "This feature cannot be used, because it hasn't found " + 
             "an appropriate window.");
       } else {
-        new Promise.resolve({then: function(resolve) {
+        // TODO: This is unreadable. Rewrite it to something more sane.
+        new Promise.resolve({ then: function(resolve) {
           target.toBlob((blob) => {
             resolve(win.URL.createObjectURL(blob));
           })
@@ -919,9 +917,11 @@ nsContextMenu.prototype = {
       let url = uri.QueryInterface(Ci.nsIURL);
       if (url.fileBaseName)
         name = decodeURI(url.fileBaseName) + ".jpg";
-    } catch (e) { }
-    if (!name)
+    } catch (e) {
+    }
+    if (!name) {
       name = "snapshot.jpg";
+    }
     var video = this.target;
     var canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
     canvas.width = video.videoWidth;
@@ -935,8 +935,9 @@ nsContextMenu.prototype = {
 
   fullScreenVideo: function() {
     let video = this.target;
-    if (document.mozFullScreenEnabled)
+    if (document.mozFullScreenEnabled) {
       video.mozRequestFullScreen();
+    }
   },
 
   leaveDOMFullScreen: function() {
@@ -956,20 +957,24 @@ nsContextMenu.prototype = {
   disableSetDesktopBackground: function() {
     // Disable the Set as Desktop Background menu item if we're still trying
     // to load the image or the load failed.
-    if (!(this.target instanceof Ci.nsIImageLoadingContent))
+    if (!(this.target instanceof Ci.nsIImageLoadingContent)) {
       return true;
+    }
 
-    if (("complete" in this.target) && !this.target.complete)
+    if (("complete" in this.target) && !this.target.complete) {
       return true;
+    }
 
-    if (this.target.currentURI.schemeIs("javascript"))
+    if (this.target.currentURI.schemeIs("javascript")) {
       return true;
+    }
 
     var request = this.target
                       .QueryInterface(Ci.nsIImageLoadingContent)
                       .getRequest(Ci.nsIImageLoadingContent.CURRENT_REQUEST);
-    if (!request)
+    if (!request) {
       return true;
+    }
 
     return false;
   },
@@ -977,15 +982,15 @@ nsContextMenu.prototype = {
   setDesktopBackground: function() {
     // Paranoia: check disableSetDesktopBackground again, in case the
     // image changed since the context menu was initiated.
-    if (this.disableSetDesktopBackground())
+    if (this.disableSetDesktopBackground()) {
       return;
+    }
 
     urlSecurityCheck(this.target.currentURI.spec,
                      this.target.ownerDocument.nodePrincipal);
 
     // Confirm since it's annoying if you hit this accidentally.
-    const kDesktopBackgroundURL = 
-                  "chrome://browser/content/setDesktopBackground.xul";
+    const kDesktopBackgroundURL = "chrome://browser/content/setDesktopBackground.xul";
 #ifdef XP_MACOSX
     // On Mac, the Set Desktop Background window is not modal.
     // Don't open more than one Set Desktop Background window.
@@ -995,8 +1000,7 @@ nsContextMenu.prototype = {
     if (dbWin) {
       dbWin.gSetBackground.init(this.target);
       dbWin.focus();
-    }
-    else {
+    } else {
       openDialog(kDesktopBackgroundURL, "",
                  "centerscreen,chrome,dialog=no,dependent,resizable=no",
                  this.target);
@@ -1025,7 +1029,8 @@ nsContextMenu.prototype = {
     // nsIExternalHelperAppService.doContent, which will wait for the
     // appropriate MIME-type headers and then prompt the user with a
     // file picker
-    function saveAsListener() {}
+    function saveAsListener() { }
+    
     saveAsListener.prototype = {
       extListener: null, 
 
@@ -1034,8 +1039,9 @@ nsContextMenu.prototype = {
         // if the timer fired, the error status will have been caused by that,
         // and we'll be restarting in onStopRequest, so no reason to notify
         // the user
-        if (aRequest.status == NS_ERROR_SAVE_LINK_AS_TIMEOUT)
+        if (aRequest.status == NS_ERROR_SAVE_LINK_AS_TIMEOUT) {
           return;
+        }
 
         timer.cancel();
 
@@ -1053,7 +1059,8 @@ nsContextMenu.prototype = {
             const promptSvc = Cc["@mozilla.org/embedcomp/prompt-service;1"].
                               getService(Ci.nsIPromptService);
             promptSvc.alert(doc.defaultView, title, msg);
-          } catch (ex) {}
+          } catch (ex) {
+          }
           return;
         }
 
@@ -1067,26 +1074,25 @@ nsContextMenu.prototype = {
         this.extListener.onStartRequest(aRequest, aContext);
       }, 
 
-      onStopRequest: function(aRequest, aContext, 
-                                                       aStatusCode) {
+      onStopRequest: function(aRequest, aContext, aStatusCode) {
         if (aStatusCode == NS_ERROR_SAVE_LINK_AS_TIMEOUT) {
           // do it the old fashioned way, which will pick the best filename
           // it can without waiting.
           saveURL(linkURL, linkText, dialogTitle, bypassCache, false, doc.documentURIObject, doc);
         }
-        if (this.extListener)
+        if (this.extListener) {
           this.extListener.onStopRequest(aRequest, aContext, aStatusCode);
+        }
       },
 
-      onDataAvailable: function(aRequest, aContext,
-                                                           aInputStream,
-                                                           aOffset, aCount) {
+      onDataAvailable: function(aRequest, aContext, aInputStream, aOffset, aCount) {
         this.extListener.onDataAvailable(aRequest, aContext, aInputStream,
                                          aOffset, aCount);
       }
     }
 
-    function callbacks() {}
+    function callbacks() { }
+    
     callbacks.prototype = {
       getInterface: function(aIID) {
         if (aIID.equals(Ci.nsIAuthPrompt) || aIID.equals(Ci.nsIAuthPrompt2)) {
@@ -1105,7 +1111,8 @@ nsContextMenu.prototype = {
     // if it we don't have the headers after a short time, the user 
     // won't have received any feedback from their click.  that's bad.  so
     // we give up waiting for the filename. 
-    function timerCallback() {}
+    function timerCallback() { }
+    
     timerCallback.prototype = {
       notify: function(aTimer) {
         channel.cancel(NS_ERROR_SAVE_LINK_AS_TIMEOUT);
@@ -1114,15 +1121,15 @@ nsContextMenu.prototype = {
     }
 
     // setting up a new channel for 'right click - save link as ...'
-    var channel = NetUtil.newChannel({
-                    uri: makeURI(linkURL),
-                    loadingPrincipal: this.target.ownerDocument.nodePrincipal,
-                    contentPolicyType: Ci.nsIContentPolicy.TYPE_SAVEAS_DOWNLOAD,
-                    securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_DATA_INHERITS,
-                  });
+    var channel = NetUtil.newChannel(
+                    { uri: makeURI(linkURL),
+                      loadingPrincipal: this.target.ownerDocument.nodePrincipal,
+                      contentPolicyType: Ci.nsIContentPolicy.TYPE_SAVEAS_DOWNLOAD,
+                      securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_DATA_INHERITS });
 
-    if (linkDownload)
+    if (linkDownload) {
       channel.contentDispositionFilename = linkDownload;
+    }
     if (channel instanceof Ci.nsIPrivateBrowsingChannel) {
       let docIsPrivate = PrivateBrowsingUtils.isWindowPrivate(doc.defaultView);
       channel.setPrivate(docIsPrivate);
@@ -1131,26 +1138,27 @@ nsContextMenu.prototype = {
 
     let flags = Ci.nsIChannel.LOAD_CALL_CONTENT_SNIFFERS;
 
-    if (bypassCache)
+    if (bypassCache) {
       flags |= Ci.nsIRequest.LOAD_BYPASS_CACHE;
+    }
 
-    if (channel instanceof Ci.nsICachingChannel)
+    if (channel instanceof Ci.nsICachingChannel) {
       flags |= Ci.nsICachingChannel.LOAD_BYPASS_LOCAL_CACHE_IF_BUSY;
+    }
 
     channel.loadFlags |= flags;
 
     if (channel instanceof Ci.nsIHttpChannel) {
       channel.referrer = doc.documentURIObject;
-      if (channel instanceof Ci.nsIHttpChannelInternal)
+      if (channel instanceof Ci.nsIHttpChannelInternal) {
         channel.forceAllowThirdPartyCookie = true;
+      }
     }
 
     // fallback to the old way if we don't see the headers quickly 
-    var timeToWait = 
-      gPrefService.getIntPref("browser.download.saveLinkAsFilenameTimeout");
+    var timeToWait = gPrefService.getIntPref("browser.download.saveLinkAsFilenameTimeout");
     var timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
-    timer.initWithCallback(new timerCallback(), timeToWait,
-                           timer.TYPE_ONE_SHOT);
+    timer.initWithCallback(new timerCallback(), timeToWait, timer.TYPE_ONE_SHOT);
 
     // kick off the channel with our proxy object as the listener
     channel.asyncOpen2(new saveAsListener());
@@ -1161,10 +1169,11 @@ nsContextMenu.prototype = {
     var doc =  this.target.ownerDocument;
     var linkText;
     // If selected text is found to match valid URL pattern.
-    if (this.onPlainTextLink)
+    if (this.onPlainTextLink) {
       linkText = document.commandDispatcher.focusedWindow.getSelection().toString().trim();
-    else
+    } else {
       linkText = this.linkText();
+    }
     urlSecurityCheck(this.linkURL, doc.nodePrincipal);
 
     this.saveHelper(this.linkURL, linkText, null, true, doc,
@@ -1178,8 +1187,9 @@ nsContextMenu.prototype = {
 
   // Backwards-compatibility wrapper
   saveImage : function() {
-    if (this.onCanvas || this.onImage)
-        this.saveMedia();
+    if (this.onCanvas || this.onImage) {
+      this.saveMedia();
+    }
   },
 
   // Save URL of the clicked upon image, video, or audio.
@@ -1197,7 +1207,8 @@ nsContextMenu.prototype = {
             "This feature cannot be used, because it hasn't found " + 
             "an appropriate window.");
       } else {
-        new Promise.resolve({then: function(resolve) {
+        // TODO: This is unreadable. Rewrite it to something more sane.
+        new Promise.resolve({ then: function(resolve) {
           target.toBlob((blob) => {
           resolve(win.URL.createObjectURL(blob));
         })
@@ -1253,16 +1264,15 @@ nsContextMenu.prototype = {
     // in case the address is not ASCII.
     try {
       var characterSet = this.target.ownerDocument.characterSet;
-      const textToSubURI = Cc["@mozilla.org/intl/texttosuburi;1"].
-                           getService(Ci.nsITextToSubURI);
+      const textToSubURI = Cc["@mozilla.org/intl/texttosuburi;1"]
+                             .getService(Ci.nsITextToSubURI);
       addresses = textToSubURI.unEscapeURIForUI(characterSet, addresses);
-    }
-    catch(ex) {
+    } catch(ex) {
       // Do nothing.
     }
 
-    var clipboard = Cc["@mozilla.org/widget/clipboardhelper;1"].
-                    getService(Ci.nsIClipboardHelper);
+    var clipboard = Cc["@mozilla.org/widget/clipboardhelper;1"]
+                      .getService(Ci.nsIClipboardHelper);
     clipboard.copyString(addresses, document);
   },
 
@@ -1273,9 +1283,11 @@ nsContextMenu.prototype = {
   // Show/hide one item (specified via name or the item element itself).
   showItem: function(aItemOrId, aShow) {
     var item = aItemOrId.constructor == String ?
-      document.getElementById(aItemOrId) : aItemOrId;
-    if (item)
+               document.getElementById(aItemOrId) :
+               aItemOrId;
+    if (item) {
       item.hidden = !aShow;
+    }
   },
 
   // Set given attribute of specified context-menu item.  If the
@@ -1287,8 +1299,7 @@ nsContextMenu.prototype = {
       if (aVal == null) {
         // null indicates attr should be removed.
         elem.removeAttribute(aAttr);
-      }
-      else {
+      } else {
         // Set attr=val.
         elem.setAttribute(aAttr, aVal);
       }
@@ -1299,10 +1310,11 @@ nsContextMenu.prototype = {
   // (such as a broadcaster).
   setItemAttrFromNode: function(aItem_id, aAttr, aOther_id) {
     var elem = document.getElementById(aOther_id);
-    if (elem && elem.getAttribute(aAttr) == "true")
+    if (elem && elem.getAttribute(aAttr) == "true") {
       this.setItemAttr(aItem_id, aAttr, "true");
-    else
+    } else {
       this.setItemAttr(aItem_id, aAttr, null);
+    }
   },
 
   // Temporary workaround for DOM api not yet implemented by XUL nodes.
@@ -1342,8 +1354,7 @@ nsContextMenu.prototype = {
   getLinkURI: function() {
     try {
       return makeURI(this.linkURL);
-    }
-    catch (ex) {
+    } catch(ex) {
      // e.g. empty URL string
     }
 
@@ -1351,8 +1362,10 @@ nsContextMenu.prototype = {
   },
 
   getLinkProtocol: function() {
-    if (this.linkURI)
-      return this.linkURI.scheme; // can be |undefined|
+    if (this.linkURI) {
+      // can be |undefined|
+      return this.linkURI.scheme;
+    }
 
     return null;
   },
@@ -1364,8 +1377,9 @@ nsContextMenu.prototype = {
       text = this.link.getAttribute("title");
       if (!text || !text.match(/\S/)) {
         text = this.link.getAttribute("alt");
-        if (!text || !text.match(/\S/))
+        if (!text || !text.match(/\S/)) {
           text = this.linkURL;
+        }
       }
     }
 
@@ -1390,25 +1404,28 @@ nsContextMenu.prototype = {
     let ownerDoc = aNode.ownerDocument;
     return ownerDoc.defaultView &&
            ownerDoc.defaultView
-              .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-              .getInterface(Components.interfaces.nsIDOMWindowUtils)
-              .isNodeDisabledForEvents(aNode);
+                   .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                   .getInterface(Components.interfaces.nsIDOMWindowUtils)
+                   .isNodeDisabledForEvents(aNode);
   },
 
   isTargetATextBox: function(node) {
-    if (node instanceof HTMLInputElement)
+    if (node instanceof HTMLInputElement) {
       return node.mozIsTextField(false);
+    }
 
     return (node instanceof HTMLTextAreaElement);
   },
 
   isTargetAKeywordField: function(aNode) {
-    if (!(aNode instanceof HTMLInputElement))
+    if (!(aNode instanceof HTMLInputElement)) {
       return false;
+    }
 
     var form = aNode.form;
-    if (!form || aNode.type == "password")
+    if (!form || aNode.type == "password") {
       return false;
+    }
 
     var method = form.method.toUpperCase();
 
@@ -1423,7 +1440,8 @@ nsContextMenu.prototype = {
     // POST     multipart/form-data               NO
     // POST     everything else                   YES
     return (method == "GET" || method == "") ||
-           (form.enctype != "text/plain") && (form.enctype != "multipart/form-data");
+           ((form.enctype != "text/plain") &&
+            (form.enctype != "multipart/form-data"));
   },
 
   // Determines whether or not the separator with the specified ID should be
@@ -1434,8 +1452,9 @@ nsContextMenu.prototype = {
     if (separator) {
       var sibling = separator.previousSibling;
       while (sibling && sibling.localName != "menuseparator") {
-        if (!sibling.hidden)
+        if (!sibling.hidden) {
           return true;
+        }
         sibling = sibling.previousSibling;
       }
     }
@@ -1449,15 +1468,15 @@ nsContextMenu.prototype = {
     try {
       locale = gPrefService.getComplexValue("intl.accept_languages",
                                             Ci.nsIPrefLocalizedString).data;
+    } catch(e) {
     }
-    catch (e) { }
 
     var version = "-";
     try {
       version = Cc["@mozilla.org/xre/app-info;1"].
                 getService(Ci.nsIXULAppInfo).version;
+    } catch(e) {
     }
-    catch (e) { }
 
     uri = uri.replace(/%LOCALE%/, escape(locale)).replace(/%VERSION%/, version);
 
@@ -1474,12 +1493,12 @@ nsContextMenu.prototype = {
   bookmarkLink: function() {
     var linkText;
     // If selected text is found to match valid URL pattern.
-    if (this.onPlainTextLink)
+    if (this.onPlainTextLink) {
       linkText = document.commandDispatcher.focusedWindow.getSelection().toString().trim();
-    else
+    } else {
       linkText = this.linkText();
-    window.top.PlacesCommandHook.bookmarkLink(PlacesUtils.bookmarksMenuFolderId, this.linkURL,
-                                              linkText);
+    }
+    window.top.PlacesCommandHook.bookmarkLink(PlacesUtils.bookmarksMenuFolderId, this.linkURL, linkText);
   },
 
   addBookmarkForFrame: function() {
@@ -1490,21 +1509,20 @@ nsContextMenu.prototype = {
     if (itemId == -1) {
       var title = doc.title;
       var description = PlacesUIUtils.getDescriptionFromDocument(doc);
-      PlacesUIUtils.showBookmarkDialog({ action: "add"
-                                       , type: "bookmark"
-                                       , uri: uri
-                                       , title: title
-                                       , description: description
-                                       , hiddenRows: [ "description"
+      PlacesUIUtils.showBookmarkDialog({ action: "add",
+                                         type: "bookmark",
+                                         uri: uri,
+                                         title: title,
+                                         description: description,
+                                         hiddenRows: [ "description"
                                                      , "location"
                                                      , "loadInSidebar"
                                                      , "keyword" ]
                                        }, window.top);
-    }
-    else {
-      PlacesUIUtils.showBookmarkDialog({ action: "edit"
-                                       , type: "bookmark"
-                                       , itemId: itemId
+    } else {
+      PlacesUIUtils.showBookmarkDialog({ action: "edit",
+                                         type: "bookmark",
+                                         itemId: itemId
                                        }, window.top);
     }
   },
@@ -1563,14 +1581,15 @@ nsContextMenu.prototype = {
   },
 
   copyMediaLocation : function() {
-    var clipboard = Cc["@mozilla.org/widget/clipboardhelper;1"].
-                    getService(Ci.nsIClipboardHelper);
+    var clipboard = Cc["@mozilla.org/widget/clipboardhelper;1"]
+                      .getService(Ci.nsIClipboardHelper);
     clipboard.copyString(this.mediaURL, document);
   },
 
   get imageURL() {
-    if (this.onImage)
+    if (this.onImage) {
       return this.mediaURL;
+    }
     return "";
   },
 
@@ -1582,18 +1601,20 @@ nsContextMenu.prototype = {
     // Store searchTerms in context menu item so we know what to search onclick
     menuItem.searchTerms = selectedText;
 
-    if (selectedText.length > 15)
+    if (selectedText.length > 15) {
       selectedText = selectedText.substr(0,15) + this.ellipsis;
+    }
 
     // Use the current engine if the search bar is visible, the default
     // engine otherwise.
     var engineName = "";
-    var ss = Cc["@mozilla.org/browser/search-service;1"].
-             getService(Ci.nsIBrowserSearchService);
-    if (isElementVisible(BrowserSearch.searchBar))
+    var ss = Cc["@mozilla.org/browser/search-service;1"]
+               .getService(Ci.nsIBrowserSearchService);
+    if (isElementVisible(BrowserSearch.searchBar)) {
       engineName = ss.currentEngine.name;
-    else
+    } else {
       engineName = ss.defaultEngine.name;
+    }
 
     // format "Search <engine> for <selection>" string to show in menu
     var menuLabel = gNavigatorBundle.getFormattedString("contextMenuSearch",

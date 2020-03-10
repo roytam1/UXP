@@ -10,31 +10,30 @@ Cu.import("resource://gre/modules/AddonManager.jsm");
 
 function restartApp() {
   let appStartup = Cc["@mozilla.org/toolkit/app-startup;1"]
-                      .getService(Ci.nsIAppStartup);
+                     .getService(Ci.nsIAppStartup);
   appStartup.quit(Ci.nsIAppStartup.eForceQuit |  Ci.nsIAppStartup.eRestart);
 }
 
 function clearAllPrefs() {
   var prefService = Cc["@mozilla.org/preferences-service;1"]
-                       .getService(Ci.nsIPrefService);
+                      .getService(Ci.nsIPrefService);
   prefService.resetUserPrefs();
 
   // Remove the pref-overrides dir, if it exists
   try {
     var fileLocator = Cc["@mozilla.org/file/directory_service;1"]
-                         .getService(Ci.nsIProperties);
+                        .getService(Ci.nsIProperties);
     const NS_APP_PREFS_OVERRIDE_DIR = "PrefDOverride";
-    var prefOverridesDir = fileLocator.get(NS_APP_PREFS_OVERRIDE_DIR,
-                                           Ci.nsIFile);
+    var prefOverridesDir = fileLocator.get(NS_APP_PREFS_OVERRIDE_DIR, Ci.nsIFile);
     prefOverridesDir.remove(true);
-  } catch (ex) {
+  } catch(ex) {
     Components.utils.reportError(ex);
   }
 }
 
 function restoreDefaultBookmarks() {
   var prefBranch  = Cc["@mozilla.org/preferences-service;1"]
-                       .getService(Ci.nsIPrefBranch);
+                      .getService(Ci.nsIPrefBranch);
   prefBranch.setBoolPref("browser.bookmarks.restore_default_bookmarks", true);
 }
 
@@ -42,7 +41,7 @@ function deleteLocalstore() {
   const nsIDirectoryServiceContractID = "@mozilla.org/file/directory_service;1";
   const nsIProperties = Ci.nsIProperties;
   var directoryService = Cc[nsIDirectoryServiceContractID]
-                            .getService(nsIProperties);
+                           .getService(nsIProperties);
   // Local store file
   var localstoreFile = directoryService.get("LStoreS", Components.interfaces.nsIFile);
   // XUL store file
@@ -68,8 +67,7 @@ function disableAddons() {
         const DEFAULT_THEME_ID = "{972ce4c6-7e08-4474-a285-3208198ce6fd}";
         if (aAddon.id == DEFAULT_THEME_ID)
           aAddon.userDisabled = false;
-      }
-      else {
+      } else {
         aAddon.userDisabled = true;
       }
     });
@@ -80,21 +78,25 @@ function disableAddons() {
 
 function restoreDefaultSearchEngines() {
   var searchService = Cc["@mozilla.org/browser/search-service;1"]
-                         .getService(Ci.nsIBrowserSearchService);
+                        .getService(Ci.nsIBrowserSearchService);
 
   searchService.restoreDefaultEngines();
 }
 
 function onOK() {
   try {
-    if (document.getElementById("resetUserPrefs").checked)
+    if (document.getElementById("resetUserPrefs").checked) {
       clearAllPrefs();
-    if (document.getElementById("deleteBookmarks").checked)
+    }
+    if (document.getElementById("deleteBookmarks").checked) {
       restoreDefaultBookmarks();
-    if (document.getElementById("resetToolbars").checked)
+    }
+    if (document.getElementById("resetToolbars").checked) {
       deleteLocalstore();
-    if (document.getElementById("restoreSearch").checked)
+    }
+    if (document.getElementById("restoreSearch").checked) {
       restoreDefaultSearchEngines();
+    }
     if (document.getElementById("disableAddons").checked) {
       disableAddons();
       // disableAddons will asynchronously restart the application
@@ -109,7 +111,7 @@ function onOK() {
 
 function onCancel() {
   let appStartup = Cc["@mozilla.org/toolkit/app-startup;1"]
-                      .getService(Ci.nsIAppStartup);
+                     .getService(Ci.nsIAppStartup);
   appStartup.quit(Ci.nsIAppStartup.eForceQuit);
 }
 

@@ -17,17 +17,17 @@ XPCOMUtils.defineLazyModuleGetter(this, "Task",
 XPCOMUtils.defineLazyModuleGetter(this, "console",
                                   "resource://gre/modules/Console.jsm");
 
-function Sanitizer() {}
+function Sanitizer() { }
+
 Sanitizer.prototype = {
   // warning to the caller: this one may raise an exception (e.g. bug #265028)
-  clearItem: function (aItemName)
-  {
-    if (this.items[aItemName].canClear)
+  clearItem: function (aItemName) {
+    if (this.items[aItemName].canClear) {
       this.items[aItemName].clear();
+    }
   },
 
-  canClearItem: function (aItemName, aCallback, aArg)
-  {
+  canClearItem: function (aItemName, aCallback, aArg) {
     let canClear = this.items[aItemName].canClear;
     if (typeof canClear == "function") {
       canClear(aCallback, aArg);
@@ -41,8 +41,7 @@ Sanitizer.prototype = {
   prefDomain: "",
   isShutDown: false,
   
-  getNameFromPreference: function (aPreferenceName)
-  {
+  getNameFromPreference: function (aPreferenceName) {
     return aPreferenceName.substr(this.prefDomain.length);
   },
   
@@ -52,8 +51,7 @@ Sanitizer.prototype = {
    * occurs, a message is reported to the console and all other items are still
    * cleared before the promise is finally rejected.
    */
-  sanitize: function ()
-  {
+  sanitize: function () {
     var deferred = Promise.defer();
     var psvc = Components.classes["@mozilla.org/preferences-service;1"]
                          .getService(Components.interfaces.nsIPrefService);
@@ -61,10 +59,12 @@ Sanitizer.prototype = {
     var seenError = false;
 
     // Cache the range of times to clear
-    if (this.ignoreTimespan)
-      var range = null;  // If we ignore timespan, clear everything
-    else
+    if (this.ignoreTimespan) {
+      // If we ignore timespan, clear everything
+      var range = null;
+    } else {
       range = this.range || Sanitizer.getClearRange();
+    }
 
     let itemCount = Object.keys(this.items).length;
     let onItemComplete = function() {
@@ -112,32 +112,31 @@ Sanitizer.prototype = {
 
   items: {
     cache: {
-      clear: function ()
-      {
-        var cache = Cc["@mozilla.org/netwerk/cache-storage-service;1"].
-                    getService(Ci.nsICacheStorageService);
+      clear: function() {
+        var cache = Cc["@mozilla.org/netwerk/cache-storage-service;1"]
+                      .getService(Ci.nsICacheStorageService);
         try {
           // Cache doesn't consult timespan, nor does it have the
           // facility for timespan-based eviction.  Wipe it.
           cache.clear();
-        } catch(er) {}
+        } catch(er) {
+        }
 
         var imageCache = Cc["@mozilla.org/image/tools;1"].
                          getService(Ci.imgITools).getImgCacheForDocument(null);
         try {
           imageCache.clearCache(false); // true=chrome, false=content
-        } catch(er) {}
+        } catch(er) {
+        }
       },
 
-      get canClear()
-      {
+      get canClear() {
         return true;
       }
     },
 
     cookies: {
-      clear: function ()
-      {
+      clear: function () {
         var cookieMgr = Components.classes["@mozilla.org/cookiemanager;1"]
                                   .getService(Ci.nsICookieManager);
         if (this.range) {
@@ -146,13 +145,13 @@ Sanitizer.prototype = {
           while (cookiesEnum.hasMoreElements()) {
             var cookie = cookiesEnum.getNext().QueryInterface(Ci.nsICookie2);
 
-            if (cookie.creationTime > this.range[0])
+            if (cookie.creationTime > this.range[0]) {
               // This cookie was created after our cutoff, clear it
               cookieMgr.remove(cookie.host, cookie.name, cookie.path,
                                false, cookie.originAttributes);
+            }
           }
-        }
-        else {
+        } else {
           // Remove everything
           cookieMgr.removeAll();
         }
@@ -166,20 +165,20 @@ Sanitizer.prototype = {
         // that this.range[1] is actually now, so we compute age range based
         // on the lower bound. If this.range results in a negative age, do
         // nothing.
-        let age = this.range ? (Date.now() / 1000 - this.range[0] / 1000000)
-                             : -1;
+        let age = this.range ? 
+                  (Date.now() / 1000 - this.range[0] / 1000000) :
+                  -1;
         if (!this.range || age >= 0) {
           let tags = ph.getPluginTags();
           for (let i = 0; i < tags.length; i++) {
             try {
               ph.clearSiteData(tags[i], null, FLAG_CLEAR_ALL, age);
-            } catch (e) {
+            } catch(e) {
               // If the plugin doesn't support clearing by age, clear everything.
-              if (e.result == Components.results.
-                    NS_ERROR_PLUGIN_TIME_RANGE_NOT_SUPPORTED) {
+              if (e.result == Components.results.NS_ERROR_PLUGIN_TIME_RANGE_NOT_SUPPORTED) {
                 try {
                   ph.clearSiteData(tags[i], null, FLAG_CLEAR_ALL, -1);
-                } catch (e) {
+                } catch(e) {
                   // Ignore errors from the plugin
                 }
               }
@@ -188,15 +187,13 @@ Sanitizer.prototype = {
         }
       },
 
-      get canClear()
-      {
+      get canClear() {
         return true;
       }
     },
 
     offlineApps: {
-      clear: function ()
-      {
+      clear: function () {
         Components.utils.import("resource:///modules/offlineAppCache.jsm");
         OfflineAppCacheHelper.clear();
         if (!this.range || this.isShutDown) {
@@ -205,15 +202,13 @@ Sanitizer.prototype = {
         }
       },
 
-      get canClear()
-      {
+      get canClear() {
         return true;
       }
     },
 
     history: {
-      clear: function ()
-      {
+      clear: function () {
         if (this.range) {
           PlacesUtils.history.removeVisitsByFilter({
             beginDate: new Date(this.range[0] / 1000),
@@ -222,23 +217,23 @@ Sanitizer.prototype = {
         } else {
           // Remove everything.
           PlacesUtils.history.clear()
-          .catch(Components.utils.reportError);
+                     .catch(Components.utils.reportError);
         }
 
         try {
           var os = Components.classes["@mozilla.org/observer-service;1"]
                              .getService(Components.interfaces.nsIObserverService);
           os.notifyObservers(null, "browser:purge-session-history", "");
+        } catch(e) {
         }
-        catch (e) { }
 
         // Clear last URL of the Open Web Location dialog
         var prefs = Components.classes["@mozilla.org/preferences-service;1"]
                               .getService(Components.interfaces.nsIPrefBranch);
         try {
           prefs.clearUserPref("general.open_location.last_url");
+        } catch(e) {
         }
-        catch (e) { }
       },
 
       get canClear()
@@ -250,8 +245,7 @@ Sanitizer.prototype = {
     },
 
     formdata: {
-      clear: function ()
-      {
+      clear: function () {
         // Clear undo history of all searchBars
         var windowManager = Components.classes['@mozilla.org/appshell/window-mediator;1']
                                       .getService(Components.interfaces.nsIWindowMediator);
@@ -259,11 +253,13 @@ Sanitizer.prototype = {
         while (windows.hasMoreElements()) {
           let currentDocument = windows.getNext().document;
           let searchBar = currentDocument.getElementById("searchbar");
-          if (searchBar)
+          if (searchBar) {
             searchBar.textbox.reset();
+          }
           let findBar = currentDocument.getElementById("FindToolbar");
-          if (findBar)
+          if (findBar) {
             findBar.clear();
+          }
         }
 
         let change = { op: "remove" };
@@ -273,8 +269,7 @@ Sanitizer.prototype = {
         FormHistory.update(change);
       },
 
-      canClear : function(aCallback, aArg)
-      {
+      canClear: function(aCallback, aArg) {
         var windowManager = Components.classes['@mozilla.org/appshell/window-mediator;1']
                                       .getService(Components.interfaces.nsIWindowMediator);
         var windows = windowManager.getEnumerator("navigator:browser");
@@ -299,27 +294,34 @@ Sanitizer.prototype = {
 
         let count = 0;
         let countDone = {
-          handleResult : function(aResult) count = aResult,
-          handleError : function(aError) Components.utils.reportError(aError),
-          handleCompletion :
-            function(aReason) { aCallback("formdata", aReason == 0 && count > 0, aArg); }
+          handleResult: function(aResult) {
+            count = aResult;
+          },
+          handleError: function(aError) {
+            Components.utils.reportError(aError);
+          },
+          handleCompletion: function(aReason) {
+            aCallback("formdata", aReason == 0 && count > 0, aArg);
+          }
         };
-        FormHistory.count({}, countDone);
+        FormHistory.count({ }, countDone);
         return false;
       }
     },
 
     downloads: {
       clear: Task.async(function* (range) {
-        let refObj = {};
+        let refObj = { };
         try {
           let filterByTime = null;
           if (range) {
             // Convert microseconds back to milliseconds for date comparisons.
             let rangeBeginMs = range[0] / 1000;
             let rangeEndMs = range[1] / 1000;
-            filterByTime = download => download.startTime >= rangeBeginMs &&
-                                       download.startTime <= rangeEndMs;
+            filterByTime = download => {
+              return download.startTime >= rangeBeginMs &&
+                     download.startTime <= rangeEndMs;
+            }
           }
 
           // Clear all completed/cancelled downloads
@@ -328,34 +330,31 @@ Sanitizer.prototype = {
         } finally {}
       }),
 
-      get canClear()
-      {
+      get canClear() {
         //Clearing is always possible with JSTransfers
         return true;
       }
     },
 
     passwords: {
-      clear: function ()
-      {
+      clear: function () {
         var pwmgr = Components.classes["@mozilla.org/login-manager;1"]
                               .getService(Components.interfaces.nsILoginManager);
         // Passwords are timeless, and don't respect the timeSpan setting
         pwmgr.removeAllLogins();
       },
 
-      get canClear()
-      {
+      get canClear() {
         var pwmgr = Components.classes["@mozilla.org/login-manager;1"]
                               .getService(Components.interfaces.nsILoginManager);
-        var count = pwmgr.countLogins("", "", ""); // count all logins
+        // count all logins
+        var count = pwmgr.countLogins("", "", "");
         return (count > 0);
       }
     },
 
     sessions: {
-      clear: function ()
-      {
+      clear: function () {
         // clear all auth tokens
         var sdr = Components.classes["@mozilla.org/security/sdr;1"]
                             .getService(Components.interfaces.nsISecretDecoderRing);
@@ -367,15 +366,13 @@ Sanitizer.prototype = {
         os.notifyObservers(null, "net:clear-active-logins", null);
       },
 
-      get canClear()
-      {
+      get canClear() {
         return true;
       }
     },
 
     siteSettings: {
-      clear: function ()
-      {
+      clear: function () {
         // Clear site-specific permissions like "Allow this site to open popups"
         var pm = Components.classes["@mozilla.org/permissionmanager;1"]
                            .getService(Components.interfaces.nsIPermissionManager);
@@ -396,23 +393,20 @@ Sanitizer.prototype = {
         }
       },
 
-      get canClear()
-      {
+      get canClear() {
         return true;
       }
     },
 
     connectivityData: {
-      clear: function ()
-      {
+      clear: function () {
         // Clear site security settings
         var sss = Components.classes["@mozilla.org/ssservice;1"]
                             .getService(Components.interfaces.nsISiteSecurityService);
         sss.clearAll();
       },
 
-      get canClear()
-      {
+      get canClear() {
         return true;
       }
     }
@@ -440,11 +434,13 @@ Sanitizer.IS_SHUTDOWN         = true;
 // in the uSec-since-epoch format that PRTime likes.  If we should
 // clear everything, return null.  Use ts if it is defined; otherwise
 // use the timeSpan pref.
-Sanitizer.getClearRange = function (ts) {
-  if (ts === undefined)
+Sanitizer.getClearRange = function(ts) {
+  if (ts === undefined) {
     ts = Sanitizer.prefs.getIntPref("timeSpan");
-  if (ts === Sanitizer.TIMESPAN_EVERYTHING)
+  }
+  if (ts === Sanitizer.TIMESPAN_EVERYTHING) {
     return null;
+  }
   
   // PRTime is microseconds while JS time is milliseconds
   var endDate = Date.now() * 1000;
@@ -472,17 +468,16 @@ Sanitizer.getClearRange = function (ts) {
 };
 
 Sanitizer._prefs = null;
-Sanitizer.__defineGetter__("prefs", function() 
-{
-  return Sanitizer._prefs ? Sanitizer._prefs
-    : Sanitizer._prefs = Components.classes["@mozilla.org/preferences-service;1"]
-                         .getService(Components.interfaces.nsIPrefService)
-                         .getBranch(Sanitizer.prefDomain);
+Sanitizer.__defineGetter__("prefs", function() {
+  return Sanitizer._prefs ?
+         Sanitizer._prefs :
+         Sanitizer._prefs = Components.classes["@mozilla.org/preferences-service;1"]
+                                      .getService(Components.interfaces.nsIPrefService)
+                                      .getBranch(Sanitizer.prefDomain);
 });
 
 // Shows sanitization UI
-Sanitizer.showUI = function(aParentWindow) 
-{
+Sanitizer.showUI = function(aParentWindow) {
   var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
                      .getService(Components.interfaces.nsIWindowWatcher);
 #ifdef XP_MACOSX
@@ -500,26 +495,22 @@ Sanitizer.showUI = function(aParentWindow)
  * Deletes privacy sensitive data in a batch, optionally showing the 
  * sanitize UI, according to user preferences
  */
-Sanitizer.sanitize = function(aParentWindow) 
-{
+Sanitizer.sanitize = function(aParentWindow) {
   Sanitizer.showUI(aParentWindow);
 };
 
-Sanitizer.onStartup = function() 
-{
+Sanitizer.onStartup = function() {
   // we check for unclean exit with pending sanitization
   Sanitizer._checkAndSanitize();
 };
 
-Sanitizer.onShutdown = function() 
-{
+Sanitizer.onShutdown = function() {
   // we check if sanitization is needed and perform it
   Sanitizer._checkAndSanitize(Sanitizer.IS_SHUTDOWN);
 };
 
 // this is called on startup and shutdown, to perform pending sanitizations
-Sanitizer._checkAndSanitize = function(isShutDown) 
-{
+Sanitizer._checkAndSanitize = function(isShutDown) {
   const prefs = Sanitizer.prefs;
   if (prefs.getBoolPref(Sanitizer.prefShutdown) && 
       !prefs.prefHasUserValue(Sanitizer.prefDidShutdown)) {
