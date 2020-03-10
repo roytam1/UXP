@@ -74,7 +74,7 @@ const gXPInstallObserver = {
     var options = { timeout: Date.now() + 30000 };
 
     switch (aTopic) {
-      case "addon-install-disabled":
+      case "addon-install-disabled": {
         notificationID = "xpinstall-disabled"
 
         if (gPrefService.prefIsLocked("xpinstall.enabled")) {
@@ -95,7 +95,8 @@ const gXPInstallObserver = {
         PopupNotifications.show(browser, notificationID, messageString, anchorID,
                                 action, null, options);
         break;
-      case "addon-install-origin-blocked":
+      }
+      case "addon-install-origin-blocked": {
         messageString = gNavigatorBundle.getFormattedString("xpinstallPromptWarningOrigin",
                           [brandShortName]);
 
@@ -104,7 +105,8 @@ const gXPInstallObserver = {
                                             null, null, options);
         removeNotificationOnEnd(popup, installInfo.installs);
         break;
-      case "addon-install-blocked":
+      }
+      case "addon-install-blocked": {
         let originatingHost;
         try {
           originatingHost = installInfo.originatingURI.host;
@@ -128,7 +130,8 @@ const gXPInstallObserver = {
                                             anchorID, action, null, options);
         removeNotificationOnEnd(popup, installInfo.installs);
         break;
-      case "addon-install-started":
+      }
+      case "addon-install-started": {
         var needsDownload = function needsDownload(aInstall) {
           return aInstall.state != AddonManager.STATE_DOWNLOADED;
         }
@@ -153,7 +156,8 @@ const gXPInstallObserver = {
         PopupNotifications.show(browser, notificationID, messageString, anchorID,
                                 null, null, options);
         break;
-      case "addon-install-failed":
+      }
+      case "addon-install-failed": {
         // TODO This isn't terribly ideal for the multiple failure case
         for (let install of installInfo.installs) {
           let host = (installInfo.originatingURI instanceof Ci.nsIStandardURL) &&
@@ -186,7 +190,8 @@ const gXPInstallObserver = {
                                   action, null, options);
         }
         break;
-      case "addon-install-complete":
+      }
+      case "addon-install-complete": {
         var needsRestart = installInfo.installs.some(function(i) {
           return i.addon.pendingOperations != AddonManager.PENDING_NONE;
         });
@@ -218,6 +223,7 @@ const gXPInstallObserver = {
         PopupNotifications.show(browser, notificationID, messageString, anchorID,
                                 action, null, options);
         break;
+      }
     }
   }
 };
