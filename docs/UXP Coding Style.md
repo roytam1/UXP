@@ -425,8 +425,9 @@ try {
 If statements on a single line become overly long, they should be split into multiple lines:
 - Binary operators (including ternary) must be left on their original lines if the line break happens around the operator. The second line should start in the same column as the start of the expression in the first line.
 - Lists of variables (e.g. when calling or declaring a function) should be split at the wrapping column.
-- Long OOP calls should be split at the period with the period on the start of the new line, indented to the column of the first object, filling to the wrapping column where possible.
+- Long OOP calls should be split at the period with the period on the start of the new line, indented to the column of the first object, filling to the wrapping column where possible, including additional terms.
 - When breaking assignments/operations/logic, break right after the operator (`=`, `+`, `&&`, `||`, etc.)
+- **Don't break too rigorously**; short additions should be kept on the same line to keep things legible - use common sense and context for flexibility.
 
 WRONG:
 ```JavaScript
@@ -471,5 +472,10 @@ let sessionStartup = Cc["@mozilla.org/browser/sessionstartup;1"]
 
 ## XUL and other XML-derivatives 
 Applies to `*.xul`, `*.html`, `*.xhtml`.
+TODO
 ## IDL
 Applies to `*.idl`, `*.xpidl` and `*.webidl`.
+TODO
+## Python-esque
+Applies to `*.py`, `mozbuild` etc.
+TODO
