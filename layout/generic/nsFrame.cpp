@@ -8434,9 +8434,13 @@ UnionBorderBoxes(nsIFrame* aFrame, bool aApplyTransform,
   Maybe<nsRect> clipPropClipRect =
     aFrame->GetClipPropClipRect(disp, effects, bounds.Size());
 
-  // Iterate over all children except pop-ups.
+  // Iterate over all children except pop-ups, absolutely positioned children,
+  // fixed-positioned children and floats.
   const nsIFrame::ChildListIDs skip(nsIFrame::kPopupList |
-                                    nsIFrame::kSelectPopupList);
+                                    nsIFrame::kSelectPopupList |
+                                    nsIFrame::kAbsoluteList |
+                                    nsIFrame::kFixedList |
+                                    nsIFrame::kFloatList);
   for (nsIFrame::ChildListIterator childLists(aFrame);
        !childLists.IsDone(); childLists.Next()) {
     if (skip.Contains(childLists.CurrentID())) {
@@ -8446,6 +8450,12 @@ UnionBorderBoxes(nsIFrame* aFrame, bool aApplyTransform,
     nsFrameList children = childLists.CurrentList();
     for (nsFrameList::Enumerator e(children); !e.AtEnd(); e.Next()) {
       nsIFrame* child = e.get();
+      
+      if (child->GetType() == nsGkAtoms::placeholderFrame) {
+        // Skip placeholders too.
+        continue;
+      }
+
       // Note that passing |true| for aApplyTransform when
       // child->Combines3DTransformWithAncestors() is incorrect if our
       // aApplyTransform is false... but the opposite would be as
