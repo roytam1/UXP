@@ -44,7 +44,7 @@ History.prototype = {
     return true;
   },
 
-  migrate: function H_migrate(aCallback) {
+  migrate: function(aCallback) {
     let places = [];
     let typedURLs = MSMigrationUtils.getTypedURLs("Software\\Microsoft\\Internet Explorer");
     let historyEnumerator = Cc["@mozilla.org/profile/migrator/iehistoryenumerator;1"].
@@ -349,7 +349,7 @@ Settings.prototype = {
     return true;
   },
 
-  migrate: function S_migrate(aCallback) {
+  migrate: function(aCallback) {
     // Converts from yes/no to a boolean.
     let yesNoToBoolean = v => v == "yes";
 
@@ -437,7 +437,7 @@ Settings.prototype = {
    * @param [optional] aTransformFn
    *        Conversion function from the Registry format to the pref format.
    */
-  _set: function S__set(aPath, aKey, aPref, aTransformFn) {
+  _set: function(aPath, aKey, aPref, aTransformFn) {
     let value = WindowsRegistry.readRegKey(Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,
                                            aPath, aKey);
     // Don't import settings that have never been flipped.
@@ -509,7 +509,7 @@ IEProfileMigrator.prototype.getLastUsedDate = function IE_getLastUsedDate() {
 };
 
 Object.defineProperty(IEProfileMigrator.prototype, "sourceHomePageURL", {
-  get: function IE_get_sourceHomePageURL() {
+  get: function() {
     let defaultStartPage = WindowsRegistry.readRegKey(Ci.nsIWindowsRegKey.ROOT_KEY_LOCAL_MACHINE,
                                                       kMainKey, "Default_Page_URL");
     let startPage = WindowsRegistry.readRegKey(Ci.nsIWindowsRegKey.ROOT_KEY_CURRENT_USER,

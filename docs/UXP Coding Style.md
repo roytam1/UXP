@@ -1,4 +1,4 @@
-# UXP Coding Style Guide
+﻿# UXP Coding Style Guide
 While our source tree is currently in a number of different Coding Styles and the general rule applies to adhere to style of surrounding code when you are making changes, it is our goal to unify the style of our source tree and making it adhere to a single style.
 This document describes the preferred style for new source code files and the preferred style to convert existing files to.
 
@@ -225,15 +225,257 @@ somelongvariable = somelongexpression ?
  
 ## JavaScript
 Applies to `*.js` and `*.jsm`.
+### General formatting guidelines
+- Place function signatures on the same line as js object identifiers, and do not use named function syntax in that case:
+  ```JavaScript
+  var myObject = {
+    myIdentifier: function(var1, var2) {
+      ...
+    },
+    myIdentifier2: function() {
+      ...
+    }
+  }
+  ```
+- Variable initializers should be placed on the variable declaration line if needed.
+  ```JavaScript
+  var fwdCommand = document.getElementById("Browser:Forward");
+  ```
+  ```JavaScript
+  var myObject = {
+    myVariable: null,
+    myString: "Something"
+  }
+  ```
+- Avoid placing executed code on the expression line. Preferably brace executed code.
+
+  WRONG:
+  ```JavaScript
+  if (a == b) do_something();
+  if (a == b) { do_something(); }
+  ```
+  DISCOURAGED:
+  ```JavaScript
+  if (a == b)
+    do_something();
+  ```
+  CORRECT:
+  ```JavaScript
+  if (a == b) {
+    do_something();
+  }
+  ```
+- Format in-lined variable functions as if you would format normal functions with the exception of closure: break with the opening brace, followed by code, and closing brace on its own line, followed immediately by any other variables passed in-line.
+  ```JavaScript
+  appMenuButton.addEventListener("mousedown", function(event) {
+      if (event.button == 0) {
+        appMenuOpening = new Date();
+      }
+    }, false);
+  ```
+- Use a single space between `{` `}` braces in empty js objects.
+
+### Flow control
+Flow control expressions should follow the following guidelines:
+- Scopes have their opening braces on the expression line
+- Scopes have their closing braces on a separate line, indent-aligned with the flow control expression
+- Any alternative flow control paths are generally started with an expression on the closing brace line. The logic behind this is that you should keep the flow control level visually the same for the executed code blocks with no breaks (a closing brace on its own line means "done").
+- Case statements are indented by 2 on a new line with the case expression on its own line.
+- Flow control default scopes are always placed at the bottom.
+
+#### if..else
+`if..else` statements example:
+```JavaScript
+if (something == somethingelse) {
+  true_case_code here;
+} else {
+  false_case_code here;
+}
+
+if (case1) {
+  case1_code here;
+} else if (case2) {
+  case2_code here;
+} else {
+  other_case_code here;
+}
+
+if (case1) {
+  case1_code here;
+} else {
+  if (case2) {
+    case2_code here;
+  }
+  case2_and_other_code here;
+}
+```
+#### for
+`for` loop example:
+```JavaScript
+for (let i = 1; i < max; i++) {
+  loop_code here;
+}
+
+for (let i = 0;; i++) {
+   do_something_with(i);
+   if (i > max) break;
+   ...
+}
+```
+#### while
+`while` loop example:
+```JavaScript
+while (something == true) {
+  loop_code here;
+}
+
+do {
+  execute_me_at_least_once();
+  ...
+} while (something == true);
+```
+#### switch..case
+`switch..case` flow control example:
+```JavaScript
+switch (variable) {
+  case value1:
+    // Comment describing 1
+    code_for_1;
+    code_for_1;
+    break;
+  case value2:
+    code_for_2;
+    code_for_2;
+    // fallthrough
+  case value3:
+  case value4:
+    code_for_3_and_4;
+    break;
+  default:
+    code_for_default;
+    code_for_default;
+}
+```
+Alternatively (braced):
+```JavaScript
+switch (variable) {
+  case value1: {
+    // Comment describing 1
+    code_for_1;
+    code_for_1;
+    break;
+  }
+  case value2: {
+    code_for_2;
+    code_for_2;
+    // fallthrough
+  }
+  case value3:
+  case value4: {
+    code_for_3_and_4;
+    break;
+  }
+  default: {
+    code_for_default;
+    code_for_default;
+  }
+}
+```
+
+#### try..catch
+- When using `try..catch` blocks, the use of optional catch binding is discouraged. Please always include the error variable.
+
+`try..catch` flow control examples:
+```JavaScript
+try {
+  do_something();
+} catch(e) {
+  handle_error(e);
+} finally {
+  always();
+}
+
+try {
+  do_something();
+} catch(e) {
+}
+
+try {
+  do_something();
+} finally {
+  always();
+}
+```
+DISCOURAGED
+```JavaScript
+try {
+  do_something();
+} catch {
+  // No error processing
+  do_something_else();
+}
+
+// No closing brace on its own line
+try {
+  do_something();
+} catch(ex) { }
+```
+
+### Long line wrapping
+If statements on a single line become overly long, they should be split into multiple lines:
+- Binary operators (including ternary) must be left on their original lines if the line break happens around the operator. The second line should start in the same column as the start of the expression in the first line.
+- Lists of variables (e.g. when calling or declaring a function) should be split at the wrapping column.
+- Long OOP calls should be split at the period with the period on the start of the new line, indented to the column of the first object, filling to the wrapping column where possible, including additional terms.
+- When breaking assignments/operations/logic, break right after the operator (`=`, `+`, `&&`, `||`, etc.)
+- **Don't break too rigorously**; short additions should be kept on the same line to keep things legible - use common sense and context for flexibility.
+
+WRONG:
+```JavaScript
+somelongobjectname.somelongfunction(
+  var1, var2, var3, var4, var5);
+
+if (somelongvariable == somelongothervariable
+  || somelongvariable2 == somelongothervariable2) {
+
+somelongvariable = somelongexpression ? somevalue1
+  : somevalue2;
+
+var iShouldntBeUsingThisLongOfAVarName
+  = someValueToAdd + someValueToAdd + someValueToAdd
+    + someValueToAdd;
+
+Cu.import("resource:///modules/DownloadsCommon.jsm", {}).
+          DownloadsCommon.initializeAllDataLinks();
+```
+CORRECT:
+```JavaScript
+somelongobjectname.somelongfunction(var1, var2, var3,
+                                    var4, var5);
+
+if (somelongvariable == somelongothervariable ||
+    somelongvariable2 == somelongothervariable2) {
+
+somelongvariable = somelongexpression ?
+                   somevalue1 :
+                   somevalue2;
+
+var iShouldntBeUsingThisLongOfAVarName =
+  someValueToAdd + someValueToAdd + someValueToAdd +
+  someValueToAdd;
+
+Cu.import("resource:///modules/DownloadsCommon.jsm", {})
+  .DownloadsCommon.initializeAllDataLinks();
+
+let sessionStartup = Cc["@mozilla.org/browser/sessionstartup;1"]
+                       .getService(Ci.nsISessionStartup);
+```
+
 ## XUL and other XML-derivatives 
 Applies to `*.xul`, `*.html`, `*.xhtml`.
+TODO
 ## IDL
 Applies to `*.idl`, `*.xpidl` and `*.webidl`.
-
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbMjUzODYzMzMsMjg5MjUwODIsLTQzMjMzNz
-ExMSw4MzQ2MjYwNDksLTE5MDMyNzE5OTYsLTEwMTIwMjc3ODMs
-LTE4MzgzODM5MDIsODA5MjEzNTEyLC01Mzg0MjM4MDAsMzgyNj
-I3NDYzLDIwODYwMjIwODUsLTE1MjU5MjE2MjIsLTY1OTMzMTA0
-MCwtNzQwOTE5MDQ1LDE4Njc1NTQxNDJdfQ==
--->
+TODO
+## Python-esque
+Applies to `*.py`, `mozbuild` etc.
+TODO

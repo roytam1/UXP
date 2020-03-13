@@ -25,7 +25,7 @@ function nsContextMenu(aXulMenu, aIsShift) {
 
 // Prototype for nsContextMenu "class."
 nsContextMenu.prototype = {
-  initMenu: function CM_initMenu(aXulMenu, aIsShift) {
+  initMenu: function(aXulMenu, aIsShift) {
     // Get contextual info.
     this.setTarget(document.popupNode, document.popupRangeParent,
                    document.popupRangeOffset);
@@ -87,7 +87,7 @@ nsContextMenu.prototype = {
     this.initItems();
   },
 
-  hiding: function CM_hiding() {
+  hiding: function() {
     gContextMenuContentData = null;
     InlineSpellCheckerUI.clearSuggestionsFromMenu();
     InlineSpellCheckerUI.clearDictionaryListFromMenu();
@@ -100,7 +100,7 @@ nsContextMenu.prototype = {
     }
   },
 
-  initItems: function CM_initItems() {
+  initItems: function() {
     this.initPageMenuSeparator();
     this.initOpenItems();
     this.initNavigationItems();
@@ -115,11 +115,11 @@ nsContextMenu.prototype = {
     this.initPasswordManagerItems();
   },
 
-  initPageMenuSeparator: function CM_initPageMenuSeparator() {
+  initPageMenuSeparator: function() {
     this.showItem("page-menu-separator", this.hasPageMenu);
   },
 
-  initOpenItems: function CM_initOpenItems() {
+  initOpenItems: function() {
     var isMailtoInternal = false;
     if (this.onMailtoLink) {
       var mailtoHandler = Cc["@mozilla.org/uriloader/external-protocol-service;1"].
@@ -167,7 +167,7 @@ nsContextMenu.prototype = {
     this.showItem("context-sep-open", shouldShow);
   },
 
-  initNavigationItems: function CM_initNavigationItems() {
+  initNavigationItems: function() {
     var shouldShow = !(this.isContentSelected || this.onLink || this.onImage ||
                        this.onCanvas || this.onVideo || this.onAudio ||
                        this.onTextInput);
@@ -188,7 +188,7 @@ nsContextMenu.prototype = {
     //this.setItemAttrFromNode( "context-stop", "disabled", "canStop" );
   },
 
-  initLeaveDOMFullScreenItems: function CM_initLeaveFullScreenItem() {
+  initLeaveDOMFullScreenItems: function() {
     // only show the option if the user is in DOM fullscreen
     var shouldShow = (this.target.ownerDocument.fullscreenElement != null);
     this.showItem("context-leave-dom-fullscreen", shouldShow);
@@ -198,7 +198,7 @@ nsContextMenu.prototype = {
         this.showItem("context-media-sep-commands", true);
   },
 
-  initSaveItems: function CM_initSaveItems() {
+  initSaveItems: function() {
     var shouldShow = !(this.onTextInput || this.onLink ||
                        this.isContentSelected || this.onImage ||
                        this.onCanvas || this.onVideo || this.onAudio);
@@ -223,7 +223,7 @@ nsContextMenu.prototype = {
     this.setItemAttr("context-sendaudio", "disabled", !this.mediaURL || mediaIsBlob);
   },
 
-  initViewItems: function CM_initViewItems() {
+  initViewItems: function() {
     // View source is always OK, unless in directory listing.
     this.showItem("context-viewpartialsource-selection",
                   this.isContentSelected);
@@ -286,7 +286,7 @@ nsContextMenu.prototype = {
     this.showItem("context-viewimagedesc", this.onImage && this.imageDescURL !== "");
   },
 
-  initMiscItems: function CM_initMiscItems() {
+  initMiscItems: function() {
     // Use "Bookmark This Link" if on a link.
     let bookmarkPage = document.getElementById("context-bookmarkpage");
     this.showItem(bookmarkPage,
@@ -1240,7 +1240,7 @@ nsContextMenu.prototype = {
     saveAsListener.prototype = {
       extListener: null,
 
-      onStartRequest: function saveLinkAs_onStartRequest(aRequest, aContext) {
+      onStartRequest: function(aRequest, aContext) {
 
         // if the timer fired, the error status will have been caused by that,
         // and we'll be restarting in onStopRequest, so no reason to notify
@@ -1281,7 +1281,7 @@ nsContextMenu.prototype = {
         this.extListener.onStartRequest(aRequest, aContext);
       },
 
-      onStopRequest: function saveLinkAs_onStopRequest(aRequest, aContext,
+      onStopRequest: function(aRequest, aContext,
                                                        aStatusCode) {
         if (aStatusCode == NS_ERROR_SAVE_LINK_AS_TIMEOUT) {
           // do it the old fashioned way, which will pick the best filename
@@ -1293,7 +1293,7 @@ nsContextMenu.prototype = {
           this.extListener.onStopRequest(aRequest, aContext, aStatusCode);
       },
 
-      onDataAvailable: function saveLinkAs_onDataAvailable(aRequest, aContext,
+      onDataAvailable: function(aRequest, aContext,
                                                            aInputStream,
                                                            aOffset, aCount) {
         this.extListener.onDataAvailable(aRequest, aContext, aInputStream,
@@ -1303,7 +1303,7 @@ nsContextMenu.prototype = {
 
     function callbacks() {}
     callbacks.prototype = {
-      getInterface: function sLA_callbacks_getInterface(aIID) {
+      getInterface: function(aIID) {
         if (aIID.equals(Ci.nsIAuthPrompt) || aIID.equals(Ci.nsIAuthPrompt2)) {
           // If the channel demands authentication prompt, we must cancel it
           // because the save-as-timer would expire and cancel the channel
@@ -1322,7 +1322,7 @@ nsContextMenu.prototype = {
     // we give up waiting for the filename.
     function timerCallback() {}
     timerCallback.prototype = {
-      notify: function sLA_timer_notify(aTimer) {
+      notify: function(aTimer) {
         channel.cancel(NS_ERROR_SAVE_LINK_AS_TIMEOUT);
         return;
       }
@@ -1643,16 +1643,16 @@ nsContextMenu.prototype = {
     openUILinkIn(uri, where);
   },
 
-  bookmarkThisPage: function CM_bookmarkThisPage() {
+  bookmarkThisPage: function() {
     window.top.PlacesCommandHook.bookmarkPage(this.browser, PlacesUtils.bookmarksMenuFolderId, true);
   },
 
-  bookmarkLink: function CM_bookmarkLink() {
+  bookmarkLink: function() {
     window.top.PlacesCommandHook.bookmarkLink(PlacesUtils.bookmarksMenuFolderId,
                                               this.linkURL, this.linkTextStr);
   },
 
-  addBookmarkForFrame: function CM_addBookmarkForFrame() {
+  addBookmarkForFrame: function() {
     let uri = gContextMenuContentData.documentURIObject;
     let mm = this.browser.messageManager;
 
@@ -1670,19 +1670,19 @@ nsContextMenu.prototype = {
     mm.sendAsyncMessage("ContextMenu:BookmarkFrame", null, { target: this.target });
   },
 
-  savePageAs: function CM_savePageAs() {
+  savePageAs: function() {
     saveBrowser(this.browser);
   },
 
-  printFrame: function CM_printFrame() {
+  printFrame: function() {
     PrintUtils.printWindow(this.frameOuterWindowID, this.browser);
   },
 
-  switchPageDirection: function CM_switchPageDirection() {
+  switchPageDirection: function() {
     this.browser.messageManager.sendAsyncMessage("SwitchDocumentDirection");
   },
 
-  mediaCommand : function CM_mediaCommand(command, data) {
+  mediaCommand : function(command, data) {
     let mm = this.browser.messageManager;
     let win = this.browser.ownerGlobal;
     let windowUtils = win.QueryInterface(Ci.nsIInterfaceRequestor)

@@ -107,7 +107,7 @@ var BookmarkPropertiesPanel = {
    * This method returns the correct label for the dialog's "accept"
    * button based on the variant of the dialog.
    */
-  _getAcceptLabel: function BPP__getAcceptLabel() {
+  _getAcceptLabel: function() {
     if (this._action == ACTION_ADD) {
       if (this._URIs.length)
         return this._strings.getString("dialogAcceptLabelAddMulti");
@@ -127,7 +127,7 @@ var BookmarkPropertiesPanel = {
    * This method returns the correct title for the current variant
    * of this dialog.
    */
-  _getDialogTitle: function BPP__getDialogTitle() {
+  _getDialogTitle: function() {
     if (this._action == ACTION_ADD) {
       if (this._itemType == BOOKMARK_ITEM)
         return this._strings.getString("dialogTitleAddBookmark");
@@ -255,7 +255,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns a title string
    */
-  _getURITitleFromHistory: function BPP__getURITitleFromHistory(aURI) {
+  _getURITitleFromHistory: function(aURI) {
     NS_ASSERT(aURI instanceof Ci.nsIURI);
 
     // get the title from History
@@ -355,7 +355,7 @@ var BookmarkPropertiesPanel = {
   }),
 
   // nsIDOMEventListener
-  handleEvent: function BPP_handleEvent(aEvent) {
+  handleEvent: function(aEvent) {
     var target = aEvent.target;
     switch (aEvent.type) {
       case "input":
@@ -410,7 +410,7 @@ var BookmarkPropertiesPanel = {
   },
 
   // nsISupports
-  QueryInterface: function BPP_QueryInterface(aIID) {
+  QueryInterface: function(aIID) {
     if (aIID.equals(Ci.nsIDOMEventListener) ||
         aIID.equals(Ci.nsISupports))
       return this;
@@ -418,7 +418,7 @@ var BookmarkPropertiesPanel = {
     throw Cr.NS_NOINTERFACE;
   },
 
-  _element: function BPP__element(aID) {
+  _element: function(aID) {
     return document.getElementById("editBMPanel_" + aID);
   },
 
@@ -463,7 +463,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns  true if the input is valid, false otherwise
    */
-  _inputIsValid: function BPP__inputIsValid() {
+  _inputIsValid: function() {
     if (this._itemType == BOOKMARK_ITEM &&
         !this._containsValidURI("locationField"))
       return false;
@@ -482,7 +482,7 @@ var BookmarkPropertiesPanel = {
    *
    * @returns true if the textbox contains a valid URI string, false otherwise
    */
-  _containsValidURI: function BPP__containsValidURI(aTextboxID) {
+  _containsValidURI: function(aTextboxID) {
     try {
       var value = this._element(aTextboxID).value;
       if (value) {
@@ -500,7 +500,7 @@ var BookmarkPropertiesPanel = {
    * The container-identifier and insertion-index are returned separately in
    * the form of [containerIdentifier, insertionIndex]
    */
-  _getInsertionPointDetails: function BPP__getInsertionPointDetails() {
+  _getInsertionPointDetails: function() {
     var containerId = this._defaultInsertionPoint.itemId;
     var indexInContainer = this._defaultInsertionPoint.index;
 
@@ -554,7 +554,7 @@ var BookmarkPropertiesPanel = {
    * Returns a childItems-transactions array representing the URIList with
    * which the dialog has been opened.
    */
-  _getTransactionsForURIList: function BPP__getTransactionsForURIList() {
+  _getTransactionsForURIList: function() {
     var transactions = [];
     for (let uri of this._URIs) {
       // uri should be an object in the form { url, title }. Though add-ons

@@ -47,7 +47,7 @@ var gGrid = {
    * Initializes the grid.
    * @param aSelector The query selector of the grid.
    */
-  init: function Grid_init() {
+  init: function() {
     this._node = document.getElementById("newtab-grid");
     this._gridDefaultContent = this._node.lastChild;
     this._createSiteFragment();
@@ -77,7 +77,7 @@ var gGrid = {
    * @param aCell The cell that will contain the new site.
    * @return The newly created site.
    */
-  createSite: function Grid_createSite(aLink, aCell) {
+  createSite: function(aLink, aCell) {
     let node = aCell.node;
     node.appendChild(this._siteFragment.cloneNode(true));
     return new Site(node.firstElementChild, aLink);
@@ -86,7 +86,7 @@ var gGrid = {
   /**
    * Handles all grid events.
    */
-  handleEvent: function Grid_handleEvent(aEvent) {
+  handleEvent: function(aEvent) {
     switch (aEvent.type) {
       case "load":
       case "resize":
@@ -98,14 +98,14 @@ var gGrid = {
   /**
    * Locks the grid to block all pointer events.
    */
-  lock: function Grid_lock() {
+  lock: function() {
     this.node.setAttribute("locked", "true");
   },
 
   /**
    * Unlocks the grid to allow all pointer events.
    */
-  unlock: function Grid_unlock() {
+  unlock: function() {
     this.node.removeAttribute("locked");
   },
 
@@ -158,7 +158,7 @@ var gGrid = {
    * Calculate the height for a number of rows up to the maximum rows
    * @param rows Number of rows defaulting to the max
    */
-  _computeHeight: function Grid_computeHeight(aRows) {
+  _computeHeight: function(aRows) {
     let {gridRows} = gGridPrefs;
     aRows = aRows === undefined ? gridRows : Math.min(gridRows, aRows);
     return aRows * this._cellHeight + GRID_BOTTOM_EXTRA;
@@ -167,7 +167,7 @@ var gGrid = {
   /**
    * Creates the DOM fragment that is re-used when creating sites.
    */
-  _createSiteFragment: function Grid_createSiteFragment() {
+  _createSiteFragment: function() {
     let site = document.createElementNS(HTML_NAMESPACE, "div");
     site.classList.add("newtab-site");
     site.setAttribute("draggable", "true");
@@ -192,7 +192,7 @@ var gGrid = {
    * Test a tile at a given position for being pinned or history
    * @param position Position in sites array
    */
-  _isHistoricalTile: function Grid_isHistoricalTile(aPos) {
+  _isHistoricalTile: function(aPos) {
     let site = this.sites[aPos];
     return site && (site.isPinned() || site.link && site.link.type == "history");
   },
@@ -200,7 +200,7 @@ var gGrid = {
   /**
    * Make sure the correct number of rows and columns are visible
    */
-  _resizeGrid: function Grid_resizeGrid() {
+  _resizeGrid: function() {
     // If we're somehow called before the page has finished loading,
     // let's bail out to avoid caching zero heights and widths.
     // We'll be called again when DOMContentLoaded fires.

@@ -105,15 +105,15 @@ PlacesController.prototype = {
   ]),
 
   // nsIClipboardOwner
-  LosingOwnership: function PC_LosingOwnership (aXferable) {
+  LosingOwnership: function(aXferable) {
     this.cutNodes = [];
   },
 
-  terminate: function PC_terminate() {
+  terminate: function() {
     this._releaseClipboardOwnership();
   },
 
-  supportsCommand: function PC_supportsCommand(aCommand) {
+  supportsCommand: function(aCommand) {
     // Non-Places specific commands that we also support
     switch (aCommand) {
     case "cmd_undo":
@@ -132,7 +132,7 @@ PlacesController.prototype = {
     return (aCommand.substr(0, CMD_PREFIX.length) == CMD_PREFIX);
   },
 
-  isCommandEnabled: function PC_isCommandEnabled(aCommand) {
+  isCommandEnabled: function(aCommand) {
     switch (aCommand) {
     case "cmd_undo":
       if (!PlacesUIUtils.useAsyncTransactions)
@@ -213,7 +213,7 @@ PlacesController.prototype = {
     }
   },
 
-  doCommand: function PC_doCommand(aCommand) {
+  doCommand: function(aCommand) {
     switch (aCommand) {
     case "cmd_undo":
       if (!PlacesUIUtils.useAsyncTransactions) {
@@ -307,7 +307,7 @@ PlacesController.prototype = {
     }
   },
 
-  onEvent: function PC_onEvent(eventName) { },
+  onEvent: function(eventName) { },
 
 
   /**
@@ -345,7 +345,7 @@ PlacesController.prototype = {
   /**
    * Determines whether or not nodes can be inserted relative to the selection.
    */
-  _canInsert: function PC__canInsert(isPaste) {
+  _canInsert: function(isPaste) {
     var ip = this._view.insertionPoint;
     return ip != null && (isPaste || ip.isTag != true);
   },
@@ -358,7 +358,7 @@ PlacesController.prototype = {
    *                  - clipboard data is of type TEXT_UNICODE and
    *                    is a valid URI.
    */
-  _isClipboardDataPasteable: function PC__isClipboardDataPasteable() {
+  _isClipboardDataPasteable: function() {
     // if the clipboard contains TYPE_X_MOZ_PLACE_* data, it is definitely
     // pasteable, with no need to unwrap all the nodes.
 
@@ -418,7 +418,7 @@ PlacesController.prototype = {
    * Notes:
    *   1) This can be slow, so don't call it anywhere performance critical!
    */
-  _buildSelectionMetadata: function PC__buildSelectionMetadata() {
+  _buildSelectionMetadata: function() {
     var metadata = [];
     var nodes = this._view.selectedNodes;
 
@@ -501,7 +501,7 @@ PlacesController.prototype = {
    * @return true if the conditions (see buildContextMenu) are satisfied
    *         and the item can be displayed, false otherwise.
    */
-  _shouldShowMenuItem: function PC__shouldShowMenuItem(aMenuItem, aMetaData) {
+  _shouldShowMenuItem: function(aMenuItem, aMetaData) {
     var selectiontype = aMenuItem.getAttribute("selectiontype");
     if (!selectiontype) {
       selectiontype = "single|multiple";
@@ -596,7 +596,7 @@ PlacesController.prototype = {
    *          The menupopup to build children into.
    * @return true if at least one item is visible, false otherwise.
    */
-  buildContextMenu: function PC_buildContextMenu(aPopup) {
+  buildContextMenu: function(aPopup) {
     var metadata = this._buildSelectionMetadata();
     var ip = this._view.insertionPoint;
     var noIp = !ip || ip.isTag;
@@ -665,7 +665,7 @@ PlacesController.prototype = {
   /**
    * Select all links in the current view.
    */
-  selectAll: function PC_selectAll() {
+  selectAll: function() {
     this._view.selectAll();
   },
 
@@ -687,7 +687,7 @@ PlacesController.prototype = {
    * This method can be run on a URI parameter to ensure that it didn't
    * receive a string instead of an nsIURI object.
    */
-  _assertURINotString: function PC__assertURINotString(value) {
+  _assertURINotString: function(value) {
     NS_ASSERT((typeof(value) == "object") && !(value instanceof String),
            "This method should be passed a URI as a nsIURI object, not as a string.");
   },
@@ -695,7 +695,7 @@ PlacesController.prototype = {
   /**
    * Reloads the selected livemark if any.
    */
-  reloadSelectedLivemark: function PC_reloadSelectedLivemark() {
+  reloadSelectedLivemark: function() {
     var selectedNode = this._view.selectedNode;
     if (selectedNode) {
       let itemId = selectedNode.itemId;
@@ -709,7 +709,7 @@ PlacesController.prototype = {
   /**
    * Opens the links in the selected folder, or the selected links in new tabs.
    */
-  openSelectionInTabs: function PC_openLinksInTabs(aEvent) {
+  openSelectionInTabs: function(aEvent) {
     var node = this._view.selectedNode;
     var nodes = this._view.selectedNodes;
     // In the case of no selection, open the root node:
@@ -728,7 +728,7 @@ PlacesController.prototype = {
    * @param aType
    *        the type of the new item (bookmark/livemark/folder)
    */
-  newItem: function PC_newItem(aType) {
+  newItem: function(aType) {
     let ip = this._view.insertionPoint;
     if (!ip)
       throw Cr.NS_ERROR_NOT_AVAILABLE;
@@ -776,7 +776,7 @@ PlacesController.prototype = {
   /**
    * Opens a dialog for moving the selected nodes.
    */
-  moveSelectedBookmarks: function PC_moveBookmarks() {
+  moveSelectedBookmarks: function() {
     window.openDialog("chrome://browser/content/places/moveBookmarks.xul",
                       "", "chrome, modal",
                       this._view.selectedNodes);
@@ -806,7 +806,7 @@ PlacesController.prototype = {
    *          List of folders the calling function has already traversed
    * @return true if the node should be skipped, false otherwise.
    */
-  _shouldSkipNode: function PC_shouldSkipNode(node, pastFolders) {
+  _shouldSkipNode: function(node, pastFolders) {
     /**
      * Determines if a node is contained by another node within a resultset.
      * @param   node
@@ -842,7 +842,7 @@ PlacesController.prototype = {
    * @param   [optional] removedFolders
    *          An array of folder nodes that have already been removed.
    */
-  _removeRange: function PC__removeRange(range, transactions, removedFolders) {
+  _removeRange: function(range, transactions, removedFolders) {
     NS_ASSERT(transactions instanceof Array, "Must pass a transactions array");
     if (!removedFolders)
       removedFolders = [];
@@ -954,7 +954,7 @@ PlacesController.prototype = {
    *
    * @note history deletes are not undoable.
    */
-  _removeRowsFromHistory: function PC__removeRowsFromHistory() {
+  _removeRowsFromHistory: function() {
     let nodes = this._view.selectedNodes;
     let URIs = [];
     for (let i = 0; i < nodes.length; ++i) {
@@ -994,7 +994,7 @@ PlacesController.prototype = {
    *
    * @note history deletes are not undoable.
    */
-  _removeHistoryContainer: function PC__removeHistoryContainer(aContainerNode) {
+  _removeHistoryContainer: function(aContainerNode) {
     if (PlacesUtils.nodeIsHost(aContainerNode)) {
       // Site container.
       PlacesUtils.bhistory.removePagesFromHost(aContainerNode.title, true);
@@ -1059,7 +1059,7 @@ PlacesController.prototype = {
    * @param   aEvent
    *          The dragstart event.
    */
-  setDataTransfer: function PC_setDataTransfer(aEvent) {
+  setDataTransfer: function(aEvent) {
     let dt = aEvent.dataTransfer;
 
     let result = this._view.result;
@@ -1129,14 +1129,14 @@ PlacesController.prototype = {
     return action;
   },
 
-  _releaseClipboardOwnership: function PC__releaseClipboardOwnership() {
+  _releaseClipboardOwnership: function() {
     if (this.cutNodes.length > 0) {
       // This clears the logical clipboard, doesn't remove data.
       this.clipboard.emptyClipboard(Ci.nsIClipboard.kGlobalClipboard);
     }
   },
 
-  _clearClipboard: function PC__clearClipboard() {
+  _clearClipboard: function() {
     let xferable = Cc["@mozilla.org/widget/transferable;1"].
                    createInstance(Ci.nsITransferable);
     xferable.init(null);
@@ -1147,7 +1147,7 @@ PlacesController.prototype = {
     this.clipboard.setData(xferable, null, Ci.nsIClipboard.kGlobalClipboard);
   },
 
-  _populateClipboard: function PC__populateClipboard(aNodes, aAction) {
+  _populateClipboard: function(aNodes, aAction) {
     // This order is _important_! It controls how this and other applications
     // select data to be inserted based on type.
     let contents = [
@@ -1231,7 +1231,7 @@ PlacesController.prototype = {
   /**
    * Copy Bookmarks and Folders to the clipboard
    */
-  copy: function PC_copy() {
+  copy: function() {
     let result = this._view.result;
     let didSuppressNotifications = result.suppressNotifications;
     if (!didSuppressNotifications)
@@ -1248,7 +1248,7 @@ PlacesController.prototype = {
   /**
    * Cut Bookmarks and Folders to the clipboard
    */
-  cut: function PC_cut() {
+  cut: function() {
     let result = this._view.result;
     let didSuppressNotifications = result.suppressNotifications;
     if (!didSuppressNotifications)
@@ -1390,7 +1390,7 @@ PlacesController.prototype = {
    * @param aLivemarkInfo
    *        a mozILivemarkInfo object.
    */
-  cacheLivemarkInfo: function PC_cacheLivemarkInfo(aNode, aLivemarkInfo) {
+  cacheLivemarkInfo: function(aNode, aLivemarkInfo) {
     this._cachedLivemarkInfoObjects.set(aNode, aLivemarkInfo);
   },
 
@@ -1401,7 +1401,7 @@ PlacesController.prototype = {
    * @return true if there's a cached mozILivemarkInfo object for
    *         aNode, false otherwise.
    */
-  hasCachedLivemarkInfo: function PC_hasCachedLivemarkInfo(aNode) {
+  hasCachedLivemarkInfo: function(aNode) {
     return this._cachedLivemarkInfoObjects.has(aNode);
   },
 
@@ -1412,7 +1412,7 @@ PlacesController.prototype = {
    *        a places result node.
    * @return the mozILivemarkInfo object for aNode, if set, null otherwise.
    */
-  getCachedLivemarkInfo: function PC_getCachedLivemarkInfo(aNode) {
+  getCachedLivemarkInfo: function(aNode) {
     return this._cachedLivemarkInfoObjects.get(aNode, null);
   }
 };
@@ -1438,7 +1438,7 @@ var PlacesControllerDragHelper = {
    * @return true if the user is dragging over a node within the hierarchy of
    *         the container, false otherwise.
    */
-  draggingOverChildNode: function PCDH_draggingOverChildNode(node) {
+  draggingOverChildNode: function(node) {
     let currentNode = this.currentDropTarget;
     while (currentNode) {
       if (currentNode == node)
@@ -1451,7 +1451,7 @@ var PlacesControllerDragHelper = {
   /**
    * @return The current active drag session. Returns null if there is none.
    */
-  getSession: function PCDH__getSession() {
+  getSession: function() {
     return this.dragService.getCurrentSession();
   },
 
@@ -1460,7 +1460,7 @@ var PlacesControllerDragHelper = {
    * @param aFlavors
    *        The flavors list of type DOMStringList.
    */
-  getFirstValidFlavor: function PCDH_getFirstValidFlavor(aFlavors) {
+  getFirstValidFlavor: function(aFlavors) {
     for (let i = 0; i < aFlavors.length; i++) {
       if (PlacesUIUtils.SUPPORTED_FLAVORS.includes(aFlavors[i]))
         return aFlavors[i];
@@ -1482,7 +1482,7 @@ var PlacesControllerDragHelper = {
    * @param ip
    *        The insertion point where the items should be dropped.
    */
-  canDrop: function PCDH_canDrop(ip, dt) {
+  canDrop: function(ip, dt) {
     let dropCount = dt.mozItemCount;
 
     // Check every dragged item.

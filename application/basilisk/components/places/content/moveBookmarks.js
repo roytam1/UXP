@@ -22,7 +22,7 @@ var gMoveBookmarksDialog = {
       PlacesUIUtils.allBookmarksFolderId;
   },
 
-  onOK: function MBD_onOK(aEvent) {
+  onOK: function(aEvent) {
     let selectedNode = this.foldersTree.selectedNode;
     let selectedFolderId = PlacesUtils.getConcreteItemId(selectedNode);
 
@@ -57,7 +57,7 @@ var gMoveBookmarksDialog = {
     }.bind(this)).then(null, Components.utils.reportError);
   },
 
-  newFolder: function MBD_newFolder() {
+  newFolder: function() {
     // The command is disabled when the tree is not focused
     this.foldersTree.focus();
     goDoCommand("placesCmd_new:folder");

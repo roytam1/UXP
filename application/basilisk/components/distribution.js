@@ -88,7 +88,7 @@ DistributionCustomizer.prototype = {
     return this._ioSvc;
   },
 
-  _makeURI: function DIST__makeURI(spec) {
+  _makeURI: function(spec) {
     return this._ioSvc.newURI(spec, null, null);
   },
 
@@ -234,7 +234,7 @@ DistributionCustomizer.prototype = {
 
   _newProfile: false,
   _customizationsApplied: false,
-  applyCustomizations: function DIST_applyCustomizations() {
+  applyCustomizations: function() {
     this._customizationsApplied = true;
 
     if (!Services.prefs.prefHasUserValue("browser.migration.version"))
@@ -296,7 +296,7 @@ DistributionCustomizer.prototype = {
   }),
 
   _prefDefaultsApplied: false,
-  applyPrefDefaults: function DIST_applyPrefDefaults() {
+  applyPrefDefaults: function() {
     this._prefDefaultsApplied = true;
     if (!this._ini)
       return this._checkCustomizationComplete();
@@ -435,7 +435,7 @@ DistributionCustomizer.prototype = {
     return this._checkCustomizationComplete();
   },
 
-  _checkCustomizationComplete: function DIST__checkCustomizationComplete() {
+  _checkCustomizationComplete: function() {
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul";
 
     if (this._newProfile) {

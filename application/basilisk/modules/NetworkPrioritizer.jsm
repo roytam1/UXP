@@ -70,7 +70,7 @@ function _handleEvent(aEvent) {
 
 // Methods that impact a browser. Put into single object for organization.
 var BrowserHelper = {
-  onOpen: function NP_BH_onOpen(aBrowser) {
+  onOpen: function(aBrowser) {
     _priorityBackup.set(aBrowser.permanentKey, Ci.nsISupportsPriority.PRIORITY_NORMAL);
 
     // If the tab is in the focused window, leave priority as it is
@@ -78,7 +78,7 @@ var BrowserHelper = {
       this.decreasePriority(aBrowser);
   },
 
-  onSelect: function NP_BH_onSelect(aBrowser) {
+  onSelect: function(aBrowser) {
     let windowEntry = WindowHelper.getEntry(aBrowser.ownerGlobal);
     if (windowEntry.lastSelectedBrowser)
       this.decreasePriority(windowEntry.lastSelectedBrowser);
@@ -91,13 +91,13 @@ var BrowserHelper = {
     aBrowser.setPriority(_priorityBackup.get(aBrowser.permanentKey));
   },
 
-  increasePriority: function NP_BH_increasePriority(aBrowser) {
+  increasePriority: function(aBrowser) {
     aBrowser.adjustPriority(PRIORITY_DELTA);
     _priorityBackup.set(aBrowser.permanentKey,
                         _priorityBackup.get(aBrowser.permanentKey) + PRIORITY_DELTA);
   },
 
-  decreasePriority: function NP_BH_decreasePriority(aBrowser) {
+  decreasePriority: function(aBrowser) {
     aBrowser.adjustPriority(PRIORITY_DELTA * -1);
     _priorityBackup.set(aBrowser.permanentKey,
                         _priorityBackup.get(aBrowser.permanentKey) - PRIORITY_DELTA);
@@ -107,7 +107,7 @@ var BrowserHelper = {
 
 // Methods that impact a window. Put into single object for organization.
 var WindowHelper = {
-  addWindow: function NP_WH_addWindow(aWindow) {
+  addWindow: function(aWindow) {
     // Build internal data object
     _windows.push({ window: aWindow, lastSelectedBrowser: null });
 
@@ -130,7 +130,7 @@ var WindowHelper = {
     BrowserHelper.onSelect(aWindow.gBrowser.selectedBrowser);
   },
 
-  removeWindow: function NP_WH_removeWindow(aWindow) {
+  removeWindow: function(aWindow) {
     if (aWindow == _lastFocusedWindow)
       _lastFocusedWindow = null;
 
@@ -146,7 +146,7 @@ var WindowHelper = {
     });
   },
 
-  onActivate: function NP_WH_onActivate(aWindow, aHasFocus) {
+  onActivate: function(aWindow, aHasFocus) {
     // If this window was the last focused window, we don't need to do anything
     if (aWindow == _lastFocusedWindow)
       return;
@@ -158,7 +158,7 @@ var WindowHelper = {
     this.increasePriority(aWindow);
   },
 
-  handleFocusedWindow: function NP_WH_handleFocusedWindow(aWindow) {
+  handleFocusedWindow: function(aWindow) {
     // If we have a last focused window, we need to deprioritize it first
     if (_lastFocusedWindow)
       this.decreasePriority(_lastFocusedWindow);
@@ -168,23 +168,23 @@ var WindowHelper = {
   },
 
   // Auxiliary methods
-  increasePriority: function NP_WH_increasePriority(aWindow) {
+  increasePriority: function(aWindow) {
     aWindow.gBrowser.browsers.forEach(function(aBrowser) {
       BrowserHelper.increasePriority(aBrowser);
     });
   },
 
-  decreasePriority: function NP_WH_decreasePriority(aWindow) {
+  decreasePriority: function(aWindow) {
     aWindow.gBrowser.browsers.forEach(function(aBrowser) {
       BrowserHelper.decreasePriority(aBrowser);
     });
   },
 
-  getEntry: function NP_WH_getEntry(aWindow) {
+  getEntry: function(aWindow) {
     return _windows[this.getEntryIndex(aWindow)];
   },
 
-  getEntryIndex: function NP_WH_getEntryAtIndex(aWindow) {
+  getEntryIndex: function(aWindow) {
     // Assumes that every object has a unique window & it's in the array
     for (let i = 0; i < _windows.length; i++)
       if (_windows[i].window == aWindow)

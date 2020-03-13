@@ -19,7 +19,10 @@ if CONFIG['LIBXUL_SDK']:
 
 SOURCES += ['nsBrowserApp.cpp']
 
-FINAL_TARGET_FILES += ['blocklist.xml']
+FINAL_TARGET_FILES += [
+    'blocklist.xml',
+    'ua-update.json'
+]
 FINAL_TARGET_FILES.defaults += ['permissions']
 FINAL_TARGET_FILES.defaults.profile += ['profile/prefs.js']
 

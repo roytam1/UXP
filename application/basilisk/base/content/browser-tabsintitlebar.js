@@ -61,7 +61,7 @@ var TabsInTitlebar = {
     }
   },
 
-  updateAppearance: function updateAppearance(aForce) {
+  updateAppearance: function(aForce) {
     this._update(aForce);
   },
 

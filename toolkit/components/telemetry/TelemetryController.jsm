@@ -365,7 +365,7 @@ var Impl = {
 
     let updateChannel = null;
     try {
-      updateChannel = UpdateUtils.getUpdateChannel(false);
+      updateChannel = UpdateUtils.UpdateChannel;
     } catch (e) {
       this._log.trace("_getApplicationSection - Unable to get update channel.", e);
     }

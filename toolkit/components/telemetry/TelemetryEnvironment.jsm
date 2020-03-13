@@ -1106,7 +1106,7 @@ EnvironmentCache.prototype = {
   _updateSettings: function () {
     let updateChannel = null;
     try {
-      updateChannel = UpdateUtils.getUpdateChannel(false);
+      updateChannel = UpdateUtils.UpdateChannel;
     } catch (e) {}
 
     this._currentEnvironment.settings = {
