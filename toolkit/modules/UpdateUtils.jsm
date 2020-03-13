@@ -13,161 +13,85 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/NetUtil.jsm");
-Cu.import("resource://gre/modules/Preferences.jsm");
+#ifdef XP_WIN
 Cu.import("resource://gre/modules/ctypes.jsm");
+Cu.import("resource://gre/modules/WindowsRegistry.jsm");
 
-const FILE_UPDATE_LOCALE                  = "update.locale";
+const WINREG_HKLM                         = Ci.nsIWindowsRegKey.ROOT_KEY_LOCAL_MACHINE;
+const WINREG_WINNT                        = "Software\\Microsoft\\Windows NT\\CurrentVersion";
+#endif
 const PREF_APP_DISTRIBUTION               = "distribution.id";
 const PREF_APP_DISTRIBUTION_VERSION       = "distribution.version";
-const PREF_APP_B2G_VERSION                = "b2g.version";
+const PREF_APP_UPDATE_CHANNEL             = "app.update.channel";
 const PREF_APP_UPDATE_CUSTOM              = "app.update.custom";
 const PREF_APP_UPDATE_IMEI_HASH           = "app.update.imei_hash";
-
+const PREF_LOCALE                         = "general.useragent.locale";
 
 this.UpdateUtils = {
-  /**
-   * Read the update channel from defaults only.  We do this to ensure that
-   * the channel is tightly coupled with the application and does not apply
-   * to other instances of the application that may use the same profile.
-   *
-   * @param [optional] aIncludePartners
-   *        Whether or not to include the partner bits. Default: true.
-   */
-  getUpdateChannel(aIncludePartners = true) {
-    let defaults = Services.prefs.getDefaultBranch(null);
-#expand    let channel = defaults.getCharPref("app.update.channel", "__MOZ_UPDATE_CHANNEL__");
-
-    if (aIncludePartners) {
-      try {
-        let partners = Services.prefs.getChildList("app.partner.").sort();
-        if (partners.length) {
-          channel += "-cck";
-          partners.forEach(function (prefName) {
-            channel += "-" + Services.prefs.getCharPref(prefName);
-          });
-        }
-      } catch (e) {
-        Cu.reportError(e);
-      }
-    }
-
-    return channel;
+  get UpdateChannel() {
+    return Services.prefs.getDefaultBranch(null)
+                         .getCharPref(PREF_APP_UPDATE_CHANNEL, "@MOZ_UPDATE_CHANNEL@");
   },
 
-  get UpdateChannel() {
-    return this.getUpdateChannel();
+  get Locale() {
+    return Services.prefs.getDefaultBranch(null)
+                         .getCharPref(PREF_LOCALE, "en-US");
   },
 
   /**
    * Formats a URL by replacing %...% values with OS, build and locale specific
    * values.
    *
-   * @param  url
+   * @param  aUpdateURL
    *         The URL to format.
+   * @param  aAdditionalSubsts
    * @return The formatted URL.
    */
-  formatUpdateURL(url) {
-    url = url.replace(/%ID%/g, Services.appinfo.ID);
-    url = url.replace(/%PRODUCT%/g, Services.appinfo.name);
-    url = url.replace(/%VERSION%/g, Services.appinfo.version);
-    url = url.replace(/%BUILD_ID%/g, Services.appinfo.appBuildID);
-    url = url.replace(/%BUILD_TARGET%/g, Services.appinfo.OS + "_" + this.ABI);
-    url = url.replace(/%BUILD_SPECIAL%/g, "@MOZ_PKG_SPECIAL@");
-    url = url.replace(/%OS_VERSION%/g, this.OSVersion);
-    url = url.replace(/%WIDGET_TOOLKIT%/g, "@MOZ_WIDGET_TOOLKIT@");
-    url = url.replace(/%CHANNEL%/g, this.UpdateChannel);
-
-    if (/%LOCALE%/.test(url)) {
-      url = url.replace(/%LOCALE%/g, this.Locale);
+  formatUpdateURL: function(aUpdateURL, aAdditionalSubsts = null) {  
+    // We want to be able to accept additional substs but also to have them be able to
+    // override the default ones below
+    if (aAdditionalSubsts) {
+      try {
+        aAdditionalSubsts.forEach(([_subst, _value]) => aUpdateURL = aUpdateURL.replace(_subst, _value));
+      } catch(ex) {
+        Cu.reportError(ex);
+      }
     }
 
-    url = url.replace(/%CUSTOM%/g, Preferences.get(PREF_APP_UPDATE_CUSTOM, ""));
-    url = url.replace(/\+/g, "%2B");
+    // appName SHOULD be lower case and not contain spaces even if it has in the past
+    let appName = Services.appinfo.name.replace(/\s+/g, '').toLowerCase()
 
-    url = url.replace(/%SYSTEM_CAPABILITIES%/g, gSystemCapabilities);
-    url = url.replace(/%PLATFORM_VERSION%/g, Services.appinfo.platformVersion);
-    url = url.replace(/%DISTRIBUTION%/g,
-                      getDistributionPrefValue(PREF_APP_DISTRIBUTION));
-    url = url.replace(/%DISTRIBUTION_VERSION%/g,
-                      getDistributionPrefValue(PREF_APP_DISTRIBUTION_VERSION));
+    // We want default pref values if they exist
+    let prefBranch = Services.prefs.getDefaultBranch(null)
+    let custom = prefBranch.getCharPref(PREF_APP_UPDATE_CUSTOM, "");
+    let distribution = prefBranch.getCharPref(PREF_APP_DISTRIBUTION, "default");
+    let distributionVersion = prefBranch.getCharPref(PREF_APP_DISTRIBUTION_VERSION, "default");
 
-    return url;
+    let substs = [
+      [/%ID%/g,                     Services.appinfo.ID],
+      [/%PRODUCT%/g,                appName],
+      [/%VERSION%/g,                Services.appinfo.version],
+      [/%BUILD_ID%/g,               Services.appinfo.appBuildID],
+      [/%BUILD_TARGET%/g,           Services.appinfo.OS + "_" + this.ABI],
+      [/%BUILD_SPECIAL%/g,          "@MOZ_PKG_SPECIAL@"],
+      [/%OS_VERSION%/g,             this.OSVersion],
+      [/%WIDGET_TOOLKIT%/g,         "@MOZ_WIDGET_TOOLKIT@"],
+      [/%CHANNEL%/g,                this.UpdateChannel],
+      [/%CUSTOM%/g,                 custom],
+      [/%PLATFORM_VERSION%/g,       Services.appinfo.platformVersion],
+      [/%DISTRIBUTION%/g,           distribution],
+      [/%DISTRIBUTION_VERSION%/g,   distributionVersion],
+      [/%LOCALE%/g,                 this.Locale]     
+    ];
+
+    substs.forEach(([_subst, _value]) => aUpdateURL = aUpdateURL.replace(_subst, _value));
+
+    // We do this last to make sure all pluses are converted
+    aUpdateURL = aUpdateURL.replace(/\+/g, "%2B");
+
+    return aUpdateURL;
   }
 };
-
-/* Get the distribution pref values, from defaults only */
-function getDistributionPrefValue(aPrefName) {
-  return prefValue = Services.prefs.getDefaultBranch(null).getCharPref(aPrefName, "default");
-}
-
-/**
- * Gets the locale from the update.locale file for replacing %LOCALE% in the
- * update url. The update.locale file can be located in the application
- * directory or the GRE directory with preference given to it being located in
- * the application directory.
- */
-XPCOMUtils.defineLazyGetter(UpdateUtils, "Locale", function() {
-  let channel;
-  let locale;
-  for (let res of ['app', 'gre']) {
-    channel = NetUtil.newChannel({
-      uri: "resource://" + res + "/" + FILE_UPDATE_LOCALE,
-      contentPolicyType: Ci.nsIContentPolicy.TYPE_INTERNAL_XMLHTTPREQUEST,
-      loadUsingSystemPrincipal: true
-    });
-    try {
-      let inputStream = channel.open2();
-      locale = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-    } catch (e) {}
-    if (locale)
-      return locale.trim();
-  }
-
-  Cu.reportError(FILE_UPDATE_LOCALE + " file doesn't exist in either the " +
-                 "application or GRE directories");
-
-  return null;
-});
-
-/**
- * Provides adhoc system capability information for application update.
- */
-XPCOMUtils.defineLazyGetter(this, "gSystemCapabilities", function aus_gSC() {
-#ifdef XP_WIN
-  const PF_MMX_INSTRUCTIONS_AVAILABLE = 3; // MMX
-  const PF_XMMI_INSTRUCTIONS_AVAILABLE = 6; // SSE
-  const PF_XMMI64_INSTRUCTIONS_AVAILABLE = 10; // SSE2
-  const PF_SSE3_INSTRUCTIONS_AVAILABLE = 13; // SSE3
-
-  let lib = ctypes.open("kernel32.dll");
-  let IsProcessorFeaturePresent = lib.declare("IsProcessorFeaturePresent",
-                                              ctypes.winapi_abi,
-                                              ctypes.int32_t, /* success */
-                                              ctypes.uint32_t); /* DWORD */
-  let instructionSet = "unknown";
-  try {
-    if (IsProcessorFeaturePresent(PF_SSE3_INSTRUCTIONS_AVAILABLE)) {
-      instructionSet = "SSE3";
-    } else if (IsProcessorFeaturePresent(PF_XMMI64_INSTRUCTIONS_AVAILABLE)) {
-      instructionSet = "SSE2";
-    } else if (IsProcessorFeaturePresent(PF_XMMI_INSTRUCTIONS_AVAILABLE)) {
-      instructionSet = "SSE";
-    } else if (IsProcessorFeaturePresent(PF_MMX_INSTRUCTIONS_AVAILABLE)) {
-      instructionSet = "MMX";
-    }
-  } catch (e) {
-    instructionSet = "error";
-    Cu.reportError("Error getting processor instruction set. " +
-                   "Exception: " + e);
-  }
-
-  lib.close();
-  return instructionSet;
-#else
-  return "NA"
-#endif
-});
 
 #ifdef XP_WIN
 /* Windows only getter that returns the processor architecture. */
@@ -182,24 +106,24 @@ XPCOMUtils.defineLazyGetter(this, "gWinCPUArch", function aus_gWinCPUArch() {
   // http://msdn.microsoft.com/en-us/library/ms724958%28v=vs.85%29.aspx
   const SYSTEM_INFO = new ctypes.StructType('SYSTEM_INFO',
       [
-      {wProcessorArchitecture: WORD},
-      {wReserved: WORD},
-      {dwPageSize: DWORD},
-      {lpMinimumApplicationAddress: ctypes.voidptr_t},
-      {lpMaximumApplicationAddress: ctypes.voidptr_t},
-      {dwActiveProcessorMask: DWORD.ptr},
-      {dwNumberOfProcessors: DWORD},
-      {dwProcessorType: DWORD},
-      {dwAllocationGranularity: DWORD},
-      {wProcessorLevel: WORD},
-      {wProcessorRevision: WORD}
+        {wProcessorArchitecture: WORD},
+        {wReserved: WORD},
+        {dwPageSize: DWORD},
+        {lpMinimumApplicationAddress: ctypes.voidptr_t},
+        {lpMaximumApplicationAddress: ctypes.voidptr_t},
+        {dwActiveProcessorMask: DWORD.ptr},
+        {dwNumberOfProcessors: DWORD},
+        {dwProcessorType: DWORD},
+        {dwAllocationGranularity: DWORD},
+        {wProcessorLevel: WORD},
+        {wProcessorRevision: WORD}
       ]);
 
   let kernel32 = false;
   try {
     kernel32 = ctypes.open("Kernel32");
-  } catch (e) {
-    Cu.reportError("Unable to open kernel32! Exception: " + e);
+  } catch (ex) {
+    Cu.reportError("Unable to open kernel32! Exception: " + ex);
   }
 
   if (kernel32) {
@@ -224,9 +148,9 @@ XPCOMUtils.defineLazyGetter(this, "gWinCPUArch", function aus_gWinCPUArch() {
           arch = "x86";
           break;
       }
-    } catch (e) {
+    } catch (ex) {
       Cu.reportError("Error getting processor architecture. " +
-                     "Exception: " + e);
+                     "Exception: " + ex);
     } finally {
       kernel32.close();
     }
@@ -240,8 +164,7 @@ XPCOMUtils.defineLazyGetter(UpdateUtils, "ABI", function() {
   let abi = null;
   try {
     abi = Services.appinfo.XPCOMABI;
-  }
-  catch (e) {
+  } catch (ex) {
     Cu.reportError("XPCOM ABI unknown");
   }
 
@@ -264,101 +187,34 @@ XPCOMUtils.defineLazyGetter(UpdateUtils, "OSVersion", function() {
   try {
     osVersion = Services.sysinfo.getProperty("name") + " " +
                 Services.sysinfo.getProperty("version");
-  }
-  catch (e) {
+  } catch(ex) {
     Cu.reportError("OS Version unknown.");
   }
 
 #ifdef XP_WIN
   if (osVersion) {
-    const BYTE = ctypes.uint8_t;
-    const WORD = ctypes.uint16_t;
-    const DWORD = ctypes.uint32_t;
-    const WCHAR = ctypes.char16_t;
-    const BOOL = ctypes.int;
-
-    // This structure is described at:
-    // http://msdn.microsoft.com/en-us/library/ms724833%28v=vs.85%29.aspx
-    const SZCSDVERSIONLENGTH = 128;
-    const OSVERSIONINFOEXW = new ctypes.StructType('OSVERSIONINFOEXW',
-        [
-        {dwOSVersionInfoSize: DWORD},
-        {dwMajorVersion: DWORD},
-        {dwMinorVersion: DWORD},
-        {dwBuildNumber: DWORD},
-        {dwPlatformId: DWORD},
-        {szCSDVersion: ctypes.ArrayType(WCHAR, SZCSDVERSIONLENGTH)},
-        {wServicePackMajor: WORD},
-        {wServicePackMinor: WORD},
-        {wSuiteMask: WORD},
-        {wProductType: BYTE},
-        {wReserved: BYTE}
-        ]);
-
-    // This structure is described at:
-    // http://msdn.microsoft.com/en-us/library/ms724958%28v=vs.85%29.aspx
-    const SYSTEM_INFO = new ctypes.StructType('SYSTEM_INFO',
-        [
-        {wProcessorArchitecture: WORD},
-        {wReserved: WORD},
-        {dwPageSize: DWORD},
-        {lpMinimumApplicationAddress: ctypes.voidptr_t},
-        {lpMaximumApplicationAddress: ctypes.voidptr_t},
-        {dwActiveProcessorMask: DWORD.ptr},
-        {dwNumberOfProcessors: DWORD},
-        {dwProcessorType: DWORD},
-        {dwAllocationGranularity: DWORD},
-        {wProcessorLevel: WORD},
-        {wProcessorRevision: WORD}
-        ]);
-
-    let kernel32 = false;
-    try {
-      kernel32 = ctypes.open("Kernel32");
-    } catch (e) {
-      Cu.reportError("Unable to open kernel32! " + e);
-      osVersion += ".unknown (unknown)";
+    let currentBuild = WindowsRegistry.readRegKey(WINREG_HKLM, WINREG_WINNT, "CurrentBuild");
+    let CSDBuildNumber = WindowsRegistry.readRegKey(WINREG_HKLM, WINREG_WINNT, "CSDBuildNumber");
+    
+    if (!CSDBuildNumber) {
+      CSDBuildNumber  = "0";
     }
 
-    if (kernel32) {
-      try {
-        // Get Service pack info
-        try {
-          let GetVersionEx = kernel32.declare("GetVersionExW",
-                                              ctypes.default_abi,
-                                              BOOL,
-                                              OSVERSIONINFOEXW.ptr);
-          let winVer = OSVERSIONINFOEXW();
-          winVer.dwOSVersionInfoSize = OSVERSIONINFOEXW.size;
+    osVersion = osVersion.replace(/Windows_NT/g, "WINNT");
+    osVersion += "." + currentBuild + "." + CSDBuildNumber
 
-          if (0 !== GetVersionEx(winVer.address())) {
-            osVersion += "." + winVer.wServicePackMajor +
-                         "." + winVer.wServicePackMinor;
-          } else {
-            Cu.reportError("Unknown failure in GetVersionEX (returned 0)");
-            osVersion += ".unknown";
-          }
-        } catch (e) {
-          Cu.reportError("Error getting service pack information. Exception: " + e);
-          osVersion += ".unknown";
-        }
-      } finally {
-        kernel32.close();
-      }
-
-      // Add processor architecture
-      osVersion += " (" + gWinCPUArch + ")";
-    }
+    // Add processor architecture
+    osVersion += " (" + gWinCPUArch + ")";
   }
+#endif
 
   try {
     osVersion += " (" + Services.sysinfo.getProperty("secondaryLibrary") + ")";
-  }
-  catch (e) {
+  } catch(ex) {
     // Not all platforms have a secondary widget library, so an error is nothing to worry about.
   }
+
   osVersion = encodeURIComponent(osVersion);
-#endif
 
   return osVersion;
 });

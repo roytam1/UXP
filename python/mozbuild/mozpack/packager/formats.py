@@ -320,5 +320,4 @@ class OmniJarSubFormatter(PiecemealFormatter):
             'modules',
             'goanna.js',
             'hyphenation',
-            'update.locale',
         ] or path[0] in STARTUP_CACHE_PATHS

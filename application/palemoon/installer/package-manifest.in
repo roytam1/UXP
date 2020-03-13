@@ -59,7 +59,6 @@
 #ifdef XP_WIN32
 @BINPATH@/uninstall/helper.exe
 #endif
-@RESPATH@/update.locale
 #ifdef MOZ_UPDATER
 @RESPATH@/updater.ini
 #endif
@@ -134,6 +133,7 @@
 @BINPATH@/@DLL_PREFIX@mozavcodec@DLL_SUFFIX@
 #endif
 @RESPATH@/browser/blocklist.xml
+@RESPATH@/browser/ua-update.json
 #ifdef XP_UNIX
 #ifndef XP_MACOSX
 @RESPATH@/run-mozilla.sh

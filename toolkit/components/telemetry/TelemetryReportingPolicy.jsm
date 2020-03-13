@@ -254,7 +254,7 @@ var TelemetryReportingPolicyImpl = {
     // use the general minimum policy version.
     let channel = "";
     try {
-      channel = UpdateUtils.getUpdateChannel(false);
+      channel = UpdateUtils.UpdateChannel;
     } catch (e) {
       this._log.error("minimumPolicyVersion - Unable to retrieve the current channel.");
       return minPolicyVersion;

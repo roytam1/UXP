@@ -33,7 +33,7 @@ function Bookmarks(aBookmarksFile) {
 Bookmarks.prototype = {
   type: MigrationUtils.resourceTypes.BOOKMARKS,
 
-  migrate: function B_migrate(aCallback) {
+  migrate: function(aCallback) {
     return Task.spawn(function* () {
       let dict = yield new Promise(resolve =>
         PropertyListUtils.read(this._file, resolve)
@@ -188,7 +188,7 @@ History.prototype = {
   // Helper method for converting the visit date property to a PRTime value.
   // The visit date is stored as a string, so it's not read as a Date
   // object by PropertyListUtils.
-  _parseCocoaDate: function H___parseCocoaDate(aCocoaDateStr) {
+  _parseCocoaDate: function(aCocoaDateStr) {
     let asDouble = parseFloat(aCocoaDateStr);
     if (!isNaN(asDouble)) {
       // reference date of NSDate.
@@ -199,7 +199,7 @@ History.prototype = {
     return 0;
   },
 
-  migrate: function H_migrate(aCallback) {
+  migrate: function(aCallback) {
     PropertyListUtils.read(this._file, function migrateHistory(aDict) {
       try {
         if (!aDict)
@@ -270,7 +270,7 @@ MainPreferencesPropertyList.prototype = {
   /**
    * @see PropertyListUtils.read
    */
-  read: function MPPL_read(aCallback) {
+  read: function(aCallback) {
     if ("_dict" in this) {
       aCallback(this._dict);
       return;
@@ -296,7 +296,7 @@ MainPreferencesPropertyList.prototype = {
 
   // Workaround for nsIBrowserProfileMigrator.sourceHomePageURL until
   // it's replaced with an async method.
-  _readSync: function MPPL__readSync() {
+  _readSync: function() {
     if ("_dict" in this)
       return this._dict;
 
@@ -319,7 +319,7 @@ function Preferences(aMainPreferencesPropertyListInstance) {
 Preferences.prototype = {
   type: MigrationUtils.resourceTypes.SETTINGS,
 
-  migrate: function MPR_migrate(aCallback) {
+  migrate: function(aCallback) {
     this._mainPreferencesPropertyList.read(aDict => {
       Task.spawn(function* () {
         if (!aDict)
@@ -370,7 +370,7 @@ Preferences.prototype = {
    *        at all.
    * @return whether or not aMozPref was set.
    */
-  _set: function MPR_set(aSafariKey, aMozPref, aConvertFunction) {
+  _set: function(aSafariKey, aMozPref, aConvertFunction) {
     if (this._dict.has(aSafariKey)) {
       let safariVal = this._dict.get(aSafariKey);
       let mozVal = aConvertFunction !== undefined ?
@@ -417,7 +417,7 @@ Preferences.prototype = {
   // we set it for all languages.
   // As for the font type of the default font (serif/sans-serif), the default
   // type for the given language is used (set in font.default.LANGGROUP).
-  _migrateFontSettings: function MPR__migrateFontSettings() {
+  _migrateFontSettings: function() {
     // If "Never use font sizes smaller than [ ] is set", migrate it for all
     // languages.
     if (this._dict.has("WebKitMinimumFontSize")) {
@@ -453,7 +453,7 @@ Preferences.prototype = {
   },
 
   // Get the language group for the system locale.
-  _getLocaleLangGroup: function MPR__getLocaleLangGroup() {
+  _getLocaleLangGroup: function() {
     let locale = Services.locale.getLocaleComponentForUserAgent();
 
     // See nsLanguageAtomService::GetLanguageGroup
@@ -506,7 +506,7 @@ function SearchStrings(aMainPreferencesPropertyListInstance) {
 SearchStrings.prototype = {
   type: MigrationUtils.resourceTypes.OTHERDATA,
 
-  migrate: function SS_migrate(aCallback) {
+  migrate: function(aCallback) {
     this._mainPreferencesPropertyList.read(MigrationUtils.wrapMigrateFunction(
       function migrateSearchStrings(aDict) {
         if (!aDict)
@@ -534,7 +534,7 @@ function WebFoundationCookieBehavior(aWebFoundationFile) {
 WebFoundationCookieBehavior.prototype = {
   type: MigrationUtils.resourceTypes.SETTINGS,
 
-  migrate: function WFPL_migrate(aCallback) {
+  migrate: function(aCallback) {
     PropertyListUtils.read(this._file, MigrationUtils.wrapMigrateFunction(
       function migrateCookieBehavior(aDict) {
         if (!aDict)
@@ -614,7 +614,7 @@ SafariProfileMigrator.prototype.getLastUsedDate = function SM_getLastUsedDate() 
 };
 
 Object.defineProperty(SafariProfileMigrator.prototype, "mainPreferencesPropertyList", {
-  get: function get_mainPreferencesPropertyList() {
+  get: function() {
     if (this._mainPreferencesPropertyList === undefined) {
       let file = FileUtils.getDir("UsrPrfs", [], false);
       if (file.exists()) {
@@ -633,7 +633,7 @@ Object.defineProperty(SafariProfileMigrator.prototype, "mainPreferencesPropertyL
 });
 
 Object.defineProperty(SafariProfileMigrator.prototype, "sourceHomePageURL", {
-  get: function get_sourceHomePageURL() {
+  get: function() {
     if (this.mainPreferencesPropertyList) {
       let dict = this.mainPreferencesPropertyList._readSync();
       if (dict.has("HomePage"))

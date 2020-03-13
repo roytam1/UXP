@@ -6,7 +6,7 @@
  * Tab previews utility, produces thumbnails
  */
 var tabPreviews = {
-  init: function tabPreviews_init() {
+  init: function() {
     if (this._selectedTab)
       return;
     this._selectedTab = gBrowser.selectedTab;
@@ -21,7 +21,7 @@ var tabPreviews = {
     this.aspectRatio = height.value / width.value;
   },
 
-  get: function tabPreviews_get(aTab) {
+  get: function(aTab) {
     let uri = aTab.linkedBrowser.currentURI.spec;
 
     if (aTab.__thumbnail_lastURI &&
@@ -42,7 +42,7 @@ var tabPreviews = {
     return this.capture(aTab, !aTab.hasAttribute("busy"));
   },
 
-  capture: function tabPreviews_capture(aTab, aShouldCache) {
+  capture: function(aTab, aShouldCache) {
     let browser = aTab.linkedBrowser;
     let uri = browser.currentURI.spec;
     let canvas = PageThumbs.createCanvas(window);
@@ -67,7 +67,7 @@ var tabPreviews = {
     return canvas;
   },
 
-  handleEvent: function tabPreviews_handleEvent(event) {
+  handleEvent: function(event) {
     switch (event.type) {
       case "TabSelect":
         if (this._selectedTab &&
@@ -193,7 +193,7 @@ var ctrlTab = {
     return this._recentlyUsedTabs;
   },
 
-  init: function ctrlTab_init() {
+  init: function() {
     if (!this._recentlyUsedTabs) {
       tabPreviews.init();
 
@@ -202,13 +202,13 @@ var ctrlTab = {
     }
   },
 
-  uninit: function ctrlTab_uninit() {
+  uninit: function() {
     this._recentlyUsedTabs = null;
     this._init(false);
   },
 
   prefName: "browser.ctrlTab.previews",
-  readPref: function ctrlTab_readPref() {
+  readPref: function() {
     var enable =
       gPrefService.getBoolPref(this.prefName) &&
       (!gPrefService.prefHasUserValue("browser.ctrlTab.disallowForScreenReaders") ||
@@ -223,7 +223,7 @@ var ctrlTab = {
     this.readPref();
   },
 
-  updatePreviews: function ctrlTab_updatePreviews() {
+  updatePreviews: function() {
     for (let i = 0; i < this.previews.length; i++)
       this.updatePreview(this.previews[i], this.tabList[i]);
 
@@ -233,7 +233,7 @@ var ctrlTab = {
     this.showAllButton.hidden = !allTabs.canOpen;
   },
 
-  updatePreview: function ctrlTab_updatePreview(aPreview, aTab) {
+  updatePreview: function(aPreview, aTab) {
     if (aPreview == this.showAllButton)
       return;
 
@@ -267,7 +267,7 @@ var ctrlTab = {
     }
   },
 
-  advanceFocus: function ctrlTab_advanceFocus(aForward) {
+  advanceFocus: function(aForward) {
     let selectedIndex = Array.indexOf(this.previews, this.selected);
     do {
       selectedIndex += aForward ? 1 : -1;
@@ -291,12 +291,12 @@ var ctrlTab = {
     }
   },
 
-  _mouseOverFocus: function ctrlTab_mouseOverFocus(aPreview) {
+  _mouseOverFocus: function(aPreview) {
     if (this._trackMouseOver)
       aPreview.focus();
   },
 
-  pick: function ctrlTab_pick(aPreview) {
+  pick: function(aPreview) {
     if (!this.tabCount)
       return;
 
@@ -308,17 +308,17 @@ var ctrlTab = {
       this.close(select._tab);
   },
 
-  showAllTabs: function ctrlTab_showAllTabs(aPreview) {
+  showAllTabs: function(aPreview) {
     this.close();
     document.getElementById("Browser:ShowAllTabs").doCommand();
   },
 
-  remove: function ctrlTab_remove(aPreview) {
+  remove: function(aPreview) {
     if (aPreview._tab)
       gBrowser.removeTab(aPreview._tab);
   },
 
-  attachTab: function ctrlTab_attachTab(aTab, aPos) {
+  attachTab: function(aTab, aPos) {
     if (aTab.closing)
       return;
 
@@ -330,13 +330,13 @@ var ctrlTab = {
       this._recentlyUsedTabs.push(aTab);
   },
 
-  detachTab: function ctrlTab_detachTab(aTab) {
+  detachTab: function(aTab) {
     var i = this._recentlyUsedTabs.indexOf(aTab);
     if (i >= 0)
       this._recentlyUsedTabs.splice(i, 1);
   },
 
-  open: function ctrlTab_open() {
+  open: function() {
     if (this.isOpen)
       return;
 
@@ -353,7 +353,7 @@ var ctrlTab = {
     }, 200, this);
   },
 
-  _openPanel: function ctrlTab_openPanel() {
+  _openPanel: function() {
     tabPreviewPanelHelper.opening(this);
 
     this.panel.width = Math.min(screen.availWidth * .99,
@@ -364,7 +364,7 @@ var ctrlTab = {
                                  false);
   },
 
-  close: function ctrlTab_close(aTabToSelect) {
+  close: function(aTabToSelect) {
     if (!this.isOpen)
       return;
 
@@ -381,7 +381,7 @@ var ctrlTab = {
     this.panel.hidePopup();
   },
 
-  setupGUI: function ctrlTab_setupGUI() {
+  setupGUI: function() {
     this.selected.focus();
     this._selectedIndex = -1;
 
@@ -394,7 +394,7 @@ var ctrlTab = {
     }, 0, this);
   },
 
-  suspendGUI: function ctrlTab_suspendGUI() {
+  suspendGUI: function() {
     document.removeEventListener("keyup", this, true);
 
     for (let preview of this.previews) {
@@ -447,7 +447,7 @@ var ctrlTab = {
     }
   },
 
-  removeClosingTabFromUI: function ctrlTab_removeClosingTabFromUI(aTab) {
+  removeClosingTabFromUI: function(aTab) {
     if (this.tabCount == 2) {
       this.close();
       return;
@@ -468,7 +468,7 @@ var ctrlTab = {
     }
   },
 
-  handleEvent: function ctrlTab_handleEvent(event) {
+  handleEvent: function(event) {
     switch (event.type) {
       case "SSWindowRestored":
         this._initRecentlyUsedTabs();
@@ -528,7 +528,7 @@ var ctrlTab = {
            .sort((tab1, tab2) => tab2.lastAccessed - tab1.lastAccessed);
   },
 
-  _init: function ctrlTab__init(enable) {
+  _init: function(enable) {
     var toggleEventListener = enable ? "addEventListener" : "removeEventListener";
 
     window[toggleEventListener]("SSWindowRestored", this, false);
@@ -575,7 +575,7 @@ var allTabs = {
     return isElementVisible(this.toolbarButton);
   },
 
-  open: function allTabs_open() {
+  open: function() {
     if (this.canOpen) {
       // Without setTimeout, the menupopup won't stay open when invoking
       // "View > Show All Tabs" and the menu bar auto-hides.

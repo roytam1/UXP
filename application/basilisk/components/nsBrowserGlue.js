@@ -85,7 +85,7 @@ const BOOKMARKS_BACKUP_MAX_INTERVAL_DAYS = 3;
 // Factory object
 const BrowserGlueServiceFactory = {
   _instance: null,
-  createInstance: function BGSF_createInstance(outer, iid) {
+  createInstance: function(outer, iid) {
     if (outer != null)
       throw Components.results.NS_ERROR_NO_AGGREGATION;
     return this._instance == null ?
@@ -129,7 +129,7 @@ BrowserGlue.prototype = {
   _isPlacesDatabaseLocked: false,
   _migrationImportsDefaultBookmarks: false,
 
-  _setPrefToSaveSession: function BG__setPrefToSaveSession(aForce) {
+  _setPrefToSaveSession: function(aForce) {
     if (!this._saveSession && !aForce)
       return;
 
@@ -142,7 +142,7 @@ BrowserGlue.prototype = {
   },
 
 #ifdef MOZ_SERVICES_SYNC
-  _setSyncAutoconnectDelay: function BG__setSyncAutoconnectDelay() {
+  _setSyncAutoconnectDelay: function() {
     // Assume that a non-zero value for services.sync.autoconnectDelay should override
     if (Services.prefs.prefHasUserValue("services.sync.autoconnectDelay")) {
       let prefDelay = Services.prefs.getIntPref("services.sync.autoconnectDelay");
@@ -166,7 +166,7 @@ BrowserGlue.prototype = {
 #endif
 
   // nsIObserver implementation
-  observe: function BG_observe(subject, topic, data) {
+  observe: function(subject, topic, data) {
     switch (topic) {
       case "notifications-open-settings":
         this._openPreferences("content");
@@ -410,7 +410,7 @@ BrowserGlue.prototype = {
   },
 
   // initialization (called on application startup)
-  _init: function BG__init() {
+  _init: function() {
     let os = Services.obs;
     os.addObserver(this, "notifications-open-settings", false);
     os.addObserver(this, "prefservice:after-app-defaults", false);
@@ -461,7 +461,7 @@ BrowserGlue.prototype = {
   },
 
   // cleanup (called on application shutdown)
-  _dispose: function BG__dispose() {
+  _dispose: function() {
     let os = Services.obs;
     os.removeObserver(this, "notifications-open-settings");
     os.removeObserver(this, "prefservice:after-app-defaults");
@@ -499,13 +499,13 @@ BrowserGlue.prototype = {
     os.removeObserver(this, "autocomplete-did-enter-text");
   },
 
-  _onAppDefaults: function BG__onAppDefaults() {
+  _onAppDefaults: function() {
     // apply distribution customizations (prefs)
     // other customizations are applied in _finalUIStartup()
     this._distributionCustomizer.applyPrefDefaults();
   },
 
-  _notifySlowAddon: function BG_notifySlowAddon(addonId) {
+  _notifySlowAddon: function(addonId) {
     let addonCallback = function(addon) {
       if (!addon) {
         Cu.reportError("couldn't look up addon: " + addonId);
@@ -617,7 +617,7 @@ BrowserGlue.prototype = {
 
   // runs on startup, before the first command line handler is invoked
   // (i.e. before the first window is opened)
-  _finalUIStartup: function BG__finalUIStartup() {
+  _finalUIStartup: function() {
     this._sanitizer.onStartup();
     // check if we're in safe mode
     if (Services.appinfo.inSafeMode) {
@@ -705,7 +705,7 @@ BrowserGlue.prototype = {
     }
   },
 
-  _onSafeModeRestart: function BG_onSafeModeRestart() {
+  _onSafeModeRestart: function() {
     // prompt the user to confirm
     let strings = gBrowserBundle;
     let promptTitle = strings.GetStringFromName("safeModeRestartPromptTitle");
@@ -896,7 +896,7 @@ BrowserGlue.prototype = {
   },
 
   // the first browser window has finished initializing
-  _onFirstWindowLoaded: function BG__onFirstWindowLoaded(aWindow) {
+  _onFirstWindowLoaded: function(aWindow) {
     // Initialize PdfJs when running in-process and remote. This only
     // happens once since PdfJs registers global hooks. If the PdfJs
     // extension is installed the init method below will be overridden
@@ -1017,7 +1017,7 @@ BrowserGlue.prototype = {
   },
 
   // All initial windows have opened.
-  _onWindowsRestored: function BG__onWindowsRestored() {
+  _onWindowsRestored: function() {
     // Show update notification, if needed.
     if (Services.prefs.prefHasUserValue("app.update.postupdate"))
       this._showUpdateNotification();
@@ -1151,7 +1151,7 @@ BrowserGlue.prototype = {
     E10SAccessibilityCheck.onWindowsRestored();
   },
 
-  _onQuitRequest: function BG__onQuitRequest(aCancelQuit, aQuitType) {
+  _onQuitRequest: function(aCancelQuit, aQuitType) {
     // If user has already dismissed quit request, then do nothing
     if ((aCancelQuit instanceof Ci.nsISupportsPRBool) && aCancelQuit.data)
       return;
@@ -1283,7 +1283,7 @@ BrowserGlue.prototype = {
     }
   },
 
-  _showUpdateNotification: function BG__showUpdateNotification() {
+  _showUpdateNotification: function() {
     Services.prefs.clearUserPref("app.update.postupdate");
 
     var um = Cc["@mozilla.org/updates/update-manager;1"].
@@ -1402,7 +1402,7 @@ BrowserGlue.prototype = {
    *   Set to true by safe-mode dialog to indicate we must restore default
    *   bookmarks.
    */
-  _initPlaces: function BG__initPlaces(aInitialMigrationPerformed) {
+  _initPlaces: function(aInitialMigrationPerformed) {
     // We must instantiate the history service since it will tell us if we
     // need to import or restore bookmarks due to first-run, corruption or
     // forced migration (due to a major schema change).
@@ -1585,7 +1585,7 @@ BrowserGlue.prototype = {
   /**
    * If a backup for today doesn't exist, this creates one.
    */
-  _backupBookmarks: function BG__backupBookmarks() {
+  _backupBookmarks: function() {
     return Task.spawn(function*() {
       let lastBackupFile = yield PlacesBackups.getMostRecentBackup();
       // Should backup bookmarks if there are no backups or the maximum
@@ -1601,7 +1601,7 @@ BrowserGlue.prototype = {
   /**
    * Show the notificationBox for a locked places database.
    */
-  _showPlacesLockedNotificationBox: function BG__showPlacesLockedNotificationBox() {
+  _showPlacesLockedNotificationBox: function() {
     var applicationName = gBrandBundle.GetStringFromName("brandShortName");
     var placesBundle = Services.strings.createBundle("chrome://browser/locale/places/places.properties");
     var title = placesBundle.GetStringFromName("lockPrompt.title");
@@ -1650,7 +1650,7 @@ BrowserGlue.prototype = {
     AlertsService.showAlertNotification(null, title, body, true, null, clickCallback);
   },
 
-  _migrateUI: function BG__migrateUI() {
+  _migrateUI: function() {
     const UI_VERSION = 42;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul";
 
@@ -1976,7 +1976,7 @@ BrowserGlue.prototype = {
     Services.prefs.setIntPref("browser.migration.version", UI_VERSION);
   },
 
-  _hasExistingNotificationPermission: function BG__hasExistingNotificationPermission() {
+  _hasExistingNotificationPermission: function() {
     let enumerator = Services.perms.enumerator;
     while (enumerator.hasMoreElements()) {
       let permission = enumerator.getNext().QueryInterface(Ci.nsIPermission);
@@ -2023,7 +2023,7 @@ BrowserGlue.prototype = {
   // public nsIBrowserGlue members
   // ------------------------------
 
-  sanitize: function BG_sanitize(aParentWindow) {
+  sanitize: function(aParentWindow) {
     this._sanitizer.sanitize(aParentWindow);
   },
 
@@ -2180,7 +2180,7 @@ BrowserGlue.prototype = {
    * lesser evil than sending a tab to a specific device (from e.g. Fennec)
    * and having nothing happen on the receiving end.
    */
-  _onDisplaySyncURI: function _onDisplaySyncURI(data) {
+  _onDisplaySyncURI: function(data) {
     try {
       let tabbrowser = RecentWindow.getMostRecentBrowserWindow({private: false}).gBrowser;
 

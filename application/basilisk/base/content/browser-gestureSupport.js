@@ -24,7 +24,7 @@ var gGestureSupport = {
    * @param aAddListener
    *        True to add/init listeners and false to remove/uninit
    */
-  init: function GS_init(aAddListener) {
+  init: function(aAddListener) {
     const gestureEvents = ["SwipeGestureMayStart", "SwipeGestureStart",
       "SwipeGestureUpdate", "SwipeGestureEnd", "SwipeGesture",
       "MagnifyGestureStart", "MagnifyGestureUpdate", "MagnifyGesture",
@@ -47,7 +47,7 @@ var gGestureSupport = {
    * @param aEvent
    *        The gesture event to handle
    */
-  handleEvent: function GS_handleEvent(aEvent) {
+  handleEvent: function(aEvent) {
     if (!Services.prefs.getBoolPref(
            "dom.debug.propagate_gesture_events_through_content")) {
       aEvent.stopPropagation();
@@ -123,7 +123,7 @@ var gGestureSupport = {
    * @param aDec
    *        Command to trigger for decreasing motion (without gesture name)
    */
-  _setupGesture: function GS__setupGesture(aEvent, aGesture, aPref, aInc, aDec) {
+  _setupGesture: function(aEvent, aGesture, aPref, aInc, aDec) {
     // Try to load user-set values from preferences
     for (let [pref, def] of Object.entries(aPref))
       aPref[pref] = this._getPref(aGesture + "." + pref, def);
@@ -168,7 +168,7 @@ var gGestureSupport = {
    *        The swipe gesture event.
    * @return true if the swipe event may navigate the history, false othwerwise.
    */
-  _swipeNavigatesHistory: function GS__swipeNavigatesHistory(aEvent) {
+  _swipeNavigatesHistory: function(aEvent) {
     return this._getCommand(aEvent, ["swipe", "left"])
               == "Browser:BackOrBackDuplicate" &&
            this._getCommand(aEvent, ["swipe", "right"])
@@ -184,7 +184,7 @@ var gGestureSupport = {
    * @return true if we're willing to start a swipe for this event, false
    *         otherwise.
    */
-  _shouldDoSwipeGesture: function GS__shouldDoSwipeGesture(aEvent) {
+  _shouldDoSwipeGesture: function(aEvent) {
     if (!this._swipeNavigatesHistory(aEvent)) {
       return false;
     }
@@ -232,14 +232,14 @@ var gGestureSupport = {
    * @return true if swipe gestures could successfully be set up, false
    *         othwerwise.
    */
-  _setupSwipeGesture: function GS__setupSwipeGesture() {
+  _setupSwipeGesture: function() {
     gHistorySwipeAnimation.startAnimation(false);
 
-    this._doUpdate = function GS__doUpdate(aEvent) {
+    this._doUpdate = function(aEvent) {
       gHistorySwipeAnimation.updateAnimation(aEvent.delta);
     };
 
-    this._doEnd = function GS__doEnd(aEvent) {
+    this._doEnd = function(aEvent) {
       gHistorySwipeAnimation.swipeEndEventReceived();
 
       this._doUpdate = function (aEvent) {};
@@ -255,7 +255,7 @@ var gGestureSupport = {
    *        Source array containing any number of elements
    * @yield Array that is a subset of the input array from full set to empty
    */
-  _power: function* GS__power(aArray) {
+  _power: function* (aArray) {
     // Create a bitmask based on the length of the array
     let num = 1 << aArray.length;
     while (--num >= 0) {
@@ -279,7 +279,7 @@ var gGestureSupport = {
    * @return Name of the executed command. Returns null if no command is
    *         found.
    */
-  _doAction: function GS__doAction(aEvent, aGesture) {
+  _doAction: function(aEvent, aGesture) {
     let command = this._getCommand(aEvent, aGesture);
     return command && this._doCommand(aEvent, command);
   },
@@ -293,7 +293,7 @@ var gGestureSupport = {
    * @param aGesture
    *        Array of gesture name parts (to be joined by periods)
    */
-  _getCommand: function GS__getCommand(aEvent, aGesture) {
+  _getCommand: function(aEvent, aGesture) {
     // Create an array of pressed keys in a fixed order so that a command for
     // "meta" is preferred over "ctrl" when both buttons are pressed (and a
     // command for both don't exist)
@@ -327,7 +327,7 @@ var gGestureSupport = {
    * @param aCommand
    *        Name of the command found for the event's keys and gesture.
    */
-  _doCommand: function GS__doCommand(aEvent, aCommand) {
+  _doCommand: function(aEvent, aCommand) {
     let node = document.getElementById(aCommand);
     if (node) {
       if (node.getAttribute("disabled") != "true") {
@@ -367,7 +367,7 @@ var gGestureSupport = {
    * @param aEvent
    *        The swipe event to handle
    */
-  onSwipe: function GS_onSwipe(aEvent) {
+  onSwipe: function(aEvent) {
     // Figure out which one (and only one) direction was triggered
     for (let dir of ["UP", "RIGHT", "DOWN", "LEFT"]) {
       if (aEvent.direction == aEvent["DIRECTION_" + dir]) {
@@ -385,7 +385,7 @@ var gGestureSupport = {
    * @param aDir
    *        The direction for the swipe event
    */
-  processSwipeEvent: function GS_processSwipeEvent(aEvent, aDir) {
+  processSwipeEvent: function(aEvent, aDir) {
     this._doAction(aEvent, ["swipe", aDir.toLowerCase()]);
   },
 
@@ -419,7 +419,7 @@ var gGestureSupport = {
    * @param aDef
    *        Default value if the preference doesn't exist
    */
-  _getPref: function GS__getPref(aPref, aDef) {
+  _getPref: function(aPref, aDef) {
     // Preferences branch under which all gestures preferences are stored
     const branch = "browser.gesture.";
 
@@ -582,7 +582,7 @@ var gHistorySwipeAnimation = {
    * Initializes the support for history swipe animations, if it is supported
    * by the platform/configuration.
    */
-  init: function HSA_init() {
+  init: function() {
     if (!this._isSupported())
       return;
 
@@ -612,7 +612,7 @@ var gHistorySwipeAnimation = {
   /**
    * Uninitializes the support for history swipe animations.
    */
-  uninit: function HSA_uninit() {
+  uninit: function() {
     gBrowser.removeEventListener("pagehide", this, false);
     gBrowser.removeEventListener("pageshow", this, false);
     gBrowser.removeEventListener("popstate", this, false);
@@ -630,7 +630,7 @@ var gHistorySwipeAnimation = {
    * @param aIsVerticalSwipe
    *        Whether we're dealing with a vertical swipe or not.
    */
-  startAnimation: function HSA_startAnimation(aIsVerticalSwipe) {
+  startAnimation: function(aIsVerticalSwipe) {
     this._direction = aIsVerticalSwipe ? "vertical" : "horizontal";
 
     if (this.isAnimationRunning()) {
@@ -672,7 +672,7 @@ var gHistorySwipeAnimation = {
   /**
    * Stops the swipe animation.
    */
-  stopAnimation: function HSA_stopAnimation() {
+  stopAnimation: function() {
     gHistorySwipeAnimation._removeBoxes();
     this._historyIndex = this._getCurrentHistoryIndex();
   },
@@ -684,7 +684,7 @@ var gHistorySwipeAnimation = {
    *        A floating point value that represents the progress of the
    *        swipe gesture.
    */
-  updateAnimation: function HSA_updateAnimation(aVal) {
+  updateAnimation: function(aVal) {
     if (!this.isAnimationRunning()) {
       return;
     }
@@ -741,7 +741,7 @@ var gHistorySwipeAnimation = {
    * @param aEvent
    *        An event to process.
    */
-  handleEvent: function HSA_handleEvent(aEvent) {
+  handleEvent: function(aEvent) {
     let browser = gBrowser.selectedBrowser;
     switch (aEvent.type) {
       case "TabClose":
@@ -780,7 +780,7 @@ var gHistorySwipeAnimation = {
    *
    * @return true if the animation is currently running, false otherwise.
    */
-  isAnimationRunning: function HSA_isAnimationRunning() {
+  isAnimationRunning: function() {
     return !!this._container;
   },
 
@@ -792,7 +792,7 @@ var gHistorySwipeAnimation = {
    * @param aDir
    *        The direction for the swipe event
    */
-  processSwipeEvent: function HSA_processSwipeEvent(aEvent, aDir) {
+  processSwipeEvent: function(aEvent, aDir) {
     if (aDir == "RIGHT")
       this._historyIndex += this.isLTR ? 1 : -1;
     else if (aDir == "LEFT")
@@ -807,7 +807,7 @@ var gHistorySwipeAnimation = {
    *
    * @return true if there is a previous page in history, false otherwise.
    */
-  canGoBack: function HSA_canGoBack() {
+  canGoBack: function() {
     if (this.isAnimationRunning())
       return this._doesIndexExistInHistory(this._historyIndex - 1);
     return gBrowser.webNavigation.canGoBack;
@@ -818,7 +818,7 @@ var gHistorySwipeAnimation = {
    *
    * @return true if there is a next page in history, false otherwise.
    */
-  canGoForward: function HSA_canGoForward() {
+  canGoForward: function() {
     if (this.isAnimationRunning())
       return this._doesIndexExistInHistory(this._historyIndex + 1);
     return gBrowser.webNavigation.canGoForward;
@@ -829,7 +829,7 @@ var gHistorySwipeAnimation = {
    * event and that we should navigate to the page that the user swiped to, if
    * any. This will also result in the animation overlay to be torn down.
    */
-  swipeEndEventReceived: function HSA_swipeEndEventReceived() {
+  swipeEndEventReceived: function() {
     // Update the session history before continuing.
     let updateSessionHistory = sessionHistory => {
       if (this._lastSwipeDir != "" && this._historyIndex != this._startingIndex)
@@ -847,7 +847,7 @@ var gHistorySwipeAnimation = {
    *        The index to check for availability for in the history.
    * @return true if the index exists in the browser history, false otherwise.
    */
-  _doesIndexExistInHistory: function HSA__doesIndexExistInHistory(aIndex) {
+  _doesIndexExistInHistory: function(aIndex) {
     try {
       return SessionStore.getSessionHistory(gBrowser.selectedTab).entries[aIndex] != null;
     }
@@ -860,7 +860,7 @@ var gHistorySwipeAnimation = {
    * Navigates to the index in history that is currently being tracked by
    * |this|.
    */
-  _navigateToHistoryIndex: function HSA__navigateToHistoryIndex() {
+  _navigateToHistoryIndex: function() {
     if (this._doesIndexExistInHistory(this._historyIndex))
       gBrowser.webNavigation.gotoIndex(this._historyIndex);
     else
@@ -873,7 +873,7 @@ var gHistorySwipeAnimation = {
    *
    * return true if supported, false otherwise.
    */
-  _isSupported: function HSA__isSupported() {
+  _isSupported: function() {
     return window.matchMedia("(-moz-swipe-animation-enabled)").matches;
   },
 
@@ -882,7 +882,7 @@ var gHistorySwipeAnimation = {
    * progress when a new one is initiated). This will swap out the snapshots
    * used in the previous animation with the appropriate new ones.
    */
-  _handleFastSwiping: function HSA__handleFastSwiping() {
+  _handleFastSwiping: function() {
     this._installCurrentPageSnapshot(null);
     this._installPrevAndNextSnapshots();
   },
@@ -890,7 +890,7 @@ var gHistorySwipeAnimation = {
   /**
    * Adds the boxes that contain the snapshots used during the swipe animation.
    */
-  _addBoxes: function HSA__addBoxes() {
+  _addBoxes: function() {
     let browserStack =
       document.getAnonymousElementByAttribute(gBrowser.getNotificationBox(),
                                               "class", "browserStack");
@@ -918,7 +918,7 @@ var gHistorySwipeAnimation = {
   /**
    * Removes the boxes.
    */
-  _removeBoxes: function HSA__removeBoxes() {
+  _removeBoxes: function() {
     this._curBox = null;
     this._prevBox = null;
     this._nextBox = null;
@@ -938,7 +938,7 @@ var gHistorySwipeAnimation = {
    *        The name of the tag to create the element for.
    * @return the newly created element.
    */
-  _createElement: function HSA__createElement(aID, aTagName) {
+  _createElement: function(aID, aTagName) {
     let XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
     let element = document.createElementNS(XULNS, aTagName);
     element.id = aID;
@@ -953,7 +953,7 @@ var gHistorySwipeAnimation = {
    * @param aPosition
    *        The position (in X coordinates) to move the box element to.
    */
-  _positionBox: function HSA__positionBox(aBox, aPosition) {
+  _positionBox: function(aBox, aPosition) {
     let transform = "";
 
     if (this._direction == "vertical")
@@ -970,14 +970,14 @@ var gHistorySwipeAnimation = {
    *
    * @return true if we're ready to take snapshots, false otherwise.
    */
-  _readyToTakeSnapshots: function HSA__readyToTakeSnapshots() {
+  _readyToTakeSnapshots: function() {
     return (this._maxSnapshots >= 1 && this._getCurrentHistoryIndex() >= 0);
   },
 
   /**
    * Takes a snapshot of the page the browser is currently on.
    */
-  _takeSnapshot: function HSA__takeSnapshot() {
+  _takeSnapshot: function() {
     if (!this._readyToTakeSnapshots()) {
       return;
     }
@@ -1011,7 +1011,7 @@ var gHistorySwipeAnimation = {
    * Retrieves the maximum number of snapshots that should be kept in memory.
    * This limit is a global limit and is valid across all open tabs.
    */
-  _getMaxSnapshots: function HSA__getMaxSnapshots() {
+  _getMaxSnapshots: function() {
     return gPrefService.getIntPref("browser.snapshots.limit");
   },
 
@@ -1083,7 +1083,7 @@ var gHistorySwipeAnimation = {
    * @param aBrowser
    *        The browser the new snapshot was taken in.
    */
-  _removeTrackedSnapshot: function HSA__removeTrackedSnapshot(aIndex, aBrowser) {
+  _removeTrackedSnapshot: function(aIndex, aBrowser) {
     let arr = this._trackedSnapshots;
     let requiresExactIndexMatch = aIndex >= 0;
     for (let i = 0; i < arr.length; i++) {
@@ -1133,7 +1133,7 @@ var gHistorySwipeAnimation = {
    *        couldn't complete before this method was called.
    * @return A new Image object representing the converted blob.
    */
-  _convertToImg: function HSA__convertToImg(aBlob) {
+  _convertToImg: function(aBlob) {
     if (!aBlob)
       return null;
 
@@ -1165,7 +1165,7 @@ var gHistorySwipeAnimation = {
    * @param aBox
    *        The box element that uses aSnapshot as background.
    */
-  _scaleSnapshot: function HSA__scaleSnapshot(aSnapshot, aScale, aBox) {
+  _scaleSnapshot: function(aSnapshot, aScale, aBox) {
     if (aSnapshot && aScale != 1 && aBox) {
       if (aSnapshot instanceof HTMLCanvasElement) {
         aBox.style.backgroundSize =

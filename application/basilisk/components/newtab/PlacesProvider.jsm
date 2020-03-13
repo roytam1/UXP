@@ -52,18 +52,18 @@ Links.prototype = {
    * All history events are emitted from this object.
    */
   historyObserver: {
-    onDeleteURI: function historyObserver_onDeleteURI(aURI) {
+    onDeleteURI: function(aURI) {
       // let observers remove sensetive data associated with deleted visit
       gLinks.emit("deleteURI", {
         url: aURI.spec,
       });
     },
 
-    onClearHistory: function historyObserver_onClearHistory() {
+    onClearHistory: function() {
       gLinks.emit("clearHistory");
     },
 
-    onFrecencyChanged: function historyObserver_onFrecencyChanged(aURI,
+    onFrecencyChanged: function(aURI,
                            aNewFrecency, aGUID, aHidden, aLastVisitDate) { // jshint ignore:line
       // The implementation of the query in getLinks excludes hidden and
       // unvisited pages, so it's important to exclude them here, too.
@@ -78,13 +78,13 @@ Links.prototype = {
       }
     },
 
-    onManyFrecenciesChanged: function historyObserver_onManyFrecenciesChanged() {
+    onManyFrecenciesChanged: function() {
       // Called when frecencies are invalidated and also when clearHistory is called
       // See toolkit/components/places/tests/unit/test_frecency_observers.js
       gLinks.emit("manyLinksChanged");
     },
 
-    onTitleChanged: function historyObserver_onTitleChanged(aURI, aNewTitle) {
+    onTitleChanged: function(aURI, aNewTitle) {
       if (NewTabUtils.linkChecker.checkLoadURI(aURI.spec)) {
         gLinks.emit("linkChanged", {
           url: aURI.spec,
@@ -101,7 +101,7 @@ Links.prototype = {
    * Must be called before the provider is used.
    * Makes it easy to disable under pref
    */
-  init: function PlacesProvider_init() {
+  init: function() {
     try {
       PlacesUtils.history.addObserver(this.historyObserver, true);
     } catch (e) {

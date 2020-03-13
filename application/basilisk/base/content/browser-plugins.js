@@ -95,7 +95,7 @@ var gPluginHandler = {
     openUILinkIn(url, "tab");
   },
 
-  submitReport: function submitReport(runID, keyVals, submitURLOptIn) {
+  submitReport: function(runID, keyVals, submitURLOptIn) {
     /*** STUB ***/
     return;
   },
@@ -110,7 +110,7 @@ var gPluginHandler = {
     openHelpLink("plugin-crashed", false);
   },
 
-  _clickToPlayNotificationEventCallback: function PH_ctpEventCallback(event) {
+  _clickToPlayNotificationEventCallback: function(event) {
     if (event == "showing") {
       Services.telemetry.getHistogramById("PLUGINS_NOTIFICATION_SHOWN")
         .add(!this.options.primaryPlugin);

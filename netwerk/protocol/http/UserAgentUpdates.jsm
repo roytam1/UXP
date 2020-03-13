@@ -17,13 +17,7 @@ XPCOMUtils.defineLazyModuleGetter(
   this, "FileUtils", "resource://gre/modules/FileUtils.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(
-  this, "NetUtil", "resource://gre/modules/NetUtil.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(
   this, "OS", "resource://gre/modules/osfile.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(
-  this, "Promise", "resource://gre/modules/Promise.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(
   this, "UpdateUtils", "resource://gre/modules/UpdateUtils.jsm");
@@ -63,30 +57,6 @@ const PREF_APP_DISTRIBUTION = "distribution.id";
 const PREF_APP_DISTRIBUTION_VERSION = "distribution.version";
 
 var gInitialized = false;
-
-function readChannel(url) {
-  return new Promise((resolve, reject) => {
-    try {
-      let channel = NetUtil.newChannel({uri: url, loadUsingSystemPrincipal: true});
-      channel.contentType = "application/json";
-
-      NetUtil.asyncFetch(channel, (inputStream, status) => {
-        if (!Components.isSuccessCode(status)) {
-          reject();
-          return;
-        }
-
-        let data = JSON.parse(
-          NetUtil.readInputStreamToString(inputStream, inputStream.available())
-        );
-        resolve(data);
-      });
-    } catch (ex) {
-      reject(new Error("UserAgentUpdates: Could not fetch " + url + " " +
-                       ex + "\n" + ex.stack));
-    }
-  });
-}
 
 this.UserAgentUpdates = {
   init: function(callback) {

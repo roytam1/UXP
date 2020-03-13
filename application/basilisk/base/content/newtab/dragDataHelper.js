@@ -9,7 +9,7 @@ var gDragDataHelper = {
     return "text/x-moz-url";
   },
 
-  getLinkFromDragEvent: function DragDataHelper_getLinkFromDragEvent(aEvent) {
+  getLinkFromDragEvent: function(aEvent) {
     let dt = aEvent.dataTransfer;
     if (!dt || !dt.types.includes(this.mimeType)) {
       return null;

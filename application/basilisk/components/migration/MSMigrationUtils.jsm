@@ -363,7 +363,7 @@ Bookmarks.prototype = {
     return this.__toolbarFolderName;
   },
 
-  migrate: function B_migrate(aCallback) {
+  migrate: function(aCallback) {
     return Task.spawn(function* () {
       // Import to the bookmarks menu.
       let folderGuid = PlacesUtils.bookmarks.menuGuid;

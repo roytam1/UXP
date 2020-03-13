@@ -321,13 +321,13 @@ loadListener.prototype = {
   ]),
 
   // nsIRequestObserver
-  onStartRequest: function SRCH_loadStartR(aRequest, aContext) {
+  onStartRequest: function(aRequest, aContext) {
     LOG("loadListener: Starting request: " + aRequest.name);
     this._stream = Cc["@mozilla.org/binaryinputstream;1"].
                    createInstance(Ci.nsIBinaryInputStream);
   },
 
-  onStopRequest: function SRCH_loadStopR(aRequest, aContext, aStatusCode) {
+  onStopRequest: function(aRequest, aContext, aStatusCode) {
     LOG("loadListener: Stopping request: " + aRequest.name);
 
     var requestFailed = !Components.isSuccessCode(aStatusCode);
@@ -345,7 +345,7 @@ loadListener.prototype = {
   },
 
   // nsIStreamListener
-  onDataAvailable: function SRCH_loadDAvailable(aRequest, aContext,
+  onDataAvailable: function(aRequest, aContext,
                                                 aInputStream, aOffset,
                                                 aCount) {
     this._stream.setInputStream(aInputStream);
@@ -356,14 +356,14 @@ loadListener.prototype = {
   },
 
   // nsIChannelEventSink
-  asyncOnChannelRedirect: function SRCH_loadCRedirect(aOldChannel, aNewChannel,
+  asyncOnChannelRedirect: function(aOldChannel, aNewChannel,
                                                       aFlags, callback) {
     this._channel = aNewChannel;
     callback.onRedirectVerifyCallback(Components.results.NS_OK);
   },
 
   // nsIInterfaceRequestor
-  getInterface: function SRCH_load_GI(aIID) {
+  getInterface: function(aIID) {
     return this.QueryInterface(aIID);
   },
 
@@ -688,18 +688,18 @@ function EngineURL(aType, aMethod, aTemplate, aResultDomain) {
 }
 EngineURL.prototype = {
 
-  addParam: function SRCH_EURL_addParam(aName, aValue, aPurpose) {
+  addParam: function(aName, aValue, aPurpose) {
     this.params.push(new QueryParameter(aName, aValue, aPurpose));
   },
 
   // Note: This method requires that aObj has a unique name or the previous MozParams entry with
   // that name will be overwritten.
-  _addMozParam: function SRCH_EURL__addMozParam(aObj) {
+  _addMozParam: function(aObj) {
     aObj.mozparam = true;
     this.mozparams[aObj.name] = aObj;
   },
 
-  getSubmission: function SRCH_EURL_getSubmission(aSearchTerms, aEngine, aPurpose) {
+  getSubmission: function(aSearchTerms, aEngine, aPurpose) {
     var url = ParamSubstitution(this.template, aSearchTerms, aEngine);
     // Default to searchbar if the purpose is not provided
     var purpose = aPurpose || "searchbar";
@@ -747,16 +747,16 @@ EngineURL.prototype = {
     return new Submission(makeURI(url), postData);
   },
 
-  _getTermsParameterName: function SRCH_EURL__getTermsParameterName() {
+  _getTermsParameterName: function() {
     let queryParam = this.params.find(p => p.value == USER_DEFINED);
     return queryParam ? queryParam.name : "";
   },
 
-  _hasRelation: function SRC_EURL__hasRelation(aRel) {
+  _hasRelation: function(aRel) {
     return this.rels.some(e => e == aRel.toLowerCase());
   },
 
-  _initWithJSON: function SRC_EURL__initWithJSON(aJson, aEngine) {
+  _initWithJSON: function(aJson, aEngine) {
     if (!aJson.params)
       return;
 
@@ -780,7 +780,7 @@ EngineURL.prototype = {
    * Creates a JavaScript object that represents this URL.
    * @returns An object suitable for serialization as JSON.
    **/
-  toJSON: function SRCH_EURL_toJSON() {
+  toJSON: function() {
     var json = {
       template: this.template,
       rels: this.rels,
@@ -947,7 +947,7 @@ Engine.prototype = {
    * Retrieves the data from the engine's file.
    * The document element is placed in the engine's data field.
    */
-  _initFromFile: function SRCH_ENG_initFromFile(file) {
+  _initFromFile: function(file) {
     if (!file || !file.exists())
       FAIL("File must exist before calling initFromFile!", Cr.NS_ERROR_UNEXPECTED);
 
@@ -995,7 +995,7 @@ Engine.prototype = {
    *
    * @param uri The uri to load the search plugin from.
    */
-  _initFromURIAndLoad: function SRCH_ENG_initFromURIAndLoad(uri) {
+  _initFromURIAndLoad: function(uri) {
     ENSURE_WARN(uri instanceof Ci.nsIURI,
                 "Must have URI when calling _initFromURIAndLoad!",
                 Cr.NS_ERROR_UNEXPECTED);
@@ -1039,7 +1039,7 @@ Engine.prototype = {
    * @returns {Promise} A promise, resolved successfully if retrieveing data
    * succeeds.
    */
-  _retrieveSearchXMLData: function SRCH_ENG__retrieveSearchXMLData(aURL) {
+  _retrieveSearchXMLData: function(aURL) {
     let deferred = Promise.defer();
     let request = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
                     createInstance(Ci.nsIXMLHttpRequest);
@@ -1058,7 +1058,7 @@ Engine.prototype = {
     return deferred.promise;
   },
 
-  _initFromURISync: function SRCH_ENG_initFromURISync(uri) {
+  _initFromURISync: function(uri) {
     ENSURE_WARN(uri instanceof Ci.nsIURI,
                 "Must have URI when calling _initFromURISync!",
                 Cr.NS_ERROR_UNEXPECTED);
@@ -1094,7 +1094,7 @@ Engine.prototype = {
    * @param aType string to match the EngineURL's type attribute
    * @param aRel [optional] only return URLs that with this rel value
    */
-  _getURLOfType: function SRCH_ENG__getURLOfType(aType, aRel) {
+  _getURLOfType: function(aType, aRel) {
     for (var i = 0; i < this._urls.length; ++i) {
       if (this._urls[i].type == aType && (!aRel || this._urls[i]._hasRelation(aRel)))
         return this._urls[i];
@@ -1103,7 +1103,7 @@ Engine.prototype = {
     return null;
   },
 
-  _confirmAddEngine: function SRCH_SVC_confirmAddEngine() {
+  _confirmAddEngine: function() {
     var stringBundle = Services.strings.createBundle(SEARCH_BUNDLE);
     var titleMessage = stringBundle.GetStringFromName("addEngineConfirmTitle");
 
@@ -1143,7 +1143,7 @@ Engine.prototype = {
    * triggers parsing of the data. The engine is then flushed to disk. Notifies
    * the search service once initialization is complete.
    */
-  _onLoad: function SRCH_ENG_onLoad(aBytes, aEngine) {
+  _onLoad: function(aBytes, aEngine) {
     /**
      * Handle an error during the load of an engine by notifying the engine's
      * error callback, if any.
@@ -1271,7 +1271,7 @@ Engine.prototype = {
    *        Height of the icon.
    * @returns key string
    */
-  _getIconKey: function SRCH_ENG_getIconKey(aWidth, aHeight) {
+  _getIconKey: function(aWidth, aHeight) {
     let keyObj = {
      width: aWidth,
      height: aHeight
@@ -1290,7 +1290,7 @@ Engine.prototype = {
    * @param aURISpec
    *        String with the icon's URI.
    */
-  _addIconToMap: function SRCH_ENG_addIconToMap(aWidth, aHeight, aURISpec) {
+  _addIconToMap: function(aWidth, aHeight, aURISpec) {
     if (aWidth == 16 && aHeight == 16) {
       // The 16x16 icon is stored in _iconURL, we don't need to store it twice.
       return;
@@ -1320,7 +1320,7 @@ Engine.prototype = {
    *  @param aHeight (optional)
    *         Height of the icon.
    */
-  _setIcon: function SRCH_ENG_setIcon(aIconURL, aIsPreferred, aWidth, aHeight) {
+  _setIcon: function(aIconURL, aIsPreferred, aWidth, aHeight) {
     var uri = makeURI(aIconURL);
 
     // Ignore bad URIs
@@ -1401,7 +1401,7 @@ Engine.prototype = {
   /**
    * Initialize this Engine object from the collected data.
    */
-  _initFromData: function SRCH_ENG_initFromData() {
+  _initFromData: function() {
     ENSURE_WARN(this._data, "Can't init an engine with no data!",
                 Cr.NS_ERROR_UNEXPECTED);
 
@@ -1426,7 +1426,7 @@ Engine.prototype = {
   /**
    * Initialize this Engine object from a collection of metadata.
    */
-  _initFromMetadata: function SRCH_ENG_initMetaData(aName, aIconURL, aAlias,
+  _initFromMetadata: function(aName, aIconURL, aAlias,
                                                     aDescription, aMethod,
                                                     aTemplate, aExtensionID) {
     ENSURE_WARN(!this._readOnly,
@@ -1451,7 +1451,7 @@ Engine.prototype = {
    * @see http://opensearch.a9.com/spec/1.1/querysyntax/#urltag.
    * @see EngineURL()
    */
-  _parseURL: function SRCH_ENG_parseURL(aElement) {
+  _parseURL: function(aElement) {
     var type     = aElement.getAttribute("type");
     // According to the spec, method is optional, defaulting to "GET" if not
     // specified
@@ -1525,7 +1525,7 @@ Engine.prototype = {
    * Get the icon from an OpenSearch Image element.
    * @see http://opensearch.a9.com/spec/1.1/description/#image
    */
-  _parseImage: function SRCH_ENG_parseImage(aElement) {
+  _parseImage: function(aElement) {
     LOG("_parseImage: Image textContent: \"" + limitURILength(aElement.textContent) + "\"");
 
     let width = parseInt(aElement.getAttribute("width"), 10);
@@ -1544,7 +1544,7 @@ Engine.prototype = {
    * Extract search engine information from the collected data to initialize
    * the engine object.
    */
-  _parse: function SRCH_ENG_parse() {
+  _parse: function() {
     var doc = this._data;
 
     // The OpenSearch spec sets a default value for the input encoding.
@@ -1601,7 +1601,7 @@ Engine.prototype = {
   /**
    * Init from a JSON record.
    **/
-  _initWithJSON: function SRCH_ENG__initWithJSON(aJson) {
+  _initWithJSON: function(aJson) {
     this._name = aJson._name;
     this._shortName = aJson._shortName;
     this._loadPath = aJson._loadPath;
@@ -1640,7 +1640,7 @@ Engine.prototype = {
    * Creates a JavaScript object that represents this engine.
    * @returns An object suitable for serialization as JSON.
    **/
-  toJSON: function SRCH_ENG_toJSON() {
+  toJSON: function() {
     var json = {
       _name: this._name,
       _shortName: this._shortName,
@@ -1933,7 +1933,7 @@ Engine.prototype = {
   },
 
   // from nsISearchEngine
-  addParam: function SRCH_ENG_addParam(aName, aValue, aResponseType) {
+  addParam: function(aName, aValue, aResponseType) {
     if (!aName || (aValue == null))
       FAIL("missing name or value for nsISearchEngine::addParam!");
     ENSURE_WARN(!this._readOnly,
@@ -1983,7 +1983,7 @@ Engine.prototype = {
   },
 
   // from nsISearchEngine
-  getSubmission: function SRCH_ENG_getSubmission(aData, aResponseType, aPurpose) {
+  getSubmission: function(aData, aResponseType, aPurpose) {
     if (!aResponseType) {
       aResponseType = AppConstants.platform == "android" ? this._defaultMobileResponseType :
                                                            URLTYPE_SEARCH_HTML;
@@ -2031,12 +2031,12 @@ Engine.prototype = {
   },
 
   // from nsISearchEngine
-  supportsResponseType: function SRCH_ENG_supportsResponseType(type) {
+  supportsResponseType: function(type) {
     return (this._getURLOfType(type) != null);
   },
 
   // from nsISearchEngine
-  getResultDomain: function SRCH_ENG_getResultDomain(aResponseType) {
+  getResultDomain: function(aResponseType) {
     if (!aResponseType) {
       aResponseType = AppConstants.platform == "android" ? this._defaultMobileResponseType :
                                                            URLTYPE_SEARCH_HTML;
@@ -2093,7 +2093,7 @@ Engine.prototype = {
    * @param height
    *        Height of the requested icon.
    */
-  getIconURLBySize: function SRCH_ENG_getIconURLBySize(aWidth, aHeight) {
+  getIconURLBySize: function(aWidth, aHeight) {
     if (aWidth == 16 && aHeight == 16)
       return this._iconURL;
 
@@ -2113,7 +2113,7 @@ Engine.prototype = {
    * represent the icon's dimensions. url is a string with the URL for
    * the icon.
    */
-  getIcons: function SRCH_ENG_getIcons() {
+  getIcons: function() {
     let result = [];
     if (this._iconURL)
       result.push({width: 16, height: 16, url: this._iconURL});
@@ -2144,7 +2144,7 @@ Engine.prototype = {
    * @throws NS_ERROR_INVALID_ARG if options is omitted or lacks required
    *         elemeents
    */
-  speculativeConnect: function SRCH_ENG_speculativeConnect(options) {
+  speculativeConnect: function(options) {
     if (!options || !options.window) {
       Cu.reportError("invalid options arg passed to nsISearchEngine.speculativeConnect");
       throw Cr.NS_ERROR_INVALID_ARG;
@@ -2262,7 +2262,7 @@ SearchService.prototype = {
   // If initialization has not been completed yet, perform synchronous
   // initialization.
   // Throws in case of initialization error.
-  _ensureInitialized: function  SRCH_SVC__ensureInitialized() {
+  _ensureInitialized: function() {
     if (gInitialized) {
       if (!Components.isSuccessCode(this._initRV)) {
         LOG("_ensureInitialized: failure");
@@ -2287,7 +2287,7 @@ SearchService.prototype = {
   // Synchronous implementation of the initializer.
   // Used by |_ensureInitialized| as a fallback if initialization is not
   // complete.
-  _syncInit: function SRCH_SVC__syncInit() {
+  _syncInit: function() {
     LOG("_syncInit start");
     this._initStarted = true;
 
@@ -2405,11 +2405,11 @@ SearchService.prototype = {
     return this.getEngineByName(defaultEngine);
   },
 
-  resetToOriginalDefaultEngine: function SRCH_SVC__resetToOriginalDefaultEngine() {
+  resetToOriginalDefaultEngine: function() {
     this.currentEngine = this.originalDefaultEngine;
   },
 
-  _buildCache: function SRCH_SVC__buildCache() {
+  _buildCache: function() {
     if (this._batchTask)
       this._batchTask.disarm();
 
@@ -2458,7 +2458,7 @@ SearchService.prototype = {
     }
   },
 
-  _syncLoadEngines: function SRCH_SVC__syncLoadEngines(cache) {
+  _syncLoadEngines: function(cache) {
     LOG("_syncLoadEngines: start");
     // See if we have a cache file so we don't have to parse a bunch of XML.
     let chromeURIs = this._findJAREngines();
@@ -2732,7 +2732,7 @@ SearchService.prototype = {
    *
    * @returns A JS object containing the cached data.
    */
-  _readCacheFile: function SRCH_SVC__readCacheFile() {
+  _readCacheFile: function() {
     if (this._cacheFileJSON) {
       return this._cacheFileJSON;
     }
@@ -2854,7 +2854,7 @@ SearchService.prototype = {
     return this._batchTask;
   },
 
-  _addEngineToStore: function SRCH_SVC_addEngineToStore(aEngine) {
+  _addEngineToStore: function(aEngine) {
     LOG("_addEngineToStore: Adding engine: \"" + aEngine.name + "\"");
 
     // See if there is an existing engine with the same name. However, if this
@@ -2909,7 +2909,7 @@ SearchService.prototype = {
     }
   },
 
-  _loadEnginesMetadataFromCache: function SRCH_SVC__loadEnginesMetadataFromCache(cache) {
+  _loadEnginesMetadataFromCache: function(cache) {
     if (cache._oldMetadata) {
       // If we have old metadata in the cache, we had no valid cache
       // file and read data from search-metadata.json.
@@ -2933,7 +2933,7 @@ SearchService.prototype = {
     }
   },
 
-  _loadEnginesFromCache: function SRCH_SVC__loadEnginesFromCache(cache,
+  _loadEnginesFromCache: function(cache,
                                                                  skipReadOnly) {
     if (!cache.engines)
       return;
@@ -2956,7 +2956,7 @@ SearchService.prototype = {
     }
   },
 
-  _loadEngineFromCache: function SRCH_SVC__loadEngineFromCache(json) {
+  _loadEngineFromCache: function(json) {
     try {
       let engine = new Engine(json._shortName, json._readOnly == undefined);
       engine._initWithJSON(json);
@@ -2967,7 +2967,7 @@ SearchService.prototype = {
     }
   },
 
-  _loadEnginesFromDir: function SRCH_SVC__loadEnginesFromDir(aDir) {
+  _loadEnginesFromDir: function(aDir) {
     LOG("_loadEnginesFromDir: Searching in " + aDir.path + " for search engines.");
 
     // Check whether aDir is the user profile dir
@@ -3064,7 +3064,7 @@ SearchService.prototype = {
     return engines;
   }),
 
-  _loadFromChromeURLs: function SRCH_SVC_loadFromChromeURLs(aURLs) {
+  _loadFromChromeURLs: function(aURLs) {
     aURLs.forEach(function (url) {
       try {
         LOG("_loadFromChromeURLs: loading engine from chrome url: " + url);
@@ -3117,7 +3117,7 @@ SearchService.prototype = {
     return fileURI.file;
   },
 
-  _findJAREngines: function SRCH_SVC_findJAREngines() {
+  _findJAREngines: function() {
     LOG("_findJAREngines: looking for engines in JARs")
 
     let chan = makeChannel(APP_SEARCH_PREFIX + "list.json");
@@ -3192,7 +3192,7 @@ SearchService.prototype = {
     return uris;
   }),
 
-  _parseListJSON: function SRCH_SVC_parseListJSON(list, uris) {
+  _parseListJSON: function(list, uris) {
     let searchSettings;
     try {
       searchSettings = JSON.parse(list);
@@ -3247,7 +3247,7 @@ SearchService.prototype = {
     this._visibleDefaultEngines = engineNames;
   },
 
-  _parseListTxt: function SRCH_SVC_parseListTxt(list, uris) {
+  _parseListTxt: function(list, uris) {
     let names = list.split("\n").filter(n => !!n);
     // This maps the names of our built-in engines to a boolean
     // indicating whether it should be hidden by default.
@@ -3301,7 +3301,7 @@ SearchService.prototype = {
   },
 
 
-  _saveSortedEngineList: function SRCH_SVC_saveSortedEngineList() {
+  _saveSortedEngineList: function() {
     LOG("SRCH_SVC_saveSortedEngineList: starting");
 
     // Set the useDB pref to indicate that from now on we should use the order
@@ -3317,7 +3317,7 @@ SearchService.prototype = {
     LOG("SRCH_SVC_saveSortedEngineList: done");
   },
 
-  _buildSortedEngineList: function SRCH_SVC_buildSortedEngineList() {
+  _buildSortedEngineList: function() {
     LOG("_buildSortedEngineList: building list");
     var addedEngines = { };
     this.__sortedEngines = [];
@@ -3419,7 +3419,7 @@ SearchService.prototype = {
    * @param aWithHidden
    *        True if hidden plugins should be included in the result.
    */
-  _getSortedEngines: function SRCH_SVC_getSorted(aWithHidden) {
+  _getSortedEngines: function(aWithHidden) {
     if (aWithHidden)
       return this._sortedEngines;
 
@@ -3429,7 +3429,7 @@ SearchService.prototype = {
   },
 
   // nsIBrowserSearchService
-  init: function SRCH_SVC_init(observer) {
+  init: function(observer) {
     LOG("SearchService.init");
     let self = this;
     if (!this._initStarted) {
@@ -3469,7 +3469,7 @@ SearchService.prototype = {
     return gInitialized;
   },
 
-  getEngines: function SRCH_SVC_getEngines(aCount) {
+  getEngines: function(aCount) {
     this._ensureInitialized();
     LOG("getEngines: getting all engines");
     var engines = this._getSortedEngines(true);
@@ -3477,7 +3477,7 @@ SearchService.prototype = {
     return engines;
   },
 
-  getVisibleEngines: function SRCH_SVC_getVisible(aCount) {
+  getVisibleEngines: function(aCount) {
     this._ensureInitialized();
     LOG("getVisibleEngines: getting all visible engines");
     var engines = this._getSortedEngines(false);
@@ -3485,7 +3485,7 @@ SearchService.prototype = {
     return engines;
   },
 
-  getDefaultEngines: function SRCH_SVC_getDefault(aCount) {
+  getDefaultEngines: function(aCount) {
     this._ensureInitialized();
     function isDefault(engine) {
       return engine._isDefault;
@@ -3544,12 +3544,12 @@ SearchService.prototype = {
     return engines;
   },
 
-  getEngineByName: function SRCH_SVC_getEngineByName(aEngineName) {
+  getEngineByName: function(aEngineName) {
     this._ensureInitialized();
     return this._engines[aEngineName] || null;
   },
 
-  getEngineByAlias: function SRCH_SVC_getEngineByAlias(aAlias) {
+  getEngineByAlias: function(aAlias) {
     this._ensureInitialized();
     for (var engineName in this._engines) {
       var engine = this._engines[engineName];
@@ -3559,7 +3559,7 @@ SearchService.prototype = {
     return null;
   },
 
-  addEngineWithDetails: function SRCH_SVC_addEWD(aName, aIconURL, aAlias,
+  addEngineWithDetails: function(aName, aIconURL, aAlias,
                                                  aDescription, aMethod,
                                                  aTemplate, aExtensionID) {
     this._ensureInitialized();
@@ -3579,7 +3579,7 @@ SearchService.prototype = {
     this._addEngineToStore(engine);
   },
 
-  addEngine: function SRCH_SVC_addEngine(aEngineURL, aDataType, aIconURL,
+  addEngine: function(aEngineURL, aDataType, aIconURL,
                                          aConfirm, aCallback) {
     LOG("addEngine: Adding \"" + aEngineURL + "\".");
     this._ensureInitialized();
@@ -3611,7 +3611,7 @@ SearchService.prototype = {
     engine._confirm = aConfirm;
   },
 
-  removeEngine: function SRCH_SVC_removeEngine(aEngine) {
+  removeEngine: function(aEngine) {
     this._ensureInitialized();
     if (!aEngine)
       FAIL("no engine passed to removeEngine!");
@@ -3660,7 +3660,7 @@ SearchService.prototype = {
     notifyAction(engineToRemove, SEARCH_ENGINE_REMOVED);
   },
 
-  moveEngine: function SRCH_SVC_moveEngine(aEngine, aNewIndex) {
+  moveEngine: function(aEngine, aNewIndex) {
     this._ensureInitialized();
     if ((aNewIndex > this._sortedEngines.length) || (aNewIndex < 0))
       FAIL("SRCH_SVC_moveEngine: Index out of bounds!");
@@ -3710,7 +3710,7 @@ SearchService.prototype = {
     this._saveSortedEngineList();
   },
 
-  restoreDefaultEngines: function SRCH_SVC_resetDefaultEngines() {
+  restoreDefaultEngines: function() {
     this._ensureInitialized();
     for (let name in this._engines) {
       let e = this._engines[name];
@@ -3928,7 +3928,7 @@ SearchService.prototype = {
    */
   _parseSubmissionMap: null,
 
-  _buildParseSubmissionMap: function SRCH_SVC__buildParseSubmissionMap() {
+  _buildParseSubmissionMap: function() {
     LOG("_buildParseSubmissionMap");
     this._parseSubmissionMap = new Map();
 
@@ -4041,7 +4041,7 @@ SearchService.prototype = {
     });
   },
 
-  parseSubmissionURL: function SRCH_SVC_parseSubmissionURL(aURL) {
+  parseSubmissionURL: function(aURL) {
     this._ensureInitialized();
     LOG("parseSubmissionURL: Parsing \"" + aURL + "\".");
 
@@ -4128,7 +4128,7 @@ SearchService.prototype = {
   },
 
   // nsIObserver
-  observe: function SRCH_SVC_observe(aEngine, aTopic, aVerb) {
+  observe: function(aEngine, aTopic, aVerb) {
     switch (aTopic) {
       case SEARCH_ENGINE_TOPIC:
         switch (aVerb) {
@@ -4170,7 +4170,7 @@ SearchService.prototype = {
   },
 
   // nsITimerCallback
-  notify: function SRCH_SVC_notify(aTimer) {
+  notify: function(aTimer) {
     LOG("_notify: checking for updates");
 
     if (!Services.prefs.getBoolPref(BROWSER_SEARCH_PREF + "update", true))
@@ -4208,7 +4208,7 @@ SearchService.prototype = {
     } // end engine iteration
   },
 
-  _addObservers: function SRCH_SVC_addObservers() {
+  _addObservers: function() {
     if (this._observersAdded) {
       // There might be a race between synchronous and asynchronous
       // initialization for which we try to register the observers twice.
@@ -4256,7 +4256,7 @@ SearchService.prototype = {
   },
   _observersAdded: false,
 
-  _removeObservers: function SRCH_SVC_removeObservers() {
+  _removeObservers: function() {
     Services.obs.removeObserver(this, SEARCH_ENGINE_TOPIC);
     Services.obs.removeObserver(this, QUIT_APPLICATION_TOPIC);
   },
@@ -4283,13 +4283,13 @@ function ULOG(aText) {
 }
 
 var engineUpdateService = {
-  scheduleNextUpdate: function eus_scheduleNextUpdate(aEngine) {
+  scheduleNextUpdate: function(aEngine) {
     var interval = aEngine._updateInterval || SEARCH_DEFAULT_UPDATE_INTERVAL;
     var milliseconds = interval * 86400000; // |interval| is in days
     aEngine.setAttr("updateexpir", Date.now() + milliseconds);
   },
 
-  update: function eus_Update(aEngine) {
+  update: function(aEngine) {
     let engine = aEngine.wrappedJSObject;
     ULOG("update called for " + aEngine._name);
     if (!Services.prefs.getBoolPref(BROWSER_SEARCH_PREF + "update", true) || !engine._hasUpdates)
