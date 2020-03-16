@@ -12,6 +12,9 @@
 #include "SharedSSLState.h"
 #include "cert.h"
 #include "certdb.h"
+#ifdef NSS_SQLSTORE
+#include "mozStorageCID.h"
+#endif
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Casting.h"
 #include "mozilla/Preferences.h"
@@ -1969,6 +1972,14 @@ nsNSSComponent::Init()
   if (!NS_IsMainThread()) {
     return NS_ERROR_NOT_SAME_THREAD;
   }
+
+#ifdef NSS_SQLSTORE
+  // To avoid an sqlite3_config race in NSS init, we require the storage service to get initialized first.
+  nsCOMPtr<nsISupports> storageService = do_GetService(MOZ_STORAGE_SERVICE_CONTRACTID);
+  if (!storageService) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+#endif
 
   nsresult rv = NS_OK;
 

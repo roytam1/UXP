@@ -1102,7 +1102,12 @@ InitializeNSS(const nsACString& dir, bool readOnly, bool loadPKCS11Modules)
     flags |= NSS_INIT_NOMODDB;
   }
   nsAutoCString dbTypeAndDirectory;
+#ifdef NSS_SQLSTORE
+  // Not strictly necessary with current NSS versions, but can't hurt to be explicit.
+  dbTypeAndDirectory.Append("sql:");
+#else
   dbTypeAndDirectory.Append("dbm:");
+#endif
   dbTypeAndDirectory.Append(dir);
   return ::NSS_Initialize(dbTypeAndDirectory.get(), "", "", SECMOD_DB, flags);
 }
