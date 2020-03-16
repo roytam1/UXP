@@ -761,6 +761,13 @@ public:
   bool NeedToCollapse() const;
   void SetNeedToCollapse(bool aValue);
 
+  bool NeedToCalcHasBCBorders() const;
+  void SetNeedToCalcHasBCBorders(bool aValue);
+
+  void CalcHasBCBorders();
+  bool HasBCBorders();
+  void SetHasBCBorders(bool aValue);
+
   /** The GeometryDirty bit is similar to the NS_FRAME_IS_DIRTY frame
     * state bit, which implies that all descendants are dirty.  The
     * GeometryDirty still implies that all the parts of the table are
@@ -870,6 +877,8 @@ protected:
     uint32_t mIStartContBCBorder:8;
     uint32_t mNeedToCollapse:1;        // rows, cols that have visibility:collapse need to be collapsed
     uint32_t mResizedColumns:1;        // have we resized columns since last reflow?
+    uint32_t mNeedToCalcHasBCBorders:1;
+    uint32_t mHasBCBorders:1;
   } mBits;
 
   nsTableCellMap*         mCellMap;            // maintains the relationships between rows, cols, and cells
@@ -963,6 +972,30 @@ inline bool nsTableFrame::NeedToCalcBCBorders() const
 inline void nsTableFrame::SetNeedToCalcBCBorders(bool aValue)
 {
   mBits.mNeedToCalcBCBorders = (unsigned)aValue;
+}
+
+inline bool nsTableFrame::NeedToCalcHasBCBorders() const
+{
+  return (bool)mBits.mNeedToCalcHasBCBorders;
+}
+
+inline void nsTableFrame::SetNeedToCalcHasBCBorders(bool aValue)
+{
+  mBits.mNeedToCalcHasBCBorders = (unsigned)aValue;
+}
+
+inline bool nsTableFrame::HasBCBorders()
+{
+  if (NeedToCalcHasBCBorders()) {
+    CalcHasBCBorders();
+    SetNeedToCalcHasBCBorders(false);
+  }
+  return (bool)mBits.mHasBCBorders;
+}
+
+inline void nsTableFrame::SetHasBCBorders(bool aValue)
+{
+  mBits.mHasBCBorders = (unsigned)aValue;
 }
 
 inline nscoord
