@@ -2730,7 +2730,7 @@ dnl =========================================================
 dnl = NSS SQL storage format
 dnl =========================================================
 MOZ_ARG_ENABLE_BOOL(nss-sqlstore,
-[  --enable-nss-sqlstore Enable the us of SQL storage for NSS],
+[  --enable-nss-sqlstore Enable the use of SQL storage for NSS],
     NSS_SQLSTORE=1,
     NSS_SQLSTORE=)
 

@@ -204,6 +204,7 @@ def old_configure_options(*options):
     '--enable-negotiateauth',
     '--enable-nfc',
     '--enable-nspr-build',
+    '--enable-nss-sqlstore',
     '--enable-official-branding',
     '--enable-official-vendor',
     '--enable-oom-breakpoint',
