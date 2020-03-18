@@ -2297,14 +2297,9 @@ LIRGenerator::visitToObjectOrNull(MToObjectOrNull* ins)
 void
 LIRGenerator::visitRegExp(MRegExp* ins)
 {
-    if (ins->mustClone()) {
-        LRegExp* lir = new(alloc()) LRegExp();
-        defineReturn(lir, ins);
-        assignSafepoint(lir, ins);
-    } else {
-        RegExpObject* source = ins->source();
-        define(new(alloc()) LPointer(source), ins);
-    }
+    LRegExp* lir = new(alloc()) LRegExp();
+    defineReturn(lir, ins);
+    assignSafepoint(lir, ins);
 }
 
 void
