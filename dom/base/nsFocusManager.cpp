@@ -1261,6 +1261,15 @@ nsFocusManager::SetFocusInner(nsIContent* aNewContent, int32_t aFlags,
     isElementInActiveWindow = (mActiveWindow && newRootWindow == mActiveWindow);
   }
 
+  // Exit fullscreen if a website focuses another window
+  if (!isElementInActiveWindow && aFlags & FLAG_RAISE) {
+    if (nsIDocument* doc = mActiveWindow ? mActiveWindow->GetDoc() : nullptr) {
+      if (doc && doc->GetFullscreenElement()) {
+        nsIDocument::AsyncExitFullscreen(doc);
+      }
+    }
+  }
+
   // Exit fullscreen if we're focusing a windowed plugin on a non-MacOSX
   // system. We don't control event dispatch to windowed plugins on non-MacOSX,
   // so we can't display the "Press ESC to leave fullscreen mode" warning on
