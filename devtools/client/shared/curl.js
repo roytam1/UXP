@@ -58,9 +58,21 @@ const Curl = {
    *         A cURL command.
    */
   generateCommand: function (data) {
-    let utils = CurlUtils;
+    const utils = CurlUtils;
 
     let command = ["curl"];
+
+    // Make sure to use the following helpers to sanitize arguments before execution.
+    const addParam = value => {
+      const safe = /^[a-zA-Z-]+$/.test(value) ? value : escapeString(value);
+      command.push(safe);
+    };
+
+    const addPostData = value => {
+      const safe = /^[a-zA-Z-]+$/.test(value) ? value : escapeString(value);
+      postData.push(safe);
+    };
+
     let ignoredHeaders = new Set();
 
     // The cURL command is expected to run on the same platform that Firefox runs
@@ -69,7 +81,7 @@ const Curl = {
                        utils.escapeStringWin : utils.escapeStringPosix;
 
     // Add URL.
-    command.push(escapeString(data.url));
+    addParam(data.url);
 
     let postDataText = null;
     let multipartRequest = utils.isMultipartRequest(data);
@@ -79,15 +91,15 @@ const Curl = {
     if (utils.isUrlEncodedRequest(data) ||
           ["PUT", "POST", "PATCH"].includes(data.method)) {
       postDataText = data.postDataText;
-      postData.push("--data");
-      postData.push(escapeString(utils.writePostDataTextParams(postDataText)));
+      addPostData("--data");
+      addPostData(utils.writePostDataTextParams(postDataText));
       ignoredHeaders.add("content-length");
     } else if (multipartRequest) {
       postDataText = data.postDataText;
-      postData.push("--data-binary");
+      addPostData("--data-binary");
       let boundary = utils.getMultipartBoundary(data);
       let text = utils.removeBinaryDataFromMultipartText(postDataText, boundary);
-      postData.push(escapeString(text));
+      addPostData(text);
       ignoredHeaders.add("content-length");
     }
 
@@ -95,15 +107,15 @@ const Curl = {
     // For GET and POST requests this is not necessary as GET is the
     // default. If --data or --binary is added POST is the default.
     if (!(data.method == "GET" || data.method == "POST")) {
-      command.push("-X");
-      command.push(data.method);
+      addParam("-X");
+      addParam(data.method);
     }
 
     // Add -I (HEAD)
     // For servers that supports HEAD.
     // This will fetch the header of a document only.
     if (data.method == "HEAD") {
-      command.push("-I");
+      addParam("-I");
     }
 
     // Add http version.
@@ -114,7 +126,7 @@ const Curl = {
       // data.httpVersion are HTTP/1.0, HTTP/1.1 and HTTP/2.0
       // So in case of HTTP/2.0 (which should ideally be HTTP/2) we are using
       // only major version, and full version in other cases
-      command.push("--http" + (version == "2.0" ? version.split(".")[0] : version));
+      addParam("--http" + (version == "2.0" ? version.split(".")[0] : version));
     }
 
     // Add request headers.
@@ -126,14 +138,14 @@ const Curl = {
     for (let i = 0; i < headers.length; i++) {
       let header = headers[i];
       if (header.name.toLowerCase() === "accept-encoding") {
-        command.push("--compressed");
+        addParam("--compressed");
         continue;
       }
       if (ignoredHeaders.has(header.name.toLowerCase())) {
         continue;
       }
-      command.push("-H");
-      command.push(escapeString(header.name + ": " + header.value));
+      addParam("-H");
+      addParam(header.name + ": " + header.value);
     }
 
     // Add post data.
