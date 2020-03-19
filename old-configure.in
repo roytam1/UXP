@@ -2165,11 +2165,11 @@ MOZ_JETPACK=1
 MOZ_DEVTOOLS_SERVER=1
 MOZ_DEVTOOLS=
 MOZ_PLACES=1
+MOZ_SECURITY_SQLSTORE=
 MOZ_SERVICES_HEALTHREPORT=1
 MOZ_SERVICES_SYNC=1
 MOZ_USERINFO=1
 NSS_DISABLE_DBM=
-NSS_SQLSTORE=
 MOZ_MAILNEWS=
 MOZ_MAILNEWS_OAUTH2=
 MOZ_LDAP_XPCOM=
@@ -2729,20 +2729,20 @@ AC_SUBST(NSS_DISABLE_DBM)
 dnl =========================================================
 dnl = NSS SQL storage format
 dnl =========================================================
-MOZ_ARG_ENABLE_BOOL(nss-sqlstore,
-[  --enable-nss-sqlstore Enable the use of SQL storage for NSS],
-    NSS_SQLSTORE=1,
-    NSS_SQLSTORE=)
+MOZ_ARG_ENABLE_BOOL(security-sqlstore,
+[  --enable-security-sqlstore Enable the use of SQL storage for NSS],
+    MOZ_SECURITY_SQLSTORE=1,
+    MOZ_SECURITY_SQLSTORE=)
 
-if test -n "$NSS_DISABLE_DBM" -a -z "$NSS_SQLSTORE"; then
+if test -n "$NSS_DISABLE_DBM" -a -z "$MOZ_SECURITY_SQLSTORE"; then
   AC_MSG_ERROR([DBM storage support is required if not using NSS SQL storage])
 fi
 
-if test -n "$NSS_SQLSTORE"; then
-  AC_DEFINE(NSS_SQLSTORE)
+if test -n "$MOZ_SECURITY_SQLSTORE"; then
+  AC_DEFINE(MOZ_SECURITY_SQLSTORE)
 fi
 
-AC_SUBST(NSS_SQLSTORE)
+AC_SUBST(MOZ_SECURITY_SQLSTORE)
 
 dnl =========================================================
 dnl = Don't fold mailnews related comps into libXUL

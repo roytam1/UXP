@@ -1102,7 +1102,7 @@ InitializeNSS(const nsACString& dir, bool readOnly, bool loadPKCS11Modules)
     flags |= NSS_INIT_NOMODDB;
   }
   nsAutoCString dbTypeAndDirectory;
-#ifdef NSS_SQLSTORE
+#ifdef MOZ_SECURITY_SQLSTORE
   // Not strictly necessary with current NSS versions, but can't hurt to be explicit.
   dbTypeAndDirectory.Append("sql:");
 #else

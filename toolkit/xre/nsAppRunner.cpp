@@ -2794,7 +2794,7 @@ XREMain::XRE_mainInit(bool* aExitFlag)
   // Reduce the number of rounds for debug builds for perf/test reasons.
   SaveToEnv("NSS_MAX_MP_PBE_ITERATION_COUNT=15");
 #else
-#ifdef NSS_SQLSTORE
+#ifdef MOZ_SECURITY_SQLSTORE
   // We're using SQL; NSS's defaults for rounds are fine.
 #else
   // Set default Master Password rounds to a sane value for DBM which is slower

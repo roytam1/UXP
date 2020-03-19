@@ -12,7 +12,7 @@
 #include "SharedSSLState.h"
 #include "cert.h"
 #include "certdb.h"
-#ifdef NSS_SQLSTORE
+#ifdef MOZ_SECURITY_SQLSTORE
 #include "mozStorageCID.h"
 #endif
 #include "mozilla/ArrayUtils.h"
@@ -1712,7 +1712,7 @@ GetNSSProfilePath(nsAutoCString& aProfilePath)
            ("Could not get nsILocalFileWin for profile directory.\n"));
     return NS_ERROR_FAILURE;
   }
-#ifdef NSS_SQLSTORE
+#ifdef MOZ_SECURITY_SQLSTORE
   // SQLite always takes UTF-8 file paths regardless of the current system
   // code page.
   nsAutoString u16ProfilePath;
@@ -1982,7 +1982,7 @@ nsNSSComponent::Init()
     return NS_ERROR_NOT_SAME_THREAD;
   }
 
-#ifdef NSS_SQLSTORE
+#ifdef MOZ_SECURITY_SQLSTORE
   // To avoid an sqlite3_config race in NSS init, we require the storage service to get initialized first.
   nsCOMPtr<nsISupports> storageService = do_GetService(MOZ_STORAGE_SERVICE_CONTRACTID);
   if (!storageService) {
