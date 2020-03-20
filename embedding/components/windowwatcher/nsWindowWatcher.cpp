@@ -1297,6 +1297,12 @@ nsWindowWatcher::OpenWindowInternal(mozIDOMWindowProxy* aParent,
     }
   }
 
+  // If a website opens a popup exit DOM fullscreen
+  if (windowIsNew && aCalledFromJS && !hasChromeParent && !isCallerChrome &&
+      parentWindow) {
+    nsIDocument::AsyncExitFullscreen(parentWindow->GetDoc());
+  }
+			
   if (aForceNoOpener && windowIsNew) {
     NS_RELEASE(*aResult);
   }

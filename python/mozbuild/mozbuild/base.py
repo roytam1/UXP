@@ -352,6 +352,13 @@ class MozbuildObject(ProcessExecutionMixin):
             return _config_guess_output[0]
 
         p = os.path.join(self.topsrcdir, 'build', 'autoconf', 'config.guess')
+        
+        # Try looking for mozilla, for comm-central
+        if not os.path.isfile(p):
+            p = os.path.join(self.topsrcdir, 'mozilla', 'build', 'autoconf', 'config.guess')
+
+        if not os.path.isfile(p):
+            p = os.path.join(self.topsrcdir, 'platform', 'build', 'autoconf', 'config.guess')
 
         # This is a little kludgy. We need access to the normalize_command
         # function. However, that's a method of a mach mixin, so we need a

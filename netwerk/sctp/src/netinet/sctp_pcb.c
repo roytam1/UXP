@@ -32,7 +32,7 @@
 
 #ifdef __FreeBSD__
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_pcb.c 280459 2015-03-24 21:12:45Z tuexen $");
+__FBSDID("$FreeBSD: head/sys/netinet/sctp_pcb.c 355931 2019-12-20 15:25:08Z tuexen $");
 #endif
 
 #include <netinet/sctp_os.h>
@@ -7213,7 +7213,7 @@ sctp_load_addresses_from_init(struct sctp_tcb *stcb, struct mbuf *m,
 		if (offset + plen > limit) {
 			break;
 		}
-		if (plen == 0) {
+		if (plen < sizeof(struct sctp_paramhdr)) {
 			break;
 		}
 #ifdef INET
@@ -7412,6 +7412,9 @@ sctp_load_addresses_from_init(struct sctp_tcb *stcb, struct mbuf *m,
 			}
 			if (plen > sizeof(lstore)) {
 				return (-23);
+			}
+			if (plen < sizeof(struct sctp_asconf_addrv4_param)) {
+				return (-101);
 			}
 			phdr = sctp_get_next_param(m, offset,
 						   (struct sctp_paramhdr *)&lstore,

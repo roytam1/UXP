@@ -30,6 +30,7 @@ XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
 var gPrefBranch;
 var gOverrides = new Map;
 var gUpdatedOverrides;
+var gOldDynOverrides;
 var gOverrideForHostCache = new Map;
 var gInitialized = false;
 var gOverrideFunctions = [
@@ -55,7 +56,10 @@ this.UserAgentOverrides = {
     }
 
     UserAgentUpdates.init(function(overrides) {
-      gOverrideForHostCache.clear();
+      if (overrides == gOldDynOverrides) {
+        return;
+      }
+      gOldDynOverrides = overrides;
       if (overrides) {
         for (let domain in overrides) {
           overrides[domain] = getUserAgentFromOverride(overrides[domain]);
@@ -63,6 +67,7 @@ this.UserAgentOverrides = {
         overrides.get = function(key) { return this[key]; };
       }
       gUpdatedOverrides = overrides;
+      buildOverrides();
     });
 
     buildOverrides();
@@ -159,15 +164,22 @@ function buildOverrides() {
   if (!Services.prefs.getBoolPref(PREF_OVERRIDES_ENABLED))
     return;
 
-  let builtUAs = new Map;
   let domains = gPrefBranch.getChildList("");
 
+  // Since the static override map has the highest priority, we build it so
+  // that it includes only domains with user-set overrides and domains with
+  // default pre-set overrides that are not overridden by dynamic updates.
   for (let domain of domains) {
-    let override = gPrefBranch.getCharPref(domain);
-    let userAgent = getUserAgentFromOverride(override);
+    if (!(gUpdatedOverrides && gUpdatedOverrides.get(domain)) ||
+        gPrefBranch.prefHasUserValue(domain)) {
+      // Here we selected domains that are not dynamically overridden
+      // or have a user-set override.
+      let override = gPrefBranch.getCharPref(domain);
+      let userAgent = getUserAgentFromOverride(override);
 
-    if (userAgent != DEFAULT_UA) {
-      gOverrides.set(domain, userAgent);
+      if (userAgent != DEFAULT_UA) {
+        gOverrides.set(domain, userAgent);
+      }
     }
   }
 }
