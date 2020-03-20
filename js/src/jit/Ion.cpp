@@ -1497,14 +1497,6 @@ OptimizeMIR(MIRGenerator* mir)
     if (mir->shouldCancel("Start"))
         return false;
 
-    if (!mir->compilingWasm()) {
-        if (!MakeMRegExpHoistable(mir, graph))
-            return false;
-
-        if (mir->shouldCancel("Make MRegExp Hoistable"))
-            return false;
-    }
-
     gs.spewPass("BuildSSA");
     AssertBasicGraphCoherency(graph);
 
