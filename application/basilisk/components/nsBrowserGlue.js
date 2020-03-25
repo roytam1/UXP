@@ -1651,7 +1651,7 @@ BrowserGlue.prototype = {
   },
 
   _migrateUI: function() {
-    const UI_VERSION = 42;
+    const UI_VERSION = 43;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul";
 
     let currentUIVersion;
@@ -1970,6 +1970,19 @@ BrowserGlue.prototype = {
       let backupFile = Services.dirsvc.get("ProfD", Ci.nsIFile);
       backupFile.append("tabgroups-session-backup.json");
       OS.File.remove(backupFile.path, {ignoreAbsent: true}).catch(ex => Cu.reportError(ex));
+    }
+
+    if (currentUIVersion < 43) {
+      if (Services.prefs.prefHasUserValue("layers.acceleration.disabled")) {
+        let HWADisabled = Service.prefs.getBoolPref("layers.acceleration.disabled");
+        Services.prefs.setBoolPref("layers.acceleration.enabled", !HWADisabled);
+        Services.prefs.setBoolPref("gfx.direct2d.disabled", HWADisabled);
+      }
+      if (Services.prefs.getBoolPref("layers.acceleration.force-enabled", false)) {
+        Services.prefs.setBoolPref("layers.acceleration.force", true);
+      }
+      Services.prefs.clearUserPref("layers.acceleration.disabled");
+      Services.prefs.clearUserPref("layers.acceleration.force-enabled");
     }
 
     // Update the migration version.
