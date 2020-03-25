@@ -127,7 +127,6 @@ UNIFIED_SOURCES += [
     'nsSecureBrowserUIImpl.cpp',
     'nsSecurityHeaderParser.cpp',
     'NSSErrorsService.cpp',
-    'nsSiteSecurityService.cpp',
     'nsSSLSocketProvider.cpp',
     'nsSSLStatus.cpp',
     'nsTLSSocketProvider.cpp',
@@ -140,6 +139,10 @@ UNIFIED_SOURCES += [
     'TransportSecurityInfo.cpp',
     'WeakCryptoOverride.cpp',
 ]
+
+# nsSiteSecurityService exceeded the obj file sections limit because of the
+# HSTS preload list so it cannot be built in UNIFIED mode.
+SOURCES += ['nsSiteSecurityService.cpp']
 
 IPDL_SOURCES += [
     'PPSMContentDownloader.ipdl',
