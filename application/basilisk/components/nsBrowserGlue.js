@@ -1974,7 +1974,7 @@ BrowserGlue.prototype = {
 
     if (currentUIVersion < 43) {
       if (Services.prefs.prefHasUserValue("layers.acceleration.disabled")) {
-        let HWADisabled = Service.prefs.getBoolPref("layers.acceleration.disabled");
+        let HWADisabled = Services.prefs.getBoolPref("layers.acceleration.disabled");
         Services.prefs.setBoolPref("layers.acceleration.enabled", !HWADisabled);
         Services.prefs.setBoolPref("gfx.direct2d.disabled", HWADisabled);
       }
