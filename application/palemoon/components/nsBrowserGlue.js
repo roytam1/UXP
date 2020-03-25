@@ -1198,7 +1198,7 @@ BrowserGlue.prototype = {
   },
 
   _migrateUI: function() {
-    const UI_VERSION = 22;
+    const UI_VERSION = 23;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul#";
     let currentUIVersion = 0;
     try {
@@ -1453,9 +1453,9 @@ BrowserGlue.prototype = {
       }
     }
 
-    if (currentUIVersion < 22) {
+    if (currentUIVersion < 23) {
       if (Services.prefs.prefHasUserValue("layers.acceleration.disabled")) {
-        let HWADisabled = Service.prefs.getBoolPref("layers.acceleration.disabled");
+        let HWADisabled = Services.prefs.getBoolPref("layers.acceleration.disabled");
         Services.prefs.setBoolPref("layers.acceleration.enabled", !HWADisabled);
         Services.prefs.setBoolPref("gfx.direct2d.disabled", HWADisabled);
       }
