@@ -326,11 +326,9 @@ nsSiteSecurityService::SetHSTSState(uint32_t aType,
     return NS_OK;
   }
 
-  // If max-age is zero, the host is no longer considered HSTS. If the host was
-  // preloaded, we store an entry indicating that this host is not HSTS, causing
-  // the preloaded information to be ignored.
+  // If max-age is zero, the host is no longer considered HSTS.
   if (maxage == 0) {
-    return RemoveState(aType, aSourceURI, flags, true);
+    return RemoveState(aType, aSourceURI, flags);
   }
 
   MOZ_ASSERT((aHSTSState == SecurityPropertySet ||
@@ -358,8 +356,7 @@ nsSiteSecurityService::SetHSTSState(uint32_t aType,
 }
 
 NS_IMETHODIMP
-nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI,
-                                   uint32_t aFlags, bool force = false)
+nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI, uint32_t aFlags)
 {
    // Child processes are not allowed direct access to this.
    if (!XRE_IsParentProcess()) {

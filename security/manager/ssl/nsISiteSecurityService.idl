@@ -106,13 +106,10 @@ interface nsISiteSecurityService : nsISupports
      * @param aURI    the URI of the target host
      * @param aFlags  options for this request as defined in nsISocketProvider:
      *                  NO_PERMANENT_STORAGE
-     * @param force   if set, forces no-HSTS state by writing a knockout value,
-     *                overriding any preload list state
      */
     void removeState(in uint32_t aType,
                      in nsIURI aURI,
-                     in uint32_t aFlags,
-                     [optional] in boolean force);
+                     in uint32_t aFlags);
 
     /**
      * See isSecureURI
