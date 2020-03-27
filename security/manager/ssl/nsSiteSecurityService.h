@@ -145,7 +145,6 @@ private:
                         bool aIsPreload);
 
   uint64_t mMaxMaxAge;
-  bool mUsePreloadList;
   bool mUseStsService;
   int64_t mPreloadListTimeOffset;
   bool mHPKPEnabled;

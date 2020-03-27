@@ -200,7 +200,6 @@ const uint64_t kSixtyDaysInSeconds = 60 * 24 * 60 * 60;
 
 nsSiteSecurityService::nsSiteSecurityService()
   : mMaxMaxAge(kSixtyDaysInSeconds)
-  , mUsePreloadList(true)
   , mUseStsService(true)
   , mPreloadListTimeOffset(0)
   , mHPKPEnabled(false)
@@ -228,10 +227,6 @@ nsSiteSecurityService::Init()
     "security.cert_pinning.max_max_age_seconds", kSixtyDaysInSeconds);
   mozilla::Preferences::AddStrongObserver(this,
     "security.cert_pinning.max_max_age_seconds");
-  mUsePreloadList = mozilla::Preferences::GetBool(
-    "network.stricttransportsecurity.preloadlist", true);
-  mozilla::Preferences::AddStrongObserver(this,
-    "network.stricttransportsecurity.preloadlist");
   mHPKPEnabled = mozilla::Preferences::GetBool(
      "security.cert_pinning.hpkp.enabled", false);
   mozilla::Preferences::AddStrongObserver(this,
@@ -1247,8 +1242,6 @@ nsSiteSecurityService::Observe(nsISupports *subject,
   }
 
   if (strcmp(topic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID) == 0) {
-    mUsePreloadList = mozilla::Preferences::GetBool(
-      "network.stricttransportsecurity.preloadlist", true);
     mUseStsService = mozilla::Preferences::GetBool(
       "network.stricttransportsecurity.enabled", true);
     mPreloadListTimeOffset =
