@@ -1101,17 +1101,6 @@ nsSiteSecurityService::ClearAll()
   return mSiteStateStorage->Clear();
 }
 
-NS_IMETHODIMP
-nsSiteSecurityService::ClearPreloads()
-{
-  // Child processes are not allowed direct access to this.
-  if (!XRE_IsParentProcess()) {
-    MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::ClearPreloads");
-  }
-
-  return mPreloadStateStorage->Clear();
-}
-
 bool entryStateNotOK(SiteHPKPState& state, mozilla::pkix::Time& aEvalTime) {
   return state.mState != SecurityPropertySet || state.IsExpired(aEvalTime) ||
          state.mSHA256keys.Length() < 1;

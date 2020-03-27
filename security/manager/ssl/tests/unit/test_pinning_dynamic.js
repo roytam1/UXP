@@ -239,9 +239,5 @@ function checkPreloadClear() {
   gSSService.clearAll();
   checkFail(certFromFile('b.preload.example.com-badca'), "b.preload.example.com");
 
-  // Check that the preloaded pins are cleared when we clear preloads
-  gSSService.clearPreloads();
-  checkOK(certFromFile('b.preload.example.com-badca'), "b.preload.example.com");
-
   do_test_finished();
 }

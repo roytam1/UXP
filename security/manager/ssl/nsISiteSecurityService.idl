@@ -152,11 +152,6 @@ interface nsISiteSecurityService : nsISupports
     void clearAll();
 
     /**
-     * Removes all preloaded security state.
-     */
-    void clearPreloads();
-
-    /**
      * Returns an array of sha256-hashed key pins for the given domain, if any.
      * If these pins also apply to subdomains of the given domain,
      * aIncludeSubdomains will be true. Pins returned are only for non-built-in
