@@ -110,8 +110,6 @@ public:
   void ToString(nsCString &aString);
 };
 
-class nsSTSPreload;
-
 class nsSiteSecurityService : public nsISiteSecurityService
                             , public nsIObserver
 {
@@ -145,8 +143,6 @@ private:
                             uint32_t* aFailureResult);
   nsresult SetHPKPState(const char* aHost, SiteHPKPState& entry, uint32_t flags,
                         bool aIsPreload);
-
-  const nsSTSPreload *GetPreloadListEntry(const char *aHost);
 
   uint64_t mMaxMaxAge;
   bool mUsePreloadList;
