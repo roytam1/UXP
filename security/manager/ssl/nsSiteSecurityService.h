@@ -39,40 +39,6 @@ enum SecurityPropertyState {
 };
 
 /**
- * SiteHPKPState: A utility class that encodes/decodes a string describing
- * the public key pins of a site.
- * HPKP state consists of:
- *  - Expiry time (PRTime (aka int64_t) in milliseconds)
- *  - A state flag (SecurityPropertyState, default SecurityPropertyUnset)
- *  - An include subdomains flag (bool, default false)
- *  - An array of sha-256 hashed base 64 encoded fingerprints of required keys
- */
-class SiteHPKPState
-{
-public:
-  SiteHPKPState();
-  explicit SiteHPKPState(nsCString& aStateString);
-  SiteHPKPState(PRTime aExpireTime, SecurityPropertyState aState,
-                bool aIncludeSubdomains, nsTArray<nsCString>& SHA256keys);
-
-  PRTime mExpireTime;
-  SecurityPropertyState mState;
-  bool mIncludeSubdomains;
-  nsTArray<nsCString> mSHA256keys;
-
-  bool IsExpired(mozilla::pkix::Time aTime)
-  {
-    if (aTime > mozilla::pkix::TimeFromEpochInSeconds(mExpireTime /
-                                                      PR_MSEC_PER_SEC)) {
-      return true;
-    }
-    return false;
-  }
-
-  void ToString(nsCString& aString);
-};
-
-/**
  * SiteHSTSState: A utility class that encodes/decodes a string describing
  * the security state of a site. Currently only handles HSTS.
  * HSTS state consists of:
@@ -137,20 +103,10 @@ private:
   nsresult ProcessSTSHeader(nsIURI* aSourceURI, const char* aHeader,
                             uint32_t flags, uint64_t* aMaxAge,
                             bool* aIncludeSubdomains, uint32_t* aFailureResult);
-  nsresult ProcessPKPHeader(nsIURI* aSourceURI, const char* aHeader,
-                            nsISSLStatus* aSSLStatus, uint32_t flags,
-                            uint64_t* aMaxAge, bool* aIncludeSubdomains,
-                            uint32_t* aFailureResult);
-  nsresult SetHPKPState(const char* aHost, SiteHPKPState& entry, uint32_t flags,
-                        bool aIsPreload);
 
-  uint64_t mMaxMaxAge;
   bool mUseStsService;
   int64_t mPreloadListTimeOffset;
-  bool mHPKPEnabled;
-  bool mProcessPKPHeadersFromNonBuiltInRoots;
   RefPtr<mozilla::DataStorage> mSiteStateStorage;
-  RefPtr<mozilla::DataStorage> mPreloadStateStorage;
 };
 
 #endif // __nsSiteSecurityService_h__

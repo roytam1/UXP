@@ -132,7 +132,6 @@ UNIFIED_SOURCES += [
     'nsTLSSocketProvider.cpp',
     'PSMContentListener.cpp',
     'PSMRunnable.cpp',
-    'PublicKeyPinningService.cpp',
     'SecretDecoderRing.cpp',
     'SharedSSLState.cpp',
     'SSLServerCertVerification.cpp',

@@ -12,7 +12,6 @@
 #include "NSSErrorsService.h"
 #include "OCSPRequestor.h"
 #include "OCSPVerificationTrustDomain.h"
-#include "PublicKeyPinningService.h"
 #include "cert.h"
 #include "certdb.h"
 #include "mozilla/Assertions.h"
@@ -861,24 +860,6 @@ NSSCertDBTrustDomain::IsChainValid(const DERArray& certArray, Time time)
   rv = IsCertBuiltInRoot(root, isBuiltInRoot);
   if (rv != Success) {
     return rv;
-  }
-  bool skipPinningChecksBecauseOfMITMMode =
-    (!isBuiltInRoot && mPinningMode == CertVerifier::pinningAllowUserCAMITM);
-  // If mHostname isn't set, we're not verifying in the context of a TLS
-  // handshake, so don't verify HPKP in those cases.
-  if (mHostname && (mPinningMode != CertVerifier::pinningDisabled) &&
-      !skipPinningChecksBecauseOfMITMMode) {
-    bool enforceTestMode =
-      (mPinningMode == CertVerifier::pinningEnforceTestMode);
-    bool chainHasValidPins;
-    nsresult nsrv = PublicKeyPinningService::ChainHasValidPins(
-      certList, mHostname, time, enforceTestMode, chainHasValidPins);
-    if (NS_FAILED(nsrv)) {
-      return Result::FATAL_ERROR_LIBRARY_FAILURE;
-    }
-    if (!chainHasValidPins) {
-      return Result::ERROR_KEY_PINNING_FAILURE;
-    }
   }
 
   mBuiltChain = Move(certList);
