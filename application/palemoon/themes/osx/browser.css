@@ -96,10 +96,6 @@
     -moz-appearance: -moz-window-button-box;
 }
 
-#main-window[sizemode="maximized"] #titlebar-buttonbox {
-    -moz-appearance: -moz-window-button-box-maximized;
-}
-
 .titlebar-placeholder[type="appmenu-button"] {
     margin-left: 4px;
 }
