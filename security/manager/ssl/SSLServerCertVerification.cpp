@@ -425,11 +425,9 @@ CertErrorRunnable::CheckCertOverrides()
   uint32_t remaining_display_errors = mCollectedErrors;
 
 
-  // If this is an HTTP Strict Transport Security host or a pinned host and the
-  // certificate is bad, don't allow overrides (RFC 6797 section 12.1,
-  // HPKP draft spec section 2.6).
+  // If this is an HTTP Strict Transport Security host, don't allow overrides
+  // RFC 6797 section 12.1.
   bool strictTransportSecurityEnabled = false;
-  bool hasPinningInformation = false;
   nsCOMPtr<nsISiteSecurityService> sss(do_GetService(NS_SSSERVICE_CONTRACTID));
   if (!sss) {
     MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
@@ -449,21 +447,10 @@ CertErrorRunnable::CheckCertOverrides()
     return new SSLServerCertVerificationResult(mInfoObject,
                                                mDefaultErrorCodeToReport);
   }
-  nsrv = sss->IsSecureHost(nsISiteSecurityService::HEADER_HPKP,
-                           mInfoObject->GetHostNameRaw(),
-                           mProviderFlags,
-                           nullptr,
-                           &hasPinningInformation);
-  if (NS_FAILED(nsrv)) {
-    MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-           ("[%p][%p] checking for HPKP failed\n", mFdForLogging, this));
-    return new SSLServerCertVerificationResult(mInfoObject,
-                                               mDefaultErrorCodeToReport);
-  }
 
-  if (!strictTransportSecurityEnabled && !hasPinningInformation) {
+  if (!strictTransportSecurityEnabled) {
     MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-           ("[%p][%p] no HSTS or HPKP - overrides allowed\n",
+           ("[%p][%p] no HSTS - overrides allowed\n",
             mFdForLogging, this));
     nsCOMPtr<nsICertOverrideService> overrideService =
       do_GetService(NS_CERTOVERRIDE_CONTRACTID);
@@ -497,7 +484,7 @@ CertErrorRunnable::CheckCertOverrides()
     }
   } else {
     MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
-           ("[%p][%p] HSTS or HPKP - no overrides allowed\n",
+           ("[%p][%p] HSTS - no overrides allowed\n",
             mFdForLogging, this));
   }
 
