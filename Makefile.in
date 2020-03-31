@@ -47,6 +47,12 @@ ifndef MOZ_PROFILE_USE
 # We need to explicitly put BUILD_BACKEND_FILES here otherwise the rule in
 # rules.mk doesn't run early enough.
 $(TIERS) binaries:: CLOBBER $(configure_dir)/configure config.status $(BUILD_BACKEND_FILES)
+
+# While our mozbuild backend has some kind of crazy install_manfests junk to
+# try and make this not have to happen, we actually want dist/bin to be
+# completely removed regardless.
+default alldep all::
+	$(RM) -r $(DIST)/bin
 ifndef JS_STANDALONE
 ifdef COMPILE_ENVIRONMENT
 $(TIERS) binaries:: $(topsrcdir)/js/src/configure js/src/config.status
