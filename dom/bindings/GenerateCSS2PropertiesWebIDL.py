@@ -16,6 +16,7 @@ def generateLine(propName, extendedAttrs):
     return "  [%s] attribute DOMString %s;\n" % (", ".join(extendedAttrs),
                                                  propName)
 def generate(output, idlFilename, preprocessorHeader):
+    print(idlFilename)
     cpp = list(buildconfig.substs['CPP'])
     cpp += shellutil.split(buildconfig.substs['ACDEFINES'])
     cpp.append(preprocessorHeader)
