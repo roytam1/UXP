@@ -11,7 +11,6 @@ EXTRA_JS_MODULES += [
     'addons/WebNavigation.jsm',
     'addons/WebNavigationContent.js',
     'addons/WebNavigationFrames.jsm',
-    'addons/WebRequest.jsm',
     'addons/WebRequestCommon.jsm',
     'addons/WebRequestContent.js',
     'addons/WebRequestUpload.jsm',
@@ -85,6 +84,7 @@ EXTRA_JS_MODULES.third_party.jsesc += ['third_party/jsesc/jsesc.js']
 EXTRA_JS_MODULES.sessionstore += ['sessionstore/Utils.jsm']
 
 EXTRA_PP_JS_MODULES += [
+    'addons/WebRequest.jsm',
     'NewTabUtils.jsm',
     'ResetProfile.jsm',
     'Troubleshoot.jsm',
