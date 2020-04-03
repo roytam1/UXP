@@ -949,6 +949,9 @@ pref("security.alternate_certificate_error_page", "certerror");
 // Whether to start the private browsing mode at application startup
 pref("browser.privatebrowsing.autostart", false);
 
+// Whether to immediately open the bookmark edit panel for new bookmarks
+pref("browser.bookmarks.editDialog.showForNewBookmarks", false);
+
 // Don't try to alter this pref, it'll be reset the next time you use the
 // bookmarking dialog
 pref("browser.bookmarks.editDialog.firstEditField", "namePicker");

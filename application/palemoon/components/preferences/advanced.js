@@ -159,8 +159,8 @@ var gAdvancedPane = {
   {
 #ifdef XP_WIN
     var fromPref = document.getElementById("layers.acceleration.enabled");
-    var toPref = document.getElementById("gfx.direct2d.disabled");
-    toPref.value = !fromPref.value;
+    var toPref = document.getElementById("gfx.direct2d.enabled");
+    toPref.value = fromPref.value;
 #endif
     this.updateHWADisplay();
   },

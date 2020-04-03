@@ -2351,18 +2351,16 @@ nsWebBrowserPersist::EndDownload(nsresult aResult)
     {
         mPersistResult = aResult;
     }
+
     // mCompleted needs to be set before issuing the stop notification.
     // (Bug 1224437)
     mCompleted = true;
-
-#ifdef MOZ_JSDOWNLOADS
     // State stop notification
     if (mProgressListener) {
         mProgressListener->OnStateChange(nullptr, nullptr,
             nsIWebProgressListener::STATE_STOP
             | nsIWebProgressListener::STATE_IS_NETWORK, mPersistResult);
     }
-#endif
 
     // Do file cleanup if required
     if (NS_FAILED(aResult) && (mPersistFlags & PERSIST_FLAGS_CLEANUP_ON_FAILURE))

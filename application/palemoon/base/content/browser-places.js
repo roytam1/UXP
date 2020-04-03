@@ -14,6 +14,10 @@ var StarUI = {
     return document.getElementById(aID);
   },
 
+  get showForNewBookmarks() {
+    return Services.prefs.getBoolPref("browser.bookmarks.editDialog.showForNewBookmarks", false);
+  },
+
   // Edit-bookmark panel
   get panel() {
     delete this.panel;
@@ -1261,7 +1265,8 @@ var BookmarkingUI = {
     }
     // Ignore clicks on the star if we are updating its state.
     if (!this._pendingStmt) {
-      PlacesCommandHook.bookmarkCurrentPage(this._itemIds.length > 0);
+      PlacesCommandHook.bookmarkCurrentPage(this._itemIds.length > 0 ||
+                                            StarUI.showForNewBookmarks);
     }
   },
 

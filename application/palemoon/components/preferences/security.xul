@@ -46,10 +46,7 @@
       <preference id="network.stricttransportsecurity.enabled"
                   name="network.stricttransportsecurity.enabled"
                   type="bool"/>
-      <preference id="security.cert_pinning.hpkp.enabled"
-                  name="security.cert_pinning.hpkp.enabled"
-                  type="bool"/>
-      
+
       <!-- Opportunistic Encryption -->
                   
       <preference id="network.http.upgrade-insecure-requests"
@@ -147,10 +144,6 @@
                   label="&enableHSTS.label;"
                   accesskey="&enableHSTS.accesskey;"
                   preference="network.stricttransportsecurity.enabled" />
-        <checkbox id="enableHPKP"
-                  label="&enableHPKP.label;"
-                  accesskey="&enableHPKP.accesskey;"
-                  preference="security.cert_pinning.hpkp.enabled"/>
       </vbox>
     </groupbox>
     

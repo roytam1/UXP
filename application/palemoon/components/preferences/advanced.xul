@@ -33,8 +33,9 @@
       <preference id="general.smoothScroll"            name="general.smoothScroll"            type="bool"/>
       <preference id="layers.acceleration.enabled"     name="layers.acceleration.enabled"     type="bool"
                   onchange="gAdvancedPane.updateHardwareAcceleration()"/>
+      <preference id="layers.acceleration.force"       name="layers.acceleration.force"       type="bool"/>
 #ifdef XP_WIN
-      <preference id="gfx.direct2d.disabled"           name="gfx.direct2d.disabled"           type="bool"   inverted="true"/>
+      <preference id="gfx.direct2d.enabled"            name="gfx.direct2d.disabled"           type="bool"   inverted="true"/>
 #endif
       <preference id="layout.spellcheckDefault"        name="layout.spellcheckDefault"        type="int"/>
 

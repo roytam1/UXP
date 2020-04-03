@@ -668,7 +668,8 @@ var NetworkHelper = {
         let host = httpActivity.hostname;
 
         info.hsts = sss.isSecureHost(sss.HEADER_HSTS, host, flags);
-        info.hpkp = sss.isSecureHost(sss.HEADER_HPKP, host, flags);
+        // HPKP is no longer supported.
+        info.hpkp = false;
       } else {
         DevToolsUtils.reportException("NetworkHelper.parseSecurityInfo",
           "Could not get HSTS/HPKP status as hostname is not available.");

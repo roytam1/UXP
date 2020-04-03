@@ -6,11 +6,10 @@ with an ESR-52 fork point.
 
 In addition to further development based on the Mozilla upstream code, and
 selective cherry-picking of directly-applicable patches, this repository has its
-own development and holds the base for a future platform to be used by XUL
+own development and holds the base for a maintained platform to be used by XUL
 applications.
 
-This repository will contain at least one application to demonstrate and make use
-of the platform: The Basilisk web browser, a close twin to Mozilla's Firefox.
+For a list of active projects making use of the Unified XUL Platform, checkout http://thereisonlyxul.org/.
 
 ## Additional documentation
 
@@ -29,7 +28,8 @@ owners. For more details, please see the notifications in the respective directo
 
 ### Foundation and maintainership
 
-This repository has been founded and is maintained by Moonchild (M.C. Straver).
-If you fork this repository to perform your own work on it, please consider
-offering improvement patches upstream to its origin to mutually improve the
-platform and build a future for XUL.
+This repository has been founded by Moonchild (M.C. Straver) and is maintained by him
+and other community members.
+If you fork this repository to perform your own work on it, please consider offering
+improvement patches upstream to its origin to mutually improve the platform and build
+a future for XUL.

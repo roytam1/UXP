@@ -1829,6 +1829,9 @@ nsDownloadManager::RetryDownload(nsDownload* dl)
       return rv;
   }
 
+  rv = NotifyDownloadRemoval(dl);
+  NS_ENSURE_SUCCESS(rv, rv);
+
   // reset time and download progress
   dl->SetStartTime(PR_Now());
   dl->SetProgressBytes(0, -1);
@@ -3083,7 +3086,7 @@ nsDownload::OnStateChange(nsIWebProgress *aWebProgress,
 #else
       (void)SetState(nsIDownloadManager::DOWNLOAD_FINISHED);
 #endif
-    } else {
+    } else if (aStatus != NS_BINDING_ABORTED) {
       // We failed for some unknown reason -- fail with a generic message
       (void)FailDownload(aStatus, nullptr);
     }
