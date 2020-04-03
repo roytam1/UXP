@@ -120,27 +120,6 @@ pref("security.webauth.u2f_enable_usbtoken", false);
 // OCSP must-staple
 pref("security.ssl.enable_ocsp_must_staple", true);
 
-// HPKP settings
-
-// Enable pinning checks by default.
-pref("security.cert_pinning.enforcement_level", 2);
-// Do not process hpkp headers rooted by not built in roots by default.
-// This is to prevent accidental pinning from MITM devices and is used
-// for tests.
-pref("security.cert_pinning.process_headers_from_non_builtin_roots", false);
-// Impose a maximum age on HPKP headers, to avoid sites getting permanently
-// blacking themselves out by setting a bad pin.  (60 days by default)
-// https://tools.ietf.org/html/rfc7469#section-4.1
-pref("security.cert_pinning.max_max_age_seconds", 5184000);
-// Controls whether or not HPKP (the HTTP Public Key Pinning header) is enabled.
-// If true, the header is processed and collected HPKP information is consulted
-// when looking for pinning information.
-// If false, the header is not processed and collected HPKP information is not
-// consulted when looking for pinning information. Preloaded pins are not
-// affected by this preference.
-// Default: false
-pref("security.cert_pinning.hpkp.enabled", false);
-
 // If a request is mixed-content, send an HSTS priming request to attempt to
 // see if it is available over HTTPS.
 pref("security.mixed_content.send_hsts_priming", true);

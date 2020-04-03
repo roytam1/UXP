@@ -2,6 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef XP_WIN
+#define UA_SPARE_PLATFORM
+#endif
+
 "use strict";
 
 this.EXPORTED_SYMBOLS = [ "UserAgentOverrides" ];
@@ -18,9 +22,14 @@ const PREF_OVERRIDES_ENABLED = "general.useragent.site_specific_overrides";
 const DEFAULT_UA = Cc["@mozilla.org/network/protocol;1?name=http"]
                      .getService(Ci.nsIHttpProtocolHandler)
                      .userAgent;
-const OS_SLICE = Cc["@mozilla.org/network/protocol;1?name=http"]
+const OSCPU = Cc["@mozilla.org/network/protocol;1?name=http"]
+                .getService(Ci.nsIHttpProtocolHandler)
+                .oscpu;
+#ifndef UA_SPARE_PLATFORM
+const PLATFORM = Cc["@mozilla.org/network/protocol;1?name=http"]
                    .getService(Ci.nsIHttpProtocolHandler)
-                   .oscpu + ";";
+                   .platform;
+#endif
 const MAX_OVERRIDE_FOR_HOST_CACHE_SIZE = 250;
 
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
@@ -37,11 +46,19 @@ var gOverrideFunctions = [
   function (aHttpChannel) { return UserAgentOverrides.getOverrideForURI(aHttpChannel.URI); }
 ];
 var gBuiltUAs = new Map;
+var gOSSlice;
 
 this.UserAgentOverrides = {
   init: function uao_init() {
     if (gInitialized)
       return;
+
+    gOSSlice = OSCPU + ";";
+#ifndef UA_SPARE_PLATFORM
+    if (PLATFORM != "") {
+      gOSSlice = PLATFORM + "; " + gOSSlice;
+    }
+#endif
 
     gPrefBranch = Services.prefs.getBranch("general.useragent.override.");
     gPrefBranch.addObserver("", buildOverrides, false);
@@ -151,7 +168,7 @@ function getUserAgentFromOverride(override)
   if (search && replace) {
     userAgent = DEFAULT_UA.replace(new RegExp(search, "g"), replace);
   } else {
-    userAgent = override.replace(/%OS_SLICE%/g, OS_SLICE);
+    userAgent = override.replace(/%OS_SLICE%/g, gOSSlice);
   }
   gBuiltUAs.set(override, userAgent);
   return userAgent;

@@ -224,6 +224,7 @@ def old_configure_options(*options):
     '--enable-require-all-d3dc-versions',
     '--enable-safe-browsing',
     '--enable-sandbox',
+    '--enable-security-sqlstore',
     '--enable-signmar',
     '--enable-simulator',
     '--enable-small-chunk-size',

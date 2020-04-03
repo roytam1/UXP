@@ -842,6 +842,13 @@ EOF
     i*:CYGWIN*:*)
 	echo ${UNAME_MACHINE}-pc-cygwin
 	exit ;;
+    *:MINGW32_NT*:*)
+  if [ "$PLATFORM" = "X64" ]; then
+    echo x86_64-pc-mingw32
+  else
+    echo ${UNAME_MACHINE}-pc-mingw32
+  fi
+  exit ;;
     *:MINGW64*:*)
 	echo ${UNAME_MACHINE}-pc-mingw64
 	exit ;;

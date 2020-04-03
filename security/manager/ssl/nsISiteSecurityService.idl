@@ -23,11 +23,11 @@ namespace mozilla
 [ref] native nsCStringTArrayRef(nsTArray<nsCString>);
 [ref] native mozillaPkixTime(mozilla::pkix::Time);
 
-[scriptable, uuid(233908bd-6741-4474-a6e1-f298c6ce9eaf)]
+[scriptable, uuid(91ea3803-9c79-45d9-97bf-88bc80269236)]
 interface nsISiteSecurityService : nsISupports
 {
     const uint32_t HEADER_HSTS = 0;
-    const uint32_t HEADER_HPKP = 1;
+    const uint32_t HEADER_HPKP = 1; /* no longer used */
     const uint32_t HEADER_OMS = 2;
 
     const uint32_t Success = 0;
@@ -39,10 +39,10 @@ interface nsISiteSecurityService : nsISupports
     const uint32_t ERROR_INVALID_MAX_AGE = 6;
     const uint32_t ERROR_MULTIPLE_INCLUDE_SUBDOMAINS = 7;
     const uint32_t ERROR_INVALID_INCLUDE_SUBDOMAINS = 8;
-    const uint32_t ERROR_INVALID_PIN = 9;
-    const uint32_t ERROR_MULTIPLE_REPORT_URIS = 10;
-    const uint32_t ERROR_PINSET_DOES_NOT_MATCH_CHAIN = 11;
-    const uint32_t ERROR_NO_BACKUP_PIN = 12;
+    const uint32_t ERROR_INVALID_PIN = 9; /* no longer used */
+    const uint32_t ERROR_MULTIPLE_REPORT_URIS = 10; /* no longer used */
+    const uint32_t ERROR_PINSET_DOES_NOT_MATCH_CHAIN = 11; /* no longer used */
+    const uint32_t ERROR_NO_BACKUP_PIN = 12; /* no longer used */
     const uint32_t ERROR_COULD_NOT_SAVE_STATE = 13;
     const uint32_t ERROR_ROOT_NOT_BUILT_IN = 14;
 
@@ -106,13 +106,10 @@ interface nsISiteSecurityService : nsISupports
      * @param aURI    the URI of the target host
      * @param aFlags  options for this request as defined in nsISocketProvider:
      *                  NO_PERMANENT_STORAGE
-     * @param force   if set, forces no-HSTS state by writing a knockout value,
-     *                overriding any preload list state
      */
     void removeState(in uint32_t aType,
                      in nsIURI aURI,
-                     in uint32_t aFlags,
-                     [optional] in boolean force);
+                     in uint32_t aFlags);
 
     /**
      * See isSecureURI
@@ -153,47 +150,6 @@ interface nsISiteSecurityService : nsISupports
      * settings.
      */
     void clearAll();
-
-    /**
-     * Removes all preloaded security state.
-     */
-    void clearPreloads();
-
-    /**
-     * Returns an array of sha256-hashed key pins for the given domain, if any.
-     * If these pins also apply to subdomains of the given domain,
-     * aIncludeSubdomains will be true. Pins returned are only for non-built-in
-     * pin entries.
-     *
-     * @param aHostname the hosname (punycode) to be queried about
-     * @param the time at which the pins should be valid. This is in
-              mozilla::pkix::Time which uses internally seconds since 0 AD.
-     * @param aPinArray the set of sha256-hashed key pins for the given domain
-     * @param aIncludeSubdomains true if the pins apply to subdomains of the
-     *        given domain
-     */
-    [noscript] boolean getKeyPinsForHostname(in string aHostname,
-                                             in mozillaPkixTime evalTime,
-                                             out nsCStringTArrayRef aPinArray,
-                                             out boolean aIncludeSubdomains);
-
-    /**
-     * Set public-key pins for a host. The resulting pins will be permanent
-     * and visible from private and non-private contexts. These pins replace
-     * any already set by this mechanism or those built-in to Gecko.
-     *
-     * @param aHost the hostname (punycode) that pins will apply to
-     * @param aIncludeSubdomains whether these pins also apply to subdomains
-     * @param aExpires the time this pin should expire (millis since epoch)
-     * @param aPinCount number of keys being pinnned
-     * @param aSha256Pins array of hashed key fingerprints (SHA-256, base64)
-     * @param aIsPreload are these key pins for a preload entry? (false by
-     *        default)
-     */
-     boolean setKeyPins(in string aHost, in boolean aIncludeSubdomains,
-                        in int64_t aExpires, in unsigned long aPinCount,
-                        [array, size_is(aPinCount)] in string aSha256Pins,
-                        [optional] in boolean aIsPreload);
 };
 
 %{C++

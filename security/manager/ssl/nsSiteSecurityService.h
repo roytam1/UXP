@@ -17,10 +17,10 @@
 class nsIURI;
 class nsISSLStatus;
 
-// {16955eee-6c48-4152-9309-c42a465138a1}
+// 91ea3803-9c79-45d9-97bf-88bc80269236
 #define NS_SITE_SECURITY_SERVICE_CID \
-  {0x16955eee, 0x6c48, 0x4152, \
-    {0x93, 0x09, 0xc4, 0x2a, 0x46, 0x51, 0x38, 0xa1} }
+  { 0x91ea3803, 0x9c79, 0x45d9, \
+    { 0x97, 0xbf, 0x88, 0xbc, 0x80, 0x26, 0x92, 0x36 } }
 
 /**
  * SecurityPropertyState: A utility enum for representing the different states
@@ -36,40 +36,6 @@ enum SecurityPropertyState {
   SecurityPropertySet = 1,
   SecurityPropertyKnockout = 2,
   SecurityPropertyNegative = 3,
-};
-
-/**
- * SiteHPKPState: A utility class that encodes/decodes a string describing
- * the public key pins of a site.
- * HPKP state consists of:
- *  - Expiry time (PRTime (aka int64_t) in milliseconds)
- *  - A state flag (SecurityPropertyState, default SecurityPropertyUnset)
- *  - An include subdomains flag (bool, default false)
- *  - An array of sha-256 hashed base 64 encoded fingerprints of required keys
- */
-class SiteHPKPState
-{
-public:
-  SiteHPKPState();
-  explicit SiteHPKPState(nsCString& aStateString);
-  SiteHPKPState(PRTime aExpireTime, SecurityPropertyState aState,
-                bool aIncludeSubdomains, nsTArray<nsCString>& SHA256keys);
-
-  PRTime mExpireTime;
-  SecurityPropertyState mState;
-  bool mIncludeSubdomains;
-  nsTArray<nsCString> mSHA256keys;
-
-  bool IsExpired(mozilla::pkix::Time aTime)
-  {
-    if (aTime > mozilla::pkix::TimeFromEpochInSeconds(mExpireTime /
-                                                      PR_MSEC_PER_SEC)) {
-      return true;
-    }
-    return false;
-  }
-
-  void ToString(nsCString& aString);
 };
 
 /**
@@ -110,8 +76,6 @@ public:
   void ToString(nsCString &aString);
 };
 
-class nsSTSPreload;
-
 class nsSiteSecurityService : public nsISiteSecurityService
                             , public nsIObserver
 {
@@ -139,23 +103,10 @@ private:
   nsresult ProcessSTSHeader(nsIURI* aSourceURI, const char* aHeader,
                             uint32_t flags, uint64_t* aMaxAge,
                             bool* aIncludeSubdomains, uint32_t* aFailureResult);
-  nsresult ProcessPKPHeader(nsIURI* aSourceURI, const char* aHeader,
-                            nsISSLStatus* aSSLStatus, uint32_t flags,
-                            uint64_t* aMaxAge, bool* aIncludeSubdomains,
-                            uint32_t* aFailureResult);
-  nsresult SetHPKPState(const char* aHost, SiteHPKPState& entry, uint32_t flags,
-                        bool aIsPreload);
 
-  const nsSTSPreload *GetPreloadListEntry(const char *aHost);
-
-  uint64_t mMaxMaxAge;
-  bool mUsePreloadList;
   bool mUseStsService;
   int64_t mPreloadListTimeOffset;
-  bool mHPKPEnabled;
-  bool mProcessPKPHeadersFromNonBuiltInRoots;
   RefPtr<mozilla::DataStorage> mSiteStateStorage;
-  RefPtr<mozilla::DataStorage> mPreloadStateStorage;
 };
 
 #endif // __nsSiteSecurityService_h__

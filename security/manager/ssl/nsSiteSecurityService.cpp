@@ -25,18 +25,8 @@
 #include "mozilla/Logging.h"
 #include "prnetdb.h"
 #include "prprf.h"
-#include "PublicKeyPinningService.h"
 #include "ScopedNSSTypes.h"
 #include "SharedCertVerifier.h"
-
-// A note about the preload list:
-// When a site specifically disables HSTS by sending a header with
-// 'max-age: 0', we keep a "knockout" value that means "we have no information
-// regarding the HSTS state of this host" (any ancestor of "this host" can still
-// influence its HSTS status via include subdomains, however).
-// This prevents the preload list from overriding the site's current
-// desired HSTS status.
-#include "nsSTSPreloadList.inc"
 
 using namespace mozilla;
 using namespace mozilla::psm;
@@ -96,123 +86,30 @@ SiteHSTSState::ToString(nsCString& aString)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-static bool
-stringIsBase64EncodingOf256bitValue(nsCString& encodedString) {
-  nsAutoCString binaryValue;
-  nsresult rv = mozilla::Base64Decode(encodedString, binaryValue);
-  if (NS_FAILED(rv)) {
-    return false;
-  }
-  if (binaryValue.Length() != SHA256_LENGTH) {
-    return false;
-  }
-  return true;
-}
-
-SiteHPKPState::SiteHPKPState()
-  : mExpireTime(0)
-  , mState(SecurityPropertyUnset)
-  , mIncludeSubdomains(false)
-{
-}
-
-SiteHPKPState::SiteHPKPState(nsCString& aStateString)
-  : mExpireTime(0)
-  , mState(SecurityPropertyUnset)
-  , mIncludeSubdomains(false)
-{
-  uint32_t hpkpState = 0;
-  uint32_t hpkpIncludeSubdomains = 0; // PR_sscanf doesn't handle bools.
-  const uint32_t MaxMergedHPKPPinSize = 1024;
-  char mergedHPKPins[MaxMergedHPKPPinSize];
-  memset(mergedHPKPins, 0, MaxMergedHPKPPinSize);
-
-  if (aStateString.Length() >= MaxMergedHPKPPinSize) {
-    SSSLOG(("SSS: Cannot parse PKPState string, too large\n"));
-    return;
-  }
-
-  int32_t matches = PR_sscanf(aStateString.get(), "%lld,%lu,%lu,%s",
-                              &mExpireTime, &hpkpState,
-                              &hpkpIncludeSubdomains, mergedHPKPins);
-  bool valid = (matches == 4 &&
-                (hpkpIncludeSubdomains == 0 || hpkpIncludeSubdomains == 1) &&
-                ((SecurityPropertyState)hpkpState == SecurityPropertyUnset ||
-                 (SecurityPropertyState)hpkpState == SecurityPropertySet ||
-                 (SecurityPropertyState)hpkpState == SecurityPropertyKnockout));
-
-  SSSLOG(("SSS: loading SiteHPKPState matches=%d\n", matches));
-  const uint32_t SHA256Base64Len = 44;
-
-  if (valid && (SecurityPropertyState)hpkpState == SecurityPropertySet) {
-    // try to expand the merged PKPins
-    const char* cur = mergedHPKPins;
-    nsAutoCString pin;
-    uint32_t collectedLen = 0;
-    mergedHPKPins[MaxMergedHPKPPinSize - 1] = 0;
-    size_t totalLen = strlen(mergedHPKPins);
-    while (collectedLen + SHA256Base64Len <= totalLen) {
-      pin.Assign(cur, SHA256Base64Len);
-      if (stringIsBase64EncodingOf256bitValue(pin)) {
-        mSHA256keys.AppendElement(pin);
-      }
-      cur += SHA256Base64Len;
-      collectedLen += SHA256Base64Len;
-    }
-    if (mSHA256keys.IsEmpty()) {
-      valid = false;
-    }
-  }
-  if (valid) {
-    mState = (SecurityPropertyState)hpkpState;
-    mIncludeSubdomains = (hpkpIncludeSubdomains == 1);
-  } else {
-    SSSLOG(("%s is not a valid SiteHPKPState", aStateString.get()));
-    mExpireTime = 0;
-    mState = SecurityPropertyUnset;
-    mIncludeSubdomains = false;
-    if (!mSHA256keys.IsEmpty()) {
-      mSHA256keys.Clear();
-    }
-  }
-}
-
-SiteHPKPState::SiteHPKPState(PRTime aExpireTime,
-                             SecurityPropertyState aState,
-                             bool aIncludeSubdomains,
-                             nsTArray<nsCString>& aSHA256keys)
-  : mExpireTime(aExpireTime)
-  , mState(aState)
-  , mIncludeSubdomains(aIncludeSubdomains)
-  , mSHA256keys(aSHA256keys)
-{
-}
-
-void
-SiteHPKPState::ToString(nsCString& aString)
-{
-  aString.Truncate();
-  aString.AppendInt(mExpireTime);
-  aString.Append(',');
-  aString.AppendInt(mState);
-  aString.Append(',');
-  aString.AppendInt(static_cast<uint32_t>(mIncludeSubdomains));
-  aString.Append(',');
-  for (unsigned int i = 0; i < mSHA256keys.Length(); i++) {
-    aString.Append(mSHA256keys[i]);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 const uint64_t kSixtyDaysInSeconds = 60 * 24 * 60 * 60;
 
+static bool
+HostIsIPAddress(const char *hostname)
+{
+  PRNetAddr hostAddr;
+  return (PR_StringToNetAddr(hostname, &hostAddr) == PR_SUCCESS);
+}
+
+nsAutoCString CanonicalizeHostname(const char* hostname)
+{
+  nsAutoCString canonicalizedHostname(hostname);
+  ToLowerCase(canonicalizedHostname);
+  while (canonicalizedHostname.Length() > 0 &&
+         canonicalizedHostname.Last() == '.') {
+    canonicalizedHostname.Truncate(canonicalizedHostname.Length() - 1);
+  }
+  return canonicalizedHostname;
+}
+
 nsSiteSecurityService::nsSiteSecurityService()
-  : mMaxMaxAge(kSixtyDaysInSeconds)
-  , mUsePreloadList(true)
-  , mUseStsService(true)
+  : mUseStsService(true)
   , mPreloadListTimeOffset(0)
-  , mHPKPEnabled(false)
 {
 }
 
@@ -233,48 +130,25 @@ nsSiteSecurityService::Init()
     return NS_ERROR_NOT_SAME_THREAD;
   }
 
-  mMaxMaxAge = mozilla::Preferences::GetInt(
-    "security.cert_pinning.max_max_age_seconds", kSixtyDaysInSeconds);
-  mozilla::Preferences::AddStrongObserver(this,
-    "security.cert_pinning.max_max_age_seconds");
-  mUsePreloadList = mozilla::Preferences::GetBool(
-    "network.stricttransportsecurity.preloadlist", true);
-  mozilla::Preferences::AddStrongObserver(this,
-    "network.stricttransportsecurity.preloadlist");
-  mHPKPEnabled = mozilla::Preferences::GetBool(
-     "security.cert_pinning.hpkp.enabled", false);
-  mozilla::Preferences::AddStrongObserver(this,
-     "security.cert_pinning.hpkp.enabled");
   mUseStsService = mozilla::Preferences::GetBool(
     "network.stricttransportsecurity.enabled", true);
   mozilla::Preferences::AddStrongObserver(this,
     "network.stricttransportsecurity.enabled");
-  mProcessPKPHeadersFromNonBuiltInRoots = mozilla::Preferences::GetBool(
-    "security.cert_pinning.process_headers_from_non_builtin_roots", false);
-  mozilla::Preferences::AddStrongObserver(this,
-    "security.cert_pinning.process_headers_from_non_builtin_roots");
   mPreloadListTimeOffset = mozilla::Preferences::GetInt(
     "test.currentTimeOffsetSeconds", 0);
   mozilla::Preferences::AddStrongObserver(this,
     "test.currentTimeOffsetSeconds");
   mSiteStateStorage =
     mozilla::DataStorage::Get(NS_LITERAL_STRING("SiteSecurityServiceState.txt"));
-  mPreloadStateStorage =
-    mozilla::DataStorage::Get(NS_LITERAL_STRING("SecurityPreloadState.txt"));
   bool storageWillPersist = false;
-  bool preloadStorageWillPersist = false;
   nsresult rv = mSiteStateStorage->Init(storageWillPersist);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-  rv = mPreloadStateStorage->Init(preloadStorageWillPersist);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
   // This is not fatal. There are some cases where there won't be a
   // profile directory (e.g. running xpcshell). There isn't the
   // expectation that site information will be presisted in those cases.
-  if (!storageWillPersist || !preloadStorageWillPersist) {
+  if (!storageWillPersist) {
     NS_WARNING("site security information will not be persisted");
   }
 
@@ -295,7 +169,7 @@ nsSiteSecurityService::GetHost(nsIURI* aURI, nsACString& aResult)
     return rv;
   }
 
-  aResult.Assign(PublicKeyPinningService::CanonicalizeHostname(host.get()));
+  aResult.Assign(CanonicalizeHostname(host.get()));
   if (aResult.IsEmpty()) {
     return NS_ERROR_UNEXPECTED;
   }
@@ -310,9 +184,6 @@ SetStorageKey(nsAutoCString& storageKey, nsCString& hostname, uint32_t aType)
   switch (aType) {
     case nsISiteSecurityService::HEADER_HSTS:
       storageKey.AppendLiteral(":HSTS");
-      break;
-    case nsISiteSecurityService::HEADER_HPKP:
-      storageKey.AppendLiteral(":HPKP");
       break;
     default:
       NS_ASSERTION(false, "SSS:SetStorageKey got invalid type");
@@ -340,11 +211,9 @@ nsSiteSecurityService::SetHSTSState(uint32_t aType,
     return NS_OK;
   }
 
-  // If max-age is zero, the host is no longer considered HSTS. If the host was
-  // preloaded, we store an entry indicating that this host is not HSTS, causing
-  // the preloaded information to be ignored.
+  // If max-age is zero, the host is no longer considered HSTS.
   if (maxage == 0) {
-    return RemoveState(aType, aSourceURI, flags, true);
+    return RemoveState(aType, aSourceURI, flags);
   }
 
   MOZ_ASSERT((aHSTSState == SecurityPropertySet ||
@@ -372,8 +241,7 @@ nsSiteSecurityService::SetHSTSState(uint32_t aType,
 }
 
 NS_IMETHODIMP
-nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI,
-                                   uint32_t aFlags, bool force = false)
+nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI, uint32_t aFlags)
 {
    // Child processes are not allowed direct access to this.
    if (!XRE_IsParentProcess()) {
@@ -381,8 +249,7 @@ nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI,
    }
 
   // Only HSTS is supported at the moment.
-  NS_ENSURE_TRUE(aType == nsISiteSecurityService::HEADER_HSTS ||
-                 aType == nsISiteSecurityService::HEADER_HPKP,
+  NS_ENSURE_TRUE(aType == nsISiteSecurityService::HEADER_HSTS,
                  NS_ERROR_NOT_IMPLEMENTED);
 
   nsAutoCString hostname;
@@ -393,32 +260,12 @@ nsSiteSecurityService::RemoveState(uint32_t aType, nsIURI* aURI,
   mozilla::DataStorageType storageType = isPrivate
                                          ? mozilla::DataStorage_Private
                                          : mozilla::DataStorage_Persistent;
-  // If this host is in the preload list, we have to store a knockout entry
-  // if it's explicitly forced to not be HSTS anymore
-  if (force && GetPreloadListEntry(hostname.get())) {
-    SSSLOG(("SSS: storing knockout entry for %s", hostname.get()));
-    SiteHSTSState siteState(0, SecurityPropertyKnockout, false);
-    nsAutoCString stateString;
-    siteState.ToString(stateString);
-    nsAutoCString storageKey;
-    SetStorageKey(storageKey, hostname, aType);
-    rv = mSiteStateStorage->Put(storageKey, stateString, storageType);
-    NS_ENSURE_SUCCESS(rv, rv);
-  } else {
-    SSSLOG(("SSS: removing entry for %s", hostname.get()));
-    nsAutoCString storageKey;
-    SetStorageKey(storageKey, hostname, aType);
-    mSiteStateStorage->Remove(storageKey, storageType);
-  }
+  SSSLOG(("SSS: removing entry for %s", hostname.get()));
+  nsAutoCString storageKey;
+  SetStorageKey(storageKey, hostname, aType);
+  mSiteStateStorage->Remove(storageKey, storageType);
 
   return NS_OK;
-}
-
-static bool
-HostIsIPAddress(const char *hostname)
-{
-  PRNetAddr hostAddr;
-  return (PR_StringToNetAddr(hostname, &hostAddr) == PR_SUCCESS);
 }
 
 NS_IMETHODIMP
@@ -431,11 +278,6 @@ nsSiteSecurityService::ProcessHeader(uint32_t aType,
                                      bool* aIncludeSubdomains,
                                      uint32_t* aFailureResult)
 {
-   // Child processes are not allowed direct access to this.
-   if (!XRE_IsParentProcess()) {
-     MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::ProcessHeader");
-   }
-
   if (aFailureResult) {
     *aFailureResult = nsISiteSecurityService::ERROR_UNKNOWN;
   }
@@ -457,11 +299,6 @@ nsSiteSecurityService::UnsafeProcessHeader(uint32_t aType,
                                            bool* aIncludeSubdomains,
                                            uint32_t* aFailureResult)
 {
-   // Child processes are not allowed direct access to this.
-   if (!XRE_IsParentProcess()) {
-     MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::UnsafeProcessHeader");
-   }
-
   return ProcessHeaderInternal(aType, aSourceURI, aHeader, nullptr, aFlags,
                                aMaxAge, aIncludeSubdomains, aFailureResult);
 }
@@ -479,9 +316,8 @@ nsSiteSecurityService::ProcessHeaderInternal(uint32_t aType,
   if (aFailureResult) {
     *aFailureResult = nsISiteSecurityService::ERROR_UNKNOWN;
   }
-  // Only HSTS and HPKP are supported at the moment.
-  NS_ENSURE_TRUE(aType == nsISiteSecurityService::HEADER_HSTS ||
-                 aType == nsISiteSecurityService::HEADER_HPKP,
+  // Only HSTS is supported at the moment.
+  NS_ENSURE_TRUE(aType == nsISiteSecurityService::HEADER_HSTS,
                  NS_ERROR_NOT_IMPLEMENTED);
 
   if (aMaxAge != nullptr) {
@@ -529,10 +365,6 @@ nsSiteSecurityService::ProcessHeaderInternal(uint32_t aType,
       rv = ProcessSTSHeader(aSourceURI, aHeader, aFlags, aMaxAge,
                             aIncludeSubdomains, aFailureResult);
       break;
-    case nsISiteSecurityService::HEADER_HPKP:
-      rv = ProcessPKPHeader(aSourceURI, aHeader, aSSLStatus, aFlags, aMaxAge,
-                            aIncludeSubdomains, aFailureResult);
-      break;
     default:
       MOZ_CRASH("unexpected header type");
   }
@@ -548,9 +380,6 @@ ParseSSSHeaders(uint32_t aType,
                 uint64_t& maxAge,
                 nsTArray<nsCString>& sha256keys)
 {
-  // Strict transport security and Public Key Pinning have very similar
-  // Header formats.
-
   // "Strict-Transport-Security" ":" OWS
   //      STS-d  *( OWS ";" OWS STS-d  OWS)
   //
@@ -562,26 +391,6 @@ ParseSSSHeaders(uint32_t aType,
   //  includeSubDomains = [ "includeSubDomains" ]
   //
 
-  // "Public-Key-Pins ":" OWS
-  //      PKP-d  *( OWS ";" OWS PKP-d  OWS)
-  //
-  //  ; PKP directive
-  //  PKP-d      = maxAge / includeSubDomains / reportUri / pin-directive
-  //
-  //  maxAge     = "max-age" "=" delta-seconds v-ext
-  //
-  //  includeSubDomains = [ "includeSubDomains" ]
-  //
-  //  reportURi  = "report-uri" "=" quoted-string
-  //
-  //  pin-directive = "pin-" token "=" quoted-string
-  //
-  //  the only valid token currently specified is sha256
-  //  the quoted string for a pin directive is the base64 encoding
-  //  of the hash of the public key of the fingerprint
-  //
-
-  //  The order of the directives is not significant.
   //  All directives must appear only once.
   //  Directive names are case-insensitive.
   //  The entire header is invalid if a directive not conforming to the
@@ -593,8 +402,6 @@ ParseSSSHeaders(uint32_t aType,
 
   NS_NAMED_LITERAL_CSTRING(max_age_var, "max-age");
   NS_NAMED_LITERAL_CSTRING(include_subd_var, "includesubdomains");
-  NS_NAMED_LITERAL_CSTRING(pin_sha256_var, "pin-sha256");
-  NS_NAMED_LITERAL_CSTRING(report_uri_var, "report-uri");
 
   nsSecurityHeaderParser parser(aHeader);
   nsresult rv = parser.Parse();
@@ -649,223 +456,13 @@ ParseSSSHeaders(uint32_t aType,
                 directive->mValue.get()));
         return nsISiteSecurityService::ERROR_INVALID_INCLUDE_SUBDOMAINS;
       }
-    } else if (aType == nsISiteSecurityService::HEADER_HPKP &&
-               directive->mName.Length() == pin_sha256_var.Length() &&
-               directive->mName.EqualsIgnoreCase(pin_sha256_var.get(),
-                                                 pin_sha256_var.Length())) {
-       SSSLOG(("SSS: found pinning entry '%s' length=%d",
-               directive->mValue.get(), directive->mValue.Length()));
-       if (!stringIsBase64EncodingOf256bitValue(directive->mValue)) {
-         return nsISiteSecurityService::ERROR_INVALID_PIN;
-       }
-       sha256keys.AppendElement(directive->mValue);
-   } else if (aType == nsISiteSecurityService::HEADER_HPKP &&
-              directive->mName.Length() == report_uri_var.Length() &&
-              directive->mName.EqualsIgnoreCase(report_uri_var.get(),
-                                                report_uri_var.Length())) {
-       // We don't support the report-uri yet, but to avoid unrecognized
-       // directive warnings, we still have to handle its presence
-      if (foundReportURI) {
-        SSSLOG(("SSS: found two report-uri directives"));
-        return nsISiteSecurityService::ERROR_MULTIPLE_REPORT_URIS;
-      }
-      SSSLOG(("SSS: found report-uri directive"));
-      foundReportURI = true;
-   } else {
+    } else {
       SSSLOG(("SSS: ignoring unrecognized directive '%s'",
               directive->mName.get()));
       foundUnrecognizedDirective = true;
     }
   }
   return nsISiteSecurityService::Success;
-}
-
-nsresult
-nsSiteSecurityService::ProcessPKPHeader(nsIURI* aSourceURI,
-                                        const char* aHeader,
-                                        nsISSLStatus* aSSLStatus,
-                                        uint32_t aFlags,
-                                        uint64_t* aMaxAge,
-                                        bool* aIncludeSubdomains,
-                                        uint32_t* aFailureResult)
-{
-  if (aFailureResult) {
-    *aFailureResult = nsISiteSecurityService::ERROR_UNKNOWN;
-  }
-  if (!mHPKPEnabled) {
-    SSSLOG(("SSS: HPKP disabled: not processing header '%s'", aHeader));
-    if (aMaxAge) {
-      *aMaxAge = 0;
-    }
-    if (aIncludeSubdomains) {
-      *aIncludeSubdomains = false;
-    }
-    return NS_OK;
-  }
-
-  SSSLOG(("SSS: processing HPKP header '%s'", aHeader));
-  NS_ENSURE_ARG(aSSLStatus);
-
-  const uint32_t aType = nsISiteSecurityService::HEADER_HPKP;
-  bool foundMaxAge = false;
-  bool foundIncludeSubdomains = false;
-  bool foundUnrecognizedDirective = false;
-  uint64_t maxAge = 0;
-  nsTArray<nsCString> sha256keys;
-  uint32_t sssrv = ParseSSSHeaders(aType, aHeader, foundIncludeSubdomains,
-                                   foundMaxAge, foundUnrecognizedDirective,
-                                   maxAge, sha256keys);
-  if (sssrv != nsISiteSecurityService::Success) {
-    if (aFailureResult) {
-      *aFailureResult = sssrv;
-    }
-    return NS_ERROR_FAILURE;
-  }
-
-  // after processing all the directives, make sure we came across max-age
-  // somewhere.
-  if (!foundMaxAge) {
-    SSSLOG(("SSS: did not encounter required max-age directive"));
-    if (aFailureResult) {
-      *aFailureResult = nsISiteSecurityService::ERROR_NO_MAX_AGE;
-    }
-    return NS_ERROR_FAILURE;
-  }
-
-  // before we add the pin we need to ensure it will not break the site as
-  // currently visited so:
-  // 1. recompute a valid chain (no external ocsp)
-  // 2. use this chain to check if things would have broken!
-  nsAutoCString host;
-  nsresult rv = GetHost(aSourceURI, host);
-  NS_ENSURE_SUCCESS(rv, rv);
-  nsCOMPtr<nsIX509Cert> cert;
-  rv = aSSLStatus->GetServerCert(getter_AddRefs(cert));
-  NS_ENSURE_SUCCESS(rv, rv);
-  NS_ENSURE_TRUE(cert, NS_ERROR_FAILURE);
-  UniqueCERTCertificate nssCert(cert->GetCert());
-  NS_ENSURE_TRUE(nssCert, NS_ERROR_FAILURE);
-
-  mozilla::pkix::Time now(mozilla::pkix::Now());
-  UniqueCERTCertList certList;
-  RefPtr<SharedCertVerifier> certVerifier(GetDefaultCertVerifier());
-  NS_ENSURE_TRUE(certVerifier, NS_ERROR_UNEXPECTED);
-  // We don't want this verification to cause any network traffic that would
-  // block execution. Also, since we don't have access to the original stapled
-  // OCSP response, we can't enforce this aspect of the TLS Feature extension.
-  // This is ok, because it will have been enforced when we originally connected
-  // to the site (or it's disabled, in which case we wouldn't want to enforce it
-  // anyway).
-  CertVerifier::Flags flags = CertVerifier::FLAG_LOCAL_ONLY |
-                              CertVerifier::FLAG_TLS_IGNORE_STATUS_REQUEST;
-  if (certVerifier->VerifySSLServerCert(nssCert,
-                                        nullptr, // stapledOCSPResponse
-                                        nullptr, // sctsFromTLSExtension
-                                        now, nullptr, // pinarg
-                                        host.get(), // hostname
-                                        certList,
-                                        false, // don't store intermediates
-                                        flags)
-        != mozilla::pkix::Success) {
-    return NS_ERROR_FAILURE;
-  }
-
-  CERTCertListNode* rootNode = CERT_LIST_TAIL(certList);
-  if (CERT_LIST_END(rootNode, certList)) {
-    return NS_ERROR_FAILURE;
-  }
-  bool isBuiltIn = false;
-  mozilla::pkix::Result result = IsCertBuiltInRoot(rootNode->cert, isBuiltIn);
-  if (result != mozilla::pkix::Success) {
-    return NS_ERROR_FAILURE;
-  }
-
-  if (!isBuiltIn && !mProcessPKPHeadersFromNonBuiltInRoots) {
-    if (aFailureResult) {
-      *aFailureResult = nsISiteSecurityService::ERROR_ROOT_NOT_BUILT_IN;
-    }
-    return NS_ERROR_FAILURE;
-  }
-
-  // If maxAge == 0, we remove dynamic HPKP state for this host. Due to
-  // architectural constraints, if this host was preloaded, any future lookups
-  // will use the preloaded state (i.e. we can't store a "this host is not HPKP"
-  // entry like we can for HSTS).
-  if (maxAge == 0) {
-    return RemoveState(aType, aSourceURI, aFlags);
-  }
-
-  // clamp maxAge to the maximum set by pref
-  if (maxAge > mMaxMaxAge) {
-    maxAge = mMaxMaxAge;
-  }
-
-  bool chainMatchesPinset;
-  rv = PublicKeyPinningService::ChainMatchesPinset(certList, sha256keys,
-                                                   chainMatchesPinset);
-  if (NS_FAILED(rv)) {
-    return rv;
-  }
-  if (!chainMatchesPinset) {
-    // is invalid
-    SSSLOG(("SSS: Pins provided by %s are invalid no match with certList\n", host.get()));
-    if (aFailureResult) {
-      *aFailureResult = nsISiteSecurityService::ERROR_PINSET_DOES_NOT_MATCH_CHAIN;
-    }
-    return NS_ERROR_FAILURE;
-  }
-
-  // finally we need to ensure that there is a "backup pin" ie. There must be
-  // at least one fingerprint hash that does NOT validate against the verified
-  // chain (Section 2.5 of the spec)
-  bool hasBackupPin = false;
-  for (uint32_t i = 0; i < sha256keys.Length(); i++) {
-    nsTArray<nsCString> singlePin;
-    singlePin.AppendElement(sha256keys[i]);
-    rv = PublicKeyPinningService::ChainMatchesPinset(certList, singlePin,
-                                                     chainMatchesPinset);
-    if (NS_FAILED(rv)) {
-      return rv;
-    }
-    if (!chainMatchesPinset) {
-      hasBackupPin = true;
-    }
-  }
-  if (!hasBackupPin) {
-     // is invalid
-    SSSLOG(("SSS: Pins provided by %s are invalid no backupPin\n", host.get()));
-    if (aFailureResult) {
-      *aFailureResult = nsISiteSecurityService::ERROR_NO_BACKUP_PIN;
-    }
-    return NS_ERROR_FAILURE;
-  }
-
-  int64_t expireTime = ExpireTimeFromMaxAge(maxAge);
-  SiteHPKPState dynamicEntry(expireTime, SecurityPropertySet,
-                             foundIncludeSubdomains, sha256keys);
-  SSSLOG(("SSS: about to set pins for  %s, expires=%ld now=%ld maxAge=%lu\n",
-           host.get(), expireTime, PR_Now() / PR_USEC_PER_MSEC, maxAge));
-
-  rv = SetHPKPState(host.get(), dynamicEntry, aFlags, false);
-  if (NS_FAILED(rv)) {
-    SSSLOG(("SSS: failed to set pins for %s\n", host.get()));
-    if (aFailureResult) {
-      *aFailureResult = nsISiteSecurityService::ERROR_COULD_NOT_SAVE_STATE;
-    }
-    return rv;
-  }
-
-  if (aMaxAge != nullptr) {
-    *aMaxAge = maxAge;
-  }
-
-  if (aIncludeSubdomains != nullptr) {
-    *aIncludeSubdomains = foundIncludeSubdomains;
-  }
-
-  return foundUnrecognizedDirective
-           ? NS_SUCCESS_LOSS_OF_INSIGNIFICANT_DATA
-           : NS_OK;
 }
 
 nsresult
@@ -937,17 +534,11 @@ nsSiteSecurityService::IsSecureURI(uint32_t aType, nsIURI* aURI,
                                    uint32_t aFlags, bool* aCached,
                                    bool* aResult)
 {
-   // Child processes are not allowed direct access to this.
-   if (!XRE_IsParentProcess() && aType != nsISiteSecurityService::HEADER_HSTS) {
-     MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::IsSecureURI for non-HSTS entries");
-   }
-
   NS_ENSURE_ARG(aURI);
   NS_ENSURE_ARG(aResult);
 
-  // Only HSTS and HPKP are supported at the moment.
-  NS_ENSURE_TRUE(aType == nsISiteSecurityService::HEADER_HSTS ||
-                 aType == nsISiteSecurityService::HEADER_HPKP,
+  // Only HSTS is supported at the moment.
+  NS_ENSURE_TRUE(aType == nsISiteSecurityService::HEADER_HSTS,
                  NS_ERROR_NOT_IMPLEMENTED);
 
   nsAutoCString hostname;
@@ -969,47 +560,16 @@ nsSiteSecurityService::IsSecureURI(uint32_t aType, nsIURI* aURI,
   return IsSecureHost(aType, hostname.get(), aFlags, aCached, aResult);
 }
 
-int STSPreloadCompare(const void *key, const void *entry)
-{
-  const char *keyStr = (const char *)key;
-  const nsSTSPreload *preloadEntry = (const nsSTSPreload *)entry;
-  return strcmp(keyStr, preloadEntry->mHost);
-}
-
-// Returns the preload list entry for the given host, if it exists.
-// Only does exact host matching - the user must decide how to use the returned
-// data. May return null.
-const nsSTSPreload *
-nsSiteSecurityService::GetPreloadListEntry(const char *aHost)
-{
-  PRTime currentTime = PR_Now() + (mPreloadListTimeOffset * PR_USEC_PER_SEC);
-  if (mUsePreloadList && currentTime < gPreloadListExpirationTime) {
-    return (const nsSTSPreload *) bsearch(aHost,
-                                          kSTSPreloadList,
-                                          mozilla::ArrayLength(kSTSPreloadList),
-                                          sizeof(nsSTSPreload),
-                                          STSPreloadCompare);
-  }
-
-  return nullptr;
-}
-
 NS_IMETHODIMP
 nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
                                     uint32_t aFlags, bool* aCached,
                                     bool* aResult)
 {
-   // Child processes are not allowed direct access to this.
-   if (!XRE_IsParentProcess() && aType != nsISiteSecurityService::HEADER_HSTS) {
-     MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::IsSecureHost for non-HSTS entries");
-   }
-
   NS_ENSURE_ARG(aHost);
   NS_ENSURE_ARG(aResult);
 
-  // Only HSTS and HPKP are supported at the moment.
-  NS_ENSURE_TRUE(aType == nsISiteSecurityService::HEADER_HSTS ||
-                 aType == nsISiteSecurityService::HEADER_HPKP,
+  // Only HSTS is supported at the moment.
+  NS_ENSURE_TRUE(aType == nsISiteSecurityService::HEADER_HSTS,
                  NS_ERROR_NOT_IMPLEMENTED);
 
   // set default in case if we can't find any STS information
@@ -1023,38 +583,14 @@ nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
     return NS_OK;
   }
 
-  /* An IP address never qualifies as a secure URI. */
+  // An IP address never qualifies as a secure URI.
   if (HostIsIPAddress(aHost)) {
     return NS_OK;
   }
 
-  if (aType == nsISiteSecurityService::HEADER_HPKP) {
-    RefPtr<SharedCertVerifier> certVerifier(GetDefaultCertVerifier());
-    if (!certVerifier) {
-      return NS_ERROR_FAILURE;
-    }
-    if (certVerifier->mPinningMode ==
-        CertVerifier::PinningMode::pinningDisabled) {
-      return NS_OK;
-    }
-    bool enforceTestMode = certVerifier->mPinningMode ==
-                           CertVerifier::PinningMode::pinningEnforceTestMode;
-    return PublicKeyPinningService::HostHasPins(aHost, mozilla::pkix::Now(),
-                                                enforceTestMode, *aResult);
-  }
-
-  // Holepunch chart.apis.google.com and subdomains.
-  nsAutoCString host(PublicKeyPinningService::CanonicalizeHostname(aHost));
-  if (host.EqualsLiteral("chart.apis.google.com") ||
-      StringEndsWith(host, NS_LITERAL_CSTRING(".chart.apis.google.com"))) {
-    if (aCached) {
-      *aCached = true;
-    }
-    return NS_OK;
-  }
-
-  const nsSTSPreload *preload = nullptr;
-
+  // Canonicalize the passed host name
+  nsAutoCString host(CanonicalizeHostname(aHost));
+  
   // First check the exact host. This involves first checking for an entry in
   // site security storage. If that entry exists, we don't want to check
   // in the preload list. We only want to use the stored value if it is not a
@@ -1086,20 +622,10 @@ nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
       }
     }
 
-    // If the entry is expired and not in the preload list, we can remove it.
-    if (expired && !GetPreloadListEntry(host.get())) {
+    // If the entry is expired we can remove it.
+    if (expired) {
       mSiteStateStorage->Remove(storageKey, storageType);
     }
-  }
-  // Finally look in the preloaded list. This is the exact host,
-  // so if an entry exists at all, this host is HSTS.
-  else if (GetPreloadListEntry(host.get())) {
-    SSSLOG(("%s is a preloaded STS host", host.get()));
-    *aResult = true;
-    if (aCached) {
-      *aCached = true;
-    }
-    return NS_OK;
   }
 
   SSSLOG(("no HSTS data for %s found, walking up domain", host.get()));
@@ -1144,21 +670,9 @@ nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
         }
       }
 
-      // If the entry is expired and not in the preload list, we can remove it.
-      if (expired && !GetPreloadListEntry(subdomain)) {
+      // If the entry is expired we can remove it.
+      if (expired) {
         mSiteStateStorage->Remove(storageKey, storageType);
-      }
-    }
-    // This is an ancestor, so if we get a match, we have to check if the
-    // preloaded entry includes subdomains.
-    else if ((preload = GetPreloadListEntry(subdomain)) != nullptr) {
-      if (preload->mIncludeSubdomains) {
-        SSSLOG(("%s is a preloaded STS host", subdomain));
-        *aResult = true;
-        if (aCached) {
-          *aCached = true;
-        }
-        break;
       }
     }
 
@@ -1172,153 +686,7 @@ nsSiteSecurityService::IsSecureHost(uint32_t aType, const char* aHost,
 NS_IMETHODIMP
 nsSiteSecurityService::ClearAll()
 {
-   // Child processes are not allowed direct access to this.
-   if (!XRE_IsParentProcess()) {
-     MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::ClearAll");
-   }
-
   return mSiteStateStorage->Clear();
-}
-
-NS_IMETHODIMP
-nsSiteSecurityService::ClearPreloads()
-{
-  // Child processes are not allowed direct access to this.
-  if (!XRE_IsParentProcess()) {
-    MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::ClearPreloads");
-  }
-
-  return mPreloadStateStorage->Clear();
-}
-
-bool entryStateNotOK(SiteHPKPState& state, mozilla::pkix::Time& aEvalTime) {
-  return state.mState != SecurityPropertySet || state.IsExpired(aEvalTime) ||
-         state.mSHA256keys.Length() < 1;
-}
-
-NS_IMETHODIMP
-nsSiteSecurityService::GetKeyPinsForHostname(const char* aHostname,
-                                             mozilla::pkix::Time& aEvalTime,
-                                             /*out*/ nsTArray<nsCString>& pinArray,
-                                             /*out*/ bool* aIncludeSubdomains,
-                                             /*out*/ bool* aFound) {
-   // Child processes are not allowed direct access to this.
-   if (!XRE_IsParentProcess()) {
-     MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::GetKeyPinsForHostname");
-   }
-
-  NS_ENSURE_ARG(aFound);
-  NS_ENSURE_ARG(aHostname);
-
-  if (!mHPKPEnabled) {
-    SSSLOG(("HPKP disabled - returning 'pins not found' for %s",
-            aHostname));
-    *aFound = false;
-    return NS_OK;
-  }
-
-  SSSLOG(("Top of GetKeyPinsForHostname for %s", aHostname));
-  *aFound = false;
-  *aIncludeSubdomains = false;
-  pinArray.Clear();
-
-  nsAutoCString host(PublicKeyPinningService::CanonicalizeHostname(aHostname));
-  nsAutoCString storageKey;
-  SetStorageKey(storageKey, host, nsISiteSecurityService::HEADER_HPKP);
-
-  SSSLOG(("storagekey '%s'\n", storageKey.get()));
-  mozilla::DataStorageType storageType = mozilla::DataStorage_Persistent;
-  nsCString value = mSiteStateStorage->Get(storageKey, storageType);
-
-  // decode now
-  SiteHPKPState foundEntry(value);
-  if (entryStateNotOK(foundEntry, aEvalTime)) {
-    // not in permanent storage, try now private
-    value = mSiteStateStorage->Get(storageKey, mozilla::DataStorage_Private);
-    SiteHPKPState privateEntry(value);
-    if (entryStateNotOK(privateEntry, aEvalTime)) {
-      // not in private storage, try dynamic preload
-      value = mPreloadStateStorage->Get(storageKey,
-                                        mozilla::DataStorage_Persistent);
-      SiteHPKPState preloadEntry(value);
-      if (entryStateNotOK(preloadEntry, aEvalTime)) {
-        return NS_OK;
-      }
-      foundEntry = preloadEntry;
-    } else {
-      foundEntry = privateEntry;
-    }
-  }
-  pinArray = foundEntry.mSHA256keys;
-  *aIncludeSubdomains = foundEntry.mIncludeSubdomains;
-  *aFound = true;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsSiteSecurityService::SetKeyPins(const char* aHost, bool aIncludeSubdomains,
-                                  int64_t aExpires, uint32_t aPinCount,
-                                  const char** aSha256Pins,
-                                  bool aIsPreload,
-                                  /*out*/ bool* aResult)
-{
-   // Child processes are not allowed direct access to this.
-   if (!XRE_IsParentProcess()) {
-     MOZ_CRASH("Child process: no direct access to nsISiteSecurityService::SetKeyPins");
-   }
-
-  NS_ENSURE_ARG_POINTER(aHost);
-  NS_ENSURE_ARG_POINTER(aResult);
-  NS_ENSURE_ARG_POINTER(aSha256Pins);
-
-
-  if (!mHPKPEnabled) {
-    SSSLOG(("SSS: HPKP disabled: not setting pins"));
-    *aResult = false;
-    return NS_OK;
-  }
-
-  SSSLOG(("Top of SetPins"));
-
-  nsTArray<nsCString> sha256keys;
-  for (unsigned int i = 0; i < aPinCount; i++) {
-    nsAutoCString pin(aSha256Pins[i]);
-    SSSLOG(("SetPins pin=%s\n", pin.get()));
-    if (!stringIsBase64EncodingOf256bitValue(pin)) {
-      return NS_ERROR_INVALID_ARG;
-    }
-    sha256keys.AppendElement(pin);
-  }
-  SiteHPKPState dynamicEntry(aExpires, SecurityPropertySet,
-                             aIncludeSubdomains, sha256keys);
-  // we always store data in permanent storage (ie no flags)
-  nsAutoCString host(PublicKeyPinningService::CanonicalizeHostname(aHost));
-  return SetHPKPState(host.get(), dynamicEntry, 0, aIsPreload);
-}
-
-nsresult
-nsSiteSecurityService::SetHPKPState(const char* aHost, SiteHPKPState& entry,
-                                    uint32_t aFlags, bool aIsPreload)
-{
-  SSSLOG(("Top of SetPKPState"));
-  nsAutoCString host(aHost);
-  nsAutoCString storageKey;
-  SetStorageKey(storageKey, host, nsISiteSecurityService::HEADER_HPKP);
-  bool isPrivate = aFlags & nsISocketProvider::NO_PERMANENT_STORAGE;
-  mozilla::DataStorageType storageType = isPrivate
-                                         ? mozilla::DataStorage_Private
-                                         : mozilla::DataStorage_Persistent;
-  nsAutoCString stateString;
-  entry.ToString(stateString);
-
-  nsresult rv;
-  if (aIsPreload) {
-    rv = mPreloadStateStorage->Put(storageKey, stateString, storageType);
-  } else {
-    rv = mSiteStateStorage->Put(storageKey, stateString, storageType);
-  }
-  NS_ENSURE_SUCCESS(rv, rv);
-  return NS_OK;
 }
 
 //------------------------------------------------------------
@@ -1337,18 +705,10 @@ nsSiteSecurityService::Observe(nsISupports *subject,
   }
 
   if (strcmp(topic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID) == 0) {
-    mUsePreloadList = mozilla::Preferences::GetBool(
-      "network.stricttransportsecurity.preloadlist", true);
     mUseStsService = mozilla::Preferences::GetBool(
       "network.stricttransportsecurity.enabled", true);
     mPreloadListTimeOffset =
       mozilla::Preferences::GetInt("test.currentTimeOffsetSeconds", 0);
-    mHPKPEnabled = mozilla::Preferences::GetBool(
-      "security.cert_pinning.hpkp.enabled", false);
-    mProcessPKPHeadersFromNonBuiltInRoots = mozilla::Preferences::GetBool(
-      "security.cert_pinning.process_headers_from_non_builtin_roots", false);
-    mMaxMaxAge = mozilla::Preferences::GetInt(
-      "security.cert_pinning.max_max_age_seconds", kSixtyDaysInSeconds);
   }
 
   return NS_OK;

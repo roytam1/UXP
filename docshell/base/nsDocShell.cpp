@@ -4943,22 +4943,17 @@ nsDocShell::DisplayLoadError(nsresult aError, nsIURI* aURI,
       if (errorClass == nsINSSErrorsService::ERROR_CLASS_BAD_CERT) {
         error.AssignLiteral("nssBadCert");
 
-        // If this is an HTTP Strict Transport Security host or a pinned host
-        // and the certificate is bad, don't allow overrides (RFC 6797 section
-        // 12.1, HPKP draft spec section 2.6).
+        // If this is an HTTP Strict Transport Security host, don't allow
+        // overrides (RFC 6797 section 12.1).
         uint32_t flags =
           UsePrivateBrowsing() ? nsISocketProvider::NO_PERMANENT_STORAGE : 0;
         bool isStsHost = false;
-        bool isPinnedHost = false;
         if (XRE_IsParentProcess()) {
           nsCOMPtr<nsISiteSecurityService> sss =
             do_GetService(NS_SSSERVICE_CONTRACTID, &rv);
           NS_ENSURE_SUCCESS(rv, rv);
           rv = sss->IsSecureURI(nsISiteSecurityService::HEADER_HSTS, aURI,
                                 flags, nullptr, &isStsHost);
-          NS_ENSURE_SUCCESS(rv, rv);
-          rv = sss->IsSecureURI(nsISiteSecurityService::HEADER_HPKP, aURI,
-                                flags, nullptr, &isPinnedHost);
           NS_ENSURE_SUCCESS(rv, rv);
         } else {
           mozilla::dom::ContentChild* cc =
@@ -4967,8 +4962,6 @@ nsDocShell::DisplayLoadError(nsresult aError, nsIURI* aURI,
           SerializeURI(aURI, uri);
           cc->SendIsSecureURI(nsISiteSecurityService::HEADER_HSTS, uri, flags,
                               &isStsHost);
-          cc->SendIsSecureURI(nsISiteSecurityService::HEADER_HPKP, uri, flags,
-                              &isPinnedHost);
         }
 
         if (Preferences::GetBool(
@@ -4976,11 +4969,9 @@ nsDocShell::DisplayLoadError(nsresult aError, nsIURI* aURI,
           cssClass.AssignLiteral("expertBadCert");
         }
 
-        // HSTS/pinning takes precedence over the expert bad cert pref. We
+        // HSTS takes precedence over the expert bad cert pref. We
         // never want to show the "Add Exception" button for these sites.
-        // In the future we should differentiate between an HSTS host and a
-        // pinned host and display a more informative message to the user.
-        if (isStsHost || isPinnedHost) {
+        if (isStsHost) {
           cssClass.AssignLiteral("badStsCert");
         }
 

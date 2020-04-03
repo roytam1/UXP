@@ -37,8 +37,6 @@
 <!ENTITY  SecProto.label             "Security Protocols">
 <!ENTITY  enableHSTS.label           "Enable Strict Transport Security (HSTS)">
 <!ENTITY  enableHSTS.accesskey       "S">
-<!ENTITY  enableHPKP.label           "Enable Certificate Key Pinning (HPKP)">
-<!ENTITY  enableHPKP.accesskey       "C">
 
 <!ENTITY  OpEnc.label                "Opportunistic Encryption (OE)">
 <!ENTITY  enableUIROpEnc.label       "Enable Upgrade Insecure Requests">

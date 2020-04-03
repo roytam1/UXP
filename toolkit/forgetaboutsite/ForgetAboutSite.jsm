@@ -216,8 +216,8 @@ this.ForgetAboutSite = {
       });
     }));
 
-    // HSTS and HPKP
-    // TODO (bug 1290529): also remove HSTS/HPKP information for subdomains.
+    // HSTS
+    // TODO (bug 1290529): also remove HSTS information for subdomains.
     // Since we can't enumerate the information in the site security service
     // (bug 1115712), we can't implement this right now.
     promises.push(Task.spawn(function*() {
@@ -225,9 +225,8 @@ this.ForgetAboutSite = {
                 getService(Ci.nsISiteSecurityService);
       let httpsURI = NetUtil.newURI("https://" + aDomain);
       sss.removeState(Ci.nsISiteSecurityService.HEADER_HSTS, httpsURI, 0);
-      sss.removeState(Ci.nsISiteSecurityService.HEADER_HPKP, httpsURI, 0);
     }).catch(ex => {
-      throw new Error("Exception thrown while clearing HSTS/HPKP: " + ex);
+      throw new Error("Exception thrown while clearing HSTS: " + ex);
     }));
 
     let ErrorCount = 0;
