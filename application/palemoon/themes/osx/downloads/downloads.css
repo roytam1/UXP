@@ -251,37 +251,39 @@ richlistitem[type="download"]:hover > stack > .downloadButton.downloadRetry:acti
 /*** Main indicator icon ***/
 
 #downloads-indicator-icon {
-  background: -moz-image-rect(url("chrome://browser/skin/Toolbar.png"),
+  background: -moz-image-rect(var(--toolbarbutton-image),
                               0, 108, 18, 90) center no-repeat;
   min-width: 18px;
   min-height: 18px;
 }
 
 toolbar[brighttext] #downloads-indicator-icon {
-  background: -moz-image-rect(url("chrome://browser/skin/Toolbar-inverted.png"),
+  background: -moz-image-rect(var(--toolbarbutton-inverted-image),
                               0, 108, 18, 90) center no-repeat;
 }
 
 #downloads-indicator[attention] > #downloads-indicator-anchor > #downloads-indicator-icon {
-  background-image: url("chrome://browser/skin/downloads/download-glow.png");
+  background: -moz-image-rect(var(--toolbarbutton-image),
+                              19, 108, 36, 90) center no-repeat;
 }
 
 /* In the next few rules, we use :not([counter]) as a shortcut that is
    equivalent to -moz-any([progress], [paused]). */
 
 #downloads-indicator:not([counter]) > #downloads-indicator-anchor > #downloads-indicator-progress-area > #downloads-indicator-counter {
-  background: -moz-image-rect(url("chrome://browser/skin/Toolbar.png"),
+  background: -moz-image-rect(var(--toolbarbutton-image),
                               0, 108, 18, 90) center no-repeat;
   background-size: 12px;
 }
 
 toolbar[brighttext] #downloads-indicator:not([counter]) > #downloads-indicator-anchor > #downloads-indicator-progress-area > #downloads-indicator-counter {
-  background: -moz-image-rect(url("chrome://browser/skin/Toolbar-inverted.png"),
+  background: -moz-image-rect(var(--toolbarbutton-inverted-image),
                               0, 108, 18, 90) center no-repeat;
 }
 
 #downloads-indicator:not([counter])[attention] > #downloads-indicator-anchor > #downloads-indicator-progress-area > #downloads-indicator-counter {
-  background-image: url("chrome://browser/skin/downloads/download-glow.png");
+  background: -moz-image-rect(var(--toolbarbutton-image),
+                              19, 108, 36, 90) center no-repeat;
 }
 
 /*** Download notifications ***/
