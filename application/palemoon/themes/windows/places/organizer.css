@@ -6,12 +6,14 @@
   --toolbar-custom-color: hsl(210,75%,92%);
   --toolbar-highlight-top: rgba(255,255,255,.5);
   --toolbarbutton-image: url("chrome://browser/skin/Toolbar.png");
+  --library-toolbar-image: url("chrome://browser/skin/places/libraryToolbar.png");
 }
 
 /* Use SVG for HiDPI 133%+ */
 @media (min-resolution: 1.33dppx) {
   :root {
     --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
+    --library-toolbar-image: url("chrome://browser/skin/places/libraryToolbar.svg");
   }
 }
 
@@ -92,34 +94,22 @@
 #organizeButton, 
 #viewMenu, 
 #maintenanceButton {
-  list-style-image: url("chrome://browser/skin/places/libraryToolbar.png");
+  list-style-image: var(--library-toolbar-image);
 }
 
 /* organize button */
 #organizeButton {
   -moz-image-region: rect(0px, 16px, 16px, 0px);
 }
-#organizeButton:hover,
-#organizeButton[open="true"] {
-  -moz-image-region: rect(16px, 16px, 32px, 0px);
-}
 
 /* view button */
 #viewMenu {
   -moz-image-region: rect(0px, 32px, 16px, 16px);
 }
-#viewMenu:hover,
-#viewMenu[open="true"] {
-  -moz-image-region: rect(16px, 32px, 32px, 16px);
-}
 
 /* maintenance button */
 #maintenanceButton {
   -moz-image-region: rect(0px, 48px, 16px, 32px);
-}
-#maintenanceButton:hover,
-#maintenanceButton[open="true"] {
-  -moz-image-region: rect(16px, 48px, 32px, 32px);
 }
 
 /* Root View */
