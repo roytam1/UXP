@@ -74,7 +74,7 @@ panel[type="private-autocomplete-richlistbox"],
 }
 
 .private-autocomplete-treebody::-moz-tree-cell-text {
-  -moz-padding-start: 8px;
+  padding-inline-start: 8px;
 }
 
 treechildren.private-autocomplete-treebody::-moz-tree-row(selected) {
@@ -163,8 +163,8 @@ treechildren.private-autocomplete-treebody::-moz-tree-cell-text(selected) {
 .ac-type-icon {
   width: 16px; 
   height: 16px;
-  -moz-margin-start: 6px;
-  -moz-margin-end: 4px;
+  margin-inline-start: 6px;
+  margin-inline-end: 4px;
   margin-bottom: -1px;
 }
 
