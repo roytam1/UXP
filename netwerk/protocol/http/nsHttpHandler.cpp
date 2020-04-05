@@ -310,28 +310,9 @@ nsHttpHandler::Init()
         }
         mAppName.StripChars(R"( ()<>@,;:\"/[]?={})");
     }
-    
-    nsCString dynamicBuildID;
-    if (appInfo) {
-      appInfo->GetPlatformBuildID(dynamicBuildID);
-      if (dynamicBuildID.Length() > 8 )
-        dynamicBuildID.Left(dynamicBuildID, 8);
-    }
 
-    if (mAppVersionIsBuildID) {
-      // Override BuildID
-      mAppVersion.AssignLiteral(MOZ_UA_BUILDID);
-    } else if (appInfo) {
-      appInfo->GetVersion(mAppVersion);
-    } else {
-      // Fall back to platform if appInfo is unavailable
-      mAppVersion.AssignLiteral(MOZILLA_UAVERSION);
-    }
+    BuildAppVersion();    
 
-    // If there's no override set, set it to the dynamic BuildID
-    if (mAppVersion.IsEmpty())
-      mAppVersion.Assign(dynamicBuildID);
-        
     mSessionStartTime = NowInSeconds();
     mHandlerActive = true;
 
@@ -350,8 +331,15 @@ nsHttpHandler::Init()
     // Goanna slice version
     mProductSub.AssignLiteral(MOZILLA_UAVERSION);
     
-    if (mProductSub.IsEmpty())
-        mProductSub.Assign(dynamicBuildID);
+    if (mProductSub.IsEmpty()) {
+      nsCString dynamicBuildID;
+      if (appInfo) {
+        appInfo->GetPlatformBuildID(dynamicBuildID);
+        if (dynamicBuildID.Length() > 8 )
+          dynamicBuildID.Left(dynamicBuildID, 8);
+      }
+      mProductSub.Assign(dynamicBuildID);
+    }
 
 #if DEBUG
     // dump user agent prefs
@@ -657,6 +645,37 @@ nsHttpHandler::GenerateHostPort(const nsCString& host, int32_t port,
 // nsHttpHandler <private>
 //-----------------------------------------------------------------------------
 
+void
+nsHttpHandler::BuildAppVersion()
+{
+    nsCOMPtr<nsIXULAppInfo> appInfo = do_GetService("@mozilla.org/xre/app-info;1");
+
+    nsCString dynamicBuildID;
+    if (appInfo) {
+      appInfo->GetPlatformBuildID(dynamicBuildID);
+      if (dynamicBuildID.Length() > 8 )
+        dynamicBuildID.Left(dynamicBuildID, 8);
+    }
+
+    if (mAppVersionIsBuildID) {
+      // Override BuildID
+      mAppVersion.Assign(dynamicBuildID);
+    } else if (appInfo) {
+      appInfo->GetVersion(mAppVersion);
+    } else {
+      // Fall back to platform if appInfo is unavailable
+      mAppVersion.AssignLiteral(MOZILLA_UAVERSION);
+    }
+
+    // If there's still no version set, set it to a fixed BuildID
+    if (mAppVersion.IsEmpty()) {
+      mAppVersion.AssignLiteral(MOZ_UA_BUILDID);
+    }
+    if (mAppVersion.IsEmpty()) {
+      mAppVersion.AssignLiteral("20200101");
+    }
+}
+
 const nsAFlatCString &
 nsHttpHandler::UserAgent()
 {
@@ -781,21 +800,6 @@ nsHttpHandler::InitUserAgentComponents()
 #endif
     );
 #endif
-
-
-#ifdef MOZ_MULET
-    {
-        // Add the `Mobile` or `Tablet` or `TV` token when running in the b2g
-        // desktop simulator via preference.
-        nsCString deviceType;
-        nsresult rv = Preferences::GetCString("devtools.useragent.device_type", &deviceType);
-        if (NS_SUCCEEDED(rv)) {
-            mCompatDevice.Assign(deviceType);
-        } else {
-            mCompatDevice.AssignLiteral("Mobile");
-        }
-    }
-#endif // MOZ_MULET
 
 #ifndef MOZ_UA_OS_AGNOSTIC
     // Gather OS/CPU.
@@ -924,6 +928,10 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
     if (PREF_CHANGED(UA_PREF("appVersionIsBuildID"))) {
         rv = prefs->GetBoolPref(UA_PREF("appVersionIsBuildID"), &cVar);
         mAppVersionIsBuildID = (NS_SUCCEEDED(rv) && cVar);
+        
+        // Rebuild application version string.
+        BuildAppVersion();
+
         mUserAgentIsDirty = true;
     }
 
