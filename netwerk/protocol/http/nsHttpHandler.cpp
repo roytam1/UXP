@@ -174,6 +174,7 @@ nsHttpHandler::nsHttpHandler()
     , mLegacyAppName("Mozilla")
     , mLegacyAppVersion("5.0")
     , mProduct("Goanna")
+    , mAppBuildID("20200101")
     , mCompatFirefoxEnabled(false)
     , mCompatFirefoxVersion("68.9")
     , mUserAgentIsDirty(true)
@@ -301,6 +302,14 @@ nsHttpHandler::Init()
     nsCOMPtr<nsIXULAppInfo> appInfo =
         do_GetService("@mozilla.org/xre/app-info;1");
 
+    nsCString dynamicBuildID;
+    if (appInfo) {
+      appInfo->GetPlatformBuildID(dynamicBuildID);
+      if (dynamicBuildID.Length() > 8 )
+        dynamicBuildID.Left(dynamicBuildID, 8);
+    }
+    mAppBuildID.Assign(dynamicBuildID);
+
     mAppName.AssignLiteral(MOZ_APP_UA_NAME);
     if (mAppName.Length() == 0 && appInfo) {
         // Try to get the UA name from appInfo, falling back to the name
@@ -332,13 +341,7 @@ nsHttpHandler::Init()
     mProductSub.AssignLiteral(MOZILLA_UAVERSION);
     
     if (mProductSub.IsEmpty()) {
-      nsCString dynamicBuildID;
-      if (appInfo) {
-        appInfo->GetPlatformBuildID(dynamicBuildID);
-        if (dynamicBuildID.Length() > 8 )
-          dynamicBuildID.Left(dynamicBuildID, 8);
-      }
-      mProductSub.Assign(dynamicBuildID);
+      mProductSub.Assign(mAppBuildID);
     }
 
 #if DEBUG
@@ -650,16 +653,9 @@ nsHttpHandler::BuildAppVersion()
 {
     nsCOMPtr<nsIXULAppInfo> appInfo = do_GetService("@mozilla.org/xre/app-info;1");
 
-    nsCString dynamicBuildID;
-    if (appInfo) {
-      appInfo->GetPlatformBuildID(dynamicBuildID);
-      if (dynamicBuildID.Length() > 8 )
-        dynamicBuildID.Left(dynamicBuildID, 8);
-    }
-
     if (mAppVersionIsBuildID) {
-      // Override BuildID
-      mAppVersion.Assign(dynamicBuildID);
+      // Override with BuildID
+      mAppVersion.Assign(mAppBuildID);
     } else if (appInfo) {
       appInfo->GetVersion(mAppVersion);
     } else {

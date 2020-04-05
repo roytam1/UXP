@@ -501,6 +501,7 @@ private:
     nsCString      mCompatFirefox;
     bool           mCompatFirefoxEnabled;
     nsCString      mCompatFirefoxVersion;
+    nsCString      mAppBuildID;
     nsXPIDLCString mCompatDevice;
     nsCString      mDeviceModelId;
 
