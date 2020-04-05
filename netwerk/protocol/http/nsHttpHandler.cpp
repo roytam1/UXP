@@ -174,6 +174,7 @@ nsHttpHandler::nsHttpHandler()
     , mLegacyAppName("Mozilla")
     , mLegacyAppVersion("5.0")
     , mProduct("Goanna")
+    , mCompatGeckoEnabled(false)
     , mAppBuildID("20200101")
     , mCompatFirefoxEnabled(false)
     , mCompatFirefoxVersion("68.9")
@@ -292,8 +293,13 @@ nsHttpHandler::Init()
     nsHttpChannelAuthProvider::InitializePrefs();
 
     // rv: should have the Firefox/Gecko compatversion for web compatibility
+    // when in either compatmodes
     mMisc.AssignLiteral("rv:");
-    mMisc += mCompatFirefoxVersion;
+    if (mCompatGeckoEnabled) {
+      mMisc += mCompatFirefoxVersion;
+    } else {
+      mMisc += MOZILLA_UAVERSION;
+    }
 
     mCompatGecko.AssignLiteral("Gecko/20100101");
     mCompatFirefox.AssignLiteral("Firefox/");
@@ -338,8 +344,12 @@ nsHttpHandler::Init()
         do_GetService("@mozilla.org/network/request-context-service;1");
 
     // Goanna slice version
-    mProductSub.AssignLiteral(MOZILLA_UAVERSION);
-    
+    if (mCompatGeckoEnabled) {
+      mProductSub.AssignLiteral(MOZILLA_UAVERSION);
+    } else {
+      mProductSub.Assign(mAppBuildID);
+    }
+    // In case MOZILLA_UAVERSION is empty for some odd reason...
     if (mProductSub.IsEmpty()) {
       mProductSub.Assign(mAppBuildID);
     }
@@ -934,6 +944,24 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
     if (PREF_CHANGED(UA_PREF("compatMode.gecko"))) {
         rv = prefs->GetBoolPref(UA_PREF("compatMode.gecko"), &cVar);
         mCompatGeckoEnabled = (NS_SUCCEEDED(rv) && cVar);
+        
+        // Rebuild rv: and Goanna slice version
+        mMisc.AssignLiteral("rv:");
+        if (mCompatGeckoEnabled) {
+          mMisc += mCompatFirefoxVersion;
+        } else {
+          mMisc += MOZILLA_UAVERSION;
+        }
+        
+        if (mCompatGeckoEnabled) {
+          mProductSub.AssignLiteral(MOZILLA_UAVERSION);
+        } else {
+          mProductSub.Assign(mAppBuildID);
+        }
+        // In case MOZILLA_UAVERSION is empty for some odd reason...
+        if (mProductSub.IsEmpty()) {
+          mProductSub.Assign(mAppBuildID);
+        }
         mUserAgentIsDirty = true;
     }
 
@@ -952,7 +980,11 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
         
         // rebuild mMisc and compatMode slice
         mMisc.AssignLiteral("rv:");
-        mMisc += mCompatFirefoxVersion;
+        if (mCompatGeckoEnabled) {
+          mMisc += mCompatFirefoxVersion;
+        } else {
+          mMisc += MOZILLA_UAVERSION;
+        }
         mCompatFirefox.AssignLiteral("Firefox/");
         mCompatFirefox += mCompatFirefoxVersion;
         
