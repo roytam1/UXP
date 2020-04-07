@@ -18,7 +18,7 @@
 // This will result in an "only with Firefox" message which suits us fine, because it's the truth.
 pref("@GUAO_PREF@.addons.mozilla.org","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_DATE_SLICE@ @PM_SLICE@");
 
-// Required for domains that have proven unresponsive to requests from users
+// Required for domains that are unresponsive to requests from users (or likely to be)
 pref("@GUAO_PREF@.live.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.msn.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.bing.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
@@ -33,6 +33,7 @@ pref("@GUAO_PREF@.yahoo.com","Mozilla/5.0 (%OS_SLICE% rv:99.9) @GK_SLICE@ Firefo
 pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:60.0) @GK_SLICE@ Firefox/60.0 @PM_SLICE@");
 pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:42.0) @GK_SLICE@ Firefox/42.0");
 pref("@GUAO_PREF@.dropbox.com","Mozilla/5.0 (%OS_SLICE% rv:99.9) @GK_SLICE@ Firefox/99.9 (Pale Moon)");
+pref("@GUAO_PREF@.patientaccess.com","Mozilla/5.0 (%OS_SLICE% rv:60.0) @GK_SLICE@ Firefox/60.0 @PM_SLICE@");
 
 pref("@GUAO_PREF@.players.brightcove.net","Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko");
 
