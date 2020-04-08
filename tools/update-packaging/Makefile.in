@@ -34,8 +34,6 @@ OVERRIDE_DEFAULT_GOAL := full-update
 full-update:: complete-patch
 
 ifeq ($(OS_TARGET), WINNT)
-MOZ_PKG_FORMAT	:= SFX7Z
-UNPACKAGE	= '$(subst $(DIST),$(ABS_DIST),$(INSTALLER_PACKAGE))'
 ifdef AB_CD
 UNPACKAGE	= '$(PACKAGE_BASE_DIR)/$(PACKAGE)'
 endif
@@ -54,11 +52,6 @@ endif
 dir-stage := $(call mkdir_deps,$(STAGE_DIR))
 
 complete-patch:: $(dir-stage)
-ifeq ($(OS_TARGET), WINNT)
-	test -f $(UNPACKAGE)
-	$(RM) -rf '$(PACKAGE_DIR)'
-	cd $(PACKAGE_BASE_DIR) && $(INNER_UNMAKE_PACKAGE)
-endif
 	MAR=$(MAR_BIN) \
 	  $(srcdir)/make_full_update.sh \
 	  '$(DIST)/$(COMPLETE_MAR)' \
