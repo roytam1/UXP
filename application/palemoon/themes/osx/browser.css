@@ -94,11 +94,15 @@
 
 /* Blend the topmost toolbar with the titlebar */
 #main-window[tabsontop=false]:not([privatebrowsingmode=temporary]) #nav-bar:not(:-moz-lwtheme),
+#main-window[tabsontop=false]:not([privatebrowsingmode=temporary]) #PersonalToolbar[collapsed=true]
+ ~ #TabsToolbar:not(:-moz-lwtheme),
 #main-window[tabsontop=true]:not([privatebrowsingmode=temporary]) #TabsToolbar:not(:-moz-lwtheme) {
   -moz-appearance: toolbar;
 }
 
 #main-window[tabsontop=false][privatebrowsingmode=temporary] #nav-bar:not(:-moz-lwtheme),
+#main-window[tabsontop=false][privatebrowsingmode=temporary] #PersonalToolbar[collapsed=true]
+ ~ #TabsToolbar:not(:-moz-lwtheme),
 #main-window[tabsontop=true][privatebrowsingmode=temporary] #TabsToolbar:not(:-moz-lwtheme) {
   background-color: transparent;
 }
