@@ -44,6 +44,7 @@ EXTRA_JS_MODULES += [
     'Locale.jsm',
     'Log.jsm',
     'Memory.jsm',
+    'NewTabUtils.jsm',
     'NLP.jsm',
     'ObjectUtils.jsm',
     'PageMenu.jsm',
@@ -85,7 +86,6 @@ EXTRA_JS_MODULES.sessionstore += ['sessionstore/Utils.jsm']
 
 EXTRA_PP_JS_MODULES += [
     'addons/WebRequest.jsm',
-    'NewTabUtils.jsm',
     'ResetProfile.jsm',
     'Troubleshoot.jsm',
     'UpdateUtils.jsm',
