@@ -134,10 +134,10 @@ if CONFIG['CLANG_CXX'] or CONFIG['CLANG_CL']:
 ASFLAGS += CONFIG['VPX_ASFLAGS']
 ASFLAGS += [
     '-I.',
-    '-I%s/third_party/aom' % TOPSRCDIR,
+    '-I%s/media/libaom/src' % TOPSRCDIR,
 ]
 
 LOCAL_INCLUDES += [
     '/media/libaom/config', # aom_version.h
-    '/third_party/aom',
+    '/media/libaom/src',
 ]
