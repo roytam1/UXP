@@ -1031,6 +1031,7 @@ nsContainerFrame::ReflowChild(nsIFrame*                aKidFrame,
 
   if (0 == (aFlags & NS_FRAME_NO_MOVE_VIEW)) {
     PositionFrameView(aKidFrame);
+    PositionChildViews(aKidFrame);
   }
 
   // Reflow the child frame
@@ -1074,6 +1075,7 @@ nsContainerFrame::ReflowChild(nsIFrame*                aKidFrame,
 
   if (0 == (aFlags & NS_FRAME_NO_MOVE_VIEW)) {
     PositionFrameView(aKidFrame);
+    PositionChildViews(aKidFrame);
   }
 
   // Reflow the child frame
