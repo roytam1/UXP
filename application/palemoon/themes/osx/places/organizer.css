@@ -2,10 +2,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+:root {
+  --toolbarbutton-image: url("chrome://browser/skin/Toolbar.png");
+  --library-toolbar-image: url("chrome://browser/skin/places/libraryToolbar.png");
+}
+
+
+/* Use SVG for HiDPI 133%+ */
+@media (min-resolution: 1.33dppx) {
+  :root {
+    --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
+    --library-toolbar-image: url("chrome://browser/skin/places/libraryToolbar.svg");
+  }
+}
+
 /* Toolbar */
 #placesToolbar {
   padding: 3px;
-  -moz-padding-end: 6px;
+  padding-inline-end: 6px;
 }
 
 #placesToolbar > toolbarbutton[disabled] > .toolbarbutton-icon {
@@ -14,7 +28,7 @@
 
 #back-button,
 #forward-button {
-  list-style-image: url("chrome://browser/skin/Toolbar.png");
+  list-style-image: var(--toolbarbutton-image);
 }
 
 #back-button {
@@ -34,34 +48,22 @@
 #organizeButton, 
 #viewMenu, 
 #maintenanceButton {
-  list-style-image: url("chrome://browser/skin/places/libraryToolbar.png");
+  list-style-image: var(--library-toolbar-image);
 }
 
 /* organize button */
 #organizeButton {
   -moz-image-region: rect(0px, 16px, 16px, 0px);
 }
-#organizeButton:hover,
-#organizeButton[open="true"] {
-  -moz-image-region: rect(16px, 16px, 32px, 0px);
-}
 
 /* view button */
 #viewMenu {
   -moz-image-region: rect(0px, 32px, 16px, 16px);
 }
-#viewMenu:hover,
-#viewMenu[open="true"] {
-  -moz-image-region: rect(16px, 32px, 32px, 16px);
-}
 
 /* maintenance button */
 #maintenanceButton {
   -moz-image-region: rect(0px, 48px, 16px, 32px);
-}
-#maintenanceButton:hover,
-#maintenanceButton[open="true"] {
-  -moz-image-region: rect(16px, 48px, 32px, 32px);
 }
 
 /* Root View */
@@ -76,7 +78,7 @@
 }
 
 #infoBoxExpanderLabel {
-  -moz-padding-start: 2px;
+  padding-inline-start: 2px;
 }
 
 #searchFilter {
@@ -92,8 +94,8 @@
 }
 
 #clearDownloadsButton {
-  -moz-padding-start: 9px;
-  -moz-padding-end: 9px;
+  padding-inline-start: 9px;
+  padding-inline-end: 9px;
 }
 
 /* hover-over/open button highlighting */

@@ -17,8 +17,6 @@ browser.jar:
 #endif
 * skin/classic/browser/autocomplete.css
   skin/classic/browser/actionicon-tab.png
-  skin/classic/browser/appmenu-icons.png
-  skin/classic/browser/appmenu-dropmarker.png
 * skin/classic/browser/browser.css
   skin/classic/browser/click-to-play-warning-stripes.png
 * skin/classic/browser/engineManager.css
@@ -68,6 +66,8 @@ browser.jar:
   skin/classic/browser/slowStartup-16.png
   skin/classic/browser/Toolbar.png
   skin/classic/browser/Toolbar-inverted.png
+  skin/classic/browser/Toolbar.svg
+  skin/classic/browser/Toolbar-inverted.svg
   skin/classic/browser/toolbarbutton-dropdown-arrow.png
   skin/classic/browser/toolbarbutton-dropdown-arrow-inverted.png
   skin/classic/browser/urlbar-arrow.png
@@ -84,7 +84,6 @@ browser.jar:
   skin/classic/browser/webRTC-sharingDevice-16.png
 #endif
   skin/classic/browser/downloads/buttons.png                          (downloads/buttons.png)
-  skin/classic/browser/downloads/download-glow.png                    (downloads/download-glow.png)
   skin/classic/browser/downloads/download-notification-finish.png     (downloads/download-notification-finish.png)
   skin/classic/browser/downloads/download-notification-start.png      (downloads/download-notification-start.png)
   skin/classic/browser/downloads/download-summary.png                 (downloads/download-summary.png)
@@ -119,6 +118,7 @@ browser.jar:
   skin/classic/browser/places/toolbarDropMarker.png                   (places/toolbarDropMarker.png)
   skin/classic/browser/places/editBookmarkOverlay.css                 (places/editBookmarkOverlay.css)
   skin/classic/browser/places/libraryToolbar.png                      (places/libraryToolbar.png)
+  skin/classic/browser/places/libraryToolbar.svg                      (places/libraryToolbar.svg)
   skin/classic/browser/places/starred48.png                           (places/starred48.png)
   skin/classic/browser/places/unstarred48.png                         (places/unstarred48.png)
   skin/classic/browser/places/unfiledBookmarks.png                    (places/unfiledBookmarks.png)

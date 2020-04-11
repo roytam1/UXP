@@ -6,19 +6,21 @@
   --toolbar-custom-color: hsl(210,75%,92%);
   --toolbar-highlight-top: rgba(255,255,255,.5);
   --toolbarbutton-image: url("chrome://browser/skin/Toolbar.png");
+  --library-toolbar-image: url("chrome://browser/skin/places/libraryToolbar.png");
 }
 
 /* Use SVG for HiDPI 133%+ */
 @media (min-resolution: 1.33dppx) {
   :root {
     --toolbarbutton-image: url("chrome://browser/skin/Toolbar.svg");
+    --library-toolbar-image: url("chrome://browser/skin/places/libraryToolbar.svg");
   }
 }
 
 /* Toolbar */
 #placesToolbar {
   padding: 3px;
-  -moz-padding-end: 6px;
+  padding-inline-end: 6px;
 }
 
 #placesToolbar > toolbarbutton[disabled] > .toolbarbutton-icon {
@@ -45,14 +47,14 @@
 
 /* Menu */
 #placesMenu {
-  -moz-margin-start: 6px;
+  margin-inline-start: 6px;
   -moz-appearance: none;
   border: none;
 }
 
 #placesMenu > menu {
-  -moz-padding-start: 4px;
-  -moz-padding-end: 1px;
+  padding-inline-start: 4px;
+  padding-inline-end: 1px;
   padding-top: 2px;
   padding-bottom: 2px;
   -moz-appearance: toolbarbutton;
@@ -73,14 +75,14 @@
 
 #placesMenu > menu[open="true"] {
   border-color: ThreeDShadow ThreeDHighlight ThreeDHighlight ThreeDShadow;
-  -moz-padding-start: 5px;
-  -moz-padding-end: 0px;
+  padding-inline-start: 5px;
+  padding-inline-end: 0px;
   padding-top: 3px;
   padding-bottom: 1px;
 }
 
 #placesMenu > menu > .menubar-text {
-  -moz-padding-end: 8px;
+  padding-inline-end: 8px;
   background: url(chrome://global/skin/arrow/arrow-dn.gif) right center no-repeat;
 }
 
@@ -92,34 +94,22 @@
 #organizeButton, 
 #viewMenu, 
 #maintenanceButton {
-  list-style-image: url("chrome://browser/skin/places/libraryToolbar.png");
+  list-style-image: var(--library-toolbar-image);
 }
 
 /* organize button */
 #organizeButton {
   -moz-image-region: rect(0px, 16px, 16px, 0px);
 }
-#organizeButton:hover,
-#organizeButton[open="true"] {
-  -moz-image-region: rect(16px, 16px, 32px, 0px);
-}
 
 /* view button */
 #viewMenu {
   -moz-image-region: rect(0px, 32px, 16px, 16px);
 }
-#viewMenu:hover,
-#viewMenu[open="true"] {
-  -moz-image-region: rect(16px, 32px, 32px, 16px);
-}
 
 /* maintenance button */
 #maintenanceButton {
   -moz-image-region: rect(0px, 48px, 16px, 32px);
-}
-#maintenanceButton:hover,
-#maintenanceButton[open="true"] {
-  -moz-image-region: rect(16px, 48px, 32px, 32px);
 }
 
 /* Root View */
@@ -134,12 +124,12 @@
 }
 
 #infoBoxExpanderLabel {
-  -moz-padding-start: 2px;
+  padding-inline-start: 2px;
 }
 
 #organizerScopeBar {
   padding: 2px 0;
-  -moz-padding-end: 3px;
+  padding-inline-end: 3px;
 }
 
 #organizerScopeBar > toolbarbutton {
@@ -181,8 +171,8 @@
 }
 
 #clearDownloadsButton {
-  -moz-padding-start: 9px;
-  -moz-padding-end: 9px;
+  padding-inline-start: 9px;
+  padding-inline-end: 9px;
 }
 
 #placesView {
@@ -205,11 +195,11 @@
 @media (-moz-windows-default-theme) {
   #placesView > splitter {
     border: 0;
-    -moz-border-end: 1px solid #A9B7C9;
+    border-inline-end: 1px solid #A9B7C9;
     min-width: 0;
     width: 3px;
     background-color: transparent;
-    -moz-margin-start: -3px;
+    margin-inline-start: -3px;
     position: relative;
   }
 }
@@ -245,7 +235,7 @@
   #searchFilter {
     -moz-appearance: none;
     padding: 2px;
-    -moz-padding-start: 4px;
+    padding-inline-start: 4px;
     background-clip: padding-box;
     border: 1px solid rgba(0,0,0,.32);
     border-radius: 2px;

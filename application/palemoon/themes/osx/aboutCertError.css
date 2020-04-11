@@ -33,7 +33,7 @@ h2 {
   border-radius: 10px;
   box-shadow: 0px 0px 8px red;
   padding: 3em;
-  -moz-padding-start: 30px;
+  padding-inline-start: 30px;
   background: url("chrome://global/skin/icons/sslWarning.png") left 0 no-repeat -moz-Field;
   background-origin: content-box;
 }
@@ -43,16 +43,16 @@ h2 {
 }
 
 #errorTitle {
-  -moz-margin-start: 80px;
+  margin-inline-start: 80px;
 }
 
 #errorLongContent {
-  -moz-margin-start: 80px;
+  margin-inline-start: 80px;
 }
 
 .expander > button {
-  -moz-padding-start: 20px;
-  -moz-margin-start: -20px;
+  padding-inline-start: 20px;
+  margin-inline-start: -20px;
   background: url("chrome://browser/skin/aboutCertError_sectionExpanded.png") left center no-repeat;
   border: none;
   font: inherit;

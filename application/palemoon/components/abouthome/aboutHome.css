@@ -63,7 +63,7 @@ a {
   display: -moz-box;
   -moz-box-align: center;
   padding-top: 2px;
-  -moz-padding-end: 8px;
+  padding-inline-end: 8px;
 }
 
 #searchLogoContainer[hidden] {
@@ -99,12 +99,12 @@ a {
 }
 
 #searchSubmit {
-  -moz-margin-start: -1px;
+  margin-inline-start: -1px;
   background: linear-gradient(hsla(0,0%,100%,.8), hsla(0,0%,100%,.1)) padding-box;
   padding: 0 9px;
   border: 1px solid;
   border-color: hsla(210,54%,20%,.15) hsla(210,54%,20%,.17) hsla(210,54%,20%,.2);
-  -moz-border-start: 1px solid transparent;
+  border-inline-start: 1px solid transparent;
   border-radius: 0 2.5px 2.5px 0;
   box-shadow: 0 0 2px hsla(0,0%,100%,.5) inset,
               0 1px 0 hsla(0,0%,100%,.2);
@@ -279,7 +279,7 @@ body[narrow] #restorePreviousSession {
   display: inline-block; /* display on same line as text label */
   vertical-align: middle;
   margin-bottom: 0;
-  -moz-margin-end: 8px;
+  margin-inline-end: 8px;
 }
 
 #restorePreviousSession:-moz-dir(rtl)::before {
