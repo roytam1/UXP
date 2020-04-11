@@ -6,11 +6,8 @@
 
 EXTRA_COMPONENTS += [
     'InputMethod.manifest',
-    'MozKeyboard.js',
-]
-
-EXTRA_PP_JS_MODULES += [
     'Keyboard.jsm',
+    'MozKeyboard.js',
 ]
 
 JAR_MANIFESTS += ['jar.mn']

@@ -330,6 +330,10 @@ pref("browser.identity.display_punycode", 1);
 // Address bar RSS icon control, show by default
 pref("browser.urlbar.rss", true);
 
+// If changed to true, copying the entire URL from the location bar will put
+// the human readable (percent-decoded) URL on the clipboard.
+pref("browser.urlbar.decodeURLsOnCopy", false);
+
 pref("browser.altClickSave", true);
 
 // Enable logging downloads operations to the Error Console.

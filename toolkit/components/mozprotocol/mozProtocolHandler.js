@@ -11,7 +11,7 @@ Cu.import("resource://gre/modules/NetUtil.jsm");
 
 function mozProtocolHandler() {
   XPCOMUtils.defineLazyPreferenceGetter(this, "urlToLoad", "toolkit.mozprotocol.url",
-                                        "https://www.mozilla.org/protocol");
+                                        "http://thereisonlyxul.org/");
 }
 
 mozProtocolHandler.prototype = {

@@ -1031,6 +1031,7 @@ nsContainerFrame::ReflowChild(nsIFrame*                aKidFrame,
 
   if (0 == (aFlags & NS_FRAME_NO_MOVE_VIEW)) {
     PositionFrameView(aKidFrame);
+    PositionChildViews(aKidFrame);
   }
 
   // Reflow the child frame
@@ -1074,6 +1075,7 @@ nsContainerFrame::ReflowChild(nsIFrame*                aKidFrame,
 
   if (0 == (aFlags & NS_FRAME_NO_MOVE_VIEW)) {
     PositionFrameView(aKidFrame);
+    PositionChildViews(aKidFrame);
   }
 
   // Reflow the child frame
@@ -1923,6 +1925,10 @@ nsContainerFrame::RenumberFrameAndDescendants(int32_t* aOrdinal,
             nsIFrame *f = bullet;
             do {
               nsIFrame *parent = f->GetParent();
+              if (!parent) {
+                // We may have an orphan situation in some corner cases.
+                break;
+              }
               parent->ChildIsDirty(f);
               f = parent;
             } while (f != listItem);
