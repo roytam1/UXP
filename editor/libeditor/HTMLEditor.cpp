@@ -3344,12 +3344,18 @@ HTMLEditor::GetIsSelectionEditable(bool* aIsSelectionEditable)
   RefPtr<Selection> selection = GetSelection();
   NS_ENSURE_TRUE(selection, NS_ERROR_NULL_POINTER);
 
+  nsINode* anchorNode = selection->GetAnchorNode();
+  nsINode* focusNode = selection->GetFocusNode();
+  if (!anchorNode || !focusNode) {
+    return NS_ERROR_FAILURE;
+  }
+
   // Per the editing spec as of June 2012: we have to have a selection whose
   // start and end nodes are editable, and which share an ancestor editing
   // host.  (Bug 766387.)
   *aIsSelectionEditable = selection->RangeCount() &&
-                          selection->GetAnchorNode()->IsEditable() &&
-                          selection->GetFocusNode()->IsEditable();
+                          anchorNode->IsEditable() &&
+                          focusNode->IsEditable();
 
   if (*aIsSelectionEditable) {
     nsINode* commonAncestor =
