@@ -4641,7 +4641,11 @@ HTMLEditRules::WillAlign(Selection& aSelection,
     }
 
     nsCOMPtr<nsINode> curParent = curNode->GetParentNode();
-    int32_t offset = curParent ? curParent->IndexOf(curNode) : -1;
+    if (!curParent) {
+      continue;
+    }
+
+    int32_t offset = curParent->IndexOf(curNode);
 
     // Skip insignificant formatting text nodes to prevent unnecessary
     // structure splitting!
