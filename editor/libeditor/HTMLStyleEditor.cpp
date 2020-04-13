@@ -333,8 +333,9 @@ HTMLEditor::SetInlinePropertyOnTextNode(Text& aText,
   RefPtr<Text> text = &aText;
   if (uint32_t(aEndOffset) != aText.Length()) {
     // We need to split off back of text node
-    text = SplitNode(aText, aEndOffset, rv)->GetAsText();
+    nsIContent* textNode = SplitNode(aText, aEndOffset, rv);
     NS_ENSURE_TRUE(!rv.Failed(), rv.StealNSResult());
+    text = textNode->GetAsText();
   }
 
   if (aStartOffset) {
