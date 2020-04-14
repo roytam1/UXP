@@ -963,7 +963,7 @@ WebGLContext::SetDimensions(int32_t signedWidth, int32_t signedHeight)
             return NS_ERROR_FAILURE;
         }
 
-#ifdef XP_WIN
+#if 0//def XP_WIN
         if (gl->GetContextType() == gl::GLContextType::WGL &&
             !gl::sWGLLib.HasDXInterop2())
         {
