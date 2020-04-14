@@ -2176,6 +2176,7 @@ MOZ_LDAP_XPCOM=
 MOZ_MORK=
 MOZ_MAPI_SUPPORT=
 MOZ_INCOMPLETE_EXTERNAL_LINKAGE=
+MOZ_CAN_DRAW_IN_TITLEBAR=
 
 case "$target_os" in
     mingw*)
@@ -2823,6 +2824,22 @@ if test -n "$MOZ_MAPI_SUPPORT"; then
 fi
 
 AC_SUBST(MOZ_MAPI_SUPPORT)
+
+dnl ========================================================
+dnl = Client drawing in titlebar
+dnl ========================================================
+if test -n "$MOZ_CAN_DRAW_IN_TITLEBAR"; then
+    case "$OS_TARGET" in
+    WINNT|Darwin)
+        AC_DEFINE(MOZ_CAN_DRAW_IN_TITLEBAR)
+        ;;
+    *)
+        AC_MSG_ERROR([Drawing in the titlebar is only supported on Windows and Macintosh targets])
+        ;;
+    esac
+fi
+
+AC_SUBST(MOZ_CAN_DRAW_IN_TITLEBAR)
 
 dnl ========================================================
 dnl = Enable WebRTC code
