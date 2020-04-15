@@ -2743,6 +2743,16 @@ public:
   static bool AttemptLargeAllocationLoad(nsIHttpChannel* aChannel);
 
   /**
+   * Appends all "document level" native anonymous content subtree roots for
+   * aDocument to aElements.  Document level NAC subtrees are those created
+   * by ancestor frames of the document element's primary frame, such as
+   * the scrollbar elements created by the root scroll frame.
+   */
+  static void AppendDocumentLevelNativeAnonymousContentTo(
+      nsIDocument* aDocument,
+      nsTArray<nsIContent*>& aElements);
+
+  /**
    * Detect whether a string is a (CSS) local-url.
    * https://drafts.csswg.org/css-values/#local-urls
    */

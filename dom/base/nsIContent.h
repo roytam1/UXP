@@ -144,7 +144,14 @@ public:
      * Skip native anonymous content created for placeholder of HTML input,
      * used in conjunction with eAllChildren or eAllButXBL.
      */
-    eSkipPlaceholderContent = 2
+    eSkipPlaceholderContent = 2,
+
+    /**
+     * Skip native anonymous content created by ancestor frames of the root
+     * element's primary frame, such as scrollbar elements created by the root
+     * scroll frame.
+     */
+    eSkipDocumentLevelNativeAnonymousContent = 4,
   };
 
   /**
@@ -723,10 +730,9 @@ public:
    */
   inline nsIContent *GetFlattenedTreeParent() const;
 
-  /**
-   * Helper method, which we leave public so that it's accessible from nsINode.
-   */
-  nsINode *GetFlattenedTreeParentNodeInternal() const;
+  // Helper method, which we leave public so that it's accessible from nsINode.
+  enum FlattenedParentType { eNotForStyle, eForStyle };
+  nsINode* GetFlattenedTreeParentNodeInternal(FlattenedParentType aType) const;
 
   /**
    * API to check if this is a link that's traversed in response to user input

@@ -390,6 +390,8 @@ public:
 
   Directionality GetComputedDirectionality() const;
 
+  inline Element* GetFlattenedTreeParentElementForStyle() const;
+
   /**
    * Gets the custom element data used by web components custom element.
    * Custom element data is created at the first attempt to enqueue a callback.

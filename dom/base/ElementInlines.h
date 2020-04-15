@@ -25,6 +25,17 @@ Element::UnregisterActivityObserver()
   OwnerDoc()->UnregisterActivityObserver(this);
 }
 
+inline Element*
+Element::GetFlattenedTreeParentElementForStyle() const
+{
+  nsINode* parentNode = GetFlattenedTreeParentNodeForStyle();
+  if MOZ_LIKELY(parentNode && parentNode->IsElement()) {
+    return parentNode->AsElement();
+  }
+
+  return nullptr;
+}
+
 } // namespace dom
 } // namespace mozilla
 
