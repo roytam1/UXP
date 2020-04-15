@@ -489,7 +489,7 @@ HTMLFormElement::UnbindFromTree(bool aDeep, bool aNullParent)
 }
 
 nsresult
-HTMLFormElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
+HTMLFormElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mWantsWillHandleEvent = true;
   if (aVisitor.mEvent->mOriginalTarget == static_cast<nsIContent*>(this)) {
@@ -513,7 +513,7 @@ HTMLFormElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
       mGeneratingReset = true;
     }
   }
-  return nsGenericHTMLElement::PreHandleEvent(aVisitor);
+  return nsGenericHTMLElement::GetEventTargetParent(aVisitor);
 }
 
 nsresult

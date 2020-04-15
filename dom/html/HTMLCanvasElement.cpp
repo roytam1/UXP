@@ -574,7 +574,7 @@ HTMLCanvasElement::CopyInnerTo(Element* aDest)
   return rv;
 }
 
-nsresult HTMLCanvasElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
+nsresult HTMLCanvasElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   if (aVisitor.mEvent->mClass == eMouseEventClass) {
     WidgetMouseEventBase* evt = (WidgetMouseEventBase*)aVisitor.mEvent;
@@ -592,7 +592,7 @@ nsresult HTMLCanvasElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
       aVisitor.mCanHandle = true;
     }
   }
-  return nsGenericHTMLElement::PreHandleEvent(aVisitor);
+  return nsGenericHTMLElement::GetEventTargetParent(aVisitor);
 }
 
 nsChangeHint

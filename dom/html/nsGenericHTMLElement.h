@@ -498,7 +498,8 @@ public:
    */
   bool CheckHandleEventForAnchorsPreconditions(
          mozilla::EventChainVisitor& aVisitor);
-  nsresult PreHandleEventForAnchors(mozilla::EventChainPreVisitor& aVisitor);
+  nsresult GetEventTargetParentForAnchors(
+             mozilla::EventChainPreVisitor& aVisitor);
   nsresult PostHandleEventForAnchors(mozilla::EventChainPostVisitor& aVisitor);
   bool IsHTMLLink(nsIURI** aURI) const;
 
@@ -1219,8 +1220,10 @@ public:
   virtual IMEState GetDesiredIMEState() override;
   virtual mozilla::EventStates IntrinsicState() const override;
 
-  virtual nsresult PreHandleEvent(
+  virtual nsresult GetEventTargetParent(
                      mozilla::EventChainPreVisitor& aVisitor) override;
+  virtual nsresult PreHandleEvent(
+                     mozilla::EventChainVisitor& aVisitor) override;
 
   virtual bool IsDisabled() const override;
 
@@ -1307,7 +1310,7 @@ protected:
   static bool FormIdUpdated(Element* aOldElement, Element* aNewElement,
                               void* aData);
 
-  // Returns true if the event should not be handled from PreHandleEvent
+  // Returns true if the event should not be handled from GetEventTargetParent
   bool IsElementDisabledForEvents(mozilla::EventMessage aMessage,
                                   nsIFrame* aFrame);
 
