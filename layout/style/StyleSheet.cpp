@@ -12,6 +12,8 @@
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/CSSStyleSheet.h"
 
+#include "mozAutoDocUpdate.h"
+#include "nsIMediaList.h"
 #include "nsNullPrincipal.h"
 
 namespace mozilla {
@@ -349,7 +351,7 @@ StyleSheet::AreRulesAvailable(nsIPrincipal& aSubjectPrincipal,
 JSObject*
 StyleSheet::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
-  return CSSStyleSheetBinding::Wrap(aCx, this, aGivenProto);
+  return dom::CSSStyleSheetBinding::Wrap(aCx, this, aGivenProto);
 }
 
 } // namespace mozilla
