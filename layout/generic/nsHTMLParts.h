@@ -11,6 +11,7 @@
 #include "nscore.h"
 #include "nsISupports.h"
 #include "nsIFrame.h"
+class nsComboboxControlFrame;
 class nsIAtom;
 class nsNodeInfoManager;
 class nsIContent;
@@ -161,7 +162,7 @@ nsIFrame*
 NS_NewNativeSelectControlFrame(nsIPresShell* aPresShell, nsStyleContext* aContext);
 nsContainerFrame*
 NS_NewListControlFrame(nsIPresShell* aPresShell, nsStyleContext* aContext);
-nsContainerFrame*
+nsComboboxControlFrame*
 NS_NewComboboxControlFrame(nsIPresShell* aPresShell, nsStyleContext* aContext, nsFrameState aFlags);
 nsIFrame*
 NS_NewProgressFrame(nsIPresShell* aPresShell, nsStyleContext* aContext);
