@@ -6951,7 +6951,7 @@ var gPrivateBrowsingUI = {
     document.getElementById("Tools:Sanitize").setAttribute("disabled", "true");
 
     if (window.location.href == getBrowserURL()) {
-#ifdef XP_MACOSX
+#if defined(XP_MACOSX) && defined(MOZ_CAN_DRAW_IN_TITLEBAR)
       if (!PrivateBrowsingUtils.permanentPrivateBrowsing) {
         document.documentElement.setAttribute("drawintitlebar", true);
       }
