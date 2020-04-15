@@ -93,6 +93,7 @@
 }
 
 /* Blend the topmost toolbar with the titlebar */
+%ifdef MOZ_CAN_DRAW_IN_TITLEBAR
 #main-window[tabsontop=false]:not([privatebrowsingmode=temporary]) #nav-bar:not(:-moz-lwtheme),
 #main-window[tabsontop=false]:not([privatebrowsingmode=temporary]) #PersonalToolbar[collapsed=true]
  ~ #TabsToolbar:not(:-moz-lwtheme),
@@ -110,6 +111,14 @@
 #main-window[tabsontop=false][privatebrowsingmode=temporary] #nav-bar:not(:-moz-lwtheme) {
   border-bottom: 1px solid rgba(26,26,26,0.2);
 }
+%else
+#main-window[tabsontop=false] #nav-bar:not(:-moz-lwtheme),
+#main-window[tabsontop=false] #PersonalToolbar[collapsed=true]
+ ~ #TabsToolbar:not(:-moz-lwtheme),
+#main-window[tabsontop=true] #TabsToolbar:not(:-moz-lwtheme) {
+  -moz-appearance: toolbar;
+}
+%endif
 
 #personal-bookmarks {
   min-height: 24px;
@@ -124,7 +133,7 @@
 }
 
 
-
+%ifdef MOZ_CAN_DRAW_IN_TITLEBAR
 /* ::::: titlebar ::::: */
 
 #main-window[sizemode="normal"]:not([privatebrowsingmode=temporary]) > #titlebar {
@@ -180,7 +189,7 @@
   margin-left: 7px;
   margin-top: 3px;
 }
-
+%endif
 /* ::::: bookmark toolbar ::::: */
 
 #personal-bookmarks {
@@ -2799,6 +2808,7 @@ toolbar[brighttext] #addonbar-closebutton {
   right: auto;
 }
 
+%ifdef MOZ_CAN_DRAW_IN_TITLEBAR
 #main-window[privatebrowsingmode=temporary] {
   background-image: url("chrome://browser/skin/privatebrowsing-mask.png");
   background-position: top right;
@@ -2852,3 +2862,4 @@ toolbar[brighttext] #addonbar-closebutton {
   padding-inline-end: 50px;
   }
 }
+%endif
