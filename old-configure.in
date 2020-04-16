@@ -2122,6 +2122,7 @@ if test "$MOZ_IOS"; then
    MOZ_AUTH_EXTENSION=
 fi
 MOZ_RAW=
+MOZ_AV1=
 MOZ_VORBIS=
 MOZ_TREMOR=
 MOZ_SAMPLE_TYPE_FLOAT32=
@@ -2922,6 +2923,20 @@ if test -n "$MOZ_RAW"; then
 fi
 
 AC_SUBST(MOZ_RAW)
+
+dnl ========================================================
+dnl = Enable Libaom AV1 Codec
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(av1,
+[  --enable-av1           Enable libaom for av1 video support],
+    MOZ_AV1=1,
+    MOZ_AV1=)
+
+if test -n "$MOZ_AV1"; then
+    AC_DEFINE(MOZ_AV1)
+fi
+
+AC_SUBST(MOZ_AV1)
 
 dnl ========================================================
 dnl = Apple platform decoder support
