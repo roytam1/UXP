@@ -1247,8 +1247,7 @@ pref("privacy.trackingprotection.pbmode.enabled",  false);
 
 pref("dom.event.contextmenu.enabled",       true);
 pref("dom.event.clipboardevents.enabled",   true);
-// Potentially risky option due to side channel attack surface using high res timers.
-pref("dom.event.highrestimestamp.enabled",  false);
+pref("dom.event.highrestimestamp.enabled",  true);
 
 pref("dom.webcomponents.enabled",           false);
 pref("dom.webcomponents.customelements.enabled", false);
