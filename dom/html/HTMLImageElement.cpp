@@ -369,7 +369,7 @@ HTMLImageElement::GetAttributeMappingFunction() const
 
 nsresult
 HTMLImageElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                nsAttrValueOrString* aValue,
+                                const nsAttrValueOrString* aValue,
                                 bool aNotify)
 {
 

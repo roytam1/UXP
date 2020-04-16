@@ -2461,6 +2461,9 @@ Element::SetAttr(int32_t aNamespaceID, nsIAtom* aName,
 
   uint8_t modType;
   bool hasListeners;
+  // We don't want to spend time preparsing class attributes if the value is not
+  // changing, so just init our nsAttrValueOrString with aValue for the
+  // OnlyNotifySameValueSet call.
   nsAttrValueOrString value(aValue);
   nsAttrValue oldValue;
 
@@ -2469,25 +2472,30 @@ Element::SetAttr(int32_t aNamespaceID, nsIAtom* aName,
     return NS_OK;
   }
 
-  nsresult rv = BeforeSetAttr(aNamespaceID, aName, &value, aNotify);
-  NS_ENSURE_SUCCESS(rv, rv);
-  nsAttrValue* preparsedAttrValue = value.GetStoredAttrValue();
+  nsAttrValue attrValue;
+  nsAttrValue* preparsedAttrValue;
+  if (aNamespaceID == kNameSpaceID_None && aName == nsGkAtoms::_class) {
+    attrValue.ParseAtomArray(aValue);
+    value.ResetToAttrValue(attrValue);
+    preparsedAttrValue = &attrValue;
+  } else {
+    preparsedAttrValue = nullptr;
+  }
 
   if (aNotify) {
     nsNodeUtils::AttributeWillChange(this, aNamespaceID, aName, modType,
                                      preparsedAttrValue);
   }
 
+  nsresult rv = BeforeSetAttr(aNamespaceID, aName, &value, aNotify);
+  NS_ENSURE_SUCCESS(rv, rv);
+
   // Hold a script blocker while calling ParseAttribute since that can call
   // out to id-observers
   nsAutoScriptBlocker scriptBlocker;
 
-  nsAttrValue attrValue;
-  if (preparsedAttrValue) {
-    attrValue.SwapValueWith(*preparsedAttrValue);
-  }
-  // Even the value was pre-parsed in BeforeSetAttr, we still need to call
-  // ParseAttribute because it can have side effects.
+  // Even the value was pre-parsed, we still need to call ParseAttribute because
+  // it can have side effects.
   if (!ParseAttribute(aNamespaceID, aName, aValue, attrValue)) {
     attrValue.SetTo(aValue);
   }
@@ -2523,13 +2531,13 @@ Element::SetParsedAttr(int32_t aNamespaceID, nsIAtom* aName,
     return NS_OK;
   }
 
-  nsresult rv = BeforeSetAttr(aNamespaceID, aName, &value, aNotify);
-  NS_ENSURE_SUCCESS(rv, rv);
-
   if (aNotify) {
     nsNodeUtils::AttributeWillChange(this, aNamespaceID, aName, modType,
                                      &aParsedValue);
   }
+
+  nsresult rv = BeforeSetAttr(aNamespaceID, aName, &value, aNotify);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   return SetAttrAndNotify(aNamespaceID, aName, aPrefix, oldValue,
                           aParsedValue, modType, hasListeners, aNotify,
@@ -2599,8 +2607,6 @@ Element::SetAttrAndNotify(int32_t aNamespaceID,
     }
   }
 
-  UpdateState(aNotify);
-
   if (CustomElementRegistry::IsCustomElementEnabled()) {
     if (CustomElementData* data = GetCustomElementData()) {
       if (CustomElementDefinition* definition =
@@ -2639,6 +2645,8 @@ Element::SetAttrAndNotify(int32_t aNamespaceID,
     }
   }
 
+  UpdateState(aNotify);
+
   if (aNotify) {
     // Don't pass aOldValue to AttributeChanged since it may not be reliable.
     // Callers only compute aOldValue under certain conditions which may not
@@ -2671,25 +2679,6 @@ Element::SetAttrAndNotify(int32_t aNamespaceID,
     (new AsyncEventDispatcher(this, mutation))->RunDOMEventWhenSafe();
   }
 
-  return NS_OK;
-}
-
-nsresult
-Element::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                       nsAttrValueOrString* aValue, bool aNotify)
-{
-  if (aNamespaceID == kNameSpaceID_None) {
-    if (aName == nsGkAtoms::_class) {
-      // aValue->GetAttrValue will only be non-null here when this is called
-      // via Element::SetParsedAttr. This shouldn't happen for "class", but
-      // this will handle it.
-      if (aValue && !aValue->GetAttrValue()) {
-        nsAttrValue attr;
-        attr.ParseAtomArray(aValue->String());
-        aValue->TakeParsedValue(attr);
-      }
-    }
-  }
   return NS_OK;
 }
 
@@ -2809,9 +2798,6 @@ Element::UnsetAttr(int32_t aNameSpaceID, nsIAtom* aName,
     return NS_OK;
   }
 
-  nsresult rv = BeforeSetAttr(aNameSpaceID, aName, nullptr, aNotify);
-  NS_ENSURE_SUCCESS(rv, rv);
-
   nsIDocument *document = GetComposedDoc();
   mozAutoDocUpdate updateBatch(document, UPDATE_CONTENT_MODEL, aNotify);
 
@@ -2820,6 +2806,9 @@ Element::UnsetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                      nsIDOMMutationEvent::REMOVAL,
                                      nullptr);
   }
+
+  nsresult rv = BeforeSetAttr(aNameSpaceID, aName, nullptr, aNotify);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   bool hasMutationListeners = aNotify &&
     nsContentUtils::HasMutationListeners(this,
@@ -2869,8 +2858,6 @@ Element::UnsetAttr(int32_t aNameSpaceID, nsIAtom* aName,
     }
   }
 
-  UpdateState(aNotify);
-
   if (CustomElementRegistry::IsCustomElementEnabled()) {
     if (CustomElementData* data = GetCustomElementData()) {
       if (CustomElementDefinition* definition =
@@ -2897,15 +2884,17 @@ Element::UnsetAttr(int32_t aNameSpaceID, nsIAtom* aName,
     }
   }
 
+  rv = AfterSetAttr(aNameSpaceID, aName, nullptr, aNotify);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  UpdateState(aNotify);
+
   if (aNotify) {
     // We can always pass oldValue here since there is no new value which could
     // have corrupted it.
     nsNodeUtils::AttributeChanged(this, aNameSpaceID, aName,
                                   nsIDOMMutationEvent::REMOVAL, &oldValue);
   }
-
-  rv = AfterSetAttr(aNameSpaceID, aName, nullptr, aNotify);
-  NS_ENSURE_SUCCESS(rv, rv);
 
   if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::dir) {
     OnSetDirAttr(this, nullptr, hadValidDir, hadDirAuto, aNotify);

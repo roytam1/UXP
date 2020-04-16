@@ -1962,7 +1962,7 @@ nsGenericHTMLFormElement::UnbindFromTree(bool aDeep, bool aNullParent)
 
 nsresult
 nsGenericHTMLFormElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                        nsAttrValueOrString* aValue,
+                                        const nsAttrValueOrString* aValue,
                                         bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None) {
@@ -1995,13 +1995,6 @@ nsGenericHTMLFormElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
       }
 
       mForm->RemoveElement(this, false);
-
-      // Removing the element from the form can make it not be the default
-      // control anymore.  Go ahead and notify on that change, though we might
-      // end up readding and becoming the default control again in
-      // AfterSetAttr.
-      // FIXME: Bug 656197
-      UpdateState(aNotify);
     }
 
     if (aName == nsGkAtoms::form) {
@@ -2051,12 +2044,6 @@ nsGenericHTMLFormElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
       }
 
       mForm->AddElement(this, false, aNotify);
-
-      // Adding the element to the form can make it be the default control .
-      // Go ahead and notify on that change.
-      // Note: no need to notify on CanBeDisabled(), since type attr
-      // changes can't affect that.
-      UpdateState(aNotify);
     }
 
     if (aName == nsGkAtoms::form) {

@@ -1286,7 +1286,7 @@ HTMLTextAreaElement::UnbindFromTree(bool aDeep, bool aNullParent)
 
 nsresult
 HTMLTextAreaElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                   nsAttrValueOrString* aValue,
+                                   const nsAttrValueOrString* aValue,
                                    bool aNotify)
 {
   if (aNotify && aName == nsGkAtoms::disabled &&
@@ -1364,8 +1364,6 @@ HTMLTextAreaElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
     } else if (aName == nsGkAtoms::minlength) {
       UpdateTooShortValidityState();
     }
-
-    UpdateState(aNotify);
   }
 
   return nsGenericHTMLFormElementWithState::AfterSetAttr(aNameSpaceID, aName, aValue,
