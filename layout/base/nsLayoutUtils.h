@@ -276,50 +276,26 @@ public:
   static mozilla::layout::FrameChildListID GetChildListNameFor(nsIFrame* aChildFrame);
 
   /**
-   * GetBeforeFrameForContent returns the ::before frame for aContent, if
-   * one exists.  This is typically O(1).  The frame passed in must be
-   * the first-in-flow.
-   *
-   * @param aGenConParentFrame an ancestor of the ::before frame
-   * @param aContent the content whose ::before is wanted
-   * @return the ::before frame or nullptr if there isn't one
+   * Returns the ::before pseudo-element for aContent, if any.
    */
-  static nsIFrame* GetBeforeFrameForContent(nsIFrame* aGenConParentFrame,
-                                            const nsIContent* aContent);
+  static mozilla::dom::Element* GetBeforePseudo(const nsIContent* aContent);
 
   /**
-   * GetBeforeFrame returns the outermost ::before frame of the given frame, if
-   * one exists.  This is typically O(1).  The frame passed in must be
-   * the first-in-flow.
-   *
-   * @param aFrame the frame whose ::before is wanted
-   * @return the :before frame or nullptr if there isn't one
+   * Returns the frame corresponding to the ::before pseudo-element for
+   * aContent, if any.
    */
-  static nsIFrame* GetBeforeFrame(nsIFrame* aFrame);
+  static nsIFrame* GetBeforeFrame(const nsIContent* aContent);
 
   /**
-   * GetAfterFrameForContent returns the ::after frame for aContent, if one
-   * exists.  This will walk the in-flow chain of aGenConParentFrame to the
-   * last-in-flow if needed.  This function is typically O(N) in the number
-   * of child frames, following in-flows, etc.
-   *
-   * @param aGenConParentFrame an ancestor of the ::after frame
-   * @param aContent the content whose ::after is wanted
-   * @return the ::after frame or nullptr if there isn't one
+   * Returns the ::after pseudo-element for aContent, if any.
    */
-  static nsIFrame* GetAfterFrameForContent(nsIFrame* aGenConParentFrame,
-                                           const nsIContent* aContent);
+  static mozilla::dom::Element* GetAfterPseudo(const nsIContent* aContent);
 
   /**
-   * GetAfterFrame returns the outermost ::after frame of the given frame, if one
-   * exists.  This will walk the in-flow chain to the last-in-flow if
-   * needed.  This function is typically O(N) in the number of child
-   * frames, following in-flows, etc.
-   *
-   * @param aFrame the frame whose ::after is wanted
-   * @return the :after frame or nullptr if there isn't one
+   * Returns the frame corresponding to the ::after pseudo-element for aContent,
+   * if any.
    */
-  static nsIFrame* GetAfterFrame(nsIFrame* aFrame);
+  static nsIFrame* GetAfterFrame(const nsIContent* aContent);
 
   /**
    * Given a frame, search up the frame tree until we find an
@@ -376,23 +352,6 @@ public:
    * placeholder frame.
    */
   static nsIFrame* GetRealPrimaryFrameFor(const nsIContent* aContent);
-
-  /**
-   * IsGeneratedContentFor returns true if aFrame is the outermost
-   * frame for generated content of type aPseudoElement for aContent.
-   * aFrame *might not* have the aPseudoElement pseudo-style! For example
-   * it might be a table wrapper frame and the inner table frame might
-   * have the pseudo-style.
-   *
-   * @param aContent the content node we're looking at.  If this is
-   *        null, then we just assume that aFrame has the right content
-   *        pointer.
-   * @param aFrame the frame we're looking at
-   * @param aPseudoElement the pseudo type we're interested in
-   * @return whether aFrame is the generated aPseudoElement frame for aContent
-   */
-  static bool IsGeneratedContentFor(nsIContent* aContent, nsIFrame* aFrame,
-                                      nsIAtom* aPseudoElement);
 
 #ifdef DEBUG
   // TODO: remove, see bug 598468.

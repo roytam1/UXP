@@ -339,6 +339,13 @@ public:
    *  NOTE! If the two nodes aren't in the same connected subtree,
    *  the result is 1, and the optional aDisconnected parameter
    *  is set to true.
+   *
+   *  XXX aOffset1 and aOffset2 should be uint32_t since valid offset value is
+   *      between 0 - UINT32_MAX.  However, these methods work even with
+   *      negative offset values!  E.g., when aOffset1 is -1 and aOffset is 0,
+   *      these methods return -1.  Some root callers depend on this behavior.
+   *      On the other hand, nsINode can have ATTRCHILD_ARRAY_MAX_CHILD_COUN
+   *      (0x3FFFFF) at most.  Therefore, they can be int32_t for now.
    */
   static int32_t ComparePoints(nsINode* aParent1, int32_t aOffset1,
                                nsINode* aParent2, int32_t aOffset2,
@@ -582,7 +589,7 @@ public:
 
   /**
    * Returns true if |aName| is a valid name to be registered via
-   * document.registerElement.
+   * customElements.define.
    */
   static bool IsCustomElementName(nsIAtom* aName);
 
@@ -2408,18 +2415,6 @@ public:
   static mozilla::LogModule* DOMDumpLog();
 
   /**
-   * Returns whether a content is an insertion point for XBL
-   * bindings or web components ShadowRoot. In web components,
-   * this corresponds to a <content> element that participates
-   * in node distribution. In XBL this corresponds to an
-   * <xbl:children> element in anonymous content.
-   *
-   * @param aContent The content to test for being an insertion point.
-   */
-  static bool IsContentInsertionPoint(nsIContent* aContent);
-
-
-  /**
    * Returns whether the children of the provided content are
    * nodes that are distributed to Shadow DOM insertion points.
    */
@@ -2735,12 +2730,17 @@ public:
                                        mozilla::dom::LifecycleAdoptedCallbackArgs* aAdoptedCallbackArgs = nullptr,
                                        mozilla::dom::CustomElementDefinition* aDefinition = nullptr);
 
-  static void GetCustomPrototype(nsIDocument* aDoc,
-                                 int32_t aNamespaceID,
-                                 nsIAtom* aAtom,
-                                 JS::MutableHandle<JSObject*> prototype);
-
   static bool AttemptLargeAllocationLoad(nsIHttpChannel* aChannel);
+
+  /**
+   * Appends all "document level" native anonymous content subtree roots for
+   * aDocument to aElements.  Document level NAC subtrees are those created
+   * by ancestor frames of the document element's primary frame, such as
+   * the scrollbar elements created by the root scroll frame.
+   */
+  static void AppendDocumentLevelNativeAnonymousContentTo(
+      nsIDocument* aDocument,
+      nsTArray<nsIContent*>& aElements);
 
   /**
    * Detect whether a string is a (CSS) local-url.
@@ -2751,6 +2751,12 @@ public:
 
   static bool
   IsWebComponentsEnabled() { return sIsWebComponentsEnabled; }
+
+  /**
+   * Walks up the tree from aElement until it finds an element that is
+   * not native anonymous content.  aElement must be NAC itself.
+   */
+  static Element* GetClosestNonNativeAnonymousAncestor(Element* aElement);
 
   static bool
   IsCustomElementsEnabled() { return sIsCustomElementsEnabled; }

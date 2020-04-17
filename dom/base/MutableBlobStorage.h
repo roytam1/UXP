@@ -7,6 +7,9 @@
 #ifndef mozilla_dom_MutableBlobStorage_h
 #define mozilla_dom_MutableBlobStorage_h
 
+#include "nsCycleCollectionParticipant.h"
+#include "nsThreadUtils.h"
+#include "nsProxyRelease.h"
 #include "mozilla/RefPtr.h"
 #include "prio.h"
 

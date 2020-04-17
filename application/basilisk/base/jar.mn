@@ -79,7 +79,7 @@ browser.jar:
 #endif
         content/browser/browser-sidebar.js            (content/browser-sidebar.js)
 *       content/browser/browser-tabPreviews.xml       (content/browser-tabPreviews.xml)
-#ifdef CAN_DRAW_IN_TITLEBAR
+#ifdef MOZ_CAN_DRAW_IN_TITLEBAR
         content/browser/browser-tabsintitlebar.js       (content/browser-tabsintitlebar.js)
 #else
         content/browser/browser-tabsintitlebar.js       (content/browser-tabsintitlebar-stub.js)

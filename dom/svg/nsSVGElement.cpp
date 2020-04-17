@@ -18,6 +18,7 @@
 #include "nsIDOMMutationEvent.h"
 #include "nsSVGPathGeometryElement.h"
 #include "mozilla/InternalMutationEvent.h"
+#include "mozAutoDocUpdate.h"
 #include "nsError.h"
 #include "nsIPresShell.h"
 #include "nsGkAtoms.h"
@@ -272,7 +273,9 @@ nsSVGElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
     ParseStyleAttribute(stringValue, attrValue, true);
     // Don't bother going through SetInlineStyleDeclaration; we don't
     // want to fire off mutation events or document notifications anyway
-    rv = mAttrsAndChildren.SetAndSwapAttr(nsGkAtoms::style, attrValue);
+    bool oldValueSet;
+    rv = mAttrsAndChildren.SetAndSwapAttr(nsGkAtoms::style, attrValue,
+                                          &oldValueSet);
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
@@ -281,7 +284,8 @@ nsSVGElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
 
 nsresult
 nsSVGElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                           const nsAttrValue* aValue, bool aNotify)
+                           const nsAttrValue* aValue,
+                           const nsAttrValue* aOldValue, bool aNotify)
 {
   // We don't currently use nsMappedAttributes within SVG. If this changes, we
   // need to be very careful because some nsAttrValues used by SVG point to
@@ -309,7 +313,8 @@ nsSVGElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
-  return nsSVGElementBase::AfterSetAttr(aNamespaceID, aName, aValue, aNotify);
+  return nsSVGElementBase::AfterSetAttr(aNamespaceID, aName, aValue, aOldValue,
+                                        aNotify);
 }
 
 bool
@@ -1441,26 +1446,15 @@ nsSVGElement::WillChangeValue(nsIAtom* aName)
   // We need an empty attr value:
   //   a) to pass to BeforeSetAttr when GetParsedAttr returns nullptr
   //   b) to store the old value in the case we have mutation listeners
-  // We can use the same value for both purposes since (a) happens before (b).
+  //
+  // We can use the same value for both purposes, because if GetParsedAttr
+  // returns non-null its return value is what will get passed to BeforeSetAttr,
+  // not matter what our mutation listener situation is.
+  //
   // Also, we should be careful to always return this value to benefit from
   // return value optimization.
   nsAttrValue emptyOrOldAttrValue;
   const nsAttrValue* attrValue = GetParsedAttr(aName);
-
-  // This is not strictly correct--the attribute value parameter for
-  // BeforeSetAttr should reflect the value that *will* be set but that implies
-  // allocating, e.g. an extra nsSVGLength2, and isn't necessary at the moment
-  // since no SVG elements overload BeforeSetAttr. For now we just pass the
-  // current value.
-  nsAttrValueOrString attrStringOrValue(attrValue ? *attrValue
-                                                  : emptyOrOldAttrValue);
-  DebugOnly<nsresult> rv =
-    BeforeSetAttr(kNameSpaceID_None, aName, &attrStringOrValue,
-                  kNotifyDocumentObservers);
-  // SVG elements aren't expected to overload BeforeSetAttr in such a way that
-  // it may fail. So long as this is the case we don't need to check and pass on
-  // the return value which simplifies the calling code significantly.
-  MOZ_ASSERT(NS_SUCCEEDED(rv), "Unexpected failure from BeforeSetAttr");
 
   // We only need to set the old value if we have listeners since otherwise it
   // isn't used.
@@ -1476,6 +1470,21 @@ nsSVGElement::WillChangeValue(nsIAtom* aName)
                   : static_cast<uint8_t>(nsIDOMMutationEvent::ADDITION);
   nsNodeUtils::AttributeWillChange(this, kNameSpaceID_None, aName, modType,
                                    nullptr);
+
+  // This is not strictly correct--the attribute value parameter for
+  // BeforeSetAttr should reflect the value that *will* be set but that implies
+  // allocating, e.g. an extra nsSVGLength2, and isn't necessary at the moment
+  // since no SVG elements overload BeforeSetAttr. For now we just pass the
+  // current value.
+  nsAttrValueOrString attrStringOrValue(attrValue ? *attrValue
+                                                  : emptyOrOldAttrValue);
+  DebugOnly<nsresult> rv =
+    BeforeSetAttr(kNameSpaceID_None, aName, &attrStringOrValue,
+                  kNotifyDocumentObservers);
+  // SVG elements aren't expected to overload BeforeSetAttr in such a way that
+  // it may fail. So long as this is the case we don't need to check and pass on
+  // the return value which simplifies the calling code significantly.
+  MOZ_ASSERT(NS_SUCCEEDED(rv), "Unexpected failure from BeforeSetAttr");
 
   return emptyOrOldAttrValue;
 }
@@ -1505,9 +1514,17 @@ nsSVGElement::DidChangeValue(nsIAtom* aName,
   uint8_t modType = HasAttr(kNameSpaceID_None, aName)
                   ? static_cast<uint8_t>(nsIDOMMutationEvent::MODIFICATION)
                   : static_cast<uint8_t>(nsIDOMMutationEvent::ADDITION);
-  SetAttrAndNotify(kNameSpaceID_None, aName, nullptr, aEmptyOrOldValue,
+
+  nsIDocument* document = GetComposedDoc();
+  mozAutoDocUpdate updateBatch(document, UPDATE_CONTENT_MODEL,
+                               kNotifyDocumentObservers);
+  // XXX Really, the fourth argument to SetAttrAndNotify should be null if
+  // aEmptyOrOldValue does not represent the actual previous value of the
+  // attribute, but currently SVG elements do not even use the old attribute
+  // value in |AfterSetAttr|, so this should be ok.
+  SetAttrAndNotify(kNameSpaceID_None, aName, nullptr, &aEmptyOrOldValue,
                    aNewValue, modType, hasListeners, kNotifyDocumentObservers,
-                   kCallAfterSetAttr);
+                   kCallAfterSetAttr, document, updateBatch);
 }
 
 void
@@ -1527,7 +1544,8 @@ nsSVGElement::MaybeSerializeAttrBeforeRemoval(nsIAtom* aName, bool aNotify)
   nsAutoString serializedValue;
   attrValue->ToString(serializedValue);
   nsAttrValue oldAttrValue(serializedValue);
-  mAttrsAndChildren.SetAndSwapAttr(aName, oldAttrValue);
+  bool oldValueSet;
+  mAttrsAndChildren.SetAndSwapAttr(aName, oldAttrValue, &oldValueSet);
 }
 
 /* static */

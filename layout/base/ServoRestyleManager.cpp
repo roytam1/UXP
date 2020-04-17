@@ -277,24 +277,17 @@ ServoRestyleManager::FrameForPseudoElement(const nsIContent* aContent,
                                            nsIAtom* aPseudoTagOrNull)
 {
   MOZ_ASSERT_IF(aPseudoTagOrNull, aContent->IsElement());
-  nsIFrame* primaryFrame = aContent->GetPrimaryFrame();
 
   if (!aPseudoTagOrNull) {
-    return primaryFrame;
+    return aContent->GetPrimaryFrame();
   }
 
-  if (!primaryFrame) {
-    return nullptr;
-  }
-
-  // NOTE: we probably need to special-case display: contents here. Gecko's
-  // RestyleManager passes the primary frame of the parent instead.
   if (aPseudoTagOrNull == nsCSSPseudoElements::before) {
-    return nsLayoutUtils::GetBeforeFrameForContent(primaryFrame, aContent);
+    return nsLayoutUtils::GetBeforeFrame(aContent);
   }
 
   if (aPseudoTagOrNull == nsCSSPseudoElements::after) {
-    return nsLayoutUtils::GetAfterFrameForContent(primaryFrame, aContent);
+    return nsLayoutUtils::GetAfterFrame(aContent);
   }
 
   MOZ_CRASH("Unkown pseudo-element given to "
@@ -513,12 +506,12 @@ ServoRestyleManager::ContentRemoved(nsINode* aContainer,
   NS_WARNING("stylo: ServoRestyleManager::ContentRemoved not implemented");
 }
 
-nsresult
+void
 ServoRestyleManager::ContentStateChanged(nsIContent* aContent,
                                          EventStates aChangedBits)
 {
   if (!aContent->IsElement()) {
-    return NS_OK;
+    return;
   }
 
   Element* aElement = aContent->AsElement();
@@ -552,7 +545,6 @@ ServoRestyleManager::ContentStateChanged(nsIContent* aContent,
   snapshot->AddState(previousState);
 
   PostRestyleEvent(aElement, restyleHint, changeHint);
-  return NS_OK;
 }
 
 void

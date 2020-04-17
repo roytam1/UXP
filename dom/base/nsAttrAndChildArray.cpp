@@ -382,12 +382,15 @@ nsAttrAndChildArray::AttrAt(uint32_t aPos) const
 }
 
 nsresult
-nsAttrAndChildArray::SetAndSwapAttr(nsIAtom* aLocalName, nsAttrValue& aValue)
+nsAttrAndChildArray::SetAndSwapAttr(nsIAtom* aLocalName, nsAttrValue& aValue,
+                                    bool* aHadValue)
 {
+  *aHadValue = false;
   uint32_t i, slotCount = AttrSlotCount();
   for (i = 0; i < slotCount && AttrSlotIsTaken(i); ++i) {
     if (ATTRS(mImpl)[i].mName.Equals(aLocalName)) {
       ATTRS(mImpl)[i].mValue.SwapValueWith(aValue);
+      *aHadValue = true;
       return NS_OK;
     }
   }
@@ -407,21 +410,22 @@ nsAttrAndChildArray::SetAndSwapAttr(nsIAtom* aLocalName, nsAttrValue& aValue)
 }
 
 nsresult
-nsAttrAndChildArray::SetAndSwapAttr(mozilla::dom::NodeInfo* aName, nsAttrValue& aValue)
+nsAttrAndChildArray::SetAndSwapAttr(mozilla::dom::NodeInfo* aName,
+                                    nsAttrValue& aValue, bool* aHadValue)
 {
   int32_t namespaceID = aName->NamespaceID();
   nsIAtom* localName = aName->NameAtom();
   if (namespaceID == kNameSpaceID_None) {
-    return SetAndSwapAttr(localName, aValue);
+    return SetAndSwapAttr(localName, aValue, aHadValue);
   }
 
+  *aHadValue = false;
   uint32_t i, slotCount = AttrSlotCount();
   for (i = 0; i < slotCount && AttrSlotIsTaken(i); ++i) {
     if (ATTRS(mImpl)[i].mName.Equals(localName, namespaceID)) {
       ATTRS(mImpl)[i].mName.SetTo(aName);
-      ATTRS(mImpl)[i].mValue.Reset();
       ATTRS(mImpl)[i].mValue.SwapValueWith(aValue);
-
+      *aHadValue = true;
       return NS_OK;
     }
   }
@@ -576,10 +580,11 @@ nsAttrAndChildArray::IndexOfAttr(nsIAtom* aLocalName, int32_t aNamespaceID) cons
 }
 
 nsresult
-nsAttrAndChildArray::SetAndTakeMappedAttr(nsIAtom* aLocalName,
+nsAttrAndChildArray::SetAndSwapMappedAttr(nsIAtom* aLocalName,
                                           nsAttrValue& aValue,
                                           nsMappedAttributeElement* aContent,
-                                          nsHTMLStyleSheet* aSheet)
+                                          nsHTMLStyleSheet* aSheet,
+                                          bool* aHadValue)
 {
   bool willAdd = true;
   if (mImpl && mImpl->mMappedAttrs) {
@@ -589,7 +594,7 @@ nsAttrAndChildArray::SetAndTakeMappedAttr(nsIAtom* aLocalName,
   RefPtr<nsMappedAttributes> mapped =
     GetModifiableMapped(aContent, aSheet, willAdd);
 
-  mapped->SetAndTakeAttr(aLocalName, aValue);
+  mapped->SetAndSwapAttr(aLocalName, aValue, aHadValue);
 
   return MakeMappedUnique(mapped);
 }
@@ -714,10 +719,19 @@ nsAttrAndChildArray::MappedAttrCount() const
   return mImpl && mImpl->mMappedAttrs ? (uint32_t)mImpl->mMappedAttrs->Count() : 0;
 }
 
+nsresult
+nsAttrAndChildArray::ForceMapped(nsMappedAttributeElement* aContent, nsIDocument* aDocument)
+{
+  nsHTMLStyleSheet* sheet = aDocument->GetAttributeStyleSheet();
+  RefPtr<nsMappedAttributes> mapped = GetModifiableMapped(aContent, sheet, false, 0);
+  return MakeMappedUnique(mapped);
+}
+
 nsMappedAttributes*
 nsAttrAndChildArray::GetModifiableMapped(nsMappedAttributeElement* aContent,
                                          nsHTMLStyleSheet* aSheet,
-                                         bool aWillAddAttr)
+                                         bool aWillAddAttr,
+                                         int32_t aAttrCount)
 {
   if (mImpl && mImpl->mMappedAttrs) {
     return mImpl->mMappedAttrs->Clone(aWillAddAttr);
@@ -727,7 +741,7 @@ nsAttrAndChildArray::GetModifiableMapped(nsMappedAttributeElement* aContent,
 
   nsMapRuleToAttributesFunc mapRuleFunc =
     aContent->GetAttributeMappingFunction();
-  return new nsMappedAttributes(aSheet, mapRuleFunc);
+  return new (aAttrCount) nsMappedAttributes(aSheet, mapRuleFunc);
 }
 
 nsresult

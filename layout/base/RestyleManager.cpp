@@ -146,8 +146,10 @@ RestyleManager::RestyleElement(Element*               aElement,
   }
 
   if (aMinHint & nsChangeHint_ReconstructFrame) {
-    FrameConstructor()->RecreateFramesForContent(aElement, false,
-      nsCSSFrameConstructor::REMOVE_FOR_RECONSTRUCTION, nullptr);
+    FrameConstructor()->RecreateFramesForContent(
+      aElement,
+      nsCSSFrameConstructor::InsertionKind::Sync,
+      nsCSSFrameConstructor::REMOVE_FOR_RECONSTRUCTION);
   } else if (aPrimaryFrame) {
     ComputeAndProcessStyleChange(aPrimaryFrame, aMinHint, aRestyleTracker,
                                  aRestyleHint, aRestyleHintData);
@@ -246,14 +248,14 @@ ElementForStyleContext(nsIContent* aParentContent,
 
 // Forwarded nsIDocumentObserver method, to handle restyling (and
 // passing the notification to the frame).
-nsresult
+void
 RestyleManager::ContentStateChanged(nsIContent* aContent,
                                     EventStates aStateMask)
 {
   // XXXbz it would be good if this function only took Elements, but
   // we'd have to make ESM guarantee that usefully.
   if (!aContent->IsElement()) {
-    return NS_OK;
+    return;
   }
 
   Element* aElement = aContent->AsElement();
@@ -263,7 +265,6 @@ RestyleManager::ContentStateChanged(nsIContent* aContent,
   ContentStateChangedInternal(aElement, aStateMask, &changeHint, &restyleHint);
 
   PostRestyleEvent(aElement, restyleHint, changeHint);
-  return NS_OK;
 }
 
 // Forwarded nsIMutationObserver method, to handle restyling.
@@ -1062,6 +1063,25 @@ ElementForStyleContext(nsIContent* aParentContent,
     return f->GetContent()->AsElement();
   }
 
+  Element* frameElement = aFrame->GetContent()->AsElement();
+  if (frameElement->IsNativeAnonymous() &&
+      nsCSSPseudoElements::PseudoElementIsJSCreatedNAC(aPseudoType)) {
+    // NAC-implemented pseudos use the closest non-NAC element as their
+    // element to inherit from.
+    //
+    // FIXME(heycam): In theory we shouldn't need to limit this only to
+    // JS-created pseudo-implementing NAC, as all pseudo-implementing
+    // should use the closest non-native anonymous ancestor element as
+    // its originating element.  But removing that part of the condition
+    // reveals some bugs in style resultion with display:contents and
+    // XBL.  See bug 1345809.
+    Element* originatingElement =
+      nsContentUtils::GetClosestNonNativeAnonymousAncestor(frameElement);
+    if (originatingElement) {
+      return originatingElement;
+    }
+  }
+
   if (aParentContent) {
     return aParentContent->AsElement();
   }
@@ -1811,7 +1831,7 @@ ElementRestyler::ConditionallyRestyleUndisplayedNodes(
   }
 
   for (UndisplayedNode* undisplayed = aUndisplayed; undisplayed;
-       undisplayed = undisplayed->mNext) {
+       undisplayed = undisplayed->getNext()) {
 
     if (!undisplayed->mContent->IsElement()) {
       continue;
@@ -2336,6 +2356,16 @@ ElementRestyler::ComputeRestyleResultFromFrame(nsIFrame* aSelf,
   // style contexts.
   if (aSelf->GetAdditionalStyleContext(0)) {
     LOG_RESTYLE_CONTINUE("there are additional style contexts");
+    aRestyleResult = RestyleResult::eContinue;
+    aCanStopWithStyleChange = false;
+    return;
+  }
+
+  // Each NAC element inherits from the first non-NAC ancestor, so child
+  // NAC may inherit from our parent instead of us. That means we can't
+  // cull traversal if our style context didn't change.
+  if (aSelf->GetContent() && aSelf->GetContent()->IsNativeAnonymous()) {
+    LOG_RESTYLE_CONTINUE("native anonymous content");
     aRestyleResult = RestyleResult::eContinue;
     aCanStopWithStyleChange = false;
     return;
@@ -3442,7 +3472,7 @@ ElementRestyler::RestyleUndisplayedNodes(nsRestyleHint      aChildRestyleHint,
   if (undisplayed) {
     pusher.PushAncestorAndStyleScope(undisplayedParent);
   }
-  for (; undisplayed; undisplayed = undisplayed->mNext) {
+  for (; undisplayed; undisplayed = undisplayed->getNext()) {
     NS_ASSERTION(undisplayedParent ||
                  undisplayed->mContent ==
                    mPresContext->Document()->GetRootElement(),
@@ -3459,7 +3489,7 @@ ElementRestyler::RestyleUndisplayedNodes(nsRestyleHint      aChildRestyleHint,
     // not have a frame and would not otherwise be pushed as an ancestor.
     nsIContent* parent = undisplayed->mContent->GetParent();
     TreeMatchContext::AutoAncestorPusher insertionPointPusher(mTreeMatchContext);
-    if (parent && nsContentUtils::IsContentInsertionPoint(parent)) {
+    if (parent && parent->IsActiveChildrenElement()) {
       insertionPointPusher.PushAncestorAndStyleScope(parent);
     }
 
@@ -3598,14 +3628,14 @@ ElementRestyler::MustReframeForPseudo(CSSPseudoElementType aPseudoType,
     // Check for a ::before pseudo style and the absence of a ::before content,
     // but only if aFrame is null or is the first continuation/ib-split.
     if ((aFrame && !nsLayoutUtils::IsFirstContinuationOrIBSplitSibling(aFrame)) ||
-        nsLayoutUtils::GetBeforeFrameForContent(aGenConParentFrame, aContent)) {
+        nsLayoutUtils::GetBeforeFrame(aContent)) {
       return false;
     }
   } else {
     // Similarly for ::after, but check for being the last continuation/
     // ib-split.
     if ((aFrame && nsLayoutUtils::GetNextContinuationOrIBSplitSibling(aFrame)) ||
-        nsLayoutUtils::GetAfterFrameForContent(aGenConParentFrame, aContent)) {
+        nsLayoutUtils::GetAfterFrame(aContent)) {
       return false;
     }
   }
@@ -3685,7 +3715,7 @@ ElementRestyler::RestyleContentChildren(nsIFrame* aParent,
         // nsPageFrame that does not have a content.
         nsIContent* parent = child->GetContent() ? child->GetContent()->GetParent() : nullptr;
         TreeMatchContext::AutoAncestorPusher insertionPointPusher(mTreeMatchContext);
-        if (parent && nsContentUtils::IsContentInsertionPoint(parent)) {
+        if (parent && parent->IsActiveChildrenElement()) {
           insertionPointPusher.PushAncestorAndStyleScope(parent);
         }
 

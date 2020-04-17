@@ -21,6 +21,7 @@
 // this one for it, for ParentDict. Hopefully it won't begin to rely on it in more fundamental ways.
 namespace mozilla {
 namespace dom {
+class DocGroup;
 class TestExternalInterface;
 class Promise;
 } // namespace dom
@@ -46,8 +47,9 @@ public:
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_RENAMED_INTERFACE_IID)
   NS_DECL_ISUPPORTS
 
-  // We need a GetParentObject to make binding codegen happy
+  // We need a GetParentObject and GetDocGroup to make binding codegen happy
   virtual nsISupports* GetParentObject();
+  DocGroup* GetDocGroup() const;
 };
 
 NS_DEFINE_STATIC_IID_ACCESSOR(nsRenamedInterface, NS_RENAMED_INTERFACE_IID)
@@ -64,8 +66,9 @@ public:
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_INDIRECTLY_IMPLEMENTED_INTERFACE_IID)
   NS_DECL_ISUPPORTS
 
-  // We need a GetParentObject to make binding codegen happy
+  // We need a GetParentObject and GetDocGroup to make binding codegen happy
   virtual nsISupports* GetParentObject();
+  DocGroup* GetDocGroup() const;
 
   bool IndirectlyImplementedProperty();
   void IndirectlyImplementedProperty(bool);

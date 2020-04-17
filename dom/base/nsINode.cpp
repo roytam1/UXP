@@ -1243,7 +1243,7 @@ nsINode::RemoveEventListener(const nsAString& aType,
 NS_IMPL_REMOVE_SYSTEM_EVENT_LISTENER(nsINode)
 
 nsresult
-nsINode::PreHandleEvent(EventChainPreVisitor& aVisitor)
+nsINode::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   // This is only here so that we can use the NS_DECL_NSIDOMTARGET macro
   NS_ABORT();
@@ -1515,7 +1515,6 @@ nsINode::SetExplicitBaseURI(nsIURI* aURI)
 {
   nsresult rv = SetProperty(nsGkAtoms::baseURIProperty, aURI, ReleaseURI);
   if (NS_SUCCEEDED(rv)) {
-    SetHasExplicitBaseURI();
     NS_ADDREF(aURI);
   }
   return rv;
@@ -3133,3 +3132,9 @@ nsINode::IsStyledByServo() const
   return OwnerDoc()->IsStyledByServo();
 }
 #endif
+
+DocGroup*
+nsINode::GetDocGroup() const
+{
+  return OwnerDoc()->GetDocGroup();
+}

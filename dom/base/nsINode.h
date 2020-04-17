@@ -72,6 +72,7 @@ inline bool IsSpaceCharacter(char aChar) {
 class AccessibleNode;
 struct BoxQuadOptions;
 struct ConvertCoordinateOptions;
+class DocGroup;
 class DOMPoint;
 class DOMQuad;
 class DOMRectReadOnly;
@@ -126,9 +127,28 @@ enum {
 
   NODE_IS_EDITABLE =                      NODE_FLAG_BIT(7),
 
-  // For all Element nodes, NODE_MAY_HAVE_CLASS is guaranteed to be set if the
-  // node in fact has a class, but may be set even if it doesn't.
-  NODE_MAY_HAVE_CLASS =                   NODE_FLAG_BIT(8),
+  // This node was created by layout as native anonymous content. This
+  // generally corresponds to things created by nsIAnonymousContentCreator,
+  // though there are exceptions (svg:use content does not have this flag
+  // set, and any non-nsIAnonymousContentCreator callers of
+  // SetIsNativeAnonymousRoot also get this flag).
+  //
+  // One very important aspect here is that this node is not transitive over
+  // the subtree (if you want that, use NODE_IS_IN_NATIVE_ANONYMOUS_SUBTREE).
+  // If Gecko code somewhere attaches children to a node with this bit set,
+  // the children will not have the bit themselves unless the calling code sets
+  // it explicitly. This means that XBL content bound to NAC doesn't get this
+  // bit, nor do nodes inserted by editor.
+  //
+  // For now, this bit exists primarily to control style inheritance behavior,
+  // since the nodes for which we set it are often used to implement pseudo-
+  // elements, which need to inherit style from a script-visible element.
+  //
+  // A more general principle for this bit might be this: If the node is entirely
+  // a detail of layout, is not script-observable in any way, and other engines
+  // might accomplish the same task with a nodeless layout frame, then the node
+  // should have this bit set.
+  NODE_IS_NATIVE_ANONYMOUS =              NODE_FLAG_BIT(8),
 
   // Whether the node participates in a shadow tree.
   NODE_IS_IN_SHADOW_TREE =                NODE_FLAG_BIT(9),
@@ -280,6 +300,7 @@ class nsINode : public mozilla::dom::EventTarget
 public:
   typedef mozilla::dom::BoxQuadOptions BoxQuadOptions;
   typedef mozilla::dom::ConvertCoordinateOptions ConvertCoordinateOptions;
+  typedef mozilla::dom::DocGroup DocGroup;
   typedef mozilla::dom::DOMPoint DOMPoint;
   typedef mozilla::dom::DOMPointInit DOMPointInit;
   typedef mozilla::dom::DOMQuad DOMQuad;
@@ -388,6 +409,12 @@ public:
    * @return whether the content matches ALL flags passed in
    */
   virtual bool IsNodeOfType(uint32_t aFlags) const = 0;
+
+  bool
+  IsSlotable() const
+  {
+    return IsElement() || IsNodeOfType(eTEXT);
+  }
 
   virtual JSObject* WrapObject(JSContext *aCx, JS::Handle<JSObject*> aGivenProto) override;
 
@@ -587,6 +614,11 @@ public:
   {
     return mNodeInfo->NamespaceID() == aNamespace;
   }
+
+  /**
+   * Returns the DocGroup of the "node document" of this node.
+   */
+  DocGroup* GetDocGroup() const;
 
   /**
    * Print a debugger friendly descriptor of this element. This will describe
@@ -921,6 +953,14 @@ public:
   inline nsINode* GetFlattenedTreeParentNode() const;
 
   /**
+   * Like GetFlattenedTreeParentNode, but returns null for any native
+   * anonymous content that was generated for ancestor frames of the
+   * root element's primary frame, such as scrollbar elements created
+   * by the root scroll frame.
+   */
+  inline nsINode* GetFlattenedTreeParentNodeForStyle() const;
+
+  /**
    * Get the parent nsINode for this node if it is an Element.
    * @return the parent node
    */
@@ -1204,6 +1244,15 @@ public:
   }
 
   /**
+   * Returns true if |this| is native anonymous (i.e. created by
+   * nsIAnonymousContentCreator);
+   */
+  bool IsNativeAnonymous() const
+  {
+    return HasFlag(NODE_IS_NATIVE_ANONYMOUS);
+  }
+
+  /**
    * Returns true if |this| or any of its ancestors is native anonymous.
    */
   bool IsInNativeAnonymousSubtree() const
@@ -1335,10 +1384,11 @@ public:
 
 protected:
   nsIURI* GetExplicitBaseURI() const {
-    if (HasExplicitBaseURI()) {
-      return static_cast<nsIURI*>(GetProperty(nsGkAtoms::baseURIProperty));
+    if (!HasProperties()) {
+      return nullptr;
     }
-    return nullptr;
+
+    return static_cast<nsIURI*>(GetProperty(nsGkAtoms::baseURIProperty));
   }
 
 public:
@@ -1541,6 +1591,8 @@ private:
     // cases lie for nsXMLElement, such as when the node has been moved between
     // documents with different id mappings.
     ElementHasID,
+    // Set if the element might have a class.
+    ElementMayHaveClass,
     // Set if the element might have inline style.
     ElementMayHaveStyle,
     // Set if the element has a name attribute set.
@@ -1559,8 +1611,6 @@ private:
     // Maybe set if the node is a root of a subtree
     // which needs to be kept in the purple buffer.
     NodeIsPurpleRoot,
-    // Set if the node has an explicit base URI stored
-    NodeHasExplicitBaseURI,
     // Set if the element has some style states locked
     ElementHasLockedStyleStates,
     // Set if element has pointer locked
@@ -1571,10 +1621,11 @@ private:
     NodeIsContent,
     // Set if the node has animations or transitions
     ElementHasAnimations,
-    // Set if node has a dir attribute with a valid value (ltr, rtl, or auto)
+    // Set if node has a dir attribute with a valid value (ltr, rtl, or auto).
+    // Note that we cannot compute this from the dir attribute event state
+    // flags, because we can't use those to distinguish
+    // <bdi dir="some-invalid-value"> and <bdi dir="auto">.
     NodeHasValidDirAttribute,
-    // Set if node has a dir attribute with a fixed value (ltr or rtl, NOT auto)
-    NodeHasFixedDir,
     // Set if the node has dir=auto and has a property pointing to the text
     // node that determines its direction
     NodeHasDirAutoSet,
@@ -1582,8 +1633,6 @@ private:
     // and has a TextNodeDirectionalityMap property listing the elements whose
     // direction it determines.
     NodeHasTextNodeDirectionalityMap,
-    // Set if the node has dir=auto.
-    NodeHasDirAuto,
     // Set if a node in the node's parent chain has dir=auto.
     NodeAncestorHasDirAuto,
     // Set if the element is in the scope of a scoped style sheet; this flag is
@@ -1637,6 +1686,8 @@ public:
     { SetBoolFlag(NodeHasRenderingObservers, aValue); }
   bool IsContent() const { return GetBoolFlag(NodeIsContent); }
   bool HasID() const { return GetBoolFlag(ElementHasID); }
+  bool MayHaveClass() const { return GetBoolFlag(ElementMayHaveClass); }
+  void SetMayHaveClass() { SetBoolFlag(ElementMayHaveClass); }
   bool MayHaveStyle() const { return GetBoolFlag(ElementMayHaveStyle); }
   bool HasName() const { return GetBoolFlag(ElementHasName); }
   bool MayHaveContentEditableAttr() const
@@ -1676,17 +1727,6 @@ public:
   void SetHasValidDir() { SetBoolFlag(NodeHasValidDirAttribute); }
   void ClearHasValidDir() { ClearBoolFlag(NodeHasValidDirAttribute); }
   bool HasValidDir() const { return GetBoolFlag(NodeHasValidDirAttribute); }
-  void SetHasFixedDir() {
-    MOZ_ASSERT(NodeType() != nsIDOMNode::TEXT_NODE,
-               "SetHasFixedDir on text node");
-    SetBoolFlag(NodeHasFixedDir);
-  }
-  void ClearHasFixedDir() {
-    MOZ_ASSERT(NodeType() != nsIDOMNode::TEXT_NODE,
-               "ClearHasFixedDir on text node");
-    ClearBoolFlag(NodeHasFixedDir);
-  }
-  bool HasFixedDir() const { return GetBoolFlag(NodeHasFixedDir); }
   void SetHasDirAutoSet() {
     MOZ_ASSERT(NodeType() != nsIDOMNode::TEXT_NODE,
                "SetHasDirAutoSet on text node");
@@ -1715,16 +1755,12 @@ public:
     return GetBoolFlag(NodeHasTextNodeDirectionalityMap);
   }
 
-  void SetHasDirAuto() { SetBoolFlag(NodeHasDirAuto); }
-  void ClearHasDirAuto() { ClearBoolFlag(NodeHasDirAuto); }
-  bool HasDirAuto() const { return GetBoolFlag(NodeHasDirAuto); }
-
   void SetAncestorHasDirAuto() { SetBoolFlag(NodeAncestorHasDirAuto); }
   void ClearAncestorHasDirAuto() { ClearBoolFlag(NodeAncestorHasDirAuto); }
   bool AncestorHasDirAuto() const { return GetBoolFlag(NodeAncestorHasDirAuto); }
 
-  bool NodeOrAncestorHasDirAuto() const
-    { return HasDirAuto() || AncestorHasDirAuto(); }
+  // Implemented in nsIContentInlines.h.
+  inline bool NodeOrAncestorHasDirAuto() const;
 
   void SetIsElementInStyleScope(bool aValue) {
     MOZ_ASSERT(IsElement(), "SetIsInStyleScope on a non-Element node");
@@ -1766,8 +1802,6 @@ protected:
   void ClearHasName() { ClearBoolFlag(ElementHasName); }
   void SetMayHaveContentEditableAttr()
     { SetBoolFlag(ElementMayHaveContentEditableAttr); }
-  bool HasExplicitBaseURI() const { return GetBoolFlag(NodeHasExplicitBaseURI); }
-  void SetHasExplicitBaseURI() { SetBoolFlag(NodeHasExplicitBaseURI); }
   void SetHasLockedStyleStates() { SetBoolFlag(ElementHasLockedStyleStates); }
   void ClearHasLockedStyleStates() { ClearBoolFlag(ElementHasLockedStyleStates); }
   bool HasLockedStyleStates() const

@@ -757,11 +757,11 @@ nsHtml5MetaScanner::handleAttributeValue()
     return;
   }
   if (contentIndex == CONTENT.length && !content) {
-    content = nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, treeBuilder);
+    content = nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, treeBuilder, false);
     return;
   }
   if (charsetIndex == CHARSET.length && !charset) {
-    charset = nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, treeBuilder);
+    charset = nsHtml5Portability::newStringFromBuffer(strBuf, 0, strBufLen, treeBuilder, false);
     return;
   }
   if (httpEquivIndex == HTTP_EQUIV.length && httpEquivState == HTTP_EQUIV_NOT_SEEN) {

@@ -39,10 +39,11 @@ public:
                                   nsRuleData* aRuleData);
 
   NS_IMETHOD WalkContentStyleRules(nsRuleWalker* aRuleWalker) override;
-  virtual bool SetMappedAttribute(nsIDocument* aDocument,
-                                    nsIAtom* aName,
-                                    nsAttrValue& aValue,
-                                    nsresult* aRetval) override;
+  virtual bool SetAndSwapMappedAttribute(nsIDocument* aDocument,
+                                         nsIAtom* aName,
+                                         nsAttrValue& aValue,
+                                         bool* aValueWasSet,
+                                         nsresult* aRetval) override;
 };
 
 #endif // NS_MAPPEDATTRIBUTEELEMENT_H_

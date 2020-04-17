@@ -70,7 +70,7 @@ HTMLFieldSetElement::IsDisabledForEvents(EventMessage aMessage)
 
 // nsIContent
 nsresult
-HTMLFieldSetElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
+HTMLFieldSetElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   // Do not process any DOM events if the element is disabled.
   aVisitor.mCanHandle = false;
@@ -78,12 +78,13 @@ HTMLFieldSetElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
     return NS_OK;
   }
 
-  return nsGenericHTMLFormElement::PreHandleEvent(aVisitor);
+  return nsGenericHTMLFormElement::GetEventTargetParent(aVisitor);
 }
 
 nsresult
 HTMLFieldSetElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                  const nsAttrValue* aValue, bool aNotify)
+                                  const nsAttrValue* aValue,
+                                  const nsAttrValue* aOldValue, bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::disabled &&
       nsINode::GetFirstChild()) {
@@ -100,7 +101,7 @@ HTMLFieldSetElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLFormElement::AfterSetAttr(aNameSpaceID, aName,
-                                                aValue, aNotify);
+                                                aValue, aOldValue, aNotify);
 }
 
 // nsIDOMHTMLFieldSetElement

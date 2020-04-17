@@ -48,7 +48,7 @@ NS_IMPL_STRING_ATTR(HTMLOptGroupElement, Label, label)
 
 
 nsresult
-HTMLOptGroupElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
+HTMLOptGroupElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mCanHandle = false;
   // Do not process any DOM events if the element is disabled
@@ -66,7 +66,7 @@ HTMLOptGroupElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
     }
   }
 
-  return nsGenericHTMLElement::PreHandleEvent(aVisitor);
+  return nsGenericHTMLElement::GetEventTargetParent(aVisitor);
 }
 
 Element*
@@ -102,7 +102,8 @@ HTMLOptGroupElement::RemoveChildAt(uint32_t aIndex, bool aNotify)
 
 nsresult
 HTMLOptGroupElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                  const nsAttrValue* aValue, bool aNotify)
+                                  const nsAttrValue* aValue,
+                                  const nsAttrValue* aOldValue, bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::disabled) {
     // All our children <option> have their :disabled state depending on our
@@ -117,7 +118,7 @@ HTMLOptGroupElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   }
 
   return nsGenericHTMLElement::AfterSetAttr(aNameSpaceID, aName, aValue,
-                                            aNotify);
+                                            aOldValue, aNotify);
 }
 
 EventStates

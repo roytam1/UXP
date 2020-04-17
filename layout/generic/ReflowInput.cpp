@@ -1564,8 +1564,7 @@ ReflowInput::InitAbsoluteConstraints(nsPresContext* aPresContext,
   // have been if it had been in the flow
   nsHypotheticalPosition hypotheticalPos;
   if ((iStartIsAuto && iEndIsAuto) || (bStartIsAuto && bEndIsAuto)) {
-    nsIFrame* placeholderFrame =
-      aPresContext->PresShell()->GetPlaceholderFrameFor(mFrame);
+    nsPlaceholderFrame* placeholderFrame = mFrame->GetPlaceholderFrame();
     NS_ASSERTION(placeholderFrame, "no placeholder frame");
 
     if (placeholderFrame->HasAnyStateBits(

@@ -3236,19 +3236,24 @@ var SessionStoreInternal = {
         // instead of gotoIndex. See bug 597315.
         browser.webNavigation.sessionHistory.getEntryAtIndex(activeIndex, true);
         browser.webNavigation.sessionHistory.reloadCurrentEntry();
-        // If the user prefers it, bypass cache and always load from the network.
-        let flags = Ci.nsIWebNavigation.LOAD_FLAGS_NONE;
-        switch (this._cacheBehavior) {
-          case 2: // hard refresh
-            flags = Ci.nsIWebNavigation.LOAD_FLAGS_BYPASS_PROXY |
-                    Ci.nsIWebNavigation.LOAD_FLAGS_BYPASS_CACHE;
-            browser.webNavigation.reload(flags);
-            break;
-          case 1: // soft refresh
-            browser.webNavigation.reload(flags);
-            break;
-          default: // 0 or other: use cache, so do nothing.
-            break;
+        // If the user prefers it, bypass cache and always load from the network,
+        // but only if restoring on demand, to prevent request flooding (since
+        // reloading will override the max tabs to restore concurrently mechanism).
+        // See Issue #1772
+        if (restoreOnDemand) {
+          let flags = Ci.nsIWebNavigation.LOAD_FLAGS_NONE;
+          switch (this._cacheBehavior) {
+            case 2: // hard refresh
+              flags = Ci.nsIWebNavigation.LOAD_FLAGS_BYPASS_PROXY |
+                      Ci.nsIWebNavigation.LOAD_FLAGS_BYPASS_CACHE;
+              browser.webNavigation.reload(flags);
+              break;
+            case 1: // soft refresh
+              browser.webNavigation.reload(flags);
+              break;
+            default: // 0 or other: use cache, so do nothing.
+              break;
+          }
         }
       }
       catch (ex) {

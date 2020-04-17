@@ -328,10 +328,10 @@ DOMEventTargetHelper::GetEventHandler(nsIAtom* aType,
 }
 
 nsresult
-DOMEventTargetHelper::PreHandleEvent(EventChainPreVisitor& aVisitor)
+DOMEventTargetHelper::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mCanHandle = true;
-  aVisitor.mParentTarget = nullptr;
+  aVisitor.SetParentTarget(nullptr, false);
   return NS_OK;
 }
 

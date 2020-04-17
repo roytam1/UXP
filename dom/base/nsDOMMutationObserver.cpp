@@ -7,11 +7,13 @@
 #include "nsDOMMutationObserver.h"
 
 #include "mozilla/AnimationTarget.h"
+#include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/OwningNonNull.h"
 
 #include "mozilla/dom/Animation.h"
 #include "mozilla/dom/KeyframeEffectReadOnly.h"
+#include "mozilla/dom/DocGroup.h"
 
 #include "nsContentUtils.h"
 #include "nsCSSPseudoElements.h"
@@ -28,6 +30,9 @@ using mozilla::NonOwningAnimationTarget;
 using mozilla::dom::TreeOrderComparator;
 using mozilla::dom::Animation;
 using mozilla::dom::Element;
+
+using namespace mozilla;
+using namespace mozilla::dom;
 
 AutoTArray<RefPtr<nsDOMMutationObserver>, 4>*
   nsDOMMutationObserver::sScheduledMutationObservers = nullptr;
@@ -609,6 +614,28 @@ public:
   }
 };
 
+/* static */ void
+nsDOMMutationObserver::QueueMutationObserverMicroTask()
+{
+  CycleCollectedJSContext* ccjs = CycleCollectedJSContext::Get();
+  if (!ccjs) {
+    return;
+  }
+
+  RefPtr<MutationObserverMicroTask> momt =
+    new MutationObserverMicroTask();
+  ccjs->DispatchMicroTaskRunnable(momt.forget());
+}
+
+void
+nsDOMMutationObserver::HandleMutations(mozilla::AutoSlowOperation& aAso)
+{
+  if (sScheduledMutationObservers ||
+      mozilla::dom::DocGroup::sPendingDocGroups) {
+    HandleMutationsInternal(aAso);
+  }
+}
+
 void
 nsDOMMutationObserver::RescheduleForRun()
 {
@@ -887,7 +914,23 @@ nsDOMMutationObserver::HandleMutationsInternal(AutoSlowOperation& aAso)
 {
   nsTArray<RefPtr<nsDOMMutationObserver> >* suppressedObservers = nullptr;
 
-  while (sScheduledMutationObservers) {
+  // Let signalList be a copy of unit of related similar-origin browsing
+  // contexts' signal slot list.
+  nsTArray<RefPtr<HTMLSlotElement>> signalList;
+  if (DocGroup::sPendingDocGroups) {
+    for (uint32_t i = 0; i < DocGroup::sPendingDocGroups->Length(); ++i) {
+      DocGroup* docGroup = DocGroup::sPendingDocGroups->ElementAt(i);
+      signalList.AppendElements(docGroup->SignalSlotList());
+
+      // Empty unit of related similar-origin browsing contexts' signal slot
+      // list.
+      docGroup->ClearSignalSlotList();
+    }
+    delete DocGroup::sPendingDocGroups;
+    DocGroup::sPendingDocGroups = nullptr;
+  }
+
+  if (sScheduledMutationObservers) {
     AutoTArray<RefPtr<nsDOMMutationObserver>, 4>* observers =
       sScheduledMutationObservers;
     sScheduledMutationObservers = nullptr;
@@ -916,6 +959,11 @@ nsDOMMutationObserver::HandleMutationsInternal(AutoSlowOperation& aAso)
     }
     delete suppressedObservers;
     suppressedObservers = nullptr;
+  }
+
+  // Fire slotchange event for each slot in signalList.
+  for (uint32_t i = 0; i < signalList.Length(); ++i) {
+    signalList[i]->FireSlotChangeEvent();
   }
 }
 

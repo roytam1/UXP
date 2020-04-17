@@ -15,6 +15,7 @@ XPIDL_SOURCES += [
 XPIDL_MODULE = 'htmlparser'
 
 EXPORTS += [
+    'nsElementTable.h',
     'nsHTMLTagList.h',
     'nsHTMLTags.h',
     'nsIContentSink.h',

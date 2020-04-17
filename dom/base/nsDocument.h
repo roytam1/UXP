@@ -293,36 +293,6 @@ public:
   nsDocHeaderData*  mNext;
 };
 
-class nsDOMStyleSheetList : public mozilla::dom::StyleSheetList,
-                            public nsStubDocumentObserver
-{
-public:
-  explicit nsDOMStyleSheetList(nsIDocument* aDocument);
-
-  NS_DECL_ISUPPORTS_INHERITED
-
-  // nsIDocumentObserver
-  NS_DECL_NSIDOCUMENTOBSERVER_STYLESHEETADDED
-  NS_DECL_NSIDOCUMENTOBSERVER_STYLESHEETREMOVED
-
-  // nsIMutationObserver
-  NS_DECL_NSIMUTATIONOBSERVER_NODEWILLBEDESTROYED
-
-  virtual nsINode* GetParentObject() const override
-  {
-    return mDocument;
-  }
-
-  uint32_t Length() override;
-  mozilla::StyleSheet* IndexedGetter(uint32_t aIndex, bool& aFound) override;
-
-protected:
-  virtual ~nsDOMStyleSheetList();
-
-  int32_t       mLength;
-  nsIDocument*  mDocument;
-};
-
 class nsOnloadBlocker final : public nsIRequest
 {
 public:
@@ -624,14 +594,6 @@ public:
 
   virtual void EnsureOnDemandBuiltInUASheet(mozilla::StyleSheet* aSheet) override;
 
-  /**
-   * Get the (document) style sheets owned by this document.
-   * These are ordered, highest priority last
-   */
-  virtual int32_t GetNumberOfStyleSheets() const override;
-  virtual mozilla::StyleSheet* GetStyleSheetAt(int32_t aIndex) const override;
-  virtual int32_t GetIndexOfStyleSheet(
-      const mozilla::StyleSheet* aSheet) const override;
   virtual void AddStyleSheet(mozilla::StyleSheet* aSheet) override;
   virtual void RemoveStyleSheet(mozilla::StyleSheet* aSheet) override;
 
@@ -642,7 +604,7 @@ public:
   virtual void RemoveStyleSheetFromStyleSets(mozilla::StyleSheet* aSheet);
 
   virtual void InsertStyleSheetAt(mozilla::StyleSheet* aSheet,
-                                  int32_t aIndex) override;
+                                  size_t aIndex) override;
   virtual void SetStyleSheetApplicableState(mozilla::StyleSheet* aSheet,
                                             bool aApplicable) override;
 
@@ -793,7 +755,11 @@ public:
 
   virtual void NotifyLayerManagerRecreated() override;
 
-
+  // Check whether web components are enabled for the global of aObject.
+  static bool IsWebComponentsEnabled(JSContext* aCx, JSObject* aObject);
+  // Check whether web components are enabled for the document this node belongs
+  // to.
+  static bool IsWebComponentsEnabled(const nsINode* aNode);
 private:
   void AddOnDemandBuiltInUASheet(mozilla::StyleSheet* aSheet);
   nsRadioGroupStruct* GetRadioGroupInternal(const nsAString& aName) const;
@@ -810,7 +776,7 @@ public:
   NS_DECL_NSIDOMDOCUMENTXBL
 
   // nsIDOMEventTarget
-  virtual nsresult PreHandleEvent(
+  virtual nsresult GetEventTargetParent(
                      mozilla::EventChainPreVisitor& aVisitor) override;
   virtual mozilla::EventListenerManager*
     GetOrCreateListenerManager() override;
@@ -1129,12 +1095,7 @@ public:
   // WebIDL bits
   virtual mozilla::dom::DOMImplementation*
     GetImplementation(mozilla::ErrorResult& rv) override;
-  virtual void
-    RegisterElement(JSContext* aCx, const nsAString& aName,
-                    const mozilla::dom::ElementRegistrationOptions& aOptions,
-                    JS::MutableHandle<JSObject*> aRetval,
-                    mozilla::ErrorResult& rv) override;
-  virtual mozilla::dom::StyleSheetList* StyleSheets() override;
+
   virtual void SetSelectedStyleSheetSet(const nsAString& aSheetSet) override;
   virtual void GetLastStyleSheetSet(nsString& aSheetSet) override;
   virtual mozilla::dom::DOMStringList* StyleSheetSets() override;
@@ -1356,7 +1317,6 @@ protected:
   // EndLoad() has already happened.
   nsWeakPtr mWeakSink;
 
-  nsTArray<RefPtr<mozilla::StyleSheet>> mStyleSheets;
   nsTArray<RefPtr<mozilla::StyleSheet>> mOnDemandBuiltInUASheets;
   nsTArray<RefPtr<mozilla::StyleSheet>> mAdditionalSheets[AdditionalSheetTypeCount];
 
@@ -1385,23 +1345,8 @@ protected:
   // non-null when this document is in fullscreen mode.
   nsWeakPtr mFullscreenRoot;
 
-private:
-  static bool CustomElementConstructor(JSContext* aCx, unsigned aArgc, JS::Value* aVp);
-
 public:
-  virtual already_AddRefed<mozilla::dom::CustomElementRegistry>
-    GetCustomElementRegistry() override;
-
-  // Check whether web components are enabled for the global of aObject.
-  static bool IsWebComponentsEnabled(JSContext* aCx, JSObject* aObject);
-  // Check whether web components are enabled for the global of the document
-  // this nodeinfo comes from.
-  static bool IsWebComponentsEnabled(mozilla::dom::NodeInfo* aNodeInfo);
-  // Check whether web components are enabled for the given window.
-  static bool IsWebComponentsEnabled(nsPIDOMWindowInner* aWindow);
-
   RefPtr<mozilla::EventListenerManager> mListenerManager;
-  RefPtr<mozilla::dom::StyleSheetList> mDOMStyleSheets;
   RefPtr<nsDOMStyleSheetSetList> mStyleSheetSetList;
   RefPtr<nsScriptLoader> mScriptLoader;
   nsDocHeaderData* mHeaderData;

@@ -116,7 +116,6 @@
 
 #include "nsBidiUtils.h"
 
-#include "nsIParserService.h"
 #include "nsContentCreatorFunctions.h"
 
 #include "nsIScriptContext.h"
@@ -570,78 +569,6 @@ struct nsRadioGroupStruct
   uint32_t mRequiredRadioCount;
   bool mGroupSuffersFromValueMissing;
 };
-
-
-nsDOMStyleSheetList::nsDOMStyleSheetList(nsIDocument *aDocument)
-{
-  mLength = -1;
-  // Not reference counted to avoid circular references.
-  // The document will tell us when its going away.
-  mDocument = aDocument;
-  mDocument->AddObserver(this);
-}
-
-nsDOMStyleSheetList::~nsDOMStyleSheetList()
-{
-  if (mDocument) {
-    mDocument->RemoveObserver(this);
-  }
-}
-
-NS_IMPL_ISUPPORTS_INHERITED(nsDOMStyleSheetList, StyleSheetList,
-                            nsIDocumentObserver,
-                            nsIMutationObserver)
-
-uint32_t
-nsDOMStyleSheetList::Length()
-{
-  if (!mDocument) {
-    return 0;
-  }
-
-  // XXX Find the number and then cache it. We'll use the
-  // observer notification to figure out if new ones have
-  // been added or removed.
-  if (-1 == mLength) {
-    mLength = mDocument->GetNumberOfStyleSheets();
-  }
-  return mLength;
-}
-
-StyleSheet*
-nsDOMStyleSheetList::IndexedGetter(uint32_t aIndex, bool& aFound)
-{
-  if (!mDocument || aIndex >= (uint32_t)mDocument->GetNumberOfStyleSheets()) {
-    aFound = false;
-    return nullptr;
-  }
-  aFound = true;
-  return mDocument->GetStyleSheetAt(aIndex);
-}
-
-void
-nsDOMStyleSheetList::NodeWillBeDestroyed(const nsINode *aNode)
-{
-  mDocument = nullptr;
-}
-
-void
-nsDOMStyleSheetList::StyleSheetAdded(StyleSheet* aStyleSheet,
-                                     bool aDocumentSheet)
-{
-  if (aDocumentSheet && -1 != mLength) {
-    mLength++;
-  }
-}
-
-void
-nsDOMStyleSheetList::StyleSheetRemoved(StyleSheet* aStyleSheet,
-                                       bool aDocumentSheet)
-{
-  if (aDocumentSheet && -1 != mLength) {
-    mLength--;
-  }
-}
 
 // nsOnloadBlocker implementation
 NS_IMPL_ISUPPORTS(nsOnloadBlocker, nsIRequest)
@@ -1200,10 +1127,10 @@ nsDOMStyleSheetSetList::EnsureFresh()
             // no document, for sure
   }
 
-  int32_t count = mDocument->GetNumberOfStyleSheets();
+  size_t count = mDocument->SheetCount();
   nsAutoString title;
-  for (int32_t index = 0; index < count; index++) {
-    StyleSheet* sheet = mDocument->GetStyleSheetAt(index);
+  for (size_t index = 0; index < count; index++) {
+    StyleSheet* sheet = mDocument->SheetAt(index);
     NS_ASSERTION(sheet, "Null sheet in sheet list!");
     // XXXheycam ServoStyleSheets don't expose their title yet.
     if (sheet->IsServo()) {
@@ -1333,6 +1260,10 @@ nsIDocument::nsIDocument()
 {
   SetIsInDocument();
 
+  // Set this when document is created and value stays the same for the lifetime
+  // of the document.
+  mIsWebComponentsEnabled = nsContentUtils::IsWebComponentsEnabled();
+
   PR_INIT_CLIST(&mDOMMediaQueryLists);
 }
 
@@ -1452,11 +1383,11 @@ nsDocument::~nsDocument()
 
   // Let the stylesheets know we're going away
   for (StyleSheet* sheet : mStyleSheets) {
-    sheet->SetOwningDocument(nullptr);
+    sheet->ClearAssociatedDocument();
   }
   for (auto& sheets : mAdditionalSheets) {
     for (StyleSheet* sheet : sheets) {
-      sheet->SetOwningDocument(nullptr);
+    sheet->ClearAssociatedDocument();
     }
   }
   if (mAttrStyleSheet) {
@@ -2113,7 +2044,7 @@ nsDocument::RemoveDocStyleSheetsFromStyleSets()
 {
   // The stylesheets should forget us
   for (StyleSheet* sheet : Reversed(mStyleSheets)) {
-    sheet->SetOwningDocument(nullptr);
+    sheet->ClearAssociatedDocument();
 
     if (sheet->IsApplicable()) {
       nsCOMPtr<nsIPresShell> shell = GetShell();
@@ -2132,7 +2063,7 @@ nsDocument::RemoveStyleSheetsFromStyleSets(
 {
   // The stylesheets should forget us
   for (StyleSheet* sheet : Reversed(aSheets)) {
-    sheet->SetOwningDocument(nullptr);
+    sheet->ClearAssociatedDocument();
 
     if (sheet->IsApplicable()) {
       nsCOMPtr<nsIPresShell> shell = GetShell();
@@ -2309,6 +2240,29 @@ WarnIfSandboxIneffective(nsIDocShell* aDocShell,
                                     "BothAllowScriptsAndSameOriginPresent",
                                     nullptr, 0, iframeUri);
   }
+}
+
+bool
+nsDocument::IsWebComponentsEnabled(JSContext* aCx, JSObject* aObject)
+{
+  if (!nsContentUtils::IsWebComponentsEnabled()) {
+    return false;
+  }
+
+  JS::Rooted<JSObject*> obj(aCx, aObject);
+
+  JSAutoCompartment ac(aCx, obj);
+  JS::Rooted<JSObject*> global(aCx, JS_GetGlobalForObject(aCx, obj));
+  nsCOMPtr<nsPIDOMWindowInner> window =
+    do_QueryInterface(nsJSUtils::GetStaticScriptGlobal(global));
+
+  nsIDocument* doc = window ? window->GetExtantDoc() : nullptr;
+  if (doc && doc->IsStyledByServo()) {
+    NS_WARNING("stylo: Web Components not supported yet");
+    return false;
+  }
+
+  return true;
 }
 
 nsresult
@@ -3927,24 +3881,6 @@ nsDocument::AddOnDemandBuiltInUASheet(StyleSheet* aSheet)
   NotifyStyleSheetAdded(aSheet, false);
 }
 
-int32_t
-nsDocument::GetNumberOfStyleSheets() const
-{
-  return mStyleSheets.Length();
-}
-
-StyleSheet*
-nsDocument::GetStyleSheetAt(int32_t aIndex) const
-{
-  return mStyleSheets.SafeElementAt(aIndex, nullptr);
-}
-
-int32_t
-nsDocument::GetIndexOfStyleSheet(const StyleSheet* aSheet) const
-{
-  return mStyleSheets.IndexOf(aSheet);
-}
-
 void
 nsDocument::AddStyleSheetToStyleSets(StyleSheet* aSheet)
 {
@@ -4007,7 +3943,7 @@ nsDocument::AddStyleSheet(StyleSheet* aSheet)
 {
   NS_PRECONDITION(aSheet, "null arg");
   mStyleSheets.AppendElement(aSheet);
-  aSheet->SetOwningDocument(this);
+  aSheet->SetAssociatedDocument(this, StyleSheet::OwnedByDocument);
 
   if (aSheet->IsApplicable()) {
     AddStyleSheetToStyleSets(aSheet);
@@ -4044,7 +3980,7 @@ nsDocument::RemoveStyleSheet(StyleSheet* aSheet)
     NotifyStyleSheetRemoved(aSheet, true);
   }
 
-  aSheet->SetOwningDocument(nullptr);
+  aSheet->ClearAssociatedDocument();
 }
 
 void
@@ -4072,7 +4008,7 @@ nsDocument::UpdateStyleSheets(nsTArray<RefPtr<StyleSheet>>& aOldSheets,
     StyleSheet* newSheet = aNewSheets[i];
     if (newSheet) {
       mStyleSheets.InsertElementAt(oldIndex, newSheet);
-      newSheet->SetOwningDocument(this);
+      newSheet->SetAssociatedDocument(this, StyleSheet::OwnedByDocument);
       if (newSheet->IsApplicable()) {
         AddStyleSheetToStyleSets(newSheet);
       }
@@ -4085,13 +4021,13 @@ nsDocument::UpdateStyleSheets(nsTArray<RefPtr<StyleSheet>>& aOldSheets,
 }
 
 void
-nsDocument::InsertStyleSheetAt(StyleSheet* aSheet, int32_t aIndex)
+nsDocument::InsertStyleSheetAt(StyleSheet* aSheet, size_t aIndex)
 {
-  NS_PRECONDITION(aSheet, "null ptr");
+  MOZ_ASSERT(aSheet);
 
   mStyleSheets.InsertElementAt(aIndex, aSheet);
 
-  aSheet->SetOwningDocument(this);
+  aSheet->SetAssociatedDocument(this, StyleSheet::OwnedByDocument);
 
   if (aSheet->IsApplicable()) {
     AddStyleSheetToStyleSets(aSheet);
@@ -4216,7 +4152,7 @@ nsDocument::LoadAdditionalStyleSheet(additionalSheetType aType,
   nsresult rv = loader->LoadSheetSync(aSheetURI, parsingMode, true, &sheet);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  sheet->SetOwningDocument(this);
+  sheet->SetAssociatedDocument(this, StyleSheet::OwnedByDocument);
   MOZ_ASSERT(sheet->IsApplicable());
 
   return AddAdditionalStyleSheet(aType, sheet);
@@ -4274,7 +4210,7 @@ nsDocument::RemoveAdditionalStyleSheet(additionalSheetType aType, nsIURI* aSheet
     NotifyStyleSheetRemoved(sheetRef, false);
     EndUpdate(UPDATE_STYLE);
 
-    sheetRef->SetOwningDocument(nullptr);
+    sheetRef->ClearAssociatedDocument();
   }
 }
 
@@ -5353,29 +5289,18 @@ bool IsLowercaseASCII(const nsAString& aValue)
   return true;
 }
 
-already_AddRefed<mozilla::dom::CustomElementRegistry>
-nsDocument::GetCustomElementRegistry()
+// We only support pseudo-elements with two colons in this function.
+static CSSPseudoElementType
+GetPseudoElementType(const nsString& aString, ErrorResult& aRv)
 {
-  nsAutoString contentType;
-  GetContentType(contentType);
-  if (!IsHTMLDocument() &&
-      !contentType.EqualsLiteral("application/xhtml+xml")) {
-    return nullptr;
+  MOZ_ASSERT(!aString.IsEmpty(), "GetPseudoElementType aString should be non-null");
+  if (aString.Length() <= 2 || aString[0] != ':' || aString[1] != ':') {
+    aRv.Throw(NS_ERROR_DOM_SYNTAX_ERR);
+    return CSSPseudoElementType::NotPseudo;
   }
-
-  nsCOMPtr<nsPIDOMWindowInner> window(
-    do_QueryInterface(mScriptGlobalObject ? mScriptGlobalObject
-                                          : GetScopeObject()));
-  if (!window) {
-    return nullptr;
-  }
-
-  RefPtr<CustomElementRegistry> registry = window->CustomElements();
-  if (!registry) {
-    return nullptr;
-  }
-
-  return registry.forget();
+  nsCOMPtr<nsIAtom> pseudo = NS_Atomize(Substring(aString, 1));
+  return nsCSSPseudoElements::GetPseudoType(pseudo,
+      nsCSSProps::EnabledState::eInUASheets);
 }
 
 already_AddRefed<Element>
@@ -5395,9 +5320,35 @@ nsDocument::CreateElement(const nsAString& aTagName,
   }
 
   const nsString* is = nullptr;
+  CSSPseudoElementType pseudoType = CSSPseudoElementType::NotPseudo;
+  if (aOptions.IsElementCreationOptions()) {
+    const ElementCreationOptions& options =
+      aOptions.GetAsElementCreationOptions();
+
+    if (CustomElementRegistry::IsCustomElementEnabled() &&
+        options.mIs.WasPassed()) {
+      is = &options.mIs.Value();
+    }
+
+    // Check 'pseudo' and throw an exception if it's not one allowed
+    // with CSS_PSEUDO_ELEMENT_IS_JS_CREATED_NAC.
+    if (options.mPseudo.WasPassed()) {
+      pseudoType = GetPseudoElementType(options.mPseudo.Value(), rv);
+      if (rv.Failed() ||
+          pseudoType == CSSPseudoElementType::NotPseudo ||
+          !nsCSSPseudoElements::PseudoElementIsJSCreatedNAC(pseudoType)) {
+        rv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+        return nullptr;
+      }
+    }
+  }
 
   RefPtr<Element> elem = CreateElem(
     needsLowercase ? lcTagName : aTagName, nullptr, mDefaultElementType, is);
+
+  if (pseudoType != CSSPseudoElementType::NotPseudo) {
+    elem->SetPseudoElementType(pseudoType);
+  }
 
   if (is) {
     elem->SetAttr(kNameSpaceID_None, nsGkAtoms::is, *is, true);
@@ -5413,8 +5364,8 @@ nsDocument::CreateElementNS(const nsAString& aNamespaceURI,
 {
   *aReturn = nullptr;
   ElementCreationOptionsOrString options;
-  options.SetAsString();
 
+  options.SetAsString();
   ErrorResult rv;
   nsCOMPtr<Element> element =
     CreateElementNS(aNamespaceURI, aQualifiedName, options, rv);
@@ -5439,6 +5390,13 @@ nsDocument::CreateElementNS(const nsAString& aNamespaceURI,
   }
 
   const nsString* is = nullptr;
+  if (CustomElementRegistry::IsCustomElementEnabled() &&
+      aOptions.IsElementCreationOptions()) {
+    const ElementCreationOptions& options = aOptions.GetAsElementCreationOptions();
+    if (options.mIs.WasPassed()) {
+      is = &options.mIs.Value();
+    }
+  }
 
   nsCOMPtr<Element> element;
   rv = NS_NewElement(getter_AddRefs(element), nodeInfo.forget(),
@@ -5647,278 +5605,9 @@ nsIDocument::CreateAttributeNS(const nsAString& aNamespaceURI,
 }
 
 bool
-nsDocument::CustomElementConstructor(JSContext* aCx, unsigned aArgc, JS::Value* aVp)
+nsDocument::IsWebComponentsEnabled(const nsINode* aNode)
 {
-  JS::CallArgs args = JS::CallArgsFromVp(aArgc, aVp);
-
-  JS::Rooted<JSObject*> global(aCx,
-    JS_GetGlobalForObject(aCx, &args.callee()));
-  RefPtr<nsGlobalWindow> window;
-  UNWRAP_OBJECT(Window, global, window);
-  MOZ_ASSERT(window, "Should have a non-null window");
-
-  nsDocument* document = static_cast<nsDocument*>(window->GetDoc());
-
-  // Function name is the type of the custom element.
-  JSString* jsFunName =
-    JS_GetFunctionId(JS_ValueToFunction(aCx, args.calleev()));
-  nsAutoJSString elemName;
-  if (!elemName.init(aCx, jsFunName)) {
-    return true;
-  }
-
-  RefPtr<mozilla::dom::CustomElementRegistry> registry = window->CustomElements();
-  if (!registry) {
-    return true;
-  }
-
-  nsCOMPtr<nsIAtom> typeAtom(NS_Atomize(elemName));
-  CustomElementDefinition* definition =
-    registry->mCustomDefinitions.GetWeak(typeAtom);
-  if (!definition) {
-    return true;
-  }
-
-  RefPtr<Element> element;
-
-  // We integrate with construction stack and do prototype swizzling here, so
-  // that old upgrade behavior could also share the new upgrade steps.
-  // And this old upgrade will be remove at some point (when everything is
-  // switched to latest custom element spec).
-  nsTArray<RefPtr<nsGenericHTMLElement>>& constructionStack =
-    definition->mConstructionStack;
-  if (constructionStack.Length()) {
-    element = constructionStack.LastElement();
-    NS_ENSURE_TRUE(element != ALEADY_CONSTRUCTED_MARKER, false);
-
-    // Do prototype swizzling if dom reflector exists.
-    JS::Rooted<JSObject*> reflector(aCx, element->GetWrapper());
-    if (reflector) {
-      Maybe<JSAutoCompartment> ac;
-      JS::Rooted<JSObject*> prototype(aCx, definition->mPrototype);
-      if (element->NodePrincipal()->SubsumesConsideringDomain(nsContentUtils::ObjectPrincipal(prototype))) {
-        ac.emplace(aCx, reflector);
-        if (!JS_WrapObject(aCx, &prototype) ||
-            !JS_SetPrototype(aCx, reflector, prototype)) {
-          return false;
-        }
-      } else {
-        // We want to set the custom prototype in the compartment where it was
-        // registered. We store the prototype from define() without unwrapped,
-        // hence the prototype's compartment is the compartment where it was
-        // registered.
-        // In the case that |reflector| and |prototype| are in different
-        // compartments, this will set the prototype on the |reflector|'s wrapper
-        // and thus only visible in the wrapper's compartment, since we know
-        // reflector's principal does not subsume prototype's in this case.
-        ac.emplace(aCx, prototype);
-        if (!JS_WrapObject(aCx, &reflector) ||
-            !JS_SetPrototype(aCx, reflector, prototype)) {
-          return false;
-        }
-      }
-
-      // Wrap into current context.
-      if (!JS_WrapObject(aCx, &reflector)) {
-        return false;
-      }
-
-      args.rval().setObject(*reflector);
-      return true;
-    }
-  } else {
-    nsDependentAtomString localName(definition->mLocalName);
-    element =
-      document->CreateElem(localName, nullptr, kNameSpaceID_XHTML,
-                           (definition->mLocalName != typeAtom) ? &elemName
-                                                                : nullptr);
-    NS_ENSURE_TRUE(element, false);
-  }
-
-  // The prototype setup happens in Element::WrapObject().
-
-  nsresult rv = nsContentUtils::WrapNative(aCx, element, element, args.rval());
-  NS_ENSURE_SUCCESS(rv, true);
-
-  return true;
-}
-
-bool
-nsDocument::IsWebComponentsEnabled(JSContext* aCx, JSObject* aObject)
-{
-  JS::Rooted<JSObject*> obj(aCx, aObject);
-
-  if (nsContentUtils::IsWebComponentsEnabled()) {
-    return true;
-  }
-
-  // Check for the webcomponents permission. See Bug 1181555.
-  JSAutoCompartment ac(aCx, obj);
-  JS::Rooted<JSObject*> global(aCx, JS_GetGlobalForObject(aCx, obj));
-  nsCOMPtr<nsPIDOMWindowInner> window =
-    do_QueryInterface(nsJSUtils::GetStaticScriptGlobal(global));
-
-  return IsWebComponentsEnabled(window);
-}
-
-bool
-nsDocument::IsWebComponentsEnabled(dom::NodeInfo* aNodeInfo)
-{
-  if (nsContentUtils::IsWebComponentsEnabled()) {
-    return true;
-  }
-
-  nsIDocument* doc = aNodeInfo->GetDocument();
-  // Use GetScopeObject() here so that data documents work the same way as the
-  // main document they're associated with.
-  nsCOMPtr<nsPIDOMWindowInner> window =
-    do_QueryInterface(doc->GetScopeObject());
-  return IsWebComponentsEnabled(window);
-}
-
-bool
-nsDocument::IsWebComponentsEnabled(nsPIDOMWindowInner* aWindow)
-{
-  if (aWindow) {
-    nsresult rv;
-    nsCOMPtr<nsIPermissionManager> permMgr =
-      do_GetService(NS_PERMISSIONMANAGER_CONTRACTID, &rv);
-    NS_ENSURE_SUCCESS(rv, false);
-
-    uint32_t perm;
-    rv = permMgr->TestPermissionFromWindow(
-      aWindow, "moz-extremely-unstable-and-will-change-webcomponents", &perm);
-    NS_ENSURE_SUCCESS(rv, false);
-
-    return perm == nsIPermissionManager::ALLOW_ACTION;
-  }
-
-  return false;
-}
-
-void
-nsDocument::RegisterElement(JSContext* aCx, const nsAString& aType,
-                            const ElementRegistrationOptions& aOptions,
-                            JS::MutableHandle<JSObject*> aRetval,
-                            ErrorResult& rv)
-{
-  RefPtr<CustomElementRegistry> registry(GetCustomElementRegistry());
-  if (!registry) {
-    rv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
-    return;
-  }
-
-  AutoCEReaction ceReaction(this->GetDocGroup()->CustomElementReactionsStack(),
-                            aCx);
-  // Unconditionally convert TYPE to lowercase.
-  nsAutoString lcType;
-  nsContentUtils::ASCIIToLower(aType, lcType);
-
-  nsIGlobalObject* sgo = GetScopeObject();
-  if (!sgo) {
-    rv.Throw(NS_ERROR_UNEXPECTED);
-    return;
-  }
-
-  JS::Rooted<JSObject*> global(aCx, sgo->GetGlobalJSObject());
-  JS::Rooted<JSObject*> protoObject(aCx);
-
-  if (!aOptions.mPrototype) {
-    JS::Rooted<JSObject*> htmlProto(aCx);
-    htmlProto = HTMLElementBinding::GetProtoObjectHandle(aCx);
-    if (!htmlProto) {
-      rv.Throw(NS_ERROR_OUT_OF_MEMORY);
-      return;
-    }
-
-    protoObject = JS_NewObjectWithGivenProto(aCx, nullptr, htmlProto);
-    if (!protoObject) {
-      rv.Throw(NS_ERROR_UNEXPECTED);
-      return;
-    }
-  } else {
-    protoObject = aOptions.mPrototype;
-
-    // Get the unwrapped prototype to do some checks.
-    JS::Rooted<JSObject*> protoObjectUnwrapped(aCx, js::CheckedUnwrap(protoObject));
-    if (!protoObjectUnwrapped) {
-      // If the caller's compartment does not have permission to access the
-      // unwrapped prototype then throw.
-      rv.Throw(NS_ERROR_DOM_SECURITY_ERR);
-      return;
-    }
-
-    // If PROTOTYPE is already an interface prototype object for any interface
-    // object or PROTOTYPE has a non-configurable property named constructor,
-    // throw a NotSupportedError and stop.
-    const js::Class* clasp = js::GetObjectClass(protoObjectUnwrapped);
-    if (IsDOMIfaceAndProtoClass(clasp)) {
-      rv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
-      return;
-    }
-
-    JS::Rooted<JS::PropertyDescriptor> descRoot(aCx);
-    JS::MutableHandle<JS::PropertyDescriptor> desc(&descRoot);
-    // This check may go through a wrapper, but as we checked above
-    // it should be transparent or an xray. This should be fine for now,
-    // until the spec is sorted out.
-    if (!JS_GetPropertyDescriptor(aCx, protoObject, "constructor", desc)) {
-      rv.Throw(NS_ERROR_UNEXPECTED);
-      return;
-    }
-
-    if (!desc.configurable()) {
-      rv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
-      return;
-    }
-  }
-
-  JS::Rooted<JSFunction*> constructor(aCx);
-  {
-    // Go into the document's global compartment when creating the constructor
-    // function because we want to get the correct document (where the
-    // definition is registered) when it is called.
-    JSAutoCompartment ac(aCx, global);
-
-    // Create constructor to return. Store the name of the custom element as the
-    // name of the function.
-    constructor = JS_NewFunction(aCx, nsDocument::CustomElementConstructor, 0,
-                                 JSFUN_CONSTRUCTOR,
-                                 NS_ConvertUTF16toUTF8(lcType).get());
-    if (!constructor) {
-      rv.Throw(NS_ERROR_OUT_OF_MEMORY);
-      return;
-    }
-  }
-
-  JS::Rooted<JSObject*> wrappedConstructor(aCx);
-  wrappedConstructor = JS_GetFunctionObject(constructor);
-  if (!JS_WrapObject(aCx, &wrappedConstructor)) {
-    rv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
-    return;
-  }
-
-  if (!JS_LinkConstructorAndPrototype(aCx, wrappedConstructor, protoObject)) {
-    rv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
-    return;
-  }
-
-  ElementDefinitionOptions options;
-  if (!aOptions.mExtends.IsVoid()) {
-    // Only convert NAME to lowercase in HTML documents.
-    nsAutoString lcName;
-    IsHTMLDocument() ? nsContentUtils::ASCIIToLower(aOptions.mExtends, lcName)
-                     : lcName.Assign(aOptions.mExtends);
-
-    options.mExtends.Construct(lcName);
-  }
-
-  RootedCallback<OwningNonNull<binding_detail::FastFunction>> functionConstructor(aCx);
-  functionConstructor = new binding_detail::FastFunction(aCx, wrappedConstructor, sgo);
-
-  registry->Define(lcType, functionConstructor, options, rv);
-
-  aRetval.set(wrappedConstructor);
+  return aNode->OwnerDoc()->IsWebComponentsEnabled();
 }
 
 NS_IMETHODIMP
@@ -6006,15 +5695,6 @@ nsDocument::GetStyleSheets(nsIDOMStyleSheetList** aStyleSheets)
   return NS_OK;
 }
 
-StyleSheetList*
-nsDocument::StyleSheets()
-{
-  if (!mDOMStyleSheets) {
-    mDOMStyleSheets = new nsDOMStyleSheetList(this);
-  }
-  return mDOMStyleSheets;
-}
-
 NS_IMETHODIMP
 nsDocument::GetMozSelectedStyleSheetSet(nsAString& aSheetSet)
 {
@@ -6028,10 +5708,10 @@ nsIDocument::GetSelectedStyleSheetSet(nsAString& aSheetSet)
   aSheetSet.Truncate();
 
   // Look through our sheets, find the selected set title
-  int32_t count = GetNumberOfStyleSheets();
+  size_t count = SheetCount();
   nsAutoString title;
-  for (int32_t index = 0; index < count; index++) {
-    StyleSheet* sheet = GetStyleSheetAt(index);
+  for (size_t index = 0; index < count; index++) {
+    StyleSheet* sheet = SheetAt(index);
     NS_ASSERTION(sheet, "Null sheet in sheet list!");
 
     // XXXheycam Make this work with ServoStyleSheets.
@@ -6148,10 +5828,10 @@ nsDocument::EnableStyleSheetsForSetInternal(const nsAString& aSheetSet,
                                             bool aUpdateCSSLoader)
 {
   BeginUpdate(UPDATE_STYLE);
-  int32_t count = GetNumberOfStyleSheets();
+  size_t count = SheetCount();
   nsAutoString title;
-  for (int32_t index = 0; index < count; index++) {
-    StyleSheet* sheet = GetStyleSheetAt(index);
+  for (size_t index = 0; index < count; index++) {
+    StyleSheet* sheet = SheetAt(index);
     NS_ASSERTION(sheet, "Null sheet in sheet list!");
 
     // XXXheycam Make this work with ServoStyleSheets.
@@ -6421,7 +6101,7 @@ already_AddRefed<nsRange>
 nsIDocument::CreateRange(ErrorResult& rv)
 {
   RefPtr<nsRange> range = new nsRange(this);
-  nsresult res = range->Set(this, 0, this, 0);
+  nsresult res = range->CollapseTo(this, 0);
   if (NS_FAILED(res)) {
     rv.Throw(res);
     return nullptr;
@@ -7712,7 +7392,7 @@ nsDocument::GetExistingListenerManager() const
 }
 
 nsresult
-nsDocument::PreHandleEvent(EventChainPreVisitor& aVisitor)
+nsDocument::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mCanHandle = true;
    // FIXME! This is a hack to make middle mouse paste working also in Editor.
@@ -7722,8 +7402,8 @@ nsDocument::PreHandleEvent(EventChainPreVisitor& aVisitor)
   // Load events must not propagate to |window| object, see bug 335251.
   if (aVisitor.mEvent->mMessage != eLoad) {
     nsGlobalWindow* window = nsGlobalWindow::Cast(GetWindow());
-    aVisitor.mParentTarget =
-      window ? window->GetTargetForEventTargetChain() : nullptr;
+    aVisitor.SetParentTarget(
+      window ? window->GetTargetForEventTargetChain() : nullptr, false);
   }
   return NS_OK;
 }
@@ -9859,9 +9539,9 @@ nsIDocument::CreateStaticClone(nsIDocShell* aCloneContainer)
 
       clonedDoc->mOriginalDocument->mStaticCloneCount++;
 
-      int32_t sheetsCount = GetNumberOfStyleSheets();
-      for (int32_t i = 0; i < sheetsCount; ++i) {
-        RefPtr<StyleSheet> sheet = GetStyleSheetAt(i);
+      size_t sheetsCount = SheetCount();
+      for (size_t i = 0; i < sheetsCount; ++i) {
+        RefPtr<StyleSheet> sheet = SheetAt(i);
         if (sheet) {
           if (sheet->IsApplicable()) {
             // XXXheycam Need to make ServoStyleSheet cloning work.
@@ -12079,7 +11759,7 @@ SizeOfOwnedSheetArrayExcludingThis(const nsTArray<RefPtr<StyleSheet>>& aSheets,
   size_t n = 0;
   n += aSheets.ShallowSizeOfExcludingThis(aMallocSizeOf);
   for (StyleSheet* sheet : aSheets) {
-    if (!sheet->GetOwningDocument()) {
+    if (!sheet->GetAssociatedDocument()) {
       // Avoid over-reporting shared sheets.
       continue;
     }

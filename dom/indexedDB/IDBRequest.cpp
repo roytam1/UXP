@@ -449,12 +449,12 @@ NS_IMPL_ADDREF_INHERITED(IDBRequest, IDBWrapperCache)
 NS_IMPL_RELEASE_INHERITED(IDBRequest, IDBWrapperCache)
 
 nsresult
-IDBRequest::PreHandleEvent(EventChainPreVisitor& aVisitor)
+IDBRequest::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   AssertIsOnOwningThread();
 
   aVisitor.mCanHandle = true;
-  aVisitor.mParentTarget = mTransaction;
+  aVisitor.SetParentTarget(mTransaction, false);
   return NS_OK;
 }
 

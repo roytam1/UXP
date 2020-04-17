@@ -3484,6 +3484,12 @@ EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
      // make sure to fire the enter and exit_synth events after the
      // eDragExit event, otherwise we'll clean up too early
     GenerateDragDropEnterExit(presContext, aEvent->AsDragEvent());
+    if (ContentChild* child = ContentChild::GetSingleton()) {
+      // SendUpdateDropEffect to prevent nsIDragService from waiting for
+      // response of forwarded dragexit event.
+      child->SendUpdateDropEffect(nsIDragService::DRAGDROP_ACTION_NONE,
+                                  nsIDragService::DRAGDROP_ACTION_NONE);
+    }
     break;
 
   case eBeforeKeyUp:
@@ -3900,13 +3906,13 @@ CreateMouseOrPointerWidgetEvent(WidgetMouseEvent* aMouseEvent,
     newPointerEvent->mWidth = sourcePointer->mWidth;
     newPointerEvent->mHeight = sourcePointer->mHeight;
     newPointerEvent->inputSource = sourcePointer->inputSource;
-    newPointerEvent->relatedTarget = aRelatedContent;
+    newPointerEvent->mRelatedTarget = aRelatedContent;
     aNewEvent = newPointerEvent.forget();
   } else {
     aNewEvent =
       new WidgetMouseEvent(aMouseEvent->IsTrusted(), aMessage,
                            aMouseEvent->mWidget, WidgetMouseEvent::eReal);
-    aNewEvent->relatedTarget = aRelatedContent;
+    aNewEvent->mRelatedTarget = aRelatedContent;
   }
   aNewEvent->mRefPoint = aMouseEvent->mRefPoint;
   aNewEvent->mModifiers = aMouseEvent->mModifiers;
@@ -4446,6 +4452,19 @@ EventStateManager::GenerateDragDropEnterExit(nsPresContext* aPresContext,
           FireDragEnterOrExit(sLastDragOverFrame->PresContext(),
                               aDragEvent, eDragExit,
                               targetContent, lastContent, sLastDragOverFrame);
+          nsIContent* target = sLastDragOverFrame ? sLastDragOverFrame.GetFrame()->GetContent() : nullptr;
+          if (IsRemoteTarget(target)) {
+            // Dragging something and moving from web content to chrome only
+            // fires dragexit and dragleave to xul:browser. We have to forward
+            // dragexit to sLastDragOverFrame when its content is a remote
+            // target. We don't forward dragleave since it's generated from
+            // dragexit.
+            WidgetDragEvent remoteEvent(aDragEvent->IsTrusted(), eDragExit,
+                                        aDragEvent->mWidget);
+            remoteEvent.AssignDragEventData(*aDragEvent, true);
+            nsEventStatus remoteStatus = nsEventStatus_eIgnore;
+            HandleCrossProcessEvent(&remoteEvent, &remoteStatus);
+          }
         }
 
         FireDragEnterOrExit(aPresContext, aDragEvent, eDragEnter,
@@ -4502,14 +4521,11 @@ EventStateManager::FireDragEnterOrExit(nsPresContext* aPresContext,
                                        nsIContent* aTargetContent,
                                        nsWeakFrame& aTargetFrame)
 {
+  MOZ_ASSERT(aMessage == eDragLeave || aMessage == eDragExit ||
+             aMessage == eDragEnter);
   nsEventStatus status = nsEventStatus_eIgnore;
   WidgetDragEvent event(aDragEvent->IsTrusted(), aMessage, aDragEvent->mWidget);
-  event.mRefPoint = aDragEvent->mRefPoint;
-  event.mModifiers = aDragEvent->mModifiers;
-  event.buttons = aDragEvent->buttons;
-  event.relatedTarget = aRelatedTarget;
-  event.inputSource = aDragEvent->inputSource;
-
+  event.AssignDragEventData(*aDragEvent, true);
   mCurrentTargetContent = aTargetContent;
 
   if (aTargetContent != aRelatedTarget) {
@@ -4527,10 +4543,7 @@ EventStateManager::FireDragEnterOrExit(nsPresContext* aPresContext,
 
     // collect any changes to moz cursor settings stored in the event's
     // data transfer.
-    if (aMessage == eDragLeave || aMessage == eDragExit ||
-        aMessage == eDragEnter) {
-      UpdateDragDataTransfer(&event);
-    }
+    UpdateDragDataTransfer(&event);
   }
 
   // Finally dispatch the event to the frame

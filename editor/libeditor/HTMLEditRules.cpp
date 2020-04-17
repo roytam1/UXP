@@ -16,12 +16,13 @@
 #include "mozilla/EditorUtils.h"
 #include "mozilla/HTMLEditor.h"
 #include "mozilla/MathAlgorithms.h"
+#include "mozilla/Move.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/UniquePtr.h"
 #include "mozilla/dom/Selection.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/OwningNonNull.h"
 #include "mozilla/mozalloc.h"
-#include "nsAutoPtr.h"
 #include "nsAString.h"
 #include "nsAlgorithm.h"
 #include "nsCRT.h"
@@ -426,7 +427,7 @@ HTMLEditRules::AfterEditInner(EditAction action,
   NS_ENSURE_STATE(selection);
 
   nsCOMPtr<nsIDOMNode> rangeStartParent, rangeEndParent;
-  int32_t rangeStartOffset = 0, rangeEndOffset = 0;
+  uint32_t rangeStartOffset = 0, rangeEndOffset = 0;
   // do we have a real range to act on?
   bool bDamagedRange = false;
   if (mDocChangeRange) {
@@ -534,8 +535,8 @@ HTMLEditRules::AfterEditInner(EditAction action,
     mHTMLEditor->HandleInlineSpellCheck(action, selection,
                                         GetAsDOMNode(mRangeItem->startNode),
                                         mRangeItem->startOffset,
-                                        rangeStartParent, rangeStartOffset,
-                                        rangeEndParent, rangeEndOffset);
+                                        rangeStartParent, static_cast<int32_t>(rangeStartOffset),
+                                        rangeEndParent, static_cast<int32_t>(rangeEndOffset));
   NS_ENSURE_SUCCESS(rv, rv);
 
   // detect empty doc
@@ -1422,16 +1423,15 @@ HTMLEditRules::WillInsertText(EditAction aAction,
     if (!mDocChangeRange) {
       mDocChangeRange = new nsRange(selNode);
     }
-    rv = mDocChangeRange->SetStart(selNode, selOffset);
-    NS_ENSURE_SUCCESS(rv, rv);
 
     if (curNode) {
-      rv = mDocChangeRange->SetEnd(curNode, curOffset);
+      rv = mDocChangeRange->SetStartAndEnd(selNode, selOffset,
+                                           curNode, curOffset);
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return rv;
       }
     } else {
-      rv = mDocChangeRange->SetEnd(selNode, selOffset);
+      rv = mDocChangeRange->CollapseTo(selNode, selOffset);
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return rv;
       }
@@ -4411,20 +4411,21 @@ HTMLEditRules::CreateStyleForInsertText(Selection& aSelection,
   NS_ENSURE_STATE(rootElement);
 
   // process clearing any styles first
-  nsAutoPtr<PropItem> item(mHTMLEditor->mTypeInState->TakeClearProperty());
+  UniquePtr<PropItem> item =
+    Move(mHTMLEditor->mTypeInState->TakeClearProperty());
   while (item && node != rootElement) {
     NS_ENSURE_STATE(mHTMLEditor);
     nsresult rv =
       mHTMLEditor->ClearStyle(address_of(node), &offset,
                               item->tag, &item->attr);
     NS_ENSURE_SUCCESS(rv, rv);
-    item = mHTMLEditor->mTypeInState->TakeClearProperty();
+    item = Move(mHTMLEditor->mTypeInState->TakeClearProperty());
     weDidSomething = true;
   }
 
   // then process setting any styles
   int32_t relFontSize = mHTMLEditor->mTypeInState->TakeRelativeFontSize();
-  item = mHTMLEditor->mTypeInState->TakeSetProperty();
+  item = Move(mHTMLEditor->mTypeInState->TakeSetProperty());
 
   if (item || relFontSize) {
     // we have at least one style to add; make a new text node to insert style
@@ -4641,7 +4642,11 @@ HTMLEditRules::WillAlign(Selection& aSelection,
     }
 
     nsCOMPtr<nsINode> curParent = curNode->GetParentNode();
-    int32_t offset = curParent ? curParent->IndexOf(curNode) : -1;
+    if (!curParent) {
+      continue;
+    }
+
+    int32_t offset = curParent->IndexOf(curNode);
 
     // Skip insignificant formatting text nodes to prevent unnecessary
     // structure splitting!
@@ -5089,10 +5094,11 @@ HTMLEditRules::ExpandSelectionForDeletion(Selection& aSelection)
 
     // Create a range that represents expanded selection
     RefPtr<nsRange> range = new nsRange(selStartNode);
-    nsresult rv = range->SetStart(selStartNode, selStartOffset);
-    NS_ENSURE_SUCCESS(rv, rv);
-    rv = range->SetEnd(selEndNode, selEndOffset);
-    NS_ENSURE_SUCCESS(rv, rv);
+    nsresult rv = range->SetStartAndEnd(selStartNode, selStartOffset,
+                                        selEndNode, selEndOffset);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
 
     // Check if block is entirely inside range
     if (brBlock) {
@@ -5145,9 +5151,8 @@ HTMLEditRules::NormalizeSelection(Selection* inSelection)
   RefPtr<nsRange> range = inSelection->GetRangeAt(0);
   NS_ENSURE_TRUE(range, NS_ERROR_NULL_POINTER);
   nsCOMPtr<nsIDOMNode> startNode, endNode;
-  int32_t startOffset, endOffset;
+  uint32_t startOffset, endOffset;
   nsCOMPtr<nsIDOMNode> newStartNode, newEndNode;
-  int32_t newStartOffset, newEndOffset;
 
   rv = range->GetStartContainer(getter_AddRefs(startNode));
   NS_ENSURE_SUCCESS(rv, rv);
@@ -5160,22 +5165,22 @@ HTMLEditRules::NormalizeSelection(Selection* inSelection)
 
   // adjusted values default to original values
   newStartNode = startNode;
-  newStartOffset = startOffset;
+  uint32_t newStartOffset = startOffset;
   newEndNode = endNode;
-  newEndOffset = endOffset;
+  uint32_t newEndOffset = endOffset;
 
   // some locals we need for whitespace code
   nsCOMPtr<nsINode> unused;
-  int32_t offset;
+  int32_t offset = -1;
   WSType wsType;
 
   // let the whitespace code do the heavy lifting
-  WSRunObject wsEndObj(mHTMLEditor, endNode, endOffset);
+  WSRunObject wsEndObj(mHTMLEditor, endNode, static_cast<int32_t>(endOffset));
   // is there any intervening visible whitespace?  if so we can't push selection past that,
   // it would visibly change maening of users selection
   nsCOMPtr<nsINode> endNode_(do_QueryInterface(endNode));
-  wsEndObj.PriorVisibleNode(endNode_, endOffset, address_of(unused),
-                            &offset, &wsType);
+  wsEndObj.PriorVisibleNode(endNode_, static_cast<int32_t>(endOffset),
+                            address_of(unused), &offset, &wsType);
   if (wsType != WSType::text && wsType != WSType::normalWS) {
     // eThisBlock and eOtherBlock conveniently distinquish cases
     // of going "down" into a block and "up" out of a block.
@@ -5185,36 +5190,44 @@ HTMLEditRules::NormalizeSelection(Selection* inSelection)
         GetAsDOMNode(mHTMLEditor->GetRightmostChild(wsEndObj.mStartReasonNode,
                                                     true));
       if (child) {
-        newEndNode = EditorBase::GetNodeLocation(child, &newEndOffset);
-        ++newEndOffset; // offset *after* child
+        int32_t offset = -1;
+        newEndNode = EditorBase::GetNodeLocation(child, &offset);
+        // offset *after* child
+        newEndOffset = static_cast<uint32_t>(offset + 1);
       }
       // else block is empty - we can leave selection alone here, i think.
     } else if (wsEndObj.mStartReason == WSType::thisBlock) {
       // endpoint is just after start of this block
       nsCOMPtr<nsIDOMNode> child;
       NS_ENSURE_STATE(mHTMLEditor);
-      mHTMLEditor->GetPriorHTMLNode(endNode, endOffset, address_of(child));
+      mHTMLEditor->GetPriorHTMLNode(endNode, static_cast<int32_t>(endOffset),
+                                    address_of(child));
       if (child) {
-        newEndNode = EditorBase::GetNodeLocation(child, &newEndOffset);
-        ++newEndOffset; // offset *after* child
+        int32_t offset = -1;
+        newEndNode = EditorBase::GetNodeLocation(child, &offset);
+        // offset *after* child
+        newEndOffset = static_cast<uint32_t>(offset + 1);
       }
       // else block is empty - we can leave selection alone here, i think.
     } else if (wsEndObj.mStartReason == WSType::br) {
       // endpoint is just after break.  lets adjust it to before it.
+      int32_t offset = -1;
       newEndNode =
         EditorBase::GetNodeLocation(GetAsDOMNode(wsEndObj.mStartReasonNode),
-                                    &newEndOffset);
+                                    &offset);
+      newEndOffset = static_cast<uint32_t>(offset);;
     }
   }
 
 
   // similar dealio for start of range
-  WSRunObject wsStartObj(mHTMLEditor, startNode, startOffset);
+  WSRunObject wsStartObj(mHTMLEditor, startNode,
+                         static_cast<int32_t>(startOffset));
   // is there any intervening visible whitespace?  if so we can't push selection past that,
   // it would visibly change maening of users selection
   nsCOMPtr<nsINode> startNode_(do_QueryInterface(startNode));
-  wsStartObj.NextVisibleNode(startNode_, startOffset, address_of(unused),
-                             &offset, &wsType);
+  wsStartObj.NextVisibleNode(startNode_, static_cast<int32_t>(startOffset),
+                             address_of(unused), &offset, &wsType);
   if (wsType != WSType::text && wsType != WSType::normalWS) {
     // eThisBlock and eOtherBlock conveniently distinquish cases
     // of going "down" into a block and "up" out of a block.
@@ -5224,23 +5237,31 @@ HTMLEditRules::NormalizeSelection(Selection* inSelection)
         GetAsDOMNode(mHTMLEditor->GetLeftmostChild(wsStartObj.mEndReasonNode,
                                                    true));
       if (child) {
-        newStartNode = EditorBase::GetNodeLocation(child, &newStartOffset);
+        int32_t offset = -1;
+        newStartNode = EditorBase::GetNodeLocation(child, &offset);
+        newStartOffset = static_cast<uint32_t>(offset);
       }
       // else block is empty - we can leave selection alone here, i think.
     } else if (wsStartObj.mEndReason == WSType::thisBlock) {
       // startpoint is just before end of this block
       nsCOMPtr<nsIDOMNode> child;
       NS_ENSURE_STATE(mHTMLEditor);
-      mHTMLEditor->GetNextHTMLNode(startNode, startOffset, address_of(child));
+      mHTMLEditor->GetNextHTMLNode(startNode, static_cast<int32_t>(startOffset),
+                                   address_of(child));
       if (child) {
-        newStartNode = EditorBase::GetNodeLocation(child, &newStartOffset);
+        int32_t offset = -1;
+        newStartNode = EditorBase::GetNodeLocation(child, &offset);
+        newStartOffset = static_cast<uint32_t>(offset);
       }
       // else block is empty - we can leave selection alone here, i think.
     } else if (wsStartObj.mEndReason == WSType::br) {
       // startpoint is just before a break.  lets adjust it to after it.
+      int32_t offset = -1;
       newStartNode =
         EditorBase::GetNodeLocation(GetAsDOMNode(wsStartObj.mEndReasonNode),
-                                    &newStartOffset);
+                                    &offset);
+      // offset *after* break
+      newStartOffset = static_cast<uint32_t>(offset + 1);
       ++newStartOffset; // offset *after* break
     }
   }
@@ -5554,26 +5575,27 @@ HTMLEditRules::PromoteRange(nsRange& aRange,
   // This is tricky.  The basic idea is to push out the range endpoints to
   // truly enclose the blocks that we will affect.
 
-  nsCOMPtr<nsIDOMNode> opStartNode;
-  nsCOMPtr<nsIDOMNode> opEndNode;
+  nsCOMPtr<nsIDOMNode> opDOMStartNode;
+  nsCOMPtr<nsIDOMNode> opDOMEndNode;
   int32_t opStartOffset, opEndOffset;
 
   GetPromotedPoint(kStart, GetAsDOMNode(startNode), startOffset,
-                   aOperationType, address_of(opStartNode), &opStartOffset);
+                   aOperationType, address_of(opDOMStartNode), &opStartOffset);
   GetPromotedPoint(kEnd, GetAsDOMNode(endNode), endOffset, aOperationType,
-                   address_of(opEndNode), &opEndOffset);
+                   address_of(opDOMEndNode), &opEndOffset);
 
   // Make sure that the new range ends up to be in the editable section.
   if (!htmlEditor->IsDescendantOfEditorRoot(
-        EditorBase::GetNodeAtRangeOffsetPoint(opStartNode, opStartOffset)) ||
+        EditorBase::GetNodeAtRangeOffsetPoint(opDOMStartNode, opStartOffset)) ||
       !htmlEditor->IsDescendantOfEditorRoot(
-        EditorBase::GetNodeAtRangeOffsetPoint(opEndNode, opEndOffset - 1))) {
+        EditorBase::GetNodeAtRangeOffsetPoint(opDOMEndNode, opEndOffset - 1))) {
     return;
   }
 
-  DebugOnly<nsresult> rv = aRange.SetStart(opStartNode, opStartOffset);
-  MOZ_ASSERT(NS_SUCCEEDED(rv));
-  rv = aRange.SetEnd(opEndNode, opEndOffset);
+  nsCOMPtr<nsINode> opStartNode = do_QueryInterface(opDOMStartNode);
+  nsCOMPtr<nsINode> opEndNode = do_QueryInterface(opDOMEndNode);
+  DebugOnly<nsresult> rv =
+    aRange.SetStartAndEnd(opStartNode, opStartOffset, opEndNode, opEndOffset);
   MOZ_ASSERT(NS_SUCCEEDED(rv));
 }
 
@@ -7175,42 +7197,44 @@ HTMLEditRules::PinSelectionToNewBlock(Selection* aSelection)
     return NS_OK;
   }
 
+  if (NS_WARN_IF(!mNewBlock)) {
+    return NS_ERROR_NULL_POINTER;
+  }
+
   // get the (collapsed) selection location
-  nsCOMPtr<nsIDOMNode> selNode, temp;
+  nsCOMPtr<nsIDOMNode> selNode;
   int32_t selOffset;
   NS_ENSURE_STATE(mHTMLEditor);
   nsresult rv =
     mHTMLEditor->GetStartNodeAndOffset(aSelection,
                                        getter_AddRefs(selNode), &selOffset);
   NS_ENSURE_SUCCESS(rv, rv);
-  temp = selNode;
 
   // use ranges and sRangeHelper to compare sel point to new block
   nsCOMPtr<nsINode> node = do_QueryInterface(selNode);
   NS_ENSURE_STATE(node);
   RefPtr<nsRange> range = new nsRange(node);
-  rv = range->SetStart(selNode, selOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = range->SetEnd(selNode, selOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  nsCOMPtr<nsIContent> block = mNewBlock.get();
-  NS_ENSURE_TRUE(block, NS_ERROR_NO_INTERFACE);
+  rv = range->CollapseTo(node, selOffset);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
   bool nodeBefore, nodeAfter;
-  rv = nsRange::CompareNodeToRange(block, range, &nodeBefore, &nodeAfter);
+  rv = nsRange::CompareNodeToRange(mNewBlock, range, &nodeBefore, &nodeAfter);
   NS_ENSURE_SUCCESS(rv, rv);
 
   if (nodeBefore && nodeAfter) {
     return NS_OK;  // selection is inside block
   } else if (nodeBefore) {
     // selection is after block.  put at end of block.
-    nsCOMPtr<nsIDOMNode> tmp = GetAsDOMNode(mNewBlock);
     NS_ENSURE_STATE(mHTMLEditor);
-    tmp = GetAsDOMNode(mHTMLEditor->GetLastEditableChild(*block));
+    nsCOMPtr<nsINode> tmp = mHTMLEditor->GetLastEditableChild(*mNewBlock);
+    if (!tmp) {
+      tmp = mNewBlock;
+    }
     uint32_t endPoint;
     if (mHTMLEditor->IsTextNode(tmp) ||
         mHTMLEditor->IsContainer(tmp)) {
-      rv = EditorBase::GetLengthOfDOMNode(tmp, endPoint);
-      NS_ENSURE_SUCCESS(rv, rv);
+      endPoint = tmp->Length();
     } else {
       tmp = EditorBase::GetNodeLocation(tmp, (int32_t*)&endPoint);
       endPoint++;  // want to be after this node
@@ -7218,9 +7242,11 @@ HTMLEditRules::PinSelectionToNewBlock(Selection* aSelection)
     return aSelection->Collapse(tmp, (int32_t)endPoint);
   } else {
     // selection is before block.  put at start of block.
-    nsCOMPtr<nsIDOMNode> tmp = GetAsDOMNode(mNewBlock);
     NS_ENSURE_STATE(mHTMLEditor);
-    tmp = GetAsDOMNode(mHTMLEditor->GetFirstEditableChild(*block));
+    nsCOMPtr<nsINode> tmp = mHTMLEditor->GetFirstEditableChild(*mNewBlock);
+    if (!tmp) {
+      tmp = mNewBlock;
+    }
     int32_t offset;
     if (mHTMLEditor->IsTextNode(tmp) ||
         mHTMLEditor->IsContainer(tmp)) {
@@ -7963,7 +7989,7 @@ HTMLEditRules::UpdateDocChangeRange(nsRange* aRange)
     NS_ENSURE_SUCCESS(rv, rv);
     // Positive result means mDocChangeRange start is after aRange start.
     if (result > 0) {
-      int32_t startOffset;
+      uint32_t startOffset;
       rv = aRange->GetStartOffset(&startOffset);
       NS_ENSURE_SUCCESS(rv, rv);
       rv = mDocChangeRange->SetStart(startNode, startOffset);
@@ -7977,9 +8003,9 @@ HTMLEditRules::UpdateDocChangeRange(nsRange* aRange)
     // Negative result means mDocChangeRange end is before aRange end.
     if (result < 0) {
       nsCOMPtr<nsIDOMNode> endNode;
-      int32_t endOffset;
       rv = aRange->GetEndContainer(getter_AddRefs(endNode));
       NS_ENSURE_SUCCESS(rv, rv);
+      uint32_t endOffset;
       rv = aRange->GetEndOffset(&endOffset);
       NS_ENSURE_SUCCESS(rv, rv);
       rv = mDocChangeRange->SetEnd(endNode, endOffset);
@@ -8087,10 +8113,13 @@ HTMLEditRules::DidSplitNode(nsIDOMNode* aExistingRightNode,
   if (!mListenerEnabled) {
     return NS_OK;
   }
-  nsresult rv = mUtilRange->SetStart(aNewLeftNode, 0);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = mUtilRange->SetEnd(aExistingRightNode, 0);
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsCOMPtr<nsINode> newLeftNode = do_QueryInterface(aNewLeftNode);
+  nsCOMPtr<nsINode> existingRightNode = do_QueryInterface(aExistingRightNode);
+  nsresult rv = mUtilRange->SetStartAndEnd(newLeftNode, 0,
+                                           existingRightNode, 0);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
   return UpdateDocChangeRange(mUtilRange);
 }
 
@@ -8115,11 +8144,12 @@ HTMLEditRules::DidJoinNodes(nsIDOMNode* aLeftNode,
   if (!mListenerEnabled) {
     return NS_OK;
   }
+  nsCOMPtr<nsINode> rightNode = do_QueryInterface(aRightNode);
   // assumption that Join keeps the righthand node
-  nsresult rv = mUtilRange->SetStart(aRightNode, mJoinOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = mUtilRange->SetEnd(aRightNode, mJoinOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsresult rv = mUtilRange->CollapseTo(rightNode, mJoinOffset);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
   return UpdateDocChangeRange(mUtilRange);
 }
 
@@ -8141,11 +8171,12 @@ HTMLEditRules::DidInsertText(nsIDOMCharacterData* aTextNode,
     return NS_OK;
   }
   int32_t length = aString.Length();
-  nsCOMPtr<nsIDOMNode> theNode = do_QueryInterface(aTextNode);
-  nsresult rv = mUtilRange->SetStart(theNode, aOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = mUtilRange->SetEnd(theNode, aOffset+length);
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsCOMPtr<nsINode> theNode = do_QueryInterface(aTextNode);
+  nsresult rv = mUtilRange->SetStartAndEnd(theNode, aOffset,
+                                           theNode, aOffset + length);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
   return UpdateDocChangeRange(mUtilRange);
 }
 
@@ -8166,11 +8197,11 @@ HTMLEditRules::DidDeleteText(nsIDOMCharacterData* aTextNode,
   if (!mListenerEnabled) {
     return NS_OK;
   }
-  nsCOMPtr<nsIDOMNode> theNode = do_QueryInterface(aTextNode);
-  nsresult rv = mUtilRange->SetStart(theNode, aOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = mUtilRange->SetEnd(theNode, aOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsCOMPtr<nsINode> theNode = do_QueryInterface(aTextNode);
+  nsresult rv = mUtilRange->CollapseTo(theNode, aOffset);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
   return UpdateDocChangeRange(mUtilRange);
 }
 
@@ -8185,22 +8216,27 @@ HTMLEditRules::WillDeleteSelection(nsISelection* aSelection)
   }
   RefPtr<Selection> selection = aSelection->AsSelection();
   // get the (collapsed) selection location
-  nsCOMPtr<nsIDOMNode> selNode;
-  int32_t selOffset;
-
+  nsCOMPtr<nsINode> startNode;
+  int32_t startOffset;
   NS_ENSURE_STATE(mHTMLEditor);
   nsresult rv =
     mHTMLEditor->GetStartNodeAndOffset(selection,
-                                       getter_AddRefs(selNode), &selOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = mUtilRange->SetStart(selNode, selOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
+                                      getter_AddRefs(startNode), &startOffset);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+  nsCOMPtr<nsINode> endNode;
+  int32_t endOffset;
   NS_ENSURE_STATE(mHTMLEditor);
   rv = mHTMLEditor->GetEndNodeAndOffset(selection,
-                                        getter_AddRefs(selNode), &selOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = mUtilRange->SetEnd(selNode, selOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
+                                       getter_AddRefs(endNode), &endOffset);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+  rv = mUtilRange->SetStartAndEnd(startNode, startOffset, endNode, endOffset);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
   return UpdateDocChangeRange(mUtilRange);
 }
 

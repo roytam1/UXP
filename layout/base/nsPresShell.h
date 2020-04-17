@@ -130,7 +130,6 @@ public:
   virtual nsIPageSequenceFrame* GetPageSequenceFrame() const override;
   virtual nsCanvasFrame* GetCanvasFrame() const override;
 
-  virtual nsIFrame* GetPlaceholderFrameFor(nsIFrame* aFrame) const override;
   virtual void FrameNeedsReflow(nsIFrame *aFrame, IntrinsicDirty aIntrinsicDirty,
                                 nsFrameState aBitToAdd,
                                 ReflowRootHandling aRootHandling =
@@ -140,9 +139,7 @@ public:
   virtual bool IsSafeToFlush() const override;
   virtual void FlushPendingNotifications(mozFlushType aType) override;
   virtual void FlushPendingNotifications(mozilla::ChangesToFlush aType) override;
-  virtual void DestroyFramesFor(nsIContent*  aContent,
-                                nsIContent** aDestroyedFramesFor) override;
-  virtual void CreateFramesFor(nsIContent* aContent) override;
+  virtual void DestroyFramesForAndRestyle(mozilla::dom::Element* aElement) override;
 
   /**
    * Recreates the frames for a node
@@ -200,7 +197,7 @@ public:
 
   virtual void NotifyCounterStylesAreDirty() override;
 
-  virtual nsresult ReconstructFrames(void) override;
+  virtual void ReconstructFrames(void) override;
   virtual void Freeze() override;
   virtual void Thaw() override;
   virtual void FireOrClearDelayedEvents(bool aFireEvents) override;

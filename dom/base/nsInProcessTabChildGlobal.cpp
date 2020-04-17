@@ -97,7 +97,7 @@ nsInProcessTabChildGlobal::nsInProcessTabChildGlobal(nsIDocShell* aShell,
   mozilla::HoldJSObjects(this);
 
   // If owner corresponds to an <iframe mozbrowser> or <iframe mozapp>, we'll
-  // have to tweak our PreHandleEvent implementation.
+  // GetEventTargetParent implementation.
   nsCOMPtr<nsIMozBrowserFrame> browserFrame = do_QueryInterface(mOwner);
   if (browserFrame) {
     mIsBrowserOrAppFrame = browserFrame->GetReallyIsBrowserOrApp();
@@ -251,7 +251,7 @@ nsInProcessTabChildGlobal::GetOwnerContent()
 }
 
 nsresult
-nsInProcessTabChildGlobal::PreHandleEvent(EventChainPreVisitor& aVisitor)
+nsInProcessTabChildGlobal::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mForceContentDispatch = true;
   aVisitor.mCanHandle = true;
@@ -270,7 +270,7 @@ nsInProcessTabChildGlobal::PreHandleEvent(EventChainPreVisitor& aVisitor)
 #endif
 
   if (mPreventEventsEscaping) {
-    aVisitor.mParentTarget = nullptr;
+    aVisitor.SetParentTarget(nullptr, false);
     return NS_OK;
   }
 
@@ -278,11 +278,13 @@ nsInProcessTabChildGlobal::PreHandleEvent(EventChainPreVisitor& aVisitor)
       (!mOwner || !nsContentUtils::IsInChromeDocshell(mOwner->OwnerDoc()))) {
     if (mOwner) {
       if (nsPIDOMWindowInner* innerWindow = mOwner->OwnerDoc()->GetInnerWindow()) {
-        aVisitor.mParentTarget = innerWindow->GetParentTarget();
+        // 'this' is already a "chrome handler", so we consider window's
+        // parent target to be part of that same part of the event path.
+        aVisitor.SetParentTarget(innerWindow->GetParentTarget(), false);
       }
     }
   } else {
-    aVisitor.mParentTarget = mOwner;
+    aVisitor.SetParentTarget(mOwner, false);
   }
 
   return NS_OK;

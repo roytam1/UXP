@@ -633,8 +633,7 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
 
   nsIPresShell *shell = presContext->GetPresShell();
   if (mState & NS_FRAME_OUT_OF_FLOW) {
-    nsPlaceholderFrame* placeholder =
-      shell->FrameManager()->GetPlaceholderFrameFor(this);
+    nsPlaceholderFrame* placeholder = GetPlaceholderFrame();
     NS_ASSERTION(!placeholder || (aDestructRoot != this),
                  "Don't call Destroy() on OOFs, call Destroy() on the placeholder.");
     NS_ASSERTION(!placeholder ||
@@ -642,7 +641,6 @@ nsFrame::DestroyFrom(nsIFrame* aDestructRoot)
                  "Placeholder relationship should have been torn down already; "
                  "this might mean we have a stray placeholder in the tree.");
     if (placeholder) {
-      shell->FrameManager()->UnregisterPlaceholderFrame(placeholder);
       placeholder->SetOutOfFlowFrame(nullptr);
     }
   }
@@ -8060,9 +8058,8 @@ int32_t
 nsFrame::GetLineNumber(nsIFrame *aFrame, bool aLockScroll, nsIFrame** aContainingBlock)
 {
   NS_ASSERTION(aFrame, "null aFrame");
-  nsFrameManager* frameManager = aFrame->PresContext()->FrameManager();
-  nsIFrame *blockFrame = aFrame;
-  nsIFrame *thisBlock;
+  nsIFrame* blockFrame = aFrame;
+  nsIFrame* thisBlock;
   nsAutoLineIterator it;
   nsresult result = NS_ERROR_FAILURE;
   while (NS_FAILED(result) && blockFrame)
@@ -8075,7 +8072,7 @@ nsFrame::GetLineNumber(nsIFrame *aFrame, bool aLockScroll, nsIFrame** aContainin
         // abspos continuations don't have placeholders, get the fif
         thisBlock = thisBlock->FirstInFlow();
       }
-      thisBlock = frameManager->GetPlaceholderFrameFor(thisBlock);
+      thisBlock = thisBlock->GetPlaceholderFrame();
       if (!thisBlock)
         return -1;
     }  
@@ -8905,6 +8902,8 @@ GetIBSplitSiblingForAnonymousBlock(const nsIFrame* aFrame)
  *
  * Also skip anonymous scrolled-content parents; inherit directly from the
  * outer scroll frame.
+ *
+ * Also skip NAC parents if the child frame is NAC.
  */
 static nsIFrame*
 GetCorrectedParent(const nsIFrame* aFrame)
@@ -8930,6 +8929,32 @@ GetCorrectedParent(const nsIFrame* aFrame)
   if (pseudo == nsCSSAnonBoxes::tableWrapper) {
     pseudo = aFrame->PrincipalChildList().FirstChild()->StyleContext()->GetPseudo();
   }
+
+  // Prevent NAC from inheriting NAC. This partially duplicates the logic
+  // implemented in nsCSSFrameConstructor::AddFCItemsForAnonymousContent, and is
+  // necessary so that restyle inherits style contexts in the same way as the
+  // initial styling performed in frame construction.
+  //
+  // It would be nice to put it in CorrectStyleParentFrame and therefore share
+  // it, but that would lose the information of whether the _child_ is NAC,
+  // since CorrectStyleParentFrame only knows about the prospective _parent_.
+  // This duplication and complexity will go away when we fully switch to the
+  // Servo style system, where all this can be handled much more naturally.
+  //
+  // We need to take special care not to disrupt the style inheritance of frames
+  // whose content is NAC but who implement a pseudo (like an anonymous
+  // box, or a non-NAC-backed pseudo like ::first-line) that does not match the
+  // one that the NAC implements, if any.
+  nsIContent* content = aFrame->GetContent();
+  Element* element =
+    content && content->IsElement() ? content->AsElement() : nullptr;
+  if (element && element->IsNativeAnonymous() && !element->IsNativeScrollbarContent() &&
+      element->GetPseudoElementType() == aFrame->StyleContext()->GetPseudoType()) {
+    while (parent->GetContent() && parent->GetContent()->IsNativeAnonymous()) {
+      parent = parent->GetInFlowParent();
+    }
+  }
+
   return nsFrame::CorrectStyleParentFrame(parent, pseudo);
 }
 
@@ -8999,7 +9024,9 @@ nsStyleContext*
 nsFrame::DoGetParentStyleContext(nsIFrame** aProviderFrame) const
 {
   *aProviderFrame = nullptr;
-  nsFrameManager* fm = PresContext()->FrameManager();
+
+  // Handle display:contents and the root frame, when there's no parent frame
+  // to inherit from.
   if (MOZ_LIKELY(mContent)) {
     nsIContent* parentContent = mContent->GetFlattenedTreeParent();
     if (MOZ_LIKELY(parentContent)) {
@@ -9013,6 +9040,7 @@ nsFrame::DoGetParentStyleContext(nsIFrame** aProviderFrame) const
           /* if next is true then it's really a request for the table frame's
              parent context, see nsTable[Outer]Frame::GetParentStyleContext. */
           pseudo == nsCSSAnonBoxes::tableWrapper) {
+        nsFrameManager* fm = PresContext()->FrameManager();
         nsStyleContext* sc = fm->GetDisplayContentsStyleFor(parentContent);
         if (MOZ_UNLIKELY(sc)) {
           return sc;
@@ -9049,7 +9077,7 @@ nsFrame::DoGetParentStyleContext(nsIFrame** aProviderFrame) const
   // We're an out-of-flow frame.  For out-of-flow frames, we must
   // resolve underneath the placeholder's parent.  The placeholder is
   // reached from the first-in-flow.
-  nsIFrame* placeholder = fm->GetPlaceholderFrameFor(FirstInFlow());
+  nsIFrame* placeholder = FirstInFlow()->GetPlaceholderFrame();
   if (!placeholder) {
     NS_NOTREACHED("no placeholder frame for out-of-flow frame");
     *aProviderFrame = GetCorrectedParent(this);
@@ -9964,19 +9992,16 @@ nsIFrame::IsPseudoStackingContextFromStyle() {
 Element*
 nsIFrame::GetPseudoElement(CSSPseudoElementType aType)
 {
-  nsIFrame* frame = nullptr;
-
-  if (aType == CSSPseudoElementType::before) {
-    frame = nsLayoutUtils::GetBeforeFrame(this);
-  } else if (aType == CSSPseudoElementType::after) {
-    frame = nsLayoutUtils::GetAfterFrame(this);
+  if (!mContent) {
+    return nullptr;
   }
 
-  if (frame) {
-    nsIContent* content = frame->GetContent();
-    if (content->IsElement()) {
-      return content->AsElement();
-    }
+  if (aType == CSSPseudoElementType::before) {
+    return nsLayoutUtils::GetBeforePseudo(mContent);
+  }
+
+  if (aType == CSSPseudoElementType::after) {
+    return nsLayoutUtils::GetAfterPseudo(mContent);
   }
 
   return nullptr;

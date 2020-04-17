@@ -80,6 +80,10 @@ protected:
    * document.
    */
   nsresult  ReparseStyleAttribute(bool aForceInDataDoc);
+
+  virtual nsresult BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
+                                 const nsAttrValueOrString* aValue,
+                                 bool aNotify) override;
 };
 
 NS_DEFINE_STATIC_IID_ACCESSOR(nsStyledElement, NS_STYLED_ELEMENT_IID)

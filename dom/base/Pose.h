@@ -8,6 +8,7 @@
 #define mozilla_dom_Pose_h
 
 #include "nsWrapperCache.h"
+#include "mozilla/ErrorResult.h"
 
 namespace mozilla {
 namespace dom {

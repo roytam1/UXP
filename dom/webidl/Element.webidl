@@ -228,14 +228,26 @@ partial interface Element {
   NodeList  querySelectorAll(DOMString selectors);
 };
 
-// http://w3c.github.io/webcomponents/spec/shadow/#extensions-to-element-interface
+// https://dom.spec.whatwg.org/#dictdef-shadowrootinit
+dictionary ShadowRootInit {
+  required ShadowRootMode mode;
+};
+
+// https://dom.spec.whatwg.org/#element
 partial interface Element {
-  [Throws,Func="nsDocument::IsWebComponentsEnabled"]
-  ShadowRoot createShadowRoot();
-  [Func="nsDocument::IsWebComponentsEnabled"]
-  NodeList getDestinationInsertionPoints();
-  [Func="nsDocument::IsWebComponentsEnabled"]
+  // Shadow DOM v1
+  [Throws, Func="nsDocument::IsWebComponentsEnabled"]
+  ShadowRoot attachShadow(ShadowRootInit shadowRootInitDict);
+  [BinaryName="shadowRootByMode", Func="nsDocument::IsWebComponentsEnabled"]
   readonly attribute ShadowRoot? shadowRoot;
+  [BinaryName="assignedSlotByMode", Func="nsDocument::IsWebComponentsEnabled"]
+  readonly attribute HTMLSlotElement? assignedSlot;
+  [CEReactions, Unscopable, SetterThrows, Func="nsDocument::IsWebComponentsEnabled"]
+           attribute DOMString slot;
+
+  // [deprecated] Shadow DOM v0
+  [Throws, Func="nsDocument::IsWebComponentsEnabled"]
+  ShadowRoot createShadowRoot();
 };
 
 Element implements ChildNode;

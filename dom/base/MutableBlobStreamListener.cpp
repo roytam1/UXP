@@ -5,6 +5,7 @@
 
 #include "MutableBlobStreamListener.h"
 #include "MutableBlobStorage.h"
+#include "nsIInputStream.h"
 
 namespace mozilla {
 namespace dom {

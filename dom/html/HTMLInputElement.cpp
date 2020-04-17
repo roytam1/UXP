@@ -147,6 +147,8 @@ namespace dom {
 #define NS_CONTROL_TYPE(bits)  ((bits) & ~( \
   NS_OUTER_ACTIVATE_EVENT | NS_ORIGINAL_CHECKED_VALUE | NS_NO_CONTENT_DISPATCH | \
   NS_ORIGINAL_INDETERMINATE_VALUE))
+#define NS_PRE_HANDLE_BLUR_EVENT  (1 << 13)
+#define NS_PRE_HANDLE_INPUT_EVENT (1 << 14)
 
 // whether textfields should be selected once focused:
 //  -1: no, 1: yes, 0: uninitialized
@@ -172,15 +174,18 @@ static const nsAttrValue::EnumTable kInputTypeTable[] = {
   { "search", NS_FORM_INPUT_SEARCH },
   { "submit", NS_FORM_INPUT_SUBMIT },
   { "tel", NS_FORM_INPUT_TEL },
-  { "text", NS_FORM_INPUT_TEXT },
   { "time", NS_FORM_INPUT_TIME },
   { "url", NS_FORM_INPUT_URL },
   { "week", NS_FORM_INPUT_WEEK },
+  // "text" must be last for ParseAttribute to work right.  If you add things
+  // before it, please update kInputDefaultType.
+  { "text", NS_FORM_INPUT_TEXT },
   { nullptr, 0 }
 };
 
 // Default type is 'text'.
-static const nsAttrValue::EnumTable* kInputDefaultType = &kInputTypeTable[18];
+static const nsAttrValue::EnumTable* kInputDefaultType =
+  &kInputTypeTable[ArrayLength(kInputTypeTable) - 2];
 
 static const uint8_t NS_INPUT_INPUTMODE_AUTO              = 0;
 static const uint8_t NS_INPUT_INPUTMODE_NUMERIC           = 1;
@@ -1235,7 +1240,7 @@ HTMLInputElement::Clone(mozilla::dom::NodeInfo* aNodeInfo, nsINode** aResult) co
 
 nsresult
 HTMLInputElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                nsAttrValueOrString* aValue,
+                                const nsAttrValueOrString* aValue,
                                 bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None) {
@@ -1259,10 +1264,6 @@ HTMLInputElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
       }
     } else if (aNotify && aName == nsGkAtoms::disabled) {
       mDisabledChanged = true;
-    } else if (aName == nsGkAtoms::dir &&
-               AttrValueIs(kNameSpaceID_None, nsGkAtoms::dir,
-                           nsGkAtoms::_auto, eIgnoreCase)) {
-      SetDirectionIfAuto(false, aNotify);
     } else if (mType == NS_FORM_INPUT_RADIO && aName == nsGkAtoms::required) {
       nsCOMPtr<nsIRadioGroupContainer> container = GetRadioGroupContainer();
 
@@ -1282,7 +1283,8 @@ HTMLInputElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 
 nsresult
 HTMLInputElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                               const nsAttrValue* aValue, bool aNotify)
+                               const nsAttrValue* aValue,
+                               const nsAttrValue* aOldValue, bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None) {
     //
@@ -1322,36 +1324,15 @@ HTMLInputElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
     }
 
     if (aName == nsGkAtoms::type) {
+      uint8_t newType;
       if (!aValue) {
-        // We're now a text input.  Note that we have to handle this manually,
-        // since removing an attribute (which is what happened, since aValue is
-        // null) doesn't call ParseAttribute.
-        HandleTypeChange(kInputDefaultType->value);
+        // We're now a text input.
+        newType = kInputDefaultType->value;
+      } else {
+        newType = aValue->GetEnumValue();
       }
-
-      UpdateBarredFromConstraintValidation();
-
-      if (mType != NS_FORM_INPUT_IMAGE) {
-        // We're no longer an image input.  Cancel our image requests, if we have
-        // any.  Note that doing this when we already weren't an image is ok --
-        // just does nothing.
-        CancelImageRequests(aNotify);
-      } else if (aNotify) {
-        // We just got switched to be an image input; we should see
-        // whether we have an image to load;
-        nsAutoString src;
-        if (GetAttr(kNameSpaceID_None, nsGkAtoms::src, src)) {
-          LoadImage(src, false, aNotify, eImageLoadType_Normal);
-        }
-      }
-
-      if (mType == NS_FORM_INPUT_PASSWORD && IsInComposedDoc()) {
-        AsyncEventDispatcher* dispatcher =
-          new AsyncEventDispatcher(this,
-                                   NS_LITERAL_STRING("DOMInputPasswordAdded"),
-                                   true,
-                                   true);
-        dispatcher->PostDOMEvent();
+      if (newType != mType) {
+        HandleTypeChange(newType, aNotify);
       }
     }
 
@@ -1434,7 +1415,7 @@ HTMLInputElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                  "HTML5 spec does not allow underflow for type=range");
     } else if (aName == nsGkAtoms::dir &&
                aValue && aValue->Equals(nsGkAtoms::_auto, eIgnoreCase)) {
-      SetDirectionIfAuto(true, aNotify);
+      SetDirectionFromValue(aNotify);
     } else if (aName == nsGkAtoms::lang) {
       if (mType == NS_FORM_INPUT_NUMBER) {
         // Update the value that is displayed to the user to the new locale:
@@ -1450,12 +1431,11 @@ HTMLInputElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
       // Clear the cached @autocomplete attribute state.
       mAutocompleteAttrState = nsContentUtils::eAutocompleteAttrState_Unknown;
     }
-
-    UpdateState(aNotify);
   }
 
   return nsGenericHTMLFormElementWithState::AfterSetAttr(aNameSpaceID, aName,
-                                                         aValue, aNotify);
+                                                         aValue, aOldValue,
+                                                         aNotify);
 }
 
 // nsIDOMHTMLInputElement
@@ -3738,7 +3718,7 @@ HTMLInputElement::IsDisabledForEvents(EventMessage aMessage)
 }
 
 nsresult
-HTMLInputElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
+HTMLInputElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   // Do not process any DOM events if the element is disabled
   aVisitor.mCanHandle = false;
@@ -3755,7 +3735,7 @@ HTMLInputElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
 
   //FIXME Allow submission etc. also when there is no prescontext, Bug 329509.
   if (!aVisitor.mPresContext) {
-    return nsGenericHTMLElement::PreHandleEvent(aVisitor);
+    return nsGenericHTMLFormElementWithState::GetEventTargetParent(aVisitor);
   }
   //
   // Web pages expect the value of a radio button or checkbox to be set
@@ -3865,23 +3845,16 @@ HTMLInputElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
 
   // Fire onchange (if necessary), before we do the blur, bug 357684.
   if (aVisitor.mEvent->mMessage == eBlur) {
-    // Experimental mobile types rely on the system UI to prevent users to not
-    // set invalid values but we have to be extra-careful. Especially if the
-    // option has been enabled on desktop.
-    if (IsExperimentalMobileType(mType)) {
-      nsAutoString aValue;
-      GetValueInternal(aValue);
-      nsresult rv =
-        SetValueInternal(aValue, nsTextEditorState::eSetValue_Internal);
-      NS_ENSURE_SUCCESS(rv, rv);
-    }
-    FireChangeEventIfNeeded();
+    // We set NS_PRE_HANDLE_BLUR_EVENT here and handle it in PreHandleEvent to
+    // prevent breaking event target chain creation.
+    aVisitor.mWantsPreHandleEvent = true;
+    aVisitor.mItemFlags |= NS_PRE_HANDLE_BLUR_EVENT;
   }
 
   if (mType == NS_FORM_INPUT_RANGE &&
       (aVisitor.mEvent->mMessage == eFocus ||
        aVisitor.mEvent->mMessage == eBlur)) {
-    // Just as nsGenericHTMLFormElementWithState::PreHandleEvent calls
+    // Just as nsGenericHTMLFormElementWithState::GetEventTargetParent calls
     // nsIFormControlFrame::SetFocus, we handle focus here.
     nsIFrame* frame = GetPrimaryFrame();
     if (frame) {
@@ -3969,10 +3942,11 @@ HTMLInputElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
     }
   }
 
-  nsresult rv = nsGenericHTMLFormElementWithState::PreHandleEvent(aVisitor);
+  nsresult rv = nsGenericHTMLFormElementWithState::GetEventTargetParent(aVisitor);
 
-  // We do this after calling the base class' PreHandleEvent so that
-  // nsIContent::PreHandleEvent doesn't reset any change we make to mCanHandle.
+  // We do this after calling the base class' GetEventTargetParent so that
+  // nsIContent::GetEventTargetParent doesn't reset any change we make to
+  // mCanHandle.
   if (mType == NS_FORM_INPUT_NUMBER &&
       aVisitor.mEvent->IsTrusted()  &&
       aVisitor.mEvent->mOriginalTarget != this) {
@@ -3987,18 +3961,10 @@ HTMLInputElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
     }
     if (textControl && aVisitor.mEvent->mOriginalTarget == textControl) {
       if (aVisitor.mEvent->mMessage == eEditorInput) {
-        // Propogate the anon text control's new value to our HTMLInputElement:
-        nsAutoString value;
-        numberControlFrame->GetValueOfAnonTextControl(value);
-        numberControlFrame->HandlingInputEvent(true);
-        nsWeakFrame weakNumberControlFrame(numberControlFrame);
-        rv = SetValueInternal(value,
-                              nsTextEditorState::eSetValue_BySetUserInput |
-                              nsTextEditorState::eSetValue_Notify);
-        NS_ENSURE_SUCCESS(rv, rv);
-        if (weakNumberControlFrame.IsAlive()) {
-          numberControlFrame->HandlingInputEvent(false);
-        }
+        aVisitor.mWantsPreHandleEvent = true;
+        // We set NS_PRE_HANDLE_INPUT_EVENT here and handle it in PreHandleEvent
+        // to prevent breaking event target chain creation.
+        aVisitor.mItemFlags |= NS_PRE_HANDLE_INPUT_EVENT;
       }
       else if (aVisitor.mEvent->mMessage == eFormChange) {
         // We cancel the DOM 'change' event that is fired for any change to our
@@ -4034,6 +4000,50 @@ HTMLInputElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
     }
   }
 
+  return rv;
+}
+
+nsresult
+HTMLInputElement::PreHandleEvent(EventChainVisitor& aVisitor)
+{
+  if (!aVisitor.mPresContext) {
+    return nsGenericHTMLFormElementWithState::PreHandleEvent(aVisitor);
+  }
+  nsresult rv;
+  if (aVisitor.mItemFlags & NS_PRE_HANDLE_BLUR_EVENT) {
+    MOZ_ASSERT(aVisitor.mEvent->mMessage == eBlur);
+    // Experimental mobile types rely on the system UI to prevent users to not
+    // set invalid values but we have to be extra-careful. Especially if the
+    // option has been enabled on desktop.
+    if (IsExperimentalMobileType(mType)) {
+      nsAutoString aValue;
+      GetValueInternal(aValue);
+      nsresult rv =
+        SetValueInternal(aValue, nsTextEditorState::eSetValue_Internal);
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+    FireChangeEventIfNeeded();
+  }
+  rv = nsGenericHTMLFormElementWithState::PreHandleEvent(aVisitor);
+  if (aVisitor.mItemFlags & NS_PRE_HANDLE_INPUT_EVENT) {
+    nsNumberControlFrame* numberControlFrame = do_QueryFrame(GetPrimaryFrame());
+    MOZ_ASSERT(aVisitor.mEvent->mMessage == eEditorInput);
+    MOZ_ASSERT(numberControlFrame);
+    MOZ_ASSERT(numberControlFrame->GetAnonTextControl() ==
+               aVisitor.mEvent->mOriginalTarget);
+    // Propogate the anon text control's new value to our HTMLInputElement:
+    nsAutoString value;
+    numberControlFrame->GetValueOfAnonTextControl(value);
+    numberControlFrame->HandlingInputEvent(true);
+    nsWeakFrame weakNumberControlFrame(numberControlFrame);
+    rv = SetValueInternal(value,
+                          nsTextEditorState::eSetValue_BySetUserInput |
+                          nsTextEditorState::eSetValue_Notify);
+    NS_ENSURE_SUCCESS(rv, rv);
+    if (weakNumberControlFrame.IsAlive()) {
+      numberControlFrame->HandlingInputEvent(false);
+    }
+  }
   return rv;
 }
 
@@ -4961,7 +4971,9 @@ HTMLInputElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
   }
 
   // Set direction based on value if dir=auto
-  SetDirectionIfAuto(HasDirAuto(), false);
+  if (HasDirAuto()) {
+    SetDirectionFromValue(false);
+  }
 
   // An element can't suffer from value missing if it is not in a document.
   // We have to check if we suffer from that as we are now in a document.
@@ -5015,14 +5027,23 @@ HTMLInputElement::UnbindFromTree(bool aDeep, bool aNullParent)
 }
 
 void
-HTMLInputElement::HandleTypeChange(uint8_t aNewType)
+HTMLInputElement::HandleTypeChange(uint8_t aNewType, bool aNotify)
 {
-  if (mType == NS_FORM_INPUT_RANGE && mIsDraggingRange) {
+  uint8_t oldType = mType;
+  MOZ_ASSERT(oldType != aNewType);
+
+  if (aNewType == NS_FORM_INPUT_FILE || oldType == NS_FORM_INPUT_FILE) {
+    // Strictly speaking, we only need to clear files on going _to_ or _from_
+    // the NS_FORM_INPUT_FILE type, not both, since we'll never confuse values
+    // and filenames. But this is safer.
+    ClearFiles(false);
+  }
+
+  if (oldType == NS_FORM_INPUT_RANGE && mIsDraggingRange) {
     CancelRangeThumbDrag(false);
   }
 
   ValueModeType aOldValueMode = GetValueMode();
-  uint8_t oldType = mType;
   nsAutoString aOldValue;
 
   if (aOldValueMode == VALUE_MODE_VALUE) {
@@ -5103,6 +5124,30 @@ HTMLInputElement::HandleTypeChange(uint8_t aNewType)
   UpdateAllValidityStates(false);
 
   UpdateApzAwareFlag();
+
+  UpdateBarredFromConstraintValidation();
+
+  if (oldType == NS_FORM_INPUT_IMAGE) {
+    // We're no longer an image input.  Cancel our image requests, if we have
+    // any.
+    CancelImageRequests(aNotify);
+  } else if (aNotify && mType == NS_FORM_INPUT_IMAGE) {
+    // We just got switched to be an image input; we should see
+    // whether we have an image to load;
+    nsAutoString src;
+    if (GetAttr(kNameSpaceID_None, nsGkAtoms::src, src)) {
+      LoadImage(src, false, aNotify, eImageLoadType_Normal);
+    }
+  }
+
+  if (mType == NS_FORM_INPUT_PASSWORD && IsInComposedDoc()) {
+    AsyncEventDispatcher* dispatcher =
+      new AsyncEventDispatcher(this,
+                               NS_LITERAL_STRING("DOMInputPasswordAdded"),
+                               true,
+                               true);
+    dispatcher->PostDOMEvent();
+  }
 }
 
 void
@@ -5813,42 +5858,34 @@ HTMLInputElement::ParseAttribute(int32_t aNamespaceID,
                                  const nsAString& aValue,
                                  nsAttrValue& aResult)
 {
+  // We can't make these static_asserts because kInputDefaultType and
+  // kInputTypeTable aren't constexpr.
+  MOZ_ASSERT(kInputDefaultType->value == NS_FORM_INPUT_TEXT,
+             "Someone forgot to update kInputDefaultType when adding a new "
+             "input type.");
+  MOZ_ASSERT(kInputTypeTable[ArrayLength(kInputTypeTable) - 1].tag == nullptr,
+             "Last entry in the table must be the nullptr guard");
+  MOZ_ASSERT(kInputTypeTable[ArrayLength(kInputTypeTable) - 2].value ==
+               NS_FORM_INPUT_TEXT,
+             "Next to last entry in the table must be the \"text\" entry");
+
   if (aNamespaceID == kNameSpaceID_None) {
     if (aAttribute == nsGkAtoms::type) {
-      // XXX ARG!! This is major evilness. ParseAttribute
-      // shouldn't set members. Override SetAttr instead
-      int32_t newType;
-      bool success = aResult.ParseEnumValue(aValue, kInputTypeTable, false);
-      if (success) {
-        newType = aResult.GetEnumValue();
-        if ((newType == NS_FORM_INPUT_NUMBER && !IsInputNumberEnabled()) ||
-            (newType == NS_FORM_INPUT_COLOR && !IsInputColorEnabled()) ||
-          (IsDateTimeInputType(newType) && !IsDateTimeTypeSupported(newType))) {
-          newType = kInputDefaultType->value;
-          aResult.SetTo(newType, &aValue);
-        }
-      } else {
-        newType = kInputDefaultType->value;
+      aResult.ParseEnumValue(aValue, kInputTypeTable, false, kInputDefaultType);
+      int32_t newType = aResult.GetEnumValue();
+      if ((IsExperimentalMobileType(newType) &&
+           !IsExperimentalFormsEnabled()) ||
+          (newType == NS_FORM_INPUT_NUMBER && !IsInputNumberEnabled()) ||
+          (newType == NS_FORM_INPUT_COLOR && !IsInputColorEnabled()) ||
+          (IsDateTimeInputType(newType) &&
+           !IsDateTimeTypeSupported(newType))) {
+        // There's no public way to set an nsAttrValue to an enum value, but we
+        // can just re-parse with a table that doesn't have any types other than
+        // "text" in it.
+        aResult.ParseEnumValue(aValue, kInputDefaultType, false, kInputDefaultType);
       }
 
-      if (newType != mType) {
-        // Make sure to do the check for newType being NS_FORM_INPUT_FILE and
-        // the corresponding SetValueInternal() call _before_ we set mType.
-        // That way the logic in SetValueInternal() will work right (that logic
-        // makes assumptions about our frame based on mType, but we won't have
-        // had time to recreate frames yet -- that happens later in the
-        // SetAttr() process).
-        if (newType == NS_FORM_INPUT_FILE || mType == NS_FORM_INPUT_FILE) {
-          // This call isn't strictly needed any more since we'll never
-          // confuse values and filenames. However it's there for backwards
-          // compat.
-          ClearFiles(false);
-        }
-
-        HandleTypeChange(newType);
-      }
-
-      return success;
+      return true;
     }
     if (aAttribute == nsGkAtoms::width) {
       return aResult.ParseSpecialIntValue(aValue);
@@ -6654,17 +6691,12 @@ HTMLInputElement::SetDefaultValueAsValue()
 }
 
 void
-HTMLInputElement::SetDirectionIfAuto(bool aAuto, bool aNotify)
+HTMLInputElement::SetDirectionFromValue(bool aNotify)
 {
-  if (aAuto) {
-    SetHasDirAuto();
-    if (IsSingleLineTextControl(true)) {
-      nsAutoString value;
-      GetValue(value);
-      SetDirectionalityFromValue(this, value, aNotify);
-    }
-  } else {
-    ClearHasDirAuto();
+  if (IsSingleLineTextControl(true)) {
+    nsAutoString value;
+    GetValue(value);
+    SetDirectionalityFromValue(this, value, aNotify);
   }
 }
 
@@ -8441,7 +8473,7 @@ HTMLInputElement::OnValueChanged(bool aNotify, bool aWasInteractiveUserChange)
   UpdateAllValidityStates(aNotify);
 
   if (HasDirAuto()) {
-    SetDirectionIfAuto(true, aNotify);
+    SetDirectionFromValue(aNotify);
   }
 
   // :placeholder-shown pseudo-class may change when the value changes.

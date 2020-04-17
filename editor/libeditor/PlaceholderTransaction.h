@@ -8,12 +8,13 @@
 
 #include "EditAggregateTransaction.h"
 #include "mozilla/EditorUtils.h"
+#include "mozilla/UniquePtr.h"
+#include "mozilla/WeakPtr.h"
 #include "nsIAbsorbingTransaction.h"
 #include "nsIDOMNode.h"
 #include "nsCOMPtr.h"
 #include "nsWeakPtr.h"
 #include "nsWeakReference.h"
-#include "nsAutoPtr.h"
 
 namespace mozilla {
 
@@ -26,14 +27,18 @@ class CompositionTransaction;
  * transactions it has absorbed.
  */
 
-class PlaceholderTransaction final : public EditAggregateTransaction,
-                                     public nsIAbsorbingTransaction,
-                                     public nsSupportsWeakReference
+class PlaceholderTransaction final
+ : public EditAggregateTransaction
+ , public nsIAbsorbingTransaction
+ , public SupportsWeakPtr<PlaceholderTransaction>
 {
 public:
+  MOZ_DECLARE_WEAKREFERENCE_TYPENAME(PlaceholderTransaction)
+
   NS_DECL_ISUPPORTS_INHERITED
 
-  PlaceholderTransaction();
+  PlaceholderTransaction(EditorBase& aEditorBase, nsIAtom* aName,
+                         UniquePtr<SelectionState> aSelState);
 
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(PlaceholderTransaction,
                                            EditAggregateTransaction)
@@ -46,9 +51,6 @@ public:
 
 // ------------ nsIAbsorbingTransaction -----------------------
 
-  NS_IMETHOD Init(nsIAtom* aName, SelectionState* aSelState,
-                  EditorBase* aEditorBase) override;
-
   NS_IMETHOD GetTxnName(nsIAtom** aName) override;
 
   NS_IMETHOD StartSelectionEquals(SelectionState* aSelState,
@@ -60,6 +62,11 @@ public:
                nsIAbsorbingTransaction* aForwardingAddress) override;
 
   NS_IMETHOD Commit() override;
+
+  NS_IMETHOD_(PlaceholderTransaction*) AsPlaceholderTransaction() override
+  {
+    return this;
+  }
 
   nsresult RememberEndingSelection();
 
@@ -80,7 +87,7 @@ protected:
   // restore the selection properly.
 
   // Use a pointer because this is constructed before we exist.
-  nsAutoPtr<SelectionState> mStartSel;
+  UniquePtr<SelectionState> mStartSel;
   SelectionState mEndSel;
 
   // The editor for this transaction.

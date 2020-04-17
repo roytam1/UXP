@@ -15,6 +15,7 @@
 
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Likely.h"
+#include "mozilla/Unused.h"
 
 #include "nsNodeInfoManager.h"
 #include "nsCOMPtr.h"

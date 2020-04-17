@@ -352,32 +352,12 @@ nsTextControlFrame::CreateAnonymousContent(nsTArray<ContentInfo>& aElements)
 
   // Create the placeholder anonymous content if needed.
   if (mUsePlaceholder) {
-    nsIContent* placeholderNode = txtCtrl->CreatePlaceholderNode();
+    Element* placeholderNode = txtCtrl->CreatePlaceholderNode();
     NS_ENSURE_TRUE(placeholderNode, NS_ERROR_OUT_OF_MEMORY);
 
     // Associate ::placeholder pseudo-element with the placeholder node.
-    CSSPseudoElementType pseudoType = CSSPseudoElementType::placeholder;
-
-    // If this is a text input inside a number input then we want to use the
-    // main number input as the source of style for the placeholder frame.
-    nsIFrame* mainInputFrame = this;
-    if (StyleContext()->GetPseudoType() == CSSPseudoElementType::mozNumberText) {
-      do {
-        mainInputFrame = mainInputFrame->GetParent();
-      } while (mainInputFrame &&
-               mainInputFrame->GetType() != nsGkAtoms::numberControlFrame);
-      MOZ_ASSERT(mainInputFrame);
-    }
-
-    RefPtr<nsStyleContext> placeholderStyleContext =
-      PresContext()->StyleSet()->ResolvePseudoElementStyle(
-          mainInputFrame->GetContent()->AsElement(), pseudoType, StyleContext(),
-          placeholderNode->AsElement());
-
-    if (!aElements.AppendElement(ContentInfo(placeholderNode,
-                                 placeholderStyleContext))) {
-      return NS_ERROR_OUT_OF_MEMORY;
-    }
+    placeholderNode->SetPseudoElementType(CSSPseudoElementType::placeholder);
+    aElements.AppendElement(placeholderNode);
 
     if (!IsSingleLineTextControl()) {
       // For textareas, UpdateValueDisplay doesn't initialize the visibility
@@ -778,7 +758,12 @@ nsTextControlFrame::SetSelectionInternal(nsIDOMNode *aStartNode,
   // we have access to the node.
   nsCOMPtr<nsINode> start = do_QueryInterface(aStartNode);
   nsCOMPtr<nsINode> end = do_QueryInterface(aEndNode);
-  nsresult rv = range->Set(start, aStartOffset, end, aEndOffset);
+  // XXXbz nsRange::SetStartAndEnd takes int32_t (and ranges generally work on
+  // int32_t), but we're passing uint32_t.  The good news is that at this point
+  // our endpoints should really be within our length, so not really that big.
+  // And if they _are_ that big, SetStartAndEnd() will simply error out, which
+  // is not too bad for a case we don't expect to happen.
+  nsresult rv = range->SetStartAndEnd(start, aStartOffset, end, aEndOffset);
   NS_ENSURE_SUCCESS(rv, rv);
 
   // Get the selection, clear it and add the new range to it!

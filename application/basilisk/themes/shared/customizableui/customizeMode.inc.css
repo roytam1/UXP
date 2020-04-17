@@ -182,7 +182,7 @@
   height: 24px;
 }
 
-%ifdef CAN_DRAW_IN_TITLEBAR
+%ifdef MOZ_CAN_DRAW_IN_TITLEBAR
 #customization-titlebar-visibility-button > .button-box > .button-text,
 %endif
 #customization-lwtheme-button > .box-inherit > .box-inherit > .button-text {
@@ -198,7 +198,7 @@
   background-size: contain;
 }
 
-%ifdef CAN_DRAW_IN_TITLEBAR
+%ifdef MOZ_CAN_DRAW_IN_TITLEBAR
 #customization-titlebar-visibility-button {
   list-style-image: url("chrome://browser/skin/customizableui/customize-titleBar-toggle.png");
   -moz-image-region: rect(0, 24px, 24px, 0);
@@ -222,7 +222,7 @@
     -moz-image-region: rect(0, 96px, 48px, 48px);
   }
 }
-%endif /* CAN_DRAW_IN_TITLEBAR */
+%endif /* MOZ_CAN_DRAW_IN_TITLEBAR */
 
 #main-window[customize-entered] #customization-panel-container {
   background-image: url("chrome://browser/skin/customizableui/customizeMode-separatorHorizontal.png"),
