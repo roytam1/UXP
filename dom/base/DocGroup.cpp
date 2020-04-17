@@ -6,9 +6,12 @@
 #include "mozilla/StaticPtr.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "nsIDocShell.h"
+#include "nsDOMMutationObserver.h"
 
 namespace mozilla {
 namespace dom {
+
+AutoTArray<RefPtr<DocGroup>, 2>* DocGroup::sPendingDocGroups = nullptr;
 
 /* static */ void
 DocGroup::GetKey(nsIPrincipal* aPrincipal, nsACString& aKey)
@@ -53,6 +56,24 @@ DocGroup::~DocGroup()
 }
 
 NS_IMPL_ISUPPORTS(DocGroup, nsISupports)
+
+void
+DocGroup::SignalSlotChange(const HTMLSlotElement* aSlot)
+{
+  if (mSignalSlotList.Contains(aSlot)) {
+    return;
+  }
+
+  mSignalSlotList.AppendElement(const_cast<HTMLSlotElement*>(aSlot));
+
+  if (!sPendingDocGroups) {
+    // Queue a mutation observer compound microtask.
+    nsDOMMutationObserver::QueueMutationObserverMicroTask();
+    sPendingDocGroups = new AutoTArray<RefPtr<DocGroup>, 2>;
+  }
+
+  sPendingDocGroups->AppendElement(this);
+}
 
 }
 }
