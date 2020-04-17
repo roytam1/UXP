@@ -6681,6 +6681,12 @@ nsCSSFrameConstructor::FindFrameForContentSibling(nsIContent* aContent,
       sibling = aPrevSibling ?
         FindPreviousSibling(iter, aTargetContent, aTargetContentDisplay, aParentFrame) :
         FindNextSibling(iter, aTargetContent, aTargetContentDisplay, aParentFrame);
+
+      // The recursion above has already done all the placeholder and
+      // continuation fixups.
+      if (sibling) {
+        return sibling;
+      }
     }
     if (!sibling) {
       // ... then ::after / ::before on the opposite end.
@@ -6704,7 +6710,7 @@ nsCSSFrameConstructor::FindFrameForContentSibling(nsIContent* aContent,
     sibling = placeholderFrame;
   }
 
-  // The frame we have now should never be a continuation
+  // The frame we have now should never be a continuation.
   NS_ASSERTION(!sibling->GetPrevContinuation(), "How did that happen?");
 
   if (aPrevSibling) {
@@ -7025,11 +7031,8 @@ nsCSSFrameConstructor::MaybeConstructLazily(Operation aOperation,
                                             nsIContent* aContainer,
                                             nsIContent* aChild)
 {
-  // XXXmats no lazy frames for display:contents direct descendants yet
-  // (Mozilla bug 979782).
   if (mPresShell->GetPresContext()->IsChrome() || !aContainer ||
-      aContainer->IsInNativeAnonymousSubtree() || aContainer->IsXULElement() ||
-      GetDisplayContentsStyleFor(aContainer)) {
+      aContainer->IsInNativeAnonymousSubtree() || aContainer->IsXULElement()) {
     return false;
   }
 
@@ -7065,8 +7068,7 @@ nsCSSFrameConstructor::MaybeConstructLazily(Operation aOperation,
   // hit a node with a leaf frame.
   //
   // Also, it's fine if one of the nodes without primary frame is a display:
-  // contents node except if it's the direct ancestor of the children we're
-  // recreating frames for.
+  // contents node.
   bool noPrimaryFrame = false;
   bool needsFrameBitSet = false;
 #endif
