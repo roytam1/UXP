@@ -593,7 +593,7 @@ nsContentUtils::Init()
                                "dom.webcomponents.enabled", false);
 
   Preferences::AddBoolVarCache(&sIsCustomElementsEnabled,
-                               "dom.webcomponents.customelements.enabled", false);
+                               "dom.webcomponents.enabled", false);
 
   Preferences::AddBoolVarCache(&sEncodeDecodeURLHash,
                                "dom.url.encode_decode_hash", false);
