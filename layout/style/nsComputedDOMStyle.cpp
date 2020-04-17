@@ -638,6 +638,34 @@ nsComputedDOMStyle::SetFrameStyleContext(nsStyleContext* aContext)
   mStyleContext = aContext;
 }
 
+/**
+ * The following function checks whether we need to explicitly resolve the style
+ * again, even though we have a style context coming from the frame.
+ *
+ * This basically checks whether the style is or may be under a ::first-line or
+ * ::first-letter frame, in which case we can't return the frame style, and we
+ * need to resolve it. See bug 505515.
+ */
+static bool
+MustReresolveStyle(const nsStyleContext* aContext)
+{
+  MOZ_ASSERT(aContext);
+
+  if (aContext->HasPseudoElementData()) {
+    if (!aContext->GetPseudo() ||
+        aContext->StyleSource().IsServoComputedValues()) {
+      // TODO(emilio): When ::first-line is supported in Servo, we may want to
+      // fix this to avoid re-resolving pseudo-element styles.
+      return true;
+    }
+
+    return aContext->GetParent() &&
+           aContext->GetParent()->HasPseudoElementData();
+  }
+
+  return false;
+}
+
 void
 nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
 {
@@ -690,9 +718,20 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
   // XXX the !mElement->IsHTMLElement(nsGkAtoms::area)
   // check is needed due to bug 135040 (to avoid using
   // mPrimaryFrame). Remove it once that's fixed.
-  if (!mPseudo && mStyleType == eAll &&
-      !mElement->IsHTMLElement(nsGkAtoms::area)) {
-    mOuterFrame = mElement->GetPrimaryFrame();
+  if (mStyleType == eAll && !mElement->IsHTMLElement(nsGkAtoms::area)) {
+    mOuterFrame = nullptr;
+
+    if (!mPseudo) {
+      mOuterFrame = mElement->GetPrimaryFrame();
+    } else if (mPseudo == nsCSSPseudoElements::before ||
+               mPseudo == nsCSSPseudoElements::after) {
+      nsIAtom* property = mPseudo == nsCSSPseudoElements::before
+                            ? nsGkAtoms::beforePseudoProperty
+                            : nsGkAtoms::afterPseudoProperty;
+
+      auto* pseudo = static_cast<Element*>(mElement->GetProperty(property));
+      mOuterFrame = pseudo ? pseudo->GetPrimaryFrame() : nullptr;
+    }
     mInnerFrame = mOuterFrame;
     if (mOuterFrame) {
       nsIAtom* type = mOuterFrame->GetType();
@@ -711,7 +750,7 @@ nsComputedDOMStyle::UpdateCurrentStyleSources(bool aNeedsLayoutFlush)
     }
   }
 
-  if (!mStyleContext || mStyleContext->HasPseudoElementData()) {
+  if (!mStyleContext || MustReresolveStyle(mStyleContext)) {
 #ifdef DEBUG
     if (mStyleContext) {
       // We want to check that going through this path because of
