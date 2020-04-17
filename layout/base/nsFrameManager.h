@@ -80,7 +80,7 @@ public:
   void Destroy();
 
   // Mapping undisplayed content
-  nsStyleContext* GetUndisplayedContent(nsIContent* aContent)
+  nsStyleContext* GetUndisplayedContent(const nsIContent* aContent)
   {
     if (!mUndisplayedMap) {
       return nullptr;
@@ -105,7 +105,7 @@ public:
   /**
    * Return the registered display:contents style context for aContent, if any.
    */
-  nsStyleContext* GetDisplayContentsStyleFor(nsIContent* aContent)
+  nsStyleContext* GetDisplayContentsStyleFor(const nsIContent* aContent)
   {
     if (!mDisplayContentsMap) {
       return nullptr;
@@ -185,7 +185,7 @@ public:
                                         nsILayoutHistoryState* aState);
 protected:
   static nsStyleContext* GetStyleContextInMap(UndisplayedMap* aMap,
-                                              nsIContent* aContent);
+                                              const nsIContent* aContent);
   static mozilla::UndisplayedNode*
     GetAllUndisplayedNodesInMapFor(UndisplayedMap* aMap,
                                    nsIContent* aParentContent);

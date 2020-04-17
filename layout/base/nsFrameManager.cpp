@@ -132,7 +132,8 @@ nsFrameManager::Destroy()
 //----------------------------------------------------------------------
 
 /* static */ nsStyleContext*
-nsFrameManager::GetStyleContextInMap(UndisplayedMap* aMap, nsIContent* aContent)
+nsFrameManager::GetStyleContextInMap(UndisplayedMap* aMap,
+                                     const nsIContent* aContent)
 {
   if (!aContent) {
     return nullptr;
