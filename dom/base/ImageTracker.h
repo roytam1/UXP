@@ -10,6 +10,7 @@
 #ifndef mozilla_dom_ImageTracker
 #define mozilla_dom_ImageTracker
 
+#include "imgIRequest.h"
 #include "nsDataHashtable.h"
 #include "nsHashKeys.h"
 

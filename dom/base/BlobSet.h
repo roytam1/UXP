@@ -8,6 +8,9 @@
 #define mozilla_dom_BlobSet_h
 
 #include "mozilla/RefPtr.h"
+#include "jsfriendapi.h"
+#include "nsString.h"
+#include "nsTArray.h"
 
 namespace mozilla {
 namespace dom {

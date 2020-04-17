@@ -225,7 +225,7 @@ EXPORTS.mozilla.dom += [
     'WindowOrientationObserver.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'AnonymousContent.cpp',
     'Attr.cpp',
     'BarProps.cpp',
@@ -376,7 +376,7 @@ UNIFIED_SOURCES += [
 ]
 
 if CONFIG['MOZ_WEBRTC']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsDOMDataChannel.cpp',
     ]
 

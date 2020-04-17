@@ -7,10 +7,12 @@
 #ifndef TabGroup_h
 #define TabGroup_h
 
+#include "nsIDocument.h"
 #include "nsISupports.h"
 #include "nsISupportsImpl.h"
 #include "nsIPrincipal.h"
 #include "nsTHashtable.h"
+#include "nsHashKeys.h"
 #include "nsString.h"
 
 #include "mozilla/RefPtr.h"

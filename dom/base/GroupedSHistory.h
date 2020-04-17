@@ -7,6 +7,8 @@
 #ifndef GroupedSHistory_h
 #define GroupedSHistory_h
 
+#include "nsCOMArray.h"
+#include "nsCycleCollectionParticipant.h" // NS_DECL_CYCLE_*
 #include "nsIFrameLoader.h"
 #include "nsIGroupedSHistory.h"
 #include "nsIPartialSHistory.h"

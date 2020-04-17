@@ -11,6 +11,8 @@
 #include "mozilla/dom/HTMLElementBinding.h"
 #include "mozilla/dom/WebComponentsBinding.h"
 #include "mozilla/dom/DocGroup.h"
+#include "mozilla/dom/Promise.h"
+#include "nsContentUtils.h"
 #include "nsHTMLTags.h"
 #include "jsapi.h"
 

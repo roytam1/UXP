@@ -57,6 +57,7 @@
 #include "mozilla/dom/ErrorEvent.h"
 #include "nsAXPCNativeCallContext.h"
 #include "mozilla/CycleCollectedJSContext.h"
+#include "mozilla/Telemetry.h"
 
 #include "nsJSPrincipals.h"
 
