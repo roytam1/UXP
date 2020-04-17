@@ -27,6 +27,7 @@ struct CustomElementData;
 struct ElementDefinitionOptions;
 class CallbackFunction;
 class CustomElementReaction;
+class DocGroup;
 class Function;
 class Promise;
 
@@ -512,6 +513,8 @@ private:
 
 public:
   nsISupports* GetParentObject() const;
+
+  DocGroup* GetDocGroup() const;
 
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 

@@ -29,6 +29,7 @@ class txIGlobalParameter;
 namespace mozilla {
 namespace dom {
 
+class DocGroup;
 class Document;
 class DocumentFragment;
 class GlobalObject;
@@ -102,6 +103,8 @@ public:
     {
         return mOwner;
     }
+
+    mozilla::dom::DocGroup* GetDocGroup() const;
 
     static already_AddRefed<txMozillaXSLTProcessor>
     Constructor(const mozilla::dom::GlobalObject& aGlobal,

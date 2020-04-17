@@ -453,6 +453,12 @@ nsISupports* CustomElementRegistry::GetParentObject() const
   return mWindow;
 }
 
+DocGroup*
+CustomElementRegistry::GetDocGroup() const
+{
+  return mWindow ? mWindow->GetDocGroup() : nullptr;
+}
+
 static const char* kLifeCycleCallbackNames[] = {
   "connectedCallback",
   "disconnectedCallback",

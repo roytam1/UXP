@@ -524,3 +524,9 @@ nsDOMAttributeMap::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
   return NamedNodeMapBinding::Wrap(aCx, this, aGivenProto);
 }
+
+DocGroup*
+nsDOMAttributeMap::GetDocGroup() const
+{
+  return mContent ? mContent->OwnerDoc()->GetDocGroup() : nullptr;
+}
