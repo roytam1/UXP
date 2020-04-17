@@ -7446,20 +7446,14 @@ nsCSSFrameConstructor::ContentAppended(nsIContent*     aContainer,
 
   // Deal with possible :after generated content on the parent
   nsIFrame* parentAfterFrame;
+  nsContainerFrame* preAdjustedParentFrame = parentFrame;
   parentFrame =
     ::AdjustAppendParentForAfterContent(this, insertion.mContainer, parentFrame,
                                         aFirstNewContent, &parentAfterFrame);
 
-  // Create some new frames
-  nsFrameConstructorState state(mPresShell,
-                                GetAbsoluteContainingBlock(parentFrame, FIXED_POS),
-                                GetAbsoluteContainingBlock(parentFrame, ABS_POS),
-                                GetFloatContainingBlock(parentFrame));
-  state.mTreeMatchContext.InitAncestors(aContainer->AsElement());
-
   // See if the containing block has :first-letter style applied.
   bool haveFirstLetterStyle = false, haveFirstLineStyle = false;
-  nsContainerFrame* containingBlock = state.mFloatedItems.containingBlock;
+  nsContainerFrame* containingBlock = GetFloatContainingBlock(parentFrame);
   if (containingBlock) {
     haveFirstLetterStyle = HasFirstLetterStyle(containingBlock);
     haveFirstLineStyle =
@@ -7468,9 +7462,29 @@ nsCSSFrameConstructor::ContentAppended(nsIContent*     aContainer,
   }
 
   if (haveFirstLetterStyle) {
+    nsWeakFrame wf(parentAfterFrame);
     // Before we get going, remove the current letter frames
-    RemoveLetterFrames(state.mPresShell, containingBlock);
+    RemoveLetterFrames(mPresShell, containingBlock);
+
+    if (parentAfterFrame && !wf) {
+      // Ouch, parentAfterFrame was a letter frame and we just deleted it!
+      // Retry AdjustAppendParentForAfterContent; fortunately this is rare.
+      parentFrame =
+        ::AdjustAppendParentForAfterContent(this, insertion.mContainer,
+                                            preAdjustedParentFrame,
+                                            aFirstNewContent, &parentAfterFrame);
+      if (parentFrame != preAdjustedParentFrame) {
+        containingBlock = GetFloatContainingBlock(parentFrame);
+      }
+    }
   }
+
+  // Create some new frames
+  nsFrameConstructorState state(mPresShell,
+                                GetAbsoluteContainingBlock(parentFrame, FIXED_POS),
+                                GetAbsoluteContainingBlock(parentFrame, ABS_POS),
+                                containingBlock);
+  state.mTreeMatchContext.InitAncestors(aContainer->AsElement());
 
   nsIAtom* frameType = parentFrame->GetType();
 
