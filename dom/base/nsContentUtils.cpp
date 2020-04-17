@@ -7017,19 +7017,6 @@ nsContentUtils::GetHTMLEditor(nsPresContext* aPresContext)
   return editor;
 }
 
-bool
-nsContentUtils::IsContentInsertionPoint(nsIContent* aContent)
-{
-  // Check if the content is a XBL insertion point.
-  if (aContent->IsActiveChildrenElement()) {
-    return true;
-  }
-
-  // Check if the content is a web components content insertion point.
-  // XXX handle <slot>?
-  return false;
-}
-
 // static
 bool
 nsContentUtils::HasDistributedChildren(nsIContent* aContent)

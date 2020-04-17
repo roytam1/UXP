@@ -3821,7 +3821,7 @@ nsCSSFrameConstructor::ConstructFrameFromItemInternal(FrameConstructionItem& aIt
   // AutoDisplayContentsAncestorPusher above.)
   TreeMatchContext::AutoAncestorPusher
     insertionPointPusher(aState.mTreeMatchContext);
-  if (adcp.IsEmpty() && parent && nsContentUtils::IsContentInsertionPoint(parent)) {
+  if (adcp.IsEmpty() && parent && parent->IsActiveChildrenElement()) {
     if (aState.mTreeMatchContext.mAncestorFilter.HasFilter()) {
       insertionPointPusher.PushAncestorAndStyleScope(parent);
     } else {
