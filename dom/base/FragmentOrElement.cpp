@@ -123,6 +123,7 @@
 #include "mozilla/CORSMode.h"
 
 #include "mozilla/dom/ShadowRoot.h"
+#include "mozilla/dom/HTMLSlotElement.h"
 #include "mozilla/dom/HTMLTemplateElement.h"
 
 #include "nsStyledElement.h"
@@ -614,6 +615,9 @@ FragmentOrElement::nsDOMSlots::Traverse(nsCycleCollectionTraversalCallback &cb)
   NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "mExtendedSlots->mContainingShadow");
   cb.NoteXPCOMChild(NS_ISUPPORTS_CAST(nsIContent*, mExtendedSlots->mContainingShadow));
 
+  NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "mExtendedSlots->mAssignedSlot");
+  cb.NoteXPCOMChild(NS_ISUPPORTS_CAST(nsIContent*, mExtendedSlots->mAssignedSlot.get()));
+
   NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "mExtendedSlots->mXBLBinding");
   cb.NoteNativeChild(mExtendedSlots->mXBLBinding,
                      NS_CYCLE_COLLECTION_PARTICIPANT(nsXBLBinding));
@@ -657,6 +661,7 @@ FragmentOrElement::nsDOMSlots::Unlink()
   mExtendedSlots->mLabelsList = nullptr;
   mExtendedSlots->mShadowRoot = nullptr;
   mExtendedSlots->mContainingShadow = nullptr;
+  mExtendedSlots->mAssignedSlot = nullptr;
   MOZ_ASSERT(!(mExtendedSlots->mXBLBinding));
   mExtendedSlots->mXBLInsertionParent = nullptr;
   if (mExtendedSlots->mCustomElementData) {
@@ -1124,6 +1129,20 @@ FragmentOrElement::GetExistingDestInsertionPoints() const
     return &slots->mDestInsertionPoints;
   }
   return nullptr;
+}
+
+HTMLSlotElement*
+FragmentOrElement::GetAssignedSlot() const
+{
+  nsExtendedDOMSlots* slots = GetExistingExtendedDOMSlots();
+  return slots ? slots->mAssignedSlot.get() : nullptr;
+}
+
+void
+FragmentOrElement::SetAssignedSlot(HTMLSlotElement* aSlot)
+{
+  nsExtendedDOMSlots* slots = ExtendedDOMSlots();
+  slots->mAssignedSlot = aSlot;
 }
 
 void
