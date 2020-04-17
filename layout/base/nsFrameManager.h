@@ -33,32 +33,19 @@ namespace mozilla {
  * Node in a linked list, containing the style for an element that
  * does not have a frame but whose parent does have a frame.
  */
-struct UndisplayedNode {
+struct UndisplayedNode : public LinkedListElement<UndisplayedNode>
+{
   UndisplayedNode(nsIContent* aContent, nsStyleContext* aStyle)
-    : mContent(aContent),
-      mStyle(aStyle),
-      mNext(nullptr)
+    : mContent(aContent)
+    , mStyle(aStyle)
   {
     MOZ_COUNT_CTOR(mozilla::UndisplayedNode);
   }
 
-  ~UndisplayedNode()
-  {
-    MOZ_COUNT_DTOR(mozilla::UndisplayedNode);
+  ~UndisplayedNode() { MOZ_COUNT_DTOR(mozilla::UndisplayedNode); }
 
-    // Delete mNext iteratively to avoid blowing up the stack (bug 460461).
-    UndisplayedNode* cur = mNext;
-    while (cur) {
-      UndisplayedNode* next = cur->mNext;
-      cur->mNext = nullptr;
-      delete cur;
-      cur = next;
-    }
-  }
-
-  nsCOMPtr<nsIContent>      mContent;
-  RefPtr<nsStyleContext>  mStyle;
-  UndisplayedNode*          mNext;
+  nsCOMPtr<nsIContent> mContent;
+  RefPtr<nsStyleContext> mStyle;
 };
 
 } // namespace mozilla

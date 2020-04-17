@@ -4444,14 +4444,14 @@ PresShell::NotifyCounterStylesAreDirty()
   mFrameConstructor->EndUpdate();
 }
 
-nsresult
-PresShell::ReconstructFrames(void)
+void
+PresShell::ReconstructFrames()
 {
   NS_PRECONDITION(!mFrameConstructor->GetRootFrame() || mDidInitialize,
                   "Must not have root frame before initial reflow");
   if (!mDidInitialize || mIsDestroying) {
     // Nothing to do here
-    return NS_OK;
+    return;
   }
 
   nsCOMPtr<nsIPresShell> kungFuDeathGrip(this);
@@ -4461,16 +4461,14 @@ PresShell::ReconstructFrames(void)
   mDocument->FlushPendingNotifications(Flush_ContentAndNotify);
 
   if (mIsDestroying) {
-    return NS_OK;
+    return;
   }
 
   nsAutoCauseReflowNotifier crNotifier(this);
   mFrameConstructor->BeginUpdate();
-  nsresult rv = mFrameConstructor->ReconstructDocElementHierarchy();
+  mFrameConstructor->ReconstructDocElementHierarchy();
   VERIFY_STYLE_TREE;
   mFrameConstructor->EndUpdate();
-
-  return rv;
 }
 
 void

@@ -125,8 +125,8 @@ public:
                                          nsIContent* aChild);
     inline void RestyleForAppend(nsIContent* aContainer,
                                  nsIContent* aFirstNewContent);
-    inline nsresult ContentStateChanged(nsIContent* aContent,
-                                        EventStates aStateMask);
+  inline void ContentStateChanged(nsIContent* aContent,
+                                  EventStates aStateMask);
     inline void AttributeWillChange(dom::Element* aElement,
                                     int32_t aNameSpaceID,
                                     nsIAtom* aAttribute,

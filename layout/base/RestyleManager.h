@@ -59,8 +59,8 @@ public:
 
   // Forwarded nsIDocumentObserver method, to handle restyling (and
   // passing the notification to the frame).
-  nsresult ContentStateChanged(nsIContent*   aContent,
-                               EventStates aStateMask);
+  void ContentStateChanged(nsIContent* aContent,
+                           EventStates aStateMask);
 
   // Forwarded nsIMutationObserver method, to handle restyling.
   void AttributeWillChange(Element* aElement,
