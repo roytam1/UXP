@@ -106,7 +106,7 @@ toolbar[printpreview="true"] {
   -moz-box-ordinal-group: 10;
 }
 
-%ifdef CAN_DRAW_IN_TITLEBAR
+%ifdef MOZ_CAN_DRAW_IN_TITLEBAR
 #main-window[inFullscreen] > #titlebar,
 #main-window[inFullscreen] .titlebar-placeholder,
 #main-window:not([tabsintitlebar]) .titlebar-placeholder {
@@ -222,7 +222,7 @@ splitmenu {
 }
 
 %ifdef MENUBAR_CAN_AUTOHIDE
-%ifndef CAN_DRAW_IN_TITLEBAR
+%ifndef MOZ_CAN_DRAW_IN_TITLEBAR
 #appmenu-toolbar-button > .toolbarbutton-text {
   display: -moz-box;
 }

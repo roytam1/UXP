@@ -147,7 +147,7 @@ LightweightThemeConsumer.prototype = {
         footer.removeAttribute("lwthemefooter");
     }
 
-#ifdef XP_MACOSX
+#if defined(XP_MACOSX) && defined(MOZ_CAN_DRAW_IN_TITLEBAR)
     // On OS X, we extend the lightweight theme into the titlebar, which means setting
     // the chromemargin attribute. Some XUL applications already draw in the titlebar,
     // so we need to save the chromemargin value before we overwrite it with the value

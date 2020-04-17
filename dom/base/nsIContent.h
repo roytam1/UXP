@@ -26,6 +26,7 @@ namespace mozilla {
 class EventChainPreVisitor;
 namespace dom {
 class ShadowRoot;
+class HTMLSlotElement;
 } // namespace dom
 namespace widget {
 struct IMEState;
@@ -144,7 +145,14 @@ public:
      * Skip native anonymous content created for placeholder of HTML input,
      * used in conjunction with eAllChildren or eAllButXBL.
      */
-    eSkipPlaceholderContent = 2
+    eSkipPlaceholderContent = 2,
+
+    /**
+     * Skip native anonymous content created by ancestor frames of the root
+     * element's primary frame, such as scrollbar elements created by the root
+     * scroll frame.
+     */
+    eSkipDocumentLevelNativeAnonymousContent = 4,
   };
 
   /**
@@ -186,7 +194,7 @@ public:
   void SetIsNativeAnonymousRoot()
   {
     SetFlags(NODE_IS_ANONYMOUS_ROOT | NODE_IS_IN_NATIVE_ANONYMOUS_SUBTREE |
-             NODE_IS_NATIVE_ANONYMOUS_ROOT);
+             NODE_IS_NATIVE_ANONYMOUS_ROOT | NODE_IS_NATIVE_ANONYMOUS);
   }
 
   /**
@@ -689,18 +697,27 @@ public:
   virtual mozilla::dom::ShadowRoot *GetContainingShadow() const = 0;
 
   /**
-   * Gets an array of destination insertion points where this content
-   * is distributed by web component distribution algorithms.
-   * The array is created if it does not already exist.
+   * Gets the assigned slot associated with this content.
+   *
+   * @return The assigned slot element or null.
    */
-  virtual nsTArray<nsIContent*> &DestInsertionPoints() = 0;
+  virtual mozilla::dom::HTMLSlotElement* GetAssignedSlot() const = 0;
 
   /**
-   * Same as DestInsertionPoints except that this method will return
-   * null if the array of destination insertion points does not already
-   * exist.
+   * Sets the assigned slot associated with this content.
+   *
+   * @param aSlot The assigned slot.
    */
-  virtual nsTArray<nsIContent*> *GetExistingDestInsertionPoints() const = 0;
+  virtual void SetAssignedSlot(mozilla::dom::HTMLSlotElement* aSlot) = 0;
+
+  /**
+   * Gets the assigned slot associated with this content based on parent's
+   * shadow root mode. Returns null if parent's shadow root is "closed".
+   * https://dom.spec.whatwg.org/#dom-slotable-assignedslot
+   *
+   * @return The assigned slot element or null.
+   */
+  mozilla::dom::HTMLSlotElement* GetAssignedSlotByMode() const;
 
   /**
    * Gets the insertion parent element of the XBL binding.
@@ -723,10 +740,9 @@ public:
    */
   inline nsIContent *GetFlattenedTreeParent() const;
 
-  /**
-   * Helper method, which we leave public so that it's accessible from nsINode.
-   */
-  nsINode *GetFlattenedTreeParentNodeInternal() const;
+  // Helper method, which we leave public so that it's accessible from nsINode.
+  enum FlattenedParentType { eNotForStyle, eForStyle };
+  nsINode* GetFlattenedTreeParentNodeInternal(FlattenedParentType aType) const;
 
   /**
    * API to check if this is a link that's traversed in response to user input
@@ -944,10 +960,18 @@ public:
     return false;
   }
 
+  // Returns true if this element is native-anonymous scrollbar content.
+  bool IsNativeScrollbarContent() const {
+    return IsNativeAnonymous() &&
+           IsAnyOfXULElements(nsGkAtoms::scrollbar,
+                              nsGkAtoms::resizer,
+                              nsGkAtoms::scrollcorner);
+  }
+
   // Overloaded from nsINode
   virtual already_AddRefed<nsIURI> GetBaseURI(bool aTryUseXHRDocBaseURI = false) const override;
 
-  virtual nsresult PreHandleEvent(
+  virtual nsresult GetEventTargetParent(
                      mozilla::EventChainPreVisitor& aVisitor) override;
 
   virtual bool IsPurple() = 0;
@@ -960,6 +984,12 @@ protected:
    * called if HasID() is true.
    */
   nsIAtom* DoGetID() const;
+
+  /**
+   * Returns the assigned slot, if it exists, or the direct parent, if it's a
+   * fallback content of a slot.
+   */
+  nsINode* GetFlattenedTreeParentForMaybeAssignedNode() const;
 
 public:
 #ifdef DEBUG
@@ -1014,7 +1044,15 @@ inline nsIContent* nsINode::AsContent()
   {                                                                            \
     return aContent->_check ? static_cast<_class*>(aContent) : nullptr;        \
   }                                                                            \
+  static const _class* FromContent(const nsIContent* aContent)                 \
+  {                                                                            \
+    return aContent->_check ? static_cast<const _class*>(aContent) : nullptr;  \
+  }                                                                            \
   static _class* FromContentOrNull(nsIContent* aContent)                       \
+  {                                                                            \
+    return aContent ? FromContent(aContent) : nullptr;                         \
+  }                                                                            \
+  static const _class* FromContentOrNull(const nsIContent* aContent)           \
   {                                                                            \
     return aContent ? FromContent(aContent) : nullptr;                         \
   }

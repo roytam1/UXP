@@ -10,6 +10,7 @@
 #include "nsIChannel.h"
 #include "nsIServiceManager.h"
 #include "nsIHttpChannelInternal.h"
+#include "nsPIDOMWindow.h"
 #include "nsIDOMWindow.h"
 #include "nsILoadContext.h"
 #include "nsIPrincipal.h"

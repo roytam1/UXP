@@ -7,6 +7,8 @@
 #ifndef TimerClamping_h___
 #define TimerClamping_h___
 
+#include <math.h>
+
 namespace mozilla {
 
 class TimerClamping

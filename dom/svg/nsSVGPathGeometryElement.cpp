@@ -26,7 +26,8 @@ nsSVGPathGeometryElement::nsSVGPathGeometryElement(already_AddRefed<mozilla::dom
 
 nsresult
 nsSVGPathGeometryElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                                       const nsAttrValue* aValue, bool aNotify)
+                                 const nsAttrValue* aValue,
+                                 const nsAttrValue* aOldValue, bool aNotify)
 {
   if (mCachedPath &&
       aNamespaceID == kNameSpaceID_None &&
@@ -34,7 +35,7 @@ nsSVGPathGeometryElement::AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
     mCachedPath = nullptr;
   }
   return nsSVGPathGeometryElementBase::AfterSetAttr(aNamespaceID, aName,
-                                                    aValue, aNotify);
+                                                    aValue, aOldValue, aNotify);
 }
 
 bool

@@ -17,6 +17,9 @@ enum VisibilityState { "hidden", "visible", "prerender" };
 /* https://dom.spec.whatwg.org/#dictdef-elementcreationoptions */
 dictionary ElementCreationOptions {
   DOMString is;
+
+  [ChromeOnly]
+  DOMString pseudo;
 };
 
 /* http://dom.spec.whatwg.org/#interface-document */
@@ -266,13 +269,6 @@ partial interface Document {
   // Event handlers
   attribute EventHandler onpointerlockchange;
   attribute EventHandler onpointerlockerror;
-};
-
-//http://dvcs.w3.org/hg/webcomponents/raw-file/tip/spec/custom/index.html#dfn-document-register
-partial interface Document {
-    // this is deprecated from CustomElements v0
-    [Throws, Func="CustomElementRegistry::IsCustomElementEnabled"]
-    object registerElement(DOMString name, optional ElementRegistrationOptions options);
 };
 
 // https://w3c.github.io/page-visibility/#extensions-to-the-document-interface

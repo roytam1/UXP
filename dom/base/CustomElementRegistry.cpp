@@ -11,7 +11,9 @@
 #include "mozilla/dom/HTMLElementBinding.h"
 #include "mozilla/dom/WebComponentsBinding.h"
 #include "mozilla/dom/DocGroup.h"
-#include "nsIParserService.h"
+#include "mozilla/dom/Promise.h"
+#include "nsContentUtils.h"
+#include "nsHTMLTags.h"
 #include "jsapi.h"
 
 namespace mozilla {
@@ -291,7 +293,6 @@ CustomElementRegistry::RegisterUnresolvedElement(Element* aElement, nsIAtom* aTy
   nsTArray<nsWeakPtr>* unresolved = mCandidatesMap.LookupOrAdd(typeName);
   nsWeakPtr* elem = unresolved->AppendElement();
   *elem = do_GetWeakReference(aElement);
-  aElement->AddStates(NS_EVENT_STATE_UNRESOLVED);
 
   return;
 }
@@ -415,19 +416,6 @@ CustomElementRegistry::EnqueueLifecycleCallback(nsIDocument::ElementCallbackType
 }
 
 void
-CustomElementRegistry::GetCustomPrototype(nsIAtom* aAtom,
-                                          JS::MutableHandle<JSObject*> aPrototype)
-{
-  mozilla::dom::CustomElementDefinition* definition =
-    mCustomDefinitions.GetWeak(aAtom);
-  if (definition) {
-    aPrototype.set(definition->mPrototype);
-  } else {
-    aPrototype.set(nullptr);
-  }
-}
-
-void
 CustomElementRegistry::UpgradeCandidates(nsIAtom* aKey,
                                          CustomElementDefinition* aDefinition,
                                          ErrorResult& aRv)
@@ -464,6 +452,12 @@ CustomElementRegistry::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenPr
 nsISupports* CustomElementRegistry::GetParentObject() const
 {
   return mWindow;
+}
+
+DocGroup*
+CustomElementRegistry::GetDocGroup() const
+{
+  return mWindow ? mWindow->GetDocGroup() : nullptr;
 }
 
 static const char* kLifeCycleCallbackNames[] = {
@@ -588,14 +582,8 @@ CustomElementRegistry::Define(const nsAString& aName,
       return;
     }
 
-    nsIParserService* ps = nsContentUtils::GetParserService();
-    if (!ps) {
-      aRv.Throw(NS_ERROR_UNEXPECTED);
-      return;
-    }
-
     // bgsound and multicol are unknown html element.
-    int32_t tag = ps->HTMLCaseSensitiveAtomTagToId(extendsAtom);
+    int32_t tag = nsHTMLTags::CaseSensitiveAtomTagToId(extendsAtom);
     if (tag == eHTMLTag_userdefined ||
         tag == eHTMLTag_bgsound ||
         tag == eHTMLTag_multicol) {
@@ -630,9 +618,9 @@ CustomElementRegistry::Define(const nsAString& aName,
        */
       JSAutoCompartment ac(cx, constructor);
       JS::Rooted<JS::Value> prototypev(cx);
-      // The .prototype on the constructor passed from document.registerElement
-      // is the "expando" of a wrapper. So we should get it from wrapper instead
-      // instead of underlying object.
+      // The .prototype on the constructor passed could be an "expando" of a
+      // wrapper. So we should get it from wrapper instead of the underlying
+      // object.
       if (!JS_GetProperty(cx, constructor, "prototype", &prototypev)) {
         aRv.StealExceptionFromJSContext(cx);
         return;
@@ -878,8 +866,6 @@ CustomElementRegistry::Upgrade(Element* aElement,
                                CustomElementDefinition* aDefinition,
                                ErrorResult& aRv)
 {
-  aElement->RemoveStates(NS_EVENT_STATE_UNRESOLVED);
-
   RefPtr<CustomElementData> data = aElement->GetCustomElementData();
   MOZ_ASSERT(data, "CustomElementData should exist");
 

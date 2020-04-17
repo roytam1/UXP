@@ -355,9 +355,10 @@ public:
     NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(nsXULElement, nsStyledElement)
 
     // nsINode
-    virtual nsresult PreHandleEvent(
+    virtual nsresult GetEventTargetParent(
                        mozilla::EventChainPreVisitor& aVisitor) override;
-
+    virtual nsresult PreHandleEvent(
+                       mozilla::EventChainVisitor& aVisitor) override;
     // nsIContent
     virtual nsresult BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                                 nsIContent* aBindingParent,
@@ -623,10 +624,12 @@ protected:
     nsresult MakeHeavyweight(nsXULPrototypeElement* aPrototype);
 
     virtual nsresult BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                                   nsAttrValueOrString* aValue,
+                                   const nsAttrValueOrString* aValue,
                                    bool aNotify) override;
     virtual nsresult AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                                  const nsAttrValue* aValue, bool aNotify) override;
+                                  const nsAttrValue* aValue,
+                                  const nsAttrValue* aOldValue,
+                                  bool aNotify) override;
 
     virtual void UpdateEditableState(bool aNotify) override;
 
@@ -689,6 +692,11 @@ protected:
     virtual JSObject* WrapNode(JSContext *aCx, JS::Handle<JSObject*> aGivenProto) override;
 
     void MaybeUpdatePrivateLifetime();
+
+    bool IsEventStoppedFromAnonymousScrollbar(mozilla::EventMessage aMessage);
+
+    nsresult DispatchXULCommand(const mozilla::EventChainVisitor& aVisitor,
+                                nsAutoString& aCommand);
 };
 
 #endif // nsXULElement_h__

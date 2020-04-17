@@ -539,7 +539,6 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_ARCCOT;
     static nsHtml5ElementName* ELT_BASEFONT;
     static nsHtml5ElementName* ELT_CARTESIANPRODUCT;
-    static nsHtml5ElementName* ELT_CONTENT;
     static nsHtml5ElementName* ELT_GT;
     static nsHtml5ElementName* ELT_DETERMINANT;
     static nsHtml5ElementName* ELT_DATALIST;
@@ -586,6 +585,7 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_SELECT;
     static nsHtml5ElementName* ELT_SCALARPRODUCT;
     static nsHtml5ElementName* ELT_SUBSET;
+    static nsHtml5ElementName* ELT_SLOT;
     static nsHtml5ElementName* ELT_SCRIPT;
     static nsHtml5ElementName* ELT_TFOOT;
     static nsHtml5ElementName* ELT_TEXT;
@@ -596,7 +596,6 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_FEDROPSHADOW;
     static nsHtml5ElementName* ELT_MROW;
     static nsHtml5ElementName* ELT_MATRIXROW;
-    static nsHtml5ElementName* ELT_SHADOW;
     static nsHtml5ElementName* ELT_VIEW;
     static nsHtml5ElementName* ELT_APPROX;
     static nsHtml5ElementName* ELT_FECOLORMATRIX;

@@ -180,13 +180,13 @@ nsWindowRoot::GetContextForEventHandlers(nsresult* aRv)
 }
 
 nsresult
-nsWindowRoot::PreHandleEvent(EventChainPreVisitor& aVisitor)
+nsWindowRoot::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mCanHandle = true;
   aVisitor.mForceContentDispatch = true; //FIXME! Bug 329119
   // To keep mWindow alive
   aVisitor.mItemData = static_cast<nsISupports *>(mWindow);
-  aVisitor.mParentTarget = mParent;
+  aVisitor.SetParentTarget(mParent, false);
   return NS_OK;
 }
 

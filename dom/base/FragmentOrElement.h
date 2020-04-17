@@ -62,6 +62,7 @@ public:
   // nsIWeakReference
   NS_DECL_NSIWEAKREFERENCE
   virtual size_t SizeOfOnlyThis(mozilla::MallocSizeOf aMallocSizeOf) const override;
+  virtual bool IsAlive() const override { return mNode != nullptr; }
 
   void NoticeNodeDestruction()
   {
@@ -154,9 +155,9 @@ public:
   virtual void SetXBLBinding(nsXBLBinding* aBinding,
                              nsBindingManager* aOldBindingManager = nullptr) override;
   virtual ShadowRoot *GetContainingShadow() const override;
-  virtual nsTArray<nsIContent*> &DestInsertionPoints() override;
-  virtual nsTArray<nsIContent*> *GetExistingDestInsertionPoints() const override;
   virtual void SetShadowRoot(ShadowRoot* aBinding) override;
+  virtual mozilla::dom::HTMLSlotElement* GetAssignedSlot() const override;
+  virtual void SetAssignedSlot(mozilla::dom::HTMLSlotElement* aSlot) override;
   virtual nsIContent *GetXBLInsertionParent() const override;
   virtual void SetXBLInsertionParent(nsIContent* aContent) override;
   virtual bool IsLink(nsIURI** aURI) const override;
@@ -294,10 +295,9 @@ public:
     RefPtr<ShadowRoot> mContainingShadow;
 
     /**
-     * An array of web component insertion points to which this element
-     * is distributed.
+     * The assigned slot associated with this element.
      */
-    nsTArray<nsIContent*> mDestInsertionPoints;
+    RefPtr<mozilla::dom::HTMLSlotElement> mAssignedSlot;
 
     /**
      * XBL binding installed on the element.

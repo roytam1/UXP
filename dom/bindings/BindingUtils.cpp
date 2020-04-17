@@ -23,9 +23,9 @@
 #include "nsContentCreatorFunctions.h"
 #include "nsContentUtils.h"
 #include "nsGlobalWindow.h"
+#include "nsHTMLTags.h"
 #include "nsIDocShell.h"
 #include "nsIDOMGlobalPropertyInitializer.h"
-#include "nsIParserService.h"
 #include "nsIPermissionManager.h"
 #include "nsIPrincipal.h"
 #include "nsIXPConnect.h"
@@ -3406,28 +3406,6 @@ GetDesiredProto(JSContext* aCx, const JS::CallArgs& aCallArgs,
   return true;
 }
 
-CustomElementReactionsStack*
-GetCustomElementReactionsStack(JS::Handle<JSObject*> aObj)
-{
-  // This might not be the right object, if there are wrappers. Unwrap if we can.
-  JSObject* obj = js::CheckedUnwrap(aObj);
-  if (!obj) {
-    return nullptr;
-  }
-
-  nsGlobalWindow* window = xpc::WindowGlobalOrNull(obj);
-  if (!window) {
-    return nullptr;
-  }
-
-  DocGroup* docGroup = window->AsInner()->GetDocGroup();
-  if (!docGroup) {
-    return nullptr;
-  }
-
-  return docGroup->CustomElementReactionsStack();
-}
-
 // https://html.spec.whatwg.org/multipage/dom.html#htmlconstructor
 already_AddRefed<nsGenericHTMLElement>
 CreateHTMLElement(const GlobalObject& aGlobal, const JS::CallArgs& aCallArgs,
@@ -3493,13 +3471,7 @@ CreateHTMLElement(const GlobalObject& aGlobal, const JS::CallArgs& aCallArgs,
     // Step 5.
     // If the definition is for a customized built-in element, the localName
     // should be defined in the specification.
-    nsIParserService* parserService = nsContentUtils::GetParserService();
-    if (!parserService) {
-      aRv.Throw(NS_ERROR_UNEXPECTED);
-      return nullptr;
-    }
-
-    tag = parserService->HTMLCaseSensitiveAtomTagToId(definition->mLocalName);
+    tag = nsHTMLTags::CaseSensitiveAtomTagToId(definition->mLocalName);
     if (tag == eHTMLTag_userdefined) {
       aRv.ThrowTypeError<MSG_ILLEGAL_CONSTRUCTOR>();
       return nullptr;

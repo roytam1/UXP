@@ -193,7 +193,7 @@ load 930250.html
 load 942979.html
 load 973401.html
 load 978646.html
-pref(dom.webcomponents.enabled,true) load 1024428-1.html
+pref(dom.webcomponents.enabled,true) load 1024428-1.html # bug 1340009
 load 1026714.html
 pref(dom.webcomponents.enabled,true) load 1027461-1.html
 pref(dom.webcomponents.enabled,true) load 1029710.html
@@ -209,4 +209,6 @@ load 1230422.html
 load 1251361.html
 load 1304437.html
 pref(clipboard.autocopy,true) load 1385272-1.html
-pref(dom.webcomponents.customelements.enabled,true) load 1341693.html
+pref(dom.webcomponents.enabled,true) load 1341693.html
+pref(dom.webcomponents.enabled,true) load 1419799.html
+pref(dom.webcomponents.enabled,false) load 1422931.html

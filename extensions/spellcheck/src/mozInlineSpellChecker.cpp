@@ -164,16 +164,23 @@ mozInlineSpellStatus::InitForEditorChange(
   NS_ENSURE_SUCCESS(rv, rv);
   if (cmpResult < 0) {
     // previous anchor node is before the current anchor
-    rv = mRange->SetStart(aPreviousNode, aPreviousOffset);
-    NS_ENSURE_SUCCESS(rv, rv);
-    rv = mRange->SetEnd(aAnchorNode, aAnchorOffset);
+    nsCOMPtr<nsINode> previousNode = do_QueryInterface(aPreviousNode);
+    nsCOMPtr<nsINode> anchorNode = do_QueryInterface(aAnchorNode);
+    rv = mRange->SetStartAndEnd(previousNode, aPreviousOffset,
+                                anchorNode, aAnchorOffset);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
   } else {
     // previous anchor node is after (or the same as) the current anchor
-    rv = mRange->SetStart(aAnchorNode, aAnchorOffset);
-    NS_ENSURE_SUCCESS(rv, rv);
-    rv = mRange->SetEnd(aPreviousNode, aPreviousOffset);
+    nsCOMPtr<nsINode> previousNode = do_QueryInterface(aPreviousNode);
+    nsCOMPtr<nsINode> anchorNode = do_QueryInterface(aAnchorNode);
+    rv = mRange->SetStartAndEnd(anchorNode, aAnchorOffset,
+                                previousNode, aPreviousOffset);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
   }
-  NS_ENSURE_SUCCESS(rv, rv);
 
   // On insert save this range: DoSpellCheck optimizes things in this range.
   // Otherwise, just leave this nullptr.
@@ -349,19 +356,18 @@ mozInlineSpellStatus::FinishNavigationEvent(mozInlineSpellWordUtil& aWordUtil)
 
   NS_ASSERTION(mAnchorRange, "No anchor for navigation!");
   nsCOMPtr<nsIDOMNode> newAnchorNode, oldAnchorNode;
-  int32_t newAnchorOffset, oldAnchorOffset;
 
   // get the DOM position of the old caret, the range should be collapsed
   nsresult rv = mOldNavigationAnchorRange->GetStartContainer(
       getter_AddRefs(oldAnchorNode));
   NS_ENSURE_SUCCESS(rv, rv);
-  rv = mOldNavigationAnchorRange->GetStartOffset(&oldAnchorOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
+  uint32_t oldAnchorOffset = mOldNavigationAnchorRange->StartOffset();
 
   // find the word on the old caret position, this is the one that we MAY need
   // to check
   RefPtr<nsRange> oldWord;
-  rv = aWordUtil.GetRangeForWord(oldAnchorNode, oldAnchorOffset,
+  rv = aWordUtil.GetRangeForWord(oldAnchorNode,
+                                 static_cast<int32_t>(oldAnchorOffset),
                                  getter_AddRefs(oldWord));
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -373,15 +379,16 @@ mozInlineSpellStatus::FinishNavigationEvent(mozInlineSpellWordUtil& aWordUtil)
   // get the DOM position of the new caret, the range should be collapsed
   rv = mAnchorRange->GetStartContainer(getter_AddRefs(newAnchorNode));
   NS_ENSURE_SUCCESS(rv, rv);
-  rv = mAnchorRange->GetStartOffset(&newAnchorOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
+  uint32_t newAnchorOffset = mAnchorRange->StartOffset();
 
   // see if the new cursor position is in the word of the old cursor position
   bool isInRange = false;
   if (! mForceNavigationWordCheck) {
-    rv = oldWord->IsPointInRange(newAnchorNode,
-                                 newAnchorOffset + mNewNavigationPositionOffset,
-                                 &isInRange);
+    rv = oldWord->IsPointInRange(
+                    newAnchorNode,
+                    static_cast<int32_t>(
+                      newAnchorOffset + mNewNavigationPositionOffset),
+                    &isInRange);
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
@@ -414,11 +421,9 @@ mozInlineSpellStatus::FillNoCheckRangeFromAnchor(
   nsresult rv = mAnchorRange->GetStartContainer(getter_AddRefs(anchorNode));
   NS_ENSURE_SUCCESS(rv, rv);
 
-  int32_t anchorOffset;
-  rv = mAnchorRange->GetStartOffset(&anchorOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  return aWordUtil.GetRangeForWord(anchorNode, anchorOffset,
+  uint32_t anchorOffset = mAnchorRange->StartOffset();
+  return aWordUtil.GetRangeForWord(anchorNode,
+                                   static_cast<int32_t>(anchorOffset),
                                    getter_AddRefs(mNoCheckRange));
 }
 
@@ -454,17 +459,19 @@ mozInlineSpellStatus::GetDocument(nsIDOMDocument** aDocument)
 
 nsresult
 mozInlineSpellStatus::PositionToCollapsedRange(nsIDOMDocument* aDocument,
-    nsIDOMNode* aNode, int32_t aOffset, nsIDOMRange** aRange)
+                                               nsIDOMNode* aNode,
+                                               int32_t aOffset,
+                                               nsRange** aRange)
 {
   *aRange = nullptr;
-  nsCOMPtr<nsIDOMRange> range;
-  nsresult rv = aDocument->CreateRange(getter_AddRefs(range));
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsCOMPtr<nsINode> documentNode = do_QueryInterface(aDocument);
+  RefPtr<nsRange> range = new nsRange(documentNode);
 
-  rv = range->SetStart(aNode, aOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = range->SetEnd(aNode, aOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsCOMPtr<nsINode> node = do_QueryInterface(aNode);
+  nsresult rv = range->CollapseTo(node, aOffset);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
 
   range.swap(*aRange);
   return NS_OK;
@@ -1164,9 +1171,8 @@ mozInlineSpellChecker::MakeSpellCheckRange(
   NS_ENSURE_SUCCESS(rv, rv);
   NS_ENSURE_TRUE(doc, NS_ERROR_FAILURE);
 
-  nsCOMPtr<nsIDOMRange> range;
-  rv = doc->CreateRange(getter_AddRefs(range));
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsCOMPtr<nsINode> documentNode = do_QueryInterface(doc);
+  RefPtr<nsRange> range = new nsRange(documentNode);
 
   // possibly use full range of the editor
   nsCOMPtr<nsIDOMElement> rootElem;
@@ -1198,15 +1204,23 @@ mozInlineSpellChecker::MakeSpellCheckRange(
   if (aStartNode == aEndNode && aStartOffset == aEndOffset)
     return NS_OK;
 
-  rv = range->SetStart(aStartNode, aStartOffset);
-  NS_ENSURE_SUCCESS(rv, rv);
-  if (aEndOffset)
-    rv = range->SetEnd(aEndNode, aEndOffset);
-  else
-    rv = range->SetEndAfter(aEndNode);
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsCOMPtr<nsINode> startNode = do_QueryInterface(aStartNode);
+  nsCOMPtr<nsINode> endNode = do_QueryInterface(aEndNode);
+  if (aEndOffset) {
+    rv = range->SetStartAndEnd(startNode, aStartOffset, endNode, aEndOffset);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+  } else {
+    uint32_t endOffset;
+    endNode = nsRange::GetParentAndOffsetAfter(endNode, &endOffset);
+    rv = range->SetStartAndEnd(startNode, aStartOffset, endNode, endOffset);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+  }
 
-  *aRange = static_cast<nsRange*>(range.forget().take());
+  range.swap(*aRange);
   return NS_OK;
 }
 

@@ -49,7 +49,7 @@ var gAdvancedPane = {
     this.updateActualCacheSize();
     this.updateActualAppCacheSize();
 
-    setEventListener("layers.acceleration.disabled", "change",
+    setEventListener("layers.acceleration.enabled", "change",
                      gAdvancedPane.updateHardwareAcceleration);
     setEventListener("advancedPrefs", "select",
                      gAdvancedPane.tabSelectionChanged);

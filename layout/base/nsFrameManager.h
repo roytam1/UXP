@@ -33,40 +33,25 @@ namespace mozilla {
  * Node in a linked list, containing the style for an element that
  * does not have a frame but whose parent does have a frame.
  */
-struct UndisplayedNode {
+struct UndisplayedNode : public LinkedListElement<UndisplayedNode>
+{
   UndisplayedNode(nsIContent* aContent, nsStyleContext* aStyle)
-    : mContent(aContent),
-      mStyle(aStyle),
-      mNext(nullptr)
+    : mContent(aContent)
+    , mStyle(aStyle)
   {
     MOZ_COUNT_CTOR(mozilla::UndisplayedNode);
   }
 
-  ~UndisplayedNode()
-  {
-    MOZ_COUNT_DTOR(mozilla::UndisplayedNode);
+  ~UndisplayedNode() { MOZ_COUNT_DTOR(mozilla::UndisplayedNode); }
 
-    // Delete mNext iteratively to avoid blowing up the stack (bug 460461).
-    UndisplayedNode* cur = mNext;
-    while (cur) {
-      UndisplayedNode* next = cur->mNext;
-      cur->mNext = nullptr;
-      delete cur;
-      cur = next;
-    }
-  }
-
-  nsCOMPtr<nsIContent>      mContent;
-  RefPtr<nsStyleContext>  mStyle;
-  UndisplayedNode*          mNext;
+  nsCOMPtr<nsIContent> mContent;
+  RefPtr<nsStyleContext> mStyle;
 };
 
 } // namespace mozilla
 
 /**
- * Frame manager interface. The frame manager serves two purposes:
- * <li>provides a service for mapping from content to frame and from
- * out-of-flow frame to placeholder frame.
+ * Frame manager interface. The frame manager serves one purpose:
  * <li>handles structural modifications to the frame model. If the frame model
  * lock can be acquired, then the changes are processed immediately; otherwise,
  * they're queued and processed later.
@@ -94,15 +79,8 @@ public:
    */
   void Destroy();
 
-  // Placeholder frame functions
-  nsPlaceholderFrame* GetPlaceholderFrameFor(const nsIFrame* aFrame);
-  void RegisterPlaceholderFrame(nsPlaceholderFrame* aPlaceholderFrame);
-  void UnregisterPlaceholderFrame(nsPlaceholderFrame* aPlaceholderFrame);
-
-  void      ClearPlaceholderFrameMap();
-
   // Mapping undisplayed content
-  nsStyleContext* GetUndisplayedContent(nsIContent* aContent)
+  nsStyleContext* GetUndisplayedContent(const nsIContent* aContent)
   {
     if (!mUndisplayedMap) {
       return nullptr;
@@ -127,7 +105,7 @@ public:
   /**
    * Return the registered display:contents style context for aContent, if any.
    */
-  nsStyleContext* GetDisplayContentsStyleFor(nsIContent* aContent)
+  nsStyleContext* GetDisplayContentsStyleFor(const nsIContent* aContent)
   {
     if (!mDisplayContentsMap) {
       return nullptr;
@@ -207,7 +185,7 @@ public:
                                         nsILayoutHistoryState* aState);
 protected:
   static nsStyleContext* GetStyleContextInMap(UndisplayedMap* aMap,
-                                              nsIContent* aContent);
+                                              const nsIContent* aContent);
   static mozilla::UndisplayedNode*
     GetAllUndisplayedNodesInMapFor(UndisplayedMap* aMap,
                                    nsIContent* aParentContent);

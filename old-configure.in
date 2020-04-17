@@ -2122,6 +2122,7 @@ if test "$MOZ_IOS"; then
    MOZ_AUTH_EXTENSION=
 fi
 MOZ_RAW=
+MOZ_AV1=
 MOZ_VORBIS=
 MOZ_TREMOR=
 MOZ_SAMPLE_TYPE_FLOAT32=
@@ -2176,6 +2177,7 @@ MOZ_LDAP_XPCOM=
 MOZ_MORK=
 MOZ_MAPI_SUPPORT=
 MOZ_INCOMPLETE_EXTERNAL_LINKAGE=
+MOZ_CAN_DRAW_IN_TITLEBAR=
 
 case "$target_os" in
     mingw*)
@@ -2825,6 +2827,22 @@ fi
 AC_SUBST(MOZ_MAPI_SUPPORT)
 
 dnl ========================================================
+dnl = Client drawing in titlebar
+dnl ========================================================
+if test -n "$MOZ_CAN_DRAW_IN_TITLEBAR"; then
+    case "$OS_TARGET" in
+    WINNT|Darwin)
+        AC_DEFINE(MOZ_CAN_DRAW_IN_TITLEBAR)
+        ;;
+    *)
+        AC_MSG_ERROR([Drawing in the titlebar is only supported on Windows and Macintosh targets])
+        ;;
+    esac
+fi
+
+AC_SUBST(MOZ_CAN_DRAW_IN_TITLEBAR)
+
+dnl ========================================================
 dnl = Enable WebRTC code
 dnl ========================================================
 MOZ_ARG_ENABLE_BOOL(webrtc,
@@ -2905,6 +2923,20 @@ if test -n "$MOZ_RAW"; then
 fi
 
 AC_SUBST(MOZ_RAW)
+
+dnl ========================================================
+dnl = Enable Libaom AV1 Codec
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(av1,
+[  --enable-av1           Enable libaom for av1 video support],
+    MOZ_AV1=1,
+    MOZ_AV1=)
+
+if test -n "$MOZ_AV1"; then
+    AC_DEFINE(MOZ_AV1)
+fi
+
+AC_SUBST(MOZ_AV1)
 
 dnl ========================================================
 dnl = Apple platform decoder support

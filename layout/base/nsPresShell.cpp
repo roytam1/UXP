@@ -2828,10 +2828,9 @@ PresShell::CancelAllPendingReflows()
 }
 
 void
-PresShell::DestroyFramesFor(nsIContent*  aContent,
-                            nsIContent** aDestroyedFramesFor)
+PresShell::DestroyFramesForAndRestyle(Element* aElement)
 {
-  MOZ_ASSERT(aContent);
+  MOZ_ASSERT(aElement);
   NS_ENSURE_TRUE_VOID(mPresContext);
   if (!mDidInitialize) {
     return;
@@ -2843,43 +2842,20 @@ PresShell::DestroyFramesFor(nsIContent*  aContent,
   ++mChangeNestCount;
 
   nsCSSFrameConstructor* fc = FrameConstructor();
+  bool didReconstruct;
   fc->BeginUpdate();
-  fc->DestroyFramesFor(aContent, aDestroyedFramesFor);
+  fc->DestroyFramesFor(aElement, &didReconstruct);
   fc->EndUpdate();
 
-  --mChangeNestCount;
-}
+  auto changeHint = didReconstruct
+    ? nsChangeHint(0)
+    : nsChangeHint_ReconstructFrame;
 
-void
-PresShell::CreateFramesFor(nsIContent* aContent)
-{
-  NS_ENSURE_TRUE_VOID(mPresContext);
-  if (!mDidInitialize) {
-    // Nothing to do here.  In fact, if we proceed and aContent is the
-    // root we will crash.
-    return;
-  }
-
-  // Don't call RecreateFramesForContent since that is not exported and we want
-  // to keep the number of entrypoints down.
-
-  NS_ASSERTION(mViewManager, "Should have view manager");
-  MOZ_ASSERT(aContent);
-
-  // Have to make sure that the content notifications are flushed before we
-  // start messing with the frame model; otherwise we can get content doubling.
-  mDocument->FlushPendingNotifications(Flush_ContentAndNotify);
-
-  nsAutoScriptBlocker scriptBlocker;
-
-  // Mark ourselves as not safe to flush while we're doing frame construction.
-  ++mChangeNestCount;
-
-  nsCSSFrameConstructor* fc = FrameConstructor();
-  nsILayoutHistoryState* layoutState = fc->GetLastCapturedLayoutHistoryState();
-  fc->BeginUpdate();
-  fc->ContentInserted(aContent->GetParent(), aContent, layoutState, false);
-  fc->EndUpdate();
+  // NOTE(emilio): eRestyle_Subtree is needed to force also a full subtree
+  // restyle for the content (in Stylo, where the existence of frames != the
+  // existence of styles).
+  mPresContext->RestyleManager()->PostRestyleEvent(
+    aElement, eRestyle_Subtree, changeHint);
 
   --mChangeNestCount;
 }
@@ -4444,14 +4420,14 @@ PresShell::NotifyCounterStylesAreDirty()
   mFrameConstructor->EndUpdate();
 }
 
-nsresult
-PresShell::ReconstructFrames(void)
+void
+PresShell::ReconstructFrames()
 {
   NS_PRECONDITION(!mFrameConstructor->GetRootFrame() || mDidInitialize,
                   "Must not have root frame before initial reflow");
   if (!mDidInitialize || mIsDestroying) {
     // Nothing to do here
-    return NS_OK;
+    return;
   }
 
   nsCOMPtr<nsIPresShell> kungFuDeathGrip(this);
@@ -4461,16 +4437,14 @@ PresShell::ReconstructFrames(void)
   mDocument->FlushPendingNotifications(Flush_ContentAndNotify);
 
   if (mIsDestroying) {
-    return NS_OK;
+    return;
   }
 
   nsAutoCauseReflowNotifier crNotifier(this);
   mFrameConstructor->BeginUpdate();
-  nsresult rv = mFrameConstructor->ReconstructDocElementHierarchy();
+  mFrameConstructor->ReconstructDocElementHierarchy();
   VERIFY_STYLE_TREE;
   mFrameConstructor->EndUpdate();
-
-  return rv;
 }
 
 void
@@ -4596,12 +4570,6 @@ void
 PresShell::StyleRuleRemoved(StyleSheet* aStyleSheet)
 {
   RecordStyleSheetChange(aStyleSheet);
-}
-
-nsIFrame*
-PresShell::GetPlaceholderFrameFor(nsIFrame* aFrame) const
-{
-  return mFrameConstructor->GetPlaceholderFrameFor(aFrame);
 }
 
 nsresult
@@ -4755,9 +4723,11 @@ PresShell::ClipListToRange(nsDisplayListBuilder *aBuilder,
         frame->GetOffsets(frameStartOffset, frameEndOffset);
 
         int32_t hilightStart =
-          atStart ? std::max(aRange->StartOffset(), frameStartOffset) : frameStartOffset;
+          atStart ? std::max(static_cast<int32_t>(aRange->StartOffset()),
+                             frameStartOffset) : frameStartOffset;
         int32_t hilightEnd =
-          atEnd ? std::min(aRange->EndOffset(), frameEndOffset) : frameEndOffset;
+          atEnd ? std::min(static_cast<int32_t>(aRange->EndOffset()),
+                           frameEndOffset) : frameEndOffset;
         if (hilightStart < hilightEnd) {
           // determine the location of the start and end edges of the range.
           nsPoint startPoint, endPoint;

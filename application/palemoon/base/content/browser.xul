@@ -324,7 +324,7 @@
 
   </popupset>
 
-#ifdef CAN_DRAW_IN_TITLEBAR
+#ifdef MOZ_CAN_DRAW_IN_TITLEBAR
 <vbox id="titlebar">
   <hbox id="titlebar-content">
 #ifdef MENUBAR_CAN_AUTOHIDE
@@ -374,7 +374,7 @@
 #include browser-menubar.inc
       </toolbaritem>
 
-#ifdef CAN_DRAW_IN_TITLEBAR
+#ifdef MOZ_CAN_DRAW_IN_TITLEBAR
       <hbox class="titlebar-placeholder" type="appmenu-button" ordinal="0"/>
       <hbox class="titlebar-placeholder" type="caption-buttons" ordinal="1000"/>
 #endif
@@ -771,7 +771,7 @@
     </toolbar>
 
 #ifdef MENUBAR_CAN_AUTOHIDE
-#ifndef CAN_DRAW_IN_TITLEBAR
+#ifndef MOZ_CAN_DRAW_IN_TITLEBAR
 #define APPMENU_ON_TABBAR
 #endif
 #endif
@@ -838,7 +838,7 @@
                      label="&closeTab.label;"
                      tooltiptext="&closeTab.label;"/>
 
-#ifdef CAN_DRAW_IN_TITLEBAR
+#ifdef MOZ_CAN_DRAW_IN_TITLEBAR
       <hbox class="titlebar-placeholder" type="appmenu-button" ordinal="0"/>
       <hbox class="titlebar-placeholder" type="caption-buttons" ordinal="1000"/>
 #endif

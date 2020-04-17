@@ -2181,7 +2181,7 @@ nsHtml5TreeBuilder::extractCharsetFromContent(nsHtml5String attributeValue, nsHt
     if (end == -1) {
       end = buffer.length;
     }
-    charset = nsHtml5Portability::newStringFromBuffer(buffer, start, end - start, tb);
+    charset = nsHtml5Portability::newStringFromBuffer(buffer, start, end - start, tb, false);
   }
   return charset;
 }

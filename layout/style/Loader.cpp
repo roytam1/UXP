@@ -1334,7 +1334,7 @@ Loader::InsertSheetInDoc(StyleSheet* aSheet,
 
   // XXX Need to cancel pending sheet loads for this element, if any
 
-  int32_t sheetCount = aDocument->GetNumberOfStyleSheets();
+  int32_t sheetCount = aDocument->SheetCount();
 
   /*
    * Start the walk at the _end_ of the list, since in the typical
@@ -1346,7 +1346,7 @@ Loader::InsertSheetInDoc(StyleSheet* aSheet,
    */
   int32_t insertionPoint;
   for (insertionPoint = sheetCount - 1; insertionPoint >= 0; --insertionPoint) {
-    StyleSheet* curSheet = aDocument->GetStyleSheetAt(insertionPoint);
+    StyleSheet* curSheet = aDocument->SheetAt(insertionPoint);
     NS_ASSERTION(curSheet, "There must be a sheet here!");
     nsCOMPtr<nsINode> sheetOwner = curSheet->GetOwnerNode();
     if (sheetOwner && !aLinkingContent) {
@@ -2209,9 +2209,9 @@ Loader::LoadChildSheet(StyleSheet* aParentSheet,
 
   nsCOMPtr<nsINode> owningNode;
 
-  // check for an owning document: if none, don't bother walking up the parent
-  // sheets
-  if (aParentSheet->GetOwningDocument()) {
+  // check for an associated document: if none, don't bother walking up the
+  // parent sheets
+  if (aParentSheet->GetAssociatedDocument()) {
     StyleSheet* topSheet = aParentSheet;
     while (StyleSheet* parent = topSheet->GetParentSheet()) {
       topSheet = parent;

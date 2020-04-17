@@ -12,6 +12,8 @@
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/CSSStyleSheet.h"
 
+#include "mozAutoDocUpdate.h"
+#include "nsIMediaList.h"
 #include "nsNullPrincipal.h"
 
 namespace mozilla {
@@ -22,6 +24,7 @@ StyleSheet::StyleSheet(StyleBackendType aType, css::SheetParsingMode aParsingMod
   , mParsingMode(aParsingMode)
   , mType(aType)
   , mDisabled(false)
+  , mDocumentAssociationMode(NotOwnedByDocument)
 {
 }
 
@@ -34,6 +37,9 @@ StyleSheet::StyleSheet(const StyleSheet& aCopy,
   , mParsingMode(aCopy.mParsingMode)
   , mType(aCopy.mType)
   , mDisabled(aCopy.mDisabled)
+    // We only use this constructor during cloning.  It's the cloner's
+    // responsibility to notify us if we end up being owned by a document.
+  , mDocumentAssociationMode(NotOwnedByDocument)
 {
 }
 
@@ -349,7 +355,7 @@ StyleSheet::AreRulesAvailable(nsIPrincipal& aSubjectPrincipal,
 JSObject*
 StyleSheet::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
-  return CSSStyleSheetBinding::Wrap(aCx, this, aGivenProto);
+  return dom::CSSStyleSheetBinding::Wrap(aCx, this, aGivenProto);
 }
 
 } // namespace mozilla

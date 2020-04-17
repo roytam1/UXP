@@ -486,12 +486,6 @@ public:
   virtual nsCanvasFrame* GetCanvasFrame() const = 0;
 
   /**
-   * Gets the placeholder frame associated with the specified frame. This is
-   * a helper frame that forwards the request to the frame manager.
-   */
-  virtual nsIFrame* GetPlaceholderFrameFor(nsIFrame* aFrame) const = 0;
-
-  /**
    * Tell the pres shell that a frame needs to be marked dirty and needs
    * Reflow.  It's OK if this is an ancestor of the frame needing reflow as
    * long as the ancestor chain between them doesn't cross a reflow root.
@@ -545,20 +539,12 @@ public:
   virtual void NotifyCounterStylesAreDirty() = 0;
 
   /**
-   * Destroy the frames for aContent.  Note that this may destroy frames
-   * for an ancestor instead - aDestroyedFramesFor contains the content node
-   * where frames were actually destroyed (which should be used in the
-   * CreateFramesFor call).  The frame tree state will be captured before
-   * the frames are destroyed in the frame constructor.
+   * Destroy the frames for aElement, and reconstruct them asynchronously if
+   * needed.
+   *
+   * Note that this may destroy frames for an ancestor instead.
    */
-  virtual void DestroyFramesFor(nsIContent*  aContent,
-                                nsIContent** aDestroyedFramesFor) = 0;
-  /**
-   * Create new frames for aContent.  It will use the last captured layout
-   * history state captured in the frame constructor to restore the state
-   * in the new frame tree.
-   */
-  virtual void CreateFramesFor(nsIContent* aContent) = 0;
+  virtual void DestroyFramesForAndRestyle(mozilla::dom::Element* aElement) = 0;
 
   /**
    * Recreates the frames for a node
@@ -977,7 +963,7 @@ public:
   /**
    * Reconstruct frames for all elements in the document
    */
-  virtual nsresult ReconstructFrames() = 0;
+  virtual void ReconstructFrames() = 0;
 
   /**
    * Notify that a content node's state has changed

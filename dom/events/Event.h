@@ -157,6 +157,8 @@ public:
   EventTarget* GetTarget() const;
   EventTarget* GetCurrentTarget() const;
 
+  void ComposedPath(nsTArray<RefPtr<EventTarget>>& aPath);
+
   uint16_t EventPhase() const;
 
   // xpidl implementation

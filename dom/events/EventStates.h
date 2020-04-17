@@ -292,14 +292,39 @@ private:
 #define NS_EVENT_STATE_RTL NS_DEFINE_EVENT_STATE_MACRO(43)
 // Element is highlighted (devtools inspector)
 #define NS_EVENT_STATE_DEVTOOLS_HIGHLIGHTED NS_DEFINE_EVENT_STATE_MACRO(45)
-// Element is an unresolved custom element candidate
-#define NS_EVENT_STATE_UNRESOLVED NS_DEFINE_EVENT_STATE_MACRO(46)
+// States for tracking the state of the "dir" attribute for HTML elements.  We
+// use these to avoid having to get "dir" attributes all the time during
+// selector matching for some parts of the UA stylesheet.
+//
+// These states are externally managed, because we also don't want to keep
+// getting "dir" attributes in IntrinsicState.
+//
+// Element is HTML and has a "dir" attibute.  This state might go away depending
+// on how https://github.com/whatwg/html/issues/2769 gets resolved.  The value
+// could be anything.
+#define NS_EVENT_STATE_HAS_DIR_ATTR NS_DEFINE_EVENT_STATE_MACRO(46)
+// Element is HTML, has a "dir" attribute, and the attribute's value is
+// case-insensitively equal to "ltr".
+#define NS_EVENT_STATE_DIR_ATTR_LTR NS_DEFINE_EVENT_STATE_MACRO(47)
+// Element is HTML, has a "dir" attribute, and the attribute's value is
+// case-insensitively equal to "rtl".
+#define NS_EVENT_STATE_DIR_ATTR_RTL NS_DEFINE_EVENT_STATE_MACRO(48)
+// Element is HTML, and is either a <bdi> element with no valid-valued "dir"
+// attribute or any HTML element which has a "dir" attribute whose value is
+// "auto".
+#define NS_EVENT_STATE_DIR_ATTR_LIKE_AUTO NS_DEFINE_EVENT_STATE_MACRO(49)
+// Free bit                          NS_DEFINE_EVENT_STATE_MACRO(50)
 // Element is transitioning for rules changed by style editor
-#define NS_EVENT_STATE_STYLEEDITOR_TRANSITIONING NS_DEFINE_EVENT_STATE_MACRO(47)
+#define NS_EVENT_STATE_STYLEEDITOR_TRANSITIONING NS_DEFINE_EVENT_STATE_MACRO(51)
 // Content shows its placeholder
-#define NS_EVENT_STATE_PLACEHOLDERSHOWN NS_DEFINE_EVENT_STATE_MACRO(48)
+#define NS_EVENT_STATE_PLACEHOLDERSHOWN NS_DEFINE_EVENT_STATE_MACRO(52)
 // Element has focus-within.
-#define NS_EVENT_STATE_FOCUS_WITHIN NS_DEFINE_EVENT_STATE_MACRO(49)
+#define NS_EVENT_STATE_FOCUS_WITHIN NS_DEFINE_EVENT_STATE_MACRO(53)
+
+#define DIR_ATTR_STATES (NS_EVENT_STATE_HAS_DIR_ATTR |          \
+                         NS_EVENT_STATE_DIR_ATTR_LTR |          \
+                         NS_EVENT_STATE_DIR_ATTR_RTL |          \
+                         NS_EVENT_STATE_DIR_ATTR_LIKE_AUTO)
 
 // Event state that is used for values that need to be parsed but do nothing.
 #define NS_EVENT_STATE_IGNORE NS_DEFINE_EVENT_STATE_MACRO(63)
@@ -310,11 +335,10 @@ private:
 
 #define DIRECTION_STATES (NS_EVENT_STATE_LTR | NS_EVENT_STATE_RTL)
 
-#define ESM_MANAGED_STATES (NS_EVENT_STATE_ACTIVE | NS_EVENT_STATE_FOCUS |  \
+#define ESM_MANAGED_STATES (DIR_ATTR_STATES | NS_EVENT_STATE_ACTIVE | NS_EVENT_STATE_FOCUS |  \
                             NS_EVENT_STATE_HOVER | NS_EVENT_STATE_DRAGOVER |   \
                             NS_EVENT_STATE_URLTARGET | NS_EVENT_STATE_FOCUSRING | \
-                            NS_EVENT_STATE_FULL_SCREEN | NS_EVENT_STATE_UNRESOLVED | \
-                            NS_EVENT_STATE_FOCUS_WITHIN)
+                            NS_EVENT_STATE_FULL_SCREEN | NS_EVENT_STATE_FOCUS_WITHIN)
 
 #define INTRINSIC_STATES (~ESM_MANAGED_STATES)
 

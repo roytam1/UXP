@@ -205,7 +205,7 @@ toolbar[customizing] > .overflow-button {
   display: none;
 }
 
-%ifdef CAN_DRAW_IN_TITLEBAR
+%ifdef MOZ_CAN_DRAW_IN_TITLEBAR
 #main-window:not([chromemargin]) > #titlebar,
 #main-window[inFullscreen] > #titlebar,
 #main-window[inFullscreen] .titlebar-placeholder,

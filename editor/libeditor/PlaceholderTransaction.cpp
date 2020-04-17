@@ -8,6 +8,7 @@
 #include "CompositionTransaction.h"
 #include "mozilla/EditorBase.h"
 #include "mozilla/dom/Selection.h"
+#include "mozilla/Move.h"
 #include "nsGkAtoms.h"
 #include "nsQueryObject.h"
 
@@ -15,13 +16,18 @@ namespace mozilla {
 
 using namespace dom;
 
-PlaceholderTransaction::PlaceholderTransaction()
+PlaceholderTransaction::PlaceholderTransaction(
+                          EditorBase& aEditorBase,
+                          nsIAtom* aName,
+                          UniquePtr<SelectionState> aSelState)
   : mAbsorb(true)
   , mForwarding(nullptr)
   , mCompositionTransaction(nullptr)
   , mCommitted(false)
-  , mEditorBase(nullptr)
+  , mStartSel(Move(aSelState))
+  , mEditorBase(&aEditorBase)
 {
+  mName = aName;
 }
 
 PlaceholderTransaction::~PlaceholderTransaction()
@@ -50,24 +56,10 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(PlaceholderTransaction)
   NS_INTERFACE_MAP_ENTRY(nsIAbsorbingTransaction)
-  NS_INTERFACE_MAP_ENTRY(nsISupportsWeakReference)
 NS_INTERFACE_MAP_END_INHERITING(EditAggregateTransaction)
 
 NS_IMPL_ADDREF_INHERITED(PlaceholderTransaction, EditAggregateTransaction)
 NS_IMPL_RELEASE_INHERITED(PlaceholderTransaction, EditAggregateTransaction)
-
-NS_IMETHODIMP
-PlaceholderTransaction::Init(nsIAtom* aName,
-                             SelectionState* aSelState,
-                             EditorBase* aEditorBase)
-{
-  NS_ENSURE_TRUE(aEditorBase && aSelState, NS_ERROR_NULL_POINTER);
-
-  mName = aName;
-  mStartSel = aSelState;
-  mEditorBase = aEditorBase;
-  return NS_OK;
-}
 
 NS_IMETHODIMP
 PlaceholderTransaction::DoTransaction()

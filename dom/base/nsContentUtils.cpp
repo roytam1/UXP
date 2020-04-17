@@ -44,9 +44,8 @@
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/FileSystemSecurity.h"
 #include "mozilla/dom/HTMLMediaElement.h"
+#include "mozilla/dom/HTMLSlotElement.h"
 #include "mozilla/dom/HTMLTemplateElement.h"
-#include "mozilla/dom/HTMLContentElement.h"
-#include "mozilla/dom/HTMLShadowElement.h"
 #include "mozilla/dom/ipc/BlobChild.h"
 #include "mozilla/dom/ipc/BlobParent.h"
 #include "mozilla/dom/Promise.h"
@@ -102,7 +101,9 @@
 #include "nsHostObjectProtocolHandler.h"
 #include "nsHtml5Module.h"
 #include "nsHtml5StringParser.h"
+#include "nsHTMLTags.h"
 #include "nsIAddonPolicyService.h"
+#include "nsIAnonymousContentCreator.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
 #include "nsICategoryManager.h"
 #include "nsIChannelEventSink.h"
@@ -500,6 +501,8 @@ nsContentUtils::Init()
     return NS_OK;
   }
 
+  nsHTMLTags::AddRefTable();
+
   sNameSpaceManager = nsNameSpaceManager::GetInstance();
   NS_ENSURE_TRUE(sNameSpaceManager, NS_ERROR_OUT_OF_MEMORY);
 
@@ -590,7 +593,7 @@ nsContentUtils::Init()
                                "dom.webcomponents.enabled", false);
 
   Preferences::AddBoolVarCache(&sIsCustomElementsEnabled,
-                               "dom.webcomponents.customelements.enabled", false);
+                               "dom.webcomponents.enabled", false);
 
   Preferences::AddBoolVarCache(&sEncodeDecodeURLHash,
                                "dom.url.encode_decode_hash", false);
@@ -1926,6 +1929,8 @@ nsContentUtils::Shutdown()
 {
   sInitialized = false;
 
+  nsHTMLTags::ReleaseTable();
+
   NS_IF_RELEASE(sContentPolicyService);
   sTriedToGetContentPolicy = false;
   uint32_t i;
@@ -2390,6 +2395,9 @@ nsContentUtils::ComparePoints(nsINode* aParent1, int32_t aOffset1,
                               bool* aDisconnected)
 {
   if (aParent1 == aParent2) {
+    // XXX This is odd.  aOffset1 and/or aOffset2 may be -1, e.g., it's result
+    //     of nsINode::IndexOf(), but this compares such invalid offset with
+    //     valid offset.
     return aOffset1 < aOffset2 ? -1 :
            aOffset1 > aOffset2 ? 1 :
            0;
@@ -2440,10 +2448,14 @@ nsContentUtils::ComparePoints(nsINode* aParent1, int32_t aOffset1,
 
   if (!pos1) {
     nsINode* child2 = parents2.ElementAt(--pos2);
+    // XXX aOffset1 may be -1 as mentioned above.  So, why does this return
+    //     it's *before* of the valid DOM point?
     return aOffset1 <= parent->IndexOf(child2) ? -1 : 1;
   }
 
   nsINode* child1 = parents1.ElementAt(--pos1);
+  // XXX aOffset2 may be -1 as mentioned above.  So, why does this return it's
+  //     *after* of the valid DOM point?
   return parent->IndexOf(child1) < aOffset2 ? -1 : 1;
 }
 
@@ -4943,17 +4955,7 @@ nsContentUtils::IsInSameAnonymousTree(const nsINode* aNode,
     return aContent->GetBindingParent() == nullptr;
   }
 
-  const nsIContent* nodeAsContent = static_cast<const nsIContent*>(aNode);
-
-  // For nodes in a shadow tree, it is insufficient to simply compare
-  // the binding parent because a node may host multiple ShadowRoots,
-  // thus nodes in different shadow tree may have the same binding parent.
-  if (aNode->IsInShadowTree()) {
-    return nodeAsContent->GetContainingShadow() ==
-      aContent->GetContainingShadow();
-  }
-
-  return nodeAsContent->GetBindingParent() == aContent->GetBindingParent();
+  return aNode->AsContent()->GetBindingParent() == aContent->GetBindingParent();
 }
 
 class AnonymousContentDestroyer : public Runnable {
@@ -7015,25 +7017,11 @@ nsContentUtils::GetHTMLEditor(nsPresContext* aPresContext)
   return editor;
 }
 
-bool
-nsContentUtils::IsContentInsertionPoint(nsIContent* aContent)
-{
-  // Check if the content is a XBL insertion point.
-  if (aContent->IsActiveChildrenElement()) {
-    return true;
-  }
-
-  // Check if the content is a web components content insertion point.
-  HTMLContentElement* contentElement =
-    HTMLContentElement::FromContent(aContent);
-  return contentElement && contentElement->IsInsertionPoint();
-}
-
 // static
 bool
 nsContentUtils::HasDistributedChildren(nsIContent* aContent)
 {
-  if (!aContent) {
+  if (!aContent || !nsDocument::IsWebComponentsEnabled(aContent)) {
     return false;
   }
 
@@ -7043,26 +7031,11 @@ nsContentUtils::HasDistributedChildren(nsIContent* aContent)
     return true;
   }
 
-  ShadowRoot* shadow = ShadowRoot::FromNode(aContent);
-  if (shadow) {
-    // Children of a shadow root are distributed to
-    // the shadow insertion point of the younger shadow root.
-    return shadow->GetYoungerShadowRoot();
-  }
-
-  HTMLShadowElement* shadowEl = HTMLShadowElement::FromContent(aContent);
-  if (shadowEl && shadowEl->IsInsertionPoint()) {
-    // Children of a shadow insertion points are distributed
-    // to the insertion points in the older shadow root.
-    return shadowEl->GetOlderShadowRoot();
-  }
-
-  HTMLContentElement* contentEl = HTMLContentElement::FromContent(aContent);
-  if (contentEl && contentEl->IsInsertionPoint()) {
-    // Children of a content insertion point are distributed to the
-    // content insertion point if the content insertion point does
-    // not match any nodes (fallback content).
-    return contentEl->MatchedNodes().IsEmpty();
+  HTMLSlotElement* slotEl = HTMLSlotElement::FromContent(aContent);
+  if (slotEl && slotEl->GetContainingShadow()) {
+    // Children of a slot are rendered if the slot does not have any assigned
+    // nodes (fallback content).
+    return slotEl->AssignedNodes().IsEmpty();
   }
 
   return false;
@@ -9675,35 +9648,6 @@ nsContentUtils::EnqueueLifecycleCallback(nsIDocument::ElementCallbackType aType,
                                                   aDefinition);
 }
 
-/* static */ void
-nsContentUtils::GetCustomPrototype(nsIDocument* aDoc,
-                                   int32_t aNamespaceID,
-                                   nsIAtom* aAtom,
-                                   JS::MutableHandle<JSObject*> aPrototype)
-{
-  MOZ_ASSERT(aDoc);
-
-  // To support imported document.
-  nsCOMPtr<nsIDocument> doc = aDoc->MasterDocument();
-
-  if (aNamespaceID != kNameSpaceID_XHTML ||
-      !doc->GetDocShell()) {
-    return;
-  }
-
-  nsCOMPtr<nsPIDOMWindowInner> window(doc->GetInnerWindow());
-  if (!window) {
-    return;
-  }
-
-  RefPtr<CustomElementRegistry> registry(window->CustomElements());
-  if (!registry) {
-    return;
-  }
-
-  return registry->GetCustomPrototype(aAtom, aPrototype);
-}
-
 /* static */ bool
 nsContentUtils::AttemptLargeAllocationLoad(nsIHttpChannel* aChannel)
 {
@@ -9837,6 +9781,24 @@ nsContentUtils::AttemptLargeAllocationLoad(nsIHttpChannel* aChannel)
   return reloadSucceeded;
 }
 
+/* static */ void
+nsContentUtils::AppendDocumentLevelNativeAnonymousContentTo(
+    nsIDocument* aDocument,
+    nsTArray<nsIContent*>& aElements)
+{
+  MOZ_ASSERT(aDocument);
+
+  // XXXheycam This probably needs to find the nsCanvasFrame's NAC too.
+  if (nsIPresShell* presShell = aDocument->GetShell()) {
+    if (nsIFrame* scrollFrame = presShell->GetRootScrollFrame()) {
+      nsIAnonymousContentCreator* creator = do_QueryFrame(scrollFrame);
+      MOZ_ASSERT(creator,
+                 "scroll frame should always implement nsIAnonymousContentCreator");
+      creator->AppendAnonymousContentTo(aElements, 0);
+    }
+  }
+}
+
 /* static */ bool
 nsContentUtils::IsLocalRefURL(const nsString& aString)
 {
@@ -9851,4 +9813,17 @@ nsContentUtils::IsLocalRefURL(const nsString& aString)
   }
 
   return false;
+}
+
+/* static */ Element*
+nsContentUtils::GetClosestNonNativeAnonymousAncestor(Element* aElement)
+{
+  MOZ_ASSERT(aElement);
+  MOZ_ASSERT(aElement->IsNativeAnonymous());
+
+  Element* e = aElement;
+  while (e && e->IsNativeAnonymous()) {
+    e = e->GetParentElement();
+  }
+  return e;
 }

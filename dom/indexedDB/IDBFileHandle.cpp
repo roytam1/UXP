@@ -127,12 +127,12 @@ IDBFileHandle::Run()
 }
 
 nsresult
-IDBFileHandle::PreHandleEvent(EventChainPreVisitor& aVisitor)
+IDBFileHandle::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   AssertIsOnOwningThread();
 
   aVisitor.mCanHandle = true;
-  aVisitor.mParentTarget = mMutableFile;
+  aVisitor.SetParentTarget(mMutableFile, false);
   return NS_OK;
 }
 

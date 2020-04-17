@@ -64,12 +64,12 @@ NS_IMPL_CYCLE_COLLECTION_INHERITED(IDBFileRequest, DOMRequest,
                                    mFileHandle)
 
 nsresult
-IDBFileRequest::PreHandleEvent(EventChainPreVisitor& aVisitor)
+IDBFileRequest::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   AssertIsOnOwningThread();
 
   aVisitor.mCanHandle = true;
-  aVisitor.mParentTarget = mFileHandle;
+  aVisitor.SetParentTarget(mFileHandle, false);
   return NS_OK;
 }
 

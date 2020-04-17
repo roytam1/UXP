@@ -8,6 +8,8 @@
  * animating */
 
 #include "ImageTracker.h"
+#include "mozilla/Preferences.h"
+#include "nsAppRunner.h" // for XRE_IsContentProcess
 
 namespace mozilla {
 namespace dom {

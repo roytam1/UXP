@@ -51,8 +51,6 @@ div.after::after {content: " Y";}
     <div id="hostT" class="c">T</div>
     <div id="hostU"><span class="c">U</span></div>
     <div id="hostV" class="c" style="color:red"><b class="c" style="color:inherit">V</b></div>
-    <div id="hostW" class="c" style="color:red"><b class="c" style="color:inherit">W</b></div>
-    <span id="hostX" style="color:red"><b class="c" style="color:inherit">X</b></span>
     <!-- TODO(bug 1021572?) <div id="hostY" class="c" style="color:red"><b>Y</b></div> -->
 
    <script>
@@ -76,38 +74,40 @@ div.after::after {content: " Y";}
         return e;
       }
 
-      document.body.offsetHeight;
+      function run() {
+        document.body.offsetHeight;
 
-      shadow("host1").innerHTML = '<content></content> c';
-      shadow("host2").innerHTML = 'a <content style="display:contents"></content> c';
-      shadow("host3").innerHTML = 'a <content style="display:contents"></content>';
-      shadow("host4").innerHTML = '<content style="display:contents"></content>';
-      shadow("host5").innerHTML = 'a <content style="display:contents"></content>';
-      shadow("host6").innerHTML = '<z style="color:blue; display:contents"><content></content></z> c';
-      shadow("host7").innerHTML = 'a <content style="display:contents"></content> c';
-      shadow("host8").innerHTML = 'a <z style="color:blue; display:contents"><content style="display:contents"></z></content>';
-      shadow("host9").innerHTML = '<content style="display:contents"></content>';
-      shadow("hostA").innerHTML = 'a <content style="display:contents"></content>';
-      shadow("hostB").innerHTML = 'a <content select=".c"></content> <content select=".b"></content> B';
-      shadow("hostC").innerHTML = 'A <content select=".c"></content> <content select=".b"></content> B';
-      shadow("hostD").innerHTML = 'A <content select=".c"></content> <content select=".b"></content> B <content select=".b"></content>';
-      shadow("hostE").innerHTML = 'A <content select=".c"></content> <content select=".b"></content> B';
-      shadow("hostF").innerHTML = '<content select=".c"></content> <content select=".b"></content> B';
-      shadow("hostG").innerHTML = '<content select=".b"></content>';
-      shadow("hostH").innerHTML = '<content select=".b"></content>';
-      shadow("hostI").innerHTML = 'A<content select=".b"></content>';
-      shadow("hostJ").innerHTML = 'A<content select=".b"></content>';
-      shadow("hostK").innerHTML = '<content select=".b"></content>';
-      shadow("hostL").innerHTML = '<content select=".b"></content>';
-      shadow("hostM").innerHTML = '<content select="b"></content><content select="i"></content>';
-      shadow("hostN").innerHTML = '<content select="b"></content><content select="i"></content>';
-      shadow("hostO").innerHTML = '<content select="b"></content><content select="i"></content>';
-      shadow("hostP").innerHTML = '<content select="b"></content><content select="i"></content>';
-      shadow("hostQ").innerHTML = '<content select="b"></content><content select="i"></content>';
-      shadow("hostR").innerHTML = '<content select="span"></content>';
-      shadow("hostW").innerHTML = '<z style="color:red"><content select="b"></content></z>';
-      shadow("hostX").innerHTML = '<z style="color:red"><content select="b"></content></z>';
-      // TODO(bug 1021572?) shadow("hostY").innerHTML = '<content select="b"><style scoped>:scope{color:green}</style></content>';
+        shadow("host1").innerHTML = '<content></content> c';
+        shadow("host2").innerHTML = 'a <content style="display:contents"></content> c';
+        shadow("host3").innerHTML = 'a <content style="display:contents"></content>';
+        shadow("host4").innerHTML = '<content style="display:contents"></content>';
+        shadow("host5").innerHTML = 'a <content style="display:contents"></content>';
+        shadow("host6").innerHTML = '<z style="color:blue; display:contents"><content></content></z> c';
+        shadow("host7").innerHTML = 'a <content style="display:contents"></content> c';
+        shadow("host8").innerHTML = 'a <z style="color:blue; display:contents"><content style="display:contents"></z></content>';
+        shadow("host9").innerHTML = '<content style="display:contents"></content>';
+        shadow("hostA").innerHTML = 'a <content style="display:contents"></content>';
+        shadow("hostB").innerHTML = 'a <content select=".c"></content> <content select=".b"></content> B';
+        shadow("hostC").innerHTML = 'A <content select=".c"></content> <content select=".b"></content> B';
+        shadow("hostD").innerHTML = 'A <content select=".c"></content> <content select=".b"></content> B <content select=".b"></content>';
+        shadow("hostE").innerHTML = 'A <content select=".c"></content> <content select=".b"></content> B';
+        shadow("hostF").innerHTML = '<content select=".c"></content> <content select=".b"></content> B';
+        shadow("hostG").innerHTML = '<content select=".b"></content>';
+        shadow("hostH").innerHTML = '<content select=".b"></content>';
+        shadow("hostI").innerHTML = 'A<content select=".b"></content>';
+        shadow("hostJ").innerHTML = 'A<content select=".b"></content>';
+        shadow("hostK").innerHTML = '<content select=".b"></content>';
+        shadow("hostL").innerHTML = '<content select=".b"></content>';
+        shadow("hostM").innerHTML = '<content select="b"></content><content select="i"></content>';
+        shadow("hostN").innerHTML = '<content select="b"></content><content select="i"></content>';
+        shadow("hostO").innerHTML = '<content select="b"></content><content select="i"></content>';
+        shadow("hostP").innerHTML = '<content select="b"></content><content select="i"></content>';
+        shadow("hostQ").innerHTML = '<content select="b"></content><content select="i"></content>';
+        shadow("hostR").innerHTML = '<content select="span"></content>';
+        shadow("hostW").innerHTML = '<z style="color:red"><content select="b"></content></z>';
+        shadow("hostX").innerHTML = '<z style="color:red"><content select="b"></content></z>';
+        // TODO(bug 1021572?) shadow("hostY").innerHTML = '<content select="b"><style scoped>:scope{color:green}</style></content>';
+      }
 
       function tweak() {
         document.body.offsetHeight;
@@ -222,15 +222,18 @@ div.after::after {content: " Y";}
             shadow("hostT");
             shadow("hostU");
             shadow("hostV").innerHTML = '<z style="color:green"><content select="b"></content></z>';
-            shadow("hostW").innerHTML = '<z style="color:green"><content select="b"></content></z>';
-            shadow("hostX").innerHTML = '<z style="color:green"><content select="b"></content></z>';
 
             document.body.offsetHeight;
             document.documentElement.removeAttribute("class");
           },0);
       }
 
-      window.addEventListener("MozReftestInvalidate", tweak, false);
+      if (document.body.createShadowRoot) {
+        run();
+        window.addEventListener("MozReftestInvalidate", tweak, false);
+      } else {
+        document.documentElement.removeAttribute("class");
+      }
     </script>
   </body>
 </html>

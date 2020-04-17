@@ -207,7 +207,7 @@ HTMLButtonElement::IsDisabledForEvents(EventMessage aMessage)
 }
 
 nsresult
-HTMLButtonElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
+HTMLButtonElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mCanHandle = false;
   if (IsDisabledForEvents(aVisitor.mEvent->mMessage)) {
@@ -235,7 +235,7 @@ HTMLButtonElement::PreHandleEvent(EventChainPreVisitor& aVisitor)
     }
   }
 
-  return nsGenericHTMLElement::PreHandleEvent(aVisitor);
+  return nsGenericHTMLElement::GetEventTargetParent(aVisitor);
 }
 
 nsresult
@@ -423,7 +423,7 @@ HTMLButtonElement::DoneCreatingElement()
 
 nsresult
 HTMLButtonElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                 nsAttrValueOrString* aValue,
+                                 const nsAttrValueOrString* aValue,
                                  bool aNotify)
 {
   if (aNotify && aName == nsGkAtoms::disabled &&
@@ -437,7 +437,8 @@ HTMLButtonElement::BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 
 nsresult
 HTMLButtonElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                const nsAttrValue* aValue, bool aNotify)
+                                const nsAttrValue* aValue,
+                                const nsAttrValue* aOldValue, bool aNotify)
 {
   if (aNameSpaceID == kNameSpaceID_None) {
     if (aName == nsGkAtoms::type) {
@@ -448,12 +449,12 @@ HTMLButtonElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 
     if (aName == nsGkAtoms::type || aName == nsGkAtoms::disabled) {
       UpdateBarredFromConstraintValidation();
-      UpdateState(aNotify); 
     }
   }
 
   return nsGenericHTMLFormElementWithState::AfterSetAttr(aNameSpaceID, aName,
-                                                         aValue, aNotify);
+                                                         aValue, aOldValue,
+                                                         aNotify);
 }
 
 NS_IMETHODIMP

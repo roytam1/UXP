@@ -465,17 +465,6 @@ public:
   virtual void UnbindFromTree(bool aDeep = true,
                               bool aNullParent = true) override;
 
-  MOZ_ALWAYS_INLINE // Avoid a crashy hook from Avast 10 Beta
-  nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                   const nsAString& aValue, bool aNotify)
-  {
-    return SetAttr(aNameSpaceID, aName, nullptr, aValue, aNotify);
-  }
-  virtual nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                           nsIAtom* aPrefix, const nsAString& aValue,
-                           bool aNotify) override;
-  virtual nsresult UnsetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                             bool aNotify) override;
   virtual bool IsFocusableInternal(int32_t *aTabIndex, bool aWithMouse) override
   {
     bool isFocusable = false;
@@ -498,7 +487,8 @@ public:
    */
   bool CheckHandleEventForAnchorsPreconditions(
          mozilla::EventChainVisitor& aVisitor);
-  nsresult PreHandleEventForAnchors(mozilla::EventChainPreVisitor& aVisitor);
+  nsresult GetEventTargetParentForAnchors(
+             mozilla::EventChainPreVisitor& aVisitor);
   nsresult PostHandleEventForAnchors(mozilla::EventChainPostVisitor& aVisitor);
   bool IsHTMLLink(nsIURI** aURI) const;
 
@@ -913,8 +903,13 @@ private:
   void RegUnRegAccessKey(bool aDoReg);
 
 protected:
+  virtual nsresult BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
+                                 const nsAttrValueOrString* aValue,
+                                 bool aNotify) override;
   virtual nsresult AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                                const nsAttrValue* aValue, bool aNotify) override;
+                                const nsAttrValue* aValue,
+                                const nsAttrValue* aOldValue,
+                                bool aNotify) override;
 
   virtual mozilla::EventListenerManager*
     GetEventListenerManagerForAttr(nsIAtom* aAttrName,
@@ -1219,8 +1214,10 @@ public:
   virtual IMEState GetDesiredIMEState() override;
   virtual mozilla::EventStates IntrinsicState() const override;
 
-  virtual nsresult PreHandleEvent(
+  virtual nsresult GetEventTargetParent(
                      mozilla::EventChainPreVisitor& aVisitor) override;
+  virtual nsresult PreHandleEvent(
+                     mozilla::EventChainVisitor& aVisitor) override;
 
   virtual bool IsDisabled() const override;
 
@@ -1262,11 +1259,13 @@ protected:
   virtual ~nsGenericHTMLFormElement();
 
   virtual nsresult BeforeSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                 nsAttrValueOrString* aValue,
+                                 const nsAttrValueOrString* aValue,
                                  bool aNotify) override;
 
   virtual nsresult AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                                const nsAttrValue* aValue, bool aNotify) override;
+                                const nsAttrValue* aValue,
+                                const nsAttrValue* aOldValue,
+                                bool aNotify) override;
 
   /**
    * This method will update the form owner, using @form or looking to a parent.
@@ -1307,7 +1306,7 @@ protected:
   static bool FormIdUpdated(Element* aOldElement, Element* aNewElement,
                               void* aData);
 
-  // Returns true if the event should not be handled from PreHandleEvent
+  // Returns true if the event should not be handled from GetEventTargetParent
   bool IsElementDisabledForEvents(mozilla::EventMessage aMessage,
                                   nsIFrame* aFrame);
 
@@ -1703,7 +1702,7 @@ NS_DECLARE_NS_NEW_HTML_ELEMENT(Pre)
 NS_DECLARE_NS_NEW_HTML_ELEMENT(Progress)
 NS_DECLARE_NS_NEW_HTML_ELEMENT(Script)
 NS_DECLARE_NS_NEW_HTML_ELEMENT(Select)
-NS_DECLARE_NS_NEW_HTML_ELEMENT(Shadow)
+NS_DECLARE_NS_NEW_HTML_ELEMENT(Slot)
 NS_DECLARE_NS_NEW_HTML_ELEMENT(Source)
 NS_DECLARE_NS_NEW_HTML_ELEMENT(Span)
 NS_DECLARE_NS_NEW_HTML_ELEMENT(Style)

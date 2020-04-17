@@ -15,17 +15,19 @@ nsMappedAttributeElement::WalkContentStyleRules(nsRuleWalker* aRuleWalker)
 }
 
 bool
-nsMappedAttributeElement::SetMappedAttribute(nsIDocument* aDocument,
-                                             nsIAtom* aName,
-                                             nsAttrValue& aValue,
-                                             nsresult* aRetval)
+nsMappedAttributeElement::SetAndSwapMappedAttribute(nsIDocument* aDocument,
+                                                    nsIAtom* aName,
+                                                    nsAttrValue& aValue,
+                                                    bool* aValueWasSet,
+                                                    nsresult* aRetval)
+
 {
   NS_PRECONDITION(aDocument == GetComposedDoc(), "Unexpected document");
   nsHTMLStyleSheet* sheet = aDocument ?
     aDocument->GetAttributeStyleSheet() : nullptr;
 
-  *aRetval = mAttrsAndChildren.SetAndTakeMappedAttr(aName, aValue,
-                                                    this, sheet);
+  *aRetval = mAttrsAndChildren.SetAndSwapMappedAttr(aName, aValue,
+                                                    this, sheet, aValueWasSet);
   return true;
 }
 

@@ -7,9 +7,11 @@
 #ifndef mozilla_dom_timeout_handler_h
 #define mozilla_dom_timeout_handler_h
 
+#include "nsCycleCollectionParticipant.h" // NS_DECL_CYCLE_*
 #include "nsCOMPtr.h"
 #include "nsISupports.h"
 #include "nsITimeoutHandler.h"
+#include "nsString.h"
 
 namespace mozilla {
 namespace dom {

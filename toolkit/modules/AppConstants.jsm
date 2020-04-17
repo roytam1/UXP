@@ -209,7 +209,7 @@ MOZ_SAFE_BROWSING:
 #endif
 
   CAN_DRAW_IN_TITLEBAR:
-#ifdef CAN_DRAW_IN_TITLEBAR
+#ifdef MOZ_CAN_DRAW_IN_TITLEBAR
   true,
 #else
   false,

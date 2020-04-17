@@ -329,14 +329,16 @@ protected:
   // BeforeSetAttr since it would involve allocating extra SVG value types.
   // See the comment in nsSVGElement::WillChangeValue.
   virtual nsresult BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                                 nsAttrValueOrString* aValue,
+                                 const nsAttrValueOrString* aValue,
                                  bool aNotify) override final
   {
     return nsSVGElementBase::BeforeSetAttr(aNamespaceID, aName, aValue, aNotify);
   }
 #endif // DEBUG
   virtual nsresult AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
-                                const nsAttrValue* aValue, bool aNotify) override;
+                                const nsAttrValue* aValue,
+                                const nsAttrValue* aOldValue,
+                                bool aNotify) override;
   virtual bool ParseAttribute(int32_t aNamespaceID, nsIAtom* aAttribute,
                                 const nsAString& aValue, nsAttrValue& aResult) override;
   static nsresult ReportAttributeParseFailure(nsIDocument* aDocument,

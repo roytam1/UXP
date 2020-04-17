@@ -378,7 +378,7 @@ CSSTransition::HasLowerCompositeOrderThan(const CSSTransition& aOther) const
 }
 
 /* static */ Nullable<TimeDuration>
-CSSTransition::GetCurrentTimeAt(const DocumentTimeline& aTimeline,
+CSSTransition::GetCurrentTimeAt(const dom::DocumentTimeline& aTimeline,
                                 const TimeStamp& aBaseTime,
                                 const TimeDuration& aStartTime,
                                 double aPlaybackRate)
@@ -395,7 +395,7 @@ CSSTransition::GetCurrentTimeAt(const DocumentTimeline& aTimeline,
 }
 
 void
-CSSTransition::SetEffectFromStyle(AnimationEffectReadOnly* aEffect)
+CSSTransition::SetEffectFromStyle(dom::AnimationEffectReadOnly* aEffect)
 {
   Animation::SetEffectNoUpdate(aEffect);
 

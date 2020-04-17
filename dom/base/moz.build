@@ -213,6 +213,7 @@ EXPORTS.mozilla.dom += [
     'SimpleTreeIterator.h',
     'StructuredCloneHolder.h',
     'StructuredCloneTags.h',
+    'StyleScope.h',
     'StyleSheetList.h',
     'SubtleCrypto.h',
     'TabGroup.h',
@@ -225,7 +226,7 @@ EXPORTS.mozilla.dom += [
     'WindowOrientationObserver.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'AnonymousContent.cpp',
     'Attr.cpp',
     'BarProps.cpp',
@@ -359,6 +360,7 @@ UNIFIED_SOURCES += [
     'ScriptSettings.cpp',
     'ShadowRoot.cpp',
     'StructuredCloneHolder.cpp',
+    'StyleScope.cpp',
     'StyleSheetList.cpp',
     'SubtleCrypto.cpp',
     'TabGroup.cpp',
@@ -376,7 +378,7 @@ UNIFIED_SOURCES += [
 ]
 
 if CONFIG['MOZ_WEBRTC']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsDOMDataChannel.cpp',
     ]
 

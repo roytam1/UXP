@@ -10,6 +10,7 @@
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/ChromeUtilsBinding.h"
 #include "mozilla/dom/ThreadSafeChromeUtilsBinding.h"
+#include "mozilla/dom/UnionTypes.h"
 #include "mozilla/ErrorResult.h"
 
 namespace mozilla {
