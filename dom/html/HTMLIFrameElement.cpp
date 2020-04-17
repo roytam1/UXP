@@ -202,7 +202,7 @@ HTMLIFrameElement::SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
 nsresult
 HTMLIFrameElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 const nsAttrValue* aValue,
-                                bool aNotify)
+                                const nsAttrValue* aOldValue, bool aNotify)
 {
   if (aName == nsGkAtoms::sandbox &&
       aNameSpaceID == kNameSpaceID_None && mFrameLoader) {
@@ -212,7 +212,7 @@ HTMLIFrameElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
     mFrameLoader->ApplySandboxFlags(GetSandboxFlags());
   }
   return nsGenericHTMLFrameElement::AfterSetAttr(aNameSpaceID, aName, aValue,
-                                                 aNotify);
+                                                 aOldValue, aNotify);
 }
 
 nsresult
