@@ -63,13 +63,6 @@ public:
   void InsertMatchedNode(uint32_t aIndex, nsIContent* aContent);
   void ClearMatchedNodes();
 
-  virtual nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
-                           nsIAtom* aPrefix, const nsAString& aValue,
-                           bool aNotify) override;
-
-  virtual nsresult UnsetAttr(int32_t aNameSpaceID, nsIAtom* aAttribute,
-                             bool aNotify) override;
-
   // WebIDL methods.
   already_AddRefed<DistributedContentList> GetDistributedNodes();
   void GetSelect(nsAString& aSelect)
@@ -94,6 +87,11 @@ protected:
    * is a destination insertion point.
    */
   void UpdateFallbackDistribution();
+
+  virtual nsresult AfterSetAttr(int32_t aNamespaceID, nsIAtom* aName,
+                                const nsAttrValue* aValue,
+                                const nsAttrValue* aOldValue,
+                                bool aNotify) override;
 
   /**
    * An array of nodes from the ShadowRoot host that match the
