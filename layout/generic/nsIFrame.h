@@ -82,6 +82,7 @@ class nsLineList_iterator;
 class nsAbsoluteContainingBlock;
 class nsIContent;
 class nsContainerFrame;
+class nsPlaceholderFrame;
 
 struct nsPeekOffsetStruct;
 struct nsPoint;
@@ -729,6 +730,16 @@ public:
   inline nsContainerFrame* GetInFlowParent();
 
   /**
+   * Return the placeholder for this frame (which must be out-of-flow).
+   * @note this will only return non-null if |this| is the first-in-flow
+   * although we don't assert that here for legacy reasons.
+   */
+  inline nsPlaceholderFrame* GetPlaceholderFrame() const {
+    MOZ_ASSERT(HasAnyStateBits(NS_FRAME_OUT_OF_FLOW));
+    return GetProperty(PlaceholderFrameProperty());
+  }
+
+  /**
    * Set this frame's parent to aParent.
    * If the frame may have moved into or out of a scrollframe's
    * frame subtree, StickyScrollContainer::NotifyReparentedFrameAcrossScrollFrameBoundary
@@ -1046,6 +1057,8 @@ public:
                                       DestroyContentArray)
 
   NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(BidiDataProperty, mozilla::FrameBidiData)
+
+  NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(PlaceholderFrameProperty, nsPlaceholderFrame)
 
   mozilla::FrameBidiData GetBidiData()
   {

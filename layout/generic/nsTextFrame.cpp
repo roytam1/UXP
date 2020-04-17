@@ -1383,8 +1383,7 @@ BuildTextRuns(DrawTarget* aDrawTarget, nsTextFrame* aForFrame,
   nsIFrame* lineContainerChild = aForFrame;
   if (!aLineContainer) {
     if (aForFrame->IsFloatingFirstLetterChild()) {
-      lineContainerChild = aForFrame->PresContext()->PresShell()->
-        GetPlaceholderFrameFor(aForFrame->GetParent());
+      lineContainerChild = aForFrame->GetParent()->GetPlaceholderFrame();
     }
     aLineContainer = FindLineContainer(lineContainerChild);
   } else {

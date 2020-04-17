@@ -486,12 +486,6 @@ public:
   virtual nsCanvasFrame* GetCanvasFrame() const = 0;
 
   /**
-   * Gets the placeholder frame associated with the specified frame. This is
-   * a helper frame that forwards the request to the frame manager.
-   */
-  virtual nsIFrame* GetPlaceholderFrameFor(nsIFrame* aFrame) const = 0;
-
-  /**
    * Tell the pres shell that a frame needs to be marked dirty and needs
    * Reflow.  It's OK if this is an ancestor of the frame needing reflow as
    * long as the ancestor chain between them doesn't cross a reflow root.
