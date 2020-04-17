@@ -6220,8 +6220,8 @@ nsCSSFrameConstructor::ReconstructDocElementHierarchy()
     /* nothing to do */
     return;
   }
-  RecreateFramesForContent(rootElement, false, REMOVE_FOR_RECONSTRUCTION,
-                           nullptr);
+  RecreateFramesForContent(rootElement, InsertionKind::Sync,
+                           REMOVE_FOR_RECONSTRUCTION);
 }
 
 nsContainerFrame*
@@ -7014,7 +7014,8 @@ nsCSSFrameConstructor::ReframeTextIfNeeded(nsIContent* aParentContent,
   }
   NS_ASSERTION(!aContent->GetPrimaryFrame(),
                "Text node has a frame and NS_CREATE_FRAME_IF_NON_WHITESPACE");
-  ContentInserted(aParentContent, aContent, nullptr, false);
+  const bool allowLazyConstruction = true;
+  ContentInserted(aParentContent, aContent, nullptr, allowLazyConstruction);
 }
 
 // For inserts aChild should be valid, for appends it should be null.
@@ -7297,8 +7298,9 @@ nsCSSFrameConstructor::MaybeRecreateForFrameset(nsIFrame* aParentFrame,
          cur = cur->GetNextSibling()) {
       if (IsSpecialFramesetChild(cur)) {
         // Just reframe the parent, since framesets are weird like that.
-        RecreateFramesForContent(aParentFrame->GetContent(), false,
-                                 REMOVE_FOR_RECONSTRUCTION, nullptr);
+        RecreateFramesForContent(aParentFrame->GetContent(),
+                                 InsertionKind::Sync,
+                                 REMOVE_FOR_RECONSTRUCTION);
         return true;
       }
     }
@@ -7363,8 +7365,8 @@ nsCSSFrameConstructor::ContentAppended(nsIContent*     aContainer,
     //XXXsmaug This is super unefficient!
     nsIContent* bindingParent = aContainer->GetBindingParent();
     LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(bindingParent, false,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(bindingParent, InsertionKind::Sync,
+                             REMOVE_FOR_RECONSTRUCTION);
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -7406,8 +7408,9 @@ nsCSSFrameConstructor::ContentAppended(nsIContent*     aContainer,
 
   if (parentFrame->IsFrameOfType(nsIFrame::eMathML)) {
     LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(parentFrame->GetContent(), false,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(parentFrame->GetContent(),
+                             InsertionKind::Sync,
+                             REMOVE_FOR_RECONSTRUCTION);
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -7799,8 +7802,8 @@ nsCSSFrameConstructor::ContentRangeInserted(nsIContent*            aContainer,
     //XXXsmaug This is super unefficient!
     nsIContent* bindingParent = aContainer->GetBindingParent();
     LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(bindingParent, false,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(bindingParent, InsertionKind::Sync,
+                             REMOVE_FOR_RECONSTRUCTION);
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -7882,8 +7885,9 @@ nsCSSFrameConstructor::ContentRangeInserted(nsIContent*            aContainer,
     // and if so, proceed. But we'd have to extend nsFieldSetFrame
     // to locate this legend in the inserted frames and extract it.
     LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(insertion.mParentFrame->GetContent(), false,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(insertion.mParentFrame->GetContent(),
+                             InsertionKind::Sync,
+                             REMOVE_FOR_RECONSTRUCTION);
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -7897,8 +7901,9 @@ nsCSSFrameConstructor::ContentRangeInserted(nsIContent*            aContainer,
     // expensive to recreate the entire details frame, but it's the simplest way
     // to handle the insertion.
     LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(insertion.mParentFrame->GetContent(), false,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(insertion.mParentFrame->GetContent(),
+                             InsertionKind::Sync,
+                             REMOVE_FOR_RECONSTRUCTION);
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -7912,8 +7917,9 @@ nsCSSFrameConstructor::ContentRangeInserted(nsIContent*            aContainer,
 
   if (insertion.mParentFrame->IsFrameOfType(nsIFrame::eMathML)) {
     LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(insertion.mParentFrame->GetContent(), false,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(insertion.mParentFrame->GetContent(),
+                             InsertionKind::Sync,
+                             REMOVE_FOR_RECONSTRUCTION);
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -8236,21 +8242,25 @@ nsCSSFrameConstructor::ContentRangeInserted(nsIContent*            aContainer,
 }
 
 void
-nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
-                                      nsIContent*  aChild,
-                                      nsIContent*  aOldNextSibling,
-                                      RemoveFlags  aFlags,
-                                      bool*        aDidReconstruct,
-                                      nsIContent** aDestroyedFramesFor)
+nsCSSFrameConstructor::ContentRemoved(nsIContent* aContainer,
+                                      nsIContent* aChild,
+                                      nsIContent* aOldNextSibling,
+                                      RemoveFlags aFlags,
+                                      bool*       aDidReconstruct)
 {
+  MOZ_ASSERT(aChild);
+  MOZ_ASSERT(aDidReconstruct);
   AUTO_LAYOUT_PHASE_ENTRY_POINT(mPresShell->GetPresContext(), FrameC);
   NS_PRECONDITION(mUpdateCount != 0,
                   "Should be in an update while destroying frames");
 
   *aDidReconstruct = false;
-  if (aDestroyedFramesFor) {
-    *aDestroyedFramesFor = aChild;
-  }
+
+  // Only recreate sync if we're already in frame construction, that is,
+  // recreate async for XBL DOM changes, and normal content removals.
+  const InsertionKind insertionKind = (aFlags == REMOVE_FOR_RECONSTRUCTION)
+                                        ? InsertionKind::Sync
+                                        : InsertionKind::Async;
 
   nsPresContext* presContext = mPresShell->GetPresContext();
   MOZ_ASSERT(presContext, "Our presShell should have a valid presContext");
@@ -8292,22 +8302,21 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
   MOZ_ASSERT(!childFrame || !GetDisplayContentsStyleFor(aChild),
              "display:contents nodes shouldn't have a frame");
   if (!childFrame && GetDisplayContentsStyleFor(aChild)) {
-    nsIContent* ancestor = aContainer;
+    nsIContent* ancestor = aChild->GetFlattenedTreeParent();
     MOZ_ASSERT(ancestor, "display: contents on the root?");
     while (!ancestor->GetPrimaryFrame()) {
-      // FIXME(emilio): Should this use the flattened tree parent instead?
-      ancestor = ancestor->GetParent();
+      ancestor = ancestor->GetFlattenedTreeParent();
       MOZ_ASSERT(ancestor, "we can't have a display: contents subtree root!");
     }
 
     nsIFrame* ancestorFrame = ancestor->GetPrimaryFrame();
     if (ancestorFrame->GetProperty(nsIFrame::GenConProperty())) {
       *aDidReconstruct = true;
-      LAYOUT_PHASE_TEMP_EXIT();
 
       // XXXmats Can we recreate frames only for the ::after/::before content?
       // XXX Perhaps even only those that belong to the aChild sub-tree?
-      RecreateFramesForContent(ancestor, false, aFlags, aDestroyedFramesFor);
+      LAYOUT_PHASE_TEMP_EXIT();
+      RecreateFramesForContent(ancestor, insertionKind, aFlags);
       LAYOUT_PHASE_TEMP_REENTER();
       return;
     }
@@ -8316,7 +8325,7 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
     for (nsIContent* c = iter.GetNextChild(); c; c = iter.GetNextChild()) {
       if (c->GetPrimaryFrame() || GetDisplayContentsStyleFor(c)) {
         LAYOUT_PHASE_TEMP_EXIT();
-        ContentRemoved(aChild, c, nullptr, aFlags, aDidReconstruct, aDestroyedFramesFor);
+        ContentRemoved(aChild, c, nullptr, aFlags, aDidReconstruct);
         LAYOUT_PHASE_TEMP_REENTER();
         if (aFlags != REMOVE_DESTROY_FRAMES && *aDidReconstruct) {
           return;
@@ -8370,7 +8379,7 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
     nsIContent* bindingParent = aContainer->GetBindingParent();
     *aDidReconstruct = true;
     LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(bindingParent, false, aFlags, aDestroyedFramesFor);
+    RecreateFramesForContent(bindingParent, insertionKind, aFlags);
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -8384,14 +8393,10 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
 
     // See whether we need to remove more than just childFrame
     LAYOUT_PHASE_TEMP_EXIT();
-    nsIContent* container;
-    if (MaybeRecreateContainerForFrameRemoval(childFrame, aFlags, &container)) {
-      LAYOUT_PHASE_TEMP_REENTER();
-      MOZ_ASSERT(container);
+    if (MaybeRecreateContainerForFrameRemoval(
+          childFrame, insertionKind, aFlags)) {
       *aDidReconstruct = true;
-      if (aDestroyedFramesFor) {
-        *aDestroyedFramesFor = container;
-      }
+      LAYOUT_PHASE_TEMP_REENTER();
       return;
     }
     LAYOUT_PHASE_TEMP_REENTER();
@@ -8405,8 +8410,8 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
       // Just reframe the parent, since framesets are weird like that.
       *aDidReconstruct = true;
       LAYOUT_PHASE_TEMP_EXIT();
-      RecreateFramesForContent(parentFrame->GetContent(), false,
-                               aFlags, aDestroyedFramesFor);
+      RecreateFramesForContent(parentFrame->GetContent(), insertionKind,
+                               aFlags);
       LAYOUT_PHASE_TEMP_REENTER();
       return;
     }
@@ -8419,8 +8424,7 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
     if (possibleMathMLAncestor->IsFrameOfType(nsIFrame::eMathML)) {
       *aDidReconstruct = true;
       LAYOUT_PHASE_TEMP_EXIT();
-      RecreateFramesForContent(possibleMathMLAncestor->GetContent(),
-                               false, aFlags, aDestroyedFramesFor);
+      RecreateFramesForContent(parentFrame->GetContent(), insertionKind, aFlags);
       LAYOUT_PHASE_TEMP_REENTER();
       return;
     }
@@ -8436,15 +8440,14 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
         !AnyKidsNeedBlockParent(childFrame->GetNextSibling())) {
       *aDidReconstruct = true;
       LAYOUT_PHASE_TEMP_EXIT();
-      RecreateFramesForContent(grandparentFrame->GetContent(), true,
-                               aFlags, aDestroyedFramesFor);
+      RecreateFramesForContent(grandparentFrame->GetContent(), insertionKind,
+                               aFlags);
       LAYOUT_PHASE_TEMP_REENTER();
       return;
     }
 
 #ifdef ACCESSIBILITY
-    nsAccessibilityService* accService = nsIPresShell::AccService();
-    if (accService) {
+    if (nsAccessibilityService* accService = nsIPresShell::AccService()) {
       accService->ContentRemoved(mPresShell, aChild);
     }
 #endif
@@ -8547,6 +8550,9 @@ nsCSSFrameConstructor::ContentRemoved(nsIContent*  aContainer,
       // and hence it's adjacent to a block end.
       // If aOldNextSibling is null, then the text node before the node being
       // removed is the last node, and we don't need to worry about it.
+      //
+      // FIXME(emilio): This should probably use the lazy frame construction
+      // bits if possible instead of reframing it in place.
       if (aOldNextSibling) {
         nsIContent* prevSibling = aOldNextSibling->GetPreviousSibling();
         if (prevSibling && prevSibling->GetPreviousSibling()) {
@@ -8651,8 +8657,8 @@ nsCSSFrameConstructor::CharacterDataChanged(nsIContent* aContent,
                  "Bit should never be set on generated content");
 #endif
     LAYOUT_PHASE_TEMP_EXIT();
-    RecreateFramesForContent(aContent, false,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(aContent, InsertionKind::Sync,
+                             REMOVE_FOR_RECONSTRUCTION);
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -9315,7 +9321,8 @@ nsCSSFrameConstructor::MaybeRecreateFramesForElement(Element* aElement)
     }
   }
 
-  RecreateFramesForContent(aElement, false, REMOVE_FOR_RECONSTRUCTION, nullptr);
+  RecreateFramesForContent(aElement, InsertionKind::Sync,
+                           REMOVE_FOR_RECONSTRUCTION);
   return nullptr;
 }
 
@@ -9358,16 +9365,15 @@ FindPreviousNonWhitespaceSibling(nsIFrame* aFrame)
 }
 
 bool
-nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
-                                                             RemoveFlags aFlags,
-                                                             nsIContent** aDestroyedFramesFor)
+nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(
+  nsIFrame* aFrame,
+  InsertionKind aInsertionKind,
+  RemoveFlags aFlags)
 {
   NS_PRECONDITION(aFrame, "Must have a frame");
   NS_PRECONDITION(aFrame->GetParent(), "Frame shouldn't be root");
   NS_PRECONDITION(aFrame == aFrame->FirstContinuation(),
                   "aFrame not the result of GetPrimaryFrame()?");
-
-  *aDestroyedFramesFor = nullptr;
 
   if (IsFramePartOfIBSplit(aFrame)) {
     // The removal functions can't handle removal of an {ib} split directly; we
@@ -9381,17 +9387,15 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
     }
 #endif
 
-    ReframeContainingBlock(aFrame, aFlags, aDestroyedFramesFor);
+    ReframeContainingBlock(aFrame, aInsertionKind, aFlags);
     return true;
   }
 
   nsContainerFrame* insertionFrame = aFrame->GetContentInsertionFrame();
   if (insertionFrame && insertionFrame->GetType() == nsGkAtoms::legendFrame &&
       aFrame->GetParent()->GetType() == nsGkAtoms::fieldSetFrame) {
-    // When we remove the legend for a fieldset, we should reframe
-    // the fieldset to ensure another legend is used, if there is one
-    RecreateFramesForContent(aFrame->GetParent()->GetContent(), false,
-                             aFlags, aDestroyedFramesFor);
+    RecreateFramesForContent(aFrame->GetParent()->GetContent(), aInsertionKind,
+                             aFlags);
     return true;
   }
 
@@ -9415,9 +9419,7 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
       // When removing a summary, we should reframe the parent details frame to
       // ensure that another summary is used or the default summary is
       // generated.
-      RecreateFramesForContent(parent->GetContent(),
-                               false, REMOVE_FOR_RECONSTRUCTION,
-                               aDestroyedFramesFor);
+      RecreateFramesForContent(parent->GetContent(), aInsertionKind, aFlags);
       return true;
     }
   }
@@ -9440,10 +9442,7 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
         // Similar if we're a table-caption.
         (inFlowFrame->IsTableCaption() &&
          parent->GetChildList(nsIFrame::kCaptionList).FirstChild() == inFlowFrame)) {
-      // We're the first or last frame in the pseudo.  Need to reframe.
-      // Good enough to recreate frames for |parent|'s content
-      RecreateFramesForContent(parent->GetContent(), true, aFlags,
-                               aDestroyedFramesFor);
+      RecreateFramesForContent(parent->GetContent(), aInsertionKind, aFlags);
       return true;
     }
   }
@@ -9472,8 +9471,7 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
 #endif
       // Good enough to recreate frames for aFrame's parent's content; even if
       // aFrame's parent is a pseudo, that'll be the right content node.
-      RecreateFramesForContent(parent->GetContent(), true, aFlags,
-                               aDestroyedFramesFor);
+      RecreateFramesForContent(parent->GetContent(), aInsertionKind, aFlags);
       return true;
     }
   }
@@ -9489,8 +9487,7 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
     //    frames may be constructed or destroyed accordingly.
     // 2. The type of the first child of a ruby frame determines
     //    whether a pseudo ruby base container should exist.
-    RecreateFramesForContent(parent->GetContent(), true, aFlags,
-                             aDestroyedFramesFor);
+    RecreateFramesForContent(parent->GetContent(), aInsertionKind, aFlags);
     return true;
   }
 
@@ -9513,8 +9510,7 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
     }
 #endif // DEBUG
     // Recreate frames for the flex container (the removed frame's parent)
-    RecreateFramesForContent(parent->GetContent(), true, aFlags,
-                             aDestroyedFramesFor);
+    RecreateFramesForContent(parent->GetContent(), aInsertionKind, aFlags);
     return true;
   }
 
@@ -9532,8 +9528,8 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
     }
 #endif // DEBUG
     // Recreate frames for the flex container (the removed frame's grandparent)
-    RecreateFramesForContent(parent->GetParent()->GetContent(), true,
-                             aFlags, aDestroyedFramesFor);
+    RecreateFramesForContent(parent->GetParent()->GetContent(), aInsertionKind,
+                             aFlags);
     return true;
   }
 
@@ -9553,8 +9549,7 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
       !inFlowFrame->GetNextSibling() &&
       ((parent->GetPrevContinuation() && !parent->GetPrevInFlow()) ||
        (parent->GetNextContinuation() && !parent->GetNextInFlow()))) {
-    RecreateFramesForContent(parent->GetContent(), true, aFlags,
-                             aDestroyedFramesFor);
+    RecreateFramesForContent(parent->GetContent(), aInsertionKind, aFlags);
     return true;
   }
 
@@ -9590,18 +9585,18 @@ nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame,
   }
 #endif
 
-  ReframeContainingBlock(parent, aFlags, aDestroyedFramesFor);
+  ReframeContainingBlock(parent, aInsertionKind, aFlags);
   return true;
 }
 
 void
-nsCSSFrameConstructor::RecreateFramesForContent(nsIContent*  aContent,
-                                                bool         aAsyncInsert,
-                                                RemoveFlags  aFlags,
-                                                nsIContent** aDestroyedFramesFor)
+nsCSSFrameConstructor::RecreateFramesForContent(nsIContent* aContent,
+                                                InsertionKind aInsertionKind,
+                                                RemoveFlags aFlags)
 {
-  NS_PRECONDITION(!aAsyncInsert || aContent->IsElement(),
-                  "Can only insert elements async");
+  MOZ_ASSERT(aInsertionKind != InsertionKind::Async || aContent->IsElement());
+  MOZ_ASSERT(aContent);
+
   // If there is no document, we don't want to recreate frames for it.  (You
   // shouldn't generally be giving this method content without a document
   // anyway).
@@ -9635,8 +9630,8 @@ nsCSSFrameConstructor::RecreateFramesForContent(nsIContent*  aContent,
   if (frame) {
     nsIFrame* nonGeneratedAncestor = nsLayoutUtils::GetNonGeneratedAncestor(frame);
     if (nonGeneratedAncestor->GetContent() != aContent) {
-      return RecreateFramesForContent(nonGeneratedAncestor->GetContent(), aAsyncInsert,
-                                      aFlags, aDestroyedFramesFor);
+      return RecreateFramesForContent(nonGeneratedAncestor->GetContent(),
+                                      aInsertionKind, aFlags);
     }
 
     if (frame->GetStateBits() & NS_FRAME_ANONYMOUSCONTENTCREATOR_CONTENT) {
@@ -9656,8 +9651,8 @@ nsCSSFrameConstructor::RecreateFramesForContent(nsIContent*  aContent,
       if (ancestor->GetType() != nsGkAtoms::svgUseFrame) {
         NS_ASSERTION(aContent->IsInNativeAnonymousSubtree(),
                      "Why is NS_FRAME_ANONYMOUSCONTENTCREATOR_CONTENT set?");
-        return RecreateFramesForContent(ancestor->GetContent(), aAsyncInsert,
-                                        aFlags, aDestroyedFramesFor);
+        return RecreateFramesForContent(ancestor->GetContent(), aInsertionKind,
+                                        aFlags);
       }
     }
 
@@ -9668,18 +9663,12 @@ nsCSSFrameConstructor::RecreateFramesForContent(nsIContent*  aContent,
     // with native anonymous content from the editor.
     if (parent && parent->IsLeaf() && parentContent &&
         parentContent != aContent) {
-      return RecreateFramesForContent(parentContent, aAsyncInsert, aFlags,
-                                      aDestroyedFramesFor);
+      return RecreateFramesForContent(parentContent, aInsertionKind, aFlags);
     }
   }
 
-  nsIContent* container;
-  if (frame && MaybeRecreateContainerForFrameRemoval(frame, aFlags,
-                                                     &container)) {
-    MOZ_ASSERT(container);
-    if (aDestroyedFramesFor) {
-      *aDestroyedFramesFor = container;
-    }
+  if (frame &&
+      MaybeRecreateContainerForFrameRemoval(frame, aInsertionKind, aFlags)) {
     return;
   }
 
@@ -9692,25 +9681,25 @@ nsCSSFrameConstructor::RecreateFramesForContent(nsIContent*  aContent,
 
     // Need the nsIContent parent, which might be null here, since we need to
     // pass it to ContentInserted and ContentRemoved.
+    //
+    // FIXME(emilio): Do we need a strong ref here?
     nsCOMPtr<nsIContent> container = aContent->GetParent();
 
     // Remove the frames associated with the content object.
     bool didReconstruct;
     nsIContent* nextSibling = aContent->IsRootOfAnonymousSubtree() ?
       nullptr : aContent->GetNextSibling();
-    const bool reconstruct = aFlags != REMOVE_DESTROY_FRAMES;
-    RemoveFlags flags = reconstruct ? REMOVE_FOR_RECONSTRUCTION : aFlags;
-    ContentRemoved(container, aContent, nextSibling, flags,
-                   &didReconstruct, aDestroyedFramesFor);
-    if (reconstruct && !didReconstruct) {
-      // Now, recreate the frames associated with this content object. If
-      // ContentRemoved triggered reconstruction, then we don't need to do this
-      // because the frames will already have been built.
-      if (aAsyncInsert) {
+    ContentRemoved(container, aContent, nextSibling, aFlags, &didReconstruct);
+    if (!didReconstruct) {
+      if (aInsertionKind == InsertionKind::Async) {
         // XXXmats doesn't frame state need to be restored in this case too?
-        RestyleManager()->PostRestyleEvent(
-          aContent->AsElement(), nsRestyleHint(0), nsChangeHint_ReconstructFrame);
+        RestyleManager()->PostRestyleEvent(aContent->AsElement(),
+                                           nsRestyleHint(0),
+                                           nsChangeHint_ReconstructFrame);
       } else {
+        // Now, recreate the frames associated with this content object. If
+        // ContentRemoved triggered reconstruction, then we don't need to do this
+        // because the frames will already have been built.
         ContentInserted(container, aContent, mTempFrameTreeState, false);
       }
     }
@@ -9718,16 +9707,18 @@ nsCSSFrameConstructor::RecreateFramesForContent(nsIContent*  aContent,
 }
 
 void
-nsCSSFrameConstructor::DestroyFramesFor(nsIContent*  aContent,
-                                        nsIContent** aDestroyedFramesFor)
+nsCSSFrameConstructor::DestroyFramesFor(nsIContent* aContent,
+                                        bool* aDidReconstruct)
 {
   MOZ_ASSERT(aContent && aContent->GetParentNode());
 
-  bool didReconstruct;
   nsIContent* nextSibling =
     aContent->IsRootOfAnonymousSubtree() ? nullptr : aContent->GetNextSibling();
-  ContentRemoved(aContent->GetParent(), aContent, nextSibling,
-                 REMOVE_DESTROY_FRAMES, &didReconstruct, aDestroyedFramesFor);
+  ContentRemoved(aContent->GetParent(),
+                 aContent,
+                 nextSibling,
+                 REMOVE_DESTROY_FRAMES,
+                 aDidReconstruct);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -12281,8 +12272,8 @@ nsCSSFrameConstructor::WipeContainingBlock(nsFrameConstructorState& aState,
   if (aFrame->IsXULBoxFrame() &&
       !(aFrame->GetStateBits() & NS_STATE_BOX_WRAPS_KIDS_IN_BLOCK) &&
       aItems.AnyItemsNeedBlockParent()) {
-    RecreateFramesForContent(aFrame->GetContent(), true,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async,
+                             REMOVE_FOR_RECONSTRUCTION);
     return true;
   }
 
@@ -12301,8 +12292,8 @@ nsCSSFrameConstructor::WipeContainingBlock(nsFrameConstructorState& aState,
     const bool isWebkitBox = IsFlexContainerForLegacyBox(aFrame, frameType);
     if (aPrevSibling && IsAnonymousFlexOrGridItem(aPrevSibling) &&
         iter.item().NeedsAnonFlexOrGridItem(aState, isWebkitBox)) {
-      RecreateFramesForContent(aFrame->GetContent(), true,
-                               REMOVE_FOR_RECONSTRUCTION, nullptr);
+      RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async,
+                               REMOVE_FOR_RECONSTRUCTION);
       return true;
     }
 
@@ -12313,8 +12304,9 @@ nsCSSFrameConstructor::WipeContainingBlock(nsFrameConstructorState& aState,
       iter.SetToEnd();
       iter.Prev();
       if (iter.item().NeedsAnonFlexOrGridItem(aState, isWebkitBox)) {
-        RecreateFramesForContent(aFrame->GetContent(), true,
-                                 REMOVE_FOR_RECONSTRUCTION, nullptr);
+        RecreateFramesForContent(aFrame->GetContent(),
+                                 InsertionKind::Async,
+                                 REMOVE_FOR_RECONSTRUCTION);
         return true;
       }
     }
@@ -12344,8 +12336,9 @@ nsCSSFrameConstructor::WipeContainingBlock(nsFrameConstructorState& aState,
                                                   isWebkitBox)) {
       // We hit something that _doesn't_ need an anonymous flex item!
       // Rebuild the flex container to bust it out.
-      RecreateFramesForContent(containerFrame->GetContent(), true,
-                               REMOVE_FOR_RECONSTRUCTION, nullptr);
+      RecreateFramesForContent(containerFrame->GetContent(),
+                               InsertionKind::Async,
+                               REMOVE_FOR_RECONSTRUCTION);
       return true;
     }
 
@@ -12369,8 +12362,8 @@ nsCSSFrameConstructor::WipeContainingBlock(nsFrameConstructorState& aState,
     // We want to optimize it better, and avoid reframing as much as
     // possible. But given the cases above, and the fact that a ruby
     // usually won't be very large, it should be fine to reframe it.
-    RecreateFramesForContent(aFrame->GetContent(), true,
-                             REMOVE_FOR_RECONSTRUCTION, nullptr);
+    RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async,
+                             REMOVE_FOR_RECONSTRUCTION);
     return true;
   }
 
@@ -12536,8 +12529,8 @@ nsCSSFrameConstructor::WipeContainingBlock(nsFrameConstructorState& aState,
     if (!aItems.AllWantParentType(parentType)) {
       // Reframing aFrame->GetContent() is good enough, since the content of
       // table pseudo-frames is the ancestor content.
-      RecreateFramesForContent(aFrame->GetContent(), true,
-                               REMOVE_FOR_RECONSTRUCTION, nullptr);
+      RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async,
+                               REMOVE_FOR_RECONSTRUCTION);
       return true;
     }
   }
@@ -12625,15 +12618,15 @@ nsCSSFrameConstructor::WipeContainingBlock(nsFrameConstructorState& aState,
            static_cast<void*>(blockContent));
   }
 #endif
-  RecreateFramesForContent(blockContent, true, REMOVE_FOR_RECONSTRUCTION,
-                           nullptr);
+  RecreateFramesForContent(blockContent, InsertionKind::Async,
+                           REMOVE_FOR_RECONSTRUCTION);
   return true;
 }
 
 void
-nsCSSFrameConstructor::ReframeContainingBlock(nsIFrame*    aFrame,
-                                              RemoveFlags  aFlags,
-                                              nsIContent** aDestroyedFramesFor)
+nsCSSFrameConstructor::ReframeContainingBlock(nsIFrame* aFrame,
+                                              InsertionKind aInsertionKind,
+                                              RemoveFlags aFlags)
 {
 
 #ifdef DEBUG
@@ -12669,20 +12662,22 @@ nsCSSFrameConstructor::ReframeContainingBlock(nsIFrame*    aFrame,
     // so GetFloatContainingBlock(aFrame) has been removed
 
     // And get the containingBlock's content
-    nsCOMPtr<nsIContent> blockContent = containingBlock->GetContent();
-    if (blockContent) {
+    if (nsIContent* blockContent = containingBlock->GetContent()) {
 #ifdef DEBUG
       if (gNoisyContentUpdates) {
         printf("  ==> blockContent=%p\n", static_cast<void*>(blockContent));
       }
 #endif
-      return RecreateFramesForContent(blockContent, true, aFlags, aDestroyedFramesFor);
+      RecreateFramesForContent(blockContent->AsElement(), aInsertionKind,
+                               REMOVE_FOR_RECONSTRUCTION);
+      return;
     }
   }
 
   // If we get here, we're screwed!
-  return RecreateFramesForContent(mPresShell->GetDocument()->GetRootElement(),
-                                  true, aFlags, nullptr);
+  RecreateFramesForContent(mPresShell->GetDocument()->GetRootElement(),
+                           aInsertionKind,
+                           REMOVE_FOR_RECONSTRUCTION);
 }
 
 void
