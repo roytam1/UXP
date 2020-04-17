@@ -102,6 +102,7 @@
 #include "nsHostObjectProtocolHandler.h"
 #include "nsHtml5Module.h"
 #include "nsHtml5StringParser.h"
+#include "nsHTMLTags.h"
 #include "nsIAddonPolicyService.h"
 #include "nsIAnonymousContentCreator.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
@@ -500,6 +501,8 @@ nsContentUtils::Init()
 
     return NS_OK;
   }
+
+  nsHTMLTags::AddRefTable();
 
   sNameSpaceManager = nsNameSpaceManager::GetInstance();
   NS_ENSURE_TRUE(sNameSpaceManager, NS_ERROR_OUT_OF_MEMORY);
@@ -1926,6 +1929,8 @@ void
 nsContentUtils::Shutdown()
 {
   sInitialized = false;
+
+  nsHTMLTags::ReleaseTable();
 
   NS_IF_RELEASE(sContentPolicyService);
   sTriedToGetContentPolicy = false;
