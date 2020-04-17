@@ -544,7 +544,7 @@ public:
    *
    * Note that this may destroy frames for an ancestor instead.
    */
-  virtual void DestroyFramesFor(mozilla::dom::Element* aElement) = 0;
+  virtual void DestroyFramesForAndRestyle(mozilla::dom::Element* aElement) = 0;
 
   /**
    * Recreates the frames for a node

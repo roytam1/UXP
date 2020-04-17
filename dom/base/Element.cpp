@@ -1119,7 +1119,7 @@ Element::CreateShadowRoot(ErrorResult& aError)
 
   if (nsIDocument* doc = GetComposedDoc()) {
     if (nsIPresShell* shell = doc->GetShell()) {
-      shell->DestroyFramesFor(this);
+      shell->DestroyFramesForAndRestyle(this);
       MOZ_ASSERT(!shell->FrameManager()->GetDisplayContentsStyleFor(this));
     }
   }

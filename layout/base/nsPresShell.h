@@ -139,7 +139,7 @@ public:
   virtual bool IsSafeToFlush() const override;
   virtual void FlushPendingNotifications(mozFlushType aType) override;
   virtual void FlushPendingNotifications(mozilla::ChangesToFlush aType) override;
-  virtual void DestroyFramesFor(mozilla::dom::Element* aElement) override;
+  virtual void DestroyFramesForAndRestyle(mozilla::dom::Element* aElement) override;
 
   /**
    * Recreates the frames for a node
