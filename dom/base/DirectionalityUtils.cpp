@@ -728,7 +728,7 @@ WalkDescendantsResetAutoDirection(Element* aElement)
 {
   nsIContent* child = aElement->GetFirstChild();
   while (child) {
-    if (child->HasDirAuto()) {
+    if (child->IsElement() && child->AsElement()->HasDirAuto()) {
       child = child->GetNextNonChildNode(aElement);
       continue;
     }
@@ -791,7 +791,7 @@ WalkDescendantsClearAncestorDirAuto(Element* aElement)
 {
   nsIContent* child = aElement->GetFirstChild();
   while (child) {
-    if (child->HasDirAuto()) {
+    if (child->IsElement() && child->AsElement()->HasDirAuto()) {
       child = child->GetNextNonChildNode(aElement);
       continue;
     }

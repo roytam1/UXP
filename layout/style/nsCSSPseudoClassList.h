@@ -211,6 +211,19 @@ CSS_STATE_PSEUDO_CLASS(mozMathIncrementScriptLevel,
                        ":-moz-math-increment-script-level", 0, "",
                        NS_EVENT_STATE_INCREMENT_SCRIPT_LEVEL)
 
+CSS_STATE_PSEUDO_CLASS(mozHasDirAttr, ":-moz-has-dir-attr",
+                       CSS_PSEUDO_CLASS_ENABLED_IN_UA_SHEETS, "",
+                       NS_EVENT_STATE_HAS_DIR_ATTR)
+CSS_STATE_PSEUDO_CLASS(mozDirAttrLTR, ":-moz-dir-attr-ltr",
+                       CSS_PSEUDO_CLASS_ENABLED_IN_UA_SHEETS, "",
+                       NS_EVENT_STATE_DIR_ATTR_LTR)
+CSS_STATE_PSEUDO_CLASS(mozDirAttrRTL, ":-moz-dir-attr-rtl",
+                       CSS_PSEUDO_CLASS_ENABLED_IN_UA_SHEETS, "",
+                       NS_EVENT_STATE_DIR_ATTR_RTL)
+CSS_STATE_PSEUDO_CLASS(mozDirAttrLikeAuto, ":-moz-dir-attr-like-auto",
+                       CSS_PSEUDO_CLASS_ENABLED_IN_UA_SHEETS, "",
+                       NS_EVENT_STATE_DIR_ATTR_LIKE_AUTO)
+
 // CSS 3 UI
 // http://www.w3.org/TR/2004/CR-css3-ui-20040511/#pseudo-classes
 CSS_STATE_PSEUDO_CLASS(required, ":required", 0, "", NS_EVENT_STATE_REQUIRED)

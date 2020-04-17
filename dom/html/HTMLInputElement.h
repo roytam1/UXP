@@ -1122,7 +1122,7 @@ protected:
    */
   nsresult SetDefaultValueAsValue();
 
-  virtual void SetDirectionIfAuto(bool aAuto, bool aNotify);
+  void SetDirectionFromValue(bool aNotify);
 
   /**
    * Return if an element should have a specific validity UI

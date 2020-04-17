@@ -256,6 +256,23 @@ public:
   void ClearStyleStateLocks();
 
   /**
+   * Accessors for the state of our dir attribute.
+   */
+  bool HasDirAuto() const
+  {
+    return State().HasState(NS_EVENT_STATE_DIR_ATTR_LIKE_AUTO);
+  }
+
+  /**
+   * Elements with dir="rtl" or dir="ltr".
+   */
+  bool HasFixedDir() const
+  {
+    return State().HasAtLeastOneOfStates(NS_EVENT_STATE_DIR_ATTR_LTR |
+                                         NS_EVENT_STATE_DIR_ATTR_RTL);
+  }
+
+  /**
    * Get the inline style declaration, if any, for this element.
    */
   virtual DeclarationBlock* GetInlineStyleDeclaration();
@@ -380,15 +397,6 @@ public:
 
   bool GetBindingURL(nsIDocument *aDocument, css::URLValue **aResult);
 
-  // The bdi element defaults to dir=auto if it has no dir attribute set.
-  // Other elements will only have dir=auto if they have an explicit dir=auto,
-  // which will mean that HasValidDir() returns true but HasFixedDir() returns
-  // false
-  inline bool HasDirAuto() const {
-    return (!HasFixedDir() &&
-            (HasValidDir() || IsHTMLElement(nsGkAtoms::bdi)));
-  }
-
   Directionality GetComputedDirectionality() const;
 
   inline Element* GetFlattenedTreeParentElementForStyle() const;
@@ -501,6 +509,16 @@ protected:
     RemoveStatesSilently(aStates);
     NotifyStateChange(aStates);
   }
+  virtual void ToggleStates(EventStates aStates, bool aNotify)
+  {
+    NS_PRECONDITION(!aStates.HasAtLeastOneOfStates(INTRINSIC_STATES),
+                    "Should only be removing externally-managed states here");
+    mState ^= aStates;
+    if (aNotify) {
+      NotifyStateChange(aStates);
+    }
+  }
+
 public:
   virtual void UpdateEditableState(bool aNotify) override;
 
