@@ -1237,7 +1237,7 @@ TextEditor::GetAndInitDocEncoder(const nsAString& aFormatType,
   nsCOMPtr<nsIDocumentEncoder> docEncoder (do_CreateInstance(formatType.get(), &rv));
   NS_ENSURE_SUCCESS(rv, rv);
 
-  nsCOMPtr<nsIDOMDocument> domDoc = do_QueryReferent(mDocWeak);
+  nsCOMPtr<nsIDOMDocument> domDoc = GetDOMDocument();
   NS_ASSERTION(domDoc, "Need a document");
 
   rv = docEncoder->Init(domDoc, aFormatType, aFlags);
