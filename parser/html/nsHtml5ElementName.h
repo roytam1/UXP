@@ -596,7 +596,6 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_FEDROPSHADOW;
     static nsHtml5ElementName* ELT_MROW;
     static nsHtml5ElementName* ELT_MATRIXROW;
-    static nsHtml5ElementName* ELT_SHADOW;
     static nsHtml5ElementName* ELT_VIEW;
     static nsHtml5ElementName* ELT_APPROX;
     static nsHtml5ElementName* ELT_FECOLORMATRIX;
