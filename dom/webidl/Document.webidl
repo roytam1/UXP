@@ -271,13 +271,6 @@ partial interface Document {
   attribute EventHandler onpointerlockerror;
 };
 
-//http://dvcs.w3.org/hg/webcomponents/raw-file/tip/spec/custom/index.html#dfn-document-register
-partial interface Document {
-    // this is deprecated from CustomElements v0
-    [Throws, Func="CustomElementRegistry::IsCustomElementEnabled"]
-    object registerElement(DOMString name, optional ElementRegistrationOptions options);
-};
-
 // https://w3c.github.io/page-visibility/#extensions-to-the-document-interface
 partial interface Document {
   [Pref="dom.visibilityAPI.enabled"]
