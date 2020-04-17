@@ -5631,7 +5631,7 @@ nsIContent* HTMLMediaElement::GetNextSource()
                 "Should only iterate over direct children");
 #endif
 
-    int32_t startOffset = 0;
+    uint32_t startOffset = 0;
     rv = mSourcePointer->GetStartOffset(&startOffset);
     NS_ENSURE_SUCCESS(rv, nullptr);
 

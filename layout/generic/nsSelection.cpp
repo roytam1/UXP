@@ -4119,13 +4119,15 @@ Selection::GetType(int16_t* aType)
 static inline bool
 RangeMatchesBeginPoint(nsRange* aRange, nsINode* aNode, int32_t aOffset)
 {
-  return aRange->GetStartParent() == aNode && aRange->StartOffset() == aOffset;
+  return aRange->GetStartParent() == aNode &&
+         static_cast<int32_t>(aRange->StartOffset()) == aOffset;
 }
 
 static inline bool
 RangeMatchesEndPoint(nsRange* aRange, nsINode* aNode, int32_t aOffset)
 {
-  return aRange->GetEndParent() == aNode && aRange->EndOffset() == aOffset;
+  return aRange->GetEndParent() == aNode &&
+         static_cast<int32_t>(aRange->EndOffset()) == aOffset;
 }
 
 // Selection::EqualsRangeAtPoint
