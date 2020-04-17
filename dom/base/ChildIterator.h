@@ -36,22 +36,19 @@ class ExplicitChildIterator
 {
 public:
   explicit ExplicitChildIterator(const nsIContent* aParent,
-                                 bool aStartAtBeginning = true)
-    : mParent(aParent),
-      mChild(nullptr),
-      mDefaultChild(nullptr),
-      mIndexInInserted(0),
-      mIsFirst(aStartAtBeginning)
-  {
-  }
+                                 bool aStartAtBeginning = true);
 
   ExplicitChildIterator(const ExplicitChildIterator& aOther)
-    : mParent(aOther.mParent), mChild(aOther.mChild),
+    : mParent(aOther.mParent),
+      mParentAsSlot(aOther.mParentAsSlot),
+      mChild(aOther.mChild),
       mDefaultChild(aOther.mDefaultChild),
       mIndexInInserted(aOther.mIndexInInserted), mIsFirst(aOther.mIsFirst) {}
 
   ExplicitChildIterator(ExplicitChildIterator&& aOther)
-    : mParent(aOther.mParent), mChild(aOther.mChild),
+    : mParent(aOther.mParent),
+      mParentAsSlot(aOther.mParentAsSlot),
+      mChild(aOther.mChild),
       mDefaultChild(aOther.mDefaultChild),
       mIndexInInserted(aOther.mIndexInInserted), mIsFirst(aOther.mIsFirst) {}
 
@@ -97,6 +94,10 @@ protected:
   // if there is a binding attached to the original parent, mParent points to
   // the <xbl:content> element for the binding.
   const nsIContent* mParent;
+
+  // If parent is a slot element, this points to the parent as HTMLSlotElement,
+  // otherwise, it's null.
+  const HTMLSlotElement* mParentAsSlot;
 
   // The current child. When we encounter an insertion point,
   // mChild remains as the insertion point whose content we're iterating (and
