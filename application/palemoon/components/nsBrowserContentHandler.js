@@ -279,7 +279,7 @@ function doSearch(searchTerm, cmdLine) {
                            sa);
 }
 
-function nsBrowserContentHandler() { }
+function nsBrowserContentHandler() {}
 nsBrowserContentHandler.prototype = {
   classID: Components.ID("{5d0ce354-df01-421a-83fb-7ead0990c24e}"),
 
@@ -448,7 +448,7 @@ nsBrowserContentHandler.prototype = {
             cmdLine.preventDefault = true;
           }
         } catch(e) {
-        Components.utils.reportError(e);
+          Components.utils.reportError(e);
         }
       }
     }
@@ -570,8 +570,7 @@ nsBrowserContentHandler.prototype = {
             break;
         }
       }
-    } catch(ex) {
-    }
+    } catch(ex) {}
 
     // formatURLPref might return "about:blank" if getting the pref fails
     if (overridePage == "about:blank") {
@@ -623,8 +622,7 @@ nsBrowserContentHandler.prototype = {
         if (height) {
           this.mFeatures += ",height=" + height;
         }
-      } catch(e) {
-      }
+      } catch(e) {}
 
       // The global PB Service consumes this flag, so only eat it in per-window
       // PB builds.
@@ -702,7 +700,7 @@ function handURIToExistingBrowser(uri, location, cmdLine, forcePrivate) {
                nsIBrowserDOMWindow.OPEN_EXTERNAL);
 }
 
-function nsDefaultCommandLineHandler() { }
+function nsDefaultCommandLineHandler() {}
 nsDefaultCommandLineHandler.prototype = {
   classID: Components.ID("{47cd0651-b1be-4a0f-b5c4-10e5a573ef71}"),
 
@@ -738,7 +736,7 @@ nsDefaultCommandLineHandler.prototype = {
         var dir = fl.get("ProfD", Components.interfaces.nsILocalFile);
         this._haveProfile = true;
       } catch(e) {
-        while ((ar = cmdLine.handleFlagWithParam("url", false))) { }
+        while ((ar = cmdLine.handleFlagWithParam("url", false))) {}
         cmdLine.preventDefault = true;
       }
     }
@@ -780,8 +778,7 @@ nsDefaultCommandLineHandler.prototype = {
         try {
           handURIToExistingBrowser(urilist[0], nsIBrowserDOMWindow.OPEN_DEFAULTWINDOW, cmdLine);
           return;
-        } catch(e) {
-        }
+        } catch(e) {}
       }
 
       var URLlist = urilist.filter(shouldLoadURI).map(function(u) u.spec);

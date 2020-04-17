@@ -32,7 +32,7 @@ function init(aEvent)
         Components.utils.reportError(ex);
       }
     }
-  } catch (e) {
+  } catch(e) {
     // Pref is unset
   }
 

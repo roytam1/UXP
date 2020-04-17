@@ -77,7 +77,7 @@ XPCOMUtils.defineLazyGetter(this, "gPrefService", function() {
 });
 
 this.__defineGetter__("AddonManager", function() {
-  let tmp = { };
+  let tmp = {};
   Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
   return this.AddonManager = tmp.AddonManager;
 });
@@ -95,13 +95,13 @@ XPCOMUtils.defineLazyModuleGetter(this, "Weave", "resource://services-sync/main.
 #endif
 
 XPCOMUtils.defineLazyGetter(this, "PopupNotifications", function() {
-  let tmp = { };
+  let tmp = {};
   Cu.import("resource:///modules/PopupNotifications.jsm", tmp);
   try {
     return new tmp.PopupNotifications(gBrowser,
                                       document.getElementById("notification-popup"),
                                       document.getElementById("notification-popup-box"));
-  } catch (ex) {
+  } catch(ex) {
     Cu.reportError(ex);
     return null;
   }
@@ -181,8 +181,9 @@ function pageShowEventHandlers(persisted) {
   // The PluginClickToPlay events are not fired when navigating using the
   // BF cache. |persisted| is true when the page is loaded from the
   // BF cache, so this code reshows the notification if necessary.
-  if (persisted)
+  if (persisted) {
     gPluginHandler.reshowClickToPlayNotification();
+  }
 }
 
 function UpdateBackForwardCommands(aWebNavigation) {
@@ -673,8 +674,7 @@ var gPopupBlockerObserver = {
     var host = "";
     try {
       host = gBrowser.currentURI.host;
-    } catch(e) {
-    }
+    } catch(e) {}
 
     var bundlePreferences = document.getElementById("bundle_preferences");
     var params = { blockVisible   : false,
@@ -1041,8 +1041,7 @@ var gBrowserInit = {
         // so that we don't disrupt startup
         try {
           gBrowser.loadTabs(specs, false, true);
-        } catch(e) {
-        }
+        } catch(e) {}
       } else if (uriToLoad instanceof XULElement) {
         // swap the given tab with the default about:blank tab and then close
         // the original tab in the other window.
@@ -1159,7 +1158,7 @@ var gBrowserInit = {
 
     // Bug 666804 - NetworkPrioritizer support for e10s
     if (!gMultiProcessBrowser) {
-      let NP = { };
+      let NP = {};
       Cu.import("resource:///modules/NetworkPrioritizer.jsm", NP);
       NP.trackBrowserWindow(window);
     }
@@ -1197,7 +1196,7 @@ var gBrowserInit = {
     setTimeout(function() {
       try {
         Services.logins;
-      } catch (ex) {
+      } catch(ex) {
         Cu.reportError(ex);
       }
     }, 3000);
@@ -1299,7 +1298,7 @@ var gBrowserInit = {
     try {
       const startupCrashEndDelay = 30 * 1000;
       setTimeout(Services.startup.trackStartupCrashEnd, startupCrashEndDelay);
-    } catch (ex) {
+    } catch(ex) {
       Cu.reportError("Could not end startup crash tracking: " + ex);
     }
 
@@ -1372,8 +1371,7 @@ var gBrowserInit = {
     try {
       gBrowser.removeProgressListener(window.XULBrowserWindow);
       gBrowser.removeTabsProgressListener(window.TabsProgressListener);
-    } catch (ex) {
-    }
+    } catch(ex) {}
 
     BookmarkingUI.uninit();
 
@@ -1431,13 +1429,13 @@ var gBrowserInit = {
       try {
         gPrefService.removeObserver(gURLBarSettings.prefSuggest, gURLBarSettings);
         gPrefService.removeObserver(gURLBarSettings.prefKeyword, gURLBarSettings);
-      } catch (ex) {
+      } catch(ex) {
         Cu.reportError(ex);
       }
 
       try {
         gPrefService.removeObserver(gHomeButton.prefDomain, gHomeButton);
-      } catch (ex) {
+      } catch(ex) {
         Cu.reportError(ex);
       }
 
@@ -1507,8 +1505,7 @@ var gBrowserInit = {
           let dockSupport = Cc["@mozilla.org/widget/macdocksupport;1"]
                               .getService(Ci.nsIMacDockSupport);
           dockSupport.dockMenu = nativeMenu;
-        } catch (e) {
-        }
+        } catch(e) {}
       }
     }
 
@@ -1608,55 +1605,55 @@ var nonBrowserWindowShutdown       = gBrowserInit.nonBrowserWindowShutdown.bind(
 
 function HandleAppCommandEvent(evt) {
   switch (evt.command) {
-  case "Back":
-    BrowserBack();
-    break;
-  case "Forward":
-    BrowserForward();
-    break;
-  case "Reload":
-    BrowserReloadSkipCache();
-    break;
-  case "Stop":
-    if (XULBrowserWindow.stopCommand.getAttribute("disabled") != "true") {
-      BrowserStop();
-    }
-    break;
-  case "Search":
-    BrowserSearch.webSearch();
-    break;
-  case "Bookmarks":
-    toggleSidebar('viewBookmarksSidebar');
-    break;
-  case "Home":
-    BrowserHome();
-    break;
-  case "New":
-    BrowserOpenTab();
-    break;
-  case "Close":
-    BrowserCloseTabOrWindow();
-    break;
-  case "Find":
-    gFindBar.onFindCommand();
-    break;
-  case "Help":
-    openHelpLink('firefox-help');
-    break;
-  case "Open":
-    BrowserOpenFileWindow();
-    break;
-  case "Print":
-    PrintUtils.print();
-    break;
-  case "Save":
-    saveDocument(window.content.document);
-    break;
-  case "SendMail":
-    MailIntegration.sendLinkForWindow(window.content);
-    break;
-  default:
-    return;
+    case "Back":
+      BrowserBack();
+      break;
+    case "Forward":
+      BrowserForward();
+      break;
+    case "Reload":
+      BrowserReloadSkipCache();
+      break;
+    case "Stop":
+      if (XULBrowserWindow.stopCommand.getAttribute("disabled") != "true") {
+        BrowserStop();
+      }
+      break;
+    case "Search":
+      BrowserSearch.webSearch();
+      break;
+    case "Bookmarks":
+      toggleSidebar('viewBookmarksSidebar');
+      break;
+    case "Home":
+      BrowserHome();
+      break;
+    case "New":
+      BrowserOpenTab();
+      break;
+    case "Close":
+      BrowserCloseTabOrWindow();
+      break;
+    case "Find":
+      gFindBar.onFindCommand();
+      break;
+    case "Help":
+      openHelpLink('firefox-help');
+      break;
+    case "Open":
+      BrowserOpenFileWindow();
+      break;
+    case "Print":
+      PrintUtils.print();
+      break;
+    case "Save":
+      saveDocument(window.content.document);
+      break;
+    case "SendMail":
+      MailIntegration.sendLinkForWindow(window.content);
+      break;
+    default:
+      return;
   }
   evt.stopPropagation();
   evt.preventDefault();
@@ -1692,8 +1689,7 @@ function BrowserForward(aEvent) {
   if (where == "current") {
     try {
       gBrowser.goForward();
-    } catch(ex) {
-    }
+    } catch(ex) {}
   } else {
     duplicateTabIn(gBrowser.selectedTab, where, 1);
   }
@@ -1705,8 +1701,7 @@ function BrowserBack(aEvent) {
   if (where == "current") {
     try {
       gBrowser.goBack();
-    } catch(ex) {
-    }
+    } catch(ex) {}
   } else {
     duplicateTabIn(gBrowser.selectedTab, where, -1);
   }
@@ -1715,24 +1710,24 @@ function BrowserBack(aEvent) {
 function BrowserHandleBackspace()
 {
   switch (gPrefService.getIntPref("browser.backspace_action")) {
-  case 0:
-    BrowserBack();
-    break;
-  case 1:
-    goDoCommand("cmd_scrollPageUp");
-    break;
+    case 0:
+      BrowserBack();
+      break;
+    case 1:
+      goDoCommand("cmd_scrollPageUp");
+      break;
   }
 }
 
 function BrowserHandleShiftBackspace()
 {
   switch (gPrefService.getIntPref("browser.backspace_action")) {
-  case 0:
-    BrowserForward();
-    break;
-  case 1:
-    goDoCommand("cmd_scrollPageDown");
-    break;
+    case 0:
+      BrowserForward();
+      break;
+    case 1:
+      goDoCommand("cmd_scrollPageDown");
+      break;
   }
 }
 
@@ -1817,8 +1812,7 @@ function loadOneOrMoreURIs(aURIString) {
   // so that we don't disrupt startup
   try {
     gBrowser.loadTabs(aURIString.split("|"), false, true);
-  } catch(e) {
-  }
+  } catch(e) {}
 }
 
 function focusAndSelectUrlBar() {
@@ -1901,8 +1895,7 @@ var gLastOpenDirectory = {
                                                      Ci.nsILocalFile);
         if (!this._lastDir.exists())
           this._lastDir = null;
-      } catch(e) {
-      }
+      } catch(e) {}
     }
     return this._lastDir;
   },
@@ -1939,8 +1932,7 @@ function BrowserOpenFileWindow() {
             gLastOpenDirectory.path =
               fp.file.parent.QueryInterface(Ci.nsILocalFile);
           }
-        } catch (ex) {
-        }
+        } catch(ex) {}
         openUILinkIn(fp.fileURL.spec, "current");
       }
     };
@@ -1952,8 +1944,7 @@ function BrowserOpenFileWindow() {
                      nsIFilePicker.filterHTML);
     fp.displayDirectory = gLastOpenDirectory.path;
     fp.open(fpCallback);
-  } catch (ex) {
-  }
+  } catch(ex) {}
 }
 
 function BrowserCloseTabOrWindow() {
@@ -1998,8 +1989,7 @@ function loadURI(uri, referrer, postData, allowThirdPartyFixup, referrerPolicy,
                                      originPrincipal: originPrincipal,
                                      triggeringPrincipal: triggeringPrincipal,
                                      forceAboutBlankViewerInCurrent: forceAboutBlankViewerInCurrent });
-  } catch (e) {
-  }
+  } catch(e) {}
 }
 
 /**
@@ -2069,8 +2059,7 @@ function getShortcutOrURIAndPostData(url, callback = null) {
         try {
           // makeURI() throws if URI is invalid.
           uri = makeURI(shortcutURL);
-        } catch (ex) {
-        }
+        } catch(ex) {}
 
         if (uri) {
           // Try to get the saved character-set.
@@ -2177,8 +2166,7 @@ function readFromClipboard()
       data = data.value.QueryInterface(Components.interfaces.nsISupportsString);
       url = data.data.substring(0, dataLen.value / 2);
     }
-  } catch (ex) {
-  }
+  } catch(ex) {}
 
   return url;
 }
@@ -2255,8 +2243,7 @@ function URLBarSetURI(aURI) {
     // Strip off "wyciwyg://" and passwords for the location bar
     try {
       uri = Services.uriFixup.createExposableURI(uri);
-    } catch (e) {
-    }
+    } catch(e) {}
 
     // Replace initial page URIs with an empty string
     // only if there's no opener (bug 370555).
@@ -2306,8 +2293,7 @@ function losslessDecodeURI(aURI) {
                   //    by the location bar (bug 410726).
                   .replace(/%(?!3B|2F|3F|3A|40|26|3D|2B|24|2C|23)|[\r\n\t]/ig,
                            encodeURIComponent);
-      } catch (e) {
-      }
+      } catch(e) {}
     }
   }
   
@@ -2554,7 +2540,7 @@ var BrowserOnClick = {
             case 1 : // Pre-populate
               params.location = aOwnerDoc.location.href;
           }
-        } catch (e) {
+        } catch(e) {
           Components.utils.reportError("Couldn't get ssl_override pref: " + e);
         }
 
@@ -2692,13 +2678,11 @@ function BrowserReloadWithFlags(reloadFlags) {
     var sh = webNav.sessionHistory;
     if (sh)
       webNav = sh.QueryInterface(nsIWebNavigation);
-  } catch(e) {
-  }
+  } catch(e) {}
 
   try {
     webNav.reload(reloadFlags);
-  } catch(e) {
-  }
+  } catch(e) {}
 }
 
 var PrintPreviewListener = {
@@ -2757,7 +2741,7 @@ var PrintPreviewListener = {
   },
 
   _hideChrome: function() {
-    this._chromeState = { };
+    this._chromeState = {};
 
     var sidebar = document.getElementById("sidebar-box");
     this._chromeState.sidebarOpen = !sidebar.hidden;
@@ -2876,7 +2860,7 @@ function openHomeDialog(aURL) {
       homepageStr.data = aURL;
       gPrefService.setComplexValue("browser.startup.homepage",
                                    Components.interfaces.nsISupportsString, homepageStr);
-    } catch (ex) {
+    } catch(ex) {
       dump("Failed to set the home page.\n"+ex+"\n");
     }
   }
@@ -2884,20 +2868,19 @@ function openHomeDialog(aURL) {
 
 var bookmarksButtonObserver = {
   onDrop: function(aEvent) {
-    let name = { };
+    let name = {};
     let url = browserDragAndDrop.drop(aEvent, name);
     try {
-      PlacesUIUtils.showBookmarkDialog({ action: "add"
-                                       , type: "bookmark"
-                                       , uri: makeURI(url)
-                                       , title: name
-                                       , hiddenRows: [ "description"
-                                                     , "location"
-                                                     , "loadInSidebar"
-                                                     , "keyword" ]
+      PlacesUIUtils.showBookmarkDialog({ action: "add",
+                                         type: "bookmark",
+                                         uri: makeURI(url),
+                                         title: name,
+                                         hiddenRows: [ "description",
+                                                       "location",
+                                                       "loadInSidebar",
+                                                       "keyword" ]
                                        }, window);
-    } catch(ex) {
-    }
+    } catch(ex) {}
   },
 
   onDragOver: function(aEvent) {
@@ -2914,8 +2897,7 @@ var newTabButtonObserver = {
     browserDragAndDrop.dragOver(aEvent);
   },
 
-  onDragExit: function(aEvent) {
-  },
+  onDragExit: function(aEvent) {},
 
   onDrop: function(aEvent) {
     let links = browserDragAndDrop.dropLinks(aEvent);
@@ -2936,8 +2918,7 @@ var newWindowButtonObserver = {
     browserDragAndDrop.dragOver(aEvent);
   },
 
-  onDragExit: function(aEvent) {
-  },
+  onDragExit: function(aEvent) {},
 
   onDrop: function(aEvent) {
     let links = browserDragAndDrop.dropLinks(aEvent);
@@ -3495,8 +3476,9 @@ function BrowserToolboxCustomizeDone(aToolboxChanged) {
     // Hacky: update the PopupNotifications' object's reference to the iconBox,
     // if it already exists, since it may have changed if the URL bar was
     // added/removed.
-    if (!window.__lookupGetter__("PopupNotifications"))
+    if (!window.__lookupGetter__("PopupNotifications")) {
       PopupNotifications.iconBox = document.getElementById("notification-popup-box");
+    }
   }
 
   PlacesToolbarHelper.customizeDone();
@@ -4119,8 +4101,7 @@ var XULBrowserWindow = {
               "<" + contentHost + "> but cached host is <" + this._host + ">.\n"
             );
         }
-      } catch (ex) {
-      }
+      } catch(ex) {}
 #endif
       return;
     }
@@ -4180,7 +4161,7 @@ var XULBrowserWindow = {
       locationObj.host = location.host;
       locationObj.hostname = location.hostname;
       locationObj.port = location.port;
-    } catch (ex) {
+    } catch(ex) {
       // Can sometimes throw if the URL being visited has no host/hostname,
       // e.g. about:blank. The _state for these pages means we won't need these
       // properties anyways, though.
@@ -4608,8 +4589,9 @@ function onViewToolbarsPopupShowing(aEvent, aInsertPoint) {
   // Empty the menu
   for (var i = popup.childNodes.length-1; i >= 0; --i) {
     var deadItem = popup.childNodes[i];
-    if (deadItem.hasAttribute("toolbarId"))
+    if (deadItem.hasAttribute("toolbarId")) {
       popup.removeChild(deadItem);
+    }
   }
 
   var firstMenuItem = aInsertPoint || popup.firstChild;
@@ -4729,8 +4711,9 @@ var AudioIndicator = {
   },
 
   observe: function(subject, topic, data) {
-    if (topic == "nsPref:changed")
+    if (topic == "nsPref:changed") {
       this.syncUI();
+    }
   },
 
   _prefName: "browser.tabs.showAudioPlayingIcon"
@@ -4774,8 +4757,9 @@ var TabsOnTop = {
   },
 
   observe: function(subject, topic, data) {
-    if (topic == "nsPref:changed")
+    if (topic == "nsPref:changed") {
       this.syncUI();
+    }
   },
 
   _prefName: "browser.tabs.onTop"
@@ -5086,8 +5070,7 @@ var gHomeButton = {
     try {
       url = gPrefService.getComplexValue(this.prefDomain,
                                          Components.interfaces.nsIPrefLocalizedString).data;
-    } catch(e) {
-    }
+    } catch(e) {}
 
     // use this if we can't find the pref
     if (!url) {
@@ -5337,7 +5320,7 @@ function contentAreaClick(event, isPanelClick) {
     if (!PrivateBrowsingUtils.isWindowPrivate(window)) {
       PlacesUIUtils.markPageAsFollowedLink(href);
     }
-  } catch (ex) {
+  } catch(ex) {
     // Skip invalid URIs.
   }
 }
@@ -5551,8 +5534,7 @@ function UpdateCharsetDetector(target) {
 
   try {
     prefvalue = gPrefService.getComplexValue("intl.charset.detector", Ci.nsIPrefLocalizedString).data;
-  } catch (ex) {
-  }
+  } catch(ex) {}
 
   if (!prefvalue) {
     prefvalue = "off";
@@ -5760,8 +5742,7 @@ var BrowserOffline = {
       if (cancelGoOffline.data) {
         return false;
       }
-    } catch (ex) {
-    }
+    } catch(ex) {}
 
     return true;
   },
@@ -6420,9 +6401,10 @@ function AddKeywordForSearchField() {
       formData.push(escapeNameValuePair(el.name, el.value, isURLEncoded));
     } else if (el instanceof HTMLSelectElement && el.selectedIndex >= 0) {
       for (var j=0; j < el.options.length; j++) {
-        if (el.options[j].selected)
+        if (el.options[j].selected) {
           formData.push(escapeNameValuePair(el.name, el.options[j].value,
                                             isURLEncoded));
+        }
       }
     }
   }
@@ -6797,7 +6779,7 @@ var gIdentityHandler = {
     try {
       let baseDomain = Services.eTLD.getBaseDomainFromHost(this._lastLocation.hostname);
       return this._IDNService.convertToDisplayIDN(baseDomain, {});
-    } catch (e) {
+    } catch(e) {
       // If something goes wrong (e.g. hostname is an IP address) just fall back
       // to the full domain.
       return this._lastLocation.hostname;

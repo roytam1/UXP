@@ -125,8 +125,7 @@ var browserMenuDragging = {
     if (!!parentPopup.openNode) {
       try {
         parentPopup.openNode.hidePopup();
-      } catch(e) {
-      }
+      } catch(e) {}
     }
     parentPopup.openNode = menupopup;
 
@@ -318,8 +317,7 @@ var browserMenuDragging = {
         default:
           return xpPref.setBoolPref(aPrefString, aValue); break;
       }
-    } catch(e) {
-    }
+    } catch(e) {}
     return null;
   },
 
@@ -328,8 +326,7 @@ var browserMenuDragging = {
           var pbi = Components.classes["@mozilla.org/preferences;1"].
                     getService(Components.interfaces.nsIPrefBranch2);
           pbi.addObserver(aObserver.domain, aObserver, false);
-      } catch(e) {
-      }
+      } catch(e) {}
   },
 
   removePrefListener: function(aObserver) {
@@ -337,8 +334,7 @@ var browserMenuDragging = {
           var pbi = Components.classes["@mozilla.org/preferences;1"].
                     getService(Components.interfaces.nsIPrefBranch2);
           pbi.removeObserver(aObserver.domain, aObserver);
-      } catch(e) {
-      }
+      } catch(e) {}
   },
 
   PrefListener:{

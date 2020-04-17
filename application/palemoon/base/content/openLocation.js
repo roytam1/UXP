@@ -5,9 +5,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 var browser;
-var dialog = { };
+var dialog = {};
 var pref = null;
-var openLocationModule = { };
+var openLocationModule = {};
 try {
   pref = Components.classes["@mozilla.org/preferences-service;1"]
                    .getService(Components.interfaces.nsIPrefBranch);
@@ -37,8 +37,7 @@ function onLoad() {
       if (useAutoFill) {
         dialog.input.setAttribute("completedefaultindex", "true");
       }
-    } catch(ex) {
-    }
+    } catch(ex) {}
 
     try {
       var value = pref.getIntPref("general.open_location.last_window_choice");
@@ -47,8 +46,7 @@ function onLoad() {
         dialog.openWhereList.selectedItem = element;
       }
       dialog.input.value = gOpenLocationLastURL.value;
-    } catch(ex) {
-    }
+    } catch(ex) {}
     
     if (dialog.input.value) {
       // XXX should probably be done automatically
@@ -109,8 +107,7 @@ function openLocation(openData) {
         browser.delayedOpenTab(openData.url, null, null, openData.postData, true);
         break;
     }
-  } catch(ex) {
-  }
+  } catch(ex) {}
 
   if (pref) {
     gOpenLocationLastURL.value = dialog.input.value;
@@ -147,6 +144,5 @@ function onChooseFile()
                      nsIFilePicker.filterImages | nsIFilePicker.filterXML |
                      nsIFilePicker.filterHTML);
     fp.open(fpCallback);
-  } catch(ex) {
-  }
+  } catch(ex) {}
 }

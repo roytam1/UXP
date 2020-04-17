@@ -30,8 +30,7 @@ nsContextMenu.prototype = {
     this.ellipsis = "\u2026";
     try {
       this.ellipsis = gPrefService.getComplexValue("intl.ellipsis", Ci.nsIPrefLocalizedString).data;
-    } catch(e) {
-    }
+    } catch(e) {}
 
     this.isContentSelected = this.isContentSelection();
     this.onPlainTextLink = false;
@@ -87,16 +86,14 @@ nsContextMenu.prototype = {
       if (/^(?:https?|ftp):/i.test(linkText)) {
         try {
           uri = makeURI(linkText);
-        } catch(ex) {
-        }
+        } catch(ex) {}
       } else if (/^[-a-z\d\.]+\.[-a-z\d]{2,}[-_=~:#%&\?\w\/\.]*$/i.test(linkText)) {
         // Check if this could be a valid url, just missing the protocol.
         let uriFixup = Cc["@mozilla.org/docshell/urifixup;1"]
                          .getService(Ci.nsIURIFixup);
         try {
           uri = uriFixup.createFixupURI(linkText, uriFixup.FIXUP_FLAG_NONE);
-        } catch(ex) {
-        }
+        } catch(ex) {}
       }
 
       if (uri && uri.host) {
@@ -438,7 +435,7 @@ nsContextMenu.prototype = {
     return gDevTools.showToolbox(target, "inspector").then(function(toolbox) {
       let inspector = toolbox.getCurrentPanel();
 
-      this.browser.messageManager.sendAsyncMessage("debug:inspect", { }, { node: this.target });
+      this.browser.messageManager.sendAsyncMessage("debug:inspect", {}, { node: this.target });
       inspector.walker.findInspectingNode().then(nodeFront => {
         inspector.selection.setNodeFront(nodeFront, "browser-context-menu");
       });
@@ -554,7 +551,7 @@ nsContextMenu.prototype = {
           try {
             computedURL = this.getComputedURL(bodyElt, "background-image");
             this._hasMultipleBGImages = false;
-          } catch (e) {
+          } catch(e) {
             this._hasMultipleBGImages = true;
           }
           if (computedURL) {
@@ -613,8 +610,7 @@ nsContextMenu.prototype = {
               // this.principal.checkMayLoad(this.linkURI, false, true);
               this.linkDownload = elem.download;
             }
-          } catch(ex) {
-          }
+          } catch(ex) {}
         }
 
         // Background image?  Don't bother if we've already found a
@@ -917,8 +913,7 @@ nsContextMenu.prototype = {
       let url = uri.QueryInterface(Ci.nsIURL);
       if (url.fileBaseName)
         name = decodeURI(url.fileBaseName) + ".jpg";
-    } catch (e) {
-    }
+    } catch(e) {}
     if (!name) {
       name = "snapshot.jpg";
     }
@@ -1029,7 +1024,7 @@ nsContextMenu.prototype = {
     // nsIExternalHelperAppService.doContent, which will wait for the
     // appropriate MIME-type headers and then prompt the user with a
     // file picker
-    function saveAsListener() { }
+    function saveAsListener() {}
     
     saveAsListener.prototype = {
       extListener: null, 
@@ -1059,8 +1054,7 @@ nsContextMenu.prototype = {
             const promptSvc = Cc["@mozilla.org/embedcomp/prompt-service;1"].
                               getService(Ci.nsIPromptService);
             promptSvc.alert(doc.defaultView, title, msg);
-          } catch (ex) {
-          }
+          } catch(ex) {}
           return;
         }
 
@@ -1091,7 +1085,7 @@ nsContextMenu.prototype = {
       }
     }
 
-    function callbacks() { }
+    function callbacks() {}
     
     callbacks.prototype = {
       getInterface: function(aIID) {
@@ -1111,7 +1105,7 @@ nsContextMenu.prototype = {
     // if it we don't have the headers after a short time, the user 
     // won't have received any feedback from their click.  that's bad.  so
     // we give up waiting for the filename. 
-    function timerCallback() { }
+    function timerCallback() {}
     
     timerCallback.prototype = {
       notify: function(aTimer) {
@@ -1468,15 +1462,13 @@ nsContextMenu.prototype = {
     try {
       locale = gPrefService.getComplexValue("intl.accept_languages",
                                             Ci.nsIPrefLocalizedString).data;
-    } catch(e) {
-    }
+    } catch(e) {}
 
     var version = "-";
     try {
       version = Cc["@mozilla.org/xre/app-info;1"].
                 getService(Ci.nsIXULAppInfo).version;
-    } catch(e) {
-    }
+    } catch(e) {}
 
     uri = uri.replace(/%LOCALE%/, escape(locale)).replace(/%VERSION%/, version);
 

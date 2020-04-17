@@ -17,7 +17,7 @@ XPCOMUtils.defineLazyModuleGetter(this, "Task",
 XPCOMUtils.defineLazyModuleGetter(this, "console",
                                   "resource://gre/modules/Console.jsm");
 
-function Sanitizer() { }
+function Sanitizer() {}
 
 Sanitizer.prototype = {
   // warning to the caller: this one may raise an exception (e.g. bug #265028)
@@ -119,15 +119,13 @@ Sanitizer.prototype = {
           // Cache doesn't consult timespan, nor does it have the
           // facility for timespan-based eviction.  Wipe it.
           cache.clear();
-        } catch(er) {
-        }
+        } catch(er) {}
 
         var imageCache = Cc["@mozilla.org/image/tools;1"].
                          getService(Ci.imgITools).getImgCacheForDocument(null);
         try {
           imageCache.clearCache(false); // true=chrome, false=content
-        } catch(er) {
-        }
+        } catch(er) {}
       },
 
       get canClear() {
@@ -224,16 +222,14 @@ Sanitizer.prototype = {
           var os = Components.classes["@mozilla.org/observer-service;1"]
                              .getService(Components.interfaces.nsIObserverService);
           os.notifyObservers(null, "browser:purge-session-history", "");
-        } catch(e) {
-        }
+        } catch(e) {}
 
         // Clear last URL of the Open Web Location dialog
         var prefs = Components.classes["@mozilla.org/preferences-service;1"]
                               .getService(Components.interfaces.nsIPrefBranch);
         try {
           prefs.clearUserPref("general.open_location.last_url");
-        } catch(e) {
-        }
+        } catch(e) {}
       },
 
       get canClear()
@@ -304,14 +300,14 @@ Sanitizer.prototype = {
             aCallback("formdata", aReason == 0 && count > 0, aArg);
           }
         };
-        FormHistory.count({ }, countDone);
+        FormHistory.count({}, countDone);
         return false;
       }
     },
 
     downloads: {
       clear: Task.async(function* (range) {
-        let refObj = { };
+        let refObj = {};
         try {
           let filterByTime = null;
           if (range) {

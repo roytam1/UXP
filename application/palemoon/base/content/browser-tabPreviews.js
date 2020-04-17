@@ -725,8 +725,7 @@ var allTabs = {
         let tabstring = tab.linkedBrowser.currentURI.spec;
         try {
           tabstring = decodeURI(tabstring);
-        } catch (e) {
-        }
+        } catch(e) {}
         tabstring = tab.label + " " + tab.label.toLocaleLowerCase() + " " + tabstring;
         for (let i = 0; i < filter.length; i++) {
           matches += tabstring.includes(filter[i]);

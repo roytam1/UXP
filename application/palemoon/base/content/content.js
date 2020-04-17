@@ -67,8 +67,7 @@ var handleContentContextMenu = function (event) {
     let plugin = null;
     try {
       plugin = event.target.QueryInterface(Ci.nsIObjectLoadingContent);
-    } catch(e) {
-    }
+    } catch(e) {}
     if (plugin && plugin.displayedType == Ci.nsIObjectLoadingContent.TYPE_PLUGIN) {
       // Don't open a context menu for plugins.
       return;
@@ -81,7 +80,7 @@ var handleContentContextMenu = function (event) {
     return;
   }
 
-  let addonInfo = { };
+  let addonInfo = {};
   let subject = {
     event: event,
     addonInfo: addonInfo,
@@ -130,15 +129,12 @@ var handleContentContextMenu = function (event) {
         imageCache.findEntryProperties(event.target.currentURI, doc);
       try {
         contentType = props.get("type", Ci.nsISupportsCString).data;
-      } catch(e) {
-      }
+      } catch(e) {}
       try {
         contentDisposition =
           props.get("content-disposition", Ci.nsISupportsCString).data;
-      } catch(e) {
-      }
-    } catch(e) {
-    }
+      } catch(e) {}
+    } catch(e) {}
   }
 
   let selectionInfo = BrowserUtils.getSelectionDetails(content);
@@ -178,5 +174,5 @@ addMessageListener("Finder:Initialize", function() {
 });
 
 addEventListener("DOMWebNotificationClicked", function(event) {
-  sendAsyncMessage("DOMWebNotificationClicked", { });
+  sendAsyncMessage("DOMWebNotificationClicked", {});
 }, false);

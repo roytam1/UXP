@@ -312,7 +312,7 @@ var LightWeightThemeWebInstaller = {
   },
 
   get _manager () {
-    var temp = { };
+    var temp = {};
     Cu.import("resource://gre/modules/LightweightThemeManager.jsm", temp);
     delete this._manager;
     return this._manager = temp.LightweightThemeManager;

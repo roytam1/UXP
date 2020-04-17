@@ -76,7 +76,7 @@ DistributionCustomizer.prototype = {
     }
     keys.sort();
 
-    let items = { };
+    let items = {};
     let defaultItemId = -1;
     let maxItemId = -1;
 
@@ -91,7 +91,7 @@ DistributionCustomizer.prototype = {
         }
 
         if (!items[iid]) {
-          items[iid] = { };
+          items[iid] = {};
         }
         if (keys.indexOf(keys[i] + "." + this._locale) >= 0) {
           items[iid][iprop] = this._ini.getString(section, keys[i] + "." +
@@ -283,7 +283,7 @@ DistributionCustomizer.prototype = {
       }
       defaults.setComplexValue("distribution.about",
                                Ci.nsISupportsString, partnerAbout);
-    } catch (e) {
+    } catch(e) {
       /* ignore bad prefs due to bug 895473 and move on */
       Cu.reportError(e);
     }
@@ -365,7 +365,7 @@ function enumerate(UTF8Enumerator) {
 }
 
 function enumToObject(UTF8Enumerator) {
-  let ret = { };
+  let ret = {};
   for (let i in enumerate(UTF8Enumerator)) {
     ret[i] = 1;
   }

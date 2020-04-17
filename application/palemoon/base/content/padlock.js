@@ -11,10 +11,10 @@ var padlock_PadLock =
     event.stopPropagation();
     gIdentityHandler.handleMoreInfoClick(event);
   },
-  onStateChange: function() { },
-  onProgressChange: function() { },
-  onLocationChange: function() { },
-  onStatusChange: function() { },
+  onStateChange: function() {},
+  onProgressChange: function() {},
+  onLocationChange: function() {},
+  onStatusChange: function() {},
   onSecurityChange: function(aCallerWebProgress, aRequestWithState, aState) {
     // aState is defined as a bitmask that may be extended in the future.
     // We filter out any unknown bits before testing for known values.
@@ -67,8 +67,7 @@ var padlock_PadLock =
         // do not warn when using local protocols
         is_insecure = false;
       }
-    } catch(ex) {
-    }
+    } catch(ex) {}
         
     let ub = document.getElementById("urlbar");
     if (ub) {
@@ -84,8 +83,7 @@ var padlock_PadLock =
       padlock_PadLock.setPadlockLevel("padlock-ib", level);
       padlock_PadLock.setPadlockLevel("padlock-ib-left", level);
       padlock_PadLock.setPadlockLevel("padlock-ub-right", level);
-    } catch(e) {
-    }
+    } catch(e) {}
     
     padlock_PadLock.setPadlockLevel("padlock-sb", level);
     padlock_PadLock.setPadlockLevel("padlock-tab", level);
@@ -203,8 +201,7 @@ var padlock_PadLock =
     try {
       // XXX should probably be done automatically
       document.getElementById("urlbar").setAttribute("https_color", colshow);
-    } catch(e) {
-    }
+    } catch(e) {}
 
     var lockenabled = padlock_PadLock.prefbranch.getBoolPref("shown");
     var padshow = "";
@@ -216,8 +213,7 @@ var padlock_PadLock =
       document.getElementById("padlock-ib").setAttribute("padshow", padshow);
       document.getElementById("padlock-ib-left").setAttribute("padshow", padshow);
       document.getElementById("padlock-ub-right").setAttribute("padshow", padshow);
-    } catch(e) {
-    }
+    } catch(e) {}
     
     document.getElementById("padlock-sb").setAttribute("padshow", padshow);
     document.getElementById("padlock-tab").setAttribute("padshow", padshow);
@@ -226,8 +222,7 @@ var padlock_PadLock =
       document.getElementById("padlock-ib").setAttribute("padstyle", padstyle);
       document.getElementById("padlock-ib-left").setAttribute("padstyle", padstyle);
       document.getElementById("padlock-ub-right").setAttribute("padstyle", padstyle);
-    } catch(e) {
-    }
+    } catch(e) {}
     
     document.getElementById("padlock-sb").setAttribute("padstyle", padstyle);
     document.getElementById("padlock-tab").setAttribute("padstyle", padstyle);

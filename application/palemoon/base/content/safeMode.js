@@ -102,8 +102,7 @@ function onOK() {
       // disableAddons will asynchronously restart the application
       return false;
     }
-  } catch(e) {
-  }
+  } catch(e) {}
 
   restartApp();
   return false;

@@ -268,12 +268,11 @@ var FullScreen = {
     let host = null;
     try {
       host = uri.host;
-    } catch(e) {
-    }
+    } catch(e) {}
     let hostLabel = document.getElementById("full-screen-domain-text");
     if (host) {
       // Document's principal's URI has a host. Display a warning including the hostname.
-      let utils = { };
+      let utils = {};
       Cu.import("resource://gre/modules/DownloadUtils.jsm", utils);
       let displayHost = utils.DownloadUtils.getURIHost(uri.spec)[0];
       let bundle = Services.strings.createBundle("chrome://browser/locale/browser.properties");

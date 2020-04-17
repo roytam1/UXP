@@ -299,8 +299,7 @@ var PlacesCommandHook = {
         title = title || url.spec;
         description = PlacesUIUtils.getDescriptionFromDocument(webNav.document);
         charset = webNav.document.characterSet;
-      } catch(e) {
-      }
+      } catch(e) {}
 
       if (aShowEditUI) {
         // If we bookmark the page here (i.e. page was not "starred" already)

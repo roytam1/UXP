@@ -92,7 +92,7 @@ function BrowserGlue() {
 
   XPCOMUtils.defineLazyGetter(this, "_sanitizer",
     function() {
-      let sanitizerScope = { };
+      let sanitizerScope = {};
       Services.scriptloader.loadSubScript("chrome://browser/content/sanitize.js", sanitizerScope);
       return sanitizerScope.Sanitizer;
     });
@@ -475,8 +475,7 @@ BrowserGlue.prototype = {
     try {
       averageTime = Services.prefs.getIntPref("browser.slowStartup.averageTime");
       samples = Services.prefs.getIntPref("browser.slowStartup.samples");
-    } catch(e) {
-    }
+    } catch(e) {}
 
     averageTime = (averageTime * samples + currentTime) / ++samples;
 
@@ -655,8 +654,7 @@ BrowserGlue.prototype = {
               // Windows 8 is version 6.2.
               let version = Services.sysinfo.getProperty("version");
               claimAllTypes = (parseFloat(version) < 6.2);
-            } catch (ex) {
-            }
+            } catch (ex) {}
 #endif
             ShellService.setDefaultBrowser(claimAllTypes, false);
           }
@@ -962,8 +960,7 @@ BrowserGlue.prototype = {
         Services.prefs.getBoolPref("browser.places.importBookmarksHTML");
       if (importBookmarksHTML)
         importBookmarks = true;
-    } catch(ex) {
-    }
+    } catch(ex) {}
 
     Task.spawn(function() {
       // Check if Safe Mode or the user has required to restore bookmarks from
@@ -977,8 +974,7 @@ BrowserGlue.prototype = {
           yield this._backupBookmarks();
           importBookmarks = true;
         }
-      } catch(ex) {
-      }
+      } catch(ex) {}
 
       // If the user did not require to restore default bookmarks, or import
       // from bookmarks.html, we will try to restore from JSON/JSONLZ4
@@ -1051,7 +1047,7 @@ BrowserGlue.prototype = {
                   // Ensure that smart bookmarks are created once the operation
                   // is complete.
                   this.ensurePlacesDefaultQueriesInitialized();
-                } catch (e) {
+                } catch(e) {
                   Cu.reportError(e);
                 }
               }.bind(this)
@@ -1171,8 +1167,7 @@ BrowserGlue.prototype = {
         let maxBackups = BOOKMARKS_BACKUP_MAX_BACKUPS;
         try {
           maxBackups = Services.prefs.getIntPref("browser.bookmarks.max_backups");
-        }
-        catch(ex) {
+        } catch(ex) {
           // Use default.
         }
 
@@ -1225,8 +1220,7 @@ BrowserGlue.prototype = {
     let currentUIVersion = 0;
     try {
       currentUIVersion = Services.prefs.getIntPref("browser.migration.version");
-    } catch(ex) {
-    }
+    } catch(ex) {}
     if (currentUIVersion >= UI_VERSION) {
       return;
     }
@@ -1432,8 +1426,7 @@ BrowserGlue.prototype = {
           Services.prefs.clearUserPref("privacy.donottrackheader.value");
         }
       }
-      catch (ex) {
-      }
+      catch (ex) {}
     }
 
 #ifndef MOZ_JXR
@@ -1447,8 +1440,7 @@ BrowserGlue.prototype = {
         } else if (ihaValue.includes("image/jxr")) {
           Services.prefs.clearUserPref(ihaPref);
         }
-      }
-      catch (ex) {}
+      } catch(ex) {}
     }
 #endif
 
@@ -1468,13 +1460,13 @@ BrowserGlue.prototype = {
       if (dsCertFile.exists()) {
         try {
           dsCertFile.remove(false);
-        } catch(e) { }
+        } catch(e) {}
       }
       dsKeyFile.append("key4.db");
       if (dsKeyFile.exists()) {
         try {
           dsKeyFile.remove(false);
-        } catch(e) { }
+        } catch(e) {}
       }
     }
 
@@ -1546,8 +1538,7 @@ BrowserGlue.prototype = {
     var url = "about:permissions";
     try {
       url = url + "?filter=" + aPrincipal.URI.host;
-    } catch(e) {
-    }
+    } catch(e) {}
     win.openUILinkIn(url, "tab");
   },
 
@@ -1555,8 +1546,7 @@ BrowserGlue.prototype = {
     try {
       return !!Cc["@mozilla.org/system-alerts-service;1"].getService(
         Ci.nsIAlertsService);
-    } catch(e) {
-    }
+    } catch(e) {}
     return false;
   },
 
@@ -1590,8 +1580,7 @@ BrowserGlue.prototype = {
       if (!this._dataSource.HasAssertion(docResource, persistResource, aSource, true)) {
         this._dataSource.Assert(docResource, persistResource, aSource, true);
       }
-    }
-    catch(ex) {}
+    } catch(ex) {}
   },
 
   // ------------------------------
@@ -1797,7 +1786,7 @@ BrowserGlue.prototype = {
   _xpcom_factory: BrowserGlueServiceFactory,
 }
 
-function ContentPermissionPrompt() { }
+function ContentPermissionPrompt() {}
 ContentPermissionPrompt.prototype = {
   classID:          Components.ID("{d8903bf6-68d5-4e97-bcd1-e4d3012f721a}"),
 
@@ -1904,7 +1893,7 @@ ContentPermissionPrompt.prototype = {
       let autoAllow = !mainAction;
 
       if (!aOptions) {
-        aOptions = { };
+        aOptions = {};
       }
 
       aOptions.removeOnDismissal = autoAllow;
@@ -1994,7 +1983,7 @@ ContentPermissionPrompt.prototype = {
           stringId: "webNotifications.showForSession",
           action: Ci.nsIPermissionManager.ALLOW_ACTION,
           expireType: Ci.nsIPermissionManager.EXPIRE_SESSION,
-          callback: function() { },
+          callback: function() {},
         }
       ];
     } else {
@@ -2003,19 +1992,19 @@ ContentPermissionPrompt.prototype = {
           stringId: "webNotifications.showForSession",
           action: Ci.nsIPermissionManager.ALLOW_ACTION,
           expireType: Ci.nsIPermissionManager.EXPIRE_SESSION,
-          callback: function() { },
+          callback: function() {},
         },
         {
           stringId: "webNotifications.alwaysShow",
           action: Ci.nsIPermissionManager.ALLOW_ACTION,
           expireType: null,
-          callback: function() { },
+          callback: function() {},
         },
         {
           stringId: "webNotifications.neverShow",
           action: Ci.nsIPermissionManager.DENY_ACTION,
           expireType: null,
-          callback: function() { },
+          callback: function() {},
         }
       ];
     }

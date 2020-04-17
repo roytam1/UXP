@@ -15,7 +15,7 @@ const ALLOW_SCRIPT                    = Ci.nsIAboutModule.ALLOW_SCRIPT;
 const HIDE_FROM_ABOUTABOUT            = Ci.nsIAboutModule.HIDE_FROM_ABOUTABOUT;
 const MAKE_LINKABLE                   = Ci.nsIAboutModule.MAKE_LINKABLE;
 
-function AboutRedirector() { }
+function AboutRedirector() {}
 AboutRedirector.prototype = {
   classDescription: "Browser about: Redirector",
   classID: Components.ID("{8cc51368-6aa0-43e8-b762-bde9b9fd828c}"),

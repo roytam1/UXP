@@ -111,7 +111,7 @@ var gSanitizePromptDialog = {
     docElt.getButton("cancel").disabled = true;
     try {
       s.sanitize().then(window.close, window.close);
-    } catch (er) {
+    } catch(er) {
       Components.utils.reportError("Exception during sanitize: " + er);
       return true; // We *do* want to close immediately on error.
     }
@@ -164,8 +164,7 @@ var gSanitizePromptDialog = {
 
     try {
       document.documentElement.getButton("accept").disabled = !found;
-    } catch(e) {
-    }
+    } catch(e) {}
 
     // Update the warning prompt if needed
     this.prepareWarning(true);
@@ -329,8 +328,8 @@ var gSanitizePromptDialog = {
     // Now calculate the rows in the tree of the durations' start times.  For
     // each duration, we are looking for the node in the tree whose time is the
     // smallest time greater than or equal to the duration's start time.
-    this.durationRowsToVals = { };
-    this.durationValsToRows = { };
+    this.durationRowsToVals = {};
+    this.durationValsToRows = {};
     var view = this.placesTree.view;
     // For all rows in the tree except the grippy row...
     for (let i = 0; i < view.rowCount - 1; i++) {
@@ -486,7 +485,7 @@ var gSanitizePromptDialog = {
 
     try {
       s.sanitize();
-    } catch (er) {
+    } catch(er) {
       Components.utils.reportError("Exception during sanitize: " + er);
     }
     return true;
@@ -592,8 +591,8 @@ var gContiguousSelectionTreeHelper = {
       throw "contiguous selection tree helper: getGrippyRow called with " +
             "multiple selection ranges";
     }
-    var max = { };
-    sel.getRangeAt(0, { }, max);
+    var max = {};
+    sel.getRangeAt(0, {}, max);
     return max.value + 1;
   },
 
@@ -822,8 +821,8 @@ var gContiguousSelectionTreeHelper = {
     };
 
     // No clicking headers to sort the tree or sort feedback on columns.
-    view.cycleHeader = function() { };
-    view.sortingChanged = function() { };
+    view.cycleHeader = function() {};
+    view.sortingChanged = function() {};
 
     // Override a bunch of methods to account for the grippy row.
 

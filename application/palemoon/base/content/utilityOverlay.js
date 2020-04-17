@@ -344,8 +344,7 @@ function openLinkIn(url, where, params) {
   if (where == "current") {
     try {
       uriObj = Services.io.newURI(url, null, null);
-    } catch(e) {
-    }
+    } catch(e) {}
   }
 
   if (where == "current" && w.gBrowser.selectedTab.pinned) {
@@ -542,8 +541,7 @@ function isBidiEnabled() {
         rv = true;
         Services.prefs.setBoolPref("bidi.browser.ui", true);
     }
-  } catch (e) {
-  }
+  } catch(e) {}
 
   return rv;
 }
@@ -863,8 +861,7 @@ function isValidFeed(aLink, aPrincipal, aIsFeed) {
       urlSecurityCheck(aLink.href, aPrincipal,
                        Components.interfaces.nsIScriptSecurityManager.DISALLOW_INHERIT_PRINCIPAL);
       return type || "application/rss+xml";
-    } catch(ex) {
-    }
+    } catch(ex) {}
   }
 
   return null;

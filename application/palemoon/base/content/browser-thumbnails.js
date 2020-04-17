@@ -39,8 +39,7 @@ var gBrowserThumbnails = {
     try {
       if (Services.prefs.getBoolPref("browser.pagethumbnails.capturing_disabled"))
         return;
-    } catch (e) {
-    }
+    } catch(e) {}
 
     PageThumbs.addExpirationFilter(this);
     gBrowser.addTabsProgressListener(this);
@@ -182,7 +181,7 @@ var gBrowserThumbnails = {
     let httpChannel;
     try {
       httpChannel = channel.QueryInterface(Ci.nsIHttpChannel);
-    } catch (e) {
+    } catch(e) {
       // Not an HTTP channel.
     }
 
@@ -192,7 +191,7 @@ var gBrowserThumbnails = {
         if (Math.floor(httpChannel.responseStatus / 100) != 2) {
           return false;
         }
-      } catch (e) {
+      } catch(e) {
         // Can't get response information from the httpChannel
         // because mResponseHead is not available.
         return false;

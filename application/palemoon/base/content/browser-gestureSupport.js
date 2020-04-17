@@ -296,8 +296,7 @@ var gGestureSupport = {
       let command;
       try {
         command = this._getPref(aGesture.concat(subCombo).join("."));
-      } catch(e) {
-      }
+      } catch(e) {}
 
       if (command) {
         return command;
