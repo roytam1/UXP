@@ -17,22 +17,23 @@ XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
                                   "resource://gre/modules/PlacesUtils.jsm");
 
 this.DistributionCustomizer = function DistributionCustomizer() {
-  let dirSvc = Cc["@mozilla.org/file/directory_service;1"].
-               getService(Ci.nsIProperties);
+  let dirSvc = Cc["@mozilla.org/file/directory_service;1"]
+                 .getService(Ci.nsIProperties);
   let iniFile = dirSvc.get("XREExeF", Ci.nsIFile);
   iniFile.leafName = "distribution";
   iniFile.append("distribution.ini");
-  if (iniFile.exists())
+  if (iniFile.exists()) {
     this._iniFile = iniFile;
+  }
 }
 
 DistributionCustomizer.prototype = {
   _iniFile: null,
 
   get _ini() {
-    let ini = Cc["@mozilla.org/xpcom/ini-parser-factory;1"].
-              getService(Ci.nsIINIParserFactory).
-              createINIParser(this._iniFile);
+    let ini = Cc["@mozilla.org/xpcom/ini-parser-factory;1"]
+                .getService(Ci.nsIINIParserFactory)
+                .createINIParser(this._iniFile);
     this.__defineGetter__("_ini", function() ini);
     return this._ini;
   },
@@ -44,8 +45,8 @@ DistributionCustomizer.prototype = {
   },
 
   get _prefSvc() {
-    let svc = Cc["@mozilla.org/preferences-service;1"].
-              getService(Ci.nsIPrefService);
+    let svc = Cc["@mozilla.org/preferences-service;1"]
+                .getService(Ci.nsIPrefService);
     this.__defineGetter__("_prefSvc", function() svc);
     return this._prefSvc;
   },
@@ -57,8 +58,8 @@ DistributionCustomizer.prototype = {
   },
 
   get _ioSvc() {
-    let svc = Cc["@mozilla.org/network/io-service;1"].
-              getService(Ci.nsIIOService);
+    let svc = Cc["@mozilla.org/network/io-service;1"]
+                .getService(Ci.nsIIOService);
     this.__defineGetter__("_ioSvc", function() svc);
     return this._ioSvc;
   },
@@ -70,11 +71,12 @@ DistributionCustomizer.prototype = {
   _parseBookmarksSection:
   function(parentId, section) {
     let keys = [];
-    for (let i in enumerate(this._ini.getKeys(section)))
+    for (let i in enumerate(this._ini.getKeys(section))) {
       keys.push(i);
+    }
     keys.sort();
 
-    let items = {};
+    let items = { };
     let defaultItemId = -1;
     let maxItemId = -1;
 
@@ -84,11 +86,13 @@ DistributionCustomizer.prototype = {
         let [foo, iid, iprop, ilocale] = m;
         iid = parseInt(iid);
 
-        if (ilocale)
+        if (ilocale) {
           continue;
+        }
 
-        if (!items[iid])
-          items[iid] = {};
+        if (!items[iid]) {
+          items[iid] = { };
+        }
         if (keys.indexOf(keys[i] + "." + this._locale) >= 0) {
           items[iid][iprop] = this._ini.getString(section, keys[i] + "." +
                                                   this._locale);
@@ -96,11 +100,13 @@ DistributionCustomizer.prototype = {
           items[iid][iprop] = this._ini.getString(section, keys[i]);
         }
 
-        if (iprop == "type" && items[iid]["type"] == "default")
+        if (iprop == "type" && items[iid]["type"] == "default") {
           defaultItemId = iid;
+        }
 
-        if (maxItemId < iid)
+        if (maxItemId < iid) {
           maxItemId = iid;
+        }
       } else {
         dump("Key did not match: " + keys[i] + "\n");
       }
@@ -108,70 +114,76 @@ DistributionCustomizer.prototype = {
 
     let prependIndex = 0;
     for (let iid = 0; iid <= maxItemId; iid++) {
-      if (!items[iid])
+      if (!items[iid]) {
         continue;
+      }
 
       let index = PlacesUtils.bookmarks.DEFAULT_INDEX;
       let newId;
 
       switch (items[iid]["type"]) {
-      case "default":
-        break;
+        case "default":
+          break;
 
-      case "folder":
-        if (iid < defaultItemId)
-          index = prependIndex++;
+        case "folder":
+          if (iid < defaultItemId) {
+            index = prependIndex++;
+          }
 
-        newId = PlacesUtils.bookmarks.createFolder(parentId,
-                                                   items[iid]["title"],
-                                                   index);
+          newId = PlacesUtils.bookmarks.createFolder(parentId,
+                                                     items[iid]["title"],
+                                                     index);
 
-        this._parseBookmarksSection(newId, "BookmarksFolder-" +
-                                    items[iid]["folderId"]);
+          this._parseBookmarksSection(newId, "BookmarksFolder-" +
+                                      items[iid]["folderId"]);
 
-        if (items[iid]["description"])
-          PlacesUtils.annotations.setItemAnnotation(newId,
-                                                    "bookmarkProperties/description",
-                                                    items[iid]["description"], 0,
-                                                    PlacesUtils.annotations.EXPIRE_NEVER);
+          if (items[iid]["description"])
+            PlacesUtils.annotations.setItemAnnotation(newId,
+                                                      "bookmarkProperties/description",
+                                                      items[iid]["description"], 0,
+                                                      PlacesUtils.annotations.EXPIRE_NEVER);
 
-        break;
+          break;
 
-      case "separator":
-        if (iid < defaultItemId)
-          index = prependIndex++;
-        PlacesUtils.bookmarks.insertSeparator(parentId, index);
-        break;
+        case "separator":
+          if (iid < defaultItemId) {
+            index = prependIndex++;
+          }
+          PlacesUtils.bookmarks.insertSeparator(parentId, index);
+          break;
 
-      case "livemark":
-        if (iid < defaultItemId)
-          index = prependIndex++;
+        case "livemark":
+          if (iid < defaultItemId) {
+            index = prependIndex++;
+          }
 
-        // Don't bother updating the livemark contents on creation.
-        PlacesUtils.livemarks.addLivemark({ title: items[iid]["title"]
-                                          , parentId: parentId
-                                          , index: index
-                                          , feedURI: this._makeURI(items[iid]["feedLink"])
-                                          , siteURI: this._makeURI(items[iid]["siteLink"])
-                                          }).then(null, Cu.reportError);
-        break;
+          // Don't bother updating the livemark contents on creation.
+          PlacesUtils.livemarks.addLivemark({ title: items[iid]["title"],
+                                              parentId: parentId,
+                                              index: index,
+                                              feedURI: this._makeURI(items[iid]["feedLink"]),
+                                              siteURI: this._makeURI(items[iid]["siteLink"])
+                                            }).then(null, Cu.reportError);
+          break;
 
-      case "bookmark":
-      default:
-        if (iid < defaultItemId)
-          index = prependIndex++;
+        case "bookmark":
+          // Fallthrough
+        default:
+          if (iid < defaultItemId) {
+            index = prependIndex++;
+          }
 
-        newId = PlacesUtils.bookmarks.insertBookmark(parentId,
-                                                     this._makeURI(items[iid]["link"]),
-                                                     index, items[iid]["title"]);
+          newId = PlacesUtils.bookmarks.insertBookmark(parentId,
+                                                       this._makeURI(items[iid]["link"]),
+                                                       index, items[iid]["title"]);
 
-        if (items[iid]["description"])
-          PlacesUtils.annotations.setItemAnnotation(newId,
-                                                    "bookmarkProperties/description",
-                                                    items[iid]["description"], 0,
-                                                    PlacesUtils.annotations.EXPIRE_NEVER);
+          if (items[iid]["description"]) {
+            PlacesUtils.annotations.setItemAnnotation(newId, "bookmarkProperties/description",
+                                                      items[iid]["description"], 0,
+                                                      PlacesUtils.annotations.EXPIRE_NEVER);
+          }
 
-        break;
+          break;
       }
     }
   },
@@ -179,8 +191,9 @@ DistributionCustomizer.prototype = {
   _customizationsApplied: false,
   applyCustomizations: function() {
     this._customizationsApplied = true;
-    if (!this._iniFile)
+    if (!this._iniFile) {
       return this._checkCustomizationComplete();
+    }
 
     // nsPrefService loads very early.  Reload prefs so we can set
     // distribution defaults during the prefservice:after-app-defaults
@@ -192,25 +205,27 @@ DistributionCustomizer.prototype = {
   _bookmarksApplied: false,
   applyBookmarks: function() {
     this._bookmarksApplied = true;
-    if (!this._iniFile)
+    if (!this._iniFile) {
       return this._checkCustomizationComplete();
+    }
 
     let sections = enumToObject(this._ini.getSections());
 
     // The global section, and several of its fields, is required
     // (we also check here to be consistent with applyPrefDefaults below)
-    if (!sections["Global"])
+    if (!sections["Global"]) {
       return this._checkCustomizationComplete();
+    }
     let globalPrefs = enumToObject(this._ini.getKeys("Global"));
-    if (!(globalPrefs["id"] && globalPrefs["version"] && globalPrefs["about"]))
+    if (!(globalPrefs["id"] && globalPrefs["version"] && globalPrefs["about"])) {
       return this._checkCustomizationComplete();
+    }
 
     let bmProcessedPref;
     try {
       bmProcessedPref = this._ini.getString("Global",
                                             "bookmarks.initialized.pref");
-    }
-    catch (e) {
+    } catch(e) {
       bmProcessedPref = "distribution." +
         this._ini.getString("Global", "id") + ".bookmarksProcessed";
     }
@@ -218,12 +233,14 @@ DistributionCustomizer.prototype = {
     let bmProcessed = this._prefs.getBoolPref(bmProcessedPref, false);
 
     if (!bmProcessed) {
-      if (sections["BookmarksMenu"])
+      if (sections["BookmarksMenu"]) {
         this._parseBookmarksSection(PlacesUtils.bookmarksMenuFolderId,
                                     "BookmarksMenu");
-      if (sections["BookmarksToolbar"])
+      }
+      if (sections["BookmarksToolbar"]) {
         this._parseBookmarksSection(PlacesUtils.toolbarFolderId,
                                     "BookmarksToolbar");
+      }
       this._prefs.setBoolPref(bmProcessedPref, true);
     }
     return this._checkCustomizationComplete();
@@ -232,17 +249,20 @@ DistributionCustomizer.prototype = {
   _prefDefaultsApplied: false,
   applyPrefDefaults: function() {
     this._prefDefaultsApplied = true;
-    if (!this._iniFile)
+    if (!this._iniFile) {
       return this._checkCustomizationComplete();
+    }
 
     let sections = enumToObject(this._ini.getSections());
 
     // The global section, and several of its fields, is required
-    if (!sections["Global"])
+    if (!sections["Global"]) {
       return this._checkCustomizationComplete();
+    }
     let globalPrefs = enumToObject(this._ini.getKeys("Global"));
-    if (!(globalPrefs["id"] && globalPrefs["version"] && globalPrefs["about"]))
+    if (!(globalPrefs["id"] && globalPrefs["version"] && globalPrefs["about"])) {
       return this._checkCustomizationComplete();
+    }
 
     let defaults = this._prefSvc.getDefaultBranch(null);
 
@@ -253,8 +273,8 @@ DistributionCustomizer.prototype = {
     defaults.setCharPref("distribution.version",
                          this._ini.getString("Global", "version"));
 
-    let partnerAbout = Cc["@mozilla.org/supports-string;1"].
-      createInstance(Ci.nsISupportsString);
+    let partnerAbout = Cc["@mozilla.org/supports-string;1"]
+                         .createInstance(Ci.nsISupportsString);
     try {
       if (globalPrefs["about." + this._locale]) {
         partnerAbout.data = this._ini.getString("Global", "about." + this._locale);
@@ -273,20 +293,22 @@ DistributionCustomizer.prototype = {
         try {
           let value = eval(this._ini.getString("Preferences", key));
           switch (typeof value) {
-          case "boolean":
-            defaults.setBoolPref(key, value);
-            break;
-          case "number":
-            defaults.setIntPref(key, value);
-            break;
-          case "string":
-            defaults.setCharPref(key, value);
-            break;
-          case "undefined":
-            defaults.setCharPref(key, value);
-            break;
+            case "boolean":
+              defaults.setBoolPref(key, value);
+              break;
+            case "number":
+              defaults.setIntPref(key, value);
+              break;
+            case "string":
+              defaults.setCharPref(key, value);
+              break;
+            case "undefined":
+              defaults.setCharPref(key, value);
+              break;
           }
-        } catch (e) { /* ignore bad prefs and move on */ }
+        } catch(e) {
+          /* ignore bad prefs and move on */
+        }
       }
     }
 
@@ -294,8 +316,8 @@ DistributionCustomizer.prototype = {
     // always get set as a string) to keep the INI format consistent:
     // string prefs always need to be in quotes
 
-    let localizedStr = Cc["@mozilla.org/pref-localizedstring;1"].
-      createInstance(Ci.nsIPrefLocalizedString);
+    let localizedStr = Cc["@mozilla.org/pref-localizedstring;1"]
+                         .createInstance(Ci.nsIPrefLocalizedString);
 
     if (sections["LocalizablePreferences"]) {
       for (let key in enumerate(this._ini.getKeys("LocalizablePreferences"))) {
@@ -304,7 +326,9 @@ DistributionCustomizer.prototype = {
           value = value.replace("%LOCALE%", this._locale, "g");
           localizedStr.data = "data:text/plain," + key + "=" + value;
           defaults.setComplexValue(key, Ci.nsIPrefLocalizedString, localizedStr);
-        } catch (e) { /* ignore bad prefs and move on */ }
+        } catch(e) {
+          /* ignore bad prefs and move on */
+        }
       }
     }
 
@@ -314,7 +338,9 @@ DistributionCustomizer.prototype = {
           let value = eval(this._ini.getString("LocalizablePreferences-" + this._locale, key));
           localizedStr.data = "data:text/plain," + key + "=" + value;
           defaults.setComplexValue(key, Ci.nsIPrefLocalizedString, localizedStr);
-        } catch (e) { /* ignore bad prefs and move on */ }
+        } catch(e) {
+          /* ignore bad prefs and move on */
+        }
       }
     }
 
@@ -325,21 +351,23 @@ DistributionCustomizer.prototype = {
     let prefDefaultsApplied = this._prefDefaultsApplied || !this._iniFile;
     if (this._customizationsApplied && this._bookmarksApplied &&
         prefDefaultsApplied) {
-      let os = Cc["@mozilla.org/observer-service;1"].
-               getService(Ci.nsIObserverService);
+      let os = Cc["@mozilla.org/observer-service;1"]
+                 .getService(Ci.nsIObserverService);
       os.notifyObservers(null, DISTRIBUTION_CUSTOMIZATION_COMPLETE_TOPIC, null);
     }
   }
 };
 
 function enumerate(UTF8Enumerator) {
-  while (UTF8Enumerator.hasMore())
+  while (UTF8Enumerator.hasMore()) {
     yield UTF8Enumerator.getNext();
+  }
 }
 
 function enumToObject(UTF8Enumerator) {
-  let ret = {};
-  for (let i in enumerate(UTF8Enumerator))
+  let ret = { };
+  for (let i in enumerate(UTF8Enumerator)) {
     ret[i] = 1;
+  }
   return ret;
 }

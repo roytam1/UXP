@@ -41,11 +41,12 @@ const NS_ERROR_WONT_HANDLE_CONTENT = 0x805d0001;
 const NS_ERROR_ABORT = Components.results.NS_ERROR_ABORT;
 
 const URI_INHERITS_SECURITY_CONTEXT = Components.interfaces.nsIHttpProtocolHandler
-                                        .URI_INHERITS_SECURITY_CONTEXT;
+                                                .URI_INHERITS_SECURITY_CONTEXT;
 
 function shouldLoadURI(aURI) {
-  if (aURI && !aURI.schemeIs("chrome"))
+  if (aURI && !aURI.schemeIs("chrome")) {
     return true;
+  }
 
   dump("*** Preventing external load of chrome: URI into browser window\n");
   dump("    Use -chrome <uri> instead\n");
@@ -63,10 +64,10 @@ function resolveURIInternal(aCmdLine, aArgument) {
   }
 
   try {
-    if (uri.file.exists())
+    if (uri.file.exists()) {
       return uri;
-  }
-  catch (e) {
+    }
+  } catch(e) {
     Components.utils.reportError(e);
   }
 
@@ -75,8 +76,7 @@ function resolveURIInternal(aCmdLine, aArgument) {
  
   try {
     uri = urifixup.createFixupURI(aArgument, 0);
-  }
-  catch (e) {
+  } catch(e) {
     Components.utils.reportError(e);
   }
 
@@ -102,8 +102,9 @@ const OVERRIDE_NEW_BUILD_ID = 3;
 function needHomepageOverride(prefb) {
   var savedmstone = prefb.getCharPref("browser.startup.homepage_override.mstone", "");
 
-  if (savedmstone == "ignore")
+  if (savedmstone == "ignore") {
     return OVERRIDE_NONE;
+  }
 
   var mstone = Services.appinfo.platformVersion;
 
@@ -116,8 +117,9 @@ function needHomepageOverride(prefb) {
     // agreement if the platform's installer had already shown one. Now with
     // about:rights we've removed the EULA stuff and default pref, but we need
     // a way to make existing profiles retain the default that we removed.
-    if (savedmstone)
+    if (savedmstone) {
       prefb.setBoolPref("browser.rights.3.shown", true);
+    }
     
     prefb.setCharPref("browser.startup.homepage_override.mstone", mstone);
     prefb.setCharPref("browser.startup.homepage_override.buildID", buildID);
@@ -146,7 +148,7 @@ function getPostUpdateOverridePage(defaultOverridePage) {
     // If the updates.xml file is deleted then getUpdateAt will throw.
     var update = um.getUpdateAt(0)
                    .QueryInterface(Components.interfaces.nsIPropertyBag);
-  } catch (e) {
+  } catch(e) {
     // This should never happen.
     Components.utils.reportError("Unable to find update: " + e);
     return defaultOverridePage;
@@ -155,13 +157,15 @@ function getPostUpdateOverridePage(defaultOverridePage) {
   let actions = update.getProperty("actions");
   // When the update doesn't specify actions fallback to the original behavior
   // of displaying the default override page.
-  if (!actions)
+  if (!actions) {
     return defaultOverridePage;
+  }
 
   // The existence of silent or the non-existence of showURL in the actions both
   // mean that an override page should not be displayed.
-  if (actions.indexOf("silent") != -1 || actions.indexOf("showURL") == -1)
+  if (actions.indexOf("silent") != -1 || actions.indexOf("showURL") == -1) {
     return "";
+  }
 
   return update.getProperty("openURL") || defaultOverridePage;
 }
@@ -187,19 +191,22 @@ function openWindow(parent, url, target, features, args, noExternalArgs) {
   
   // Pass an array to avoid the browser "|"-splitting behavior.
   var argArray = Components.classes["@mozilla.org/supports-array;1"]
-                    .createInstance(Components.interfaces.nsISupportsArray);
+                           .createInstance(Components.interfaces.nsISupportsArray);
 
   // add args to the arguments array
   var stringArgs = null;
-  if (args instanceof Array) // array
+  if (args instanceof Array) {
+    // array
     stringArgs = args;
-  else if (args) // string
+  } else if (args) {
+    // string
     stringArgs = [args];
+  }
 
   if (stringArgs) {
     // put the URIs into argArray
     var uriArray = Components.classes["@mozilla.org/supports-array;1"]
-                       .createInstance(Components.interfaces.nsISupportsArray);
+                             .createInstance(Components.interfaces.nsISupportsArray);
     stringArgs.forEach(function(uri) {
       var sstring = Components.classes["@mozilla.org/supports-string;1"]
                               .createInstance(nsISupportsString);
@@ -272,22 +279,22 @@ function doSearch(searchTerm, cmdLine) {
                            sa);
 }
 
-function nsBrowserContentHandler() {
-}
+function nsBrowserContentHandler() { }
 nsBrowserContentHandler.prototype = {
   classID: Components.ID("{5d0ce354-df01-421a-83fb-7ead0990c24e}"),
 
   _xpcom_factory: {
     createInstance: function(outer, iid) {
-      if (outer)
+      if (outer) {
         throw Components.results.NS_ERROR_NO_AGGREGATION;
+      }
       return gBrowserContentHandler.QueryInterface(iid);
     }
   },
 
   /* helper functions */
 
-  mChromeURL : null,
+  mChromeURL: null,
 
   get chromeURL() {
     if (this.mChromeURL) {
@@ -302,13 +309,13 @@ nsBrowserContentHandler.prototype = {
   },
 
   /* nsISupports */
-  QueryInterface : XPCOMUtils.generateQI([nsICommandLineHandler,
+  QueryInterface: XPCOMUtils.generateQI([ nsICommandLineHandler,
                                           nsIBrowserHandler,
                                           nsIContentHandler,
-                                          nsICommandLineValidator]),
+                                          nsICommandLineValidator ]),
 
   /* nsICommandLineHandler */
-  handle : function(cmdLine) {
+  handle: function(cmdLine) {
     if (cmdLine.handleFlag("browser", false)) {
       // Passing defaultArgs, so use NO_EXTERNAL_URIS
       openWindow(null, this.chromeURL, "_blank",
@@ -319,8 +326,7 @@ nsBrowserContentHandler.prototype = {
 
     try {
       var remoteCommand = cmdLine.handleFlagWithParam("remote", true);
-    }
-    catch (e) {
+    } catch(e) {
       throw NS_ERROR_ABORT;
     }
 
@@ -332,63 +338,63 @@ nsBrowserContentHandler.prototype = {
           remoteVerb = a[1].toLowerCase();
           var remoteParams = [];
           var sepIndex = a[2].lastIndexOf(",");
-          if (sepIndex == -1)
+          if (sepIndex == -1) {
             remoteParams[0] = a[2];
-          else {
+          } else {
             remoteParams[0] = a[2].substring(0, sepIndex);
             remoteParams[1] = a[2].substring(sepIndex + 1);
           }
         }
 
         switch (remoteVerb) {
-        case "openurl":
-        case "openfile":
-          // openURL(<url>)
-          // openURL(<url>,new-window)
-          // openURL(<url>,new-tab)
-
-          // First param is the URL, second param (if present) is the "target"
-          // (tab, window)
-          var url = remoteParams[0];
-          var target = nsIBrowserDOMWindow.OPEN_DEFAULTWINDOW;
-          if (remoteParams[1]) {
-            var targetParam = remoteParams[1].toLowerCase()
-                                             .replace(/^\s*|\s*$/g, "");
-            if (targetParam == "new-tab")
-              target = nsIBrowserDOMWindow.OPEN_NEWTAB;
-            else if (targetParam == "new-window")
-              target = nsIBrowserDOMWindow.OPEN_NEWWINDOW;
-            else {
-              // The "target" param isn't one of our supported values, so
-              // assume it's part of a URL that contains commas.
-              url += "," + remoteParams[1];
+          case "openurl":
+          case "openfile":
+            // openURL(<url>)
+            // openURL(<url>,new-window)
+            // openURL(<url>,new-tab)
+  
+            // First param is the URL, second param (if present) is the "target"
+            // (tab, window)
+            var url = remoteParams[0];
+            var target = nsIBrowserDOMWindow.OPEN_DEFAULTWINDOW;
+            if (remoteParams[1]) {
+              var targetParam = remoteParams[1].toLowerCase()
+                                               .replace(/^\s*|\s*$/g, "");
+              if (targetParam == "new-tab") {
+                target = nsIBrowserDOMWindow.OPEN_NEWTAB;
+              } else if (targetParam == "new-window") {
+                target = nsIBrowserDOMWindow.OPEN_NEWWINDOW;
+              } else {
+                // The "target" param isn't one of our supported values, so
+                // assume it's part of a URL that contains commas.
+                url += "," + remoteParams[1];
+              }
             }
-          }
 
-          var uri = resolveURIInternal(cmdLine, url);
-          handURIToExistingBrowser(uri, target, cmdLine);
-          break;
+            var uri = resolveURIInternal(cmdLine, url);
+            handURIToExistingBrowser(uri, target, cmdLine);
+            break;
 
-        case "xfedocommand":
-          // xfeDoCommand(openBrowser)
-          if (remoteParams[0].toLowerCase() != "openbrowser")
-            throw NS_ERROR_ABORT;
+          case "xfedocommand":
+            // xfeDoCommand(openBrowser)
+            if (remoteParams[0].toLowerCase() != "openbrowser") {
+              throw NS_ERROR_ABORT;
+            }
 
-          // Passing defaultArgs, so use NO_EXTERNAL_URIS
-          openWindow(null, this.chromeURL, "_blank",
-                     "chrome,dialog=no,all" + this.getFeatures(cmdLine),
-                     this.defaultArgs, NO_EXTERNAL_URIS);
-          break;
+            // Passing defaultArgs, so use NO_EXTERNAL_URIS
+            openWindow(null, this.chromeURL, "_blank",
+                       "chrome,dialog=no,all" + this.getFeatures(cmdLine),
+                       this.defaultArgs, NO_EXTERNAL_URIS);
+            break;
 
-        default:
-          // Somebody sent us a remote command we don't know how to process:
-          // just abort.
-          throw "Unknown remote command.";
+          default:
+            // Somebody sent us a remote command we don't know how to process:
+            // just abort.
+            throw "Unknown remote command.";
         }
 
         cmdLine.preventDefault = true;
-      }
-      catch (e) {
+      } catch (e) {
         Components.utils.reportError(e);
         // If we had a -remote flag but failed to process it, throw
         // NS_ERROR_ABORT so that the xremote code knows to return a failure
@@ -401,15 +407,15 @@ nsBrowserContentHandler.prototype = {
     try {
       while ((uriparam = cmdLine.handleFlagWithParam("new-window", false))) {
         var uri = resolveURIInternal(cmdLine, uriparam);
-        if (!shouldLoadURI(uri))
+        if (!shouldLoadURI(uri)) {
           continue;
+        }
         openWindow(null, this.chromeURL, "_blank",
                    "chrome,dialog=no,all" + this.getFeatures(cmdLine),
                    uri.spec);
         cmdLine.preventDefault = true;
       }
-    }
-    catch (e) {
+    } catch(e) {
       Components.utils.reportError(e);
     }
 
@@ -419,8 +425,7 @@ nsBrowserContentHandler.prototype = {
         handURIToExistingBrowser(uri, nsIBrowserDOMWindow.OPEN_NEWTAB, cmdLine);
         cmdLine.preventDefault = true;
       }
-    }
-    catch (e) {
+    } catch(e) {
       Components.utils.reportError(e);
     }
 
@@ -431,27 +436,29 @@ nsBrowserContentHandler.prototype = {
       if (chromeParam == "chrome://browser/content/pref/pref.xul") {
         openPreferences();
         cmdLine.preventDefault = true;
-      } else try {
-        // only load URIs which do not inherit chrome privs
-        var features = "chrome,dialog=no,all" + this.getFeatures(cmdLine);
-        var uri = resolveURIInternal(cmdLine, chromeParam);
-        var netutil = Components.classes["@mozilla.org/network/util;1"]
-                                .getService(nsINetUtil);
-        if (!netutil.URIChainHasFlags(uri, URI_INHERITS_SECURITY_CONTEXT)) {
-          openWindow(null, uri.spec, "_blank", features);
-          cmdLine.preventDefault = true;
-        }
-      }
-      catch (e) {
+      } else {
+        try {
+          // only load URIs which do not inherit chrome privs
+          var features = "chrome,dialog=no,all" + this.getFeatures(cmdLine);
+          var uri = resolveURIInternal(cmdLine, chromeParam);
+          var netutil = Components.classes["@mozilla.org/network/util;1"]
+                                  .getService(nsINetUtil);
+          if (!netutil.URIChainHasFlags(uri, URI_INHERITS_SECURITY_CONTEXT)) {
+            openWindow(null, uri.spec, "_blank", features);
+            cmdLine.preventDefault = true;
+          }
+        } catch(e) {
         Components.utils.reportError(e);
+        }
       }
     }
     if (cmdLine.handleFlag("preferences", false)) {
       openPreferences();
       cmdLine.preventDefault = true;
     }
-    if (cmdLine.handleFlag("silent", false))
+    if (cmdLine.handleFlag("silent", false)) {
       cmdLine.preventDefault = true;
+    }
 
     try {
       var privateWindowParam = cmdLine.handleFlagWithParam("private-window", false);
@@ -460,15 +467,15 @@ nsBrowserContentHandler.prototype = {
         handURIToExistingBrowser(resolvedURI, nsIBrowserDOMWindow.OPEN_NEWTAB, cmdLine, true);
         cmdLine.preventDefault = true;
       }
-    } catch (e) {
+    } catch(e) {
       if (e.result != Components.results.NS_ERROR_INVALID_ARG) {
         throw e;
       }
       // NS_ERROR_INVALID_ARG is thrown when flag exists, but has no param.
       if (cmdLine.handleFlag("private-window", false)) {
         openWindow(null, this.chromeURL, "_blank",
-          "chrome,dialog=no,private,all" + this.getFeatures(cmdLine),
-          "about:privatebrowsing");
+                   "chrome,dialog=no,private,all" + this.getFeatures(cmdLine),
+                   "about:privatebrowsing");
         cmdLine.preventDefault = true;
       }
     }
@@ -512,16 +519,12 @@ nsBrowserContentHandler.prototype = {
 #endif
   },
 
-  helpInfo : "  --browser                                    Open a browser window.\n" +
-             "  --new-window <url>                           Open <url> in a new window.\n" +
-             "  --new-tab <url>                              Open <url> in a new tab.\n" +
-             "  --private-window <url>                       Open <url> in a new private window.\n" +
-#ifdef XP_WIN
-             "  --preferences                                Open Options dialog.\n" +
-#else
-             "  --preferences                                Open Preferences dialog.\n" +
-#endif
-             "  --search <term>                              Search <term> with your default search engine.\n",
+  helpInfo: "  --browser                                    Open a browser window.\n" +
+            "  --new-window <url>                           Open <url> in a new window.\n" +
+            "  --new-tab <url>                              Open <url> in a new tab.\n" +
+            "  --private-window <url>                       Open <url> in a new private window.\n" +
+            "  --preferences                                Open Preferences dialog.\n" +
+            "  --search <term>                              Search <term> with your default search engine.\n",
 
   /* nsIBrowserHandler */
 
@@ -559,31 +562,36 @@ nsBrowserContentHandler.prototype = {
                                .getService(Components.interfaces.nsISessionStartup);
             haveUpdateSession = ss.doRestore();
             overridePage = Services.urlFormatter.formatURLPref("startup.homepage_override_url");
-            if (prefb.prefHasUserValue("app.update.postupdate"))
+            if (prefb.prefHasUserValue("app.update.postupdate")) {
               overridePage = getPostUpdateOverridePage(overridePage);
+            }
 
             overridePage = overridePage.replace("%OLD_VERSION%", old_mstone);
             break;
         }
       }
-    } catch (ex) {}
+    } catch(ex) {
+    }
 
     // formatURLPref might return "about:blank" if getting the pref fails
-    if (overridePage == "about:blank")
+    if (overridePage == "about:blank") {
       overridePage = "";
+    }
 
     var startPage = "";
     try {
       var choice = prefb.getIntPref("browser.startup.page");
-      if (choice == 1 || choice == 3)
+      if (choice == 1 || choice == 3) {
         startPage = this.startPage;
-    } catch (e) {
+      }
+    } catch(e) {
       Components.utils.reportError(e);
     }
 
     // Only show the startPage if we're not restoring an update session.
-    if (overridePage && startPage && !haveUpdateSession)
+    if (overridePage && startPage && !haveUpdateSession) {
       return overridePage + "|" + startPage;
+    }
 
     return overridePage || startPage || "about:logopage";
   },
@@ -599,9 +607,9 @@ nsBrowserContentHandler.prototype = {
     return uri;
   },
 
-  mFeatures : null,
+  mFeatures: null,
 
-  getFeatures : function(cmdLine) {
+  getFeatures: function(cmdLine) {
     if (this.mFeatures === null) {
       this.mFeatures = "";
 
@@ -609,12 +617,13 @@ nsBrowserContentHandler.prototype = {
         var width = cmdLine.handleFlagWithParam("width", false);
         var height = cmdLine.handleFlagWithParam("height", false);
 
-        if (width)
+        if (width) {
           this.mFeatures += ",width=" + width;
-        if (height)
+        }
+        if (height) {
           this.mFeatures += ",height=" + height;
-      }
-      catch (e) {
+        }
+      } catch(e) {
       }
 
       // The global PB Service consumes this flag, so only eat it in per-window
@@ -629,25 +638,24 @@ nsBrowserContentHandler.prototype = {
 
   /* nsIContentHandler */
 
-  handleContent : function(contentType, context, request) {
+  handleContent: function(contentType, context, request) {
     try {
       var webNavInfo = Components.classes["@mozilla.org/webnavigation-info;1"]
                                  .getService(nsIWebNavigationInfo);
       if (!webNavInfo.isTypeSupported(contentType, null)) {
         throw NS_ERROR_WONT_HANDLE_CONTENT;
       }
-    } catch (e) {
+    } catch(e) {
       throw NS_ERROR_WONT_HANDLE_CONTENT;
     }
 
     request.QueryInterface(nsIChannel);
-    handURIToExistingBrowser(request.URI,
-      nsIBrowserDOMWindow.OPEN_DEFAULTWINDOW, null);
+    handURIToExistingBrowser(request.URI, nsIBrowserDOMWindow.OPEN_DEFAULTWINDOW, null);
     request.cancel(NS_BINDING_ABORTED);
   },
 
   /* nsICommandLineValidator */
-  validate : function(cmdLine) {
+  validate: function(cmdLine) {
     // Other handlers may use osint so only handle the osint flag if the url
     // flag is also present and the command line is valid.
     var osintFlagIdx = cmdLine.findFlag("osint", false);
@@ -655,18 +663,20 @@ nsBrowserContentHandler.prototype = {
     if (urlFlagIdx > -1 && (osintFlagIdx > -1 ||
         cmdLine.state == nsICommandLine.STATE_REMOTE_EXPLICIT)) {
       var urlParam = cmdLine.getArgument(urlFlagIdx + 1);
-      if (cmdLine.length != urlFlagIdx + 2 || /firefoxurl:/.test(urlParam))
+      if (cmdLine.length != urlFlagIdx + 2 || /firefoxurl:/.test(urlParam)) {
         throw NS_ERROR_ABORT;
+      }
       cmdLine.handleFlag("osint", false)
     }
   },
 };
+
 var gBrowserContentHandler = new nsBrowserContentHandler();
 
-function handURIToExistingBrowser(uri, location, cmdLine, forcePrivate)
-{
-  if (!shouldLoadURI(uri))
+function handURIToExistingBrowser(uri, location, cmdLine, forcePrivate) {
+  if (!shouldLoadURI(uri)) {
     return;
+  }
 
   // Unless using a private window is forced, open external links in private
   // windows only if we're in perma-private mode.
@@ -692,14 +702,12 @@ function handURIToExistingBrowser(uri, location, cmdLine, forcePrivate)
                nsIBrowserDOMWindow.OPEN_EXTERNAL);
 }
 
-function nsDefaultCommandLineHandler() {
-}
-
+function nsDefaultCommandLineHandler() { }
 nsDefaultCommandLineHandler.prototype = {
   classID: Components.ID("{47cd0651-b1be-4a0f-b5c4-10e5a573ef71}"),
 
   /* nsISupports */
-  QueryInterface : function(iid) {
+  QueryInterface: function(iid) {
     if (!iid.equals(nsISupports) &&
         !iid.equals(nsICommandLineHandler))
       throw Components.results.NS_ERROR_NO_INTERFACE;
@@ -712,7 +720,7 @@ nsDefaultCommandLineHandler.prototype = {
 #endif
 
   /* nsICommandLineHandler */
-  handle : function(cmdLine) {
+  handle: function(cmdLine) {
     var urilist = [];
 
 #ifdef XP_WIN
@@ -729,8 +737,7 @@ nsDefaultCommandLineHandler.prototype = {
                            .getService(Components.interfaces.nsIProperties);
         var dir = fl.get("ProfD", Components.interfaces.nsILocalFile);
         this._haveProfile = true;
-      }
-      catch (e) {
+      } catch(e) {
         while ((ar = cmdLine.handleFlagWithParam("url", false))) { }
         cmdLine.preventDefault = true;
       }
@@ -743,8 +750,7 @@ nsDefaultCommandLineHandler.prototype = {
         var uri = resolveURIInternal(cmdLine, ar);
         urilist.push(uri);
       }
-    }
-    catch (e) {
+    } catch(e) {
       Components.utils.reportError(e);
     }
 
@@ -760,8 +766,7 @@ nsDefaultCommandLineHandler.prototype = {
       } else {
         try {
           urilist.push(resolveURIInternal(cmdLine, curarg));
-        }
-        catch (e) {
+        } catch(e) {
           Components.utils.reportError("Error opening URI '" + curarg + "' from the command line: " + e + "\n");
         }
       }
@@ -775,8 +780,7 @@ nsDefaultCommandLineHandler.prototype = {
         try {
           handURIToExistingBrowser(urilist[0], nsIBrowserDOMWindow.OPEN_DEFAULTWINDOW, cmdLine);
           return;
-        }
-        catch (e) {
+        } catch(e) {
         }
       }
 
@@ -787,8 +791,7 @@ nsDefaultCommandLineHandler.prototype = {
                    URLlist);
       }
 
-    }
-    else if (!cmdLine.preventDefault) {
+    } else if (!cmdLine.preventDefault) {
       // Passing defaultArgs, so use NO_EXTERNAL_URIS
       openWindow(null, gBrowserContentHandler.chromeURL, "_blank",
                  "chrome,dialog=no,all" + gBrowserContentHandler.getFeatures(cmdLine),

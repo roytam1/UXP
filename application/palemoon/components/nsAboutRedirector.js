@@ -15,7 +15,7 @@ const ALLOW_SCRIPT                    = Ci.nsIAboutModule.ALLOW_SCRIPT;
 const HIDE_FROM_ABOUTABOUT            = Ci.nsIAboutModule.HIDE_FROM_ABOUTABOUT;
 const MAKE_LINKABLE                   = Ci.nsIAboutModule.MAKE_LINKABLE;
 
-function AboutRedirector() {}
+function AboutRedirector() { }
 AboutRedirector.prototype = {
   classDescription: "Browser about: Redirector",
   classID: Components.ID("{8cc51368-6aa0-43e8-b762-bde9b9fd828c}"),
@@ -88,15 +88,17 @@ AboutRedirector.prototype = {
 
   getURIFlags: function(aURI) {
     let name = this._getModuleName(aURI);
-    if (!(name in this._redirMap))
+    if (!(name in this._redirMap)) {
       throw Cr.NS_ERROR_ILLEGAL_VALUE;
+    }
     return this._redirMap[name].flags;
   },
 
   newChannel: function(aURI, aLoadInfo) {
     let name = this._getModuleName(aURI);
-    if (!(name in this._redirMap))
+    if (!(name in this._redirMap)) {
       throw Cr.NS_ERROR_ILLEGAL_VALUE;
+    }
 
     let newURI = Services.io.newURI(this._redirMap[name].url, null, null);
     let channel = Services.io.newChannelFromURIWithLoadInfo(newURI, aLoadInfo);
