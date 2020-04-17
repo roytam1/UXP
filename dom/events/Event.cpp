@@ -11,6 +11,7 @@
 #include "mozilla/dom/ShadowRoot.h"
 #include "mozilla/ContentEvents.h"
 #include "mozilla/DOMEventTargetHelper.h"
+#include "mozilla/EventDispatcher.h"
 #include "mozilla/EventStateManager.h"
 #include "mozilla/InternalMutationEvent.h"
 #include "mozilla/dom/Performance.h"
@@ -296,6 +297,12 @@ EventTarget*
 Event::GetCurrentTarget() const
 {
   return mEvent->GetCurrentDOMEventTarget();
+}
+
+void
+Event::ComposedPath(nsTArray<RefPtr<EventTarget>>& aPath)
+{
+  EventDispatcher::GetComposedPathFor(mEvent, aPath);
 }
 
 NS_IMETHODIMP

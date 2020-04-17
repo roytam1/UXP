@@ -124,6 +124,9 @@ public:
     , mWantsWillHandleEvent(false)
     , mMayHaveListenerManager(true)
     , mWantsPreHandleEvent(false)
+    , mRootOfClosedTree(false)
+    , mParentIsSlotInClosedTree(false)
+    , mParentIsChromeHandler(false)
     , mParentTarget(nullptr)
     , mEventTargetAtParent(nullptr)
   {
@@ -139,8 +142,24 @@ public:
     mWantsWillHandleEvent = false;
     mMayHaveListenerManager = true;
     mWantsPreHandleEvent = false;
+    mRootOfClosedTree = false;
+    mParentIsSlotInClosedTree = false;
+    mParentIsChromeHandler = false;
     mParentTarget = nullptr;
     mEventTargetAtParent = nullptr;
+  }
+
+  dom::EventTarget* GetParentTarget()
+  {
+    return mParentTarget;
+  }
+
+  void SetParentTarget(dom::EventTarget* aParentTarget, bool aIsChromeHandler)
+  {
+    mParentTarget = aParentTarget;
+    if (mParentTarget) {
+      mParentIsChromeHandler = aIsChromeHandler;
+    }
   }
 
   /**
@@ -195,10 +214,29 @@ public:
   bool mWantsPreHandleEvent;
 
   /**
+   * True if the current target is either closed ShadowRoot or root of
+   * chrome only access tree (for example native anonymous content).
+   */
+  bool mRootOfClosedTree;
+
+  /**
+   * True if mParentTarget is HTMLSlotElement in a closed shadow tree and the
+   * current target is assigned to that slot.
+   */
+  bool mParentIsSlotInClosedTree;
+
+  /**
+   * True if mParentTarget is a chrome handler in the event path.
+   */
+  bool mParentIsChromeHandler;
+
+private:
+  /**
    * Parent item in the event target chain.
    */
   dom::EventTarget* mParentTarget;
 
+public:
   /**
    * If the event needs to be retargeted, this is the event target,
    * which should be used when the event is handled at mParentTarget.
@@ -280,6 +318,9 @@ public:
                                                   nsPresContext* aPresContext,
                                                   WidgetEvent* aEvent,
                                                   const nsAString& aEventType);
+
+  static void GetComposedPathFor(WidgetEvent* aEvent,
+                                 nsTArray<RefPtr<dom::EventTarget>>& aPath);
 
   /**
    * Called at shutting down.

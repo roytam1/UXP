@@ -69,7 +69,7 @@ IDBFileRequest::GetEventTargetParent(EventChainPreVisitor& aVisitor)
   AssertIsOnOwningThread();
 
   aVisitor.mCanHandle = true;
-  aVisitor.mParentTarget = mFileHandle;
+  aVisitor.SetParentTarget(mFileHandle, false);
   return NS_OK;
 }
 

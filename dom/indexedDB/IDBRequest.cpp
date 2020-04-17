@@ -454,7 +454,7 @@ IDBRequest::GetEventTargetParent(EventChainPreVisitor& aVisitor)
   AssertIsOnOwningThread();
 
   aVisitor.mCanHandle = true;
-  aVisitor.mParentTarget = mTransaction;
+  aVisitor.SetParentTarget(mTransaction, false);
   return NS_OK;
 }
 

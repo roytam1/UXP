@@ -25,6 +25,8 @@ struct ParamTraits;
 
 namespace mozilla {
 
+class EventTargetChainItem;
+
 /******************************************************************************
  * mozilla::BaseEventFlags
  *
@@ -350,6 +352,7 @@ protected:
     , mRefPoint(0, 0)
     , mLastRefPoint(0, 0)
     , mSpecifiedEventType(nullptr)
+    , mPath(nullptr)
   {
     MOZ_COUNT_CTOR(WidgetEvent);
     mFlags.Clear();
@@ -361,6 +364,7 @@ protected:
 
   WidgetEvent()
     : WidgetEventTime()
+    , mPath(nullptr)
   {
     MOZ_COUNT_CTOR(WidgetEvent);
   }
@@ -418,6 +422,8 @@ public:
   nsCOMPtr<dom::EventTarget> mTarget;
   nsCOMPtr<dom::EventTarget> mCurrentTarget;
   nsCOMPtr<dom::EventTarget> mOriginalTarget;
+
+  nsTArray<EventTargetChainItem>* mPath;
 
   dom::EventTarget* GetDOMEventTarget() const;
   dom::EventTarget* GetCurrentDOMEventTarget() const;
