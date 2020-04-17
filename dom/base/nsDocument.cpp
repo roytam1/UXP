@@ -1332,6 +1332,10 @@ nsIDocument::nsIDocument()
 {
   SetIsInDocument();
 
+  // Set this when document is created and value stays the same for the lifetime
+  // of the document.
+  mIsWebComponentsEnabled = nsContentUtils::IsWebComponentsEnabled();
+
   PR_INIT_CLIST(&mDOMMediaQueryLists);
 }
 
@@ -5683,6 +5687,12 @@ nsDocument::IsWebComponentsEnabled(JSContext* aCx, JSObject* aObject)
     do_QueryInterface(nsJSUtils::GetStaticScriptGlobal(global));
 
   return IsWebComponentsEnabled(window);
+}
+
+bool
+nsDocument::IsWebComponentsEnabled(const nsINode* aNode)
+{
+  return aNode->OwnerDoc()->IsWebComponentsEnabled();
 }
 
 bool

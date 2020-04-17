@@ -793,7 +793,6 @@ public:
 
   virtual void NotifyLayerManagerRecreated() override;
 
-
 private:
   void AddOnDemandBuiltInUASheet(mozilla::StyleSheet* aSheet);
   nsRadioGroupStruct* GetRadioGroupInternal(const nsAString& aName) const;
@@ -1383,6 +1382,9 @@ protected:
 public:
   // Check whether web components are enabled for the global of aObject.
   static bool IsWebComponentsEnabled(JSContext* aCx, JSObject* aObject);
+  // Check whether web components are enabled for the document this node belongs
+  // to.
+  static bool IsWebComponentsEnabled(const nsINode* aNode);
   // Check whether web components are enabled for the global of the document
   // this nodeinfo comes from.
   static bool IsWebComponentsEnabled(mozilla::dom::NodeInfo* aNodeInfo);
