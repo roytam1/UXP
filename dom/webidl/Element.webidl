@@ -238,9 +238,9 @@ partial interface Element {
   // Shadow DOM v1
   [Throws, Pref="nsDocument::IsWebComponentsEnabled"]
   ShadowRoot attachShadow(ShadowRootInit shadowRootInitDict);
-  [Func="nsDocument::IsWebComponentsEnabled"]
+  [BinaryName="shadowRootByMode", Func="nsDocument::IsWebComponentsEnabled"]
   readonly attribute ShadowRoot? shadowRoot;
-  [Pref="nsDocument::IsWebComponentsEnabled"]
+  [BinaryName="assignedSlotByMode", Pref="nsDocument::IsWebComponentsEnabled"]
   readonly attribute HTMLSlotElement? assignedSlot;
   [CEReactions, Unscopable, SetterThrows, Pref="nsDocument::IsWebComponentsEnabled"]
            attribute DOMString slot;

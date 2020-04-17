@@ -51,6 +51,11 @@ public:
   {
     return mMode;
   }
+  bool IsClosed()
+  {
+    return mMode == ShadowRootMode::Closed;
+  }
+
 
   // [deprecated] Shadow DOM v0
   void AddToIdTable(Element* aElement, nsIAtom* aId);
