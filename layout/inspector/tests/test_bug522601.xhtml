@@ -237,6 +237,8 @@ addLoadEvent(function() {
   testFunc(walkerAnon, "previousNode", $("display"), "step back to root (anon)");
   testFunc(walkerAnon, "previousNode", null, "step back past root (anon)");
 
+  //XXXsmaug update this test for Shadow DOM v1! bug 1421539
+  /*if (Element.prototype.createShadowRoot) {
   var shadowdiv = document.querySelector('#test-shadow');
   var shadowRoot = shadowdiv.createShadowRoot();
   var h = document.createElement("header");
@@ -266,6 +268,7 @@ addLoadEvent(function() {
 
   SimpleTest.finish();
 });
+  }*/
 
 ]]>
 </script>

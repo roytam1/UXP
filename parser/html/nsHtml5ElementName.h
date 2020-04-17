@@ -539,7 +539,6 @@ class nsHtml5ElementName
     static nsHtml5ElementName* ELT_ARCCOT;
     static nsHtml5ElementName* ELT_BASEFONT;
     static nsHtml5ElementName* ELT_CARTESIANPRODUCT;
-    static nsHtml5ElementName* ELT_CONTENT;
     static nsHtml5ElementName* ELT_GT;
     static nsHtml5ElementName* ELT_DETERMINANT;
     static nsHtml5ElementName* ELT_DATALIST;
