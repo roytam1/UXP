@@ -57,6 +57,7 @@
 #include "nsGlobalWindow.h"
 #include "nsPIWindowRoot.h"
 #include "nsLayoutUtils.h"
+#include "nsMappedAttributes.h"
 #include "nsView.h"
 #include "GroupedSHistory.h"
 #include "PartialSHistory.h"
@@ -936,6 +937,8 @@ nsFrameLoader::MarginsChanged(uint32_t aMarginWidth,
   RefPtr<nsPresContext> presContext;
   mDocShell->GetPresContext(getter_AddRefs(presContext));
   if (presContext)
+    // rebuild, because now the same nsMappedAttributes* will produce
+    // a different style
     presContext->RebuildAllStyleData(nsChangeHint(0), eRestyle_Subtree);
 }
 
