@@ -7,6 +7,7 @@
 #ifndef mozilla_dom_ImageBitmapUtils_h
 #define mozilla_dom_ImageBitmapUtils_h
 
+#include "ImageBitmap.h"
 #include "mozilla/UniquePtr.h"
 #include "nsTArrayForwardDeclare.h"
 

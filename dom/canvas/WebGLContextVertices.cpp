@@ -7,6 +7,7 @@
 
 #include "GLContext.h"
 #include "mozilla/CheckedInt.h"
+#include "WebGL2Context.h"
 #include "WebGLBuffer.h"
 #include "WebGLFramebuffer.h"
 #include "WebGLProgram.h"

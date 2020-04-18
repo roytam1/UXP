@@ -6,6 +6,9 @@
 
 #include "OffscreenCanvas.h"
 
+#include "mozilla/dom/File.h" // for Blob
+#include "mozilla/dom/ImageEncoder.h"
+#include "mozilla/dom/Promise.h"
 #include "mozilla/dom/OffscreenCanvasBinding.h"
 #include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/dom/WorkerScope.h"
@@ -15,10 +18,15 @@
 #include "mozilla/Telemetry.h"
 #include "CanvasRenderingContext2D.h"
 #include "CanvasUtils.h"
+#include "GLContext.h"
 #include "GLScreenBuffer.h"
+#include "ImageBitmap.h"
 #include "WebGL1Context.h"
 #include "WebGL2Context.h"
 
+using namespace mozilla::layers;
+using namespace mozilla::dom::workers;
+ 
 namespace mozilla {
 namespace dom {
 

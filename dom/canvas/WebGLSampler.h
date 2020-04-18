@@ -8,6 +8,7 @@
 
 #include "mozilla/LinkedList.h"
 #include "nsWrapperCache.h"
+#include "WebGLContext.h"
 #include "WebGLObjectModel.h"
 #include "WebGLStrongTypes.h"
 

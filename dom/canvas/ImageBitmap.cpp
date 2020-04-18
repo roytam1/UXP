@@ -5,19 +5,29 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "mozilla/dom/ImageBitmap.h"
+
 #include "mozilla/CheckedInt.h"
+#include "mozilla/dom/File.h" // for Blob
+#include "mozilla/dom/HTMLImageElement.h"
 #include "mozilla/dom/ImageBitmapBinding.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/StructuredCloneTags.h"
+#include "mozilla/dom/UnionTypes.h" // for ArrayBufferViewOrArrayBuffer
 #include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/dom/WorkerRunnable.h"
-#include "mozilla/gfx/2D.h"
+#include "CanvasRenderingContext2D.h"
+#include "gfxUtils.h"
 #include "ImageBitmapColorUtils.h"
 #include "ImageBitmapUtils.h"
+#include "ImageData.h"
+#include "ImageLayers.h"
 #include "ImageUtils.h"
 #include "imgTools.h"
 #include "libyuv.h"
+#include "nsLayoutUtils.h"
+#include "OffscreenCanvas.h"
 
+using namespace mozilla::dom;
 using namespace mozilla::gfx;
 using namespace mozilla::layers;
 
