@@ -12,6 +12,7 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/dom/File.h"
 
+using namespace mozilla;
 using namespace mozilla::dom;
 USING_ARCHIVEREADER_NAMESPACE
 

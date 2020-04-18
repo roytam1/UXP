@@ -13,7 +13,7 @@ EXPORTS.mozilla.dom.archivereader += [
     'ArchiveZipFile.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'ArchiveEvent.cpp',
     'ArchiveReader.cpp',
     'ArchiveRequest.cpp',
