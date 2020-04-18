@@ -12,8 +12,11 @@
 #include "nsID.h"
 #include "nsIInputStream.h"
 #include "nsISupportsImpl.h"
+#include "mozilla/ErrorResult.h"
 #include "mozilla/RefPtr.h"
 #include "nsTArrayForwardDeclare.h"
+
+using namespace mozilla;
 
 namespace mozilla {
 namespace ipc {
