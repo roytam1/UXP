@@ -22,7 +22,7 @@ EXPORTS.mozilla.dom += [
     'Console.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'Console.cpp',
     'ConsoleReportCollector.cpp',
 ]
