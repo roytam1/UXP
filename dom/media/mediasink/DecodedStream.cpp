@@ -19,6 +19,8 @@
 #include "VideoSegment.h"
 #include "VideoUtils.h"
 
+#include "nsPrintfCString.h"
+
 namespace mozilla {
 
 #undef DUMP_LOG
