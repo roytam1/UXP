@@ -172,7 +172,7 @@ var FullScreen = {
     if (aEvent.keyCode == aEvent.DOM_VK_ESCAPE) {
       FullScreen.hideNavToolbox(true);
     } else if (aEvent.keyCode == aEvent.DOM_VK_F6) {
-    // F6 is another shortcut to the address bar, but its not covered in OpenLocation()
+      // F6 is another shortcut to the address bar, but its not covered in OpenLocation()
       FullScreen.showNavToolbox();
     }
   },

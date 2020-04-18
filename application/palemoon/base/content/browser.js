@@ -5710,8 +5710,7 @@ var BrowserOffline = {
     // Stop automatic management of the offline status
     try {
       ioService.manageOfflineStatus = false;
-    } catch(ex) {
-    }
+    } catch(ex) {}
 
     if (!ioService.offline && !this._canGoOffline()) {
       this._updateOfflineUI(false);
@@ -7524,8 +7523,7 @@ var ToolbarIconColor = {
         var colorChangedPref = false;
         try {
           colorChangedPref = gPrefService.getBoolPref("ui.colorChanged");
-        } catch(e) {
-        }
+        } catch(e) {}
         // if pref indicates change, call inferFromText() on a small delay
         if (colorChangedPref == true) {
           setTimeout(() => { this.inferFromText(); }, 300);
