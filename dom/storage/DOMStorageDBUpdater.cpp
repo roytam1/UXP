@@ -4,12 +4,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "DOMStorageDBThread.h"
 #include "DOMStorageManager.h"
 
 #include "mozIStorageBindingParamsArray.h"
 #include "mozIStorageBindingParams.h"
 #include "mozIStorageValueArray.h"
 #include "mozIStorageFunction.h"
+
+#include "mozStorageHelper.h"
+
 #include "mozilla/BasePrincipal.h"
 #include "nsVariant.h"
 #include "mozilla/Services.h"
