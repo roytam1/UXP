@@ -7,6 +7,7 @@
 #ifndef mozilla_IMEContentObserver_h_
 #define mozilla_IMEContentObserver_h_
 
+#include "ContentEventHandler.h"
 #include "mozilla/Attributes.h"
 #include "nsCOMPtr.h"
 #include "nsCycleCollectionParticipant.h"

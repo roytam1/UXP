@@ -76,7 +76,7 @@ EXPORTS.mozilla.dom += [
 if CONFIG['MOZ_WEBSPEECH']:
     EXPORTS.mozilla.dom += ['SpeechRecognitionError.h']
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'AnimationEvent.cpp',
     'AsyncEventDispatcher.cpp',
     'BeforeAfterKeyboardEvent.cpp',
@@ -97,6 +97,7 @@ UNIFIED_SOURCES += [
     'EventDispatcher.cpp',
     'EventListenerManager.cpp',
     'EventListenerService.cpp',
+    'EventStateManager.cpp',
     'EventTarget.cpp',
     'FocusEvent.cpp',
     'ImageCaptureError.cpp',
@@ -126,13 +127,8 @@ UNIFIED_SOURCES += [
     'XULCommandEvent.cpp',
 ]
 
-# nsEventStateManager.cpp should be built separately because of Mac OS X headers.
-SOURCES += [
-    'EventStateManager.cpp',
-]
-
 if CONFIG['MOZ_WEBSPEECH']:
-    UNIFIED_SOURCES += ['SpeechRecognitionError.cpp']
+    SOURCES += ['SpeechRecognitionError.cpp']
 
 include('/ipc/chromium/chromium-config.mozbuild')
 
