@@ -19,9 +19,12 @@ EXPORTS.mozilla.dom += [
 ]
 
 UNIFIED_SOURCES += [
-    'ChannelInfo.cpp',
     'Fetch.cpp',
     'FetchConsumer.cpp',
+]
+
+SOURCES += [
+    'ChannelInfo.cpp',
     'FetchDriver.cpp',
     'FetchUtil.cpp',
     'Headers.cpp',
