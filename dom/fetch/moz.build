@@ -21,6 +21,8 @@ EXPORTS.mozilla.dom += [
 UNIFIED_SOURCES += [
     'Fetch.cpp',
     'FetchConsumer.cpp',
+    'Request.cpp',
+    'Response.cpp',
 ]
 
 SOURCES += [
@@ -31,8 +33,6 @@ SOURCES += [
     'InternalHeaders.cpp',
     'InternalRequest.cpp',
     'InternalResponse.cpp',
-    'Request.cpp',
-    'Response.cpp',
 ]
 
 IPDL_SOURCES += [
