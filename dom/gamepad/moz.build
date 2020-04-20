@@ -31,7 +31,7 @@ if CONFIG['MOZ_GAMEPAD']:
         'ipc/GamepadTestChannelParent.h'
         ]
 
-    UNIFIED_SOURCES = [
+    SOURCES = [
         'Gamepad.cpp',
         'GamepadButton.cpp',
         'GamepadManager.cpp',
@@ -46,23 +46,23 @@ if CONFIG['MOZ_GAMEPAD']:
         ]
 
     if CONFIG['MOZ_GAMEPAD_BACKEND'] == 'stub':
-        UNIFIED_SOURCES += [
+        SOURCES += [
             'fallback/FallbackGamepad.cpp'
         ]
     elif CONFIG['MOZ_GAMEPAD_BACKEND'] == 'cocoa':
-        UNIFIED_SOURCES += [
+        SOURCES += [
             'cocoa/CocoaGamepad.cpp'
         ]
     elif CONFIG['MOZ_GAMEPAD_BACKEND'] == 'windows':
-        UNIFIED_SOURCES += [
+        SOURCES += [
             'windows/WindowsGamepad.cpp'
         ]
     elif CONFIG['MOZ_GAMEPAD_BACKEND'] == 'linux':
-        UNIFIED_SOURCES += [
+        SOURCES += [
             'linux/LinuxGamepad.cpp'
         ]
     elif CONFIG['MOZ_GAMEPAD_BACKEND'] == 'android':
-        UNIFIED_SOURCES += [
+        SOURCES += [
             'android/AndroidGamepad.cpp'
         ]
 

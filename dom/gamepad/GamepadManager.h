@@ -7,11 +7,14 @@
 #ifndef mozilla_dom_GamepadManager_h_
 #define mozilla_dom_GamepadManager_h_
 
+#include "nsGlobalWindow.h"
 #include "nsIIPCBackgroundChildCreateCallback.h"
 #include "nsIObserver.h"
 // Needed for GamepadMappingType
 #include "mozilla/dom/GamepadBinding.h"
+#include "mozilla/dom/GamepadPoseState.h"
 #include "mozilla/dom/GamepadServiceType.h"
+#include "nsRefPtrHashtable.h"
 
 class nsGlobalWindow;
 

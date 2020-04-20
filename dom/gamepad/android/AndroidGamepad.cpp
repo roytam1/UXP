@@ -7,6 +7,7 @@
 #include "GeneratedJNIWrappers.h"
 #include "GeneratedJNINatives.h"
 #include "nsThreadUtils.h"
+#include "mozilla/dom/Gamepad.h"
 
 namespace mozilla {
 namespace dom {

@@ -2,6 +2,8 @@
 #ifndef mozilla_dom_gamepad_GamepadPoseState_h_
 #define mozilla_dom_gamepad_GamepadPoseState_h_
 
+#include "mozilla/TypedEnumBits.h"
+
 namespace mozilla{
 namespace dom{
 

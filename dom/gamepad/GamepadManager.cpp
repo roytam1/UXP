@@ -20,7 +20,6 @@
 #include "mozilla/StaticPtr.h"
 
 #include "nsAutoPtr.h"
-#include "nsGlobalWindow.h"
 #include "nsIDOMEvent.h"
 #include "nsIDOMDocument.h"
 #include "nsIDOMWindow.h"

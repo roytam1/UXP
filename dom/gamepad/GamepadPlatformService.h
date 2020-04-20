@@ -15,6 +15,7 @@
 namespace mozilla {
 namespace dom {
 
+class GamepadChangeEvent;
 class GamepadEventChannelParent;
 
 // Platform Service for building and transmitting IPDL messages
