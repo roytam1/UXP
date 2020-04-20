@@ -7,11 +7,13 @@
 #ifndef mozilla_dom_GridDimension_h
 #define mozilla_dom_GridDimension_h
 
+#include "mozilla/dom/GridBinding.h"
 #include "nsWrapperCache.h"
 
 namespace mozilla {
 
 struct ComputedGridTrackInfo;
+struct ComputedGridLineInfo;
 
 namespace dom {
 
