@@ -15,8 +15,11 @@
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/ipc/BlobChild.h"
 #include "mozilla/dom/ipc/BlobParent.h"
+#include "mozilla/ipc/BackgroundParent.h"
 #include "nsIFile.h"
 #include "nsStringGlue.h"
+
+using namespace mozilla::ipc;
 
 namespace mozilla {
 namespace dom {

@@ -19,6 +19,8 @@
 #include "mozilla/Unused.h"
 #include "nsProxyRelease.h"
 
+using namespace mozilla::ipc;
+
 namespace mozilla {
 namespace dom {
 
