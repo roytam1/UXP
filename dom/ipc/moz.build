@@ -44,11 +44,13 @@ EXPORTS.mozilla += [
     'ProcessPriorityManager.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'AppProcessChecker.cpp',
+    'Blob.cpp',
     'ColorPickerParent.cpp',
     'ContentBridgeChild.cpp',
     'ContentBridgeParent.cpp',
+    'ContentChild.cpp',
     'ContentParent.cpp',
     'ContentProcess.cpp',
     'ContentProcessManager.cpp',
@@ -57,6 +59,7 @@ UNIFIED_SOURCES += [
     'nsIContentParent.cpp',
     'PermissionMessageUtils.cpp',
     'PreallocatedProcessManager.cpp',
+    'ProcessHangMonitor.cpp',
     'ProcessPriorityManager.cpp',
     'ScreenManagerParent.cpp',
     'StructuredCloneData.cpp',
@@ -64,14 +67,6 @@ UNIFIED_SOURCES += [
     'TabContext.cpp',
     'TabMessageUtils.cpp',
     'TabParent.cpp',
-]
-
-# Blob.cpp cannot be compiled in unified mode because it triggers a fatal gcc warning.
-# ContentChild.cpp cannot be compiled in unified mode on  linux due to Time conflict
-SOURCES += [
-    'Blob.cpp',
-    'ContentChild.cpp',
-    'ProcessHangMonitor.cpp',
 ]
 
 IPDL_SOURCES += [
