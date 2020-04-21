@@ -11,6 +11,7 @@
 #include "nsContentUtils.h"
 #include "nsStyleConsts.h"
 #include "nsIContentSecurityPolicy.h"
+#include "nsIDOMDocument.h"
 
 NS_IMPL_NS_NEW_HTML_ELEMENT(Meta)
 
