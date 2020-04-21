@@ -52,6 +52,8 @@
 // Include this last to avoid path problems on Windows.
 #include "ActorsChild.h"
 
+using namespace mozilla::dom::indexedDB;
+
 namespace mozilla {
 namespace dom {
 
