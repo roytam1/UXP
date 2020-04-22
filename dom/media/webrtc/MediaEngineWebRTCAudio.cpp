@@ -9,6 +9,7 @@
 #include "MediaTrackConstraints.h"
 #include "mtransport/runnable_utils.h"
 #include "nsAutoPtr.h"
+#include "nsContentUtils.h"
 
 // scoped_ptr.h uses FF
 #ifdef FF

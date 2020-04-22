@@ -22,6 +22,7 @@
 #include "AudioSegment.h"
 #include "endpointer.h"
 
+#include "SpeechGrammar.h"
 #include "mozilla/dom/SpeechRecognitionEvent.h"
 #include "nsContentUtils.h"
 #include "nsIDocument.h"
