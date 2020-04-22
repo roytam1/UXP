@@ -10,7 +10,7 @@ EXPORTS.mozilla += [
     'MediaDrmProxySupport.h',
 ]
 
-SOURCES += [
+UNIFIED_SOURCES += [
     'MediaDrmCDMCallbackProxy.cpp',
     'MediaDrmCDMProxy.cpp',
     'MediaDrmProxySupport.cpp',

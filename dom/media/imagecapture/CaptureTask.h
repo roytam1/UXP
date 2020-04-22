@@ -86,24 +86,6 @@ protected:
   bool mPrincipalChanged;
 };
 
-class CaptureTask::MediaStreamEventListener : public MediaStreamTrackListener
-{
-public:
-  explicit MediaStreamEventListener(CaptureTask* aCaptureTask)
-    : mCaptureTask(aCaptureTask) {};
-
-  // MediaStreamListener methods.
-  void NotifyEnded() override
-  {
-    if(!mCaptureTask->mImageGrabbedOrTrackEnd) {
-      mCaptureTask->PostTrackEndEvent();
-    }
-  }
-
-private:
-  CaptureTask* mCaptureTask;
-};
-
 } // namespace mozilla
 
 #endif // CAPTURETASK_H

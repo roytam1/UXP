@@ -6,11 +6,9 @@
 
 #include "mozilla/TaskQueue.h"
 
-#include "DecoderDoctorDiagnostics.h"
 #include "H264Converter.h"
 #include "ImageContainer.h"
 #include "MediaInfo.h"
-#include "PDMFactory.h"
 #include "mp4_demuxer/AnnexB.h"
 #include "mp4_demuxer/H264.h"
 

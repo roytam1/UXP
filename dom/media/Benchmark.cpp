@@ -11,7 +11,6 @@
 #include "PDMFactory.h"
 #include "WebMDemuxer.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/SharedThreadPool.h"
 #include "mozilla/dom/ContentChild.h"
 
 #ifndef MOZ_WIDGET_ANDROID

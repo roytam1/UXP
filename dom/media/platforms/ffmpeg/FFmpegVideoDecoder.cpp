@@ -16,7 +16,6 @@
 #include "FFmpegVideoDecoder.h"
 #include "FFmpegLog.h"
 #include "mozilla/PodOperations.h"
-#include "prsystem.h" // for PR_GetNumberOfProcessors
 
 #include "libavutil/pixfmt.h"
 #if LIBAVCODEC_VERSION_MAJOR < 54

@@ -8,7 +8,6 @@
 #include "gfxPlatform.h"
 #include "ImageContainer.h"
 #include "MediaStreamGraph.h"
-#include "MediaStreamListener.h"
 #include "mozilla/dom/CanvasCaptureMediaStreamBinding.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/Atomics.h"

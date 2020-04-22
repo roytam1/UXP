@@ -7,7 +7,6 @@
 #ifndef MOZILLA_MEDIASTREAMLISTENER_h_
 #define MOZILLA_MEDIASTREAMLISTENER_h_
 
-#include "MediaStreamGraph.h"
 #include "StreamTracks.h"
 
 namespace mozilla {

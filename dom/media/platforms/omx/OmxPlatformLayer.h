@@ -7,7 +7,6 @@
 #if !defined(OmxPlatformLayer_h_)
 #define OmxPlatformLayer_h_
 
-#include "OMX_Component.h"
 #include "OMX_Core.h"
 #include "OMX_Types.h"
 

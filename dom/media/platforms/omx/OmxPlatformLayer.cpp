@@ -6,8 +6,6 @@
 
 #include "OmxPlatformLayer.h"
 
-#include "OmxDataDecoder.h"
-
 #include "OMX_VideoExt.h" // For VP8.
 
 #include "VPXDecoder.h"
