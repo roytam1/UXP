@@ -6,6 +6,7 @@
 
 #include "PerformanceTiming.h"
 #include "mozilla/dom/PerformanceTimingBinding.h"
+#include "nsITimedChannel.h"
 
 namespace mozilla {
 namespace dom {

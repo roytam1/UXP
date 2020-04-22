@@ -6,7 +6,12 @@
 
 #include "PerformanceMainThread.h"
 #include "PerformanceNavigation.h"
+#include "PerformanceNavigationTiming.h"
+#include "PerformanceResourceTiming.h"
+#include "PerformanceTiming.h"
 #include "nsICacheInfoChannel.h"
+#include "nsITimedChannel.h"
+#include "mozilla/dom/Event.h"
 
 namespace mozilla {
 namespace dom {
