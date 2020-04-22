@@ -13,6 +13,7 @@
 #include "nsIBlocklistService.h"
 #include "nsIUnicodeDecoder.h"
 #include "nsIPlatformCharset.h"
+#include "nsIURI.h"
 #include "nsPluginLogging.h"
 #include "nsNPAPIPlugin.h"
 #include "nsCharSeparatedTokenizer.h"
@@ -26,6 +27,7 @@
 
 using mozilla::dom::EncodingUtils;
 using mozilla::dom::FakePluginTagInit;
+using mozilla::dom::FakePluginMimeEntry;
 using namespace mozilla;
 
 // These legacy flags are used in the plugin registry. The states are now

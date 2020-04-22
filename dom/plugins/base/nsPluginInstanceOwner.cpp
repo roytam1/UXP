@@ -64,6 +64,7 @@ using mozilla::DefaultXDisplay;
 #include "mozilla/IMEStateManager.h"
 #include "mozilla/TextComposition.h"
 #include "mozilla/AutoRestore.h"
+#include "mozilla/plugins/PluginAsyncSurrogate.h"
 
 #include "nsContentCID.h"
 #include "nsWidgetsCID.h"
@@ -90,6 +91,7 @@ static NS_DEFINE_CID(kAppShellCID, NS_APPSHELL_CID);
 using namespace mozilla;
 using namespace mozilla::dom;
 using namespace mozilla::layers;
+using namespace mozilla::plugins;
 
 static inline nsPoint AsNsPoint(const nsIntPoint &p) {
   return nsPoint(p.x, p.y);
