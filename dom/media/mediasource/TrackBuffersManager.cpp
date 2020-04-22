@@ -40,6 +40,7 @@ using media::TimeUnit;
 using media::TimeInterval;
 using media::TimeIntervals;
 typedef SourceBufferTask::AppendBufferResult AppendBufferResult;
+typedef SourceBufferAttributes::AppendState AppendState; 
 
 static const char*
 AppendStateToStr(SourceBufferAttributes::AppendState aState)

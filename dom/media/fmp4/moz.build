@@ -10,13 +10,10 @@ EXPORTS += [
     'MP4Stream.h',
 ]
 
-UNIFIED_SOURCES += [
-    'MP4Decoder.cpp',
-    'MP4Stream.cpp',
-]
-
 SOURCES += [
+    'MP4Decoder.cpp',
     'MP4Demuxer.cpp',
+    'MP4Stream.cpp',
 ]
 
 FINAL_LIBRARY = 'xul'

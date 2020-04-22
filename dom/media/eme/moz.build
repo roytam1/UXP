@@ -23,7 +23,7 @@ EXPORTS.mozilla += [
     'EMEUtils.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'CDMCaps.cpp',
     'DetailedPromise.cpp',
     'EMEUtils.cpp',
