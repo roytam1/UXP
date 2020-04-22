@@ -87,7 +87,7 @@ if CONFIG['OS_TARGET'] == 'Android':
         'rlz',
     ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'GMPAudioDecoderChild.cpp',
     'GMPAudioDecoderParent.cpp',
     'GMPAudioHost.cpp',
@@ -123,7 +123,7 @@ UNIFIED_SOURCES += [
 ]
 
 if CONFIG['MOZ_EME']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'GMPCDMCallbackProxy.cpp',
         'GMPCDMProxy.cpp',
     ]

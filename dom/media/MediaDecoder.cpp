@@ -788,6 +788,13 @@ MediaDecoder::CallSeek(const SeekTarget& aTarget, dom::Promise* aPromise)
            &MediaDecoder::OnSeekResolved, &MediaDecoder::OnSeekRejected));
 }
 
+// GetCurrentTime is defined in winbase.h as a zero argument macro forwarding to
+// GetTickCount(), which conflicts with the MediaDecoder::GetCurrentTime
+// implementation here. Clear the macro.
+#ifdef GetCurrentTime
+#undef GetCurrentTime
+#endif
+
 double
 MediaDecoder::GetCurrentTime()
 {
