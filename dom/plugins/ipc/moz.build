@@ -48,12 +48,10 @@ if CONFIG['OS_ARCH'] == 'WINNT':
     EXPORTS.mozilla.plugins += [
         'PluginSurfaceParent.h',
     ]
-    UNIFIED_SOURCES += [
+    SOURCES += [
+        'MiniShmParent.cpp',
         'PluginHangUIParent.cpp',
         'PluginSurfaceParent.cpp',
-    ]
-    SOURCES += [
-        'MiniShmParent.cpp', # Issues with CreateEvent
     ]
     DEFINES['MOZ_HANGUI_PROCESS_NAME'] = '"plugin-hang-ui%s"' % CONFIG['BIN_SUFFIX']
     LOCAL_INCLUDES += [
@@ -66,15 +64,17 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         'PluginInterposeOSX.h',
     ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'BrowserStreamChild.cpp',
     'BrowserStreamParent.cpp',
     'ChildAsyncCall.cpp',
     'ChildTimer.cpp',
     'PluginAsyncSurrogate.cpp',
     'PluginBackgroundDestroyer.cpp',
+    'PluginInstanceChild.cpp',
     'PluginInstanceParent.cpp',
     'PluginMessageUtils.cpp',
+    'PluginModuleChild.cpp',
     'PluginModuleParent.cpp',
     'PluginProcessChild.cpp',
     'PluginProcessParent.cpp',
@@ -83,23 +83,18 @@ UNIFIED_SOURCES += [
     'PluginScriptableObjectParent.cpp',
     'PluginStreamChild.cpp',
     'PluginStreamParent.cpp',
-]
-
-SOURCES += [
-    'PluginInstanceChild.cpp', # 'PluginThreadCallback' : ambiguous symbol
-    'PluginModuleChild.cpp',   # Redefinition of mozilla::WindowsDllInterceptor sUser32Intercept
     'PluginWidgetChild.cpp',
     'PluginWidgetParent.cpp',
 ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'PluginInterposeOSX.mm',
         'PluginUtilsOSX.mm',
     ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'D3D11SurfaceHolder.cpp',
         'PluginUtilsWin.cpp'
     ]
