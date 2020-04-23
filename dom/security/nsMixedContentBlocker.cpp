@@ -20,6 +20,8 @@
 #include "nsIContentViewer.h"
 #include "nsIChannel.h"
 #include "nsIHttpChannel.h"
+#include "nsIProtocolHandler.h"
+#include "nsIInterfaceRequestorUtils.h"
 #include "nsIParentChannel.h"
 #include "mozilla/Preferences.h"
 #include "nsIScriptObjectPrincipal.h"
@@ -33,11 +35,11 @@
 #include "nsAsyncRedirectVerifyHelper.h"
 #include "mozilla/LoadInfo.h"
 #include "nsISiteSecurityService.h"
+#include "nsNetUtil.h"
 
 #include "mozilla/Logging.h"
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/ipc/URIUtils.h"
-
 
 using namespace mozilla;
 

@@ -5,15 +5,25 @@
 #include "nsIStreamListener.h"
 #include "nsILoadInfo.h"
 #include "nsIOService.h"
+#include "nsIProtocolHandler.h"
 #include "nsContentUtils.h"
 #include "nsCORSListenerProxy.h"
 #include "nsIStreamListener.h"
+#include "nsIScriptError.h"
 #include "nsCDefaultURIFixup.h"
 #include "nsIURIFixup.h"
 #include "nsIImageLoadingContent.h"
+#include "nsNetUtil.h"
+#include "mozilla/ArrayUtils.h"
+#include "nsString.h"
+#include "nsMimeTypes.h"
+#include "nsContentPolicyUtils.h"
+#include "nsCharSeparatedTokenizer.h"
 
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/TabChild.h"
+
+using namespace mozilla;
 
 NS_IMPL_ISUPPORTS(nsContentSecurityManager,
                   nsIContentSecurityManager,
