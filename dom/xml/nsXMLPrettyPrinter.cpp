@@ -11,6 +11,7 @@
 #include "nsIXSLTProcessor.h"
 #include "nsSyncLoadService.h"
 #include "nsPIDOMWindow.h"
+#include "nsIDOMDocument.h"
 #include "nsIDOMElement.h"
 #include "nsIServiceManager.h"
 #include "nsNetUtil.h"
