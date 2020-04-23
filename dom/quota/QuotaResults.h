@@ -8,6 +8,7 @@
 #define mozilla_dom_quota_QuotaResults_h
 
 #include "nsIQuotaResults.h"
+#include "nsString.h"
 
 namespace mozilla {
 namespace dom {
