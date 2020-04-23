@@ -6,6 +6,8 @@
 
 #include "mozilla/dom/SVGGraphicsElement.h"
 
+#include "nsContentUtils.h"
+
 namespace mozilla {
 namespace dom {
 

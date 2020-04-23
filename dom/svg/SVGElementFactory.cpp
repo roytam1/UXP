@@ -7,9 +7,7 @@
 #include "SVGElementFactory.h"
 #include "nsGkAtoms.h"
 #include "nsIContent.h"
-#include "mozilla/dom/NodeInfo.h"
 #include "mozilla/dom/Element.h"
-#include "mozilla/dom/FromParser.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;

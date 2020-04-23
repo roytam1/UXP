@@ -21,6 +21,8 @@
 #include "nsSVGElement.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/StyleSheetInlines.h"
+#include "nsContentUtils.h"
+#include "nsLayoutUtils.h"
 
 using namespace mozilla::css;
 using namespace mozilla::dom;
