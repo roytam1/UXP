@@ -18,7 +18,7 @@ EXPORTS.mozilla.dom += [
     'XMLHttpRequestUpload.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'XMLHttpRequest.cpp',
     'XMLHttpRequestEventTarget.cpp',
     'XMLHttpRequestMainThread.cpp',

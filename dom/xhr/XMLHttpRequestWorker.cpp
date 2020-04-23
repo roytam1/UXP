@@ -33,6 +33,8 @@
 #include "WorkerScope.h"
 #include "WorkerPrivate.h"
 #include "WorkerRunnable.h"
+#include "XMLHttpRequestMainThread.h"
+#include "XMLHttpRequestString.h"
 #include "XMLHttpRequestUpload.h"
 
 #include "mozilla/UniquePtr.h"
