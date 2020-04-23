@@ -7,6 +7,8 @@
 #ifndef mozilla_dom_ServiceWorkerCommon_h
 #define mozilla_dom_ServiceWorkerCommon_h
 
+#include "mozilla/TypedEnumBits.h"
+
 namespace mozilla {
 namespace dom {
 

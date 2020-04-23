@@ -8,6 +8,7 @@
 
 #include "nsPIDOMWindow.h"
 
+#include "mozilla/dom/Event.h"
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/dom/MessagePort.h"

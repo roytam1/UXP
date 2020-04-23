@@ -28,6 +28,7 @@
 #include "ServiceWorkerManager.h"
 
 #include "mozilla/ErrorResult.h"
+#include "mozilla/Move.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/dom/BodyUtil.h"
 #include "mozilla/dom/DOMException.h"
@@ -50,6 +51,7 @@
 #include "WorkerPrivate.h"
 #include "xpcpublic.h"
 
+using namespace mozilla;
 using namespace mozilla::dom;
 using namespace mozilla::dom::workers;
 
