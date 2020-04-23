@@ -18,6 +18,7 @@
 #include "nsDebug.h"
 #include "nsStyleUtil.h"
 #include "nsIDocument.h"
+#include "nsComputedDOMStyle.h"
 
 using namespace mozilla::dom;
 using mozilla::StyleAnimationValue;
