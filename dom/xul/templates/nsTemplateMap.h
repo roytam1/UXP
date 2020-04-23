@@ -9,6 +9,8 @@
 #include "PLDHashTable.h"
 #include "nsXULElement.h"
 
+using mozilla::fallible;
+
 class nsTemplateMap {
 protected:
     struct Entry : public PLDHashEntryHdr {

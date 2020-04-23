@@ -42,6 +42,7 @@
 #include "nsReadableUtils.h"
 #include "nsXULElement.h"
 #include "mozilla/Logging.h"
+#include "mozilla/CheckedInt.h"
 #include "prmem.h"
 #include "nsCRT.h"
 
@@ -57,6 +58,7 @@
 #include "nsIScriptError.h"
 #include "nsContentTypeParser.h"
 
+using namespace mozilla;
 static mozilla::LazyLogModule gContentSinkLog("nsXULContentSink");;
 
 //----------------------------------------------------------------------

@@ -17,7 +17,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'xultmpl'
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsContentSupportMap.cpp',
     'nsContentTestNode.cpp',
     'nsInstantiationNode.cpp',

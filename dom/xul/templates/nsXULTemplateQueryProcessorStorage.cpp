@@ -28,6 +28,8 @@
 #include "nsIDocument.h"
 #include "nsNetUtil.h"
 
+using mozilla::fallible;
+
 //----------------------------------------------------------------------
 //
 // nsXULTemplateResultSetStorage
