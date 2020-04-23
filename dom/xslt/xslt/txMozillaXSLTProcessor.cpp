@@ -37,7 +37,9 @@
 #include "nsVariant.h"
 #include "mozilla/dom/DocumentFragment.h"
 #include "mozilla/dom/XSLTProcessorBinding.h"
+#include "mozilla/ErrorResult.h"
 
+using namespace mozilla;
 using namespace mozilla::dom;
 
 static NS_DEFINE_CID(kXMLDocumentCID, NS_XMLDOCUMENT_CID);

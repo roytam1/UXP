@@ -13,6 +13,9 @@
 #include "txLog.h"
 #include "txURIUtils.h"
 #include "txXMLParser.h"
+#include "mozilla/Logging.h"
+
+using mozilla::LogLevel;
 
 const int32_t txExecutionState::kMaxRecursionDepth = 20000;
 
