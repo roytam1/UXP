@@ -9,6 +9,7 @@
 
 #include "mozilla/BasicEvents.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/D3DMessageUtils.h"
 #include "D3D11SurfaceHolder.h"
 #include "PluginInstanceParent.h"
 #include "BrowserStreamParent.h"
