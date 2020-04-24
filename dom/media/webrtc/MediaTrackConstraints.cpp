@@ -5,6 +5,7 @@
 
 #include "MediaTrackConstraints.h"
 #include "mozilla/dom/MediaStreamTrackBinding.h"
+#include "mozilla/Unused.h"
 
 #include <limits>
 #include <algorithm>
