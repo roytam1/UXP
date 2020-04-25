@@ -16,6 +16,7 @@
 #include "mozilla/ipc/BackgroundParent.h"
 #include "mozilla/ipc/BackgroundUtils.h"
 #include "mozilla/ipc/PBackgroundChild.h"
+#include "nsContentUtils.h"
 #include "nsIIdleService.h"
 #include "nsIIPCBackgroundChildCreateCallback.h"
 #include "nsIObserverService.h"
