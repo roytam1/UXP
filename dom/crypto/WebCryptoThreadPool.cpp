@@ -9,6 +9,7 @@
 #include "mozilla/Services.h"
 #include "mozilla/StaticPtr.h"
 #include "nsComponentManagerUtils.h"
+#include "nsContentUtils.h"
 #include "nsNSSComponent.h"
 #include "nsString.h"
 #include "nsXPCOMCIDInternal.h"
