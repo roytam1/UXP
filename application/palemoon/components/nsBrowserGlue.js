@@ -287,6 +287,9 @@ BrowserGlue.prototype = {
       case "profile-before-change":
         this._onProfileShutdown();
         break;
+      case "profile-after-change":
+         this._onProfileAfterChange();
+         break;
       case "browser-search-engine-modified":
         if (data != "engine-default" && data != "engine-current") {
           break;
@@ -357,6 +360,7 @@ BrowserGlue.prototype = {
     this._isPlacesShutdownObserver = true;
     os.addObserver(this, "handle-xul-text-link", false);
     os.addObserver(this, "profile-before-change", false);
+    os.addObserver(this, "profile-after-change", false);
     os.addObserver(this, "browser-search-engine-modified", false);
     os.addObserver(this, "browser-search-service", false);
   },
@@ -394,12 +398,19 @@ BrowserGlue.prototype = {
     }
     os.removeObserver(this, "handle-xul-text-link");
     os.removeObserver(this, "profile-before-change");
+    os.removeObserver(this, "profile-after-change");
     os.removeObserver(this, "browser-search-engine-modified");
     try {
       os.removeObserver(this, "browser-search-service");
     } catch(ex) {
       // may have already been removed by the observer
     }
+  },
+
+  // profile is available
+  _onProfileAfterChange: function()
+  {
+    this._copyDefaultProfileFiles();
   },
 
   _onAppDefaults: function() {
@@ -442,6 +453,65 @@ BrowserGlue.prototype = {
     LoginManagerParent.init();
     
     Services.obs.notifyObservers(null, "browser-ui-startup-complete", "");
+  },
+
+  // Copies additional profile files from the default profile tho the current profile.
+  // Only files not covered by the regular profile creation process.
+  // Currently only the userchrome examples.
+  _copyDefaultProfileFiles: function()
+  {
+    // Copy default chrome example files if they do not exist in the current profile.
+    var profileDir = Services.dirsvc.get("ProfD", Components.interfaces.nsILocalFile);
+    profileDir.append("chrome");
+
+    // The chrome directory in the current/new profile already exists so no copying.
+    if (profileDir.exists())
+      return;
+
+    let defaultProfileDir = Services.dirsvc.get("DefRt",
+                                                Components.interfaces.nsIFile);
+    defaultProfileDir.append("profile");
+    defaultProfileDir.append("chrome");
+
+    if (defaultProfileDir.exists() && defaultProfileDir.isDirectory()) {
+      try {
+        this._copyDir(defaultProfileDir, profileDir);
+      } catch (e) {
+        Components.utils.reportError(e);
+      }
+    }
+  },
+
+  // Simple copy function for copying complete aSource Directory to aDestiniation.
+  _copyDir: function(aSource, aDestination)
+  {
+    let enumerator = aSource.directoryEntries;
+
+    while (enumerator.hasMoreElements()) {
+      let file = enumerator.getNext().QueryInterface(Components.interfaces.nsIFile);
+
+      if (file.isDirectory()) {
+        let subdir = aDestination.clone();
+        subdir.append(file.leafName);
+
+        // Create the target directory. If it already exists continue copying files.
+        try {
+          subdir.create(Components.interfaces.nsIFile.DIRECTORY_TYPE,
+                        FileUtils.PERMS_DIRECTORY);
+        } catch (ex) {
+           if (ex.result != Components.results.NS_ERROR_FILE_ALREADY_EXISTS)
+            throw ex;
+        }
+        // Directory created. Now copy the files.
+        this._copyDir(file, subdir);
+      } else {
+        try {
+          file.copyTo(aDestination, null);
+        } catch (e) {
+          Components.utils.reportError(e);
+        }
+      }
+    }
   },
 
   _setUpUserAgentOverrides: function() {
