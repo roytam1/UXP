@@ -191,6 +191,7 @@ public:
       MOZ_ASSERT(false, "unexpected aPseudoType");
       return nullptr;
     }
+    
   private:
     RestyleManager* mRestyleManager;
     AutoRestore<ReframingStyleContexts*> mRestorePointer;
@@ -879,6 +880,11 @@ private:
   nsPresContext* const mPresContext;
   AutoTArray<mozilla::dom::Element*, 4> mAncestors;
 };
+
+dom::Element*
+ElementForStyleContext(nsIContent* aParentContent,
+                       nsIFrame* aFrame,
+                       CSSPseudoElementType aPseudoType);
 
 } // namespace mozilla
 

@@ -10,6 +10,7 @@
 #include "nsPlaceholderFrame.h"
 #include "nsContainerFrame.h"
 
+using namespace mozilla;
 
 class nsFrameIterator : public nsIFrameEnumerator
 {

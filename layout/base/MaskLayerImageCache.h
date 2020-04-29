@@ -10,6 +10,7 @@
 #include "nsAutoPtr.h"
 #include "nsPresContext.h"
 #include "mozilla/gfx/Matrix.h"
+#include "mozilla/layers/ShadowLayers.h"
 
 namespace mozilla {
 

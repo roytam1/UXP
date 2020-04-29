@@ -9,6 +9,7 @@
 #include "mozilla/ServoStyleSet.h"
 #include "mozilla/dom/ChildIterator.h"
 #include "nsContentUtils.h"
+#include "nsCSSFrameConstructor.h"
 #include "nsPrintfCString.h"
 #include "nsStyleChangeList.h"
 
