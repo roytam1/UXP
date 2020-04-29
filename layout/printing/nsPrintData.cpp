@@ -7,9 +7,11 @@
 
 #include "nsIStringBundle.h"
 #include "nsIServiceManager.h"
+#include "nsPIDOMWindow.h"
 #include "nsPrintObject.h"
 #include "nsPrintPreviewListener.h"
 #include "nsIWebProgressListener.h"
+#include "nsIWidget.h"
 #include "mozilla/Services.h"
 
 //-----------------------------------------------------

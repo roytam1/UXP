@@ -6,6 +6,7 @@
 #include "nsPrintObject.h"
 #include "nsIContentViewer.h"
 #include "nsIDOMDocument.h"
+#include "nsIDOMElement.h"
 #include "nsContentUtils.h" // for nsAutoScriptBlocker
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsPIDOMWindow.h"
@@ -14,6 +15,9 @@
 #include "nsIDocShellTreeItem.h"
 #include "nsIBaseWindow.h"
 #include "nsIDocument.h"
+#include "nsIWidget.h"
+#include "mozilla/Unused.h"
+#include "mozilla/dom/Element.h"
 
 //---------------------------------------------------
 //-- nsPrintObject Class Impl

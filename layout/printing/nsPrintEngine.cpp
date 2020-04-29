@@ -16,6 +16,7 @@
 #include "nsPIDOMWindow.h"
 #include "nsIDocShell.h"
 #include "nsIURI.h"
+#include "nsIFile.h"
 #include "nsITextToSubURI.h"
 #include "nsError.h"
 
@@ -143,7 +144,7 @@ using namespace mozilla::dom;
 #define DUMP_LAYOUT_LEVEL 9 // this turns on the dumping of each doucment's layout info
 
 #ifndef PR_PL
-static mozilla::LazyLogModule gPrintingLog("printing")
+static mozilla::LazyLogModule gPrintingLog("printing");
 
 #define PR_PL(_p1)  MOZ_LOG(gPrintingLog, mozilla::LogLevel::Debug, _p1);
 #endif
