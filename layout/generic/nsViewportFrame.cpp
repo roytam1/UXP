@@ -16,6 +16,7 @@
 #include "nsAbsoluteContainingBlock.h"
 #include "GeckoProfiler.h"
 #include "nsIMozBrowserFrame.h"
+#include "nsPlaceholderFrame.h"
 
 using namespace mozilla;
 typedef nsAbsoluteContainingBlock::AbsPosReflowFlags AbsPosReflowFlags;

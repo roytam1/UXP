@@ -123,7 +123,7 @@ EXPORTS.mozilla.layout += [
     'FrameChildList.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'AsyncScrollBase.cpp',
     'BlockReflowInput.cpp',
     'CSSAlignUtils.cpp',
@@ -157,9 +157,11 @@ UNIFIED_SOURCES += [
     'nsIntervalSet.cpp',
     'nsLeafFrame.cpp',
     'nsLineBox.cpp',
+    'nsLineLayout.cpp',
     'nsPageContentFrame.cpp',
     'nsPageFrame.cpp',
     'nsPlaceholderFrame.cpp',
+    'nsPluginFrame.cpp',
     'nsRubyBaseContainerFrame.cpp',
     'nsRubyBaseFrame.cpp',
     'nsRubyContentFrame.cpp',
@@ -183,13 +185,6 @@ UNIFIED_SOURCES += [
     'ScrollVelocityQueue.cpp',
     'StickyScrollContainer.cpp',
     'TextOverflow.cpp',
-]
-
-# nsLineLayout.cpp needs to be built separately because it uses plarena.h.
-# nsPluginFrame.cpp needs to be built separately because of name clashes in the OS X headers.
-SOURCES += [
-    'nsLineLayout.cpp',
-    'nsPluginFrame.cpp',
 ]
 
 include('/ipc/chromium/chromium-config.mozbuild')

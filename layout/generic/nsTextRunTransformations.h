@@ -12,6 +12,8 @@
 #include "gfxTextRun.h"
 #include "nsStyleContext.h"
 
+using namespace mozilla;
+
 class nsTransformedTextRun;
 
 struct nsTransformedCharStyle final {

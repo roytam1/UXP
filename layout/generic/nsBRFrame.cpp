@@ -6,6 +6,7 @@
 /* rendering object for HTML <br> elements */
 
 #include "nsCOMPtr.h"
+#include "nsContainerframe.h"
 #include "nsFontMetrics.h"
 #include "nsFrame.h"
 #include "nsPresContext.h"

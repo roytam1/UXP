@@ -8,6 +8,8 @@
 #include "mozilla/ReflowOutput.h"
 #include "mozilla/ReflowInput.h"
 
+using namespace mozilla;
+
 void
 nsOverflowAreas::UnionWith(const nsOverflowAreas& aOther)
 {

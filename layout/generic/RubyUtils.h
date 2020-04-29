@@ -10,6 +10,7 @@
 #include "nsTArray.h"
 #include "nsGkAtoms.h"
 #include "nsCSSAnonBoxes.h"
+#include "nsIFrame.h"
 
 #define RTC_ARRAY_SIZE 1
 

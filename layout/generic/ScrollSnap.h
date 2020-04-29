@@ -6,6 +6,8 @@
 #ifndef mozilla_layout_ScrollSnap_h_
 #define mozilla_layout_ScrollSnap_h_
 
+#include "nsIScrollableFrame.h"
+
 namespace mozilla {
 
 namespace layers {

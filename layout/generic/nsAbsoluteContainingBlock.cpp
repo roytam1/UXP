@@ -18,6 +18,7 @@
 #include "nsPresContext.h"
 #include "nsCSSFrameConstructor.h"
 #include "nsGridContainerFrame.h"
+#include "nsPlaceholderFrame.h"
 
 #include "mozilla/Sprintf.h"
 
