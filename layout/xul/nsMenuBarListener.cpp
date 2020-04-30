@@ -21,6 +21,7 @@
 #include "mozilla/BasicEvents.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/TextEvents.h"
+#include "mozilla/dom/Event.h"
 
 using namespace mozilla;
 

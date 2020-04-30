@@ -48,6 +48,7 @@
 #include <algorithm>
 
 using namespace mozilla;
+using namespace mozilla::dom;
 
 #define NS_MENU_POPUP_LIST_INDEX 0
 
