@@ -4,8 +4,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "ServoBindings.h"
 #include "mozilla/ServoStyleSheet.h"
 #include "mozilla/StyleBackendType.h"
+#include "CSSRuleList.h"
+
+using namespace mozilla::dom;
 
 namespace mozilla {
 
