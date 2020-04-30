@@ -41,6 +41,7 @@
 #include "nsCSSFrameConstructor.h"
 #include "mozilla/StyleSetHandle.h"
 #include "mozilla/StyleSetHandleInlines.h"
+#include "mozilla/gfx/Helpers.h"
 #include "nsDisplayList.h"
 #include "nsIScrollableFrame.h"
 #include "nsCSSProps.h"
@@ -48,6 +49,7 @@
 #include <algorithm>
 
 using namespace mozilla;
+using namespace mozilla::gfx;
 using namespace mozilla::image;
 using namespace mozilla::layout;
 
