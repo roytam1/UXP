@@ -14,6 +14,7 @@
 #include "mozilla/css/Declaration.h"
 #include "nsPrintfCString.h"
 #include "gfxFontConstants.h"
+#include "nsCSSRules.h"
 #include "nsStyleUtil.h"
 
 namespace mozilla {
