@@ -4,15 +4,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsIScriptSecurityManager.h"
-#include "TCPServerSocket.h"
 #include "TCPServerSocketParent.h"
+
+#include "nsIScriptSecurityManager.h"
+#include "TCPSocket.h"
+#include "TCPServerSocket.h"
 #include "nsJSUtils.h"
 #include "TCPSocketParent.h"
 #include "mozilla/Unused.h"
 #include "mozilla/AppProcessChecker.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/TabParent.h"
+#include "mozilla/dom/TCPServerSocketEvent.h"
 
 namespace mozilla {
 namespace dom {

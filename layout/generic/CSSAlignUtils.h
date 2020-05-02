@@ -9,6 +9,7 @@
 #define mozilla_CSSAlignUtils_h
 
 #include "mozilla/WritingModes.h"
+#include "ReflowInput.h"
 
 namespace mozilla {
 

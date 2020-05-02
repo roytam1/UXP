@@ -15,7 +15,6 @@ namespace mozilla {
 template<typename> class LinkedList;
 class WebGLContext;
 
-
 ////
 
 // This class is a mixin for objects that are tied to a specific

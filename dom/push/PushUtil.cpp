@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "mozilla/dom/PushUtil.h"
+#include "mozilla/dom/UnionTypes.h" // for OwningArrayBufferViewOrArrayBuffer
 
 namespace mozilla {
 namespace dom {

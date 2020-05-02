@@ -7,6 +7,7 @@
 #ifndef nsCSPParser_h___
 #define nsCSPParser_h___
 
+#include "nsCSPContext.h"
 #include "nsCSPUtils.h"
 #include "nsIURI.h"
 #include "nsString.h"

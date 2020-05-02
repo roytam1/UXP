@@ -7,6 +7,7 @@
 #include "FlacFrameParser.h"
 #include "mp4_demuxer/ByteReader.h"
 #include "nsTArray.h"
+#include "FlacDemuxer.h"
 #include "OggCodecState.h"
 #include "OpusParser.h"
 #include "VideoUtils.h"

@@ -9,6 +9,9 @@
 #include "nsCSSProps.h"
 #include "nsHashKeys.h"
 #include "nsSMILCSSProperty.h"
+#include "mozilla/CSSEnabledState.h"
+
+using namespace mozilla;
 
 // PLDHashEntryHdr methods
 bool

@@ -8,6 +8,7 @@
 
 #include "gfxRect.h"
 #include "nsQueryFrame.h"
+#include "imgIContainer.h"
 
 class gfxContext;
 class gfxMatrix;

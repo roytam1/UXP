@@ -16,6 +16,7 @@
 #include "IDBTransaction.h"
 #include "IDBFactory.h"
 #include "IndexedDatabaseManager.h"
+#include "KeyPath.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/EventDispatcher.h"
 #include "MainThreadUtils.h"
@@ -54,12 +55,14 @@
 // Include this last to avoid path problems on Windows.
 #include "ActorsChild.h"
 
-namespace mozilla {
-namespace dom {
+using namespace mozilla::dom::indexedDB;
 
 using namespace mozilla::dom::quota;
 using namespace mozilla::ipc;
 using namespace mozilla::services;
+
+namespace mozilla {
+namespace dom {
 
 namespace {
 

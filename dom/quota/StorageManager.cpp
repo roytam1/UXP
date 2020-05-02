@@ -13,9 +13,12 @@
 #include "mozilla/ErrorResult.h"
 #include "nsIQuotaCallbacks.h"
 #include "nsIQuotaRequests.h"
+#include "nsIQuotaResults.h"
 #include "nsPIDOMWindow.h"
+#include "QuotaManagerService.h"
 
 using namespace mozilla::dom::workers;
+using namespace mozilla::dom::quota;
 
 namespace mozilla {
 namespace dom {

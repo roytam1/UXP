@@ -9,6 +9,8 @@
 
 #include "mozilla/BasicEvents.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/D3DMessageUtils.h"
+#include "D3D11SurfaceHolder.h"
 #include "PluginInstanceParent.h"
 #include "BrowserStreamParent.h"
 #include "PluginAsyncSurrogate.h"
@@ -69,8 +71,10 @@ extern const wchar_t* kFlashFullscreenClass;
 #include <ApplicationServices/ApplicationServices.h>
 #endif // defined(XP_MACOSX)
 
+using namespace mozilla;
 using namespace mozilla::plugins;
 using namespace mozilla::layers;
+using namespace mozilla::gfx;
 using namespace mozilla::gl;
 
 void

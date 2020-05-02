@@ -7,6 +7,7 @@
 #include "nsAutoPtr.h"
 #include "nsIImageLoadingContent.h"
 #include "nsExpirationTracker.h"
+#include "imgIContainer.h"
 #include "imgIRequest.h"
 #include "mozilla/dom/Element.h"
 #include "nsTHashtable.h"

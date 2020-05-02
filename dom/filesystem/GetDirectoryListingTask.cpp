@@ -16,9 +16,12 @@
 #include "mozilla/dom/UnionTypes.h"
 #include "mozilla/dom/ipc/BlobChild.h"
 #include "mozilla/dom/ipc/BlobParent.h"
+#include "mozilla/ipc/BackgroundParent.h"
 #include "nsIFile.h"
 #include "nsISimpleEnumerator.h"
 #include "nsStringGlue.h"
+
+using namespace mozilla::ipc;
 
 namespace mozilla {
 namespace dom {

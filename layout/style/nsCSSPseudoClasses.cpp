@@ -13,6 +13,7 @@
 #include "nsString.h"
 
 using namespace mozilla;
+using namespace mozilla::css;
 
 // define storage for all atoms
 #define CSS_PSEUDO_CLASS(_name, _value, _flags, _pref) \

@@ -3,13 +3,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
 #include "nsMathMLmfencedFrame.h"
 #include "nsRenderingContext.h"
 #include "nsMathMLChar.h"
 #include <algorithm>
 
 using namespace mozilla;
+using namespace mozilla::gfx;
 
 //
 // <mfenced> -- surround content with a pair of fences

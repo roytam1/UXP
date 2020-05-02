@@ -38,10 +38,12 @@ EXPORTS.mozilla += [
     'PluginPRLibrary.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsJSNPRuntime.cpp',
+    'nsNPAPIPlugin.cpp',
     'nsNPAPIPluginInstance.cpp',
     'nsNPAPIPluginStreamListener.cpp',
+    'nsPluginHost.cpp',
     'nsPluginInstanceOwner.cpp',
     'nsPluginModule.cpp',
     'nsPluginStreamListenerPeer.cpp',
@@ -49,24 +51,19 @@ UNIFIED_SOURCES += [
     'PluginPRLibrary.cpp',
 ]
 
-SOURCES += [
-    'nsNPAPIPlugin.cpp', # Conflict with X11 headers
-    'nsPluginHost.cpp',  # Conflict with NS_NPAPIPLUGIN_CALLBACK
-]
-
 if CONFIG['OS_ARCH'] == 'WINNT':
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsPluginDirServiceProvider.cpp',
         'nsPluginNativeWindowWin.cpp',
         'nsPluginsDirWin.cpp',
     ]
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsPluginNativeWindow.cpp',
         'nsPluginsDirDarwin.cpp',
     ]
 else:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsPluginsDirUnix.cpp',
     ]
     if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
@@ -75,7 +72,7 @@ else:
             'nsPluginNativeWindowGtk.cpp',
         ]
     else:
-        UNIFIED_SOURCES += [
+        SOURCES += [
             'nsPluginNativeWindow.cpp',
         ]
 

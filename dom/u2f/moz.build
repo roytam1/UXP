@@ -10,7 +10,7 @@ EXPORTS.mozilla.dom += [
     'USBToken.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'NSSU2FTokenRemote.cpp',
     'U2F.cpp',
     'USBToken.cpp',

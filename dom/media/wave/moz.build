@@ -9,7 +9,7 @@ EXPORTS += [
     'WaveDemuxer.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'WaveDecoder.cpp',
     'WaveDemuxer.cpp',
 ]

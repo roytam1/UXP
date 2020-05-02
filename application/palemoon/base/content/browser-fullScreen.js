@@ -37,8 +37,7 @@ var FullScreen = {
     if (enterFS && this.useLionFullScreen) {
       if (document.mozFullScreen) {
         this.showXULChrome("toolbar", false);
-      }
-      else {
+      } else {
         gNavToolbox.setAttribute("inFullscreen", true);
         document.documentElement.setAttribute("inFullscreen", true);
       }
@@ -61,8 +60,7 @@ var FullScreen = {
       // as the size of the content area would still be changing after the
       // mozfullscreenchange event fired, which could confuse content script.
       this.hideNavToolbox(document.mozFullScreen);
-    }
-    else {
+    } else {
       this.showNavToolbox(false);
       // This is needed if they use the context menu to quit fullscreen
       this._isPopupOpen = false;
@@ -85,15 +83,17 @@ var FullScreen = {
         }
         break;
       case "transitionend":
-        if (event.propertyName == "opacity")
+        if (event.propertyName == "opacity") {
           this.cancelWarning();
+        }
         break;
     }
   },
 
   enterDomFullscreen : function(event) {
-    if (!document.mozFullScreen)
+    if (!document.mozFullScreen) {
       return;
+    }
 
     // However, if we receive a "MozDOMFullscreen:NewOrigin" event for a document
     // which is not a subdocument of a currently active (ie. visible) browser
@@ -117,8 +117,9 @@ var FullScreen = {
 
     document.documentElement.setAttribute("inDOMFullscreen", true);
 
-    if (gFindBarInitialized)
+    if (gFindBarInitialized) {
       gFindBar.close();
+    }
 
     this.showWarning(event.target);
 
@@ -151,54 +152,54 @@ var FullScreen = {
       gBrowser.tabContainer.removeEventListener("TabOpen", this.exitDomFullScreen);
       gBrowser.tabContainer.removeEventListener("TabClose", this.exitDomFullScreen);
       gBrowser.tabContainer.removeEventListener("TabSelect", this.exitDomFullScreen);
-      if (!this.useLionFullScreen)
+      if (!this.useLionFullScreen) {
         window.removeEventListener("activate", this);
+      }
       this.fullscreenDoc = null;
     }
   },
 
   // Event callbacks
-  _expandCallback: function()
-  {
+  _expandCallback: function() {
     FullScreen.showNavToolbox();
   },
-  _collapseCallback: function()
-  {
+  _collapseCallback: function() {
     FullScreen.hideNavToolbox();
   },
-  _keyToggleCallback: function(aEvent)
-  {
+  _keyToggleCallback: function(aEvent) {
     // if we can use the keyboard (eg Ctrl+L or Ctrl+E) to open the toolbars, we
     // should provide a way to collapse them too.
     if (aEvent.keyCode == aEvent.DOM_VK_ESCAPE) {
       FullScreen.hideNavToolbox(true);
-    }
-    // F6 is another shortcut to the address bar, but its not covered in OpenLocation()
-    else if (aEvent.keyCode == aEvent.DOM_VK_F6)
+    } else if (aEvent.keyCode == aEvent.DOM_VK_F6) {
+      // F6 is another shortcut to the address bar, but its not covered in OpenLocation()
       FullScreen.showNavToolbox();
+    }
   },
 
   // Checks whether we are allowed to collapse the chrome
   _isPopupOpen: false,
   _isChromeCollapsed: false,
-  _safeToCollapse: function(forceHide)
-  {
-    if (!gPrefService.getBoolPref("browser.fullscreen.autohide"))
+  _safeToCollapse: function(forceHide) {
+    if (!gPrefService.getBoolPref("browser.fullscreen.autohide")) {
       return false;
+    }
 
     // a popup menu is open in chrome: don't collapse chrome
-    if (!forceHide && this._isPopupOpen)
+    if (!forceHide && this._isPopupOpen) {
       return false;
+    }
 
     // a textbox in chrome is focused (location bar anyone?): don't collapse chrome
     if (document.commandDispatcher.focusedElement &&
         document.commandDispatcher.focusedElement.ownerDocument == document &&
         document.commandDispatcher.focusedElement.localName == "input") {
-      if (forceHide)
+      if (forceHide) {
         // hidden textboxes that still have focus are bad bad bad
         document.commandDispatcher.focusedElement.blur();
-      else
+      } else {
         return false;
+      }
     }
     return true;
   },
@@ -210,20 +211,19 @@ var FullScreen = {
     // e.g. we wouldn't want the autoscroll icon firing this event, so when the user
     // toggles chrome when moving mouse to the top, it doesn't go away again.
     if (aEvent.type == "popupshown" && !FullScreen._isChromeCollapsed &&
-        aEvent.target.localName != "tooltip" && aEvent.target.localName != "window")
+        aEvent.target.localName != "tooltip" && aEvent.target.localName != "window") {
       FullScreen._isPopupOpen = true;
-    else if (aEvent.type == "popuphidden" && aEvent.target.localName != "tooltip" &&
-             aEvent.target.localName != "window")
+    } else if (aEvent.type == "popuphidden" && aEvent.target.localName != "tooltip" &&
+             aEvent.target.localName != "window") {
       FullScreen._isPopupOpen = false;
+    }
   },
 
   // Autohide helpers for the context menu item
-  getAutohide: function(aItem)
-  {
+  getAutohide: function(aItem) {
     aItem.setAttribute("checked", gPrefService.getBoolPref("browser.fullscreen.autohide"));
   },
-  setAutohide: function()
-  {
+  setAutohide: function() {
     gPrefService.setBoolPref("browser.fullscreen.autohide", !gPrefService.getBoolPref("browser.fullscreen.autohide"));
   },
 
@@ -231,8 +231,9 @@ var FullScreen = {
   _shouldAnimate: true,
 
   cancelWarning: function(event) {
-    if (!this.warningBox)
+    if (!this.warningBox) {
       return;
+    }
     this.warningBox.removeEventListener("transitionend", this);
     if (this.warningFadeOutTimeout) {
       clearTimeout(this.warningFadeOutTimeout);
@@ -257,8 +258,9 @@ var FullScreen = {
   // Shows a warning that the site has entered fullscreen for a short duration.
   showWarning: function(targetDoc) {
     let timeout = gPrefService.getIntPref("full-screen-api.warning.timeout");
-    if (!document.mozFullScreen || timeout <= 0)
+    if (!document.mozFullScreen || timeout <= 0) {
       return;
+    }
 
     // Set the strings on the fullscreen warning UI.
     this.fullscreenDoc = targetDoc;
@@ -266,7 +268,7 @@ var FullScreen = {
     let host = null;
     try {
       host = uri.host;
-    } catch (e) { }
+    } catch(e) {}
     let hostLabel = document.getElementById("full-screen-domain-text");
     if (host) {
       // Document's principal's URI has a host. Display a warning including the hostname.
@@ -384,16 +386,16 @@ var FullScreen = {
           // Give the main nav bar and the tab bar the fullscreen context menu,
           // otherwise remove context menu to prevent breakage
           el.setAttribute("saved-context", el.getAttribute("context"));
-          if (el.id == "nav-bar" || el.id == "TabsToolbar")
+          if (el.id == "nav-bar" || el.id == "TabsToolbar") {
             el.setAttribute("context", "autohide-context");
-          else
+          } else {
             el.removeAttribute("context");
+          }
 
           // Set the inFullscreen attribute to allow specific styling
           // in fullscreen mode
           el.setAttribute("inFullscreen", true);
-        }
-        else {
+        } else {
           var restoreAttr = function restoreAttr(attrName) {
             var savedAttr = "saved-" + attrName;
             if (el.hasAttribute(savedAttr)) {
@@ -411,10 +413,11 @@ var FullScreen = {
       } else {
         // use moz-collapsed so it doesn't persist hidden/collapsed,
         // so that new windows don't have missing toolbars
-        if (aShow)
+        if (aShow) {
           el.removeAttribute("moz-collapsed");
-        else
+        } else {
           el.setAttribute("moz-collapsed", "true");
+        }
       }
     }
 
@@ -433,13 +436,13 @@ var FullScreen = {
     var fullscreenctls = document.getElementById("window-controls");
     var navbar = document.getElementById("nav-bar");
     var ctlsOnTabbar = window.toolbar.visible &&
-                        (navbar.collapsed || (TabsOnTop.enabled &&
-                        !gPrefService.getBoolPref("browser.tabs.autoHide")));
+                       (navbar.collapsed ||
+                        (TabsOnTop.enabled &&
+                         !gPrefService.getBoolPref("browser.tabs.autoHide")));
     if (fullscreenctls.parentNode == navbar && ctlsOnTabbar) {
       fullscreenctls.removeAttribute("flex");
       document.getElementById("TabsToolbar").appendChild(fullscreenctls);
-    }
-    else if (fullscreenctls.parentNode.id == "TabsToolbar" && !ctlsOnTabbar) {
+    } else if (fullscreenctls.parentNode.id == "TabsToolbar" && !ctlsOnTabbar) {
       fullscreenctls.setAttribute("flex", "1");
       navbar.appendChild(fullscreenctls);
     }

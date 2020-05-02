@@ -7,6 +7,7 @@
 #include "nsCOMPtr.h"
 #include "nsDataHashtable.h"
 #include "nsHashKeys.h"
+#include "nsNetUtil.h"
 #include "nsTArray.h"
 
 #include "nsIPersistentProperties2.h"

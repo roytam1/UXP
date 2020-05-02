@@ -8,7 +8,7 @@
 
 #include "mozilla/AlreadyAddRefed.h"
 #include "nsWrapperCache.h"
-#include "WebGLObjectModel.h"
+#include "WebGLContext.h"
 #include "WebGLTypes.h"
 
 namespace mozilla {

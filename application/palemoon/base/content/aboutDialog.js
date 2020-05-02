@@ -7,8 +7,9 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 
 function init(aEvent)
 {
-  if (aEvent.target != document)
+  if (aEvent.target != document) {
     return;
+  }
 
   try {
     var distroId = Services.prefs.getCharPref("distribution.id");
@@ -22,18 +23,16 @@ function init(aEvent)
       try {
         // This is in its own try catch due to bug 895473 and bug 900925.
         var distroAbout = Services.prefs.getComplexValue("distribution.about",
-          Components.interfaces.nsISupportsString);
+                                                         Components.interfaces.nsISupportsString);
         var distroField = document.getElementById("distribution");
         distroField.value = distroAbout;
         distroField.style.display = "block";
-      }
-      catch (ex) {
+      } catch (ex) {
         // Pref is unset
         Components.utils.reportError(ex);
       }
     }
-  }
-  catch (e) {
+  } catch(e) {
     // Pref is unset
   }
 

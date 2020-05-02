@@ -9,6 +9,7 @@
 
 #include "nsCOMPtr.h"
 #include "nsICryptoHash.h"
+#include "nsString.h"
 
 class nsIChannel;
 class nsIUnicharStreamLoader;

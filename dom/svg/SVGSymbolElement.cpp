@@ -7,6 +7,8 @@
 #include "mozilla/dom/SVGSymbolElement.h"
 #include "mozilla/dom/SVGSymbolElementBinding.h"
 
+#include "nsContentUtils.h"
+
 NS_IMPL_NS_NEW_NAMESPACED_SVG_ELEMENT(Symbol)
 
 namespace mozilla {

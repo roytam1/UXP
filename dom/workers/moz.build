@@ -22,6 +22,7 @@ EXPORTS.mozilla.dom += [
 
 EXPORTS.mozilla.dom.workers += [
     'RuntimeService.h',
+    'ServiceWorkerCommon.h',
     'ServiceWorkerInfo.h',
     'ServiceWorkerManager.h',
     'ServiceWorkerRegistrationInfo.h',
@@ -46,7 +47,7 @@ XPIDL_SOURCES += [
     'nsIWorkerDebuggerManager.idl',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'ChromeWorkerScope.cpp',
     'FileReaderSync.cpp',
     'Principal.cpp',

@@ -37,8 +37,9 @@ var FeedHandler = {
     let feeds = gBrowser.selectedBrowser.feeds || [];
     // If there are multiple feeds, the menu will open, so no need to do
     // anything. If there are no feeds, nothing to do either.
-    if (feeds.length != 1)
+    if (feeds.length != 1) {
       return;
+    }
 
     if (event.eventPhase == Event.AT_TARGET &&
         (event.button == 0 || event.button == 1)) {
@@ -68,18 +69,21 @@ var FeedHandler = {
       return false;
     }
 
-    while (menuPopup.firstChild)
+    while (menuPopup.firstChild) {
       menuPopup.removeChild(menuPopup.firstChild);
+    }
 
     if (feeds.length == 1) {
       var feedButtonPM = document.getElementById("ub-feed-button");
-      if (feedButtonPM)
+      if (feedButtonPM) {
         feedButtonPM.setAttribute("feed", feeds[0].href);
+      }
       return false;
     }
 
-    if (feeds.length <= 1)
+    if (feeds.length <= 1) {
       return false;
+    }
 
     // Build the menu showing the available feed choices for viewing.
     for (let feedInfo of feeds) {
@@ -112,15 +116,17 @@ var FeedHandler = {
   subscribeToFeed: function(href, event) {
     // Just load the feed in the content area to either subscribe or show the
     // preview UI
-    if (!href)
+    if (!href) {
       href = event.target.getAttribute("feed");
+    }
     urlSecurityCheck(href, gBrowser.contentPrincipal,
                      Ci.nsIScriptSecurityManager.DISALLOW_INHERIT_PRINCIPAL);
     var feedURI = makeURI(href, document.characterSet);
     // Use the feed scheme so X-Moz-Is-Feed will be set
     // The value doesn't matter
-    if (/^https?$/.test(feedURI.scheme))
+    if (/^https?$/.test(feedURI.scheme)) {
       href = "feed:" + href;
+    }
     this.loadFeed(href, event);
   },
 
@@ -128,8 +134,7 @@ var FeedHandler = {
     var feeds = gBrowser.selectedBrowser.feeds;
     try {
       openUILink(href, event, { ignoreAlt: true });
-    }
-    finally {
+    } finally {
       // We might default to a livebookmarks modal dialog,
       // so reset that if the user happens to click it again
       gBrowser.selectedBrowser.feeds = feeds;
@@ -151,8 +156,9 @@ var FeedHandler = {
    * a page is loaded or the user switches tabs to a page that has feeds.
    */
   updateFeeds: function() {
-    if (this._updateFeedTimeout)
+    if (this._updateFeedTimeout) {
       clearTimeout(this._updateFeedTimeout);
+    }
 
     var feeds = gBrowser.selectedBrowser.feeds;
     var haveFeeds = feeds && feeds.length > 0;
@@ -161,8 +167,9 @@ var FeedHandler = {
 
     var feedButton = document.getElementById("feed-button");
     
-    if (feedButton)
+    if (feedButton) {
       feedButton.disabled = !haveFeeds;
+    }
     
     if (feedButtonPM) {
         if (!haveFeeds) {
@@ -181,13 +188,15 @@ var FeedHandler = {
     }
 
     if (feeds.length > 1) {
-      if (feedButtonPM)
+      if (feedButtonPM) {
         feedButtonPM.removeAttribute("feed");
+      }
       this._feedMenuitem.setAttribute("hidden", "true");
       this._feedMenupopup.removeAttribute("hidden");
     } else {
-      if (feedButtonPM)
+      if (feedButtonPM) {
         feedButtonPM.setAttribute("feed", feeds[0].href);
+      }
       this._feedMenuitem.setAttribute("feed", feeds[0].href);
       this._feedMenuitem.removeAttribute("disabled");
       this._feedMenuitem.removeAttribute("hidden");
@@ -203,8 +212,9 @@ var FeedHandler = {
       return;
     }
 
-    if (!browserForLink.feeds)
+    if (!browserForLink.feeds) {
       browserForLink.feeds = [];
+    }
 
     browserForLink.feeds.push({ href: link.href, title: link.title });
 
@@ -212,12 +222,14 @@ var FeedHandler = {
     // background browsers, we'll update on tab switch.
     if (browserForLink == gBrowser.selectedBrowser) {
       var feedButtonPM = document.getElementById("ub-feed-button");
-      if (feedButtonPM)
+      if (feedButtonPM) {
         feedButtonPM.collapsed = !gPrefService.getBoolPref("browser.urlbar.rss");
+      }
       // Batch updates to avoid updating the UI for multiple onLinkAdded events
       // fired within 100ms of each other.
-      if (this._updateFeedTimeout)
+      if (this._updateFeedTimeout) {
         clearTimeout(this._updateFeedTimeout);
+      }
       this._updateFeedTimeout = setTimeout(this.updateFeeds.bind(this), 100);
     }
   }

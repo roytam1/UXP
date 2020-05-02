@@ -6,6 +6,10 @@
 
 #include "ServiceWorkerRegistrationInfo.h"
 
+#include "ServiceWorkerManager.h"
+#include "ServiceWorkerPrivate.h"
+#include "nsProxyRelease.h"
+
 BEGIN_WORKERS_NAMESPACE
 
 namespace {

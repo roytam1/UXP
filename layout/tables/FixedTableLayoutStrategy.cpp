@@ -15,6 +15,10 @@
 #include "nsTableCellFrame.h"
 #include <algorithm>
 
+#include "mozilla/WritingModes.h"
+
+using namespace mozilla;
+
 FixedTableLayoutStrategy::FixedTableLayoutStrategy(nsTableFrame *aTableFrame)
   : nsITableLayoutStrategy(nsITableLayoutStrategy::Fixed)
   , mTableFrame(aTableFrame)

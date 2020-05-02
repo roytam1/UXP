@@ -6,9 +6,11 @@
 
 #include "nsIServiceManager.h"
 #include "UDPSocketParent.h"
+#include "UDPSocket.h"
 #include "nsComponentManagerUtils.h"
 #include "nsIUDPSocket.h"
 #include "nsINetAddr.h"
+#include "nsNetCID.h"
 #include "mozilla/AppProcessChecker.h"
 #include "mozilla/Unused.h"
 #include "mozilla/ipc/InputStreamUtils.h"
@@ -17,8 +19,11 @@
 #include "mozilla/net/PNeckoParent.h"
 #include "nsIPermissionManager.h"
 #include "nsIScriptSecurityManager.h"
+#include "mozilla/dom/ContentParent.h"
 #include "mozilla/ipc/PBackgroundParent.h"
 #include "mtransport/runnable_utils.h"
+
+using namespace mozilla::net;
 
 namespace mozilla {
 namespace dom {

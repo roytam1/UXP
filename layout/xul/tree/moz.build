@@ -27,7 +27,7 @@ EXPORTS.mozilla.dom += [
     'TreeBoxObject.h'
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsTreeBodyFrame.cpp',
     'nsTreeColFrame.cpp',
     'nsTreeColumns.cpp',

@@ -8,6 +8,8 @@
 #define mozilla_dom_workers_serviceworkerupdatejob_h
 
 #include "ServiceWorkerJob.h"
+#include "ServiceWorkerRegistrationInfo.h"
+#include "nsILoadGroup.h"
 
 namespace mozilla {
 namespace dom {

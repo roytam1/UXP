@@ -10,7 +10,7 @@ EXPORTS.mozilla.dom += [
     'XPathResult.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'txBooleanExpr.cpp',
     'txBooleanResult.cpp',
     'txCoreFunctionCall.cpp',

@@ -6,6 +6,7 @@
 #include "WebGLExtensions.h"
 
 #include "mozilla/dom/WebGLRenderingContextBinding.h"
+#include "GLContext.h"
 #include "WebGLContext.h"
 #include "WebGLContextUtils.h"
 

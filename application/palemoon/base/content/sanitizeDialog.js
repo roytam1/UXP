@@ -8,35 +8,30 @@ var Ci = Components.interfaces;
 
 var gSanitizePromptDialog = {
 
-  get bundleBrowser()
-  {
-    if (!this._bundleBrowser)
+  get bundleBrowser() {
+    if (!this._bundleBrowser) {
       this._bundleBrowser = document.getElementById("bundleBrowser");
+    }
     return this._bundleBrowser;
   },
 
-  get selectedTimespan()
-  {
+  get selectedTimespan() {
     var durList = document.getElementById("sanitizeDurationChoice");
     return parseInt(durList.value);
   },
 
-  get sanitizePreferences()
-  {
+  get sanitizePreferences() {
     if (!this._sanitizePreferences) {
-      this._sanitizePreferences =
-        document.getElementById("sanitizePreferences");
+      this._sanitizePreferences = document.getElementById("sanitizePreferences");
     }
     return this._sanitizePreferences;
   },
 
-  get warningBox()
-  {
+  get warningBox() {
     return document.getElementById("sanitizeEverythingWarningBox");
   },
 
-  init: function()
-  {
+  init: function() {
     // This is used by selectByTimespan() to determine if the window has loaded.
     this._inited = true;
 
@@ -62,19 +57,18 @@ var gSanitizePromptDialog = {
     if (this.selectedTimespan === Sanitizer.TIMESPAN_EVERYTHING) {
       this.prepareWarning();
       this.warningBox.hidden = false;
-      document.title =
-        this.bundleBrowser.getString("sanitizeDialog2.everything.title");
-    }
-    else
+      document.title = this.bundleBrowser.getString("sanitizeDialog2.everything.title");
+    } else {
       this.warningBox.hidden = true;
+    }
   },
 
-  selectByTimespan: function()
-  {
+  selectByTimespan: function() {
     // This method is the onselect handler for the duration dropdown.  As a
     // result it's called a couple of times before onload calls init().
-    if (!this._inited)
+    if (!this._inited) {
       return;
+    }
 
     var warningBox = this.warningBox;
 
@@ -85,8 +79,7 @@ var gSanitizePromptDialog = {
         warningBox.hidden = false;
         window.resizeBy(0, warningBox.boxObject.height);
       }
-      window.document.title =
-        this.bundleBrowser.getString("sanitizeDialog2.everything.title");
+      window.document.title = this.bundleBrowser.getString("sanitizeDialog2.everything.title");
       return;
     }
 
@@ -95,12 +88,10 @@ var gSanitizePromptDialog = {
       window.resizeBy(0, -warningBox.boxObject.height);
       warningBox.hidden = true;
     }
-    window.document.title =
-      window.document.documentElement.getAttribute("noneverythingtitle");
+    window.document.title = window.document.documentElement.getAttribute("noneverythingtitle");
   },
 
-  sanitize: function()
-  {
+  sanitize: function() {
     // Update pref values before handing off to the sanitizer (bug 453440)
     this.updatePrefs();
     var s = new Sanitizer();
@@ -116,12 +107,11 @@ var gSanitizePromptDialog = {
     let docElt = document.documentElement;
     let acceptButton = docElt.getButton("accept");
     acceptButton.disabled = true;
-    acceptButton.setAttribute("label",
-                              this.bundleBrowser.getString("sanitizeButtonClearing"));
+    acceptButton.setAttribute("label", this.bundleBrowser.getString("sanitizeButtonClearing"));
     docElt.getButton("cancel").disabled = true;
     try {
       s.sanitize().then(window.close, window.close);
-    } catch (er) {
+    } catch(er) {
       Components.utils.reportError("Exception during sanitize: " + er);
       return true; // We *do* want to close immediately on error.
     }
@@ -144,24 +134,22 @@ var gSanitizePromptDialog = {
     var warningStringID;
     if (this.hasNonSelectedItems()) {
       warningStringID = "sanitizeSelectedWarning";
-      if (!aDontShowItemList)
+      if (!aDontShowItemList) {
         this.showItemList();
-    }
-    else {
+      }
+    } else {
       warningStringID = "sanitizeEverythingWarning2";
     }
 
     var warningDesc = document.getElementById("sanitizeEverythingWarning");
-    warningDesc.textContent =
-      this.bundleBrowser.getString(warningStringID);
+    warningDesc.textContent = this.bundleBrowser.getString(warningStringID);
   },
 
   /**
    * Called when the value of a preference element is synced from the actual
    * pref.  Enables or disables the OK button appropriately.
    */
-  onReadGeneric: function()
-  {
+  onReadGeneric: function() {
     var found = false;
 
     // Find any other pref that's checked and enabled.
@@ -176,8 +164,7 @@ var gSanitizePromptDialog = {
 
     try {
       document.documentElement.getButton("accept").disabled = !found;
-    }
-    catch (e) { }
+    } catch(e) {}
 
     // Update the warning prompt if needed
     this.prepareWarning(true);
@@ -218,8 +205,9 @@ var gSanitizePromptDialog = {
     let checkboxes = document.querySelectorAll("#itemList > [preference]");
     for (let i = 0; i < checkboxes.length; ++i) {
       let pref = document.getElementById(checkboxes[i].getAttribute("preference"));
-      if (!pref.value)
+      if (!pref.value) {
         return true;
+      }
     }
     return false;
   },
@@ -234,8 +222,9 @@ var gSanitizePromptDialog = {
     if (itemList.collapsed) {
       expanderButton.className = "expander-up";
       itemList.setAttribute("collapsed", "false");
-      if (document.documentElement.boxObject.height)
+      if (document.documentElement.boxObject.height) {
         window.resizeBy(0, itemList.boxObject.height);
+      }
     }
   },
 
@@ -256,34 +245,32 @@ var gSanitizePromptDialog = {
   /**
    * Called by the item list expander button to toggle the list's visibility.
    */
-  toggleItemList: function()
-  {
+  toggleItemList: function() {
     var itemList = document.getElementById("itemList");
 
-    if (itemList.collapsed)
+    if (itemList.collapsed) {
       this.showItemList();
-    else
+    } else {
       this.hideItemList();
+    }
   }
 
 #ifdef CRH_DIALOG_TREE_VIEW
   // A duration value; used in the same context as Sanitizer.TIMESPAN_HOUR,
   // Sanitizer.TIMESPAN_2HOURS, et al.  This should match the value attribute
   // of the sanitizeDurationCustom menuitem.
-  get TIMESPAN_CUSTOM()
-  {
+  get TIMESPAN_CUSTOM() {
     return -1;
   },
 
-  get placesTree()
-  {
-    if (!this._placesTree)
+  get placesTree() {
+    if (!this._placesTree) {
       this._placesTree = document.getElementById("placesTree");
+    }
     return this._placesTree;
   },
 
-  init: function()
-  {
+  init: function() {
     // This is used by selectByTimespan() to determine if the window has loaded.
     this._inited = true;
 
@@ -315,8 +302,7 @@ var gSanitizePromptDialog = {
    * the tree to duration values, and this.durationStartTimes, which maps
    * duration values to their corresponding start times.
    */
-  initDurationDropdown: function()
-  {
+  initDurationDropdown: function() {
     // First, calculate the start times for each duration.
     this.durationStartTimes = {};
     var durVals = [];
@@ -348,8 +334,8 @@ var gSanitizePromptDialog = {
     // For all rows in the tree except the grippy row...
     for (let i = 0; i < view.rowCount - 1; i++) {
       let unfoundDurVals = [];
-      let nodeTime = view.QueryInterface(Ci.nsINavHistoryResultTreeViewer).
-                     nodeForTreeIndex(i).time;
+      let nodeTime = view.QueryInterface(Ci.nsINavHistoryResultTreeViewer)
+                         .nodeForTreeIndex(i).time;
       // For all durations whose rows have not yet been found in the tree, see
       // if index i is their index.  An index may map to more than one duration,
       // in which case the final duration (the largest) wins.
@@ -359,9 +345,9 @@ var gSanitizePromptDialog = {
         if (nodeTime < durStartTime) {
           this.durationValsToRows[durVal] = i - 1;
           this.durationRowsToVals[i - 1] = durVal;
-        }
-        else
+        } else {
           unfoundDurVals.push(durVal);
+        }
       }
       durVals = unfoundDurVals;
     }
@@ -379,10 +365,10 @@ var gSanitizePromptDialog = {
   /**
    * If the Places tree is not set up, sets it up.  Otherwise does nothing.
    */
-  ensurePlacesTreeIsInited: function()
-  {
-    if (this._placesTreeIsInited)
+  ensurePlacesTreeIsInited: function() {
+    if (this._placesTreeIsInited) {
       return;
+    }
 
     this._placesTreeIsInited = true;
 
@@ -396,8 +382,8 @@ var gSanitizePromptDialog = {
       times = Sanitizer.getClearRange(Sanitizer.TIMESPAN_4HOURS);
     }
 
-    var histServ = Cc["@mozilla.org/browser/nav-history-service;1"].
-                   getService(Ci.nsINavHistoryService);
+    var histServ = Cc["@mozilla.org/browser/nav-history-service;1"]
+                     .getService(Ci.nsINavHistoryService);
     var query = histServ.getNewQuery();
     query.beginTimeReference = query.TIME_RELATIVE_EPOCH;
     query.beginTime = times[0];
@@ -420,12 +406,12 @@ var gSanitizePromptDialog = {
    * the tree that are contained in the selected duration.  If clearing
    * everything, the warning panel is shown instead.
    */
-  selectByTimespan: function()
-  {
+  selectByTimespan: function() {
     // This method is the onselect handler for the duration dropdown.  As a
     // result it's called a couple of times before onload calls init().
-    if (!this._inited)
+    if (!this._inited) {
       return;
+    }
 
     var durDeck = document.getElementById("durationDeck");
     var durList = document.getElementById("sanitizeDurationChoice");
@@ -446,29 +432,24 @@ var gSanitizePromptDialog = {
     if (durVal === Sanitizer.TIMESPAN_EVERYTHING) {
       this.prepareWarning();
       durDeck.selectedIndex = 1;
-      window.document.title =
-        this.bundleBrowser.getString("sanitizeDialog2.everything.title");
+      window.document.title = this.bundleBrowser.getString("sanitizeDialog2.everything.title");
       document.documentElement.getButton("accept").disabled = false;
       return;
     }
 
-    // Otherwise -- if clearing a specific time range -- select that time range
-    // in the tree.
+    // Otherwise -- if clearing a specific time range -- select that time range in the tree.
     this.ensurePlacesTreeIsInited();
     durDeck.selectedIndex = 0;
-    window.document.title =
-      window.document.documentElement.getAttribute("noneverythingtitle");
+    window.document.title = window.document.documentElement.getAttribute("noneverythingtitle");
     var durRow = this.durationValsToRows[durVal];
     gContiguousSelectionTreeHelper.rangedSelect(durRow);
     gContiguousSelectionTreeHelper.scrollToGrippy();
 
-    // If duration is empty (there are no selected rows), disable the dialog's
-    // OK button.
+    // If duration is empty (there are no selected rows), disable the dialog's OK button.
     document.documentElement.getButton("accept").disabled = durRow < 0;
   },
 
-  sanitize: function()
-  {
+  sanitize: function() {
     // Update pref values before handing off to the sanitizer (bug 453440)
     this.updatePrefs();
     var s = new Sanitizer();
@@ -486,9 +467,9 @@ var gSanitizePromptDialog = {
         var now = Date.now() * 1000;
         // We disable the dialog's OK button if there's no selection, but we'll
         // handle that case just in... case.
-        if (view.selection.getRangeCount() === 0)
+        if (view.selection.getRangeCount() === 0) {
           s.range = [now, now];
-        else {
+        } else {
           var startIndexRef = {};
           // Tree sorted by visit date DEscending, so start time time comes last.
           view.selection.getRangeAt(0, {}, startIndexRef);
@@ -496,15 +477,15 @@ var gSanitizePromptDialog = {
           var startNode = view.nodeForTreeIndex(startIndexRef.value);
           s.range = [startNode.time, now];
         }
-      }
-      // Otherwise use the predetermined range.
-      else
+      } else {
+        // Use the predetermined range.
         s.range = [this.durationStartTimes[durValue], Date.now() * 1000];
+      }
     }
 
     try {
       s.sanitize();
-    } catch (er) {
+    } catch(er) {
       Components.utils.reportError("Exception during sanitize: " + er);
     }
     return true;
@@ -515,8 +496,7 @@ var gSanitizePromptDialog = {
    * for garbage collection, we need to break the reference cycle between the
    * two.
    */
-  unload: function()
-  {
+  unload: function() {
     let result = this.placesTree.getResult();
     result.removeObserver(this.placesTree.view);
     this.placesTree.view = null;
@@ -533,8 +513,7 @@ var gSanitizePromptDialog = {
    * @param aEvent
    *        The event captured in the event handler.
    */
-  grippyMoved: function(aEventName, aEvent)
-  {
+  grippyMoved: function(aEventName, aEvent) {
     gContiguousSelectionTreeHelper[aEventName](aEvent);
     var lastSelRow = gContiguousSelectionTreeHelper.getGrippyRow() - 1;
     var durList = document.getElementById("sanitizeDurationChoice");
@@ -548,10 +527,11 @@ var gSanitizePromptDialog = {
          this.durationValsToRows[durValue] !== lastSelRow)) {
       // Setting durList.value causes its onselect handler to fire, which calls
       // selectByTimespan().
-      if (lastSelRow in this.durationRowsToVals)
+      if (lastSelRow in this.durationRowsToVals) {
         durList.value = this.durationRowsToVals[lastSelRow];
-      else
+      } else {
         durList.value = this.TIMESPAN_CUSTOM;
+      }
     }
 
     // If there are no selected rows, disable the dialog's OK button.
@@ -560,7 +540,6 @@ var gSanitizePromptDialog = {
 #endif
 
 };
-
 
 #ifdef CRH_DIALOG_TREE_VIEW
 /**
@@ -571,8 +550,7 @@ var gContiguousSelectionTreeHelper = {
   /**
    * Gets the tree associated with this helper.
    */
-  get tree()
-  {
+  get tree() {
     return this._tree;
   },
 
@@ -589,8 +567,7 @@ var gContiguousSelectionTreeHelper = {
    *         view
    * @return The new view
    */
-  setTree: function(aTreeElement, aProtoTreeView)
-  {
+  setTree: function(aTreeElement, aProtoTreeView) {
     this._tree = aTreeElement;
     var newView = this._makeTreeView(aProtoTreeView || aTreeElement.view);
     aTreeElement.view = newView;
@@ -604,12 +581,12 @@ var gContiguousSelectionTreeHelper = {
    *
    * @return The row index of the grippy
    */
-  getGrippyRow: function()
-  {
+  getGrippyRow: function() {
     var sel = this.tree.view.selection;
     var rangeCount = sel.getRangeCount();
-    if (rangeCount === 0)
+    if (rangeCount === 0) {
       return 0;
+    }
     if (rangeCount !== 1) {
       throw "contiguous selection tree helper: getGrippyRow called with " +
             "multiple selection ranges";
@@ -626,13 +603,12 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed dragover event
    */
-  ondragover: function(aEvent)
-  {
+  ondragover: function(aEvent) {
     // Without this when dragging on Windows the mouse cursor is a "no" sign.
     // This makes it a drop symbol.
-    var ds = Cc["@mozilla.org/widget/dragservice;1"].
-             getService(Ci.nsIDragService).
-             getCurrentSession();
+    var ds = Cc["@mozilla.org/widget/dragservice;1"]
+               .getService(Ci.nsIDragService)
+               .getCurrentSession();
     ds.canDrop = true;
     ds.dragAction = 0;
 
@@ -640,8 +616,9 @@ var gContiguousSelectionTreeHelper = {
     aEvent.QueryInterface(Ci.nsIDOMMouseEvent);
     var hoverRow = tbo.getRowAt(aEvent.clientX, aEvent.clientY);
 
-    if (hoverRow < 0)
+    if (hoverRow < 0) {
       return;
+    }
 
     this.rangedSelect(hoverRow - 1);
   },
@@ -653,30 +630,30 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed dragstart event
    */
-  ondragstart: function(aEvent)
-  {
+  ondragstart: function(aEvent) {
     var tbo = this.tree.treeBoxObject;
     var clickedRow = tbo.getRowAt(aEvent.clientX, aEvent.clientY);
 
-    if (clickedRow !== this.getGrippyRow())
+    if (clickedRow !== this.getGrippyRow()) {
       return;
+    }
 
     // This part is a hack.  What we really want is a grab and slide, not
     // drag and drop.  Start a move drag session with dummy data and a
     // dummy region.  Set the region's coordinates to (Infinity, Infinity)
     // so it's drawn offscreen and its size to (1, 1).
-    var arr = Cc["@mozilla.org/supports-array;1"].
-              createInstance(Ci.nsISupportsArray);
-    var trans = Cc["@mozilla.org/widget/transferable;1"].
-                createInstance(Ci.nsITransferable);
+    var arr = Cc["@mozilla.org/supports-array;1"]
+                .createInstance(Ci.nsISupportsArray);
+    var trans = Cc["@mozilla.org/widget/transferable;1"]
+                  .createInstance(Ci.nsITransferable);
     trans.init(null);
     trans.setTransferData('dummy-flavor', null, 0);
     arr.AppendElement(trans);
-    var reg = Cc["@mozilla.org/gfx/region;1"].
-              createInstance(Ci.nsIScriptableRegion);
+    var reg = Cc["@mozilla.org/gfx/region;1"]
+                .createInstance(Ci.nsIScriptableRegion);
     reg.setToRect(Infinity, Infinity, 1, 1);
-    var ds = Cc["@mozilla.org/widget/dragservice;1"].
-             getService(Ci.nsIDragService);
+    var ds = Cc["@mozilla.org/widget/dragservice;1"]
+               .getService(Ci.nsIDragService);
     ds.invokeDragSession(aEvent.target, arr, reg, ds.DRAGDROP_ACTION_MOVE);
   },
 
@@ -688,56 +665,59 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed keypress event
    */
-  onkeypress: function(aEvent)
-  {
+  onkeypress: function(aEvent) {
     var grippyRow = this.getGrippyRow();
     var tbo = this.tree.treeBoxObject;
     var rangeEnd;
     switch (aEvent.keyCode) {
-    case aEvent.DOM_VK_HOME:
-      rangeEnd = 0;
-      break;
-    case aEvent.DOM_VK_PAGE_UP:
-      rangeEnd = grippyRow - tbo.getPageLength();
-      break;
-    case aEvent.DOM_VK_UP:
-      rangeEnd = grippyRow - 2;
-      break;
-    case aEvent.DOM_VK_DOWN:
-      rangeEnd = grippyRow;
-      break;
-    case aEvent.DOM_VK_PAGE_DOWN:
-      rangeEnd = grippyRow + tbo.getPageLength();
-      break;
-    case aEvent.DOM_VK_END:
-      rangeEnd = this.tree.view.rowCount - 2;
-      break;
-    default:
-      return;
-      break;
+      case aEvent.DOM_VK_HOME:
+        rangeEnd = 0;
+        break;
+      case aEvent.DOM_VK_PAGE_UP:
+        rangeEnd = grippyRow - tbo.getPageLength();
+        break;
+      case aEvent.DOM_VK_UP:
+        rangeEnd = grippyRow - 2;
+        break;
+      case aEvent.DOM_VK_DOWN:
+        rangeEnd = grippyRow;
+        break;
+      case aEvent.DOM_VK_PAGE_DOWN:
+        rangeEnd = grippyRow + tbo.getPageLength();
+        break;
+      case aEvent.DOM_VK_END:
+        rangeEnd = this.tree.view.rowCount - 2;
+        break;
+      default:
+        return;
+        break;
     }
 
     aEvent.stopPropagation();
 
     // First, clip rangeEnd.  this.rangedSelect() doesn't clip the range if we
     // select past the ends of the tree.
-    if (rangeEnd < 0)
+    if (rangeEnd < 0) {
       rangeEnd = -1;
-    else if (this.tree.view.rowCount - 2 < rangeEnd)
+    } else if (this.tree.view.rowCount - 2 < rangeEnd) {
       rangeEnd = this.tree.view.rowCount - 2;
+    }
 
     // Next, (de)select.
     this.rangedSelect(rangeEnd);
 
     // Finally, scroll the tree.  We always want one row above and below the
     // grippy row to be visible if possible.
-    if (rangeEnd < grippyRow) // moved up
+    if (rangeEnd < grippyRow) {
+      // moved up
       tbo.ensureRowIsVisible(rangeEnd < 0 ? 0 : rangeEnd);
-    else {                    // moved down
-      if (rangeEnd + 2 < this.tree.view.rowCount)
+    } else {
+      // moved down
+      if (rangeEnd + 2 < this.tree.view.rowCount) {
         tbo.ensureRowIsVisible(rangeEnd + 2);
-      else if (rangeEnd + 1 < this.tree.view.rowCount)
+      } else if (rangeEnd + 1 < this.tree.view.rowCount) {
         tbo.ensureRowIsVisible(rangeEnd + 1);
+      }
     }
   },
 
@@ -749,18 +729,19 @@ var gContiguousSelectionTreeHelper = {
    * @param aEvent
    *        The observed mousedown event
    */
-  onmousedown: function(aEvent)
-  {
+  onmousedown: function(aEvent) {
     var tbo = this.tree.treeBoxObject;
     var clickedRow = tbo.getRowAt(aEvent.clientX, aEvent.clientY);
 
-    if (clickedRow < 0 || clickedRow >= this.tree.view.rowCount)
+    if (clickedRow < 0 || clickedRow >= this.tree.view.rowCount) {
       return;
+    }
 
-    if (clickedRow < this.getGrippyRow())
+    if (clickedRow < this.getGrippyRow()) {
       this.rangedSelect(clickedRow);
-    else if (clickedRow > this.getGrippyRow())
+    } else if (clickedRow > this.getGrippyRow()) {
       this.rangedSelect(clickedRow - 1);
+    }
   },
 
   /**
@@ -771,40 +752,40 @@ var gContiguousSelectionTreeHelper = {
    * @param aEndRow
    *        The range [0, aEndRow] will be selected.
    */
-  rangedSelect: function(aEndRow)
-  {
+  rangedSelect: function(aEndRow) {
     var tbo = this.tree.treeBoxObject;
-    if (aEndRow < 0)
+    if (aEndRow < 0) {
       this.tree.view.selection.clearSelection();
-    else
+    } else {
       this.tree.view.selection.rangedSelect(0, aEndRow, false);
+    }
     tbo.invalidateRange(tbo.getFirstVisibleRow(), tbo.getLastVisibleRow());
   },
 
   /**
    * Scrolls the tree so that the grippy row is in the center of the view.
    */
-  scrollToGrippy: function()
-  {
+  scrollToGrippy: function() {
     var rowCount = this.tree.view.rowCount;
     var tbo = this.tree.treeBoxObject;
     var pageLen = tbo.getPageLength() ||
                   parseInt(this.tree.getAttribute("rows")) ||
                   10;
 
-    // All rows fit on a single page.
-    if (rowCount <= pageLen)
+    if (rowCount <= pageLen) {
+      // All rows fit on a single page.
       return;
+    }
 
     var scrollToRow = this.getGrippyRow() - Math.ceil(pageLen / 2.0);
 
-    // Grippy row is in first half of first page.
-    if (scrollToRow < 0)
+    if (scrollToRow < 0) {
+      // Grippy row is in first half of first page.
       scrollToRow = 0;
-
-    // Grippy row is in last half of last page.
-    else if (rowCount < scrollToRow + pageLen)
+    } else if (rowCount < scrollToRow + pageLen) {
+      // Grippy row is in last half of last page.
       scrollToRow = rowCount - pageLen;
+    }
 
     tbo.scrollToRow(scrollToRow);
   },
@@ -817,92 +798,87 @@ var gContiguousSelectionTreeHelper = {
    * @param aProtoTreeView
    *        Used as the new view's prototype if specified
    */
-  _makeTreeView: function(aProtoTreeView)
-  {
+  _makeTreeView: function(aProtoTreeView) {
     var view = aProtoTreeView;
     var that = this;
 
     //XXXadw: When Alex gets the grippy icon done, this may or may not change,
     //        depending on how we style it.
-    view.isSeparator = function(aRow)
-    {
+    view.isSeparator = function(aRow) {
       return aRow === that.getGrippyRow();
     };
 
     // rowCount includes the grippy row.
     view.__defineGetter__("_rowCount", view.__lookupGetter__("rowCount"));
-    view.__defineGetter__("rowCount",
-      function()
-      {
+    view.__defineGetter__("rowCount", function() {
         return this._rowCount + 1;
       });
 
     // This has to do with visual feedback in the view itself, e.g., drawing
     // a small line underneath the dropzone.  Not what we want.
-    view.canDrop = function CSTH_View_canDrop() { return false; };
+    view.canDrop = function() {
+      return false;
+    };
 
     // No clicking headers to sort the tree or sort feedback on columns.
-    view.cycleHeader = function CSTH_View_cycleHeader() {};
-    view.sortingChanged = function CSTH_View_sortingChanged() {};
+    view.cycleHeader = function() {};
+    view.sortingChanged = function() {};
 
     // Override a bunch of methods to account for the grippy row.
 
     view._getCellProperties = view.getCellProperties;
-    view.getCellProperties =
-      function CSTH_View_getCellProperties(aRow, aCol)
-      {
+    view.getCellProperties = function (aRow, aCol) {
         var grippyRow = that.getGrippyRow();
-        if (aRow === grippyRow)
+        if (aRow === grippyRow) {
           return "grippyRow";
-        if (aRow < grippyRow)
+        }
+        if (aRow < grippyRow) {
           return this._getCellProperties(aRow, aCol);
+        }
 
         return this._getCellProperties(aRow - 1, aCol);
       };
 
     view._getRowProperties = view.getRowProperties;
-    view.getRowProperties =
-      function CSTH_View_getRowProperties(aRow)
-      {
+    view.getRowProperties = function (aRow) {
         var grippyRow = that.getGrippyRow();
-        if (aRow === grippyRow)
+        if (aRow === grippyRow) {
           return "grippyRow";
+        }
 
-        if (aRow < grippyRow)
+        if (aRow < grippyRow) {
           return this._getRowProperties(aRow);
+        }
 
         return this._getRowProperties(aRow - 1);
       };
 
     view._getCellText = view.getCellText;
-    view.getCellText =
-      function CSTH_View_getCellText(aRow, aCol)
-      {
+    view.getCellText = function (aRow, aCol) {
         var grippyRow = that.getGrippyRow();
-        if (aRow === grippyRow)
+        if (aRow === grippyRow) {
           return "";
+        }
         aRow = aRow < grippyRow ? aRow : aRow - 1;
         return this._getCellText(aRow, aCol);
       };
 
     view._getImageSrc = view.getImageSrc;
-    view.getImageSrc =
-      function CSTH_View_getImageSrc(aRow, aCol)
-      {
+    view.getImageSrc = function(aRow, aCol) {
         var grippyRow = that.getGrippyRow();
-        if (aRow === grippyRow)
+        if (aRow === grippyRow) {
           return "";
+        }
         aRow = aRow < grippyRow ? aRow : aRow - 1;
         return this._getImageSrc(aRow, aCol);
       };
 
-    view.isContainer = function CSTH_View_isContainer(aRow) { return false; };
-    view.getParentIndex = function CSTH_View_getParentIndex(aRow) { return -1; };
-    view.getLevel = function CSTH_View_getLevel(aRow) { return 0; };
-    view.hasNextSibling = function CSTH_View_hasNextSibling(aRow, aAfterIndex)
-    {
-      return aRow < this.rowCount - 1;
-    };
+    view.isContainer = function(aRow) { return false; };
+    view.getParentIndex = function(aRow) { return -1; };
+    view.getLevel = function(aRow) { return 0; };
+    view.hasNextSibling = function(aRow, aAfterIndex) {
+        return aRow < this.rowCount - 1;
+      };
 
     return view;
   }

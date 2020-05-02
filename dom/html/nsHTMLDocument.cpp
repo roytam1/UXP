@@ -28,6 +28,7 @@
 #include "nsIDOMElement.h"
 #include "nsPIDOMWindow.h"
 #include "nsDOMString.h"
+#include "nsIProtocolHandler.h"
 #include "nsIStreamListener.h"
 #include "nsIURI.h"
 #include "nsIIOService.h"

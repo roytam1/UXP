@@ -8,6 +8,7 @@
 
 #include "nsISupportsImpl.h"
 #include "nsIURI.h"
+#include "nsNetUtil.h"
 #include "nsPIDOMWindow.h"
 
 #include "mozilla/ErrorResult.h"

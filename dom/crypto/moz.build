@@ -13,7 +13,7 @@ EXPORTS.mozilla.dom += [
     'WebCryptoThreadPool.h'
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'CryptoBuffer.cpp',
     'CryptoKey.cpp',
     'KeyAlgorithmProxy.cpp',

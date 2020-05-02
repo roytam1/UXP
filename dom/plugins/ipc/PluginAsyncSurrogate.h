@@ -8,6 +8,7 @@
 #define dom_plugins_ipc_PluginAsyncSurrogate_h
 
 #include "mozilla/UniquePtr.h"
+#include "mozilla/WeakPtr.h"
 #include "npapi.h"
 #include "npfunctions.h"
 #include "npruntime.h"

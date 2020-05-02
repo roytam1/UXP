@@ -8,7 +8,7 @@ EXPORTS += [
     'OmxDecoderModule.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'OmxDataDecoder.cpp',
     'OmxDecoderModule.cpp',
     'OmxPlatformLayer.cpp',

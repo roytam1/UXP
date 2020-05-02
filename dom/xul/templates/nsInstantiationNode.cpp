@@ -8,6 +8,9 @@
 #include "nsXULTemplateQueryProcessorRDF.h"
 
 #include "mozilla/Logging.h"
+
+using namespace mozilla;
+
 extern mozilla::LazyLogModule gXULTemplateLog;
 
 nsInstantiationNode::nsInstantiationNode(nsXULTemplateQueryProcessorRDF* aProcessor,

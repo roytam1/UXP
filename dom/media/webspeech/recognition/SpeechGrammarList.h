@@ -9,6 +9,7 @@
 
 #include "mozilla/Attributes.h"
 #include "nsCOMPtr.h"
+#include "nsTArray.h"
 #include "nsCycleCollectionParticipant.h"
 #include "nsWrapperCache.h"
 

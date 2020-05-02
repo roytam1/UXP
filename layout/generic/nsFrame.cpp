@@ -53,6 +53,7 @@
 #include "nsGkAtoms.h"
 #include "nsHtml5Atoms.h"
 #include "nsCSSAnonBoxes.h"
+#include "nsGenericHTMLElement.h"
 
 #include "nsFrameTraversal.h"
 #include "nsRange.h"

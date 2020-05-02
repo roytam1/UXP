@@ -19,7 +19,7 @@ EXPORTS.mozilla.dom += [
     'OSFileSystem.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'Directory.cpp',
     'FileSystemBase.cpp',
     'FileSystemRequestParent.cpp',

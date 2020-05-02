@@ -32,6 +32,9 @@
 #include "nsTreeContentView.h"
 #include "nsIXULStore.h"
 #include "mozilla/BinarySearch.h"
+#include "mozilla/Logging.h"
+
+using mozilla::LogLevel;
 
 // For security check
 #include "nsIDocument.h"

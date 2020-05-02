@@ -9,9 +9,12 @@
 
 #include "mozilla/Mutex.h"
 #include "mozilla/RefPtr.h"
+#include "mozilla/dom/File.h"
+#include "nsClassHashtable.h"
 #include "nsCycleCollectionTraversalCallback.h"
 #include "nsTArray.h"
 #include "nsTHashtable.h"
+#include "nsThreadUtils.h"
 
 class nsIGlobalObject;
 

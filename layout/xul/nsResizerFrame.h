@@ -8,8 +8,11 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/EventForwards.h"
 #include "nsTitleBarFrame.h"
+#include "Units.h"
 
 class nsIBaseWindow;
+
+using namespace mozilla;
 
 class nsResizerFrame : public nsTitleBarFrame 
 {

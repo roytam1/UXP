@@ -9,7 +9,7 @@ EXPORTS += [
     'MP3Demuxer.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'MP3Decoder.cpp',
     'MP3Demuxer.cpp',
 ]

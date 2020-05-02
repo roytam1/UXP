@@ -13,6 +13,15 @@
 namespace mozilla {
 
 namespace flac {
+
+#define FLAC_MAX_CHANNELS           8
+#define FLAC_MIN_BLOCKSIZE         16
+#define FLAC_MAX_BLOCKSIZE      65535
+#define FLAC_MIN_FRAME_SIZE        11
+#define FLAC_MAX_FRAME_HEADER_SIZE 16
+#define FLAC_MAX_FRAME_SIZE (FLAC_MAX_FRAME_HEADER_SIZE \
+                             +FLAC_MAX_BLOCKSIZE*FLAC_MAX_CHANNELS*3)
+
 class Frame;
 class FrameParser;
 }

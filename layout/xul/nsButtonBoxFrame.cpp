@@ -12,6 +12,7 @@
 #include "nsPresContext.h"
 #include "nsIPresShell.h"
 #include "nsIDOMElement.h"
+#include "nsIDOMEvent.h"
 #include "nsDisplayList.h"
 #include "nsContentUtils.h"
 #include "mozilla/dom/Element.h"

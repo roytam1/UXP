@@ -241,11 +241,6 @@ RestyleManager::AnimationsWithDestroyedFrame::StopAnimationsWithoutFrame(
   }
 }
 
-static inline dom::Element*
-ElementForStyleContext(nsIContent* aParentContent,
-                       nsIFrame* aFrame,
-                       CSSPseudoElementType aPseudoType);
-
 // Forwarded nsIDocumentObserver method, to handle restyling (and
 // passing the notification to the frame).
 void
@@ -1009,7 +1004,7 @@ RestyleManager::TryInitiatingTransition(nsPresContext* aPresContext,
   return *aNewStyleContext != sc;
 }
 
-static dom::Element*
+dom::Element*
 ElementForStyleContext(nsIContent* aParentContent,
                        nsIFrame* aFrame,
                        CSSPseudoElementType aPseudoType)

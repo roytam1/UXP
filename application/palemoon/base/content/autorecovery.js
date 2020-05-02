@@ -17,10 +17,8 @@ var Cu = Components.utils;
 // Services = object with smart getters for common XPCOM services
 Cu.import("resource://gre/modules/Services.jsm");
 
-var browser_autoRecovery =
-{
+var browser_autoRecovery = {
   onLoad: function() {
-  
     var nsIAS = Ci.nsIAppStartup; // Application startup interface
     
     if (typeof gBrowser === "undefined") {
@@ -35,9 +33,9 @@ var browser_autoRecovery =
         // gBrowser isn't defined, and we're not using a custom locale. Most likely
         // a user-installed add-on causes issues here, so we restart in Safe Mode.
         let RISM = Services.prompt.confirm(null, "Error",
-                              "The Browser didn't start properly!\n"+
-                              "This is usually caused by an add-on or misconfiguration.\n\n"+
-                              "Restart in Safe Mode?");
+                                           "The Browser didn't start properly!\n"+
+                                           "This is usually caused by an add-on or misconfiguration.\n\n"+
+                                           "Restart in Safe Mode?");
         if (RISM) {
           Cc["@mozilla.org/toolkit/app-startup;1"].getService(nsIAS).restartInSafeMode(nsIAS.eRestart | nsIAS.eAttemptQuit);
         } else {

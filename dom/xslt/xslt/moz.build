@@ -8,7 +8,7 @@ EXPORTS.mozilla.dom += [
     'txMozillaXSLTProcessor.h'
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'txBufferingHandler.cpp',
     'txCurrentFunctionCall.cpp',
     'txDocumentFunctionCall.cpp',

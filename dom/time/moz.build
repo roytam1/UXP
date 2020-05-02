@@ -4,9 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-XPIDL_SOURCES += [
-    'nsITimeService.idl',
-]
+XPIDL_SOURCES += ['nsITimeService.idl']
 
 XPIDL_MODULE = 'dom_time'
 
@@ -17,7 +15,7 @@ EXPORTS.mozilla.dom.time += [
     'TimeService.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'DateCacheCleaner.cpp',
     'TimeChangeObserver.cpp',
     'TimeManager.cpp',

@@ -9,14 +9,12 @@ EXPORTS.mozilla.dom += [
     'URLSearchParams.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'URL.cpp',
     'URLSearchParams.cpp',
 ]
 
-LOCAL_INCLUDES += [
-    '../workers',
-]
+LOCAL_INCLUDES += ['../workers']
 
 MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
 MOCHITEST_CHROME_MANIFESTS += [ 'tests/chrome.ini' ]

@@ -27,6 +27,7 @@
 #include "nsPrintfCString.h"
 #include "xpcpublic.h"
 
+using namespace mozilla::ipc;
 using namespace mozilla::jsipc;
 
 // XXX need another bug to move this to a common header.

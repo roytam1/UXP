@@ -22,6 +22,8 @@
 #include "nsIObserver.h"
 #include "nsIObserverService.h"
 
+using namespace mozilla::ipc;
+
 namespace mozilla {
 namespace dom {
 

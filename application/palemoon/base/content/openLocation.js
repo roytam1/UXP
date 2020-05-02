@@ -11,56 +11,57 @@ var openLocationModule = {};
 try {
   pref = Components.classes["@mozilla.org/preferences-service;1"]
                    .getService(Components.interfaces.nsIPrefBranch);
-} catch (ex) {
+} catch(ex) {
   // not critical, remain silent
 }
 
 Components.utils.import("resource:///modules/openLocationLastURL.jsm", openLocationModule);
 var gOpenLocationLastURL = new openLocationModule.OpenLocationLastURL(window.opener);
 
-function onLoad()
-{
+function onLoad() {
   dialog.input         = document.getElementById("dialog.input");
   dialog.open          = document.documentElement.getButton("accept");
   dialog.openWhereList = document.getElementById("openWhereList");
   dialog.openTopWindow = document.getElementById("currentWindow");
   dialog.bundle        = document.getElementById("openLocationBundle");
 
-  if ("arguments" in window && window.arguments.length >= 1)
+  if ("arguments" in window && window.arguments.length >= 1) {
     browser = window.arguments[0];
+  }
    
   dialog.openWhereList.selectedItem = dialog.openTopWindow;
 
   if (pref) {
     try {
       var useAutoFill = pref.getBoolPref("browser.urlbar.autoFill");
-      if (useAutoFill)
+      if (useAutoFill) {
         dialog.input.setAttribute("completedefaultindex", "true");
-    } catch (ex) {}
+      }
+    } catch(ex) {}
 
     try {
       var value = pref.getIntPref("general.open_location.last_window_choice");
       var element = dialog.openWhereList.getElementsByAttribute("value", value)[0];
-      if (element)
+      if (element) {
         dialog.openWhereList.selectedItem = element;
+      }
       dialog.input.value = gOpenLocationLastURL.value;
+    } catch(ex) {}
+    
+    if (dialog.input.value) {
+      // XXX should probably be done automatically
+      dialog.input.select();
     }
-    catch(ex) {
-    }
-    if (dialog.input.value)
-      dialog.input.select(); // XXX should probably be done automatically
   }
 
   doEnabling();
 }
 
-function doEnabling()
-{
+function doEnabling() {
     dialog.open.disabled = !dialog.input.value;
 }
 
-function open()
-{
+function open() {
   var openData = {
     "url": null,
     "postData": null,
@@ -83,8 +84,7 @@ function open()
   return false;
 }
 
-function openLocation(openData)
-{
+function openLocation(openData) {
   try {
     // Whichever target we use for the load, we allow third-party services to
     // fix up the URI
@@ -93,10 +93,10 @@ function openLocation(openData)
         var webNav = Components.interfaces.nsIWebNavigation;
         var flags = webNav.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP |
                     webNav.LOAD_FLAGS_FIXUP_SCHEME_TYPOS;
-        if (!openData.mayInheritPrincipal)
+        if (!openData.mayInheritPrincipal) {
           flags |= webNav.LOAD_FLAGS_DISALLOW_INHERIT_PRINCIPAL;
-        browser.gBrowser.loadURIWithFlags(
-            openData.url, flags, null, null, openData.postData);
+        }
+        browser.gBrowser.loadURIWithFlags(openData.url, flags, null, null, openData.postData);
         break;
       case "1":
         window.opener.delayedOpenWindow(getBrowserURL(), "all,dialog=no",
@@ -104,16 +104,14 @@ function openLocation(openData)
                                         null, null, true);
         break;
       case "3":
-        browser.delayedOpenTab(
-            openData.url, null, null, openData.postData, true);
+        browser.delayedOpenTab(openData.url, null, null, openData.postData, true);
         break;
     }
-  } catch (ex) {}
+  } catch(ex) {}
 
   if (pref) {
     gOpenLocationLastURL.value = dialog.input.value;
-    pref.setIntPref(
-        "general.open_location.last_window_choice", dialog.openWhereList.value);
+    pref.setIntPref("general.open_location.last_window_choice", dialog.openWhereList.value);
   }
 
   window.close();
@@ -129,10 +127,11 @@ const nsIFilePicker = Components.interfaces.nsIFilePicker;
 function onChooseFile()
 {
   try {
-    let fp = Components.classes["@mozilla.org/filepicker;1"].
-             createInstance(nsIFilePicker);
+    let fp = Components.classes["@mozilla.org/filepicker;1"]
+                       .createInstance(nsIFilePicker);
     let fpCallback = function fpCallback_done(aResult) {
-      if (aResult == nsIFilePicker.returnOK && fp.fileURL.spec &&
+      if (aResult == nsIFilePicker.returnOK &&
+          fp.fileURL.spec &&
           fp.fileURL.spec.length > 0) {
         dialog.input.value = fp.fileURL.spec;
       }
@@ -145,6 +144,5 @@ function onChooseFile()
                      nsIFilePicker.filterImages | nsIFilePicker.filterXML |
                      nsIFilePicker.filterHTML);
     fp.open(fpCallback);
-  } catch (ex) {
-  }
+  } catch(ex) {}
 }

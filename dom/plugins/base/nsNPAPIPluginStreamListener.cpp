@@ -9,11 +9,13 @@
 #include "nsDirectoryServiceDefs.h"
 #include "nsDirectoryServiceUtils.h"
 #include "nsIFile.h"
+#include "nsIHttpChannel.h"
 #include "nsNetUtil.h"
 #include "nsPluginHost.h"
 #include "nsNPAPIPlugin.h"
 #include "nsPluginLogging.h"
 #include "nsPluginStreamListenerPeer.h"
+#include "GeckoProfiler.h"
 
 #include <stdint.h>
 #include <algorithm>

@@ -13,11 +13,11 @@
 #include "nsCOMPtr.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/UniquePtr.h"
+#include "mozilla/layout/PrintTranslator.h"
 
 class nsDeviceContext;
 class nsIPrintSettings;
 class nsIWebProgressListener;
-class PrintTranslator;
 
 namespace mozilla {
 namespace layout {

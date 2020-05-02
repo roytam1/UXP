@@ -26,7 +26,7 @@ if CONFIG['MOZ_WEBSPEECH']:
         'SpeechSynthesisVoice.h',
     ]
 
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'ipc/SpeechSynthesisChild.cpp',
         'ipc/SpeechSynthesisParent.cpp',
         'nsSpeechTask.cpp',
@@ -37,7 +37,7 @@ if CONFIG['MOZ_WEBSPEECH']:
     ]
 
     if CONFIG['MOZ_WEBSPEECH_TEST_BACKEND']:
-        UNIFIED_SOURCES += [
+        SOURCES += [
             'test/FakeSynthModule.cpp',
             'test/nsFakeSynthServices.cpp'
         ]

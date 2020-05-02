@@ -29,10 +29,14 @@
 #include "nsNPAPIPlugin.h"
 #include "nsPrintfCString.h"
 #include "prsystem.h"
+#include "PluginBackgroundDestroyer.h"
 #include "PluginQuirks.h"
+#include "PluginStreamParent.h"
+#include "StreamNotifyParent.h"
 #include "GeckoProfiler.h"
 #include "nsPluginTags.h"
 #include "nsUnicharUtils.h"
+#include "mozilla/layers/ImageBridgeChild.h"
 #include "mozilla/layers/TextureClientRecycleAllocator.h"
 
 #ifdef XP_WIN
@@ -56,6 +60,7 @@ using mozilla::ipc::MessageChannel;
 using mozilla::ipc::GeckoChildProcessHost;
 
 using namespace mozilla;
+using namespace mozilla::layers;
 using namespace mozilla::plugins;
 using namespace mozilla::plugins::parent;
 

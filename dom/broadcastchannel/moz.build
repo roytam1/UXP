@@ -8,20 +8,16 @@ EXPORTS.mozilla.dom += [
     'BroadcastChannel.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'BroadcastChannel.cpp',
     'BroadcastChannelChild.cpp',
     'BroadcastChannelParent.cpp',
     'BroadcastChannelService.cpp',
 ]
 
-IPDL_SOURCES += [
-    'PBroadcastChannel.ipdl',
-]
+IPDL_SOURCES += ['PBroadcastChannel.ipdl']
 
-LOCAL_INCLUDES += [
-    '../workers',
-]
+LOCAL_INCLUDES += ['../workers']
 
 MOCHITEST_MANIFESTS += ['tests/mochitest.ini']
 BROWSER_CHROME_MANIFESTS += ['tests/browser.ini']

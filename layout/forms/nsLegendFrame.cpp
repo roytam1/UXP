@@ -12,6 +12,8 @@
 #include "nsStyleConsts.h"
 #include "nsFormControlFrame.h"
 
+using namespace mozilla;
+
 nsIFrame*
 NS_NewLegendFrame(nsIPresShell* aPresShell, nsStyleContext* aContext)
 {

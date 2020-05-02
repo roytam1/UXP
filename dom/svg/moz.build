@@ -103,7 +103,7 @@ EXPORTS.mozilla.dom += [
     'SVGZoomEvent.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'DOMSVGAnimatedLengthList.cpp',
     'DOMSVGAnimatedNumberList.cpp',
     'DOMSVGLength.cpp',

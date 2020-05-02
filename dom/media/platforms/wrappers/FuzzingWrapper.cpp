@@ -6,6 +6,8 @@
 
 #include "FuzzingWrapper.h"
 
+#include "mozilla/SharedThreadPool.h"
+
 mozilla::LogModule* GetFuzzingWrapperLog() {
   static mozilla::LazyLogModule log("MediaFuzzingWrapper");
   return log;

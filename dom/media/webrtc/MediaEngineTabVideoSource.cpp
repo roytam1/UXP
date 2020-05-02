@@ -29,6 +29,7 @@
 namespace mozilla {
 
 using namespace mozilla::gfx;
+using namespace mozilla::dom;
 
 NS_IMPL_ISUPPORTS(MediaEngineTabVideoSource, nsIDOMEventListener, nsITimerCallback)
 

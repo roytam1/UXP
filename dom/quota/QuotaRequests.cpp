@@ -8,6 +8,7 @@
 
 #include "ActorsChild.h"
 #include "nsIQuotaCallbacks.h"
+#include "nsIVariant.h"
 
 namespace mozilla {
 namespace dom {

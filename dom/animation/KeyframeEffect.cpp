@@ -11,6 +11,7 @@
 #include "mozilla/dom/AnimationEffectTiming.h"
 #include "mozilla/dom/KeyframeEffectBinding.h"
 #include "mozilla/KeyframeUtils.h"
+#include "nsContentUtils.h"
 #include "nsDOMMutationObserver.h" // For nsAutoAnimationMutationBatch
 #include "nsIScriptError.h"
 

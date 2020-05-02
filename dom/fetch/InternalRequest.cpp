@@ -8,6 +8,7 @@
 
 #include "nsIContentPolicy.h"
 #include "nsIDocument.h"
+#include "nsIHttpChannelInternal.h"
 #include "nsStreamUtils.h"
 
 #include "mozilla/ErrorResult.h"

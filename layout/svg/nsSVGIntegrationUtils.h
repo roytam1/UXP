@@ -10,6 +10,7 @@
 #include "gfxRect.h"
 #include "nsRegionFwd.h"
 #include "mozilla/gfx/Rect.h"
+#include "imgIContainer.h"
 
 class gfxContext;
 class gfxDrawable;

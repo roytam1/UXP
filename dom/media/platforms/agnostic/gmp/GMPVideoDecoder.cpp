@@ -10,6 +10,7 @@
 #include "prsystem.h"
 #include "MediaData.h"
 #include "GMPDecoderModule.h"
+#include "MP4Decoder.h"
 #include "VPXDecoder.h"
 
 namespace mozilla {

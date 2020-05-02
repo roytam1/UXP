@@ -24,6 +24,7 @@
 #include <math.h>
 #include <algorithm>
 
+using namespace mozilla;
 using namespace mozilla::dom;
 
 //----------------------------------------------------------------------

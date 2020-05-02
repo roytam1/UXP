@@ -9,7 +9,7 @@ EXPORTS.mozilla.dom += [
     'PermissionStatus.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'PermissionObserver.cpp',
     'Permissions.cpp',
     'PermissionStatus.cpp',

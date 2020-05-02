@@ -2,6 +2,7 @@
 
 #include "nsError.h"
 #include "nsIUnicodeDecoder.h"
+#include "nsNetUtil.h"
 #include "nsString.h"
 
 #include "mozilla/dom/EncodingUtils.h"

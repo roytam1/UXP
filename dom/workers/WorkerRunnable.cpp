@@ -14,6 +14,7 @@
 
 #include "mozilla/DebugOnly.h"
 #include "mozilla/ErrorResult.h"
+#include "mozilla/Unused.h"
 #include "mozilla/dom/ScriptSettings.h"
 
 #include "js/RootingAPI.h"
@@ -22,6 +23,7 @@
 #include "WorkerPrivate.h"
 #include "WorkerScope.h"
 
+using namespace mozilla;
 USING_WORKERS_NAMESPACE
 
 namespace {

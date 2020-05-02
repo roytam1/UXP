@@ -8,6 +8,7 @@
 #define DocumentStyleRootIterator_h
 
 #include "nsTArray.h"
+#include "mozilla/dom/Element.h"
 
 class nsIContent;
 class nsIDocument;

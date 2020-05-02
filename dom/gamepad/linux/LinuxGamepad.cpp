@@ -19,6 +19,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "nscore.h"
+#include "mozilla/dom/Gamepad.h"
 #include "mozilla/dom/GamepadPlatformService.h"
 #include "udev.h"
 

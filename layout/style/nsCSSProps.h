@@ -345,7 +345,7 @@ public:
     // KTableEntry objects can be initialized either with an int16_t value
     // or a value of an enumeration type that can fit within an int16_t.
 
-    constexpr KTableEntry(nsCSSKeyword aKeyword, int16_t aValue)
+    KTableEntry(nsCSSKeyword aKeyword, int16_t aValue)
       : mKeyword(aKeyword)
       , mValue(aValue)
     {
@@ -353,7 +353,7 @@ public:
 
     template<typename T,
              typename = typename std::enable_if<std::is_enum<T>::value>::type>
-    constexpr KTableEntry(nsCSSKeyword aKeyword, T aValue)
+    KTableEntry(nsCSSKeyword aKeyword, T aValue)
       : mKeyword(aKeyword)
       , mValue(static_cast<int16_t>(aValue))
     {

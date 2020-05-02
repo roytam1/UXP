@@ -6,8 +6,11 @@
 #ifndef WEBGL_TRANSFORM_FEEDBACK_H_
 #define WEBGL_TRANSFORM_FEEDBACK_H_
 
+#include <vector>
 #include "mozilla/LinkedList.h"
 #include "nsWrapperCache.h"
+#include "WebGLBuffer.h"
+#include "WebGLContext.h"
 #include "WebGLObjectModel.h"
 
 namespace mozilla {

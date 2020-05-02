@@ -7,6 +7,7 @@
 #define WEBGL_VERTEX_ATTRIB_DATA_H_
 
 #include "GLDefs.h"
+#include "WebGLBuffer.h"
 #include "WebGLObjectModel.h"
 
 namespace mozilla {

@@ -10,6 +10,7 @@
 #include "mozilla/css/Declaration.h"
 #include "mozilla/css/StyleRule.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/DocGroup.h"
 #include "nsIDocument.h"
 #include "nsIDOMMutationEvent.h"
 #include "nsIURI.h"
@@ -17,8 +18,12 @@
 #include "nsWrapperCacheInlines.h"
 #include "nsIFrame.h"
 #include "ActiveLayerTracker.h"
+#include "ServoDeclarationBlock.h"
+#include "StyleSetHandle.h"
+#include "DeclarationBlockInlines.h"
 
 using namespace mozilla;
+using namespace mozilla::dom;
 
 nsDOMCSSAttributeDeclaration::nsDOMCSSAttributeDeclaration(dom::Element* aElement,
                                                            bool aIsSMILOverride)
