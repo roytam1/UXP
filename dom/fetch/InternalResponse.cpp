@@ -7,6 +7,7 @@
 #include "InternalResponse.h"
 
 #include "mozilla/Assertions.h"
+#include "mozilla/dom/FetchTypes.h"
 #include "mozilla/dom/InternalHeaders.h"
 #include "mozilla/dom/cache/CacheTypes.h"
 #include "mozilla/ipc/PBackgroundSharedTypes.h"

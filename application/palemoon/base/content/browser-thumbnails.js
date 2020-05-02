@@ -32,13 +32,14 @@ var gBrowserThumbnails = {
 
   init: function() {
     // Bug 863512 - Make page thumbnails work in electrolysis
-    if (gMultiProcessBrowser)
+    if (gMultiProcessBrowser) {
       return;
+    }
 
     try {
       if (Services.prefs.getBoolPref("browser.pagethumbnails.capturing_disabled"))
         return;
-    } catch (e) {}
+    } catch(e) {}
 
     PageThumbs.addExpirationFilter(this);
     gBrowser.addTabsProgressListener(this);
@@ -56,8 +57,9 @@ var gBrowserThumbnails = {
 
   uninit: function() {
     // Bug 863512 - Make page thumbnails work in electrolysis
-    if (gMultiProcessBrowser)
+    if (gMultiProcessBrowser) {
       return;
+    }
 
     PageThumbs.removeExpirationFilter(this);
     gBrowser.removeTabsProgressListener(this);
@@ -72,8 +74,9 @@ var gBrowserThumbnails = {
     switch (aEvent.type) {
       case "scroll":
         let browser = aEvent.currentTarget;
-        if (this._timeouts.has(browser))
+        if (this._timeouts.has(browser)) {
           this._delayedCapture(browser);
+        }
         break;
       case "TabSelect":
         this._delayedCapture(aEvent.target.linkedBrowser);
@@ -106,20 +109,23 @@ var gBrowserThumbnails = {
   onStateChange: function(aBrowser, aWebProgress,
                                                    aRequest, aStateFlags, aStatus) {
     if (aStateFlags & Ci.nsIWebProgressListener.STATE_STOP &&
-        aStateFlags & Ci.nsIWebProgressListener.STATE_IS_NETWORK)
+        aStateFlags & Ci.nsIWebProgressListener.STATE_IS_NETWORK) {
       this._delayedCapture(aBrowser);
+    }
   },
 
   _capture: function(aBrowser) {
-    if (this._shouldCapture(aBrowser))
+    if (this._shouldCapture(aBrowser)) {
       PageThumbs.captureAndStore(aBrowser);
+    }
   },
 
   _delayedCapture: function(aBrowser) {
-    if (this._timeouts.has(aBrowser))
+    if (this._timeouts.has(aBrowser)) {
       clearTimeout(this._timeouts.get(aBrowser));
-    else
+    } else {
       aBrowser.addEventListener("scroll", this, true);
+    }
 
     let timeout = setTimeout(function() {
       this._clearTimeout(aBrowser);
@@ -131,63 +137,75 @@ var gBrowserThumbnails = {
 
   _shouldCapture: function(aBrowser) {
     // Capture only if it's the currently selected tab.
-    if (aBrowser != gBrowser.selectedBrowser)
+    if (aBrowser != gBrowser.selectedBrowser) {
       return false;
+    }
 
     // Don't capture in per-window private browsing mode.
-    if (PrivateBrowsingUtils.isWindowPrivate(window))
+    if (PrivateBrowsingUtils.isWindowPrivate(window)) {
       return false;
+    }
 
     let doc = aBrowser.contentDocument;
 
     // FIXME Bug 720575 - Don't capture thumbnails for SVG or XML documents as
     //       that currently regresses Talos SVG tests.
-    if (doc instanceof XMLDocument)
+    if (doc instanceof XMLDocument) {
       return false;
+    }
 
     // There's no point in taking screenshot of loading pages.
-    if (aBrowser.docShell.busyFlags != Ci.nsIDocShell.BUSY_FLAGS_NONE)
+    if (aBrowser.docShell.busyFlags != Ci.nsIDocShell.BUSY_FLAGS_NONE) {
       return false;
+    }
 
     // Don't take screenshots of about: pages.
-    if (aBrowser.currentURI.schemeIs("about"))
+    if (aBrowser.currentURI.schemeIs("about")) {
       return false;
+    }
 
     let channel = aBrowser.docShell.currentDocumentChannel;
 
     // No valid document channel. We shouldn't take a screenshot.
-    if (!channel)
+    if (!channel) {
       return false;
+    }
 
     // Don't take screenshots of internally redirecting about: pages.
     // This includes error pages.
     let uri = channel.originalURI;
-    if (uri.schemeIs("about"))
+    if (uri.schemeIs("about")) {
       return false;
+    }
 
     let httpChannel;
     try {
       httpChannel = channel.QueryInterface(Ci.nsIHttpChannel);
-    } catch (e) { /* Not an HTTP channel. */ }
+    } catch(e) {
+      // Not an HTTP channel.
+    }
 
     if (httpChannel) {
       // Continue only if we have a 2xx status code.
       try {
-        if (Math.floor(httpChannel.responseStatus / 100) != 2)
+        if (Math.floor(httpChannel.responseStatus / 100) != 2) {
           return false;
-      } catch (e) {
+        }
+      } catch(e) {
         // Can't get response information from the httpChannel
         // because mResponseHead is not available.
         return false;
       }
 
       // Cache-Control: no-store.
-      if (httpChannel.isNoStoreResponse())
+      if (httpChannel.isNoStoreResponse()) {
         return false;
+      }
 
       // Don't capture HTTPS pages unless the user explicitly enabled it.
-      if (uri.schemeIs("https") && !this._sslDiskCacheEnabled)
+      if (uri.schemeIs("https") && !this._sslDiskCacheEnabled) {
         return false;
+      }
     }
 
     return true;

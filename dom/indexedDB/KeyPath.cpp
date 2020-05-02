@@ -11,10 +11,12 @@
 
 #include "nsCharSeparatedTokenizer.h"
 #include "nsJSUtils.h"
+#include "nsPrintfCString.h"
 #include "xpcpublic.h"
 
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/BlobBinding.h"
+#include "mozilla/dom/File.h" // for Blob
 #include "mozilla/dom/IDBObjectStoreBinding.h"
 
 namespace mozilla {

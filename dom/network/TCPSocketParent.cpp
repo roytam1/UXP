@@ -5,6 +5,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "TCPSocketParent.h"
+#include "TCPSocket.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
 #include "nsJSUtils.h"

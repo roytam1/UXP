@@ -5,8 +5,26 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "mozilla/RestyleManagerBase.h"
+#include "mozilla/RestyleManager.h"
 #include "mozilla/StyleSetHandle.h"
+#include "mozilla/StyleSetHandleInlines.h" // for Ptr::HasStateDependentStyle
+#include "ActiveLayerTracker.h"
+#include "nsCSSFrameConstructor.h"
+#include "nsCSSRendering.h"
 #include "nsIFrame.h"
+#include "nsIFrameInlines.h" // for IsAbsPosContainingBlock
+#include "nsPlaceholderFrame.h"
+#include "nsStyleChangeList.h"
+#include "nsStyleStructInlines.h" // for HasTransform
+#include "nsSVGEffects.h"
+#include "nsSVGIntegrationUtils.h"
+#include "nsSVGUtils.h"
+#include "nsViewportFrame.h"
+#include "StickyScrollContainer.h"
+#include "SVGTextFrame.h"
+
+using namespace mozilla;
+using namespace mozilla::layers;
 
 namespace mozilla {
 

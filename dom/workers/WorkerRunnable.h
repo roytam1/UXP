@@ -14,6 +14,7 @@
 #include "mozilla/Atomics.h"
 #include "nsISupportsImpl.h"
 #include "nsThreadUtils.h" /* nsRunnable */
+#include "WorkerHolder.h"
 
 struct JSContext;
 class nsIEventTarget;

@@ -19,7 +19,7 @@ if CONFIG['MOZ_XUL']:
         'nsIXULDocument.h',
     ]
 
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsXULCommandDispatcher.cpp',
         'nsXULContentSink.cpp',
         'nsXULElement.cpp',
@@ -36,7 +36,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'xul'
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsXULControllers.cpp',
 ]
 

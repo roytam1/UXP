@@ -12,6 +12,8 @@
 #include "nsQuickSort.h"
 #include "nsIPresShell.h"
 
+using mozilla::fallible;
+
 //#define DEBUG_SPANNING_CELL_SORTER
 
 SpanningCellSorter::SpanningCellSorter()

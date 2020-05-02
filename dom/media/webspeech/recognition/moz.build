@@ -31,7 +31,7 @@ if CONFIG['MOZ_WEBSPEECH_POCKETSPHINX']:
         'PocketSphinxSpeechRecognitionService.h',
     ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'endpointer.cc',
     'energy_endpointer.cc',
     'energy_endpointer_params.cc',
@@ -45,12 +45,12 @@ UNIFIED_SOURCES += [
 ]
 
 if CONFIG['MOZ_WEBSPEECH_TEST_BACKEND']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'test/FakeSpeechRecognitionService.cpp',
     ]
 
 if CONFIG['MOZ_WEBSPEECH_POCKETSPHINX']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'PocketSphinxSpeechRecognitionService.cpp',
     ]
 

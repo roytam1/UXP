@@ -12,6 +12,8 @@
 #include "nsPresShell.h"
 #include "nsView.h"
 
+using namespace mozilla::dom;
+
 namespace mozilla {
 
 nsDataHashtable<nsUint32HashKey, TouchManager::TouchInfo>* TouchManager::sCaptureTouchList;

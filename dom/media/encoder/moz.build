@@ -16,7 +16,7 @@ EXPORTS += [
     'TrackMetadataBase.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'MediaEncoder.cpp',
     'OpusTrackEncoder.cpp',
     'TrackEncoder.cpp',
@@ -25,8 +25,10 @@ UNIFIED_SOURCES += [
 if CONFIG['MOZ_WEBM_ENCODER']:
     EXPORTS += ['VP8TrackEncoder.h',
     ]
-    UNIFIED_SOURCES += ['VP8TrackEncoder.cpp',
+
+    SOURCES += ['VP8TrackEncoder.cpp',
     ]
+
     LOCAL_INCLUDES += ['/media/libyuv/include']
 
 FINAL_LIBRARY = 'xul'

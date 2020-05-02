@@ -10,6 +10,7 @@
 #include "mozilla/ErrorResult.h"
 #include "nsCOMPtr.h"
 #include "nsXPCOMStrings.h"
+#include "SpeechGrammar.h"
 #include "SpeechRecognition.h"
 
 namespace mozilla {

@@ -13,6 +13,8 @@
 #include "nsStringAPI.h"
 #endif
 
+#include "mozilla/RefCounted.h"
+
 template <class T> class nsCOMPtr;
 class nsIIDNService;
 

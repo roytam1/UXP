@@ -12,6 +12,8 @@
 #include "nsCSSAnonBoxes.h"
 #include "nsCSSPseudoElements.h"
 #include "nsStyleConsts.h"
+#include "nsStyleStruct.h"
+#include "nsStyleStructInlines.h"
 #include "nsString.h"
 #include "nsPresContext.h"
 #include "nsIStyleRule.h"
@@ -35,6 +37,7 @@
 #include "mozilla/ReflowInput.h"
 #include "nsLayoutUtils.h"
 #include "nsCoord.h"
+#include "nsFontMetrics.h"
 
 // Ensure the binding function declarations in nsStyleContext.h matches
 // those in ServoBindings.h.

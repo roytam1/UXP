@@ -38,7 +38,7 @@ EXPORTS.mozilla.dom.cache += [
     'TypeUtils.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'Action.cpp',
     'ActorChild.cpp',
     'AutoUtils.cpp',

@@ -11,6 +11,7 @@
 #include "nsCharSeparatedTokenizer.h"
 #include "nsStyleUtil.h"
 #include "mozilla/Preferences.h"
+#include "nsIContentInlines.h"
 
 namespace mozilla {
 namespace dom {

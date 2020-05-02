@@ -7,6 +7,8 @@
 #ifndef mozilla_dom_FileSystemUtils_h
 #define mozilla_dom_FileSystemUtils_h
 
+#include "nsString.h"
+
 class nsIFile;
 
 namespace mozilla {

@@ -18,7 +18,6 @@
 #include "nsIDeviceContextSpec.h"
 #include "nsIPrintSettings.h"
 #include "nsIWebProgressListener.h"
-#include "PrintTranslator.h"
 
 namespace mozilla {
 namespace layout {

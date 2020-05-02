@@ -7,6 +7,7 @@
 #include "Request.h"
 
 #include "nsIURI.h"
+#include "nsNetUtil.h"
 #include "nsPIDOMWindow.h"
 
 #include "mozilla/ErrorResult.h"
@@ -15,13 +16,17 @@
 #include "mozilla/dom/FetchUtil.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/URL.h"
-#include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/Unused.h"
 
 #include "WorkerPrivate.h"
+#include "WorkerRunnable.h"
+#include "WorkerScope.h"
+#include "Workers.h"
 
 namespace mozilla {
 namespace dom {
+
+using namespace workers;
 
 NS_IMPL_CYCLE_COLLECTING_ADDREF(Request)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(Request)
@@ -237,14 +242,14 @@ GetRequestURLFromWorker(const GlobalObject& aGlobal, const nsAString& aInput,
   }
 }
 
-class ReferrerSameOriginChecker final : public workers::WorkerMainThreadRunnable
+class ReferrerSameOriginChecker final : public WorkerMainThreadRunnable
 {
 public:
   ReferrerSameOriginChecker(workers::WorkerPrivate* aWorkerPrivate,
                             const nsAString& aReferrerURL,
                             nsresult& aResult)
-    : workers::WorkerMainThreadRunnable(aWorkerPrivate,
-                                        NS_LITERAL_CSTRING("Fetch :: Referrer same origin check")),
+    : WorkerMainThreadRunnable(aWorkerPrivate,
+                               NS_LITERAL_CSTRING("Fetch :: Referrer same origin check")),
       mReferrerURL(aReferrerURL),
       mResult(aResult)
   {

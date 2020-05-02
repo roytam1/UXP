@@ -12,7 +12,7 @@ if CONFIG['MOZ_WEBRTC']:
         'LoadManagerFactory.h',
         'LoadMonitor.h',
     ]
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'CamerasChild.cpp',
         'CamerasParent.cpp',
         'LoadManager.cpp',
@@ -24,6 +24,7 @@ if CONFIG['MOZ_WEBRTC']:
         '/media/webrtc/signaling',
         '/media/webrtc/trunk',
     ]
+
 if CONFIG['OS_TARGET'] == 'WINNT':
     DEFINES['WEBRTC_WIN'] = True
 else:
@@ -34,12 +35,12 @@ if CONFIG['OS_TARGET'] == 'Android':
     EXPORTS += [
         'OpenSLESProvider.h'
     ]
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'OpenSLESProvider.cpp',
     ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-  UNIFIED_SOURCES += ['OSXRunLoopSingleton.cpp']
+  SOURCES += ['OSXRunLoopSingleton.cpp']
   EXPORTS += ['OSXRunLoopSingleton.h']
 
 if CONFIG['_MSC_VER']:
@@ -66,7 +67,8 @@ EXPORTS.mozilla.media += ['CamerasTypes.h',
                           'MediaTaskUtils.h',
                           'MediaUtils.h',
 ]
-UNIFIED_SOURCES += [
+
+SOURCES += [
     'MediaChild.cpp',
     'MediaParent.cpp',
     'MediaSystemResourceClient.cpp',
@@ -76,11 +78,13 @@ UNIFIED_SOURCES += [
     'MediaSystemResourceService.cpp',
     'MediaUtils.cpp',
 ]
+
 IPDL_SOURCES += [
     'PCameras.ipdl',
     'PMedia.ipdl',
     'PMediaSystemResourceManager.ipdl',
 ]
+
 # /dom/base needed for nsGlobalWindow.h in MediaChild.cpp
 LOCAL_INCLUDES += [
     '/dom/base',

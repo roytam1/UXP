@@ -9,6 +9,8 @@
 #define nsCSSPseudoClasses_h___
 
 #include "nsStringFwd.h"
+#include "mozilla/CSSEnabledState.h"
+#include "nsStyleStruct.h"
 
 // The following two flags along with the pref defines where this pseudo
 // class can be used:

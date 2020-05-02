@@ -88,15 +88,17 @@ AboutRedirector.prototype = {
 
   getURIFlags: function(aURI) {
     let name = this._getModuleName(aURI);
-    if (!(name in this._redirMap))
+    if (!(name in this._redirMap)) {
       throw Cr.NS_ERROR_ILLEGAL_VALUE;
+    }
     return this._redirMap[name].flags;
   },
 
   newChannel: function(aURI, aLoadInfo) {
     let name = this._getModuleName(aURI);
-    if (!(name in this._redirMap))
+    if (!(name in this._redirMap)) {
       throw Cr.NS_ERROR_ILLEGAL_VALUE;
+    }
 
     let newURI = Services.io.newURI(this._redirMap[name].url, null, null);
     let channel = Services.io.newChannelFromURIWithLoadInfo(newURI, aLoadInfo);

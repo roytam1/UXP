@@ -7,8 +7,10 @@
 // mostly derived from the Allegro source code at:
 // http://alleg.svn.sourceforge.net/viewvc/alleg/allegro/branches/4.9/src/macosx/hidjoy.m?revision=13760&view=markup
 
+#include "mozilla/dom/Gamepad.h"
 #include "mozilla/dom/GamepadPlatformService.h"
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/Unused.h"
 #include "nsThreadUtils.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/hid/IOHIDBase.h>

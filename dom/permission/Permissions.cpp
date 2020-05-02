@@ -11,6 +11,7 @@
 #include "mozilla/dom/Promise.h"
 #include "mozilla/Services.h"
 #include "nsIPermissionManager.h"
+#include "PermissionStatus.h"
 #include "PermissionUtils.h"
 
 namespace mozilla {

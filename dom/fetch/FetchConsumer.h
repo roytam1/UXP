@@ -8,11 +8,13 @@
 #define mozilla_dom_FetchConsumer_h
 
 #include "Fetch.h"
+#include "nsIInputStream.h"
 #include "nsIObserver.h"
 #include "nsWeakReference.h"
 #include "mozilla/dom/MutableBlobStorage.h"
 
 class nsIThread;
+class nsIInputStreamPump;
 
 namespace mozilla {
 namespace dom {

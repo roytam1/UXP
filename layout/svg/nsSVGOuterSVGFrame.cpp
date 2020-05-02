@@ -18,9 +18,12 @@
 #include "mozilla/dom/SVGSVGElement.h"
 #include "mozilla/dom/SVGViewElement.h"
 #include "nsSubDocumentFrame.h"
+#include "gfxMatrix.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
+using namespace mozilla::gfx;
+using namespace mozilla::image;
 
 //----------------------------------------------------------------------
 // Implementation helpers

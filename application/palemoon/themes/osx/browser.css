@@ -2862,4 +2862,12 @@ toolbar[brighttext] #addonbar-closebutton {
   padding-inline-end: 50px;
   }
 }
+%else
+#main-window[privatebrowsingmode=temporary] #TabsToolbar::before {
+  display: -moz-box;
+  content: "";
+  background: url("chrome://browser/skin/privatebrowsing-dark.png") center no-repeat;
+  width: 30px;
+  color: inherit;
+}
 %endif

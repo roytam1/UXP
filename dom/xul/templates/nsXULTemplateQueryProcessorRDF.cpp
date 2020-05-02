@@ -35,6 +35,10 @@
 #include "nsXULSortService.h"
 #include "nsIDocument.h"
 
+#include "mozilla/Logging.h"
+
+using namespace mozilla;
+
 //----------------------------------------------------------------------
 
 #define PARSE_TYPE_INTEGER  "Integer"

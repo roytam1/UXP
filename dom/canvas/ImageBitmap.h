@@ -13,7 +13,9 @@
 #include "mozilla/gfx/Rect.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/UniquePtr.h"
+#include "CanvasRenderingContextHelper.h"
 #include "nsCycleCollectionParticipant.h"
+#include "nsIGlobalObject.h"
 
 struct JSContext;
 struct JSStructuredCloneReader;

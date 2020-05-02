@@ -13,6 +13,7 @@
 #include <algorithm>
 #include "nsCSSRuleProcessor.h"
 #include "nsThreadUtils.h"
+#include "CSSStyleSheet.h"
 
 using namespace mozilla;
 

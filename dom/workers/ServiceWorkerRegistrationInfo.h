@@ -8,6 +8,7 @@
 #define mozilla_dom_workers_serviceworkerregistrationinfo_h
 
 #include "mozilla/dom/workers/ServiceWorkerInfo.h"
+#include "mozilla/dom/workers/ServiceWorkerCommon.h"
 
 namespace mozilla {
 namespace dom {

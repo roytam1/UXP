@@ -13,7 +13,7 @@ EXPORTS.mozilla.dom += [
     'MessagePortParent.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'MessageChannel.cpp',
     'MessagePort.cpp',
     'MessagePortChild.cpp',
@@ -22,9 +22,7 @@ UNIFIED_SOURCES += [
     'SharedMessagePortMessage.cpp',
 ]
 
-IPDL_SOURCES += [
-    'PMessagePort.ipdl',
-]
+IPDL_SOURCES += ['PMessagePort.ipdl']
 
 LOCAL_INCLUDES += [
     '../base',

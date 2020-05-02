@@ -6,6 +6,8 @@
 
 #include "ServiceWorkerInfo.h"
 
+#include "ServiceWorker.h"
+#include "ServiceWorkerPrivate.h"
 #include "ServiceWorkerScriptCache.h"
 
 BEGIN_WORKERS_NAMESPACE

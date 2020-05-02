@@ -16,6 +16,8 @@
 
 namespace mozilla {
 
+using namespace widget;
+
 namespace dom {
 
 /******************************************************************************

@@ -21,7 +21,7 @@ EXPORTS.mozilla += [
     'SVGContextPaint.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsCSSClipPathInstance.cpp',
     'nsCSSFilterInstance.cpp',
     'nsFilterInstance.cpp',

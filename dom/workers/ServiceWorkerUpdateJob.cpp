@@ -6,9 +6,13 @@
 
 #include "ServiceWorkerUpdateJob.h"
 
+#include "nsProxyRelease.h"
 #include "nsIScriptError.h"
 #include "nsIURL.h"
+#include "nsNetUtil.h"
 #include "ServiceWorkerScriptCache.h"
+#include "ServiceWorkerPrivate.h"
+#include "ServiceWorkerManager.h"
 #include "Workers.h"
 
 namespace mozilla {

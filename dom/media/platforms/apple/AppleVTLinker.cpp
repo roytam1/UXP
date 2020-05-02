@@ -7,7 +7,9 @@
 #include <dlfcn.h>
 
 #include "AppleVTLinker.h"
+#include "PlatformDecoderModule.h"
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/Logging.h"
 #include "nsDebug.h"
 
 #define LOG(...) MOZ_LOG(sPDMLog, mozilla::LogLevel::Debug, (__VA_ARGS__))

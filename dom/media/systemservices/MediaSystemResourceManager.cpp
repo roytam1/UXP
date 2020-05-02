@@ -7,6 +7,7 @@
 #include "mozilla/TaskQueue.h"
 
 #include "gfxPrefs.h"
+#include "MediaSystemResourceClient.h"
 #include "MediaSystemResourceManagerChild.h"
 #include "mozilla/layers/ImageBridgeChild.h"
 

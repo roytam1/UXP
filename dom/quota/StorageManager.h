@@ -7,8 +7,10 @@
 #ifndef mozilla_dom_StorageManager_h
 #define mozilla_dom_StorageManager_h
 
+#include "mozilla/ErrorResult.h"
 #include "nsCOMPtr.h"
 #include "nsCycleCollectionParticipant.h"
+#include "nsIGlobalObject.h"
 #include "nsISupports.h"
 #include "nsWrapperCache.h"
 

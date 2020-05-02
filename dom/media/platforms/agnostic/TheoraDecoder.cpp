@@ -10,6 +10,7 @@
 #include "nsError.h"
 #include "TimeUnits.h"
 #include "mozilla/PodOperations.h"
+#include "mozilla/SyncRunnable.h"
 
 #include <algorithm>
 

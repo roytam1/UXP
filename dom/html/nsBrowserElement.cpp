@@ -18,8 +18,10 @@
 
 #include "mozIApplication.h"
 #include "nsComponentManagerUtils.h"
+#include "nsContentUtils.h"
 #include "nsFrameLoader.h"
 #include "nsIAppsService.h"
+#include "nsIDOMDocument.h"
 #include "nsIDOMDOMRequest.h"
 #include "nsIDOMElement.h"
 #include "nsIMozBrowserFrame.h"

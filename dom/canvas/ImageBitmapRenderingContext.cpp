@@ -4,9 +4,19 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "ImageBitmapRenderingContext.h"
+
 #include "mozilla/dom/ImageBitmapRenderingContextBinding.h"
+#include "mozilla/gfx/2D.h"
+#include "mozilla/gfx/DataSurfaceHelpers.h"
+#include "ImageBitmap.h"
 #include "ImageContainer.h"
+#include "ImageEncoder.h"
 #include "ImageLayers.h"
+#include "imgIEncoder.h"
+#include "Layers.h"
+
+using namespace mozilla::gfx;
+using namespace mozilla::layers;
 
 namespace mozilla {
 namespace dom {

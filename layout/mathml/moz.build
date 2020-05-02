@@ -16,7 +16,7 @@ if CONFIG['ENABLE_TESTS']:
         'tests/chrome.ini',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsMathMLChar.cpp',
     'nsMathMLContainerFrame.cpp',
     'nsMathMLFrame.cpp',

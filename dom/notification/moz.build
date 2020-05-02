@@ -9,9 +9,7 @@ EXTRA_COMPONENTS += [
     'NotificationStorage.manifest',
 ]
 
-EXTRA_JS_MODULES += [
-    'NotificationDB.jsm'
-]
+EXTRA_JS_MODULES += ['NotificationDB.jsm']
 
 EXPORTS.mozilla.dom += [
     'DesktopNotification.h',
@@ -19,7 +17,7 @@ EXPORTS.mozilla.dom += [
     'NotificationEvent.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'DesktopNotification.cpp',
     'Notification.cpp',
     'NotificationEvent.cpp',
@@ -28,6 +26,7 @@ UNIFIED_SOURCES += [
 include('/ipc/chromium/chromium-config.mozbuild')
 
 FINAL_LIBRARY = 'xul'
+
 LOCAL_INCLUDES += [
     '/dom/base',
     '/dom/ipc',

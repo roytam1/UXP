@@ -6,6 +6,7 @@
 #include "MediaEngineRemoteVideoSource.h"
 
 #include "mozilla/RefPtr.h"
+#include "Layers.h"
 #include "VideoUtils.h"
 #include "nsIPrefService.h"
 #include "MediaTrackConstraints.h"
@@ -14,6 +15,8 @@
 extern mozilla::LogModule* GetMediaManagerLog();
 #define LOG(msg) MOZ_LOG(GetMediaManagerLog(), mozilla::LogLevel::Debug, msg)
 #define LOGFRAME(msg) MOZ_LOG(GetMediaManagerLog(), mozilla::LogLevel::Verbose, msg)
+
+typedef mozilla::gfx::IntSize IntSize;
 
 namespace mozilla {
 

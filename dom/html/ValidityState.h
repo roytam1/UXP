@@ -11,6 +11,7 @@
 #include "nsIConstraintValidation.h"
 #include "nsWrapperCache.h"
 #include "js/TypeDecls.h"
+#include "nsCOMPtr.h"
 
 namespace mozilla {
 namespace dom {

@@ -100,5 +100,3 @@ fi
 
 # Short-circuit a few services to be removed
 MOZ_SERVICES_HEALTHREPORT=
-MOZ_ADDON_SIGNING=0
-MOZ_REQUIRE_SIGNING=0

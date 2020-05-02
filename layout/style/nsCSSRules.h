@@ -41,7 +41,6 @@ namespace mozilla {
 
 namespace dom {
 class DocGroup;
-class DocGroup;
 } // namespace dom
 
 class ErrorResult;

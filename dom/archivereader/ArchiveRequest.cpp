@@ -8,10 +8,12 @@
 
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/dom/ArchiveRequestBinding.h"
+#include "mozilla/dom/File.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "nsContentUtils.h"
 
 using namespace mozilla;
+using namespace mozilla::dom;
 
 USING_ARCHIVEREADER_NAMESPACE
 

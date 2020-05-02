@@ -17,6 +17,8 @@
 #include "nsINetAddr.h"
 #include "nsStringStream.h"
 
+using namespace mozilla::net;
+
 namespace mozilla {
 namespace dom {
 

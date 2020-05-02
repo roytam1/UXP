@@ -8,6 +8,7 @@
 #define dom_plugins_PluginUtilsWin_h 1
 
 #include "npapi.h"
+#include "PluginModuleParent.h"
 
 namespace mozilla {
 namespace plugins {

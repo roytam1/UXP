@@ -6,6 +6,7 @@
 
 #include "mozilla/dom/KeyframeEffectReadOnly.h"
 
+#include "mozilla/dom/Animation.h"
 #include "mozilla/dom/KeyframeAnimationOptionsBinding.h"
   // For UnrestrictedDoubleOrKeyframeAnimationOptions;
 #include "mozilla/dom/CSSPseudoElement.h"
@@ -25,6 +26,7 @@
 #include "nsCSSPseudoElements.h" // For CSSPseudoElementType
 #include "nsIPresShell.h"
 #include "nsIScriptError.h"
+#include "nsRefreshDriver.h"
 
 namespace mozilla {
 

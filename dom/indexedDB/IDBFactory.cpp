@@ -41,6 +41,8 @@
 #include "nsContentUtils.h" // For assertions.
 #endif
 
+using namespace mozilla::dom::indexedDB;
+
 namespace mozilla {
 namespace dom {
 

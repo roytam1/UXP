@@ -8,6 +8,9 @@
 #include "FileSystemUtils.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/StaticPtr.h"
+#include "mozilla/ipc/BackgroundParent.h"
+
+using namespace mozilla::ipc;
 
 namespace mozilla {
 namespace dom {

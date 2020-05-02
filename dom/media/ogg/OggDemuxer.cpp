@@ -21,6 +21,7 @@
 #include <algorithm>
 
 extern mozilla::LazyLogModule gMediaDemuxerLog;
+#define LOG(type, msg) MOZ_LOG(gMediaDecoderLog, type, msg)
 #define OGG_DEBUG(arg, ...) MOZ_LOG(gMediaDemuxerLog, mozilla::LogLevel::Debug, ("OggDemuxer(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
 
 // Un-comment to enable logging of seek bisections.

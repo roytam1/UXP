@@ -19,17 +19,20 @@ EXPORTS.mozilla.dom += [
 ]
 
 UNIFIED_SOURCES += [
-    'ChannelInfo.cpp',
     'Fetch.cpp',
     'FetchConsumer.cpp',
+    'Request.cpp',
+    'Response.cpp',
+]
+
+SOURCES += [
+    'ChannelInfo.cpp',
     'FetchDriver.cpp',
     'FetchUtil.cpp',
     'Headers.cpp',
     'InternalHeaders.cpp',
     'InternalRequest.cpp',
     'InternalResponse.cpp',
-    'Request.cpp',
-    'Response.cpp',
 ]
 
 IPDL_SOURCES += [

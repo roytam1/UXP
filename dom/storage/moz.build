@@ -9,7 +9,7 @@ EXPORTS.mozilla.dom += [
     'DOMStorageIPC.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'DOMStorage.cpp',
     'DOMStorageCache.cpp',
     'DOMStorageDBThread.cpp',
@@ -19,16 +19,13 @@ UNIFIED_SOURCES += [
     'DOMStorageObserver.cpp',
 ]
 
-IPDL_SOURCES += [
-    'PStorage.ipdl',
-]
+IPDL_SOURCES += ['PStorage.ipdl']
 
 include('/ipc/chromium/chromium-config.mozbuild')
 
 FINAL_LIBRARY = 'xul'
-LOCAL_INCLUDES += [
-    '/dom/base',
-]
+
+LOCAL_INCLUDES += ['/dom/base']
 
 if CONFIG['ENABLE_TESTS']:
     DEFINES['DOM_STORAGE_TESTS'] = True

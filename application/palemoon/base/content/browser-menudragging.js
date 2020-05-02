@@ -23,7 +23,7 @@ var browserMenuDragging = {
   count:[],
 
 
-  init: function(){
+  init: function() {
     window.removeEventListener('load', this, false);
     window.addEventListener('unload', this, false);
     this.addPrefListener(this.PrefListener);
@@ -34,7 +34,7 @@ var browserMenuDragging = {
     this.delayedStartup();
   },
 
-  uninit: function(){
+  uninit: function() {
     window.removeEventListener('unload', this, false);
     this.removePrefListener(this.PrefListener);
 
@@ -50,7 +50,7 @@ var browserMenuDragging = {
 
   },
 
-  initPref: function(){
+  initPref: function() {
     this.STAY_OPEN_ONDRAGEXIT =
           Services.prefs.getBoolPref('browser.menu.dragging.stayOpen', false);
     this.DEBUG =
@@ -58,12 +58,12 @@ var browserMenuDragging = {
   },
 
   //delayed startup
-  delayedStartup: function(){
+  delayedStartup: function() {
     //wait until construction of bookmarksBarContent is completed.
-    for (var i = 0; i < this.menupopup.length; i++){
+    for (var i = 0; i < this.menupopup.length; i++) {
       this.count[i] = 0;
-      this.timer[i] = setInterval(function(self, i){
-        if(++self.count[i] > 50 || document.getElementById(self.menupopup[i])){
+      this.timer[i] = setInterval(function(self, i) {
+        if(++self.count[i] > 50 || document.getElementById(self.menupopup[i])) {
           clearInterval(self.timer[i]);
           var menupopup = document.getElementById(self.menupopup[i]);
           if (menupopup) {
@@ -75,7 +75,7 @@ var browserMenuDragging = {
     }
   },
 
-  handleEvent: function(event){
+  handleEvent: function(event) {
     switch (event.type) {
       case 'popupshowing':
         this.popupshowing(event);
@@ -105,12 +105,14 @@ var browserMenuDragging = {
       // leaves button depressed/sunken when hovered
       menupopup.parentNode.parentNode._openedMenuButton = null;
 
-      if (!PlacesControllerDragHelper.getSession())
-      // Clear the dragover attribute if present, if we are dragging into a
-      // folder in the hierachy of current opened popup we don't clear
-      // this attribute on clearOverFolder.  See Notify for closeTimer.
-      if (menupopup.parentNode.hasAttribute('dragover'))
-        menupopup.parentNode.removeAttribute('dragover');
+      if (!PlacesControllerDragHelper.getSession()) {
+        // Clear the dragover attribute if present, if we are dragging into a
+        // folder in the hierachy of current opened popup we don't clear
+        // this attribute on clearOverFolder.  See Notify for closeTimer.
+        if (menupopup.parentNode.hasAttribute('dragover')) {
+          menupopup.parentNode.removeAttribute('dragover');
+        }
+      }
     }
   },
 
@@ -120,10 +122,10 @@ var browserMenuDragging = {
 
     var parentPopup = menupopup.parentNode.parentNode;
 
-    if (!!parentPopup.openNode){
+    if (!!parentPopup.openNode) {
       try {
         parentPopup.openNode.hidePopup();
-      } catch(e){}
+      } catch(e) {}
     }
     parentPopup.openNode = menupopup;
 
@@ -138,12 +140,16 @@ var browserMenuDragging = {
 
       var target = event.originalTarget;
       while (target) {
-        if (/menupopup/.test(target.localName))
+        if (/menupopup/.test(target.localName)) {
           break;
+        }
         target = target.parentNode;
       }
-      if (this != target)
+      
+      if (this != target) {
         return;
+      }
+      
       event.stopPropagation();
       browserMenuDragging.debug("onDragOver " + "\n" + this.parentNode.getAttribute('label'));
 
@@ -201,13 +207,13 @@ var browserMenuDragging = {
       if (scrollDir == 0) {
         let elt = this.firstChild;
         while (elt && event.screenY > elt.boxObject.screenY +
-                                       elt.boxObject.height / 2)
+                                      elt.boxObject.height / 2) {
           elt = elt.nextSibling;
-        newMarginTop = elt ? elt.boxObject.screenY - sbo.screenY :
-                              sbo.height;
-      }
-      else if (scrollDir == 1)
+        }
+        newMarginTop = elt ? elt.boxObject.screenY - sbo.screenY : sbo.height;
+      } else if (scrollDir == 1) {
         newMarginTop = sbo.height;
+      }
 
       // Set the new marginTop based on arrowscrollbox.
       newMarginTop += sbo.y - this._scrollBox.boxObject.y;
@@ -221,12 +227,16 @@ var browserMenuDragging = {
     menupopup.onDragExit = function (event) {
       var target = event.originalTarget;
       while (target) {
-        if (/menupopup/.test(target.localName))
+        if (/menupopup/.test(target.localName)) {
           break;
+        }
         target = target.parentNode;
       }
-      if (this != target)
+      
+      if (this != target) {
         return;
+      }
+      
       event.stopPropagation();
       browserMenuDragging.debug("onDragExit " + browserMenuDragging.STAY_OPEN_ONDRAGEXIT);
 
@@ -236,13 +246,13 @@ var browserMenuDragging = {
       // If we have not moved to a valid new target clear the drop indicator
       // this happens when moving out of the popup.
       target = event.relatedTarget;
-      if (!target)
+      if (!target) {
         this._indicatorBar.hidden = true;
+      }
 
       // Close any folder being hovered over
       if (this._overFolder.elt) {
-        this._overFolder.closeTimer = this._overFolder
-                                          .setTimer(this._overFolder.hoverTime);
+        this._overFolder.closeTimer = this._overFolder.setTimer(this._overFolder.hoverTime);
       }
 
       // The auto-opened attribute is set when this folder was automatically
@@ -268,12 +278,13 @@ var browserMenuDragging = {
   hideTooltip: function() {
     ['bhTooltip', 'btTooltip2'].forEach(function(id) {
       var tooltip = document.getElementById(id);
-      if (tooltip)
+      if (tooltip) {
         tooltip.hidePopup();
+      }
     });
   },
 
-  get getVer(){
+  get getVer() {
     const Cc = Components.classes;
     const Ci = Components.interfaces;
     var info = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
@@ -281,17 +292,18 @@ var browserMenuDragging = {
     return ver;
   },
 
-  debug: function(aMsg){
-    if (!browserMenuDragging.DEBUG)
+  debug: function(aMsg) {
+    if (!browserMenuDragging.DEBUG) {
       return;
+    }
     Components.classes["@mozilla.org/consoleservice;1"]
-      .getService(Components.interfaces.nsIConsoleService)
-      .logStringMessage(aMsg);
+              .getService(Components.interfaces.nsIConsoleService)
+              .logStringMessage(aMsg);
   },
 
-  setPref: function(aPrefString, aPrefType, aValue){
+  setPref: function(aPrefString, aPrefType, aValue) {
     var xpPref = Components.classes["@mozilla.org/preferences-service;1"]
-                  .getService(Components.interfaces.nsIPrefService);
+                           .getService(Components.interfaces.nsIPrefService);
     try{
       switch (aPrefType){
         case 'complex':
@@ -305,8 +317,7 @@ var browserMenuDragging = {
         default:
           return xpPref.setBoolPref(aPrefString, aValue); break;
       }
-    }catch(e){
-    }
+    } catch(e) {}
     return null;
   },
 

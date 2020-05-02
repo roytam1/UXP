@@ -7,10 +7,15 @@
 #ifndef mozilla_dom_GridLines_h
 #define mozilla_dom_GridLines_h
 
-#include "nsTArray.h"
+#include "mozilla/dom/GridBinding.h"
+#include "nsGridContainerFrame.h"
 #include "nsWrapperCache.h"
 
 namespace mozilla {
+
+struct ComputedGridTrackInfo;
+struct ComputedGridLineInfo;
+
 namespace dom {
 
 class GridDimension;

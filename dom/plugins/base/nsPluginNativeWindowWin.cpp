@@ -5,6 +5,7 @@
 
 #include "mozilla/BasicEvents.h"
 #include "mozilla/DebugOnly.h"
+#include "nsPluginHost.h"
 
 #include "windows.h"
 #include "windowsx.h"

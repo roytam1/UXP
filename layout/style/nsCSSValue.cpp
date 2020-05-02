@@ -6,11 +6,12 @@
 
 /* representation of simple property values within CSS declarations */
 
+#include "mozilla/ArrayUtils.h"
+
 #include "nsCSSValue.h"
 
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/Likely.h"
-#include "mozilla/MemoryReporting.h"
 #include "mozilla/Move.h"
 #include "mozilla/css/ImageLoader.h"
 #include "CSSCalc.h"
@@ -18,8 +19,6 @@
 #include "imgIRequest.h"
 #include "imgRequestProxy.h"
 #include "nsIDocument.h"
-#include "nsIPrincipal.h"
-#include "nsCSSProps.h"
 #include "nsNetUtil.h"
 #include "nsPresContext.h"
 #include "nsStyleUtil.h"
@@ -27,7 +26,9 @@
 #include "nsStyleSet.h"
 #include "nsContentUtils.h"
 
+
 using namespace mozilla;
+using namespace mozilla::css;
 
 static bool
 IsLocalRefURL(nsStringBuffer* aString)

@@ -11,12 +11,15 @@
 #include "AppleUtils.h"
 #include "AppleVTDecoder.h"
 #include "AppleVTLinker.h"
+#include "MacIOSurfaceImage.h"
 #include "MediaData.h"
 #include "mozilla/ArrayUtils.h"
 #include "mp4_demuxer/H264.h"
 #include "nsAutoPtr.h"
 #include "nsThreadUtils.h"
 #include "mozilla/Logging.h"
+#include "mozilla/SyncRunnable.h"
+#include "mozilla/gfx/MacIOSurface.h"
 #include "VideoUtils.h"
 #include "gfxPlatform.h"
 
@@ -360,7 +363,7 @@ AppleVTDecoder::OutputFrame(CVPixelBufferRef aImage,
 
     RefPtr<MacIOSurface> macSurface = new MacIOSurface(surface);
 
-    RefPtr<layers::Image> image = new MacIOSurfaceImage(macSurface);
+    RefPtr<layers::Image> image = new layers::MacIOSurfaceImage(macSurface);
 
     data =
       VideoData::CreateFromImage(info,

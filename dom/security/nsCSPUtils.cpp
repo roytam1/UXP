@@ -17,6 +17,10 @@
 #include "nsIURL.h"
 #include "nsReadableUtils.h"
 #include "nsSandboxFlags.h"
+#include "nsString.h"
+#include "mozilla/Logging.h"
+
+using namespace mozilla;
 
 #define DEFAULT_PORT -1
 
@@ -29,6 +33,29 @@ GetCspUtilsLog()
 
 #define CSPUTILSLOG(args) MOZ_LOG(GetCspUtilsLog(), mozilla::LogLevel::Debug, args)
 #define CSPUTILSLOGENABLED() MOZ_LOG_TEST(GetCspUtilsLog(), mozilla::LogLevel::Debug)
+
+static const char16_t PERCENT_SIGN = '%';
+
+static bool
+isCharacterToken(char16_t aSymbol)
+{
+  return (aSymbol >= 'a' && aSymbol <= 'z') ||
+         (aSymbol >= 'A' && aSymbol <= 'Z');
+}
+
+static bool
+isNumberToken(char16_t aSymbol)
+{
+  return (aSymbol >= '0' && aSymbol <= '9');
+}
+
+static bool
+isValidHexDig(char16_t aHexDig)
+{
+  return (isNumberToken(aHexDig) ||
+          (aHexDig >= 'A' && aHexDig <= 'F') ||
+          (aHexDig >= 'a' && aHexDig <= 'f'));
+}
 
 void
 CSP_PercentDecodeStr(const nsAString& aEncStr, nsAString& outDecStr)

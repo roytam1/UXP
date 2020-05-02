@@ -23,6 +23,7 @@
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsISupportsImpl.h"
 #include "mozilla/Logging.h"
+#include "mozilla/MediaManager.h"
 
 #undef LOG
 mozilla::LazyLogModule gMediaParentLog("MediaParent");

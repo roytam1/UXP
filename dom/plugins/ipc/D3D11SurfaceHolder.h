@@ -6,6 +6,7 @@
 #define _include_dom_plugins_ipc_D3D11SurfaceHolder_h__
 
 #include "ipc/IPCMessageUtils.h"
+#include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/Point.h"
 #include "mozilla/gfx/Types.h"
 

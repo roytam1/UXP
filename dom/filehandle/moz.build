@@ -18,7 +18,7 @@ EXPORTS.mozilla.dom += [
     'MutableFileBase.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'ActorsChild.cpp',
     'ActorsParent.cpp',
     'FileHandleBase.cpp',

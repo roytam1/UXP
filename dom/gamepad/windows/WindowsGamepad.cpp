@@ -24,6 +24,7 @@
 #include "mozilla/Services.h"
 
 #include "mozilla/ipc/BackgroundParent.h"
+#include "mozilla/dom/Gamepad.h"
 #include "mozilla/dom/GamepadPlatformService.h"
 
 namespace {

@@ -6,6 +6,7 @@
 
 #include "GridLines.h"
 
+#include "GridArea.h"
 #include "GridDimension.h"
 #include "GridLine.h"
 #include "mozilla/dom/GridBinding.h"

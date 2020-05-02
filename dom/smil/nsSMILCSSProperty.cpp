@@ -17,6 +17,7 @@
 #include "nsIDOMElement.h"
 #include "nsIDocument.h"
 
+using namespace mozilla;
 using namespace mozilla::dom;
 
 // Helper function

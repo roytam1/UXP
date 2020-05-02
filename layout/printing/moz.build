@@ -13,11 +13,12 @@ XPIDL_SOURCES += [
 EXPORTS.mozilla.layout += [
     'ipc/RemotePrintJobChild.h',
     'ipc/RemotePrintJobParent.h',
+    'PrintTranslator.h',
 ]
 
 XPIDL_MODULE = 'layout_printing'
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'ipc/RemotePrintJobChild.cpp',
     'ipc/RemotePrintJobParent.cpp',
     'nsPagePrintTimer.cpp',

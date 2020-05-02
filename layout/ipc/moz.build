@@ -14,12 +14,9 @@ EXPORTS.mozilla.layout += [
     'VsyncParent.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'RenderFrameChild.cpp',
     'RenderFrameParent.cpp',
-]
-
-SOURCES += [
     'VsyncChild.cpp',
     'VsyncParent.cpp',
 ]

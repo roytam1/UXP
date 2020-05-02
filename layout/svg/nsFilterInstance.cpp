@@ -28,6 +28,7 @@
 using namespace mozilla;
 using namespace mozilla::dom;
 using namespace mozilla::gfx;
+using namespace mozilla::image;
 
 FilterDescription
 nsFilterInstance::GetFilterDescription(nsIContent* aFilteredElement,

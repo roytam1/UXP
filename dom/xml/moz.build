@@ -20,7 +20,7 @@ EXPORTS.mozilla.dom += [
     'XMLStylesheetProcessingInstruction.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'CDATASection.cpp',
     'nsXMLContentSink.cpp',
     'nsXMLElement.cpp',

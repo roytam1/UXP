@@ -47,6 +47,7 @@
 #include "mozilla/RuleProcessorCache.h"
 #include "nsIStyleSheetLinkingElement.h"
 #include "nsDOMWindowUtils.h"
+#include "nsStyleSet.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;

@@ -7,6 +7,7 @@
 #include "mozilla/dom/cache/CacheStorage.h"
 
 #include "mozilla/Unused.h"
+#include "mozilla/dom/CacheBinding.h"
 #include "mozilla/dom/CacheStorageBinding.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/Response.h"
@@ -28,6 +29,8 @@
 #include "nsIScriptSecurityManager.h"
 #include "nsURLParsers.h"
 #include "WorkerPrivate.h"
+
+using namespace mozilla::dom;
 
 namespace mozilla {
 namespace dom {

@@ -55,6 +55,7 @@
 #define DEFAULT_COLUMN_WIDTH 20
 
 using namespace mozilla;
+using namespace mozilla::dom;
 
 nsIFrame*
 NS_NewTextControlFrame(nsIPresShell* aPresShell, nsStyleContext* aContext)

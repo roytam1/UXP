@@ -12,7 +12,7 @@
 #include "mozilla/WeakPtr.h"
 #include "nsWrapperCache.h"
 
-#include "WebGLObjectModel.h"
+#include "WebGLContext.h"
 #include "WebGLRenderbuffer.h"
 #include "WebGLStrongTypes.h"
 #include "WebGLTexture.h"

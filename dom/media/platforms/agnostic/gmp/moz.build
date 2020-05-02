@@ -11,7 +11,7 @@ EXPORTS += [
     'MediaDataDecoderProxy.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'GMPAudioDecoder.cpp',
     'GMPDecoderModule.cpp',
     'GMPVideoDecoder.cpp',
