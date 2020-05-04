@@ -236,14 +236,10 @@ function sanityCheckEvent(evt)
   is(evt.eventPhase, evt.AT_TARGET);
   is(evt.bubbles, false, "Event should not bubble");
   is(evt.cancelable, false, "Event should not be cancelable");
-  if (SpecialPowers.getBoolPref("dom.event.highrestimestamp.enabled")) {
-    var now = window.performance.now();
-    ok(evt.timeStamp > 0 && evt.timeStamp < now,
-       "Event timeStamp (" + evt.timeStamp + ") should be > 0 but " +
-       "before the current time (" + now + ")");
-  } else {
-    is(evt.timeStamp, 0, "Event timeStamp should be 0");
-  }
+  var now = window.performance.now();
+  ok(evt.timeStamp > 0 && evt.timeStamp < now,
+     "Event timeStamp (" + evt.timeStamp + ") should be > 0 but " +
+     "before the current time (" + now + ")");
   ok(evt.view !== null, "Event view not set");
 }
 
