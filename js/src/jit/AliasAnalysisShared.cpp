@@ -134,6 +134,7 @@ GetObject(const MDefinition* ins)
       case MDefinition::Op_SetArgumentsObjectArg:
       case MDefinition::Op_GetFrameArgument:
       case MDefinition::Op_SetFrameArgument:
+      case MDefinition::Op_CreateThis:
       case MDefinition::Op_CompareExchangeTypedArrayElement:
       case MDefinition::Op_AtomicExchangeTypedArrayElement:
       case MDefinition::Op_AtomicTypedArrayElementBinop:
