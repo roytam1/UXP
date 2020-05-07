@@ -364,7 +364,7 @@ nsMenuFrame::BuildDisplayListForChildren(nsDisplayListBuilder*   aBuilder,
     return;
   }
     
-  nsDisplayListCollection set;
+  nsDisplayListCollection set(aBuilder);
   nsBoxFrame::BuildDisplayListForChildren(aBuilder, set);
   
   WrapListsInRedirector(aBuilder, set, aLists);

@@ -358,7 +358,7 @@ nsSliderFrame::BuildDisplayListForChildren(nsDisplayListBuilder*   aBuilder,
     nsLayoutUtils::SetScrollbarThumbLayerization(thumb, thumbGetsLayer);
 
     if (thumbGetsLayer) {
-      nsDisplayListCollection tempLists;
+      nsDisplayListCollection tempLists(aBuilder);
       nsBoxFrame::BuildDisplayListForChildren(aBuilder, tempLists);
 
       // This is a bit of a hack. Collect up all descendant display items

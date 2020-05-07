@@ -116,7 +116,7 @@ nsHTMLButtonControlFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
     mRenderer.DisplayButton(aBuilder, aLists.BorderBackground(), &onTop);
   }
 
-  nsDisplayListCollection set;
+  nsDisplayListCollection set(aBuilder);
 
   // Do not allow the child subtree to receive events.
   if (!isForEventDelivery) {
