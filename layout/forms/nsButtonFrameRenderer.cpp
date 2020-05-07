@@ -263,8 +263,8 @@ nsButtonFrameRenderer::DisplayButton(nsDisplayListBuilder* aBuilder,
       nsDisplayButtonBoxShadowOuter(aBuilder, this));
   }
 
-  nsRect buttonRect;
-  GetButtonRect(mFrame->GetRectRelativeToSelf(), buttonRect);
+  nsRect buttonRect =
+  mFrame->GetRectRelativeToSelf() + aBuilder->ToReferenceFrame(mFrame);
 
   nsDisplayBackgroundImage::AppendBackgroundItemsToTop(
     aBuilder, mFrame, buttonRect, aBackground);

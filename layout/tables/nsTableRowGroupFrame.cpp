@@ -207,8 +207,43 @@ void
 nsTableRowGroupFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
                                        const nsDisplayListSet& aLists)
 {
-  nsTableFrame::DisplayGenericTablePart(aBuilder, this,
-                                        aLists, DisplayRows);
+  if (IsVisibleForPainting(aBuilder)) {
+    // XXXbz should box-shadow for rows/rowgroups/columns/colgroups get painted
+    // just because we're visible?  Or should it depend on the cell visibility
+    // when we're not the whole table?
+
+    // Paint the outset box-shadows for the table frames
+    if (StyleEffects()->mBoxShadow) {
+      aLists.BorderBackground()->AppendNewToTop(
+        new (aBuilder) nsDisplayBoxShadowOuter
+          (aBuilder, this));
+    }
+  }
+
+  for (nsTableRowFrame* row = GetFirstRow(); row; row = row->GetNextRow()) {
+    if (!aBuilder->GetDirtyRect().Intersects(row->GetVisualOverflowRect() + row->GetNormalPosition())) {
+      continue;
+    }
+    row->PaintCellBackgroundsForFrame(this, aBuilder, aLists,
+                                      row->GetNormalPosition());
+  }
+
+  if (IsVisibleForPainting(aBuilder)) {
+    // XXXbz should box-shadow for rows/rowgroups/columns/colgroups get painted
+    // just because we're visible?  Or should it depend on the cell visibility
+    // when we're not the whole table?
+
+    // Paint the inset box-shadows for the table frames
+    if (StyleEffects()->mBoxShadow) {
+      aLists.BorderBackground()->AppendNewToTop(
+        new (aBuilder) nsDisplayBoxShadowInner
+          (aBuilder, this));
+    }
+  }
+
+  DisplayOutline(aBuilder, aLists);
+
+  DisplayRows(aBuilder, this, aLists);
 }
 
 nsIFrame::LogicalSides

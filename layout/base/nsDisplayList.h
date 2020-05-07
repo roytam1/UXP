@@ -48,6 +48,7 @@ class nsISelection;
 class nsIScrollableFrame;
 class nsDisplayLayerEventRegions;
 class nsDisplayScrollInfoLayer;
+class nsDisplayTableBackgroundSet;
 class nsCaret;
 
 namespace mozilla {
@@ -588,6 +589,16 @@ public:
     mSyncDecodeImages = aSyncDecodeImages;
   }
 
+  nsDisplayTableBackgroundSet* SetTableBackgroundSet(
+      nsDisplayTableBackgroundSet* aTableSet) {
+    nsDisplayTableBackgroundSet* old = mTableBackgroundSet;
+    mTableBackgroundSet = aTableSet;
+    return old;
+  }
+  nsDisplayTableBackgroundSet* GetTableBackgroundSet() const {
+    return mTableBackgroundSet;
+  }
+
   /**
    * Helper method to generate background painting flags based on the
    * information available in the display list builder. Currently only
@@ -710,6 +721,10 @@ public:
   friend class AutoBuildingDisplayList;
   class AutoBuildingDisplayList {
   public:
+
+  AutoBuildingDisplayList(nsDisplayListBuilder* aBuilder, nsIFrame* aForChild) 
+        : AutoBuildingDisplayList(
+                            aBuilder, aForChild, aBuilder->GetDirtyRect(), aForChild->IsTransformed()){}
 
     AutoBuildingDisplayList(nsDisplayListBuilder* aBuilder, nsIFrame* aForChild,
                             const nsRect& aDirtyRect, bool aIsRoot)
@@ -992,10 +1007,6 @@ public:
     return mPreserves3DCtx.mAccumulatedRectLevels;
   }
 
-  // Helpers for tables
-  nsDisplayTableItem* GetCurrentTableItem() { return mCurrentTableItem; }
-  void SetCurrentTableItem(nsDisplayTableItem* aTableItem) { mCurrentTableItem = aTableItem; }
-
   struct OutOfFlowDisplayData {
     OutOfFlowDisplayData(const DisplayItemClip* aContainingBlockClip,
                          const DisplayItemScrollClip* aContainingBlockScrollClip,
@@ -1213,7 +1224,6 @@ private:
   AutoTArray<PresShellState,8> mPresShellStates;
   AutoTArray<nsIFrame*,400>    mFramesMarkedForDisplay;
   AutoTArray<ThemeGeometry,2>  mThemeGeometries;
-  nsDisplayTableItem*            mCurrentTableItem;
   DisplayListClipState           mClipState;
   // mCurrentFrame is the frame that we're currently calling (or about to call)
   // BuildDisplayList on.
@@ -1256,6 +1266,7 @@ private:
   nsTArray<DisplayItemScrollClip*> mScrollClipsToDestroy;
   nsTArray<DisplayItemClip*>     mDisplayItemClipsToDestroy;
   nsDisplayListBuilderMode       mMode;
+  nsDisplayTableBackgroundSet* mTableBackgroundSet;
   ViewID                         mCurrentScrollParentId;
   ViewID                         mCurrentScrollbarTarget;
   uint32_t                       mCurrentScrollbarFlags;
@@ -2751,7 +2762,9 @@ public:
                                          bool aAllowWillPaintBorderOptimization = true,
                                          nsStyleContext* aStyleContext = nullptr,
                                          const nsRect& aBackgroundOriginRect = nsRect(),
-                                         nsIFrame* aSecondaryReferenceFrame = nullptr);
+                                         nsIFrame* aSecondaryReferenceFrame = nullptr,
+                                         mozilla::Maybe<nsDisplayListBuilder::AutoBuildingDisplayList>*
+                                             aAutoBuildingDisplayList = nullptr);
 
   virtual LayerState GetLayerState(nsDisplayListBuilder* aBuilder,
                                    LayerManager* aManager,

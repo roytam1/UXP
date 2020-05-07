@@ -1793,6 +1793,13 @@ void
 nsFrame::DisplayOutlineUnconditional(nsDisplayListBuilder*   aBuilder,
                                      const nsDisplayListSet& aLists)
 {
+  // Per https://drafts.csswg.org/css-tables-3/#global-style-overrides:
+  // "All css properties of table-column and table-column-group boxes are
+  // ignored, except when explicitly specified by this specification."
+  // CSS outlines fall into this category, so we skip them on these boxes.
+
+  MOZ_ASSERT(GetType() !=  nsGkAtoms::tableColGroupFrame && GetType() != nsGkAtoms::tableColFrame);
+
   if (StyleOutline()->mOutlineStyle == NS_STYLE_BORDER_STYLE_NONE) {
     return;
   }
@@ -1839,7 +1846,9 @@ nsFrame::DisplayBackgroundUnconditional(nsDisplayListBuilder* aBuilder,
   if (aBuilder->IsForEventDelivery() || aForceBackground ||
       !StyleBackground()->IsTransparent() || StyleDisplay()->mAppearance) {
     return nsDisplayBackgroundImage::AppendBackgroundItemsToTop(
-        aBuilder, this, GetRectRelativeToSelf(), aLists.BorderBackground());
+        aBuilder, this,
+        GetRectRelativeToSelf() + aBuilder->ToReferenceFrame(this),
+        aLists.BorderBackground());
   }
   return false;
 }
@@ -1872,7 +1881,9 @@ nsFrame::DisplayBorderBackgroundOutline(nsDisplayListBuilder*   aBuilder,
 
   // If there's a themed background, we should not create a border item.
   // It won't be rendered.
-  if (!bgIsThemed && StyleBorder()->HasBorder()) {
+  // Don't paint borders for tables here, since they paint them in a different
+  // order.
+  if (!bgIsThemed && StyleBorder()->HasBorder() && GetType() != nsGkAtoms::tableFrame) {
     aLists.BorderBackground()->AppendNewToTop(new (aBuilder)
       nsDisplayBorder(aBuilder, this));
   }
@@ -2626,8 +2637,33 @@ static bool DescendIntoChild(nsDisplayListBuilder* aBuilder,
     return true;
   }
 
+  if (aChild->IsFrameOfType(nsIFrame::eTablePart)) {
+    // Relative positioning and transforms can cause table parts to move, but we
+    // will still paint the backgrounds for their ancestor parts under them at
+    // their 'normal' position. That means that we must consider the overflow
+    // rects at both positions.
+
+    // We convert the overflow rect into the nsTableFrame's coordinate
+    // space, applying the normal position offset at each step. Then we
+    // compare that against the builder's cached dirty rect in table
+    // coordinate space.
+    const nsIFrame* f = aChild;
+    nsRect normalPositionOverflowRelativeToTable = overflow;
+
+    while (f->IsFrameOfType(nsIFrame::eTablePart)) {
+      normalPositionOverflowRelativeToTable += f->GetNormalPosition();
+      f = f->GetParent();
+    }
+
+    nsDisplayTableBackgroundSet* tableBGs = aBuilder->GetTableBackgroundSet();
+    if (tableBGs &&
+        tableBGs->GetDirtyRect().Intersects(normalPositionOverflowRelativeToTable)) {
+      return true;
+    }
+  }
+
   return false;
- }
+}
 
 void
 nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
@@ -2770,7 +2806,7 @@ nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
     // If you change this, also change IsPseudoStackingContextFromStyle()
     pseudoStackingContext = true;
   }
-  
+
   NS_ASSERTION(!isStackingContext || pseudoStackingContext,
                "Stacking contexts must also be pseudo-stacking-contexts");
 
