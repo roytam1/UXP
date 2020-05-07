@@ -2120,9 +2120,14 @@ nsIFrame::BuildDisplayListForStackingContext(nsDisplayListBuilder* aBuilder,
     aBuilder->AddToWillChangeBudget(this, GetSize());
   }
 
-  bool extend3DContext = Extend3DContext();
+  const bool isTransformed = IsTransformed();
+  const bool hasPerspective = isTransformed && HasPerspective();
+  const bool extend3DContext = Extend3DContext();
+  const bool combines3DTransformWithAncestors =
+    (extend3DContext || isTransformed) && Combines3DTransformWithAncestors();
+  const bool childrenHavePerspective = ChildrenHavePerspective();
   Maybe<nsDisplayListBuilder::AutoPreserves3DContext> autoPreserves3DContext;
-  if (extend3DContext && !Combines3DTransformWithAncestors()) {
+  if (extend3DContext && !combines3DTransformWithAncestors) {
     // Start a new preserves3d context to keep informations on
     // nsDisplayListBuilder.
     autoPreserves3DContext.emplace(aBuilder);
@@ -2136,9 +2141,6 @@ nsIFrame::BuildDisplayListForStackingContext(nsDisplayListBuilder* aBuilder,
   // the chain.
   nsRect dirtyRect = aBuilder->GetDirtyRect();
 
-  bool inTransform = aBuilder->IsInTransform();
-  bool isTransformed = IsTransformed();
-  bool hasPerspective = HasPerspective();
   // reset blend mode so we can keep track if this stacking context needs have
   // a nsDisplayBlendContainer. Set the blend mode back when the routine exits
   // so we keep track if the parent stacking context needs a container too.
@@ -2146,6 +2148,7 @@ nsIFrame::BuildDisplayListForStackingContext(nsDisplayListBuilder* aBuilder,
   aBuilder->SetContainsBlendMode(false);
  
   nsRect dirtyRectOutsideTransform = dirtyRect;
+  bool inTransform = aBuilder->IsInTransform();
   if (isTransformed) {
     const nsRect overflow = GetVisualOverflowRectRelativeToSelf();
     if (nsDisplayTransform::ShouldPrerenderTransformedContent(aBuilder,
@@ -2158,7 +2161,7 @@ nsIFrame::BuildDisplayListForStackingContext(nsDisplayListBuilder* aBuilder,
 
       // If we're in preserve-3d then grab the dirty rect that was given to the root
       // and transform using the combined transform.
-      if (Combines3DTransformWithAncestors()) {
+      if (combines3DTransformWithAncestors) {
         dirtyRect = aBuilder->GetPreserves3DRects();
       }
 
@@ -2273,7 +2276,7 @@ nsIFrame::BuildDisplayListForStackingContext(nsDisplayListBuilder* aBuilder,
     nsDisplayListBuilder::AutoInTransformSetter
       inTransformSetter(aBuilder, inTransform);
     nsDisplayListBuilder::AutoSaveRestorePerspectiveIndex
-      perspectiveIndex(aBuilder, this);
+      perspectiveIndex(aBuilder, childrenHavePerspective);
 
     CheckForApzAwareEventHandlers(aBuilder, this);
 
@@ -2597,6 +2600,35 @@ WrapInWrapList(nsDisplayListBuilder* aBuilder,
   return item;
 }
 
+static bool DescendIntoChild(nsDisplayListBuilder* aBuilder,
+                             const nsIFrame* aChild, const nsRect& aDirty) {
+  if (aChild->GetStateBits() & NS_FRAME_FORCE_DISPLAY_LIST_DESCEND_INTO) {
+    return true;
+  }
+
+  // If the child is a scrollframe that we want to ignore, then we need
+  // to descend into it because its scrolled child may intersect the dirty
+  // area even if the scrollframe itself doesn't.
+  if (aChild == aBuilder->GetIgnoreScrollFrame()) {
+    return true;
+  }
+
+  // There are cases where the "ignore scroll frame" on the builder is not set
+  // correctly, and so we additionally want to catch cases where the child is
+  // a root scrollframe and we are ignoring scrolling on the viewport.
+  if (aChild == aBuilder->GetPresShellIgnoreScrollFrame()) {
+    return true;
+  }
+
+  const nsRect overflow = aChild->GetVisualOverflowRect();
+
+  if (aDirty.Intersects(overflow)) {
+    return true;
+  }
+
+  return false;
+ }
+
 void
 nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
                                    nsIFrame*               aChild,
@@ -2618,12 +2650,13 @@ nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
   if (child->GetStateBits() & NS_FRAME_TOO_DEEP_IN_FRAME_TREE)
     return;
 
-  bool isSVG = (child->GetStateBits() & NS_FRAME_SVG_LAYOUT);
+  const bool isSVG = child->GetStateBits() & NS_FRAME_SVG_LAYOUT;
 
   // true if this is a real or pseudo stacking context
   bool pseudoStackingContext =
     (aFlags & DISPLAY_CHILD_FORCE_PSEUDO_STACKING_CONTEXT) != 0;
-  if (!isSVG &&
+  if (!pseudoStackingContext &&
+      !isSVG &&
       (aFlags & DISPLAY_CHILD_INLINE) &&
       !child->IsFrameOfType(eLineParticipant)) {
     // child is a non-inline frame in an inline context, i.e.,
@@ -2687,36 +2720,10 @@ nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
       !aChild->IsSelected()) {
     return;
   }
-
-  if (aBuilder->GetIncludeAllOutOfFlows() &&
-      (child->GetStateBits() & NS_FRAME_OUT_OF_FLOW)) {
+  if (aBuilder->GetIncludeAllOutOfFlows() && isPlaceholder) {
     dirty = child->GetVisualOverflowRect();
-  } else if (!(child->GetStateBits() & NS_FRAME_FORCE_DISPLAY_LIST_DESCEND_INTO)) {
-    // No need to descend into child to catch placeholders for visible
-    // positioned stuff. So see if we can short-circuit frame traversal here.
-
-    // We can stop if child's frame subtree's intersection with the
-    // dirty area is empty.
-    // If the child is a scrollframe that we want to ignore, then we need
-    // to descend into it because its scrolled child may intersect the dirty
-    // area even if the scrollframe itself doesn't.
-    // There are cases where the "ignore scroll frame" on the builder is not set
-    // correctly, and so we additionally want to catch cases where the child is
-    // a root scrollframe and we are ignoring scrolling on the viewport.
-    nsIPresShell* shell = PresContext()->PresShell();
-    bool keepDescending = child == aBuilder->GetIgnoreScrollFrame() ||
-        (shell->IgnoringViewportScrolling() && child == shell->GetRootScrollFrame());
-    if (!keepDescending) {
-      nsRect childDirty;
-      if (!childDirty.IntersectRect(dirty, child->GetVisualOverflowRect())) {
-        return;
-      }
-      // Usually we could set dirty to childDirty now but there's no
-      // benefit, and it can be confusing. It can especially confuse
-      // situations where we're going to ignore a scrollframe's clipping;
-      // we wouldn't want to clip the dirty area to the scrollframe's
-      // bounds in that case.
-    }
+  } else if (!DescendIntoChild(aBuilder, child, dirty)) {
+    return;
   }
 
   // XXX need to have inline-block and inline-table set pseudoStackingContext
@@ -2740,7 +2747,7 @@ nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
   const nsStyleDisplay* disp = child->StyleDisplay();
   const nsStyleEffects* effects = child->StyleEffects();
   const nsStylePosition* pos = child->StylePosition();
-  bool isVisuallyAtomic = child->HasOpacity()
+  const bool isVisuallyAtomic = child->HasOpacity()
     || child->IsTransformed()
     // strictly speaking, 'perspective' doesn't require visual atomicity,
     // but the spec says it acts like the rest of these
@@ -2748,23 +2755,22 @@ nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
     || effects->mMixBlendMode != NS_STYLE_BLEND_NORMAL
     || nsSVGIntegrationUtils::UsingEffectsForFrame(child);
 
-  bool isPositioned = disp->IsAbsPosContainingBlock(child);
-  bool isStackingContext =
+  const bool isPositioned = disp->IsAbsPosContainingBlock(child);
+  const bool isStackingContext =
     (isPositioned && (disp->IsPositionForcingStackingContext() ||
                       pos->mZIndex.GetUnit() == eStyleUnit_Integer)) ||
      (disp->mWillChangeBitField & NS_STYLE_WILL_CHANGE_STACKING_CONTEXT) ||
      disp->mIsolation != NS_STYLE_ISOLATION_AUTO ||
      isVisuallyAtomic || (aFlags & DISPLAY_CHILD_FORCE_STACKING_CONTEXT);
 
-  if (isVisuallyAtomic || isPositioned || (!isSVG && disp->IsFloating(child)) ||
-      ((effects->mClipFlags & NS_STYLE_CLIP_RECT) &&
-       IsSVGContentWithCSSClip(child)) ||
-       disp->mIsolation != NS_STYLE_ISOLATION_AUTO ||
-       (disp->mWillChangeBitField & NS_STYLE_WILL_CHANGE_STACKING_CONTEXT) ||
-      (aFlags & DISPLAY_CHILD_FORCE_STACKING_CONTEXT)) {
+  if (pseudoStackingContext || isStackingContext || isPositioned ||
+      (!isSVG && disp->IsFloating(child)) ||
+      (isSVG && (effects->mClipFlags & NS_STYLE_CLIP_RECT) &&
+       IsSVGContentWithCSSClip(child))) {
     // If you change this, also change IsPseudoStackingContextFromStyle()
     pseudoStackingContext = true;
   }
+  
   NS_ASSERTION(!isStackingContext || pseudoStackingContext,
                "Stacking contexts must also be pseudo-stacking-contexts");
 

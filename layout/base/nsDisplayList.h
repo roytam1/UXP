@@ -520,6 +520,14 @@ public:
    * Get the caret associated with the current presshell.
    */
   nsCaret* GetCaret();
+
+   /**
+    * Returns the root scroll frame for the current PresShell, if the PresShell
+    * is ignoring viewport scrolling.
+    */
+   nsIFrame* GetPresShellIgnoreScrollFrame() {
+     return CurrentPresShellState()->mPresShellIgnoreScrollFrame;
+   }
   /**
    * Notify the display list builder that we're entering a presshell.
    * aReferenceFrame should be a frame in the new presshell.
@@ -805,10 +813,11 @@ public:
   friend class AutoSaveRestorePerspectiveIndex;
   class AutoSaveRestorePerspectiveIndex {
   public:
-    AutoSaveRestorePerspectiveIndex(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame)
+    AutoSaveRestorePerspectiveIndex(nsDisplayListBuilder* aBuilder,
+                                    const bool aChildrenHavePerspective)
       : mBuilder(nullptr)
     {
-      if (aFrame->ChildrenHavePerspective()) {
+      if (aChildrenHavePerspective) {
         mBuilder = aBuilder;
         mCachedItemIndex = aBuilder->mPerspectiveItemIndex;
         aBuilder->mPerspectiveItemIndex = 0;
@@ -1175,6 +1184,7 @@ private:
     nsRect        mCaretRect;
     uint32_t      mFirstFrameMarkedForDisplay;
     bool          mIsBackgroundOnly;
+    nsIFrame*     mPresShellIgnoreScrollFrame;
     // This is a per-document flag turning off event handling for all content
     // in the document, and is set when we enter a subdocument for a pointer-
     // events:none frame.
