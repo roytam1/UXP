@@ -156,7 +156,7 @@ nsTableRowGroupFrame::InitRepeatedFrame(nsTableRowGroupFrame* aHeaderFooterFrame
 // Handle the child-traversal part of DisplayGenericTablePart
 static void
 DisplayRows(nsDisplayListBuilder* aBuilder, nsFrame* aFrame,
-            const nsRect& aDirtyRect, const nsDisplayListSet& aLists)
+            const nsDisplayListSet& aLists)
 {
   nscoord overflowAbove;
   nsTableRowGroupFrame* f = static_cast<nsTableRowGroupFrame*>(aFrame);
@@ -169,15 +169,15 @@ DisplayRows(nsDisplayListBuilder* aBuilder, nsFrame* aFrame,
   // approximate it by checking it for |f|: if it's true for any row
   // in |f| then it's true for |f| itself.
   nsIFrame* kid = aBuilder->ShouldDescendIntoFrame(f) ?
-    nullptr : f->GetFirstRowContaining(aDirtyRect.y, &overflowAbove);
+    nullptr : f->GetFirstRowContaining(aBuilder->GetDirtyRect().y, &overflowAbove);
 
   if (kid) {
     // If we have a cursor, use it
     while (kid) {
-      if (kid->GetRect().y - overflowAbove >= aDirtyRect.YMost()) {
+      if (kid->GetRect().y - overflowAbove >= aBuilder->GetDirtyRect().YMost()) {
         break;
       }
-      f->BuildDisplayListForChild(aBuilder, kid, aDirtyRect, aLists);
+      f->BuildDisplayListForChild(aBuilder, kid, aLists);
       kid = kid->GetNextSibling();
     }
     return;
@@ -187,7 +187,7 @@ DisplayRows(nsDisplayListBuilder* aBuilder, nsFrame* aFrame,
   nsTableRowGroupFrame::FrameCursorData* cursor = f->SetupRowCursor();
   kid = f->PrincipalChildList().FirstChild();
   while (kid) {
-    f->BuildDisplayListForChild(aBuilder, kid, aDirtyRect, aLists);
+    f->BuildDisplayListForChild(aBuilder, kid, aLists);
 
     if (cursor) {
       if (!cursor->AppendFrame(kid)) {
@@ -205,10 +205,9 @@ DisplayRows(nsDisplayListBuilder* aBuilder, nsFrame* aFrame,
 
 void
 nsTableRowGroupFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                       const nsRect&           aDirtyRect,
                                        const nsDisplayListSet& aLists)
 {
-  nsTableFrame::DisplayGenericTablePart(aBuilder, this, aDirtyRect,
+  nsTableFrame::DisplayGenericTablePart(aBuilder, this,
                                         aLists, DisplayRows);
 }
 

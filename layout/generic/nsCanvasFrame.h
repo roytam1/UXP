@@ -107,7 +107,6 @@ public:
   NS_IMETHOD SetHasFocus(bool aHasFocus);
 
   virtual void BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                const nsRect&           aDirtyRect,
                                 const nsDisplayListSet& aLists) override;
 
   void PaintFocus(mozilla::gfx::DrawTarget* aRenderingContext, nsPoint aPt);

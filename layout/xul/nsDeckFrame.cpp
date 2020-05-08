@@ -145,14 +145,13 @@ nsDeckFrame::GetSelectedBox()
 
 void
 nsDeckFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                              const nsRect&           aDirtyRect,
                               const nsDisplayListSet& aLists)
 {
   // if a tab is hidden all its children are too.
   if (!StyleVisibility()->mVisible)
     return;
     
-  nsBoxFrame::BuildDisplayList(aBuilder, aDirtyRect, aLists);
+  nsBoxFrame::BuildDisplayList(aBuilder, aLists);
 }
 
 void
@@ -185,7 +184,6 @@ nsDeckFrame::RemoveFrame(ChildListID aListID,
 
 void
 nsDeckFrame::BuildDisplayListForChildren(nsDisplayListBuilder*   aBuilder,
-                                         const nsRect&           aDirtyRect,
                                          const nsDisplayListSet& aLists)
 {
   // only paint the selected box
@@ -196,7 +194,7 @@ nsDeckFrame::BuildDisplayListForChildren(nsDisplayListBuilder*   aBuilder,
   // Putting the child in the background list. This is a little weird but
   // it matches what we were doing before.
   nsDisplayListSet set(aLists, aLists.BlockBorderBackgrounds());
-  BuildDisplayListForChild(aBuilder, box, aDirtyRect, set);
+  BuildDisplayListForChild(aBuilder, box, set);
 }
 
 NS_IMETHODIMP

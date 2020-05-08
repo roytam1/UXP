@@ -259,7 +259,6 @@ nsSVGPathGeometryFrame::IsSVGTransformed(gfx::Matrix *aOwnTransform,
 
 void
 nsSVGPathGeometryFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                         const nsRect&           aDirtyRect,
                                          const nsDisplayListSet& aLists)
 {
   if (!static_cast<const nsSVGElement*>(mContent)->HasValidDimensions() ||

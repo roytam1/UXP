@@ -4868,8 +4868,8 @@ PresShell::CreateRangePaintInfo(nsIDOMRange* aRange,
     nsIFrame* frame = aNode->AsContent()->GetPrimaryFrame();
     // XXX deal with frame being null due to display:contents
     for (; frame; frame = nsLayoutUtils::GetNextContinuationOrIBSplitSibling(frame)) {
-      frame->BuildDisplayListForStackingContext(&info->mBuilder,
-               frame->GetVisualOverflowRect(), &info->mList);
+      info->mBuilder.SetDirtyRect(frame->GetVisualOverflowRect());
+      frame->BuildDisplayListForStackingContext(&info->mBuilder, &info->mList);
     }
   };
   if (startParent->NodeType() == nsIDOMNode::TEXT_NODE) {

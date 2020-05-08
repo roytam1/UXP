@@ -63,14 +63,13 @@ nsRubyTextFrame::GetFrameName(nsAString& aResult) const
 
 /* virtual */ void
 nsRubyTextFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                  const nsRect&           aDirtyRect,
                                   const nsDisplayListSet& aLists)
 {
   if (IsAutoHidden()) {
     return;
   }
 
-  nsRubyContentFrame::BuildDisplayList(aBuilder, aDirtyRect, aLists);
+  nsRubyContentFrame::BuildDisplayList(aBuilder, aLists);
 }
 
 /* virtual */ void

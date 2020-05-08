@@ -1310,7 +1310,6 @@ PaintXULDebugBackground(nsIFrame* aFrame, DrawTarget* aDrawTarget,
 
 void
 nsBoxFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                             const nsRect&           aDirtyRect,
                              const nsDisplayListSet& aLists)
 {
   bool forceLayer = false;
@@ -1344,7 +1343,7 @@ nsBoxFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
   }
 #endif
 
-  BuildDisplayListForChildren(aBuilder, aDirtyRect, destination);
+  BuildDisplayListForChildren(aBuilder, destination);
 
   // see if we have to draw a selection frame around this container
   DisplaySelectionOverlay(aBuilder, destination.Content());
@@ -1370,7 +1369,6 @@ nsBoxFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
 
 void
 nsBoxFrame::BuildDisplayListForChildren(nsDisplayListBuilder*   aBuilder,
-                                        const nsRect&           aDirtyRect,
                                         const nsDisplayListSet& aLists)
 {
   nsIFrame* kid = mFrames.FirstChild();
@@ -1379,7 +1377,7 @@ nsBoxFrame::BuildDisplayListForChildren(nsDisplayListBuilder*   aBuilder,
   nsDisplayListSet set(aLists, aLists.BlockBorderBackgrounds());
   // The children should be in the right order
   while (kid) {
-    BuildDisplayListForChild(aBuilder, kid, aDirtyRect, set);
+    BuildDisplayListForChild(aBuilder, kid, set);
     kid = kid->GetNextSibling();
   }
 }
