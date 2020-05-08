@@ -8,7 +8,6 @@
 #include "nsIServiceManager.h"
 #include "nsIConsoleService.h"
 #include "nsPrintfCString.h"
-#include "Nv3DVUtils.h"
 #include "plstr.h"
 #include <algorithm>
 #include "gfx2DGlue.h"
@@ -263,21 +262,6 @@ DeviceManagerD3D9::Initialize()
     return false;
   }
 
-  if (gfxPrefs::StereoVideoEnabled()) {
-    /* Create an Nv3DVUtils instance */
-    if (!mNv3DVUtils) {
-      mNv3DVUtils = new Nv3DVUtils();
-      if (!mNv3DVUtils) {
-        NS_WARNING("Could not create a new instance of Nv3DVUtils.");
-      }
-    }
-
-    /* Initialize the Nv3DVUtils object */
-    if (mNv3DVUtils) {
-      mNv3DVUtils->Initialize();
-    }
-  }
-
   HMODULE d3d9 = LoadLibraryW(L"d3d9.dll");
   decltype(Direct3DCreate9)* d3d9Create = (decltype(Direct3DCreate9)*)
     GetProcAddress(d3d9, "Direct3DCreate9");
@@ -385,14 +369,6 @@ DeviceManagerD3D9::Initialize()
   /* 
    * Do some post device creation setup 
    */ 
-  if (mNv3DVUtils) { 
-    IUnknown* devUnknown = nullptr; 
-    if (mDevice) { 
-      mDevice->QueryInterface(IID_IUnknown, (void **)&devUnknown); 
-    } 
-    mNv3DVUtils->SetDeviceInfo(devUnknown); 
-  } 
-
   auto failCreateShaderMsg = "[D3D9] failed to create a critical resource (shader) code";
 
   hr = mDevice->CreateVertexShader((DWORD*)LayerQuadVS,

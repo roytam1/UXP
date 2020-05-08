@@ -18,7 +18,6 @@ namespace mozilla {
 namespace layers {
 
 class DeviceManagerD3D9;
-class Nv3DVUtils;
 class Layer;
 class TextureSourceD3D9;
 
@@ -179,11 +178,6 @@ public:
   // returns the register to be used for the mask texture, if appropriate
   uint32_t SetShaderMode(ShaderMode aMode, MaskType aMaskType);
 
-  /** 
-   * Return pointer to the Nv3DVUtils instance 
-   */ 
-  Nv3DVUtils *GetNv3DVUtils()  { return mNv3DVUtils; }
-
   /**
    * Returns true if this device was removed.
    */
@@ -337,9 +331,6 @@ private:
 
   /* If this device was removed */
   bool mDeviceWasRemoved;
-
-  /* Nv3DVUtils instance */ 
-  nsAutoPtr<Nv3DVUtils> mNv3DVUtils; 
 
   /**
    * Verifies all required device capabilities are present.

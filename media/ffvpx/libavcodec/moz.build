@@ -161,6 +161,11 @@ SOURCES += [
 SYMBOLS_FILE = 'avcodec.symbols'
 NO_VISIBILITY_FLAGS = True
 
+# GCC 10 defaults -fno-common, we don't care to solve this "properly" yet
+# so use GCC < 10 behavior.
+if CONFIG['GNU_CC'] and CONFIG['CC_VERSION'] >= '10.0.0':
+    CFLAGS += ['-fcommon']
+
 USE_LIBS += [
      'mozavutil'
 ]
