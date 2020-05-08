@@ -64,7 +64,3 @@ if test "$OS_ARCH" = "WINNT" -o \
         "$OS_ARCH" = "Darwin"; then
   MOZ_CAN_DRAW_IN_TITLEBAR=1
 fi
-
-# Disable checking that add-ons are signed by the trusted root
-MOZ_ADDON_SIGNING=0
-MOZ_REQUIRE_SIGNING=0
