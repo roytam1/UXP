@@ -396,7 +396,10 @@ MP3TrackDemuxer::Duration(int64_t aNumFrames) const {
 
 MediaByteRange
 MP3TrackDemuxer::FindFirstFrame() {
-  static const int MIN_SUCCESSIVE_FRAMES = 4;
+  // This check is meant to avoid invalid frames from broken streams, but
+  // small MP3 files and streams with odd header data can break this. Lowering
+  // the value to 3 seems to help significantly.
+  static const int MIN_SUCCESSIVE_FRAMES = 3;
 
   MediaByteRange candidateFrame = FindNextFrame();
   int numSuccFrames = candidateFrame.Length() > 0;
