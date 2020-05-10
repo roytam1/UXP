@@ -2707,8 +2707,7 @@ nsIFrame::BuildDisplayListForChild(nsDisplayListBuilder*   aBuilder,
 
   // dirty rect in child-relative coordinates
   NS_ASSERTION(aBuilder->GetCurrentFrame() == this, "Wrong coord space!");
-  nsPoint offset = child->GetOffsetTo(this);
-  nsRect dirty = aBuilder->GetDirtyRect() - offset;
+  nsRect dirty = aBuilder->GetDirtyRect() - child->GetOffsetTo(this);
 
   if (childType == nsGkAtoms::placeholderFrame) {
     isPlaceholder = true;

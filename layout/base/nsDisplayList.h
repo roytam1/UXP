@@ -1195,11 +1195,11 @@ private:
     nsRect        mCaretRect;
     uint32_t      mFirstFrameMarkedForDisplay;
     bool          mIsBackgroundOnly;
-    nsIFrame*     mPresShellIgnoreScrollFrame;
     // This is a per-document flag turning off event handling for all content
     // in the document, and is set when we enter a subdocument for a pointer-
     // events:none frame.
     bool          mInsidePointerEventsNoneDoc;
+    nsIFrame*     mPresShellIgnoreScrollFrame;
   };
 
   PresShellState* CurrentPresShellState() {

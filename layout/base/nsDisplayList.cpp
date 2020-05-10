@@ -882,8 +882,7 @@ void nsDisplayListBuilder::MarkOutOfFlowFrameForDisplay(nsIFrame* aDirtyFrame,
     }
   }
 
-  nsPoint offset = aFrame->GetOffsetTo(aDirtyFrame);
-  nsRect dirty = dirtyRectRelativeToDirtyFrame - offset;
+  nsRect dirty = dirtyRectRelativeToDirtyFrame - aFrame->GetOffsetTo(aDirtyFrame);
   nsRect overflowRect = aFrame->GetVisualOverflowRect();
 
   if (aFrame->IsTransformed() &&
