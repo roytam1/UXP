@@ -116,7 +116,7 @@ static bool HaveSpecifiedSize(const nsStylePosition* aStylePosition)
 
 // Decide whether we can optimize away reflows that result from the
 // image's intrinsic size changing.
-inline bool HaveFixedSize(const ReflowInput& aReflowInput)
+static bool HaveFixedSize(const ReflowInput& aReflowInput)
 {
   NS_ASSERTION(aReflowInput.mStylePosition, "crappy reflowInput - null stylePosition");
   // Don't try to make this optimization when an image has percentages
@@ -440,8 +440,22 @@ nsImageFrame::SourceRectToDest(const nsIntRect& aRect)
     (!(_state).HasAtLeastOneOfStates(NS_EVENT_STATE_BROKEN | NS_EVENT_STATE_USERDISABLED) && \
      (_state).HasState(NS_EVENT_STATE_LOADING) && (_loadingOK)))
 
-/* static */
-bool
+static bool HasAltText(Element* aElement)
+{
+  // We always return some alternate text for <input>, see
+  // nsCSSFrameConstructor::GetAlternateTextFor.
+  if (aElement->IsHTMLElement(nsGkAtoms::input)) {
+    return true;
+  }
+
+  MOZ_ASSERT(aElement->IsHTMLElement(nsGkAtoms::img));
+  nsAutoString altText;
+  return aElement->GetAttr(kNameSpaceID_None, nsGkAtoms::alt, altText) && !altText.IsEmpty();
+}
+
+// Check if we want to use an image frame or just let the frame constructor make
+// us into an inline.
+/* static */ bool
 nsImageFrame::ShouldCreateImageFrameFor(Element* aElement,
                                         nsStyleContext* aStyleContext)
 {
@@ -452,44 +466,26 @@ nsImageFrame::ShouldCreateImageFrameFor(Element* aElement,
     return true;
   }
 
-  // Check if we want to use a placeholder box with an icon or just
-  // let the presShell make us into inline text.  Decide as follows:
-  //
-  //  - if our special "force icons" style is set, show an icon
-  //  - else if our "do not show placeholders" pref is set, skip the icon
-  //  - else:
-  //  - if there is a src attribute, there is no alt attribute,
-  //    and this is not an <object> (which could not possibly have
-  //    such an attribute), show an icon.
-  //  - if QuirksMode, and the IMG has a size show an icon.
-  //  - otherwise, skip the icon
-  bool useSizedBox;
-  
+  // If our special "force icons" style is set, show an icon
   if (aStyleContext->StyleUIReset()->mForceBrokenImageIcon) {
-    useSizedBox = true;
-  }
-  else if (gIconLoad && gIconLoad->mPrefForceInlineAltText) {
-    useSizedBox = false;
-  }
-  else if (aElement->HasAttr(kNameSpaceID_None, nsGkAtoms::src) &&
-           !aElement->HasAttr(kNameSpaceID_None, nsGkAtoms::alt) &&
-           !aElement->IsHTMLElement(nsGkAtoms::object) &&
-           !aElement->IsHTMLElement(nsGkAtoms::input)) {
-    // Use a sized box if we have no alt text.  This means no alt attribute
-    // and the node is not an object or an input (since those always have alt
-    // text).
-    useSizedBox = true;
-  }
-  else if (aStyleContext->PresContext()->CompatibilityMode() !=
-           eCompatibility_NavQuirks) {
-    useSizedBox = false;
-  }
-  else {
-    // check whether we have specified size
-    useSizedBox = HaveSpecifiedSize(aStyleContext->StylePosition());
+    return true;
   }
 
-  return useSizedBox;
+  // If our "do not show placeholders" pref is set, skip the icon
+  if (gIconLoad && gIconLoad->mPrefForceInlineAltText) {
+    return false;
+  }
+
+  // If there is no Alt text, always create an image frame (regardless of src)
+  if (!HasAltText(aElement)) {
+    return true;
+  }
+  
+  if (aStyleContext->PresContext()->CompatibilityMode() == eCompatibility_NavQuirks) {
+    return HaveSpecifiedSize(aStyleContext->StylePosition());
+  }
+  
+  return false;
 }
 
 nsresult
@@ -775,6 +771,25 @@ nsImageFrame::PredictedDestRect(const nsRect& aFrameContentBox)
                                               StylePosition());
 }
 
+bool nsImageFrame::ShouldShowBrokenImageIcon() const
+{
+  bool imageBroken = false;
+  // Check for broken images. valid null images (eg. img src="") are
+  // not considered broken because they have no image requests
+  nsCOMPtr<nsIImageLoadingContent> imageLoader = do_QueryInterface(mContent);
+  if (imageLoader) {
+    nsCOMPtr<imgIRequest> currentRequest;
+    imageLoader->GetRequest(nsIImageLoadingContent::CURRENT_REQUEST,
+                            getter_AddRefs(currentRequest));
+    uint32_t imageStatus;
+    imageBroken =
+      currentRequest &&
+      NS_SUCCEEDED(currentRequest->GetImageStatus(&imageStatus)) &&
+      (imageStatus & imgIRequest::STATUS_ERROR);
+  }
+  return imageBroken;
+}
+
 void
 nsImageFrame::EnsureIntrinsicSizeAndRatio()
 {
@@ -789,25 +804,11 @@ nsImageFrame::EnsureIntrinsicSizeAndRatio()
       UpdateIntrinsicSize(mImage);
       UpdateIntrinsicRatio(mImage);
     } else {
-      // image request is null or image size not known, probably an
-      // invalid image specified
+      // Image request is null or image size not known.
       if (!(GetStateBits() & NS_FRAME_GENERATED_CONTENT)) {
-        bool imageBroken = false;
-        // check for broken images. valid null images (eg. img src="") are
-        // not considered broken because they have no image requests
-        nsCOMPtr<nsIImageLoadingContent> imageLoader = do_QueryInterface(mContent);
-        if (imageLoader) {
-          nsCOMPtr<imgIRequest> currentRequest;
-          imageLoader->GetRequest(nsIImageLoadingContent::CURRENT_REQUEST,
-                                  getter_AddRefs(currentRequest));
-          uint32_t imageStatus;
-          imageBroken =
-            currentRequest &&
-            NS_SUCCEEDED(currentRequest->GetImageStatus(&imageStatus)) &&
-            (imageStatus & imgIRequest::STATUS_ERROR);
-        }
-        // invalid image specified. make the image big enough for the "broken" icon
-        if (imageBroken) {
+        // Likely an invalid image. Check if we should display it as broken.
+        if (ShouldShowBrokenImageIcon()) {
+          // Invalid image specified. make the image big enough for the "broken" icon
           nscoord edgeLengthToUse =
             nsPresContext::CSSPixelsToAppUnits(
               ICON_SIZE + (2 * (ICON_PADDING + ALT_BORDER_WIDTH)));
@@ -1389,7 +1390,8 @@ nsImageFrame::DisplayAltFeedback(nsRenderingContext& aRenderingContext,
   DrawResult result = DrawResult::NOT_READY;
 
   // Check if we should display image placeholders
-  if (!gIconLoad->mPrefShowPlaceholders ||
+  if (!ShouldShowBrokenImageIcon() ||
+      !gIconLoad->mPrefShowPlaceholders ||
       (isLoading && !gIconLoad->mPrefShowLoadingPlaceholder)) {
     result = DrawResult::SUCCESS;
   } else {
