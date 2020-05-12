@@ -757,30 +757,6 @@ MacroAssemblerMIPS64::ma_b(Address addr, ImmGCPtr imm, Label* label, Condition c
 }
 
 void
-MacroAssemblerMIPS64::ma_jal(Label* label)
-{
-    if (label->bound()) {
-        // Generate the mixed jump.
-        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
-        as_jal(JOffImm26(0));
-        as_nop();
-        return;
-    }
-
-    // Second word holds a pointer to the next branch in label's chain.
-    uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
-
-    // Make the whole branch continous in the buffer. The '2'
-    // instructions are writing at below (contain delay slot).
-    m_buffer.ensureSpace(2 * sizeof(uint32_t));
-
-    BufferOffset bo = as_jal(JOffImm26(0));
-    writeInst(nextInChain);
-    if (!oom())
-        label->use(bo.getOffset());
-}
-
-void
 MacroAssemblerMIPS64::branchWithCode(InstImm code, Label* label, JumpKind jumpKind)
 {
     MOZ_ASSERT(code.encode() != InstImm(op_regimm, zero, rt_bgezal, BOffImm16(0)).encode());

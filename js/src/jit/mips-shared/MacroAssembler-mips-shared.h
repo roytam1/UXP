@@ -164,6 +164,8 @@ class MacroAssemblerMIPSShared : public Assembler
     void ma_b(Label* l, JumpKind jumpKind = MixedJump);
     void ma_b(wasm::TrapDesc target, JumpKind jumpKind = MixedJump);
 
+    void ma_jal(Label* l);
+
     // fp instructions
     void ma_lis(FloatRegister dest, float value);
     void ma_lis(FloatRegister dest, wasm::RawF32 value);
