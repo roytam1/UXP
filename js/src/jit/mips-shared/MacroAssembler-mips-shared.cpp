@@ -665,14 +665,14 @@ MacroAssemblerMIPSShared::branchWithCode(InstImm code, Label* label, JumpKind ju
         InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
         if (code.encode() == inst_beq.encode()) {
             // Handle mixed jump
-            addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
+            addMixedJump(nextOffset(), label->offset());
             as_j(JOffImm26(0));
             as_nop();
             return;
         }
 
         // Handle long conditional branch
-        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()), MixedJumpPatch::CONDITIONAL);
+        addMixedJump(nextOffset(), label->offset(), MixedJumpPatch::CONDITIONAL);
         writeInst(code.encode());
         as_nop();
         return;
@@ -785,7 +785,7 @@ MacroAssemblerMIPSShared::ma_jal(Label* label)
 {
     if (label->bound()) {
         // Generate the mixed jump.
-        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
+        addMixedJump(nextOffset(), label->offset());
         as_jal(JOffImm26(0));
         as_nop();
         return;
@@ -1041,7 +1041,7 @@ MacroAssemblerMIPSShared::GenerateMixedJumps()
     // Generate all mixed jumps.
     for (size_t i = 0; i < numMixedJumps(); i++) {
         MixedJumpPatch& mjp = mixedJump(i);
-        if (MixedJumpPatch::NONE == mjp.kind && uintptr_t(mjp.target) <= size())
+        if (MixedJumpPatch::NONE == mjp.kind && mjp.target <= size())
             continue;
         BufferOffset bo = m_buffer.nextOffset();
         if (MixedJumpPatch::CONDITIONAL & mjp.kind) {

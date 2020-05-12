@@ -1498,7 +1498,7 @@ MacroAssemblerMIPSCompat::jumpWithPatch(RepatchLabel* label, Label* documentatio
     BufferOffset bo = nextOffset();
     label->use(bo.getOffset());
     if (label->bound())
-        addMixedJump(bo, ImmPtr((void*)label->offset()), MixedJumpPatch::PATCHABLE);
+        addMixedJump(bo, label->offset(), MixedJumpPatch::PATCHABLE);
     as_j(JOffImm26(0));
     as_nop();
     return CodeOffsetJump(bo.getOffset());

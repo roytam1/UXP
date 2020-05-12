@@ -842,10 +842,10 @@ class AssemblerMIPSShared : public AssemblerShared
 
         BufferOffset src;
         BufferOffset mid;
-        void* target;
+        uintptr_t target;
         Kind kind;
 
-        MixedJumpPatch(BufferOffset src, void* target, Kind kind)
+        MixedJumpPatch(BufferOffset src, uintptr_t target, Kind kind)
           : src(src),
             mid(BufferOffset()),
             target(target),
@@ -1256,10 +1256,10 @@ class AssemblerMIPSShared : public AssemblerShared
             writeRelocation(src);
     }
 
-    void addMixedJump(BufferOffset src, ImmPtr target,
+    void addMixedJump(BufferOffset src, uintptr_t target,
                       MixedJumpPatch::Kind kind = MixedJumpPatch::NONE)
     {
-        enoughMemory_ &= mixedJumps_.append(MixedJumpPatch(src, target.value, kind));
+        enoughMemory_ &= mixedJumps_.append(MixedJumpPatch(src, target, kind));
     }
 
     virtual void GenerateMixedJumps() = 0;
