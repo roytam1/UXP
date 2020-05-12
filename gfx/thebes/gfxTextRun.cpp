@@ -37,6 +37,8 @@
 
 #include "cairo.h"
 
+#include <unicode/unorm2.h>
+
 using namespace mozilla;
 using namespace mozilla::gfx;
 using namespace mozilla::unicode;

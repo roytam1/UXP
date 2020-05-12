@@ -8,6 +8,8 @@
 #include "nsIObserverService.h"
 #include "nsThreadUtils.h"              // for nsRunnable
 #include "gfxPlatformFontList.h"
+#include "mozilla/gfx/Logging.h"
+#include <d3d11.h>
 
 using namespace mozilla;
 using services::GetObserverService;

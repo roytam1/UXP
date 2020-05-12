@@ -8,6 +8,8 @@
 #include "mozilla/gfx/Tools.h"
 #include "mozilla/gfx/Matrix.h" // for Matrix4x4
 
+using namespace mozilla::gfx;
+
 #define CAIRO_MATRIX(x) reinterpret_cast<cairo_matrix_t*>((x))
 #define CONST_CAIRO_MATRIX(x) reinterpret_cast<const cairo_matrix_t*>((x))
 

@@ -44,6 +44,11 @@
 
 #include "cairo.h"
 
+#ifdef XP_WIN
+#include "cairo-win32.h"
+#include "gfxWindowsPlatform.h"
+#endif
+
 #include "harfbuzz/hb.h"
 #include "harfbuzz/hb-ot.h"
 #include "graphite2/Font.h"

@@ -38,6 +38,7 @@
 #define UTF8_CHARSET NS_LITERAL_CSTRING("utf-8")
 
 using namespace mozilla;
+using namespace mozilla::gfx;
 
 typedef mozilla::dom::Element Element;
 
