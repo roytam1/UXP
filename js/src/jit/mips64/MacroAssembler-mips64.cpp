@@ -869,6 +869,10 @@ MacroAssemblerMIPS64::branchWithCode(InstImm code, Label* label, JumpKind jumpKi
 void
 MacroAssemblerMIPS64::ma_cmp_set(Register rd, Register rs, ImmWord imm, Condition c)
 {
+    if (imm.value == 0) {
+        ma_cmp_set(rd, rs, zero, c);
+        return;
+    }
     ma_li(ScratchRegister, imm);
     ma_cmp_set(rd, rs, ScratchRegister, c);
 }
@@ -886,6 +890,10 @@ MacroAssemblerMIPS64::ma_lid(FloatRegister dest, double value)
 {
     ImmWord imm(mozilla::BitwiseCast<uint64_t>(value));
 
+    if (imm.value == 0) {
+        moveToDouble(zero, dest);
+        return;
+    }
     ma_li(ScratchRegister, imm);
     moveToDouble(ScratchRegister, dest);
 }
@@ -1288,6 +1296,10 @@ MacroAssemblerMIPS64Compat::store32(Register src, const Address& address)
 void
 MacroAssemblerMIPS64Compat::store32(Imm32 src, const Address& address)
 {
+    if (src.value == 0) {
+        ma_store(zero, address, SizeWord);
+        return;
+    }
     move32(src, SecondScratchReg);
     ma_store(SecondScratchReg, address, SizeWord);
 }
@@ -2060,9 +2072,9 @@ MacroAssemblerMIPS64Compat::handleFailureWithHandlerTail(void* handler)
     loadPtr(Address(StackPointer, offsetof(ResumeFromException, stackPointer)), StackPointer);
 
     // We're going to be returning by the ion calling convention
-    ma_pop(ra);
+    as_ld(ra, StackPointer, 0);
     as_jr(ra);
-    as_nop();
+    as_daddiu(StackPointer, StackPointer, sizeof(intptr_t));  // in delay slot.
 
     // If we found a catch handler, this must be a baseline frame. Restore
     // state and jump to the catch block.
@@ -2084,8 +2096,9 @@ MacroAssemblerMIPS64Compat::handleFailureWithHandlerTail(void* handler)
     loadPtr(Address(sp, offsetof(ResumeFromException, stackPointer)), sp);
 
     pushValue(BooleanValue(true));
-    pushValue(exception);
-    jump(a0);
+    as_daddiu(StackPointer, StackPointer, -sizeof(intptr_t));
+    as_jr(a0);
+    as_sd(exception.valueReg(), StackPointer, 0); // In delay slot
 
     // Only used in debug mode. Return BaselineFrame->returnValue() to the
     // caller.
