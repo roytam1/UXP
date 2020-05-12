@@ -503,19 +503,6 @@ MacroAssemblerMIPS::ma_b(Address addr, ImmGCPtr imm, Label* label, Condition c, 
     ma_b(SecondScratchReg, imm, label, c, jumpKind);
 }
 
-void
-MacroAssemblerMIPS::ma_cmp_set(Register rd, Register rs, Address addr, Condition c)
-{
-    ma_lw(ScratchRegister, addr);
-    ma_cmp_set(rd, rs, ScratchRegister, c);
-}
-
-void
-MacroAssemblerMIPS::ma_cmp_set(Register dst, Address lhs, Register rhs, Condition c)
-{
-    ma_lw(ScratchRegister, lhs);
-    ma_cmp_set(dst, ScratchRegister, rhs, c);
-}
 
 // fp instructions
 void
