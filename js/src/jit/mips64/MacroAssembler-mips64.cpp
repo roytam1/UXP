@@ -757,36 +757,27 @@ MacroAssemblerMIPS64::ma_b(Address addr, ImmGCPtr imm, Label* label, Condition c
 }
 
 void
-MacroAssemblerMIPS64::ma_bal(Label* label, DelaySlotFill delaySlotFill)
+MacroAssemblerMIPS64::ma_jal(Label* label)
 {
     if (label->bound()) {
-        // Generate the long jump for calls because return address has to be
-        // the address after the reserved block.
-        addLongJump(nextOffset());
-        ma_liPatchable(ScratchRegister, ImmWord(label->offset()));
-        as_jalr(ScratchRegister);
-        if (delaySlotFill == FillDelaySlot)
-            as_nop();
+        // Generate the mixed jump.
+        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
+        as_jal(JOffImm26(0));
+        as_nop();
         return;
     }
 
     // Second word holds a pointer to the next branch in label's chain.
     uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
 
-    // Make the whole branch continous in the buffer. The '6'
+    // Make the whole branch continous in the buffer. The '2'
     // instructions are writing at below (contain delay slot).
-    m_buffer.ensureSpace(6 * sizeof(uint32_t));
+    m_buffer.ensureSpace(2 * sizeof(uint32_t));
 
-    BufferOffset bo = writeInst(getBranchCode(BranchIsCall).encode());
+    BufferOffset bo = as_jal(JOffImm26(0));
     writeInst(nextInChain);
     if (!oom())
         label->use(bo.getOffset());
-    // Leave space for long jump.
-    as_nop();
-    as_nop();
-    as_nop();
-    if (delaySlotFill == FillDelaySlot)
-        as_nop();
 }
 
 void
@@ -810,21 +801,19 @@ MacroAssemblerMIPS64::branchWithCode(InstImm code, Label* label, JumpKind jumpKi
         }
 
         if (code.encode() == inst_beq.encode()) {
-            // Handle long jump
-            addLongJump(nextOffset());
-            ma_liPatchable(ScratchRegister, ImmWord(label->offset()));
-            as_jr(ScratchRegister);
+            // Handle mixed jump
+            addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
+            as_j(JOffImm26(0));
             as_nop();
             return;
         }
 
         // Handle long conditional branch, the target offset is based on self,
         // point to next instruction of nop at below.
-        writeInst(invertBranch(code, BOffImm16(7 * sizeof(uint32_t))).encode());
-        // No need for a "nop" here because we can clobber scratch.
-        addLongJump(nextOffset());
-        ma_liPatchable(ScratchRegister, ImmWord(label->offset()));
-        as_jr(ScratchRegister);
+        writeInst(invertBranch(code, BOffImm16(4 * sizeof(uint32_t))).encode());
+        as_nop();
+        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
+        as_j(JOffImm26(0));
         as_nop();
         return;
     }
@@ -834,36 +823,21 @@ MacroAssemblerMIPS64::branchWithCode(InstImm code, Label* label, JumpKind jumpKi
     // Second word holds a pointer to the next branch in label's chain.
     uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
 
-    if (jumpKind == ShortJump) {
-        // Make the whole branch continous in the buffer.
-        m_buffer.ensureSpace(2 * sizeof(uint32_t));
+    // Make the whole branch continous in the buffer.
+    m_buffer.ensureSpace(4 * sizeof(uint32_t));
 
+    if (jumpKind == ShortJump) {
         // Indicate that this is short jump with offset 4.
         code.setBOffImm16(BOffImm16(4));
-        BufferOffset bo = writeInst(code.encode());
-        writeInst(nextInChain);
-        if (!oom())
-            label->use(bo.getOffset());
-        return;
     }
-
-    bool conditional = code.encode() != inst_beq.encode();
-
-    // Make the whole branch continous in the buffer. The '7'
-    // instructions are writing at below (contain conditional nop).
-    m_buffer.ensureSpace(7 * sizeof(uint32_t));
-
     BufferOffset bo = writeInst(code.encode());
     writeInst(nextInChain);
     if (!oom())
         label->use(bo.getOffset());
-    // Leave space for potential long jump.
-    as_nop();
-    as_nop();
-    as_nop();
-    as_nop();
-    if (conditional)
+    if (jumpKind != ShortJump && code.encode() != inst_beq.encode()) {
         as_nop();
+        as_nop();
+    }
 }
 
 void
@@ -1844,13 +1818,12 @@ MacroAssemblerMIPS64Compat::jumpWithPatch(RepatchLabel* label, Label* documentat
 {
     // Only one branch per label.
     MOZ_ASSERT(!label->used());
-    uint32_t dest = label->bound() ? label->offset() : LabelBase::INVALID_OFFSET;
 
     BufferOffset bo = nextOffset();
     label->use(bo.getOffset());
-    addLongJump(bo);
-    ma_liPatchable(ScratchRegister, ImmWord(dest));
-    as_jr(ScratchRegister);
+    if (label->bound())
+        addMixedJump(bo, ImmPtr((void*)label->offset()), MixedJumpPatch::PATCHABLE);
+    as_j(JOffImm26(0));
     as_nop();
     return CodeOffsetJump(bo.getOffset());
 }

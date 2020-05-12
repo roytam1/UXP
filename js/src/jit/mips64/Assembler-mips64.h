@@ -153,10 +153,6 @@ class Assembler : public AssemblerMIPSShared
 
     void bind(InstImm* inst, uintptr_t branch, uintptr_t target);
 
-    // Copy the assembly code to the given buffer, and perform any pending
-    // relocations relying on the target address.
-    void executableCopy(uint8_t* buffer);
-
     static uint32_t PatchWrite_NearCallSize();
 
     static uint64_t ExtractLoad64Value(Instruction* inst0);

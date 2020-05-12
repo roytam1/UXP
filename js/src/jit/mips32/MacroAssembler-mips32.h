@@ -91,25 +91,25 @@ class MacroAssemblerMIPS : public MacroAssemblerMIPSShared
 
     void branchWithCode(InstImm code, Label* label, JumpKind jumpKind);
     // branches when done from within mips-specific code
-    void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = LongJump)
+    void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = MixedJump)
     {
         ma_b(lhs, Imm32(uint32_t(imm.value)), l, c, jumpKind);
     }
-    void ma_b(Address addr, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = LongJump)
+    void ma_b(Address addr, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = MixedJump)
     {
         ma_b(addr, Imm32(uint32_t(imm.value)), l, c, jumpKind);
     }
 
-    void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, Register rhs, Label* l, Condition c, JumpKind jumpKind = LongJump) {
+    void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, Register rhs, Label* l, Condition c, JumpKind jumpKind = MixedJump) {
         MOZ_ASSERT(rhs != ScratchRegister);
         ma_load(ScratchRegister, addr, SizeWord);
         ma_b(ScratchRegister, rhs, l, c, jumpKind);
     }
 
-    void ma_bal(Label* l, DelaySlotFill delaySlotFill = FillDelaySlot);
+    void ma_jal(Label* l);
 
     // fp instructions
     void ma_lid(FloatRegister dest, double value);

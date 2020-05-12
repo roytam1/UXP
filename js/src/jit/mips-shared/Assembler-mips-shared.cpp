@@ -92,6 +92,7 @@ void
 AssemblerMIPSShared::finish()
 {
     MOZ_ASSERT(!isFinished);
+    GenerateMixedJumps();
     isFinished = true;
 }
 
@@ -100,11 +101,19 @@ AssemblerMIPSShared::asmMergeWith(const AssemblerMIPSShared& other)
 {
     if (!AssemblerShared::asmMergeWith(size(), other))
         return false;
-    for (size_t i = 0; i < other.numLongJumps(); i++) {
-        size_t off = other.longJumps_[i];
-        addLongJump(BufferOffset(size() + off));
-    }
     return m_buffer.appendBuffer(other.m_buffer);
+}
+
+void
+AssemblerMIPSShared::executableCopy(uint8_t* buffer)
+{
+    MOZ_ASSERT(isFinished);
+    m_buffer.executableCopy(buffer);
+
+    // Patch all mixed jumps during code copy.
+    PatchMixedJumps(buffer);
+
+    AutoFlushICache::setRange(uintptr_t(buffer), m_buffer.size());
 }
 
 uint32_t
@@ -1660,6 +1669,89 @@ AssemblerMIPSShared::NextInstruction(uint8_t* inst_, uint32_t* count)
     if (count != nullptr)
         *count += sizeof(Instruction);
     return reinterpret_cast<uint8_t*>(inst->next());
+}
+
+Instruction*
+AssemblerMIPSShared::GetInstructionImmediateFromJump(Instruction* jump)
+{
+    if (jump->extractOpcode() == ((uint32_t)op_j >> OpcodeShift) ||
+        jump->extractOpcode() == ((uint32_t)op_jal >> OpcodeShift))
+    {
+        InstJump* j = (InstJump*) jump;
+        uintptr_t base = (uintptr_t(j) >> Imm28Bits) << Imm28Bits;
+        uint32_t index = j->extractImm26Value() << 2;
+
+        jump = (Instruction*)(base | index);
+    }
+
+    return jump;
+}
+
+void
+AssemblerMIPSShared::PatchMixedJump(uint8_t* src, uint8_t* mid, uint8_t* target)
+{
+    InstImm* b = (InstImm*)src;
+    uint32_t opcode = b->extractOpcode();
+    int offset;
+
+    if (mid) {
+        offset = intptr_t(mid);
+        Assembler::PatchInstructionImmediate(mid, PatchedImmPtr(target));
+    } else {
+        offset = intptr_t(target);
+    }
+
+    if (((uint32_t)op_j >> OpcodeShift) == opcode ||
+        ((uint32_t)op_jal >> OpcodeShift) == opcode)
+    {
+        InstJump* j = (InstJump*)b;
+
+        j->setJOffImm26(JOffImm26(offset));
+    } else {
+        InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
+        int i = (b[0].encode() == inst_beq.encode()) ? 0 : 2;
+
+        b[i] = InstJump(op_j, JOffImm26(offset)).encode();
+    }
+}
+
+void
+AssemblerMIPSShared::PatchMixedJumps(uint8_t* buffer)
+{
+    // Patch all mixed jumps.
+    for (size_t i = 0; i < numMixedJumps(); i++) {
+        MixedJumpPatch& mjp = mixedJump(i);
+        InstImm* b = (InstImm*)(buffer + mjp.src.getOffset());
+        uint32_t opcode = b->extractOpcode();
+        int offset;
+
+        if (mjp.mid.assigned()) {
+            offset = intptr_t(buffer) + mjp.mid.getOffset();
+            Assembler::PatchInstructionImmediate(buffer + mjp.mid.getOffset(),
+                                                 PatchedImmPtr(buffer + uintptr_t(mjp.target)));
+        } else {
+            offset = intptr_t(buffer) + intptr_t(mjp.target);
+        }
+
+        if (((uint32_t)op_j >> OpcodeShift) == opcode ||
+            ((uint32_t)op_jal >> OpcodeShift) == opcode)
+        {
+            InstJump* j = (InstJump*)b;
+
+            j->setJOffImm26(JOffImm26(offset));
+        } else {
+            InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
+
+            if (b[0].encode() == inst_beq.encode()) {
+                b[0] = InstJump(op_j, JOffImm26(offset)).encode();
+            } else {
+                b[0] = invertBranch(b[0], BOffImm16(4 * sizeof(uint32_t)));
+                b[2] = InstJump(op_j, JOffImm26(offset)).encode();
+            }
+        }
+
+        b[1].makeNop();
+    }
 }
 
 // Since there are no pools in MIPS implementation, this should be simple.

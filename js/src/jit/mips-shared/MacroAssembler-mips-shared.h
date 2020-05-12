@@ -34,7 +34,7 @@ enum LoadStoreExtension
 
 enum JumpKind
 {
-    LongJump = 0,
+    MixedJump = 0,
     ShortJump = 1
 };
 
@@ -58,6 +58,8 @@ class MacroAssemblerMIPSShared : public Assembler
     void compareFloatingPoint(FloatFormat fmt, FloatRegister lhs, FloatRegister rhs,
                               DoubleCondition c, FloatTestKind* testKind,
                               FPConditionBit fcc = FCC0);
+
+    void GenerateMixedJumps();
 
   public:
     void ma_move(Register rd, Register rs);
@@ -147,20 +149,20 @@ class MacroAssemblerMIPSShared : public Assembler
                      int32_t shift, Label* negZero = nullptr);
 
     // branches when done from within mips-specific code
-    void ma_b(Register lhs, Register rhs, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Register lhs, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Register lhs, ImmPtr imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Register lhs, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = LongJump) {
+    void ma_b(Register lhs, Register rhs, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Register lhs, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Register lhs, ImmPtr imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Register lhs, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = MixedJump) {
         MOZ_ASSERT(lhs != ScratchRegister);
         ma_li(ScratchRegister, imm);
         ma_b(lhs, ScratchRegister, l, c, jumpKind);
     }
     template <typename T>
     void ma_b(Register lhs, T rhs, wasm::TrapDesc target, Condition c,
-              JumpKind jumpKind = LongJump);
+              JumpKind jumpKind = MixedJump);
 
-    void ma_b(Label* l, JumpKind jumpKind = LongJump);
-    void ma_b(wasm::TrapDesc target, JumpKind jumpKind = LongJump);
+    void ma_b(Label* l, JumpKind jumpKind = MixedJump);
+    void ma_b(wasm::TrapDesc target, JumpKind jumpKind = MixedJump);
 
     // fp instructions
     void ma_lis(FloatRegister dest, float value);
@@ -172,9 +174,9 @@ class MacroAssemblerMIPSShared : public Assembler
 
     //FP branches
     void ma_bc1s(FloatRegister lhs, FloatRegister rhs, Label* label, DoubleCondition c,
-                 JumpKind jumpKind = LongJump, FPConditionBit fcc = FCC0);
+                 JumpKind jumpKind = MixedJump, FPConditionBit fcc = FCC0);
     void ma_bc1d(FloatRegister lhs, FloatRegister rhs, Label* label, DoubleCondition c,
-                 JumpKind jumpKind = LongJump, FPConditionBit fcc = FCC0);
+                 JumpKind jumpKind = MixedJump, FPConditionBit fcc = FCC0);
 
     void ma_call(ImmPtr dest);
 

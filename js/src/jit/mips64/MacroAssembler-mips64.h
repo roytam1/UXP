@@ -117,17 +117,17 @@ class MacroAssemblerMIPS64 : public MacroAssemblerMIPSShared
 
     void branchWithCode(InstImm code, Label* label, JumpKind jumpKind);
     // branches when done from within mips-specific code
-    void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, Register rhs, Label* l, Condition c, JumpKind jumpKind = LongJump) {
+    void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, Register rhs, Label* l, Condition c, JumpKind jumpKind = MixedJump) {
         MOZ_ASSERT(rhs != ScratchRegister);
         ma_load(ScratchRegister, addr, SizeDouble);
         ma_b(ScratchRegister, rhs, l, c, jumpKind);
     }
 
-    void ma_bal(Label* l, DelaySlotFill delaySlotFill = FillDelaySlot);
+    void ma_jal(Label* l);
 
     // fp instructions
     void ma_lid(FloatRegister dest, double value);

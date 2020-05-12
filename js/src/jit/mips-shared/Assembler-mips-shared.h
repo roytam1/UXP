@@ -525,21 +525,13 @@ class JOffImm26
     }
     int32_t decode() {
         MOZ_ASSERT(!isInvalid());
-        return (int32_t(data << 8) >> 6) + 4;
+        return int32_t(data << 8) >> 6;
     }
 
     explicit JOffImm26(int offset)
-      : data ((offset - 4) >> 2 & Imm26Mask)
+      : data (offset >> 2 & Imm26Mask)
     {
         MOZ_ASSERT((offset & 0x3) == 0);
-        MOZ_ASSERT(IsInRange(offset));
-    }
-    static bool IsInRange(int offset) {
-        if ((offset - 4) < -536870912)
-            return false;
-        if ((offset - 4) > 536870908)
-            return false;
-        return true;
     }
     static const uint32_t INVALID = 0x20000000;
     JOffImm26()
@@ -840,6 +832,26 @@ class AssemblerMIPSShared : public AssemblerShared
         TestForFalse
     };
 
+    struct MixedJumpPatch
+    {
+        enum Kind {
+            NONE,
+            PATCHABLE
+        };
+
+        BufferOffset src;
+        BufferOffset mid;
+        void* target;
+        Kind kind;
+
+        MixedJumpPatch(BufferOffset src, void* target, Kind kind)
+          : src(src),
+            mid(BufferOffset()),
+            target(target),
+            kind(kind)
+        { }
+    };
+
     // :( this should be protected, but since CodeGenerator
     // wants to use it, It needs to go out here :(
 
@@ -873,7 +885,7 @@ class AssemblerMIPSShared : public AssemblerShared
     };
 
     js::Vector<RelativePatch, 8, SystemAllocPolicy> jumps_;
-    js::Vector<uint32_t, 8, SystemAllocPolicy> longJumps_;
+    js::Vector<MixedJumpPatch, 8, SystemAllocPolicy> mixedJumps_;
 
     CompactBufferWriter jumpRelocations_;
     CompactBufferWriter dataRelocations_;
@@ -922,7 +934,9 @@ class AssemblerMIPSShared : public AssemblerShared
   public:
     void finish();
     bool asmMergeWith(const AssemblerMIPSShared& other);
-    void executableCopy(void* buffer);
+    // Copy the assembly code to the given buffer, and perform any pending
+    // relocations relying on the target address.
+    void executableCopy(uint8_t* buffer);
     void copyJumpRelocationTable(uint8_t* dest);
     void copyDataRelocationTable(uint8_t* dest);
     void copyPreBarrierTable(uint8_t* dest);
@@ -1240,16 +1254,21 @@ class AssemblerMIPSShared : public AssemblerShared
             writeRelocation(src);
     }
 
-    void addLongJump(BufferOffset src) {
-        enoughMemory_ &= longJumps_.append(src.getOffset());
+    void addMixedJump(BufferOffset src, ImmPtr target,
+                      MixedJumpPatch::Kind kind = MixedJumpPatch::NONE)
+    {
+        enoughMemory_ &= mixedJumps_.append(MixedJumpPatch(src, target.value, kind));
     }
 
+    virtual void GenerateMixedJumps() = 0;
+    void PatchMixedJumps(uint8_t* buffer);
+
   public:
-    size_t numLongJumps() const {
-        return longJumps_.length();
+    size_t numMixedJumps() const {
+        return mixedJumps_.length();
     }
-    uint32_t longJump(size_t i) {
-        return longJumps_[i];
+    MixedJumpPatch& mixedJump(size_t i) {
+        return mixedJumps_[i];
     }
 
     void flushBuffer() {
@@ -1269,6 +1288,8 @@ class AssemblerMIPSShared : public AssemblerShared
     }
 
     static uint8_t* NextInstruction(uint8_t* instruction, uint32_t* count = nullptr);
+    static Instruction* GetInstructionImmediateFromJump(Instruction* jump);
+    static void PatchMixedJump(uint8_t* src, uint8_t* mid, uint8_t* target);
 
     static void ToggleToJmp(CodeLocationLabel inst_);
     static void ToggleToCmp(CodeLocationLabel inst_);
@@ -1488,6 +1509,10 @@ class InstJump : public Instruction
 
     uint32_t extractImm26Value() {
         return extractBitField(Imm26Shift + Imm26Bits - 1, Imm26Shift);
+    }
+    void setJOffImm26(JOffImm26 off) {
+        // Reset immediate field and replace it
+        data = (data & ~Imm26Mask) | off.encode();
     }
 };
 
