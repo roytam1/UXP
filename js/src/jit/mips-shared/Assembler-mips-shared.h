@@ -1211,8 +1211,9 @@ class AssemblerMIPSShared : public AssemblerShared
     // label operations
     void bind(Label* label, BufferOffset boff = BufferOffset());
     void bindLater(Label* label, wasm::TrapDesc target);
-    virtual void bind(InstImm* inst, uintptr_t branch, uintptr_t target) = 0;
+    void bind(InstImm* inst, uintptr_t branch, uintptr_t target);
     virtual void Bind(uint8_t* rawCode, CodeOffset* label, const void* address) = 0;
+    void bind(RepatchLabel* label);
     void bind(CodeOffset* label) {
         label->bind(currentOffset());
     }

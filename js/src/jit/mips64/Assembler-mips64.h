@@ -143,15 +143,10 @@ class Assembler : public AssemblerMIPSShared
 
     static uintptr_t GetPointer(uint8_t*);
 
-    using AssemblerMIPSShared::bind;
-
-    void bind(RepatchLabel* label);
     void Bind(uint8_t* rawCode, CodeOffset* label, const void* address);
 
     static void TraceJumpRelocations(JSTracer* trc, JitCode* code, CompactBufferReader& reader);
     static void TraceDataRelocations(JSTracer* trc, JitCode* code, CompactBufferReader& reader);
-
-    void bind(InstImm* inst, uintptr_t branch, uintptr_t target);
 
     static uint32_t PatchWrite_NearCallSize();
 
