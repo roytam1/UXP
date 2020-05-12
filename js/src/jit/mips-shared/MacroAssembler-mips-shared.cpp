@@ -643,6 +643,65 @@ MacroAssemblerMIPSShared::ma_store_unaligned(Register data, const BaseIndex& des
     }
 }
 
+void
+MacroAssemblerMIPSShared::branchWithCode(InstImm code, Label* label, JumpKind jumpKind)
+{
+    MOZ_ASSERT(code.encode() != InstImm(op_regimm, zero, rt_bgezal, BOffImm16(0)).encode());
+    InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
+
+    if (label->bound()) {
+        int32_t offset = label->offset() - m_buffer.nextOffset().getOffset();
+
+        if (BOffImm16::IsInRange(offset))
+            jumpKind = ShortJump;
+
+        if (jumpKind == ShortJump) {
+            MOZ_ASSERT(BOffImm16::IsInRange(offset));
+            code.setBOffImm16(BOffImm16(offset));
+            writeInst(code.encode());
+            as_nop();
+            return;
+        }
+
+        if (code.encode() == inst_beq.encode()) {
+            // Handle mixed jump
+            addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
+            as_j(JOffImm26(0));
+            as_nop();
+            return;
+        }
+
+        // Handle long conditional branch
+        writeInst(invertBranch(code, BOffImm16(4 * sizeof(uint32_t))).encode());
+        as_nop();
+        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
+        as_j(JOffImm26(0));
+        as_nop();
+        return;
+    }
+
+    // Generate mixed jump and link it to a label.
+
+    // Second word holds a pointer to the next branch in label's chain.
+    uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
+
+    // Make the whole branch continous in the buffer.
+    m_buffer.ensureSpace(4 * sizeof(uint32_t));
+
+    if (jumpKind == ShortJump) {
+        // Indicate that this is short jump with offset 4.
+        code.setBOffImm16(BOffImm16(4));
+    }
+    BufferOffset bo = writeInst(code.encode());
+    writeInst(nextInChain);
+    if (!oom())
+        label->use(bo.getOffset());
+    if (jumpKind != ShortJump && code.encode() != inst_beq.encode()) {
+        as_nop();
+        as_nop();
+    }
+}
+
 // Branches when done from within mips-specific code.
 void
 MacroAssemblerMIPSShared::ma_b(Register lhs, Register rhs, Label* label, Condition c, JumpKind jumpKind)
@@ -650,7 +709,7 @@ MacroAssemblerMIPSShared::ma_b(Register lhs, Register rhs, Label* label, Conditi
     switch (c) {
       case Equal :
       case NotEqual:
-        asMasm().branchWithCode(getBranchCode(lhs, rhs, c), label, jumpKind);
+        branchWithCode(getBranchCode(lhs, rhs, c), label, jumpKind);
         break;
       case Always:
         ma_b(label, jumpKind);
@@ -660,11 +719,11 @@ MacroAssemblerMIPSShared::ma_b(Register lhs, Register rhs, Label* label, Conditi
       case Signed:
       case NotSigned:
         MOZ_ASSERT(lhs == rhs);
-        asMasm().branchWithCode(getBranchCode(lhs, c), label, jumpKind);
+        branchWithCode(getBranchCode(lhs, c), label, jumpKind);
         break;
       default:
         Condition cond = ma_cmp(ScratchRegister, lhs, rhs, c);
-        asMasm().branchWithCode(getBranchCode(ScratchRegister, cond), label, jumpKind);
+        branchWithCode(getBranchCode(ScratchRegister, cond), label, jumpKind);
         break;
     }
 }
@@ -679,7 +738,7 @@ MacroAssemblerMIPSShared::ma_b(Register lhs, Imm32 imm, Label* label, Condition 
         else if (c == Below)
             ; // This condition is always false. No branch required.
         else
-            asMasm().branchWithCode(getBranchCode(lhs, c), label, jumpKind);
+            branchWithCode(getBranchCode(lhs, c), label, jumpKind);
     } else {
         MOZ_ASSERT(lhs != ScratchRegister);
         ma_li(ScratchRegister, imm);
@@ -716,7 +775,7 @@ template void MacroAssemblerMIPSShared::ma_b<ImmTag>(Register lhs, ImmTag rhs,
 void
 MacroAssemblerMIPSShared::ma_b(Label* label, JumpKind jumpKind)
 {
-    asMasm().branchWithCode(getBranchCode(BranchIsJump), label, jumpKind);
+    branchWithCode(getBranchCode(BranchIsJump), label, jumpKind);
 }
 
 void
@@ -1122,7 +1181,7 @@ MacroAssemblerMIPSShared::ma_bc1s(FloatRegister lhs, FloatRegister rhs, Label* l
 {
     FloatTestKind testKind;
     compareFloatingPoint(SingleFloat, lhs, rhs, c, &testKind, fcc);
-    asMasm().branchWithCode(getBranchCode(testKind, fcc), label, jumpKind);
+    branchWithCode(getBranchCode(testKind, fcc), label, jumpKind);
 }
 
 void
@@ -1131,7 +1190,7 @@ MacroAssemblerMIPSShared::ma_bc1d(FloatRegister lhs, FloatRegister rhs, Label* l
 {
     FloatTestKind testKind;
     compareFloatingPoint(DoubleFloat, lhs, rhs, c, &testKind, fcc);
-    asMasm().branchWithCode(getBranchCode(testKind, fcc), label, jumpKind);
+    branchWithCode(getBranchCode(testKind, fcc), label, jumpKind);
 }
 
 void

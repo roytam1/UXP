@@ -148,6 +148,7 @@ class MacroAssemblerMIPSShared : public Assembler
     void ma_mod_mask(Register src, Register dest, Register hold, Register remain,
                      int32_t shift, Label* negZero = nullptr);
 
+    void branchWithCode(InstImm code, Label* label, JumpKind jumpKind);
     // branches when done from within mips-specific code
     void ma_b(Register lhs, Register rhs, Label* l, Condition c, JumpKind jumpKind = MixedJump);
     void ma_b(Register lhs, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);

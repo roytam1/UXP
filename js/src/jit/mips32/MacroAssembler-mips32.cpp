@@ -504,65 +504,6 @@ MacroAssemblerMIPS::ma_b(Address addr, ImmGCPtr imm, Label* label, Condition c, 
 }
 
 void
-MacroAssemblerMIPS::branchWithCode(InstImm code, Label* label, JumpKind jumpKind)
-{
-    MOZ_ASSERT(code.encode() != InstImm(op_regimm, zero, rt_bgezal, BOffImm16(0)).encode());
-    InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
-
-    if (label->bound()) {
-        int32_t offset = label->offset() - m_buffer.nextOffset().getOffset();
-
-        if (BOffImm16::IsInRange(offset))
-            jumpKind = ShortJump;
-
-        if (jumpKind == ShortJump) {
-            MOZ_ASSERT(BOffImm16::IsInRange(offset));
-            code.setBOffImm16(BOffImm16(offset));
-            writeInst(code.encode());
-            as_nop();
-            return;
-        }
-
-        if (code.encode() == inst_beq.encode()) {
-            // Handle mixed jump
-            addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
-            as_j(JOffImm26(0));
-            as_nop();
-            return;
-        }
-
-        // Handle long conditional branch
-        writeInst(invertBranch(code, BOffImm16(4 * sizeof(uint32_t))).encode());
-        as_nop();
-        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
-        as_j(JOffImm26(0));
-        as_nop();
-        return;
-    }
-
-    // Generate open jump and link it to a label.
-
-    // Second word holds a pointer to the next branch in label's chain.
-    uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
-
-    // Make the whole branch continous in the buffer.
-    m_buffer.ensureSpace(4 * sizeof(uint32_t));
-
-    if (jumpKind == ShortJump) {
-        // Indicate that this is short jump with offset 4.
-        code.setBOffImm16(BOffImm16(4));
-    }
-    BufferOffset bo = writeInst(code.encode());
-    writeInst(nextInChain);
-    if (!oom())
-        label->use(bo.getOffset());
-    if (jumpKind != ShortJump && code.encode() != inst_beq.encode()) {
-        as_nop();
-        as_nop();
-    }
-}
-
-void
 MacroAssemblerMIPS::ma_cmp_set(Register rd, Register rs, Address addr, Condition c)
 {
     ma_lw(ScratchRegister, addr);

@@ -115,7 +115,6 @@ class MacroAssemblerMIPS64 : public MacroAssemblerMIPSShared
     void ma_pop(Register r);
     void ma_push(Register r);
 
-    void branchWithCode(InstImm code, Label* label, JumpKind jumpKind);
     // branches when done from within mips-specific code
     void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
     void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = MixedJump);
