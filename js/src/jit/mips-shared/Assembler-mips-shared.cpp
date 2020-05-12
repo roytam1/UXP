@@ -1748,6 +1748,25 @@ AssemblerMIPSShared::PatchWrite_Imm32(CodeLocationLabel label, Imm32 imm)
     *(raw - 1) = imm.value;
 }
 
+uint32_t
+AssemblerMIPSShared::PatchWrite_NearCallSize()
+{
+    return 2 * sizeof(uint32_t);
+}
+
+void
+AssemblerMIPSShared::PatchWrite_NearCall(CodeLocationLabel start, CodeLocationLabel toCall)
+{
+    Instruction* inst = (Instruction*) start.raw();
+
+    // Overwrite whatever instruction used to be here with a call.
+    inst[0] = InstJump(op_jal, JOffImm26(uintptr_t(toCall.raw())));
+    inst[1] = InstNOP();
+
+    // Ensure everyone sees the code that was just written into memory.
+    AutoFlushICache::flush(uintptr_t(inst), PatchWrite_NearCallSize());
+}
+
 uint8_t*
 AssemblerMIPSShared::NextInstruction(uint8_t* inst_, uint32_t* count)
 {
@@ -1789,8 +1808,8 @@ AssemblerMIPSShared::PatchMixedJump(uint8_t* src, uint8_t* mid, uint8_t* target)
         offset = intptr_t(mid);
         if (insn->extractOpcode() != ((uint32_t)op_lui >> OpcodeShift)) {
             o = 1 * sizeof(uint32_t);
-            Assembler::PatchInstructionImmediate(mid + Assembler::PatchWrite_NearCallSize(),
-                                                 PatchedImmPtr(&b[2]));
+            Assembler::PatchInstructionImmediate(mid + Assembler::InstructionImmediateSize() +
+                                                 2 * sizeof(uint32_t), PatchedImmPtr(&b[2]));
         }
         Assembler::PatchInstructionImmediate(mid + o, PatchedImmPtr(target));
     } else {
@@ -1823,7 +1842,8 @@ AssemblerMIPSShared::PatchMixedJumps(uint8_t* buffer)
             mid = buffer + mjp.mid.getOffset();
             if (MixedJumpPatch::CONDITIONAL & mjp.kind) {
                 InstImm* bc = (InstImm*)(buffer + mjp.mid.getOffset());
-                bc[0] = invertBranch(b[0], BOffImm16(Assembler::PatchWrite_NearCallSize()));
+                BOffImm16 offset(Assembler::InstructionImmediateSize() + 2 * sizeof(uint32_t));
+                bc[0] = invertBranch(b[0], offset);
             }
         }
 

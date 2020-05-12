@@ -1282,8 +1282,10 @@ class AssemblerMIPSShared : public AssemblerShared
     }
 
     static uint32_t NopSize() { return 4; }
+    static uint32_t PatchWrite_NearCallSize();
 
     static void PatchWrite_Imm32(CodeLocationLabel label, Imm32 imm);
+    static void PatchWrite_NearCall(CodeLocationLabel start, CodeLocationLabel toCall);
 
     static uint32_t AlignDoubleArg(uint32_t offset) {
         return (offset + 1U) &~ 1U;

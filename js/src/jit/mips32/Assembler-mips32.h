@@ -149,13 +149,10 @@ class Assembler : public AssemblerMIPSShared
     static void TraceJumpRelocations(JSTracer* trc, JitCode* code, CompactBufferReader& reader);
     static void TraceDataRelocations(JSTracer* trc, JitCode* code, CompactBufferReader& reader);
 
-    static uint32_t PatchWrite_NearCallSize();
-
+    static uint32_t InstructionImmediateSize() {
+        return 2 * sizeof(uint32_t);
+    }
     static uint32_t ExtractLuiOriValue(Instruction* inst0, Instruction* inst1);
-    static void WriteLuiOriInstructions(Instruction* inst, Instruction* inst1,
-                                        Register reg, uint32_t value);
-
-    static void PatchWrite_NearCall(CodeLocationLabel start, CodeLocationLabel toCall);
     static void PatchDataWithValueCheck(CodeLocationLabel label, ImmPtr newValue,
                                         ImmPtr expectedValue);
     static void PatchDataWithValueCheck(CodeLocationLabel label, PatchedImmPtr newValue,

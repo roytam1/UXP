@@ -228,32 +228,6 @@ Assembler::Bind(uint8_t* rawCode, CodeOffset* label, const void* address)
     }
 }
 
-uint32_t
-Assembler::PatchWrite_NearCallSize()
-{
-    // Load an address needs 4 instructions, and a jump with a delay slot.
-    return (4 + 2) * sizeof(uint32_t);
-}
-
-void
-Assembler::PatchWrite_NearCall(CodeLocationLabel start, CodeLocationLabel toCall)
-{
-    Instruction* inst = (Instruction*) start.raw();
-    uint8_t* dest = toCall.raw();
-
-    // Overwrite whatever instruction used to be here with a call.
-    // Always use long jump for two reasons:
-    // - Jump has to be the same size because of PatchWrite_NearCallSize.
-    // - Return address has to be at the end of replaced block.
-    // Short jump wouldn't be more efficient.
-    Assembler::WriteLoad64Instructions(inst, ScratchRegister, (uint64_t)dest);
-    inst[4] = InstReg(op_special, ScratchRegister, zero, ra, ff_jalr);
-    inst[5] = InstNOP();
-
-    // Ensure everyone sees the code that was just written into memory.
-    AutoFlushICache::flush(uintptr_t(inst), PatchWrite_NearCallSize());
-}
-
 uint64_t
 Assembler::ExtractLoad64Value(Instruction* inst0)
 {
@@ -312,19 +286,6 @@ Assembler::UpdateLoad64Value(Instruction* inst0, uint64_t value)
     i1->setImm16(Imm16::Lower(Imm32(value >> 32)));
     i3->setImm16(Imm16::Upper(Imm32(value)));
     i5->setImm16(Imm16::Lower(Imm32(value)));
-}
-
-void
-Assembler::WriteLoad64Instructions(Instruction* inst0, Register reg, uint64_t value)
-{
-    Instruction* inst1 = inst0->next();
-    Instruction* inst2 = inst1->next();
-    Instruction* inst3 = inst2->next();
-
-    *inst0 = InstImm(op_lui, zero, reg, Imm16::Lower(Imm32(value >> 32)));
-    *inst1 = InstImm(op_ori, reg, reg, Imm16::Upper(Imm32(value)));
-    *inst2 = InstReg(op_special, rs_one, reg, reg, 48 - 32, ff_dsrl32);
-    *inst3 = InstImm(op_ori, reg, reg, Imm16::Lower(Imm32(value)));
 }
 
 void

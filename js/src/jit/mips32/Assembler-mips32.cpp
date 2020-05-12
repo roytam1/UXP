@@ -297,31 +297,6 @@ Assembler::Bind(uint8_t* rawCode, CodeOffset* label, const void* address)
 }
 
 uint32_t
-Assembler::PatchWrite_NearCallSize()
-{
-    return 4 * sizeof(uint32_t);
-}
-
-void
-Assembler::PatchWrite_NearCall(CodeLocationLabel start, CodeLocationLabel toCall)
-{
-    Instruction* inst = (Instruction*) start.raw();
-    uint8_t* dest = toCall.raw();
-
-    // Overwrite whatever instruction used to be here with a call.
-    // Always use long jump for two reasons:
-    // - Jump has to be the same size because of PatchWrite_NearCallSize.
-    // - Return address has to be at the end of replaced block.
-    // Short jump wouldn't be more efficient.
-    Assembler::WriteLuiOriInstructions(inst, &inst[1], ScratchRegister, (uint32_t)dest);
-    inst[2] = InstReg(op_special, ScratchRegister, zero, ra, ff_jalr);
-    inst[3] = InstNOP();
-
-    // Ensure everyone sees the code that was just written into memory.
-    AutoFlushICache::flush(uintptr_t(inst), PatchWrite_NearCallSize());
-}
-
-uint32_t
 Assembler::ExtractLuiOriValue(Instruction* inst0, Instruction* inst1)
 {
     InstImm* i0 = (InstImm*) inst0;
@@ -332,14 +307,6 @@ Assembler::ExtractLuiOriValue(Instruction* inst0, Instruction* inst1)
     uint32_t value = i0->extractImm16Value() << 16;
     value = value | i1->extractImm16Value();
     return value;
-}
-
-void
-Assembler::WriteLuiOriInstructions(Instruction* inst0, Instruction* inst1,
-                                   Register reg, uint32_t value)
-{
-    *inst0 = InstImm(op_lui, zero, reg, Imm16::Upper(Imm32(value)));
-    *inst1 = InstImm(op_ori, reg, reg, Imm16::Lower(Imm32(value)));
 }
 
 void
