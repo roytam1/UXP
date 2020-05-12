@@ -25,6 +25,8 @@
 #define _PR_SI_ARCHITECTURE "sparc64"
 #elif defined(__sparc__)
 #define _PR_SI_ARCHITECTURE "sparc"
+#elif defined(__mips64__)
+#define _PR_SI_ARCHITECTURE "mips64"
 #elif defined(__mips__)
 #define _PR_SI_ARCHITECTURE "mips"
 #elif defined(__arm32__) || defined(__arm__) || defined(__armel__) \
