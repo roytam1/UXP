@@ -1103,7 +1103,7 @@ int VP8DecoderImpl::InitDecode(const VideoCodec* inst,
   cfg.h = cfg.w = 0;  // set after decode
 
 vpx_codec_flags_t flags = 0;
-#ifndef WEBRTC_ARCH_ARM
+#if !defined(WEBRTC_ARCH_ARM) && !defined(WEBRTC_ARCH_MIPS)
   flags = VPX_CODEC_USE_POSTPROC;
 #ifdef INDEPENDENT_PARTITIONS
   flags |= VPX_CODEC_USE_INPUT_PARTITION;
