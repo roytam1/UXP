@@ -1788,7 +1788,11 @@ MacroAssemblerMIPS64Compat::storeValue(JSValueType type, Register reg, Address d
 
     ma_li(SecondScratchReg, ImmTag(JSVAL_TYPE_TO_TAG(type)));
     ma_dsll(SecondScratchReg, SecondScratchReg, Imm32(JSVAL_TAG_SHIFT));
-    ma_dins(SecondScratchReg, reg, Imm32(0), Imm32(JSVAL_TAG_SHIFT));
+    if (type == JSVAL_TYPE_INT32 || type == JSVAL_TYPE_BOOLEAN) {
+        ma_dins(SecondScratchReg, reg, Imm32(0), Imm32(32));
+    } else {
+        ma_dins(SecondScratchReg, reg, Imm32(0), Imm32(JSVAL_TAG_SHIFT));
+    }
     storePtr(SecondScratchReg, Address(dest.base, dest.offset));
 }
 
