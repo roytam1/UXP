@@ -46,6 +46,7 @@ class MacroAssemblerMIPS : public MacroAssemblerMIPSShared
   public:
     using MacroAssemblerMIPSShared::ma_b;
     using MacroAssemblerMIPSShared::ma_li;
+    using MacroAssemblerMIPSShared::ma_liPatchable;
     using MacroAssemblerMIPSShared::ma_ss;
     using MacroAssemblerMIPSShared::ma_sd;
     using MacroAssemblerMIPSShared::ma_load;
