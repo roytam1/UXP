@@ -340,10 +340,6 @@ public:
   virtual nsIAtom* GetType() const override;
 
   virtual nsMargin GetUsedBorder() const override;
-  virtual bool GetBorderRadii(const nsSize& aFrameSize,
-                              const nsSize& aBorderArea,
-                              Sides aSkipSides,
-                              nscoord aRadii[8]) const override;
 
   // Get the *inner half of the border only*, in twips.
   virtual LogicalMargin GetBorderWidth(WritingMode aWM) const override;
