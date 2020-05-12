@@ -101,6 +101,11 @@ AssemblerMIPSShared::asmMergeWith(const AssemblerMIPSShared& other)
 {
     if (!AssemblerShared::asmMergeWith(size(), other))
         return false;
+    for (size_t i = 0; i < other.numMixedJumps(); i++) {
+        const MixedJumpPatch& mjp = other.mixedJumps_[i];
+        addMixedJump(BufferOffset(size() + mjp.src.getOffset()),
+                     ImmPtr(size() + mjp.target), mjp.kind);
+    }
     return m_buffer.appendBuffer(other.m_buffer);
 }
 
