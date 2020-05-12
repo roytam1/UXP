@@ -616,7 +616,7 @@ MacroAssemblerMIPSShared::ma_store_unaligned(Register data, const BaseIndex& des
     int16_t lowOffset, hiOffset;
     Register base;
 
-    asMasm().computeEffectiveAddress(dest, SecondScratchReg);
+    asMasm().computeScaledAddress(dest, SecondScratchReg);
 
     if (Imm16::IsInSignedRange(dest.offset) && Imm16::IsInSignedRange(dest.offset + size / 8 - 1)) {
         base = SecondScratchReg;
