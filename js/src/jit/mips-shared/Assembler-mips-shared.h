@@ -836,7 +836,8 @@ class AssemblerMIPSShared : public AssemblerShared
     {
         enum Kind {
             NONE,
-            PATCHABLE
+            PATCHABLE,
+            CONDITIONAL,
         };
 
         BufferOffset src;

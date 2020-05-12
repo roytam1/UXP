@@ -1621,7 +1621,12 @@ AssemblerMIPSShared::bind(InstImm* inst, uintptr_t branch, uintptr_t target)
         return;
     }
 
-    addMixedJump(BufferOffset(branch), ImmPtr((void*)target));
+    MixedJumpPatch::Kind kind = MixedJumpPatch::NONE;
+    InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
+    if (inst[0].encode() != inst_beq.encode())
+        kind = MixedJumpPatch::CONDITIONAL;
+
+    addMixedJump(BufferOffset(branch), ImmPtr((const void*)target), kind);
 }
 
 void
@@ -1763,6 +1768,8 @@ AssemblerMIPSShared::GetInstructionImmediateFromJump(Instruction* jump)
         uint32_t index = j->extractImm26Value() << 2;
 
         jump = (Instruction*)(base | index);
+        if (jump->extractOpcode() != ((uint32_t)op_lui >> OpcodeShift))
+            jump = jump->next();
     }
 
     return jump;
@@ -1776,8 +1783,16 @@ AssemblerMIPSShared::PatchMixedJump(uint8_t* src, uint8_t* mid, uint8_t* target)
     int offset;
 
     if (mid) {
+        int o = 0;
+        InstImm* insn = (InstImm*)mid;
+
         offset = intptr_t(mid);
-        Assembler::PatchInstructionImmediate(mid, PatchedImmPtr(target));
+        if (insn->extractOpcode() != ((uint32_t)op_lui >> OpcodeShift)) {
+            o = 1 * sizeof(uint32_t);
+            Assembler::PatchInstructionImmediate(mid + Assembler::PatchWrite_NearCallSize(),
+                                                 PatchedImmPtr(&b[2]));
+        }
+        Assembler::PatchInstructionImmediate(mid + o, PatchedImmPtr(target));
     } else {
         offset = intptr_t(target);
     }
@@ -1789,10 +1804,7 @@ AssemblerMIPSShared::PatchMixedJump(uint8_t* src, uint8_t* mid, uint8_t* target)
 
         j->setJOffImm26(JOffImm26(offset));
     } else {
-        InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
-        int i = (b[0].encode() == inst_beq.encode()) ? 0 : 2;
-
-        b[i] = InstJump(op_j, JOffImm26(offset)).encode();
+        b[0] = InstJump(op_j, JOffImm26(offset)).encode();
     }
 }
 
@@ -1802,35 +1814,20 @@ AssemblerMIPSShared::PatchMixedJumps(uint8_t* buffer)
     // Patch all mixed jumps.
     for (size_t i = 0; i < numMixedJumps(); i++) {
         MixedJumpPatch& mjp = mixedJump(i);
-        InstImm* b = (InstImm*)(buffer + mjp.src.getOffset());
-        uint32_t opcode = b->extractOpcode();
-        int offset;
+        uint8_t* src = buffer + mjp.src.getOffset();
+        uint8_t* mid = nullptr;
+        uint8_t* target = buffer + uintptr_t(mjp.target);
+        InstImm* b = (InstImm*)src;
 
         if (mjp.mid.assigned()) {
-            offset = intptr_t(buffer) + mjp.mid.getOffset();
-            Assembler::PatchInstructionImmediate(buffer + mjp.mid.getOffset(),
-                                                 PatchedImmPtr(buffer + uintptr_t(mjp.target)));
-        } else {
-            offset = intptr_t(buffer) + intptr_t(mjp.target);
-        }
-
-        if (((uint32_t)op_j >> OpcodeShift) == opcode ||
-            ((uint32_t)op_jal >> OpcodeShift) == opcode)
-        {
-            InstJump* j = (InstJump*)b;
-
-            j->setJOffImm26(JOffImm26(offset));
-        } else {
-            InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
-
-            if (b[0].encode() == inst_beq.encode()) {
-                b[0] = InstJump(op_j, JOffImm26(offset)).encode();
-            } else {
-                b[0] = invertBranch(b[0], BOffImm16(4 * sizeof(uint32_t)));
-                b[2] = InstJump(op_j, JOffImm26(offset)).encode();
+            mid = buffer + mjp.mid.getOffset();
+            if (MixedJumpPatch::CONDITIONAL & mjp.kind) {
+                InstImm* bc = (InstImm*)(buffer + mjp.mid.getOffset());
+                bc[0] = invertBranch(b[0], BOffImm16(Assembler::PatchWrite_NearCallSize()));
             }
         }
 
+        PatchMixedJump(src, mid, target);
         b[1].makeNop();
     }
 }

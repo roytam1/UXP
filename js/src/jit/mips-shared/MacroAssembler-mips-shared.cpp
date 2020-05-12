@@ -647,7 +647,6 @@ void
 MacroAssemblerMIPSShared::branchWithCode(InstImm code, Label* label, JumpKind jumpKind)
 {
     MOZ_ASSERT(code.encode() != InstImm(op_regimm, zero, rt_bgezal, BOffImm16(0)).encode());
-    InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
 
     if (label->bound()) {
         int32_t offset = label->offset() - m_buffer.nextOffset().getOffset();
@@ -663,6 +662,7 @@ MacroAssemblerMIPSShared::branchWithCode(InstImm code, Label* label, JumpKind ju
             return;
         }
 
+        InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
         if (code.encode() == inst_beq.encode()) {
             // Handle mixed jump
             addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
@@ -672,10 +672,8 @@ MacroAssemblerMIPSShared::branchWithCode(InstImm code, Label* label, JumpKind ju
         }
 
         // Handle long conditional branch
-        writeInst(invertBranch(code, BOffImm16(4 * sizeof(uint32_t))).encode());
-        as_nop();
-        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()));
-        as_j(JOffImm26(0));
+        addMixedJump(nextOffset(), ImmPtr((void*)label->offset()), MixedJumpPatch::CONDITIONAL);
+        writeInst(code.encode());
         as_nop();
         return;
     }
@@ -686,7 +684,7 @@ MacroAssemblerMIPSShared::branchWithCode(InstImm code, Label* label, JumpKind ju
     uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
 
     // Make the whole branch continous in the buffer.
-    m_buffer.ensureSpace(4 * sizeof(uint32_t));
+    m_buffer.ensureSpace(2 * sizeof(uint32_t));
 
     if (jumpKind == ShortJump) {
         // Indicate that this is short jump with offset 4.
@@ -696,10 +694,6 @@ MacroAssemblerMIPSShared::branchWithCode(InstImm code, Label* label, JumpKind ju
     writeInst(nextInChain);
     if (!oom())
         label->use(bo.getOffset());
-    if (jumpKind != ShortJump && code.encode() != inst_beq.encode()) {
-        as_nop();
-        as_nop();
-    }
 }
 
 // Branches when done from within mips-specific code.
@@ -1050,6 +1044,12 @@ MacroAssemblerMIPSShared::GenerateMixedJumps()
         if (MixedJumpPatch::NONE == mjp.kind && uintptr_t(mjp.target) <= size())
             continue;
         BufferOffset bo = m_buffer.nextOffset();
+        if (MixedJumpPatch::CONDITIONAL & mjp.kind) {
+            // Leave space for conditional branch.
+            as_nop();
+            asMasm().ma_liPatchable(ScratchRegister, ImmWord(0));
+            as_jr(ScratchRegister);
+        }
         asMasm().ma_liPatchable(ScratchRegister, ImmWord(0));
         as_jr(ScratchRegister);
         as_nop();
