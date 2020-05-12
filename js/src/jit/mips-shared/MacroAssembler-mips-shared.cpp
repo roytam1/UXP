@@ -236,8 +236,14 @@ template <typename L>
 void
 MacroAssemblerMIPSShared::ma_addTestCarry(Register rd, Register rs, Register rt, L overflow)
 {
-    as_addu(rd, rs, rt);
-    as_sltu(SecondScratchReg, rd, rs);
+    if (rd != rs) {
+        as_addu(rd, rs, rt);
+        as_sltu(SecondScratchReg, rd, rs);
+    } else {
+        ma_move(SecondScratchReg, rs);
+        as_addu(rd, rs, rt);
+        as_sltu(SecondScratchReg, rd, SecondScratchReg);
+    }
     ma_b(SecondScratchReg, SecondScratchReg, overflow, Assembler::NonZero);
 }
 
