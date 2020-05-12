@@ -1366,22 +1366,52 @@ MacroAssemblerMIPS64Compat::testUndefinedSet(Condition cond, const ValueOperand&
 void
 MacroAssemblerMIPS64Compat::unboxNonDouble(const ValueOperand& operand, Register dest)
 {
+    Label isInt32, done;
+    Register tag = splitTagForTest(operand);
+    asMasm().branchTestInt32(Assembler::Equal, tag, &isInt32);
+
     ma_dext(dest, operand.valueReg(), Imm32(0), Imm32(JSVAL_TAG_SHIFT));
+    jump(&done);
+
+    bind(&isInt32);
+    ma_sll(dest, operand.valueReg(), Imm32(0));
+
+    bind(&done);
 }
 
 void
 MacroAssemblerMIPS64Compat::unboxNonDouble(const Address& src, Register dest)
 {
+    Label isInt32, done;
     loadPtr(Address(src.base, src.offset), dest);
+    splitTag(dest, SecondScratchReg);
+    asMasm().branchTestInt32(Assembler::Equal, SecondScratchReg, &isInt32);
+
     ma_dext(dest, dest, Imm32(0), Imm32(JSVAL_TAG_SHIFT));
+    jump(&done);
+
+    bind(&isInt32);
+    ma_sll(dest, dest, Imm32(0));
+
+    bind(&done);
 }
 
 void
 MacroAssemblerMIPS64Compat::unboxNonDouble(const BaseIndex& src, Register dest)
 {
+    Label isInt32, done;
     computeScaledAddress(src, SecondScratchReg);
     loadPtr(Address(SecondScratchReg, src.offset), dest);
+    splitTag(dest, SecondScratchReg);
+    asMasm().branchTestInt32(Assembler::Equal, SecondScratchReg, &isInt32);
+
     ma_dext(dest, dest, Imm32(0), Imm32(JSVAL_TAG_SHIFT));
+    jump(&done);
+
+    bind(&isInt32);
+    ma_sll(dest, dest, Imm32(0));
+
+    bind(&done);
 }
 
 void
