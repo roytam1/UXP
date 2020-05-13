@@ -6,6 +6,9 @@
 #ifndef GFX_FONT_IMPL_H
 #define GFX_FONT_IMPL_H
 
+#include "mozilla/DebugOnly.h"
+using mozilla::DebugOnly;
+
 #ifdef __GNUC__
 #define GFX_MAYBE_UNUSED __attribute__((unused))
 #else
