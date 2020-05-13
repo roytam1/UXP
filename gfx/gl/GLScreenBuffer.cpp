@@ -33,10 +33,12 @@
 #include "SharedSurfaceGLX.h"
 #endif
 
+
 namespace mozilla {
 namespace gl {
 
 using gfx::SurfaceFormat;
+using namespace mozilla::layers;
 
 UniquePtr<GLScreenBuffer>
 GLScreenBuffer::Create(GLContext* gl,

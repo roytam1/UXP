@@ -12,6 +12,7 @@
 #include "mozilla/Tokenizer.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Unused.h"
+#include "mozilla/gfx/Logging.h"
 #include "nsDirectoryServiceDefs.h"
 #include "nsDirectoryServiceUtils.h"
 #include "nsIGfxInfo.h"
@@ -25,6 +26,10 @@
 #include "GLContextProvider.h"
 #include "gfxPrefs.h"
 #include "ScopedGLHelpers.h"
+#include "GLReadTexImageHelper.h"
+
+using namespace mozilla::gfx;
+using namespace mozilla::layers;
 
 namespace mozilla {
 namespace gl {

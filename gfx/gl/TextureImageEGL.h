@@ -8,6 +8,8 @@
 
 #include "GLTextureImage.h"
 
+using namespace mozilla::gfx;
+
 namespace mozilla {
 namespace gl {
 

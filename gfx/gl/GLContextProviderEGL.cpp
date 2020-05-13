@@ -86,6 +86,7 @@
 #include "GLContextEGL.h"
 #include "GLContextProvider.h"
 #include "GLLibraryEGL.h"
+#include "GLScreenBuffer.h"
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/widget/CompositorWidget.h"

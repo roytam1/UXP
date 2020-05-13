@@ -19,6 +19,7 @@
 #include "GLDefs.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/Point.h"
+#include "mozilla/layers/LayersTypes.h"
 #include "mozilla/UniquePtr.h"
 #include "SharedSurface.h"
 #include "SurfaceTypes.h"

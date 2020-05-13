@@ -8,6 +8,7 @@
 #include <d3d11.h>
 #include "GLContextEGL.h"
 #include "GLLibraryEGL.h"
+#include "GLReadTexImageHelper.h"
 #include "mozilla/gfx/DeviceManagerDx.h"
 #include "mozilla/layers/LayersSurfaces.h"  // for SurfaceDescriptor, etc
 
