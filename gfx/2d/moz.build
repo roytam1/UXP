@@ -141,15 +141,11 @@ elif CONFIG['CPU_ARCH'].startswith('mips'):
             'convolverLS3.cpp',
         ]
 
-# Won't build non-unified with a build error in iosfwd `strlen` (??)
-UNIFIED_SOURCES += [
-    'DataSourceSurface.cpp',
-    'DataSurfaceHelpers.cpp',
-]
-
 SOURCES += [
     'BezierUtils.cpp',
     'Blur.cpp',
+    'DataSourceSurface.cpp',
+    'DataSurfaceHelpers.cpp',
     'DrawEventRecorder.cpp',
     'DrawingJob.cpp',
     'DrawTarget.cpp',
