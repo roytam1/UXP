@@ -38,7 +38,7 @@ of the License or (at your option) any later version.
 
 
 #include <cassert>
-#include <cstring>
+#include <string.h>
 #include "inc/Machine.h"
 #include "inc/Segment.h"
 #include "inc/Slot.h"

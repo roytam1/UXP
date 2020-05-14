@@ -28,7 +28,7 @@ of the License or (at your option) any later version.
 #include "inc/debug.h"
 #include "inc/Endian.h"
 #include "inc/Pass.h"
-#include <cstring>
+#include <string.h>
 #include <cstdlib>
 #include <cassert>
 #include <cmath>

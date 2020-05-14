@@ -31,7 +31,7 @@ of the License or (at your option) any later version.
 // interface.
 
 #pragma once
-#include <cstring>
+#include <string.h>
 #include <graphite2/Types.h>
 #include "inc/Main.h"
 

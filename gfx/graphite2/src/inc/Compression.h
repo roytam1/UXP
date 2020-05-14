@@ -29,7 +29,7 @@ of the License or (at your option) any later version.
 
 #include <cassert>
 #include <cstddef>
-#include <cstring>
+#include <string.h>
 
 namespace
 {

@@ -43,7 +43,7 @@ Description
 //#include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <cstring>
+#include <string.h>
 #include <climits>
 #include <cwchar>
 //#include <stdexcept>
