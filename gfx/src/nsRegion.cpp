@@ -5,6 +5,7 @@
 
 #include "nsRegion.h"
 #include "nsTArray.h"
+#include "gfx2DGlue.h"
 #include "gfxUtils.h"
 #include "mozilla/ToString.h"
 
