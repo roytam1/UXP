@@ -10,6 +10,7 @@
 #include "GPUProcessManager.h"
 #include "mozilla/dom/CheckerboardReportService.h"
 #include "mozilla/gfx/gfxVars.h"
+#include "mozilla/Services.h"
 #if defined(XP_WIN)
 # include "mozilla/gfx/DeviceManagerDx.h"
 #endif
