@@ -33,6 +33,7 @@
 #include "mozilla/ClearOnShutdown.h"    // for ClearOnShutdown
 #include "mozilla/ComputedTimingFunction.h" // for ComputedTimingFunction
 #include "mozilla/EventForwards.h"      // for nsEventStatus_*
+#include "mozilla/EventStateManager.h"
 #include "mozilla/MouseEvents.h"        // for WidgetWheelEvent
 #include "mozilla/Preferences.h"        // for Preferences
 #include "mozilla/ReentrantMonitor.h"   // for ReentrantMonitorAutoEnter, etc
@@ -44,6 +45,7 @@
 #include "mozilla/dom/Touch.h"          // for Touch
 #include "mozilla/gfx/BasePoint.h"      // for BasePoint
 #include "mozilla/gfx/BaseRect.h"       // for BaseRect
+#include "mozilla/gfx/Coord.h"
 #include "mozilla/gfx/Point.h"          // for Point, RoundedToInt, etc
 #include "mozilla/gfx/Rect.h"           // for RoundedIn
 #include "mozilla/gfx/ScaleFactor.h"    // for ScaleFactor
@@ -102,7 +104,12 @@ typedef GeckoContentController::APZStateChange APZStateChange;
 typedef GeckoContentController::TapType TapType;
 typedef mozilla::gfx::Point Point;
 typedef mozilla::gfx::Matrix4x4 Matrix4x4;
+using mozilla::gfx::CoordTyped;
+using mozilla::gfx::IntCoordTyped;
+using mozilla::gfx::IntRectTyped;
 using mozilla::gfx::PointTyped;
+using mozilla::gfx::RectTyped;
+using mozilla::gfx::ScaleFactors2D;
 
 // Choose between platform-specific implementations.
 #ifdef MOZ_WIDGET_ANDROID
@@ -833,7 +840,9 @@ AsyncPanZoomController::ArePointerEventsConsumable(TouchBlockState* aBlock, uint
 }
 
 template <typename Units>
-static CoordTyped<Units> GetAxisStart(AsyncDragMetrics::DragDirection aDir, const PointTyped<Units>& aValue) {
+static CoordTyped<Units> GetAxisStart(
+AsyncDragMetrics::DragDirection aDir,
+const PointTyped<Units>& aValue) {
   if (aDir == AsyncDragMetrics::HORIZONTAL) {
     return aValue.x;
   } else {

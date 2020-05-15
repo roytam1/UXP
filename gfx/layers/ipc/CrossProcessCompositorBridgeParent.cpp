@@ -84,8 +84,9 @@
 #include "LayerScope.h"
 
 namespace mozilla {
-
 namespace layers {
+
+using namespace std;
 
 // defined in CompositorBridgeParent.cpp
 typedef map<uint64_t, CompositorBridgeParent::LayerTreeState> LayerTreeMap;
