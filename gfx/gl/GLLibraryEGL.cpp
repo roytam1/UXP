@@ -24,6 +24,7 @@
 #include "prenv.h"
 #include "GLContext.h"
 #include "GLContextProvider.h"
+#include "gfxEnv.h"
 #include "gfxPrefs.h"
 #include "ScopedGLHelpers.h"
 #include "GLReadTexImageHelper.h"
