@@ -1903,8 +1903,15 @@ nsCSSRendering::GetImageLayerClip(const nsStyleImageLayers::Layer& aLayer,
   nsRect clipBorderArea =
     ::BoxDecorationRectForBorder(aForFrame, aBorderArea, skipSides, &aBorder);
 
-  bool haveRoundedCorners = GetRadii(aForFrame, aBorder, aBorderArea,
-                                     clipBorderArea, aClipState->mRadii);
+  bool haveRoundedCorners = false;
+   nsIAtom* fType = aForFrame->GetType();
+   if (fType != nsGkAtoms::tableColGroupFrame &&
+       fType != nsGkAtoms::tableColFrame &&
+       fType != nsGkAtoms::tableRowFrame &&
+       fType != nsGkAtoms::tableRowGroupFrame) {
+     haveRoundedCorners = GetRadii(aForFrame, aBorder, aBorderArea,
+                                   clipBorderArea, aClipState->mRadii);
+   }
 
   bool isSolidBorder =
       aWillPaintBorder && IsOpaqueBorder(aBorder);

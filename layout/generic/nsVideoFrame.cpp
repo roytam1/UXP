@@ -446,7 +446,6 @@ public:
 
 void
 nsVideoFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                               const nsRect&           aDirtyRect,
                                const nsDisplayListSet& aLists)
 {
   if (!IsVisibleForPainting(aBuilder))
@@ -482,14 +481,15 @@ nsVideoFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
   // but only want to draw mPosterImage conditionally. Others we
   // always add to the display list.
   for (nsIFrame* child : mFrames) {
-    if (child->GetContent() != mPosterImage || shouldDisplayPoster) {
-      child->BuildDisplayListForStackingContext(aBuilder,
-                                                aDirtyRect - child->GetOffsetTo(this),
-                                                aLists.Content());
-    } else if (child->GetType() == nsGkAtoms::boxFrame) {
-      child->BuildDisplayListForStackingContext(aBuilder,
-                                                aDirtyRect - child->GetOffsetTo(this),
-                                                aLists.Content());
+    if (child->GetContent() != mPosterImage || shouldDisplayPoster ||
+      child->GetType() == nsGkAtoms::boxFrame) {
+
+      nsDisplayListBuilder::AutoBuildingDisplayList
+        buildingForChild(aBuilder, child,
+        aBuilder->GetDirtyRect() - child->GetOffsetTo(this),
+        aBuilder->IsAtRootOfPseudoStackingContext());
+
+      child->BuildDisplayListForStackingContext(aBuilder, aLists.Content());
     }
   }
 }

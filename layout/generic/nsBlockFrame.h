@@ -139,7 +139,6 @@ public:
   virtual nsSplittableType GetSplittableType() const override;
   virtual bool IsFloatContainingBlock() const override;
   virtual void BuildDisplayList(nsDisplayListBuilder* aBuilder,
-                                const nsRect& aDirtyRect,
                                 const nsDisplayListSet& aLists) override;
   virtual nsIAtom* GetType() const override;
   virtual bool IsFrameOfType(uint32_t aFlags) const override
