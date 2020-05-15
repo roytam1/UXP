@@ -48,6 +48,7 @@ class nsISelection;
 class nsIScrollableFrame;
 class nsDisplayLayerEventRegions;
 class nsDisplayScrollInfoLayer;
+class nsDisplayTableBackgroundSet;
 class nsCaret;
 
 namespace mozilla {
@@ -444,6 +445,10 @@ public:
    * BuildDisplayList on right now).
    */
   const nsRect& GetDirtyRect() { return mDirtyRect; }
+
+  void SetDirtyRect(const nsRect& aDirtyRect) { mDirtyRect = aDirtyRect; }
+  void IntersectDirtyRect(const nsRect& aDirtyRect) { mDirtyRect.IntersectRect(mDirtyRect, aDirtyRect); }
+
   const nsIFrame* GetCurrentFrame() { return mCurrentFrame; }
   const nsIFrame* GetCurrentReferenceFrame() { return mCurrentReferenceFrame; }
   const nsPoint& GetCurrentFrameOffsetToReferenceFrame() { return mCurrentOffsetToReferenceFrame; }
@@ -493,11 +498,10 @@ public:
   /**
    * Display the caret if needed.
    */
-  void DisplayCaret(nsIFrame* aFrame, const nsRect& aDirtyRect,
-                    nsDisplayList* aList) {
+  void DisplayCaret(nsIFrame* aFrame, nsDisplayList* aList) {
     nsIFrame* frame = GetCaretFrame();
     if (aFrame == frame) {
-      frame->DisplayCaret(this, aDirtyRect, aList);
+      frame->DisplayCaret(this, aList);
     }
   }
   /**
@@ -517,6 +521,14 @@ public:
    * Get the caret associated with the current presshell.
    */
   nsCaret* GetCaret();
+
+   /**
+    * Returns the root scroll frame for the current PresShell, if the PresShell
+    * is ignoring viewport scrolling.
+    */
+   nsIFrame* GetPresShellIgnoreScrollFrame() {
+     return CurrentPresShellState()->mPresShellIgnoreScrollFrame;
+   }
   /**
    * Notify the display list builder that we're entering a presshell.
    * aReferenceFrame should be a frame in the new presshell.
@@ -577,6 +589,16 @@ public:
     mSyncDecodeImages = aSyncDecodeImages;
   }
 
+  nsDisplayTableBackgroundSet* SetTableBackgroundSet(
+      nsDisplayTableBackgroundSet* aTableSet) {
+    nsDisplayTableBackgroundSet* old = mTableBackgroundSet;
+    mTableBackgroundSet = aTableSet;
+    return old;
+  }
+  nsDisplayTableBackgroundSet* GetTableBackgroundSet() const {
+    return mTableBackgroundSet;
+  }
+
   /**
    * Helper method to generate background painting flags based on the
    * information available in the display list builder. Currently only
@@ -602,8 +624,7 @@ public:
    * destroyed.
    */
   void MarkFramesForDisplayList(nsIFrame* aDirtyFrame,
-                                const nsFrameList& aFrames,
-                                const nsRect& aDirtyRect);
+                                const nsFrameList& aFrames);
   /**
    * Mark all child frames that Preserve3D() as needing display.
    * Because these frames include transforms set on their parent, dirty rects
@@ -700,8 +721,12 @@ public:
   friend class AutoBuildingDisplayList;
   class AutoBuildingDisplayList {
   public:
-    AutoBuildingDisplayList(nsDisplayListBuilder* aBuilder,
-                            nsIFrame* aForChild,
+
+  AutoBuildingDisplayList(nsDisplayListBuilder* aBuilder, nsIFrame* aForChild) 
+        : AutoBuildingDisplayList(
+                            aBuilder, aForChild, aBuilder->GetDirtyRect(), aForChild->IsTransformed()){}
+
+    AutoBuildingDisplayList(nsDisplayListBuilder* aBuilder, nsIFrame* aForChild,
                             const nsRect& aDirtyRect, bool aIsRoot)
       : mBuilder(aBuilder),
         mPrevFrame(aBuilder->mCurrentFrame),
@@ -803,10 +828,11 @@ public:
   friend class AutoSaveRestorePerspectiveIndex;
   class AutoSaveRestorePerspectiveIndex {
   public:
-    AutoSaveRestorePerspectiveIndex(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame)
+    AutoSaveRestorePerspectiveIndex(nsDisplayListBuilder* aBuilder,
+                                    const bool aChildrenHavePerspective)
       : mBuilder(nullptr)
     {
-      if (aFrame->ChildrenHavePerspective()) {
+      if (aChildrenHavePerspective) {
         mBuilder = aBuilder;
         mCachedItemIndex = aBuilder->mPerspectiveItemIndex;
         aBuilder->mPerspectiveItemIndex = 0;
@@ -981,10 +1007,6 @@ public:
     return mPreserves3DCtx.mAccumulatedRectLevels;
   }
 
-  // Helpers for tables
-  nsDisplayTableItem* GetCurrentTableItem() { return mCurrentTableItem; }
-  void SetCurrentTableItem(nsDisplayTableItem* aTableItem) { mCurrentTableItem = aTableItem; }
-
   struct OutOfFlowDisplayData {
     OutOfFlowDisplayData(const DisplayItemClip* aContainingBlockClip,
                          const DisplayItemScrollClip* aContainingBlockScrollClip,
@@ -1120,11 +1142,11 @@ public:
     Preserves3DContext mSavedCtx;
   };
 
-  const nsRect GetPreserves3DDirtyRect(const nsIFrame *aFrame) const {
+  const nsRect GetPreserves3DRects() const {
     return mPreserves3DCtx.mDirtyRect;
   }
-  void SetPreserves3DDirtyRect(const nsRect &aDirtyRect) {
-    mPreserves3DCtx.mDirtyRect = aDirtyRect;
+  void SavePreserves3DRects() {
+    mPreserves3DCtx.mDirtyRect = mDirtyRect;
   }
 
   bool IsBuildingInvisibleItems() const { return mBuildingInvisibleItems; }
@@ -1133,8 +1155,7 @@ public:
   }
 
 private:
-  void MarkOutOfFlowFrameForDisplay(nsIFrame* aDirtyFrame, nsIFrame* aFrame,
-                                    const nsRect& aDirtyRect);
+  void MarkOutOfFlowFrameForDisplay(nsIFrame* aDirtyFrame, nsIFrame* aFrame);
 
   /**
    * Returns whether a frame acts as an animated geometry root, optionally
@@ -1178,6 +1199,7 @@ private:
     // in the document, and is set when we enter a subdocument for a pointer-
     // events:none frame.
     bool          mInsidePointerEventsNoneDoc;
+    nsIFrame*     mPresShellIgnoreScrollFrame;
   };
 
   PresShellState* CurrentPresShellState() {
@@ -1202,7 +1224,6 @@ private:
   AutoTArray<PresShellState,8> mPresShellStates;
   AutoTArray<nsIFrame*,400>    mFramesMarkedForDisplay;
   AutoTArray<ThemeGeometry,2>  mThemeGeometries;
-  nsDisplayTableItem*            mCurrentTableItem;
   DisplayListClipState           mClipState;
   // mCurrentFrame is the frame that we're currently calling (or about to call)
   // BuildDisplayList on.
@@ -1245,6 +1266,7 @@ private:
   nsTArray<DisplayItemScrollClip*> mScrollClipsToDestroy;
   nsTArray<DisplayItemClip*>     mDisplayItemClipsToDestroy;
   nsDisplayListBuilderMode       mMode;
+  nsDisplayTableBackgroundSet* mTableBackgroundSet;
   ViewID                         mCurrentScrollParentId;
   ViewID                         mCurrentScrollbarTarget;
   uint32_t                       mCurrentScrollbarFlags;
@@ -2287,12 +2309,13 @@ protected:
  * to the object, and all distinct.
  */
 struct nsDisplayListCollection : public nsDisplayListSet {
-  nsDisplayListCollection() :
-    nsDisplayListSet(&mLists[0], &mLists[1], &mLists[2], &mLists[3], &mLists[4],
+  explicit nsDisplayListCollection(nsDisplayListBuilder* aBuilder)
+    : nsDisplayListSet(&mLists[0], &mLists[1], &mLists[2], &mLists[3], &mLists[4],
                      &mLists[5]) {}
-  explicit nsDisplayListCollection(nsDisplayList* aBorderBackground) :
-    nsDisplayListSet(aBorderBackground, &mLists[1], &mLists[2], &mLists[3], &mLists[4],
-                     &mLists[5]) {}
+  explicit nsDisplayListCollection(nsDisplayListBuilder* aBuilder,
+                                   nsDisplayList* aBorderBackground)
+     : nsDisplayListSet(aBorderBackground, &mLists[1], &mLists[2], &mLists[3], &mLists[4],
+                        &mLists[5]) {}
 
   /**
    * Sort all lists by content order.
@@ -2739,7 +2762,9 @@ public:
                                          bool aAllowWillPaintBorderOptimization = true,
                                          nsStyleContext* aStyleContext = nullptr,
                                          const nsRect& aBackgroundOriginRect = nsRect(),
-                                         nsIFrame* aSecondaryReferenceFrame = nullptr);
+                                         nsIFrame* aSecondaryReferenceFrame = nullptr,
+                                         mozilla::Maybe<nsDisplayListBuilder::AutoBuildingDisplayList>*
+                                             aAutoBuildingDisplayList = nullptr);
 
   virtual LayerState GetLayerState(nsDisplayListBuilder* aBuilder,
                                    LayerManager* aManager,

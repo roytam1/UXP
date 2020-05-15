@@ -1419,7 +1419,6 @@ nsTextControlFrame::PeekOffset(nsPeekOffsetStruct *aPos)
 
 void
 nsTextControlFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                     const nsRect&           aDirtyRect,
                                      const nsDisplayListSet& aLists)
 {
   /*
@@ -1447,7 +1446,7 @@ nsTextControlFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
     // placeholder has to be visible.
     if (kid->GetContent() != txtCtrl->GetPlaceholderNode() ||
         txtCtrl->GetPlaceholderVisibility()) {
-      BuildDisplayListForChild(aBuilder, kid, aDirtyRect, set, 0);
+      BuildDisplayListForChild(aBuilder, kid, set, 0);
     }
     kid = kid->GetNextSibling();
   }

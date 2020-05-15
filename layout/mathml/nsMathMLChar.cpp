@@ -1992,7 +1992,8 @@ nsMathMLChar::Display(nsDisplayListBuilder*   aBuilder,
     if (styleContext != parentContext &&
         NS_GET_A(backg->mBackgroundColor) > 0) {
       nsDisplayBackgroundImage::AppendBackgroundItemsToTop(
-        aBuilder, aForFrame, mRect, aLists.BorderBackground(),
+        aBuilder, aForFrame, mRect + aBuilder->ToReferenceFrame(aForFrame),
+        aLists.BorderBackground(),
         /* aAllowWillPaintBorderOptimization */ true, styleContext);
     }
     //else

@@ -71,14 +71,13 @@ nsMathMLSelectedFrame::SetInitialChildList(ChildListID     aListID,
 //  Only paint the selected child...
 void
 nsMathMLSelectedFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                        const nsRect&           aDirtyRect,
                                         const nsDisplayListSet& aLists)
 {
   // Report an error if something wrong was found in this frame.
   // We can't call nsDisplayMathMLError from here,
   // so ask nsMathMLContainerFrame to do the work for us.
   if (NS_MATHML_HAS_ERROR(mPresentationData.flags)) {
-    nsMathMLContainerFrame::BuildDisplayList(aBuilder, aDirtyRect, aLists);
+    nsMathMLContainerFrame::BuildDisplayList(aBuilder, aLists);
     return;
   }
 
@@ -89,7 +88,7 @@ nsMathMLSelectedFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
     // Put the child's background directly onto the content list
     nsDisplayListSet set(aLists, aLists.Content());
     // The children should be in content order
-    BuildDisplayListForChild(aBuilder, childFrame, aDirtyRect, set);
+    BuildDisplayListForChild(aBuilder, childFrame, set);
   }
 
 #if defined(DEBUG) && defined(SHOW_BOUNDING_BOX)

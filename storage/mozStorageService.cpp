@@ -253,7 +253,6 @@ int32_t Service::sDefaultPageSize = PREF_TS_PAGESIZE_DEFAULT;
 
 Service::Service()
 : mMutex("Service::mMutex")
-, mSqliteVFS(nullptr)
 , mRegistrationMutex("Service::mRegistrationMutex")
 , mConnections()
 {
@@ -264,13 +263,9 @@ Service::~Service()
   mozilla::UnregisterWeakMemoryReporter(this);
   mozilla::UnregisterStorageSQLiteDistinguishedAmount();
 
-  int rc = sqlite3_vfs_unregister(mSqliteVFS);
-  if (rc != SQLITE_OK)
-    NS_WARNING("Failed to unregister sqlite vfs wrapper.");
-
   // Shutdown the sqlite3 API.  Warn if shutdown did not turn out okay, but
   // there is nothing actionable we can do in that case.
-  rc = ::sqlite3_shutdown();
+  int rc = ::sqlite3_shutdown();
   if (rc != SQLITE_OK)
     NS_WARNING("sqlite3 did not shutdown cleanly.");
 
@@ -278,8 +273,6 @@ Service::~Service()
   NS_ASSERTION(shutdownObserved, "Shutdown was not observed!");
 
   gService = nullptr;
-  delete mSqliteVFS;
-  mSqliteVFS = nullptr;
 }
 
 void
@@ -371,8 +364,6 @@ Service::shutdown()
 {
   NS_IF_RELEASE(sXPConnect);
 }
-
-sqlite3_vfs *ConstructTelemetryVFS();
 
 #ifdef MOZ_STORAGE_MEMORY
 
@@ -480,15 +471,6 @@ Service::initialize()
   rc = ::sqlite3_initialize();
   if (rc != SQLITE_OK)
     return convertResultCode(rc);
-
-  mSqliteVFS = ConstructTelemetryVFS();
-  if (mSqliteVFS) {
-    rc = sqlite3_vfs_register(mSqliteVFS, 1);
-    if (rc != SQLITE_OK)
-      return convertResultCode(rc);
-  } else {
-    NS_WARNING("Failed to register telemetry VFS");
-  }
 
   // Register for xpcom-shutdown so we can cleanup after ourselves.  The
   // observer service can only be used on the main thread.

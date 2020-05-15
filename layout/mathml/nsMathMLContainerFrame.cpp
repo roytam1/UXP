@@ -618,7 +618,6 @@ nsMathMLContainerFrame::PropagatePresentationDataFromChildAt(nsIFrame*       aPa
 
 void
 nsMathMLContainerFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                         const nsRect&           aDirtyRect,
                                          const nsDisplayListSet& aLists)
 {
   // report an error if something wrong was found in this frame
@@ -633,8 +632,7 @@ nsMathMLContainerFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
 
   DisplayBorderBackgroundOutline(aBuilder, aLists);
 
-  BuildDisplayListForNonBlockChildren(aBuilder, aDirtyRect, aLists,
-                                      DISPLAY_CHILD_INLINE);
+  BuildDisplayListForNonBlockChildren(aBuilder, aLists, DISPLAY_CHILD_INLINE);
 
 #if defined(DEBUG) && defined(SHOW_BOUNDING_BOX)
   // for visual debug

@@ -19,7 +19,6 @@
 
 class nsIMemoryReporter;
 class nsIXPConnect;
-struct sqlite3_vfs;
 
 namespace mozilla {
 namespace storage {
@@ -136,8 +135,6 @@ private:
    * synchronizing access to mLocaleCollation.
    */
   Mutex mMutex;
-  
-  sqlite3_vfs *mSqliteVFS;
 
   /**
    * Protects mConnections.

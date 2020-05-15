@@ -2433,7 +2433,6 @@ GetDisplayFlagsForFlexItem(nsIFrame* aFrame)
 
 void
 nsFlexContainerFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                       const nsRect&           aDirtyRect,
                                        const nsDisplayListSet& aLists)
 {
   // XXXdholbert hacky temporary band-aid for bug 1059138: Trivially pass this
@@ -2452,7 +2451,7 @@ nsFlexContainerFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
   // the BlockBorderBackgrounds list.
   nsDisplayListSet childLists(aLists, aLists.BlockBorderBackgrounds());
   for (nsIFrame* childFrame : mFrames) {
-    BuildDisplayListForChild(aBuilder, childFrame, aDirtyRect, childLists,
+    BuildDisplayListForChild(aBuilder, childFrame, childLists,
                              GetDisplayFlagsForFlexItem(childFrame));
   }
 }

@@ -110,16 +110,15 @@ nsDisplayXULTreeColSplitterTarget::HitTest(nsDisplayListBuilder* aBuilder, const
 
 void
 nsTreeColFrame::BuildDisplayListForChildren(nsDisplayListBuilder*   aBuilder,
-                                            const nsRect&           aDirtyRect,
                                             const nsDisplayListSet& aLists)
 {
   if (!aBuilder->IsForEventDelivery()) {
-    nsBoxFrame::BuildDisplayListForChildren(aBuilder, aDirtyRect, aLists);
+    nsBoxFrame::BuildDisplayListForChildren(aBuilder, aLists);
     return;
   }
   
-  nsDisplayListCollection set;
-  nsBoxFrame::BuildDisplayListForChildren(aBuilder, aDirtyRect, set);
+  nsDisplayListCollection set(aBuilder);
+  nsBoxFrame::BuildDisplayListForChildren(aBuilder, set);
   
   WrapListsInRedirector(aBuilder, set, aLists);
 

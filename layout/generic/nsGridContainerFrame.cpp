@@ -6643,12 +6643,11 @@ nsGridContainerFrame::GetType() const
 
 void
 nsGridContainerFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
-                                       const nsRect&           aDirtyRect,
                                        const nsDisplayListSet& aLists)
 {
   DisplayBorderBackgroundOutline(aBuilder, aLists);
   if (GetPrevInFlow()) {
-    DisplayOverflowContainers(aBuilder, aDirtyRect, aLists);
+    DisplayOverflowContainers(aBuilder, aLists);
   }
 
   // Our children are all grid-level boxes, which behave the same as
@@ -6662,8 +6661,7 @@ nsGridContainerFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
                                 GridItemCSSOrderIterator::eIncludeAll, order);
   for (; !iter.AtEnd(); iter.Next()) {
     nsIFrame* child = *iter;
-    BuildDisplayListForChild(aBuilder, child, aDirtyRect, aLists,
-                             ::GetDisplayFlagsForGridItem(child));
+    BuildDisplayListForChild(aBuilder, child, aLists, ::GetDisplayFlagsForGridItem(child));
   }
 }
 
