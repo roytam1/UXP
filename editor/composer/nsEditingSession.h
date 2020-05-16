@@ -27,6 +27,7 @@
 
 #include "nsString.h"                   // for nsCString
 
+class nsPIDOMWindowOuter;
 class mozIDOMWindowProxy;
 class nsIDOMWindow;
 class nsISupports;

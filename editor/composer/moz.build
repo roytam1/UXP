@@ -14,7 +14,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'composer'
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsComposerCommands.cpp',
     'nsComposerCommandsUpdater.cpp',
     'nsComposerController.cpp',
