@@ -19,7 +19,7 @@ EXPORTS += [
     'nsTransactionManagerCID.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsTransactionItem.cpp',
     'nsTransactionList.cpp',
     'nsTransactionManager.cpp',
