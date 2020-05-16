@@ -6,6 +6,7 @@
 #include "mozilla/HTMLEditor.h"
 
 #include "HTMLEditUtils.h"
+#include "TextEditRules.h"
 #include "TextEditUtils.h"
 #include "TypeInState.h"
 #include "mozilla/Assertions.h"

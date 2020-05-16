@@ -30,7 +30,7 @@ EXPORTS.mozilla += [
     'TextEditRules.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'ChangeAttributeTransaction.cpp',
     'ChangeStyleTransaction.cpp',
     'CompositionTransaction.cpp',
