@@ -16,6 +16,7 @@
 #include "nsEscape.h"
 
 using namespace mozilla;
+using namespace mozilla::net;
 
 nsresult
 nsDataChannel::OpenContentStream(bool async, nsIInputStream **result,
