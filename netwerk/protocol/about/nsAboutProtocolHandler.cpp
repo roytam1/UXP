@@ -20,6 +20,7 @@
 #include "nsIWritablePropertyBag2.h"
 #include "nsIChannel.h"
 #include "nsIScriptError.h"
+#include "nsContentUtils.h"
 
 namespace mozilla {
 namespace net {
