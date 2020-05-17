@@ -16,6 +16,7 @@
 #include "jsfriendapi.h"
 #include "prnetdb.h"
 #include "nsITimer.h"
+#include "mozilla/Mutex.h"
 #include "mozilla/net/DNS.h"
 #include "nsServiceManagerUtils.h"
 #include "nsNetCID.h"

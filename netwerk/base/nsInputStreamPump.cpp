@@ -19,6 +19,9 @@
 #include "nsNetCID.h"
 #include <algorithm>
 
+using namespace mozilla;
+using namespace mozilla::net;
+
 static NS_DEFINE_CID(kStreamTransportServiceCID, NS_STREAMTRANSPORTSERVICE_CID);
 
 //
