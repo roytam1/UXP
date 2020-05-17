@@ -6,6 +6,7 @@
 
 #include "mozilla/BasePrincipal.h"
 #include "plstr.h"
+#include "mozilla/SHA1.h"
 
 namespace mozilla {
 namespace net {
