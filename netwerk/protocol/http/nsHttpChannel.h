@@ -35,7 +35,10 @@ class nsIHttpChannelAuthProvider;
 class nsInputStreamPump;
 class nsISSLStatus;
 
-namespace mozilla { namespace net {
+namespace mozilla {
+namespace net {
+
+bool WillRedirect(nsHttpResponseHead * response);
 
 class Http2PushedStream;
 

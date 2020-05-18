@@ -24,6 +24,7 @@
 #include "nsIAssociatedContentSecurity.h"
 #include "nsIApplicationCacheService.h"
 #include "mozilla/ipc/InputStreamUtils.h"
+#include "mozilla/ipc/IPCStreamUtils.h"
 #include "mozilla/ipc/URIUtils.h"
 #include "SerializedLoadContext.h"
 #include "nsIAuthInformation.h"
@@ -40,6 +41,8 @@
 #include "nsIWindowWatcher.h"
 #include "nsIDocument.h"
 #include "nsStringStream.h"
+#include "nsIStorageStream.h"
+#include "nsStreamUtils.h"
 
 using mozilla::BasePrincipal;
 using namespace mozilla::dom;
