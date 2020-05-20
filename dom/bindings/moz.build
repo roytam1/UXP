@@ -70,7 +70,6 @@ LOCAL_INCLUDES += [
     '/dom/html',
     '/dom/indexedDB',
     '/dom/media/webaudio',
-    '/dom/media/webspeech/recognition',
     '/dom/svg',
     '/dom/workers',
     '/dom/xbl',
