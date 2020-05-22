@@ -2330,11 +2330,9 @@ EditorBase::CloneAttributes(Element* aDest,
   RefPtr<nsDOMAttributeMap> destAttributes = aDest->Attributes();
   while (RefPtr<Attr> attr = destAttributes->Item(0)) {
     if (destInBody) {
-      RemoveAttribute(static_cast<nsIDOMElement*>(GetAsDOMNode(aDest)),
-                      attr->NodeName());
+      RemoveAttribute(aDest, attr->NodeInfo()->NameAtom());
     } else {
-      ErrorResult ignored;
-      aDest->RemoveAttribute(attr->NodeName(), ignored);
+      aDest->UnsetAttr(kNameSpaceID_None, attr->NodeInfo()->NameAtom(), true);
     }
   }
 
@@ -2346,13 +2344,13 @@ EditorBase::CloneAttributes(Element* aDest,
     nsAutoString value;
     attr->GetValue(value);
     if (destInBody) {
-      SetAttributeOrEquivalent(static_cast<nsIDOMElement*>(GetAsDOMNode(aDest)),
-                               attr->NodeName(), value, false);
+      SetAttributeOrEquivalent(aDest, attr->NodeInfo()->NameAtom(), value,
+                               false);
     } else {
       // The element is not inserted in the document yet, we don't want to put
       // a transaction on the UndoStack
-      SetAttributeOrEquivalent(static_cast<nsIDOMElement*>(GetAsDOMNode(aDest)),
-                               attr->NodeName(), value, true);
+      SetAttributeOrEquivalent(aDest, attr->NodeInfo()->NameAtom(), value,
+                               true);
     }
   }
 }
