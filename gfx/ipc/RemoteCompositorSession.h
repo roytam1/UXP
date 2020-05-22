@@ -9,6 +9,7 @@
 #include "CompositorSession.h"
 #include "mozilla/gfx/Point.h"
 #include "Units.h"
+#include "nsBaseWidget.h"
 
 namespace mozilla {
 namespace layers {

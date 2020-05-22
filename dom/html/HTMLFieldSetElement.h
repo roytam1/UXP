@@ -55,7 +55,7 @@ public:
   NS_IMETHOD_(uint32_t) GetType() const override { return NS_FORM_FIELDSET; }
   NS_IMETHOD Reset() override;
   NS_IMETHOD SubmitNamesValues(HTMLFormSubmission* aFormSubmission) override;
-  virtual bool IsDisabledForEvents(EventMessage aMessage) override;
+  virtual bool IsDisabledForEvents(WidgetEvent* aEvent) override;
   virtual nsresult Clone(mozilla::dom::NodeInfo *aNodeInfo, nsINode **aResult) const override;
 
   const nsIContent* GetFirstLegend() const { return mFirstLegend; }

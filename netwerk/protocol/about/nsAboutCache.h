@@ -9,6 +9,7 @@
 #include "nsIAboutModule.h"
 #include "nsICacheStorageVisitor.h"
 #include "nsICacheStorage.h"
+#include "nsIChannel.h"
 
 #include "nsString.h"
 #include "nsIOutputStream.h"

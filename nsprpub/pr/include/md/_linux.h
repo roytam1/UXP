@@ -37,6 +37,8 @@
 #define _PR_SI_ARCHITECTURE "sparc"
 #elif defined(__i386__)
 #define _PR_SI_ARCHITECTURE "x86"
+#elif defined(__mips64__)
+#define _PR_SI_ARCHITECTURE "mips64"
 #elif defined(__mips__)
 #define _PR_SI_ARCHITECTURE "mips"
 #elif defined(__arm__)

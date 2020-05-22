@@ -10,6 +10,7 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/Sprintf.h"
 #include "mozilla/ThreadLocal.h"
+#include "mozilla/Unused.h"
 
 #include "nsCache.h"
 #include "nsDiskCache.h"
@@ -57,6 +58,7 @@ using namespace mozilla::storage;
 using mozilla::NeckoOriginAttributes;
 
 static const char OFFLINE_CACHE_DEVICE_ID[] = { "offline" };
+static NS_DEFINE_CID(kCacheServiceCID, NS_CACHESERVICE_CID);
 
 #define LOG(args) CACHE_LOG_DEBUG(args)
 

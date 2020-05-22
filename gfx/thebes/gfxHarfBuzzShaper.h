@@ -12,6 +12,8 @@
 #include "nsUnicodeProperties.h"
 #include "mozilla/gfx/2D.h"
 
+using namespace mozilla;
+
 class gfxHarfBuzzShaper : public gfxFontShaper {
 public:
     explicit gfxHarfBuzzShaper(gfxFont *aFont);

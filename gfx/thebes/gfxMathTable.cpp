@@ -8,6 +8,7 @@
 #include "harfbuzz/hb-ot.h"
 
 #define FixedToFloat(f) ((f) * (1.0 / 65536.0))
+#define FloatToFixed(f) (65536 * (f))
 
 using namespace mozilla;
 

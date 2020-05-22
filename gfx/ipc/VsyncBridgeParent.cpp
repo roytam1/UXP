@@ -5,6 +5,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "VsyncBridgeParent.h"
 #include "mozilla/layers/CompositorThread.h"
+#include "mozilla/layers/CompositorBridgeParent.h"
+
+using namespace mozilla::layers;
 
 namespace mozilla {
 namespace gfx {

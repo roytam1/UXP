@@ -35,6 +35,7 @@
 #include "nsStreamUtils.h"
 #include "nsString.h"
 #include "nsThreadUtils.h"
+#include "nsHttpRequestHead.h"
 #include "mozilla/Logging.h"
 
 #include "mozilla/Preferences.h"
@@ -51,6 +52,7 @@
 #include "mozilla/dom/ContentParent.h"
 
 using namespace mozilla;
+using namespace mozilla::dom;
 
 namespace mozilla {
 namespace net {

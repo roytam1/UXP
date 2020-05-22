@@ -6,7 +6,9 @@
 
 #include "ThrottleQueue.h"
 #include "nsISeekableStream.h"
+#include "nsIEventTarget.h"
 #include "nsIAsyncInputStream.h"
+#include "nsSocketTransportService2.h"
 #include "nsStreamUtils.h"
 #include "nsNetUtil.h"
 

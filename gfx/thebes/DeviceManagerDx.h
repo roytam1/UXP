@@ -20,6 +20,7 @@
 #include <objbase.h>
 
 #include <dxgi.h>
+#include <d3d11.h>
 
 // This header is available in the June 2010 SDK and in the Win8 SDK
 #include <d3dcommon.h>

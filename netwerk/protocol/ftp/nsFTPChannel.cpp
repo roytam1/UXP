@@ -14,6 +14,9 @@ using namespace mozilla;
 using namespace mozilla::net;
 extern LazyLogModule gFTPLog;
 
+#undef LOG
+#define LOG(args) MOZ_LOG(gFTPLog, mozilla::LogLevel::Debug, args)
+
 // There are two transport connections established for an 
 // ftp connection. One is used for the command channel , and
 // the other for the data channel. The command channel is the first

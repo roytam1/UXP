@@ -63,6 +63,8 @@
 #define TOP() (parenStack[parenSP])
 #define SYNC_FIXUP() (fixupCount = 0)
 
+using namespace mozilla::unicode;
+
 void
 gfxScriptItemizer::push(uint32_t endPairChar, Script newScriptCode)
 {

@@ -10,6 +10,8 @@
 #include "GLReadTexImageHelper.h"
 #include "mozilla/gfx/2D.h"
 #include "ScopedGLHelpers.h"
+#include "mozilla/layers/LayersSurfaces.h"  // for SurfaceDescriptor, etc
+#include "mozilla/layers/TextureForwarder.h"
 
 namespace mozilla {
 namespace gl {

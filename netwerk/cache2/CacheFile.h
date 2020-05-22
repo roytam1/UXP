@@ -10,6 +10,7 @@
 #include "CacheFileMetadata.h"
 #include "nsRefPtrHashtable.h"
 #include "nsClassHashtable.h"
+#include "nsICacheEntry.h"
 #include "mozilla/Mutex.h"
 
 class nsIInputStream;

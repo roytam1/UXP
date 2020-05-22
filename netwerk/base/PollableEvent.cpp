@@ -9,6 +9,7 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Logging.h"
+#include "mozilla/net/DNS.h"
 #include "prerror.h"
 #include "prio.h"
 #include "private/pprio.h"
@@ -20,6 +21,8 @@
 #include <fcntl.h>
 #define USEPIPE 1
 #endif
+
+using namespace mozilla::net;
 
 namespace mozilla {
 namespace net {

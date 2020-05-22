@@ -229,7 +229,11 @@ static inline JS::Value PoisonedObjectValue(JSObject* obj);
 namespace detail {
 
 constexpr int CanonicalizedNaNSignBit = 0;
+#if defined(__mips__) && !defined(__mips_nan2008)
+constexpr uint64_t CanonicalizedNaNSignificand = 0x7FFFFFFFFFFFFULL;
+#else
 constexpr uint64_t CanonicalizedNaNSignificand = 0x8000000000000ULL;
+#endif
 
 constexpr uint64_t CanonicalizedNaNBits =
     mozilla::SpecificNaNBits<double,

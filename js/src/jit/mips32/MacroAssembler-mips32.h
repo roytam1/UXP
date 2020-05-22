@@ -46,6 +46,7 @@ class MacroAssemblerMIPS : public MacroAssemblerMIPSShared
   public:
     using MacroAssemblerMIPSShared::ma_b;
     using MacroAssemblerMIPSShared::ma_li;
+    using MacroAssemblerMIPSShared::ma_liPatchable;
     using MacroAssemblerMIPSShared::ma_ss;
     using MacroAssemblerMIPSShared::ma_sd;
     using MacroAssemblerMIPSShared::ma_load;
@@ -55,7 +56,6 @@ class MacroAssemblerMIPS : public MacroAssemblerMIPSShared
 
     void ma_li(Register dest, CodeOffset* label);
 
-    void ma_liPatchable(Register dest, Imm32 imm);
     void ma_li(Register dest, ImmWord imm);
     void ma_liPatchable(Register dest, ImmPtr imm);
     void ma_liPatchable(Register dest, ImmWord imm);
@@ -89,27 +89,24 @@ class MacroAssemblerMIPS : public MacroAssemblerMIPSShared
     void ma_pop(Register r);
     void ma_push(Register r);
 
-    void branchWithCode(InstImm code, Label* label, JumpKind jumpKind);
     // branches when done from within mips-specific code
-    void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = LongJump)
+    void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = MixedJump)
     {
         ma_b(lhs, Imm32(uint32_t(imm.value)), l, c, jumpKind);
     }
-    void ma_b(Address addr, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = LongJump)
+    void ma_b(Address addr, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = MixedJump)
     {
         ma_b(addr, Imm32(uint32_t(imm.value)), l, c, jumpKind);
     }
 
-    void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, Register rhs, Label* l, Condition c, JumpKind jumpKind = LongJump) {
+    void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, Register rhs, Label* l, Condition c, JumpKind jumpKind = MixedJump) {
         MOZ_ASSERT(rhs != ScratchRegister);
-        ma_load(ScratchRegister, addr, SizeWord);
+        ma_lw(ScratchRegister, addr);
         ma_b(ScratchRegister, rhs, l, c, jumpKind);
     }
-
-    void ma_bal(Label* l, DelaySlotFill delaySlotFill = FillDelaySlot);
 
     // fp instructions
     void ma_lid(FloatRegister dest, double value);
@@ -128,12 +125,19 @@ class MacroAssemblerMIPS : public MacroAssemblerMIPSShared
     void ma_cmp_set(Register dst, Register lhs, ImmPtr imm, Condition c) {
         ma_cmp_set(dst, lhs, Imm32(uint32_t(imm.value)), c);
     }
-    void ma_cmp_set(Register rd, Register rs, Address addr, Condition c);
-    void ma_cmp_set(Register dst, Address lhs, Register rhs, Condition c);
-    void ma_cmp_set(Register dst, Address lhs, ImmPtr imm, Condition c) {
+    void ma_cmp_set(Register dst, Register lhs, Address addr, Condition c) {
+        MOZ_ASSERT(lhs != ScratchRegister);
+        ma_lw(ScratchRegister, addr);
+        ma_cmp_set(dst, lhs, ScratchRegister, c);
+    }
+    void ma_cmp_set(Register dst, Address lhs, Register rhs, Condition c) {
+        MOZ_ASSERT(rhs != ScratchRegister);
         ma_lw(ScratchRegister, lhs);
-        ma_li(SecondScratchReg, Imm32(uint32_t(imm.value)));
-        ma_cmp_set(dst, ScratchRegister, SecondScratchReg, c);
+        ma_cmp_set(dst, ScratchRegister, rhs, c);
+    }
+    void ma_cmp_set(Register dst, Address lhs, ImmPtr imm, Condition c) {
+        ma_lw(SecondScratchReg, lhs);
+        ma_cmp_set(dst, SecondScratchReg, imm, c);
     }
 
     // These fuctions abstract the access to high part of the double precision
@@ -893,7 +897,8 @@ class MacroAssemblerMIPSCompat : public MacroAssemblerMIPS
 
     void loadDouble(const Address& addr, FloatRegister dest);
     void loadDouble(const BaseIndex& src, FloatRegister dest);
-    void loadUnalignedDouble(const BaseIndex& src, Register temp, FloatRegister dest);
+    void loadUnalignedDouble(const wasm::MemoryAccessDesc& access, const BaseIndex& src,
+                             Register temp, FloatRegister dest);
 
     // Load a float value into a register, then expand it to a double.
     void loadFloatAsDouble(const Address& addr, FloatRegister dest);
@@ -901,7 +906,8 @@ class MacroAssemblerMIPSCompat : public MacroAssemblerMIPS
 
     void loadFloat32(const Address& addr, FloatRegister dest);
     void loadFloat32(const BaseIndex& src, FloatRegister dest);
-    void loadUnalignedFloat32(const BaseIndex& src, Register temp, FloatRegister dest);
+    void loadUnalignedFloat32(const wasm::MemoryAccessDesc& access, const BaseIndex& src,
+                              Register temp, FloatRegister dest);
 
     void store8(Register src, const Address& address);
     void store8(Imm32 imm, const Address& address);
@@ -942,8 +948,10 @@ class MacroAssemblerMIPSCompat : public MacroAssemblerMIPS
     void storePtr(Register src, const BaseIndex& address);
     void storePtr(Register src, AbsoluteAddress dest);
 
-    void storeUnalignedFloat32(FloatRegister src, Register temp, const BaseIndex& dest);
-    void storeUnalignedDouble(FloatRegister src, Register temp, const BaseIndex& dest);
+    void storeUnalignedFloat32(const wasm::MemoryAccessDesc& access, FloatRegister src,
+                               Register temp, const BaseIndex& dest);
+    void storeUnalignedDouble(const wasm::MemoryAccessDesc& access, FloatRegister src,
+                              Register temp, const BaseIndex& dest);
 
     void moveDouble(FloatRegister src, FloatRegister dest) {
         as_movd(dest, src);
@@ -988,12 +996,6 @@ class MacroAssemblerMIPSCompat : public MacroAssemblerMIPS
 
     void ma_storeImm(Imm32 imm, const Address& addr) {
         ma_sw(imm, addr);
-    }
-
-    BufferOffset ma_BoundsCheck(Register bounded) {
-        BufferOffset bo = m_buffer.nextOffset();
-        ma_liPatchable(bounded, ImmWord(0));
-        return bo;
     }
 
     void moveFloat32(FloatRegister src, FloatRegister dest) {

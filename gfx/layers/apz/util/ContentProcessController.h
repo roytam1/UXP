@@ -8,6 +8,7 @@
 #define mozilla_layers_ContentProcessController_h
 
 #include "mozilla/layers/GeckoContentController.h"
+#include "mozilla/dom/ipc/IdType.h"
 
 class nsIObserver;
 

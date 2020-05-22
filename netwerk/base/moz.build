@@ -182,7 +182,7 @@ EXPORTS.mozilla.net += [
     'ReferrerPolicy.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'ArrayBufferInputStream.cpp',
     'BackgroundFileSaver.cpp',
     'CaptivePortalService.cpp',

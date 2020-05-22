@@ -1419,21 +1419,21 @@ HTMLSelectElement::GetAttributeMappingFunction() const
 }
 
 bool
-HTMLSelectElement::IsDisabledForEvents(EventMessage aMessage)
+HTMLSelectElement::IsDisabledForEvents(WidgetEvent* aEvent)
 {
   nsIFormControlFrame* formControlFrame = GetFormControlFrame(false);
   nsIFrame* formFrame = nullptr;
   if (formControlFrame) {
     formFrame = do_QueryFrame(formControlFrame);
   }
-  return IsElementDisabledForEvents(aMessage, formFrame);
+  return IsElementDisabledForEvents(aEvent, formFrame);
 }
 
 nsresult
 HTMLSelectElement::GetEventTargetParent(EventChainPreVisitor& aVisitor)
 {
   aVisitor.mCanHandle = false;
-  if (IsDisabledForEvents(aVisitor.mEvent->mMessage)) {
+  if (IsDisabledForEvents(aVisitor.mEvent)) {
     return NS_OK;
   }
 

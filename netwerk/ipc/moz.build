@@ -12,7 +12,7 @@ EXPORTS.mozilla.net += [
     'NeckoParent.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'ChannelEventQueue.cpp',
     'NeckoChild.cpp',
     'NeckoCommon.cpp',

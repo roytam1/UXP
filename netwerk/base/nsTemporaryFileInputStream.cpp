@@ -4,8 +4,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsTemporaryFileInputStream.h"
+
+#include "mozilla/ipc/InputStreamUtils.h"
+#include "mozilla/Mutex.h"
 #include "nsStreamUtils.h"
+#include "private/pprio.h"
 #include <algorithm>
+
+using namespace mozilla;
+using namespace mozilla::ipc;
 
 typedef mozilla::ipc::FileDescriptor::PlatformHandleType FileHandleType;
 

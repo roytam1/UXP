@@ -5,11 +5,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "GPUChild.h"
 #include "gfxConfig.h"
+#include "gfxPlatform.h"
 #include "gfxPrefs.h"
 #include "GPUProcessHost.h"
 #include "GPUProcessManager.h"
 #include "mozilla/dom/CheckerboardReportService.h"
 #include "mozilla/gfx/gfxVars.h"
+#include "mozilla/Services.h"
 #if defined(XP_WIN)
 # include "mozilla/gfx/DeviceManagerDx.h"
 #endif

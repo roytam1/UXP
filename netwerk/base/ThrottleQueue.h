@@ -8,8 +8,10 @@
 #define mozilla_net_ThrottleQueue_h
 
 #include "mozilla/TimeStamp.h"
+#include "nsCOMPtr.h"
 #include "nsIThrottledInputChannel.h"
 #include "nsITimer.h"
+#include "nsTArray.h"
 
 namespace mozilla {
 namespace net {

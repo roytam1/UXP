@@ -34,7 +34,7 @@ enum LoadStoreExtension
 
 enum JumpKind
 {
-    LongJump = 0,
+    MixedJump = 0,
     ShortJump = 1
 };
 
@@ -54,10 +54,13 @@ class MacroAssemblerMIPSShared : public Assembler
     const MacroAssembler& asMasm() const;
 
     Condition ma_cmp(Register rd, Register lhs, Register rhs, Condition c);
+    Condition ma_cmp(Register rd, Register lhs, Imm32 imm, Condition c);
 
     void compareFloatingPoint(FloatFormat fmt, FloatRegister lhs, FloatRegister rhs,
                               DoubleCondition c, FloatTestKind* testKind,
                               FPConditionBit fcc = FCC0);
+
+    void GenerateMixedJumps();
 
   public:
     void ma_move(Register rd, Register rs);
@@ -65,6 +68,7 @@ class MacroAssemblerMIPSShared : public Assembler
     void ma_li(Register dest, ImmGCPtr ptr);
 
     void ma_li(Register dest, Imm32 imm);
+    void ma_liPatchable(Register dest, Imm32 imm);
 
     // Shift operations
     void ma_sll(Register rd, Register rt, Imm32 shift);
@@ -104,7 +108,7 @@ class MacroAssemblerMIPSShared : public Assembler
     // load
     void ma_load(Register dest, const BaseIndex& src, LoadStoreSize size = SizeWord,
                  LoadStoreExtension extension = SignExtend);
-    void ma_load_unaligned(Register dest, const BaseIndex& src, Register temp,
+    void ma_load_unaligned(const wasm::MemoryAccessDesc& access, Register dest, const BaseIndex& src, Register temp,
                            LoadStoreSize size, LoadStoreExtension extension);
 
     // store
@@ -112,7 +116,7 @@ class MacroAssemblerMIPSShared : public Assembler
                   LoadStoreExtension extension = SignExtend);
     void ma_store(Imm32 imm, const BaseIndex& dest, LoadStoreSize size = SizeWord,
                   LoadStoreExtension extension = SignExtend);
-    void ma_store_unaligned(Register data, const BaseIndex& dest, Register temp,
+    void ma_store_unaligned(const wasm::MemoryAccessDesc& access, Register data, const BaseIndex& dest, Register temp,
                             LoadStoreSize size, LoadStoreExtension extension);
 
     // arithmetic based ops
@@ -145,21 +149,24 @@ class MacroAssemblerMIPSShared : public Assembler
     void ma_mod_mask(Register src, Register dest, Register hold, Register remain,
                      int32_t shift, Label* negZero = nullptr);
 
+    void branchWithCode(InstImm code, Label* label, JumpKind jumpKind);
     // branches when done from within mips-specific code
-    void ma_b(Register lhs, Register rhs, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Register lhs, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Register lhs, ImmPtr imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Register lhs, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = LongJump) {
+    void ma_b(Register lhs, Register rhs, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Register lhs, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Register lhs, ImmPtr imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Register lhs, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = MixedJump) {
         MOZ_ASSERT(lhs != ScratchRegister);
         ma_li(ScratchRegister, imm);
         ma_b(lhs, ScratchRegister, l, c, jumpKind);
     }
     template <typename T>
     void ma_b(Register lhs, T rhs, wasm::TrapDesc target, Condition c,
-              JumpKind jumpKind = LongJump);
+              JumpKind jumpKind = MixedJump);
 
-    void ma_b(Label* l, JumpKind jumpKind = LongJump);
-    void ma_b(wasm::TrapDesc target, JumpKind jumpKind = LongJump);
+    void ma_b(Label* l, JumpKind jumpKind = MixedJump);
+    void ma_b(wasm::TrapDesc target, JumpKind jumpKind = MixedJump);
+
+    void ma_jal(Label* l);
 
     // fp instructions
     void ma_lis(FloatRegister dest, float value);
@@ -171,9 +178,9 @@ class MacroAssemblerMIPSShared : public Assembler
 
     //FP branches
     void ma_bc1s(FloatRegister lhs, FloatRegister rhs, Label* label, DoubleCondition c,
-                 JumpKind jumpKind = LongJump, FPConditionBit fcc = FCC0);
+                 JumpKind jumpKind = MixedJump, FPConditionBit fcc = FCC0);
     void ma_bc1d(FloatRegister lhs, FloatRegister rhs, Label* label, DoubleCondition c,
-                 JumpKind jumpKind = LongJump, FPConditionBit fcc = FCC0);
+                 JumpKind jumpKind = MixedJump, FPConditionBit fcc = FCC0);
 
     void ma_call(ImmPtr dest);
 
@@ -183,6 +190,12 @@ class MacroAssemblerMIPSShared : public Assembler
     void ma_cmp_set(Register dst, Register lhs, Imm32 imm, Condition c);
     void ma_cmp_set_double(Register dst, FloatRegister lhs, FloatRegister rhs, DoubleCondition c);
     void ma_cmp_set_float32(Register dst, FloatRegister lhs, FloatRegister rhs, DoubleCondition c);
+
+    BufferOffset ma_BoundsCheck(Register bounded) {
+        BufferOffset bo = m_buffer.nextOffset();
+        ma_liPatchable(bounded, Imm32(0));
+        return bo;
+    }
 
     void moveToDoubleLo(Register src, FloatRegister dest) {
         as_mtc1(src, dest);

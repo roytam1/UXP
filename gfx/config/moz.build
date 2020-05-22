@@ -15,7 +15,7 @@ EXPORTS.mozilla.gfx += [
   'gfxVars.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
   'gfxConfig.cpp',
   'gfxFeature.cpp',
   'gfxVars.cpp',

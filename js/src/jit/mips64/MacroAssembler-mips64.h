@@ -115,19 +115,16 @@ class MacroAssemblerMIPS64 : public MacroAssemblerMIPSShared
     void ma_pop(Register r);
     void ma_push(Register r);
 
-    void branchWithCode(InstImm code, Label* label, JumpKind jumpKind);
     // branches when done from within mips-specific code
-    void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = LongJump);
-    void ma_b(Address addr, Register rhs, Label* l, Condition c, JumpKind jumpKind = LongJump) {
+    void ma_b(Register lhs, ImmWord imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Register lhs, Address addr, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, Imm32 imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, ImmGCPtr imm, Label* l, Condition c, JumpKind jumpKind = MixedJump);
+    void ma_b(Address addr, Register rhs, Label* l, Condition c, JumpKind jumpKind = MixedJump) {
         MOZ_ASSERT(rhs != ScratchRegister);
         ma_load(ScratchRegister, addr, SizeDouble);
         ma_b(ScratchRegister, rhs, l, c, jumpKind);
     }
-
-    void ma_bal(Label* l, DelaySlotFill delaySlotFill = FillDelaySlot);
 
     // fp instructions
     void ma_lid(FloatRegister dest, double value);
@@ -473,7 +470,12 @@ class MacroAssemblerMIPS64Compat : public MacroAssemblerMIPS64
         JSValueTag tag = (JSValueTag)JSVAL_TYPE_TO_TAG(type);
         ma_li(dest, Imm32(tag));
         ma_dsll(dest, dest, Imm32(JSVAL_TAG_SHIFT));
-        ma_dins(dest, src, Imm32(0), Imm32(JSVAL_TAG_SHIFT));
+
+        if (type == JSVAL_TYPE_INT32 || type == JSVAL_TYPE_BOOLEAN) {
+            ma_dins(dest, src, Imm32(0), Imm32(32));
+        } else {
+            ma_dins(dest, src, Imm32(0), Imm32(JSVAL_TAG_SHIFT));
+        }
     }
 
     void storeValue(ValueOperand val, Operand dst);
@@ -905,7 +907,8 @@ class MacroAssemblerMIPS64Compat : public MacroAssemblerMIPS64
 
     void loadDouble(const Address& addr, FloatRegister dest);
     void loadDouble(const BaseIndex& src, FloatRegister dest);
-    void loadUnalignedDouble(const BaseIndex& src, Register temp, FloatRegister dest);
+    void loadUnalignedDouble(const wasm::MemoryAccessDesc& access, const BaseIndex& src,
+                             Register temp, FloatRegister dest);
 
     // Load a float value into a register, then expand it to a double.
     void loadFloatAsDouble(const Address& addr, FloatRegister dest);
@@ -913,7 +916,8 @@ class MacroAssemblerMIPS64Compat : public MacroAssemblerMIPS64
 
     void loadFloat32(const Address& addr, FloatRegister dest);
     void loadFloat32(const BaseIndex& src, FloatRegister dest);
-    void loadUnalignedFloat32(const BaseIndex& src, Register temp, FloatRegister dest);
+    void loadUnalignedFloat32(const wasm::MemoryAccessDesc& access, const BaseIndex& src,
+                              Register temp, FloatRegister dest);
 
     void store8(Register src, const Address& address);
     void store8(Imm32 imm, const Address& address);
@@ -952,8 +956,10 @@ class MacroAssemblerMIPS64Compat : public MacroAssemblerMIPS64
     void storePtr(Register src, const BaseIndex& address);
     void storePtr(Register src, AbsoluteAddress dest);
 
-    void storeUnalignedFloat32(FloatRegister src, Register temp, const BaseIndex& dest);
-    void storeUnalignedDouble(FloatRegister src, Register temp, const BaseIndex& dest);
+    void storeUnalignedFloat32(const wasm::MemoryAccessDesc& access, FloatRegister src,
+                               Register temp, const BaseIndex& dest);
+    void storeUnalignedDouble(const wasm::MemoryAccessDesc& access, FloatRegister src,
+                              Register temp, const BaseIndex& dest);
 
     void moveDouble(FloatRegister src, FloatRegister dest) {
         as_movd(dest, src);
@@ -1007,12 +1013,6 @@ class MacroAssemblerMIPS64Compat : public MacroAssemblerMIPS64
     void abiret() {
         as_jr(ra);
         as_nop();
-    }
-
-    BufferOffset ma_BoundsCheck(Register bounded) {
-        BufferOffset bo = m_buffer.nextOffset();
-        ma_liPatchable(bounded, ImmWord(0));
-        return bo;
     }
 
     void moveFloat32(FloatRegister src, FloatRegister dest) {

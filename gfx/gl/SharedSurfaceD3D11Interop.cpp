@@ -11,6 +11,8 @@
 #include "WGLLibrary.h"
 #include "nsPrintfCString.h"
 #include "mozilla/gfx/DeviceManagerDx.h"
+#include "mozilla/layers/LayersSurfaces.h"
+#include "mozilla/layers/TextureForwarder.h"
 
 namespace mozilla {
 namespace gl {

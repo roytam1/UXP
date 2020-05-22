@@ -18,6 +18,7 @@
 #include "nsDirectoryServiceDefs.h"
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsISimpleEnumerator.h"
+#include "GeckoProfiler.h"
 
 #include "gfxGDIFontList.h"
 

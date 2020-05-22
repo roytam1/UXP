@@ -15,7 +15,6 @@
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/layers/CompositorThread.h"
 #include "nsIGfxInfo.h"
-#include <d3d11.h>
 #include <ddraw.h>
 
 namespace mozilla {

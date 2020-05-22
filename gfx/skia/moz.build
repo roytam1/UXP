@@ -20,9 +20,9 @@ if CONFIG['MOZ_OPTIMIZE']:
     if CONFIG['_MSC_VER']:
         skia_opt_flags += ['-O2']
     elif CONFIG['GNU_CC']:
-        skia_opt_flags += ['-O3']
+        skia_opt_flags += ['-O2']
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'skia/src/core/SkAAClip.cpp',
     'skia/src/core/SkAlphaRuns.cpp',
     'skia/src/core/SkAnnotation.cpp',
@@ -308,7 +308,7 @@ SOURCES['skia/src/core/SkSpriteBlitter4f.cpp'].flags += skia_opt_flags
 SOURCES['skia/src/core/SkSpriteBlitter_ARGB32.cpp'].flags += skia_opt_flags
 SOURCES['skia/src/core/SkSpriteBlitter_RGB16.cpp'].flags += skia_opt_flags
 if CONFIG['MOZ_ENABLE_SKIA_PDF']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'skia/src/core/SkMD5.cpp',
         'skia/src/pdf/SkDeflate.cpp',
         'skia/src/pdf/SkJpegInfo.cpp',
@@ -332,7 +332,7 @@ if CONFIG['MOZ_ENABLE_SKIA_PDF']:
         'skia/src/pdf/SkPDFFont.cpp',
     ]
 if CONFIG['MOZ_ENABLE_SKIA_GPU']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'skia/src/effects/gradients/SkTwoPointConicalGradient_gpu.cpp',
         'skia/src/gpu/batches/GrAnalyticRectBatch.cpp',
         'skia/src/gpu/batches/GrAtlasTextBatch.cpp',
@@ -517,7 +517,7 @@ if CONFIG['MOZ_ENABLE_SKIA_GPU']:
         'skia/src/image/SkImage_Gpu.cpp',
     ]
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('android'):
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'skia/src/ports/SkDebug_android.cpp',
         'skia/src/ports/SkOSFile_posix.cpp',
         'skia/src/ports/SkOSLibrary_posix.cpp',
@@ -529,7 +529,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('android'):
         'skia/src/ports/SkFontHost_FreeType_common.cpp',
     ]
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in {'cocoa', 'uikit'}:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'skia/src/ports/SkDebug_stdio.cpp',
         'skia/src/ports/SkOSFile_posix.cpp',
         'skia/src/ports/SkOSLibrary_posix.cpp',
@@ -542,7 +542,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in {'cocoa', 'uikit'}:
         'skia/src/ports/SkFontHost_mac.cpp',
     ]
 if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'skia/src/ports/SkDebug_stdio.cpp',
         'skia/src/ports/SkOSFile_posix.cpp',
         'skia/src/ports/SkOSLibrary_posix.cpp',
@@ -574,7 +574,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'skia/src/utils/win/SkIStream.cpp',
     ]
 if CONFIG['INTEL_ARCHITECTURE']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'skia/src/opts/opts_check_x86.cpp',
     ]
     SOURCES += [
@@ -598,7 +598,7 @@ if CONFIG['INTEL_ARCHITECTURE']:
     SOURCES['skia/src/opts/SkOpts_sse42.cpp'].flags += skia_opt_flags
     SOURCES['skia/src/opts/SkOpts_ssse3.cpp'].flags += skia_opt_flags
 elif CONFIG['CPU_ARCH'] in ('arm', 'aarch64') and CONFIG['GNU_CC']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'skia/src/core/SkUtilsArm.cpp',
     ]
     SOURCES += [

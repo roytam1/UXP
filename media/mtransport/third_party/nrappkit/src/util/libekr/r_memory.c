@@ -51,7 +51,7 @@ typedef struct r_malloc_chunk_ {
 #endif
      UCHAR type;
      UINT4 size;
-     UCHAR memory[1];
+     UINT8 memory[1];
 } r_malloc_chunk;
 
 #define CHUNK_MEMORY_OFFSET                    offsetof(struct r_malloc_chunk_, memory)

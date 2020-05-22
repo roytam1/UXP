@@ -589,7 +589,23 @@ static ProcessExecutableMemory execMemory;
 void*
 js::jit::AllocateExecutableMemory(size_t bytes, ProtectionSetting protection)
 {
+#if defined(JS_CODEGEN_MIPS32) || defined(JS_CODEGEN_MIPS64)
+    // On MIPS, j/jal instructions to branch within the current
+    // 256 MB-aligned region.
+    void* allocation = nullptr;
+    js::Vector<void*, 8, SystemAllocPolicy> unused_maps;
+    for (;;) {
+        allocation = execMemory.allocate(bytes, protection);
+        if ((uintptr_t(allocation) >> 28) == (uintptr_t(allocation + bytes) >> 28))
+            break;
+        unused_maps.append(allocation);
+    }
+    for (size_t i = 0; i < unused_maps.length(); i++)
+        DeallocateExecutableMemory(unused_maps[i], bytes);
+    return allocation;
+#else
     return execMemory.allocate(bytes, protection);
+#endif
 }
 
 void

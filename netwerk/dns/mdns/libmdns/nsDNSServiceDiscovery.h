@@ -6,6 +6,7 @@
 #ifndef mozilla_netwerk_dns_mdns_libmdns_nsDNSServiceDiscovery_h
 #define mozilla_netwerk_dns_mdns_libmdns_nsDNSServiceDiscovery_h
 
+#include "MDNSResponderOperator.h"
 #include "nsIDNSServiceDiscovery.h"
 #include "nsCOMPtr.h"
 #include "mozilla/RefPtr.h"

@@ -26,6 +26,7 @@
 #include "nsContentUtils.h"
 #include "prprf.h"
 #include "nsReadableUtils.h"
+#include "nsPrintfCString.h"
 
 using mozilla::dom::EncodingUtils;
 using namespace mozilla::ipc;

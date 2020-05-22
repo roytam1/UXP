@@ -19,6 +19,7 @@
 #include "nsHttpChannel.h"
 #include "nsIHttpPushListener.h"
 #include "nsString.h"
+#include "nsSocketTransportService2.h"
 
 namespace mozilla {
 namespace net {

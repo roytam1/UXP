@@ -7,6 +7,7 @@
 #define _include_mozilla_gfx_ipc_InProcessCompositorSession_h_
 
 #include "CompositorSession.h"
+#include "Layers.h"
 #include "mozilla/gfx/Point.h"
 #include "Units.h"
 

@@ -8,7 +8,7 @@ EXPORTS += [
     'YCbCrUtils.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'scale_yuv_argb.cpp',
     'ycbcr_to_rgb565.cpp',
     'YCbCrUtils.cpp',

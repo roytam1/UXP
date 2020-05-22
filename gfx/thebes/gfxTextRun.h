@@ -11,6 +11,7 @@
 #include "nsString.h"
 #include "gfxPoint.h"
 #include "gfxFont.h"
+#include "gfxFont-Impl.h"
 #include "gfxFontConstants.h"
 #include "nsTArray.h"
 #include "gfxSkipChars.h"

@@ -8,6 +8,7 @@
 #include "Types.h"
 
 #include "mozilla/RefPtr.h"
+#include "mozilla/gfx/Logging.h"
 
 #ifdef MOZ_WIDGET_UIKIT
 #include <CoreFoundation/CoreFoundation.h>
