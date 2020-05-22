@@ -7,8 +7,10 @@
 #include "GLContextWGL.h"
 #include "GLLibraryLoader.h"
 #include "nsDebug.h"
+#include "nsIGfxInfo.h"
 #include "nsIWidget.h"
 #include "gfxPlatform.h"
+#include "gfxUtils.h"
 #include "gfxWindowsSurface.h"
 
 #include "prenv.h"

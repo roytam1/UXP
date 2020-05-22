@@ -495,7 +495,7 @@ set_config('MOZ_SYNTH_SPEECHD',
 
 # Speech API
 # ==============================================================
-option('--disable-webspeech', help='Disable support for HTML Speech API')
+option('--disable-webspeech', help='Disable support for HTML Speech synthesis API')
 
 @depends('--disable-webspeech', '--help')
 def webspeech(value, _):
@@ -505,38 +505,6 @@ def webspeech(value, _):
 set_config('MOZ_WEBSPEECH', webspeech)
 set_define('MOZ_WEBSPEECH', webspeech)
 add_old_configure_assignment('MOZ_WEBSPEECH', webspeech)
-
-# Speech API pocketsphinx backend
-# ==============================================================
-@depends(build_project, milestone, webspeech)
-def webspeech_pocketsphinx(build_project, milestone, webspeech):
-    if webspeech and milestone.is_nightly and build_project == 'b2g':
-        return True
-
-set_config('MOZ_WEBSPEECH_POCKETSPHINX', webspeech_pocketsphinx)
-set_define('MOZ_WEBSPEECH_POCKETSPHINX', webspeech_pocketsphinx)
-
-# Speech API models
-# ==============================================================
-@depends(build_project, milestone, webspeech)
-def webspeech_models(build_project, milestone, webspeech):
-    if webspeech and milestone.is_nightly and build_project == 'b2g':
-        return True
-
-set_config('MOZ_WEBSPEECH_MODELS', webspeech_models)
-set_define('MOZ_WEBSPEECH_MODELS', webspeech_models)
-
-# Speech API test backend
-# ==============================================================
-option('--enable-webspeechtestbackend', default=webspeech,
-       help='Enable support for HTML Speech API Test Backend')
-
-@depends_if('--enable-webspeechtestbackend')
-def webspeech_test_backend(value):
-    return True
-
-set_config('MOZ_WEBSPEECH_TEST_BACKEND', webspeech_test_backend)
-set_define('MOZ_WEBSPEECH_TEST_BACKEND', webspeech_test_backend)
 
 # Enable IPDL's "expensive" unit tests
 # ==============================================================

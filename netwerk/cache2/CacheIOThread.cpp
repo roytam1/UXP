@@ -4,6 +4,8 @@
 
 #include "CacheIOThread.h"
 #include "CacheFileIOManager.h"
+#include "CacheObserver.h"
+#include "CacheLog.h"
 
 #include "nsIRunnable.h"
 #include "nsISupportsImpl.h"

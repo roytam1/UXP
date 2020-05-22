@@ -144,28 +144,15 @@ class Assembler : public AssemblerMIPSShared
     }
 
   public:
-    using AssemblerMIPSShared::bind;
-
-    void bind(RepatchLabel* label);
     void Bind(uint8_t* rawCode, CodeOffset* label, const void* address);
 
     static void TraceJumpRelocations(JSTracer* trc, JitCode* code, CompactBufferReader& reader);
     static void TraceDataRelocations(JSTracer* trc, JitCode* code, CompactBufferReader& reader);
 
-    void bind(InstImm* inst, uintptr_t branch, uintptr_t target);
-
-    // Copy the assembly code to the given buffer, and perform any pending
-    // relocations relying on the target address.
-    void executableCopy(uint8_t* buffer);
-
-    static uint32_t PatchWrite_NearCallSize();
-
+    static uint32_t InstructionImmediateSize() {
+        return 2 * sizeof(uint32_t);
+    }
     static uint32_t ExtractLuiOriValue(Instruction* inst0, Instruction* inst1);
-    static void UpdateLuiOriValue(Instruction* inst0, Instruction* inst1, uint32_t value);
-    static void WriteLuiOriInstructions(Instruction* inst, Instruction* inst1,
-                                        Register reg, uint32_t value);
-
-    static void PatchWrite_NearCall(CodeLocationLabel start, CodeLocationLabel toCall);
     static void PatchDataWithValueCheck(CodeLocationLabel label, ImmPtr newValue,
                                         ImmPtr expectedValue);
     static void PatchDataWithValueCheck(CodeLocationLabel label, PatchedImmPtr newValue,

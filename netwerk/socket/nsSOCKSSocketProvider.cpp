@@ -12,6 +12,7 @@
 #include "nsError.h"
 
 using mozilla::NeckoOriginAttributes;
+using namespace mozilla::net;
 
 //////////////////////////////////////////////////////////////////////////
 

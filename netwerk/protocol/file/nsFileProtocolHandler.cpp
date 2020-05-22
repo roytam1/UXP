@@ -28,6 +28,8 @@
 #define DESKTOP_ENTRY_SECTION "Desktop Entry"
 #endif
 
+using namespace mozilla::net;
+
 //-----------------------------------------------------------------------------
 
 nsFileProtocolHandler::nsFileProtocolHandler()

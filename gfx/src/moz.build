@@ -56,11 +56,12 @@ if CONFIG['MOZ_X11']:
         'X11Util.cpp',
     ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'DriverCrashGuard.cpp',
     'FilterSupport.cpp',
     'gfxTelemetry.cpp',
     'nsColor.cpp',
+    'nsDeviceContext.cpp',
     'nsFont.cpp',
     'nsFontMetrics.cpp',
     'nsRect.cpp',
@@ -70,11 +71,6 @@ UNIFIED_SOURCES += [
     'nsThebesGfxFactory.cpp',
     'nsTransform2D.cpp',
     'TiledRegion.cpp',
-]
-
-# nsDeviceContext.cpp cannot be built in unified mode because it pulls in OS X system headers.
-SOURCES += [
-    'nsDeviceContext.cpp',
 ]
 
 include('/ipc/chromium/chromium-config.mozbuild')

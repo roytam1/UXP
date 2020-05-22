@@ -33,9 +33,10 @@ echo "$TARBALL" >> gfx/graphite2/README.mozilla
 echo ""
 echo "See" $0 "for update procedure." >> gfx/graphite2/README.mozilla
 
-# fix up includes because of bug 721839 (cstdio) and bug 803066 (Windows.h)
-#find gfx/graphite2/ -name "*.cpp" -exec perl -p -i -e "s/<cstdio>/<stdio.h>/;s/Windows.h/windows.h/;" {} \;
-#find gfx/graphite2/ -name "*.h" -exec perl -p -i -e "s/<cstdio>/<stdio.h>/;s/Windows.h/windows.h/;" {} \;
+# fix up includes because of BZ bug 721839 (cstdio) and BZ bug 803066 (Windows.h)
+# Additional issue with inclusion of <cstring> in non-unified mode (Issue #80)
+find gfx/graphite2/ -name "*.cpp" -exec perl -p -i -e "s/<cstdio>/<stdio.h>/;s/<cstring>/<string.h>/;s/Windows.h/windows.h/;" {} \;
+find gfx/graphite2/ -name "*.h" -exec perl -p -i -e "s/<cstdio>/<stdio.h>/;s/<cstring>/<string.h>/;s/Windows.h/windows.h/;" {} \;
 
 # summarize what's been touched
 echo Updated to $RELEASE.

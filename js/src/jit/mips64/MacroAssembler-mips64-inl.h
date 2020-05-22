@@ -279,8 +279,9 @@ MacroAssembler::mul64(const Operand& src, const Register64& dest, const Register
 void
 MacroAssembler::mulBy3(Register src, Register dest)
 {
-    as_daddu(dest, src, src);
-    as_daddu(dest, dest, src);
+    MOZ_ASSERT(src != ScratchRegister);
+    as_daddu(ScratchRegister, src, src);
+    as_daddu(dest, ScratchRegister, src);
 }
 
 void
@@ -706,8 +707,12 @@ MacroAssembler::wasmBoundsCheck(Condition cond, Register index, L label)
 void
 MacroAssembler::wasmPatchBoundsCheck(uint8_t* patchAt, uint32_t limit)
 {
+    Instruction* inst = (Instruction*) patchAt;
+    InstImm* i0 = (InstImm*) inst;
+    InstImm* i1 = (InstImm*) i0->next();
+
     // Replace with new value
-    Assembler::UpdateLoad64Value((Instruction*) patchAt, limit);
+    AssemblerMIPSShared::UpdateLuiOriValue(i0, i1, limit);
 }
 
 //}}} check_macroassembler_style
@@ -721,9 +726,8 @@ inline void
 MacroAssembler::cmpPtrSet(Assembler::Condition cond, Address lhs, ImmPtr rhs,
                           Register dest)
 {
-    loadPtr(lhs, ScratchRegister);
-    movePtr(rhs, SecondScratchReg);
-    cmpPtrSet(cond, ScratchRegister, SecondScratchReg, dest);
+    loadPtr(lhs, SecondScratchReg);
+    cmpPtrSet(cond, SecondScratchReg, rhs, dest);
 }
 
 template<>

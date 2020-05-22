@@ -120,11 +120,14 @@ js::jit::SA(FloatRegister r)
 void
 jit::PatchJump(CodeLocationJump& jump_, CodeLocationLabel label, ReprotectCode reprotect)
 {
-    Instruction* inst1 = (Instruction*)jump_.raw();
-    Instruction* inst2 = inst1->next();
+    Instruction* inst1;
+    Instruction* inst2;
+
+    inst1 = AssemblerMIPSShared::GetInstructionImmediateFromJump((Instruction*)jump_.raw());
+    inst2 = inst1->next();
 
     MaybeAutoWritableJitCode awjc(inst1, 8, reprotect);
-    Assembler::UpdateLuiOriValue(inst1, inst2, (uint32_t)label.raw());
+    AssemblerMIPSShared::UpdateLuiOriValue(inst1, inst2, (uint32_t)label.raw());
 
     AutoFlushICache::flush(uintptr_t(inst1), 8);
 }
@@ -146,32 +149,15 @@ jit::PatchBackedge(CodeLocationJump& jump, CodeLocationLabel label,
     } else {
         if (target == JitRuntime::BackedgeLoopHeader) {
             Instruction* lui = &branch[1];
-            Assembler::UpdateLuiOriValue(lui, lui->next(), targetAddr);
+            AssemblerMIPSShared::UpdateLuiOriValue(lui, lui->next(), targetAddr);
             // Jump to ori. The lui will be executed in delay slot.
             branch->setBOffImm16(BOffImm16(2 * sizeof(uint32_t)));
         } else {
             Instruction* lui = &branch[4];
-            Assembler::UpdateLuiOriValue(lui, lui->next(), targetAddr);
+            AssemblerMIPSShared::UpdateLuiOriValue(lui, lui->next(), targetAddr);
             branch->setBOffImm16(BOffImm16(4 * sizeof(uint32_t)));
         }
     }
-}
-
-void
-Assembler::executableCopy(uint8_t* buffer)
-{
-    MOZ_ASSERT(isFinished);
-    m_buffer.executableCopy(buffer);
-
-    // Patch all long jumps during code copy.
-    for (size_t i = 0; i < longJumps_.length(); i++) {
-        Instruction* inst1 = (Instruction*) ((uint32_t)buffer + longJumps_[i]);
-
-        uint32_t value = Assembler::ExtractLuiOriValue(inst1, inst1->next());
-        Assembler::UpdateLuiOriValue(inst1, inst1->next(), (uint32_t)buffer + value);
-    }
-
-    AutoFlushICache::setRange(uintptr_t(buffer), m_buffer.size());
 }
 
 uintptr_t
@@ -207,7 +193,7 @@ TraceOneDataRelocation(JSTracer* trc, Instruction* inst)
     TraceManuallyBarrieredGenericPointerEdge(trc, reinterpret_cast<gc::Cell**>(&ptr),
                                                  "ion-masm-ptr");
     if (ptr != prior) {
-        Assembler::UpdateLuiOriValue(inst, inst->next(), uint32_t(ptr));
+        AssemblerMIPSShared::UpdateLuiOriValue(inst, inst->next(), uint32_t(ptr));
         AutoFlushICache::flush(uintptr_t(inst), 8);
     }
 }
@@ -306,151 +292,8 @@ Assembler::Bind(uint8_t* rawCode, CodeOffset* label, const void* address)
     if (label->bound()) {
         intptr_t offset = label->offset();
         Instruction* inst = (Instruction*) (rawCode + offset);
-        Assembler::UpdateLuiOriValue(inst, inst->next(), (uint32_t)address);
+        AssemblerMIPSShared::UpdateLuiOriValue(inst, inst->next(), (uint32_t)address);
     }
-}
-
-void
-Assembler::bind(InstImm* inst, uintptr_t branch, uintptr_t target)
-{
-    int32_t offset = target - branch;
-    InstImm inst_bgezal = InstImm(op_regimm, zero, rt_bgezal, BOffImm16(0));
-    InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
-
-    // If encoded offset is 4, then the jump must be short
-    if (BOffImm16(inst[0]).decode() == 4) {
-        MOZ_ASSERT(BOffImm16::IsInRange(offset));
-        inst[0].setBOffImm16(BOffImm16(offset));
-        inst[1].makeNop();
-        return;
-    }
-
-    // Generate the long jump for calls because return address has to be the
-    // address after the reserved block.
-    if (inst[0].encode() == inst_bgezal.encode()) {
-        addLongJump(BufferOffset(branch));
-        Assembler::WriteLuiOriInstructions(inst, &inst[1], ScratchRegister, target);
-        inst[2] = InstReg(op_special, ScratchRegister, zero, ra, ff_jalr).encode();
-        // There is 1 nop after this.
-        return;
-    }
-
-    if (BOffImm16::IsInRange(offset)) {
-        bool conditional = (inst[0].encode() != inst_bgezal.encode() &&
-                            inst[0].encode() != inst_beq.encode());
-
-        inst[0].setBOffImm16(BOffImm16(offset));
-        inst[1].makeNop();
-
-        // Skip the trailing nops in conditional branches.
-        if (conditional) {
-            inst[2] = InstImm(op_regimm, zero, rt_bgez, BOffImm16(3 * sizeof(void*))).encode();
-            // There are 2 nops after this
-        }
-        return;
-    }
-
-    if (inst[0].encode() == inst_beq.encode()) {
-        // Handle long unconditional jump.
-        addLongJump(BufferOffset(branch));
-        Assembler::WriteLuiOriInstructions(inst, &inst[1], ScratchRegister, target);
-        inst[2] = InstReg(op_special, ScratchRegister, zero, zero, ff_jr).encode();
-        // There is 1 nop after this.
-    } else {
-        // Handle long conditional jump.
-        inst[0] = invertBranch(inst[0], BOffImm16(5 * sizeof(void*)));
-        // No need for a "nop" here because we can clobber scratch.
-        addLongJump(BufferOffset(branch + sizeof(void*)));
-        Assembler::WriteLuiOriInstructions(&inst[1], &inst[2], ScratchRegister, target);
-        inst[3] = InstReg(op_special, ScratchRegister, zero, zero, ff_jr).encode();
-        // There is 1 nop after this.
-    }
-}
-
-void
-Assembler::bind(RepatchLabel* label)
-{
-    BufferOffset dest = nextOffset();
-    if (label->used() && !oom()) {
-        // If the label has a use, then change this use to refer to
-        // the bound label;
-        BufferOffset b(label->offset());
-        InstImm* inst = (InstImm*)editSrc(b);
-        InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
-        uint32_t offset = dest.getOffset() - label->offset();
-
-        // If first instruction is lui, then this is a long jump.
-        // If second instruction is lui, then this is a loop backedge.
-        if (inst[0].extractOpcode() == (uint32_t(op_lui) >> OpcodeShift)) {
-            // For unconditional long branches generated by ma_liPatchable,
-            // such as under:
-            //     jumpWithpatch
-            Assembler::UpdateLuiOriValue(inst, inst->next(), dest.getOffset());
-        } else if (inst[1].extractOpcode() == (uint32_t(op_lui) >> OpcodeShift) ||
-                   BOffImm16::IsInRange(offset))
-        {
-            // Handle code produced by:
-            //     backedgeJump
-            //     branchWithCode
-            MOZ_ASSERT(BOffImm16::IsInRange(offset));
-            MOZ_ASSERT(inst[0].extractOpcode() == (uint32_t(op_beq) >> OpcodeShift) ||
-                       inst[0].extractOpcode() == (uint32_t(op_bne) >> OpcodeShift) ||
-                       inst[0].extractOpcode() == (uint32_t(op_blez) >> OpcodeShift) ||
-                       inst[0].extractOpcode() == (uint32_t(op_bgtz) >> OpcodeShift));
-            inst[0].setBOffImm16(BOffImm16(offset));
-        } else if (inst[0].encode() == inst_beq.encode()) {
-            // Handle open long unconditional jumps created by
-            // MacroAssemblerMIPSShared::ma_b(..., wasm::Trap, ...).
-            // We need to add it to long jumps array here.
-            // See MacroAssemblerMIPS::branchWithCode().
-            MOZ_ASSERT(inst[1].encode() == NopInst);
-            MOZ_ASSERT(inst[2].encode() == NopInst);
-            MOZ_ASSERT(inst[3].encode() == NopInst);
-            addLongJump(BufferOffset(label->offset()));
-            Assembler::WriteLuiOriInstructions(inst, &inst[1], ScratchRegister, dest.getOffset());
-            inst[2] = InstReg(op_special, ScratchRegister, zero, zero, ff_jr).encode();
-        } else {
-            // Handle open long conditional jumps created by
-            // MacroAssemblerMIPSShared::ma_b(..., wasm::Trap, ...).
-            inst[0] = invertBranch(inst[0], BOffImm16(5 * sizeof(void*)));
-            // No need for a "nop" here because we can clobber scratch.
-            // We need to add it to long jumps array here.
-            // See MacroAssemblerMIPS::branchWithCode().
-            MOZ_ASSERT(inst[1].encode() == NopInst);
-            MOZ_ASSERT(inst[2].encode() == NopInst);
-            MOZ_ASSERT(inst[3].encode() == NopInst);
-            MOZ_ASSERT(inst[4].encode() == NopInst);
-            addLongJump(BufferOffset(label->offset() + sizeof(void*)));
-            Assembler::WriteLuiOriInstructions(&inst[1], &inst[2], ScratchRegister, dest.getOffset());
-            inst[3] = InstReg(op_special, ScratchRegister, zero, zero, ff_jr).encode();
-        }
-    }
-    label->bind(dest.getOffset());
-}
-
-uint32_t
-Assembler::PatchWrite_NearCallSize()
-{
-    return 4 * sizeof(uint32_t);
-}
-
-void
-Assembler::PatchWrite_NearCall(CodeLocationLabel start, CodeLocationLabel toCall)
-{
-    Instruction* inst = (Instruction*) start.raw();
-    uint8_t* dest = toCall.raw();
-
-    // Overwrite whatever instruction used to be here with a call.
-    // Always use long jump for two reasons:
-    // - Jump has to be the same size because of PatchWrite_NearCallSize.
-    // - Return address has to be at the end of replaced block.
-    // Short jump wouldn't be more efficient.
-    Assembler::WriteLuiOriInstructions(inst, &inst[1], ScratchRegister, (uint32_t)dest);
-    inst[2] = InstReg(op_special, ScratchRegister, zero, ra, ff_jalr);
-    inst[3] = InstNOP();
-
-    // Ensure everyone sees the code that was just written into memory.
-    AutoFlushICache::flush(uintptr_t(inst), PatchWrite_NearCallSize());
 }
 
 uint32_t
@@ -464,24 +307,6 @@ Assembler::ExtractLuiOriValue(Instruction* inst0, Instruction* inst1)
     uint32_t value = i0->extractImm16Value() << 16;
     value = value | i1->extractImm16Value();
     return value;
-}
-
-void
-Assembler::UpdateLuiOriValue(Instruction* inst0, Instruction* inst1, uint32_t value)
-{
-    MOZ_ASSERT(inst0->extractOpcode() == ((uint32_t)op_lui >> OpcodeShift));
-    MOZ_ASSERT(inst1->extractOpcode() == ((uint32_t)op_ori >> OpcodeShift));
-
-    ((InstImm*) inst0)->setImm16(Imm16::Upper(Imm32(value)));
-    ((InstImm*) inst1)->setImm16(Imm16::Lower(Imm32(value)));
-}
-
-void
-Assembler::WriteLuiOriInstructions(Instruction* inst0, Instruction* inst1,
-                                   Register reg, uint32_t value)
-{
-    *inst0 = InstImm(op_lui, zero, reg, Imm16::Upper(Imm32(value)));
-    *inst1 = InstImm(op_ori, reg, reg, Imm16::Lower(Imm32(value)));
 }
 
 void
@@ -503,7 +328,7 @@ Assembler::PatchDataWithValueCheck(CodeLocationLabel label, PatchedImmPtr newVal
     MOZ_ASSERT(value == uint32_t(expectedValue.value));
 
     // Replace with new value
-    Assembler::UpdateLuiOriValue(inst, inst->next(), uint32_t(newValue.value));
+    AssemblerMIPSShared::UpdateLuiOriValue(inst, inst->next(), uint32_t(newValue.value));
 
     AutoFlushICache::flush(uintptr_t(inst), 8);
 }
@@ -512,7 +337,7 @@ void
 Assembler::PatchInstructionImmediate(uint8_t* code, PatchedImmPtr imm)
 {
     InstImm* inst = (InstImm*)code;
-    Assembler::UpdateLuiOriValue(inst, inst->next(), (uint32_t)imm.value);
+    AssemblerMIPSShared::UpdateLuiOriValue(inst, inst->next(), (uint32_t)imm.value);
 }
 
 uint32_t

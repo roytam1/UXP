@@ -33,7 +33,7 @@ of the License or (at your option) any later version.
 // opcodes) but is slower that the direct threaded interpreter by a factor of 2
 
 #include <cassert>
-#include <cstring>
+#include <string.h>
 #include <graphite2/Segment.h>
 #include "inc/Machine.h"
 #include "inc/Segment.h"

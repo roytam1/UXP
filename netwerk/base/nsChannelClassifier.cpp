@@ -17,6 +17,7 @@
 #include "nsIDOMDocument.h"
 #include "nsIHttpChannelInternal.h"
 #include "nsIIOService.h"
+#include "nsILoadContext.h"
 #include "nsIParentChannel.h"
 #include "nsIPermissionManager.h"
 #include "nsIPrivateBrowsingTrackingProtectionWhitelist.h"

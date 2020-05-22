@@ -6,9 +6,15 @@
 
 #include "InProcessCompositorSession.h"
 
+#include "mozilla/widget/CompositorWidget.h"
+#include "mozilla/layers/CompositorBridgeParent.h"
+#include "mozilla/layers/CompositorBridgeChild.h"
 // so we can cast an APZCTreeManager to an IAPZCTreeManager
 #include "mozilla/layers/APZCTreeManager.h"
 #include "mozilla/layers/IAPZCTreeManager.h"
+
+using namespace mozilla::layers;
+using namespace mozilla::widget;
 
 namespace mozilla {
 namespace layers {

@@ -26,6 +26,7 @@ PrintTargetWindows::PrintTargetWindows(cairo_surface_t* aCairoSurface,
 /* static */ already_AddRefed<PrintTargetWindows>
 PrintTargetWindows::CreateOrNull(HDC aDC)
 {
+#ifdef NS_PRINTING
   // Figure out the cairo surface size - Windows we need to use the printable
   // area of the page.  Note: we only scale the printing using the LOGPIXELSY,
   // so we use that when calculating the surface width as well as the height.
@@ -51,6 +52,9 @@ PrintTargetWindows::CreateOrNull(HDC aDC)
     new PrintTargetWindows(surface, size, aDC);
 
   return target.forget();
+#else
+  return nullptr;
+#endif
 }
 
 nsresult

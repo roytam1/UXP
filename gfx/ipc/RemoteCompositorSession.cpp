@@ -8,8 +8,10 @@
 #include "mozilla/VsyncDispatcher.h"
 #include "mozilla/layers/APZChild.h"
 #include "mozilla/layers/APZCTreeManagerChild.h"
+#include "mozilla/layers/CompositorBridgeChild.h"
 #include "mozilla/Unused.h"
 #include "nsBaseWidget.h"
+#include "GPUProcessManager.h"
 
 namespace mozilla {
 namespace layers {

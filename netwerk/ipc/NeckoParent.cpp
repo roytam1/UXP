@@ -45,6 +45,8 @@
 #include "nsINetworkPredictor.h"
 #include "nsINetworkPredictorVerifier.h"
 #include "nsISpeculativeConnect.h"
+#include "nsIOService.h"
+#include "mozilla/ipc/URIUtils.h"
 
 using mozilla::DocShellOriginAttributes;
 using mozilla::NeckoOriginAttributes;

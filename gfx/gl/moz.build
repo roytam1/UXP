@@ -68,7 +68,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'SharedSurfaceD3D11Interop.h',
         'WGLLibrary.h',
     ]
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'GLContextProviderWGL.cpp',
         'SharedSurfaceANGLE.cpp',
         'SharedSurfaceD3D11Interop.cpp',
@@ -118,7 +118,7 @@ elif gl_provider == 'GLX':
         'SharedSurfaceGLX.h'
     ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'AndroidSurfaceTexture.cpp',
     'DecomposeIntoNoRepeatTriangles.cpp',
     'EGLUtils.cpp',

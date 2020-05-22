@@ -4,6 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "gfxFont.h"
+#include "gfxFont-Impl.h"
 
 #include "mozilla/BinarySearch.h"
 #include "mozilla/DebugOnly.h"
@@ -43,6 +44,11 @@
 #include "GreekCasing.h"
 
 #include "cairo.h"
+
+#ifdef XP_WIN
+#include "cairo-win32.h"
+#include "gfxWindowsPlatform.h"
+#endif
 
 #include "harfbuzz/hb.h"
 #include "harfbuzz/hb-ot.h"
@@ -2539,70 +2545,7 @@ IsBoundarySpace(char16_t aChar, char16_t aNextChar)
 #define GFX_MAYBE_UNUSED
 #endif
 
-template<typename T>
-gfxShapedWord*
-gfxFont::GetShapedWord(DrawTarget *aDrawTarget,
-                       const T    *aText,
-                       uint32_t    aLength,
-                       uint32_t    aHash,
-                       Script      aRunScript,
-                       bool        aVertical,
-                       int32_t     aAppUnitsPerDevUnit,
-                       uint32_t    aFlags,
-                       gfxTextPerfMetrics *aTextPerf GFX_MAYBE_UNUSED)
-{
-    // if the cache is getting too big, flush it and start over
-    uint32_t wordCacheMaxEntries =
-        gfxPlatform::GetPlatform()->WordCacheMaxEntries();
-    if (mWordCache->Count() > wordCacheMaxEntries) {
-        NS_WARNING("flushing shaped-word cache");
-        ClearCachedWords();
-    }
-
-    // if there's a cached entry for this word, just return it
-    CacheHashKey key(aText, aLength, aHash,
-                     aRunScript,
-                     aAppUnitsPerDevUnit,
-                     aFlags);
-
-    CacheHashEntry *entry = mWordCache->PutEntry(key);
-    if (!entry) {
-        NS_WARNING("failed to create word cache entry - expect missing text");
-        return nullptr;
-    }
-    gfxShapedWord* sw = entry->mShapedWord.get();
-
-    if (sw) {
-        sw->ResetAge();
-#ifndef RELEASE_OR_BETA
-        if (aTextPerf) {
-            aTextPerf->current.wordCacheHit++;
-        }
-#endif
-        return sw;
-    }
-
-#ifndef RELEASE_OR_BETA
-    if (aTextPerf) {
-        aTextPerf->current.wordCacheMiss++;
-    }
-#endif
-
-    sw = gfxShapedWord::Create(aText, aLength, aRunScript, aAppUnitsPerDevUnit,
-                               aFlags);
-    entry->mShapedWord.reset(sw);
-    if (!sw) {
-        NS_WARNING("failed to create gfxShapedWord - expect missing text");
-        return nullptr;
-    }
-
-    DebugOnly<bool> ok =
-        ShapeText(aDrawTarget, aText, 0, aLength, aRunScript, aVertical, sw);
-
-    NS_WARNING_ASSERTION(ok, "failed to shape word - expect garbled text");
-
-    return sw;
-}
+/* GetShapedWord is in gfxFont-Impl.h */
 
 bool
 gfxFont::CacheHashEntry::KeyEquals(const KeyTypePointer aKey) const

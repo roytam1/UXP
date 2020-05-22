@@ -63,7 +63,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('cocoa', 'uikit'):
     EXPORTS.mozilla.gfx += [
         'MacIOSurface.h',
     ]
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'NativeFontResourceMac.cpp',
         'PathCG.cpp',
         'ScaledFontMac.cpp',
@@ -95,10 +95,8 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('gtk2', 'gtk3'):
     ]
 
 if CONFIG['MOZ_ENABLE_SKIA']:
-    UNIFIED_SOURCES += [
-        'convolver.cpp',
-    ]
     SOURCES += [
+        'convolver.cpp',
         'DrawTargetSkia.cpp',
         'image_operations.cpp', # Uses _USE_MATH_DEFINES
         'PathSkia.cpp',
@@ -143,7 +141,7 @@ elif CONFIG['CPU_ARCH'].startswith('mips'):
             'convolverLS3.cpp',
         ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'BezierUtils.cpp',
     'Blur.cpp',
     'DataSourceSurface.cpp',
@@ -156,6 +154,7 @@ UNIFIED_SOURCES += [
     'DrawTargetDual.cpp',
     'DrawTargetRecording.cpp',
     'DrawTargetTiled.cpp',
+    'Factory.cpp', # Need to suppress warnings in Skia header files.
     'FilterNodeSoftware.cpp',
     'FilterProcessing.cpp',
     'FilterProcessingScalar.cpp',
@@ -175,10 +174,6 @@ UNIFIED_SOURCES += [
     'SFNTNameTable.cpp',
     'SourceSurfaceCairo.cpp',
     'SourceSurfaceRawData.cpp',
-]
-
-SOURCES += [
-    'Factory.cpp', # Need to suppress warnings in Skia header files.
 ]
 
 if CONFIG['CLANG_CXX']:

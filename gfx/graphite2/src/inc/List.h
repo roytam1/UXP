@@ -30,7 +30,7 @@ of the License or (at your option) any later version.
 
 #include <cstddef>
 #include <cassert>
-#include <cstring>
+#include <string.h>
 #include <cstdlib>
 #include <new>
 

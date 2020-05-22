@@ -11,6 +11,7 @@
 #include "mozilla/net/HttpBaseChannel.h"
 
 #include "nsHttpHandler.h"
+#include "nsHttpChannel.h"
 #include "nsMimeTypes.h"
 #include "nsNetCID.h"
 #include "nsNetUtil.h"

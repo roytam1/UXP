@@ -3206,7 +3206,7 @@ class BaseCompiler
     // This is the temp register passed as the last argument to load()
     MOZ_MUST_USE size_t loadStoreTemps(MemoryAccessDesc& access) {
 #if defined(JS_CODEGEN_ARM)
-        if (access.isUnaligned()) {
+        if (IsUnaligned(access)) {
             switch (access.type()) {
               case Scalar::Float32:
                 return 1;
@@ -3391,7 +3391,7 @@ class BaseCompiler
 #ifdef JS_CODEGEN_ARM
     void
     loadI32(MemoryAccessDesc access, bool isSigned, RegI32 ptr, Register rt) {
-        if (access.byteSize() > 1 && access.isUnaligned()) {
+        if (access.byteSize() > 1 && IsUnaligned(ins->access())) {
             masm.add32(HeapReg, ptr.reg);
             SecondScratchRegisterScope scratch(*this);
             masm.emitUnalignedLoad(isSigned, access.byteSize(), ptr.reg, scratch, rt, 0);
@@ -3405,7 +3405,7 @@ class BaseCompiler
 
     void
     storeI32(MemoryAccessDesc access, RegI32 ptr, Register rt) {
-        if (access.byteSize() > 1 && access.isUnaligned()) {
+        if (access.byteSize() > 1 && IsUnaligned(ins->access())) {
             masm.add32(HeapReg, ptr.reg);
             masm.emitUnalignedStore(access.byteSize(), ptr.reg, rt, 0);
         } else {
@@ -3419,7 +3419,7 @@ class BaseCompiler
 
     void
     loadI64(MemoryAccessDesc access, RegI32 ptr, RegI64 dest) {
-        if (access.isUnaligned()) {
+        if (IsUnaligned(ins->access())) {
             masm.add32(HeapReg, ptr.reg);
             SecondScratchRegisterScope scratch(*this);
             masm.emitUnalignedLoad(IsSigned(false), ByteSize(4), ptr.reg, scratch, dest.reg.low,
@@ -3440,7 +3440,7 @@ class BaseCompiler
 
     void
     storeI64(MemoryAccessDesc access, RegI32 ptr, RegI64 src) {
-        if (access.isUnaligned()) {
+        if (IsUnaligned(ins->access())) {
             masm.add32(HeapReg, ptr.reg);
             masm.emitUnalignedStore(ByteSize(4), ptr.reg, src.reg.low, 0);
             masm.emitUnalignedStore(ByteSize(4), ptr.reg, src.reg.high, 4);
@@ -3459,7 +3459,7 @@ class BaseCompiler
     void
     loadF32(MemoryAccessDesc access, RegI32 ptr, RegF32 dest, RegI32 tmp1) {
         masm.add32(HeapReg, ptr.reg);
-        if (access.isUnaligned()) {
+        if (IsUnaligned(ins->access())) {
             SecondScratchRegisterScope scratch(*this);
             masm.emitUnalignedLoad(IsSigned(false), ByteSize(4), ptr.reg, scratch, tmp1.reg, 0);
             masm.ma_vxfer(tmp1.reg, dest.reg);
@@ -3473,7 +3473,7 @@ class BaseCompiler
     void
     storeF32(MemoryAccessDesc access, RegI32 ptr, RegF32 src, RegI32 tmp1) {
         masm.add32(HeapReg, ptr.reg);
-        if (access.isUnaligned()) {
+        if (IsUnaligned(ins->access())) {
             masm.ma_vxfer(src.reg, tmp1.reg);
             masm.emitUnalignedStore(ByteSize(4), ptr.reg, tmp1.reg, 0);
         } else {
@@ -3486,7 +3486,7 @@ class BaseCompiler
     void
     loadF64(MemoryAccessDesc access, RegI32 ptr, RegF64 dest, RegI32 tmp1, RegI32 tmp2) {
         masm.add32(HeapReg, ptr.reg);
-        if (access.isUnaligned()) {
+        if (IsUnaligned(ins->access())) {
             SecondScratchRegisterScope scratch(*this);
             masm.emitUnalignedLoad(IsSigned(false), ByteSize(4), ptr.reg, scratch, tmp1.reg, 0);
             masm.emitUnalignedLoad(IsSigned(false), ByteSize(4), ptr.reg, scratch, tmp2.reg, 4);
@@ -3501,7 +3501,7 @@ class BaseCompiler
     void
     storeF64(MemoryAccessDesc access, RegI32 ptr, RegF64 src, RegI32 tmp1, RegI32 tmp2) {
         masm.add32(HeapReg, ptr.reg);
-        if (access.isUnaligned()) {
+        if (IsUnaligned(ins->access())) {
             masm.ma_vxfer(src.reg, tmp1.reg, tmp2.reg);
             masm.emitUnalignedStore(ByteSize(4), ptr.reg, tmp1.reg, 0);
             masm.emitUnalignedStore(ByteSize(4), ptr.reg, tmp2.reg, 4);
@@ -5991,7 +5991,7 @@ BaseCompiler::emitLoad(ValType type, Scalar::Type viewType)
       case ValType::I32: {
         RegI32 rp = popI32();
 #ifdef JS_CODEGEN_ARM
-        RegI32 rv = access.isUnaligned() ? needI32() : rp;
+        RegI32 rv = IsUnaligned(access) ? needI32() : rp;
 #else
         RegI32 rv = rp;
 #endif

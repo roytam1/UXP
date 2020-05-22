@@ -16,6 +16,7 @@
 #include "mozilla/TimeStamp.h"              // for TimeStamp
 #include "nsTArray.h"                       // for nsTArray
 #include "TouchCounter.h"
+#include "OverscrollHandoffState.h"
 
 namespace mozilla {
 namespace layers {

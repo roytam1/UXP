@@ -202,17 +202,6 @@ MacroAssemblerMIPS::ma_li(Register dest, ImmWord imm)
     ma_li(dest, Imm32(uint32_t(imm.value)));
 }
 
-// This method generates lui and ori instruction pair that can be modified by
-// UpdateLuiOriValue, either during compilation (eg. Assembler::bind), or
-// during execution (eg. jit::PatchJump).
-void
-MacroAssemblerMIPS::ma_liPatchable(Register dest, Imm32 imm)
-{
-    m_buffer.ensureSpace(2 * sizeof(uint32_t));
-    as_lui(dest, Imm16::Upper(imm).encode());
-    as_ori(dest, dest, Imm16::Lower(imm).encode());
-}
-
 void
 MacroAssemblerMIPS::ma_liPatchable(Register dest, ImmPtr imm)
 {
@@ -514,122 +503,6 @@ MacroAssemblerMIPS::ma_b(Address addr, ImmGCPtr imm, Label* label, Condition c, 
     ma_b(SecondScratchReg, imm, label, c, jumpKind);
 }
 
-void
-MacroAssemblerMIPS::ma_bal(Label* label, DelaySlotFill delaySlotFill)
-{
-    if (label->bound()) {
-        // Generate the long jump for calls because return address has to be
-        // the address after the reserved block.
-        addLongJump(nextOffset());
-        ma_liPatchable(ScratchRegister, Imm32(label->offset()));
-        as_jalr(ScratchRegister);
-        if (delaySlotFill == FillDelaySlot)
-            as_nop();
-        return;
-    }
-
-    // Second word holds a pointer to the next branch in label's chain.
-    uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
-
-    // Make the whole branch continous in the buffer.
-    m_buffer.ensureSpace(4 * sizeof(uint32_t));
-
-    BufferOffset bo = writeInst(getBranchCode(BranchIsCall).encode());
-    writeInst(nextInChain);
-    if (!oom())
-        label->use(bo.getOffset());
-    // Leave space for long jump.
-    as_nop();
-    if (delaySlotFill == FillDelaySlot)
-        as_nop();
-}
-
-void
-MacroAssemblerMIPS::branchWithCode(InstImm code, Label* label, JumpKind jumpKind)
-{
-    MOZ_ASSERT(code.encode() != InstImm(op_regimm, zero, rt_bgezal, BOffImm16(0)).encode());
-    InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
-
-    if (label->bound()) {
-        int32_t offset = label->offset() - m_buffer.nextOffset().getOffset();
-
-        if (BOffImm16::IsInRange(offset))
-            jumpKind = ShortJump;
-
-        if (jumpKind == ShortJump) {
-            MOZ_ASSERT(BOffImm16::IsInRange(offset));
-            code.setBOffImm16(BOffImm16(offset));
-            writeInst(code.encode());
-            as_nop();
-            return;
-        }
-
-        if (code.encode() == inst_beq.encode()) {
-            // Handle long jump
-            addLongJump(nextOffset());
-            ma_liPatchable(ScratchRegister, Imm32(label->offset()));
-            as_jr(ScratchRegister);
-            as_nop();
-            return;
-        }
-
-        // Handle long conditional branch
-        writeInst(invertBranch(code, BOffImm16(5 * sizeof(uint32_t))).encode());
-        // No need for a "nop" here because we can clobber scratch.
-        addLongJump(nextOffset());
-        ma_liPatchable(ScratchRegister, Imm32(label->offset()));
-        as_jr(ScratchRegister);
-        as_nop();
-        return;
-    }
-
-    // Generate open jump and link it to a label.
-
-    // Second word holds a pointer to the next branch in label's chain.
-    uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
-
-    if (jumpKind == ShortJump) {
-        // Make the whole branch continous in the buffer.
-        m_buffer.ensureSpace(2 * sizeof(uint32_t));
-
-        // Indicate that this is short jump with offset 4.
-        code.setBOffImm16(BOffImm16(4));
-        BufferOffset bo = writeInst(code.encode());
-        writeInst(nextInChain);
-        if (!oom())
-            label->use(bo.getOffset());
-        return;
-    }
-
-    bool conditional = code.encode() != inst_beq.encode();
-
-    // Make the whole branch continous in the buffer.
-    m_buffer.ensureSpace((conditional ? 5 : 4) * sizeof(uint32_t));
-
-    BufferOffset bo = writeInst(code.encode());
-    writeInst(nextInChain);
-    if (!oom())
-        label->use(bo.getOffset());
-    // Leave space for potential long jump.
-    as_nop();
-    as_nop();
-    if (conditional)
-        as_nop();
-}
-
-void
-MacroAssemblerMIPS::ma_cmp_set(Register rd, Register rs, Address addr, Condition c)
-{
-    ma_lw(ScratchRegister, addr);
-    ma_cmp_set(rd, rs, ScratchRegister, c);
-}
-
-void
-MacroAssemblerMIPS::ma_cmp_set(Register dst, Address lhs, Register rhs, Condition c)
-{
-    ma_lw(ScratchRegister, lhs);
-    ma_cmp_set(dst, ScratchRegister, rhs, c);
-}
 
 // fp instructions
 void
@@ -928,26 +801,32 @@ MacroAssemblerMIPSCompat::loadDouble(const BaseIndex& src, FloatRegister dest)
 }
 
 void
-MacroAssemblerMIPSCompat::loadUnalignedDouble(const BaseIndex& src, Register temp,
-                                              FloatRegister dest)
+MacroAssemblerMIPSCompat::loadUnalignedDouble(const wasm::MemoryAccessDesc& access,
+                                              const BaseIndex& src, Register temp, FloatRegister dest)
 {
     computeScaledAddress(src, SecondScratchReg);
 
+    uint32_t framePushed = asMasm().framePushed();
+    BufferOffset load;
     if (Imm16::IsInSignedRange(src.offset) && Imm16::IsInSignedRange(src.offset + 7)) {
-        as_lwl(temp, SecondScratchReg, src.offset + INT64LOW_OFFSET + 3);
+        load = as_lwl(temp, SecondScratchReg, src.offset + INT64LOW_OFFSET + 3);
         as_lwr(temp, SecondScratchReg, src.offset + INT64LOW_OFFSET);
+        append(access, load.getOffset(), framePushed);
         moveToDoubleLo(temp, dest);
-        as_lwl(temp, SecondScratchReg, src.offset + INT64HIGH_OFFSET + 3);
+        load = as_lwl(temp, SecondScratchReg, src.offset + INT64HIGH_OFFSET + 3);
         as_lwr(temp, SecondScratchReg, src.offset + INT64HIGH_OFFSET);
+        append(access, load.getOffset(), framePushed);
         moveToDoubleHi(temp, dest);
     } else {
         ma_li(ScratchRegister, Imm32(src.offset));
         as_daddu(ScratchRegister, SecondScratchReg, ScratchRegister);
-        as_lwl(temp, ScratchRegister, INT64LOW_OFFSET + 3);
+        load = as_lwl(temp, ScratchRegister, INT64LOW_OFFSET + 3);
         as_lwr(temp, ScratchRegister, INT64LOW_OFFSET);
+        append(access, load.getOffset(), framePushed);
         moveToDoubleLo(temp, dest);
-        as_lwl(temp, ScratchRegister, INT64HIGH_OFFSET + 3);
+        load = as_lwl(temp, ScratchRegister, INT64HIGH_OFFSET + 3);
         as_lwr(temp, ScratchRegister, INT64HIGH_OFFSET);
+        append(access, load.getOffset(), framePushed);
         moveToDoubleHi(temp, dest);
     }
 }
@@ -980,21 +859,21 @@ MacroAssemblerMIPSCompat::loadFloat32(const BaseIndex& src, FloatRegister dest)
 }
 
 void
-MacroAssemblerMIPSCompat::loadUnalignedFloat32(const BaseIndex& src, Register temp,
-                                               FloatRegister dest)
+MacroAssemblerMIPSCompat::loadUnalignedFloat32(const wasm::MemoryAccessDesc& access,
+                                               const BaseIndex& src, Register temp, FloatRegister dest)
 {
     computeScaledAddress(src, SecondScratchReg);
-
+    BufferOffset load;
     if (Imm16::IsInSignedRange(src.offset) && Imm16::IsInSignedRange(src.offset + 3)) {
-        as_lwl(temp, SecondScratchReg, src.offset + 3);
+        load = as_lwl(temp, SecondScratchReg, src.offset + 3);
         as_lwr(temp, SecondScratchReg, src.offset);
     } else {
         ma_li(ScratchRegister, Imm32(src.offset));
         as_daddu(ScratchRegister, SecondScratchReg, ScratchRegister);
-        as_lwl(temp, ScratchRegister, 3);
+        load = as_lwl(temp, ScratchRegister, 3);
         as_lwr(temp, ScratchRegister, 0);
     }
-
+    append(access, load.getOffset(), asMasm().framePushed());
     moveToFloat32(temp, dest);
 }
 
@@ -1132,46 +1011,52 @@ MacroAssemblerMIPSCompat::storePtr(Register src, AbsoluteAddress dest)
 }
 
 void
-MacroAssemblerMIPSCompat::storeUnalignedFloat32(FloatRegister src, Register temp,
-                                                const BaseIndex& dest)
+MacroAssemblerMIPSCompat::storeUnalignedFloat32(const wasm::MemoryAccessDesc& access,
+                                                FloatRegister src, Register temp, const BaseIndex& dest)
 {
     computeScaledAddress(dest, SecondScratchReg);
     moveFromFloat32(src, temp);
 
+    BufferOffset store;
     if (Imm16::IsInSignedRange(dest.offset) && Imm16::IsInSignedRange(dest.offset + 3)) {
-        as_swl(temp, SecondScratchReg, dest.offset + 3);
+        store = as_swl(temp, SecondScratchReg, dest.offset + 3);
         as_swr(temp, SecondScratchReg, dest.offset);
     } else {
         ma_li(ScratchRegister, Imm32(dest.offset));
         as_daddu(ScratchRegister, SecondScratchReg, ScratchRegister);
-        as_swl(temp, ScratchRegister, 3);
+        store = as_swl(temp, ScratchRegister, 3);
         as_swr(temp, ScratchRegister, 0);
     }
+    append(access, store.getOffset(), asMasm().framePushed());
 }
 
 void
-MacroAssemblerMIPSCompat::storeUnalignedDouble(FloatRegister src, Register temp,
-                                               const BaseIndex& dest)
+MacroAssemblerMIPSCompat::storeUnalignedDouble(const wasm::MemoryAccessDesc& access,
+                                               FloatRegister src, Register temp, const BaseIndex& dest)
 {
     computeScaledAddress(dest, SecondScratchReg);
 
+    uint32_t framePushed = asMasm().framePushed();
+    BufferOffset store;
     if (Imm16::IsInSignedRange(dest.offset) && Imm16::IsInSignedRange(dest.offset + 7)) {
+        moveFromDoubleHi(src, temp);
+        store = as_swl(temp, SecondScratchReg, dest.offset + INT64HIGH_OFFSET + 3);
+        as_swr(temp, SecondScratchReg, dest.offset + INT64HIGH_OFFSET);
         moveFromDoubleLo(src, temp);
         as_swl(temp, SecondScratchReg, dest.offset + INT64LOW_OFFSET + 3);
         as_swr(temp, SecondScratchReg, dest.offset + INT64LOW_OFFSET);
-        moveFromDoubleHi(src, temp);
-        as_swl(temp, SecondScratchReg, dest.offset + INT64HIGH_OFFSET + 3);
-        as_swr(temp, SecondScratchReg, dest.offset + INT64HIGH_OFFSET);
+
     } else {
         ma_li(ScratchRegister, Imm32(dest.offset));
         as_daddu(ScratchRegister, SecondScratchReg, ScratchRegister);
+        moveFromDoubleHi(src, temp);
+        store = as_swl(temp, ScratchRegister, INT64HIGH_OFFSET + 3);
+        as_swr(temp, ScratchRegister, INT64HIGH_OFFSET);
         moveFromDoubleLo(src, temp);
         as_swl(temp, ScratchRegister, INT64LOW_OFFSET + 3);
         as_swr(temp, ScratchRegister, INT64LOW_OFFSET);
-        moveFromDoubleHi(src, temp);
-        as_swl(temp, ScratchRegister, INT64HIGH_OFFSET + 3);
-        as_swr(temp, ScratchRegister, INT64HIGH_OFFSET);
     }
+    append(access, store.getOffset(), framePushed);
 }
 
 // Note: this function clobbers the input register.
@@ -1608,13 +1493,12 @@ MacroAssemblerMIPSCompat::jumpWithPatch(RepatchLabel* label, Label* documentatio
 {
     // Only one branch per label.
     MOZ_ASSERT(!label->used());
-    uint32_t dest = label->bound() ? label->offset() : LabelBase::INVALID_OFFSET;
 
     BufferOffset bo = nextOffset();
     label->use(bo.getOffset());
-    addLongJump(bo);
-    ma_liPatchable(ScratchRegister, Imm32(dest));
-    as_jr(ScratchRegister);
+    if (label->bound())
+        addMixedJump(bo, label->offset(), MixedJumpPatch::PATCHABLE);
+    as_j(JOffImm26(0));
     as_nop();
     return CodeOffsetJump(bo.getOffset());
 }

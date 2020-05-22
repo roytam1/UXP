@@ -615,6 +615,11 @@ int VP8EncoderImpl::SetCpuSpeed(int width, int height) {
   // On mobile platform, always set to -12 to leverage between cpu usage
   // and video quality.
   return -12;
+#elif defined(WEBRTC_ARCH_MIPS)
+  // On mips platform, temporarily set to -12 to leverage between cpu usage
+  // and video quality.
+  // TODO: Once improved the coding performance,recover the complexity setting.
+  return -12;
 #else
   // For non-ARM, increase encoding complexity (i.e., use lower speed setting)
   // if resolution is below CIF. Otherwise, keep the default/user setting
@@ -1103,7 +1108,7 @@ int VP8DecoderImpl::InitDecode(const VideoCodec* inst,
   cfg.h = cfg.w = 0;  // set after decode
 
 vpx_codec_flags_t flags = 0;
-#ifndef WEBRTC_ARCH_ARM
+#if !defined(WEBRTC_ARCH_ARM) && !defined(WEBRTC_ARCH_MIPS)
   flags = VPX_CODEC_USE_POSTPROC;
 #ifdef INDEPENDENT_PARTITIONS
   flags |= VPX_CODEC_USE_INPUT_PARTITION;

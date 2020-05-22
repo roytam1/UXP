@@ -18,6 +18,7 @@
 #include "nsIProxyInfo.h"
 #include "nsIProxiedChannel.h"
 #include "nsIResumableChannel.h"
+#include "ADivertableParentChannel.h"
 
 class nsIURI;
 using mozilla::net::ADivertableParentChannel;

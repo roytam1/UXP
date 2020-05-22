@@ -32,7 +32,7 @@ of the License or (at your option) any later version.
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
-#include <cstring>
+#include <string.h>
 #include "graphite2/Segment.h"
 #include "inc/Code.h"
 #include "inc/Face.h"
@@ -42,7 +42,7 @@ of the License or (at your option) any later version.
 #include "inc/Rule.h"
 #include "inc/Silf.h"
 
-#include <cstdio>
+#include <stdio.h>
 
 #ifdef NDEBUG
 #ifdef __GNUC__

@@ -10,7 +10,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = 'necko_http'
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'mozTXTToHTMLConv.cpp',
     'nsDirIndex.cpp',
     'nsDirIndexParser.cpp',
@@ -22,13 +22,13 @@ UNIFIED_SOURCES += [
 ]
 
 if 'ftp' in CONFIG['NECKO_PROTOCOLS']:
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsFTPDirListingConv.cpp',
         'ParseFTPList.cpp',
     ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'cocoa':
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsBinHexDecoder.cpp',
     ]
 

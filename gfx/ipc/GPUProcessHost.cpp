@@ -5,6 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "GPUProcessHost.h"
+#include "GPUChild.h"
 #include "chrome/common/process_watcher.h"
 #include "gfxPrefs.h"
 #include "mozilla/gfx/Logging.h"

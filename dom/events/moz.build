@@ -73,9 +73,6 @@ EXPORTS.mozilla.dom += [
     'XULCommandEvent.h',
 ]
 
-if CONFIG['MOZ_WEBSPEECH']:
-    EXPORTS.mozilla.dom += ['SpeechRecognitionError.h']
-
 SOURCES += [
     'AnimationEvent.cpp',
     'AsyncEventDispatcher.cpp',
@@ -126,9 +123,6 @@ SOURCES += [
     'WheelHandlingHelper.cpp',
     'XULCommandEvent.cpp',
 ]
-
-if CONFIG['MOZ_WEBSPEECH']:
-    SOURCES += ['SpeechRecognitionError.cpp']
 
 include('/ipc/chromium/chromium-config.mozbuild')
 

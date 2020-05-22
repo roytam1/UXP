@@ -39,6 +39,17 @@ MacroAssemblerMIPSShared::ma_li(Register dest, Imm32 imm)
     }
 }
 
+// This method generates lui and ori instruction pair that can be modified by
+// UpdateLuiOriValue, either during compilation (eg. Assembler::bind), or
+// during execution (eg. jit::PatchJump).
+void
+MacroAssemblerMIPSShared::ma_liPatchable(Register dest, Imm32 imm)
+{
+    m_buffer.ensureSpace(2 * sizeof(uint32_t));
+    as_lui(dest, Imm16::Upper(imm).encode());
+    as_ori(dest, dest, Imm16::Lower(imm).encode());
+}
+
 // Shifts
 void
 MacroAssemblerMIPSShared::ma_sll(Register rd, Register rt, Imm32 shift)
@@ -225,8 +236,14 @@ template <typename L>
 void
 MacroAssemblerMIPSShared::ma_addTestCarry(Register rd, Register rs, Register rt, L overflow)
 {
-    as_addu(rd, rs, rt);
-    as_sltu(SecondScratchReg, rd, rs);
+    if (rd != rs) {
+        as_addu(rd, rs, rt);
+        as_sltu(SecondScratchReg, rd, rs);
+    } else {
+        ma_move(SecondScratchReg, rs);
+        as_addu(rd, rs, rt);
+        as_sltu(SecondScratchReg, rd, SecondScratchReg);
+    }
     ma_b(SecondScratchReg, SecondScratchReg, overflow, Assembler::NonZero);
 }
 
@@ -446,7 +463,7 @@ MacroAssemblerMIPSShared::ma_load(Register dest, const BaseIndex& src,
 }
 
 void
-MacroAssemblerMIPSShared::ma_load_unaligned(Register dest, const BaseIndex& src, Register temp,
+MacroAssemblerMIPSShared::ma_load_unaligned(const wasm::MemoryAccessDesc& access, Register dest, const BaseIndex& src, Register temp,
                                             LoadStoreSize size, LoadStoreExtension extension)
 {
     int16_t lowOffset, hiOffset;
@@ -460,36 +477,41 @@ MacroAssemblerMIPSShared::ma_load_unaligned(Register dest, const BaseIndex& src,
         hiOffset = Imm16(src.offset + size / 8 - 1).encode();
     } else {
         ma_li(ScratchRegister, Imm32(src.offset));
-        as_daddu(ScratchRegister, SecondScratchReg, ScratchRegister);
+        asMasm().addPtr(SecondScratchReg, ScratchRegister);
         base = ScratchRegister;
         lowOffset = Imm16(0).encode();
         hiOffset = Imm16(size / 8 - 1).encode();
     }
 
+    BufferOffset load;
     switch (size) {
       case SizeHalfWord:
-        as_lbu(dest, base, lowOffset);
         if (extension != ZeroExtend)
-            as_lbu(temp, base, hiOffset);
+            load = as_lbu(temp, base, hiOffset);
         else
-            as_lb(temp, base, hiOffset);
+            load = as_lb(temp, base, hiOffset);
+        as_lbu(dest, base, lowOffset);
         as_ins(dest, temp, 8, 24);
         break;
       case SizeWord:
-        as_lwl(dest, base, hiOffset);
+        load = as_lwl(dest, base, hiOffset);
         as_lwr(dest, base, lowOffset);
 #ifdef JS_CODEGEN_MIPS64
         if (extension != ZeroExtend)
             as_dext(dest, dest, 0, 32);
 #endif
         break;
+#ifdef JS_CODEGEN_MIPS64
       case SizeDouble:
-        as_ldl(dest, base, hiOffset);
+        load = as_ldl(dest, base, hiOffset);
         as_ldr(dest, base, lowOffset);
         break;
+#endif
       default:
         MOZ_CRASH("Invalid argument for ma_load");
     }
+
+    append(access, load.getOffset(), asMasm().framePushed());
 }
 
 void
@@ -593,13 +615,13 @@ MacroAssemblerMIPSShared::ma_store(Imm32 imm, const BaseIndex& dest,
 }
 
 void
-MacroAssemblerMIPSShared::ma_store_unaligned(Register data, const BaseIndex& dest, Register temp,
+MacroAssemblerMIPSShared::ma_store_unaligned(const wasm::MemoryAccessDesc& access, Register data, const BaseIndex& dest, Register temp,
                                              LoadStoreSize size, LoadStoreExtension extension)
 {
     int16_t lowOffset, hiOffset;
     Register base;
 
-    asMasm().computeEffectiveAddress(dest, SecondScratchReg);
+    asMasm().computeScaledAddress(dest, SecondScratchReg);
 
     if (Imm16::IsInSignedRange(dest.offset) && Imm16::IsInSignedRange(dest.offset + size / 8 - 1)) {
         base = SecondScratchReg;
@@ -607,29 +629,87 @@ MacroAssemblerMIPSShared::ma_store_unaligned(Register data, const BaseIndex& des
         hiOffset = Imm16(dest.offset + size / 8 - 1).encode();
     } else {
         ma_li(ScratchRegister, Imm32(dest.offset));
-        as_daddu(ScratchRegister, SecondScratchReg, ScratchRegister);
+        asMasm().addPtr(SecondScratchReg, ScratchRegister);
         base = ScratchRegister;
         lowOffset = Imm16(0).encode();
         hiOffset = Imm16(size / 8 - 1).encode();
     }
 
+    BufferOffset store;
     switch (size) {
       case SizeHalfWord:
-        as_sb(data, base, lowOffset);
         as_ext(temp, data, 8, 8);
-        as_sb(temp, base, hiOffset);
+        store = as_sb(temp, base, hiOffset);
+        as_sb(data, base, lowOffset);
         break;
       case SizeWord:
-        as_swl(data, base, hiOffset);
+        store = as_swl(data, base, hiOffset);
         as_swr(data, base, lowOffset);
         break;
+#ifdef JS_CODEGEN_MIPS64
       case SizeDouble:
-        as_sdl(data, base, hiOffset);
+        store = as_sdl(data, base, hiOffset);
         as_sdr(data, base, lowOffset);
         break;
+#endif
       default:
         MOZ_CRASH("Invalid argument for ma_store");
     }
+
+    append(access, store.getOffset(), asMasm().framePushed());
+}
+
+void
+MacroAssemblerMIPSShared::branchWithCode(InstImm code, Label* label, JumpKind jumpKind)
+{
+    MOZ_ASSERT(code.encode() != InstImm(op_regimm, zero, rt_bgezal, BOffImm16(0)).encode());
+
+    if (label->bound()) {
+        int32_t offset = label->offset() - m_buffer.nextOffset().getOffset();
+
+        if (BOffImm16::IsInRange(offset))
+            jumpKind = ShortJump;
+
+        if (jumpKind == ShortJump) {
+            MOZ_ASSERT(BOffImm16::IsInRange(offset));
+            code.setBOffImm16(BOffImm16(offset));
+            writeInst(code.encode());
+            as_nop();
+            return;
+        }
+
+        InstImm inst_beq = InstImm(op_beq, zero, zero, BOffImm16(0));
+        if (code.encode() == inst_beq.encode()) {
+            // Handle mixed jump
+            addMixedJump(nextOffset(), label->offset());
+            as_j(JOffImm26(0));
+            as_nop();
+            return;
+        }
+
+        // Handle long conditional branch
+        addMixedJump(nextOffset(), label->offset(), MixedJumpPatch::CONDITIONAL);
+        writeInst(code.encode());
+        as_nop();
+        return;
+    }
+
+    // Generate mixed jump and link it to a label.
+
+    // Second word holds a pointer to the next branch in label's chain.
+    uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
+
+    // Make the whole branch continous in the buffer.
+    m_buffer.ensureSpace(2 * sizeof(uint32_t));
+
+    if (jumpKind == ShortJump) {
+        // Indicate that this is short jump with offset 4.
+        code.setBOffImm16(BOffImm16(4));
+    }
+    BufferOffset bo = writeInst(code.encode());
+    writeInst(nextInChain);
+    if (!oom())
+        label->use(bo.getOffset());
 }
 
 // Branches when done from within mips-specific code.
@@ -639,7 +719,7 @@ MacroAssemblerMIPSShared::ma_b(Register lhs, Register rhs, Label* label, Conditi
     switch (c) {
       case Equal :
       case NotEqual:
-        asMasm().branchWithCode(getBranchCode(lhs, rhs, c), label, jumpKind);
+        branchWithCode(getBranchCode(lhs, rhs, c), label, jumpKind);
         break;
       case Always:
         ma_b(label, jumpKind);
@@ -649,11 +729,11 @@ MacroAssemblerMIPSShared::ma_b(Register lhs, Register rhs, Label* label, Conditi
       case Signed:
       case NotSigned:
         MOZ_ASSERT(lhs == rhs);
-        asMasm().branchWithCode(getBranchCode(lhs, c), label, jumpKind);
+        branchWithCode(getBranchCode(lhs, c), label, jumpKind);
         break;
       default:
         Condition cond = ma_cmp(ScratchRegister, lhs, rhs, c);
-        asMasm().branchWithCode(getBranchCode(ScratchRegister, cond), label, jumpKind);
+        branchWithCode(getBranchCode(ScratchRegister, cond), label, jumpKind);
         break;
     }
 }
@@ -668,11 +748,19 @@ MacroAssemblerMIPSShared::ma_b(Register lhs, Imm32 imm, Label* label, Condition 
         else if (c == Below)
             ; // This condition is always false. No branch required.
         else
-            asMasm().branchWithCode(getBranchCode(lhs, c), label, jumpKind);
+            branchWithCode(getBranchCode(lhs, c), label, jumpKind);
     } else {
-        MOZ_ASSERT(lhs != ScratchRegister);
-        ma_li(ScratchRegister, imm);
-        ma_b(lhs, ScratchRegister, label, c, jumpKind);
+      switch (c) {
+        case Equal:
+        case NotEqual:
+          MOZ_ASSERT(lhs != ScratchRegister);
+          ma_li(ScratchRegister, imm);
+          ma_b(lhs, ScratchRegister, label, c, jumpKind);
+          break;
+        default:
+          Condition cond = ma_cmp(ScratchRegister, lhs, imm, c);
+          asMasm().branchWithCode(getBranchCode(ScratchRegister, cond), label, jumpKind);
+        }
     }
 }
 
@@ -705,7 +793,7 @@ template void MacroAssemblerMIPSShared::ma_b<ImmTag>(Register lhs, ImmTag rhs,
 void
 MacroAssemblerMIPSShared::ma_b(Label* label, JumpKind jumpKind)
 {
-    asMasm().branchWithCode(getBranchCode(BranchIsJump), label, jumpKind);
+    branchWithCode(getBranchCode(BranchIsJump), label, jumpKind);
 }
 
 void
@@ -714,6 +802,30 @@ MacroAssemblerMIPSShared::ma_b(wasm::TrapDesc target, JumpKind jumpKind)
     Label label;
     asMasm().branchWithCode(getBranchCode(BranchIsJump), &label, jumpKind);
     bindLater(&label, target);
+}
+
+void
+MacroAssemblerMIPSShared::ma_jal(Label* label)
+{
+    if (label->bound()) {
+        // Generate the mixed jump.
+        addMixedJump(nextOffset(), label->offset());
+        as_jal(JOffImm26(0));
+        as_nop();
+        return;
+    }
+
+    // Second word holds a pointer to the next branch in label's chain.
+    uint32_t nextInChain = label->used() ? label->offset() : LabelBase::INVALID_OFFSET;
+
+    // Make the whole branch continous in the buffer. The '2'
+    // instructions are writing at below (contain delay slot).
+    m_buffer.ensureSpace(2 * sizeof(uint32_t));
+
+    BufferOffset bo = as_jal(JOffImm26(0));
+    writeInst(nextInChain);
+    if (!oom())
+        label->use(bo.getOffset());
 }
 
 Assembler::Condition
@@ -768,20 +880,59 @@ MacroAssemblerMIPSShared::ma_cmp(Register scratch, Register lhs, Register rhs, C
         //   beq at,$zero,offs
         as_slt(scratch, rhs, lhs);
         return Equal;
-      case Equal :
-      case NotEqual:
-      case Zero:
-      case NonZero:
-      case Always:
-      case Signed:
-      case NotSigned:
-        MOZ_CRASH("There is a better way to compare for equality.");
-        break;
-      case Overflow:
-        MOZ_CRASH("Overflow condition not supported for MIPS.");
-        break;
       default:
-        MOZ_CRASH("Invalid condition for branch.");
+        MOZ_CRASH("Invalid condition.");
+    }
+    return Always;
+}
+
+Assembler::Condition
+MacroAssemblerMIPSShared::ma_cmp(Register scratch, Register lhs, Imm32 imm, Condition c)
+{
+    switch (c) {
+      case Above:
+      case BelowOrEqual:
+        if (Imm16::IsInSignedRange(imm.value + 1) && imm.value != -1) {
+          // lhs <= rhs via lhs < rhs + 1 if rhs + 1 does not overflow
+          as_sltiu(scratch, lhs, imm.value + 1);
+
+          return (c == BelowOrEqual ? NotEqual : Equal);
+        } else {
+          ma_li(scratch, imm);
+          as_sltu(scratch, scratch, lhs);
+          return (c == BelowOrEqual ? Equal : NotEqual);
+        }
+      case AboveOrEqual:
+      case Below:
+        if (Imm16::IsInSignedRange(imm.value)) {
+          as_sltiu(scratch, lhs, imm.value);
+        } else {
+          ma_li(scratch, imm);
+          as_sltu(scratch, lhs, scratch);
+        }
+        return (c == AboveOrEqual ? Equal : NotEqual);
+      case GreaterThan:
+      case LessThanOrEqual:
+        if (Imm16::IsInSignedRange(imm.value + 1)) {
+          // lhs <= rhs via lhs < rhs + 1.
+          as_slti(scratch, lhs, imm.value + 1);
+          return (c == LessThanOrEqual ? NotEqual : Equal);
+        } else {
+          ma_li(scratch, imm);
+          as_slt(scratch, scratch, lhs);
+          return (c == LessThanOrEqual ? Equal : NotEqual);
+        }
+      case GreaterThanOrEqual:
+      case LessThan:
+        if (Imm16::IsInSignedRange(imm.value)) {
+          as_slti(scratch, lhs, imm.value);
+        } else {
+          ma_li(scratch, imm);
+          as_slt(scratch, lhs, scratch);
+        }
+        return (c == GreaterThanOrEqual ? Equal : NotEqual);
+      default:
+        MOZ_CRASH("Invalid condition.");
     }
     return Always;
 }
@@ -853,22 +1004,21 @@ MacroAssemblerMIPSShared::ma_cmp_set(Register rd, Register rs, Register rt, Cond
       case Zero:
         MOZ_ASSERT(rs == rt);
         // seq d,s,$zero =>
-        //   xor d,s,$zero
-        //   sltiu d,d,1
-        as_xor(rd, rs, zero);
-        as_sltiu(rd, rd, 1);
+        //   sltiu d,s,1
+        as_sltiu(rd, rs, 1);
         break;
       case NonZero:
+        MOZ_ASSERT(rs == rt);
         // sne d,s,$zero =>
-        //   xor d,s,$zero
-        //   sltu d,$zero,d
-        as_xor(rd, rs, zero);
-        as_sltu(rd, zero, rd);
+        //   sltu d,$zero,s
+        as_sltu(rd, zero, rs);
         break;
       case Signed:
+        MOZ_ASSERT(rs == rt);
         as_slt(rd, rs, zero);
         break;
       case NotSigned:
+        MOZ_ASSERT(rs == rt);
         // sge d,s,$zero =>
         //   slt d,s,$zero
         //   xori d,d,1
@@ -876,7 +1026,7 @@ MacroAssemblerMIPSShared::ma_cmp_set(Register rd, Register rs, Register rt, Cond
         as_xori(rd, rd, 1);
         break;
       default:
-        MOZ_CRASH("Invalid condition for ma_cmp_set.");
+        MOZ_CRASH("Invalid condition.");
     }
 }
 
@@ -948,42 +1098,127 @@ MacroAssemblerMIPSShared::compareFloatingPoint(FloatFormat fmt, FloatRegister lh
 }
 
 void
+MacroAssemblerMIPSShared::GenerateMixedJumps()
+{
+    // Generate all mixed jumps.
+    for (size_t i = 0; i < numMixedJumps(); i++) {
+        MixedJumpPatch& mjp = mixedJump(i);
+        if (MixedJumpPatch::NONE == mjp.kind && mjp.target <= size())
+            continue;
+        BufferOffset bo = m_buffer.nextOffset();
+        if (MixedJumpPatch::CONDITIONAL & mjp.kind) {
+            // Leave space for conditional branch.
+            as_nop();
+            asMasm().ma_liPatchable(ScratchRegister, ImmWord(0));
+            as_jr(ScratchRegister);
+        }
+        asMasm().ma_liPatchable(ScratchRegister, ImmWord(0));
+        as_jr(ScratchRegister);
+        as_nop();
+        mjp.mid = bo;
+    }
+}
+
+void
 MacroAssemblerMIPSShared::ma_cmp_set_double(Register dest, FloatRegister lhs, FloatRegister rhs,
                                             DoubleCondition c)
 {
-    ma_li(dest, Imm32(0));
-    ma_li(ScratchRegister, Imm32(1));
-
     FloatTestKind moveCondition;
     compareFloatingPoint(DoubleFloat, lhs, rhs, c, &moveCondition);
 
+    ma_li(dest, Imm32(1));
+
     if (moveCondition == TestForTrue)
-        as_movt(dest, ScratchRegister);
+        as_movf(dest, zero);
     else
-        as_movf(dest, ScratchRegister);
+        as_movt(dest, zero);
 }
 
 void
 MacroAssemblerMIPSShared::ma_cmp_set_float32(Register dest, FloatRegister lhs, FloatRegister rhs,
                                              DoubleCondition c)
 {
-    ma_li(dest, Imm32(0));
-    ma_li(ScratchRegister, Imm32(1));
-
     FloatTestKind moveCondition;
     compareFloatingPoint(SingleFloat, lhs, rhs, c, &moveCondition);
 
+    ma_li(dest, Imm32(1));
+
     if (moveCondition == TestForTrue)
-        as_movt(dest, ScratchRegister);
+        as_movf(dest, zero);
     else
-        as_movf(dest, ScratchRegister);
+        as_movt(dest, zero);
 }
 
 void
 MacroAssemblerMIPSShared::ma_cmp_set(Register rd, Register rs, Imm32 imm, Condition c)
 {
-    ma_li(ScratchRegister, imm);
-    ma_cmp_set(rd, rs, ScratchRegister, c);
+    if (imm.value == 0) {
+        switch (c) {
+          case Equal :
+          case BelowOrEqual:
+            as_sltiu(rd, rs, 1);
+            break;
+          case NotEqual:
+          case Above:
+            as_sltu(rd, zero, rs);
+            break;
+          case AboveOrEqual:
+          case Below:
+            as_ori(rd, zero, c == AboveOrEqual ? 1: 0);
+            break;
+          case GreaterThan:
+          case LessThanOrEqual:
+            as_slt(rd, zero, rs);
+            if (c == LessThanOrEqual)
+                as_xori(rd, rd, 1);
+            break;
+          case LessThan:
+          case GreaterThanOrEqual:
+            as_slt(rd, rs, zero);
+            if (c == GreaterThanOrEqual)
+                as_xori(rd, rd, 1);
+            break;
+          case Zero:
+            as_sltiu(rd, rs, 1);
+            break;
+          case NonZero:
+            as_sltu(rd, zero, rs);
+            break;
+          case Signed:
+            as_slt(rd, rs, zero);
+            break;
+          case NotSigned:
+            as_slt(rd, rs, zero);
+            as_xori(rd, rd, 1);
+            break;
+          default:
+            MOZ_CRASH("Invalid condition.");
+        }
+        return;
+    }
+
+    switch (c) {
+      case Equal:
+      case NotEqual:
+        MOZ_ASSERT(rs != ScratchRegister);
+        ma_xor(rd, rs, imm);
+        if (c == Equal)
+            as_sltiu(rd, rd, 1);
+        else
+            as_sltu(rd, zero, rd);
+        break;
+      case Zero:
+      case NonZero:
+      case Signed:
+      case NotSigned:
+        MOZ_CRASH("Invalid condition.");
+      default:
+        Condition cond = ma_cmp(rd, rs, imm, c);
+        MOZ_ASSERT(cond == Equal || cond == NotEqual);
+
+        if(cond == Equal)
+            as_xori(rd, rd, 1);
+    }
 }
 
 // fp instructions
@@ -1071,7 +1306,7 @@ MacroAssemblerMIPSShared::ma_bc1s(FloatRegister lhs, FloatRegister rhs, Label* l
 {
     FloatTestKind testKind;
     compareFloatingPoint(SingleFloat, lhs, rhs, c, &testKind, fcc);
-    asMasm().branchWithCode(getBranchCode(testKind, fcc), label, jumpKind);
+    branchWithCode(getBranchCode(testKind, fcc), label, jumpKind);
 }
 
 void
@@ -1080,7 +1315,7 @@ MacroAssemblerMIPSShared::ma_bc1d(FloatRegister lhs, FloatRegister rhs, Label* l
 {
     FloatTestKind testKind;
     compareFloatingPoint(DoubleFloat, lhs, rhs, c, &testKind, fcc);
-    asMasm().branchWithCode(getBranchCode(testKind, fcc), label, jumpKind);
+    branchWithCode(getBranchCode(testKind, fcc), label, jumpKind);
 }
 
 void
@@ -1561,7 +1796,7 @@ MacroAssembler::call(Register reg)
 CodeOffset
 MacroAssembler::call(Label* label)
 {
-    ma_bal(label);
+    ma_jal(label);
     return CodeOffset(currentOffset());
 }
 

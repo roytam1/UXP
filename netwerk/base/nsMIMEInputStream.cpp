@@ -24,6 +24,7 @@
 
 using namespace mozilla::ipc;
 using mozilla::Maybe;
+using mozilla::Nothing;
 
 class nsMIMEInputStream : public nsIMIMEInputStream,
                           public nsISeekableStream,

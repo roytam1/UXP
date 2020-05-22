@@ -2285,10 +2285,17 @@ nsGenericHTMLFormElement::FormIdUpdated(Element* aOldElement,
 }
 
 bool 
-nsGenericHTMLFormElement::IsElementDisabledForEvents(EventMessage aMessage,
+nsGenericHTMLFormElement::IsElementDisabledForEvents(WidgetEvent* aEvent,
                                                      nsIFrame* aFrame)
 {
-  switch (aMessage) {
+  MOZ_ASSERT(aEvent);
+
+  // Allow dispatch of CustomEvent and untrusted Events.
+  if (!aEvent->IsTrusted()) {
+    return false;
+  }
+
+  switch (aEvent->mMessage) {
     case eMouseMove:
     case eMouseOver:
     case eMouseOut:
@@ -2454,8 +2461,9 @@ nsGenericHTMLFormElement::IsLabelable() const
 void
 nsGenericHTMLElement::Click()
 {
-  if (HandlingClick())
+  if (IsDisabled() || HandlingClick()) {
     return;
+  }
 
   // Strong in case the event kills it
   nsCOMPtr<nsIDocument> doc = GetComposedDoc();

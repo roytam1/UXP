@@ -18,7 +18,7 @@ LOCAL_INCLUDES += [
     '/netwerk/base',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'nsSocketProviderService.cpp',
     'nsSOCKSIOLayer.cpp',
     'nsSOCKSSocketProvider.cpp',
@@ -29,7 +29,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     XPIDL_SOURCES += [
         'nsINamedPipeService.idl',
     ]
-    UNIFIED_SOURCES += [
+    SOURCES += [
         'nsNamedPipeIOLayer.cpp',
         'nsNamedPipeService.cpp'
     ]

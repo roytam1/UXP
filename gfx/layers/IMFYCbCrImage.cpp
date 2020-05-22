@@ -13,6 +13,8 @@
 #include "mozilla/layers/TextureClient.h"
 #include "d3d9.h"
 
+using namespace mozilla::gfx;
+
 namespace mozilla {
 namespace layers {
 
@@ -67,10 +69,10 @@ struct AutoLockTexture
 static already_AddRefed<IDirect3DTexture9>
 InitTextures(IDirect3DDevice9* aDevice,
              const IntSize &aSize,
-            _D3DFORMAT aFormat,
-            RefPtr<IDirect3DSurface9>& aSurface,
-            HANDLE& aHandle,
-            D3DLOCKED_RECT& aLockedRect)
+             _D3DFORMAT aFormat,
+             RefPtr<IDirect3DSurface9>& aSurface,
+             HANDLE& aHandle,
+             D3DLOCKED_RECT& aLockedRect)
 {
   if (!aDevice) {
     return nullptr;

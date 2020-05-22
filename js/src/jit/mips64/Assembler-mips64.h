@@ -143,28 +143,17 @@ class Assembler : public AssemblerMIPSShared
 
     static uintptr_t GetPointer(uint8_t*);
 
-    using AssemblerMIPSShared::bind;
-
-    void bind(RepatchLabel* label);
     void Bind(uint8_t* rawCode, CodeOffset* label, const void* address);
 
     static void TraceJumpRelocations(JSTracer* trc, JitCode* code, CompactBufferReader& reader);
     static void TraceDataRelocations(JSTracer* trc, JitCode* code, CompactBufferReader& reader);
 
-    void bind(InstImm* inst, uintptr_t branch, uintptr_t target);
-
-    // Copy the assembly code to the given buffer, and perform any pending
-    // relocations relying on the target address.
-    void executableCopy(uint8_t* buffer);
-
-    static uint32_t PatchWrite_NearCallSize();
-
+    static uint32_t InstructionImmediateSize() {
+        return 4 * sizeof(uint32_t);
+    }
     static uint64_t ExtractLoad64Value(Instruction* inst0);
     static void UpdateLoad64Value(Instruction* inst0, uint64_t value);
-    static void WriteLoad64Instructions(Instruction* inst0, Register reg, uint64_t value);
 
-
-    static void PatchWrite_NearCall(CodeLocationLabel start, CodeLocationLabel toCall);
     static void PatchDataWithValueCheck(CodeLocationLabel label, ImmPtr newValue,
                                         ImmPtr expectedValue);
     static void PatchDataWithValueCheck(CodeLocationLabel label, PatchedImmPtr newValue,

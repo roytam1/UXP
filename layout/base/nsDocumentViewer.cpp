@@ -544,10 +544,12 @@ nsDocumentViewer::~nsDocumentViewer()
     mDocument->Destroy();
   }
 
+#ifdef NS_PRINTING
   if (mPrintEngine) {
     mPrintEngine->Destroy();
     mPrintEngine = nullptr;
   }
+#endif
 
   MOZ_RELEASE_ASSERT(mDestroyRefCount == 0);
   NS_ASSERTION(!mPresShell && !mPresContext,

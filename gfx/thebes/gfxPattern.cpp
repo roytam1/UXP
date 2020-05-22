@@ -17,6 +17,7 @@
 
 #include <vector>
 
+using namespace mozilla;
 using namespace mozilla::gfx;
 
 gfxPattern::gfxPattern(const Color& aColor)

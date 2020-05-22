@@ -6,6 +6,7 @@
 #include "GPUProcessManager.h"
 #include "GPUProcessHost.h"
 #include "GPUProcessListener.h"
+#include "GPUChild.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/layers/APZCTreeManager.h"
@@ -20,6 +21,7 @@
 #ifdef MOZ_WIDGET_SUPPORTS_OOP_COMPOSITING
 # include "mozilla/widget/CompositorWidgetChild.h"
 #endif
+#include "gfxConfig.h"
 #include "nsBaseWidget.h"
 #include "nsContentUtils.h"
 #include "VsyncBridgeChild.h"
@@ -28,6 +30,9 @@
 #include "mozilla/dom/VideoDecoderManagerChild.h"
 #include "mozilla/dom/VideoDecoderManagerParent.h"
 #include "MediaPrefs.h"
+
+using namespace mozilla::ipc;
+using namespace mozilla::widget;
 
 namespace mozilla {
 namespace gfx {

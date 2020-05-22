@@ -207,7 +207,7 @@ public:
    */
   inline bool AllowDraggableChildren() const;
 
-  virtual bool IsDisabledForEvents(mozilla::EventMessage aMessage)
+  virtual bool IsDisabledForEvents(mozilla::WidgetEvent* aEvent)
   {
     return false;
   }

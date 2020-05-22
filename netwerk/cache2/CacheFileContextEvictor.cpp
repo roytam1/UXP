@@ -8,6 +8,7 @@
 #include "CacheIndex.h"
 #include "CacheIndexIterator.h"
 #include "CacheFileUtils.h"
+#include "CacheObserver.h"
 #include "nsIFile.h"
 #include "LoadContextInfo.h"
 #include "nsThreadUtils.h"
