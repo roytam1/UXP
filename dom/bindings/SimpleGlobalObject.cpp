@@ -13,6 +13,7 @@
 #include "nsNullPrincipal.h"
 #include "nsThreadUtils.h"
 #include "nsContentUtils.h"
+#include "nsWrapperCacheInlines.h"
 
 #include "xpcprivate.h"
 

@@ -11,6 +11,9 @@
 #include "nsCOMPtr.h"
 #include "nsComputedDOMStyle.h"
 #include "nsDebug.h"
+#ifdef DEBUG
+#include "nsDocument.h"
+#endif
 #include "nsError.h"
 #include "nsGkAtoms.h"
 #include "nsIAtom.h"
