@@ -7,6 +7,10 @@
 #define HTMLEditUtils_h
 
 #include <stdint.h>
+#ifdef DEBUG
+// Used by various files for debug logging; included here to reduce duplication
+#include "nsDocument.h"
+#endif
 
 class nsIDOMNode;
 class nsINode;
