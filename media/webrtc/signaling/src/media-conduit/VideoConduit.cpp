@@ -521,6 +521,8 @@ WebrtcVideoConduit::DeleteStreams()
     mVideoCodecStat->EndOfCallStats();
   }
   mVideoCodecStat = nullptr;
+  //This does Release AudioConduit before mPtrViEBase set nullptr.
+  SyncTo(nullptr);
   // We can't delete the VideoEngine until all these are released!
   // And we can't use a Scoped ptr, since the order is arbitrary
   mPtrViEBase = nullptr;
@@ -543,6 +545,11 @@ WebrtcVideoConduit::SyncTo(WebrtcAudioConduit *aConduit)
 {
   CSFLogDebug(logTag, "%s Synced to %p", __FUNCTION__, aConduit);
 
+  if (!mPtrViEBase) {
+    // ViEBase has already been released; we no longer have a conduit.
+    mSyncedTo = nullptr;
+    return;
+  }
   // SyncTo(value) syncs to the AudioConduit, and if already synced replaces
   // the current sync target.  SyncTo(nullptr) cancels any existing sync and
   // releases the strong ref to AudioConduit.

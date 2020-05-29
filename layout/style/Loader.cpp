@@ -50,6 +50,7 @@
 #include "nsGkAtoms.h"
 #include "nsIThreadInternal.h"
 #include "nsINetworkPredictor.h"
+#include "nsITimedChannel.h"
 #include "mozilla/dom/ShadowRoot.h"
 #include "mozilla/dom/URL.h"
 #include "mozilla/AsyncEventDispatcher.h"

@@ -8,6 +8,7 @@
 #include "mozilla/dom/WorkletGlobalScopeBinding.h"
 #include "mozilla/dom/Console.h"
 #include "nsContentUtils.h"
+#include "nsWrapperCacheInlines.h"
 
 namespace mozilla {
 namespace dom {
