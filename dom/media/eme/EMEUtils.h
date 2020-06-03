@@ -11,6 +11,7 @@
 #include "mozilla/Logging.h"
 #include "nsString.h"
 #include "nsTArray.h"
+#include "mozilla/dom/TypedArray.h"
 
 namespace mozilla {
 
