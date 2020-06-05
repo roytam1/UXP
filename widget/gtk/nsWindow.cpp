@@ -67,6 +67,7 @@
 
 #include "mozilla/Assertions.h"
 #include "mozilla/Likely.h"
+#include "mozilla/Move.h"
 #include "mozilla/Preferences.h"
 #include "nsIPrefService.h"
 #include "nsIGConfService.h"
@@ -5173,6 +5174,11 @@ nsWindow::HideWindowChrome(bool aShouldHide)
 #endif /* MOZ_X11 */
 
     return NS_OK;
+}
+
+void
+nsWindow::SetMenuBar(UniquePtr<nsMenuBar> aMenuBar) {
+    mMenuBar = mozilla::Move(aMenuBar);
 }
 
 bool

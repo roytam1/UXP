@@ -38,9 +38,11 @@ elif toolkit == 'cocoa':
         'nsITaskbarProgress.idl',
     ]
     EXPORTS += [
-        'nsINativeMenuService.h',
         'nsIPrintDialogService.h',
     ]
+
+if toolkit in ('cocoa', 'gtk2', 'gtk3'):
+    EXPORTS += ['nsINativeMenuService.h']
 
 # Don't build the DSO under the 'build' directory as windows does.
 #

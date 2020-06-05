@@ -307,6 +307,15 @@ toolbar[type="menubar"][autohide="true"][inactive="true"]:not([customizing="true
 }
 %endif
 
+%ifdef MOZ_WIDGET_GTK
+window[shellshowingmenubar="true"] menubar,
+window[shellshowingmenubar="true"]
+toolbar[type="menubar"]:not([customizing="true"]) {
+  /* If a system-wide global menubar is in use, hide the XUL menubar. */
+  display: none !important;
+}
+%endif
+
 toolbarseparator {
   -moz-binding: url("chrome://global/content/bindings/toolbar.xml#toolbardecoration");
 }
