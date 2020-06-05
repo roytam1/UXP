@@ -9,6 +9,7 @@
 
 #include "ImageContainer.h"
 #include "DecoderDoctorDiagnostics.h"
+#include "ImageContainer.h"
 #include "MediaDecoderReader.h"
 #include "MediaInfo.h"
 #include "mozilla/MozPromise.h"

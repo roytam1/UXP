@@ -18,7 +18,8 @@ directory. This will contain relevant documentation regarding contributing,
 using and distributing this code and its binaries.
 
 If you are interested in the development and building side of things, some
-information will be available on the [Pale Moon developer wiki](http://developer.palemoon.org).
+information will be available on the [Pale Moon developer site](http://developer.palemoon.org).
+You are also always welcome to get in touch with our community on the [Pale Moon forum](https://forum.palemoon.org/).
 
 ### A note about trademarks and branding
 
