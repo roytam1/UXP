@@ -2298,9 +2298,9 @@ function losslessDecodeURI(aURI) {
   }
   
   // Encode invisible characters (C0/C1 control characters, U+007F [DEL],
-  // U+00A0 [no-break space], line and paragraph separator,
+  // U+00A0 [no-break space], line and paragraph separator, braille space,
   // object replacement character) (bug 452979, bug 909264)
-  value = value.replace(/[\u0000-\u001f\u007f-\u00a0\u2028\u2029\ufffc]/g,
+  value = value.replace(/[\u0000-\u001f\u007f-\u00a0\u2028\u2029\u2800\ufffc]/g,
                         encodeURIComponent);
 
   // Encode default ignorable characters (bug 546013)

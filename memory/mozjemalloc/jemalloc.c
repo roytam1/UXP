@@ -360,10 +360,6 @@ void *_mmap(void *addr, size_t length, int prot, int flags,
 #endif
 #endif
 
-#if defined(MOZ_MEMORY_SOLARIS) && defined(MAP_ALIGN) && !defined(JEMALLOC_NEVER_USES_MAP_ALIGN)
-#define JEMALLOC_USES_MAP_ALIGN	 /* Required on Solaris 10. Might improve performance elsewhere. */
-#endif
-
 #ifndef __DECONST
 #define __DECONST(type, var) ((type)(uintptr_t)(const void *)(var))
 #endif
@@ -1945,33 +1941,12 @@ pages_unmap(void *addr, size_t size)
 	}
 }
 #else
-#ifdef JEMALLOC_USES_MAP_ALIGN
-static void *
-pages_map_align(size_t size, size_t alignment)
-{
-	void *ret;
-
-	/*
-	 * We don't use MAP_FIXED here, because it can cause the *replacement*
-	 * of existing mappings, and we only want to create new mappings.
-	 */
-	ret = mmap((void *)alignment, size, PROT_READ | PROT_WRITE,
-		MAP_PRIVATE | MAP_NOSYNC | MAP_ALIGN | MAP_ANON, -1, 0);
-	assert(ret != NULL);
-
-	if (ret == MAP_FAILED)
-		ret = NULL;
-	else
-		MozTagAnonymousMemory(ret, size, "jemalloc");
-	return (ret);
-}
-#endif
 
 static void *
 pages_map(void *addr, size_t size)
 {
 	void *ret;
-#if defined(__ia64__) || (defined(__sparc__) && defined(__arch64__) && defined(__linux__))
+#if defined(__ia64__) || (defined(__sparc__) && defined(__arch64__) && defined(__linux__)) || (defined(__sun) && defined(__x86_64__))
         /*
          * The JS engine assumes that all allocated pointers have their high 17 bits clear,
          * which ia64's mmap doesn't support directly. However, we can emulate it by passing
@@ -1992,7 +1967,7 @@ pages_map(void *addr, size_t size)
 	}
 #endif
 
-#if defined(__sparc__) && defined(__arch64__) && defined(__linux__)
+#if defined(__sparc__) && defined(__arch64__) && defined(__linux__) || (defined(__sun) && defined(__x86_64__))
     const uintptr_t start = 0x0000070000000000ULL;
     const uintptr_t end   = 0x0000800000000000ULL;
 
@@ -2026,7 +2001,7 @@ pages_map(void *addr, size_t size)
 	if (ret == MAP_FAILED) {
 		ret = NULL;
 	}
-#if defined(__ia64__) || (defined(__sparc__) && defined(__arch64__) && defined(__linux__))
+#if defined(__ia64__) || (defined(__sparc__) && defined(__arch64__) && defined(__linux__)) || (defined(__sun) && defined(__x86_64__))
         /*
          * If the allocated memory doesn't have its upper 17 bits clear, consider it
          * as out of memory.
@@ -2059,7 +2034,7 @@ pages_map(void *addr, size_t size)
 		MozTagAnonymousMemory(ret, size, "jemalloc");
 	}
 
-#if defined(__ia64__) || (defined(__sparc__) && defined(__arch64__) && defined(__linux__))
+#if defined(__ia64__) || (defined(__sparc__) && defined(__arch64__) && defined(__linux__)) || (defined(__sun) && defined(__x86_64__))
 	assert(ret == NULL || (!check_placement && ret != NULL)
 	    || (check_placement && ret == addr));
 #else
@@ -2310,9 +2285,6 @@ chunk_alloc_mmap_slow(size_t size, size_t alignment)
 static void *
 chunk_alloc_mmap(size_t size, size_t alignment)
 {
-#ifdef JEMALLOC_USES_MAP_ALIGN
-        return pages_map_align(size, alignment);
-#else
         void *ret;
         size_t offset;
 
@@ -2340,7 +2312,6 @@ chunk_alloc_mmap(size_t size, size_t alignment)
 
         assert(ret != NULL);
         return (ret);
-#endif
 }
 
 bool
@@ -5345,15 +5316,6 @@ MALLOC_OUT:
 #endif
 
 	recycled_size = 0;
-
-#ifdef JEMALLOC_USES_MAP_ALIGN
-	/*
-	 * When using MAP_ALIGN, the alignment parameter must be a power of two
-	 * multiple of the system pagesize, or mmap will fail.
-	 */
-	assert((chunksize % pagesize) == 0);
-	assert((1 << (ffs(chunksize / pagesize) - 1)) == (chunksize/pagesize));
-#endif
 
 	/* Various sanity checks that regard configuration. */
 	assert(quantum >= sizeof(void *));

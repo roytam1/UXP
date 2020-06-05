@@ -121,6 +121,7 @@ class GlobalObject : public NativeObject
         FOR_OF_PIC_CHAIN,
         MODULE_RESOLVE_HOOK,
         WINDOW_PROXY,
+        GLOBAL_THIS_RESOLVED,
 
         /* Total reserved-slot count for global objects. */
         RESERVED_SLOTS
@@ -170,6 +171,8 @@ class GlobalObject : public NativeObject
     static bool resolveConstructor(JSContext* cx, Handle<GlobalObject*> global, JSProtoKey key);
     static bool initBuiltinConstructor(JSContext* cx, Handle<GlobalObject*> global,
                                        JSProtoKey key, HandleObject ctor, HandleObject proto);
+
+    static bool maybeResolveGlobalThis(JSContext* cx, Handle<GlobalObject*> global, bool* resolved);
 
     void setConstructor(JSProtoKey key, const Value& v) {
         MOZ_ASSERT(key <= JSProto_LIMIT);
