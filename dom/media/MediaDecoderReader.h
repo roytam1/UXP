@@ -17,6 +17,7 @@
 #include "MediaMetadataManager.h"
 #include "MediaQueue.h"
 #include "MediaTimer.h"
+#include "MP3Demuxer.h"
 #include "AudioCompactor.h"
 #include "Intervals.h"
 #include "TimeUnits.h"
