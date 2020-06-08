@@ -11,8 +11,6 @@ else:
 
 updater_rel_path = ''
 include('updater-common.build')
-if CONFIG['ENABLE_TESTS']:
-    DIRS += ['updater-xpcshell']
 
 CXXFLAGS += CONFIG['MOZ_BZ2_CFLAGS']
 
