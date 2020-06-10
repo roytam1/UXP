@@ -25,8 +25,21 @@
         </getter>
       </property>
 
+#ifdef MOZ_WIDGET_GTK
+      <property name="state" readonly="true">
+        <getter>
+        <![CDATA[
+          if (this.hasAttribute('_moz-nativemenupopupstate'))
+            return this.getAttribute('_moz-nativemenupopupstate');
+          else
+            return this.popupBoxObject.popupState;
+        ]]>
+        </getter>
+      </property>
+#else
       <property name="state" readonly="true"
                 onget="return this.popupBoxObject.popupState"/>
+#endif
 
       <property name="triggerNode" readonly="true"
                 onget="return this.popupBoxObject.triggerNode"/>

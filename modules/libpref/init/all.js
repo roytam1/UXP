@@ -251,6 +251,10 @@ pref("browser.sessionhistory.max_total_viewers", -1);
 pref("browser.newtabpage.add_to_session_history", false);
 
 pref("ui.use_native_colors", true);
+#ifdef MOZ_WIDGET_GTK
+// Determines whether the menubar is shown in the global menubar or not.
+pref("ui.use_global_menubar", false);
+#endif
 pref("ui.click_hold_context_menus", false);
 // Duration of timeout of incremental search in menus (ms).  0 means infinite.
 pref("ui.menu.incremental_search.timeout", 1000);
@@ -5388,13 +5392,6 @@ pref("layout.css.color-adjust.enabled", true);
 
 pref("dom.audiochannel.audioCompeting", false);
 pref("dom.audiochannel.audioCompeting.allAgents", false);
-
-// Disable Node.rootNode in release builds.
-#ifdef RELEASE_OR_BETA
-pref("dom.node.rootNode.enabled", false);
-#else
-pref("dom.node.rootNode.enabled", true);
-#endif
 
 // Default media volume
 pref("media.default_volume", "1.0");
