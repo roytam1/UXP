@@ -12,7 +12,8 @@
 namespace mozilla {
 namespace dom {
 
-NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(FetchController, mGlobal, mSignal)
+NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(FetchController, mGlobal, mSignal,
+                                      mFollowingSignal) 
 
 NS_IMPL_CYCLE_COLLECTING_ADDREF(FetchController)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(FetchController)
@@ -97,13 +98,29 @@ FetchController::Abort()
 void
 FetchController::Follow(FetchSignal& aSignal)
 {
-  // TODO
+  FetchSignal::Follower::Follow(&aSignal);
 }
 
 void
 FetchController::Unfollow(FetchSignal& aSignal)
 {
-  // TODO
+  if (mFollowingSignal != &aSignal) {
+    return;
+  }
+
+  FetchSignal::Follower::Unfollow();
+}
+
+FetchSignal*
+FetchController::Following() const
+{
+  return mFollowingSignal;
+}
+
+void
+FetchController::Aborted()
+{
+  Abort();
 }
 
 } // dom namespace
