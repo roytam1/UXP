@@ -37,6 +37,10 @@ FetchSignal::FetchSignal(FetchController* aController,
   , mAborted(aAborted)
 {}
 
+FetchSignal::FetchSignal(bool aAborted)
+  : mAborted(aAborted)
+{}
+
 JSObject*
 FetchSignal::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
@@ -94,6 +98,10 @@ bool
 FetchSignal::CanAcceptFollower(FetchSignal::Follower* aFollower) const
 {
   MOZ_DIAGNOSTIC_ASSERT(aFollower);
+
+  if (!mController) {
+    return true;
+  }
 
   if (aFollower == mController) {
     return false;

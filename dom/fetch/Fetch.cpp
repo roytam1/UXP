@@ -52,41 +52,137 @@ namespace dom {
 
 using namespace workers;
 
+// This class helps the proxying of FetchSignal changes cross threads.
+class FetchSignalProxy final : public FetchSignal::Follower
+{
+  // This is created and released on the main-thread.
+  RefPtr<FetchSignal> mSignalMainThread;
+
+  // This value is used only for the creation of FetchSignal on the
+  // main-thread. They are not updated.
+  const bool mAborted;
+
+  // This runnable propagates changes from the FetchSignal on workers to the
+  // FetchSignal on main-thread.
+  class FetchSignalProxyRunnable final : public Runnable
+  {
+    RefPtr<FetchSignalProxy> mProxy;
+
+  public:
+    explicit FetchSignalProxyRunnable(FetchSignalProxy* aProxy)
+      : mProxy(aProxy)
+    {}
+
+    NS_IMETHOD
+    Run() override
+    {
+      MOZ_ASSERT(NS_IsMainThread());
+      FetchSignal* signal = mProxy->GetOrCreateSignalForMainThread();
+      signal->Abort();
+      return NS_OK;
+    }
+  };
+
+public:
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(FetchSignalProxy)
+
+  explicit FetchSignalProxy(FetchSignal* aSignal)
+    : mAborted(aSignal->Aborted())
+  {
+    Follow(aSignal);
+  }
+
+  void
+  Aborted() override
+  {
+    RefPtr<FetchSignalProxyRunnable> runnable =
+      new FetchSignalProxyRunnable(this);
+    NS_DispatchToMainThread(runnable);
+  }
+
+  FetchSignal*
+  GetOrCreateSignalForMainThread()
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+    if (!mSignalMainThread) {
+      mSignalMainThread = new FetchSignal(mAborted);
+    }
+    return mSignalMainThread;
+  }
+
+  void
+  Shutdown()
+  {
+    Unfollow();
+  }
+
+private:
+  ~FetchSignalProxy()
+  {
+    NS_ReleaseOnMainThread(mSignalMainThread.forget());
+  }
+};
+
 class WorkerFetchResolver final : public FetchDriverObserver
 {
   friend class MainThreadFetchRunnable;
+  friend class WorkerFetchResponseEndBase;
   friend class WorkerFetchResponseEndRunnable;
   friend class WorkerFetchResponseRunnable;
 
   RefPtr<PromiseWorkerProxy> mPromiseProxy;
+  RefPtr<FetchSignalProxy> mSignalProxy;
+
 public:
   // Returns null if worker is shutting down.
   static already_AddRefed<WorkerFetchResolver>
-  Create(workers::WorkerPrivate* aWorkerPrivate, Promise* aPromise)
+  Create(workers::WorkerPrivate* aWorkerPrivate, Promise* aPromise,
+         FetchSignal* aSignal)
   {
     MOZ_ASSERT(aWorkerPrivate);
     aWorkerPrivate->AssertIsOnWorkerThread();
-    RefPtr<PromiseWorkerProxy> proxy = PromiseWorkerProxy::Create(aWorkerPrivate, aPromise);
+    RefPtr<PromiseWorkerProxy> proxy =
+      PromiseWorkerProxy::Create(aWorkerPrivate, aPromise);
     if (!proxy) {
       return nullptr;
     }
 
-    RefPtr<WorkerFetchResolver> r = new WorkerFetchResolver(proxy);
+    RefPtr<FetchSignalProxy> signalProxy;
+    if (aSignal) {
+      signalProxy = new FetchSignalProxy(aSignal);
+    }
+
+    RefPtr<WorkerFetchResolver> r = new WorkerFetchResolver(proxy, signalProxy);
     return r.forget();
+  }
+
+  FetchSignal*
+  GetFetchSignal()
+  {
+    MOZ_ASSERT(NS_IsMainThread());
+
+    if (!mSignalProxy) {
+      return nullptr;
+    }
+
+    return mSignalProxy->GetOrCreateSignalForMainThread();
   }
 
   void
   OnResponseAvailableInternal(InternalResponse* aResponse) override;
 
   void
-  OnResponseEnd() override;
+  OnResponseEnd(FetchDriverObserver::EndReason eReason) override;
 
 private:
-  explicit WorkerFetchResolver(PromiseWorkerProxy* aProxy)
+   WorkerFetchResolver(PromiseWorkerProxy* aProxy,
+                       FetchSignalProxy* aSignalProxy)
     : mPromiseProxy(aProxy)
+    , mSignalProxy(aSignalProxy)
   {
     MOZ_ASSERT(!NS_IsMainThread());
     MOZ_ASSERT(mPromiseProxy);
+
   }
 
   ~WorkerFetchResolver()
@@ -115,8 +211,12 @@ public:
     mDocument = aDocument;
   }
 
-  virtual void OnResponseEnd() override
+  void OnResponseEnd(FetchDriverObserver::EndReason aReason) override
   {
+    if (aReason == eAborted) {
+      mPromise->MaybeReject(NS_ERROR_DOM_ABORT_ERR);
+    }
+
     FlushConsoleReport();
   }
 
@@ -170,9 +270,11 @@ public:
       fetch->SetWorkerScript(spec);
     }
 
+    RefPtr<FetchSignal> signal = mResolver->GetFetchSignal();
+
     // ...but release it before calling Fetch, because mResolver's callback can
     // be called synchronously and they want the mutex, too.
-    return fetch->Fetch(mResolver);
+    return fetch->Fetch(signal, mResolver);
   }
 };
 
@@ -210,6 +312,12 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
 
   RefPtr<InternalRequest> r = request->GetInternalRequest();
 
+  RefPtr<FetchSignal> signal;
+  if (aInit.mSignal.WasPassed()) {
+    signal = &aInit.mSignal.Value();
+    // Let's FetchDriver to deal with an already aborted signal.
+  }
+
   if (NS_IsMainThread()) {
     nsCOMPtr<nsPIDOMWindowInner> window = do_QueryInterface(aGlobal);
     nsCOMPtr<nsIDocument> doc;
@@ -240,7 +348,7 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
     RefPtr<FetchDriver> fetch = new FetchDriver(r, principal, loadGroup);
     fetch->SetDocument(doc);
     resolver->SetDocument(doc);
-    aRv = fetch->Fetch(resolver);
+    aRv = fetch->Fetch(signal, resolver);
     if (NS_WARN_IF(aRv.Failed())) {
       return nullptr;
     }
@@ -252,7 +360,7 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
       r->SetSkipServiceWorker();
     }
 
-    RefPtr<WorkerFetchResolver> resolver = WorkerFetchResolver::Create(worker, p);
+    RefPtr<WorkerFetchResolver> resolver = WorkerFetchResolver::Create(worker, p, signal);
     if (!resolver) {
       NS_WARNING("Could not add WorkerFetchResolver workerHolder to worker");
       aRv.Throw(NS_ERROR_DOM_ABORT_ERR);
@@ -306,6 +414,7 @@ public:
     , mResolver(aResolver)
     , mInternalResponse(aResponse)
   {
+     MOZ_ASSERT(mResolver);
   }
 
   bool
@@ -332,9 +441,13 @@ public:
 class WorkerFetchResponseEndBase
 {
   RefPtr<PromiseWorkerProxy> mPromiseProxy;
+  RefPtr<FetchSignalProxy> mSignalProxy;
+
 public:
-  explicit WorkerFetchResponseEndBase(PromiseWorkerProxy* aPromiseProxy)
+  WorkerFetchResponseEndBase(PromiseWorkerProxy* aPromiseProxy,
+                             FetchSignalProxy* aSignalProxy)
     : mPromiseProxy(aPromiseProxy)
+    , mSignalProxy(aSignalProxy)
   {
     MOZ_ASSERT(mPromiseProxy);
   }
@@ -344,7 +457,16 @@ public:
   {
     MOZ_ASSERT(aWorkerPrivate);
     aWorkerPrivate->AssertIsOnWorkerThread();
+
+    RefPtr<Promise> promise = mPromiseProxy->WorkerPromise();
+    promise->MaybeReject(NS_ERROR_DOM_ABORT_ERR);
+
     mPromiseProxy->CleanUp();
+
+    if (mSignalProxy) {
+      mSignalProxy->Shutdown();
+      mSignalProxy = nullptr;
+    }
   }
 };
 
@@ -352,9 +474,10 @@ class WorkerFetchResponseEndRunnable final : public MainThreadWorkerRunnable
                                            , public WorkerFetchResponseEndBase
 {
 public:
-  explicit WorkerFetchResponseEndRunnable(PromiseWorkerProxy* aPromiseProxy)
+  WorkerFetchResponseEndRunnable(PromiseWorkerProxy* aPromiseProxy,
+                                 FetchSignalProxy* aSignalProxy)
     : MainThreadWorkerRunnable(aPromiseProxy->GetWorkerPrivate())
-    , WorkerFetchResponseEndBase(aPromiseProxy)
+    , WorkerFetchResponseEndBase(aPromiseProxy, aSignalProxy)
   {
   }
 
@@ -379,9 +502,10 @@ class WorkerFetchResponseEndControlRunnable final : public MainThreadWorkerContr
                                                   , public WorkerFetchResponseEndBase
 {
 public:
-  explicit WorkerFetchResponseEndControlRunnable(PromiseWorkerProxy* aPromiseProxy)
+  WorkerFetchResponseEndControlRunnable(PromiseWorkerProxy* aPromiseProxy,
+                                        FetchSignalProxy* aSignalProxy)
     : MainThreadWorkerControlRunnable(aPromiseProxy->GetWorkerPrivate())
-    , WorkerFetchResponseEndBase(aPromiseProxy)
+    , WorkerFetchResponseEndBase(aPromiseProxy, aSignalProxy)
   {
   }
 
@@ -415,7 +539,7 @@ WorkerFetchResolver::OnResponseAvailableInternal(InternalResponse* aResponse)
 }
 
 void
-WorkerFetchResolver::OnResponseEnd()
+WorkerFetchResolver::OnResponseEnd(FetchDriverObserver::EndReason aReason)
 {
   AssertIsOnMainThread();
   MutexAutoLock lock(mPromiseProxy->Lock());
@@ -426,11 +550,11 @@ WorkerFetchResolver::OnResponseEnd()
   FlushConsoleReport();
 
   RefPtr<WorkerFetchResponseEndRunnable> r =
-    new WorkerFetchResponseEndRunnable(mPromiseProxy);
+    new WorkerFetchResponseEndRunnable(mPromiseProxy, mSignalProxy);
 
   if (!r->Dispatch()) {
     RefPtr<WorkerFetchResponseEndControlRunnable> cr =
-      new WorkerFetchResponseEndControlRunnable(mPromiseProxy);
+      new WorkerFetchResponseEndControlRunnable(mPromiseProxy, mSignalProxy);
     // This can fail if the worker thread is canceled or killed causing
     // the PromiseWorkerProxy to give up its WorkerHolder immediately,
     // allowing the worker thread to become Dead.
