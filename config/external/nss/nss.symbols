@@ -112,6 +112,7 @@ CERT_GetCertChainFromCert
 CERT_GetCertEmailAddress
 CERT_GetCertificateDer
 CERT_GetCertificateRequestExtensions
+CERT_GetCertKeyType
 CERT_GetCertTimes
 CERT_GetCertTrust
 CERT_GetCommonName
@@ -270,6 +271,7 @@ NSS_Init
 NSS_Initialize
 NSS_InitWithMerge
 NSS_IsInitialized
+NSS_OptionGet
 NSS_OptionSet
 NSS_NoDB_Init
 NSS_SecureMemcmp
@@ -383,6 +385,7 @@ PK11_GetNextSymKey
 PK11_GetPadMechanism
 PK11_GetPrivateKeyNickname
 PK11_GetPrivateModulusLen
+PK11_GetSlotFromPrivateKey
 PK11_GetSlotID
 PK11_GetSlotInfo
 PK11_GetSlotName

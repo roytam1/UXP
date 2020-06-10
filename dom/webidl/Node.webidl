@@ -38,8 +38,8 @@ interface Node : EventTarget {
   readonly attribute boolean isConnected;
   [Pure]
   readonly attribute Document? ownerDocument;
-  [Pure, Pref="dom.node.rootNode.enabled"]
-  readonly attribute Node rootNode;
+  [Pure]
+  Node getRootNode(optional GetRootNodeOptions options);
   [Pure]
   readonly attribute Node? parentNode;
   [Pure]
@@ -113,3 +113,8 @@ interface Node : EventTarget {
   readonly attribute AccessibleNode? accessibleNode;
 #endif
 };
+
+dictionary GetRootNodeOptions {
+  boolean composed = false;
+};
+

@@ -73,7 +73,7 @@
 
 #include "nsPIWindowRoot.h"
 
-#ifdef XP_MACOSX
+#if defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
 #include "nsINativeMenuService.h"
 #define USE_NATIVE_MENUS
 #endif
