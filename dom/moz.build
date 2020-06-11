@@ -37,6 +37,7 @@ interfaces = [
 DIRS += ['interfaces/' + i for i in interfaces]
 
 DIRS += [
+    'abort',
     'animation',
     'apps',
     'base',
