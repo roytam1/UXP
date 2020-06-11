@@ -650,10 +650,10 @@ WEBIDL_FILES += [
 # We only expose our prefable test interfaces in debug builds, just to be on
 # the safe side.
 if CONFIG['MOZ_DEBUG']:
-    WEBIDL_FILES += ['TestFunctions.webidl',
-                     'TestInterfaceJS.webidl',
-                     'TestInterfaceJSDictionaries.webidl',
-                     'TestInterfaceJSMaplikeSetlikeIterable.webidl']
+    WEBIDL_FILES += [
+         'TestInterfaceJS.webidl',
+         'TestInterfaceJSDictionaries.webidl',
+    ]
 
 if CONFIG['MOZ_SECUREELEMENT']:
     WEBIDL_FILES += [
