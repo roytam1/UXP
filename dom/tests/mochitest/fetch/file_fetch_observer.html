@@ -19,7 +19,7 @@ function testObserver() {
 }
 
 function testObserveAbort() {
-  var fc = new FetchController();
+  var fc = new AbortController();
 
   fetch('http://mochi.test:8888/tests/dom/tests/mochitest/fetch/slow.sjs', {
     signal: fc.signal,
@@ -37,7 +37,7 @@ function testObserveAbort() {
 }
 
 function testObserveComplete() {
-  var fc = new FetchController();
+  var fc = new AbortController();
 
   fetch('http://mochi.test:8888/tests/dom/tests/mochitest/fetch/slow.sjs', {
     signal: fc.signal,
@@ -54,7 +54,7 @@ function testObserveComplete() {
 }
 
 function testObserveErrored() {
-  var fc = new FetchController();
+  var fc = new AbortController();
 
   fetch('foo: bar', {
     signal: fc.signal,
@@ -71,7 +71,7 @@ function testObserveErrored() {
 }
 
 function testObserveResponding() {
-  var fc = new FetchController();
+  var fc = new AbortController();
 
   fetch('http://mochi.test:8888/tests/dom/tests/mochitest/fetch/slow.sjs', {
     signal: fc.signal,

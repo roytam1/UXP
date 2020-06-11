@@ -4,11 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef mozilla_dom_FetchController_h
-#define mozilla_dom_FetchController_h
+#ifndef mozilla_dom_AbortController_h
+#define mozilla_dom_AbortController_h
 
 #include "mozilla/dom/BindingDeclarations.h"
-#include "mozilla/dom/FetchSignal.h" 
+#include "mozilla/dom/AbortSignal.h" 
 #include "nsCycleCollectionParticipant.h"
 #include "nsWrapperCache.h"
 #include "mozilla/ErrorResult.h"
@@ -17,21 +17,21 @@
 namespace mozilla {
 namespace dom {
 
-class FetchController final : public nsISupports
+class AbortController final : public nsISupports
                             , public nsWrapperCache
-                            , public FetchSignal::Follower
+                            , public AbortSignal::Follower
 {
 public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(FetchController)
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(AbortController)
 
   static bool
   IsEnabled(JSContext* aCx, JSObject* aGlobal);
 
-  static already_AddRefed<FetchController>
+  static already_AddRefed<AbortController>
   Constructor(const GlobalObject& aGlobal, ErrorResult& aRv);
 
-  explicit FetchController(nsIGlobalObject* aGlobal);
+  explicit AbortController(nsIGlobalObject* aGlobal);
 
   JSObject*
   WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
@@ -39,30 +39,30 @@ public:
   nsIGlobalObject*
   GetParentObject() const;
 
-  FetchSignal*
+  AbortSignal*
   Signal();
 
   void
   Abort();
 
   void
-  Follow(FetchSignal& aSignal);
+  Follow(AbortSignal& aSignal);
 
   void
-  Unfollow(FetchSignal& aSignal);
+  Unfollow(AbortSignal& aSignal);
 
-  FetchSignal*
+  AbortSignal*
   Following() const;
 
-  // FetchSignal::Follower
+  // AbortSignal::Follower
 
   void Aborted() override;
 
 private:
-  ~FetchController() = default;
+  ~AbortController() = default;
 
   nsCOMPtr<nsIGlobalObject> mGlobal;
-  RefPtr<FetchSignal> mSignal;
+  RefPtr<AbortSignal> mSignal;
 
   bool mAborted;
 };
@@ -70,4 +70,4 @@ private:
 } // dom namespace
 } // mozilla namespace
 
-#endif // mozilla_dom_FetchController_h
+#endif // mozilla_dom_AbortController_h

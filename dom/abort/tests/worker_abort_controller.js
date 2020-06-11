@@ -1,5 +1,5 @@
 function testWorkerAbortedFetch() {
-  var fc = new FetchController();
+  var fc = new AbortController();
   fc.abort();
 
   fetch('slow.sjs', { signal: fc.signal }).then(() => {
@@ -10,7 +10,7 @@ function testWorkerAbortedFetch() {
 }
 
 function testWorkerFetchAndAbort() {
-  var fc = new FetchController();
+  var fc = new AbortController();
 
   var p = fetch('slow.sjs', { signal: fc.signal });
   fc.abort();

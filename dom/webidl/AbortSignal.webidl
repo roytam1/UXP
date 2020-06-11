@@ -5,8 +5,8 @@
  */
 
 [Exposed=(Window,Worker),
- Func="FetchController::IsEnabled"]
-interface FetchSignal : EventTarget {
+ Func="AbortController::IsEnabled"]
+interface AbortSignal : EventTarget {
   readonly attribute boolean aborted;
 
   attribute EventHandler onabort;

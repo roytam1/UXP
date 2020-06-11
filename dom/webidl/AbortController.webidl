@@ -5,11 +5,11 @@
  */
 
 [Constructor(), Exposed=(Window,Worker),
- Func="FetchController::IsEnabled"]
-interface FetchController {
-  readonly attribute FetchSignal signal;
+ Func="AbortController::IsEnabled"]
+interface AbortController {
+  readonly attribute AbortSignal signal;
 
   void abort();
-  void follow(FetchSignal signal);
-  void unfollow(FetchSignal signal);
+  void follow(AbortSignal signal);
+  void unfollow(AbortSignal signal);
 };
