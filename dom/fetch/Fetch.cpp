@@ -332,7 +332,12 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
   RefPtr<AbortSignal> signal;
   if (aInit.mSignal.WasPassed()) {
     signal = &aInit.mSignal.Value();
-    // Let's FetchDriver to deal with an already aborted signal.
+  }
+  
+  if (signal && signal->Aborted()) {
+    // An already aborted signal should reject immediately.
+    aRv.Throw(NS_ERROR_DOM_ABORT_ERR);
+    return nullptr;
   }
 
   RefPtr<FetchObserver> observer;
