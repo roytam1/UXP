@@ -9,6 +9,7 @@ EXPORTS.mozilla.dom += [
     'Fetch.h',
     'FetchDriver.h',
     'FetchIPCTypes.h',
+    'FetchObserver.h',
     'FetchUtil.h',
     'Headers.h',
     'InternalHeaders.h',
@@ -28,6 +29,7 @@ UNIFIED_SOURCES += [
 SOURCES += [
     'ChannelInfo.cpp',
     'FetchDriver.cpp',
+    'FetchObserver.cpp',
     'FetchUtil.cpp',
     'Headers.cpp',
     'InternalHeaders.cpp',

@@ -67,7 +67,7 @@ FetchDriver::~FetchDriver()
 }
 
 nsresult
-FetchDriver::Fetch(FetchDriverObserver* aObserver)
+FetchDriver::Fetch(AbortSignal* aSignal, FetchDriverObserver* aObserver)
 {
   workers::AssertIsOnMainThread();
 #ifdef DEBUG
@@ -90,6 +90,18 @@ FetchDriver::Fetch(FetchDriverObserver* aObserver)
   }
 
   mRequest->SetPrincipalInfo(Move(principalInfo));
+
+  // If the signal is aborted, it's time to inform the observer and terminate
+  // the operation.
+  if (aSignal) {
+    if (aSignal->Aborted()) {
+      Aborted();
+      return NS_OK;
+    }
+
+    Follow(aSignal);
+  }
+
   if (NS_FAILED(HttpFetch())) {
     FailWithNetworkError();
   }
@@ -114,11 +126,7 @@ FetchDriver::HttpFetch()
   nsAutoCString url;
   mRequest->GetURL(url);
   nsCOMPtr<nsIURI> uri;
-  rv = NS_NewURI(getter_AddRefs(uri),
-                          url,
-                          nullptr,
-                          nullptr,
-                          ios);
+  rv = NS_NewURI(getter_AddRefs(uri), url, nullptr, nullptr, ios);
   NS_ENSURE_SUCCESS(rv, rv);
 
   // Unsafe requests aren't allowed with when using no-core mode.
@@ -380,6 +388,8 @@ FetchDriver::HttpFetch()
   NS_ENSURE_SUCCESS(rv, rv);
 
   // Step 4 onwards of "HTTP Fetch" is handled internally by Necko.
+
+  mChannel = chan;
   return NS_OK;
 }
 already_AddRefed<InternalResponse>
@@ -433,9 +443,11 @@ FetchDriver::FailWithNetworkError()
 #ifdef DEBUG
     mResponseAvailableCalled = true;
 #endif
-    mObserver->OnResponseEnd();
+    mObserver->OnResponseEnd(FetchDriverObserver::eByNetworking);
     mObserver = nullptr;
   }
+  
+  mChannel = nullptr;
 }
 
 namespace {
@@ -655,6 +667,31 @@ FetchDriver::OnStartRequest(nsIRequest* aRequest,
   return NS_OK;
 }
 
+namespace {
+
+// Runnable to call the observer OnDataAvailable on the main-thread.
+class DataAvailableRunnable final : public Runnable
+{
+  RefPtr<FetchDriverObserver> mObserver;
+
+public:
+  explicit DataAvailableRunnable(FetchDriverObserver* aObserver)
+    : mObserver(aObserver)
+  {
+     MOZ_ASSERT(aObserver);
+  }
+
+  NS_IMETHOD
+  Run() override
+  {
+    mObserver->OnDataAvailable();
+    mObserver = nullptr;
+    return NS_OK;
+  }
+};
+
+} // anonymous namespace
+
 NS_IMETHODIMP
 FetchDriver::OnDataAvailable(nsIRequest* aRequest,
                              nsISupports* aContext,
@@ -665,6 +702,18 @@ FetchDriver::OnDataAvailable(nsIRequest* aRequest,
   // NB: This can be called on any thread!  But we're guaranteed that it is
   // called between OnStartRequest and OnStopRequest, so we don't need to worry
   // about races.
+
+  if (mObserver) {
+    if (NS_IsMainThread()) {
+      mObserver->OnDataAvailable();
+    } else {
+      RefPtr<Runnable> runnable = new DataAvailableRunnable(mObserver);
+      nsresult rv = NS_DispatchToMainThread(runnable);
+      if (NS_WARN_IF(NS_FAILED(rv))) {
+        return rv;
+      }
+    }
+  }
 
   uint32_t aRead;
   MOZ_ASSERT(mResponse);
@@ -777,10 +826,11 @@ FetchDriver::OnStopRequest(nsIRequest* aRequest,
       #endif
     }
 
-    mObserver->OnResponseEnd();
+    mObserver->OnResponseEnd(FetchDriverObserver::eByNetworking);
     mObserver = nullptr;
   }
 
+  mChannel = nullptr;
   return NS_OK;
 }
 
@@ -918,6 +968,22 @@ FetchDriver::SetRequestHeaders(nsIHttpChannel* aChannel) const
                                  NS_ConvertUTF16toUTF8(origin),
                                  false /* merge */);
     }
+  }
+}
+
+void FetchDriver::Aborted()
+{
+  if (mObserver) {
+#ifdef DEBUG
+    mResponseAvailableCalled = true;
+#endif
+    mObserver->OnResponseEnd(FetchDriverObserver::eAborted);
+    mObserver = nullptr;
+  }
+
+  if (mChannel) {
+    mChannel->Cancel(NS_BINDING_ABORTED);
+    mChannel = nullptr;
   }
 }
 
