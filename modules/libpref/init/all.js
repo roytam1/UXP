@@ -4746,6 +4746,9 @@ pref("dom.vibrator.max_vibrate_list_len", 128);
 // Disabled by default to reduce private data exposure.
 pref("dom.battery.enabled", false);
 
+// Abort API
+pref("dom.abortController.enabled", true);
+
 // Push
 
 pref("dom.push.enabled", false);
