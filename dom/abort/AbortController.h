@@ -19,7 +19,6 @@ namespace dom {
 
 class AbortController final : public nsISupports
                             , public nsWrapperCache
-                            , public AbortSignal::Follower
 {
 public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
@@ -44,19 +43,6 @@ public:
 
   void
   Abort();
-
-  void
-  Follow(AbortSignal& aSignal);
-
-  void
-  Unfollow(AbortSignal& aSignal);
-
-  AbortSignal*
-  Following() const;
-
-  // AbortSignal::Follower
-
-  void Aborted() override;
 
 private:
   ~AbortController() = default;
