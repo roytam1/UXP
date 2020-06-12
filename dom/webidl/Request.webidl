@@ -47,6 +47,12 @@ dictionary RequestInit {
   RequestCache cache;
   RequestRedirect redirect;
   DOMString integrity;
+
+  [Func="AbortController::IsEnabled"]
+  AbortSignal signal;
+
+  [Func="FetchObserver::IsEnabled"]
+  ObserverCallback observe;
 };
 
 // Gecko currently does not ship RequestContext, so please don't use it in IDL

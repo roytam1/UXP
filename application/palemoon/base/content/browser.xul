@@ -131,12 +131,10 @@
     <tooltip id="aHTMLTooltip" page="true"/>
 
     <!-- for search and content formfill/pw manager -->
-    <panel type="autocomplete" id="PopupAutoComplete" noautofocus="true" hidden="true"/>
     <panel type="private-autocomplete" id="PopupAutoComplete" noautofocus="true" hidden="true"/>
 
     <!-- for url bar autocomplete -->
-    <panel type="autocomplete-richlistbox" id="PopupAutoCompleteRichResult" noautofocus="true" hidden="true"/>
-    <panel type="private-autocomplete-richlistbox" id="PopupAutoCompleteRichResult" noautofocus="true" hidden="true"/>
+    <panel type="private-autocomplete-richlistbox" id="PopupAutoCompleteRichResult" noautofocus="true" hidden="true"/> 
 
     <!-- for date/time picker. consumeoutsideclicks is set to never, so that
          clicks on the anchored input box are never consumed. -->
