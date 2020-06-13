@@ -6,6 +6,7 @@
 
 #include "nsCOMArray.h"
 #include "nsContentList.h"
+#include "nsIDocument.h"
 
 namespace mozilla {
 class ErrorResult;
