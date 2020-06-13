@@ -1138,6 +1138,15 @@ FragmentOrElement::GetAssignedSlot() const
   return slots ? slots->mAssignedSlot.get() : nullptr;
 }
 
+nsIContent*
+nsIContent::GetContainingShadowHost() const
+{
+  if (mozilla::dom::ShadowRoot* shadow = GetContainingShadow()) {
+    return shadow->GetHost();
+  }
+  return nullptr;
+}
+
 void
 FragmentOrElement::SetAssignedSlot(HTMLSlotElement* aSlot)
 {
