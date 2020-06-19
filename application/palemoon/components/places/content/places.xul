@@ -154,7 +154,11 @@
         <toolbarbutton type="menu" class="tabbable"
               onpopupshowing="document.getElementById('placeContent').focus()"
 #else
+#ifdef MOZ_WIDGET_GTK
+      <menubar id="placesMenu" _moz-menubarkeeplocal="true">
+#else
       <menubar id="placesMenu">
+#endif
         <menu accesskey="&organize.accesskey;" class="menu-iconic"
 #endif
               id="organizeButton" label="&organize.label;"
