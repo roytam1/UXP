@@ -10,13 +10,13 @@
 #include "nsDataHashtable.h"
 #include "nsHashKeys.h"
 #include "nsIAtom.h"
-#include "nsIDocument.h"
 #include "nsIObserver.h"
 #include "nsTArray.h"
 
 #include "mozilla/StaticPtr.h"
 
 class nsAString;
+class nsIDocument;
 
 /**
  * The Name Space Manager tracks the association between a NameSpace

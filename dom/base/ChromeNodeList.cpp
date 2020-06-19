@@ -6,6 +6,7 @@
 
 #include "mozilla/dom/ChromeNodeList.h"
 #include "mozilla/dom/ChromeNodeListBinding.h"
+#include "nsPIDOMWindow.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;

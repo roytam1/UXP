@@ -160,7 +160,6 @@ nsNativeMenuService::~nsNativeMenuService() {
         gPangoLayout = nullptr;
     }
 
-    MOZ_ASSERT(sService == this);
     sService = nullptr;
 }
 

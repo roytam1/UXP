@@ -5151,6 +5151,9 @@
 
       ${GetParameters} $R8
 
+      ; Require elevation if the user can elevate
+      ${ElevateUAC}
+
       ${If} $R8 != ""
         ; Default install type
         StrCpy $InstallType ${INSTALLTYPE_BASIC}
@@ -5203,28 +5206,14 @@
               FileClose $R5
               Delete $R6
               ${If} ${Errors}
-                ; Attempt to elevate and then try again.
-                ${ElevateUAC}
-                GetTempFileName $R6 "$INSTDIR"
-                FileOpen $R5 "$R6" w
-                FileWrite $R5 "Write Access Test"
-                FileClose $R5
-                Delete $R6
-                ${If} ${Errors}
-                  ; Nothing initialized so no need to call OnEndCommon
-                  Quit
-                ${EndIf}
+                ; Nothing initialized so no need to call OnEndCommon
+                Quit
               ${EndIf}
             ${Else}
               CreateDirectory "$INSTDIR"
               ${If} ${Errors}
-                ; Attempt to elevate and then try again.
-                ${ElevateUAC}
-                CreateDirectory "$INSTDIR"
-                ${If} ${Errors}
-                  ; Nothing initialized so no need to call OnEndCommon
-                  Quit
-                ${EndIf}
+                ; Nothing initialized so no need to call OnEndCommon
+                Quit
               ${EndIf}
             ${EndIf}
 
@@ -5256,19 +5245,9 @@
               ${EndIf}
             !endif
           ${EndIf}
-        ${Else}
-          ; If this isn't an INI install, we need to try to elevate now.
-          ; We'll check the user's permission level later on to determine the
-          ; default install path (which will be the real install path for /S).
-          ; If an INI file is used, we try to elevate down that path when needed.
-          ${ElevateUAC}
         ${EndUnless}
       ${EndIf}
       ClearErrors
-
-      ${IfNot} ${Silent}
-        ${ElevateUAC}
-      ${EndIf}
 
       Pop $R5
       Pop $R6

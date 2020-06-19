@@ -226,6 +226,10 @@ splitmenu {
 #appmenu-toolbar-button > .toolbarbutton-text {
   display: -moz-box;
 }
+
+window[shellshowingmenubar="true"] #appmenu-toolbar-button {
+  display: none;
+}
 %endif
 
 #appmenu_offlineModeRecovery:not([checked=true]) {

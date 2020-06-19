@@ -15,18 +15,24 @@
 
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/Move.h"
-#include "mozilla/dom/Element.h"
 #include "mozilla/net/ReferrerPolicy.h"
 
 #include "nsCOMArray.h"
 #include "nsCOMPtr.h"
-#include "nsContentList.h"
 #include "nsIAtom.h"
-#include "nsIDocument.h"
 #include "nsTArray.h"
 #include "nsTHashtable.h"
+#include "nsHashKeys.h"
 
 class nsIContent;
+class nsContentList;
+class nsBaseContentList;
+
+namespace mozilla {
+namespace dom {
+  class Element;
+} // namespace dom
+} // namespace mozilla
 
 /**
  * Right now our identifier map entries contain information for 'name'
@@ -40,26 +46,84 @@ class nsIContent;
  * Perhaps the document.all results should have their own hashtable
  * in nsHTMLDocument.
  */
-class nsIdentifierMapEntry : public nsStringHashKey
+class nsIdentifierMapEntry : public PLDHashEntryHdr
 {
-public:
   typedef mozilla::dom::Element Element;
   typedef mozilla::net::ReferrerPolicy ReferrerPolicy;
 
-  explicit nsIdentifierMapEntry(const nsAString& aKey) :
-    nsStringHashKey(&aKey), mNameContentList(nullptr)
+  /**
+   * @see nsIDocument::IDTargetObserver, this is just here to avoid include
+   * hell.
+   */
+  typedef bool (* IDTargetObserver)(Element* aOldElement,
+                                    Element* aNewelement, void* aData);
+
+public:
+  struct AtomOrString
   {
-  }
-  explicit nsIdentifierMapEntry(const nsAString* aKey) :
-    nsStringHashKey(aKey), mNameContentList(nullptr)
-  {
-  }
-  nsIdentifierMapEntry(const nsIdentifierMapEntry& aOther) :
-    nsStringHashKey(&aOther.GetKey())
-  {
-    NS_ERROR("Should never be called");
-  }
+    MOZ_IMPLICIT AtomOrString(nsIAtom* aAtom) : mAtom(aAtom) {}
+    MOZ_IMPLICIT AtomOrString(const nsAString& aString) : mString(aString) {}
+    AtomOrString(const AtomOrString& aOther)
+      : mAtom(aOther.mAtom)
+      , mString(aOther.mString)
+    {
+    }
+
+    AtomOrString(AtomOrString&& aOther)
+      : mAtom(aOther.mAtom.forget())
+      , mString(aOther.mString)
+    {
+    }
+
+    nsCOMPtr<nsIAtom> mAtom;
+    const nsString mString;
+  };
+
+  typedef const AtomOrString& KeyType;
+  typedef const AtomOrString* KeyTypePointer;
+
+  explicit nsIdentifierMapEntry(const AtomOrString& aKey);
+  explicit nsIdentifierMapEntry(const AtomOrString* aKey);
+  nsIdentifierMapEntry(nsIdentifierMapEntry&& aOther);
   ~nsIdentifierMapEntry();
+
+  KeyType GetKey() const { return mKey; }
+
+  nsString GetKeyAsString() const
+  {
+    if (mKey.mAtom) {
+      return nsAtomString(mKey.mAtom);
+    }
+
+    return mKey.mString;
+  }
+
+  bool KeyEquals(const KeyTypePointer aOtherKey) const
+  {
+    if (mKey.mAtom) {
+      if (aOtherKey->mAtom) {
+        return mKey.mAtom == aOtherKey->mAtom;
+      }
+
+      return mKey.mAtom->Equals(aOtherKey->mString);
+    }
+
+    if (aOtherKey->mAtom) {
+      return aOtherKey->mAtom->Equals(mKey.mString);
+    }
+
+    return mKey.mString.Equals(aOtherKey->mString);
+  }
+
+  static KeyTypePointer KeyToPointer(KeyType aKey) { return &aKey; }
+
+  static PLDHashNumber HashKey(const KeyTypePointer aKey)
+  {
+    return aKey->mAtom ?
+      aKey->mAtom->hash() : mozilla::HashString(aKey->mString);
+  }
+
+  enum { ALLOW_MEMMOVE = false };
 
   void AddNameElement(nsINode* aDocument, Element* aElement);
   void RemoveNameElement(Element* aElement);
@@ -67,9 +131,7 @@ public:
   nsBaseContentList* GetNameContentList() {
     return mNameContentList;
   }
-  bool HasNameElement() const {
-    return mNameContentList && mNameContentList->Length() != 0;
-  }
+  bool HasNameElement() const;
 
   /**
    * Returns the element if we know the element associated with this
@@ -109,9 +171,9 @@ public:
   bool HasIdElementExposedAsHTMLDocumentProperty();
 
   bool HasContentChangeCallback() { return mChangeCallbacks != nullptr; }
-  void AddContentChangeCallback(nsIDocument::IDTargetObserver aCallback,
+  void AddContentChangeCallback(IDTargetObserver aCallback,
                                 void* aData, bool aForImage);
-  void RemoveContentChangeCallback(nsIDocument::IDTargetObserver aCallback,
+  void RemoveContentChangeCallback(IDTargetObserver aCallback,
                                 void* aData, bool aForImage);
 
   /**
@@ -122,7 +184,7 @@ public:
   void Traverse(nsCycleCollectionTraversalCallback* aCallback);
 
   struct ChangeCallback {
-    nsIDocument::IDTargetObserver mCallback;
+    IDTargetObserver mCallback;
     void* mData;
     bool mForImage;
   };
@@ -156,12 +218,16 @@ public:
   size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
 private:
+  nsIdentifierMapEntry(const nsIdentifierMapEntry& aOther) = delete;
+  nsIdentifierMapEntry& operator=(const nsIdentifierMapEntry& aOther) = delete;
+
   void FireChangeCallbacks(Element* aOldElement, Element* aNewElement,
                            bool aImageOnly = false);
 
+  AtomOrString mKey;
   // empty if there are no elements with this ID.
   // The elements are stored as weak pointers.
-  nsTArray<Element*> mIdContentList;
+  AutoTArray<Element*, 1> mIdContentList;
   RefPtr<nsBaseContentList> mNameContentList;
   nsAutoPtr<nsTHashtable<ChangeCallbackEntry> > mChangeCallbacks;
   RefPtr<Element> mImageElement;
