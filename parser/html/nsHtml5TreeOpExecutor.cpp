@@ -7,10 +7,10 @@
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Likely.h"
 #include "mozilla/dom/nsCSPService.h"
+#include "mozilla/dom/ScriptLoader.h"
 
 #include "nsError.h"
 #include "nsHtml5TreeOpExecutor.h"
-#include "nsScriptLoader.h"
 #include "nsIContentViewer.h"
 #include "nsIContentSecurityPolicy.h"
 #include "nsIDocShellTreeItem.h"

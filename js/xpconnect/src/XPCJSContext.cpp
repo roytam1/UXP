@@ -35,13 +35,13 @@
 #include "nsCCUncollectableMarker.h"
 #include "nsCycleCollectionNoteRootCallback.h"
 #include "nsCycleCollector.h"
-#include "nsScriptLoader.h"
 #include "jsapi.h"
 #include "jsprf.h"
 #include "js/MemoryMetrics.h"
 #include "mozilla/dom/GeneratedAtomList.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/ScriptLoader.h"
 #include "mozilla/dom/WindowBinding.h"
 #include "mozilla/jsipc/CrossProcessObjectWrappers.h"
 #include "mozilla/Atomics.h"
@@ -3035,8 +3035,8 @@ ReadSourceFromFilename(JSContext* cx, const char* filename, char16_t** src, size
         ptr += bytesRead;
     }
 
-    rv = nsScriptLoader::ConvertToUTF16(scriptChannel, buf.get(), rawLen, EmptyString(),
-                                        nullptr, *src, *len);
+    rv = ScriptLoader::ConvertToUTF16(scriptChannel, buf.get(), rawLen, EmptyString(),
+                                      nullptr, *src, *len);
     NS_ENSURE_SUCCESS(rv, rv);
 
     if (!*src)

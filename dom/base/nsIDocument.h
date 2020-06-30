@@ -93,7 +93,6 @@ class nsIVariant;
 class nsViewManager;
 class nsPresContext;
 class nsRange;
-class nsScriptLoader;
 class nsSMILAnimationController;
 class nsTextNode;
 class nsWindowSizes;
@@ -153,6 +152,7 @@ enum class OrientationType : uint32_t;
 class ProcessingInstruction;
 class Promise;
 class Selection;
+class ScriptLoader;
 class StyleSheetList;
 class SVGDocument;
 class SVGSVGElement;
@@ -1278,7 +1278,7 @@ public:
   /**
    * Get the script loader for this document
    */
-  virtual nsScriptLoader* ScriptLoader() = 0;
+  virtual mozilla::dom::ScriptLoader* ScriptLoader() = 0;
 
   /**
    * Add/Remove an element to the document's id and name hashes

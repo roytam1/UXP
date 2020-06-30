@@ -29,9 +29,8 @@
 #include "nsIDocument.h"
 #include "nsIDOMEvent.h"
 #include "nsWeakPtr.h"
-#include "ScriptSettings.h"
 
-using mozilla::Unused;          // <snicker>
+using mozilla::Unused;
 using namespace mozilla::dom;
 using namespace mozilla;
 
