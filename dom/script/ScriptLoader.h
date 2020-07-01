@@ -4,10 +4,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/*
- * A class that handles loading and evaluation of <script> elements.
- */
-
 #ifndef mozilla_dom_ScriptLoader_h
 #define mozilla_dom_ScriptLoader_h
 
@@ -25,7 +21,6 @@
 #include "mozilla/CORSMode.h"
 #include "mozilla/dom/SRIMetadata.h"
 #include "mozilla/dom/SRICheck.h"
-#include "mozilla/LinkedList.h"
 #include "mozilla/MozPromise.h"
 #include "mozilla/net/ReferrerPolicy.h"
 #include "mozilla/Vector.h"
@@ -221,6 +216,7 @@ public:
     NS_RELEASE(aElem);
   }
 };
+class ScriptLoadHandler;
 
 //////////////////////////////////////////////////////////////
 // Script loader implementation
@@ -641,53 +637,6 @@ private:
   nsRefPtrHashtable<nsURIHashKey, ModuleScript> mFetchedModules;
 
   nsCOMPtr<nsIConsoleReportCollector> mReporter;
-};
-
-class ScriptLoadHandler final : public nsIIncrementalStreamLoaderObserver
-{
-public:
-  explicit ScriptLoadHandler(ScriptLoader* aScriptLoader,
-                             ScriptLoadRequest *aRequest,
-                             mozilla::dom::SRICheckDataVerifier *aSRIDataVerifier);
-
-  NS_DECL_ISUPPORTS
-  NS_DECL_NSIINCREMENTALSTREAMLOADEROBSERVER
-
-private:
-  virtual ~ScriptLoadHandler();
-
-  /*
-   * Try to decode some raw data.
-   */
-  nsresult TryDecodeRawData(const uint8_t* aData, uint32_t aDataLength,
-                            bool aEndOfStream);
-
-  /*
-   * Discover the charset by looking at the stream data, the script
-   * tag, and other indicators.  Returns true if charset has been
-   * discovered.
-   */
-  bool EnsureDecoder(nsIIncrementalStreamLoader *aLoader,
-                     const uint8_t* aData, uint32_t aDataLength,
-                     bool aEndOfStream);
-
-  // ScriptLoader which will handle the parsed script.
-  RefPtr<ScriptLoader>        mScriptLoader;
-
-  // The ScriptLoadRequest for this load.
-  RefPtr<ScriptLoadRequest>   mRequest;
-
-  // SRI data verifier.
-  nsAutoPtr<mozilla::dom::SRICheckDataVerifier> mSRIDataVerifier;
-
-  // Status of SRI data operations.
-  nsresult                      mSRIStatus;
-
-  // Unicode decoder for charset.
-  nsCOMPtr<nsIUnicodeDecoder>   mDecoder;
-
-  // Accumulated decoded char buffer.
-  mozilla::Vector<char16_t>     mBuffer;
 };
 
 class nsAutoScriptLoaderDisabler

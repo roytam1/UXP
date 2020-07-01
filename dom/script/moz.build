@@ -18,8 +18,11 @@ EXPORTS.mozilla.dom += [
 ]
 
 SOURCES += [
+    'ModuleLoadRequest.cpp',
+    'ModuleScript.cpp',
     'ScriptElement.cpp',
     'ScriptLoader.cpp',
+    'ScriptLoadHandler.cpp',
     'ScriptSettings.cpp',
 ]
 
