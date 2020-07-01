@@ -52,6 +52,14 @@ void ModuleLoadRequest::Cancel()
 void
 ModuleLoadRequest::SetReady()
 {
+  // Mark a module as ready to execute. This means that this module and all it
+  // dependencies have had their source loaded, parsed as a module and the
+  // modules instantiated.
+  //
+  // The mReady promise is used to ensure that when all dependencies of a module
+  // have become ready, DependenciesLoaded is called on that module
+  // request. This is set up in StartFetchingModuleDependencies.
+
 #ifdef DEBUG
   for (size_t i = 0; i < mImports.Length(); i++) {
     MOZ_ASSERT(mImports[i]->IsReadyToRun());

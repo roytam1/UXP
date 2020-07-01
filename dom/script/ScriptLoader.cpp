@@ -420,6 +420,10 @@ ScriptLoader::SetModuleFetchFinishedAndResumeWaitingRequests(ModuleLoadRequest *
 {
   // Update module map with the result of fetching a single module script.  The
   // module script pointer is nullptr on error.
+  //
+  // If any requests for the same URL are waiting on this one to complete, they
+  // will have ModuleLoaded or LoadFailed on them when the promise is
+  // resolved/rejected. This is set up in StartLoad.
 
   MOZ_ASSERT(!aRequest->IsReadyToRun());
 
