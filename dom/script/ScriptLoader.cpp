@@ -721,6 +721,12 @@ ScriptLoader::StartFetchingModuleDependencies(ModuleLoadRequest* aRequest)
 {
   MOZ_ASSERT(aRequest->mModuleScript);
   MOZ_ASSERT(!aRequest->IsReadyToRun());
+
+  if (aRequest->mModuleScript->InstantiationFailed()) {
+    aRequest->LoadFailed();
+    return;
+  }
+
   aRequest->mProgress = ModuleLoadRequest::Progress::FetchingImports;
 
   nsCOMArray<nsIURI> urls;
