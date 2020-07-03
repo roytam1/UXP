@@ -4396,6 +4396,12 @@ GetRequestedModules(JSContext* cx, JS::HandleObject moduleRecord);
 extern JS_PUBLIC_API(JSScript*)
 GetModuleScript(JSContext* cx, JS::HandleObject moduleRecord);
 
+extern JS_PUBLIC_API(bool)
+IsModuleErrored(JSObject* moduleRecord);
+
+extern JS_PUBLIC_API(JS::Value)
+GetModuleError(JSObject* moduleRecord);
+
 } /* namespace JS */
 
 extern JS_PUBLIC_API(bool)
