@@ -5038,7 +5038,7 @@ Parser<FullParseHandler>::namedImportsOrNamespaceImport(TokenKind tt, Node impor
         // Namespace imports are are not indirect bindings but lexical
         // definitions that hold a module namespace object. They are treated
         // as const variables which are initialized during the
-        // ModuleDeclarationInstantiation step.
+        // ModuleInstantiate step.
         RootedPropertyName bindingName(context, importedBinding());
         if (!bindingName)
             return false;
