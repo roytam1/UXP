@@ -32,7 +32,6 @@
 #include "nsJSThingHashtable.h"
 #include "nsIScriptObjectPrincipal.h"
 #include "nsIURI.h"
-#include "nsScriptLoader.h"
 #include "nsIRadioGroupContainer.h"
 #include "nsILayoutHistoryState.h"
 #include "nsIRequest.h"
@@ -61,6 +60,7 @@
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/PendingAnimationTracker.h"
 #include "mozilla/dom/DOMImplementation.h"
+#include "mozilla/dom/ScriptLoader.h"
 #include "mozilla/dom/StyleSheetList.h"
 #include "nsDataHashtable.h"
 #include "mozilla/TimeStamp.h"
@@ -491,7 +491,7 @@ public:
   /**
    * Get the script loader for this document
    */
-  virtual nsScriptLoader* ScriptLoader() override;
+  virtual mozilla::dom::ScriptLoader* ScriptLoader() override;
 
   /**
    * Add/Remove an element to the document's id and name hashes
@@ -1205,7 +1205,7 @@ protected:
 public:
   RefPtr<mozilla::EventListenerManager> mListenerManager;
   RefPtr<nsDOMStyleSheetSetList> mStyleSheetSetList;
-  RefPtr<nsScriptLoader> mScriptLoader;
+  RefPtr<mozilla::dom::ScriptLoader> mScriptLoader;
   nsDocHeaderData* mHeaderData;
 
   nsClassHashtable<nsStringHashKey, nsRadioGroupStruct> mRadioGroups;
