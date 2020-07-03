@@ -4396,10 +4396,10 @@ extern JS_PUBLIC_API(JSScript*)
 GetModuleScript(JSContext* cx, JS::HandleObject moduleRecord);
 
 extern JS_PUBLIC_API(bool)
-IsModuleErrored(JSObject* moduleRecord);
+IsModuleErrored(JSContext* cx, JSObject* moduleRecord);
 
 extern JS_PUBLIC_API(JS::Value)
-GetModuleError(JSObject* moduleRecord);
+GetModuleError(JSContext* cx, JSObject* moduleRecord);
 
 } /* namespace JS */
 
