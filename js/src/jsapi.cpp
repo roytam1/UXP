@@ -4704,7 +4704,7 @@ JS::GetModuleHostDefinedField(JSObject* module)
 }
 
 JS_PUBLIC_API(bool)
-JS::ModuleDeclarationInstantiation(JSContext* cx, JS::HandleObject moduleArg)
+JS::ModuleInstantiate(JSContext* cx, JS::HandleObject moduleArg)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
@@ -4713,7 +4713,7 @@ JS::ModuleDeclarationInstantiation(JSContext* cx, JS::HandleObject moduleArg)
 }
 
 JS_PUBLIC_API(bool)
-JS::ModuleEvaluation(JSContext* cx, JS::HandleObject moduleArg)
+JS::ModuleEvaluate(JSContext* cx, JS::HandleObject moduleArg)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);

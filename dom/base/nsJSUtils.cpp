@@ -308,9 +308,9 @@ nsJSUtils::CompileModule(JSContext* aCx,
 }
 
 nsresult
-nsJSUtils::ModuleDeclarationInstantiation(JSContext* aCx, JS::Handle<JSObject*> aModule)
+nsJSUtils::ModuleInstantiate(JSContext* aCx, JS::Handle<JSObject*> aModule)
 {
-  PROFILER_LABEL("nsJSUtils", "ModuleDeclarationInstantiation",
+  PROFILER_LABEL("nsJSUtils", "ModuleInstantiate",
     js::ProfileEntry::Category::JS);
 
   MOZ_ASSERT(aCx == nsContentUtils::GetCurrentJSContext());
@@ -318,7 +318,7 @@ nsJSUtils::ModuleDeclarationInstantiation(JSContext* aCx, JS::Handle<JSObject*> 
 
   NS_ENSURE_TRUE(xpc::Scriptability::Get(aModule).Allowed(), NS_OK);
 
-  if (!JS::ModuleDeclarationInstantiation(aCx, aModule)) {
+  if (!JS::ModuleInstantiate(aCx, aModule)) {
     return NS_ERROR_FAILURE;
   }
 
@@ -326,9 +326,9 @@ nsJSUtils::ModuleDeclarationInstantiation(JSContext* aCx, JS::Handle<JSObject*> 
 }
 
 nsresult
-nsJSUtils::ModuleEvaluation(JSContext* aCx, JS::Handle<JSObject*> aModule)
+nsJSUtils::ModuleEvaluate(JSContext* aCx, JS::Handle<JSObject*> aModule)
 {
-  PROFILER_LABEL("nsJSUtils", "ModuleEvaluation",
+  PROFILER_LABEL("nsJSUtils", "ModuleEvaluate",
     js::ProfileEntry::Category::JS);
 
   MOZ_ASSERT(aCx == nsContentUtils::GetCurrentJSContext());
@@ -338,7 +338,7 @@ nsJSUtils::ModuleEvaluation(JSContext* aCx, JS::Handle<JSObject*> aModule)
 
   NS_ENSURE_TRUE(xpc::Scriptability::Get(aModule).Allowed(), NS_OK);
 
-  if (!JS::ModuleEvaluation(aCx, aModule)) {
+  if (!JS::ModuleEvaluate(aCx, aModule)) {
     return NS_ERROR_FAILURE;
   }
 
