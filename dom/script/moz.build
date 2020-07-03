@@ -1,0 +1,36 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+XPIDL_SOURCES += [
+    'nsIScriptLoaderObserver.idl',
+]
+
+XPIDL_MODULE = 'dom'
+
+EXPORTS += ['nsIScriptElement.h']
+
+EXPORTS.mozilla.dom += [
+    'ScriptElement.h',
+    'ScriptLoader.h',
+    'ScriptSettings.h',
+]
+
+SOURCES += [
+    'ModuleLoadRequest.cpp',
+    'ModuleScript.cpp',
+    'ScriptElement.cpp',
+    'ScriptLoader.cpp',
+    'ScriptLoadHandler.cpp',
+    'ScriptSettings.cpp',
+]
+
+LOCAL_INCLUDES += [
+    '/dom/base',
+    '/dom/workers',
+]
+
+include('/ipc/chromium/chromium-config.mozbuild')
+
+FINAL_LIBRARY = 'xul'

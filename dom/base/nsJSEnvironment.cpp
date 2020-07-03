@@ -37,7 +37,6 @@
 #include "nsXPCOMCIDInternal.h"
 #include "nsIXULRuntime.h"
 #include "nsTextFormatter.h"
-#include "ScriptSettings.h"
 
 #include "xpcpublic.h"
 
@@ -55,6 +54,7 @@
 #include "mozilla/dom/DOMException.h"
 #include "mozilla/dom/DOMExceptionBinding.h"
 #include "mozilla/dom/ErrorEvent.h"
+#include "mozilla/dom/ScriptSettings.h"
 #include "nsAXPCNativeCallContext.h"
 #include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/Telemetry.h"

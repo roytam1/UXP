@@ -485,7 +485,13 @@ AutoJSAPI::Init(nsIGlobalObject* aGlobalObject)
 bool
 AutoJSAPI::Init(JSObject* aObject)
 {
-  return Init(xpc::NativeGlobal(aObject));
+  nsIGlobalObject* global = nullptr;
+  if (aObject)
+    global = xpc::NativeGlobal(aObject);
+  if (global)
+    return Init(global);
+  else
+    return false;
 }
 
 bool

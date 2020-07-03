@@ -19,7 +19,6 @@
 #include "nsJSUtils.h"
 #include "nsJSPrincipals.h"
 #include "nsNetUtil.h"
-#include "nsScriptLoader.h"
 #include "nsFrameLoader.h"
 #include "nsIXULRuntime.h"
 #include "nsIScriptError.h"
@@ -38,6 +37,7 @@
 #include "mozilla/dom/PermissionMessageUtils.h"
 #include "mozilla/dom/ProcessGlobal.h"
 #include "mozilla/dom/SameProcessMessageQueue.h"
+#include "mozilla/dom/ScriptLoader.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/ipc/BlobChild.h"
 #include "mozilla/dom/ipc/BlobParent.h"
@@ -1786,9 +1786,9 @@ nsMessageManagerScriptExecutor::TryCacheLoadAndCompileScript(
     if (NS_FAILED(NS_ReadInputStreamToString(input, buffer, avail))) {
       return;
     }
-    nsScriptLoader::ConvertToUTF16(channel, (uint8_t*)buffer.get(), avail,
-                                   EmptyString(), nullptr,
-                                   dataStringBuf, dataStringLength);
+    ScriptLoader::ConvertToUTF16(channel, (uint8_t*)buffer.get(), avail,
+                                 EmptyString(), nullptr,
+                                 dataStringBuf, dataStringLength);
   }
 
   JS::SourceBufferHolder srcBuf(dataStringBuf, dataStringLength,
