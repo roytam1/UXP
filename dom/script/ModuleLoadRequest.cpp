@@ -86,11 +86,6 @@ ModuleLoadRequest::DependenciesLoaded()
   // The module and all of its dependencies have been successfully fetched and
   // compiled.
 
-  if (!mLoader->InstantiateModuleTree(this)) {
-    LoadFailed();
-    return;
-  }
-
   SetReady();
   mLoader->ProcessLoadedModuleTree(this);
   mLoader = nullptr;
