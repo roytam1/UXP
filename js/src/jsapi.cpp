@@ -4740,18 +4740,14 @@ JS::GetModuleScript(JSContext* cx, JS::HandleObject moduleArg)
 }
 
 JS_PUBLIC_API(bool)
-JS::IsModuleErrored(JSContext* cx, JSObject* moduleArg)
+JS::IsModuleErrored(JSObject* moduleArg)
 {
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
     return moduleArg->as<ModuleObject>().status() == MODULE_STATUS_ERRORED;
 }
 
 JS_PUBLIC_API(JS::Value)
-JS::GetModuleError(JSContext* cx, JSObject* moduleArg)
+JS::GetModuleError(JSObject* moduleArg)
 {
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
     return moduleArg->as<ModuleObject>().error();
 }
 
