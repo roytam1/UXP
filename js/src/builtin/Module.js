@@ -509,7 +509,7 @@ function ResolutionError(resolution, kind, name, line, column)
 function ModuleEvaluate()
 {
     if (!IsObject(this) || !IsModule(this))
-        return callFunction(CallModuleMethodIfWrapped, this, "ModuleEvaluatie");
+        return callFunction(CallModuleMethodIfWrapped, this, "ModuleEvaluate");
 
     // Step 1
     let module = this;
