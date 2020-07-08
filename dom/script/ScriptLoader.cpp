@@ -2327,7 +2327,8 @@ ScriptLoader::OnStreamComplete(nsIIncrementalStreamLoader* aLoader,
       MOZ_ASSERT(!modReq->IsTopLevel());
       MOZ_ASSERT(!modReq->isInList());
       modReq->Cancel();
-      FireScriptAvailable(rv, request);
+      // A single error is fired for the top level module, so don't use
+      // FireScriptAvailable here.
     } else if (mParserBlockingRequest == request) {
       MOZ_ASSERT(!request->isInList());
       mParserBlockingRequest = nullptr;
