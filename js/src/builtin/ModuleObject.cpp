@@ -248,21 +248,13 @@ IndirectBindingMap::Binding::Binding(ModuleEnvironmentObject* environment, Shape
   : environment(environment), shape(shape)
 {}
 
-IndirectBindingMap::IndirectBindingMap(Zone* zone)
-  : map_(ZoneAllocPolicy(zone))
-{
-}
-
-bool
-IndirectBindingMap::init()
-{
-    return map_.init();
-}
-
 void
 IndirectBindingMap::trace(JSTracer* trc)
 {
-    for (Map::Enum e(map_); !e.empty(); e.popFront()) {
+    if (!map_)
+        return;
+
+    for (Map::Enum e(*map_); !e.empty(); e.popFront()) {
         Binding& b = e.front().value();
         TraceEdge(trc, &b.environment, "module bindings environment");
         TraceEdge(trc, &b.shape, "module bindings shape");
@@ -276,9 +268,22 @@ bool
 IndirectBindingMap::put(JSContext* cx, HandleId name,
                         HandleModuleEnvironmentObject environment, HandleId localName)
 {
+    // This object might have been allocated on the background parsing thread in
+    // different zone to the final module. Lazily allocate the map so we don't
+    // have to switch its zone when merging compartments.
+    if (!map_) {
+        MOZ_ASSERT(!cx->zone()->group()->createdForHelperThread());
+        map_.emplace(cx->zone());
+        if (!map_->init()) {
+            map_.reset();
+            ReportOutOfMemory(cx);
+            return false;
+        }
+    }
+
     RootedShape shape(cx, environment->lookup(cx, localName));
     MOZ_ASSERT(shape);
-    if (!map_.put(name, Binding(environment, shape))) {
+    if (!map_->put(name, Binding(environment, shape))) {
         ReportOutOfMemory(cx);
         return false;
     }
@@ -289,7 +294,10 @@ IndirectBindingMap::put(JSContext* cx, HandleId name,
 bool
 IndirectBindingMap::lookup(jsid name, ModuleEnvironmentObject** envOut, Shape** shapeOut) const
 {
-    auto ptr = map_.lookup(name);
+    if (!map_)
+        return false;
+
+    auto ptr = map_->lookup(name);
     if (!ptr)
         return false;
 
@@ -625,10 +633,9 @@ ModuleObject::create(ExclusiveContext* cx)
     RootedModuleObject self(cx, &obj->as<ModuleObject>());
 
     Zone* zone = cx->zone();
-    IndirectBindingMap* bindings = zone->new_<IndirectBindingMap>(zone);
-    if (!bindings || !bindings->init()) {
+    IndirectBindingMap* bindings = zone->new_<IndirectBindingMap>();
+    if (!bindings) {
         ReportOutOfMemory(cx);
-        js_delete<IndirectBindingMap>(bindings);
         return nullptr;
     }
 
@@ -974,10 +981,9 @@ ModuleObject::createNamespace(JSContext* cx, HandleModuleObject self, HandleObje
         return nullptr;
 
     Zone* zone = cx->zone();
-    IndirectBindingMap* bindings = zone->new_<IndirectBindingMap>(zone);
-    if (!bindings || !bindings->init()) {
+    IndirectBindingMap* bindings = zone->new_<IndirectBindingMap>();
+    if (!bindings) {
         ReportOutOfMemory(cx);
-        js_delete<IndirectBindingMap>(bindings);
         return nullptr;
     }
 
