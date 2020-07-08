@@ -234,8 +234,11 @@ function GetModuleEnvironment(module)
 {
     assert(IsModule(module), "Non-module passed to GetModuleEnvironment");
 
+    assert(module.status >= MODULE_STATUS_INSTANTIATING,
+           "Attempt to access module environement before instantation");
+
     let env = UnsafeGetReservedSlot(module, MODULE_OBJECT_ENVIRONMENT_SLOT);
-    assert(env === undefined || IsModuleEnvironment(env),
+    assert(IsModuleEnvironment(env),
            "Module environment slot contains unexpected value");
 
     return env;
@@ -421,7 +424,7 @@ function ModuleDeclarationEnvironmentSetup(module)
     }
 
     // Steps 5-6
-    CreateModuleEnvironment(module);
+    // Note that we have already created the environment by this point.
     let env = GetModuleEnvironment(module);
 
     // Step 8

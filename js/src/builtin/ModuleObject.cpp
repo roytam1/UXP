@@ -657,17 +657,24 @@ ModuleObject::finalize(js::FreeOp* fop, JSObject* obj)
         fop->delete_(funDecls);
 }
 
+ModuleEnvironmentObject&
+ModuleObject::initialEnvironment() const
+{
+    Value value = getReservedSlot(EnvironmentSlot);
+    return value.toObject().as<ModuleEnvironmentObject>();
+}
+
 ModuleEnvironmentObject*
 ModuleObject::environment() const
 {
-//-    MOZ_ASSERT(status() != MODULE_STATUS_ERRORED);
-//+    MOZ_ASSERT(!hadEvaluationError());
+    MOZ_ASSERT(!hadEvaluationError());
 
-    Value value = getReservedSlot(EnvironmentSlot);
-    if (value.isUndefined())
+    // According to the spec the environment record is created during
+    // instantiation, but we create it earlier than that.
+    if (status() < MODULE_STATUS_INSTANTIATED)
         return nullptr;
 
-    return &value.toObject().as<ModuleEnvironmentObject>();
+    return &initialEnvironment();
 }
 
 bool
@@ -732,7 +739,7 @@ ModuleObject::init(HandleScript script)
 void
 ModuleObject::setInitialEnvironment(HandleModuleEnvironmentObject initialEnvironment)
 {
-    initReservedSlot(InitialEnvironmentSlot, ObjectValue(*initialEnvironment));
+    initReservedSlot(EnvironmentSlot, ObjectValue(*initialEnvironment));
 }
 
 void
@@ -867,12 +874,6 @@ ModuleObject::setHostDefinedField(const JS::Value& value)
     setReservedSlot(HostDefinedSlot, value);
 }
 
-ModuleEnvironmentObject&
-ModuleObject::initialEnvironment() const
-{
-    return getReservedSlot(InitialEnvironmentSlot).toObject().as<ModuleEnvironmentObject>();
-}
-
 Scope*
 ModuleObject::enclosingScope() const
 {
@@ -898,16 +899,6 @@ ModuleObject::trace(JSTracer* trc, JSObject* obj)
         funDecls->trace(trc);
 }
 
-void
-ModuleObject::createEnvironment()
-{
-    // The environment has already been created, we just neet to set it in the
-    // right slot.
-    MOZ_ASSERT(!getReservedSlot(InitialEnvironmentSlot).isUndefined());
-    MOZ_ASSERT(getReservedSlot(EnvironmentSlot).isUndefined());
-    setReservedSlot(EnvironmentSlot, getReservedSlot(InitialEnvironmentSlot));
-}
-
 bool
 ModuleObject::noteFunctionDeclaration(ExclusiveContext* cx, HandleAtom name, HandleFunction fun)
 {
@@ -923,7 +914,10 @@ ModuleObject::noteFunctionDeclaration(ExclusiveContext* cx, HandleAtom name, Han
 /* static */ bool
 ModuleObject::instantiateFunctionDeclarations(JSContext* cx, HandleModuleObject self)
 {
+#ifdef DEBUG
+    MOZ_ASSERT(self->status() == MODULE_STATUS_INSTANTIATING);
     MOZ_ASSERT(IsFrozen(cx, self));
+#endif
 
     FunctionDeclarationVector* funDecls = self->functionDeclarations();
     if (!funDecls) {
@@ -954,7 +948,10 @@ ModuleObject::instantiateFunctionDeclarations(JSContext* cx, HandleModuleObject 
 /* static */ bool
 ModuleObject::execute(JSContext* cx, HandleModuleObject self, MutableHandleValue rval)
 {
+#ifdef DEBUG
+    MOZ_ASSERT(self->status() == MODULE_STATUS_EVALUATING);
     MOZ_ASSERT(IsFrozen(cx, self));
+#endif
 
     RootedScript script(cx, self->script());
     RootedModuleEnvironmentObject scope(cx, self->environment());
