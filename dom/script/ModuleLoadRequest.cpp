@@ -83,7 +83,7 @@ ModuleLoadRequest::ModuleLoaded()
   // been loaded.
 
   mModuleScript = mLoader->GetFetchedModule(mURI);
-  if (!mModuleScript || mModuleScript->IsErrored()) {
+  if (!mModuleScript || mModuleScript->HasParseError()) {
     ModuleErrored();
     return;
   }
@@ -95,7 +95,7 @@ void
 ModuleLoadRequest::ModuleErrored()
 {
   mLoader->CheckModuleDependenciesLoaded(this);
-  MOZ_ASSERT(!mModuleScript || mModuleScript->IsErrored());
+  MOZ_ASSERT(!mModuleScript || mModuleScript->HasParseError());
 
   CancelImports();
   SetReady();

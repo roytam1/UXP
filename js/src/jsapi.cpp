@@ -4739,18 +4739,6 @@ JS::GetModuleScript(JSContext* cx, JS::HandleObject moduleArg)
     return moduleArg->as<ModuleObject>().script();
 }
 
-JS_PUBLIC_API(bool)
-JS::IsModuleErrored(JSObject* moduleArg)
-{
-    return moduleArg->as<ModuleObject>().status() == MODULE_STATUS_ERRORED;
-}
-
-JS_PUBLIC_API(JS::Value)
-JS::GetModuleError(JSObject* moduleArg)
-{
-    return moduleArg->as<ModuleObject>().error();
-}
-
 JS_PUBLIC_API(JSObject*)
 JS_New(JSContext* cx, HandleObject ctor, const JS::HandleValueArray& inputArgs)
 {
