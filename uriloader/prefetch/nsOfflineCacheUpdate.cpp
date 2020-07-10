@@ -948,6 +948,14 @@ nsOfflineManifestItem::HandleManifestLine(const nsCString::const_iterator &aBegi
                                     mStrictFileOriginPolicy))
             break;
 
+        // Check fallback path for disallowed encoded path separators
+        nsAutoCString path;
+        fallbackURI->GetFilePath(path);
+        if (path.Find("%2f") != kNotFound || path.Find("%2F") != kNotFound) {
+            LogToConsole("Offline cache manifest bad fallback path", this);
+            break;
+        }
+        
         mFallbackURIs.AppendObject(fallbackURI);
 
         AddNamespace(nsIApplicationCacheNamespace::NAMESPACE_FALLBACK,
