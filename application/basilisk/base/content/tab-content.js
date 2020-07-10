@@ -865,11 +865,13 @@ RefreshBlocker.init();
 
 #ifdef MOZ_WEBEXTENSIONS
 ExtensionContent.init(this);
+#endif
 addEventListener("unload", () => {
+#ifdef MOZ_WEBEXTENSIONS
   ExtensionContent.uninit(this);
+#endif
   RefreshBlocker.uninit();
 });
-#endif
 
 addMessageListener("AllowScriptsToClose", () => {
   content.QueryInterface(Ci.nsIInterfaceRequestor)
