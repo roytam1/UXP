@@ -4803,6 +4803,10 @@ function getTogglableToolbars() {
   let toolbarNodes = Array.slice(gNavToolbox.childNodes);
   toolbarNodes = toolbarNodes.concat(gNavToolbox.externalToolbars);
   toolbarNodes = toolbarNodes.filter(node => node.getAttribute("toolbarname"));
+#ifdef MOZ_WIDGET_GTK
+  if (document.documentElement.getAttribute("shellshowingmenubar") == "true")
+    toolbarNodes = toolbarNodes.filter(node => node.id != "toolbar-menubar");
+#endif
   return toolbarNodes;
 }
 
