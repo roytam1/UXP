@@ -1,6 +1,6 @@
 This directory contains files used in goanna builds from FFmpeg
 (http://ffmpeg.org). The current files are from FFmpeg as of
-Release 3.4.2
+Release 3.4.8
 All source files match their path from the library's source archive.
 
 Currently, we only use the vp8 and vp9 portion of the library, and only on x86

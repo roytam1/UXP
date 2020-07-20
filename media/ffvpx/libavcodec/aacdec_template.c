@@ -1156,6 +1156,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     AACContext *ac = avctx->priv_data;
     int ret;
 
+    if (avctx->sample_rate > 96000)
+        return AVERROR_INVALIDDATA;
+
     ret = ff_thread_once(&aac_table_init, &aac_static_table_init);
     if (ret != 0)
         return AVERROR_UNKNOWN;
@@ -1672,25 +1675,24 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
                 }
             } else if (cbt_m1 == NOISE_BT - 1) {
                 for (group = 0; group < (AAC_SIGNE)g_len; group++, cfo+=128) {
-#if !USE_FIXED
-                    float scale;
-#endif /* !USE_FIXED */
                     INTFLOAT band_energy;
-
+#if USE_FIXED
                     for (k = 0; k < off_len; k++) {
                         ac->random_state  = lcg_random(ac->random_state);
-#if USE_FIXED
                         cfo[k] = ac->random_state >> 3;
-#else
-                        cfo[k] = ac->random_state;
-#endif /* USE_FIXED */
                     }
 
-#if USE_FIXED
                     band_energy = ac->fdsp->scalarproduct_fixed(cfo, cfo, off_len);
                     band_energy = fixed_sqrt(band_energy, 31);
                     noise_scale(cfo, sf[idx], band_energy, off_len);
 #else
+                    float scale;
+
+                    for (k = 0; k < off_len; k++) {
+                        ac->random_state  = lcg_random(ac->random_state);
+                        cfo[k] = ac->random_state;
+                    }
+
                     band_energy = ac->fdsp->scalarproduct_float(cfo, cfo, off_len);
                     scale = sf[idx] / sqrtf(band_energy);
                     ac->fdsp->vector_fmul_scalar(cfo, cfo, scale, off_len);
@@ -2463,6 +2465,9 @@ static void apply_tns(INTFLOAT coef_param[1024], TemporalNoiseShaping *tns,
     INTFLOAT tmp[TNS_MAX_ORDER+1];
     UINTFLOAT *coef = coef_param;
 
+    if(!mmm)
+        return;
+
     for (w = 0; w < ics->num_windows; w++) {
         bottom = ics->num_swb;
         for (filt = 0; filt < tns->n_filt[w]; filt++) {
@@ -2627,7 +2632,7 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
         ac->mdct.imdct_half(&ac->mdct, buf, in);
 #if USE_FIXED
         for (i=0; i<1024; i++)
-          buf[i] = (buf[i] + 4) >> 3;
+          buf[i] = (buf[i] + 4LL) >> 3;
 #endif /* USE_FIXED */
     }
 
