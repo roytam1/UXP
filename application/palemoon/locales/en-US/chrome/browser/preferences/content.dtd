@@ -30,7 +30,7 @@
 <!ENTITY  chooseButton.label          "Choose…">
 <!ENTITY  chooseButton.accesskey      "o">
 
-<!ENTITY  jsOptions.label             "Javascript">
+<!ENTITY  jsOptions.label             "JavaScript">
 <!ENTITY  jsOptionsWasm.label         "Enable WebAssembly (WASM)">
 <!ENTITY  jsOptionsWasm.accesskey     "y">
 
