@@ -93,8 +93,10 @@ NS_INTERFACE_TABLE_TAIL_INHERITING(nsGenericHTMLElement)
 NS_IMPL_ELEMENT_CLONE(HTMLLinkElement)
 
 bool
-HTMLLinkElement::Disabled()
+HTMLLinkElement::Disabled() const
 {
+  return GetBoolAttr(nsGkAtoms::disabled);
+
   StyleSheet* ss = GetSheet();
   return ss && ss->Disabled();
 }
@@ -107,8 +109,10 @@ HTMLLinkElement::GetMozDisabled(bool* aDisabled)
 }
 
 void
-HTMLLinkElement::SetDisabled(bool aDisabled)
+HTMLLinkElement::SetDisabled(bool aDisabled, ErrorResult& aRv)
 {
+  return SetHTMLBoolAttr(nsGkAtoms::disabled, aDisabled, aRv);
+
   if (StyleSheet* ss = GetSheet()) {
     ss->SetDisabled(aDisabled);
   }
@@ -117,8 +121,9 @@ HTMLLinkElement::SetDisabled(bool aDisabled)
 NS_IMETHODIMP
 HTMLLinkElement::SetMozDisabled(bool aDisabled)
 {
-  SetDisabled(aDisabled);
-  return NS_OK;
+  ErrorResult rv;
+  SetDisabled(aDisabled, rv);
+  return rv.StealNSResult();
 }
 
 
@@ -370,7 +375,8 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
          aName == nsGkAtoms::rel ||
          aName == nsGkAtoms::title ||
          aName == nsGkAtoms::media ||
-         aName == nsGkAtoms::type)) {
+         aName == nsGkAtoms::type ||
+         aName == nsGkAtoms::disabled)) {
       bool dropSheet = false;
       if (aName == nsGkAtoms::rel) {
         nsAutoString value;
@@ -397,7 +403,8 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                dropSheet ||
                                (aName == nsGkAtoms::title ||
                                 aName == nsGkAtoms::media ||
-                                aName == nsGkAtoms::type));
+                                aName == nsGkAtoms::type ||
+                                aName == nsGkAtoms::disabled));
     }
   } else {
     // Since removing href or rel makes us no longer link to a
@@ -407,7 +414,8 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
           aName == nsGkAtoms::rel ||
           aName == nsGkAtoms::title ||
           aName == nsGkAtoms::media ||
-          aName == nsGkAtoms::type) {
+          aName == nsGkAtoms::type ||
+          aName == nsGkAtoms::disabled) {
         UpdateStyleSheetInternal(nullptr, nullptr, true);
       }
       if (aName == nsGkAtoms::href ||
@@ -513,6 +521,10 @@ HTMLLinkElement::GetStyleSheetInfo(nsAString& aTitle,
   uint32_t linkTypes = nsStyleLinkElement::ParseLinkTypes(rel, NodePrincipal());
   // Is it a stylesheet link?
   if (!(linkTypes & nsStyleLinkElement::eSTYLESHEET)) {
+    return;
+  }
+
+  if (Disabled()) {
     return;
   }
 

@@ -86,8 +86,8 @@ public:
   virtual bool HasDeferredDNSPrefetchRequest() override;
 
   // WebIDL
-  bool Disabled();
-  void SetDisabled(bool aDisabled);
+  bool Disabled() const;
+  void SetDisabled(bool aDisabled, ErrorResult& aRv);
   // XPCOM GetHref is fine.
   void SetHref(const nsAString& aHref, ErrorResult& aRv)
   {
