@@ -32,6 +32,10 @@
                   type="wstring"
                   onchange="gContentPane._rebuildFonts();"/>
                   
+      <!-- JavaScript -->
+      <preference id="javascript.options.wasm"        name="javascript.options.wasm"          type="bool"/>
+
+
       <!-- VIDEO -->
       <preference id="media.mediasource.enabled"       name="media.mediasource.enabled"       type="bool"/>
       <preference id="media.mediasource.mp4.enabled"   name="media.mediasource.mp4.enabled"   type="bool"/>
@@ -152,6 +156,14 @@
                 oncommand="gContentPane.showLanguages();"/>
       </hbox>
     </groupbox>
+
+    <!-- Javascript -->
+     <groupbox id="jsOptionsGroup">
+       <caption label="&jsOptions.label;"/>
+
+       <checkbox id="jsOptionsWasm" preference="javascript.options.wasm"
+                 label="&jsOptionsWasm.label;" accesskey="&jsOptionsWasm.accesskey;"/>
+     </groupbox>    
 
     <!-- Video -->
      <groupbox id="videoGroup">

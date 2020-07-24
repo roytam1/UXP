@@ -1265,8 +1265,14 @@ pref("javascript.options.unboxed_objects",  false);
 pref("javascript.options.baselinejit",      true);
 pref("javascript.options.ion",              true);
 pref("javascript.options.asmjs",            true);
-pref("javascript.options.wasm",             false);
+pref("javascript.options.wasm",             true);
+// wasm jit crashes in 32bit builds because of 64bit casts so
+// only enable it by default for 64bit builds
+#ifdef HAVE_64BIT_BUILD
+pref("javascript.options.wasm_baselinejit", true);
+#else
 pref("javascript.options.wasm_baselinejit", false);
+#endif
 pref("javascript.options.native_regexp",    true);
 pref("javascript.options.parallel_parsing", true);
 // ayncstack is used for debugging promises in devtools.
@@ -2483,7 +2489,7 @@ pref("layout.css.scroll-snap.prediction-max-velocity", 2000);
 pref("layout.css.scroll-snap.prediction-sensitivity", "0.750");
 
 // Is support for basic shapes in clip-path enabled?
-pref("layout.css.clip-path-shapes.enabled", false);
+pref("layout.css.clip-path-shapes.enabled", true);
 
 // Is support for DOMPoint enabled?
 pref("layout.css.DOMPoint.enabled", true);
@@ -2495,18 +2501,10 @@ pref("layout.css.DOMQuad.enabled", true);
 pref("layout.css.DOMMatrix.enabled", true);
 
 // Is support for GeometryUtils.getBoxQuads enabled?
-#ifdef RELEASE_OR_BETA
-pref("layout.css.getBoxQuads.enabled", false);
-#else
 pref("layout.css.getBoxQuads.enabled", true);
-#endif
 
 // Is support for GeometryUtils.convert*FromNode enabled?
-#ifdef RELEASE_OR_BETA
-pref("layout.css.convertFromNode.enabled", false);
-#else
 pref("layout.css.convertFromNode.enabled", true);
-#endif
 
 // Is support for CSS "text-align: unsafe X" enabled?
 pref("layout.css.text-align-unsafe-value.enabled", false);
@@ -2516,11 +2514,7 @@ pref("layout.css.text-justify.enabled", true);
 
 // Is support for CSS "float: inline-{start,end}" and
 // "clear: inline-{start,end}" enabled?
-#if !defined(RELEASE_OR_BETA)
 pref("layout.css.float-logical-values.enabled", true);
-#else
-pref("layout.css.float-logical-values.enabled", false);
-#endif
 
 // Is support for the CSS4 image-orientation property enabled?
 pref("layout.css.image-orientation.enabled", true);

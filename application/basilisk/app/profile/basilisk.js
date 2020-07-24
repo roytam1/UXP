@@ -1363,7 +1363,3 @@ pref("services.sync.validation.enabled", true);
 // The counter resets when the page is reloaded from the UI
 // (content-reloads do NOT clear this to mitigate reloading tricks).
 pref("prompts.authentication_dialog_abuse_limit", 3);
-
-// Enable WASM and its baseline jit (platform default is false)
-pref("javascript.options.wasm",             true);
-pref("javascript.options.wasm_baselinejit", true);
