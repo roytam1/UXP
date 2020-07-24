@@ -33,7 +33,7 @@ class Request final : public nsISupports
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(Request)
 
 public:
-  Request(nsIGlobalObject* aOwner, InternalRequest* aRequest);
+  Request(nsIGlobalObject* aOwner, InternalRequest* aRequest, AbortSignal* aSignal);
 
   static bool
   RequestContextEnabled(JSContext* aCx, JSObject* aObj);
@@ -142,7 +142,7 @@ public:
   }
 
   already_AddRefed<Request>
-  Clone(ErrorResult& aRv) const;
+  Clone(ErrorResult& aRv);
 
   already_AddRefed<InternalRequest>
   GetInternalRequest();
@@ -153,13 +153,22 @@ public:
     return mRequest->GetPrincipalInfo();
   }
 
+  AbortSignal*
+  GetOrCreateSignal();
+
+  // This can return a null AbortSignal.
+  AbortSignal*
+  GetSignal() const override;
+
 private:
   ~Request();
 
   nsCOMPtr<nsIGlobalObject> mOwner;
   RefPtr<InternalRequest> mRequest;
+  
   // Lazily created.
   RefPtr<Headers> mHeaders;
+  RefPtr<AbortSignal> mSignal;
 };
 
 } // namespace dom
