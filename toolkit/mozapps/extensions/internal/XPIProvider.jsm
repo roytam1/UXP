@@ -6477,8 +6477,12 @@ AddonInternal.prototype = {
         return false;
 #endif
     }
-    else if (app.id == TOOLKIT_ID)
-      version = aPlatformVersion
+    else if (app.id == TOOLKIT_ID) {
+#ifdef MOZ_PHOENIX_EXTENSIONS
+      this.native = true;
+#endif
+      version = aPlatformVersion;
+    }
 
     // Only extensions and dictionaries can be compatible by default; themes
     // and language packs always use strict compatibility checking.

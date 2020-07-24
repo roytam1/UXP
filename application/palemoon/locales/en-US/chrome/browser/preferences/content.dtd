@@ -30,6 +30,10 @@
 <!ENTITY  chooseButton.label          "Choose…">
 <!ENTITY  chooseButton.accesskey      "o">
 
+<!ENTITY  jsOptions.label             "JavaScript">
+<!ENTITY  jsOptionsWasm.label         "Enable WebAssembly (WASM)">
+<!ENTITY  jsOptionsWasm.accesskey     "y">
+
 <!ENTITY  video.label                 "Video">
 <!ENTITY  videoMSE.label              "Enable Media Source Extensions (MSE)">
 <!ENTITY  videoMSE.accesskey          "M">
