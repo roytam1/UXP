@@ -53,7 +53,7 @@ dictionary RequestInit {
   DOMString integrity;
 
   [Func="AbortController::IsEnabled"]
-  AbortSignal signal;
+  AbortSignal? signal;
 
   [Func="FetchObserver::IsEnabled"]
   ObserverCallback observe;
