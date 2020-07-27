@@ -176,6 +176,10 @@ function allAccountsSorted(aExcludeIMAccounts) {
     accountList = accountList.sort(compareAccounts);
   }
 
+  // Set "Local Folders" as always the first displayed account
+  if (Services.prefs.getBoolPref("mail.accountmanager.localfolderfirst", false)) {
+    accountList.unshift(accountList.splice(accountList.findIndex(item => item.key === "account1"), 1)[0]);
+  }
 
   return accountList;
 }
