@@ -172,7 +172,7 @@ function allAccountsSorted(aExcludeIMAccounts) {
   }
   
   // Sort the accounts else will respect the order in mail.accountmanager.accounts
-  if (Services.prefs.getBoolPref("mail.accountmanager.accounts.ordered", true)) {
+  if (!Services.prefs.getBoolPref("mail.accountmanager.accounts.ordered", false)) {
     accountList = accountList.sort(compareAccounts);
   }
 
