@@ -50,7 +50,6 @@ WEBIDL_FILES = [
     'AutocompleteInfo.webidl',
     'BarProp.webidl',
     'BaseKeyframeTypes.webidl',
-    'BatteryManager.webidl',
     'BeforeAfterKeyboardEvent.webidl',
     'BeforeUnloadEvent.webidl',
     'BiquadFilterNode.webidl',
