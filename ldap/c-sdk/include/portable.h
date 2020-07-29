@@ -59,7 +59,7 @@
  */
 
 #ifndef SYSV
-#if defined( hpux ) || defined( SOLARIS ) || defined ( sgi ) || defined( SVR4 )
+#if defined( hpux ) || defined(XP_SOLARIS) || defined ( sgi ) || defined( SVR4 )
 #define SYSV
 #endif
 #endif
@@ -191,7 +191,7 @@
  */
 #if !defined(NSLDAPI_CONNECT_MUST_NOT_BE_INTERRUPTED) && \
 	( defined(AIX) || defined(IRIX) || defined(HPUX) || defined(SUNOS4) \
-	|| defined(SOLARIS) || defined(OSF1) ||defined(freebsd)) 
+	|| defined(XP_SOLARIS) || defined(OSF1) ||defined(freebsd)) 
 #define NSLDAPI_CONNECT_MUST_NOT_BE_INTERRUPTED
 #endif
 
