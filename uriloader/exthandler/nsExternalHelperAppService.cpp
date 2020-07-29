@@ -1181,9 +1181,12 @@ nsExternalAppHandler::nsExternalAppHandler(nsIMIMEInfo * aMIMEInfo,
     mTempFileExtension = char16_t('.');
   AppendUTF8toUTF16(aTempFileExtension, mTempFileExtension);
 
-  // replace platform specific path separator and illegal characters to avoid any confusion
-  mSuggestedFileName.ReplaceChar(KNOWN_PATH_SEPARATORS FILE_ILLEGAL_CHARACTERS, '_');
-  mTempFileExtension.ReplaceChar(KNOWN_PATH_SEPARATORS FILE_ILLEGAL_CHARACTERS, '_');
+  // Replace platform specific path separator and illegal characters to avoid any confusion
+  mSuggestedFileName.ReplaceChar(KNOWN_PATH_SEPARATORS, '_');
+  mSuggestedFileName.ReplaceChar(FILE_ILLEGAL_CHARACTERS, ' ');
+  mSuggestedFileName.ReplaceChar(char16_t(0), '_');
+  mTempFileExtension.ReplaceChar(KNOWN_PATH_SEPARATORS, '_');
+  mTempFileExtension.ReplaceChar(FILE_ILLEGAL_CHARACTERS, ' ');
 
   // Remove unsafe bidi characters which might have spoofing implications (bug 511521).
   const char16_t unsafeBidiCharacters[] = {
