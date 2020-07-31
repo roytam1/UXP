@@ -33,7 +33,7 @@ class Response final : public nsISupports
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(Response)
 
 public:
-  Response(nsIGlobalObject* aGlobal, InternalResponse* aInternalResponse);
+  Response(nsIGlobalObject* aGlobal, InternalResponse* aInternalResponse, AbortSignal* aSignal);
 
   Response(const Response& aOther) = delete;
 
@@ -134,13 +134,21 @@ public:
   already_AddRefed<InternalResponse>
   GetInternalResponse() const;
 
+  AbortSignal*
+  GetSignal() const override
+  {
+    return mSignal;
+  }
+
 private:
   ~Response();
 
   nsCOMPtr<nsIGlobalObject> mOwner;
   RefPtr<InternalResponse> mInternalResponse;
+
   // Lazily created
   RefPtr<Headers> mHeaders;
+  RefPtr<AbortSignal> mSignal;
 };
 
 } // namespace dom

@@ -3823,7 +3823,7 @@ IonBuilder::improveTypesAtTypeOfCompare(MCompare* ins, bool trueBranch, MTest* t
         tmp.addType(TypeSet::PrimitiveType(ValueTypeFromMIRType(subject->type())), alloc_->lifoAlloc());
     }
 
-    if (inputTypes->unknown())
+    if (inputTypes->unknown() || inputTypes->hasType(TypeSet::MagicArgType()))
         return true;
 
     // Note: we cannot remove the AnyObject type in the false branch,
@@ -3905,7 +3905,7 @@ IonBuilder::improveTypesAtNullOrUndefinedCompare(MCompare* ins, bool trueBranch,
         tmp.addType(TypeSet::PrimitiveType(ValueTypeFromMIRType(subject->type())), alloc_->lifoAlloc());
     }
 
-    if (inputTypes->unknown())
+    if (inputTypes->unknown() || inputTypes->hasType(TypeSet::MagicArgType()))
         return true;
 
     TemporaryTypeSet* type;
@@ -3969,7 +3969,7 @@ IonBuilder::improveTypesAtTest(MDefinition* ins, bool trueBranch, MTest* test)
             tmp.addType(TypeSet::PrimitiveType(ValueTypeFromMIRType(subject->type())), alloc_->lifoAlloc());
         }
 
-        if (oldType->unknown())
+        if (oldType->unknown() || oldType->hasType(TypeSet::MagicArgType()))
             return true;
 
         TemporaryTypeSet* type = nullptr;
@@ -4049,7 +4049,7 @@ IonBuilder::improveTypesAtTest(MDefinition* ins, bool trueBranch, MTest* test)
     }
 
     // If ins does not have a typeset we return as we cannot optimize.
-    if (oldType->unknown())
+    if (oldType->unknown() || oldType->hasType(TypeSet::MagicArgType()))
         return true;
 
     // Decide either to set or remove.

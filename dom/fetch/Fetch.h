@@ -162,6 +162,9 @@ public:
     return mMimeType;
   }
 
+  virtual AbortSignal*
+  GetSignal() const = 0;
+
 protected:
   FetchBody();
 

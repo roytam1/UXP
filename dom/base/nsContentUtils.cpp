@@ -5123,6 +5123,14 @@ nsContentUtils::TriggerLink(nsIContent *aContent, nsPresContext *aPresContext,
       fileName.SetIsVoid(true); // No actionable download attribute was found.
     }
 
+    // Sanitize fileNames containing control characters by replacing them with
+    // underscores.
+    if (!fileName.IsVoid()) {
+      for (int i = 0; i < 32; i++) {
+        fileName.ReplaceChar(char16_t(i), '_');
+      }
+    }
+
     handler->OnLinkClick(aContent, aLinkURI,
                          fileName.IsVoid() ? aTargetSpec.get() : EmptyString().get(),
                          fileName, nullptr, nullptr, aIsTrusted, aContent->NodePrincipal());

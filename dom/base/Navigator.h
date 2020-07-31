@@ -51,10 +51,6 @@ namespace dom {
 
 class Permissions;
 
-namespace battery {
-class BatteryManager;
-} // namespace battery
-
 class Promise;
 
 class DesktopNotificationCenter;
@@ -136,7 +132,6 @@ public:
   Permissions* GetPermissions(ErrorResult& aRv);
   // The XPCOM GetDoNotTrack is ok
   Geolocation* GetGeolocation(ErrorResult& aRv);
-  Promise* GetBattery(ErrorResult& aRv);
 
   static void AppName(nsAString& aAppName, bool aUsePrefOverriddenValue);
 
@@ -269,8 +264,6 @@ private:
   RefPtr<Permissions> mPermissions;
   RefPtr<Geolocation> mGeolocation;
   RefPtr<DesktopNotificationCenter> mNotification;
-  RefPtr<battery::BatteryManager> mBatteryManager;
-  RefPtr<Promise> mBatteryPromise;
   RefPtr<PowerManager> mPowerManager;
   RefPtr<network::Connection> mConnection;
 #ifdef MOZ_AUDIO_CHANNEL_MANAGER

@@ -3240,7 +3240,7 @@ var SessionStoreInternal = {
         // but only if restoring on demand, to prevent request flooding (since
         // reloading will override the max tabs to restore concurrently mechanism).
         // See Issue #1772
-        if (restoreOnDemand) {
+        if (TabRestoreQueue.prefs.restoreOnDemand) {
           let flags = Ci.nsIWebNavigation.LOAD_FLAGS_NONE;
           switch (this._cacheBehavior) {
             case 2: // hard refresh

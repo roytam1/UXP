@@ -694,7 +694,7 @@ private:
     ir->SetPrincipalInfo(Move(principalInfo));
 
     RefPtr<mozilla::dom::Response> response =
-      new mozilla::dom::Response(mCacheCreator->Global(), ir);
+      new mozilla::dom::Response(mCacheCreator->Global(), ir, nullptr);
 
     mozilla::dom::RequestOrUSVString request;
 
@@ -1101,14 +1101,16 @@ private:
     rv = NS_GetFinalChannelURI(channel, getter_AddRefs(finalURI));
     NS_ENSURE_SUCCESS(rv, rv);
 
-    nsCString filename;
-    rv = finalURI->GetSpec(filename);
-    NS_ENSURE_SUCCESS(rv, rv);
+    if (principal->Subsumes(channelPrincipal)) {
+      nsCString filename;
+      rv = finalURI->GetSpec(filename);
+      NS_ENSURE_SUCCESS(rv, rv);
 
-    if (!filename.IsEmpty()) {
-      // This will help callers figure out what their script url resolved to in
-      // case of errors.
-      aLoadInfo.mURL.Assign(NS_ConvertUTF8toUTF16(filename));
+      if (!filename.IsEmpty()) {
+        // This will help callers figure out what their script url resolved to in
+        // case of errors.
+        aLoadInfo.mURL.Assign(NS_ConvertUTF8toUTF16(filename));
+      }
     }
 
     nsCOMPtr<nsILoadInfo> chanLoadInfo = channel->GetLoadInfo();

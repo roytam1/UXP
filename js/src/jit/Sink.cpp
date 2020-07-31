@@ -71,8 +71,12 @@ Sink(MIRGenerator* mir, MIRGraph& graph)
             for (MUseIterator i(ins->usesBegin()), e(ins->usesEnd()); i != e; i++) {
                 hasUses = true;
                 MNode* consumerNode = (*i)->consumer();
-                if (consumerNode->isResumePoint())
+                if (consumerNode->isResumePoint()) {
+                    if (!consumerNode->toResumePoint()->isRecoverableOperand(*i)) {
+                        hasLiveUses = true;
+                    }
                     continue;
+                }
 
                 MDefinition* consumer = consumerNode->toDefinition();
                 if (consumer->isRecoveredOnBailout())
