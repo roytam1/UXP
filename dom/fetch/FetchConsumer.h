@@ -11,6 +11,7 @@
 #include "nsIInputStream.h"
 #include "nsIObserver.h"
 #include "nsWeakReference.h"
+#include "mozilla/dom/AbortSignal.h"
 #include "mozilla/dom/MutableBlobStorage.h"
 
 class nsIThread;
@@ -34,6 +35,7 @@ template <class Derived> class FetchBody;
 template <class Derived>
 class FetchBodyConsumer final : public nsIObserver
                               , public nsSupportsWeakReference
+                              , public AbortSignal::Follower
 {
 public:
   NS_DECL_THREADSAFE_ISUPPORTS
@@ -42,6 +44,7 @@ public:
   static already_AddRefed<Promise>
   Create(nsIGlobalObject* aGlobal,
          FetchBody<Derived>* aBody,
+         AbortSignal* aSignal,
          FetchConsumeType aType,
          ErrorResult& aRv);
 
@@ -72,6 +75,9 @@ public:
     mShuttingDown = true;
     mConsumeBodyPump = nullptr;
   }
+
+  // Override AbortSignal::Follower::Aborted
+  void Aborted() override;
 
 private:
   FetchBodyConsumer(nsIGlobalObject* aGlobalObject,

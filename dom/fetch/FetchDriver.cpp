@@ -499,6 +499,11 @@ FetchDriver::OnStartRequest(nsIRequest* aRequest,
     return rv;
   }
 
+  if (!mChannel) {
+    MOZ_ASSERT(!mObserver);
+    return NS_BINDING_ABORTED;
+  }
+
   // We should only get to the following code once.
   MOZ_ASSERT(!mPipeOutputStream);
   MOZ_ASSERT(mObserver);

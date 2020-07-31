@@ -12,6 +12,7 @@ this.EXPORTED_SYMBOLS = ["getFolderProperties", "getSpecialFolderString",
 
 Components.utils.import("resource:///modules/mailServices.js");
 Components.utils.import("resource:///modules/iteratorUtils.jsm");
+Components.utils.import("resource://gre/modules/Services.jsm");
 
 /**
  * Returns a string representation of a folder's "special" type.
@@ -169,8 +170,18 @@ function allAccountsSorted(aExcludeIMAccounts) {
       return a.incomingServer.type != "im";
     });
   }
+  
+  // Sort the accounts else will respect the order in mail.accountmanager.accounts
+  if (!Services.prefs.getBoolPref("mail.accountmanager.accounts.ordered", false)) {
+    accountList = accountList.sort(compareAccounts);
+  }
 
-  return accountList.sort(compareAccounts);
+  // Set "Local Folders" as always the first displayed account
+  if (Services.prefs.getBoolPref("mail.accountmanager.localfolderfirst", false)) {
+    accountList.unshift(accountList.splice(accountList.findIndex(item => item.key === "account1"), 1)[0]);
+  }
+
+  return accountList;
 }
 
 /**

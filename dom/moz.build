@@ -43,7 +43,6 @@ DIRS += [
     'base',
     'archivereader',
     'bindings',
-    'battery',
     'browser-element',
     'cache',
     'canvas',

@@ -1285,7 +1285,7 @@ BrowserGlue.prototype = {
   },
 
   _migrateUI: function() {
-    const UI_VERSION = 23;
+    const UI_VERSION = 24;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul#";
     let currentUIVersion = 0;
     try {
@@ -1552,6 +1552,13 @@ BrowserGlue.prototype = {
       Services.prefs.clearUserPref("layers.acceleration.disabled");
       Services.prefs.clearUserPref("layers.acceleration.force-enabled");
     }  
+
+    if (currentUIVersion < 24) {
+      // AbortController's worker signalling was fixed so reset user prefs that
+      // might have been set as workaround for web compat issues in the meantime.
+      Services.prefs.clearUserPref("dom.abortController.enabled");
+    }
+
     
     // Clear out dirty storage
     if (this._dirty) {

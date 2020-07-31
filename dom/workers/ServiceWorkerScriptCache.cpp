@@ -554,7 +554,7 @@ private:
       ir->SetPrincipalInfo(Move(mPrincipalInfo));
     }
 
-    RefPtr<Response> response = new Response(aCache->GetGlobalObject(), ir);
+    RefPtr<Response> response = new Response(aCache->GetGlobalObject(), ir, nullptr);
 
     RequestOrUSVString request;
     request.SetAsUSVString().Rebind(URL().Data(), URL().Length());

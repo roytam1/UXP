@@ -111,6 +111,12 @@ public:
     return mSignalMainThread;
   }
 
+  AbortSignal*
+  GetSignalForTargetThread()
+  {
+    return mFollowingSignal;
+  }
+
   void
   Shutdown()
   {
@@ -161,7 +167,7 @@ public:
   }
 
   AbortSignal*
-  GetAbortSignal()
+  GetAbortSignalForMainThread()
   {
     MOZ_ASSERT(NS_IsMainThread());
 
@@ -170,6 +176,18 @@ public:
     }
 
     return mSignalProxy->GetOrCreateSignalForMainThread();
+  }
+
+  AbortSignal*
+  GetAbortSignalForTargetThread()
+  {
+    mPromiseProxy->GetWorkerPrivate()->AssertIsOnWorkerThread();
+
+    if (!mSignalProxy) {
+      return nullptr;
+    }
+
+    return mSignalProxy->GetSignalForTargetThread();
   }
 
   void
@@ -205,14 +223,16 @@ class MainThreadFetchResolver final : public FetchDriverObserver
   RefPtr<Promise> mPromise;
   RefPtr<Response> mResponse;
   RefPtr<FetchObserver> mFetchObserver;
+  RefPtr<AbortSignal> mSignal;
 
   nsCOMPtr<nsIDocument> mDocument;
 
   NS_DECL_OWNINGTHREAD
 public:
-  MainThreadFetchResolver(Promise* aPromise, FetchObserver* aObserver)
+  MainThreadFetchResolver(Promise* aPromise, FetchObserver* aObserver, AbortSignal* aSignal)
     : mPromise(aPromise)
     , mFetchObserver(aObserver)
+    , mSignal(aSignal)
   {}
 
   void
@@ -287,7 +307,7 @@ public:
       fetch->SetWorkerScript(spec);
     }
 
-    RefPtr<AbortSignal> signal = mResolver->GetAbortSignal();
+    RefPtr<AbortSignal> signal = mResolver->GetAbortSignalForMainThread();
 
     // ...but release it before calling Fetch, because mResolver's callback can
     // be called synchronously and they want the mutex, too.
@@ -329,10 +349,7 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
 
   RefPtr<InternalRequest> r = request->GetInternalRequest();
 
-  RefPtr<AbortSignal> signal;
-  if (aInit.mSignal.WasPassed()) {
-    signal = &aInit.mSignal.Value();
-  }
+  RefPtr<AbortSignal> signal = request->GetSignal();
   
   if (signal && signal->Aborted()) {
     // An already aborted signal should reject immediately.
@@ -373,7 +390,7 @@ FetchRequest(nsIGlobalObject* aGlobal, const RequestOrUSVString& aInput,
     }
 
     RefPtr<MainThreadFetchResolver> resolver =
-      new MainThreadFetchResolver(p, observer);
+      new MainThreadFetchResolver(p, observer, signal);
     RefPtr<FetchDriver> fetch = new FetchDriver(r, principal, loadGroup);
     fetch->SetDocument(doc);
     resolver->SetDocument(doc);
@@ -416,7 +433,7 @@ MainThreadFetchResolver::OnResponseAvailableInternal(InternalResponse* aResponse
     }
 
     nsCOMPtr<nsIGlobalObject> go = mPromise->GetParentObject();
-    mResponse = new Response(go, aResponse);
+    mResponse = new Response(go, aResponse, mSignal);
     mPromise->MaybeResolve(mResponse);
   } else {
     if (mFetchObserver) {
@@ -479,7 +496,7 @@ public:
       }
 
       RefPtr<nsIGlobalObject> global = aWorkerPrivate->GlobalScope();
-      RefPtr<Response> response = new Response(global, mInternalResponse);
+      RefPtr<Response> response = new Response(global, mInternalResponse, mResolver->GetAbortSignalForTargetThread());
       promise->MaybeResolve(response);
     } else {
       if (mResolver->mFetchObserver) {
@@ -926,6 +943,12 @@ template <class Derived>
 already_AddRefed<Promise>
 FetchBody<Derived>::ConsumeBody(FetchConsumeType aType, ErrorResult& aRv)
 {
+  RefPtr<AbortSignal> signal = DerivedClass()->GetSignal();
+  if (signal && signal->Aborted()) {
+    aRv.Throw(NS_ERROR_DOM_ABORT_ERR);
+    return nullptr;
+  }
+
   if (BodyUsed()) {
     aRv.ThrowTypeError<MSG_FETCH_BODY_CONSUMED_ERROR>();
     return nullptr;
@@ -935,7 +958,7 @@ FetchBody<Derived>::ConsumeBody(FetchConsumeType aType, ErrorResult& aRv)
 
   RefPtr<Promise> promise =
     FetchBodyConsumer<Derived>::Create(DerivedClass()->GetParentObject(),
-                                       this, aType, aRv);
+                                       this, signal, aType, aRv);
   if (NS_WARN_IF(aRv.Failed())) {
     return nullptr;
   }

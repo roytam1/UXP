@@ -14,6 +14,7 @@
 #include "FilterNodeD2D1.h"
 #include "ExtendInputEffectD2D1.h"
 #include "Tools.h"
+#include "nsWindowsHelpers.h"
 
 using namespace std;
 
@@ -1177,7 +1178,7 @@ DrawTargetD2D1::GetDWriteFactory()
   }
 
   decltype(DWriteCreateFactory)* createDWriteFactory;
-  HMODULE dwriteModule = LoadLibraryW(L"dwrite.dll");
+  HMODULE dwriteModule = LoadLibrarySystem32(L"dwrite.dll");
   createDWriteFactory = (decltype(DWriteCreateFactory)*)
     GetProcAddress(dwriteModule, "DWriteCreateFactory");
 
