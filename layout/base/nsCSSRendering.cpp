@@ -5290,6 +5290,16 @@ nsImageRenderer::ComputeIntrinsicSize()
       if (haveHeight) {
         result.SetHeight(nsPresContext::CSSPixelsToAppUnits(imageIntSize.height));
       }
+
+      if (!haveHeight && haveWidth && result.mRatio) {
+        nscoord intrinsicHeight =
+            result.mRatio.Inverted().ApplyTo(imageIntSize.width);
+        result.SetHeight(nsPresContext::CSSPixelsToAppUnits(intrinsicHeight));
+      } else if (haveHeight && !haveWidth && result.mRatio) {
+        nscoord intrinsicWidth = result.mRatio.ApplyTo(imageIntSize.height);
+        result.SetWidth(nsPresContext::CSSPixelsToAppUnits(intrinsicWidth));
+      }
+
       break;
     }
     case eStyleImageType_Element:
