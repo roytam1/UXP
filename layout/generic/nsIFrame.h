@@ -27,6 +27,7 @@
 #include "FrameProperties.h"
 #include "LayoutConstants.h"
 #include "mozilla/layout/FrameChildList.h"
+#include "mozilla/AspectRatio.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/WritingModes.h"
 #include "nsDirection.h"
@@ -2063,15 +2064,14 @@ public:
   virtual mozilla::IntrinsicSize GetIntrinsicSize() = 0;
 
   /**
-   * Get the intrinsic ratio of this element, or nsSize(0,0) if it has
-   * no intrinsic ratio.  The intrinsic ratio is the ratio of the
-   * height/width of a box with an intrinsic size or the intrinsic
-   * aspect ratio of a scalable vector image without an intrinsic size.
+   * Get the intrinsic ratio of this element, or a default-constructed
+   * AspectRatio if it has no intrinsic ratio.
    *
-   * Either one of the sides may be zero, indicating a zero or infinite
-   * ratio.
+   * The intrinsic ratio is the ratio of the width/height of a box with an
+   * intrinsic size or the intrinsic aspect ratio of a scalable vector image
+   * without an intrinsic size.
    */
-  virtual nsSize GetIntrinsicRatio() = 0;
+  virtual mozilla::AspectRatio GetIntrinsicRatio() = 0;
 
   /**
    * Bit-flags to pass to ComputeSize in |aFlags| parameter.

@@ -264,7 +264,7 @@ public:
   IntrinsicISizeOffsetData
   IntrinsicISizeOffsets(nscoord aPercentageBasis = NS_UNCONSTRAINEDSIZE) override;
   virtual mozilla::IntrinsicSize GetIntrinsicSize() override;
-  virtual nsSize GetIntrinsicRatio() override;
+  virtual mozilla::AspectRatio GetIntrinsicRatio() override;
 
   virtual mozilla::LogicalSize
   ComputeSize(nsRenderingContext*         aRenderingContext,
@@ -285,7 +285,7 @@ public:
               nsRenderingContext*           aRenderingContext,
               mozilla::WritingMode          aWM,
               const mozilla::IntrinsicSize& aIntrinsicSize,
-              nsSize                        aIntrinsicRatio,
+              const mozilla::AspectRatio&   aIntrinsicRatio,
               const mozilla::LogicalSize&   aCBSize,
               const mozilla::LogicalSize&   aMargin,
               const mozilla::LogicalSize&   aBorder,

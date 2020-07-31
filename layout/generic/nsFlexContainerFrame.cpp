@@ -557,8 +557,8 @@ public:
     return mFlexShrink * mFlexBaseSize;
   }
 
-  const nsSize& IntrinsicRatio() const { return mIntrinsicRatio; }
-  bool HasIntrinsicRatio() const { return mIntrinsicRatio != nsSize(); }
+  const AspectRatio IntrinsicRatio() const { return mIntrinsicRatio; }
+  bool HasIntrinsicRatio() const { return !!mIntrinsicRatio; }
 
   // Getters for margin:
   // ===================
@@ -756,7 +756,7 @@ protected:
   const float mFlexGrow;
   const float mFlexShrink;
 
-  const nsSize mIntrinsicRatio;
+  const AspectRatio mIntrinsicRatio;
 
   const nsMargin mBorderPadding;
   nsMargin mMargin; // non-const because we need to resolve auto margins
@@ -1520,22 +1520,20 @@ CrossSizeToUseWithRatio(const FlexItem& aFlexItem,
 }
 
 // Convenience function; returns a main-size, given a cross-size and an
-// intrinsic ratio. The intrinsic ratio must not have 0 in its cross-axis
-// component (or else we'll divide by 0).
+// intrinsic ratio. The caller is responsible for ensuring that the passed-in
+// intrinsic ratio is not zero.
 static nscoord
 MainSizeFromAspectRatio(nscoord aCrossSize,
-                        const nsSize& aIntrinsicRatio,
+                        const AspectRatio& aIntrinsicRatio,
                         const FlexboxAxisTracker& aAxisTracker)
 {
-  MOZ_ASSERT(aAxisTracker.GetCrossComponent(aIntrinsicRatio) != 0,
+  MOZ_ASSERT(aIntrinsicRatio,
              "Invalid ratio; will divide by 0! Caller should've checked...");
+  AspectRatio ratio = aAxisTracker.IsMainAxisHorizontal()
+                          ? aIntrinsicRatio
+                          : aIntrinsicRatio.Inverted();
 
-  if (aAxisTracker.IsCrossAxisHorizontal()) {
-    // cross axis horiz --> aCrossSize is a width. Converting to height.
-    return NSCoordMulDiv(aCrossSize, aIntrinsicRatio.height, aIntrinsicRatio.width);
-  }
-  // cross axis vert --> aCrossSize is a height. Converting to width.
-  return NSCoordMulDiv(aCrossSize, aIntrinsicRatio.width, aIntrinsicRatio.height);
+  return ratio.ApplyTo(aCrossSize);
 }
 
 // Partially resolves "min-[width|height]:auto" and returns the resulting value.
@@ -1584,7 +1582,7 @@ PartiallyResolveAutoMinSize(const FlexItem& aFlexItem,
   // * if the item has an intrinsic aspect ratio, the width (height) calculated
   //   from the aspect ratio and any definite size constraints in the opposite
   //   dimension.
-  if (aAxisTracker.GetCrossComponent(aFlexItem.IntrinsicRatio()) != 0) {
+  if (aFlexItem.IntrinsicRatio()) {
     // We have a usable aspect ratio. (not going to divide by 0)
     const bool useMinSizeIfCrossSizeIsIndefinite = true;
     nscoord crossSizeToUseWithRatio =
@@ -1617,7 +1615,7 @@ ResolveAutoFlexBasisFromRatio(FlexItem& aFlexItem,
   //  - a definite cross size
   // then the flex base size is calculated from its inner cross size and the
   // flex item’s intrinsic aspect ratio.
-  if (aAxisTracker.GetCrossComponent(aFlexItem.IntrinsicRatio()) != 0) {
+  if (aFlexItem.IntrinsicRatio()) {
     // We have a usable aspect ratio. (not going to divide by 0)
     const bool useMinSizeIfCrossSizeIsIndefinite = false;
     nscoord crossSizeToUseWithRatio =
@@ -1693,8 +1691,7 @@ nsFlexContainerFrame::
     // (We'll consider that later, if we need to.)
     resolvedMinSize = PartiallyResolveAutoMinSize(aFlexItem, aItemReflowInput,
                                                   aAxisTracker);
-    if (resolvedMinSize > 0 &&
-        aAxisTracker.GetCrossComponent(aFlexItem.IntrinsicRatio()) == 0) {
+    if (resolvedMinSize > 0 && !aFlexItem.IntrinsicRatio()) {
       // We don't have a usable aspect ratio, so we need to consider our
       // min-content size as another candidate min-size, which we'll have to
       // min() with the current resolvedMinSize.

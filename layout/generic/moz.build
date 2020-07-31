@@ -109,6 +109,7 @@ EXPORTS += [
 ]
 
 EXPORTS.mozilla += [
+    'AspectRatio.h',
     'CSSAlignUtils.h',
     'ReflowInput.h',
     'ReflowOutput.h',
