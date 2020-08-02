@@ -199,6 +199,7 @@ nsHTMLCanvasFrame::GetIntrinsicSize()
 /* virtual */ AspectRatio
 nsHTMLCanvasFrame::GetIntrinsicRatio()
 {
+ // When 'contain: size' is implemented, make sure to check for it.
 /*
   if (StyleDisplay()->IsContainSize()) {
     return AspectRatio();

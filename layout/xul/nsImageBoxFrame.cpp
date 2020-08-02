@@ -407,8 +407,7 @@ nsImageBoxFrame::PaintImage(nsRenderingContext& aRenderingContext,
       // Image has a valid size; use it as intrinsic size & ratio.
       intrinsicSize.width.SetCoordValue(mIntrinsicSize.width);
       intrinsicSize.height.SetCoordValue(mIntrinsicSize.height);
-      intrinsicRatio =
-          AspectRatio::FromSize(mIntrinsicSize);
+      intrinsicRatio = AspectRatio::FromSize(mIntrinsicSize);
     } else {
       // Image doesn't have a (valid) intrinsic size.
       // Try to look up intrinsic ratio and use that at least.
