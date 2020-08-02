@@ -5197,26 +5197,6 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       if (hasIntrinsicISize) {
         tentISize = intrinsicISize;
       } else if (hasIntrinsicBSize && logicalRatio) {
-        // (dholbert) <https://phabricator.services.mozilla.com
-        //             /D29244#change-5faEkbsohV7O>
-        // This is wrong -- this ApplyTo call (and probably every ApplyTo call
-        // in this function) would only be valid if we're in a horizontal
-        // writing mode. It's not valid in a vertical writing mode. If this
-        // doesn't break tests, that's a bit concerning, and I think it means
-        // we're missing some test coverage. (That, or I'm misreading things.)
-        //
-        // aIntrinsicRatio is stored in terms of physical axes (width/height),
-        // either of which could be I vs. B axis. So any sort of
-        // aIntrinsicRatio.ApplyTo(someBSize) operation will be
-        // potentially-bogus.
-        //
-        // You probably want to bring back a logicalRatio variable
-        // (like the one we used to have here), but now with type AspectRatio.
-        // It would be equal to either aIntrinsicRatio or
-        // aIntrinsicRatio.Invert() depending on whether aWM is horizontal or
-        // vertical. (And hopefully having logical in its name would be a
-        // reminder that it's in terms of Inline/Block and can be used for
-        // these sorts of ApplyTo(intrinsicBSize) operations.
         tentISize = logicalRatio.ApplyTo(intrinsicBSize);
       } else if (logicalRatio) {
         tentISize = aCBSize.ISize(aWM) - boxSizingToMarginEdgeISize; // XXX scrollbar?

@@ -1,0 +1,57 @@
+<!doctype html>
+<title>Frame width and height attributes as they apply in a vertical writing mode</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<style>
+ #horiz
+ {
+  writing-mode: horizontal-tb;
+  display: inline-block;
+ }
+ #vert
+ {
+  writing-mode: vertical-rl;
+  display: inline-block;
+ }
+ object
+ {
+  border: 1px solid red;
+  margin: 5px;
+ }
+</style>
+<div id="horiz">
+<object data="/images/green.png" width=300></object>
+<object data="/images/green.png" height=50></object>
+</div>
+<div id="vert">
+<object data="/images/green.png" width=300></object>
+<object data="/images/green.png" height=50></object>
+</div>
+<script>
+let t = async_test("Frame width and height attributes as they apply in a vertical writing mode");
+function assert_dimensions(obj, expectedX, expectedY) {
+  assert_equals(getComputedStyle(obj).width, expectedX);
+  assert_equals(getComputedStyle(obj).height, expectedY);
+}
+t.step(function() {
+  var obj = document.createElement('object');
+  obj.width = 133;
+  obj.data = '/images/blue.png';
+  document.getElementById('horiz').appendChild(obj);
+
+  obj = document.createElement('object');
+  obj.width = 133;
+  obj.data = '/images/blue.png';
+  document.getElementById('vert').appendChild(obj);
+});
+
+onload = t.step_func_done(function() {
+  let objects = document.querySelectorAll("object");
+  assert_dimensions(objects[0], '300px', '150px');
+  assert_dimensions(objects[1], '100px', '50px');
+  assert_dimensions(objects[2], '133px', '106px');
+  assert_dimensions(objects[3], '300px', '150px');
+  assert_dimensions(objects[4], '100px', '50px');
+  assert_dimensions(objects[5], '133px', '106px');
+});
+</script>
