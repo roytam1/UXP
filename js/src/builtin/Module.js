@@ -67,7 +67,8 @@ function ModuleGetExportedNames(exportStarSet = [])
 
 function ModuleSetStatus(module, newStatus)
 {
-    assert(newStatus >= MODULE_STATUS_ERRORED && newStatus <= MODULE_STATUS_EVALUATED,
+    assert(newStatus >= MODULE_STATUS_UNINSTANTIATED &&
+           newStatus <= MODULE_STATUS_EVALUATED_ERROR,
            "Bad new module status in ModuleSetStatus");
 
     // Note that under OOM conditions we can fail the module instantiation
