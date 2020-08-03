@@ -2765,7 +2765,6 @@ MOZ_ARG_ENABLE_BOOL(mailnews,
     MOZ_MAILNEWS=)
 
 if test -n "$MOZ_MAILNEWS"; then
-    MOZ_MAILNEWS_OAUTH2=1
     MOZ_MORK=1
     MOZ_LDAP_XPCOM=1
 
