@@ -196,6 +196,11 @@ public:
     return GetReferrerPolicyAsEnum();
   }
 
+  bool IsAwaitingLoad() const
+  {
+    return !!mPendingImageLoadTask;
+  }
+
   int32_t X();
   int32_t Y();
   // Uses XPCOM GetLowsrc.

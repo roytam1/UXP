@@ -1815,6 +1815,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStylePosition
   nsStyleCoord  mGridAutoColumnsMax;    // [reset] coord, percent, enum, calc, flex
   nsStyleCoord  mGridAutoRowsMin;       // [reset] coord, percent, enum, calc, flex
   nsStyleCoord  mGridAutoRowsMax;       // [reset] coord, percent, enum, calc, flex
+  float         mAspectRatio;           // [reset] float
   uint8_t       mGridAutoFlow;          // [reset] enumerated. See nsStyleConsts.h
   mozilla::StyleBoxSizing mBoxSizing;   // [reset] see nsStyleConsts.h
 
