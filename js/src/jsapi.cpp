@@ -483,6 +483,11 @@ JS_DestroyContext(JSContext* cx)
     DestroyContext(cx);
 }
 
+JS_PUBLIC_API(JSRuntime*)
+JS_GetRuntime(JSContext* cx) {
+    return cx->runtime();
+}
+
 static JS_CurrentEmbedderTimeFunction currentEmbedderTimeFunction;
 
 JS_PUBLIC_API(void)
