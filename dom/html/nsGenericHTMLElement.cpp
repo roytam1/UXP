@@ -1480,8 +1480,6 @@ nsGenericHTMLElement::MapImageSizeAttributesInto(const nsMappedAttributes* aAttr
     }
   }
 
-  // 2020-07-15 (RealityRipple) Much of this is a guess based on a few sources.
-  // Please go over this with a fine-tooth comb before production.
   if (Preferences::GetBool("layout.css.width-and-height-map-to-aspect-ratio.enabled") &&
       aMapAspectRatio && aWidth && aHeight) {
     Maybe<double> w;

@@ -287,10 +287,6 @@ nsImageFrame::Init(nsIContent*       aContent,
     p->AdjustPriority(-1);
 }
 
-// 2020-07-14 (RealityRipple) Firefox is doing this completely differently
-// because of loading="lazy" support and the StyleDisplay()->IsContainSize()
-// property. Double-check all of this for problems.
-
 static IntrinsicSize
 ComputeIntrinsicSize(imgIContainer* aImage,
                      bool aUseMappedRatio,
