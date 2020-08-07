@@ -311,9 +311,9 @@ TextEditor::UpdateMetaCharset(nsIDOMDocument* aDocument,
     }
 
     // set attribute to <original prefix> charset=text/html
-    nsCOMPtr<nsIDOMElement> metaElement = do_QueryInterface(metaNode);
+    RefPtr<Element> metaElement = metaNode->AsElement();
     MOZ_ASSERT(metaElement);
-    rv = EditorBase::SetAttribute(metaElement, NS_LITERAL_STRING("content"),
+    rv = EditorBase::SetAttribute(metaElement, nsGkAtoms::content,
                                   Substring(originalStart, start) +
                                     charsetEquals +
                                     NS_ConvertASCIItoUTF16(aCharacterSet));
@@ -1622,8 +1622,8 @@ TextEditor::GetDOMEventTarget()
 
 
 nsresult
-TextEditor::SetAttributeOrEquivalent(nsIDOMElement* aElement,
-                                     const nsAString& aAttribute,
+TextEditor::SetAttributeOrEquivalent(Element* aElement,
+                                     nsIAtom* aAttribute,
                                      const nsAString& aValue,
                                      bool aSuppressTransaction)
 {
@@ -1631,8 +1631,8 @@ TextEditor::SetAttributeOrEquivalent(nsIDOMElement* aElement,
 }
 
 nsresult
-TextEditor::RemoveAttributeOrEquivalent(nsIDOMElement* aElement,
-                                        const nsAString& aAttribute,
+TextEditor::RemoveAttributeOrEquivalent(Element* aElement,
+                                        nsIAtom* aAttribute,
                                         bool aSuppressTransaction)
 {
   return EditorBase::RemoveAttribute(aElement, aAttribute);

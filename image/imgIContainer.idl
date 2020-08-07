@@ -12,6 +12,7 @@
 #include "gfxMatrix.h"
 #include "gfxRect.h"
 #include "mozilla/gfx/2D.h"
+#include "mozilla/AspectRatio.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/RefPtr.h"
 #include "nsRect.h"
@@ -55,6 +56,7 @@ native SamplingFilter(mozilla::gfx::SamplingFilter);
 native nsIntRectByVal(nsIntRect);
 [ref] native nsIntSize(nsIntSize);
 native nsSize(nsSize);
+native AspectRatio(mozilla::AspectRatio);
 [ptr] native nsIFrame(nsIFrame);
 native TempRefImageContainer(already_AddRefed<mozilla::layers::ImageContainer>);
 [ref] native ImageRegion(mozilla::image::ImageRegion);
@@ -101,7 +103,7 @@ interface imgIContainer : nsISupports
    * The (dimensionless) intrinsic ratio of this image. In the case of any
    * error, an exception will be thrown.
    */
-  [noscript] readonly attribute nsSize intrinsicRatio;
+  [noscript] readonly attribute AspectRatio intrinsicRatio;
 
   /**
    * Given a size at which this image will be displayed, and the drawing

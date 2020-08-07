@@ -4744,6 +4744,8 @@ pref("dom.push.enabled", false);
 
 pref("dom.push.loglevel", "error");
 
+pref("dom.getRootNode.enabled", false);
+
 pref("dom.push.serverURL", "wss://push.services.mozilla.com/");
 pref("dom.push.userAgentID", "");
 

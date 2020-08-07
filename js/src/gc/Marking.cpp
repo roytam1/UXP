@@ -2267,6 +2267,8 @@ void
 js::gc::StoreBuffer::SlotsEdge::trace(TenuringTracer& mover) const
 {
     NativeObject* obj = object();
+    if(!IsCellPointerValid(obj))
+        return;
 
     // Beware JSObject::swap exchanging a native object for a non-native one.
     if (!obj->isNative())
@@ -2336,6 +2338,8 @@ js::gc::StoreBuffer::traceWholeCells(TenuringTracer& mover)
 {
     for (ArenaCellSet* cells = bufferWholeCell; cells; cells = cells->next) {
         Arena* arena = cells->arena;
+        if(!IsCellPointerValid(arena))
+            continue;
 
         MOZ_ASSERT(arena->bufferedCells == cells);
         arena->bufferedCells = &ArenaCellSet::Empty;
@@ -2364,6 +2368,7 @@ js::gc::StoreBuffer::CellPtrEdge::trace(TenuringTracer& mover) const
 {
     if (!*edge)
         return;
+    // XXX: We should check if the cell pointer is valid here too
 
     MOZ_ASSERT((*edge)->getTraceKind() == JS::TraceKind::Object);
     mover.traverse(reinterpret_cast<JSObject**>(edge));

@@ -2529,7 +2529,7 @@ HTMLEditor::CreateElementWithDefaults(const nsAString& aTagName)
 
   // New call to use instead to get proper HTML element, bug 39919
   nsCOMPtr<nsIAtom> realTagAtom = NS_Atomize(realTagName);
-  nsCOMPtr<Element> newElement = CreateHTMLContent(realTagAtom);
+  RefPtr<Element> newElement = CreateHTMLContent(realTagAtom);
   if (!newElement) {
     return nullptr;
   }
@@ -2561,8 +2561,7 @@ HTMLEditor::CreateElementWithDefaults(const nsAString& aTagName)
   } else if (tagName.EqualsLiteral("td")) {
     nsresult rv =
       SetAttributeOrEquivalent(
-        static_cast<nsIDOMElement*>(newElement->AsDOMNode()),
-        NS_LITERAL_STRING("valign"), NS_LITERAL_STRING("top"), true);
+        newElement, nsGkAtoms::valign, NS_LITERAL_STRING("top"), true);
     NS_ENSURE_SUCCESS(rv, nullptr);
   }
   // ADD OTHER TAGS HERE
@@ -4390,87 +4389,83 @@ HTMLEditor::IsEmptyNodeImpl(nsINode* aNode,
 // add to aElement the CSS inline styles corresponding to the HTML attribute
 // aAttribute with its value aValue
 nsresult
-HTMLEditor::SetAttributeOrEquivalent(nsIDOMElement* aElement,
-                                     const nsAString& aAttribute,
+HTMLEditor::SetAttributeOrEquivalent(Element* aElement,
+                                     nsIAtom* aAttribute,
                                      const nsAString& aValue,
                                      bool aSuppressTransaction)
 {
+  MOZ_ASSERT(aElement);
+  MOZ_ASSERT(aAttribute);
+
   nsAutoScriptBlocker scriptBlocker;
 
-  if (IsCSSEnabled() && mCSSEditUtils) {
-    int32_t count;
-    nsresult rv =
-      mCSSEditUtils->SetCSSEquivalentToHTMLStyle(aElement, nullptr,
-                                                 &aAttribute, &aValue,
-                                                 &count,
-                                                 aSuppressTransaction);
-    NS_ENSURE_SUCCESS(rv, rv);
-    if (count) {
-      // we found an equivalence ; let's remove the HTML attribute itself if it is set
-      nsAutoString existingValue;
-      bool wasSet = false;
-      rv = GetAttributeValue(aElement, aAttribute, existingValue, &wasSet);
-      NS_ENSURE_SUCCESS(rv, rv);
-      if (!wasSet) {
-        return NS_OK;
-      }
-      return aSuppressTransaction ? aElement->RemoveAttribute(aAttribute) :
-                                    RemoveAttribute(aElement, aAttribute);
-    }
-
-    // count is an integer that represents the number of CSS declarations applied to the
-    // element. If it is zero, we found no equivalence in this implementation for the
-    // attribute
-    if (aAttribute.EqualsLiteral("style")) {
-      // if it is the style attribute, just add the new value to the existing style
-      // attribute's value
-      nsAutoString existingValue;
-      bool wasSet = false;
-      nsresult rv = GetAttributeValue(aElement, NS_LITERAL_STRING("style"),
-                                      existingValue, &wasSet);
-      NS_ENSURE_SUCCESS(rv, rv);
-      existingValue.Append(' ');
-      existingValue.Append(aValue);
-      return aSuppressTransaction ?
-        aElement->SetAttribute(aAttribute, existingValue) :
-        SetAttribute(aElement, aAttribute, existingValue);
-    }
-
-    // we have no CSS equivalence for this attribute and it is not the style
-    // attribute; let's set it the good'n'old HTML way
-    return aSuppressTransaction ? aElement->SetAttribute(aAttribute, aValue) :
-                                  SetAttribute(aElement, aAttribute, aValue);
+  if (!IsCSSEnabled() || !mCSSEditUtils) {
+    // we are not in an HTML+CSS editor; let's set the attribute the HTML way
+    return aSuppressTransaction ?
+             aElement->SetAttr(kNameSpaceID_None, aAttribute, aValue, true) :
+             SetAttribute(aElement, aAttribute, aValue);
   }
 
-  // we are not in an HTML+CSS editor; let's set the attribute the HTML way
-  return aSuppressTransaction ? aElement->SetAttribute(aAttribute, aValue) :
-                                SetAttribute(aElement, aAttribute, aValue);
+  int32_t count =
+    mCSSEditUtils->SetCSSEquivalentToHTMLStyle(aElement, nullptr,
+                                               aAttribute, &aValue,
+                                               aSuppressTransaction);
+  if (count) {
+    // we found an equivalence ; let's remove the HTML attribute itself if it
+    // is set
+    nsAutoString existingValue;
+    if (!aElement->GetAttr(kNameSpaceID_None, aAttribute, existingValue)) {
+      return NS_OK;
+    }
+
+    return aSuppressTransaction ?
+             aElement->UnsetAttr(kNameSpaceID_None, aAttribute, true) :
+             RemoveAttribute(aElement, aAttribute);
+  }
+
+  // count is an integer that represents the number of CSS declarations applied
+  // to the element. If it is zero, we found no equivalence in this
+  // implementation for the attribute
+  if (aAttribute == nsGkAtoms::style) {
+    // if it is the style attribute, just add the new value to the existing
+    // style attribute's value
+    nsAutoString existingValue;
+    aElement->GetAttr(kNameSpaceID_None, nsGkAtoms::style, existingValue);
+    existingValue.Append(' ');
+    existingValue.Append(aValue);
+    return aSuppressTransaction ?
+       aElement->SetAttr(kNameSpaceID_None, aAttribute, existingValue, true) :
+      SetAttribute(aElement, aAttribute, existingValue);
+  }
+
+  // we have no CSS equivalence for this attribute and it is not the style
+  // attribute; let's set it the good'n'old HTML way
+  return aSuppressTransaction ?
+           aElement->SetAttr(kNameSpaceID_None, aAttribute, aValue, true) :
+           SetAttribute(aElement, aAttribute, aValue);
 }
 
 nsresult
-HTMLEditor::RemoveAttributeOrEquivalent(nsIDOMElement* aElement,
-                                        const nsAString& aAttribute,
+HTMLEditor::RemoveAttributeOrEquivalent(Element* aElement,
+                                        nsIAtom* aAttribute,
                                         bool aSuppressTransaction)
 {
-  nsCOMPtr<dom::Element> element = do_QueryInterface(aElement);
-  NS_ENSURE_TRUE(element, NS_OK);
-
-  nsCOMPtr<nsIAtom> attribute = NS_Atomize(aAttribute);
-  MOZ_ASSERT(attribute);
+  MOZ_ASSERT(aElement);
+  MOZ_ASSERT(aAttribute);
 
   if (IsCSSEnabled() && mCSSEditUtils) {
     nsresult rv =
       mCSSEditUtils->RemoveCSSEquivalentToHTMLStyle(
-        element, nullptr, &aAttribute, nullptr, aSuppressTransaction);
+        aElement, nullptr, aAttribute, nullptr, aSuppressTransaction);
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
-  if (!element->HasAttr(kNameSpaceID_None, attribute)) {
+  if (!aElement->HasAttr(kNameSpaceID_None, aAttribute)) {
     return NS_OK;
   }
 
   return aSuppressTransaction ?
-    element->UnsetAttr(kNameSpaceID_None, attribute, /* aNotify = */ true) :
+    aElement->UnsetAttr(kNameSpaceID_None, aAttribute, /* aNotify = */ true) :
     RemoveAttribute(aElement, aAttribute);
 }
 
@@ -4523,7 +4518,6 @@ HTMLEditor::SetCSSBackgroundColor(const nsAString& aColor)
   NS_ENSURE_SUCCESS(rv, rv);
   if (!cancel && !handled) {
     // Loop through the ranges in the selection
-    NS_NAMED_LITERAL_STRING(bgcolor, "bgcolor");
     for (uint32_t i = 0; i < selection->RangeCount(); i++) {
       RefPtr<nsRange> range = selection->GetRangeAt(i);
       NS_ENSURE_TRUE(range, NS_ERROR_FAILURE);
@@ -4542,13 +4536,15 @@ HTMLEditor::SetCSSBackgroundColor(const nsAString& aColor)
         if (blockParent && cachedBlockParent != blockParent) {
           cachedBlockParent = blockParent;
           mCSSEditUtils->SetCSSEquivalentToHTMLStyle(blockParent, nullptr,
-                                                     &bgcolor, &aColor, false);
+                                                     nsGkAtoms::bgcolor,
+                                                     &aColor, false);
         }
       } else if (startNode == endNode &&
                  startNode->IsHTMLElement(nsGkAtoms::body) && isCollapsed) {
         // No block in the document, let's apply the background to the body
         mCSSEditUtils->SetCSSEquivalentToHTMLStyle(startNode->AsElement(),
-                                                   nullptr, &bgcolor, &aColor,
+                                                   nullptr, nsGkAtoms::bgcolor,
+                                                   &aColor,
                                                    false);
       } else if (startNode == endNode && (endOffset - startOffset == 1 ||
                                           (!startOffset && !endOffset))) {
@@ -4559,7 +4555,8 @@ HTMLEditor::SetCSSBackgroundColor(const nsAString& aColor)
         if (blockParent && cachedBlockParent != blockParent) {
           cachedBlockParent = blockParent;
           mCSSEditUtils->SetCSSEquivalentToHTMLStyle(blockParent, nullptr,
-                                                     &bgcolor, &aColor, false);
+                                                     nsGkAtoms::bgcolor,
+                                                     &aColor, false);
         }
       } else {
         // Not the easy case.  Range not contained in single text node.  There
@@ -4602,7 +4599,8 @@ HTMLEditor::SetCSSBackgroundColor(const nsAString& aColor)
           if (blockParent && cachedBlockParent != blockParent) {
             cachedBlockParent = blockParent;
             mCSSEditUtils->SetCSSEquivalentToHTMLStyle(blockParent, nullptr,
-                                                       &bgcolor, &aColor,
+                                                       nsGkAtoms::bgcolor,
+                                                       &aColor,
                                                        false);
           }
         }
@@ -4613,7 +4611,8 @@ HTMLEditor::SetCSSBackgroundColor(const nsAString& aColor)
           if (blockParent && cachedBlockParent != blockParent) {
             cachedBlockParent = blockParent;
             mCSSEditUtils->SetCSSEquivalentToHTMLStyle(blockParent, nullptr,
-                                                       &bgcolor, &aColor,
+                                                       nsGkAtoms::bgcolor,
+                                                       &aColor,
                                                        false);
           }
         }
@@ -4627,7 +4626,8 @@ HTMLEditor::SetCSSBackgroundColor(const nsAString& aColor)
           if (blockParent && cachedBlockParent != blockParent) {
             cachedBlockParent = blockParent;
             mCSSEditUtils->SetCSSEquivalentToHTMLStyle(blockParent, nullptr,
-                                                       &bgcolor, &aColor,
+                                                       nsGkAtoms::bgcolor,
+                                                       &aColor,
                                                        false);
           }
         }

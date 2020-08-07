@@ -242,13 +242,13 @@ ClippedImage::GetIntrinsicSize(nsSize* aSize)
 }
 
 NS_IMETHODIMP
-ClippedImage::GetIntrinsicRatio(nsSize* aRatio)
+ClippedImage::GetIntrinsicRatio(AspectRatio* aRatio)
 {
   if (!ShouldClip()) {
     return InnerImage()->GetIntrinsicRatio(aRatio);
   }
 
-  *aRatio = nsSize(mClip.width, mClip.height);
+  *aRatio = AspectRatio::FromSize(mClip.width, mClip.height);
   return NS_OK;
 }
 

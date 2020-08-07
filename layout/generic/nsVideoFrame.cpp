@@ -217,12 +217,10 @@ nsVideoFrame::BuildLayer(nsDisplayListBuilder* aBuilder,
   // Convert video size from pixel units into app units, to get an aspect-ratio
   // (which has to be represented as a nsSize) and an IntrinsicSize that we
   // can pass to ComputeObjectRenderRect.
-  nsSize aspectRatio(nsPresContext::CSSPixelsToAppUnits(videoSizeInPx.width),
-                     nsPresContext::CSSPixelsToAppUnits(videoSizeInPx.height));
+  auto aspectRatio = AspectRatio::FromSize(videoSizeInPx);
   IntrinsicSize intrinsicSize;
-  intrinsicSize.width.SetCoordValue(aspectRatio.width);
-  intrinsicSize.height.SetCoordValue(aspectRatio.height);
-
+  intrinsicSize.width.SetCoordValue(nsPresContext::CSSPixelsToAppUnits(videoSizeInPx.width));
+  intrinsicSize.height.SetCoordValue(nsPresContext::CSSPixelsToAppUnits(videoSizeInPx.height));
   nsRect dest = nsLayoutUtils::ComputeObjectDestRect(area,
                                                      intrinsicSize,
                                                      aspectRatio,
@@ -533,7 +531,9 @@ nsVideoFrame::ComputeSize(nsRenderingContext *aRenderingContext,
   intrinsicSize.height.SetCoordValue(size.height);
 
   // Only video elements have an intrinsic ratio.
-  nsSize intrinsicRatio = HasVideoElement() ? size : nsSize(0, 0);
+  auto intrinsicRatio = HasVideoElement() ?
+                        AspectRatio::FromSize(size) :
+                        AspectRatio();
 
   return ComputeSizeWithIntrinsicDimensions(aRenderingContext, aWM,
                                             intrinsicSize, intrinsicRatio,
@@ -557,14 +557,14 @@ nscoord nsVideoFrame::GetPrefISize(nsRenderingContext *aRenderingContext)
   return result;
 }
 
-nsSize nsVideoFrame::GetIntrinsicRatio()
+AspectRatio nsVideoFrame::GetIntrinsicRatio()
 {
   if (!HasVideoElement()) {
     // Audio elements have no intrinsic ratio.
-    return nsSize(0, 0);
+    return AspectRatio();
   }
 
-  return GetVideoIntrinsicSize(nullptr);
+  return AspectRatio::FromSize(GetVideoIntrinsicSize(nullptr));
 }
 
 bool nsVideoFrame::ShouldDisplayPoster()

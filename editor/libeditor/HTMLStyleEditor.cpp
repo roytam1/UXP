@@ -429,7 +429,7 @@ HTMLEditor::SetInlinePropertyOnNodeImpl(nsIContent& aNode,
                  mCSSEditUtils->IsCSSEditableProperty(&aNode, &aProperty,
                                                       aAttribute)) ||
                 // bgcolor is always done using CSS
-                aAttribute->EqualsLiteral("bgcolor");
+                attrAtom == nsGkAtoms::bgcolor;
 
   if (useCSS) {
     nsCOMPtr<dom::Element> tmp;
@@ -444,12 +444,9 @@ HTMLEditor::SetInlinePropertyOnNodeImpl(nsIContent& aNode,
     }
 
     // Add the CSS styles corresponding to the HTML style request
-    int32_t count;
-    nsresult rv =
-      mCSSEditUtils->SetCSSEquivalentToHTMLStyle(tmp->AsDOMNode(),
-                                                 &aProperty, aAttribute,
-                                                 &aValue, &count, false);
-    NS_ENSURE_SUCCESS(rv, rv);
+    mCSSEditUtils->SetCSSEquivalentToHTMLStyle(tmp,
+                                               &aProperty, attrAtom,
+                                               &aValue, false);
     return NS_OK;
   }
 
@@ -576,8 +573,9 @@ HTMLEditor::SplitStyleAbovePoint(nsCOMPtr<nsINode>* aNode,
       // in this implementation for the node; let's check if it carries those
       // CSS styles
       nsAutoString firstValue;
-      mCSSEditUtils->IsCSSEquivalentToHTMLInlineStyleSet(GetAsDOMNode(node),
-        aProperty, aAttribute, isSet, firstValue, CSSEditUtils::eSpecified);
+      isSet = mCSSEditUtils->IsCSSEquivalentToHTMLInlineStyleSet(
+                node, aProperty, aAttribute, firstValue,
+                CSSEditUtils::eSpecified);
     }
     if (// node is the correct inline prop
         (aProperty && node->IsHTMLElement(aProperty)) ||
@@ -746,8 +744,6 @@ HTMLEditor::RemoveStyleInside(nsIContent& aNode,
     // if we weren't passed an attribute, then we want to
     // remove any matching inlinestyles entirely
     if (!aAttribute || aAttribute->IsEmpty()) {
-      NS_NAMED_LITERAL_STRING(styleAttr, "style");
-      NS_NAMED_LITERAL_STRING(classAttr, "class");
 
       bool hasStyleAttr = aNode.HasAttr(kNameSpaceID_None, nsGkAtoms::style);
       bool hasClassAttr = aNode.HasAttr(kNameSpaceID_None, nsGkAtoms::_class);
@@ -756,14 +752,14 @@ HTMLEditor::RemoveStyleInside(nsIContent& aNode,
         // just remove the element... We need to create above the element
         // a span that will carry those styles or class, then we can delete
         // the node.
-        nsCOMPtr<Element> spanNode =
+        RefPtr<Element> spanNode =
           InsertContainerAbove(&aNode, nsGkAtoms::span);
         NS_ENSURE_STATE(spanNode);
         nsresult rv =
-          CloneAttribute(styleAttr, spanNode->AsDOMNode(), aNode.AsDOMNode());
+          CloneAttribute(nsGkAtoms::style, spanNode, aNode.AsElement());
         NS_ENSURE_SUCCESS(rv, rv);
         rv =
-          CloneAttribute(classAttr, spanNode->AsDOMNode(), aNode.AsDOMNode());
+          CloneAttribute(nsGkAtoms::_class, spanNode, aNode.AsElement());
         NS_ENSURE_SUCCESS(rv, rv);
       }
       nsresult rv = RemoveContainer(&aNode);
@@ -796,15 +792,17 @@ HTMLEditor::RemoveStyleInside(nsIContent& aNode,
     // the HTML style defined by aProperty/aAttribute has a CSS equivalence in
     // this implementation for the node aNode; let's check if it carries those
     // css styles
+    nsCOMPtr<nsIAtom> attribute =
+      aAttribute ? NS_Atomize(*aAttribute) : nullptr;
     nsAutoString propertyValue;
     bool isSet = mCSSEditUtils->IsCSSEquivalentToHTMLInlineStyleSet(&aNode,
-      aProperty, aAttribute, propertyValue, CSSEditUtils::eSpecified);
+      aProperty, attribute, propertyValue, CSSEditUtils::eSpecified);
     if (isSet && aNode.IsElement()) {
       // yes, tmp has the corresponding css declarations in its style attribute
       // let's remove them
       mCSSEditUtils->RemoveCSSEquivalentToHTMLStyle(aNode.AsElement(),
                                                     aProperty,
-                                                    aAttribute,
+                                                    attribute,
                                                     &propertyValue,
                                                     false);
       // remove the node if it is a span or font, if its style attribute is

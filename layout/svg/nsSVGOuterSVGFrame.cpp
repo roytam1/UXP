@@ -232,28 +232,38 @@ nsSVGOuterSVGFrame::GetIntrinsicSize()
   return intrinsicSize;
 }
 
-/* virtual */ nsSize
+/* virtual */ AspectRatio
 nsSVGOuterSVGFrame::GetIntrinsicRatio()
 {
+  // 2020-07-14 (RealityRipple) Firefox Uses a new IsReplacedAndContainSize(this)
+  // function call [Line 96-99 on trunk].
+/*
+  static inline bool IsReplacedAndContainSize(const nsSVGOuterSVGFrame* aFrame) {
+    return aFrame->GetContent->GetParent() &&
+           aFrame->StyleDisplay()->IsContainSize();
+  }
+ */
+  // but since contain: size doesn't exist in Pale Moon yet...
+/*
+  if (IsReplacedAndContainSize(this)) {
+    return AspectRatio();
+  }
+ */
+  
   // We only have an intrinsic size/ratio if our width and height attributes
   // are both specified and set to non-percentage values, or we have a viewBox
   // rect: http://www.w3.org/TR/SVGMobile12/coords.html#IntrinsicSizing
+  // Unfortunately we have to return the ratio as two nscoords whereas what
+  // we have are two floats. Using app units allows for some floating point
+  // values to work but really small or large numbers will fail.
 
   SVGSVGElement *content = static_cast<SVGSVGElement*>(mContent);
   nsSVGLength2 &width  = content->mLengthAttributes[SVGSVGElement::ATTR_WIDTH];
   nsSVGLength2 &height = content->mLengthAttributes[SVGSVGElement::ATTR_HEIGHT];
 
   if (!width.IsPercentage() && !height.IsPercentage()) {
-    nsSize ratio(
-      nsPresContext::CSSPixelsToAppUnits(width.GetAnimValue(content)),
-      nsPresContext::CSSPixelsToAppUnits(height.GetAnimValue(content)));
-    if (ratio.width < 0) {
-      ratio.width = 0;
-    }
-    if (ratio.height < 0) {
-      ratio.height = 0;
-    }
-    return ratio;
+    return AspectRatio::FromSize(width.GetAnimValue(content),
+                                 height.GetAnimValue(content));
   }
 
   SVGViewElement* viewElement = content->GetCurrentViewElement();
@@ -267,17 +277,7 @@ nsSVGOuterSVGFrame::GetIntrinsicRatio()
   }
 
   if (viewbox) {
-    float viewBoxWidth = viewbox->width;
-    float viewBoxHeight = viewbox->height;
-
-    if (viewBoxWidth < 0.0f) {
-      viewBoxWidth = 0.0f;
-    }
-    if (viewBoxHeight < 0.0f) {
-      viewBoxHeight = 0.0f;
-    }
-    return nsSize(nsPresContext::CSSPixelsToAppUnits(viewBoxWidth),
-                  nsPresContext::CSSPixelsToAppUnits(viewBoxHeight));
+    return AspectRatio::FromSize(viewbox->width, viewbox->height);
   }
 
   return nsSVGDisplayContainerFrame::GetIntrinsicRatio();

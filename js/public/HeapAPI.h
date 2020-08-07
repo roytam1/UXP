@@ -51,6 +51,7 @@ const size_t ChunkMarkBitmapBits = 129024;
 const size_t ChunkRuntimeOffset = ChunkSize - sizeof(void*);
 const size_t ChunkTrailerSize = 2 * sizeof(uintptr_t) + sizeof(uint64_t);
 const size_t ChunkLocationOffset = ChunkSize - ChunkTrailerSize;
+const size_t ChunkStoreBufferOffset = ChunkSize - ChunkTrailerSize + sizeof(uint64_t);
 const size_t ArenaZoneOffset = sizeof(size_t);
 const size_t ArenaHeaderSize = sizeof(size_t) + 2 * sizeof(uintptr_t) +
                                sizeof(size_t) + sizeof(uintptr_t);
@@ -326,6 +327,20 @@ CellIsMarkedGray(const Cell* cell)
 extern JS_PUBLIC_API(bool)
 CellIsMarkedGrayIfKnown(const Cell* cell);
 
+MOZ_ALWAYS_INLINE ChunkLocation GetCellLocation(const void* cell) {
+  uintptr_t addr = uintptr_t(cell);
+  addr &= ~js::gc::ChunkMask;
+  addr |= js::gc::ChunkLocationOffset;
+  return *reinterpret_cast<ChunkLocation*>(addr);
+}
+
+MOZ_ALWAYS_INLINE bool NurseryCellHasStoreBuffer(const void* cell) {
+  uintptr_t addr = uintptr_t(cell);
+  addr &= ~js::gc::ChunkMask;
+  addr |= js::gc::ChunkStoreBufferOffset;
+  return *reinterpret_cast<void**>(addr) != nullptr;
+}
+
 } /* namespace detail */
 
 MOZ_ALWAYS_INLINE bool
@@ -339,6 +354,28 @@ IsInsideNursery(const js::gc::Cell* cell)
     auto location = *reinterpret_cast<ChunkLocation*>(addr);
     MOZ_ASSERT(location == ChunkLocation::Nursery || location == ChunkLocation::TenuredHeap);
     return location == ChunkLocation::Nursery;
+}
+
+MOZ_ALWAYS_INLINE bool IsCellPointerValid(const void* cell) {
+  auto addr = uintptr_t(cell);
+  if (addr < ChunkSize || addr % CellSize != 0) {
+    return false;
+  }
+  auto location = detail::GetCellLocation(cell);
+  if (location == ChunkLocation::TenuredHeap) {
+    return !!detail::GetGCThingZone(addr);
+  }
+  if (location == ChunkLocation::Nursery) {
+    return detail::NurseryCellHasStoreBuffer(cell);
+  }
+  return false;
+}
+
+MOZ_ALWAYS_INLINE bool IsCellPointerValidOrNull(const void* cell) {
+  if (!cell) {
+    return true;
+  }
+  return IsCellPointerValid(cell);
 }
 
 } /* namespace gc */
