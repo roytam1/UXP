@@ -840,19 +840,18 @@ HTMLEditRules::GetAlignment(bool* aMixed,
 
   NS_ENSURE_TRUE(nodeToExamine, NS_ERROR_NULL_POINTER);
 
-  NS_NAMED_LITERAL_STRING(typeAttrName, "align");
   nsCOMPtr<Element> blockParent = htmlEditor->GetBlock(*nodeToExamine);
 
   NS_ENSURE_TRUE(blockParent, NS_ERROR_FAILURE);
 
   if (htmlEditor->IsCSSEnabled() &&
       htmlEditor->mCSSEditUtils->IsCSSEditableProperty(blockParent, nullptr,
-                                                        &typeAttrName)) {
+                                                       nsGkAtoms::align)) {
     // We are in CSS mode and we know how to align this element with CSS
     nsAutoString value;
     // Let's get the value(s) of text-align or margin-left/margin-right
     htmlEditor->mCSSEditUtils->GetCSSEquivalentToHTMLInlineStyleSet(
-        blockParent, nullptr, &typeAttrName, value, CSSEditUtils::eComputed);
+        blockParent, nullptr, nsGkAtoms::align, value, CSSEditUtils::eComputed);
     if (value.EqualsLiteral("center") ||
         value.EqualsLiteral("-moz-center") ||
         value.EqualsLiteral("auto auto")) {
@@ -1510,10 +1509,11 @@ HTMLEditRules::WillInsertBreak(Selection& aSelection,
   nsCOMPtr<Element> blockParent = htmlEditor->GetBlock(node);
   NS_ENSURE_TRUE(blockParent, NS_ERROR_FAILURE);
 
-  // If the active editing host is an inline element, or if the active editing
-  // host is the block parent itself, just append a br.
+  // When there is an active editing host (the <body> if it's in designMode)
+  // and a block which becomes the parent of line breaker is in it, do the
+  // standard thing.
   nsCOMPtr<Element> host = htmlEditor->GetActiveEditingHost();
-  if (!EditorUtils::IsDescendantOf(blockParent, host)) {
+  if (host && !EditorUtils::IsDescendantOf(blockParent, host)) {
     nsresult rv = StandardBreakImpl(node, offset, aSelection);
     NS_ENSURE_SUCCESS(rv, rv);
     *aHandled = true;
@@ -3303,15 +3303,15 @@ HTMLEditRules::WillMakeList(Selection* aSelection,
         }
       }
       NS_ENSURE_STATE(mHTMLEditor);
-      nsCOMPtr<nsIDOMElement> curElement = do_QueryInterface(curNode);
-      NS_NAMED_LITERAL_STRING(typestr, "type");
+      nsCOMPtr<Element> curElement = do_QueryInterface(curNode);
       if (aBulletType && !aBulletType->IsEmpty()) {
-        rv = mHTMLEditor->SetAttribute(curElement, typestr, *aBulletType);
+        rv = mHTMLEditor->SetAttribute(curElement, nsGkAtoms::type,
+                                       *aBulletType);
         if (NS_WARN_IF(NS_FAILED(rv))) {
           return rv;
         }
       } else {
-        rv = mHTMLEditor->RemoveAttribute(curElement, typestr);
+        rv = mHTMLEditor->RemoveAttribute(curElement, nsGkAtoms::type);
         if (NS_WARN_IF(NS_FAILED(rv))) {
           return rv;
         }
@@ -4756,7 +4756,7 @@ HTMLEditRules::WillAlign(Selection& aSelection,
       NS_ENSURE_SUCCESS(rv, rv);
       if (useCSS) {
         htmlEditor->mCSSEditUtils->SetCSSEquivalentToHTMLStyle(
-            curNode->AsElement(), nullptr, &NS_LITERAL_STRING("align"),
+            curNode->AsElement(), nullptr, nsGkAtoms::align,
             &aAlignType, false);
         curDiv = nullptr;
         continue;
@@ -4837,7 +4837,6 @@ HTMLEditRules::AlignBlockContents(nsIDOMNode* aNode,
   nsCOMPtr<nsINode> node = do_QueryInterface(aNode);
   NS_ENSURE_TRUE(node && alignType, NS_ERROR_NULL_POINTER);
   nsCOMPtr<nsIContent> firstChild, lastChild;
-  nsCOMPtr<Element> divNode;
 
   bool useCSS = mHTMLEditor->IsCSSEnabled();
 
@@ -4845,24 +4844,25 @@ HTMLEditRules::AlignBlockContents(nsIDOMNode* aNode,
   firstChild = mHTMLEditor->GetFirstEditableChild(*node);
   NS_ENSURE_STATE(mHTMLEditor);
   lastChild = mHTMLEditor->GetLastEditableChild(*node);
-  NS_NAMED_LITERAL_STRING(attr, "align");
   if (!firstChild) {
     // this cell has no content, nothing to align
   } else if (firstChild == lastChild &&
              firstChild->IsHTMLElement(nsGkAtoms::div)) {
     // the cell already has a div containing all of its content: just
     // act on this div.
-    nsCOMPtr<nsIDOMElement> divElem = do_QueryInterface(firstChild);
+    RefPtr<Element> divElem = firstChild->AsElement();
     if (useCSS) {
       NS_ENSURE_STATE(mHTMLEditor);
-      nsresult rv = mHTMLEditor->SetAttributeOrEquivalent(divElem, attr,
+      nsresult rv = mHTMLEditor->SetAttributeOrEquivalent(divElem,
+                                                          nsGkAtoms::align,
                                                           *alignType, false);
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return rv;
       }
     } else {
       NS_ENSURE_STATE(mHTMLEditor);
-      nsresult rv = mHTMLEditor->SetAttribute(divElem, attr, *alignType);
+      nsresult rv = mHTMLEditor->SetAttribute(divElem, nsGkAtoms::align,
+                                              *alignType);
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return rv;
       }
@@ -4870,28 +4870,29 @@ HTMLEditRules::AlignBlockContents(nsIDOMNode* aNode,
   } else {
     // else we need to put in a div, set the alignment, and toss in all the children
     NS_ENSURE_STATE(mHTMLEditor);
-    divNode = mHTMLEditor->CreateNode(nsGkAtoms::div, node, 0);
-    NS_ENSURE_STATE(divNode);
+    RefPtr<Element> divElem = mHTMLEditor->CreateNode(nsGkAtoms::div, node, 0);
+    NS_ENSURE_STATE(divElem);
     // set up the alignment on the div
-    nsCOMPtr<nsIDOMElement> divElem = do_QueryInterface(divNode);
     if (useCSS) {
       NS_ENSURE_STATE(mHTMLEditor);
       nsresult rv =
-        mHTMLEditor->SetAttributeOrEquivalent(divElem, attr, *alignType, false);
+        mHTMLEditor->SetAttributeOrEquivalent(divElem, nsGkAtoms::align,
+                                              *alignType, false);
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return rv;
       }
     } else {
       NS_ENSURE_STATE(mHTMLEditor);
-      nsresult rv = mHTMLEditor->SetAttribute(divElem, attr, *alignType);
+      nsresult rv =
+        mHTMLEditor->SetAttribute(divElem, nsGkAtoms::align, *alignType);
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return rv;
       }
     }
     // tuck the children into the end of the active div
-    while (lastChild && (lastChild != divNode)) {
+    while (lastChild && (lastChild != divElem)) {
       NS_ENSURE_STATE(mHTMLEditor);
-      nsresult rv = mHTMLEditor->MoveNode(lastChild, divNode, 0);
+      nsresult rv = mHTMLEditor->MoveNode(lastChild, divElem, 0);
       NS_ENSURE_SUCCESS(rv, rv);
       NS_ENSURE_STATE(mHTMLEditor);
       lastChild = mHTMLEditor->GetLastEditableChild(*node);
@@ -6498,10 +6499,14 @@ HTMLEditRules::SplitParagraph(nsIDOMNode *aPara,
   // split the paragraph
   NS_ENSURE_STATE(mHTMLEditor);
   NS_ENSURE_STATE(selNode->IsContent());
-  mHTMLEditor->SplitNodeDeep(*para, *selNode->AsContent(), *aOffset,
-                             HTMLEditor::EmptyContainers::yes,
-                             getter_AddRefs(leftPara),
-                             getter_AddRefs(rightPara));
+  int32_t offset =
+    mHTMLEditor->SplitNodeDeep(*para, *selNode->AsContent(), *aOffset,
+                               HTMLEditor::EmptyContainers::yes,
+                               getter_AddRefs(leftPara),
+                               getter_AddRefs(rightPara));
+  if (NS_WARN_IF(offset == -1)) {
+    return NS_ERROR_FAILURE;
+  }
   // get rid of the break, if it is visible (otherwise it may be needed to prevent an empty p)
   NS_ENSURE_STATE(mHTMLEditor);
   if (mHTMLEditor->IsVisBreak(aBRNode)) {
@@ -6511,9 +6516,9 @@ HTMLEditRules::SplitParagraph(nsIDOMNode *aPara,
   }
 
   // remove ID attribute on the paragraph we just created
-  nsCOMPtr<nsIDOMElement> rightElt = do_QueryInterface(rightPara);
+  RefPtr<Element> rightElt = rightPara->AsElement();
   NS_ENSURE_STATE(mHTMLEditor);
-  rv = mHTMLEditor->RemoveAttribute(rightElt, NS_LITERAL_STRING("id"));
+  rv = mHTMLEditor->RemoveAttribute(rightElt, nsGkAtoms::id);
   NS_ENSURE_SUCCESS(rv, rv);
 
   // check both halves of para to see if we need mozBR
@@ -7143,9 +7148,9 @@ HTMLEditRules::CacheInlineStyles(nsIDOMNode* aNode)
                                               isSet, &outValue);
     } else {
       NS_ENSURE_STATE(mHTMLEditor);
-      mHTMLEditor->mCSSEditUtils->IsCSSEquivalentToHTMLInlineStyleSet(aNode,
-        mCachedStyles[j].tag, &(mCachedStyles[j].attr), isSet, outValue,
-        CSSEditUtils::eComputed);
+      isSet = mHTMLEditor->mCSSEditUtils->IsCSSEquivalentToHTMLInlineStyleSet(
+                aNode, mCachedStyles[j].tag, &(mCachedStyles[j].attr), outValue,
+                CSSEditUtils::eComputed);
     }
     if (isSet) {
       mCachedStyles[j].mPresent = true;
@@ -8388,18 +8393,18 @@ HTMLEditRules::RemoveAlignment(nsIDOMNode* aNode,
       NS_ENSURE_SUCCESS(rv, rv);
     } else if (isBlock || HTMLEditUtils::IsHR(child)) {
       // the current node is a block element
-      nsCOMPtr<nsIDOMElement> curElem = do_QueryInterface(child);
+      nsCOMPtr<Element> curElem = do_QueryInterface(child);
       if (HTMLEditUtils::SupportsAlignAttr(child)) {
         // remove the ALIGN attribute if this element can have it
         NS_ENSURE_STATE(mHTMLEditor);
-        rv = mHTMLEditor->RemoveAttribute(curElem, NS_LITERAL_STRING("align"));
+        rv = mHTMLEditor->RemoveAttribute(curElem, nsGkAtoms::align);
         NS_ENSURE_SUCCESS(rv, rv);
       }
       if (useCSS) {
         if (HTMLEditUtils::IsTable(child) || HTMLEditUtils::IsHR(child)) {
           NS_ENSURE_STATE(mHTMLEditor);
           rv = mHTMLEditor->SetAttributeOrEquivalent(curElem,
-                                                     NS_LITERAL_STRING("align"),
+                                                     nsGkAtoms::align,
                                                      aAlignType, false);
           if (NS_WARN_IF(NS_FAILED(rv))) {
             return rv;
@@ -8519,21 +8524,17 @@ HTMLEditRules::AlignBlock(Element& aElement,
   nsresult rv = RemoveAlignment(aElement.AsDOMNode(), aAlignType,
                                 aContentsOnly == ContentsOnly::yes);
   NS_ENSURE_SUCCESS(rv, rv);
-  NS_NAMED_LITERAL_STRING(attr, "align");
   if (htmlEditor->IsCSSEnabled()) {
     // Let's use CSS alignment; we use margin-left and margin-right for tables
     // and text-align for other block-level elements
     rv = htmlEditor->SetAttributeOrEquivalent(
-                       static_cast<nsIDOMElement*>(aElement.AsDOMNode()),
-                       attr, aAlignType, false);
+                       &aElement, nsGkAtoms::align, aAlignType, false);
     NS_ENSURE_SUCCESS(rv, rv);
   } else {
     // HTML case; this code is supposed to be called ONLY if the element
     // supports the align attribute but we'll never know...
     if (HTMLEditUtils::SupportsAlignAttr(aElement.AsDOMNode())) {
-      rv = htmlEditor->SetAttribute(
-                         static_cast<nsIDOMElement*>(aElement.AsDOMNode()),
-                         attr, aAlignType);
+      rv = htmlEditor->SetAttribute(&aElement, nsGkAtoms::align, aAlignType);
       NS_ENSURE_SUCCESS(rv, rv);
     }
   }

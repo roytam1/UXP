@@ -3546,10 +3546,10 @@ ComputeDrawnSizeForBackground(const CSSSizeOrRatio& aIntrinsicSize,
     imageSize.width = ComputeRoundedSize(imageSize.width, aBgPositioningArea.width);
     if (!isRepeatRoundInBothDimensions &&
         aLayerSize.mHeightType == nsStyleImageLayers::Size::DimensionType::eAuto) {
-      // Restore intrinsic rato
-      if (aIntrinsicSize.mRatio.width) {
-        float scale = float(aIntrinsicSize.mRatio.height) / aIntrinsicSize.mRatio.width;
-        imageSize.height = NSCoordSaturatingNonnegativeMultiply(imageSize.width, scale);
+      // Restore intrinsic ratio
+      if (aIntrinsicSize.mRatio) {
+        imageSize.height =
+            aIntrinsicSize.mRatio.Inverted().ApplyTo(imageSize.width);
       }
     }
   }
@@ -3560,10 +3560,9 @@ ComputeDrawnSizeForBackground(const CSSSizeOrRatio& aIntrinsicSize,
     imageSize.height = ComputeRoundedSize(imageSize.height, aBgPositioningArea.height);
     if (!isRepeatRoundInBothDimensions &&
         aLayerSize.mWidthType == nsStyleImageLayers::Size::DimensionType::eAuto) {
-      // Restore intrinsic rato
-      if (aIntrinsicSize.mRatio.height) {
-        float scale = float(aIntrinsicSize.mRatio.width) / aIntrinsicSize.mRatio.height;
-        imageSize.width = NSCoordSaturatingNonnegativeMultiply(imageSize.height, scale);
+      // Restore intrinsic ratio
+      if (aIntrinsicSize.mRatio) {
+        imageSize.width = aIntrinsicSize.mRatio.ApplyTo(imageSize.height);
       }
     }
   }
@@ -5264,17 +5263,11 @@ CSSSizeOrRatio::ComputeConcreteSize() const
     return nsSize(mWidth, mHeight);
   }
   if (mHasWidth) {
-    nscoord height = NSCoordSaturatingNonnegativeMultiply(
-      mWidth,
-      double(mRatio.height) / mRatio.width);
-    return nsSize(mWidth, height);
+    return nsSize(mWidth, mRatio.Inverted().ApplyTo(mWidth));
   }
 
   MOZ_ASSERT(mHasHeight);
-  nscoord width = NSCoordSaturatingNonnegativeMultiply(
-    mHeight,
-    double(mRatio.width) / mRatio.height);
-  return nsSize(width, mHeight);
+  return nsSize(mRatio.ApplyTo(mHeight), mHeight);
 }
 
 CSSSizeOrRatio
@@ -5297,6 +5290,16 @@ nsImageRenderer::ComputeIntrinsicSize()
       if (haveHeight) {
         result.SetHeight(nsPresContext::CSSPixelsToAppUnits(imageIntSize.height));
       }
+
+      if (!haveHeight && haveWidth && result.mRatio) {
+        nscoord intrinsicHeight =
+            result.mRatio.Inverted().ApplyTo(imageIntSize.width);
+        result.SetHeight(nsPresContext::CSSPixelsToAppUnits(intrinsicHeight));
+      } else if (haveHeight && !haveWidth && result.mRatio) {
+        nscoord intrinsicWidth = result.mRatio.ApplyTo(imageIntSize.height);
+        result.SetWidth(nsPresContext::CSSPixelsToAppUnits(intrinsicWidth));
+      }
+
       break;
     }
     case eStyleImageType_Element:
@@ -5379,9 +5382,7 @@ nsImageRenderer::ComputeConcreteSize(const CSSSizeOrRatio& aSpecifiedSize,
   if (aSpecifiedSize.mHasWidth) {
     nscoord height;
     if (aIntrinsicSize.HasRatio()) {
-      height = NSCoordSaturatingNonnegativeMultiply(
-        aSpecifiedSize.mWidth,
-        double(aIntrinsicSize.mRatio.height) / aIntrinsicSize.mRatio.width);
+      height = aIntrinsicSize.mRatio.Inverted().ApplyTo(aSpecifiedSize.mWidth);
     } else if (aIntrinsicSize.mHasHeight) {
       height = aIntrinsicSize.mHeight;
     } else {
@@ -5393,9 +5394,7 @@ nsImageRenderer::ComputeConcreteSize(const CSSSizeOrRatio& aSpecifiedSize,
   MOZ_ASSERT(aSpecifiedSize.mHasHeight);
   nscoord width;
   if (aIntrinsicSize.HasRatio()) {
-    width = NSCoordSaturatingNonnegativeMultiply(
-      aSpecifiedSize.mHeight,
-      double(aIntrinsicSize.mRatio.width) / aIntrinsicSize.mRatio.height);
+    width = aIntrinsicSize.mRatio.ApplyTo(aSpecifiedSize.mHeight);
   } else if (aIntrinsicSize.mHasWidth) {
     width = aIntrinsicSize.mWidth;
   } else {
@@ -5406,32 +5405,57 @@ nsImageRenderer::ComputeConcreteSize(const CSSSizeOrRatio& aSpecifiedSize,
 
 /* static */ nsSize
 nsImageRenderer::ComputeConstrainedSize(const nsSize& aConstrainingSize,
-                                        const nsSize& aIntrinsicRatio,
+                                        const AspectRatio& aIntrinsicRatio,
                                         FitType aFitType)
 {
-  if (aIntrinsicRatio.width <= 0 && aIntrinsicRatio.height <= 0) {
+  if (!aIntrinsicRatio) {
     return aConstrainingSize;
   }
 
-  float scaleX = double(aConstrainingSize.width) / aIntrinsicRatio.width;
-  float scaleY = double(aConstrainingSize.height) / aIntrinsicRatio.height;
+  // Suppose we're doing a "contain" fit. If the image's aspect ratio has a
+  // "fatter" shape than the constraint area, then we need to use the
+  // constraint area's full width, and we need to use the aspect ratio to
+  // produce a height. ON the other hand, if the aspect ratio is "skinnier", we
+  // use the constraint area's full height, and we use the aspect ratio to
+  // produce a width. (If instead we're doing a "cover" fit, then it can easily
+  // be seen that we should do precisely the opposite.)
+  //
+  // This is equivalent to the more descriptive alternative:
+  //
+  //   AspectRatio::FromSize(aConstrainingSize) < aIntrinsicRatio
+  //
+  // But gracefully handling the case where one of the two dimensions from
+  // aConstrainingSize is zero. This is easy to prove since:
+  //
+  //   aConstrainingSize.width / aConstrainingSize.height < aIntrinsicRatio
+  //
+  // Is trivially equivalent to:
+  //
+  //   aIntrinsicRatio.width < aIntrinsicRatio * aConstrainingSize.height
+  //
+  // For the cases where height is not zero.
+  //
+  // We use float math here to avoid losing precision for very lareg backgrounds
+  // since we use saturating nscoord math otherwise.
+  const float constraintWidth = float(aConstrainingSize.width);
+  const float hypotheticalWidth =
+      aIntrinsicRatio.ApplyToFloat(aConstrainingSize.height);
+
   nsSize size;
-  if ((aFitType == CONTAIN) == (scaleX < scaleY)) {
+  if ((aFitType == CONTAIN) == (constraintWidth < hypotheticalWidth)) {
     size.width = aConstrainingSize.width;
-    size.height = NSCoordSaturatingNonnegativeMultiply(
-                    aIntrinsicRatio.height, scaleX);
+    size.height = aIntrinsicRatio.Inverted().ApplyTo(aConstrainingSize.width);
     // If we're reducing the size by less than one css pixel, then just use the
     // constraining size.
     if (aFitType == CONTAIN && aConstrainingSize.height - size.height < nsPresContext::AppUnitsPerCSSPixel()) {
       size.height = aConstrainingSize.height;
     }
   } else {
-    size.width = NSCoordSaturatingNonnegativeMultiply(
-                   aIntrinsicRatio.width, scaleY);
+    size.height = aConstrainingSize.height;
+    size.width = aIntrinsicRatio.ApplyTo(aConstrainingSize.height);
     if (aFitType == CONTAIN && aConstrainingSize.width - size.width < nsPresContext::AppUnitsPerCSSPixel()) {
       size.width = aConstrainingSize.width;
     }
-    size.height = aConstrainingSize.height;
   }
   return size;
 }

@@ -74,7 +74,6 @@ const PREF_DSS_SWITCHPENDING          = "extensions.dss.switchPending";
 const PREF_DSS_SKIN_TO_SELECT         = "extensions.lastSelectedSkin";
 const PREF_GENERAL_SKINS_SELECTEDSKIN = "general.skins.selectedSkin";
 const PREF_EM_UPDATE_URL              = "extensions.update.url";
-const PREF_EM_UPDATE_BACKGROUND_URL   = "extensions.update.background.url";
 const PREF_EM_ENABLED_ADDONS          = "extensions.enabledAddons";
 const PREF_EM_EXTENSION_FORMAT        = "extensions.";
 const PREF_EM_ENABLED_SCOPES          = "extensions.enabledScopes";
@@ -6179,12 +6178,7 @@ function UpdateChecker(aAddon, aListener, aReason, aAppVersion, aPlatformVersion
 
   let updateURL = aAddon.updateURL;
   if (!updateURL) {
-    if (aReason == AddonManager.UPDATE_WHEN_PERIODIC_UPDATE &&
-        Services.prefs.getPrefType(PREF_EM_UPDATE_BACKGROUND_URL) == Services.prefs.PREF_STRING) {
-      updateURL = Services.prefs.getCharPref(PREF_EM_UPDATE_BACKGROUND_URL);
-    } else {
-      updateURL = Services.prefs.getCharPref(PREF_EM_UPDATE_URL);
-    }
+    updateURL = Services.prefs.getCharPref(PREF_EM_UPDATE_URL);
   }
 
   const UPDATE_TYPE_COMPATIBILITY = 32;

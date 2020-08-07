@@ -240,13 +240,14 @@ RasterImage::GetIntrinsicSize(nsSize* aSize)
 
 //******************************************************************************
 NS_IMETHODIMP
-RasterImage::GetIntrinsicRatio(nsSize* aRatio)
+RasterImage::GetIntrinsicRatio(AspectRatio* aRatio)
 {
   if (mError) {
     return NS_ERROR_FAILURE;
   }
 
-  *aRatio = nsSize(mSize.width, mSize.height);
+  *aRatio = AspectRatio::FromSize(mSize);
+
   return NS_OK;
 }
 
