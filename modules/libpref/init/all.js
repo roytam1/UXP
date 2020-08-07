@@ -4824,7 +4824,7 @@ pref("layout.css.touch_action.enabled", true);
 // https://html.spec.whatwg.org/multipage/rendering.html#attributes-for-embedded-content-and-images
 // Are the width and height attributes on image-like elements mapped to the
 // internal-for-now aspect-ratio property?
-pref("layout.css.width-and-height-map-to-aspect-ratio.enabled", false);
+pref("layout.css.intrinsic-aspect-ratio.enabled", true);
 
 // Enables some assertions in nsStyleContext that are too expensive
 // for general use, but might be useful to enable for specific tests.

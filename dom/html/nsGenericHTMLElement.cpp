@@ -1480,7 +1480,7 @@ nsGenericHTMLElement::MapImageSizeAttributesInto(const nsMappedAttributes* aAttr
     }
   }
 
-  if (Preferences::GetBool("layout.css.width-and-height-map-to-aspect-ratio.enabled") &&
+  if (Preferences::GetBool("layout.css.intrinsic-aspect-ratio.enabled") &&
       aMapAspectRatio && aWidth && aHeight) {
     Maybe<double> w;
     if (aWidth->Type() == nsAttrValue::eInteger) {
