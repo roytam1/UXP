@@ -5637,7 +5637,7 @@ var gPageStyleMenu = {
   _stylesheetInFrame: function(frame, title) {
     return Array.some(frame.document.styleSheets,
                       function(stylesheet) {
-                        stylesheet.title == title
+                        return stylesheet.title == title;
                       });
   },
 
