@@ -126,7 +126,6 @@ HTMLLinkElement::SetMozDisabled(bool aDisabled)
   return rv.StealNSResult();
 }
 
-
 NS_IMPL_STRING_ATTR(HTMLLinkElement, Charset, charset)
 NS_IMPL_URI_ATTR(HTMLLinkElement, Href, href)
 NS_IMPL_STRING_ATTR(HTMLLinkElement, Hreflang, hreflang)
@@ -407,9 +406,14 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                 aName == nsGkAtoms::disabled));
     }
   } else {
-    // Since removing href or rel makes us no longer link to a
-    // stylesheet, force updates for those too.
+    // If the disabled attribute is removed from a link element, the 
+    // stylesheet may be explicitly enabled.
     if (aNameSpaceID == kNameSpaceID_None) {
+      if (aName == nsGkAtoms::disabled) {
+        mExplicitlyEnabled = true;
+      }
+      // Since removing href or rel makes us no longer link to a
+      // stylesheet, force updates for those too.
       if (aName == nsGkAtoms::href ||
           aName == nsGkAtoms::rel ||
           aName == nsGkAtoms::title ||
@@ -508,13 +512,15 @@ HTMLLinkElement::GetStyleSheetInfo(nsAString& aTitle,
                                    nsAString& aType,
                                    nsAString& aMedia,
                                    bool* aIsScoped,
-                                   bool* aIsAlternate)
+                                   bool* aIsAlternate,
+                                   bool* aIsExplicitlyEnabled)
 {
   aTitle.Truncate();
   aType.Truncate();
   aMedia.Truncate();
   *aIsScoped = false;
   *aIsAlternate = false;
+  *aIsExplicitlyEnabled = false;
 
   nsAutoString rel;
   GetAttr(kNameSpaceID_None, nsGkAtoms::rel, rel);
@@ -524,8 +530,14 @@ HTMLLinkElement::GetStyleSheetInfo(nsAString& aTitle,
     return;
   }
 
+  // Is the link disabled?
   if (Disabled()) {
     return;
+  }
+
+  // Is it explicitly enabled?
+  if (mExplicitlyEnabled) {
+    *aIsExplicitlyEnabled = true;
   }
 
   nsAutoString title;

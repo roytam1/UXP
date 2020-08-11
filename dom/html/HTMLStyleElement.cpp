@@ -223,12 +223,14 @@ HTMLStyleElement::GetStyleSheetInfo(nsAString& aTitle,
                                     nsAString& aType,
                                     nsAString& aMedia,
                                     bool* aIsScoped,
-                                    bool* aIsAlternate)
+                                    bool* aIsAlternate,
+                                    bool* aIsExplicitlyEnabled)
 {
   aTitle.Truncate();
   aType.Truncate();
   aMedia.Truncate();
   *aIsAlternate = false;
+  *aIsExplicitlyEnabled = false;
 
   nsAutoString title;
   GetAttr(kNameSpaceID_None, nsGkAtoms::title, title);

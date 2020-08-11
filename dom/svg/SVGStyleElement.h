@@ -95,7 +95,8 @@ protected:
                          nsAString& aType,
                          nsAString& aMedia,
                          bool* aIsScoped,
-                         bool* aIsAlternate) override;
+                         bool* aIsAlternate,
+                         bool* aIsExplicitlyEnabled) override;
   virtual CORSMode GetCORSMode() const override;
 
   /**

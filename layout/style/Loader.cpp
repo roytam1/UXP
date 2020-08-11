@@ -1278,7 +1278,8 @@ Loader::PrepareSheet(StyleSheet* aSheet,
                      const nsSubstring& aMediaString,
                      nsMediaList* aMediaList,
                      Element* aScopeElement,
-                     bool isAlternate)
+                     bool isAlternate,
+                     bool isExplicitlyEnabled)
 {
   NS_PRECONDITION(aSheet, "Must have a sheet!");
 
@@ -1307,7 +1308,7 @@ Loader::PrepareSheet(StyleSheet* aSheet,
   sheet->SetMedia(mediaList);
 
   sheet->SetTitle(aTitle);
-  sheet->SetEnabled(!isAlternate);
+  sheet->SetEnabled(!isAlternate || isExplicitlyEnabled);
   sheet->SetScopeElement(aScopeElement);
 }
 
@@ -1985,7 +1986,8 @@ Loader::LoadInlineStyle(nsIContent* aElement,
                         Element* aScopeElement,
                         nsICSSLoaderObserver* aObserver,
                         bool* aCompleted,
-                        bool* aIsAlternate)
+                        bool* aIsAlternate,
+                        bool* aIsExplicitlyEnabled)
 {
   LOG(("css::Loader::LoadInlineStyle"));
   NS_ASSERTION(mParsingDatas.Length() == 0, "We're in the middle of a parse?");
@@ -2017,8 +2019,9 @@ Loader::LoadInlineStyle(nsIContent* aElement,
                "Inline sheets should not be cached");
 
   LOG(("  Sheet is alternate: %d", *aIsAlternate));
+  LOG(("  Sheet is explicitly enabled: %d", *aIsExplicitlyEnabled));
 
-  PrepareSheet(sheet, aTitle, aMedia, nullptr, aScopeElement, *aIsAlternate);
+  PrepareSheet(sheet, aTitle, aMedia, nullptr, aScopeElement, *aIsAlternate, *aIsExplicitlyEnabled);
 
   if (aElement->HasFlag(NODE_IS_IN_SHADOW_TREE)) {
     ShadowRoot* containingShadow = aElement->GetContainingShadow();
@@ -2059,7 +2062,8 @@ Loader::LoadStyleLink(nsIContent* aElement,
                       ReferrerPolicy aReferrerPolicy,
                       const nsAString& aIntegrity,
                       nsICSSLoaderObserver* aObserver,
-                      bool* aIsAlternate)
+                      bool* aIsAlternate,
+                      bool* aIsExplicitlyEnabled)
 {
   LOG(("css::Loader::LoadStyleLink"));
   NS_PRECONDITION(aURL, "Must have URL to load");
@@ -2112,8 +2116,9 @@ Loader::LoadStyleLink(nsIContent* aElement,
   NS_ENSURE_SUCCESS(rv, rv);
 
   LOG(("  Sheet is alternate: %d", *aIsAlternate));
+  LOG(("  Sheet is explicitly enabled: %d", *aIsExplicitlyEnabled));
 
-  PrepareSheet(sheet, aTitle, aMedia, nullptr, nullptr, *aIsAlternate);
+  PrepareSheet(sheet, aTitle, aMedia, nullptr, nullptr, *aIsAlternate, *aIsExplicitlyEnabled);
 
   rv = InsertSheetInDoc(sheet, aElement, mDocument);
   NS_ENSURE_SUCCESS(rv, rv);
@@ -2138,9 +2143,10 @@ Loader::LoadStyleLink(nsIContent* aElement,
                                           aObserver, principal, requestingNode);
   NS_ADDREF(data);
 
-  // If we have to parse and it's an alternate non-inline, defer it
+  // If we have to parse and it's an alternate non-inline, defer it unless
+  // it's explicitly enabled.
   if (aURL && state == eSheetNeedsParser && mSheets->mLoadingDatas.Count() != 0 &&
-      *aIsAlternate) {
+      *aIsAlternate && !*aIsExplicitlyEnabled) {
     LOG(("  Deferring alternate sheet load"));
     URIPrincipalReferrerPolicyAndCORSModeHashKey key(data->mURI,
                                                      data->mLoaderPrincipal,
@@ -2267,6 +2273,7 @@ Loader::LoadChildSheet(StyleSheet* aParentSheet,
     state = eSheetComplete;
   } else {
     bool isAlternate;
+    bool isExplicitlyEnabled;
     const nsSubstring& empty = EmptyString();
     // For now, use CORS_NONE for child sheets
     rv = CreateSheet(aURL, nullptr, principal,
@@ -2277,7 +2284,7 @@ Loader::LoadChildSheet(StyleSheet* aParentSheet,
                      false, empty, state, &isAlternate, &sheet);
     NS_ENSURE_SUCCESS(rv, rv);
 
-    PrepareSheet(sheet, empty, empty, aMedia, nullptr, isAlternate);
+    PrepareSheet(sheet, empty, empty, aMedia, nullptr, isAlternate, isExplicitlyEnabled);
   }
 
   rv = InsertChildSheet(sheet, aParentSheet, aParentRule);
@@ -2390,6 +2397,7 @@ Loader::InternalLoadNonDocumentSheet(nsIURI* aURL,
 
   StyleSheetState state;
   bool isAlternate;
+  bool isExplicitlyEnabled;
   RefPtr<StyleSheet> sheet;
   bool syncLoad = (aObserver == nullptr);
   const nsSubstring& empty = EmptyString();
@@ -2399,7 +2407,7 @@ Loader::InternalLoadNonDocumentSheet(nsIURI* aURL,
                    false, empty, state, &isAlternate, &sheet);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  PrepareSheet(sheet, empty, empty, nullptr, nullptr, isAlternate);
+  PrepareSheet(sheet, empty, empty, nullptr, nullptr, isAlternate, isExplicitlyEnabled);
 
   if (state == eSheetComplete) {
     LOG(("  Sheet already complete"));
