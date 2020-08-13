@@ -22,50 +22,84 @@ var padlock_PadLock =
     const wpl_security_bits = wpl.STATE_IS_SECURE |
                               wpl.STATE_IS_BROKEN |
                               wpl.STATE_IS_INSECURE |
-                              wpl.STATE_IDENTITY_EV_TOPLEVEL |
-                              wpl.STATE_SECURE_HIGH |
-                              wpl.STATE_SECURE_MED |
-                              wpl.STATE_SECURE_LOW;
+                              wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT |
+                              wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT |
+                              wpl.STATE_IDENTITY_EV_TOPLEVEL;
     var level;
-    var is_insecure;
     var highlight_urlbar = false;
 
     switch (aState & wpl_security_bits) {
-      case wpl.STATE_IS_SECURE | wpl.STATE_SECURE_HIGH | wpl.STATE_IDENTITY_EV_TOPLEVEL:
+      case wpl.STATE_IS_SECURE | wpl.STATE_IDENTITY_EV_TOPLEVEL:
         level = "ev";
-        is_insecure = "";
         highlight_urlbar = true;
         break;
-      case wpl.STATE_IS_SECURE | wpl.STATE_SECURE_HIGH:
+      case wpl.STATE_IS_SECURE:
+      case wpl.STATE_IS_SECURE |
+           wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
         level = "high";
-        is_insecure = "";
         highlight_urlbar = true;
         break;
-      case wpl.STATE_IS_SECURE | wpl.STATE_SECURE_MED:
-      case wpl.STATE_IS_SECURE | wpl.STATE_SECURE_LOW:
+      case wpl.STATE_IS_SECURE |
+           wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT:
         level = "low";
-        is_insecure = "insecure";
-        break;
-      case wpl.STATE_IS_BROKEN | wpl.STATE_SECURE_LOW:
-        level = "mixed";
-        is_insecure = "insecure";
         highlight_urlbar = true;
         break;
+      case wpl.STATE_IS_SECURE | wpl.STATE_IDENTITY_EV_TOPLEVEL |
+           wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT |
+           wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
+      case wpl.STATE_IS_SECURE | wpl.STATE_IDENTITY_EV_TOPLEVEL |
+           wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT:
+      case wpl.STATE_IS_SECURE | wpl.STATE_IDENTITY_EV_TOPLEVEL |
+           wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
       case wpl.STATE_IS_BROKEN:
         level = "broken";
-        is_insecure = "insecure";
         highlight_urlbar = true;
         break;
       default: // should not be reached
         level = null;
-        is_insecure = "insecure";
+    }
+
+    if (level != null && level != "broken") {
+      var secUI = gBrowser.securityUI;
+      //if we wanted, we could use secUI.state instead of aState above?
+      var secState = secUI.QueryInterface(Ci.nsISSLStatusProvider).SSLStatus;
+      if (secState) {
+        secState.QueryInterface(Ci.nsISSLStatus);
+        var proto = secState.protocolVersion;
+        if (proto == Ci.nsISSLStatus.SSL_VERSION_3) {
+          level = "broken";
+        } else if (proto == Ci.nsISSLStatus.TLS_VERSION_1 ||
+                   proto == Ci.nsISSLStatus.TLS_VERSION_1_1) {
+          level = "low";
+        }
+        if (level != "broken") {
+          var aCipher = secState.cipherSuite;
+          if (aCipher.indexOf("_EXPORT") > -1) {
+            level = "broken";
+          } else if (aCipher.indexOf("_RC2_") > -1) {
+            level = "broken";
+          } else if (aCipher.indexOf("_RC4_") > -1) {
+            if (aCipher.indexOf("_MD5") > -1) {
+              level = "broken";
+            } else if (aCipher.indexOf("_SHA") > -1) {
+              level = "low";
+            }
+          } else if (aCipher.indexOf("TLS_DHE_RSA_WITH_AES") > -1) {
+            level = "low";
+          } else if (aCipher.indexOf("TLS_RSA_WITH_AES_128_") > -1) {
+            level = "low";
+          } else if (aCipher.indexOf("_3DES_") > -1) {
+            level = "low";
+          }
+        }
+      }
     }
 
     try {
       var proto = gBrowser.contentWindow.location.protocol;
       if (proto == "about:" || proto == "chrome:" || proto == "file:" ) {
         // do not warn when using local protocols
-        is_insecure = false;
+        highlight_urlbar = false;
       }
     } catch(ex) {}
         
@@ -110,9 +144,6 @@ var padlock_PadLock =
         break;
       case "low":
         sectooltip = "Weak security";
-        break;
-      case "mixed":
-        sectooltip = "Mixed mode (partially encrypted)";
         break;
       case "broken":
         sectooltip = "Not secure";
