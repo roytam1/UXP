@@ -84,9 +84,7 @@ var padlock_PadLock =
             } else if (aCipher.indexOf("_SHA") > -1) {
               level = "low";
             }
-          } else if (aCipher == "TLS_RSA_WITH_3DES_EDE_CBC_SHA") {
-            level = "low";
-          } else if (aCipher == "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA") {
+          } else if (aCipher.indexOf("_3DES_") > -1) {
             level = "low";
           }
         }
