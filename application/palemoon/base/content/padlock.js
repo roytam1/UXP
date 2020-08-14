@@ -16,81 +16,80 @@ var padlock_PadLock =
   onLocationChange: function() {},
   onStatusChange: function() {},
   onSecurityChange: function(aCallerWebProgress, aRequestWithState, aState) {
-    // aState is defined as a bitmask that may be extended in the future.
-    // We filter out any unknown bits before testing for known values.
     const wpl = Ci.nsIWebProgressListener;
-    const wpl_security_bits = wpl.STATE_IS_SECURE |
-                              wpl.STATE_IS_BROKEN |
-                              wpl.STATE_IS_INSECURE;
     var level;
     var highlight_urlbar = false;
-
-    switch (aState & wpl_security_bits) {
-      case wpl.STATE_IS_SECURE:
-        level = "high";
-        highlight_urlbar = true;
-        break;
-      case wpl.STATE_IS_BROKEN:
-        level = "broken";
-        highlight_urlbar = true;
-        break;
-      default: // should not be reached
-        level = null;
-    }
-
-    if (level != null) {
-      var secUI = gBrowser.securityUI;
-      //if we wanted, we could use secUI.state instead of aState above?
-      var secState = secUI.QueryInterface(Ci.nsISSLStatusProvider).SSLStatus;
-      if (secState) {
-        secState.QueryInterface(Ci.nsISSLStatus);
-        if (secState.isExtendedValidation) {
-          if ((aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT) ||
-            (aState & wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT))
-            level = "broken";
-          else if (level == "high")
-            level = "ev";
-        } else {
-          if (aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT)
-            level = "low";
-          else if (aState & wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT)
-            level = "high";
-        }
-        if (level != "broken") {
-          var proto = secState.protocolVersion;
-          if (proto == Ci.nsISSLStatus.SSL_VERSION_3) {
-            level = "broken";
-          } else if (proto == Ci.nsISSLStatus.TLS_VERSION_1 ||
-                     proto == Ci.nsISSLStatus.TLS_VERSION_1_1) {
-            level = "low";
-          }
-          if (level != "broken") {
-            var aCipher = secState.cipherSuite;
-            if (aCipher.indexOf("_EXPORT") > -1) {
-              level = "broken";
-            } else if (aCipher.indexOf("_RC2_") > -1) {
-              level = "broken";
-            } else if (aCipher.indexOf("_RC4_") > -1) {
-              if (aCipher.indexOf("_MD5") > -1) {
-                level = "broken";
-              } else if (aCipher.indexOf("_SHA") > -1) {
-                level = "low";
-              }
-            } else if (aCipher.indexOf("_3DES_") > -1) {
-              level = "low";
-            }
-          }
+    var secUI = gBrowser.securityUI;
+    var secState = secUI.QueryInterface(Ci.nsISSLStatusProvider).SSLStatus;
+    if (secState == null) {
+      level = null;
+    } else {
+      highlight_urlbar = true;
+      secState.QueryInterface(Ci.nsISSLStatus);
+      // Step 1: Check EV
+      if (secState.isExtendedValidation) {
+        // Step 1 TRUE: Extended Validation
+        //  Normal               "ev"
+        //  Mixed Content        "broken"
+        if ((aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT) ||
+          (aState & wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT))
+          level = "broken";
+        else
+          level = "ev";
+      } else {
+        // Step 1 FALSE: Domain Validation
+        //  Normal               "high"
+        //  Mixed Active Content "low"
+        if (aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT)
+          level = "low";
+        else
+          level = "high";
+      }
+      // Step 2: Check Protocol
+      if (level != "broken") {
+        //  SSL 3                "broken"
+        //  TLS 1.0              "low"
+        //  TLS 1.1              "low"
+        var proto = secState.protocolVersion;
+        if (proto == Ci.nsISSLStatus.SSL_VERSION_3)
+          level = "broken";
+        else if (proto == Ci.nsISSLStatus.TLS_VERSION_1 ||
+          proto == Ci.nsISSLStatus.TLS_VERSION_1_1) {
+          level = "low";
         }
       }
-    }
-
-    try {
-      var proto = gBrowser.contentWindow.location.protocol;
-      if (proto == "about:" || proto == "chrome:" || proto == "file:" ) {
-        // do not warn when using local protocols
-        highlight_urlbar = false;
+      // Step 3: Check Bad Ciphers
+      if (level != "broken") {
+        //  EXPORT               "broken"
+        //  RC2                  "broken"
+        //  RC4 + MD5            "broken"
+        //  RC4 + SHA1           "low"
+        //  3DES                 "low"
+        var aCipher = secState.cipherSuite;
+        if (aCipher.indexOf("_EXPORT") > -1) {
+          level = "broken";
+        } else if (aCipher.indexOf("_RC2_") > -1) {
+          level = "broken";
+        } else if (aCipher.indexOf("_RC4_") > -1) {
+          if (aCipher.indexOf("_MD5") > -1) {
+            level = "broken";
+          } else if (aCipher.indexOf("_SHA") > -1) {
+            level = "low";
+          }
+        } else if (aCipher.indexOf("_3DES_") > -1) {
+          level = "low";
+        }
       }
-    } catch(ex) {}
+      // Step 4: Check Boolean Problems
+      if (level != "broken") {
+        //  Untrusted            "broken"
+        //  Domain Mismatch      "broken"
+        //  Expired (or too new) "broken"
+        if (secState.isUntrusted || secState.isDomainMismatch ||
+          secState.isNotValidAtThisTime)
+          level = "broken";
+      }
+    }
 
     let ub = document.getElementById("urlbar");
     if (ub) {
