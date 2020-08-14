@@ -34,22 +34,22 @@ var padlock_PadLock =
         highlight_urlbar = true;
         break;
       case wpl.STATE_IS_SECURE:
-      case wpl.STATE_IS_SECURE |
+      case wpl.STATE_IS_BROKEN |
            wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
         level = "high";
         highlight_urlbar = true;
         break;
-      case wpl.STATE_IS_SECURE |
+      case wpl.STATE_IS_BROKEN |
            wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT:
         level = "low";
         highlight_urlbar = true;
         break;
-      case wpl.STATE_IS_SECURE | wpl.STATE_IDENTITY_EV_TOPLEVEL |
+      case wpl.STATE_IS_BROKEN | wpl.STATE_IDENTITY_EV_TOPLEVEL |
            wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT |
            wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
-      case wpl.STATE_IS_SECURE | wpl.STATE_IDENTITY_EV_TOPLEVEL |
+      case wpl.STATE_IS_BROKEN | wpl.STATE_IDENTITY_EV_TOPLEVEL |
            wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT:
-      case wpl.STATE_IS_SECURE | wpl.STATE_IDENTITY_EV_TOPLEVEL |
+      case wpl.STATE_IS_BROKEN | wpl.STATE_IDENTITY_EV_TOPLEVEL |
            wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
       case wpl.STATE_IS_BROKEN:
         level = "broken";
