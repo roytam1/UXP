@@ -100,7 +100,7 @@ var padlock_PadLock =
         highlight_urlbar = false;
       }
     } catch(ex) {}
-        
+
     let ub = document.getElementById("urlbar");
     if (ub) {
       // Only call if URL bar is present.
@@ -116,15 +116,15 @@ var padlock_PadLock =
       padlock_PadLock.setPadlockLevel("padlock-ib-left", level);
       padlock_PadLock.setPadlockLevel("padlock-ub-right", level);
     } catch(e) {}
-    
+
     padlock_PadLock.setPadlockLevel("padlock-sb", level);
     padlock_PadLock.setPadlockLevel("padlock-tab", level);
   },
-  
+
   setPadlockLevel: function(item, level) {
     let secbut = document.getElementById(item);
     var sectooltip = "";
-    
+
     if (level) {
       secbut.setAttribute("level", level);
       secbut.hidden = false;
@@ -170,12 +170,12 @@ var padlock_PadLock =
     }
     secbut.setAttribute("tooltiptext", sectooltip);
   },
-  
+
   prefbranch : null,
-  
+
   onLoad: function() {
     gBrowser.addProgressListener(padlock_PadLock);
-    
+
     var prefService = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefService);
     padlock_PadLock.prefbranch = prefService.getBranch("browser.padlock.");
     padlock_PadLock.prefbranch.QueryInterface(Components.interfaces.nsIPrefBranch2);
@@ -262,7 +262,7 @@ var padlock_PadLock =
       document.getElementById("padlock-ib-left").setAttribute("padshow", padshow);
       document.getElementById("padlock-ub-right").setAttribute("padshow", padshow);
     } catch(e) {}
-    
+
     document.getElementById("padlock-sb").setAttribute("padshow", padshow);
     document.getElementById("padlock-tab").setAttribute("padshow", padshow);
 
@@ -271,7 +271,7 @@ var padlock_PadLock =
       document.getElementById("padlock-ib-left").setAttribute("padstyle", padstyle);
       document.getElementById("padlock-ub-right").setAttribute("padstyle", padstyle);
     } catch(e) {}
-    
+
     document.getElementById("padlock-sb").setAttribute("padstyle", padstyle);
     document.getElementById("padlock-tab").setAttribute("padstyle", padstyle);
 
