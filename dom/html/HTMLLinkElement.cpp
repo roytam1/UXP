@@ -130,7 +130,7 @@ HTMLLinkElement::SetMozDisabled(bool aDisabled)
 {
   ErrorResult rv;
   SetDisabled(aDisabled, rv);
-  return rv.StealNSResult();   
+  return rv.StealNSResult(); 
 }
 
 NS_IMPL_STRING_ATTR(HTMLLinkElement, Charset, charset)
@@ -415,8 +415,8 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
   } else {
     // If the disabled attribute is removed from a link element, the 
     // stylesheet may be explicitly enabled.
-    if (aNameSpaceID == kNameSpaceID_None && LINK_DISABLED) {
-      if (aName == nsGkAtoms::disabled) {
+    if (aNameSpaceID == kNameSpaceID_None) {
+      if (aName == nsGkAtoms::disabled && LINK_DISABLED) {
         mExplicitlyEnabled = true;
       }
       // Since removing href or rel makes us no longer link to a
