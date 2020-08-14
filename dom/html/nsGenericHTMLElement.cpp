@@ -1449,29 +1449,57 @@ nsGenericHTMLElement::MapImageMarginAttributeInto(const nsMappedAttributes* aAtt
 
 void
 nsGenericHTMLElement::MapImageSizeAttributesInto(const nsMappedAttributes* aAttributes,
-                                                 nsRuleData* aData)
+                                                 nsRuleData* aData,
+                                                 bool aMapAspectRatio)
 {
   if (!(aData->mSIDs & NS_STYLE_INHERIT_BIT(Position)))
     return;
 
+  auto* aWidth = aAttributes->GetAttr(nsGkAtoms::width);
+  auto* aHeight = aAttributes->GetAttr(nsGkAtoms::height);
+
   // width: value
-  nsCSSValue* width = aData->ValueForWidth();
-  if (width->GetUnit() == eCSSUnit_Null) {
-    const nsAttrValue* value = aAttributes->GetAttr(nsGkAtoms::width);
-    if (value && value->Type() == nsAttrValue::eInteger)
-      width->SetFloatValue((float)value->GetIntegerValue(), eCSSUnit_Pixel);
-    else if (value && value->Type() == nsAttrValue::ePercent)
-      width->SetPercentValue(value->GetPercentValue());
+  if (aWidth) {
+    nsCSSValue* cWidth = aData->ValueForWidth();
+    if (cWidth->GetUnit() == eCSSUnit_Null) {
+      if (aWidth->Type() == nsAttrValue::eInteger)
+        cWidth->SetFloatValue((float)aWidth->GetIntegerValue(), eCSSUnit_Pixel);
+      else if (aWidth->Type() == nsAttrValue::ePercent)
+        cWidth->SetPercentValue(aWidth->GetPercentValue());
+    }
   }
 
   // height: value
-  nsCSSValue* height = aData->ValueForHeight();
-  if (height->GetUnit() == eCSSUnit_Null) {
-    const nsAttrValue* value = aAttributes->GetAttr(nsGkAtoms::height);
-    if (value && value->Type() == nsAttrValue::eInteger)
-      height->SetFloatValue((float)value->GetIntegerValue(), eCSSUnit_Pixel); 
-    else if (value && value->Type() == nsAttrValue::ePercent)
-      height->SetPercentValue(value->GetPercentValue());
+  if (aHeight) {
+    nsCSSValue* cHeight = aData->ValueForHeight();
+    if (cHeight->GetUnit() == eCSSUnit_Null) {
+      if (aHeight->Type() == nsAttrValue::eInteger)
+        cHeight->SetFloatValue((float)aHeight->GetIntegerValue(), eCSSUnit_Pixel); 
+      else if (aHeight->Type() == nsAttrValue::ePercent)
+        cHeight->SetPercentValue(aHeight->GetPercentValue());
+    }
+  }
+
+  if (Preferences::GetBool("layout.css.intrinsic-aspect-ratio.enabled") &&
+      aMapAspectRatio && aWidth && aHeight) {
+    Maybe<double> w;
+    if (aWidth->Type() == nsAttrValue::eInteger) {
+      w.emplace(aWidth->GetIntegerValue());
+    } else if (aWidth->Type() == nsAttrValue::eDoubleValue) {
+      w.emplace(aWidth->GetDoubleValue());
+    }
+
+    Maybe<double> h;
+    if (aHeight->Type() == nsAttrValue::eInteger) {
+      h.emplace(aHeight->GetIntegerValue());
+    } else if (aHeight->Type() == nsAttrValue::eDoubleValue) {
+      h.emplace(aHeight->GetDoubleValue());
+    }
+
+    if (w && h && *w != 0 && *h != 0) {
+      nsCSSValue* aspect_ratio = aData->ValueForAspectRatio();
+      aspect_ratio->SetFloatValue((float(*w) / float(*h)), eCSSUnit_Number);
+    }
   }
 }
 

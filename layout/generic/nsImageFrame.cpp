@@ -14,6 +14,7 @@
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/Helpers.h"
 #include "mozilla/gfx/PathHelpers.h"
+#include "mozilla/dom/HTMLImageElement.h"
 #include "mozilla/MouseEvents.h"
 #include "mozilla/Unused.h"
 
@@ -229,26 +230,26 @@ nsImageFrame::DidSetStyleContext(nsStyleContext* aOldStyleContext)
 {
   nsAtomicContainerFrame::DidSetStyleContext(aOldStyleContext);
 
-  if (!mImage) {
-    // We'll pick this change up whenever we do get an image.
-    return;
-  }
-
   nsStyleImageOrientation newOrientation = StyleVisibility()->mImageOrientation;
 
   // We need to update our orientation either if we had no style context before
   // because this is the first time it's been set, or if the image-orientation
   // property changed from its previous value.
   bool shouldUpdateOrientation =
-    !aOldStyleContext ||
-    aOldStyleContext->StyleVisibility()->mImageOrientation != newOrientation;
+    mImage &&
+    (!aOldStyleContext ||
+     aOldStyleContext->StyleVisibility()->mImageOrientation != newOrientation);
 
   if (shouldUpdateOrientation) {
     nsCOMPtr<imgIContainer> image(mImage->Unwrap());
     mImage = nsLayoutUtils::OrientImage(image, newOrientation);
 
-    UpdateIntrinsicSize(mImage);
-    UpdateIntrinsicRatio(mImage);
+    UpdateIntrinsicSize();
+    UpdateIntrinsicRatio();
+  } else if (!aOldStyleContext ||
+             aOldStyleContext->StylePosition()->mAspectRatio !=
+                 StylePosition()->mAspectRatio) {
+    UpdateIntrinsicRatio();
   }
 }
 
@@ -286,50 +287,110 @@ nsImageFrame::Init(nsIContent*       aContent,
     p->AdjustPriority(-1);
 }
 
-bool
-nsImageFrame::UpdateIntrinsicSize(imgIContainer* aImage)
+static IntrinsicSize
+ComputeIntrinsicSize(imgIContainer* aImage,
+                     bool aUseMappedRatio,
+                     const nsImageFrame& aFrame)
 {
-  NS_PRECONDITION(aImage, "null image");
-  if (!aImage)
-    return false;
-
-  IntrinsicSize oldIntrinsicSize = mIntrinsicSize;
-  mIntrinsicSize = IntrinsicSize();
-
-  // Set intrinsic size to match aImage's reported intrinsic width & height.
-  nsSize intrinsicSize;
-  if (NS_SUCCEEDED(aImage->GetIntrinsicSize(&intrinsicSize))) {
-    // If the image has no intrinsic width, intrinsicSize.width will be -1, and
-    // we can leave mIntrinsicSize.width at its default value of eStyleUnit_None.
-    // Otherwise we use intrinsicSize.width. Height works the same way.
-    if (intrinsicSize.width != -1)
-      mIntrinsicSize.width.SetCoordValue(intrinsicSize.width);
-    if (intrinsicSize.height != -1)
-      mIntrinsicSize.height.SetCoordValue(intrinsicSize.height);
-  } else {
-    // Failure means that the image hasn't loaded enough to report a result. We
-    // treat this case as if the image's intrinsic size was 0x0.
-    mIntrinsicSize.width.SetCoordValue(0);
-    mIntrinsicSize.height.SetCoordValue(0);
+ // When 'contain: size' is implemented, make sure to check for it.
+/*
+  const ComputedStyle& style = *aFrame.Style();
+  if (style.StyleDisplay()->IsContainSize()) {
+    return AspectRatio();
+  }
+ */
+  nsSize size;
+  IntrinsicSize intrinsicSize;
+  if (aImage && NS_SUCCEEDED(aImage->GetIntrinsicSize(&size))) {
+    if (size.width != -1)
+      intrinsicSize.width.SetCoordValue(size.width);
+    if (size.height != -1)
+      intrinsicSize.height.SetCoordValue(size.height);
+    return intrinsicSize;
   }
 
-  return mIntrinsicSize != oldIntrinsicSize;
+  // If broken images should ever lose their size
+  /*
+  if (aFrame.ShouldShowBrokenImageIcon()) {
+    nscoord edgeLengthToUse = nsPresContext::CSSPixelsToAppUnits(
+        ICON_SIZE + (2 * (ICON_PADDING + ALT_BORDER_WIDTH)));
+    intrinsicSize.width.SetCoordValue(edgeLengthToUse);
+    intrinsicSize.height.SetCoordValue(edgeLengthToUse);
+    return intrinsicSize;
+  }
+  */
+
+  if (aUseMappedRatio && aFrame.StylePosition()->mAspectRatio != 0.0f) {
+    return IntrinsicSize();
+  }
+
+  intrinsicSize.width.SetCoordValue(0);
+  intrinsicSize.height.SetCoordValue(0);
+  return intrinsicSize;
+}
+
+// For compat reasons, see bug 1602047, we don't use the intrinsic ratio from
+// width="" and height="" for images with no src attribute (no request).
+//
+// If <img loading=lazy> ever gets implemented, this will need to check for it.
+bool nsImageFrame::ShouldUseMappedAspectRatio() const {
+  nsCOMPtr<imgIRequest> currentRequest;
+  nsCOMPtr<nsIImageLoadingContent> imageLoader = do_QueryInterface(mContent);
+  if (imageLoader) {
+    imageLoader->GetRequest(nsIImageLoadingContent::CURRENT_REQUEST,
+                            getter_AddRefs(currentRequest));
+  }
+  if (!!currentRequest) {
+    return true;
+  }
+  // TODO(emilio): Investigate the compat situation of the above check, maybe we
+  // can just check for empty src attribute or something...
+  auto* image = static_cast<HTMLImageElement*>(mContent);
+  return image && image->IsAwaitingLoad();
 }
 
 bool
-nsImageFrame::UpdateIntrinsicRatio(imgIContainer* aImage)
+nsImageFrame::UpdateIntrinsicSize()
 {
-  NS_PRECONDITION(aImage, "null image");
+  IntrinsicSize oldIntrinsicSize = mIntrinsicSize;
+  mIntrinsicSize = ComputeIntrinsicSize(mImage, ShouldUseMappedAspectRatio(), *this);
+  return mIntrinsicSize != oldIntrinsicSize;
+}
 
-  if (!aImage)
-    return false;
+static AspectRatio
+ComputeAspectRatio(imgIContainer* aImage,
+                   bool aUseMappedRatio,
+                   const nsImageFrame& aFrame)
+{
+ // When 'contain: size' is implemented, make sure to check for it.
+/*
+  const ComputedStyle& style = *aFrame.Style();
+  if (style.StyleDisplay()->IsContainSize()) {
+    return AspectRatio();
+  }
+ */
+  if (aImage) {
+    AspectRatio fromImage;
+    if (NS_SUCCEEDED(aImage->GetIntrinsicRatio(&fromImage))) {
+      return fromImage;
+    }
+  }
+  if (aUseMappedRatio && aFrame.StylePosition()->mAspectRatio != 0.0f) {
+    return AspectRatio(aFrame.StylePosition()->mAspectRatio);
+  }
+  if (aFrame.ShouldShowBrokenImageIcon()) {
+    return AspectRatio(1.0f);
+  }
+  return AspectRatio();
+}
+
+bool
+nsImageFrame::UpdateIntrinsicRatio()
+{
 
   AspectRatio oldIntrinsicRatio = mIntrinsicRatio;
-
-  // Set intrinsic ratio to match aImage's reported intrinsic ratio.
-  if (NS_FAILED(aImage->GetIntrinsicRatio(&mIntrinsicRatio)))
-    mIntrinsicRatio = AspectRatio();
-
+  mIntrinsicRatio =
+      ComputeAspectRatio(mImage, ShouldUseMappedAspectRatio(), *this);
   return mIntrinsicRatio != oldIntrinsicRatio;
 }
 
@@ -541,30 +602,38 @@ nsImageFrame::OnSizeAvailable(imgIRequest* aRequest, imgIContainer* aImage)
     return NS_OK;
   }
 
-  bool intrinsicSizeChanged = false;
+  UpdateImage(aRequest, aImage);
+  return NS_OK;
+}
+
+void nsImageFrame::UpdateImage(imgIRequest* aRequest, imgIContainer* aImage) {
+  MOZ_ASSERT(aRequest);
   if (SizeIsAvailable(aRequest)) {
     // This is valid and for the current request, so update our stored image
     // container, orienting according to our style.
-    mImage = nsLayoutUtils::OrientImage(aImage, StyleVisibility()->mImageOrientation);
-
-    intrinsicSizeChanged = UpdateIntrinsicSize(mImage);
-    intrinsicSizeChanged = UpdateIntrinsicRatio(mImage) || intrinsicSizeChanged;
+    mImage = nsLayoutUtils::OrientImage(aImage,
+                                        StyleVisibility()->mImageOrientation);
+    MOZ_ASSERT(mImage);
   } else {
     // We no longer have a valid image, so release our stored image container.
     mImage = mPrevImage = nullptr;
-
-    // Have to size to 0,0 so that GetDesiredSize recalculates the size.
-    mIntrinsicSize.width.SetCoordValue(0);
-    mIntrinsicSize.height.SetCoordValue(0);
-    mIntrinsicRatio = AspectRatio();
-    intrinsicSizeChanged = true;
+  }
+  // NOTE(emilio): Intentionally using `|` instead of `||` to avoid
+  // short-circuiting.
+  bool intrinsicSizeChanged =
+      UpdateIntrinsicSize() | UpdateIntrinsicRatio();
+  if (!(mState & IMAGE_GOTINITIALREFLOW)) {
+    return;
   }
 
-  if (intrinsicSizeChanged && (mState & IMAGE_GOTINITIALREFLOW)) {
+  // We're going to need to repaint now either way.
+  InvalidateFrame();
+
+  if (intrinsicSizeChanged) {
     // Now we need to reflow if we have an unconstrained size and have
-    // already gotten the initial reflow
+    // already gotten the initial reflow.
     if (!(mState & IMAGE_SIZECONSTRAINED)) { 
-      nsIPresShell *presShell = presContext->GetPresShell();
+      nsIPresShell *presShell = PresContext()->GetPresShell();
       NS_ASSERTION(presShell, "No PresShell.");
       if (presShell) { 
         presShell->FrameNeedsReflow(this, nsIPresShell::eStyleChange,
@@ -578,8 +647,6 @@ nsImageFrame::OnSizeAvailable(imgIRequest* aRequest, imgIContainer* aImage)
 
     mPrevImage = nullptr;
   }
-
-  return NS_OK;
 }
 
 nsresult
@@ -654,45 +721,9 @@ nsImageFrame::NotifyNewCurrentRequest(imgIRequest *aRequest,
 {
   nsCOMPtr<imgIContainer> image;
   aRequest->GetImage(getter_AddRefs(image));
-  NS_ASSERTION(image || NS_FAILED(aStatus), "Successful load with no container?");
-
-  // May have to switch sizes here!
-  bool intrinsicSizeChanged = true;
-  if (NS_SUCCEEDED(aStatus) && image && SizeIsAvailable(aRequest)) {
-    // Update our stored image container, orienting according to our style.
-    mImage = nsLayoutUtils::OrientImage(image, StyleVisibility()->mImageOrientation);
-
-    intrinsicSizeChanged = UpdateIntrinsicSize(mImage);
-    intrinsicSizeChanged = UpdateIntrinsicRatio(mImage) || intrinsicSizeChanged;
-  } else {
-    // We no longer have a valid image, so release our stored image container.
-    mImage = mPrevImage = nullptr;
-
-    // Have to size to 0,0 so that GetDesiredSize recalculates the size
-    mIntrinsicSize.width.SetCoordValue(0);
-    mIntrinsicSize.height.SetCoordValue(0);
-    mIntrinsicRatio = AspectRatio();
-  }
-
-  if (mState & IMAGE_GOTINITIALREFLOW) { // do nothing if we haven't gotten the initial reflow yet
-    if (intrinsicSizeChanged) {
-      if (!(mState & IMAGE_SIZECONSTRAINED)) {
-        nsIPresShell *presShell = PresContext()->GetPresShell();
-        if (presShell) {
-          presShell->FrameNeedsReflow(this, nsIPresShell::eStyleChange,
-                                      NS_FRAME_IS_DIRTY);
-        }
-      } else {
-        // We've already gotten the initial reflow, and our size hasn't changed,
-        // so we're ready to request a decode.
-        MaybeDecodeForPredictedSize();
-      }
-
-      mPrevImage = nullptr;
-    }
-    // Update border+content to account for image change
-    InvalidateFrame();
-  }
+  NS_ASSERTION(image || NS_FAILED(aStatus),
+               "Successful load with no container?");
+  UpdateImage(aRequest, image);
 }
 
 void
@@ -786,32 +817,27 @@ bool nsImageFrame::ShouldShowBrokenImageIcon() const
 void
 nsImageFrame::EnsureIntrinsicSizeAndRatio()
 {
+ // When 'contain: size' is implemented, make sure to check for it.
+/*
+  if (StyleDisplay()->IsContainSize()) {
+    // If we have 'contain:size', then our intrinsic size and ratio are 0,0
+    // regardless of what our underlying image may think.
+    mIntrinsicSize = IntrinsicSize(0, 0);
+    mIntrinsicRatio = AspectRatio();
+    return;
+  }
+ */
+
   // If mIntrinsicSize.width and height are 0, then we need to update from the
   // image container.
-  if (mIntrinsicSize.width.GetUnit() == eStyleUnit_Coord &&
+  if (!(mIntrinsicSize.width.GetUnit() == eStyleUnit_Coord &&
       mIntrinsicSize.width.GetCoordValue() == 0 &&
       mIntrinsicSize.height.GetUnit() == eStyleUnit_Coord &&
-      mIntrinsicSize.height.GetCoordValue() == 0) {
-
-    if (mImage) {
-      UpdateIntrinsicSize(mImage);
-      UpdateIntrinsicRatio(mImage);
-    } else {
-      // Image request is null or image size not known.
-      if (!(GetStateBits() & NS_FRAME_GENERATED_CONTENT)) {
-        // Likely an invalid image. Check if we should display it as broken.
-        if (ShouldShowBrokenImageIcon()) {
-          // Invalid image specified. make the image big enough for the "broken" icon
-          nscoord edgeLengthToUse =
-            nsPresContext::CSSPixelsToAppUnits(
-              ICON_SIZE + (2 * (ICON_PADDING + ALT_BORDER_WIDTH)));
-          mIntrinsicSize.width.SetCoordValue(edgeLengthToUse);
-          mIntrinsicSize.height.SetCoordValue(edgeLengthToUse);
-          mIntrinsicRatio = AspectRatio(1.0f);
-        }
-      }
-    }
+      mIntrinsicSize.height.GetCoordValue() == 0)) {
+    return;
   }
+  UpdateIntrinsicSize();
+  UpdateIntrinsicRatio();
 }
 
 /* virtual */
