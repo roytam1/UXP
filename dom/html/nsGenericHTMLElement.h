@@ -702,10 +702,12 @@ public:
    *
    * @param aAttributes the list of attributes to map
    * @param aData the returned rule data [INOUT]
+   * @param aMapAspectRatio map width and height attributes on aspect-ratio
    * @see GetAttributeMappingFunction
    */
   static void MapImageSizeAttributesInto(const nsMappedAttributes* aAttributes,
-                                         nsRuleData* aData);
+                                         nsRuleData* aData,
+                                         bool = false);
   /**
    * Helper to map the background attribute
    * into a style struct.

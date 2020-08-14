@@ -234,22 +234,14 @@ nsSVGOuterSVGFrame::GetIntrinsicSize()
 
 /* virtual */ AspectRatio
 nsSVGOuterSVGFrame::GetIntrinsicRatio()
-{
-  // 2020-07-14 (RealityRipple) Firefox Uses a new IsReplacedAndContainSize(this)
-  // function call [Line 96-99 on trunk].
+{ 
+ // When 'contain: size' is implemented, make sure to check for it.
 /*
-  static inline bool IsReplacedAndContainSize(const nsSVGOuterSVGFrame* aFrame) {
-    return aFrame->GetContent->GetParent() &&
-           aFrame->StyleDisplay()->IsContainSize();
-  }
- */
-  // but since contain: size doesn't exist in Pale Moon yet...
-/*
-  if (IsReplacedAndContainSize(this)) {
+  if (this->GetContent->GetParent() && this->StyleDisplay()->IsContainSize()) {
     return AspectRatio();
   }
  */
-  
+
   // We only have an intrinsic size/ratio if our width and height attributes
   // are both specified and set to non-percentage values, or we have a viewBox
   // rect: http://www.w3.org/TR/SVGMobile12/coords.html#IntrinsicSizing
