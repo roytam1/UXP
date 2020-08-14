@@ -132,19 +132,38 @@ var padlock_PadLock =
       secbut.hidden = true;
       secbut.removeAttribute("level");
     }
-    
+
+    let s_ev = "Extended Validated";
+    let s_hi = "Secure";
+    let s_lo = "Weak security";
+    let s_no = "Not secure";
+    let gLocale = document.getElementById("bundle_browser");
+    if(!!gLocale) {
+      let n_ev = gLocale.getString("identity.padlock.ev");
+      if(n_ev != null)
+        s_ev = n_ev;
+      let n_hi = gLocale.getString("identity.padlock.high");
+      if(n_hi != null)
+        s_hi = n_hi;
+      let n_lo = gLocale.getString("identity.padlock.low");
+      if(n_lo != null)
+        s_lo = n_lo;
+      let n_no = gLocale.getString("identity.padlock.broken");
+      if(n_no != null)
+        s_no = n_no;
+    }
     switch (level) {
       case "ev":
-        sectooltip = "Extended Validated";
+        sectooltip = s_ev;
         break;
       case "high":
-        sectooltip = "Secure";
+        sectooltip = s_hi;
         break;
       case "low":
-        sectooltip = "Weak security";
+        sectooltip = s_lo;
         break;
       case "broken":
-        sectooltip = "Not secure";
+        sectooltip = s_no;
         break;
       default:
         sectooltip = "";
