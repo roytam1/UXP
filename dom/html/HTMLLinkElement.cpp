@@ -33,6 +33,8 @@
 #define LINK_ELEMENT_FLAG_BIT(n_) \
   NODE_FLAG_BIT(ELEMENT_TYPE_SPECIFIC_BITS_OFFSET + (n_))
 
+#define LINK_DISABLED Preferences::GetBool("dom.link.disabled_attribute.enabled", true)
+
 // Link element specific bits
 enum {
   // Indicates that a DNS Prefetch has been requested from this Link element.
@@ -92,10 +94,13 @@ NS_INTERFACE_TABLE_TAIL_INHERITING(nsGenericHTMLElement)
 
 NS_IMPL_ELEMENT_CLONE(HTMLLinkElement)
 
+
 bool
 HTMLLinkElement::Disabled() const
 {
-  return GetBoolAttr(nsGkAtoms::disabled);
+  if (LINK_DISABLED) {
+    return GetBoolAttr(nsGkAtoms::disabled);
+  }
 
   StyleSheet* ss = GetSheet();
   return ss && ss->Disabled();
@@ -110,8 +115,10 @@ HTMLLinkElement::GetMozDisabled(bool* aDisabled)
 
 void
 HTMLLinkElement::SetDisabled(bool aDisabled, ErrorResult& aRv)
-{
+{ 
+  if (LINK_DISABLED) {
   return SetHTMLBoolAttr(nsGkAtoms::disabled, aDisabled, aRv);
+  }
 
   if (StyleSheet* ss = GetSheet()) {
     ss->SetDisabled(aDisabled);
@@ -123,7 +130,7 @@ HTMLLinkElement::SetMozDisabled(bool aDisabled)
 {
   ErrorResult rv;
   SetDisabled(aDisabled, rv);
-  return rv.StealNSResult();
+  return rv.StealNSResult();   
 }
 
 NS_IMPL_STRING_ATTR(HTMLLinkElement, Charset, charset)
@@ -375,7 +382,7 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
          aName == nsGkAtoms::title ||
          aName == nsGkAtoms::media ||
          aName == nsGkAtoms::type ||
-         aName == nsGkAtoms::disabled)) {
+         (LINK_DISABLED && aName == nsGkAtoms::disabled))) {
       bool dropSheet = false;
       if (aName == nsGkAtoms::rel) {
         nsAutoString value;
@@ -403,12 +410,12 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                                (aName == nsGkAtoms::title ||
                                 aName == nsGkAtoms::media ||
                                 aName == nsGkAtoms::type ||
-                                aName == nsGkAtoms::disabled));
+                                (LINK_DISABLED && aName == nsGkAtoms::disabled)));
     }
   } else {
     // If the disabled attribute is removed from a link element, the 
     // stylesheet may be explicitly enabled.
-    if (aNameSpaceID == kNameSpaceID_None) {
+    if (aNameSpaceID == kNameSpaceID_None && LINK_DISABLED) {
       if (aName == nsGkAtoms::disabled) {
         mExplicitlyEnabled = true;
       }
@@ -419,7 +426,7 @@ HTMLLinkElement::AfterSetAttr(int32_t aNameSpaceID, nsIAtom* aName,
           aName == nsGkAtoms::title ||
           aName == nsGkAtoms::media ||
           aName == nsGkAtoms::type ||
-          aName == nsGkAtoms::disabled) {
+          (LINK_DISABLED && aName == nsGkAtoms::disabled)) {
         UpdateStyleSheetInternal(nullptr, nullptr, true);
       }
       if (aName == nsGkAtoms::href ||
@@ -530,6 +537,8 @@ HTMLLinkElement::GetStyleSheetInfo(nsAString& aTitle,
     return;
   }
 
+  if (LINK_DISABLED) {
+
   // Is the link disabled?
   if (Disabled()) {
     return;
@@ -538,6 +547,8 @@ HTMLLinkElement::GetStyleSheetInfo(nsAString& aTitle,
   // Is it explicitly enabled?
   if (mExplicitlyEnabled) {
     *aIsExplicitlyEnabled = true;
+  }
+
   }
 
   nsAutoString title;

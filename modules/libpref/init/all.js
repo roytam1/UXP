@@ -1185,6 +1185,14 @@ pref("dom.storage.default_quota",      5120);
 
 pref("dom.send_after_paint_to_content", false);
 
+// Whether the disabled attribute in HTMLLinkElement disables the sheet loading
+// altogether, or forwards to the inner stylesheet method without attribute
+// reflection.
+//
+// Historical behavior is the second, the first is being discussed at:
+// https://github.com/whatwg/html/issues/3840
+pref("dom.link.disabled_attribute.enabled", true);
+
 // Timeout clamp in ms for timeouts we clamp
 pref("dom.min_timeout_value", 4);
 // And for background windows
