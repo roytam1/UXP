@@ -21,36 +21,15 @@ var padlock_PadLock =
     const wpl = Ci.nsIWebProgressListener;
     const wpl_security_bits = wpl.STATE_IS_SECURE |
                               wpl.STATE_IS_BROKEN |
-                              wpl.STATE_IS_INSECURE |
-                              wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT |
-                              wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT |
-                              wpl.STATE_IDENTITY_EV_TOPLEVEL;
+                              wpl.STATE_IS_INSECURE;
     var level;
     var highlight_urlbar = false;
 
     switch (aState & wpl_security_bits) {
-      case wpl.STATE_IS_SECURE | wpl.STATE_IDENTITY_EV_TOPLEVEL:
-        level = "ev";
-        highlight_urlbar = true;
-        break;
       case wpl.STATE_IS_SECURE:
-      case wpl.STATE_IS_BROKEN |
-           wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
         level = "high";
         highlight_urlbar = true;
         break;
-      case wpl.STATE_IS_BROKEN |
-           wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT:
-        level = "low";
-        highlight_urlbar = true;
-        break;
-      case wpl.STATE_IS_BROKEN | wpl.STATE_IDENTITY_EV_TOPLEVEL |
-           wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT |
-           wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
-      case wpl.STATE_IS_BROKEN | wpl.STATE_IDENTITY_EV_TOPLEVEL |
-           wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT:
-      case wpl.STATE_IS_BROKEN | wpl.STATE_IDENTITY_EV_TOPLEVEL |
-           wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT:
       case wpl.STATE_IS_BROKEN:
         level = "broken";
         highlight_urlbar = true;
@@ -59,33 +38,47 @@ var padlock_PadLock =
         level = null;
     }
 
-    if (level != null && level != "broken") {
+    if (level != null) {
       var secUI = gBrowser.securityUI;
       //if we wanted, we could use secUI.state instead of aState above?
       var secState = secUI.QueryInterface(Ci.nsISSLStatusProvider).SSLStatus;
       if (secState) {
         secState.QueryInterface(Ci.nsISSLStatus);
-        var proto = secState.protocolVersion;
-        if (proto == Ci.nsISSLStatus.SSL_VERSION_3) {
-          level = "broken";
-        } else if (proto == Ci.nsISSLStatus.TLS_VERSION_1 ||
-                   proto == Ci.nsISSLStatus.TLS_VERSION_1_1) {
-          level = "low";
+        if (secState.isExtendedValidation) {
+          if ((aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT) ||
+            (aState & wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT))
+            level = "broken";
+          else if (level == "high")
+            level = "ev";
+        } else {
+          if (aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT)
+            level = "low";
+          else if (aState & wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT)
+            level = "high";
         }
         if (level != "broken") {
-          var aCipher = secState.cipherSuite;
-          if (aCipher.indexOf("_EXPORT") > -1) {
+          var proto = secState.protocolVersion;
+          if (proto == Ci.nsISSLStatus.SSL_VERSION_3) {
             level = "broken";
-          } else if (aCipher.indexOf("_RC2_") > -1) {
-            level = "broken";
-          } else if (aCipher.indexOf("_RC4_") > -1) {
-            if (aCipher.indexOf("_MD5") > -1) {
+          } else if (proto == Ci.nsISSLStatus.TLS_VERSION_1 ||
+                     proto == Ci.nsISSLStatus.TLS_VERSION_1_1) {
+            level = "low";
+          }
+          if (level != "broken") {
+            var aCipher = secState.cipherSuite;
+            if (aCipher.indexOf("_EXPORT") > -1) {
               level = "broken";
-            } else if (aCipher.indexOf("_SHA") > -1) {
+            } else if (aCipher.indexOf("_RC2_") > -1) {
+              level = "broken";
+            } else if (aCipher.indexOf("_RC4_") > -1) {
+              if (aCipher.indexOf("_MD5") > -1) {
+                level = "broken";
+              } else if (aCipher.indexOf("_SHA") > -1) {
+                level = "low";
+              }
+            } else if (aCipher.indexOf("_3DES_") > -1) {
               level = "low";
             }
-          } else if (aCipher.indexOf("_3DES_") > -1) {
-            level = "low";
           }
         }
       }
