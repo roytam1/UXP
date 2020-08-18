@@ -65,9 +65,13 @@ if CONFIG['MOZ_DEBUG']:
 
 # Force using malloc_usable_size when building with jemalloc because _msize
 # causes assertions on Win64. See bug 719579.
+# This causes a known warning due to the way mozjemalloc is linked and the
+# malloc_usable_size function not being available at compile time on MSVC
+# so we suppress that particular warning (C4013)
 if CONFIG['OS_ARCH'] == 'WINNT' and CONFIG['MOZ_MEMORY']:
     DEFINES['HAVE_MALLOC_USABLE_SIZE'] = True
     DEFINES['SQLITE_WITHOUT_MSIZE'] = True
+    CFLAGS += ['-wd4013']
 
 # Omit unused functions to save some library footprint.
 DEFINES['SQLITE_OMIT_DEPRECATED'] = True
