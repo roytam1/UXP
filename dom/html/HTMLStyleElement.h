@@ -59,7 +59,7 @@ public:
   NS_DECL_NSIMUTATIONOBSERVER_CONTENTINSERTED
   NS_DECL_NSIMUTATIONOBSERVER_CONTENTREMOVED
 
-  bool Disabled();
+  bool Disabled() const;
   void SetDisabled(bool aDisabled);
   void SetMedia(const nsAString& aMedia, ErrorResult& aError)
   {
@@ -88,7 +88,8 @@ protected:
                          nsAString& aType,
                          nsAString& aMedia,
                          bool* aIsScoped,
-                         bool* aIsAlternate) override;
+                         bool* aIsAlternate,
+                         bool* aIsExplicitlyEnabled) override;
   /**
    * Common method to call from the various mutation observer methods.
    * aContent is a content node that's either the one that changed or its
