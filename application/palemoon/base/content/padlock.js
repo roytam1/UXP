@@ -16,59 +16,81 @@ var padlock_PadLock =
   onLocationChange: function() {},
   onStatusChange: function() {},
   onSecurityChange: function(aCallerWebProgress, aRequestWithState, aState) {
-    // aState is defined as a bitmask that may be extended in the future.
-    // We filter out any unknown bits before testing for known values.
     const wpl = Ci.nsIWebProgressListener;
-    const wpl_security_bits = wpl.STATE_IS_SECURE |
-                              wpl.STATE_IS_BROKEN |
-                              wpl.STATE_IS_INSECURE |
-                              wpl.STATE_IDENTITY_EV_TOPLEVEL |
-                              wpl.STATE_SECURE_HIGH |
-                              wpl.STATE_SECURE_MED |
-                              wpl.STATE_SECURE_LOW;
     var level;
-    var is_insecure;
     var highlight_urlbar = false;
-
-    switch (aState & wpl_security_bits) {
-      case wpl.STATE_IS_SECURE | wpl.STATE_SECURE_HIGH | wpl.STATE_IDENTITY_EV_TOPLEVEL:
-        level = "ev";
-        is_insecure = "";
-        highlight_urlbar = true;
-        break;
-      case wpl.STATE_IS_SECURE | wpl.STATE_SECURE_HIGH:
-        level = "high";
-        is_insecure = "";
-        highlight_urlbar = true;
-        break;
-      case wpl.STATE_IS_SECURE | wpl.STATE_SECURE_MED:
-      case wpl.STATE_IS_SECURE | wpl.STATE_SECURE_LOW:
-        level = "low";
-        is_insecure = "insecure";
-        break;
-      case wpl.STATE_IS_BROKEN | wpl.STATE_SECURE_LOW:
-        level = "mixed";
-        is_insecure = "insecure";
-        highlight_urlbar = true;
-        break;
-      case wpl.STATE_IS_BROKEN:
-        level = "broken";
-        is_insecure = "insecure";
-        highlight_urlbar = true;
-        break;
-      default: // should not be reached
-        level = null;
-        is_insecure = "insecure";
+    var secUI = gBrowser.securityUI;
+    var secState = secUI.QueryInterface(Ci.nsISSLStatusProvider).SSLStatus;
+    if (secState == null) {
+      level = null;
+    } else {
+      highlight_urlbar = true;
+      secState.QueryInterface(Ci.nsISSLStatus);
+      // Step 1: Check EV
+      if (secState.isExtendedValidation) {
+        // Step 1 TRUE: Extended Validation
+        //  Normal               "ev"
+        //  Mixed Content        "broken"
+        if ((aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT) ||
+          (aState & wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT))
+          level = "broken";
+        else
+          level = "ev";
+      } else {
+        // Step 1 FALSE: Domain Validation
+        //  Normal               "high"
+        //  Mixed Active Content "low"
+        if (aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT)
+          level = "low";
+        else
+          level = "high";
+      }
+      // Step 2: Check Protocol
+      if (level != "broken") {
+        //  SSL 3                "broken"
+        //  TLS 1.0              "low"
+        //  TLS 1.1              "low"
+        var proto = secState.protocolVersion;
+        if (proto == Ci.nsISSLStatus.SSL_VERSION_3)
+          level = "broken";
+        else if (proto == Ci.nsISSLStatus.TLS_VERSION_1 ||
+          proto == Ci.nsISSLStatus.TLS_VERSION_1_1) {
+          level = "low";
+        }
+      }
+      // Step 3: Check Bad Ciphers
+      if (level != "broken") {
+        //  EXPORT               "broken"
+        //  RC2                  "broken"
+        //  RC4 + MD5            "broken"
+        //  RC4 + SHA1           "low"
+        //  3DES                 "low"
+        var aCipher = secState.cipherSuite;
+        if (aCipher.indexOf("_EXPORT") > -1) {
+          level = "broken";
+        } else if (aCipher.indexOf("_RC2_") > -1) {
+          level = "broken";
+        } else if (aCipher.indexOf("_RC4_") > -1) {
+          if (aCipher.indexOf("_MD5") > -1) {
+            level = "broken";
+          } else if (aCipher.indexOf("_SHA") > -1) {
+            level = "low";
+          }
+        } else if (aCipher.indexOf("_3DES_") > -1) {
+          level = "low";
+        }
+      }
+      // Step 4: Check Boolean Problems
+      if (level != "broken") {
+        //  Untrusted            "broken"
+        //  Domain Mismatch      "broken"
+        //  Expired (or too new) "broken"
+        if (secState.isUntrusted || secState.isDomainMismatch ||
+          secState.isNotValidAtThisTime)
+          level = "broken";
+      }
     }
 
-    try {
-      var proto = gBrowser.contentWindow.location.protocol;
-      if (proto == "about:" || proto == "chrome:" || proto == "file:" ) {
-        // do not warn when using local protocols
-        is_insecure = false;
-      }
-    } catch(ex) {}
-        
     let ub = document.getElementById("urlbar");
     if (ub) {
       // Only call if URL bar is present.
@@ -84,15 +106,15 @@ var padlock_PadLock =
       padlock_PadLock.setPadlockLevel("padlock-ib-left", level);
       padlock_PadLock.setPadlockLevel("padlock-ub-right", level);
     } catch(e) {}
-    
+
     padlock_PadLock.setPadlockLevel("padlock-sb", level);
     padlock_PadLock.setPadlockLevel("padlock-tab", level);
   },
-  
+
   setPadlockLevel: function(item, level) {
     let secbut = document.getElementById(item);
     var sectooltip = "";
-    
+
     if (level) {
       secbut.setAttribute("level", level);
       secbut.hidden = false;
@@ -100,34 +122,50 @@ var padlock_PadLock =
       secbut.hidden = true;
       secbut.removeAttribute("level");
     }
-    
+
+    let s_ev = "Extended Validated";
+    let s_hi = "Secure";
+    let s_lo = "Weak security";
+    let s_no = "Not secure";
+    let gLocale = document.getElementById("bundle_browser");
+    if(!!gLocale) {
+      let n_ev = gLocale.getString("identity.padlock.ev");
+      if(n_ev != null)
+        s_ev = n_ev;
+      let n_hi = gLocale.getString("identity.padlock.high");
+      if(n_hi != null)
+        s_hi = n_hi;
+      let n_lo = gLocale.getString("identity.padlock.low");
+      if(n_lo != null)
+        s_lo = n_lo;
+      let n_no = gLocale.getString("identity.padlock.broken");
+      if(n_no != null)
+        s_no = n_no;
+    }
     switch (level) {
       case "ev":
-        sectooltip = "Extended Validated";
+        sectooltip = s_ev;
         break;
       case "high":
-        sectooltip = "Secure";
+        sectooltip = s_hi;
         break;
       case "low":
-        sectooltip = "Weak security";
-        break;
-      case "mixed":
-        sectooltip = "Mixed mode (partially encrypted)";
+        sectooltip = s_lo;
         break;
       case "broken":
-        sectooltip = "Not secure";
+        sectooltip = s_no;
         break;
       default:
         sectooltip = "";
     }
     secbut.setAttribute("tooltiptext", sectooltip);
   },
-  
+
   prefbranch : null,
-  
+
   onLoad: function() {
     gBrowser.addProgressListener(padlock_PadLock);
-    
+
     var prefService = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefService);
     padlock_PadLock.prefbranch = prefService.getBranch("browser.padlock.");
     padlock_PadLock.prefbranch.QueryInterface(Components.interfaces.nsIPrefBranch2);
@@ -214,7 +252,7 @@ var padlock_PadLock =
       document.getElementById("padlock-ib-left").setAttribute("padshow", padshow);
       document.getElementById("padlock-ub-right").setAttribute("padshow", padshow);
     } catch(e) {}
-    
+
     document.getElementById("padlock-sb").setAttribute("padshow", padshow);
     document.getElementById("padlock-tab").setAttribute("padshow", padshow);
 
@@ -223,7 +261,7 @@ var padlock_PadLock =
       document.getElementById("padlock-ib-left").setAttribute("padstyle", padstyle);
       document.getElementById("padlock-ub-right").setAttribute("padstyle", padstyle);
     } catch(e) {}
-    
+
     document.getElementById("padlock-sb").setAttribute("padstyle", padstyle);
     document.getElementById("padlock-tab").setAttribute("padstyle", padstyle);
 
