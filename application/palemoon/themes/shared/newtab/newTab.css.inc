@@ -43,13 +43,14 @@ body {
   outline: 1px dotted;
 }
 
-
-#newtab-undo-close-button > .toolbarbutton-text {
-  display: none;
-}
-
-#newtab-undo-close-button:-moz-focusring {
-  outline: 1px dotted;
+#newtab-undo-close-button {
+  -moz-appearance: none;
+  padding: 0;
+  border: none;
+  width: 16px;
+  height: 16px;
+  float: right;
+  right: 0;
 }
 
 /* TOGGLE */
