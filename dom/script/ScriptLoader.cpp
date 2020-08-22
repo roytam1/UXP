@@ -2241,19 +2241,41 @@ ScriptLoader::OnStreamComplete(nsIIncrementalStreamLoader* aLoader,
                                nsresult aChannelStatus,
                                nsresult aSRIStatus,
                                mozilla::Vector<char16_t> &aString,
-                               mozilla::dom::SRICheckDataVerifier* aSRIDataVerifier)
+                               SRICheckDataVerifier* aSRIDataVerifier)
 {
   ScriptLoadRequest* request = static_cast<ScriptLoadRequest*>(aContext);
   NS_ASSERTION(request, "null request in stream complete handler");
   NS_ENSURE_TRUE(request, NS_ERROR_FAILURE);
 
+  nsresult rv = VerifySRI(request, aLoader, aSRIStatus, aSRIDataVerifier);
+
+  if (NS_SUCCEEDED(rv)) {
+    rv = PrepareLoadedRequest(request, aLoader, aChannelStatus, aString);
+  }
+
+  if (NS_FAILED(rv)) {
+    HandleLoadError(request, rv);
+  }
+
+  // Process our request and/or any pending ones
+  ProcessPendingRequests();
+
+  return NS_OK;
+}
+
+nsresult
+ScriptLoader::VerifySRI(ScriptLoadRequest* aRequest,
+                        nsIIncrementalStreamLoader* aLoader,
+                        nsresult aSRIStatus,
+                        SRICheckDataVerifier* aSRIDataVerifier) const
+{
   nsCOMPtr<nsIRequest> channelRequest;
   aLoader->GetRequest(getter_AddRefs(channelRequest));
   nsCOMPtr<nsIChannel> channel;
   channel = do_QueryInterface(channelRequest);
 
   nsresult rv = NS_OK;
-  if (!request->mIntegrity.IsEmpty() &&
+  if (!aRequest->mIntegrity.IsEmpty() &&
       NS_SUCCEEDED((rv = aSRIStatus))) {
     MOZ_ASSERT(aSRIDataVerifier);
     MOZ_ASSERT(mReporter);
@@ -2262,7 +2284,7 @@ ScriptLoader::OnStreamComplete(nsIIncrementalStreamLoader* aLoader,
     if (mDocument && mDocument->GetDocumentURI()) {
       mDocument->GetDocumentURI()->GetAsciiSpec(sourceUri);
     }
-    rv = aSRIDataVerifier->Verify(request->mIntegrity, channel, sourceUri,
+    rv = aSRIDataVerifier->Verify(aRequest->mIntegrity, channel, sourceUri,
                                   mReporter);
     mReporter->FlushConsoleReports(mDocument);
     if (NS_FAILED(rv)) {
@@ -2278,7 +2300,7 @@ ScriptLoader::OnStreamComplete(nsIIncrementalStreamLoader* aLoader,
       loadInfo->LoadingPrincipal()->GetCsp(getter_AddRefs(csp));
       nsAutoCString violationURISpec;
       mDocument->GetDocumentURI()->GetAsciiSpec(violationURISpec);
-      uint32_t lineNo = request->mElement ? request->mElement->GetScriptLineNumber() : 0;
+      uint32_t lineNo = aRequest->mElement ? aRequest->mElement->GetScriptLineNumber() : 0;
       csp->LogViolationDetails(
         nsIContentSecurityPolicy::VIOLATION_TYPE_REQUIRE_SRI_FOR_SCRIPT,
         NS_ConvertUTF8toUTF16(violationURISpec),
@@ -2286,19 +2308,8 @@ ScriptLoader::OnStreamComplete(nsIIncrementalStreamLoader* aLoader,
       rv = NS_ERROR_SRI_CORRUPT;
     }
   }
-
-  if (NS_SUCCEEDED(rv)) {
-    rv = PrepareLoadedRequest(request, aLoader, aChannelStatus, aString);
-  }
-
-  if (NS_FAILED(rv)) {
-    HandleLoadError(request, rv);
-  }
-
-  // Process our request and/or any pending ones
-  ProcessPendingRequests();
-
-  return NS_OK;
+  
+  return rv;
 }
 
 void
