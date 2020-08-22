@@ -407,6 +407,8 @@ public:
                             mozilla::Vector<char16_t> &aString,
                             mozilla::dom::SRICheckDataVerifier* aSRIDataVerifier);
 
+  void HandleLoadError(ScriptLoadRequest *aRequest, nsresult aResult);
+
   /**
    * Processes any pending requests that are ready for processing.
    */

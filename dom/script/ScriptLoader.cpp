@@ -2292,65 +2292,7 @@ ScriptLoader::OnStreamComplete(nsIIncrementalStreamLoader* aLoader,
   }
 
   if (NS_FAILED(rv)) {
-    /*
-     * Handle script not loading error because source was a tracking URL.
-     * We make a note of this script node by including it in a dedicated
-     * array of blocked tracking nodes under its parent document.
-     */
-    if (rv == NS_ERROR_TRACKING_URI) {
-      nsCOMPtr<nsIContent> cont = do_QueryInterface(request->mElement);
-      mDocument->AddBlockedTrackingNode(cont);
-    }
-
-    if (request->mIsDefer) {
-      MOZ_ASSERT_IF(request->IsModuleRequest(),
-                    request->AsModuleRequest()->IsTopLevel());
-      if (request->isInList()) {
-        RefPtr<ScriptLoadRequest> req = mDeferRequests.Steal(request);
-        FireScriptAvailable(rv, req);
-      }
-    } else if (request->mIsAsync) {
-      MOZ_ASSERT_IF(request->IsModuleRequest(),
-                    request->AsModuleRequest()->IsTopLevel());
-      if (request->isInList()) {
-        RefPtr<ScriptLoadRequest> req = mLoadingAsyncRequests.Steal(request);
-        FireScriptAvailable(rv, req);
-      }
-    } else if (request->mIsNonAsyncScriptInserted) {
-      if (request->isInList()) {
-        RefPtr<ScriptLoadRequest> req =
-          mNonAsyncExternalScriptInsertedRequests.Steal(request);
-        FireScriptAvailable(rv, req);
-      }
-    } else if (request->mIsXSLT) {
-      if (request->isInList()) {
-        RefPtr<ScriptLoadRequest> req = mXSLTRequests.Steal(request);
-        FireScriptAvailable(rv, req);
-      }
-    } else if (request->IsModuleRequest()) {
-      ModuleLoadRequest* modReq = request->AsModuleRequest();
-      MOZ_ASSERT(!modReq->IsTopLevel());
-      MOZ_ASSERT(!modReq->isInList());
-      modReq->Cancel();
-      // A single error is fired for the top level module, so don't use
-      // FireScriptAvailable here.
-    } else if (mParserBlockingRequest == request) {
-      MOZ_ASSERT(!request->isInList());
-      mParserBlockingRequest = nullptr;
-      UnblockParser(request);
-
-      // Ensure that we treat request->mElement as our current parser-inserted
-      // script while firing onerror on it.
-      MOZ_ASSERT(request->mElement->GetParserCreated());
-      nsCOMPtr<nsIScriptElement> oldParserInsertedScript =
-        mCurrentParserInsertedScript;
-      mCurrentParserInsertedScript = request->mElement;
-      FireScriptAvailable(rv, request);
-      ContinueParserAsync(request);
-      mCurrentParserInsertedScript = oldParserInsertedScript;
-    } else {
-      mPreloads.RemoveElement(request, PreloadRequestComparator());
-    }
+    HandleLoadError(request, rv);
   }
 
   // Process our request and/or any pending ones
@@ -2358,6 +2300,70 @@ ScriptLoader::OnStreamComplete(nsIIncrementalStreamLoader* aLoader,
 
   return NS_OK;
 }
+
+void
+ScriptLoader::HandleLoadError(ScriptLoadRequest *aRequest, nsresult aResult) {
+  /*
+   * Handle script not loading error because source was a tracking URL.
+   * We make a note of this script node by including it in a dedicated
+   * array of blocked tracking nodes under its parent document.
+   */
+  if (aResult == NS_ERROR_TRACKING_URI) {
+    nsCOMPtr<nsIContent> cont = do_QueryInterface(aRequest->mElement);
+    mDocument->AddBlockedTrackingNode(cont);
+  }
+
+  if (aRequest->mIsDefer) {
+    MOZ_ASSERT_IF(aRequest->IsModuleRequest(),
+                  aRequest->AsModuleRequest()->IsTopLevel());
+    if (aRequest->isInList()) {
+      RefPtr<ScriptLoadRequest> req = mDeferRequests.Steal(aRequest);
+      FireScriptAvailable(aResult, req);
+    }
+  } else if (aRequest->mIsAsync) {
+    MOZ_ASSERT_IF(aRequest->IsModuleRequest(),
+                  aRequest->AsModuleRequest()->IsTopLevel());
+    if (aRequest->isInList()) {
+      RefPtr<ScriptLoadRequest> req = mLoadingAsyncRequests.Steal(aRequest);
+      FireScriptAvailable(aResult, req);
+    }
+  } else if (aRequest->mIsNonAsyncScriptInserted) {
+    if (aRequest->isInList()) {
+      RefPtr<ScriptLoadRequest> req =
+        mNonAsyncExternalScriptInsertedRequests.Steal(aRequest);
+      FireScriptAvailable(aResult, req);
+    }
+  } else if (aRequest->mIsXSLT) {
+    if (aRequest->isInList()) {
+      RefPtr<ScriptLoadRequest> req = mXSLTRequests.Steal(aRequest);
+      FireScriptAvailable(aResult, req);
+    }
+  } else if (aRequest->IsModuleRequest()) {
+    ModuleLoadRequest* modReq = aRequest->AsModuleRequest();
+    MOZ_ASSERT(!modReq->IsTopLevel());
+    MOZ_ASSERT(!modReq->isInList());
+    modReq->Cancel();
+    // A single error is fired for the top level module, so don't use
+    // FireScriptAvailable here.
+  } else if (mParserBlockingRequest == aRequest) {
+    MOZ_ASSERT(!aRequest->isInList());
+    mParserBlockingRequest = nullptr;
+    UnblockParser(aRequest);
+
+    // Ensure that we treat request->mElement as our current parser-inserted
+    // script while firing onerror on it.
+    MOZ_ASSERT(aRequest->mElement->GetParserCreated());
+    nsCOMPtr<nsIScriptElement> oldParserInsertedScript =
+      mCurrentParserInsertedScript;
+    mCurrentParserInsertedScript = aRequest->mElement;
+    FireScriptAvailable(aResult, aRequest);
+    ContinueParserAsync(aRequest);
+    mCurrentParserInsertedScript = oldParserInsertedScript;
+  } else {
+    mPreloads.RemoveElement(aRequest, PreloadRequestComparator());
+  }
+}
+
 
 void
 ScriptLoader::UnblockParser(ScriptLoadRequest* aParserBlockingRequest)
