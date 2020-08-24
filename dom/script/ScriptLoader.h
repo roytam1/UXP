@@ -74,8 +74,8 @@ public:
       mProgress(Progress::Loading),
       mIsInline(true),
       mHasSourceMapURL(false),
-      mIsDefer(false),
-      mIsAsync(false),
+      mInDeferList(false),
+      mInAsyncList(false),
       mIsNonAsyncScriptInserted(false),
       mIsXSLT(false),
       mIsCanceled(false),
@@ -159,8 +159,8 @@ public:
   Progress mProgress;     // Are we still waiting for a load to complete?
   bool mIsInline;         // Is the script inline or loaded?
   bool mHasSourceMapURL;  // Does the HTTP header have a source map url?
-  bool mIsDefer;          // True if we live in mDeferRequests.
-  bool mIsAsync;          // True if we live in mLoadingAsyncRequests or mLoadedAsyncRequests.
+  bool mInDeferList;      // True if we live in mDeferRequests.
+  bool mInAsyncList;      // True if we live in mLoadingAsyncRequests or mLoadedAsyncRequests.
   bool mIsNonAsyncScriptInserted; // True if we live in mNonAsyncExternalScriptInsertedRequests
   bool mIsXSLT;           // True if we live in mXSLTRequests.
   bool mIsCanceled;       // True if we have been explicitly canceled.
