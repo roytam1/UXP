@@ -76,6 +76,8 @@ public:
       mHasSourceMapURL(false),
       mInDeferList(false),
       mInAsyncList(false),
+      mPreloadAsAsync(false),
+      mPreloadAsDefer(false),
       mIsNonAsyncScriptInserted(false),
       mIsXSLT(false),
       mIsCanceled(false),
@@ -161,6 +163,8 @@ public:
   bool mHasSourceMapURL;  // Does the HTTP header have a source map url?
   bool mInDeferList;      // True if we live in mDeferRequests.
   bool mInAsyncList;      // True if we live in mLoadingAsyncRequests or mLoadedAsyncRequests.
+  bool mPreloadAsAsync;   // True if this is a preload request and the script is async
+  bool mPreloadAsDefer;   // True if this is a preload request and the script is defer
   bool mIsNonAsyncScriptInserted; // True if we live in mNonAsyncExternalScriptInsertedRequests
   bool mIsXSLT;           // True if we live in mXSLTRequests.
   bool mIsCanceled;       // True if we have been explicitly canceled.
@@ -459,6 +463,8 @@ public:
                           const nsAString &aCrossOrigin,
                           const nsAString& aIntegrity,
                           bool aScriptFromHead,
+                          bool aAsync,
+                          bool aDefer,
                           const mozilla::net::ReferrerPolicy aReferrerPolicy);
 
   /**
