@@ -571,6 +571,7 @@ private:
                                 mozilla::Vector<char16_t> &aString);
 
   void AddDeferRequest(ScriptLoadRequest* aRequest);
+  void AddAsyncRequest(ScriptLoadRequest* aRequest);
   bool MaybeRemovedDeferRequests();
 
   void MaybeMoveToLoadedList(ScriptLoadRequest* aRequest);
