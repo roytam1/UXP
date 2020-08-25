@@ -63,6 +63,7 @@ ModuleLoadRequest::ModuleLoadRequest(nsIURI* aURI,
   MOZ_ASSERT(mVisitedSet->Contains(aURI));
 
   mIsInline = false;
+  mScriptMode = aParent->mScriptMode;
 }
 
 void ModuleLoadRequest::Cancel()

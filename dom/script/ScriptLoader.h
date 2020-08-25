@@ -72,12 +72,11 @@ public:
     : mKind(aKind),
       mElement(aElement),
       mProgress(Progress::Loading),
+      mScriptMode(ScriptMode::eBlocking),
       mIsInline(true),
       mHasSourceMapURL(false),
       mInDeferList(false),
       mInAsyncList(false),
-      mPreloadAsAsync(false),
-      mPreloadAsDefer(false),
       mIsNonAsyncScriptInserted(false),
       mIsXSLT(false),
       mIsCanceled(false),
@@ -151,6 +150,29 @@ public:
            (IsReadyToRun() && mWasCompiledOMT);
   }
 
+  enum class ScriptMode : uint8_t {
+    eBlocking,
+    eDeferred,
+    eAsync
+  };
+
+  void SetScriptMode(bool aDeferAttr, bool aAsyncAttr);
+
+  bool IsBlockingScript() const
+  {
+    return mScriptMode == ScriptMode::eBlocking;
+  }
+
+  bool IsDeferredScript() const
+  {
+    return mScriptMode == ScriptMode::eDeferred;
+  }
+
+  bool IsAsyncScript() const
+  {
+    return mScriptMode == ScriptMode::eAsync;
+  }
+
   void MaybeCancelOffThreadScript();
 
   using super::getNext;
@@ -159,12 +181,11 @@ public:
   const ScriptKind mKind;
   nsCOMPtr<nsIScriptElement> mElement;
   Progress mProgress;     // Are we still waiting for a load to complete?
+  ScriptMode mScriptMode; // Whether this script is blocking, deferred or async.
   bool mIsInline;         // Is the script inline or loaded?
   bool mHasSourceMapURL;  // Does the HTTP header have a source map url?
   bool mInDeferList;      // True if we live in mDeferRequests.
   bool mInAsyncList;      // True if we live in mLoadingAsyncRequests or mLoadedAsyncRequests.
-  bool mPreloadAsAsync;   // True if this is a preload request and the script is async
-  bool mPreloadAsDefer;   // True if this is a preload request and the script is defer
   bool mIsNonAsyncScriptInserted; // True if we live in mNonAsyncExternalScriptInsertedRequests
   bool mIsXSLT;           // True if we live in mXSLTRequests.
   bool mIsCanceled;       // True if we have been explicitly canceled.
