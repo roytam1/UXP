@@ -391,19 +391,6 @@ ScriptLoader::CheckContentPolicy(nsIDocument* aDocument,
 }
 
 bool
-ScriptLoader::ModuleScriptsEnabled()
-{
-  static bool sEnabledForContent = false;
-  static bool sCachedPref = false;
-  if (!sCachedPref) {
-    sCachedPref = true;
-    Preferences::AddBoolVarCache(&sEnabledForContent, "dom.moduleScripts.enabled", false);
-  }
-
-  return nsContentUtils::IsChromeDoc(mDocument) || sEnabledForContent;
-}
-
-bool
 ScriptLoader::ModuleMapContainsURL(nsIURI* aURL) const
 {
   // Returns whether we have fetched, or are currently fetching, a module script
@@ -1227,14 +1214,12 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
 
   nsCOMPtr<nsIContent> scriptContent = do_QueryInterface(aElement);
 
-  // Determine whether this is a classic script or a module script.
   nsAutoString type;
   bool hasType = aElement->GetScriptType(type);
-  ScriptKind scriptKind = ScriptKind::Classic;
-  if (ModuleScriptsEnabled() &&
-      !type.IsEmpty() && type.LowerCaseEqualsASCII("module")) {
-    scriptKind = ScriptKind::Module;
-  }
+
+  ScriptKind scriptKind = aElement->GetScriptIsModule() ?
+                          ScriptKind::Module :
+                          ScriptKind::Classic;
 
   // Step 13. Check that the script is not an eventhandler
   if (IsScriptEventHandler(scriptKind, scriptContent)) {
@@ -1268,7 +1253,7 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   // the nomodule attribute will be ignored".
   // "The nomodule attribute must not be specified on module scripts (and will
   // be ignored if it is)."
-  if (ModuleScriptsEnabled() &&
+  if (mDocument->ModuleScriptsEnabled() &&
       scriptKind == ScriptKind::Classic &&
       scriptContent->IsHTMLElement() &&
       scriptContent->HasAttr(kNameSpaceID_None, nsGkAtoms::nomodule)) {
@@ -1479,6 +1464,12 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   request->mJSVersion = version;
   request->mIsInline = true;
   request->mLineNo = aElement->GetScriptLineNumber();
+
+  // Only the 'async' attribute is heeded on an inline module script and
+  // inline classic scripts ignore both these attributes.
+  MOZ_ASSERT(!aElement->GetScriptDeferred());
+  MOZ_ASSERT_IF(!request->IsModuleRequest(), !aElement->GetScriptAsync());
+  request->SetScriptMode(false, aElement->GetScriptAsync());
 
   if (request->IsModuleRequest()) {
     ModuleLoadRequest* modReq = request->AsModuleRequest();
@@ -2601,7 +2592,7 @@ ScriptLoader::PreloadURI(nsIURI *aURI, const nsAString &aCharset,
   }
 
   // TODO: Preload module scripts.
-  if (ModuleScriptsEnabled() && aType.LowerCaseEqualsASCII("module")) {
+  if (mDocument->ModuleScriptsEnabled() && aType.LowerCaseEqualsASCII("module")) {
     return;
   }
 

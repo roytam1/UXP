@@ -13,6 +13,7 @@
 #include "nsIScriptLoaderObserver.h"
 #include "nsWeakPtr.h"
 #include "nsIParser.h"
+#include "nsIDocument.h"
 #include "nsContentCreatorFunctions.h"
 #include "nsIDOMHTMLScriptElement.h"
 #include "mozilla/CORSMode.h"
@@ -37,6 +38,7 @@ public:
       mForceAsync(aFromParser == mozilla::dom::NOT_FROM_PARSER ||
                   aFromParser == mozilla::dom::FROM_PARSER_FRAGMENT),
       mFrozen(false),
+      mIsModule(false),
       mDefer(false),
       mAsync(false),
       mExternal(false),
@@ -73,11 +75,25 @@ public:
   virtual void GetScriptCharset(nsAString& charset) = 0;
 
   /**
-   * Freezes the return values of GetScriptDeferred(), GetScriptAsync() and
-   * GetScriptURI() so that subsequent modifications to the attributes don't
-   * change execution behavior.
+   * Freezes the return values of the following methods so that subsequent
+   * modifications to the attributes don't change execution behavior:
+   *  - GetScriptIsModule()
+   *  - GetScriptDeferred()
+   *  - GetScriptAsync()
+   *  - GetScriptURI()
+   *  - GetScriptExternal()
    */
-  virtual void FreezeUriAsyncDefer() = 0;
+  virtual void FreezeExecutionAttrs(nsIDocument* aOwnerDoc) = 0;
+
+  /**
+   * Is the script a module script?
+   * Currently only supported by HTML scripts.
+   */
+  bool GetScriptIsModule()
+  {
+    NS_PRECONDITION(mFrozen, "Execution attributes not yet frozen: Not ready for this call!");
+    return mIsModule;
+  }
 
   /**
    * Is the script deferred. Currently only supported by HTML scripts.
@@ -291,6 +307,11 @@ protected:
    * Whether src, defer and async are frozen.
    */
   bool mFrozen;
+
+  /**
+   * The effective moduleness.
+   */
+  bool mIsModule;
 
   /**
    * The effective deferredness.
