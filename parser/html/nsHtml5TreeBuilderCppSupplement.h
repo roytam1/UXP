@@ -189,6 +189,8 @@ nsHtml5TreeBuilder::createElement(int32_t aNamespace,
               aAttributes->contains(nsHtml5AttributeName::ATTR_ASYNC);
             bool defer =
               aAttributes->contains(nsHtml5AttributeName::ATTR_DEFER);
+            bool noModule =
+              aAttributes->contains(nsHtml5AttributeName::ATTR_NOMODULE);
             mSpeculativeLoadQueue.AppendElement()->InitScript(
               url,
               charset,
@@ -197,7 +199,8 @@ nsHtml5TreeBuilder::createElement(int32_t aNamespace,
               integrity,
               mode == nsHtml5TreeBuilder::IN_HEAD,
               async,
-              defer);
+              defer,
+              noModule);
             mCurrentHtmlScriptIsAsyncOrDefer = async || defer;
           }
         } else if (nsHtml5Atoms::link == aName) {
@@ -303,7 +306,8 @@ nsHtml5TreeBuilder::createElement(int32_t aNamespace,
               integrity,
               mode == nsHtml5TreeBuilder::IN_HEAD,
               false /* async */, 
-              false /* defer */);
+              false /* defer */,
+              false /* noModule */);
           }
         } else if (nsHtml5Atoms::style == aName) {
           nsHtml5TreeOperation* treeOp = mOpQueue.AppendElement();

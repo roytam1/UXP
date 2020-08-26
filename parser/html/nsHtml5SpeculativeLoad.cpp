@@ -52,17 +52,27 @@ nsHtml5SpeculativeLoad::Perform(nsHtml5TreeOpExecutor* aExecutor)
     case eSpeculativeLoadScript:
       aExecutor->PreloadScript(mUrl, mCharset, mTypeOrCharsetSourceOrDocumentMode,
                                mCrossOrigin, mIntegrity, false,
-                               mIsAsync, mIsDefer);
+                               mIsAsync, mIsDefer, false);
       break;
     case eSpeculativeLoadScriptFromHead:
       aExecutor->PreloadScript(mUrl, mCharset, mTypeOrCharsetSourceOrDocumentMode,
                                mCrossOrigin, mIntegrity, true,
-                               mIsAsync, mIsDefer);
+                               mIsAsync, mIsDefer, false);
+      break;
+    case eSpeculativeLoadNoModuleScript:
+      aExecutor->PreloadScript(mUrl, mCharset, mTypeOrCharsetSourceOrDocumentMode,
+                               mCrossOrigin, mIntegrity, false,
+                               mIsAsync, mIsDefer, true);
+      break;
+    case eSpeculativeLoadNoModuleScriptFromHead:
+      aExecutor->PreloadScript(mUrl, mCharset, mTypeOrCharsetSourceOrDocumentMode,
+                               mCrossOrigin, mIntegrity, true,
+                               mIsAsync, mIsDefer, true);
       break;
     case eSpeculativeLoadStyle:
       aExecutor->PreloadStyle(mUrl, mCharset, mCrossOrigin, mIntegrity);
       break;
-    case eSpeculativeLoadManifest:  
+    case eSpeculativeLoadManifest:
       aExecutor->ProcessOfflineManifest(mUrl);
       break;
     case eSpeculativeLoadSetDocumentCharset: {
