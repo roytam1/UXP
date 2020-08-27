@@ -559,7 +559,9 @@ ScriptLoader::CreateModuleScript(ModuleLoadRequest* aRequest)
         rv = nsJSUtils::CompileModule(cx, srcBuf, global, options, &module);
       }
     }
+
     MOZ_ASSERT(NS_SUCCEEDED(rv) == (module != nullptr));
+
     RefPtr<ModuleScript> moduleScript = new ModuleScript(this, aRequest->mBaseURL);
     aRequest->mModuleScript = moduleScript;
 
@@ -979,7 +981,7 @@ ScriptLoader::StartLoad(ScriptLoadRequest *aRequest, const nsAString &aType,
 
   if (aRequest->IsModuleRequest()) {
     // Check whether the module has been fetched or is currently being fetched,
-    // and if so wait for it.
+    // and if so wait for it rather than starting a new fetch.
     ModuleLoadRequest* request = aRequest->AsModuleRequest();
     if (ModuleMapContainsURL(request->mURI)) {
       WaitForModuleFetch(request->mURI)
@@ -988,9 +990,6 @@ ScriptLoader::StartLoad(ScriptLoadRequest *aRequest, const nsAString &aType,
                &ModuleLoadRequest::LoadFailed);
       return NS_OK;
     }
-
-    // Otherwise put the URL in the module map and mark it as fetching.
-    SetModuleFetchStarted(request);
   }
 
   nsContentPolicyType contentPolicyType = aRequest->IsPreload()
@@ -1103,7 +1102,16 @@ ScriptLoader::StartLoad(ScriptLoadRequest *aRequest, const nsAString &aType,
   rv = NS_NewIncrementalStreamLoader(getter_AddRefs(loader), handler);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  return channel->AsyncOpen2(loader);
+  rv = channel->AsyncOpen2(loader);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  if (aRequest->IsModuleRequest()) {
+    // We successfully started fetching a module so put its URL in the module
+    // map and mark it as fetching.
+    SetModuleFetchStarted(aRequest->AsModuleRequest());
+  }
+
+  return NS_OK;
 }
 
 bool
@@ -1355,8 +1363,8 @@ ScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       }
     }
 
-    // Should still be in loading stage of script.
-    NS_ASSERTION(!request->InCompilingStage(),
+    // Should still be in loading stage of script unless we're loading a module.
+    NS_ASSERTION(!request->InCompilingStage() || request->IsModuleRequest(),
                  "Request should not yet be in compiling stage.");
 
     request->mJSVersion = version;
@@ -1904,14 +1912,17 @@ ScriptLoader::FillCompileOptionsForRequest(const AutoJSAPI&jsapi,
     aOptions->setMutedErrors(!subsumes);
   }
 
-  JSContext* cx = jsapi.cx();
-  JS::Rooted<JS::Value> elementVal(cx);
-  MOZ_ASSERT(aRequest->mElement);
-  if (NS_SUCCEEDED(nsContentUtils::WrapNative(cx, aRequest->mElement,
-                                              &elementVal,
-                                              /* aAllowWrapping = */ true))) {
-    MOZ_ASSERT(elementVal.isObject());
-    aOptions->setElement(&elementVal.toObject());
+  if (!aRequest->IsModuleRequest()) {
+    // Only do this for classic scripts.
+    JSContext* cx = jsapi.cx();
+    JS::Rooted<JS::Value> elementVal(cx);
+    MOZ_ASSERT(aRequest->mElement);
+    if (NS_SUCCEEDED(nsContentUtils::WrapNative(cx, aRequest->mElement,
+                                                &elementVal,
+                                                /* aAllowWrapping = */ true))) {
+      MOZ_ASSERT(elementVal.isObject());
+      aOptions->setElement(&elementVal.toObject());
+    }
   }
 
   return NS_OK;
@@ -2373,7 +2384,7 @@ ScriptLoader::HandleLoadError(ScriptLoadRequest *aRequest, nsresult aResult) {
       RefPtr<ScriptLoadRequest> req = mXSLTRequests.Steal(aRequest);
       FireScriptAvailable(aResult, req);
     }
-  } else if (aRequest->IsModuleRequest()) {
+  } else if (aRequest->IsModuleRequest() && !aRequest->IsPreload()) {
     ModuleLoadRequest* modReq = aRequest->AsModuleRequest();
     MOZ_ASSERT(!modReq->IsTopLevel());
     MOZ_ASSERT(!modReq->isInList());
@@ -2394,8 +2405,19 @@ ScriptLoader::HandleLoadError(ScriptLoadRequest *aRequest, nsresult aResult) {
     FireScriptAvailable(aResult, aRequest);
     ContinueParserAsync(aRequest);
     mCurrentParserInsertedScript = oldParserInsertedScript;
+  } else if (aRequest->IsPreload()) {
+    if (aRequest->IsModuleRequest()) {
+      // If there is an error preloading modules, cancel the load request.
+      aRequest->Cancel();
+    }
+    if (aRequest->IsTopLevel()) {
+      MOZ_ALWAYS_TRUE(mPreloads.RemoveElement(aRequest, PreloadRequestComparator()));
+    }
+    MOZ_ASSERT(!aRequest->isInList());
   } else {
-    mPreloads.RemoveElement(aRequest, PreloadRequestComparator());
+    // This happens for blocking requests cancelled by ParsingComplete().
+    MOZ_ASSERT(aRequest->IsCanceled());
+    MOZ_ASSERT(!aRequest->isInList());
   }
 }
 
@@ -2593,16 +2615,29 @@ ScriptLoader::PreloadURI(nsIURI *aURI,
     return;
   }
 
+  ScriptKind scriptKind = ScriptKind::Classic;
+  
   if (mDocument->ModuleScriptsEnabled()) {
     // Don't load nomodule scripts.
     if (aNoModule) {
       return;
     }
 
-    // TODO: Preload module scripts.
-    if (aType.LowerCaseEqualsASCII("module")) {
-      return;
+    // Preload module scripts.
+    static const char kASCIIWhitespace[] = "\t\n\f\r ";
+
+    nsAutoString type(aType);
+    type.Trim(kASCIIWhitespace);
+    if (type.LowerCaseEqualsASCII("module")) {
+      scriptKind = ScriptKind::Module;
     }
+  }
+
+  if (scriptKind == ScriptKind::Classic &&
+      !aType.IsEmpty() && !nsContentUtils::IsJavascriptMIMEType(aType)) {
+    // Unknown type (not type = module and not type = JS MIME type).
+    // Don't load it.
+    return;
   }
 
   SRIMetadata sriMetadata;
@@ -2618,7 +2653,7 @@ ScriptLoader::PreloadURI(nsIURI *aURI,
   }
 
   RefPtr<ScriptLoadRequest> request =
-    CreateLoadRequest(ScriptKind::Classic, aURI, nullptr, 0,
+    CreateLoadRequest(scriptKind, aURI, nullptr, 0,
                       Element::StringToCORSMode(aCrossOrigin), sriMetadata,
                       aReferrerPolicy);
   request->mIsInline = false;
