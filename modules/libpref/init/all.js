@@ -5456,3 +5456,11 @@ pref("prompts.authentication_dialog_abuse_limit", 0);
 // Whether module scripts (<script type="module">) are enabled for content.
 pref("dom.moduleScripts.enabled", true);
 
+// Report details when a media source error occurs?
+// Enabled by default in debug builds, otherwise should be explicitly enabled
+// by the user to prevent XO leaking of the response status (CVE-2020-15666)
+#ifdef DEBUG
+pref("media.sourceErrorDetails.enabled", true);
+#else
+pref("media.sourceErrorDetails.enabled", false);
+#endif
