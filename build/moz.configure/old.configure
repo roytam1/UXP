@@ -311,6 +311,7 @@ def old_configure_options(*options):
     '--disable-browser-statusbar',
     '--disable-sync',
     '--disable-personas',
+    '--enable-phoenix-extensions',
     
     # Below are configure flags used by Basilisk
     '--disable-webextensions',

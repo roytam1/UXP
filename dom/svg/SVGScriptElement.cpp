@@ -137,7 +137,7 @@ SVGScriptElement::GetScriptCharset(nsAString& charset)
 }
 
 void
-SVGScriptElement::FreezeUriAsyncDefer()
+SVGScriptElement::FreezeExecutionAttrs(nsIDocument* aOwnerDoc)
 {
   if (mFrozen) {
     return;

@@ -483,6 +483,11 @@ JS_DestroyContext(JSContext* cx)
     DestroyContext(cx);
 }
 
+JS_PUBLIC_API(JSRuntime*)
+JS_GetRuntime(JSContext* cx) {
+    return cx->runtime();
+}
+
 static JS_CurrentEmbedderTimeFunction currentEmbedderTimeFunction;
 
 JS_PUBLIC_API(void)
@@ -4662,21 +4667,16 @@ JS::Evaluate(JSContext* cx, const ReadOnlyCompileOptions& optionsArg,
     return ::Evaluate(cx, optionsArg, filename, rval);
 }
 
-JS_PUBLIC_API(JSFunction*)
-JS::GetModuleResolveHook(JSContext* cx)
+JS_PUBLIC_API(JS::ModuleResolveHook)
+JS::GetModuleResolveHook(JSRuntime* rt)
 {
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    return cx->global()->moduleResolveHook();
+    return rt->moduleResolveHook;
 }
 
 JS_PUBLIC_API(void)
-JS::SetModuleResolveHook(JSContext* cx, HandleFunction func)
+JS::SetModuleResolveHook(JSRuntime* rt, JS::ModuleResolveHook func)
 {
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    assertSameCompartment(cx, func);
-    cx->global()->setModuleResolveHook(func);
+    rt->moduleResolveHook = func;
 }
 
 JS_PUBLIC_API(bool)
@@ -4737,18 +4737,6 @@ JS::GetModuleScript(JSContext* cx, JS::HandleObject moduleArg)
     CHECK_REQUEST(cx);
     assertSameCompartment(cx, moduleArg);
     return moduleArg->as<ModuleObject>().script();
-}
-
-JS_PUBLIC_API(bool)
-JS::IsModuleErrored(JSObject* moduleArg)
-{
-    return moduleArg->as<ModuleObject>().status() == MODULE_STATUS_ERRORED;
-}
-
-JS_PUBLIC_API(JS::Value)
-JS::GetModuleError(JSObject* moduleArg)
-{
-    return moduleArg->as<ModuleObject>().error();
 }
 
 JS_PUBLIC_API(JSObject*)

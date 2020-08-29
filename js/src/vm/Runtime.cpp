@@ -241,8 +241,10 @@ JSRuntime::JSRuntime(JSRuntime* parentRuntime)
     lastAnimationTime(0),
     performanceMonitoring(thisFromCtor()),
     ionLazyLinkListSize_(0),
-    stackFormat_(parentRuntime ? js::StackFormat::Default
-                               : js::StackFormat::SpiderMonkey)
+    stackFormat_(parentRuntime ?
+                 js::StackFormat::Default :
+                 js::StackFormat::SpiderMonkey),
+    moduleResolveHook()
 {
     setGCStoreBufferPtr(&gc.storeBuffer);
 

@@ -10,7 +10,8 @@
 
 class nsHtml5TreeOpExecutor;
 
-enum eHtml5SpeculativeLoad {
+enum eHtml5SpeculativeLoad
+{
 #ifdef DEBUG
   eSpeculativeLoadUninitialized,
 #endif
@@ -23,6 +24,8 @@ enum eHtml5SpeculativeLoad {
   eSpeculativeLoadPictureSource,
   eSpeculativeLoadScript,
   eSpeculativeLoadScriptFromHead,
+  eSpeculativeLoadNoModuleScript,
+  eSpeculativeLoadNoModuleScriptFromHead,
   eSpeculativeLoadStyle,
   eSpeculativeLoadManifest,
   eSpeculativeLoadSetDocumentCharset,
@@ -128,17 +131,27 @@ class nsHtml5SpeculativeLoad {
                            nsHtml5String aType,
                            nsHtml5String aCrossOrigin,
                            nsHtml5String aIntegrity,
-                           bool aParserInHead)
+                           bool aParserInHead,
+                           bool aAsync,
+                           bool aDefer,
+                           bool aNoModule)
     {
       NS_PRECONDITION(mOpCode == eSpeculativeLoadUninitialized,
                       "Trying to reinitialize a speculative load!");
-      mOpCode = aParserInHead ?
-          eSpeculativeLoadScriptFromHead : eSpeculativeLoadScript;
+      if (aNoModule) {
+          mOpCode = aParserInHead ? eSpeculativeLoadNoModuleScriptFromHead
+                                  : eSpeculativeLoadNoModuleScript;
+      } else {
+          mOpCode = aParserInHead ? eSpeculativeLoadScriptFromHead
+                                  : eSpeculativeLoadScript;
+      }
       aUrl.ToString(mUrl);
       aCharset.ToString(mCharset);
       aType.ToString(mTypeOrCharsetSourceOrDocumentMode);
       aCrossOrigin.ToString(mCrossOrigin);
       aIntegrity.ToString(mIntegrity);
+      mIsAsync = aAsync;
+      mIsDefer = aDefer;
     }
 
     inline void InitStyle(nsHtml5String aUrl,
@@ -221,6 +234,13 @@ class nsHtml5SpeculativeLoad {
 
   private:
     eHtml5SpeculativeLoad mOpCode;
+
+    /**
+     * Whether the refering element has async and/or defer attributes.
+     */
+    bool mIsAsync;
+    bool mIsDefer;
+
     nsString mUrl;
     nsString mReferrerPolicy;
     nsString mMetaCSP;

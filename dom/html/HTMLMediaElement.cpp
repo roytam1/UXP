@@ -9,6 +9,7 @@
 #include "mozilla/dom/HTMLSourceElement.h"
 #include "mozilla/dom/ElementInlines.h"
 #include "mozilla/dom/Promise.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/MathAlgorithms.h"
 #include "mozilla/AsyncEventDispatcher.h"
@@ -1245,7 +1246,18 @@ void HTMLMediaElement::NoSupportedMediaSourceError(const nsACString& aErrorDetai
   if (mDecoder) {
     ShutdownDecoder();
   }
-  mErrorSink->SetError(MEDIA_ERR_SRC_NOT_SUPPORTED, aErrorDetails);
+
+  // aErrorDetails can include sensitive details like MimeType or HTTP Status
+  // Code. We should not leak this and pass a Generic Error Message unless the
+  // user has explicitly enabled error reporting for debugging purposes.
+  bool reportDetails = Preferences::GetBool("media.sourceErrorDetails.enabled", false);
+  if (reportDetails) {
+    mErrorSink->SetError(MEDIA_ERR_SRC_NOT_SUPPORTED, aErrorDetails);
+  } else {
+    mErrorSink->SetError(MEDIA_ERR_SRC_NOT_SUPPORTED,
+                         NS_LITERAL_CSTRING("Failed to open media"));
+  }
+
   ChangeDelayLoadStatus(false);
   UpdateAudioChannelPlayingState();
   RejectPromises(TakePendingPlayPromises(), NS_ERROR_DOM_MEDIA_NOT_SUPPORTED_ERR);

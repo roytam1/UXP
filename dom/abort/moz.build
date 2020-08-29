@@ -14,7 +14,7 @@ EXPORTS.mozilla.dom += [
     'AbortSignal.h',
 ]
 
-UNIFIED_SOURCES += [
+SOURCES += [
     'AbortController.cpp',
     'AbortSignal.cpp',
 ]
