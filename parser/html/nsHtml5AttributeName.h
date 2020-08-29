@@ -563,6 +563,7 @@ class nsHtml5AttributeName
     static nsHtml5AttributeName* ATTR_LQUOTE;
     static nsHtml5AttributeName* ATTR_PANOSE_1;
     static nsHtml5AttributeName* ATTR_NUMOCTAVES;
+    static nsHtml5AttributeName* ATTR_NOMODULE;
     static nsHtml5AttributeName* ATTR_ONLOAD;
     static nsHtml5AttributeName* ATTR_ONBOUNCE;
     static nsHtml5AttributeName* ATTR_ONCONTROLSELECT;

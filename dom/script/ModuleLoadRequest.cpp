@@ -17,26 +17,54 @@ NS_INTERFACE_MAP_END_INHERITING(ScriptLoadRequest)
 NS_IMPL_CYCLE_COLLECTION_INHERITED(ModuleLoadRequest, ScriptLoadRequest,
                                    mBaseURL,
                                    mLoader,
-                                   mParent,
                                    mModuleScript,
                                    mImports)
 
 NS_IMPL_ADDREF_INHERITED(ModuleLoadRequest, ScriptLoadRequest)
 NS_IMPL_RELEASE_INHERITED(ModuleLoadRequest, ScriptLoadRequest)
 
-ModuleLoadRequest::ModuleLoadRequest(nsIScriptElement* aElement,
+ModuleLoadRequest::ModuleLoadRequest(nsIURI* aURI,
+                                     nsIScriptElement* aElement,
                                      uint32_t aVersion,
                                      CORSMode aCORSMode,
                                      const SRIMetadata &aIntegrity,
+                                     nsIURI* aReferrer,
+                                     mozilla::net::ReferrerPolicy aReferrerPolicy,
                                      ScriptLoader* aLoader)
   : ScriptLoadRequest(ScriptKind::Module,
+                      aURI,
                       aElement,
                       aVersion,
                       aCORSMode,
-                      aIntegrity),
+                      aIntegrity,
+                      aReferrer,
+                      aReferrerPolicy),
     mIsTopLevel(true),
-    mLoader(aLoader)
-{}
+    mLoader(aLoader),
+    mVisitedSet(new VisitedURLSet())
+{
+  mVisitedSet->PutEntry(aURI);
+}
+
+ModuleLoadRequest::ModuleLoadRequest(nsIURI* aURI,
+                                     ModuleLoadRequest* aParent)
+  : ScriptLoadRequest(ScriptKind::Module,
+                      aURI,
+                      aParent->mElement,
+                      aParent->mJSVersion,
+                      aParent->mCORSMode,
+                      SRIMetadata(),
+                      aParent->mURI,
+                      aParent->mReferrerPolicy),
+    mIsTopLevel(false),
+    mLoader(aParent->mLoader),
+    mVisitedSet(aParent->mVisitedSet)
+{
+  MOZ_ASSERT(mVisitedSet->Contains(aURI));
+
+  mIsInline = false;
+  mScriptMode = aParent->mScriptMode;
+}
 
 void ModuleLoadRequest::Cancel()
 {
@@ -83,7 +111,7 @@ ModuleLoadRequest::ModuleLoaded()
   // been loaded.
 
   mModuleScript = mLoader->GetFetchedModule(mURI);
-  if (!mModuleScript || mModuleScript->IsErrored()) {
+  if (!mModuleScript || mModuleScript->HasParseError()) {
     ModuleErrored();
     return;
   }
@@ -95,7 +123,7 @@ void
 ModuleLoadRequest::ModuleErrored()
 {
   mLoader->CheckModuleDependenciesLoaded(this);
-  MOZ_ASSERT(!mModuleScript || mModuleScript->IsErrored());
+  MOZ_ASSERT(!mModuleScript || mModuleScript->HasParseError());
 
   CancelImports();
   SetReady();
@@ -132,7 +160,6 @@ ModuleLoadRequest::LoadFinished()
 {
   mLoader->ProcessLoadedModuleTree(this);
   mLoader = nullptr;
-  mParent = nullptr;
 }
 
 } // dom namespace

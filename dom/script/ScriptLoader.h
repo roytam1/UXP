@@ -62,17 +62,21 @@ protected:
 
 public:
   ScriptLoadRequest(ScriptKind aKind,
+                    nsIURI* aURI,
                     nsIScriptElement* aElement,
                     uint32_t aVersion,
                     mozilla::CORSMode aCORSMode,
-                    const mozilla::dom::SRIMetadata &aIntegrity)
+                    const SRIMetadata& aIntegrity,
+                    nsIURI* aReferrer,
+                    mozilla::net::ReferrerPolicy aReferrerPolicy)
     : mKind(aKind),
       mElement(aElement),
       mProgress(Progress::Loading),
+      mScriptMode(ScriptMode::eBlocking),
       mIsInline(true),
       mHasSourceMapURL(false),
-      mIsDefer(false),
-      mIsAsync(false),
+      mInDeferList(false),
+      mInAsyncList(false),
       mIsNonAsyncScriptInserted(false),
       mIsXSLT(false),
       mIsCanceled(false),
@@ -81,10 +85,12 @@ public:
       mScriptTextBuf(nullptr),
       mScriptTextLength(0),
       mJSVersion(aVersion),
+      mURI(aURI),
       mLineNo(1),
       mCORSMode(aCORSMode),
       mIntegrity(aIntegrity),
-      mReferrerPolicy(mozilla::net::RP_Default)
+      mReferrer(aReferrer),
+      mReferrerPolicy(aReferrerPolicy)
   {
   }
 
@@ -100,7 +106,8 @@ public:
 
   void FireScriptAvailable(nsresult aResult)
   {
-    mElement->ScriptAvailable(aResult, mElement, mIsInline, mURI, mLineNo);
+    bool isInlineClassicScript = mIsInline && !IsModuleRequest();
+    mElement->ScriptAvailable(aResult, mElement, isInlineClassicScript, mURI, mLineNo);
   }
   void FireScriptEvaluated(nsresult aResult)
   {
@@ -143,6 +150,29 @@ public:
            (IsReadyToRun() && mWasCompiledOMT);
   }
 
+  enum class ScriptMode : uint8_t {
+    eBlocking,
+    eDeferred,
+    eAsync
+  };
+
+  void SetScriptMode(bool aDeferAttr, bool aAsyncAttr);
+
+  bool IsBlockingScript() const
+  {
+    return mScriptMode == ScriptMode::eBlocking;
+  }
+
+  bool IsDeferredScript() const
+  {
+    return mScriptMode == ScriptMode::eDeferred;
+  }
+
+  bool IsAsyncScript() const
+  {
+    return mScriptMode == ScriptMode::eAsync;
+  }
+
   void MaybeCancelOffThreadScript();
 
   using super::getNext;
@@ -151,10 +181,11 @@ public:
   const ScriptKind mKind;
   nsCOMPtr<nsIScriptElement> mElement;
   Progress mProgress;     // Are we still waiting for a load to complete?
+  ScriptMode mScriptMode; // Whether this script is blocking, deferred or async.
   bool mIsInline;         // Is the script inline or loaded?
   bool mHasSourceMapURL;  // Does the HTTP header have a source map url?
-  bool mIsDefer;          // True if we live in mDeferRequests.
-  bool mIsAsync;          // True if we live in mLoadingAsyncRequests or mLoadedAsyncRequests.
+  bool mInDeferList;      // True if we live in mDeferRequests.
+  bool mInAsyncList;      // True if we live in mLoadingAsyncRequests or mLoadedAsyncRequests.
   bool mIsNonAsyncScriptInserted; // True if we live in mNonAsyncExternalScriptInsertedRequests
   bool mIsXSLT;           // True if we live in mXSLTRequests.
   bool mIsCanceled;       // True if we have been explicitly canceled.
@@ -164,13 +195,14 @@ public:
   char16_t* mScriptTextBuf; // Holds script text for non-inline scripts. Don't
   size_t mScriptTextLength; // use nsString so we can give ownership to jsapi.
   uint32_t mJSVersion;
-  nsCOMPtr<nsIURI> mURI;
+  const nsCOMPtr<nsIURI> mURI;
   nsCOMPtr<nsIPrincipal> mOriginPrincipal;
   nsAutoCString mURL;     // Keep the URI's filename alive during off thread parsing.
   int32_t mLineNo;
   const mozilla::CORSMode mCORSMode;
-  const mozilla::dom::SRIMetadata mIntegrity;
-  mozilla::net::ReferrerPolicy mReferrerPolicy;
+  const SRIMetadata mIntegrity;
+  const nsCOMPtr<nsIURI> mReferrer;
+  const mozilla::net::ReferrerPolicy mReferrerPolicy;
 };
 
 class ScriptLoadRequestList : private mozilla::LinkedList<ScriptLoadRequest>
@@ -447,11 +479,15 @@ public:
    * @param aIntegrity The expect hash url, if avail, of the request
    * @param aScriptFromHead Whether or not the script was a child of head
    */
-  virtual void PreloadURI(nsIURI *aURI, const nsAString &aCharset,
+  virtual void PreloadURI(nsIURI *aURI,
+                          const nsAString &aCharset,
                           const nsAString &aType,
                           const nsAString &aCrossOrigin,
                           const nsAString& aIntegrity,
                           bool aScriptFromHead,
+                          bool aAsync,
+                          bool aDefer,
+                          bool aNoModule,
                           const mozilla::net::ReferrerPolicy aReferrerPolicy);
 
   /**
@@ -467,12 +503,13 @@ public:
 private:
   virtual ~ScriptLoader();
 
-  ScriptLoadRequest* CreateLoadRequest(
-    ScriptKind aKind,
-    nsIScriptElement* aElement,
-    uint32_t aVersion,
-    mozilla::CORSMode aCORSMode,
-    const mozilla::dom::SRIMetadata &aIntegrity);
+  ScriptLoadRequest* CreateLoadRequest(ScriptKind aKind,
+                                       nsIURI* aURI,
+                                       nsIScriptElement* aElement,
+                                       uint32_t aVersion,
+                                       mozilla::CORSMode aCORSMode,
+                                       const SRIMetadata& aIntegrity,
+                                       mozilla::net::ReferrerPolicy aReferrerPolicy);
 
   /**
    * Unblocks the creator parser of the parser-blocking scripts.
@@ -499,6 +536,8 @@ private:
    */
   nsresult StartLoad(ScriptLoadRequest *aRequest, const nsAString &aType,
                      bool aScriptFromHead);
+
+  void HandleLoadError(ScriptLoadRequest *aRequest, nsresult aResult);
 
   /**
    * Process any pending requests asynchronously (i.e. off an event) if there
@@ -534,6 +573,11 @@ private:
     return mEnabled && !mBlockerCount;
   }
 
+  nsresult VerifySRI(ScriptLoadRequest *aRequest,
+                     nsIIncrementalStreamLoader* aLoader,
+                     nsresult aSRIStatus,
+                     SRICheckDataVerifier* aSRIDataVerifier) const;
+
   nsresult AttemptAsyncScriptCompile(ScriptLoadRequest* aRequest);
   nsresult ProcessRequest(ScriptLoadRequest* aRequest);
   nsresult CompileOffThreadOrProcessRequest(ScriptLoadRequest* aRequest);
@@ -556,6 +600,7 @@ private:
                                 mozilla::Vector<char16_t> &aString);
 
   void AddDeferRequest(ScriptLoadRequest* aRequest);
+  void AddAsyncRequest(ScriptLoadRequest* aRequest);
   bool MaybeRemovedDeferRequests();
 
   void MaybeMoveToLoadedList(ScriptLoadRequest* aRequest);
@@ -563,30 +608,30 @@ private:
   JS::SourceBufferHolder GetScriptSource(ScriptLoadRequest* aRequest,
                                          nsAutoString& inlineData);
 
-  bool ModuleScriptsEnabled();
-
   void SetModuleFetchStarted(ModuleLoadRequest *aRequest);
   void SetModuleFetchFinishedAndResumeWaitingRequests(ModuleLoadRequest *aRequest,
                                                       nsresult aResult);
 
   bool IsFetchingModule(ModuleLoadRequest *aRequest) const;
 
-  bool ModuleMapContainsModule(ModuleLoadRequest *aRequest) const;
-  RefPtr<mozilla::GenericPromise> WaitForModuleFetch(ModuleLoadRequest *aRequest);
+  bool ModuleMapContainsURL(nsIURI* aURL) const;
+  RefPtr<mozilla::GenericPromise> WaitForModuleFetch(nsIURI* aURL);
   ModuleScript* GetFetchedModule(nsIURI* aURL) const;
 
-  friend bool
-  HostResolveImportedModule(JSContext* aCx, unsigned argc, JS::Value* vp);
+  friend JSObject*
+  HostResolveImportedModule(JSContext* aCx, JS::Handle<JSObject*> aModule,
+                          JS::Handle<JSString*> aSpecifier);
 
   nsresult CreateModuleScript(ModuleLoadRequest* aRequest);
   nsresult ProcessFetchedModuleSource(ModuleLoadRequest* aRequest);
   void CheckModuleDependenciesLoaded(ModuleLoadRequest* aRequest);
   void ProcessLoadedModuleTree(ModuleLoadRequest* aRequest);
+  JS::Value FindFirstParseError(ModuleLoadRequest* aRequest);
   bool InstantiateModuleTree(ModuleLoadRequest* aRequest);
   void StartFetchingModuleDependencies(ModuleLoadRequest* aRequest);
 
   RefPtr<mozilla::GenericPromise>
-  StartFetchingModuleAndDependencies(ModuleLoadRequest* aRequest, nsIURI* aURI);
+  StartFetchingModuleAndDependencies(ModuleLoadRequest* aParent, nsIURI* aURI);
 
   nsIDocument* mDocument;                   // [WEAK]
   nsCOMArray<nsIScriptLoaderObserver> mObservers;

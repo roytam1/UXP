@@ -995,6 +995,9 @@ JS_NewContext(uint32_t maxbytes,
 extern JS_PUBLIC_API(void)
 JS_DestroyContext(JSContext* cx);
 
+extern JS_PUBLIC_API(JSRuntime*)
+JS_GetRuntime(JSContext* cx);
+
 typedef double (*JS_CurrentEmbedderTimeFunction)();
 
 /**
@@ -4322,17 +4325,19 @@ extern JS_PUBLIC_API(bool)
 Evaluate(JSContext* cx, const ReadOnlyCompileOptions& options,
          const char* filename, JS::MutableHandleValue rval);
 
-/**
- * Get the HostResolveImportedModule hook for a global.
- */
-extern JS_PUBLIC_API(JSFunction*)
-GetModuleResolveHook(JSContext* cx);
+using ModuleResolveHook = JSObject* (*)(JSContext*, HandleObject, HandleString);
 
 /**
- * Set the HostResolveImportedModule hook for a global to the given function.
+ * Get the HostResolveImportedModule hook for the runtime.
+ */
+extern JS_PUBLIC_API(ModuleResolveHook)
+GetModuleResolveHook(JSRuntime* rt);
+
+/**
+ * Set the HostResolveImportedModule hook for the runtime to the given function.
  */
 extern JS_PUBLIC_API(void)
-SetModuleResolveHook(JSContext* cx, JS::HandleFunction func);
+SetModuleResolveHook(JSRuntime* rt, ModuleResolveHook func);
 
 /**
  * Parse the given source buffer as a module in the scope of the current global
@@ -4394,12 +4399,6 @@ GetRequestedModules(JSContext* cx, JS::HandleObject moduleRecord);
  */
 extern JS_PUBLIC_API(JSScript*)
 GetModuleScript(JSContext* cx, JS::HandleObject moduleRecord);
-
-extern JS_PUBLIC_API(bool)
-IsModuleErrored(JSObject* moduleRecord);
-
-extern JS_PUBLIC_API(JS::Value)
-GetModuleError(JSObject* moduleRecord);
 
 } /* namespace JS */
 

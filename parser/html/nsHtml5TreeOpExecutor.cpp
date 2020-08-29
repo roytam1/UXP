@@ -921,14 +921,18 @@ nsHtml5TreeOpExecutor::PreloadScript(const nsAString& aURL,
                                      const nsAString& aType,
                                      const nsAString& aCrossOrigin,
                                      const nsAString& aIntegrity,
-                                     bool aScriptFromHead)
+                                     bool aScriptFromHead,
+                                     bool aAsync,
+                                     bool aDefer,
+                                     bool aNoModule)
 {
   nsCOMPtr<nsIURI> uri = ConvertIfNotPreloadedYet(aURL);
   if (!uri) {
     return;
   }
   mDocument->ScriptLoader()->PreloadURI(uri, aCharset, aType, aCrossOrigin,
-                                        aIntegrity, aScriptFromHead,
+                                        aIntegrity, aScriptFromHead, aAsync,
+                                        aDefer, aNoModule,
                                         mSpeculationReferrerPolicy);
 }
 

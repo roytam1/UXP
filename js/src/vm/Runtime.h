@@ -1294,6 +1294,9 @@ struct JSRuntime : public JS::shadow::Runtime,
     // For inherited heap state accessors.
     friend class js::gc::AutoTraceSession;
     friend class JS::AutoEnterCycleCollection;
+
+    // The implementation-defined abstract operation HostResolveImportedModule.
+    JS::ModuleResolveHook moduleResolveHook;
 };
 
 namespace js {

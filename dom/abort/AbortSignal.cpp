@@ -56,8 +56,15 @@ AbortSignal::Aborted() const
 void
 AbortSignal::Abort()
 {
-  MOZ_ASSERT(!mAborted);
+  // Re-entrancy guard
+  if (mAborted) {
+    return;
+  }
   mAborted = true;
+
+  // We might be deleted as a result of aborting a follower, so ensure we
+  // stay alive until all followers have been aborted.
+  RefPtr<AbortSignal> pinThis = this;
 
   // Let's inform the followers.
   for (uint32_t i = 0; i < mFollowers.Length(); ++i) {

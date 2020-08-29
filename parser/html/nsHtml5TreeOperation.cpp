@@ -1076,7 +1076,7 @@ nsHtml5TreeOperation::Perform(nsHtml5TreeOpExecutor* aBuilder,
       nsCOMPtr<nsIScriptElement> sele = do_QueryInterface(node);
       NS_ASSERTION(sele, "Node didn't QI to script.");
       sele->SetScriptLineNumber(mFour.integer);
-      sele->FreezeUriAsyncDefer();
+      sele->FreezeExecutionAttrs(node->OwnerDoc());
       return NS_OK;
     }
     case eTreeOpSvgLoad: {
