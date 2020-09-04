@@ -1345,6 +1345,9 @@ KTableEntry nsCSSProps::kDisplayKTable[] = {
   // The next entry is controlled by the layout.css.display-contents.enabled
   // pref.
   { eCSSKeyword_contents,            StyleDisplay::Contents },
+  // The next entry is controlled by the layout.css.display-flow-root.enabled 
+  // pref.
+  { eCSSKeyword_flow_root,           StyleDisplay::FlowRoot },
   { eCSSKeyword_UNKNOWN,             -1 }
 };
 
