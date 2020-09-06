@@ -2273,7 +2273,8 @@ Loader::LoadChildSheet(StyleSheet* aParentSheet,
     state = eSheetComplete;
   } else {
     bool isAlternate;
-    bool isExplicitlyEnabled;
+    // For now, child sheets are not explicitly enabled.
+    bool isExplicitlyEnabled = false;
     const nsSubstring& empty = EmptyString();
     // For now, use CORS_NONE for child sheets
     rv = CreateSheet(aURL, nullptr, principal,
@@ -2397,7 +2398,9 @@ Loader::InternalLoadNonDocumentSheet(nsIURI* aURL,
 
   StyleSheetState state;
   bool isAlternate;
-  bool isExplicitlyEnabled;
+  // Sheets can only be explicitly enabled after creation and preparation, so
+  // set isExplicitlyEnabled to false.
+  bool isExplicitlyEnabled = false;
   RefPtr<StyleSheet> sheet;
   bool syncLoad = (aObserver == nullptr);
   const nsSubstring& empty = EmptyString();
