@@ -2446,6 +2446,18 @@ ScriptLoader::NumberOfProcessors()
   return mNumberOfProcessors;
 }
 
+static bool
+IsInternalURIScheme(nsIURI* uri)
+{
+  // Note: Extend this if other schemes need to be included.
+  bool isResource;
+  if (NS_SUCCEEDED(uri->SchemeIs("resource", &isResource)) && isResource) {
+    return true;
+  }
+
+  return false;
+}
+
 nsresult
 ScriptLoader::PrepareLoadedRequest(ScriptLoadRequest* aRequest,
                                    nsIIncrementalStreamLoader* aLoader,
@@ -2533,7 +2545,17 @@ ScriptLoader::PrepareLoadedRequest(ScriptLoadRequest* aRequest,
       return NS_ERROR_FAILURE;
     }
 
-    channel->GetURI(getter_AddRefs(request->mBaseURL));
+    nsCOMPtr<nsIURI> uri;
+    rv = channel->GetOriginalURI(getter_AddRefs(uri));
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    // Fixup internal scheme URIs like resource:, because the channel URI
+    // will point to file: which won't be allowed to load.
+    if (uri && IsInternalURIScheme(uri)) {
+      request->mBaseURL = uri;
+    } else {
+      channel->GetURI(getter_AddRefs(request->mBaseURL));
+    }
 
     // Attempt to compile off main thread.
     rv = AttemptAsyncScriptCompile(request);
