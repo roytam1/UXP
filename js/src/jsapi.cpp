@@ -4708,7 +4708,7 @@ JS::ModuleInstantiate(JSContext* cx, JS::HandleObject moduleArg)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
-    assertSameCompartment(cx, moduleArg);
+    releaseAssertSameCompartment(cx, moduleArg);
     return ModuleObject::Instantiate(cx, moduleArg.as<ModuleObject>());
 }
 
@@ -4717,7 +4717,7 @@ JS::ModuleEvaluate(JSContext* cx, JS::HandleObject moduleArg)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
-    assertSameCompartment(cx, moduleArg);
+    releaseAssertSameCompartment(cx, moduleArg);
     return ModuleObject::Evaluate(cx, moduleArg.as<ModuleObject>());
 }
 
@@ -6204,7 +6204,7 @@ JS_SetPendingException(JSContext* cx, HandleValue value)
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
-    assertSameCompartment(cx, value);
+    releaseAssertSameCompartment(cx, value);
     cx->setPendingException(value);
 }
 
