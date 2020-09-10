@@ -202,3 +202,21 @@ function ObjectLookupGetter(name) {
 
     // Step 3.d. (implicit)
 }
+
+// Stage 4 draft 2020-09-06 https://tc39.github.io/proposal-object-from-entries/
+// Object.fromEntries (iterable)
+function ObjectFromEntries(iter) {
+    // We omit the usual step number comments here because they don't help.
+    // This implementation inlines AddEntriesFromIterator and
+    // CreateDataPropertyOnObject, so it looks more like the polyfill
+    // than the step-by-step spec algorithm.
+    const obj = {};
+
+    for (const pair of allowContentIter(iter)) {
+        if (!IsObject(pair))
+            ThrowTypeError(JSMSG_INVALID_MAP_ITERABLE, "Object.fromEntries");
+        _DefineDataProperty(obj, pair[0], pair[1]);
+    }
+
+    return obj;
+}
