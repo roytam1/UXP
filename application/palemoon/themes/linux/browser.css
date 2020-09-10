@@ -1055,6 +1055,15 @@ toolbar[iconsize="small"] #webrtc-status-button {
   background-repeat: no-repeat;
 }
 
+#urlbar[pageproxystate="valid"] > #identity-box.mixedContent {
+  color: rgb(79,79,0);
+  margin-inline-end: 4px;
+  background-image: linear-gradient(rgba(245,245,220,1),
+                                    rgba(242,242,207,1));
+  background-position: right;
+  background-repeat: no-repeat;
+}
+
 #identity-box.verifiedIdentity:-moz-locale-dir(rtl) {
   background-position: left;
 }

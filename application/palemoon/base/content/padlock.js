@@ -38,10 +38,13 @@ var padlock_PadLock =
           level = "ev";
       } else {
         // Step 1 FALSE: Domain Validation
-        //  Normal               "high"
-        //  Mixed Active Content "low"
+        //  Normal                "high"
+        //  Mixed Passive Content "mixed"
+        //  Mixed Active Content  "broken"
         if (aState & wpl.STATE_LOADED_MIXED_ACTIVE_CONTENT)
-          level = "low";
+          level = "broken";
+        else if (aState & wpl.STATE_LOADED_MIXED_DISPLAY_CONTENT)
+          level = "mixed";
         else
           level = "high";
       }
@@ -125,6 +128,7 @@ var padlock_PadLock =
 
     let s_ev = "Extended Validated";
     let s_hi = "Secure";
+    let s_mx = "Mixed content";
     let s_lo = "Weak security";
     let s_no = "Not secure";
     let gLocale = document.getElementById("bundle_browser");
@@ -135,6 +139,9 @@ var padlock_PadLock =
       let n_hi = gLocale.getString("identity.padlock.high");
       if(n_hi != null)
         s_hi = n_hi;
+      let n_mx = gLocale.getString("identity.padlock.mixed");
+      if(n_mx != null)
+        s_mx = n_mx;
       let n_lo = gLocale.getString("identity.padlock.low");
       if(n_lo != null)
         s_lo = n_lo;
@@ -151,6 +158,9 @@ var padlock_PadLock =
         break;
       case "low":
         sectooltip = s_lo;
+        break;
+      case "mixed":
+        sectooltip = s_mx;
         break;
       case "broken":
         sectooltip = s_no;
