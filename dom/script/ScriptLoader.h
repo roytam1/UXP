@@ -173,6 +173,12 @@ public:
     return mScriptMode == ScriptMode::eAsync;
   }
 
+  virtual bool IsTopLevel() const
+  {
+    // Classic scripts are always top level.
+    return true;
+  }
+
   void MaybeCancelOffThreadScript();
 
   using super::getNext;
@@ -499,6 +505,12 @@ public:
   bool AddPendingChildLoader(ScriptLoader* aChild) {
     return mPendingChildLoaders.AppendElement(aChild) != nullptr;
   }
+
+  /*
+   * Clear the map of loaded modules. Called when a Document object is reused
+   * for a different global.
+   */
+  void ClearModuleMap();
 
 private:
   virtual ~ScriptLoader();

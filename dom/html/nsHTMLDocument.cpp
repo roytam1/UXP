@@ -1471,6 +1471,9 @@ nsHTMLDocument::Open(JSContext* cx,
     // document again otherwise the document could have a non-zero onload block
     // count without the onload blocker request being in the loadgroup.
     EnsureOnloadBlocker();
+
+    // Throw away loaded modules created for the previous global.
+    ScriptLoader()->ClearModuleMap();
   }
 
   // Step 8 - Clear all event listeners out of our DOM tree

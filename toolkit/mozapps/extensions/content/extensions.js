@@ -809,15 +809,6 @@ var gViewController = {
       }
     },
 
-/* Plugincheck service is currently N/A for Pale Moon
-    cmd_pluginCheck: {
-      isEnabled: function cmd_pluginCheck_isEnabled() true,
-      doCommand: function cmd_pluginCheck_doCommand() {
-        openURL(Services.urlFormatter.formatURLPref("plugins.update.url"));
-      }
-    },
-*/
-
     cmd_toggleAutoUpdateDefault: {
       isEnabled: function cmd_toggleAutoUpdateDefault_isEnabled() true,
       doCommand: function cmd_toggleAutoUpdateDefault_doCommand() {
@@ -3028,10 +3019,7 @@ var gDetailView = {
           "details.notification.outdated",
           [this._addon.name], 1
         );
-        var warningLink = document.getElementById("detail-warning-link");
-        warningLink.value = gStrings.ext.GetStringFromName("details.notification.outdated.link");
-        warningLink.href = Services.urlFormatter.formatURLPref("plugins.update.url");
-        warningLink.hidden = false;
+        document.getElementById("detail-warning-link").hidden = true;
       } else if (this._addon.blocklistState == Ci.nsIBlocklistService.STATE_VULNERABLE_UPDATE_AVAILABLE) {
         this.node.setAttribute("notification", "error");
         document.getElementById("detail-error").textContent = gStrings.ext.formatStringFromName(
