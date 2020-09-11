@@ -332,12 +332,6 @@ var gPluginHandler = {
     BrowserOpenAddonsMgr("addons://list/plugin");
   },
 
-  // Callback for user clicking on the link in a click-to-play plugin
-  // (where the plugin has an update)
-  openPluginUpdatePage: function(aEvent) {
-    openURL(Services.urlFormatter.formatURLPref("plugins.update.url"));
-  },
-
   // Callback for user clicking a "reload page" link
   reloadPage: function(browser) {
     browser.reload();
@@ -524,10 +518,7 @@ var gPluginHandler = {
       }
 
       let url;
-      // TODO: allow the blocklist to specify a better link, bug 873093
-      if (pluginInfo.blocklistState == Ci.nsIBlocklistService.STATE_VULNERABLE_UPDATE_AVAILABLE) {
-        url = Services.urlFormatter.formatURLPref("plugins.update.url");
-      } else if (pluginInfo.blocklistState != Ci.nsIBlocklistService.STATE_NOT_BLOCKED) {
+      if (pluginInfo.blocklistState != Ci.nsIBlocklistService.STATE_NOT_BLOCKED) {
         url = Services.blocklist.getPluginBlocklistURL(pluginInfo.pluginTag);
       }
       pluginInfo.detailsLink = url;

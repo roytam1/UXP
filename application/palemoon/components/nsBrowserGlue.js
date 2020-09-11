@@ -54,9 +54,6 @@ XPCOMUtils.defineLazyGetter(this, "gBrowserBundle", function() {
   return Services.strings.createBundle('chrome://browser/locale/browser.properties');
 });
 
-const PREF_PLUGINS_NOTIFYUSER = "plugins.update.notifyUser";
-const PREF_PLUGINS_UPDATEURL  = "plugins.update.url";
-
 // We try to backup bookmarks at idle times, to avoid doing that at shutdown.
 // Number of idle seconds before trying to backup bookmarks.  15 minutes.
 const BOOKMARKS_BACKUP_IDLE_TIME = 15 * 60;
@@ -975,21 +972,6 @@ BrowserGlue.prototype = {
     } catch(e) {
       Cu.reportError(e);
     }
-  },
-
-  _showPluginUpdatePage: function() {
-    // Pale Moon: disable this functionality from BrowserGlue, people are 
-    // already notified if they visit a page with an outdated plugin, and
-    // they can check properly from the plugins page as well. 
-
-//    Services.prefs.setBoolPref(PREF_PLUGINS_NOTIFYUSER, false);
-//
-//    var formatter = Cc["@mozilla.org/toolkit/URLFormatterService;1"].
-//                    getService(Ci.nsIURLFormatter);
-//    var updateUrl = formatter.formatURLPref(PREF_PLUGINS_UPDATEURL);
-//
-//    var win = this.getMostRecentBrowserWindow();
-//    win.openUILinkIn(updateUrl, "tab");
   },
 
   /**
