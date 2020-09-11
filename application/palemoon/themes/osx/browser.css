@@ -1073,6 +1073,17 @@ html|*.urlbar-input:-moz-lwtheme::-moz-placeholder,
   background-repeat: no-repeat;
 }
 
+#urlbar[pageproxystate="valid"] > #identity-box.mixedContent {
+  color: rgb(79,79,0);
+  margin-inline-end: 4px;
+  background-image: -moz-linear-gradient(rgba(79,79,0,0),
+    rgba(79,79,0,.08) 25%,
+    rgba(79,79,0,.08) 75%,
+    rgba(79,79,0,0));
+  background-position: right;
+  background-repeat: no-repeat;
+}
+
 #identity-box.verifiedIdentity:-moz-locale-dir(rtl) {
   background-position: left;
 }

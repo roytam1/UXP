@@ -6836,6 +6836,7 @@ var gIdentityHandler = {
     let punyID = gPrefService.getIntPref("browser.identity.display_punycode", 1);
 
     switch (newMode) {
+      case this.IDENTITY_MODE_MIXED_CONTENT:
       case this.IDENTITY_MODE_DOMAIN_VERIFIED: {
         let iData = this.getIdentityData();
       
