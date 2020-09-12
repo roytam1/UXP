@@ -58,8 +58,7 @@ NSSCertDBTrustDomain::NSSCertDBTrustDomain(SECTrustType certDBTrustType,
                                            CertVerifier::SHA1Mode sha1Mode,
                                            NetscapeStepUpPolicy netscapeStepUpPolicy,
                                            const NeckoOriginAttributes& originAttributes,
-                                           UniqueCERTCertList& builtChain,
-                              /*optional*/ const char* hostname)
+                                           UniqueCERTCertList& builtChain)
   : mCertDBTrustType(certDBTrustType)
   , mOCSPFetching(ocspFetching)
   , mOCSPCache(ocspCache)
@@ -73,7 +72,6 @@ NSSCertDBTrustDomain::NSSCertDBTrustDomain(SECTrustType certDBTrustType,
   , mNetscapeStepUpPolicy(netscapeStepUpPolicy)
   , mOriginAttributes(originAttributes)
   , mBuiltChain(builtChain)
-  , mHostname(hostname)
   , mCertBlocklist(do_GetService(NS_CERTBLOCKLIST_CONTRACTID))
   , mOCSPStaplingStatus(CertVerifier::OCSP_STAPLING_NEVER_CHECKED)
   , mSCTListFromCertificate()
