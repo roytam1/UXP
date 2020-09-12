@@ -452,7 +452,7 @@ BrowserGlue.prototype = {
     Services.obs.notifyObservers(null, "browser-ui-startup-complete", "");
   },
 
-  // Copies additional profile files from the default profile tho the current profile.
+  // Copies additional profile files from the default profile to the current profile.
   // Only files not covered by the regular profile creation process.
   // Currently only the userchrome examples.
   _copyDefaultProfileFiles: function()
