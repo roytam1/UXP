@@ -2273,7 +2273,6 @@ Loader::LoadChildSheet(StyleSheet* aParentSheet,
     state = eSheetComplete;
   } else {
     bool isAlternate;
-    bool isExplicitlyEnabled;
     const nsSubstring& empty = EmptyString();
     // For now, use CORS_NONE for child sheets
     rv = CreateSheet(aURL, nullptr, principal,
@@ -2283,8 +2282,9 @@ Loader::LoadChildSheet(StyleSheet* aParentSheet,
                      parentData ? parentData->mSyncLoad : false,
                      false, empty, state, &isAlternate, &sheet);
     NS_ENSURE_SUCCESS(rv, rv);
-
-    PrepareSheet(sheet, empty, empty, aMedia, nullptr, isAlternate, isExplicitlyEnabled);
+    // For now, child sheets are not explicitly enabled (seventh argument is
+    // always false here). 
+    PrepareSheet(sheet, empty, empty, aMedia, nullptr, isAlternate, false);
   }
 
   rv = InsertChildSheet(sheet, aParentSheet, aParentRule);
@@ -2397,7 +2397,6 @@ Loader::InternalLoadNonDocumentSheet(nsIURI* aURL,
 
   StyleSheetState state;
   bool isAlternate;
-  bool isExplicitlyEnabled;
   RefPtr<StyleSheet> sheet;
   bool syncLoad = (aObserver == nullptr);
   const nsSubstring& empty = EmptyString();
@@ -2407,7 +2406,10 @@ Loader::InternalLoadNonDocumentSheet(nsIURI* aURL,
                    false, empty, state, &isAlternate, &sheet);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  PrepareSheet(sheet, empty, empty, nullptr, nullptr, isAlternate, isExplicitlyEnabled);
+  // Sheets can only be explicitly enabled after creation and preparation, so
+  // we always pass false for the initial value of the explicitly enabled flag 
+  // when calling PrepareSheet.
+  PrepareSheet(sheet, empty, empty, nullptr, nullptr, isAlternate, false);
 
   if (state == eSheetComplete) {
     LOG(("  Sheet already complete"));

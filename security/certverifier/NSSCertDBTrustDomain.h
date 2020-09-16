@@ -83,8 +83,7 @@ public:
                        CertVerifier::SHA1Mode sha1Mode,
                        NetscapeStepUpPolicy netscapeStepUpPolicy,
                        const NeckoOriginAttributes& originAttributes,
-                       UniqueCERTCertList& builtChain,
-          /*optional*/ const char* hostname = nullptr);
+                       UniqueCERTCertList& builtChain);
 
   virtual Result FindIssuer(mozilla::pkix::Input encodedIssuerName,
                             IssuerChecker& checker,
@@ -187,7 +186,6 @@ private:
   NetscapeStepUpPolicy mNetscapeStepUpPolicy;
   const NeckoOriginAttributes& mOriginAttributes;
   UniqueCERTCertList& mBuiltChain; // non-owning
-  const char* mHostname; // non-owning - only used for pinning checks
   nsCOMPtr<nsICertBlocklist> mCertBlocklist;
   CertVerifier::OCSPStaplingStatus mOCSPStaplingStatus;
   // Certificate Transparency data extracted during certificate verification
