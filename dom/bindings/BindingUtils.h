@@ -3073,21 +3073,21 @@ class GetCCParticipant
 {
   // Helper for GetCCParticipant for classes that participate in CC.
   template<class U>
-  static constexpr nsCycleCollectionParticipant*
+  static nsCycleCollectionParticipant*
   GetHelper(int, typename U::NS_CYCLE_COLLECTION_INNERCLASS* dummy=nullptr)
   {
     return T::NS_CYCLE_COLLECTION_INNERCLASS::GetParticipant();
   }
   // Helper for GetCCParticipant for classes that don't participate in CC.
   template<class U>
-  static constexpr nsCycleCollectionParticipant*
+  static nsCycleCollectionParticipant*
   GetHelper(double)
   {
     return nullptr;
   }
 
 public:
-  static constexpr nsCycleCollectionParticipant*
+  static nsCycleCollectionParticipant*
   Get()
   {
     // Passing int() here will try to call the GetHelper that takes an int as
@@ -3102,7 +3102,7 @@ template<class T>
 class GetCCParticipant<T, true>
 {
 public:
-  static constexpr nsCycleCollectionParticipant*
+  static nsCycleCollectionParticipant*
   Get()
   {
     return nullptr;
@@ -3125,7 +3125,7 @@ EnumerateGlobal(JSContext* aCx, JS::Handle<JSObject*> aObj);
 template <class T>
 struct CreateGlobalOptions
 {
-  static constexpr ProtoAndIfaceCache::Kind ProtoAndIfaceCacheKind =
+  static const ProtoAndIfaceCache::Kind ProtoAndIfaceCacheKind =
     ProtoAndIfaceCache::NonWindowLike;
   static void TraceGlobal(JSTracer* aTrc, JSObject* aObj)
   {
@@ -3142,7 +3142,7 @@ struct CreateGlobalOptions
 template <>
 struct CreateGlobalOptions<nsGlobalWindow>
 {
-  static constexpr ProtoAndIfaceCache::Kind ProtoAndIfaceCacheKind =
+  static const ProtoAndIfaceCache::Kind ProtoAndIfaceCacheKind =
     ProtoAndIfaceCache::WindowLike;
   static void TraceGlobal(JSTracer* aTrc, JSObject* aObj);
   static bool PostCreateGlobal(JSContext* aCx, JS::Handle<JSObject*> aGlobal);

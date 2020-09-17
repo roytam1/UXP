@@ -27,7 +27,7 @@ public:
   typedef uint64_t InternalType;
   typedef uint8_t ServoType;
 
-  constexpr EventStates()
+  EventStates()
     : mStates(0)
   {
   }
@@ -37,12 +37,12 @@ public:
   // In that case, we could be sure that only macros at the end were creating
   // EventStates instances with mStates set to something else than 0.
   // Unfortunately, this constructor is needed at at least two places now.
-  explicit constexpr EventStates(InternalType aStates)
+  explicit EventStates(InternalType aStates)
     : mStates(aStates)
   {
   }
 
-  EventStates constexpr operator|(const EventStates& aEventStates) const
+  EventStates operator|(const EventStates& aEventStates) const
   {
     return EventStates(mStates | aEventStates.mStates);
   }
@@ -56,7 +56,7 @@ public:
   // NOTE: calling if (eventStates1 & eventStates2) will not build.
   // This might work correctly if operator bool() is defined
   // but using HasState, HasAllStates or HasAtLeastOneOfStates is recommended.
-  EventStates constexpr operator&(const EventStates& aEventStates) const
+  EventStates operator&(const EventStates& aEventStates) const
   {
     return EventStates(mStates & aEventStates.mStates);
   }

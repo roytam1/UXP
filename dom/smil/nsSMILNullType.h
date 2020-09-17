@@ -44,7 +44,7 @@ protected:
 
 private:
   // Private constructor: prevent instances beyond my singleton.
-  constexpr nsSMILNullType() {}
+  nsSMILNullType() {}
 };
 
 #endif // NS_SMILNULLTYPE_H_

@@ -56,7 +56,7 @@ enum ErrNum {
 
 // Debug-only compile-time table of the number of arguments of each error, for use in static_assert.
 #if defined(DEBUG) && (defined(__clang__) || defined(__GNUC__))
-uint16_t constexpr ErrorFormatNumArgs[] = {
+uint16_t ErrorFormatNumArgs[] = {
 #define MSG_DEF(_name, _argc, _exn, _str) \
   _argc,
 #include "mozilla/dom/Errors.msg"
