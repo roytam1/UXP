@@ -3540,7 +3540,7 @@ var gCSSProperties = {
     inherited: false,
     type: CSS_TYPE_LONGHAND,
     initial_values: [ "1", "17", "397.376", "3e1", "3e+1", "3e0", "3e+0", "3e-0" ],
-    other_values: [ "0", "0.4", "0.0000", "-3", "3e-1" "-100%", "50%"],
+    other_values: [ "0", "0.4", "0.0000", "-3", "3e-1" "-100%", "50%" ],
     invalid_values: [ "0px", "1px" ]
   },
   "-moz-orient": {
@@ -4273,7 +4273,7 @@ var gCSSProperties = {
     inherited: true,
     type: CSS_TYPE_LONGHAND,
     initial_values: [ "1", "2.8", "1.000", "300%", "context-fill-opacity", "context-stroke-opacity" ],
-    other_values: [ "0", "0.3", "-7.3", "-100%", "50%"],
+    other_values: [ "0", "0.3", "-7.3", "-100%", "50%" ],
     invalid_values: []
   },
   "fill-rule": {
@@ -4305,8 +4305,8 @@ var gCSSProperties = {
     domProp: "floodOpacity",
     inherited: false,
     type: CSS_TYPE_LONGHAND,
-    initial_values: [ "1", "2.8", "1.000", "300%"],
-    other_values: [ "0", "0.3", "-7.3", "-100%", "50%"],
+    initial_values: [ "1", "2.8", "1.000", "300%" ],
+    other_values: [ "0", "0.3", "-7.3", "-100%", "50%" ],
     invalid_values: []
   },
   "image-rendering": {
