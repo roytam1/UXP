@@ -124,7 +124,7 @@ struct BarrierMethods<nsXBLMaybeCompiled<UncompiledT>>
 template <class T>
 struct IsHeapConstructibleType<nsXBLMaybeCompiled<T>>
 { // Yes, this is the exception to the rule. Sorry.
-  static constexpr bool value = true;
+  static const bool value = true;
 };
 
 template <class UncompiledT>

@@ -123,7 +123,7 @@ public:
 
 private:
   // Private constructor: prevent instances beyond my singleton.
-  constexpr SVGTransformListSMILType() {}
+  SVGTransformListSMILType() {}
 };
 
 } // end namespace mozilla

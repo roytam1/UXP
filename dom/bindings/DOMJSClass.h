@@ -210,7 +210,7 @@ struct NativePropertiesN {
 
   const int32_t iteratorAliasMethodIndex;
 
-  constexpr const NativePropertiesN<7>* Upcast() const {
+  const NativePropertiesN<7>* Upcast() const {
     return reinterpret_cast<const NativePropertiesN<7>*>(this);
   }
 

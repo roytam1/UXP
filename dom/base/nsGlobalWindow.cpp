@@ -956,7 +956,7 @@ NS_IMPL_CYCLE_COLLECTING_RELEASE(DialogValueHolder)
 class nsOuterWindowProxy : public js::Wrapper
 {
 public:
-  constexpr nsOuterWindowProxy() : js::Wrapper(0) { }
+  nsOuterWindowProxy() : js::Wrapper(0) { }
 
   virtual bool finalizeInBackground(const JS::Value& priv) const override {
     return false;
@@ -1407,7 +1407,7 @@ nsOuterWindowProxy::singleton;
 class nsChromeOuterWindowProxy : public nsOuterWindowProxy
 {
 public:
-  constexpr nsChromeOuterWindowProxy() : nsOuterWindowProxy() { }
+  nsChromeOuterWindowProxy() : nsOuterWindowProxy() { }
 
   virtual const char *className(JSContext *cx, JS::Handle<JSObject*> wrapper) const override;
 
