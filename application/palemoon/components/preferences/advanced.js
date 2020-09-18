@@ -755,7 +755,7 @@ var gAdvancedPane = {
 #endif
       shellSvc.setDefaultBrowser(claimAllTypes, false);
     } catch (ex) {
-      Cu.reportError(ex);
+      Components.utils.reportError(ex);
       return;
     }
     let selectedIndex =
