@@ -45,10 +45,10 @@ public:
   // This is called on the decode task queue.
   void SetCDMProxy(CDMProxy* aProxy);
 
-  static constexpr int kYUV400 = 0;
-  static constexpr int kYUV420 = 1;
-  static constexpr int kYUV422 = 2;
-  static constexpr int kYUV444 = 3;
+  static const int kYUV400 = 0;
+  static const int kYUV420 = 1;
+  static const int kYUV422 = 2;
+  static const int kYUV444 = 3;
 
 private:
   virtual ~PDMFactory();

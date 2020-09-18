@@ -38,7 +38,8 @@ public:
   }
 
 private:
-  constexpr SMILIntegerType() {}
+  // Private constructor: prevent instances beyond my singleton.
+  SMILIntegerType() {}
 };
 
 } // namespace mozilla

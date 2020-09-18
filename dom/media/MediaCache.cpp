@@ -277,7 +277,7 @@ protected:
   };
 
   struct BlockOwner {
-    constexpr BlockOwner() {}
+    BlockOwner() {}
 
     // The stream that owns this block, or null if the block is free.
     MediaCacheStream* mStream = nullptr;

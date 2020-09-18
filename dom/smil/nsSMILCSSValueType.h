@@ -110,7 +110,7 @@ public:
 
 private:
   // Private constructor: prevent instances beyond my singleton.
-  constexpr nsSMILCSSValueType() {}
+  nsSMILCSSValueType() {}
 };
 
 #endif // NS_SMILCSSVALUETYPE_H_

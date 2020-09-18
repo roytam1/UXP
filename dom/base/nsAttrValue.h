@@ -268,7 +268,7 @@ public:
     // EnumTable can be initialized either with an int16_t value
     // or a value of an enumeration type that can fit within an int16_t.
 
-    constexpr EnumTable(const char* aTag, int16_t aValue)
+    EnumTable(const char* aTag, int16_t aValue)
       : tag(aTag)
       , value(aValue)
     {
@@ -276,7 +276,7 @@ public:
 
     template<typename T,
              typename = typename std::enable_if<std::is_enum<T>::value>::type>
-    constexpr EnumTable(const char* aTag, T aValue)
+    EnumTable(const char* aTag, T aValue)
       : tag(aTag)
       , value(static_cast<int16_t>(aValue))
     {

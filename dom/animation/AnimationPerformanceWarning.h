@@ -38,8 +38,6 @@ struct AnimationPerformanceWarning
                               std::initializer_list<int32_t> aParams)
     : mType(aType)
   {
-    // FIXME:  Once std::initializer_list::size() become a constexpr function,
-    // we should use static_assert here.
     MOZ_ASSERT(aParams.size() <= kMaxParamsForLocalization,
       "The length of parameters should be less than "
       "kMaxParamsForLocalization");
@@ -49,11 +47,11 @@ struct AnimationPerformanceWarning
   // Maximum number of parameters passed to
   // nsContentUtils::FormatLocalizedString to localize warning messages.
   //
-  // NOTE: This constexpr can't be forward declared, so if you want to use
+  // NOTE: This can't be forward declared, so if you want to use
   // this variable, please include this header file directly.
   // This value is the same as the limit of nsStringBundle::FormatString.
   // See the implementation of nsStringBundle::FormatString.
-  static constexpr uint8_t kMaxParamsForLocalization = 10;
+  static const uint8_t kMaxParamsForLocalization = 10;
 
   // Indicates why this property could not be animated on the compositor.
   Type mType;

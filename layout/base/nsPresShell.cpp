@@ -9060,6 +9060,11 @@ PresShell::DidDoReflow(bool aInterruptible)
     docShell->NotifyReflowObservers(aInterruptible, mLastReflowStart, now);
   }
 
+  // Notify resize observers on reflow.
+  if (!mPresContext->HasPendingInterrupt()) {
+    mDocument->ScheduleResizeObserversNotification();
+  }
+
   if (sSynthMouseMove) {
     SynthesizeMouseMove(false);
   }

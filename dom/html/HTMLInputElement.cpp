@@ -5858,8 +5858,6 @@ HTMLInputElement::ParseAttribute(int32_t aNamespaceID,
                                  const nsAString& aValue,
                                  nsAttrValue& aResult)
 {
-  // We can't make these static_asserts because kInputDefaultType and
-  // kInputTypeTable aren't constexpr.
   MOZ_ASSERT(kInputDefaultType->value == NS_FORM_INPUT_TEXT,
              "Someone forgot to update kInputDefaultType when adding a new "
              "input type.");
