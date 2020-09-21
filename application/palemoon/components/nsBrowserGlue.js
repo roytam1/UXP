@@ -406,8 +406,7 @@ BrowserGlue.prototype = {
   },
 
   // profile is available
-  _onProfileAfterChange: function()
-  {
+  _onProfileAfterChange: function() {
     this._copyDefaultProfileFiles();
   },
   
@@ -476,8 +475,7 @@ BrowserGlue.prototype = {
   // Copies additional profile files from the default profile to the current profile.
   // Only files not covered by the regular profile creation process.
   // Currently only the userchrome examples.
-  _copyDefaultProfileFiles: function()
-  {
+  _copyDefaultProfileFiles: function() {
     // Copy default chrome example files if they do not exist in the current profile.
     var profileDir = Services.dirsvc.get("ProfD", Components.interfaces.nsILocalFile);
     profileDir.append("chrome");
