@@ -286,6 +286,7 @@ BrowserGlue.prototype = {
         break;
       case "profile-after-change":
          this._onProfileAfterChange();
+         this._promptForMasterPassword();
          break;
       case "browser-search-engine-modified":
         if (data != "engine-default" && data != "engine-current") {
@@ -408,6 +409,26 @@ BrowserGlue.prototype = {
   _onProfileAfterChange: function()
   {
     this._copyDefaultProfileFiles();
+  },
+  
+  _promptForMasterPassword: function() {
+    if (!Services.prefs.getBoolPref("signon.startup.prompt", false))
+      return;
+
+    // Try to avoid the multiple master password prompts on startup scenario
+    // by prompting for the master password upfront.
+    let token = Components.classes["@mozilla.org/security/pk11tokendb;1"]
+                          .getService(Components.interfaces.nsIPK11TokenDB)
+                          .getInternalKeyToken();
+
+    // Only log in to the internal token if it is already initialized,
+    // otherwise we get a "Change Master Password" dialog.
+    try {
+      if (!token.needsUserInit)
+        token.login(false);
+    } catch (ex) {
+      // If user cancels an exception is expected.
+    }
   },
 
   _onAppDefaults: function() {
