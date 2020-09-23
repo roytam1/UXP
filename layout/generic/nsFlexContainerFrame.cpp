@@ -1613,7 +1613,7 @@ ResolveAutoFlexBasisFromRatio(FlexItem& aFlexItem,
   //  - a [used] flex-basis of 'main-size' [auto?] [We have this, if we're here.]
   //  - a definite cross size
   // then the flex base size is calculated from its inner cross size and the
-  // flex item???s intrinsic aspect ratio.
+  // flex item’s intrinsic aspect ratio.
   if (aFlexItem.IntrinsicRatio()) {
     // We have a usable aspect ratio. (not going to divide by 0)
     const bool useMinSizeIfCrossSizeIsIndefinite = false;
