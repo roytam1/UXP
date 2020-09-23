@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -251,7 +250,7 @@ class FastBernoulliTrial {
        * - The gaps below 1 are 2**-53, so that interval is (0, 1-2**-53].
        *
        * - Because the floating-point gaps near 1 are wider than those near
-       *   zero, there are many small positive doubles ε such that 1-ε rounds to
+       *   zero, there are many small positive doubles ?? such that 1-?? rounds to
        *   exactly 1. However, 2**-53 can be represented exactly. So
        *   1-mProbability is in [2**-53, 1].
        *
@@ -264,9 +263,9 @@ class FastBernoulliTrial {
        *
        * - How much of the range of mProbability does this cause us to ignore?
        *   The only value for which log returns 0 is exactly 1; the slope of log
-       *   at 1 is 1, so for small ε such that 1 - ε != 1, log(1 - ε) is -ε,
+       *   at 1 is 1, so for small ?? such that 1 - ?? != 1, log(1 - ??) is -??,
        *   never 0. The gaps near one are larger than the gaps near zero, so if
-       *   1 - ε wasn't 1, then -ε is representable. So if log(1 - mProbability)
+       *   1 - ?? wasn't 1, then -?? is representable. So if log(1 - mProbability)
        *   isn't 0, then 1 - mProbability isn't 1, which means that mProbability
        *   is at least 2**-53, as discussed earlier. This is a sampling
        *   likelihood of roughly one in ten trillion, which is unlikely to be

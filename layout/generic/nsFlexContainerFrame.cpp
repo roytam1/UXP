@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=2 et sw=2 tw=80: */
 
 /* This Source Code is subject to the terms of the Mozilla Public License
  * version 2.0 (the "License"). You can obtain a copy of the License at
@@ -1614,7 +1613,7 @@ ResolveAutoFlexBasisFromRatio(FlexItem& aFlexItem,
   //  - a [used] flex-basis of 'main-size' [auto?] [We have this, if we're here.]
   //  - a definite cross size
   // then the flex base size is calculated from its inner cross size and the
-  // flex item’s intrinsic aspect ratio.
+  // flex item???s intrinsic aspect ratio.
   if (aFlexItem.IntrinsicRatio()) {
     // We have a usable aspect ratio. (not going to divide by 0)
     const bool useMinSizeIfCrossSizeIsIndefinite = false;

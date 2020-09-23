@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -773,7 +772,7 @@ StripURIForReporting(nsIURI* aURI,
 {
   // 1) If the origin of uri is a globally unique identifier (for example,
   // aURI has a scheme of data, blob, or filesystem), then return the
-  // ASCII serialization of uri’s scheme.
+  // ASCII serialization of uri???s scheme.
   bool isHttpOrFtp =
     (NS_SUCCEEDED(aURI->SchemeIs("http", &isHttpOrFtp)) && isHttpOrFtp) ||
     (NS_SUCCEEDED(aURI->SchemeIs("https", &isHttpOrFtp)) && isHttpOrFtp) ||
@@ -788,7 +787,7 @@ StripURIForReporting(nsIURI* aURI,
   }
 
   // 2) If the origin of uri is not the same as the origin of the protected
-  // resource, then return the ASCII serialization of uri’s origin.
+  // resource, then return the ASCII serialization of uri???s origin.
   if (!NS_SecurityCompareURIs(aSelfURI, aURI, false)) {
     // cross origin redirects also fall into this category, see:
     // http://www.w3.org/TR/CSP/#violation-reports

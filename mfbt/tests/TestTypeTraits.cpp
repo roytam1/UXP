@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -376,7 +375,7 @@ static_assert(IsDestructible<TrivialDestructible>::value,
 
 namespace CPlusPlus11IsBaseOf {
 
-// Adapted from C++11 § 20.9.6.
+// Adapted from C++11 ?? 20.9.6.
 struct B {};
 struct B1 : B {};
 struct B2 : B {};

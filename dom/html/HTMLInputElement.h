@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -1566,7 +1565,7 @@ protected:
   // Default step base value when a type do not have specific one.
   static const Decimal kDefaultStepBase;
   // Default step base value when type=week does not not have a specific one,
-  // which is −259200000, the start of week 1970-W01.
+  // which is ???259200000, the start of week 1970-W01.
   static const Decimal kDefaultStepBaseWeek;
 
   // Default step used when there is no specified step.

@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -879,7 +878,7 @@ FetchDriver::AsyncOnChannelRedirect(nsIChannel* aOldChannel,
 
   mRequest->AddURL(spec, fragment);
   NS_ConvertUTF8toUTF16 tRPHeaderValue(tRPHeaderCValue);
-  // updates request’s associated referrer policy according to the
+  // updates request???s associated referrer policy according to the
   // Referrer-Policy header (if any).
   if (!tRPHeaderValue.IsEmpty()) {
     net::ReferrerPolicy net_referrerPolicy =

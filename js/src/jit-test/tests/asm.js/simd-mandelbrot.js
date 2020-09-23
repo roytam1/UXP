@@ -1,5 +1,4 @@
 /* -*- Mode: javascript; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 ; js-indent-level : 2 ; js-curly-indent-offset: 0 -*- */
-/* vim: set ts=2 et sw=2 tw=80: */
 
 // Mandelbrot using SIMD
 // Author: Peter Jensen, Intel Corporation
