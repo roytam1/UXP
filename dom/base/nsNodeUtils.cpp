@@ -540,7 +540,7 @@ nsNodeUtils::CloneAndAdopt(nsINode *aNode, bool aClone, bool aDeep,
     nsIDocument* newDoc = aNode->OwnerDoc();
     if (newDoc) {
       if (CustomElementRegistry::IsCustomElementEnabled()) {
-        // Adopted callback must be enqueued whenever a node???s
+        // Adopted callback must be enqueued whenever a node’s
         // shadow-including inclusive descendants that is custom.
         Element* element = aNode->IsElement() ? aNode->AsElement() : nullptr;
         if (element) {

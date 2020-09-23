@@ -878,7 +878,7 @@ FetchDriver::AsyncOnChannelRedirect(nsIChannel* aOldChannel,
 
   mRequest->AddURL(spec, fragment);
   NS_ConvertUTF8toUTF16 tRPHeaderValue(tRPHeaderCValue);
-  // updates request???s associated referrer policy according to the
+  // updates request’s associated referrer policy according to the
   // Referrer-Policy header (if any).
   if (!tRPHeaderValue.IsEmpty()) {
     net::ReferrerPolicy net_referrerPolicy =

@@ -1565,7 +1565,7 @@ protected:
   // Default step base value when a type do not have specific one.
   static const Decimal kDefaultStepBase;
   // Default step base value when type=week does not not have a specific one,
-  // which is ???259200000, the start of week 1970-W01.
+  // which is −259200000, the start of week 1970-W01.
   static const Decimal kDefaultStepBaseWeek;
 
   // Default step used when there is no specified step.

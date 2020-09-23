@@ -1403,7 +1403,7 @@ struct nsGridContainerFrame::Tracks
                                  const LineRange&            aRange,
                                  const GridItemInfo&         aGridItem);
 
-  // Helper method that returns the track size to use in ??11.5.1.2
+  // Helper method that returns the track size to use in §11.5.1.2
   // https://drafts.csswg.org/css-grid/#extra-space
   template<TrackSizingPhase phase> static
   nscoord StartSizeInDistribution(const TrackSize& aSize)
@@ -1426,7 +1426,7 @@ struct nsGridContainerFrame::Tracks
   /**
    * Collect the tracks which are growable (matching aSelector) into
    * aGrowableTracks, and return the amount of space that can be used
-   * to grow those tracks.  This method implements CSS Grid ??11.5.1.2.
+   * to grow those tracks.  This method implements CSS Grid §11.5.1.2.
    * https://drafts.csswg.org/css-grid/#extra-space
    */
   template<TrackSizingPhase phase>
@@ -1537,7 +1537,7 @@ struct nsGridContainerFrame::Tracks
         nscoord limit = sz.mLimit;
         if (MOZ_UNLIKELY((sz.mState & TrackSize::eFitContent) &&
                          aFitContentClamper)) {
-          // Clamp the limit to the fit-content() size, for ??12.5.2 step 5/6.
+          // Clamp the limit to the fit-content() size, for §12.5.2 step 5/6.
           aFitContentClamper(track, sz.mBase, &limit);
         }
         if (newBase > limit) {
@@ -1609,7 +1609,7 @@ struct nsGridContainerFrame::Tracks
 
   /**
    * Mark all tracks in aGrowableTracks with an eSkipGrowUnlimited bit if
-   * they *shouldn't* grow unlimited in ??11.5.1.2.3 "Distribute space beyond
+   * they *shouldn't* grow unlimited in §11.5.1.2.3 "Distribute space beyond
    * growth limits" https://drafts.csswg.org/css-grid/#extra-space
    * Return the number of tracks that are still growable.
    */
@@ -1671,7 +1671,7 @@ struct nsGridContainerFrame::Tracks
         nscoord newBase = sz.mBase + delta;
         if (MOZ_UNLIKELY((sz.mState & TrackSize::eFitContent) &&
                          aFitContentClamper)) {
-          // Clamp newBase to the fit-content() size, for ??12.5.2 step 5/6.
+          // Clamp newBase to the fit-content() size, for §12.5.2 step 5/6.
           if (aFitContentClamper(track, sz.mBase, &newBase)) {
             didClamp = true;
             delta = newBase - sz.mBase;
@@ -4104,7 +4104,7 @@ nsGridContainerFrame::Tracks::ResolveIntrinsicSizeStep1(
       sz.mLimit = std::max(sz.mLimit, s);
     }
     if (MOZ_UNLIKELY(sz.mState & TrackSize::eFitContent)) {
-      // Clamp mLimit to the fit-content() size, for ??12.5.1.
+      // Clamp mLimit to the fit-content() size, for §12.5.1.
       auto maxCoord = aFunctions.MaxSizingFor(aRange.mStart);
       nscoord fitContentClamp =
         nsRuleNode::ComputeCoordPercentCalc(maxCoord, aPercentageBasis);
@@ -4845,8 +4845,8 @@ nsGridContainerFrame::Tracks::StretchFlexibleTracks(
       applyMinMax = false;
       // https://drafts.csswg.org/css-grid/#algo-flex-tracks
       // "If using this flex fraction would cause the grid to be smaller than
-      // the grid container???s min-width/height (or larger than the grid
-      // container???s max-width/height), then redo this step, treating the free
+      // the grid container’s min-width/height (or larger than the grid
+      // container’s max-width/height), then redo this step, treating the free
       // space as definite [...]"
       nscoord newSize = 0;
       for (auto& sz : mSizes) {

@@ -3828,7 +3828,7 @@ VariablesView.stringifiers.byObjectKind = {
 
 
 /**
- * Get the "N more???" formatted string, given an N. This is used for displaying
+ * Get the "N more…" formatted string, given an N. This is used for displaying
  * how many elements are not displayed in an object preview (eg. an array).
  *
  * @private

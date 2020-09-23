@@ -375,7 +375,7 @@ static_assert(IsDestructible<TrivialDestructible>::value,
 
 namespace CPlusPlus11IsBaseOf {
 
-// Adapted from C++11 ?? 20.9.6.
+// Adapted from C++11 § 20.9.6.
 struct B {};
 struct B1 : B {};
 struct B2 : B {};
