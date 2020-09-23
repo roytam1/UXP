@@ -12,6 +12,7 @@ import hashlib
 import json
 import logging
 import os
+import sys
 
 from copy import deepcopy
 
@@ -270,6 +271,7 @@ class WebIDLCodegenManager(LoggingMixin):
         for filename in sorted(changed_inputs):
             basename = mozpath.basename(filename)
             print basename
+            sys.stdout.flush()
             result.inputs.add(filename)
             written, deps = self._generate_build_files_for_webidl(filename)
             result.created |= written[0]
