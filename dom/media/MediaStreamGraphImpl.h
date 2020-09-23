@@ -652,7 +652,7 @@ public:
    * and boolean to control if we want input/output
    */
   bool mInputWanted;
-  int mInputDeviceID;
+  Atomic<int> mInputDeviceID;
   bool mOutputWanted;
   int mOutputDeviceID;
   // Maps AudioDataListeners to a usecount of streams using the listener
