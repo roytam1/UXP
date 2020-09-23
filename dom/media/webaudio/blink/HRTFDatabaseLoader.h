@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2010 Google Inc. All rights reserved.
+ * Copyright (C) 2020 M. Straver. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -85,7 +86,12 @@ public:
     // on any thread except m_databaseLoaderThread.
     void waitForLoaderThreadCompletion();
     
-    HRTFDatabase* database() { return m_hrtfDatabase.get(); }
+    HRTFDatabase* database() {
+      if (!m_databaseLoaded) {
+        return nullptr;
+      }
+      return m_hrtfDatabase.get();
+    }
 
     float databaseSampleRate() const { return m_databaseSampleRate; }
 
@@ -141,6 +147,7 @@ private:
     PRThread* m_databaseLoaderThread;
 
     float m_databaseSampleRate;
+    mozilla::Atomic<bool> m_databaseLoaded;
 };
 
 } // namespace WebCore
