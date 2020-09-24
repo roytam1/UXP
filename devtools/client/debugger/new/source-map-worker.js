@@ -391,7 +391,6 @@ var Debugger =
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 	
 	/* -*- indent-tabs-mode: nil; js-indent-level: 2 -*- */
-	/* vim: set ft=javascript ts=2 et sw=2 tw=80: */
 	/* This Source Code Form is subject to the terms of the Mozilla Public
 	 * License, v. 2.0. If a copy of the MPL was not distributed with this
 	 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
