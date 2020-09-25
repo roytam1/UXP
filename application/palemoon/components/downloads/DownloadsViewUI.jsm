@@ -80,17 +80,21 @@ this.DownloadsViewUI.DownloadElementShell.prototype = {
 
   get extendedDisplayName() {
     let s = DownloadsCommon.strings;
-    let referrer = this.download.source.referrer ||
-                   this.download.source.url;
-    let [displayHost, fullHost] = DownloadUtils.getURIHost(referrer);
+    let [displayHost, fullHost] = DownloadUtils.getURIHost(this.download.source.url);
     return s.statusSeparator(this.displayName, displayHost);
   },
   
   get extendedDisplayNameTip() {
     let s = DownloadsCommon.strings;
-    let referrer = this.download.source.referrer ||
-                   this.download.source.url;
-    let [displayHost, fullHost] = DownloadUtils.getURIHost(referrer);
+    let referrer = this.download.source.referrer;
+    if (referrer) {
+      let [displayHost, fullHost] = DownloadUtils.getURIHost(this.download.source.url) +
+                                    ' (' +
+                                    DownloadUtils.getURIHost(referrer) +
+                                    ')';
+    } else {
+      let [displayHost, fullHost] = DownloadUtils.getURIHost(this.download.source.url);
+    }
     return s.statusSeparator(this.displayName, fullHost);
   },
 

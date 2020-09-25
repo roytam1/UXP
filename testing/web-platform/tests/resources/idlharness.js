@@ -1850,4 +1850,3 @@ function IdlTypedef(obj)
 IdlTypedef.prototype = Object.create(IdlObject.prototype);
 
 }());
-// vim: set expandtab shiftwidth=4 tabstop=4 foldmarker=@{,@} foldmethod=marker:
