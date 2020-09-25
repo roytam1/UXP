@@ -154,5 +154,4 @@ function run_test()
   }
 }
 
-// vim: set et ts=2 :
 

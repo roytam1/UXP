@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=8 autoindent cindent expandtab: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -16,6 +15,7 @@
 #include "prclist.h"
 #include "mozilla/Attributes.h"
 #include "nsWrapperCache.h"
+#include "mozilla/DOMEventTargetHelper.h"
 #include "mozilla/dom/MediaQueryListBinding.h"
 
 class nsIDocument;
@@ -24,8 +24,7 @@ class nsMediaList;
 namespace mozilla {
 namespace dom {
 
-class MediaQueryList final : public nsISupports,
-                             public nsWrapperCache,
+class MediaQueryList final : public DOMEventTargetHelper,
                              public PRCList
 {
 public:
@@ -37,33 +36,45 @@ private:
   ~MediaQueryList();
 
 public:
-  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(MediaQueryList)
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(MediaQueryList, DOMEventTargetHelper)
 
   nsISupports* GetParentObject() const;
 
-  struct HandleChangeData {
-    RefPtr<MediaQueryList> mql;
-    RefPtr<mozilla::dom::MediaQueryListListener> callback;
-  };
-
-  // Appends listeners that need notification to aListenersToNotify
-  void MediumFeaturesChanged(nsTArray<HandleChangeData>& aListenersToNotify);
-
-  bool HasListeners() const { return !mCallbacks.IsEmpty(); }
-
-  void RemoveAllListeners();
+  void MaybeNotify();
 
   JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
   // WebIDL methods
   void GetMedia(nsAString& aMedia);
   bool Matches();
-  void AddListener(mozilla::dom::MediaQueryListListener& aListener);
-  void RemoveListener(mozilla::dom::MediaQueryListListener& aListener);
+  void AddListener(EventListener* aListener, ErrorResult& aRv);
+  void RemoveListener(EventListener* aListener, ErrorResult& aRv);
+
+  EventHandlerNonNull* GetOnchange();
+  void SetOnchange(EventHandlerNonNull* aCallback);
+
+  using nsIDOMEventTarget::AddEventListener;
+  using nsIDOMEventTarget::RemoveEventListener;
+
+  virtual void AddEventListener(const nsAString& aType,
+                                EventListener* aCallback,
+                                const AddEventListenerOptionsOrBoolean& aOptions,
+                                const Nullable<bool>& aWantsUntrusted,
+                                ErrorResult& aRv) override;
+  virtual void RemoveEventListener(const nsAString& aType,
+                                   EventListener* aCallback,
+                                   const EventListenerOptionsOrBoolean& aOptions,
+                                   ErrorResult& aRv) override;
+
+  bool HasListeners();
+
+  void Disconnect();
 
 private:
   void RecomputeMatches();
+  
+  void UpdateMustKeepAlive();
 
   // We only need a pointer to the document to support lazy
   // reevaluation following dynamic changes.  However, this lazy
@@ -84,7 +95,7 @@ private:
   RefPtr<nsMediaList> mMediaList;
   bool mMatches;
   bool mMatchesValid;
-  nsTArray<RefPtr<mozilla::dom::MediaQueryListListener>> mCallbacks;
+  bool mIsKeptAlive;
 };
 
 } // namespace dom

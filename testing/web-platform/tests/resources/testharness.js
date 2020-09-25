@@ -2679,4 +2679,3 @@ policies and contribution forms [3].
     test_environment.on_tests_ready();
 
 })();
-// vim: set expandtab shiftwidth=4 tabstop=4:

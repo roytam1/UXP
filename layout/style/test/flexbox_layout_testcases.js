@@ -1,5 +1,4 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 2 -*- */
-/* vim: set ts=2 sw=2 sts=2 et: */
 
 /*
  * This Source Code is subject to the terms of the Mozilla Public License

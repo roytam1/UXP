@@ -1,5 +1,4 @@
 /* -*- Mode: javascript; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 ; js-indent-level : 2 ; js-curly-indent-offset: 0 -*- */
-/* vim: set ts=4 et sw=4 tw=80: */
 
 // Author: Peter Jensen
 

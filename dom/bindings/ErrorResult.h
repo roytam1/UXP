@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -56,7 +55,7 @@ enum ErrNum {
 
 // Debug-only compile-time table of the number of arguments of each error, for use in static_assert.
 #if defined(DEBUG) && (defined(__clang__) || defined(__GNUC__))
-uint16_t ErrorFormatNumArgs[] = {
+uint16_t constexpr ErrorFormatNumArgs[] = {
 #define MSG_DEF(_name, _argc, _exn, _str) \
   _argc,
 #include "mozilla/dom/Errors.msg"
