@@ -2872,6 +2872,7 @@ exports.CSS_PROPERTIES = {
       "box-shadow",
       "box-sizing",
       "caption-side",
+      "caret-color",
       "clear",
       "clip",
       "clip-path",
@@ -5274,6 +5275,28 @@ exports.CSS_PROPERTIES = {
       "right",
       "top",
       "top-outside",
+      "unset"
+    ]
+  },
+  "caret-color": {
+    "isInherited": true,
+    "subproperties": [
+      "caret-color"
+    ],
+    "supports": [
+      2
+    ],
+    "values": [
+      "COLOR",
+      "auto",
+      "currentColor",
+      "hsl",
+      "hsla",
+      "inherit",
+      "initial",
+      "rgb",
+      "rgba",
+      "transparent",
       "unset"
     ]
   },
