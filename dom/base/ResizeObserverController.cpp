@@ -58,6 +58,12 @@ ResizeObserverNotificationHelper::Register()
 void
 ResizeObserverNotificationHelper::Unregister()
 {
+  if (!mOwner) {
+    // We've outlived our owner, so there's nothing registered anymore.
+    mRegistered = false;
+    return;
+  }
+
   if (!mRegistered) {
     return;
   }
