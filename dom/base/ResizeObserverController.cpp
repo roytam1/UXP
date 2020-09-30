@@ -118,6 +118,10 @@ ResizeObserverController::Notify()
     return;
   }
 
+  // Hold a strong reference to the document, because otherwise calling
+  // all active observers on it might yank it out from under us.
+  RefPtr<nsIDocument> document(mDocument);
+  
   uint32_t shallowestTargetDepth = 0;
 
   GatherAllActiveObservations(shallowestTargetDepth);
@@ -152,7 +156,7 @@ ResizeObserverController::Notify()
     nsEventStatus status = nsEventStatus_eIgnore;
 
     nsCOMPtr<nsPIDOMWindowInner> window =
-      mDocument->GetWindow()->GetCurrentInnerWindow();
+      document->GetWindow()->GetCurrentInnerWindow();
 
     if (window) {
       nsCOMPtr<nsIScriptGlobalObject> sgo = do_QueryInterface(window);
@@ -184,7 +188,11 @@ ResizeObserverController::BroadcastAllActiveObservations()
 {
   uint32_t shallowestTargetDepth = UINT32_MAX;
 
-  for (auto observer : mResizeObservers) {
+  // Use a copy of the observers as this invokes the callbacks of the observers
+  // which could register/unregister observers at will.
+  nsTArray<RefPtr<ResizeObserver>> tempObservers(mResizeObservers);
+  
+  for (auto observer : tempObservers) {
 
     uint32_t targetDepth = observer->BroadcastActiveObservations();
 
