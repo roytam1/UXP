@@ -1299,7 +1299,7 @@ protected:
   }
   bool ParseNonNegativeNumber(nsCSSValue& aValue)
   {
-    return ParseSingleTokenNonNegativeVariant(aValue, VARIANT_NUMBER | VARIANT_OPACITY, nullptr);
+    return ParseSingleTokenNonNegativeVariant(aValue, VARIANT_NUMBER, nullptr);
   }
 
   // Helpers for some common ParseSingleTokenOneOrLargerVariant calls.
@@ -1309,7 +1309,7 @@ protected:
   }
   bool ParseOneOrLargerNumber(nsCSSValue& aValue)
   {
-    return ParseSingleTokenOneOrLargerVariant(aValue, VARIANT_NUMBER | VARIANT_OPACITY, nullptr);
+    return ParseSingleTokenOneOrLargerVariant(aValue, VARIANT_NUMBER, nullptr);
   }
 
   // http://dev.w3.org/csswg/css-values/#custom-idents
@@ -8485,7 +8485,7 @@ CSSParserImpl::ParseImageRect(nsCSSValue& aImage)
       break;
     }
 
-    static const int32_t VARIANT_SIDE = VARIANT_NUMBER | VARIANT_PERCENT | VARIANT_OPACITY;
+    static const int32_t VARIANT_SIDE = VARIANT_NUMBER | VARIANT_PERCENT;
     if (!ParseSingleTokenNonNegativeVariant(top, VARIANT_SIDE, nullptr) ||
         !ExpectSymbol(',', true) ||
         !ParseSingleTokenNonNegativeVariant(right, VARIANT_SIDE, nullptr) ||
@@ -10894,7 +10894,7 @@ CSSParserImpl::ParseWebkitGradientColorStop(nsCSSValueGradient* aGradient)
   if (mToken.mIdent.LowerCaseEqualsLiteral("color-stop")) {
     // Parse stop location, followed by comma.
     if (!ParseSingleTokenVariant(stop->mLocation,
-                                 VARIANT_NUMBER | VARIANT_PERCENT | VARIANT_OPACITY,
+                                 VARIANT_NUMBER | VARIANT_PERCENT,
                                  nullptr) ||
         !ExpectSymbol(',', true)) {
       SkipUntil(')'); // Skip to end of color-stop(...) expression.
@@ -16057,7 +16057,7 @@ static bool GetFunctionParseInformation(nsCSSKeyword aToken,
     {VARIANT_LBCALC, VARIANT_LBCALC, VARIANT_LBCALC},
     {VARIANT_ANGLE_OR_ZERO},
     {VARIANT_ANGLE_OR_ZERO, VARIANT_ANGLE_OR_ZERO},
-    {VARIANT_NUMBER|VARIANT_OPACITY},
+    {VARIANT_NUMBER},
     {VARIANT_LENGTH|VARIANT_NONNEGATIVE_DIMENSION},
     {VARIANT_LB|VARIANT_NONNEGATIVE_DIMENSION},
     {VARIANT_NUMBER, VARIANT_NUMBER},
@@ -17639,7 +17639,7 @@ CSSParserImpl::ParseScrollSnapPoints(nsCSSValue& aValue, nsCSSPropertyID aPropID
       nsCSSKeywords::LookupKeyword(mToken.mIdent) == eCSSKeyword_repeat) {
     nsCSSValue lengthValue;
     if (ParseNonNegativeVariant(lengthValue,
-                                VARIANT_LENGTH | VARIANT_PERCENT | VARIANT_OPACITY | VARIANT_CALC,
+                                VARIANT_LENGTH | VARIANT_PERCENT | VARIANT_CALC,
                                 nullptr) != CSSParseResult::Ok) {
       REPORT_UNEXPECTED(PEExpectedNonnegativeNP);
       SkipUntil(')');
