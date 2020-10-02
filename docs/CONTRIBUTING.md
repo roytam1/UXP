@@ -93,15 +93,20 @@ With rare exception, it is advisable to use the following style for commit messa
 
 This would directly apply to anyone making a pull request.
 
+Single commits are where issues can be reasonably resolved in a single commit.
 - Single Commit: `Issue #xxx - Cited issue title or appropriate direct description of changes`
   - *`Issue #1083 - Deprecate FUEL extension helper javascript library`*
-- Multi-Part Commits: `Issue #xxx - Part Number: Appropriate direct description of changes`
+
+Multi-part commits would be used for complex issues. However, an exception exists for multi-part commits where the issue is anticipated or ends up being long term such as "Stop using unified compilation of sources". In these instances the multi-part form is not required.
+- Multi-Part Form: `Issue #xxx - Part Number: Appropriate direct description of changes`
   - *`Issue #492 - Part 1: Remove files`*
   - *`Issue #492 - Part 2: Build system, Installer/Packaging`*
   - *`Issue #492 - Part 3: nsUpdateService.js, updater.cpp, nsUpdateDriver.cpp`*
   - *`Issue #492 - Part 4: Remove superfluous brackets in nsUpdateService.js and updater.cpp`*
 
-An exception exists for multi-part commits where the issue is anticipated or ends up being long term such as "Stop using unified compilation of sources". In these instances the multi-part form is not required.
+Occasionally a resolved (and shipped) issue requires further changes to fix bugs. However, If follow-ups are complex enough to be multi-part it should be considered a new issue.
+- Follow-up Form: *`Issue #xxx - Follow-up: Appropriate direct description of changes`*
+  - *`Issue #1643 - Follow-up: Make sure things aren't changed while iterating.`*
 
 ### Commits with no issue
 
