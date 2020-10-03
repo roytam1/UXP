@@ -8243,6 +8243,16 @@ nsTextFrame::AddInlineMinISizeForFlow(nsRenderingContext *aRenderingContext,
     return;
   }
 
+  // If overflow-wrap is break-word, we can wrap everywhere.
+  if (textStyle->WordCanWrap(this)) {
+    aData->OptionallyBreak();
+    aData->mCurrentLine +=
+      textRun->GetMinAdvanceWidth(Range(start, flowEndInTextRun));
+    aData->mTrailingWhitespace = 0;
+    aData->OptionallyBreak();
+    return;
+  }
+
   AutoTArray<bool,BIG_TEXT_NODE_SIZE> hyphBuffer;
   bool *hyphBreakBefore = nullptr;
   if (hyphenating) {
