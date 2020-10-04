@@ -138,8 +138,13 @@ pref("app.update.cert.maxErrors", 5);
 // |app.update.url.override| user preference has been set for testing updates or
 // when the |app.update.cert.checkAttributes| preference is set to false. Also,
 // the |app.update.url.override| preference should ONLY be used for testing.
-pref("app.update.certs.1.issuerName", "CN=COMODO RSA Domain Validation Secure Server CA,O=COMODO CA Limited,L=Salford,ST=Greater Manchester,C=GB");
-pref("app.update.certs.1.commonName", "*.palemoon.org");
+//
+// Examples:
+// pref("app.update.certs.1.issuerName", "CN=COMODO RSA Domain Validation Secure Server CA,O=COMODO CA Limited,L=Salford,ST=Greater Manchester,C=GB");
+// pref("app.update.certs.1.commonName", "*.palemoon.org");
+//
+// Note: these preferences are branding-specific and should be listed in
+// application branding, depending on publisher.
 
 // Whether or not app updates are enabled
 pref("app.update.enabled", true);
