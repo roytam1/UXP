@@ -1007,7 +1007,7 @@ nsWindow::RegisterWindowClass(const wchar_t* aClassName,
   }
 
   wc.style         = CS_DBLCLKS | aExtraStyle;
-  wc.lpfnWndProc   = WinUtils::NonClientDpiScalingDefWindowProcW;
+  wc.lpfnWndProc   = WinUtils::GetDefWindowProc();
   wc.cbClsExtra    = 0;
   wc.cbWndExtra    = 0;
   wc.hInstance     = nsToolkit::mDllInstance;
