@@ -41,6 +41,10 @@ public:
 
   void Disconnect();
 
+  bool IsRegistered() const { return mRegistered; }
+
+  void DetachFromOwner() { mOwner = nullptr; }
+
 protected:
   virtual ~ResizeObserverNotificationHelper();
 
@@ -68,6 +72,7 @@ public:
   void Traverse(nsCycleCollectionTraversalCallback& aCb);
   void Unlink();
 
+  void DetachFromDocument();
   void AddResizeObserver(ResizeObserver* aObserver);
 
   /*
