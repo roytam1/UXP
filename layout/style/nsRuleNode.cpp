@@ -5141,6 +5141,13 @@ nsRuleNode::ComputeUserInterfaceData(void* aStartStruct,
 {
   COMPUTE_START_INHERITED(UserInterface, ui, parentUI)
 
+  auto setComplexColor = [&](const nsCSSValue* aValue,
+                             StyleComplexColor nsStyleUserInterface::* aField) {
+    SetComplexColor<eUnsetInherit>(*aValue, parentUI->*aField,
+                                   StyleComplexColor::Auto(),
+                                   mPresContext, ui->*aField, conditions);
+  };
+
   // cursor: enum, url, inherit
   const nsCSSValue* cursorValue = aRuleData->ValueForCursor();
   nsCSSUnit cursorUnit = cursorValue->GetUnit();
@@ -5213,12 +5220,8 @@ nsRuleNode::ComputeUserInterfaceData(void* aStartStruct,
            NS_STYLE_POINTER_EVENTS_AUTO);
 
   // caret-color: auto, color, inherit
-  const nsCSSValue* caretColorValue = aRuleData->ValueForCaretColor();
-  SetComplexColor<eUnsetInherit>(*caretColorValue,
-                                 parentUI->mCaretColor,
-                                 StyleComplexColor::Auto(),
-                                 mPresContext,
-                                 ui->mCaretColor, conditions);
+  setComplexColor(aRuleData->ValueForCaretColor(),
+                  &nsStyleUserInterface::mCaretColor);
 
   COMPUTE_END_INHERITED(UserInterface, ui)
 }
