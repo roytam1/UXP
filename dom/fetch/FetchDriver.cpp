@@ -771,6 +771,17 @@ FetchDriver::OnDataAvailable(nsIRequest* aRequest,
   nsresult rv = aInputStream->ReadSegments(NS_CopySegmentToStream,
                                            mPipeOutputStream,
                                            aCount, &aRead);
+
+  // If no data was read, it's possible the output stream is closed but the
+  // ReadSegments call followed its contract of returning NS_OK despite write
+  // errors.  Unfortunately, nsIOutputStream has an ill-conceived contract when
+  // taken together with ReadSegments' contract, because the pipe will just
+  // NS_OK if we try and invoke its Write* functions ourselves with a 0 count.
+  // So we must just assume the pipe is broken.
+  if (aRead == 0 && aCount != 0) {
+    return NS_BASE_STREAM_CLOSED;
+  }
+
   return rv;
 }
 
