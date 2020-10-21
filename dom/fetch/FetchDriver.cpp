@@ -708,10 +708,12 @@ FetchDriver::OnDataAvailable(nsIRequest* aRequest,
   // about races.
 
   if (mObserver) {
+    // Need to keep mObserver alive.
+    RefPtr<FetchDriverObserver> observer = mObserver;
     if (NS_IsMainThread()) {
-      mObserver->OnDataAvailable();
+      observer->OnDataAvailable();
     } else {
-      RefPtr<Runnable> runnable = new DataAvailableRunnable(mObserver);
+      RefPtr<Runnable> runnable = new DataAvailableRunnable(observer);
       nsresult rv = NS_DispatchToMainThread(runnable);
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return rv;
@@ -719,12 +721,15 @@ FetchDriver::OnDataAvailable(nsIRequest* aRequest,
     }
   }
 
-  uint32_t aRead;
+  // Explicitly initialized to 0 because in some cases nsStringInputStream may
+  // not write to aRead.
+  uint32_t aRead = 0;
   MOZ_ASSERT(mResponse);
   MOZ_ASSERT(mPipeOutputStream);
 
   // From "Main Fetch" step 17: SRI-part2.
-  if (mResponse->Type() != ResponseType::Error &&
+  if (mResponse &&
+      mResponse->Type() != ResponseType::Error &&
       !mRequest->GetIntegrity().IsEmpty()) {
     MOZ_ASSERT(mSRIDataVerifier);
 
