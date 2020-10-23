@@ -708,10 +708,12 @@ FetchDriver::OnDataAvailable(nsIRequest* aRequest,
   // about races.
 
   if (mObserver) {
+    // Need to keep mObserver alive.
+    RefPtr<FetchDriverObserver> observer = mObserver;
     if (NS_IsMainThread()) {
-      mObserver->OnDataAvailable();
+      observer->OnDataAvailable();
     } else {
-      RefPtr<Runnable> runnable = new DataAvailableRunnable(mObserver);
+      RefPtr<Runnable> runnable = new DataAvailableRunnable(observer);
       nsresult rv = NS_DispatchToMainThread(runnable);
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return rv;
@@ -719,12 +721,15 @@ FetchDriver::OnDataAvailable(nsIRequest* aRequest,
     }
   }
 
-  uint32_t aRead;
+  // Explicitly initialized to 0 because in some cases nsStringInputStream may
+  // not write to aRead.
+  uint32_t aRead = 0;
   MOZ_ASSERT(mResponse);
   MOZ_ASSERT(mPipeOutputStream);
 
   // From "Main Fetch" step 17: SRI-part2.
-  if (mResponse->Type() != ResponseType::Error &&
+  if (mResponse &&
+      mResponse->Type() != ResponseType::Error &&
       !mRequest->GetIntegrity().IsEmpty()) {
     MOZ_ASSERT(mSRIDataVerifier);
 
@@ -766,6 +771,17 @@ FetchDriver::OnDataAvailable(nsIRequest* aRequest,
   nsresult rv = aInputStream->ReadSegments(NS_CopySegmentToStream,
                                            mPipeOutputStream,
                                            aCount, &aRead);
+
+  // If no data was read, it's possible the output stream is closed but the
+  // ReadSegments call followed its contract of returning NS_OK despite write
+  // errors.  Unfortunately, nsIOutputStream has an ill-conceived contract when
+  // taken together with ReadSegments' contract, because the pipe will just
+  // NS_OK if we try and invoke its Write* functions ourselves with a 0 count.
+  // So we must just assume the pipe is broken.
+  if (aRead == 0 && aCount != 0) {
+    return NS_BASE_STREAM_CLOSED;
+  }
+
   return rv;
 }
 

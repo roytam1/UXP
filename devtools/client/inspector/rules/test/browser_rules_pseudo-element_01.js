@@ -29,7 +29,7 @@ function* testTopLeft(inspector, view) {
       elementRulesNb: 4,
       firstLineRulesNb: 2,
       firstLetterRulesNb: 1,
-      selectionRulesNb: 0,
+      selectionRulesNb: 1,
       afterRulesNb: 1,
       beforeRulesNb: 2
     }
@@ -166,7 +166,7 @@ function* testParagraph(inspector, view) {
       elementRulesNb: 3,
       firstLineRulesNb: 1,
       firstLetterRulesNb: 1,
-      selectionRulesNb: 1,
+      selectionRulesNb: 2,
       beforeRulesNb: 0,
       afterRulesNb: 0
     });
@@ -216,7 +216,7 @@ function* assertPseudoElementRulesNumbers(selector, inspector, view, ruleNbs) {
     firstLetterRules: elementStyle.rules.filter(rule =>
       rule.pseudoElement === ":first-letter"),
     selectionRules: elementStyle.rules.filter(rule =>
-      rule.pseudoElement === ":-moz-selection"),
+      rule.pseudoElement === ":selection"),
     beforeRules: elementStyle.rules.filter(rule =>
       rule.pseudoElement === ":before"),
     afterRules: elementStyle.rules.filter(rule =>

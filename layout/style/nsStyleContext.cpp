@@ -1255,6 +1255,17 @@ nsStyleContext::CalcStyleDifferenceInternal(StyleContextLike* aNewContext,
       }
     }
 
+    // NB: Calling Peek on |this|, not |thisVis| (see above).
+    if (!change && PeekStyleUserInterface()) {
+      const nsStyleUserInterface *thisVisUserInterface = thisVis->StyleUserInterface();
+      const nsStyleUserInterface *otherVisUserInterface = otherVis->StyleUserInterface();
+      if (thisVisUserInterface->mCaretColor !=
+          otherVisUserInterface->mCaretColor) {
+        change = true;
+      }
+    }
+
+
     if (change) {
       hint |= nsChangeHint_RepaintFrame;
     }
@@ -1487,6 +1498,9 @@ ExtractColor(nsCSSPropertyID aProperty,
     case StyleAnimationValue::eUnit_ComplexColor:
       return Some(aStyleContext->StyleColor()->
                   CalcComplexColor(val.GetStyleComplexColorValue()));
+    case StyleAnimationValue::eUnit_Auto:
+      return Some(aStyleContext->StyleColor()->
+                  CalcComplexColor(StyleComplexColor::Auto()));
     default:
       return Nothing();
   }
@@ -1508,7 +1522,8 @@ static const ColorIndexSet gVisitedIndices[2] = { { 0, 0 }, { 1, 0 } };
 nscolor
 nsStyleContext::GetVisitedDependentColor(nsCSSPropertyID aProperty)
 {
-  NS_ASSERTION(aProperty == eCSSProperty_color ||
+  NS_ASSERTION(aProperty == eCSSProperty_caret_color ||
+	       aProperty == eCSSProperty_color ||
                aProperty == eCSSProperty_background_color ||
                aProperty == eCSSProperty_border_top_color ||
                aProperty == eCSSProperty_border_right_color ||
