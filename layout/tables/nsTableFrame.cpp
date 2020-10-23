@@ -2933,16 +2933,27 @@ nsTableFrame::ReflowChildren(TableReflowInput& aReflowInput,
   // using the footer's prev-in-flow's height instead of reflowing it again,
   // but there's no real need.
   if (isPaginated) {
+    bool reorder = false;
     if (thead && !GetPrevInFlow()) {
+      if (thead->GetNextInFlow()) {
+        reorder = true;
+      }
       nscoord desiredHeight;
       nsresult rv = SetupHeaderFooterChild(aReflowInput, thead, &desiredHeight);
       if (NS_FAILED(rv))
         return;
     }
     if (tfoot) {
+      if (tfoot->GetNextInFlow()) {
+        reorder = true;
+      }
       nsresult rv = SetupHeaderFooterChild(aReflowInput, tfoot, &footerHeight);
       if (NS_FAILED(rv))
         return;
+    }
+    if (reorder) {
+      // Reorder row groups, because the reflow may have changed what's next-in-flow.
+      OrderRowGroups(rowGroups, &thead, &tfoot);
     }
   }
    // if the child is a tbody in paginated mode reduce the height by a repeated footer
@@ -3013,8 +3024,9 @@ nsTableFrame::ReflowChildren(TableReflowInput& aReflowInput,
       // record the presence of a next in flow, it might get destroyed so we
       // need to reorder the row group array
       bool reorder = false;
-      if (kidFrame->GetNextInFlow())
+      if (kidFrame->GetNextInFlow()) {
         reorder = true;
+      }
 
       LogicalPoint kidPosition(wm, aReflowInput.iCoord, aReflowInput.bCoord);
       ReflowChild(kidFrame, presContext, desiredSize, kidReflowInput,
@@ -3022,7 +3034,7 @@ nsTableFrame::ReflowChildren(TableReflowInput& aReflowInput,
       kidReflowInput.ApplyRelativePositioning(&kidPosition, containerSize);
 
       if (reorder) {
-        // reorder row groups the reflow may have changed the nextinflows
+        // Reorder row groups, because the reflow may have changed what's next-in-flow.
         OrderRowGroups(rowGroups, &thead, &tfoot);
         childX = rowGroups.IndexOf(kidFrame);
         if (childX == RowGroupArray::NoIndex) {
