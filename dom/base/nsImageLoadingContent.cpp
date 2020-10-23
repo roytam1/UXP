@@ -932,8 +932,12 @@ nsImageLoadingContent::LoadImage(nsIURI* aNewURI,
     MOZ_ASSERT(!req, "Shouldn't have non-null request here");
     // If we don't have a current URI, we might as well store this URI so people
     // know what we tried (and failed) to load.
-    if (!mCurrentRequest)
+    if (!mCurrentRequest) {
       mCurrentURI = aNewURI;
+      if (mImageBlockingStatus == nsIContentPolicy::ACCEPT) {
+        mImageBlockingStatus = nsIContentPolicy::REJECT_REQUEST;
+      }
+    }
 
     FireEvent(NS_LITERAL_STRING("error"));
     FireEvent(NS_LITERAL_STRING("loadend"));
