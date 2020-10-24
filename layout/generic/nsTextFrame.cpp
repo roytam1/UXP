@@ -3435,7 +3435,7 @@ PropertyProvider::GetSpacingInternal(Range aRange, Spacing* aSpacing,
   if (!aIgnoreTabs) {
     gfxFloat tabWidth = ComputeTabWidthAppUnits(mFrame, mTextRun);
     if (tabWidth > 0) {
-      CalcTabWidths(aRange);
+      CalcTabWidths(aRange, tabWidth);
       if (mTabWidths) {
         mTabWidths->ApplySpacing(aSpacing,
                                  aRange.start - mStart.GetSkippedOffset(),
@@ -3466,13 +3466,13 @@ PropertyProvider::GetSpacingInternal(Range aRange, Spacing* aSpacing,
 // aX and the result are in whole appunits.
 static gfxFloat
 AdvanceToNextTab(gfxFloat aX, nsIFrame* aFrame,
-                 gfxTextRun* aTextRun, gfxFloat* aTabWidth)
+                 gfxTextRun* aTextRun, gfxFloat aTabWidth)
 {
 
   // Advance aX to the next multiple of *aCachedTabWidth. We must advance
   // by at least 1 appunit.
   // XXX should we make this 1 CSS pixel?
-  return ceil((aX + 1)/ aTabWidth) * aTabWidth;
+  return NS_round((aX + 1) / aTabWidth) * aTabWidth;
 }
 
 void
