@@ -2027,8 +2027,8 @@ var gCSSProperties = {
     other_values: [ "ignore" ],
     invalid_values: []
   },
-  "-moz-tab-size": {
-    domProp: "MozTabSize",
+  "tab-size": {
+    domProp: "TabSize",
     inherited: true,
     type: CSS_TYPE_LONGHAND,
     initial_values: [ "8" ],
@@ -2036,6 +2036,13 @@ var gCSSProperties = {
 	    "calc(1px + 1em)", "calc(1px - 2px)", "calc(1 + 1)", "calc(-2.5)" ],
     invalid_values: [ "9%", "calc(9% + 1px)", "calc(1 + 1em)", "-1", "-808",
 	    "auto" ]
+  },
+  "-moz-tab-size": {
+    domProp: "MozTabSize",
+    inherited: true,
+    type: CSS_TYPE_SHORTHAND_AND_LONGHAND
+    alias_for: "tab-size",
+    subproperties: [ "tab-size" ]
   },
   "-moz-text-size-adjust": {
     domProp: "MozTextSizeAdjust",

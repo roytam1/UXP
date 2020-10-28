@@ -4513,7 +4513,7 @@ struct LengthNumberCalcObj
   bool mIsNumber;
 };
 
-struct LengthNumberCalcOps : public css::FloatCoeffsAlreadyNormalizedOps
+struct LengthNumberCalcOps : public css::NumbersAlreadyNormalizedOps
 {
   typedef LengthNumberCalcObj result_type;
   nsStyleContext* const mStyleContext;
