@@ -47,8 +47,9 @@ protected:
   // available.
   mozilla::Vector<uint8_t, 0> mData;
 
-  // Number of consumed bytes from the mData.
-  size_t  mBytesConsumed;
+  // Number of bytes read, which may differ from the number of bytes in mData,
+  // since we incrementally remove from there.
+  mozilla::Atomic<uint32_t, mozilla::Relaxed> mBytesRead;
 };
 
 #endif // nsIncrementalStreamLoader_h__
