@@ -404,4 +404,3 @@ int main(int argc, char *argv[])
 	return 0 ;
 }
 #endif
-/* vim: set ts=4 et sw=4 tw=75 */

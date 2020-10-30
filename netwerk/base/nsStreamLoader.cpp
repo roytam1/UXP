@@ -54,7 +54,7 @@ NS_IMPL_ISUPPORTS(nsStreamLoader, nsIStreamLoader,
 NS_IMETHODIMP 
 nsStreamLoader::GetNumBytesRead(uint32_t* aNumBytes)
 {
-  *aNumBytes = mData.length();
+  *aNumBytes = mBytesRead;
   return NS_OK;
 }
 
@@ -150,7 +150,10 @@ nsStreamLoader::OnDataAvailable(nsIRequest* request, nsISupports *ctxt,
                                 uint64_t sourceOffset, uint32_t count)
 {
   uint32_t countRead;
-  return inStr->ReadSegments(WriteSegmentFun, this, count, &countRead);
+  nsresult rv = inStr->ReadSegments(WriteSegmentFun, this, count, &countRead);
+  NS_ENSURE_SUCCESS(rv, rv);
+  mBytesRead += countRead;
+  return NS_OK;
 }
 
 void
