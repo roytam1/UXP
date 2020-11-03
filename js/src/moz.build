@@ -12,6 +12,7 @@ FILES_PER_UNIFIED_FILE = 6
 DIRS += [
     'builtin',
     'devtools',
+    'ds',
 ]
 
 if CONFIG['JS_BUNDLED_EDITLINE']:
@@ -116,8 +117,6 @@ EXPORTS.js += [
 ]
 
 SOURCES += [
-    'ds/LifoAlloc.cpp',
-    'ds/MemoryProtectionExceptionHandler.cpp',
     'frontend/BytecodeCompiler.cpp',
     'frontend/BytecodeEmitter.cpp',
     'frontend/FoldConstants.cpp',
