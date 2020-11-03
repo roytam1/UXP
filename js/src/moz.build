@@ -3,6 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+include('js-config.mozbuild')
 include('js-cxxflags.mozbuild')
 include('js-testing.mozbuild')
 
@@ -37,7 +38,6 @@ CONFIGURE_DEFINE_FILES += [
 
 if CONFIG['HAVE_DTRACE']:
     GENERATED_FILES += ['javascript-trace.h']
-
     EXPORTS += ['!javascript-trace.h']
 
 # Changes to internal header files, used externally, massively slow down
@@ -538,7 +538,6 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         'threading/windows/Thread.cpp',
     ]
     # _CRT_RAND_S must be #defined before #including stdlib.h to get rand_s()
-    DEFINES['_CRT_RAND_S'] = True
 else:
     SOURCES += [
         'threading/posix/ConditionVariable.cpp',
@@ -615,24 +614,6 @@ USE_LIBS += [
     'zlib',
 ]
 
-if CONFIG['NIGHTLY_BUILD']:
-    DEFINES['ENABLE_BINARYDATA'] = True
-
-if CONFIG['NIGHTLY_BUILD']:
-    DEFINES['ENABLE_SIMD'] = True
-
-# Also set in shell/moz.build
-DEFINES['ENABLE_SHARED_ARRAY_BUFFER'] = True
-
-DEFINES['EXPORT_JS_API'] = True
-
-if CONFIG['JS_HAS_CTYPES']:
-    DEFINES['JS_HAS_CTYPES'] = True
-    for var in ('DLL_PREFIX', 'DLL_SUFFIX'):
-        DEFINES[var] = '"%s"' % CONFIG[var]
-
-if CONFIG['MOZ_LINKER']:
-    DEFINES['MOZ_LINKER'] = True
 
 if CONFIG['_MSC_VER']:
     if CONFIG['CPU_ARCH'] == 'x86':
@@ -641,19 +622,13 @@ if CONFIG['_MSC_VER']:
         SOURCES['ctypes/CTypes.cpp'].no_pgo = True # Bug 810661
 
 if CONFIG['OS_ARCH'] not in ('WINNT'):
-    OS_LIBS += [
-        'm',
-    ]
+    OS_LIBS += ['m']
 
 if CONFIG['OS_ARCH'] == 'FreeBSD':
-    OS_LIBS += [
-        '-pthread',
-    ]
+    OS_LIBS += ['-pthread']
 
 if CONFIG['OS_ARCH'] == 'Linux':
-    OS_LIBS += [
-        'dl',
-    ]
+    OS_LIBS += ['dl']
 
 if CONFIG['OS_ARCH'] == 'SunOS':
     OS_LIBS += [
@@ -706,15 +681,9 @@ selfhosted.inputs = [
     'builtin/WeakSet.js'
 ]
 
-if CONFIG['JS_HAS_CTYPES']:
-    if not CONFIG['MOZ_SYSTEM_FFI']:
-        # Windows needs this to be linked with a static library.
-        DEFINES['FFI_BUILDING'] = True
-
 # Suppress warnings in third-party code.
 # We are keeping this in the main moz.build because it is file specific
 if CONFIG['CLANG_CXX'] or CONFIG['GNU_CXX']:
     SOURCES['jsdtoa.cpp'].flags += ['-Wno-implicit-fallthrough']
 
-if CONFIG['OS_ARCH'] == 'WINNT':
-    DEFINES['NOMINMAX'] = True
+
