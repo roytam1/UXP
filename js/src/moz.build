@@ -107,6 +107,7 @@ DIRS += [
     'devtools',
     'ds',
     'frontend',
+    'gc',
 ]
 
 if CONFIG['JS_BUNDLED_EDITLINE']:
@@ -116,19 +117,6 @@ if not CONFIG['JS_DISABLE_SHELL']:
     DIRS += ['shell']
 
 SOURCES += [
-    'gc/Allocator.cpp',
-    'gc/Barrier.cpp',
-    'gc/GCTrace.cpp',
-    'gc/Iteration.cpp',
-    'gc/Marking.cpp',
-    'gc/Memory.cpp',
-    'gc/MemoryProfiler.cpp',
-    'gc/Nursery.cpp',
-    'gc/RootMarking.cpp',
-    'gc/Statistics.cpp',
-    'gc/Tracer.cpp',
-    'gc/Verifier.cpp',
-    'gc/Zone.cpp',
     'irregexp/NativeRegExpMacroAssembler.cpp',
     'irregexp/RegExpAST.cpp',
     'irregexp/RegExpCharacters.cpp',
@@ -331,7 +319,6 @@ SOURCES += [
 # instantiations may or may not be needed depending on what it gets bundled
 # with.
 SOURCES += [
-    'gc/StoreBuffer.cpp',
     'jsarray.cpp',
     'jsatom.cpp',
     'jsdtoa.cpp',
