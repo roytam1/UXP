@@ -32,7 +32,6 @@ SOURCES += [
     'CacheIR.cpp',
     'CodeGenerator.cpp',
     'CompileWrappers.cpp',
-    'Disassembler.cpp',
     'EagerSimdUnbox.cpp',
     'EdgeCaseAnalysis.cpp',
     'EffectiveAddressAnalysis.cpp',
@@ -82,6 +81,9 @@ SOURCES += [
     'VMFunctions.cpp',
     'WasmBCE.cpp',
 ]
+
+if CONFIG['MOZ_DEBUG']:
+    SOURCES += ['Disassembler.cpp']
 
 if not CONFIG['ENABLE_ION']:
     SOURCES += [
