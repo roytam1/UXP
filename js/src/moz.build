@@ -11,6 +11,7 @@ CONFIGURE_SUBST_FILES += [
     'js-config',
     'js.pc',
 ]
+
 CONFIGURE_DEFINE_FILES += [
     'js-confdefs.h',
 ]
@@ -111,6 +112,7 @@ DIRS += [
     'jit',
     'perf',
     'proxy',
+    'threading',
 ]
 
 if CONFIG['JS_BUNDLED_EDITLINE']:
@@ -141,7 +143,6 @@ SOURCES += [
     'jsscript.cpp',
     'jsstr.cpp',
     'jsweakmap.cpp',
-    'threading/Mutex.cpp',
     'vm/ArgumentsObject.cpp',
     'vm/ArrayBufferObject.cpp',
     'vm/AsyncFunction.cpp',
@@ -254,20 +255,6 @@ if CONFIG['ENABLE_TRACE_LOGGING']:
         'vm/TraceLogging.cpp',
         'vm/TraceLoggingGraph.cpp',
         'vm/TraceLoggingTypes.cpp',
-    ]
-
-if CONFIG['OS_ARCH'] == 'WINNT':
-    SOURCES += [
-        'threading/windows/ConditionVariable.cpp',
-        'threading/windows/MutexImpl.cpp',
-        'threading/windows/Thread.cpp',
-    ]
-    # _CRT_RAND_S must be #defined before #including stdlib.h to get rand_s()
-else:
-    SOURCES += [
-        'threading/posix/ConditionVariable.cpp',
-        'threading/posix/MutexImpl.cpp',
-        'threading/posix/Thread.cpp',
     ]
 
 if CONFIG['JS_HAS_CTYPES']:
