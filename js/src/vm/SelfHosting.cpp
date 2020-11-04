@@ -20,8 +20,8 @@
 #include "jsstr.h"
 #include "jsweakmap.h"
 #include "jswrapper.h"
-#include "selfhosted.out.h"
 
+#include "builtin/selfhosted.out.h"
 #include "builtin/Intl.h"
 #include "builtin/MapObject.h"
 #include "builtin/ModuleObject.h"
