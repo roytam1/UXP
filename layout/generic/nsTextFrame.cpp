@@ -1716,6 +1716,16 @@ GetSpaceWidthAppUnits(const gfxTextRun* aTextRun)
   return spaceWidthAppUnits;
 }
 
+static gfxFloat
+GetMinTabAdvanceAppUnits(const gfxTextRun* aTextRun)
+{
+  gfxFloat chWidthAppUnits =
+    NS_round(GetFirstFontMetrics(aTextRun->GetFontGroup(),
+			         aTextRun->IsVertical()).zeroOrAveCharWidth *
+	     aTextRun->GetAppUnitsPerDevUnit());
+  return 0.5 * chWidthAppUnits;
+}
+
 static nscoord
 LetterSpacing(nsIFrame* aFrame, const nsStyleText* aStyleText = nullptr)
 {
@@ -3090,6 +3100,7 @@ public:
       mLength(aLength),
       mWordSpacing(WordSpacing(aFrame, mTextRun, aTextStyle)),
       mLetterSpacing(LetterSpacing(aFrame, aTextStyle)),
+      mMinTabAdvance(-1.0),
       mHyphenWidth(-1),
       mOffsetFromBlockOriginForTabs(aOffsetFromBlockOriginForTabs),
       mReflowing(true),
@@ -3114,6 +3125,7 @@ public:
       mLength(aFrame->GetContentLength()),
       mWordSpacing(WordSpacing(aFrame, mTextRun)),
       mLetterSpacing(LetterSpacing(aFrame)),
+      mMinTabAdvance(-1.0),
       mHyphenWidth(-1),
       mOffsetFromBlockOriginForTabs(0),
       mReflowing(false),
@@ -3176,7 +3188,14 @@ public:
     return mFontMetrics;
   }
 
-  void CalcTabWidths(Range aTransformedRange);
+  void CalcTabWidths(Range aTransformedRange, gfxFloat aTabWidth);
+
+  gfxFloat MinTabAdvance() {
+    if (mMinTabAdvance < 0.0) {
+      mMinTabAdvance = GetMinTabAdvanceAppUnits(mTextRun);
+    }
+    return mMinTabAdvance;
+  }
 
   const gfxSkipCharsIterator& GetEndHint() { return mTempIterator; }
 
@@ -3210,6 +3229,7 @@ protected:
   int32_t               mLength; // DOM string length, may be INT32_MAX
   gfxFloat              mWordSpacing;     // space for each whitespace char
   gfxFloat              mLetterSpacing;   // space for each letter
+  gfxFloat		mMinTabAdvance; // min advance for <tab> char
   gfxFloat              mHyphenWidth;
   gfxFloat              mOffsetFromBlockOriginForTabs;
 
@@ -3362,6 +3382,28 @@ CanAddSpacingAfter(const gfxTextRun* aTextRun, uint32_t aOffset)
     aTextRun->IsLigatureGroupStart(aOffset + 1);
 }
 
+static gfxFloat
+ComputeTabWidthAppUnits(nsIFrame* aFrame, gfxTextRun* aTextRun)
+{
+  const nsStyleText* textStyle = aFrame->StyleText();
+  if (textStyle->mTabSize.GetUnit() != eStyleUnit_Factor) {
+    nscoord w = textStyle->mTabSize.GetCoordValue();
+    MOZ_ASSERT(w >= 0);
+    return w;
+  }
+
+  gfxFloat spaces = textStyle->mTabSize.GetFactorValue();
+  MOZ_ASSERT(spaces >= 0);
+
+  // Round the space width when converting to appunits the same way
+  // textruns do.
+  gfxFloat spaceWidthAppUnits =
+    NS_round(GetFirstFontMetrics(aTextRun->GetFontGroup(),
+                                 aTextRun->IsVertical()).spaceWidth *
+             aTextRun->GetAppUnitsPerDevUnit());
+  return spaces * spaceWidthAppUnits;
+}
+
 void
 PropertyProvider::GetSpacingInternal(Range aRange, Spacing* aSpacing,
                                      bool aIgnoreTabs)
@@ -3409,17 +3451,16 @@ PropertyProvider::GetSpacingInternal(Range aRange, Spacing* aSpacing,
     }
   }
 
-  // Ignore tab spacing rather than computing it, if the tab size is 0
-  if (!aIgnoreTabs)
-    aIgnoreTabs = mFrame->StyleText()->mTabSize == 0;
-
   // Now add tab spacing, if there is any
   if (!aIgnoreTabs) {
-    CalcTabWidths(aRange);
-    if (mTabWidths) {
-      mTabWidths->ApplySpacing(aSpacing,
-                               aRange.start - mStart.GetSkippedOffset(),
-                               aRange.Length());
+    gfxFloat tabWidth = ComputeTabWidthAppUnits(mFrame, mTextRun);
+    if (tabWidth > 0) {
+      CalcTabWidths(aRange, tabWidth);
+      if (mTabWidths) {
+        mTabWidths->ApplySpacing(aSpacing,
+                                 aRange.start - mStart.GetSkippedOffset(),
+                                 aRange.Length());
+      }
     }
   }
 
@@ -3442,33 +3483,22 @@ PropertyProvider::GetSpacingInternal(Range aRange, Spacing* aSpacing,
   }
 }
 
-static gfxFloat
-ComputeTabWidthAppUnits(nsIFrame* aFrame, const gfxTextRun* aTextRun)
-{
-  // Get the number of spaces from CSS -moz-tab-size
-  const nsStyleText* textStyle = aFrame->StyleText();
-
-  return textStyle->mTabSize * GetSpaceWidthAppUnits(aTextRun);
-}
-
 // aX and the result are in whole appunits.
 static gfxFloat
-AdvanceToNextTab(gfxFloat aX, nsIFrame* aFrame,
-                 const gfxTextRun* aTextRun, gfxFloat* aCachedTabWidth)
+AdvanceToNextTab(gfxFloat aX, nsIFrame* aFrame, gfxTextRun* aTextRun,
+	         gfxFloat aTabWidth, gfxFloat aMinAdvance)
 {
-  if (*aCachedTabWidth < 0) {
-    *aCachedTabWidth = ComputeTabWidthAppUnits(aFrame, aTextRun);
-  }
 
-  // Advance aX to the next multiple of *aCachedTabWidth. We must advance
-  // by at least 1 appunit.
-  // XXX should we make this 1 CSS pixel?
-  return ceil((aX + 1)/(*aCachedTabWidth))*(*aCachedTabWidth);
+  // Advance aX to the next multiple of aTabWidth. We must advance
+  // by at least aMinAdvance.
+  return ceil((aX + aMinAdvance) / aTabWidth) * aTabWidth;
 }
 
 void
-PropertyProvider::CalcTabWidths(Range aRange)
+PropertyProvider::CalcTabWidths(Range aRange, gfxFloat aTabWidth)
 {
+  MOZ_ASSERT(aTabWidth > 0);
+
   if (!mTabWidths) {
     if (mReflowing && !mLineContainer) {
       // Intrinsic width computation does its own tab processing. We
@@ -3503,7 +3533,6 @@ PropertyProvider::CalcTabWidths(Range aRange)
     NS_ASSERTION(mReflowing,
                  "We need precomputed tab widths, but don't have enough.");
 
-    gfxFloat tabWidth = -1;
     for (uint32_t i = tabsEnd; i < aRange.end; ++i) {
       Spacing spacing;
       GetSpacingInternal(Range(i, i + 1), &spacing, true);
@@ -3525,7 +3554,7 @@ PropertyProvider::CalcTabWidths(Range aRange)
           mFrame->SetProperty(TabWidthProperty(), mTabWidths);
         }
         double nextTab = AdvanceToNextTab(mOffsetFromBlockOriginForTabs,
-                mFrame, mTextRun, &tabWidth);
+	        mFrame, mTextRun, aTabWidth, MinTabAdvance());
         mTabWidths->mWidths.AppendElement(TabWidth(i - startOffset, 
                 NSToIntRound(nextTab - mOffsetFromBlockOriginForTabs)));
         mOffsetFromBlockOriginForTabs = nextTab;
@@ -8319,9 +8348,12 @@ nsTextFrame::AddInlineMinISizeForFlow(nsRenderingContext *aRenderingContext,
       PropertyProvider::Spacing spacing;
       provider.GetSpacing(Range(i, i + 1), &spacing);
       aData->mCurrentLine += nscoord(spacing.mBefore);
+      if (tabWidth < 0) {
+	tabWidth = ComputeTabWidthAppUnits(this, textRun);
+      }
       gfxFloat afterTab =
-        AdvanceToNextTab(aData->mCurrentLine, this,
-                         textRun, &tabWidth);
+        AdvanceToNextTab(aData->mCurrentLine, this, textRun, tabWidth,
+			 provider.MinTabAdvance());
       aData->mCurrentLine = nscoord(afterTab + spacing.mAfter);
       wordStart = i + 1;
     } else if (i < flowEndInTextRun ||
@@ -8478,9 +8510,12 @@ nsTextFrame::AddInlinePrefISizeForFlow(nsRenderingContext *aRenderingContext,
       PropertyProvider::Spacing spacing;
       provider.GetSpacing(Range(i, i + 1), &spacing);
       aData->mCurrentLine += nscoord(spacing.mBefore);
+      if (tabWidth < 0) {
+	tabWidth = ComputeTabWidthAppUnits(this, textRun);
+      }
       gfxFloat afterTab =
-        AdvanceToNextTab(aData->mCurrentLine, this,
-                         textRun, &tabWidth);
+        AdvanceToNextTab(aData->mCurrentLine, this, textRun, tabWidth,
+			 provider.MinTabAdvance());
       aData->mCurrentLine = nscoord(afterTab + spacing.mAfter);
       lineStart = i + 1;
     } else if (preformattedNewline) {
