@@ -7039,7 +7039,9 @@ JS::CaptureCurrentStack(JSContext* cx, JS::MutableHandleObject stackp,
 {
     AssertHeapIsIdle(cx);
     CHECK_REQUEST(cx);
-    MOZ_RELEASE_ASSERT(cx->compartment());
+    if (!cx->compartment()) {
+      return false;
+    }
 
     JSCompartment* compartment = cx->compartment();
     Rooted<SavedFrame*> frame(cx);
