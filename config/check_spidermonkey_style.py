@@ -86,6 +86,7 @@ included_inclnames_to_ignore = set([
     'unicode/udat.h',           # ICU
     'unicode/udatpg.h',         # ICU
     'unicode/uenum.h',          # ICU
+    'unicode/uniset.h',         # ICU
     'unicode/unorm.h',          # ICU
     'unicode/unum.h',           # ICU
     'unicode/unumsys.h',        # ICU
