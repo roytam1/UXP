@@ -51,7 +51,6 @@ NSSCertDBTrustDomain::NSSCertDBTrustDomain(SECTrustType certDBTrustType,
              /*optional but shouldn't be*/ void* pinArg,
                                            CertVerifier::OcspGetConfig ocspGETConfig,
                                            uint32_t certShortLifetimeInDays,
-                                           CertVerifier::PinningMode pinningMode,
                                            unsigned int minRSABits,
                                            ValidityCheckingMode validityCheckingMode,
                                            CertVerifier::SHA1Mode sha1Mode,
@@ -64,7 +63,6 @@ NSSCertDBTrustDomain::NSSCertDBTrustDomain(SECTrustType certDBTrustType,
   , mPinArg(pinArg)
   , mOCSPGetConfig(ocspGETConfig)
   , mCertShortLifetimeInDays(certShortLifetimeInDays)
-  , mPinningMode(pinningMode)
   , mMinRSABits(minRSABits)
   , mValidityCheckingMode(validityCheckingMode)
   , mSHA1Mode(sha1Mode)

@@ -87,8 +87,6 @@ SiteHSTSState::ToString(nsCString& aString)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const uint64_t kSixtyDaysInSeconds = 60 * 24 * 60 * 60;
-
 static bool
 HostIsIPAddress(const char *hostname)
 {
@@ -397,8 +395,6 @@ ParseSSSHeaders(uint32_t aType,
   //  syntax is encountered.
   //  Unrecognized directives (that are otherwise syntactically valid) are
   //  ignored, and the rest of the header is parsed as normal.
-
-  bool foundReportURI = false;
 
   NS_NAMED_LITERAL_CSTRING(max_age_var, "max-age");
   NS_NAMED_LITERAL_CSTRING(include_subd_var, "includesubdomains");

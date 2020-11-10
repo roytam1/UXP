@@ -139,13 +139,6 @@ public:
    /*optional out*/ SHA1ModeResult* sha1ModeResult = nullptr,
    /*optional out*/ CertificateTransparencyInfo* ctInfo = nullptr);
 
-  enum PinningMode {
-    pinningDisabled = 0,
-    pinningAllowUserCAMITM = 1,
-    pinningStrict = 2,
-    pinningEnforceTestMode = 3
-  };
-
   enum class SHA1Mode {
     Allowed = 0,
     Forbidden = 1,
@@ -172,7 +165,7 @@ public:
 
   CertVerifier(OcspDownloadConfig odc, OcspStrictConfig osc,
                OcspGetConfig ogc, uint32_t certShortLifetimeInDays,
-               PinningMode pinningMode, SHA1Mode sha1Mode,
+               SHA1Mode sha1Mode,
                BRNameMatchingPolicy::Mode nameMatchingMode,
                NetscapeStepUpPolicy netscapeStepUpPolicy,
                CertificateTransparencyMode ctMode);
@@ -184,7 +177,6 @@ public:
   const bool mOCSPStrict;
   const bool mOCSPGETEnabled;
   const uint32_t mCertShortLifetimeInDays;
-  const PinningMode mPinningMode;
   const SHA1Mode mSHA1Mode;
   const BRNameMatchingPolicy::Mode mNameMatchingMode;
   const NetscapeStepUpPolicy mNetscapeStepUpPolicy;
@@ -214,8 +206,7 @@ private:
 
 mozilla::pkix::Result IsCertBuiltInRoot(CERTCertificate* cert, bool& result);
 mozilla::pkix::Result CertListContainsExpectedKeys(
-  const CERTCertList* certList, const char* hostname, mozilla::pkix::Time time,
-  CertVerifier::PinningMode pinningMode);
+  const CERTCertList* certList, const char* hostname, mozilla::pkix::Time time);
 
 } } // namespace mozilla::psm
 
