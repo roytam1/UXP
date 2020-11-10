@@ -313,7 +313,7 @@ public:
     return *this;
   }
 
-  T& operator*() const { return *get(); }
+  typename AddLvalueReference<T>::Type operator*() const { return *get(); }
   Pointer operator->() const
   {
     MOZ_ASSERT(get(), "dereferencing a UniquePtr containing nullptr");
