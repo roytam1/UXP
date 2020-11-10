@@ -662,7 +662,7 @@ class MOZ_NONHEAP_CLASS Handle {
   // this object's lifetime only ends at the end of the full statement.
   // Origin:
   // https://github.com/v8/v8/blob/03aaa4b3bf4cb01eee1f223b252e6869b04ab08c/src/handles/handles.h#L91-L105
-  class MOZ_TEMPORARY_CLASS ObjectRef {
+  class ObjectRef {
    public:
     T* operator->() { return &object_; }
 
@@ -742,10 +742,10 @@ inline Handle<T> handle(T object, Isolate* isolate) {
 class DisallowHeapAllocation {
  public:
   DisallowHeapAllocation() {}
-  operator const JS::AutoAssertNoGC&() const { return no_gc_; }
+  operator const JS::AutoCheckCannotGC&() const { return no_gc_; }
 
  private:
-  const JS::AutoAssertNoGC no_gc_;
+  const JS::AutoCheckCannotGC no_gc_;
 };
 
 // This is used inside DisallowHeapAllocation regions to enable
@@ -802,7 +802,7 @@ class String : public HeapObject {
     }
    private:
     const JSLinearString* string_;
-    const JS::AutoAssertNoGC& no_gc_;
+    const JS::AutoCheckCannotGC& no_gc_;
   };
   FlatContent GetFlatContent(const DisallowHeapAllocation& no_gc) {
     MOZ_ASSERT(IsFlat());
@@ -1037,7 +1037,7 @@ public:
   //********** Stack guard code **********//
   inline StackGuard* stack_guard() { return this; }
   Object HandleInterrupts() {
-    return Object(JS::BooleanValue(cx()->handleInterrupt()));
+    return Object(JS::BooleanValue(cx()->handleInterrupt(cx())));
   }
 
   JSContext* cx() const { return cx_; }
@@ -1085,14 +1085,21 @@ class StackLimitCheck {
   StackLimitCheck(Isolate* isolate) : cx_(isolate->cx()) {}
 
   // Use this to check for stack-overflows in C++ code.
-  bool HasOverflowed() { return !CheckRecursionLimitDontReport(cx_); }
+  bool HasOverflowed() { 
+    JS_CHECK_RECURSION_DONT_REPORT(cx_, return true);
+    return false;
+  }
 
   // Use this to check for interrupt request in C++ code.
-  bool InterruptRequested() { return cx_->hasAnyPendingInterrupt(); }
+  bool InterruptRequested() { 
+    JSRuntime* rt = cx_->runtime();
+    return rt->hasPendingInterrupt();
+  }
 
   // Use this to check for stack-overflow when entering runtime from JS code.
   bool JsHasOverflowed() {
-    return !CheckRecursionLimitConservativeDontReport(cx_);
+    JS_CHECK_RECURSION_CONSERVATIVE_DONT_REPORT(cx_, return true);
+    return false;
   }
 
  private:
