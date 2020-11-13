@@ -97,11 +97,6 @@
 namespace mozilla {
 namespace dom {
 
-static bool sVibratorEnabled   = false;
-static uint32_t sMaxVibrateMS  = 0;
-static uint32_t sMaxVibrateListLen = 0;
-static const char* kVibrationPermissionType = "vibration";
-
 static void
 AddPermission(nsIPrincipal* aPrincipal, const char* aType, uint32_t aPermission,
               uint32_t aExpireType, int64_t aExpireTime)
@@ -152,12 +147,7 @@ GetPermission(nsIPrincipal* aPrincipal, const char* aType)
 void
 Navigator::Init()
 {
-  Preferences::AddBoolVarCache(&sVibratorEnabled,
-                               "dom.vibrator.enabled", true);
-  Preferences::AddUintVarCache(&sMaxVibrateMS,
-                               "dom.vibrator.max_vibrate_ms", 10000);
-  Preferences::AddUintVarCache(&sMaxVibrateListLen,
-                               "dom.vibrator.max_vibrate_list_len", 128);
+  // Add any Preferences::Add*VarCache(&sPref, "pref", default) here if needed.
 }
 
 Navigator::Navigator(nsPIDOMWindowInner* aWindow)
@@ -705,82 +695,6 @@ Navigator::RefreshMIMEArray()
   }
 }
 
-namespace {
-
-class VibrateWindowListener : public nsIDOMEventListener
-{
-public:
-  VibrateWindowListener(nsPIDOMWindowInner* aWindow, nsIDocument* aDocument)
-  {
-    mWindow = do_GetWeakReference(aWindow);
-    mDocument = do_GetWeakReference(aDocument);
-
-    NS_NAMED_LITERAL_STRING(visibilitychange, "visibilitychange");
-    aDocument->AddSystemEventListener(visibilitychange,
-                                      this, /* listener */
-                                      true, /* use capture */
-                                      false /* wants untrusted */);
-  }
-
-  void RemoveListener();
-
-  NS_DECL_ISUPPORTS
-  NS_DECL_NSIDOMEVENTLISTENER
-
-private:
-  virtual ~VibrateWindowListener()
-  {
-  }
-
-  nsWeakPtr mWindow;
-  nsWeakPtr mDocument;
-};
-
-NS_IMPL_ISUPPORTS(VibrateWindowListener, nsIDOMEventListener)
-
-StaticRefPtr<VibrateWindowListener> gVibrateWindowListener;
-
-static bool
-MayVibrate(nsIDocument* doc) {
-  // Hidden documents cannot start or stop a vibration.
-  return (doc && !doc->Hidden());
-}
-
-NS_IMETHODIMP
-VibrateWindowListener::HandleEvent(nsIDOMEvent* aEvent)
-{
-  nsCOMPtr<nsIDocument> doc =
-    do_QueryInterface(aEvent->InternalDOMEvent()->GetTarget());
-
-  if (!MayVibrate(doc)) {
-    // It's important that we call CancelVibrate(), not Vibrate() with an
-    // empty list, because Vibrate() will fail if we're no longer focused, but
-    // CancelVibrate() will succeed, so long as nobody else has started a new
-    // vibration pattern.
-    nsCOMPtr<nsPIDOMWindowInner> window = do_QueryReferent(mWindow);
-    hal::CancelVibrate(window);
-    RemoveListener();
-    gVibrateWindowListener = nullptr;
-    // Careful: The line above might have deleted |this|!
-  }
-
-  return NS_OK;
-}
-
-void
-VibrateWindowListener::RemoveListener()
-{
-  nsCOMPtr<EventTarget> target = do_QueryReferent(mDocument);
-  if (!target) {
-    return;
-  }
-  NS_NAMED_LITERAL_STRING(visibilitychange, "visibilitychange");
-  target->RemoveSystemEventListener(visibilitychange, this,
-                                    true /* use capture */);
-}
-
-} // namespace
-
 void
 Navigator::AddIdleObserver(MozIdleObserver& aIdleObserver, ErrorResult& aRv)
 {
@@ -807,111 +721,6 @@ Navigator::RemoveIdleObserver(MozIdleObserver& aIdleObserver, ErrorResult& aRv)
   if (NS_FAILED(mWindow->UnregisterIdleObserver(obs))) {
     NS_WARNING("Failed to remove idle observer.");
   }
-}
-
-void
-Navigator::SetVibrationPermission(bool aPermitted, bool aPersistent)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-
-  nsTArray<uint32_t> pattern;
-  pattern.SwapElements(mRequestedVibrationPattern);
-
-  if (!mWindow) {
-    return;
-  }
-
-  nsCOMPtr<nsIDocument> doc = mWindow->GetExtantDoc();
-
-  if (!MayVibrate(doc)) {
-    return;
-  }
-
-  if (aPermitted) {
-    // Add a listener to cancel the vibration if the document becomes hidden,
-    // and remove the old visibility listener, if there was one.
-    if (!gVibrateWindowListener) {
-      // If gVibrateWindowListener is null, this is the first time we've vibrated,
-      // and we need to register a listener to clear gVibrateWindowListener on
-      // shutdown.
-      ClearOnShutdown(&gVibrateWindowListener);
-    } else {
-      gVibrateWindowListener->RemoveListener();
-    }
-    gVibrateWindowListener = new VibrateWindowListener(mWindow, doc);
-    hal::Vibrate(pattern, mWindow);
-  }
-
-  if (aPersistent) {
-    AddPermission(doc->NodePrincipal(), kVibrationPermissionType,
-                  aPermitted ? nsIPermissionManager::ALLOW_ACTION :
-                               nsIPermissionManager::DENY_ACTION,
-                  nsIPermissionManager::EXPIRE_SESSION, 0);
-  }
-}
-
-bool
-Navigator::Vibrate(uint32_t aDuration)
-{
-  AutoTArray<uint32_t, 1> pattern;
-  pattern.AppendElement(aDuration);
-  return Vibrate(pattern);
-}
-
-bool
-Navigator::Vibrate(const nsTArray<uint32_t>& aPattern)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-
-  if (!mWindow) {
-    return false;
-  }
-
-  nsCOMPtr<nsIDocument> doc = mWindow->GetExtantDoc();
-
-  if (!MayVibrate(doc)) {
-    return false;
-  }
-
-  nsTArray<uint32_t> pattern(aPattern);
-
-  if (pattern.Length() > sMaxVibrateListLen) {
-    pattern.SetLength(sMaxVibrateListLen);
-  }
-
-  for (size_t i = 0; i < pattern.Length(); ++i) {
-    pattern[i] = std::min(sMaxVibrateMS, pattern[i]);
-  }
-
-  // The spec says we check sVibratorEnabled after we've done the sanity
-  // checking on the pattern.
-  if (!sVibratorEnabled) {
-    return true;
-  }
-
-  mRequestedVibrationPattern.SwapElements(pattern);
-  uint32_t permission = GetPermission(mWindow, kVibrationPermissionType);
-
-  if (permission == nsIPermissionManager::ALLOW_ACTION ||
-      mRequestedVibrationPattern.IsEmpty() ||
-      (mRequestedVibrationPattern.Length() == 1 &&
-       mRequestedVibrationPattern[0] == 0)) {
-    // Always allow cancelling vibration and respect session permissions.
-    SetVibrationPermission(true /* permitted */, false /* persistent */);
-    return true;
-  }
-
-  nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
-  if (!obs || permission == nsIPermissionManager::DENY_ACTION) {
-    // Abort without observer service or on denied session permission.
-    SetVibrationPermission(false /* permitted */, false /* persistent */);
-    return true;
-  }
-
-  // Request user permission.
-  obs->NotifyObservers(ToSupports(this), "Vibration:Request", nullptr);
-
-  return true;
 }
 
 //*****************************************************************************

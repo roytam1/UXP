@@ -13,9 +13,9 @@
  * http://www.w3.org/TR/beacon/#sec-beacon-method
  * https://html.spec.whatwg.org/#navigatorconcurrenthardware
  *
- * © Copyright 2004-2011 Apple Computer, Inc., Mozilla Foundation, and
- * Opera Software ASA. You are granted a license to use, reproduce
- * and create derivative works of this document.
+ * © Copyright 2004-2020 Apple Computer, Inc., Mozilla Foundation,
+ * Opera Software ASA and Moonchild Productions. You are granted a license to use,
+ * reproduce and create derivative works of this document.
  */
 
 // http://www.whatwg.org/specs/web-apps/current-work/#the-navigator-object
@@ -124,14 +124,6 @@ interface NavigatorGeolocation {
 };
 Navigator implements NavigatorGeolocation;
 
-// http://www.w3.org/TR/vibration/#vibration-interface
-partial interface Navigator {
-    // We don't support sequences in unions yet
-    //boolean vibrate ((unsigned long or sequence<unsigned long>) pattern);
-    boolean vibrate(unsigned long duration);
-    boolean vibrate(sequence<unsigned long> pattern);
-};
-
 // http://www.w3.org/TR/pointerevents/#extensions-to-the-navigator-interface
 partial interface Navigator {
     [Pref="dom.w3c_pointer_events.enabled"]
@@ -139,17 +131,6 @@ partial interface Navigator {
 };
 
 // Mozilla-specific extensions
-
-// Chrome-only interface for Vibration API permission handling.
-partial interface Navigator {
-    /* Set permission state to device vibration.
-     * @param permitted permission state (true for allowing vibration)
-     * @param persistent make the permission session-persistent
-     */
-    [ChromeOnly]
-    void setVibrationPermission(boolean permitted,
-                                optional boolean persistent = true);
-};
 
 callback interface MozIdleObserver {
   // Time is in seconds and is read only when idle observers are added
