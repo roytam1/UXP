@@ -5421,8 +5421,8 @@ pref("osfile.reset_worker_delay", 30000);
 #endif
 
 #if !defined(MOZ_WIDGET_ANDROID)
-pref("dom.webkitBlink.dirPicker.enabled", true);
-pref("dom.webkitBlink.filesystem.enabled", true);
+pref("dom.webkitBlink.dirPicker.enabled", false);
+pref("dom.webkitBlink.filesystem.enabled", false);
 #endif
 
 #ifdef NIGHTLY_BUILD
