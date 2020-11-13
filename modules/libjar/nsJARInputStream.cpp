@@ -7,6 +7,7 @@
 
 #include "nsJARInputStream.h"
 #include "zipstruct.h"         // defines ZIP compression codes
+#include "brotli/decode.h"
 #include "nsZipArchive.h"
 
 #include "nsEscape.h"
@@ -47,6 +48,13 @@ nsJARInputStream::InitFile(nsJAR *aJar, nsZipItem *item)
            NS_ENSURE_SUCCESS(rv, rv);
     
            mMode = MODE_INFLATE;
+           mInCrc = item->CRC32();
+           mOutCrc = crc32(0L, Z_NULL, 0);
+           break;
+
+       case MOZ_JAR_BROTLI:
+           mBrotliState = BrotliDecoderCreateInstance(nullptr, nullptr, nullptr);
+           mMode = MODE_BROTLI;
            mInCrc = item->CRC32();
            mOutCrc = crc32(0L, Z_NULL, 0);
            break;
@@ -166,6 +174,7 @@ nsJARInputStream::Available(uint64_t *_retval)
         break;
 
       case MODE_INFLATE:
+      case MODE_BROTLI:
       case MODE_COPY:
         *_retval = mOutSize - mZs.total_out;
         break;
@@ -195,6 +204,7 @@ MOZ_WIN_MEM_TRY_BEGIN
         return ReadDirectory(aBuffer, aCount, aBytesRead);
 
       case MODE_INFLATE:
+      case MODE_BROTLI:
         if (mZs.total_out < mOutSize) {
           rv = ContinueInflate(aBuffer, aCount, aBytesRead);
         }
@@ -246,6 +256,9 @@ nsJARInputStream::Close()
     if (mMode == MODE_INFLATE) {
         inflateEnd(&mZs);
     }
+    if (mMode == MODE_BROTLI) {
+        BrotliDecoderDestroyInstance(mBrotliState);
+    }
     mMode = MODE_CLOSED;
     mFd = nullptr;
     return NS_OK;
@@ -255,6 +268,8 @@ nsresult
 nsJARInputStream::ContinueInflate(char* aBuffer, uint32_t aCount,
                                   uint32_t* aBytesRead)
 {
+    bool finished = false;
+
     // No need to check the args, ::Read did that, but assert them at least
     NS_ASSERTION(aBuffer,"aBuffer parameter must not be null");
     NS_ASSERTION(aBytesRead,"aBytesRead parameter must not be null");
@@ -266,11 +281,35 @@ nsJARInputStream::ContinueInflate(char* aBuffer, uint32_t aCount,
     mZs.avail_out = std::min(aCount, (mOutSize-oldTotalOut));
     mZs.next_out = (unsigned char*)aBuffer;
 
-    // now inflate
-    int zerr = inflate(&mZs, Z_SYNC_FLUSH);
-    if ((zerr != Z_OK) && (zerr != Z_STREAM_END)) {
-        nsZipArchive::sFileCorruptedReason = "nsJARInputStream: error while inflating";
-        return NS_ERROR_FILE_CORRUPTED;
+    if (mMode == MODE_INFLATE) {
+        // now inflate
+        int zerr = inflate(&mZs, Z_SYNC_FLUSH);
+        if ((zerr != Z_OK) && (zerr != Z_STREAM_END)) {
+            nsZipArchive::sFileCorruptedReason = "nsJARInputStream: error while inflating";
+            return NS_ERROR_FILE_CORRUPTED;
+        }
+        finished = (zerr == Z_STREAM_END);
+    } else {
+        MOZ_ASSERT(mMode == MODE_BROTLI);
+        /* The brotli library wants size_t, but z_stream only contains
+         * unsigned int for avail_* and unsigned long for total_*.
+         * So use temporary stack values. */
+        size_t avail_in = mZs.avail_in;
+        size_t avail_out = mZs.avail_out;
+        size_t total_out = mZs.total_out;
+        BrotliDecoderResult result = BrotliDecoderDecompressStream(
+            mBrotliState,
+            &avail_in, const_cast<const unsigned char**>(&mZs.next_in),
+            &avail_out, &mZs.next_out, &total_out);
+        /* We don't need to update avail_out, it's not used outside this
+         * function. */
+        mZs.total_out = total_out;
+        mZs.avail_in = avail_in;
+        if (result == BROTLI_DECODER_RESULT_ERROR) {
+            nsZipArchive::sFileCorruptedReason = "nsJARInputStream: brotli decompression error";
+            return NS_ERROR_FILE_CORRUPTED;
+        }
+        finished = (result == BROTLI_DECODER_RESULT_SUCCESS);
     }
 
     *aBytesRead = (mZs.total_out - oldTotalOut);
@@ -280,8 +319,10 @@ nsJARInputStream::ContinueInflate(char* aBuffer, uint32_t aCount,
 
     // be aggressive about ending the inflation
     // for some reason we don't always get Z_STREAM_END
-    if (zerr == Z_STREAM_END || mZs.total_out == mOutSize) {
-        inflateEnd(&mZs);
+    if (finished || mZs.total_out == mOutSize) {
+        if (mMode == MODE_INFLATE) {
+            inflateEnd(&mZs);
+        }
 
         // stop returning valid data as soon as we know we have a bad CRC
         if (mOutCrc != mInCrc) {
