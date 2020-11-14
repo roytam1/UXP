@@ -535,7 +535,7 @@ class Jarrer(FileRegistry, BaseFile):
             dest = Dest(dest)
         assert isinstance(dest, Dest)
 
-        from mozpack.mozjar import JarWriter, JarReader
+        from mozpack.mozjar import JarWriter, JarReader, JAR_BROTLI
         try:
             old_jar = JarReader(fileobj=dest)
         except Exception:
