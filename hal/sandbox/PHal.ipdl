@@ -69,9 +69,6 @@ child:
     async NotifySystemTimezoneChange(SystemTimezoneChangeInformation aSystemTimezoneChangeInfo); 
 
 parent:
-    async Vibrate(uint32_t[] pattern, uint64_t[] id, PBrowser browser);
-    async CancelVibrate(uint64_t[] id, PBrowser browser);
-
     async EnableNetworkNotifications();
     async DisableNetworkNotifications();
     sync GetCurrentNetworkInformation()

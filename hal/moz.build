@@ -29,7 +29,6 @@ if CONFIG['OS_TARGET'] == 'Linux':
         'fallback/FallbackAlarm.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
-        'fallback/FallbackVibration.cpp',
         'linux/LinuxMemory.cpp',
         'linux/LinuxPower.cpp',
     ]
@@ -39,7 +38,6 @@ elif CONFIG['OS_TARGET'] == 'WINNT':
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
-        'fallback/FallbackVibration.cpp',
         'windows/WindowsSensor.cpp',
     ]
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
@@ -48,7 +46,6 @@ elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         'fallback/FallbackMemory.cpp',
         'fallback/FallbackPower.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
-        'fallback/FallbackVibration.cpp',
     ]
 elif CONFIG['OS_TARGET'] in ('OpenBSD', 'NetBSD', 'FreeBSD', 'DragonFly'):
     UNIFIED_SOURCES += [
@@ -57,7 +54,6 @@ elif CONFIG['OS_TARGET'] in ('OpenBSD', 'NetBSD', 'FreeBSD', 'DragonFly'):
         'fallback/FallbackPower.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
-        'fallback/FallbackVibration.cpp',
     ]
 else:
     UNIFIED_SOURCES += [
@@ -66,7 +62,6 @@ else:
         'fallback/FallbackPower.cpp',
         'fallback/FallbackScreenConfiguration.cpp',
         'fallback/FallbackSensor.cpp',
-        'fallback/FallbackVibration.cpp',
     ]
 
 UNIFIED_SOURCES += [

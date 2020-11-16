@@ -526,7 +526,6 @@ hardware/lights.h
 hardware/power.h
 hardware_legacy/power.h
 hardware_legacy/uevent.h
-hardware_legacy/vibrator.h
 #endif
 HIToolbox/HIToolbox.h
 hlink.h

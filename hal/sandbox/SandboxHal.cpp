@@ -46,28 +46,6 @@ Hal()
 }
 
 void
-Vibrate(const nsTArray<uint32_t>& pattern, const WindowIdentifier &id)
-{
-  HAL_LOG("Vibrate: Sending to parent process.");
-
-  AutoTArray<uint32_t, 8> p(pattern);
-
-  WindowIdentifier newID(id);
-  newID.AppendProcessID();
-  Hal()->SendVibrate(p, newID.AsArray(), TabChild::GetFrom(newID.GetWindow()));
-}
-
-void
-CancelVibrate(const WindowIdentifier &id)
-{
-  HAL_LOG("CancelVibrate: Sending to parent process.");
-
-  WindowIdentifier newID(id);
-  newID.AppendProcessID();
-  Hal()->SendCancelVibrate(newID.AsArray(), TabChild::GetFrom(newID.GetWindow()));
-}
-
-void
 EnableNetworkNotifications()
 {
   Hal()->SendEnableNetworkNotifications();
@@ -377,36 +355,6 @@ public:
     hal::UnregisterWakeLockObserver(this);
     hal::UnregisterSystemClockChangeObserver(this);
     hal::UnregisterSystemTimezoneChangeObserver(this);
-  }
-
-  virtual bool
-  RecvVibrate(InfallibleTArray<unsigned int>&& pattern,
-              InfallibleTArray<uint64_t>&& id,
-              PBrowserParent *browserParent) override
-  {
-    // We give all content vibration permission.
-    //    TabParent *tabParent = TabParent::GetFrom(browserParent);
-    /* xxxkhuey wtf
-    nsCOMPtr<nsIDOMWindow> window =
-      do_QueryInterface(tabParent->GetBrowserDOMWindow());
-    */
-    WindowIdentifier newID(id, nullptr);
-    hal::Vibrate(pattern, newID);
-    return true;
-  }
-
-  virtual bool
-  RecvCancelVibrate(InfallibleTArray<uint64_t> &&id,
-                    PBrowserParent *browserParent) override
-  {
-    //TabParent *tabParent = TabParent::GetFrom(browserParent);
-    /* XXXkhuey wtf
-    nsCOMPtr<nsIDOMWindow> window =
-      tabParent->GetBrowserDOMWindow();
-    */
-    WindowIdentifier newID(id, nullptr);
-    hal::CancelVibrate(newID);
-    return true;
   }
 
   virtual bool
