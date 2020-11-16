@@ -4402,6 +4402,85 @@ dnl =
 dnl ========================================================
 MOZ_ARG_HEADER(Misc. Options)
 
+dnl =========================================================
+dnl = Chrome format
+dnl =========================================================
+MOZ_ARG_ENABLE_STRING([chrome-format],
+[  --enable-chrome-format=jar|flat|omni
+                          Select FORMAT of chrome files during packaging],
+    MOZ_CHROME_FILE_FORMAT=`echo $enableval | tr A-Z a-z`)
+
+if test -z "$MOZ_CHROME_FILE_FORMAT"; then
+    MOZ_CHROME_FILE_FORMAT=omni
+fi
+
+if test "$MOZ_CHROME_FILE_FORMAT" = "symlink"; then
+    AC_MSG_ERROR([--enable-chrome-format=symlink has been deprecated. It is now used by default in $DIST/bin on platforms that support it])
+fi
+
+if test "$MOZ_CHROME_FILE_FORMAT" != "jar" &&
+    test "$MOZ_CHROME_FILE_FORMAT" != "flat" &&
+    test "$MOZ_CHROME_FILE_FORMAT" != "omni"; then
+    AC_MSG_ERROR([--enable-chrome-format must be set to either jar, flat, or omni])
+fi
+
+dnl =========================================================
+dnl = Chrome compression
+dnl =========================================================
+MOZ_ARG_ENABLE_STRING([chrome-compression],
+[  --enable-chrome-compression=none|deflate|brotli
+                          Select COMPRESSION type of chrome files during packaging],
+    JAR_COMPRESSION=`echo $enableval | tr A-Z a-z`)
+
+if test -z "$JAR_COMPRESSION"; then
+    JAR_COMPRESSION=deflate
+fi
+
+if test "$JAR_COMPRESSION" != "none" &&
+    test "$JAR_COMPRESSION" != "deflate" &&
+    test "$JAR_COMPRESSION" != "brotli"; then
+    AC_MSG_ERROR([--enable-chrome-compression must be set to either none, deflate, or brotli])
+fi
+
+dnl =========================================================
+dnl Omnijar packaging (bug 552121)
+dnl =========================================================
+dnl Omnijar packaging is compatible with flat packaging.
+dnl In unpackaged builds, omnijar looks for files as if
+dnl things were flat packaged. After packaging, all files
+dnl are loaded from a single jar. MOZ_CHROME_FILE_FORMAT
+dnl is set to flat since putting files into jars is only
+dnl done during packaging with omnijar.
+if test "$MOZ_CHROME_FILE_FORMAT" = "omni"; then
+    MOZ_OMNIJAR=1
+    AC_DEFINE(MOZ_OMNIJAR)
+fi
+
+# Allow someone to change OMNIJAR_NAME in mozconfig
+MOZ_ARG_WITH_STRING(chrome-name,
+[  --with-chrome-name=CHROMENAME
+                          Set chrome jar name (default=omni.ja)],
+[ val=`echo $withval`
+    OMNIJAR_NAME="$val"])
+
+# Default Omni Jar Name
+if test -z "$OMNIJAR_NAME" ; then
+    OMNIJAR_NAME=omni.ja
+fi
+
+MOZ_PACKAGER_FORMAT="$MOZ_CHROME_FILE_FORMAT"
+if test "$OS_ARCH" = "WINNT"; then
+    MOZ_CHROME_FILE_FORMAT=flat
+else
+    MOZ_CHROME_FILE_FORMAT=symlink
+fi
+
+AC_SUBST(JAR_COMPRESSION)
+AC_SUBST(OMNIJAR_NAME)
+AC_SUBST(MOZ_OMNIJAR)
+AC_SUBST(MOZ_PACKAGER_FORMAT)
+AC_SUBST(MOZ_CHROME_FILE_FORMAT)
+
 dnl ========================================================
 dnl = Disable Jetpack
 dnl ========================================================
