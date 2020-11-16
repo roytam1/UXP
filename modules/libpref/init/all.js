@@ -23,7 +23,7 @@ pref("keyword.enabled", false);
 pref("general.useragent.locale", "chrome://global/locale/intl.properties");
 pref("general.useragent.compatMode.gecko", false);
 pref("general.useragent.compatMode.firefox", false);
-pref("general.useragent.compatMode.version", "68.9");
+pref("general.useragent.compatMode.version", "68.0");
 pref("general.useragent.appVersionIsBuildID", false);
 
 // This pref exists only for testing purposes. In order to disable all
@@ -4746,10 +4746,6 @@ pref("dom.event.handling-user-input-time-limit", 1000);
 // Whether we should layerize all animated images (if otherwise possible).
 pref("layout.animated-image-layers.enabled", false);
 
-pref("dom.vibrator.enabled", true);
-pref("dom.vibrator.max_vibrate_ms", 10000);
-pref("dom.vibrator.max_vibrate_list_len", 128);
-
 // Abort API
 pref("dom.abortController.enabled", true);
 
@@ -5421,8 +5417,8 @@ pref("osfile.reset_worker_delay", 30000);
 #endif
 
 #if !defined(MOZ_WIDGET_ANDROID)
-pref("dom.webkitBlink.dirPicker.enabled", true);
-pref("dom.webkitBlink.filesystem.enabled", true);
+pref("dom.webkitBlink.dirPicker.enabled", false);
+pref("dom.webkitBlink.filesystem.enabled", false);
 #endif
 
 #ifdef NIGHTLY_BUILD

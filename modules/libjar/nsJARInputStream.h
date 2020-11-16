@@ -12,6 +12,8 @@
 #include "nsTArray.h"
 #include "mozilla/Attributes.h"
 
+struct BrotliDecoderStateStruct;
+
 /*-------------------------------------------------------------------------
  * Class nsJARInputStream declaration. This class defines the type of the
  * object returned by calls to nsJAR::GetInputStream(filename) for the
@@ -20,9 +22,15 @@
 class nsJARInputStream final : public nsIInputStream
 {
   public:
-    nsJARInputStream() : 
-        mOutSize(0), mInCrc(0), mOutCrc(0), mNameLen(0),
-        mCurPos(0), mArrPos(0), mMode(MODE_NOTINITED)
+    nsJARInputStream()
+    : mOutSize(0)
+    , mInCrc(0)
+    , mOutCrc(0)
+    , mBrotliState(nullptr)
+    , mNameLen(0)
+    , mCurPos(0)
+    , mArrPos(0)
+    , mMode(MODE_NOTINITED)
     { 
       memset(&mZs, 0, sizeof(z_stream));
     }
@@ -45,6 +53,7 @@ class nsJARInputStream final : public nsIInputStream
     uint32_t               mInCrc;      // CRC as provided by the zipentry
     uint32_t               mOutCrc;     // CRC as calculated by me
     z_stream               mZs;         // zip data structure
+    BrotliDecoderStateStruct* mBrotliState; // Brotli decoder state
 
     /* For directory reading */
     RefPtr<nsJAR>          mJar;        // string reference to zipreader
@@ -59,6 +68,7 @@ class nsJARInputStream final : public nsIInputStream
         MODE_CLOSED,
         MODE_DIRECTORY,
         MODE_INFLATE,
+        MODE_BROTLI,
         MODE_COPY
     } JISMode;
 

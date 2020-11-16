@@ -51,41 +51,6 @@ typedef Observer<SystemTimezoneChangeInformation> SystemTimezoneChangeObserver;
 namespace MOZ_HAL_NAMESPACE {
 
 /**
- * Turn the default vibrator device on/off per the pattern specified
- * by |pattern|.  Each element in the pattern is the number of
- * milliseconds to turn the vibrator on or off.  The first element in
- * |pattern| is an "on" element, the next is "off", and so on.
- *
- * If |pattern| is empty, any in-progress vibration is canceled.
- *
- * Only an active window within an active tab may call Vibrate; calls
- * from inactive windows and windows on inactive tabs do nothing.
- *
- * If you're calling hal::Vibrate from the outside world, pass an
- * nsIDOMWindow* in place of the WindowIdentifier parameter.
- * The method with WindowIdentifier will be called automatically.
- */
-void Vibrate(const nsTArray<uint32_t>& pattern,
-             nsPIDOMWindowInner* aWindow);
-void Vibrate(const nsTArray<uint32_t>& pattern,
-             const hal::WindowIdentifier &id);
-
-/**
- * Cancel a vibration started by the content window identified by
- * WindowIdentifier.
- *
- * If the window was the last window to start a vibration, the
- * cancellation request will go through even if the window is not
- * active.
- *
- * As with hal::Vibrate(), if you're calling hal::CancelVibrate from the outside
- * world, pass an nsIDOMWindow*. The method with WindowIdentifier will be called
- * automatically.
- */
-void CancelVibrate(nsPIDOMWindowInner* aWindow);
-void CancelVibrate(const hal::WindowIdentifier &id);
-
-/**
  * Determine whether the device's screen is currently enabled.
  */
 bool GetScreenEnabled();
