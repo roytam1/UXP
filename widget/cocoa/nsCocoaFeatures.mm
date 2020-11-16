@@ -22,6 +22,8 @@
 #define MAC_OS_X_VERSION_10_13_HEX 0x000010D0
 #define MAC_OS_X_VERSION_10_14_HEX 0x000010E0
 #define MAC_OS_X_VERSION_10_15_HEX 0x000010F0
+#define MAC_OS_X_VERSION_10_16_HEX 0x000A1000
+#define MAC_OS_X_VERSION_11_0_HEX  0x000B0000
 
 #include "nsCocoaFeatures.h"
 #include "nsCocoaUtils.h"
@@ -186,6 +188,14 @@ nsCocoaFeatures::OnMojaveOrLater()
 nsCocoaFeatures::OnCatalinaOrLater() 
 {
     return (OSXVersion() >= MAC_OS_X_VERSION_10_15_HEX);
+}
+
+/* static */ bool
+nsCocoaFeatures::OnBigSurOrLater() {
+  // Account for the version being 10.16 (which occurs when the
+  // application is linked with an older SDK) or 11.0 on Big Sur.
+  return ((OSXVersion() >= MAC_OS_X_VERSION_10_16_HEX) ||
+          (OSXVersion() >= MAC_OS_X_VERSION_11_0_HEX));
 }
 
 /* static */ bool

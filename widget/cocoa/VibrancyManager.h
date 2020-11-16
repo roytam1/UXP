@@ -77,14 +77,6 @@ public:
   bool HasVibrantRegions() { return !mVibrantRegions.IsEmpty(); }
 
   /**
-   * Clear the vibrant areas that we know about.
-   * The clearing happens in the current NSGraphicsContext. If you call this
-   * from within an -[NSView drawRect:] implementation, the currrent
-   * NSGraphicsContext is already correctly set to the window drawing context.
-   */
-  void ClearVibrantAreas() const;
-
-  /**
    * Return the fill color that should be drawn on top of the cleared window
    * parts. Usually this would be drawn by -[NSVisualEffectView drawRect:].
    * The returned color is opaque if the system-wide "Reduce transparency"
@@ -105,10 +97,19 @@ public:
    */
   static bool SystemSupportsVibrancy();
 
-protected:
-  void ClearVibrantRegion(const LayoutDeviceIntRegion& aVibrantRegion) const;
-  NSView* CreateEffectView(VibrancyType aType);
+  /**
+   * Create an NSVisualEffectView for the specified vibrancy type. The return
+   * value is not autoreleased. We return an object of type NSView* because we
+   * compile with an SDK that does not contain a definition for
+   * NSVisualEffectView.
+   * @param aIsContainer Whether this NSView will have child views. This value
+   *                     affects hit testing: Container views will pass through
+   *                     hit testing requests to their children, and leaf views
+   *                     will be transparent to hit testing.
+   */
+  static NSView* CreateEffectView(VibrancyType aType, BOOL aIsContainer = NO);
 
+protected:
   const nsChildView& mCoordinateConverter;
   NSView* mContainerView;
   nsClassHashtable<nsUint32HashKey, ViewRegion> mVibrantRegions;
