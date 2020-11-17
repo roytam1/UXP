@@ -3564,10 +3564,16 @@ NSEvent* gLastDragMouseDownEvent = nil;
 // This method is called from mPixelHostingView's drawRect handler.
 - (void)doDrawRect:(NSRect)aRect
 {
-  CGContextRef cgContext = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
+  if (!NS_IsMainThread()) {
+    // In the presence of CoreAnimation, this method can sometimes be called on
+    // a non-main thread. Ignore those calls because Gecko can only react to
+    // them on the main thread.
+    return;
+  }
 
   if (!mGeckoChild || !mGeckoChild->IsVisible())
     return;
+  CGContextRef cgContext = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
 
   if ([self isUsingOpenGL]) {
     // Since this view is usually declared as opaque, the window's pixel
