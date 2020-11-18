@@ -10,6 +10,10 @@
 #include <vector>
 #include "skia/include/core/SkCanvas.h"
 #include "skia/include/core/SkImage.h"
+#include "mozilla/Maybe.h"
+#include "mozilla/Mutex.h"
+
+typedef mozilla::MutexAutoLock MutexAutoLock;
 
 namespace mozilla {
 
@@ -28,7 +32,7 @@ public:
   virtual IntSize GetSize() const;
   virtual SurfaceFormat GetFormat() const;
 
-  sk_sp<SkImage>& GetImage() { return mImage; }
+  sk_sp<SkImage> GetImage(Maybe<MutexAutoLock>* aLock);
 
   bool InitFromData(unsigned char* aData,
                     const IntSize &aSize,

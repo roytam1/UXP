@@ -212,7 +212,7 @@ VerifyRGBXCorners(uint8_t* aData, const IntSize &aSize, const int32_t aStride, S
 #endif
 
 static sk_sp<SkImage>
-GetSkImageForSurface(SourceSurface* aSurface)
+GetSkImageForSurface(SourceSurface* aSurface, Maybe<MutexAutoLock>* aLock)
 {
   if (!aSurface) {
     gfxDebug() << "Creating null Skia image from null SourceSurface";
@@ -220,7 +220,7 @@ GetSkImageForSurface(SourceSurface* aSurface)
   }
 
   if (aSurface->GetType() == SurfaceType::SKIA) {
-    return static_cast<SourceSurfaceSkia*>(aSurface)->GetImage();
+    return static_cast<SourceSurfaceSkia*>(aSurface)->GetImage(aLock);
   }
 
   DataSourceSurface* surf = aSurface->GetDataSurface().take();
@@ -390,9 +390,9 @@ ExtractAlphaBitmap(sk_sp<SkImage> aImage, SkBitmap* aResultBitmap)
 }
 
 static sk_sp<SkImage>
-ExtractAlphaForSurface(SourceSurface* aSurface)
+ExtractAlphaForSurface(SourceSurface* aSurface, Maybe<MutexAutoLock>& aLock)
 {
-  sk_sp<SkImage> image = GetSkImageForSurface(aSurface);
+  sk_sp<SkImage> image = GetSkImageForSurface(aSurface, &aLock);
   if (!image) {
     return nullptr;
   }
@@ -411,7 +411,11 @@ ExtractAlphaForSurface(SourceSurface* aSurface)
 }
 
 static void
-SetPaintPattern(SkPaint& aPaint, const Pattern& aPattern, Float aAlpha = 1.0, Point aOffset = Point(0, 0))
+SetPaintPattern(SkPaint& aPaint,
+                const Pattern& aPattern,
+                Maybe<MutexAutoLock>& aLock,
+                Float aAlpha = 1.0,
+                Point aOffset = Point(0, 0))
 {
   switch (aPattern.GetType()) {
     case PatternType::COLOR: {
@@ -473,7 +477,7 @@ SetPaintPattern(SkPaint& aPaint, const Pattern& aPattern, Float aAlpha = 1.0, Po
     }
     case PatternType::SURFACE: {
       const SurfacePattern& pat = static_cast<const SurfacePattern&>(aPattern);
-      sk_sp<SkImage> image = GetSkImageForSurface(pat.mSurface);
+      sk_sp<SkImage> image = GetSkImageForSurface(pat.mSurface, &aLock);
       if (!image) {
         aPaint.setColor(SK_ColorTRANSPARENT);
         break;
@@ -525,7 +529,7 @@ struct AutoPaintSetup {
     : mNeedsRestore(false), mAlpha(1.0)
   {
     Init(aCanvas, aOptions, aMaskBounds, false);
-    SetPaintPattern(mPaint, aPattern, mAlpha, aOffset);
+    SetPaintPattern(mPaint, aPattern, mLock, mAlpha, aOffset);
   }
 
   AutoPaintSetup(SkCanvas *aCanvas, const DrawOptions& aOptions, const Rect* aMaskBounds = nullptr, bool aForceGroup = false)
@@ -579,6 +583,7 @@ struct AutoPaintSetup {
   SkPaint mPaint;
   bool mNeedsRestore;
   SkCanvas* mCanvas;
+  Maybe<MutexAutoLock> mLock;
   Float mAlpha;
 };
 
@@ -601,7 +606,8 @@ DrawTargetSkia::DrawSurface(SourceSurface *aSurface,
 
   MarkChanged();
 
-  sk_sp<SkImage> image = GetSkImageForSurface(aSurface);
+  Maybe<MutexAutoLock> lock;
+  sk_sp<SkImage> image = GetSkImageForSurface(aSurface, &lock);
   if (!image) {
     return;
   }
@@ -654,7 +660,8 @@ DrawTargetSkia::DrawSurfaceWithShadow(SourceSurface *aSurface,
 
   MarkChanged();
 
-  sk_sp<SkImage> image = GetSkImageForSurface(aSurface);
+  Maybe<MutexAutoLock> lock;
+  sk_sp<SkImage> image = GetSkImageForSurface(aSurface, &lock);
   if (!image) {
     return;
   }
@@ -1407,8 +1414,9 @@ DrawTargetSkia::Mask(const Pattern &aSource,
   MarkChanged();
   AutoPaintSetup paint(mCanvas.get(), aOptions, aSource);
 
+  Maybe<MutexAutoLock> lock;
   SkPaint maskPaint;
-  SetPaintPattern(maskPaint, aMask);
+  SetPaintPattern(maskPaint, aMask, lock);
 
   SkLayerRasterizer::Builder builder;
   builder.addLayer(maskPaint);
@@ -1427,7 +1435,8 @@ DrawTargetSkia::MaskSurface(const Pattern &aSource,
   MarkChanged();
   AutoPaintSetup paint(mCanvas.get(), aOptions, aSource, nullptr, -aOffset);
 
-  sk_sp<SkImage> alphaMask = ExtractAlphaForSurface(aMask);
+  Maybe<MutexAutoLock> lock;
+  sk_sp<SkImage> alphaMask = ExtractAlphaForSurface(aMask, lock);
   if (!alphaMask) {
     gfxDebug() << *this << ": MaskSurface() failed to extract alpha for mask";
     return;
@@ -1456,7 +1465,8 @@ DrawTarget::Draw3DTransformedSurface(SourceSurface* aSurface, const Matrix4x4& a
   fullMat.PostTranslate(-xformBounds.x, -xformBounds.y, 0);
 
   // Read in the source data.
-  sk_sp<SkImage> srcImage = GetSkImageForSurface(aSurface);
+  Maybe<MutexAutoLock> lock;
+  sk_sp<SkImage> srcImage = GetSkImageForSurface(aSurface, &lock);
   if (!srcImage) {
     return true;
   }
@@ -1515,7 +1525,8 @@ DrawTargetSkia::Draw3DTransformedSurface(SourceSurface* aSurface, const Matrix4x
 
   MarkChanged();
 
-  sk_sp<SkImage> image = GetSkImageForSurface(aSurface);
+  Maybe<MutexAutoLock> lock;
+  sk_sp<SkImage> image = GetSkImageForSurface(aSurface, &lock);
   if (!image) {
     return true;
   }
@@ -1599,7 +1610,8 @@ already_AddRefed<SourceSurface>
 DrawTargetSkia::OptimizeGPUSourceSurface(SourceSurface *aSurface) const
 {
   // Check if the underlying SkImage already has an associated GrTexture.
-  sk_sp<SkImage> image = GetSkImageForSurface(aSurface);
+  Maybe<MutexAutoLock> lock;
+  sk_sp<SkImage> image = GetSkImageForSurface(aSurface, &lock);
   if (!image || image->isTextureBacked()) {
     RefPtr<SourceSurface> surface(aSurface);
     return surface.forget();
@@ -1716,7 +1728,8 @@ DrawTargetSkia::CopySurface(SourceSurface *aSurface,
 {
   MarkChanged();
 
-  sk_sp<SkImage> image = GetSkImageForSurface(aSurface);
+  Maybe<MutexAutoLock> lock;
+  sk_sp<SkImage> image = GetSkImageForSurface(aSurface, &lock);
   if (!image) {
     return;
   }
@@ -2061,7 +2074,8 @@ DrawTargetSkia::PopLayer()
         paint.setColor(SK_ColorTRANSPARENT);
       }
 
-      sk_sp<SkImage> alphaMask = ExtractAlphaForSurface(layer.mMask);
+      Maybe<MutexAutoLock> lock;
+      sk_sp<SkImage> alphaMask = ExtractAlphaForSurface(layer.mMask, lock);
       if (!alphaMask) {
         gfxDebug() << *this << ": PopLayer() failed to extract alpha for mask";
       } else {

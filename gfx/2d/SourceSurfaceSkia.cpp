@@ -40,6 +40,25 @@ SourceSurfaceSkia::GetFormat() const
   return mFormat;
 }
 
+sk_sp<SkImage>
+SourceSurfaceSkia::GetImage(Maybe<MutexAutoLock>* aLock) {
+  // If we were provided a lock object, we can let the caller access
+  // a shared SkImage and we know it won't go away while the lock is held.
+  if (aLock) {
+    // We are locked, so now we can check mDrawTarget.
+    // If it's null, then we're not shared and we can unlock eagerly.
+    if (!mDrawTarget) {
+      aLock->reset();
+    }
+  } else {
+    // Otherwise we need to call DrawTargetWillChange to ensure we have our
+    // own copy of the SkImage.
+    DrawTargetWillChange();
+  }
+  sk_sp<SkImage> image = mImage;
+  return image;
+}
+  
 static sk_sp<SkData>
 MakeSkData(unsigned char* aData, const IntSize& aSize, int32_t aStride)
 {
