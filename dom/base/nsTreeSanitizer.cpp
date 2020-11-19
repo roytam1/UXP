@@ -1384,6 +1384,8 @@ nsTreeSanitizer::SanitizeChildren(nsINode* aRoot)
         nsAutoString styleText;
         nsContentUtils::GetNodeTextContent(node, false, styleText);
 
+        RemoveAllAttributesFromDescendants(elt);
+        
         nsAutoString sanitizedStyle;
         nsCOMPtr<nsIURI> baseURI = node->GetBaseURI();
         if (SanitizeStyleSheet(styleText,
@@ -1476,6 +1478,17 @@ nsTreeSanitizer::RemoveAllAttributes(nsIContent* aElement)
     int32_t attrNs = attrName->NamespaceID();
     nsCOMPtr<nsIAtom> attrLocal = attrName->LocalName();
     aElement->UnsetAttr(attrNs, attrLocal, false);
+  }
+}
+
+void nsTreeSanitizer::RemoveAllAttributesFromDescendants(mozilla::dom::Element* aElement) {
+  nsIContent* node = aElement->GetFirstChild();
+  while (node) {
+    if (node->IsElement()) {
+      mozilla::dom::Element* elt = node->AsElement();
+      RemoveAllAttributes(elt);
+    }
+    node = node->GetNextNode(aElement);
   }
 }
 

@@ -184,6 +184,12 @@ class MOZ_STACK_CLASS nsTreeSanitizer {
     void RemoveAllAttributes(nsIContent* aElement);
 
     /**
+     * Removes all attributes from the descendants of an element but not from
+     * the element itself.
+     */
+    void RemoveAllAttributesFromDescendants(mozilla::dom::Element* aElement);
+
+    /**
      * The whitelist of HTML elements.
      */
     static nsTHashtable<nsISupportsHashKey>* sElementsHTML;
