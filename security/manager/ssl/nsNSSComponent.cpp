@@ -1579,14 +1579,6 @@ void nsNSSComponent::setValidationOptions(bool isInitialSetting,
   PublicSSLState()->SetSignedCertTimestampsEnabled(sctsEnabled);
   PrivateSSLState()->SetSignedCertTimestampsEnabled(sctsEnabled);
 
-  CertVerifier::PinningMode pinningMode =
-    static_cast<CertVerifier::PinningMode>
-      (Preferences::GetInt("security.cert_pinning.enforcement_level",
-                           CertVerifier::pinningDisabled));
-  if (pinningMode > CertVerifier::pinningEnforceTestMode) {
-    pinningMode = CertVerifier::pinningDisabled;
-  }
-
   CertVerifier::SHA1Mode sha1Mode = static_cast<CertVerifier::SHA1Mode>
       (Preferences::GetInt("security.pki.sha1_enforcement_level",
                            static_cast<int32_t>(CertVerifier::SHA1Mode::Allowed)));
@@ -1646,7 +1638,7 @@ void nsNSSComponent::setValidationOptions(bool isInitialSetting,
                                  lock);
   mDefaultCertVerifier = new SharedCertVerifier(odc, osc, ogc,
                                                 certShortLifetimeInDays,
-                                                pinningMode, sha1Mode,
+                                                sha1Mode,
                                                 nameMatchingMode,
                                                 netscapeStepUpPolicy,
                                                 ctMode);
