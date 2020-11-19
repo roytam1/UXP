@@ -76,7 +76,6 @@ public:
                        OCSPCache& ocspCache, void* pinArg,
                        CertVerifier::OcspGetConfig ocspGETConfig,
                        uint32_t certShortLifetimeInDays,
-                       CertVerifier::PinningMode pinningMode,
                        unsigned int minRSABits,
                        ValidityCheckingMode validityCheckingMode,
                        CertVerifier::SHA1Mode sha1Mode,
@@ -178,7 +177,6 @@ private:
   void* mPinArg; // non-owning!
   const CertVerifier::OcspGetConfig mOCSPGetConfig;
   const uint32_t mCertShortLifetimeInDays;
-  CertVerifier::PinningMode mPinningMode;
   const unsigned int mMinRSABits;
   ValidityCheckingMode mValidityCheckingMode;
   CertVerifier::SHA1Mode mSHA1Mode;
