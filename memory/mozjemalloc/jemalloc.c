@@ -305,6 +305,9 @@ typedef long ssize_t;
 #include <mach/mach_init.h>
 #include <mach/vm_map.h>
 #include <malloc/malloc.h>
+#ifndef _pthread_self
+#define _pthread_self() pthread_self()
+#endif
 #endif
 
 #endif

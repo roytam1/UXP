@@ -23,6 +23,7 @@
 #include <stddef.h>  // size_t
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "webrtc/common_audio/ring_buffer.h"
 #include "webrtc/common_audio/signal_processing/include/signal_processing_library.h"
@@ -1573,33 +1574,36 @@ AecCore* WebRtcAec_CreateAec() {
 #endif
   aec->extended_filter_enabled = 0;
 
-  // Assembly optimization
-  WebRtcAec_FilterFar = FilterFar;
-  WebRtcAec_ScaleErrorSignal = ScaleErrorSignal;
-  WebRtcAec_FilterAdaptation = FilterAdaptation;
-  WebRtcAec_OverdriveAndSuppress = OverdriveAndSuppress;
-  WebRtcAec_ComfortNoise = ComfortNoise;
-  WebRtcAec_SubbandCoherence = SubbandCoherence;
+  static bool initted = false;
+  if (!initted) {
+    initted = true;
+    // Assembly optimization
+    WebRtcAec_FilterFar = FilterFar;
+    WebRtcAec_ScaleErrorSignal = ScaleErrorSignal;
+    WebRtcAec_FilterAdaptation = FilterAdaptation;
+    WebRtcAec_OverdriveAndSuppress = OverdriveAndSuppress;
+    WebRtcAec_ComfortNoise = ComfortNoise;
+    WebRtcAec_SubbandCoherence = SubbandCoherence;
 
 #if defined(WEBRTC_ARCH_X86_FAMILY)
-  if (WebRtc_GetCPUInfo(kSSE2)) {
-    WebRtcAec_InitAec_SSE2();
-  }
+    if (WebRtc_GetCPUInfo(kSSE2)) {
+      WebRtcAec_InitAec_SSE2();
+    }
 #endif
 
 #if defined(MIPS_FPU_LE)
-  WebRtcAec_InitAec_mips();
+    WebRtcAec_InitAec_mips();
 #endif
 
 #if defined(WEBRTC_ARCH_ARM_NEON)
-  WebRtcAec_InitAec_neon();
-#elif defined(WEBRTC_DETECT_ARM_NEON)
-  if ((WebRtc_GetCPUFeaturesARM() & kCPUFeatureNEON) != 0) {
     WebRtcAec_InitAec_neon();
-  }
+#elif defined(WEBRTC_DETECT_ARM_NEON)
+    if ((WebRtc_GetCPUFeaturesARM() & kCPUFeatureNEON) != 0) {
+      WebRtcAec_InitAec_neon();
+    }
 #endif
-
-  aec_rdft_init();
+    aec_rdft_init();
+  }
 
   return aec;
 }

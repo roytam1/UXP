@@ -359,7 +359,8 @@ protected:
   nsresult             CreateNativeWindow(const NSRect &aRect,
                                           nsBorderStyle aBorderStyle,
                                           bool aRectIsFrameRect);
-  nsresult             CreatePopupContentView(const LayoutDeviceIntRect &aRect);
+  nsresult             CreatePopupContentView(const LayoutDeviceIntRect &aRect,
+                                              nsWidgetInitData* aInitData);
   void                 DestroyNativeWindow();
   void                 AdjustWindowShadow();
   void                 SetWindowBackgroundBlur();
@@ -415,6 +416,8 @@ protected:
 
   bool                 mInReportMoveEvent; // true if in a call to ReportMoveEvent().
   bool                 mInResize; // true if in a call to DoResize().
+
+  bool                 mAlwaysOnTop;
 
   int32_t              mNumModalDescendents;
   InputContext         mInputContext;

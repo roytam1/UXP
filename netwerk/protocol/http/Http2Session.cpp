@@ -3531,17 +3531,18 @@ Http2Session::UnRegisterTunnel(Http2Stream *aTunnel)
 }
 
 void
-Http2Session::CreateTunnel(nsHttpTransaction *trans,
-                           nsHttpConnectionInfo *ci,
-                           nsIInterfaceRequestor *aCallbacks)
+Http2Session::CreateTunnel(nsHttpTransaction* trans,
+                           nsHttpConnectionInfo* ci,
+                           nsIInterfaceRequestor* aCallbacks)
 {
   LOG(("Http2Session::CreateTunnel %p %p make new tunnel\n", this, trans));
   // The connect transaction will hold onto the underlying http
   // transaction so that an auth created by the connect can be mappped
   // to the correct security callbacks
 
+  RefPtr<nsHttpConnectionInfo> clone(ci->Clone());
   RefPtr<SpdyConnectTransaction> connectTrans =
-    new SpdyConnectTransaction(ci, aCallbacks, trans->Caps(), trans, this);
+    new SpdyConnectTransaction(clone, aCallbacks, trans->Caps(), trans, this);
   AddStream(connectTrans, nsISupportsPriority::PRIORITY_NORMAL, false, nullptr);
   Http2Stream *tunnel = mStreamTransactionHash.Get(connectTrans);
   MOZ_ASSERT(tunnel);

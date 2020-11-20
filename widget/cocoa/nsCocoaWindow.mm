@@ -34,6 +34,7 @@
 #include "nsIWidgetListener.h"
 #include "nsIPresShell.h"
 #include "nsScreenCocoa.h"
+#include "VibrancyManager.h"
 
 #include "gfxPlatform.h"
 #include "qcms.h"
@@ -127,6 +128,7 @@ nsCocoaWindow::nsCocoaWindow()
 , mIsAnimationSuppressed(false)
 , mInReportMoveEvent(false)
 , mInResize(false)
+, mAlwaysOnTop(false)
 , mNumModalDescendents(0)
 {
   if ([NSWindow respondsToSelector:@selector(setAllowsAutomaticWindowTabbing:)]) {
@@ -301,12 +303,14 @@ nsCocoaWindow::Create(nsIWidget* aParent,
   if (mWindowType == eWindowType_popup) {
     if (aInitData->mMouseTransparent) {
       [mWindow setIgnoresMouseEvents:YES];
+    } else {
+      [mWindow setIgnoresMouseEvents:NO];
     }
     // now we can convert newBounds to device pixels for the window we created,
     // as the child view expects a rect expressed in the dev pix of its parent
     LayoutDeviceIntRect devRect =
       RoundedToInt(newBounds * GetDesktopToDeviceScale());
-    return CreatePopupContentView(devRect);
+    return CreatePopupContentView(devRect, aInitData);
   }
 
   mIsAnimationSuppressed = aInitData->mIsAnimationSuppressed;
@@ -455,6 +459,11 @@ nsresult nsCocoaWindow::CreateNativeWindow(const NSRect &aRect,
   mWindow = [[windowClass alloc] initWithContentRect:contentRect styleMask:features 
                                  backing:NSBackingStoreBuffered defer:YES];
 
+  // Make sure that window titles don't leak to disk in private browsing mode
+  // due to macOS' resume feature.
+  [mWindow setRestorable:NO];
+  [mWindow disableSnapshotRestoration];
+
   // setup our notification delegate. Note that setDelegate: does NOT retain.
   mDelegate = [[WindowDelegate alloc] initWithGeckoWindow:this];
   [mWindow setDelegate:mDelegate];
@@ -473,7 +482,6 @@ nsresult nsCocoaWindow::CreateNativeWindow(const NSRect &aRect,
 
   if (mWindowType == eWindowType_popup) {
     SetPopupWindowLevel();
-    [mWindow setHasShadow:YES];
     [mWindow setBackgroundColor:[NSColor clearColor]];
     [mWindow setOpaque:NO];
   } else {
@@ -481,6 +489,13 @@ nsresult nsCocoaWindow::CreateNativeWindow(const NSRect &aRect,
     // nsChildView::WidgetTypeSupportsAcceleration returns true for them.
     [mWindow setOpaque:YES];
   }
+
+  NSWindowCollectionBehavior newBehavior = [mWindow collectionBehavior];
+  if (mAlwaysOnTop) {
+    [mWindow setLevel:NSFloatingWindowLevel];
+    newBehavior |= NSWindowCollectionBehaviorCanJoinAllSpaces;
+  }
+  [mWindow setCollectionBehavior:newBehavior];
 
   [mWindow setContentMinSize:NSMakeSize(60, 60)];
   [mWindow disableCursorRects];
@@ -498,7 +513,8 @@ nsresult nsCocoaWindow::CreateNativeWindow(const NSRect &aRect,
 }
 
 NS_IMETHODIMP
-nsCocoaWindow::CreatePopupContentView(const LayoutDeviceIntRect &aRect)
+nsCocoaWindow::CreatePopupContentView(const LayoutDeviceIntRect &aRect,
+	                                  nsWidgetInitData* aInitData)
 {
   NS_OBJC_BEGIN_TRY_ABORT_BLOCK_NSRESULT;
 
@@ -511,13 +527,16 @@ nsCocoaWindow::CreatePopupContentView(const LayoutDeviceIntRect &aRect)
 
   nsIWidget* thisAsWidget = static_cast<nsIWidget*>(this);
   nsresult rv = mPopupContentView->Create(thisAsWidget, nullptr, aRect,
-                                          nullptr);
+                                          aInitData);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
 
-  ChildView* newContentView = (ChildView*)mPopupContentView->GetNativeData(NS_NATIVE_WIDGET);
-  [mWindow setContentView:newContentView];
+  NSView* contentView = [mWindow contentView];
+  ChildView* childView = (ChildView*)mPopupContentView->GetNativeData(NS_NATIVE_WIDGET);
+  [childView setFrame:NSZeroRect];
+  [childView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [contentView addSubview:childView];
 
   return NS_OK;
 
@@ -756,6 +775,13 @@ NS_IMETHODIMP nsCocoaWindow::Show(bool bState)
     (NSWindow*)parentWidget->GetNativeData(NS_NATIVE_WINDOW) : nil;
 
   if (bState && !mBounds.IsEmpty()) {
+    // Don't try to show a popup when the parent isn't visible or is minimized.
+    if (mWindowType == eWindowType_popup && nativeParentWindow) {
+      if (![nativeParentWindow isVisible] || [nativeParentWindow isMiniaturized]) {
+        return NS_ERROR_FAILURE;
+      }
+    }
+
     if (mPopupContentView) {
       // Ensure our content view is visible. We never need to hide it.
       mPopupContentView->Show(true);
@@ -2789,12 +2815,6 @@ static NSMutableSet *gSwizzledFrameViewClasses = nil;
  - (void)_addKnownSubview:(NSView*)aView positioned:(NSWindowOrderingMode)place relativeTo:(NSView*)otherView;
 @end
 
-// Available on 10.10
-@interface NSWindow(PrivateCornerMaskMethod)
- - (id)_cornerMask;
- - (void)_cornerMaskChanged;
-@end
-
 #if !defined(MAC_OS_X_VERSION_10_10) || \
     MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_10
 
@@ -2815,6 +2835,10 @@ static NSMutableSet *gSwizzledFrameViewClasses = nil;
 
 #endif
 
+@interface NSView(NSVisualEffectViewSetMaskImage)
+- (void)setMaskImage:(NSImage*)image;
+@end
+
 @interface BaseWindow(Private)
 - (void)removeTrackingArea;
 - (void)cursorUpdated:(NSEvent*)aEvent;
@@ -2823,25 +2847,6 @@ static NSMutableSet *gSwizzledFrameViewClasses = nil;
 @end
 
 @implementation BaseWindow
-
-- (id)_cornerMask
-{
-  if (!mUseMenuStyle) {
-    return [super _cornerMask];
-  }
-
-  CGFloat radius = 4.0f;
-  NSEdgeInsets insets = { 5, 5, 5, 5 };
-  NSSize maskSize = { 12, 12 };
-  NSImage* maskImage = [NSImage imageWithSize:maskSize flipped:YES drawingHandler:^BOOL(NSRect dstRect) {
-    NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:dstRect xRadius:radius yRadius:radius];
-    [[NSColor colorWithDeviceWhite:1.0 alpha:1.0] set];
-    [path fill];
-    return YES;
-  }];
-  [maskImage setCapInsets:insets];
-  return maskImage;
-}
 
 // The frame of a window is implemented using undocumented NSView subclasses.
 // We offset the window buttons by overriding the methods _closeButtonOrigin
@@ -2915,14 +2920,54 @@ static NSMutableSet *gSwizzledFrameViewClasses = nil;
   return self;
 }
 
+// Returns an autoreleased NSImage.
+static NSImage*
+GetMenuMaskImage()
+{
+  CGFloat radius = 4.0f;
+  NSEdgeInsets insets = { 5, 5, 5, 5 };
+  NSSize maskSize = { 12, 12 };
+  NSImage* maskImage = [NSImage imageWithSize:maskSize flipped:YES drawingHandler:^BOOL(NSRect dstRect) {
+    NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:dstRect xRadius:radius yRadius:radius];
+    [[NSColor colorWithDeviceWhite:1.0 alpha:1.0] set];
+    [path fill];
+    return YES;
+  }];
+  [maskImage setCapInsets:insets];
+  return maskImage;
+}
+
+- (void)swapOutChildViewWrapper:(NSView*)aNewWrapper
+{
+  [aNewWrapper setFrame:[[self contentView] frame]];
+  NSView* childView = [[self mainChildView] retain];
+  [childView removeFromSuperview];
+  [aNewWrapper addSubview:childView];
+  [childView release];
+  [super setContentView:aNewWrapper];
+}
+
 - (void)setUseMenuStyle:(BOOL)aValue
 {
-  if (aValue != mUseMenuStyle) {
-    mUseMenuStyle = aValue;
-    if ([self respondsToSelector:@selector(_cornerMaskChanged)]) {
-      [self _cornerMaskChanged];
-    }
+  if (!VibrancyManager::SystemSupportsVibrancy()) {
+    return;
   }
+
+  if (aValue && !mUseMenuStyle) {
+    // Turn on rounded corner masking.
+    NSView* effectView = VibrancyManager::CreateEffectView(VibrancyType::MENU, YES);
+    if ([effectView respondsToSelector:@selector(setMaskImage:)]) {
+      [effectView setMaskImage:GetMenuMaskImage()];
+    }
+    [self swapOutChildViewWrapper:effectView];
+    [effectView release];
+  } else if (mUseMenuStyle && !aValue) {
+    // Turn off rounded corner masking.
+    NSView* wrapper = [[NSView alloc] initWithFrame:NSZeroRect];
+    [self swapOutChildViewWrapper:wrapper];
+    [wrapper release];
+  }
+  mUseMenuStyle = aValue;
 }
 
 - (void)setBeingShown:(BOOL)aValue
@@ -3080,10 +3125,6 @@ static const NSString* kStateCollectionBehavior = @"collectionBehavior";
 - (ChildView*)mainChildView
 {
   NSView *contentView = [self contentView];
-  // A PopupWindow's contentView is a ChildView object.
-  if ([contentView isKindOfClass:[ChildView class]]) {
-    return (ChildView*)contentView;
-  }
   NSView* lastView = [[contentView subviews] lastObject];
   if ([lastView isKindOfClass:[ChildView class]]) {
     return (ChildView*)lastView;
