@@ -609,7 +609,7 @@ imply_option('--enable-project', application)
 def default_project(build_env, help):
     if build_env.topobjdir.endswith('/js/src'):
         return 'js'
-    return 'browser'
+    return 'application/xulrunner'
 
 option('--enable-project', nargs=1, default=default_project,
        help='Project to build')
@@ -617,33 +617,22 @@ option('--enable-project', nargs=1, default=default_project,
 option('--with-external-source-dir', env='EXTERNAL_SOURCE_DIR', nargs=1,
        help='External directory containing additional build files')
 
-@depends('--enable-project', '--with-external-source-dir',
-         check_build_environment, '--help')
+@depends('--enable-project', '--with-external-source-dir', check_build_environment, '--help')
 @imports(_from='os.path', _import='exists')
 def include_project_configure(project, external_source_dir, build_env, help):
-    if not project:
-        die('--enable-project is required.')
-
     base_dir = build_env.topsrcdir
+
     if external_source_dir:
         base_dir = os.path.join(base_dir, external_source_dir[0])
-
+    
     build_app = project[0]
 
-    # XXX: Change this when 'browser' becomes invalid as an alias
-    if build_app == 'browser':
-        build_app = 'basilisk'
-        #die('The project "browser" is no longer valid. Perhaps you meant "basilisk" or "palemoon"?')
-    
-    path_project_src_dir_application = os.path.join(base_dir, 'application/' + build_app, 'moz.configure')
     path_project_src_dir_root = os.path.join(base_dir, build_app, 'moz.configure')
     
-    if exists(path_project_src_dir_application):
-        return path_project_src_dir_application
-    elif exists(path_project_src_dir_root):
+    if exists(path_project_src_dir_root):
         return path_project_src_dir_root
     else:
-        die('Cannot find project %s', build_app)
+        return os.path.join(build_env.topsrcdir, 'toolkit', 'moz.configure')
 
 @depends('--with-external-source-dir')
 def external_source_dir(value):
@@ -653,12 +642,29 @@ def external_source_dir(value):
 set_config('EXTERNAL_SOURCE_DIR', external_source_dir)
 add_old_configure_assignment('EXTERNAL_SOURCE_DIR', external_source_dir)
 
+@depends('--enable-project', '--with-external-source-dir', check_build_environment, '--help')
+@imports(_from='os.path', _import='exists')
+def build_project(project, external_source_dir, build_env, help):
+    if not project:
+        die('--enable-project is required.')
 
-@depends(include_project_configure, check_build_environment, '--help')
-def build_project(include_project_configure, build_env, help):
-    ret = os.path.dirname(os.path.relpath(include_project_configure,
-                                          build_env.topsrcdir))
-    return ret
+    base_dir = build_env.topsrcdir
+
+    if external_source_dir:
+        base_dir = os.path.join(base_dir, external_source_dir[0])
+
+    build_app = project[0]
+
+    if not external_source_dir and build_app not in ('xulrunner', 'js'):
+        die('Cannot find project %s', build_app)
+
+    build_app_abspath = os.path.join(base_dir, build_app)
+
+    if exists(build_app_abspath):
+        return os.path.relpath(build_app_abspath, build_env.topsrcdir)
+    else:
+        die('Cannot find project %s', build_app)
+
 
 set_config('MOZ_BUILD_APP', build_project)
 set_define('MOZ_BUILD_APP', build_project)
