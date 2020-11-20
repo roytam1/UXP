@@ -443,8 +443,8 @@ static ChildView* ChildViewForFrame(nsIFrame* aFrame)
   if (!widget)
     return nil;
 
-  NSView* view = (NSView*)widget->GetNativeData(NS_NATIVE_WIDGET);
-  return [view isKindOfClass:[ChildView class]] ? (ChildView*)view : nil;
+  NSWindow* window = (NSWindow*)widget->GetNativeData(NS_NATIVE_WINDOW);
+  return [window isKindOfClass:[BaseWindow class]] ? [(BaseWindow*)window mainChildView]  : nil;
 }
 
 static NSWindow* NativeWindowForFrame(nsIFrame* aFrame,
@@ -2437,17 +2437,30 @@ nsNativeThemeCocoa::DrawWidgetBackground(nsRenderingContext* aContext,
       break;
 
     case NS_THEME_MENUSEPARATOR: {
-      ThemeMenuState menuState;
-      if (IsDisabled(aFrame, eventState)) {
-        menuState = kThemeMenuDisabled;
+      // Workaround for visual artifacts issues with
+      // HIThemeDrawMenuSeparator on macOS Big Sur.
+      if (nsCocoaFeatures::OnBigSurOrLater()) {
+        CGRect separatorRect = macRect;
+        separatorRect.size.height = 1;
+        separatorRect.size.width -= 42;
+        separatorRect.origin.x += 21;
+        // Use a gray color similar to the native separator
+        CGContextSetRGBFillColor(cgContext, 0.816, 0.816, 0.816, 1.0);
+        CGContextFillRect(cgContext, separatorRect);
       }
-      else {
-        menuState = CheckBooleanAttr(aFrame, nsGkAtoms::menuactive) ?
-                    kThemeMenuSelected : kThemeMenuActive;
+      else
+      {
+        ThemeMenuState menuState;
+        if (IsDisabled(aFrame, eventState)) {
+           menuState = kThemeMenuDisabled;
+        }
+        else {
+          menuState = CheckBooleanAttr(aFrame, nsGkAtoms::menuactive) ?
+                      kThemeMenuSelected : kThemeMenuActive;
+        }
+        HIThemeMenuItemDrawInfo midi = { 0, kThemeMenuItemPlain, menuState };
+        HIThemeDrawMenuSeparator(&macRect, &macRect, &midi, cgContext, HITHEME_ORIENTATION);
       }
-
-      HIThemeMenuItemDrawInfo midi = { 0, kThemeMenuItemPlain, menuState };
-      HIThemeDrawMenuSeparator(&macRect, &macRect, &midi, cgContext, HITHEME_ORIENTATION);
     }
       break;
 
