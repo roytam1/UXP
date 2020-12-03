@@ -1272,6 +1272,7 @@ pref("javascript.options.strict.debug",     false);
 pref("javascript.options.unboxed_objects",  false);
 pref("javascript.options.baselinejit",      true);
 pref("javascript.options.ion",              true);
+pref("javascript.options.ion.inlining",     true);
 pref("javascript.options.asmjs",            true);
 pref("javascript.options.wasm",             true);
 // wasm jit crashes in 32bit builds because of 64bit casts so

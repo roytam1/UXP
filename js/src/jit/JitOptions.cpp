@@ -96,7 +96,7 @@ DefaultJitOptions::DefaultJitOptions()
     SET_DEFAULT(disableGvn, false);
 
     // Toggles whether inlining is globally disabled.
-    SET_DEFAULT(disableInlining, true);
+    SET_DEFAULT(disableInlining, false);
 
     // Toggles whether loop invariant code motion is globally disabled.
     SET_DEFAULT(disableLicm, false);

@@ -5905,6 +5905,7 @@ JS_SetOffthreadIonCompilationEnabled(JSContext* cx, bool enabled);
     Register(ION_GVN_ENABLE, "ion.gvn.enable")                              \
     Register(ION_FORCE_IC, "ion.forceinlineCaches")                         \
     Register(ION_ENABLE, "ion.enable")                                      \
+    Register(ION_INLINING, "ion.inlining")                                  \
     Register(ION_INTERRUPT_WITHOUT_SIGNAL, "ion.interrupt-without-signals") \
     Register(ION_CHECK_RANGE_ANALYSIS, "ion.check-range-analysis")          \
     Register(BASELINE_ENABLE, "baseline.enable")                            \

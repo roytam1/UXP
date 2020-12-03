@@ -1,4 +1,5 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set ts=8 sts=4 et sw=4 tw=99: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -1428,6 +1429,8 @@ ReloadPrefsCallback(const char* pref, void* data)
 
     bool unboxedObjects = Preferences::GetBool(JS_OPTIONS_DOT_STR "unboxed_objects");
     
+    bool inlining = Preferences::GetBool(JS_OPTIONS_DOT_STR "ion.inlining");
+    
     sSharedMemoryEnabled = Preferences::GetBool(JS_OPTIONS_DOT_STR "shared_memory");
 
 #ifdef DEBUG
@@ -1458,6 +1461,8 @@ ReloadPrefsCallback(const char* pref, void* data)
                                   useIonEager ? 0 : -1);
     JS_SetGlobalJitCompilerOption(cx, JSJITCOMPILER_UNBOXED_OBJECTS,
                                   unboxedObjects);
+    JS_SetGlobalJitCompilerOption(cx, JSJITCOMPILER_ION_INLINING,
+                                  inlining);
 }
 
 XPCJSContext::~XPCJSContext()
