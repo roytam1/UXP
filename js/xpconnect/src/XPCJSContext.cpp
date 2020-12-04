@@ -1428,6 +1428,8 @@ ReloadPrefsCallback(const char* pref, void* data)
 
     bool unboxedObjects = Preferences::GetBool(JS_OPTIONS_DOT_STR "unboxed_objects");
     
+    bool inlining = Preferences::GetBool(JS_OPTIONS_DOT_STR "ion.inlining");
+    
     sSharedMemoryEnabled = Preferences::GetBool(JS_OPTIONS_DOT_STR "shared_memory");
 
 #ifdef DEBUG
@@ -1458,6 +1460,8 @@ ReloadPrefsCallback(const char* pref, void* data)
                                   useIonEager ? 0 : -1);
     JS_SetGlobalJitCompilerOption(cx, JSJITCOMPILER_UNBOXED_OBJECTS,
                                   unboxedObjects);
+    JS_SetGlobalJitCompilerOption(cx, JSJITCOMPILER_ION_INLINING,
+                                  inlining);
 }
 
 XPCJSContext::~XPCJSContext()
