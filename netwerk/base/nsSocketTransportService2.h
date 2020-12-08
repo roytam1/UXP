@@ -19,7 +19,6 @@
 #include "mozilla/Mutex.h"
 #include "mozilla/net/DashboardTypes.h"
 #include "mozilla/Atomics.h"
-#include "mozilla/TimeStamp.h"
 #include "nsITimer.h"
 #include "mozilla/UniquePtr.h"
 #include "PollableEvent.h"
@@ -167,7 +166,33 @@ private:
     {
         PRFileDesc       *mFD;
         nsASocketHandler *mHandler;
-        uint16_t          mElapsedTime;  // time elapsed w/o activity
+        PRIntervalTime    mPollStartEpoch;  // Epoch timestamp when we started to poll this socket
+
+    public:
+        // Helper functions implementing a timeout mechanism.
+        
+        // Returns true if the socket has not been signalled in more than the desired
+        // timeout for this socket (mHandler->mPollTimeout).
+        bool IsTimedOut(PRIntervalTime now) const;
+        
+        // Records the epoch timestamp we started polling this socket. If the epoch is already
+        // recorded, then it does nothing (i.e. does not re-arm) so it's safe to call whenever
+        // this socket is put into the active polling list.
+        void StartTimeout(PRIntervalTime now);
+        
+        // Turns off the timout calculation.
+        void StopTimeout();
+        
+        // Returns the number of intervals from "now" after which this socket will timeout,
+        // or 0 (zero) when it has already timed out. Returns NS_SOCKET_POLL_TIMEOUT
+        // when there is no timeout set on the socket.
+        PRIntervalTime TimeoutIn(PRIntervalTime now) const;
+        
+        // When a socket timeout is set to not time out and later set again to time out, it
+        // is possible that mPollStartEpoch is not reset in-between. We have to manually
+        // call this on every iteration over sockets to ensure the epoch timestamp is reset
+        // and our socket bookkeeping remains accurate.
+        void ResetTimeout();
     };
 
     SocketContext *mActiveList;                   /* mListSize entries */
@@ -203,10 +228,10 @@ private:
 
     PRPollDesc *mPollList;                        /* mListSize + 1 entries */
 
-    PRIntervalTime PollTimeout();            // computes ideal poll timeout
+    PRIntervalTime PollTimeout(PRIntervalTime now); // computes ideal poll timeout
     nsresult       DoPollIteration();
                                              // perfoms a single poll iteration
-    int32_t        Poll(uint32_t *interval);
+    int32_t        Poll(PRIntervalTime now);
                                              // calls PR_Poll.  the out param
                                              // interval indicates the poll
                                              // duration in seconds.
