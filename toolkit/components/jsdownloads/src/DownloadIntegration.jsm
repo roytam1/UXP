@@ -717,6 +717,22 @@ this.DownloadIntegration = {
       return;
     }
 
+#ifdef XP_WIN
+    // When a file has no extension, and there's an executable file with the
+    // same name in the same folder, the Windows shell can get confused.
+    // For this reason, we show the file in the containing folder instead of
+    // trying to open it.
+    // We also don't trust mimeinfo; it could be a type we can forward to a
+    // system handler, but it could also be an executable type, and we
+    // don't have an exhaustive list with all of them.
+    if (!fileExtension) {
+      // We can't check for the existence of a same-name file with every
+      // possible executable extension, so this is a catch-all.
+      this.showContainingDirectory(aDownload.target.path);
+      return;
+    }
+#endif
+
     // No custom application chosen, let's launch the file with the default
     // handler. First, let's try to launch it through the MIME service.
     if (mimeInfo) {
