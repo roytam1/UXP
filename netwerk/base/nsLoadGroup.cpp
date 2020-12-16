@@ -107,6 +107,9 @@ nsLoadGroup::nsLoadGroup(nsISupports* outer)
     , mStatus(NS_OK)
     , mPriority(PRIORITY_NORMAL)
     , mIsCanceling(false)
+    , mDefaultLoadIsTimed(false)
+    , mTimedRequests(0)
+    , mCachedRequests(0)
     , mTimedNonCachedRequestsUntilOnEndPageLoad(0)
 {
     NS_INIT_AGGREGATED(outer);
@@ -427,6 +430,12 @@ nsLoadGroup::SetDefaultLoadRequest(nsIRequest *aRequest)
         // in particular, nsIChannel::LOAD_DOCUMENT_URI...
         //
         mLoadFlags &= nsIRequest::LOAD_REQUESTMASK;
+
+        nsCOMPtr<nsITimedChannel> timedChannel = do_QueryInterface(aRequest);
+        mDefaultLoadIsTimed = timedChannel != nullptr;
+        if (mDefaultLoadIsTimed) {
+            timedChannel->SetTimingEnabled(true);
+        }
     }
     // Else, do not change the group's load flags (see bug 95981)
     return NS_OK;
@@ -480,6 +489,10 @@ nsLoadGroup::AddRequest(nsIRequest *request, nsISupports* ctxt)
 
     if (mPriority != 0)
         RescheduleRequest(request, mPriority);
+
+    nsCOMPtr<nsITimedChannel> timedChannel = do_QueryInterface(request);
+    if (timedChannel)
+        timedChannel->SetTimingEnabled(true);
 
     if (!(flags & nsIRequest::LOAD_BACKGROUND)) {
         // Update the count of foreground URIs..
