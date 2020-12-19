@@ -5893,7 +5893,12 @@ var OfflineApps = {
     var cacheService = Cc["@mozilla.org/network/application-cache-service;1"]
                          .getService(Ci.nsIApplicationCacheService);
     if (!groups) {
-      groups = cacheService.getGroups();
+      try {
+        groups = cacheService.getGroups();
+      } catch(ex) {
+        // Cache disabled.
+        return 0;
+      }
     }
 
     var usage = 0;
