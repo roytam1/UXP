@@ -94,7 +94,7 @@ exports.menuitems = [
     },
     key: {
       id: "browserToolbox",
-      modifiers: isMac ? "accel,alt" : "accel,shift",
+      modifiers: "accel,alt,shift",
       keytext: true
     }
   },
