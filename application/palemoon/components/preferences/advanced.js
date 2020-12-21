@@ -283,7 +283,11 @@ var gAdvancedPane = {
       Components.classes["@mozilla.org/netwerk/cache-storage-service;1"]
                 .getService(Components.interfaces.nsICacheStorageService);
     var storage = cacheService.appCacheStorage(LoadContextInfo.default, null);
-    storage.asyncVisitStorage(visitor, false);
+    try {
+      storage.asyncVisitStorage(visitor, false);
+    } catch(ex) {
+      // Service unavailable: user most likely crippled the cache.
+    }
   },
 
   updateCacheSizeUI: function(smartSizeEnabled)
@@ -393,8 +397,14 @@ var gAdvancedPane = {
   {
     var cacheService = Components.classes["@mozilla.org/network/application-cache-service;1"].
                        getService(Components.interfaces.nsIApplicationCacheService);
-    if (!groups)
-      groups = cacheService.getGroups();
+    if (!groups) {
+      try {
+        groups = cacheService.getGroups();
+      } catch(ex) {
+        // Cache disabled.
+        return 0;
+      }
+    }
 
     var ios = Components.classes["@mozilla.org/network/io-service;1"].
               getService(Components.interfaces.nsIIOService);
@@ -426,27 +436,33 @@ var gAdvancedPane = {
 
     var cacheService = Components.classes["@mozilla.org/network/application-cache-service;1"].
                        getService(Components.interfaces.nsIApplicationCacheService);
-    var groups = cacheService.getGroups();
+    
+    try {
+      var groups = cacheService.getGroups();
 
-    var bundle = document.getElementById("bundlePreferences");
+      var bundle = document.getElementById("bundlePreferences");
 
-    var enumerator = pm.enumerator;
-    while (enumerator.hasMoreElements()) {
-      var perm = enumerator.getNext().QueryInterface(Components.interfaces.nsIPermission);
-      if (perm.type == "offline-app" &&
-          perm.capability != Components.interfaces.nsIPermissionManager.DEFAULT_ACTION &&
-          perm.capability != Components.interfaces.nsIPermissionManager.DENY_ACTION) {
-        var row = document.createElement("listitem");
-        row.id = "";
-        row.className = "offlineapp";
-        row.setAttribute("origin", perm.principal.origin);
-        var converted = DownloadUtils.
-                        convertByteUnits(this._getOfflineAppUsage(perm, groups));
-        row.setAttribute("usage",
-                         bundle.getFormattedString("offlineAppUsage",
-                                                   converted));
-        list.appendChild(row);
+      var enumerator = pm.enumerator;
+      while (enumerator.hasMoreElements()) {
+        var perm = enumerator.getNext().QueryInterface(Components.interfaces.nsIPermission);
+        if (perm.type == "offline-app" &&
+            perm.capability != Components.interfaces.nsIPermissionManager.DEFAULT_ACTION &&
+            perm.capability != Components.interfaces.nsIPermissionManager.DENY_ACTION) {
+          var row = document.createElement("listitem");
+          row.id = "";
+          row.className = "offlineapp";
+          row.setAttribute("origin", perm.principal.origin);
+          var converted = DownloadUtils.
+                          convertByteUnits(this._getOfflineAppUsage(perm, groups));
+          row.setAttribute("usage",
+                           bundle.getFormattedString("offlineAppUsage",
+                                                     converted));
+          list.appendChild(row);
+        }
       }
+    } catch(ex) {
+        // Cache service unavailable/errored, off-line app cache is disabled or 0
+        // Do nothing, just leave the box blank.
     }
   },
 

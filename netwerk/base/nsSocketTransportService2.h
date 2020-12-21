@@ -258,6 +258,9 @@ private:
     Atomic<int32_t, Relaxed>        mMaxTimePerPollIter;
     Atomic<PRIntervalTime, Relaxed> mMaxTimeForPrClosePref;
 
+    Atomic<bool, Relaxed>           mSleepPhase;
+    nsCOMPtr<nsITimer>              mAfterWakeUpTimer;
+
     void OnKeepaliveEnabledPrefChange();
     void NotifyKeepaliveEnabledPrefChange(SocketContext *sock);
 
