@@ -82,6 +82,10 @@ protected:
     int32_t                         mPriority;
     bool                            mIsCanceling;
 
+    bool                            mDefaultLoadIsTimed;
+    uint32_t                        mTimedRequests;
+    uint32_t                        mCachedRequests;
+
     /* For nsPILoadGroupInternal */
     uint32_t                        mTimedNonCachedRequestsUntilOnEndPageLoad;
 };
