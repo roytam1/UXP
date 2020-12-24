@@ -178,6 +178,7 @@
     macro(InitializeCollator, InitializeCollator, "InitializeCollator") \
     macro(InitializeDateTimeFormat, InitializeDateTimeFormat, "InitializeDateTimeFormat") \
     macro(InitializeNumberFormat, InitializeNumberFormat, "InitializeNumberFormat") \
+    macro(InitializePluralRules, InitializePluralRules, "InitializePluralRules") \
     macro(innermost, innermost, "innermost") \
     macro(inNursery, inNursery, "inNursery") \
     macro(input, input, "input") \
@@ -270,6 +271,8 @@
     macro(parseInt, parseInt, "parseInt") \
     macro(pattern, pattern, "pattern") \
     macro(pending, pending, "pending") \
+    macro(PluralRules, PluralRules, "PluralRules") \
+    macro(PluralRulesSelect, PluralRulesSelect, "Intl_PluralRules_Select") \
     macro(public, public_, "public") \
     macro(preventExtensions, preventExtensions, "preventExtensions") \
     macro(private, private_, "private") \

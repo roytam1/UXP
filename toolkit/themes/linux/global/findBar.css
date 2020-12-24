@@ -5,9 +5,9 @@
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 findbar {
+  padding: 4px 8px;
   border-top: 2px solid;
   -moz-border-top-colors: ThreeDShadow ThreeDHighlight;
-  padding-bottom: 1px;
   min-width: 1px;
   transition-property: margin-bottom, opacity, visibility;
   transition-duration: 150ms, 150ms, 0s;
@@ -73,13 +73,22 @@ findbar[hidden] {
   list-style-image: url("chrome://global/skin/icons/loading_16.png");
 }
 
+.findbar-textbox {
+  -moz-appearance: none;
+  border: 1px solid ThreeDShadow;
+  box-shadow: 0 0 1px 0 ThreeDShadow inset;
+  margin: 0;
+  padding: 5px;
+  width: 14em;
+}
+
 .findbar-textbox[status="notfound"] {
-  box-shadow: 0 0 0 1em #f66 inset;
+  background-color: #f66;
   color: white;
 }
 
 .findbar-textbox[flash="true"] {
-  box-shadow: 0 0 0 1em yellow inset;
+  background-color: yellow;
   color: black;
 }
 
