@@ -91,9 +91,6 @@ GPATH
 # Git clone directory for updating web-platform-tests
 testing/web-platform/sync/
 
-# Android Gradle artifacts.
-mobile/android/gradle/.gradle
-
 # XCode project cruft
 embedding/ios/GoannaEmbed/GoannaEmbed.xcodeproj/project.xcworkspace/xcuserdata
 embedding/ios/GoannaEmbed/GoannaEmbed.xcodeproj/xcuserdata
