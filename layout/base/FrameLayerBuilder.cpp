@@ -2502,7 +2502,6 @@ ContainerState::PreparePaintedLayerForUse(PaintedLayer* aLayer,
   aData->mVisibilityComputedRegion.SetEmpty();
 
   // FIXME: Temporary workaround for bug 681192 and bug 724786.
-#ifndef MOZ_WIDGET_ANDROID
   // Calculate exact position of the top-left of the active scrolled root.
   // This might not be 0,0 due to the snapping in ScaleToNearestPixels.
   gfxPoint animatedGeometryRootTopLeft = scaledOffset - ThebesPoint(matrix.GetTranslation()) + mParameters.mOffset;
@@ -2515,9 +2514,6 @@ ContainerState::PreparePaintedLayerForUse(PaintedLayer* aLayer,
   } else if (didResetScrollPositionForLayerPixelAlignment) {
     aData->mAnimatedGeometryRootPosition = animatedGeometryRootTopLeft;
   }
-#else
-  Unused << didResetScrollPositionForLayerPixelAlignment;
-#endif
 }
 
 #if defined(DEBUG) || defined(MOZ_DUMP_PAINTING)

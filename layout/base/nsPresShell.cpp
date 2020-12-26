@@ -197,10 +197,6 @@
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/dom/ImageTracker.h"
 
-#ifdef ANDROID
-#include "nsIDocShellTreeOwner.h"
-#endif
-
 #ifdef MOZ_TASK_TRACER
 #include "GeckoTaskTracer.h"
 using namespace mozilla::tasktracer;
@@ -7287,12 +7283,6 @@ PresShell::HandleEvent(nsIFrame* aFrame,
       // if the mouse is being captured then retarget the mouse event at the
       // document that is being captured.
       retargetEventDoc = capturingContent->GetComposedDoc();
-#ifdef ANDROID
-    } else if ((aEvent->mClass == eTouchEventClass) ||
-               (aEvent->mClass == eMouseEventClass) ||
-               (aEvent->mClass == eWheelEventClass)) {
-      retargetEventDoc = GetTouchEventTargetDocument();
-#endif
     }
 
     if (retargetEventDoc) {
@@ -7845,38 +7835,6 @@ PresShell::HandleEvent(nsIFrame* aFrame,
 
   return rv;
 }
-
-#ifdef ANDROID
-nsIDocument*
-PresShell::GetTouchEventTargetDocument()
-{
-  nsPresContext* context = GetPresContext();
-  if (!context || !context->IsRoot()) {
-    return nullptr;
-  }
-
-  nsCOMPtr<nsIDocShellTreeItem> shellAsTreeItem = context->GetDocShell();
-  if (!shellAsTreeItem) {
-    return nullptr;
-  }
-
-  nsCOMPtr<nsIDocShellTreeOwner> owner;
-  shellAsTreeItem->GetTreeOwner(getter_AddRefs(owner));
-  if (!owner) {
-    return nullptr;
-  }
-
-  // now get the primary content shell (active tab)
-  nsCOMPtr<nsIDocShellTreeItem> item;
-  owner->GetPrimaryContentShell(getter_AddRefs(item));
-  nsCOMPtr<nsIDocShell> childDocShell = do_QueryInterface(item);
-  if (!childDocShell) {
-    return nullptr;
-  }
-
-  return childDocShell->GetDocument();
-}
-#endif
 
 #ifdef DEBUG
 void

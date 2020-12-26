@@ -33,12 +33,6 @@ var WindowListener = {
 };
 
 function startup(data, reason) {
-  if (Services.appinfo.OS == "Android") {
-    Cm.addBootstrappedManifestLocation(data.installPath);
-    Services.wm.addListener(WindowListener);
-    return;
-  }
-
   let orig = Services.wm.getMostRecentWindow("navigator:browser");
 
   let ios = Cc["@mozilla.org/network/io-service;1"]
@@ -61,12 +55,7 @@ function startup(data, reason) {
 }
 
 function shutdown(data, reason) {
-  if (Services.appinfo.OS == "Android") {
-    Services.wm.removeListener(WindowListener);
-    Cm.removedBootstrappedManifestLocation(data.installPath);
-    OnRefTestUnload();
-    Cu.unload("chrome://reftest/content/reftest.jsm");
-  }
+  // Any special shutdown commands go here.
 }
 
 
