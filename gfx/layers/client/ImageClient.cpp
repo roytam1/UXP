@@ -128,13 +128,6 @@ ImageClient::CreateTextureClientForImage(Image* aImage, KnowsCompositor* aForwar
       EGLImageImage* typedImage = aImage->AsEGLImageImage();
       texture = EGLImageTextureData::CreateTextureClient(
         typedImage, size, aForwarder->GetTextureForwarder(), TextureFlags::DEFAULT);
-#ifdef MOZ_WIDGET_ANDROID
-    } else if (aImage->GetFormat() == ImageFormat::SURFACE_TEXTURE) {
-      SurfaceTextureImage* typedImage = aImage->AsSurfaceTextureImage();
-      texture = AndroidSurfaceTextureData::CreateTextureClient(
-        typedImage->GetSurfaceTexture(), size, typedImage->GetOriginPos(),
-        aForwarder->GetTextureForwarder(), TextureFlags::DEFAULT);
-#endif
     } else {
       MOZ_ASSERT(false, "Bad ImageFormat.");
     }

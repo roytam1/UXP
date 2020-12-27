@@ -303,7 +303,7 @@ SkBitmap ImageOperations::ResizeSubpixel(const SkBitmap& source,
   return result;
 #else
   return SkBitmap();
-#endif  // OS_POSIX && !OS_MACOSX && !defined(OS_ANDROID)
+#endif  // OS_POSIX && !OS_MACOSX
 }
 
 // static

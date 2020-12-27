@@ -107,11 +107,6 @@ class GLBlitHelper final
     void BindAndUploadEGLImage(EGLImage image, GLuint target);
 
     bool BlitPlanarYCbCrImage(layers::PlanarYCbCrImage* yuvImage);
-#ifdef MOZ_WIDGET_ANDROID
-    // Blit onto the current FB.
-    bool BlitSurfaceTextureImage(layers::SurfaceTextureImage* stImage);
-    bool BlitEGLImageImage(layers::EGLImageImage* eglImage);
-#endif
 #ifdef XP_MACOSX
     bool BlitMacIOSurfaceImage(layers::MacIOSurfaceImage* ioImage);
 #endif
