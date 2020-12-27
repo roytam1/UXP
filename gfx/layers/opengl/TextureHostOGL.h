@@ -36,10 +36,6 @@ namespace gfx {
 class DataSourceSurface;
 } // namespace gfx
 
-namespace gl {
-class AndroidSurfaceTexture;
-} // namespace gl
-
 namespace layers {
 
 class Compositor;

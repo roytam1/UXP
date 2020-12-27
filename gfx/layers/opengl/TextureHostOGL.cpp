@@ -16,7 +16,6 @@
 #include "mozilla/gfx/Logging.h"        // for gfxCriticalError
 #include "mozilla/layers/ISurfaceAllocator.h"
 #include "nsRegion.h"                   // for nsIntRegion
-#include "AndroidSurfaceTexture.h"
 #include "GfxTexturesReporter.h"        // for GfxTexturesReporter
 #include "GLBlitTextureImageHelper.h"
 #include "GeckoProfiler.h"

@@ -14,7 +14,6 @@
 #include "mozilla/layers/CompositorTypes.h"
 #include "mozilla/layers/LayersSurfaces.h"  // for SurfaceDescriptor
 #include "mozilla/layers/TextureClient.h"  // for TextureClient, etc
-#include "AndroidSurfaceTexture.h"
 
 namespace mozilla {
 

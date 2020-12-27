@@ -80,16 +80,6 @@ if CONFIG['MOZ_APPLEMEDIA']:
 
 include('/ipc/chromium/chromium-config.mozbuild')
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    EXPORTS += [
-        'android/AndroidDecoderModule.h',
-    ]
-    SOURCES += [
-        'android/AndroidDecoderModule.cpp',
-        'android/MediaCodecDataDecoder.cpp',
-        'android/RemoteDataDecoder.cpp',
-    ]
-
 FINAL_LIBRARY = 'xul'
 
 if CONFIG['GNU_CXX']:

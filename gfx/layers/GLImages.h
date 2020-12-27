@@ -6,7 +6,6 @@
 #ifndef GFX_GLIMAGES_H
 #define GFX_GLIMAGES_H
 
-#include "AndroidSurfaceTexture.h"
 #include "GLContextTypes.h"
 #include "GLTypes.h"
 #include "ImageContainer.h"             // for Image
