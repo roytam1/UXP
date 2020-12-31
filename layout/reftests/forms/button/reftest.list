@@ -8,13 +8,10 @@
 == min-height.html min-height-ref.html
 == overflow-areas-1.html overflow-areas-1-ref.html
 
-# The buttons in these tests have some fancy shading applied to their corners
-# on Android, despite their "-moz-appearance: none; background: gray", so they
-# don't quite match the reference case's normal <div>. That's why they're fuzzy.
-fuzzy-if(Android,125,20) == percent-height-child-1.html percent-height-child-1-ref.html
-pref(browser.display.focus_ring_width,1) fuzzy-if(Android,125,80) == percent-height-child-2.html percent-height-child-2-ref.html
-fuzzy-if(Android,125,20) == percent-width-child-1.html  percent-width-child-1-ref.html
-pref(browser.display.focus_ring_width,1) fuzzy-if(Android,125,80) == percent-width-child-2.html  percent-width-child-2-ref.html
+== percent-height-child-1.html percent-height-child-1-ref.html
+pref(browser.display.focus_ring_width,1) == percent-height-child-2.html percent-height-child-2-ref.html
+== percent-width-child-1.html  percent-width-child-1-ref.html
+pref(browser.display.focus_ring_width,1) == percent-width-child-2.html  percent-width-child-2-ref.html
 
 == vertical-centering.html vertical-centering-ref.html
 
@@ -23,9 +20,7 @@ pref(browser.display.focus_ring_width,1) fuzzy-if(Android,125,80) == percent-wid
 != line-height-input-0.5.html line-height-input-1.0.html
 != line-height-input-1.5.html line-height-input-1.0.html
 
-# Looks like Android changes the text color, but to something slightly
-# different from ColorGray
-fails-if(Android) == disabled-1.html disabled-1-ref.html
+== disabled-1.html disabled-1-ref.html
 == disabled-2.html disabled-2-ref.html
 
 != disabled-3.html disabled-3-notref.html

@@ -1,5 +1,5 @@
 == label-dynamic.html label-dynamic-ref.html
-fails-if(Android) == radio-stretched.html radio-stretched-ref.html # test for bug 464589
+== radio-stretched.html radio-stretched-ref.html # test for bug 464589
 != checked.html checked-notref.html
 != checked-native.html checked-native-notref.html
 != checked.html about:blank

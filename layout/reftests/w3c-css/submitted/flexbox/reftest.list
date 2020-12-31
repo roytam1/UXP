@@ -34,7 +34,7 @@
 == flexbox-align-self-vert-002.xhtml  flexbox-align-self-vert-002-ref.xhtml
 == flexbox-align-self-vert-003.xhtml  flexbox-align-self-vert-003-ref.xhtml
 == flexbox-align-self-vert-004.xhtml  flexbox-align-self-vert-004-ref.xhtml
-fuzzy-if(Android,158,32) == flexbox-align-self-vert-rtl-001.xhtml  flexbox-align-self-vert-rtl-001-ref.xhtml
+== flexbox-align-self-vert-rtl-001.xhtml  flexbox-align-self-vert-rtl-001-ref.xhtml
 == flexbox-align-self-vert-rtl-002.xhtml  flexbox-align-self-vert-rtl-002-ref.xhtml
 == flexbox-align-self-vert-rtl-003.xhtml  flexbox-align-self-vert-rtl-003-ref.xhtml
 == flexbox-align-self-vert-rtl-004.xhtml  flexbox-align-self-vert-rtl-004-ref.xhtml

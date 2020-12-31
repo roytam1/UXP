@@ -1,5 +1,5 @@
 == default-size.html default-size-ref.html
-fuzzy-if(Android,8,1000) == size-1.html size-1-ref.html
+== size-1.html size-1-ref.html
 
 == empty-transaction-1.html empty-transaction-1-ref.html
 
@@ -66,10 +66,10 @@ random-if(cocoaWidget&&azureSkia) random-if(!cocoaWidget||OSX==1006||OSX==1007) 
 # azure quartz uses CGDrawLinearGradient instead of DrawShading
 # so we have less control over degenerate behaviour as tested by this
 # test
-fails-if((azureSkia&&!azureSkiaGL)||azureQuartz||(azureSkiaGL&&Android)) == linear-gradient-1a.html linear-gradient-1-ref.html
+fails-if((azureSkia&&!azureSkiaGL)||azureQuartz) == linear-gradient-1a.html linear-gradient-1-ref.html
 
 # this passes with cairo on 10.7 and 10.8 but not with azure for reasons unknown
-fails-if((azureSkia&&!azureSkiaGL)||azureQuartz||(azureSkiaGL&&Android)) == linear-gradient-1b.html linear-gradient-1-ref.html
+fails-if((azureSkia&&!azureSkiaGL)||azureQuartz) == linear-gradient-1b.html linear-gradient-1-ref.html
 
 == zero-dimensions.html zero-dimensions-ref.html
 
@@ -77,7 +77,7 @@ fails-if((azureSkia&&!azureSkiaGL)||azureQuartz||(azureSkiaGL&&Android)) == line
 == evenodd-fill-1.html evenodd-fill-ref.html
 
 == dash-sanity.html data:text/html,<body>Pass
-fuzzy-if(azureSkia||skiaContent,9,470) random-if(Android) == dash-1.html dash-1-ref.svg  # Bug 668412 (really is android-specific, not IPC-specific)
+fuzzy-if(azureSkia||skiaContent,9,470) == dash-1.html dash-1-ref.svg
 
 == ctm-sanity.html data:text/html,<body>Pass
 == ctm-singular-sanity.html data:text/html,<body>Pass

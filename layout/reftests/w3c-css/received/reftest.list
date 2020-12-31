@@ -70,7 +70,7 @@ fails HTTP(../../..) == css-multicol-1/multicol-count-002.xht css-multicol-1/mul
 fails HTTP(../../..) == css-multicol-1/multicol-count-computed-001.xht css-multicol-1/multicol-count-computed-ref.xht
 fails HTTP(../../..) == css-multicol-1/multicol-count-computed-002.xht css-multicol-1/multicol-count-computed-2-ref.xht
 fails HTTP(../../..) == css-multicol-1/multicol-count-computed-003.xht css-multicol-1/multicol-count-computed-003-ref.xht
-fuzzy-if(winWidget||OSX||gtkWidget,112,861) fails-if(Android) HTTP(../../..) == css-multicol-1/multicol-count-computed-004.xht css-multicol-1/multicol-count-computed-004-ref.xht
+fuzzy-if(winWidget||OSX||gtkWidget,112,861) HTTP(../../..) == css-multicol-1/multicol-count-computed-004.xht css-multicol-1/multicol-count-computed-004-ref.xht
 fails HTTP(../../..) == css-multicol-1/multicol-count-computed-005.xht css-multicol-1/multicol-count-computed-003-ref.xht
 fails HTTP(../../..) == css-multicol-1/multicol-count-large-001.xht css-multicol-1/multicol-count-large-ref.xht
 fuzzy(255,132) HTTP(../../..) == css-multicol-1/multicol-count-large-002.xht css-multicol-1/multicol-count-large-2-ref.xht
@@ -93,7 +93,7 @@ fuzzy(255,290) HTTP(../../..) == css-multicol-1/multicol-gap-001.xht css-multico
 fuzzy(204,930) fuzzy-if(skiaContent,208,930) HTTP(../../..) == css-multicol-1/multicol-gap-002.xht css-multicol-1/multicol-gap-002-ref.xht
 fuzzy(204,930) fuzzy-if(skiaContent,208,930) HTTP(../../..) == css-multicol-1/multicol-gap-003.xht css-multicol-1/multicol-gap-002-ref.xht
 fuzzy(107,1823) HTTP(../../..) == css-multicol-1/multicol-gap-fraction-001.xht css-multicol-1/multicol-gap-fraction-001-ref.xht
-fuzzy-if(winWidget||OSX||gtkWidget,204,1048) fuzzy-if(skiaContent,208,1048) fails-if(Android) HTTP(../../..) == css-multicol-1/multicol-gap-large-001.xht css-multicol-1/multicol-gap-large-001-ref.xht
+fuzzy-if(winWidget||OSX||gtkWidget,204,1048) fuzzy-if(skiaContent,208,1048) HTTP(../../..) == css-multicol-1/multicol-gap-large-001.xht css-multicol-1/multicol-gap-large-001-ref.xht
 fuzzy(225,920) HTTP(../../..) == css-multicol-1/multicol-gap-large-002.xht css-multicol-1/multicol-gap-large-002-ref.xht
 fuzzy(204,930) fuzzy-if(skiaContent,208,930) HTTP(../../..) == css-multicol-1/multicol-gap-negative-001.xht css-multicol-1/multicol-gap-002-ref.xht
 HTTP(../../..) == css-multicol-1/multicol-height-001.xht css-multicol-1/multicol-height-001-ref.xht

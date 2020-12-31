@@ -112,7 +112,7 @@ random-if(winWidget) == 305643-1.html 305643-1-ref.html # depends on windows ver
 == 613149-1a.html 613149-1-ref.html
 == 613149-1b.html 613149-1-ref.html
 fuzzy-if(/^Windows\x20NT\x206\.1/.test(http.oscpu)&&!layersGPUAccelerated&&!azureSkia,36,2) == 613149-2a.html 613149-2-ref.html
-fuzzy-if(Android,24,1) fuzzy-if(/^Windows\x20NT\x206\.1/.test(http.oscpu)&&!layersGPUAccelerated&&!azureSkia,36,2) == 613149-2b.html 613149-2-ref.html
+fuzzy-if(/^Windows\x20NT\x206\.1/.test(http.oscpu)&&!layersGPUAccelerated&&!azureSkia,36,2) == 613149-2b.html 613149-2-ref.html
 == 613157-1.html 613157-1-ref.html
 fuzzy-if(/^Windows\x20NT\x206\.1/.test(http.oscpu)&&!layersGPUAccelerated&&!azureSkia,255,6) == 613157-2.html 613157-2-ref.html
 == 662288-1.html 662288-1-ref.html
@@ -160,11 +160,11 @@ fuzzy-if(xulRuntime.widgetToolkit=="gtk3",1,11) == 869833-1.xul 869833-1-ref.xul
 == brackets-1c-ltr.html brackets-1c-ltr-ref.html
 == brackets-1c-rtl.html brackets-1c-rtl-ref.html
 == brackets-2a-ltr.html brackets-2a-ltr-ref.html
-fuzzy-if(Android,254,557) == brackets-2a-rtl.html brackets-2a-rtl-ref.html
+== brackets-2a-rtl.html brackets-2a-rtl-ref.html
 == brackets-2b-ltr.html brackets-2b-ltr-ref.html
 == brackets-2b-rtl.html brackets-2b-rtl-ref.html
 == brackets-2c-ltr.html brackets-2c-ltr-ref.html
-fuzzy-if(Android,254,231) == brackets-2c-rtl.html brackets-2c-rtl-ref.html
+== brackets-2c-rtl.html brackets-2c-rtl-ref.html
 == brackets-3a-ltr.html brackets-3a-ltr-ref.html
 == brackets-3a-rtl.html brackets-3a-rtl-ref.html
 == brackets-3b-ltr.html brackets-3b-ltr-ref.html
