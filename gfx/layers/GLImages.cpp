@@ -1,3 +1,7 @@
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "GLImages.h"
 #include "GLContext.h"
@@ -97,18 +101,6 @@ GLImage::GetAsSourceSurface()
   ReadPixelsIntoDataSurface(sSnapshotContext, source);
   return source.forget();
 }
-
-#ifdef MOZ_WIDGET_ANDROID
-SurfaceTextureImage::SurfaceTextureImage(gl::AndroidSurfaceTexture* aSurfTex,
-                                         const gfx::IntSize& aSize,
-                                         gl::OriginPos aOriginPos)
- : GLImage(ImageFormat::SURFACE_TEXTURE),
-   mSurfaceTexture(aSurfTex),
-   mSize(aSize),
-   mOriginPos(aOriginPos)
-{
-}
-#endif
 
 } // namespace layers
 } // namespace mozilla

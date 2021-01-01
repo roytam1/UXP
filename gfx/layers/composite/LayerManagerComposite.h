@@ -327,9 +327,6 @@ private:
    * Render the current layer tree to the active target.
    */
   void Render(const nsIntRegion& aInvalidRegion, const nsIntRegion& aOpaqueRegion);
-#if defined(MOZ_WIDGET_ANDROID)
-  void RenderToPresentationSurface();
-#endif
 
   /**
    * We need to know our invalid region before we're ready to render.

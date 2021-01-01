@@ -208,80 +208,6 @@ class ReftestRunner(MozbuildObject):
 
         return rv
 
-    def run_android_test(self, **kwargs):
-        """Runs a reftest, in Firefox for Android."""
-
-        args = Namespace(**kwargs)
-        if args.suite not in ('reftest', 'crashtest', 'jstestbrowser'):
-            raise Exception('None or unrecognized reftest suite type.')
-
-        self._setup_objdir(args)
-        import remotereftest
-
-        default_manifest = {
-            "reftest": (self.topsrcdir, "layout", "reftests", "reftest.list"),
-            "crashtest": (self.topsrcdir, "testing", "crashtest", "crashtests.list"),
-            "jstestbrowser": ("jsreftest", "tests", "jstests.list")
-        }
-
-        if not args.tests:
-            args.tests = [os.path.join(*default_manifest[args.suite])]
-
-        args.extraProfileFiles.append(
-            os.path.join(self.topsrcdir, "mobile", "android", "fonts"))
-
-        hyphenation_path = os.path.join(self.topsrcdir, "intl", "locales")
-
-        for (dirpath, dirnames, filenames) in os.walk(hyphenation_path):
-            for filename in filenames:
-                if filename.endswith('.dic'):
-                    args.extraProfileFiles.append(os.path.join(dirpath, filename))
-
-        if not args.httpdPath:
-            args.httpdPath = os.path.join(self.tests_dir, "modules")
-        if not args.symbolsPath:
-            args.symbolsPath = os.path.join(self.topobjdir, "crashreporter-symbols")
-        if not args.xrePath:
-            args.xrePath = os.environ.get("MOZ_HOST_BIN")
-        if not args.app:
-            args.app = self.substs["ANDROID_PACKAGE_NAME"]
-        if not args.utilityPath:
-            args.utilityPath = args.xrePath
-        args.dm_trans = "adb"
-        args.ignoreWindowSize = True
-        args.printDeviceInfo = False
-
-        from mozrunner.devices.android_device import grant_runtime_permissions
-        grant_runtime_permissions(self)
-
-        # A symlink and some path manipulations are required so that test
-        # manifests can be found both locally and remotely (via a url)
-        # using the same relative path.
-        if args.suite == "jstestbrowser":
-            staged_js_dir = os.path.join(self.topobjdir, "dist", "test-stage", "jsreftest")
-            tests = os.path.join(self.reftest_dir, 'jsreftest')
-            if not os.path.isdir(tests):
-                os.symlink(staged_js_dir, tests)
-            args.extraProfileFiles.append(os.path.join(staged_js_dir, "tests", "user.js"))
-        else:
-            tests = os.path.join(self.reftest_dir, "tests")
-            if not os.path.isdir(tests):
-                os.symlink(self.topsrcdir, tests)
-            for i, path in enumerate(args.tests):
-                # Non-absolute paths are relative to the packaged directory, which
-                # has an extra tests/ at the start
-                if os.path.exists(os.path.abspath(path)):
-                    path = os.path.relpath(path, os.path.join(self.topsrcdir))
-                args.tests[i] = os.path.join('tests', path)
-
-        self.log_manager.enable_unstructured()
-        try:
-            rv = remotereftest.run_test_harness(parser, args)
-        finally:
-            self.log_manager.disable_unstructured()
-
-        return rv
-
 
 def process_test_objects(kwargs):
     """|mach test| works by providing a test_objects argument, from
@@ -299,12 +225,7 @@ def get_parser():
     global parser
     here = os.path.abspath(os.path.dirname(__file__))
     build_obj = MozbuildObject.from_environment(cwd=here)
-    if conditions.is_android(build_obj):
-        parser = reftestcommandline.RemoteArgumentsParser()
-    elif conditions.is_mulet(build_obj):
-        parser = reftestcommandline.B2GArgumentParser()
-    else:
-        parser = reftestcommandline.DesktopArgumentsParser()
+    parser = reftestcommandline.DesktopArgumentsParser()
     return parser
 
 
@@ -340,12 +261,6 @@ class MachCommands(MachCommandBase):
     def _run_reftest(self, **kwargs):
         process_test_objects(kwargs)
         reftest = self._spawn(ReftestRunner)
-        if conditions.is_android(self):
-            from mozrunner.devices.android_device import verify_android_device
-            verify_android_device(self, install=True, xre=True)
-            return reftest.run_android_test(**kwargs)
-        elif conditions.is_mulet(self):
-            return reftest.run_mulet_test(**kwargs)
         return reftest.run_desktop_test(**kwargs)
 
 

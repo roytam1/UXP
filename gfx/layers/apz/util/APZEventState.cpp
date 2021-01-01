@@ -479,11 +479,8 @@ APZEventState::ProcessAPZStateChange(ViewID aViewId,
 void
 APZEventState::ProcessClusterHit()
 {
-  // If we hit a cluster of links then we shouldn't activate any of them,
-  // as we will be showing the zoomed view. (This is only called on Fennec).
-#ifndef MOZ_WIDGET_ANDROID
-  MOZ_ASSERT(false);
-#endif
+  // If we hit a cluster of links then we shouldn't activate any of them.
+  MOZ_ASSERT(false, "Cluster hits shouldn't happen on desktop!");
   mActiveElementManager->ClearActivation();
 }
 

@@ -54,46 +54,6 @@ static const char* sEGLExtensionNames[] = {
     "EGL_ANGLE_platform_angle_d3d"
 };
 
-#if defined(ANDROID)
-
-static PRLibrary* LoadApitraceLibrary()
-{
-    // Initialization of gfx prefs here is only needed during the unit tests...
-    gfxPrefs::GetSingleton();
-    if (!gfxPrefs::UseApitrace()) {
-        return nullptr;
-    }
-
-    static PRLibrary* sApitraceLibrary = nullptr;
-
-    if (sApitraceLibrary)
-        return sApitraceLibrary;
-
-    nsCString logFile = Preferences::GetCString("gfx.apitrace.logfile");
-
-    if (logFile.IsEmpty()) {
-        logFile = "firefox.trace";
-    }
-
-    // The firefox process can't write to /data/local, but it can write
-    // to $GRE_HOME/
-    nsAutoCString logPath;
-    logPath.AppendPrintf("%s/%s", getenv("GRE_HOME"), logFile.get());
-
-    // apitrace uses the TRACE_FILE environment variable to determine where
-    // to log trace output to
-    printf_stderr("Logging GL tracing output to %s", logPath.get());
-    setenv("TRACE_FILE", logPath.get(), false);
-
-    printf_stderr("Attempting load of %s\n", APITRACE_LIB);
-
-    sApitraceLibrary = PR_LoadLibrary(APITRACE_LIB);
-
-    return sApitraceLibrary;
-}
-
-#endif // ANDROID
-
 #ifdef XP_WIN
 // see the comment in GLLibraryEGL::EnsureInitialized() for the rationale here.
 static PRLibrary*
@@ -348,13 +308,8 @@ GLLibraryEGL::EnsureInitialized(bool forceAccel, nsACString* const out_failureId
 
 #else // !Windows
 
-    // On non-Windows (Android) we use system copies of libEGL. We look for
-    // the APITrace lib, libEGL.so, and libEGL.so.1 in that order.
-
-#if defined(ANDROID)
-    if (!mEGLLibrary)
-        mEGLLibrary = LoadApitraceLibrary();
-#endif
+    // On non-Windows we use system copies of libEGL. We look for
+    // libEGL.so and libEGL.so.1 in that order.
 
     if (!mEGLLibrary) {
         printf_stderr("Attempting load of libEGL.so\n");
@@ -593,24 +548,6 @@ GLLibraryEGL::EnsureInitialized(bool forceAccel, nsACString* const out_failureId
         MarkExtensionUnsupported(KHR_image_pixmap);
     }
 
-    if (IsExtensionSupported(ANDROID_native_fence_sync)) {
-        GLLibraryLoader::SymLoadStruct nativeFenceSymbols[] = {
-            { (PRFuncPtr*) &mSymbols.fDupNativeFenceFDANDROID, { "eglDupNativeFenceFDANDROID", nullptr } },
-            { nullptr, { nullptr } }
-        };
-
-        bool success = GLLibraryLoader::LoadSymbols(mEGLLibrary,
-                                                    &nativeFenceSymbols[0],
-                                                    lookupFunction);
-        if (!success) {
-            NS_ERROR("EGL supports ANDROID_native_fence_sync without exposing its functions!");
-
-            MarkExtensionUnsupported(ANDROID_native_fence_sync);
-
-            mSymbols.fDupNativeFenceFDANDROID = nullptr;
-        }
-    }
-
     mInitialized = true;
     return true;
 }
@@ -642,12 +579,7 @@ GLLibraryEGL::InitClientExtensions()
 
     const char* rawExtString = nullptr;
 
-#ifndef ANDROID
-    // Bug 1209612: Crashes on a number of android drivers.
-    // Ideally we would only blocklist this there, but for now we don't need the client
-    // extension list on ANDROID (we mostly need it on ANGLE), and we'd rather not crash.
     rawExtString = (const char*)fQueryString(nullptr, LOCAL_EGL_EXTENSIONS);
-#endif
 
     if (!rawExtString) {
         if (shouldDumpExts) {

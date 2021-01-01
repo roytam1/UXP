@@ -6,7 +6,6 @@
 #ifndef GFX_GLIMAGES_H
 #define GFX_GLIMAGES_H
 
-#include "AndroidSurfaceTexture.h"
 #include "GLContextTypes.h"
 #include "GLTypes.h"
 #include "ImageContainer.h"             // for Image
@@ -59,34 +58,6 @@ private:
   gl::OriginPos mPos;
   bool mOwns;
 };
-
-#ifdef MOZ_WIDGET_ANDROID
-
-class SurfaceTextureImage : public GLImage {
-public:
-  SurfaceTextureImage(gl::AndroidSurfaceTexture* aSurfTex,
-                      const gfx::IntSize& aSize,
-                      gl::OriginPos aOriginPos);
-
-  gfx::IntSize GetSize() override { return mSize; }
-  gl::AndroidSurfaceTexture* GetSurfaceTexture() const {
-    return mSurfaceTexture;
-  }
-  gl::OriginPos GetOriginPos() const {
-    return mOriginPos;
-  }
-
-  SurfaceTextureImage* AsSurfaceTextureImage() override {
-    return this;
-  }
-
-private:
-  RefPtr<gl::AndroidSurfaceTexture> mSurfaceTexture;
-  gfx::IntSize mSize;
-  gl::OriginPos mOriginPos;
-};
-
-#endif // MOZ_WIDGET_ANDROID
 
 } // namespace layers
 } // namespace mozilla

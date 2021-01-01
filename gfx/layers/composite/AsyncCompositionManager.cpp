@@ -38,10 +38,6 @@
 #include "nsTArrayForwardDeclare.h"     // for InfallibleTArray
 #include "UnitTransforms.h"             // for TransformTo
 #include "gfxPrefs.h"
-#if defined(MOZ_WIDGET_ANDROID)
-# include <android/log.h>
-# include "mozilla/widget/AndroidCompositorWidget.h"
-#endif
 #include "GeckoProfiler.h"
 #include "FrameUniformityData.h"
 #include "TreeTraversal.h"              // for ForEachNode, BreadthFirstSearch
@@ -825,51 +821,13 @@ ExpandRootClipRect(Layer* aLayer, const ScreenMargin& aFixedLayerMargins)
   // clear the clip rect on aLayer entirely but this seems more precise.
   Maybe<ParentLayerIntRect> rootClipRect = aLayer->AsLayerComposite()->GetShadowClipRect();
   if (rootClipRect && aFixedLayerMargins != ScreenMargin()) {
-#ifndef MOZ_WIDGET_ANDROID
-    // We should never enter here on anything other than Fennec, since
-    // aFixedLayerMargins should be empty everywhere else.
-    MOZ_ASSERT(false);
-#endif
+    MOZ_ASSERT(false, "aFixedLayerMargins should be empty!");
     ParentLayerRect rect(rootClipRect.value());
     rect.Deflate(ViewAs<ParentLayerPixel>(aFixedLayerMargins,
       PixelCastJustification::ScreenIsParentLayerForRoot));
     aLayer->AsLayerComposite()->SetShadowClipRect(Some(RoundedOut(rect)));
   }
 }
-
-#ifdef MOZ_WIDGET_ANDROID
-static void
-MoveScrollbarForLayerMargin(Layer* aRoot, FrameMetrics::ViewID aRootScrollId,
-                            const ScreenMargin& aFixedLayerMargins)
-{
-  // See bug 1223928 comment 9 - once we can detect the RCD with just the
-  // isRootContent flag on the metrics, we can probably move this code into
-  // ApplyAsyncTransformToScrollbar rather than having it as a separate
-  // adjustment on the layer tree.
-  Layer* scrollbar = BreadthFirstSearch<ReverseIterator>(aRoot,
-    [aRootScrollId](Layer* aNode) {
-      return (aNode->GetScrollbarDirection() == Layer::HORIZONTAL &&
-              aNode->GetScrollbarTargetContainerId() == aRootScrollId);
-    });
-  if (scrollbar) {
-    // Shift the horizontal scrollbar down into the new space exposed by the
-    // dynamic toolbar hiding. Technically we should also scale the vertical
-    // scrollbar a bit to expand into the new space but it's not as noticeable
-    // and it would add a lot more complexity, so we're going with the "it's not
-    // worth it" justification.
-    TranslateShadowLayer(scrollbar, ParentLayerPoint(0, -aFixedLayerMargins.bottom), true, nullptr);
-    if (scrollbar->GetParent()) {
-      // The layer that has the HORIZONTAL direction sits inside another
-      // ContainerLayer. This ContainerLayer also has a clip rect that causes
-      // the scrollbar to get clipped. We need to expand that clip rect to
-      // prevent that from happening. This is kind of ugly in that we're
-      // assuming a particular layer tree structure but short of adding more
-      // flags to the layer there doesn't appear to be a good way to do this.
-      ExpandRootClipRect(scrollbar->GetParent(), aFixedLayerMargins);
-    }
-  }
-}
-#endif
 
 bool
 AsyncCompositionManager::ApplyAsyncContentTransformToTree(Layer *aLayer,
@@ -974,50 +932,9 @@ AsyncCompositionManager::ApplyAsyncContentTransformToTree(Layer *aLayer,
           const ScrollMetadata& scrollMetadata = layer->GetScrollMetadata(i);
           const FrameMetrics& metrics = scrollMetadata.GetMetrics();
 
-#if defined(MOZ_WIDGET_ANDROID)
-          // If we find a metrics which is the root content doc, use that. If not, use
-          // the root layer. Since this function recurses on children first we should
-          // only end up using the root layer if the entire tree was devoid of a
-          // root content metrics. This is a temporary solution; in the long term we
-          // should not need the root content metrics at all. See bug 1201529 comment
-          // 6 for details.
-          if (!(*aOutFoundRoot)) {
-            *aOutFoundRoot = metrics.IsRootContent() ||       /* RCD */
-                  (layer->GetParent() == nullptr &&          /* rootmost metrics */
-                   i + 1 >= layer->GetScrollMetadataCount());
-            if (*aOutFoundRoot) {
-              mRootScrollableId = metrics.GetScrollId();
-              CSSToLayerScale geckoZoom = metrics.LayersPixelsPerCSSPixel().ToScaleFactor();
-              if (mIsFirstPaint) {
-                LayerIntPoint scrollOffsetLayerPixels = RoundedToInt(metrics.GetScrollOffset() * geckoZoom);
-                mContentRect = metrics.GetScrollableRect();
-                SetFirstPaintViewport(scrollOffsetLayerPixels,
-                                      geckoZoom,
-                                      mContentRect);
-              } else {
-                ParentLayerPoint scrollOffset = controller->GetCurrentAsyncScrollOffset(
-                    AsyncPanZoomController::RESPECT_FORCE_DISABLE);
-                // Compute the painted displayport in document-relative CSS pixels.
-                CSSRect displayPort(metrics.GetCriticalDisplayPort().IsEmpty() ?
-                    metrics.GetDisplayPort() :
-                    metrics.GetCriticalDisplayPort());
-                displayPort += metrics.GetScrollOffset();
-                SyncFrameMetrics(scrollOffset,
-                    geckoZoom * asyncTransformWithoutOverscroll.mScale,
-                    metrics.GetScrollableRect(), displayPort, geckoZoom, mLayersUpdated,
-                    mPaintSyncId, fixedLayerMargins);
-                mFixedLayerMargins = fixedLayerMargins;
-                mLayersUpdated = false;
-                mPaintSyncId = 0;
-              }
-              mIsFirstPaint = false;
-            }
-          }
-#else
-          // Non-Android platforms still care about this flag being cleared after
+          // We still care about this flag being cleared after
           // the first call to TransformShadowTree().
           mIsFirstPaint = false;
-#endif
 
           // Transform the current local clips by this APZC's async transform. If we're
           // using containerful scrolling, then the clip is not part of the scrolled
@@ -1420,12 +1337,8 @@ AsyncCompositionManager::TransformShadowTree(TimeStamp aCurrentFrame,
     // in Gecko and partially in Java.
     bool foundRoot = false;
     if (ApplyAsyncContentTransformToTree(root, &foundRoot)) {
-#if defined(MOZ_WIDGET_ANDROID)
-      MOZ_ASSERT(foundRoot);
-      if (foundRoot && mFixedLayerMargins != ScreenMargin()) {
-        MoveScrollbarForLayerMargin(root, mRootScrollableId, mFixedLayerMargins);
-      }
-#endif
+      // Fixed margin considerations should go here, but we never encounter
+      // those outside of mobile.
     }
 
     // Advance APZ animations to the next expected vsync timestamp, if we can
@@ -1458,14 +1371,7 @@ AsyncCompositionManager::SetFirstPaintViewport(const LayerIntPoint& aOffset,
                                                const CSSToLayerScale& aZoom,
                                                const CSSRect& aCssPageRect)
 {
-#ifdef MOZ_WIDGET_ANDROID
-  widget::AndroidCompositorWidget* widget =
-      mLayerManager->GetCompositor()->GetWidget()->AsAndroid();
-  if (!widget) {
-    return;
-  }
-  widget->SetFirstPaintViewport(aOffset, aZoom, aCssPageRect);
-#endif
+  // ** STUB **
 }
 
 void
@@ -1478,16 +1384,7 @@ AsyncCompositionManager::SyncFrameMetrics(const ParentLayerPoint& aScrollOffset,
                                           int32_t aPaintSyncId,
                                           ScreenMargin& aFixedLayerMargins)
 {
-#ifdef MOZ_WIDGET_ANDROID
-  widget::AndroidCompositorWidget* widget =
-      mLayerManager->GetCompositor()->GetWidget()->AsAndroid();
-  if (!widget) {
-    return;
-  }
-  widget->SyncFrameMetrics(
-      aScrollOffset, aZoom, aCssPageRect, aDisplayPort, aPaintedResolution,
-      aLayersUpdated, aPaintSyncId, aFixedLayerMargins);
-#endif
+  // ** STUB **
 }
 
 } // namespace layers

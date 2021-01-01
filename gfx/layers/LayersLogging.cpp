@@ -396,18 +396,7 @@ AppendToString(std::stringstream& aStream, ImageFormat format,
 void
 print_stderr(std::stringstream& aStr)
 {
-#if defined(ANDROID)
-  // On Android logcat output is truncated to 1024 chars per line, and
-  // we usually use std::stringstream to build up giant multi-line gobs
-  // of output. So to avoid the truncation we find the newlines and
-  // print the lines individually.
-  std::string line;
-  while (std::getline(aStr, line)) {
-    printf_stderr("%s\n", line.c_str());
-  }
-#else
   printf_stderr("%s", aStr.str().c_str());
-#endif
 }
 
 void

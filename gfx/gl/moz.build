@@ -16,14 +16,11 @@ elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
         gl_provider = 'EGL'
     else:
         gl_provider = 'GLX'
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    gl_provider = 'EGL'
 
 if CONFIG['MOZ_GL_PROVIDER']:
     gl_provider = CONFIG['MOZ_GL_PROVIDER']
 
 EXPORTS += [
-    'AndroidSurfaceTexture.h',
     'DecomposeIntoNoRepeatTriangles.h',
     'EGLUtils.h',
     'ForceDiscreteGPUHelperCGL.h',
@@ -118,7 +115,6 @@ elif gl_provider == 'GLX':
     ]
 
 SOURCES += [
-    'AndroidSurfaceTexture.cpp',
     'DecomposeIntoNoRepeatTriangles.cpp',
     'EGLUtils.cpp',
     'GfxTexturesReporter.cpp',

@@ -14,7 +14,6 @@
 #include "mozilla/layers/CompositorTypes.h"
 #include "mozilla/layers/LayersSurfaces.h"  // for SurfaceDescriptor
 #include "mozilla/layers/TextureClient.h"  // for TextureClient, etc
-#include "AndroidSurfaceTexture.h"
 
 namespace mozilla {
 
@@ -47,41 +46,6 @@ protected:
   RefPtr<EGLImageImage> mImage;
   const gfx::IntSize mSize;
 };
-
-#ifdef MOZ_WIDGET_ANDROID
-
-class AndroidSurfaceTextureData : public TextureData
-{
-public:
-  static already_AddRefed<TextureClient>
-  CreateTextureClient(gl::AndroidSurfaceTexture* aSurfTex,
-                      gfx::IntSize aSize,
-                      gl::OriginPos aOriginPos,
-                      LayersIPCChannel* aAllocator,
-                      TextureFlags aFlags);
-
-  ~AndroidSurfaceTextureData();
-
-  virtual void FillInfo(TextureData::Info& aInfo) const override;
-
-  virtual bool Serialize(SurfaceDescriptor& aOutDescriptor) override;
-
-  // Useless functions.
-  virtual bool Lock(OpenMode) override { return true; }
-
-  virtual void Unlock() override {}
-
-  // Our data is always owned externally.
-  virtual void Deallocate(LayersIPCChannel*) override {}
-
-protected:
-  AndroidSurfaceTextureData(gl::AndroidSurfaceTexture* aSurfTex, gfx::IntSize aSize);
-
-  const RefPtr<gl::AndroidSurfaceTexture> mSurfTex;
-  const gfx::IntSize mSize;
-};
-
-#endif // MOZ_WIDGET_ANDROID
 
 } // namespace layers
 } // namespace mozilla

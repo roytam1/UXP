@@ -25,7 +25,7 @@ load 321224.xul
 load 322780-1.xul
 load 323381-1.html
 load 323381-2.html
-asserts-if(gtkWidget,1) asserts-if(Android&&asyncPan,1) load 323386-1.html # Bug 718883
+asserts-if(gtkWidget,1) load 323386-1.html # Bug 718883
 load 323389-1.html
 load 323389-2.html
 load 323493-1.html
@@ -310,7 +310,7 @@ load 455171-3.html
 load 455643-1.xhtml
 load 457375.html
 load 457380-1.html
-asserts-if(!Android,4) load 459968.html # bug 1067022
+asserts(4) load 459968.html # bug 1067022
 load 460910-1.xml
 load 461294-1.html
 load 462968.xhtml
@@ -345,7 +345,7 @@ load 477928.html
 load 478131-1.html
 load 478170-1.html
 load 478185-1.html
-asserts-if(!Android,0-1) load 479938-1.html # Bug 575011
+asserts(0-1) load 479938-1.html # Bug 575011
 load 480345-1.html
 load 481921.html
 load 489462-1.html
@@ -473,8 +473,8 @@ load 700031.xhtml
 load 718516.html
 load 723108.html
 load 724235.html
-skip-if(Android&&isDebugBuild) load 724978.xhtml # bug 1263300 - slow
-skip-if(Android&&isDebugBuild) load 730559.html # bug 1245634 - slow
+load 724978.xhtml
+load 730559.html
 load 734777.html
 load 737313-1.html
 load 737313-2.html
@@ -500,7 +500,7 @@ load 786740-1.html
 load 790260-1.html
 asserts(1) test-pref(font.size.inflation.emPerLine,15) load 791601.xhtml # Bug 871327
 test-pref(font.size.inflation.minTwips,120) load 794693.html
-asserts-if(!Android,4) load 798020-1.html
+asserts(4) load 798020-1.html
 load 798235-1.html
 load 799207-1.html
 load 799207-2.html
@@ -532,7 +532,7 @@ load 842166.html
 load 844529-1.html
 load 847130.xhtml
 load 847208.html
-asserts-if(Android,2) asserts-if(Android&&asyncPan,4) asserts-if(!Android,4) load 847209.html # bug 847368
+asserts(4) load 847209.html # bug 847368
 load 847211-1.html
 load 849603.html
 asserts(0-12) load 850931.html # bug 569193
@@ -558,7 +558,7 @@ asserts(2-8) load 944909-1.html
 load 946167-1.html
 load 947158.html
 load 949932.html
-asserts-if(Android,0-1) load 964078.html # bug 989718
+load 964078.html
 load 970710.html
 load 973701-1.xhtml
 load 973701-2.xhtml
@@ -626,7 +626,7 @@ load text-overflow-bug671796.xhtml
 load text-overflow-bug713610.html
 load text-overflow-form-elements.html
 load text-overflow-iframe.html
-asserts-if(Android,2-4) asserts-if(!Android,4) load 1225005.html # bug 682647 and bug 448083
+asserts(4) load 1225005.html # bug 682647 and bug 448083
 load 1233191.html
 asserts(2) load 1272983-1.html # bug 586628
 asserts(2) load 1272983-2.html # bug 586628
