@@ -9,10 +9,10 @@ include clip-path/reftest.list
 == clipPath-html-03-extref.xhtml clipPath-html-03-ref.svg
 == clipPath-html-04.xhtml clipPath-html-04-ref.xhtml
 == clipPath-html-04-extref.xhtml clipPath-html-04-ref.xhtml
-fuzzy-if(true,140,70) == clipPath-html-05.xhtml clipPath-html-05-ref.xhtml # Bug 776089
-fuzzy-if(true,140,70) == clipPath-html-05-extref.xhtml clipPath-html-05-ref.xhtml # Bug 776089
-fuzzy-if(Android,255,30) == clipPath-html-06.xhtml clipPath-html-06-ref.xhtml
-fuzzy-if(Android,255,30) == clipPath-html-06-extref.xhtml clipPath-html-06-ref.xhtml
+fuzzy(140,70) == clipPath-html-05.xhtml clipPath-html-05-ref.xhtml # Bug 776089
+fuzzy(140,70) == clipPath-html-05-extref.xhtml clipPath-html-05-ref.xhtml # Bug 776089
+== clipPath-html-06.xhtml clipPath-html-06-ref.xhtml
+== clipPath-html-06-extref.xhtml clipPath-html-06-ref.xhtml
 == clipPath-html-07.xhtml clipPath-html-07-ref.svg
 == clipPath-html-08.xhtml clipPath-html-07-ref.svg # reuse 07-ref.svg
 == clipPath-html-zoomed-01.xhtml clipPath-html-01-ref.svg
@@ -25,7 +25,7 @@ fuzzy-if(Android,255,30) == clipPath-html-06-extref.xhtml clipPath-html-06-ref.x
 == dynamic-conditions-outer-svg-03.xhtml ../pass.svg
 == dynamic-conditions-outer-svg-04.xhtml ../pass.svg
 == filter-html-01.xhtml filter-html-01-ref.svg
-random-if(Android) == filter-html-01-extref.xhtml filter-html-01-ref.svg # Android: bug 1198380
+== filter-html-01-extref.xhtml filter-html-01-ref.svg
 == filter-html-zoomed-01.xhtml filter-html-01-ref.svg
 == mask-html-01.xhtml mask-html-01-ref.svg
 == mask-html-01-extref-01.xhtml mask-html-01-ref.svg

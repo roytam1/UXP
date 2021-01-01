@@ -620,8 +620,6 @@ FindFrameTargetedByInputEvent(WidgetGUIEvent* aEvent,
   PET_LOG("Final target is %p\n", target);
 
   // Uncomment this to dump the frame tree to help with debugging.
-  // Note that dumping the frame tree at the top of the function may flood
-  // logcat on Android devices and cause the PET_LOGs to get dropped.
   // aRootFrame->DumpFrameTree();
 
   if (!target || !prefs->mRepositionEventCoords) {

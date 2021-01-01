@@ -36,10 +36,6 @@ namespace gfx {
 class DataSourceSurface;
 } // namespace gfx
 
-namespace gl {
-class AndroidSurfaceTexture;
-} // namespace gl
-
 namespace layers {
 
 class Compositor;
@@ -334,103 +330,6 @@ protected:
   RefPtr<CompositorOGL> mCompositor;
   RefPtr<GLTextureSource> mTextureSource;
 };
-
-////////////////////////////////////////////////////////////////////////
-// SurfaceTexture
-
-#ifdef MOZ_WIDGET_ANDROID
-
-class SurfaceTextureSource : public TextureSource
-                           , public TextureSourceOGL
-{
-public:
-  SurfaceTextureSource(CompositorOGL* aCompositor,
-                       mozilla::gl::AndroidSurfaceTexture* aSurfTex,
-                       gfx::SurfaceFormat aFormat,
-                       GLenum aTarget,
-                       GLenum aWrapMode,
-                       gfx::IntSize aSize);
-
-  virtual const char* Name() const override { return "SurfaceTextureSource"; }
-
-  virtual TextureSourceOGL* AsSourceOGL() override { return this; }
-
-  virtual void BindTexture(GLenum activetex,
-                           gfx::SamplingFilter aSamplingFilter) override;
-
-  virtual bool IsValid() const override;
-
-  virtual gfx::IntSize GetSize() const override { return mSize; }
-
-  virtual gfx::SurfaceFormat GetFormat() const override { return mFormat; }
-
-  virtual gfx::Matrix4x4 GetTextureTransform() override;
-
-  virtual GLenum GetTextureTarget() const override { return mTextureTarget; }
-
-  virtual GLenum GetWrapMode() const override { return mWrapMode; }
-
-  virtual void DeallocateDeviceData() override;
-
-  virtual void SetCompositor(Compositor* aCompositor) override;
-
-  gl::GLContext* gl() const;
-
-protected:
-  RefPtr<CompositorOGL> mCompositor;
-  RefPtr<gl::AndroidSurfaceTexture> mSurfTex;
-  const gfx::SurfaceFormat mFormat;
-  const GLenum mTextureTarget;
-  const GLenum mWrapMode;
-  const gfx::IntSize mSize;
-};
-
-class SurfaceTextureHost : public TextureHost
-{
-public:
-  SurfaceTextureHost(TextureFlags aFlags,
-                     mozilla::gl::AndroidSurfaceTexture* aSurfTex,
-                     gfx::IntSize aSize);
-
-  virtual ~SurfaceTextureHost();
-
-  virtual void DeallocateDeviceData() override;
-
-  virtual void SetCompositor(Compositor* aCompositor) override;
-
-  virtual Compositor* GetCompositor() override { return mCompositor; }
-
-  virtual bool Lock() override;
-
-  virtual void Unlock() override;
-
-  virtual gfx::SurfaceFormat GetFormat() const override;
-
-  virtual bool BindTextureSource(CompositableTextureSourceRef& aTexture) override
-  {
-    aTexture = mTextureSource;
-    return !!aTexture;
-  }
-
-  virtual already_AddRefed<gfx::DataSourceSurface> GetAsSurface() override
-  {
-    return nullptr; // XXX - implement this (for MOZ_DUMP_PAINTING)
-  }
-
-  gl::GLContext* gl() const;
-
-  virtual gfx::IntSize GetSize() const override { return mSize; }
-
-  virtual const char* Name() override { return "SurfaceTextureHost"; }
-
-protected:
-  RefPtr<gl::AndroidSurfaceTexture> mSurfTex;
-  const gfx::IntSize mSize;
-  RefPtr<CompositorOGL> mCompositor;
-  RefPtr<SurfaceTextureSource> mTextureSource;
-};
-
-#endif // MOZ_WIDGET_ANDROID
 
 ////////////////////////////////////////////////////////////////////////
 // EGLImage

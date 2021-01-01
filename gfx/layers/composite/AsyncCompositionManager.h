@@ -238,14 +238,6 @@ private:
   LayerTransformRecorder mLayerTransformRecorder;
 
   TimeStamp mPreviousFrameTimeStamp;
-
-#ifdef MOZ_WIDGET_ANDROID
-  // The following two fields are only needed on Fennec with C++ APZ, because
-  // then we need to reposition the gecko scrollbar to deal with the
-  // dynamic toolbar shifting content around.
-  FrameMetrics::ViewID mRootScrollableId;
-  ScreenMargin mFixedLayerMargins;
-#endif
 };
 
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(AsyncCompositionManager::TransformsToSkip)

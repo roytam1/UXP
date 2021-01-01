@@ -52,10 +52,7 @@ function handleRequest(request, response)
 
   // Test url looks like:
   //   http://localhost:port/timestamp/number/background-referrer.html
-  // Except in Android, where it looks like:
-  //   http://A.B.C.D:port/timestamp/number/background-referrer.html
-  // where A.B.C.D is the IP address of the box the reftest HTTP server is
-  // running on.  And maybe that will change.  So just test for ending in
+  // Maybe that will change.  So just test for ending in
   // "/background-referrer.html".
   if (/\/background-referrer.html$/.test(referrer))
   {

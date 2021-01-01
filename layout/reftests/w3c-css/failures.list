@@ -64,7 +64,7 @@ fails css-multicol-1/multicol-count-002.xht
 fails css-multicol-1/multicol-count-computed-001.xht
 fails css-multicol-1/multicol-count-computed-002.xht
 fails css-multicol-1/multicol-count-computed-003.xht
-fuzzy-if(winWidget||OSX||gtkWidget,112,861) fails-if(Android) css-multicol-1/multicol-count-computed-004.xht
+fuzzy-if(winWidget||OSX||gtkWidget,112,861) css-multicol-1/multicol-count-computed-004.xht
 fails css-multicol-1/multicol-count-computed-005.xht
 fails css-multicol-1/multicol-count-large-001.xht
 fuzzy(255,132) css-multicol-1/multicol-count-large-002.xht
@@ -82,7 +82,7 @@ fuzzy(255,290) css-multicol-1/multicol-gap-001.xht
 fuzzy(204,930) fuzzy-if(skiaContent,208,930) css-multicol-1/multicol-gap-002.xht
 fuzzy(204,930) fuzzy-if(skiaContent,208,930) css-multicol-1/multicol-gap-003.xht
 fuzzy(107,1823) css-multicol-1/multicol-gap-fraction-001.xht
-fuzzy-if(winWidget||OSX||gtkWidget,204,1048) fuzzy-if(skiaContent,208,1048) fails-if(Android) css-multicol-1/multicol-gap-large-001.xht
+fuzzy-if(winWidget||OSX||gtkWidget,204,1048) fuzzy-if(skiaContent,208,1048) css-multicol-1/multicol-gap-large-001.xht
 fuzzy(225,920) css-multicol-1/multicol-gap-large-002.xht
 fuzzy(204,930) fuzzy-if(skiaContent,208,930) css-multicol-1/multicol-gap-negative-001.xht
 fails css-multicol-1/multicol-height-block-child-001.xht

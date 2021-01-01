@@ -7,9 +7,9 @@ HTTP(..) == download-2.html download-2-ref.html
 HTTP(..) != download-2.html about:blank
 random-if(winWidget||gtkWidget) HTTP(..) == download-2-big.html download-2-big-otf.html # bug 470713
 HTTP(..) != download-2-big-otf.html about:blank
-asserts-if(Android&&!asyncPan,1-8) HTTP(..) != download-3-notref.html download-3.html # bug 1019192
-asserts-if(Android,0-8) HTTP(..) == download-3-ref.html download-3.html # same bugs as above
-asserts-if(Android,0-8) HTTP(..) == fallback-to-system-1.html fallback-to-system-1-ref.html # just delayed assertions from above tests
+HTTP(..) != download-3-notref.html download-3.html # bug 1019192
+HTTP(..) == download-3-ref.html download-3.html # same bugs as above
+HTTP(..) == fallback-to-system-1.html fallback-to-system-1-ref.html # just delayed assertions from above tests
 HTTP(..) == name-override-simple-1.html name-override-simple-1-ref.html
 HTTP(..) != name-override-simple-1.html download-1-notref.html
 fails HTTP(..) == name-override-1.html name-override-1-ref.html
@@ -27,8 +27,8 @@ HTTP(..) == src-list-format-6.html src-list-format-3-ref.html
 # assumes AAT fonts are only supported on MacOS
 random-if(cocoaWidget) HTTP(..) == src-list-format-7.html src-list-format-2-ref.html
 random-if(!cocoaWidget) HTTP(..) == src-list-format-7.html src-list-format-3-ref.html
-fails-if(Android) == src-list-local-full.html src-list-local-full-ref.html
-fails-if(Android) == src-list-local-full-quotes.html src-list-local-full-ref.html
+== src-list-local-full.html src-list-local-full-ref.html
+== src-list-local-full-quotes.html src-list-local-full-ref.html
 HTTP(..) == src-list-local-fallback.html src-list-local-fallback-ref.html
 
 # data url tests (these don't need the HTTP server)
@@ -44,8 +44,8 @@ HTTP(..) == src-list-actual-font-ref.html src-list-data-1.html
 skip HTTP(..) == src-list-local-localized.html src-list-local-localized-ref.html # 486787, 486497
 
 # postscript name lookup
-# fontconfig only supports postscript name lookup from 2.10.92, Android not supported
-fails-if(Android) random-if(gtkWidget) == src-list-local-ps.html src-list-local-full-ref.html
+# fontconfig only supports postscript name lookup from 2.10.92
+random-if(gtkWidget) == src-list-local-ps.html src-list-local-full-ref.html
 # Mac-specific test of 100 weight faces
 random-if(!cocoaWidget) == helveticaneue-ultra.html helveticaneue-ultra-ref.html
 
@@ -142,8 +142,8 @@ HTTP(..) == bug533251.html bug533251-ref.html
 HTTP(..) == font-familiy-whitespace-1.html font-familiy-whitespace-1-ref.html
 HTTP(..) != font-familiy-whitespace-1.html font-familiy-whitespace-1-notref.html
 
-skip-if(Android) HTTP(..) == ivs-1.html ivs-1-ref.html # Android bug 1250229
-skip-if(Android) HTTP(..) == cjkcisvs-1.html cjkcisvs-1-ref.html # Android bug 1250229
+HTTP(..) == ivs-1.html ivs-1-ref.html
+HTTP(..) == cjkcisvs-1.html cjkcisvs-1-ref.html
 
 HTTP(..) == missing-names.html missing-names-ref.html
 

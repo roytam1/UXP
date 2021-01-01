@@ -49,7 +49,6 @@ REMOTE_REFTEST = rm -f ./$@.log && $(PYTHON) _tests/reftest/remotereftest.py \
   --dm_trans=$(DM_TRANS) --ignore-window-size \
   --app=$(TEST_PACKAGE_NAME) --deviceIP=${TEST_DEVICE} --xre-path=${MOZ_HOST_BIN} \
   --httpd-path=_tests/modules --suite reftest \
-  --extra-profile-file=$(topsrcdir)/mobile/android/fonts \
   $(SYMBOLS_PATH) $(EXTRA_TEST_ARGS) $(1) | tee ./$@.log
 
 RUN_REFTEST_B2G = rm -f ./$@.log && $(PYTHON) _tests/reftest/runreftestb2g.py \
@@ -208,15 +207,6 @@ endef
 
 $(foreach name,$(TEST_PKGS),$(eval $(call package_archive,$(name))))
 
-ifeq ($(MOZ_BUILD_APP),mobile/android)
-stage-all: stage-android
-stage-all: stage-instrumentation-tests
-endif
-
-ifeq ($(MOZ_WIDGET_TOOLKIT),gonk)
-stage-all: stage-b2g
-endif
-
 # Prepare _tests before any of the other staging/packaging steps.
 # make-stage-dir is a prerequisite to all the stage-* targets in testsuite-targets.mk.
 make-stage-dir: install-test-files
@@ -242,11 +232,6 @@ stage-mach: make-stage-dir
 	cp $(topsrcdir)/testing/tools/mach_test_package_bootstrap.py $(PKG_STAGE)/tools/mach_bootstrap.py
 	cp $(topsrcdir)/mach $(PKG_STAGE)
 
-stage-mochitest: make-stage-dir
-ifeq ($(MOZ_BUILD_APP),mobile/android)
-	$(MAKE) -C $(DEPTH)/testing/mochitest stage-package
-endif
-
 stage-jstests: make-stage-dir
 	$(MAKE) -C $(DEPTH)/js/src/tests stage-package
 
@@ -259,10 +244,6 @@ stage-gtest: make-stage-dir
 	cp $(topsrcdir)/testing/gtest/rungtests.py $(PKG_STAGE)/gtest
 	cp $(DIST)/bin/dependentlibs.list.gtest $(PKG_STAGE)/gtest
 	cp $(DEPTH)/mozinfo.json $(PKG_STAGE)/gtest
-
-stage-android: make-stage-dir
-	$(NSINSTALL) $(topsrcdir)/mobile/android/fonts $(DEPTH)/_tests/reftest
-	$(NSINSTALL) $(topsrcdir)/mobile/android/fonts $(DEPTH)/_tests/testing/mochitest
 
 stage-jetpack: make-stage-dir
 	$(MAKE) -C $(DEPTH)/addon-sdk stage-tests-package
@@ -322,11 +303,9 @@ check::
   package-tests-common \
   make-stage-dir \
   stage-all \
-  stage-b2g \
   stage-config \
   stage-mochitest \
   stage-jstests \
-  stage-android \
   stage-jetpack \
   stage-steeplechase \
   stage-instrumentation-tests \

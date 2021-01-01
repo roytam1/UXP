@@ -75,9 +75,6 @@
 #include "SharedMemoryBasic.h"          // for SharedMemoryBasic
 #include "ScrollSnap.h"                 // for ScrollSnapUtils
 #include "WheelScrollAnimation.h"
-#if defined(MOZ_WIDGET_ANDROID)
-#include "AndroidAPZ.h"
-#endif // defined(MOZ_WIDGET_ANDROID)
 
 #define ENABLE_APZC_LOGGING 0
 // #define ENABLE_APZC_LOGGING 1
@@ -110,16 +107,10 @@ using mozilla::gfx::PointTyped;
 using mozilla::gfx::RectTyped;
 using mozilla::gfx::ScaleFactors2D;
 
-// Choose between platform-specific implementations.
-#ifdef MOZ_WIDGET_ANDROID
-typedef WidgetOverscrollEffect OverscrollEffect;
-typedef AndroidSpecificState PlatformSpecificState;
-typedef AndroidFlingAnimation FlingAnimation;
-#else
+// Platform-specific implementations.
 typedef GenericOverscrollEffect OverscrollEffect;
 typedef PlatformSpecificStateBase PlatformSpecificState;  // no extra state, just use the base class
 typedef GenericFlingAnimation FlingAnimation;
-#endif
 
 /**
  * \page APZCPrefs APZ preferences
@@ -250,7 +241,6 @@ typedef GenericFlingAnimation FlingAnimation;
  * for a new sample, v(t0) is the velocity at the previous sample, f is the
  * value of this pref, and (t1 - t0) is the amount of time, in milliseconds,
  * that has elapsed between the two samples.\n
- * NOTE: Not currently used in Android fling calculations.
  *
  * \li\b apz.fling_min_velocity_threshold
  * Minimum velocity for a fling to actually kick off. If the user pans and lifts
@@ -271,8 +261,6 @@ typedef GenericFlingAnimation FlingAnimation;
  * animation completely. This is to prevent asymptotically approaching 0
  * velocity and rerendering unnecessarily.\n
  * Units: screen pixels per millisecond.\n
- * NOTE: Should not be set to anything
- * other than 0.0 for Android except for tests to disable flings.
  *
  * \li\b apz.max_velocity_inches_per_ms
  * Maximum velocity.  Velocity will be capped at this value if a faster fling

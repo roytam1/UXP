@@ -5,7 +5,7 @@ HTTP(..) == 1079154-1-vertical-rl-columns.html 1079154-1-vertical-rl-columns-ref
 HTTP(..) == 1083748.html 1083748-ref.html
 HTTP(..) == 1083848-1-inline-border.html 1083848-1-inline-border-ref.html
 HTTP(..) == 1083848-2-inline-background.html 1083848-2-inline-background-ref.html
-fuzzy-if(gtkWidget,255,2) fuzzy-if(winWidget||Android,4,8704) HTTP(..) == 1083848-3-inline-background-repeat.html 1083848-3-inline-background-repeat-ref.html
+fuzzy-if(gtkWidget,255,2) fuzzy-if(winWidget,4,8704) HTTP(..) == 1083848-3-inline-background-repeat.html 1083848-3-inline-background-repeat-ref.html
 == 1083892-1.html 1083892-1-ref.html
 == 1086883-1a.html 1086883-1-ref.html
 == 1086883-1b.html 1086883-1-ref.html
@@ -62,12 +62,10 @@ fuzzy(116,94) fuzzy-if(winWidget,135,124) HTTP(..) == 1115916-1-vertical-metrics
 == ua-style-sheet-size-2.html ua-style-sheet-size-2-ref.html
 
 == ua-style-sheet-fieldset-1.html ua-style-sheet-fieldset-1-ref.html
-skip-if(Android||(winWidget&&!/^Windows\x20NT\x205\.1/.test(http.oscpu))) == ua-style-sheet-textarea-1.html ua-style-sheet-textarea-1a-ref.html
-skip-if(!(Android)) == ua-style-sheet-textarea-1.html ua-style-sheet-textarea-1b-ref.html
-skip-if(!winWidget||/^Windows\x20NT\x205\.1/.test(http.oscpu)) == ua-style-sheet-textarea-1.html ua-style-sheet-textarea-1c-ref.html
+== ua-style-sheet-textarea-1.html ua-style-sheet-textarea-1a-ref.html
+skip-if(!winWidget) == ua-style-sheet-textarea-1.html ua-style-sheet-textarea-1c-ref.html
 == ua-style-sheet-checkbox-radio-1.html ua-style-sheet-checkbox-radio-1-ref.html
-skip-if(Android) fuzzy-if(skiaContent&&!Android,2,6) == ua-style-sheet-button-1.html ua-style-sheet-button-1a-ref.html
-skip-if(!(Android)) == ua-style-sheet-button-1.html ua-style-sheet-button-1b-ref.html
+fuzzy-if(skiaContent,2,6) == ua-style-sheet-button-1.html ua-style-sheet-button-1a-ref.html
 == ua-style-sheet-input-color-1.html ua-style-sheet-input-color-1-ref.html
 fuzzy-if(gtkWidget,1,15) == ua-style-sheet-input-number-1.html ua-style-sheet-input-number-1-ref.html
 
@@ -166,7 +164,7 @@ fuzzy-if(gtkWidget,255,6) fuzzy-if(cocoaWidget,65,69) == 1193519-sideways-lr-dec
 
 == 1243125-1-floats-overflowing.html 1243125-1-floats-overflowing-ref.html
 
-skip-if(Android) HTTP(..) == 1248248-1-orientation-break-glyphrun.html 1248248-1-orientation-break-glyphrun-ref.html # Android bug 1250229
+HTTP(..) == 1248248-1-orientation-break-glyphrun.html 1248248-1-orientation-break-glyphrun-ref.html
 
 == 1302734-bidi-plaintext-1a.html 1302734-bidi-plaintext-1-ref.html
 == 1302734-bidi-plaintext-1b.html 1302734-bidi-plaintext-1-ref.html
@@ -176,13 +174,13 @@ skip-if(Android) HTTP(..) == 1248248-1-orientation-break-glyphrun.html 1248248-1
 == 1302734-bidi-plaintext-2d.html 1302734-bidi-plaintext-2-ref.html
 
 == 1302389-scrolled-rect-1a.html 1302389-scrolled-rect-1-ref.html
-fuzzy-if(Android,54,852) == 1302389-scrolled-rect-1b.html 1302389-scrolled-rect-1-ref.html
-fuzzy-if(Android,54,852) fuzzy-if(gtkWidget,1,25) fuzzy-if(cocoaWidget,1,2) == 1302389-scrolled-rect-1c.html 1302389-scrolled-rect-1-ref.html
+== 1302389-scrolled-rect-1b.html 1302389-scrolled-rect-1-ref.html
+fuzzy-if(gtkWidget,1,25) fuzzy-if(cocoaWidget,1,2) == 1302389-scrolled-rect-1c.html 1302389-scrolled-rect-1-ref.html
 fuzzy-if(gtkWidget,1,25) fuzzy-if(cocoaWidget,1,2) == 1302389-scrolled-rect-1d.html 1302389-scrolled-rect-1-ref.html
-fuzzy-if(Android,54,852) fuzzy-if(gtkWidget,1,25) fuzzy-if(cocoaWidget,1,2) == 1302389-scrolled-rect-2a.html 1302389-scrolled-rect-2-ref.html
+fuzzy-if(gtkWidget,1,25) fuzzy-if(cocoaWidget,1,2) == 1302389-scrolled-rect-2a.html 1302389-scrolled-rect-2-ref.html
 fuzzy-if(gtkWidget,1,25) fuzzy-if(cocoaWidget,1,2) == 1302389-scrolled-rect-2b.html 1302389-scrolled-rect-2-ref.html
 == 1302389-scrolled-rect-2c.html 1302389-scrolled-rect-2-ref.html
-fuzzy-if(Android,54,852) == 1302389-scrolled-rect-2d.html 1302389-scrolled-rect-2-ref.html
+== 1302389-scrolled-rect-2d.html 1302389-scrolled-rect-2-ref.html
 
 # Suite of tests from Gérard Talbot in bug 1079151
 # Frequent Windows 7 load failed: timed out waiting for test to complete (waiting for onload scripts to complete), bug 1167155 and friends

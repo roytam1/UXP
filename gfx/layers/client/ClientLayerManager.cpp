@@ -31,10 +31,6 @@
 #include "TiledLayerBuffer.h"
 #include "mozilla/dom/WindowBinding.h"  // for Overfill Callback
 #include "FrameLayerBuilder.h"          // for FrameLayerbuilder
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidBridge.h"
-#include "LayerMetricsWrapper.h"
-#endif
 #ifdef XP_WIN
 #include "mozilla/gfx/DeviceManagerDx.h"
 #endif
@@ -250,7 +246,7 @@ ClientLayerManager::BeginTransactionWithTarget(gfxContext* aTarget)
   //
   // Desktop does not support async zoom yet, so we ignore this for those
   // platforms.
-#if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_UIKIT)
+#if defined(MOZ_WIDGET_UIKIT)
   if (mWidget && mWidget->GetOwningTabChild()) {
     mCompositorMightResample = AsyncPanZoomEnabled();
   }

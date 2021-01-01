@@ -11,20 +11,7 @@
     #define GET_NATIVE_WINDOW(aWidget) ((EGLNativeWindowType)aWidget->GetNativeData(NS_NATIVE_WINDOW))
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-    #define GET_JAVA_SURFACE(aWidget) (aWidget->GetNativeData(NS_JAVA_SURFACE))
-#endif
-
 #if defined(XP_UNIX)
-    #ifdef MOZ_WIDGET_ANDROID
-        #include <android/native_window.h>
-        #include <android/native_window_jni.h>
-    #endif
-
-    #ifdef ANDROID
-        #include <android/log.h>
-        #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Android" , ## args)
-    #endif
 
     #define GLES2_LIB "libGLESv2.so"
     #define GLES2_LIB2 "libGLESv2.so.2"
@@ -164,22 +151,8 @@ CreateSurfaceForWindow(nsIWidget* widget, const EGLConfig& config) {
     EGLSurface newSurface = nullptr;
 
     MOZ_ASSERT(widget);
-#ifdef MOZ_WIDGET_ANDROID
-    void* javaSurface = GET_JAVA_SURFACE(widget);
-    if (!javaSurface) {
-        MOZ_CRASH("GFX: Failed to get Java surface.\n");
-    }
-    JNIEnv* const env = jni::GetEnvForThread();
-    ANativeWindow* const nativeWindow = ANativeWindow_fromSurface(
-            env, reinterpret_cast<jobject>(javaSurface));
-    newSurface = sEGLLibrary.fCreateWindowSurface(
-            sEGLLibrary.fGetDisplay(EGL_DEFAULT_DISPLAY),
-            config, nativeWindow, 0);
-    ANativeWindow_release(nativeWindow);
-#else
     newSurface = sEGLLibrary.fCreateWindowSurface(EGL_DISPLAY(), config,
                                                   GET_NATIVE_WINDOW(widget), 0);
-#endif
     return newSurface;
 }
 
@@ -229,11 +202,6 @@ GLContextEGL::~GLContextEGL()
 bool
 GLContextEGL::Init()
 {
-#if defined(ANDROID)
-    // We can't use LoadApitraceLibrary here because the GLContext
-    // expects its own handle to the GL library
-    if (!OpenLibrary(APITRACE_LIB))
-#endif
         if (!OpenLibrary(GLES2_LIB)) {
 #if defined(XP_UNIX)
             if (!OpenLibrary(GLES2_LIB2)) {
@@ -432,10 +400,8 @@ GLContextEGL::GetWSIInfo(nsCString* const out) const
     out->AppendLiteral("\nEGL_EXTENSIONS: ");
     out->Append((const char*)sEGLLibrary.fQueryString(EGL_DISPLAY(), LOCAL_EGL_EXTENSIONS));
 
-#ifndef ANDROID // This query will crash some old android.
     out->AppendLiteral("\nEGL_EXTENSIONS(nullptr): ");
     out->Append((const char*)sEGLLibrary.fQueryString(nullptr, LOCAL_EGL_EXTENSIONS));
-#endif
 }
 
 // hold a reference to the given surface
@@ -685,18 +651,6 @@ CreateConfig(EGLConfig* aConfig, nsIWidget* aWidget)
 {
     int32_t depth = gfxPlatform::GetPlatform()->GetScreenDepth();
     if (!CreateConfig(aConfig, depth, aWidget)) {
-#ifdef MOZ_WIDGET_ANDROID
-        // Bug 736005
-        // Android doesn't always support 16 bit so also try 24 bit
-        if (depth == 16) {
-            return CreateConfig(aConfig, 24, aWidget);
-        }
-        // Bug 970096
-        // Some devices that have 24 bit screens only support 16 bit OpenGL?
-        if (depth == 24) {
-            return CreateConfig(aConfig, 16, aWidget);
-        }
-#endif
         return false;
     } else {
         return true;
@@ -770,43 +724,6 @@ GLContextProviderEGL::CreateForWindow(nsIWidget* aWidget, bool aForceAccelerated
 
     return gl.forget();
 }
-
-#if defined(ANDROID)
-EGLSurface
-GLContextProviderEGL::CreateEGLSurface(void* aWindow)
-{
-    nsCString discardFailureId;
-    if (!sEGLLibrary.EnsureInitialized(false, &discardFailureId)) {
-        MOZ_CRASH("GFX: Failed to load EGL library 4!\n");
-    }
-
-    EGLConfig config;
-    if (!CreateConfig(&config, static_cast<nsIWidget*>(aWindow))) {
-        MOZ_CRASH("GFX: Failed to create EGLConfig 2!\n");
-    }
-
-    MOZ_ASSERT(aWindow);
-
-    EGLSurface surface = sEGLLibrary.fCreateWindowSurface(EGL_DISPLAY(), config, aWindow,
-                                                          0);
-    if (surface == EGL_NO_SURFACE) {
-        MOZ_CRASH("GFX: Failed to create EGLSurface 2!\n");
-    }
-
-    return surface;
-}
-
-void
-GLContextProviderEGL::DestroyEGLSurface(EGLSurface surface)
-{
-    nsCString discardFailureId;
-    if (!sEGLLibrary.EnsureInitialized(false, &discardFailureId)) {
-        MOZ_CRASH("GFX: Failed to load EGL library 5!\n");
-    }
-
-    sEGLLibrary.fDestroySurface(EGL_DISPLAY(), surface);
-}
-#endif // defined(ANDROID)
 
 static void
 FillContextAttribs(bool alpha, bool depth, bool stencil, bool bpp16,

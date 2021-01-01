@@ -1230,19 +1230,7 @@ ClientMultiTiledLayerBuffer::ComputeProgressiveUpdateRegion(const nsIntRegion& a
   // Compute a "coherent update rect" that we should paint all at once in a
   // single transaction. This is to avoid rendering glitches on animated
   // page content, and when layers change size/shape.
-  // On Fennec uploads are more expensive because we're not using gralloc, so
-  // we use a coherent update rect that is intersected with the screen at the
-  // time of issuing the draw command. This will paint faster but also potentially
-  // make the progressive paint more visible to the user while scrolling.
-  // On B2G uploads are cheaper and we value coherency more, especially outside
-  // the browser, so we always use the entire user-visible area.
-  IntRect coherentUpdateRect(RoundedOut(
-#ifdef MOZ_WIDGET_ANDROID
-    transformedCompositionBounds->Intersect(aPaintData->mCompositionBounds)
-#else
-    *transformedCompositionBounds
-#endif
-  ).ToUnknownRect());
+  IntRect coherentUpdateRect(RoundedOut(*transformedCompositionBounds).ToUnknownRect());
 
   TILING_LOG("TILING %p: Progressive update final coherency rect %s\n", &mPaintedLayer, Stringify(coherentUpdateRect).c_str());
 

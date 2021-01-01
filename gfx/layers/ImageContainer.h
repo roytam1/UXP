@@ -166,9 +166,7 @@ protected:
 class GLImage;
 class EGLImageImage;
 class SharedRGBImage;
-#ifdef MOZ_WIDGET_ANDROID
-class SurfaceTextureImage;
-#elif defined(XP_MACOSX)
+#if defined(XP_MACOSX)
 class MacIOSurfaceImage;
 #endif
 
@@ -225,9 +223,6 @@ public:
   /* Access to derived classes. */
   virtual EGLImageImage* AsEGLImageImage() { return nullptr; }
   virtual GLImage* AsGLImage() { return nullptr; }
-#ifdef MOZ_WIDGET_ANDROID
-  virtual SurfaceTextureImage* AsSurfaceTextureImage() { return nullptr; }
-#endif
 #ifdef XP_MACOSX
   virtual MacIOSurfaceImage* AsMacIOSurfaceImage() { return nullptr; }
 #endif
