@@ -643,7 +643,6 @@ else:
         'skia/src/opts/SkBlitRow_opts_none.cpp',
     ]
 
-
 # We allow warnings for third-party code that can be updated from upstream.
 ALLOW_COMPILER_WARNINGS = True
 
@@ -693,6 +692,11 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'skia/src/fonts/SkFontMgr_indirect.cpp',
         'skia/src/fonts/SkRemotableFontMgr.cpp',
     ]
+
+if CONFIG['GKMEDIAS_SHARED_LIBRARY']:
+    DEFINES['SKIA_DLL'] = 1
+    DEFINES['GR_DLL'] = 1
+    DEFINES['SK_FONT_HOST_USE_SYSTEM_SETTINGS'] = 1
 
 # We should autogenerate these SSE related flags.
 

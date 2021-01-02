@@ -84,6 +84,10 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'skia/src/fonts/SkRemotableFontMgr.cpp',
     ]
 
+if CONFIG['GKMEDIAS_SHARED_LIBRARY']:
+    DEFINES['SKIA_DLL'] = 1
+    DEFINES['GR_DLL'] = 1
+
 # We should autogenerate these SSE related flags.
 
 if CONFIG['_MSC_VER']:
