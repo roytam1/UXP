@@ -174,6 +174,9 @@
 #endif
 
 #include <sys/types.h>
+#ifdef MOZ_MEMORY_BSD
+#include <sys/sysctl.h>
+#endif
 
 #include <errno.h>
 #include <stdlib.h>
@@ -489,10 +492,10 @@ typedef pthread_mutex_t malloc_spinlock_t;
 #endif
 
 /* Set to true once the allocator has been initialized. */
-static bool malloc_initialized = false;
+static volatile bool malloc_initialized = false;
 
-#if defined(MOZ_MEMORY_WINDOWS)
-/* No init lock for Windows. */
+#if defined(MOZ_MEMORY_WINDOWS) || defined(__FreeBSD__)
+/* No init lock for Windows nor FreeBSD. */
 #elif defined(MOZ_MEMORY_DARWIN)
 static malloc_mutex_t init_lock = {OS_SPINLOCK_INIT};
 #elif defined(MOZ_MEMORY_LINUX)
@@ -1388,6 +1391,11 @@ void	(*_malloc_message)(const char *p1, const char *p2, const char *p3,
  * cases.
  */
 
+#ifdef __FreeBSD__
+// If true, memory calls must be diverted to the bootstrap allocator
+static __thread bool in_mutex_init = false;
+#endif
+
 static bool
 malloc_mutex_init(malloc_mutex_t *mutex)
 {
@@ -1406,6 +1414,19 @@ malloc_mutex_init(malloc_mutex_t *mutex)
 		return (true);
 	}
 	pthread_mutexattr_destroy(&attr);
+#elif defined(__FreeBSD__)
+	in_mutex_init = true;
+
+	*mutex = PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
+
+	// Make sure necessary mutex memory is allocated right now, with
+	// 'in_mutex_init' set to true (allocations to be diverted to the
+	// bootstrap allocator). Also force multi-thread initialization in
+	// libthr (checked and performed in 'pthread_mutex_lock').
+	pthread_mutex_lock(mutex);
+	pthread_mutex_unlock(mutex);
+
+	in_mutex_init = false;
 #else
 	if (pthread_mutex_init(mutex, NULL) != 0)
 		return (true);
@@ -1460,6 +1481,8 @@ malloc_spin_init(malloc_spinlock_t *lock)
 		return (true);
 	}
 	pthread_mutexattr_destroy(&attr);
+#elif defined(__FreeBSD__)
+	malloc_lock_init(lock);
 #else
 	if (pthread_mutex_init(lock, NULL) != 0)
 		return (true);
@@ -4744,25 +4767,7 @@ huge_dalloc(void *ptr)
  * Platform-specific methods to determine the number of CPUs in a system.
  * This will be used to determine the desired number of arenas.
  */
-#ifdef MOZ_MEMORY_BSD
-static inline unsigned
-malloc_ncpus(void)
-{
-	unsigned ret;
-	int mib[2];
-	size_t len;
-
-	mib[0] = CTL_HW;
-	mib[1] = HW_NCPU;
-	len = sizeof(ret);
-	if (sysctl(mib, 2, &ret, &len, (void *) 0, 0) == -1) {
-		/* Error. */
-		return (1);
-	}
-
-	return (ret);
-}
-#elif (defined(MOZ_MEMORY_LINUX))
+#if (defined(MOZ_MEMORY_LINUX))
 #include <fcntl.h>
 
 static inline unsigned
@@ -4834,8 +4839,7 @@ malloc_ncpus(void)
 	else
 		return (n);
 }
-#elif (defined(MOZ_MEMORY_SOLARIS))
-
+#elif (defined(MOZ_MEMORY_SOLARIS) || defined(MOZ_MEMORY_BSD))
 static inline unsigned
 malloc_ncpus(void)
 {
@@ -4980,24 +4984,251 @@ malloc_print_stats(void)
 	}
 }
 
-/*
- * FreeBSD's pthreads implementation calls malloc(3), so the malloc
- * implementation has to take pains to avoid infinite recursion during
- * initialization.
- */
+
 #if (defined(MOZ_MEMORY_WINDOWS) || defined(MOZ_MEMORY_DARWIN))
 #define	malloc_init() false
 #else
 static inline bool
 malloc_init(void)
 {
-
 	if (malloc_initialized == false)
 		return (malloc_init_hard());
 
 	return (false);
 }
 #endif
+
+
+#ifdef __FreeBSD__
+// There are several problematic interactions between FreeBSD's libthr and this
+// jemalloc.
+//
+// 1. This malloc calls pthread_mutex_init at init, but in libthr this triggers
+// an allocation, causing an infinite recursion.
+// 2. Actually, this malloc assumes that lock initialization never triggers a
+// memory allocation, even after initialization (see 'arena_new').
+// 3. First use of a lock routine ('pthread_mutex_lock') in libthr triggers
+// initialization of the process as a multi-threaded process. Unfortunately,
+// libthr calls regular malloc as part of this bootstrap process.
+//
+// If there was no problem 3, we could have resolved this easily by using
+// constant mutex initializers, since then libthr's uses its own internal
+// allocator instead of regular malloc (this appears to have been the case for
+// years now). However, problem 3 requires this malloc to provide some memory
+// at places where it is not able to, so we need a way to divert standard
+// allocator functions to some simple bootstrap allocator. And once we have
+// done this, using constant mutex initializers looses most of its appeal,
+// because allocations for problems 1 & 2 can be fulfilled by the simple
+// allocator as well, without the drawback of being dependent on libthr's
+// specific behavior.
+//
+// Since the init lock controls the 'malloc_initialized' flag, it is not
+// possible to reliably check whether jemalloc is initialized in the case of
+// multiple threads with the given tools (pthread cannot be used yet, but
+// mutual exclusion is required). One solution would be to code simple
+// user-space locks for this (e.g., spinlocks using GCC's builtins). But an
+// even "simpler" solution is in fact to just remove the lock, on the ground
+// that there must be some memory allocation before multithreading is enabled,
+// so jemalloc is in fact always initialized before that point. And if there
+// is not, we'll provoke it.
+//
+// At some point, I implemented a solution using __constructor__, as
+// 'jemalloc_darwin_init', and tweaked the build so that it is included in
+// executables (in platform/build/gecko_templates.mozbuild). But this was not
+// enough: Clearly it could happen that some other library would be initialized
+// before jemalloc, calling malloc in its contructor. Could have tried to work
+// around this with constructor priorities, but this seemed fragile as well. So
+// in the end, I kept the calls to 'malloc_init' from the interface's
+// functions, and had to introduce 'malloc_initializing' to know when (part of
+// the) calls should be diverted. I finally kept the constructor as well, just
+// to absolutely guarantee that jemalloc is initialized during executable load,
+// that is to say, before multi-threading happens, in case initialization in
+// libthr or glib is removed at some point. It just doesn't call
+// 'malloc_init_hard', contrary to Darwin's, but 'malloc_init' (because
+// jemalloc normally has already been initialized at this point).
+//
+// During lock initialization, malloc is temporarily diverted to the bootstrap
+// allocator to avoid harmful recursion. This is achieved using a flag
+// indicating whether lock initialization is under way (in order to work also
+// after malloc_init_hard() has completed). The flag *must* be per-thread,
+// because creation of new arenas, which causes creation of new locks, can
+// happen at unpredictable moments after multi-threading has been enabled (and
+// malloc has been initialized), which means concurrent allocation requests can
+// occur, and must not all be diverted. With this flag in place, and an
+// additional change to ensure that libthr's multi-thread init is indeed done
+// during mutex init (through 'pthread_lock_mutex'), there was no need to keep
+// the 'malloc_initializing' flag (see previous paragraph).
+//
+// The most likely change this whole architecture is not immune to would be if
+// jemalloc starts initializing new locks after malloc_init_hard() has finished
+// but not under an existing lock (new arena's lock is currently initialized
+// under the arenas lock), because bootstrap allocator functions are not
+// thread-safe per se. If this happens, then a very simple spinlock
+// implementation on top of GCC's atomics will be in order. But I don't think
+// this is very likely to happen.
+
+// Diverts key (de)allocation functions when jemalloc's mutexes are
+// initializing (malloc_init_hard(), but also arena_new() and
+// malloc_rtree_new(), as of this writing).
+#define BA_DIVERT(code)						\
+	do {							\
+		if (in_mutex_init) {				\
+			code;					\
+		}						\
+	} while (0)
+
+
+// Bootstrap allocator
+//
+// It is not FreeBSD-specific, and could be used by any POSIX-compliant
+// platform if needed.
+//
+// Allocates one page at a time (relies on 'pagesize' as defined above in this
+// file), and returns memory from it. Does not accept allocations larger than a
+// single page (minus alignment). Will waste space at end of pages. Never frees
+// memory.
+//
+// All these constraints are not a problem, since this allocator is meant to
+// serve only some requests at initialization (no more than a few kB).
+
+// Number of really allocated bytes
+static size_t ba_allocated_bn = 0;
+
+// Number of requested bytes
+static size_t ba_requested_bn = 0;
+
+// Current address we are allocating from, or NULL if a new page has to be
+// allocated.
+static void *ba_cur_free = NULL;
+
+
+static void ba_alloc_new_page()
+{
+	ba_cur_free = mmap(NULL, pagesize, PROT_READ | PROT_WRITE,
+			   MAP_ANON | MAP_PRIVATE, -1, 0);
+	if (ba_cur_free == MAP_FAILED)
+		abort();
+
+	ba_allocated_bn += pagesize;
+}
+
+// Returns the offset to point to have point a multiple of alignment
+static size_t
+ba_offset_to_aligned(uintptr_t point, size_t alignment) {
+	if (alignment != 0) {
+		size_t rest = point % alignment;
+
+		if (rest != 0)
+			return alignment - rest;
+	}
+
+	return 0;
+}
+
+static void * ba_memalign(size_t alignment, size_t size)
+{
+	// We don't care about alignment being a power of 2, nor pagesize. Code
+	// below supports everything, provided that alignment divides the page
+	// size.
+
+	// Impose cache-line size minimum alignment, so that there is no cache
+	// trashing between fundamental structures.
+	if (alignment < CACHELINE)
+		alignment = CACHELINE;
+
+	if (size > pagesize ||
+	    alignment > pagesize ||
+	    size + alignment > pagesize ||
+	    pagesize % alignment != 0)
+		abort();
+
+	// Address to be returned
+	uintptr_t cur_free;
+
+	// Allocate a new page if no current page (startup or previous one was
+	// exhausted) or there is not enough remaining space in it.
+
+	if (ba_cur_free == NULL) {
+		// No current page
+		ba_alloc_new_page();
+		cur_free = (uintptr_t)ba_cur_free;
+	} else {
+		cur_free = (uintptr_t)ba_cur_free;
+
+		uintptr_t off = cur_free % pagesize;
+		uintptr_t al_off = ba_offset_to_aligned(off, alignment);
+
+		if (off + al_off + size > pagesize) {
+			// Not enough room. Need a new page.
+			ba_alloc_new_page();
+			cur_free = (uintptr_t)ba_cur_free;
+		} else
+			// Account for alignment
+			cur_free += al_off;
+	}
+
+	// Compute the next free address
+	uintptr_t next_free = cur_free + size;
+	if (next_free % pagesize == 0 && size != 0)
+		next_free = 0;
+
+	// Set it
+	ba_cur_free = (void *)next_free;
+
+	// Stats
+	ba_requested_bn += size;
+
+	// Done
+	return (void *)cur_free;
+}
+
+static void * ba_malloc(size_t size)
+{
+	// 64-bit alignment by default. ba_memalign imposes an even greater
+	// alignment anyway.
+	return ba_memalign(8, size);
+}
+
+static void * ba_calloc(size_t number, size_t size)
+{
+	size_t const bn = number * size;
+
+	if ((bn < number || bn < size) && bn != 0)
+		// Overflow
+		abort();
+
+	void * const res = ba_malloc(bn);
+	memset(res, 0, bn);
+	return res;
+}
+
+static void ba_free(void * ptr) {
+#ifdef MALLOC_DEBUG
+	malloc_printf("Bootstrap allocator: Request to free at %p\n", ptr);
+#endif
+
+	// Do nothing
+	return;
+}
+
+#ifdef MALLOC_STATS
+static void ba_print_stats() {
+	malloc_printf("Bootstrap allocator: %zu bytes requested, "
+		      "%zu allocated\n",
+		      ba_requested_bn, ba_allocated_bn);
+}
+#endif
+
+
+__attribute__((constructor))
+void
+jemalloc_FreeBSD_init(void)
+{
+	if (malloc_init())
+		abort();
+}
+#endif  // #ifdef __FreeBSD__
+
 
 #if !defined(MOZ_MEMORY_WINDOWS)
 static
@@ -5016,7 +5247,7 @@ malloc_init_hard(void)
     malloc_zone_t* default_zone;
 #endif
 
-#ifndef MOZ_MEMORY_WINDOWS
+#if !(defined(MOZ_MEMORY_WINDOWS) || defined(__FreeBSD__))
 	malloc_mutex_lock(&init_lock);
 #endif
 
@@ -5414,7 +5645,7 @@ MALLOC_OUT:
 	/* Allocate and initialize arenas. */
 	arenas = (arena_t **)base_alloc(sizeof(arena_t *) * narenas);
 	if (arenas == NULL) {
-#ifndef MOZ_MEMORY_WINDOWS
+#if !(defined(MOZ_MEMORY_WINDOWS) || defined(__FreeBSD__))
 		malloc_mutex_unlock(&init_lock);
 #endif
 		return (true);
@@ -5431,7 +5662,7 @@ MALLOC_OUT:
 	 */
 	arenas_extend(0);
 	if (arenas[0] == NULL) {
-#ifndef MOZ_MEMORY_WINDOWS
+#if !(defined(MOZ_MEMORY_WINDOWS) || defined(__FreeBSD__))
 		malloc_mutex_unlock(&init_lock);
 #endif
 		return (true);
@@ -5504,9 +5735,15 @@ MALLOC_OUT:
 	}
 #endif
 
-#ifndef MOZ_MEMORY_WINDOWS
+#if defined(__FreeBSD__) && defined(MALLOC_STATS)
+	malloc_printf("Bootstrap allocator: malloc_init_hard stats:\n");
+	ba_print_stats();
+#endif
+
+#if !(defined(MOZ_MEMORY_WINDOWS) || defined(__FreeBSD__))
 	malloc_mutex_unlock(&init_lock);
 #endif
+
 	return (false);
 }
 
@@ -5547,12 +5784,21 @@ malloc_shutdown()
 #define DARWIN_ONLY(A)
 #endif
 
+#ifdef __FreeBSD__
+#define FREEBSD_ONLY(code) code
+#else
+#define FREEBSD_ONLY(code)
+#endif
+
+
 MOZ_MEMORY_API void *
 malloc_impl(size_t size)
 {
-	void *ret;
-
 	DARWIN_ONLY(return (szone->malloc)(szone, size));
+
+	FREEBSD_ONLY(BA_DIVERT(return ba_malloc(size)));
+
+	void *ret;
 
 	if (malloc_init()) {
 		ret = NULL;
@@ -5629,9 +5875,11 @@ MOZ_MEMORY_API
 void *
 MEMALIGN(size_t alignment, size_t size)
 {
-	void *ret;
-
 	DARWIN_ONLY(return (szone->memalign)(szone, alignment, size));
+
+	FREEBSD_ONLY(BA_DIVERT(return ba_memalign(alignment, size)));
+
+	void *ret;
 
 	assert(((alignment - 1) & alignment) == 0);
 
@@ -5727,10 +5975,12 @@ valloc_impl(size_t size)
 MOZ_MEMORY_API void *
 calloc_impl(size_t num, size_t size)
 {
+	DARWIN_ONLY(return (szone->calloc)(szone, num, size));
+
+	FREEBSD_ONLY(BA_DIVERT(return ba_calloc(num, size)));
+
 	void *ret;
 	size_t num_size;
-
-	DARWIN_ONLY(return (szone->calloc)(szone, num, size));
 
 	if (malloc_init()) {
 		num_size = 0;
@@ -5846,9 +6096,11 @@ RETURN:
 MOZ_MEMORY_API void
 free_impl(void *ptr)
 {
-	size_t offset;
-
 	DARWIN_ONLY((szone->free)(szone, ptr); return);
+
+	FREEBSD_ONLY(BA_DIVERT(return ba_free(ptr)));
+
+	size_t offset;
 
 	/*
 	 * A version of idalloc that checks for NULL pointer but only for
