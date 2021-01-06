@@ -12,7 +12,7 @@
 
 #include "nsCoord.h"
 #include "DisplayItemClip.h"
-#include "ScrollbarStyles.h"
+#include "ScrollStyles.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/gfx/Point.h"
 #include "nsIScrollbarMediator.h"
@@ -63,7 +63,7 @@ public:
    * or NS_STYLE_OVERFLOW_AUTO) governing the horizontal and vertical
    * scrollbars for this frame.
    */
-  virtual mozilla::ScrollbarStyles GetScrollbarStyles() const = 0;
+  virtual mozilla::ScrollStyles GetScrollStyles() const = 0;
 
   enum { HORIZONTAL = 0x01, VERTICAL = 0x02 };
   /**

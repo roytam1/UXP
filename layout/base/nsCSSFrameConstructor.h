@@ -22,7 +22,7 @@
 #include "nsCounterManager.h"
 #include "nsIAnonymousContentCreator.h"
 #include "nsFrameManager.h"
-#include "ScrollbarStyles.h"
+#include "ScrollStyles.h"
 
 struct nsFrameItems;
 class nsStyleContext;

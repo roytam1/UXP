@@ -1137,9 +1137,9 @@ if (!mDestroyedFrames) {
         // to reconstruct - we can just reflow, because no scrollframe is being
         // added/removed.
         nsIContent* prevOverrideNode =
-          presContext->GetViewportScrollbarStylesOverrideNode();
+          presContext->GetViewportScrollStylesOverrideNode();
         nsIContent* newOverrideNode =
-          presContext->UpdateViewportScrollbarStylesOverride();
+          presContext->UpdateViewportScrollStylesOverride();
 
         if (data.mContent == prevOverrideNode ||
             data.mContent == newOverrideNode) {
