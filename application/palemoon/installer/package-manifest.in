@@ -169,8 +169,8 @@
 #ifdef XP_MACOSX
 #endif
 
-@RESPATH@/chrome/marionette@JAREXT@
-@RESPATH@/chrome/marionette.manifest
+;@RESPATH@/chrome/marionette@JAREXT@
+;@RESPATH@/chrome/marionette.manifest
 
 ; Modules
 @RESPATH@/browser/modules/*
