@@ -131,7 +131,7 @@
               Basilisk is community software released by <label class="text-link" href="http://www.palemoon.org/">the Pale Moon team</label> and Mozilla developers. Learn <label class="text-link" useoriginprincipal="true" href="about:credits">who contributed</label> to this software.
           </description>
           <description class="text-blurb" id="contributeDesc">
-              Want to help? Please consider <label class="text-link" href="https://www.palemoon.org/donations.shtml">donating</label> or get involved with our <label class="text-link" href="https://github.com/MoonchildProductions/UXP">development</label> of the Unified XUL Platform.
+              Want to help? Please consider <label class="text-link" href="https://www.palemoon.org/donations.shtml">donating</label> or get involved with our <label class="text-link" href="https://repo.palemoon.org/MoonchildProductions/UXP">development</label> of the Unified XUL Platform.
           </description>
 #endif
         </vbox>
