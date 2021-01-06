@@ -196,6 +196,7 @@ label.findbar-find-fast:-moz-lwtheme,
 
 .findbar-textbox[flash="true"] {
   background-color: #F7E379;
+  color: #000;
 }
 
 .findbar-textbox[status="notfound"] {

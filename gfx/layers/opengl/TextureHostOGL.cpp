@@ -16,7 +16,6 @@
 #include "mozilla/gfx/Logging.h"        // for gfxCriticalError
 #include "mozilla/layers/ISurfaceAllocator.h"
 #include "nsRegion.h"                   // for nsIntRegion
-#include "AndroidSurfaceTexture.h"
 #include "GfxTexturesReporter.h"        // for GfxTexturesReporter
 #include "GLBlitTextureImageHelper.h"
 #include "GeckoProfiler.h"
@@ -40,16 +39,6 @@ CreateTextureHostOGL(const SurfaceDescriptor& aDesc,
 {
   RefPtr<TextureHost> result;
   switch (aDesc.type()) {
-#ifdef MOZ_WIDGET_ANDROID
-    case SurfaceDescriptor::TSurfaceTextureDescriptor: {
-      const SurfaceTextureDescriptor& desc = aDesc.get_SurfaceTextureDescriptor();
-      result = new SurfaceTextureHost(aFlags,
-                                      (AndroidSurfaceTexture*)desc.surfTex(),
-                                      desc.size());
-      break;
-    }
-#endif
-
     case SurfaceDescriptor::TEGLImageDescriptor: {
       const EGLImageDescriptor& desc = aDesc.get_EGLImageDescriptor();
       result = new EGLImageTextureHost(aFlags,
@@ -345,177 +334,6 @@ GLTextureSource::gl() const
 {
   return mCompositor ? mCompositor->gl() : nullptr;
 }
-
-////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////
-// SurfaceTextureHost
-
-#ifdef MOZ_WIDGET_ANDROID
-
-SurfaceTextureSource::SurfaceTextureSource(CompositorOGL* aCompositor,
-                                           AndroidSurfaceTexture* aSurfTex,
-                                           gfx::SurfaceFormat aFormat,
-                                           GLenum aTarget,
-                                           GLenum aWrapMode,
-                                           gfx::IntSize aSize)
-  : mCompositor(aCompositor)
-  , mSurfTex(aSurfTex)
-  , mFormat(aFormat)
-  , mTextureTarget(aTarget)
-  , mWrapMode(aWrapMode)
-  , mSize(aSize)
-{
-}
-
-void
-SurfaceTextureSource::BindTexture(GLenum aTextureUnit,
-                                  gfx::SamplingFilter aSamplingFilter)
-{
-  MOZ_ASSERT(mSurfTex);
-  GLContext* gl = this->gl();
-  if (!gl || !gl->MakeCurrent()) {
-    NS_WARNING("Trying to bind a texture without a GLContext");
-    return;
-  }
-
-  gl->fActiveTexture(aTextureUnit);
-
-  // SurfaceTexture spams us if there are any existing GL errors, so
-  // we'll clear them here in order to avoid that.
-  gl->FlushErrors();
-
-  mSurfTex->UpdateTexImage();
-
-  ApplySamplingFilterToBoundTexture(gl, aSamplingFilter, mTextureTarget);
-}
-
-void
-SurfaceTextureSource::SetCompositor(Compositor* aCompositor)
-{
-  CompositorOGL* glCompositor = AssertGLCompositor(aCompositor);
-  if (!glCompositor) {
-    DeallocateDeviceData();
-    return;
-  }
-  if (mCompositor != glCompositor) {
-    DeallocateDeviceData();
-  }
-
-  mCompositor = glCompositor;
-}
-
-bool
-SurfaceTextureSource::IsValid() const
-{
-  return !!gl();
-}
-
-gl::GLContext*
-SurfaceTextureSource::gl() const
-{
-  return mCompositor ? mCompositor->gl() : nullptr;
-}
-
-gfx::Matrix4x4
-SurfaceTextureSource::GetTextureTransform()
-{
-  MOZ_ASSERT(mSurfTex);
-
-  gfx::Matrix4x4 ret;
-  mSurfTex->GetTransformMatrix(ret);
-
-  return ret;
-}
-
-void
-SurfaceTextureSource::DeallocateDeviceData()
-{
-  mSurfTex = nullptr;
-}
-
-////////////////////////////////////////////////////////////////////////
-
-SurfaceTextureHost::SurfaceTextureHost(TextureFlags aFlags,
-                                       AndroidSurfaceTexture* aSurfTex,
-                                       gfx::IntSize aSize)
-  : TextureHost(aFlags)
-  , mSurfTex(aSurfTex)
-  , mSize(aSize)
-  , mCompositor(nullptr)
-{
-}
-
-SurfaceTextureHost::~SurfaceTextureHost()
-{
-}
-
-gl::GLContext*
-SurfaceTextureHost::gl() const
-{
-  return mCompositor ? mCompositor->gl() : nullptr;
-}
-
-bool
-SurfaceTextureHost::Lock()
-{
-  MOZ_ASSERT(mSurfTex);
-  GLContext* gl = this->gl();
-  if (!gl || !gl->MakeCurrent()) {
-    return false;
-  }
-
-  if (!mTextureSource) {
-    gfx::SurfaceFormat format = gfx::SurfaceFormat::R8G8B8A8;
-    GLenum target = LOCAL_GL_TEXTURE_EXTERNAL;
-    GLenum wrapMode = LOCAL_GL_CLAMP_TO_EDGE;
-    mTextureSource = new SurfaceTextureSource(mCompositor,
-                                              mSurfTex,
-                                              format,
-                                              target,
-                                              wrapMode,
-                                              mSize);
-  }
-
-  return NS_SUCCEEDED(mSurfTex->Attach(gl));
-}
-
-void
-SurfaceTextureHost::Unlock()
-{
-  MOZ_ASSERT(mSurfTex);
-  mSurfTex->Detach();
-}
-
-void
-SurfaceTextureHost::SetCompositor(Compositor* aCompositor)
-{
-  CompositorOGL* glCompositor = AssertGLCompositor(aCompositor);
-  if (!glCompositor) {
-    DeallocateDeviceData();
-    return;
-  }
-  mCompositor = glCompositor;
-  if (mTextureSource) {
-    mTextureSource->SetCompositor(glCompositor);
-  }
-}
-
-gfx::SurfaceFormat
-SurfaceTextureHost::GetFormat() const
-{
-  return mTextureSource ? mTextureSource->GetFormat() : gfx::SurfaceFormat::UNKNOWN;
-}
-
-void
-SurfaceTextureHost::DeallocateDeviceData()
-{
-  if (mTextureSource) {
-    mTextureSource->DeallocateDeviceData();
-  }
-  mSurfTex = nullptr;
-}
-
-#endif // MOZ_WIDGET_ANDROID
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////

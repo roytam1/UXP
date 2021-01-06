@@ -352,8 +352,7 @@ class DesktopArgumentsParser(ReftestArgumentsParser):
 
         if options.app is None:
             bin_dir = (self.build_obj.get_binary_path() if
-                       self.build_obj and self.build_obj.substs[
-                           'MOZ_BUILD_APP'] != 'mobile/android'
+                       self.build_obj
                        else None)
 
             if bin_dir:
@@ -744,7 +743,5 @@ class RemoteArgumentsParser(ReftestArgumentsParser):
                 self.error("ERROR: Invalid screen resolution %sx%s, please adjust to 1366x1050 or higher" % (
                     width, height))
 
-        # Disable e10s by default on Android because we don't run Android
-        # e10s jobs anywhere yet.
         options.e10s = False
         return options

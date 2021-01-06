@@ -33,17 +33,6 @@
     typedef void* EGLNativePixmapType;
     typedef void* EGLNativeWindowType;
 
-    #ifdef ANDROID
-        // We only need to explicitly dlopen egltrace
-        // on android as we can use LD_PRELOAD or other tricks
-        // on other platforms. We look for it in /data/local
-        // as that's writeable by all users
-        //
-        // This should really go in GLLibraryEGL.cpp but we currently reference
-        // APITRACE_LIB in GLContextProviderEGL.cpp. Further refactoring
-        // will come in subsequent patches on Bug 732865
-        #define APITRACE_LIB "/data/local/tmp/egltrace.so"
-    #endif
 #endif
 
 #if defined(MOZ_X11)
@@ -79,28 +68,15 @@ namespace gl {
 # endif
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-// Record the name of the GL call for better hang stacks on Android.
-#define BEFORE_GL_CALL                      \
-    PROFILER_LABEL_FUNC(                    \
-      js::ProfileEntry::Category::GRAPHICS);\
-    BeforeGLCall(MOZ_FUNCTION_NAME)
-#else
 #define BEFORE_GL_CALL do {          \
     BeforeGLCall(MOZ_FUNCTION_NAME); \
 } while (0)
-#endif
 
 #define AFTER_GL_CALL do {           \
     AfterGLCall(MOZ_FUNCTION_NAME);  \
 } while (0)
-#else
-#ifdef MOZ_WIDGET_ANDROID
-// Record the name of the GL call for better hang stacks on Android.
-#define BEFORE_GL_CALL PROFILER_LABEL_FUNC(js::ProfileEntry::Category::GRAPHICS)
-#else
+#else // !DEBUG
 #define BEFORE_GL_CALL
-#endif
 #define AFTER_GL_CALL
 #endif
 

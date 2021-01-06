@@ -133,18 +133,7 @@ CanvasLayerComposite::CleanupResources()
 gfx::SamplingFilter
 CanvasLayerComposite::GetSamplingFilter()
 {
-  gfx::SamplingFilter filter = mSamplingFilter;
-#ifdef ANDROID
-  // Bug 691354
-  // Using the LINEAR filter we get unexplained artifacts.
-  // Use NEAREST when no scaling is required.
-  Matrix matrix;
-  bool is2D = GetEffectiveTransform().Is2D(&matrix);
-  if (is2D && !ThebesMatrix(matrix).HasNonTranslationOrFlip()) {
-    filter = SamplingFilter::POINT;
-  }
-#endif
-  return filter;
+  return mSamplingFilter;
 }
 
 void

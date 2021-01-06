@@ -44,7 +44,7 @@ HTTP(..) == filter-2.xhtml filter-2-ref.xhtml
 == zoom-invalidation.html zoom-invalidation-ref.html # bug 773482
 
 # test that xulRuntime.OS works
-fails-if(xulRuntime.OS!="Linux"&&!Android) == data:text/html,<body>Linux data:text/html,<script>document.write(navigator.platform.substr(0,5))</script>
+fails-if(xulRuntime.OS!="Linux") == data:text/html,<body>Linux data:text/html,<script>document.write(navigator.platform.substr(0,5))</script>
 fails-if(xulRuntime.OS!="WINNT") == data:text/html,<body>Win data:text/html,<script>document.write(navigator.platform.substr(0,3))</script>
 fails-if(xulRuntime.OS!="Darwin") == data:text/html,<body>Mac data:text/html,<script>document.write(navigator.platform.substr(0,3))</script>
 
@@ -91,7 +91,7 @@ needs-focus == data:text/plain, about:blank
 
 # Sanity check of viewport+displayport overrides
 pref(dom.meta-viewport.enabled,true) skip-if(!browserIsRemote) != test-displayport-2.html test-displayport-ref.html # bug 593168
-skip-if(!browserIsRemote) fails-if(OSX&&layersGPUAccelerated) fuzzy-if(layersOMTC,1,1390) random-if(Android) random-if(transparentScrollbars) == 647192-1.html 647192-1-ref.html
+skip-if(!browserIsRemote) fails-if(OSX&&layersGPUAccelerated) fuzzy-if(layersOMTC,1,1390) random-if(transparentScrollbars) == 647192-1.html 647192-1-ref.html
 skip-if(!browserIsRemote) == 656041-1.html 656041-1-ref.html
 pref(dom.meta-viewport.enabled,true) skip-if(!browserIsRemote||layersOMTC) == test-displayport-bg.html test-displayport-ref.html # bug 694706
 
@@ -153,7 +153,7 @@ fuzzy(1,250000) != too-fuzzy.html fuzzy-ref.html
 fuzzy-if(true,1,250000) == fuzzy.html fuzzy-ref.html
 fuzzy-if(false,2,1) == fuzzy-ref.html fuzzy-ref.html
 # When using 565 fuzzy.html and fuzzy-ref.html will compare as equal
-fails fuzzy-if(false,2,1) random-if(Android) == fuzzy.html fuzzy-ref.html
+fails fuzzy-if(false,2,1) == fuzzy.html fuzzy-ref.html
 
 # Test that reftest-no-paint fails correctly
 fails == reftest-no-paint.html reftest-no-paint-ref.html
@@ -166,8 +166,6 @@ default-preferences pref(layers.low-precision-buffer,false)
 skip-if(!asyncPan||!browserIsRemote) != async-scroll-1b.html async-scroll-1-ref.html
 default-preferences
 
-skip-if(!Android) pref(apz.allow_zooming,true) != async-zoom-1.html async-zoom-1-ref.html
-fuzzy(112,800) skip-if(!Android) pref(apz.allow_zooming,true) == async-zoom-2.html async-zoom-2-ref.html
 
 # reftest-opaque-layer
 == reftest-opaque-layer-pass.html reftest-opaque-layer-pass.html

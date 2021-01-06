@@ -99,9 +99,7 @@ var innerRuleInfo = [
      if (aException) {
        return false;
      }
-     if (navigator.oscpu.match(/Linux/) ||
-         navigator.oscpu.match(/Android/) ||
-         SpecialPowers.Services.appinfo.name == "B2G") {
+     if (navigator.oscpu.match(/Linux/)) {
        return true;
     }
     return Math.abs(width - (aApplied ? monospaceWidth : serifWidth)) <= 1; // bug 769194 prevents local()

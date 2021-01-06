@@ -43,10 +43,6 @@
 #include "GLBlitTextureImageHelper.h"
 #include "HeapCopyOfStackArray.h"
 
-#if MOZ_WIDGET_ANDROID
-#include "TexturePoolOGL.h"
-#endif
-
 #include "GeckoProfiler.h"
 
 namespace mozilla {
@@ -228,13 +224,6 @@ CompositorOGL::Initialize(nsCString* const out_failureReason)
   MOZ_ASSERT(mGLContext == nullptr, "Don't reinitialize CompositorOGL");
 
   mGLContext = CreateContext();
-
-#ifdef MOZ_WIDGET_ANDROID
-  if (!mGLContext){
-    *out_failureReason = "FEATURE_FAILURE_OPENGL_NO_ANDROID_CONTEXT";
-    NS_RUNTIMEABORT("We need a context on Android");
-  }
-#endif
 
   if (!mGLContext){
     *out_failureReason = "FEATURE_FAILURE_OPENGL_CREATE_CONTEXT";
@@ -672,10 +661,6 @@ CompositorOGL::BeginFrame(const nsIntRegion& aInvalidRegion,
 
   mPixelsPerFrame = width * height;
   mPixelsFilled = 0;
-
-#ifdef MOZ_WIDGET_ANDROID
-  TexturePoolOGL::Fill(gl());
-#endif
 
   // Default blend function implements "OVER"
   mGLContext->fBlendFuncSeparate(LOCAL_GL_ONE, LOCAL_GL_ONE_MINUS_SRC_ALPHA,
@@ -1707,19 +1692,13 @@ CompositorOGL::CopyToTarget(DrawTarget* aTarget, const nsIntPoint& aTopLeft, con
 void
 CompositorOGL::Pause()
 {
-#ifdef MOZ_WIDGET_ANDROID
-  if (!gl() || gl()->IsDestroyed())
-    return;
-
-  // ReleaseSurface internally calls MakeCurrent.
-  gl()->ReleaseSurface();
-#endif
+  // This was only used on Android
 }
 
 bool
 CompositorOGL::Resume()
 {
-#if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_UIKIT)
+#if defined(MOZ_WIDGET_UIKIT)
   if (!gl() || gl()->IsDestroyed())
     return false;
 

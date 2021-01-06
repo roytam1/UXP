@@ -49,7 +49,6 @@ SimpleTest.waitForExplicitFinish();
 
 const kIsWin = navigator.platform.indexOf("Win") == 0;
 const kIsMac = navigator.platform.indexOf("Mac") == 0;
-const kIsAndroid = navigator.appVersion.indexOf("Android") != 0;
 
 function runTests()
 {
@@ -352,8 +351,7 @@ function runTests()
 
   // Mac uses native popup for dropdown.  Let's skip the tests for popup
   // since it's not handled in nsListControlFrame.
-  // Similarly, Android doesn't use popup for dropdown.
-  if (kIsMac || kIsAndroid) {
+  if (kIsMac) {
     finish();
     return;
   }

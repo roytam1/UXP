@@ -149,7 +149,6 @@ BasicPaintedLayer::Validate(LayerManager::DrawPaintedLayerCallback aCallback,
   }
 
   uint32_t flags = 0;
-#ifndef MOZ_WIDGET_ANDROID
   if (BasicManager()->CompositorMightResample()) {
     flags |= RotatedContentBuffer::PAINT_WILL_RESAMPLE;
   }
@@ -158,7 +157,6 @@ BasicPaintedLayer::Validate(LayerManager::DrawPaintedLayerCallback aCallback,
       flags |= RotatedContentBuffer::PAINT_WILL_RESAMPLE;
     }
   }
-#endif
   if (mDrawAtomically) {
     flags |= RotatedContentBuffer::PAINT_NO_ROTATION;
   }

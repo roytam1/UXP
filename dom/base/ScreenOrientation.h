@@ -16,8 +16,6 @@ namespace mozilla {
 namespace dom {
 
 class Promise;
-// Make sure that any change to ScreenOrientationInternal values are
-// also made in mobile/android/base/GeckoScreenOrientation.java
 typedef uint32_t ScreenOrientationInternal;
 
 static const ScreenOrientationInternal eScreenOrientation_None               = 0;

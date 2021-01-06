@@ -28,8 +28,6 @@ def run_mochitest(context, **kwargs):
         args.test_paths = map(normalize, args.test_paths)
 
     import mozinfo
-    if mozinfo.info.get('buildapp') == 'mobile/android':
-        return run_mochitest_android(context, args)
     return run_mochitest_desktop(context, args)
 
 
@@ -42,29 +40,10 @@ def run_mochitest_desktop(context, args):
     return run_test_harness(parser, args)
 
 
-def run_mochitest_android(context, args):
-    args.app = args.app or 'org.mozilla.fennec'
-    args.extraProfileFiles.append(os.path.join(context.package_root, 'mochitest', 'fonts'))
-    args.utilityPath = context.hostutils
-    args.xrePath = context.hostutils
-
-    config = context.mozharness_config
-    if config:
-        args.remoteWebServer = config['remote_webserver']
-        args.httpPort = config['emulator']['http_port']
-        args.sslPort = config['emulator']['ssl_port']
-        args.adbPath = config['exes']['adb'] % {'abs_work_dir': context.mozharness_workdir}
-
-    from runtestsremote import run_test_harness
-    return run_test_harness(parser, args)
-
-
 def setup_argument_parser():
     import mozinfo
     mozinfo.find_and_update_from_json(here)
     app = 'generic'
-    if mozinfo.info.get('buildapp') == 'mobile/android':
-        app = 'android'
 
     from mochitest_options import MochitestArgumentParser
     global parser

@@ -14,12 +14,6 @@
 #include "mozilla/gfx/Matrix.h"
 #include "mozilla/UniquePtr.h"
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidSurfaceTexture.h"
-#include "GLImages.h"
-#include "GLLibraryEGL.h"
-#endif
-
 #ifdef XP_MACOSX
 #include "MacIOSurfaceImage.h"
 #include "GLContextCGL.h"
@@ -146,26 +140,6 @@ GLBlitHelper::InitTexQuadProgram(BlitType target)
                                          vTexCoord * uTexCoordMult);  \n\
         }                                                             \n\
     ";
-#ifdef ANDROID /* MOZ_WIDGET_ANDROID */
-    const char kTexExternalBlit_FragShaderSource[] = "\
-        #version 100                                                    \n\
-        #extension GL_OES_EGL_image_external : require                  \n\
-        #ifdef GL_FRAGMENT_PRECISION_HIGH                               \n\
-            precision highp float;                                      \n\
-        #else                                                           \n\
-            precision mediump float;                                    \n\
-        #endif                                                          \n\
-        varying vec2 vTexCoord;                                         \n\
-        uniform mat4 uTextureTransform;                                 \n\
-        uniform samplerExternalOES uTexUnit;                            \n\
-                                                                        \n\
-        void main()                                                     \n\
-        {                                                               \n\
-            gl_FragColor = texture2D(uTexUnit,                          \n\
-                (uTextureTransform * vec4(vTexCoord, 0.0, 1.0)).xy);    \n\
-        }                                                               \n\
-    ";
-#endif
     /* From Rec601:
     [R]   [1.1643835616438356,  0.0,                 1.5960267857142858]      [ Y -  16]
     [G] = [1.1643835616438358, -0.3917622900949137, -0.8129676472377708]    x [Cb - 128]
@@ -257,14 +231,6 @@ GLBlitHelper::InitTexQuadProgram(BlitType target)
         fragShaderPtr = &mTex2DRectBlit_FragShader;
         fragShaderSource = kTex2DRectBlit_FragShaderSource;
         break;
-#ifdef ANDROID
-    case ConvertSurfaceTexture:
-    case ConvertGralloc:
-        programPtr = &mTexExternalBlit_Program;
-        fragShaderPtr = &mTexExternalBlit_FragShader;
-        fragShaderSource = kTexExternalBlit_FragShaderSource;
-        break;
-#endif
     case ConvertPlanarYCbCr:
         programPtr = &mTexYUVPlanarBlit_Program;
         fragShaderPtr = &mTexYUVPlanarBlit_FragShader;
@@ -398,10 +364,6 @@ GLBlitHelper::InitTexQuadProgram(BlitType target)
         // Cache and set attribute and uniform
         mGL->fUseProgram(program);
         switch (target) {
-#ifdef ANDROID
-            case ConvertSurfaceTexture:
-            case ConvertGralloc:
-#endif
             case BlitTex2D:
             case BlitTexRect:
             case ConvertEGLImage: {
@@ -678,67 +640,6 @@ GLBlitHelper::BindAndUploadEGLImage(EGLImage image, GLuint target)
     mGL->fEGLImageTargetTexture2D(target, image);
 }
 
-#ifdef MOZ_WIDGET_ANDROID
-
-#define ATTACH_WAIT_MS 50
-
-bool
-GLBlitHelper::BlitSurfaceTextureImage(layers::SurfaceTextureImage* stImage)
-{
-    AndroidSurfaceTexture* surfaceTexture = stImage->GetSurfaceTexture();
-
-    ScopedBindTextureUnit boundTU(mGL, LOCAL_GL_TEXTURE0);
-
-    if (NS_FAILED(surfaceTexture->Attach(mGL, PR_MillisecondsToInterval(ATTACH_WAIT_MS))))
-        return false;
-
-    // UpdateTexImage() changes the EXTERNAL binding, so save it here
-    // so we can restore it after.
-    int oldBinding = 0;
-    mGL->fGetIntegerv(LOCAL_GL_TEXTURE_BINDING_EXTERNAL, &oldBinding);
-
-    surfaceTexture->UpdateTexImage();
-
-    gfx::Matrix4x4 transform;
-    surfaceTexture->GetTransformMatrix(transform);
-
-    mGL->fUniformMatrix4fv(mTextureTransformLoc, 1, false, &transform._11);
-    mGL->fDrawArrays(LOCAL_GL_TRIANGLE_STRIP, 0, 4);
-
-    surfaceTexture->Detach();
-
-    mGL->fBindTexture(LOCAL_GL_TEXTURE_EXTERNAL, oldBinding);
-    return true;
-}
-
-bool
-GLBlitHelper::BlitEGLImageImage(layers::EGLImageImage* image)
-{
-    EGLImage eglImage = image->GetImage();
-    EGLSync eglSync = image->GetSync();
-
-    if (eglSync) {
-        EGLint status = sEGLLibrary.fClientWaitSync(EGL_DISPLAY(), eglSync, 0, LOCAL_EGL_FOREVER);
-        if (status != LOCAL_EGL_CONDITION_SATISFIED) {
-            return false;
-        }
-    }
-
-    ScopedBindTextureUnit boundTU(mGL, LOCAL_GL_TEXTURE0);
-
-    int oldBinding = 0;
-    mGL->fGetIntegerv(LOCAL_GL_TEXTURE_BINDING_2D, &oldBinding);
-
-    BindAndUploadEGLImage(eglImage, LOCAL_GL_TEXTURE_2D);
-
-    mGL->fDrawArrays(LOCAL_GL_TRIANGLE_STRIP, 0, 4);
-
-    mGL->fBindTexture(LOCAL_GL_TEXTURE_2D, oldBinding);
-    return true;
-}
-
-#endif
-
 bool
 GLBlitHelper::BlitPlanarYCbCrImage(layers::PlanarYCbCrImage* yuvImage)
 {
@@ -835,16 +736,6 @@ GLBlitHelper::BlitImageToFramebuffer(layers::Image* srcImage,
         srcOrigin = OriginPos::BottomLeft;
         break;
 
-#ifdef MOZ_WIDGET_ANDROID
-    case ImageFormat::SURFACE_TEXTURE:
-        type = ConvertSurfaceTexture;
-        srcOrigin = srcImage->AsSurfaceTextureImage()->GetOriginPos();
-        break;
-    case ImageFormat::EGLIMAGE:
-        type = ConvertEGLImage;
-        srcOrigin = srcImage->AsEGLImageImage()->GetOriginPos();
-        break;
-#endif
 #ifdef XP_MACOSX
     case ImageFormat::MAC_IOSURFACE:
         type = ConvertMacIOSurfaceImage;
@@ -876,14 +767,6 @@ GLBlitHelper::BlitImageToFramebuffer(layers::Image* srcImage,
             mGL->fPixelStorei(LOCAL_GL_UNPACK_ALIGNMENT, saved);
             return ret;
         }
-
-#ifdef MOZ_WIDGET_ANDROID
-    case ConvertSurfaceTexture:
-        return BlitSurfaceTextureImage(static_cast<layers::SurfaceTextureImage*>(srcImage));
-
-    case ConvertEGLImage:
-        return BlitEGLImageImage(static_cast<layers::EGLImageImage*>(srcImage));
-#endif
 
 #ifdef XP_MACOSX
     case ConvertMacIOSurfaceImage:
@@ -983,8 +866,7 @@ GLBlitHelper::BlitFramebufferToTexture(GLuint srcFB, GLuint destTex,
                                        GLenum destTarget,
                                        bool internalFBs)
 {
-    // On the Android 4.3 emulator, IsFramebuffer may return false incorrectly.
-    MOZ_ASSERT_IF(mGL->Renderer() != GLRenderer::AndroidEmulator, !srcFB || mGL->fIsFramebuffer(srcFB));
+    MOZ_ASSERT(!srcFB || mGL->fIsFramebuffer(srcFB));
     MOZ_ASSERT(mGL->fIsTexture(destTex));
 
     if (mGL->IsSupported(GLFeature::framebuffer_blit)) {

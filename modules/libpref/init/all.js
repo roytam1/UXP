@@ -1272,6 +1272,7 @@ pref("javascript.options.strict.debug",     false);
 pref("javascript.options.unboxed_objects",  false);
 pref("javascript.options.baselinejit",      true);
 pref("javascript.options.ion",              true);
+pref("javascript.options.ion.inlining",     false);
 pref("javascript.options.asmjs",            true);
 pref("javascript.options.wasm",             true);
 // wasm jit crashes in 32bit builds because of 64bit casts so
@@ -5417,8 +5418,8 @@ pref("osfile.reset_worker_delay", 30000);
 #endif
 
 #if !defined(MOZ_WIDGET_ANDROID)
-pref("dom.webkitBlink.dirPicker.enabled", false);
-pref("dom.webkitBlink.filesystem.enabled", false);
+pref("dom.webkitBlink.dirPicker.enabled", true);
+pref("dom.webkitBlink.filesystem.enabled", true);
 #endif
 
 #ifdef NIGHTLY_BUILD

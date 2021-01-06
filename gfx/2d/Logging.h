@@ -16,9 +16,6 @@
 #endif
 #include "mozilla/Tuple.h"
 
-#if defined(MOZ_WIDGET_ANDROID)
-#include "nsDebug.h"
-#endif
 #include "Point.h"
 #include "BaseRect.h"
 #include "Matrix.h"
@@ -141,9 +138,6 @@ struct BasicLogger
   // in the appropriate places in that method.
   static bool ShouldOutputMessage(int aLevel) {
     if (LoggingPrefs::sGfxLogLevel >= aLevel) {
-#if defined(MOZ_WIDGET_ANDROID)
-      return true;
-#else
 #if defined(MOZ_LOGGING)
       if (MOZ_LOG_TEST(GetGFX2DLog(), PRLogLevelForLevel(aLevel))) {
         return true;
@@ -153,7 +147,6 @@ struct BasicLogger
                  (aLevel < LOG_DEBUG)) {
         return true;
       }
-#endif
     }
     return false;
   }
@@ -174,9 +167,6 @@ struct BasicLogger
     // make the corresponding change in the ShouldOutputMessage method
     // above.
     if (LoggingPrefs::sGfxLogLevel >= aLevel) {
-#if defined(MOZ_WIDGET_ANDROID)
-      printf_stderr("%s%s", aString.c_str(), aNoNewline ? "" : "\n");
-#else
 #if defined(MOZ_LOGGING)
       if (MOZ_LOG_TEST(GetGFX2DLog(), PRLogLevelForLevel(aLevel))) {
         PR_LogPrint("%s%s", aString.c_str(), aNoNewline ? "" : "\n");
@@ -186,7 +176,6 @@ struct BasicLogger
                  (aLevel < LOG_DEBUG)) {
         printf("%s%s", aString.c_str(), aNoNewline ? "" : "\n");
       }
-#endif
     }
   }
 };

@@ -228,11 +228,6 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         'opengl/GLManager.cpp',
     ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
-    SOURCES += [
-        'apz/src/AndroidAPZ.cpp',
-    ]
-
 SOURCES += [
     'apz/public/IAPZCTreeManager.cpp',
     'apz/src/APZCTreeManager.cpp',

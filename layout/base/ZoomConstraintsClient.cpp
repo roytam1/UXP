@@ -53,7 +53,7 @@ GetWidget(nsIPresShell* aShell)
     return nullptr;
   }
   if (nsIFrame* rootFrame = aShell->GetRootFrame()) {
-#if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_UIKIT)
+#if defined(MOZ_WIDGET_UIKIT)
     return rootFrame->GetNearestWidget();
 #else
     if (nsView* view = rootFrame->GetView()) {

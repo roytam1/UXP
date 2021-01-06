@@ -54,16 +54,6 @@
 #include "nsPoint.h"                    // for nsIntPoint
 #include "nsRect.h"                     // for mozilla::gfx::IntRect
 #include "nsRegion.h"                   // for nsIntRegion, etc
-#ifdef MOZ_WIDGET_ANDROID
-#include <android/log.h>
-#include <android/native_window.h>
-#endif
-#if defined(MOZ_WIDGET_ANDROID)
-#include "opengl/CompositorOGL.h"
-#include "GLContextEGL.h"
-#include "GLContextProvider.h"
-#include "ScopedGLHelpers.h"
-#endif
 #include "GeckoProfiler.h"
 #include "TextRenderer.h"               // for TextRenderer
 #include "mozilla/layers/CompositorBridgeParent.h"
@@ -490,9 +480,6 @@ LayerManagerComposite::UpdateAndRender()
   }
 
   Render(invalid, opaque);
-#if defined(MOZ_WIDGET_ANDROID)
-  RenderToPresentationSurface();
-#endif
   mGeometryChanged = false;
   mWindowOverlayChanged = false;
 
@@ -618,42 +605,6 @@ LayerManagerComposite::RenderDebugOverlay(const IntRect& aBounds)
     }
 
     float alpha = 1;
-#ifdef ANDROID
-    // Draw a translation delay warning overlay
-    int width;
-    int border;
-    if (!mWarnTime.IsNull() && (now - mWarnTime).ToMilliseconds() < kVisualWarningDuration) {
-      EffectChain effects;
-
-      // Black blorder
-      border = 4;
-      width = 6;
-      effects.mPrimaryEffect = new EffectSolidColor(gfx::Color(0, 0, 0, 1));
-      mCompositor->DrawQuad(gfx::Rect(border, border, aBounds.width - 2 * border, width),
-                            aBounds, effects, alpha, gfx::Matrix4x4());
-      mCompositor->DrawQuad(gfx::Rect(border, aBounds.height - border - width, aBounds.width - 2 * border, width),
-                            aBounds, effects, alpha, gfx::Matrix4x4());
-      mCompositor->DrawQuad(gfx::Rect(border, border + width, width, aBounds.height - 2 * border - width * 2),
-                            aBounds, effects, alpha, gfx::Matrix4x4());
-      mCompositor->DrawQuad(gfx::Rect(aBounds.width - border - width, border + width, width, aBounds.height - 2 * border - 2 * width),
-                            aBounds, effects, alpha, gfx::Matrix4x4());
-
-      // Content
-      border = 5;
-      width = 4;
-      effects.mPrimaryEffect = new EffectSolidColor(gfx::Color(1, 1.f - mWarningLevel, 0, 1));
-      mCompositor->DrawQuad(gfx::Rect(border, border, aBounds.width - 2 * border, width),
-                            aBounds, effects, alpha, gfx::Matrix4x4());
-      mCompositor->DrawQuad(gfx::Rect(border, aBounds.height - border - width, aBounds.width - 2 * border, width),
-                            aBounds, effects, alpha, gfx::Matrix4x4());
-      mCompositor->DrawQuad(gfx::Rect(border, border + width, width, aBounds.height - 2 * border - width * 2),
-                            aBounds, effects, alpha, gfx::Matrix4x4());
-      mCompositor->DrawQuad(gfx::Rect(aBounds.width - border - width, border + width, width, aBounds.height - 2 * border - 2 * width),
-                            aBounds, effects, alpha, gfx::Matrix4x4());
-      SetDebugOverlayWantsNextFrame(true);
-    }
-#endif
-
     float fillRatio = mCompositor->GetFillRatio();
     mFPS->DrawFPS(now, drawFrameColorBars ? 10 : 1, 2, unsigned(fillRatio), mCompositor);
 
@@ -932,8 +883,6 @@ LayerManagerComposite::Render(const nsIntRegion& aInvalidRegion, const nsIntRegi
   mozilla::widget::WidgetRenderingContext widgetContext;
 #if defined(XP_MACOSX)
   widgetContext.mLayerManager = this;
-#elif defined(MOZ_WIDGET_ANDROID)
-  widgetContext.mCompositor = GetCompositor();
 #endif
 
   {
@@ -952,14 +901,6 @@ LayerManagerComposite::Render(const nsIntRegion& aInvalidRegion, const nsIntRegi
   CompositorBench(mCompositor, bounds);
 
   MOZ_ASSERT(mRoot->GetOpacity() == 1);
-#if defined(MOZ_WIDGET_ANDROID)
-  LayerMetricsWrapper wrapper = GetRootContentLayer();
-  if (wrapper) {
-    mCompositor->SetClearColor(wrapper.Metadata().GetBackgroundColor());
-  } else {
-    mCompositor->SetClearColorToDefault();
-  }
-#endif
   if (mRoot->GetClipRect()) {
     clipRect = *mRoot->GetClipRect();
     IntRect rect(clipRect.x, clipRect.y, clipRect.width, clipRect.height);
@@ -1028,182 +969,6 @@ LayerManagerComposite::Render(const nsIntRegion& aInvalidRegion, const nsIntRegi
 
   RecordFrame();
 }
-
-#if defined(MOZ_WIDGET_ANDROID)
-class ScopedCompositorProjMatrix {
-public:
-  ScopedCompositorProjMatrix(CompositorOGL* aCompositor, const Matrix4x4& aProjMatrix):
-    mCompositor(aCompositor),
-    mOriginalProjMatrix(mCompositor->GetProjMatrix())
-  {
-    mCompositor->SetProjMatrix(aProjMatrix);
-  }
-
-  ~ScopedCompositorProjMatrix()
-  {
-    mCompositor->SetProjMatrix(mOriginalProjMatrix);
-  }
-private:
-  CompositorOGL* const mCompositor;
-  const Matrix4x4 mOriginalProjMatrix;
-};
-
-class ScopedCompostitorSurfaceSize {
-public:
-  ScopedCompostitorSurfaceSize(CompositorOGL* aCompositor, const gfx::IntSize& aSize) :
-    mCompositor(aCompositor),
-    mOriginalSize(mCompositor->GetDestinationSurfaceSize())
-  {
-    mCompositor->SetDestinationSurfaceSize(aSize);
-  }
-  ~ScopedCompostitorSurfaceSize()
-  {
-    mCompositor->SetDestinationSurfaceSize(mOriginalSize);
-  }
-private:
-  CompositorOGL* const mCompositor;
-  const gfx::IntSize mOriginalSize;
-};
-
-class ScopedCompositorRenderOffset {
-public:
-  ScopedCompositorRenderOffset(CompositorOGL* aCompositor, const ScreenPoint& aOffset) :
-    mCompositor(aCompositor),
-    mOriginalOffset(mCompositor->GetScreenRenderOffset())
-  {
-    mCompositor->SetScreenRenderOffset(aOffset);
-  }
-  ~ScopedCompositorRenderOffset()
-  {
-    mCompositor->SetScreenRenderOffset(mOriginalOffset);
-  }
-private:
-  CompositorOGL* const mCompositor;
-  const ScreenPoint mOriginalOffset;
-};
-
-class ScopedContextSurfaceOverride {
-public:
-  ScopedContextSurfaceOverride(GLContextEGL* aContext, void* aSurface) :
-    mContext(aContext)
-  {
-    MOZ_ASSERT(aSurface);
-    mContext->SetEGLSurfaceOverride(aSurface);
-    mContext->MakeCurrent(true);
-  }
-  ~ScopedContextSurfaceOverride()
-  {
-    mContext->SetEGLSurfaceOverride(EGL_NO_SURFACE);
-    mContext->MakeCurrent(true);
-  }
-private:
-  GLContextEGL* const mContext;
-};
-
-void
-LayerManagerComposite::RenderToPresentationSurface()
-{
-#ifdef MOZ_WIDGET_ANDROID
-  nsIWidget* const widget = mCompositor->GetWidget()->RealWidget();
-  auto window = static_cast<ANativeWindow*>(
-      widget->GetNativeData(NS_PRESENTATION_WINDOW));
-
-  if (!window) {
-    return;
-  }
-
-  EGLSurface surface = widget->GetNativeData(NS_PRESENTATION_SURFACE);
-
-  if (!surface) {
-    //create surface;
-    surface = GLContextProviderEGL::CreateEGLSurface(window);
-    if (!surface) {
-      return;
-    }
-
-    widget->SetNativeData(NS_PRESENTATION_SURFACE,
-                          reinterpret_cast<uintptr_t>(surface));
-  }
-
-  CompositorOGL* compositor = mCompositor->AsCompositorOGL();
-  GLContext* gl = compositor->gl();
-  GLContextEGL* egl = GLContextEGL::Cast(gl);
-
-  if (!egl) {
-    return;
-  }
-
-  const IntSize windowSize(ANativeWindow_getWidth(window),
-                           ANativeWindow_getHeight(window));
-
-#endif
-
-  if ((windowSize.width <= 0) || (windowSize.height <= 0)) {
-    return;
-  }
-
-  ScreenRotation rotation = compositor->GetScreenRotation();
-
-  const int actualWidth = windowSize.width;
-  const int actualHeight = windowSize.height;
-
-  const gfx::IntSize originalSize = compositor->GetDestinationSurfaceSize();
-  const nsIntRect originalRect = nsIntRect(0, 0, originalSize.width, originalSize.height);
-
-  int pageWidth = originalSize.width;
-  int pageHeight = originalSize.height;
-  if (rotation == ROTATION_90 || rotation == ROTATION_270) {
-    pageWidth = originalSize.height;
-    pageHeight = originalSize.width;
-  }
-
-  float scale = 1.0;
-
-  if ((pageWidth > actualWidth) || (pageHeight > actualHeight)) {
-    const float scaleWidth = (float)actualWidth / (float)pageWidth;
-    const float scaleHeight = (float)actualHeight / (float)pageHeight;
-    scale = scaleWidth <= scaleHeight ? scaleWidth : scaleHeight;
-  }
-
-  const gfx::IntSize actualSize(actualWidth, actualHeight);
-  ScopedCompostitorSurfaceSize overrideSurfaceSize(compositor, actualSize);
-
-  const ScreenPoint offset((actualWidth - (int)(scale * pageWidth)) / 2, 0);
-  ScopedContextSurfaceOverride overrideSurface(egl, surface);
-
-  Matrix viewMatrix = ComputeTransformForRotation(originalRect,
-                                                  rotation);
-  viewMatrix.Invert(); // unrotate
-  viewMatrix.PostScale(scale, scale);
-  viewMatrix.PostTranslate(offset.x, offset.y);
-  Matrix4x4 matrix = Matrix4x4::From2D(viewMatrix);
-
-  mRoot->ComputeEffectiveTransforms(matrix);
-  nsIntRegion opaque;
-  LayerIntRegion visible;
-  PostProcessLayers(mRoot, opaque, visible, Nothing());
-
-  nsIntRegion invalid;
-  IntRect bounds = IntRect::Truncate(0, 0, scale * pageWidth, actualHeight);
-  IntRect rect, actualBounds;
-  MOZ_ASSERT(mRoot->GetOpacity() == 1);
-  mCompositor->BeginFrame(invalid, nullptr, bounds, nsIntRegion(), &rect, &actualBounds);
-
-  // The Java side of Fennec sets a scissor rect that accounts for
-  // chrome such as the URL bar. Override that so that the entire frame buffer
-  // is cleared.
-  ScopedScissorRect scissorRect(egl, 0, 0, actualWidth, actualHeight);
-  egl->fClearColor(0.0, 0.0, 0.0, 0.0);
-  egl->fClear(LOCAL_GL_COLOR_BUFFER_BIT);
-
-  const IntRect clipRect = IntRect::Truncate(0, 0, actualWidth, actualHeight);
-
-  RootLayer()->Prepare(RenderTargetIntRect::FromUnknownRect(clipRect));
-  RootLayer()->RenderLayer(clipRect);
-
-  mCompositor->EndFrame();
-}
-#endif
 
 already_AddRefed<PaintedLayerComposite>
 LayerManagerComposite::CreatePaintedLayerComposite()

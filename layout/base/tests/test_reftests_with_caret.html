@@ -189,20 +189,15 @@ var tests = [
     function() {SpecialPowers.pushPrefEnv({'clear': [['layout.accessiblecaret.enabled']]}, nextTest);} ,
 ];
 
-if (navigator.appVersion.indexOf("Android") == -1 &&
-  SpecialPowers.Services.appinfo.name != "B2G") {
-  tests.push([ 'bug512295-1.html' , 'bug512295-1-ref.html' ]);
-  tests.push([ 'bug512295-2.html' , 'bug512295-2-ref.html' ]);
-  tests.push([ 'bug923376.html'   , 'bug923376-ref.html'   ]);
-  tests.push(function() {SpecialPowers.pushPrefEnv({'set': [['layout.css.overflow-clip-box.enabled', true]]}, nextTest);});
-  tests.push([ 'bug966992-1.html' , 'bug966992-1-ref.html' ]);
-  tests.push([ 'bug966992-2.html' , 'bug966992-2-ref.html' ]);
-  tests.push([ 'bug966992-3.html' , 'bug966992-3-ref.html' ]);
-  tests.push(function() {SpecialPowers.pushPrefEnv({'clear': [['layout.css.overflow-clip-box.enabled']]}, nextTest);});
-  tests.push([ 'bug1258308-1.html' , 'bug1258308-1-ref.html' ]); // maybe VK_END doesn't work on Android?
-} else {
-  is(SpecialPowers.getIntPref("layout.spellcheckDefault"), 0, "Spellcheck should be turned off for this platform or this if..else check removed");
-}
+tests.push([ 'bug512295-1.html' , 'bug512295-1-ref.html' ]);
+tests.push([ 'bug512295-2.html' , 'bug512295-2-ref.html' ]);
+tests.push([ 'bug923376.html'   , 'bug923376-ref.html'   ]);
+tests.push(function() {SpecialPowers.pushPrefEnv({'set': [['layout.css.overflow-clip-box.enabled', true]]}, nextTest);});
+tests.push([ 'bug966992-1.html' , 'bug966992-1-ref.html' ]);
+tests.push([ 'bug966992-2.html' , 'bug966992-2-ref.html' ]);
+tests.push([ 'bug966992-3.html' , 'bug966992-3-ref.html' ]);
+tests.push(function() {SpecialPowers.pushPrefEnv({'clear': [['layout.css.overflow-clip-box.enabled']]}, nextTest);});
+tests.push([ 'bug1258308-1.html' , 'bug1258308-1-ref.html' ]);
 
 if (navigator.platform.indexOf("Linux") >= 0 &&
     SpecialPowers.Services.appinfo.name != "B2G") {
