@@ -1054,6 +1054,15 @@ nsHTMLScrollFrame::Reflow(nsPresContext* aPresContext,
       reflowScrollCorner = showResizer == mHelper.mCollapsedResizer;
       mHelper.mCollapsedResizer = !showResizer;
     }
+
+    // Hide the scrollbar when the scrollbar-width is set to none.
+    // This is only needed for root element because scrollbars of non-
+    // root elements with "scrollbar-width: none" is already suppressed
+    // in ScrollFrameHelper::CreateAnonymousContent.
+    if (this->StyleUserInterface()->mScrollbarWidth == StyleScrollbarWidth::None) {
+      state.mVScrollbar = ShowScrollbar::Never;
+      state.mHScrollbar = ShowScrollbar::Never;
+    }
   }
 
   nsRect oldScrollAreaBounds = mHelper.mScrollPort;
@@ -4404,24 +4413,30 @@ ScrollFrameHelper::CreateAnonymousContent(
 
   nsIScrollableFrame *scrollable = do_QueryFrame(mOuter);
 
-  // If we're the scrollframe for the root, then we want to construct
-  // our scrollbar frames no matter what.  That way later dynamic
-  // changes to propagated overflow styles will show or hide
-  // scrollbars on the viewport without requiring frame reconstruction
-  // of the viewport (good!).
   bool canHaveHorizontal;
   bool canHaveVertical;
-  if (!mIsRoot) {
-    ScrollStyles styles = scrollable->GetScrollStyles();
-    canHaveHorizontal = styles.mHorizontal != NS_STYLE_OVERFLOW_HIDDEN;
-    canHaveVertical = styles.mVertical != NS_STYLE_OVERFLOW_HIDDEN;
+  if (mIsRoot) {
+    // If we're the scrollframe for the root, then we want to construct
+    // our scrollbar frames no matter what. That way, later dynamic
+    // changes to propagated overflow styles will show or hide
+    // scrollbars on the viewport without requiring frame reconstruction
+    // of the viewport (which is a Good Thing(tm)!).
+    canHaveHorizontal = true;
+    canHaveVertical = true;
+  } else {
+    if (mOuter->StyleUserInterface()->mScrollbarWidth == StyleScrollbarWidth::None) {
+      // If scrollbar-width is none, don't generate scrollbars.
+      canHaveHorizontal = false;
+      canHaveVertical = false;
+    } else {
+      ScrollStyles styles = scrollable->GetScrollStyles();
+      canHaveHorizontal = styles.mHorizontal != NS_STYLE_OVERFLOW_HIDDEN;
+      canHaveVertical = styles.mVertical != NS_STYLE_OVERFLOW_HIDDEN;
+    }
     if (!canHaveHorizontal && !canHaveVertical && !isResizable) {
       // Nothing to do.
       return NS_OK;
     }
-  } else {
-    canHaveHorizontal = true;
-    canHaveVertical = true;
   }
 
   // The anonymous <div> used by <inputs> never gets scrollbars.
