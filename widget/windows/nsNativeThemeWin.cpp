@@ -1569,6 +1569,12 @@ GetThemeDpiScaleFactor(nsIFrame* aFrame)
   return 1.0;
 }
 
+static bool
+IsScrollbarWidthThin(nsIFrame* aFrame)
+{
+  return aFrame->StyleUserInterface()->mScrollbarWidth == StyleScrollbarWidth::Thin;
+}
+
 NS_IMETHODIMP
 nsNativeThemeWin::DrawWidgetBackground(nsRenderingContext* aContext,
                                        nsIFrame* aFrame,
@@ -2999,14 +3005,21 @@ nsNativeThemeWin::ClassicGetMinimumWidgetSize(nsIFrame* aFrame,
       break;
     case NS_THEME_SCROLLBARBUTTON_UP:
     case NS_THEME_SCROLLBARBUTTON_DOWN:
-      (*aResult).width = ::GetSystemMetrics(SM_CXVSCROLL);
-      (*aResult).height = ::GetSystemMetrics(SM_CYVSCROLL);
+      // Get scrollbar button metrics from the system, except in the case of
+      // thin scrollbars, where we leave them at 0 (collapsing them to invisible)
+      if (!IsScrollbarWidthThin(aFrame)) {
+        (*aResult).width = ::GetSystemMetrics(SM_CXVSCROLL);
+        (*aResult).height = ::GetSystemMetrics(SM_CYVSCROLL);
+      }
       *aIsOverridable = false;
       break;
     case NS_THEME_SCROLLBARBUTTON_LEFT:
     case NS_THEME_SCROLLBARBUTTON_RIGHT:
-      (*aResult).width = ::GetSystemMetrics(SM_CXHSCROLL);
-      (*aResult).height = ::GetSystemMetrics(SM_CYHSCROLL);
+      // See comment above.
+      if (!IsScrollbarWidthThin(aFrame)) {
+        (*aResult).width = ::GetSystemMetrics(SM_CXHSCROLL);
+        (*aResult).height = ::GetSystemMetrics(SM_CYHSCROLL);
+      }
       *aIsOverridable = false;
       break;
     case NS_THEME_SCROLLBAR_VERTICAL:
@@ -3082,8 +3095,14 @@ nsNativeThemeWin::ClassicGetMinimumWidgetSize(nsIFrame* aFrame,
       (*aResult).height = ::GetSystemMetrics(SM_CYVTHUMB);
       // Without theming, divide the thumb size by two in order to look more
       // native
-      if (!GetTheme(aWidgetType))
-        (*aResult).height >>= 1;
+      if (!GetTheme(aWidgetType)) {
+        (*aResult).height /= 2;
+      }
+      // If scrollbar-width is thin, divide the thickness by three to make
+      // it more compact.
+      if (IsScrollbarWidthThin(aFrame)) {
+        (*aResult).width /= 3;
+      }      
       *aIsOverridable = false;
       break;
     case NS_THEME_SCROLLBARTHUMB_HORIZONTAL:
@@ -3091,8 +3110,14 @@ nsNativeThemeWin::ClassicGetMinimumWidgetSize(nsIFrame* aFrame,
       (*aResult).height = ::GetSystemMetrics(SM_CYHSCROLL);
       // Without theming, divide the thumb size by two in order to look more
       // native
-      if (!GetTheme(aWidgetType))
-        (*aResult).width >>= 1;
+      if (!GetTheme(aWidgetType)) {
+        (*aResult).width /= 2;
+      }
+      // If scrollbar-width is thin, divide the thickness by three to make
+      // it more compact.
+      if (IsScrollbarWidthThin(aFrame)) {
+        (*aResult).height /= 3;
+      }      
       *aIsOverridable = false;
       break;
     case NS_THEME_SCROLLBAR_HORIZONTAL:
