@@ -149,8 +149,16 @@ nsContentSecurityManager::CheckFTPSubresourceLoad(nsIChannel* aChannel)
   nsIPrincipal* triggeringPrincipal = loadInfo->TriggeringPrincipal();
   nsCOMPtr<nsIURI> tURI;
   triggeringPrincipal->GetURI(getter_AddRefs(tURI));
+  if (!tURI) {
+    // We don't have a triggering principal URI, meaning this isn't actually
+    // a subresource, but rather a top-level document, i.e. something we can
+    // display in-browser and might be saving as-is. Allow the load.
+    return NS_OK;
+  }
   bool isTrigFtpURI = (NS_SUCCEEDED(tURI->SchemeIs("ftp", &isTrigFtpURI)) && isTrigFtpURI);
   if (isTrigFtpURI) {
+    // The document loading this resource is also on FTP, satisfying the SOP.
+    // Allow the load.
     return NS_OK;
   }
 
