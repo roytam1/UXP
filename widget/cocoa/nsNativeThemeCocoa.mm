@@ -3404,18 +3404,8 @@ nsNativeThemeCocoa::GetMinimumWidgetSize(nsPresContext* aPresContext,
       
       bool isSmall = (scrollbarFrame->StyleDisplay()->mAppearance == NS_THEME_SCROLLBAR_SMALL);
       bool isHorizontal = (aWidgetType == NS_THEME_SCROLLBARTHUMB_HORIZONTAL);
-      int32_t& minSize = isSmall ? kSmallScrollbarThumbMinSize : kRegularScrollbarThumbMinSize;
-      if (IsScrollbarWidthThin(aFrame)) {
-        minSize /= 2;
-      }
-      if (isHorizontal) {
-        aResult->width = kRegularScrollbarThumbMinSize;
-        aResult->height = minSize;
-      } else {
-        aResult->width = minSize;
-        aResult->height = kRegularScrollbarThumbMinSize;
-      }
- 
+      int32_t& minSize = isHorizontal ? aResult->width : aResult->height;
+      minSize = isSmall ? kSmallScrollbarThumbMinSize : kRegularScrollbarThumbMinSize;
       break;
     }
 
