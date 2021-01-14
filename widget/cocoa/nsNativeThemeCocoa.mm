@@ -2279,6 +2279,12 @@ IsHiDPIContext(nsPresContext* aContext)
     2 * aContext->DeviceContext()->AppUnitsPerDevPixelAtUnitFullZoom();
 }
 
+static bool
+IsScrollbarWidthThin(nsIFrame* aFrame)
+{
+  return aFrame->StyleUserInterface()->mScrollbarWidth == StyleScrollbarWidth::Thin;
+}
+
 NS_IMETHODIMP
 nsNativeThemeCocoa::DrawWidgetBackground(nsRenderingContext* aContext,
                                          nsIFrame* aFrame,
@@ -3392,9 +3398,10 @@ nsNativeThemeCocoa::GetMinimumWidgetSize(nsPresContext* aPresContext,
       // Find our parent scrollbar frame in order to find out whether we're in
       // a small or a large scrollbar.
       nsIFrame *scrollbarFrame = GetParentScrollbarFrame(aFrame);
-      if (!scrollbarFrame)
+      if (!scrollbarFrame) {
         return NS_ERROR_FAILURE;
-
+      }
+      
       bool isSmall = (scrollbarFrame->StyleDisplay()->mAppearance == NS_THEME_SCROLLBAR_SMALL);
       bool isHorizontal = (aWidgetType == NS_THEME_SCROLLBARTHUMB_HORIZONTAL);
       int32_t& minSize = isHorizontal ? aResult->width : aResult->height;
@@ -3419,6 +3426,9 @@ nsNativeThemeCocoa::GetMinimumWidgetSize(nsPresContext* aPresContext,
         else {
           aResult->SizeTo(16, 16);
         }
+        if (IsScrollbarWidthThin(aFrame)) {
+          aResult->SizeTo(8, 8);
+        }
         break;
       }
 
@@ -3435,6 +3445,9 @@ nsNativeThemeCocoa::GetMinimumWidgetSize(nsPresContext* aPresContext,
                             kThemeMetricScrollBarWidth;
       SInt32 scrollbarWidth = 0;
       ::GetThemeMetric(themeMetric, &scrollbarWidth);
+      if (IsScrollbarWidthThin(aFrame)) {
+        scrollbarWidth /= 2;
+      }
       aResult->SizeTo(scrollbarWidth, scrollbarWidth);
       break;
     }
@@ -3467,22 +3480,26 @@ nsNativeThemeCocoa::GetMinimumWidgetSize(nsPresContext* aPresContext,
     case NS_THEME_SCROLLBARBUTTON_LEFT:
     case NS_THEME_SCROLLBARBUTTON_RIGHT:
     {
-      nsIFrame *scrollbarFrame = GetParentScrollbarFrame(aFrame);
-      if (!scrollbarFrame) return NS_ERROR_FAILURE;
+      if (!IsScrollbarWidthThin(aFrame)) {
+        // Get scrollbar button metrics from the system, except in the case of
+        // thin scrollbars, where we leave them at 0 (collapse)
 
-      // Since there is no NS_THEME_SCROLLBARBUTTON_UP_SMALL we need to ask the parent what appearance style it has.
-      int32_t themeMetric = (scrollbarFrame->StyleDisplay()->mAppearance == NS_THEME_SCROLLBAR_SMALL) ?
-                            kThemeMetricSmallScrollBarWidth :
-                            kThemeMetricScrollBarWidth;
-      SInt32 scrollbarWidth = 0;
-      ::GetThemeMetric(themeMetric, &scrollbarWidth);
+        nsIFrame *scrollbarFrame = GetParentScrollbarFrame(aFrame);
+        if (!scrollbarFrame) return NS_ERROR_FAILURE;
 
-      // It seems that for both sizes of scrollbar, the buttons are one pixel "longer".
-      if (aWidgetType == NS_THEME_SCROLLBARBUTTON_LEFT || aWidgetType == NS_THEME_SCROLLBARBUTTON_RIGHT)
-        aResult->SizeTo(scrollbarWidth+1, scrollbarWidth);
-      else
-        aResult->SizeTo(scrollbarWidth, scrollbarWidth+1);
- 
+        // Since there is no NS_THEME_SCROLLBARBUTTON_UP_SMALL we need to ask the parent what appearance style it has.
+        int32_t themeMetric = (scrollbarFrame->StyleDisplay()->mAppearance == NS_THEME_SCROLLBAR_SMALL) ?
+                              kThemeMetricSmallScrollBarWidth :
+                              kThemeMetricScrollBarWidth;
+        SInt32 scrollbarWidth = 0;
+        ::GetThemeMetric(themeMetric, &scrollbarWidth);
+
+        // It seems that for both sizes of scrollbar, the buttons are one pixel "longer".
+        if (aWidgetType == NS_THEME_SCROLLBARBUTTON_LEFT || aWidgetType == NS_THEME_SCROLLBARBUTTON_RIGHT)
+          aResult->SizeTo(scrollbarWidth+1, scrollbarWidth);
+        else
+          aResult->SizeTo(scrollbarWidth, scrollbarWidth+1);
+      }
       *aIsOverridable = false;
       break;
     }

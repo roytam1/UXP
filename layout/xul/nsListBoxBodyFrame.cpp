@@ -296,7 +296,7 @@ nsListBoxBodyFrame::GetXULMinSizeForScrollArea(nsBoxLayoutState& aBoxLayoutState
     result.height = 0;
     nsIScrollableFrame* scrollFrame = nsLayoutUtils::GetScrollableFrameFor(this);
     if (scrollFrame &&
-        scrollFrame->GetScrollbarStyles().mVertical == NS_STYLE_OVERFLOW_AUTO) {
+        scrollFrame->GetScrollStyles().mVertical == NS_STYLE_OVERFLOW_AUTO) {
       nsMargin scrollbars =
         scrollFrame->GetDesiredScrollbarSizes(&aBoxLayoutState);
       result.width += scrollbars.left + scrollbars.right;
@@ -316,7 +316,7 @@ nsListBoxBodyFrame::GetXULPrefSize(nsBoxLayoutState& aBoxLayoutState)
 
   nsIScrollableFrame* scrollFrame = nsLayoutUtils::GetScrollableFrameFor(this);
   if (scrollFrame &&
-      scrollFrame->GetScrollbarStyles().mVertical == NS_STYLE_OVERFLOW_AUTO) {
+      scrollFrame->GetScrollStyles().mVertical == NS_STYLE_OVERFLOW_AUTO) {
     nsMargin scrollbars = scrollFrame->GetDesiredScrollbarSizes(&aBoxLayoutState);
     pref.width += scrollbars.left + scrollbars.right;
   }

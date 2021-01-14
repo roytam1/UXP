@@ -72,8 +72,6 @@ thumb[orient="horizontal"] {
 
 scrollbarbutton {
   background: -moz-Dialog no-repeat 50% 50%;
-  min-width: 16px;
-  min-height: 16px;
 }
 
 scrollbarbutton:hover:active, scrollbarbutton[active="true"] {
