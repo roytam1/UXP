@@ -2941,6 +2941,15 @@ nsDocument::AreWebAnimationsImplicitKeyframesEnabled(JSContext* /*unused*/, JSOb
          Preferences::GetBool("dom.animations-api.implicit-keyframes.enabled");
 }
 
+bool
+nsDocument::IsWebAnimationsGetAnimationsEnabled(JSContext* /*unused*/, JSObject* /*unused*/)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  return nsContentUtils::IsCallerChrome() ||
+         Preferences::GetBool("dom.animations-api.getAnimations.enabled");
+}
+
 DocumentTimeline*
 nsDocument::Timeline()
 {
