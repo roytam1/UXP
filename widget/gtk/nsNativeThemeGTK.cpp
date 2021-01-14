@@ -1098,6 +1098,12 @@ nsNativeThemeGTK::GetExtraSizeForWidget(nsIFrame* aFrame, uint8_t aWidgetType,
   return true;
 }
 
+static bool
+IsScrollbarWidthThin(nsIFrame* aFrame)
+{
+  return aFrame->StyleUserInterface()->mScrollbarWidth == StyleScrollbarWidth::Thin;
+}
+
 NS_IMETHODIMP
 nsNativeThemeGTK::DrawWidgetBackground(nsRenderingContext* aContext,
                                        nsIFrame* aFrame,
@@ -1419,32 +1425,39 @@ nsNativeThemeGTK::GetMinimumWidgetSize(nsPresContext* aPresContext,
     case NS_THEME_SCROLLBARBUTTON_UP:
     case NS_THEME_SCROLLBARBUTTON_DOWN:
       {
-        if (gtk_check_version(3,20,0) == nullptr) {
-          moz_gtk_get_widget_min_size(MOZ_GTK_SCROLLBAR_BUTTON,
-                                      &(aResult->width), &(aResult->height));
-        } else {
-          MozGtkScrollbarMetrics metrics;
-          moz_gtk_get_scrollbar_metrics(&metrics);
+        if (!IsScrollbarWidthThin(aFrame)) {
+          // Get scrollbar button metrics from the system, except in the case of
+          // thin scrollbars, where we leave them at 0 (collapse)
+          if (gtk_check_version(3,20,0) == nullptr) {
+            moz_gtk_get_widget_min_size(MOZ_GTK_SCROLLBAR_BUTTON,
+                                        &(aResult->width), &(aResult->height));
+          } else {
+            MozGtkScrollbarMetrics metrics;
+            moz_gtk_get_scrollbar_metrics(&metrics);
 
-          aResult->width = metrics.slider_width;
-          aResult->height = metrics.stepper_size;
+            aResult->width = metrics.slider_width;
+            aResult->height = metrics.stepper_size;
+          }
         }
-
         *aIsOverridable = false;
       }
       break;
     case NS_THEME_SCROLLBARBUTTON_LEFT:
     case NS_THEME_SCROLLBARBUTTON_RIGHT:
       {
-        if (gtk_check_version(3,20,0) == nullptr) {
-          moz_gtk_get_widget_min_size(MOZ_GTK_SCROLLBAR_BUTTON,
-                                      &(aResult->width), &(aResult->height));
-        } else {
-          MozGtkScrollbarMetrics metrics;
-          moz_gtk_get_scrollbar_metrics(&metrics);
+        if (!IsScrollbarWidthThin(aFrame)) {
+          // Get scrollbar button metrics from the system, except in the case of
+          // thin scrollbars, where we leave them at 0 (collapse)
+          if (gtk_check_version(3,20,0) == nullptr) {
+            moz_gtk_get_widget_min_size(MOZ_GTK_SCROLLBAR_BUTTON,
+                                        &(aResult->width), &(aResult->height));
+          } else {
+            MozGtkScrollbarMetrics metrics;
+            moz_gtk_get_scrollbar_metrics(&metrics);
 
-          aResult->width = metrics.stepper_size;
-          aResult->height = metrics.slider_width;
+            aResult->width = metrics.stepper_size;
+            aResult->height = metrics.slider_width;
+          }
         }
         *aIsOverridable = false;
       }
@@ -1514,6 +1527,24 @@ nsNativeThemeGTK::GetMinimumWidgetSize(nsPresContext* aPresContext,
     }
     break;
     case NS_THEME_SCROLLBARTHUMB_VERTICAL:
+      {
+        if (gtk_check_version(3,20,0) == nullptr) {
+          moz_gtk_get_widget_min_size(NativeThemeToGtkTheme(aWidgetType, aFrame),
+                                      &(aResult->width), &(aResult->height));
+        } else {
+          MozGtkScrollbarMetrics metrics;
+          moz_gtk_get_scrollbar_metrics(&metrics);
+
+          aResult->width = metrics.slider_width;
+          aResult->height = metrics.min_slider_size;
+        }
+        if (IsScrollbarWidthThin(aFrame)) {
+          // If thin scrollbars, divide the thickness by 3
+          aResult->width /= 3;
+        }
+        *aIsOverridable = false;
+      }
+      break;
     case NS_THEME_SCROLLBARTHUMB_HORIZONTAL:
       {
         if (gtk_check_version(3,20,0) == nullptr) {
@@ -1523,13 +1554,12 @@ nsNativeThemeGTK::GetMinimumWidgetSize(nsPresContext* aPresContext,
           MozGtkScrollbarMetrics metrics;
           moz_gtk_get_scrollbar_metrics(&metrics);
 
-          if (aWidgetType == NS_THEME_SCROLLBARTHUMB_VERTICAL) {
-            aResult->width = metrics.slider_width;
-            aResult->height = metrics.min_slider_size;
-          } else {
-            aResult->height = metrics.slider_width;
-            aResult->width = metrics.min_slider_size;
-          }
+          aResult->height = metrics.slider_width;
+          aResult->width = metrics.min_slider_size;
+        }
+        if (IsScrollbarWidthThin(aFrame)) {
+          // If thin scrollbars, divide the thickness by 3
+          aResult->height /= 3;
         }
         *aIsOverridable = false;
       }

@@ -1272,7 +1272,7 @@ pref("javascript.options.strict.debug",     false);
 pref("javascript.options.unboxed_objects",  false);
 pref("javascript.options.baselinejit",      true);
 pref("javascript.options.ion",              true);
-pref("javascript.options.ion.inlining",     false);
+pref("javascript.options.ion.inlining",     true);
 pref("javascript.options.asmjs",            true);
 pref("javascript.options.wasm",             true);
 // wasm jit crashes in 32bit builds because of 64bit casts so
@@ -2482,6 +2482,9 @@ pref("layout.css.isolation.enabled", true);
 
 // Is support for CSS Filters enabled?
 pref("layout.css.filters.enabled", true);
+
+// Is support for scrollbar-width property enabled?
+pref("layout.css.scrollbar-width.enabled", false);
 
 // Set the threshold distance in CSS pixels below which scrolling will snap to
 // an edge, when scroll snapping is set to "proximity".

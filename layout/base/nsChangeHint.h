@@ -225,7 +225,7 @@ enum nsChangeHint {
    * scrollframe, this is instead equivalent to nsChangeHint_AllReflowHints
    * (because the viewport always has an associated scrollframe).
    */
-  nsChangeHint_CSSOverflowChange = 1 << 28,
+  nsChangeHint_ScrollbarChange = 1 << 28,
 
   // IMPORTANT NOTE: When adding new hints, consider whether you need
   // to add them to NS_HintsNotHandledForDescendantsIn() below. Please
@@ -316,7 +316,7 @@ inline nsChangeHint operator^=(nsChangeHint& aLeft, nsChangeHint aRight)
           nsChangeHint_UpdatePostTransformOverflow | \
           nsChangeHint_UpdateParentOverflow | \
           nsChangeHint_ChildrenOnlyTransform | \
-          nsChangeHint_CSSOverflowChange | \
+          nsChangeHint_ScrollbarChange | \
           nsChangeHint_RecomputePosition | \
           nsChangeHint_UpdateContainingBlock | \
           nsChangeHint_AddOrRemoveTransform | \
