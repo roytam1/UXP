@@ -2923,6 +2923,15 @@ nsDocument::IsWebAnimationsEnabled(JSContext* /*unused*/, JSObject* /*unused*/)
          Preferences::GetBool("dom.animations-api.core.enabled");
 }
 
+bool
+nsDocument::AreWebAnimationsTimelinesEnabled(JSContext* /*unused*/, JSObject* /*unused*/)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  return nsContentUtils::IsCallerChrome() ||
+         Preferences::GetBool("dom.animations-api.timelines.enabled");
+}
+
 DocumentTimeline*
 nsDocument::Timeline()
 {
