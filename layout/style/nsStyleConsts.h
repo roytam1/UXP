@@ -187,6 +187,13 @@ enum class StyleFloatEdge : uint8_t {
   MarginBox,
 };
 
+// scrollbar-width
+enum class StyleScrollbarWidth : uint8_t {
+  Auto,
+  Thin,
+  None,
+};
+
 // shape-box for shape-outside
 enum class StyleShapeOutsideShapeBox : uint8_t {
   NoBox,

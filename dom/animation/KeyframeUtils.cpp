@@ -7,6 +7,7 @@
 #include "mozilla/AnimationUtils.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/Move.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/RangedArray.h"
 #include "mozilla/ServoBindings.h"
 #include "mozilla/StyleAnimationValue.h"
@@ -21,6 +22,7 @@
 #include "nsCSSPropertyIDSet.h"
 #include "nsCSSProps.h"
 #include "nsCSSPseudoElements.h" // For CSSPseudoElementType
+#include "nsDocument.h"
 #include "nsTArray.h"
 #include <algorithm> // For std::stable_sort
 
@@ -400,7 +402,7 @@ GetKeyframeListFromPropertyIndexedKeyframe(JSContext* aCx,
                                            ErrorResult& aRv);
 
 static bool
-RequiresAdditiveAnimation(const nsTArray<Keyframe>& aKeyframes,
+HasImplicitKeyframeValues(const nsTArray<Keyframe>& aKeyframes,
                           nsIDocument* aDocument);
 
 static void
@@ -467,11 +469,13 @@ KeyframeUtils::GetKeyframesFromObject(JSContext* aCx,
   // says that if you don't have a keyframe at offset 0 or 1, then you should
   // synthesize one using an additive zero value when you go to compose style.
   // Until we implement additive animations we just throw if we encounter any
-  // set of keyframes that would put us in that situation.
+  // set of keyframes that would put us in that situation and keyframes aren't
+  // explicitly force-enabled.
 
-  if (RequiresAdditiveAnimation(keyframes, aDocument)) {
-    aRv.Throw(NS_ERROR_DOM_ANIM_MISSING_PROPS_ERR);
+  if (!nsDocument::AreWebAnimationsImplicitKeyframesEnabled(aCx, nullptr) &&
+      HasImplicitKeyframeValues(keyframes, aDocument)) {
     keyframes.Clear();
+    aRv.Throw(NS_ERROR_DOM_ANIM_MISSING_PROPS_ERR);
   }
 
   return keyframes;
@@ -1330,10 +1334,16 @@ GetKeyframeListFromPropertyIndexedKeyframe(JSContext* aCx,
       // No animation values for this property.
       continue;
     }
-    if (count == 1) {
-      // We don't support additive values and so can't support an
-      // animation that goes from the underlying value to this
-      // specified value.  Throw an exception until we do support this.
+    if (!Preferences::GetBool("dom.animations-api.implicit-keyframes.enabled") &&
+        count == 1) {
+      // We don't support implicit keyframes by preference.
+      aRv.Throw(NS_ERROR_DOM_ANIM_MISSING_PROPS_ERR);
+      return;
+    } else if (count == 1) {
+      // Implicit keyframes isn't implemented yet and so we can't
+      // support an animation that goes from the underlying value
+      // to this specified value.
+      // Throw an exception until we do support this.
       aRv.Throw(NS_ERROR_DOM_ANIM_MISSING_PROPS_ERR);
       return;
     }
@@ -1374,7 +1384,7 @@ GetKeyframeListFromPropertyIndexedKeyframe(JSContext* aCx,
  *   try to detect where we have an invalid value at 0%/100%.
  */
 static bool
-RequiresAdditiveAnimation(const nsTArray<Keyframe>& aKeyframes,
+HasImplicitKeyframeValues(const nsTArray<Keyframe>& aKeyframes,
                           nsIDocument* aDocument)
 {
   // We are looking to see if that every property referenced in |aKeyframes|
@@ -1385,7 +1395,7 @@ RequiresAdditiveAnimation(const nsTArray<Keyframe>& aKeyframes,
   // a document which we might not always have at the point where we want to
   // perform this check.
   //
-  // This is only a temporary measure until we implement additive animation.
+  // This is only a temporary measure until we implement implicit keyframes.
   // So as long as this check catches most cases, and we don't do anything
   // horrible in one of the cases we can't detect, it should be sufficient.
 

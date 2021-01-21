@@ -171,7 +171,7 @@ RestyleManagerBase::ChangeHintToString(nsChangeHint aHint)
     "NeutralChange", "InvalidateRenderingObservers",
     "ReflowChangesSizeOrPosition", "UpdateComputedBSize",
     "UpdateUsesOpacity", "UpdateBackgroundPosition",
-    "AddOrRemoveTransform", "CSSOverflowChange",
+    "AddOrRemoveTransform", "ScrollbarChange",
   };
   static_assert(nsChangeHint_AllHints == (1 << ArrayLength(names)) - 1,
                 "Name list doesn't match change hints.");
@@ -1111,11 +1111,11 @@ if (!mDestroyedFrames) {
   nsPresContext* presContext = PresContext();
   nsCSSFrameConstructor* frameConstructor = presContext->FrameConstructor();
 
-  // Handle nsChangeHint_CSSOverflowChange, by either updating the
+  // Handle nsChangeHint_ScrollbarChange, by either updating the
   // scrollbars on the viewport, or upgrading the change hint to frame-reconstruct.
   for (nsStyleChangeData& data : aChangeList) {
-    if (data.mHint & nsChangeHint_CSSOverflowChange) {
-      data.mHint &= ~nsChangeHint_CSSOverflowChange;
+    if (data.mHint & nsChangeHint_ScrollbarChange) {
+      data.mHint &= ~nsChangeHint_ScrollbarChange;
       bool doReconstruct = true; // assume the worst
 
       // Only bother with this if we're html/body, since:
@@ -1137,9 +1137,9 @@ if (!mDestroyedFrames) {
         // to reconstruct - we can just reflow, because no scrollframe is being
         // added/removed.
         nsIContent* prevOverrideNode =
-          presContext->GetViewportScrollbarStylesOverrideNode();
+          presContext->GetViewportScrollStylesOverrideNode();
         nsIContent* newOverrideNode =
-          presContext->UpdateViewportScrollbarStylesOverride();
+          presContext->UpdateViewportScrollStylesOverride();
 
         if (data.mContent == prevOverrideNode ||
             data.mContent == newOverrideNode) {
