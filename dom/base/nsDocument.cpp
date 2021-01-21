@@ -2923,6 +2923,33 @@ nsDocument::IsWebAnimationsEnabled(JSContext* /*unused*/, JSObject* /*unused*/)
          Preferences::GetBool("dom.animations-api.core.enabled");
 }
 
+bool
+nsDocument::AreWebAnimationsTimelinesEnabled(JSContext* /*unused*/, JSObject* /*unused*/)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  return nsContentUtils::IsCallerChrome() ||
+         Preferences::GetBool("dom.animations-api.timelines.enabled");
+}
+
+bool
+nsDocument::AreWebAnimationsImplicitKeyframesEnabled(JSContext* /*unused*/, JSObject* /*unused*/)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  return nsContentUtils::IsCallerChrome() ||
+         Preferences::GetBool("dom.animations-api.implicit-keyframes.enabled");
+}
+
+bool
+nsDocument::IsWebAnimationsGetAnimationsEnabled(JSContext* /*unused*/, JSObject* /*unused*/)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  return nsContentUtils::IsCallerChrome() ||
+         Preferences::GetBool("dom.animations-api.getAnimations.enabled");
+}
+
 DocumentTimeline*
 nsDocument::Timeline()
 {

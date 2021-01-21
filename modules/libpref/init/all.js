@@ -580,7 +580,7 @@ pref("media.mediasource.webm.enabled", true);
 pref("media.mediasource.webm.audio.enabled", true);
 
 #ifdef MOZ_AV1
-pref("media.av1.enabled", false);
+pref("media.av1.enabled", true);
 #endif
 
 // Use new MediaFormatReader architecture for plain ogg.
@@ -2710,14 +2710,12 @@ pref("layout.idle_period.required_quiescent_frames", 2);
 pref("layout.idle_period.time_limit", 1);
 
 // Is support for the Web Animations API enabled?
-// Before enabling this by default, make sure also CSSPseudoElement interface
-// has been spec'ed properly, or we should add a separate pref for
-// CSSPseudoElement interface. See Bug 1174575 for further details.
-#ifdef RELEASE_OR_BETA
-pref("dom.animations-api.core.enabled", false);
-#else
 pref("dom.animations-api.core.enabled", true);
-#endif
+
+pref("dom.animations-api.timelines.enabled", false);
+pref("dom.animations-api.implicit-keyframes.enabled", false);
+pref("dom.animations-api.compositing.enabled", false);
+pref("dom.animations-api.getAnimations.enabled", false);
 
 // Is support for the Element.animate() function (a subset of the Web Animations
 // API) enabled?
@@ -4813,7 +4811,7 @@ pref("dom.w3c_touch_events.enabled", 2);
 #endif
 
 // W3C draft pointer events
-pref("dom.w3c_pointer_events.enabled", false);
+pref("dom.w3c_pointer_events.enabled", true);
 
 // W3C pointer events draft
 pref("dom.w3c_pointer_events.implicit_capture", false);

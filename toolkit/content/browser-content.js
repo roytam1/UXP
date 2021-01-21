@@ -483,8 +483,18 @@ var Printing = {
         printSettings.printerName = PSSVC.defaultPrinterName;
       }
       // First get any defaults from the printer
-      PSSVC.initPrintSettingsFromPrinter(printSettings.printerName,
-                                         printSettings);
+      try {
+        PSSVC.initPrintSettingsFromPrinter(printSettings.printerName,
+                                           printSettings);
+      } catch(e) {
+        // The printer name specified was invalid or there was an O.S. error.
+        Components.utils.reportError("Invalid printer: " + printSettings.printerName);
+        Services.prefs.clearUserPref("print.print_printer");
+        // Try again with default
+        printSettings.printerName = PSSVC.defaultPrinterName;
+        PSSVC.initPrintSettingsFromPrinter(printSettings.printerName,
+                                           printSettings);
+      }
       // now augment them with any values from last time
       PSSVC.initPrintSettingsFromPrefs(printSettings, true,
                                        printSettings.kInitSaveAll);

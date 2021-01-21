@@ -15,24 +15,20 @@
 pref("@GUAO_PREF@.accounts.firefox.com", "Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 pref("@GUAO_PREF@.addons.mozilla.org", "Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
 
-// Required for domains that have proven unresponsive to requests from users
+// Required for domains that have proven unresponsive to requests from users (notice a trend...? ;) )
 pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:62.0) @GK_SLICE@ Firefox/62.0 @APP_SLICE@");
-pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:62.0) @GK_SLICE@ Firefox/62.0");
 pref("@GUAO_PREF@.studio.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:71.0) @GK_SLICE@ Firefox/71.0 @APP_SLICE@");
-pref("@GUAO_PREF@.netflix.com","Mozilla/5.0 (%OS_SLICE% rv:42.0) @GK_SLICE@ Firefox/42.0 @APP_SLICE@");
+pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:71.0) @GK_SLICE@ Firefox/71.0 @APP_SLICE@");
+pref("@GUAO_PREF@.netflix.com","Mozilla/5.0 (Windows NT 6.1; rv:42.0) @GK_SLICE@ Firefox/42.0 @APP_SLICE@");
+pref("@GUAO_PREF@.netflximg.net","Mozilla/5.0 (Windows NT 6.1; rv:42.0) @GK_SLICE@ Firefox/42.0 @APP_SLICE@");
+pref("@GUAO_PREF@.google.com","Mozilla/5.0 (%OS_SLICE% rv:71.0) @GK_SLICE@ Firefox/71.0 @APP_SLICE@");
+pref("@GUAO_PREF@.googlevideos.com","Mozilla/5.0 (%OS_SLICE% rv:52.9) @GK_SLICE@ @GRE_VERSION_SLICE@ Firefox/52.9");
 
-// The never-ending Facebook debacle...
-
-// UA-Sniffing domains below are pending responses from their operators - temp workaround
 // Daily motion only likes strict Firefox UAs
 pref("@GUAO_PREF@.dailymotion.com","Mozilla/5.0 (%OS_SLICE% rv:52.0) @GK_SLICE@ Firefox/52.0");
 
-// The following requires native mode. Or it blocks.. "too old firefox", breakage, etc.
-
-// UA-Sniffing domains below have indicated no interest in supporting Pale Moon (BOO!)
+// UA-sniffing domains that are "app/vendor-specific" and do not like Basilisk
 pref("@GUAO_PREF@.whatsapp.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ Firefox/68.0");
-
-// UA-sniffing domains that are "app/vendor-specific" and do not like Pale Moon
 
 // The following domains do not like the Goanna slice
 pref("@GUAO_PREF@.hitbox.tv","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@");
