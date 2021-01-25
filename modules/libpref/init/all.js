@@ -4984,6 +4984,9 @@ pref("dom.mozInputMethod.enabled", false);
 // Enable mapped array buffer by default.
 pref("dom.mapped_arraybuffer.enabled", true);
 
+// Whether <menuitem> is a thing or not.
+pref("dom.menuitem.enabled", false);
+
 #ifdef MOZ_SAFE_BROWSING
 // The tables used for Safebrowsing phishing and malware checks.
 pref("urlclassifier.malwareTable", "goog-malware-shavar,goog-unwanted-shavar,test-malware-simple,test-unwanted-simple");
