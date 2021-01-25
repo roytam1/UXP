@@ -9341,62 +9341,6 @@ nsContentUtils::SetScrollbarsVisibility(nsIDocShell* aDocShell, bool aVisible)
   }
 }
 
-/* static */ void
-nsContentUtils::GetPresentationURL(nsIDocShell* aDocShell, nsAString& aPresentationUrl)
-{
-  MOZ_ASSERT(aDocShell);
-
-  // Simulate receiver context for web platform test
-  if (Preferences::GetBool("dom.presentation.testing.simulate-receiver")) {
-    nsCOMPtr<nsIDocument> doc;
-
-    nsCOMPtr<nsPIDOMWindowOuter> docShellWin =
-      do_QueryInterface(aDocShell->GetScriptGlobalObject());
-    if (docShellWin) {
-      doc = docShellWin->GetExtantDoc();
-    }
-
-    if (NS_WARN_IF(!doc)) {
-      return;
-    }
-
-    nsCOMPtr<nsIURI> uri = doc->GetDocumentURI();
-    if (NS_WARN_IF(!uri)) {
-      return;
-    }
-
-    nsAutoCString uriStr;
-    uri->GetSpec(uriStr);
-    aPresentationUrl = NS_ConvertUTF8toUTF16(uriStr);
-    return;
-  }
-
-  if (XRE_IsContentProcess()) {
-    nsCOMPtr<nsIDocShellTreeItem> sameTypeRoot;
-    aDocShell->GetSameTypeRootTreeItem(getter_AddRefs(sameTypeRoot));
-    nsCOMPtr<nsIDocShellTreeItem> root;
-    aDocShell->GetRootTreeItem(getter_AddRefs(root));
-    if (sameTypeRoot.get() == root.get()) {
-      // presentation URL is stored in TabChild for the top most
-      // <iframe mozbrowser> in content process.
-      TabChild* tabChild = TabChild::GetFrom(aDocShell);
-      if (tabChild) {
-        aPresentationUrl = tabChild->PresentationURL();
-      }
-      return;
-    }
-  }
-
-  nsCOMPtr<nsILoadContext> loadContext(do_QueryInterface(aDocShell));
-  nsCOMPtr<nsIDOMElement> topFrameElement;
-  loadContext->GetTopFrameElement(getter_AddRefs(topFrameElement));
-  if (!topFrameElement) {
-    return;
-  }
-
-  topFrameElement->GetAttribute(NS_LITERAL_STRING("mozpresentation"), aPresentationUrl);
-}
-
 /* static */ nsIDocShell*
 nsContentUtils::GetDocShellForEventTarget(EventTarget* aTarget)
 {

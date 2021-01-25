@@ -5178,21 +5178,6 @@ pref("dom.udpsocket.enabled", false);
 // Disable before keyboard events and after keyboard events by default.
 pref("dom.beforeAfterKeyboardEvent.enabled", false);
 
-// Presentation API
-pref("dom.presentation.enabled", false);
-pref("dom.presentation.controller.enabled", false);
-pref("dom.presentation.receiver.enabled", false);
-
-// Presentation Device
-pref("dom.presentation.tcp_server.debug", false);
-pref("dom.presentation.discovery.enabled", false);
-pref("dom.presentation.discovery.legacy.enabled", false);
-pref("dom.presentation.discovery.timeout_ms", 10000);
-pref("dom.presentation.discoverable", false);
-pref("dom.presentation.discoverable.encrypted", true);
-pref("dom.presentation.discoverable.retry_ms", 5000);
-pref("dom.presentation.session_transport.data_channel.enable", false);
-
 #ifdef XP_MACOSX
 #if defined(DEBUG)
 // In debug builds we crash by default on insecure text input (when a
