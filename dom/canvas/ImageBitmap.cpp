@@ -930,7 +930,7 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, ImageData& aImageData,
                             const Maybe<IntRect>& aCropRect, ErrorResult& aRv)
 {
   // Copy data into SourceSurface.
-  dom::Uint8ClampedArray array;
+  RootedTypedArray<Uint8ClampedArray> array(RootingCx());
   DebugOnly<bool> inited = array.Init(aImageData.GetDataObject());
   MOZ_ASSERT(inited);
 
