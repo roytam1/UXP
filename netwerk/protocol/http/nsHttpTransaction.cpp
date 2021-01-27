@@ -765,7 +765,10 @@ nsHttpTransaction::ReadSegments(nsAHttpSegmentReader *reader,
 
     if (!mConnected && !m0RTTInProgress) {
         mConnected = true;
-        mConnection->GetSecurityInfo(getter_AddRefs(mSecurityInfo));
+        nsCOMPtr<nsISupports> info;
+        mConnection->GetSecurityInfo(getter_AddRefs(info));
+        MutexAutoLock lock(mLock);
+        mSecurityInfo = std::move(info);
     }
 
     mDeferredSendProgress = false;
@@ -1314,7 +1317,10 @@ nsHttpTransaction::Restart()
         seekable->Seek(nsISeekableStream::NS_SEEK_SET, 0);
 
     // clear old connection state...
-    mSecurityInfo = nullptr;
+    {
+      MutexAutoLock lock(mLock);
+      mSecurityInfo = nullptr;
+    }
     if (mConnection) {
         if (!mReuseOnRestart) {
             mConnection->DontReuse();
@@ -2489,7 +2495,10 @@ nsHttpTransaction::Finish0RTT(bool aRestart, bool aAlpnChanged /* ignored */)
     } else if (!mConnected) {
         // this is code that was skipped in ::ReadSegments while in 0RTT
         mConnected = true;
-        mConnection->GetSecurityInfo(getter_AddRefs(mSecurityInfo));
+        nsCOMPtr<nsISupports> info;
+        mConnection->GetSecurityInfo(getter_AddRefs(info));
+        MutexAutoLock lock(mLock);
+        mSecurityInfo = std::move(info);
     }
     return NS_OK;
 }

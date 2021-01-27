@@ -873,6 +873,9 @@ JS_TransplantObject(JSContext* cx, HandleObject origobj, HandleObject target)
     AutoDisableCompactingGC nocgc(cx);
 
     AutoDisableProxyCheck adpc(cx->runtime());
+    
+    // Transplanting is never OOM-safe.
+    AutoEnterOOMUnsafeRegion oomUnsafe;
 
     JSCompartment* destination = target->compartment();
 
@@ -905,19 +908,22 @@ JS_TransplantObject(JSContext* cx, HandleObject origobj, HandleObject target)
     // Now, iterate through other scopes looking for references to the
     // old object, and update the relevant cross-compartment wrappers.
     if (!RemapAllWrappersForObject(cx, origobj, newIdentity))
-        MOZ_CRASH();
+        oomUnsafe.crash("JS_TransplantObject");
 
     // Lastly, update the original object to point to the new one.
     if (origobj->compartment() != destination) {
         RootedObject newIdentityWrapper(cx, newIdentity);
         AutoCompartment ac(cx, origobj);
-        if (!JS_WrapObject(cx, &newIdentityWrapper))
-            MOZ_CRASH();
+        if (!JS_WrapObject(cx, &newIdentityWrapper)) {
+          MOZ_RELEASE_ASSERT(cx->isThrowingOutOfMemory() ||
+                             cx->isThrowingOverRecursed());
+          oomUnsafe.crash("JS_TransplantObject");
+        }
         MOZ_ASSERT(Wrapper::wrappedObject(newIdentityWrapper) == newIdentity);
         if (!JSObject::swap(cx, origobj, newIdentityWrapper))
             MOZ_CRASH();
         if (!origobj->compartment()->putWrapper(cx, CrossCompartmentKey(newIdentity), origv))
-            MOZ_CRASH();
+            oomUnsafe.crash("JS_TransplantObject");
     }
 
     // The new identity object might be one of several things. Return it to avoid

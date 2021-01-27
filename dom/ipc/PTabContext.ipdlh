@@ -48,11 +48,6 @@ struct FrameIPCTabContext
   // Whether this TabContext should work in prerender mode.
   bool isPrerendered;
 
-  // The requested presentation URL.
-  // This value would be empty if the TabContext isn't created for
-  // presented content.
-  nsString presentationURL;
-
   // Keyboard indicator state inherited from the parent.
   UIStateChangeType showAccelerators;
   UIStateChangeType showFocusRings;

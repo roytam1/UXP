@@ -3106,14 +3106,6 @@ nsFrameLoader::ApplySandboxFlags(uint32_t sandboxFlags)
     // The child can only add restrictions, never remove them.
     sandboxFlags |= parentSandboxFlags;
 
-    // If this frame is a receiving browsing context, we should add
-    // sandboxed auxiliary navigation flag to sandboxFlags. See
-    // https://w3c.github.io/presentation-api/#creating-a-receiving-browsing-context
-    nsAutoString presentationURL;
-    nsContentUtils::GetPresentationURL(mDocShell, presentationURL);
-    if (!presentationURL.IsEmpty()) {
-      sandboxFlags |= SANDBOXED_AUXILIARY_NAVIGATION;
-    }
     mDocShell->SetSandboxFlags(sandboxFlags);
   }
 }
@@ -3431,11 +3423,6 @@ nsFrameLoader::GetNewTabContext(MutableTabContext* aTabContext,
   rv = PopulateUserContextIdFromAttribute(attrs);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  nsAutoString presentationURLStr;
-  mOwnerContent->GetAttr(kNameSpaceID_None,
-                         nsGkAtoms::mozpresentation,
-                         presentationURLStr);
-
   nsCOMPtr<nsIDocShell> docShell = mOwnerContent->OwnerDoc()->GetDocShell();
   nsCOMPtr<nsILoadContext> parentContext = do_QueryInterface(docShell);
   NS_ENSURE_STATE(parentContext);
@@ -3463,8 +3450,7 @@ nsFrameLoader::GetNewTabContext(MutableTabContext* aTabContext,
                                containingApp,
                                showAccelerators,
                                showFocusRings,
-                               attrs,
-                               presentationURLStr);
+                               attrs);
   NS_ENSURE_STATE(tabContextUpdated);
 
   return NS_OK;
