@@ -125,12 +125,6 @@ public:
    */
   const DocShellOriginAttributes& OriginAttributesRef() const;
 
-  /**
-   * Returns the presentation URL associated with the tab if this tab is
-   * created for presented content
-   */
-  const nsAString& PresentationURL() const;
-
   UIStateChangeType ShowAccelerators() const;
   UIStateChangeType ShowFocusRings() const;
 
@@ -169,8 +163,7 @@ protected:
                      mozIApplication* aAppFrameOwnerApp,
                      UIStateChangeType aShowAccelerators,
                      UIStateChangeType aShowFocusRings,
-                     const DocShellOriginAttributes& aOriginAttributes,
-                     const nsAString& aPresentationURL);
+                     const DocShellOriginAttributes& aOriginAttributes);
 
   /**
    * Modify this TabContext to match the given TabContext.  This is a special
@@ -226,11 +219,6 @@ private:
   DocShellOriginAttributes mOriginAttributes;
 
   /**
-   * The requested presentation URL.
-   */
-  nsString mPresentationURL;
-
-  /**
    * Keyboard indicator state (focus rings, accelerators).
    */
   UIStateChangeType mShowAccelerators;
@@ -257,8 +245,7 @@ public:
                 mozIApplication* aAppFrameOwnerApp,
                 UIStateChangeType aShowAccelerators,
                 UIStateChangeType aShowFocusRings,
-                const DocShellOriginAttributes& aOriginAttributes,
-                const nsAString& aPresentationURL = EmptyString())
+                const DocShellOriginAttributes& aOriginAttributes)
   {
     return TabContext::SetTabContext(aIsMozBrowserElement,
                                      aIsPrerendered,
@@ -266,8 +253,7 @@ public:
                                      aAppFrameOwnerApp,
                                      aShowAccelerators,
                                      aShowFocusRings,
-                                     aOriginAttributes,
-                                     aPresentationURL);
+                                     aOriginAttributes);
   }
 };
 

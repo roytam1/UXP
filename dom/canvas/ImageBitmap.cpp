@@ -930,7 +930,7 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, ImageData& aImageData,
                             const Maybe<IntRect>& aCropRect, ErrorResult& aRv)
 {
   // Copy data into SourceSurface.
-  dom::Uint8ClampedArray array;
+  RootedTypedArray<Uint8ClampedArray> array(RootingCx());
   DebugOnly<bool> inited = array.Init(aImageData.GetDataObject());
   MOZ_ASSERT(inited);
 
@@ -952,13 +952,17 @@ ImageBitmap::CreateInternal(nsIGlobalObject* aGlobal, ImageData& aImageData,
 
   // Create and Crop the raw data into a layers::Image
   RefPtr<layers::Image> data;
+
+  // The data could move during a GC; copy it out into a local buffer.
+  uint8_t* fixedData = array.Data();
+
   if (NS_IsMainThread()) {
     data = CreateImageFromRawData(imageSize, imageStride, FORMAT,
-                                  array.Data(), dataLength,
+                                  fixedData, dataLength,
                                   aCropRect);
   } else {
     RefPtr<CreateImageFromRawDataInMainThreadSyncTask> task
-      = new CreateImageFromRawDataInMainThreadSyncTask(array.Data(),
+      = new CreateImageFromRawDataInMainThreadSyncTask(fixedData,
                                                        dataLength,
                                                        imageStride,
                                                        FORMAT,

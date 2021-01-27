@@ -9,6 +9,7 @@
 #include "mozilla/ipc/BackgroundParent.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/Unused.h"
+#include "mozilla/WeakPtr.h"
 #include "nsTArray.h"
 
 using mozilla::ipc::AssertIsOnBackgroundThread;
@@ -59,7 +60,7 @@ public:
   {
     uint32_t mSequenceID;
     // MessagePortParent keeps the service alive, and we don't want a cycle.
-    MessagePortParent* mParent;
+    WeakPtr<MessagePortParent> mParent;
   };
 
   FallibleTArray<NextParent> mNextParents;
@@ -275,9 +276,13 @@ MessagePortService::CloseAll(const nsID& aUUID, bool aForced)
     data->mParent->Close();
   }
 
-  for (const MessagePortServiceData::NextParent& parent : data->mNextParents) {
-    parent.mParent->CloseAndDelete();
+  for (const MessagePortServiceData::NextParent& nextParent : data->mNextParents) {
+    MessagePortParent* const parent = nextParent.mParent;
+    if (parent) {
+      parent->CloseAndDelete();
+    }
   }
+  data->mNextParents.Clear();
 
   nsID destinationUUID = data->mDestinationUUID;
 
