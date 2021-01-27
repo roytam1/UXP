@@ -1826,12 +1826,17 @@ nsTreeBodyFrame::RowCountChanged(int32_t aIndex, int32_t aCount)
     FireRowCountChangedEvent(aIndex, aCount);
 #endif
 
+  nsWeakFrame weakFrame(this);
+  
   // Adjust our selection.
+  nsCOMPtr<nsITreeView> view = mView;
   nsCOMPtr<nsITreeSelection> sel;
-  mView->GetSelection(getter_AddRefs(sel));
+  view->GetSelection(getter_AddRefs(sel));
   if (sel)
     sel->AdjustSelection(aIndex, aCount);
 
+  NS_ENSURE_STATE (weakFrame.IsAlive());
+  
   if (mUpdateBatchNest)
     return NS_OK;
 

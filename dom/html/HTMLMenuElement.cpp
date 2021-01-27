@@ -137,9 +137,9 @@ HTMLMenuElement::ParseAttribute(int32_t aNamespaceID,
                                 const nsAString& aValue,
                                 nsAttrValue& aResult)
 {
-  if (aNamespaceID == kNameSpaceID_None && aAttribute == nsGkAtoms::type) {
-    bool success = aResult.ParseEnumValue(aValue, kMenuTypeTable,
-                                            false);
+  if (aNamespaceID == kNameSpaceID_None && aAttribute == nsGkAtoms::type &&
+      Preferences::GetBool("dom.menuitem.enabled")) {
+    bool success = aResult.ParseEnumValue(aValue, kMenuTypeTable, false);
     if (success) {
       mType = aResult.GetEnumValue();
     } else {
