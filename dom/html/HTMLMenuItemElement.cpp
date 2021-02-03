@@ -16,11 +16,10 @@
 nsGenericHTMLElement*
 NS_NewHTMLMenuItemElement(already_AddRefed<mozilla::dom::NodeInfo>&& aNodeInfo,
                           mozilla::dom::FromParser aFromParser) {
-  RefPtr<mozilla::dom::NodeInfo> nodeInfo(aNodeInfo);
   if (mozilla::Preferences::GetBool("dom.menuitem.enabled")) {
-    return new mozilla::dom::HTMLMenuItemElement(nodeInfo.forget(), aFromParser);
+    return new mozilla::dom::HTMLMenuItemElement(aNodeInfo, aFromParser);
   } else {
-    return new mozilla::dom::HTMLUnknownElement(nodeInfo.forget());
+    return new mozilla::dom::HTMLUnknownElement(aNodeInfo);
   }
 }
 
