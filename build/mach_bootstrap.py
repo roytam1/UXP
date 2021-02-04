@@ -90,9 +90,6 @@ SEARCH_PATHS = [
     'testing/mozbase/manifestparser',
     'testing/taskcluster',
     'testing/tools/autotry',
-    'testing/web-platform',
-    'testing/web-platform/harness',
-    'testing/web-platform/tests/tools/wptserve',
     'testing/xpcshell',
     'xpcom/idl-parser',
 ]
@@ -121,7 +118,6 @@ MACH_MODULES = [
     'testing/mochitest/mach_commands.py',
     'testing/mozharness/mach_commands.py',
     'testing/talos/mach_commands.py',
-    'testing/web-platform/mach_commands.py',
     'testing/xpcshell/mach_commands.py',
     'tools/docs/mach_commands.py',
     'tools/lint/mach_commands.py',

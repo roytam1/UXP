@@ -867,6 +867,7 @@ class IonBuilder
     InliningStatus inlineRegExpSearcher(CallInfo& callInfo);
     InliningStatus inlineRegExpTester(CallInfo& callInfo);
     InliningStatus inlineIsRegExpObject(CallInfo& callInfo);
+    InliningStatus inlineIsPossiblyWrappedRegExpObject(CallInfo& callInfo);
     InliningStatus inlineRegExpPrototypeOptimizable(CallInfo& callInfo);
     InliningStatus inlineRegExpInstanceOptimizable(CallInfo& callInfo);
     InliningStatus inlineGetFirstDollarIndex(CallInfo& callInfo);
