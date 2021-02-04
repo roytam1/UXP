@@ -1166,3 +1166,24 @@ function RegExpStringIteratorNext() {
     result.value = match;
     return result;
 }
+
+// String.prototype.matchAll proposal.
+// ES2020 draft rev e97c95d064750fb949b6778584702dd658cf5624
+// 7.2.8 IsRegExp ( argument )
+function IsRegExp(argument) {
+    // Step 1.
+    if (!IsObject(argument)) {
+        return false;
+    }
+
+    // Step 2.
+    var matcher = argument[std_match];
+
+    // Step 3.
+    if (matcher !== undefined) {
+        return !!matcher;
+    }
+
+    // Steps 4-5.
+    return IsPossiblyWrappedRegExpObject(argument);
+}
