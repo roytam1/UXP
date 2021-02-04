@@ -476,6 +476,10 @@ JSString*
 str_replace_string_raw(JSContext* cx, HandleString string, HandleString pattern,
                        HandleString replacement);
 
+JSString*
+str_replaceAll_string_raw(JSContext* cx, HandleString string, HandleString pattern,
+                       HandleString replacement);
+
 extern bool
 StringConstructor(JSContext* cx, unsigned argc, Value* vp);
 
