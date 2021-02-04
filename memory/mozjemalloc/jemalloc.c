@@ -6760,7 +6760,8 @@ jemalloc_darwin_init(void)
 #define is_malloc_(a) malloc_is_ ## a
 #define is_malloc(a) is_malloc_(a)
 
-#if !defined(MOZ_MEMORY_DARWIN) && (is_malloc(malloc_impl) == 1)
+#if !(defined(MOZ_MEMORY_DARWIN) || defined(MOZ_MEMORY_BSD)) && \
+	(is_malloc(malloc_impl) == 1)
 #  if defined(__GLIBC__) && !defined(__UCLIBC__)
 /*
  * glibc provides the RTLD_DEEPBIND flag for dlopen which can make it possible
