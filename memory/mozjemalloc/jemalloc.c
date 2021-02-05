@@ -5256,7 +5256,7 @@ malloc_init_hard(void)
 		 * Another thread initialized the allocator before this one
 		 * acquired init_lock.
 		 */
-#ifndef MOZ_MEMORY_WINDOWS
+#if !(defined(MOZ_MEMORY_WINDOWS) || defined(__FreeBSD__))
 		malloc_mutex_unlock(&init_lock);
 #endif
 		return (false);
