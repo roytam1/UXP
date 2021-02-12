@@ -1,5 +1,7 @@
-commit 4d027901ef4d3288b2ca264ba1f532cf826190ac
+commit 95120170afa0cf622a18da37d3af58abf8ecd40e
 Author: Yoshito Umaoka <yumaoka@users.noreply.github.com>
-Date:   Fri Sep 13 18:23:18 2019 -0400
+Date:   Wed Jan 27 09:48:37 2021 -0500
 
-    ICU-20823 ICU time zone data updates for 2019c
+    ICU-21467 tzdata 2021a updates. Also updated build script. With this … (#17)
+    
+    change, we no longer release ICU time zone data updates for ICU 4.2 or older releases.
