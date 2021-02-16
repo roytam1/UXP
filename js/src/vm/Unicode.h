@@ -469,9 +469,9 @@ IsTrailSurrogate(uint32_t codePoint)
 /**
  * Returns true if the given value is a UTF-16 surrogate.
  *
- * This function is intended for use in contexts where 32-bit values may need
- * to be tested to see if they reside in the surrogate range, so it doesn't
- * just take char16_t.
+ * This function is intended to be used in contexts where 32-bit values may
+ * need to be tested to see if they reside in the surrogate range, so it
+ * doesn't just take char16_t.
  */
 inline bool
 IsSurrogate(uint32_t codePoint)
