@@ -47,6 +47,7 @@ inline const char* XMMRegName(XMMRegisterID reg)
 #ifdef JS_CODEGEN_X64
        ,"%xmm8", "%xmm9", "%xmm10", "%xmm11", "%xmm12", "%xmm13", "%xmm14", "%xmm15"
 #endif
+       ,"invalid"
     };
     MOZ_ASSERT(size_t(reg) < mozilla::ArrayLength(names));
     return names[reg];
