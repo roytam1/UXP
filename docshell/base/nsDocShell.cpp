@@ -820,6 +820,8 @@ nsDocShell::nsDocShell()
   , mParentCharsetSource(0)
   , mJSRunToCompletionDepth(0)
   , mTouchEventsOverride(nsIDocShell::TOUCHEVENTS_OVERRIDE_NONE)
+  , mStateFloodGuardCount(0)
+  , mStateFloodGuardReported(false)
 {
   AssertOriginAttributesMatchPrivateBrowsing();
   mHistoryID = ++gDocshellIDCounter;
@@ -11833,6 +11835,27 @@ nsDocShell::SetReferrerPolicy(uint32_t aReferrerPolicy)
 // nsDocShell: Session History
 //*****************************************************************************
 
+bool
+nsDocShell::IsStateChangeFlooding()
+{
+  // Issue #1688: Let's copy Firefox's strategy for state flooding here, so
+  // that our implementations are interoperable.
+  if (mStateFloodGuardCount > kStateUpdateLimit) {
+    TimeStamp now = TimeStamp::Now();
+
+    if (now - mStateFloodGuardUpdated > TimeDuration::FromSeconds(kRefreshTimeSecs)) {
+      mStateFloodGuardCount = 0;
+      mStateFloodGuardUpdated = now;
+      mStateFloodGuardReported = false;
+      return false;
+    }
+    return true;
+  }
+
+  mStateFloodGuardCount++;
+  return false;
+}
+
 NS_IMETHODIMP
 nsDocShell::AddState(JS::Handle<JS::Value> aData, const nsAString& aTitle,
                      const nsAString& aURL, bool aReplace, JSContext* aCx)
@@ -11896,6 +11919,24 @@ nsDocShell::AddState(JS::Handle<JS::Value> aData, const nsAString& aTitle,
 
   nsCOMPtr<nsIDocument> document = GetDocument();
   NS_ENSURE_TRUE(document, NS_ERROR_FAILURE);
+
+  // If we're being flooded with state change requests, we should abort early
+  // from the state change logic.
+  if (IsStateChangeFlooding()) {
+    // Report a warning to the console to tell developers why their navigations
+    // failed.
+    // Do this only if not yet marked reported so we only report it once per
+    // flood interval.
+    if (!mStateFloodGuardReported) {
+      nsContentUtils::ReportToConsole(nsIScriptError::warningFlag,
+                                      NS_LITERAL_CSTRING("PushState"),
+                                      document,
+                                      nsContentUtils::eDOM_PROPERTIES,
+                                      "PushStateFloodingPrevented");
+      mStateFloodGuardReported = true;
+    }
+    return NS_OK;
+  }
 
   // Step A: Serialize aData using structured clone.
   // https://html.spec.whatwg.org/multipage/history.html#dom-history-pushstate

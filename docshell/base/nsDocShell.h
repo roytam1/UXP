@@ -1049,6 +1049,15 @@ private:
   // as constants in the nsIDocShell.idl file.
   uint32_t mTouchEventsOverride;
 
+  // Keep track how how many history state changes we're getting, to catch &
+  // prevent flooding.
+  int32_t mStateFloodGuardCount;
+  mozilla::TimeStamp mStateFloodGuardUpdated;
+  bool mStateFloodGuardReported;
+  // We have a limit of pushing 50 states to history every 10 seconds.
+  const int32_t kStateUpdateLimit = 50;
+  const double kRefreshTimeSecs = 10.0;
+
   // Separate function to do the actual name (i.e. not _top, _self etc.)
   // searching for FindItemWithName.
   nsresult DoFindItemWithName(const nsAString& aName,
@@ -1063,6 +1072,10 @@ private:
   // Notify consumers of a search being loaded through the observer service:
   void MaybeNotifyKeywordSearchLoading(const nsString& aProvider,
                                        const nsString& aKeyword);
+
+  // Helper method for AddState which checks for excessive calls to PushState or
+  // ReplaceState.
+  bool IsStateChangeFlooding();
 
 #ifdef DEBUG
   // We're counting the number of |nsDocShells| to help find leaks

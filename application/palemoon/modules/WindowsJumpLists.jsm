@@ -149,18 +149,18 @@ this.WinTaskbarJumpList =
    */ 
 
   startup: function() {
-    // exit if this isn't win7 or higher.
-    if (!this._initTaskbar())
+    // Exit if there's something wrong with getting the taskbar service.
+    if (!this._initTaskbar()) {
       return;
+    }
 
     // Win shell shortcut maintenance. If we've gone through an update,
     // this will update any pinned taskbar shortcuts. Not specific to
     // jump lists, but this was a convienent place to call it. 
     try {
-      // dev builds may not have helper.exe, ignore failures.
+      // builds may not have helper.exe, ignore failures.
       this._shortcutMaintenance();
-    } catch (ex) {
-    }
+    } catch(ex) {}
 
     // Store our task list config data
     this._tasks = tasksCfg;
@@ -177,8 +177,9 @@ this.WinTaskbarJumpList =
 
   update: function() {
     // are we disabled via prefs? don't do anything!
-    if (!this._enabled)
+    if (!this._enabled) {
       return;
+    }
 
     // do what we came here to do, update the taskbar jumplist
     this._buildList();
@@ -235,18 +236,22 @@ this.WinTaskbarJumpList =
       return;
     }
 
-    if (!this._startBuild())
+    if (!this._startBuild()) {
       return;
+    }
 
-    if (this._showTasks)
+    if (this._showTasks) {
       this._buildTasks();
+    }
 
     // Space for frequent items takes priority over recent.
-    if (this._showFrequent)
+    if (this._showFrequent) {
       this._buildFrequent();
+    }
 
-    if (this._showRecent)
+    if (this._showRecent) {
       this._buildRecent();
+    }
 
     this._commitBuild();
   },
@@ -256,8 +261,8 @@ this.WinTaskbarJumpList =
    */ 
 
   _startBuild: function() {
-    var removedItems = Cc["@mozilla.org/array;1"].
-                       createInstance(Ci.nsIMutableArray);
+    var removedItems = Cc["@mozilla.org/array;1"]
+                       .createInstance(Ci.nsIMutableArray);
     this._builder.abortListBuild();
     if (this._builder.initListBuild(removedItems)) { 
       // Prior to building, delete removed items from history.
@@ -277,20 +282,24 @@ this.WinTaskbarJumpList =
     var items = Cc["@mozilla.org/array;1"].
                 createInstance(Ci.nsIMutableArray);
     this._tasks.forEach(function(task) {
-      if ((this._shuttingDown && !task.close) || (!this._shuttingDown && !task.open))
+      if ((this._shuttingDown && !task.close) ||
+          (!this._shuttingDown && !task.open)) {
         return;
+      }
       var item = this._getHandlerAppItem(task.title, task.description,
                                          task.args, task.iconIndex, null);
       items.appendElement(item, false);
     }, this);
     
-    if (items.length > 0)
+    if (items.length > 0) {
       this._builder.addListToBuild(this._builder.JUMPLIST_CATEGORY_TASKS, items);
+    }
   },
 
   _buildCustom: function(title, items) {
-    if (items.length > 0)
+    if (items.length > 0) {
       this._builder.addListToBuild(this._builder.JUMPLIST_CATEGORY_CUSTOMLIST, items, title);
+    }
   },
 
   _buildFrequent: function() {
@@ -329,8 +338,7 @@ this.WinTaskbarJumpList =
         items.appendElement(shortcut, false);
         this._frequentHashList.push(aResult.uri);
       },
-      this
-    );
+      this);
   },
 
   _buildRecent: function() {
@@ -374,8 +382,7 @@ this.WinTaskbarJumpList =
         items.appendElement(shortcut, false);
         count++;
       },
-      this
-    );
+      this);
   },
 
   _deleteActiveJumpList: function() {
@@ -386,22 +393,25 @@ this.WinTaskbarJumpList =
    * Jump list item creation helpers
    */
 
-  _getHandlerAppItem: function(name, description, 
-                                                        args, iconIndex, 
-                                                        faviconPageUri) {
+  _getHandlerAppItem: function(name,
+                               description, 
+                               args,
+                               iconIndex, 
+                               faviconPageUri) {
     var file = Services.dirsvc.get("XREExeF", Ci.nsILocalFile);
 
     var handlerApp = Cc["@mozilla.org/uriloader/local-handler-app;1"].
                      createInstance(Ci.nsILocalHandlerApp);
     handlerApp.executable = file;
     // handlers default to the leaf name if a name is not specified
-    if (name && name.length != 0)
+    if (name && name.length != 0) {
       handlerApp.name = name;
+    }
     handlerApp.detailedDescription = description;
     handlerApp.appendParameter(args);
 
-    var item = Cc["@mozilla.org/windows-jumplistshortcut;1"].
-               createInstance(Ci.nsIJumpListShortcut);
+    var item = Cc["@mozilla.org/windows-jumplistshortcut;1"]
+               .createInstance(Ci.nsIJumpListShortcut);
     item.app = handlerApp;
     item.iconIndex = iconIndex;
     item.faviconPageUri = faviconPageUri;
@@ -409,8 +419,8 @@ this.WinTaskbarJumpList =
   },
 
   _getSeparatorItem: function() {
-    var item = Cc["@mozilla.org/windows-jumplistseparator;1"].
-               createInstance(Ci.nsIJumpListSeparator);
+    var item = Cc["@mozilla.org/windows-jumplistseparator;1"]
+               .createInstance(Ci.nsIJumpListSeparator);
     return item;
   },
 
@@ -449,8 +459,9 @@ this.WinTaskbarJumpList =
   },
 
   _clearHistory: function(items) {
-    if (!items)
+    if (!items) {
       return;
+    }
     var URIsToRemove = [];
     var e = items.enumerate();
     while (e.hasMoreElements()) {
@@ -459,7 +470,7 @@ this.WinTaskbarJumpList =
         try { // in case we get a bad uri
           let uriSpec = oldItem.app.getParameter(0);
           URIsToRemove.push(NetUtil.newURI(uriSpec));
-        } catch (err) { }
+        } catch(err) {}
       }
     }
     if (URIsToRemove.length > 0) {
@@ -512,8 +523,7 @@ this.WinTaskbarJumpList =
       this._timer.initWithCallback(this,
                                    _prefs.getIntPref(PREF_TASKBAR_REFRESH)*1000,
                                    this._timer.TYPE_REPEATING_SLACK);
-    }
-    else if ((!this._enabled || this._shuttingDown) && this._timer) {
+    } else if ((!this._enabled || this._shuttingDown) && this._timer) {
       this._timer.cancel();
       delete this._timer;
     }
@@ -524,8 +534,7 @@ this.WinTaskbarJumpList =
     if (this._enabled && !this._shuttingDown && !this._hasIdleObserver) {
       _idle.addIdleObserver(this, IDLE_TIMEOUT_SECONDS);
       this._hasIdleObserver = true;
-    }
-    else if ((!this._enabled || this._shuttingDown) && this._hasIdleObserver) {
+    } else if ((!this._enabled || this._shuttingDown) && this._hasIdleObserver) {
       _idle.removeIdleObserver(this, IDLE_TIMEOUT_SECONDS);
       this._hasIdleObserver = false;
     }
@@ -551,31 +560,32 @@ this.WinTaskbarJumpList =
   observe: function(aSubject, aTopic, aData) {
     switch (aTopic) {
       case "nsPref:changed":
-        if (this._enabled == true && !_prefs.getBoolPref(PREF_TASKBAR_ENABLED))
+        if (this._enabled == true && !_prefs.getBoolPref(PREF_TASKBAR_ENABLED)) {
           this._deleteActiveJumpList();
+        }
         this._refreshPrefs();
         this._updateTimer();
         this._updateIdleObserver();
         this.update();
-      break;
+        break;
 
       case "profile-before-change":
         this._shutdown();
-      break;
+        break;
 
       case "browser:purge-session-history":
         this.update();
-      break;
+        break;
       case "idle":
         if (this._timer) {
           this._timer.cancel();
           delete this._timer;
         }
-      break;
+        break;
 
       case "back":
         this._updateTimer();
-      break;
+        break;
     }
   },
 };
