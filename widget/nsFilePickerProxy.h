@@ -34,7 +34,7 @@ public:
     NS_DECL_ISUPPORTS
 
     // nsIFilePicker (less what's in nsBaseFilePicker)
-    NS_IMETHOD Init(mozIDOMWindowProxy* aParent, const nsAString& aTitle, int16_t aMode) override;
+    NS_IMETHOD Init(mozIDOMWindowProxy* aParent, const nsAString& aTitle, int16_t aMode, bool aRequireInteraction = false) override;
     NS_IMETHOD AppendFilter(const nsAString& aTitle, const nsAString& aFilter) override;
     NS_IMETHOD GetDefaultString(nsAString& aDefaultString) override;
     NS_IMETHOD SetDefaultString(const nsAString& aDefaultString) override;
