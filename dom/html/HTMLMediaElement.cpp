@@ -4614,8 +4614,12 @@ void HTMLMediaElement::DecodeError(const MediaResult& aError)
     }
   } else if (mReadyState == nsIDOMHTMLMediaElement::HAVE_NOTHING) {
     NoSupportedMediaSourceError(aError.Description());
-  } else {
+  } else if (IsCORSSameOrigin()) {
     Error(MEDIA_ERR_DECODE, aError.Description());
+  } else {
+    nsAutoCString eMessage;
+    eMessage.AssignLiteral("Failed to decode media");
+    Error(MEDIA_ERR_DECODE, eMessage);
   }
 }
 
