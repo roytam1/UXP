@@ -74,6 +74,7 @@ NS_IMPL_ISUPPORTS(TransportSecurityInfo,
 nsresult
 TransportSecurityInfo::SetHostName(const char* host)
 {
+  MutexAutoLock lock(mMutex);
   mHostName.Adopt(host ? NS_strdup(host) : 0);
   return NS_OK;
 }
@@ -103,6 +104,7 @@ nsresult
 TransportSecurityInfo::SetOriginAttributes(
   const NeckoOriginAttributes& aOriginAttributes)
 {
+  MutexAutoLock lock(mMutex);
   mOriginAttributes = aOriginAttributes;
   return NS_OK;
 }
@@ -136,6 +138,7 @@ TransportSecurityInfo::GetSecurityState(uint32_t* state)
 nsresult
 TransportSecurityInfo::SetSecurityState(uint32_t aState)
 {
+  MutexAutoLock lock(mMutex);
   mSecurityState = aState;
   return NS_OK;
 }
@@ -152,6 +155,7 @@ NS_IMETHODIMP
 TransportSecurityInfo::SetCountSubRequestsBrokenSecurity(
   int32_t aSubRequestsBrokenSecurity)
 {
+  MutexAutoLock lock(mMutex);
   mSubRequestsBrokenSecurity = aSubRequestsBrokenSecurity;
   return NS_OK;
 }
@@ -168,6 +172,7 @@ NS_IMETHODIMP
 TransportSecurityInfo::SetCountSubRequestsNoSecurity(
   int32_t aSubRequestsNoSecurity)
 {
+  MutexAutoLock lock(mMutex);
   mSubRequestsNoSecurity = aSubRequestsNoSecurity;
   return NS_OK;
 }
@@ -515,6 +520,7 @@ TransportSecurityInfo::GetSSLStatus(nsISSLStatus** _result)
 nsresult
 TransportSecurityInfo::SetSSLStatus(nsSSLStatus *aSSLStatus)
 {
+  MutexAutoLock lock(mMutex);
   mSSLStatus = aSSLStatus;
 
   return NS_OK;
