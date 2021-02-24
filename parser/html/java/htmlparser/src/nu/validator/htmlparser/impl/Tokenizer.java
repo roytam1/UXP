@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2005-2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
- * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2018-2021 Moonchild Productions
  * Copyright (c) 2020 Binary Outcast
  * Portions of comments Copyright 2004-2010 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
@@ -1009,8 +1009,8 @@ public class Tokenizer implements Locator {
         // ]NOCPP]
     }
 
-    private void appendStrBuf(@NoLength char[] buffer, int offset, int length) {
-        int newLen = strBufLen + length;
+    private void appendStrBuf(@NoLength char[] buffer, int offset, int length) throws SAXException {
+        int newLen = Portability.checkedAdd(strBufLen, length);
         // CPPONLY: assert newLen <= strBuf.length: "Previous buffer length insufficient.";
         // CPPONLY: if (strBuf.length < newLen) {
         // CPPONLY:     if (!EnsureBufferSpace(length)) {
@@ -1024,7 +1024,7 @@ public class Tokenizer implements Locator {
     /**
      * Append the contents of the char reference buffer to the main one.
      */
-    @Inline private void appendCharRefBufToStrBuf() {
+    @Inline private void appendCharRefBufToStrBuf() throws SAXException {
         appendStrBuf(charRefBuf, 0, charRefBufLen);
         charRefBufLen = 0;
     }
