@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2008-2015 Mozilla Foundation
- * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2018-2021 Moonchild Productions
  * Copyright (c) 2020 Binary Outcast
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
@@ -60,6 +60,7 @@ class nsHtml5StateSnapshot;
 class nsHtml5Portability
 {
   public:
+    static int32_t checkedAdd(int32_t a, int32_t b);
     static nsIAtom* newLocalNameFromBuffer(char16_t* buf, int32_t offset, int32_t length, nsHtml5AtomTable* interner);
     static nsHtml5String newStringFromBuffer(char16_t* buf, int32_t offset, int32_t length, nsHtml5TreeBuilder* treeBuilder, bool maybeAtomize);
     static nsHtml5String newEmptyString();

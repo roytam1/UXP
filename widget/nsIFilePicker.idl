@@ -66,9 +66,12 @@ interface nsIFilePicker : nsISupports
   *                      on this parent. parent must be non-null.
   * @param      title    The title for the file widget
   * @param      mode     load, save, or get folder
+  * @param      requireinteraction (optional)
+  *                      require interaction before confirmation is possible
   *
   */
-  void init(in mozIDOMWindowProxy parent, in AString title, in short mode);
+  void init(in mozIDOMWindowProxy parent, in AString title, in short mode,
+            [optional] in boolean requireinteraction);
 
  /**
   * Append to the  filter list with things from the predefined list
