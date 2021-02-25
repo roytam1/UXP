@@ -25,7 +25,8 @@ public:
 
   NS_IMETHOD Init(mozIDOMWindowProxy* aParent,
                   const nsAString& aTitle,
-                  int16_t aMode);
+                  int16_t aMode,
+                  bool aRequireInteraction = false);
 
   NS_IMETHOD Open(nsIFilePickerShownCallback *aCallback);
   NS_IMETHOD AppendFilters(int32_t filterMask);

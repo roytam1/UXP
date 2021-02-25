@@ -866,7 +866,7 @@ HTMLInputElement::InitFilePicker(FilePickerType aType)
     mode = static_cast<int16_t>(nsIFilePicker::modeOpen);
   }
 
-  nsresult rv = filePicker->Init(win, title, mode);
+  nsresult rv = filePicker->Init(win, title, mode, /*aRequireInteraction = */ true);
   NS_ENSURE_SUCCESS(rv, rv);
 
   if (!okButtonLabel.IsEmpty()) {

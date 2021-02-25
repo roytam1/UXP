@@ -166,7 +166,8 @@ nsBaseFilePicker::~nsBaseFilePicker()
 
 NS_IMETHODIMP nsBaseFilePicker::Init(mozIDOMWindowProxy* aParent,
                                      const nsAString& aTitle,
-                                     int16_t aMode)
+                                     int16_t aMode,
+                                     bool aRequireInteraction)
 {
   NS_PRECONDITION(aParent, "Null parent passed to filepicker, no file "
                   "picker for you!");

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2005-2007 Henri Sivonen
  * Copyright (c) 2007-2015 Mozilla Foundation
- * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2018-2021 Moonchild Productions
  * Copyright (c) 2020 Binary Outcast
  * Portions of comments Copyright 2004-2010 Apple Computer, Inc., Mozilla
  * Foundation, and Opera Software ASA.
@@ -249,7 +249,7 @@ nsHtml5Tokenizer::emitStrBuf()
 void 
 nsHtml5Tokenizer::appendStrBuf(char16_t* buffer, int32_t offset, int32_t length)
 {
-  int32_t newLen = strBufLen + length;
+  int32_t newLen = nsHtml5Portability::checkedAdd(strBufLen, length);
   MOZ_ASSERT(newLen <= strBuf.length, "Previous buffer length insufficient.");
   if (MOZ_UNLIKELY(strBuf.length < newLen)) {
     if (MOZ_UNLIKELY(!EnsureBufferSpace(length))) {
