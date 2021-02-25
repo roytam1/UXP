@@ -36,6 +36,10 @@ using mozilla::mscom::EnsureMTA;
 using mozilla::UniquePtr;
 using namespace mozilla::widget;
 
+#ifndef FOS_OKBUTTONNEEDSINTERACTION
+#define FOS_OKBUTTONNEEDSINTERACTION 0x00200000
+#endif
+
 char16_t *nsFilePicker::mLastUsedUnicodeDirectory;
 char nsFilePicker::mLastUsedDirectory[MAX_PATH+1] = { 0 };
 
