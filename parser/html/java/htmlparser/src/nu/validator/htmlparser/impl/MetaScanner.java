@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2008-2015 Mozilla Foundation
- * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2018-2021 Moonchild Productions
  * Copyright (c) 2020 Binary Outcast
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
@@ -753,7 +753,7 @@ public abstract class MetaScanner {
         stateSave  = state;
     }
 
-    private void handleCharInAttributeValue(int c) {
+    private void handleCharInAttributeValue(int c) throws SAXException {
         if (metaState == A) {
             if (contentIndex == CONTENT.length || charsetIndex == CHARSET.length) {
                 addToBuffer(c);
@@ -778,9 +778,9 @@ public abstract class MetaScanner {
      * Adds a character to the accumulation buffer.
      * @param c the character to add
      */
-    private void addToBuffer(int c) {
+    private void addToBuffer(int c) throws SAXException {
         if (strBufLen == strBuf.length) {
-            char[] newBuf = new char[strBuf.length + (strBuf.length << 1)];
+            char[] newBuf = new char[Portability.checkedAdd(strBuf.length, (strBuf.length << 1))];
             System.arraycopy(strBuf, 0, newBuf, 0, strBuf.length);
             strBuf = newBuf;
         }

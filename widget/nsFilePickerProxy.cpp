@@ -27,7 +27,7 @@ nsFilePickerProxy::~nsFilePickerProxy()
 
 NS_IMETHODIMP
 nsFilePickerProxy::Init(mozIDOMWindowProxy* aParent, const nsAString& aTitle,
-                        int16_t aMode)
+                        int16_t aMode, bool aRequireInteraction)
 {
   TabChild* tabChild = TabChild::GetFrom(aParent);
   if (!tabChild) {

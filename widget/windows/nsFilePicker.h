@@ -60,7 +60,8 @@ class nsFilePicker :
 public:
   nsFilePicker();
 
-  NS_IMETHOD Init(mozIDOMWindowProxy *aParent, const nsAString& aTitle, int16_t aMode);
+  NS_IMETHOD Init(mozIDOMWindowProxy *aParent, const nsAString& aTitle, int16_t aMode,
+                  bool aRequireInteraction = false);
 
   NS_DECL_ISUPPORTS
 
@@ -125,6 +126,7 @@ protected:
   nsString               mUnicodeFile;
   static char16_t      *mLastUsedUnicodeDirectory;
   HWND                   mDlgWnd;
+  bool                   mRequireInteraction;
 
   class ComDlgFilterSpec
   {

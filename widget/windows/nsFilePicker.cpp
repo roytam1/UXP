@@ -30,6 +30,7 @@
 
 using mozilla::IsVistaOrLater;
 using mozilla::IsWin8OrLater;
+using mozilla::IsWin10OrLater;
 using mozilla::MakeUnique;
 using mozilla::mscom::EnsureMTA;
 using mozilla::UniquePtr;
@@ -194,11 +195,13 @@ nsFilePicker::~nsFilePicker()
 
 NS_IMPL_ISUPPORTS(nsFilePicker, nsIFilePicker)
 
-NS_IMETHODIMP nsFilePicker::Init(mozIDOMWindowProxy *aParent, const nsAString& aTitle, int16_t aMode)
+NS_IMETHODIMP nsFilePicker::Init(mozIDOMWindowProxy *aParent, const nsAString& aTitle, int16_t aMode,
+                                 bool aRequireInteraction)
 {
   nsCOMPtr<nsPIDOMWindowOuter> window = do_QueryInterface(aParent);
   nsIDocShell* docShell = window ? window->GetDocShell() : nullptr;  
   mLoadContext = do_QueryInterface(docShell);
+  mRequireInteraction = aRequireInteraction;
   
   return nsBaseFilePicker::Init(aParent, aTitle, aMode);
 }
@@ -603,6 +606,13 @@ nsFilePicker::ShowFolderPicker(const nsString& aInitialDir, bool &aWasInitError)
 
   // options
   FILEOPENDIALOGOPTIONS fos = FOS_PICKFOLDERS;
+  // Require interaction if the folder picker is triggered by an element that
+  // is potentially unsafe to use the default value in.
+  // Win 10+ only, because this dialog flag is broken in earlier versions.
+  if (IsWin10OrLater() && mRequireInteraction) {
+    fos |= FOS_OKBUTTONNEEDSINTERACTION;
+  }
+
   dialog->SetOptions(fos);
  
   // initial strings
@@ -923,6 +933,13 @@ nsFilePicker::ShowFilePicker(const nsString& aInitialDir, bool &aWasInitError)
   FILEOPENDIALOGOPTIONS fos = 0;
   fos |= FOS_SHAREAWARE | FOS_OVERWRITEPROMPT |
          FOS_FORCEFILESYSTEM;
+  
+  // Require interaction if the file picker is triggered by an element that
+  // is potentially unsafe to use the default value in.
+  // Win 10+ only, because this dialog flag is broken in earlier versions.
+  if (IsWin10OrLater() && mRequireInteraction) {
+    fos |= FOS_OKBUTTONNEEDSINTERACTION;
+  }
 
   // Handle add to recent docs settings
   if (IsPrivacyModeEnabled() || !mAddToRecentDocs) {

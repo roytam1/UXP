@@ -33,9 +33,7 @@
        available under licenses which are both
        <a href="http://www.gnu.org/philosophy/free-sw.html">free</a> and
        <a href="http://www.opensource.org/docs/definition.php">open source</a>.
-       A URL identifying the specific source code used to create this copy can be found
-       on the <a href="about:buildconfig">build configuration page</a>, and you can read
-       <a href="https://developer.mozilla.org/en/Mozilla_Source_Code_%28Mercurial%29">instructions
+       You can read <a href="https://developer.palemoon.org/">instructions
        on how to download and build the code for yourself</a>.
     </p>
 
@@ -65,31 +63,34 @@
       <li><a href="about:license#gpl-3.0">GNU General Public License 3.0</a>
       <br><br>
       </li>
+#ifdef MOZ_WEBRTC
       <li><a href="about:license#ACE">ACE License</a></li>
+#endif
+#ifdef MOZ_DEVTOOLS_SERVER
       <li><a href="about:license#acorn">acorn License</a></li>
-#ifdef MOZ_INSTALL_TRACKING
-      <li><a href="about:license#adjust">Adjust SDK License</a></li>
 #endif
       <li><a href="about:license#adobecmap">Adobe CMap License</a></li>
-      <li><a href="about:license#android">Android Open Source License</a></li>
+#ifdef MOZ_ANGLE_RENDERER
       <li><a href="about:license#angle">ANGLE License</a></li>
+#endif
       <li><a href="about:license#apache">Apache License 2.0</a></li>
       <li><a href="about:license#apple">Apple License</a></li>
       <li><a href="about:license#apple-mozilla">Apple/Mozilla NPRuntime License</a></li>
       <li><a href="about:license#arm">ARM License</a></li>
+#ifdef MOZ_UPDATER
       <li><a href="about:license#bspatch">bspatch License</a></li>
+#endif
       <li><a href="about:license#cairo">Cairo Component Licenses</a></li>
       <li><a href="about:license#chromium">Chromium License</a></li>
-      <li><a href="about:license#codemirror">CodeMirror License</a></li>
+#ifdef MOZ_DEVTOOLS      <li><a href="about:license#codemirror">CodeMirror License</a></li>
       <li><a href="about:license#cubic-bezier">cubic-bezier License</a></li>
       <li><a href="about:license#d3">D3 License</a></li>
       <li><a href="about:license#dagre-d3">Dagre-D3 License</a></li>
+#endif
       <li><a href="about:license#dtoa">dtoa License</a></li>
-      <li><a href="about:license#hunspell-nl">Dutch Spellchecking Dictionary License</a></li>
 #if defined(XP_WIN) || defined(XP_LINUX)
       <li><a href="about:license#twemoji">Twemoji License</a></li>
 #endif
-      <li><a href="about:license#hunspell-ee">Estonian Spellchecking Dictionary License</a></li>
       <li><a href="about:license#expat">Expat License</a></li>
       <li><a href="about:license#firebug">Firebug License</a></li>
       <li><a href="about:license#gfx-font-list">gfxFontList License</a></li>
@@ -98,11 +99,15 @@
       <li><a href="about:license#gears-istumbler">Google Gears/iStumbler License</a></li>
       <li><a href="about:license#vp8">Google VP8 License</a></li>
       <li><a href="about:license#gsl">GSL License</a></li>
+#ifdef MOZ_WEBRTC
       <li><a href="about:license#gyp">gyp License</a></li>
+#endif
       <li><a href="about:license#halloc">halloc License</a></li>
       <li><a href="about:license#harfbuzz">HarfBuzz License</a></li>
       <li><a href="about:license#icu">ICU License</a></li>
+#ifdef MOZ_DEVTOOLS
       <li><a href="about:license#immutable">Immutable.js License</a></li>
+#endif
       <li><a href="about:license#jpnic">Japan Network Information Center License</a></li>
       <li><a href="about:license#jquery">jQuery License</a></li>
       <li><a href="about:license#k_exp">k_exp License</a></li>
@@ -118,42 +123,56 @@
       <li><a href="about:license#libnestegg">libnestegg License</a></li>
       <li><a href="about:license#libsoundtouch">libsoundtouch License</a></li>
       <li><a href="about:license#libyuv">libyuv License</a></li>
-      <li><a href="about:license#hunspell-lt">Lithuanian Spellchecking Dictionary License</a></li>
       <li><a href="about:license#microformatsshiv">MIT license — microformat-shiv</a></li>
       <li><a href="about:license#myspell">MySpell License</a></li>
+#ifdef MOZ_DEVTOOLS
       <li><a href="about:license#naturalSort">naturalSort License</a></li>
+#endif
+#ifdef MOZ_WEBRTC
       <li><a href="about:license#nicer">nICEr License</a></li>
+#endif
       <li><a href="about:license#node-properties">node-properties License</a></li>
+#ifdef MOZ_WEBRTC
       <li><a href="about:license#nrappkit">nrappkit License</a></li>
+#endif
+#ifdef MOZ_EME
       <li><a href="about:license#openaes">OpenAES License</a></li>
+#endif
       <li><a href="about:license#openvision">OpenVision License</a></li>
-      <li><a href="about:license#pbkdf2-sha256">pbkdf2_sha256 License</a></li>
       <li><a href="about:license#praton">praton License</a></li>
       <li><a href="about:license#qcms">qcms License</a></li>
+#ifdef MOZ_DEVTOOLS_SERVER
       <li><a href="about:license#qrcode-generator">QR Code Generator License</a></li>
+#endif
       <li><a href="about:license#react">React License</a></li>
+#ifdef MOZ_DEVTOOLS
       <li><a href="about:license#react-redux">React-Redux License</a></li>
       <li><a href="about:license#react-virtualized">React Virtualized License</a></li>
+#endif
       <li><a href="about:license#xdg">Red Hat xdg_user_dir_lookup License</a></li>
+#ifdef MOZ_DEVTOOLS
       <li><a href="about:license#redux">Redux License</a></li>
       <li><a href="about:license#reselect">Reselect License</a></li>
-      <li><a href="about:license#hunspell-ru">Russian Spellchecking Dictionary License</a></li>
+#endif
       <li><a href="about:license#sctp">SCTP Licenses</a></li>
+#ifdef MOZ_ENABLE_SKIA
       <li><a href="about:license#skia">Skia License</a></li>
+#endif
       <li><a href="about:license#snappy">Snappy License</a></li>
+#ifdef MOZ_DEVTOOLS_SERVER
       <li><a href="about:license#sprintf.js">sprintf.js License</a></li>
+#endif
       <li><a href="about:license#sunsoft">SunSoft License</a></li>
       <li><a href="about:license#superfasthash">SuperFastHash License</a></li>
       <li><a href="about:license#unicode">Unicode License</a></li>
       <li><a href="about:license#ucal">University of California License</a></li>
       <li><a href="about:license#hunspell-en-US">US English Spellchecking Dictionary Licenses</a></li>
       <li><a href="about:license#v8">V8 License</a></li>
-#if defined(XP_WIN) || defined(XP_MACOSX) || defined(XP_LINUX)
-      <li><a href="about:license#valve">Valve BSD License</a></li>
-#endif
       <li><a href="about:license#vtune">VTune License</a></li>
+#ifdef MOZ_WEBRTC
       <li><a href="about:license#webrtc">WebRTC License</a></li>
       <li><a href="about:license#x264">x264 License</a></li>
+#endif
       <li><a href="about:license#xiph">Xiph.org Foundation License</a></li>
     </ul>
 
@@ -2053,7 +2072,7 @@ Public License instead of this License.  But first, please read
 &lt;<a href="http://www.gnu.org/philosophy/why-not-lgpl.html">http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>
 
 <hr>
-
+#ifdef MOZ_WEBRTC
     <h1><a id="ACE"></a>ACE License</h1>
 
     <p>This license applies to the file
@@ -2077,11 +2096,13 @@ executables of your software products.
 
 
     <hr>
-
+#endif
     <h1><a id="adobecmap"></a>Adobe CMap License</h1>
 
-    <p>This license applies to files in the directory
-    <span class="path">browser/extensions/pdfjs/content/web/cmaps/</span>.</p>
+    <p>This license applies to files in application directories for
+    applications including the pdf.js in-application PDF reader,
+    specifically
+    <span class="path">*/pdfjs/content/web/cmaps/</span>.</p>
 
 <pre>
 Copyright 1990-2009 Adobe Systems Incorporated.
@@ -2122,41 +2143,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
-
-    <h1><a id="android"></a>Android Open Source License</h1>
-
-    <p>This license applies to various files in the Mozilla codebase,
-    including those in the directory <span class="path">gfx/skia/</span>.</p>
-<!-- This is the wrong directory, what was intended? -->
-
-<pre>
- Copyright 2009, The Android Open Source Project
-
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
-  * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
- EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-</pre>
-
-
-    <hr>
-
+#ifdef MOZ_ANGLE_RENDERER
     <h1><a id="angle"></a>ANGLE License</h1>
 
     <p>This license applies to files in the directory <span class="path">gfx/angle/</span>.</p>
@@ -2198,7 +2185,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
-
+#endif
+#ifdef MOZ_DEVTOOLS_SERVER
     <h1><a id="acorn"></a>acorn License</h1>
 
     <p>This license applies to all files in
@@ -2232,6 +2220,7 @@ licences.
 
 
     <hr>
+#endif
 
 #ifdef MOZ_INSTALL_TRACKING
     <h1><a id="adjust"></a>Adjust SDK License</h1>
@@ -2559,6 +2548,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <hr>
 
+#ifdef MOZ_UPDATER
     <h1><a id="bspatch"></a>bspatch License</h1>
 
     <p>This license applies to the files
@@ -2594,6 +2584,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
+#endif
 
     <h1><a id="cairo"></a>Cairo Component Licenses</h1>
 
@@ -2652,7 +2643,6 @@ WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <p>This license applies to parts of the code in:</p>
     <ul>
         <li><span class="path">editor/libeditor/EditorEventListener.cpp</span></li>
-        <li><span class="path">security/sandbox/</span></li>
         <li><span class="path">widget/cocoa/GfxInfo.mm</span></li>
     </ul>
     <p>and also some files in these directories:</p>
@@ -2700,7 +2690,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
-
+#ifdef MOZ_DEVTOOLS
     <h1><a id="codemirror"></a>CodeMirror License</h1>
 
     <p>This license applies to all files in
@@ -2777,7 +2767,7 @@ DEALINGS IN THE SOFTWARE.
     <h1><a id="d3"></a>D3 License</h1>
 
     <p>This license applies to the file
-      <span class="path">devtools/client/shared/d3.js</span>.
+      <span class="path">devtools/client/shared/vendor/d3.js</span>.
     </p>
 <pre>
 Copyright (c) 2014, Michael Bostock
@@ -2840,6 +2830,7 @@ THE SOFTWARE.
 
 
     <hr>
+#endif
 
     <h1><a id="dtoa"></a>dtoa License</h1>
 
@@ -2861,47 +2852,6 @@ THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTY.  IN PARTICULAR, NEITHER THE AUTHOR NOR LUCENT MAKES ANY
 REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
 OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
-</pre>
-
-
-    <hr>
-
-    <h1><a id="hunspell-nl"></a>Dutch Spellchecking Dictionary License</h1>
-
-    <p>This license applies to the Dutch Spellchecking Dictionary. (This
-      code only ships in some localized versions of this product.)</p>
-
-<pre>
-Copyright (c) 2006, 2007 OpenTaal
-Copyright (c) 2001, 2002, 2003, 2005 Simon Brouwer e.a.
-Copyright (c) 1996 Nederlandstalige Tex Gebruikersgroep
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
-* Neither the name of the OpenTaal, Simon Brouwer e.a., or Nederlandstalige Tex
-Gebruikersgroep nor the names of its contributors may be used to endorse or
-promote products derived from this software without specific prior written
-permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
 
 
@@ -2951,56 +2901,6 @@ publicity, privacy, or moral rights may limit how you use the material.
     <hr>
 
 #endif
-    <h1><a id="hunspell-ee"></a>Estonian Spellchecking Dictionary License</h1>
-
-    <p>This license applies to precursor works to certain files which are
-      part of the Estonian Spellchecking Dictionary. The
-      shipped versions are under the GNU Lesser General Public License. (This
-      code only ships in some localized versions of this product.)</p>
-
-<pre>
-Copyright © Institute of the Estonian Language
-
-E-mail: litsents@eki.ee
-URL: http://www.eki.ee/tarkvara/
-
-The present Licence Agreement gives the user of this Software Product
-(hereinafter: Product) the right to use the Product for whatever purpose
-(incl. distribution, copying, altering, inclusion in other software, and
-selling) on the following conditions:
-
-1. The present Licence Agreement should belong unaltered to each copy ever
-   made of this Product;
-2. Neither the Institute of the Estonian Language (hereinafter: IEL) nor the
-   author(s) of the Product will take responsibility for any detriment, direct
-   or indirect, possibly ensuing from the application of the Product;
-3. The IEL is ready to share the Product with other users as we wish to
-   advance research on the Estonian language and to promote the use of
-   Estonian in rapidly developing infotechnology, yet we refuse to bind
-   ourselves to any further obligation, which means that the IEL is not
-   obliged either to warrant the suitability of the Product for a specific
-   purpose, to improve the software, or to provide a more detailed description
-   of the underlying algorithms. (Which does not mean, though, that we may not
-   do it.)
-
-Notification Request:
-
-As a courtesy, we would appreciate being informed whenever our linguistic
-products are used to create derivative works. If you modify our software or
-include it in other products, please inform us by sending e-mail to
-litsents@eki.ee or by letter to
-
-Institute of the Estonian Language
-Roosikrantsi 6
-10119 Tallinn
-ESTONIA
-
-Phone &amp; Fax: +372 6411443
-</pre>
-
-
-
-    <hr>
 
     <h1><a id="expat"></a>Expat License</h1>
 
@@ -3036,8 +2936,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     <hr>
 
-
-    <h1><a id="firebug"></a>Firebug License</h1>
+#ifdef MOZ_DEVTOOLS_SERVER    <h1><a id="firebug"></a>Firebug License</h1>
 
     <p>This license applies to the code
     <span class="path">devtools/shared/webconsole/network-helper.js</span>.</p>
@@ -3079,6 +2978,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
+#endif
 
     <h1><a id="gfx-font-list"></a>gfxFontList License</h1>
 
@@ -3122,7 +3022,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <h1><a id="google-bsd"></a>Google BSD License</h1>
 
     <p>This license applies to files in the directories
-    <span class="path">toolkit/crashreporter/google-breakpad/</span> and
     <span class="path">toolkit/components/protobuf/</span>.</p>
 
 <pre>
@@ -3159,30 +3058,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <hr>
 
-    <h1><a id="vp8"></a>Google VP8 License</h1>
+    <h1><a id="vpx"></a>VPX License</h1>
 
-    <p>This license applies to certain files in the directory
+    <p>This license applies to the files in the directory
     <span class="path">media/libvpx</span>.</p>
 <pre>
-Copyright (c) 2010, Google, Inc.
-
-All rights reserved.
+Copyright (c) 2010, The WebM Project authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
+modification, are permitted provided that the following conditions are
+met:
 
-- Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
 
-- Redistributions in binary form must reproduce the above
-  copyright notice, this list of conditions and the following
-  disclaimer in the documentation and/or other materials provided
-  with the distribution.
+  * Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
 
-- Neither the name of Google nor the names of its contributors may
-  be used to endorse or promote products derived from this software
-  without specific prior written permission.
+  * Neither the name of Google, nor the WebM Project, nor the names
+    of its contributors may be used to endorse or promote products
+    derived from this software without specific prior written
+    permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -3196,22 +3094,29 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Subject to the terms and conditions of the above License, Google
-hereby grants to You a perpetual, worldwide, non-exclusive,
-no-charge, royalty-free, irrevocable (except as stated in this
-section) patent license to make, have made, use, offer to sell, sell,
-import, and otherwise transfer this implementation of VP8, where such
-license applies only to those patent claims, both currently owned by
-Google and acquired in the future, licensable by Google that are
-necessarily infringed by this implementation of VP8. If You or your
-agent or exclusive licensee institute or order or agree to the
-institution of patent litigation against any entity (including a
-cross-claim or counterclaim in a lawsuit) alleging that this
-implementation of VP8 or any code incorporated within this
-implementation of VP8 constitutes direct or contributory patent
-infringement, or inducement of patent infringement, then any rights
-granted to You under this License for this implementation of VP8
-shall terminate as of the date such litigation is filed.
+Additional IP Rights Grant (Patents)
+------------------------------------
+
+"These implementations" means the copyrightable works that implement the WebM
+codecs distributed by Google as part of the WebM Project.
+
+Google hereby grants to you a perpetual, worldwide, non-exclusive, no-charge,
+royalty-free, irrevocable (except as stated in this section) patent license to
+make, have made, use, offer to sell, sell, import, transfer, and otherwise
+run, modify and propagate the contents of these implementations of WebM, where
+such license applies only to those patent claims, both currently owned by
+Google and acquired in the future, licensable by Google that are necessarily
+infringed by these implementations of WebM. This grant does not include claims
+that would be infringed only as a consequence of further modification of these
+implementations. If you or your agent or exclusive licensee institute or order
+or agree to the institution of patent litigation or any other patent
+enforcement activity against any entity (including a cross-claim or
+counterclaim in a lawsuit) alleging that any of these implementations of WebM
+or any code incorporated within any of these implementations of WebM
+constitute direct or contributory patent infringement, or inducement of
+patent infringement, then any patent rights granted to you under this License
+for these implementations of WebM shall terminate as of the date such
+litigation is filed.
 </pre>
 
     <hr>
@@ -3290,6 +3195,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <!-- https://github.com/Microsoft/GSL/blob/3819df6e378ffccf0e29465afe99c3b324c2aa70/LICENSE -->
 <pre>
 Copyright (c) 2015 Microsoft Corporation. All rights reserved.
+Copyright (c) 2020 Moonchild Productions. All rights reserved.
 
 This code is licensed under the MIT License (MIT).
 
@@ -3314,7 +3220,7 @@ THE SOFTWARE.
 
 
     <hr>
-
+#ifdef MOZ_WEBRTC
     <h1><a id="gyp"></a>gyp License</h1>
 
     <p>This license applies to certain files in the directory
@@ -3351,6 +3257,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
+#endif
 
     <h1><a id="halloc"></a>halloc License</h1>
 
@@ -3470,6 +3377,8 @@ All trademarks and registered trademarks mentioned herein are the property
 of their respective owners.
 </pre>
     <hr>
+    
+#ifdef MOZ_DEVTOOLS
     <h1><a id="immutable"></a>Immutable.js License</h1>
 
 <pre>
@@ -3506,6 +3415,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
 
     <hr>
+#endif
 
     <h1><a id="jpnic"></a>Japan Network Information Center License</h1>
     <p>This license applies to certain files in the
@@ -3624,8 +3534,8 @@ SUCH DAMAGE.
     <p>This license applies to the following files:</p>
 
     <ul>
-      <li class="path">openmax_dl/dl/api/omxtypes.h</li>
-      <li class="path">openmax_dl/dl/sp/api/omxSP.h</li>
+      <li class="path">media/openmax_dl/dl/api/omxtypes.h</li>
+      <li class="path">media/openmax_dl/dl/sp/api/omxSP.h</li>
     </ul>
 
 <pre>
@@ -3663,6 +3573,7 @@ Khronos and OpenMAX are trademarks of the Khronos Group Inc.
 
 <pre>
 Copyright (c) 2003-2010 Mark Borgerding
+Copyright (c) 2017 Mark Straver BASc
 
 All rights reserved.
 
@@ -3947,43 +3858,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <hr>
 
-    <h1><a id="hunspell-lt"></a>Lithuanian Spellchecking Dictionary License</h1>
-
-    <p>This license applies to the Lithuanian Spellchecking Dictionary. (This
-      code only ships in some localized versions of this product.)</p>
-
-<pre>
-Copyright (c) 2000-2013, Albertas Agejevas and contributors.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-3. Neither the name of the copyright holders nor the names of its contributors
-   may be used to endorse or promote products derived from this software
-   without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED.  IN NO EVENT SHALL ALBERTAS AGEJEVAS OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGE.
-</pre>
-
-
-    <hr>
-
     <h1><a id="microformatsshiv"></a>MIT license — microformat-shiv</h1>
 
     <p>This license applies to some files in the directory
@@ -4056,7 +3930,7 @@ SUCH DAMAGE.
 
 
 <hr>
-
+#ifdef MOZ_DEVTOOLS
 <h1><a id="naturalSort"></a>naturalSort License</h1>
 
 <p>This license applies to <span class="path">devtools/client/shared/natural-sort.js</span>.</p>
@@ -4086,7 +3960,8 @@ THE SOFTWARE.
 </pre>
 
     <hr>
-
+#endif
+#ifdef MOZ_WEBRTC
     <h1><a id="nicer"></a>nICEr License</h1>
 
     <p>This license applies to certain files in the directory
@@ -4131,7 +4006,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
-
+#endif
+#ifdef MOZ_EME
     <h1><a id="openaes"></a>OpenAES License</h1>
 
     <p>This license applies to certain files in the directory
@@ -4166,6 +4042,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
+#endif
 
     <h1><a id="openvision"></a>OpenVision License</h1>
 
@@ -4195,7 +4072,7 @@ PERFORMANCE OF THIS SOFTWARE.
 </pre>
 
     <hr>
-
+#ifdef MOZ_DEVTOOLS_SERVER
     <h1><a id="node-properties"></a>node-properties License</h1>
 
     <p>This license applies to
@@ -4226,7 +4103,8 @@ THE SOFTWARE.
 </pre>
 
     <hr>
-
+#endif
+#ifdef MOZ_WEBRTC
     <h1><a id="nrappkit"></a>nrappkit License</h1>
 
     <p>This license applies to certain files in the directory
@@ -4373,6 +4251,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
+#endif
 
     <h1><a id="praton"></a>praton License</h1>
 
@@ -4446,41 +4325,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
     <hr>
 
-    <h1><a id="pbkdf2-sha256"></a>pbkdf2_sha256 License</h1>
-
-    <p>This license applies to the code
-    <span class="path">mozglue/android/pbkdf2_sha256.c</span> and
-    <span class="path">mozglue/android/pbkdf2_sha256.h</span>.
-    </p>
-
-<pre>
-Copyright 2005,2007,2009 Colin Percival
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGE.
-</pre>
-
-    <hr>
-
     <h1><a id="qcms"></a>qcms License</h1>
 
     <p>This license applies to certain files in the directory
@@ -4511,6 +4355,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     <hr>
 
+#ifdef MOZ_DEVTOOLS_SERVER
     <h1><a id="qrcode-generator"></a>QR Code Generator License</h1>
 
     <p>This license applies to certain files in the directory
@@ -4539,6 +4384,7 @@ THE SOFTWARE.
 
 
     <hr>
+#endif
 
     <h1><a id="react"></a>React License</h1>
 
@@ -4576,6 +4422,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <hr>
 
+#ifdef MOZ_DEVTOOLS
     <h1><a id="react-redux"></a>React-Redux License</h1>
 
     <p>This license applies to the file
@@ -4631,6 +4478,7 @@ SOFTWARE.
 </pre>
 
     <hr>
+#endif
 
     <h1><a id="xdg"></a>Red Hat xdg_user_dir_lookup License</h1>
 
@@ -4663,7 +4511,7 @@ SOFTWARE.
 </pre>
 
     <hr>
-
+#ifdef MOZ_DEVTOOLS
     <h1><a id="redux"></a>Redux License</h1>
 
     <p>This license applies to the file
@@ -4721,44 +4569,7 @@ SOFTWARE.
 </pre>
 
     <hr>
-
-    <h1><a id="hunspell-ru"></a>Russian Spellchecking Dictionary License</h1>
-
-    <p>This license applies to the Russian Spellchecking Dictionary. (This
-      code only ships in some localized versions of this product.)</p>
-
-<pre>
-* Copyright (c) 1997-2008, Alexander I. Lebedev
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-* Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.
-* Modified versions must be clearly marked as such.
-* The name of Alexander I. Lebedev may not be used to endorse or promote
-  products derived from this software without specific prior written
-  permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
-</pre>
-
-    <hr>
+#endif
 
     <h1><a id="sctp"></a>SCTP Licenses</h1>
 
@@ -4831,6 +4642,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
     <hr>
 
+#ifdef MOZ_ENABLE_SKIA
     <h1><a id="skia"></a>Skia License</h1>
 
     <p>This license applies to certain files in the directory
@@ -4867,6 +4679,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
 
     <hr>
+#endif
 
     <h1><a id="snappy"></a>Snappy License</h1>
 
@@ -4905,7 +4718,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
 
     <hr>
-
+#ifdef MOZ_DEVTOOLS_SERVER
     <h1><a id="sprintf.js"></a>sprintf.js License</h1>
 
     <p>This license applies to
@@ -4939,6 +4752,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
 
     <hr>
+#endif
 
     <h1><a id="sunsoft"></a>SunSoft License</h1>
 
@@ -4975,42 +4789,6 @@ Except as contained in this notice, the name of SunSoft, Inc.
 shall not be used in advertising or otherwise to promote the
 sale, use or other dealings in this Software without written
 authorization from SunSoft Inc.
-</pre>
-
-
-    <hr>
-
-    <h1><a id="superfasthash"></a>SuperFastHash License</h1>
-
-    <p>This license applies to files in the directory
-      <span class="path">security/sandbox/chromium/base/third_party/superfasthash/</span>.</p>
-
-<pre>
-Copyright (c) 2010, Paul Hsieh
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice, this
-  list of conditions and the following disclaimer in the documentation and/or
-  other materials provided with the distribution.
-* Neither my name, Paul Hsieh, nor the names of any other contributors to the
-  code use may not be used to endorse or promote products derived from this
-  software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
 
 
@@ -5419,7 +5197,7 @@ Database section 7.
     directories, certain files in those directories:</p>
 
     <ul>
-      <li class="path">dbm/</li>
+      <li class="path">security/nss/lib/dbm/</li>
       <li class="path">db/mork/src/morkQuickSort.cpp</li>
       <li class="path">xpcom/glue/nsQuickSort.cpp</li>
       <li class="path">nsprpub/pr/src/misc/praton.c</li>
@@ -5600,44 +5378,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <hr>
 
-    <h1><a id="valve"></a>Valve BSD License</h1>
-
-    <p>This license applies to certain files in the directory
-    <span class="path">gfx/vr/openvr</span>.</p>
-<pre>
-Copyright (c) 2015, Valve Corporation
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this
-list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation and/or
-other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors
-may be used to endorse or promote products derived from this software without
-specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-</pre>
-
-#endif
-
-    <hr>
-
     <h1><a id="vtune"></a>VTune License</h1>
 
     <p>This license applies to certain files in the directory
@@ -5675,7 +5415,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     <hr>
-
+#ifdef MOZ_WEBRTC
     <h1><a id="webrtc"></a>WebRTC License</h1>
 
     <p>This license applies to certain files in the directory
@@ -5743,6 +5483,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 </pre>
 
     <hr>
+#endif
 
     <h1><a id="xiph"></a>Xiph.org Foundation License</h1>
 
@@ -5795,10 +5536,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <ul>
       <li>This software is based in part on the work of the Independent
           JPEG Group.</li>
-      <li>Portions of the OS/2 and Android versions
-          of this software are copyright &copy;1996-2012
-          <a href="http://www.freetype.org/">The FreeType Project</a>.
-          All rights reserved.</li>
     </ul>
 
 
@@ -5825,16 +5562,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </ul>
 
 
-
-#ifdef XP_WIN
-
     <hr>
+#ifdef XP_WIN
 
     <h1><a id="proprietary-notices"></a>Proprietary Operating System Components</h1>
 
     <p>Under some circumstances, under our
-    <a href="http://www.mozilla.org/foundation/licensing/binary-components/">binary components policy</a>,
-    Mozilla may decide to include additional
+    <a href="http://www.palemoon.org/policies/binarycomponents.html">Binary Component Policy</a>,
+    we may decide to include additional
     operating system vendor code with the installer of our products designed
     for that vendor's proprietary platform, to make our products work well on
     that specific operating system. The following license statements
@@ -5846,7 +5581,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     they are referred to below as "Distributable Code":
       <ul>
         <li><span class="path">d3d*.dll</span> (Direct3D libraries)</li>
-        <li><span class="path">msvc*.dll</span> (C and C++ runtime libraries)</li>
+        <li><span class="path">msvc*.dll</span> and <span class="path">vcruntime*.dll</span> (C and C++ runtime libraries)</li>
+        <li><span class="path">api-ms-win*.dll</span> and <span class="path">ucrtbase.dll</span> (Universal CRT runtime libraries)</li>
       </ul>
     </p>
 
@@ -5870,10 +5606,8 @@ following terms:
       regulations that apply to the Distributable Code.
 </pre>
 
-#endif
-
-
     <hr>
+#endif
 
     <p><a href="about:license#top">Return to top</a>.</p>
 
