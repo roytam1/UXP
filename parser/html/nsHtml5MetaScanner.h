@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
  * Copyright (c) 2008-2015 Mozilla Foundation
- * Copyright (c) 2018-2020 Moonchild Productions
+ * Copyright (c) 2018-2021 Moonchild Productions
  * Copyright (c) 2020 Binary Outcast
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
