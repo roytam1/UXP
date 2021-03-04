@@ -130,6 +130,24 @@ unsigned int aom_variance64x64_neon(const uint8_t *a, int a_stride,
   return *sse - (unsigned int)(((int64_t)sum1 * sum1) >> 12);
 }
 
+unsigned int aom_variance128x128_neon(const uint8_t *a, int a_stride,
+                                      const uint8_t *b, int b_stride,
+                                      unsigned int *sse) {
+  int sum1, sum2;
+  uint32_t sse1, sse2;
+  sum1 = sse1 = 0;
+  for (int i = 0; i < 16; i++) {
+    variance_neon_w8(a + (8 * i * a_stride), a_stride, b + (8 * i * b_stride),
+                     b_stride, 128, 8, &sse2, &sum2);
+    sse1 += sse2;
+    sum1 += sum2;
+  }
+
+  *sse = sse1;
+
+  return *sse - (unsigned int)(((int64_t)sum1 * sum1) >> 14);
+}
+
 unsigned int aom_variance16x8_neon(const unsigned char *src_ptr,
                                    int source_stride,
                                    const unsigned char *ref_ptr,
@@ -355,9 +373,7 @@ unsigned int aom_get4x4sse_cs_neon(const unsigned char *src_ptr,
   d6u8 = vld1_u8(ref_ptr);
   ref_ptr += recon_stride;
   d3u8 = vld1_u8(src_ptr);
-  src_ptr += source_stride;
   d7u8 = vld1_u8(ref_ptr);
-  ref_ptr += recon_stride;
 
   q11u16 = vsubl_u8(d0u8, d4u8);
   q12u16 = vsubl_u8(d1u8, d5u8);

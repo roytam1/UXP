@@ -19,8 +19,8 @@
 #include "aom_mem/aom_mem.h"
 #include "aom_ports/mem.h"
 
+#include "av1/common/av1_common_int.h"
 #include "av1/common/av1_loopfilter.h"
-#include "av1/common/onyxc_int.h"
 #include "av1/common/quant_common.h"
 
 #include "av1/encoder/av1_quantize.h"
@@ -38,7 +38,7 @@ static void yv12_copy_plane(const YV12_BUFFER_CONFIG *src_bc,
 }
 
 int av1_get_max_filter_level(const AV1_COMP *cpi) {
-  if (cpi->oxcf.pass == 2) {
+  if (is_stat_consumption_stage_twopass(cpi)) {
     return cpi->twopass.section_intra_rating > 8 ? MAX_LOOP_FILTER * 3 / 4
                                                  : MAX_LOOP_FILTER;
   } else {
@@ -142,11 +142,12 @@ static int search_filter_level(const YV12_BUFFER_CONFIG *sd, AV1_COMP *cpi,
     // Bias against raising loop filter in favor of lowering it.
     int64_t bias = (best_err >> (15 - (filt_mid / 8))) * filter_step;
 
-    if ((cpi->oxcf.pass == 2) && (cpi->twopass.section_intra_rating < 20))
+    if ((is_stat_consumption_stage_twopass(cpi)) &&
+        (cpi->twopass.section_intra_rating < 20))
       bias = (bias * cpi->twopass.section_intra_rating) / 20;
 
     // yx, bias less for large block size
-    if (cm->tx_mode != ONLY_4X4) bias >>= 1;
+    if (cm->features.tx_mode != ONLY_4X4) bias >>= 1;
 
     if (filt_direction <= 0 && filt_low != filt_mid) {
       // Get Low filter error score
@@ -212,8 +213,8 @@ void av1_pick_filter_level(const YV12_BUFFER_CONFIG *sd, AV1_COMP *cpi,
   } else if (method >= LPF_PICK_FROM_Q) {
     const int min_filter_level = 0;
     const int max_filter_level = av1_get_max_filter_level(cpi);
-    const int q =
-        av1_ac_quant_QTX(cm->base_qindex, 0, cm->seq_params.bit_depth);
+    const int q = av1_ac_quant_QTX(cm->quant_params.base_qindex, 0,
+                                   cm->seq_params.bit_depth);
     // based on tests result for rtc test set
     // 0.04590 boosted or 0.02295 non-booseted in 18-bit fixed point
     const int strength_boost_q_treshold = 700;
@@ -263,12 +264,14 @@ void av1_pick_filter_level(const YV12_BUFFER_CONFIG *sd, AV1_COMP *cpi,
     lf->filter_level[0] = lf->filter_level[1] =
         search_filter_level(sd, cpi, method == LPF_PICK_FROM_SUBIMAGE,
                             last_frame_filter_level, NULL, 0, 2);
-    lf->filter_level[0] =
-        search_filter_level(sd, cpi, method == LPF_PICK_FROM_SUBIMAGE,
-                            last_frame_filter_level, NULL, 0, 0);
-    lf->filter_level[1] =
-        search_filter_level(sd, cpi, method == LPF_PICK_FROM_SUBIMAGE,
-                            last_frame_filter_level, NULL, 0, 1);
+    if (method != LPF_PICK_FROM_FULL_IMAGE_NON_DUAL) {
+      lf->filter_level[0] =
+          search_filter_level(sd, cpi, method == LPF_PICK_FROM_SUBIMAGE,
+                              last_frame_filter_level, NULL, 0, 0);
+      lf->filter_level[1] =
+          search_filter_level(sd, cpi, method == LPF_PICK_FROM_SUBIMAGE,
+                              last_frame_filter_level, NULL, 0, 1);
+    }
 
     if (num_planes > 1) {
       lf->filter_level_u =

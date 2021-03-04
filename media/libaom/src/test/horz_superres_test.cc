@@ -10,6 +10,8 @@
  */
 
 #include <memory>
+#include <ostream>
+#include <tuple>
 
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
@@ -23,8 +25,8 @@
 
 namespace {
 
-using ::testing::make_tuple;
-using ::testing::tuple;
+using std::make_tuple;
+using std::tuple;
 
 /* TESTING PARAMETERS */
 
@@ -40,8 +42,16 @@ typedef struct {
   double psnr_threshold;
 } TestVideoParam;
 
+std::ostream &operator<<(std::ostream &os, const TestVideoParam &test_arg) {
+  return os << "TestVideoParam { filename:" << test_arg.filename
+            << " fmt:" << test_arg.fmt << " bit_depth:" << test_arg.bit_depth
+            << " profile:" << test_arg.profile << " limit:" << test_arg.limit
+            << " screen_content:" << test_arg.screen_content
+            << " psnr_threshold:" << test_arg.psnr_threshold << " }";
+}
+
 const TestVideoParam kTestVideoVectors[] = {
-  { "park_joy_90p_8_420.y4m", AOM_IMG_FMT_I420, AOM_BITS_8, 0, 5, 0, 26.0 },
+  { "park_joy_90p_8_420.y4m", AOM_IMG_FMT_I420, AOM_BITS_8, 0, 5, 0, 25.5 },
 #if CONFIG_AV1_HIGHBITDEPTH
   { "park_joy_90p_10_444.y4m", AOM_IMG_FMT_I44416, AOM_BITS_10, 1, 5, 0, 28.0 },
 #endif
@@ -184,8 +194,8 @@ class HorzSuperresFixedEndToEndTest
       : EncoderTest(GET_PARAM(0)), test_video_param_(GET_PARAM(1)),
         superres_mode_(SUPERRES_FIXED), psnr_(0.0), frame_count_(0) {
     SuperresDenominatorPair denoms = GET_PARAM(2);
-    superres_denom_ = ::testing::get<0>(denoms);
-    superres_kf_denom_ = ::testing::get<1>(denoms);
+    superres_denom_ = std::get<0>(denoms);
+    superres_kf_denom_ = std::get<1>(denoms);
   }
 
   virtual ~HorzSuperresFixedEndToEndTest() {}
@@ -295,8 +305,8 @@ class HorzSuperresQThreshEndToEndTest
       : EncoderTest(GET_PARAM(0)), test_video_param_(GET_PARAM(1)),
         superres_mode_(SUPERRES_QTHRESH), psnr_(0.0), frame_count_(0) {
     SuperresQThresholdPair qthresholds = GET_PARAM(2);
-    superres_qthresh_ = ::testing::get<0>(qthresholds);
-    superres_kf_qthresh_ = ::testing::get<1>(qthresholds);
+    superres_qthresh_ = std::get<0>(qthresholds);
+    superres_kf_qthresh_ = std::get<1>(qthresholds);
   }
 
   virtual ~HorzSuperresQThreshEndToEndTest() {}

@@ -9,9 +9,9 @@
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
 
+#include "av1/common/av1_common_int.h"
 #include "av1/common/cfl.h"
 #include "av1/common/common_data.h"
-#include "av1/common/onyxc_int.h"
 
 #include "config/av1_rtcd.h"
 
@@ -327,7 +327,7 @@ static void cfl_store(CFL_CTX *cfl, const uint8_t *input, int input_stride,
                       int row, int col, TX_SIZE tx_size, int use_hbd) {
   const int width = tx_size_wide[tx_size];
   const int height = tx_size_high[tx_size];
-  const int tx_off_log2 = tx_size_wide_log2[0];
+  const int tx_off_log2 = MI_SIZE_LOG2;
   const int sub_x = cfl->subsampling_x;
   const int sub_y = cfl->subsampling_y;
   const int store_row = row << (tx_off_log2 - sub_y);
@@ -372,16 +372,17 @@ static void cfl_store(CFL_CTX *cfl, const uint8_t *input, int input_stride,
 
 // Adjust the row and column of blocks smaller than 8X8, as chroma-referenced
 // and non-chroma-referenced blocks are stored together in the CfL buffer.
-static INLINE void sub8x8_adjust_offset(const CFL_CTX *cfl, int *row_out,
+static INLINE void sub8x8_adjust_offset(const CFL_CTX *cfl, int mi_row,
+                                        int mi_col, int *row_out,
                                         int *col_out) {
   // Increment row index for bottom: 8x4, 16x4 or both bottom 4x4s.
-  if ((cfl->mi_row & 0x01) && cfl->subsampling_y) {
+  if ((mi_row & 0x01) && cfl->subsampling_y) {
     assert(*row_out == 0);
     (*row_out)++;
   }
 
   // Increment col index for right: 4x8, 4x16 or both right 4x4s.
-  if ((cfl->mi_col & 0x01) && cfl->subsampling_x) {
+  if ((mi_col & 0x01) && cfl->subsampling_x) {
     assert(*col_out == 0);
     (*col_out)++;
   }
@@ -391,16 +392,31 @@ void cfl_store_tx(MACROBLOCKD *const xd, int row, int col, TX_SIZE tx_size,
                   BLOCK_SIZE bsize) {
   CFL_CTX *const cfl = &xd->cfl;
   struct macroblockd_plane *const pd = &xd->plane[AOM_PLANE_Y];
-  uint8_t *dst =
-      &pd->dst.buf[(row * pd->dst.stride + col) << tx_size_wide_log2[0]];
+  uint8_t *dst = &pd->dst.buf[(row * pd->dst.stride + col) << MI_SIZE_LOG2];
 
   if (block_size_high[bsize] == 4 || block_size_wide[bsize] == 4) {
     // Only dimensions of size 4 can have an odd offset.
     assert(!((col & 1) && tx_size_wide[tx_size] != 4));
     assert(!((row & 1) && tx_size_high[tx_size] != 4));
-    sub8x8_adjust_offset(cfl, &row, &col);
+    sub8x8_adjust_offset(cfl, xd->mi_row, xd->mi_col, &row, &col);
   }
   cfl_store(cfl, dst, pd->dst.stride, row, col, tx_size, is_cur_buf_hbd(xd));
+}
+
+static INLINE int max_intra_block_width(const MACROBLOCKD *xd,
+                                        BLOCK_SIZE plane_bsize, int plane,
+                                        TX_SIZE tx_size) {
+  const int max_blocks_wide = max_block_wide(xd, plane_bsize, plane)
+                              << MI_SIZE_LOG2;
+  return ALIGN_POWER_OF_TWO(max_blocks_wide, tx_size_wide_log2[tx_size]);
+}
+
+static INLINE int max_intra_block_height(const MACROBLOCKD *xd,
+                                         BLOCK_SIZE plane_bsize, int plane,
+                                         TX_SIZE tx_size) {
+  const int max_blocks_high = max_block_high(xd, plane_bsize, plane)
+                              << MI_SIZE_LOG2;
+  return ALIGN_POWER_OF_TWO(max_blocks_high, tx_size_high_log2[tx_size]);
 }
 
 void cfl_store_block(MACROBLOCKD *const xd, BLOCK_SIZE bsize, TX_SIZE tx_size) {
@@ -410,7 +426,7 @@ void cfl_store_block(MACROBLOCKD *const xd, BLOCK_SIZE bsize, TX_SIZE tx_size) {
   int col = 0;
 
   if (block_size_high[bsize] == 4 || block_size_wide[bsize] == 4) {
-    sub8x8_adjust_offset(cfl, &row, &col);
+    sub8x8_adjust_offset(cfl, xd->mi_row, xd->mi_col, &row, &col);
   }
   const int width = max_intra_block_width(xd, bsize, AOM_PLANE_Y, tx_size);
   const int height = max_intra_block_height(xd, bsize, AOM_PLANE_Y, tx_size);

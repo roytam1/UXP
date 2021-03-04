@@ -112,7 +112,6 @@ endif()
 if(BUILD_SHARED_LIBS)
   set(CONFIG_PIC 1)
   set(CONFIG_SHARED 1)
-  set(CONFIG_STATIC 0)
 endif()
 
 if(NOT MSVC)
@@ -154,21 +153,26 @@ elseif("${AOM_TARGET_CPU}" MATCHES "arm")
   if("${AOM_TARGET_SYSTEM}" STREQUAL "Darwin")
     set(AS_EXECUTABLE as)
     set(AOM_AS_FLAGS -arch ${AOM_TARGET_CPU} -isysroot ${CMAKE_OSX_SYSROOT})
-  elseif("${AOM_TARGET_SYSTEM}" STREQUAL "Linux")
-    if(NOT AS_EXECUTABLE)
-      set(AS_EXECUTABLE as)
-    endif()
   elseif("${AOM_TARGET_SYSTEM}" STREQUAL "Windows")
     if(NOT AS_EXECUTABLE)
       set(AS_EXECUTABLE ${CMAKE_C_COMPILER} -c -mimplicit-it=always)
     endif()
+  else()
+    if(NOT AS_EXECUTABLE)
+      set(AS_EXECUTABLE as)
+    endif()
   endif()
-  if(NOT AS_EXECUTABLE)
+  find_program(as_executable_found ${AS_EXECUTABLE})
+  if(NOT as_executable_found)
     message(
       FATAL_ERROR
-        "Unknown assembler for: ${AOM_TARGET_CPU}-${AOM_TARGET_SYSTEM}")
+        "Unable to find assembler and optimizations are enabled."
+        "Searched for ${AS_EXECUTABLE}. Install it, add it to your path, or "
+        "set the assembler directly by adding -DAS_EXECUTABLE=<assembler path> "
+        "to your CMake command line."
+        "To build without optimizations, add -DAOM_TARGET_CPU=generic to your "
+        "cmake command line.")
   endif()
-
   string(STRIP "${AOM_AS_FLAGS}" AOM_AS_FLAGS)
 endif()
 
@@ -273,9 +277,10 @@ else()
   add_compiler_flag_if_supported("-Wdisabled-optimization")
   add_compiler_flag_if_supported("-Wextra")
   add_compiler_flag_if_supported("-Wfloat-conversion")
-  add_compiler_flag_if_supported("-Wimplicit-function-declaration")
+  add_c_flag_if_supported("-Wimplicit-function-declaration")
   add_compiler_flag_if_supported("-Wlogical-op")
   add_compiler_flag_if_supported("-Wpointer-arith")
+  add_compiler_flag_if_supported("-Wshorten-64-to-32")
   add_compiler_flag_if_supported("-Wsign-compare")
   add_compiler_flag_if_supported("-Wstring-conversion")
   add_compiler_flag_if_supported("-Wtype-limits")
@@ -291,16 +296,12 @@ else()
     add_c_flag_if_supported("-Wstack-usage=170000")
     add_cxx_flag_if_supported("-Wstack-usage=270000")
   elseif(CONFIG_RD_DEBUG) # Another case where higher stack usage is expected.
-    add_c_flag_if_supported("-Wstack-usage=111000")
+    add_c_flag_if_supported("-Wstack-usage=117000")
     add_cxx_flag_if_supported("-Wstack-usage=240000")
   else()
     add_c_flag_if_supported("-Wstack-usage=100000")
     add_cxx_flag_if_supported("-Wstack-usage=240000")
   endif()
-
-  # TODO(jzern): this could be added as a cxx flags for test/*.cc only, avoiding
-  # third_party.
-  add_c_flag_if_supported("-Wshorten-64-to-32")
 
   # Add -Wshadow only for C files to avoid massive gtest warning spam.
   add_c_flag_if_supported("-Wshadow")

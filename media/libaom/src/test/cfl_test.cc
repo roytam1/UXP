@@ -9,6 +9,8 @@
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
 
+#include <tuple>
+
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 #include "config/av1_rtcd.h"
@@ -17,7 +19,7 @@
 #include "test/util.h"
 #include "test/acm_random.h"
 
-using ::testing::make_tuple;
+using std::make_tuple;
 
 using libaom_test::ACMRandom;
 
@@ -166,13 +168,13 @@ class CFLTestWithAlignedData : public CFLTest {
 };
 
 typedef cfl_subtract_average_fn (*sub_avg_fn)(TX_SIZE tx_size);
-typedef ::testing::tuple<TX_SIZE, sub_avg_fn> sub_avg_param;
+typedef std::tuple<TX_SIZE, sub_avg_fn> sub_avg_param;
 class CFLSubAvgTest : public ::testing::TestWithParam<sub_avg_param>,
                       public CFLTestWithData<int16_t> {
  public:
   virtual void SetUp() {
-    CFLTest::init(::testing::get<0>(this->GetParam()));
-    sub_avg = ::testing::get<1>(this->GetParam())(tx_size);
+    CFLTest::init(std::get<0>(this->GetParam()));
+    sub_avg = std::get<1>(this->GetParam())(tx_size);
     sub_avg_ref = cfl_get_subtract_average_fn_c(tx_size);
   }
   virtual ~CFLSubAvgTest() {}
@@ -216,10 +218,10 @@ class CFLSubsampleTest : public ::testing::TestWithParam<S>,
                          public CFLTestWithData<I> {
  public:
   virtual void SetUp() {
-    CFLTest::init(::testing::get<0>(this->GetParam()));
-    fun_420 = ::testing::get<1>(this->GetParam())(this->tx_size);
-    fun_422 = ::testing::get<2>(this->GetParam())(this->tx_size);
-    fun_444 = ::testing::get<3>(this->GetParam())(this->tx_size);
+    CFLTest::init(std::get<0>(this->GetParam()));
+    fun_420 = std::get<1>(this->GetParam())(this->tx_size);
+    fun_422 = std::get<2>(this->GetParam())(this->tx_size);
+    fun_444 = std::get<3>(this->GetParam())(this->tx_size);
   }
 
  protected:
@@ -269,8 +271,8 @@ class CFLSubsampleTest : public ::testing::TestWithParam<S>,
 };
 
 typedef cfl_subsample_lbd_fn (*get_subsample_lbd_fn)(TX_SIZE tx_size);
-typedef ::testing::tuple<TX_SIZE, get_subsample_lbd_fn, get_subsample_lbd_fn,
-                         get_subsample_lbd_fn>
+typedef std::tuple<TX_SIZE, get_subsample_lbd_fn, get_subsample_lbd_fn,
+                   get_subsample_lbd_fn>
     subsample_lbd_param;
 class CFLSubsampleLBDTest
     : public CFLSubsampleTest<subsample_lbd_param, cfl_subsample_lbd_fn,
@@ -312,8 +314,8 @@ TEST_P(CFLSubsampleLBDTest, DISABLED_SubsampleLBD444SpeedTest) {
 
 #if CONFIG_AV1_HIGHBITDEPTH
 typedef cfl_subsample_hbd_fn (*get_subsample_hbd_fn)(TX_SIZE tx_size);
-typedef ::testing::tuple<TX_SIZE, get_subsample_hbd_fn, get_subsample_hbd_fn,
-                         get_subsample_hbd_fn>
+typedef std::tuple<TX_SIZE, get_subsample_hbd_fn, get_subsample_hbd_fn,
+                   get_subsample_hbd_fn>
     subsample_hbd_param;
 class CFLSubsampleHBDTest
     : public CFLSubsampleTest<subsample_hbd_param, cfl_subsample_hbd_fn,
@@ -355,13 +357,13 @@ TEST_P(CFLSubsampleHBDTest, DISABLED_SubsampleHBD444SpeedTest) {
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 
 typedef cfl_predict_lbd_fn (*get_predict_fn)(TX_SIZE tx_size);
-typedef ::testing::tuple<TX_SIZE, get_predict_fn> predict_param;
+typedef std::tuple<TX_SIZE, get_predict_fn> predict_param;
 class CFLPredictTest : public ::testing::TestWithParam<predict_param>,
                        public CFLTestWithAlignedData<uint8_t> {
  public:
   virtual void SetUp() {
-    CFLTest::init(::testing::get<0>(this->GetParam()));
-    predict = ::testing::get<1>(this->GetParam())(tx_size);
+    CFLTest::init(std::get<0>(this->GetParam()));
+    predict = std::get<1>(this->GetParam())(tx_size);
     predict_ref = cfl_get_predict_lbd_fn_c(tx_size);
   }
   virtual ~CFLPredictTest() {}
@@ -402,13 +404,13 @@ TEST_P(CFLPredictTest, DISABLED_PredictSpeedTest) {
 
 #if CONFIG_AV1_HIGHBITDEPTH
 typedef cfl_predict_hbd_fn (*get_predict_fn_hbd)(TX_SIZE tx_size);
-typedef ::testing::tuple<TX_SIZE, get_predict_fn_hbd> predict_param_hbd;
+typedef std::tuple<TX_SIZE, get_predict_fn_hbd> predict_param_hbd;
 class CFLPredictHBDTest : public ::testing::TestWithParam<predict_param_hbd>,
                           public CFLTestWithAlignedData<uint16_t> {
  public:
   virtual void SetUp() {
-    CFLTest::init(::testing::get<0>(this->GetParam()));
-    predict = ::testing::get<1>(this->GetParam())(tx_size);
+    CFLTest::init(std::get<0>(this->GetParam()));
+    predict = std::get<1>(this->GetParam())(tx_size);
     predict_ref = cfl_get_predict_hbd_fn_c(tx_size);
   }
   virtual ~CFLPredictHBDTest() {}
@@ -454,8 +456,8 @@ TEST_P(CFLPredictHBDTest, DISABLED_PredictHBDSpeedTest) {
 const sub_avg_param sub_avg_sizes_sse2[] = { ALL_CFL_TX_SIZES(
     cfl_get_subtract_average_fn_sse2) };
 
-INSTANTIATE_TEST_CASE_P(SSE2, CFLSubAvgTest,
-                        ::testing::ValuesIn(sub_avg_sizes_sse2));
+INSTANTIATE_TEST_SUITE_P(SSE2, CFLSubAvgTest,
+                         ::testing::ValuesIn(sub_avg_sizes_sse2));
 
 #endif
 
@@ -469,11 +471,11 @@ const subsample_lbd_param subsample_lbd_sizes_ssse3[] = {
 const predict_param predict_sizes_ssse3[] = { ALL_CFL_TX_SIZES(
     cfl_get_predict_lbd_fn_ssse3) };
 
-INSTANTIATE_TEST_CASE_P(SSSE3, CFLSubsampleLBDTest,
-                        ::testing::ValuesIn(subsample_lbd_sizes_ssse3));
+INSTANTIATE_TEST_SUITE_P(SSSE3, CFLSubsampleLBDTest,
+                         ::testing::ValuesIn(subsample_lbd_sizes_ssse3));
 
-INSTANTIATE_TEST_CASE_P(SSSE3, CFLPredictTest,
-                        ::testing::ValuesIn(predict_sizes_ssse3));
+INSTANTIATE_TEST_SUITE_P(SSSE3, CFLPredictTest,
+                         ::testing::ValuesIn(predict_sizes_ssse3));
 
 #if CONFIG_AV1_HIGHBITDEPTH
 const subsample_hbd_param subsample_hbd_sizes_ssse3[] = {
@@ -485,11 +487,11 @@ const subsample_hbd_param subsample_hbd_sizes_ssse3[] = {
 const predict_param_hbd predict_sizes_hbd_ssse3[] = { ALL_CFL_TX_SIZES(
     cfl_get_predict_hbd_fn_ssse3) };
 
-INSTANTIATE_TEST_CASE_P(SSSE3, CFLSubsampleHBDTest,
-                        ::testing::ValuesIn(subsample_hbd_sizes_ssse3));
+INSTANTIATE_TEST_SUITE_P(SSSE3, CFLSubsampleHBDTest,
+                         ::testing::ValuesIn(subsample_hbd_sizes_ssse3));
 
-INSTANTIATE_TEST_CASE_P(SSSE3, CFLPredictHBDTest,
-                        ::testing::ValuesIn(predict_sizes_hbd_ssse3));
+INSTANTIATE_TEST_SUITE_P(SSSE3, CFLPredictHBDTest,
+                         ::testing::ValuesIn(predict_sizes_hbd_ssse3));
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 #endif  // HAVE_SSSE3
 
@@ -506,14 +508,14 @@ const subsample_lbd_param subsample_lbd_sizes_avx2[] = {
 const predict_param predict_sizes_avx2[] = { ALL_CFL_TX_SIZES(
     cfl_get_predict_lbd_fn_avx2) };
 
-INSTANTIATE_TEST_CASE_P(AVX2, CFLSubAvgTest,
-                        ::testing::ValuesIn(sub_avg_sizes_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, CFLSubAvgTest,
+                         ::testing::ValuesIn(sub_avg_sizes_avx2));
 
-INSTANTIATE_TEST_CASE_P(AVX2, CFLSubsampleLBDTest,
-                        ::testing::ValuesIn(subsample_lbd_sizes_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, CFLSubsampleLBDTest,
+                         ::testing::ValuesIn(subsample_lbd_sizes_avx2));
 
-INSTANTIATE_TEST_CASE_P(AVX2, CFLPredictTest,
-                        ::testing::ValuesIn(predict_sizes_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, CFLPredictTest,
+                         ::testing::ValuesIn(predict_sizes_avx2));
 
 #if CONFIG_AV1_HIGHBITDEPTH
 const subsample_hbd_param subsample_hbd_sizes_avx2[] = {
@@ -525,11 +527,11 @@ const subsample_hbd_param subsample_hbd_sizes_avx2[] = {
 const predict_param_hbd predict_sizes_hbd_avx2[] = { ALL_CFL_TX_SIZES(
     cfl_get_predict_hbd_fn_avx2) };
 
-INSTANTIATE_TEST_CASE_P(AVX2, CFLSubsampleHBDTest,
-                        ::testing::ValuesIn(subsample_hbd_sizes_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, CFLSubsampleHBDTest,
+                         ::testing::ValuesIn(subsample_hbd_sizes_avx2));
 
-INSTANTIATE_TEST_CASE_P(AVX2, CFLPredictHBDTest,
-                        ::testing::ValuesIn(predict_sizes_hbd_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, CFLPredictHBDTest,
+                         ::testing::ValuesIn(predict_sizes_hbd_avx2));
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 #endif  // HAVE_AVX2
 
@@ -546,14 +548,14 @@ const subsample_lbd_param subsample_lbd_sizes_neon[] = {
                              cfl_get_luma_subsampling_444_lbd_neon)
 };
 
-INSTANTIATE_TEST_CASE_P(NEON, CFLSubAvgTest,
-                        ::testing::ValuesIn(sub_avg_sizes_neon));
+INSTANTIATE_TEST_SUITE_P(NEON, CFLSubAvgTest,
+                         ::testing::ValuesIn(sub_avg_sizes_neon));
 
-INSTANTIATE_TEST_CASE_P(NEON, CFLSubsampleLBDTest,
-                        ::testing::ValuesIn(subsample_lbd_sizes_neon));
+INSTANTIATE_TEST_SUITE_P(NEON, CFLSubsampleLBDTest,
+                         ::testing::ValuesIn(subsample_lbd_sizes_neon));
 
-INSTANTIATE_TEST_CASE_P(NEON, CFLPredictTest,
-                        ::testing::ValuesIn(predict_sizes_neon));
+INSTANTIATE_TEST_SUITE_P(NEON, CFLPredictTest,
+                         ::testing::ValuesIn(predict_sizes_neon));
 
 #if CONFIG_AV1_HIGHBITDEPTH
 const subsample_hbd_param subsample_hbd_sizes_neon[] = {
@@ -565,11 +567,11 @@ const subsample_hbd_param subsample_hbd_sizes_neon[] = {
 const predict_param_hbd predict_sizes_hbd_neon[] = { ALL_CFL_TX_SIZES(
     cfl_get_predict_hbd_fn_neon) };
 
-INSTANTIATE_TEST_CASE_P(NEON, CFLSubsampleHBDTest,
-                        ::testing::ValuesIn(subsample_hbd_sizes_neon));
+INSTANTIATE_TEST_SUITE_P(NEON, CFLSubsampleHBDTest,
+                         ::testing::ValuesIn(subsample_hbd_sizes_neon));
 
-INSTANTIATE_TEST_CASE_P(NEON, CFLPredictHBDTest,
-                        ::testing::ValuesIn(predict_sizes_hbd_neon));
+INSTANTIATE_TEST_SUITE_P(NEON, CFLPredictHBDTest,
+                         ::testing::ValuesIn(predict_sizes_hbd_neon));
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 #endif  // HAVE_NEON
 
@@ -577,7 +579,7 @@ INSTANTIATE_TEST_CASE_P(NEON, CFLPredictHBDTest,
 const sub_avg_param sub_avg_sizes_vsx[] = { ALL_CFL_TX_SIZES(
     cfl_get_subtract_average_fn_vsx) };
 
-INSTANTIATE_TEST_CASE_P(VSX, CFLSubAvgTest,
-                        ::testing::ValuesIn(sub_avg_sizes_vsx));
+INSTANTIATE_TEST_SUITE_P(VSX, CFLSubAvgTest,
+                         ::testing::ValuesIn(sub_avg_sizes_vsx));
 #endif
 }  // namespace

@@ -44,16 +44,22 @@ extern "C" {
 #define MV_COST_WEIGHT 108
 #define MV_COST_WEIGHT_SUB 120
 
-#define RD_THRESH_MAX_FACT 64
-#define RD_THRESH_INC 1
+// The fractional part of rd_thresh factor is stored with 5 bits. The maximum
+// factor that we allow is two, which is stored as 2 ** (5+1) = 64
+#define RD_THRESH_FAC_FRAC_BITS (5)
+#define RD_THRESH_FAC_FRAC_VAL (1 << (RD_THRESH_FAC_FRAC_BITS))
+#define RD_THRESH_MAX_FACT ((RD_THRESH_FAC_FRAC_VAL) << 1)
+#define RD_THRESH_LOG_DEC_FACTOR (4)
+#define RD_THRESH_INC (1)
 
 // Factor to weigh the rate for switchable interp filters.
 #define SWITCHABLE_INTERP_RATE_FACTOR 1
 
 enum {
-  // Default initialization
+  // Default initialization when we are not using winner mode framework. e.g.
+  // intrabc
   DEFAULT_EVAL = 0,
-  // Initialization for default mode evaluation
+  // Initialization for selecting winner mode
   MODE_EVAL,
   // Initialization for winner mode evaluation
   WINNER_MODE_EVAL,
@@ -73,10 +79,22 @@ typedef struct RD_OPT {
   int RDMULT;
 
   double r0, arf_r0;
-#if !USE_TPL_CLASSIC_MODEL
   double mc_saved_base, mc_count_base;
-#endif  // !USE_TPL_CLASSIC_MODEL
 } RD_OPT;
+
+typedef struct {
+  // Cost of transmitting the actual motion vector.
+  // mv_component[0][i] is the cost of motion vector with horizontal component
+  // (mv_row) equal to i - MV_MAX.
+  // mv_component[1][i] is the cost of motion vector with vertical component
+  // (mv_col) equal to i - MV_MAX.
+  int mv_component[2][MV_VALS];
+
+  // joint_mv[i] is the cost of transmitting joint mv(MV_JOINT_TYPE) of
+  // type i.
+  // TODO(huisu@google.com): we can update dv_joint_cost per SB.
+  int joint_mv[MV_JOINTS];
+} IntraBCMVCosts;
 
 static INLINE void av1_init_rd_stats(RD_STATS *rd_stats) {
 #if CONFIG_RD_DEBUG
@@ -224,8 +242,8 @@ void av1_model_rd_curvfit(BLOCK_SIZE bsize, double sse_norm, double xqr,
 void av1_model_rd_surffit(BLOCK_SIZE bsize, double sse_norm, double xm,
                           double yl, double *rate_f, double *distbysse_f);
 
-int av1_get_switchable_rate(const AV1_COMMON *const cm, MACROBLOCK *x,
-                            const MACROBLOCKD *xd);
+int av1_get_switchable_rate(const MACROBLOCK *x, const MACROBLOCKD *xd,
+                            InterpFilter interp_filter);
 
 YV12_BUFFER_CONFIG *av1_get_scaled_ref_frame(const struct AV1_COMP *cpi,
                                              int ref_frame);
@@ -234,7 +252,7 @@ void av1_init_me_luts(void);
 
 void av1_set_mvcost(MACROBLOCK *x, int ref, int ref_mv_idx);
 
-void av1_get_entropy_contexts(BLOCK_SIZE bsize,
+void av1_get_entropy_contexts(BLOCK_SIZE plane_bsize,
                               const struct macroblockd_plane *pd,
                               ENTROPY_CONTEXT t_above[MAX_MIB_SIZE],
                               ENTROPY_CONTEXT t_left[MAX_MIB_SIZE]);
@@ -242,8 +260,16 @@ void av1_get_entropy_contexts(BLOCK_SIZE bsize,
 void av1_set_rd_speed_thresholds(struct AV1_COMP *cpi);
 
 void av1_update_rd_thresh_fact(const AV1_COMMON *const cm,
-                               int (*fact)[MAX_MODES], int rd_thresh, int bsize,
-                               int best_mode_index);
+                               int (*fact)[MAX_MODES], int rd_thresh,
+                               BLOCK_SIZE bsize, THR_MODES best_mode_index);
+
+static INLINE void reset_thresh_freq_fact(MACROBLOCK *const x) {
+  for (int i = 0; i < BLOCK_SIZES_ALL; ++i) {
+    for (int j = 0; j < MAX_MODES; ++j) {
+      x->thresh_freq_fact[i][j] = RD_THRESH_FAC_FRAC_VAL;
+    }
+  }
+}
 
 static INLINE int rd_less_than_thresh(int64_t best_rd, int thresh,
                                       int thresh_fact) {
@@ -282,9 +308,41 @@ static INLINE uint32_t get_rd_opt_coeff_thresh(
   return coeff_opt_thresh;
 }
 
+// Used to reset the state of tx/mb rd hash information
+static INLINE void reset_hash_records(MACROBLOCK *const x,
+                                      int use_inter_txb_hash) {
+  int32_t record_idx;
+
+  // Reset the state for use_inter_txb_hash
+  if (use_inter_txb_hash) {
+    for (record_idx = 0;
+         record_idx < ((MAX_MIB_SIZE >> 1) * (MAX_MIB_SIZE >> 1)); record_idx++)
+      x->txb_rd_record_8X8[record_idx].num =
+          x->txb_rd_record_8X8[record_idx].index_start = 0;
+    for (record_idx = 0;
+         record_idx < ((MAX_MIB_SIZE >> 2) * (MAX_MIB_SIZE >> 2)); record_idx++)
+      x->txb_rd_record_16X16[record_idx].num =
+          x->txb_rd_record_16X16[record_idx].index_start = 0;
+    for (record_idx = 0;
+         record_idx < ((MAX_MIB_SIZE >> 3) * (MAX_MIB_SIZE >> 3)); record_idx++)
+      x->txb_rd_record_32X32[record_idx].num =
+          x->txb_rd_record_32X32[record_idx].index_start = 0;
+    for (record_idx = 0;
+         record_idx < ((MAX_MIB_SIZE >> 4) * (MAX_MIB_SIZE >> 4)); record_idx++)
+      x->txb_rd_record_64X64[record_idx].num =
+          x->txb_rd_record_64X64[record_idx].index_start = 0;
+  }
+
+  // Reset the state for use_intra_txb_hash
+  x->txb_rd_record_intra.num = x->txb_rd_record_intra.index_start = 0;
+
+  // Reset the state for use_mb_rd_hash
+  x->mb_rd_record.num = x->mb_rd_record.index_start = 0;
+}
+
 void av1_setup_pred_block(const MACROBLOCKD *xd,
                           struct buf_2d dst[MAX_MB_PLANE],
-                          const YV12_BUFFER_CONFIG *src, int mi_row, int mi_col,
+                          const YV12_BUFFER_CONFIG *src,
                           const struct scale_factors *scale,
                           const struct scale_factors *scale_uv,
                           const int num_planes);

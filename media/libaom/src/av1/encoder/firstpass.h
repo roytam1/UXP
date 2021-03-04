@@ -12,8 +12,8 @@
 #ifndef AOM_AV1_ENCODER_FIRSTPASS_H_
 #define AOM_AV1_ENCODER_FIRSTPASS_H_
 
+#include "av1/common/av1_common_int.h"
 #include "av1/common/enums.h"
-#include "av1/common/onyxc_int.h"
 #include "av1/encoder/lookahead.h"
 #include "av1/encoder/ratectrl.h"
 
@@ -29,8 +29,6 @@ extern "C" {
 #define MIN_MV_IN_OUT 0.4
 
 #define VLOW_MOTION_THRESHOLD 950
-
-#define MAX_ARF_LAYERS 5
 
 typedef struct {
   // Frame number in display order, if stats are for a single frame.
@@ -112,6 +110,9 @@ typedef struct {
   unsigned char index;
   FRAME_UPDATE_TYPE update_type[MAX_STATIC_GF_GROUP_LENGTH];
   unsigned char arf_src_offset[MAX_STATIC_GF_GROUP_LENGTH];
+  // The number of frames displayed so far within the GOP at a given coding
+  // frame.
+  unsigned char cur_frame_idx[MAX_STATIC_GF_GROUP_LENGTH];
   unsigned char frame_disp_idx[MAX_STATIC_GF_GROUP_LENGTH];
   int ref_frame_disp_idx[MAX_STATIC_GF_GROUP_LENGTH][REF_FRAMES];
   int ref_frame_gop_idx[MAX_STATIC_GF_GROUP_LENGTH][REF_FRAMES];
@@ -129,17 +130,22 @@ typedef struct {
 } GF_GROUP;
 
 typedef struct {
+  FIRSTPASS_STATS *stats_in_start;
+  FIRSTPASS_STATS *stats_in_end;
+  FIRSTPASS_STATS *stats_in_buf_end;
+  FIRSTPASS_STATS *total_stats;
+  FIRSTPASS_STATS *total_left_stats;
+} STATS_BUFFER_CTX;
+
+typedef struct {
   unsigned int section_intra_rating;
-  FIRSTPASS_STATS total_stats;
   // Circular queue of first pass stats stored for most recent frames.
   // cpi->output_pkt_list[i].data.twopass_stats.buf points to actual data stored
   // here.
-  FIRSTPASS_STATS frame_stats_arr[MAX_LAG_BUFFERS];
+  FIRSTPASS_STATS *frame_stats_arr[MAX_LAP_BUFFERS + 1];
   int frame_stats_next_idx;  // Index to next unused element in frame_stats_arr.
   const FIRSTPASS_STATS *stats_in;
-  const FIRSTPASS_STATS *stats_in_start;
-  const FIRSTPASS_STATS *stats_in_end;
-  FIRSTPASS_STATS total_left_stats;
+  STATS_BUFFER_CTX *stats_buf_ctx;
   int first_pass_done;
   int64_t bits_left;
   double modified_error_min;
@@ -156,9 +162,6 @@ typedef struct {
 
   // Error score of frames still to be coded in kf group
   int64_t kf_group_error_left;
-
-  // The fraction for a kf groups total bits allocated to the inter frames
-  double kfgroup_inter_fraction;
 
   // Over time correction for bits per macro block estimation
   double bpm_factor;
@@ -180,7 +183,6 @@ struct AV1_COMP;
 struct EncodeFrameParams;
 struct AV1EncoderConfig;
 
-void av1_init_first_pass(struct AV1_COMP *cpi);
 void av1_rc_get_first_pass_params(struct AV1_COMP *cpi);
 void av1_first_pass(struct AV1_COMP *cpi, const int64_t ts_duration);
 void av1_end_first_pass(struct AV1_COMP *cpi);

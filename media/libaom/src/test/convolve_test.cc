@@ -10,6 +10,7 @@
  */
 
 #include <string.h>
+#include <tuple>
 
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
@@ -47,7 +48,7 @@ struct ConvolveFunctions {
   int use_highbd_;  // 0 if high bitdepth not used, else the actual bit depth.
 };
 
-typedef ::testing::tuple<int, int, const ConvolveFunctions *> ConvolveParam;
+typedef std::tuple<int, int, const ConvolveFunctions *> ConvolveParam;
 
 #define ALL_SIZES_64(convolve_fn)                                         \
   make_tuple(4, 4, &convolve_fn), make_tuple(8, 4, &convolve_fn),         \
@@ -748,7 +749,7 @@ TEST_P(ConvolveTest, DISABLED_Speed) {
          UUT_->use_highbd_, elapsed_time);
 }
 
-using ::testing::make_tuple;
+using std::make_tuple;
 
 // WRAP macro is only used for high bitdepth build.
 #if CONFIG_AV1_HIGHBITDEPTH
@@ -818,7 +819,8 @@ const ConvolveFunctions convolve8_c(aom_convolve_copy_c, aom_convolve8_horiz_c,
 const ConvolveParam kArrayConvolve_c[] = { ALL_SIZES(convolve8_c) };
 #endif
 
-INSTANTIATE_TEST_CASE_P(C, ConvolveTest, ::testing::ValuesIn(kArrayConvolve_c));
+INSTANTIATE_TEST_SUITE_P(C, ConvolveTest,
+                         ::testing::ValuesIn(kArrayConvolve_c));
 
 #if HAVE_SSE2 && ARCH_X86_64
 #if CONFIG_AV1_HIGHBITDEPTH
@@ -840,8 +842,8 @@ const ConvolveFunctions convolve8_sse2(aom_convolve_copy_c,
                                        aom_convolve8_vert_sse2, 0);
 const ConvolveParam kArrayConvolve_sse2[] = { ALL_SIZES(convolve8_sse2) };
 #endif
-INSTANTIATE_TEST_CASE_P(SSE2, ConvolveTest,
-                        ::testing::ValuesIn(kArrayConvolve_sse2));
+INSTANTIATE_TEST_SUITE_P(SSE2, ConvolveTest,
+                         ::testing::ValuesIn(kArrayConvolve_sse2));
 #endif
 
 #if HAVE_SSSE3
@@ -850,8 +852,8 @@ const ConvolveFunctions convolve8_ssse3(aom_convolve_copy_c,
                                         aom_convolve8_vert_ssse3, 0);
 
 const ConvolveParam kArrayConvolve8_ssse3[] = { ALL_SIZES(convolve8_ssse3) };
-INSTANTIATE_TEST_CASE_P(SSSE3, ConvolveTest,
-                        ::testing::ValuesIn(kArrayConvolve8_ssse3));
+INSTANTIATE_TEST_SUITE_P(SSSE3, ConvolveTest,
+                         ::testing::ValuesIn(kArrayConvolve8_ssse3));
 #endif
 
 #if HAVE_AVX2
@@ -876,8 +878,8 @@ const ConvolveFunctions convolve8_avx2(aom_convolve_copy_c,
 const ConvolveParam kArray_Convolve8_avx2[] = { ALL_SIZES(convolve8_avx2) };
 #endif
 
-INSTANTIATE_TEST_CASE_P(AVX2, ConvolveTest,
-                        ::testing::ValuesIn(kArray_Convolve8_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, ConvolveTest,
+                         ::testing::ValuesIn(kArray_Convolve8_avx2));
 #endif  // HAVE_AVX2
 
 }  // namespace

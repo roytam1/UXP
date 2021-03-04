@@ -13,8 +13,8 @@
 
 #include "aom_ports/system_state.h"
 
+#include "av1/common/av1_common_int.h"
 #include "av1/common/blockd.h"
-#include "av1/common/onyxc_int.h"
 
 PREDICTION_MODE av1_left_block_mode(const MB_MODE_INFO *left_mi) {
   if (!left_mi) return DC_PRED;
@@ -28,11 +28,12 @@ PREDICTION_MODE av1_above_block_mode(const MB_MODE_INFO *above_mi) {
   return above_mi->mode;
 }
 
-void av1_set_contexts(const MACROBLOCKD *xd, struct macroblockd_plane *pd,
-                      int plane, BLOCK_SIZE plane_bsize, TX_SIZE tx_size,
-                      int has_eob, int aoff, int loff) {
-  ENTROPY_CONTEXT *const a = pd->above_context + aoff;
-  ENTROPY_CONTEXT *const l = pd->left_context + loff;
+void av1_set_entropy_contexts(const MACROBLOCKD *xd,
+                              struct macroblockd_plane *pd, int plane,
+                              BLOCK_SIZE plane_bsize, TX_SIZE tx_size,
+                              int has_eob, int aoff, int loff) {
+  ENTROPY_CONTEXT *const a = pd->above_entropy_context + aoff;
+  ENTROPY_CONTEXT *const l = pd->left_entropy_context + loff;
   const int txs_wide = tx_size_wide_unit[tx_size];
   const int txs_high = tx_size_high_unit[tx_size];
 
@@ -56,25 +57,18 @@ void av1_set_contexts(const MACROBLOCKD *xd, struct macroblockd_plane *pd,
     memset(l, has_eob, sizeof(*l) * txs_high);
   }
 }
-void av1_reset_skip_context(MACROBLOCKD *xd, int mi_row, int mi_col,
-                            BLOCK_SIZE bsize, const int num_planes) {
-  int i;
-  int nplanes;
-  int chroma_ref;
+void av1_reset_entropy_context(MACROBLOCKD *xd, BLOCK_SIZE bsize,
+                               const int num_planes) {
   assert(bsize < BLOCK_SIZES_ALL);
-
-  chroma_ref =
-      is_chroma_reference(mi_row, mi_col, bsize, xd->plane[1].subsampling_x,
-                          xd->plane[1].subsampling_y);
-  nplanes = 1 + (num_planes - 1) * chroma_ref;
-  for (i = 0; i < nplanes; i++) {
+  const int nplanes = 1 + (num_planes - 1) * xd->is_chroma_ref;
+  for (int i = 0; i < nplanes; i++) {
     struct macroblockd_plane *const pd = &xd->plane[i];
     const BLOCK_SIZE plane_bsize =
         get_plane_block_size(bsize, pd->subsampling_x, pd->subsampling_y);
-    const int txs_wide = block_size_wide[plane_bsize] >> tx_size_wide_log2[0];
-    const int txs_high = block_size_high[plane_bsize] >> tx_size_high_log2[0];
-    memset(pd->above_context, 0, sizeof(ENTROPY_CONTEXT) * txs_wide);
-    memset(pd->left_context, 0, sizeof(ENTROPY_CONTEXT) * txs_high);
+    const int txs_wide = mi_size_wide[plane_bsize];
+    const int txs_high = mi_size_high[plane_bsize];
+    memset(pd->above_entropy_context, 0, sizeof(ENTROPY_CONTEXT) * txs_wide);
+    memset(pd->left_entropy_context, 0, sizeof(ENTROPY_CONTEXT) * txs_high);
   }
 }
 
