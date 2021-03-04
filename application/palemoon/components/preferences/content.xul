@@ -40,7 +40,15 @@
       <preference id="media.mediasource.enabled"       name="media.mediasource.enabled"       type="bool"/>
       <preference id="media.mediasource.mp4.enabled"   name="media.mediasource.mp4.enabled"   type="bool"/>
       <preference id="media.mediasource.webm.enabled"  name="media.mediasource.webm.enabled"  type="bool"/>
-      
+
+      <!-- Media formats -->
+      <preference id="media.av1.enabled"               name="media.av1.enabled"               type="bool"/>
+      <preference id="media.flac.enabled"              name="media.flac.enabled"              type="bool"/>
+      <preference id="media.mp4.enabled"               name="media.mp4.enabled"               type="bool"/>
+      <preference id="media.ogg.enabled"               name="media.ogg.enabled"               type="bool"/>
+      <preference id="media.opus.enabled"              name="media.opus.enabled"              type="bool"/>
+      <preference id="media.webm.enabled"              name="media.webm.enabled"              type="bool"/>
+
     </preferences>
     
     <script type="application/javascript" src="chrome://mozapps/content/preferences/fontbuilder.js"/>
@@ -176,6 +184,24 @@
                  label="&videoMSEMP4.label;" accesskey="&videoMSEMP4.accesskey;"/>
        <checkbox class="indent" id="videoMSEWebM" preference="media.mediasource.webm.enabled"
                  label="&videoMSEWebM.label;" accesskey="&videoMSEWebM.accesskey;"/>
+     </groupbox>
+
+    <!-- Media formats -->
+     <groupbox id="mediaSupport" align="start">
+       <caption label="&mediaSupport.label;"/>
+       <hbox align="center">
+         <label id="allowEnable" value="&allowEnable.label;"/>
+#ifdef MOZ_FMP4
+         <checkbox id="enableMP4"    label="&enableMP4.label;"    preference="media.mp4.enabled"/>
+#endif
+         <checkbox id="enableWebM"   label="&enableWebM.label;"   preference="media.webm.enabled"/>
+#ifdef MOZ_AV1
+         <checkbox id="enableAV1"    label="&enableAV1.label;"    preference="media.av1.enabled"/>
+#endif
+         <checkbox id="enableOGG"    label="&enableOGG.label;"    preference="media.ogg.enabled"/>
+         <checkbox id="enableOPUS"   label="&enableOPUS.label;"   preference="media.opus.enabled"/>
+         <checkbox id="enableFLAC"   label="&enableFLAC.label;"   preference="media.flac.enabled"/>
+       </hbox>
      </groupbox>
 
   </prefpane>
