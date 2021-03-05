@@ -25,6 +25,7 @@
 #endif
 #include "av1/encoder/encoder.h"
 
+#include "av1/encoder/motion_search_facade.h"
 #include "av1/encoder/partition_strategy.h"
 #include "av1/encoder/rdopt.h"
 
@@ -62,6 +63,10 @@ void av1_intra_mode_cnn_partition(const AV1_COMMON *const cm, MACROBLOCK *x,
   assert(cm->seq_params.sb_size >= BLOCK_64X64 &&
          "Invalid sb_size for intra_cnn!");
   const int bsize_idx = convert_bsize_to_idx(bsize);
+
+  if (bsize == BLOCK_128X128) {
+    return;
+  }
 
   // Precompute the CNN part and cache the result in MACROBLOCK
   if (bsize == BLOCK_64X64 && !x->cnn_output_valid) {
@@ -264,7 +269,7 @@ void av1_simple_motion_search_based_split(
   const float *ml_std = av1_simple_motion_search_split_std[bsize_idx];
   const NN_CONFIG *nn_config =
       av1_simple_motion_search_split_nn_config[bsize_idx];
-  const int agg = cpi->sf.simple_motion_search_prune_agg;
+  const int agg = cpi->sf.part_sf.simple_motion_search_prune_agg;
 
   const float split_only_thresh =
       av1_simple_motion_search_split_thresh[agg][res_idx][bsize_idx];
@@ -291,7 +296,8 @@ void av1_simple_motion_search_based_split(
     *do_rectangular_split = 0;
   }
 
-  if (cpi->sf.simple_motion_search_split >= 2 && score < no_split_thresh) {
+  if (cpi->sf.part_sf.simple_motion_search_split >= 2 &&
+      score < no_split_thresh) {
     *do_square_split = 0;
   }
 }
@@ -310,7 +316,7 @@ static int simple_motion_search_get_best_ref(
   const AV1_COMMON *const cm = &cpi->common;
   int best_ref = -1;
 
-  if (mi_col >= cm->mi_cols || mi_row >= cm->mi_rows) {
+  if (mi_col >= cm->mi_params.mi_cols || mi_row >= cm->mi_params.mi_rows) {
     // If the whole block is outside of the image, set the var and sse to 0.
     *best_var = 0;
     *best_sse = 0;
@@ -321,7 +327,6 @@ static int simple_motion_search_get_best_ref(
   // Otherwise do loop through the reference frames and find the one with the
   // minimum SSE
   const MACROBLOCKD *xd = &x->e_mbd;
-  const MV *mv_ref_fulls = pc_tree->mv_ref_fulls;
 
   const int num_planes = 1;
 
@@ -331,9 +336,11 @@ static int simple_motion_search_get_best_ref(
     const int ref = refs[ref_idx];
 
     if (cpi->ref_frame_flags & av1_ref_frame_flag_list[ref]) {
+      const FULLPEL_MV *start_mvs = pc_tree->start_mvs;
       unsigned int curr_sse = 0, curr_var = 0;
-      av1_simple_motion_search(cpi, x, mi_row, mi_col, bsize, ref,
-                               mv_ref_fulls[ref], num_planes, use_subpixel);
+      int_mv best_mv =
+          av1_simple_motion_search(cpi, x, mi_row, mi_col, bsize, ref,
+                                   start_mvs[ref], num_planes, use_subpixel);
       curr_var = cpi->fn_ptr[bsize].vf(
           x->plane[0].src.buf, x->plane[0].src.stride, xd->plane[0].dst.buf,
           xd->plane[0].dst.stride, &curr_sse);
@@ -344,18 +351,14 @@ static int simple_motion_search_get_best_ref(
       }
 
       if (save_mv) {
-        const int new_mv_row = x->best_mv.as_mv.row / 8;
-        const int new_mv_col = x->best_mv.as_mv.col / 8;
-
-        pc_tree->mv_ref_fulls[ref].row = new_mv_row;
-        pc_tree->mv_ref_fulls[ref].col = new_mv_col;
+        pc_tree->start_mvs[ref].row = best_mv.as_mv.row / 8;
+        pc_tree->start_mvs[ref].col = best_mv.as_mv.col / 8;
 
         if (bsize >= BLOCK_8X8) {
           for (int r_idx = 0; r_idx < 4; r_idx++) {
             // Propagate the new motion vectors to a lower level
             PC_TREE *sub_tree = pc_tree->split[r_idx];
-            sub_tree->mv_ref_fulls[ref].row = new_mv_row;
-            sub_tree->mv_ref_fulls[ref].col = new_mv_col;
+            sub_tree->start_mvs[ref] = pc_tree->start_mvs[ref];
           }
         }
       }
@@ -511,7 +514,7 @@ void av1_simple_motion_search_prune_rect(AV1_COMP *const cpi, MACROBLOCK *x,
   const float *ml_mean = av1_simple_motion_search_prune_rect_mean[bsize_idx],
               *ml_std = av1_simple_motion_search_prune_rect_std[bsize_idx];
 
-  const int agg = cpi->sf.simple_motion_search_prune_agg;
+  const int agg = cpi->sf.part_sf.simple_motion_search_prune_agg;
   const float prune_thresh =
       av1_simple_motion_search_prune_rect_thresh[agg][res_idx][bsize_idx];
 
@@ -542,7 +545,8 @@ void av1_simple_motion_search_prune_rect(AV1_COMP *const cpi, MACROBLOCK *x,
   av1_nn_softmax(scores, probs, num_classes);
 
   // Determine if we should prune rectangular partitions.
-  if (cpi->sf.simple_motion_search_prune_rect && !frame_is_intra_only(cm) &&
+  if (cpi->sf.part_sf.simple_motion_search_prune_rect &&
+      !frame_is_intra_only(cm) &&
       (*partition_horz_allowed || *partition_vert_allowed) &&
       bsize >= BLOCK_8X8 && !av1_superres_scaled(cm)) {
     *prune_horz = probs[PARTITION_HORZ] <= prune_thresh;
@@ -657,14 +661,13 @@ void av1_get_max_min_partition_features(AV1_COMP *const cpi, MACROBLOCK *x,
       const int this_mi_col = mi_col + (mb_col << mb_in_mi_size_wide_log2);
       unsigned int sse = 0;
       unsigned int var = 0;
-      const MV ref_mv_full = { .row = 0, .col = 0 };
-
-      av1_simple_motion_sse_var(cpi, x, this_mi_row, this_mi_col, mb_size,
-                                ref_mv_full, 0, &sse, &var);
+      const FULLPEL_MV start_mv = kZeroFullMv;
+      int_mv best_mv = av1_simple_motion_sse_var(
+          cpi, x, this_mi_row, this_mi_col, mb_size, start_mv, 0, &sse, &var);
 
       aom_clear_system_state();
-      const float mv_row = (float)(x->best_mv.as_mv.row / 8);
-      const float mv_col = (float)(x->best_mv.as_mv.col / 8);
+      const float mv_row = (float)(best_mv.as_mv.row / 8);
+      const float mv_col = (float)(best_mv.as_mv.col / 8);
       const float log_sse = logf(1.0f + (float)sse);
       const float abs_mv_row = fabsf(mv_row);
       const float abs_mv_col = fabsf(mv_col);
@@ -717,14 +720,16 @@ BLOCK_SIZE av1_predict_max_partition(AV1_COMP *const cpi, MACROBLOCK *const x,
         probs[MAX_NUM_CLASSES_MAX_MIN_PART_PRED] = { 0.0f };
   const NN_CONFIG *nn_config = &av1_max_part_pred_nn_config;
 
-  assert(cpi->sf.auto_max_partition_based_on_simple_motion != NOT_IN_USE);
+  assert(cpi->sf.part_sf.auto_max_partition_based_on_simple_motion !=
+         NOT_IN_USE);
 
   aom_clear_system_state();
   av1_nn_predict(features, nn_config, 1, scores);
   av1_nn_softmax(scores, probs, MAX_NUM_CLASSES_MAX_MIN_PART_PRED);
 
   int result = MAX_NUM_CLASSES_MAX_MIN_PART_PRED - 1;
-  if (cpi->sf.auto_max_partition_based_on_simple_motion == DIRECT_PRED) {
+  if (cpi->sf.part_sf.auto_max_partition_based_on_simple_motion ==
+      DIRECT_PRED) {
     result = 0;
     float max_prob = probs[0];
     for (int i = 1; i < MAX_NUM_CLASSES_MAX_MIN_PART_PRED; ++i) {
@@ -733,7 +738,7 @@ BLOCK_SIZE av1_predict_max_partition(AV1_COMP *const cpi, MACROBLOCK *const x,
         result = i;
       }
     }
-  } else if (cpi->sf.auto_max_partition_based_on_simple_motion ==
+  } else if (cpi->sf.part_sf.auto_max_partition_based_on_simple_motion ==
              RELAXED_PRED) {
     for (result = MAX_NUM_CLASSES_MAX_MIN_PART_PRED - 1; result >= 0;
          --result) {
@@ -742,7 +747,8 @@ BLOCK_SIZE av1_predict_max_partition(AV1_COMP *const cpi, MACROBLOCK *const x,
       }
       if (probs[result] > 0.2) break;
     }
-  } else if (cpi->sf.auto_max_partition_based_on_simple_motion == ADAPT_PRED) {
+  } else if (cpi->sf.part_sf.auto_max_partition_based_on_simple_motion ==
+             ADAPT_PRED) {
     const BLOCK_SIZE sb_size = cpi->common.seq_params.sb_size;
     MACROBLOCKD *const xd = &x->e_mbd;
     // TODO(debargha): x->source_variance is unavailable at this point,
@@ -848,7 +854,7 @@ void av1_ml_early_term_after_split(AV1_COMP *const cpi, MACROBLOCK *const x,
   if (!nn_config) return;
 
   // Use more conservative threshold for level 1.
-  if (cpi->sf.ml_early_term_after_part_split_level < 2) thresh -= 0.3f;
+  if (cpi->sf.part_sf.ml_early_term_after_part_split_level < 2) thresh -= 0.3f;
 
   const MACROBLOCKD *const xd = &x->e_mbd;
   const int dc_q = av1_dc_quant_QTX(x->qindex, 0, xd->bd) >> (xd->bd - 8);
@@ -1227,23 +1233,23 @@ int av1_ml_predict_breakout(const AV1_COMP *const cpi, BLOCK_SIZE bsize,
   switch (bsize) {
     case BLOCK_8X8:
       nn_config = &av1_partition_breakout_nnconfig_8;
-      thresh = cpi->sf.ml_partition_search_breakout_thresh[0];
+      thresh = cpi->sf.part_sf.ml_partition_search_breakout_thresh[0];
       break;
     case BLOCK_16X16:
       nn_config = &av1_partition_breakout_nnconfig_16;
-      thresh = cpi->sf.ml_partition_search_breakout_thresh[1];
+      thresh = cpi->sf.part_sf.ml_partition_search_breakout_thresh[1];
       break;
     case BLOCK_32X32:
       nn_config = &av1_partition_breakout_nnconfig_32;
-      thresh = cpi->sf.ml_partition_search_breakout_thresh[2];
+      thresh = cpi->sf.part_sf.ml_partition_search_breakout_thresh[2];
       break;
     case BLOCK_64X64:
       nn_config = &av1_partition_breakout_nnconfig_64;
-      thresh = cpi->sf.ml_partition_search_breakout_thresh[3];
+      thresh = cpi->sf.part_sf.ml_partition_search_breakout_thresh[3];
       break;
     case BLOCK_128X128:
       nn_config = &av1_partition_breakout_nnconfig_128;
-      thresh = cpi->sf.ml_partition_search_breakout_thresh[4];
+      thresh = cpi->sf.part_sf.ml_partition_search_breakout_thresh[4];
       break;
     default: assert(0 && "Unexpected bsize.");
   }

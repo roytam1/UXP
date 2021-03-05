@@ -1,5 +1,5 @@
 ;
-; Copyright (c) 2019, Alliance for Open Media. All rights reserved
+; Copyright (c) 2021, Alliance for Open Media. All rights reserved
 ;
 ; This source code is subject to the terms of the BSD 2 Clause License and
 ; the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -54,8 +54,8 @@
 .equ CONFIG_SIZE_LIMIT, 0
 .equ CONFIG_SPATIAL_RESAMPLING, 1
 .equ CONFIG_SPEED_STATS, 0
-.equ CONFIG_STATIC, 1
 .equ CONFIG_SUPERRES_IN_RECODE, 1
+.equ CONFIG_TUNE_VMAF, 0
 .equ CONFIG_WEBM_IO, 0
 .equ DECODE_HEIGHT_LIMIT, 0
 .equ DECODE_WIDTH_LIMIT, 0

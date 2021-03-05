@@ -157,14 +157,12 @@ uint8_t av1_read_coeffs_txb(const AV1_COMMON *const cm, MACROBLOCKD *const xd,
     // only y plane's tx_type is transmitted
     av1_read_tx_type(cm, xd, blk_row, blk_col, tx_size, r);
   }
-  const TX_TYPE tx_type = av1_get_tx_type(xd, plane_type, blk_row, blk_col,
-                                          tx_size, cm->reduced_tx_set_used);
+  const TX_TYPE tx_type =
+      av1_get_tx_type(xd, plane_type, blk_row, blk_col, tx_size,
+                      cm->features.reduced_tx_set_used);
   const TX_CLASS tx_class = tx_type_to_class[tx_type];
-  const TX_SIZE qm_tx_size = av1_get_adjusted_tx_size(tx_size);
   const qm_val_t *iqmatrix =
-      IS_2D_TRANSFORM(tx_type)
-          ? pd->seg_iqmatrix[mbmi->segment_id][qm_tx_size]
-          : cm->giqmatrix[NUM_QM_LEVELS - 1][0][qm_tx_size];
+      av1_get_iqmatrix(&cm->quant_params, xd, plane, tx_size, tx_type);
   const SCAN_ORDER *const scan_order = get_scan(tx_size, tx_type);
   const int16_t *const scan = scan_order->scan;
   int eob_extra = 0;
@@ -339,17 +337,18 @@ void av1_read_coeffs_txb_facade(const AV1_COMMON *const cm,
       get_plane_block_size(bsize, pd->subsampling_x, pd->subsampling_y);
 
   TXB_CTX txb_ctx;
-  get_txb_ctx(plane_bsize, tx_size, plane, pd->above_context + col,
-              pd->left_context + row, &txb_ctx);
+  get_txb_ctx(plane_bsize, tx_size, plane, pd->above_entropy_context + col,
+              pd->left_entropy_context + row, &txb_ctx);
   const uint8_t cul_level =
       av1_read_coeffs_txb(cm, xd, r, row, col, plane, &txb_ctx, tx_size);
-  av1_set_contexts(xd, pd, plane, plane_bsize, tx_size, cul_level, col, row);
+  av1_set_entropy_contexts(xd, pd, plane, plane_bsize, tx_size, cul_level, col,
+                           row);
 
   if (is_inter_block(mbmi)) {
     const PLANE_TYPE plane_type = get_plane_type(plane);
     // tx_type will be read out in av1_read_coeffs_txb_facade
     const TX_TYPE tx_type = av1_get_tx_type(xd, plane_type, row, col, tx_size,
-                                            cm->reduced_tx_set_used);
+                                            cm->features.reduced_tx_set_used);
 
     if (plane == 0) {
       const int txw = tx_size_wide_unit[tx_size];

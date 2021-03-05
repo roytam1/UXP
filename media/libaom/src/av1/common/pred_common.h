@@ -12,29 +12,31 @@
 #ifndef AOM_AV1_COMMON_PRED_COMMON_H_
 #define AOM_AV1_COMMON_PRED_COMMON_H_
 
+#include "av1/common/av1_common_int.h"
 #include "av1/common/blockd.h"
 #include "av1/common/mvref_common.h"
-#include "av1/common/onyxc_int.h"
 #include "aom_dsp/aom_dsp_common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-static INLINE int get_segment_id(const AV1_COMMON *const cm,
+static INLINE int get_segment_id(const CommonModeInfoParams *const mi_params,
                                  const uint8_t *segment_ids, BLOCK_SIZE bsize,
                                  int mi_row, int mi_col) {
-  const int mi_offset = mi_row * cm->mi_cols + mi_col;
+  const int mi_offset = mi_row * mi_params->mi_cols + mi_col;
   const int bw = mi_size_wide[bsize];
   const int bh = mi_size_high[bsize];
-  const int xmis = AOMMIN(cm->mi_cols - mi_col, bw);
-  const int ymis = AOMMIN(cm->mi_rows - mi_row, bh);
-  int x, y, segment_id = MAX_SEGMENTS;
+  const int xmis = AOMMIN(mi_params->mi_cols - mi_col, bw);
+  const int ymis = AOMMIN(mi_params->mi_rows - mi_row, bh);
+  int segment_id = MAX_SEGMENTS;
 
-  for (y = 0; y < ymis; ++y)
-    for (x = 0; x < xmis; ++x)
-      segment_id =
-          AOMMIN(segment_id, segment_ids[mi_offset + y * cm->mi_cols + x]);
+  for (int y = 0; y < ymis; ++y) {
+    for (int x = 0; x < xmis; ++x) {
+      segment_id = AOMMIN(segment_id,
+                          segment_ids[mi_offset + y * mi_params->mi_cols + x]);
+    }
+  }
 
   assert(segment_id >= 0 && segment_id < MAX_SEGMENTS);
   return segment_id;
@@ -42,22 +44,25 @@ static INLINE int get_segment_id(const AV1_COMMON *const cm,
 
 static INLINE int av1_get_spatial_seg_pred(const AV1_COMMON *const cm,
                                            const MACROBLOCKD *const xd,
-                                           int mi_row, int mi_col,
                                            int *cdf_index) {
   int prev_ul = -1;  // top left segment_id
   int prev_l = -1;   // left segment_id
   int prev_u = -1;   // top segment_id
+  const int mi_row = xd->mi_row;
+  const int mi_col = xd->mi_col;
+  const CommonModeInfoParams *const mi_params = &cm->mi_params;
+  const uint8_t *seg_map = cm->cur_frame->seg_map;
   if ((xd->up_available) && (xd->left_available)) {
-    prev_ul = get_segment_id(cm, cm->cur_frame->seg_map, BLOCK_4X4, mi_row - 1,
-                             mi_col - 1);
+    prev_ul =
+        get_segment_id(mi_params, seg_map, BLOCK_4X4, mi_row - 1, mi_col - 1);
   }
   if (xd->up_available) {
-    prev_u = get_segment_id(cm, cm->cur_frame->seg_map, BLOCK_4X4, mi_row - 1,
-                            mi_col - 0);
+    prev_u =
+        get_segment_id(mi_params, seg_map, BLOCK_4X4, mi_row - 1, mi_col - 0);
   }
   if (xd->left_available) {
-    prev_l = get_segment_id(cm, cm->cur_frame->seg_map, BLOCK_4X4, mi_row - 0,
-                            mi_col - 1);
+    prev_l =
+        get_segment_id(mi_params, seg_map, BLOCK_4X4, mi_row - 0, mi_col - 1);
   }
   // This property follows from the fact that get_segment_id() returns a
   // nonnegative value. This allows us to test for all edge cases with a simple
@@ -201,6 +206,10 @@ int av1_get_reference_mode_context(const MACROBLOCKD *xd);
 
 static INLINE aom_cdf_prob *av1_get_reference_mode_cdf(const MACROBLOCKD *xd) {
   return xd->tile_ctx->comp_inter_cdf[av1_get_reference_mode_context(xd)];
+}
+
+static INLINE aom_cdf_prob *av1_get_skip_cdf(const MACROBLOCKD *xd) {
+  return xd->tile_ctx->skip_cdfs[av1_get_skip_context(xd)];
 }
 
 int av1_get_comp_reference_type_context(const MACROBLOCKD *xd);

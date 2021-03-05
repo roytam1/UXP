@@ -19,8 +19,8 @@
 #include "aom_scale/yv12config.h"
 #include "aom_util/aom_thread.h"
 
+#include "av1/common/av1_common_int.h"
 #include "av1/common/thread_common.h"
-#include "av1/common/onyxc_int.h"
 #include "av1/decoder/dthread.h"
 #if CONFIG_ACCOUNTING
 #include "av1/decoder/accounting.h"
@@ -41,7 +41,6 @@ typedef void (*decode_block_visitor_fn_t)(const AV1_COMMON *const cm,
 
 typedef void (*predict_inter_block_visitor_fn_t)(AV1_COMMON *const cm,
                                                  MACROBLOCKD *const xd,
-                                                 int mi_row, int mi_col,
                                                  BLOCK_SIZE bsize);
 
 typedef void (*cfl_store_inter_block_visitor_fn_t)(AV1_COMMON *const cm,
@@ -244,6 +243,13 @@ typedef struct AV1Decoder {
 #endif
 
   AV1DecRowMTInfo frame_row_mt_info;
+  aom_metadata_array_t *metadata;
+
+  int context_update_tile_id;
+  int skip_loop_filter;
+  int skip_film_grain;
+  int is_annexb;
+  int valid_for_referencing[REF_FRAMES];
 } AV1Decoder;
 
 // Returns 0 on success. Sets pbi->common.error.error_code to a nonzero error
@@ -311,9 +317,8 @@ static INLINE int av1_read_uniform(aom_reader *r, int n) {
 typedef void (*palette_visitor_fn_t)(MACROBLOCKD *const xd, int plane,
                                      aom_reader *r);
 
-void av1_visit_palette(AV1Decoder *const pbi, MACROBLOCKD *const xd, int mi_row,
-                       int mi_col, aom_reader *r, BLOCK_SIZE bsize,
-                       palette_visitor_fn_t visit);
+void av1_visit_palette(AV1Decoder *const pbi, MACROBLOCKD *const xd,
+                       aom_reader *r, palette_visitor_fn_t visit);
 
 typedef void (*block_visitor_fn_t)(AV1Decoder *const pbi, ThreadData *const td,
                                    int mi_row, int mi_col, aom_reader *r,

@@ -12,6 +12,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <tuple>
 #include <vector>
 
 #include "config/av1_rtcd.h"
@@ -32,7 +33,7 @@ using std::vector;
 
 namespace {
 // tx_type_, tx_size_, max_error_, max_avg_error_
-typedef ::testing::tuple<TX_TYPE, TX_SIZE, double, double> AV1FwdTxfm2dParam;
+typedef std::tuple<TX_TYPE, TX_SIZE, double, double> AV1FwdTxfm2dParam;
 
 class AV1FwdTxfm2d : public ::testing::TestWithParam<AV1FwdTxfm2dParam> {
  public:
@@ -196,8 +197,8 @@ vector<AV1FwdTxfm2dParam> GetTxfm2dParamList() {
   return param_list;
 }
 
-INSTANTIATE_TEST_CASE_P(C, AV1FwdTxfm2d,
-                        ::testing::ValuesIn(GetTxfm2dParamList()));
+INSTANTIATE_TEST_SUITE_P(C, AV1FwdTxfm2d,
+                         ::testing::ValuesIn(GetTxfm2dParamList()));
 
 TEST_P(AV1FwdTxfm2d, RunFwdAccuracyCheck) { RunFwdAccuracyCheck(); }
 
@@ -350,7 +351,7 @@ void AV1FwdTxfm2dSpeedTest(TX_SIZE tx_size, lowbd_fwd_txfm_func target_func) {
   }
 }
 
-typedef ::testing::tuple<TX_SIZE, lowbd_fwd_txfm_func> LbdFwdTxfm2dParam;
+typedef std::tuple<TX_SIZE, lowbd_fwd_txfm_func> LbdFwdTxfm2dParam;
 
 class AV1FwdTxfm2dTest : public ::testing::TestWithParam<LbdFwdTxfm2dParam> {};
 
@@ -387,9 +388,9 @@ static TX_SIZE fwd_txfm_for_sse2[] = {
   TX_64X16,
 };
 
-INSTANTIATE_TEST_CASE_P(SSE2, AV1FwdTxfm2dTest,
-                        Combine(ValuesIn(fwd_txfm_for_sse2),
-                                Values(av1_lowbd_fwd_txfm_sse2)));
+INSTANTIATE_TEST_SUITE_P(SSE2, AV1FwdTxfm2dTest,
+                         Combine(ValuesIn(fwd_txfm_for_sse2),
+                                 Values(av1_lowbd_fwd_txfm_sse2)));
 #endif  // HAVE_SSE2
 
 #if HAVE_SSE4_1
@@ -400,9 +401,9 @@ static TX_SIZE fwd_txfm_for_sse41[] = {
   TX_64X32,
 };
 
-INSTANTIATE_TEST_CASE_P(SSE4_1, AV1FwdTxfm2dTest,
-                        Combine(ValuesIn(fwd_txfm_for_sse41),
-                                Values(av1_lowbd_fwd_txfm_sse4_1)));
+INSTANTIATE_TEST_SUITE_P(SSE4_1, AV1FwdTxfm2dTest,
+                         Combine(ValuesIn(fwd_txfm_for_sse41),
+                                 Values(av1_lowbd_fwd_txfm_sse4_1)));
 #endif  // HAVE_SSE4_1
 
 #if HAVE_AVX2
@@ -412,9 +413,9 @@ static TX_SIZE fwd_txfm_for_avx2[] = {
   TX_16X4, TX_8X32, TX_32X8,  TX_16X64, TX_64X16,
 };
 
-INSTANTIATE_TEST_CASE_P(AVX2, AV1FwdTxfm2dTest,
-                        Combine(ValuesIn(fwd_txfm_for_avx2),
-                                Values(av1_lowbd_fwd_txfm_avx2)));
+INSTANTIATE_TEST_SUITE_P(AVX2, AV1FwdTxfm2dTest,
+                         Combine(ValuesIn(fwd_txfm_for_avx2),
+                                 Values(av1_lowbd_fwd_txfm_avx2)));
 #endif  // HAVE_AVX2
 
 typedef void (*Highbd_fwd_txfm_func)(const int16_t *src_diff, tran_low_t *coeff,
@@ -543,7 +544,7 @@ void AV1HighbdFwdTxfm2dSpeedTest(TX_SIZE tx_size,
   }
 }
 
-typedef ::testing::tuple<TX_SIZE, Highbd_fwd_txfm_func> HighbdFwdTxfm2dParam;
+typedef std::tuple<TX_SIZE, Highbd_fwd_txfm_func> HighbdFwdTxfm2dParam;
 
 class AV1HighbdFwdTxfm2dTest
     : public ::testing::TestWithParam<HighbdFwdTxfm2dParam> {};
@@ -567,16 +568,16 @@ static TX_SIZE Highbd_fwd_txfm_for_sse4_1[] = {
   TX_16X4, TX_8X32, TX_32X8,  TX_16X64, TX_64X16,
 };
 
-INSTANTIATE_TEST_CASE_P(SSE4_1, AV1HighbdFwdTxfm2dTest,
-                        Combine(ValuesIn(Highbd_fwd_txfm_for_sse4_1),
-                                Values(av1_highbd_fwd_txfm)));
+INSTANTIATE_TEST_SUITE_P(SSE4_1, AV1HighbdFwdTxfm2dTest,
+                         Combine(ValuesIn(Highbd_fwd_txfm_for_sse4_1),
+                                 Values(av1_highbd_fwd_txfm)));
 #endif  // HAVE_SSE4_1
 #if HAVE_AVX2
 static TX_SIZE Highbd_fwd_txfm_for_avx2[] = { TX_8X8,   TX_16X16, TX_32X32,
                                               TX_64X64, TX_8X16,  TX_16X8 };
 
-INSTANTIATE_TEST_CASE_P(AVX2, AV1HighbdFwdTxfm2dTest,
-                        Combine(ValuesIn(Highbd_fwd_txfm_for_avx2),
-                                Values(av1_highbd_fwd_txfm)));
+INSTANTIATE_TEST_SUITE_P(AVX2, AV1HighbdFwdTxfm2dTest,
+                         Combine(ValuesIn(Highbd_fwd_txfm_for_avx2),
+                                 Values(av1_highbd_fwd_txfm)));
 #endif  // HAVE_AVX2
 }  // namespace

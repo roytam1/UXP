@@ -12,9 +12,9 @@
 #ifndef AOM_AV1_COMMON_RECONINTER_H_
 #define AOM_AV1_COMMON_RECONINTER_H_
 
-#include "av1/common/filter.h"
-#include "av1/common/onyxc_int.h"
+#include "av1/common/av1_common_int.h"
 #include "av1/common/convolve.h"
+#include "av1/common/filter.h"
 #include "av1/common/warped_motion.h"
 #include "aom/aom_integer.h"
 
@@ -35,8 +35,7 @@
 extern "C" {
 #endif
 
-// Set to (1 << 5) if the 32-ary codebooks are used for any bock size
-#define MAX_WEDGE_TYPES (1 << 4)
+#define MAX_WEDGE_TYPES 16
 
 #define MAX_WEDGE_SIZE_LOG2 5  // 32x32
 #define MAX_WEDGE_SIZE (1 << MAX_WEDGE_SIZE_LOG2)
@@ -67,7 +66,7 @@ typedef struct {
 typedef uint8_t *wedge_masks_type[MAX_WEDGE_TYPES];
 
 typedef struct {
-  int bits;
+  int wedge_types;
   const wedge_code_type *codebook;
   uint8_t *signflip;
   wedge_masks_type *masks;
@@ -84,8 +83,6 @@ typedef struct SubpelParams {
 
 struct build_prediction_ctxt {
   const AV1_COMMON *cm;
-  int mi_row;
-  int mi_col;
   uint8_t **tmp_buf;
   int *tmp_width;
   int *tmp_height;
@@ -94,13 +91,19 @@ struct build_prediction_ctxt {
 };
 
 typedef enum InterPredMode {
-  UNIFORM_PRED,
+  TRANSLATION_PRED,
   WARP_PRED,
-  MASK_PRED,
 } InterPredMode;
+
+typedef enum InterCompMode {
+  UNIFORM_SINGLE,
+  UNIFORM_COMP,
+  MASK_COMP,
+} InterCompMode;
 
 typedef struct InterPredParams {
   InterPredMode mode;
+  InterCompMode comp_mode;
   WarpedMotionParams warp_params;
   ConvolveParams conv_params;
   const InterpFilterParams *interp_filter_params[2];
@@ -114,6 +117,8 @@ typedef struct InterPredParams {
   const struct scale_factors *scale_factors;
   int bit_depth;
   int use_hbd_buf;
+  INTERINTER_COMPOUND_DATA mask_comp;
+  BLOCK_SIZE sb_type;
   int is_intrabc;
 } InterPredParams;
 
@@ -122,12 +127,17 @@ void av1_init_inter_params(InterPredParams *inter_pred_params, int block_width,
                            int subsampling_x, int subsampling_y, int bit_depth,
                            int use_hbd_buf, int is_intrabc,
                            const struct scale_factors *sf,
+                           const struct buf_2d *ref_buf,
                            int_interpfilters interp_filters);
 
+void av1_init_comp_mode(InterPredParams *inter_pred_params);
+
 void av1_init_warp_params(InterPredParams *inter_pred_params,
-                          const struct buf_2d *ref_buf,
                           const WarpTypesAllowed *warp_types, int ref,
                           const MACROBLOCKD *xd, const MB_MODE_INFO *mi);
+
+void av1_init_mask_comp(InterPredParams *inter_pred_params, BLOCK_SIZE bsize,
+                        const INTERINTER_COMPOUND_DATA *mask_comp);
 
 static INLINE int has_scale(int xs, int ys) {
   return xs != SCALE_SUBPEL_SHIFTS || ys != SCALE_SUBPEL_SHIFTS;
@@ -200,7 +210,7 @@ static INLINE int is_interinter_compound_used(COMPOUND_TYPE type,
     case COMPOUND_DISTWTD:
     case COMPOUND_DIFFWTD: return comp_allowed;
     case COMPOUND_WEDGE:
-      return comp_allowed && av1_wedge_params_lookup[sb_type].bits > 0;
+      return comp_allowed && av1_wedge_params_lookup[sb_type].wedge_types > 0;
     default: assert(0); return 0;
   }
 }
@@ -218,21 +228,12 @@ static INLINE int is_any_masked_compound_used(BLOCK_SIZE sb_type) {
   return 0;
 }
 
-static INLINE int get_wedge_bits_lookup(BLOCK_SIZE sb_type) {
-  return av1_wedge_params_lookup[sb_type].bits;
+static INLINE int get_wedge_types_lookup(BLOCK_SIZE sb_type) {
+  return av1_wedge_params_lookup[sb_type].wedge_types;
 }
 
-static INLINE int get_interinter_wedge_bits(BLOCK_SIZE sb_type) {
-  const int wbits = av1_wedge_params_lookup[sb_type].bits;
-  return (wbits > 0) ? wbits + 1 : 0;
-}
-
-static INLINE int is_interintra_wedge_used(BLOCK_SIZE sb_type) {
-  return av1_wedge_params_lookup[sb_type].bits > 0;
-}
-
-static INLINE int get_interintra_wedge_bits(BLOCK_SIZE sb_type) {
-  return av1_wedge_params_lookup[sb_type].bits;
+static INLINE int av1_is_wedge_used(BLOCK_SIZE sb_type) {
+  return av1_wedge_params_lookup[sb_type].wedge_types > 0;
 }
 
 void av1_make_inter_predictor(const uint8_t *src, int src_stride, uint8_t *dst,
@@ -243,8 +244,25 @@ void av1_make_inter_predictor(const uint8_t *src, int src_stride, uint8_t *dst,
 void av1_make_masked_inter_predictor(const uint8_t *pre, int pre_stride,
                                      uint8_t *dst, int dst_stride,
                                      InterPredParams *inter_pred_params,
-                                     const SubpelParams *subpel_params, int w,
-                                     int h, int plane, MACROBLOCKD *xd);
+                                     const SubpelParams *subpel_params);
+
+typedef void (*CalcSubpelParamsFunc)(const MV *const src_mv,
+                                     InterPredParams *const inter_pred_params,
+                                     MACROBLOCKD *xd, int mi_x, int mi_y,
+                                     int ref, uint8_t **pre,
+                                     SubpelParams *subpel_params,
+                                     int *src_stride);
+
+void av1_build_one_inter_predictor(
+    uint8_t *dst, int dst_stride, const MV *const src_mv,
+    InterPredParams *inter_pred_params, MACROBLOCKD *xd, int mi_x, int mi_y,
+    int ref, CalcSubpelParamsFunc calc_subpel_params_func);
+
+void av1_build_inter_predictors(const AV1_COMMON *cm, MACROBLOCKD *xd,
+                                int plane, const MB_MODE_INFO *mi,
+                                int build_for_obmc, int bw, int bh, int mi_x,
+                                int mi_y,
+                                CalcSubpelParamsFunc calc_subpel_params_func);
 
 // TODO(jkoleszar): yet another mv clamping function :-(
 static INLINE MV clamp_mv_to_umv_border_sb(const MACROBLOCKD *xd,
@@ -261,11 +279,14 @@ static INLINE MV clamp_mv_to_umv_border_sb(const MACROBLOCKD *xd,
                     (int16_t)(src_mv->col * (1 << (1 - ss_x))) };
   assert(ss_x <= 1);
   assert(ss_y <= 1);
+  const SubpelMvLimits mv_limits = {
+    xd->mb_to_left_edge * (1 << (1 - ss_x)) - spel_left,
+    xd->mb_to_right_edge * (1 << (1 - ss_x)) + spel_right,
+    xd->mb_to_top_edge * (1 << (1 - ss_y)) - spel_top,
+    xd->mb_to_bottom_edge * (1 << (1 - ss_y)) + spel_bottom
+  };
 
-  clamp_mv(&clamped_mv, xd->mb_to_left_edge * (1 << (1 - ss_x)) - spel_left,
-           xd->mb_to_right_edge * (1 << (1 - ss_x)) + spel_right,
-           xd->mb_to_top_edge * (1 << (1 - ss_y)) - spel_top,
-           xd->mb_to_bottom_edge * (1 << (1 - ss_y)) + spel_bottom);
+  clamp_mv(&clamped_mv, &mv_limits);
 
   return clamped_mv;
 }
@@ -322,6 +343,11 @@ static INLINE int av1_is_interp_needed(const MACROBLOCKD *const xd) {
   return 1;
 }
 
+void av1_setup_address_for_obmc(MACROBLOCKD *xd, int mi_row_offset,
+                                int mi_col_offset, MB_MODE_INFO *ref_mbmi,
+                                struct build_prediction_ctxt *ctxt,
+                                const int num_planes);
+
 void av1_setup_build_prediction_by_above_pred(
     MACROBLOCKD *xd, int rel_mi_col, uint8_t above_mi_width,
     MB_MODE_INFO *above_mbmi, struct build_prediction_ctxt *ctxt,
@@ -332,15 +358,13 @@ void av1_setup_build_prediction_by_left_pred(MACROBLOCKD *xd, int rel_mi_row,
                                              struct build_prediction_ctxt *ctxt,
                                              const int num_planes);
 void av1_build_obmc_inter_prediction(const AV1_COMMON *cm, MACROBLOCKD *xd,
-                                     int mi_row, int mi_col,
                                      uint8_t *above[MAX_MB_PLANE],
                                      int above_stride[MAX_MB_PLANE],
                                      uint8_t *left[MAX_MB_PLANE],
                                      int left_stride[MAX_MB_PLANE]);
 
 const uint8_t *av1_get_obmc_mask(int length);
-void av1_count_overlappable_neighbors(const AV1_COMMON *cm, MACROBLOCKD *xd,
-                                      int mi_row, int mi_col);
+void av1_count_overlappable_neighbors(const AV1_COMMON *cm, MACROBLOCKD *xd);
 
 #define MASK_MASTER_SIZE ((MAX_WEDGE_SIZE) << 1)
 #define MASK_MASTER_STRIDE (MASK_MASTER_SIZE)
@@ -357,16 +381,10 @@ const uint8_t *av1_get_compound_type_mask(
     const INTERINTER_COMPOUND_DATA *const comp_data, BLOCK_SIZE sb_type);
 
 // build interintra_predictors for one plane
-void av1_build_interintra_predictors_sbp(const AV1_COMMON *cm, MACROBLOCKD *xd,
-                                         uint8_t *pred, int stride,
-                                         const BUFFER_SET *ctx, int plane,
-                                         BLOCK_SIZE bsize);
-
-void av1_build_interintra_predictors_sbuv(const AV1_COMMON *cm, MACROBLOCKD *xd,
-                                          uint8_t *upred, uint8_t *vpred,
-                                          int ustride, int vstride,
-                                          const BUFFER_SET *ctx,
-                                          BLOCK_SIZE bsize);
+void av1_build_interintra_predictor(const AV1_COMMON *cm, MACROBLOCKD *xd,
+                                    uint8_t *pred, int stride,
+                                    const BUFFER_SET *ctx, int plane,
+                                    BLOCK_SIZE bsize);
 
 void av1_build_intra_predictors_for_interintra(const AV1_COMMON *cm,
                                                MACROBLOCKD *xd,

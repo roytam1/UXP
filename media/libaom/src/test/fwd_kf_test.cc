@@ -9,6 +9,8 @@
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
 
+#include <ostream>
+
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 #include "test/codec_factory.h"
 #include "test/encode_test_driver.h"
@@ -23,9 +25,14 @@ typedef struct {
 } FwdKfTestParam;
 
 const FwdKfTestParam kTestParams[] = {
-  { 4, 37.0 },  { 6, 35.9 },  { 8, 35.0 },
-  { 12, 33.6 }, { 16, 33.5 }, { 18, 33.1 }
+  { 4, 33.4 },  { 6, 32.9 },  { 8, 32.6 },
+  { 12, 32.4 }, { 16, 32.3 }, { 18, 32.1 }
 };
+
+std::ostream &operator<<(std::ostream &os, const FwdKfTestParam &test_arg) {
+  return os << "FwdKfTestParam { max_kf_dist:" << test_arg.max_kf_dist
+            << " psnr_thresh:" << test_arg.psnr_thresh << " }";
+}
 
 class ForwardKeyTest
     : public ::libaom_test::CodecTestWith2Params<libaom_test::TestMode,

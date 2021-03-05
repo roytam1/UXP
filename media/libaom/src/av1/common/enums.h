@@ -260,6 +260,7 @@ enum {
   V_FLIPADST,         // FLIPADST in vertical, identity in horizontal
   H_FLIPADST,         // Identity in vertical, FLIPADST in horizontal
   TX_TYPES,
+  DCT_ADST_TX_MASK = 0x000F,  // Either DCT or ADST in each direction
 } UENUM1BYTE(TX_TYPE);
 
 enum {
@@ -289,8 +290,6 @@ enum {
   EXT_TX_SET_ALL16,
   EXT_TX_SET_TYPES
 } UENUM1BYTE(TxSetType);
-
-#define IS_2D_TRANSFORM(tx_type) (tx_type < IDTX)
 
 #define EXT_TX_SIZES 4       // number of sizes that use extended transforms
 #define EXT_TX_SETS_INTER 4  // Sets of transform selections for INTER
@@ -411,6 +410,8 @@ enum {
   MB_MODE_COUNT,
   INTRA_MODE_START = DC_PRED,
   INTRA_MODE_END = NEARESTMV,
+  DIR_MODE_START = V_PRED,
+  DIR_MODE_END = D67_PRED + 1,
   INTRA_MODE_NUM = INTRA_MODE_END - INTRA_MODE_START,
   SINGLE_INTER_MODE_START = NEARESTMV,
   SINGLE_INTER_MODE_END = NEAREST_NEARESTMV,

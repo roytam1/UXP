@@ -27,7 +27,6 @@ extern "C" {
 #define AOM_INTERP_EXTEND 4
 #define AOM_BORDER_IN_PIXELS 288
 #define AOM_ENC_NO_SCALE_BORDER 160
-#define AOM_ENC_LOOKAHEAD_BORDER 64
 #define AOM_DEC_BORDER_IN_PIXELS 64
 
 typedef struct yv12_buffer_config {
@@ -128,24 +127,16 @@ int aom_realloc_frame_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
                              aom_codec_frame_buffer_t *fb,
                              aom_get_frame_buffer_cb_fn_t cb, void *cb_priv);
 
-int aom_realloc_lookahead_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
-                                 int ss_x, int ss_y, int use_highbitdepth,
-                                 int border, int byte_alignment,
-                                 aom_codec_frame_buffer_t *fb,
-                                 aom_get_frame_buffer_cb_fn_t cb,
-                                 void *cb_priv);
-
 int aom_free_frame_buffer(YV12_BUFFER_CONFIG *ybf);
 
 /*!\brief Removes metadata from YUV_BUFFER_CONFIG struct.
  *
  * Frees metadata in frame buffer.
  * Frame buffer metadata pointer will be set to NULL.
- * Returns the number of deleted metadata structs.
  *
  * \param[in]    ybf       Frame buffer struct pointer
  */
-size_t aom_remove_metadata_from_frame_buffer(YV12_BUFFER_CONFIG *ybf);
+void aom_remove_metadata_from_frame_buffer(YV12_BUFFER_CONFIG *ybf);
 
 /*!\brief Copy metadata to YUV_BUFFER_CONFIG struct.
  *
@@ -159,7 +150,7 @@ size_t aom_remove_metadata_from_frame_buffer(YV12_BUFFER_CONFIG *ybf);
  * \param[in]    arr       Metadata array struct pointer
  */
 int aom_copy_metadata_to_frame_buffer(YV12_BUFFER_CONFIG *ybf,
-                                      aom_metadata_array_t *arr);
+                                      const aom_metadata_array_t *arr);
 
 #ifdef __cplusplus
 }

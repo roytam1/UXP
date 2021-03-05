@@ -8,6 +8,9 @@
  * Media Patent License 1.0 was not distributed with this source code in the
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
+
+#include <tuple>
+
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 #include "config/aom_config.h"
@@ -314,9 +317,9 @@ TEST_P(LowbdDrPredTest, SaturatedValues) {
   }
 }
 
-using ::testing::make_tuple;
+using std::make_tuple;
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     C, LowbdDrPredTest,
     ::testing::Values(DrPredFunc<DrPred>(&z1_wrapper<av1_dr_prediction_z1_c>,
                                          NULL, AOM_BITS_8, kZ1Start),
@@ -338,7 +341,7 @@ TEST_P(HighbdDrPredTest, SaturatedValues) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     C, HighbdDrPredTest,
     ::testing::Values(
         DrPredFunc<DrPred_Hbd>(&z1_wrapper_hbd<av1_highbd_dr_prediction_z1_c>,
@@ -362,7 +365,7 @@ INSTANTIATE_TEST_CASE_P(
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 
 #if HAVE_AVX2
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     AVX2, LowbdDrPredTest,
     ::testing::Values(DrPredFunc<DrPred>(&z1_wrapper<av1_dr_prediction_z1_c>,
                                          &z1_wrapper<av1_dr_prediction_z1_avx2>,
@@ -401,7 +404,7 @@ TEST_P(LowbdDrPredTest, OperationCheck) {
 }
 
 #if CONFIG_AV1_HIGHBITDEPTH
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     AVX2, HighbdDrPredTest,
     ::testing::Values(DrPredFunc<DrPred_Hbd>(
                           &z1_wrapper_hbd<av1_highbd_dr_prediction_z1_c>,

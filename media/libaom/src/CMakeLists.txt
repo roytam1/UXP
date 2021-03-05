@@ -32,6 +32,11 @@ if("${AOM_ROOT}" STREQUAL "${AOM_CONFIG_DIR}")
                 "And re-run CMake from the aom_build directory.")
 endif()
 
+# Updating version info.
+# https://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
+set(SO_VERSION 2)
+set(SO_FILE_VERSION 2.0.2)
+
 include("${AOM_ROOT}/build/cmake/aom_configure.cmake")
 include("${AOM_ROOT}/aom_dsp/aom_dsp.cmake")
 include("${AOM_ROOT}/aom_mem/aom_mem.cmake")
@@ -190,6 +195,18 @@ add_custom_target(aom_version_check
                           "${AOM_ROOT}/build/cmake/version.cmake"
                   COMMENT "Updating version info if necessary."
                   VERBATIM)
+
+if(BUILD_SHARED_LIBS AND NOT MSVC)
+  # Generate version file immediately for non-MSVC shared builds: The version
+  # string is needed for the aom target.
+  execute_process(COMMAND ${CMAKE_COMMAND}
+                          -DAOM_CONFIG_DIR=${AOM_CONFIG_DIR}
+                          -DAOM_ROOT=${AOM_ROOT}
+                          -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
+                          -DPERL_EXECUTABLE=${PERL_EXECUTABLE} -P
+                          "${AOM_ROOT}/build/cmake/version.cmake")
+endif()
+
 add_dependencies(aom_version aom_version_check)
 
 # TODO(tomfinegan): Move rtcd target setup where it belongs for each rtcd
@@ -211,14 +228,46 @@ if(ENABLE_EXAMPLES)
   add_library(aom_encoder_stats OBJECT ${AOM_ENCODER_STATS_SOURCES})
   set(AOM_LIB_TARGETS ${AOM_LIB_TARGETS} aom_encoder_stats)
 endif()
+
 add_library(aom ${AOM_SOURCES} $<TARGET_OBJECTS:aom_rtcd>)
+if(BUILD_SHARED_LIBS)
+  add_library(aom_static STATIC ${AOM_SOURCES} $<TARGET_OBJECTS:aom_rtcd>)
+  set_target_properties(aom_static PROPERTIES OUTPUT_NAME aom)
+
+  if(NOT MSVC)
+    # Extract version string and set VERSION/SOVERSION for the aom target.
+    extract_version_string("${AOM_CONFIG_DIR}/config/aom_version.h"
+                           aom_version_triple)
+
+    # Strip any trailing version information, if present.
+    string(FIND "${aom_version_triple}" "-" dash_pos)
+    if(NOT dash_pos EQUAL -1)
+      string(SUBSTRING "${aom_version_triple}" 0 ${dash_pos} aom_version_triple)
+    endif()
+
+    # cmake-format: off
+    # VERSION is embedded in the .so file name.
+    # libaom.so -> libaom.so.SOVERSION
+    # libaom.so.SOVERSION -> libaom.so.VERSION
+    # libaom.so.VERSION
+    # cmake-format: on
+    set_target_properties(aom PROPERTIES SOVERSION ${SO_VERSION})
+    set_target_properties(aom PROPERTIES VERSION ${SO_FILE_VERSION})
+  endif()
+endif()
 
 if(NOT MSVC AND NOT APPLE)
   target_link_libraries(aom ${AOM_LIB_LINK_TYPE} m)
+  if(BUILD_SHARED_LIBS)
+    target_link_libraries(aom_static ${AOM_LIB_LINK_TYPE} m)
+  endif()
 endif()
 
 # List of object and static library targets.
 set(AOM_LIB_TARGETS ${AOM_LIB_TARGETS} aom_rtcd aom_mem aom_scale aom)
+if(BUILD_SHARED_LIBS)
+  set(AOM_LIB_TARGETS ${AOM_LIB_TARGETS} aom_static)
+endif()
 
 # Setup dependencies.
 setup_aom_dsp_targets()
@@ -382,6 +431,19 @@ if(CONFIG_AV1_ENCODER)
   # Add encoder examples and tools to the targets list.
   list(APPEND AOM_APP_TARGETS ${AOM_ENCODER_EXAMPLE_TARGETS}
               ${AOM_ENCODER_TOOL_TARGETS})
+
+  if(CONFIG_TUNE_VMAF)
+    find_library(VMAF libvmaf.a vmaf)
+    if(NOT VMAF)
+      message(FATAL_ERROR "VMAF library not found.")
+    endif()
+    message("-- Found VMAF library: " ${VMAF})
+    set_target_properties(aom PROPERTIES LINKER_LANGUAGE CXX)
+    if(BUILD_SHARED_LIBS)
+      set_target_properties(aom_static PROPERTIES LINKER_LANGUAGE CXX)
+    endif()
+    target_link_libraries(aom PRIVATE ${VMAF})
+  endif()
 endif()
 
 if(ENABLE_EXAMPLES)
@@ -510,6 +572,9 @@ endif()
 if(HAVE_PTHREAD_H AND CONFIG_MULTITHREAD)
   find_package(Threads)
   target_link_libraries(aom ${AOM_LIB_LINK_TYPE} Threads::Threads)
+  if(BUILD_SHARED_LIBS)
+    target_link_libraries(aom_static ${AOM_LIB_LINK_TYPE} Threads::Threads)
+  endif()
 endif()
 
 if(XCODE)
@@ -559,7 +624,6 @@ endif()
 if(BUILD_SHARED_LIBS)
   include("${AOM_ROOT}/build/cmake/exports.cmake")
   setup_exports_target()
-  set_target_properties(aom PROPERTIES SOVERSION 0)
 endif()
 
 # Handle user supplied compile and link flags last to ensure they're obeyed.

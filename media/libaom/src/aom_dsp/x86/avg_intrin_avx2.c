@@ -181,6 +181,38 @@ void aom_hadamard_16x16_avx2(const int16_t *src_diff, ptrdiff_t src_stride,
   hadamard_16x16_avx2(src_diff, src_stride, coeff, 1);
 }
 
+void aom_hadamard_lp_16x16_avx2(const int16_t *src_diff, ptrdiff_t src_stride,
+                                int16_t *coeff) {
+  int16_t *t_coeff = coeff;
+  for (int idx = 0; idx < 2; ++idx) {
+    const int16_t *src_ptr = src_diff + idx * 8 * src_stride;
+    hadamard_8x8x2_avx2(src_ptr, src_stride, t_coeff + (idx * 64 * 2));
+  }
+
+  for (int idx = 0; idx < 64; idx += 16) {
+    const __m256i coeff0 = _mm256_loadu_si256((const __m256i *)t_coeff);
+    const __m256i coeff1 = _mm256_loadu_si256((const __m256i *)(t_coeff + 64));
+    const __m256i coeff2 = _mm256_loadu_si256((const __m256i *)(t_coeff + 128));
+    const __m256i coeff3 = _mm256_loadu_si256((const __m256i *)(t_coeff + 192));
+
+    __m256i b0 = _mm256_add_epi16(coeff0, coeff1);
+    __m256i b1 = _mm256_sub_epi16(coeff0, coeff1);
+    __m256i b2 = _mm256_add_epi16(coeff2, coeff3);
+    __m256i b3 = _mm256_sub_epi16(coeff2, coeff3);
+
+    b0 = _mm256_srai_epi16(b0, 1);
+    b1 = _mm256_srai_epi16(b1, 1);
+    b2 = _mm256_srai_epi16(b2, 1);
+    b3 = _mm256_srai_epi16(b3, 1);
+    _mm256_storeu_si256((__m256i *)coeff, _mm256_add_epi16(b0, b2));
+    _mm256_storeu_si256((__m256i *)(coeff + 64), _mm256_add_epi16(b1, b3));
+    _mm256_storeu_si256((__m256i *)(coeff + 128), _mm256_sub_epi16(b0, b2));
+    _mm256_storeu_si256((__m256i *)(coeff + 192), _mm256_sub_epi16(b1, b3));
+    coeff += 16;
+    t_coeff += 16;
+  }
+}
+
 void aom_hadamard_32x32_avx2(const int16_t *src_diff, ptrdiff_t src_stride,
                              tran_low_t *coeff) {
   // For high bitdepths, it is unnecessary to store_tran_low
@@ -435,6 +467,29 @@ int aom_satd_avx2(const tran_low_t *coeff, int length) {
     const __m256i src_line = _mm256_loadu_si256((const __m256i *)coeff);
     const __m256i abs = _mm256_abs_epi32(src_line);
     accum = _mm256_add_epi32(accum, abs);
+  }
+
+  {  // 32 bit horizontal add
+    const __m256i a = _mm256_srli_si256(accum, 8);
+    const __m256i b = _mm256_add_epi32(accum, a);
+    const __m256i c = _mm256_srli_epi64(b, 32);
+    const __m256i d = _mm256_add_epi32(b, c);
+    const __m128i accum_128 = _mm_add_epi32(_mm256_castsi256_si128(d),
+                                            _mm256_extractf128_si256(d, 1));
+    return _mm_cvtsi128_si32(accum_128);
+  }
+}
+
+int aom_satd_lp_avx2(const int16_t *coeff, int length) {
+  const __m256i one = _mm256_set1_epi16(1);
+  __m256i accum = _mm256_setzero_si256();
+
+  for (int i = 0; i < length; i += 16) {
+    const __m256i src_line = _mm256_loadu_si256((const __m256i *)coeff);
+    const __m256i abs = _mm256_abs_epi16(src_line);
+    const __m256i sum = _mm256_madd_epi16(abs, one);
+    accum = _mm256_add_epi32(accum, sum);
+    coeff += 16;
   }
 
   {  // 32 bit horizontal add

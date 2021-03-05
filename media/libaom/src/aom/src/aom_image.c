@@ -288,30 +288,29 @@ int aom_img_plane_height(const aom_image_t *img, int plane) {
     return img->d_h;
 }
 
-aom_metadata_t *aom_img_metadata_alloc(uint8_t type, uint8_t *data, size_t sz) {
-  aom_metadata_t *metadata =
-      (aom_metadata_t *)calloc(1, sizeof(aom_metadata_t));
+aom_metadata_t *aom_img_metadata_alloc(
+    uint32_t type, const uint8_t *data, size_t sz,
+    aom_metadata_insert_flags_t insert_flag) {
+  if (!data || sz == 0) return NULL;
+  aom_metadata_t *metadata = (aom_metadata_t *)malloc(sizeof(aom_metadata_t));
   if (!metadata) return NULL;
   metadata->type = type;
-  if (sz > 0) {
-    metadata->payload = (uint8_t *)calloc(sz, sizeof(uint8_t));
-    if (!metadata->payload) {
-      free(metadata);
-      return NULL;
-    }
-    if (data) {
-      memcpy(metadata->payload, data, sz);
-      metadata->sz = sz;
-    }
+  metadata->payload = (uint8_t *)malloc(sz);
+  if (!metadata->payload) {
+    free(metadata);
+    return NULL;
   }
+  memcpy(metadata->payload, data, sz);
+  metadata->sz = sz;
+  metadata->insert_flag = insert_flag;
   return metadata;
 }
 
-int aom_img_metadata_free(aom_metadata_t *metadata) {
-  if (!metadata) return -1;
-  if (metadata->payload) free(metadata->payload);
-  free(metadata);
-  return 0;
+void aom_img_metadata_free(aom_metadata_t *metadata) {
+  if (metadata) {
+    if (metadata->payload) free(metadata->payload);
+    free(metadata);
+  }
 }
 
 aom_metadata_array_t *aom_img_metadata_array_alloc(size_t sz) {
@@ -330,29 +329,27 @@ aom_metadata_array_t *aom_img_metadata_array_alloc(size_t sz) {
   return arr;
 }
 
-size_t aom_img_metadata_array_free(aom_metadata_array_t *arr) {
-  size_t deleted_metadatas = 0;
-  if (!arr) return deleted_metadatas;
-  if (arr->metadata_array) {
-    for (size_t i = 0; i < arr->sz; i++) {
-      if (aom_img_metadata_free(arr->metadata_array[i]) == 0) {
-        deleted_metadatas++;
+void aom_img_metadata_array_free(aom_metadata_array_t *arr) {
+  if (arr) {
+    if (arr->metadata_array) {
+      for (size_t i = 0; i < arr->sz; i++) {
+        aom_img_metadata_free(arr->metadata_array[i]);
       }
+      free(arr->metadata_array);
     }
-    free(arr->metadata_array);
+    free(arr);
   }
-  free(arr);
-  return deleted_metadatas;
 }
 
-int aom_img_add_metadata(aom_image_t *img, uint8_t type, uint8_t *data,
-                         size_t sz) {
+int aom_img_add_metadata(aom_image_t *img, uint32_t type, const uint8_t *data,
+                         size_t sz, aom_metadata_insert_flags_t insert_flag) {
   if (!img) return -1;
   if (!img->metadata) {
     img->metadata = aom_img_metadata_array_alloc(0);
     if (!img->metadata) return -1;
   }
-  aom_metadata_t *metadata = aom_img_metadata_alloc(type, data, sz);
+  aom_metadata_t *metadata =
+      aom_img_metadata_alloc(type, data, sz, insert_flag);
   if (!metadata) goto fail;
   if (!img->metadata->metadata_array) {
     img->metadata->metadata_array =
@@ -375,11 +372,24 @@ fail:
   return -1;
 }
 
-size_t aom_img_remove_metadata(aom_image_t *img) {
+void aom_img_remove_metadata(aom_image_t *img) {
   if (img && img->metadata) {
-    size_t sz = aom_img_metadata_array_free(img->metadata);
+    aom_img_metadata_array_free(img->metadata);
     img->metadata = NULL;
-    return sz;
   }
-  return 0;
+}
+
+const aom_metadata_t *aom_img_get_metadata(const aom_image_t *img,
+                                           size_t index) {
+  if (!img) return NULL;
+  const aom_metadata_array_t *array = img->metadata;
+  if (array && index < array->sz) {
+    return array->metadata_array[index];
+  }
+  return NULL;
+}
+
+size_t aom_img_num_metadata(const aom_image_t *img) {
+  if (!img || !img->metadata) return 0;
+  return img->metadata->sz;
 }

@@ -28,7 +28,7 @@ struct ThreadData;
 // Structure to hold snapshot of coding context during the mode picking process
 typedef struct {
   MB_MODE_INFO mic;
-  MB_MODE_INFO_EXT mbmi_ext;
+  MB_MODE_INFO_EXT_FRAME mbmi_ext_best;
   uint8_t *color_index_map[2];
   uint8_t *blk_skip;
 
@@ -77,15 +77,16 @@ typedef struct PC_TREE {
   int index;
 
   // Simple motion search_features
-  MV mv_ref_fulls[REF_FRAMES];
+  FULLPEL_MV start_mvs[REF_FRAMES];
   unsigned int sms_none_feat[2];
   unsigned int sms_rect_feat[8];
   int sms_none_valid;
   int sms_rect_valid;
 } PC_TREE;
 
-void av1_setup_pc_tree(struct AV1Common *cm, struct ThreadData *td);
-void av1_free_pc_tree(struct ThreadData *td, const int num_planes);
+void av1_setup_pc_tree(struct AV1_COMP *const cpi, struct ThreadData *td);
+void av1_free_pc_tree(const struct AV1_COMP *const cpi, struct ThreadData *td,
+                      const int num_planes, BLOCK_SIZE sb_size);
 void av1_copy_tree_context(PICK_MODE_CONTEXT *dst_ctx,
                            PICK_MODE_CONTEXT *src_ctx);
 
