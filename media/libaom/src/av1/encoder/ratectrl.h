@@ -17,8 +17,8 @@
 
 #include "aom_ports/mem.h"
 
+#include "av1/common/av1_common_int.h"
 #include "av1/common/blockd.h"
-#include "av1/common/onyxc_int.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,8 +45,14 @@ extern "C" {
 #define MAX_PYRAMID_LVL 4
 
 #define MIN_GF_INTERVAL 4
-#define MAX_GF_INTERVAL 16
+#define MAX_GF_INTERVAL 32
 #define FIXED_GF_INTERVAL 8  // Used in some testing modes only
+#define MAX_GF_LENGTH_LAP 16
+
+#define MAX_NUM_GF_INTERVALS 15
+
+#define MAX_ARF_LAYERS 6
+// #define STRICT_RC
 
 typedef struct {
   int resize_width;
@@ -78,6 +84,10 @@ typedef struct {
   int base_frame_target;  // A baseline frame target before adjustment
                           // for previous under or over shoot.
   int this_frame_target;  // Actual frame target after rc adjustment.
+
+  // gop bit budget
+  int64_t gf_group_bits;
+
   int projected_frame_size;
   int sb64_target_rate;
   int last_q[FRAME_TYPES];  // Separate values for Intra/Inter
@@ -91,6 +101,14 @@ typedef struct {
 
   int frames_since_golden;
   int frames_till_gf_update_due;
+
+  // number of determined gf group length left
+  int intervals_till_gf_calculate_due;
+  // stores gf group length intervals
+  int gf_intervals[MAX_NUM_GF_INTERVALS];
+  // the current index in gf_intervals
+  int cur_gf_index;
+
   int min_gf_interval;
   int max_gf_interval;
   int static_scene_max_gf_interval;
@@ -108,6 +126,7 @@ typedef struct {
   int avg_frame_bandwidth;  // Average frame size target for clip
   int min_frame_bandwidth;  // Minimum allocation used for any frame
   int max_frame_bandwidth;  // Maximum burst rate allowed for a frame.
+  int prev_avg_frame_bandwidth;
 
   int ni_av_qi;
   int ni_tot_qi;
@@ -156,7 +175,17 @@ typedef struct {
   // Q index used for ALT frame
   int arf_q;
   int active_worst_quality;
+  int active_best_quality[MAX_ARF_LAYERS + 1];
   int base_layer_qp;
+
+  // Total number of stats used only for kf_boost calculation.
+  int num_stats_used_for_kf_boost;
+  // Total number of stats used only for gfu_boost calculation.
+  int num_stats_used_for_gfu_boost;
+  // Total number of stats required by gfu_boost calculation.
+  int num_stats_required_for_gfu_boost;
+  int next_is_fwd_key;
+  int enable_scenecut_detection;
 } RATE_CONTROL;
 
 struct AV1_COMP;

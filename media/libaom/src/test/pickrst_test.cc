@@ -9,6 +9,8 @@
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
 
+#include <tuple>
+
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 #include "test/register_state_check.h"
@@ -36,8 +38,7 @@ typedef int64_t (*lowbd_pixel_proj_error_func)(
 // 8 bit
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef ::testing::tuple<const lowbd_pixel_proj_error_func>
-    PixelProjErrorTestParam;
+typedef std::tuple<const lowbd_pixel_proj_error_func> PixelProjErrorTestParam;
 
 class PixelProjErrorTest
     : public ::testing::TestWithParam<PixelProjErrorTestParam> {
@@ -177,14 +178,14 @@ TEST_P(PixelProjErrorTest, ExtremeValues) {
 TEST_P(PixelProjErrorTest, DISABLED_Speed) { RunPixelProjErrorTest(200000); }
 
 #if HAVE_SSE4_1
-INSTANTIATE_TEST_CASE_P(SSE4_1, PixelProjErrorTest,
-                        ::testing::Values(av1_lowbd_pixel_proj_error_sse4_1));
+INSTANTIATE_TEST_SUITE_P(SSE4_1, PixelProjErrorTest,
+                         ::testing::Values(av1_lowbd_pixel_proj_error_sse4_1));
 #endif  // HAVE_SSE4_1
 
 #if HAVE_AVX2
 
-INSTANTIATE_TEST_CASE_P(AVX2, PixelProjErrorTest,
-                        ::testing::Values(av1_lowbd_pixel_proj_error_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, PixelProjErrorTest,
+                         ::testing::Values(av1_lowbd_pixel_proj_error_avx2));
 #endif  // HAVE_AVX2
 
 }  // namespace pickrst_test_lowbd
@@ -202,8 +203,7 @@ typedef int64_t (*highbd_pixel_proj_error_func)(
 // High bit-depth
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef ::testing::tuple<const highbd_pixel_proj_error_func>
-    PixelProjErrorTestParam;
+typedef std::tuple<const highbd_pixel_proj_error_func> PixelProjErrorTestParam;
 
 class PixelProjHighbdErrorTest
     : public ::testing::TestWithParam<PixelProjErrorTestParam> {
@@ -345,14 +345,14 @@ TEST_P(PixelProjHighbdErrorTest, DISABLED_Speed) {
 }
 
 #if HAVE_SSE4_1
-INSTANTIATE_TEST_CASE_P(SSE4_1, PixelProjHighbdErrorTest,
-                        ::testing::Values(av1_highbd_pixel_proj_error_sse4_1));
+INSTANTIATE_TEST_SUITE_P(SSE4_1, PixelProjHighbdErrorTest,
+                         ::testing::Values(av1_highbd_pixel_proj_error_sse4_1));
 #endif  // HAVE_SSE4_1
 
 #if HAVE_AVX2
 
-INSTANTIATE_TEST_CASE_P(AVX2, PixelProjHighbdErrorTest,
-                        ::testing::Values(av1_highbd_pixel_proj_error_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, PixelProjHighbdErrorTest,
+                         ::testing::Values(av1_highbd_pixel_proj_error_avx2));
 #endif  // HAVE_AVX2
 
 }  // namespace pickrst_test_highbd
@@ -372,7 +372,7 @@ typedef void (*set_get_proj_subspace)(const uint8_t *src8, int width,
                                       int64_t H[2][2], int64_t C[2],
                                       const sgr_params_type *params);
 
-typedef ::testing::tuple<const set_get_proj_subspace> GetProjSubspaceTestParam;
+typedef std::tuple<const set_get_proj_subspace> GetProjSubspaceTestParam;
 
 class GetProjSubspaceTest
     : public ::testing::TestWithParam<GetProjSubspaceTestParam> {
@@ -526,8 +526,8 @@ TEST_P(GetProjSubspaceTest, DISABLED_Speed) { RunGetProjSubspaceTest(200000); }
 
 #if HAVE_AVX2
 
-INSTANTIATE_TEST_CASE_P(AVX2, GetProjSubspaceTest,
-                        ::testing::Values(av1_calc_proj_params_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, GetProjSubspaceTest,
+                         ::testing::Values(av1_calc_proj_params_avx2));
 #endif  // HAVE_AVX2
 
 }  // namespace get_proj_subspace_test_lowbd

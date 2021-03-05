@@ -22,24 +22,24 @@
 #endif
 
 #include "av1/encoder/hash.h"
-#if CONFIG_DIST_8X8
-#include "aom/aomcx.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// 1: use classic model 0: use count or saving stats
-#define USE_TPL_CLASSIC_MODEL 0
 #define MC_FLOW_BSIZE_1D 16
 #define MC_FLOW_NUM_PELS (MC_FLOW_BSIZE_1D * MC_FLOW_BSIZE_1D)
 #define MAX_MC_FLOW_BLK_IN_SB (MAX_SB_SIZE / MC_FLOW_BSIZE_1D)
-#define MAX_WINNER_MODE_COUNT 3
+#define MAX_WINNER_MODE_COUNT_INTRA 3
+#define MAX_WINNER_MODE_COUNT_INTER 1
 typedef struct {
   MB_MODE_INFO mbmi;
+  RD_STATS rd_cost;
   int64_t rd;
+  int rate_y;
+  int rate_uv;
   uint8_t color_index_map[64 * 64];
+  THR_MODES mode_index;
 } WinnerModeStats;
 
 typedef struct {
@@ -47,6 +47,13 @@ typedef struct {
   int sum;
   unsigned int var;
 } DIFF;
+
+enum {
+  NO_TRELLIS_OPT,          // No trellis optimization
+  FULL_TRELLIS_OPT,        // Trellis optimization in all stages
+  FINAL_PASS_TRELLIS_OPT,  // Trellis optimization in only the final encode pass
+  NO_ESTIMATE_YRD_TRELLIS_OPT  // Disable trellis in estimate_yrd_for_sb
+} UENUM1BYTE(TRELLIS_OPT_TYPE);
 
 typedef struct macroblock_plane {
   DECLARE_ALIGNED(32, int16_t, src_diff[MAX_SB_SQUARE]);
@@ -100,7 +107,7 @@ typedef struct {
   uint8_t ref_mv_count[MODE_CTX_REF_FRAMES];
 } MB_MODE_INFO_EXT;
 
-// Structure to store winner reference mode information at frame level. This
+// Structure to store best mode information at frame level. This
 // frame level information will be used during bitstream preparation stage.
 typedef struct {
   CANDIDATE_MV ref_mv_stack[USABLE_REF_MV_STACK_SIZE];
@@ -111,13 +118,6 @@ typedef struct {
   int16_t mode_context;
   uint8_t ref_mv_count;
 } MB_MODE_INFO_EXT_FRAME;
-
-typedef struct {
-  int col_min;
-  int col_max;
-  int row_min;
-  int row_max;
-} MvLimits;
 
 typedef struct {
   uint8_t best_palette_color_map[MAX_PALETTE_SQUARE];
@@ -182,30 +182,23 @@ typedef struct {
 // 4: NEAREST, NEW, NEAR, GLOBAL
 #define SINGLE_REF_MODES ((REF_FRAMES - 1) * 4)
 
-#define MAX_INTERP_FILTER_STATS 64
-typedef struct {
-  int_interpfilters filters;
-  int_mv mv[2];
-  int8_t ref_frames[2];
-  COMPOUND_TYPE comp_type;
-  int64_t rd;
-  unsigned int pred_sse;
-} INTERPOLATION_FILTER_STATS;
-
 #define MAX_COMP_RD_STATS 64
 typedef struct {
   int32_t rate[COMPOUND_TYPES];
   int64_t dist[COMPOUND_TYPES];
-  int64_t comp_model_rd[COMPOUND_TYPES];
+  int32_t model_rate[COMPOUND_TYPES];
+  int64_t model_dist[COMPOUND_TYPES];
+  int comp_rs2[COMPOUND_TYPES];
   int_mv mv[2];
   MV_REFERENCE_FRAME ref_frames[2];
   PREDICTION_MODE mode;
   int_interpfilters filter;
   int ref_mv_idx;
   int is_global[2];
+  INTERINTER_COMPOUND_DATA interinter_comp;
 } COMP_RD_STATS;
 
-// Struct for buffers used by compound_type_rd() function.
+// Struct for buffers used by av1_compound_type_rd() function.
 // For sizes and alignment of these arrays, refer to
 // alloc_compound_type_rd_buffers() function.
 typedef struct {
@@ -216,6 +209,14 @@ typedef struct {
   uint8_t *tmp_best_mask_buf;  // backup of the best segmentation mask
 } CompoundTypeRdBuffers;
 
+enum {
+  MV_COST_ENTROPY,    // Use the entropy rate of the mv as the cost
+  MV_COST_L1_LOWRES,  // Use the l1 norm of the mv as the cost (<480p)
+  MV_COST_L1_MIDRES,  // Use the l1 norm of the mv as the cost (>=480p)
+  MV_COST_L1_HDRES,   // Use the l1 norm of the mv as the cost (>=720p)
+  MV_COST_NONE        // Use 0 as as cost irrespective of the current mv
+} UENUM1BYTE(MV_COST_TYPE);
+
 struct inter_modes_info;
 typedef struct macroblock MACROBLOCK;
 struct macroblock {
@@ -225,10 +226,6 @@ struct macroblock {
   // search model to select prediction modes, or full complexity model
   // to select transform kernel.
   int rd_model;
-
-  // [comp_idx][saved stat_idx]
-  INTERPOLATION_FILTER_STATS interp_filter_stats[2][MAX_INTERP_FILTER_STATS];
-  int interp_filter_stats_idx[2];
 
   // prune_comp_search_by_single_result (3:MAX_REF_MV_SEARCH)
   SimpleRDState simple_rd_state[SINGLE_REF_MODES][3];
@@ -249,7 +246,8 @@ struct macroblock {
   MB_MODE_INFO_EXT *mbmi_ext;
   MB_MODE_INFO_EXT_FRAME *mbmi_ext_frame;
   // Array of mode stats for winner mode processing
-  WinnerModeStats winner_mode_stats[MAX_WINNER_MODE_COUNT];
+  WinnerModeStats winner_mode_stats[AOMMAX(MAX_WINNER_MODE_COUNT_INTRA,
+                                           MAX_WINNER_MODE_COUNT_INTER)];
   int winner_mode_count;
   int skip_block;
   int qindex;
@@ -259,15 +257,10 @@ struct macroblock {
   int errorperbit;
   // The equivalend SAD error of one (whole) bit at the current quantizer
   // for large blocks.
-  int sadperbit16;
-  // The equivalend SAD error of one (whole) bit at the current quantizer
-  // for sub-8x8 blocks.
-  int sadperbit4;
+  int sadperbit;
   int rdmult;
   int mb_energy;
   int sb_energy_level;
-  int *m_search_count_ptr;
-  int *ex_search_count_ptr;
 
   unsigned int txb_split_count;
 #if CONFIG_SPEED_STATS
@@ -314,25 +307,18 @@ struct macroblock {
 
   struct inter_modes_info *inter_modes_info;
 
-  // buffer for hash value calculation of a block
-  // used only in av1_get_block_hash_value()
-  // [first hash/second hash]
-  // [two buffers used ping-pong]
-  uint32_t *hash_value_buffer[2][2];
-
-  CRC_CALCULATOR crc_calculator1;
-  CRC_CALCULATOR crc_calculator2;
-  int g_crc_initialized;
+  // Contains the hash table, hash function, and buffer used for intrabc
+  IntraBCHashInfo intrabc_hash_info;
 
   // These define limits to motion vector components to prevent them
   // from extending outside the UMV borders
-  MvLimits mv_limits;
+  FullMvLimits mv_limits;
 
   uint8_t blk_skip[MAX_MIB_SIZE * MAX_MIB_SIZE];
   uint8_t tx_type_map[MAX_MIB_SIZE * MAX_MIB_SIZE];
 
-  int skip;
-  int skip_chroma_rd;
+  // Force the coding block to skip transform and quantization.
+  int force_skip;
   int skip_cost[SKIP_CONTEXTS][2];
 
   int skip_mode;  // 0: off; 1: on
@@ -401,14 +387,6 @@ struct macroblock {
   // Used to store sub partition's choices.
   MV pred_mv[REF_FRAMES];
 
-  // Store the best motion vector during motion search
-  int_mv best_mv;
-  // Store the second best motion vector during full-pixel motion search
-  int_mv second_best_mv;
-
-  // Store the fractional best motion vector during sub/Qpel-pixel motion search
-  int_mv fractional_best_mv[3];
-
   // Ref frames that are selected by square partition blocks within a super-
   // block, in MI resolution. They can be used to prune ref frames for
   // rectangular blocks.
@@ -418,15 +396,12 @@ struct macroblock {
   int use_default_intra_tx_type;
   // use default transform and skip transform type search for inter modes
   int use_default_inter_tx_type;
-#if CONFIG_DIST_8X8
-  int using_dist_8x8;
-  aom_tune_metric tune_metric;
-#endif  // CONFIG_DIST_8X8
   int comp_idx_cost[COMP_INDEX_CONTEXTS][2];
   int comp_group_idx_cost[COMP_GROUP_IDX_CONTEXTS][2];
   int must_find_valid_partition;
   int recalc_luma_mc_data;  // Flag to indicate recalculation of MC data during
                             // interpolation filter search
+  int prune_mode;
   uint32_t tx_domain_dist_threshold;
   int use_transform_domain_distortion;
   // The likelihood of an edge existing in the block (using partial Canny edge
@@ -455,21 +430,56 @@ struct macroblock {
   float log_q;
 #endif
   int thresh_freq_fact[BLOCK_SIZES_ALL][MAX_MODES];
+  // 0 - 128x128
+  // 1-2 - 128x64
+  // 3-4 - 64x128
+  // 5-8 - 64x64
+  // 9-16 - 64x32
+  // 17-24 - 32x64
+  // 25-40 - 32x32
+  // 41-104 - 16x16
   uint8_t variance_low[105];
+  uint8_t content_state_sb;
   // Strong color activity detection. Used in REALTIME coding mode to enhance
   // the visual quality at the boundary of moving color objects.
   uint8_t color_sensitivity[2];
+  int nonrd_prune_ref_frame_search;
 
   // Used to control the tx size search evaluation for mode processing
   // (normal/winner mode)
   int tx_size_search_method;
-  TX_MODE tx_mode;
+  // This tx_mode_search_type is used internally by the encoder, and is not
+  // written to the bitstream. It determines what kind of tx_mode should be
+  // searched. For example, we might set it to TX_MODE_LARGEST to find a good
+  // candidate, then use TX_MODE_SELECT on it
+  TX_MODE tx_mode_search_type;
+
+  // Used to control aggressiveness of skip flag prediction for mode processing
+  // (normal/winner mode)
+  unsigned int predict_skip_level;
 
   // Copy out this SB's TPL block stats.
   int valid_cost_b;
   int64_t inter_cost_b[MAX_MC_FLOW_BLK_IN_SB * MAX_MC_FLOW_BLK_IN_SB];
   int64_t intra_cost_b[MAX_MC_FLOW_BLK_IN_SB * MAX_MC_FLOW_BLK_IN_SB];
+  int_mv mv_b[MAX_MC_FLOW_BLK_IN_SB * MAX_MC_FLOW_BLK_IN_SB]
+             [INTER_REFS_PER_FRAME];
   int cost_stride;
+
+  // The type of mv cost used during motion search
+  MV_COST_TYPE mv_cost_type;
+
+  uint8_t search_ref_frame[REF_FRAMES];
+
+#if CONFIG_AV1_HIGHBITDEPTH
+  void (*fwd_txfm4x4)(const int16_t *input, tran_low_t *output, int stride);
+  void (*inv_txfm_add)(const tran_low_t *input, uint8_t *dest, int stride,
+                       int eob);
+#else
+  void (*fwd_txfm4x4)(const int16_t *input, int16_t *output, int stride);
+  void (*inv_txfm_add)(const int16_t *input, uint8_t *dest, int stride,
+                       int eob);
+#endif
 };
 
 // Only consider full SB, MC_FLOW_BSIZE_1D = 16.

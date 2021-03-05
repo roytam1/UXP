@@ -15,10 +15,10 @@
 #include "config/aom_dsp_rtcd.h"
 #include "config/av1_rtcd.h"
 
+#include "av1/common/av1_common_int.h"
 #include "av1/common/blockd.h"
 #include "av1/common/convolve.h"
 #include "av1/common/filter.h"
-#include "av1/common/onyxc_int.h"
 #include "av1/common/resize.h"
 #include "aom_dsp/aom_dsp_common.h"
 #include "aom_ports/mem.h"
@@ -573,10 +573,20 @@ void av1_convolve_2d_facade(const uint8_t *src, int src_stride, uint8_t *dst,
   if (filter_params_x->taps == 2 || filter_params_y->taps == 2) {
     assert(filter_params_x->taps == 2 && filter_params_y->taps == 2);
     assert(!scaled);
-    if (subpel_x_qn || subpel_y_qn) {
+    if (subpel_x_qn && subpel_y_qn) {
       av1_convolve_2d_sr_c(src, src_stride, dst, dst_stride, w, h,
                            filter_params_x, filter_params_y, subpel_x_qn,
                            subpel_y_qn, conv_params);
+      return;
+    } else if (subpel_x_qn) {
+      av1_convolve_x_sr_c(src, src_stride, dst, dst_stride, w, h,
+                          filter_params_x, filter_params_y, subpel_x_qn,
+                          subpel_y_qn, conv_params);
+      return;
+    } else if (subpel_y_qn) {
+      av1_convolve_y_sr_c(src, src_stride, dst, dst_stride, w, h,
+                          filter_params_x, filter_params_y, subpel_x_qn,
+                          subpel_y_qn, conv_params);
       return;
     }
   }

@@ -12,6 +12,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <tuple>
 #include <vector>
 
 #include "config/av1_rtcd.h"
@@ -62,7 +63,7 @@ static const char *tx_type_name[] = {
 
 // AV1InvTxfm2dParam argument list:
 // tx_type_, tx_size_, max_error_, max_avg_error_
-typedef ::testing::tuple<TxType, TxSize, int, double> AV1InvTxfm2dParam;
+typedef std::tuple<TxType, TxSize, int, double> AV1InvTxfm2dParam;
 
 class AV1InvTxfm2d : public ::testing::TestWithParam<AV1InvTxfm2dParam> {
  public:
@@ -226,8 +227,8 @@ vector<AV1InvTxfm2dParam> GetInvTxfm2dParamList() {
   return param_list;
 }
 
-INSTANTIATE_TEST_CASE_P(C, AV1InvTxfm2d,
-                        ::testing::ValuesIn(GetInvTxfm2dParamList()));
+INSTANTIATE_TEST_SUITE_P(C, AV1InvTxfm2d,
+                         ::testing::ValuesIn(GetInvTxfm2dParamList()));
 
 TEST_P(AV1InvTxfm2d, RunRoundtripCheck) { RunRoundtripCheck(); }
 
@@ -261,7 +262,7 @@ TEST(AV1InvTxfm2d, CfgTest) {
   }
 }
 
-typedef ::testing::tuple<const LbdInvTxfm2dFunc> AV1LbdInvTxfm2dParam;
+typedef std::tuple<const LbdInvTxfm2dFunc> AV1LbdInvTxfm2dParam;
 class AV1LbdInvTxfm2d : public ::testing::TestWithParam<AV1LbdInvTxfm2dParam> {
  public:
   virtual void SetUp() { target_func_ = GET_PARAM(0); }
@@ -391,8 +392,8 @@ TEST_P(AV1LbdInvTxfm2d, DISABLED_Speed) {
 #if HAVE_SSSE3
 #if defined(_MSC_VER) || defined(__SSSE3__)
 #include "av1/common/x86/av1_inv_txfm_ssse3.h"
-INSTANTIATE_TEST_CASE_P(SSSE3, AV1LbdInvTxfm2d,
-                        ::testing::Values(av1_lowbd_inv_txfm2d_add_ssse3));
+INSTANTIATE_TEST_SUITE_P(SSSE3, AV1LbdInvTxfm2d,
+                         ::testing::Values(av1_lowbd_inv_txfm2d_add_ssse3));
 #endif  // _MSC_VER || __SSSE3__
 #endif  // HAVE_SSSE3
 
@@ -402,8 +403,8 @@ extern "C" void av1_lowbd_inv_txfm2d_add_avx2(const int32_t *input,
                                               TxType tx_type, TxSize tx_size,
                                               int eob);
 
-INSTANTIATE_TEST_CASE_P(AVX2, AV1LbdInvTxfm2d,
-                        ::testing::Values(av1_lowbd_inv_txfm2d_add_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, AV1LbdInvTxfm2d,
+                         ::testing::Values(av1_lowbd_inv_txfm2d_add_avx2));
 #endif  // HAVE_AVX2
 
 // TODO(yunqing): Re-enable this unit test for NEON version after the functions
@@ -414,8 +415,8 @@ extern "C" void av1_lowbd_inv_txfm2d_add_neon(const int32_t *input,
                                               TX_TYPE tx_type, TX_SIZE tx_size,
                                               int eob);
 
-INSTANTIATE_TEST_CASE_P(NEON, AV1LbdInvTxfm2d,
-                        ::testing::Values(av1_lowbd_inv_txfm2d_add_neon));
+INSTANTIATE_TEST_SUITE_P(NEON, AV1LbdInvTxfm2d,
+                         ::testing::Values(av1_lowbd_inv_txfm2d_add_neon));
 #endif  // HAVE_NEON
 
 }  // namespace

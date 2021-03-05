@@ -42,4 +42,16 @@
 <!ENTITY  videoMSEWebM.label          "Enable MSE for WebM video">
 <!ENTITY  videoMSEWebM.accesskey      "W">
 
+<!ENTITY mediaSupport.label           "Media Formats">
+<!ENTITY allowEnable.label            "Enable:">
 
+#ifdef MOZ_FMP4
+<!ENTITY enableMP4.label              "MP4">
+#endif
+<!ENTITY enableWebM.label             "WebM">
+#ifdef MOZ_AV1
+<!ENTITY enableAV1.label              "AV1">
+#endif
+<!ENTITY enableOGG.label              "Vorbis">
+<!ENTITY enableOPUS.label             "Opus">
+<!ENTITY enableFLAC.label             "Flac">

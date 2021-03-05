@@ -11,6 +11,7 @@
 
 #include <assert.h>
 
+#include "aom/internal/aom_image_internal.h"
 #include "aom_mem/aom_mem.h"
 #include "aom_ports/mem.h"
 #include "aom_scale/yv12config.h"
@@ -228,54 +229,6 @@ int aom_realloc_frame_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
   return AOM_CODEC_MEM_ERROR;
 }
 
-// TODO(anyone): This function allocates memory for
-// lookahead buffer considering height and width is
-// aligned to 128. Currently variance calculation of
-// simple_motion_search_get_best_ref() function is done
-// for full sb size (i.e integral multiple of max sb
-// size = 128 or 64). Hence partial sbs need up to 127
-// pixels beyond frame boundary. 128 aligned limitation of
-// lookahead buffer can be removed if variance calculation
-// is adjusted for partial sbs
-
-// NOTE: Chroma width and height need not be aligned to
-// 128 since variance calculation happens only for luma plane
-int aom_realloc_lookahead_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
-                                 int ss_x, int ss_y, int use_highbitdepth,
-                                 int border, int byte_alignment,
-                                 aom_codec_frame_buffer_t *fb,
-                                 aom_get_frame_buffer_cb_fn_t cb,
-                                 void *cb_priv) {
-  if (ybf) {
-    int y_stride = 0;
-    int uv_stride = 0;
-    uint64_t yplane_size = 0;
-    uint64_t uvplane_size = 0;
-    const int aligned_128_width = (width + 127) & ~127;
-    const int aligned_128_height = (height + 127) & ~127;
-    const int aligned_width = (width + 7) & ~7;
-    const int aligned_height = (height + 7) & ~7;
-    const int uv_64_height = aligned_128_height >> ss_y;
-    const int uv_width = aligned_width >> ss_x;
-    const int uv_height = aligned_height >> ss_y;
-    const int uv_border_w = border >> ss_x;
-    const int uv_border_h = border >> ss_y;
-
-    int error = calc_stride_and_planesize(
-        ss_x, ss_y, aligned_128_width, aligned_128_height, border,
-        byte_alignment, &y_stride, &uv_stride, &yplane_size, &uvplane_size,
-        uv_64_height);
-    if (error) return error;
-
-    return realloc_frame_buffer_aligned(
-        ybf, width, height, ss_x, ss_y, use_highbitdepth, border,
-        byte_alignment, fb, cb, cb_priv, y_stride, yplane_size, uvplane_size,
-        aligned_width, aligned_height, uv_width, uv_height, uv_stride,
-        uv_border_w, uv_border_h);
-  }
-  return AOM_CODEC_MEM_ERROR;
-}
-
 int aom_alloc_frame_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
                            int ss_x, int ss_y, int use_highbitdepth, int border,
                            int byte_alignment) {
@@ -288,25 +241,23 @@ int aom_alloc_frame_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
   return AOM_CODEC_MEM_ERROR;
 }
 
-size_t aom_remove_metadata_from_frame_buffer(YV12_BUFFER_CONFIG *ybf) {
+void aom_remove_metadata_from_frame_buffer(YV12_BUFFER_CONFIG *ybf) {
   if (ybf && ybf->metadata) {
-    size_t sz = aom_img_metadata_array_free(ybf->metadata);
+    aom_img_metadata_array_free(ybf->metadata);
     ybf->metadata = NULL;
-    return sz;
   }
-  return 0;
 }
 
 int aom_copy_metadata_to_frame_buffer(YV12_BUFFER_CONFIG *ybf,
-                                      aom_metadata_array_t *arr) {
+                                      const aom_metadata_array_t *arr) {
   if (!ybf || !arr || !arr->metadata_array) return -1;
   aom_remove_metadata_from_frame_buffer(ybf);
   ybf->metadata = aom_img_metadata_array_alloc(arr->sz);
-  if (!ybf->metadata) return 0;
+  if (!ybf->metadata) return -1;
   for (size_t i = 0; i < ybf->metadata->sz; i++) {
     ybf->metadata->metadata_array[i] = aom_img_metadata_alloc(
         arr->metadata_array[i]->type, arr->metadata_array[i]->payload,
-        arr->metadata_array[i]->sz);
+        arr->metadata_array[i]->sz, arr->metadata_array[i]->insert_flag);
     if (ybf->metadata->metadata_array[i] == NULL) {
       aom_img_metadata_array_free(ybf->metadata);
       ybf->metadata = NULL;

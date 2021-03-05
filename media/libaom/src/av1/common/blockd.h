@@ -75,24 +75,24 @@ static INLINE int is_inter_compound_mode(PREDICTION_MODE mode) {
 }
 
 static INLINE PREDICTION_MODE compound_ref0_mode(PREDICTION_MODE mode) {
-  static PREDICTION_MODE lut[] = {
-    MB_MODE_COUNT,  // DC_PRED
-    MB_MODE_COUNT,  // V_PRED
-    MB_MODE_COUNT,  // H_PRED
-    MB_MODE_COUNT,  // D45_PRED
-    MB_MODE_COUNT,  // D135_PRED
-    MB_MODE_COUNT,  // D113_PRED
-    MB_MODE_COUNT,  // D157_PRED
-    MB_MODE_COUNT,  // D203_PRED
-    MB_MODE_COUNT,  // D67_PRED
-    MB_MODE_COUNT,  // SMOOTH_PRED
-    MB_MODE_COUNT,  // SMOOTH_V_PRED
-    MB_MODE_COUNT,  // SMOOTH_H_PRED
-    MB_MODE_COUNT,  // PAETH_PRED
-    MB_MODE_COUNT,  // NEARESTMV
-    MB_MODE_COUNT,  // NEARMV
-    MB_MODE_COUNT,  // GLOBALMV
-    MB_MODE_COUNT,  // NEWMV
+  static const PREDICTION_MODE lut[] = {
+    DC_PRED,        // DC_PRED
+    V_PRED,         // V_PRED
+    H_PRED,         // H_PRED
+    D45_PRED,       // D45_PRED
+    D135_PRED,      // D135_PRED
+    D113_PRED,      // D113_PRED
+    D157_PRED,      // D157_PRED
+    D203_PRED,      // D203_PRED
+    D67_PRED,       // D67_PRED
+    SMOOTH_PRED,    // SMOOTH_PRED
+    SMOOTH_V_PRED,  // SMOOTH_V_PRED
+    SMOOTH_H_PRED,  // SMOOTH_H_PRED
+    PAETH_PRED,     // PAETH_PRED
+    NEARESTMV,      // NEARESTMV
+    NEARMV,         // NEARMV
+    GLOBALMV,       // GLOBALMV
+    NEWMV,          // NEWMV
     NEARESTMV,      // NEAREST_NEARESTMV
     NEARMV,         // NEAR_NEARMV
     NEARESTMV,      // NEAREST_NEWMV
@@ -103,12 +103,12 @@ static INLINE PREDICTION_MODE compound_ref0_mode(PREDICTION_MODE mode) {
     NEWMV,          // NEW_NEWMV
   };
   assert(NELEMENTS(lut) == MB_MODE_COUNT);
-  assert(is_inter_compound_mode(mode));
+  assert(is_inter_compound_mode(mode) || is_inter_singleref_mode(mode));
   return lut[mode];
 }
 
 static INLINE PREDICTION_MODE compound_ref1_mode(PREDICTION_MODE mode) {
-  static PREDICTION_MODE lut[] = {
+  static const PREDICTION_MODE lut[] = {
     MB_MODE_COUNT,  // DC_PRED
     MB_MODE_COUNT,  // V_PRED
     MB_MODE_COUNT,  // H_PRED
@@ -361,9 +361,9 @@ static INLINE void mi_to_pixel_loc(int *pixel_c, int *pixel_r, int mi_col,
                                    int mi_row, int tx_blk_col, int tx_blk_row,
                                    int subsampling_x, int subsampling_y) {
   *pixel_c = ((mi_col >> subsampling_x) << MI_SIZE_LOG2) +
-             (tx_blk_col << tx_size_wide_log2[0]);
+             (tx_blk_col << MI_SIZE_LOG2);
   *pixel_r = ((mi_row >> subsampling_y) << MI_SIZE_LOG2) +
-             (tx_blk_row << tx_size_high_log2[0]);
+             (tx_blk_row << MI_SIZE_LOG2);
 }
 #endif
 
@@ -398,8 +398,8 @@ typedef struct macroblockd_plane {
   int subsampling_y;
   struct buf_2d dst;
   struct buf_2d pre[2];
-  ENTROPY_CONTEXT *above_context;
-  ENTROPY_CONTEXT *left_context;
+  ENTROPY_CONTEXT *above_entropy_context;
+  ENTROPY_CONTEXT *left_entropy_context;
 
   // The dequantizers below are true dequantizers used only in the
   // dequantization process.  They have the same coefficient
@@ -414,8 +414,7 @@ typedef struct macroblockd_plane {
   qm_val_t *seg_qmatrix[MAX_SEGMENTS][TX_SIZES_ALL];
 } MACROBLOCKD_PLANE;
 
-#define BLOCK_OFFSET(i) \
-  ((i) * (1 << (tx_size_wide_log2[0] + tx_size_high_log2[0])))
+#define BLOCK_OFFSET(i) ((i) << 4)
 
 typedef struct {
   DECLARE_ALIGNED(16, InterpKernel, vfilter);
@@ -460,16 +459,12 @@ typedef struct cfl_ctx {
   // Chroma subsampling
   int subsampling_x, subsampling_y;
 
-  int mi_row, mi_col;
-
   // Whether the reconstructed luma pixels need to be stored
   int store_y;
 
 #if CONFIG_DEBUG
   int rate;
 #endif  // CONFIG_DEBUG
-
-  int is_chroma_reference;
 } CFL_CTX;
 
 typedef struct dist_wtd_comp_params {
@@ -483,53 +478,125 @@ struct scale_factors;
 // Most/all of the pointers are mere pointers to actual arrays are allocated
 // elsewhere. This is mostly for coding convenience.
 typedef struct macroblockd {
+  // Row and column position of current macroblock in mi units.
+  int mi_row;
+  int mi_col;
+  // Same as cm->mi_params.mi_stride, copied here for convenience.
+  int mi_stride;
+
+  // True if current block transmits chroma information.
+  // More detail:
+  // Smallest supported block size for both luma and chroma plane is 4x4. Hence,
+  // in case of subsampled chroma plane (YUV 4:2:0 or YUV 4:2:2), multiple luma
+  // blocks smaller than 8x8 maybe combined into one chroma block.
+  // For example, for YUV 4:2:0, let's say an 8x8 area is split into four 4x4
+  // luma blocks. Then, a single chroma block of size 4x4 will cover the area of
+  // these four luma blocks. This is implemented in bitstream as follows:
+  // - There are four MB_MODE_INFO structs for the four luma blocks.
+  // - First 3 MB_MODE_INFO have is_chroma_ref = false, and so do not transmit
+  // any information for chroma planes.
+  // - Last block will have is_chroma_ref = true and transmits chroma
+  // information for the 4x4 chroma block that covers whole 8x8 area covered by
+  // four luma blocks.
+  // Similar logic applies for chroma blocks that cover 2 or 3 luma blocks.
+  bool is_chroma_ref;
+
   struct macroblockd_plane plane[MAX_MB_PLANE];
 
   TileInfo tile;
 
-  int mi_stride;
-
+  // Appropriate offset inside cm->mi_params.mi_grid_base based on current
+  // mi_row and mi_col.
   MB_MODE_INFO **mi;
+
+  // True if 4x4 block above the current block is available.
+  bool up_available;
+  // True if 4x4 block to the left of the current block is available.
+  bool left_available;
+  // True if the above chrome reference block is available.
+  bool chroma_up_available;
+  // True if the left chrome reference block is available.
+  bool chroma_left_available;
+
+  // MB_MODE_INFO for 4x4 block to the left of the current block, if
+  // left_available == true; otherwise NULL.
   MB_MODE_INFO *left_mbmi;
+  // MB_MODE_INFO for 4x4 block above the current block, if
+  // up_available == true; otherwise NULL.
   MB_MODE_INFO *above_mbmi;
+  // Above chroma reference block if is_chroma_ref == true for the current block
+  // and chroma_up_available == true; otherwise NULL.
+  // See also: the special case logic when current chroma block covers more than
+  // one luma blocks in set_mi_row_col().
   MB_MODE_INFO *chroma_left_mbmi;
+  // Left chroma reference block if is_chroma_ref == true for the current block
+  // and chroma_left_available == true; otherwise NULL.
+  // See also: the special case logic when current chroma block covers more than
+  // one luma blocks in set_mi_row_col().
   MB_MODE_INFO *chroma_above_mbmi;
 
+  // Appropriate offset based on current 'mi_row' and 'mi_col', inside
+  // 'tx_type_map' in one of 'CommonModeInfoParams', 'PICK_MODE_CONTEXT' or
+  // 'MACROBLOCK' structs.
   uint8_t *tx_type_map;
+  // Stride for 'tx_type_map'. Note that this may / may not be same as
+  // 'mi_stride', depending on which actual array 'tx_type_map' points to.
   int tx_type_map_stride;
 
-  int up_available;
-  int left_available;
-  int chroma_up_available;
-  int chroma_left_available;
-
-  /* Distance of MB away from frame edges in subpixels (1/8th pixel)  */
+  // Distance of this macroblock from frame edges in 1/8th pixel units.
   int mb_to_left_edge;
   int mb_to_right_edge;
   int mb_to_top_edge;
   int mb_to_bottom_edge;
 
-  /* pointers to reference frame scale factors */
+  // Scale factors for reference frames of the current block.
+  // These are pointers into 'cm->ref_scale_factors'.
   const struct scale_factors *block_ref_scale_factors[2];
 
-  /* pointer to current frame */
   const YV12_BUFFER_CONFIG *cur_buf;
 
-  ENTROPY_CONTEXT *above_context[MAX_MB_PLANE];
-  ENTROPY_CONTEXT left_context[MAX_MB_PLANE][MAX_MIB_SIZE];
+  // Entropy contexts for the above blocks.
+  // above_entropy_context[i][j] corresponds to above entropy context for ith
+  // plane and jth mi column of this *frame*, wrt current 'mi_row'.
+  // These are pointers into 'cm->above_contexts.entropy'.
+  ENTROPY_CONTEXT *above_entropy_context[MAX_MB_PLANE];
+  // Entropy contexts for the left blocks.
+  // left_entropy_context[i][j] corresponds to left entropy context for ith
+  // plane and jth mi row of this *superblock*, wrt current 'mi_col'.
+  // Note: These contain actual data, NOT pointers.
+  ENTROPY_CONTEXT left_entropy_context[MAX_MB_PLANE][MAX_MIB_SIZE];
 
-  PARTITION_CONTEXT *above_seg_context;
-  PARTITION_CONTEXT left_seg_context[MAX_MIB_SIZE];
+  // Partition contexts for the above blocks.
+  // above_partition_context[i] corresponds to above partition context for ith
+  // mi column of this *frame*, wrt current 'mi_row'.
+  // These are pointers into 'cm->above_contexts.partition'.
+  PARTITION_CONTEXT *above_partition_context;
+  // Partition contexts for the left blocks.
+  // left_partition_context[i] corresponds to left partition context for ith
+  // mi row of this *superblock*, wrt current 'mi_col'.
+  // Note: These contain actual data, NOT pointers.
+  PARTITION_CONTEXT left_partition_context[MAX_MIB_SIZE];
 
+  // Transform contexts for the above blocks.
+  // TODO(urvang): Indexed two different ways from cm->above_contexts.txfm in
+  // code currently. Need to make it consistent / document why.
   TXFM_CONTEXT *above_txfm_context;
+  // Transform contexts for the left blocks.
   TXFM_CONTEXT *left_txfm_context;
+  // TODO(urvang): 'left_txfm_context' points to 'left_txfm_context_buffer'.
+  // Can we remove this indirection?
   TXFM_CONTEXT left_txfm_context_buffer[MAX_MIB_SIZE];
 
+  // Default values for the two restoration filters for each plane.
+  // These values are used as reference values when writing the bitstream. That
+  // is, we transmit the delta between the actual values in
+  // cm->rst_info[plane].unit_info[unit_idx] and these reference values.
   WienerInfo wiener_info[MAX_MB_PLANE];
   SgrprojInfo sgrproj_info[MAX_MB_PLANE];
 
-  // block dimension in the unit of mode_info.
-  uint8_t n4_w, n4_h;
+  // Block dimensions in MB_MODE_INFO units.
+  uint8_t width;
+  uint8_t height;
 
   uint8_t ref_mv_count[MODE_CTX_REF_FRAMES];
   CANDIDATE_MV ref_mv_stack[MODE_CTX_REF_FRAMES][MAX_REF_MV_STACK_SIZE];
@@ -541,15 +608,18 @@ typedef struct macroblockd {
   uint8_t neighbors_ref_counts[REF_FRAMES];
 
   FRAME_CONTEXT *tile_ctx;
-  /* Bit depth: 8, 10, 12 */
+  // Bit depth: copied from cm->seq_params.bit_depth for convenience.
   int bd;
 
   int qindex[MAX_SEGMENTS];
   int lossless[MAX_SEGMENTS];
+  // TODO(urvang): Move to decoder.
   int corrupted;
+  // Same as cm->features.cur_frame_force_integer_mv.
   int cur_frame_force_integer_mv;
-  // same with that in AV1_COMMON
+  // Pointer to cm->error.
   struct aom_internal_error_info *error_info;
+  // Same as cm->global_motion.
   const WarpedMotionParams *global_motion;
   int delta_qindex;
   int current_qindex;
@@ -574,7 +644,20 @@ typedef struct macroblockd {
   // SEG_LVL_ALT_LF_U   = 3;
   // SEG_LVL_ALT_LF_V   = 4;
   int8_t delta_lf[FRAME_LF_COUNT];
-  int cdef_preset[4];
+  // cdef_transmitted[i] is true if CDEF strength for ith CDEF unit in the
+  // current superblock has already been read from (decoder) / written to
+  // (encoder) the bitstream; and false otherwise.
+  // More detail:
+  // (1) CDEF strength is transmitted only once per CDEF unit, in the 1st
+  // non-skip coding block. So, we need this array to keep track of whether CDEF
+  // strengths for the given CDEF units have been transmitted yet or not.
+  // (2) Superblock size can be either 128x128 or 64x64, but CDEF unit size is
+  // fixed to be 64x64. So, there may be 4 CDEF units within a superblock (if
+  // superblock size is 128x128). Hence the array size is 4.
+  // (3) In the current implementation, CDEF strength for this CDEF unit is
+  // stored in the MB_MODE_INFO of the 1st block in this CDEF unit (inside
+  // cm->mi_params.mi_grid_base).
+  bool cdef_transmitted[4];
 
   DECLARE_ALIGNED(16, uint8_t, seg_mask[2 * MAX_SB_SQUARE]);
   uint8_t *mc_buf[2];
@@ -796,7 +879,7 @@ static INLINE TX_TYPE get_default_tx_type(PLANE_TYPE plane_type,
 static INLINE BLOCK_SIZE get_plane_block_size(BLOCK_SIZE bsize,
                                               int subsampling_x,
                                               int subsampling_y) {
-  if (bsize == BLOCK_INVALID) return BLOCK_INVALID;
+  assert(bsize < BLOCK_SIZES_ALL);
   assert(subsampling_x >= 0 && subsampling_x < 2);
   assert(subsampling_y >= 0 && subsampling_y < 2);
   return ss_size_lookup[bsize][subsampling_x][subsampling_y];
@@ -952,6 +1035,7 @@ static INLINE int bsize_to_max_depth(BLOCK_SIZE bsize) {
  * assert(depth < 10);
  */
 static INLINE int bsize_to_tx_size_cat(BLOCK_SIZE bsize) {
+  assert(bsize < BLOCK_SIZES_ALL);
   static const uint8_t bsize_to_tx_size_depth_table[BLOCK_SIZES_ALL] = {
     0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 2, 2, 3, 3, 4, 4,
   };
@@ -996,8 +1080,8 @@ static INLINE TX_SIZE av1_get_tx_size(int plane, const MACROBLOCKD *xd) {
                                pd->subsampling_y);
 }
 
-void av1_reset_skip_context(MACROBLOCKD *xd, int mi_row, int mi_col,
-                            BLOCK_SIZE bsize, const int num_planes);
+void av1_reset_entropy_context(MACROBLOCKD *xd, BLOCK_SIZE bsize,
+                               const int num_planes);
 
 void av1_reset_loop_filter_delta(MACROBLOCKD *xd, int num_planes);
 
@@ -1008,9 +1092,10 @@ typedef void (*foreach_transformed_block_visitor)(int plane, int block,
                                                   BLOCK_SIZE plane_bsize,
                                                   TX_SIZE tx_size, void *arg);
 
-void av1_set_contexts(const MACROBLOCKD *xd, struct macroblockd_plane *pd,
-                      int plane, BLOCK_SIZE plane_bsize, TX_SIZE tx_size,
-                      int has_eob, int aoff, int loff);
+void av1_set_entropy_contexts(const MACROBLOCKD *xd,
+                              struct macroblockd_plane *pd, int plane,
+                              BLOCK_SIZE plane_bsize, TX_SIZE tx_size,
+                              int has_eob, int aoff, int loff);
 
 #define MAX_INTERINTRA_SB_SQUARE 32 * 32
 static INLINE int is_interintra_mode(const MB_MODE_INFO *mbmi) {

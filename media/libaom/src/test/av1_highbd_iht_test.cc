@@ -9,6 +9,8 @@
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
 
+#include <tuple>
+
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 #include "config/av1_rtcd.h"
@@ -26,7 +28,7 @@
 namespace {
 
 using libaom_test::ACMRandom;
-using ::testing::tuple;
+using std::tuple;
 
 typedef void (*HbdHtFunc)(const int16_t *input, int32_t *output, int stride,
                           TX_TYPE tx_type, int bd);
@@ -155,7 +157,7 @@ void AV1HighbdInvHTNxN::RunBitexactCheck() {
 
 TEST_P(AV1HighbdInvHTNxN, InvTransResultCheck) { RunBitexactCheck(); }
 
-using ::testing::make_tuple;
+using std::make_tuple;
 
 #if HAVE_SSE4_1
 #define PARAM_LIST_4X4                                   \
@@ -184,14 +186,14 @@ const IHbdHtParam kArrayIhtParam[] = {
   make_tuple(PARAM_LIST_4X4, FLIPADST_ADST, 12),
 };
 
-INSTANTIATE_TEST_CASE_P(SSE4_1, AV1HighbdInvHTNxN,
-                        ::testing::ValuesIn(kArrayIhtParam));
+INSTANTIATE_TEST_SUITE_P(SSE4_1, AV1HighbdInvHTNxN,
+                         ::testing::ValuesIn(kArrayIhtParam));
 #endif  // HAVE_SSE4_1
 
 typedef void (*HighbdInvTxfm2dFunc)(const int32_t *input, uint8_t *output,
                                     int stride, const TxfmParam *txfm_param);
 
-typedef ::testing::tuple<const HighbdInvTxfm2dFunc> AV1HighbdInvTxfm2dParam;
+typedef std::tuple<const HighbdInvTxfm2dFunc> AV1HighbdInvTxfm2dParam;
 class AV1HighbdInvTxfm2d
     : public ::testing::TestWithParam<AV1HighbdInvTxfm2dParam> {
  public:
@@ -349,12 +351,12 @@ TEST_P(AV1HighbdInvTxfm2d, DISABLED_Speed) {
 }
 
 #if HAVE_SSE4_1
-INSTANTIATE_TEST_CASE_P(SSE4_1, AV1HighbdInvTxfm2d,
-                        ::testing::Values(av1_highbd_inv_txfm_add_sse4_1));
+INSTANTIATE_TEST_SUITE_P(SSE4_1, AV1HighbdInvTxfm2d,
+                         ::testing::Values(av1_highbd_inv_txfm_add_sse4_1));
 #endif
 
 #if HAVE_AVX2
-INSTANTIATE_TEST_CASE_P(AVX2, AV1HighbdInvTxfm2d,
-                        ::testing::Values(av1_highbd_inv_txfm_add_avx2));
+INSTANTIATE_TEST_SUITE_P(AVX2, AV1HighbdInvTxfm2d,
+                         ::testing::Values(av1_highbd_inv_txfm_add_avx2));
 #endif
 }  // namespace

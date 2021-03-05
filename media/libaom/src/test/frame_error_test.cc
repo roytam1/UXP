@@ -12,6 +12,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <tuple>
 
 #include "config/av1_rtcd.h"
 
@@ -35,7 +36,7 @@ const int kBlockHeight[] = {
   480, 482, 360, 720, 1080,
 };
 #endif
-typedef ::testing::tuple<frame_error_func, int, int> FrameErrorParam;
+typedef std::tuple<frame_error_func, int, int> FrameErrorParam;
 
 class AV1FrameErrorTest : public ::testing::TestWithParam<FrameErrorParam> {
  public:
@@ -146,7 +147,7 @@ TEST_P(AV1FrameErrorTest, DISABLED_Speed) {
 }
 
 #if HAVE_SSE2
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SSE2, AV1FrameErrorTest,
     ::testing::Combine(::testing::Values(&av1_calc_frame_error_sse2),
                        ::testing::ValuesIn(kBlockWidth),
@@ -154,7 +155,7 @@ INSTANTIATE_TEST_CASE_P(
 #endif
 
 #if HAVE_AVX2
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     AVX2, AV1FrameErrorTest,
     ::testing::Combine(::testing::Values(&av1_calc_frame_error_avx2),
                        ::testing::ValuesIn(kBlockWidth),
