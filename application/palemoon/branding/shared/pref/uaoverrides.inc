@@ -59,7 +59,7 @@ pref("@GUAO_PREF@.spotify.com","Mozilla/5.0 (%OS_SLICE% rv:@GRE_VERSION@) @GRE_D
 // UA-Sniffing domains below have indicated no interest in supporting Pale Moon (BOO!)
 pref("@GUAO_PREF@.humblebundle.com","Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@) @GK_SLICE@ @FX_SLICE@ (Pale Moon)");
 pref("@GUAO_PREF@.privat24.ua","Mozilla/5.0 (%OS_SLICE% rv:38.0) @GK_SLICE@ Firefox/38.0");
-pref("@GUAO_PREF@.citi.com","Mozilla/5.0 (%OS_SLICE% rv:57.0) @GK_SLICE@ Firefox/57.0 (Pale Moon)");
+pref("@GUAO_PREF@.citi.com","Mozilla/5.0 (%OS_SLICE% rv:81.0) @GK_SLICE@ Firefox/81.0 (Pale Moon)");
 pref("@GUAO_PREF@.netflix.com","Mozilla/5.0 (Windows NT 6.1; rv:45.9) @GK_SLICE@ Firefox/45.9");
 pref("@GUAO_PREF@.netflximg.net","Mozilla/5.0 (Windows NT 6.1; rv:45.9) @GK_SLICE@ Firefox/45.9");
 
