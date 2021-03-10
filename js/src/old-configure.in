@@ -639,15 +639,6 @@ case "$target" in
     MOZ_FIX_LINK_PATHS="-Wl,-executable_path,${DIST}/bin"
     ;;
 
-*-android*|*-linuxandroid*)
-    AC_DEFINE(NO_PW_GECOS)
-    MOZ_GFX_OPTIMIZE_MOBILE=1
-    MOZ_OPTIMIZE_FLAGS="-O3"
-    if test -z "$CLANG_CC"; then
-       MOZ_OPTIMIZE_FLAGS="-freorder-blocks -fno-reorder-functions $MOZ_OPTIMIZE_FLAGS"
-    fi
-    ;;
-
 *-*linux*)
     if test "$GNU_CC" -o "$GNU_CXX"; then
         MOZ_PGO_OPTIMIZE_FLAGS="-O3"
@@ -1427,9 +1418,6 @@ if test "$ac_cv_thread_keyword" = yes; then
   # See bug 528687
   case "${target}" in
     mips*-*)
-      :
-      ;;
-    *-android*|*-linuxandroid*)
       :
       ;;
     *)
