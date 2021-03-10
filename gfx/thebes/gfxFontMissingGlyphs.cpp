@@ -155,7 +155,6 @@ static const Float BOX_BORDER_OPACITY = 0.5;
  * Quartz cairo backend which doesn't generally support masking with surfaces.
  * So for now we just paint a bunch of rectangles...
  */
-#ifndef MOZ_GFX_OPTIMIZE_MOBILE
 static void
 DrawHexChar(uint32_t aDigit, const Point& aPt, DrawTarget& aDrawTarget,
             const Pattern &aPattern)
@@ -182,7 +181,6 @@ DrawHexChar(uint32_t aDigit, const Point& aPt, DrawTarget& aDrawTarget,
     RefPtr<Path> path = builder->Finish();
     aDrawTarget.Fill(path, aPattern);
 }
-#endif // MOZ_GFX_OPTIMIZE_MOBILE
 
 void
 gfxFontMissingGlyphs::DrawMissingGlyph(uint32_t aChar,
@@ -209,15 +207,10 @@ gfxFontMissingGlyphs::DrawMissingGlyph(uint32_t aChar,
     if (!borderStrokeRect.IsEmpty()) {
         ColorPattern adjustedColor = color;
         color.mColor.a *= BOX_BORDER_OPACITY;
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-        aDrawTarget.FillRect(borderStrokeRect, adjustedColor);
-#else
         StrokeOptions strokeOptions(BOX_BORDER_WIDTH);
         aDrawTarget.StrokeRect(borderStrokeRect, adjustedColor, strokeOptions);
-#endif
     }
 
-#ifndef MOZ_GFX_OPTIMIZE_MOBILE
     Point center = aRect.Center();
     Float halfGap = HEX_CHAR_GAP / 2.f;
     Float top = -(MINIFONT_HEIGHT + halfGap);
@@ -266,7 +259,6 @@ gfxFontMissingGlyphs::DrawMissingGlyph(uint32_t aChar,
                         Point(third, halfGap), aDrawTarget, color);
         }
     }
-#endif
 }
 
 Float

@@ -1078,14 +1078,8 @@ WebGLContext::ClearBackbufferIfNeeded()
 void
 WebGLContext::LoseOldestWebGLContextIfLimitExceeded()
 {
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-    // some mobile devices can't have more than 8 GL contexts overall
-    const size_t kMaxWebGLContextsPerPrincipal = 2;
-    const size_t kMaxWebGLContexts             = 4;
-#else
     const size_t kMaxWebGLContextsPerPrincipal = 16;
     const size_t kMaxWebGLContexts             = 32;
-#endif
     MOZ_ASSERT(kMaxWebGLContextsPerPrincipal < kMaxWebGLContexts);
 
     if (!NS_IsMainThread()) {

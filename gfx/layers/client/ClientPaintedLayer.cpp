@@ -39,7 +39,6 @@ ClientPaintedLayer::PaintThebes()
                "Can only draw in drawing phase");
   
   uint32_t flags = RotatedContentBuffer::PAINT_CAN_DRAW_ROTATED;
-#ifndef MOZ_IGNORE_PAINT_WILL_RESAMPLE
   if (ClientManager()->CompositorMightResample()) {
     flags |= RotatedContentBuffer::PAINT_WILL_RESAMPLE;
   }
@@ -48,7 +47,6 @@ ClientPaintedLayer::PaintThebes()
       flags |= RotatedContentBuffer::PAINT_WILL_RESAMPLE;
     }
   }
-#endif
   PaintState state =
     mContentClient->BeginPaintBuffer(this, flags);
   mValidRegion.Sub(mValidRegion, state.mRegionToInvalidate);
