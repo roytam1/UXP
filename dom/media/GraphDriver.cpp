@@ -21,16 +21,11 @@
 extern mozilla::LazyLogModule gMediaStreamGraphLog;
 #define STREAM_LOG(type, msg) MOZ_LOG(gMediaStreamGraphLog, type, msg)
 
-// We don't use NSPR log here because we want this interleaved with adb logcat
-// on Android/B2G
+// XXX: We didn't use NSPR log here because we wanted this interleaved with
+// adb logcat on Android/B2G. This is no longer a concern; use NSPR?
 // #define ENABLE_LIFECYCLE_LOG
 #ifdef ENABLE_LIFECYCLE_LOG
-#ifdef ANDROID
-#include "android/log.h"
-#define LIFECYCLE_LOG(...)  __android_log_print(ANDROID_LOG_INFO, "Gecko - MSG" , __VA_ARGS__); printf(__VA_ARGS__);printf("\n");
-#else
 #define LIFECYCLE_LOG(...) printf(__VA_ARGS__);printf("\n");
-#endif
 #else
 #define LIFECYCLE_LOG(...)
 #endif

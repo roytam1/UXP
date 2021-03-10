@@ -24,9 +24,6 @@
 #include "mozilla/dom/Timeout.h"
 #include "mozilla/dom/TimeoutHandler.h"
 #include "mozilla/IntegerPrintfMacros.h"
-#if defined(MOZ_WIDGET_ANDROID)
-#include "mozilla/dom/WindowOrientationObserver.h"
-#endif
 #include "nsDOMOfflineResourceList.h"
 #include "nsError.h"
 #include "nsIIdleService.h"
@@ -250,10 +247,6 @@ class nsIScriptTimeoutHandler;
 #undef check
 #endif // check
 #include "AccessCheck.h"
-
-#ifdef ANDROID
-#include <android/log.h>
-#endif
 
 #ifdef XP_WIN
 #include <process.h>
@@ -1917,10 +1910,6 @@ nsGlobalWindow::CleanUp()
   mSpeechSynthesis = nullptr;
 #endif
 
-#if defined(MOZ_WIDGET_ANDROID)
-  mOrientationChangeObserver = nullptr;
-#endif
-
   ClearControllers();
 
   mOpener = nullptr;             // Forces Release
@@ -2040,10 +2029,6 @@ nsGlobalWindow::FreeInnerObjects(bool aForDocumentOpen)
   if (mScreen) {
     mScreen = nullptr;
   }
-
-#if defined(MOZ_WIDGET_ANDROID)
-  mOrientationChangeObserver = nullptr;
-#endif
 
   if (mDoc) {
     // Remember the document's principal and URI.
@@ -7132,9 +7117,6 @@ nsGlobalWindow::Dump(const nsAString& aStr)
     MOZ_LOG(nsContentUtils::DOMDumpLog(), LogLevel::Debug, ("[Window.Dump] %s", cstr));
 #ifdef XP_WIN
     PrintToDebugger(cstr);
-#endif
-#ifdef ANDROID
-    __android_log_write(ANDROID_LOG_INFO, "GeckoDump", cstr);
 #endif
     FILE *fp = gDumpFile ? gDumpFile : stdout;
     fputs(cstr, fp);
@@ -13764,27 +13746,6 @@ nsGlobalWindow::DisableDeviceSensor(uint32_t aType)
   }
 }
 
-#if defined(MOZ_WIDGET_ANDROID)
-void
-nsGlobalWindow::EnableOrientationChangeListener()
-{
-  MOZ_ASSERT(IsInnerWindow());
-  if (!nsContentUtils::ShouldResistFingerprinting(mDocShell) &&
-      !mOrientationChangeObserver) {
-    mOrientationChangeObserver =
-      new WindowOrientationObserver(this);
-  }
-}
-
-void
-nsGlobalWindow::DisableOrientationChangeListener()
-{
-  MOZ_ASSERT(IsInnerWindow());
-
-  mOrientationChangeObserver = nullptr;
-}
-#endif
-
 void
 nsGlobalWindow::SetHasGamepadEventListener(bool aHasGamepad/* = true*/)
 {
@@ -14470,15 +14431,6 @@ nsGlobalWindow::InitWasOffline()
 {
   mWasOffline = NS_IsOffline();
 }
-
-#if defined(MOZ_WIDGET_ANDROID)
-int16_t
-nsGlobalWindow::Orientation(CallerType aCallerType) const
-{
-  return nsContentUtils::ResistFingerprinting(aCallerType) ?
-           0 : WindowOrientationObserver::OrientationAngle();
-}
-#endif
 
 Console*
 nsGlobalWindow::GetConsole(ErrorResult& aRv)
