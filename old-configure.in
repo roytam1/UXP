@@ -90,15 +90,7 @@ DIST="$MOZ_BUILD_ROOT/dist"
 
 MOZ_DEFAULT_COMPILER
 
-if test "$COMPILE_ENVIRONMENT"; then
-    MOZ_ANDROID_NDK
-fi # COMPILE_ENVIRONMENT
-
 case "$target" in
-*-android*|*-linuxandroid*)
-    ZLIB_DIR=yes
-    AC_DEFINE(ANDROID)
-    ;;
 *-linux*)
     AC_PATH_PROG(OBJCOPY,objcopy)
     ;;
@@ -521,16 +513,6 @@ else
         dnl Default Android builds to ARMv7.
         MOZ_ARCH=armv7-a
     fi
-fi # COMPILE_ENVIRONMENT
-
-dnl ========================================================
-dnl Android libstdc++, placed here so it can use MOZ_ARCH
-dnl computed above.
-dnl ========================================================
-
-MOZ_ANDROID_CPU_ARCH
-if test "$COMPILE_ENVIRONMENT"; then
-    MOZ_ANDROID_STLPORT
 fi # COMPILE_ENVIRONMENT
 
 dnl ========================================================
@@ -2265,17 +2247,6 @@ if test -n "$MOZ_GRAPHENE"; then
 fi
 
 dnl ========================================================
-dnl Ensure Android SDK and build-tools versions depending on
-dnl mobile target.
-dnl ========================================================
-
-case "$MOZ_BUILD_APP" in
-mobile/android)
-    MOZ_ANDROID_SDK(23, 23.0.3 23.0.1)
-    ;;
-esac
-
-dnl ========================================================
 dnl =
 dnl = Toolkit Options
 dnl =
@@ -2473,17 +2444,6 @@ fi
 
 AC_DEFINE_UNQUOTED(MOZ_DISTRIBUTION_ID,"$MOZ_DISTRIBUTION_ID")
 AC_SUBST(MOZ_DISTRIBUTION_ID)
-
-
-dnl ========================================================
-dnl Google Play Services, placed here so it can depend on
-dnl values set by configure.sh above.
-dnl ========================================================
-
-MOZ_ANDROID_GOOGLE_PLAY_SERVICES
-MOZ_ANDROID_GOOGLE_CLOUD_MESSAGING
-MOZ_ANDROID_INSTALL_TRACKING
-
 
 dnl ========================================================
 dnl = GIO and GConf support module
@@ -5066,7 +5026,6 @@ AC_SUBST(ENABLE_TESTS)
 AC_SUBST(MOZ_UNIVERSALCHARDET)
 AC_SUBST(ACCESSIBILITY)
 AC_SUBST(MOZ_SPELLCHECK)
-AC_SUBST(MOZ_ANDROID_ANR_REPORTER)
 AC_SUBST(MOZ_VERIFY_MAR_SIGNATURE)
 AC_SUBST(MOZ_ENABLE_SIGNMAR)
 AC_SUBST(MOZ_UPDATER)
@@ -5080,9 +5039,6 @@ AC_SUBST(MOZ_DIRECTX_SDK_PATH)
 AC_SUBST(MOZ_D3DCOMPILER_XP_DLL)
 AC_SUBST(MOZ_D3DCOMPILER_XP_CAB)
 
-AC_SUBST(MOZ_ANDROID_APPLICATION_CLASS)
-AC_SUBST(MOZ_ANDROID_BROWSER_INTENT_CLASS)
-AC_SUBST(MOZ_ANDROID_SEARCH_INTENT_CLASS)
 AC_SUBST(MOZ_EXCLUDE_HYPHENATION_DICTIONARIES)
 AC_SUBST(MOZ_INSTALL_TRACKING)
 AC_SUBST(ENABLE_STRIP)
@@ -5179,10 +5135,6 @@ AC_SUBST(MOZ_CHILD_PROCESS_BUNDLE)
 # the main application is set to the value of this variable.  If not
 # set, it falls back to a Mozilla-specific value derived from the
 # build ID.
-# - MOZ_ANDROID_SHARED_ID: On Android, "android:sharedUserId" for all Android
-# packages produced.
-# - MOZ_ANDROID_GCM_SENDERID: On Android, the Android GCM Sender ID used.  GCM
-# sender IDs are not sensitive: see, http://stackoverflow.com/a/18216063.
 # - MOZ_PROFILE_MIGRATOR: When set, enables profile migrator.
 
 if test -z "$MOZ_APP_NAME"; then
@@ -5199,14 +5151,6 @@ fi
 
 if test -z "$ANDROID_PACKAGE_NAME" ; then
    ANDROID_PACKAGE_NAME="org.mozilla.$MOZ_APP_NAME"
-fi
-
-# Mozilla released Firefox for Android {Release,Beta} and {Aurora,Nightly} to
-# the public with specific common shared IDs and we need to keep them
-# consistent forever.  The specific common values are set by per-channel
-# branding; all other channels use a generic sharedID, set below.
-if test -z "$MOZ_ANDROID_SHARED_ID" ; then
-   MOZ_ANDROID_SHARED_ID="${ANDROID_PACKAGE_NAME}.sharedID"
 fi
 
 # For extensions and langpacks, we require a max version that is compatible
@@ -5235,8 +5179,6 @@ AC_SUBST(MOZ_APP_VENDOR)
 AC_SUBST(MOZ_APP_PROFILE)
 AC_SUBST(MOZ_APP_ID)
 AC_SUBST(MOZ_APP_ANDROID_VERSION_CODE)
-AC_SUBST(MOZ_ANDROID_SHARED_ID)
-AC_SUBST(MOZ_ANDROID_GCM_SENDERID)
 AC_SUBST(MAR_CHANNEL_ID)
 AC_SUBST(ACCEPTED_MAR_CHANNEL_IDS)
 AC_SUBST(MOZ_PROFILE_MIGRATOR)

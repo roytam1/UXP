@@ -144,15 +144,6 @@ PushRecord.prototype = {
       return Date.now();
     }
 
-#ifdef MOZ_ANDROID_HISTORY
-    let result = yield Messaging.sendRequestForResult({
-      type: "History:GetPrePathLastVisitedTimeMilliseconds",
-      prePath: this.uri.prePath,
-    });
-
-    return result == 0 ? -Infinity : result;
-#endif
-
     // Places History transition types that can fire a
     // `pushsubscriptionchange` event when the user visits a site with expired push
     // registrations. Visits only count if the user sees the origin in the address
