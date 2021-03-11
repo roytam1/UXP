@@ -645,13 +645,6 @@ nsDeviceContext::FindScreen(nsIScreen** outScreen)
                                               outScreen);
     }
 
-#ifdef MOZ_WIDGET_ANDROID
-    if (!(*outScreen)) {
-        nsCOMPtr<nsIScreen> screen = mWidget->GetWidgetScreen();
-        screen.forget(outScreen);
-    }
-#endif
-
     if (!(*outScreen)) {
         mScreenManager->GetPrimaryScreen(outScreen);
     }

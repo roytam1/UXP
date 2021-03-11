@@ -365,15 +365,6 @@ Window implements TouchEventHandlers;
 
 Window implements OnErrorEventHandlerForWindow;
 
-#if defined(MOZ_WIDGET_ANDROID)
-// https://compat.spec.whatwg.org/#windoworientation-interface
-partial interface Window {
-  [NeedsCallerType]
-  readonly attribute short orientation;
-           attribute EventHandler onorientationchange;
-};
-#endif
-
 #ifdef HAVE_SIDEBAR
 // Mozilla extension
 partial interface Window {

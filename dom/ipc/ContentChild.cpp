@@ -130,10 +130,6 @@
 
 #include "PermissionMessageUtils.h"
 
-#if defined(MOZ_WIDGET_ANDROID)
-#include "APKOpen.h"
-#endif
-
 #ifdef XP_WIN
 #include <process.h>
 #define getpid _getpid

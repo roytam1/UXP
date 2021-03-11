@@ -32,10 +32,6 @@
 #include "mozilla/gfx/gfxVars.h"
 #include "mozilla/Sprintf.h"
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidBridge.h"
-#endif
-
 struct JSContext;
 class JSObject;
 
@@ -72,12 +68,7 @@ IsWebMForced(DecoderDoctorDiagnostics* aDiagnostics)
     DecoderTraits::IsMP4TypeAndEnabled(NS_LITERAL_CSTRING("video/mp4"),
                                        aDiagnostics);
   bool hwsupported = gfx::gfxVars::CanUseHardwareVideoDecoding();
-#ifdef MOZ_WIDGET_ANDROID
-  return !mp4supported || !hwsupported || VP9Benchmark::IsVP9DecodeFast() ||
-         java::HardwareCodecCapabilityUtils::HasHWVP9();
-#else
   return !mp4supported || !hwsupported || VP9Benchmark::IsVP9DecodeFast();
-#endif
 }
 
 namespace dom {

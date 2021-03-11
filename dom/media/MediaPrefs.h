@@ -6,10 +6,6 @@
 #ifndef MEDIA_PREFS_H
 #define MEDIA_PREFS_H
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidBridge.h"
-#endif
-
 #include "mozilla/Atomics.h"
 
 // First time MediaPrefs::GetSingleton() needs to be called on the main thread,
@@ -105,11 +101,6 @@ private:
   DECL_MEDIA_PREF("media.eme.enabled",                        EMEEnabled, bool, false);
   DECL_MEDIA_PREF("media.use-blank-decoder",                  PDMUseBlankDecoder, bool, false);
   DECL_MEDIA_PREF("media.gpu-process-decoder",                PDMUseGPUDecoder, bool, false);
-#ifdef MOZ_WIDGET_ANDROID
-  DECL_MEDIA_PREF("media.android-media-codec.enabled",        PDMAndroidMediaCodecEnabled, bool, false);
-  DECL_MEDIA_PREF("media.android-media-codec.preferred",      PDMAndroidMediaCodecPreferred, bool, false);
-  DECL_MEDIA_PREF("media.android-remote-codec.enabled",       PDMAndroidRemoteCodecEnabled, bool, false);
-#endif
 #ifdef MOZ_FFMPEG
   DECL_MEDIA_PREF("media.ffmpeg.enabled",                     PDMFFmpegEnabled, bool, true);
   DECL_MEDIA_PREF("media.libavcodec.allow-obsolete",          LibavcodecAllowObsolete, bool, false);
@@ -168,15 +159,7 @@ private:
   // Default value functions
   static int32_t MediaDecoderLimitDefault()
   {
-#ifdef MOZ_WIDGET_ANDROID
-    if (AndroidBridge::Bridge() &&
-        AndroidBridge::Bridge()->GetAPIVersion() < 18) {
-      // Older Android versions have broken support for multiple simultaneous
-      // decoders, see bug 1278574.
-      return 1;
-    }
-#endif
-    // Otherwise, set no decoder limit.
+    // Setting a decoder limit was only necessary for Android; set no decoder limit.
     return -1;
   }
 

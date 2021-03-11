@@ -87,10 +87,6 @@
 #include "gfxPlatformGtk.h" // xxx - for UseFcFontList
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "TexturePoolOGL.h"
-#endif
-
 #ifdef USE_SKIA
 # ifdef __GNUC__
 #  pragma GCC diagnostic push
@@ -522,8 +518,6 @@ void RecordingPrefChanged(const char *aPrefName, void *aClosure)
 #if defined(USE_SKIA)
 static uint32_t GetSkiaGlyphCacheSize()
 {
-    // Only increase font cache size on non-android to save memory.
-#if !defined(MOZ_WIDGET_ANDROID)
     // 10mb as the default cache size on desktop due to talos perf tweaking.
     // Chromium uses 20mb and skia default uses 2mb.
     // We don't need to change the font cache count since we usually
@@ -535,9 +529,6 @@ static uint32_t GetSkiaGlyphCacheSize()
     }
 
     return cacheSize;
-#else
-    return kDefaultGlyphCacheSize;
-#endif // MOZ_WIDGET_ANDROID
 }
 #endif
 
@@ -671,11 +662,6 @@ gfxPlatform::Init()
 
     GLContext::PlatformStartup();
 
-#ifdef MOZ_WIDGET_ANDROID
-    // Texture pool init
-    TexturePoolOGL::Init();
-#endif
-
     Preferences::RegisterCallbackAndCall(RecordingPrefChanged, "gfx.2d.recording", nullptr);
 
     CreateCMSOutputProfile();
@@ -780,11 +766,6 @@ gfxPlatform::Shutdown()
     }
 
     gPlatform->mVsyncSource = nullptr;
-
-#ifdef MOZ_WIDGET_ANDROID
-    // Shut down the texture pool
-    TexturePoolOGL::Shutdown();
-#endif
 
     // Shut down the default GL context provider.
     GLContextProvider::Shutdown();
@@ -2323,7 +2304,7 @@ gfxPlatform::GetTilesSupportInfo(mozilla::widget::InfoObject& aObj)
 /*static*/ bool
 gfxPlatform::AsyncPanZoomEnabled()
 {
-#if !defined(MOZ_WIDGET_ANDROID) && !defined(MOZ_WIDGET_UIKIT)
+#if !defined(MOZ_WIDGET_UIKIT)
   // For XUL applications (everything but Firefox on Android) we only want
   // to use APZ when E10S is enabled or when the user explicitly enable it.
   if (BrowserTabsRemoteAutostart() || gfxPrefs::APZDesktopEnabled()) {
@@ -2331,8 +2312,6 @@ gfxPlatform::AsyncPanZoomEnabled()
   } else {
     return false;
   }
-#elif defined(MOZ_WIDGET_ANDROID)
-  return true;
 #else
   return gfxPrefs::AsyncPanZoomEnabledDoNotUseDirectly();
 #endif
@@ -2356,10 +2335,6 @@ gfxPlatform::GetAcceleratedCompositorBackends(nsTArray<LayersBackend>& aBackends
       NS_WARNING("OpenGL-accelerated layers are not supported on this system");
       tell_me_once = 1;
     }
-#ifdef MOZ_WIDGET_ANDROID
-    NS_RUNTIMEABORT("OpenGL-accelerated layers are a hard requirement on this platform. "
-                    "Cannot continue without support for them");
-#endif
   }
 }
 

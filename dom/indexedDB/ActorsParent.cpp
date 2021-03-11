@@ -121,10 +121,6 @@
          LogLevel::Debug,                                                         \
          _args )
 
-#if defined(MOZ_WIDGET_ANDROID)
-#define IDB_MOBILE
-#endif
-
 #define BLOB_IMPL_STORED_FILE_IID \
   {0x6b505c84, 0x2c60, 0x4ffb, {0x8b, 0x91, 0xfe, 0x22, 0xb1, 0xec, 0x75, 0xe2}}
 
@@ -189,12 +185,7 @@ const int32_t kStorageProgressGranularity = 1000;
 // Changing the value here will override the page size of new databases only.
 // A journal mode change and VACUUM are needed to change existing databases, so
 // the best way to do that is to use the schema version upgrade mechanism.
-const uint32_t kSQLitePageSizeOverride =
-#ifdef IDB_MOBILE
-  2048;
-#else
-  4096;
-#endif
+const uint32_t kSQLitePageSizeOverride = 4096;
 
 static_assert(kSQLitePageSizeOverride == /* mozStorage default */ 0 ||
               (kSQLitePageSizeOverride % 2 == 0 &&
@@ -2621,25 +2612,6 @@ UpgradeSchemaFrom12_0To13_0(mozIStorageConnection* aConnection,
 
   nsresult rv;
 
-#ifdef IDB_MOBILE
-  int32_t defaultPageSize;
-  rv = aConnection->GetDefaultPageSize(&defaultPageSize);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  // Enable auto_vacuum mode and update the page size to the platform default.
-  nsAutoCString upgradeQuery("PRAGMA auto_vacuum = FULL; PRAGMA page_size = ");
-  upgradeQuery.AppendInt(defaultPageSize);
-
-  rv = aConnection->ExecuteSimpleSQL(upgradeQuery);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return rv;
-  }
-
-  *aVacuumNeeded = true;
-#endif
-
   rv = aConnection->SetSchemaVersion(MakeSchemaVersion(13, 0));
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
@@ -3583,15 +3555,9 @@ UpgradeSchemaFrom17_0To18_0Helper::DoUpgradeInternal(
     return rv;
   }
 
-  // Finally, turn on auto_vacuum mode. We use full auto_vacuum mode to reclaim
-  // disk space on mobile devices (at the cost of some COMMIT speed), and
-  // incremental auto_vacuum mode on desktop builds.
+  // Finally, turn on auto_vacuum mode.
   rv = aConnection->ExecuteSimpleSQL(
-#ifdef IDB_MOBILE
-    NS_LITERAL_CSTRING("PRAGMA auto_vacuum = FULL;")
-#else
     NS_LITERAL_CSTRING("PRAGMA auto_vacuum = INCREMENTAL;")
-#endif
   );
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
@@ -4223,7 +4189,6 @@ SetDefaultPragmas(mozIStorageConnection* aConnection)
     return rv;
   }
 
-#ifndef IDB_MOBILE
   if (kSQLiteGrowthIncrement) {
     // This is just an optimization so ignore the failure if the disk is
     // currently too full.
@@ -4233,7 +4198,6 @@ SetDefaultPragmas(mozIStorageConnection* aConnection)
       return rv;
     }
   }
-#endif // IDB_MOBILE
 
   return NS_OK;
 }
@@ -4285,13 +4249,6 @@ SetJournalMode(mozIStorageConnection* aConnection)
     }
   } else {
     NS_WARNING("Failed to set WAL mode, falling back to normal journal mode.");
-#ifdef IDB_MOBILE
-    rv = aConnection->ExecuteSimpleSQL(journalModeQueryStart +
-                                       NS_LITERAL_CSTRING("truncate"));
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
-#endif
   }
 
   return NS_OK;
@@ -4533,14 +4490,7 @@ CreateStorageConnection(nsIFile* aDBFile,
 
       // We have to set the auto_vacuum mode before opening a transaction.
       rv = connection->ExecuteSimpleSQL(
-#ifdef IDB_MOBILE
-        // Turn on full auto_vacuum mode to reclaim disk space on mobile
-        // devices (at the cost of some COMMIT speed).
-        NS_LITERAL_CSTRING("PRAGMA auto_vacuum = FULL;")
-#else
-        // Turn on incremental auto_vacuum mode on desktop builds.
         NS_LITERAL_CSTRING("PRAGMA auto_vacuum = INCREMENTAL;")
-#endif
       );
       if (rv == NS_ERROR_FILE_NO_DEVICE_SPACE) {
         // mozstorage translates SQLITE_FULL to NS_ERROR_FILE_NO_DEVICE_SPACE,
@@ -21105,14 +21055,6 @@ FactoryOp::CheckPermission(ContentParent* aContentParent,
     return rv;
   }
 
-#ifdef IDB_MOBILE
-  if (persistenceType == PERSISTENCE_TYPE_PERSISTENT &&
-      !QuotaManager::IsOriginInternal(origin) &&
-      !isApp) {
-    return NS_ERROR_DOM_INDEXEDDB_NOT_ALLOWED_ERR;
-  }
-#endif
-
   PermissionRequestBase::PermissionValue permission;
 
   if (QuotaManager::IsFirstPromptRequired(persistenceType, origin, isApp)) {
@@ -29589,7 +29531,6 @@ FileHelper::SyncCopy(nsIInputStream* aInputStream,
 } // namespace dom
 } // namespace mozilla
 
-#undef IDB_MOBILE
 #undef IDB_DEBUG_LOG
 #undef ASSERT_UNLESS_FUZZING
 #undef DISABLE_ASSERTS_FOR_FUZZING

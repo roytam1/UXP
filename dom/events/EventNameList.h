@@ -566,12 +566,6 @@ WINDOW_EVENT(online,
              eOnline,
              EventNameType_XUL | EventNameType_HTMLBodyOrFramesetOnly,
              eBasicEventClass)
-#if defined(MOZ_WIDGET_ANDROID)
-WINDOW_EVENT(orientationchange,
-             eOrientationChange,
-             EventNameType_HTMLBodyOrFramesetOnly,
-             eBasicEventClass)
-#endif
 WINDOW_EVENT(pagehide,
              ePageHide,
              EventNameType_HTMLBodyOrFramesetOnly,
