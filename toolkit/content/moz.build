@@ -13,9 +13,6 @@ for var in ('target',
 DEFINES['CFLAGS'] = CONFIG['OS_CFLAGS']
 DEFINES['TOPOBJDIR'] = TOPOBJDIR
 
-if CONFIG['MOZ_ANDROID_CXX_STL'] == 'libc++':
-    DEFINES['MOZ_USE_LIBCXX'] = True
-
 JAR_MANIFESTS += ['jar.mn']
 
 

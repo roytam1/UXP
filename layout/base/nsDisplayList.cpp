@@ -1488,11 +1488,7 @@ nsDisplayListBuilder::IsInWillChangeBudget(nsIFrame* aFrame,
   return onBudget;
 }
 
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-const float gAGRBudgetAreaMultiplier = 0.3;
-#else
 const float gAGRBudgetAreaMultiplier = 3.0;
-#endif
 
 bool
 nsDisplayListBuilder::AddToAGRBudget(nsIFrame* aFrame)
