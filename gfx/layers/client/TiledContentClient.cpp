@@ -308,30 +308,17 @@ ClientTiledLayerBuffer::GetContentType(SurfaceMode* aMode) const
   SurfaceMode mode = mPaintedLayer.GetSurfaceMode();
 
   if (mode == SurfaceMode::SURFACE_COMPONENT_ALPHA) {
-#if defined(MOZ_GFX_OPTIMIZE_MOBILE)
-    mode = SurfaceMode::SURFACE_SINGLE_CHANNEL_ALPHA;
-#else
     if (!mPaintedLayer.GetParent() ||
         !mPaintedLayer.GetParent()->SupportsComponentAlphaChildren()) {
       mode = SurfaceMode::SURFACE_SINGLE_CHANNEL_ALPHA;
     } else {
       content = gfxContentType::COLOR;
     }
-#endif
   } else if (mode == SurfaceMode::SURFACE_OPAQUE) {
-#if defined(MOZ_GFX_OPTIMIZE_MOBILE)
-    if (IsLowPrecision()) {
-      // If we're in low-res mode, drawing can sample from outside the visible
-      // region. Make sure that we only sample transparency if that happens.
-      mode = SurfaceMode::SURFACE_SINGLE_CHANNEL_ALPHA;
-      content = gfxContentType::COLOR_ALPHA;
-    }
-#else
     if (mPaintedLayer.MayResample()) {
       mode = SurfaceMode::SURFACE_SINGLE_CHANNEL_ALPHA;
       content = gfxContentType::COLOR_ALPHA;
     }
-#endif
   }
 
   if (aMode) {
