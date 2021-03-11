@@ -4592,11 +4592,7 @@ PresShell::RenderDocument(const nsRect& aRect, uint32_t aFlags,
             nsPresContext::AppUnitsToFloatCSSPixels(aRect.width),
             nsPresContext::AppUnitsToFloatCSSPixels(aRect.height));
   aThebesContext->NewPath();
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-  aThebesContext->Rectangle(r, true);
-#else
   aThebesContext->Rectangle(r);
-#endif
 
   nsIFrame* rootFrame = mFrameConstructor->GetRootFrame();
   if (!rootFrame) {

@@ -139,21 +139,13 @@ RotatedBuffer::DrawBufferQuadrant(gfx::DrawTarget* aTarget,
     transform *= oldTransform;
     transform *= inverseMask;
 
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-    SurfacePattern source(snapshot, ExtendMode::CLAMP, transform, SamplingFilter::POINT);
-#else
     SurfacePattern source(snapshot, ExtendMode::CLAMP, transform);
-#endif
 
     aTarget->SetTransform(*aMaskTransform);
     aTarget->MaskSurface(source, aMask, Point(0, 0), DrawOptions(aOpacity, aOperator));
     aTarget->SetTransform(oldTransform);
   } else {
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-    DrawSurfaceOptions options(SamplingFilter::POINT);
-#else
     DrawSurfaceOptions options;
-#endif
     aTarget->DrawSurface(snapshot, IntRectToRect(fillRect),
                          GetSourceRectangle(aXSide, aYSide),
                          options,
@@ -466,9 +458,6 @@ RotatedContentBuffer::BeginPaint(PaintedLayer* aLayer,
     }
 
     if (mode == SurfaceMode::SURFACE_COMPONENT_ALPHA) {
-#if defined(MOZ_GFX_OPTIMIZE_MOBILE)
-      mode = SurfaceMode::SURFACE_SINGLE_CHANNEL_ALPHA;
-#else
       if (!aLayer->GetParent() ||
           !aLayer->GetParent()->SupportsComponentAlphaChildren() ||
           !aLayer->AsShadowableLayer() ||
@@ -477,7 +466,6 @@ RotatedContentBuffer::BeginPaint(PaintedLayer* aLayer,
       } else {
         result.mContentType = gfxContentType::COLOR;
       }
-#endif
     }
 
     if ((aFlags & PAINT_WILL_RESAMPLE) &&

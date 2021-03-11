@@ -208,22 +208,8 @@ MOZ_SAFE_BROWSING:
   false,
 #endif
 
-  MOZ_ANDROID_HISTORY:
-#ifdef MOZ_ANDROID_HISTORY
-  true,
-#else
-  false,
-#endif
-
   MOZ_TOOLKIT_SEARCH:
 #ifdef MOZ_TOOLKIT_SEARCH
-  true,
-#else
-  false,
-#endif
-
-  MOZ_ANDROID_ACTIVITY_STREAM:
-#ifdef MOZ_ANDROID_ACTIVITY_STREAM
   true,
 #else
   false,

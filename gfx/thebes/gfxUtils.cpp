@@ -378,7 +378,6 @@ gfxUtils::ConvertBGRAtoRGBA(uint8_t* aData, uint32_t aLength)
     libyuv::ABGRToARGB(aData, aLength, aData, aLength, aLength / 4, 1);
 }
 
-#if !defined(MOZ_GFX_OPTIMIZE_MOBILE)
 /**
  * This returns the fastest operator to use for solid surfaces which have no
  * alpha channel or their alpha channel is uniformly opaque.
@@ -448,66 +447,7 @@ CreateSamplingRestrictedDrawable(gfxDrawable* aDrawable,
     RefPtr<gfxDrawable> drawable = new gfxSurfaceDrawable(surface, size, gfxMatrix::Translation(-needed.TopLeft()));
     return drawable.forget();
 }
-#endif // !MOZ_GFX_OPTIMIZE_MOBILE
 
-/* These heuristics are based on Source/WebCore/platform/graphics/skia/ImageSkia.cpp:computeResamplingMode() */
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-static SamplingFilter ReduceResamplingFilter(SamplingFilter aSamplingFilter,
-                                             int aImgWidth, int aImgHeight,
-                                             float aSourceWidth, float aSourceHeight)
-{
-    // Images smaller than this in either direction are considered "small" and
-    // are not resampled ever (see below).
-    const int kSmallImageSizeThreshold = 8;
-
-    // The amount an image can be stretched in a single direction before we
-    // say that it is being stretched so much that it must be a line or
-    // background that doesn't need resampling.
-    const float kLargeStretch = 3.0f;
-
-    if (aImgWidth <= kSmallImageSizeThreshold
-        || aImgHeight <= kSmallImageSizeThreshold) {
-        // Never resample small images. These are often used for borders and
-        // rules (think 1x1 images used to make lines).
-        return SamplingFilter::POINT;
-    }
-
-    if (aImgHeight * kLargeStretch <= aSourceHeight || aImgWidth * kLargeStretch <= aSourceWidth) {
-        // Large image tiling detected.
-
-        // Don't resample if it is being tiled a lot in only one direction.
-        // This is trying to catch cases where somebody has created a border
-        // (which might be large) and then is stretching it to fill some part
-        // of the page.
-        if (fabs(aSourceWidth - aImgWidth)/aImgWidth < 0.5 || fabs(aSourceHeight - aImgHeight)/aImgHeight < 0.5)
-            return SamplingFilter::POINT;
-
-        // The image is growing a lot and in more than one direction. Resampling
-        // is slow and doesn't give us very much when growing a lot.
-        return aSamplingFilter;
-    }
-
-    /* Some notes on other heuristics:
-       The Skia backend also uses nearest for backgrounds that are stretched by
-       a large amount. I'm not sure this is common enough for us to worry about
-       now. It also uses nearest for backgrounds/avoids high quality for images
-       that are very slightly scaled.  I'm also not sure that very slightly
-       scaled backgrounds are common enough us to worry about.
-
-       We don't currently have much support for doing high quality interpolation.
-       The only place this currently happens is on Quartz and we don't have as
-       much control over it as would be needed. Webkit avoids using high quality
-       resampling during load. It also avoids high quality if the transformation
-       is not just a scale and translation
-
-       WebKit bug #40045 added code to avoid resampling different parts
-       of an image with different methods by using a resampling hint size.
-       It currently looks unused in WebKit but it's something to watch out for.
-    */
-
-    return aSamplingFilter;
-}
-#else
 static SamplingFilter ReduceResamplingFilter(SamplingFilter aSamplingFilter,
                                              int aImgWidth, int aImgHeight,
                                              int aSourceWidth, int aSourceHeight)
@@ -515,7 +455,6 @@ static SamplingFilter ReduceResamplingFilter(SamplingFilter aSamplingFilter,
     // Just pass the filter through unchanged
     return aSamplingFilter;
 }
-#endif
 
 #ifdef MOZ_WIDGET_COCOA
 // Only prescale a temporary surface if we're going to repeat it often.
@@ -667,10 +606,6 @@ gfxUtils::DrawPixelSnapped(gfxContext*         aContext,
             }
 #endif
 
-            // On Mobile, we don't ever want to do this; it has the potential for
-            // allocating very large temporary surfaces, especially since we'll
-            // do full-page snapshots often (see bug 749426).
-#if !defined(MOZ_GFX_OPTIMIZE_MOBILE)
             RefPtr<gfxDrawable> restrictedDrawable =
               CreateSamplingRestrictedDrawable(aDrawable, aContext,
                                                aRegion, aFormat);
@@ -682,7 +617,6 @@ gfxUtils::DrawPixelSnapped(gfxContext*         aContext,
               // drawn without tiling.
               extendMode = ExtendMode::CLAMP;
             }
-#endif
         }
     }
 

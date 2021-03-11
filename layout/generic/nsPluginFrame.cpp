@@ -1429,12 +1429,6 @@ nsPluginFrame::BuildLayer(nsDisplayListBuilder* aBuilder,
     imglayer->SetScaleToSize(size, ScaleMode::STRETCH);
     imglayer->SetContainer(container);
     SamplingFilter samplingFilter = nsLayoutUtils::GetSamplingFilterForFrame(this);
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-    if (!aManager->IsCompositingCheap()) {
-      // Pixman just horrible with bilinear filter scaling
-      samplingFilter = SamplingFilter::POINT;
-    }
-#endif
     imglayer->SetSamplingFilter(samplingFilter);
 
     layer->SetContentFlags(IsOpaque() ? Layer::CONTENT_OPAQUE : 0);

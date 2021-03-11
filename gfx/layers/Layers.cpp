@@ -1399,11 +1399,7 @@ ContainerLayer::DefaultComputeEffectiveTransforms(const Matrix4x4& aTransformToS
         checkClipRect = true;
         checkMaskLayers = true;
       } else {
-#ifdef MOZ_GFX_OPTIMIZE_MOBILE
-        if (!contTransform.PreservesAxisAlignedRectangles()) {
-#else
         if (gfx::ThebesMatrix(contTransform).HasNonIntegerTranslation()) {
-#endif
           checkClipRect = true;
         }
         /* In 2D case, only translation and/or positive scaling can be done w/o using IntermediateSurface.
