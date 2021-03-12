@@ -19,10 +19,6 @@
 #include "nsIPrefService.h"
 #include "nsIPrefBranch.h"
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "nsISupportsUtils.h"
-#endif
-
 #ifdef MOZ_WEBRTC
 #include "YuvStamper.h"
 #endif
@@ -192,12 +188,7 @@ MediaEngineDefaultVideoSource::Start(SourceMediaStream* aStream, TrackID aID,
   mTrackID = aID;
 
   // Start timer for subsequent frames
-#if defined(MOZ_WIDGET_ANDROID) && defined(DEBUG)
-// emulator debug is very, very slow and has problems dealing with realtime audio inputs
-  mTimer->InitWithCallback(this, (1000 / mOpts.mFPS)*10, nsITimer::TYPE_REPEATING_SLACK);
-#else
   mTimer->InitWithCallback(this, 1000 / mOpts.mFPS, nsITimer::TYPE_REPEATING_SLACK);
-#endif
   mState = kStarted;
 
   return NS_OK;

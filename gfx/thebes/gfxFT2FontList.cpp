@@ -492,15 +492,6 @@ FT2FontEntry::ReadCMAP(FontInfoData *aFontInfoData)
         }
     }
 
-#ifdef MOZ_WIDGET_ANDROID
-    // Hack for the SamsungDevanagari font, bug 1012365:
-    // pretend the font supports U+0972.
-    if (!charmap->test(0x0972) &&
-        charmap->test(0x0905) && charmap->test(0x0945)) {
-        charmap->set(0x0972);
-    }
-#endif
-
     mHasCmapTable = NS_SUCCEEDED(rv);
     if (mHasCmapTable) {
         gfxPlatformFontList *pfl = gfxPlatformFontList::PlatformFontList();
@@ -1562,12 +1553,6 @@ gfxFontFamily*
 gfxFT2FontList::GetDefaultFontForPlatform(const gfxFontStyle* aStyle)
 {
     gfxFontFamily *ff = nullptr;
-#if defined(MOZ_WIDGET_ANDROID)
-    ff = FindFamily(NS_LITERAL_STRING("Roboto"));
-    if (!ff) {
-        ff = FindFamily(NS_LITERAL_STRING("Droid Sans"));
-    }
-#endif
     /* TODO: what about Qt or other platforms that may use this? */
     return ff;
 }

@@ -204,10 +204,7 @@ TouchEvent::PrefEnabled(nsIDocShell* aDocShell)
     enabled = false;
   } else {
     if (sPrefCacheValue == 2) {
-#if defined(MOZ_WIDGET_ANDROID)
-      // Touch support is always enabled on B2G and android.
-      enabled = true;
-#elif defined(XP_WIN) || MOZ_WIDGET_GTK == 3
+#if defined(XP_WIN) || MOZ_WIDGET_GTK == 3
       static bool sDidCheckTouchDeviceSupport = false;
       static bool sIsTouchDeviceSupportPresent = false;
       // On Windows and GTK3 we auto-detect based on device support.

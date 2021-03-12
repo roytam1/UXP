@@ -37,9 +37,6 @@
 #include "nsUnicharUtils.h"
 #include "mozilla/dom/MediaSource.h"
 #include "DecoderTraits.h"
-#ifdef MOZ_WIDGET_ANDROID
-#include "FennecJNIWrappers.h"
-#endif
 
 namespace mozilla {
 namespace dom {
@@ -104,12 +101,6 @@ HavePluginForKeySystem(const nsCString& aKeySystem)
 {
   bool havePlugin = HaveGMPFor(NS_LITERAL_CSTRING(GMP_API_DECRYPTOR),
                                { aKeySystem });
-#ifdef MOZ_WIDGET_ANDROID
-  // Check if we can use MediaDrm for this keysystem.
-  if (!havePlugin) {
-    havePlugin = mozilla::java::MediaDrmProxy::IsSchemeSupported(aKeySystem);
-  }
-#endif
   return havePlugin;
 }
 
@@ -167,16 +158,6 @@ MediaKeySystemAccess::GetKeySystemStatus(const nsAString& aKeySystem,
         return MediaKeySystemStatus::Cdm_disabled;
       }
       return EnsureCDMInstalled(aKeySystem, aOutMessage);
-#ifdef MOZ_WIDGET_ANDROID
-    } else if (Preferences::GetBool("media.mediadrm-widevinecdm.visible", false)) {
-        nsCString keySystem = NS_ConvertUTF16toUTF8(aKeySystem);
-        bool supported = mozilla::java::MediaDrmProxy::IsSchemeSupported(keySystem);
-        if (!supported) {
-          aOutMessage = NS_LITERAL_CSTRING("Widevine CDM is not available");
-          return MediaKeySystemStatus::Cdm_not_installed;
-        }
-        return MediaKeySystemStatus::Available;
-#endif
     }
   }
 
@@ -332,9 +313,6 @@ GetSupportedKeySystems()
       widevine.mPersistentState = KeySystemFeatureSupport::Requestable;
       widevine.mDistinctiveIdentifier = KeySystemFeatureSupport::Prohibited;
       widevine.mSessionTypes.AppendElement(MediaKeySessionType::Temporary);
-#ifdef MOZ_WIDGET_ANDROID
-      widevine.mSessionTypes.AppendElement(MediaKeySessionType::Persistent_license);
-#endif
       widevine.mAudioRobustness.AppendElement(NS_LITERAL_STRING("SW_SECURE_CRYPTO"));
       widevine.mVideoRobustness.AppendElement(NS_LITERAL_STRING("SW_SECURE_DECODE"));
 #if defined(XP_WIN)
@@ -346,49 +324,13 @@ GetSupportedKeySystems()
       if (WMFDecoderModule::HasAAC()) {
         widevine.mMP4.SetCanDecrypt(EME_CODEC_AAC);
       }
-#elif !defined(MOZ_WIDGET_ANDROID)
-      widevine.mMP4.SetCanDecrypt(EME_CODEC_AAC);
 #endif
 
-#if defined(MOZ_WIDGET_ANDROID)
-      using namespace mozilla::java;
-      // MediaDrm.isCryptoSchemeSupported only allows passing
-      // "video/mp4" or "video/webm" for mimetype string.
-      // See https://developer.android.com/reference/android/media/MediaDrm.html#isCryptoSchemeSupported(java.util.UUID, java.lang.String)
-      // for more detail.
-      typedef struct {
-        const nsCString& mMimeType;
-        const nsCString& mEMECodecType;
-        const char16_t* mCodecType;
-        KeySystemContainerSupport* mSupportType;
-      } DataForValidation;
-
-      DataForValidation validationList[] = {
-        { nsCString("video/mp4"), EME_CODEC_H264, MediaDrmProxy::AVC, &widevine.mMP4 },
-        { nsCString("audio/mp4"), EME_CODEC_AAC, MediaDrmProxy::AAC, &widevine.mMP4 },
-        { nsCString("video/webm"), EME_CODEC_VP8, MediaDrmProxy::VP8, &widevine.mWebM },
-        { nsCString("video/webm"), EME_CODEC_VP9, MediaDrmProxy::VP9, &widevine.mWebM},
-        { nsCString("audio/webm"), EME_CODEC_VORBIS, MediaDrmProxy::VORBIS, &widevine.mWebM},
-        { nsCString("audio/webm"), EME_CODEC_OPUS, MediaDrmProxy::OPUS, &widevine.mWebM},
-      };
-
-      for (const auto& data: validationList) {
-        if (MediaDrmProxy::IsCryptoSchemeSupported(kEMEKeySystemWidevine,
-                                                   data.mMimeType)) {
-          if (MediaDrmProxy::CanDecode(data.mCodecType)) {
-            data.mSupportType->SetCanDecryptAndDecode(data.mEMECodecType);
-          } else {
-            data.mSupportType->SetCanDecrypt(data.mEMECodecType);
-          }
-        }
-      }
-#else
       widevine.mMP4.SetCanDecryptAndDecode(EME_CODEC_H264);
       widevine.mWebM.SetCanDecrypt(EME_CODEC_VORBIS);
       widevine.mWebM.SetCanDecrypt(EME_CODEC_OPUS);
       widevine.mWebM.SetCanDecryptAndDecode(EME_CODEC_VP8);
       widevine.mWebM.SetCanDecryptAndDecode(EME_CODEC_VP9);
-#endif
       keySystemConfigs.AppendElement(Move(widevine));
     }
   }

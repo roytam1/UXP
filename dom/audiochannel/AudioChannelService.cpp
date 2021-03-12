@@ -159,16 +159,8 @@ bool
 IsEnableAudioCompetingForAllAgents()
 {
   // In general, the audio competing should only be for audible media and it
-  // helps user can focus on one media at the same time. However, we hope to
-  // treat all media as the same in the mobile device. First reason is we have
-  // media control on fennec and we just want to control one media at once time.
-  // Second reason is to reduce the bandwidth, avoiding to play any non-audible
-  // media in background which user doesn't notice about.
-#ifdef MOZ_WIDGET_ANDROID
-  return true;
-#else
+  // helps user can focus on one media at the same time.
   return sAudioChannelCompetingAllAgents;
-#endif
 }
 
 } // anonymous namespace

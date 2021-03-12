@@ -10,7 +10,7 @@
 #include "ContentParent.h"
 #include "TabParent.h"
 
-#if defined(ANDROID) || defined(LINUX)
+#if defined(LINUX)
 # include <sys/time.h>
 # include <sys/resource.h>
 #endif
@@ -177,7 +177,7 @@
 #include "signaling/src/peerconnection/WebrtcGlobalParent.h"
 #endif
 
-#if defined(ANDROID) || defined(LINUX)
+#if defined(LINUX)
 #include "nsSystemInfo.h"
 #endif
 
@@ -185,16 +185,8 @@
 #include "mozilla/Hal.h"
 #endif
 
-#ifdef ANDROID
-# include "gfxAndroidPlatform.h"
-#endif
-
 #ifdef MOZ_PERMISSIONS
 # include "nsPermissionManager.h"
-#endif
-
-#ifdef MOZ_WIDGET_ANDROID
-# include "AndroidBridge.h"
 #endif
 
 #ifdef MOZ_WIDGET_GTK
@@ -1521,7 +1513,7 @@ ContentParent::OnChannelConnected(int32_t pid)
 {
   SetOtherProcessId(pid);
 
-#if defined(ANDROID) || defined(LINUX)
+#if defined(LINUX)
   // Check nice preference
   int32_t nice = Preferences::GetInt("dom.ipc.content.nice", 0);
 
@@ -2222,9 +2214,6 @@ ContentParent::OnVarChanged(const GfxVarUpdate& aVar)
 bool
 ContentParent::RecvReadFontList(InfallibleTArray<FontListEntry>* retValue)
 {
-#ifdef ANDROID
-  gfxAndroidPlatform::GetPlatform()->GetSystemFontList(retValue);
-#endif
   return true;
 }
 
@@ -2382,19 +2371,6 @@ bool
 ContentParent::RecvGetSystemColors(const uint32_t& colorsCount,
                                    InfallibleTArray<uint32_t>* colors)
 {
-#ifdef MOZ_WIDGET_ANDROID
-  NS_ASSERTION(AndroidBridge::Bridge() != nullptr, "AndroidBridge is not available");
-  if (AndroidBridge::Bridge() == nullptr) {
-    // Do not fail - the colors won't be right, but it's not critical
-    return true;
-  }
-
-  colors->AppendElements(colorsCount);
-
-  // The array elements correspond to the members of AndroidSystemColors structure,
-  // so just pass the pointer to the elements buffer
-  AndroidBridge::Bridge()->GetSystemColors((AndroidSystemColors*)colors->Elements());
-#endif
   return true;
 }
 
@@ -2403,17 +2379,6 @@ ContentParent::RecvGetIconForExtension(const nsCString& aFileExt,
                                        const uint32_t& aIconSize,
                                        InfallibleTArray<uint8_t>* bits)
 {
-#ifdef MOZ_WIDGET_ANDROID
-  NS_ASSERTION(AndroidBridge::Bridge() != nullptr, "AndroidBridge is not available");
-  if (AndroidBridge::Bridge() == nullptr) {
-    // Do not fail - just no icon will be shown
-    return true;
-  }
-
-  bits->AppendElements(aIconSize * aIconSize * 4);
-
-  AndroidBridge::Bridge()->GetIconForExtension(aFileExt, aIconSize, bits->Elements());
-#endif
   return true;
 }
 
@@ -2422,11 +2387,6 @@ ContentParent::RecvGetShowPasswordSetting(bool* showPassword)
 {
   // default behavior is to show the last password character
   *showPassword = true;
-#ifdef MOZ_WIDGET_ANDROID
-  NS_ASSERTION(AndroidBridge::Bridge() != nullptr, "AndroidBridge is not available");
-
-  *showPassword = java::GeckoAppShell::GetShowPasswordSetting();
-#endif
   return true;
 }
 
@@ -4477,13 +4437,8 @@ ContentParent::RecvEndDriverCrashGuard(const uint32_t& aGuardType)
 bool
 ContentParent::RecvGetAndroidSystemInfo(AndroidSystemInfo* aInfo)
 {
-#ifdef MOZ_WIDGET_ANDROID
-  nsSystemInfo::GetAndroidSystemInfo(aInfo);
-  return true;
-#else
   MOZ_CRASH("wrong platform!");
   return false;
-#endif
 }
 
 bool
