@@ -19,9 +19,6 @@
 #ifdef XP_WIN
 #include "mozilla/WindowsVersion.h"
 #endif
-#ifdef MOZ_WIDGET_ANDROID
-#include "nsIGfxInfo.h"
-#endif
 #include "mozilla/layers/LayersTypes.h"
 
 #include "PDMFactory.h"

@@ -12,10 +12,7 @@ EXTRA_COMPONENTS += [
 
 EXTRA_JS_MODULES += [
     'AppsServiceChild.jsm',
+    'AppsUtils.jsm',
     'PermissionsInstaller.jsm',
     'PermissionsTable.jsm',
-]
-
-EXTRA_PP_JS_MODULES += [
-    'AppsUtils.jsm',
 ]

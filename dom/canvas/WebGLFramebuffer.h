@@ -155,17 +155,6 @@ public:
     const GLuint mGLName;
 
 protected:
-#ifdef ANDROID
-    // Bug 1140459: Some drivers (including our test slaves!) don't
-    // give reasonable answers for IsRenderbuffer, maybe others.
-    // This shows up on Android 2.3 emulator.
-    //
-    // So we track the `is a Framebuffer` state ourselves.
-    bool mIsFB;
-#endif
-
-    ////
-
     WebGLFBAttachPoint mDepthAttachment;
     WebGLFBAttachPoint mStencilAttachment;
     WebGLFBAttachPoint mDepthStencilAttachment;

@@ -309,40 +309,9 @@ ScreenOrientation::LockInternal(ScreenOrientationInternal aOrientation, ErrorRes
     return nullptr;
   }
 
-#if !defined(MOZ_WIDGET_ANDROID)
   // User agent does not support locking the screen orientation.
   p->MaybeReject(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
   return p.forget();
-#else
-  LockPermission perm = GetLockOrientationPermission(true);
-  if (perm == LOCK_DENIED) {
-    p->MaybeReject(NS_ERROR_DOM_SECURITY_ERR);
-    return p.forget();
-  }
-
-  nsCOMPtr<nsIDocShellTreeItem> root;
-  docShell->GetSameTypeRootTreeItem(getter_AddRefs(root));
-  nsCOMPtr<nsIDocShell> rootShell(do_QueryInterface(root));
-  if (!rootShell) {
-    aRv.Throw(NS_ERROR_UNEXPECTED);
-    return nullptr;
-  }
-
-  rootShell->SetOrientationLock(aOrientation);
-  AbortOrientationPromises(rootShell);
-
-  doc->SetOrientationPendingPromise(p);
-
-  nsCOMPtr<nsIRunnable> lockOrientationTask =
-    new LockOrientationTask(this, p, aOrientation, doc,
-                            perm == FULLSCREEN_LOCK_ALLOWED);
-  aRv = NS_DispatchToMainThread(lockOrientationTask);
-  if (NS_WARN_IF(aRv.Failed())) {
-    return nullptr;
-  }
-
-  return p.forget();
-#endif
 }
 
 bool

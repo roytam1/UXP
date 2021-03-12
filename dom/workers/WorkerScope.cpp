@@ -33,10 +33,6 @@
 #include "nsIServiceWorkerManager.h"
 #include "nsIScriptTimeoutHandler.h"
 
-#ifdef ANDROID
-#include <android/log.h>
-#endif
-
 #include "Crypto.h"
 #include "Principal.h"
 #include "RuntimeService.h"
@@ -378,9 +374,6 @@ WorkerGlobalScope::Dump(const Optional<nsAString>& aString) const
   NS_ConvertUTF16toUTF8 str(aString.Value());
 
   MOZ_LOG(nsContentUtils::DOMDumpLog(), LogLevel::Debug, ("[Worker.Dump] %s", str.get()));
-#ifdef ANDROID
-  __android_log_print(ANDROID_LOG_INFO, "Gecko", "%s", str.get());
-#endif
   fputs(str.get(), stdout);
   fflush(stdout);
 }

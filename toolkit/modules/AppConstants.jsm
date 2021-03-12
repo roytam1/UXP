@@ -130,8 +130,6 @@ MOZ_SAFE_BROWSING:
   false,
 #endif
 
-# NOTE! XP_LINUX has to go after MOZ_WIDGET_ANDROID otherwise Android
-# builds will be misidentified as linux.
   platform:
 #ifdef MOZ_WIDGET_GTK
   "linux",
@@ -139,8 +137,6 @@ MOZ_SAFE_BROWSING:
   "win",
 #elif XP_MACOSX
   "macosx",
-#elif MOZ_WIDGET_ANDROID
-  "android",
 #elif XP_LINUX
   "linux",
 #else

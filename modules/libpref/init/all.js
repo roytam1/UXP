@@ -530,13 +530,6 @@ pref("media.navigator.audio.full_duplex", false);
 pref("media.peerconnection.capture_delay", 50);
 pref("media.getusermedia.playout_delay", 40);
 pref("media.navigator.audio.full_duplex", false);
-#elif defined(ANDROID)
-pref("media.peerconnection.capture_delay", 100);
-pref("media.getusermedia.playout_delay", 100);
-pref("media.navigator.audio.full_duplex", false);
-// Whether to enable Webrtc Hardware acceleration support
-pref("media.navigator.hardware.vp8_encode.acceleration_enabled", false);
-pref("media.navigator.hardware.vp8_decode.acceleration_enabled", false);
 #elif defined(XP_LINUX)
 pref("media.peerconnection.capture_delay", 70);
 pref("media.getusermedia.playout_delay", 50);
@@ -551,9 +544,7 @@ pref("media.navigator.audio.full_duplex", false);
 
 pref("dom.webaudio.enabled", true);
 
-#if !defined(ANDROID)
 pref("media.getusermedia.screensharing.enabled", true);
-#endif
 
 pref("media.getusermedia.screensharing.allowed_domains", "webex.com,*.webex.com,ciscospark.com,*.ciscospark.com,projectsquared.com,*.projectsquared.com,*.room.co,room.co,beta.talky.io,talky.io,*.clearslide.com,appear.in,*.appear.in,tokbox.com,*.tokbox.com,*.sso.francetelecom.fr,*.si.francetelecom.fr,*.sso.infra.ftgroup,*.multimedia-conference.orange-business.com,*.espacecollaboration.orange-business.com,free.gotomeeting.com,g2m.me,*.g2m.me,*.mypurecloud.com,*.mypurecloud.com.au,spreed.me,*.spreed.me,*.spreed.com,air.mozilla.org,*.circuit.com,*.yourcircuit.com,circuit.siemens.com,yourcircuit.siemens.com,circuitsandbox.net,*.unify.com,tandi.circuitsandbox.net,*.ericsson.net,*.cct.ericsson.net,*.opentok.com,*.conf.meetecho.com,meet.jit.si,*.meet.jit.si,web.stage.speakeasyapp.net,web.speakeasyapp.net,*.hipchat.me,*.beta-wspbx.com,*.wspbx.com,*.unifiedcloudit.com,*.smartboxuc.com,*.smartbox-uc.com,*.panterranetworks.com,pexipdemo.com,*.pexipdemo.com,pex.me,*.pex.me,*.rd.pexip.com,1click.io,*.1click.io,*.fuze.com,*.fuzemeeting.com,*.thinkingphones.com,gotomeeting.com,*.gotomeeting.com,gotowebinar.com,*.gotowebinar.com,gototraining.com,*.gototraining.com,citrix.com,*.citrix.com,expertcity.com,*.expertcity.com,citrixonline.com,*.citrixonline.com,g2m.me,*.g2m.me,gotomeet.me,*.gotomeet.me,gotomeet.at,*.gotomeet.at,miriadaxdes.miriadax.net,certificacion.miriadax.net,miriadax.net,*.wire.com,sylaps.com,*.sylaps.com,bluejeans.com,*.bluejeans.com,*.a.bluejeans.com,*.bbcollab.com");
 // OS/X 10.6 and XP have screen/window sharing off by default due to various issues - Caveat emptor
@@ -572,7 +563,7 @@ pref("media.mediasource.enabled", true);
 
 pref("media.mediasource.mp4.enabled", true);
 
-#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_ANDROID)
+#if defined(XP_WIN) || defined(XP_MACOSX)
 pref("media.mediasource.webm.enabled", false);
 #else
 pref("media.mediasource.webm.enabled", true);
@@ -696,15 +687,7 @@ pref("apz.y_stationary_size_multiplier", "3.5");
 pref("apz.zoom_animation_duration_ms", 250);
 pref("apz.scale_repaint_delay_ms", 500);
 
-#if defined(MOZ_WIDGET_ANDROID)
-// Mobile prefs
-pref("apz.allow_zooming", true);
-pref("apz.enlarge_displayport_when_clipped", true);
-pref("apz.y_skate_size_multiplier", "1.5");
-pref("apz.y_stationary_size_multiplier", "1.5");
-#endif
-
-#if !defined(MOZ_WIDGET_ANDROID) && !defined(MOZ_WIDGET_UIKIT)
+#if !defined(MOZ_WIDGET_UIKIT)
 pref("apz.desktop.enabled", false);
 #endif
 
@@ -716,10 +699,8 @@ pref("apz.desktop.enabled", false);
 pref("gfx.hidpi.enabled", 2);
 #endif
 
-#if !defined(MOZ_WIDGET_ANDROID)
-// Use containerless scrolling for now on desktop.
+// Use containerless scrolling for now.
 pref("layout.scroll.root-frame-containers", false);
-#endif
 
 // Whether to enable LayerScope tool and default listening port
 pref("gfx.layerscope.enabled", false);
@@ -752,11 +733,6 @@ pref("gfx.downloadable_fonts.fallback_delay_short", 100);
 pref("gfx.downloadable_fonts.disable_cache", false);
 
 pref("gfx.downloadable_fonts.woff2.enabled", true);
-
-#ifdef ANDROID
-pref("gfx.bundled_fonts.enabled", true);
-pref("gfx.bundled_fonts.force-enabled", false);
-#endif
 
 // Do we fire a notification about missing fonts, so the front-end can decide
 // whether to try and do something about it (e.g. download additional fonts)?
@@ -2032,9 +2008,6 @@ pref("network.proxy.no_proxies_on",         "localhost, 127.0.0.1");
 pref("network.proxy.failover_timeout",      1800); // 30 minutes
 pref("network.online",                      true); //online/offline
 pref("network.cookie.cookieBehavior",       0); // 0-Accept, 1-dontAcceptForeign, 2-dontAcceptAny, 3-limitForeign
-#ifdef ANDROID
-pref("network.cookie.cookieBehavior",       0); // Keep the old default of accepting all cookies
-#endif
 pref("network.cookie.thirdparty.sessionOnly", false);
 pref("network.cookie.leave-secure-alone",   true);
 pref("network.cookie.lifetimePolicy",       0); // 0-accept, 1-dontUse 2-acceptForSession, 3-acceptForNDays
@@ -2079,12 +2052,8 @@ pref("intl.locale.matchOS",                 false);
 pref("intl.fallbackCharsetList.ISO-8859-1", "windows-1252");
 pref("font.language.group",                 "chrome://global/locale/intl.properties");
 
-// Android-specific pref to use key-events-only mode for IME-unaware webapps.
-#ifdef MOZ_WIDGET_ANDROID
-pref("intl.ime.hack.on_ime_unaware_apps.fire_key_events_for_composition", true);
-#else
+// Pref to use key-events-only mode for IME-unaware webapps. (legacy from android)
 pref("intl.ime.hack.on_ime_unaware_apps.fire_key_events_for_composition", false);
-#endif
 
 // If you use legacy Chinese IME which puts an ideographic space to composition
 // string as placeholder, this pref might be useful.  If this is true and when
@@ -3920,68 +3889,6 @@ pref("mousewheel.enable_pixel_scrolling", true);
 # XP_MACOSX
 #endif
 
-#ifdef ANDROID
-// Handled differently under Mac/Windows
-pref("network.protocol-handler.warn-external.file", false);
-pref("browser.drag_out_of_frame_style", 1);
-
-// Middle-mouse handling
-pref("middlemouse.paste", true);
-pref("middlemouse.contentLoadURL", true);
-pref("middlemouse.openNewWindow", true);
-pref("middlemouse.scrollbarPosition", true);
-
-pref("browser.urlbar.clickSelectsAll", false);
-
-// Tab focus model bit field:
-// 1 focuses text controls, 2 focuses other form elements, 4 adds links.
-// Leave this at the default, 7, to match mozilla1.0-era user expectations.
-// pref("accessibility.tabfocus", 1);
-
-// autocomplete keyboard grab workaround
-pref("autocomplete.grab_during_popup", true);
-pref("autocomplete.ungrab_during_mode_switch", true);
-
-// Default to using the system filepicker if possible, but allow
-// toggling to use the XUL filepicker
-pref("ui.allow_platform_file_picker", true);
-
-pref("helpers.global_mime_types_file", "/etc/mime.types");
-pref("helpers.global_mailcap_file", "/etc/mailcap");
-pref("helpers.private_mime_types_file", "~/.mime.types");
-pref("helpers.private_mailcap_file", "~/.mailcap");
-pref("print.printer_list", ""); // list of printers, separated by spaces
-pref("print.print_reversed", false);
-pref("print.print_color", true);
-pref("print.print_landscape", false);
-pref("print.print_paper_size", 0);
-
-// print_extra_margin enables platforms to specify an extra gap or margin
-// around the content of the page for Print Preview only
-pref("print.print_extra_margin", 0); // twips
-
-/* PostScript print module prefs */
-// pref("print.postscript.enabled",      true);
-
-// Setting default_level_parent to true makes the default level for popup
-// windows "top" instead of "parent".  On GTK2 platform, this is implemented
-// with override-redirect windows which is the normal way to implement
-// temporary popup windows.  Setting this to false would make the default
-// level "parent" which is implemented with managed windows.
-// A problem with using managed windows is that metacity sometimes deactivates
-// the parent window when the managed popup is shown.
-pref("ui.panel.default_level_parent", true);
-
-pref("mousewheel.system_scroll_override_on_root_content.enabled", false);
-
-// Forward downloads with known OMA MIME types to Android's download manager
-// instead of downloading them in the browser.
-pref("browser.download.forward_oma_android_download_manager", false);
-
-# ANDROID
-#endif
-
-#ifndef ANDROID
 #ifndef XP_MACOSX
 #ifdef XP_UNIX
 // Handled differently under Mac/Windows
@@ -4193,113 +4100,7 @@ pref("gfx.font_rendering.fontconfig.max_generic_substitutions", 3);
 # XP_UNIX
 #endif
 #endif
-#endif
 
-#if defined(ANDROID)
-
-pref("font.size.fixed.ar", 12);
-
-pref("font.default.el", "sans-serif");
-pref("font.size.fixed.el", 12);
-
-pref("font.size.fixed.he", 12);
-
-pref("font.default.x-cyrillic", "sans-serif");
-pref("font.size.fixed.x-cyrillic", 12);
-
-pref("font.default.x-unicode", "sans-serif");
-pref("font.size.fixed.x-unicode", 12);
-
-pref("font.default.x-western", "sans-serif");
-pref("font.size.fixed.x-western", 12);
-
-# ANDROID
-#endif
-
-#if defined(ANDROID)
-// We use the bundled fonts for Firefox for Android
-
-pref("font.name-list.emoji", "Noto Color Emoji");
-
-// ar
-
-pref("font.name.serif.el", "Droid Serif"); // not Charis SIL Compact, only has a few Greek chars
-pref("font.name.sans-serif.el", "Clear Sans");
-pref("font.name.monospace.el", "Droid Sans Mono");
-pref("font.name-list.serif.el", "Noto Serif");
-pref("font.name-list.sans-serif.el", "Clear Sans, Roboto, Droid Sans");
-
-pref("font.name.serif.he", "Droid Serif");
-pref("font.name.sans-serif.he", "Clear Sans");
-pref("font.name.monospace.he", "Droid Sans Mono");
-pref("font.name-list.serif.he", "Noto Serif");
-pref("font.name-list.sans-serif.he", "Droid Sans Hebrew, Clear Sans, Droid Sans");
-
-pref("font.name.serif.ja", "Charis SIL Compact");
-pref("font.name.sans-serif.ja", "Clear Sans");
-pref("font.name.monospace.ja", "MotoyaLMaru");
-pref("font.name-list.serif.ja", "Noto Serif, Droid Serif");
-pref("font.name-list.sans-serif.ja", "Clear Sans, Roboto, Droid Sans, MotoyaLMaru, MotoyaLCedar, Noto Sans JP, Noto Sans CJK JP, Droid Sans Japanese");
-pref("font.name-list.monospace.ja", "MotoyaLMaru, MotoyaLCedar, Droid Sans Mono CJK JP, Droid Sans Mono");
-
-pref("font.name.serif.ko", "Charis SIL Compact");
-pref("font.name.sans-serif.ko", "Clear Sans");
-pref("font.name.monospace.ko", "Droid Sans Mono");
-pref("font.name-list.serif.ko", "Noto Serif, Droid Serif, HYSerif");
-pref("font.name-list.sans-serif.ko", "SmartGothic, NanumGothic, Noto Sans KR, Noto Sans CJK KR, DroidSansFallback, Droid Sans Fallback");
-pref("font.name-list.monospace.ko", "Noto Sans Mono CJK KR");
-
-pref("font.name.serif.th", "Charis SIL Compact");
-pref("font.name.sans-serif.th", "Clear Sans");
-pref("font.name.monospace.th", "Droid Sans Mono");
-pref("font.name-list.serif.th", "Noto Serif, Droid Serif");
-pref("font.name-list.sans-serif.th", "Droid Sans Thai, Clear Sans, Droid Sans");
-
-pref("font.name.serif.x-cyrillic", "Charis SIL Compact");
-pref("font.name.sans-serif.x-cyrillic", "Clear Sans");
-pref("font.name.monospace.x-cyrillic", "Droid Sans Mono");
-pref("font.name-list.serif.x-cyrillic", "Noto Serif, Droid Serif");
-pref("font.name-list.sans-serif.x-cyrillic", "Clear Sans, Roboto, Droid Sans");
-
-pref("font.name.serif.x-unicode", "Charis SIL Compact");
-pref("font.name.sans-serif.x-unicode", "Clear Sans");
-pref("font.name.monospace.x-unicode", "Droid Sans Mono");
-pref("font.name-list.serif.x-unicode", "Noto Serif, Droid Serif");
-pref("font.name-list.sans-serif.x-unicode", "Clear Sans, Roboto, Droid Sans");
-
-pref("font.name.serif.x-western", "Charis SIL Compact");
-pref("font.name.sans-serif.x-western", "Clear Sans");
-pref("font.name.monospace.x-western", "Droid Sans Mono");
-pref("font.name-list.serif.x-western", "Noto Serif, Droid Serif");
-pref("font.name-list.sans-serif.x-western", "Clear Sans, Roboto, Droid Sans");
-
-pref("font.name.serif.zh-CN", "Charis SIL Compact");
-pref("font.name.sans-serif.zh-CN", "Clear Sans");
-pref("font.name.monospace.zh-CN", "Droid Sans Mono");
-pref("font.name-list.serif.zh-CN", "Noto Serif, Droid Serif, Droid Sans Fallback");
-pref("font.name-list.sans-serif.zh-CN", "Roboto, Droid Sans, Noto Sans SC, Noto Sans CJK SC, Droid Sans Fallback");
-pref("font.name-list.monospace.zh-CN", "Noto Sans Mono CJK SC, Droid Sans Fallback");
-
-pref("font.name.serif.zh-HK", "Charis SIL Compact");
-pref("font.name.sans-serif.zh-HK", "Clear Sans");
-pref("font.name.monospace.zh-HK", "Droid Sans Mono");
-pref("font.name-list.serif.zh-HK", "Noto Serif, Droid Serif, Droid Sans Fallback");
-pref("font.name-list.sans-serif.zh-HK", "Roboto, Droid Sans, Noto Sans TC, Noto Sans SC, Noto Sans CJK TC, Droid Sans Fallback");
-pref("font.name-list.monospace.zh-HK", "Noto Sans Mono CJK TC, Droid Sans Fallback");
-
-pref("font.name.serif.zh-TW", "Charis SIL Compact");
-pref("font.name.sans-serif.zh-TW", "Clear Sans");
-pref("font.name.monospace.zh-TW", "Droid Sans Mono");
-pref("font.name-list.serif.zh-TW", "Noto Serif, Droid Serif, Droid Sans Fallback");
-pref("font.name-list.sans-serif.zh-TW", "Roboto, Droid Sans, Noto Sans TC, Noto Sans SC, Noto Sans CJK TC, Droid Sans Fallback");
-pref("font.name-list.monospace.zh-TW", "Noto Sans Mono CJK TC, Droid Sans Fallback");
-
-pref("font.name.serif.x-math", "Latin Modern Math");
-pref("font.name-list.serif.x-math", "Latin Modern Math, XITS Math, Cambria Math, Libertinus Math, DejaVu Math TeX Gyre, TeX Gyre Bonum Math, TeX Gyre Pagella Math, TeX Gyre Schola, TeX Gyre Termes Math, STIX Math, Asana Math, STIXGeneral, DejaVu Serif, DejaVu Sans, Charis SIL Compact");
-pref("font.name.sans-serif.x-math", "Clear Sans");
-pref("font.name.monospace.x-math", "Droid Sans Mono");
-
-#endif
 
 #if OS_ARCH==AIX
 
@@ -4436,12 +4237,7 @@ pref("canvas.image.cache.limit", 0);
 pref("canvas.poisondata", false);
 
 // WebGL prefs
-#ifdef ANDROID
-// Disable MSAA on mobile.
-pref("gl.msaa-level", 0);
-#else
 pref("gl.msaa-level", 2);
-#endif
 pref("gl.require-hardware", false);
 #ifdef XP_MACOSX
 pref("gl.multithreaded", true);
@@ -4536,13 +4332,7 @@ pref("layers.gpu-process.dev.enabled", true);
 pref("layers.acceleration.draw-fps", false);
 
 // Enable DEAA antialiasing for transformed layers in the compositor
-#if !defined(MOZ_WIDGET_ANDROID)
-// Desktop prefs
 pref("layers.deaa.enabled", true);
-#else
-// Mobile prefs
-pref("layers.deaa.enabled", false);
-#endif
 
 pref("layers.dump", false);
 #ifdef MOZ_DUMP_PAINTING
@@ -4585,10 +4375,6 @@ pref("layers.tile-height", 512);
 pref("layers.tiles.edge-padding", false);
 #endif
 
-#ifdef MOZ_WIDGET_ANDROID
-pref("layers.tiles.edge-padding", true);
-#endif
-
 // Whether to animate simple opacity and transforms on the compositor
 pref("layers.offmainthreadcomposition.async-animations", true);
 
@@ -4604,10 +4390,6 @@ pref("layers.draw-mask-debug", false);
 pref("gfx.content.use-native-pushlayer", false);
 
 pref("gfx.content.always-paint", false);
-
-#ifdef ANDROID
-pref("gfx.apitrace.enabled",false);
-#endif
 
 #ifdef MOZ_X11
 pref("gfx.content.use-native-pushlayer", true);
@@ -4842,12 +4624,8 @@ pref("layout.css.expensive-style-struct-assertions.enabled", false);
 // enable JS dump() function.
 pref("browser.dom.window.dump.enabled", false);
 
-#if defined(MOZ_WIDGET_ANDROID)
 // Network Information API
-pref("dom.netinfo.enabled", true);
-#else
 pref("dom.netinfo.enabled", false);
-#endif
 
 #ifdef XP_WIN
 // On 32-bit Windows, fire a low-memory notification if we have less than this
@@ -5311,11 +5089,7 @@ pref("reader.has_used_toolbar", false);
 // Whether to use a vertical or horizontal toolbar.
 pref("reader.toolbar.vertical", true);
 
-#if !defined(ANDROID)
 pref("narrate.enabled", true);
-#else
-pref("narrate.enabled", false);
-#endif
 
 pref("narrate.test", false);
 pref("narrate.rate", 0);
@@ -5398,10 +5172,8 @@ pref("dom.maxHardwareConcurrency", 16);
 // Shutdown the async osfile worker if it's no longer needed.
 pref("osfile.reset_worker_delay", 30000);
 
-#if !defined(MOZ_WIDGET_ANDROID)
 pref("dom.webkitBlink.dirPicker.enabled", true);
 pref("dom.webkitBlink.filesystem.enabled", true);
-#endif
 
 pref("media.block-autoplay-until-in-foreground", true);
 

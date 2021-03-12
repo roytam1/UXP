@@ -25,10 +25,6 @@
 
 #include "mozilla/Unused.h"
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidJNIWrapper.h"
-#endif
-
 // for ntohs
 #ifdef _MSC_VER
 #include "Winsock2.h"
@@ -323,15 +319,6 @@ WebrtcVideoConduit::InitMain()
     }
   }
 
-#ifdef MOZ_WIDGET_ANDROID
-  // get the JVM
-  JavaVM *jvm = jsjni_GetVM();
-
-  if (webrtc::VideoEngine::SetAndroidObjects(jvm) != 0) {
-    CSFLogError(logTag,  "%s: could not set Android objects", __FUNCTION__);
-    return kMediaConduitSessionNotInited;
-  }
-#endif
 #endif
   return kMediaConduitNoError;
 }

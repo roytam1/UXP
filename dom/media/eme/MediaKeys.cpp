@@ -13,9 +13,6 @@
 #include "mozilla/dom/DOMException.h"
 #include "mozilla/dom/UnionTypes.h"
 #include "GMPCDMProxy.h"
-#ifdef MOZ_WIDGET_ANDROID
-#include "mozilla/MediaDrmCDMProxy.h"
-#endif
 #include "mozilla/EMEUtils.h"
 #include "nsContentUtils.h"
 #include "nsIScriptObjectPrincipal.h"
@@ -330,14 +327,6 @@ already_AddRefed<CDMProxy>
 MediaKeys::CreateCDMProxy()
 {
   RefPtr<CDMProxy> proxy;
-#ifdef MOZ_WIDGET_ANDROID
-  if (IsWidevineKeySystem(mKeySystem)) {
-    proxy = new MediaDrmCDMProxy(this,
-                                 mKeySystem,
-                                 mConfig.mDistinctiveIdentifier == MediaKeysRequirement::Required,
-                                 mConfig.mPersistentState == MediaKeysRequirement::Required);
-  } else
-#endif
   {
     proxy = new GMPCDMProxy(this,
                             mKeySystem,
