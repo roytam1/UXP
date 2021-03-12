@@ -23,14 +23,9 @@ const {
 const {PushDB} = Cu.import("resource://gre/modules/PushDB.jsm");
 
 const CONNECTION_PROTOCOLS = (function() {
-#ifdef MOZ_WIDGET_ANDROID
-    const {PushServiceAndroidGCM} = Cu.import("resource://gre/modules/PushServiceAndroidGCM.jsm");
-    return [PushServiceAndroidGCM];
-#else
     const {PushServiceWebSocket} = Cu.import("resource://gre/modules/PushServiceWebSocket.jsm");
     const {PushServiceHttp2} = Cu.import("resource://gre/modules/PushServiceHttp2.jsm");
     return [PushServiceWebSocket, PushServiceHttp2];
-#endif
 })();
 
 XPCOMUtils.defineLazyServiceGetter(this, "gPushNotifier",

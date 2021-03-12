@@ -27,10 +27,6 @@
 
 class nsIPrincipal;
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidLocationProvider.h"
-#endif
-
 #ifdef MOZ_GPSD
 #include "GpsdLocationProvider.h"
 #endif
@@ -645,10 +641,6 @@ nsresult nsGeolocationService::Init()
   }
 
   obs->AddObserver(this, "xpcom-shutdown", false);
-
-#ifdef MOZ_WIDGET_ANDROID
-  mProvider = new AndroidLocationProvider();
-#endif
 
 #ifdef MOZ_WIDGET_GTK
 #ifdef MOZ_GPSD

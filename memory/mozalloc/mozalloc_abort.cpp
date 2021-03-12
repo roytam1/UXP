@@ -7,10 +7,6 @@
 
 #include "mozilla/mozalloc_abort.h"
 
-#ifdef MOZ_WIDGET_ANDROID
-# include "APKOpen.h"
-# include "dlfcn.h"
-#endif
 #include <stdio.h>
 
 #include "mozilla/Assertions.h"

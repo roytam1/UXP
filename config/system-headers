@@ -164,13 +164,6 @@ all.h
 alloca.h
 alloc.h
 alsa/asoundlib.h
-#ifdef ANDROID
-android/ashmem.h
-android/log.h
-android/looper.h
-android/native_window.h
-android_audio/AudioSystem.h
-#endif
 ansi_parms.h
 a.out.h
 app/Cursor.h
@@ -200,14 +193,6 @@ atlimpl.cpp
 atlwin.cpp
 ATSTypes.h
 ATSUnicode.h
-#ifdef ANDROID
-audio_effects/effect_aec.h
-audio_effects/effect_ns.h
-AudioParameter.h
-AudioSystem.h
-AudioTrack.h
-avc_utils.h
-#endif
 Balloons.h
 base/pblock.h
 base/PCR_Base.h
@@ -218,18 +203,6 @@ Beep.h
 be/kernel/image.h
 be/kernel/OS.h
 bfd.h
-#ifdef ANDROID
-binder/Binder.h
-binder/BinderService.h
-binder/IBinder.h
-binder/IInterface.h
-binder/IMemory.h
-binder/IPCThreadState.h
-binder/IPermissionController.h
-binder/IServiceManager.h
-binder/Parcel.h
-binder/ProcessState.h
-#endif
 Bitmap.h
 bitset
 blapi.h
@@ -308,10 +281,6 @@ dfb_types.h
 directfb_strings.h
 directfb_keyboard.h
 callconv.h
-#ifdef ANDROID
-camera/Camera.h
-camera/CameraParameters.h
-#endif
 Carbon/Carbon.h
 CarbonEvents.h
 Carbon.h
@@ -335,9 +304,6 @@ Clipboard.h
 cmplrs/stsupport.h
 Cocoa/Cocoa.h
 CodeFragments.h
-#ifdef ANDROID
-ColorConverter.h
-#endif
 comdef.h
 commctrl.h
 COMMCTRL.H
@@ -366,15 +332,6 @@ ctype.h
 curl/curl.h
 curl/easy.h
 curses.h
-#ifdef ANDROID
-cutils/android_reboot.h
-cutils/atomic.h
-cutils/compiler.h
-cutils/log.h
-cutils/native_handle.h
-cutils/properties.h
-cutils/sockets.h
-#endif
 cxxabi.h
 DateTimeUtils.h
 dbus/dbus.h
@@ -429,19 +386,6 @@ fontconfig/fontconfig.h
 fontconfig/fcfreetype.h
 Font.h
 Fonts.h
-#ifdef ANDROID
-foundation/ABase.h
-foundation/ABitReader.h
-foundation/ABuffer.h
-foundation/ADebug.h
-foundation/AHandler.h
-foundation/AHandlerReflector.h
-foundation/ALooper.h
-foundation/AMessage.h
-foundation/AString.h
-foundation/base64.h
-foundation/hexdump.h
-#endif
 fp.h
 fpieee.h
 frame/log.h
@@ -505,33 +449,8 @@ gssapi.h
 gtk/gtk.h
 gtk/gtkx.h
 gtk/gtkunixprint.h
-#ifdef ANDROID
-gui/BufferQueue.h
-gui/ConsumerBase.h
-gui/GraphicBufferAlloc.h
-gui/IConsumerListener.h
-gui/IGraphicBufferAlloc.h
-gui/IGraphicBufferProducer.h
-gui/ISurfaceComposer.h
-gui/ISurfaceComposerClient.h
-gui/ISurfaceTexture.h
-gui/Surface.h
-gui/SurfaceComposerClient.h
-gui/SurfaceTextureClient.h
-hardware/audio.h
-hardware/gralloc.h
-hardware/hardware.h
-hardware/hwcomposer.h
-hardware/lights.h
-hardware/power.h
-hardware_legacy/power.h
-hardware_legacy/uevent.h
-#endif
 HIToolbox/HIToolbox.h
 hlink.h
-#ifdef ANDROID
-HTTPBase.h
-#endif
 ia64/sys/inline.h
 Icons.h
 iconv.h
@@ -623,10 +542,6 @@ libgnomeui/gnome-icon-theme.h
 libgnomeui/gnome-ui-init.h
 limits.h
 link.h
-#ifdef ANDROID
-linux/android_alarm.h
-linux/ashmem.h
-#endif
 linux/ioprio.h
 linux/kernel.h
 linux/limits.h
@@ -712,53 +627,6 @@ mapix.h
 Math64.h
 math.h
 mbstring.h
-#ifdef ANDROID
-android/native_window.h
-android/native_window_jni.h
-media/AudioEffect.h
-media/AudioSystem.h
-media/ICrypto.h
-media/IOMX.h
-media/MediaProfiles.h
-media/MediaRecorderBase.h
-media/openmax/OMX_Audio.h
-media/stagefright/AACWriter.h
-media/stagefright/AMRWriter.h
-media/stagefright/AudioSource.h
-media/stagefright/DataSource.h
-media/stagefright/foundation/ABase.h
-media/stagefright/foundation/ABitReader.h
-media/stagefright/foundation/ABuffer.h
-media/stagefright/foundation/ADebug.h
-media/stagefright/foundation/AHandler.h
-media/stagefright/foundation/AHandlerReflector.h
-media/stagefright/foundation/ALooper.h
-media/stagefright/foundation/AMessage.h
-media/stagefright/foundation/AString.h
-media/stagefright/foundation/base64.h
-media/stagefright/foundation/hexdump.h
-media/stagefright/MediaBuffer.h
-media/stagefright/MediaBufferGroup.h
-media/stagefright/MediaCodec.h
-media/stagefright/MediaCodecList.h
-media/stagefright/MediaCodecSource.h
-media/stagefright/MediaDefs.h
-media/stagefright/MediaErrors.h
-media/stagefright/MediaExtractor.h
-media/stagefright/MediaSource.h
-media/stagefright/MediaWriter.h
-media/stagefright/MetaData.h
-media/stagefright/MPEG2TSWriter.h
-media/stagefright/MPEG4Writer.h
-media/stagefright/OMXClient.h
-media/stagefright/OMXCodec.h
-media/stagefright/openmax/OMX_Core.h
-media/stagefright/openmax/OMX_Index.h
-media/stagefright/openmax/OMX_IVCommon.h
-media/stagefright/openmax/OMX_Types.h
-media/stagefright/openmax/OMX_Video.h
-media/stagefright/Utils.h
-#endif
 mem.h
 memory.h
 Memory.h
@@ -798,10 +666,6 @@ Objsafe.h
 ojiapitests.h
 ole2.h
 oleidl.h
-#ifdef ANDROID
-OMX.h
-OMX_Component.h
-#endif
 OpenGL/OpenGL.h
 OpenTptInternet.h
 OpenTransport.h
@@ -847,10 +711,6 @@ PP_Resources.h
 PP_Types.h
 Printing.h
 Print/PMPrintingDialogExtensions.h
-#ifdef ANDROID
-private/android_filesystem_config.h
-private/qucomextra_p.h
-#endif
 Processes.h
 process.h
 Process.h
@@ -917,43 +777,6 @@ Sound.h
 soundcard.h
 sqlite3.h
 sstream
-#ifdef ANDROID
-stagefright/AACWriter.h
-stagefright/AMRWriter.h
-stagefright/AudioSource.h
-stagefright/DataSource.h
-stagefright/foundation/ABase.h
-stagefright/foundation/ABitReader.h
-stagefright/foundation/ABuffer.h
-stagefright/foundation/ADebug.h
-stagefright/foundation/AHandler.h
-stagefright/foundation/AHandlerReflector.h
-stagefright/foundation/ALooper.h
-stagefright/foundation/AMessage.h
-stagefright/foundation/AString.h
-stagefright/foundation/base64.h
-stagefright/foundation/hexdump.h
-stagefright/MediaBuffer.h
-stagefright/MediaBufferGroup.h
-stagefright/MediaCodec.h
-stagefright/MediaDefs.h
-stagefright/MediaErrors.h
-stagefright/MediaExtractor.h
-stagefright/MediaSource.h
-stagefright/MediaWriter.h
-stagefright/MetaData.h
-stagefright/MPEG2TSWriter.h
-stagefright/MPEG4Writer.h
-stagefright/OMXCodec.h
-stagefright/OMXClient.h
-stagefright/openmax/OMX_Component.h
-stagefright/openmax/OMX_Core.h
-stagefright/openmax/OMX_Index.h
-stagefright/openmax/OMX_IVCommon.h
-stagefright/openmax/OMX_Types.h
-stagefright/openmax/OMX_Video.h
-stagefright/Utils.h
-#endif
 StandardFile.h
 starlet.h
 stat.h
@@ -981,9 +804,6 @@ SupportDefs.h
 support/String.h
 support/SupportDefs.h
 support/TLS.h
-#ifdef ANDROID
-suspend/autosuspend.h
-#endif
 svrcore.h
 symconst.h
 sym.h
@@ -1071,12 +891,6 @@ sys/unistd.h
 sys/utsname.h
 sys/vfs.h
 sys/wait.h
-#ifdef ANDROID
-sysutils/NetlinkEvent.h
-system/audio.h
-system/graphics.h
-system/window.h
-#endif
 tables.h
 TArray.h
 TArrayIterator.h
@@ -1119,15 +933,6 @@ UEventMgr.h
 UException.h
 UExtractFromAEDesc.h
 UGWorld.h
-#ifdef ANDROID
-ui/ANativeObjectBase.h
-ui/egl/android_natives.h
-ui/Fence.h
-ui/FramebufferNativeWindow.h
-ui/GraphicBuffer.h
-ui/Rect.h
-ui/Region.h
-#endif
 UKeyFilters.h
 ulocks.h
 ulserrno.h
@@ -1149,28 +954,6 @@ UReanimator.h
 URegions.h
 URegistrar.h
 UResourceMgr.h
-#ifdef ANDROID
-utils/BitSet.h
-utils/CallStack.h
-utils/Errors.h
-utils/FileMap.h
-utils/KeyedVector.h
-utils/List.h
-utils/Log.h
-utils/Looper.h
-utils/PropertyMap.h
-utils/RefBase.h
-utils/String16.h
-utils/String8.h
-utils/threads.h
-utils/TextOutput.h
-utils/Timers.h
-utils/Trace.h
-utils/TypeHelpers.h
-utils/Unicode.h
-utils/Vector.h
-utils/VectorImpl.h
-#endif
 urlhist.h
 urlmon.h
 UScrap.h

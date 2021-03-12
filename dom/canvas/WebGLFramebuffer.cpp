@@ -621,9 +621,6 @@ WebGLFBAttachPoint::GetParameter(const char* funcName, WebGLContext* webgl, JSCo
 WebGLFramebuffer::WebGLFramebuffer(WebGLContext* webgl, GLuint fbo)
     : WebGLRefCountedObject(webgl)
     , mGLName(fbo)
-#ifdef ANDROID
-    , mIsFB(false)
-#endif
     , mDepthAttachment(this, LOCAL_GL_DEPTH_ATTACHMENT)
     , mStencilAttachment(this, LOCAL_GL_STENCIL_ATTACHMENT)
     , mDepthStencilAttachment(this, LOCAL_GL_DEPTH_STENCIL_ATTACHMENT)
@@ -657,10 +654,6 @@ WebGLFramebuffer::Delete()
     mContext->gl->fDeleteFramebuffers(1, &mGLName);
 
     LinkedListElement<WebGLFramebuffer>::removeFrom(mContext->mFramebuffers);
-
-#ifdef ANDROID
-    mIsFB = false;
-#endif
 }
 
 ////

@@ -23,23 +23,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef ANDROID
-#include <android/log.h>
-extern "C" char* PrintJSStack();
-static void LogFunctionAndJSStack(const char* funcname) {
-  char *jsstack = PrintJSStack();
-  __android_log_print(ANDROID_LOG_INFO, "PowerManagerService", \
-                      "Call to %s. The JS stack is:\n%s\n",
-                      funcname,
-                      jsstack ? jsstack : "<no JS stack>");
-  JS_smprintf_free(jsstack);
-}
-// bug 839452
-#define LOG_FUNCTION_AND_JS_STACK() \
-  LogFunctionAndJSStack(__PRETTY_FUNCTION__);
-#else
 #define LOG_FUNCTION_AND_JS_STACK()
-#endif
 
 namespace mozilla {
 namespace dom {

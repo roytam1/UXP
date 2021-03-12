@@ -145,9 +145,6 @@ WebGLContext::BindFramebuffer(GLenum target, WebGLFramebuffer* wfb)
     } else {
         GLuint framebuffername = wfb->mGLName;
         gl->fBindFramebuffer(target, framebuffername);
-#ifdef ANDROID
-        wfb->mIsFB = true;
-#endif
     }
 
     switch (target) {
@@ -981,14 +978,6 @@ WebGLContext::IsFramebuffer(const WebGLFramebuffer* fb)
 {
     if (!ValidateIsObject("isFramebuffer", fb))
         return false;
-
-#ifdef ANDROID
-    if (gl->WorkAroundDriverBugs() &&
-        gl->Renderer() == GLRenderer::AndroidEmulator)
-    {
-        return fb->mIsFB;
-    }
-#endif
 
     MakeContextCurrent();
     return gl->fIsFramebuffer(fb->mGLName);

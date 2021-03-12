@@ -31,10 +31,6 @@
 #include "webrtc/voice_engine/voice_engine_impl.h"
 #include "webrtc/system_wrappers/interface/clock.h"
 
-#ifdef MOZ_WIDGET_ANDROID
-#include "AndroidJNIWrapper.h"
-#endif
-
 namespace mozilla {
 
 static const char* logTag ="WebrtcAudioSessionConduit";
@@ -260,17 +256,6 @@ bool WebrtcAudioConduit::InsertDTMFTone(int channel, int eventCode,
 MediaConduitErrorCode WebrtcAudioConduit::Init()
 {
   CSFLogDebug(logTag,  "%s this=%p", __FUNCTION__, this);
-
-#ifdef MOZ_WIDGET_ANDROID
-    jobject context = jsjni_GetGlobalContextRef();
-    // get the JVM
-    JavaVM *jvm = jsjni_GetVM();
-
-    if (webrtc::VoiceEngine::SetAndroidObjects(jvm, (void*)context) != 0) {
-      CSFLogError(logTag, "%s Unable to set Android objects", __FUNCTION__);
-      return kMediaConduitSessionNotInited;
-    }
-#endif
 
   // Per WebRTC APIs below function calls return nullptr on failure
   if(!(mVoiceEngine = webrtc::VoiceEngine::Create()))
