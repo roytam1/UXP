@@ -1,27 +1,10 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-/* Copyright 2013 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
-#include "pkixtestutil.h"
+#include "pkix/test/pkixtestutil.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -30,8 +13,8 @@
 #include <sstream>
 #include <cstdlib>
 
-#include "pkixder.h"
-#include "pkixutil.h"
+#include "pkix/pkixder.h"
+#include "pkix/pkixutil.h"
 
 using namespace std;
 
@@ -39,12 +22,14 @@ namespace mozilla { namespace pkix { namespace test {
 
 namespace {
 
-inline void
-fclose_void(FILE* file) {
-  (void) fclose(file);
-}
-
-typedef mozilla::pkix::ScopedPtr<FILE, fclose_void> ScopedFILE;
+struct ScopedMaybeDeleteFile {
+  void operator()(FILE* f) {
+    if (f) {
+      (void)fclose(f);
+    }
+  }
+};
+typedef std::unique_ptr<FILE, ScopedMaybeDeleteFile> ScopedFILE;
 
 FILE*
 OpenFile(const string& dir, const string& filename, const string& mode)
@@ -151,8 +136,8 @@ OCSPResponseExtension::OCSPResponseExtension()
 {
 }
 
-OCSPResponseContext::OCSPResponseContext(const CertID& certID, time_t time)
-  : certID(certID)
+OCSPResponseContext::OCSPResponseContext(const CertID& aCertID, time_t time)
+  : certID(aCertID)
   , responseStatus(successful)
   , skipResponseBytes(false)
   , producedAt(time)
@@ -248,7 +233,7 @@ Integer(long value)
 enum TimeEncoding { UTCTime = 0, GeneralizedTime = 1 };
 
 // Windows doesn't provide gmtime_r, but it provides something very similar.
-#if defined(WIN32) && !defined(_POSIX_THREAD_SAFE_FUNCTIONS)
+#if defined(_WINDOWS) && (!defined(_POSIX_C_SOURCE) || !defined(_POSIX_THREAD_SAFE_FUNCTIONS))
 static tm*
 gmtime_r(const time_t* t, /*out*/ tm* exploded)
 {
@@ -738,7 +723,7 @@ CreateEncodedSerialNumber(long serialNumberValue)
 //         pathLenConstraint       INTEGER (0..MAX) OPTIONAL }
 ByteString
 CreateEncodedBasicConstraints(bool isCA,
-                              /*optional*/ long* pathLenConstraintValue,
+                              /*optional in*/ const long* pathLenConstraintValue,
                               Critical critical)
 {
   ByteString value;
@@ -1139,11 +1124,11 @@ CertStatus(OCSPResponseContext& context)
 static const ByteString NO_UNUSED_BITS(1, 0x00);
 
 // The SubjectPublicKeyInfo syntax is specified in RFC 5280 Section 4.1.
-TestKeyPair::TestKeyPair(const TestPublicKeyAlgorithm& publicKeyAlg,
+TestKeyPair::TestKeyPair(const TestPublicKeyAlgorithm& aPublicKeyAlg,
                          const ByteString& spk)
-  : publicKeyAlg(publicKeyAlg)
+  : publicKeyAlg(aPublicKeyAlg)
   , subjectPublicKeyInfo(TLV(der::SEQUENCE,
-                             publicKeyAlg.algorithmIdentifier +
+                             aPublicKeyAlg.algorithmIdentifier +
                              TLV(der::BIT_STRING, NO_UNUSED_BITS + spk)))
   , subjectPublicKey(spk)
 {

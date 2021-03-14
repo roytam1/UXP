@@ -1,27 +1,10 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-/* Copyright 2014 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
-#include "pkixutil.h"
+#include "pkix/pkixutil.h"
 
 namespace mozilla { namespace pkix {
 
@@ -104,29 +87,24 @@ BackCert::Init()
     return rv;
   }
 
-  static const uint8_t CSC = der::CONTEXT_SPECIFIC | der::CONSTRUCTED;
-
   // According to RFC 5280, all fields below this line are forbidden for
   // certificate versions less than v3.  However, for compatibility reasons,
   // we parse v1/v2 certificates in the same way as v3 certificates.  So if
   // these fields appear in a v1 certificate, they will be used.
 
   // Ignore issuerUniqueID if present.
-  if (tbsCertificate.Peek(CSC | 1)) {
-    rv = der::ExpectTagAndSkipValue(tbsCertificate, CSC | 1);
-    if (rv != Success) {
-      return rv;
-    }
+  rv = der::SkipOptionalImplicitPrimitiveTag(tbsCertificate, 1);
+  if (rv != Success) {
+    return rv;
   }
 
   // Ignore subjectUniqueID if present.
-  if (tbsCertificate.Peek(CSC | 2)) {
-    rv = der::ExpectTagAndSkipValue(tbsCertificate, CSC | 2);
-    if (rv != Success) {
-      return rv;
-    }
+  rv = der::SkipOptionalImplicitPrimitiveTag(tbsCertificate, 2);
+  if (rv != Success) {
+    return rv;
   }
 
+  static const uint8_t CSC = der::CONTEXT_SPECIFIC | der::CONSTRUCTED;
   rv = der::OptionalExtensions(
          tbsCertificate, CSC | 3,
          [this](Reader& extnID, const Input& extnValue, bool critical,
@@ -156,7 +134,7 @@ BackCert::Init()
   // SSL Client          |  false                |  id_kp_clientAuth
   // S/MIME Client       |  false                |  id_kp_emailProtection
   // Object Signing      |  false                |  id_kp_codeSigning
-  // SSL Server CA       |  true                 |  id_pk_serverAuth
+  // SSL Server CA       |  true                 |  id_kp_serverAuth
   // SSL Client CA       |  true                 |  id_kp_clientAuth
   // S/MIME CA           |  true                 |  id_kp_emailProtection
   // Object Signing CA   |  true                 |  id_kp_codeSigning

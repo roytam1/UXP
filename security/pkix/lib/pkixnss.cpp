@@ -1,24 +1,7 @@
 /*- *- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-/* Copyright 2013 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 #include "pkix/pkixnss.h"
@@ -28,9 +11,9 @@
 #include "cryptohi.h"
 #include "keyhi.h"
 #include "pk11pub.h"
+#include "nss_scoped_ptrs.h"
 #include "pkix/pkix.h"
-#include "pkixutil.h"
-#include "ScopedPtr.h"
+#include "pkix/pkixutil.h"
 #include "secerr.h"
 #include "sslerr.h"
 
@@ -55,12 +38,12 @@ VerifySignedDigest(const SignedDigest& sd,
 
   SECItem subjectPublicKeyInfoSECItem =
     UnsafeMapInputToSECItem(subjectPublicKeyInfo);
-  ScopedPtr<CERTSubjectPublicKeyInfo, SECKEY_DestroySubjectPublicKeyInfo>
+  ScopedCERTSubjectPublicKeyInfo
     spki(SECKEY_DecodeDERSubjectPublicKeyInfo(&subjectPublicKeyInfoSECItem));
   if (!spki) {
     return MapPRErrorCodeToResult(PR_GetError());
   }
-  ScopedPtr<SECKEYPublicKey, SECKEY_DestroyPublicKey>
+  ScopedSECKEYPublicKey
     pubKey(SECKEY_ExtractPublicKey(spki.get()));
   if (!pubKey) {
     return MapPRErrorCodeToResult(PR_GetError());
@@ -210,6 +193,14 @@ RegisterErrorTable()
     { "MOZILLA_PKIX_ERROR_EMPTY_ISSUER_NAME",
       "The server presented a certificate with an empty issuer distinguished "
       "name." },
+    { "MOZILLA_PKIX_ERROR_ADDITIONAL_POLICY_CONSTRAINT_FAILED",
+      "An additional policy constraint failed when validating this "
+      "certificate." },
+    { "MOZILLA_PKIX_ERROR_SELF_SIGNED_CERT",
+      "The certificate is not trusted because it is self-signed." },
+    { "MOZILLA_PKIX_ERROR_MITM_DETECTED",
+      "Your connection is being intercepted by a TLS proxy. Uninstall it if "
+      "possible or configure your device to trust its root certificate." },
   };
   // Note that these error strings are not localizable.
   // When these strings change, update the localization information too.
