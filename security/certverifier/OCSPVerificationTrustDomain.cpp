@@ -35,7 +35,7 @@ OCSPVerificationTrustDomain::FindIssuer(Input, IssuerChecker&, Time)
 }
 
 Result
-OCSPVerificationTrustDomain::IsChainValid(const DERArray&, Time)
+OCSPVerificationTrustDomain::IsChainValid(const DERArray&, Time, const CertPolicyId&)
 {
   // We do not expect this to be called for OCSP signers
   return Result::FATAL_ERROR_LIBRARY_FAILURE;
@@ -44,7 +44,7 @@ OCSPVerificationTrustDomain::IsChainValid(const DERArray&, Time)
 Result
 OCSPVerificationTrustDomain::CheckRevocation(EndEntityOrCA, const CertID&,
                                              Time, Duration, const Input*,
-                                             const Input*)
+                                             const Input*, const Input*)
 {
   // We do not expect this to be called for OCSP signers
   return Result::FATAL_ERROR_LIBRARY_FAILURE;

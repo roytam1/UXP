@@ -1,24 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-/* Copyright 2013 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 #ifndef mozilla_pkix_Input_h
@@ -29,7 +12,8 @@
 #include "pkix/Result.h"
 #include "stdint.h"
 
-namespace mozilla { namespace pkix {
+namespace mozilla {
+namespace pkix {
 
 class Reader;
 
@@ -48,9 +32,8 @@ class Reader;
 //
 // Note that in the example, GoodExample has the same performance
 // characteristics as WorseExample, but with much better safety guarantees.
-class Input final
-{
-public:
+class Input final {
+ public:
   typedef uint16_t size_type;
 
   // This constructor is useful for inputs that are statically known to be of a
@@ -65,37 +48,28 @@ public:
   //   Input expected;
   //   Result rv = expected.Init(EXPECTED_BYTES, sizeof EXPECTED_BYTES);
   template <size_type N>
-  explicit Input(const uint8_t (&data)[N])
-    : data(data)
-    , len(N)
-  {
-  }
+  explicit Input(const uint8_t (&aData)[N]) : data(aData), len(N) {}
 
   // Construct a valid, empty, Init-able Input.
-  Input()
-    : data(nullptr)
-    , len(0u)
-  {
-  }
+  Input() : data(nullptr), len(0u) {}
 
   // This is intentionally not explicit in order to allow value semantics.
   Input(const Input&) = default;
 
   // Initialize the input. data must be non-null and len must be less than
   // 65536. Init may not be called more than once.
-  Result Init(const uint8_t* data, size_t len)
-  {
+  Result Init(const uint8_t* aData, size_t aLen) {
     if (this->data) {
       // already initialized
       return Result::FATAL_ERROR_INVALID_ARGS;
     }
-    if (!data || len > 0xffffu) {
+    if (!aData || aLen > 0xffffu) {
       // input too large
       return Result::ERROR_BAD_DER;
     }
 
-    this->data = data;
-    this->len = len;
+    this->data = aData;
+    this->len = aLen;
 
     return Success;
   }
@@ -106,10 +80,7 @@ public:
   // This is basically operator=, but it wasn't given that name because
   // normally callers do not check the result of operator=, and normally
   // operator= can be used multiple times.
-  Result Init(Input other)
-  {
-    return Init(other.data, other.len);
-  }
+  Result Init(Input other) { return Init(other.data, other.len); }
 
   // Returns the length of the input.
   //
@@ -121,18 +92,17 @@ public:
   // don't want to declare in this header file.
   const uint8_t* UnsafeGetData() const { return data; }
 
-private:
+ private:
   const uint8_t* data;
   size_t len;
 
-  void operator=(const Input&) = delete; // Use Init instead.
+  void operator=(const Input&) = delete;  // Use Init instead.
 };
 
-inline bool
-InputsAreEqual(const Input& a, const Input& b)
-{
+inline bool InputsAreEqual(const Input& a, const Input& b) {
   return a.GetLength() == b.GetLength() &&
-         std::equal(a.UnsafeGetData(), a.UnsafeGetData() + a.GetLength(), b.UnsafeGetData());
+         std::equal(a.UnsafeGetData(), a.UnsafeGetData() + a.GetLength(),
+                    b.UnsafeGetData());
 }
 
 // An Reader is a cursor/iterator through the contents of an Input, designed to
@@ -143,38 +113,28 @@ InputsAreEqual(const Input& a, const Input& b)
 //
 // In general, Reader allows for one byte of lookahead and no backtracking.
 // However, the Match* functions internally may have more lookahead.
-class Reader final
-{
-public:
-  Reader()
-    : input(nullptr)
-    , end(nullptr)
-  {
-  }
+class Reader final {
+ public:
+  Reader() : input(nullptr), end(nullptr) {}
 
-  explicit Reader(Input input)
-    : input(input.UnsafeGetData())
-    , end(input.UnsafeGetData() + input.GetLength())
-  {
-  }
+  explicit Reader(Input aInput)
+      : input(aInput.UnsafeGetData()),
+        end(aInput.UnsafeGetData() + aInput.GetLength()) {}
 
-  Result Init(Input input)
-  {
+  Result Init(Input aInput) {
     if (this->input) {
       return Result::FATAL_ERROR_INVALID_ARGS;
     }
-    this->input = input.UnsafeGetData();
-    this->end = input.UnsafeGetData() + input.GetLength();
+    this->input = aInput.UnsafeGetData();
+    this->end = aInput.UnsafeGetData() + aInput.GetLength();
     return Success;
   }
 
-  bool Peek(uint8_t expectedByte) const
-  {
+  bool Peek(uint8_t expectedByte) const {
     return input < end && *input == expectedByte;
   }
 
-  Result Read(uint8_t& out)
-  {
+  Result Read(uint8_t& out) {
     Result rv = EnsureLength(1);
     if (rv != Success) {
       return rv;
@@ -183,8 +143,7 @@ public:
     return Success;
   }
 
-  Result Read(uint16_t& out)
-  {
+  Result Read(uint16_t& out) {
     Result rv = EnsureLength(2);
     if (rv != Success) {
       return rv;
@@ -196,8 +155,7 @@ public:
   }
 
   template <Input::size_type N>
-  bool MatchRest(const uint8_t (&toMatch)[N])
-  {
+  bool MatchRest(const uint8_t (&toMatch)[N]) {
     // Normally we use EnsureLength which compares (input + len < end), but
     // here we want to be sure that there is nothing following the matched
     // bytes
@@ -211,8 +169,7 @@ public:
     return true;
   }
 
-  bool MatchRest(Input toMatch)
-  {
+  bool MatchRest(Input toMatch) {
     // Normally we use EnsureLength which compares (input + len < end), but
     // here we want to be sure that there is nothing following the matched
     // bytes
@@ -227,8 +184,7 @@ public:
     return true;
   }
 
-  Result Skip(Input::size_type len)
-  {
+  Result Skip(Input::size_type len) {
     Result rv = EnsureLength(len);
     if (rv != Success) {
       return rv;
@@ -237,22 +193,7 @@ public:
     return Success;
   }
 
-  Result Skip(Input::size_type len, Reader& skipped)
-  {
-    Result rv = EnsureLength(len);
-    if (rv != Success) {
-      return rv;
-    }
-    rv = skipped.Init(input, len);
-    if (rv != Success) {
-      return rv;
-    }
-    input += len;
-    return Success;
-  }
-
-  Result Skip(Input::size_type len, /*out*/ Input& skipped)
-  {
+  Result Skip(Input::size_type len, Reader& skipped) {
     Result rv = EnsureLength(len);
     if (rv != Success) {
       return rv;
@@ -265,18 +206,26 @@ public:
     return Success;
   }
 
-  void SkipToEnd()
-  {
-    input = end;
+  Result Skip(Input::size_type len, /*out*/ Input& skipped) {
+    Result rv = EnsureLength(len);
+    if (rv != Success) {
+      return rv;
+    }
+    rv = skipped.Init(input, len);
+    if (rv != Success) {
+      return rv;
+    }
+    input += len;
+    return Success;
   }
 
-  Result SkipToEnd(/*out*/ Input& skipped)
-  {
+  void SkipToEnd() { input = end; }
+
+  Result SkipToEnd(/*out*/ Input& skipped) {
     return Skip(static_cast<Input::size_type>(end - input), skipped);
   }
 
-  Result EnsureLength(Input::size_type len)
-  {
+  Result EnsureLength(Input::size_type len) {
     if (static_cast<size_t>(end - input) < len) {
       return Result::ERROR_BAD_DER;
     }
@@ -285,13 +234,13 @@ public:
 
   bool AtEnd() const { return input == end; }
 
-  class Mark final
-  {
-  public:
-    Mark(const Mark&) = default; // Intentionally not explicit.
-  private:
+  class Mark final {
+   public:
+    Mark(const Mark&) = default;  // Intentionally not explicit.
+   private:
     friend class Reader;
-    Mark(const Reader& input, const uint8_t* mark) : input(input), mark(mark) { }
+    Mark(const Reader& aInput, const uint8_t* aMark)
+        : input(aInput), mark(aMark) {}
     const Reader& input;
     const uint8_t* const mark;
     void operator=(const Mark&) = delete;
@@ -299,8 +248,7 @@ public:
 
   Mark GetMark() const { return Mark(*this, input); }
 
-  Result GetInput(const Mark& mark, /*out*/ Input& item)
-  {
+  Result GetInput(const Mark& mark, /*out*/ Input& item) {
     if (&mark.input != this || mark.mark > input) {
       return NotReached("invalid mark", Result::FATAL_ERROR_INVALID_ARGS);
     }
@@ -308,9 +256,8 @@ public:
                      static_cast<Input::size_type>(input - mark.mark));
   }
 
-private:
-  Result Init(const uint8_t* data, Input::size_type len)
-  {
+ private:
+  Result Init(const uint8_t* data, Input::size_type len) {
     if (input) {
       // already initialized
       return Result::FATAL_ERROR_INVALID_ARGS;
@@ -327,9 +274,7 @@ private:
   void operator=(const Reader&) = delete;
 };
 
-inline bool
-InputContains(const Input& input, uint8_t toFind)
-{
+inline bool InputContains(const Input& input, uint8_t toFind) {
   Reader reader(input);
   for (;;) {
     uint8_t b;
@@ -341,7 +286,7 @@ InputContains(const Input& input, uint8_t toFind)
     }
   }
 }
+}
+}  // namespace mozilla::pkix
 
-} } // namespace mozilla::pkix
-
-#endif // mozilla_pkix_Input_h
+#endif  // mozilla_pkix_Input_h

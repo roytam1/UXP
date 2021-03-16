@@ -1,27 +1,11 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-/* Copyright 2013 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
-#include "pkixtestutil.h"
+#include "pkix/test/pkixtestutil.h"
+#include "pkix/test/pkixtestnss.h"
 
 #include <limits>
 
@@ -30,9 +14,10 @@
 #include "nss.h"
 #include "pk11pqg.h"
 #include "pk11pub.h"
+#include "nss_scoped_ptrs.h"
 #include "pkix/pkixnss.h"
-#include "pkixder.h"
-#include "pkixutil.h"
+#include "pkix/pkixder.h"
+#include "pkix/pkixutil.h"
 #include "prinit.h"
 #include "secerr.h"
 #include "secitem.h"
@@ -40,19 +25,6 @@
 namespace mozilla { namespace pkix { namespace test {
 
 namespace {
-
-typedef ScopedPtr<SECKEYPublicKey, SECKEY_DestroyPublicKey>
-  ScopedSECKEYPublicKey;
-typedef ScopedPtr<SECKEYPrivateKey, SECKEY_DestroyPrivateKey>
-  ScopedSECKEYPrivateKey;
-
-inline void
-SECITEM_FreeItem_true(SECItem* item)
-{
-  SECITEM_FreeItem(item, true);
-}
-
-typedef mozilla::pkix::ScopedPtr<SECItem, SECITEM_FreeItem_true> ScopedSECItem;
 
 TestKeyPair* GenerateKeyPairInner();
 
@@ -77,12 +49,15 @@ InitReusedKeyPair()
 class NSSTestKeyPair final : public TestKeyPair
 {
 public:
-  // NSSTestKeyPair takes ownership of privateKey.
-  NSSTestKeyPair(const TestPublicKeyAlgorithm& publicKeyAlg,
+  NSSTestKeyPair(const TestPublicKeyAlgorithm& aPublicKeyAlg,
                  const ByteString& spk,
-                 SECKEYPrivateKey* privateKey)
-    : TestKeyPair(publicKeyAlg, spk)
-    , privateKey(privateKey)
+                 const ByteString& aEncryptedPrivateKey,
+                 const ByteString& aEncryptionAlgorithm,
+                 const ByteString& aEncryptionParams)
+    : TestKeyPair(aPublicKeyAlg, spk)
+    , encryptedPrivateKey(aEncryptedPrivateKey)
+    , encryptionAlgorithm(aEncryptionAlgorithm)
+    , encryptionParams(aEncryptionParams)
   {
   }
 
@@ -120,10 +95,50 @@ public:
       abort();
     }
 
+    ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+    if (!slot) {
+      return MapPRErrorCodeToResult(PR_GetError());
+    }
+    SECItem encryptedPrivateKeyInfoItem = {
+      siBuffer,
+      const_cast<uint8_t*>(encryptedPrivateKey.data()),
+      static_cast<unsigned int>(encryptedPrivateKey.length())
+    };
+    SECItem encryptionAlgorithmItem = {
+      siBuffer,
+      const_cast<uint8_t*>(encryptionAlgorithm.data()),
+      static_cast<unsigned int>(encryptionAlgorithm.length())
+    };
+    SECItem encryptionParamsItem = {
+      siBuffer,
+      const_cast<uint8_t*>(encryptionParams.data()),
+      static_cast<unsigned int>(encryptionParams.length())
+    };
+    SECKEYEncryptedPrivateKeyInfo encryptedPrivateKeyInfo = {
+      nullptr,
+      { encryptionAlgorithmItem, encryptionParamsItem },
+      encryptedPrivateKeyInfoItem
+    };
+    SECItem passwordItem = { siBuffer, nullptr, 0 };
+    SECItem publicValueItem = {
+      siBuffer,
+      const_cast<uint8_t*>(subjectPublicKey.data()),
+      static_cast<unsigned int>(subjectPublicKey.length())
+    };
+    SECKEYPrivateKey* privateKey;
+    // This should always be an RSA key (we'll have aborted above if we're not
+    // doing an RSA signature).
+    if (PK11_ImportEncryptedPrivateKeyInfoAndReturnKey(
+          slot.get(), &encryptedPrivateKeyInfo, &passwordItem, nullptr,
+          &publicValueItem, false, false, rsaKey, KU_ALL, &privateKey,
+          nullptr) != SECSuccess) {
+      return MapPRErrorCodeToResult(PR_GetError());
+    }
+    ScopedSECKEYPrivateKey scopedPrivateKey(privateKey);
     SECItem signatureItem;
     if (SEC_SignData(&signatureItem, tbs.data(),
                      static_cast<int>(tbs.length()),
-                     privateKey.get(), oidTag) != SECSuccess) {
+                     scopedPrivateKey.get(), oidTag) != SECSuccess) {
       return MapPRErrorCodeToResult(PR_GetError());
     }
     signature.assign(signatureItem.data, signatureItem.len);
@@ -133,40 +148,63 @@ public:
 
   TestKeyPair* Clone() const override
   {
-    ScopedSECKEYPrivateKey
-      privateKeyCopy(SECKEY_CopyPrivateKey(privateKey.get()));
-    if (!privateKeyCopy) {
-      return nullptr;
-    }
     return new (std::nothrow) NSSTestKeyPair(publicKeyAlg,
                                              subjectPublicKey,
-                                             privateKeyCopy.release());
+                                             encryptedPrivateKey,
+                                             encryptionAlgorithm,
+                                             encryptionParams);
   }
 
 private:
-  ScopedSECKEYPrivateKey privateKey;
+  const ByteString encryptedPrivateKey;
+  const ByteString encryptionAlgorithm;
+  const ByteString encryptionParams;
 };
 
 } // namespace
 
 // This private function is also used by Gecko's PSM test framework
 // (OCSPCommon.cpp).
-//
-// Ownership of privateKey is transfered.
 TestKeyPair* CreateTestKeyPair(const TestPublicKeyAlgorithm publicKeyAlg,
-                               const SECKEYPublicKey& publicKey,
-                               SECKEYPrivateKey* privateKey)
+                               const ScopedSECKEYPublicKey& publicKey,
+                               const ScopedSECKEYPrivateKey& privateKey)
 {
-  ScopedPtr<CERTSubjectPublicKeyInfo, SECKEY_DestroySubjectPublicKeyInfo>
-    spki(SECKEY_CreateSubjectPublicKeyInfo(&publicKey));
+  ScopedCERTSubjectPublicKeyInfo
+    spki(SECKEY_CreateSubjectPublicKeyInfo(publicKey.get()));
   if (!spki) {
     return nullptr;
   }
   SECItem spkDER = spki->subjectPublicKey;
   DER_ConvertBitString(&spkDER); // bits to bytes
-  return new (std::nothrow) NSSTestKeyPair(publicKeyAlg,
-                                           ByteString(spkDER.data, spkDER.len),
-                                           privateKey);
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  if (!slot) {
+    return nullptr;
+  }
+  // Because NSSTestKeyPair isn't tracked by XPCOM and won't otherwise be aware
+  // of shutdown, we don't have a way to release NSS resources at the
+  // appropriate time. To work around this, NSSTestKeyPair doesn't hold on to
+  // NSS resources. Instead, we export the generated private key part as an
+  // encrypted blob (with an empty password and fairly lame encryption). When we
+  // need to use it (e.g. to sign something), we decrypt it and create a
+  // temporary key object.
+  SECItem passwordItem = { siBuffer, nullptr, 0 };
+  ScopedSECKEYEncryptedPrivateKeyInfo encryptedPrivateKey(
+    PK11_ExportEncryptedPrivKeyInfo(
+      slot.get(), SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_3KEY_TRIPLE_DES_CBC,
+      &passwordItem, privateKey.get(), 1, nullptr));
+  if (!encryptedPrivateKey) {
+    return nullptr;
+  }
+
+  return new (std::nothrow) NSSTestKeyPair(
+    publicKeyAlg,
+    ByteString(spkDER.data, spkDER.len),
+    ByteString(encryptedPrivateKey->encryptedData.data,
+               encryptedPrivateKey->encryptedData.len),
+    ByteString(encryptedPrivateKey->algorithm.algorithm.data,
+               encryptedPrivateKey->algorithm.algorithm.len),
+    ByteString(encryptedPrivateKey->algorithm.parameters.data,
+               encryptedPrivateKey->algorithm.parameters.len));
 }
 
 namespace {
@@ -174,18 +212,18 @@ namespace {
 TestKeyPair*
 GenerateKeyPairInner()
 {
-  ScopedPtr<PK11SlotInfo, PK11_FreeSlot> slot(PK11_GetInternalSlot());
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
   if (!slot) {
     abort();
   }
+  PK11RSAGenParams params;
+  params.keySizeInBits = 2048;
+  params.pe = 65537;
 
   // Bug 1012786: PK11_GenerateKeyPair can fail if there is insufficient
   // entropy to generate a random key. Attempting to add some entropy and
   // retrying appears to solve this issue.
   for (uint32_t retries = 0; retries < 10; retries++) {
-    PK11RSAGenParams params;
-    params.keySizeInBits = 2048;
-    params.pe = 3;
     SECKEYPublicKey* publicKeyTemp = nullptr;
     ScopedSECKEYPrivateKey
       privateKey(PK11_GenerateKeyPair(slot.get(), CKM_RSA_PKCS_KEY_PAIR_GEN,
@@ -193,7 +231,7 @@ GenerateKeyPairInner()
                                       nullptr));
     ScopedSECKEYPublicKey publicKey(publicKeyTemp);
     if (privateKey) {
-      return CreateTestKeyPair(RSA_PKCS1(), *publicKey, privateKey.release());
+      return CreateTestKeyPair(RSA_PKCS1(), publicKey, privateKey);
     }
 
     assert(!publicKeyTemp);
@@ -206,8 +244,9 @@ GenerateKeyPairInner()
     // random keys.
     // https://xkcd.com/221/
     static const uint8_t RANDOM_NUMBER[] = { 4, 4, 4, 4, 4, 4, 4, 4 };
-    if (PK11_RandomUpdate((void*) &RANDOM_NUMBER,
-                          sizeof(RANDOM_NUMBER)) != SECSuccess) {
+    if (PK11_RandomUpdate(
+          const_cast<void*>(reinterpret_cast<const void*>(RANDOM_NUMBER)),
+          sizeof(RANDOM_NUMBER)) != SECSuccess) {
       break;
     }
   }
@@ -240,7 +279,7 @@ GenerateDSSKeyPair()
 {
   InitNSSIfNeeded();
 
-  ScopedPtr<PK11SlotInfo, PK11_FreeSlot> slot(PK11_GetInternalSlot());
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
   if (!slot) {
     return nullptr;
   }
@@ -274,7 +313,7 @@ GenerateDSSKeyPair()
     return nullptr;
   }
   ScopedSECKEYPublicKey publicKey(publicKeyTemp);
-  return CreateTestKeyPair(DSS(), *publicKey, privateKey.release());
+  return CreateTestKeyPair(DSS(), publicKey, privateKey);
 }
 
 Result

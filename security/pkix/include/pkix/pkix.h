@@ -1,32 +1,16 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-/* Copyright 2013 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 #ifndef mozilla_pkix_pkix_h
 #define mozilla_pkix_pkix_h
 
-#include "pkixtypes.h"
+#include "pkix/pkixtypes.h"
 
-namespace mozilla { namespace pkix {
+namespace mozilla {
+namespace pkix {
 
 // ----------------------------------------------------------------------------
 // LIMITED SUPPORT FOR CERTIFICATE POLICIES
@@ -102,8 +86,8 @@ namespace mozilla { namespace pkix {
 //  requiredPolicy:
 //         This is the policy to apply; typically included in EV certificates.
 //         If there is no policy, pass in CertPolicyId::anyPolicy.
-Result BuildCertChain(TrustDomain& trustDomain, Input cert,
-                      Time time, EndEntityOrCA endEntityOrCA,
+Result BuildCertChain(TrustDomain& trustDomain, Input cert, Time time,
+                      EndEntityOrCA endEntityOrCA,
                       KeyUsage requiredKeyUsageIfPresent,
                       KeyPurposeId requiredEKUIfPresent,
                       const CertPolicyId& requiredPolicy,
@@ -121,8 +105,7 @@ Result CheckCertHostname(Input cert, Input hostname,
 // Construct an RFC-6960-encoded OCSP request, ready for submission to a
 // responder, for the provided CertID. The request has no extensions.
 static const size_t OCSP_REQUEST_MAX_LENGTH = 127;
-Result CreateEncodedOCSPRequest(TrustDomain& trustDomain,
-                                const CertID& certID,
+Result CreateEncodedOCSPRequest(TrustDomain& trustDomain, const CertID& certID,
                                 /*out*/ uint8_t (&out)[OCSP_REQUEST_MAX_LENGTH],
                                 /*out*/ size_t& outLen);
 
@@ -139,13 +122,12 @@ Result CreateEncodedOCSPRequest(TrustDomain& trustDomain,
 // which the encoded response is considered trustworthy (that is, as long as
 // the given time at which to validate is less than or equal to validThrough,
 // the response will be considered trustworthy).
-Result VerifyEncodedOCSPResponse(TrustDomain& trustDomain,
-                                 const CertID& certID, Time time,
-                                 uint16_t maxLifetimeInDays,
-                                 Input encodedResponse,
-                       /* out */ bool& expired,
-              /* optional out */ Time* thisUpdate = nullptr,
-              /* optional out */ Time* validThrough = nullptr);
+Result VerifyEncodedOCSPResponse(
+    TrustDomain& trustDomain, const CertID& certID, Time time,
+    uint16_t maxLifetimeInDays, Input encodedResponse,
+    /* out */ bool& expired,
+    /* optional out */ Time* thisUpdate = nullptr,
+    /* optional out */ Time* validThrough = nullptr);
 
 // Check that the TLSFeature extensions in a given end-entity cert (which is
 // assumed to have been already validated with BuildCertChain) are satisfied.
@@ -154,7 +136,7 @@ Result VerifyEncodedOCSPResponse(TrustDomain& trustDomain,
 // requirement for another value. Empty extensions are also rejected.
 Result CheckTLSFeaturesAreSatisfied(Input& cert,
                                     const Input* stapledOCSPResponse);
+}
+}  // namespace mozilla::pkix
 
-} } // namespace mozilla::pkix
-
-#endif // mozilla_pkix_pkix_h
+#endif  // mozilla_pkix_pkix_h
