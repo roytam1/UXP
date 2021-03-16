@@ -293,6 +293,7 @@ AppTrustDomain::DigestBuf(Input item,
 Result
 AppTrustDomain::CheckRevocation(EndEntityOrCA, const CertID&, Time, Duration,
                                 /*optional*/ const Input*,
+                                /*optional*/ const Input*,
                                 /*optional*/ const Input*)
 {
   // We don't currently do revocation checking. If we need to distrust an Apps
@@ -301,7 +302,8 @@ AppTrustDomain::CheckRevocation(EndEntityOrCA, const CertID&, Time, Duration,
 }
 
 Result
-AppTrustDomain::IsChainValid(const DERArray& certChain, Time time)
+AppTrustDomain::IsChainValid(const DERArray& certChain, Time time,
+                             const CertPolicyId& requiredPolicy)
 {
   SECStatus srv = ConstructCERTCertListFromReversedDERArray(certChain,
                                                             mCertChain);

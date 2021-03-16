@@ -1,29 +1,13 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-/* Copyright 2015 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
-#include "pkixtestutil.h"
+#include "pkix/test/pkixtestutil.h"
 
-#include "pkixder.h"
+#include "pkix/pkixder.h"
+#include "nss_scoped_ptrs.h"
 
 // python DottedOIDToCode.py --prefixdefine PREFIX_1_2_840_10040 1.2.840.10040
 #define PREFIX_1_2_840_10040 0x2a, 0x86, 0x48, 0xce, 0x38
@@ -136,14 +120,14 @@ static const uint8_t DSS_G_RAW[] =
 } // namespace
 
 TestSignatureAlgorithm::TestSignatureAlgorithm(
-  const TestPublicKeyAlgorithm& publicKeyAlg,
-  TestDigestAlgorithmID digestAlg,
-  const ByteString& algorithmIdentifier,
-  bool accepted)
-  : publicKeyAlg(publicKeyAlg)
-  , digestAlg(digestAlg)
-  , algorithmIdentifier(algorithmIdentifier)
-  , accepted(accepted)
+  const TestPublicKeyAlgorithm& aPublicKeyAlg,
+  TestDigestAlgorithmID aDigestAlg,
+  const ByteString& aAlgorithmIdentifier,
+  bool aAccepted)
+  : publicKeyAlg(aPublicKeyAlg)
+  , digestAlg(aDigestAlg)
+  , algorithmIdentifier(aAlgorithmIdentifier)
+  , accepted(aAccepted)
 {
 }
 

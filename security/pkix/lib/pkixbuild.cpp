@@ -1,30 +1,13 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-/* Copyright 2013 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 #include "pkix/pkix.h"
 
-#include "pkixcheck.h"
-#include "pkixutil.h"
+#include "pkix/pkixcheck.h"
+#include "pkix/pkixutil.h"
 
 namespace mozilla { namespace pkix {
 
@@ -35,7 +18,8 @@ static Result BuildForward(TrustDomain& trustDomain,
                            KeyPurposeId requiredEKUIfPresent,
                            const CertPolicyId& requiredPolicy,
                            /*optional*/ const Input* stapledOCSPResponse,
-                           unsigned int subCACount);
+                           unsigned int subCACount,
+                           unsigned int& buildForwardCallBudget);
 
 TrustDomain::IssuerChecker::IssuerChecker() { }
 TrustDomain::IssuerChecker::~IssuerChecker() { }
@@ -45,21 +29,24 @@ TrustDomain::IssuerChecker::~IssuerChecker() { }
 class PathBuildingStep final : public TrustDomain::IssuerChecker
 {
 public:
-  PathBuildingStep(TrustDomain& trustDomain, const BackCert& subject,
-                   Time time, KeyPurposeId requiredEKUIfPresent,
-                   const CertPolicyId& requiredPolicy,
-                   /*optional*/ const Input* stapledOCSPResponse,
-                   unsigned int subCACount, Result deferredSubjectError)
-    : trustDomain(trustDomain)
-    , subject(subject)
-    , time(time)
-    , requiredEKUIfPresent(requiredEKUIfPresent)
-    , requiredPolicy(requiredPolicy)
-    , stapledOCSPResponse(stapledOCSPResponse)
-    , subCACount(subCACount)
-    , deferredSubjectError(deferredSubjectError)
+  PathBuildingStep(TrustDomain& aTrustDomain, const BackCert& aSubject,
+                   Time aTime, KeyPurposeId aRequiredEKUIfPresent,
+                   const CertPolicyId& aRequiredPolicy,
+                   /*optional*/ const Input* aStapledOCSPResponse,
+                   unsigned int aSubCACount, Result aDeferredSubjectError,
+                   unsigned int& aBuildForwardCallBudget)
+    : trustDomain(aTrustDomain)
+    , subject(aSubject)
+    , time(aTime)
+    , requiredEKUIfPresent(aRequiredEKUIfPresent)
+    , requiredPolicy(aRequiredPolicy)
+    , stapledOCSPResponse(aStapledOCSPResponse)
+    , subCACount(aSubCACount)
+    , deferredSubjectError(aDeferredSubjectError)
+    , subjectSignaturePublicKeyAlg(der::PublicKeyAlgorithm::Uninitialized)
     , result(Result::FATAL_ERROR_LIBRARY_FAILURE)
     , resultWasSet(false)
+    , buildForwardCallBudget(aBuildForwardCallBudget)
   {
   }
 
@@ -87,6 +74,7 @@ private:
   Result RecordResult(Result currentResult, /*out*/ bool& keepGoing);
   Result result;
   bool resultWasSet;
+  unsigned int& buildForwardCallBudget;
 
   PathBuildingStep(const PathBuildingStep&) = delete;
   void operator=(const PathBuildingStep&) = delete;
@@ -160,9 +148,8 @@ PathBuildingStep::Check(Input potentialIssuerDER,
   // Loop prevention, done as recommended by RFC4158 Section 5.2
   // TODO: this doesn't account for subjectAltNames!
   // TODO(perf): This probably can and should be optimized in some way.
-  bool loopDetected = false;
-  for (const BackCert* prev = potentialIssuer.childCert;
-       !loopDetected && prev != nullptr; prev = prev->childCert) {
+  for (const BackCert* prev = potentialIssuer.childCert; prev;
+       prev = prev->childCert) {
     if (InputsAreEqual(potentialIssuer.GetSubjectPublicKeyInfo(),
                        prev->GetSubjectPublicKeyInfo()) &&
         InputsAreEqual(potentialIssuer.GetSubject(), prev->GetSubject())) {
@@ -192,11 +179,20 @@ PathBuildingStep::Check(Input potentialIssuerDER,
     return RecordResult(rv, keepGoing);
   }
 
+  // If we've ran out of budget, stop searching.
+  if (buildForwardCallBudget == 0) {
+    Result savedRv = RecordResult(Result::ERROR_UNKNOWN_ISSUER, keepGoing);
+    keepGoing = false;
+    return savedRv;
+  }
+  buildForwardCallBudget--;
+
   // RFC 5280, Section 4.2.1.3: "If the keyUsage extension is present, then the
   // subject public key MUST NOT be used to verify signatures on certificates
   // or CRLs unless the corresponding keyCertSign or cRLSign bit is set."
   rv = BuildForward(trustDomain, potentialIssuer, time, KeyUsage::keyCertSign,
-                    requiredEKUIfPresent, requiredPolicy, nullptr, subCACount);
+                    requiredEKUIfPresent, requiredPolicy, nullptr, subCACount,
+                    buildForwardCallBudget);
   if (rv != Success) {
     return RecordResult(rv, keepGoing);
   }
@@ -239,9 +235,15 @@ PathBuildingStep::Check(Input potentialIssuerDER,
     Duration validityDuration(notAfter, notBefore);
     rv = trustDomain.CheckRevocation(subject.endEntityOrCA, certID, time,
                                      validityDuration, stapledOCSPResponse,
-                                     subject.GetAuthorityInfoAccess());
+                                     subject.GetAuthorityInfoAccess(),
+                                     subject.GetSignedCertificateTimestamps());
     if (rv != Success) {
-      return RecordResult(rv, keepGoing);
+      // Since this is actually a problem with the current subject certificate
+      // (rather than the issuer), it doesn't make sense to keep going; all
+      // paths through this certificate will fail.
+      Result savedRv = RecordResult(rv, keepGoing);
+      keepGoing = false;
+      return savedRv;
     }
 
     if (subject.endEntityOrCA == EndEntityOrCA::MustBeEndEntity) {
@@ -251,7 +253,11 @@ PathBuildingStep::Check(Input potentialIssuerDER,
         rv = ExtractSignedCertificateTimestampListFromExtension(*sctExtension,
                                                                 sctList);
         if (rv != Success) {
-          return RecordResult(rv, keepGoing);
+          // Again, the problem is with this certificate, and all paths through
+          // it will fail.
+          Result savedRv = RecordResult(rv, keepGoing);
+          keepGoing = false;
+          return savedRv;
         }
         trustDomain.NoteAuxiliaryExtension(AuxiliaryExtension::EmbeddedSCTList,
                                            sctList);
@@ -276,7 +282,8 @@ BuildForward(TrustDomain& trustDomain,
              KeyPurposeId requiredEKUIfPresent,
              const CertPolicyId& requiredPolicy,
              /*optional*/ const Input* stapledOCSPResponse,
-             unsigned int subCACount)
+             unsigned int subCACount,
+             unsigned int& buildForwardCallBudget)
 {
   Result rv;
 
@@ -311,7 +318,7 @@ BuildForward(TrustDomain& trustDomain,
 
     // This must be done here, after the chain is built but before any
     // revocation checks have been done.
-    return trustDomain.IsChainValid(chain, time);
+    return trustDomain.IsChainValid(chain, time, requiredPolicy);
   }
 
   if (subject.endEntityOrCA == EndEntityOrCA::MustBeCA) {
@@ -334,7 +341,7 @@ BuildForward(TrustDomain& trustDomain,
   PathBuildingStep pathBuilder(trustDomain, subject, time,
                                requiredEKUIfPresent, requiredPolicy,
                                stapledOCSPResponse, subCACount,
-                               deferredEndEntityError);
+                               deferredEndEntityError, buildForwardCallBudget);
 
   // TODO(bug 965136): Add SKI/AKI matching optimizations
   rv = trustDomain.FindIssuer(subject.GetIssuer(), pathBuilder, time);
@@ -373,9 +380,22 @@ BuildCertChain(TrustDomain& trustDomain, Input certDER,
     return rv;
   }
 
+  // See bug 1056341 for context. If mozilla::pkix is being used in an
+  // environment where there are many certificates that all have the same
+  // distinguished name as their subject and issuer (but different SPKIs - see
+  // the loop prevention as per RFC4158 Section 5.2 in PathBuildingStep::Check),
+  // the space to search becomes exponential. Because it would be prohibitively
+  // expensive to explore the entire space, we introduce a budget here that,
+  // when exhausted, terminates the search with the result
+  // Result::ERROR_UNKNOWN_ISSUER. Essentially, we limit the total number of
+  // times `BuildForward` can be called. The current value appears to be a good
+  // balance between finding a path when one exists (when the space isn't too
+  // large) and timing out quickly enough when the space is too large or there
+  // is no valid path to a trust anchor.
+  unsigned int buildForwardCallBudget = 200000;
   return BuildForward(trustDomain, cert, time, requiredKeyUsageIfPresent,
                       requiredEKUIfPresent, requiredPolicy, stapledOCSPResponse,
-                      0/*subCACount*/);
+                      0/*subCACount*/, buildForwardCallBudget);
 }
 
 } } // namespace mozilla::pkix
