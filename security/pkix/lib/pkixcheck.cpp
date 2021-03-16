@@ -1,30 +1,13 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-/* Copyright 2013 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
-#include "pkixcheck.h"
+#include "pkix/pkixcheck.h"
 
-#include "pkixder.h"
-#include "pkixutil.h"
+#include "pkix/pkixder.h"
+#include "pkix/pkixutil.h"
 
 namespace mozilla { namespace pkix {
 
@@ -116,7 +99,11 @@ CheckSignatureAlgorithm(TrustDomain& trustDomain,
       // for any curve that we support, the chances of us encountering a curve
       // during path building is too low to be worth bothering with.
       break;
-
+    case der::PublicKeyAlgorithm::Uninitialized:
+    {
+      assert(false);
+      return Result::FATAL_ERROR_LIBRARY_FAILURE;
+    }
     MOZILLA_PKIX_UNREACHABLE_DEFAULT_ENUM
   }
 
@@ -338,15 +325,16 @@ CheckSubjectPublicKeyInfoContents(Reader& input, TrustDomain& trustDomain,
                      [&trustDomain, endEntityOrCA](Reader& r) {
       Input modulus;
       Input::size_type modulusSignificantBytes;
-      Result rv = der::PositiveInteger(r, modulus, &modulusSignificantBytes);
-      if (rv != Success) {
-        return rv;
+      Result nestedRv =
+        der::PositiveInteger(r, modulus, &modulusSignificantBytes);
+      if (nestedRv != Success) {
+        return nestedRv;
       }
       // XXX: Should we do additional checks of the modulus?
-      rv = trustDomain.CheckRSAPublicKeyModulusSizeInBits(
-             endEntityOrCA, modulusSignificantBytes * 8u);
-      if (rv != Success) {
-        return rv;
+      nestedRv = trustDomain.CheckRSAPublicKeyModulusSizeInBits(
+        endEntityOrCA, modulusSignificantBytes * 8u);
+      if (nestedRv != Success) {
+        return nestedRv;
       }
 
       // XXX: We don't allow the TrustDomain to validate the exponent.
@@ -531,6 +519,13 @@ CertPolicyId::IsAnyPolicy() const {
          std::equal(bytes, bytes + numBytes, ::mozilla::pkix::anyPolicy);
 }
 
+bool
+CertPolicyId::operator==(const CertPolicyId& other) const
+{
+  return numBytes == other.numBytes &&
+         std::equal(bytes, bytes + numBytes, other.bytes);
+}
+
 // certificatePolicies ::= SEQUENCE SIZE (1..MAX) OF PolicyInformation
 Result
 CheckCertificatePolicies(EndEntityOrCA endEntityOrCA,
@@ -644,9 +639,9 @@ CheckBasicConstraints(EndEntityOrCA endEntityOrCA,
     Reader input(*encodedBasicConstraints);
     Result rv = der::Nested(input, der::SEQUENCE,
                             [&isCA, &pathLenConstraint](Reader& r) {
-      Result rv = der::OptionalBoolean(r, isCA);
-      if (rv != Success) {
-        return rv;
+      Result nestedRv = der::OptionalBoolean(r, isCA);
+      if (nestedRv != Success) {
+        return nestedRv;
       }
       // TODO(bug 985025): If isCA is false, pathLenConstraint
       // MUST NOT be included (as per RFC 5280 section

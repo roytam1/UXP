@@ -13,7 +13,7 @@
 #include "mozilla/RangedPtr.h"
 #include "mozilla/Vector.h"
 #include "pkix/pkixnss.h"
-#include "pkixutil.h"
+#include "pkix/pkixutil.h"
 
 namespace mozilla { namespace ct {
 

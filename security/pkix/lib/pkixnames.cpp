@@ -1,24 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* This code is made available to you under your choice of the following sets
- * of licensing terms:
- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-/* Copyright 2014 Mozilla Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 // This code implements RFC6125-ish name matching, RFC5280-ish name constraint
@@ -33,8 +16,10 @@
 // constraints, the reference identifier is the entire encoded name constraint
 // extension value.
 
-#include "pkixcheck.h"
-#include "pkixutil.h"
+#include <algorithm>
+
+#include "pkix/pkixcheck.h"
+#include "pkix/pkixutil.h"
 
 namespace mozilla { namespace pkix {
 
@@ -1607,12 +1592,12 @@ StartsWithIDNALabel(Input id)
 {
   static const uint8_t IDN_ALABEL_PREFIX[4] = { 'x', 'n', '-', '-' };
   Reader input(id);
-  for (size_t i = 0; i < sizeof(IDN_ALABEL_PREFIX); ++i) {
+  for (const uint8_t prefixByte : IDN_ALABEL_PREFIX) {
     uint8_t b;
     if (input.Read(b) != Success) {
       return false;
     }
-    if (b != IDN_ALABEL_PREFIX[i]) {
+    if (b != prefixByte) {
       return false;
     }
   }
@@ -1704,11 +1689,9 @@ FinishIPv6Address(/*in/out*/ uint8_t (&address)[16], int numComponents,
   }
 
   // Shift components that occur after the contraction over.
-  size_t componentsToMove = static_cast<size_t>(numComponents -
-                                                contractionIndex);
-  memmove(address + (2u * static_cast<size_t>(8 - componentsToMove)),
-          address + (2u * static_cast<size_t>(contractionIndex)),
-          componentsToMove * 2u);
+  std::copy_backward(address + (2u * static_cast<size_t>(contractionIndex)),
+                     address + (2u * static_cast<size_t>(numComponents)),
+                     address + (2u * 8u));
   // Fill in the contracted area with zeros.
   std::fill_n(address + 2u * static_cast<size_t>(contractionIndex),
               (8u - static_cast<size_t>(numComponents)) * 2u, static_cast<uint8_t>(0u));
