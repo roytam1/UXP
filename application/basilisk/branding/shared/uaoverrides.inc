@@ -17,8 +17,8 @@ pref("@GUAO_PREF@.addons.mozilla.org", "Mozilla/5.0 (%OS_SLICE% rv:@GK_VERSION@)
 
 // Required for domains that have proven unresponsive to requests from users (notice a trend...? ;) )
 pref("@GUAO_PREF@.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:62.0) @GK_SLICE@ Firefox/62.0 @APP_SLICE@");
-pref("@GUAO_PREF@.studio.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:71.0) @GK_SLICE@ Firefox/71.0 @APP_SLICE@");
 pref("@GUAO_PREF@.gaming.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:71.0) @GK_SLICE@ Firefox/71.0 @APP_SLICE@");
+pref("@GUAO_PREF@.studio.youtube.com","Mozilla/5.0 (%OS_SLICE% rv:68.0) @GK_SLICE@ @GRE_VERSION_SLICE@ Firefox/68.0 @APP_SLICE@");
 pref("@GUAO_PREF@.netflix.com","Mozilla/5.0 (Windows NT 6.1; rv:42.0) @GK_SLICE@ Firefox/42.0 @APP_SLICE@");
 pref("@GUAO_PREF@.netflximg.net","Mozilla/5.0 (Windows NT 6.1; rv:42.0) @GK_SLICE@ Firefox/42.0 @APP_SLICE@");
 pref("@GUAO_PREF@.google.com","Mozilla/5.0 (%OS_SLICE% rv:71.0) @GK_SLICE@ Firefox/71.0 @APP_SLICE@");
