@@ -2453,7 +2453,7 @@ pref("layout.css.isolation.enabled", true);
 pref("layout.css.filters.enabled", true);
 
 // Is support for scrollbar-width property enabled?
-pref("layout.css.scrollbar-width.enabled", false);
+pref("layout.css.scrollbar-width.enabled", true);
 
 // Set the threshold distance in CSS pixels below which scrolling will snap to
 // an edge, when scroll snapping is set to "proximity".
