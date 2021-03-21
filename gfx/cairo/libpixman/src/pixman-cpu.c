@@ -1,19 +1,20 @@
 /*
  * Copyright © 2000 SuSE, Inc.
  * Copyright © 2007 Red Hat, Inc.
+ * Copyright © 2021 Moonchild Productions
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of SuSE not be used in advertising or
+ * documentation, and that the names of the authors not be used in advertising or
  * publicity pertaining to distribution of the software without specific,
- * written prior permission.  SuSE makes no representations about the
+ * written prior permission.  The authors make no representations about the
  * suitability of this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
  *
- * SuSE DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL SuSE
+ * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL THE AUTHORS
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
@@ -290,7 +291,7 @@ pixman_have_arm_iwmmxt (void)
 #endif
 }
 
-#elif defined (__linux__) || defined(__ANDROID__) || defined(ANDROID) /* linux ELF or ANDROID */
+#elif defined (__linux__) /* linux ELF */
 
 static pixman_bool_t arm_has_v7 = FALSE;
 static pixman_bool_t arm_has_v6 = FALSE;
@@ -298,39 +299,6 @@ static pixman_bool_t arm_has_vfp = FALSE;
 static pixman_bool_t arm_has_neon = FALSE;
 static pixman_bool_t arm_has_iwmmxt = FALSE;
 static pixman_bool_t arm_tests_initialized = FALSE;
-
-#if defined(__ANDROID__) || defined(ANDROID) /* Android device support */
-
-static void
-pixman_arm_read_auxv_or_cpu_features ()
-{
-    char buf[1024];
-    char* pos;
-    const char* ver_token = "CPU architecture: ";
-    FILE* f = fopen("/proc/cpuinfo", "r");
-    if (!f) {
-	arm_tests_initialized = TRUE;
-	return;
-    }
-
-    fread(buf, sizeof(char), sizeof(buf), f);
-    fclose(f);
-    pos = strstr(buf, ver_token);
-    if (pos) {
-	char vchar = *(pos + strlen(ver_token));
-	if (vchar >= '0' && vchar <= '9') {
-	    int ver = vchar - '0';
-	    arm_has_v7 = ver >= 7;
-	    arm_has_v6 = ver >= 6;
-	}
-    }
-    arm_has_neon = strstr(buf, "neon") != NULL;
-    arm_has_vfp = strstr(buf, "vfp") != NULL;
-    arm_has_iwmmxt = strstr(buf, "iwmmxt") != NULL;
-    arm_tests_initialized = TRUE;
-}
-
-#elif defined (__linux__) /* linux ELF */
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -382,8 +350,6 @@ pixman_arm_read_auxv_or_cpu_features ()
     arm_tests_initialized = TRUE;
 }
 
-#endif /* Linux elf */
-
 #if defined(USE_ARM_SIMD)
 pixman_bool_t
 pixman_have_arm_simd (void)
@@ -420,7 +386,7 @@ pixman_have_arm_iwmmxt (void)
 
 #endif /* USE_ARM_IWMMXT */
 
-#else /* !_MSC_VER && !Linux elf && !Android */
+#else /* !_MSC_VER && !Linux elf */
 
 #define pixman_have_arm_simd() FALSE
 #define pixman_have_arm_neon() FALSE

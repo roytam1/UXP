@@ -1,6 +1,7 @@
 /*
  * Copyright © 2007,2008,2009  Red Hat, Inc.
  * Copyright © 2011,2012  Google, Inc.
+ * Copyright © 2021 Moonchild Productions
  *
  *  This is part of HarfBuzz, a text shaping library.
  *
@@ -24,6 +25,7 @@
  *
  * Red Hat Author(s): Behdad Esfahbod
  * Google Author(s): Behdad Esfahbod
+ * Moonchild Productions Author(s): Moonchild Straver
  */
 
 #ifndef HB_PRIVATE_HH
@@ -200,13 +202,6 @@ static int errno = 0; /* Use something better? */
  * http://msdn.microsoft.com/en-ca/library/tze57ck3.aspx
  * http://msdn.microsoft.com/en-ca/library/zk17ww08.aspx
  * mingw32 headers say atexit is safe to use in shared libraries.
- */
-#    define HB_USE_ATEXIT 1
-#  elif defined(__ANDROID__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-/* This was fixed in Android NKD r8 or r8b:
- * https://code.google.com/p/android/issues/detail?id=6455
- * which introduced GCC 4.6:
- * https://developer.android.com/tools/sdk/ndk/index.html
  */
 #    define HB_USE_ATEXIT 1
 #  endif
