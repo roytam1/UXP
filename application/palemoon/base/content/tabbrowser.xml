@@ -113,11 +113,7 @@
         new Map();
       </field>
       <field name="arrowKeysShouldWrap" readonly="true">
-#ifdef XP_MACOSX
-        true
-#else
         false
-#endif
       </field>
 
       <field name="_autoScrollPopup">
@@ -3143,22 +3139,6 @@
             }
           }
 
-#ifdef XP_MACOSX
-          if (!aEvent.metaKey)
-            return;
-
-          var offset = 1;
-          switch (aEvent.charCode) {
-            case '}'.charCodeAt(0):
-              offset = -1;
-            case '{'.charCodeAt(0):
-              if (window.getComputedStyle(this, null).direction == "ltr")
-                offset *= -1;
-              this.tabContainer.advanceSelectedTab(offset, true);
-              aEvent.stopPropagation();
-              aEvent.preventDefault();
-          }
-#else
           if (aEvent.ctrlKey && !aEvent.shiftKey && !aEvent.metaKey &&
               aEvent.keyCode == KeyEvent.DOM_VK_F4 &&
               !this.mCurrentTab.pinned) {
@@ -3166,7 +3146,6 @@
             aEvent.stopPropagation();
             aEvent.preventDefault();
           }
-#endif
         ]]></body>
       </method>
 
@@ -3603,9 +3582,7 @@
       </xul:hbox>
       <xul:arrowscrollbox anonid="arrowscrollbox" orient="horizontal" flex="1"
                           style="min-width: 1px;"
-#ifndef XP_MACOSX
                           clicktoscroll="true"
-#endif
                           class="tabbrowser-arrowscrollbox">
 # This is a hack to circumvent bug 472020, otherwise the tabs show up on the
 # right of the newtab button.
@@ -4291,11 +4268,7 @@
                   PrivateBrowsingUtils.isWindowPrivate(sourceNode.ownerDocument.defaultView))
                 return dt.effectAllowed = "none";
 
-#ifdef XP_MACOSX
-              return dt.effectAllowed = event.altKey ? "copy" : "move";
-#else
               return dt.effectAllowed = event.ctrlKey ? "copy" : "move";
-#endif
             }
           }
 
@@ -4453,14 +4426,12 @@
       ]]></handler>
 
       <handler event="dblclick"><![CDATA[
-#ifndef XP_MACOSX
         // When the tabbar has an unified appearance with the titlebar
         // and menubar, a double-click in it should have the same behavior
         // as double-clicking the titlebar
         if (TabsInTitlebar.enabled ||
             (TabsOnTop.enabled && this.parentNode._dragBindingAlive))
           return;
-#endif
 
         if (event.button != 0 ||
             event.originalTarget.localName != "box")
@@ -4550,11 +4521,7 @@
 
       <handler event="keypress"><![CDATA[
         if (event.altKey || event.shiftKey ||
-#ifdef XP_MACOSX
-            !event.metaKey)
-#else
             !event.ctrlKey || event.metaKey)
-#endif
           return;
 
         switch (event.keyCode) {

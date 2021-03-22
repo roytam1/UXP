@@ -27,10 +27,7 @@ var gInPrintPreviewMode = false;
 var gContextMenu = null; // nsContextMenu instance
 var gMultiProcessBrowser = false;
 
-#ifndef XP_MACOSX
 var gEditUIVisible = true;
-#endif
-
 [
   ["gBrowser",            "content"],
   ["gNavToolbox",         "navigator-toolbox"],
@@ -1206,12 +1203,10 @@ var gBrowserInit = {
     // unless there are downloads to be displayed.
     DownloadsButton.initializeIndicator();
 
-#ifndef XP_MACOSX
     updateEditUIVisibility();
     let placesContext = document.getElementById("placesContext");
     placesContext.addEventListener("popupshowing", updateEditUIVisibility, false);
     placesContext.addEventListener("popuphiding", updateEditUIVisibility, false);
-#endif
 
 #ifdef MOZ_PERSONAS
     gBrowser.mPanelContainer.addEventListener("InstallBrowserTheme", LightWeightThemeWebInstaller, false, true);
@@ -1457,95 +1452,6 @@ var gBrowserInit = {
     window.QueryInterface(Ci.nsIDOMChromeWindow).browserDOMWindow = null;
   },
 
-#ifdef XP_MACOSX
-  // nonBrowserWindowStartup(), nonBrowserWindowDelayedStartup(), and
-  // nonBrowserWindowShutdown() are used for non-browser windows in
-  // macBrowserOverlay
-  nonBrowserWindowStartup: function() {
-    // Disable inappropriate commands / submenus
-    var disabledItems = ['Browser:SavePage',
-                         'Browser:SendLink', 'cmd_pageSetup', 'cmd_print', 'cmd_find', 'cmd_findAgain',
-                         'viewToolbarsMenu', 'viewSidebarMenuMenu', 'Browser:Reload',
-                         'viewFullZoomMenu', 'pageStyleMenu', 'charsetMenu', 'View:PageSource', 'View:FullScreen',
-                         'viewHistorySidebar', 'Browser:AddBookmarkAs', 'Browser:BookmarkAllTabs',
-                         'View:PageInfo', 'Browser:ToggleAddonBar'];
-    var element;
-
-    for (let disabledItem of disabledItems) {
-      element = document.getElementById(disabledItem);
-      if (element) {
-        element.setAttribute("disabled", "true");
-      }
-    }
-
-    // If no windows are active (i.e. we're the hidden window), disable the close, minimize
-    // and zoom menu commands as well
-    if (window.location.href == "chrome://browser/content/hiddenWindow.xul") {
-      var hiddenWindowDisabledItems = ['cmd_close', 'minimizeWindow', 'zoomWindow'];
-      for (let hiddenWindowDisabledItem of hiddenWindowDisabledItems) {
-        element = document.getElementById(hiddenWindowDisabledItem);
-        if (element) {
-          element.setAttribute("disabled", "true");
-        }
-      }
-
-      // also hide the window-list separator
-      element = document.getElementById("sep-window-list");
-      element.setAttribute("hidden", "true");
-
-      // Setup the dock menu.
-      let dockMenuElement = document.getElementById("menu_mac_dockmenu");
-      if (dockMenuElement != null) {
-        let nativeMenu = Cc["@mozilla.org/widget/standalonenativemenu;1"]
-                           .createInstance(Ci.nsIStandaloneNativeMenu);
-
-        try {
-          nativeMenu.init(dockMenuElement);
-
-          let dockSupport = Cc["@mozilla.org/widget/macdocksupport;1"]
-                              .getService(Ci.nsIMacDockSupport);
-          dockSupport.dockMenu = nativeMenu;
-        } catch(e) {}
-      }
-    }
-
-    if (PrivateBrowsingUtils.permanentPrivateBrowsing) {
-      document.getElementById("macDockMenuNewWindow").hidden = true;
-    }
-
-    this._delayedStartupTimeoutId = setTimeout(this.nonBrowserWindowDelayedStartup.bind(this), 0);
-  },
-
-  nonBrowserWindowDelayedStartup: function() {
-    this._delayedStartupTimeoutId = null;
-
-    // initialise the offline listener
-    BrowserOffline.init();
-
-    // Set up Sanitize Item
-    this._initializeSanitizer();
-
-    // initialize the private browsing UI
-    gPrivateBrowsingUI.init();
-
-#ifdef MOZ_SERVICES_SYNC
-    // initialize the sync UI
-    gSyncUI.init();
-#endif
-  },
-
-  nonBrowserWindowShutdown: function() {
-    // If nonBrowserWindowDelayedStartup hasn't run yet, we have no work to do -
-    // just cancel the pending timeout and return;
-    if (this._delayedStartupTimeoutId) {
-      clearTimeout(this._delayedStartupTimeoutId);
-      return;
-    }
-
-    BrowserOffline.uninit();
-  },
-#endif
-
   _initializeSanitizer: function() {
     const kDidSanitizeDomain = "privacy.sanitize.didShutdownSanitize";
     if (gPrefService.prefHasUserValue(kDidSanitizeDomain)) {
@@ -1597,11 +1503,6 @@ var gBrowserInit = {
 /* Legacy global init functions */
 var BrowserStartup        = gBrowserInit.onLoad.bind(gBrowserInit);
 var BrowserShutdown       = gBrowserInit.onUnload.bind(gBrowserInit);
-#ifdef XP_MACOSX
-var nonBrowserWindowStartup        = gBrowserInit.nonBrowserWindowStartup.bind(gBrowserInit);
-var nonBrowserWindowDelayedStartup = gBrowserInit.nonBrowserWindowDelayedStartup.bind(gBrowserInit);
-var nonBrowserWindowShutdown       = gBrowserInit.nonBrowserWindowShutdown.bind(gBrowserInit);
-#endif
 
 function HandleAppCommandEvent(evt) {
   switch (evt.command) {
@@ -1738,11 +1639,7 @@ function BrowserStop() {
 
 function BrowserReloadOrDuplicate(aEvent) {
   var backgroundTabModifier = aEvent.button == 1 ||
-#ifdef XP_MACOSX
-    aEvent.metaKey;
-#else
     aEvent.ctrlKey;
-#endif
   if (aEvent.shiftKey && !backgroundTabModifier) {
     BrowserReloadSkipCache();
     return;
@@ -1801,13 +1698,6 @@ function BrowserGoHome(aEvent) {
 }
 
 function loadOneOrMoreURIs(aURIString) {
-#ifdef XP_MACOSX
-  // we're not a browser window, pass the URI string to a new browser window
-  if (window.location.href != getBrowserURL()) {
-    window.openDialog(getBrowserURL(), "_blank", "all,dialog=no", aURIString);
-    return;
-  }
-#endif
   // This function throws for certain malformed URIs, so use exception handling
   // so that we don't disrupt startup
   try {
@@ -1834,22 +1724,6 @@ function openLocation() {
     return;
   }
 
-#ifdef XP_MACOSX
-  if (window.location.href != getBrowserURL()) {
-    var win = getTopWin();
-    if (win) {
-      // If there's an open browser window, it should handle this command
-      win.focus()
-      win.openLocation();
-    } else {
-      // If there are no open browser windows, open a new one
-      win = window.openDialog("chrome://browser/content/", "_blank",
-                              "chrome,all,dialog=no", BROWSER_NEW_TAB_URL);
-      win.addEventListener("load", openLocationCallback, false);
-    }
-    return;
-  }
-#endif
   openDialog("chrome://browser/content/openLocation.xul", "_blank",
              "chrome,modal,titlebar", window);
 }
@@ -1948,14 +1822,6 @@ function BrowserOpenFileWindow() {
 }
 
 function BrowserCloseTabOrWindow() {
-#ifdef XP_MACOSX
-  // If we're not a browser window, just close the window
-  if (window.location.href != getBrowserURL()) {
-    closeWindow(true);
-    return;
-  }
-#endif
-
   // If the current tab is the last one, this will close the window.
   gBrowser.removeCurrentTab({animate: true});
 }
@@ -3126,28 +2992,6 @@ const BrowserSearch = {
    * or focuses an existing window, if necessary.
    */
   webSearch: function() {
-#ifdef XP_MACOSX
-    if (window.location.href != getBrowserURL()) {
-      var win = getTopWin();
-      if (win) {
-        // If there's an open browser window, it should handle this command
-        win.focus();
-        win.BrowserSearch.webSearch();
-      } else {
-        // If there are no open browser windows, open a new one
-        var observer = function observer(subject, topic, data) {
-          if (subject == win) {
-            BrowserSearch.webSearch();
-            Services.obs.removeObserver(observer, "browser-delayed-startup-finished");
-          }
-        }
-        win = window.openDialog(getBrowserURL(), "_blank",
-                                "chrome,all,dialog=no", "about:blank");
-        Services.obs.addObserver(observer, "browser-delayed-startup-finished", false);
-      }
-      return;
-    }
-#endif
     var searchBar = this.searchBar;
     if (searchBar && window.fullScreen) {
       FullScreen.showNavToolbox();
@@ -3469,9 +3313,7 @@ function BrowserToolboxCustomizeDone(aToolboxChanged) {
     gIdentityHandler._cacheElements();
     window.XULBrowserWindow.init();
 
-#ifndef XP_MACOSX
     updateEditUIVisibility();
-#endif
 
     // Hacky: update the PopupNotifications' object's reference to the iconBox,
     // if it already exists, since it may have changed if the URL bar was
@@ -3576,7 +3418,6 @@ function retrieveToolbarIconsizesFromTheme() {
  * is a no op.
  */
 function updateEditUIVisibility() {
-#ifndef XP_MACOSX
   let editMenuPopupState = document.getElementById("menu_EditPopup").state;
   let contextMenuPopupState = document.getElementById("contentAreaContextMenu").state;
   let placesContextMenuPopupState = document.getElementById("placesContext").state;
@@ -3618,7 +3459,6 @@ function updateEditUIVisibility() {
     goSetCommandEnabled("cmd_delete", true);
     goSetCommandEnabled("cmd_switchTextDirection", true);
   }
-#endif
 }
 
 /**
@@ -6268,14 +6108,7 @@ function warnAboutClosingWindow() {
 
   os.notifyObservers(null, "browser-lastwindow-close-granted", null);
 
-#ifdef XP_MACOSX
-  // OS X doesn't quit the application when the last window is closed, but keeps
-  // the session alive. Hence don't prompt users to save tabs, but warn about
-  // closing multiple tabs.
-  return isPBWindow || gBrowser.warnAboutClosingTabs(gBrowser.closingTabsEnum.ALL);
-#else
   return true;
-#endif
 }
 
 var MailIntegration = {
@@ -7082,12 +6915,6 @@ var gPrivateBrowsingUI = {
     document.getElementById("Tools:Sanitize").setAttribute("disabled", "true");
 
     if (window.location.href == getBrowserURL()) {
-#if defined(XP_MACOSX) && defined(MOZ_CAN_DRAW_IN_TITLEBAR)
-      if (!PrivateBrowsingUtils.permanentPrivateBrowsing) {
-        document.documentElement.setAttribute("drawintitlebar", true);
-      }
-#endif
-
       // Adjust the window's title
       let docElement = document.documentElement;
       if (!PrivateBrowsingUtils.permanentPrivateBrowsing) {
@@ -7558,9 +7385,6 @@ var ToolbarIconColor = {
     }
 
     let toolbarSelector = "toolbar:not([collapsed=true])";
-#ifdef XP_MACOSX
-    toolbarSelector += ":not([type=menubar])";
-#endif
 
     // The getComputedStyle calls and setting the brighttext are separated in
     // two loops to avoid flushing layout and making it dirty repeatedly.

@@ -92,13 +92,8 @@
               accesskey="&cmd.removeFromHistory.accesskey;"/>
     <menuitem command="downloadsCmd_show"
               class="downloadShowMenuItem"
-#ifdef XP_MACOSX
-              label="&cmd.showMac.label;"
-              accesskey="&cmd.showMac.accesskey;"
-#else
               label="&cmd.show.label;"
               accesskey="&cmd.show.accesskey;"
-#endif
               />
 
     <menuseparator class="downloadCommandsSeparator"/>

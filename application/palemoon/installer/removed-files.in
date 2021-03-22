@@ -69,22 +69,11 @@
 # Firefox 27
 @DIR_MACOS@distribution/extensions/testpilot@labs.mozilla.com.xpi
 
-# Mac OS X v2 signing removals
-#ifdef XP_MACOSX
-  @DIR_MACOS@active-update.xml
-  @DIR_MACOS@update-settings.ini
-  @DIR_MACOS@updates.xml
-  @DIR_MACOS@defaults/*
-  @DIR_MACOS@updates/*
-#endif
-
 # Common Directory removals
 @DIR_MACOS@chrome/
 #ifdef XP_UNIX
-  #ifndef XP_MACOSX
-    chrome/icons/
-    chrome/icons/default/
-  #endif
+  chrome/icons/
+  chrome/icons/default/
 #endif
 @DIR_MACOS@chrome/overlayinfo/
 @DIR_MACOS@components/
@@ -106,11 +95,5 @@
 @DIR_MACOS@greprefs/
 @DIR_MACOS@jssubloader/
 @DIR_MACOS@modules/
-#ifdef XP_MACOSX
-  @DIR_MACOS@plugins/Default Plugin.plugin/*
-  @DIR_MACOS@plugins/JavaEmbeddingPlugin.bundle/*
-  @DIR_MACOS@plugins/MRJPlugin.plugin/*
-  Contents/Plug-Ins/PrintPDE.plugin/*
-#endif
 @DIR_MACOS@searchplugins/*
 @DIR_MACOS@webapprt/components/

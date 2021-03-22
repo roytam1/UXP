@@ -157,11 +157,7 @@ function whereToOpenLink(e, ignoreButton, ignoreAlt) {
 
   // Don't do anything special with right-mouse clicks.  They're probably clicks on context menu items.
 
-#ifdef XP_MACOSX
-  if (meta || (middle && middleUsesTabs)) {
-#else
   if (ctrl || (middle && middleUsesTabs)) {
-#endif
     return shift ? "tabshifted" : "tab";
   }
 
@@ -654,7 +650,6 @@ function buildHelpMenu() {
     }
   }
 #else
-#ifndef XP_MACOSX
   // Some extensions may rely on these being present so only hide the about
   // separator when there are no elements besides the check for updates menuitem
   // in between the about separator and the updates separator.
@@ -665,7 +660,6 @@ function buildHelpMenu() {
       checkForUpdates.nextSibling === aboutSeparator) {
     updatesSeparator.hidden = true;
   }
-#endif
 #endif
 }
 
@@ -681,8 +675,6 @@ function openAboutDialog() {
 
 #ifdef XP_WIN
   var features = "chrome,centerscreen,dependent";
-#elifdef XP_MACOSX
-  var features = "chrome,resizable=no,minimizable=no";
 #else
   var features = "chrome,centerscreen,dependent,dialog=no";
 #endif

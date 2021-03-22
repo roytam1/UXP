@@ -991,9 +991,6 @@ var allTabs = {
       let container = this.container.getBoundingClientRect();
       let tabCloseButton = this.tabCloseButton.getBoundingClientRect();
       let alignLeft = getComputedStyle(this.panel, "").direction == "rtl";
-#ifdef XP_MACOSX
-      alignLeft = !alignLeft;
-#endif
       this.tabCloseButton.left = canvas.left -
                                  container.left +
                                  parseInt(this.container.left) +

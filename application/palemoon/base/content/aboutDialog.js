@@ -44,12 +44,6 @@ function init(aEvent)
     document.getElementById("aboutVersion").textContent += " (" + buildDate + ")";
   }
 
-#ifdef XP_MACOSX
-  // it may not be sized at this point, and we need its width to calculate its position
-  window.sizeToContent();
-  window.moveTo((screen.availWidth / 2) - (window.outerWidth / 2), screen.availHeight / 5);
-#endif
-
 // get release notes URL from prefs
   var formatter = Components.classes["@mozilla.org/toolkit/URLFormatterService;1"]
                             .getService(Components.interfaces.nsIURLFormatter);

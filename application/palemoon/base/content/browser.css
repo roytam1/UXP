@@ -179,12 +179,6 @@ toolbar[mode="icons"] > #reload-button[displaystop] {
   background-position: top right;
 }
 
-%ifdef XP_MACOSX
-#main-window[inFullscreen="true"] {
-  padding-top: 0; /* override drawintitlebar="true" */
-}
-%endif
-
 #browser-bottombox[lwthemefooter="true"] {
   background-repeat: no-repeat;
   background-position: bottom left;
@@ -553,11 +547,7 @@ window[chromehidden~="toolbar"] toolbar:not(.toolbar-primary):not(#nav-bar):not(
 .ctrlTab-favicon-container,
 .allTabs-favicon-container {
   -moz-box-align: start;
-%ifdef XP_MACOSX
-  -moz-box-pack: end;
-%else
   -moz-box-pack: start;
-%endif
 }
 
 .ctrlTab-favicon,

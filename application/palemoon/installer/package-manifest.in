@@ -32,14 +32,6 @@
 
 #filter substitution
 
-#ifdef XP_MACOSX
-; Mac bundle stuff
-@APPNAME@/Contents/Info.plist
-@APPNAME@/Contents/PkgInfo
-@RESPATH@/firefox.icns
-@RESPATH@/document.icns
-#endif
-
 [@AB_CD@]
 @RESPATH@/browser/chrome/@AB_CD@@JAREXT@
 @RESPATH@/browser/chrome/@AB_CD@.manifest
@@ -78,17 +70,8 @@
 @BINPATH@/@DLL_PREFIX@plds4@DLL_SUFFIX@
 #endif
 #endif
-#ifdef XP_MACOSX
-@BINPATH@/XUL
-#else
 @BINPATH@/@DLL_PREFIX@xul@DLL_SUFFIX@
-#endif
-#ifdef XP_MACOSX
-@BINPATH@/@MOZ_CHILD_PROCESS_NAME@.app/
-@BINPATH@/@DLL_PREFIX@plugin_child_interpose@DLL_SUFFIX@
-#else
 @BINPATH@/@MOZ_CHILD_PROCESS_NAME@
-#endif
 #ifdef XP_WIN32
 @BINPATH@/plugin-hang-ui@BIN_SUFFIX@
 #if MOZ_PACKAGE_MSVC_DLLS
@@ -135,9 +118,7 @@
 @RESPATH@/browser/blocklist.xml
 @RESPATH@/browser/ua-update.json
 #ifdef XP_UNIX
-#ifndef XP_MACOSX
 @RESPATH@/run-mozilla.sh
-#endif
 #endif
 
 ; [Components]
@@ -165,8 +146,6 @@
 #ifdef MOZ_WEBRTC
 #endif
 #ifdef MOZ_ENABLE_XREMOTE
-#endif
-#ifdef XP_MACOSX
 #endif
 
 @RESPATH@/chrome/marionette@JAREXT@
@@ -212,13 +191,11 @@
 
 ; shell icons
 #ifdef XP_UNIX
-#ifndef XP_MACOSX
 ; shell icons
 @RESPATH@/browser/icons/*.png
 #ifdef MOZ_UPDATER
 ; updater icon
 @RESPATH@/icons/updater.png
-#endif
 #endif
 #endif
 
@@ -267,21 +244,11 @@
 @RESPATH@/res/table-remove-row-hover.gif
 @RESPATH@/res/table-remove-row.gif
 @RESPATH@/res/grabber.gif
-#ifdef XP_MACOSX
-@RESPATH@/res/cursors/*
-#endif
 @RESPATH@/res/fonts/*
 @RESPATH@/res/dtd/*
 @RESPATH@/res/html/*
-#if defined(XP_MACOSX)
-; For SafariProfileMigrator.js.
-@RESPATH@/res/langGroups.properties
-#endif
 @RESPATH@/res/language.properties
 @RESPATH@/res/entityTables/*
-#ifdef XP_MACOSX
-@RESPATH@/res/MainMenu.nib/
-#endif
 
 ; svg
 @RESPATH@/res/svg.css
@@ -322,11 +289,7 @@
 ; [Updater]
 ;
 #ifdef MOZ_UPDATER
-#ifdef XP_MACOSX
-@BINPATH@/updater.app/
-#else
 @BINPATH@/updater@BIN_SUFFIX@
-#endif
 #endif
 
 ; Shutdown Terminator
