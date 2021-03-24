@@ -17,6 +17,8 @@
 #include "nss.h"
 #include "pk11pub.h"
 
+#include "nsNetUtil.h"  // for NS_CheckPortSafety
+
 #include "nsNetCID.h"
 #include "nsIProperty.h"
 #include "nsIPropertyBag2.h"
@@ -494,6 +496,13 @@ PeerConnectionConfiguration::Init(const RTCConfiguration& aSrc)
   return NS_OK;
 }
 
+// list of known acceptable ports for webrtc
+int16_t gGoodWebrtcPortList[] = {
+    3478,  // stun or turn
+    5349,  // stuns or turns
+    0,     // Sentinel value: This MUST be zero
+};
+
 nsresult
 PeerConnectionConfiguration::AddIceServer(const RTCIceServer &aServer)
 {
@@ -566,6 +575,21 @@ PeerConnectionConfiguration::AddIceServer(const RTCIceServer &aServer)
     }
     if (port == -1)
       port = (isStuns || isTurns)? 5349 : 3478;
+
+    // First check the known good ports for webrtc
+    bool knownGoodPort = false;
+    for (int i = 0; !knownGoodPort && gGoodWebrtcPortList[i]; i++) {
+      if (port == gGoodWebrtcPortList[i]) {
+        knownGoodPort = true;
+      }
+    }
+
+    // if not in the list of known good ports for webrtc, check
+    // the generic block list using NS_CheckPortSafety.
+    if (!knownGoodPort) {
+      rv = NS_CheckPortSafety(port, nullptr);
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
 
     if (isTurn || isTurns) {
       NS_ConvertUTF16toUTF8 credential(aServer.mCredential.Value());
