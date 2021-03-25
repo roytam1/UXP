@@ -28,10 +28,6 @@
       <handler event="mouseover" action="ctrlTab._mouseOverFocus(this);"/>
       <handler event="command" action="ctrlTab.pick(this);"/>
       <handler event="click" button="1" action="ctrlTab.remove(this);"/>
-#ifdef XP_MACOSX
-# Control+click is a right click on OS X
-      <handler event="click" button="2" action="ctrlTab.pick(this);"/>
-#endif
     </handlers>
   </binding>
 

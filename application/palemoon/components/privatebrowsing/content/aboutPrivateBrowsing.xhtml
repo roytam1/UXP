@@ -13,11 +13,7 @@
   %globalDTD;
   <!ENTITY % browserDTD SYSTEM "chrome://browser/locale/browser.dtd">
   %browserDTD;
-#ifdef XP_MACOSX
-  <!ENTITY basePBMenu.label   "&fileMenu.label;">
-#else
   <!ENTITY basePBMenu.label   "<span class='appMenuButton'>&brandShortName;</span><span class='fileMenu'>&fileMenu.label;</span>">
-#endif
   <!ENTITY % privatebrowsingpageDTD SYSTEM "chrome://browser/locale/aboutPrivateBrowsing.dtd">
   %privatebrowsingpageDTD;
 ]>
@@ -48,9 +44,7 @@
         document.title = "]]>&privatebrowsingpage.title.normal;<![CDATA[";
         setFavIcon("chrome://global/skin/icons/question-16.png");
       } else {
-#ifndef XP_MACOSX
         document.title = "]]>&privatebrowsingpage.title;<![CDATA[";
-#endif
         setFavIcon("chrome://browser/skin/Privacy-16.png");
       }
 

@@ -1371,8 +1371,12 @@ Engine.prototype = {
           }
 
           let type = chan.contentType;
-          if (!type.startsWith("image/"))
-            type = "image/x-icon";
+          if (!type.startsWith("image/")) {
+            console.warn(
+              "Search service: Unable to set icon, content type is not an image",
+              contentType);
+            return;
+          }            
           let dataURL = "data:" + type + ";base64," +
             btoa(String.fromCharCode.apply(null, aByteArray));
 

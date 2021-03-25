@@ -986,26 +986,10 @@ nsContextMenu.prototype = {
 
     // Confirm since it's annoying if you hit this accidentally.
     const kDesktopBackgroundURL = "chrome://browser/content/setDesktopBackground.xul";
-#ifdef XP_MACOSX
-    // On Mac, the Set Desktop Background window is not modal.
-    // Don't open more than one Set Desktop Background window.
-    var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-                       .getService(Components.interfaces.nsIWindowMediator);
-    var dbWin = wm.getMostRecentWindow("Shell:SetDesktopBackground");
-    if (dbWin) {
-      dbWin.gSetBackground.init(this.target);
-      dbWin.focus();
-    } else {
-      openDialog(kDesktopBackgroundURL, "",
-                 "centerscreen,chrome,dialog=no,dependent,resizable=no",
-                 this.target);
-    }
-#else
-    // On non-Mac platforms, the Set Wallpaper dialog is modal.
+    // The Set Wallpaper dialog is modal.
     openDialog(kDesktopBackgroundURL, "",
                "centerscreen,chrome,dialog,modal,dependent",
                this.target);
-#endif
   },
 
   // Save URL of clicked-on frame.

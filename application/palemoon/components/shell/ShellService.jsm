@@ -31,7 +31,7 @@ var ShellServiceInternal = {
                                   .QueryInterface(Ci.nsIGNOMEShellService);
       return linuxShellService.canSetDesktopBackground;
     }
-#elif defined(XP_WIN) || defined(XP_MACOSX)
+#elif defined(XP_WIN)
     return true;
 #else
     return false;

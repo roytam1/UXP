@@ -28,12 +28,7 @@
 // so also try /sdcard/.
 
 #ifndef PERF_SPEW_DIR
-# if defined(__ANDROID__)
-#  define PERF_SPEW_DIR "/data/local/tmp/"
-#  define PERF_SPEW_DIR_2 "/sdcard/"
-# else
 #  define PERF_SPEW_DIR "/tmp/"
-# endif
 #endif
 
 using namespace js;
@@ -104,12 +99,6 @@ js::jit::CheckPerf() {
                 return;
             }
 
-#if defined(__ANDROID__)
-            if (openPerfMap(PERF_SPEW_DIR_2)) {
-                PerfChecked = true;
-                return;
-            }
-#endif
             fprintf(stderr, "Failed to open perf map file.  Disabling IONPERF.\n");
             PerfMode = PERF_MODE_NONE;
         }

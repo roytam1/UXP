@@ -331,13 +331,6 @@ AudioStream::Init(uint32_t aNumChannels, uint32_t aRate,
   cubeb_stream_params params;
   params.rate = aRate;
   params.channels = mOutChannels;
-#if defined(__ANDROID__)
-  params.stream_type = CUBEB_STREAM_TYPE_MUSIC;
-
-  if (params.stream_type == CUBEB_STREAM_TYPE_MAX) {
-    return NS_ERROR_INVALID_ARG;
-  }
-#endif
 
   params.format = ToCubebFormat<AUDIO_OUTPUT_FORMAT>::value;
   mAudioClock.Init(aRate);

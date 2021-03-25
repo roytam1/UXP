@@ -475,11 +475,7 @@ const DownloadsPanel = {
     }
 
     let pasting = aEvent.keyCode == Ci.nsIDOMKeyEvent.DOM_VK_V &&
-#ifdef XP_MACOSX
-                  aEvent.metaKey;
-#else
                   aEvent.ctrlKey;
-#endif
 
     if (!pasting) {
       return;

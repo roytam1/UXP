@@ -22,9 +22,8 @@ using mozilla::TimeStamp;
 
 static const long NanoSecPerSec = 1000000000;
 
-// Android 32-bit & macOS 10.12 has the clock functions, but not pthread_condattr_setclock.
-#if defined(HAVE_CLOCK_MONOTONIC) && \
-    !(defined(__ANDROID__) && !defined(__LP64__)) && !defined(__APPLE__)
+// MacOS 10.12 has the clock functions, but not pthread_condattr_setclock.
+#if defined(HAVE_CLOCK_MONOTONIC) && !defined(__APPLE__)
 # define USE_CLOCK_API
 #endif
 

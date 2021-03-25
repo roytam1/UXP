@@ -4,9 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifdef XP_UNIX
-#ifndef XP_MACOSX
 #define XP_GNOME 1
-#endif
 #endif
 
   <stringbundleset id="stringbundleset">
@@ -172,10 +170,8 @@
     <key id="key_newNavigatorTab" key="&tabCmd.commandkey;" modifiers="accel" command="cmd_newNavigatorTab"/>
     <key id="focusURLBar" key="&openCmd.commandkey;" command="Browser:OpenLocation"
          modifiers="accel"/>
-#ifndef XP_MACOSX
     <key id="focusURLBar2" key="&urlbar.accesskey;" command="Browser:OpenLocation"
          modifiers="alt"/>
-#endif
 
 #
 # Search Command Key Logic works like this:
@@ -195,9 +191,6 @@
 # for people to switch to Linux.
 #
     <key id="key_search" key="&searchFocus.commandkey;" command="Tools:Search" modifiers="accel"/>
-#ifdef XP_MACOSX
-    <key id="key_search2" key="&findOnCmd.commandkey;" command="Tools:Search" modifiers="accel,alt"/>
-#endif
 #ifdef XP_WIN
     <key id="key_search2" key="&searchFocus.commandkey2;" command="Tools:Search" modifiers="accel"/>
 #endif
@@ -236,28 +229,17 @@
 
     <key keycode="VK_BACK" command="cmd_handleBackspace"/>
     <key keycode="VK_BACK" command="cmd_handleShiftBackspace" modifiers="shift"/>
-#ifndef XP_MACOSX
     <key id="goBackKb"  keycode="VK_LEFT" command="Browser:Back" modifiers="alt"/>
     <key id="goForwardKb"  keycode="VK_RIGHT" command="Browser:Forward" modifiers="alt"/>
-#else
-    <key id="goBackKb" keycode="VK_LEFT" command="Browser:Back" modifiers="accel" />
-    <key id="goForwardKb" keycode="VK_RIGHT" command="Browser:Forward" modifiers="accel" />
-#endif
 #ifdef XP_UNIX
     <key id="goBackKb2" key="&goBackCmd.commandKey;" command="Browser:Back" modifiers="accel"/>
     <key id="goForwardKb2" key="&goForwardCmd.commandKey;" command="Browser:Forward" modifiers="accel"/>
 #endif
     <key id="goHome" keycode="VK_HOME" command="Browser:Home" modifiers="alt"/>
     <key keycode="VK_F5" command="Browser:Reload"/>
-#ifndef XP_MACOSX
     <key id="showAllHistoryKb" key="&showAllHistoryCmd.commandkey;" command="Browser:ShowAllHistory" modifiers="accel,shift"/>
     <key keycode="VK_F5" command="Browser:ReloadSkipCache" modifiers="accel"/>
     <key id="key_fullScreen" keycode="VK_F11" command="View:FullScreen"/>
-#else
-    <key id="key_fullScreen" key="&fullScreenCmd.macCommandKey;" command="View:FullScreen" modifiers="accel,control"/>
-    <key id="key_fullScreen_old" key="&fullScreenCmd.macCommandKey;" command="View:FullScreen" modifiers="accel,shift"/>
-    <key keycode="VK_F11" command="View:FullScreen"/>
-#endif
     <key key="&reloadCmd.commandkey;" command="Browser:Reload" modifiers="accel" id="key_reload"/>
     <key key="&reloadCmd.commandkey;" command="Browser:ReloadSkipCache" modifiers="accel,shift"/>
     <key id="key_viewSource" key="&pageSourceCmd.commandkey;" command="View:PageSource" modifiers="accel"/>
@@ -290,18 +272,10 @@
 # networking requests, XHR, animated gifs, etc.
     <key id="key_stop" keycode="VK_ESCAPE" command="Browser:Stop"/>
     <key id="key_stop_all" keycode="VK_ESCAPE" modifiers="shift" oncommand="BrowserStop();"/>
-#ifdef XP_MACOSX
-    <key id="key_stop_mac" modifiers="accel" key="&stopCmd.macCommandKey;" command="Browser:Stop"/>
-    <key id="key_stop_all_mac" modifiers="accel,shift" key="&stopCmd.macCommandKey;" oncommand="BrowserStop();"/>
-#endif
 
     <key id="key_gotoHistory"
          key="&historySidebarCmd.commandKey;"
-#ifdef XP_MACOSX
-         modifiers="accel,shift"
-#else
          modifiers="accel"
-#endif
          command="viewHistorySidebar"/>
 
     <key id="key_fullZoomReduce"  key="&fullZoomReduceCmd.commandkey;"   command="cmd_fullZoomReduce"  modifiers="accel"/>
@@ -318,9 +292,6 @@
 
     <key id="key_privatebrowsing" command="Tools:PrivateBrowsing" key="&privateBrowsingCmd.commandkey;" modifiers="accel,shift"/>
     <key id="key_sanitize" command="Tools:Sanitize" keycode="VK_DELETE" modifiers="accel,shift"/>
-#ifdef XP_MACOSX
-    <key id="key_sanitize_mac" command="Tools:Sanitize" keycode="VK_BACK" modifiers="accel,shift"/>
-#endif
 #ifdef XP_UNIX
     <key id="key_quitApplication" key="&quitApplicationCmdUnix.key;" command="cmd_quitApplication" modifiers="accel"/>
 #endif
@@ -351,7 +322,4 @@
   </keyset>
 
 # Used by baseMenuOverlay
-#ifdef XP_MACOSX
-  <commandset id="baseMenuCommandSet" />
-#endif
   <keyset id="baseMenuKeyset" />

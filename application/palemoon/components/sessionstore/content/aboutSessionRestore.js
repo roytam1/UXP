@@ -141,11 +141,7 @@ function onListClick(aEvent) {
   if (cell.col) {
     // Restore this specific tab in the same window for middle/double/accel clicking
     // on a tab's title.
-#ifdef XP_MACOSX
-    let accelKey = aEvent.metaKey;
-#else
     let accelKey = aEvent.ctrlKey;
-#endif
     if ((aEvent.button == 1 || aEvent.button == 0 && aEvent.detail == 2 || accelKey) &&
         cell.col.id == "title" &&
         !treeView.isContainer(cell.row)) {

@@ -62,27 +62,6 @@ var PlacesOrganizer = {
     PlacesSearchBox.init();
 
     window.addEventListener("AppCommand", this, true);
-#ifdef XP_MACOSX
-    // 1. Map Edit->Find command to OrganizerCommand_find:all.  Need to map
-    // both the menuitem and the Find key.
-    var findMenuItem = document.getElementById("menu_find");
-    findMenuItem.setAttribute("command", "OrganizerCommand_find:all");
-    var findKey = document.getElementById("key_find");
-    findKey.setAttribute("command", "OrganizerCommand_find:all");
-
-    // 2. Disable some keybindings from browser.xul
-    var elements = ["cmd_handleBackspace", "cmd_handleShiftBackspace"];
-    for (var i=0; i < elements.length; i++) {
-      document.getElementById(elements[i]).setAttribute("disabled", "true");
-    }
-    
-    // 3. Disable the keyboard shortcut for the History menu back/forward
-    // in order to support those in the Library
-    var historyMenuBack = document.getElementById("historyMenuBack");
-    historyMenuBack.removeAttribute("key");
-    var historyMenuForward = document.getElementById("historyMenuForward");
-    historyMenuForward.removeAttribute("key");
-#endif
 
     // remove the "Properties" context-menu item, we've our own details pane
     document.getElementById("placesContext")
