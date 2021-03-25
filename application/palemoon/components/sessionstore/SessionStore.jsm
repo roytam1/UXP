@@ -775,9 +775,7 @@ var SessionStoreInternal = {
 
       if (closedWindowState) {
         let newWindowState;
-#ifndef XP_MACOSX
         if (!this._doResumeSession()) {
-#endif
           // We want to split the window up into pinned tabs and unpinned tabs.
           // Pinned tabs should be restored. If there are any remaining tabs,
           // they should be added back to _closedWindows.
@@ -801,7 +799,6 @@ var SessionStoreInternal = {
             delete normalTabsState.windows[0].__lastSessionWindowID;
             this._closedWindows[closedWindowIndex] = normalTabsState.windows[0];
           }
-#ifndef XP_MACOSX
         }
         else {
           // If we're just restoring the window, make sure it gets removed from
@@ -810,7 +807,6 @@ var SessionStoreInternal = {
           newWindowState = closedWindowState;
           delete newWindowState.hidden;
         }
-#endif
         if (newWindowState) {
           // Ensure that the window state isn't hidden
           this._restoreCount = 1;
@@ -911,11 +907,9 @@ var SessionStoreInternal = {
         this._updateCookies(windows);
       }
 
-#ifndef XP_MACOSX
       // Until we decide otherwise elsewhere, this window is part of a series
       // of closing windows to quit.
       winData._shouldRestore = true;
-#endif
 
       // Save the window if it has multiple tabs or a single saveable tab and
       // it's not private.
@@ -2529,7 +2523,6 @@ var SessionStoreInternal = {
     // shallow copy this._closedWindows to preserve current state
     let lastClosedWindowsCopy = this._closedWindows.slice();
 
-#ifndef XP_MACOSX
     // If no non-popup browser window remains open, return the state of the last
     // closed window(s). We only want to do this when we're actually "ending"
     // the session.
@@ -2543,7 +2536,6 @@ var SessionStoreInternal = {
         total.unshift(lastClosedWindowsCopy.shift())
       } while (total[0].isPopup && lastClosedWindowsCopy.length > 0)
     }
-#endif
 
     if (aPinnedOnly) {
       // perform a deep copy so that existing session variables are not changed.
@@ -3776,7 +3768,6 @@ var SessionStoreInternal = {
       }
     }
 
-#ifndef XP_MACOSX
     // We want to restore closed windows that are marked with _shouldRestore.
     // We're doing this here because we want to control this only when saving
     // the file.
@@ -3791,7 +3782,6 @@ var SessionStoreInternal = {
         break;
       }
     }
-#endif
 
     if (pinnedOnly) {
       // Save original resume_session_once preference for when quiting browser,
@@ -4408,7 +4398,6 @@ var SessionStoreInternal = {
     if (this._closedWindows.length <= this._max_windows_undo)
       return;
     let spliceTo = this._max_windows_undo;
-#ifndef XP_MACOSX
     let normalWindowIndex = 0;
     // try to find a non-popup window in this._closedWindows
     while (normalWindowIndex < this._closedWindows.length &&
@@ -4416,7 +4405,6 @@ var SessionStoreInternal = {
       normalWindowIndex++;
     if (normalWindowIndex >= this._max_windows_undo)
       spliceTo = normalWindowIndex + 1;
-#endif
     this._closedWindows.splice(spliceTo, this._closedWindows.length);
   },
 

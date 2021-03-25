@@ -476,11 +476,7 @@ Sanitizer.__defineGetter__("prefs", function() {
 Sanitizer.showUI = function(aParentWindow) {
   var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
                      .getService(Components.interfaces.nsIWindowWatcher);
-#ifdef XP_MACOSX
-  ww.openWindow(null, // make this an app-modal window on Mac
-#else
   ww.openWindow(aParentWindow,
-#endif
                 "chrome://browser/content/sanitize.xul",
                 "Sanitize",
                 "chrome,titlebar,dialog,centerscreen,modal",

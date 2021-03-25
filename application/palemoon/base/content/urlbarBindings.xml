@@ -375,11 +375,7 @@
           // and only if we get a keyboard event, to match user expectations.
           if (/^\s*[^.:\/\s]+(?:\/.*|\s*)$/i.test(url) &&
               (aTriggeringEvent instanceof KeyEvent)) {
-#ifdef XP_MACOSX
-            let accel = aTriggeringEvent.metaKey;
-#else
             let accel = aTriggeringEvent.ctrlKey;
-#endif
             let shift = aTriggeringEvent.shiftKey;
 
             let suffix = "";

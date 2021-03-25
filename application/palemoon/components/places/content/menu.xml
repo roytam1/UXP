@@ -304,19 +304,6 @@
         if (elt.parentNode != this)
           return;
 
-#ifdef XP_MACOSX
-        // XXX: The following check is a temporary hack until bug 420033 is
-        // resolved.
-        let parentElt = elt.parent;
-        while (parentElt) {
-          if (parentElt.id == "bookmarksMenuPopup" ||
-              parentElt.id == "goPopup")
-            return;
-
-          parentElt = parentElt.parentNode;
-        }
-#endif
-
         if (window.XULBrowserWindow) {
           let elt = event.target;
           let placesNode = elt._placesNode;

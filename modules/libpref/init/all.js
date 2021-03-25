@@ -266,6 +266,10 @@ pref("browser.display.use_document_fonts",  1);  // 0 = never, 1 = quick, 2 = al
 // 1 = always
 // 2 = never
 pref("browser.display.document_color_use", 0);
+// 0 = feature disabled
+// 1 = default: light theme preferred
+// 2 = dark theme preferred
+pref("browser.display.prefers_color_scheme", 1);
 pref("browser.display.use_system_colors",   false);
 pref("browser.display.foreground_color",    "#000000");
 pref("browser.display.background_color",    "#FFFFFF");

@@ -53,11 +53,7 @@
                     tooltiptext="&cmd.retry.label;"
                     oncommand="DownloadsView.onDownloadCommand(event, 'downloadsCmd_retry');"/>
         <xul:button class="downloadButton downloadShow"
-#ifdef XP_MACOSX
-                    tooltiptext="&cmd.showMac.label;"
-#else
                     tooltiptext="&cmd.show.label;"
-#endif
                     oncommand="DownloadsView.onDownloadCommand(event, 'downloadsCmd_show');"/>
       </xul:stack>
     </content>
@@ -136,11 +132,7 @@
                   tooltiptext="&cmd.retry.label;"
                   oncommand="goDoCommand('downloadsCmd_retry')"/>
       <xul:button class="downloadButton downloadShow"
-#ifdef XP_MACOSX
-                  tooltiptext="&cmd.showMac.label;"
-#else
                   tooltiptext="&cmd.show.label;"
-#endif
                   oncommand="goDoCommand('downloadsCmd_show')"/>
 
     </content>

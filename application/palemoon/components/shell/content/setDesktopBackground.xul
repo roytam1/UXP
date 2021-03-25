@@ -9,18 +9,10 @@
 
 <!DOCTYPE dialog SYSTEM "chrome://browser/locale/setDesktopBackground.dtd">
 
-#ifdef XP_MACOSX
-<?xul-overlay href="chrome://browser/content/macBrowserOverlay.xul"?>
-#endif
-
 <dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         xmlns:html="http://www.w3.org/1999/xhtml"
         windowtype="Shell:SetDesktopBackground"
-#ifndef XP_MACOSX
         buttons="accept,cancel"
-#else
-        buttons="accept"
-#endif
         buttonlabelaccept="&setDesktopBackground.title;"
         onload="gSetBackground.load();"
         ondialogaccept="gSetBackground.setDesktopBackground();"
@@ -33,7 +25,6 @@
     <script type="application/javascript" src="chrome://browser/content/setDesktopBackground.js"/>
     <script type="application/javascript" src="chrome://global/content/contentAreaUtils.js"/>
 
-#ifndef XP_MACOSX
     <hbox align="center">
       <label value="&position.label;"/>
       <menulist id="menuPosition"
@@ -53,7 +44,6 @@
                    type="button" 
                    onchange="gSetBackground.updateColor(this.color);"/> 
     </hbox>
-#endif
     <groupbox align="center">
       <caption label="&preview.label;"/>
       <stack>
@@ -63,22 +53,4 @@
       </stack>
     </groupbox>
     
-#ifdef XP_MACOSX
-    <separator/>
-    
-    <hbox align="right">
-      <button id="setDesktopBackground"
-              label="&setDesktopBackground.title;" 
-              oncommand="gSetBackground.setDesktopBackground();"/>
-      <button id="showDesktopPreferences"
-              label="&openDesktopPrefs.label;"
-              oncommand="gSetBackground.showDesktopPrefs();"
-              hidden="true"/>
-    </hbox>
-#endif
-
-#ifdef XP_MACOSX
-#include ../../../base/content/browserMountPoints.inc
-#endif
-
 </dialog>

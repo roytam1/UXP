@@ -20,6 +20,7 @@
 #include "nsIDocument.h"
 #include "nsIWidget.h"
 #include "nsContentUtils.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/StyleSheetInlines.h"
 
@@ -43,6 +44,12 @@ static const nsCSSProps::KTableEntry kDisplayModeKeywords[] = {
   { eCSSKeyword_standalone,              NS_STYLE_DISPLAY_MODE_STANDALONE },
   { eCSSKeyword_fullscreen,              NS_STYLE_DISPLAY_MODE_FULLSCREEN },
   { eCSSKeyword_UNKNOWN,                 -1 }
+};
+
+static const nsCSSProps::KTableEntry kPrefersColorSchemeKeywords[] = {
+  { eCSSKeyword_light,			 NS_STYLE_PREFERS_COLOR_SCHEME_LIGHT },
+  { eCSSKeyword_dark,			 NS_STYLE_PREFERS_COLOR_SCHEME_DARK },
+  { eCSSKeyword_UNKNOWN,		 -1 },
 };
 
 #ifdef XP_WIN
@@ -458,6 +465,25 @@ GetOperatingSystemVersion(nsPresContext* aPresContext, const nsMediaFeature* aFe
 }
 
 static nsresult
+GetPrefersColorScheme(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
+		      nsCSSValue& aResult)
+{
+  switch(Preferences::GetInt("browser.display.prefers_color_scheme", 1)) {
+    case 1:
+    aResult.SetIntValue(NS_STYLE_PREFERS_COLOR_SCHEME_LIGHT, 
+		        eCSSUnit_Enumerated);
+    break;
+    case 2:
+    aResult.SetIntValue(NS_STYLE_PREFERS_COLOR_SCHEME_DARK, 
+		        eCSSUnit_Enumerated);
+    break;
+    default:
+    aResult.Reset();
+  }
+  return NS_OK;
+}
+
+static nsresult
 GetIsGlyph(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
           nsCSSValue& aResult)
 {
@@ -555,6 +581,14 @@ nsMediaFeatures::features[] = {
     nsMediaFeature::eNoRequirements,
     { nullptr },
     GetMonochrome
+  },
+  {
+    &nsGkAtoms::prefers_color_scheme,
+    nsMediaFeature::eMinMaxNotAllowed,
+    nsMediaFeature::eEnumerated,
+    nsMediaFeature::eNoRequirements,
+    { kPrefersColorSchemeKeywords },
+    GetPrefersColorScheme
   },
   {
     &nsGkAtoms::resolution,

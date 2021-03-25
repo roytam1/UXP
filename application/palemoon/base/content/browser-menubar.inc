@@ -70,12 +70,10 @@
                           label="&printSetupCmd.label;"
                           accesskey="&printSetupCmd.accesskey;"
                           command="cmd_pageSetup"/>
-#ifndef XP_MACOSX
                 <menuitem id="menu_printPreview"
                           label="&printPreviewCmd.label;"
                           accesskey="&printPreviewCmd.accesskey;"
                           command="cmd_printPreview"/>
-#endif
                 <menuitem id="menu_print"
                           label="&printCmd.label;"
                           accesskey="&printCmd.accesskey;"
@@ -97,12 +95,8 @@
                           label="&quitApplicationCmdWin.label;"
                           accesskey="&quitApplicationCmdWin.accesskey;"
 #else
-#ifdef XP_MACOSX
-                          label="&quitApplicationCmdMac.label;"
-#else
                           label="&quitApplicationCmd.label;"
                           accesskey="&quitApplicationCmd.accesskey;"
-#endif
 #ifdef XP_UNIX
                           key="key_quitApplication"
 #endif
@@ -215,11 +209,7 @@
                           label="&stopCmd.label;"
                           accesskey="&stopCmd.accesskey;"
                           command="Browser:Stop"
-#ifdef XP_MACOSX
-                          key="key_stop_mac"/>
-#else
                           key="key_stop"/>
-#endif
                 <menuitem id="menu_reload"
                           class="show-only-for-keyboard"
                           label="&reloadCmd.label;"
@@ -276,30 +266,12 @@
                 </menu>
 #include browser-charsetmenu.inc
                 <menuseparator/>
-#ifdef XP_MACOSX
-                <menuitem id="enterFullScreenItem"
-                          accesskey="&enterFullScreenCmd.accesskey;"
-                          label="&enterFullScreenCmd.label;"
-                          key="key_fullScreen">
-                  <observes element="View:FullScreen" attribute="oncommand"/>
-                  <observes element="View:FullScreen" attribute="disabled"/>
-                </menuitem>
-                <menuitem id="exitFullScreenItem"
-                          accesskey="&exitFullScreenCmd.accesskey;"
-                          label="&exitFullScreenCmd.label;"
-                          key="key_fullScreen"
-                          hidden="true">
-                  <observes element="View:FullScreen" attribute="oncommand"/>
-                  <observes element="View:FullScreen" attribute="disabled"/>
-                </menuitem>
-#else
                 <menuitem id="fullScreenItem"
                           accesskey="&fullScreenCmd.accesskey;"
                           label="&fullScreenCmd.label;"
                           key="key_fullScreen"
                           type="checkbox"
                           observes="View:FullScreen"/>
-#endif
                 <menuitem id="menu_showAllTabs"
                           hidden="true"
                           accesskey="&showAllTabsCmd.accesskey;"
@@ -319,9 +291,7 @@
                   label="&historyMenu.label;"
                   accesskey="&historyMenu.accesskey;">
               <menupopup id="goPopup"
-#ifndef XP_MACOSX
                          placespopup="true"
-#endif
                          context="placesContext"
                          oncommand="this.parentNode._placesView._onCommand(event);"
                          onclick="checkForMiddleClick(this, event);"
@@ -332,21 +302,13 @@
                 <menuitem id="historyMenuBack"
                           class="show-only-for-keyboard"
                           label="&backCmd.label;"
-#ifdef XP_MACOSX
-                          key="goBackKb2"
-#else
                           key="goBackKb"
-#endif
                           command="Browser:BackOrBackDuplicate"
                           onclick="checkForMiddleClick(this, event);"/>
                 <menuitem id="historyMenuForward"
                           class="show-only-for-keyboard"
                           label="&forwardCmd.label;"
-#ifdef XP_MACOSX
-                          key="goForwardKb2"
-#else
                           key="goForwardKb"
-#endif
                           command="Browser:ForwardOrForwardDuplicate"
                           onclick="checkForMiddleClick(this, event);"/>
                 <menuitem id="historyMenuHome"
@@ -359,15 +321,11 @@
                                class="show-only-for-keyboard"/>
                 <menuitem id="menu_showAllHistory"
                           label="&showAllHistoryCmd2.label;"
-#ifndef XP_MACOSX
                           class="menuitem-iconic"
                           key="showAllHistoryKb"
-#endif
                           command="Browser:ShowAllHistory"/>
                 <menuitem id="sanitizeItem"
-#ifndef XP_MACOSX
                           class="menuitem-iconic"
-#endif
                           label="&clearRecentHistory.label;"
                           key="key_sanitize"
                           command="Tools:Sanitize"/>
@@ -387,9 +345,7 @@
                       label="&historyUndoMenu.label;"
                       disabled="true">
                   <menupopup id="historyUndoPopup"
-#ifndef XP_MACOSX
                              placespopup="true"
-#endif
                              onpopupshowing="document.getElementById('history-menu')._placesView.populateUndoSubmenu();"/>
                 </menu>
                 <menu id="historyUndoWindowMenu"
@@ -397,9 +353,7 @@
                       label="&historyUndoWindowMenu.label;"
                       disabled="true">
                   <menupopup id="historyUndoWindowPopup"
-#ifndef XP_MACOSX
                              placespopup="true"
-#endif
                              onpopupshowing="document.getElementById('history-menu')._placesView.populateUndoWindowSubmenu();"/>
                 </menu>
                 <menuseparator id="startHistorySeparator"
@@ -414,9 +368,7 @@
         ondragover="PlacesMenuDNDHandler.onDragOver(event);"
         ondrop="PlacesMenuDNDHandler.onDrop(event);">
     <menupopup id="bookmarksMenuPopup"
-#ifndef XP_MACOSX
                placespopup="true"
-#endif
                context="placesContext"
                openInTabs="children"
                oncommand="BookmarksEventHandler.onCommand(event, this.parentNode._placesView);"
@@ -426,32 +378,24 @@
                                  new PlacesMenu(event, 'place:folder=BOOKMARKS_MENU');"
                tooltip="bhTooltip" popupsinherittooltip="true">
       <menuitem id="bookmarksShowAll"
-#ifndef XP_MACOSX
                 class="menuitem-iconic"
-#endif
                 label="&organizeBookmarks.label;"
                 command="Browser:ShowAllBookmarks"
                 key="manBookmarkKb"/>
       <menuseparator id="organizeBookmarksSeparator"/>
       <menuitem id="menu_bookmarkThisPage"
-#ifndef XP_MACOSX
                 class="menuitem-iconic"
-#endif
                 label="&bookmarkThisPageCmd.label;"
                 command="Browser:AddBookmarkAs"
                 key="addBookmarkAsKb"/>
       <menuitem id="subscribeToPageMenuitem"
-#ifndef XP_MACOSX
                 class="menuitem-iconic"
-#endif
                 label="&subscribeToPageMenuitem.label;"
                 oncommand="return FeedHandler.subscribeToFeed(null, event);"
                 onclick="checkForMiddleClick(this, event);"
                 observes="singleFeedMenuitemState"/>
       <menu id="subscribeToPageMenupopup"
-#ifndef XP_MACOSX
             class="menu-iconic"
-#endif
             label="&subscribeToPageMenupopup.label;"
             observes="multipleFeedsMenuState">
         <menupopup id="subscribeToPageSubmenuMenupopup"
@@ -470,9 +414,7 @@
             label="&personalbarCmd.label;"
             container="true">
         <menupopup id="bookmarksToolbarFolderPopup"
-#ifndef XP_MACOSX
                    placespopup="true"
-#endif
                    context="placesContext"
                    onpopupshowing="if (!this.parentNode._placesView)
                                      new PlacesMenu(event, 'place:folder=TOOLBAR');"/>
@@ -482,9 +424,7 @@
       <menuseparator builder="end"
                      class="hide-if-empty-places-result"/>
       <menuitem id="menu_unsortedBookmarks"
-#ifndef XP_MACOSX
                 class="menuitem-iconic"
-#endif
                 label="&unsortedBookmarksCmd.label;"
                 oncommand="PlacesCommandHook.showPlacesOrganizer('UnfiledBookmarks');"/>
     </menupopup>
@@ -560,9 +500,5 @@
                         oncommand="openPreferences();"/>
               </menupopup>
             </menu>
-
-#ifdef XP_MACOSX
-          <menu id="windowMenu" />
-#endif
           <menu id="helpMenu" />
         </menubar>
