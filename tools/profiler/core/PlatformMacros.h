@@ -34,16 +34,6 @@
 #  define SPS_ARCH_amd64 1
 #  define SPS_OS_linux 1
 
-#elif defined(__ANDROID__) && defined(__arm__)
-#  define SPS_PLAT_arm_android 1
-#  define SPS_ARCH_arm 1
-#  define SPS_OS_android 1
-
-#elif defined(__ANDROID__) && defined(__i386__)
-#  define SPS_PLAT_x86_android 1
-#  define SPS_ARCH_x86 1
-#  define SPS_OS_android 1
-
 #elif defined(__linux__) && defined(__i386__)
 #  define SPS_PLAT_x86_linux 1
 #  define SPS_ARCH_x86 1

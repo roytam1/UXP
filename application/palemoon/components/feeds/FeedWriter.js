@@ -676,13 +676,6 @@ FeedWriter.prototype = {
       } catch (e) {}
     }
 #endif
-#ifdef XP_MACOSX
-    if (file instanceof Ci.nsILocalFileMac) {
-      try {
-        return file.bundleDisplayName;
-      } catch (e) {}
-    }
-#endif
     return file.leafName;
   },
 
@@ -733,11 +726,7 @@ FeedWriter.prototype = {
 #ifdef XP_WIN
 #expand             if (fp.file.leafName != "__MOZ_APP_NAME__.exe") {
 #else
-#ifdef XP_MACOSX
-#expand             if (fp.file.leafName != "__MOZ_MACBUNDLE_NAME__") {
-#else
 #expand             if (fp.file.leafName != "__MOZ_APP_NAME__-bin") {
-#endif
 #endif
               this._initMenuItemWithFile(this._contentSandbox.selectedAppMenuItem,
                                          this._selectedApp);

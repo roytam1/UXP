@@ -390,6 +390,16 @@ WebGLContext::TexImage(const char* funcName, uint8_t funcDims, GLenum rawTarget,
     if (!ValidateTexImageTarget(this, funcName, funcDims, rawTarget, &target, &tex))
         return;
 
+    const bool isUploadFromPbo = bool(src.mPboOffset);
+    const bool isPboBound = bool(mBoundPixelUnpackBuffer);
+    if (isUploadFromPbo != isPboBound) {
+      SynthesizeGLError(LOCAL_GL_INVALID_OPERATION,
+                    "Tex upload from %s but PIXEL_UNPACK_BUFFER %s bound.",
+                    isUploadFromPbo ? "PBO" : "non-PBO",
+                    isPboBound ? "was" : "was not");
+      return;
+    }
+
     const webgl::PackingInfo pi = {unpackFormat, unpackType};
     tex->TexImage(funcName, target, level, internalFormat, width, height, depth, border,
                   pi, src);
@@ -406,6 +416,16 @@ WebGLContext::TexSubImage(const char* funcName, uint8_t funcDims, GLenum rawTarg
     WebGLTexture* tex;
     if (!ValidateTexImageTarget(this, funcName, funcDims, rawTarget, &target, &tex))
         return;
+
+    const bool isUploadFromPbo = bool(src.mPboOffset);
+    const bool isPboBound = bool(mBoundPixelUnpackBuffer);
+    if (isUploadFromPbo != isPboBound) {
+      SynthesizeGLError(LOCAL_GL_INVALID_OPERATION,
+                    "Tex upload from %s but PIXEL_UNPACK_BUFFER %s bound.",
+                    isUploadFromPbo ? "PBO" : "non-PBO",
+                    isPboBound ? "was" : "was not");
+      return;
+    }
 
     const webgl::PackingInfo pi = {unpackFormat, unpackType};
     tex->TexSubImage(funcName, target, level, xOffset, yOffset, zOffset, width, height,

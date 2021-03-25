@@ -804,11 +804,9 @@
                phase="capturing"
                action="return this.openSearch();"/>
 
-#ifndef XP_MACOSX
       <handler event="keypress" keycode="VK_F4"
                phase="capturing"
                action="return this.openSearch();"/>
-#endif
 
       <handler event="dragover">
       <![CDATA[

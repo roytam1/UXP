@@ -13,13 +13,9 @@
 
 <?xul-overlay href="chrome://browser/content/places/editBookmarkOverlay.xul"?>
 
-#ifdef XP_MACOSX
-<?xul-overlay href="chrome://browser/content/macBrowserOverlay.xul"?>
-#else
 <?xul-overlay href="chrome://browser/content/baseMenuOverlay.xul"?>
 <?xul-overlay href="chrome://global/content/editMenuOverlay.xul"?>
 <?xul-overlay href="chrome://browser/content/places/placesOverlay.xul"?>
-#endif
 
 <!DOCTYPE window [
 <!ENTITY % placesDTD SYSTEM "chrome://browser/locale/places/places.dtd">
@@ -53,12 +49,8 @@
     <stringbundle id="brandStrings" src="chrome://branding/locale/brand.properties"/>
   </stringbundleset>
 
-#ifdef XP_MACOSX
-#include ../../../base/content/browserMountPoints.inc
-#else
   <commandset id="editMenuCommands"/>
   <commandset id="placesCommands"/>
-#endif
   <keyset id="placesCommandKeys"/>
 
   <commandset id="organizerCommandSet">
@@ -94,7 +86,6 @@
          modifiers="accel"/>
 
     <!-- Back/Forward Keys Support -->
-#ifndef XP_MACOSX
     <key id="placesKey_goBackKb"
          keycode="VK_LEFT"
          command="OrganizerCommand:Back"
@@ -103,16 +94,6 @@
          keycode="VK_RIGHT"
          command="OrganizerCommand:Forward"
          modifiers="alt"/>
-#else
-    <key id="placesKey_goBackKb"
-         keycode="VK_LEFT"
-         command="OrganizerCommand:Back"
-         modifiers="accel"/>
-    <key id="placesKey_goForwardKb"
-         keycode="VK_RIGHT"
-         command="OrganizerCommand:Forward"
-         modifiers="accel"/>
-#endif
 #ifdef XP_UNIX
     <key id="placesKey_goBackKb2"
          key="&goBackCmd.commandKey;"
@@ -126,9 +107,6 @@
   </keyset>
 
   <keyset id="editMenuKeys">
-#ifdef XP_MACOSX
-    <key id="key_delete2" keycode="VK_BACK" command="cmd_delete"/>
-#endif
   </keyset>
 
   <popupset id="placesPopupset">
@@ -150,17 +128,12 @@
                      tooltiptext="&forwardButton.tooltip;"
                      disabled="true"/>
 
-#ifdef XP_MACOSX
-        <toolbarbutton type="menu" class="tabbable"
-              onpopupshowing="document.getElementById('placeContent').focus()"
-#else
 #ifdef MOZ_WIDGET_GTK
       <menubar id="placesMenu" _moz-menubarkeeplocal="true">
 #else
       <menubar id="placesMenu">
 #endif
         <menu accesskey="&organize.accesskey;" class="menu-iconic"
-#endif
               id="organizeButton" label="&organize.label;"
               tooltiptext="&organize.tooltip;">
           <menupopup id="organizeButtonPopup">
@@ -177,7 +150,6 @@
                       label="&cmd.new_separator.label;"
                       accesskey="&cmd.new_separator.accesskey;"/>
 
-#ifndef XP_MACOSX
             <menuseparator id="orgUndoSeparator"/>
 
             <menuitem id="orgUndo"
@@ -225,20 +197,12 @@
                       key="key_selectAll"
                       accesskey="&selectAllCmd.accesskey;"/>
 
-#endif
             <menuseparator id="orgMoveSeparator"/>
 
             <menuitem id="orgMoveBookmarks"
                       command="placesCmd_moveBookmarks"
                       label="&cmd.moveBookmarks.label;"
                       accesskey="&cmd.moveBookmarks.accesskey;"/>
-#ifdef XP_MACOSX
-            <menuitem id="orgDelete"
-                      command="cmd_delete"
-                      label="&deleteCmd.label;"
-                      key="key_delete"
-                      accesskey="&deleteCmd.accesskey;"/>
-#else
             <menuseparator id="orgCloseSeparator"/>
 
             <menuitem id="orgClose"
@@ -246,15 +210,9 @@
                       label="&file.close.label;"
                       accesskey="&file.close.accesskey;"
                       oncommand="close();"/>
-#endif
           </menupopup>
-#ifdef XP_MACOSX
-        </toolbarbutton>
-        <toolbarbutton type="menu" class="tabbable"
-#else
         </menu>
         <menu accesskey="&views.accesskey;" class="menu-iconic"
-#endif
               id="viewMenu" label="&views.label;"
               tooltiptext="&views.tooltip;">
           <menupopup id="viewMenuPopup">
@@ -282,13 +240,8 @@
               </menupopup>
             </menu>
           </menupopup>
-#ifdef XP_MACOSX
-        </toolbarbutton>
-        <toolbarbutton type="menu" class="tabbable"
-#else
         </menu>
         <menu accesskey="&maintenance.accesskey;" class="menu-iconic"
-#endif
               id="maintenanceButton" label="&maintenance.label;"
               tooltiptext="&maintenance.tooltip;">
           <menupopup id="maintenanceButtonPopup">
@@ -315,12 +268,8 @@
                       label="&exportBookmarksToHTML.label;"
                       accesskey="&exportBookmarksToHTML.accesskey;"/>
           </menupopup>
-#ifdef XP_MACOSX
-        </toolbarbutton>
-#else
         </menu>
       </menubar>
-#endif
 
       <spacer id="libraryToolbarSpacer" flex="1"/>
 

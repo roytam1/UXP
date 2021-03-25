@@ -16,9 +16,7 @@
 #
 
 #ifdef XP_UNIX
-#ifndef XP_MACOSX
 #define UNIX_BUT_NOT_MAC
-#endif
 #endif
 
 #ifdef XP_WIN
@@ -433,13 +431,7 @@ pref("browser.link.open_newwindow.restriction", 2);
 // If true, this pref causes windows opened by window.open to be forced into new
 // tabs (rather than potentially opening separate windows, depending on
 // window.open arguments) when the browser is in fullscreen mode.
-// We set this differently on Mac because the fullscreen implementation there is
-// different.
-#ifdef XP_MACOSX
-pref("browser.link.open_newwindow.disabled_in_fullscreen", true);
-#else
 pref("browser.link.open_newwindow.disabled_in_fullscreen", false);
-#endif
 
 // Tabbed browser
 pref("browser.tabs.autoHide", false);
@@ -594,13 +586,8 @@ pref("browser.gesture.swipe.left", "Browser:BackOrBackDuplicate");
 pref("browser.gesture.swipe.right", "Browser:ForwardOrForwardDuplicate");
 pref("browser.gesture.swipe.up", "cmd_scrollTop");
 pref("browser.gesture.swipe.down", "cmd_scrollBottom");
-#ifdef XP_MACOSX
-pref("browser.gesture.pinch.latched", true);
-pref("browser.gesture.pinch.threshold", 150);
-#else
 pref("browser.gesture.pinch.latched", false);
 pref("browser.gesture.pinch.threshold", 25);
-#endif
 #ifdef XP_WIN
 // Enabled for touch input display zoom.
 pref("browser.gesture.pinch.out", "cmd_fullZoomEnlarge");
@@ -628,27 +615,9 @@ pref("browser.snapshots.limit", 0);
 // 2: Go back or go forward, in your history
 // 3: Zoom in or out
 // 4: Scroll contents with X and Y swapped
-#ifdef XP_MACOSX
-// On OS X, if the wheel has one axis only, shift+wheel comes through as a
-// horizontal scroll event. Thus, we can't assign anything other than normal
-// scrolling to shift+wheel.
-pref("mousewheel.with_alt.action", 2);
-pref("mousewheel.with_shift.action", 1);
-// On MacOS X, control+wheel is typically handled by system and we don't
-// receive the event.  So, command key which is the main modifier key for
-// acceleration is the best modifier for zoom-in/out.  However, we should keep
-// the control key setting for backward compatibility.
-pref("mousewheel.with_meta.action", 3); // command key on Mac
-// Disable control-/meta-modified horizontal mousewheel events, since
-// those are used on Mac as part of modified swipe gestures (e.g.
-// Left swipe+Cmd = go back in a new tab).
-pref("mousewheel.with_control.action.override_x", 0);
-pref("mousewheel.with_meta.action.override_x", 0);
-#else
 pref("mousewheel.with_alt.action", 1);
 pref("mousewheel.with_shift.action", 2);
 pref("mousewheel.with_meta.action", 1); // win key on Win, Super/Hyper on Linux
-#endif
 pref("mousewheel.with_control.action",3);
 pref("mousewheel.with_win.action", 1);
 
@@ -715,11 +684,7 @@ pref("browser.preferences.instantApply", false);
 #else
 pref("browser.preferences.instantApply", true);
 #endif
-#ifdef XP_MACOSX
-pref("browser.preferences.animateFadeIn", true);
-#else
 pref("browser.preferences.animateFadeIn", false);
-#endif
 
 pref("browser.download.show_plugins_in_list", true);
 pref("browser.download.hide_plugins_without_extensions", true);
@@ -971,19 +936,9 @@ pref("browser.bookmarks.editDialog.firstEditField", "namePicker");
 pref("signon.startup.prompt", false);
 
 // Whether to use a panel that looks like an OS X sheet for customization
-#ifdef XP_MACOSX
-pref("toolbar.customization.usesheet", true);
-#else
 pref("toolbar.customization.usesheet", false);
-#endif
 
-#ifdef XP_MACOSX
-// On mac, the default pref is per-architecture
-pref("dom.ipc.plugins.enabled.i386", true);
-pref("dom.ipc.plugins.enabled.x86_64", true);
-#else
 pref("dom.ipc.plugins.enabled", true);
-#endif
 
 pref("browser.tabs.remote", false);
 

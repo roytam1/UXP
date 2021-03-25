@@ -11,10 +11,6 @@
   %pageInfoDTD;
 ]>
 
-#ifdef XP_MACOSX
-<?xul-overlay href="chrome://browser/content/macBrowserOverlay.xul"?>
-#endif
-
 <window id="main-window"
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   windowtype="Browser:page-info"
@@ -66,11 +62,7 @@
   <keyset id="pageInfoKeySet">
     <key key="&closeWindow.key;" modifiers="accel" command="cmd_close"/>
     <key keycode="VK_ESCAPE"                       command="cmd_close"/>
-#ifdef XP_MACOSX
-    <key key="."                 modifiers="meta"  command="cmd_close"/>
-#else
     <key keycode="VK_F1"                           command="cmd_help"/>
-#endif
     <key key="&copy.key;"        modifiers="accel" command="cmd_copy"/>
     <key key="&selectall.key;"   modifiers="accel" command="cmd_selectall"/>
     <key key="&selectall.key;"   modifiers="alt"   command="cmd_selectall"/>
@@ -499,9 +491,5 @@
     </vbox>
     <!-- Others added by overlay -->
   </deck>
-
-#ifdef XP_MACOSX
-#include ../../base/content/browserMountPoints.inc
-#endif
 
 </window>

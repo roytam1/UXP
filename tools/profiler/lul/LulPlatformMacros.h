@@ -30,20 +30,10 @@
 # define LUL_ARCH_x64 1
 # define LUL_OS_linux 1
 
-#elif defined(__linux__) && defined(__i386__) && !defined(__ANDROID__)
+#elif defined(__linux__) && defined(__i386__)
 # define LUL_PLAT_x86_linux 1
 # define LUL_ARCH_x86 1
 # define LUL_OS_linux 1
-
-#elif defined(__ANDROID__) && defined(__arm__)
-# define LUL_PLAT_arm_android 1
-# define LUL_ARCH_arm 1
-# define LUL_OS_android 1
-
-#elif defined(__ANDROID__) && defined(__i386__)
-# define LUL_PLAT_x86_android 1
-# define LUL_ARCH_x86 1
-# define LUL_OS_android 1
 
 #else
 # error "Unsupported platform"

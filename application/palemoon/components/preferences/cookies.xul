@@ -96,10 +96,8 @@
       <button id="removeAllCookies" disabled="true" icon="clear"
               oncommand="gCookiesWindow.deleteAllCookies();"/>
       <spacer flex="1"/>
-#ifndef XP_MACOSX
       <button oncommand="close();" icon="close"
               label="&button.close.label;" accesskey="&button.close.accesskey;"/>
-#endif
     </hbox>
     <resizer type="window" dir="bottomend"/>
   </hbox>

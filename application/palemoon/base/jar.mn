@@ -3,11 +3,6 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 browser.jar:
 % content browser %content/browser/ contentaccessible=yes
-#ifdef XP_MACOSX
-% overlay chrome://mozapps/content/downloads/downloads.xul chrome://browser/content/downloadManagerOverlay.xul
-% overlay chrome://global/content/console.xul chrome://browser/content/jsConsoleOverlay.xul
-% overlay chrome://mozapps/content/update/updates.xul chrome://browser/content/softwareUpdateOverlay.xul
-#endif
 #ifdef XP_WIN
 % overlay chrome://browser/content/browser.xul chrome://browser/content/win6BrowserOverlay.xul os=WINNT osversion>=6
 #endif
@@ -66,12 +61,6 @@ browser.jar:
 * content/browser/nsContextMenu.js              (content/nsContextMenu.js)
 # XXX: We should exclude this one as well (bug 71895)
 * content/browser/hiddenWindow.xul              (content/hiddenWindow.xul)
-#ifdef XP_MACOSX
-* content/browser/macBrowserOverlay.xul         (content/macBrowserOverlay.xul)
-* content/browser/downloadManagerOverlay.xul    (content/downloadManagerOverlay.xul)
-* content/browser/jsConsoleOverlay.xul          (content/jsConsoleOverlay.xul)
-* content/browser/softwareUpdateOverlay.xul     (content/softwareUpdateOverlay.xul)
-#endif
 * content/browser/viewSourceOverlay.xul         (content/viewSourceOverlay.xul)
 #ifdef XP_WIN
   content/browser/win6BrowserOverlay.xul        (content/win6BrowserOverlay.xul)

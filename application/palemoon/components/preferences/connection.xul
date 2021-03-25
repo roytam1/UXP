@@ -16,11 +16,7 @@
             onbeforeaccept="return gConnectionsDialog.beforeAccept();"
             onload="gConnectionsDialog.checkForSystemProxy();"
             ondialoghelp="openPrefsHelp()"
-#ifdef XP_MACOSX
-            style="width: &window.macWidth; !important;">
-#else
             style="width: &window.width; !important;">
-#endif
 
   <script type="application/javascript" src="chrome://browser/content/utilityOverlay.js"/>
 
