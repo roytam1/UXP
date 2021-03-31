@@ -1202,23 +1202,11 @@ PartitionNumberPattern(JSContext* cx, UNumberFormat* nf, double* x,
     MOZ_ALWAYS_TRUE(formattedChars.resize(INITIAL_CHAR_BUFFER_SIZE));
    UErrorCode status = U_ZERO_ERROR;
 
-#if !defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
-    MOZ_ASSERT(fpositer == nullptr,
-               "shouldn't be requesting field information from an ICU that "
-               "can't provide it");
-#endif
-
     int32_t resultSize;
-#if defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
     resultSize =
         unum_formatDoubleForFields(nf, *x,
                                    Char16ToUChar(formattedChars.begin()), INITIAL_CHAR_BUFFER_SIZE,
                                    fpositer, &status);
-#else
-    resultSize =
-        unum_formatDouble(nf, *x, Char16ToUChar(formattedChars.begin()), INITIAL_CHAR_BUFFER_SIZE,
-                          nullptr, &status);
-#endif // defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
     if (status == U_BUFFER_OVERFLOW_ERROR) {
         if (!formattedChars.resize(size_t(resultSize)))
             return false;
@@ -1226,13 +1214,8 @@ PartitionNumberPattern(JSContext* cx, UNumberFormat* nf, double* x,
 #ifdef DEBUG
         int32_t size =
 #endif
-#if defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
             unum_formatDoubleForFields(nf, *x, Char16ToUChar(formattedChars.begin()), resultSize,
                                        fpositer, &status);
-#else
-            unum_formatDouble(nf, *x, Char16ToUChar(formattedChars.begin()), resultSize,
-                              nullptr, &status);
-#endif // defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
         MOZ_ASSERT(size == resultSize);
     }
     if (U_FAILURE(status)) {
@@ -1261,8 +1244,6 @@ intl_FormatNumber(JSContext* cx, UNumberFormat* nf, double x, MutableHandleValue
 }
 
 using FieldType = ImmutablePropertyNamePtr JSAtomState::*;
-
-#if defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
 
 static FieldType
 GetFieldTypeForNumberField(UNumberFormatFields fieldName, double d)
@@ -1658,8 +1639,6 @@ intl_FormatNumberToParts(JSContext* cx, UNumberFormat* nf, double x, MutableHand
     return true;
 }
 
-#endif // defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
-
 bool
 js::intl_FormatNumber(JSContext* cx, unsigned argc, Value* vp)
 {
@@ -1699,12 +1678,9 @@ js::intl_FormatNumber(JSContext* cx, unsigned argc, Value* vp)
     RootedValue result(cx);
 
     bool success;
-#if defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
     if (args[2].toBoolean()) {
         success = intl_FormatNumberToParts(cx, nf, d, &result);
-    } else
-#endif // defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
-    {
+    } else {
         MOZ_ASSERT(!args[2].toBoolean(),
                    "shouldn't be doing formatToParts without an ICU that "
                    "supports it");

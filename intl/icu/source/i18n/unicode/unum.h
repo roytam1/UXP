@@ -692,16 +692,15 @@ unum_formatUFormattable(const UNumberFormat* fmt,
 * @see unum_parseDouble
 * @see UFieldPositionIterator
 * @see UNumberFormatFields
-* @draft ICU 59
+* @stable ICU 59
 */
-U_DRAFT int32_t U_EXPORT2
+U_STABLE int32_t U_EXPORT2
 unum_formatDoubleForFields(const UNumberFormat* format,
                            double number,
                            UChar* result,
                            int32_t resultLength,
                            UFieldPositionIterator* fpositer,
                            UErrorCode* status);
-#define ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS
 
 /**
 * Parse a string into an integer using a UNumberFormat.
