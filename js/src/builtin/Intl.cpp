@@ -755,6 +755,7 @@ static const JSFunctionSpec numberFormat_static_methods[] = {
 
 static const JSFunctionSpec numberFormat_methods[] = {
     JS_SELF_HOSTED_FN("resolvedOptions", "Intl_NumberFormat_resolvedOptions", 0, 0),
+    JS_SELF_HOSTED_FN("formatToParts", "Intl_NumberFormat_formatToParts", 1, 0),
 #if JS_HAS_TOSOURCE
     JS_FN(js_toSource_str, numberFormat_toSource, 0, 0),
 #endif
@@ -904,24 +905,6 @@ CreateNumberFormatPrototype(JSContext* cx, HandleObject Intl, Handle<GlobalObjec
     {
         return nullptr;
     }
-
-#if defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
-    // If the still-experimental NumberFormat.prototype.formatToParts method is
-    // enabled, also add it.
-    if (cx->compartment()->creationOptions().experimentalNumberFormatFormatToPartsEnabled()) {
-        RootedValue ftp(cx);
-        HandlePropertyName name = cx->names().formatToParts;
-        if (!GlobalObject::getSelfHostedFunction(cx, cx->global(),
-                                                 cx->names().NumberFormatFormatToParts,
-                                                 name, 1, &ftp))
-        {
-            return nullptr;
-        }
-
-        if (!DefineProperty(cx, proto, cx->names().formatToParts, ftp, nullptr, nullptr, 0))
-            return nullptr;
-    }
-#endif // defined(ICU_UNUM_HAS_FORMATDOUBLEFORFIELDS)
 
     RootedValue options(cx);
     if (!CreateDefaultOptions(cx, &options))
