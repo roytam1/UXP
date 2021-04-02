@@ -2140,7 +2140,7 @@ function numberFormatFormatToBind(value) {
 
     // Step 1.a.ii-iii.
     var x = ToNumber(value);
-    return intl_FormatNumber(this, x);
+    return intl_FormatNumber(this, x, /* formatToParts = */ false);
 }
 
 
@@ -2168,6 +2168,19 @@ function Intl_NumberFormat_format_get() {
     return internals.boundFormat;
 }
 
+function Intl_NumberFormat_formatToParts(value) {
+    // Step 1.
+    var nf = this;
+
+    // Steps 2-3.
+    getNumberFormatInternals(nf, "formatToParts");
+
+    // Step 4.
+    var x = ToNumber(value);
+
+    // Step 5.
+    return intl_FormatNumber(nf, x, /* formatToParts = */ true);
+}
 
 /**
  * Returns the resolved options for a NumberFormat object.

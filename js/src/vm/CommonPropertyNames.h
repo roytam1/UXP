@@ -82,10 +82,10 @@
     macro(currencyDisplay, currencyDisplay, "currencyDisplay") \
     macro(DateTimeFormat, DateTimeFormat, "DateTimeFormat") \
     macro(DateTimeFormatFormatGet, DateTimeFormatFormatGet, "Intl_DateTimeFormat_format_get") \
-    macro(DateTimeFormatFormatToParts, DateTimeFormatFormatToParts, "Intl_DateTimeFormat_formatToParts") \
     macro(day, day, "day") \
     macro(dayPeriod, dayPeriod, "dayPeriod") \
     macro(debugger, debugger, "debugger") \
+    macro(decimal, decimal, "decimal") \
     macro(decodeURI, decodeURI, "decodeURI") \
     macro(decodeURIComponent, decodeURIComponent, "decodeURIComponent") \
     macro(DefaultBaseClassConstructor, DefaultBaseClassConstructor, "DefaultBaseClassConstructor") \
@@ -142,6 +142,7 @@
     macro(forceInterpreter, forceInterpreter, "forceInterpreter") \
     macro(forEach, forEach, "forEach") \
     macro(format, format, "format") \
+    macro(fraction, fraction, "fraction") \
     macro(frame, frame, "frame") \
     macro(from, from, "from") \
     macro(fulfilled, fulfilled, "fulfilled") \
@@ -160,6 +161,7 @@
     macro(getPrototypeOf, getPrototypeOf, "getPrototypeOf") \
     macro(global, global, "global") \
     macro(globalThis, globalThis, "globalThis") \
+    macro(group, group, "group") \
     macro(Handle, Handle, "Handle") \
     macro(has, has, "has") \
     macro(hasOwn, hasOwn, "hasOwn") \
@@ -174,6 +176,7 @@
     macro(includes, includes, "includes") \
     macro(incumbentGlobal, incumbentGlobal, "incumbentGlobal") \
     macro(index, index, "index") \
+    macro(infinity, infinity, "infinity") \
     macro(Infinity, Infinity, "Infinity") \
     macro(InitializeCollator, InitializeCollator, "InitializeCollator") \
     macro(InitializeDateTimeFormat, InitializeDateTimeFormat, "InitializeDateTimeFormat") \
@@ -189,6 +192,7 @@
     macro(Int8x16, Int8x16, "Int8x16") \
     macro(Int16x8, Int16x8, "Int16x8") \
     macro(Int32x4, Int32x4, "Int32x4") \
+    macro(integer, integer, "integer") \
     macro(interface, interface, "interface") \
     macro(InterpretGeneratorResume, InterpretGeneratorResume, "InterpretGeneratorResume") \
     macro(isEntryPoint, isEntryPoint, "isEntryPoint") \
@@ -223,6 +227,7 @@
     macro(minimumFractionDigits, minimumFractionDigits, "minimumFractionDigits") \
     macro(minimumIntegerDigits, minimumIntegerDigits, "minimumIntegerDigits") \
     macro(minimumSignificantDigits, minimumSignificantDigits, "minimumSignificantDigits") \
+    macro(minusSign, minusSign, "minusSign") \
     macro(minute, minute, "minute") \
     macro(missingArguments, missingArguments, "missingArguments") \
     macro(module, module, "module") \
@@ -232,6 +237,7 @@
     macro(month, month, "month") \
     macro(multiline, multiline, "multiline") \
     macro(name, name, "name") \
+    macro(nan, nan, "nan") \
     macro(NaN, NaN, "NaN") \
     macro(NegativeInfinity, NegativeInfinity, "-Infinity") \
     macro(new, new_, "new") \
@@ -271,9 +277,10 @@
     macro(parseInt, parseInt, "parseInt") \
     macro(pattern, pattern, "pattern") \
     macro(pending, pending, "pending") \
+    macro(percentSign, percentSign, "percentSign") \
     macro(PluralRules, PluralRules, "PluralRules") \
     macro(PluralRulesSelect, PluralRulesSelect, "Intl_PluralRules_Select") \
-    macro(public, public_, "public") \
+    macro(plusSign, plusSign, "plusSign") \
     macro(preventExtensions, preventExtensions, "preventExtensions") \
     macro(private, private_, "private") \
     macro(promise, promise, "promise") \
@@ -282,6 +289,7 @@
     macro(proto, proto, "__proto__") \
     macro(prototype, prototype, "prototype") \
     macro(proxy, proxy, "proxy") \
+    macro(public, public_, "public") \
     macro(raw, raw, "raw") \
     macro(reason, reason, "reason") \
     macro(RegExpFlagsGetter, RegExpFlagsGetter, "RegExpFlagsGetter") \
