@@ -65,6 +65,7 @@ ImportError exception, it is silently ignored.
 
 import sys
 import os
+import platform
 
 try:
     import __builtin__ as builtins
@@ -85,10 +86,13 @@ USER_SITE = None
 USER_BASE = None
 
 _is_64bit = (getattr(sys, 'maxsize', None) or getattr(sys, 'maxint')) > 2**32
+_is_tauthon = platform.python_implementation() == "Tauthon"
 _is_pypy = hasattr(sys, 'pypy_version_info')
 _is_jython = sys.platform[:4] == 'java'
 if _is_jython:
     ModuleType = type(os)
+
+_python_libdir = "tauthon" if _is_tauthon else "python"
 
 def makepath(*paths):
     dir = os.path.join(*paths)
@@ -228,16 +232,16 @@ def addsitepackages(known_paths, sys_prefix=sys.prefix, exec_prefix=sys.exec_pre
 
                 else: # any other Python distros on OSX work this way
                     sitedirs = [os.path.join(prefix, "lib",
-                                             "python" + sys.version[:3], "site-packages")]
+                                             _python_libdir + sys.version[:3], "site-packages")]
 
             elif os.sep == '/':
                 sitedirs = [os.path.join(prefix,
                                          "lib",
-                                         "python" + sys.version[:3],
+                                         _python_libdir + sys.version[:3],
                                          "site-packages"),
                             os.path.join(prefix, "lib", "site-python"),
-                            os.path.join(prefix, "python" + sys.version[:3], "lib-dynload")]
-                lib64_dir = os.path.join(prefix, "lib64", "python" + sys.version[:3], "site-packages")
+                            os.path.join(prefix, _python_libdir + sys.version[:3], "lib-dynload")]
+                lib64_dir = os.path.join(prefix, "lib64", _python_libdir + sys.version[:3], "site-packages")
                 if (os.path.exists(lib64_dir) and
                     os.path.realpath(lib64_dir) not in [os.path.realpath(p) for p in sitedirs]):
                     if _is_64bit:
@@ -252,15 +256,15 @@ def addsitepackages(known_paths, sys_prefix=sys.prefix, exec_prefix=sys.exec_pre
                     pass
                 # Debian-specific dist-packages directories:
                 sitedirs.append(os.path.join(prefix, "local/lib",
-                                             "python" + sys.version[:3],
+                                             _python_libdir + sys.version[:3],
                                              "dist-packages"))
                 if sys.version[0] == '2':
                     sitedirs.append(os.path.join(prefix, "lib",
-                                                 "python" + sys.version[:3],
+                                                 _python_libdir + sys.version[:3],
                                                  "dist-packages"))
                 else:
                     sitedirs.append(os.path.join(prefix, "lib",
-                                                 "python" + sys.version[0],
+                                                 _python_libdir + sys.version[0],
                                                  "dist-packages"))
                 sitedirs.append(os.path.join(prefix, "lib", "dist-python"))
             else:
@@ -583,9 +587,9 @@ def virtual_install_main_packages():
     elif sys.platform == 'win32' and os.sep == '\\':
         paths = [os.path.join(sys.real_prefix, 'Lib'), os.path.join(sys.real_prefix, 'DLLs')]
     else:
-        paths = [os.path.join(sys.real_prefix, 'lib', 'python'+sys.version[:3])]
+        paths = [os.path.join(sys.real_prefix, 'lib', _python_libdir + sys.version[:3])]
         hardcoded_relative_dirs = paths[:] # for the special 'darwin' case below
-        lib64_path = os.path.join(sys.real_prefix, 'lib64', 'python'+sys.version[:3])
+        lib64_path = os.path.join(sys.real_prefix, 'lib64', _python_libdir + sys.version[:3])
         if os.path.exists(lib64_path):
             if _is_64bit:
                 paths.insert(0, lib64_path)
@@ -602,7 +606,7 @@ def virtual_install_main_packages():
             # This is a non-multiarch aware Python.  Fallback to the old way.
             arch = sys.platform
         plat_path = os.path.join(sys.real_prefix, 'lib',
-                                 'python'+sys.version[:3],
+                                 _python_libdir + sys.version[:3],
                                  'plat-%s' % arch)
         if os.path.exists(plat_path):
             paths.append(plat_path)

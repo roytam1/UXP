@@ -44,13 +44,14 @@ if sys.version_info < (2, 6):
     print('ERROR: this script requires Python 2.6 or greater.')
     sys.exit(101)
 
+import platform
+
 try:
     basestring
 except NameError:
     basestring = str
 
-py_version = 'python%s.%s' % (sys.version_info[0], sys.version_info[1])
-
+is_tauthon = platform.python_implementation() == "Tauthon"
 is_jython = sys.platform.startswith('java')
 is_pypy = hasattr(sys, 'pypy_version_info')
 is_win = (sys.platform == 'win32' and os.sep == '\\')
@@ -58,6 +59,9 @@ is_cygwin = (sys.platform == 'cygwin')
 is_msys2 = (sys.platform == 'win32' and os.sep == '/')
 is_darwin = (sys.platform == 'darwin')
 abiflags = getattr(sys, 'abiflags', '')
+
+py_version = '%s%s.%s' % ("tauthon" if is_tauthon else "python",
+                          sys.version_info[0], sys.version_info[1])
 
 user_dir = os.path.expanduser('~')
 if is_win:
@@ -121,7 +125,7 @@ REQUIRED_MODULES = ['os', 'posix', 'posixpath', 'nt', 'ntpath', 'genericpath',
                     'fnmatch', 'locale', 'encodings', 'codecs',
                     'stat', 'UserDict', 'readline', 'copy_reg', 'types',
                     're', 'sre', 'sre_parse', 'sre_constants', 'sre_compile',
-                    'zlib']
+                    'zlib', 'platform', 'string']
 
 REQUIRED_FILES = ['lib-dynload', 'config']
 
@@ -131,6 +135,8 @@ if majver == 2:
         REQUIRED_MODULES.extend(['warnings', 'linecache', '_abcoll', 'abc'])
     if minver >= 7:
         REQUIRED_MODULES.extend(['_weakrefset'])
+    if is_tauthon:
+        REQUIRED_MODULES.extend(['_oserror'])
     if is_msys2:
         REQUIRED_MODULES.extend(['functools'])
 elif majver == 3:
