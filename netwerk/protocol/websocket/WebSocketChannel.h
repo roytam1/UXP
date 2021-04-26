@@ -146,6 +146,7 @@ private:
   void GeneratePong(uint8_t *payload, uint32_t len);
   void GeneratePing();
 
+  nsresult OnNetworkChangedTargetThread();
   nsresult OnNetworkChanged();
   nsresult StartPinging();
 
