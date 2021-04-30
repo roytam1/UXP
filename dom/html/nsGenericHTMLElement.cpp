@@ -2170,10 +2170,6 @@ nsGenericHTMLFormElement::IsHTMLFocusable(bool aWithMouse,
     return true;
   }
 
-#ifdef XP_MACOSX
-  *aIsFocusable =
-    (!aWithMouse || nsFocusManager::sMouseFocusesFormControl) && *aIsFocusable;
-#endif
   return false;
 }
 

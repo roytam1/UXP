@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- * vim: sw=4 ts=4 et :
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -48,9 +47,6 @@
 
 #ifdef MOZ_WIDGET_GTK
 #include <glib.h>
-#elif XP_MACOSX
-#include "PluginInterposeOSX.h"
-#include "PluginUtilsOSX.h"
 #endif
 
 using base::KillProcess;
@@ -508,7 +504,7 @@ PluginModuleChromeParent::OnProcessLaunched(const bool aSucceeded)
         if (NS_SUCCEEDED(mAsyncInitRv))
 #endif
         {
-#if defined(XP_UNIX) && !defined(XP_MACOSX)
+#if defined(XP_UNIX)
             mAsyncInitRv = NP_Initialize(mNPNIface,
                                          mNPPIface,
                                          &mAsyncInitError);
@@ -517,13 +513,6 @@ PluginModuleChromeParent::OnProcessLaunched(const bool aSucceeded)
                                          &mAsyncInitError);
 #endif
         }
-
-#if defined(XP_MACOSX)
-        if (NS_SUCCEEDED(mAsyncInitRv)) {
-            mAsyncInitRv = NP_GetEntryPoints(mNPPIface,
-                                             &mAsyncInitError);
-        }
-#endif
     }
 }
 
@@ -1668,13 +1657,8 @@ PluginModuleParent::GetSettings(PluginSettings* aSettings)
     aSettings->supportsWindowless() = GetSetting(NPNVSupportsWindowless);
     aSettings->userAgent() = NullableString(mNPNIface->uagent(nullptr));
 
-#if defined(XP_MACOSX)
-    aSettings->nativeCursorsSupported() =
-      Preferences::GetBool("dom.ipc.plugins.nativeCursorSupport", false);
-#else
     // Need to initialize this to satisfy IPDL.
     aSettings->nativeCursorsSupported() = false;
-#endif
 }
 
 void
@@ -1692,7 +1676,7 @@ PluginModuleChromeParent::CachedSettingChanged(const char* aPref, void* aModule)
     module->CachedSettingChanged();
 }
 
-#if defined(XP_UNIX) && !defined(XP_MACOSX)
+#if defined(XP_UNIX)
 nsresult
 PluginModuleParent::NP_Initialize(NPNetscapeFuncs* bFuncs, NPPluginFuncs* pFuncs, NPError* error)
 {
@@ -1830,7 +1814,7 @@ PluginModuleParent::NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error)
     return NS_OK;
 }
 
-#if defined(XP_WIN) || defined(XP_MACOSX)
+#if defined(XP_WIN)
 
 nsresult
 PluginModuleContentParent::NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error)
@@ -1853,20 +1837,10 @@ PluginModuleChromeParent::NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error)
     if (NS_FAILED(rv))
         return rv;
 
-#if defined(XP_MACOSX)
-    if (!mSubprocess->IsConnected()) {
-        // The subprocess isn't connected yet. Defer NP_Initialize until
-        // OnProcessLaunched is invoked.
-        mInitOnAsyncConnect = true;
-        *error = NPERR_NO_ERROR;
-        return NS_OK;
-    }
-#else
     if (mInitOnAsyncConnect) {
         *error = NPERR_NO_ERROR;
         return NS_OK;
     }
-#endif
 
     PluginSettings settings;
     GetSettings(&settings);
@@ -2058,7 +2032,7 @@ PluginModuleParent::NP_GetValue(void *future, NPPVariable aVariable,
     return NS_OK;
 }
 
-#if defined(XP_WIN) || defined(XP_MACOSX)
+#if defined(XP_WIN)
 nsresult
 PluginModuleParent::NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* error)
 {
@@ -2067,16 +2041,7 @@ PluginModuleParent::NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* error)
     *error = NPERR_NO_ERROR;
     if (mIsStartingAsync && !IsChrome()) {
         mNPPIface = pFuncs;
-#if defined(XP_MACOSX)
-        if (mNPInitialized) {
-            SetPluginFuncs(pFuncs);
-            InitAsyncSurrogates();
-        } else {
-            PluginAsyncSurrogate::NP_GetEntryPoints(pFuncs);
-        }
-#else
         PluginAsyncSurrogate::NP_GetEntryPoints(pFuncs);
-#endif
     } else {
         SetPluginFuncs(pFuncs);
     }
@@ -2087,14 +2052,6 @@ PluginModuleParent::NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* error)
 nsresult
 PluginModuleChromeParent::NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* error)
 {
-#if defined(XP_MACOSX)
-    if (mInitOnAsyncConnect) {
-        PluginAsyncSurrogate::NP_GetEntryPoints(pFuncs);
-        mNPPIface = pFuncs;
-        *error = NPERR_NO_ERROR;
-        return NS_OK;
-    }
-#else
     if (mIsStartingAsync) {
         PluginAsyncSurrogate::NP_GetEntryPoints(pFuncs);
     }
@@ -2104,7 +2061,6 @@ PluginModuleChromeParent::NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* erro
         *error = NPERR_NO_ERROR;
         return NS_OK;
     }
-#endif
 
     // We need to have the plugin process update its function table here by
     // actually calling NP_GetEntryPoints. The parent's function table will
@@ -2325,18 +2281,7 @@ PluginModuleParent::NPP_GetSitesWithData(nsCOMPtr<nsIGetSitesWithDataCallback> c
     return NS_OK;
 }
 
-#if defined(XP_MACOSX)
-nsresult
-PluginModuleParent::IsRemoteDrawingCoreAnimation(NPP instance, bool *aDrawing)
-{
-    PluginInstanceParent* i = PluginInstanceParent::Cast(instance);
-    if (!i)
-        return NS_ERROR_FAILURE;
-
-    return i->IsRemoteDrawingCoreAnimation(aDrawing);
-}
-#endif
-#if defined(XP_MACOSX) || defined(XP_WIN)
+#if defined(XP_WIN)
 nsresult
 PluginModuleParent::ContentsScaleFactorChanged(NPP instance, double aContentsScaleFactor)
 {
@@ -2346,17 +2291,9 @@ PluginModuleParent::ContentsScaleFactorChanged(NPP instance, double aContentsSca
 
     return i->ContentsScaleFactorChanged(aContentsScaleFactor);
 }
-#endif // #if defined(XP_MACOSX)
+#endif // #if defined(XP_WIN)
 
-#if defined(XP_MACOSX)
-bool
-PluginModuleParent::AnswerProcessSomeEvents()
-{
-    mozilla::plugins::PluginUtilsOSX::InvokeNativeEventLoop();
-    return true;
-}
-
-#elif !defined(MOZ_WIDGET_GTK)
+#if !defined(MOZ_WIDGET_GTK)
 bool
 PluginModuleParent::AnswerProcessSomeEvents()
 {
@@ -2414,85 +2351,54 @@ PluginModuleParent::RecvPluginShowWindow(const uint32_t& aWindowId, const bool& 
                                          const size_t& aWidth, const size_t& aHeight)
 {
     PLUGIN_LOG_DEBUG(("%s", FULLFUNCTION));
-#if defined(XP_MACOSX)
-    CGRect windowBound = ::CGRectMake(aX, aY, aWidth, aHeight);
-    mac_plugin_interposing::parent::OnPluginShowWindow(aWindowId, windowBound, aModal);
-    return true;
-#else
     NS_NOTREACHED(
         "PluginInstanceParent::RecvPluginShowWindow not implemented!");
     return false;
-#endif
 }
 
 bool
 PluginModuleParent::RecvPluginHideWindow(const uint32_t& aWindowId)
 {
     PLUGIN_LOG_DEBUG(("%s", FULLFUNCTION));
-#if defined(XP_MACOSX)
-    mac_plugin_interposing::parent::OnPluginHideWindow(aWindowId, OtherPid());
-    return true;
-#else
     NS_NOTREACHED(
         "PluginInstanceParent::RecvPluginHideWindow not implemented!");
     return false;
-#endif
 }
 
 bool
 PluginModuleParent::RecvSetCursor(const NSCursorInfo& aCursorInfo)
 {
     PLUGIN_LOG_DEBUG(("%s", FULLFUNCTION));
-#if defined(XP_MACOSX)
-    mac_plugin_interposing::parent::OnSetCursor(aCursorInfo);
-    return true;
-#else
     NS_NOTREACHED(
         "PluginInstanceParent::RecvSetCursor not implemented!");
     return false;
-#endif
 }
 
 bool
 PluginModuleParent::RecvShowCursor(const bool& aShow)
 {
     PLUGIN_LOG_DEBUG(("%s", FULLFUNCTION));
-#if defined(XP_MACOSX)
-    mac_plugin_interposing::parent::OnShowCursor(aShow);
-    return true;
-#else
     NS_NOTREACHED(
         "PluginInstanceParent::RecvShowCursor not implemented!");
     return false;
-#endif
 }
 
 bool
 PluginModuleParent::RecvPushCursor(const NSCursorInfo& aCursorInfo)
 {
     PLUGIN_LOG_DEBUG(("%s", FULLFUNCTION));
-#if defined(XP_MACOSX)
-    mac_plugin_interposing::parent::OnPushCursor(aCursorInfo);
-    return true;
-#else
     NS_NOTREACHED(
         "PluginInstanceParent::RecvPushCursor not implemented!");
     return false;
-#endif
 }
 
 bool
 PluginModuleParent::RecvPopCursor()
 {
     PLUGIN_LOG_DEBUG(("%s", FULLFUNCTION));
-#if defined(XP_MACOSX)
-    mac_plugin_interposing::parent::OnPopCursor();
-    return true;
-#else
     NS_NOTREACHED(
         "PluginInstanceParent::RecvPopCursor not implemented!");
     return false;
-#endif
 }
 
 bool
