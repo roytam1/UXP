@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*-
- * vim: sw=2 ts=8 et :
  */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,18 +8,7 @@
 
 #include <mach/vm_map.h>
 #include <mach/mach_port.h>
-#if defined(XP_IOS)
-#include <mach/vm_map.h>
-#define mach_vm_address_t vm_address_t
-#define mach_vm_allocate vm_allocate
-#define mach_vm_deallocate vm_deallocate
-#define mach_vm_map vm_map
-#define mach_vm_read vm_read
-#define mach_vm_region_recurse vm_region_recurse_64
-#define mach_vm_size_t vm_size_t
-#else
 #include <mach/mach_vm.h>
-#endif
 #include <pthread.h>
 #include <unistd.h>
 #include "SharedMemoryBasic.h"
