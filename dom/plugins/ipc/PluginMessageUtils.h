@@ -106,8 +106,6 @@ struct NPAudioDeviceChangeDetailsIPC
 typedef HWND NativeWindowHandle;
 #elif defined(MOZ_X11)
 typedef XID NativeWindowHandle;
-#elif defined(XP_DARWIN)
-typedef intptr_t NativeWindowHandle; // never actually used, will always be 0
 #else
 #error Need NativeWindowHandle for this platform
 #endif

@@ -2,16 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Darwin gives a leading '_' to symbols defined in C code.
-#ifdef XP_DARWIN
-#define SYM(x) _ ## x
-#define CFI_STARTPROC
-#define CFI_ENDPROC
-#define CFI_DEF_CFA_OFFSET(offset)
-#define CFI_OFFSET(reg, offset)
-#define CFI_DEF_CFA_REGISTER(reg)
-#define CFI_DEF_CFA(reg, offset)
-#else
 #define SYM(x) x
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
@@ -19,7 +9,6 @@
 #define CFI_OFFSET(reg, offset) .cfi_offset reg, offset
 #define CFI_DEF_CFA_REGISTER(reg) .cfi_def_cfa_register reg
 #define CFI_DEF_CFA(reg, offset) .cfi_def_cfa reg, offset
-#endif
 
 .intel_syntax noprefix
 
@@ -27,9 +16,7 @@
 #                           uint32_t argc, nsXPTCVariant* argv);
 .text
 .global SYM(NS_InvokeByIndex)
-#ifndef XP_DARWIN
 .type NS_InvokeByIndex, @function
-#endif
 .align 4
 SYM(NS_InvokeByIndex):
   CFI_STARTPROC
@@ -116,7 +103,5 @@ SYM(NS_InvokeByIndex):
   ret
   CFI_ENDPROC
 
-#ifndef XP_DARWIN
 // Magic indicating no need for an executable stack
 .section .note.GNU-stack, "", @progbits ; .previous
-#endif
