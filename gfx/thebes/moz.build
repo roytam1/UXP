@@ -57,24 +57,7 @@ EXPORTS.mozilla.gfx += [
     'PrintTargetThebes.h',
 ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    EXPORTS += [
-        'gfxPlatformMac.h',
-        'gfxQuartzNativeDrawing.h',
-        'gfxQuartzSurface.h',
-    ]
-    EXPORTS.mozilla.gfx += [
-        'PrintTargetCG.h',
-    ]
-    SOURCES += [
-        'gfxCoreTextShaper.cpp',
-        'gfxMacFont.cpp',
-        'gfxPlatformMac.cpp',
-        'gfxQuartzNativeDrawing.cpp',
-        'gfxQuartzSurface.cpp',
-        'PrintTargetCG.cpp',
-    ]
-elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
+if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
     EXPORTS += [
         'gfxFontconfigFonts.h',
         'gfxFT2FontBase.h',
@@ -185,11 +168,7 @@ SOURCES += [
     'VsyncSource.cpp',
 ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    SOURCES += [
-        'gfxMacPlatformFontList.mm',
-    ]
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     SOURCES += [
         'D3D11Checks.cpp',
         'DeviceManagerDx.cpp',
