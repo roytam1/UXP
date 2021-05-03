@@ -6,43 +6,9 @@
 #include "xpcom-private.h"
 
 //-----------------------------------------------------------------------------
-// XP_MACOSX
-//-----------------------------------------------------------------------------
-#if defined(XP_MACOSX)
-
-#include "nsAString.h"
-#include "nsReadableUtils.h"
-#include "nsString.h"
-
-nsresult
-NS_CopyNativeToUnicode(const nsACString& aInput, nsAString& aOutput)
-{
-  CopyUTF8toUTF16(aInput, aOutput);
-  return NS_OK;
-}
-
-nsresult
-NS_CopyUnicodeToNative(const nsAString&  aInput, nsACString& aOutput)
-{
-  CopyUTF16toUTF8(aInput, aOutput);
-  return NS_OK;
-}
-
-void
-NS_StartupNativeCharsetUtils()
-{
-}
-
-void
-NS_ShutdownNativeCharsetUtils()
-{
-}
-
-
-//-----------------------------------------------------------------------------
 // XP_UNIX
 //-----------------------------------------------------------------------------
-#elif defined(XP_UNIX)
+#if defined(XP_UNIX)
 
 #include <stdlib.h>   // mbtowc, wctomb
 #include <locale.h>   // setlocale

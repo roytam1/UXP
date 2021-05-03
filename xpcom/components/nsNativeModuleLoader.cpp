@@ -33,10 +33,6 @@
 #include <windows.h>
 #endif
 
-#ifdef XP_MACOSX
-#include <signal.h>
-#endif
-
 #ifdef DEBUG
 #define IMPLEMENT_BREAK_AFTER_LOAD
 #endif
