@@ -18,8 +18,6 @@
 #include <sys/types.h>
 #elif defined(XP_WIN)
 #include <windows.h>
-#elif defined(XP_MACOSX)
-#include <mach/mach.h>
 #endif
 
 namespace mozilla {
@@ -93,10 +91,6 @@ private:
 private:
   bool mInitialized;
   HANDLE mThreadID;
-
-#elif defined(XP_MACOSX)
-private:
-  thread_act_t mThreadID;
 
 #endif
 };

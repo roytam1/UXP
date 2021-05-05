@@ -41,7 +41,7 @@
 # pragma GCC diagnostic pop // -Wshadow
 #endif
 
-#if defined(XP_LINUX) || defined(XP_MACOSX)
+#if defined(XP_LINUX)
 #include <pthread.h>
 #endif
 
@@ -97,8 +97,6 @@ ThreadStackHelper::ThreadStackHelper()
     THREAD_SUSPEND_RESUME
     , FALSE, 0);
   MOZ_ASSERT(mInitialized);
-#elif defined(XP_MACOSX)
-  mThreadID = mach_thread_self();
 #endif
 }
 
@@ -176,26 +174,6 @@ ThreadStackHelper::GetStack(Stack& aStack)
   }
 
   MOZ_ALWAYS_TRUE(::ResumeThread(mThreadID) != DWORD(-1));
-
-#elif defined(XP_MACOSX)
-# if defined(MOZ_VALGRIND) && defined(RUNNING_ON_VALGRIND)
-  if (RUNNING_ON_VALGRIND) {
-    /* thread_suspend and thread_resume sometimes hang runs on Valgrind,
-       for unknown reasons.  So, just avoid them.  See bug 1100911. */
-    return;
-  }
-# endif
-
-  if (::thread_suspend(mThreadID) != KERN_SUCCESS) {
-    MOZ_ASSERT(false);
-    return;
-  }
-
-  FillStackBuffer();
-  FillThreadContext();
-
-  MOZ_ALWAYS_TRUE(::thread_resume(mThreadID) == KERN_SUCCESS);
-
 #endif
 }
 

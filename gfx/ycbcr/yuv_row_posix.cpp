@@ -1,4 +1,5 @@
 // Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Copyright (c) 2021 Moonchild Productions.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -319,9 +320,7 @@ void FastConvertYUVToRGB32Row_SSE(const uint8* y_buf,
 "2:"
   "popa\n"
   "ret\n"
-#if !defined(XP_MACOSX)
   ".previous\n"
-#endif
 );
 
 void FastConvertYUVToRGB32Row(const uint8* y_buf,
@@ -412,9 +411,7 @@ void ScaleYUVToRGB32Row_SSE(const uint8* y_buf,
 "2:"
   "popa\n"
   "ret\n"
-#if !defined(XP_MACOSX)
   ".previous\n"
-#endif
 );
 
 void ScaleYUVToRGB32Row(const uint8* y_buf,
@@ -544,9 +541,7 @@ void LinearScaleYUVToRGB32Row_SSE(const uint8* y_buf,
   "movd %mm1, (%ebp)\n"
   "popa\n"
   "ret\n"
-#if !defined(XP_MACOSX)
   ".previous\n"
-#endif
 );
 
 void LinearScaleYUVToRGB32Row(const uint8* y_buf,
@@ -577,11 +572,7 @@ void PICConvertYUVToRGB32Row_SSE(const uint8* y_buf,
 
   asm(
   ".text\n"
-#if defined(XP_MACOSX)
-"_PICConvertYUVToRGB32Row_SSE:\n"
-#else
-"PICConvertYUVToRGB32Row_SSE:\n"
-#endif
+  "PICConvertYUVToRGB32Row_SSE:\n"
   "pusha\n"
   "mov    0x24(%esp),%edx\n"
   "mov    0x28(%esp),%edi\n"
@@ -630,9 +621,7 @@ void PICConvertYUVToRGB32Row_SSE(const uint8* y_buf,
 "2:"
   "popa\n"
   "ret\n"
-#if !defined(XP_MACOSX)
   ".previous\n"
-#endif
 );
 
 void FastConvertYUVToRGB32Row(const uint8* y_buf,
@@ -660,11 +649,7 @@ void PICScaleYUVToRGB32Row_SSE(const uint8* y_buf,
 
   asm(
   ".text\n"
-#if defined(XP_MACOSX)
-"_PICScaleYUVToRGB32Row_SSE:\n"
-#else
-"PICScaleYUVToRGB32Row_SSE:\n"
-#endif
+  "PICScaleYUVToRGB32Row_SSE:\n"
   "pusha\n"
   "mov    0x24(%esp),%edx\n"
   "mov    0x28(%esp),%edi\n"
@@ -727,9 +712,7 @@ void PICScaleYUVToRGB32Row_SSE(const uint8* y_buf,
 "2:"
   "popa\n"
   "ret\n"
-#if !defined(XP_MACOSX)
   ".previous\n"
-#endif
 );
 
 void ScaleYUVToRGB32Row(const uint8* y_buf,
@@ -758,11 +741,7 @@ void PICLinearScaleYUVToRGB32Row_SSE(const uint8* y_buf,
 
   asm(
   ".text\n"
-#if defined(XP_MACOSX)
-"_PICLinearScaleYUVToRGB32Row_SSE:\n"
-#else
-"PICLinearScaleYUVToRGB32Row_SSE:\n"
-#endif
+  "PICLinearScaleYUVToRGB32Row_SSE:\n"
   "pusha\n"
   "mov    0x24(%esp),%edx\n"
   "mov    0x30(%esp),%ebp\n"
@@ -865,9 +844,7 @@ void PICLinearScaleYUVToRGB32Row_SSE(const uint8* y_buf,
   "movd %mm1, (%ebp)\n"
   "popa\n"
   "ret\n"
-#if !defined(XP_MACOSX)
   ".previous\n"
-#endif
 );
 
 

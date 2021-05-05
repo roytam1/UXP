@@ -33,22 +33,17 @@ nsresult NS_CopyUnicodeToNative(const nsAString& aInput, nsACString& aOutput);
  * name in UTF-8 out of nsIFile, we can just use |GetNativeLeafName| rather
  * than using |GetLeafName| and converting the result to UTF-8 if the file
  * system  encoding is UTF-8.
- * On Unix (but not on Mac OS X), it depends on the locale and is not known
- * in advance (at the compilation time) so that this function needs to be
- * a real function. On Mac OS X it's always UTF-8 while on Windows
- * and other platforms (e.g. OS2), it's never UTF-8.
+ * On Unix, it depends on the locale and is not known in advance (at the
+ * compilation time) so that this function needs to be a real function.
+ * On Windows and other platforms (e.g. OS2), it's never UTF-8.
  */
-#if defined(XP_UNIX) && !defined(XP_MACOSX)
+#if defined(XP_UNIX)
 bool NS_IsNativeUTF8();
 #else
 inline bool
 NS_IsNativeUTF8()
 {
-#if defined(XP_MACOSX)
-  return true;
-#else
   return false;
-#endif
 }
 #endif
 

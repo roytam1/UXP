@@ -48,10 +48,6 @@
 #endif
 #endif
 
-#ifdef XP_MACOSX
-#include "mozilla/layers/MacIOSurfaceTextureClientOGL.h"
-#endif
-
 #if 0
 #define RECYCLE_LOG(...) printf_stderr(__VA_ARGS__)
 #else
@@ -1073,12 +1069,6 @@ TextureClient::CreateForDrawing(TextureForwarder* aAllocator,
     data = X11TextureData::Create(aSize, aFormat, aTextureFlags, aAllocator);
   }
 #endif
-#endif
-
-#ifdef XP_MACOSX
-  if (!data && gfxPrefs::UseIOSurfaceTextures()) {
-    data = MacIOSurfaceTextureData::Create(aSize, aFormat, moz2DBackend);
-  }
 #endif
 
   if (data) {
