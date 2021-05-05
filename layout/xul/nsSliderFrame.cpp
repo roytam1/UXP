@@ -665,11 +665,7 @@ nsSliderFrame::GetScrollToClick()
     return false;
   }
 
-#ifdef XP_MACOSX
-  return true;
-#else
   return false;
-#endif
 }
 
 nsIFrame*
@@ -1179,8 +1175,8 @@ nsSliderFrame::ShouldScrollToClickForEvent(WidgetGUIEvent* aEvent)
     return false;
   }
 
-#if defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
-  // On Mac and Linux, clicking the scrollbar thumb should never scroll to click.
+#if defined(MOZ_WIDGET_GTK)
+  // On Linux, clicking the scrollbar thumb should never scroll to click.
   if (IsEventOverThumb(aEvent)) {
     return false;
   }
@@ -1188,11 +1184,7 @@ nsSliderFrame::ShouldScrollToClickForEvent(WidgetGUIEvent* aEvent)
 
   WidgetMouseEvent* mouseEvent = aEvent->AsMouseEvent();
   if (mouseEvent->button == WidgetMouseEvent::eLeftButton) {
-#ifdef XP_MACOSX
-    bool invertPref = mouseEvent->IsAlt();
-#else
     bool invertPref = mouseEvent->IsShift();
-#endif
     return GetScrollToClick() != invertPref;
   }
 

@@ -32,13 +32,6 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         'PoisonIOInterposerBase.cpp',
         'PoisonIOInterposerWin.cpp',
     ]
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    UNIFIED_SOURCES += [
-        'PoisonIOInterposerBase.cpp',
-        'PoisonIOInterposerMac.cpp',
-    ]
-    SOURCES += ['mach_override.c']
-    SOURCES['mach_override.c'].flags += ['-Wno-unused-function']
 else:
     SOURCES += ['PoisonIOInterposerStub.cpp']
 

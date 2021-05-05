@@ -19,9 +19,7 @@
 #include "nsIWeakReferenceUtils.h"
 #include "nsIObserver.h"
 #include "nsString.h"
-#ifndef XP_MACOSX
 #include "prproces.h"
-#endif
 #if defined(PROCESSMODEL_WINAPI)
 #include <windows.h>
 #include <shellapi.h>
@@ -73,7 +71,7 @@ private:
   int32_t mExitValue;
 #if defined(PROCESSMODEL_WINAPI)
   HANDLE mProcess;
-#elif !defined(XP_MACOSX)
+#else
   PRProcess* mProcess;
 #endif
 };

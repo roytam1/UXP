@@ -31,11 +31,6 @@ public:
 
   virtual int32_t TabIndexDefault() override;
 
-#ifdef XP_MACOSX
-  // nsIDOMEventTarget
-  NS_IMETHOD PostHandleEvent(EventChainPostVisitor& aVisitor) override;
-#endif
-
   // nsIDOMHTMLAppletElement
   NS_DECL_NSIDOMHTMLAPPLETELEMENT
 

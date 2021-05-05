@@ -6,8 +6,6 @@
 #if defined(XP_WIN)
 #include <windows.h>
 #include <objbase.h>
-#elif defined(XP_MACOSX)
-#include <CoreFoundation/CoreFoundation.h>
 #else
 #include <stdlib.h>
 #include "prrng.h"
@@ -34,7 +32,7 @@ nsUUIDGenerator::Init()
   // We're a service, so we're guaranteed that Init() is not going
   // to be reentered while we're inside Init().
 
-#if !defined(XP_WIN) && !defined(XP_MACOSX) && !defined(HAVE_ARC4RANDOM)
+#if !defined(XP_WIN) && !defined(HAVE_ARC4RANDOM)
   /* initialize random number generator using NSPR random noise */
   unsigned int seed;
 
@@ -71,7 +69,7 @@ nsUUIDGenerator::Init()
   }
 #endif
 
-#endif /* non XP_WIN and non XP_MACOSX and non ARC4RANDOM */
+#endif /* non XP_WIN and non ARC4RANDOM */
 
   return NS_OK;
 }
@@ -106,17 +104,7 @@ nsUUIDGenerator::GenerateUUIDInPlace(nsID* aId)
   if (FAILED(hr)) {
     return NS_ERROR_FAILURE;
   }
-#elif defined(XP_MACOSX)
-  CFUUIDRef uuid = CFUUIDCreate(kCFAllocatorDefault);
-  if (!uuid) {
-    return NS_ERROR_FAILURE;
-  }
-
-  CFUUIDBytes bytes = CFUUIDGetUUIDBytes(uuid);
-  memcpy(aId, &bytes, sizeof(nsID));
-
-  CFRelease(uuid);
-#else /* not windows or OS X; generate randomness using random(). */
+#else /* not windows; generate randomness using random(). */
   /* XXX we should be saving the return of setstate here and switching
    * back to it; instead, we use the value returned when we called
    * initstate, since older glibc's have broken setstate() return values

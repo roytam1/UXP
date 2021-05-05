@@ -1231,14 +1231,6 @@
     "description": "gfxGDIFontList::InitFontList Total (ms)",
     "cpp_guard": "XP_WIN"
   },
-  "MAC_INITFONTLIST_TOTAL": {
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 30000,
-    "n_buckets": 10,
-    "description": "gfxMacPlatformFontList::InitFontList Total (ms)",
-    "cpp_guard": "XP_DARWIN"
-  },
   "SYSTEM_FONT_FALLBACK": {
     "expires_in_version": "never",
     "kind": "exponential",

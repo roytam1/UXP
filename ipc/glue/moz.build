@@ -77,13 +77,7 @@ else:
         'CrossProcessMutex_unimplemented.cpp',
     ]
 
-if CONFIG['OS_ARCH'] == 'Darwin':
-    EXPORTS.mozilla.ipc += ['SharedMemoryBasic_mach.h']
-    SOURCES += [
-        'SharedMemoryBasic_mach.mm',
-    ]
-else:
-    EXPORTS.mozilla.ipc += ['SharedMemoryBasic_chromium.h']
+EXPORTS.mozilla.ipc += ['SharedMemoryBasic_chromium.h']
 
 if CONFIG['OS_ARCH'] == 'Linux':
     UNIFIED_SOURCES += [

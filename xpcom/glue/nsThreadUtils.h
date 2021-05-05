@@ -1037,9 +1037,6 @@ public:
 
 private:
   bool lowIOPrioritySet;
-#if defined(XP_MACOSX)
-  int oldPriority;
-#endif
 };
 
 void
