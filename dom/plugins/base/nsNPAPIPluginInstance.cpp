@@ -60,9 +60,6 @@ nsNPAPIPluginInstance::nsNPAPIPluginInstance()
   , mPlugin(nullptr)
   , mMIMEType(nullptr)
   , mOwner(nullptr)
-#ifdef XP_MACOSX
-  , mCurrentPluginEvent(nullptr)
-#endif
   , mHaveJavaC2PJSObjectQuirk(false)
   , mCachedParamLength(0)
   , mCachedParamNames(nullptr)
@@ -503,9 +500,6 @@ nsresult nsNPAPIPluginInstance::HandleEvent(void* event, int16_t* result,
   int16_t tmpResult = kNPEventNotHandled;
 
   if (pluginFunctions->event) {
-#ifdef XP_MACOSX
-    mCurrentPluginEvent = event;
-#endif
 #if defined(XP_WIN)
     NS_TRY_SAFE_CALL_RETURN(tmpResult, (*pluginFunctions->event)(&mNPP, event), this,
                             aSafeToReenterGecko);
@@ -519,9 +513,6 @@ nsresult nsNPAPIPluginInstance::HandleEvent(void* event, int16_t* result,
 
     if (result)
       *result = tmpResult;
-#ifdef XP_MACOSX
-    mCurrentPluginEvent = nullptr;
-#endif
   }
 
   return NS_OK;
@@ -617,19 +608,6 @@ void nsNPAPIPluginInstance::RedrawPlugin()
   mOwner->RedrawPlugin();
 }
 
-#if defined(XP_MACOSX)
-void nsNPAPIPluginInstance::SetEventModel(NPEventModel aModel)
-{
-  // the event model needs to be set for the object frame immediately
-  if (!mOwner) {
-    NS_WARNING("Trying to set event model without a plugin instance owner!");
-    return;
-  }
-
-  mOwner->SetEventModel(aModel);
-}
-#endif
-
 nsresult nsNPAPIPluginInstance::GetDrawingModel(int32_t* aModel)
 {
   *aModel = (int32_t)mDrawingModel;
@@ -638,24 +616,14 @@ nsresult nsNPAPIPluginInstance::GetDrawingModel(int32_t* aModel)
 
 nsresult nsNPAPIPluginInstance::IsRemoteDrawingCoreAnimation(bool* aDrawing)
 {
-#ifdef XP_MACOSX
-  if (!mPlugin)
-      return NS_ERROR_FAILURE;
-
-  PluginLibrary* library = mPlugin->GetLibrary();
-  if (!library)
-      return NS_ERROR_FAILURE;
-
-  return library->IsRemoteDrawingCoreAnimation(&mNPP, aDrawing);
-#else
+  /** Mac Stub **/
   return NS_ERROR_FAILURE;
-#endif
 }
 
 nsresult
 nsNPAPIPluginInstance::ContentsScaleFactorChanged(double aContentsScaleFactor)
 {
-#if defined(XP_MACOSX) || defined(XP_WIN)
+#if defined(XP_WIN)
   if (!mPlugin)
       return NS_ERROR_FAILURE;
 
@@ -732,12 +700,7 @@ nsNPAPIPluginInstance::ShouldCache()
 nsresult
 nsNPAPIPluginInstance::IsWindowless(bool* isWindowless)
 {
-#ifdef XP_MACOSX
-  // All OS X plugins are windowless.
-  *isWindowless = true;
-#else
   *isWindowless = mWindowless;
-#endif
   return NS_OK;
 }
 

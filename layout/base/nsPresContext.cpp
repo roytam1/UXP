@@ -2895,15 +2895,9 @@ nsRootPresContext::ComputePluginGeometryUpdates(nsIFrame* aFrame,
     aList->ComputeVisibilityForRoot(aBuilder, &region);
   }
 
-#ifdef XP_MACOSX
-  // We control painting of Mac plugins, so just apply geometry updates now.
-  // This is not happening during a paint event.
-  ApplyPluginGeometryUpdates();
-#else
   if (XRE_IsParentProcess()) {
     InitApplyPluginGeometryTimer();
   }
-#endif
 }
 
 static void
@@ -2938,8 +2932,6 @@ nsRootPresContext::CancelApplyPluginGeometryTimer()
     mApplyPluginGeometryTimer = nullptr;
   }
 }
-
-#ifndef XP_MACOSX
 
 static bool
 HasOverlap(const LayoutDeviceIntPoint& aOffset1,
@@ -3025,8 +3017,6 @@ PluginGetGeometryUpdate(nsTHashtable<nsRefPtrHashKey<nsIContent>>& aPlugins,
   }
 }
 
-#endif  // #ifndef XP_MACOSX
-
 static void
 PluginDidSetGeometry(nsTHashtable<nsRefPtrHashKey<nsIContent>>& aPlugins)
 {
@@ -3043,7 +3033,6 @@ PluginDidSetGeometry(nsTHashtable<nsRefPtrHashKey<nsIContent>>& aPlugins)
 void
 nsRootPresContext::ApplyPluginGeometryUpdates()
 {
-#ifndef XP_MACOSX
   CancelApplyPluginGeometryTimer();
 
   nsTArray<nsIWidget::Configuration> configurations;
@@ -3055,7 +3044,6 @@ nsRootPresContext::ApplyPluginGeometryUpdates()
     SortConfigurations(&configurations);
     widget->ConfigureChildren(configurations);
   }
-#endif  // #ifndef XP_MACOSX
 
   PluginDidSetGeometry(mRegisteredPlugins);
 }
@@ -3063,7 +3051,6 @@ nsRootPresContext::ApplyPluginGeometryUpdates()
 void
 nsRootPresContext::CollectPluginGeometryUpdates(LayerManager* aLayerManager)
 {
-#ifndef XP_MACOSX
   // Collect and pass plugin widget configurations down to the compositor
   // for transmission to the chrome process.
   NS_ASSERTION(aLayerManager, "layer manager is invalid!");
@@ -3086,7 +3073,6 @@ nsRootPresContext::CollectPluginGeometryUpdates(LayerManager* aLayerManager)
     clm->StorePluginWidgetConfigurations(configurations);
   }
   PluginDidSetGeometry(mRegisteredPlugins);
-#endif  // #ifndef XP_MACOSX
 }
 
 static void

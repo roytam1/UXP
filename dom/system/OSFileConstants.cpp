@@ -29,10 +29,6 @@
 #include <linux/fadvise.h>
 #endif // defined(XP_LINUX)
 
-#if defined(XP_MACOSX)
-#include "copyfile.h"
-#endif // defined(XP_MACOSX)
-
 #if defined(XP_WIN)
 #include <windows.h>
 #include <accctrl.h>
@@ -131,22 +127,6 @@ struct Paths {
   nsString winStartMenuProgsDir;
 #endif // defined(XP_WIN)
 
-#if defined(XP_MACOSX)
-  /**
-   * The user's Library directory.
-   */
-  nsString macUserLibDir;
-  /**
-   * The Application directory, that stores applications installed in the
-   * system.
-   */
-  nsString macLocalApplicationsDir;
-  /**
-   * The user's trash directory.
-   */
-  nsString macTrashDir;
-#endif // defined(XP_MACOSX)
-
   Paths()
   {
     libDir.SetIsVoid(true);
@@ -161,12 +141,6 @@ struct Paths {
     winAppDataDir.SetIsVoid(true);
     winStartMenuProgsDir.SetIsVoid(true);
 #endif // defined(XP_WIN)
-
-#if defined(XP_MACOSX)
-    macUserLibDir.SetIsVoid(true);
-    macLocalApplicationsDir.SetIsVoid(true);
-    macTrashDir.SetIsVoid(true);
-#endif // defined(XP_MACOSX)
   }
 };
 
@@ -310,12 +284,6 @@ nsresult InitOSFileConstants()
   GetPathToSpecialDir(NS_WIN_APPDATA_DIR, paths->winAppDataDir);
   GetPathToSpecialDir(NS_WIN_PROGRAMS_DIR, paths->winStartMenuProgsDir);
 #endif // defined(XP_WIN)
-
-#if defined(XP_MACOSX)
-  GetPathToSpecialDir(NS_MAC_USER_LIB_DIR, paths->macUserLibDir);
-  GetPathToSpecialDir(NS_OSX_LOCAL_APPLICATIONS_DIR, paths->macLocalApplicationsDir);
-  GetPathToSpecialDir(NS_MAC_TRASH_DIR, paths->macTrashDir);
-#endif // defined(XP_MACOSX)
 
   gPaths = paths.forget();
 
@@ -972,20 +940,12 @@ bool DefineOSFileConstants(JSContext *cx, JS::Handle<JSObject*> global)
   // Note that we don't actually provide the full path, only the name of the
   // library, which is sufficient to link to the library using js-ctypes.
 
-#if defined(XP_MACOSX)
-  // Under MacOS X, for some reason, libxul is called simply "XUL",
-  // and we need to provide the full path.
-  nsAutoString libxul;
-  libxul.Append(gPaths->libDir);
-  libxul.AppendLiteral("/XUL");
-#else
-  // On other platforms, libxul is a library "xul" with regular
+  // On all supported platforms, libxul is a library "xul" with regular
   // library prefix/suffix.
   nsAutoString libxul;
   libxul.AppendLiteral(DLL_PREFIX);
   libxul.AppendLiteral("xul");
   libxul.AppendLiteral(DLL_SUFFIX);
-#endif // defined(XP_MACOSX)
 
   if (!SetStringProperty(cx, objPath, "libxul", libxul)) {
     return false;
@@ -1032,20 +992,6 @@ bool DefineOSFileConstants(JSContext *cx, JS::Handle<JSObject*> global)
     return false;
   }
 #endif // defined(XP_WIN)
-
-#if defined(XP_MACOSX)
-  if (!SetStringProperty(cx, objPath, "macUserLibDir", gPaths->macUserLibDir)) {
-    return false;
-  }
-
-  if (!SetStringProperty(cx, objPath, "macLocalApplicationsDir", gPaths->macLocalApplicationsDir)) {
-    return false;
-  }
-
-  if (!SetStringProperty(cx, objPath, "macTrashDir", gPaths->macTrashDir)) {
-    return false;
-  }
-#endif // defined(XP_MACOSX)
 
   // sqlite3 is always a shared lib
   nsAutoString libsqlite3;

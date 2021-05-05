@@ -712,21 +712,6 @@ nsXULPopupManager::ShowMenu(nsIContent *aMenu,
 
   nsAutoString position;
 
-#ifdef XP_MACOSX
-  nsCOMPtr<nsIDOMXULMenuListElement> menulist = do_QueryInterface(aMenu);
-  bool isNonEditableMenulist = false;
-  if (menulist) {
-    bool editable;
-    menulist->GetEditable(&editable);
-    isNonEditableMenulist = !editable;
-  }
-
-  if (isNonEditableMenulist) {
-    position.AssignLiteral("selection");
-  }
-  else
-#endif
-
   if (onMenuBar || !onmenu)
     position.AssignLiteral("after_start");
   else
@@ -1814,15 +1799,6 @@ nsXULPopupManager::MayShowPopup(nsMenuPopupFrame* aPopup)
     return false;
   }
 
-#ifdef XP_MACOSX
-  if (rootWin) {
-    auto globalWin = nsGlobalWindow::Cast(rootWin.get());
-    if (globalWin->IsInModalState()) {
-      return false;
-    }
-  }
-#endif
-
   // cannot open a popup that is a submenu of a menupopup that isn't open.
   nsMenuFrame* menuFrame = do_QueryFrame(aPopup->GetParent());
   if (menuFrame) {
@@ -2328,7 +2304,6 @@ nsXULPopupManager::HandleKeyboardEventWithKeyCode(
   switch (keyCode) {
     case nsIDOMKeyEvent::DOM_VK_UP:
     case nsIDOMKeyEvent::DOM_VK_DOWN:
-#ifndef XP_MACOSX
       // roll up the popup when alt+up/down are pressed within a menulist.
       bool alt;
       aKeyEvent->GetAltKey(&alt);
@@ -2337,7 +2312,6 @@ nsXULPopupManager::HandleKeyboardEventWithKeyCode(
         break;
       }
       MOZ_FALLTHROUGH;
-#endif
 
     case nsIDOMKeyEvent::DOM_VK_LEFT:
     case nsIDOMKeyEvent::DOM_VK_RIGHT:
@@ -2366,9 +2340,7 @@ nsXULPopupManager::HandleKeyboardEventWithKeyCode(
       break;
 
     case nsIDOMKeyEvent::DOM_VK_TAB:
-#ifndef XP_MACOSX
     case nsIDOMKeyEvent::DOM_VK_F10:
-#endif
       if (aTopVisibleMenuItem &&
           !aTopVisibleMenuItem->Frame()->GetContent()->AttrValueIs(kNameSpaceID_None,
            nsGkAtoms::activateontab, nsGkAtoms::_true, eCaseMatters)) {

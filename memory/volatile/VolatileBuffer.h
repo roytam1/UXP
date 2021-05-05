@@ -76,9 +76,7 @@ private:
   void* mBuf;
   size_t mSize;
   int mLockCount;
-#ifdef XP_DARWIN
-  bool mHeap;
-#elif defined(XP_WIN)
+#if defined(XP_WIN)
   bool mHeap;
   bool mFirstLock;
 #endif

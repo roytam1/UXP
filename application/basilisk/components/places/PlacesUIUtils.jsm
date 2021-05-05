@@ -1018,7 +1018,9 @@ this.PlacesUIUtils = {
       if (PlacesUtils.nodeIsURI(aNodes[i]))
         urlsToOpen.push({uri: aNodes[i].uri, isBookmark: PlacesUtils.nodeIsBookmark(aNodes[i])});
     }
-    this._openTabset(urlsToOpen, aEvent, window);
+    if (this.confirmOpenInTabs(urlsToOpen.length, window)) {
+      this._openTabset(urlsToOpen, aEvent, window);
+    }
   },
 
   /**
