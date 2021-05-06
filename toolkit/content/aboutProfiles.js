@@ -131,8 +131,6 @@ function display(profileData) {
       let button = document.createElement('button');
 #ifdef XP_WIN
       let string = 'winOpenDir2';
-#elifdef XP_MACOSX
-      let string = 'macOpenDir';
 #else
       let string = 'openDir';
 #endif  

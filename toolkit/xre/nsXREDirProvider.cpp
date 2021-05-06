@@ -49,19 +49,11 @@
 #include <windows.h>
 #include <shlobj.h>
 #endif
-#ifdef XP_MACOSX
-#include "nsILocalFileMac.h"
-// for chflags()
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
 #ifdef XP_UNIX
 #include <ctype.h>
 #endif
 
-#if defined(XP_MACOSX)
-#define APP_REGISTRY_NAME "Application Registry"
-#elif defined(XP_WIN)
+#if defined(XP_WIN)
 #define APP_REGISTRY_NAME "registry.dat"
 #else
 #define APP_REGISTRY_NAME "appreg"
@@ -109,9 +101,6 @@ nsXREDirProvider::Initialize(nsIFile *aXULAppDir,
   mXULAppDir = aXULAppDir;
   mGREDir = aGREDir;
   mGREDir->Clone(getter_AddRefs(mGREBinDir));
-#ifdef XP_MACOSX
-  mGREBinDir->SetNativeLeafName(NS_LITERAL_CSTRING("MacOS"));
-#endif
 
   if (!mProfileDir) {
     nsCOMPtr<nsIDirectoryServiceProvider> app(do_QueryInterface(mAppProvider));
@@ -140,30 +129,6 @@ nsXREDirProvider::SetProfile(nsIFile* aDir, nsIFile* aLocalDir)
   rv = EnsureDirectoryExists(aLocalDir);
   if (NS_FAILED(rv))
     return rv;
-
-#ifdef XP_MACOSX
-  bool same;
-  if (NS_SUCCEEDED(aDir->Equals(aLocalDir, &same)) && !same) {
-    // Ensure that the cache directory is not indexed by Spotlight
-    // (bug 718910).  At least on OS X, the cache directory (under
-    // ~/Library/Caches/) is always the "local" user profile
-    // directory.  This is confusing, since *both* user profile
-    // directories are "local" (they both exist under the user's
-    // home directory).  But this usage dates back at least as far
-    // as the patch for bug 291033, where "local" seems to mean
-    // "suitable for temporary storage".  Don't hide the cache
-    // directory if by some chance it and the "non-local" profile
-    // directory are the same -- there are bad side effects from
-    // hiding a profile directory under /Library/Application Support/
-    // (see bug 801883).
-    nsAutoCString cacheDir;
-    if (NS_SUCCEEDED(aLocalDir->GetNativePath(cacheDir))) {
-      if (chflags(cacheDir.get(), UF_HIDDEN)) {
-        NS_WARNING("Failed to set Cache directory to HIDDEN.");
-      }
-    }
-  }
-#endif
 
   mProfileDir = aDir;
   mProfileLocalDir = aLocalDir;
@@ -199,7 +164,7 @@ nsXREDirProvider::GetUserProfilesRootDir(nsIFile** aResult,
                                      aProfileName, aAppName, aVendorName);
 
   if (NS_SUCCEEDED(rv)) {
-#if !defined(XP_UNIX) || defined(XP_MACOSX)
+#if !defined(XP_UNIX)
     rv = file->AppendNative(NS_LITERAL_CSTRING("Profiles"));
 #endif
     // We must create the profile directory here if it does not exist.
@@ -224,7 +189,7 @@ nsXREDirProvider::GetUserProfilesLocalDir(nsIFile** aResult,
                                      aProfileName, aAppName, aVendorName);
 
   if (NS_SUCCEEDED(rv)) {
-#if !defined(XP_UNIX) || defined(XP_MACOSX)
+#if !defined(XP_UNIX)
     rv = file->AppendNative(NS_LITERAL_CSTRING("Profiles"));
 #endif
     // We must create the profile directory here if it does not exist.
@@ -237,7 +202,7 @@ nsXREDirProvider::GetUserProfilesLocalDir(nsIFile** aResult,
   return NS_OK;
 }
 
-#if defined(XP_UNIX) || defined(XP_MACOSX)
+#if defined(XP_UNIX)
 /**
  * Get the directory that is the parent of the system-wide directories
  * for extensions and native-messaing manifests.
@@ -251,12 +216,6 @@ GetSystemParentDirectory(nsIFile** aFile)
 {
   nsresult rv;
   nsCOMPtr<nsIFile> localDir;
-#if defined(XP_MACOSX)
-  rv = GetOSXFolderType(kOnSystemDisk, kApplicationSupportFolderType, getter_AddRefs(localDir));
-  if (NS_SUCCEEDED(rv)) {
-    rv = localDir->AppendNative(NS_LITERAL_CSTRING("Mozilla"));
-  }
-#else
   NS_NAMED_LITERAL_CSTRING(dirname,
 #ifdef HAVE_USR_LIB64_DIR
                            "/usr/lib64/mozilla"
@@ -267,7 +226,6 @@ GetSystemParentDirectory(nsIFile** aFile)
 #endif
                            );
   rv = NS_NewNativeLocalFile(dirname, false, getter_AddRefs(localDir));
-#endif
 
   if (NS_SUCCEEDED(rv)) {
     localDir.forget(aFile);
@@ -351,18 +309,14 @@ nsXREDirProvider::GetFile(const char* aProperty, bool* aPersistent,
            !strcmp(aProperty, XRE_USER_APP_DATA_DIR)) {
     rv = GetUserAppDataDirectory(getter_AddRefs(file));
   }
-#if defined(XP_UNIX) || defined(XP_MACOSX)
+#if defined(XP_UNIX)
   else if (!strcmp(aProperty, XRE_SYS_NATIVE_MESSAGING_MANIFESTS)) {
     nsCOMPtr<nsIFile> localDir;
 
     rv = ::GetSystemParentDirectory(getter_AddRefs(localDir));
     if (NS_SUCCEEDED(rv)) {
       NS_NAMED_LITERAL_CSTRING(dirname,
-#if defined(XP_MACOSX)
-                               "NativeMessagingHosts"
-#else
                                "native-messaging-hosts"
-#endif
                                );
       rv = localDir->AppendNative(dirname);
       if (NS_SUCCEEDED(rv)) {
@@ -374,17 +328,10 @@ nsXREDirProvider::GetFile(const char* aProperty, bool* aPersistent,
     nsCOMPtr<nsIFile> localDir;
     rv = GetUserDataDirectoryHome(getter_AddRefs(localDir), false);
     if (NS_SUCCEEDED(rv)) {
-#if defined(XP_MACOSX)
-      rv = localDir->AppendNative(NS_LITERAL_CSTRING("Mozilla"));
-      if (NS_SUCCEEDED(rv)) {
-        rv = localDir->AppendNative(NS_LITERAL_CSTRING("NativeMessagingHosts"));
-      }
-#else
       rv = localDir->AppendNative(NS_LITERAL_CSTRING(".mozilla"));
       if (NS_SUCCEEDED(rv)) {
         rv = localDir->AppendNative(NS_LITERAL_CSTRING("native-messaging-hosts"));
       }
-#endif
     }
     if (NS_SUCCEEDED(rv)) {
       localDir.swap(file);
@@ -426,7 +373,7 @@ nsXREDirProvider::GetFile(const char* aProperty, bool* aPersistent,
       return mAppProvider->GetFile(NS_APP_PROFILE_DIR_STARTUP, aPersistent,
                                    aFile);
   }
-#if defined(XP_UNIX) || defined(XP_MACOSX)
+#if defined(XP_UNIX)
   else if (!strcmp(aProperty, XRE_SYS_LOCAL_EXTENSION_PARENT_DIR)) {
 #ifdef ENABLE_SYSTEM_EXTENSION_DIRS
     return GetSystemExtensionsDirectory(aFile);
@@ -435,7 +382,7 @@ nsXREDirProvider::GetFile(const char* aProperty, bool* aPersistent,
 #endif
   }
 #endif
-#if defined(XP_UNIX) && !defined(XP_MACOSX)
+#if defined(XP_UNIX)
   else if (!strcmp(aProperty, XRE_SYS_SHARE_EXTENSION_PARENT_DIR)) {
 #ifdef ENABLE_SYSTEM_EXTENSION_DIRS
 #if defined(__OpenBSD__) || defined(__FreeBSD__)
@@ -1105,42 +1052,7 @@ nsXREDirProvider::GetUpdateRootDir(nsIFile* *aResult)
   rv = appFile->GetParent(getter_AddRefs(updRoot));
   NS_ENSURE_SUCCESS(rv, rv);
 
-#ifdef XP_MACOSX
-  nsCOMPtr<nsIFile> appRootDirFile;
-  nsCOMPtr<nsIFile> localDir;
-  nsAutoString appDirPath;
-  if (NS_FAILED(appFile->GetParent(getter_AddRefs(appRootDirFile))) ||
-      NS_FAILED(appRootDirFile->GetPath(appDirPath)) ||
-      NS_FAILED(GetUserDataDirectoryHome(getter_AddRefs(localDir), true))) {
-    return NS_ERROR_FAILURE;
-  }
-
-  int32_t dotIndex = appDirPath.RFind(".app");
-  if (dotIndex == kNotFound) {
-    dotIndex = appDirPath.Length();
-  }
-  appDirPath = Substring(appDirPath, 1, dotIndex - 1);
-
-  bool hasVendor = gAppData->vendor && strlen(gAppData->vendor) != 0;
-  if (hasVendor || gAppData->name) {
-    if (NS_FAILED(localDir->AppendNative(nsDependentCString(hasVendor ?
-                                           gAppData->vendor :
-                                           gAppData->name)))) {
-      return NS_ERROR_FAILURE;
-    }
-  } else if (NS_FAILED(localDir->AppendNative(NS_LITERAL_CSTRING("Mozilla")))) {
-    return NS_ERROR_FAILURE;
-  }
-
-  if (NS_FAILED(localDir->Append(NS_LITERAL_STRING("updates"))) ||
-      NS_FAILED(localDir->AppendRelativePath(appDirPath))) {
-    return NS_ERROR_FAILURE;
-  }
-
-  localDir.forget(aResult);
-  return NS_OK;
-
-#elif XP_WIN
+#if XP_WIN
   nsAutoString pathHash;
   bool pathHashResult = false;
   bool hasVendor = gAppData->vendor && strlen(gAppData->vendor) != 0;
@@ -1282,32 +1194,7 @@ nsXREDirProvider::GetUserDataDirectoryHome(nsIFile** aFile, bool aLocal)
   nsresult rv;
   nsCOMPtr<nsIFile> localDir;
 
-#if defined(XP_MACOSX)
-  FSRef fsRef;
-  OSType folderType;
-  if (aLocal) {
-    folderType = kCachedDataFolderType;
-  } else {
-#ifdef MOZ_THUNDERBIRD
-    folderType = kDomainLibraryFolderType;
-#else
-    folderType = kApplicationSupportFolderType;
-#endif
-  }
-  OSErr err = ::FSFindFolder(kUserDomain, folderType, kCreateFolder, &fsRef);
-  NS_ENSURE_FALSE(err, NS_ERROR_FAILURE);
-
-  rv = NS_NewNativeLocalFile(EmptyCString(), true, getter_AddRefs(localDir));
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  nsCOMPtr<nsILocalFileMac> dirFileMac = do_QueryInterface(localDir);
-  NS_ENSURE_TRUE(dirFileMac, NS_ERROR_UNEXPECTED);
-
-  rv = dirFileMac->InitWithFSRef(&fsRef);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  localDir = do_QueryInterface(dirFileMac, &rv);
-#elif defined(XP_WIN)
+#if defined(XP_WIN)
   nsString path;
   if (aLocal) {
     rv = GetShellFolderPath(CSIDL_LOCAL_APPDATA, path);
@@ -1370,7 +1257,7 @@ nsXREDirProvider::GetSysUserExtensionsDirectory(nsIFile** aFile)
   return NS_OK;
 }
 
-#if defined(XP_UNIX) || defined(XP_MACOSX)
+#if defined(XP_UNIX)
 nsresult
 nsXREDirProvider::GetSystemExtensionsDirectory(nsIFile** aFile)
 {
@@ -1380,11 +1267,7 @@ nsXREDirProvider::GetSystemExtensionsDirectory(nsIFile** aFile)
   rv = GetSystemParentDirectory(getter_AddRefs(localDir));
   if (NS_SUCCEEDED(rv)) {
     NS_NAMED_LITERAL_CSTRING(sExtensions,
-#if defined(XP_MACOSX)
-                             "Extensions"
-#else
                              "extensions"
-#endif
                              );
 
     rv = localDir->AppendNative(sExtensions);
@@ -1451,7 +1334,7 @@ nsXREDirProvider::AppendSysUserExtensionPath(nsIFile* aFile)
 
   nsresult rv;
 
-#if defined (XP_MACOSX) || defined(XP_WIN)
+#if defined(XP_WIN)
 
   static const char* const sXR = "Mozilla";
   rv = aFile->AppendNative(nsDependentCString(sXR));
@@ -1510,19 +1393,7 @@ nsXREDirProvider::AppendProfilePath(nsIFile* aFile,
 
   nsresult rv;
 
-#if defined (XP_MACOSX)
-  if (!profile.IsEmpty()) {
-    rv = AppendProfileString(aFile, profile.get());
-  }
-  else {
-    // Note that MacOS ignores the vendor when creating the profile hierarchy -
-    // all application preferences directories live alongside one another in
-    // ~/Library/Application Support/
-    rv = aFile->AppendNative(appName);
-  }
-  NS_ENSURE_SUCCESS(rv, rv);
-
-#elif defined(XP_WIN)
+#if defined(XP_WIN)
   if (!profile.IsEmpty()) {
     rv = AppendProfileString(aFile, profile.get());
   }

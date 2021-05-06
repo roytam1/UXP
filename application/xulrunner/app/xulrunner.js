@@ -19,8 +19,4 @@ pref("browser.preferences.instantApply", false);
 #else
 pref("browser.preferences.instantApply", true);
 #endif
-#ifdef XP_MACOSX
-pref("browser.preferences.animateFadeIn", true);
-#else
 pref("browser.preferences.animateFadeIn", false);
-#endif
