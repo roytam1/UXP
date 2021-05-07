@@ -243,11 +243,6 @@ caption {
 
 /******** draggable elements *********/
 
-%ifdef XP_MACOSX
-titlebar,
-toolbar:not([nowindowdrag="true"]):not([customizing="true"]),
-statusbar:not([nowindowdrag="true"]),
-%endif
 windowdragbox {
   -moz-window-dragging: drag;
 }
@@ -288,12 +283,6 @@ toolbar[customizing="true"][hidden="true"] {
   display: -moz-box;
 }
 
-%ifdef XP_MACOSX
-toolbar[type="menubar"] {
-  min-height: 0 !important;
-  border: 0 !important;
-}
-%else
 toolbar[type="menubar"][autohide="true"] {
   -moz-binding: url("chrome://global/content/bindings/toolbar.xml#toolbar-menubar-autohide");
   overflow: hidden;
@@ -305,7 +294,6 @@ toolbar[type="menubar"][autohide="true"][inactive="true"]:not([customizing="true
   -moz-appearance: none !important;
   border-style: none !important;
 }
-%endif
 
 %ifdef MOZ_WIDGET_GTK
 window[shellshowingmenubar="true"] menubar,
@@ -499,15 +487,9 @@ panel[arrowposition="start_after"]:-moz-locale-dir(rtl) {
 
 %endif
 
-%ifdef XP_MACOSX
-.statusbar-resizerpanel {
-  display: none;
-}
-%else
 window[sizemode="maximized"] statusbarpanel.statusbar-resizerpanel {
   visibility: collapse;
 }
-%endif
 
 /******** grid **********/
 
@@ -1018,9 +1000,6 @@ autorepeatbutton {
 
 statusbar {
   -moz-binding: url("chrome://global/content/bindings/general.xml#statusbar");
-%ifdef XP_MACOSX
-  padding-right: 14px;
-%endif
 }
 
 statusbarpanel {

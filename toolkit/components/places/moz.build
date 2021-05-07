@@ -68,9 +68,8 @@ if CONFIG['MOZ_PLACES']:
         'PlacesSearchAutocompleteProvider.jsm',
         'PlacesSyncUtils.jsm',
         'PlacesTransactions.jsm',
+        'PlacesUtils.jsm',
     ]
-
-    EXTRA_PP_JS_MODULES += ['PlacesUtils.jsm']
 
     EXTRA_COMPONENTS += [
         'ColorAnalyzer.js',

@@ -21,10 +21,6 @@
 MimeDefClass(MimeExternalBody, MimeExternalBodyClass,
        mimeExternalBodyClass, &MIME_SUPERCLASS);
 
-#ifdef XP_MACOSX
-extern MimeObjectClass mimeMultipartAppleDoubleClass;
-#endif
-
 static int MimeExternalBody_initialize (MimeObject *);
 static void MimeExternalBody_finalize (MimeObject *);
 static int MimeExternalBody_parse_line (const char *, int32_t, MimeObject *);
@@ -252,12 +248,6 @@ MimeExternalBody_parse_eof (MimeObject *obj, bool abort_p)
   status = ((MimeObjectClass*)&MIME_SUPERCLASS)->parse_eof(obj, abort_p);
   if (status < 0) return status;
 
-#ifdef XP_MACOSX
-  if (obj->parent && mime_typep(obj->parent,
-                                (MimeObjectClass*) &mimeMultipartAppleDoubleClass))
-    goto done;
-#endif /* XP_MACOSX */
-
   if (!abort_p &&
       obj->output_p &&
       obj->options &&
@@ -424,10 +414,6 @@ FAIL:
     PR_FREEIF(svr);
     PR_FREEIF(subj);
   }
-
-#ifdef XP_MACOSX
-done:
-#endif
 
     return status;
 }

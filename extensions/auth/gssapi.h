@@ -1,4 +1,3 @@
-/* vim:set ts=4 sw=4 sts=4 et cindent: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Copyright 1993 by OpenVision Technologies, Inc.
  * 
@@ -93,10 +92,6 @@
 #endif
 
 EXTERN_C_BEGIN
-
-#if defined(XP_MACOSX)
-#    pragma pack(push,2)
-#endif
 
 /*
  * If the platform supports the xom.h header file, it should be
@@ -837,10 +832,6 @@ GSS_CALLCONV GSS_FUNC(gss_duplicate_name)
                int *               /* qop_state */
               );
 
-
-#if defined(XP_MACOSX)
-#    pragma pack(pop)
-#endif
 
 EXTERN_C_END
 

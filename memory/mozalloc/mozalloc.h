@@ -1,6 +1,4 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- * vim: sw=4 ts=4 et :
- */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -152,13 +150,9 @@ MFBT_API void* moz_xvalloc(size_t size)
  */
 
 /* NB: This is defined just to silence vacuous warnings about symbol
- * visibility on OS X/gcc. These symbols are force-inline and not
- * exported. */
-#if defined(XP_MACOSX)
-#  define MOZALLOC_EXPORT_NEW MFBT_API
-#else
-#  define MOZALLOC_EXPORT_NEW
-#endif
+ * visibility on gcc. These symbols are force-inline and not exported.
+ */
+#define MOZALLOC_EXPORT_NEW
 
 #if defined(_MSC_VER)
 /*
