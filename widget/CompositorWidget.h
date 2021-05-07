@@ -54,11 +54,7 @@ class CompositorWidgetChild;
 
 class WidgetRenderingContext
 {
-public:
-#ifdef XP_MACOSX
-  WidgetRenderingContext() : mLayerManager(nullptr) {}
-  layers::LayerManagerComposite* mLayerManager;
-#endif
+/** Mac Stub **/
 };
 
 /**

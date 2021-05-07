@@ -20,11 +20,6 @@
 #define strcasecmp _stricmp
 #define PATH_SEPARATOR_CHAR '\\'
 #define R_OK 04
-#elif defined(XP_MACOSX)
-#include <unistd.h>
-#include <sys/stat.h>
-#include <CoreFoundation/CoreFoundation.h>
-#define PATH_SEPARATOR_CHAR '/'
 #else
 #include <unistd.h>
 #include <sys/types.h>
@@ -160,41 +155,6 @@ main(int argc, char **argv)
   char greDir[MAXPATHLEN];
   bool greFound = false;
 
-#if defined(XP_MACOSX)
-  CFBundleRef appBundle = CFBundleGetMainBundle();
-  if (!appBundle)
-    return 1;
-
-  CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(appBundle);
-  if (!resourcesURL)
-    return 1;
-
-  CFURLRef absResourcesURL = CFURLCopyAbsoluteURL(resourcesURL);
-  CFRelease(resourcesURL);
-  if (!absResourcesURL)
-    return 1;
-
-  CFURLRef iniFileURL =
-    CFURLCreateCopyAppendingPathComponent(kCFAllocatorDefault,
-                                          absResourcesURL,
-                                          CFSTR("application.ini"),
-                                          false);
-  CFRelease(absResourcesURL);
-  if (!iniFileURL)
-    return 1;
-
-  CFStringRef iniPathStr =
-    CFURLCopyFileSystemPath(iniFileURL, kCFURLPOSIXPathStyle);
-  CFRelease(iniFileURL);
-  if (!iniPathStr)
-    return 1;
-
-  CFStringGetCString(iniPathStr, iniPath, sizeof(iniPath),
-                     kCFStringEncodingUTF8);
-  CFRelease(iniPathStr);
-
-#else
-
 #ifdef XP_WIN
   wchar_t wide_path[MAX_PATH];
   if (!::GetModuleFileNameW(nullptr, wide_path, MAX_PATH))
@@ -276,8 +236,6 @@ main(int argc, char **argv)
 
   strncpy(lastSlash, "application.ini", sizeof(iniPath) - (lastSlash - iniPath));
 
-#endif
-
   // If -app parameter was passed in, it is now time to take it under 
   // consideration.
   const char *appDataFile;
@@ -334,33 +292,6 @@ main(int argc, char **argv)
   }
 
   if (!greFound) {
-#ifdef XP_MACOSX
-    // The bundle can be found next to the executable, in the MacOS dir.
-    CFURLRef exurl = CFBundleCopyExecutableURL(appBundle);
-    CFURLRef absexurl = nullptr;
-    if (exurl) {
-      absexurl = CFURLCopyAbsoluteURL(exurl);
-      CFRelease(exurl);
-    }
-
-    if (absexurl) {
-      char tbuffer[MAXPATHLEN];
-
-      if (CFURLGetFileSystemRepresentation(absexurl, true,
-                                           (UInt8*) tbuffer,
-                                           sizeof(tbuffer)) &&
-          access(tbuffer, R_OK | X_OK) == 0) {
-        if (realpath(tbuffer, greDir)) {
-          greFound = true;
-        }
-        else {
-          greDir[0] = '\0';
-        }
-      }
-
-      CFRelease(absexurl);
-    }
-#endif
     if (!greFound) {
       Output(false, "Could not find the Mozilla runtime.\n");
       return 1;

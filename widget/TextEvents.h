@@ -111,10 +111,6 @@ protected:
     , mLocation(nsIDOMKeyEvent::DOM_KEY_LOCATION_STANDARD)
     , mAccessKeyForwardedToChild(false)
     , mUniqueId(0)
-#ifdef XP_MACOSX
-    , mNativeModifierFlags(0)
-    , mNativeKeyCode(0)
-#endif // #ifdef XP_MACOSX
     , mKeyNameIndex(mozilla::KEY_NAME_INDEX_Unidentified)
     , mCodeNameIndex(CODE_NAME_INDEX_UNKNOWN)
     , mInputMethodAppState(eNotHandled)
@@ -140,10 +136,6 @@ public:
     , mLocation(nsIDOMKeyEvent::DOM_KEY_LOCATION_STANDARD)
     , mAccessKeyForwardedToChild(false)
     , mUniqueId(0)
-#ifdef XP_MACOSX
-    , mNativeModifierFlags(0)
-    , mNativeKeyCode(0)
-#endif // #ifdef XP_MACOSX
     , mKeyNameIndex(mozilla::KEY_NAME_INDEX_Unidentified)
     , mCodeNameIndex(CODE_NAME_INDEX_UNKNOWN)
     , mInputMethodAppState(eNotHandled)
@@ -204,15 +196,6 @@ public:
   // CODE_NAME_INDEX_USE_STRING.
   nsString mCodeValue;
 
-#ifdef XP_MACOSX
-  // Values given by a native NSEvent, for use with Cocoa NPAPI plugins.
-  nsString mNativeCharacters;
-  nsString mNativeCharactersIgnoringModifiers;
-  // If this is non-empty, create a text event for plugins instead of a
-  // keyboard event.
-  nsString mPluginTextEventString;
-#endif // #ifdef XP_MACOSX
-
   // OS-specific native event can optionally be preserved
   void* mNativeKeyEvent;
   // A DOM keyCode value or 0.  If a keypress event whose mCharCode is 0, this
@@ -239,12 +222,6 @@ public:
   // after preventDefault is called on keydown events. It's ok if this wraps
   // over long periods.
   uint32_t mUniqueId;
-
-#ifdef XP_MACOSX
-  // Values given by a native NSEvent, for use with Cocoa NPAPI plugins.
-  uint32_t mNativeModifierFlags;
-  uint16_t mNativeKeyCode;
-#endif // #ifdef XP_MACOSX
 
   // DOM KeyboardEvent.key
   KeyNameIndex mKeyNameIndex;
@@ -397,14 +374,6 @@ public:
     // is destroyed.
     mNativeKeyEvent = nullptr;
     mUniqueId = aEvent.mUniqueId;
-#ifdef XP_MACOSX
-    mNativeKeyCode = aEvent.mNativeKeyCode;
-    mNativeModifierFlags = aEvent.mNativeModifierFlags;
-    mNativeCharacters.Assign(aEvent.mNativeCharacters);
-    mNativeCharactersIgnoringModifiers.
-      Assign(aEvent.mNativeCharactersIgnoringModifiers);
-    mPluginTextEventString.Assign(aEvent.mPluginTextEventString);
-#endif
     mInputMethodAppState = aEvent.mInputMethodAppState;
     mIsSynthesizedByTIP = aEvent.mIsSynthesizedByTIP;
   }

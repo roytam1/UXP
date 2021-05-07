@@ -5,6 +5,7 @@
 
 EXTRA_JS_MODULES.addons += [
     'AddonLogging.jsm',
+    'AddonRepository.jsm',
     'AddonRepository_SQLiteMigrator.jsm',
     'Content.js',
     'GMPProvider.jsm',
@@ -15,7 +16,6 @@ EXTRA_JS_MODULES.addons += [
 ]
 
 EXTRA_PP_JS_MODULES.addons += [
-    'AddonRepository.jsm',
     'AddonUpdateChecker.jsm',
     'XPIProvider.jsm',
     'XPIProviderUtils.js',
