@@ -119,12 +119,6 @@ AppPicker.prototype =
           return file.getVersionInfoField("FileDescription");
         } catch (e) {}
       }
-#elifdef XP_MACOSX
-      if (file instanceof Components.interfaces.nsILocalFileMac) {
-        try {
-          return file.bundleDisplayName;
-        } catch (e) {}
-      }
 #endif
       return file.leafName;
     },
@@ -183,8 +177,6 @@ AppPicker.prototype =
       var startLocation;
 #ifdef XP_WIN
       startLocation = "ProgF"; // Program Files
-#elifdef XP_MACOSX
-      startLocation = "LocApp"; // Local Applications
 #else
       startLocation = "Home";
 #endif

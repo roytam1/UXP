@@ -822,11 +822,6 @@ nsresult nsMsgFilter::ConvertMoveOrCopyToFolderValue(nsIMsgRuleAction *filterAct
         if (offset != -1)
           moveValue.Cut(offset, 4);
 
-#ifdef XP_MACOSX
-        nsCString unescapedMoveValue;
-        MsgUnescapeString(moveValue, 0, unescapedMoveValue);
-        moveValue = unescapedMoveValue;
-#endif
         destFolderUri.Append('/');
         if (filterVersion == k45Version)
         {

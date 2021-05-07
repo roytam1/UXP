@@ -675,11 +675,7 @@ nsUnknownContentTypeDialog.prototype = {
 
   // getPath:
   getPath: function (aFile) {
-#ifdef XP_MACOSX
-      return aFile.leafName || aFile.path;
-#else
     return aFile.path;
-#endif
   },
 
   // initAppAndSaveToDiskValues:
@@ -985,12 +981,6 @@ nsUnknownContentTypeDialog.prototype = {
     if (file instanceof Components.interfaces.nsILocalFileWin) {
       try {
         return file.getVersionInfoField("FileDescription");
-      } catch (e) {}
-    }
-#elifdef XP_MACOSX
-    if (file instanceof Components.interfaces.nsILocalFileMac) {
-      try {
-        return file.bundleDisplayName;
       } catch (e) {}
     }
 #endif

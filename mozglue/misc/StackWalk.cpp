@@ -955,7 +955,7 @@ MozDescribeCodeAddress(void* aPC, MozCodeAddressDetails* aDetails)
 
 #endif
 
-#if defined(XP_WIN) || defined (XP_MACOSX) || defined (XP_LINUX)
+#if defined(XP_WIN) || defined (XP_LINUX)
 namespace mozilla {
 bool
 FramePointerStackWalk(MozWalkStackCallback aCallback, uint32_t aSkipFrames,
@@ -979,8 +979,8 @@ FramePointerStackWalk(MozWalkStackCallback aCallback, uint32_t aSkipFrames,
         (uintptr_t(next) & 3)) {
       break;
     }
-#if (defined(__ppc__) && defined(XP_MACOSX)) || defined(__powerpc64__)
-    // ppc mac or powerpc64 linux
+#if defined(__powerpc64__)
+    // powerpc64 linux
     void* pc = *(bp + 2);
     bp += 3;
 #else // i386 or powerpc32 linux
