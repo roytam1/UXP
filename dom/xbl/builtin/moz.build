@@ -5,8 +5,6 @@
 
 if CONFIG['OS_ARCH'] == 'WINNT':
     DIRS += ['win']
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    DIRS += ['mac']
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'android':
     DIRS += ['android']
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] in ('gtk2', 'gtk3'):
