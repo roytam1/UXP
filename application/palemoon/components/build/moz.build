@@ -29,7 +29,6 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         'netapi32.dll',
     ]
 
-# Mac: Need to link with CoreFoundation for Mac Migrators (PList reading code)
-# GTK2: Need to link with glib for GNOME shell service
-if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('cocoa', 'gtk2', 'gtk3'):
+# GTK: Need to link with glib for GNOME shell service
+if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('gtk2', 'gtk3'):
     OS_LIBS += CONFIG['TK_LIBS']
