@@ -30,14 +30,6 @@ def ApplicationBranding():
             'wizHeaderRTL.bmp',
             'wizWatermark.bmp',
         ]
-    elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-        BRANDING_FILES += [
-            '../shared/background.png',
-            'disk.icns',
-            'document.icns',
-            'dsstore',
-            'firefox.icns',
-        ]
     elif 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
         BRANDING_FILES += [
             'default16.png',
