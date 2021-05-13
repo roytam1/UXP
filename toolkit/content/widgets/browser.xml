@@ -1206,7 +1206,7 @@
               }
               case "DOMMouseScroll": {
                 this._autoScrollPopup.hidePopup();
-                event.preventDefault();
+                aEvent.preventDefault();
                 break;
               }
               case "popuphidden": {
