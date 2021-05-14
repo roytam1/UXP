@@ -70,6 +70,7 @@ UNIFIED_SOURCES += [
     'mozStorageStatementRow.cpp',
     'SQLCollations.cpp',
     'StorageBaseStatementInternal.cpp',
+    'TelemetryVFS.cpp',
     'VacuumManager.cpp',
 ]
 
