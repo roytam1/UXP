@@ -62,7 +62,7 @@ BaselineFrame::trace(JSTracer* trc, JitFrameIterator& frameIterator)
 
     // NB: It is possible that numValueSlots() could be zero, even if nfixed is
     // nonzero.  This is the case if the function has an early stack check.
-    if (numValueSlots > 0) {
+    if (numValueSlots() > 0) {
 
         MOZ_ASSERT(nfixed <= numValueSlots());
 
