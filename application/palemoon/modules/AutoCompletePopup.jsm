@@ -188,10 +188,15 @@ this.AutoCompletePopup = {
 
   closePopup() {
     if (this.openedPopup) {
-      // Note that hidePopup() closes the popup immediately,
-      // so popuphiding or popuphidden events will be fired
-      // and handled during this call.
-      this.openedPopup.hidePopup();
+      try {
+        // Note that hidePopup() closes the popup immediately,
+        // so popuphiding or popuphidden events will be fired
+        // and handled during this call.
+        this.openedPopup.hidePopup();
+      } catch(e) {
+        Cu.reportError(e);
+        console.log("Debug: ", this.openedPopup);
+      }
     }
     AutoCompleteTreeView.clearResults();
   },

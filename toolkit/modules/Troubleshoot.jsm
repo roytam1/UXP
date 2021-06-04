@@ -96,6 +96,7 @@ const PREFS_WHITELIST = [
 const PREFS_BLACKLIST = [
   /^network[.]proxy[.]/,
   /[.]print_to_filename$/,
+  /^print[.]printer_/,
   /^print[.]macosx[.]pagesetup/,
 ];
 
