@@ -575,10 +575,6 @@ NS_InitXPCOM2(nsIServiceManager** aResult,
     setlocale(LC_ALL, "");
   }
 
-#if defined(XP_UNIX)
-  NS_StartupNativeCharsetUtils();
-#endif
-
   NS_StartupLocalFile();
 
   StartupSpecialSystemDirectory();
@@ -1023,9 +1019,6 @@ ShutdownXPCOM(nsIServiceManager* aServMgr)
 
   // Shutdown nsLocalFile string conversion
   NS_ShutdownLocalFile();
-#ifdef XP_UNIX
-  NS_ShutdownNativeCharsetUtils();
-#endif
 
   // Shutdown xpcom. This will release all loaders and cause others holding
   // a refcount to the component manager to release it.
