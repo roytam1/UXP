@@ -4492,6 +4492,15 @@ struct LengthNumberCalcObj
   bool mIsNumber;
 };
 
+struct RealNumberComputedCalc
+{
+  // We use float for mLength, so it can support real numbers.
+  float mLength  = 0.0f;
+  float mPercent = 0.0f;
+  bool mIsNumber = false;
+};
+
+
 struct LengthNumberCalcOps : public css::NumbersAlreadyNormalizedOps
 {
   typedef LengthNumberCalcObj result_type;
@@ -4570,6 +4579,96 @@ struct LengthNumberCalcOps : public css::NumbersAlreadyNormalizedOps
       result.mValue = 1.0f;
     }
 
+    return result;
+  }
+};
+
+// This is like LengthNumberCalcOps, but then for real/float.
+struct LengthPercentNumberCalcOps : public css::NumbersAlreadyNormalizedOps
+{
+  typedef RealNumberComputedCalc result_type;
+
+  nsStyleContext* const mContext;
+  nsPresContext* const mPresContext;
+  RuleNodeCacheConditions& mConditions;
+  bool mHasPercent = false;
+
+  LengthPercentNumberCalcOps(nsStyleContext* aContext,
+                             nsPresContext* aPresContext,
+                             RuleNodeCacheConditions& aConditions)
+    : mContext(aContext),
+      mPresContext(aPresContext),
+      mConditions(aConditions) { }
+
+  result_type
+  MergeAdditive(nsCSSUnit aCalcFunction,
+                result_type aValue1, result_type aValue2)
+  {
+    MOZ_ASSERT(aValue1.mIsNumber == aValue2.mIsNumber);
+    MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Plus ||
+               aCalcFunction == eCSSUnit_Calc_Minus,
+               "unexpected unit");
+
+    result_type result;
+    result.mIsNumber = aValue1.mIsNumber;
+    if (aCalcFunction == eCSSUnit_Calc_Plus) {
+      result.mLength = aValue1.mLength + aValue2.mLength;
+      result.mPercent = aValue1.mPercent + aValue2.mPercent;
+    } else {
+      result.mLength = aValue2.mLength == NS_IEEEPositiveInfinity() ?
+                       0.0f :
+                       aValue1.mLength - aValue2.mLength;
+      result.mPercent = aValue1.mPercent - aValue2.mPercent;
+    }
+    return result;
+  }
+
+  result_type
+  MergeMultiplicativeL(nsCSSUnit aCalcFunction,
+                       float aValue1, result_type aValue2)
+  {
+    MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_Times_L,
+               "unexpected unit");
+    result_type result;
+    result.mLength = aValue1 * aValue2.mLength;
+    result.mPercent = aValue1 * aValue2.mPercent;
+    result.mIsNumber = aValue2.mIsNumber;
+    return result;
+  }
+
+  result_type
+  MergeMultiplicativeR(nsCSSUnit aCalcFunction,
+                       result_type aValue1, float aValue2)
+  {
+    MOZ_ASSERT(aCalcFunction == eCSSUnit_Calc_TimesR ||
+               aCalcFunction == eCSSUnit_Divided,
+               "unexpected unit");
+    result_type result;
+    if (aCalcFunction == eCSSUnit_Calc_Divided) {
+      aValue2 = 1.0f / aValue2;
+    }
+    result.mLength = aValue1.mLength * aValue2;
+    result.mPercent = aValue1.mPercent * aValue2;
+    result.mIsNumber = aValue1.mIsNumber;
+    return result;
+  }
+
+  result_type
+  ComputeLeafValue(const nsCSSValue& aValue)
+  {
+    result_type result;
+    if (aValue.IsLengthUnit()) {
+      result.mLength = CalcLength(aValue, mContext, mPresContext, mConditions);
+    } else if (aValue.GetUnit() == eCSSUnit_Percent) {
+      result.mPercent = aValue.GetPercentValue();
+      mHasPercent = true;
+    } else if (aValue.GetUnit() == eCSSUnit_Number) {
+      result.mLength = aValue.GetFloatValue();
+      result.mIsNumber = true;
+    } else {
+      MOZ_ASSERT_UNREACHABLE("unexpected unit");
+      result.mLength = CalcLength(aValue, mContext, mPresContext, mConditions);
+    }
     return result;
   }
 };
@@ -9626,6 +9725,18 @@ nsRuleNode::ComputeSVGData(void* aStartStruct,
     strokeDashoffsetValue->GetIntValue() == NS_STYLE_STROKE_PROP_CONTEXT_VALUE);
   if (svg->StrokeDashoffsetFromObject()) {
     svg->mStrokeDashoffset.SetCoordValue(0);
+  } else if (strokeDashoffsetValue->IsCalcUnit()) {
+    LengthPercentNumberCalcOps ops(aContext, mPresContext, conditions);
+    RealNumberComputedCalc obj = css::ComputeCalc(*strokeDashoffsetValue, ops);
+    if (obj.mIsNumber) {
+      svg->mStrokeDashoffset.SetFactorValue(obj.mLength);
+    } else {
+      nsStyleCoord::Calc* calcObj = new nsStyleCoord::Calc;
+      calcObj->mLength = NSToCoordRoundWithClamp(obj.mLength);
+      calcObj->mPercent = obj.mPercent;
+      calcObj->mHasPercent = ops.mHasPercent;
+      svg->mStrokeDashoffset.SetCalcValue(calcObj);
+    }
   } else {
     SetCoord(*aRuleData->ValueForStrokeDashoffset(),
              svg->mStrokeDashoffset, parentSVG->mStrokeDashoffset,
