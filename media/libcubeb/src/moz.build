@@ -55,10 +55,6 @@ if CONFIG['OS_TARGET'] == 'Darwin':
         'cubeb_audiounit.cpp',
         'cubeb_resampler.cpp'
     ]
-    if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-        SOURCES += [
-            'cubeb_osx_run_loop.c',
-        ]
     DEFINES['USE_AUDIOUNIT'] = True
 
 if CONFIG['OS_TARGET'] == 'WINNT':

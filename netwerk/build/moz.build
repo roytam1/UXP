@@ -36,12 +36,7 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         '/netwerk/system/win32',
     ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    LOCAL_INCLUDES += [
-        '/netwerk/system/mac',
-    ]
-
-elif CONFIG['OS_ARCH'] == 'Linux':
+if CONFIG['OS_ARCH'] == 'Linux':
     LOCAL_INCLUDES += [
         '/netwerk/system/linux',
     ]

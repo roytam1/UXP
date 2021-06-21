@@ -28,10 +28,6 @@ if CONFIG['ACCESSIBILITY']:
         LOCAL_INCLUDES += [
             '/accessible/atk',
         ]
-    elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-        LOCAL_INCLUDES += [
-            '/accessible/mac',
-        ]
     else:
         LOCAL_INCLUDES += [
             '/accessible/other',

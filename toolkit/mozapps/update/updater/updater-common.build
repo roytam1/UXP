@@ -72,24 +72,6 @@ if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:
         'progressui_gtk.cpp',
     ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    have_progressui = 1
-    srcs += [
-        'launchchild_osx.mm',
-        'progressui_osx.mm',
-    ]
-    OS_LIBS += [
-        '-framework Cocoa',
-        '-framework Security',
-        '-framework SystemConfiguration',
-    ]
-    UNIFIED_SOURCES += [
-        '/toolkit/xre/updaterfileutils_osx.mm',
-    ]
-    LOCAL_INCLUDES += [
-        '/toolkit/xre',
-    ]
-
 if have_progressui == 0:
     srcs += [
         'progressui_null.cpp',
