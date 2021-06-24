@@ -19,15 +19,6 @@ if CONFIG['MOZ_INSTRUMENT_EVENT_LOOP']:
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     UNIFIED_SOURCES += ['nsNativeAppSupportWin.cpp']
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    UNIFIED_SOURCES += [
-        'MacApplicationDelegate.mm',
-        'MacAutoreleasePool.mm',
-        'MacLaunchHelper.mm',
-        'nsCommandLineServiceMac.cpp',
-        'nsNativeAppSupportCocoa.mm',
-        'updaterfileutils_osx.mm',
-    ]
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'uikit':
     UNIFIED_SOURCES += [
         'nsNativeAppSupportDefault.cpp',
@@ -120,12 +111,6 @@ LOCAL_INCLUDES += [
     '/testing/gtest/mozilla',
     '/xpcom/build',
 ]
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    LOCAL_INCLUDES += [
-        '/widget',
-        '/widget/cocoa',
-    ]
 
 if CONFIG['MOZ_ENABLE_XREMOTE']:
     LOCAL_INCLUDES += [

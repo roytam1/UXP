@@ -117,7 +117,6 @@ EXPORTS.mozilla.layers += [
     'AxisPhysicsModel.h',
     'AxisPhysicsMSDModel.h',
     'basic/BasicCompositor.h',
-    'basic/MacIOSurfaceTextureHostBasic.h',
     'basic/TextureHostBasic.h',
     'BSPTree.h',
     'BufferTexture.h',
@@ -186,8 +185,6 @@ EXPORTS.mozilla.layers += [
     'LayersTypes.h',
     'opengl/CompositingRenderTargetOGL.h',
     'opengl/CompositorOGL.h',
-    'opengl/MacIOSurfaceTextureClientOGL.h',
-    'opengl/MacIOSurfaceTextureHostOGL.h',
     'opengl/TextureClientOGL.h',
     'opengl/TextureHostOGL.h',
     'PersistentBufferProvider.h',
@@ -211,21 +208,6 @@ if CONFIG['MOZ_X11']:
         'composite/X11TextureHost.cpp',
         'ipc/ShadowLayerUtilsX11.cpp',
         'opengl/X11TextureSourceOGL.cpp',
-    ]
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    EXPORTS.mozilla.layers += [
-        'opengl/GLManager.h',
-    ]
-    EXPORTS += [
-        'MacIOSurfaceHelpers.h',
-        'MacIOSurfaceImage.h',
-    ]
-    SOURCES += [
-        'ipc/ShadowLayerUtilsMac.cpp',
-        'MacIOSurfaceHelpers.cpp',
-        'MacIOSurfaceImage.cpp',
-        'opengl/GLManager.cpp',
     ]
 
 SOURCES += [
@@ -378,13 +360,6 @@ if CONFIG['_MSC_VER'] and CONFIG['CPU_ARCH'] == 'x86_64':
         'LayerTreeInvalidation.cpp',
     ]:
         SOURCES[src].no_pgo = True
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    SOURCES += [
-        'basic/MacIOSurfaceTextureHostBasic.cpp',
-        'opengl/MacIOSurfaceTextureClientOGL.cpp',
-        'opengl/MacIOSurfaceTextureHostOGL.cpp',
-    ]
 
 IPDL_SOURCES = [
     'ipc/LayersMessages.ipdlh',

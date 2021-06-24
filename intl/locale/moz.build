@@ -9,8 +9,6 @@ toolkit = CONFIG['MOZ_WIDGET_TOOLKIT']
 
 if toolkit == 'windows':
     DIRS += ['windows']
-elif toolkit == 'cocoa':
-    DIRS += ['mac']
 else:
     DIRS += ['unix']
 

@@ -528,7 +528,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('android'):
         'skia/src/ports/SkFontHost_cairo.cpp',
         'skia/src/ports/SkFontHost_FreeType_common.cpp',
     ]
-if CONFIG['MOZ_WIDGET_TOOLKIT'] in {'cocoa', 'uikit'}:
+if CONFIG['MOZ_WIDGET_TOOLKIT'] in {'uikit'}:
     SOURCES += [
         'skia/src/ports/SkDebug_stdio.cpp',
         'skia/src/ports/SkOSFile_posix.cpp',
@@ -679,7 +679,6 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('android'):
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in {
     'android',
-    'cocoa',
     'gtk2',
     'gtk3',
     'uikit',

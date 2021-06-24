@@ -466,20 +466,60 @@ GetOperatingSystemVersion(nsPresContext* aPresContext, const nsMediaFeature* aFe
 
 static nsresult
 GetPrefersColorScheme(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
-		      nsCSSValue& aResult)
+          nsCSSValue& aResult)
 {
   switch(Preferences::GetInt("browser.display.prefers_color_scheme", 1)) {
     case 1:
-    aResult.SetIntValue(NS_STYLE_PREFERS_COLOR_SCHEME_LIGHT, 
-		        eCSSUnit_Enumerated);
-    break;
+      aResult.SetIntValue(NS_STYLE_PREFERS_COLOR_SCHEME_LIGHT, 
+                          eCSSUnit_Enumerated);
+      break;
     case 2:
-    aResult.SetIntValue(NS_STYLE_PREFERS_COLOR_SCHEME_DARK, 
-		        eCSSUnit_Enumerated);
-    break;
+      aResult.SetIntValue(NS_STYLE_PREFERS_COLOR_SCHEME_DARK, 
+                          eCSSUnit_Enumerated);
+      break;
+    case 3:
+      // If the pref is 3, we follow ui.color_scheme instead. When following 
+      // ui.color_scheme, light theme is the fallback behavior.
+      switch(Preferences::GetInt("ui.color_scheme", 1)) {
+        case 2:
+          aResult.SetIntValue(NS_STYLE_PREFERS_COLOR_SCHEME_DARK,
+                              eCSSUnit_Enumerated);
+          break;
+        default:
+          aResult.SetIntValue(NS_STYLE_PREFERS_COLOR_SCHEME_LIGHT,
+                              eCSSUnit_Enumerated);
+      }
+      break;
     default:
-    aResult.Reset();
+      aResult.Reset();
   }
+
+  return NS_OK;
+}
+
+static nsresult
+GetDarkTheme(nsPresContext* aPresContext, const nsMediaFeature* aFeature,
+             nsCSSValue& aResult)
+{
+#ifdef XP_WIN
+  // Under Windows, do nothing if High Contrast Theme is on.
+  if (LookAndFeel::GetInt(LookAndFeel::eIntID_UseAccessibilityTheme, 0)) {
+    aResult.Reset();
+    return NS_OK;
+  }
+#endif
+
+  switch(Preferences::GetInt("ui.color_scheme", 1)) {
+    case 1:
+      aResult.SetIntValue(0, eCSSUnit_Integer);
+      break;
+    case 2:
+      aResult.SetIntValue(1, eCSSUnit_Integer);
+      break;
+    default:
+      aResult.Reset();
+  }
+
   return NS_OK;
 }
 
@@ -645,6 +685,14 @@ nsMediaFeatures::features[] = {
   },
 
   // Mozilla extensions
+  {
+    &nsGkAtoms::_moz_dark_theme,
+    nsMediaFeature::eMinMaxNotAllowed,
+    nsMediaFeature::eBoolInteger,
+    nsMediaFeature::eNoRequirements,
+    { nullptr },
+    GetDarkTheme
+  },
   {
     &nsGkAtoms::_moz_device_pixel_ratio,
     nsMediaFeature::eMinMaxAllowed,
