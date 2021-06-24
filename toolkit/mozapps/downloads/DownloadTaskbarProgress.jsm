@@ -58,6 +58,7 @@ this.DownloadTaskbarProgress =
    */
   onDownloadWindowLoad: function DTP_onDownloadWindowLoad(aWindow)
   {
+    this.init();
     if (!DownloadTaskbarProgressUpdater) {
       return;
     }

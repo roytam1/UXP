@@ -250,6 +250,13 @@ pref("browser.sessionhistory.max_total_viewers", -1);
 // See https://github.com/MoonchildProductions/UXP/issues/719
 pref("browser.newtabpage.add_to_session_history", false);
 
+
+// Determines whether the browser's current theme should be light or dark.
+// 0 = feature disabled
+// 1 = default: light theme
+// 2 = dark theme
+pref("ui.color_scheme", 1);
+
 pref("ui.use_native_colors", true);
 #ifdef MOZ_WIDGET_GTK
 // Determines whether the menubar is shown in the global menubar or not.
@@ -269,6 +276,7 @@ pref("browser.display.document_color_use", 0);
 // 0 = feature disabled
 // 1 = default: light theme preferred
 // 2 = dark theme preferred
+// 3 = match ui.color_scheme
 pref("browser.display.prefers_color_scheme", 1);
 pref("browser.display.use_system_colors",   false);
 pref("browser.display.foreground_color",    "#000000");

@@ -35,10 +35,6 @@ if CONFIG['OS_ARCH'] == 'WINNT':
 else:
     OS_LIBS += CONFIG['MOZ_ZLIB_LIBS']
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    OS_LIBS += CONFIG['TK_LIBS']
-    OS_LIBS += ['-framework Cocoa']
-
 LOCAL_INCLUDES += [
     '/mailnews/addrbook/src',
     '/mailnews/base/search/src',

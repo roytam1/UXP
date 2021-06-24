@@ -10,8 +10,6 @@ XPIDL_MODULE = 'parentalcontrols'
 if not CONFIG['MOZ_DISABLE_PARENTAL_CONTROLS']:
     if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         SOURCES += ['nsParentalControlsServiceWin.cpp']
-    elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-        UNIFIED_SOURCES += ['nsParentalControlsServiceCocoa.mm']
     else:
         SOURCES += ['nsParentalControlsServiceDefault.cpp']
 

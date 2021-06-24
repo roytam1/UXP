@@ -45,10 +45,6 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     DEFINES['SQLITE_WIN32_GETVERSIONEX'] = 0
     DEFINES['SQLITE_ALLOW_URI_AUTHORITY'] = 1
 
-# -DSQLITE_ENABLE_LOCKING_STYLE=1 to help with AFP folders
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    DEFINES['SQLITE_ENABLE_LOCKING_STYLE'] = 1
-
 # sqlite defaults this to on on __APPLE_ but it breaks on newer iOS SDKs
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'uikit':
     DEFINES['SQLITE_ENABLE_LOCKING_STYLE'] = 0
