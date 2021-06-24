@@ -16,7 +16,7 @@ EXPORTS.cairo += [
     'pixman-rename.h',
 ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] not in ('cocoa', 'uikit'):
+if CONFIG['MOZ_WIDGET_TOOLKIT'] not in ('uikit'):
     EXPORTS.cairo += [
         'cairo-pdf.h',
     ]
@@ -56,7 +56,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         ]
     else:
         DEFINES['CAIRO_OMIT_WIN32_PRINTING'] = True
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] in {'cocoa', 'uikit'}:
+elif CONFIG['MOZ_WIDGET_TOOLKIT'] in {'uikit'}:
     EXPORTS.cairo += [
         'cairo-quartz-image.h',
         'cairo-quartz.h',

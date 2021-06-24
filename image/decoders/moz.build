@@ -13,9 +13,6 @@ if 'gtk' in toolkit:
 if CONFIG['OS_ARCH'] == 'WINNT':
     DIRS += ['icon/win', 'icon']
 
-if toolkit == 'cocoa':
-    DIRS += ['icon/mac', 'icon']
-
 UNIFIED_SOURCES += [
     'EXIF.cpp',
     'iccjpeg.c',

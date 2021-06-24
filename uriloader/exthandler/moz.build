@@ -21,8 +21,6 @@ XPIDL_MODULE = 'exthandler'
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     osdir = 'win'
     LOCAL_INCLUDES += ['win']
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    osdir = 'mac'
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'uikit':
     osdir = 'uikit'
 else:
@@ -53,13 +51,7 @@ UNIFIED_SOURCES += [
     'nsMIMEInfoImpl.cpp',
 ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    UNIFIED_SOURCES += [
-        'mac/nsLocalHandlerAppMac.mm',
-        'mac/nsMIMEInfoMac.mm',
-        'mac/nsOSHelperAppService.mm',
-    ]
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'uikit':
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'uikit':
     UNIFIED_SOURCES += [
         'uikit/nsLocalHandlerAppUIKit.mm',
         'uikit/nsMIMEInfoUIKit.mm',

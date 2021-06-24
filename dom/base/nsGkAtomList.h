@@ -2267,6 +2267,7 @@ GK_ATOM(windows_theme_generic, "windows-theme-generic")
 
 // And the same again, as media query keywords.
 GK_ATOM(_moz_color_picker_available, "-moz-color-picker-available")
+GK_ATOM(_moz_dark_theme, "-moz-dark-theme")
 GK_ATOM(_moz_scrollbar_start_backward, "-moz-scrollbar-start-backward")
 GK_ATOM(_moz_scrollbar_start_forward, "-moz-scrollbar-start-forward")
 GK_ATOM(_moz_scrollbar_end_backward, "-moz-scrollbar-end-backward")

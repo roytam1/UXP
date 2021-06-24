@@ -257,10 +257,6 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
         'nsURLHelperWin.cpp',
         'ShutdownLayer.cpp',
     ]
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    SOURCES += [
-        'nsURLHelperOSX.cpp',
-    ]
 else:
     SOURCES += [
         'nsURLHelperUnix.cpp',
@@ -270,11 +266,6 @@ else:
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     SOURCES += [
         'NetworkInfoServiceWindows.cpp',
-        'nsNetworkInfoService.cpp',
-    ]
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    SOURCES += [
-        'NetworkInfoServiceCocoa.cpp',
         'nsNetworkInfoService.cpp',
     ]
 elif CONFIG['OS_ARCH'] == 'Linux':

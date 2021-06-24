@@ -61,8 +61,6 @@ if CONFIG['OS_ARCH'] == 'WINNT':
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('gtk2', 'gtk3', 'qt'):
     SOURCES += ['nsMessengerUnixIntegration.cpp']
-elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    SOURCES += ['nsMessengerOSXIntegration.mm']
 
 EXTRA_COMPONENTS += [
     'folderLookupService.js',

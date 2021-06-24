@@ -16,9 +16,6 @@ SOURCES += [
     'nsXULStub.cpp',
 ]
 
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    FINAL_TARGET = 'dist/XUL.framework/Versions/%(MOZILLA_VERSION)s' % CONFIG
-
 DEFINES['XPCOM_GLUE'] = True
 
 LOCAL_INCLUDES += [
@@ -44,7 +41,3 @@ if CONFIG['OS_ARCH'] == 'WINNT':
     ]
 
 DISABLE_STL_WRAPPING = True
-
-# Need to link with CoreFoundation on Mac
-if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
-    OS_LIBS += CONFIG['TK_LIBS']

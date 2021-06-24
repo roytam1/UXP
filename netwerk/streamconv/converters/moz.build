@@ -11,6 +11,7 @@ XPIDL_MODULE = 'necko_http'
 
 SOURCES += [
     'mozTXTToHTMLConv.cpp',
+    'nsBinHexDecoder.cpp',
     'nsDirIndex.cpp',
     'nsDirIndexParser.cpp',
     'nsHTTPCompressConv.cpp',
@@ -24,11 +25,6 @@ if 'ftp' in CONFIG['NECKO_PROTOCOLS']:
     SOURCES += [
         'nsFTPDirListingConv.cpp',
         'ParseFTPList.cpp',
-    ]
-
-if CONFIG['MOZ_WIDGET_TOOLKIT'] != 'cocoa':
-    SOURCES += [
-        'nsBinHexDecoder.cpp',
     ]
 
 FINAL_LIBRARY = 'xul'

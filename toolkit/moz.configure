@@ -62,7 +62,7 @@ set_config('L10NBASEDIR', l10n_base)
 # reason.
 option('--enable-default-toolkit', nargs=1,
        choices=('cairo-windows', 'cairo-gtk2', 'cairo-gtk2-x11', 'cairo-gtk3',
-                'cairo-cocoa', 'cairo-uikit'),
+                'cairo-uikit'),
        help='Select default toolkit')
 
 @depends('--enable-default-toolkit', target)
@@ -72,8 +72,6 @@ def toolkit(value, target):
     os = target.os
     if target.os == 'WINNT':
         platform_choices = ('cairo-windows',)
-    elif target.os == 'OSX':
-        platform_choices = ('cairo-cocoa',)
     elif target.os == 'iOS':
         platform_choices = ('cairo-uikit',)
     else:
@@ -196,7 +194,7 @@ option(env='MOZ_INSTRUMENT_EVENT_LOOP',
 
 @depends('MOZ_INSTRUMENT_EVENT_LOOP', toolkit)
 def instrument_event_loop(value, toolkit):
-    if value or (toolkit in ('windows', 'gtk2', 'gtk3', 'cocoa') and value.origin == 'default'):
+    if value or (toolkit in ('windows', 'gtk2', 'gtk3') and value.origin == 'default'):
         return True
 
 set_config('MOZ_INSTRUMENT_EVENT_LOOP', instrument_event_loop)
@@ -282,7 +280,7 @@ add_old_configure_assignment('FT2_CFLAGS',
 # ==============================================================
 @depends(toolkit)
 def applemedia(toolkit):
-    if toolkit in ('cocoa', 'uikit'):
+    if toolkit in ('uikit'):
         return True
 
 set_config('MOZ_APPLEMEDIA', applemedia)

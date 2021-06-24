@@ -21,9 +21,7 @@ if CONFIG['MOZ_PHOENIX']:
 else:
     app = CONFIG['MOZ_BUILD_APP']
 
-if toolkit == 'cocoa':
-    DIRS += ['osx']
-elif toolkit in ('gtk2', 'gtk3'):
+if toolkit in ('gtk2', 'gtk3'):
     DIRS += ['linux']
 else:
     DIRS += ['windows']
