@@ -230,7 +230,7 @@
                     preference="privacy.donottrackheader.enabled"/>
           <separator class="thin"/>
           <label class="text-link" id="doNotTrackInfo"
-                 href="https://www.mozilla.org/dnt"
+                 href="https://www.palemoon.org/support/do-not-track"
                  value="&doNotTrackInfo.label;"/>
 
         </hbox>
