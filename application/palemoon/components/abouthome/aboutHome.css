@@ -7,7 +7,7 @@
 html {
   font: message-box;
   font-size: 100%;
-  background-color: hsl(0,0%,90%);
+  background-color: #ececec;
   color: #000;
   height: 100%;
 }
@@ -51,110 +51,128 @@ a {
   background-repeat: no-repeat;
 }
 
-#searchForm {
-  width: 470px;
+/* SEARCH */
+#searchContainer {
+  display: -moz-box;
+  position: relative;
+  -moz-box-pack: center;
+  margin: 10px 0 15px;
+}
+
+#searchContainer[page-disabled] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 #searchForm {
   display: -moz-box;
-}
-
-#searchLogoContainer {
-  display: -moz-box;
-  -moz-box-align: center;
-  padding-top: 2px;
-  padding-inline-end: 8px;
-}
-
-#searchLogoContainer[hidden] {
-  display: none;
+  position: relative;
+  height: 36px;
+  -moz-box-flex: 1;
+  max-width: 600px; /* 2 * (290 cell width + 10 cell margin) */
 }
 
 #searchEngineLogo {
-  display: inline-block;
-  height: 28px;
-  width: 70px;
-  min-width: 70px;
+  border: 1px transparent;
+  padding: 2px 4px 2px 2px;
+  margin: 0;
+  width: 32px;
+  height: 32px;
+  position: absolute;
 }
 
 #searchText {
   -moz-box-flex: 1;
-  padding: 6px 8px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-inline-start: 42px;
+  padding-inline-end: 8px;
   background: hsla(0,0%,100%,.9) padding-box;
   border: 1px solid;
-  border-color: hsla(210,54%,20%,.15) hsla(210,54%,20%,.17) hsla(210,54%,20%,.2);
-  box-shadow: 0 1px 0 hsla(210,65%,9%,.02) inset,
-              0 0 2px hsla(210,65%,9%,.1) inset,
+  border-spacing: 0;
+  border-radius: 2px 0 0 2px;
+  border-color: hsla(228,54%,20%,.15) hsla(228,54%,20%,.17) hsla(228,54%,20%,.2);
+  box-shadow: 0 1px 0 hsla(228,65%,9%,.02) inset,
+              0 0 2px hsla(228,65%,9%,.1) inset,
               0 1px 0 hsla(0,0%,100%,.2);
-  border-radius: 2.5px 0 0 2.5px;
+  color: inherit;
+  unicode-bidi: plaintext;
 }
 
-#searchText:-moz-dir(rtl) {
-  border-radius: 0 2.5px 2.5px 0;
+#searchText:dir(rtl) {
+  border-radius: 0 2px 2px 0;
 }
 
-#searchText:focus,
-#searchText[autofocus] {
-  border-color: hsla(206,100%,60%,.6) hsla(206,76%,52%,.6) hsla(204,100%,40%,.6);
+#searchText[aria-expanded="true"] {
+  border-radius: 2px 0 0 0;
+}
+
+#searchText[aria-expanded="true"]:dir(rtl) {
+  border-radius: 0 2px 0 0;
+}
+
+#searchText[keepfocus],
+#searchText:focus {
+  border-color: hsla(234,50%,60%,.6) hsla(234,38%,52%,.6) hsla(234,50%,40%,.6);
 }
 
 #searchSubmit {
   margin-inline-start: -1px;
-  background: linear-gradient(hsla(0,0%,100%,.8), hsla(0,0%,100%,.1)) padding-box;
   padding: 0 9px;
   border: 1px solid;
-  border-color: hsla(210,54%,20%,.15) hsla(210,54%,20%,.17) hsla(210,54%,20%,.2);
-  border-inline-start: 1px solid transparent;
+  background-color: #e0e0e0;
+  color: black;
+  border-color: hsla(238,45%,20%,.15) hsla(238,45%,20%,.17) hsla(238,45%,20%,.2);
   border-radius: 0 2.5px 2.5px 0;
   box-shadow: 0 0 2px hsla(0,0%,100%,.5) inset,
               0 1px 0 hsla(0,0%,100%,.2);
   cursor: pointer;
-  transition-property: background-color, border-color, box-shadow;
-  transition-duration: 150ms;
+  width: 50px;
 }
 
-#searchSubmit:-moz-dir(rtl) {
-  border-radius: 2.5px 0 0 2.5px;
+#searchSubmit:dir(rtl) {
+  border-radius: 2px 0 0 2px;
 }
 
-#searchText:focus + #searchSubmit,
-#searchText + #searchSubmit:hover,
-#searchText[autofocus] + #searchSubmit {
-  border-color: #59b5fc #45a3e7 #3294d5;
+#searchSubmit:hover {
+  background-color: hsl(220,54%,20%);
   color: white;
 }
 
 #searchText:focus + #searchSubmit,
-#searchText[autofocus] + #searchSubmit {
-  background-image: linear-gradient(#4cb1ff, #1793e5);
+#searchText + #searchSubmit:hover {
+  border-color: #5985fc #4573e7 #3264d5;
+}
+
+#searchText:focus + #searchSubmit,
+#searchText[keepfocus] + #searchSubmit {
   box-shadow: 0 1px 0 hsla(0,0%,100%,.2) inset,
               0 0 0 1px hsla(0,0%,100%,.1) inset,
-              0 1px 0 hsla(210,54%,20%,.03);
+              0 1px 0 hsla(238,45%,20%,.03);
 }
 
 #searchText + #searchSubmit:hover {
-  background-image: linear-gradient(#66bdff, #0d9eff);
   box-shadow: 0 1px 0 hsla(0,0%,100%,.2) inset,
               0 0 0 1px hsla(0,0%,100%,.1) inset,
-              0 1px 0 hsla(210,54%,20%,.03),
-              0 0 4px hsla(206,100%,20%,.2);
+              0 1px 0 hsla(238,45%,20%,.03),
+              0 0 4px hsla(236,60%,20%,.2);
 }
 
 #searchText + #searchSubmit:hover:active {
-  box-shadow: 0 1px 1px hsla(211,79%,6%,.1) inset,
-              0 0 1px hsla(211,79%,6%,.2) inset;
-  transition-duration: 0ms;
+  box-shadow: 0 1px 1px hsla(239,40%,6%,.1) inset,
+              0 0 1px hsla(239,40%,6%,.2) inset;
 }
 
+/* LAUNCHER */
 #launcher {
   display: -moz-box;
   -moz-box-align: center;
   -moz-box-pack: center;
   width: 100%;
-  background-color: hsla(0,0%,0%,.03);
-  border-top: 1px solid hsla(0,0%,0%,.03);
-  box-shadow: 0 1px 2px hsla(0,0%,0%,.02) inset,
-              0 -1px 0 hsla(0,0%,100%,.25);
+  background-color: rgba(0,0,0,.03);
+  border-top: 1px solid rgba(0,0,0,.03);
+  box-shadow: 0 1px 2px rgba(0,0,0,.02) inset,
+              0 -1px 0 rgba(255,255,255,.25);
 }
 
 #launcher:not([session]),
@@ -176,12 +194,12 @@ body[narrow] #launcher[session] {
   white-space: normal;
   background: transparent padding-box;
   border: 1px solid transparent;
-  border-radius: 2.5px;
+  border-radius: 5px;
   color: #525c66;
   font-size: 75%;
   cursor: pointer;
   transition-property: background-color, border-color, box-shadow;
-  transition-duration: 150ms;
+  transition-duration: 120ms;
 }
 
 body[narrow] #launcher[session] > .launchButton {

@@ -13,7 +13,7 @@ body {
   height: 100%;
   padding: 0;
   margin: 0;
-  background-color: #F9F9F9;
+  background-color: #ececec;
   display: -moz-box;
   position: relative;
   -moz-box-flex: 1;
@@ -251,7 +251,7 @@ input[type=button] {
 
 #searchEngineLogo {
   border: 1px transparent;
-  padding: 2px 4px;
+  padding: 2px 4px 2px 2px;
   margin: 0;
   width: 32px;
   height: 32px;
@@ -268,9 +268,9 @@ input[type=button] {
   border: 1px solid;
   border-spacing: 0;
   border-radius: 2px 0 0 2px;
-  border-color: hsla(210,54%,20%,.15) hsla(210,54%,20%,.17) hsla(210,54%,20%,.2);
-  box-shadow: 0 1px 0 hsla(210,65%,9%,.02) inset,
-              0 0 2px hsla(210,65%,9%,.1) inset,
+  border-color: hsla(228,54%,20%,.15) hsla(228,54%,20%,.17) hsla(228,54%,20%,.2);
+  box-shadow: 0 1px 0 hsla(228,65%,9%,.02) inset,
+              0 0 2px hsla(228,65%,9%,.1) inset,
               0 1px 0 hsla(0,0%,100%,.2);
   color: inherit;
   unicode-bidi: plaintext;
@@ -290,22 +290,20 @@ input[type=button] {
 
 #searchText[keepfocus],
 #searchText:focus {
-  border-color: hsla(216,100%,60%,.6) hsla(216,76%,52%,.6) hsla(214,100%,40%,.6);
+  border-color: hsla(234,50%,60%,.6) hsla(234,38%,52%,.6) hsla(234,50%,40%,.6);
 }
 
 #searchSubmit {
   margin-inline-start: -1px;
-  padding: 0;
+  padding: 0 9px;
   border: 1px solid;
   background-color: #e0e0e0;
   color: black;
-  border-color: hsla(220,54%,20%,.15) hsla(220,54%,20%,.17) hsla(220,54%,20%,.2);
-  border-radius: 0 2px 2px 0;
+  border-color: hsla(238,45%,20%,.15) hsla(238,45%,20%,.17) hsla(238,45%,20%,.2);
+  border-radius: 0 2.5px 2.5px 0;
   box-shadow: 0 0 2px hsla(0,0%,100%,.5) inset,
               0 1px 0 hsla(0,0%,100%,.2);
   cursor: pointer;
-  transition-property: background-color, border-color, box-shadow;
-  transition-duration: 150ms;
   width: 50px;
 }
 
@@ -327,20 +325,19 @@ input[type=button] {
 #searchText[keepfocus] + #searchSubmit {
   box-shadow: 0 1px 0 hsla(0,0%,100%,.2) inset,
               0 0 0 1px hsla(0,0%,100%,.1) inset,
-              0 1px 0 hsla(220,54%,20%,.03);
+              0 1px 0 hsla(238,45%,20%,.03);
 }
 
 #searchText + #searchSubmit:hover {
   box-shadow: 0 1px 0 hsla(0,0%,100%,.2) inset,
               0 0 0 1px hsla(0,0%,100%,.1) inset,
-              0 1px 0 hsla(220,54%,20%,.03),
-              0 0 4px hsla(216,100%,20%,.2);
+              0 1px 0 hsla(238,45%,20%,.03),
+              0 0 4px hsla(236,60%,20%,.2);
 }
 
 #searchText + #searchSubmit:hover:active {
-  box-shadow: 0 1px 1px hsla(221,79%,6%,.1) inset,
-              0 0 1px hsla(221,79%,6%,.2) inset;
-  transition-duration: 0ms;
+  box-shadow: 0 1px 1px hsla(239,40%,6%,.1) inset,
+              0 0 1px hsla(239,40%,6%,.2) inset;
 }
 
 .contentSearchSuggestionTable {

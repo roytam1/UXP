@@ -9,7 +9,7 @@
 }
 
 body {
-  background: linear-gradient(to top,#DFF3FF,#F9F9F9) fixed;
+  background: #ececec;
 }
 
 /* SCROLLBOX */
