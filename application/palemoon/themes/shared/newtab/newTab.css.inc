@@ -106,7 +106,7 @@ body {
 
 .newtab-site:hover,
 .newtab-site[dragged] {
-  box-shadow: 0 3px 6px 1px rgba(8,20,37,.6);
+  box-shadow: 0 2px 4px 0px rgba(37,37,37,.2);
 }
 
 .newtab-site[dragged] {
@@ -125,8 +125,8 @@ body {
 /* TITLES */
 .newtab-title {
   padding: 0 8px 1px;
-  background-color: rgba(248,249,251,.95);
-  color: #1f364c;
+  background-color: rgba(229,229,229,.95);
+  color: black;
   line-height: 24px;
 }
 

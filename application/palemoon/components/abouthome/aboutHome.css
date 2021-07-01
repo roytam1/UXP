@@ -51,11 +51,11 @@ a {
   background-repeat: no-repeat;
 }
 
+/* SEARCH */
 #searchForm {
   width: 470px;
 }
 
-/* SEARCH */
 #searchContainer {
   display: -moz-box;
   position: relative;
@@ -117,7 +117,7 @@ a {
 
 #searchText[keepfocus],
 #searchText:focus {
-  border-color: hsla(234,50%,60%,.6) hsla(234,38%,52%,.6) hsla(234,50%,40%,.6);
+  border-color: hsla(234,0%,60%,.6) hsla(234,0%,52%,.6) hsla(234,0%,40%,.6);
 }
 
 #searchSubmit {
@@ -126,7 +126,7 @@ a {
   border: 1px solid;
   background-color: #e0e0e0;
   color: black;
-  border-color: hsla(238,45%,20%,.15) hsla(238,45%,20%,.17) hsla(238,45%,20%,.2);
+  border-color: hsla(234,0%,20%,.15) hsla(234,0%,20%,.17) hsla(234,0%,20%,.2);
   border-radius: 0 2.5px 2.5px 0;
   box-shadow: 0 0 2px hsla(0,0%,100%,.5) inset,
               0 1px 0 hsla(0,0%,100%,.2);
@@ -139,32 +139,27 @@ a {
 }
 
 #searchSubmit:hover {
-  background-color: hsl(220,54%,20%);
+  background-color: hsl(220,54%,30%);
   color: white;
 }
 
 #searchText:focus + #searchSubmit,
 #searchText + #searchSubmit:hover {
-  border-color: #5985fc #4573e7 #3264d5;
+  border-color: #808080;
 }
 
-#searchText:focus + #searchSubmit,
-#searchText[keepfocus] + #searchSubmit {
-  box-shadow: 0 1px 0 hsla(0,0%,100%,.2) inset,
-              0 0 0 1px hsla(0,0%,100%,.1) inset,
-              0 1px 0 hsla(238,45%,20%,.03);
-}
-
-#searchText + #searchSubmit:hover {
-  box-shadow: 0 1px 0 hsla(0,0%,100%,.2) inset,
-              0 0 0 1px hsla(0,0%,100%,.1) inset,
-              0 1px 0 hsla(238,45%,20%,.03),
-              0 0 4px hsla(236,60%,20%,.2);
+#searchText[keepfocus],
+#searchText:focus,
+#searchText[keepfocus] + #searchSubmit,
+#searchText:focus + #searchSubmit
+{
+  box-shadow: 0 0 2px hsla(0,0%,100%,.5) inset,
+              0 2px 4px 0px rgba(37,37,37,.2);
 }
 
 #searchText + #searchSubmit:hover:active {
-  box-shadow: 0 1px 1px hsla(239,40%,6%,.1) inset,
-              0 0 1px hsla(239,40%,6%,.2) inset;
+  background-color: hsl(220,24%,10%);
+  color: #a0a0a0;
 }
 
 /* LAUNCHER */
