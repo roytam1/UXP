@@ -7,7 +7,7 @@
 html {
   font: message-box;
   font-size: 100%;
-  background-color: #ececec;
+  background-color: rgb(229,229,229);
   color: #000;
   height: 100%;
 }
