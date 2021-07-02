@@ -112,6 +112,11 @@ a {
   border-color: rgba(92, 133, 214, 0.6) rgba(78, 114, 188, 0.6) rgba(41, 82, 163, 0.6);
 }
 
+#searchText::placeholder {
+  font-style: italic;
+  opacity: 0.3;
+}  
+
 #searchSubmit {
   margin-inline-start: -1px;
   background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.1)) padding-box;
