@@ -22,10 +22,6 @@
 
     <preferences id="privacyPreferences">
 
-      <preference id="browser.preferences.privacy.selectedTabIndex"
-                  name="browser.preferences.privacy.selectedTabIndex"
-                  type="int"/>
-  
       <!-- Tracking -->
       <preference id="privacy.donottrackheader.enabled"
                   name="privacy.donottrackheader.enabled"
