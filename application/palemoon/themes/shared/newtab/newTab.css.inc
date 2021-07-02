@@ -9,12 +9,12 @@
 }
 
 body {
-  background: #ececec;
+  background: #e5e5e5;
 }
 
 /* SCROLLBOX */
 #newtab-scrollbox:not([page-disabled]) {
-  background-color: rgb(229,229,229);
+  background-color: #e5e5e5;
   background-image: url(chrome://browser/skin/newtab/noise.png),
                     linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.2));
   background-attachment: fixed;
@@ -95,7 +95,7 @@ body {
 }
 
 .newtab-cell:hover:not(:empty):not([dragged]) {
-  border-color: rgba(8,22,37,.25) rgba(8,22,37,.27) rgba(8,22,37,.3);
+  border-color: rgba(8,16,37,.25) rgba(8,16,37,.27) rgba(8,16,37,.3);
 }
 
 /* SITES */
@@ -106,7 +106,7 @@ body {
 
 .newtab-site:hover,
 .newtab-site[dragged] {
-  box-shadow: 0 2px 4px 0px rgba(37,37,37,.2);
+  box-shadow: 0 3px 6px 0px rgba(75,80,89,.6);
 }
 
 .newtab-site[dragged] {
@@ -125,8 +125,8 @@ body {
 /* TITLES */
 .newtab-title {
   padding: 0 8px 1px;
-  background-color: rgba(229,229,229,.95);
-  color: black;
+  background: linear-gradient(to bottom, rgba(245, 245, 245, .95), rgba(225, 225, 225, .95));
+  color: #303030;
   line-height: 24px;
 }
 
