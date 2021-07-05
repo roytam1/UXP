@@ -9,14 +9,12 @@
 }
 
 body {
-  background: #e5e5e5;
+  background: #eee;
 }
 
 /* SCROLLBOX */
 #newtab-scrollbox:not([page-disabled]) {
-  background-color: #e5e5e5;
-  background-image: url(chrome://browser/skin/newtab/noise.png),
-                    linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.2));
+  background-color: #eee;
   background-attachment: fixed;
 }
 
@@ -78,10 +76,10 @@ body {
 /* CELLS */
 .newtab-cell {
   -moz-margin-end: 20px;
-  background-color: rgba(255,255,255,.2);
+  background-color: rgba(255,255,255,.3);
   border: 1px solid;
   border-color: rgba(8,22,37,.12) rgba(8,22,37,.14) rgba(8,22,37,.16);
-  border-radius: 1px;
+  border-radius: 3.5px;
   transition: border-color 100ms ease-out;
 }
 
@@ -102,6 +100,8 @@ body {
 .newtab-site {
   text-decoration: none;
   transition-property: top, left, opacity, box-shadow, background-color;
+  border-radius: 2.5px;
+  overflow: hidden;
 }
 
 .newtab-site:hover,

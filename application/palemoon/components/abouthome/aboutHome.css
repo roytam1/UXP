@@ -7,7 +7,7 @@
 html {
   font: message-box;
   font-size: 100%;
-  background-color: #e5e5e5;
+  background-color: #eee;
   color: #000;
   height: 100%;
 }
@@ -18,8 +18,6 @@ body {
   -moz-box-orient: vertical;
   width: 100%;
   height: 100%;
-  background-image: url(chrome://browser/content/abouthome/noise.png),
-                    linear-gradient(hsla(0,0%,100%,.7), hsla(0,0%,100%,.4));
 }
 
 input,
@@ -68,23 +66,12 @@ a {
   max-width: 600px;
 }
 
-/* #searchLogoContainer {
-  display: -moz-box;
-  -moz-box-align: center;
-  padding-top: 2px;
-  padding-inline-end: 8px;
-}
-
-#searchLogoContainer[hidden] {
-  display: none;
-}*/
-
 #searchEngineLogo {
   border: 1px transparent;
-  padding: 2px 4px 2px 2px;
+  padding: 4px;
   margin: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   position: absolute;
 }
 
@@ -92,7 +79,7 @@ a {
   -moz-box-flex: 1;
   padding-top: 6px;
   padding-bottom: 6px;
-  padding-inline-start: 42px; /* room for logo */
+  padding-inline-start: 38px; /* room for logo */
   padding-inline-end: 8px;
   background: rgba(255, 255, 255, 0.9) padding-box;
   border: 1px solid;

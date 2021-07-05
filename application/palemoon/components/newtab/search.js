@@ -88,7 +88,8 @@ function setupSearchEngine() {
     logoElt.alt = searchEngineName;
     searchText.placeholder = "";
   } else {
-    logoElt.parentNode.hidden = true;
+    logoElt.parentNode.hidden = false;
+    logoElt.src = SEARCH_ENGINES['generic'].image;
     searchText.placeholder = searchEngineName;
   }
 }

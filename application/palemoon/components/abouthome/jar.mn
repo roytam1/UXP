@@ -6,9 +6,6 @@ browser.jar:
 * content/browser/abouthome/aboutHome.xhtml
 * content/browser/abouthome/aboutHome.js
 * content/browser/abouthome/aboutHome.css
-  content/browser/abouthome/noise.png
-  content/browser/abouthome/snippet1.png
-  content/browser/abouthome/snippet2.png
   content/browser/abouthome/downloads.png
   content/browser/abouthome/bookmarks.png
   content/browser/abouthome/history.png
@@ -19,8 +16,6 @@ browser.jar:
   content/browser/abouthome/settings.png
   content/browser/abouthome/restore.png
   content/browser/abouthome/restore-large.png
-  content/browser/abouthome/snippet1@2x.png
-  content/browser/abouthome/snippet2@2x.png
   content/browser/abouthome/downloads@2x.png
   content/browser/abouthome/bookmarks@2x.png
   content/browser/abouthome/history@2x.png
