@@ -108,14 +108,14 @@ var gPage = {
 
     this._initialized = true;
 
-    // XXX: this comment makes no sense for what it does. There's no HC check,
-    // and it changes the button unconditionally to a "play" button. Which is
-    // wrong for search. Commented out for now.
-    //    
+    // XXX: This comment makes no sense for what it does. There is no HC check,
+    // and it changes the button unconditionally to a "play" button, which is
+    // wrong for a search action. Commented out for now.
+    
     // Set submit button label for when CSS background are disabled (e.g.
     // high contrast mode).
-    // document.getElementById("searchSubmit").value =
-    //   document.body.getAttribute("dir") == "ltr" ? "\u25B6" : "\u25C0";
+    //document.getElementById("searchSubmit").value =
+    //  document.body.getAttribute("dir") == "ltr" ? "\u25B6" : "\u25C0";
 
     if (document.hidden) {
       addEventListener("visibilitychange", this);

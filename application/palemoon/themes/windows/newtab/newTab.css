@@ -7,7 +7,7 @@
 .newtab-undo-button {
   -moz-appearance: none;
   color: -moz-nativehyperlinktext;
-  color: rgb(0,102,204);
+  color: rgb(78,114,204);
   cursor: pointer;
   padding: 0;
   margin: 0 4px;
