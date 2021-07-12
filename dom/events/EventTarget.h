@@ -42,6 +42,8 @@ public:
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_EVENTTARGET_IID)
 
   // WebIDL API
+  static already_AddRefed<EventTarget> Constructor(const GlobalObject& aGlobal,
+                                                   ErrorResult& aRv);
   using nsIDOMEventTarget::AddEventListener;
   using nsIDOMEventTarget::RemoveEventListener;
   using nsIDOMEventTarget::DispatchEvent;
