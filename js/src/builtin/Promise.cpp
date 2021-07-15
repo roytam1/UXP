@@ -1963,40 +1963,43 @@ PerformPromiseAllSettled(JSContext *cx, JS::ForOfIterator& iterator, HandleObjec
 
         RootedValue nextPromise(cx);
         RootedValue staticResolve(cx);
-        if (!GetProperty(cx, CVal, cx->names().resolve, &staticResolve))
-            return false;
-        RootedValue staticReject(cx);
-        if (!GetProperty(cx, CVal, cx->names().reject, &staticReject))
+	RootedValue staticReject(cx);
+
+	// Because Promise.allSettled can continue whether the promise is fulfilled or rejected, we 
+	// should only return false if neither condition is true.
+
+        if (!GetProperty(cx, CVal, cx->names().resolve, &staticResolve) && 
+	    !GetProperty(cx, CVal, cx->names().reject, &staticReject))
             return false;
 
         FixedInvokeArgs<1> resolveArgs(cx);
         resolveArgs[0].set(nextValue);
-        if (!Call(cx, staticResolve, CVal, resolveArgs, &nextPromise))
-            return false;
         FixedInvokeArgs<1> rejectArgs(cx);
         rejectArgs[0].set(nextValue);
-        if (!Call(cx, staticReject, CVal, rejectArgs, &nextPromise))
+        if (!Call(cx, staticResolve, CVal, resolveArgs, &nextPromise) && 
+	    !Call(cx, staticReject, CVal, rejectArgs, &nextPromise))
             return false;
 
-        RootedFunction resolveFunc(cx, NewNativeFunction(cx, PromiseAllSettledResolveElementFunction,
-                                                         1, nullptr,
-                                                         gc::AllocKind::FUNCTION_EXTENDED,
-                                                         GenericObject));
-        if (!resolveFunc)
-            return false;
-        RootedFunction rejectFunc(cx, NewNativeFunction(cx, PromiseAllSettledRejectElementFunction,
-                                                        1, nullptr,
-                                                        gc::AllocKind::FUNCTION_EXTENDED,
-                                                        GenericObject));
-        if (!rejectFunc)
-            return false;
-
-        resolveFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data, dataHolderVal);
-        resolveFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex,
-                                     Int32Value(index));
-        rejectFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data, dataHolderVal);
-        rejectFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex,
-                                    Int32Value(index));
+		
+	RootedFunction resolveFunc(cx, NewNativeFunction(cx, PromiseAllSettledResolveElementFunction,
+			           1, nullptr,
+			           gc::AllocKind::FUNCTION_EXTENDED,
+			           GenericObject));
+		
+	RootedFunction rejectFunc(cx, NewNativeFunction(cx, PromiseAllSettledRejectElementFunction,
+				  1, nullptr,
+				  gc::AllocKind::FUNCTION_EXTENDED,
+				  GenericObject));
+	if (!resolveFunc && !rejectFunc) {
+	     return false;
+	}
+		
+	resolveFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data, dataHolderVal);
+	resolveFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex,
+				Int32Value(index));
+	rejectFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_Data, dataHolderVal);
+	rejectFunc->setExtendedSlot(PromiseAllResolveElementFunctionSlot_ElementIndex,
+				Int32Value(index));
 
         dataHolder->increaseRemainingCount();
 
