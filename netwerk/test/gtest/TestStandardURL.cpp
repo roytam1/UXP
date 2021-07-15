@@ -9,6 +9,10 @@
 #include "nsComponentManagerUtils.h"
 #include "nsIIPCSerializableURI.h"
 #include "mozilla/ipc/URIUtils.h"
+#include "mozilla/Unused.h"
+#include "nsSerializationHelper.h"
+#include "mozilla/Base64.h"
+#include "nsEscape.h"
 
 TEST(TestStandardURL, Simple) {
     nsCOMPtr<nsIURL> url( do_CreateInstance(NS_STANDARDURL_CONTRACTID) );
@@ -82,4 +86,51 @@ TEST(TestStandardURL, Deserialize_Bug1392739)
 
   nsCOMPtr<nsIIPCSerializableURI> url = do_CreateInstance(NS_STANDARDURL_CID);
   ASSERT_EQ(url->Deserialize(params), false);
+}
+
+TEST(TestStandardURL, CorruptSerialization)
+{
+  auto spec = "http://user:pass@example.com/path/to/file.ext?query#hash"_ns;
+
+  nsCOMPtr<nsIURI> uri;
+  nsresult rv = NS_MutateURI(NS_STANDARDURLMUTATOR_CONTRACTID)
+                    .SetSpec(spec)
+                    .Finalize(uri);
+  ASSERT_EQ(rv, NS_OK);
+
+  nsAutoCString serialization;
+  nsCOMPtr<nsISerializable> serializable = do_QueryInterface(uri);
+  ASSERT_TRUE(serializable);
+
+  // Check that the URL is normally serializable.
+  ASSERT_EQ(NS_OK, NS_SerializeToString(serializable, serialization));
+  nsCOMPtr<nsISupports> deserializedObject;
+  ASSERT_EQ(NS_OK, NS_DeserializeObject(serialization,
+                                        getter_AddRefs(deserializedObject)));
+
+  nsAutoCString canonicalBin;
+  Unused << Base64Decode(serialization, canonicalBin);
+
+// The spec serialization begins at byte 49
+// If the implementation of nsStandardURL::Write changes, this test will need
+// to be adjusted.
+#define SPEC_OFFSET 49
+
+  ASSERT_EQ(Substring(canonicalBin, SPEC_OFFSET, 7), "http://"_ns);
+
+  nsAutoCString corruptedBin = canonicalBin;
+  // change mScheme.mPos
+  corruptedBin.BeginWriting()[SPEC_OFFSET + spec.Length()] = 1;
+  Unused << Base64Encode(corruptedBin, serialization);
+  ASSERT_EQ(
+      NS_ERROR_MALFORMED_URI,
+      NS_DeserializeObject(serialization, getter_AddRefs(deserializedObject)));
+
+  corruptedBin = canonicalBin;
+  // change mScheme.mLen
+  corruptedBin.BeginWriting()[SPEC_OFFSET + spec.Length() + 4] = 127;
+  Unused << Base64Encode(corruptedBin, serialization);
+  ASSERT_EQ(
+      NS_ERROR_MALFORMED_URI,
+      NS_DeserializeObject(serialization, getter_AddRefs(deserializedObject)));
 }

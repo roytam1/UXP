@@ -79,10 +79,10 @@ public:
     nsHttpHandler();
 
     nsresult Init();
-    nsresult AddStandardRequestHeaders(nsHttpRequestHead *, bool isSecure, nsContentPolicyType aContentPolicyType);
+    nsresult AddStandardRequestHeaders(nsHttpRequestHead *, nsContentPolicyType aContentPolicyType);
     nsresult AddConnectionHeader(nsHttpRequestHead *,
                                  uint32_t capabilities);
-    bool     IsAcceptableEncoding(const char *encoding, bool isSecure);
+    bool     IsAcceptableEncoding(const char *encoding);
 
     const nsAFlatCString &UserAgent();
 
@@ -398,7 +398,7 @@ private:
 
     nsresult SetAccept(const char *, AcceptType aType);
     nsresult SetAcceptLanguages();
-    nsresult SetAcceptEncodings(const char *, bool mIsSecure);
+    nsresult SetAcceptEncodings(const char *);
 
     nsresult InitConnectionMgr();
 
@@ -476,8 +476,7 @@ private:
     nsCString mAcceptStyle;
     nsCString mAcceptDefault;
     nsCString mAcceptLanguages;
-    nsCString mHttpAcceptEncodings;
-    nsCString mHttpsAcceptEncodings;
+    nsCString mAcceptEncodings;
 
     nsXPIDLCString mDefaultSocketType;
 

@@ -23,6 +23,12 @@ toolbox {
        so don't use the widget toolbox styling and fallback to -moz-Dialog's
        color which by default should be a non-blinding rgb(240, 240, 240) */
     -moz-appearance: none;
+
+    /* Since we are overriding the style we want to provide the bottom border
+       that is normally drawn by look&feel.
+       However, local application styling may also provide it on adjacent
+       widgets as a border-top. Those will need to omit it on Windows 10. */
+    border-bottom: 1px solid ThreeDShadow;
   }
 }
 
