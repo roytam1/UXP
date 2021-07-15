@@ -26,6 +26,7 @@ class Event;
 class EventListener;
 class EventListenerOptionsOrBoolean;
 class EventHandlerNonNull;
+class GlobalObject;
 
 template <class T> struct Nullable;
 
@@ -41,6 +42,8 @@ public:
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_EVENTTARGET_IID)
 
   // WebIDL API
+  static already_AddRefed<EventTarget> Constructor(const GlobalObject& aGlobal,
+                                                   ErrorResult& aRv);
   using nsIDOMEventTarget::AddEventListener;
   using nsIDOMEventTarget::RemoveEventListener;
   using nsIDOMEventTarget::DispatchEvent;
@@ -54,6 +57,11 @@ public:
                                    const EventListenerOptionsOrBoolean& aOptions,
                                    ErrorResult& aRv);
   bool DispatchEvent(JSContext* aCx, Event& aEvent, ErrorResult& aRv);
+
+  nsIGlobalObject* GetParentObject() const
+  {
+    return GetOwnerGlobal();
+  }
 
   // Note, this takes the type in onfoo form!
   EventHandlerNonNull* GetEventHandler(const nsAString& aType)

@@ -123,6 +123,13 @@ toolbar:-moz-lwtheme {
   border-top: none;
 }
 
+@media (-moz-os-version: windows-win10) and (-moz-windows-theme: aero) {
+  #navigator-toolbox {
+    /* Override the global style for Windows 10 that adds a bottom border */
+    border-bottom: none;
+  };
+}
+
 #navigator-toolbox::after {
   content: "";
   display: -moz-box;
