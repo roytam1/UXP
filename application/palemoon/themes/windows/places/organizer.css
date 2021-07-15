@@ -214,6 +214,13 @@
   }
 }
 
+@media (-moz-os-version: windows-win10) and (-moz-windows-theme: aero) {
+  #placesToolbox {
+    /* Override the global style for Windows 10 that adds a bottom border */
+    border-bottom: none;
+  }
+}
+
 @media (-moz-windows-default-theme) and (-moz-os-version: windows-vista),
        (-moz-windows-default-theme) and (-moz-os-version: windows-win7) {
   #placesView,

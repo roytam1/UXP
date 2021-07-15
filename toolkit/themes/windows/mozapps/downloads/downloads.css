@@ -111,7 +111,7 @@ richlistitem[type="download"] .dateTime {
   margin-top: 3px;
 }
 
-@media (-moz-windows-compositor) {
+@media (-moz-windows-compositor) and (-moz-os-version: windows-win7) {
   #downloadManager {
     -moz-appearance: -moz-win-glass;
     background: transparent;

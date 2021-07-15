@@ -1463,9 +1463,7 @@ pref("network.http.redirection-limit", 20);
 // Enable http compression: comment this out in case of problems with 1.1
 // NOTE: support for "compress" has been disabled per bug 196406.
 // NOTE: separate values with comma+space (", "): see bug 576033
-// NOTE: there is currently no reason except evangelism for https to not use brotli for http
 pref("network.http.accept-encoding", "gzip, deflate, br");
-pref("network.http.accept-encoding.secure", "gzip, deflate, br");
 
 pref("network.http.pipelining"      , true);
 pref("network.http.pipelining.ssl"  , false); // disable pipelining over SSL
