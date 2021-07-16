@@ -3464,8 +3464,7 @@ nsCSSFrameConstructor::ConstructTextFrame(const FrameConstructionData* aData,
   aFrameItems.AddChild(newFrame);
 
   if (!aState.mCreatingExtraFrames ||
-      (aContent->IsInNativeAnonymousSubtree() &&
-       !aContent->GetPrimaryFrame())) {
+      (aContent->IsInNativeAnonymousSubtree() && !aContent->GetPrimaryFrame())) {
     aContent->SetPrimaryFrame(newFrame);
   }
 }
