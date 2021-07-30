@@ -15,10 +15,14 @@
 
 #include "builtin/RegExp.h"
 #include "frontend/TokenStream.h"
+
+#ifndef JS_NEW_REGEXP
 #ifdef DEBUG
 #include "irregexp/RegExpBytecode.h"
 #endif
 #include "irregexp/RegExpParser.h"
+#endif
+
 #include "vm/MatchPairs.h"
 #include "vm/RegExpStatics.h"
 #include "vm/StringBuffer.h"
@@ -271,9 +275,12 @@ RegExpObject::create(ExclusiveContext* cx, HandleAtom source, RegExpFlag flags,
         tokenStream = dummyTokenStream.ptr();
     }
 
+#ifdef JS_NEW_REGEXP
+    MOZ_CRASH("TODO");
+#else
     if (!irregexp::ParsePatternSyntax(*tokenStream, alloc, source, flags & UnicodeFlag, flags & DotAllFlag))
         return nullptr;
-
+#endif
     Rooted<RegExpObject*> regexp(cx, RegExpAlloc(cx));
     if (!regexp)
         return nullptr;
@@ -510,7 +517,7 @@ RegExpObject::toString(JSContext* cx) const
     return sb.finishString();
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(JS_NEW_REGEXP)
 bool
 RegExpShared::dumpBytecode(JSContext* cx, bool match_only, HandleLinearString input)
 {
@@ -903,7 +910,7 @@ RegExpObject::dumpBytecode(JSContext* cx, Handle<RegExpObject*> regexp,
 
     return g.re()->dumpBytecode(cx, match_only, input);
 }
-#endif
+#endif //DEBUG && !JS_NEW_REGEXP
 
 template <typename CharT>
 static MOZ_ALWAYS_INLINE bool
@@ -1003,6 +1010,30 @@ RegExpShared::compile(JSContext* cx, HandleLinearString input,
     RootedAtom pattern(cx, source);
     return compile(cx, pattern, input, mode, force);
 }
+
+#ifdef JS_NEW_REGEXP
+bool
+RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString input,
+                      CompilationMode mode, ForceByteCodeEnum force)
+{
+  MOZ_CRASH("TODO");
+}
+
+bool
+RegExpShared::compileIfNecessary(JSContext* cx, HandleLinearString input,
+                                 CompilationMode mode, ForceByteCodeEnum force)
+{
+  MOZ_CRASH("TODO");
+}
+
+RegExpRunStatus
+RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
+                      MatchPairs* matches, size_t* endIndex)
+{
+  MOZ_CRASH("TODO");
+}
+
+#else
 
 bool
 RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString input,
@@ -1185,6 +1216,8 @@ RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
         matches->checkAgainst(length);
     return result;
 }
+
+#endif // JS_NEW_REGEXP
 
 size_t
 RegExpShared::sizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf)

@@ -153,14 +153,6 @@ UNIFIED_SOURCES += [
     'gc/Tracer.cpp',
     'gc/Verifier.cpp',
     'gc/Zone.cpp',
-    'irregexp/NativeRegExpMacroAssembler.cpp',
-    'irregexp/RegExpAST.cpp',
-    'irregexp/RegExpCharacters.cpp',
-    'irregexp/RegExpEngine.cpp',
-    'irregexp/RegExpInterpreter.cpp',
-    'irregexp/RegExpMacroAssembler.cpp',
-    'irregexp/RegExpParser.cpp',
-    'irregexp/RegExpStack.cpp',
     'jit/AliasAnalysis.cpp',
     'jit/AliasAnalysisShared.cpp',
     'jit/AlignmentMaskAnalysis.cpp',
@@ -342,6 +334,18 @@ UNIFIED_SOURCES += [
     'wasm/WasmTextUtils.cpp',
     'wasm/WasmTypes.cpp'
 ]
+
+if not CONFIG['JS_NEW_REGEXP']:
+    UNIFIED_SOURCES += [
+        'irregexp/NativeRegExpMacroAssembler.cpp',
+        'irregexp/RegExpAST.cpp',
+        'irregexp/RegExpCharacters.cpp',
+        'irregexp/RegExpEngine.cpp',
+        'irregexp/RegExpInterpreter.cpp',
+        'irregexp/RegExpMacroAssembler.cpp',
+        'irregexp/RegExpParser.cpp',
+        'irregexp/RegExpStack.cpp',
+    ]
 
 # jsarray.cpp and jsatom.cpp cannot be built in unified mode because
 # xpcshell is broken during packaging when compiled with gcc-4.8.2

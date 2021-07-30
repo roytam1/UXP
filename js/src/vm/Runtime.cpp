@@ -280,8 +280,10 @@ JSRuntime::init(uint32_t maxbytes, uint32_t maxNurseryBytes)
     if (!mainThread.init())
         return false;
 
+#ifndef JS_NEW_REGEXP
     if (!regexpStack.init())
         return false;
+#endif
 
     if (CanUseExtraThreads() && !EnsureHelperThreadsInitialized())
         return false;
