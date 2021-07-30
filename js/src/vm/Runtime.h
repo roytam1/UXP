@@ -42,6 +42,9 @@
 #endif
 #include "js/UniquePtr.h"
 #include "js/Vector.h"
+#ifdef JS_NEW_REGEXP
+# include "new-regexp/RegExpTypes.h"
+#endif
 #include "threading/Thread.h"
 #include "vm/CodeCoverage.h"
 #include "vm/CommonPropertyNames.h"
@@ -405,7 +408,10 @@ struct JSRuntime : public JS::shadow::Runtime,
 
     void* addressOfJitStackLimitNoInterrupt() { return &jitStackLimitNoInterrupt_; }
 
-#ifndef JS_NEW_REGEXP
+#ifdef JS_NEW_REGEXP
+    // Shim for V8 interfaces used by irregexp code
+    js::irregexp::Isolate* isolate;
+#else
     // Information about the heap allocated backtrack stack used by RegExp JIT code.
     js::irregexp::RegExpStack regexpStack;
 #endif
