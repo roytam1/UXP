@@ -154,25 +154,10 @@ const gXPInstallObserver = {
 
     let messageString;
     let notification = document.getElementById("addon-install-confirmation-notification");
-    if (unsigned.length == installInfo.installs.length) {
-      // None of the add-ons are verified
-      messageString = gNavigatorBundle.getString("addonConfirmInstallUnsigned.message");
-      notification.setAttribute("warning", "true");
-      options.learnMoreURL += "unsigned-addons";
-    }
-    else if (unsigned.length == 0) {
-      // All add-ons are verified or don't need to be verified
-      messageString = gNavigatorBundle.getString("addonConfirmInstall.message");
-      notification.removeAttribute("warning");
-      options.learnMoreURL += "find-and-install-add-ons";
-    }
-    else {
-      // Some of the add-ons are unverified, the list of names will indicate
-      // which
-      messageString = gNavigatorBundle.getString("addonConfirmInstallSomeUnsigned.message");
-      notification.setAttribute("warning", "true");
-      options.learnMoreURL += "unsigned-addons";
-    }
+
+    messageString = gNavigatorBundle.getString("addonConfirmInstall.message");
+    notification.removeAttribute("warning");
+    options.learnMoreURL += "find-and-install-add-ons";
 
     let brandBundle = document.getElementById("bundle_brand");
     let brandShortName = brandBundle.getString("brandShortName");

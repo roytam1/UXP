@@ -738,11 +738,6 @@ function isUsableAddon(aAddon) {
   if (aAddon.type == "theme" && aAddon.internalName == XPIProvider.defaultSkin)
     return true;
 
-  if (mustSign(aAddon.type) && !aAddon.isCorrectlySigned) {
-    logger.warn(`Add-on ${aAddon.id} is not correctly signed.`);
-    return false;
-  }
-
   if (aAddon.blocklistState == Blocklist.STATE_BLOCKED) {
     logger.warn(`Add-on ${aAddon.id} is blocklisted.`);
     return false;
@@ -1762,25 +1757,6 @@ function getSignedStatus(aRv, aCert, aAddonID) {
   }
 }
 
-function shouldVerifySignedState(aAddon) {
-  // Updated system add-ons should always have their signature checked
-  if (aAddon._installLocation.name == KEY_APP_SYSTEM_ADDONS)
-    return true;
-
-  // We don't care about signatures for default system add-ons
-  if (aAddon._installLocation.name == KEY_APP_SYSTEM_DEFAULTS)
-    return false;
-
-  // Hotfixes should always have their signature checked
-  let hotfixID = Preferences.get(PREF_EM_HOTFIX_ID, undefined);
-  if (hotfixID && aAddon.id == hotfixID)
-    return true;
-
-  // Otherwise only check signatures if signing is enabled and the add-on is one
-  // of the signed types.
-  return ADDON_SIGNING && SIGNED_TYPES.has(aAddon.type);
-}
-
 let gCertDB = Cc["@mozilla.org/security/x509certdb;1"]
               .getService(Ci.nsIX509CertDB);
 
@@ -1797,11 +1773,6 @@ let gCertDB = Cc["@mozilla.org/security/x509certdb;1"]
  *         cert: an nsIX509Cert
  */
 function verifyZipSignedState(aFile, aAddon) {
-  if (!shouldVerifySignedState(aAddon))
-    return Promise.resolve({
-      signedState: AddonManager.SIGNEDSTATE_NOT_REQUIRED,
-      cert: null
-    });
 
   let root = Ci.nsIX509CertDB.AddonsPublicRoot;
   if (!REQUIRE_SIGNING && Preferences.get(PREF_XPI_SIGNATURES_DEV_ROOT, false))
@@ -1839,11 +1810,6 @@ function verifyZipSignedState(aFile, aAddon) {
  *         cert: an nsIX509Cert
  */
 function verifyDirSignedState(aDir, aAddon) {
-  if (!shouldVerifySignedState(aAddon))
-    return Promise.resolve({
-      signedState: AddonManager.SIGNEDSTATE_NOT_REQUIRED,
-      cert: null,
-    });
 
   let root = Ci.nsIX509CertDB.AddonsPublicRoot;
   if (!REQUIRE_SIGNING && Preferences.get(PREF_XPI_SIGNATURES_DEV_ROOT, false))
@@ -7039,32 +7005,6 @@ AddonInternal.prototype = {
               this.updateURL.substring(0, 6) == "https:");
   },
 
-  get isCorrectlySigned() {
-    switch (this._installLocation.name) {
-      case KEY_APP_SYSTEM_ADDONS:
-        // System add-ons must be signed by the system key.
-        return this.signedState == AddonManager.SIGNEDSTATE_SYSTEM
-
-      case KEY_APP_SYSTEM_DEFAULTS:
-      case KEY_APP_TEMPORARY:
-        // Temporary and built-in system add-ons do not require signing.
-        return true;
-
-      case KEY_APP_SYSTEM_SHARE:
-      case KEY_APP_SYSTEM_LOCAL:
-        // On UNIX platforms except OSX, an additional location for system
-        // add-ons exists in /usr/{lib,share}/mozilla/extensions. Add-ons
-        // installed there do not require signing.
-        if (Services.appinfo.OS != "Darwin")
-          return true;
-        break;
-    }
-
-    if (this.signedState === AddonManager.SIGNEDSTATE_NOT_REQUIRED)
-      return true;
-    return this.signedState > AddonManager.SIGNEDSTATE_MISSING;
-  },
-
   get isCompatible() {
     return this.isCompatibleWith();
   },
@@ -7909,8 +7849,7 @@ function defineAddonWrapperProperty(name, getter) {
  "providesUpdatesSecurely", "blocklistState", "blocklistURL", "appDisabled",
  "softDisabled", "skinnable", "size", "foreignInstall", "hasBinaryComponents",
  "strictCompatibility", "compatibilityOverrides", "updateURL", "dependencies",
- "getDataDirectory", "multiprocessCompatible", "signedState", "mpcOptedOut",
- "isCorrectlySigned"].forEach(function(aProp) {
+ "getDataDirectory", "multiprocessCompatible", "signedState", "mpcOptedOut"].forEach(function(aProp) {
    defineAddonWrapperProperty(aProp, function() {
      let addon = addonFor(this);
      return (aProp in addon) ? addon[aProp] : undefined;
