@@ -28,7 +28,9 @@
 #include "frontend/NameCollections.h"
 #include "gc/GCRuntime.h"
 #include "gc/Tracer.h"
+#ifndef JS_NEW_REGEXP
 #include "irregexp/RegExpStack.h"
+#endif
 #include "js/Debug.h"
 #include "js/GCVector.h"
 #include "js/HashTable.h"
@@ -400,8 +402,10 @@ struct JSRuntime : public JS::shadow::Runtime,
 
     void* addressOfJitStackLimitNoInterrupt() { return &jitStackLimitNoInterrupt_; }
 
+#ifndef JS_NEW_REGEXP
     // Information about the heap allocated backtrack stack used by RegExp JIT code.
     js::irregexp::RegExpStack regexpStack;
+#endif
 
 #ifdef DEBUG
   private:
