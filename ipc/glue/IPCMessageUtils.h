@@ -385,6 +385,18 @@ struct ParamTraits<nsLiteralCString> : ParamTraits<nsACString>
   typedef nsLiteralCString paramType;
 };
 
+template <>
+struct ParamTraits<nsDependentSubstring> : ParamTraits<nsAString>
+{
+  typedef nsDependentSubstring paramType;
+};
+
+template <>
+struct ParamTraits<nsDependentCSubstring> : ParamTraits<nsACString>
+{
+  typedef nsDependentCSubstring paramType;
+};
+
 #ifdef MOZILLA_INTERNAL_API
 
 template<>

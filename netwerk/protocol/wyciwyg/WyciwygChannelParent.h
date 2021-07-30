@@ -45,7 +45,7 @@ protected:
                              const uint32_t& loadFlags,
                              const IPC::SerializedLoadContext& loadContext,
                              const PBrowserOrId &parent) override;
-  virtual bool RecvWriteToCacheEntry(const nsString& data) override;
+  virtual bool RecvWriteToCacheEntry(const nsDependentSubstring& data) override;
   virtual bool RecvCloseCacheEntry(const nsresult& reason) override;
   virtual bool RecvSetCharsetAndSource(const int32_t& source,
                                        const nsCString& charset) override;
