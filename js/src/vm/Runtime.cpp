@@ -49,6 +49,10 @@
 #include "vm/Debugger.h"
 #include "wasm/WasmSignalHandlers.h"
 
+#ifdef JS_NEW_REGEXP
+#include "new-regexp/RegExpAPI.h"
+#endif
+
 #include "jscntxtinlines.h"
 #include "jsgcinlines.h"
 
@@ -278,7 +282,12 @@ JSRuntime::init(uint32_t maxbytes, uint32_t maxNurseryBytes)
     if (!mainThread.init())
         return false;
 
-#ifndef JS_NEW_REGEXP
+#ifdef JS_NEW_REGEXP
+    isolate = irregexp::CreateIsolate(this->contextFromMainThread());
+    if (!isolate) {
+      return false;
+    }
+#else
     if (!regexpStack.init())
         return false;
 #endif
