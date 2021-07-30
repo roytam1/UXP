@@ -27,7 +27,7 @@
 #endif
       <menupopup id="menu_HelpPopup" onpopupshowing="buildHelpMenu();">
         <menuitem id="menu_openHelp"
-                  oncommand="openHelpLink('firefox-help')"
+                  oncommand="openHelpLink('pale-moon-help')"
                   onclick="checkForMiddleClick(this, event);"
                   label="&productHelp.label;"
                   accesskey="&productHelp.accesskey;"

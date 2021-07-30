@@ -340,11 +340,11 @@
       </splitmenu>
       <splitmenu id="appmenu_help"
                  label="&helpMenu.label;"
-                 oncommand="openHelpLink('firefox-help')">
+                 oncommand="openHelpLink('pale-moon-help')">
           <menupopup id="appmenu_helpMenupopup" onpopupshowing="buildHelpMenu();">
             <menuitem id="appmenu_openHelp"
                       label="&helpMenu.label;"
-                      oncommand="openHelpLink('firefox-help')"
+                      oncommand="openHelpLink('pale-moon-help')"
                       onclick="checkForMiddleClick(this, event);"/>
             <menuitem id="appmenu_troubleshootingInfo"
                       label="&helpTroubleshootingInfo.label;"
