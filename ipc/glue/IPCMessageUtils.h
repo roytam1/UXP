@@ -119,7 +119,7 @@ struct EnumSerializer {
           uintParamType;
 
   static void Write(Message* aMsg, const paramType& aValue) {
-    MOZ_ASSERT(EnumValidator::IsLegalValue(aValue));
+    MOZ_RELEASE_ASSERT(EnumValidator::IsLegalValue(aValue));
     WriteParam(aMsg, uintParamType(aValue));
   }
 
