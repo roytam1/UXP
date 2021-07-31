@@ -11,6 +11,7 @@
 #include "mozilla/dom/ScriptSettings.h"
 #include "xpcprivate.h"
 #include "js/Class.h"
+#include "js/RegExp.h"
 #include "jsfriendapi.h"
 
 using namespace JS;
@@ -685,7 +686,7 @@ WrapperAnswer::RecvRegExpToShared(const ObjectId& objId, ReturnStatus* rs,
     if (!obj)
         return deadCPOW(jsapi, rs);
 
-    RootedString sourceJSStr(cx, JS_GetRegExpSource(cx, obj));
+    RootedString sourceJSStr(cx, JS::GetRegExpSource(cx, obj));
     if (!sourceJSStr)
         return fail(jsapi, rs);
     nsAutoJSString sourceStr;
@@ -693,7 +694,7 @@ WrapperAnswer::RecvRegExpToShared(const ObjectId& objId, ReturnStatus* rs,
         return fail(jsapi, rs);
     source->Assign(sourceStr);
 
-    *flags = JS_GetRegExpFlags(cx, obj);
+    *flags = JS::GetRegExpFlags(cx, obj);
 
     return ok(rs);
 }
