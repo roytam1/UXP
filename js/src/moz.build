@@ -92,6 +92,7 @@ EXPORTS.js += [
     '../public/ProfilingStack.h',
     '../public/Proxy.h',
     '../public/Realm.h',
+    '../public/RegExp.h',
     '../public/RequiredDefines.h',
     '../public/RootingAPI.h',
     '../public/SliceBudget.h',

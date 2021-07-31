@@ -46,7 +46,6 @@
 #include "builtin/Intl.h"
 #include "builtin/MapObject.h"
 #include "builtin/Promise.h"
-#include "builtin/RegExp.h"
 #include "builtin/SymbolObject.h"
 #ifdef ENABLE_SIMD
 # include "builtin/SIMD.h"
@@ -76,7 +75,6 @@
 #include "vm/ErrorObject.h"
 #include "vm/HelperThreads.h"
 #include "vm/Interpreter.h"
-#include "vm/RegExpStatics.h"
 #include "vm/Runtime.h"
 #include "vm/SavedStacks.h"
 #include "vm/SelfHosting.h"
@@ -6012,137 +6010,6 @@ JS_ObjectIsDate(JSContext* cx, HandleObject obj, bool* isDate)
 
     *isDate = cls == ESClass::Date;
     return true;
-}
-
-/************************************************************************/
-
-/*
- * Regular Expressions.
- */
-JS_PUBLIC_API(JSObject*)
-JS_NewRegExpObject(JSContext* cx, const char* bytes, size_t length, unsigned flags)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    ScopedJSFreePtr<char16_t> chars(InflateString(cx, bytes, &length));
-    if (!chars)
-        return nullptr;
-
-    RegExpObject* reobj = RegExpObject::create(cx, chars, length,
-                                               RegExpFlag(flags), nullptr, cx->tempLifoAlloc());
-    return reobj;
-}
-
-JS_PUBLIC_API(JSObject*)
-JS_NewUCRegExpObject(JSContext* cx, const char16_t* chars, size_t length, unsigned flags)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    return RegExpObject::create(cx, chars, length,
-                                RegExpFlag(flags), nullptr, cx->tempLifoAlloc());
-}
-
-JS_PUBLIC_API(bool)
-JS_SetRegExpInput(JSContext* cx, HandleObject obj, HandleString input)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    assertSameCompartment(cx, input);
-
-    Handle<GlobalObject*> global = obj.as<GlobalObject>();
-    RegExpStatics* res = GlobalObject::getRegExpStatics(cx, global);
-    if (!res)
-        return false;
-
-    res->reset(cx, input);
-    return true;
-}
-
-JS_PUBLIC_API(bool)
-JS_ClearRegExpStatics(JSContext* cx, HandleObject obj)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-    MOZ_ASSERT(obj);
-
-    Handle<GlobalObject*> global = obj.as<GlobalObject>();
-    RegExpStatics* res = GlobalObject::getRegExpStatics(cx, global);
-    if (!res)
-        return false;
-
-    res->clear();
-    return true;
-}
-
-JS_PUBLIC_API(bool)
-JS_ExecuteRegExp(JSContext* cx, HandleObject obj, HandleObject reobj, char16_t* chars,
-                 size_t length, size_t* indexp, bool test, MutableHandleValue rval)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-
-    Handle<GlobalObject*> global = obj.as<GlobalObject>();
-    RegExpStatics* res = GlobalObject::getRegExpStatics(cx, global);
-    if (!res)
-        return false;
-
-    RootedLinearString input(cx, NewStringCopyN<CanGC>(cx, chars, length));
-    if (!input)
-        return false;
-
-    return ExecuteRegExpLegacy(cx, res, reobj.as<RegExpObject>(), input, indexp, test, rval);
-}
-
-JS_PUBLIC_API(bool)
-JS_ExecuteRegExpNoStatics(JSContext* cx, HandleObject obj, char16_t* chars, size_t length,
-                          size_t* indexp, bool test, MutableHandleValue rval)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-
-    RootedLinearString input(cx, NewStringCopyN<CanGC>(cx, chars, length));
-    if (!input)
-        return false;
-
-    return ExecuteRegExpLegacy(cx, nullptr, obj.as<RegExpObject>(), input, indexp, test,
-                               rval);
-}
-
-JS_PUBLIC_API(bool)
-JS_ObjectIsRegExp(JSContext* cx, HandleObject obj, bool* isRegExp)
-{
-    assertSameCompartment(cx, obj);
-
-    ESClass cls;
-    if (!GetBuiltinClass(cx, obj, &cls))
-        return false;
-
-    *isRegExp = cls == ESClass::RegExp;
-    return true;
-}
-
-JS_PUBLIC_API(unsigned)
-JS_GetRegExpFlags(JSContext* cx, HandleObject obj)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-
-    RegExpGuard shared(cx);
-    if (!RegExpToShared(cx, obj, &shared))
-        return false;
-    return shared.re()->getFlags();
-}
-
-JS_PUBLIC_API(JSString*)
-JS_GetRegExpSource(JSContext* cx, HandleObject obj)
-{
-    AssertHeapIsIdle(cx);
-    CHECK_REQUEST(cx);
-
-    RegExpGuard shared(cx);
-    if (!RegExpToShared(cx, obj, &shared))
-        return nullptr;
-    return shared.re()->getSource();
 }
 
 /************************************************************************/
