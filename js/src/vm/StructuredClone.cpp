@@ -28,6 +28,7 @@
 
 #include "js/StructuredClone.h"
 
+#include "mozilla/Casting.h"
 #include "mozilla/CheckedInt.h"
 #include "mozilla/EndianUtils.h"
 #include "mozilla/FloatingPoint.h"
@@ -42,6 +43,7 @@
 #include "builtin/MapObject.h"
 #include "js/Date.h"
 #include "js/GCHashTable.h"
+#include "js/RegExpFlags.h"
 #include "vm/SavedFrame.h"
 #include "vm/SharedArrayObject.h"
 #include "vm/TypedArrayObject.h"
@@ -52,12 +54,14 @@
 
 using namespace js;
 
+using mozilla::AssertedCast;
 using mozilla::BitwiseCast;
 using mozilla::IsNaN;
 using mozilla::LittleEndian;
 using mozilla::NativeEndian;
 using mozilla::NumbersAreIdentical;
 using JS::CanonicalizeNaN;
+using JS::RegExpFlags;
 
 // When you make updates here, make sure you consider whether you need to bump the
 // value of JS_STRUCTURED_CLONE_VERSION in js/public/StructuredClone.h.  You will
@@ -1400,7 +1404,7 @@ JSStructuredCloneWriter::startWrite(HandleValue v)
             RegExpGuard re(context());
             if (!RegExpToShared(context(), obj, &re))
                 return false;
-            return out.writePair(SCTAG_REGEXP_OBJECT, re->getFlags()) &&
+            return out.writePair(SCTAG_REGEXP_OBJECT, re->getFlags().value()) &&
                    writeString(SCTAG_STRING, re->getSource());
         } else if (cls == ESClass::Date) {
             RootedValue unboxed(context());
@@ -2035,7 +2039,7 @@ JSStructuredCloneReader::startRead(MutableHandleValue vp)
       }
 
       case SCTAG_REGEXP_OBJECT: {
-        RegExpFlag flags = RegExpFlag(data);
+        RegExpFlags flags = AssertedCast<uint8_t>(data);
         uint32_t tag2, stringData;
         if (!in.readPair(&tag2, &stringData))
             return false;

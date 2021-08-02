@@ -18,6 +18,7 @@
 #include "jscntxt.h"
 #include "jsgc.h"
 
+#include "js/RegExpFlags.h"
 #include "js/Vector.h"
 
 /* Note: Aborts on OOM. */
@@ -132,6 +133,26 @@ class JSAPITest
 
     JSAPITestString toSource(bool v) {
         return JSAPITestString(v ? "true" : "false");
+    }
+
+    JSAPITestString toSource(JS::RegExpFlags flags) {
+      JSAPITestString str;
+      if (flags.global()) {
+        str += "g";
+      }
+      if (flags.ignoreCase()) {
+        str += "i";
+      }
+      if (flags.multiline()) {
+        str += "m";
+      }
+      if (flags.unicode()) {
+        str += "u";
+      }
+      if (flags.sticky()) {
+        str += "y";
+      }
+      return str;
     }
 
     JSAPITestString toSource(JSAtom* v) {

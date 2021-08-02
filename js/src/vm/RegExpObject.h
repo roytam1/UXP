@@ -14,6 +14,7 @@
 #include "builtin/SelfHostingDefines.h"
 #include "gc/Marking.h"
 #include "gc/Zone.h"
+#include "js/RegExpFlags.h"
 #include "proxy/Proxy.h"
 #include "vm/ArrayObject.h"
 #include "vm/Shape.h"
@@ -44,27 +45,6 @@ class RegExpShared;
 class RegExpStatics;
 
 namespace frontend { class TokenStream; }
-
-enum RegExpFlag
-{
-    IgnoreCaseFlag  = 0x01,
-    GlobalFlag      = 0x02,
-    MultilineFlag   = 0x04,
-    StickyFlag      = 0x08,
-    UnicodeFlag     = 0x10,
-    DotAllFlag      = 0x20,
-
-    NoFlags         = 0x00,
-    AllFlags        = 0x3f
-};
-
-static_assert(IgnoreCaseFlag == REGEXP_IGNORECASE_FLAG &&
-              GlobalFlag == REGEXP_GLOBAL_FLAG &&
-              MultilineFlag == REGEXP_MULTILINE_FLAG &&
-              StickyFlag == REGEXP_STICKY_FLAG &&
-              UnicodeFlag == REGEXP_UNICODE_FLAG &&
-              DotAllFlag == REGEXP_DOTALL_FLAG,
-              "Flag values should be in sync with self-hosted JS");
 
 enum RegExpRunStatus
 {
@@ -128,7 +108,7 @@ class RegExpShared
     /* Source to the RegExp, for lazy compilation. */
     HeapPtr<JSAtom*>     source;
 
-    RegExpFlag         flags;
+    JS::RegExpFlags    flags;
     size_t             parenCount;
     bool               canStringMatch;
     bool               marked_;
@@ -164,7 +144,7 @@ class RegExpShared
     }
 
   public:
-    RegExpShared(JSAtom* source, RegExpFlag flags);
+    RegExpShared(JSAtom* source, JS::RegExpFlags flags);
     ~RegExpShared();
 
     // Execute this RegExp on input starting from searchIndex, filling in
@@ -188,13 +168,14 @@ class RegExpShared
     size_t pairCount() const            { return getParenCount() + 1; }
 
     JSAtom* getSource() const           { return source; }
-    RegExpFlag getFlags() const         { return flags; }
-    bool ignoreCase() const             { return flags & IgnoreCaseFlag; }
-    bool global() const                 { return flags & GlobalFlag; }
-    bool multiline() const              { return flags & MultilineFlag; }
-    bool sticky() const                 { return flags & StickyFlag; }
-    bool unicode() const                { return flags & UnicodeFlag; }
-    bool dotall() const                 { return flags & DotAllFlag; }
+    JS::RegExpFlags getFlags() const    { return flags; }
+
+    bool global() const                 { return flags.global(); }
+    bool ignoreCase() const             { return flags.ignoreCase(); }
+    bool multiline() const              { return flags.multiline(); }
+    bool dotall() const                 { return flags.dotAll(); }
+    bool unicode() const                { return flags.unicode(); }
+    bool sticky() const                 { return flags.sticky(); }
 
     bool isCompiled(CompilationMode mode, bool latin1,
                     ForceByteCodeEnum force = DontForceByteCode) const {
@@ -295,23 +276,23 @@ class RegExpGuard : public JS::CustomAutoRooter
 class RegExpCompartment
 {
     struct Key {
-        JSAtom* atom;
-        uint16_t flag;
+        JSAtom* atom = nullptr;
+        JS::RegExpFlags flags = JS::RegExpFlag::NoFlags;
 
-        Key() {}
-        Key(JSAtom* atom, RegExpFlag flag)
-          : atom(atom), flag(flag)
+        Key() = default;
+        Key(JSAtom* atom, JS::RegExpFlags flags)
+          : atom(atom), flags(flags)
         { }
         MOZ_IMPLICIT Key(RegExpShared* shared)
-          : atom(shared->getSource()), flag(shared->getFlags())
+          : atom(shared->getSource()), flags(shared->getFlags())
         { }
 
         typedef Key Lookup;
         static HashNumber hash(const Lookup& l) {
-            return DefaultHasher<JSAtom*>::hash(l.atom) ^ (l.flag << 1);
+            return DefaultHasher<JSAtom*>::hash(l.atom) ^ (l.flags.value() << 1);
         }
         static bool match(Key l, Key r) {
-            return l.atom == r.atom && l.flag == r.flag;
+            return l.atom == r.atom && l.flags == r.flags;
         }
     };
 
@@ -361,7 +342,7 @@ class RegExpCompartment
 
     bool empty() { return set_.empty(); }
 
-    bool get(JSContext* cx, JSAtom* source, RegExpFlag flags, RegExpGuard* g);
+    bool get(JSContext* cx, JSAtom* source, JS::RegExpFlags flags, RegExpGuard* g);
 
     /* Like 'get', but compile 'maybeOpt' (if non-null). */
     bool get(JSContext* cx, HandleAtom source, JSString* maybeOpt, RegExpGuard* g);
@@ -417,11 +398,11 @@ class RegExpObject : public NativeObject
     static const size_t MaxPairCount = 14;
 
     static RegExpObject*
-    create(ExclusiveContext* cx, const char16_t* chars, size_t length, RegExpFlag flags,
+    create(ExclusiveContext* cx, const char16_t* chars, size_t length, JS::RegExpFlags flags,
            frontend::TokenStream* ts, LifoAlloc& alloc);
 
     static RegExpObject*
-    create(ExclusiveContext* cx, HandleAtom atom, RegExpFlag flags,
+    create(ExclusiveContext* cx, HandleAtom atom, JS::RegExpFlags flags,
            frontend::TokenStream* ts, LifoAlloc& alloc);
 
     /*
@@ -470,21 +451,21 @@ class RegExpObject : public NativeObject
 
     static unsigned flagsSlot() { return FLAGS_SLOT; }
 
-    RegExpFlag getFlags() const {
-        return RegExpFlag(getFixedSlot(FLAGS_SLOT).toInt32());
+    JS::RegExpFlags getFlags() const {
+        return JS::RegExpFlags(getFixedSlot(FLAGS_SLOT).toInt32());
     }
-    void setFlags(RegExpFlag flags) {
-        setSlot(FLAGS_SLOT, Int32Value(flags));
+    void setFlags(JS::RegExpFlags flags) {
+        setFixedSlot(FLAGS_SLOT, Int32Value(flags.value()));
     }
 
-    bool ignoreCase() const { return getFlags() & IgnoreCaseFlag; }
-    bool global() const     { return getFlags() & GlobalFlag; }
-    bool multiline() const  { return getFlags() & MultilineFlag; }
-    bool sticky() const     { return getFlags() & StickyFlag; }
-    bool unicode() const    { return getFlags() & UnicodeFlag; }
-    bool dotall() const     { return getFlags() & DotAllFlag; }
+    bool global() const     { return getFlags().global(); }
+    bool ignoreCase() const { return getFlags().ignoreCase(); }
+    bool multiline() const  { return getFlags().multiline(); }
+    bool dotall() const     { return getFlags().dotAll(); }
+    bool unicode() const    { return getFlags().unicode(); }
+    bool sticky() const     { return getFlags().sticky(); }
 
-    static bool isOriginalFlagGetter(JSNative native, RegExpFlag* mask);
+    static bool isOriginalFlagGetter(JSNative native, JS::RegExpFlags* mask);
 
     static MOZ_MUST_USE bool getShared(JSContext* cx, Handle<RegExpObject*> regexp,
                                        RegExpGuard* g);
@@ -496,12 +477,12 @@ class RegExpObject : public NativeObject
 
     static void trace(JSTracer* trc, JSObject* obj);
 
-    void initIgnoringLastIndex(HandleAtom source, RegExpFlag flags);
+    void initIgnoringLastIndex(HandleAtom source, JS::RegExpFlags flags);
 
     // NOTE: This method is *only* safe to call on RegExps that haven't been
     //       exposed to script, because it requires that the "lastIndex"
     //       property be writable.
-    void initAndZeroLastIndex(HandleAtom source, RegExpFlag flags, ExclusiveContext* cx);
+    void initAndZeroLastIndex(HandleAtom source, JS::RegExpFlags flags, ExclusiveContext* cx);
 
 #ifdef DEBUG
     static MOZ_MUST_USE bool dumpBytecode(JSContext* cx, Handle<RegExpObject*> regexp,
@@ -530,7 +511,7 @@ class RegExpObject : public NativeObject
  * N.B. flagStr must be rooted.
  */
 bool
-ParseRegExpFlags(JSContext* cx, JSString* flagStr, RegExpFlag* flagsOut);
+ParseRegExpFlags(JSContext* cx, JSString* flagStr, JS::RegExpFlags* flagsOut);
 
 /* Assuming GetBuiltinClass(obj) is ESClass::RegExp, return a RegExpShared for obj. */
 inline bool

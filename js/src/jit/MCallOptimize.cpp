@@ -19,6 +19,7 @@
 #include "jit/Lowering.h"
 #include "jit/MIR.h"
 #include "jit/MIRGraph.h"
+#include "js/RegExpFlags.h"
 #include "vm/ArgumentsObject.h"
 #include "vm/ProxyObject.h"
 #include "vm/SelfHosting.h"
@@ -38,6 +39,8 @@ using JS::DoubleNaNValue;
 using JS::TrackedOutcome;
 using JS::TrackedStrategy;
 using JS::TrackedTypeSite;
+using JS::RegExpFlag;
+using JS::RegExpFlags;
 
 namespace js {
 namespace jit {
@@ -381,7 +384,7 @@ IonBuilder::inlineNativeGetter(CallInfo& callInfo, JSFunction* target)
     }
 
     // Try to optimize RegExp getters.
-    RegExpFlag mask = NoFlags;
+    RegExpFlags mask = RegExpFlag::NoFlags;
     if (RegExpObject::isOriginalFlagGetter(native, &mask)) {
         const Class* clasp = thisTypes->getKnownClass(constraints());
         if (clasp != &RegExpObject::class_)
@@ -390,7 +393,7 @@ IonBuilder::inlineNativeGetter(CallInfo& callInfo, JSFunction* target)
         MLoadFixedSlot* flags = MLoadFixedSlot::New(alloc(), thisArg, RegExpObject::flagsSlot());
         current->add(flags);
         flags->setResultType(MIRType::Int32);
-        MConstant* maskConst = MConstant::New(alloc(), Int32Value(mask));
+        MConstant* maskConst = MConstant::New(alloc(), Int32Value(mask.value()));
         current->add(maskConst);
         MBitAnd* maskedFlag = MBitAnd::New(alloc(), flags, maskConst);
         maskedFlag->setInt32Specialization();

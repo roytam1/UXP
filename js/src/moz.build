@@ -81,6 +81,7 @@ EXPORTS.js += [
     '../public/Proxy.h',
     '../public/Realm.h',
     '../public/RegExp.h',
+    '../public/RegExpFlags.h',
     '../public/RequiredDefines.h',
     '../public/RootingAPI.h',
     '../public/SliceBudget.h',

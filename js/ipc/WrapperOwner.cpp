@@ -19,6 +19,7 @@
 #include "nsIDOMDocument.h"
 #include "nsJSUtils.h"
 #include "js/RegExp.h"
+#include "js/RegExpFlags.h"
 
 using namespace js;
 using namespace JS;
@@ -879,7 +880,7 @@ WrapperOwner::regexp_toShared(JSContext* cx, HandleObject proxy, RegExpGuard* g)
         return false;
 
     RootedObject regexp(cx);
-    regexp = JS::NewUCRegExpObject(cx, source.get(), source.Length(), flags);
+    regexp = JS::NewUCRegExpObject(cx, source.get(), source.Length(), RegExpFlags(flags));
     if (!regexp)
         return false;
 
