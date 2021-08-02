@@ -37,6 +37,7 @@
 #include "frontend/FoldConstants.h"
 #include "frontend/TokenStream.h"
 #include "wasm/AsmJS.h"
+#include "js/RegExpFlags.h"
 
 #include "jsatominlines.h"
 #include "jsscriptinlines.h"
@@ -56,6 +57,8 @@ using mozilla::PodZero;
 using mozilla::Some;
 
 using JS::AutoGCRooter;
+using JS::RegExpFlag;
+using JS::RegExpFlags;
 
 namespace js {
 namespace frontend {
@@ -9533,7 +9536,7 @@ Parser<ParseHandler>::newRegExp()
     // Create the regexp even when doing a syntax parse, to check the regexp's syntax.
     const char16_t* chars = tokenStream.getTokenbuf().begin();
     size_t length = tokenStream.getTokenbuf().length();
-    RegExpFlag flags = tokenStream.currentToken().regExpFlags();
+    RegExpFlags flags = tokenStream.currentToken().regExpFlags();
 
     Rooted<RegExpObject*> reobj(context);
     reobj = RegExpObject::create(context, chars, length, flags, &tokenStream, alloc);

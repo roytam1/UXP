@@ -40,6 +40,7 @@
 #include "jit/MoveEmitter.h"
 #include "jit/RangeAnalysis.h"
 #include "jit/SharedICHelpers.h"
+#include "js/RegExpFlags.h"
 #include "vm/AsyncFunction.h"
 #include "vm/AsyncIteration.h"
 #include "vm/MatchPairs.h"
@@ -1110,7 +1111,7 @@ PrepareAndExecuteRegExp(JSContext* cx, MacroAssembler& masm, Register regexp, Re
         Label done;
 
         masm.branchTest32(Assembler::Zero, Address(temp1, RegExpShared::offsetOfFlags()),
-                          Imm32(UnicodeFlag), &done);
+                          Imm32(int32_t(JS::RegExpFlag::Unicode)), &done);
 
         // If input is latin1, there should not be surrogate pair.
         masm.branchLatin1String(input, &done);

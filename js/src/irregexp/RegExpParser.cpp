@@ -29,10 +29,14 @@
 
 #include "irregexp/RegExpParser.h"
 
+#include "js/RegExpFlags.h"
 #include "frontend/TokenStream.h"
 
 using namespace js;
 using namespace js::irregexp;
+
+using JS::RegExpFlag;
+using JS::RegExpFlags;
 
 // ----------------------------------------------------------------------------
 // RegExpBuilder
@@ -220,8 +224,7 @@ RegExpBuilder::AddQuantifierToAtom(int min, int max,
 
 template <typename CharT>
 RegExpParser<CharT>::RegExpParser(frontend::TokenStream& ts, LifoAlloc* alloc,
-                                  const CharT* chars, const CharT* end, bool multiline_mode,
-                                  bool unicode, bool ignore_case, bool dotall)
+                                  RegExpFlags flags, const CharT* chars, const CharT* end)
   : ts(ts),
     alloc(alloc),
     captures_(nullptr),
@@ -230,10 +233,10 @@ RegExpParser<CharT>::RegExpParser(frontend::TokenStream& ts, LifoAlloc* alloc,
     current_(kEndMarker),
     capture_count_(0),
     has_more_(true),
-    multiline_(multiline_mode),
-    unicode_(unicode),
-    ignore_case_(ignore_case),
-    dotall_(dotall),
+    multiline_(flags.multiline()),
+    unicode_(flags.unicode()),
+    ignore_case_(flags.ignoreCase()),
+    dotall_(flags.dotAll()),
     simple_(false),
     contains_anchor_(false),
     is_scanned_for_captures_(false)
@@ -1875,10 +1878,11 @@ template class irregexp::RegExpParser<char16_t>;
 template <typename CharT>
 static bool
 ParsePattern(frontend::TokenStream& ts, LifoAlloc& alloc, const CharT* chars, size_t length,
-             bool multiline, bool match_only, bool unicode, bool ignore_case,
-             bool global, bool sticky, bool dotall, RegExpCompileData* data)
+             bool match_only, RegExpFlags flags, RegExpCompileData* data)
 {
-    if (match_only) {
+    // We shouldn't strip pattern for exec, or test with global/sticky,
+    // to reflect correct match position and lastIndex.
+    if (match_only && !flags.global() && !flags.sticky()) {
         // Try to strip a leading '.*' from the RegExp, but only if it is not
         // followed by a '?' (which will affect how the .* is parsed). This
         // pattern will affect the captures produced by the RegExp, but not
@@ -1896,14 +1900,14 @@ ParsePattern(frontend::TokenStream& ts, LifoAlloc& alloc, const CharT* chars, si
         //   2. global and sticky flags are not set, as lastIndex needs to be
         //      set properly on global or sticky match
         if (length >= 3 && !HasRegExpMetaChars(chars, length - 2) &&
-            !global && !sticky &&
+            !flags.global() && !flags.sticky() &&
             chars[length - 2] == '.' && chars[length - 1] == '*')
         {
             length -= 2;
         }
     }
 
-    RegExpParser<CharT> parser(ts, &alloc, chars, chars + length, multiline, unicode, ignore_case, dotall);
+    RegExpParser<CharT> parser(ts, &alloc, flags, chars, chars + length);
     data->tree = parser.ParsePattern();
     if (!data->tree)
         return false;
@@ -1916,15 +1920,14 @@ ParsePattern(frontend::TokenStream& ts, LifoAlloc& alloc, const CharT* chars, si
 
 bool
 irregexp::ParsePattern(frontend::TokenStream& ts, LifoAlloc& alloc, JSAtom* str,
-                       bool multiline, bool match_only, bool unicode, bool ignore_case,
-                       bool global, bool sticky, bool dotall, RegExpCompileData* data)
+                       bool match_only, RegExpFlags flags, RegExpCompileData* data)
 {
     JS::AutoCheckCannotGC nogc;
     return str->hasLatin1Chars()
            ? ::ParsePattern(ts, alloc, str->latin1Chars(nogc), str->length(),
-                            multiline, match_only, unicode, ignore_case, global, sticky, dotall, data)
+                            match_only, flags, data)
            : ::ParsePattern(ts, alloc, str->twoByteChars(nogc), str->length(),
-                            multiline, match_only, unicode, ignore_case, global, sticky, dotall, data);
+                            match_only, flags, data);
 }
 
 template <typename CharT>
@@ -1933,8 +1936,12 @@ ParsePatternSyntax(frontend::TokenStream& ts, LifoAlloc& alloc, const CharT* cha
                    bool unicode, bool dotall)
 {
     LifoAllocScope scope(&alloc);
-
-    RegExpParser<CharT> parser(ts, &alloc, chars, chars + length, false, unicode, dotall, false);
+    RegExpFlags flags = RegExpFlag::NoFlags;
+    if (unicode)
+      flags |= RegExpFlag::Unicode;
+    if (dotall)
+      flags |= RegExpFlag::DotAll;
+    RegExpParser<CharT> parser(ts, &alloc, flags, chars, chars + length);
     return parser.ParsePattern() != nullptr;
 }
 

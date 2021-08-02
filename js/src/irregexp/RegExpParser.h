@@ -31,6 +31,7 @@
 #define V8_PARSER_H_
 
 #include "irregexp/RegExpAST.h"
+#include "js/RegExpFlags.h"
 
 namespace js {
 
@@ -42,8 +43,7 @@ namespace irregexp {
 
 bool
 ParsePattern(frontend::TokenStream& ts, LifoAlloc& alloc, JSAtom* str,
-             bool multiline, bool match_only, bool unicode, bool ignore_case,
-             bool global, bool sticky, bool dotall, RegExpCompileData* data);
+             bool match_only, JS::RegExpFlags flags, RegExpCompileData* data);
 
 bool
 ParsePatternSyntax(frontend::TokenStream& ts, LifoAlloc& alloc, JSAtom* str,
@@ -176,8 +176,7 @@ class RegExpParser
 {
   public:
     RegExpParser(frontend::TokenStream& ts, LifoAlloc* alloc,
-                 const CharT* chars, const CharT* end, bool multiline_mode, bool unicode,
-                 bool ignore_case, bool dotall);
+                 JS::RegExpFlags flags, const CharT* chars, const CharT* end);
 
     RegExpTree* ParsePattern();
     RegExpTree* ParseDisjunction();
