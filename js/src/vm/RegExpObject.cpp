@@ -24,6 +24,10 @@
 #include "irregexp/RegExpParser.h"
 #endif
 
+#ifdef JS_NEW_REGEXP
+#include "new-regexp/RegExpAPI.h"
+#endif
+
 #include "vm/MatchPairs.h"
 #include "vm/RegExpStatics.h"
 #include "vm/StringBuffer.h"
@@ -285,7 +289,9 @@ RegExpObject::create(ExclusiveContext* cx, HandleAtom source, RegExpFlags flags,
     }
 
 #ifdef JS_NEW_REGEXP
-    MOZ_CRASH("TODO");
+    if (!irregexp::CheckPatternSyntax(cx->asJSContext(), *tokenStream, source, flags)) {
+      return nullptr;
+    }
 #else
     if (!irregexp::ParsePatternSyntax(*tokenStream, alloc, source, flags.unicode(), flags.dotAll()))
         return nullptr;
