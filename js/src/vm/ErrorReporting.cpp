@@ -16,6 +16,8 @@ using mozilla::Move;
 
 using JS::UniqueTwoByteChars;
 
+namespace js {
+
 void
 CallWarningReporter(JSContext* cx, JSErrorReport* reportp)
 {
@@ -121,3 +123,5 @@ ReportCompileError(JSContext* cx, ErrorMetadata&& metadata, UniquePtr<JSErrorNot
         err->throwError(cx->asJSContext());
     }
 }
+
+} //namespace js

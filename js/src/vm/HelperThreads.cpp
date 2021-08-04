@@ -16,6 +16,7 @@
 #include "gc/GCInternals.h"
 #include "jit/IonBuilder.h"
 #include "vm/Debugger.h"
+#include "vm/ErrorReporting.h"
 #include "vm/SharedImmutableStringsCache.h"
 #include "vm/Time.h"
 #include "vm/TraceLogging.h"
@@ -1581,9 +1582,9 @@ ExclusiveContext::setHelperThread(HelperThread* thread)
 }
 
 bool
-ExclusiveContext::addPendingCompileError(frontend::CompileError** error)
+ExclusiveContext::addPendingCompileError(CompileError** error)
 {
-    UniquePtr<frontend::CompileError> errorPtr(new_<frontend::CompileError>());
+    UniquePtr<CompileError> errorPtr(new_<CompileError>());
     if (!errorPtr)
         return false;
     if (!helperThread()->parseTask()->errors.append(errorPtr.get()))

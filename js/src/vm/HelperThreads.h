@@ -555,7 +555,7 @@ struct ParseTask
 
     // Any errors or warnings produced during compilation. These are reported
     // when finishing the script.
-    Vector<frontend::CompileError*> errors;
+    Vector<CompileError*> errors;
     bool overRecursed;
     bool outOfMemory;
 

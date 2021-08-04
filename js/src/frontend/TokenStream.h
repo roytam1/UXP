@@ -238,11 +238,6 @@ struct Token
     }
 };
 
-class CompileError : public JSErrorReport {
-  public:
-    void throwError(JSContext* cx);
-};
-
 extern const char*
 ReservedWordToCharZ(PropertyName* str);
 
@@ -265,37 +260,6 @@ IsStrictReservedWord(JSLinearString* str);
 class StrictModeGetter {
   public:
     virtual bool strictMode() = 0;
-};
-
-/**
- * Metadata for a compilation error (or warning) at a particular offset, or at
- * no offset (i.e. with respect to a script overall).
- */
-struct ErrorMetadata
-{
-    // The file/URL where the error occurred.
-    const char* filename;
-
-    // The line and column numbers where the error occurred.  If the error
-    // is with respect to the entire script and not with respect to a
-    // particular location, these will both be zero.
-    uint32_t lineNumber;
-    uint32_t columnNumber;
-
-    // If the error occurs at a particular location, context surrounding the
-    // location of the error: the line that contained the error, or a small
-    // portion of it if the line is long.
-    //
-    // This information is provided on a best-effort basis: code populating
-    // ErrorMetadata instances isn't obligated to supply this.
-    UniqueTwoByteChars lineOfContext;
-
-    // If |lineOfContext| is non-null, its length.
-    size_t lineLength;
-
-    // If |lineOfContext| is non-null, the offset within it of the token that
-    // triggered the error.
-    size_t tokenOffset;
 };
 
 // TokenStream is the lexical scanner for Javascript source text.
@@ -894,6 +858,13 @@ class MOZ_STACK_CLASS TokenStream
     const ReadOnlyCompileOptions& options() const {
         return options_;
     }
+
+    /**
+     * Fill in |err|, excepting line-of-context-related fields. If the token
+     * stream has location information, use that and return true. If it does
+     * not, use the caller's location information and return false.
+     */
+    bool fillExcludingContext(ErrorMetadata* err, uint32_t offset);
 
   private:
     // This is the low-level interface to the JS source code buffer.  It just
