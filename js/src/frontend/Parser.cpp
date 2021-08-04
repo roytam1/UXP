@@ -605,12 +605,17 @@ ParserBase::error(unsigned errorNumber, ...)
 {
     va_list args;
     va_start(args, errorNumber);
+
+    ErrorMetadata metadata;
+    if (tokenStream.computeErrorMetadata(&metadata, pos().begin)) {
 #ifdef DEBUG
-    bool result =
+        bool result =
 #endif
-        tokenStream.reportCompileErrorNumberVA(nullptr, pos().begin, JSREPORT_ERROR,
-                                               errorNumber, args);
-    MOZ_ASSERT(!result, "reporting an error returned true?");
+            tokenStream.reportCompileErrorNumberVA(Move(metadata), nullptr, JSREPORT_ERROR,
+                                                   errorNumber, args);
+        MOZ_ASSERT(!result, "reporting an error returned true?");
+    }
+
     va_end(args);
 }
 
@@ -619,12 +624,17 @@ ParserBase::errorWithNotes(UniquePtr<JSErrorNotes> notes, unsigned errorNumber, 
 {
     va_list args;
     va_start(args, errorNumber);
+
+    ErrorMetadata metadata;
+    if (tokenStream.computeErrorMetadata(&metadata, pos().begin)) {
 #ifdef DEBUG
-    bool result =
+        bool result =
 #endif
-        tokenStream.reportCompileErrorNumberVA(Move(notes), pos().begin, JSREPORT_ERROR,
-                                               errorNumber, args);
-    MOZ_ASSERT(!result, "reporting an error returned true?");
+            tokenStream.reportCompileErrorNumberVA(Move(metadata), Move(notes), JSREPORT_ERROR,
+                                                   errorNumber, args);
+        MOZ_ASSERT(!result, "reporting an error returned true?");
+    }
+
     va_end(args);
 }
 
@@ -633,11 +643,17 @@ ParserBase::errorAt(uint32_t offset, unsigned errorNumber, ...)
 {
     va_list args;
     va_start(args, errorNumber);
+
+    ErrorMetadata metadata;
+    if (tokenStream.computeErrorMetadata(&metadata, offset)) {
 #ifdef DEBUG
-    bool result =
+        bool result =
 #endif
-        tokenStream.reportCompileErrorNumberVA(nullptr, offset, JSREPORT_ERROR, errorNumber, args);
-    MOZ_ASSERT(!result, "reporting an error returned true?");
+            tokenStream.reportCompileErrorNumberVA(Move(metadata), nullptr, JSREPORT_ERROR,
+                                                   errorNumber, args);
+        MOZ_ASSERT(!result, "reporting an error returned true?");
+    }
+
     va_end(args);
 }
 
@@ -647,12 +663,17 @@ ParserBase::errorWithNotesAt(UniquePtr<JSErrorNotes> notes, uint32_t offset,
 {
     va_list args;
     va_start(args, errorNumber);
+
+    ErrorMetadata metadata;
+    if (tokenStream.computeErrorMetadata(&metadata, offset)) {
 #ifdef DEBUG
-    bool result =
+        bool result =
 #endif
-        tokenStream.reportCompileErrorNumberVA(Move(notes), offset, JSREPORT_ERROR,
-                                               errorNumber, args);
-    MOZ_ASSERT(!result, "reporting an error returned true?");
+            tokenStream.reportCompileErrorNumberVA(Move(metadata), Move(notes), JSREPORT_ERROR,
+                                                   errorNumber, args);
+        MOZ_ASSERT(!result, "reporting an error returned true?");
+    }
+
     va_end(args);
 }
 
@@ -661,9 +682,15 @@ ParserBase::warning(unsigned errorNumber, ...)
 {
     va_list args;
     va_start(args, errorNumber);
-    bool result =
-        tokenStream.reportCompileErrorNumberVA(nullptr, pos().begin, JSREPORT_WARNING,
-                                               errorNumber, args);
+
+    ErrorMetadata metadata;
+    bool result = tokenStream.computeErrorMetadata(&metadata, pos().begin);
+    if (result) {
+        result =
+            tokenStream.reportCompileErrorNumberVA(Move(metadata), nullptr, JSREPORT_WARNING,
+                                                   errorNumber, args);
+    }
+
     va_end(args);
     return result;
 }
@@ -673,9 +700,15 @@ ParserBase::warningAt(uint32_t offset, unsigned errorNumber, ...)
 {
     va_list args;
     va_start(args, errorNumber);
-    bool result =
-        tokenStream.reportCompileErrorNumberVA(nullptr, offset, JSREPORT_WARNING,
-                                               errorNumber, args);
+
+    ErrorMetadata metadata;
+    bool result = tokenStream.computeErrorMetadata(&metadata, offset);
+    if (result) {
+        result =
+            tokenStream.reportCompileErrorNumberVA(Move(metadata), nullptr, JSREPORT_WARNING,
+                                                   errorNumber, args);
+    }
+
     va_end(args);
     return result;
 }
@@ -685,8 +718,10 @@ ParserBase::extraWarning(unsigned errorNumber, ...)
 {
     va_list args;
     va_start(args, errorNumber);
-    bool result = tokenStream.reportExtraWarningErrorNumberVA(nullptr, pos().begin,
-                                                              errorNumber, args);
+
+    bool result =
+        tokenStream.reportExtraWarningErrorNumberVA(nullptr, pos().begin, errorNumber, args);
+
     va_end(args);
     return result;
 }
@@ -709,9 +744,11 @@ ParserBase::strictModeError(unsigned errorNumber, ...)
 {
     va_list args;
     va_start(args, errorNumber);
+
     bool res =
         tokenStream.reportStrictModeErrorNumberVA(nullptr, pos().begin, pc->sc()->strict(),
                                                   errorNumber, args);
+
     va_end(args);
     return res;
 }
@@ -721,9 +758,11 @@ ParserBase::strictModeErrorAt(uint32_t offset, unsigned errorNumber, ...)
 {
     va_list args;
     va_start(args, errorNumber);
+
     bool res =
         tokenStream.reportStrictModeErrorNumberVA(nullptr, offset, pc->sc()->strict(),
                                                   errorNumber, args);
+
     va_end(args);
     return res;
 }
@@ -733,24 +772,25 @@ ParserBase::reportNoOffset(ParseReportKind kind, bool strict, unsigned errorNumb
 {
     va_list args;
     va_start(args, errorNumber);
+
     bool result = false;
-    uint32_t offset = TokenStream::NoOffset;
     switch (kind) {
       case ParseError:
-        result = tokenStream.reportCompileErrorNumberVA(nullptr, offset, JSREPORT_ERROR,
+      case ParseWarning: {
+        ErrorMetadata metadata;
+        tokenStream.computeErrorMetadataNoOffset(&metadata);
+
+        unsigned flags = kind == ParseError ? JSREPORT_ERROR : JSREPORT_WARNING;
+        result = tokenStream.reportCompileErrorNumberVA(Move(metadata), nullptr, flags,
                                                         errorNumber, args);
         break;
-      case ParseWarning:
-        result =
-            tokenStream.reportCompileErrorNumberVA(nullptr, offset, JSREPORT_WARNING,
-                                                   errorNumber, args);
-        break;
+      }
       case ParseExtraWarning:
-        result = tokenStream.reportExtraWarningErrorNumberVA(nullptr, offset,
+        result = tokenStream.reportExtraWarningErrorNumberVA(nullptr, TokenStream::NoOffset,
                                                              errorNumber, args);
         break;
       case ParseStrictError:
-        result = tokenStream.reportStrictModeErrorNumberVA(nullptr, offset, strict,
+        result = tokenStream.reportStrictModeErrorNumberVA(nullptr, TokenStream::NoOffset, strict,
                                                            errorNumber, args);
         break;
     }
