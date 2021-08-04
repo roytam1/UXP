@@ -524,6 +524,14 @@ UTF16Decode(char16_t lead, char16_t trail)
     return (lead << 10) + trail + (NonBMPMin - (LeadSurrogateMin << 10) - TrailSurrogateMin);
 }
 
+/**
+ * Count the number of code points in [begin, end].
+ *
+ * Every sequence of 16-bit units is considered valid.  Lone surrogates are
+ * treated as if they represented a code point of the same value.
+ */
+extern size_t CountCodePoints(const char16_t* begin, const char16_t* end);
+
 } /* namespace unicode */
 } /* namespace js */
 
