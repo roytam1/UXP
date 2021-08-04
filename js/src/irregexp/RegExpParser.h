@@ -1,6 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 
 // Copyright 2012 the V8 project authors. All rights reserved.
+// Copyright 2021 Moonchild Productions. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -12,6 +13,9 @@
 //       disclaimer in the documentation and/or other materials provided
 //       with the distribution.
 //     * Neither the name of Google Inc. nor the names of its
+//       contributors may be used to endorse or promote products derived
+//       from this software without specific prior written permission.
+//     * Neither the name of Moonchild Productions nor the names of its
 //       contributors may be used to endorse or promote products derived
 //       from this software without specific prior written permission.
 //
@@ -29,6 +33,8 @@
 
 #ifndef V8_PARSER_H_
 #define V8_PARSER_H_
+
+#include <stdarg.h>
 
 #include "irregexp/RegExpAST.h"
 #include "js/RegExpFlags.h"
@@ -209,7 +215,13 @@ class RegExpParser
     bool ParseBackReferenceIndex(int* index_out);
 
     bool ParseClassAtom(char16_t* char_class, widechar *value);
+
+  private:
+    void SyntaxError(unsigned errorNumber, ...);
+
+  public:
     RegExpTree* ReportError(unsigned errorNumber, const char* param = nullptr);
+
     void Advance();
     void Advance(int dist) {
         next_pos_ += dist - 1;
@@ -289,6 +301,7 @@ class RegExpParser
     frontend::TokenStream& ts;
     LifoAlloc* alloc;
     RegExpCaptureVector* captures_;
+    const CharT* const start_;
     const CharT* next_pos_;
     const CharT* end_;
     widechar current_;

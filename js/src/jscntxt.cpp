@@ -822,16 +822,6 @@ js::ReportErrorNumberUCArray(JSContext* cx, unsigned flags, JSErrorCallback call
     return warning;
 }
 
-void
-js::CallWarningReporter(JSContext* cx, JSErrorReport* reportp)
-{
-    MOZ_ASSERT(reportp);
-    MOZ_ASSERT(JSREPORT_IS_WARNING(reportp->flags));
-
-    if (JS::WarningReporter warningReporter = cx->runtime()->warningReporter)
-        warningReporter(cx, reportp);
-}
-
 bool
 js::ReportIsNotDefined(JSContext* cx, HandleId id)
 {

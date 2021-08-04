@@ -36,11 +36,19 @@ struct ErrorMetadata
 
     // If the error occurs at a particular location, context surrounding the
     // location of the error: the line that contained the error, or a small
-    // portion of it if the line is long.
+    // portion of it if the line is long. (If the error occurs within a
+    // regular expression, this context is based upon its pattern characters.)
     //
     // This information is provided on a best-effort basis: code populating
     // ErrorMetadata instances isn't obligated to supply this.
     JS::UniqueTwoByteChars lineOfContext;
+
+    // If |lineOfContext| is provided, we show only a portion (a "window") of
+    // the line around the erroneous token -- the first char in the token, plus
+    // |lineOfContextRadius| chars before it and |lineOfContextRadius - 1|
+    // chars after it. This is because for a very long line, the full line is
+    // (a) not that helpful, and (b) wastes a lot of memory. See bug 634444.
+    static constexpr size_t lineOfContextRadius = 60;
 
     // If |lineOfContext| is non-null, its length.
     size_t lineLength;
@@ -50,7 +58,7 @@ struct ErrorMetadata
     size_t tokenOffset;
 
     // Whether the error is "muted" because it derives from a cross-origin
-    // load.  See the comment in TransitiveCompileOptions in jsapi.h for
+    // load. See the comment in TransitiveCompileOptions in jsapi.h for
     // details.
     bool isMuted;
 };
@@ -70,7 +78,7 @@ CallWarningReporter(JSContext* cx, JSErrorReport* report);
  * script.
  */
 extern void
-ReportCompileError(ErrorMetadata&& metadata, UniquePtr<JSErrorNotes> notes,
+ReportCompileError(JSContext* cx, ErrorMetadata&& metadata, UniquePtr<JSErrorNotes> notes,
                    unsigned flags, unsigned errorNumber, va_list args);
 
 /**
