@@ -2627,3 +2627,26 @@ js::unicode::IsIdentifierPartNonBMP(uint32_t codePoint)
         return true;
     return false;
 }
+
+size_t js::unicode::CountCodePoints(const char16_t* begin,
+                                    const char16_t* end) {
+  MOZ_ASSERT(begin <= end);
+
+  size_t count = 0;
+
+  const char16_t* ptr = begin;
+  while (ptr < end) {
+    count++;
+
+    if (!IsLeadSurrogate(*ptr++)) {
+      continue;
+    }
+
+    if (ptr < end && IsTrailSurrogate(*ptr)) {
+      ptr++;
+    }
+  }
+  MOZ_ASSERT(ptr == end, "should have consumed the full range");
+
+  return count;
+}
