@@ -107,11 +107,11 @@ public:
    */
   template<typename U,
            typename =
-             typename std::enable_if<std::is_pointer<T>::value &&
-                                     (std::is_same<U, decltype(nullptr)>::value ||
-                                      (std::is_pointer<U>::value &&
-                                       std::is_base_of<typename std::remove_pointer<T>::type,
-                                                       typename std::remove_pointer<U>::type>::value))>::type>
+             typename std::enable_if_t<std::is_pointer_v<T> &&
+                                       (std::is_same_v<U, decltype(nullptr)> ||
+                                        (std::is_pointer_v<U> &&
+                                         std::is_base_of_v<typename std::remove_pointer_t<T>,
+                                                           typename std::remove_pointer_t<U>>))>>
   MOZ_IMPLICIT
   Maybe(const Maybe<U>& aOther)
     : mIsSome(false)
@@ -136,11 +136,11 @@ public:
    */
   template<typename U,
            typename =
-             typename std::enable_if<std::is_pointer<T>::value &&
-                                     (std::is_same<U, decltype(nullptr)>::value ||
-                                      (std::is_pointer<U>::value &&
-                                       std::is_base_of<typename std::remove_pointer<T>::type,
-                                                       typename std::remove_pointer<U>::type>::value))>::type>
+             typename std::enable_if_t<std::is_pointer_v<T> &&
+                                       (std::is_same_v<U, decltype(nullptr)> ||
+                                        (std::is_pointer_v<U> &&
+                                         std::is_base_of_v<typename std::remove_pointer_t<T>,
+                                                           typename std::remove_pointer_t<U>>))>>
   MOZ_IMPLICIT
   Maybe(Maybe<U>&& aOther)
     : mIsSome(false)
