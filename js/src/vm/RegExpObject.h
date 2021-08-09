@@ -147,6 +147,12 @@ class RegExpShared
     RegExpShared(JSAtom* source, JS::RegExpFlags flags);
     ~RegExpShared();
 
+    RegExpRunStatus executeAtom(JSContext* cx,
+                                HandleLinearString input,
+                                size_t start,
+                                size_t* endIndex,
+                                MatchPairs* matches);
+
     // Execute this RegExp on input starting from searchIndex, filling in
     // matches if specified and otherwise only determining if there is a match.
     RegExpRunStatus execute(JSContext* cx, HandleLinearString input, size_t searchIndex,
@@ -168,6 +174,7 @@ class RegExpShared
     size_t pairCount() const            { return getParenCount() + 1; }
 
     JSAtom* getSource() const           { return source; }
+    JSAtom* patternAtom() const         { return getSource(); }
     JS::RegExpFlags getFlags() const    { return flags; }
 
     bool global() const                 { return flags.global(); }
