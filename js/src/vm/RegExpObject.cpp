@@ -1026,6 +1026,47 @@ RegExpShared::compile(JSContext* cx, HandleLinearString input,
     return compile(cx, pattern, input, mode, force);
 }
 
+RegExpRunStatus RegExpShared::executeAtom(JSContext* cx,
+                                          HandleLinearString input,
+                                          size_t start,
+                                          size_t* endIndex,
+                                          MatchPairs* matches) {
+    MOZ_ASSERT(pairCount() == 1);
+    size_t length = input->length();
+    size_t sourceLength = source->length();
+    if (this->sticky()) {
+        // First part checks size_t overflow.
+        if (sourceLength + start < sourceLength || sourceLength + start > length)
+            return RegExpRunStatus_Success_NotFound;
+        if (!HasSubstringAt(input, this->patternAtom(), start))
+            return RegExpRunStatus_Success_NotFound;
+
+        if (matches) {
+            (*matches)[0].start = start;
+            (*matches)[0].limit = start + sourceLength;
+
+            matches->checkAgainst(length);
+        } else if (endIndex) {
+            *endIndex = start + sourceLength;
+        }
+        return RegExpRunStatus_Success;
+    }
+
+    int res = StringFindPattern(input, this->patternAtom(), start);
+    if (res == -1)
+        return RegExpRunStatus_Success_NotFound;
+
+    if (matches) {
+        (*matches)[0].start = res;
+        (*matches)[0].limit = res + sourceLength;
+
+        matches->checkAgainst(length);
+    } else if (endIndex) {
+        *endIndex = res + sourceLength;
+    }
+    return RegExpRunStatus_Success;
+}
+
 #ifdef JS_NEW_REGEXP
 bool
 RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString input,
@@ -1131,39 +1172,7 @@ RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
     irregexp::RegExpStackScope stackScope(cx->runtime());
 
     if (canStringMatch) {
-        MOZ_ASSERT(pairCount() == 1);
-        size_t sourceLength = source->length();
-        if (sticky()) {
-            // First part checks size_t overflow.
-            if (sourceLength + start < sourceLength || sourceLength + start > length)
-                return RegExpRunStatus_Success_NotFound;
-            if (!HasSubstringAt(input, source, start))
-                return RegExpRunStatus_Success_NotFound;
-
-            if (matches) {
-                (*matches)[0].start = start;
-                (*matches)[0].limit = start + sourceLength;
-
-                matches->checkAgainst(length);
-            } else if (endIndex) {
-                *endIndex = start + sourceLength;
-            }
-            return RegExpRunStatus_Success;
-        }
-
-        int res = StringFindPattern(input, source, start);
-        if (res == -1)
-            return RegExpRunStatus_Success_NotFound;
-
-        if (matches) {
-            (*matches)[0].start = res;
-            (*matches)[0].limit = res + sourceLength;
-
-            matches->checkAgainst(length);
-        } else if (endIndex) {
-            *endIndex = res + sourceLength;
-        }
-        return RegExpRunStatus_Success;
+        return executeAtom(cx, input, start, endIndex, matches);
     }
 
     do {
