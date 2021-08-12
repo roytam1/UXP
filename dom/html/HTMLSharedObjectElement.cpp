@@ -177,8 +177,13 @@ HTMLSharedObjectElement::AfterMaybeChangeAttr(int32_t aNamespaceID,
       // a document, just in case that the caller wants to set additional
       // attributes before inserting the node into the document.
       if (aNotify && IsInComposedDoc() && mIsDoneAddingChildren) {
-        nsresult rv = LoadObject(aNotify, true);
-        NS_ENSURE_SUCCESS(rv, rv);
+        nsContentUtils::AddScriptRunner(NS_NewRunnableFunction(
+            [self = RefPtr<HTMLSharedObjectElement>(this), aNotify]() {
+              if (self->IsInComposedDoc()) {
+                self->LoadObject(aNotify, true);
+              }
+            }));
+        return NS_OK;
       }
     }
   }

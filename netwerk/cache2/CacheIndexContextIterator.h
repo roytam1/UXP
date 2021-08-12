@@ -20,8 +20,8 @@ public:
   virtual ~CacheIndexContextIterator();
 
 private:
-  virtual void AddRecord(CacheIndexRecord *aRecord);
-  virtual void AddRecords(const nsTArray<CacheIndexRecord *> &aRecords);
+  virtual void AddRecord(CacheIndexRecordWrapper* aRecord,
+                         const StaticMutexAutoLock& aProofOfLock) override;
 
   nsCOMPtr<nsILoadContextInfo> mInfo;
 };

@@ -24,7 +24,9 @@ CacheIndexIterator::~CacheIndexIterator()
 {
   LOG(("CacheIndexIterator::~CacheIndexIterator() [this=%p]", this));
 
-  Close();
+  StaticMutexAutoLock lock(CacheIndex::sLock);
+  ClearRecords(lock);
+  CloseInternal(NS_ERROR_NOT_AVAILABLE);
 }
 
 nsresult
@@ -43,7 +45,7 @@ CacheIndexIterator::GetNextHash(SHA1Sum::Hash *aHash)
     return mStatus;
   }
 
-  memcpy(aHash, mRecords[mRecords.Length() - 1]->mHash, sizeof(SHA1Sum::Hash));
+  memcpy(aHash, mRecords[mRecords.Length() - 1]->Get()->mHash, sizeof(SHA1Sum::Hash));
   mRecords.RemoveElementAt(mRecords.Length() - 1);
 
   return NS_OK;
@@ -82,8 +84,13 @@ CacheIndexIterator::CloseInternal(nsresult aStatus)
   return NS_OK;
 }
 
-void
-CacheIndexIterator::AddRecord(CacheIndexRecord *aRecord)
+void CacheIndexIterator::ClearRecords(const StaticMutexAutoLock& aProofOfLock)
+{
+  mRecords.Clear();
+}
+
+void CacheIndexIterator::AddRecord(CacheIndexRecordWrapper* aRecord,
+                                   const StaticMutexAutoLock& aProofOfLock)
 {
   LOG(("CacheIndexIterator::AddRecord() [this=%p, record=%p]", this, aRecord));
 
@@ -91,7 +98,8 @@ CacheIndexIterator::AddRecord(CacheIndexRecord *aRecord)
 }
 
 bool
-CacheIndexIterator::RemoveRecord(CacheIndexRecord *aRecord)
+CacheIndexIterator::RemoveRecord(CacheIndexRecordWrapper *aRecord,
+                                 const StaticMutexAutoLock& aProofOfLock)
 {
   LOG(("CacheIndexIterator::RemoveRecord() [this=%p, record=%p]", this,
        aRecord));
@@ -100,14 +108,15 @@ CacheIndexIterator::RemoveRecord(CacheIndexRecord *aRecord)
 }
 
 bool
-CacheIndexIterator::ReplaceRecord(CacheIndexRecord *aOldRecord,
-                                  CacheIndexRecord *aNewRecord)
+CacheIndexIterator::ReplaceRecord(CacheIndexRecordWrapper* aOldRecord,
+                                  CacheIndexRecordWrapper* aNewRecord,
+                                  const StaticMutexAutoLock& aProofOfLock)
 {
   LOG(("CacheIndexIterator::ReplaceRecord() [this=%p, oldRecord=%p, "
        "newRecord=%p]", this, aOldRecord, aNewRecord));
 
-  if (RemoveRecord(aOldRecord)) {
-    AddRecord(aNewRecord);
+  if (RemoveRecord(aOldRecord, aProofOfLock)) {
+    AddRecord(aNewRecord, aProofOfLock);
     return true;
   }
 
