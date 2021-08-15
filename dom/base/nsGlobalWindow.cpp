@@ -9892,6 +9892,13 @@ nsGlobalWindow::Btoa(const nsAString& aBinaryData,
   aError = nsContentUtils::Btoa(aBinaryData, aAsciiBase64String);
 }
 
+void
+nsGlobalWindow::GetOrigin(nsAString& aOrigin)
+{
+  MOZ_ASSERT(IsInnerWindow());
+  nsContentUtils::GetUTFOrigin(GetPrincipal(), aOrigin);
+}
+
 //*****************************************************************************
 // nsGlobalWindow::nsIDOMEventTarget
 //*****************************************************************************

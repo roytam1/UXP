@@ -245,6 +245,7 @@ struct WorkerLoadInfo
 
   nsAutoPtr<mozilla::ipc::PrincipalInfo> mPrincipalInfo;
   nsCString mDomain;
+  nsString mOrigin; // Derived from mPrincipal; can be used on worker threads.
 
   nsString mServiceWorkerCacheName;
 

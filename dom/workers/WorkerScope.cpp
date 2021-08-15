@@ -357,6 +357,13 @@ WorkerGlobalScope::Btoa(const nsAString& aBtoa, nsAString& aOutput, ErrorResult&
 }
 
 void
+WorkerGlobalScope::GetOrigin(nsAString& aOrigin) const
+{
+  mWorkerPrivate->AssertIsOnWorkerThread();
+  aOrigin = mWorkerPrivate->Origin();
+}
+
+void
 WorkerGlobalScope::Dump(const Optional<nsAString>& aString) const
 {
   mWorkerPrivate->AssertIsOnWorkerThread();
