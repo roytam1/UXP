@@ -145,6 +145,9 @@ public:
   void
   Btoa(const nsAString& aBtoa, nsAString& aOutput, ErrorResult& aRv) const;
 
+  void
+  GetOrigin(nsAString& aOrigin) const;
+
   IMPL_EVENT_HANDLER(online)
   IMPL_EVENT_HANDLER(offline)
 

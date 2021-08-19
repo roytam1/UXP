@@ -13,9 +13,8 @@
 // https://html.spec.whatwg.org/multipage/webappapis.html#windoworworkerglobalscope-mixin
 [NoInterfaceObject, Exposed=(Window,Worker)]
 interface WindowOrWorkerGlobalScope {
-  // XXXbz We don't implement 'origin' yet on either window or worker globals.
-  // See bug 1306170.
-  // [Replaceable] readonly attribute USVString origin;
+  // .origin on Window or Worker globals
+  [Replaceable] readonly attribute USVString origin;
 
   // base64 utility methods
   [Throws]
