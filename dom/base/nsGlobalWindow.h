@@ -958,6 +958,7 @@ public:
             mozilla::ErrorResult& aError);
   void Btoa(const nsAString& aBinaryData, nsAString& aAsciiBase64String,
             mozilla::ErrorResult& aError);
+  void GetOrigin(nsAString& aOrigin);
   mozilla::dom::DOMStorage* GetSessionStorage(mozilla::ErrorResult& aError);
   mozilla::dom::DOMStorage*
   GetLocalStorage(mozilla::ErrorResult& aError);
