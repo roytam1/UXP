@@ -976,7 +976,10 @@ js::StringHasRegExpMetaChars(JSLinearString* str)
 /* RegExpShared */
 
 RegExpShared::RegExpShared(JSAtom* source, RegExpFlags flags)
-  : source(source), flags(flags), parenCount(0), canStringMatch(false), marked_(false)
+  : source(source)
+  , flags(flags)
+  , parenCount(0)
+  , marked_(false)
 {}
 
 RegExpShared::~RegExpShared()
@@ -1083,14 +1086,56 @@ bool
 RegExpShared::compileIfNecessary(JSContext* cx, HandleLinearString input,
                                  CompilationMode mode, ForceByteCodeEnum force)
 {
-  MOZ_CRASH("TODO");
+  bool needsCompile = false;
+  if (kind() == RegExpShared::Kind::Unparsed) {
+    needsCompile = true;
+  }
+
+  // TODO: tier-up from interpreter to generated code
+
+  if (needsCompile) {
+    return irregexp::CompilePattern(cx, this, input);
+  }
+  return true;
 }
 
 RegExpRunStatus
 RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
                       MatchPairs* matches, size_t* endIndex)
 {
+  MOZ_ASSERT_IF(matches, !endIndex);
+  MOZ_ASSERT_IF(!matches, endIndex);
+
+  // TODO: Add tracelogger support
+
+  CompilationMode mode = matches ? Normal : MatchOnly;
+  
+  /* Compile the code at point-of-use. */
+  if (!compileIfNecessary(cx, input, mode, DontForceByteCode)) {
+    return RegExpRunStatus_Error;
+  }
+
+  /*
+   * Ensure sufficient memory for output vector.
+   * No need to initialize it. The RegExp engine fills them in on a match.
+   */
+  if (!matches->allocOrExpandArray(pairCount())) {
+    ReportOutOfMemory(cx);
+    return RegExpRunStatus_Error;
+  }
+
+  if (kind() == RegExpShared::Kind::Atom) {
+    return RegExpShared::executeAtom(cx, input, start, endIndex, matches);
+  }
+
   MOZ_CRASH("TODO");
+}
+
+void RegExpShared::useAtomMatch(HandleAtom pattern) {
+  MOZ_ASSERT(kind() == RegExpShared::Kind::Unparsed);
+  kind_ = RegExpShared::Kind::Atom;
+  patternAtom_ = pattern;
+  parenCount = 0;
 }
 
 #else

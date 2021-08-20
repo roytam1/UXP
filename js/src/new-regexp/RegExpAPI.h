@@ -27,6 +27,9 @@ bool CheckPatternSyntax(JSContext* cx, frontend::TokenStream& ts,
 bool CheckPatternSyntax(JSContext* cx, frontend::TokenStream& ts,
                         HandleAtom pattern, JS::RegExpFlags flags);
 
+bool CompilePattern(JSContext* cx, RegExpShared* re,
+                    HandleLinearString input);
+
 }  // namespace irregexp
 }  // namespace js
 
