@@ -974,7 +974,7 @@ js::StringHasRegExpMetaChars(JSLinearString* str)
 RegExpShared::RegExpShared(JSAtom* source, RegExpFlags flags)
   : source(source)
   , flags(flags)
-  , parenCount(0)
+  , pairCount_(0)
   , marked_(false)
 {}
 
@@ -1131,7 +1131,7 @@ void RegExpShared::useAtomMatch(HandleAtom pattern) {
   MOZ_ASSERT(kind() == RegExpShared::Kind::Unparsed);
   kind_ = RegExpShared::Kind::Atom;
   patternAtom_ = pattern;
-  parenCount = 0;
+  pairCount_ = 1;
 }
 
 #else
@@ -1155,7 +1155,8 @@ RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString inpu
         return false;
     }
 
-    this->parenCount = data.capture_count;
+    // Add one to account for the extra whole-match capture.
+    this->pairCount_ = data.capture_count + 1;
 
     irregexp::RegExpCode code = irregexp::CompilePattern(cx, this, &data, input,
                                                          false /* global() */,

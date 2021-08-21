@@ -1147,11 +1147,10 @@ PrepareAndExecuteRegExp(JSContext* cx, MacroAssembler& masm, Register regexp, Re
 
     if (mode == RegExpShared::Normal) {
         // Don't handle RegExps with excessive parens.
-        masm.load32(Address(temp1, RegExpShared::offsetOfParenCount()), temp2);
-        masm.branch32(Assembler::AboveOrEqual, temp2, Imm32(RegExpObject::MaxPairCount), failure);
+        masm.load32(Address(temp1, RegExpShared::offsetOfPairCount()), temp2);
+        masm.branch32(Assembler::Above, temp2, Imm32(RegExpObject::MaxPairCount), failure);
 
         // Fill in the paren count in the MatchPairs on the stack.
-        masm.add32(Imm32(1), temp2);
         masm.store32(temp2, pairCountAddress);
     }
 

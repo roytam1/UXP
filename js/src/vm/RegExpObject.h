@@ -115,7 +115,8 @@ class RegExpShared
     HeapPtr<JSAtom*>     source;
 
     JS::RegExpFlags    flags;
-    size_t             parenCount;
+    size_t             pairCount_;
+
 #ifdef JS_NEW_REGEXP
     RegExpShared::Kind kind_ = Kind::Unparsed;
     GCPtrAtom patternAtom_;
@@ -176,13 +177,13 @@ class RegExpShared
 
     /* Accessors */
 
-    size_t getParenCount() const {
+    size_t pairCount() const {
 #ifdef JS_NEW_REGEXP
         MOZ_ASSERT(kind() != Kind::Unparsed);
 #else
         MOZ_ASSERT(isCompiled());
 #endif
-        return parenCount;
+        return pairCount_;
     }
 
 #ifdef JS_NEW_REGEXP
@@ -191,9 +192,6 @@ class RegExpShared
     // Use simple string matching for this regexp.
     void useAtomMatch(HandleAtom pattern);
 #endif
-
-    /* Accounts for the "0" (whole match) pair. */
-    size_t pairCount() const            { return getParenCount() + 1; }
 
     JSAtom* getSource() const           { return source; }
 #ifdef JS_NEW_REGEXP
@@ -237,8 +235,8 @@ class RegExpShared
         return offsetof(RegExpShared, flags);
     }
 
-    static size_t offsetOfParenCount() {
-        return offsetof(RegExpShared, parenCount);
+    static size_t offsetOfPairCount() {
+        return offsetof(RegExpShared, pairCount_);
     }
 
     static size_t offsetOfLatin1JitCode(CompilationMode mode) {
