@@ -76,11 +76,6 @@ CloneRegExpObject(JSContext* cx, JSObject* regexp);
 class RegExpShared
 {
   public:
-    enum CompilationMode {
-        Normal,
-        MatchOnly
-    };
-
     enum ForceByteCodeEnum {
         DontForceByteCode,
         ForceByteCode
@@ -125,34 +120,28 @@ class RegExpShared
 #endif
     bool               marked_;
 
-    RegExpCompilation  compilationArray[4];
+    RegExpCompilation  compilationArray[2];
 
-    static int CompilationIndex(CompilationMode mode, bool latin1) {
-        switch (mode) {
-          case Normal:    return latin1 ? 0 : 1;
-          case MatchOnly: return latin1 ? 2 : 3;
-        }
-        MOZ_CRASH();
-    }
+    static int CompilationIndex(bool latin1) { return latin1 ? 0 : 1; }
 
     // Tables referenced by JIT code.
     Vector<uint8_t*, 0, SystemAllocPolicy> tables;
 
     /* Internal functions. */
     bool compile(JSContext* cx, HandleLinearString input,
-                 CompilationMode mode, ForceByteCodeEnum force);
+                 ForceByteCodeEnum force);
     bool compile(JSContext* cx, HandleAtom pattern, HandleLinearString input,
-                 CompilationMode mode, ForceByteCodeEnum force);
+                 ForceByteCodeEnum force);
 
     bool compileIfNecessary(JSContext* cx, HandleLinearString input,
-                            CompilationMode mode, ForceByteCodeEnum force);
+                            ForceByteCodeEnum force);
 
-    const RegExpCompilation& compilation(CompilationMode mode, bool latin1) const {
-        return compilationArray[CompilationIndex(mode, latin1)];
+    const RegExpCompilation& compilation(bool latin1) const {
+        return compilationArray[CompilationIndex(latin1)];
     }
 
-    RegExpCompilation& compilation(CompilationMode mode, bool latin1) {
-        return compilationArray[CompilationIndex(mode, latin1)];
+    RegExpCompilation& compilation(bool latin1) {
+        return compilationArray[CompilationIndex(latin1)];
     }
 
   public:
@@ -162,13 +151,11 @@ class RegExpShared
     RegExpRunStatus executeAtom(JSContext* cx,
                                 HandleLinearString input,
                                 size_t start,
-                                size_t* endIndex,
                                 MatchPairs* matches);
 
-    // Execute this RegExp on input starting from searchIndex, filling in
-    // matches if specified and otherwise only determining if there is a match.
+    // Execute this RegExp on input starting from searchIndex, filling in matches.
     RegExpRunStatus execute(JSContext* cx, HandleLinearString input, size_t searchIndex,
-                            MatchPairs* matches, size_t* endIndex);
+                            MatchPairs* matches);
 
     // Register a table with this RegExpShared, and take ownership.
     bool addTable(uint8_t* table) {
@@ -208,14 +195,11 @@ class RegExpShared
     bool unicode() const                { return flags.unicode(); }
     bool sticky() const                 { return flags.sticky(); }
 
-    bool isCompiled(CompilationMode mode, bool latin1,
+    bool isCompiled(bool latin1,
                     ForceByteCodeEnum force = DontForceByteCode) const {
-        return compilation(mode, latin1).compiled(force);
+        return compilation(latin1).compiled(force);
     }
-    bool isCompiled() const {
-        return isCompiled(Normal, true) || isCompiled(Normal, false)
-            || isCompiled(MatchOnly, true) || isCompiled(MatchOnly, false);
-    }
+    bool isCompiled() const { return isCompiled(true) || isCompiled(false); }
 
     void trace(JSTracer* trc);
     bool needsSweep(JSRuntime* rt);
@@ -239,21 +223,16 @@ class RegExpShared
         return offsetof(RegExpShared, pairCount_);
     }
 
-    static size_t offsetOfLatin1JitCode(CompilationMode mode) {
-        return offsetof(RegExpShared, compilationArray)
-             + (CompilationIndex(mode, true) * sizeof(RegExpCompilation))
-             + offsetof(RegExpCompilation, jitCode);
-    }
-    static size_t offsetOfTwoByteJitCode(CompilationMode mode) {
-        return offsetof(RegExpShared, compilationArray)
-             + (CompilationIndex(mode, false) * sizeof(RegExpCompilation))
-             + offsetof(RegExpCompilation, jitCode);
+    static size_t offsetOfJitCode(bool latin1) {
+        return offsetof(RegExpShared, compilationArray) +
+               (CompilationIndex(latin1) * sizeof(RegExpCompilation)) +
+               offsetof(RegExpCompilation, jitCode);
     }
 
     size_t sizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf);
 
 #ifdef DEBUG
-    bool dumpBytecode(JSContext* cx, bool match_only, HandleLinearString input);
+    bool dumpBytecode(JSContext* cx, HandleLinearString input);
 #endif
 };
 
