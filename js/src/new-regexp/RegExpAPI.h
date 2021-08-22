@@ -14,6 +14,7 @@
 
 #include "frontend/TokenStream.h"
 #include "jscntxt.h"
+#include "vm/MatchPairs.h"
 #include "vm/RegExpObject.h"
 
 namespace js {
@@ -29,6 +30,10 @@ bool CheckPatternSyntax(JSContext* cx, frontend::TokenStream& ts,
 
 bool CompilePattern(JSContext* cx, RegExpShared* re,
                     HandleLinearString input);
+
+RegExpRunStatus Execute(JSContext* cx, RegExpShared* re,
+                        HandleLinearString input, size_t start,
+                        VectorMatchPairs* matches);
 
 }  // namespace irregexp
 }  // namespace js

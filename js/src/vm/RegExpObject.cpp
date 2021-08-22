@@ -25,6 +25,7 @@
 #endif
 
 #ifdef JS_NEW_REGEXP
+#include "new-regexp/regexp-stack.h"
 #include "new-regexp/RegExpAPI.h"
 #endif
 
@@ -1112,7 +1113,57 @@ RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
     return RegExpShared::executeAtom(cx, input, start, matches);
   }
 
-  MOZ_CRASH("TODO");
+  // Reset the Irregexp backtrack stack if it grows during execution.
+  irregexp::RegExpStackScope stackScope(cx->isolate);
+
+  /*
+   * Ensure sufficient memory for output vector.
+   * No need to initialize it. The RegExp engine fills them in on a match.
+   */
+  if (!matches->allocOrExpandArray(pairCount())) {
+    ReportOutOfMemory(cx);
+    return RegExpRunStatus_Error;
+  }
+
+  uint32_t interruptRetries = 0;
+  const uint32_t maxInterruptRetries = 4;
+  VectorMatchPairs* vmatches = static_cast<VectorMatchPairs*>(matches);
+  do {
+    
+    RegExpRunStatus result = irregexp::Execute(cx, this, input, start, vmatches);
+
+    if (result == RegExpRunStatus_Error) {
+      /* Execute can return RegExpRunStatus_Error:
+       *
+       *  1. If the native stack overflowed
+       *  2. If the backtrack stack overflowed
+       *  3. If an interrupt was requested during execution.
+       *
+       * In the first two cases, we want to throw an error. In the
+       * third case, we want to handle the interrupt and try again.
+       * We cap the number of times we will retry.
+       */
+      JSRuntime* rt = cx->runtime();
+      if (rt->hasPendingInterrupt()) {
+        if (!CheckForInterrupt(cx)) {
+          return RegExpRunStatus_Error;
+        }
+        if (interruptRetries++ < maxInterruptRetries) {
+          continue;
+        }
+      }
+      // If we have run out of retries, this regexp takes too long to execute.
+      ReportOverRecursed(cx);
+      return RegExpRunStatus_Error;
+    }
+
+    MOZ_ASSERT(result == RegExpRunStatus_Success ||
+               result == RegExpRunStatus_Success_NotFound);
+
+    return result;
+  } while (true);
+
+  MOZ_CRASH("Unreachable");
 }
 
 void RegExpShared::useAtomMatch(HandleAtom pattern) {
@@ -1120,6 +1171,12 @@ void RegExpShared::useAtomMatch(HandleAtom pattern) {
   kind_ = RegExpShared::Kind::Atom;
   patternAtom_ = pattern;
   pairCount_ = 1;
+}
+
+void RegExpShared::useRegExpMatch(size_t pairCount) {
+  MOZ_ASSERT(kind() == RegExpShared::Kind::Unparsed);
+  kind_ = RegExpShared::Kind::RegExp;
+  pairCount_ = pairCount;
 }
 
 #else
