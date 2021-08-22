@@ -134,18 +134,14 @@ CreateRegExpSearchResult(JSContext* cx, const MatchPairs& matches)
  */
 static RegExpRunStatus
 ExecuteRegExpImpl(JSContext* cx, RegExpStatics* res, RegExpShared& re, HandleLinearString input,
-                  size_t searchIndex, MatchPairs* matches, size_t* endIndex)
+                  size_t searchIndex, MatchPairs* matches)
 {
-    RegExpRunStatus status = re.execute(cx, input, searchIndex, matches, endIndex);
+    RegExpRunStatus status = re.execute(cx, input, searchIndex, matches);
 
     /* Out of spec: Update RegExpStatics. */
     if (status == RegExpRunStatus_Success && res) {
-        if (matches) {
-            if (!res->updateFromMatchPairs(cx, input, *matches))
-                return RegExpRunStatus_Error;
-        } else {
-            res->updateLazily(cx, input, &re, searchIndex);
-        }
+        if (!res->updateFromMatchPairs(cx, input, *matches))
+            return RegExpRunStatus_Error;
     }
     return status;
 }
@@ -162,8 +158,7 @@ js::ExecuteRegExpLegacy(JSContext* cx, RegExpStatics* res, Handle<RegExpObject*>
 
     ScopedMatchPairs matches(&cx->tempLifoAlloc());
 
-    RegExpRunStatus status = ExecuteRegExpImpl(cx, res, *shared, input, *lastIndex,
-                                               &matches, nullptr);
+    RegExpRunStatus status = ExecuteRegExpImpl(cx, res, *shared, input, *lastIndex, &matches);
     if (status == RegExpRunStatus_Error)
         return false;
 
@@ -946,7 +941,7 @@ IsTrailSurrogateWithLeadSurrogate(JSContext* cx, HandleLinearString input, int32
 static RegExpRunStatus
 ExecuteRegExp(JSContext* cx, HandleObject regexp, HandleString string,
               int32_t lastIndex,
-              MatchPairs* matches, size_t* endIndex, RegExpStaticsUpdate staticsUpdate)
+              MatchPairs* matches, RegExpStaticsUpdate staticsUpdate)
 {
     /*
      * WARNING: Despite the presence of spec step comment numbers, this
@@ -1008,7 +1003,7 @@ ExecuteRegExp(JSContext* cx, HandleObject regexp, HandleString string,
     }
 
     /* Steps 3, 11-14, except 12.a.i, 12.c.i.1. */
-    RegExpRunStatus status = ExecuteRegExpImpl(cx, res, *re, input, lastIndex, matches, endIndex);
+    RegExpRunStatus status = ExecuteRegExpImpl(cx, res, *re, input, lastIndex, matches);
     if (status == RegExpRunStatus_Error)
         return RegExpRunStatus_Error;
 
@@ -1030,7 +1025,7 @@ RegExpMatcherImpl(JSContext* cx, HandleObject regexp, HandleString string,
 
     /* Steps 3, 9-14, except 12.a.i, 12.c.i.1. */
     RegExpRunStatus status = ExecuteRegExp(cx, regexp, string, lastIndex,
-                                           &matches, nullptr, staticsUpdate);
+                                           &matches, staticsUpdate);
     if (status == RegExpRunStatus_Error)
         return false;
 
@@ -1104,7 +1099,7 @@ RegExpSearcherImpl(JSContext* cx, HandleObject regexp, HandleString string,
 
     /* Steps 3, 9-14, except 12.a.i, 12.c.i.1. */
     RegExpRunStatus status = ExecuteRegExp(cx, regexp, string, lastIndex,
-                                           &matches, nullptr, staticsUpdate);
+                                           &matches, staticsUpdate);
     if (status == RegExpRunStatus_Error)
         return false;
 
@@ -1206,16 +1201,16 @@ js::RegExpTester(JSContext* cx, unsigned argc, Value* vp)
         return false;
 
     /* Steps 3, 9-14, except 12.a.i, 12.c.i.1. */
-    size_t endIndex = 0;
+    VectorMatchPairs matches;
     RegExpRunStatus status = ExecuteRegExp(cx, regexp, string, lastIndex,
-                                           nullptr, &endIndex, UpdateRegExpStatics);
+                                           &matches, UpdateRegExpStatics);
 
     if (status == RegExpRunStatus_Error)
         return false;
 
     if (status == RegExpRunStatus_Success) {
-        MOZ_ASSERT(endIndex <= INT32_MAX);
-        args.rval().setInt32(int32_t(endIndex));
+        int32_t endIndex = matches[0].limit;
+        args.rval().setInt32(endIndex);
     } else {
         args.rval().setInt32(-1);
     }
@@ -1232,13 +1227,12 @@ js::RegExpTesterRaw(JSContext* cx, HandleObject regexp, HandleString input,
 {
     MOZ_ASSERT(lastIndex >= 0);
 
-    size_t endIndexTmp = 0;
+    VectorMatchPairs matches;
     RegExpRunStatus status = ExecuteRegExp(cx, regexp, input, lastIndex,
-                                           nullptr, &endIndexTmp, UpdateRegExpStatics);
+                                           &matches, UpdateRegExpStatics);
 
     if (status == RegExpRunStatus_Success) {
-        MOZ_ASSERT(endIndexTmp <= INT32_MAX);
-        *endIndex = int32_t(endIndexTmp);
+        *endIndex = matches[0].limit;
         return true;
     }
     if (status == RegExpRunStatus_Success_NotFound) {
@@ -1260,9 +1254,9 @@ js::regexp_test_no_statics(JSContext* cx, unsigned argc, Value* vp)
     RootedObject regexp(cx, &args[0].toObject());
     RootedString string(cx, args[1].toString());
 
-    size_t ignored = 0;
+    VectorMatchPairs ignored;
     RegExpRunStatus status = ExecuteRegExp(cx, regexp, string, 0,
-                                           nullptr, &ignored, DontUpdateRegExpStatics);
+                                           &ignored, DontUpdateRegExpStatics);
     args.rval().setBoolean(status == RegExpRunStatus_Success);
     return status != RegExpRunStatus_Error;
 }
