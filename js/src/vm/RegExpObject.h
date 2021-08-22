@@ -15,6 +15,9 @@
 #include "gc/Marking.h"
 #include "gc/Zone.h"
 #include "js/RegExpFlags.h"
+#ifdef JS_NEW_REGEXP
+#  include "new-regexp/RegExpTypes.h"
+#endif
 #include "proxy/Proxy.h"
 #include "vm/ArrayObject.h"
 #include "vm/Shape.h"
@@ -86,6 +89,12 @@ class RegExpShared
         Atom,
         RegExp
     };
+
+#ifdef JS_NEW_REGEXP
+  using ByteCode = js::irregexp::ByteArrayData;
+#else
+  using ByteCode = uint8_t;
+#endif
     
   private:
     friend class RegExpCompartment;
@@ -96,7 +105,7 @@ class RegExpShared
     struct RegExpCompilation
     {
         HeapPtr<jit::JitCode*> jitCode;
-        uint8_t* byteCode;
+        ByteCode* byteCode;
 
         RegExpCompilation() : byteCode(nullptr) {}
         ~RegExpCompilation() { js_free(byteCode); }
@@ -178,6 +187,13 @@ class RegExpShared
 
     // Use simple string matching for this regexp.
     void useAtomMatch(HandleAtom pattern);
+
+    void setByteCode(ByteCode* code, bool latin1) {
+      compilation(latin1).byteCode = code;
+    }
+    ByteCode* getByteCode(bool latin1) const {
+      return compilation(latin1).byteCode;
+    }
 #endif
 
     JSAtom* getSource() const           { return source; }
