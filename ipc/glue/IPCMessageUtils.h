@@ -119,7 +119,7 @@ struct EnumSerializer {
           uintParamType;
 
   static void Write(Message* aMsg, const paramType& aValue) {
-    MOZ_ASSERT(EnumValidator::IsLegalValue(aValue));
+    MOZ_RELEASE_ASSERT(EnumValidator::IsLegalValue(aValue));
     WriteParam(aMsg, uintParamType(aValue));
   }
 
@@ -383,6 +383,18 @@ template <>
 struct ParamTraits<nsLiteralCString> : ParamTraits<nsACString>
 {
   typedef nsLiteralCString paramType;
+};
+
+template <>
+struct ParamTraits<nsDependentSubstring> : ParamTraits<nsAString>
+{
+  typedef nsDependentSubstring paramType;
+};
+
+template <>
+struct ParamTraits<nsDependentCSubstring> : ParamTraits<nsACString>
+{
+  typedef nsDependentCSubstring paramType;
 };
 
 #ifdef MOZILLA_INTERNAL_API

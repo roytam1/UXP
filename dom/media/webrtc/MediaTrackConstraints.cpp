@@ -13,6 +13,9 @@
 
 namespace mozilla {
 
+using dom::ConstrainBooleanParameters;
+using dom::OwningLongOrConstrainLongRange;
+
 template<class ValueType>
 template<class ConstrainRange>
 void
