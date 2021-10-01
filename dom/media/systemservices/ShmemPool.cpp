@@ -39,7 +39,7 @@ mozilla::ShmemBuffer ShmemPool::GetIfAvailable(size_t aSize)
 
   MOZ_ASSERT(res.mShmem.IsWritable(), "Pool in Shmem is not writable?");
 
-  if (res.mShmem.Size<char>() < aSize) {
+  if (res.mShmem.Size<uint8_t>() < aSize) {
     LOG(("Free Shmem but not of the right size"));
     return ShmemBuffer();
   }
@@ -64,7 +64,7 @@ void ShmemPool::Put(ShmemBuffer&& aShmem)
 #ifdef DEBUG
   size_t poolUse = mShmemPool.Length() - mPoolFree;
   if (poolUse > 0) {
-    LOG(("ShmemPool usage reduced to %d buffers", poolUse));
+    LOG_VERBOSE(("ShmemPool usage reduced to %d buffers", poolUse));
   }
 #endif
 }
