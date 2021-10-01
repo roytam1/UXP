@@ -213,7 +213,7 @@ WyciwygChannelParent::RecvAsyncOpen(const URIParams& aOriginal,
 }
 
 bool
-WyciwygChannelParent::RecvWriteToCacheEntry(const nsString& data)
+WyciwygChannelParent::RecvWriteToCacheEntry(const nsDependentSubstring& data)
 {
   if (!mReceivedAppData) {
     printf_stderr("WyciwygChannelParent::RecvWriteToCacheEntry: FATAL ERROR: didn't receive app data\n");
