@@ -758,7 +758,7 @@ WebrtcVideoConduit::GetAVStats(int32_t* jitterBufferDelayMs,
 }
 
 bool
-+WebrtcVideoConduit::GetRTPStats(unsigned int* jitterMs,
+WebrtcVideoConduit::GetRTPStats(unsigned int* jitterMs,
                                 unsigned int* cumulativeLost)
 {
   CSFLogVerbose(logTag, "%s for VideoConduit:%p", __FUNCTION__, this);
