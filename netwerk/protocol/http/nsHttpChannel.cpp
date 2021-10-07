@@ -5711,7 +5711,7 @@ nsHttpChannel::BeginConnect()
     mRequestHead.SetOrigin(scheme, host, port);
 
     SetOriginHeader();
-    SetDoNotTrack();
+    SetGPC();
 
     NeckoOriginAttributes originAttributes;
     NS_GetOriginAttributes(this, originAttributes);
@@ -8051,18 +8051,13 @@ nsHttpChannel::SetOriginHeader()
 }
 
 void
-nsHttpChannel::SetDoNotTrack()
+nsHttpChannel::SetGPC()
 {
   /**
-   * 'DoNotTrack' header should be added if 'privacy.donottrackheader.enabled'
-   * is true or tracking protection is enabled. See bug 1258033.
+   * 'Sec-GPC: 1' header should be added if 'privacy.GPCheader.enabled' is true.
    */
-  nsCOMPtr<nsILoadContext> loadContext;
-  NS_QueryNotificationCallbacks(this, loadContext);
-
-  if ((loadContext && loadContext->UseTrackingProtection()) ||
-      nsContentUtils::DoNotTrackEnabled()) {
-    mRequestHead.SetHeader(nsHttp::DoNotTrack,
+  if (nsContentUtils::GPCEnabled()) {
+    mRequestHead.SetHeader(nsHttp::GlobalPrivacyControl,
                            NS_LITERAL_CSTRING("1"),
                            false);
   }
