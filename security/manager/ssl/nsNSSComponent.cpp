@@ -1443,6 +1443,7 @@ static const bool FALSE_START_ENABLED_DEFAULT = true;
 static const bool NPN_ENABLED_DEFAULT = true;
 static const bool ALPN_ENABLED_DEFAULT = false;
 static const bool ENABLED_0RTT_DATA_DEFAULT = false;
+static const bool TLS13_COMPAT_MODE_DEFAULT = false;
 
 static void
 ConfigureTLSSessionIdentifiers()
@@ -1876,6 +1877,11 @@ nsNSSComponent::InitializeNSS()
                        Preferences::GetBool("security.tls.enable_0rtt_data",
                                             ENABLED_0RTT_DATA_DEFAULT));
 
+  // Set TLS 1.3 compatibility mode for bad middleware boxes?
+  SSL_OptionSetDefault(SSL_ENABLE_TLS13_COMPAT_MODE,
+                       Preferences::GetBool("security.ssl.enable_tls13_compat_mode",
+                                            TLS13_COMPAT_MODE_DEFAULT));  
+  
   if (NS_FAILED(InitializeCipherSuite())) {
 
     MOZ_LOG(gPIPNSSLog, LogLevel::Error, ("Unable to initialize cipher suite settings\n"));

@@ -112,6 +112,12 @@ pref("security.webauth.u2f_enable_usbtoken", false);
 // OCSP must-staple
 pref("security.ssl.enable_ocsp_must_staple", true);
 
+// Enable TLS 1.3 compatmode version for bad middleware boxes?
+// This is a holdover from the later draft specs and SHOULD NOT be enabled by
+// default. ONLY use this when you explicitly need it. You have been warned!
+// Restart required.
+pref("security.ssl.enable_tls13_compat_mode", false);
+
 // If a request is mixed-content, send an HSTS priming request to attempt to
 // see if it is available over HTTPS.
 pref("security.mixed_content.send_hsts_priming", true);
