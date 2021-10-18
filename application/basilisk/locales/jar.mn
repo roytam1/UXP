@@ -48,10 +48,6 @@
     locale/browser/places/bookmarkProperties.properties (%chrome/browser/places/bookmarkProperties.properties)
     locale/browser/preferences/selectBookmark.dtd  (%chrome/browser/preferences/selectBookmark.dtd)
     locale/browser/places/moveBookmarks.dtd        (%chrome/browser/places/moveBookmarks.dtd)
-#ifdef MOZ_SAFE_BROWSING
-    locale/browser/safebrowsing/phishing-afterload-warning-message.dtd (%chrome/browser/safebrowsing/phishing-afterload-warning-message.dtd)
-    locale/browser/safebrowsing/report-phishing.dtd                    (%chrome/browser/safebrowsing/report-phishing.dtd)
-#endif
     locale/browser/feeds/subscribe.dtd              (%chrome/browser/feeds/subscribe.dtd)
     locale/browser/feeds/subscribe.properties       (%chrome/browser/feeds/subscribe.properties)
     locale/browser/migration/migration.dtd         (%chrome/browser/migration/migration.dtd)
@@ -59,16 +55,10 @@
     locale/browser/preferences/advanced.dtd           (%chrome/browser/preferences/advanced.dtd)
     locale/browser/preferences/applicationManager.dtd        (%chrome/browser/preferences/applicationManager.dtd)
     locale/browser/preferences/applicationManager.properties (%chrome/browser/preferences/applicationManager.properties)
-#ifdef MOZ_SAFE_BROWSING
-    locale/browser/preferences/blocklists.dtd         (%chrome/browser/preferences/blocklists.dtd)
-#endif
     locale/browser/preferences/colors.dtd             (%chrome/browser/preferences/colors.dtd)
     locale/browser/preferences/cookies.dtd            (%chrome/browser/preferences/cookies.dtd)
     locale/browser/preferences/content.dtd            (%chrome/browser/preferences/content.dtd)
     locale/browser/preferences/connection.dtd         (%chrome/browser/preferences/connection.dtd)
-#ifdef MOZ_SAFE_BROWSING
-    locale/browser/preferences/donottrack.dtd         (%chrome/browser/preferences/donottrack.dtd)
-#endif
     locale/browser/preferences/applications.dtd       (%chrome/browser/preferences/applications.dtd)
     locale/browser/preferences/fonts.dtd              (%chrome/browser/preferences/fonts.dtd)
     locale/browser/preferences/main.dtd               (%chrome/browser/preferences/main.dtd)

@@ -54,37 +54,6 @@
                 oncommand="gIdentityHandler.toggleSubView('security', this)"/>
       </hbox>
 
-      <!-- Tracking Protection Section -->
-      <hbox id="tracking-protection-container"
-            class="identity-popup-section"
-            when-connection="not-secure secure secure-ev secure-cert-user-overridden file">
-        <vbox id="tracking-protection-content" flex="1">
-          <description class="identity-popup-headline"
-                       crop="end"
-                       value="&trackingProtection.title;" />
-
-          <label id="tracking-blocked"
-                 crop="end">&trackingProtection.detectedBlocked3;</label>
-          <label id="tracking-loaded"
-                 crop="end">&trackingProtection.detectedNotBlocked3;</label>
-          <label id="tracking-not-detected"
-                 crop="end">&trackingProtection.notDetected3;</label>
-
-          <button id="tracking-action-unblock"
-                  label="&trackingProtection.unblock.label;"
-                  accesskey="&trackingProtection.unblock.accesskey;"
-                  oncommand="TrackingProtection.disableForCurrentPage();" />
-          <button id="tracking-action-unblock-private"
-                  label="&trackingProtection.unblockPrivate.label;"
-                  accesskey="&trackingProtection.unblockPrivate.accesskey;"
-                  oncommand="TrackingProtection.disableForCurrentPage();" />
-          <button id="tracking-action-block"
-                  label="&trackingProtection.block2.label;"
-                  accesskey="&trackingProtection.block2.accesskey;"
-                  oncommand="TrackingProtection.enableForCurrentPage();" />
-        </vbox>
-      </hbox>
-
       <!-- Permissions Section -->
       <hbox class="identity-popup-section">
         <vbox id="identity-popup-permissions-content" flex="1">

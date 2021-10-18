@@ -236,13 +236,6 @@ treecol {
 
 /* Privacy pane */
 
-#trackingProtectionPBMLearnMore,
-#trackingProtectionLearnMore {
-  margin-inline-start: 1.5em !important;
-  margin-top: 0;
-  font-weight: normal;
-}
-
 .doNotTrackLearnMore {
   margin-inline-start: calc(1em + 30px);
   margin-bottom: 1em;
