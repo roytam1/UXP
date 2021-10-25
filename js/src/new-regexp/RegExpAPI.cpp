@@ -509,6 +509,14 @@ RegExpRunStatus Interpret(JSContext* cx, RegExpShared* re,
     return RegExpRunStatus_Error;
   }
 
+  // Double-check enum definitions
+  static_assert(RegExpRunStatus_Error == v8::internal::RegExp::kInternalRegExpException,
+                "RegExpRunStatus enum mismatch!");
+  static_assert(RegExpRunStatus_Success == v8::internal::RegExp::kInternalRegExpSuccess,
+                "RegExpRunStatus enum mismatch!");
+  static_assert(RegExpRunStatus_Success_NotFound == v8::internal::RegExp::kInternalRegExpFailure,
+                "RegExpRunStatus enum mismatch!");
+
   RegExpRunStatus status =
       (RegExpRunStatus) IrregexpInterpreter::MatchForCallFromRuntime(
           cx->isolate, wrappedRegExp, wrappedInput, registers.begin(),

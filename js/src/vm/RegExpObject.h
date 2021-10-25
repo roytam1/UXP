@@ -49,11 +49,10 @@ class RegExpStatics;
 
 namespace frontend { class TokenStream; }
 
-enum RegExpRunStatus
-{
-    RegExpRunStatus_Error,
-    RegExpRunStatus_Success,
-    RegExpRunStatus_Success_NotFound
+enum RegExpRunStatus : int32_t {
+  RegExpRunStatus_Error = -1,
+  RegExpRunStatus_Success = 1,
+  RegExpRunStatus_Success_NotFound = 0,
 };
 
 extern RegExpObject*
