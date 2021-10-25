@@ -78,15 +78,16 @@ CloneRegExpObject(JSContext* cx, JSObject* regexp);
 class RegExpShared
 {
   public:
-    enum ForceByteCodeEnum {
-        DontForceByteCode,
-        ForceByteCode
-    };
-
     enum class Kind {
         Unparsed,
         Atom,
         RegExp
+    };
+    
+    enum class CodeKind {
+        Bytecode,
+        Jitcode,
+        Any
     };
 
 #ifdef JS_NEW_REGEXP
@@ -109,8 +110,16 @@ class RegExpShared
         RegExpCompilation() : byteCode(nullptr) {}
         ~RegExpCompilation() { js_free(byteCode); }
 
-        bool compiled(ForceByteCodeEnum force = DontForceByteCode) const {
-            return byteCode || (force == DontForceByteCode && jitCode);
+        bool compiled(CodeKind kind = CodeKind::Any) const {
+          switch (kind) {
+            case CodeKind::Bytecode:
+              return !!byteCode;
+            case CodeKind::Jitcode:
+              return !!jitCode;
+            case CodeKind::Any:
+              return !!byteCode || !!jitCode;
+          }
+          MOZ_CRASH("RegExp Compilation CodeKind: Unreachable");
         }
     };
 
@@ -138,12 +147,12 @@ class RegExpShared
 
     /* Internal functions. */
     bool compile(JSContext* cx, HandleLinearString input,
-                 ForceByteCodeEnum force);
+                 CodeKind codeKind);
     bool compile(JSContext* cx, HandleAtom pattern, HandleLinearString input,
-                 ForceByteCodeEnum force);
+                 CodeKind codeKind);
 
     bool compileIfNecessary(JSContext* cx, HandleLinearString input,
-                            ForceByteCodeEnum force);
+                            CodeKind codeKind);
 
     const RegExpCompilation& compilation(bool latin1) const {
         return compilationArray[CompilationIndex(latin1)];
@@ -219,9 +228,8 @@ class RegExpShared
     bool unicode() const                { return flags.unicode(); }
     bool sticky() const                 { return flags.sticky(); }
 
-    bool isCompiled(bool latin1,
-                    ForceByteCodeEnum force = DontForceByteCode) const {
-        return compilation(latin1).compiled(force);
+    bool isCompiled(bool latin1, CodeKind codeKind = CodeKind::Any) const {
+        return compilation(latin1).compiled(codeKind);
     }
     bool isCompiled() const { return isCompiled(true) || isCompiled(false); }
 

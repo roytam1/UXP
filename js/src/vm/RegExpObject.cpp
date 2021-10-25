@@ -541,7 +541,7 @@ RegExpObject::toString(JSContext* cx) const
 bool
 RegExpShared::dumpBytecode(JSContext* cx, HandleLinearString input)
 {
-    if (!compileIfNecessary(cx, input, ForceByteCode))
+    if (!compileIfNecessary(cx, input, CodeKind::Bytecode))
         return false;
 
     const uint8_t* byteCode = compilation(input->hasLatin1Chars()).byteCode;
@@ -1024,13 +1024,13 @@ RegExpShared::unmarkGray()
 
 bool
 RegExpShared::compile(JSContext* cx, HandleLinearString input,
-                      ForceByteCodeEnum force)
+                      RegExpShared::CodeKind codeKind)
 {
     TraceLoggerThread* logger = TraceLoggerForMainThread(cx->runtime());
     AutoTraceLog logCompile(logger, TraceLogger_IrregexpCompile);
 
     RootedAtom pattern(cx, source);
-    return compile(cx, pattern, input, force);
+    return compile(cx, pattern, input, codeKind);
 }
 
 RegExpRunStatus RegExpShared::executeAtom(JSContext* cx,
@@ -1068,14 +1068,14 @@ RegExpRunStatus RegExpShared::executeAtom(JSContext* cx,
 #ifdef JS_NEW_REGEXP
 bool
 RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString input,
-                      ForceByteCodeEnum force)
+                      RegExpShared::CodeKind codeKind)
 {
   MOZ_CRASH("TODO");
 }
 
 bool
 RegExpShared::compileIfNecessary(JSContext* cx, HandleLinearString input,
-                                 ForceByteCodeEnum force)
+                                 RegExpShared::CodeKind codeKind)
 {
   bool needsCompile = false;
   if (kind() == RegExpShared::Kind::Unparsed) {
@@ -1100,7 +1100,7 @@ RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
   // TODO: Add tracelogger support
 
   /* Compile the code at point-of-use. */
-  if (!compileIfNecessary(cx, input, DontForceByteCode)) {
+  if (!compileIfNecessary(cx, input, RegExpShared::CodeKind::Any)) {
     return RegExpRunStatus_Error;
   }
 
@@ -1187,7 +1187,7 @@ void RegExpShared::useRegExpMatch(size_t pairCount) {
 
 bool
 RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString input,
-                      ForceByteCodeEnum force)
+                      RegExpShared::CodeKind codeKind)
 {
     if (!ignoreCase() && !StringHasRegExpMetaChars(pattern))
         canStringMatch = true;
@@ -1207,12 +1207,13 @@ RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString inpu
     // Add one to account for the extra whole-match capture.
     this->pairCount_ = data.capture_count + 1;
 
+    bool forceBytecode = codeKind == RegExpShared::CodeKind::Bytecode;
     irregexp::RegExpCode code = irregexp::CompilePattern(cx, this, &data, input,
                                                          false /* global() */,
                                                          ignoreCase(),
                                                          input->hasLatin1Chars(),
                                                          /* match_only =*/ false,
-                                                         force == ForceByteCode,
+                                                         forceBytecode,
                                                          sticky(), unicode());
     if (code.empty())
         return false;
@@ -1230,11 +1231,11 @@ RegExpShared::compile(JSContext* cx, HandleAtom pattern, HandleLinearString inpu
 
 bool
 RegExpShared::compileIfNecessary(JSContext* cx, HandleLinearString input,
-                                 ForceByteCodeEnum force)
+                                 RegExpShared::CodeKind codeKind)
 {
-    if (isCompiled(input->hasLatin1Chars(), force))
+    if (isCompiled(input->hasLatin1Chars(), codeKind))
         return true;
-    return compile(cx, input, force);
+    return compile(cx, input, codeKind);
 }
 
 RegExpRunStatus
@@ -1245,7 +1246,7 @@ RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
     TraceLoggerThread* logger = TraceLoggerForMainThread(cx->runtime());
 
     /* Compile the code at point-of-use. */
-    if (!compileIfNecessary(cx, input, DontForceByteCode))
+    if (!compileIfNecessary(cx, input, RegExpShared::CodeKind::Any))
         return RegExpRunStatus_Error;
 
     /*
@@ -1305,7 +1306,7 @@ RegExpShared::execute(JSContext* cx, HandleLinearString input, size_t start,
     } while (false);
 
     // Compile bytecode for the RegExp if necessary.
-    if (!compileIfNecessary(cx, input, ForceByteCode))
+    if (!compileIfNecessary(cx, input, RegExpShared::CodeKind::Bytecode))
         return RegExpRunStatus_Error;
 
     uint8_t* byteCode = compilation(input->hasLatin1Chars()).byteCode;
