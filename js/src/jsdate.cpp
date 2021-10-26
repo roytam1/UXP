@@ -20,8 +20,6 @@
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/Sprintf.h"
 
-#include "nsCRT.h"
-
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
@@ -932,6 +930,10 @@ ParseISOStyleDate(const CharT* s, size_t length, ClippedTime* result)
 #undef NEED_NDIGITS
 }
 
+static bool IsAsciiDigit(char ch) {
+    return (uint8_t)(ch - '0') <= 9;
+}
+
 template <typename CharT>
 static bool
 ParseDate(const CharT* s, size_t length, ClippedTime* result)
@@ -967,7 +969,7 @@ ParseDate(const CharT* s, size_t length, ClippedTime* result)
         // Dashes are delimiters if they're immediately followed by a number field.
         // If they're not followed by a number field, they're simply ignored.
         if (c == '-') {
-            if (i < length && nsCRT::IsAsciiDigit(s[i])) {
+            if (i < length && IsAsciiDigit(s[i])) {
                 prevc = c;
             }
             continue;
@@ -989,7 +991,7 @@ ParseDate(const CharT* s, size_t length, ClippedTime* result)
         }
 
         // Parse a number field.
-        if (nsCRT::IsAsciiDigit(c)) {        
+        if (IsAsciiDigit(c)) {        
             int n = c - '0';
             while (i < length && '0' <= (c = s[i]) && c <= '9') {
                 n = n * 10 + c - '0';
