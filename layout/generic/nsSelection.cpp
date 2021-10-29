@@ -78,7 +78,6 @@ static NS_DEFINE_CID(kFrameTraversalCID, NS_FRAMETRAVERSAL_CID);
 #include "mozilla/ErrorResult.h"
 #include "mozilla/dom/SelectionBinding.h"
 #include "mozilla/AsyncEventDispatcher.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/layers/ScrollInputMethods.h"
 #include "nsViewManager.h"
 

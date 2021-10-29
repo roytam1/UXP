@@ -45,7 +45,6 @@
 
 #include "nsThreadUtils.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/Telemetry.h"
 
 static const char DISK_CACHE_DEVICE_ID[] = { "disk" };
 using namespace mozilla;

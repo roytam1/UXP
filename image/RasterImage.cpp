@@ -40,7 +40,6 @@
 #include "mozilla/Services.h"
 #include <stdint.h>
 #include "mozilla/TimeStamp.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Tuple.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/gfx/Scale.h"
@@ -1558,7 +1557,6 @@ RasterImage::NotifyProgress(Progress aProgress,
 void
 RasterImage::NotifyDecodeComplete(const DecoderFinalStatus& aStatus,
                                   const ImageMetadata& aMetadata,
-                                  const DecoderTelemetry& aTelemetry,
                                   Progress aProgress,
                                   const IntRect& aInvalidRect,
                                   const Maybe<uint32_t>& aFrameCount,

@@ -1,11 +1,15 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-
- * vim: sw=2 ts=2 et lcs=trail\:.,tab\:>~ :
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* This is a passthrough module initially set up to record telemetry via
+   an IO interposer. While the interposing plumbing is still intact to
+   avoid storage issues, telemetry recording has been removed
+   MCFIXME: Rewrite calls to go directly to SQLite and no longer through
+            this plumbing... */
+
 #include <string.h>
-#include "mozilla/Telemetry.h"
 #include "mozilla/Preferences.h"
 #include "sqlite3.h"
 #include "nsThreadUtils.h"
@@ -37,20 +41,10 @@ using namespace mozilla::dom::quota;
 
 struct Histograms {
   const char *name;
-  const Telemetry::ID readB;
-  const Telemetry::ID writeB;
-  const Telemetry::ID readMS;
-  const Telemetry::ID writeMS;
-  const Telemetry::ID syncMS;
 };
 
 #define SQLITE_TELEMETRY(FILENAME, HGRAM) \
   { FILENAME, \
-    Telemetry::MOZ_SQLITE_ ## HGRAM ## _READ_B, \
-    Telemetry::MOZ_SQLITE_ ## HGRAM ## _WRITE_B, \
-    Telemetry::MOZ_SQLITE_ ## HGRAM ## _READ_MS, \
-    Telemetry::MOZ_SQLITE_ ## HGRAM ## _WRITE_MS, \
-    Telemetry::MOZ_SQLITE_ ## HGRAM ## _SYNC_MS \
   }
 
 Histograms gHistograms[] = {
@@ -70,31 +64,12 @@ public:
    * automatically determines whether IO is happening on the main
    * thread and picks an appropriate histogram.
    *
-   * @param id takes a telemetry histogram id. The id+1 must be an
-   * equivalent histogram for the main thread. Eg, MOZ_SQLITE_OPEN_MS 
-   * is followed by MOZ_SQLITE_OPEN_MAIN_THREAD_MS.
-   *
    * @param aOp optionally takes an IO operation to report through the
    * IOInterposer. Filename will be reported as NULL, and reference will be
    * either "sqlite-mainthread" or "sqlite-otherthread".
    */
-  explicit IOThreadAutoTimer(Telemetry::ID aId,
-    IOInterposeObserver::Operation aOp = IOInterposeObserver::OpNone)
-    : start(TimeStamp::Now()),
-      id(aId),
-      op(aOp)
-  {
-  }
-
-  /**
-   * This constructor is for when we want to report an operation to
-   * IOInterposer but do not require a telemetry probe.
-   *
-   * @param aOp IO Operation to report through the IOInterposer.
-   */
   explicit IOThreadAutoTimer(IOInterposeObserver::Operation aOp)
     : start(TimeStamp::Now()),
-      id(Telemetry::HistogramCount),
       op(aOp)
   {
   }
@@ -108,7 +83,6 @@ public:
 
 private:
   const TimeStamp start;
-  const Telemetry::ID id;
   IOInterposeObserver::Operation op;
 };
 
@@ -351,7 +325,6 @@ int
 xRead(sqlite3_file *pFile, void *zBuf, int iAmt, sqlite_int64 iOfst)
 {
   telemetry_file *p = (telemetry_file *)pFile;
-  IOThreadAutoTimer ioTimer(p->histograms->readMS, IOInterposeObserver::OpRead);
   int rc;
   rc = p->pReal->pMethods->xRead(p->pReal, zBuf, iAmt, iOfst);
   // sqlite likes to read from empty files, this is normal, ignore it.
@@ -378,7 +351,6 @@ int
 xWrite(sqlite3_file *pFile, const void *zBuf, int iAmt, sqlite_int64 iOfst)
 {
   telemetry_file *p = (telemetry_file *)pFile;
-  IOThreadAutoTimer ioTimer(p->histograms->writeMS, IOInterposeObserver::OpWrite);
   int rc;
   if (p->quotaObject) {
     MOZ_ASSERT(INT64_MAX - iOfst >= iAmt);
@@ -404,7 +376,6 @@ xWrite(sqlite3_file *pFile, const void *zBuf, int iAmt, sqlite_int64 iOfst)
 int
 xTruncate(sqlite3_file *pFile, sqlite_int64 size)
 {
-  IOThreadAutoTimer ioTimer(Telemetry::MOZ_SQLITE_TRUNCATE_MS);
   telemetry_file *p = (telemetry_file *)pFile;
   int rc;
   if (p->quotaObject) {
@@ -420,14 +391,7 @@ xTruncate(sqlite3_file *pFile, sqlite_int64 size)
   }
   rc = p->pReal->pMethods->xTruncate(p->pReal, size);
   if (p->quotaObject) {
-    if (rc == SQLITE_OK) {
-#ifdef DEBUG
-      // Make sure xTruncate set the size exactly as we calculated above.
-      sqlite_int64 newSize;
-      MOZ_ASSERT(xFileSize(pFile, &newSize) == SQLITE_OK);
-      MOZ_ASSERT(newSize == size);
-#endif
-    } else {
+    if (rc != SQLITE_OK) {
       NS_WARNING("xTruncate failed on a quota-controlled file, attempting to "
                  "update its current size...");
       if (xFileSize(pFile, &size) == SQLITE_OK) {
@@ -445,7 +409,6 @@ int
 xSync(sqlite3_file *pFile, int flags)
 {
   telemetry_file *p = (telemetry_file *)pFile;
-  IOThreadAutoTimer ioTimer(p->histograms->syncMS, IOInterposeObserver::OpFSync);
   return p->pReal->pMethods->xSync(p->pReal, flags);
 }
 
@@ -513,19 +476,6 @@ xFileControl(sqlite3_file *pFile, int op, void *pArg)
   if (op == SQLITE_FCNTL_CHUNK_SIZE && rc == SQLITE_OK) {
     p->fileChunkSize = *static_cast<int*>(pArg);
   }
-#ifdef DEBUG
-  if (op == SQLITE_FCNTL_SIZE_HINT && p->quotaObject && rc == SQLITE_OK) {
-    sqlite3_int64 hintSize = *static_cast<sqlite3_int64*>(pArg);
-    if (p->fileChunkSize > 0) {
-      hintSize =
-        ((hintSize + p->fileChunkSize - 1) / p->fileChunkSize) *
-          p->fileChunkSize;
-    }
-    sqlite3_int64 currentSize;
-    MOZ_ASSERT(xFileSize(pFile, &currentSize) == SQLITE_OK);
-    MOZ_ASSERT(currentSize >= hintSize);
-  }
-#endif
   return rc;
 }
 
@@ -606,8 +556,6 @@ int
 xOpen(sqlite3_vfs* vfs, const char *zName, sqlite3_file* pFile,
           int flags, int *pOutFlags)
 {
-  IOThreadAutoTimer ioTimer(Telemetry::MOZ_SQLITE_OPEN_MS,
-                            IOInterposeObserver::OpCreateOrOpen);
   sqlite3_vfs *orig_vfs = static_cast<sqlite3_vfs*>(vfs->pAppData);
   int rc;
   telemetry_file *p = (telemetry_file *)pFile;

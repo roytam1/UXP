@@ -95,7 +95,6 @@
 #include "mozilla/layers/PersistentBufferProvider.h"
 #include "mozilla/MathAlgorithms.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Unused.h"

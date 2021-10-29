@@ -31,10 +31,11 @@
 #include "nsZipArchive.h"
 #include "mozilla/Omnijar.h"
 #include "prenv.h"
-#include "mozilla/Telemetry.h"
 #include "nsThreadUtils.h"
 #include "nsXULAppAPI.h"
 #include "nsIProtocolHandler.h"
+
+#include "GeckoProfiler.h"
 
 #ifdef IS_BIG_ENDIAN
 #define SC_ENDIAN "big"
@@ -420,8 +421,7 @@ StartupCache::WriteToDisk()
 
   // If we didn't have an mArchive member, that means that we failed to
   // open the startup cache for reading.  Therefore, we need to record
-  // the time of creation in a zipfile comment; this will be useful for
-  // Telemetry statistics.
+  // the time of creation in a zipfile comment.
   PRTime now = PR_Now();
   if (!mArchive) {
     nsCString comment;

@@ -24,7 +24,6 @@
 
 #include "gfxPlatform.h"
 #include "mozilla/EndianUtils.h"
-#include "mozilla/Telemetry.h"
 
 extern "C" {
 #include "iccjpeg.h"
@@ -121,12 +120,6 @@ nsJPEGDecoder::~nsJPEGDecoder()
   MOZ_LOG(sJPEGDecoderAccountingLog, LogLevel::Debug,
          ("nsJPEGDecoder::~nsJPEGDecoder: Destroying JPEG decoder %p",
           this));
-}
-
-Maybe<Telemetry::ID>
-nsJPEGDecoder::SpeedHistogram() const
-{
-  return Some(Telemetry::IMAGE_DECODE_SPEED_JPEG);
 }
 
 nsresult

@@ -6585,7 +6585,7 @@ nsHttpChannel::OnStopRequest(nsIRequest *request, nsISupports *ctxt, nsresult st
         mTransferSize = mTransaction->GetTransferSize();
 
         // If we are using the transaction to serve content, we also save the
-        // time since async open in the cache entry so we can compare telemetry
+        // time since async open in the cache entry so we can compare time
         // between cache and net response.
         if (request == mTransactionPump && mCacheEntry &&
             !mAsyncOpenTime.IsNull() && !mOnStartRequestTimestamp.IsNull()) {

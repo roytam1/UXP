@@ -8,7 +8,6 @@ EXPORTS += ['nsTerminator.h']
 SOURCES += ['nsTerminator.cpp']
 
 EXTRA_COMPONENTS += [
-    'nsTerminatorTelemetry.js',
     'terminator.manifest',
 ]
 

@@ -11,7 +11,6 @@
 #include "mozilla/plugins/PluginInstanceParent.h"
 #include "mozilla/plugins/PluginModuleParent.h"
 #include "mozilla/plugins/PluginScriptableObjectParent.h"
-#include "mozilla/Telemetry.h"
 #include "nsJSNPRuntime.h"
 #include "nsNPAPIPlugin.h"
 #include "nsNPAPIPluginInstance.h"

@@ -10,7 +10,6 @@
 #include "nsNodeInfoManager.h"
 
 #include "mozilla/DebugOnly.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/dom/NodeInfo.h"
 #include "mozilla/dom/NodeInfoInlines.h"
 #include "nsCOMPtr.h"

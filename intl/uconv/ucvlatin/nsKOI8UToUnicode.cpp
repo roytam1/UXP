@@ -5,7 +5,6 @@
 
 #include "nsUCConstructors.h"
 #include "nsKOI8UToUnicode.h"
-#include "mozilla/Telemetry.h"
 
 using namespace mozilla;
 

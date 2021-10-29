@@ -22,7 +22,6 @@
 #include "RasterImage.h"
 #include "SurfacePipeFactory.h"
 #include "mozilla/DebugOnly.h"
-#include "mozilla/Telemetry.h"
 
 using namespace mozilla::gfx;
 
@@ -1085,12 +1084,6 @@ void
 nsPNGDecoder::warning_callback(png_structp png_ptr, png_const_charp warning_msg)
 {
   MOZ_LOG(sPNGLog, LogLevel::Warning, ("libpng warning: %s\n", warning_msg));
-}
-
-Maybe<Telemetry::ID>
-nsPNGDecoder::SpeedHistogram() const
-{
-  return Some(Telemetry::IMAGE_DECODE_SPEED_PNG);
 }
 
 bool

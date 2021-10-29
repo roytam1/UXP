@@ -7,30 +7,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 
 const gHttpTestRoot = "http://example.com/browser/dom/base/test/";
 
-/**
- * Enable local telemetry recording for the duration of the tests.
- */
-var gOldContentCanRecord = false;
-var gOldParentCanRecord = false;
-add_task(function* test_initialize() {
-  let Telemetry = Cc["@mozilla.org/base/telemetry;1"].getService(Ci.nsITelemetry);
-  gOldParentCanRecord = Telemetry.canRecordExtended
-  Telemetry.canRecordExtended = true;
-
-  // Because canRecordExtended is a per-process variable, we need to make sure
-  // that all of the pages load in the same content process. Limit the number
-  // of content processes to at most 1 (or 0 if e10s is off entirely).
-  yield SpecialPowers.pushPrefEnv({ set: [[ "dom.ipc.processCount", 1 ]] });
-
-  gOldContentCanRecord = yield ContentTask.spawn(gBrowser.selectedBrowser, {}, function () {
-    let telemetry = Cc["@mozilla.org/base/telemetry;1"].getService(Ci.nsITelemetry);
-    let old = telemetry.canRecordExtended;
-    telemetry.canRecordExtended = true;
-    return old;
-  });
-  info("canRecord for content: " + gOldContentCanRecord);
-});
-
 add_task(function* () {
   // Check that use counters are incremented by SVGs loaded directly in iframes.
   yield check_use_counter_iframe("file_use_counter_svg_getElementById.svg",
@@ -73,20 +49,6 @@ add_task(function* () {
   //                               "PROPERTY_FILL_OPACITY");
 });
 
-add_task(function* () {
-  let Telemetry = Cc["@mozilla.org/base/telemetry;1"].getService(Ci.nsITelemetry);
-  Telemetry.canRecordExtended = gOldParentCanRecord;
-
-  yield ContentTask.spawn(gBrowser.selectedBrowser, { oldCanRecord: gOldContentCanRecord }, function (arg) {
-    Cu.import("resource://gre/modules/PromiseUtils.jsm");
-    yield new Promise(resolve => {
-      let telemetry = Cc["@mozilla.org/base/telemetry;1"].getService(Ci.nsITelemetry);
-      telemetry.canRecordExtended = arg.oldCanRecord;
-      resolve();
-    });
-  });
-});
-
 
 function waitForDestroyedDocuments() {
   let deferred = promise.defer();
@@ -108,17 +70,6 @@ function waitForPageLoad(browser) {
 }
 
 function grabHistogramsFromContent(use_counter_middlefix, page_before = null) {
-  let telemetry = Cc["@mozilla.org/base/telemetry;1"].getService(Ci.nsITelemetry);
-  let suffix = Services.appinfo.browserTabsRemoteAutostart ? "#content" : "";
-  let gather = () => [
-    telemetry.getHistogramById("USE_COUNTER2_" + use_counter_middlefix + "_PAGE" + suffix).snapshot().sum,
-    telemetry.getHistogramById("USE_COUNTER2_" + use_counter_middlefix + "_DOCUMENT" + suffix).snapshot().sum,
-    telemetry.getHistogramById("CONTENT_DOCUMENTS_DESTROYED" + suffix).snapshot().sum,
-    telemetry.getHistogramById("TOP_LEVEL_CONTENT_DOCUMENTS_DESTROYED" + suffix).snapshot().sum,
-  ];
-  return BrowserTestUtils.waitForCondition(() => {
-    return page_before != telemetry.getHistogramById("USE_COUNTER2_" + use_counter_middlefix + "_PAGE" + suffix).snapshot().sum;
-  }).then(gather, gather);
 }
 
 var check_use_counter_iframe = Task.async(function* (file, use_counter_middlefix, check_documents=true) {
@@ -127,12 +78,6 @@ var check_use_counter_iframe = Task.async(function* (file, use_counter_middlefix
   let newTab = gBrowser.addTab( "about:blank");
   gBrowser.selectedTab = newTab;
   newTab.linkedBrowser.stop();
-
-  // Hold on to the current values of the telemetry histograms we're
-  // interested in.
-  let [histogram_page_before, histogram_document_before,
-       histogram_docs_before, histogram_toplevel_docs_before] =
-      yield grabHistogramsFromContent(use_counter_middlefix);
 
   gBrowser.selectedBrowser.loadURI(gHttpTestRoot + "file_use_counter_outer.html");
   yield waitForPageLoad(gBrowser.selectedBrowser);
@@ -151,7 +96,7 @@ var check_use_counter_iframe = Task.async(function* (file, use_counter_middlefix
 
       // We flush the main document first, then the iframe's document to
       // ensure any propagation that might happen from content->parent should
-      // have already happened when counters are reported to telemetry.
+      // have already happened.
       wu.forceUseCounterFlush(content.document);
       wu.forceUseCounterFlush(iframe.contentDocument);
 
@@ -191,12 +136,6 @@ var check_use_counter_img = Task.async(function* (file, use_counter_middlefix) {
   let newTab = gBrowser.addTab("about:blank");
   gBrowser.selectedTab = newTab;
   newTab.linkedBrowser.stop();
-
-  // Hold on to the current values of the telemetry histograms we're
-  // interested in.
-  let [histogram_page_before, histogram_document_before,
-       histogram_docs_before, histogram_toplevel_docs_before] =
-      yield grabHistogramsFromContent(use_counter_middlefix);
 
   gBrowser.selectedBrowser.loadURI(gHttpTestRoot + "file_use_counter_outer.html");
   yield waitForPageLoad(gBrowser.selectedBrowser);
@@ -257,12 +196,6 @@ var check_use_counter_direct = Task.async(function* (file, use_counter_middlefix
   let newTab = gBrowser.addTab( "about:blank");
   gBrowser.selectedTab = newTab;
   newTab.linkedBrowser.stop();
-
-  // Hold on to the current values of the telemetry histograms we're
-  // interested in.
-  let [histogram_page_before, histogram_document_before,
-       histogram_docs_before, histogram_toplevel_docs_before] =
-      yield grabHistogramsFromContent(use_counter_middlefix);
 
   gBrowser.selectedBrowser.loadURI(gHttpTestRoot + file);
   yield ContentTask.spawn(gBrowser.selectedBrowser, null, function*() {

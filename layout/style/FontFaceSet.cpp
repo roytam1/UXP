@@ -18,7 +18,6 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/SizePrintfMacros.h"
 #include "mozilla/Sprintf.h"
-#include "mozilla/Telemetry.h"
 #include "nsAutoPtr.h"
 #include "nsContentPolicyUtils.h"
 #include "nsCSSParser.h"

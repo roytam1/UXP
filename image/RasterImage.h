@@ -224,7 +224,6 @@ public:
    */
   void NotifyDecodeComplete(const DecoderFinalStatus& aStatus,
                             const ImageMetadata& aMetadata,
-                            const DecoderTelemetry& aTelemetry,
                             Progress aProgress,
                             const gfx::IntRect& aInvalidRect,
                             const Maybe<uint32_t>& aFrameCount,

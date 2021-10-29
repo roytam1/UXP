@@ -31,7 +31,6 @@
 #include "mozilla/ProcessPriorityManager.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Services.h"
-#include "mozilla/Telemetry.h"
 #include "nsContentUtils.h"
 #include "nsDisplayList.h"
 #include "nsError.h"

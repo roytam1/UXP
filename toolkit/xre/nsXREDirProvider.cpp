@@ -41,7 +41,6 @@
 #include "mozilla/Services.h"
 #include "mozilla/Omnijar.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 
 #include <stdlib.h>
 
@@ -927,7 +926,6 @@ nsXREDirProvider::DoShutdown()
       // Phase 3: Notify observers of a profile change
       obsSvc->NotifyObservers(nullptr, "profile-before-change", kShutdownPersist);
       obsSvc->NotifyObservers(nullptr, "profile-before-change-qm", kShutdownPersist);
-      obsSvc->NotifyObservers(nullptr, "profile-before-change-telemetry", kShutdownPersist);
     }
     mProfileNotified = false;
   }

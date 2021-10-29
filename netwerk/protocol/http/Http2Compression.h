@@ -13,7 +13,6 @@
 #include "nsDeque.h"
 #include "nsString.h"
 #include "nsIMemoryReporter.h"
-#include "mozilla/Telemetry.h"
 
 namespace mozilla {
 namespace net {
@@ -85,10 +84,6 @@ protected:
 
   uint32_t mPeakSize;
   uint32_t mPeakCount;
-  MOZ_INIT_OUTSIDE_CTOR
-  Telemetry::ID mPeakSizeID;
-  MOZ_INIT_OUTSIDE_CTOR
-  Telemetry::ID mPeakCountID;
 
 private:
   RefPtr<HpackDynamicTableReporter> mDynamicReporter;
@@ -101,8 +96,6 @@ class Http2Decompressor final : public Http2BaseCompressor
 public:
   Http2Decompressor()
   {
-    mPeakSizeID = Telemetry::HPACK_PEAK_SIZE_DECOMPRESSOR;
-    mPeakCountID = Telemetry::HPACK_PEAK_COUNT_DECOMPRESSOR;
   };
   virtual ~Http2Decompressor() { } ;
 
@@ -159,8 +152,6 @@ public:
                       mBufferSizeChangeWaiting(false),
                       mLowestBufferSizeWaiting(0)
   {
-    mPeakSizeID = Telemetry::HPACK_PEAK_SIZE_COMPRESSOR;
-    mPeakCountID = Telemetry::HPACK_PEAK_COUNT_COMPRESSOR;
   };
   virtual ~Http2Compressor() { }
 

@@ -561,10 +561,6 @@ typedef Log<LOG_CRITICAL, CriticalLogger> CriticalLog;
 #define gfxWarning mozilla::gfx::WarningLog
 #define gfxWarningOnce static gfxWarning GFX_LOGGING_GLUE(sOnceAtLine,__LINE__) = gfxWarning
 
-// In the debug build, this is equivalent to the default gfxCriticalError.
-// In the non-debug build, on nightly and dev edition, it will MOZ_CRASH.
-// On beta and release versions, it will telemetry count, but proceed.
-//
 // You should create a (new) enum in the LogReason and use it for the reason
 // parameter to ensure uniqueness.
 #define gfxDevCrash(reason) gfxCriticalError(int(gfx::LogOptions::AutoPrefix) | int(gfx::LogOptions::AssertOnCall) | int(gfx::LogOptions::CrashAction), (reason))

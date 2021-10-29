@@ -24,8 +24,6 @@
 
 using mozilla::ipc::GeckoChildProcessHost;
 
-#include "mozilla/Telemetry.h"
-
 #ifdef XP_WIN
 #include "WMFDecoderModule.h"
 #endif

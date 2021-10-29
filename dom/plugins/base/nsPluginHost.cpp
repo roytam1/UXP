@@ -88,7 +88,6 @@
 #include "nsIContentPolicy.h"
 #include "nsContentPolicyUtils.h"
 #include "mozilla/TimeStamp.h"
-#include "mozilla/Telemetry.h"
 #include "nsIImageLoadingContent.h"
 #include "mozilla/Preferences.h"
 #include "nsVersionComparator.h"

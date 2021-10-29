@@ -11,7 +11,6 @@
 #include "nsProxyRelease.h"
 
 #include "jsapi.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/dom/CryptoBuffer.h"
 #include "mozilla/dom/CryptoKey.h"
 #include "mozilla/dom/KeyAlgorithmProxy.h"
@@ -44,56 +43,6 @@ using mozilla::dom::workers::GetCurrentThreadWorkerPrivate;
 using mozilla::dom::workers::Status;
 using mozilla::dom::workers::WorkerHolder;
 using mozilla::dom::workers::WorkerPrivate;
-
-// Pre-defined identifiers for telemetry histograms
-
-enum TelemetryMethod {
-  TM_ENCRYPT      = 0,
-  TM_DECRYPT      = 1,
-  TM_SIGN         = 2,
-  TM_VERIFY       = 3,
-  TM_DIGEST       = 4,
-  TM_GENERATEKEY  = 5,
-  TM_DERIVEKEY    = 6,
-  TM_DERIVEBITS   = 7,
-  TM_IMPORTKEY    = 8,
-  TM_EXPORTKEY    = 9,
-  TM_WRAPKEY      = 10,
-  TM_UNWRAPKEY    = 11
-};
-
-enum TelemetryAlgorithm {
-  // Please make additions at the end of the list,
-  // to preserve comparability of histograms over time
-  TA_UNKNOWN         = 0,
-  // encrypt / decrypt
-  TA_AES_CBC         = 1,
-  TA_AES_CFB         = 2,
-  TA_AES_CTR         = 3,
-  TA_AES_GCM         = 4,
-  TA_RSAES_PKCS1     = 5, // NB: This algorithm has been removed
-  TA_RSA_OAEP        = 6,
-  // sign/verify
-  TA_RSASSA_PKCS1    = 7,
-  TA_RSA_PSS         = 8,
-  TA_HMAC_SHA_1      = 9,
-  TA_HMAC_SHA_224    = 10,
-  TA_HMAC_SHA_256    = 11,
-  TA_HMAC_SHA_384    = 12,
-  TA_HMAC_SHA_512    = 13,
-  // digest
-  TA_SHA_1           = 14,
-  TA_SHA_224         = 15,
-  TA_SHA_256         = 16,
-  TA_SHA_384         = 17,
-  TA_SHA_512         = 18,
-  // Later additions
-  TA_AES_KW          = 19,
-  TA_ECDH            = 20,
-  TA_PBKDF2          = 21,
-  TA_ECDSA           = 22,
-  TA_HKDF            = 23,
-};
 
 // Convenience functions for extracting / converting information
 
@@ -577,12 +526,10 @@ public:
     }
 
     // Cache parameters depending on the specific algorithm
-    TelemetryAlgorithm telemetryAlg;
     if (algName.EqualsLiteral(WEBCRYPTO_ALG_AES_CBC)) {
       CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_AES_CBC);
 
       mMechanism = CKM_AES_CBC_PAD;
-      telemetryAlg = TA_AES_CBC;
       RootedDictionary<AesCbcParams> params(aCx);
       nsresult rv = Coerce(aCx, params, aAlgorithm);
       if (NS_FAILED(rv)) {
@@ -599,7 +546,6 @@ public:
       CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_AES_CTR);
 
       mMechanism = CKM_AES_CTR;
-      telemetryAlg = TA_AES_CTR;
       RootedDictionary<AesCtrParams> params(aCx);
       nsresult rv = Coerce(aCx, params, aAlgorithm);
       if (NS_FAILED(rv)) {
@@ -618,7 +564,6 @@ public:
       CHECK_KEY_ALGORITHM(aKey.Algorithm(), WEBCRYPTO_ALG_AES_GCM);
 
       mMechanism = CKM_AES_GCM;
-      telemetryAlg = TA_AES_GCM;
       RootedDictionary<AesGcmParams> params(aCx);
       nsresult rv = Coerce(aCx, params, aAlgorithm);
       if (NS_FAILED(rv)) {
@@ -1033,16 +978,6 @@ public:
       mEarlyRv = NS_ERROR_DOM_DATA_ERR;
       return;
     }
-
-    TelemetryAlgorithm telemetryAlg;
-    switch (mMechanism) {
-      case CKM_SHA_1_HMAC:  telemetryAlg = TA_HMAC_SHA_1; break;
-      case CKM_SHA224_HMAC: telemetryAlg = TA_HMAC_SHA_224; break;
-      case CKM_SHA256_HMAC: telemetryAlg = TA_HMAC_SHA_256; break;
-      case CKM_SHA384_HMAC: telemetryAlg = TA_HMAC_SHA_384; break;
-      case CKM_SHA512_HMAC: telemetryAlg = TA_HMAC_SHA_512; break;
-      default:              telemetryAlg = TA_UNKNOWN;
-    }
   }
 
 private:
@@ -1333,15 +1268,11 @@ public:
       return;
     }
 
-    TelemetryAlgorithm telemetryAlg;
-    if (algName.EqualsLiteral(WEBCRYPTO_ALG_SHA1))   {
-      telemetryAlg = TA_SHA_1;
-    } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_SHA256)) {
-      telemetryAlg = TA_SHA_224;
-    } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_SHA384)) {
-      telemetryAlg = TA_SHA_256;
-    } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_SHA512)) {
-      telemetryAlg = TA_SHA_384;
+    if (algName.EqualsLiteral(WEBCRYPTO_ALG_SHA1) ||
+        algName.EqualsLiteral(WEBCRYPTO_ALG_SHA256) ||
+        algName.EqualsLiteral(WEBCRYPTO_ALG_SHA384) ||
+        algName.EqualsLiteral(WEBCRYPTO_ALG_SHA512)) {
+      // All good, fall through.
     } else {
       mEarlyRv = NS_ERROR_DOM_SYNTAX_ERR;
       return;
