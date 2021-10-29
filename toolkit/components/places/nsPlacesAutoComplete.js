@@ -81,9 +81,6 @@ const kBrowserUrlbarAutofillPref = "autoFill";
 // Whether to search only typed entries.
 const kBrowserUrlbarAutofillTypedPref = "autoFill.typed";
 
-// The Telemetry histogram for urlInlineComplete query on domain
-const DOMAIN_QUERY_TELEMETRY = "PLACES_AUTOCOMPLETE_URLINLINE_DOMAIN_QUERY_TIME_MS";
-
 ////////////////////////////////////////////////////////////////////////////////
 //// Globals
 
@@ -553,7 +550,6 @@ nsPlacesAutoComplete.prototype = {
     queries.push(query);
 
     // Start executing our queries.
-    this._telemetryStartTime = Date.now();
     this._executeQueries(queries);
 
     // Set up our persistent state for the duration of the search.
@@ -810,19 +806,6 @@ nsPlacesAutoComplete.prototype = {
     }
     result.setSearchResult(Ci.nsIAutoCompleteResult[resultCode]);
     this._listener.onSearchResult(this, result);
-    if (this._telemetryStartTime) {
-      let elapsed = Date.now() - this._telemetryStartTime;
-      if (elapsed > 50) {
-        try {
-          Services.telemetry
-                  .getHistogramById("PLACES_AUTOCOMPLETE_1ST_RESULT_TIME_MS")
-                  .add(elapsed);
-        } catch (ex) {
-          Components.utils.reportError("Unable to report telemetry.");
-        }
-      }
-      this._telemetryStartTime = null;
-    }
   },
 
   /**

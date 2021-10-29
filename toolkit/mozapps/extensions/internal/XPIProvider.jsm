@@ -206,7 +206,7 @@ const RESTARTLESS_TYPES = new Set([
   "locale",
 ]);
 
-// Keep track of where we are in startup for telemetry
+// Keep track of where we are in startup.
 // event happened during XPIDatabase.startup()
 const XPI_STARTING = "XPIStarting";
 // event happened after startup() but before the final-ui-startup event
@@ -1833,13 +1833,11 @@ this.XPIProvider = {
   allAppGlobal: true,
   // A string listing the enabled add-ons for annotating crash reports
   enabledAddons: null,
-  // Keep track of startup phases for telemetry
+  // Keep track of startup phases.
   runPhase: XPI_STARTING,
   // Keep track of the newest file in each add-on, in case we want to
-  // report it to telemetry.
+  // report it.
   _mostRecentlyModifiedFile: {},
-  // Per-addon telemetry information
-  _telemetryDetails: {},
   // Experiments are disabled by default. Track ones that are locally enabled.
   _enabledExperiments: null,
   // A Map from an add-on install to its ID
@@ -2009,8 +2007,6 @@ this.XPIProvider = {
     }
 
     try {
-      AddonManagerPrivate.recordTimestamp("XPI_startup_begin");
-
       logger.debug("startup");
       this.runPhase = XPI_STARTING;
       this.installs = [];
@@ -2018,8 +2014,6 @@ this.XPIProvider = {
       this.installLocationsByName = {};
       // Hook for tests to detect when saving database at shutdown time fails
       this._shutdownError = null;
-      // Clear this at startup for xpcshell test restarts
-      this._telemetryDetails = {};
       // Clear the set of enabled experiments (experiments disabled by default).
       this._enabledExperiments = new Set();
 
@@ -2144,21 +2138,7 @@ this.XPIProvider = {
 
       this.enabledAddons = Preferences.get(PREF_EM_ENABLED_ADDONS, "");
 
-      if ("nsICrashReporter" in Ci &&
-          Services.appinfo instanceof Ci.nsICrashReporter) {
-        // Annotate the crash report with relevant add-on information.
-        try {
-          Services.appinfo.annotateCrashReport("Theme", this.currentSkin);
-        } catch (e) { }
-        try {
-          Services.appinfo.annotateCrashReport("EMCheckCompatibility",
-                                               AddonManager.checkCompatibility);
-        } catch (e) { }
-        this.addAddonsToCrashReporter();
-      }
-
       try {
-        AddonManagerPrivate.recordTimestamp("XPI_bootstrap_addons_begin");
         for (let id in this.bootstrappedAddons) {
           try {
             let file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
@@ -2177,11 +2157,9 @@ this.XPIProvider = {
                   this.bootstrappedAddons[id].descriptor, e);
           }
         }
-        AddonManagerPrivate.recordTimestamp("XPI_bootstrap_addons_end");
       }
       catch (e) {
         logger.error("bootstrap startup failed", e);
-        AddonManagerPrivate.recordException("XPI-BOOTSTRAP", "startup failed", e);
       }
 
       // Let these shutdown a little earlier when they still have access to most
@@ -2200,23 +2178,11 @@ this.XPIProvider = {
         }
       }, "quit-application-granted", false);
 
-      // Detect final-ui-startup for telemetry reporting
-      Services.obs.addObserver({
-        observe: function uiStartupObserver(aSubject, aTopic, aData) {
-          AddonManagerPrivate.recordTimestamp("XPI_finalUIStartup");
-          XPIProvider.runPhase = XPI_AFTER_UI_STARTUP;
-          Services.obs.removeObserver(this, "final-ui-startup");
-        }
-      }, "final-ui-startup", false);
-
-      AddonManagerPrivate.recordTimestamp("XPI_startup_end");
-
       this.extensionsActive = true;
       this.runPhase = XPI_BEFORE_UI_STARTUP;
     }
     catch (e) {
       logger.error("startup failed", e);
-      AddonManagerPrivate.recordException("XPI", "startup failed", e);
     }
   },
 
@@ -2240,7 +2206,6 @@ this.XPIProvider = {
     // If there are pending operations then we must update the list of active
     // add-ons
     if (Preferences.get(PREF_PENDING_OPERATIONS, false)) {
-      AddonManagerPrivate.recordSimpleMeasure("XPIDB_pending_ops", 1);
       XPIDatabase.updateActiveAddons();
       Services.prefs.setBoolPref(PREF_PENDING_OPERATIONS,
                                  !XPIDatabase.writeAddonsList());
@@ -2307,11 +2272,8 @@ this.XPIProvider = {
    *           to be updated, but the metadata check needs to be performed.
    */
   shouldForceUpdateCheck: function XPI_shouldForceUpdateCheck(aAppChanged) {
-    AddonManagerPrivate.recordSimpleMeasure("XPIDB_metadata_age", AddonRepository.metadataAge());
-
     let startupChanges = AddonManager.getStartupChanges(AddonManager.STARTUP_CHANGE_DISABLED);
     logger.debug("shouldForceUpdateCheck startupChanges: " + startupChanges.toSource());
-    AddonManagerPrivate.recordSimpleMeasure("XPIDB_startup_disabled", startupChanges.length);
 
     let forceUpdate = [];
     if (startupChanges.length > 0) {
@@ -2405,10 +2367,6 @@ this.XPIProvider = {
       Services.appinfo.annotateCrashReport("Add-ons", data);
     }
     catch (e) { }
-
-    let TelemetrySession =
-      Cu.import("resource://gre/modules/TelemetrySession.jsm", {}).TelemetrySession;
-    TelemetrySession.setAddOns(data);
   },
 
   /**
@@ -3554,11 +3512,7 @@ this.XPIProvider = {
       }
     }
 
-    // Telemetry probe added around getInstallState() to check perf
-    let telemetryCaptureTime = Cu.now();
     let installChanged = XPIStates.getInstallState();
-    let telemetry = Services.telemetry;
-    telemetry.getHistogramById("CHECK_ADDONS_MODIFIED_MS").add(Math.round(Cu.now() - telemetryCaptureTime));
     if (installChanged) {
       updateReasons.push("directoryState");
     }
@@ -3610,7 +3564,6 @@ this.XPIProvider = {
       // If the database needs to be updated then open it and then update it
       // from the filesystem
       if (updateReasons.length > 0) {
-        AddonManagerPrivate.recordSimpleMeasure("XPIDB_startup_load_reasons", updateReasons);
         XPIDatabase.syncLoadDB(false);
         try {
           extensionListChanged = this.processFileChanges(manifests,
@@ -6431,7 +6384,6 @@ AddonInternal.prototype = {
       let message = "Problem with addon " + this.id + " targetPlatforms "
                     + JSON.stringify(this.targetPlatforms);
       logger.error(message, e);
-      AddonManagerPrivate.recordException("XPI", message, e);
       // don't trust this add-on
       return false;
     }

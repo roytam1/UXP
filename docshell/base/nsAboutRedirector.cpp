@@ -135,10 +135,6 @@ static RedirEntry kRedirMap[] = {
   {
     "support", "chrome://global/content/aboutSupport.xhtml",
     nsIAboutModule::ALLOW_SCRIPT
-  },
-  {
-    "telemetry", "chrome://global/content/aboutTelemetry.xhtml",
-    nsIAboutModule::ALLOW_SCRIPT
 #ifdef MOZ_WEBRTC
   },
   {

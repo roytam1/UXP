@@ -10,8 +10,6 @@ const DEFAULT_CAPTURE_TIMEOUT = 30000; // ms
 const DESTROY_BROWSER_TIMEOUT = 60000; // ms
 const FRAME_SCRIPT_URL = "chrome://global/content/backgroundPageThumbsContent.js";
 
-const TELEMETRY_HISTOGRAM_ID_PREFIX = "FX_THUMBNAILS_BG_";
-
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 
@@ -21,19 +19,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 Cu.import("resource://gre/modules/PageThumbs.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
-
-// possible FX_THUMBNAILS_BG_CAPTURE_DONE_REASON_2 telemetry values
-const TEL_CAPTURE_DONE_OK = 0;
-const TEL_CAPTURE_DONE_TIMEOUT = 1;
-// 2 and 3 were used when we had special handling for private-browsing.
-const TEL_CAPTURE_DONE_CRASHED = 4;
-const TEL_CAPTURE_DONE_BAD_URI = 5;
-
-// These are looked up on the global as properties below.
-XPCOMUtils.defineConstant(this, "TEL_CAPTURE_DONE_OK", TEL_CAPTURE_DONE_OK);
-XPCOMUtils.defineConstant(this, "TEL_CAPTURE_DONE_TIMEOUT", TEL_CAPTURE_DONE_TIMEOUT);
-XPCOMUtils.defineConstant(this, "TEL_CAPTURE_DONE_CRASHED", TEL_CAPTURE_DONE_CRASHED);
-XPCOMUtils.defineConstant(this, "TEL_CAPTURE_DONE_BAD_URI", TEL_CAPTURE_DONE_BAD_URI);
 
 const global = this;
 
@@ -66,8 +51,6 @@ const BackgroundPageThumbs = {
     }
     this._captureQueue = this._captureQueue || [];
     this._capturesByURL = this._capturesByURL || new Map();
-
-    tel("QUEUE_SIZE_ON_CAPTURE", this._captureQueue.length);
 
     // We want to avoid duplicate captures for the same URL.  If there is an
     // existing one, we just add the callback to that one and we are done.
@@ -237,7 +220,7 @@ const BackgroundPageThumbs = {
         // listener.  Trying to send a message to the manager in that case
         // throws NS_ERROR_NOT_INITIALIZED.
         Services.tm.currentThread.dispatch(() => {
-          curCapture._done(null, TEL_CAPTURE_DONE_CRASHED);
+          curCapture._done(null);
         }, Ci.nsIEventTarget.DISPATCH_NORMAL);
       }
       // else: we must have been idle and not currently doing a capture (eg,
@@ -286,9 +269,6 @@ const BackgroundPageThumbs = {
       throw new Error("The capture should be at the head of the queue.");
     this._captureQueue.shift();
     this._capturesByURL.delete(capture.url);
-    if (capture.doneReason != TEL_CAPTURE_DONE_OK) {
-      Services.obs.notifyObservers(null, "page-thumbnail:error", capture.url);
-    }
 
     // Start the destroy-browser timer *before* processing the capture queue.
     let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
@@ -324,7 +304,6 @@ function Capture(url, captureCallback, options) {
   this.id = Capture.nextID++;
   this.creationDate = new Date();
   this.doneCallbacks = [];
-  this.doneReason;
   if (options.onDone)
     this.doneCallbacks.push(options.onDone);
 }
@@ -342,7 +321,6 @@ Capture.prototype = {
    */
   start: function (messageManager) {
     this.startDate = new Date();
-    tel("CAPTURE_QUEUE_TIME_MS", this.startDate - this.creationDate);
 
     // timeout timer
     let timeout;
@@ -386,46 +364,30 @@ Capture.prototype = {
 
   // Called when the didCapture message is received.
   receiveMessage: function (msg) {
-    if (msg.data.imageData)
-      tel("CAPTURE_SERVICE_TIME_MS", new Date() - this.startDate);
-
     // A different timed-out capture may have finally successfully completed, so
     // discard messages that aren't meant for this capture.
     if (msg.data.id != this.id)
       return;
 
     if (msg.data.failReason) {
-      let reason = global["TEL_CAPTURE_DONE_" + msg.data.failReason];
-      this._done(null, reason);
+      this._done(null);
       return;
     }
 
-    this._done(msg.data, TEL_CAPTURE_DONE_OK);
+    this._done(msg.data);
   },
 
   // Called when the timeout timer fires.
   notify: function () {
-    this._done(null, TEL_CAPTURE_DONE_TIMEOUT);
+    this._done(null);
   },
 
-  _done: function (data, reason) {
+  _done: function (data) {
     // Note that _done will be called only once, by either receiveMessage or
     // notify, since it calls destroy here, which cancels the timeout timer and
     // removes the didCapture message listener.
     let { captureCallback, doneCallbacks, options } = this;
     this.destroy();
-    this.doneReason = reason;
-
-    if (typeof(reason) != "number") {
-      throw new Error("A done reason must be given.");
-    }
-    tel("CAPTURE_DONE_REASON_2", reason);
-    if (data && data.telemetry) {
-      // Telemetry is currently disabled in the content process (bug 680508).
-      for (let id in data.telemetry) {
-        tel(id, data.telemetry[id]);
-      }
-    }
 
     let done = () => {
       captureCallback(this);
@@ -453,17 +415,6 @@ Capture.prototype = {
 };
 
 Capture.nextID = 0;
-
-/**
- * Adds a value to one of this module's telemetry histograms.
- *
- * @param histogramID  This is prefixed with this module's ID.
- * @param value        The value to add.
- */
-function tel(histogramID, value) {
-  let id = TELEMETRY_HISTOGRAM_ID_PREFIX + histogramID;
-  Services.telemetry.getHistogramById(id).add(value);
-}
 
 function schedule(callback) {
   Services.tm.mainThread.dispatch(callback, Ci.nsIThread.DISPATCH_NORMAL);

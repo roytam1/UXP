@@ -1,5 +1,4 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 2 -*-
- * vim: sw=2 ts=2 sts=2 expandtab
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -708,22 +707,12 @@ nsPlacesExpiration.prototype = {
                    aError.result + "', '" + aError.message + "'");
   },
 
-  // Number of expiration steps needed to reach a CLEAN status.
-  _telemetrySteps: 1,
   handleCompletion: function PEX_handleCompletion(aReason)
   {
     if (aReason == Ci.mozIStorageStatementCallback.REASON_FINISHED) {
 
       if (this._mostRecentExpiredVisitDays) {
-        try {
-          Services.telemetry
-                  .getHistogramById("PLACES_MOST_RECENT_EXPIRED_VISIT_DAYS")
-                  .add(this._mostRecentExpiredVisitDays);
-        } catch (ex) {
-          Components.utils.reportError("Unable to report telemetry.");
-        } finally {
-          delete this._mostRecentExpiredVisitDays;
-        }
+        delete this._mostRecentExpiredVisitDays;
       }
 
       if ("_expectedResultsCount" in this) {
@@ -733,25 +722,6 @@ nsPlacesExpiration.prototype = {
         let oldStatus = this.status;
         this.status = this._expectedResultsCount == 0 ? STATUS.DIRTY
                                                       : STATUS.CLEAN;
-
-        // Collect or send telemetry data.
-        if (this.status == STATUS.DIRTY) {
-          this._telemetrySteps++;
-        }
-        else {
-          // Avoid reporting the common cases where the database is clean, or
-          // a single step is needed.
-          if (oldStatus == STATUS.DIRTY) {
-            try {
-              Services.telemetry
-                      .getHistogramById("PLACES_EXPIRATION_STEPS_TO_CLEAN2")
-                      .add(this._telemetrySteps);
-            } catch (ex) {
-              Components.utils.reportError("Unable to report telemetry.");
-            }
-          }
-          this._telemetrySteps = 1;
-        }
 
         delete this._expectedResultsCount;
       }

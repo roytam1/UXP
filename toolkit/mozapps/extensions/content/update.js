@@ -243,17 +243,6 @@ var gVersionInfoPage = {
 
   onAllUpdatesFinished: function gVersionInfoPage_onAllUpdatesFinished() {
     AddonManager.removeAddonListener(listener);
-    AddonManagerPrivate.recordSimpleMeasure("appUpdate_disabled",
-        gUpdateWizard.disabled);
-    AddonManagerPrivate.recordSimpleMeasure("appUpdate_metadata_enabled",
-        gUpdateWizard.metadataEnabled);
-    AddonManagerPrivate.recordSimpleMeasure("appUpdate_metadata_disabled",
-        gUpdateWizard.metadataDisabled);
-    // Record 0 for these here in case we exit early; values will be replaced
-    // later if we actually upgrade any.
-    AddonManagerPrivate.recordSimpleMeasure("appUpdate_upgraded", 0);
-    AddonManagerPrivate.recordSimpleMeasure("appUpdate_upgradeFailed", 0);
-    AddonManagerPrivate.recordSimpleMeasure("appUpdate_upgradeDeclined", 0);
     // Filter out any add-ons that are now enabled.
     // Tycho:
     // logger.debug("VersionInfo updates finished: found " +
@@ -563,12 +552,6 @@ var gInstallingPage = {
 
     if (this._installs.length == this._currentInstall) {
       Services.obs.notifyObservers(null, "TEST:all-updates-done", null);
-      AddonManagerPrivate.recordSimpleMeasure("appUpdate_upgraded",
-          gUpdateWizard.upgraded);
-      AddonManagerPrivate.recordSimpleMeasure("appUpdate_upgradeFailed",
-          gUpdateWizard.upgradeFailed);
-      AddonManagerPrivate.recordSimpleMeasure("appUpdate_upgradeDeclined",
-          gUpdateWizard.upgradeDeclined);
       this._installing = false;
       if (gUpdateWizard.shuttingDown) {
         return;
