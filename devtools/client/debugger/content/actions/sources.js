@@ -180,12 +180,9 @@ function loadSourceText(source) {
       [PROMISE]: Task.spawn(function* () {
         let transportType = gClient.localTransport ? "_LOCAL" : "_REMOTE";
         let histogramId = "DEVTOOLS_DEBUGGER_DISPLAY_SOURCE" + transportType + "_MS";
-        let histogram = Services.telemetry.getHistogramById(histogramId);
         let startTime = Date.now();
 
         const response = yield sourceClient.source();
-
-        histogram.add(Date.now() - startTime);
 
         // Automatically pretty print if enabled and the test is
         // detected to be "minified"
