@@ -124,8 +124,6 @@ chrome/en-US/locale/en-US/browser/overrides/dom/dom.properties
 chrome/en-US/locale/en-US/browser/overrides/global.dtd
 chrome/en-US/locale/en-US/browser/overrides/global/aboutSupport.dtd
 chrome/en-US/locale/en-US/browser/overrides/global/aboutSupport.properties
-chrome/en-US/locale/en-US/browser/overrides/global/aboutTelemetry.dtd
-chrome/en-US/locale/en-US/browser/overrides/global/aboutTelemetry.properties
 chrome/en-US/locale/en-US/browser/overrides/global/aboutWebrtc.properties
 chrome/en-US/locale/en-US/browser/overrides/global/mozilla.dtd
 chrome/en-US/locale/en-US/browser/overrides/intl.css
@@ -148,8 +146,6 @@ chrome/en-US/locale/en-US/global/aboutReader.properties
 chrome/en-US/locale/en-US/global/aboutRights.dtd
 chrome/en-US/locale/en-US/global/aboutSupport.dtd
 chrome/en-US/locale/en-US/global/aboutSupport.properties
-chrome/en-US/locale/en-US/global/aboutTelemetry.dtd
-chrome/en-US/locale/en-US/global/aboutTelemetry.properties
 chrome/en-US/locale/en-US/global/aboutWebrtc.properties
 chrome/en-US/locale/en-US/global/charsetMenu.properties
 chrome/en-US/locale/en-US/global/commonDialogs.properties

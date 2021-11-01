@@ -1205,14 +1205,10 @@ pref("media.gmp-widevinecdm.visible", true);
 pref("media.gmp-widevinecdm.enabled", true);
 #endif
 
-// Play with different values of the decay time and get telemetry,
+// Play with different values of the decay time,
 // 0 means to randomize (and persist) the experiment value in users' profiles,
 // -1 means no experiment is run and we use the preferred value for frecency (6h)
-pref("browser.cache.frecency_experiment", 0);
-
-// Telemetry settings.
-// Determines if Telemetry pings can be archived locally.
-pref("toolkit.telemetry.archive.enabled", true);
+pref("browser.cache.frecency_experiment", -1);
 
 // Enable GMP support in the addon manager.
 pref("media.gmp-provider.enabled", true);

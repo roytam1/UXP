@@ -135,7 +135,6 @@ Cu.import("resource://gre/modules/PrivateBrowsingUtils.jsm", this);
 Cu.import("resource://gre/modules/Promise.jsm", this);
 Cu.import("resource://gre/modules/Services.jsm", this);
 Cu.import("resource://gre/modules/Task.jsm", this);
-Cu.import("resource://gre/modules/TelemetryTimestamps.jsm", this);
 Cu.import("resource://gre/modules/Timer.jsm", this);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 Cu.import("resource://gre/modules/debug.js", this);
@@ -145,8 +144,6 @@ XPCOMUtils.defineLazyServiceGetter(this, "gSessionStartup",
   "@mozilla.org/browser/sessionstartup;1", "nsISessionStartup");
 XPCOMUtils.defineLazyServiceGetter(this, "gScreenManager",
   "@mozilla.org/gfx/screenmanager;1", "nsIScreenManager");
-XPCOMUtils.defineLazyServiceGetter(this, "Telemetry",
-  "@mozilla.org/base/telemetry;1", "nsITelemetry");
 XPCOMUtils.defineLazyModuleGetter(this, "console",
   "resource://gre/modules/Console.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "RecentWindow",
@@ -550,7 +547,6 @@ var SessionStoreInternal = {
       throw new Error("SessionStore.init() must only be called once!");
     }
 
-    TelemetryTimestamps.add("sessionRestoreInitialized");
     OBSERVING.forEach(function(aTopic) {
       Services.obs.addObserver(this, aTopic, true);
     }, this);
@@ -782,9 +778,8 @@ var SessionStoreInternal = {
           return;
         }
 
-        // Record telemetry measurements done in the child and update the tab's
-        // cached state. Mark the window as dirty and trigger a delayed write.
-        this.recordTelemetry(aMessage.data.telemetry);
+        // Update the tab's cached state.
+        // Mark the window as dirty and trigger a delayed write.
         TabState.update(browser, aMessage.data);
         this.saveStateDelayed(win);
 
@@ -916,18 +911,6 @@ var SessionStoreInternal = {
       default:
         throw new Error(`received unknown message '${aMessage.name}'`);
         break;
-    }
-  },
-
-  /**
-   * Record telemetry measurements stored in an object.
-   * @param telemetry
-   *        {histogramID: value, ...} An object mapping histogramIDs to the
-   *        value to be recorded for that ID,
-   */
-  recordTelemetry: function (telemetry) {
-    for (let histogramId in telemetry){
-      Telemetry.getHistogramById(histogramId).add(telemetry[histogramId]);
     }
   },
 
@@ -1081,7 +1064,6 @@ var SessionStoreInternal = {
           // Nothing to restore now, notify observers things are complete.
           Services.obs.notifyObservers(null, NOTIFY_WINDOWS_RESTORED, "");
         } else {
-          TelemetryTimestamps.add("sessionRestoreRestoring");
           this._restoreCount = aInitialState.windows ? aInitialState.windows.length : 0;
 
           // global data must be restored before restoreWindow is called so that
@@ -3810,8 +3792,7 @@ var SessionStoreInternal = {
   },
 
   /**
-   * Update the session start time and send a telemetry measurement
-   * for the number of days elapsed since the session was started.
+   * Update the session start time.
    *
    * @param state
    *        The session state.
@@ -4437,13 +4418,7 @@ var SessionStoreInternal = {
    * Handle an error report from a content process.
    */
   reportInternalError(data) {
-    // For the moment, we only report errors through Telemetry.
-    if (data.telemetry) {
-      for (let key of Object.keys(data.telemetry)) {
-        let histogram = Telemetry.getHistogramById(key);
-        histogram.add(data.telemetry[key]);
-      }
-    }
+    // STUB, was only reported through Telemetry.
   },
 
   /**

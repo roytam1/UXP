@@ -217,12 +217,6 @@ Cc["@mozilla.org/eventlistenerservice;1"]
   .getService(Ci.nsIEventListenerService)
   .addSystemEventListener(global, "contextmenu", handleContentContextMenu, false);
 
-// Values for telemtery bins: see TLS_ERROR_REPORT_UI in Histograms.json
-const TLS_ERROR_REPORT_TELEMETRY_UI_SHOWN = 0;
-const TLS_ERROR_REPORT_TELEMETRY_EXPANDED = 1;
-const TLS_ERROR_REPORT_TELEMETRY_SUCCESS  = 6;
-const TLS_ERROR_REPORT_TELEMETRY_FAILURE  = 7;
-
 const SEC_ERROR_BASE          = Ci.nsINSSErrorsService.NSS_SEC_ERROR_BASE;
 const MOZILLA_PKIX_ERROR_BASE = Ci.nsINSSErrorsService.MOZILLA_PKIX_ERROR_BASE;
 

@@ -12,13 +12,6 @@ Cu.import("resource://gre/modules/Preferences.jsm");
 
 const PREF_FHR_UPLOAD_ENABLED = "datareporting.healthreport.uploadEnabled";
 
-XPCOMUtils.defineLazyModuleGetter(this, "TelemetryArchive",
-                                  "resource://gre/modules/TelemetryArchive.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "TelemetryEnvironment",
-                                  "resource://gre/modules/TelemetryEnvironment.jsm");
-XPCOMUtils.defineLazyModuleGetter(this, "TelemetryController",
-                                  "resource://gre/modules/TelemetryController.jsm");
-
 function MozSelfSupportInterface() {
 }
 
@@ -49,24 +42,6 @@ MozSelfSupportInterface.prototype = {
   resetSearchEngines: function() {
     Services.search.restoreDefaultEngines();
     Services.search.resetToOriginalDefaultEngine();
-  },
-
-  getTelemetryPingList: function() {
-    return this._wrapPromise(TelemetryArchive.promiseArchivedPingList());
-  },
-
-  getTelemetryPing: function(pingId) {
-    return this._wrapPromise(TelemetryArchive.promiseArchivedPingById(pingId));
-  },
-
-  getCurrentTelemetryEnvironment: function() {
-    const current = TelemetryEnvironment.currentEnvironment;
-    return new this._window.Promise(resolve => resolve(current));
-  },
-
-  getCurrentTelemetrySubsessionPing: function() {
-    const current = TelemetryController.getCurrentPingData(true);
-    return new this._window.Promise(resolve => resolve(current));
   },
 
   _wrapPromise: function(promise) {

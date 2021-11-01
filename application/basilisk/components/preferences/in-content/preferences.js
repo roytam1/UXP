@@ -124,36 +124,6 @@ function init_dynamic_padding() {
   document.documentElement.appendChild(mediaStyle);
 }
 
-function telemetryBucketForCategory(category) {
-  switch (category) {
-    case "general":
-    case "search":
-    case "content":
-    case "applications":
-    case "privacy":
-    case "security":
-    case "sync":
-      return category;
-    case "advanced":
-      let advancedPaneTabs = document.getElementById("advancedPrefs");
-      switch (advancedPaneTabs.selectedTab.id) {
-        case "generalTab":
-          return "advancedGeneral";
-        case "dataChoicesTab":
-          return "advancedDataChoices";
-        case "networkTab":
-          return "advancedNetwork";
-        case "updateTab":
-          return "advancedUpdates";
-        case "encryptionTab":
-          return "advancedCerts";
-      }
-      // fall-through for unknown.
-    default:
-      return "unknown";
-  }
-}
-
 function onHashChange() {
   gotoPref();
 }
@@ -194,10 +164,6 @@ function gotoPref(aCategory) {
   search(category, "data-category");
   let mainContent = document.querySelector(".main-content");
   mainContent.scrollTop = 0;
-
-  Services.telemetry
-          .getHistogramById("FX_PREFERENCES_CATEGORY_OPENED")
-          .add(telemetryBucketForCategory(friendlyName));
 }
 
 function search(aQuery, aAttribute) {

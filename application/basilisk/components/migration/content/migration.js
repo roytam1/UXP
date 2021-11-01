@@ -35,7 +35,6 @@ var MigrationWizard = { /* exported MigrationWizard */
 
     let args = window.arguments;
     let entryPointId = args[0] || MigrationUtils.MIGRATION_ENTRYPOINT_UNKNOWN;
-    Services.telemetry.getHistogramById("FX_MIGRATION_ENTRY_POINT").add(entryPointId);
     this.isInitialMigration = entryPointId == MigrationUtils.MIGRATION_ENTRYPOINT_FIRSTRUN;
 
     if (args.length > 1) {
@@ -105,15 +104,6 @@ var MigrationWizard = { /* exported MigrationWizard */
         }
       }
     }
-    if (this.isInitialMigration) {
-      Services.telemetry.getHistogramById("FX_STARTUP_MIGRATION_BROWSER_COUNT")
-        .add(this._availableMigrators.length);
-      let defaultBrowser = MigrationUtils.getMigratorKeyForDefaultBrowser();
-      // This will record 0 for unknown default browser IDs.
-      defaultBrowser = MigrationUtils.getSourceIdForTelemetry(defaultBrowser);
-      Services.telemetry.getHistogramById("FX_STARTUP_MIGRATION_EXISTING_DEFAULT_BROWSER")
-        .add(defaultBrowser);
-    }
 
     group.addEventListener("command", toggleCloseBrowserWarning);
 
@@ -142,11 +132,6 @@ var MigrationWizard = { /* exported MigrationWizard */
     var newSource = document.getElementById("importSourceGroup").selectedItem.id;
 
     if (newSource == "nothing") {
-      // Need to do telemetry here because we're closing the dialog before we get to
-      // do actual migration. For actual migration, this doesn't happen until after
-      // migration takes place.
-      Services.telemetry.getHistogramById("FX_MIGRATION_SOURCE_BROWSER")
-                        .add(MigrationUtils.getSourceIdForTelemetry("nothing"));
       document.documentElement.cancel();
       return false;
     }
@@ -366,21 +351,6 @@ var MigrationWizard = { /* exported MigrationWizard */
   onMigratingMigrate: function ()
   {
     this._migrator.migrate(this._itemsFlags, this._autoMigrate, this._selectedProfile);
-
-    Services.telemetry.getHistogramById("FX_MIGRATION_SOURCE_BROWSER")
-                      .add(MigrationUtils.getSourceIdForTelemetry(this._source));
-    if (!this._autoMigrate) {
-      let hist = Services.telemetry.getKeyedHistogramById("FX_MIGRATION_USAGE");
-      let exp = 0;
-      let items = this._itemsFlags;
-      while (items) {
-        if (items & 1) {
-          hist.add(this._source, exp);
-        }
-        items = items >> 1;
-        exp++;
-      }
-    }
   },
 
   _listItems: function (aID)
@@ -426,18 +396,8 @@ var MigrationWizard = { /* exported MigrationWizard */
           label.removeAttribute("style");
         break;
       case "Migration:Ended":
-        if (this.isInitialMigration) {
-          // Ensure errors in reporting data recency do not affect the rest of the migration.
-          try {
-            this.reportDataRecencyTelemetry();
-          } catch (ex) {
-            Cu.reportError(ex);
-          }
-        }
         if (this._autoMigrate) {
           let hasImportedHomepage = !!(this._newHomePage && this._newHomePage != "DEFAULT");
-          Services.telemetry.getKeyedHistogramById("FX_MIGRATION_IMPORTED_HOMEPAGE")
-                            .add(this._source, hasImportedHomepage);
           if (this._newHomePage) {
             try {
               // set homepage properly
@@ -508,8 +468,6 @@ var MigrationWizard = { /* exported MigrationWizard */
         Cc["@mozilla.org/consoleservice;1"]
           .getService(Ci.nsIConsoleService)
           .logStringMessage("some " + type + " did not successfully migrate.");
-        Services.telemetry.getKeyedHistogramById("FX_MIGRATION_ERRORS")
-                          .add(this._source, Math.log2(numericType));
         break;
     }
   },
@@ -521,29 +479,4 @@ var MigrationWizard = { /* exported MigrationWizard */
     this._listItems("doneItems");
   },
 
-  reportDataRecencyTelemetry() {
-    let histogram = Services.telemetry.getKeyedHistogramById("FX_STARTUP_MIGRATION_DATA_RECENCY");
-    let lastUsedPromises = [];
-    for (let [key, migrator] of this._availableMigrators) {
-      // No block-scoped let in for...of loop conditions, so get the source:
-      let localKey = key;
-      lastUsedPromises.push(migrator.getLastUsedDate().then(date => {
-        const ONE_YEAR = 24 * 365;
-        let diffInHours = Math.round((Date.now() - date) / (60 * 60 * 1000));
-        if (diffInHours > ONE_YEAR) {
-          diffInHours = ONE_YEAR;
-        }
-        histogram.add(localKey, diffInHours);
-        return [localKey, diffInHours];
-      }));
-    }
-    Promise.all(lastUsedPromises).then(migratorUsedTimeDiff => {
-      // Sort low to high.
-      migratorUsedTimeDiff.sort(([keyA, diffA], [keyB, diffB]) => diffA - diffB); /* eslint no-unused-vars: off */
-      let usedMostRecentBrowser = migratorUsedTimeDiff.length && this._source == migratorUsedTimeDiff[0][0];
-      let usedRecentBrowser =
-        Services.telemetry.getKeyedHistogramById("FX_STARTUP_MIGRATION_USED_RECENT_BROWSER");
-      usedRecentBrowser.add(this._source, usedMostRecentBrowser);
-    });
-  },
 };

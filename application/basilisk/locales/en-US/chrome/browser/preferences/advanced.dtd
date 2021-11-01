@@ -35,11 +35,6 @@
 <!ENTITY enableHealthReport.accesskey    "R">
 <!ENTITY healthReportLearnMore.label     "Learn More">
 
-<!ENTITY telemetryDesc.label             "Shares performance, usage, hardware and customization data about your browser with &vendorShortName; to help us make &brandShortName; better">
-<!ENTITY enableTelemetryData.label       "Share additional data (i.e., Telemetry)">
-<!ENTITY enableTelemetryData.accesskey   "T">
-<!ENTITY telemetryLearnMore.label        "Learn More">
-
 <!ENTITY crashReporterDesc2.label         "Crash reports help &vendorShortName; fix problems and make your browser more stable and secure">
 <!ENTITY alwaysSubmitCrashReports.label   "Allow &brandShortName; to send backlogged crash reports on your behalf">
 <!ENTITY alwaysSubmitCrashReports.accesskey "c">

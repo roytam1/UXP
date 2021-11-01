@@ -15,7 +15,6 @@ Cu.import("resource://gre/modules/NotificationDB.jsm");
   ["AboutHome", "resource:///modules/AboutHome.jsm"],
   ["AddonWatcher", "resource://gre/modules/AddonWatcher.jsm"],
   ["AppConstants", "resource://gre/modules/AppConstants.jsm"],
-  ["BrowserUsageTelemetry", "resource:///modules/BrowserUsageTelemetry.jsm"],
   ["BrowserUtils", "resource://gre/modules/BrowserUtils.jsm"],
   ["CharsetMenu", "resource://gre/modules/CharsetMenu.jsm"],
   ["Color", "resource://gre/modules/Color.jsm"],
@@ -1054,10 +1053,6 @@ var gBrowserInit = {
 
   _delayedStartup: function() {
     let tmp = {};
-    Cu.import("resource://gre/modules/TelemetryTimestamps.jsm", tmp);
-    let TelemetryTimestamps = tmp.TelemetryTimestamps;
-    TelemetryTimestamps.add("delayedStartupStarted");
-
     this._cancelDelayedStartup();
 
     // We need to set the OfflineApps message listeners up before we
@@ -1198,8 +1193,6 @@ var gBrowserInit = {
     FullZoom.init();
     PanelUI.init();
     LightweightThemeListener.init();
-
-    Services.telemetry.getHistogramById("E10S_WINDOW").add(gMultiProcessBrowser);
 
     SidebarUI.startDelayedLoad();
 
@@ -1354,20 +1347,6 @@ var gBrowserInit = {
       this.gmpInstallManager.simpleCheckAndInstall().then(null, () => {});
     }, 1000 * 60);
 
-    // Report via telemetry whether we're able to play MP4/H.264/AAC video.
-    // We suspect that some Windows users have a broken or have not installed
-    // Windows Media Foundation, and we'd like to know how many. We'd also like
-    // to know how good our coverage is on other platforms.
-    // Note: we delay by 90 seconds reporting this, as calling canPlayType()
-    // on Windows will cause DLLs to load, i.e. cause disk I/O.
-    setTimeout(() => {
-      let v = document.createElementNS("http://www.w3.org/1999/xhtml", "video");
-      let aacWorks = v.canPlayType("audio/mp4") != "";
-      Services.telemetry.getHistogramById("VIDEO_CAN_CREATE_AAC_DECODER").add(aacWorks);
-      let h264Works = v.canPlayType("video/mp4") != "";
-      Services.telemetry.getHistogramById("VIDEO_CAN_CREATE_H264_DECODER").add(h264Works);
-    }, 90 * 1000);
-
     SessionStore.promiseInitialized.then(() => {
       // Bail out if the window has been closed in the meantime.
       if (window.closed) {
@@ -1379,23 +1358,6 @@ var gBrowserInit = {
 
       // Start monitoring slow add-ons
       AddonWatcher.init();
-
-      // Telemetry for master-password - we do this after 5 seconds as it
-      // can cause IO if NSS/PSM has not already initialized.
-      setTimeout(() => {
-        if (window.closed) {
-          return;
-        }
-        let secmodDB = Cc["@mozilla.org/security/pkcs11moduledb;1"]
-                       .getService(Ci.nsIPKCS11ModuleDB);
-        let slot = secmodDB.findSlotByName("");
-        let mpEnabled = slot &&
-                        slot.status != Ci.nsIPKCS11Slot.SLOT_UNINITIALIZED &&
-                        slot.status != Ci.nsIPKCS11Slot.SLOT_READY;
-        if (mpEnabled) {
-          Services.telemetry.getHistogramById("MASTER_PASSWORD_ENABLED").add(mpEnabled);
-        }
-      }, 5000);
 
       PanicButtonNotifier.init();
     });
@@ -1411,7 +1373,6 @@ var gBrowserInit = {
     this.delayedStartupFinished = true;
 
     Services.obs.notifyObservers(window, "browser-delayed-startup-finished", "");
-    TelemetryTimestamps.add("delayedStartupFinished");
   },
 
   // Returns the URI(s) to load at startup.
@@ -2692,12 +2653,6 @@ var gMenuButtonUpdateBadge = {
   }
 };
 
-// Values for telemtery bins: see TLS_ERROR_REPORT_UI in Histograms.json
-const TLS_ERROR_REPORT_TELEMETRY_AUTO_CHECKED   = 2;
-const TLS_ERROR_REPORT_TELEMETRY_AUTO_UNCHECKED = 3;
-const TLS_ERROR_REPORT_TELEMETRY_MANUAL_SEND    = 4;
-const TLS_ERROR_REPORT_TELEMETRY_AUTO_SEND      = 5;
-
 const PREF_SSL_IMPACT_ROOTS = ["security.tls.version.", "security.ssl3."];
 
 const PREF_SSL_IMPACT = PREF_SSL_IMPACT_ROOTS.reduce((prefs, root) => {
@@ -2717,7 +2672,6 @@ var BrowserOnClick = {
     mm.addMessageListener("Browser:SiteBlockedError", this);
     mm.addMessageListener("Browser:EnableOnlineMode", this);
     mm.addMessageListener("Browser:ResetSSLPreferences", this);
-    mm.addMessageListener("Browser:SSLErrorReportTelemetry", this);
     mm.addMessageListener("Browser:OverrideWeakCrypto", this);
     mm.addMessageListener("Browser:SSLErrorGoBack", this);
 
@@ -2731,7 +2685,6 @@ var BrowserOnClick = {
     mm.removeMessageListener("Browser:SiteBlockedError", this);
     mm.removeMessageListener("Browser:EnableOnlineMode", this);
     mm.removeMessageListener("Browser:ResetSSLPreferences", this);
-    mm.removeMessageListener("Browser:SSLErrorReportTelemetry", this);
     mm.removeMessageListener("Browser:OverrideWeakCrypto", this);
     mm.removeMessageListener("Browser:SSLErrorGoBack", this);
 
@@ -2776,19 +2729,6 @@ var BrowserOnClick = {
           Services.prefs.clearUserPref(prefName);
         }
         msg.target.reload();
-      break;
-      case "Browser:SetSSLErrorReportAuto":
-        Services.prefs.setBoolPref("security.ssl.errorReporting.automatic", msg.json.automatic);
-        let bin = TLS_ERROR_REPORT_TELEMETRY_AUTO_UNCHECKED;
-        if (msg.json.automatic) {
-          bin = TLS_ERROR_REPORT_TELEMETRY_AUTO_CHECKED;
-        }
-        Services.telemetry.getHistogramById("TLS_ERROR_REPORT_UI").add(bin);
-      break;
-      case "Browser:SSLErrorReportTelemetry":
-        let reportStatus = msg.data.reportStatus;
-        Services.telemetry.getHistogramById("TLS_ERROR_REPORT_UI")
-          .add(reportStatus);
       break;
       case "Browser:OverrideWeakCrypto":
         let weakCryptoOverride = Cc["@mozilla.org/security/weakcryptooverride;1"]
@@ -3486,9 +3426,6 @@ const BrowserSearch = {
    */
   loadSearchFromContext: function (terms) {
     let engine = BrowserSearch._loadSearch(terms, true, "contextmenu");
-    if (engine) {
-      BrowserSearch.recordSearchInTelemetry(engine, "contextmenu");
-    }
   },
 
   pasteAndSearch: function (event) {
@@ -3512,56 +3449,8 @@ const BrowserSearch = {
     var newWindowPref = gPrefService.getIntPref("browser.link.open_newwindow");
     var where = newWindowPref == 3 ? "tab" : "window";
     openUILinkIn(this.searchEnginesURL, where);
-  },
-
-  /**
-   * Helper to record a search with Telemetry.
-   *
-   * Telemetry records only search counts and nothing pertaining to the search itself.
-   *
-   * @param engine
-   *        (nsISearchEngine) The engine handling the search.
-   * @param source
-   *        (string) Where the search originated from. See BrowserUsageTelemetry for
-   *        allowed values.
-   * @param details [optional]
-   *        An optional parameter passed to |BrowserUsageTelemetry.recordSearch|.
-   *        See its documentation for allowed options.
-   *        Additionally, if the search was a suggested search, |details.selection|
-   *        indicates where the item was in the suggestion list and how the user
-   *        selected it: {selection: {index: The selected index, kind: "key" or "mouse"}}
-   */
-  recordSearchInTelemetry: function (engine, source, details={}) {
-    try {
-      BrowserUsageTelemetry.recordSearch(engine, source, details);
-    } catch (ex) {
-      Cu.reportError(ex);
-    }
-  },
-
-  /**
-   * Helper to record a one-off search with Telemetry.
-   *
-   * Telemetry records only search counts and nothing pertaining to the search itself.
-   *
-   * @param engine
-   *        (nsISearchEngine) The engine handling the search.
-   * @param source
-   *        (string) Where the search originated from. See BrowserUsageTelemetry for
-   *        allowed values.
-   * @param type
-   *        (string) Indicates how the user selected the search item.
-   * @param where
-   *        (string) Where was the search link opened (e.g. new tab, current tab, ..).
-   */
-  recordOneoffSearchInTelemetry: function (engine, source, type, where) {
-    try {
-      const details = {type, isOneOff: true};
-      BrowserUsageTelemetry.recordSearch(engine, source, details);
-    } catch (ex) {
-      Cu.reportError(ex);
-    }
   }
+
 };
 
 XPCOMUtils.defineConstant(this, "BrowserSearch", BrowserSearch);
@@ -4889,11 +4778,6 @@ var gTabletModePageCounter = {
   },
 
   finish() {
-    if (this.enabled) {
-      let histogram = Services.telemetry.getKeyedHistogramById("FX_TABLETMODE_PAGE_LOAD");
-      histogram.add("tablet", this._tabletCount);
-      histogram.add("desktop", this._desktopCount);
-    }
   },
 };
 
@@ -6423,12 +6307,6 @@ var gIdentityHandler = {
   },
 
   disableMixedContentProtection() {
-    // Use telemetry to measure how often unblocking happens
-    const kMIXED_CONTENT_UNBLOCK_EVENT = 2;
-    let histogram =
-      Services.telemetry.getHistogramById(
-        "MIXED_CONTENT_UNBLOCK_COUNTER");
-    histogram.add(kMIXED_CONTENT_UNBLOCK_EVENT);
     // Reload the page with the content unblocked
     BrowserReloadWithFlags(
       Ci.nsIWebNavigation.LOAD_FLAGS_ALLOW_MIXED_CONTENT);
@@ -7144,9 +7022,6 @@ var gIdentityHandler = {
       SitePermissions.remove(gBrowser.currentURI, aPermission.id);
       this._permissionJustRemoved = true;
       this.updatePermissionHint();
-
-      // Set telemetry values for clearing a permission
-      let histogram = Services.telemetry.getKeyedHistogramById("WEB_PERMISSION_CLEARED");
 
       let permissionType = 0;
       if (aPermission.state == SitePermissions.ALLOW) {
