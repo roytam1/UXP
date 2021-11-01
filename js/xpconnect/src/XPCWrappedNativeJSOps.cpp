@@ -937,9 +937,9 @@ const js::ObjectOps XPC_WN_ObjectOpsWithEnumerate = {
 // |this| object for a given method (often to the detriment of proper
 // call/apply). When these tricks were removed, a fair amount of chrome
 // code broke, because it was relying on being able to grab methods off
-// some XPCOM object (like the nsITelemetry service) and invoke them without
-// a proper |this|. So, if it's quite clear that we're in this situation and
-// about to use a |this| argument that just won't work, fix things up.
+// some XPCOM object and invoke them without a proper |this|. So, if it's
+// quite clear that we're in this situation and about to use a |this|
+// argument that just won't work, fix things up.
 //
 // This hack is only useful for getters/setters if someone sets an XPCOM object
 // as the prototype for a vanilla JS object and expects the XPCOM attributes to

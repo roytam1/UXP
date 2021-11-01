@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim:set ts=2 sts=2 sw=2 et cin: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -1983,8 +1982,7 @@ WinUtils::SanitizePath(const wchar_t* aInputPath, nsAString& aOutput)
 
 /**
  * This function provides an array of (system path, substitution) pairs that are
- * considered to be acceptable with respect to privacy, for the purposes of
- * submitting within telemetry or crash reports.
+ * considered to be acceptable with respect to privacy.
  *
  * The substitution string's void flag may be set. If it is, no subsitution is
  * necessary. Otherwise, the consumer should replace the system path with the

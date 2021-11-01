@@ -596,13 +596,6 @@ StartupCache::ResetStartupWriteTimer()
   return NS_OK;
 }
 
-nsresult
-StartupCache::RecordAgesAlways()
-{
-  gPostFlushAgeAction = RECORD_AGE;
-  return NS_OK;
-}
-
 // StartupCacheDebugOutputStream implementation
 #ifdef DEBUG
 NS_IMPL_ISUPPORTS(StartupCacheDebugOutputStream, nsIObjectOutputStream, 
@@ -796,12 +789,6 @@ StartupCacheWrapper::GetObserver(nsIObserver** obv) {
   }
   NS_ADDREF(*obv = sc->mListener);
   return NS_OK;
-}
-
-nsresult
-StartupCacheWrapper::RecordAgesAlways() {
-  StartupCache *sc = StartupCache::GetSingleton();
-  return sc ? sc->RecordAgesAlways() : NS_ERROR_NOT_INITIALIZED;
 }
 
 } // namespace scache

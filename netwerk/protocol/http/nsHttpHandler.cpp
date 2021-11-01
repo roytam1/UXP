@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* vim:set ts=4 sw=4 sts=4 et cin: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -1505,8 +1504,7 @@ nsHttpHandler::PrefsChanged(nsIPrefBranch *prefs, const char *pref)
         }
     }
 
-    // toggle to true anytime a token bucket related pref is changed.. that
-    // includes telemetry and allow-experiments because of the abtest profile
+    // toggle to true anytime a token bucket related pref is changed.
     bool requestTokenBucketUpdated = false;
 
     // "security.ssl3.ecdhe_rsa_aes_128_gcm_sha256" is the required h2 interop

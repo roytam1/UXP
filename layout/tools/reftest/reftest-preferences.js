@@ -71,15 +71,6 @@ user_pref("dom.allow_XUL_XBL_for_file", true);
 // their protocol with the inner URI of the view-source URI
 user_pref("security.view-source.reachable-from-inner-protocol", true);
 
-// Ensure that telemetry is disabled, so we don't connect to the telemetry
-// server in the middle of the tests.
-user_pref("toolkit.telemetry.enabled", false);
-user_pref("toolkit.telemetry.unified", false);
-// Likewise for safebrowsing.
-user_pref("browser.safebrowsing.phishing.enabled", false);
-user_pref("browser.safebrowsing.malware.enabled", false);
-user_pref("browser.safebrowsing.forbiddenURIs.enabled", false);
-user_pref("browser.safebrowsing.blockedURIs.enabled", false);
 // Likewise for tracking protection.
 user_pref("privacy.trackingprotection.enabled", false);
 user_pref("privacy.trackingprotection.pbmode.enabled", false);

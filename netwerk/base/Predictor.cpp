@@ -493,13 +493,6 @@ Predictor::GetParallelSpeculativeConnectLimit(
 }
 
 NS_IMETHODIMP
-Predictor::GetIsFromPredictor(bool *isFromPredictor)
-{
-  *isFromPredictor = true;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 Predictor::GetAllow1918(bool *allow1918)
 {
   *allow1918 = false;
