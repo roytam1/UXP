@@ -1673,6 +1673,15 @@ static bool CanMatchFeaturelessElement(nsCSSSelector* aSelector)
     return false;
   }
 
+  for (nsPseudoClassList* pseudoClass = aSelector->mPseudoClassList;
+       pseudoClass;
+       pseudoClass = pseudoClass->mNext) {
+    if (pseudoClass->mType == CSSPseudoClassType::host ||
+        pseudoClass->mType == CSSPseudoClassType::hostContext) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -1903,6 +1912,67 @@ static bool SelectorMatches(Element* aElement,
           if (!AnySelectorInArgListMatches(aElement, pseudoClass,
                                            aNodeMatchContext,
                                            aTreeMatchContext)) {
+            return false;
+          }
+        }
+        break;
+
+      case CSSPseudoClassType::host:
+        {
+          // In order to match :host, the element must be a shadow root host,
+          // we must be matching only against host pseudo selectors, and the 
+          // selector's context must be the shadow root (the selector must be 
+          // featureless, the left-most selector, and be in a shadow root 
+          // style). The :host selector may also be be functional, with a 
+          // compound selector. If this is the case, then also ensure that the 
+          // host element matches against the compound
+          // selector.
+          return aElement->GetShadowRoot() &&
+            aTreeMatchContext.mOnlyMatchHostPseudo &&
+            !aSelector->HasFeatureSelectors() &&
+            !aSelector->mNext &&
+            (!pseudoClass->u.mSelectors ||
+             AnySelectorInArgListMatches(aElement, pseudoClass,
+                                      aNodeMatchContext,
+                                      aTreeMatchContext));
+        }
+        break;
+
+
+      case CSSPseudoClassType::hostContext:
+        {
+          // In order to match host-context, the element must be a
+          // shadow root host and the selector's context must be the
+          // shadow root (aTreeMatchContext.mScopedRoot is set to the
+          // host of the shadow root where the style is contained,
+          // thus the element must be mScopedRoot). If the UNKNOWN
+          // selector flag is set, relax the shadow root host
+          // requirement because this pseudo class walks through
+          // ancestors looking for a match, thus the selector can be
+          // dependant on aElement even though it is not the host. The
+          // dependency would otherwise be missed because when UNKNOWN
+          // is set, selector matching may not have started from the top.
+          if (!((aElement->GetShadowRoot() &&
+                 aElement == aTreeMatchContext.mScopedRoot) ||
+                aSelectorFlags & SelectorMatchesFlags::UNKNOWN)) {
+            return false;
+          }
+
+          Element* currentElement = aElement;
+          while (currentElement) {
+            NodeMatchContext nodeContext(EventStates(),
+                               nsCSSRuleProcessor::IsLink(currentElement));
+            if (AnySelectorInArgListMatches(currentElement, pseudoClass,
+                                            nodeContext,
+                                            aTreeMatchContext)) {
+              break;
+            }
+
+            nsIContent* flattenedParent = currentElement->GetFlattenedTreeParent();
+            currentElement = flattenedParent && flattenedParent->IsElement() ?
+              flattenedParent->AsElement() : nullptr;
+          }
+          if (!currentElement) {
             return false;
           }
         }
@@ -2571,6 +2641,15 @@ void ContentEnumFunc(const RuleValue& value, nsCSSSelector* aSelector,
     }
 
     bool seenHostPseudo = false;
+    for (nsPseudoClassList* pseudoClass = selector->mPseudoClassList;
+         pseudoClass;
+         pseudoClass = pseudoClass->mNext) {
+      if (pseudoClass->mType == CSSPseudoClassType::host ||
+	        pseudoClass->mType == CSSPseudoClassType::hostContext) {
+        seenHostPseudo = true;
+        break;
+      }
+    }
 
     if (!seenHostPseudo) {
       return;
@@ -2929,7 +3008,17 @@ AttributeEnumFunc(nsCSSSelector* aSelector,
     }
 
     bool seenHostPseudo = false;
-    break;
+    for (nsPseudoClassList* pseudoClass = selector->mPseudoClassList;
+         pseudoClass;
+         pseudoClass = pseudoClass->mNext) {
+      if (pseudoClass->mType == CSSPseudoClassType::host ||
+	        pseudoClass->mType == CSSPseudoClassType::hostContext) {
+        // :host-context will walk ancestors looking for a match of a compound 
+        // selector, thus any changes to ancestors may require restyling the 
+        // subtree.
+        possibleChange |= eRestyle_Subtree;
+        seenHostPseudo = true;
+        break;
       }
     }
 
@@ -3412,7 +3501,9 @@ AddSelector(RuleCascadeData* aCascade,
     // Recur through any :-moz-any or :host-context selectors
     for (nsPseudoClassList* pseudoClass = negation->mPseudoClassList;
          pseudoClass; pseudoClass = pseudoClass->mNext) {
-      if (pseudoClass->mType == CSSPseudoClassType::any) {
+      if (pseudoClass->mType == CSSPseudoClassType::any ||
+          pseudoClass->mType == CSSPseudoClassType::host ||
+          pseudoClass->mType == CSSPseudoClassType::hostContext) {
         for (nsCSSSelectorList *l = pseudoClass->u.mSelectors; l; l = l->mNext) {
           nsCSSSelector *s = l->mSelectors;
           if (!AddSelector(aCascade, aSelectorInTopLevel, s,
