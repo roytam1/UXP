@@ -30,6 +30,7 @@
 #include "nsXBLPrototypeBinding.h"
 #include "nsXBLDocumentInfo.h"
 #include "mozilla/dom/XBLChildrenElement.h"
+#include "mozilla/dom/ShadowRoot.h"
 
 #include "nsIStyleRuleProcessor.h"
 #include "nsRuleProcessorData.h"
@@ -663,13 +664,44 @@ nsBindingManager::WalkRules(nsIStyleRuleProcessor::EnumFunc aFunc,
 
   NS_ASSERTION(aData->mElement, "How did that happen?");
 
+  // Walk the rules in shadow root for :host pseudo-class rules.
+  aData->mTreeMatchContext.mOnlyMatchHostPseudo = true;
+  aData->mElementIsFeatureless = true;
+
+  ShadowRoot* currentShadow = aData->mElement->GetShadowRoot();
+  // XXX: Obviously not the right approach for Shadow DOM v1.
+  // Per spec, rules from younger shadow DOM win over rules from older shadow 
+  // DOM. Iterate to the oldest shadow root on the host then walk back to the 
+  // youngest when walking rules.
+  while (currentShadow) {
+    ShadowRoot* olderShadow = currentShadow->GetOlderShadowRoot();
+    if (!olderShadow) {
+      break;
+    }
+    currentShadow = olderShadow;
+  }
+
+  while (currentShadow) {
+    nsXBLBinding* associatedBinding = currentShadow->GetAssociatedBinding();
+    if (associatedBinding) {
+      aData->mTreeMatchContext.mScopedRoot = aData->mElement;
+      associatedBinding->WalkRules(aFunc, aData);
+    }
+    currentShadow = currentShadow->GetYoungerShadowRoot();
+  }
+
+  aData->mElementIsFeatureless = false;
+  aData->mTreeMatchContext.mOnlyMatchHostPseudo = false;
+
   // Walk the binding scope chain, starting with the binding attached to our
   // content, up till we run out of scopes or we get cut off.
   nsIContent *content = aData->mElement;
 
   do {
     nsXBLBinding *binding = content->GetXBLBinding();
-    if (binding) {
+    if (binding &&
+         // Unlike XBL, styles in the shadow root are not applied to the host.
+	!(content == aData->mElement && binding->IsShadowRootBinding())) {
       aData->mTreeMatchContext.mScopedRoot = content;
       binding->WalkRules(aFunc, aData);
       // If we're not looking at our original content, allow the binding to cut
@@ -701,15 +733,41 @@ nsBindingManager::WalkRules(nsIStyleRuleProcessor::EnumFunc aFunc,
 
 typedef nsTHashtable<nsPtrHashKey<nsIStyleRuleProcessor> > RuleProcessorSet;
 
+// XXX: Figure out what the anonymous namespace is for. Is this even appropriate now that we're using iterators instead of enumerators?
+
+namespace {
+
+struct RuleProcessorsData {
+  RuleProcessorSet* mSet;
+  bool mOnlyWalkShadowHosts;
+};
+
+} // anonymous namespace
+
+
 static RuleProcessorSet*
 GetContentSetRuleProcessors(nsTHashtable<nsRefPtrHashKey<nsIContent>>* aContentSet)
 {
-  RuleProcessorSet* set = nullptr;
+  RuleProcessorsData* data = nullptr;	
+  RuleProcessorSet* set = data->mSet;
+
 
   for (auto iter = aContentSet->Iter(); !iter.Done(); iter.Next()) {
     nsIContent* boundContent = iter.Get()->GetKey();
-    for (nsXBLBinding* binding = boundContent->GetXBLBinding(); binding;
-         binding = binding->GetBaseBinding()) {
+
+  // If we are only walking rules for shadow root hosts, skip other types
+  // of bound content.
+  ShadowRoot *shadowRoot = boundContent->GetShadowRoot();
+  if (data->mOnlyWalkShadowHosts && !shadowRoot) {
+    return set;
+  }
+
+  // Bound content may have multiple rule processors, potentially one
+  // for its immediate binding, and one more for each binding in the
+  // inheritance chain. Additionally, a bound content may host multiple
+  // shadow roots, each with its own rule processor.
+  nsXBLBinding *binding = boundContent->GetXBLBinding();
+  while (binding) {
       nsIStyleRuleProcessor* ruleProc =
         binding->PrototypeBinding()->GetRuleProcessor();
       if (ruleProc) {
@@ -718,15 +776,30 @@ GetContentSetRuleProcessors(nsTHashtable<nsRefPtrHashKey<nsIContent>>* aContentS
         }
         set->PutEntry(ruleProc);
       }
+
+      binding = binding->GetBaseBinding();
+      // XXX: Obviously not the right approach for Shadow DOM v1.
+      // If there isn't a base binding, start walking the binding of the
+      // next older shadow root hosted by the bound content (if any).
+      if (!binding && shadowRoot) {
+        shadowRoot = shadowRoot->GetOlderShadowRoot();
+        if (shadowRoot) {
+          binding = shadowRoot->GetAssociatedBinding();
+        }
+      }
     }
   }
 
   return set;
 }
 
+// XXX: I think since this calls GetContentSetRuleProcessors directly now, no changes should be needed here? The original enumerator patch used the RuleProcessorsData function from the anonymous namespace here.
+
+
 void
 nsBindingManager::WalkAllRules(nsIStyleRuleProcessor::EnumFunc aFunc,
-                               ElementDependentRuleProcessorData* aData)
+                               ElementDependentRuleProcessorData* aData,
+			       bool aOnlyWalkShadowRootRules)
 {
   if (!mBoundContentSet) {
     return;
@@ -743,6 +816,19 @@ nsBindingManager::WalkAllRules(nsIStyleRuleProcessor::EnumFunc aFunc,
     (*(aFunc))(ruleProcessor, aData);
   }
 }
+
+// The approach in WalkAllShadowRootHostRules seems reasonable on the surface and reminds me of what is done with mScopedRoot elsewhere. But something important is missing, either here or in the code that would normally use it.
+
+void
+nsBindingManager::WalkAllShadowRootHostRules(nsIStyleRuleProcessor::EnumFunc aFunc,
+                                         ElementDependentRuleProcessorData* aData)
+ {
+   aData->mTreeMatchContext.mOnlyMatchHostPseudo = true;
+   WalkAllRules(aFunc, aData, true);
+   aData->mTreeMatchContext.mOnlyMatchHostPseudo = false;
+ }
+
+//XXX: I think since this calls GetContentSetRuleProcessors directly now, no changes should be needed here? The original enumerator patch used the RuleProcessorsData function from the anonymous namespace here.
 
 nsresult
 nsBindingManager::MediumFeaturesChanged(nsPresContext* aPresContext,

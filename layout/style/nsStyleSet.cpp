@@ -1311,8 +1311,9 @@ nsStyleSet::WalkRuleProcessors(nsIStyleRuleProcessor::EnumFunc aFunc,
   if (mBindingManager) {
     // We can supply additional document-level sheets that should be walked.
     if (aWalkAllXBLStylesheets) {
-      mBindingManager->WalkAllRules(aFunc, aData);
+      mBindingManager->WalkAllRules(aFunc, aData, false);
     } else {
+      mBindingManager->WalkAllShadowRootHostRules(aFunc, aData);	    
       mBindingManager->WalkRules(aFunc, aData, &cutOffInheritance);
     }
   }
