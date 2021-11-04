@@ -624,7 +624,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
           }
           // Augment the search action details object.
           let details = searchActionDetails || {};
-          details.isOneOff = isOneOff;
           details.type = eventType;
 
           let submission = engine.getSubmission(query, null, "keyword");

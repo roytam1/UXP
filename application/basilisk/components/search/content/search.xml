@@ -1940,8 +1940,6 @@
                               aOpenUILinkParams &&
                               aOpenUILinkParams.inBackground;
           let where = tabBackground ? "tab-background" : aOpenUILinkWhere;
-          BrowserSearch.recordOneoffSearchInTelemetry(engine, source, type,
-                                                      where);
           return true;
         ]]></body>
       </method>
