@@ -202,7 +202,7 @@ const gXPInstallObserver = {
             label: gNavigatorBundle.getString("addonInstallRestartButton"),
             accessKey: gNavigatorBundle.getString("addonInstallRestartButton.accesskey"),
             callback: function() {
-              Application.restart();
+              Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart);
             }
           };
         } else {
@@ -368,7 +368,7 @@ var LightWeightThemeWebInstaller = {
           label: gNavigatorBundle.getString("lwthemeNeedsRestart.button"),
           accessKey: gNavigatorBundle.getString("lwthemeNeedsRestart.accesskey"),
           callback: function () {
-            Application.restart();
+            Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart);
           }
         };
 
