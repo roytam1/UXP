@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* vim:set ts=4 sw=4 et cindent: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -2153,7 +2152,9 @@ nsSocketTransport::OpenInputStream(uint32_t flags,
     mInputClosed = false;
 
     rv = PostEvent(MSG_ENSURE_CONNECT);
-    if (NS_FAILED(rv)) return rv;
+    if (NS_FAILED(rv)) {
+        return rv;
+    }
 
     result.forget(aResult);
     return NS_OK;
@@ -2173,6 +2174,7 @@ nsSocketTransport::OpenOutputStream(uint32_t flags,
     nsresult rv;
     nsCOMPtr<nsIAsyncOutputStream> pipeOut;
     nsCOMPtr<nsIOutputStream> result;
+
     if (!(flags & OPEN_UNBUFFERED) || (flags & OPEN_BLOCKING)) {
         // XXX if the caller wants blocking, then the caller also gets buffered!
         //bool openBuffered = !(flags & OPEN_UNBUFFERED);
