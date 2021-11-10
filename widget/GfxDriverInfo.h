@@ -49,21 +49,6 @@ enum class OperatingSystem {
   Windows8_1,
   Windows10,
   Linux,
-  OSX,
-  OSX10_5,
-  OSX10_6,
-  OSX10_7,
-  OSX10_8,
-  OSX10_9,
-  OSX10_10,
-  OSX10_11,
-  OSX10_12,
-  OSX10_13,
-  OSX10_14,
-  OSX10_15,
-  OSX10_16,
-  OSX11_0,
-  Ios
 };
 
 enum VersionComparisonOp {

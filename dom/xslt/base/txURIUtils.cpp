@@ -74,6 +74,7 @@ URIUtils::ResetWithSource(nsIDocument *aNewDoc, nsINode *aSourceNode)
     aNewDoc->Reset(channel, loadGroup);
     aNewDoc->SetPrincipal(sourcePrincipal);
     aNewDoc->SetBaseURI(sourceDoc->GetDocBaseURI());
+    aNewDoc->SetSandboxFlags(sourceDoc->GetSandboxFlags());
 
     // Copy charset
     aNewDoc->SetDocumentCharacterSetSource(

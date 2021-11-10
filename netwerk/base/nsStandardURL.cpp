@@ -554,37 +554,76 @@ nsStandardURL::NormalizeIPv4(const nsCSubstring &host, nsCString &result)
     return NS_OK;
 }
 
+/**
+ * Returns |true| if |aString| contains only ASCII characters according
+ * to our CRT.
+ *
+ * @param aString an 8-bit wide string to scan
+ */
+inline bool IsAsciiString(mozilla::Span<const char> aString) {
+  for (char c : aString) {
+    if (!nsCRT::IsAscii(c)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 nsresult
 nsStandardURL::NormalizeIDN(const nsCSubstring &host, nsCString &result)
 {
-    // If host is ACE, then convert to UTF-8.  Else, if host is already UTF-8,
-    // then make sure it is normalized per IDN.
-
-    // this function returns true if normalization succeeds.
-
-    // NOTE: As a side-effect this function sets mHostEncoding.  While it would
-    // be nice to avoid side-effects in this function, the implementation of
-    // this function is already somewhat bound to the behavior of the
-    // callsites.  Anyways, this function exists to avoid code duplication, so
-    // side-effects abound :-/
-
-    NS_ASSERTION(mHostEncoding == eEncoding_ASCII, "unexpected default encoding");
-
-    bool isASCII;
+    nsresult rv = NS_ERROR_UNEXPECTED;
+    // Clear result even if we bail.
+    result.Truncate();
+    
     if (!gIDN) {
         nsCOMPtr<nsIIDNService> serv(do_GetService(NS_IDNSERVICE_CONTRACTID));
         if (serv) {
             NS_ADDREF(gIDN = serv.get());
         }
     }
+    if (!gIDN) {
+        return NS_ERROR_UNEXPECTED;
+    }
 
-    result.Truncate();
-    nsresult rv = NS_ERROR_UNEXPECTED;
-    if (gIDN) {
-        rv = gIDN->ConvertToDisplayIDN(host, &isASCII, result);
-        if (NS_SUCCEEDED(rv) && !isASCII) {
-          mHostEncoding = eEncoding_UTF8;
-        }
+    NS_ASSERTION(mHostEncoding == eEncoding_ASCII, "unexpected default encoding");
+
+    bool isASCII;
+    nsAutoCString normalized;
+
+    // If the input is ASCII, and not ACE encoded, then there's no processing
+    // needed. This is needed because we want to allow ascii labels longer than
+    // 64 characters for some schemes.
+    bool isACE = false;
+    if (IsAsciiString(host) && NS_SUCCEEDED(gIDN->IsACE(host, &isACE)) && !isACE) {
+        result = host;
+        return NS_OK;
+    }
+
+    // If the input is an ACE encoded string it MUST be ASCII or it's malformed
+    // according to the spec.
+    if (!IsAsciiString(host) && isACE) {
+        return NS_ERROR_MALFORMED_URI;
+    }
+
+    // Even if it's already ACE, we must still call ConvertUTF8toACE in order
+    // for the input normalization to take place.
+    rv = gIDN->ConvertUTF8toACE(host, normalized);
+    if (NS_FAILED(rv)) {
+        return rv;
+    }
+
+    // If the ASCII representation doesn't contain the xn-- token then we don't
+    // need to call ConvertToDisplayIDN as that would not change anything.
+    if (!StringBeginsWith(normalized, NS_LITERAL_CSTRING("xn--")) &&
+        normalized.Find(NS_LITERAL_CSTRING(".xn--")) == kNotFound) {
+        return NS_OK;
+    }
+   
+    // Finally, convert to IDN
+    rv = gIDN->ConvertToDisplayIDN(normalized, &isASCII, result);
+    if (NS_SUCCEEDED(rv) && !isASCII) {
+        mHostEncoding = eEncoding_UTF8;
     }
 
     return rv;
