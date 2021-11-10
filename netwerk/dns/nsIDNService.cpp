@@ -202,7 +202,13 @@ nsIDNService::IDNA2008StringPrep(const nsAString& input,
     return NS_OK;
   }
 
-  if (info.errors != 0) {
+  uint32_t ignoredErrors = 0;
+  if (flag == eStringPrepForDNS) {
+    ignoredErrors = UIDNA_ERROR_LEADING_HYPHEN | UIDNA_ERROR_TRAILING_HYPHEN |
+                    UIDNA_ERROR_HYPHEN_3_4;
+  }
+
+  if ((info.errors & ~ignoredErrors) != 0) {
     if (flag == eStringPrepForDNS) {
       output.Truncate();
     }
@@ -309,18 +315,40 @@ nsresult nsIDNService::ACEtoUTF8(const nsACString & input, nsACString & _retval,
   return NS_OK;
 }
 
+/**
+ * Returns |true| if |aString| contains only ASCII characters according
+ * to our CRT.
+ *
+ * @param aString an 8-bit wide string to scan
+ */
+inline bool IsAsciiString(mozilla::Span<const char> aString) {
+  for (char c : aString) {
+    if (!nsCRT::IsAscii(c)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 NS_IMETHODIMP nsIDNService::IsACE(const nsACString & input, bool *_retval)
 {
-  const char *data = input.BeginReading();
-  uint32_t dataLen = input.Length();
-
   // look for the ACE prefix in the input string.  it may occur
   // at the beginning of any segment in the domain name.  for
   // example: "www.xn--ENCODED.com"
+  if (!IsAsciiString(input)) {
+    *_retval = false;
+    return NS_OK;
+  }
+  auto stringContains = [](const nsACString& haystack,
+                           const nsACString& needle) {
+    return std::search(haystack.BeginReading(), haystack.EndReading(),
+                       needle.BeginReading(),
+                       needle.EndReading()) != haystack.EndReading();
+  };
 
-  const char *p = PL_strncasestr(data, kACEPrefix, dataLen);
-
-  *_retval = p && (p == data || *(p - 1) == '.');
+  *_retval = StringBeginsWith(input, NS_LITERAL_CSTRING("xn--")) ||
+             (!input.IsEmpty() && input[0] != '.' &&
+              stringContains(input, NS_LITERAL_CSTRING(".xn--")));
   return NS_OK;
 }
 

@@ -297,21 +297,8 @@ typedef long ssize_t;
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef MOZ_MEMORY_DARWIN
 #include <strings.h>
-#endif
 #include <unistd.h>
-
-#ifdef MOZ_MEMORY_DARWIN
-#include <libkern/OSAtomic.h>
-#include <mach/mach_error.h>
-#include <mach/mach_init.h>
-#include <mach/vm_map.h>
-#include <malloc/malloc.h>
-#ifndef _pthread_self
-#define _pthread_self() pthread_self()
-#endif
-#endif
 
 #endif
 
