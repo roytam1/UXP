@@ -1927,14 +1927,33 @@ static bool SelectorMatches(Element* aElement,
           // compound selector. If this is the case, then also ensure that the 
           // host element matches against the compound
           // selector.
-          return aElement->GetShadowRoot() &&
-            aTreeMatchContext.mOnlyMatchHostPseudo &&
-            !aSelector->HasFeatureSelectors() &&
-            !aSelector->mNext &&
-            (!pseudoClass->u.mSelectors ||
-             AnySelectorInArgListMatches(aElement, pseudoClass,
-                                      aNodeMatchContext,
-                                      aTreeMatchContext));
+           
+          // We match automatically if GetParent() and GetShadowRoot() have 
+          // the same result. Without special casing this ahead of all other 
+          // selector matching, it fails. Have not determined the cause.
+
+          if (aElement->GetParent() == aElement->GetShadowRoot()) {
+            break;
+          }
+
+          // Match if any selector in the argument list matches.
+
+          NodeMatchContext nodeContext(EventStates(),
+                               nsCSSRuleProcessor::IsLink(aElement));
+          if (AnySelectorInArgListMatches(aElement, pseudoClass,
+                                            nodeContext,
+                                            aTreeMatchContext)) {
+            break;
+          }
+
+          // Finally, with the exception of the two above cases, make sure we 
+          // don't match if GetContainingShadow() returns null. For whatever 
+          // reason, we can't test for this case first. 
+
+          if (aElement->GetContainingShadow() == nullptr) {
+            return false;
+          }
+          
         }
         break;
 
