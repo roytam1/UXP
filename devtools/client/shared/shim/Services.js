@@ -502,7 +502,7 @@ const Services = {
       return window.navigator.appVersion;
     },
 
-    // This is only used by telemetry, which is disabled for the
+    // This was only used by telemetry, which is disabled for the
     // content case.  So, being totally wrong is ok.
     get is64Bit() {
       return true;

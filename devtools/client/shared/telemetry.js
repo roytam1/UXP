@@ -266,15 +266,7 @@ Telemetry.prototype = {
    *         Value to store.
    */
   log: function (histogramId, value) {
-    if (histogramId) {
-      try {
-        let histogram = Services.telemetry.getHistogramById(histogramId);
-        histogram.add(value);
-      } catch (e) {
-        dump("Warning: An attempt was made to write to the " + histogramId +
-             " histogram, which is not defined in Histograms.json\n");
-      }
-    }
+    /* STUB */
   },
 
   /**
@@ -288,15 +280,7 @@ Telemetry.prototype = {
    *         Value to store.
    */
   logKeyed: function (histogramId, key, value) {
-    if (histogramId) {
-      try {
-        let histogram = Services.telemetry.getKeyedHistogramById(histogramId);
-        histogram.add(key, value);
-      } catch (e) {
-        dump("Warning: An attempt was made to write to the " + histogramId +
-             " histogram, which is not defined in Histograms.json\n");
-      }
-    }
+    /* STUB */
   },
 
   /**
