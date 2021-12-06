@@ -740,8 +740,8 @@ GetContentSetRuleProcessors(nsTHashtable<nsRefPtrHashKey<nsIContent>>* aContentS
   // for its immediate binding, and one more for each binding in the
   // inheritance chain. Additionally, a bound content may host multiple
   // shadow roots, each with its own rule processor.
-  nsXBLBinding *binding = boundContent->GetXBLBinding();
-  if (binding) {
+  for (nsXBLBinding *binding = boundContent->GetXBLBinding(); binding;
+       binding = binding->GetBaseBinding()) {
       nsIStyleRuleProcessor* ruleProc =
         binding->PrototypeBinding()->GetRuleProcessor();
       if (ruleProc) {
@@ -751,7 +751,6 @@ GetContentSetRuleProcessors(nsTHashtable<nsRefPtrHashKey<nsIContent>>* aContentS
         set->PutEntry(ruleProc);
       }
 
-      binding = binding->GetBaseBinding();
       if (shadowRoot) {
         binding = shadowRoot->GetAssociatedBinding();
         }
