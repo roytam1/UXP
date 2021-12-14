@@ -15,6 +15,7 @@
 #include "xpcpublic.h"
 
 #include "mozilla/Base64.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/dom/ScriptSettings.h"
 
 using namespace mozilla;
@@ -138,6 +139,11 @@ nsStructuredCloneContainer::GetDataAsBase64(nsAString &aOut)
 
   auto iter = Data().Start();
   size_t size = Data().Size();
+  CheckedInt<nsAutoCString::size_type> sizeCheck(size);
+  if (!sizeCheck.isValid()) {
+    return NS_ERROR_FAILURE;
+  }
+
   nsAutoCString binaryData;
   binaryData.SetLength(size);
   Data().ReadBytes(iter, binaryData.BeginWriting(), size);

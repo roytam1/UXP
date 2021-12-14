@@ -1058,6 +1058,15 @@ private:
   const int32_t kStateUpdateLimit = 50;
   const double kRefreshTimeSecs = 10.0;
 
+  // Keep track how how many history state changes we're getting, to catch &
+  // prevent flooding.
+  int32_t mReloadFloodGuardCount;
+  mozilla::TimeStamp mReloadFloodGuardUpdated;
+  bool mReloadFloodGuardReported;
+  // We have a limit of reloading 50 times every 10 seconds.
+  const int32_t kReloadLimit = 50;
+  const double kReloadTimeSecs = 10.0;
+
   // Separate function to do the actual name (i.e. not _top, _self etc.)
   // searching for FindItemWithName.
   nsresult DoFindItemWithName(const nsAString& aName,
@@ -1076,6 +1085,9 @@ private:
   // Helper method for AddState which checks for excessive calls to PushState or
   // ReplaceState.
   bool IsStateChangeFlooding();
+
+  // Helper method for Reload which checks for excessive calls to Reload.
+  bool IsReloadFlooding();
 
 #ifdef DEBUG
   // We're counting the number of |nsDocShells| to help find leaks

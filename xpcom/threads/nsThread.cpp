@@ -1217,7 +1217,8 @@ nsThread::SetObserver(nsIThreadObserver* aObs)
   }
 
   MutexAutoLock lock(mLock);
-  mObserver = aObs;
+  nsCOMPtr<nsIThreadObserver> observer = aObs;
+  mObserver.swap(observer);
   return NS_OK;
 }
 
