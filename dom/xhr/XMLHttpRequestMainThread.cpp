@@ -86,6 +86,7 @@
 #include "mozilla/Preferences.h"
 #include "private/pprio.h"
 #include "XMLHttpRequestUpload.h"
+#include "nsHostObjectProtocolHandler.h"
 
 using namespace mozilla::net;
 
@@ -2877,6 +2878,11 @@ XMLHttpRequestMainThread::SendInternal(const RequestBodyBase* aBody)
   // as per spec. We really should create the channel here in send(), but
   // we have internal code relying on the channel being created in open().
   if (!mChannel) {
+    return NS_ERROR_DOM_NETWORK_ERR;
+  }
+
+  // non-GET requests aren't allowed for blob.
+  if (IsBlobURI(mRequestURL) && !mRequestMethod.EqualsLiteral("GET")) {
     return NS_ERROR_DOM_NETWORK_ERR;
   }
 

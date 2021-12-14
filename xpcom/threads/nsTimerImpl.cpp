@@ -433,11 +433,13 @@ nsTimerImpl::Fire(int32_t aGeneration)
   uint8_t oldType;
   uint32_t oldDelay;
   TimeStamp oldTimeout;
+  nsCOMPtr<nsITimer> timer;
 
   {
+    MutexAutoLock lock(mMutex);
+
     // Don't fire callbacks or fiddle with refcounts when the mutex is locked.
     // If some other thread Cancels/Inits after this, they're just too late.
-    MutexAutoLock lock(mMutex);
     if (aGeneration != mGeneration) {
       return;
     }
@@ -446,6 +448,10 @@ nsTimerImpl::Fire(int32_t aGeneration)
     oldType = mType;
     oldDelay = mDelay;
     oldTimeout = mTimeout;
+    // Ensure that the nsITimer does not unhook from the nsTimerImpl during
+    // Fire; this will cause null pointer crashes if the user of the timer drops
+    // its reference, and then uses the nsITimer* passed in the callback.
+    timer = mITimer;    
   }
 
   PROFILER_LABEL("Timer", "Fire",
@@ -475,13 +481,13 @@ nsTimerImpl::Fire(int32_t aGeneration)
 
   switch (mCallbackDuringFire.mType) {
     case Callback::Type::Function:
-      mCallbackDuringFire.mCallback.c(mITimer, mCallbackDuringFire.mClosure);
+      mCallbackDuringFire.mCallback.c(timer, mCallbackDuringFire.mClosure);
       break;
     case Callback::Type::Interface:
-      mCallbackDuringFire.mCallback.i->Notify(mITimer);
+      mCallbackDuringFire.mCallback.i->Notify(timer);
       break;
     case Callback::Type::Observer:
-      mCallbackDuringFire.mCallback.o->Observe(mITimer, NS_TIMER_CALLBACK_TOPIC,
+      mCallbackDuringFire.mCallback.o->Observe(timer, NS_TIMER_CALLBACK_TOPIC,
                                                nullptr);
       break;
     default:
