@@ -822,6 +822,8 @@ nsDocShell::nsDocShell()
   , mTouchEventsOverride(nsIDocShell::TOUCHEVENTS_OVERRIDE_NONE)
   , mStateFloodGuardCount(0)
   , mStateFloodGuardReported(false)
+  , mReloadFloodGuardCount(0)
+  , mReloadFloodGuardReported(false)
 {
   AssertOriginAttributesMatchPrivateBrowsing();
   mHistoryID = ++gDocshellIDCounter;
@@ -5329,6 +5331,25 @@ nsDocShell::LoadErrorPage(nsIURI* aURI, const char16_t* aURL,
                       nullptr);
 }
 
+bool
+nsDocShell::IsReloadFlooding()
+{
+  if (mReloadFloodGuardCount > kReloadLimit) {
+    TimeStamp now = TimeStamp::Now();
+
+    if (now - mReloadFloodGuardUpdated > TimeDuration::FromSeconds(kReloadTimeSecs)) {
+      mReloadFloodGuardCount = 0;
+      mReloadFloodGuardUpdated = now;
+      mReloadFloodGuardReported = false;
+      return false;
+    }
+    return true;
+  }
+
+  mReloadFloodGuardCount++;
+  return false;
+}
+
 NS_IMETHODIMP
 nsDocShell::Reload(uint32_t aReloadFlags)
 {
@@ -5352,6 +5373,26 @@ nsDocShell::Reload(uint32_t aReloadFlags)
   bool canReload = true;
   if (rootSH) {
     shistInt->NotifyOnHistoryReload(mCurrentURI, aReloadFlags, &canReload);
+  }
+
+  // If we're being flooded with reload requests, we should abort early
+  // from the reload logic.
+  if (IsReloadFlooding()) {
+    // Report a warning to the console to tell developers why their reload
+    // failed.
+    // Do this only if not yet marked reported so we only report it once per
+    // flood interval.
+    if (!mReloadFloodGuardReported) {
+#if 0
+      nsContentUtils::ReportToConsole(nsIScriptError::warningFlag,
+                                      NS_LITERAL_CSTRING("Reload"),
+                                      GetDocument(),
+                                      nsContentUtils::eDOM_PROPERTIES,
+                                      "ReloadFloodingPrevented");
+#endif
+      mReloadFloodGuardReported = true;
+    }
+    return NS_OK;
   }
 
   if (!canReload) {
