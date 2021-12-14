@@ -197,6 +197,11 @@ FirstNon8Bit(const char16_t *str, const char16_t *end)
 bool
 nsTextFragment::SetTo(const char16_t* aBuffer, int32_t aLength, bool aUpdateBidi)
 {
+  if (MOZ_UNLIKELY(aLength < 0 || static_cast<uint32_t>(aLength) >
+                                      NS_MAX_TEXT_FRAGMENT_LENGTH)) {
+    return false;
+  }
+
   ReleaseText();
 
   if (aLength == 0) {
@@ -328,26 +333,30 @@ nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBi
   // This is a common case because some callsites create a textnode
   // with a value by creating the node and then calling AppendData.
   if (mState.mLength == 0) {
+    if (MOZ_UNLIKELY(aLength > INT32_MAX)) {
+      return false;
+    }
     return SetTo(aBuffer, aLength, aUpdateBidi);
   }
 
   // Should we optimize for aData.Length() == 0?
 
-  CheckedUint32 length = mState.mLength;
-  length += aLength;
-
-  if (!length.isValid()) {
-    return false;
+  // Note: Using CheckedInt here is wrong as nsTextFragment is 29 bits and needs an
+  // explicit check for that length and not INT_MAX. Also, this method can be a very
+  // hot path and cause performance loss since CheckedInt isn't inlined.
+  if (NS_MAX_TEXT_FRAGMENT_LENGTH - mState.mLength < aLength) {
+    return false;  // Would be overflowing if we'd continue.
   }
 
   if (mState.mIs2b) {
-    length *= sizeof(char16_t);
-    if (!length.isValid()) {
-      return false;
+    size_t size = mState.mLength + aLength;
+    if (SIZE_MAX / sizeof(char16_t) < size) {
+      return false;  // Would be overflowing if we'd continue.
     }
+    size *= sizeof(char16_t);
 
     // Already a 2-byte string so the result will be too
-    char16_t* buff = static_cast<char16_t*>(realloc(m2b, length.value()));
+    char16_t* buff = static_cast<char16_t*>(realloc(m2b, size));
     if (!buff) {
       return false;
     }
@@ -367,14 +376,15 @@ nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBi
   int32_t first16bit = FirstNon8Bit(aBuffer, aBuffer + aLength);
 
   if (first16bit != -1) { // aBuffer contains no non-8bit character
-    length *= sizeof(char16_t);
-    if (!length.isValid()) {
-      return false;
+    size_t size = mState.mLength + aLength;
+    if (SIZE_MAX / sizeof(char16_t) < size) {
+      return false;  // Would be overflowing if we'd continue.
     }
+    size *= sizeof(char16_t);
 
     // The old data was 1-byte, but the new is not so we have to expand it
     // all to 2-byte
-    char16_t* buff = static_cast<char16_t*>(malloc(length.value()));
+    char16_t* buff = static_cast<char16_t*>(malloc(size));
     if (!buff) {
       return false;
     }
@@ -402,15 +412,22 @@ nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBi
   }
 
   // The new and the old data is all 1-byte
+
+  // Note: Using CheckedInt here is wrong. See above.
+  if (NS_MAX_TEXT_FRAGMENT_LENGTH - mState.mLength < aLength) {
+    return false;  // Would be overflowing if we'd continue.
+  }
+  
+  size_t size = mState.mLength + aLength;
+  MOZ_ASSERT(sizeof(char) == 1);
   char* buff;
   if (mState.mInHeap) {
-    buff = static_cast<char*>(realloc(const_cast<char*>(m1b), length.value()));
+    buff = static_cast<char*>(realloc(const_cast<char*>(m1b), size));
     if (!buff) {
       return false;
     }
-  }
-  else {
-    buff = static_cast<char*>(malloc(length.value()));
+  } else {
+    buff = static_cast<char*>(malloc(size));
     if (!buff) {
       return false;
     }

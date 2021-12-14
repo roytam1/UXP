@@ -198,6 +198,8 @@ private:
                                          bool aForceSave,
                                          nsIInterfaceRequestor *aWindowContext,
                                          nsIStreamListener ** aStreamListener);
+
+  static nsresult EscapeURI(nsIURI* aURI, nsIURI** aResult);
 };
 
 /**
