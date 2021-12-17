@@ -35,10 +35,10 @@ public:
   virtual Result CheckRevocation(mozilla::pkix::EndEntityOrCA endEntityOrCA,
                                  const mozilla::pkix::CertID& certID,
                                  mozilla::pkix::Time time,
+                                 mozilla::pkix::Time validityBeginning,
                                  mozilla::pkix::Duration validityDuration,
                     /*optional*/ const mozilla::pkix::Input* stapledOCSPresponse,
-                    /*optional*/ const mozilla::pkix::Input* aiaExtension,
-                    /*optional*/ const mozilla::pkix::Input* sctExtension) override;
+                    /*optional*/ const mozilla::pkix::Input* aiaExtension) override;
   virtual Result IsChainValid(const mozilla::pkix::DERArray& certChain,
                               mozilla::pkix::Time time,
                               const mozilla::pkix::CertPolicyId& requiredPolicy) override;

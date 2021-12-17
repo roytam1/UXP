@@ -66,10 +66,10 @@ public:
                    mozilla::pkix::EndEntityOrCA endEntityOrCA,
                    const mozilla::pkix::CertID& certID,
                    mozilla::pkix::Time time,
+                   mozilla::pkix::Time validityBeginning,
                    mozilla::pkix::Duration validityDuration,
       /*optional*/ const mozilla::pkix::Input* stapledOCSPResponse,
-      /*optional*/ const mozilla::pkix::Input* aiaExtension,
-      /*optional*/ const mozilla::pkix::Input* sctExtension)
+      /*optional*/ const mozilla::pkix::Input* aiaExtension)
                    override;
 
   virtual Result IsChainValid(const mozilla::pkix::DERArray& certChain,

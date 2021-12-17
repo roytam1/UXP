@@ -127,10 +127,10 @@ CSTrustDomain::FindIssuer(Input encodedIssuerName, IssuerChecker& checker,
 Result
 CSTrustDomain::CheckRevocation(EndEntityOrCA endEntityOrCA,
                                const CertID& certID, Time time,
+                               Time validityBeginning,
                                Duration validityDuration,
                                /*optional*/ const Input* stapledOCSPresponse,
-                               /*optional*/ const Input* aiaExtension,
-                               /*optional*/ const Input* sctExtension)
+                               /*optional*/ const Input* aiaExtension)
 {
   // We're relying solely on the CertBlocklist for revocation - and we're
   // performing checks on this in GetCertTrust (as per nsNSSCertDBTrustDomain)
