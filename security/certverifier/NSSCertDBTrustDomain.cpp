@@ -346,10 +346,10 @@ GetOCSPAuthorityInfoAccessLocation(const UniquePLArenaPool& arena,
 Result
 NSSCertDBTrustDomain::CheckRevocation(EndEntityOrCA endEntityOrCA,
                                       const CertID& certID, Time time,
+                                      Time validityBeginning,
                                       Duration validityDuration,
                          /*optional*/ const Input* stapledOCSPResponse,
-                         /*optional*/ const Input* aiaExtension,
-                         /*optional*/ const Input* sctExtension)
+                         /*optional*/ const Input* aiaExtension)
 {
   // Actively distrusted certificates will have already been blocked by
   // GetCertTrust.

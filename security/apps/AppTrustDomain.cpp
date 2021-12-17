@@ -291,8 +291,7 @@ AppTrustDomain::DigestBuf(Input item,
 }
 
 Result
-AppTrustDomain::CheckRevocation(EndEntityOrCA, const CertID&, Time, Duration,
-                                /*optional*/ const Input*,
+AppTrustDomain::CheckRevocation(EndEntityOrCA, const CertID&, Time, Time, Duration,
                                 /*optional*/ const Input*,
                                 /*optional*/ const Input*)
 {
