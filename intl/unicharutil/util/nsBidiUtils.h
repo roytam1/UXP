@@ -147,10 +147,17 @@ typedef enum nsCharType nsCharType;
    }
 
   /**
-   * Give an nsString.
+   * Give a 16-bit (UTF-16) text buffer and length
    * @return true if the string contains right-to-left characters
    */
-   bool HasRTLChars(const nsAString& aString);
+   bool HasRTLChars(const char16_t* aText, uint32_t aLength);
+
+  /**
+   * Convenience function to call the above on an nsAString.
+   */
+   inline bool HasRTLChars(const nsAString& aString) {
+     return HasRTLChars(aString.BeginReading(), aString.Length());
+   }
 
 // These values are shared with Preferences dialog
 //  ------------------
@@ -256,6 +263,17 @@ typedef enum nsCharType nsCharType;
                                      ((0xfe70 <= (c)) && ((c) <= 0xfefc)))
 #define IS_IN_SMP_RTL_BLOCK(c) (((0x10800 <= (c)) && ((c) <= 0x10fff)) || \
                                 ((0x1e800 <= (c)) && ((c) <= 0x1eFFF)))
+// Due to the supplementary-plane RTL blocks being identifiable from the
+// high surrogate without examining the low surrogate, it is correct to
+// use this by-code-unit check on potentially astral text without doing
+// the math to decode surrogate pairs into code points. However, unpaired
+// high surrogates that are RTL high surrogates then count as RTL even
+// though, if replaced by the REPLACEMENT CHARACTER, it would not be
+// RTL.
+#define UTF16_CODE_UNIT_IS_BIDI(c) ((IS_IN_BMP_RTL_BLOCK(c)) || \
+                                    (IS_RTL_PRESENTATION_FORM(c)) || \
+                                    (c) == 0xD802 || (c) == 0xD803 || \
+                                    (c) == 0xD83A || (c) == 0xD83B)
 #define UCS2_CHAR_IS_BIDI(c) ((IS_IN_BMP_RTL_BLOCK(c)) || \
                               (IS_RTL_PRESENTATION_FORM(c)) || \
                               (c) == 0xD802 || (c) == 0xD803)

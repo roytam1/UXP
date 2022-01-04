@@ -330,6 +330,10 @@ nsTextFragment::CopyTo(char16_t *aDest, int32_t aOffset, int32_t aCount)
 bool
 nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBidi)
 {
+  if (!aLength) {
+    return true;
+  }
+
   // This is a common case because some callsites create a textnode
   // with a value by creating the node and then calling AppendData.
   if (mState.mLength == 0) {
@@ -344,20 +348,20 @@ nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBi
   // Note: Using CheckedInt here is wrong as nsTextFragment is 29 bits and needs an
   // explicit check for that length and not INT_MAX. Also, this method can be a very
   // hot path and cause performance loss since CheckedInt isn't inlined.
-  if (NS_MAX_TEXT_FRAGMENT_LENGTH - mState.mLength < aLength) {
+  if (MOZ_UNLIKELY(NS_MAX_TEXT_FRAGMENT_LENGTH - mState.mLength < aLength)) {
     return false;  // Would be overflowing if we'd continue.
   }
 
   if (mState.mIs2b) {
     size_t size = mState.mLength + aLength;
-    if (SIZE_MAX / sizeof(char16_t) < size) {
+    if (MOZ_UNLIKELY(SIZE_MAX / sizeof(char16_t) < size)) {
       return false;  // Would be overflowing if we'd continue.
     }
     size *= sizeof(char16_t);
 
     // Already a 2-byte string so the result will be too
     char16_t* buff = static_cast<char16_t*>(realloc(m2b, size));
-    if (!buff) {
+    if (MOZ_UNLIKELY(!buff)) {
       return false;
     }
 
@@ -377,7 +381,7 @@ nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBi
 
   if (first16bit != -1) { // aBuffer contains no non-8bit character
     size_t size = mState.mLength + aLength;
-    if (SIZE_MAX / sizeof(char16_t) < size) {
+    if (MOZ_UNLIKELY((SIZE_MAX / sizeof(char16_t)) < size)) {
       return false;  // Would be overflowing if we'd continue.
     }
     size *= sizeof(char16_t);
@@ -385,7 +389,7 @@ nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBi
     // The old data was 1-byte, but the new is not so we have to expand it
     // all to 2-byte
     char16_t* buff = static_cast<char16_t*>(malloc(size));
-    if (!buff) {
+    if (MOZ_UNLIKELY(!buff)) {
       return false;
     }
 
@@ -414,7 +418,7 @@ nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBi
   // The new and the old data is all 1-byte
 
   // Note: Using CheckedInt here is wrong. See above.
-  if (NS_MAX_TEXT_FRAGMENT_LENGTH - mState.mLength < aLength) {
+  if (MOZ_UNLIKELY(NS_MAX_TEXT_FRAGMENT_LENGTH - mState.mLength < aLength)) {
     return false;  // Would be overflowing if we'd continue.
   }
   
@@ -423,12 +427,12 @@ nsTextFragment::Append(const char16_t* aBuffer, uint32_t aLength, bool aUpdateBi
   char* buff;
   if (mState.mInHeap) {
     buff = static_cast<char*>(realloc(const_cast<char*>(m1b), size));
-    if (!buff) {
+    if (MOZ_UNLIKELY(!buff)) {
       return false;
     }
   } else {
     buff = static_cast<char*>(malloc(size));
-    if (!buff) {
+    if (MOZ_UNLIKELY(!buff)) {
       return false;
     }
 
@@ -466,21 +470,8 @@ void
 nsTextFragment::UpdateBidiFlag(const char16_t* aBuffer, uint32_t aLength)
 {
   if (mState.mIs2b && !mState.mIsBidi) {
-    const char16_t* cp = aBuffer;
-    const char16_t* end = cp + aLength;
-    while (cp < end) {
-      char16_t ch1 = *cp++;
-      uint32_t utf32Char = ch1;
-      if (NS_IS_HIGH_SURROGATE(ch1) &&
-          cp < end &&
-          NS_IS_LOW_SURROGATE(*cp)) {
-        char16_t ch2 = *cp++;
-        utf32Char = SURROGATE_TO_UCS4(ch1, ch2);
-      }
-      if (UTF32_CHAR_IS_BIDI(utf32Char) || IsBidiControlRTL(utf32Char)) {
-        mState.mIsBidi = true;
-        break;
-      }
+    if (HasRTLChars(aBuffer, aLength)) {
+      mState.mIsBidi = true;
     }
   }
 }
