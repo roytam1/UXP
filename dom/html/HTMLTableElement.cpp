@@ -321,7 +321,7 @@ TableRowsCollection::ParentDestroyed()
 
 HTMLTableElement::HTMLTableElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo)
   : nsGenericHTMLElement(aNodeInfo),
-    mTableInheritedAttributes(nullptr)
+    mTableInheritedAttributes(TABLE_ATTRS_DIRTY)
 {
   SetHasWeirdParserInsertionMode();
 }
@@ -911,15 +911,20 @@ MapInheritedTableAttributesIntoRule(const nsMappedAttributes* aAttributes,
 nsMappedAttributes*
 HTMLTableElement::GetAttributesMappedForCell()
 {
-  return mTableInheritedAttributes;
+  if (mTableInheritedAttributes) {
+    if (mTableInheritedAttributes == TABLE_ATTRS_DIRTY)
+      BuildInheritedAttributes();
+    if (mTableInheritedAttributes != TABLE_ATTRS_DIRTY)
+      return mTableInheritedAttributes;
+  }
+  return nullptr;
 }
 
 void
 HTMLTableElement::BuildInheritedAttributes()
 {
-  NS_ASSERTION(!mTableInheritedAttributes,
+  NS_ASSERTION(mTableInheritedAttributes == TABLE_ATTRS_DIRTY,
                "potential leak, plus waste of work");
-  MOZ_ASSERT(NS_IsMainThread());
   nsIDocument *document = GetComposedDoc();
   nsHTMLStyleSheet* sheet = document ?
                               document->GetAttributeStyleSheet() : nullptr;
@@ -956,7 +961,10 @@ HTMLTableElement::BuildInheritedAttributes()
 void
 HTMLTableElement::ReleaseInheritedAttributes()
 {
-  NS_IF_RELEASE(mTableInheritedAttributes);
+  if (mTableInheritedAttributes &&
+      mTableInheritedAttributes != TABLE_ATTRS_DIRTY)
+    NS_RELEASE(mTableInheritedAttributes);
+  mTableInheritedAttributes = TABLE_ATTRS_DIRTY;
 }
 
 nsresult
@@ -965,12 +973,9 @@ HTMLTableElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                              bool aCompileEventHandlers)
 {
   ReleaseInheritedAttributes();
-  nsresult rv = nsGenericHTMLElement::BindToTree(aDocument, aParent,
-                                                aBindingParent,
-                                                aCompileEventHandlers);
-  NS_ENSURE_SUCCESS(rv, rv);
-  BuildInheritedAttributes();
-  return NS_OK;
+  return nsGenericHTMLElement::BindToTree(aDocument, aParent,
+                                          aBindingParent,
+                                          aCompileEventHandlers);
 }
 
 void
