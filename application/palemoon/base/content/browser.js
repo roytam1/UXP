@@ -2632,12 +2632,14 @@ var PrintPreviewListener = {
     this._chromeState.globalNotificationsOpen = !globalNotificationBox.notificationsHidden;
     globalNotificationBox.notificationsHidden = true;
 
+#ifdef MOZ_SERVICES_SYNC
     this._chromeState.syncNotificationsOpen = false;
     var syncNotifications = document.getElementById("sync-notifications");
     if (syncNotifications) {
       this._chromeState.syncNotificationsOpen = !syncNotifications.notificationsHidden;
       syncNotifications.notificationsHidden = true;
     }
+#endif
   },
 
   _showChrome: function() {
@@ -2658,9 +2660,11 @@ var PrintPreviewListener = {
       document.getElementById("global-notificationbox").notificationsHidden = false;
     }
 
+#ifdef MOZ_SERVICES_SYNC
     if (this._chromeState.syncNotificationsOpen) {
       document.getElementById("sync-notifications").notificationsHidden = false;
     }
+#endif
   }
 }
 
