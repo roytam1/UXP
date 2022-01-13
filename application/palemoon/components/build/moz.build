@@ -17,7 +17,6 @@ LOCAL_INCLUDES += [
 
 if CONFIG['OS_ARCH'] == 'WINNT':
     OS_LIBS += [
-        'esent',
         'netapi32',
         'ole32',
         'shell32',
@@ -25,8 +24,9 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         'version',
     ]
     DELAYLOAD_DLLS += [
-        'esent.dll',
         'netapi32.dll',
+        'advapi32.dll',
+        'ole32.dll',
     ]
 
 # GTK: Need to link with glib for GNOME shell service
