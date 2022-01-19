@@ -775,6 +775,7 @@ FileReader::Shutdown()
     mAsyncStream = nullptr;
   }
 
+  ClearProgressEventTimer();
   FreeFileData();
   mResultArrayBuffer = nullptr;
 

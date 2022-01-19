@@ -228,6 +228,7 @@ protected:
                                       // nsDataObj owns and ref counts CEnumFormatEtc,
 
     nsCOMPtr<nsIFile> mCachedTempFile;
+    RefPtr<nsDataObj> mKeepAlive;
 
     BOOL mIsAsyncMode;
     BOOL mIsInOperation;
