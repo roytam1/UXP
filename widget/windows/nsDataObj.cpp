@@ -24,6 +24,7 @@
 #include "nsIURL.h"
 #include "nsNetUtil.h"
 #include "mozilla/Services.h"
+#include "nsProxyRelease.h"
 #include "nsIOutputStream.h"
 #include "nsXPCOMStrings.h"
 #include "nscore.h"
@@ -442,6 +443,12 @@ STDMETHODIMP_(ULONG) nsDataObj::AddRef()
 {
 	++m_cRef;
 	NS_LOG_ADDREF(this, m_cRef, "nsDataObj", sizeof(*this));
+
+  // When the first reference is taken, hold our own internal reference.
+  if (m_cRef == 1) {
+    mKeepAlive = this;
+  }
+
 	return m_cRef;
 }
 
@@ -528,6 +535,12 @@ STDMETHODIMP_(ULONG) nsDataObj::Release()
 	--m_cRef;
 	
 	NS_LOG_RELEASE(this, m_cRef, "nsDataObj");
+
+  // If we hold the last reference, submit release of it to the main thread.
+  if (m_cRef == 1 && mKeepAlive) {
+    NS_ReleaseOnMainThread(mKeepAlive.forget(), true);
+  }
+
 	if (0 != m_cRef)
 		return m_cRef;
 
@@ -541,6 +554,10 @@ STDMETHODIMP_(ULONG) nsDataObj::Release()
     mCachedTempFile = nullptr;
     helper->Attach();
   }
+
+  // In case the destructor ever AddRef/Releases, ensure we don't delete twice
+  // or take mKeepAlive as another reference.
+  m_cRef = 1;
 
 	delete this;
 
@@ -566,6 +583,9 @@ STDMETHODIMP nsDataObj::GetData(LPFORMATETC aFormat, LPSTGMEDIUM pSTM)
 {
   if (!mTransferable)
     return DV_E_FORMATETC;
+
+  // Hold an extra reference in case we end up spinning the event loop.
+  RefPtr<nsDataObj> keepAliveDuringGetData(this);
 
   uint32_t dfInx = 0;
 
