@@ -666,7 +666,7 @@ var gPrivacyPane = {
    */
   showClearPrivateDataSettings: function ()
   {
-    gSubDialog.open("chrome://browser/content/preferences/sanitize.xul", "resizable=no");
+    gSubDialog.open("chrome://browser/content/preferences/sanitize.xul", "");
   },
 
 
@@ -682,7 +682,7 @@ var gPrivacyPane = {
       ts.value = 0;
     }
 
-    gSubDialog.open("chrome://browser/content/sanitize.xul", "resizable=no", null, () => {
+    gSubDialog.open("chrome://browser/content/sanitize.xul", "", null, () => {
       // reset the timeSpan pref
       if (aClearEverything) {
         ts.value = timeSpanOrig;
