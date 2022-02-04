@@ -843,10 +843,7 @@ HttpObserverManager = {
 var onBeforeRequest = {
   get allowedOptions() {
     delete this.allowedOptions;
-    this.allowedOptions = ["blocking"];
-#ifndef RELEASE_OR_BETA
-    this.allowedOptions.push("requestBody");
-#endif
+    this.allowedOptions = ["blocking", "requestBody"];
     return this.allowedOptions;
   },
   addListener(callback, filter = null, opt_extraInfoSpec = null) {

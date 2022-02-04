@@ -950,11 +950,8 @@ nsXULAppInfo::GetLastRunCrashID(nsAString &aLastRunCrashID)
 NS_IMETHODIMP
 nsXULAppInfo::GetIsReleaseOrBeta(bool* aResult)
 {
-#ifdef RELEASE_OR_BETA
+  // Unused; always returns true.
   *aResult = true;
-#else
-  *aResult = false;
-#endif
   return NS_OK;
 }
 

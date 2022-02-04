@@ -489,12 +489,6 @@ ReadStream::Create(const CacheReadStream& aReadStream)
   nsCOMPtr<nsIInputStream> stream = DeserializeIPCStream(aReadStream.stream());
   MOZ_DIAGNOSTIC_ASSERT(stream);
 
-  // Currently we expect all cache read streams to be blocking file streams.
-#if !defined(RELEASE_OR_BETA)
-  nsCOMPtr<nsIAsyncInputStream> asyncStream = do_QueryInterface(stream);
-  MOZ_DIAGNOSTIC_ASSERT(!asyncStream);
-#endif
-
   RefPtr<Inner> inner = new Inner(control, aReadStream.id(), stream);
   RefPtr<ReadStream> ref = new ReadStream(inner);
   return ref.forget();

@@ -54,11 +54,7 @@ CacheWorkerHolder::RemoveActor(ActorChild* aActor)
   NS_ASSERT_OWNINGTHREAD(CacheWorkerHolder);
   MOZ_DIAGNOSTIC_ASSERT(aActor);
 
-#if defined(RELEASE_OR_BETA)
   mActorList.RemoveElement(aActor);
-#else
-  MOZ_DIAGNOSTIC_ASSERT(mActorList.RemoveElement(aActor));
-#endif
 
   MOZ_ASSERT(!mActorList.Contains(aActor));
 }

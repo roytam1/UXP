@@ -44,7 +44,7 @@ void
 StreamControl::CloseReadStreams(const nsID& aId)
 {
   AssertOwningThread();
-#if defined(DEBUG) || !defined(RELEASE_OR_BETA)
+#if defined(DEBUG)
   uint32_t closedCount = 0;
 #endif
 
@@ -53,13 +53,15 @@ StreamControl::CloseReadStreams(const nsID& aId)
     RefPtr<ReadStream::Controllable> stream = iter.GetNext();
     if (stream->MatchId(aId)) {
       stream->CloseStream();
-#if defined(DEBUG) || !defined(RELEASE_OR_BETA)
+#if defined(DEBUG)
       closedCount += 1;
 #endif
     }
   }
 
+#if defined(DEBUG)
   MOZ_DIAGNOSTIC_ASSERT(closedCount > 0);
+#endif
 }
 
 void

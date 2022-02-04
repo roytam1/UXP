@@ -2550,12 +2550,14 @@ Migrate(mozIStorageConnection* aConn)
       }
     }
 
-#if defined(DEBUG) || !defined(RELEASE_OR_BETA)
+#if defined(DEBUG)
     int32_t lastVersion = currentVersion;
 #endif
     rv = aConn->GetSchemaVersion(&currentVersion);
     if (NS_WARN_IF(NS_FAILED(rv))) { return rv; }
+#if defined(DEBUG)
     MOZ_DIAGNOSTIC_ASSERT(currentVersion > lastVersion);
+#endif
   }
 
   MOZ_DIAGNOSTIC_ASSERT(currentVersion == kLatestSchemaVersion);
