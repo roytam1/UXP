@@ -115,6 +115,8 @@ private:
 
   mozilla::Monitor mMonitor;
   PRThread* mThread;
+  // Only set in Init(), before the thread is started, which reads it but never
+  // writes
   UniquePtr<detail::BlockingIOWatcher> mBlockingIOWatcher;
   Atomic<nsIThread *> mXPCOMThread;
   Atomic<uint32_t, Relaxed> mLowestLevelWaiting;
@@ -128,7 +130,7 @@ private:
   // Raised when nsIEventTarget.Dispatch() is called on this thread
   Atomic<bool, Relaxed> mHasXPCOMEvents;
   // See YieldAndRerun() above
-  bool mRerunCurrentEvent;
+  bool mRerunCurrentEvent;  // Only accessed on the cache thread
   // Signal to process all pending events and then shutdown
   // Synchronized by mMonitor
   bool mShutdown;

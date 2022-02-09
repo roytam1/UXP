@@ -112,9 +112,10 @@ public:
   nsresult OnFetched();
 
   bool DataSize(int64_t* aSize);
-  void Key(nsACString& aKey) { aKey = mKey; }
+  void Key(nsACString& aKey);
   bool IsDoomed();
-  bool IsPinned() const { return mPinned; }
+  bool IsPinned();
+  // Returns true when there is a potentially unfinished write operation.
   bool IsWriteInProgress();
 
   // Memory reporting
@@ -131,10 +132,16 @@ private:
 
   virtual ~CacheFile();
 
-  void     Lock();
-  void     Unlock();
-  void     AssertOwnsLock() const;
-  void     ReleaseOutsideLock(RefPtr<nsISupports> aObject);
+  void Lock() { mLock.Lock(); }
+  void Unlock() {
+    // move the elements out of mObjsToRelease
+    // so that they can be released after we unlock
+    nsTArray<RefPtr<nsISupports>> objs = std::move(mObjsToRelease);
+
+    mLock.Unlock();
+  }
+  void AssertOwnsLock() const { mLock.AssertCurrentThreadOwns(); }
+  void ReleaseOutsideLock(RefPtr<nsISupports> aObject);
 
   enum ECallerType {
     READER    = 0,
