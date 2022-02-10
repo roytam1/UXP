@@ -425,6 +425,7 @@ void WebMBufferedState::NotifyDataArrived(const unsigned char* aBuffer, uint32_t
 }
 
 void WebMBufferedState::Reset() {
+  ReentrantMonitorAutoEnter mon(mReentrantMonitor);
   mRangeParsers.Clear();
   mTimeMapping.Clear();
 }
