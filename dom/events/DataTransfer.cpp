@@ -639,16 +639,11 @@ DataTransfer::PrincipalMaySetData(const nsAString& aType,
       return false;
     }
 
-    if (aType.EqualsASCII(kFileMime) ||
-        aType.EqualsASCII(kFilePromiseMime)) {
-      NS_WARNING("Disallowing adding x-moz-file or x-moz-file-promize types to DataTransfer");
-      return false;
-    }
-    
-    // Disallow content from creating x-moz-place flavors, so that it cannot
-    // create fake Places smart queries exposing user data.
-    if (StringBeginsWith(aType, NS_LITERAL_STRING("text/x-moz-place"))) {
-      NS_WARNING("Disallowing adding moz-place types to DataTransfer");
+    // Don't allow adding internal types of the form */x-moz-*, but
+    // special-case the url types as they are simple variations of urls.
+    if (FindInReadable(NS_LITERAL_STRING(kInternal_Mimetype_Prefix), aType) &&
+        !StringBeginsWith(aType, NS_LITERAL_STRING("text/x-moz-url"))) {
+      NS_WARNING("Disallowing adding requested internal type to DataTransfer");
       return false;
     }
   }
