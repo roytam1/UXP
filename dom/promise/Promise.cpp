@@ -730,12 +730,17 @@ PromiseWorkerProxy::Create(WorkerPrivate* aWorkerPrivate,
   RefPtr<PromiseWorkerProxy> proxy =
     new PromiseWorkerProxy(aWorkerPrivate, aWorkerPromise, aCb);
 
+  // Maintain a reference so that we have a valid object to clean up when
+  // removing the feature.
+  proxy.get()->AddRef();
+
   // We do this to make sure the worker thread won't shut down before the
   // promise is resolved/rejected on the worker thread.
   if (!proxy->AddRefObject()) {
     // Probably the worker is terminating. We cannot complete the operation
-    // and we have to release all the resources.
-    proxy->CleanProperties();
+    // and we have to release all the resources. CleanUp releases the extra
+    // ref, too
+    proxy->CleanUp();
     return nullptr;
   }
 
@@ -761,24 +766,6 @@ PromiseWorkerProxy::~PromiseWorkerProxy()
   MOZ_ASSERT(!mWorkerHolder);
   MOZ_ASSERT(!mWorkerPromise);
   MOZ_ASSERT(!mWorkerPrivate);
-}
-
-void
-PromiseWorkerProxy::CleanProperties()
-{
-#ifdef DEBUG
-  WorkerPrivate* worker = GetCurrentThreadWorkerPrivate();
-  MOZ_ASSERT(worker);
-  worker->AssertIsOnWorkerThread();
-#endif
-  // Ok to do this unprotected from Create().
-  // CleanUp() holds the lock before calling this.
-  mCleanedUp = true;
-  mWorkerPromise = nullptr;
-  mWorkerPrivate = nullptr;
-
-  // Clear the StructuredCloneHolderBase class.
-  Clear();
 }
 
 bool
@@ -881,8 +868,9 @@ PromiseWorkerProxy::CleanUp()
       return;
     }
 
-    MOZ_ASSERT(mWorkerPrivate);
-    mWorkerPrivate->AssertIsOnWorkerThread();
+    if (mWorkerPrivate) {
+      mWorkerPrivate->AssertIsOnWorkerThread();
+    }
 
     // Release the Promise and remove the PromiseWorkerProxy from the holders of
     // the worker thread since the Promise has been resolved/rejected or the
@@ -890,7 +878,12 @@ PromiseWorkerProxy::CleanUp()
     MOZ_ASSERT(mWorkerHolder);
     mWorkerHolder = nullptr;
 
-    CleanProperties();
+    mCleanedUp = true;
+    mWorkerPromise = nullptr;
+    mWorkerPrivate = nullptr;
+
+    // Clear the StructuredCloneHolderBase class.
+    Clear();
   }
   Release();
 }
