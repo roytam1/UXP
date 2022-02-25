@@ -2206,6 +2206,7 @@ void ReportLoadError(ErrorResult& aRv, nsresult aLoadResult,
   switch (aLoadResult) {
     case NS_ERROR_FILE_NOT_FOUND:
     case NS_ERROR_NOT_AVAILABLE:
+    case NS_ERROR_CORRUPTED_CONTENT:
       aLoadResult = NS_ERROR_DOM_NETWORK_ERR;
       break;
 
