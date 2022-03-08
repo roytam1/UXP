@@ -2638,6 +2638,7 @@ nsHttpConnectionMgr::OnMsgCompleteUpgrade(int32_t, ARefBase *param)
 void
 nsHttpConnectionMgr::OnMsgUpdateParam(int32_t inParam, ARefBase *)
 {
+    MOZ_ASSERT(OnSocketThread(), "not on socket thread");
     uint32_t param = static_cast<uint32_t>(inParam);
     uint16_t name  = ((param) & 0xFFFF0000) >> 16;
     uint16_t value =  param & 0x0000FFFF;
@@ -2709,9 +2710,18 @@ nsHttpConnectionMgr::ActivateTimeoutTick()
             NS_WARNING("failed to create timer for http timeout management");
             return;
         }
+        ReentrantMonitorAutoEnter mon(mReentrantMonitor);
+        if (!mSocketThreadTarget) {
+            NS_WARNING("HTTP Connection Manager: Cannot activate timout if not initialized or shutdown");
+          return;
+        }
         mTimeoutTick->SetTarget(mSocketThreadTarget);
     }
-
+    if (mIsShuttingDown) {  // Atomic
+        // don't set a timer to generate an event if we're shutting down
+        // (mSocketThreadTarget might be null or garbage anyway if we're shutting down)
+        return;
+    }
     MOZ_ASSERT(!mTimeoutTickArmed, "timer tick armed");
     mTimeoutTickArmed = true;
     mTimeoutTick->Init(this, 1000, nsITimer::TYPE_REPEATING_SLACK);
