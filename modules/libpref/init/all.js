@@ -5227,6 +5227,9 @@ pref("dom.storageManager.enabled", false);
 // See application preferences for appropriate defaults.
 pref("prompts.authentication_dialog_abuse_limit", 0);
 
+// Whether content handling dialog is window modal
+pref("prompts.content_handling_dialog_modal.enabled", false);
+
 // Whether module scripts (<script type="module">) are enabled for content.
 pref("dom.moduleScripts.enabled", true);
 

@@ -6,9 +6,8 @@ Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 
 // Constants
 
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-const Cr = Components.results;
+const {utils: Cu, interfaces: Ci, classes: Cc, results: Cr} = Components;
+Cu.import("resource://gre/modules/Services.jsm");
 
 const CONTENT_HANDLING_URL = "chrome://mozapps/content/handling/dialog.xul";
 const STRINGBUNDLE_URL = "chrome://mozapps/locale/handling/handling.properties";
@@ -64,13 +63,14 @@ nsContentDispatchChooser.prototype =
     params.appendElement(aURI, false);
     params.appendElement(aWindowContext, false);
 
+    var features = "chrome,dialog=yes,resizable,centerscreen";
+    if (Services.prefs.getBoolPref("prompts.content_handling_dialog_modal.enabled")) {
+      features += ",modal";
+    }
+
     var ww = Cc["@mozilla.org/embedcomp/window-watcher;1"].
              getService(Ci.nsIWindowWatcher);
-    ww.openWindow(window,
-                  CONTENT_HANDLING_URL,
-                  null,
-                  "chrome,dialog=yes,resizable,centerscreen",
-                  params);
+    ww.openWindow(window, CONTENT_HANDLING_URL, null, features, params);
   },
 
   // nsISupports
