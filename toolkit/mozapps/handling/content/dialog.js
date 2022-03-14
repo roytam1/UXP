@@ -151,6 +151,7 @@ var dialog = {
       elm.setAttribute("type", "handler");
       elm.id = "os-default-handler";
       elm.setAttribute("name", this._handlerInfo.defaultDescription);
+      elm.setAttribute("image", "moz-icon://.exe?size=32");
 
       items.insertBefore(elm, items.firstChild);
       if (this._handlerInfo.preferredAction ==
