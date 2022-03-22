@@ -780,7 +780,12 @@
                 onget="return this.tree.currentIndex;">
         <setter>
           <![CDATA[
-          this.tree.view.selection.select(val);
+          if (!this.tree.view) {
+            // We don't have a view? return "no selection".
+            val = -1;
+          } else {
+            this.tree.view.selection.select(val);
+          }
           if (this.tree.treeBoxObject.height > 0)
             this.tree.treeBoxObject.ensureRowIsVisible(val < 0 ? 0 : val);
           // Fire select event on xul:tree so that accessibility API

@@ -240,7 +240,7 @@ class txVariable : public txIGlobalParameter
 {
 public:
     explicit txVariable(nsIVariant* aValue, txAExprResult* aTxValue)
-      : mValue(aValue), mTxValue(aTxValue)
+      : mValue(aValue)
     {
         NS_ASSERTION(aValue && aTxValue, "missing value");
     }
@@ -250,7 +250,13 @@ public:
     }
     nsresult getValue(txAExprResult** aValue)
     {
-        NS_ASSERTION(mTxValue, "variablevalue is null");
+        if (!mTxValue) {
+          // XXX: This should not happen as we normally convert values before
+          // we call this function. For corner cases where this isn't true, we
+          // perform the conversion here.
+          nsresult rv = Convert(mValue, getter_AddRefs(mTxValue));
+          NS_ENSURE_SUCCESS(rv, rv);
+        }        
 
         *aValue = mTxValue;
         NS_ADDREF(*aValue);
@@ -280,7 +286,7 @@ public:
         mTxValue = aValue;
     }
 
-    static nsresult Convert(nsIVariant* aValue, txAExprResult** aResult);
+    static nsresult Convert(nsIVariant *aValue, txAExprResult** aResult);
 
     friend void ImplCycleCollectionUnlink(txVariable& aVariable);
     friend void ImplCycleCollectionTraverse(
