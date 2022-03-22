@@ -2234,10 +2234,6 @@ void ReportLoadError(ErrorResult& aRv, nsresult aLoadResult,
       aLoadResult = NS_ERROR_DOM_SECURITY_ERR;
       break;
 
-    case NS_ERROR_CORRUPTED_CONTENT:
-      aLoadResult = NS_ERROR_DOM_NETWORK_ERR;
-      break;
-
     default:
       // For lack of anything better, go ahead and throw a NetworkError here.
       // We don't want to throw a JS exception, because for toplevel script
