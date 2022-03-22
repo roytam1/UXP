@@ -254,6 +254,9 @@ label[disabled="true"]:-moz-system-metric(windows-classic) {
 
 .tooltip-label {
   margin: 0;
+  word-wrap: break-word;
+  /* We must specify a min-width, otherwise word-wrap:break-word doesn't work. Bug 630864. */
+  min-width: 1px;
 }
 
 .header {

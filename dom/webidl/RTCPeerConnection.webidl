@@ -9,7 +9,6 @@
 
 callback RTCSessionDescriptionCallback = void (RTCSessionDescription sdp);
 callback RTCPeerConnectionErrorCallback = void (DOMError error);
-callback VoidFunction = void ();
 callback RTCStatsCallback = void (RTCStatsReport report);
 
 enum RTCSignalingState {

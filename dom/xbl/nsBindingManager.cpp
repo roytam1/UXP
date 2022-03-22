@@ -30,6 +30,7 @@
 #include "nsXBLPrototypeBinding.h"
 #include "nsXBLDocumentInfo.h"
 #include "mozilla/dom/XBLChildrenElement.h"
+#include "mozilla/dom/ShadowRoot.h"
 
 #include "nsIStyleRuleProcessor.h"
 #include "nsRuleProcessorData.h"
@@ -663,13 +664,32 @@ nsBindingManager::WalkRules(nsIStyleRuleProcessor::EnumFunc aFunc,
 
   NS_ASSERTION(aData->mElement, "How did that happen?");
 
+  // Walk the rules in shadow root for :host pseudo-class rules.
+  aData->mTreeMatchContext.mOnlyMatchHostPseudo = true;
+  aData->mElementIsFeatureless = true;
+
+  ShadowRoot* currentShadow = aData->mElement->GetShadowRoot();
+
+  if (currentShadow) {
+    nsXBLBinding* associatedBinding = currentShadow->GetAssociatedBinding();
+    if (associatedBinding) {
+      aData->mTreeMatchContext.mScopedRoot = aData->mElement;
+      associatedBinding->WalkRules(aFunc, aData);
+    }
+  }
+
+  aData->mElementIsFeatureless = false;
+  aData->mTreeMatchContext.mOnlyMatchHostPseudo = false;
+
   // Walk the binding scope chain, starting with the binding attached to our
   // content, up till we run out of scopes or we get cut off.
   nsIContent *content = aData->mElement;
 
   do {
     nsXBLBinding *binding = content->GetXBLBinding();
-    if (binding) {
+    if (binding &&
+         // Unlike XBL, styles in the shadow root are not applied to the host.
+	!(content == aData->mElement && binding->IsShadowRootBinding())) {
       aData->mTreeMatchContext.mScopedRoot = content;
       binding->WalkRules(aFunc, aData);
       // If we're not looking at our original content, allow the binding to cut
@@ -702,14 +722,26 @@ nsBindingManager::WalkRules(nsIStyleRuleProcessor::EnumFunc aFunc,
 typedef nsTHashtable<nsPtrHashKey<nsIStyleRuleProcessor> > RuleProcessorSet;
 
 static RuleProcessorSet*
-GetContentSetRuleProcessors(nsTHashtable<nsRefPtrHashKey<nsIContent>>* aContentSet)
+GetContentSetRuleProcessors(nsTHashtable<nsRefPtrHashKey<nsIContent>>* aContentSet, bool aOnlyWalkShadowRootRules)
 {
   RuleProcessorSet* set = nullptr;
 
   for (auto iter = aContentSet->Iter(); !iter.Done(); iter.Next()) {
     nsIContent* boundContent = iter.Get()->GetKey();
-    for (nsXBLBinding* binding = boundContent->GetXBLBinding(); binding;
-         binding = binding->GetBaseBinding()) {
+
+  // If we are only walking rules for shadow root hosts, skip other types
+  // of bound content.
+  ShadowRoot *shadowRoot = boundContent->GetShadowRoot();
+  if (aOnlyWalkShadowRootRules && !shadowRoot) {
+    return set;
+  }
+
+  // Bound content may have multiple rule processors, potentially one
+  // for its immediate binding, and one more for each binding in the
+  // inheritance chain. Additionally, a bound content may host multiple
+  // shadow roots, each with its own rule processor.
+  for (nsXBLBinding *binding = boundContent->GetXBLBinding(); binding;
+       binding = binding->GetBaseBinding()) {
       nsIStyleRuleProcessor* ruleProc =
         binding->PrototypeBinding()->GetRuleProcessor();
       if (ruleProc) {
@@ -718,22 +750,27 @@ GetContentSetRuleProcessors(nsTHashtable<nsRefPtrHashKey<nsIContent>>* aContentS
         }
         set->PutEntry(ruleProc);
       }
+
+      if (shadowRoot) {
+        binding = shadowRoot->GetAssociatedBinding();
+        }
+      }
     }
-  }
 
   return set;
 }
 
 void
 nsBindingManager::WalkAllRules(nsIStyleRuleProcessor::EnumFunc aFunc,
-                               ElementDependentRuleProcessorData* aData)
+                               ElementDependentRuleProcessorData* aData,
+			       bool aOnlyWalkShadowRootRules)
 {
   if (!mBoundContentSet) {
     return;
   }
 
   nsAutoPtr<RuleProcessorSet> set;
-  set = GetContentSetRuleProcessors(mBoundContentSet);
+  set = GetContentSetRuleProcessors(mBoundContentSet, aOnlyWalkShadowRootRules);
   if (!set) {
     return;
   }
@@ -743,6 +780,17 @@ nsBindingManager::WalkAllRules(nsIStyleRuleProcessor::EnumFunc aFunc,
     (*(aFunc))(ruleProcessor, aData);
   }
 }
+
+// The approach in WalkAllShadowRootHostRules seems reasonable on the surface and reminds me of what is done with mScopedRoot elsewhere. But something important is missing, either here or in the code that would normally use it.
+
+void
+nsBindingManager::WalkAllShadowRootHostRules(nsIStyleRuleProcessor::EnumFunc aFunc,
+                                         ElementDependentRuleProcessorData* aData)
+ {
+   aData->mTreeMatchContext.mOnlyMatchHostPseudo = true;
+   WalkAllRules(aFunc, aData, true);
+   aData->mTreeMatchContext.mOnlyMatchHostPseudo = false;
+ }
 
 nsresult
 nsBindingManager::MediumFeaturesChanged(nsPresContext* aPresContext,
@@ -754,7 +802,7 @@ nsBindingManager::MediumFeaturesChanged(nsPresContext* aPresContext,
   }
 
   nsAutoPtr<RuleProcessorSet> set;
-  set = GetContentSetRuleProcessors(mBoundContentSet);
+  set = GetContentSetRuleProcessors(mBoundContentSet, false);
   if (!set) {
     return NS_OK;
   }

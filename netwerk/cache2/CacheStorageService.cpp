@@ -2031,6 +2031,8 @@ NS_IMETHODIMP
 CacheStorageService::CollectReports(nsIHandleReportCallback* aHandleReport,
                                     nsISupports* aData, bool aAnonymize)
 {
+  MutexAutoLock lock(mLock);
+
   MOZ_COLLECT_REPORT(
     "explicit/network/cache2/io", KIND_HEAP, UNITS_BYTES,
     CacheFileIOManager::SizeOfIncludingThis(MallocSizeOf),
@@ -2040,8 +2042,6 @@ CacheStorageService::CollectReports(nsIHandleReportCallback* aHandleReport,
     "explicit/network/cache2/index", KIND_HEAP, UNITS_BYTES,
     CacheIndex::SizeOfIncludingThis(MallocSizeOf),
     "Memory used by the cache index.");
-
-  MutexAutoLock lock(mLock);
 
   // Report the service instance, this doesn't report entries, done lower
   MOZ_COLLECT_REPORT(

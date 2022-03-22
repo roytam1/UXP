@@ -348,6 +348,7 @@ NS_IMETHODIMP
 CacheFileInputStream::Seek(int32_t whence, int64_t offset)
 {
   CacheFileAutoLock lock(mFile);
+  mFile->AssertOwnsLock();  // For thread-safety analysis
 
   LOG(("CacheFileInputStream::Seek() [this=%p, whence=%d, offset=%lld]",
        this, whence, offset));
@@ -395,6 +396,7 @@ NS_IMETHODIMP
 CacheFileInputStream::Tell(int64_t *_retval)
 {
   CacheFileAutoLock lock(mFile);
+  mFile->AssertOwnsLock();  // For thread-safety analysis
 
   if (mClosed) {
     LOG(("CacheFileInputStream::Tell() - Stream is closed. [this=%p]", this));

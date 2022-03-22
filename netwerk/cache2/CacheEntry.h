@@ -119,8 +119,8 @@ public:
   ::mozilla::Atomic<uint32_t, ::mozilla::Relaxed> mSortingExpirationTime;
 
   // Memory reporting
-  size_t SizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf) const;
-  size_t SizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf) const;
+  size_t SizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf);
+  size_t SizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf);
 
 private:
   virtual ~CacheEntry();
@@ -152,7 +152,8 @@ private:
     void ExchangeEntry(CacheEntry* aEntry);
 
     // Returns true when an entry is about to be "defer" doomed and this is
-    // a "defer" callback.
+    // a "defer" callback. The caller must hold a lock (this entry is in the
+    // caller's mCallback array)
     bool DeferDoom(bool *aDoom) const;
 
     // We are raising reference count here to take into account the pending
@@ -289,9 +290,10 @@ private:
   // When mFileStatus is read and found success it is ensured there is mFile and
   // that it is after a successful call to Init().
   ::mozilla::Atomic<nsresult, ::mozilla::ReleaseAcquire> mFileStatus;
-  nsCString mURI;
-  nsCString mEnhanceID;
-  nsCString mStorageID;
+  // Set in constructor
+  nsCString const mURI;
+  nsCString const mEnhanceID;
+  nsCString const mStorageID;
 
   // mUseDisk, mSkipSizeCheck, mIsDoomed are plain "bool", not "bool:1",
   // so as to avoid bitfield races with the byte containing
@@ -302,7 +304,9 @@ private:
   // Whether it should skip max size check.
   bool const mSkipSizeCheck;
   // Set when entry is doomed with AsyncDoom() or DoomAlreadyRemoved().
-  bool mIsDoomed;
+  Atomic<bool, Relaxed> mIsDoomed;
+  // The indication of pinning this entry was open with
+  Atomic<bool, Relaxed> mPinned;
 
   // Following flags are all synchronized with the cache entry lock.
 
@@ -317,8 +321,6 @@ private:
   // false: after load and a new file, or dropped to back to false when a writer
   //        fails to open an output stream.
   bool mHasData : 1;
-  // The indication of pinning this entry was open with
-  bool mPinned : 1;
   // Whether the pinning state of the entry is known (equals to the actual state
   // of the cache file)
   bool mPinningKnown : 1;

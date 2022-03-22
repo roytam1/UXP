@@ -441,6 +441,8 @@ nsTimerImpl::Fire(int32_t aGeneration)
     // Don't fire callbacks or fiddle with refcounts when the mutex is locked.
     // If some other thread Cancels/Inits after this, they're just too late.
     if (aGeneration != mGeneration) {
+      // This timer got rescheduled or cancelled before we fired, so ignore this
+      // firing
       return;
     }
 

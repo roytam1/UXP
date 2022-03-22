@@ -323,6 +323,16 @@ CacheFile::Init(const nsACString &aKey,
   return NS_OK;
 }
 
+void CacheFile::Key(nsACString& aKey) {
+  CacheFileAutoLock lock(this);
+  aKey = mKey;
+}
+
+bool CacheFile::IsPinned() {
+  CacheFileAutoLock lock(this);
+  return mPinned;
+}
+
 nsresult
 CacheFile::OnChunkRead(nsresult aResult, CacheFileChunk *aChunk)
 {
@@ -469,6 +479,7 @@ CacheFile::OnFileOpened(CacheFileHandle *aHandle, nsresult aResult)
     bool mAlreadyDoomed;
   } autoDoom(aHandle);
 
+  RefPtr<CacheFileMetadata> metadata;
   nsCOMPtr<CacheFileListener> listener;
   bool isNew = false;
   nsresult retval = NS_OK;
@@ -571,20 +582,22 @@ CacheFile::OnFileOpened(CacheFileHandle *aHandle, nsresult aResult)
         return NS_OK;
       }
     }
-  }
+    if (listener) {
+      lock.Unlock();
+      listener->OnFileReady(retval, isNew);
+      return NS_OK;
+    }
 
-  if (listener) {
-    listener->OnFileReady(retval, isNew);
-    return NS_OK;
-  }
+    MOZ_ASSERT(NS_SUCCEEDED(aResult));
+    MOZ_ASSERT(!mMetadata);
+    MOZ_ASSERT(mListener);
 
-  MOZ_ASSERT(NS_SUCCEEDED(aResult));
-  MOZ_ASSERT(!mMetadata);
-  MOZ_ASSERT(mListener);
+    metadata = mMetadata = new CacheFileMetadata(mHandle, mKey);
+  }
 
   mMetadata = new CacheFileMetadata(mHandle, mKey);
 
-  rv = mMetadata->ReadMetadata(this);
+  rv = metadata->ReadMetadata(this);
   if (NS_FAILED(rv)) {
     mListener.swap(listener);
     listener->OnFileReady(rv, false);
@@ -611,40 +624,42 @@ CacheFile::OnDataRead(CacheFileHandle *aHandle, char *aBuf, nsresult aResult)
 nsresult
 CacheFile::OnMetadataRead(nsresult aResult)
 {
-  MOZ_ASSERT(mListener);
-
-  LOG(("CacheFile::OnMetadataRead() [this=%p, rv=0x%08x]", this, aResult));
+  nsCOMPtr<CacheFileListener> listener;
 
   bool isNew = false;
-  if (NS_SUCCEEDED(aResult)) {
-    mPinned = mMetadata->Pinned();
-    mReady = true;
-    mDataSize = mMetadata->Offset();
-    if (mDataSize == 0 && mMetadata->ElementsSize() == 0) {
-      isNew = true;
-      mMetadata->MarkDirty();
-    } else {
-      const char *altData = mMetadata->GetElement(CacheFileUtils::kAltDataKey);
-      if (altData &&
-          (NS_FAILED(CacheFileUtils::ParseAlternativeDataInfo(
-            altData, &mAltDataOffset, nullptr)) ||
-          (mAltDataOffset > mDataSize))) {
-        // alt-metadata cannot be parsed or alt-data offset is invalid
-        mMetadata->InitEmptyMetadata();
-        isNew = true;
-        mAltDataOffset = -1;
-        mDataSize = 0;
-      } else {
-        CacheFileAutoLock lock(this);
-        PreloadChunks(0);
-      }
-    }
+  {
+    CacheFileAutoLock lock(this);
+    MOZ_ASSERT(mListener);
 
-    InitIndexEntry();
+    LOG(("CacheFile::OnMetadataRead() [this=%p, rv=0x%08]", this,
+         static_cast<uint32_t>(aResult)));
+
+    if (NS_SUCCEEDED(aResult)) {
+      mPinned = mMetadata->Pinned();
+      mReady = true;
+      mDataSize = mMetadata->Offset();
+      if (mDataSize == 0 && mMetadata->ElementsSize() == 0) {
+        mMetadata->MarkDirty();
+      } else {
+        const char* altData =
+            mMetadata->GetElement(CacheFileUtils::kAltDataKey);
+        if (altData && (NS_FAILED(CacheFileUtils::ParseAlternativeDataInfo(
+                            altData, &mAltDataOffset, nullptr)) ||
+                        (mAltDataOffset > mDataSize))) {
+          // alt-metadata cannot be parsed or alt-data offset is invalid
+          mMetadata->InitEmptyMetadata();
+          isNew = true;
+          mAltDataOffset = -1;
+          mDataSize = 0;
+        } else {
+          PreloadChunks(0);
+        }
+      }
+      InitIndexEntry();
+    }
+    mListener.swap(listener);
   }
 
-  nsCOMPtr<CacheFileListener> listener;
-  mListener.swap(listener);
   listener->OnFileReady(aResult, isNew);
   return NS_OK;
 }
@@ -1021,6 +1036,7 @@ CacheFile::Doom(CacheFileListener *aCallback)
 nsresult
 CacheFile::DoomLocked(CacheFileListener *aCallback)
 {
+  AssertOwnsLock();
   MOZ_ASSERT(mHandle || mMemoryOnly || mOpeningFile);
 
   LOG(("CacheFile::DoomLocked() [this=%p, listener=%p]", this, aCallback));
@@ -1232,6 +1248,7 @@ CacheFile::GetFetchCount(uint32_t *_retval)
 nsresult
 CacheFile::GetDiskStorageSizeInKB(uint32_t *aDiskStorageSize)
 {
+  CacheFileAutoLock lock(this);
   if (!mHandle) {
     return NS_ERROR_NOT_AVAILABLE;
   }
@@ -1253,30 +1270,6 @@ CacheFile::OnFetched()
   PostWriteTimer();
 
   return mMetadata->OnFetched();
-}
-
-void
-CacheFile::Lock()
-{
-  mLock.Lock();
-}
-
-void
-CacheFile::Unlock()
-{
-  // move the elements out of mObjsToRelease
-  // so that they can be released after we unlock
-  nsTArray<RefPtr<nsISupports>> objs;
-  objs.SwapElements(mObjsToRelease);
-
-  mLock.Unlock();
-
-}
-
-void
-CacheFile::AssertOwnsLock() const
-{
-  mLock.AssertCurrentThreadOwns();
 }
 
 void
@@ -2010,6 +2003,7 @@ CacheFile::NotifyChunkListeners(uint32_t aIndex, nsresult aResult,
 bool
 CacheFile::HaveChunkListeners(uint32_t aIndex)
 {
+  AssertOwnsLock();
   ChunkListeners *listeners;
   mChunkListeners.Get(aIndex, &listeners);
   return !!listeners;
@@ -2270,6 +2264,7 @@ CacheFile::SetError(nsresult aStatus)
 nsresult
 CacheFile::InitIndexEntry()
 {
+  AssertOwnsLock();
   MOZ_ASSERT(mHandle);
 
   if (mHandle->IsDoomed())

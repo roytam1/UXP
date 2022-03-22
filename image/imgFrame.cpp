@@ -190,6 +190,7 @@ imgFrame::InitForDecoder(const nsIntSize& aImageSize,
   // warn for properties related to bad content.
   if (!AllowedImageAndFrameDimensions(aImageSize, aRect)) {
     NS_WARNING("Should have legal image size");
+    MonitorAutoLock lock(mMonitor);
     mAborted = true;
     return NS_ERROR_FAILURE;
   }
@@ -279,6 +280,7 @@ imgFrame::InitWithDrawable(gfxDrawable* aDrawable,
   // warn for properties related to bad content.
   if (!AllowedImageSize(aSize.width, aSize.height)) {
     NS_WARNING("Should have legal image size");
+    MonitorAutoLock lock(mMonitor);
     mAborted = true;
     return NS_ERROR_FAILURE;
   }
@@ -295,6 +297,7 @@ imgFrame::InitWithDrawable(gfxDrawable* aDrawable,
     gfxPlatform::GetPlatform()->CanRenderContentToDataSurface();
 
   if (canUseDataSurface) {
+    MonitorAutoLock lock(mMonitor);
     // It's safe to use data surfaces for content on this platform, so we can
     // get away with using volatile buffers.
     MOZ_ASSERT(!mImageSurface, "Called imgFrame::InitWithDrawable() twice?");
@@ -336,7 +339,12 @@ imgFrame::InitWithDrawable(gfxDrawable* aDrawable,
     // surface instead.  This means if someone later calls RawAccessRef(), we
     // may have to do an expensive readback, but we warned callers about that in
     // the documentation for this method.
-    MOZ_ASSERT(!mOptSurface, "Called imgFrame::InitWithDrawable() twice?");
+#ifdef DEBUG
+    {
+      MonitorAutoLock lock(mMonitor);
+      MOZ_ASSERT(!mOptSurface, "Called imgFrame::InitWithDrawable() twice?");
+    }
+#endif
 
     if (gfxPlatform::GetPlatform()->SupportsAzureContentForType(aBackend)) {
       target = gfxPlatform::GetPlatform()->
@@ -348,6 +356,7 @@ imgFrame::InitWithDrawable(gfxDrawable* aDrawable,
   }
 
   if (!target || !target->IsValid()) {
+    MonitorAutoLock lock(mMonitor);
     mAborted = true;
     return NS_ERROR_OUT_OF_MEMORY;
   }
@@ -359,6 +368,7 @@ imgFrame::InitWithDrawable(gfxDrawable* aDrawable,
                              ImageRegion::Create(ThebesRect(mFrameRect)),
                              mFormat, aSamplingFilter, aImageFlags);
 
+  MonitorAutoLock lock(mMonitor);
   if (canUseDataSurface && !mImageSurface) {
     NS_WARNING("Failed to create VolatileDataSourceSurface");
     mAborted = true;
@@ -375,10 +385,7 @@ imgFrame::InitWithDrawable(gfxDrawable* aDrawable,
   mDecoded = GetRect();
   mFinished = true;
 
-#ifdef DEBUG
-  MonitorAutoLock lock(mMonitor);
   MOZ_ASSERT(AreAllPixelsWritten());
-#endif
 
   return NS_OK;
 }

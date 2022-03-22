@@ -133,6 +133,12 @@ CSS_PSEUDO_CLASS(scope, ":scope", 0, "layout.css.scope-pseudo.enabled")
 // it doesn't actually get directly matched on in SelectorMatches.
 CSS_PSEUDO_CLASS(negation, ":not", 0, "")
 
+// http://drafts.csswg.org/css-scoping/#selectordef-host-context
+CSS_PSEUDO_CLASS(hostContext, ":host-context", 0, "dom.webcomponents.enabled")
+
+// http://drafts.csswg.org/css-scoping/#selectordef-host-context
+CSS_PSEUDO_CLASS(host, ":host", 0, "dom.webcomponents.enabled")
+
 // :dir(ltr) and :dir(rtl) match elements whose resolved
 // directionality in the markup language is ltr or rtl respectively.
 CSS_STATE_DEPENDENT_PSEUDO_CLASS(dir, ":dir", 0, "",
