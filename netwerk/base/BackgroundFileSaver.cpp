@@ -247,7 +247,8 @@ BackgroundFileSaver::EnableSha256()
   nsresult rv;
   nsCOMPtr<nsISupports> nssDummy = do_GetService("@mozilla.org/psm;1", &rv);
   NS_ENSURE_SUCCESS(rv, rv);
-  mSha256Enabled = true;
+  MutexAutoLock lock(mLock);
+  mSha256Enabled = true;  // this will be read by the worker thread
   return NS_OK;
 }
 
@@ -273,6 +274,7 @@ BackgroundFileSaver::EnableSignatureInfo()
   nsresult rv;
   nsCOMPtr<nsISupports> nssDummy = do_GetService("@mozilla.org/psm;1", &rv);
   NS_ENSURE_SUCCESS(rv, rv);
+  MutexAutoLock lock(mLock);
   mSignatureInfoEnabled = true;
   return NS_OK;
 }
@@ -386,9 +388,17 @@ BackgroundFileSaver::ProcessAttention()
   // If mAsyncCopyContext is not null, we interrupt the copy and re-enter
   // through AsyncCopyCallback.  This allows us to check if, for instance, we
   // should rename the target file.  We will then restart the copy if needed.
-  if (mAsyncCopyContext) {
-    NS_CancelAsyncCopy(mAsyncCopyContext, NS_ERROR_ABORT);
-    return NS_OK;
+
+  // mAsyncCopyContext is only written on the worker thread (which we are on)
+  MOZ_ASSERT(!NS_IsMainThread());
+  {
+    // Even though we're the only thread that writes this, we have to take the
+    // lock
+    MutexAutoLock lock(mLock);
+    if (mAsyncCopyContext) {
+      NS_CancelAsyncCopy(mAsyncCopyContext, NS_ERROR_ABORT);
+      return NS_OK;
+    }
   }
   // Use the current shared state to determine the next operation to execute.
   rv = ProcessStateChange();
@@ -661,12 +671,11 @@ BackgroundFileSaver::CheckCompletion()
 {
   nsresult rv;
 
-  MOZ_ASSERT(!mAsyncCopyContext,
-             "Should not be copying when checking completion conditions.");
-
   bool failed = true;
   {
     MutexAutoLock lock(mLock);
+    MOZ_ASSERT(!mAsyncCopyContext,
+               "Should not be copying when checking completion conditions.");
 
     if (mComplete) {
       return true;

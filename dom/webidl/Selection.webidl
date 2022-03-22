@@ -46,6 +46,12 @@ interface Selection {
   [Throws]
   boolean            containsNode(Node node, boolean allowPartialContainment);
 
+  [Throws]
+  void               setBaseAndExtent(Node anchorNode,
+                                      unsigned long anchorOffset,
+                                      Node focusNode,
+                                      unsigned long focusOffset);
+
   stringifier;
 };
 

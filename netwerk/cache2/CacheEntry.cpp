@@ -143,8 +143,11 @@ CacheEntry::Callback::~Callback()
   MOZ_COUNT_DTOR(CacheEntry::Callback);
 }
 
+// We have locks on both this and aEntry
 void CacheEntry::Callback::ExchangeEntry(CacheEntry* aEntry)
 {
+  aEntry->mLock.AssertCurrentThreadOwns();
+  mEntry->mLock.AssertCurrentThreadOwns();
   if (mEntry == aEntry)
     return;
 
@@ -209,11 +212,11 @@ CacheEntry::CacheEntry(const nsACString& aStorageID,
 , mStorageID(aStorageID)
 , mUseDisk(aUseDisk)
 , mSkipSizeCheck(aSkipSizeCheck)
+, mPinned(aPin)
 , mIsDoomed(false)
 , mSecurityInfoLoaded(false)
 , mPreventCallbacks(false)
 , mHasData(false)
-, mPinned(aPin)
 , mPinningKnown(false)
 , mState(NOTLOADED)
 , mRegistration(NEVERREGISTERED)
@@ -297,9 +300,6 @@ nsresult CacheEntry::HashingKey(nsCSubstring const& aStorageID,
 
 void CacheEntry::AsyncOpen(nsICacheEntryOpenCallback* aCallback, uint32_t aFlags)
 {
-  LOG(("CacheEntry::AsyncOpen [this=%p, state=%s, flags=%d, callback=%p]",
-    this, StateString(mState), aFlags, aCallback));
-
   bool readonly = aFlags & nsICacheStorage::OPEN_READONLY;
   bool bypassIfBusy = aFlags & nsICacheStorage::OPEN_BYPASS_IF_BUSY;
   bool truncate = aFlags & nsICacheStorage::OPEN_TRUNCATE;
@@ -307,8 +307,20 @@ void CacheEntry::AsyncOpen(nsICacheEntryOpenCallback* aCallback, uint32_t aFlags
   bool multithread = aFlags & nsICacheStorage::CHECK_MULTITHREADED;
   bool secret = aFlags & nsICacheStorage::OPEN_SECRETLY;
 
-  MOZ_ASSERT(!readonly || !truncate, "Bad flags combination");
-  MOZ_ASSERT(!(truncate && mState > LOADING), "Must not call truncate on already loaded entry");
+  if (MOZ_LOG_TEST(gCache2Log, LogLevel::Debug)) {
+    MutexAutoLock lock(mLock);
+    LOG(("CacheEntry::AsyncOpen [this=%p, state=%s, flags=%d, callback=%p]",
+         this, StateString(mState), aFlags, aCallback));
+  }
+#ifdef DEBUG
+  {
+    // yes, if logging is on in DEBUG we'll take the lock twice in a row
+    MutexAutoLock lock(mLock);
+    MOZ_ASSERT(!readonly || !truncate, "Bad flags combination");
+    MOZ_ASSERT(!(truncate && mState > LOADING),
+               "Must not call truncate on already loaded entry");
+  }
+#endif
 
   Callback callback(this, aCallback, readonly, multithread, secret);
 
@@ -470,7 +482,7 @@ NS_IMETHODIMP CacheEntry::OnFileReady(nsresult aResult, bool aIsNew)
 
   mPinned = mFile->IsPinned();;
   mPinningKnown = true;
-  LOG(("  pinning=%d", mPinned));
+  LOG(("  pinning=%d", (bool)mPinned));
 
   if (mState == READY) {
     mHasData = true;
@@ -560,6 +572,7 @@ already_AddRefed<CacheEntryHandle> CacheEntry::ReopenTruncated(bool aMemoryOnly,
 void CacheEntry::TransferCallbacks(CacheEntry & aFromEntry)
 {
   mozilla::MutexAutoLock lock(mLock);
+  aFromEntry.mLock.AssertCurrentThreadOwns();
 
   LOG(("CacheEntry::TransferCallbacks [entry=%p, from=%p]",
     this, &aFromEntry));
@@ -684,10 +697,9 @@ bool CacheEntry::InvokeCallbacks(bool aReadOnly)
 
 bool CacheEntry::InvokeCallback(Callback & aCallback)
 {
+  mLock.AssertCurrentThreadOwns();
   LOG(("CacheEntry::InvokeCallback [this=%p, state=%s, cb=%p]",
     this, StateString(mState), aCallback.mCallback.get()));
-
-  mLock.AssertCurrentThreadOwns();
 
   // When this entry is doomed we want to notify the callback any time
   if (!mIsDoomed) {
@@ -802,15 +814,21 @@ bool CacheEntry::InvokeCallback(Callback & aCallback)
 
 void CacheEntry::InvokeAvailableCallback(Callback const & aCallback)
 {
-  LOG(("CacheEntry::InvokeAvailableCallback [this=%p, state=%s, cb=%p, r/o=%d, n/w=%d]",
-    this, StateString(mState), aCallback.mCallback.get(), aCallback.mReadOnly, aCallback.mNotWanted));
-
   nsresult rv;
+  uint32_t state;
+  { // Scope for lock
+    mozilla::MutexAutoLock lock(mLock);
+    state = mState;
+    LOG(
+        ("CacheEntry::InvokeAvailableCallback [this=%p, state=%s, cb=%p, "
+         "r/o=%d, "
+         "n/w=%d]",
+         this, StateString(mState), aCallback.mCallback.get(),
+         aCallback.mReadOnly, aCallback.mNotWanted));
 
-  uint32_t const state = mState;
-
-  // When we are here, the entry must be loaded from disk
-  MOZ_ASSERT(state > LOADING || mIsDoomed);
+    // When we are here, the entry must be loaded from disk
+    MOZ_ASSERT(state > LOADING || mIsDoomed);
+  }
 
   bool onAvailThread;
   rv = aCallback.OnAvailThread(&onAvailThread);
@@ -911,11 +929,10 @@ CacheEntryHandle* CacheEntry::NewWriteHandle()
 
 void CacheEntry::OnHandleClosed(CacheEntryHandle const* aHandle)
 {
+  mozilla::MutexAutoLock lock(mLock);
   LOG(("CacheEntry::OnHandleClosed [this=%p, state=%s, handle=%p]", this, StateString(mState), aHandle));
 
-  mozilla::MutexAutoLock lock(mLock);
-
-  if (IsDoomed() && NS_SUCCEEDED(mFileStatus) &&
+  if (mIsDoomed && NS_SUCCEEDED(mFileStatus) &&
       // Note: mHandlesCount is dropped before this method is called
       (mHandlesCount == 0 ||
        (mHandlesCount == 1 && mWriter && mWriter != aHandle))
@@ -1064,8 +1081,12 @@ NS_IMETHODIMP CacheEntry::GetIsForcedValid(bool *aIsForcedValid)
 {
   NS_ENSURE_ARG(aIsForcedValid);
 
-  MOZ_ASSERT(mState > LOADING);
-
+#ifdef DEBUG
+  {
+    mozilla::MutexAutoLock lock(mLock);
+    MOZ_ASSERT(mState > LOADING);
+  }
+#endif
   if (mPinned) {
     *aIsForcedValid = true;
     return NS_OK;
@@ -1429,12 +1450,11 @@ NS_IMETHODIMP CacheEntry::MetaDataReady()
 
 NS_IMETHODIMP CacheEntry::SetValid()
 {
-  LOG(("CacheEntry::SetValid [this=%p, state=%s]", this, StateString(mState)));
-
   nsCOMPtr<nsIOutputStream> outputStream;
 
-  {
+  { // Scope for lock
     mozilla::MutexAutoLock lock(mLock);
+    LOG(("CacheEntry::SetValid [this=%p, state=%s]", this, StateString(mState)));
 
     MOZ_ASSERT(mState > EMPTY);
 
@@ -1457,9 +1477,8 @@ NS_IMETHODIMP CacheEntry::SetValid()
 NS_IMETHODIMP CacheEntry::Recreate(bool aMemoryOnly,
                                    nsICacheEntry **_retval)
 {
-  LOG(("CacheEntry::Recreate [this=%p, state=%s]", this, StateString(mState)));
-
   mozilla::MutexAutoLock lock(mLock);
+  LOG(("CacheEntry::Recreate [this=%p, state=%s]", this, StateString(mState)));
 
   RefPtr<CacheEntryHandle> handle = ReopenTruncated(aMemoryOnly, nullptr);
   if (handle) {
@@ -1600,7 +1619,7 @@ bool CacheEntry::DeferOrBypassRemovalOnPinStatus(bool aPinned)
   mozilla::MutexAutoLock lock(mLock);
 
   if (mPinningKnown) {
-    LOG(("  pinned=%d, caller=%d", mPinned, aPinned));
+    LOG(("  pinned=%d, caller=%d", (bool)mPinned, aPinned));
     // Bypass when the pin status of this entry doesn't match the pin status
     // caller wants to remove
     return mPinned != aPinned;
@@ -1873,9 +1892,11 @@ NS_IMETHODIMP CacheOutputCloseListener::Run()
 
 // Memory reporting
 
-size_t CacheEntry::SizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf) const
+size_t CacheEntry::SizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf)
 {
   size_t n = 0;
+
+  MutexAutoLock lock(mLock);
 
   n += mCallbacks.ShallowSizeOfExcludingThis(mallocSizeOf);
   if (mFile) {
@@ -1896,7 +1917,7 @@ size_t CacheEntry::SizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf) const
   return n;
 }
 
-size_t CacheEntry::SizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf) const
+size_t CacheEntry::SizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf)
 {
   return mallocSizeOf(this) + SizeOfExcludingThis(mallocSizeOf);
 }

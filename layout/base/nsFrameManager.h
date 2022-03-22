@@ -99,7 +99,6 @@ public:
 
   void ClearUndisplayedContentIn(nsIContent* aContent,
                                  nsIContent* aParentContent);
-  void ClearAllUndisplayedContentIn(nsIContent* aParentContent);
 
   // display:contents related methods:
   /**
@@ -139,7 +138,6 @@ public:
    */
   void ClearDisplayContentsIn(nsIContent* aContent,
                               nsIContent* aParentContent);
-  void ClearAllDisplayContentsIn(nsIContent* aParentContent);
 
   // Functions for manipulating the frame model
   void AppendFrames(nsContainerFrame* aParentFrame,
@@ -184,6 +182,8 @@ public:
   void RestoreFrameStateFor(nsIFrame*              aFrame,
                                         nsILayoutHistoryState* aState);
 protected:
+  void ClearAllMapsFor(nsIContent* aParentContent);
+
   static nsStyleContext* GetStyleContextInMap(UndisplayedMap* aMap,
                                               const nsIContent* aContent);
   static mozilla::UndisplayedNode*

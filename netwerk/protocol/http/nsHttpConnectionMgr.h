@@ -492,8 +492,15 @@ private:
     //-------------------------------------------------------------------------
 
     ReentrantMonitor    mReentrantMonitor;
+    // This is used as a flag that we're shut down, and no new events should be
+    // dispatched.
     nsCOMPtr<nsIEventTarget>     mSocketThreadTarget;
 
+    Atomic<bool, mozilla::Relaxed> mIsShuttingDown;
+
+    //-------------------------------------------------------------------------
+    // NOTE: these members are only accessed on the socket transport thread
+    //-------------------------------------------------------------------------
     // connection limits
     uint16_t mMaxConns;
     uint16_t mMaxPersistConnsPerHost;
@@ -501,11 +508,6 @@ private:
     uint16_t mMaxRequestDelay; // in seconds
     uint16_t mMaxPipelinedRequests;
     uint16_t mMaxOptimisticPipelinedRequests;
-    Atomic<bool, mozilla::Relaxed> mIsShuttingDown;
-
-    //-------------------------------------------------------------------------
-    // NOTE: these members are only accessed on the socket transport thread
-    //-------------------------------------------------------------------------
 
     bool     ProcessPendingQForEntry(nsConnectionEntry *, bool considerAll);
     bool     IsUnderPressure(nsConnectionEntry *ent,

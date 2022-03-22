@@ -90,6 +90,7 @@ CacheFileOutputStream::Write(const char * aBuf, uint32_t aCount,
                              uint32_t *_retval)
 {
   CacheFileAutoLock lock(mFile);
+  mFile->AssertOwnsLock();  // For thread-safety analysis
 
   LOG(("CacheFileOutputStream::Write() [this=%p, count=%d]", this, aCount));
 
@@ -257,6 +258,7 @@ NS_IMETHODIMP
 CacheFileOutputStream::Seek(int32_t whence, int64_t offset)
 {
   CacheFileAutoLock lock(mFile);
+  mFile->AssertOwnsLock();  // For thread-safety analysis
 
   LOG(("CacheFileOutputStream::Seek() [this=%p, whence=%d, offset=%lld]",
        this, whence, offset));
@@ -298,6 +300,7 @@ NS_IMETHODIMP
 CacheFileOutputStream::Tell(int64_t *_retval)
 {
   CacheFileAutoLock lock(mFile);
+  mFile->AssertOwnsLock();  // For thread-safety analysis
 
   if (mClosed) {
     LOG(("CacheFileOutputStream::Tell() - Stream is closed. [this=%p]", this));
@@ -371,6 +374,8 @@ void CacheFileOutputStream::NotifyCloseListener()
 void
 CacheFileOutputStream::ReleaseChunk()
 {
+  mFile->AssertOwnsLock();
+
   LOG(("CacheFileOutputStream::ReleaseChunk() [this=%p, idx=%d]",
        this, mChunk->Index()));
 

@@ -1652,6 +1652,9 @@ private:
     ParserHasNotified,
     // Sets if the node is apz aware or we have apz aware listeners.
     MayBeApzAware,
+    // Set if this node has at some point (and may still have)
+    // display:none or display:contents children.
+    NodeMayHaveChildrenWithLayoutBoxesDisabled,
     // Guard value
     BooleanFlagCount
   };
@@ -1790,6 +1793,20 @@ public:
   {
     return GetBoolFlag(MayBeApzAware);
   }
+
+  void SetMayHaveChildrenWithLayoutBoxesDisabled()
+  {
+    SetBoolFlag(NodeMayHaveChildrenWithLayoutBoxesDisabled);
+  }
+  void UnsetMayHaveChildrenWithLayoutBoxesDisabled()
+  {
+    ClearBoolFlag(NodeMayHaveChildrenWithLayoutBoxesDisabled);
+  }
+  bool MayHaveChildrenWithLayoutBoxesDisabled() const
+  {
+    return GetBoolFlag(NodeMayHaveChildrenWithLayoutBoxesDisabled);
+  }
+
 protected:
   void SetParentIsContent(bool aValue) { SetBoolFlag(ParentIsContent, aValue); }
   void SetIsInDocument() { SetBoolFlag(IsInDocument); }

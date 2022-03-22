@@ -201,8 +201,9 @@ public:
   }
 
   size_t
-  SizeOfThis(MallocSizeOf aMallocSizeOf) const
+  SizeOfThis(MallocSizeOf aMallocSizeOf)
   {
+    MutexAutoLock lock(mMutex);
     return mData.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
   }
 

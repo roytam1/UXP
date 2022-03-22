@@ -13,6 +13,8 @@
 namespace mozilla {
 namespace dom {
 
+#define TABLE_ATTRS_DIRTY ((nsMappedAttributes*)0x1)
+
 class TableRowsCollection;
 
 class HTMLTableElement final : public nsGenericHTMLElement
@@ -219,6 +221,8 @@ protected:
 
   RefPtr<nsContentList> mTBodies;
   RefPtr<TableRowsCollection> mRows;
+  // Sentinel value of TABLE_ATTRS_DIRTY indicates that this is dirty and needs
+  // to be recalculated.
   nsMappedAttributes *mTableInheritedAttributes;
   void BuildInheritedAttributes();
   void ReleaseInheritedAttributes();

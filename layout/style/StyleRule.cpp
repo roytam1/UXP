@@ -148,7 +148,8 @@ nsPseudoClassList::nsPseudoClassList(CSSPseudoClassType aType,
   : mType(aType),
     mNext(nullptr)
 {
-  NS_ASSERTION(nsCSSPseudoClasses::HasSelectorListArg(aType),
+  NS_ASSERTION(nsCSSPseudoClasses::HasSelectorListArg(aType) ||
+	       nsCSSPseudoClasses::HasOptionalSelectorListArg(aType),
                "unexpected pseudo-class");
   NS_ASSERTION(aSelectorList, "selector list expected");
   MOZ_COUNT_CTOR(nsPseudoClassList);
@@ -313,6 +314,7 @@ nsCSSSelector::nsCSSSelector(void)
     mPseudoClassList(nullptr),
     mAttrList(nullptr),
     mNegations(nullptr),
+    mExplicitUniversal(false),
     mNext(nullptr),
     mNameSpace(kNameSpaceID_Unknown),
     mOperator(0),
@@ -380,6 +382,17 @@ void nsCSSSelector::Reset(void)
                "mNegations can't have non-null mNext");
   NS_CSS_DELETE_LIST_MEMBER(nsCSSSelector, this, mNegations);
   mOperator = char16_t(0);
+}
+
+bool nsCSSSelector::HasFeatureSelectors()
+{
+  return mExplicitUniversal || mLowercaseTag || mCasedTag ||
+    mIDList || mClassList || mAttrList;
+}
+
+void nsCSSSelector::SetHasExplicitUniversal()
+{
+  mExplicitUniversal = true;
 }
 
 void nsCSSSelector::SetNameSpace(int32_t aNameSpace)
@@ -750,9 +763,9 @@ nsCSSSelector::AppendToStringWithoutCombinatorsOrNegations
     // Universal selector:  avoid writing the universal selector when we
     // can avoid it, especially since we're required to avoid it for the
     // inside of :not()
-    if (wroteNamespace ||
+    if (wroteNamespace || mExplicitUniversal ||
         (!mIDList && !mClassList && !mPseudoClassList && !mAttrList &&
-         (aIsNegated || !mNegations))) {
+         aIsNegated)) {
       aString.Append(char16_t('*'));
     }
   } else {
@@ -760,9 +773,7 @@ nsCSSSelector::AppendToStringWithoutCombinatorsOrNegations
     nsAutoString tag;
     (isPseudoElement ? mLowercaseTag : mCasedTag)->ToString(tag);
     if (isPseudoElement) {
-      if (!mNext) {
-        // Lone pseudo-element selector -- toss in a wildcard type selector
-        // XXXldb Why?
+      if (mExplicitUniversal) {
         aString.Append(char16_t('*'));
       }
       // While our atoms use one colon, most pseudo-elements require two

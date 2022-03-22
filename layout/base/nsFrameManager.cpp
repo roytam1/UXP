@@ -187,6 +187,17 @@ nsFrameManager::SetStyleContextInMap(UndisplayedMap* aMap,
                "undisplayed content must have a parent, unless it's the root "
                "element");
 #endif
+
+  // We set this bit as an optimization so that we can can know when a content
+  // node may have |display:none| or |display:contents| children.  This allows
+  // other parts of the code to avoid checking for such children in
+  // mUndisplayedMap and mDisplayContentsMap if the bit isn't present on a node
+  // that it's handling.
+
+if (parent) {
+  parent->SetMayHaveChildrenWithLayoutBoxesDisabled();
+}
+
   aMap->AddNodeFor(parent, aContent, aStyleContext);
 }
 
@@ -212,7 +223,10 @@ nsFrameManager::ChangeStyleContextInMap(UndisplayedMap* aMap,
    printf("ChangeStyleContextInMap(%d): p=%p \n", i++, (void *)aContent);
 #endif
 
-  for (UndisplayedNode* node = aMap->GetFirstNode(aContent->GetParent());
+  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
+  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+
+  for (UndisplayedNode* node = aMap->GetFirstNode(parent);
        node; node = node->getNext()) {
     if (node->mContent == aContent) {
       node->mStyle = aStyleContext;
@@ -235,9 +249,20 @@ nsFrameManager::ClearUndisplayedContentIn(nsIContent* aContent,
   if (!mUndisplayedMap) {
     return;
   }
+  
+  if (aParentContent && 
+      !aParentContent->MayHaveChildrenWithLayoutBoxesDisabled()) {
+    MOZ_ASSERT(!mUndisplayedMap->GetFirstNode(aParentContent),
+               "MayHaveChildrenWithLayoutBoxesDisabled bit out of sync - "
+               "may fail to removenode from mUndisplayedMap");
+    return;
+  }
 
-  for (UndisplayedNode* node = mUndisplayedMap->GetFirstNode(aParentContent);
-       node; node = node->getNext()) {
+  UndisplayedNode* node = mUndisplayedMap->GetFirstNode(aParentContent);
+
+  const bool haveOneDisplayNoneChild = node && !node->getNext();
+
+  for (; node; node = node->getNext()) {  
     if (node->mContent == aContent) {
       mUndisplayedMap->RemoveNodeFor(aParentContent, node);
 
@@ -247,6 +272,22 @@ nsFrameManager::ClearUndisplayedContentIn(nsIContent* aContent,
       // make sure that there are no more entries for the same content
       MOZ_ASSERT(!GetUndisplayedContent(aContent),
                  "Found more undisplayed content data after removal");
+
+      if (haveOneDisplayNoneChild) {
+        // There are no more children of aParentContent in mUndisplayedMap.
+        MOZ_ASSERT(!mUndisplayedMap->GetFirstNode(aParentContent),
+                   "Bad UnsetMayHaveChildrenWithLayoutBoxesDisabled call");
+        // If we also know that none of its children are in mDisplayContentsMap
+        // then we can call UnsetMayHaveChildrenWithLayoutBoxesDisabled. We
+        // don't want to check mDisplayContentsMap though, since that involves 
+        // a hash table lookup in relatively hot code. Still, we know there are
+        // no chlildren in mDisplayContentsMap if the map is empty, so we do
+        // check for that.
+        if (aParentContent && !mDisplayContentsMap) {
+          aParentContent->UnsetMayHaveChildrenWithLayoutBoxesDisabled();
+        }
+      }
+
       return;
     }
   }
@@ -257,16 +298,44 @@ nsFrameManager::ClearUndisplayedContentIn(nsIContent* aContent,
 }
 
 void
-nsFrameManager::ClearAllUndisplayedContentIn(nsIContent* aParentContent)
+nsFrameManager::ClearAllMapsFor(nsIContent* aParentContent)
 {
-#ifdef DEBUG_UNDISPLAYED_MAP
+#if defined(DEBUG_UNDISPLAYED_MAP) || defined(DEBUG_DISPLAY_CONTENTS_MAP)
   static int i = 0;
-  printf("ClearAllUndisplayedContentIn(%d): parent=%p \n", i++, (void*)aParentContent);
+  printf("ClearAllMapsFor(%d): parent=%p \n", i++, (void*)aParentContent);
 #endif
 
-  if (mUndisplayedMap) {
-    mUndisplayedMap->RemoveNodesFor(aParentContent);
+  if (!aParentContent ||
+      aParentContent->MayHaveChildrenWithLayoutBoxesDisabled()) {
+    if (mUndisplayedMap) {
+      mUndisplayedMap->RemoveNodesFor(aParentContent);
+    }
+    if (mDisplayContentsMap) {
+      nsAutoPtr<LinkedList<UndisplayedNode>> list =
+        mDisplayContentsMap->UnlinkNodesFor(aParentContent);
+      if (list) {
+        while (UndisplayedNode* node = list->popFirst()) {
+          ClearAllMapsFor(node->mContent);
+          delete node;
+        }
+      }
+    }
+    if (aParentContent) {
+      aParentContent->UnsetMayHaveChildrenWithLayoutBoxesDisabled();
+    }
   }
+#ifdef DEBUG
+  else {
+    if (mUndisplayedMap) {
+      MOZ_ASSERT(!mUndisplayedMap->GetFirstNode(aParentContent),
+                 "We failed to remove a node from mUndisplayedMap");
+    }
+    if (mDisplayContentsMap) {
+      MOZ_ASSERT(!mDisplayContentsMap->GetFirstNode(aParentContent),
+                 "We failed to remove a node from mDisplayContentsMap");
+    }
+  }
+#endif
 
   // Need to look at aParentContent's content list due to XBL insertions.
   // Nodes in aParentContent's content list do not have aParentContent as a
@@ -274,8 +343,10 @@ nsFrameManager::ClearAllUndisplayedContentIn(nsIContent* aParentContent)
   // the flattened content list and just ignore any nodes we don't care about.
   FlattenedChildIterator iter(aParentContent);
   for (nsIContent* child = iter.GetNextChild(); child; child = iter.GetNextChild()) {
-    if (child->GetParent() != aParentContent) {
-      ClearUndisplayedContentIn(child, child->GetParent());
+    auto parent = child->GetParent();
+    if (parent != aParentContent) {
+      ClearUndisplayedContentIn(child, parent);
+      ClearDisplayContentsIn(child, parent);
     }
   }
 }
@@ -311,8 +382,19 @@ nsFrameManager::ClearDisplayContentsIn(nsIContent* aContent,
     return;
   }
 
-  for (UndisplayedNode* node = mDisplayContentsMap->GetFirstNode(aParentContent);
-       node; node = node->getNext()) {
+  if (aParentContent &&
+      !aParentContent->MayHaveChildrenWithLayoutBoxesDisabled()) {
+    MOZ_ASSERT(!mDisplayContentsMap->GetFirstNode(aParentContent),
+               "MayHaveChildrenWithLayoutBoxesDisabled bit out of sync - "
+               "may fail to remove node from mDisplayContentsMap");
+    return;
+  }
+
+  UndisplayedNode* node = mDisplayContentsMap->GetFirstNode(aParentContent);
+
+  const bool haveOneDisplayContentsChild = node && !node->getNext();
+
+  for (; node; node = node->getNext()) {
     if (node->mContent == aContent) {
       mDisplayContentsMap->RemoveNodeFor(aParentContent, node);
 
@@ -322,47 +404,29 @@ nsFrameManager::ClearDisplayContentsIn(nsIContent* aContent,
       // make sure that there are no more entries for the same content
       MOZ_ASSERT(!GetDisplayContentsStyleFor(aContent),
                  "Found more entries for aContent after removal");
-      ClearAllDisplayContentsIn(aContent);
-      ClearAllUndisplayedContentIn(aContent);
+      ClearAllMapsFor(aContent);
+
+      if (haveOneDisplayContentsChild) {
+        // There are no more children of aParentContent in mDisplayContentsMap.
+        MOZ_ASSERT(!mDisplayContentsMap->GetFirstNode(aParentContent),
+                   "Bad UnsetMayHaveChildrenWithLayoutBoxesDisabled call");
+        // If we also know that none of its children are in mUndisplayedMap
+        // then we can call UnsetMayHaveChildrenWithLayoutBoxesDisabled.  We
+        // don't want to check mUndisplayedMap though since that involves a
+        // hash table lookup in relatively hot code.  Still, we know there are
+        // no children in mUndisplayedMap if the map is empty, so we do
+        // check for that.
+        if (aParentContent && !mUndisplayedMap) {
+          aParentContent->UnsetMayHaveChildrenWithLayoutBoxesDisabled();
+        }
+      }
+
       return;
     }
   }
 #ifdef DEBUG_DISPLAY_CONTENTS_MAP
   printf( "not found.\n");
 #endif
-}
-
-void
-nsFrameManager::ClearAllDisplayContentsIn(nsIContent* aParentContent)
-{
-#ifdef DEBUG_DISPLAY_CONTENTS_MAP
-  static int i = 0;
-  printf("ClearAllDisplayContentsIn(%d): parent=%p \n", i++, (void*)aParentContent);
-#endif
-
-  if (mDisplayContentsMap) {
-    nsAutoPtr<LinkedList<UndisplayedNode>> list =
-      mDisplayContentsMap->UnlinkNodesFor(aParentContent);
-    if (list) {
-      while (UndisplayedNode* node = list->popFirst()) {
-        ClearAllDisplayContentsIn(node->mContent);
-        ClearAllUndisplayedContentIn(node->mContent);
-        delete node;
-      }
-    }
-  }
-
-  // Need to look at aParentContent's content list due to XBL insertions.
-  // Nodes in aParentContent's content list do not have aParentContent as a
-  // parent, but are treated as children of aParentContent. We iterate over
-  // the flattened content list and just ignore any nodes we don't care about.
-  FlattenedChildIterator iter(aParentContent);
-  for (nsIContent* child = iter.GetNextChild(); child; child = iter.GetNextChild()) {
-    if (child->GetParent() != aParentContent) {
-      ClearDisplayContentsIn(child, child->GetParent());
-      ClearUndisplayedContentIn(child, child->GetParent());
-    }
-  }
 }
 
 //----------------------------------------------------------------------
@@ -441,8 +505,7 @@ nsFrameManager::NotifyDestroyingFrame(nsIFrame* aFrame)
 {
   nsIContent* content = aFrame->GetContent();
   if (content && content->GetPrimaryFrame() == aFrame) {
-    ClearAllUndisplayedContentIn(content);
-    ClearAllDisplayContentsIn(content);
+    ClearAllMapsFor(content);
   }
 }
 
