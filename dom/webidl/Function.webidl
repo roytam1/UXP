@@ -6,9 +6,11 @@
  * The origin of this IDL file is
  * http://www.whatwg.org/specs/web-apps/current-work/#functiocn
  *
- * © Copyright 2004-2011 Apple Computer, Inc., Mozilla Foundation, and
- * Opera Software ASA. You are granted a license to use, reproduce
- * and create derivative works of this document.
+ * © Copyright 2004-2022 Apple Computer, Inc., Mozilla Foundation,
+ * Opera Software ASA and Moonchild Productions. You are granted a license to use,
+ * reproduce and create derivative works of this document.
  */
 
 callback Function = any(any... arguments);
+
+callback VoidFunction = void ();

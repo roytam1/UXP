@@ -1,20 +1,19 @@
 /*
  * Copyright © 2000 SuSE, Inc.
  * Copyright © 2007 Red Hat, Inc.
- * Copyright © 2021 Moonchild Productions
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the names of the authors not be used in advertising or
+ * documentation, and that the name of SuSE not be used in advertising or
  * publicity pertaining to distribution of the software without specific,
- * written prior permission.  The authors make no representations about the
+ * written prior permission.  SuSE makes no representations about the
  * suitability of this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL THE AUTHORS
+ * SuSE DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL SuSE
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
@@ -95,6 +94,35 @@ detect_cpu_features (void)
     return features;
 }
 
+#elif defined(__ANDROID__) || defined(ANDROID) /* Android */
+
+#include <cpu-features.h>
+
+static arm_cpu_features_t
+detect_cpu_features (void)
+{
+    arm_cpu_features_t features = 0;
+    AndroidCpuFamily cpu_family;
+    uint64_t cpu_features;
+
+    cpu_family = android_getCpuFamily();
+    cpu_features = android_getCpuFeatures();
+
+    if (cpu_family == ANDROID_CPU_FAMILY_ARM)
+    {
+	if (cpu_features & ANDROID_CPU_ARM_FEATURE_ARMv7)
+	    features |= ARM_V7;
+
+	if (cpu_features & ANDROID_CPU_ARM_FEATURE_VFPv3)
+	    features |= ARM_VFP;
+
+	if (cpu_features & ANDROID_CPU_ARM_FEATURE_NEON)
+	    features |= ARM_NEON;
+    }
+
+    return features;
+}
+
 #elif defined (__linux__) /* linux ELF */
 
 #include <unistd.h>
@@ -144,6 +172,31 @@ detect_cpu_features (void)
 	}
 	close (fd);
     }
+
+    return features;
+}
+
+#elif defined (_3DS) /* 3DS homebrew (devkitARM) */
+
+static arm_cpu_features_t
+detect_cpu_features (void)
+{
+    arm_cpu_features_t features = 0;
+
+    features |= ARM_V6;
+
+    return features;
+}
+
+#elif defined (PSP2) || defined (__SWITCH__)
+/* Vita (VitaSDK) or Switch (devkitA64) homebrew */
+
+static arm_cpu_features_t
+detect_cpu_features (void)
+{
+    arm_cpu_features_t features = 0;
+
+    features |= ARM_NEON;
 
     return features;
 }

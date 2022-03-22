@@ -166,7 +166,10 @@ public:
   int32_t               mGeneration;
 
   uint32_t              mDelay;
-  // Updated only after this timer has been removed from the timer thread.
+  // Never updated while in the TimerThread's timer list. Only updated
+  // before adding to that list or during nsTimerImpl::Fire(), when it has
+  // been removed from the TimerThread's list. TimerThread can safely access
+  // mTimeout of any timer in the list.
   TimeStamp             mTimeout;
 
 #ifdef MOZ_TASK_TRACER

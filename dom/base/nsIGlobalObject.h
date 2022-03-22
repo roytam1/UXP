@@ -19,6 +19,13 @@ class nsCString;
 class nsCycleCollectionTraversalCallback;
 class nsIPrincipal;
 
+namespace mozilla{
+namespace dom{
+class VoidFunction;
+}
+}
+
+
 class nsIGlobalObject : public nsISupports
 {
   nsTArray<nsCString> mHostObjectURIs;
@@ -71,6 +78,10 @@ public:
   // exposes the URL API.
   void UnlinkHostObjectURIs();
   void TraverseHostObjectURIs(nsCycleCollectionTraversalCallback &aCb);
+
+  virtual bool IsInSyncOperation() { return false; }
+
+  void QueueMicrotask(mozilla::dom::VoidFunction& aCallback);
 
 protected:
   virtual ~nsIGlobalObject();

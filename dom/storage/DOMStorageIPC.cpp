@@ -213,8 +213,10 @@ DOMStorageDBChild::RecvObserve(const nsCString& aTopic,
                                const nsString& aOriginAttributesPattern,
                                const nsCString& aOriginScope)
 {
-  DOMStorageObserver::Self()->Notify(
-    aTopic.get(), aOriginAttributesPattern, aOriginScope);
+  DOMStorageObserver* observer = DOMStorageObserver::Self();
+  if (observer) {
+    observer->Notify(aTopic.get(), aOriginAttributesPattern, aOriginScope);
+  }
   return true;
 }
 

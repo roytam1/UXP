@@ -164,6 +164,23 @@ struct MOZ_STACK_CLASS TreeMatchContext {
       mStyleScopes.TruncateLength(mStyleScopes.Length() - 1);
     }
   }
+
+  void PushShadowHost(mozilla::dom::Element* aElement)
+  {
+    NS_PRECONDITION(aElement, "aElement must not be null");
+    if (aElement->GetShadowRoot()) {
+      mShadowHosts.AppendElement(aElement);
+    }
+  }
+
+  void PopShadowHost(mozilla::dom::Element* aElement)
+  {
+    NS_PRECONDITION(aElement, "aElement must not be null");
+    if (mShadowHosts.SafeLastElement(nullptr) == aElement) {
+      mShadowHosts.TruncateLength(mShadowHosts.Length() - 1);
+    }
+  }
+
  
   bool PopStyleScopeForSelectorMatching(mozilla::dom::Element* aElement)
   {
@@ -233,6 +250,7 @@ struct MOZ_STACK_CLASS TreeMatchContext {
                                 MOZ_GUARD_OBJECT_NOTIFIER_PARAM)
       : mPushedAncestor(false)
       , mPushedStyleScope(false)
+      , mPushedShadowHost(false)
       , mTreeMatchContext(aTreeMatchContext)
       , mElement(nullptr)
     {
@@ -245,8 +263,10 @@ struct MOZ_STACK_CLASS TreeMatchContext {
         mElement = aElement;
         mPushedAncestor = true;
         mPushedStyleScope = true;
+	mPushedShadowHost = true;
         mTreeMatchContext.mAncestorFilter.PushAncestor(aElement);
         mTreeMatchContext.PushStyleScope(aElement);
+	mTreeMatchContext.PushShadowHost(aElement);
       }
     }
 
@@ -278,11 +298,15 @@ struct MOZ_STACK_CLASS TreeMatchContext {
       if (mPushedStyleScope) {
         mTreeMatchContext.PopStyleScope(mElement);
       }
+      if (mPushedShadowHost) {
+	mTreeMatchContext.PopShadowHost(mElement);
+      }
     }
 
   private:
     bool mPushedAncestor;
     bool mPushedStyleScope;
+    bool mPushedShadowHost;
     TreeMatchContext& mTreeMatchContext;
     mozilla::dom::Element* mElement;
     MOZ_DECL_USE_GUARD_OBJECT_NOTIFIER
@@ -342,6 +366,11 @@ struct MOZ_STACK_CLASS TreeMatchContext {
   // The document we're working with.
   nsIDocument* const mDocument;
 
+  // Only selectors that contain :host or :host-context pseudo class
+  // should be matched against elements. All other selectors should not
+  // match.
+  bool mOnlyMatchHostPseudo;
+
   // Root of scoped stylesheet (set and unset by the supplier of the
   // scoped stylesheet).
   nsIContent* mScopedRoot;
@@ -383,6 +412,9 @@ struct MOZ_STACK_CLASS TreeMatchContext {
   // <style scoped> child).
   AutoTArray<mozilla::dom::Element*, 1> mStyleScopes;
 
+  // List of ancestor elements that are a shadow root host.
+  AutoTArray<mozilla::dom::Element*, 1> mShadowHosts;
+
   // The current style scope element for selector matching.
   mozilla::dom::Element* mCurrentStyleScope;
 
@@ -396,6 +428,7 @@ struct MOZ_STACK_CLASS TreeMatchContext {
     , mHaveSpecifiedScope(false)
     , mVisitedHandling(aVisitedHandling)
     , mDocument(aDocument)
+    , mOnlyMatchHostPseudo(false)
     , mScopedRoot(nullptr)
     , mIsHTMLDocument(aDocument->IsHTMLDocument())
     , mCompatMode(aDocument->GetCompatibilityMode())
@@ -437,6 +470,7 @@ struct MOZ_STACK_CLASS ElementDependentRuleProcessorData :
     : RuleProcessorData(aPresContext, aRuleWalker)
     , mElement(aElement)
     , mTreeMatchContext(aTreeMatchContext)
+    , mElementIsFeatureless(false)
   {
     NS_ASSERTION(aElement, "null element leaked into SelectorMatches");
     NS_ASSERTION(aElement->OwnerDoc(), "Document-less node here?");
@@ -446,6 +480,7 @@ struct MOZ_STACK_CLASS ElementDependentRuleProcessorData :
   
   mozilla::dom::Element* const mElement; // weak ref, must not be null
   TreeMatchContext& mTreeMatchContext;
+  bool mElementIsFeatureless;
 };
 
 struct MOZ_STACK_CLASS ElementRuleProcessorData :

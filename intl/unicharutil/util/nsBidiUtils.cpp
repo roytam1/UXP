@@ -91,6 +91,11 @@ bool HasRTLChars(const nsAString& aString)
   int32_t length = aString.Length();
   for (int32_t i = 0; i < length; i++) {
     char16_t ch = aString.CharAt(i);
+    if (ch < 0x0590) {
+      // Characters below this value are never RTL, so take a quick exit
+      // out of this iteration of the loop.
+      continue;
+    }
     if (ch >= 0xD800 || IS_IN_BMP_RTL_BLOCK(ch)) {
       return true;
     }
