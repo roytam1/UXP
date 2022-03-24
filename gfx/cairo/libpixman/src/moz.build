@@ -76,11 +76,13 @@ DEFINES['_USE_MATH_DEFINES'] = True
 
 use_mmx = False
 use_sse2 = False
+use_ssse3 = False
 use_vmx = False
 use_arm_simd_gcc = False
 use_arm_neon_gcc = False
 if '86' in CONFIG['OS_TEST']:
     use_sse2 = True
+    use_ssse3 = True
     if '64' not in CONFIG['OS_TEST']:
         if CONFIG['_MSC_VER']:
             use_mmx = True
@@ -113,6 +115,15 @@ if use_sse2:
     SOURCES['pixman-sse2.c'].flags += CONFIG['SSE_FLAGS'] + CONFIG['SSE2_FLAGS']
     if CONFIG['GNU_CC']:
         SOURCES['pixman-sse2.c'].flags += ['-Winline']
+
+if use_ssse3:
+    DEFINES['USE_SSE'] = True
+    DEFINES['USE_SSE2'] = True
+    DEFINES['USE_SSSE3'] = True
+    SOURCES += ['pixman-ssse3.c']
+    SOURCES['pixman-ssse3.c'].flags += CONFIG['SSE_FLAGS'] + CONFIG['SSE2_FLAGS'] + CONFIG['SSSE3_FLAGS']
+    if CONFIG['GNU_CC']:
+        SOURCES['pixman-ssse3.c'].flags += ['-Winline']
 
 if use_vmx:
     DEFINES['USE_VMX'] = True
