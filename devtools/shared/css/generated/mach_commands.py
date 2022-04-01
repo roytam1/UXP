@@ -13,18 +13,18 @@ import os
 import sys
 import string
 import subprocess
+
+import mozpack.path as mozpath
+
 from mozbuild.base import (
     MozbuildObject,
     MachCommandBase,
 )
+
 from mach.decorators import (
     CommandProvider,
     Command,
 )
-
-def resolve_path(start, relativePath):
-    """Helper to resolve a path from a start, and a relative path"""
-    return os.path.normpath(os.path.join(start, relativePath))
 
 def stringify(obj):
     """Helper to stringify to JSON"""
@@ -38,6 +38,15 @@ class MachCommands(MachCommandBase):
     def generate_css_db(self):
         """Generate the static css properties database for devtools and write it to file."""
 
+        generated_dir = mozpath.join(self.topsrcdir,
+            'devtools/shared/css/generated')
+        if not os.path.exists(generated_dir):
+            generated_dir = mozpath.join(self.topsrcdir, 'platform',
+                'devtools/shared/css/generated')
+        else:
+            raise Exception('Directory expected at %s does not exist.' % generated_dir)
+        self.generated_dir = generated_dir
+
         print("Re-generating the css properties database...")
         db = self.get_properties_db_from_xpcshell()
 
@@ -47,13 +56,13 @@ class MachCommands(MachCommandBase):
 
     def get_properties_db_from_xpcshell(self):
         """Generate the static css properties db for devtools from an xpcshell script."""
-        build = MozbuildObject.from_environment()
+        build = MozbuildObject.from_environment(cwd=self.topobjdir)
 
         # Get the paths
-        script_path = resolve_path(self.topsrcdir,
-            'devtools/shared/css/generated/generate-properties-db.js')
-        gre_path = resolve_path(self.topobjdir, 'dist/bin')
-        browser_path = resolve_path(self.topobjdir, 'dist/bin/browser')
+        script_path = mozpath.join(self.generated_dir,
+            'generate-properties-db.js')
+        gre_path = mozpath.join(self.topobjdir, 'dist/bin')
+        browser_path = mozpath.join(self.topobjdir, 'dist/bin/browser')
         xpcshell_path = build.get_binary_path(what='xpcshell')
         print(browser_path)
 
@@ -74,10 +83,10 @@ class MachCommands(MachCommandBase):
 
     def output_template(self, substitutions):
         """Output a the properties-db.js from a template."""
-        js_template_path = resolve_path(self.topsrcdir,
-            'devtools/shared/css/generated/properties-db.js.in')
-        destination_path = resolve_path(self.topsrcdir,
-            'devtools/shared/css/generated/properties-db.js')
+        js_template_path = mozpath.join(self.generated_dir,
+            'properties-db.js.in')
+        destination_path = mozpath.join(self.generated_dir,
+            'properties-db.js')
 
         with open(js_template_path, 'rb') as handle:
             js_template = handle.read()
