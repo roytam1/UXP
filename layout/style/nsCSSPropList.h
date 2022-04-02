@@ -1516,7 +1516,7 @@ CSS_PROP_COLUMN(
     kColumnFillKTable,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
-CSS_PROP_COLUMN(
+CSS_PROP_POSITION(
     column-gap,
     column_gap,
     ColumnGap,
@@ -1525,7 +1525,7 @@ CSS_PROP_COLUMN(
     "",
     VARIANT_HLP | VARIANT_NORMAL | VARIANT_CALC,
     nullptr,
-    offsetof(nsStyleColumn, mColumnGap),
+    offsetof(nsStylePosition, mColumnGap),
     eStyleAnimType_Coord)
 CSS_PROP_SHORTHAND(
     column-rule,
@@ -2100,6 +2100,12 @@ CSS_PROP_UIRESET(
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete) // bug 58646
 CSS_PROP_SHORTHAND(
+    gap,
+    gap,
+    Gap,
+    CSS_PROPERTY_PARSE_FUNCTION,
+    "")
+CSS_PROP_SHORTHAND(
     grid,
     grid,
     Grid,
@@ -2160,17 +2166,6 @@ CSS_PROP_POSITION(
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
 CSS_PROP_POSITION(
-    grid-column-gap,
-    grid_column_gap,
-    GridColumnGap,
-    CSS_PROPERTY_PARSE_VALUE |
-        CSS_PROPERTY_VALUE_NONNEGATIVE,
-    "",
-    VARIANT_HLP | VARIANT_CALC,
-    nullptr,
-    offsetof(nsStylePosition, mGridColumnGap),
-    eStyleAnimType_Coord)
-CSS_PROP_POSITION(
     grid-column-start,
     grid_column_start,
     GridColumnStart,
@@ -2180,12 +2175,6 @@ CSS_PROP_POSITION(
     nullptr,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
-CSS_PROP_SHORTHAND(
-    grid-gap,
-    grid_gap,
-    GridGap,
-    CSS_PROPERTY_PARSE_FUNCTION,
-    "")
 CSS_PROP_SHORTHAND(
     grid-row,
     grid_row,
@@ -2202,17 +2191,6 @@ CSS_PROP_POSITION(
     nullptr,
     CSS_PROP_NO_OFFSET,
     eStyleAnimType_Discrete)
-CSS_PROP_POSITION(
-    grid-row-gap,
-    grid_row_gap,
-    GridRowGap,
-    CSS_PROPERTY_PARSE_VALUE |
-        CSS_PROPERTY_VALUE_NONNEGATIVE,
-    "",
-    VARIANT_HLP | VARIANT_CALC,
-    nullptr,
-    offsetof(nsStylePosition, mGridRowGap),
-    eStyleAnimType_Coord)
 CSS_PROP_POSITION(
     grid-row-start,
     grid_row_start,
@@ -3552,6 +3530,17 @@ CSS_PROP_POSITION(
     nullptr,
     offsetof(nsStylePosition, mOffset),
     eStyleAnimType_Sides_Right)
+CSS_PROP_POSITION(
+    row-gap,
+    row_gap,
+    RowGap,
+    CSS_PROPERTY_PARSE_VALUE |
+        CSS_PROPERTY_VALUE_NONNEGATIVE,
+    "",
+    VARIANT_HLP | VARIANT_NORMAL | VARIANT_CALC,
+    nullptr,
+    offsetof(nsStylePosition, mRowGap),
+    eStyleAnimType_Coord)
 CSS_PROP_TEXT(
     ruby-align,
     ruby_align,

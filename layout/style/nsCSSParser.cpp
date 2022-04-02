@@ -1015,7 +1015,7 @@ protected:
   bool ParseGridColumnRow(nsCSSPropertyID aStartPropID,
                           nsCSSPropertyID aEndPropID);
   bool ParseGridArea();
-  bool ParseGridGap();
+  bool ParseGap();
 
   bool ParseInitialLetter();
 
@@ -9732,8 +9732,8 @@ CSSParserImpl::ParseGrid()
   // "Also, the gutter properties are reset by this shorthand,
   //  even though they can't be set by it."
   value.SetFloatValue(0.0f, eCSSUnit_Pixel);
-  AppendValue(eCSSProperty_grid_row_gap, value);
-  AppendValue(eCSSProperty_grid_column_gap, value);
+  AppendValue(eCSSProperty_row_gap, value);
+  AppendValue(eCSSProperty_column_gap, value);
 
   // [ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>
   auto res = ParseGridShorthandAutoProps(NS_STYLE_GRID_AUTO_FLOW_ROW);
@@ -10041,12 +10041,12 @@ CSSParserImpl::ParseGridArea()
 }
 
 bool
-CSSParserImpl::ParseGridGap()
+CSSParserImpl::ParseGap()
 {
   nsCSSValue first;
   if (ParseSingleTokenVariant(first, VARIANT_INHERIT, nullptr)) {
-    AppendValue(eCSSProperty_grid_row_gap, first);
-    AppendValue(eCSSProperty_grid_column_gap, first);
+    AppendValue(eCSSProperty_row_gap, first);
+    AppendValue(eCSSProperty_column_gap, first);
     return true;
   }
   if (ParseNonNegativeVariant(first, VARIANT_LPCALC, nullptr) !=
@@ -10058,8 +10058,8 @@ CSSParserImpl::ParseGridGap()
   if (result == CSSParseResult::Error) {
     return false;
   }
-  AppendValue(eCSSProperty_grid_row_gap, first);
-  AppendValue(eCSSProperty_grid_column_gap,
+  AppendValue(eCSSProperty_row_gap, first);
+  AppendValue(eCSSProperty_column_gap,
               result == CSSParseResult::NotFound ? first : second);
   return true;
 }
@@ -11959,8 +11959,8 @@ CSSParserImpl::ParsePropertyByFunction(nsCSSPropertyID aPropID)
                               eCSSProperty_grid_row_end);
   case eCSSProperty_grid_area:
     return ParseGridArea();
-  case eCSSProperty_grid_gap:
-    return ParseGridGap();
+  case eCSSProperty_gap:
+    return ParseGap();
   case eCSSProperty_image_region:
     return ParseRect(eCSSProperty_image_region);
   case eCSSProperty_align_content:

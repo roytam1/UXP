@@ -1249,13 +1249,13 @@ Declaration::GetPropertyValueInternal(
     // #3 [ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>
     case eCSSProperty_grid: {
       const nsCSSValue& columnGapValue =
-        *data->ValueFor(eCSSProperty_grid_column_gap);
+        *data->ValueFor(eCSSProperty_column_gap);
       if (columnGapValue.GetUnit() != eCSSUnit_Pixel ||
           columnGapValue.GetFloatValue() != 0.0f) {
         return; // Not serializable, bail.
       }
       const nsCSSValue& rowGapValue =
-        *data->ValueFor(eCSSProperty_grid_row_gap);
+        *data->ValueFor(eCSSProperty_row_gap);
       if (rowGapValue.GetUnit() != eCSSUnit_Pixel ||
           rowGapValue.GetFloatValue() != 0.0f) {
         return; // Not serializable, bail.
@@ -1475,7 +1475,7 @@ Declaration::GetPropertyValueInternal(
       }
       MOZ_FALLTHROUGH;
     }
-    case eCSSProperty_grid_gap: {
+    case eCSSProperty_gap: {
       const nsCSSPropertyID* subprops =
         nsCSSProps::SubpropertyEntryFor(aProperty);
       MOZ_ASSERT(subprops[2] == eCSSProperty_UNKNOWN,

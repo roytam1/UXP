@@ -8877,25 +8877,27 @@ nsRuleNode::ComputePositionData(void* aStartStruct,
               parentPos->mGridRowEnd,
               conditions);
 
-  // grid-column-gap
-  if (SetCoord(*aRuleData->ValueForGridColumnGap(),
-               pos->mGridColumnGap, parentPos->mGridColumnGap,
-               SETCOORD_LPH | SETCOORD_INITIAL_ZERO | SETCOORD_STORE_CALC |
-               SETCOORD_CALC_CLAMP_NONNEGATIVE | SETCOORD_UNSET_INITIAL,
+  // column-gap: normal, length, percent, calc, inherit, initial
+  if (SetCoord(*aRuleData->ValueForColumnGap(),
+               pos->mColumnGap, parentPos->mColumnGap,
+               SETCOORD_LPH | SETCOORD_NORMAL | SETCOORD_INITIAL_NORMAL |
+               SETCOORD_STORE_CALC | SETCOORD_CALC_CLAMP_NONNEGATIVE |
+               SETCOORD_UNSET_INITIAL,
                aContext, mPresContext, conditions)) {
   } else {
-    MOZ_ASSERT(aRuleData->ValueForGridColumnGap()->GetUnit() == eCSSUnit_Null,
+    MOZ_ASSERT(aRuleData->ValueForColumnGap()->GetUnit() == eCSSUnit_Null,
                "unexpected unit");
   }
 
-  // grid-row-gap
-  if (SetCoord(*aRuleData->ValueForGridRowGap(),
-               pos->mGridRowGap, parentPos->mGridRowGap,
-               SETCOORD_LPH | SETCOORD_INITIAL_ZERO | SETCOORD_STORE_CALC |
-               SETCOORD_CALC_CLAMP_NONNEGATIVE | SETCOORD_UNSET_INITIAL,
+  // row-gap: normal, length, percent, calc, inherit, initial
+  if (SetCoord(*aRuleData->ValueForRowGap(),
+               pos->mRowGap, parentPos->mRowGap,
+               SETCOORD_LPH | SETCOORD_NORMAL | SETCOORD_INITIAL_NORMAL |
+               SETCOORD_STORE_CALC | SETCOORD_CALC_CLAMP_NONNEGATIVE |
+               SETCOORD_UNSET_INITIAL,
                aContext, mPresContext, conditions)) {
   } else {
-    MOZ_ASSERT(aRuleData->ValueForGridRowGap()->GetUnit() == eCSSUnit_Null,
+    MOZ_ASSERT(aRuleData->ValueForRowGap()->GetUnit() == eCSSUnit_Null,
                "unexpected unit");
   }
 
@@ -9301,18 +9303,6 @@ nsRuleNode::ComputeColumnData(void* aStartStruct,
              SETCOORD_CALC_LENGTH_ONLY | SETCOORD_CALC_CLAMP_NONNEGATIVE |
              SETCOORD_UNSET_INITIAL,
            aContext, mPresContext, conditions);
-
-  // column-gap: length, inherit, normal
-  SetCoord(*aRuleData->ValueForColumnGap(),
-           column->mColumnGap, parent->mColumnGap,
-           SETCOORD_LH | SETCOORD_NORMAL | SETCOORD_INITIAL_NORMAL |
-             SETCOORD_CALC_LENGTH_ONLY | SETCOORD_UNSET_INITIAL,
-           aContext, mPresContext, conditions);
-  // clamp negative calc() to 0
-  if (column->mColumnGap.GetUnit() == eStyleUnit_Coord) {
-    column->mColumnGap.SetCoordValue(
-      std::max(column->mColumnGap.GetCoordValue(), 0));
-  }
 
   // column-count: auto, integer, inherit
   const nsCSSValue* columnCountValue = aRuleData->ValueForColumnCount();
