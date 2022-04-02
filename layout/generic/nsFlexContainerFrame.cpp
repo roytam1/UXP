@@ -2330,7 +2330,7 @@ private:
   // XXX this should be uint16_t when we add explicit fallback handling
   uint8_t  mAlignContent;
 
-  nscoord mCrossGapSize = 0;
+  const nscoord mCrossGapSize;
 };
 
 // Utility class for managing our position along the cross axis, *within* a
@@ -4473,6 +4473,11 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
     // Now that we've finished with this line's items, size the line itself:
     line->ComputeCrossSizeAndBaseline(aAxisTracker);
     sumLineCrossSizes += line->GetLineCrossSize();
+
+    // Add the cross axis gap space if this is not the last line
+    if (line->getNext()) {
+      sumLineCrossSizes += aCrossGapSize;
+    }
   }
 
   bool isCrossSizeDefinite;
@@ -4934,6 +4939,11 @@ nsFlexContainerFrame::GetIntrinsicISize(nsRenderingContext* aRenderingContext,
   bool onFirstChild = true;
 
   for (nsIFrame* childFrame : mFrames) {
+    // Skip out-of-flow children because they don't participate in flex layout.
+    if (childFrame->GetType() == nsGkAtoms::placeholderFrame) {
+      continue;
+    }
+
     nscoord childISize = nsLayoutUtils::IntrinsicForContainer(
         aRenderingContext, childFrame, aType);
     // * For a row-oriented single-line flex container, the intrinsic
