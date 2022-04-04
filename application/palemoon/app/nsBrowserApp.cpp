@@ -36,6 +36,7 @@
 
 #include "nsXPCOMPrivate.h" // for MAXPATHLEN and XPCOM_DLL
 
+#include "mozilla/StartupTimeline.h"
 #include "mozilla/Sprintf.h"
 #include "mozilla/WindowsDllBlocklist.h"
 
