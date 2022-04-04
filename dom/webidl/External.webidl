@@ -13,7 +13,7 @@ interface External
 
 // Mozilla extension
 partial interface External {
-  [UnsafeInPrerendering, UseCounter]
+  [UnsafeInPrerendering]
   void addSearchEngine(DOMString engineURL, DOMString iconURL,
                        DOMString suggestedTitle, DOMString suggestedCategory);
 };

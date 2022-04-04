@@ -4245,11 +4245,6 @@ class IDLAttribute(IDLInterfaceMember):
                                   "readonly attributes" % attr.value(),
                                   [attr.location, self.location])
             self._setDependsOn(attr.value())
-        elif identifier == "UseCounter":
-            if self.stringifier:
-                raise WebIDLError("[UseCounter] must not be used on a "
-                                  "stringifier attribute",
-                                  [attr.location, self.location])
         elif identifier == "Unscopable":
             if not attr.noArguments():
                 raise WebIDLError("[Unscopable] must take no arguments",
@@ -4979,11 +4974,6 @@ class IDLMethod(IDLInterfaceMember, IDLScope):
                 raise WebIDLError("[Alias] takes an identifier or string",
                                   [attr.location])
             self._addAlias(attr.value())
-        elif identifier == "UseCounter":
-            if self.isSpecial():
-                raise WebIDLError("[UseCounter] must not be used on a special "
-                                  "operation",
-                                  [attr.location, self.location])
         elif identifier == "Unscopable":
             if not attr.noArguments():
                 raise WebIDLError("[Unscopable] must take no arguments",

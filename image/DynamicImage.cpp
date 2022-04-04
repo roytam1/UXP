@@ -337,11 +337,5 @@ DynamicImage::Unwrap()
   return self.forget();
 }
 
-void
-DynamicImage::PropagateUseCounters(nsIDocument*)
-{
-  // No use counters.
-}
-
 } // namespace image
 } // namespace mozilla
