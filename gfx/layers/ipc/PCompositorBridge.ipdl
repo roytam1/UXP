@@ -184,12 +184,6 @@ parent:
   // work around a windows presentation bug (See Bug 1232042)
   async ForcePresent();
 
-  sync StartFrameTimeRecording(int32_t bufferSize)
-    returns (uint32_t startIndex);
-
-  sync StopFrameTimeRecording(uint32_t startIndex)
-    returns (float[] intervals);
-
   // layersBackendHints is an ordered list of preffered backends where
   // layersBackendHints[0] is the best backend. If any hints are LayersBackend::LAYERS_NONE
   // that hint is ignored.

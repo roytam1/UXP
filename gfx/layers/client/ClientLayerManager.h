@@ -98,11 +98,6 @@ public:
   virtual void FlushRendering() override;
   void SendInvalidRegion(const nsIntRegion& aRegion);
 
-  virtual uint32_t StartFrameTimeRecording(int32_t aBufferSize) override;
-
-  virtual void StopFrameTimeRecording(uint32_t         aStartIndex,
-                                      nsTArray<float>& aFrameIntervals) override;
-
   virtual bool NeedsWidgetInvalidation() override { return false; }
 
   ShadowableLayer* Hold(Layer* aLayer);

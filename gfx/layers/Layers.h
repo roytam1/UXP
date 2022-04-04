@@ -586,36 +586,6 @@ public:
    */
   void LogSelf(const char* aPrefix="");
 
-  /**
-   * Record (and return) frame-intervals and paint-times for frames which were presented
-   *   between calling StartFrameTimeRecording and StopFrameTimeRecording.
-   *
-   * - Uses a cyclic buffer and serves concurrent consumers, so if Stop is called too late
-   *     (elements were overwritten since Start), result is considered invalid and hence empty.
-   * - Buffer is capable of holding 10 seconds @ 60fps (or more if frames were less frequent).
-   *     Can be changed (up to 1 hour) via pref: toolkit.framesRecording.bufferSize.
-   * - Note: the first frame-interval may be longer than expected because last frame
-   *     might have been presented some time before calling StartFrameTimeRecording.
-   */
-
-  /**
-   * Returns a handle which represents current recording start position.
-   */
-  virtual uint32_t StartFrameTimeRecording(int32_t aBufferSize);
-
-  /**
-   *  Clears, then populates aFrameIntervals with the recorded frame timing
-   *  data. The array will be empty if data was overwritten since
-   *  aStartIndex was obtained.
-   */
-  virtual void StopFrameTimeRecording(uint32_t         aStartIndex,
-                                      nsTArray<float>& aFrameIntervals);
-
-  void RecordFrame();
-  void PostPresent();
-
-  void BeginTabSwitch();
-
   static bool IsLogEnabled();
   static mozilla::LogModule* GetLog();
 
@@ -686,27 +656,6 @@ protected:
   TimeStamp mAnimationReadyTime;
   // The count of pixels that were painted in the current transaction.
   uint32_t mPaintedPixelCount;
-private:
-  struct FramesTimingRecording
-  {
-    // Stores state and data for frame intervals and paint times recording.
-    // see LayerManager::StartFrameTimeRecording() at Layers.cpp for more details.
-    FramesTimingRecording()
-      : mNextIndex(0)
-      , mLatestStartIndex(0)
-      , mCurrentRunStartIndex(0)
-      , mIsPaused(true)
-    {}
-    nsTArray<float> mIntervals;
-    TimeStamp mLastFrameTime;
-    uint32_t mNextIndex;
-    uint32_t mLatestStartIndex;
-    uint32_t mCurrentRunStartIndex;
-    bool mIsPaused;
-  };
-  FramesTimingRecording mRecording;
-
-  TimeStamp mTabSwitchStart;
 
 public:
   /*
