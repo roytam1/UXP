@@ -98,6 +98,16 @@
 == flexbox-column-row-gap-004.html flexbox-column-row-gap-004-ref.html
 == flexbox-gap-position-absolute.html flexbox-gap-position-absolute-ref.html
 
+# Tests for "flex-basis: content"
+== flexbox-flex-basis-content-001a.html flexbox-flex-basis-content-001-ref.html
+== flexbox-flex-basis-content-001b.html flexbox-flex-basis-content-001-ref.html
+== flexbox-flex-basis-content-002a.html flexbox-flex-basis-content-002-ref.html
+== flexbox-flex-basis-content-002b.html flexbox-flex-basis-content-002-ref.html
+== flexbox-flex-basis-content-003a.html flexbox-flex-basis-content-003-ref.html
+== flexbox-flex-basis-content-003b.html flexbox-flex-basis-content-003-ref.html
+== flexbox-flex-basis-content-004a.html flexbox-flex-basis-content-004-ref.html
+== flexbox-flex-basis-content-004b.html flexbox-flex-basis-content-004-ref.html
+
 # Tests for flex-flow shorthand property
 == flexbox-flex-flow-001.html flexbox-flex-flow-001-ref.html
 == flexbox-flex-flow-002.html flexbox-flex-flow-002-ref.html
