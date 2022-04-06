@@ -4637,34 +4637,50 @@ nsFrame::GetIntrinsicRatio()
 
 void
 nsFrame::SetCoordToFlexBasis(bool aIsInlineFlexItem,
+                             bool aIntrinsic,
                              const nsStyleCoord* aFlexBasis,
                              const nsStyleCoord** aInlineStyle,
                              const nsStyleCoord** aBlockStyle)
 {
-  // Don't bother changing the pointer of the coordinates if the
-  // value of the 'flex-basis' property is set to 'auto'.
-  if (aFlexBasis->GetUnit() == eStyleUnit_Auto) {
-    return;
-  }
-
-  const nsStyleCoord* newCoord = aFlexBasis;
-
-  // Having 'content' as the value of the 'flex-basis' property is
-  // equivalent to setting both 'flex-basis' and the main size
-  // properties to 'auto', which is why a dummy 'auto' value will
-  // be used here for the main size property.
-  if (aFlexBasis->GetUnit() == eStyleUnit_Enumerated &&
-      aFlexBasis->GetIntValue() == NS_STYLE_FLEX_BASIS_CONTENT) {
-    static const nsStyleCoord autoStyleCoord(eStyleUnit_Auto);
-    newCoord = &autoStyleCoord;
-  }
-
-  // Override whichever styleCoord is in the flex container's main axis
-  if (aIsInlineFlexItem) {
-    *aInlineStyle = newCoord;
-  } else {
-    *aBlockStyle = newCoord;
-  }
+  auto mainAxisCoord = aIsInlineFlexItem ?
+                       aInlineStyle :
+                       aBlockStyle;
+  // We have a used flex-basis of 'content' if flex-basis explicitly has that
+  // value, OR if flex-basis is 'auto' (deferring to the main-size property)
+  // and the main-size property is also 'auto'.
+  // See https://drafts.csswg.org/css-flexbox-1/#valdef-flex-basis-auto
+  if ((aFlexBasis->GetUnit() == eStyleUnit_Enumerated &&
+       aFlexBasis->GetIntValue() == NS_STYLE_FLEX_BASIS_CONTENT) ||
+      (aFlexBasis->GetUnit() == eStyleUnit_Auto &&
+       (*mainAxisCoord)->GetUnit() == eStyleUnit_Auto)) {
+    // If we get here, we're resolving the flex base size for a flex item,
+    // and we fall into the flexbox spec section 9.2 step 3, substep C (if
+    // we have a definite cross size) or E (if not). And specifically:
+    //
+    // * If we have a definite cross size, we're supposed to resolve our
+    //   main-size based on that and our intrinsic ratio.
+    // * Otherwise, we're supposed to produce our max-content size.
+    //
+    // Conveniently, we can handle both of those scenarios (regardless of
+    // which substep we fall into) by using the 'auto' keyword for our
+    // main-axis coordinate here. (This makes sense, because the spec is
+    // effectively trying to produce the 'auto' sizing behavior).
+    if (aIntrinsic) {
+      static const nsStyleCoord autoStyleCoord(eStyleUnit_Auto);
+      *mainAxisCoord = &autoStyleCoord;
+    } else {
+      // (Note: if our main axis is the block axis, then this 'max-content'
+      // value will be treated like 'auto', via the IsAutoBSize() call below.)
+      static const nsStyleCoord maxContStyleCoord(NS_STYLE_WIDTH_MAX_CONTENT,
+                                                  eStyleUnit_Enumerated);
+      *mainAxisCoord = &maxContStyleCoord;
+    }
+  } else if (aFlexBasis->GetUnit() != eStyleUnit_Auto) {
+    // For all other non-'auto' flex-basis values, we just swap in the
+    // flex-basis itself for the main-size property.
+    *mainAxisCoord = aFlexBasis;
+  } // else: flex-basis is 'auto', which is deferring to some explicit
+    // value in mainAxisCoord. So we proceed w/o touching mainAxisCoord.
 }
 
 /* virtual */
@@ -4727,7 +4743,7 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
       flexDirection == NS_STYLE_FLEX_DIRECTION_ROW_REVERSE;
 
     const nsStyleCoord* flexBasis = &(stylePos->mFlexBasis);
-    SetCoordToFlexBasis(isInlineFlexItem, flexBasis,
+    SetCoordToFlexBasis(isInlineFlexItem, false, flexBasis,
                         &inlineStyleCoord, &blockStyleCoord);
   }
 
@@ -4962,7 +4978,7 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       }
     } else {
       const nsStyleCoord* flexBasis = &(stylePos->mFlexBasis);
-      SetCoordToFlexBasis(isInlineFlexItem, flexBasis,
+      SetCoordToFlexBasis(isInlineFlexItem, true, flexBasis,
                           &inlineStyleCoord, &blockStyleCoord);
     }
   }

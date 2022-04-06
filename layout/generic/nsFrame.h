@@ -272,6 +272,7 @@ public:
    * as 'width', for sizing purposes.
    */
   void SetCoordToFlexBasis(bool aIsInlineFlexItem,
+                           bool aIntrinsic,
                            const nsStyleCoord* aFlexBasis,
                            const nsStyleCoord** aInlineStyle,
                            const nsStyleCoord** aBlockStyle);
