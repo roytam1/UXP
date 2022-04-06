@@ -4647,11 +4647,23 @@ nsFrame::SetCoordToFlexBasis(bool aIsInlineFlexItem,
     return;
   }
 
+  const nsStyleCoord* newCoord = aFlexBasis;
+
+  // Having 'content' as the value of the 'flex-basis' property is
+  // equivalent to setting both 'flex-basis' and the main size
+  // properties to 'auto', which is why a dummy 'auto' value will
+  // be used here for the main size property.
+  if (aFlexBasis->GetUnit() == eStyleUnit_Enumerated &&
+      aFlexBasis->GetIntValue() == NS_STYLE_FLEX_BASIS_CONTENT) {
+    static const nsStyleCoord autoStyleCoord(eStyleUnit_Auto);
+    newCoord = &autoStyleCoord;
+  }
+
   // Override whichever styleCoord is in the flex container's main axis
   if (aIsInlineFlexItem) {
-    *aInlineStyle = aFlexBasis;
+    *aInlineStyle = newCoord;
   } else {
-    *aBlockStyle = aFlexBasis;
+    *aBlockStyle = newCoord;
   }
 }
 
