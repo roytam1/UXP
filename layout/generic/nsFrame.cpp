@@ -4647,19 +4647,11 @@ nsFrame::SetCoordToFlexBasis(bool aIsInlineFlexItem,
     return;
   }
 
+  // Override whichever styleCoord is in the flex container's main axis
   if (aIsInlineFlexItem) {
     *aInlineStyle = aFlexBasis;
   } else {
-    // One caveat for vertical flex items: We don't support enumerated
-    // values (e.g. "max-content") for height properties yet. So, if our
-    // computed flex-basis is an enumerated value, we'll just behave as if
-    // it were "auto", which means "use the main-size property after all"
-    // (which is "height", in this case).
-    // NOTE: Once we support intrinsic sizing keywords for "height",
-    // we should remove this check.
-    if (aFlexBasis->GetUnit() != eStyleUnit_Enumerated) {
-      *aBlockStyle = aFlexBasis;
-    }
+    *aBlockStyle = aFlexBasis;
   }
 }
 
