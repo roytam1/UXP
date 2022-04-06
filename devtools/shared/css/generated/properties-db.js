@@ -2073,6 +2073,7 @@ exports.CSS_PROPERTIES = {
       "-moz-min-content",
       "auto",
       "calc",
+      "content",
       "inherit",
       "initial",
       "unset"
@@ -2095,6 +2096,7 @@ exports.CSS_PROPERTIES = {
       "-moz-min-content",
       "auto",
       "calc",
+      "content",
       "inherit",
       "initial",
       "unset"
@@ -3231,6 +3233,7 @@ exports.CSS_PROPERTIES = {
       "column-reverse",
       "condensed",
       "contain",
+      "content",
       "content-box",
       "contents",
       "cover",
@@ -5840,6 +5843,7 @@ exports.CSS_PROPERTIES = {
       "-moz-min-content",
       "auto",
       "calc",
+      "content",
       "inherit",
       "initial",
       "unset"
@@ -5862,6 +5866,7 @@ exports.CSS_PROPERTIES = {
       "-moz-min-content",
       "auto",
       "calc",
+      "content",
       "inherit",
       "initial",
       "unset"
