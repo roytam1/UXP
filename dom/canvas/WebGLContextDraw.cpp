@@ -1066,7 +1066,7 @@ WebGLContext::DoFakeVertexAttrib0(const char* funcName, GLuint vertexCount)
         vertexCount = 1;
     }
 
-    if (gl->WorkAroundDriverBugs() && gl->IsMesa()) {
+    if (gl->WorkAroundDriverBugs() && gl->Vendor() == gl::GLVendor::Nouveau) {
       // Padded/strided to vec4, so 4x4bytes.
       const auto effectiveVertAttribBytes = CheckedInt<int32_t>(vertexCount) * 4 * 4;
       if (!effectiveVertAttribBytes.isValid()) {
