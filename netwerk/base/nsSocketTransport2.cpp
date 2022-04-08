@@ -1321,7 +1321,7 @@ nsSocketTransport::InitiateSocket()
     // if we already have a connected socket, then just attach and return.
     //
     {
-      MutexAutoLock lock(mlock);
+      MutexAutoLock lock(mLock);
       if (mFD.IsInitialized()) {
         rv = mSocketTransportService->AttachSocket(mFD, this);
         if (NS_SUCCEEDED(rv))
