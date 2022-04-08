@@ -155,8 +155,6 @@ nsThreadPool::Run()
 {
   mThreadNaming.SetThreadPoolName(mName);
 
-  LOG(("THRD-P(%p) enter %s\n", this, mName.BeginReading()));
-
   nsCOMPtr<nsIThread> current;
   nsThreadManager::get().GetCurrentThread(getter_AddRefs(current));
 
@@ -169,6 +167,7 @@ nsThreadPool::Run()
   {
     MutexAutoLock lock(mMutex);
     listener = mListener;
+    LOG(("THRD-P(%p) enter %s\n", this, mName.BeginReading()));
   }
 
   if (listener) {
@@ -223,7 +222,12 @@ nsThreadPool::Run()
       }
     }
     if (event) {
-      LOG(("THRD-P(%p) %s running [%p]\n", this, mName.BeginReading(), event.get()));
+#ifdef DEBUG
+      {
+        MutexAutoLock lock(mMutex);
+        LOG(("THRD-P(%p) %s running [%p]\n", this, mName.BeginReading(), event.get()));
+      }
+#endif
       event->Run();
     }
   } while (!exitThread);
@@ -335,6 +339,7 @@ nsThreadPool::Shutdown()
 NS_IMETHODIMP
 nsThreadPool::GetThreadLimit(uint32_t* aValue)
 {
+  MutexAutoLock lock(mMutex);
   *aValue = mThreadLimit;
   return NS_OK;
 }
@@ -358,6 +363,7 @@ nsThreadPool::SetThreadLimit(uint32_t aValue)
 NS_IMETHODIMP
 nsThreadPool::GetIdleThreadLimit(uint32_t* aValue)
 {
+  MutexAutoLock lock(mMutex);
   *aValue = mIdleThreadLimit;
   return NS_OK;
 }
@@ -382,6 +388,7 @@ nsThreadPool::SetIdleThreadLimit(uint32_t aValue)
 NS_IMETHODIMP
 nsThreadPool::GetIdleThreadTimeout(uint32_t* aValue)
 {
+  MutexAutoLock lock(mMutex);
   *aValue = mIdleThreadTimeout;
   return NS_OK;
 }
@@ -438,11 +445,9 @@ nsThreadPool::SetListener(nsIThreadPoolListener* aListener)
 NS_IMETHODIMP
 nsThreadPool::SetName(const nsACString& aName)
 {
-  {
-    MutexAutoLock lock(mMutex);
-    if (mThreads.Count()) {
-      return NS_ERROR_NOT_AVAILABLE;
-    }
+  MutexAutoLock lock(mMutex);
+  if (mThreads.Count()) {
+    return NS_ERROR_NOT_AVAILABLE;
   }
 
   mName = aName;
