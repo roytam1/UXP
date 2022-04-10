@@ -23,6 +23,19 @@ function enableSourceMaps() {
 
 function _resolveSourceMapURL(source) {
   const { url = "", sourceMapURL = "" } = source;
+  
+  const UNSUPPORTED_PROTOCOLS = ["chrome://", "resource://"];
+  if (path.isURL(sourceMapURL) && UNSUPPORTED_PROTOCOLS.some(protocol => sourceMapURL.startsWith(protocol))) {
+    // If it's an internal protocol, don't allow it and return empty.
+    return "";
+  }
+  if (path.isURL(sourceMapURL) && sourceMapURL.startsWith("file://")) {
+    // Only allow file:// source maps from file:// docs
+    if (!url.startsWith("file://")) {
+      return "";
+    }
+  }
+  
   if (path.isURL(sourceMapURL) || url == "") {
     // If it's already a full URL or the source doesn't have a URL,
     // don't resolve anything.

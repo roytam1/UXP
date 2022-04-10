@@ -280,10 +280,13 @@ nsProcess::ProcessComplete()
   }
 
   const char* topic;
-  if (mExitValue < 0) {
-    topic = "process-failed";
-  } else {
-    topic = "process-finished";
+  { // Lock scope
+    MutexAutoLock lock(mLock);
+    if (mExitValue < 0) {
+      topic = "process-failed";
+    } else {
+      topic = "process-finished";
+    }
   }
 
   mPid = -1;
@@ -412,8 +415,11 @@ nsProcess::RunProcess(bool aBlocking, char** aMyArgv, nsIObserver* aObserver,
     }
   }
 
-  mExitValue = -1;
-  mPid = -1;
+  {
+    MutexAutoLock lock(mLock);
+    mExitValue = -1;
+    mPid = -1;
+  }
 
 #if defined(PROCESSMODEL_WINAPI)
   BOOL retVal;
@@ -477,6 +483,7 @@ nsProcess::RunProcess(bool aBlocking, char** aMyArgv, nsIObserver* aObserver,
   mBlocking = aBlocking;
   if (aBlocking) {
     Monitor(this);
+    MutexAutoLock lock(mLock);
     if (mExitValue < 0) {
       return NS_ERROR_FILE_EXECUTION_FAILED;
     }

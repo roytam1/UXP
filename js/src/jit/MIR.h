@@ -10113,7 +10113,7 @@ class MLoadTypedArrayElementHole
         return congruentIfOperandsEqual(other);
     }
     AliasSet getAliasSet() const override {
-        return AliasSet::Load(AliasSet::UnboxedElement);
+        return AliasSet::Load(AliasSet::UnboxedElement | AliasSet::ObjectFields);
     }
     bool canProduceFloat32() const override { return arrayType_ == Scalar::Float32; }
 

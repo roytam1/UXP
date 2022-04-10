@@ -1066,6 +1066,15 @@ WebGLContext::DoFakeVertexAttrib0(const char* funcName, GLuint vertexCount)
         vertexCount = 1;
     }
 
+    if (gl->WorkAroundDriverBugs() && gl->Vendor() == gl::GLVendor::Nouveau) {
+      // Padded/strided to vec4, so 4x4bytes.
+      const auto effectiveVertAttribBytes = CheckedInt<int32_t>(vertexCount) * 4 * 4;
+      if (!effectiveVertAttribBytes.isValid()) {
+        ErrorOutOfMemory("`offset + count` too large for Mesa.");
+        return false;
+      }
+    }
+
     const auto whatDoesAttrib0Need = WhatDoesVertexAttrib0Need();
     if (MOZ_LIKELY(whatDoesAttrib0Need == WebGLVertexAttrib0Status::Default))
         return true;

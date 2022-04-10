@@ -152,9 +152,10 @@ private:
   nsCOMPtr<nsIThread> mThread;
 
   /**
-   * Protected by mMutex. Created when mThread has no pending events and fired
+   * Created when mThread has no pending events and fired
    * at mOwningThread. Any thread that dispatches to mThread will take ownership
    * of the timer and fire a separate cancel event to the owning thread.
+   * Only accessed from the owning thread.
    */
   nsCOMPtr<nsITimer> mIdleTimer;
 
