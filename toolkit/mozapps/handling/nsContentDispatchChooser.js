@@ -66,6 +66,8 @@ nsContentDispatchChooser.prototype =
     var features = "chrome,dialog=yes,resizable,centerscreen";
     if (Services.prefs.getBoolPref("prompts.content_handling_dialog_modal.enabled")) {
       features += ",modal";
+    } else {
+      features += ",dependent";
     }
 
     var ww = Cc["@mozilla.org/embedcomp/window-watcher;1"].
