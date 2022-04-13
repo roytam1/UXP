@@ -4,11 +4,12 @@
 
 MY_TEMP_DIR=$(mktemp -d -t xz-embedded_update.XXXXXX) || exit 1
 
-git clone http://git.tukaani.org/xz-embedded.git ${MY_TEMP_DIR}/xz-embedded
+git clone https://git.tukaani.org/xz-embedded.git ${MY_TEMP_DIR}/xz-embedded
 
 COMMIT=$(git -C ${MY_TEMP_DIR}/xz-embedded rev-parse HEAD)
 cd $(dirname $0)
-perl -p -i -e "s/\[commit [0-9a-f]{40}\]/[${COMMIT}]/" README.mozilla;
+perl -p -i -e "s/\[[0-9a-f]{40}\]/[${COMMIT}]/" README.mozilla;
+rm -f README.mozilla.bak;
 
 rm -rf src
 mkdir src
@@ -23,7 +24,6 @@ mv ${MY_TEMP_DIR}/xz-embedded/linux/lib/xz/xz_dec_bcj.c src/
 mv ${MY_TEMP_DIR}/xz-embedded/linux/lib/xz/xz_dec_stream.c src/
 mv ${MY_TEMP_DIR}/xz-embedded/linux/lib/xz/xz_dec_lzma2.c src/
 rm -rf ${MY_TEMP_DIR}
-hg addremove src
 
 echo "###"
 echo "### Updated xz-embedded/src to $COMMIT."

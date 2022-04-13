@@ -1,14 +1,14 @@
 This is the XZ Embedded decompression library from
-http://tukaani.org/xz/embedded.html.
+https://tukaani.org/xz/embedded.html.
 
 Upstream code can be viewed at
-  http://git.tukaani.org/xz-embedded.git
+  https://git.tukaani.org/xz-embedded.git
 
 and cloned by
-  git clone http://git.tukaani.org/xz-embedded.git
+  git clone https://git.tukaani.org/xz-embedded.git
 
 The in-tree copy is updated by running
   sh update.sh
 from within the modules/xz-embedded directory.
 
-Current version: [e75f4eb79165213a02d567940d344f5c2ff1be03].
+Current version: [3f438e15109229bb14ab45f285f4bff5412a9542].
