@@ -721,10 +721,14 @@ FetchDriver::OnDataAvailable(nsIRequest* aRequest,
     }
   }
 
+  if (!mResponse) {
+    MOZ_ASSERT(false);
+    return NS_ERROR_UNEXPECTED;
+  }
+
   // Explicitly initialized to 0 because in some cases nsStringInputStream may
   // not write to aRead.
   uint32_t aRead = 0;
-  MOZ_ASSERT(mResponse);
   MOZ_ASSERT(mPipeOutputStream);
 
   // From "Main Fetch" step 17: SRI-part2.
