@@ -4645,6 +4645,13 @@ nsFrame::SetCoordToFlexBasis(bool aIsInlineFlexItem,
   auto mainAxisCoord = aIsInlineFlexItem ?
                        aInlineStyle :
                        aBlockStyle;
+  // NOTE: If we're a table-wrapper frame, we skip this clause and just stick
+  // with 'main-size:auto' behavior (which -- unlike 'content'
+  // i.e. 'max-content' -- will give us the ability to honor percent sizes on
+  // our table-box child when resolving the flex base size). The flexbox spec
+  // doesn't call for this special case, but webcompat & regression-avoidance
+  // seems to require it, for the time being... Tables sure are special.
+  bool isTableWrapperFrame = GetType() == nsGkAtoms::tableWrapperFrame;
   // We have a used flex-basis of 'content' if flex-basis explicitly has that
   // value, OR if flex-basis is 'auto' (deferring to the main-size property)
   // and the main-size property is also 'auto'.
@@ -4665,7 +4672,7 @@ nsFrame::SetCoordToFlexBasis(bool aIsInlineFlexItem,
     // which substep we fall into) by using the 'auto' keyword for our
     // main-axis coordinate here. (This makes sense, because the spec is
     // effectively trying to produce the 'auto' sizing behavior).
-    if (aIntrinsic) {
+    if (aIntrinsic || MOZ_LIKELY(isTableWrapperFrame)) {
       static const nsStyleCoord autoStyleCoord(eStyleUnit_Auto);
       *mainAxisCoord = &autoStyleCoord;
     } else {
