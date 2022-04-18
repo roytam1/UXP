@@ -131,6 +131,17 @@ nsFrameManager::Destroy()
 
 //----------------------------------------------------------------------
 
+/* static */ nsIContent*
+nsFrameManager::ParentForUndisplayedMap(const nsIContent* aContent)
+{
+  MOZ_ASSERT(aContent);
+
+  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
+  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+
+  return parent;
+}
+
 /* static */ nsStyleContext*
 nsFrameManager::GetStyleContextInMap(UndisplayedMap* aMap,
                                      const nsIContent* aContent)
@@ -138,8 +149,8 @@ nsFrameManager::GetStyleContextInMap(UndisplayedMap* aMap,
   if (!aContent) {
     return nullptr;
   }
-  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
-  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+
+  nsIContent* parent = ParentForUndisplayedMap(aContent);
   for (UndisplayedNode* node = aMap->GetFirstNode(parent);
        node; node = node->getNext()) {
     if (node->mContent == aContent)
@@ -178,8 +189,7 @@ nsFrameManager::SetStyleContextInMap(UndisplayedMap* aMap,
   MOZ_ASSERT(!GetStyleContextInMap(aMap, aContent),
              "Already have an entry for aContent");
 
-  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
-  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+  nsIContent* parent = ParentForUndisplayedMap(aContent);
 #ifdef DEBUG
   nsIPresShell* shell = aStyleContext->PresContext()->PresShell();
   NS_ASSERTION(parent || (shell && shell->GetDocument() &&
@@ -223,8 +233,7 @@ nsFrameManager::ChangeStyleContextInMap(UndisplayedMap* aMap,
    printf("ChangeStyleContextInMap(%d): p=%p \n", i++, (void *)aContent);
 #endif
 
-  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
-  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+  nsIContent* parent = ParentForUndisplayedMap(aContent);
 
   for (UndisplayedNode* node = aMap->GetFirstNode(parent);
        node; node = node->getNext()) {
