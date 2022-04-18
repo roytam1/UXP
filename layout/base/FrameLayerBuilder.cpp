@@ -5581,20 +5581,20 @@ FrameLayerBuilder::BuildContainerLayerFor(nsDisplayListBuilder* aBuilder,
 
       // Restore DisplayItemData
       auto iter = data->mDisplayItems.begin();
-        while (iter != data->mDisplayItems.end()) {
-          DisplayItemData* did = iter->get();
+      while (iter != data->mDisplayItems.end()) {
+        DisplayItemData* did = iter->get();
         if (did->mUsed && did->mContainerLayerGeneration >= mContainerLayerGeneration) {
           if (iter != data->mDisplayItems.end() - 1) {
-          std::iter_swap(iter, data->mDisplayItems.end() - 1);
-          data->mDisplayItems.pop_back();
+            std::iter_swap(iter, data->mDisplayItems.end() - 1);
+            data->mDisplayItems.pop_back();
           } else {
-          data->mDisplayItems.pop_back();
-          break;
+            data->mDisplayItems.pop_back();
+            break;
           }
-          } else {
+        } else {
           iter++;
-          }
         }
+      }
 
       // Restore PaintedLayerItemEntries
       for (auto iter = mPaintedLayerItems.Iter(); !iter.Done(); iter.Next()) {
