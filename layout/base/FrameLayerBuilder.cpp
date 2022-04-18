@@ -162,7 +162,12 @@ void
 FrameLayerBuilder::DisplayItemData::AddFrame(nsIFrame* aFrame)
 {
   MOZ_RELEASE_ASSERT(mLayer);
-  mFrameList.AppendElement(aFrame);
+  
+  // Make sure we don't add duplicate frames as we're storing these as vectors.
+  // See UXP Issue #1860
+  if (!mFrameList.Contains(aFrame)) {
+    mFrameList.AppendElement(aFrame);
+  }
 
   nsTArray<DisplayItemData*>* array =
     aFrame->GetProperty(FrameLayerBuilder::LayerManagerDataProperty());
