@@ -213,9 +213,9 @@ nsFrameManager::SetStyleContextInMap(UndisplayedMap* aMap,
   // mUndisplayedMap and mDisplayContentsMap if the bit isn't present on a node
   // that it's handling.
 
-if (parent) {
-  parent->SetMayHaveChildrenWithLayoutBoxesDisabled();
-}
+  if (parent) {
+    parent->SetMayHaveChildrenWithLayoutBoxesDisabled();
+  }
 
   aMap->AddNodeFor(parent, aContent, aStyleContext);
 }
