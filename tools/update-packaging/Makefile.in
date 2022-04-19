@@ -31,7 +31,7 @@ MAR_BIN	= $(DIST)/host/bin/mar$(HOST_BIN_SUFFIX)
 MBSDIFF_BIN	= $(DIST)/host/bin/mbsdiff$(HOST_BIN_SUFFIX)
 
 OVERRIDE_DEFAULT_GOAL := full-update
-full-update:: complete-patch
+full-update:: mar-package
 
 ifeq ($(OS_TARGET), WINNT)
 ifdef AB_CD
@@ -69,4 +69,24 @@ partial-patch:: $(dir-stage)
 	  '$(DST_BUILD)'
 ifdef MOZ_SIGN_CMD
 	$(MOZ_SIGN_CMD) -f mar '$(STAGE_DIR)/$(PKG_UPDATE_BASENAME).partial.$(SRC_BUILD_ID)-$(DST_BUILD_ID).mar'
+endif
+
+mar-package: $(call mkdir_deps,$(ABS_DIST)/$(PKG_STAGE_DIR))
+	@echo 'Creating update mar (xz compressed)...'
+	MAR=$(MAR_BIN) \
+	  $(srcdir)/make_full_update.sh \
+	  '$(DIST)/$(BARE_MAR)' \
+	  '$(PACKAGE_DIR)'
+ifdef MOZ_SIGN_CMD
+	$(MOZ_SIGN_CMD) -f mar '$(DIST)/$(BARE_MAR)'
+endif
+
+mar-package-bz2: $(call mkdir_deps,$(ABS_DIST)/$(PKG_STAGE_DIR))
+	@echo 'Creating update mar (bz2 compressed)...'
+	MAR_OLD_FORMAT=1 MAR=$(MAR_BIN) \
+	  $(srcdir)/make_full_update.sh \
+	  '$(DIST)/$(COMPLETE_MAR)' \
+	  '$(PACKAGE_DIR)'
+ifdef MOZ_SIGN_CMD
+	$(MOZ_SIGN_CMD) -f mar '$(DIST)/$(COMPLETE_MAR)'
 endif

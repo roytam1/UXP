@@ -947,8 +947,29 @@ nsContainerFrame::ComputeAutoSize(nsRenderingContext* aRenderingContext,
                        aBorder.ISize(aWM) - aPadding.ISize(aWM);
   // replaced elements always shrink-wrap
   if ((aFlags & ComputeSizeFlags::eShrinkWrap) || IsFrameOfType(eReplaced)) {
-    // don't bother setting it if the result won't be used
-    if (StylePosition()->ISize(aWM).GetUnit() == eStyleUnit_Auto) {
+    const nsStylePosition* position = StylePosition();
+
+    bool isFlexBasisContent = false;
+    if (IsFlexItem()) {
+      uint32_t flexDirection =
+        GetParent()->StylePosition()->mFlexDirection;
+      bool isInlineFlexItem =
+        flexDirection == NS_STYLE_FLEX_DIRECTION_ROW ||
+        flexDirection == NS_STYLE_FLEX_DIRECTION_ROW_REVERSE;
+      isFlexBasisContent =
+        position->mFlexBasis.GetUnit() == eStyleUnit_Enumerated &&
+        position->mFlexBasis.GetIntValue() == NS_STYLE_FLEX_BASIS_CONTENT &&
+        isInlineFlexItem;
+    }
+
+    // Only bother computing our 'auto' ISize if the result will be used.
+    // It'll be used under two scenarios:
+    // - If our ISize property is itself 'auto'.
+    // - If we're using flex-basis in place of our ISize property (i.e. we're a
+    // flex item with our inline axis being the main axis), AND we have
+    // flex-basis:content.
+    bool isAuto = position->ISize(aWM).GetUnit() == eStyleUnit_Auto;
+    if (isAuto || isFlexBasisContent) {
       result.ISize(aWM) = ShrinkWidthToFit(aRenderingContext, availBased, aFlags);
     }
   } else {

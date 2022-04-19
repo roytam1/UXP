@@ -969,12 +969,14 @@ function String_static_trimStart(string) {
         ThrowTypeError(JSMSG_MISSING_FUN_ARG, 0, 'String.trimStart');
     return callFunction(std_String_trimStart, string);
 }
+_SetCanonicalName(String_static_trimStart, "trimStart");
 
 function String_static_trimEnd(string) {
     if (arguments.length < 1)
         ThrowTypeError(JSMSG_MISSING_FUN_ARG, 0, 'String.trimEnd');
     return callFunction(std_String_trimEnd, string);
 }
+_SetCanonicalName(String_static_trimEnd, "trimEnd");
 
 function String_static_toLocaleLowerCase(string) {
     if (arguments.length < 1)

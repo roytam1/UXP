@@ -1848,8 +1848,8 @@ public:
   nsStyleGridLine mGridColumnEnd;
   nsStyleGridLine mGridRowStart;
   nsStyleGridLine mGridRowEnd;
-  nsStyleCoord    mGridColumnGap;       // [reset] coord, percent, calc
-  nsStyleCoord    mGridRowGap;          // [reset] coord, percent, calc
+  nsStyleCoord    mColumnGap;       // [reset] normal, coord, percent, calc
+  nsStyleCoord    mRowGap;          // [reset] normal, coord, percent, calc
 
   // FIXME: Logical-coordinate equivalents to these WidthDepends... and
   // HeightDepends... methods have been introduced (see below); we probably
@@ -3502,7 +3502,6 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleColumn
 
   uint32_t     mColumnCount; // [reset] see nsStyleConsts.h
   nsStyleCoord mColumnWidth; // [reset] coord, auto
-  nsStyleCoord mColumnGap;   // [reset] <length-percentage> | normal
 
   mozilla::StyleComplexColor mColumnRuleColor; // [reset]
   uint8_t      mColumnRuleStyle;  // [reset]

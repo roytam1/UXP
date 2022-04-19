@@ -34,6 +34,7 @@ typedef nsFlexContainerFrame::FlexboxAxisTracker FlexboxAxisTracker;
 typedef nsFlexContainerFrame::StrutInfo StrutInfo;
 typedef nsFlexContainerFrame::CachedMeasuringReflowResult
           CachedMeasuringReflowResult;
+typedef nsLayoutUtils::IntrinsicISizeType IntrinsicISizeType;
 
 static mozilla::LazyLogModule gFlexContainerLog("nsFlexContainerFrame");
 
@@ -811,17 +812,23 @@ protected:
 class nsFlexContainerFrame::FlexLine : public LinkedListElement<FlexLine>
 {
 public:
-  FlexLine()
+  explicit FlexLine(nscoord aMainGapSize)
   : mNumItems(0),
     mNumFrozenItems(0),
     mTotalInnerHypotheticalMainSize(0),
     mTotalOuterHypotheticalMainSize(0),
     mLineCrossSize(0),
     mFirstBaselineOffset(nscoord_MIN),
-    mLastBaselineOffset(nscoord_MIN)
+    mLastBaselineOffset(nscoord_MIN),
+    mMainGapSize(aMainGapSize)
   {}
 
-  // Returns the sum of our FlexItems' outer hypothetical main sizes.
+  nscoord GetSumOfGaps() const {
+    return mNumItems > 0 ? (mNumItems - 1) * mMainGapSize : 0;
+  }
+
+  // Returns the sum of our FlexItems' outer hypothetical main sizes
+  // and the sum of the main axis {row,column}-gaps between items.
   // ("outer" = margin-box, and "hypothetical" = before flexing)
   nscoord GetTotalOuterHypotheticalMainSize() const {
     return mTotalOuterHypotheticalMainSize;
@@ -890,8 +897,16 @@ public:
     if (aItem->IsFrozen()) {
       mNumFrozenItems++;
     }
-    mTotalInnerHypotheticalMainSize += aItemInnerHypotheticalMainSize;
+
+    mTotalInnerHypotheticalMainSize += (aItemOuterHypotheticalMainSize -
+                                        aItemInnerHypotheticalMainSize);
     mTotalOuterHypotheticalMainSize += aItemOuterHypotheticalMainSize;
+
+    // If the item added was not the first item in the line, we add in
+    // any gap space as needed.
+    if (mNumItems >= 2) {
+        mTotalOuterHypotheticalMainSize += mMainGapSize;
+    }
   }
 
   // Computes the cross-size and baseline position of this FlexLine, based on
@@ -935,6 +950,22 @@ public:
     return mLastBaselineOffset;
   }
 
+  /**
+   * Returns the number of items held in this line. Used for total gap
+   * calculations.
+   */
+  uint32_t GetNumItems() const {
+    return mNumItems;
+  }
+
+  /**
+   * Returns the gap size in the main axis for this line. Used for gap
+   * calculations.
+   */
+  nscoord GetMainGapSize() const {
+    return mMainGapSize;
+  }
+
   // Runs the "Resolving Flexible Lengths" algorithm from section 9.7 of the
   // CSS flexbox spec to distribute aFlexContainerMainSize among our flex items.
   void ResolveFlexibleLengths(nscoord aFlexContainerMainSize);
@@ -973,6 +1004,9 @@ private:
   nscoord mLineCrossSize;
   nscoord mFirstBaselineOffset;
   nscoord mLastBaselineOffset;
+
+  // Maintain size of each {row,column}-gap in the main axis
+  const nscoord mMainGapSize;
 };
 
 // Information about a strut left behind by a FlexItem that's been collapsed
@@ -2241,6 +2275,9 @@ public:
                "miscounted the number of auto margins");
   }
 
+  // Advances past the gap space (if any) between two flex items
+  void TraverseGap(nscoord aGapSize) { mPosition += aGapSize; }
+
   // Advances past the packing space (if any) between two flex items
   void TraversePackingSpace();
 
@@ -2266,7 +2303,11 @@ public:
                            const ReflowInput& aReflowInput,
                            nscoord aContentBoxCrossSize,
                            bool aIsCrossSizeDefinite,
-                           const FlexboxAxisTracker& aAxisTracker);
+                           const FlexboxAxisTracker& aAxisTracker,
+                           const nscoord aCrossGapSize);
+
+  // Advances past the gap (if any) between two flex lines
+  void TraverseGap() { mPosition += mCrossGapSize; }
 
   // Advances past the packing space (if any) between two flex lines
   void TraversePackingSpace();
@@ -2288,6 +2329,8 @@ private:
   uint32_t mNumPackingSpacesRemaining;
   // XXX this should be uint16_t when we add explicit fallback handling
   uint8_t  mAlignContent;
+
+  const nscoord mCrossGapSize;
 };
 
 // Utility class for managing our position along the cross axis, *within* a
@@ -2581,14 +2624,12 @@ FlexLine::ResolveFlexibleLengths(nscoord aFlexContainerMainSize)
   }
   MOZ_ASSERT(!IsEmpty(), "empty lines should take the early-return above");
 
-  // Subtract space occupied by our items' margins/borders/padding, so we can
-  // just be dealing with the space available for our flex items' content
-  // boxes.
-  nscoord spaceReservedForMarginBorderPadding =
-    mTotalOuterHypotheticalMainSize - mTotalInnerHypotheticalMainSize;
-
+  // Subtract space occupied by our items' margins/borders/padding/gaps, so
+  // we can just be dealing with the space available for our flex items'
+  // content boxes.
   nscoord spaceAvailableForFlexItemsContentBoxes =
-    aFlexContainerMainSize - spaceReservedForMarginBorderPadding;
+    aFlexContainerMainSize - (mTotalInnerHypotheticalMainSize +
+                              GetSumOfGaps());
 
   nscoord origAvailableFreeSpace;
   bool isOrigAvailFreeSpaceInitialized = false;
@@ -2867,6 +2908,9 @@ MainAxisPositionTracker::
     mNumAutoMarginsInMainAxis += item->GetNumAutoMarginsInAxis(mAxis);
   }
 
+  // Subtract space required for row/col gap from the remaining packing space
+  mPackingSpaceRemaining -= aLine->GetSumOfGaps();
+
   if (mPackingSpaceRemaining <= 0) {
     // No available packing space to use for resolving auto margins.
     mNumAutoMarginsInMainAxis = 0;
@@ -3014,12 +3058,14 @@ CrossAxisPositionTracker::
                            const ReflowInput& aReflowInput,
                            nscoord aContentBoxCrossSize,
                            bool aIsCrossSizeDefinite,
-                           const FlexboxAxisTracker& aAxisTracker)
+                           const FlexboxAxisTracker& aAxisTracker,
+                           const nscoord aCrossGapSize)
   : PositionTracker(aAxisTracker.GetCrossAxis(),
                     aAxisTracker.IsCrossAxisReversed()),
     mPackingSpaceRemaining(0),
     mNumPackingSpacesRemaining(0),
-    mAlignContent(aReflowInput.mStylePosition->mAlignContent)
+    mAlignContent(aReflowInput.mStylePosition->mAlignContent),
+    mCrossGapSize(aCrossGapSize)
 {
   MOZ_ASSERT(aFirstLine, "null first line pointer");
 
@@ -3071,6 +3117,11 @@ CrossAxisPositionTracker::
     mPackingSpaceRemaining -= line->GetLineCrossSize();
     numLines++;
   }
+
+  // Subtract space required for row/col gap from the remaining packing space
+  MOZ_ASSERT(numLines >= 1,
+             "GenerateFlexLines should've produced at least 1 line");
+  mPackingSpaceRemaining -= aCrossGapSize * (numLines - 1);
 
   // If packing space is negative, 'space-between' and 'stretch' behave like
   // 'flex-start', and 'space-around' and 'space-evenly' behave like 'center'.
@@ -3673,9 +3724,10 @@ FlexboxAxisTracker::InitAxesFromModernProps(
 // back depending on aShouldInsertAtFront), and returns a pointer to it.
 static FlexLine*
 AddNewFlexLineToList(LinkedList<FlexLine>& aLines,
-                     bool aShouldInsertAtFront)
+                     bool aShouldInsertAtFront,
+                     nscoord aMainGapSize)
 {
-  FlexLine* newLine = new FlexLine();
+  FlexLine* newLine = new FlexLine(aMainGapSize);
   if (aShouldInsertAtFront) {
     aLines.insertFront(newLine);
   } else {
@@ -3692,6 +3744,7 @@ nsFlexContainerFrame::GenerateFlexLines(
   nscoord aAvailableBSizeForContent,
   const nsTArray<StrutInfo>& aStruts,
   const FlexboxAxisTracker& aAxisTracker,
+  nscoord aMainGapSize,
   nsTArray<nsIFrame*>& aPlaceholders, /* out */
   LinkedList<FlexLine>& aLines /* out */)
 {
@@ -3710,7 +3763,8 @@ nsFlexContainerFrame::GenerateFlexLines(
 
   // We have at least one FlexLine. Even an empty flex container has a single
   // (empty) flex line.
-  FlexLine* curLine = AddNewFlexLineToList(aLines, shouldInsertAtFront);
+  FlexLine* curLine = AddNewFlexLineToList(aLines, shouldInsertAtFront,
+                                           aMainGapSize);
 
   nscoord wrapThreshold;
   if (isSingleLine) {
@@ -3759,7 +3813,8 @@ nsFlexContainerFrame::GenerateFlexLines(
     // Honor "page-break-before", if we're multi-line and this line isn't empty:
     if (!isSingleLine && !curLine->IsEmpty() &&
         childFrame->StyleDisplay()->mBreakBefore) {
-      curLine = AddNewFlexLineToList(aLines, shouldInsertAtFront);
+      curLine = AddNewFlexLineToList(aLines, shouldInsertAtFront,
+                                     aMainGapSize);
     }
 
     UniquePtr<FlexItem> item;
@@ -3782,11 +3837,16 @@ nsFlexContainerFrame::GenerateFlexLines(
     // Check if we need to wrap |item| to a new line
     // (i.e. check if its outer hypothetical main size pushes our line over
     // the threshold)
-    if (wrapThreshold != NS_UNCONSTRAINEDSIZE &&
-        !curLine->IsEmpty() && // No need to wrap at start of a line.
-        wrapThreshold < (curLine->GetTotalOuterHypotheticalMainSize() +
-                         itemOuterHypotheticalMainSize)) {
-      curLine = AddNewFlexLineToList(aLines, shouldInsertAtFront);
+    // Don't wrap if unconstrained and if this will be line's first item.
+    if (wrapThreshold != NS_UNCONSTRAINEDSIZE && !curLine->IsEmpty()) {
+      nscoord newOuterSize = curLine->GetTotalOuterHypotheticalMainSize() +
+                             itemOuterHypotheticalMainSize;
+      // Account for gap between this line's previous item and this item
+      newOuterSize += aMainGapSize;
+      if (newOuterSize == nscoord_MAX || newOuterSize > wrapThreshold) {
+        curLine = AddNewFlexLineToList(aLines, shouldInsertAtFront,
+                                       aMainGapSize);
+      }
     }
 
     // Add item to current flex line (and update the line's bookkeeping about
@@ -3798,7 +3858,8 @@ nsFlexContainerFrame::GenerateFlexLines(
     // Honor "page-break-after", if we're multi-line and have more children:
     if (!isSingleLine && childFrame->GetNextSibling() &&
         childFrame->StyleDisplay()->mBreakAfter) {
-      curLine = AddNewFlexLineToList(aLines, shouldInsertAtFront);
+      curLine = AddNewFlexLineToList(aLines, shouldInsertAtFront,
+                                     aMainGapSize);
     }
     itemIdxInContainer++;
   }
@@ -3990,6 +4051,9 @@ FlexLine::PositionItemsInMainAxis(uint8_t aJustifyContent,
     mainAxisPosnTracker.ExitChildFrame(itemMainBorderBoxSize);
     mainAxisPosnTracker.ExitMargin(item->GetMargin());
     mainAxisPosnTracker.TraversePackingSpace();
+    if (item->getNext()) {
+      mainAxisPosnTracker.TraverseGap(mMainGapSize);
+    }
   }
 }
 
@@ -4178,16 +4242,37 @@ nsFlexContainerFrame::Reflow(nsPresContext* aPresContext,
   nscoord contentBoxMainSize = GetMainSizeFromReflowInput(aReflowInput,
                                                           axisTracker);
 
+  // Calculate gap size for main and cross axis
+  nscoord mainGapSize;
+  nscoord crossGapSize;
+  if (axisTracker.IsRowOriented()) {
+    mainGapSize = nsLayoutUtils::ResolveGapToLength(stylePos->mColumnGap,
+                                                    contentBoxMainSize);
+    crossGapSize =
+      nsLayoutUtils::ResolveGapToLength(stylePos->mRowGap,
+                                        GetEffectiveComputedBSize(aReflowInput));
+  } else {
+    mainGapSize = nsLayoutUtils::ResolveGapToLength(stylePos->mRowGap,
+                                                    contentBoxMainSize);
+    NS_WARNING_ASSERTION(aReflowInput.ComputedISize() != NS_UNCONSTRAINEDSIZE,
+                         "Unconstrained inline size; this should only result "
+                         "from huge sizes (not intrinsic sizing w/ orthogonal "
+                         "flows)");
+    crossGapSize =
+      nsLayoutUtils::ResolveGapToLength(stylePos->mColumnGap,
+                                        aReflowInput.ComputedISize());
+  }
+
   AutoTArray<StrutInfo, 1> struts;
   DoFlexLayout(aPresContext, aDesiredSize, aReflowInput, aStatus,
                contentBoxMainSize, availableBSizeForContent,
-               struts, axisTracker);
+               struts, axisTracker, mainGapSize, crossGapSize);
 
   if (!struts.IsEmpty()) {
     // We're restarting flex layout, with new knowledge of collapsed items.
     DoFlexLayout(aPresContext, aDesiredSize, aReflowInput, aStatus,
                  contentBoxMainSize, availableBSizeForContent,
-                 struts, axisTracker);
+                 struts, axisTracker, mainGapSize, crossGapSize);
   }
 }
 
@@ -4312,7 +4397,9 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
                                    nscoord aContentBoxMainSize,
                                    nscoord aAvailableBSizeForContent,
                                    nsTArray<StrutInfo>& aStruts,
-                                   const FlexboxAxisTracker& aAxisTracker)
+                                   const FlexboxAxisTracker& aAxisTracker,
+                                   nscoord aMainGapSize,
+                                   nscoord aCrossGapSize)
 {
   aStatus = NS_FRAME_COMPLETE;
 
@@ -4324,6 +4411,7 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
                     aContentBoxMainSize,
                     aAvailableBSizeForContent,
                     aStruts, aAxisTracker,
+                    aMainGapSize,
                     placeholderKids, lines);
 
   if (lines.getFirst()->IsEmpty() &&
@@ -4385,6 +4473,11 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
     // Now that we've finished with this line's items, size the line itself:
     line->ComputeCrossSizeAndBaseline(aAxisTracker);
     sumLineCrossSizes += line->GetLineCrossSize();
+
+    // Add the cross axis gap space if this is not the last line
+    if (line->getNext()) {
+      sumLineCrossSizes += aCrossGapSize;
+    }
   }
 
   bool isCrossSizeDefinite;
@@ -4397,7 +4490,8 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
   CrossAxisPositionTracker
     crossAxisPosnTracker(lines.getFirst(),
                          aReflowInput, contentBoxCrossSize,
-                         isCrossSizeDefinite, aAxisTracker);
+                         isCrossSizeDefinite, aAxisTracker,
+                         aCrossGapSize);
 
   // Now that we know the cross size of each line (including
   // "align-content:stretch" adjustments, from the CrossAxisPositionTracker
@@ -4447,6 +4541,10 @@ nsFlexContainerFrame::DoFlexLayout(nsPresContext*           aPresContext,
                                    aAxisTracker);
     crossAxisPosnTracker.TraverseLine(*line);
     crossAxisPosnTracker.TraversePackingSpace();
+
+    if (line->getNext()) {
+      crossAxisPosnTracker.TraverseGap();
+    }
   }
 
   // If the container should derive its baseline from the last FlexLine,
@@ -4817,33 +4915,70 @@ nsFlexContainerFrame::ReflowPlaceholders(nsPresContext* aPresContext,
   }
 }
 
+nscoord
+nsFlexContainerFrame::GetIntrinsicISize(nsRenderingContext* aRenderingContext,
+                                        IntrinsicISizeType aType)
+{
+  nscoord containerISize = 0;
+  RenumberList();
+
+  const nsStylePosition* stylePos = StylePosition();
+  const FlexboxAxisTracker axisTracker(this, GetWritingMode());
+
+  nscoord mainGapSize;
+  if (axisTracker.IsRowOriented()) {
+    mainGapSize = nsLayoutUtils::ResolveGapToLength(stylePos->mColumnGap,
+                                                    NS_UNCONSTRAINEDSIZE);
+  } else {
+    mainGapSize = nsLayoutUtils::ResolveGapToLength(stylePos->mRowGap,
+                                                    NS_UNCONSTRAINEDSIZE);
+  }
+
+  // The loop below sets aside space for a gap before each item besides the
+  // first. This bool helps us handle that special-case.
+  bool onFirstChild = true;
+
+  for (nsIFrame* childFrame : mFrames) {
+    // Skip out-of-flow children because they don't participate in flex layout.
+    if (childFrame->GetType() == nsGkAtoms::placeholderFrame) {
+      continue;
+    }
+
+    nscoord childISize = nsLayoutUtils::IntrinsicForContainer(
+        aRenderingContext, childFrame, aType);
+    // * For a row-oriented single-line flex container, the intrinsic
+    // {min/pref}-isize is the sum of its items' {min/pref}-isizes and
+    // (n-1) column gaps.
+    // * For a column-oriented flex container, the intrinsic min isize
+    // is the max of its items' min isizes.
+    // * For a row-oriented multi-line flex container, the intrinsic
+    // pref isize is former (sum), and its min isize is the latter (max).
+    bool isSingleLine = (NS_STYLE_FLEX_WRAP_NOWRAP == stylePos->mFlexWrap);
+    if (axisTracker.IsRowOriented() &&
+        (isSingleLine || aType == nsLayoutUtils::PREF_ISIZE)) {
+      containerISize += childISize;
+      if (!onFirstChild) {
+        containerISize += mainGapSize;
+      }
+      onFirstChild = false;
+    } else {
+      // col-oriented, or MIN_ISIZE for multi-line row flex container
+      containerISize = std::max(containerISize, childISize);
+    }
+  }
+
+  return containerISize;
+}
+
 /* virtual */ nscoord
 nsFlexContainerFrame::GetMinISize(nsRenderingContext* aRenderingContext)
 {
   nscoord minISize = 0;
   DISPLAY_MIN_WIDTH(this, minISize);
 
-  RenumberList();
+  // TODO: See bug 1454822
+  minISize = GetIntrinsicISize(aRenderingContext, nsLayoutUtils::MIN_ISIZE);
 
-  const nsStylePosition* stylePos = StylePosition();
-  const FlexboxAxisTracker axisTracker(this, GetWritingMode());
-
-  for (nsIFrame* childFrame : mFrames) {
-    nscoord childMinISize =
-      nsLayoutUtils::IntrinsicForContainer(aRenderingContext, childFrame,
-                                           nsLayoutUtils::MIN_ISIZE);
-    // For a horizontal single-line flex container, the intrinsic min
-    // isize is the sum of its items' min isizes.
-    // For a column-oriented flex container, or for a multi-line row-
-    // oriented flex container, the intrinsic min isize is the max of
-    // its items' min isizes.
-    if (axisTracker.IsRowOriented() &&
-        NS_STYLE_FLEX_WRAP_NOWRAP == stylePos->mFlexWrap) {
-      minISize += childMinISize;
-    } else {
-      minISize = std::max(minISize, childMinISize);
-    }
-  }
   return minISize;
 }
 
@@ -4853,24 +4988,8 @@ nsFlexContainerFrame::GetPrefISize(nsRenderingContext* aRenderingContext)
   nscoord prefISize = 0;
   DISPLAY_PREF_WIDTH(this, prefISize);
 
-  RenumberList();
+  // TODO: See bug 1454822
+  prefISize = GetIntrinsicISize(aRenderingContext, nsLayoutUtils::PREF_ISIZE);
 
-  // XXXdholbert Optimization: We could cache our intrinsic widths like
-  // nsBlockFrame does (and return it early from this function if it's set).
-  // Whenever anything happens that might change it, set it to
-  // NS_INTRINSIC_WIDTH_UNKNOWN (like nsBlockFrame::MarkIntrinsicISizesDirty
-  // does)
-  const FlexboxAxisTracker axisTracker(this, GetWritingMode());
-
-  for (nsIFrame* childFrame : mFrames) {
-    nscoord childPrefISize =
-      nsLayoutUtils::IntrinsicForContainer(aRenderingContext, childFrame,
-                                           nsLayoutUtils::PREF_ISIZE);
-    if (axisTracker.IsRowOriented()) {
-      prefISize += childPrefISize;
-    } else {
-      prefISize = std::max(prefISize, childPrefISize);
-    }
-  }
   return prefISize;
 }

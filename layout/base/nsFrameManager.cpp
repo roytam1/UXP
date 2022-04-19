@@ -90,16 +90,22 @@ public:
   // Removes all entries from the hash table
   void  Clear();
 
-protected:
-  LinkedList<UndisplayedNode>* GetListFor(nsIContent* aParentContent);
-  LinkedList<UndisplayedNode>* GetOrCreateListFor(nsIContent* aParentContent);
-  void AppendNodeFor(UndisplayedNode* aNode, nsIContent* aParentContent);
   /**
    * Get the applicable parent for the map lookup. This is almost always the
    * provided argument, except if it's a <xbl:children> element, in which case
    * it's the parent of the children element.
+   *
+   * All functions that are entry points into code that handles "parent"
+   * objects (used as the hash table keys) must ensure that the parent objects
+   * that they act on (and pass to other code) have been normalized by calling
+   * this method.
    */
-  nsIContent* GetApplicableParent(nsIContent* aParent);
+  static nsIContent* GetApplicableParent(nsIContent* aParent);
+
+protected:
+  LinkedList<UndisplayedNode>* GetListFor(nsIContent* aParentContent);
+  LinkedList<UndisplayedNode>* GetOrCreateListFor(nsIContent* aParentContent);
+  void AppendNodeFor(UndisplayedNode* aNode, nsIContent* aParentContent);
 };
 
 //----------------------------------------------------------------------
@@ -131,6 +137,20 @@ nsFrameManager::Destroy()
 
 //----------------------------------------------------------------------
 
+/* static */ nsIContent*
+nsFrameManager::ParentForUndisplayedMap(const nsIContent* aContent)
+{
+  MOZ_ASSERT(aContent);
+
+  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
+  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+
+  // Normalize the parent
+  parent = UndisplayedMap::GetApplicableParent(parent);
+
+  return parent;
+}
+
 /* static */ nsStyleContext*
 nsFrameManager::GetStyleContextInMap(UndisplayedMap* aMap,
                                      const nsIContent* aContent)
@@ -138,8 +158,8 @@ nsFrameManager::GetStyleContextInMap(UndisplayedMap* aMap,
   if (!aContent) {
     return nullptr;
   }
-  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
-  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+
+  nsIContent* parent = ParentForUndisplayedMap(aContent);
   for (UndisplayedNode* node = aMap->GetFirstNode(parent);
        node; node = node->getNext()) {
     if (node->mContent == aContent)
@@ -178,8 +198,7 @@ nsFrameManager::SetStyleContextInMap(UndisplayedMap* aMap,
   MOZ_ASSERT(!GetStyleContextInMap(aMap, aContent),
              "Already have an entry for aContent");
 
-  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
-  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+  nsIContent* parent = ParentForUndisplayedMap(aContent);
 #ifdef DEBUG
   nsIPresShell* shell = aStyleContext->PresContext()->PresShell();
   NS_ASSERTION(parent || (shell && shell->GetDocument() &&
@@ -194,9 +213,9 @@ nsFrameManager::SetStyleContextInMap(UndisplayedMap* aMap,
   // mUndisplayedMap and mDisplayContentsMap if the bit isn't present on a node
   // that it's handling.
 
-if (parent) {
-  parent->SetMayHaveChildrenWithLayoutBoxesDisabled();
-}
+  if (parent) {
+    parent->SetMayHaveChildrenWithLayoutBoxesDisabled();
+  }
 
   aMap->AddNodeFor(parent, aContent, aStyleContext);
 }
@@ -223,8 +242,7 @@ nsFrameManager::ChangeStyleContextInMap(UndisplayedMap* aMap,
    printf("ChangeStyleContextInMap(%d): p=%p \n", i++, (void *)aContent);
 #endif
 
-  nsIContent* parent = aContent->GetParentElementCrossingShadowRoot();
-  MOZ_ASSERT(parent || !aContent->GetParent(), "no non-elements");
+  nsIContent* parent = ParentForUndisplayedMap(aContent);
 
   for (UndisplayedNode* node = aMap->GetFirstNode(parent);
        node; node = node->getNext()) {
@@ -249,7 +267,11 @@ nsFrameManager::ClearUndisplayedContentIn(nsIContent* aContent,
   if (!mUndisplayedMap) {
     return;
   }
-  
+
+  // This function is an entry point into UndisplayedMap handling code, so we
+  // must call GetApplicableParent so the parent we pass around is correct.
+  aParentContent = UndisplayedMap::GetApplicableParent(aParentContent);
+
   if (aParentContent && 
       !aParentContent->MayHaveChildrenWithLayoutBoxesDisabled()) {
     MOZ_ASSERT(!mUndisplayedMap->GetFirstNode(aParentContent),
@@ -381,6 +403,10 @@ nsFrameManager::ClearDisplayContentsIn(nsIContent* aContent,
   if (!mDisplayContentsMap) {
     return;
   }
+
+  // This function is an entry point into UndisplayedMap handling code, so we
+  // must call GetApplicableParent so the parent we pass around is correct.
+  aParentContent = UndisplayedMap::GetApplicableParent(aParentContent);
 
   if (aParentContent &&
       !aParentContent->MayHaveChildrenWithLayoutBoxesDisabled()) {
@@ -684,7 +710,8 @@ nsFrameManagerBase::UndisplayedMap::GetApplicableParent(nsIContent* aParent)
 LinkedList<UndisplayedNode>*
 nsFrameManagerBase::UndisplayedMap::GetListFor(nsIContent* aParent)
 {
-  aParent = GetApplicableParent(aParent);
+  MOZ_ASSERT(aParent == GetApplicableParent(aParent),
+             "The parent that we use as the hash key must have been normalized");
 
   LinkedList<UndisplayedNode>* list;
   if (Get(aParent, &list)) {
@@ -697,7 +724,9 @@ nsFrameManagerBase::UndisplayedMap::GetListFor(nsIContent* aParent)
 LinkedList<UndisplayedNode>*
 nsFrameManagerBase::UndisplayedMap::GetOrCreateListFor(nsIContent* aParent)
 {
-  aParent = GetApplicableParent(aParent);
+  MOZ_ASSERT(aParent == GetApplicableParent(aParent),
+             "The parent that we use as the hash key must have been normalized");
+
   return LookupOrAdd(aParent);
 }
 
