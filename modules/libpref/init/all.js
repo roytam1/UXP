@@ -2547,9 +2547,6 @@ pref("layout.css.variables.enabled", true);
 // Is support for CSS overflow-clip-box enabled for non-UA sheets?
 pref("layout.css.overflow-clip-box.enabled", false);
 
-// Is support for CSS grid enabled?
-pref("layout.css.grid.enabled", true);
-
 // Is support for CSS "grid-template-{columns,rows}: subgrid X" enabled?
 pref("layout.css.grid-template-subgrid-value.enabled", false);
 

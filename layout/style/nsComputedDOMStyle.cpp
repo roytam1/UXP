@@ -1093,21 +1093,6 @@ nsComputedDOMStyle::DoGetColumnWidth()
 }
 
 already_AddRefed<CSSValue>
-nsComputedDOMStyle::DoGetColumnGap()
-{
-  RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-
-  const nsStyleColumn* column = StyleColumn();
-  if (column->mColumnGap.GetUnit() == eStyleUnit_Normal) {
-    val->SetAppUnits(StyleFont()->mFont.size);
-  } else {
-    SetValueToCoord(val, StyleColumn()->mColumnGap, true);
-  }
-
-  return val.forget();
-}
-
-already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetColumnFill()
 {
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
@@ -3003,18 +2988,32 @@ nsComputedDOMStyle::DoGetGridRowEnd()
 }
 
 already_AddRefed<CSSValue>
-nsComputedDOMStyle::DoGetGridColumnGap()
+nsComputedDOMStyle::DoGetColumnGap()
 {
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-  SetValueToCoord(val, StylePosition()->mGridColumnGap, true);
+
+  const nsStylePosition* positionData = StylePosition();
+  if (positionData->mColumnGap.GetUnit() == eStyleUnit_Normal) {
+    val->SetIdent(eCSSKeyword_normal);
+  } else {
+    SetValueToCoord(val, positionData->mColumnGap, true);
+  }
+
   return val.forget();
 }
 
 already_AddRefed<CSSValue>
-nsComputedDOMStyle::DoGetGridRowGap()
+nsComputedDOMStyle::DoGetRowGap()
 {
   RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-  SetValueToCoord(val, StylePosition()->mGridRowGap, true);
+
+  const nsStylePosition* positionData = StylePosition();
+  if (positionData->mRowGap.GetUnit() == eStyleUnit_Normal) {
+    val->SetIdent(eCSSKeyword_normal);
+  } else {
+    SetValueToCoord(val, positionData->mRowGap, true);
+  }
+
   return val.forget();
 }
 
@@ -4425,7 +4424,7 @@ nsComputedDOMStyle::DoGetFlexBasis()
   //   }
 
   SetValueToCoord(val, StylePosition()->mFlexBasis, true,
-                  nullptr, nsCSSProps::kWidthKTable);
+                  nullptr, nsCSSProps::kFlexBasisKTable);
   return val.forget();
 }
 

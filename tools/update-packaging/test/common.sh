@@ -10,9 +10,9 @@
 # In here to use the local common.sh to allow the full mars to have unfiltered files
 
 # -----------------------------------------------------------------------------
-# By default just assume that these tools exist on our path
+# By default just assume that these tools exist in our path
 MAR=${MAR:-mar}
-BZIP2=${BZIP2:-bzip2}
+XZ=${XZ:-xz}
 MBSDIFF=${MBSDIFF:-mbsdiff}
 
 # -----------------------------------------------------------------------------

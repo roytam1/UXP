@@ -4635,6 +4635,61 @@ nsFrame::GetIntrinsicRatio()
   return AspectRatio();
 }
 
+void
+nsFrame::SetCoordToFlexBasis(bool aIsInlineFlexItem,
+                             bool aIntrinsic,
+                             const nsStyleCoord* aFlexBasis,
+                             const nsStyleCoord** aInlineStyle,
+                             const nsStyleCoord** aBlockStyle)
+{
+  auto mainAxisCoord = aIsInlineFlexItem ?
+                       aInlineStyle :
+                       aBlockStyle;
+  // NOTE: If we're a table-wrapper frame, we skip this clause and just stick
+  // with 'main-size:auto' behavior (which -- unlike 'content'
+  // i.e. 'max-content' -- will give us the ability to honor percent sizes on
+  // our table-box child when resolving the flex base size). The flexbox spec
+  // doesn't call for this special case, but webcompat & regression-avoidance
+  // seems to require it, for the time being... Tables sure are special.
+  bool isTableWrapperFrame = GetType() == nsGkAtoms::tableWrapperFrame;
+  // We have a used flex-basis of 'content' if flex-basis explicitly has that
+  // value, OR if flex-basis is 'auto' (deferring to the main-size property)
+  // and the main-size property is also 'auto'.
+  // See https://drafts.csswg.org/css-flexbox-1/#valdef-flex-basis-auto
+  if ((aFlexBasis->GetUnit() == eStyleUnit_Enumerated &&
+       aFlexBasis->GetIntValue() == NS_STYLE_FLEX_BASIS_CONTENT) ||
+      (aFlexBasis->GetUnit() == eStyleUnit_Auto &&
+       (*mainAxisCoord)->GetUnit() == eStyleUnit_Auto)) {
+    // If we get here, we're resolving the flex base size for a flex item,
+    // and we fall into the flexbox spec section 9.2 step 3, substep C (if
+    // we have a definite cross size) or E (if not). And specifically:
+    //
+    // * If we have a definite cross size, we're supposed to resolve our
+    //   main-size based on that and our intrinsic ratio.
+    // * Otherwise, we're supposed to produce our max-content size.
+    //
+    // Conveniently, we can handle both of those scenarios (regardless of
+    // which substep we fall into) by using the 'auto' keyword for our
+    // main-axis coordinate here. (This makes sense, because the spec is
+    // effectively trying to produce the 'auto' sizing behavior).
+    if (aIntrinsic || MOZ_LIKELY(isTableWrapperFrame)) {
+      static const nsStyleCoord autoStyleCoord(eStyleUnit_Auto);
+      *mainAxisCoord = &autoStyleCoord;
+    } else {
+      // (Note: if our main axis is the block axis, then this 'max-content'
+      // value will be treated like 'auto', via the IsAutoBSize() call below.)
+      static const nsStyleCoord maxContStyleCoord(NS_STYLE_WIDTH_MAX_CONTENT,
+                                                  eStyleUnit_Enumerated);
+      *mainAxisCoord = &maxContStyleCoord;
+    }
+  } else if (aFlexBasis->GetUnit() != eStyleUnit_Auto) {
+    // For all other non-'auto' flex-basis values, we just swap in the
+    // flex-basis itself for the main-size property.
+    *mainAxisCoord = aFlexBasis;
+  } // else: flex-basis is 'auto', which is deferring to some explicit
+    // value in mainAxisCoord. So we proceed w/o touching mainAxisCoord.
+}
+
 /* virtual */
 LogicalSize
 nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
@@ -4689,35 +4744,14 @@ nsFrame::ComputeSize(nsRenderingContext* aRenderingContext,
                      !(GetStateBits() & NS_FRAME_OUT_OF_FLOW));
   bool isInlineFlexItem = false;
   if (isFlexItem) {
-    // Flex items use their "flex-basis" property in place of their main-size
-    // property (e.g. "width") for sizing purposes, *unless* they have
-    // "flex-basis:auto", in which case they use their main-size property after
-    // all.
     uint32_t flexDirection = GetParent()->StylePosition()->mFlexDirection;
     isInlineFlexItem =
       flexDirection == NS_STYLE_FLEX_DIRECTION_ROW ||
       flexDirection == NS_STYLE_FLEX_DIRECTION_ROW_REVERSE;
 
-    // NOTE: The logic here should match the similar chunk for determining
-    // inlineStyleCoord and blockStyleCoord in
-    // nsFrame::ComputeSizeWithIntrinsicDimensions().
     const nsStyleCoord* flexBasis = &(stylePos->mFlexBasis);
-    if (flexBasis->GetUnit() != eStyleUnit_Auto) {
-      if (isInlineFlexItem) {
-        inlineStyleCoord = flexBasis;
-      } else {
-        // One caveat for vertical flex items: We don't support enumerated
-        // values (e.g. "max-content") for height properties yet. So, if our
-        // computed flex-basis is an enumerated value, we'll just behave as if
-        // it were "auto", which means "use the main-size property after all"
-        // (which is "height", in this case).
-        // NOTE: Once we support intrinsic sizing keywords for "height",
-        // we should remove this check.
-        if (flexBasis->GetUnit() != eStyleUnit_Enumerated) {
-          blockStyleCoord = flexBasis;
-        }
-      }
-    }
+    SetCoordToFlexBasis(isInlineFlexItem, false, flexBasis,
+                        &inlineStyleCoord, &blockStyleCoord);
   }
 
   // Compute inline-axis size
@@ -4949,31 +4983,10 @@ nsFrame::ComputeSizeWithIntrinsicDimensions(nsRenderingContext*  aRenderingConte
       } else {
         blockStyleCoord = imposedMainSizeStyleCoord.ptr();
       }
-
     } else {
-      // Flex items use their "flex-basis" property in place of their main-size
-      // property (e.g. "width") for sizing purposes, *unless* they have
-      // "flex-basis:auto", in which case they use their main-size property
-      // after all.
-      // NOTE: The logic here should match the similar chunk for determining
-      // inlineStyleCoord and blockStyleCoord in nsFrame::ComputeSize().
       const nsStyleCoord* flexBasis = &(stylePos->mFlexBasis);
-      if (flexBasis->GetUnit() != eStyleUnit_Auto) {
-        if (isInlineFlexItem) {
-          inlineStyleCoord = flexBasis;
-        } else {
-          // One caveat for vertical flex items: We don't support enumerated
-          // values (e.g. "max-content") for height properties yet. So, if our
-          // computed flex-basis is an enumerated value, we'll just behave as if
-          // it were "auto", which means "use the main-size property after all"
-          // (which is "height", in this case).
-          // NOTE: Once we support intrinsic sizing keywords for "height",
-          // we should remove this check.
-          if (flexBasis->GetUnit() != eStyleUnit_Enumerated) {
-            blockStyleCoord = flexBasis;
-          }
-        }
-      }
+      SetCoordToFlexBasis(isInlineFlexItem, true, flexBasis,
+                          &inlineStyleCoord, &blockStyleCoord);
     }
   }
 
