@@ -380,8 +380,6 @@ nsLayoutStylesheetCache::For(StyleBackendType aType)
     // Preferences::RegisterCallback(&DependentPrefChanged,
     //                               "layout.css.example-pref.enabled");
     Preferences::RegisterCallback(&DependentPrefChanged,
-                                  "layout.css.grid.enabled");
-    Preferences::RegisterCallback(&DependentPrefChanged,
                                   "dom.details_element.enabled");
   }
 
@@ -553,7 +551,7 @@ nsLayoutStylesheetCache::DependentPrefChanged(const char* aPref, void* aData)
   InvalidateSheet(gStyleCache_Gecko ? &gStyleCache_Gecko->sheet_ : nullptr, \
                   gStyleCache_Servo ? &gStyleCache_Servo->sheet_ : nullptr);
 
-  INVALIDATE(mUASheet);  // for layout.css.grid.enabled
+  // INVALIDATE(mUASheet);  // for layout.css.example-pref.enabled
   INVALIDATE(mHTMLSheet); // for dom.details_element.enabled
 
 #undef INVALIDATE

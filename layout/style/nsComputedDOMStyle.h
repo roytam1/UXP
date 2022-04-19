@@ -286,8 +286,6 @@ private:
   already_AddRefed<CSSValue> DoGetGridColumnEnd();
   already_AddRefed<CSSValue> DoGetGridRowStart();
   already_AddRefed<CSSValue> DoGetGridRowEnd();
-  already_AddRefed<CSSValue> DoGetGridColumnGap();
-  already_AddRefed<CSSValue> DoGetGridRowGap();
 
   /* StyleImageLayer properties */
   already_AddRefed<CSSValue> DoGetImageLayerImage(const nsStyleImageLayers& aLayers);
@@ -503,7 +501,6 @@ private:
   already_AddRefed<CSSValue> DoGetColumnCount();
   already_AddRefed<CSSValue> DoGetColumnFill();
   already_AddRefed<CSSValue> DoGetColumnWidth();
-  already_AddRefed<CSSValue> DoGetColumnGap();
   already_AddRefed<CSSValue> DoGetColumnRuleWidth();
   already_AddRefed<CSSValue> DoGetColumnRuleStyle();
   already_AddRefed<CSSValue> DoGetColumnRuleColor();
@@ -541,6 +538,8 @@ private:
   already_AddRefed<CSSValue> DoGetJustifyContent();
   already_AddRefed<CSSValue> DoGetJustifyItems();
   already_AddRefed<CSSValue> DoGetJustifySelf();
+  already_AddRefed<CSSValue> DoGetColumnGap();
+  already_AddRefed<CSSValue> DoGetRowGap();
 
   /* SVG properties */
   already_AddRefed<CSSValue> DoGetFill();

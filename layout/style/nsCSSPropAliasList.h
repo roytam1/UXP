@@ -34,6 +34,18 @@
 
  ******/
 
+CSS_PROP_ALIAS(grid-gap,
+               gap,
+               GridGap,
+               "")
+CSS_PROP_ALIAS(grid-column-gap,
+               column_gap,
+               GridColumnGap,
+               "")
+CSS_PROP_ALIAS(grid-row-gap,
+               row_gap,
+               GridRowGap,
+               "")
 CSS_PROP_ALIAS(word-wrap,
                overflow_wrap,
                WordWrap,

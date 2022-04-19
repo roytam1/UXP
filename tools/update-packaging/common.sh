@@ -9,10 +9,15 @@
 #
 
 # -----------------------------------------------------------------------------
-# By default just assume that these tools exist on our path
+# By default just assume that these tools exist in our path
 MAR=${MAR:-mar}
-BZIP2=${BZIP2:-bzip2}
 MBSDIFF=${MBSDIFF:-mbsdiff}
+if [[ -z "${MAR_OLD_FORMAT}" ]]; then
+  XZ=${XZ:-xz}
+else
+  MAR_OLD_FORMAT=1
+  BZIP2=${BZIP2:-bzip2}
+fi
 
 # -----------------------------------------------------------------------------
 # Helper routines

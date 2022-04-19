@@ -13,7 +13,7 @@
 
 use Getopt::Std;
 
-my ($MAR, $BZIP2, $archive, @marentries, @marfiles);
+my ($MAR, $XZ, $BZIP2, $MAR_OLD_FORMAT, $archive, @marentries, @marfiles);
 
 if (defined($ENV{"MAR"})) {
     $MAR = $ENV{"MAR"};
@@ -27,6 +27,18 @@ if (defined($ENV{"BZIP2"})) {
 }
 else {
     $BZIP2 = "bzip2";
+}
+
+if (defined($ENV{"XZ"})) {
+    $XZ = $ENV{"XZ"};
+}
+else {
+    if (system("xz --version > /dev/null 2>&1") != 0) {
+        die("The xz executable must be in the path.");
+    }
+    else {
+        $XZ = "xz";
+    }
 }
 
 sub print_usage
@@ -50,18 +62,43 @@ $archive = $ARGV[0];
 
 $? && die("Couldn't run \"$MAR\" -t");
 
-shift @marentries;
+if (system("$MAR -x \"$archive\"") != 0) {
+  die "Couldn't run $MAR -x";
+}
 
-system("$MAR -x \"$archive\"") == 0 || die "Couldn't run $MAR -x";
+# Try to determine if the mar file contains bzip2 compressed files and if not
+# assume that the mar file contains lzma compressed files. The updatev3.manifest
+# file is checked since a valid mar file must have this file in the root path.
+open(my $testfilename, "updatev3.manifest") or die $!;
+binmode($testfilename);
+read($testfilename, my $bytes, 3);
+if ($bytes eq "BZh") {
+    $MAR_OLD_FORMAT = 1;
+} else {
+    undef $MAR_OLD_FORMAT;
+}
+close $testfilename;
+
+shift @marentries;
 
 foreach (@marentries) {
     tr/\n\r//d;
     my @splits = split(/\t/,$_);
     my $file = $splits[2];
 
-    system("mv \"$file\" \"$file.bz2\"") == 0 ||
-      die "Couldn't mv \"$file\"";
-    system("\"$BZIP2\" -d \"$file.bz2\"") == 0 ||
-      die "Couldn't decompress \"$file\"";
+    print "Decompressing: " . $file . "\n";
+    if ($MAR_OLD_FORMAT == 1) {
+      system("mv \"$file\" \"$file.bz2\"") == 0 ||
+        die "Couldn't mv \"$file\"";
+      system("\"$BZIP2\" -d \"$file.bz2\"") == 0 ||
+        die "Couldn't decompress \"$file\"";
+    }
+    else {
+      system("mv \"$file\" \"$file.xz\"") == 0 ||
+        die "Couldn't mv \"$file\"";
+      system("\"$XZ\" -d \"$file.xz\"") == 0 ||
+        die "Couldn't decompress \"$file\"";
+    }
 }
 
+print "Finished\n";

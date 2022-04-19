@@ -55,7 +55,7 @@ external_dirs += [
     'media/psshparser'
 ]
 
-if CONFIG['MOZ_LINKER']:
+if CONFIG['MOZ_UPDATER']:
     external_dirs += ['modules/xz-embedded']
 
 DIRS += ['../../' + i for i in external_dirs]

@@ -2073,6 +2073,7 @@ exports.CSS_PROPERTIES = {
       "-moz-min-content",
       "auto",
       "calc",
+      "content",
       "inherit",
       "initial",
       "unset"
@@ -2095,6 +2096,7 @@ exports.CSS_PROPERTIES = {
       "-moz-min-content",
       "auto",
       "calc",
+      "content",
       "inherit",
       "initial",
       "unset"
@@ -2931,10 +2933,8 @@ exports.CSS_PROPERTIES = {
       "grid-auto-flow",
       "grid-auto-rows",
       "grid-column-end",
-      "grid-column-gap",
       "grid-column-start",
       "grid-row-end",
-      "grid-row-gap",
       "grid-row-start",
       "grid-template-areas",
       "grid-template-columns",
@@ -3029,6 +3029,7 @@ exports.CSS_PROPERTIES = {
       "quotes",
       "resize",
       "right",
+      "row-gap",
       "ruby-align",
       "ruby-position",
       "scroll-behavior",
@@ -3232,6 +3233,7 @@ exports.CSS_PROPERTIES = {
       "column-reverse",
       "condensed",
       "contain",
+      "content",
       "content-box",
       "contents",
       "cover",
@@ -5841,6 +5843,7 @@ exports.CSS_PROPERTIES = {
       "-moz-min-content",
       "auto",
       "calc",
+      "content",
       "inherit",
       "initial",
       "unset"
@@ -5863,6 +5866,7 @@ exports.CSS_PROPERTIES = {
       "-moz-min-content",
       "auto",
       "calc",
+      "content",
       "inherit",
       "initial",
       "unset"
@@ -6328,17 +6332,11 @@ exports.CSS_PROPERTIES = {
       "unset"
     ]
   },
-  "grid": {
+  "gap": {
     "isInherited": false,
     "subproperties": [
-      "grid-template-areas",
-      "grid-template-rows",
-      "grid-template-columns",
-      "grid-auto-flow",
-      "grid-auto-rows",
-      "grid-auto-columns",
-      "grid-row-gap",
-      "grid-column-gap"
+      "row-gap",
+      "column-gap"
     ],
     "supports": [
       6,
@@ -6347,6 +6345,27 @@ exports.CSS_PROPERTIES = {
     "values": [
       "-moz-calc",
       "calc",
+      "inherit",
+      "initial",
+      "normal",
+      "unset"
+    ]
+  },
+  "grid": {
+    "isInherited": false,
+    "subproperties": [
+      "grid-template-areas",
+      "grid-template-rows",
+      "grid-template-columns",
+      "grid-auto-flow",
+      "grid-auto-rows",
+      "grid-auto-columns"
+    ],
+    "supports": [
+      6,
+      8
+    ],
+    "values": [
       "inherit",
       "initial",
       "unset"
@@ -6443,7 +6462,7 @@ exports.CSS_PROPERTIES = {
   "grid-column-gap": {
     "isInherited": false,
     "subproperties": [
-      "grid-column-gap"
+      "column-gap"
     ],
     "supports": [
       6,
@@ -6454,6 +6473,7 @@ exports.CSS_PROPERTIES = {
       "calc",
       "inherit",
       "initial",
+      "normal",
       "unset"
     ]
   },
@@ -6474,8 +6494,8 @@ exports.CSS_PROPERTIES = {
   "grid-gap": {
     "isInherited": false,
     "subproperties": [
-      "grid-row-gap",
-      "grid-column-gap"
+      "row-gap",
+      "column-gap"
     ],
     "supports": [
       6,
@@ -6486,6 +6506,7 @@ exports.CSS_PROPERTIES = {
       "calc",
       "inherit",
       "initial",
+      "normal",
       "unset"
     ]
   },
@@ -6521,7 +6542,7 @@ exports.CSS_PROPERTIES = {
   "grid-row-gap": {
     "isInherited": false,
     "subproperties": [
-      "grid-row-gap"
+      "row-gap"
     ],
     "supports": [
       6,
@@ -6532,6 +6553,7 @@ exports.CSS_PROPERTIES = {
       "calc",
       "inherit",
       "initial",
+      "normal",
       "unset"
     ]
   },
@@ -8332,6 +8354,24 @@ exports.CSS_PROPERTIES = {
       "calc",
       "inherit",
       "initial",
+      "unset"
+    ]
+  },
+  "row-gap": {
+    "isInherited": false,
+    "subproperties": [
+      "row-gap"
+    ],
+    "supports": [
+      6,
+      8
+    ],
+    "values": [
+      "-moz-calc",
+      "calc",
+      "inherit",
+      "initial",
+      "normal",
       "unset"
     ]
   },

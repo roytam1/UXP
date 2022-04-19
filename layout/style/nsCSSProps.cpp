@@ -1334,7 +1334,6 @@ KTableEntry nsCSSProps::kDisplayKTable[] = {
   { eCSSKeyword_ruby_base_container, StyleDisplay::RubyBaseContainer },
   { eCSSKeyword_ruby_text,           StyleDisplay::RubyText },
   { eCSSKeyword_ruby_text_container, StyleDisplay::RubyTextContainer },
-  // The next two entries are controlled by the layout.css.grid.enabled pref.
   { eCSSKeyword_grid,                StyleDisplay::Grid },
   { eCSSKeyword_inline_grid,         StyleDisplay::InlineGrid },
   // The next 4 entries are controlled by the layout.css.prefixes.webkit pref.
@@ -2264,6 +2263,20 @@ const KTableEntry nsCSSProps::kWidthKTable[] = {
   { eCSSKeyword_UNKNOWN, -1 }
 };
 
+// This must be the same as kWidthKTable, but just with 'content' added:
+const KTableEntry nsCSSProps::kFlexBasisKTable[] = {
+  { eCSSKeyword__moz_max_content, NS_STYLE_WIDTH_MAX_CONTENT },
+  { eCSSKeyword__moz_min_content, NS_STYLE_WIDTH_MIN_CONTENT },
+  { eCSSKeyword__moz_fit_content, NS_STYLE_WIDTH_FIT_CONTENT },
+  { eCSSKeyword__moz_available,   NS_STYLE_WIDTH_AVAILABLE },
+  { eCSSKeyword_content,          NS_STYLE_FLEX_BASIS_CONTENT },
+  { eCSSKeyword_UNKNOWN, -1 }
+};
+static_assert(ArrayLength(nsCSSProps::kFlexBasisKTable) ==
+              ArrayLength(nsCSSProps::kWidthKTable) + 1,
+              "kFlexBasisKTable should have the same entries as "
+              "kWidthKTable, plus one more for 'content'");
+
 const KTableEntry nsCSSProps::kWindowDraggingKTable[] = {
   { eCSSKeyword_default, StyleWindowDragging::Default },
   { eCSSKeyword_drag, StyleWindowDragging::Drag },
@@ -2955,8 +2968,6 @@ static const nsCSSPropertyID gGridSubpropTable[] = {
   eCSSProperty_grid_auto_flow,
   eCSSProperty_grid_auto_rows,
   eCSSProperty_grid_auto_columns,
-  eCSSProperty_grid_row_gap, // can only be reset, not get/set
-  eCSSProperty_grid_column_gap, // can only be reset, not get/set
   eCSSProperty_UNKNOWN
 };
 
@@ -2980,9 +2991,9 @@ static const nsCSSPropertyID gGridAreaSubpropTable[] = {
   eCSSProperty_UNKNOWN
 };
 
-static const nsCSSPropertyID gGridGapSubpropTable[] = {
-  eCSSProperty_grid_row_gap,
-  eCSSProperty_grid_column_gap,
+static const nsCSSPropertyID gGapSubpropTable[] = {
+  eCSSProperty_row_gap,
+  eCSSProperty_column_gap,
   eCSSProperty_UNKNOWN
 };
 
