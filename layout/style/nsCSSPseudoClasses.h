@@ -59,12 +59,7 @@ public:
   static bool HasStringArg(Type aType);
   static bool HasNthPairArg(Type aType);
   static bool HasSelectorListArg(Type aType) {
-    return aType == Type::any ||
-	   aType == Type::host ||
-	   aType == Type::hostContext;
-  }
-  static bool HasOptionalSelectorListArg(Type aType) {
-    return aType == Type::host;
+    return aType == Type::any;
   }
   static bool IsUserActionPseudoClass(Type aType);
 

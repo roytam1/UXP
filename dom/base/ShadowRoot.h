@@ -108,7 +108,6 @@ public:
 
   void SetInsertionPointChanged() { mInsertionPointChanged = true; }
 
-  nsXBLBinding* GetAssociatedBinding() { return mAssociatedBinding; }
   void SetAssociatedBinding(nsXBLBinding* aBinding) { mAssociatedBinding = aBinding; }
 
   JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;

@@ -151,8 +151,6 @@ public:
   nsCSSSelector* Clone() const { return Clone(true, true); }
 
   void Reset(void);
-  bool HasFeatureSelectors();
-  void SetHasExplicitUniversal();
   void SetNameSpace(int32_t aNameSpace);
   void SetTag(const nsString& aTag);
   void AddID(const nsString& aID);
@@ -233,10 +231,9 @@ public:
                                        // the argument to functional pseudos
   nsAttrSelector* mAttrList;
   nsCSSSelector*  mNegations;
-  bool            mExplicitUniversal; // True if universal selector explicitly
-  nsCSSSelector*  mNext;              // appears in the selector
+  nsCSSSelector*  mNext;
   int32_t         mNameSpace;
-  char            mOperator;
+  char16_t       mOperator;
 private:
   // The underlying type of CSSPseudoElementType is uint8_t and
   // it packs well with mOperator. (char16_t + uint8_t is less than 32bits.)
