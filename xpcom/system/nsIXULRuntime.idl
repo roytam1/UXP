@@ -144,7 +144,8 @@ interface nsIXULRuntime : nsISupports
   readonly attribute DOMString lastRunCrashID;
 
   /**
-   * True if this is RELEASE_OR_BETA.
+   * True if this is explicitly flagged as release or beta at build time.
+   * Currently unused.
    */
   readonly attribute boolean isReleaseOrBeta;
 

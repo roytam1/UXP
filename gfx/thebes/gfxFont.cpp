@@ -180,7 +180,7 @@ gfxFontCache::gfxFontCache()
         obs->AddObserver(new Observer, "memory-pressure", false);
     }
 
-#ifndef RELEASE_OR_BETA
+#if 0
     // Currently disabled for release builds, due to unexplained crashes
     // during expiration; see bug 717175 & 894798.
     mWordCacheExpirationTimer = do_CreateInstance("@mozilla.org/timer;1");
@@ -2786,7 +2786,7 @@ gfxFont::ShapeTextWithoutWordCache(DrawTarget *aDrawTarget,
     return ok;
 }
 
-#ifndef RELEASE_OR_BETA
+#ifdef DEBUG
 #define TEXT_PERF_INCR(tp, m) (tp ? (tp)->current.m++ : 0)
 #else
 #define TEXT_PERF_INCR(tp, m)
@@ -2826,7 +2826,7 @@ gfxFont::SplitAndInitTextRun(DrawTarget *aDrawTarget,
 
     gfxTextPerfMetrics *tp = nullptr;
 
-#ifndef RELEASE_OR_BETA
+#ifdef DEBUG
     tp = aTextRun->GetFontGroup()->GetTextPerfMetrics();
     if (tp) {
         if (mStyle.systemFont) {

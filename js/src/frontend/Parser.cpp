@@ -10192,7 +10192,9 @@ Parser<ParseHandler>::exprInParens(InHandling inHandling, YieldHandling yieldHan
 bool
 ParserBase::warnOnceAboutExprClosure()
 {
-#ifndef RELEASE_OR_BETA
+    // We extensively use expression closures.
+    // Disabling spew; see Issue #3061
+#if 0
     JSContext* cx = context->maybeJSContext();
     if (!cx)
         return true;
