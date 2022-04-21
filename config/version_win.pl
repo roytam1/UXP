@@ -235,8 +235,8 @@ for ($j = 1; $j < 4; $j++)
 my $winappversion = "$appver[0],$appver[1],$appver[2],$appver[3]";
 
 my $copyright = "License: MPL 2.0";
-my $company = "Moonchild Productions";
-my $trademarks = "Moonchild";
+my $company = "UXP Contributors";
+my $trademarks = "Goanna is (tm) Moonchild Productions";
 my $productname = "UXP";
 
 

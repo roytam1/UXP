@@ -259,14 +259,14 @@ class IOInterposerInit
 public:
   IOInterposerInit()
   {
-#if !defined(RELEASE_OR_BETA)
+#ifdef DEBUG
     IOInterposer::Init();
 #endif
   }
 
   ~IOInterposerInit()
   {
-#if !defined(RELEASE_OR_BETA)
+#ifdef DEBUG
     IOInterposer::Clear();
 #endif
   }

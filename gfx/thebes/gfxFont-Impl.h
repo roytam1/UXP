@@ -50,19 +50,8 @@ gfxFont::GetShapedWord(DrawTarget *aDrawTarget,
 
     if (sw) {
         sw->ResetAge();
-#ifndef RELEASE_OR_BETA
-        if (aTextPerf) {
-            aTextPerf->current.wordCacheHit++;
-        }
-#endif
         return sw;
     }
-
-#ifndef RELEASE_OR_BETA
-    if (aTextPerf) {
-        aTextPerf->current.wordCacheMiss++;
-    }
-#endif
 
     sw = gfxShapedWord::Create(aText, aLength, aRunScript, aAppUnitsPerDevUnit,
                                aFlags);

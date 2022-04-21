@@ -1525,11 +1525,13 @@ Manager::ReleaseCacheId(CacheId aCacheId)
   NS_ASSERT_OWNINGTHREAD(Manager);
   for (uint32_t i = 0; i < mCacheIdRefs.Length(); ++i) {
     if (mCacheIdRefs[i].mCacheId == aCacheId) {
-#if defined(DEBUG) || !defined(RELEASE_OR_BETA)
+#if defined(DEBUG)
       uint32_t oldRef = mCacheIdRefs[i].mCount;
 #endif
       mCacheIdRefs[i].mCount -= 1;
+#if defined(DEBUG)
       MOZ_DIAGNOSTIC_ASSERT(mCacheIdRefs[i].mCount < oldRef);
+#endif
       if (mCacheIdRefs[i].mCount == 0) {
         bool orphaned = mCacheIdRefs[i].mOrphaned;
         mCacheIdRefs.RemoveElementAt(i);
@@ -1576,11 +1578,13 @@ Manager::ReleaseBodyId(const nsID& aBodyId)
   NS_ASSERT_OWNINGTHREAD(Manager);
   for (uint32_t i = 0; i < mBodyIdRefs.Length(); ++i) {
     if (mBodyIdRefs[i].mBodyId == aBodyId) {
-#if defined(DEBUG) || !defined(RELEASE_OR_BETA)
+#if defined(DEBUG)
       uint32_t oldRef = mBodyIdRefs[i].mCount;
 #endif
       mBodyIdRefs[i].mCount -= 1;
+#if defined(DEBUG)
       MOZ_DIAGNOSTIC_ASSERT(mBodyIdRefs[i].mCount < oldRef);
+#endif
       if (mBodyIdRefs[i].mCount < 1) {
         bool orphaned = mBodyIdRefs[i].mOrphaned;
         mBodyIdRefs.RemoveElementAt(i);
