@@ -1946,10 +1946,6 @@ nsNSSComponent::ShutdownNSS()
 #ifndef MOZ_NO_SMART_CARDS
     ShutdownSmartCardThreads();
 #endif
-    SSL_ClearSessionCache();
-    // TLSServerSocket may be run with the session cache enabled. This ensures
-    // those resources are cleaned up.
-    Unused << SSL_ShutdownServerSessionIDCache();
 
     MOZ_LOG(gPIPNSSLog, LogLevel::Debug, ("evaporating psm resources"));
     if (NS_FAILED(nsNSSShutDownList::evaporateAllNSSResources())) {

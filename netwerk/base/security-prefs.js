@@ -90,11 +90,7 @@ pref("security.pki.sha1_enforcement_level", 3);
 // 2: fall back to the subject common name for certificates valid before 23
 //    August 2015 if necessary
 // 3: only use name information from the subject alternative name extension
-#ifdef RELEASE_OR_BETA
 pref("security.pki.name_matching_mode", 1);
-#else
-pref("security.pki.name_matching_mode", 2);
-#endif
 
 // security.pki.netscape_step_up_policy controls how the platform handles the
 // id-Netscape-stepUp OID in extended key usage extensions of CA certificates.
@@ -102,11 +98,7 @@ pref("security.pki.name_matching_mode", 2);
 // 1: it is considered equivalent when the notBefore is before 23 August 2016
 // 2: similarly, but for 23 August 2015
 // 3: it is never considered equivalent
-#ifdef RELEASE_OR_BETA
 pref("security.pki.netscape_step_up_policy", 1);
-#else
-pref("security.pki.netscape_step_up_policy", 2);
-#endif
 
 // Configures Certificate Transparency support mode:
 // 0: Fully disabled.
@@ -123,11 +115,5 @@ pref("security.ssl.enable_ocsp_must_staple", true);
 // If a request is mixed-content, send an HSTS priming request to attempt to
 // see if it is available over HTTPS.
 pref("security.mixed_content.send_hsts_priming", true);
-#ifdef RELEASE_OR_BETA
 // Don't change the order of evaluation of mixed-content and HSTS upgrades
 pref("security.mixed_content.use_hsts", false);
-#else
-// Change the order of evaluation so HSTS upgrades happen before
-// mixed-content blocking
-pref("security.mixed_content.use_hsts", true);
-#endif

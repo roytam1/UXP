@@ -21,7 +21,7 @@
 #include "mozilla/ipc/Faulty.h"
 #endif
 
-#if !defined(RELEASE_OR_BETA) || defined(DEBUG)
+#if defined(DEBUG)
 #define MOZ_PICKLE_SENTINEL_CHECKING
 #endif
 
