@@ -8363,6 +8363,109 @@ Parser<ParseHandler>::unaryOpExpr(YieldHandling yieldHandling, ParseNodeKind kin
 
 template <typename ParseHandler>
 typename ParseHandler::Node
+Parser<ParseHandler>::optionalExpr(
+    YieldHandling yieldHandling, TripledotHandling tripledotHandling,
+    TokenKind tt, bool allowCallSyntax /* = true */,
+    PossibleError* possibleError /* = nullptr */,
+    InvokedPrediction invoked /* = PredictUninvoked */)
+{
+    JS_CHECK_RECURSION(context, return null());
+
+    uint32_t begin = pos().begin;
+
+    Node lhs = memberExpr(yieldHandling, tripledotHandling, tt,
+                          /* allowCallSyntax = */ true, possibleError, invoked);
+
+    if (!lhs) {
+        return null();
+    }
+
+    // Note: TokenStream::None is equivalent to TokenStream::SlashIsDiv
+    // in current Mozilla code, see bug 1539821.
+    if (!tokenStream.peekToken(&tt, TokenStream::None)) {
+        return null();
+    }
+
+    if (tt == TOK_EOF || tt != TOK_OPTCHAIN) {
+        return lhs;
+    }
+
+    while (true) {
+        if (!tokenStream.getToken(&tt)) {
+            return null();
+        }
+
+        if (tt == TOK_EOF) {
+            break;
+        }
+
+        Node nextMember;
+        if (tt == TOK_OPTCHAIN) {
+            if (!tokenStream.getToken(&tt)) {
+                return null();
+            }
+            if (TokenKindIsPossibleIdentifierName(tt)) {
+                nextMember = memberPropertyAccess(lhs, OptionalKind::Optional);
+                if (!nextMember) {
+                    return null();
+                }
+            } else if (tt == TOK_LB) {
+                nextMember = memberElemAccess(lhs, yieldHandling,
+                                              OptionalKind::Optional);
+                if (!nextMember) {
+                    return null();
+                }
+            } else if (tt == TOK_LP) {
+                nextMember = memberCall(tt, lhs, yieldHandling, possibleError,
+                                        OptionalKind::Optional);
+                if (!nextMember) {
+                    return null();
+                }
+            } else {
+                error(JSMSG_NAME_AFTER_DOT);
+                return null();
+            }
+        } else if (tt == TOK_DOT) {
+            if (!tokenStream.getToken(&tt)) {
+                return null();
+            }
+            if (TokenKindIsPossibleIdentifierName(tt)) {
+                nextMember = memberPropertyAccess(lhs);
+                if (!nextMember) {
+                    return null();
+                }
+            } else {
+                error(JSMSG_NAME_AFTER_DOT);
+                return null();
+            }
+        } else if (tt == TOK_LB) {
+            nextMember = memberElemAccess(lhs, yieldHandling);
+            if (!nextMember) {
+                return null();
+            }
+        } else if (allowCallSyntax && tt == TOK_LP) {
+            nextMember = memberCall(tt, lhs, yieldHandling, possibleError);
+            if (!nextMember) {
+                return null();
+            }
+        } else if (tt == TOK_TEMPLATE_HEAD || tt == TOK_NO_SUBS_TEMPLATE) {
+            error(JSMSG_BAD_OPTIONAL_TEMPLATE);
+            return null();
+        } else {
+            tokenStream.ungetToken();
+            break;
+        }
+
+        if (nextMember) {
+            lhs = nextMember;
+        }
+    }
+
+  return handler.newOptionalChain(begin, lhs);
+}
+
+template <typename ParseHandler>
+typename ParseHandler::Node
 Parser<ParseHandler>::unaryExpr(YieldHandling yieldHandling, TripledotHandling tripledotHandling,
                                 PossibleError* possibleError /* = nullptr */,
                                 InvokedPrediction invoked /* = PredictUninvoked */)
@@ -8454,8 +8557,9 @@ Parser<ParseHandler>::unaryExpr(YieldHandling yieldHandling, TripledotHandling t
         MOZ_FALLTHROUGH;
 
       default: {
-        Node expr = memberExpr(yieldHandling, tripledotHandling, tt, /* allowCallSyntax = */ true,
-                             possibleError, invoked);
+        Node expr = optionalExpr(yieldHandling, tripledotHandling, tt,
+                                 /* allowCallSyntax = */ true,
+                                 possibleError, invoked);
         if (!expr)
             return null();
 
@@ -8904,6 +9008,18 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
 
             handler.addList(lhs, ctorExpr);
 
+            // If we have encountered an optional chain, in the form of `new
+            // ClassName?.()` then we need to throw, as this is disallowed
+            // by the spec.
+            bool optionalToken;
+            if (!tokenStream.matchToken(&optionalToken, TOK_OPTCHAIN)) {
+                return null();
+            }
+            if (optionalToken) {
+                errorAt(newBegin, JSMSG_BAD_NEW_OPTIONAL);
+                return null();
+            }
+
             bool matched;
             if (!tokenStream.matchToken(&matched, TOK_LP))
                 return null();
@@ -8941,12 +9057,7 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
             if (!tokenStream.getToken(&tt))
                 return null();
             if (TokenKindIsPossibleIdentifierName(tt)) {
-                PropertyName* field = tokenStream.currentName();
-                if (handler.isSuperBase(lhs) && !checkAndMarkSuperScope()) {
-                    error(JSMSG_BAD_SUPERPROP, "property");
-                    return null();
-                }
-                nextMember = handler.newPropertyAccess(lhs, field, pos().end);
+                nextMember = memberPropertyAccess(lhs);
                 if (!nextMember)
                     return null();
             } else {
@@ -8954,17 +9065,7 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
                 return null();
             }
         } else if (tt == TOK_LB) {
-            Node propExpr = expr(InAllowed, yieldHandling, TripledotProhibited);
-            if (!propExpr)
-                return null();
-
-            MUST_MATCH_TOKEN(TOK_RB, JSMSG_BRACKET_IN_INDEX);
-
-            if (handler.isSuperBase(lhs) && !checkAndMarkSuperScope()) {
-                error(JSMSG_BAD_SUPERPROP, "member");
-                return null();
-            }
-            nextMember = handler.newPropertyByValue(lhs, propExpr, pos().end);
+            nextMember = memberElemAccess(lhs, yieldHandling);
             if (!nextMember)
                 return null();
         } else if ((allowCallSyntax && tt == TOK_LP) ||
@@ -9000,82 +9101,17 @@ Parser<ParseHandler>::memberExpr(YieldHandling yieldHandling, TripledotHandling 
                 if (!thisName)
                     return null();
 
+                // XXX This was refactored out into memberSuperCall as part of
+                // bug 1566143, but was not used elsewhere aside from here, so
+                // I opted not to move this into a separate function. However,
+                // I'm unsure if this will be needed eventually in the future.
                 nextMember = handler.newSetThis(thisName, nextMember);
                 if (!nextMember)
                     return null();
             } else {
-                if (options().selfHostingMode && handler.isPropertyAccess(lhs)) {
-                    error(JSMSG_SELFHOSTED_METHOD_CALL);
-                    return null();
-                }
-
-                nextMember = tt == TOK_LP ? handler.newCall() : handler.newTaggedTemplate();
+                nextMember = memberCall(tt, lhs, yieldHandling, possibleError);
                 if (!nextMember)
                     return null();
-
-                JSOp op = JSOP_CALL;
-                bool maybeAsyncArrow = false;
-                if (PropertyName* prop = handler.maybeDottedProperty(lhs)) {
-                    // Use the JSOP_FUN{APPLY,CALL} optimizations given the
-                    // right syntax.
-                    if (prop == context->names().apply) {
-                        op = JSOP_FUNAPPLY;
-                        if (pc->isFunctionBox()) {
-                            pc->functionBox()->usesApply = true;
-                        }
-                    } else if (prop == context->names().call) {
-                        op = JSOP_FUNCALL;
-                    }
-                } else if (tt == TOK_LP) {
-                    if (handler.isAsyncKeyword(lhs, context)) {
-                        // |async (| can be the start of an async arrow
-                        // function, so we need to defer reporting possible
-                        // errors from destructuring syntax. To give better
-                        // error messages, we only allow the AsyncArrowHead
-                        // part of the CoverCallExpressionAndAsyncArrowHead
-                        // syntax when the initial name is "async".
-                        maybeAsyncArrow = true;
-                    } else if (handler.isEvalAnyParentheses(lhs, context)) {
-                        // Select the right EVAL op and flag pc as having a
-                        // direct eval.
-                        op = pc->sc()->strict() ? JSOP_STRICTEVAL : JSOP_EVAL;
-                        pc->sc()->setBindingsAccessedDynamically();
-                        pc->sc()->setHasDirectEval();
-
-                        // In non-strict mode code, direct calls to eval can
-                        // add variables to the call object.
-                        if (pc->isFunctionBox() && !pc->sc()->strict())
-                            pc->functionBox()->setHasExtensibleScope();
-
-                        // If we're in a method, mark the method as requiring
-                        // support for 'super', since direct eval code can use
-                        // it. (If we're not in a method, that's fine, so
-                        // ignore the return value.)
-                        checkAndMarkSuperScope();
-                    }
-                }
-
-                handler.setBeginPosition(nextMember, lhs);
-                handler.addList(nextMember, lhs);
-
-                if (tt == TOK_LP) {
-                    bool isSpread = false;
-                    PossibleError* asyncPossibleError = maybeAsyncArrow ? possibleError : nullptr;
-                    if (!argumentList(yieldHandling, nextMember, &isSpread, asyncPossibleError))
-                        return null();
-                    if (isSpread) {
-                        if (op == JSOP_EVAL)
-                            op = JSOP_SPREADEVAL;
-                        else if (op == JSOP_STRICTEVAL)
-                            op = JSOP_STRICTSPREADEVAL;
-                        else
-                            op = JSOP_SPREADCALL;
-                    }
-                } else {
-                    if (!taggedTemplate(yieldHandling, nextMember, tt))
-                        return null();
-                }
-                handler.setOp(nextMember, op);
             }
         } else {
             tokenStream.ungetToken();
@@ -9107,6 +9143,155 @@ typename ParseHandler::Node
 Parser<ParseHandler>::newName(PropertyName* name, TokenPos pos)
 {
     return handler.newName(name, pos, context);
+}
+
+template <class ParseHandler>
+typename ParseHandler::Node
+Parser<ParseHandler>::memberPropertyAccess(
+    Node lhs, OptionalKind optionalKind /* = OptionalKind::NonOptional */)
+{
+    MOZ_ASSERT(TokenKindIsPossibleIdentifierName(tokenStream.currentToken().type));
+    PropertyName* field = tokenStream.currentName();
+    if (handler.isSuperBase(lhs) && !checkAndMarkSuperScope()) {
+        error(JSMSG_BAD_SUPERPROP, "property");
+        return null();
+    }
+    if (optionalKind == OptionalKind::Optional) {
+        return handler.newOptionalPropertyAccess(lhs, field, pos().end);
+    }
+    return handler.newPropertyAccess(lhs, field, pos().end);
+}
+
+template <class ParseHandler>
+typename ParseHandler::Node
+Parser<ParseHandler>::memberElemAccess(
+    Node lhs, YieldHandling yieldHandling,
+    OptionalKind optionalKind /* = OptionalKind::NonOptional */)
+{
+    MOZ_ASSERT(tokenStream.currentToken().type == TOK_LB);
+    Node propExpr = expr(InAllowed, yieldHandling, TripledotProhibited);
+    if (!propExpr) {
+        return null();
+    }
+
+    MUST_MATCH_TOKEN(TOK_RB, JSMSG_BRACKET_IN_INDEX);
+
+    if (handler.isSuperBase(lhs) && !checkAndMarkSuperScope()) {
+        error(JSMSG_BAD_SUPERPROP, "member");
+        return null();
+    }
+
+    if (optionalKind == OptionalKind::Optional) {
+        return handler.newOptionalPropertyByValue(lhs, propExpr, pos().end);
+    }
+    return handler.newPropertyByValue(lhs, propExpr, pos().end);
+}
+
+template <class ParseHandler>
+typename ParseHandler::Node
+Parser<ParseHandler>::memberCall(
+    TokenKind tt, Node lhs, YieldHandling yieldHandling,
+    PossibleError* possibleError /* = nullptr */,
+    OptionalKind optionalKind /* = OptionalKind::NonOptional */)
+{
+    if (options().selfHostingMode && handler.isPropertyAccess(lhs)) {
+        error(JSMSG_SELFHOSTED_METHOD_CALL);
+        return null();
+    }
+
+    MOZ_ASSERT(tt == TOK_LP ||
+               tt == TOK_TEMPLATE_HEAD ||
+               tt == TOK_NO_SUBS_TEMPLATE,
+               "Unexpected token kind for member call");
+
+    Node nextMember;
+    if (tt == TOK_LP) {
+        if (optionalKind == OptionalKind::Optional) {
+            nextMember = handler.newOptionalCall();
+        } else {
+            nextMember = handler.newCall();
+        }
+    } else {
+        nextMember = handler.newTaggedTemplate();
+    }
+
+    JSOp op = JSOP_CALL;
+    bool maybeAsyncArrow = false;
+    if (PropertyName* prop = handler.maybeDottedProperty(lhs)) {
+        // Use the JSOP_FUN{APPLY,CALL} optimizations given the
+        // right syntax.
+        if (prop == context->names().apply) {
+            op = JSOP_FUNAPPLY;
+            if (pc->isFunctionBox()) {
+                pc->functionBox()->usesApply = true;
+            }
+        } else if (prop == context->names().call) {
+            op = JSOP_FUNCALL;
+        }
+    } else if (tt == TOK_LP && optionalKind == OptionalKind::NonOptional) {
+        if (handler.isAsyncKeyword(lhs, context)) {
+            // |async (| can be the start of an async arrow
+            // function, so we need to defer reporting possible
+            // errors from destructuring syntax. To give better
+            // error messages, we only allow the AsyncArrowHead
+            // part of the CoverCallExpressionAndAsyncArrowHead
+            // syntax when the initial name is "async".
+            maybeAsyncArrow = true;
+        } else if (handler.isEvalAnyParentheses(lhs, context)) {
+            // Select the right EVAL op and flag pc as having a
+            // direct eval.
+            op = pc->sc()->strict() ? JSOP_STRICTEVAL : JSOP_EVAL;
+            pc->sc()->setBindingsAccessedDynamically();
+            pc->sc()->setHasDirectEval();
+
+            // In non-strict mode code, direct calls to eval can
+            // add variables to the call object.
+            if (pc->isFunctionBox() && !pc->sc()->strict()) {
+                pc->functionBox()->setHasExtensibleScope();
+            }
+
+            // If we're in a method, mark the method as requiring
+            // support for 'super', since direct eval code can use
+            // it. (If we're not in a method, that's fine, so
+            // ignore the return value.)
+            checkAndMarkSuperScope();
+        }
+    }
+
+    handler.setBeginPosition(nextMember, lhs);
+    handler.addList(nextMember, lhs);
+
+    if (tt == TOK_LP) {
+        bool isSpread = false;
+        PossibleError* asyncPossibleError = maybeAsyncArrow ?
+                                            possibleError :
+                                            nullptr;
+
+        if (!argumentList(yieldHandling, nextMember, &isSpread, asyncPossibleError)) {
+            return null();
+        }
+
+        if (isSpread) {
+            if (op == JSOP_EVAL) {
+                op = JSOP_SPREADEVAL;
+            } else if (op == JSOP_STRICTEVAL) {
+                op = JSOP_STRICTSPREADEVAL;
+            } else {
+                op = JSOP_SPREADCALL;
+            }
+        }
+    } else {
+        if (!taggedTemplate(yieldHandling, nextMember, tt)) {
+            return null();
+        }
+        if (optionalKind == OptionalKind::Optional) {
+            error(JSMSG_BAD_OPTIONAL_TEMPLATE);
+            return null();
+        }
+    }
+    handler.setOp(nextMember, op);
+
+    return nextMember;
 }
 
 template <typename ParseHandler>

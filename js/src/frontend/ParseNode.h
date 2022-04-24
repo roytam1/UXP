@@ -34,6 +34,10 @@ class ObjectBox;
     F(POSTDECREMENT) \
     F(DOT) \
     F(ELEM) \
+    F(OPTDOT) \
+    F(OPTCHAIN) \
+    F(OPTELEM) \
+    F(OPTCALL) \
     F(ARRAY) \
     F(ELISION) \
     F(STATEMENTLIST) \
@@ -76,6 +80,7 @@ class ObjectBox;
     F(DELETEPROP) \
     F(DELETEELEM) \
     F(DELETEEXPR) \
+    F(DELETEOPTCHAIN) \
     F(TRY) \
     F(CATCH) \
     F(CATCHLIST) \
@@ -371,6 +376,29 @@ IsTypeofKind(ParseNodeKind kind)
  *                          for a more-specific PNK_DELETE* unless constant
  *                          folding (or a similar parse tree manipulation) has
  *                          occurred
+ * PNK_DELETEOPTCHAIN unary pn_kid: MEMBER expr that's evaluated, then the
+ *                          overall delete evaluates to true; If constant
+ *                          folding occurs, PNK_ELEM may become PNK_DOT.
+ *                          PNK_OPTELEM does not get folded into PNK_OPTDOT.
+ * PNK_OPTCHAIN unary       pn_kid: expression that is evaluated as a chain.
+ *                          Contains one or more optional nodes. Its first node
+ *                          is always an optional node, such as PNK_OPTELEM,
+ *                          PNK_OPTDOT, or PNK_OPTCALL. This will shortcircuit
+ *                          and return 'undefined' without evaluating the rest
+ *                          of the expression if any of the optional nodes it
+ *                          contains are nullish. An optional chain can also
+ *                          contain nodes such as PNK_DOT, PNK_ELEM, PNK_NAME,
+ *                          PNK_CALL, etc. These are evaluated normally.
+ * PNK_OPTDOT   name        pn_expr: MEMBER expr to left of .
+ *                          short circuits back to PNK_OPTCHAIN if nullish.
+ *                          pn_atom: name to right of .
+ * PNK_OPTELEM  binary      pn_left: MEMBER expr to left of [
+ *                          short circuits back to PNK_OPTCHAIN if nullish.
+ *                          pn_right: expr between [ and ]
+ * PNK_OPTCALL  list        pn_head: list of call, arg1, arg2, ... argN
+ *                          pn_count: 1 + N (where N is number of args)
+ *                          call is a MEMBER expr naming a callable object,
+ *                          short circuits back to PNK_OPTCHAIN if nullish.
  * PNK_DOT      name        pn_expr: MEMBER expr to left of .
  *                          pn_atom: name to right of .
  * PNK_ELEM     binary      pn_left: MEMBER expr to left of [
@@ -1182,11 +1210,12 @@ class RegExpLiteral : public NullaryNode
     }
 };
 
-class PropertyAccess : public ParseNode
+class PropertyAccessBase : public ParseNode
 {
   public:
-    PropertyAccess(ParseNode* lhs, PropertyName* name, uint32_t begin, uint32_t end)
-      : ParseNode(PNK_DOT, JSOP_NOP, PN_NAME, TokenPos(begin, end))
+    PropertyAccessBase(ParseNodeKind kind, ParseNode* lhs, PropertyName* name,
+                       uint32_t begin, uint32_t end)
+      : ParseNode(kind, JSOP_NOP, PN_NAME, TokenPos(begin, end))
     {
         MOZ_ASSERT(lhs != nullptr);
         MOZ_ASSERT(name != nullptr);
@@ -1195,7 +1224,8 @@ class PropertyAccess : public ParseNode
     }
 
     static bool test(const ParseNode& node) {
-        bool match = node.isKind(PNK_DOT);
+        bool match = node.isKind(PNK_DOT) ||
+                     node.isKind(PNK_OPTDOT);
         MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
         return match;
     }
@@ -1214,24 +1244,88 @@ class PropertyAccess : public ParseNode
     }
 };
 
-class PropertyByValue : public ParseNode
+class PropertyAccess : public PropertyAccessBase
 {
   public:
-    PropertyByValue(ParseNode* lhs, ParseNode* propExpr, uint32_t begin, uint32_t end)
-      : ParseNode(PNK_ELEM, JSOP_NOP, PN_BINARY, TokenPos(begin, end))
+    PropertyAccess(ParseNode* lhs, PropertyName* name, uint32_t begin,
+                   uint32_t end)
+      : PropertyAccessBase(PNK_DOT, lhs, name, begin, end)
+    {
+        MOZ_ASSERT(lhs != nullptr);
+        MOZ_ASSERT(name != nullptr);
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_DOT);
+        MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
+        return match;
+    }
+};
+
+class OptionalPropertyAccess : public PropertyAccessBase
+{
+  public:
+    OptionalPropertyAccess(ParseNode* lhs, PropertyName* name, uint32_t begin,
+                           uint32_t end)
+      : PropertyAccessBase(PNK_OPTDOT, lhs, name, begin, end)
+    {
+        MOZ_ASSERT(lhs != nullptr);
+        MOZ_ASSERT(name != nullptr);
+    }
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_OPTDOT);
+        MOZ_ASSERT_IF(match, node.isArity(PN_NAME));
+        return match;
+    }
+};
+
+class PropertyByValueBase : public ParseNode
+{
+  public:
+    PropertyByValueBase(ParseNodeKind kind, ParseNode* lhs, ParseNode* propExpr,
+                    uint32_t begin, uint32_t end)
+      : ParseNode(kind, JSOP_NOP, PN_BINARY, TokenPos(begin, end))
     {
         pn_u.binary.left = lhs;
         pn_u.binary.right = propExpr;
     }
 
     static bool test(const ParseNode& node) {
-        bool match = node.isKind(PNK_ELEM);
+        bool match = node.isKind(PNK_ELEM) ||
+                     node.isKind(PNK_OPTELEM);
         MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
         return match;
     }
 
     bool isSuper() const {
         return pn_left->isKind(PNK_SUPERBASE);
+    }
+};
+
+class PropertyByValue : public PropertyByValueBase {
+  public:
+    PropertyByValue(ParseNode* lhs, ParseNode* propExpr, uint32_t begin,
+                    uint32_t end)
+      : PropertyByValueBase(PNK_ELEM, lhs, propExpr, begin, end) {}
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_ELEM);
+        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        return match;
+    }
+};
+
+class OptionalPropertyByValue : public PropertyByValueBase {
+ public:
+    OptionalPropertyByValue(ParseNode* lhs, ParseNode* propExpr,
+                            uint32_t begin, uint32_t end)
+      : PropertyByValueBase(PNK_OPTELEM, lhs, propExpr, begin, end) {}
+
+    static bool test(const ParseNode& node) {
+        bool match = node.isKind(PNK_OPTELEM);
+        MOZ_ASSERT_IF(match, node.isArity(PN_BINARY));
+        return match;
     }
 };
 

@@ -319,6 +319,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_DELETEPROP:
       case PNK_DELETEELEM:
       case PNK_DELETEEXPR:
+      case PNK_DELETEOPTCHAIN:
       case PNK_POS:
       case PNK_NEG:
       case PNK_PREINCREMENT:
@@ -1304,7 +1305,7 @@ FoldElement(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>&
 {
     ParseNode* node = *nodePtr;
 
-    MOZ_ASSERT(node->isKind(PNK_ELEM));
+    MOZ_ASSERT(node->isKind(PNK_ELEM) || node->isKind(PNK_OPTELEM));
     MOZ_ASSERT(node->isArity(PN_BINARY));
 
     ParseNode*& expr = node->pn_left;
@@ -1348,9 +1349,15 @@ FoldElement(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>&
 
     // Optimization 3: We have expr["foo"] where foo is not an index.  Convert
     // to a property access (like expr.foo) that optimizes better downstream.
-    ParseNode* dottedAccess = parser.handler.newPropertyAccess(expr, name, node->pn_pos.end);
-    if (!dottedAccess)
+    ParseNode* dottedAccess;
+    if (node->isKind(PNK_OPTELEM)) {
+        dottedAccess = parser.handler.newOptionalPropertyAccess(expr, name, node->pn_pos.end);
+    } else {
+        dottedAccess = parser.handler.newPropertyAccess(expr, name, node->pn_pos.end);
+    }
+    if (!dottedAccess) {
         return false;
+    }
     dottedAccess->setInParens(node->isInParens());
     ReplaceNode(nodePtr, dottedAccess);
 
@@ -1599,13 +1606,13 @@ static bool
 FoldDottedProperty(ExclusiveContext* cx, ParseNode* node, Parser<FullParseHandler>& parser,
                    bool inGenexpLambda)
 {
-    MOZ_ASSERT(node->isKind(PNK_DOT));
+    MOZ_ASSERT(node->isKind(PNK_DOT) || node->isKind(PNK_OPTDOT));
     MOZ_ASSERT(node->isArity(PN_NAME));
 
     // Iterate through a long chain of dotted property accesses to find the
     // most-nested non-dotted property node, then fold that.
     ParseNode** nested = &node->pn_expr;
-    while ((*nested)->isKind(PNK_DOT)) {
+    while ((*nested)->isKind(PNK_DOT) || (*nested)->isKind(PNK_OPTDOT)) {
         MOZ_ASSERT((*nested)->isArity(PN_NAME));
         nested = &(*nested)->pn_expr;
     }
@@ -1632,6 +1639,9 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
     JS_CHECK_RECURSION(cx, return false);
 
     ParseNode* pn = *pnp;
+#ifdef DEBUG
+    ParseNodeKind kind = pn->getKind();
+#endif
 
     switch (pn->getKind()) {
       case PNK_NOP:
@@ -1713,6 +1723,8 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
         MOZ_ASSERT(pn->isArity(PN_BINARY));
         return Fold(cx, &pn->pn_left, parser, inGenexpLambda);
 
+      case PNK_DELETEOPTCHAIN:
+      case PNK_OPTCHAIN:
       case PNK_SEMI:
       case PNK_THIS:
         MOZ_ASSERT(pn->isArity(PN_UNARY));
@@ -1806,6 +1818,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
       case PNK_CLASS:
         return FoldClass(cx, pn, parser, inGenexpLambda);
 
+      case PNK_OPTELEM:
       case PNK_ELEM:
         return FoldElement(cx, pnp, parser, inGenexpLambda);
 
@@ -1896,6 +1909,7 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
         MOZ_ASSERT(pn->isArity(PN_NAME));
         return Fold(cx, &pn->pn_expr, parser, inGenexpLambda);
 
+      case PNK_OPTDOT:
       case PNK_DOT:
         return FoldDottedProperty(cx, pn, parser, inGenexpLambda);
 
