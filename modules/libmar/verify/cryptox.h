@@ -57,7 +57,54 @@ CryptoX_Result NSS_VerifySignature(VFYContext * const *ctx ,
 #define CryptoX_FreeCertificate(cert) \
   CERT_DestroyCertificate(*cert)
 
-#if defined(XP_WIN) 
+#elif XP_MACOSX
+
+#define CryptoX_InvalidHandleValue NULL
+#define CryptoX_ProviderHandle void*
+#define CryptoX_SignatureHandle void*
+#define CryptoX_PublicKey void*
+#define CryptoX_Certificate void*
+
+// Forward-declare Objective-C functions implemented in MacVerifyCrypto.mm.
+#ifdef __cplusplus
+extern "C" {
+#endif
+CryptoX_Result CryptoMac_InitCryptoProvider();
+CryptoX_Result CryptoMac_VerifyBegin(CryptoX_SignatureHandle* aInputData);
+CryptoX_Result CryptoMac_VerifyUpdate(CryptoX_SignatureHandle* aInputData,
+                                      void* aBuf, unsigned int aLen);
+CryptoX_Result CryptoMac_LoadPublicKey(const unsigned char* aCertData,
+                                       unsigned int aDataSize,
+                                       CryptoX_PublicKey* aPublicKey);
+CryptoX_Result CryptoMac_VerifySignature(CryptoX_SignatureHandle* aInputData,
+                                         CryptoX_PublicKey* aPublicKey,
+                                         const unsigned char* aSignature,
+                                         unsigned int aSignatureLen);
+void CryptoMac_FreeSignatureHandle(CryptoX_SignatureHandle* aInputData);
+void CryptoMac_FreePublicKey(CryptoX_PublicKey* aPublicKey);
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#define CryptoX_InitCryptoProvider(aProviderHandle) \
+  CryptoMac_InitCryptoProvider()
+#define CryptoX_VerifyBegin(aCryptoHandle, aInputData, aPublicKey) \
+  CryptoMac_VerifyBegin(aInputData)
+#define CryptoX_VerifyUpdate(aInputData, aBuf, aLen) \
+  CryptoMac_VerifyUpdate(aInputData, aBuf, aLen)
+#define CryptoX_LoadPublicKey(aProviderHandle, aCertData, aDataSize, \
+                              aPublicKey) \
+  CryptoMac_LoadPublicKey(aCertData, aDataSize, aPublicKey)
+#define CryptoX_VerifySignature(aInputData, aPublicKey, aSignature, \
+                                aSignatureLen) \
+  CryptoMac_VerifySignature(aInputData, aPublicKey, aSignature, aSignatureLen)
+#define CryptoX_FreeSignatureHandle(aInputData) \
+  CryptoMac_FreeSignatureHandle(aInputData)
+#define CryptoX_FreePublicKey(aPublicKey) \
+  CryptoMac_FreePublicKey(aPublicKey)
+#define CryptoX_FreeCertificate(aCertificate)
+
+#elif defined(XP_WIN) 
 
 #include <windows.h>
 #include <wincrypt.h>
