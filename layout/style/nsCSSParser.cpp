@@ -2315,7 +2315,7 @@ CSSParserImpl::ParseMarginString(const nsSubstring& aBuffer,
   } else {
     UngetToken();
     // Parse a margin, and check that there's nothing else after it.
-    marginParsed = ParseGroupedBoxProperty(VARIANT_LP, aValue, 0) &&
+    marginParsed = ParseGroupedBoxProperty(VARIANT_LPN, aValue, 0) &&
                    !GetToken(true);
   }
 
