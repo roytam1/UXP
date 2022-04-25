@@ -700,6 +700,30 @@ IsEqualityOp(JSOp op)
 }
 
 inline bool
+IsSpreadOp(JSOp op)
+{
+    return JOF_OPTYPE(op) == JOF_BYTE;
+}
+
+inline bool
+IsNewOp(JSOp op)
+{
+    return op == JSOP_NEW ||
+           op == JSOP_SPREADNEW ||
+           op == JSOP_SUPERCALL ||
+           op == JSOP_SPREADSUPERCALL;
+}
+
+inline bool
+IsEvalOp(JSOp op)
+{
+    return op == JSOP_EVAL ||
+           op == JSOP_STRICTEVAL ||
+           op == JSOP_SPREADEVAL ||
+           op == JSOP_STRICTSPREADEVAL;
+}
+
+inline bool
 IsCheckStrictOp(JSOp op)
 {
     return CodeSpec[op].format & JOF_CHECKSTRICT;
