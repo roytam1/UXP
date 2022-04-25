@@ -2312,8 +2312,20 @@ CSSParserImpl::ParseMarginString(const nsSubstring& aBuffer,
 
   nsAutoSuppressErrors suppressErrors(this, aSuppressErrors);
 
-  // Parse a margin, and check that there's nothing else after it.
-  bool marginParsed = ParseGroupedBoxProperty(VARIANT_LP, aValue, 0) && !GetToken(true);
+  bool marginParsed = false;
+
+  // Treat margin as zero length if there are no tokens, i.e., the specified
+  // margin string is empty or consists only of whitespace characters.
+  if (!GetToken(true)) {
+    nsCSSRect& zeroRootMargin = aValue.SetRectValue();
+    zeroRootMargin.SetAllSidesTo(nsCSSValue(0.0f, eCSSUnit_Pixel));
+    marginParsed = true;
+  } else {
+    UngetToken();
+    // Parse a margin, and check that there's nothing else after it.
+    marginParsed = ParseGroupedBoxProperty(VARIANT_LPN, aValue, 0) &&
+                   !GetToken(true);
+  }
 
   if (aSuppressErrors) {
     CLEAR_ERROR();

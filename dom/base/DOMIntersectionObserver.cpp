@@ -126,7 +126,9 @@ DOMIntersectionObserver::SetRootMargin(const nsAString& aString)
 
   for (uint32_t i = 0; i < ArrayLength(nsCSSRect::sides); ++i) {
     nsCSSValue value = mRootMargin.*nsCSSRect::sides[i];
-    if (!(value.IsPixelLengthUnit() || value.IsPercentLengthUnit())) {
+    if (!(value.IsPixelLengthUnit() ||
+          value.IsPercentLengthUnit() ||
+          value.IsFloatUnit(value.GetUnit()))) {
       return false;
     }
   }
@@ -327,6 +329,8 @@ DOMIntersectionObserver::Update(nsIDocument* aDocument, DOMHighResTimeStamp time
     nsStyleCoord coord;
     if (value.IsPixelLengthUnit()) {
       coord.SetCoordValue(value.GetPixelLength());
+    } else if (value.IsFloatUnit(value.GetUnit())) {
+      coord.SetCoordValue(value.GetFloatValue());
     } else if (value.IsPercentLengthUnit()) {
       coord.SetPercentValue(value.GetPercentValue());
     } else {
