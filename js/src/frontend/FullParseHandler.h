@@ -74,6 +74,10 @@ class FullParseHandler
         return node->isKind(PNK_DOT) || node->isKind(PNK_ELEM);
     }
 
+    bool isOptionalPropertyAccess(ParseNode* node) {
+        return node->isKind(PNK_OPTDOT) || node->isKind(PNK_OPTELEM);
+    }
+
     bool isFunctionCall(ParseNode* node) {
         // Note: super() is a special form, *not* a function call.
         return node->isKind(PNK_CALL);
@@ -949,7 +953,9 @@ class FullParseHandler
         return pn->isKind(PNK_CALL);
     }
     PropertyName* maybeDottedProperty(ParseNode* pn) {
-        return pn->is<PropertyAccess>() ? &pn->as<PropertyAccess>().name() : nullptr;
+        return pn->is<PropertyAccessBase>() ?
+               &pn->as<PropertyAccessBase>().name() :
+               nullptr;
     }
     JSAtom* isStringExprStatement(ParseNode* pn, TokenPos* pos) {
         if (JSAtom* atom = pn->isStringExprStatement()) {

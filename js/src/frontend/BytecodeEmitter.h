@@ -459,7 +459,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
                                EmitLineNumberNote emitLineNote = EMIT_LINENOTE);
 
     // Emit code for the optional tree rooted at pn.
-    MOZ_MUST_USE bool emitOptionalTree(ParseNode* pn, OptionalEmitter& oe);
+    MOZ_MUST_USE bool emitOptionalTree(ParseNode* pn,
+                                       OptionalEmitter& oe,
+                                       ValueUsage valueUsage = ValueUsage::WantValue);
 
     // Emit code for the tree rooted at pn with its own TDZ cache.
     MOZ_MUST_USE bool emitTreeInBranch(ParseNode* pn,
@@ -786,7 +788,8 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitDeleteExpression(ParseNode* pn);
 
     // Optional methods which emit Optional Jump Target
-    MOZ_MUST_USE bool emitOptionalChain(ParseNode* optionalChain);
+    MOZ_MUST_USE bool emitOptionalChain(ParseNode* optionalChain,
+                                        ValueUsage valueUsage);
     MOZ_MUST_USE bool emitCalleeAndThisForOptionalChain(ParseNode* optionalChain,
                                                         ParseNode* callNode,
                                                         bool isCall);
@@ -802,7 +805,9 @@ struct MOZ_STACK_CLASS BytecodeEmitter
                                                  OptionalEmitter& oe,
                                                  ParseNode* calleeNode,
                                                  bool isCall);
-    MOZ_MUST_USE bool emitOptionalCall(ParseNode* callNode, OptionalEmitter& oe);
+    MOZ_MUST_USE bool emitOptionalCall(ParseNode* callNode,
+                                       OptionalEmitter& oe,
+                                       ValueUsage valueUsage);
     MOZ_MUST_USE bool emitDeletePropertyInOptChain(PropertyAccessBase* propExpr,
                                                    OptionalEmitter& oe);
     MOZ_MUST_USE bool emitDeleteElementInOptChain(PropertyByValueBase* elemExpr,

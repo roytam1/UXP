@@ -7154,7 +7154,7 @@ Parser<ParseHandler>::classDefinition(YieldHandling yieldHandling,
     if (hasHeritage) {
         if (!tokenStream.getToken(&tt))
             return null();
-        classHeritage = memberExpr(yieldHandling, TripledotProhibited, tt);
+        classHeritage = optionalExpr(yieldHandling, TripledotProhibited, tt);
         if (!classHeritage)
             return null();
     }
@@ -8386,7 +8386,7 @@ Parser<ParseHandler>::optionalExpr(
         return null();
     }
 
-    if (tt == TOK_EOF || tt != TOK_OPTCHAIN) {
+    if (tt != TOK_OPTCHAIN) {
         return lhs;
     }
 
@@ -8456,9 +8456,8 @@ Parser<ParseHandler>::optionalExpr(
             break;
         }
 
-        if (nextMember) {
-            lhs = nextMember;
-        }
+        MOZ_ASSERT(nextMember);
+        lhs = nextMember;
     }
 
   return handler.newOptionalChain(begin, lhs);
@@ -8515,7 +8514,7 @@ Parser<ParseHandler>::unaryExpr(YieldHandling yieldHandling, TripledotHandling t
             return null();
 
         uint32_t operandOffset = pos().begin;
-        Node operand = memberExpr(yieldHandling, TripledotProhibited, tt2);
+        Node operand = optionalExpr(yieldHandling, TripledotProhibited, tt2);
         if (!operand || !checkIncDecOperand(operand, operandOffset))
             return null();
 
@@ -9157,6 +9156,7 @@ Parser<ParseHandler>::memberPropertyAccess(
         return null();
     }
     if (optionalKind == OptionalKind::Optional) {
+        MOZ_ASSERT(!handler.isSuperBase(lhs));
         return handler.newOptionalPropertyAccess(lhs, field, pos().end);
     }
     return handler.newPropertyAccess(lhs, field, pos().end);
@@ -9182,6 +9182,7 @@ Parser<ParseHandler>::memberElemAccess(
     }
 
     if (optionalKind == OptionalKind::Optional) {
+        MOZ_ASSERT(!handler.isSuperBase(lhs));
         return handler.newOptionalPropertyByValue(lhs, propExpr, pos().end);
     }
     return handler.newPropertyByValue(lhs, propExpr, pos().end);
@@ -9194,7 +9195,8 @@ Parser<ParseHandler>::memberCall(
     PossibleError* possibleError /* = nullptr */,
     OptionalKind optionalKind /* = OptionalKind::NonOptional */)
 {
-    if (options().selfHostingMode && handler.isPropertyAccess(lhs)) {
+    if (options().selfHostingMode && (handler.isPropertyAccess(lhs) ||
+                                      handler.isOptionalPropertyAccess(lhs))) {
         error(JSMSG_SELFHOSTED_METHOD_CALL);
         return null();
     }

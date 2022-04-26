@@ -3043,7 +3043,10 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
         RootedValue propname(cx);
         RootedAtom pnAtom(cx, pn->pn_atom);
 
-        if (pn->as<PropertyAccessBase>().isSuper()) {
+        bool isSuper = pn->is<PropertyAccess>() &&
+                       pn->as<PropertyAccess>().isSuper();
+
+        if (isSuper) {
             if (!builder.super(&pn->pn_expr->pn_pos, &expr))
                 return false;
         } else {
@@ -3066,7 +3069,10 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
 
         RootedValue left(cx), right(cx);
 
-        if (pn->as<PropertyByValueBase>().isSuper()) {
+        bool isSuper = pn->is<PropertyByValue>() &&
+                       pn->as<PropertyByValue>().isSuper();
+
+        if (isSuper) {
             if (!builder.super(&pn->pn_left->pn_pos, &left))
                 return false;
         } else {
