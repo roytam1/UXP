@@ -14,7 +14,11 @@
 
 #define INITAL_REPEAT_DELAY 250
 
+#ifdef XP_MACOSX
+#define REPEAT_DELAY        25
+#else
 #define REPEAT_DELAY        50
+#endif
 
 class nsITimer;
 

@@ -21,6 +21,9 @@
 #include "jsclist.h"
 #include "jsscript.h"
 
+#ifdef XP_DARWIN
+# include "wasm/WasmSignalHandlers.h"
+#endif
 #include "builtin/AtomicsObject.h"
 #include "builtin/Intl.h"
 #include "builtin/Promise.h"
@@ -928,6 +931,10 @@ struct JSRuntime : public JS::shadow::Runtime,
      * onNewGlobalObject handler methods established.
      */
     JSCList             onNewGlobalObjectWatchers;
+
+#if defined(XP_DARWIN)
+    js::wasm::MachExceptionHandler wasmMachExceptionHandler;
+#endif
 
   private:
     js::FreeOp*         defaultFreeOp_;

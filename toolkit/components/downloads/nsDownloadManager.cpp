@@ -57,6 +57,10 @@
 #endif
 #endif
 
+#ifdef XP_MACOSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #ifdef MOZ_WIDGET_GTK
 #include <gtk/gtk.h>
 #endif
@@ -1372,7 +1376,12 @@ nsDownloadManager::GetDefaultDownloadsDirectory(nsIFile **aResult)
   mBundle->GetStringFromName(u"downloadsFolder",
                              getter_Copies(folderName));
 
-#if defined(XP_WIN)
+#if defined (XP_MACOSX)
+  rv = dirService->Get(NS_OSX_DEFAULT_DOWNLOAD_DIR,
+                       NS_GET_IID(nsIFile),
+                       getter_AddRefs(downloadDir));
+  NS_ENSURE_SUCCESS(rv, rv);
+#elif defined(XP_WIN)
   rv = dirService->Get(NS_WIN_DEFAULT_DOWNLOAD_DIR,
                        NS_GET_IID(nsIFile),
                        getter_AddRefs(downloadDir));
@@ -2436,11 +2445,19 @@ nsDownloadManager::Observe(nsISupports *aSubject,
     nsCOMPtr<nsISupportsPRBool> cancelDownloads =
       do_QueryInterface(aSubject, &rv);
     NS_ENSURE_SUCCESS(rv, rv);
+#ifndef XP_MACOSX
     ConfirmCancelDownloads(currDownloadCount, cancelDownloads,
                            u"quitCancelDownloadsAlertTitle",
                            u"quitCancelDownloadsAlertMsgMultiple",
                            u"quitCancelDownloadsAlertMsg",
                            u"dontQuitButtonWin");
+#else
+    ConfirmCancelDownloads(currDownloadCount, cancelDownloads,
+                           u"quitCancelDownloadsAlertTitle",
+                           u"quitCancelDownloadsAlertMsgMacMultiple",
+                           u"quitCancelDownloadsAlertMsgMac",
+                           u"dontQuitButtonMac");
+#endif
   } else if (strcmp(aTopic, "offline-requested") == 0 && currDownloadCount) {
     nsCOMPtr<nsISupportsPRBool> cancelDownloads =
       do_QueryInterface(aSubject, &rv);
@@ -2730,7 +2747,7 @@ nsDownload::SetState(DownloadState aState)
         }
       }
 
-#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
       nsCOMPtr<nsIFileURL> fileURL = do_QueryInterface(mTarget);
       nsCOMPtr<nsIFile> file;
       nsAutoString path;
@@ -2740,6 +2757,7 @@ nsDownload::SetState(DownloadState aState)
           file &&
           NS_SUCCEEDED(file->GetPath(path))) {
 
+#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
         // On Windows and Gtk, add the download to the system's "recent documents"
         // list, with a pref to disable.
         {
@@ -2777,6 +2795,18 @@ nsDownload::SetState(DownloadState aState)
           g_object_unref(gio_file);
 #endif
         }
+#endif
+
+#ifdef XP_MACOSX
+        // On OS X, make the downloads stack bounce.
+        CFStringRef observedObject = ::CFStringCreateWithCString(kCFAllocatorDefault,
+                                                 NS_ConvertUTF16toUTF8(path).get(),
+                                                 kCFStringEncodingUTF8);
+        CFNotificationCenterRef center = ::CFNotificationCenterGetDistributedCenter();
+        ::CFNotificationCenterPostNotification(center, CFSTR("com.apple.DownloadFileFinished"),
+                                               observedObject, nullptr, TRUE);
+        ::CFRelease(observedObject);
+#endif
       }
 
 #ifdef XP_WIN
@@ -3359,10 +3389,14 @@ nsDownload::OpenWithApplication()
   if (!prefs || NS_FAILED(prefs->GetBoolPref(PREF_BH_DELETETEMPFILEONEXIT,
                                              &deleteTempFileOnExit))) {
     // No prefservice or no pref set; use default value
-    // Some users have been very verbal about temp files being deleted on
+#if !defined(XP_MACOSX)
+    // Mac users have been very verbal about temp files being deleted on
     // app exit - they don't like it - but we'll continue to do this on
-    // all platforms for now.
+    // other platforms for now.
     deleteTempFileOnExit = true;
+#else
+    deleteTempFileOnExit = false;
+#endif
   }
 
   // Always schedule files to be deleted at the end of the private browsing

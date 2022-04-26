@@ -479,7 +479,11 @@ WidgetInputEvent::AccelModifier()
         sAccelModifier = MODIFIER_CONTROL;
         break;
       default:
+#ifdef XP_MACOSX
+        sAccelModifier = MODIFIER_META;
+#else
         sAccelModifier = MODIFIER_CONTROL;
+#endif
         break;
     }
   }

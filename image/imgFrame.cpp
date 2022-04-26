@@ -123,12 +123,20 @@ AllowedImageSize(int32_t aWidth, int32_t aHeight)
     return false;
   }
 
-  // check to make sure we don't overflow 32-bit size for RGBA
+  // check to make sure we don't overflow a 32-bit
   CheckedInt32 requiredBytes = CheckedInt32(aWidth) * CheckedInt32(aHeight) * 4;
   if (MOZ_UNLIKELY(!requiredBytes.isValid())) {
     NS_WARNING("width or height too large");
     return false;
   }
+#if defined(XP_MACOSX)
+  // CoreGraphics is limited to images < 32K in *height*, so clamp all surfaces
+  // on the Mac to that height
+  if (MOZ_UNLIKELY(aHeight > SHRT_MAX)) {
+    NS_WARNING("image too big");
+    return false;
+  }
+#endif
   return true;
 }
 

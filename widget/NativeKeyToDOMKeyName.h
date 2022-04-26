@@ -61,6 +61,10 @@
 #else
 #error Any NS_*_TO_DOM_KEY_NAME_INDEX() is not defined.
 #endif // #if defined(NS_NATIVE_KEY_TO_DOM_KEY_NAME_INDEX) ...
+#elif defined(XP_MACOSX)
+#undef KEY_MAP_COCOA
+#define KEY_MAP_COCOA(aCPPKeyName, aNativeKey) \
+  NS_NATIVE_KEY_TO_DOM_KEY_NAME_INDEX(aNativeKey, KEY_NAME_INDEX_##aCPPKeyName)
 #elif defined(MOZ_WIDGET_GTK)
 #undef KEY_MAP_GTK
 #define KEY_MAP_GTK(aCPPKeyName, aNativeKey) \

@@ -298,6 +298,8 @@ nsChromeRegistry::ConvertChromeURL(nsIURI* aChromeURI, nsIURI* *aResult)
   if (flags & PLATFORM_PACKAGE) {
 #if defined(XP_WIN)
     path.Insert("win/", 0);
+#elif defined(XP_MACOSX)
+    path.Insert("mac/", 0);
 #else
     path.Insert("unix/", 0);
 #endif

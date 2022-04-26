@@ -15,7 +15,7 @@ toolkit.jar:
 #ifdef MOZ_OFFICIAL_BRANDING
 *  content/global/aboutRights.xhtml
 #else
-   content/global/aboutRights.xhtml           (aboutRights-unbranded.xhtml)
+*  content/global/aboutRights.xhtml           (aboutRights-unbranded.xhtml)
 #endif
    content/global/aboutNetworking.js
    content/global/aboutNetworking.xhtml
@@ -38,7 +38,7 @@ toolkit.jar:
 *  content/global/buildconfig.html
 *  content/global/contentAreaUtils.js
    content/global/customizeToolbar.css
-   content/global/customizeToolbar.js
+*  content/global/customizeToolbar.js
    content/global/customizeToolbar.xul
    content/global/datepicker.xhtml
    content/global/editMenuOverlay.js
@@ -47,7 +47,7 @@ toolkit.jar:
 *  content/global/finddialog.xul
    content/global/findUtils.js
    content/global/filepicker.properties
-   content/global/globalOverlay.js
+*  content/global/globalOverlay.js
    content/global/mozilla.xhtml
 #ifdef MOZ_PHOENIX
    content/global/logopage.xhtml
@@ -63,7 +63,7 @@ toolkit.jar:
    content/global/treeUtils.js
    content/global/viewZoomOverlay.js
    content/global/globalOverlay.xul
-   content/global/dialogOverlay.xul
+*  content/global/dialogOverlay.xul
    content/global/dialogOverlay.js
    content/global/inlineSpellCheckUI.js
    content/global/nsClipboard.js
@@ -85,7 +85,7 @@ toolkit.jar:
    content/global/bindings/editor.xml          (widgets/editor.xml)
    content/global/bindings/expander.xml        (widgets/expander.xml)
    content/global/bindings/filefield.xml       (widgets/filefield.xml)
-   content/global/bindings/findbar.xml         (widgets/findbar.xml)
+*  content/global/bindings/findbar.xml         (widgets/findbar.xml)
    content/global/bindings/general.xml         (widgets/general.xml)
    content/global/bindings/groupbox.xml        (widgets/groupbox.xml)
    content/global/bindings/listbox.xml         (widgets/listbox.xml)
@@ -114,10 +114,13 @@ toolkit.jar:
    content/global/bindings/timepicker.js       (widgets/timepicker.js)
    content/global/bindings/toolbar.xml         (widgets/toolbar.xml)
    content/global/bindings/toolbarbutton.xml   (widgets/toolbarbutton.xml)
-   content/global/bindings/tree.xml            (widgets/tree.xml)
+*  content/global/bindings/tree.xml            (widgets/tree.xml)
    content/global/bindings/videocontrols.xml   (widgets/videocontrols.xml)
    content/global/bindings/videocontrols.css   (widgets/videocontrols.css)
 *  content/global/bindings/wizard.xml          (widgets/wizard.xml)
+#ifdef XP_MACOSX
+   content/global/macWindowMenu.js
+#endif
    content/global/svg/svgBindings.xml          (/layout/svg/resources/content/svgBindings.xml)
    content/global/gmp-sources/eme-adobe.json   (gmp-sources/eme-adobe.json)
    content/global/gmp-sources/openh264.json    (gmp-sources/openh264.json)

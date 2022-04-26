@@ -353,9 +353,11 @@ NS_IMETHODIMP nsMsgMailSession::AddMsgWindow(nsIMsgWindow *msgWindow)
 NS_IMETHODIMP nsMsgMailSession::RemoveMsgWindow(nsIMsgWindow *msgWindow)
 {
   mWindows.RemoveObject(msgWindow);
-  // For suite, we don't want to disable mailnews when the last mail window
-  // is closed (other component windows may still be open).
-#if !defined(MOZ_SUITE)
+  // Mac keeps a hidden window open so the app doesn't shut down when
+  // the last window is closed. So don't shutdown the account manager in that
+  // case. Similarly, for suite, we don't want to disable mailnews when the
+  // last mail window is closed.
+#if !defined(XP_MACOSX) && !defined(MOZ_SUITE)
   if (!mWindows.Count())
   {
     nsresult rv;

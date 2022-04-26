@@ -112,12 +112,14 @@ GetPluginFile(const nsAString& aPluginPath,
   nsAutoString baseName;
   GetFileBase(aPluginPath, aLibDirectory, aLibFile, baseName);
 
-#if defined(OS_POSIX)
+#if defined(XP_MACOSX)
+  nsAutoString binaryName = NS_LITERAL_STRING("lib") + baseName + NS_LITERAL_STRING(".dylib");
+#elif defined(OS_POSIX)
   nsAutoString binaryName = NS_LITERAL_STRING("lib") + baseName + NS_LITERAL_STRING(".so");
 #elif defined(XP_WIN)
   nsAutoString binaryName =                            baseName + NS_LITERAL_STRING(".dll");
 #else
-#error Unsupported O.S.
+#error not defined
 #endif
   aLibFile->AppendRelativePath(binaryName);
   return true;

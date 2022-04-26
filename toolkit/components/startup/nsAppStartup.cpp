@@ -273,6 +273,10 @@ nsAppStartup::Run(void)
   // with a zombie process.
 
   if (!mShuttingDown && mConsiderQuitStopper != 0) {
+#ifdef XP_MACOSX
+    EnterLastWindowClosingSurvivalArea();
+#endif
+
     mRunning = true;
 
     nsresult rv = mAppShell->Run();
@@ -308,10 +312,45 @@ nsAppStartup::Quit(uint32_t aMode)
 
   // If we're considering quitting, we will only do so if:
   if (ferocity == eConsiderQuit) {
+#ifdef XP_MACOSX
+    nsCOMPtr<nsIAppShellService> appShell
+      (do_GetService(NS_APPSHELLSERVICE_CONTRACTID));
+    bool hasHiddenPrivateWindow = false;
+    if (appShell) {
+      appShell->GetHasHiddenPrivateWindow(&hasHiddenPrivateWindow);
+    }
+    int32_t suspiciousCount = hasHiddenPrivateWindow ? 2 : 1;
+#endif
+
     if (mConsiderQuitStopper == 0) {
       // there are no windows...
       ferocity = eAttemptQuit;
     }
+#ifdef XP_MACOSX
+    else if (mConsiderQuitStopper == suspiciousCount) {
+      // ... or there is only a hiddenWindow left, and it's useless:
+
+      // Failure shouldn't be fatal, but will abort quit attempt:
+      if (!appShell)
+        return NS_OK;
+
+      bool usefulHiddenWindow;
+      appShell->GetApplicationProvidedHiddenWindow(&usefulHiddenWindow);
+      nsCOMPtr<nsIXULWindow> hiddenWindow;
+      appShell->GetHiddenWindow(getter_AddRefs(hiddenWindow));
+      // If the remaining windows are useful, we won't quit:
+      nsCOMPtr<nsIXULWindow> hiddenPrivateWindow;
+      if (hasHiddenPrivateWindow) {
+        appShell->GetHiddenPrivateWindow(getter_AddRefs(hiddenPrivateWindow));
+        if ((!hiddenWindow && !hiddenPrivateWindow) || usefulHiddenWindow)
+          return NS_OK;
+      } else if (!hiddenWindow || usefulHiddenWindow) {
+        return NS_OK;
+      }
+
+      ferocity = eAttemptQuit;
+    }
+#endif
   }
 
   nsCOMPtr<nsIObserverService> obsService;
@@ -365,6 +404,10 @@ nsAppStartup::Quit(uint32_t aMode)
 
     if (!mAttemptingQuit) {
       mAttemptingQuit = true;
+#ifdef XP_MACOSX
+      // now even the Mac wants to quit when the last window is closed
+      ExitLastWindowClosingSurvivalArea();
+#endif
       if (obsService)
         obsService->NotifyObservers(nullptr, "quit-application-granted", nullptr);
     }

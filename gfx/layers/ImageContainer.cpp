@@ -28,6 +28,10 @@
 #include "mozilla/gfx/2D.h"
 #include "mozilla/CheckedInt.h"
 
+#ifdef XP_MACOSX
+#include "mozilla/gfx/QuartzSupport.h"
+#endif
+
 #ifdef XP_WIN
 #include "gfxWindowsPlatform.h"
 #include <d3d10_1.h>

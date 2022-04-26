@@ -1,4 +1,5 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim:set ts=2 sw=2 sts=2 et cindent: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -61,7 +62,7 @@ static void print_usage() {
          "signed_input_archive.mar base_64_encoded_signature_file "
          "changed_signed_output.mar\n");
   printf("(i) is the index of the certificate to extract\n");
-#if (defined(XP_WIN) && !defined(MAR_NSS))
+#if defined(XP_MACOSX) || (defined(XP_WIN) && !defined(MAR_NSS))
   printf("Verify a MAR file:\n");
   printf("  mar [-C workingDir] -D DERFilePath -v signed_archive.mar\n");
   printf("At most %d signature certificate DER files are specified by "
@@ -125,10 +126,11 @@ int main(int argc, char **argv) {
 #if !defined(NO_SIGN_VERIFY)
   uint32_t fileSizes[MAX_SIGNATURES];
   const uint8_t* certBuffers[MAX_SIGNATURES];
-#if defined(XP_WIN) && !defined(MAR_NSS)
+#if ((!defined(MAR_NSS) && defined(XP_WIN)) || defined(XP_MACOSX)) || \
+    ((defined(XP_WIN) || defined(XP_MACOSX)) && !defined(MAR_NSS))
   char* DERFilePaths[MAX_SIGNATURES];
 #endif
-#if !defined(XP_WIN) || defined(MAR_NSS)
+#if (!defined(XP_WIN) && !defined(XP_MACOSX)) || defined(MAR_NSS)
   CERTCertificate* certs[MAX_SIGNATURES];
 #endif
 #endif
@@ -137,7 +139,8 @@ int main(int argc, char **argv) {
 #if defined(XP_WIN) && !defined(MAR_NSS) && !defined(NO_SIGN_VERIFY)
   memset((void*)certBuffers, 0, sizeof(certBuffers));
 #endif
-#if !defined(NO_SIGN_VERIFY) && (!defined(MAR_NSS) && defined(XP_WIN))
+#if !defined(NO_SIGN_VERIFY) && ((!defined(MAR_NSS) && defined(XP_WIN)) || \
+                                 defined(XP_MACOSX))
   memset(DERFilePaths, 0, sizeof(DERFilePaths));
   memset(fileSizes, 0, sizeof(fileSizes));
 #endif
@@ -168,7 +171,8 @@ int main(int argc, char **argv) {
       argv += 2;
       argc -= 2;
     } 
-#if !defined(NO_SIGN_VERIFY) && (!defined(MAR_NSS) && defined(XP_WIN))
+#if !defined(NO_SIGN_VERIFY) && ((!defined(MAR_NSS) && defined(XP_WIN)) || \
+                                 defined(XP_MACOSX))
     /* -D DERFilePath, also matches -D[index] DERFilePath
        We allow an index for verifying to be symmetric
        with the import and export command line arguments. */
@@ -326,7 +330,7 @@ int main(int argc, char **argv) {
       return -1;
     }
 
-#if !defined(XP_WIN) || defined(MAR_NSS)
+#if (!defined(XP_WIN) && !defined(XP_MACOSX)) || defined(MAR_NSS)
     if (!NSSConfigDir || certCount == 0) {
       print_usage();
       return -1;
@@ -340,7 +344,7 @@ int main(int argc, char **argv) {
 
     rv = 0;
     for (k = 0; k < certCount; ++k) {
-#if defined(XP_WIN) && !defined(MAR_NSS)
+#if (defined(XP_WIN) || defined(XP_MACOSX)) && !defined(MAR_NSS)
       rv = mar_read_entire_file(DERFilePaths[k], MAR_MAX_CERT_SIZE,
                                 &certBuffers[k], &fileSizes[k]);
 
@@ -380,7 +384,7 @@ int main(int argc, char **argv) {
       }
     }
     for (k = 0; k < certCount; ++k) {
-#if defined(XP_WIN) && !defined(MAR_NSS)
+#if (defined(XP_WIN) || defined(XP_MACOSX)) && !defined(MAR_NSS)
       free((void*)certBuffers[k]);
 #else
       /* certBuffers[k] is owned by certs[k] so don't free it */
@@ -398,7 +402,7 @@ int main(int argc, char **argv) {
                         " no signature to verify.\n");
       }
     }
-#if !defined(XP_WIN) || defined(MAR_NSS)
+#if (!defined(XP_WIN) && !defined(XP_MACOSX)) || defined(MAR_NSS)
     (void) NSS_Shutdown();
 #endif
     return rv ? -1 : 0;

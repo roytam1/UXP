@@ -16,6 +16,42 @@
 #include "nsAutoPtr.h"
 #include "nsIMsgAttachmentHandler.h"
 
+#ifdef XP_MACOSX
+
+#include "nsMsgAppleDouble.h"
+#include "nsILocalFileMac.h"
+
+class AppleDoubleEncodeObject
+{
+public:
+  appledouble_encode_object   ap_encode_obj;
+  char                        *buff;          // the working buff
+  int32_t                     s_buff;         // the working buff size
+  nsCOMPtr <nsIOutputStream>  fileStream;    // file to hold the encoding
+};
+
+class nsILocalFileMac;
+class nsIZipWriter;
+
+/* Simple utility class that will synchronously zip any file 
+   (or folder hierarchy) you give it. */
+class nsSimpleZipper
+{
+  public:
+    
+    // Synchronously zips the input file/folder and writes all
+    // data to the output file.
+    static nsresult Zip(nsIFile *aInputFile, nsIFile *aOutputFile);
+  
+  private:
+    
+    // Recursively adds the file or folder to aZipWriter.
+    static nsresult AddToZip(nsIZipWriter *aZipWriter,
+                             nsIFile *aFile,
+                             const nsACString &aPath);
+};
+#endif  // XP_MACOSX
+
 namespace mozilla {
 namespace mailnews {
 class MimeEncoder;
@@ -59,6 +95,14 @@ private:
   bool                  UseUUEncode_p(void);
   void                  AnalyzeDataChunk (const char *chunk, int32_t chunkSize);
   nsresult              LoadDataFromFile(nsIFile *file, nsString &sigData, bool charsetConversion); //A similar function already exist in nsMsgCompose!
+#ifdef XP_MACOSX
+  nsresult              ConvertToAppleEncoding(const nsCString &aFileSpecURI, 
+                                               const nsCString &aFilePath, 
+                                               nsILocalFileMac *aSourceFile);
+  // zips this attachment and does the work to make this attachment handler handle it properly.
+  nsresult ConvertToZipFile(nsILocalFileMac *aSourceFile);
+  bool HasResourceFork(FSRef *fsRef);
+#endif
 
   //
 public:
@@ -69,6 +113,12 @@ public:
   nsMsgCompFields       *mCompFields;       // Message composition fields for the sender
   bool                  m_bogus_attachment; // This is to catch problem children...
   
+#ifdef XP_MACOSX
+  // if we need to encode this file into for example an appledouble, or zip file,
+  // this file is our working file. currently only needed on mac.
+  nsCOMPtr<nsIFile> mEncodedWorkingFile;
+#endif
+
   nsCString m_xMacType;      // Mac file type
   nsCString m_xMacCreator;   // Mac file creator
 

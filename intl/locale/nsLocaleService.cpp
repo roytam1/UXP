@@ -17,6 +17,8 @@
 
 #if defined(XP_WIN)
 #  include "nsWin32Locale.h"
+#elif defined(XP_MACOSX)
+#  include <Carbon/Carbon.h>
 #elif defined(XP_UNIX)
 #  include <locale.h>
 #  include <stdlib.h>
@@ -39,7 +41,7 @@ const char* LocaleList[LocaleListLength] =
 #define NSILOCALE_MAX_ACCEPT_LANGUAGE	16
 #define NSILOCALE_MAX_ACCEPT_LENGTH		18
 
-#if defined(XP_UNIX)
+#if (defined(XP_UNIX) && !defined(XP_MACOSX))
 static int posix_locale_category[LocaleListLength] =
 {
   LC_COLLATE,
@@ -111,7 +113,7 @@ nsLocaleService::nsLocaleService(void)
     rv = NewLocale(xpLocale, getter_AddRefs(mApplicationLocale));
     NS_ENSURE_SUCCESS_VOID(rv);
 #endif
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
     RefPtr<nsLocale> resultLocale(new nsLocale());
     NS_ENSURE_TRUE_VOID(resultLocale);
 
@@ -152,7 +154,36 @@ nsLocaleService::nsLocaleService(void)
     }
     mSystemLocale = do_QueryInterface(resultLocale);
     mApplicationLocale = do_QueryInterface(resultLocale);
+       
 #endif // XP_UNIX
+
+#ifdef XP_MACOSX
+    // Get string representation of user's current locale
+    CFLocaleRef userLocaleRef = ::CFLocaleCopyCurrent();
+    CFStringRef userLocaleStr = ::CFLocaleGetIdentifier(userLocaleRef);
+    ::CFRetain(userLocaleStr);
+
+    AutoTArray<UniChar, 32> buffer;
+    int size = ::CFStringGetLength(userLocaleStr);
+    buffer.SetLength(size + 1);
+    CFRange range = ::CFRangeMake(0, size);
+    ::CFStringGetCharacters(userLocaleStr, range, buffer.Elements());
+    buffer[size] = 0;
+
+    // Convert the locale string to the format that Mozilla expects
+    nsAutoString xpLocale(reinterpret_cast<char16_t*>(buffer.Elements()));
+    xpLocale.ReplaceChar('_', '-');
+
+    nsresult rv = NewLocale(xpLocale, getter_AddRefs(mSystemLocale));
+    if (NS_SUCCEEDED(rv)) {
+        mApplicationLocale = mSystemLocale;
+    }
+
+    ::CFRelease(userLocaleStr);
+    ::CFRelease(userLocaleRef);
+
+    NS_ASSERTION(mApplicationLocale, "Failed to create locale objects");
+#endif // XP_MACOSX
 }
 
 nsLocaleService::~nsLocaleService(void)
@@ -175,7 +206,7 @@ nsLocaleService::NewLocale(const nsAString &aLocale, nsILocale **_retval)
       NS_ConvertASCIItoUTF16 category(LocaleList[i]);
       result = resultLocale->AddCategory(category, aLocale);
       if (NS_FAILED(result)) return result;
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
       category.AppendLiteral("##PLATFORM");
       result = resultLocale->AddCategory(category, aLocale);
       if (NS_FAILED(result)) return result;

@@ -79,11 +79,11 @@
       <property name="treeBoxObject"
                 onget="return this.boxObject;"
                 readonly="true"/>
-<!-- contentView is obsolete (see bug 202391) -->
+# contentView is obsolete (see bug 202391)
       <property name="contentView"
                 onget="return this.view; /*.QueryInterface(Components.interfaces.nsITreeContentView)*/"
                 readonly="true"/>
-<!-- builderView is obsolete (see bug 202393) -->
+# builderView is obsolete (see bug 202393)
       <property name="builderView"
                 onget="return this.view; /*.QueryInterface(Components.interfaces.nsIXULTreeBuilder)*/"
                 readonly="true"/>
@@ -774,6 +774,7 @@
           event.preventDefault();
         }
       </handler>
+#ifndef XP_MACOSX
       <!-- Use F2 key to enter text editing. -->
       <handler event="keydown" keycode="VK_F2">
         <![CDATA[
@@ -785,6 +786,7 @@
             event.preventDefault();
         ]]>
       </handler>
+#endif // XP_MACOSX
 
       <handler event="keydown" keycode="VK_ESCAPE">
         <![CDATA[

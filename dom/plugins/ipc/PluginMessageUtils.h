@@ -1,4 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+ * vim: sw=4 ts=4 et :
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -22,7 +23,11 @@
 #include "nsTArray.h"
 #include "mozilla/Logging.h"
 #include "nsHashKeys.h"
+#ifdef XP_MACOSX
+#include "PluginInterposeOSX.h"
+#else
 namespace mac_plugin_interposing { class NSCursorInfo { }; }
+#endif
 using mac_plugin_interposing::NSCursorInfo;
 
 namespace mozilla {
@@ -82,11 +87,11 @@ struct NPRemoteWindow
   uint32_t height;
   NPRect clipRect;
   NPWindowType type;
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
   VisualID visualID;
   Colormap colormap;
 #endif /* XP_UNIX */
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
   double contentsScaleFactor;
 #endif
 };
@@ -106,6 +111,8 @@ struct NPAudioDeviceChangeDetailsIPC
 typedef HWND NativeWindowHandle;
 #elif defined(MOZ_X11)
 typedef XID NativeWindowHandle;
+#elif defined(XP_DARWIN)
+typedef intptr_t NativeWindowHandle; // never actually used, will always be 0
 #else
 #error Need NativeWindowHandle for this platform
 #endif
@@ -148,6 +155,11 @@ NPPVariableToString(NPPVariable aVar)
         VARSTR(NPPVpluginUrlRequestsDisplayedBool);
   
         VARSTR(NPPVpluginWantsAllNetworkStreams);
+
+#ifdef XP_MACOSX
+        VARSTR(NPPVpluginDrawingModel);
+        VARSTR(NPPVpluginEventModel);
+#endif
 
 #ifdef XP_WIN
         VARSTR(NPPVpluginRequiresAudioDeviceChanges);
@@ -345,11 +357,11 @@ struct ParamTraits<mozilla::plugins::NPRemoteWindow>
     WriteParam(aMsg, aParam.height);
     WriteParam(aMsg, aParam.clipRect);
     WriteParam(aMsg, aParam.type);
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
     aMsg->WriteULong(aParam.visualID);
     aMsg->WriteULong(aParam.colormap);
 #endif
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
     aMsg->WriteDouble(aParam.contentsScaleFactor);
 #endif
   }
@@ -370,7 +382,7 @@ struct ParamTraits<mozilla::plugins::NPRemoteWindow>
           ReadParam(aMsg, aIter, &type)))
       return false;
 
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
     unsigned long visualID;
     unsigned long colormap;
     if (!(aMsg->ReadULong(aIter, &visualID) &&
@@ -378,7 +390,7 @@ struct ParamTraits<mozilla::plugins::NPRemoteWindow>
       return false;
 #endif
 
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
     double contentsScaleFactor;
     if (!aMsg->ReadDouble(aIter, &contentsScaleFactor))
       return false;
@@ -391,11 +403,11 @@ struct ParamTraits<mozilla::plugins::NPRemoteWindow>
     aResult->height = height;
     aResult->clipRect = clipRect;
     aResult->type = type;
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
     aResult->visualID = visualID;
     aResult->colormap = colormap;
 #endif
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
     aResult->contentsScaleFactor = contentsScaleFactor;
 #endif
     return true;
@@ -410,6 +422,161 @@ struct ParamTraits<mozilla::plugins::NPRemoteWindow>
   }
 };
 
+#ifdef XP_MACOSX
+template <>
+struct ParamTraits<NPNSString*>
+{
+  typedef NPNSString* paramType;
+
+  // Empty string writes a length of 0 and no buffer.
+  // We don't write a nullptr terminating character in buffers.
+  static void Write(Message* aMsg, const paramType& aParam)
+  {
+    CFStringRef cfString = (CFStringRef)aParam;
+
+    // Write true if we have a string, false represents nullptr.
+    aMsg->WriteBool(!!cfString);
+    if (!cfString) {
+      return;
+    }
+
+    long length = ::CFStringGetLength(cfString);
+    WriteParam(aMsg, length);
+    if (length == 0) {
+      return;
+    }
+
+    // Attempt to get characters without any allocation/conversion.
+    if (::CFStringGetCharactersPtr(cfString)) {
+      aMsg->WriteBytes(::CFStringGetCharactersPtr(cfString), length * sizeof(UniChar));
+    } else {
+      UniChar *buffer = (UniChar*)moz_xmalloc(length * sizeof(UniChar));
+      ::CFStringGetCharacters(cfString, ::CFRangeMake(0, length), buffer);
+      aMsg->WriteBytes(buffer, length * sizeof(UniChar));
+      free(buffer);
+    }
+  }
+
+  static bool Read(const Message* aMsg, PickleIterator* aIter, paramType* aResult)
+  {
+    bool haveString = false;
+    if (!aMsg->ReadBool(aIter, &haveString)) {
+      return false;
+    }
+    if (!haveString) {
+      *aResult = nullptr;
+      return true;
+    }
+
+    long length;
+    if (!ReadParam(aMsg, aIter, &length)) {
+      return false;
+    }
+
+    // Avoid integer multiplication overflow.
+    if (length > INT_MAX / static_cast<long>(sizeof(UniChar))) {
+      return false;
+    }
+
+    auto chars = mozilla::MakeUnique<UniChar[]>(length);
+    if (length != 0) {
+      if (!aMsg->ReadBytesInto(aIter, chars.get(), length * sizeof(UniChar))) {
+        return false;
+      }
+    }
+
+    *aResult = (NPNSString*)::CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8*)chars.get(),
+                                                      length * sizeof(UniChar),
+                                                      kCFStringEncodingUTF16, false);
+    if (!*aResult) {
+      return false;
+    }
+
+    return true;
+  }
+};
+#endif
+
+#ifdef XP_MACOSX
+template <>
+struct ParamTraits<NSCursorInfo>
+{
+  typedef NSCursorInfo paramType;
+
+  static void Write(Message* aMsg, const paramType& aParam)
+  {
+    NSCursorInfo::Type type = aParam.GetType();
+
+    aMsg->WriteInt(type);
+
+    nsPoint hotSpot = aParam.GetHotSpot();
+    WriteParam(aMsg, hotSpot.x);
+    WriteParam(aMsg, hotSpot.y);
+
+    uint32_t dataLength = aParam.GetCustomImageDataLength();
+    WriteParam(aMsg, dataLength);
+    if (dataLength == 0) {
+      return;
+    }
+
+    uint8_t* buffer = (uint8_t*)moz_xmalloc(dataLength);
+    memcpy(buffer, aParam.GetCustomImageData(), dataLength);
+    aMsg->WriteBytes(buffer, dataLength);
+    free(buffer);
+  }
+
+  static bool Read(const Message* aMsg, PickleIterator* aIter, paramType* aResult)
+  {
+    NSCursorInfo::Type type;
+    if (!aMsg->ReadInt(aIter, (int*)&type)) {
+      return false;
+    }
+
+    nscoord hotSpotX, hotSpotY;
+    if (!ReadParam(aMsg, aIter, &hotSpotX) ||
+        !ReadParam(aMsg, aIter, &hotSpotY)) {
+      return false;
+    }
+
+    uint32_t dataLength;
+    if (!ReadParam(aMsg, aIter, &dataLength)) {
+      return false;
+    }
+
+    auto data = mozilla::MakeUnique<uint8_t[]>(dataLength);
+    if (dataLength != 0) {
+      if (!aMsg->ReadBytesInto(aIter, data.get(), dataLength)) {
+        return false;
+      }
+    }
+
+    aResult->SetType(type);
+    aResult->SetHotSpot(nsPoint(hotSpotX, hotSpotY));
+    aResult->SetCustomImageData(data.get(), dataLength);
+
+    return true;
+  }
+
+  static void Log(const paramType& aParam, std::wstring* aLog)
+  {
+    const char* typeName = aParam.GetTypeName();
+    nsPoint hotSpot = aParam.GetHotSpot();
+    int hotSpotX, hotSpotY;
+#ifdef NS_COORD_IS_FLOAT
+    hotSpotX = rint(hotSpot.x);
+    hotSpotY = rint(hotSpot.y);
+#else
+    hotSpotX = hotSpot.x;
+    hotSpotY = hotSpot.y;
+#endif
+    uint32_t dataLength = aParam.GetCustomImageDataLength();
+    uint8_t* data = aParam.GetCustomImageData();
+
+    aLog->append(StringPrintf(L"[%s, (%i %i), %u, %p]",
+                              typeName, hotSpotX, hotSpotY, dataLength, data));
+  }
+};
+#else
 template<>
 struct ParamTraits<NSCursorInfo>
 {
@@ -422,6 +589,7 @@ struct ParamTraits<NSCursorInfo>
     return false;
   }
 };
+#endif // #ifdef XP_MACOSX
 
 template <>
 struct ParamTraits<mozilla::plugins::IPCByteRange>
@@ -564,7 +732,9 @@ struct ParamTraits<mozilla::plugins::NPAudioDeviceChangeDetailsIPC>
 // 
 // NB: these guards are based on those where struct NPEvent is defined
 // in npapi.h.  They should be kept in sync.
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+#  include "mozilla/plugins/NPEventOSX.h"
+#elif defined(XP_WIN)
 #  include "mozilla/plugins/NPEventWindows.h"
 #elif defined(XP_UNIX)
 #  include "mozilla/plugins/NPEventUnix.h"

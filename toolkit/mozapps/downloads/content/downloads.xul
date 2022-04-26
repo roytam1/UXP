@@ -1,12 +1,14 @@
 <?xml version="1.0"?>
 
-# -*- Mode: XML; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+# -*- Mode: Java; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifdef XP_UNIX
+#ifndef XP_MACOSX
 #define XP_GNOME 1
+#endif
 #endif
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
@@ -50,6 +52,9 @@
     <key keycode="VK_RETURN" oncommand="doDefaultForSelected();"/>
     <key id="key_pauseResume" key=" " oncommand="performCommand('cmd_pauseResume');"/>
     <key id="key_removeFromList"  keycode="VK_DELETE" oncommand="performCommand('cmd_removeFromList');"/>
+#ifdef XP_MACOSX
+    <key id="key_removeFromList2" keycode="VK_BACK" oncommand="performCommand('cmd_removeFromList');"/>
+#endif
     <key id="key_close"   key="&cmd.close.commandKey;"  oncommand="closeWindow(true);"    modifiers="accel"/>
 #ifdef XP_GNOME
     <key id="key_close2"  key="&cmd.close2Unix.commandKey;" oncommand="closeWindow(true);" modifiers="accel,shift"/>
@@ -95,8 +100,13 @@
               oncommand="performCommand('cmd_open');"
               cmd="cmd_open"/>
     <menuitem id="menuitem_show"
+#ifdef XP_MACOSX
+              label="&cmd.showMac.label;"
+              accesskey="&cmd.showMac.accesskey;"
+#else
               label="&cmd.show.label;"
               accesskey="&cmd.show.accesskey;"
+#endif
               oncommand="performCommand('cmd_show');"
               cmd="cmd_show"/>
 

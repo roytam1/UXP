@@ -47,6 +47,13 @@ PluginProcessParent::Launch(mozilla::UniquePtr<LaunchCompleteTask> aLaunchComple
     uint32_t containerArchitectures = GetSupportedArchitecturesForProcessType(GeckoProcessType_Plugin);
 
     uint32_t pluginLibArchitectures = currentArchitecture;
+#ifdef XP_MACOSX
+    nsresult rv = GetArchitecturesForBinary(mPluginFilePath.c_str(), &pluginLibArchitectures);
+    if (NS_FAILED(rv)) {
+        // If the call failed just assume that we want the current architecture.
+        pluginLibArchitectures = currentArchitecture;
+    }
+#endif
 
     ProcessArchitecture selectedArchitecture = currentArchitecture;
     if (!(pluginLibArchitectures & containerArchitectures & currentArchitecture)) {

@@ -3055,6 +3055,17 @@ nsSocketTransport::PRFileDescAutoLock::SetKeepaliveVals(bool aEnabled,
     }
     return NS_OK;
 
+#elif defined(XP_DARWIN)
+    // Darwin uses sec; only supports idle time being set.
+    int err = setsockopt(sock, IPPROTO_TCP, TCP_KEEPALIVE,
+                         &aIdleTime, sizeof(aIdleTime));
+    if (NS_WARN_IF(err)) {
+        LogOSError("nsSocketTransport Failed setting TCP_KEEPALIVE",
+                   mSocketTransport);
+        return NS_ERROR_UNEXPECTED;
+    }
+    return NS_OK;
+
 #elif defined(XP_UNIX)
     // Not all *nix OSes support the following setsockopt() options
     // build errors will tell us if they are not.

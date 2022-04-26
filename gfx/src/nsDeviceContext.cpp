@@ -239,7 +239,11 @@ nsDeviceContext::FontMetricsDeleted(const nsFontMetrics* aFontMetrics)
 bool
 nsDeviceContext::IsPrinterContext()
 {
-  return mPrintTarget != nullptr;
+  return mPrintTarget != nullptr
+#ifdef XP_MACOSX
+         || mCachedPrintTarget != nullptr
+#endif
+         ;
 }
 
 void
@@ -343,6 +347,17 @@ nsDeviceContext::CreateRenderingContextCommon(bool aWantReferenceContext)
     MOZ_ASSERT(mWidth > 0 && mHeight > 0);
 
     RefPtr<PrintTarget> printingTarget = mPrintTarget;
+#ifdef XP_MACOSX
+    // CreateRenderingContext() can be called (on reflow) after EndPage()
+    // but before BeginPage().  On OS X (and only there) mPrintTarget
+    // will in this case be null, because OS X printing surfaces are
+    // per-page, and therefore only truly valid between calls to BeginPage()
+    // and EndPage().  But we can get away with fudging things here, if need
+    // be, by using a cached copy.
+    if (!printingTarget) {
+      printingTarget = mCachedPrintTarget;
+    }
+#endif
 
     // This will usually be null, depending on the pref print.print_via_parent.
     RefPtr<DrawEventRecorder> recorder;
@@ -363,6 +378,9 @@ nsDeviceContext::CreateRenderingContextCommon(bool aWantReferenceContext)
       return nullptr;
     }
 
+#ifdef XP_MACOSX
+    dt->AddUserData(&gfxContext::sDontUseAsSourceKey, dt, nullptr);
+#endif
     dt->AddUserData(&sDisablePixelSnapping, (void*)0x1, nullptr);
 
     RefPtr<gfxContext> pContext = gfxContext::CreateOrNull(dt);
@@ -525,6 +543,12 @@ nsDeviceContext::BeginPage(void)
 
     if (NS_FAILED(rv)) return rv;
 
+#ifdef XP_MACOSX
+    // We need to get a new surface for each page on the Mac, as the
+    // CGContextRefs are only good for one page.
+    mPrintTarget = mDeviceContextSpec->MakePrintTarget();
+#endif
+
     rv = mPrintTarget->BeginPage();
 
     return rv;
@@ -534,6 +558,18 @@ nsresult
 nsDeviceContext::EndPage(void)
 {
     nsresult rv = mPrintTarget->EndPage();
+
+#ifdef XP_MACOSX
+    // We need to release the CGContextRef in the surface here, plus it's
+    // not something you would want anyway, as these CGContextRefs are only
+    // good for one page.  But we need to keep a cached reference to it, since
+    // CreateRenderingContext() may try to access it when mPrintTarget
+    // would normally be null.  See bug 665218.  If we just stop nulling out
+    // mPrintTarget here (and thereby make that our cached copy), we'll
+    // break all our null checks on mPrintTarget.  See bug 684622.
+    mCachedPrintTarget = mPrintTarget;
+    mPrintTarget = nullptr;
+#endif
 
     if (mDeviceContextSpec)
         mDeviceContextSpec->EndPage();

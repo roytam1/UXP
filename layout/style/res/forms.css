@@ -593,11 +593,15 @@ input[type="checkbox"]:disabled:hover:active {
   cursor: inherit;
 }
 
+% On Mac, the native theme takes care of this.
+% See nsNativeThemeCocoa::ThemeDrawsFocusForWidget.
+%ifndef XP_MACOSX
 input[type="checkbox"]:-moz-focusring,
 input[type="radio"]:-moz-focusring {
   /* Don't specify the outline-color, we should always use initial value. */
   outline: 1px dotted;
 }
+%endif
 
 input[type="checkbox"]:hover:active,
 input[type="radio"]:hover:active {
@@ -719,10 +723,12 @@ input[type="color"]:-moz-system-metric(color-picker-available):active:hover,
 input[type="reset"]:active:hover,
 input[type="button"]:active:hover,
 input[type="submit"]:active:hover {
+%ifndef XP_MACOSX
   padding-block-start: 0px;
   padding-inline-end: 5px;
   padding-block-end: 0px;
   padding-inline-start: 7px;
+%endif
   border-style: inset;
   background-color: ButtonFace;
 }

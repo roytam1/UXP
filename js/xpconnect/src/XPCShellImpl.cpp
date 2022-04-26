@@ -1283,6 +1283,22 @@ XRE_XPCShellMain(int argc, char** argv, char** envp)
         argc -= 2;
         argv += 2;
     } else {
+#ifdef XP_MACOSX
+        // On OSX, the GreD needs to point to Contents/Resources in the .app
+        // bundle. Libraries will be loaded at a relative path to GreD, i.e.
+        // ../MacOS.
+        nsCOMPtr<nsIFile> tmpDir;
+        XRE_GetFileFromPath(argv[0], getter_AddRefs(greDir));
+        greDir->GetParent(getter_AddRefs(tmpDir));
+        tmpDir->Clone(getter_AddRefs(greDir));
+        tmpDir->SetNativeLeafName(NS_LITERAL_CSTRING("Resources"));
+        bool dirExists = false;
+        tmpDir->Exists(&dirExists);
+        if (dirExists) {
+            greDir = tmpDir.forget();
+        }
+        dirprovider.SetGREDirs(greDir);
+#else
         nsAutoString workingDir;
         if (!GetCurrentWorkingDirectory(workingDir)) {
             printf("GetCurrentWorkingDirectory failed.\n");
@@ -1293,6 +1309,7 @@ XRE_XPCShellMain(int argc, char** argv, char** envp)
             printf("NS_NewLocalFile failed.\n");
             return 1;
         }
+#endif
     }
 
     if (argc > 1 && !strcmp(argv[1], "-a")) {
@@ -1547,6 +1564,13 @@ XPCShellDirProvider::SetGREDirs(nsIFile* greDir)
 {
     mGREDir = greDir;
     mGREDir->Clone(getter_AddRefs(mGREBinDir));
+#ifdef XP_MACOSX
+    nsAutoCString leafName;
+    mGREDir->GetNativeLeafName(leafName);
+    if (leafName.Equals("Resources")) {
+        mGREBinDir->SetNativeLeafName(NS_LITERAL_CSTRING("MacOS"));
+    }
+#endif
 }
 
 void

@@ -9,6 +9,8 @@
 #include "nsXPCOMPrivate.h" // for MAXPATHLEN
 #ifdef XP_WIN
 #include <windows.h>
+#elif defined(XP_MACOSX)
+#include <CoreFoundation/CoreFoundation.h>
 #elif defined(XP_UNIX)
 #include <sys/stat.h>
 #include <string.h>
@@ -39,6 +41,46 @@ private:
       return NS_OK;
     }
     return NS_ERROR_FAILURE;
+  }
+
+#elif defined(XP_MACOSX)
+  static nsresult Get(const char* argv0, char aResult[MAXPATHLEN])
+  {
+    // Works even if we're not bundled.
+    CFBundleRef appBundle = CFBundleGetMainBundle();
+    if (!appBundle) {
+      return NS_ERROR_FAILURE;
+    }
+
+    CFURLRef executableURL = CFBundleCopyExecutableURL(appBundle);
+    if (!executableURL) {
+      return NS_ERROR_FAILURE;
+    }
+
+    nsresult rv;
+    if (CFURLGetFileSystemRepresentation(executableURL, false, (UInt8*)aResult,
+                                         MAXPATHLEN)) {
+      // Sanitize path in case the app was launched from Terminal via
+      // './firefox' for example.
+      size_t readPos = 0;
+      size_t writePos = 0;
+      while (aResult[readPos] != '\0') {
+        if (aResult[readPos] == '.' && aResult[readPos + 1] == '/') {
+          readPos += 2;
+        } else {
+          aResult[writePos] = aResult[readPos];
+          readPos++;
+          writePos++;
+        }
+      }
+      aResult[writePos] = '\0';
+      rv = NS_OK;
+    } else {
+      rv = NS_ERROR_FAILURE;
+    }
+
+    CFRelease(executableURL);
+    return rv;
   }
 
 #elif defined(XP_UNIX)

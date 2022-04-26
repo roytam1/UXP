@@ -551,6 +551,10 @@ nsFrameSelection::nsFrameSelection()
   mSelectedCellIndex = 0;
 
   nsAutoCopyListener *autoCopy = nullptr;
+  // On macOS, cache the current selection to send to osx service menu.
+#ifdef XP_MACOSX
+  autoCopy = nsAutoCopyListener::GetInstance(nsIClipboard::kSelectionCache);
+#endif
 
   // Check to see if the autocopy pref is enabled
   //   and add the autocopy listener if it is
@@ -1973,6 +1977,16 @@ nsFrameSelection::RepaintSelection(SelectionType aSelectionType)
     return NS_ERROR_NULL_POINTER;
   NS_ENSURE_STATE(mShell);
 
+// On macOS, update the selection cache to the new active selection
+// aka the current selection.
+#ifdef XP_MACOSX
+  nsFocusManager* fm = nsFocusManager::GetFocusManager();
+  // Check an active window exists otherwise there cannot be a current selection
+  // and that it's a normal selection.
+  if (fm->GetActiveWindow() && aSelectionType == SelectionType::eNormal) {
+    UpdateSelectionCacheOnRepaintSelection(mDomSelections[index]);
+  }
+#endif
   return mDomSelections[index]->Repaint(mShell->GetPresContext());
 }
 
@@ -2696,7 +2710,11 @@ printf("aTarget == %d\n", aTarget);
       // Any other mouseup actions require that Ctrl or Cmd key is pressed
       //  else stop table selection mode
       bool doMouseUpAction = false;
+#ifdef XP_MACOSX
+      doMouseUpAction = aMouseEvent->IsMeta();
+#else
       doMouseUpAction = aMouseEvent->IsControl();
+#endif
       if (!doMouseUpAction)
       {
 #ifdef DEBUG_TABLE_SELECTION

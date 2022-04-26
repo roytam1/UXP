@@ -479,7 +479,12 @@ function HandleSignonKeyPress(e) {
     return;
   }
 
+#ifdef XP_MACOSX
+  if (e.keyCode == KeyboardEvent.DOM_VK_DELETE ||
+      e.keyCode == KeyboardEvent.DOM_VK_BACK_SPACE) {
+#else
   if (e.keyCode == KeyboardEvent.DOM_VK_DELETE) {
+#endif
     DeleteSignon();
   }
 }

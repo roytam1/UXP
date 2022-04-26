@@ -151,7 +151,9 @@ js::ThisThread::SetName(const char* name)
 #endif
 
   int rv;
-#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#ifdef XP_DARWIN
+  rv = pthread_setname_np(name);
+#elif defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
   pthread_set_name_np(pthread_self(), name);
   rv = 0;
 #elif defined(__NetBSD__)

@@ -154,6 +154,22 @@ static void fpehandler(int signum, siginfo_t *si, void *context)
     NS_DebugBreak(NS_DEBUG_ABORT, "Divide by zero", nullptr, __FILE__, __LINE__);
   }
 
+#ifdef XP_MACOSX
+  ucontext_t *uc = (ucontext_t *)context;
+
+#if defined(__i386__) || defined(__amd64__)
+  _STRUCT_FP_CONTROL *ctrl = &uc->uc_mcontext->__fs.__fpu_fcw;
+  ctrl->__invalid = ctrl->__denorm = ctrl->__zdiv = ctrl->__ovrfl = ctrl->__undfl = ctrl->__precis = 1;
+
+  _STRUCT_FP_STATUS *status = &uc->uc_mcontext->__fs.__fpu_fsw;
+  status->__invalid = status->__denorm = status->__zdiv = status->__ovrfl = status->__undfl =
+    status->__precis = status->__stkflt = status->__errsumm = 0;
+
+  uint32_t *mxcsr = &uc->uc_mcontext->__fs.__fpu_mxcsr;
+  *mxcsr |= SSE_EXCEPTION_MASK; /* disable all SSE exceptions */
+  *mxcsr &= ~SSE_STATUS_FLAGS; /* clear all pending SSE exceptions */
+#endif
+#endif
 #if defined(LINUX)
   ucontext_t *uc = (ucontext_t *)context;
 

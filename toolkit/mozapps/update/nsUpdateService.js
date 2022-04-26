@@ -315,6 +315,36 @@ function areDirectoryEntriesWriteable(aDir) {
 }
 
 /**
+ * OSX only function to determine if the user requires elevation to be able to
+ * write to the application bundle.
+ *
+ * @return true if elevation is required, false otherwise
+ */
+function getElevationRequired() {
+#ifdef XP_MACOSX
+  try {
+    // Recursively check that the application bundle (and its descendants) can
+    // be written to.
+    LOG("getElevationRequired - recursively testing write access on " +
+        getInstallDirRoot().path);
+    if (!getInstallDirRoot().isWritable() ||
+        !areDirectoryEntriesWriteable(getInstallDirRoot())) {
+      LOG("getElevationRequired - unable to write to application bundle, " +
+          "elevation required");
+      return true;
+    }
+  } catch (ex) {
+    LOG("getElevationRequired - unable to write to application bundle, " +
+        "elevation required. Exception: " + ex);
+    return true;
+  }
+  LOG("getElevationRequired - able to write to application bundle, elevation " +
+      "not required");
+#endif
+  return false;
+}
+
+/**
  * Determines whether or not an update can be applied. This is always true on
  * Windows when the service is used. Also, this is always true on OSX because we
  * offer users the option to perform an elevated update when necessary.
@@ -322,6 +352,7 @@ function areDirectoryEntriesWriteable(aDir) {
  * @return true if an update can be applied, false otherwise
  */
 function getCanApplyUpdates() {
+#ifndef XP_MACOSX
   try {
     let updateTestFile = getUpdateFile([FILE_UPDATE_TEST]);
     LOG("getCanApplyUpdates - testing write access " + updateTestFile.path);
@@ -400,6 +431,7 @@ function getCanApplyUpdates() {
     // No write privileges to install directory
     return false;
   }
+#endif // !XP_MACOSX
 
   LOG("getCanApplyUpdates - able to apply updates");
   return true;
@@ -412,17 +444,28 @@ function getCanApplyUpdates() {
  * @return true if updates can be staged for this session.
  */
 XPCOMUtils.defineLazyGetter(this, "gCanStageUpdatesSession", function aus_gCSUS() {
+  if (getElevationRequired()) {
+    LOG("gCanStageUpdatesSession - unable to stage updates because elevation " +
+        "is required.");
+    return false;
+  }
+
   try {
     let updateTestFile;
+#ifdef XP_MACOSX
+    updateTestFile = getUpdateFile([FILE_UPDATE_TEST]);
+#else
     updateTestFile = getInstallDirRoot();
     updateTestFile.append(FILE_UPDATE_TEST);
+#endif
 
     LOG("gCanStageUpdatesSession - testing write access " +
         updateTestFile.path);
     testWriteAccess(updateTestFile, true);
 
-    // On all platforms, we need to test the parent directory as well,
-    // as we need to be able to move files in that directory during the
+#ifndef XP_MACOSX
+    // On all platforms except Mac, we need to test the parent directory as
+    // well, as we need to be able to move files in that directory during the
     // replacing step.
     updateTestFile = getInstallDirRoot().parent;
     updateTestFile.append(FILE_UPDATE_TEST);
@@ -431,6 +474,7 @@ XPCOMUtils.defineLazyGetter(this, "gCanStageUpdatesSession", function aus_gCSUS(
     updateTestFile.createUnique(Ci.nsILocalFile.DIRECTORY_TYPE,
                                 FileUtils.PERMS_DIRECTORY);
     updateTestFile.remove(false);
+#endif // !XP_MACOSX
   } catch (e) {
     LOG("gCanStageUpdatesSession - unable to stage updates. Exception: " +
         e);
@@ -549,6 +593,10 @@ function getAppBaseDir() {
  */
 function getInstallDirRoot() {
   let dir = getAppBaseDir();
+#ifdef XP_MACOSX
+  // On Mac, we store the Updated.app directory inside the bundle directory.
+  dir = dir.parent.parent;
+#endif
   return dir;
 }
 
@@ -832,7 +880,31 @@ function handleUpdateFailure(update, errorCode) {
     cancelations++;
     Services.prefs.setIntPref(PREF_APP_UPDATE_CANCELATIONS, cancelations);
 
+#ifdef XP_MACOSX
+    let osxCancelations = Services.prefs.getIntPref(PREF_APP_UPDATE_CANCELATIONS_OSX, 0);
+    osxCancelations++;
+    Services.prefs.setIntPref(PREF_APP_UPDATE_CANCELATIONS_OSX,
+                              osxCancelations);
+    let maxCancels = Services.prefs.getIntPref(
+                             PREF_APP_UPDATE_CANCELATIONS_OSX_MAX,
+                             DEFAULT_CANCELATIONS_OSX_MAX);
+    // Prevent the preference from setting a value greater than 5.
+    maxCancels = Math.min(maxCancels, 5);
+    if (osxCancelations >= maxCancels) {
+      cleanupActiveUpdate();
+    } else {
+      writeStatusFile(getUpdatesDir(),
+                      update.state = STATE_PENDING_ELEVATE);
+    }
+    update.statusText = gUpdateBundle.GetStringFromName("elevationFailure");
+    update.QueryInterface(Ci.nsIWritablePropertyBag);
+    update.setProperty("patchingFailed", "elevationFailure");
+    let prompter = Cc["@mozilla.org/updates/update-prompt;1"].
+               createInstance(Ci.nsIUpdatePrompt);
+    prompter.showUpdateError(update);
+#else
     writeStatusFile(getUpdatesDir(), update.state = STATE_PENDING);
+#endif
 
     return true;
   }
@@ -1778,6 +1850,58 @@ UpdateService.prototype = {
     });
 
     let update = minorUpdate || majorUpdate;
+#ifdef XP_MACOSX
+    if (update) {
+      if (getElevationRequired()) {
+        let installAttemptVersion = Services.prefs.getCharPref(
+                                            PREF_APP_UPDATE_ELEVATE_VERSION,
+                                            "");
+        if (vc.compare(installAttemptVersion, update.appVersion) != 0) {
+          Services.prefs.setCharPref(PREF_APP_UPDATE_ELEVATE_VERSION,
+                                     update.appVersion);
+          if (Services.prefs.prefHasUserValue(
+                PREF_APP_UPDATE_CANCELATIONS_OSX)) {
+            Services.prefs.clearUserPref(PREF_APP_UPDATE_CANCELATIONS_OSX);
+          }
+          if (Services.prefs.prefHasUserValue(PREF_APP_UPDATE_ELEVATE_NEVER)) {
+            Services.prefs.clearUserPref(PREF_APP_UPDATE_ELEVATE_NEVER);
+          }
+        } else {
+          let numCancels = Services.prefs.getIntPref(PREF_APP_UPDATE_CANCELATIONS_OSX, 0);
+          let rejectedVersion = Services.prefs.getCharPref(PREF_APP_UPDATE_ELEVATE_NEVER, "");
+          let maxCancels = Services.prefs.getIntPref(PREF_APP_UPDATE_CANCELATIONS_OSX_MAX,
+                                   DEFAULT_CANCELATIONS_OSX_MAX);
+          if (numCancels >= maxCancels) {
+            LOG("UpdateService:selectUpdate - the user requires elevation to " +
+                "install this update, but the user has exceeded the max " +
+                "number of elevation attempts.");
+            update.elevationFailure = true;
+          } else if (vc.compare(rejectedVersion, update.appVersion) == 0) {
+            LOG("UpdateService:selectUpdate - the user requires elevation to " +
+                "install this update, but elevation is disabled for this " +
+                "version.");
+            update.elevationFailure = true;
+          } else {
+            LOG("UpdateService:selectUpdate - the user requires elevation to " +
+                "install the update.");
+          }
+        }
+      } else {
+        // Clear elevation-related prefs since they no longer apply (the user
+        // may have gained write access to the Firefox directory or an update
+        // was executed with a different profile).
+        if (Services.prefs.prefHasUserValue(PREF_APP_UPDATE_ELEVATE_VERSION)) {
+          Services.prefs.clearUserPref(PREF_APP_UPDATE_ELEVATE_VERSION);
+        }
+        if (Services.prefs.prefHasUserValue(PREF_APP_UPDATE_CANCELATIONS_OSX)) {
+          Services.prefs.clearUserPref(PREF_APP_UPDATE_CANCELATIONS_OSX);
+        }
+        if (Services.prefs.prefHasUserValue(PREF_APP_UPDATE_ELEVATE_NEVER)) {
+          Services.prefs.clearUserPref(PREF_APP_UPDATE_ELEVATE_NEVER);
+        }
+      }
+    }
+#endif
 
     return update;
   },
@@ -1895,8 +2019,7 @@ UpdateService.prototype = {
    * See nsIUpdateService.idl
    */
   get elevationRequired() {
-    /** Mac Stub, but keeping this for now to not break the API **/
-    return false;
+    return getElevationRequired();
   },
 
   /**
@@ -3147,7 +3270,11 @@ Downloader.prototype = {
         "max fail: " + maxFail + ", " + "retryTimeout: " + retryTimeout);
     if (Components.isSuccessCode(status)) {
       if (this._verifyDownload()) {
-        state = STATE_PENDING;
+        if (getElevationRequired()) {
+          state = STATE_PENDING_ELEVATE;
+        } else {
+          state = STATE_PENDING;
+        }
         if (this.background) {
           shouldShowPrompt = !getCanStageUpdates();
         }

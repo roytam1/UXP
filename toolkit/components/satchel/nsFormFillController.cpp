@@ -1016,11 +1016,27 @@ nsFormFillController::KeyPress(nsIDOMEvent* aEvent)
   keyEvent->GetKeyCode(&k);
   switch (k) {
   case nsIDOMKeyEvent::DOM_VK_DELETE:
+#ifndef XP_MACOSX
     mController->HandleDelete(&cancel);
     break;
   case nsIDOMKeyEvent::DOM_VK_BACK_SPACE:
     mController->HandleText(&unused);
     break;
+#else
+  case nsIDOMKeyEvent::DOM_VK_BACK_SPACE:
+    {
+      bool isShift = false;
+      keyEvent->GetShiftKey(&isShift);
+
+      if (isShift) {
+        mController->HandleDelete(&cancel);
+      } else {
+        mController->HandleText(&unused);
+      }
+
+      break;
+    }
+#endif
   case nsIDOMKeyEvent::DOM_VK_PAGE_UP:
   case nsIDOMKeyEvent::DOM_VK_PAGE_DOWN:
     {

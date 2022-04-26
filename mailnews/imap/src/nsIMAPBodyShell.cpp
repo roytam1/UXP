@@ -724,8 +724,27 @@ bool nsIMAPBodypartLeaf::ShouldFetchInline(nsIMAPBodyShell *aShell)
 
       return false;  // we can leave it on the server
     }
+#ifdef XP_MACOSX
+    // If it is either applesingle, or a resource fork for appledouble
+    if (!PL_strcasecmp(m_contentType, "application/applefile"))
+    {
+      // if it is appledouble
+      if (m_parentPart->GetType() == IMAP_BODY_MULTIPART &&
+        !PL_strcasecmp(m_parentPart->GetBodySubType(), "appledouble"))
+      {
+        // This is the resource fork of a multipart/appledouble.
+        // We inherit the inline attributes of the parent,
+        // which was derived from its OTHER child.  (The data fork.)
+        return m_parentPart->ShouldFetchInline(aShell);
+      }
+      else	// it is applesingle
+      {
+        return false;	// we can leave it on the server
+      }
+    }
+#endif // XP_MACOSX
     
-    // Leave out parts with type application/(*)
+    // Leave out parts with type application/*
     if (!PL_strcasecmp(m_bodyType, "APPLICATION") &&	// If it is of type "application"
       PL_strncasecmp(m_bodySubType, "x-pkcs7", 7)	// and it's not a signature (signatures are inline)
       )

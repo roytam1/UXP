@@ -136,11 +136,13 @@ nsresult nsStatusBarBiffManager::PlayBiffSound(const char *aPrefBranch)
       }
     }
   }
+#ifndef XP_MACOSX
   // if nothing played, play the default system sound
   if (!customSoundPlayed) {
     rv = mSound->PlayEventSound(nsISound::EVENT_NEW_MAIL_RECEIVED);
     NS_ENSURE_SUCCESS(rv, rv);
   }
+#endif
   return rv;
 }
 

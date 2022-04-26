@@ -5,5 +5,7 @@
 
 if CONFIG['OS_ARCH'] == 'WINNT':
     DIRS += ['win32']
+elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    DIRS += ['mac']
 elif CONFIG['OS_ARCH'] == 'Linux':
     DIRS += ['linux']

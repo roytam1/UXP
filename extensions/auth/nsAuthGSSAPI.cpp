@@ -1,3 +1,4 @@
+/* vim:set ts=4 sw=4 sts=4 et cindent: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -23,6 +24,19 @@
 #include "nsNativeCharsetUtils.h"
 
 #include "nsAuthGSSAPI.h"
+
+#ifdef XP_MACOSX
+#include <Kerberos/Kerberos.h>
+#endif
+
+#ifdef XP_MACOSX
+typedef KLStatus (*KLCacheHasValidTickets_type)(
+    KLPrincipal,
+    KLKerberosVersion,
+    KLBoolean *,
+    KLPrincipal *,
+    char **);
+#endif
 
 #if defined(HAVE_RES_NINIT)
 #include <sys/types.h>
@@ -76,6 +90,12 @@ static PRLibrary* gssLibrary = nullptr;
 #define gss_release_name_ptr        ((gss_release_name_type)*gssFuncs[7].func)
 #define gss_wrap_ptr                ((gss_wrap_type)*gssFuncs[8].func)
 #define gss_unwrap_ptr              ((gss_unwrap_type)*gssFuncs[9].func)
+
+#ifdef XP_MACOSX
+static PRFuncPtr KLCacheHasValidTicketsPtr;
+#define KLCacheHasValidTickets_ptr \
+        ((KLCacheHasValidTickets_type)*KLCacheHasValidTicketsPtr)
+#endif
 
 static nsresult
 gssInit()
@@ -192,6 +212,15 @@ gssInit()
             return NS_ERROR_FAILURE;
         }
     }
+#ifdef XP_MACOSX
+    if (gssNativeImp &&
+            !(KLCacheHasValidTicketsPtr =
+               PR_FindFunctionSymbol(lib, "KLCacheHasValidTickets"))) {
+        LOG(("Fail to load KLCacheHasValidTickets function from gssapi library\n"));
+        PR_UnloadLibrary(lib);
+        return NS_ERROR_FAILURE;
+    }
+#endif
 
     gssLibrary = lib;
     return NS_OK;
@@ -412,6 +441,24 @@ nsAuthGSSAPI::GetNextToken(const void *inToken,
         return NS_ERROR_UNEXPECTED; 
     }
 
+#if defined(XP_MACOSX)
+    // Suppress Kerberos prompts to get credentials.  See bug 240643.
+    // We can only use Mac OS X specific kerb functions if we are using 
+    // the native lib
+    KLBoolean found;    
+    bool doingMailTask = mServiceName.Find("imap@") ||
+                           mServiceName.Find("pop@") ||
+                           mServiceName.Find("smtp@") ||
+                           mServiceName.Find("ldap@");
+    
+    if (!doingMailTask && (gssNativeImp &&
+         (KLCacheHasValidTickets_ptr(nullptr, kerberosVersion_V5, &found, nullptr, nullptr) != klNoErr || !found)))
+    {
+        major_status = GSS_S_FAILURE;
+        minor_status = 0;
+    }
+    else
+#endif /* XP_MACOSX */
     major_status = gss_init_sec_context_ptr(&minor_status,
                                             GSS_C_NO_CREDENTIAL,
                                             &mCtx,

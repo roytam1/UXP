@@ -424,7 +424,7 @@ void nsPluginTag::InitMime(const char* const* aMimeTypes,
   }
 }
 
-#if !defined(XP_WIN)
+#if !defined(XP_WIN) && !defined(XP_MACOSX)
 static nsresult ConvertToUTF8(nsIUnicodeDecoder *aUnicodeDecoder,
                               nsAFlatCString& aString)
 {
@@ -448,7 +448,7 @@ static nsresult ConvertToUTF8(nsIUnicodeDecoder *aUnicodeDecoder,
 
 nsresult nsPluginTag::EnsureMembersAreUTF8()
 {
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
   return NS_OK;
 #else
   nsresult rv;

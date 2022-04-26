@@ -33,6 +33,16 @@ NS_DEFINE_NAMED_CID(NS_TEXTIMPORT_CID);
 NS_DEFINE_NAMED_CID(NS_VCARDIMPORT_CID);
 
 ////////////////////////////////////////////////////////////////////////////////
+// Apple Mail import Include Files
+////////////////////////////////////////////////////////////////////////////////
+#if defined(XP_MACOSX)
+#include "nsAppleMailImport.h"
+
+NS_DEFINE_NAMED_CID(NS_APPLEMAILIMPORT_CID);
+NS_DEFINE_NAMED_CID(NS_APPLEMAILIMPL_CID);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // outlook import Include Files
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef XP_WIN
@@ -79,6 +89,14 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(nsTextImport)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsVCardImport)
 
 ////////////////////////////////////////////////////////////////////////////////
+// apple mail import factories
+////////////////////////////////////////////////////////////////////////////////
+#if defined(XP_MACOSX)
+NS_GENERIC_FACTORY_CONSTRUCTOR(nsAppleMailImportModule)
+NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsAppleMailImportMail, Initialize)
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // outlook import factories
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef XP_WIN
@@ -108,6 +126,9 @@ static const mozilla::Module::CategoryEntry kMailNewsImportCategories[] = {
   { "mailnewsimport", "{1DB469A0-8B00-11d3-A206-00A0CC26DA63}", kOutlookSupportsString },
 #endif
 #endif
+#if defined(XP_MACOSX)
+  { "mailnewsimport", "{6d3f101c-70ec-4e04-b68d-9908d1aeddf3}", kAppleMailSupportsString },
+#endif
   { NULL }
 };
 
@@ -116,6 +137,11 @@ const mozilla::Module::CIDEntry kMailNewsImportCIDs[] = {
   { &kNS_IMPORTMIMEENCODE_CID, false, NULL, nsIImportMimeEncodeImplConstructor },
   { &kNS_TEXTIMPORT_CID, false, NULL, nsTextImportConstructor },
   { &kNS_VCARDIMPORT_CID, false, NULL, nsVCardImportConstructor },
+#if defined(XP_MACOSX)
+  { &kNS_APPLEMAILIMPORT_CID, false, NULL, nsAppleMailImportModuleConstructor },
+  { &kNS_APPLEMAILIMPL_CID, false, NULL, nsAppleMailImportMailConstructor },
+#endif
+
 #ifdef XP_WIN
   { &kNS_OEIMPORT_CID, false, NULL, nsOEImportConstructor },
   { &kNS_WMIMPORT_CID, false, NULL, nsWMImportConstructor },
@@ -132,6 +158,11 @@ const mozilla::Module::ContractIDEntry kMailNewsImportContracts[] = {
   { "@mozilla.org/import/import-mimeencode;1", &kNS_IMPORTMIMEENCODE_CID },
   { "@mozilla.org/import/import-text;1", &kNS_TEXTIMPORT_CID },
   { "@mozilla.org/import/import-vcard;1", &kNS_VCARDIMPORT_CID },
+#if defined(XP_MACOSX)
+  { "@mozilla.org/import/import-applemail;1", &kNS_APPLEMAILIMPORT_CID },
+  { NS_APPLEMAILIMPL_CONTRACTID, &kNS_APPLEMAILIMPL_CID },
+#endif
+
 #ifdef XP_WIN
   { "@mozilla.org/import/import-oe;1", &kNS_OEIMPORT_CID },
   { "@mozilla.org/import/import-wm;1", &kNS_WMIMPORT_CID },

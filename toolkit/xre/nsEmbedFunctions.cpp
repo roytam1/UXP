@@ -38,6 +38,10 @@
 #include "nsXREDirProvider.h"
 
 #include "mozilla/Omnijar.h"
+#if defined(XP_MACOSX)
+#include "nsVersionComparator.h"
+#include "chrome/common/mach_ipc_mac.h"
+#endif
 #include "nsX11ErrorHandler.h"
 #include "nsGDKErrorHandler.h"
 #include "base/at_exit.h"
@@ -300,6 +304,81 @@ XRE_InitChildProcess(int aArgc,
   PROFILER_LABEL("Startup", "XRE_InitChildProcess",
     js::ProfileEntry::Category::OTHER);
 
+  // Complete 'task_t' exchange for Mac OS X. This structure has the same size
+  // regardless of architecture so we don't have any cross-arch issues here.
+#ifdef XP_MACOSX
+  if (aArgc < 1)
+    return NS_ERROR_FAILURE;
+  const char* const mach_port_name = aArgv[--aArgc];
+
+  const int kTimeoutMs = 1000;
+
+  MachSendMessage child_message(0);
+  if (!child_message.AddDescriptor(MachMsgPortDescriptor(mach_task_self()))) {
+    NS_WARNING("child AddDescriptor(mach_task_self()) failed.");
+    return NS_ERROR_FAILURE;
+  }
+
+  ReceivePort child_recv_port;
+  mach_port_t raw_child_recv_port = child_recv_port.GetPort();
+  if (!child_message.AddDescriptor(MachMsgPortDescriptor(raw_child_recv_port))) {
+    NS_WARNING("Adding descriptor to message failed");
+    return NS_ERROR_FAILURE;
+  }
+
+  ReceivePort* ports_out_receiver = new ReceivePort();
+  if (!child_message.AddDescriptor(MachMsgPortDescriptor(ports_out_receiver->GetPort()))) {
+    NS_WARNING("Adding descriptor to message failed");
+    return NS_ERROR_FAILURE;
+  }
+
+  ReceivePort* ports_in_receiver = new ReceivePort();
+  if (!child_message.AddDescriptor(MachMsgPortDescriptor(ports_in_receiver->GetPort()))) {
+    NS_WARNING("Adding descriptor to message failed");
+    return NS_ERROR_FAILURE;
+  }
+
+  MachPortSender child_sender(mach_port_name);
+  kern_return_t err = child_sender.SendMessage(child_message, kTimeoutMs);
+  if (err != KERN_SUCCESS) {
+    NS_WARNING("child SendMessage() failed");
+    return NS_ERROR_FAILURE;
+  }
+
+  MachReceiveMessage parent_message;
+  err = child_recv_port.WaitForMessage(&parent_message, kTimeoutMs);
+  if (err != KERN_SUCCESS) {
+    NS_WARNING("child WaitForMessage() failed");
+    return NS_ERROR_FAILURE;
+  }
+
+  if (parent_message.GetTranslatedPort(0) == MACH_PORT_NULL) {
+    NS_WARNING("child GetTranslatedPort(0) failed");
+    return NS_ERROR_FAILURE;
+  }
+
+  err = task_set_bootstrap_port(mach_task_self(),
+                                parent_message.GetTranslatedPort(0));
+
+  if (parent_message.GetTranslatedPort(1) == MACH_PORT_NULL) {
+    NS_WARNING("child GetTranslatedPort(1) failed");
+    return NS_ERROR_FAILURE;
+  }
+  MachPortSender* ports_out_sender = new MachPortSender(parent_message.GetTranslatedPort(1));
+
+  if (parent_message.GetTranslatedPort(2) == MACH_PORT_NULL) {
+    NS_WARNING("child GetTranslatedPort(2) failed");
+    return NS_ERROR_FAILURE;
+  }
+  MachPortSender* ports_in_sender = new MachPortSender(parent_message.GetTranslatedPort(2));
+
+  if (err != KERN_SUCCESS) {
+    NS_WARNING("child task_set_bootstrap_port() failed");
+    return NS_ERROR_FAILURE;
+  }
+
+#endif
+
   SetupErrorHandling(aArgv[0]);  
 
   gArgv = aArgv;
@@ -344,6 +423,11 @@ XRE_InitChildProcess(int aArgc,
   char* end = 0;
   base::ProcessId parentPID = strtol(parentPIDString, &end, 10);
   MOZ_ASSERT(!*end, "invalid parent PID");
+
+#ifdef XP_MACOSX
+  mozilla::ipc::SharedMemoryBasic::SetupMachMemory(parentPID, ports_in_receiver, ports_in_sender,
+                                                   ports_out_sender, ports_out_receiver, true);
+#endif
 
 #if defined(XP_WIN)
   // On Win7+, register the application user model id passed in by
@@ -476,6 +560,11 @@ XRE_InitChildProcess(int aArgc,
       // scope and being deleted
       process->CleanUp();
       mozilla::Omnijar::CleanUp();
+
+#if defined(XP_MACOSX)
+      // Everybody should be done using shared memory by now.
+      mozilla::ipc::SharedMemoryBasic::Shutdown();
+#endif
     }
   }
 
@@ -591,6 +680,47 @@ XRE_RunAppShell()
 {
     nsCOMPtr<nsIAppShell> appShell(do_GetService(kAppShellCID));
     NS_ENSURE_TRUE(appShell, NS_ERROR_FAILURE);
+#if defined(XP_MACOSX)
+    {
+      // In content processes that want XPCOM (and hence want
+      // AppShell), we usually run our hybrid event loop through
+      // MessagePump::Run(), by way of nsBaseAppShell::Run().  The
+      // Cocoa nsAppShell impl, however, implements its own Run()
+      // that's unaware of MessagePump.  That's all rather suboptimal,
+      // but oddly enough not a problem... usually.
+      // 
+      // The problem with this setup comes during startup.
+      // XPCOM-in-subprocesses depends on IPC, e.g. to init the pref
+      // service, so we have to init IPC first.  But, IPC also
+      // indirectly kinda-depends on XPCOM, because MessagePump
+      // schedules work from off-main threads (e.g. IO thread) by
+      // using NS_DispatchToMainThread().  If the IO thread receives a
+      // Message from the parent before nsThreadManager is
+      // initialized, then DispatchToMainThread() will fail, although
+      // MessagePump will remember the task.  This race condition
+      // isn't a problem when appShell->Run() ends up in
+      // MessagePump::Run(), because MessagePump will immediate see it
+      // has work to do.  It *is* a problem when we end up in [NSApp
+      // run], because it's not aware that MessagePump has work that
+      // needs to be processed; that was supposed to be signaled by
+      // nsIRunnable(s).
+      // 
+      // So instead of hacking Cocoa nsAppShell or rewriting the
+      // event-loop system, we compromise here by processing any tasks
+      // that might have been enqueued on MessagePump, *before*
+      // MessagePump::ScheduleWork was able to successfully
+      // DispatchToMainThread().
+      MessageLoop* loop = MessageLoop::current();
+      bool couldNest = loop->NestableTasksAllowed();
+
+      loop->SetNestableTasksAllowed(true);
+      RefPtr<Runnable> task = new MessageLoop::QuitTask();
+      loop->PostTask(task.forget());
+      loop->Run();
+
+      loop->SetNestableTasksAllowed(couldNest);
+    }
+#endif  // XP_MACOSX
     return appShell->Run();
 }
 
@@ -609,6 +739,16 @@ XRE_ShutdownChildProcess()
   //  (4) ProcessChild joins the IO thread
   //  (5) exit()
   MessageLoop::current()->Quit();
+#if defined(XP_MACOSX)
+  nsCOMPtr<nsIAppShell> appShell(do_GetService(kAppShellCID));
+  if (appShell) {
+      // On Mac, we might be only above nsAppShell::Run(), not
+      // MessagePump::Run().  See XRE_RunAppShell(). To account for
+      // that case, we fire off an Exit() here.  If we were indeed
+      // above MessagePump::Run(), this Exit() is just superfluous.
+      appShell->Exit();
+  }
+#endif // XP_MACOSX
 }
 
 namespace {

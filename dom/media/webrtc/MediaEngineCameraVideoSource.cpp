@@ -339,6 +339,13 @@ MediaEngineCameraVideoSource::SetName(nsString aName)
     facingMode = VideoFacingModeEnum::User;
   }
 #endif // ANDROID
+#ifdef XP_MACOSX
+  // Kludge to test user-facing cameras on OSX.
+  if (aName.Find(NS_LITERAL_STRING("Face")) != -1) {
+    hasFacingMode = true;
+    facingMode = VideoFacingModeEnum::User;
+  }
+#endif
 #ifdef XP_WIN
   // The cameras' name of Surface book are "Microsoft Camera Front" and
   // "Microsoft Camera Rear" respectively.

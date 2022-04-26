@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 
-<!-- -*- Mode: XML; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- -->
-<!-- This Source Code Form is subject to the terms of the Mozilla Public
-     License, v. 2.0. If a copy of the MPL was not distributed with this
-     file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+# -*- Mode: Java; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?> 
 <?xml-stylesheet href="chrome://mozapps/skin/extensions/update.css" type="text/css"?> 
@@ -100,7 +100,11 @@
                 oncommand="gUpdateWizard.shouldAutoCheck = this.checked;"/>
     </vbox>
     <separator flex="1"/>
+#ifndef XP_MACOSX
     <label>&clickFinish.label;</label>
+#else
+    <label>&clickFinish.labelMac;</label>
+#endif
     <separator class="thin"/>
   </wizardpage>
 
@@ -140,7 +144,11 @@
       <description flex="1">&installerrors.intro.label;</description>
     </hbox>
     <separator flex="1"/>
+#ifndef XP_MACOSX
     <label>&clickFinish.label;</label>
+#else
+    <label>&clickFinish.labelMac;</label>
+#endif
     <separator class="thin"/>
   </wizardpage>
   
@@ -153,7 +161,11 @@
       <description flex="1">&adminDisabled.warning.label;</description>
     </hbox>
     <separator flex="1"/>
+#ifndef XP_MACOSX
     <label>&clickFinish.label;</label>
+#else
+    <label>&clickFinish.labelMac;</label>
+#endif
     <separator class="thin"/>
   </wizardpage>
 
@@ -172,7 +184,11 @@
                 oncommand="gUpdateWizard.shouldAutoCheck = this.checked;"/>
     </vbox>
     <separator flex="1"/>
+#ifndef XP_MACOSX
     <label>&clickFinish.label;</label>
+#else
+    <label>&clickFinish.labelMac;</label>
+#endif
     <separator class="thin"/>
   </wizardpage>
   

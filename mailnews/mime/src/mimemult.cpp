@@ -16,6 +16,10 @@
 #include "nsMimeTypes.h"
 #include <ctype.h>
 
+#ifdef XP_MACOSX
+  extern MimeObjectClass mimeMultipartAppleDoubleClass;
+#endif
+
 #define MIME_SUPERCLASS mimeContainerClass
 MimeDefClass(MimeMultipart, MimeMultipartClass,
        mimeMultipartClass, &MIME_SUPERCLASS);
@@ -487,6 +491,19 @@ MimeMultipart_create_child(MimeObject *obj)
   if (body->output_p)
   {  
     status = body->clazz->parse_begin(body);
+
+#ifdef XP_MACOSX
+    /* if we are saving an apple double attachment, we need to set correctly the conten type of the channel */
+    if (mime_typep(obj, (MimeObjectClass *) &mimeMultipartAppleDoubleClass))
+    {
+      mime_stream_data *msd = (mime_stream_data *)body->options->stream_closure;
+      if (!body->options->write_html_p && body->content_type && !PL_strcasecmp(body->content_type, APPLICATION_APPLEFILE))
+      {
+        if (msd && msd->channel)
+          msd->channel->SetContentType(NS_LITERAL_CSTRING(APPLICATION_APPLEFILE));
+      }
+    }
+#endif
 
     if (status < 0) return status;
   }

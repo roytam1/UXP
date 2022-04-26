@@ -29,8 +29,15 @@ static CriticalAddress gCriticalAddress;
 #define _GNU_SOURCE
 #endif
 
-#if defined(HAVE_DLOPEN)
+#if defined(HAVE_DLOPEN) || defined(XP_DARWIN)
 #include <dlfcn.h>
+#endif
+
+#if (defined(XP_DARWIN) && \
+     (defined(__i386) || defined(__ppc__) || defined(HAVE__UNWIND_BACKTRACE)))
+#define MOZ_STACKWALK_SUPPORTS_MACOSX 1
+#else
+#define MOZ_STACKWALK_SUPPORTS_MACOSX 0
 #endif
 
 #if (defined(linux) && \
@@ -51,18 +58,121 @@ static CriticalAddress gCriticalAddress;
 extern MOZ_EXPORT void* __libc_stack_end; // from ld-linux.so
 #endif
 
+#if MOZ_STACKWALK_SUPPORTS_MACOSX
+#include <pthread.h>
+#include <sys/errno.h>
+#ifdef MOZ_WIDGET_COCOA
+#include <CoreServices/CoreServices.h>
+#endif
+
+typedef void
+malloc_logger_t(uint32_t aType,
+                uintptr_t aArg1, uintptr_t aArg2, uintptr_t aArg3,
+                uintptr_t aResult, uint32_t aNumHotFramesToSkip);
+extern malloc_logger_t* malloc_logger;
+
+static void
+stack_callback(uint32_t aFrameNumber, void* aPc, void* aSp, void* aClosure)
+{
+  const char* name = static_cast<char*>(aClosure);
+  Dl_info info;
+
+  // On Leopard dladdr returns the wrong value for "new_sem_from_pool". The
+  // stack shows up as having two pthread_cond_wait$UNIX2003 frames. The
+  // correct one is the first that we find on our way up, so the
+  // following check for gCriticalAddress.mAddr is critical.
+  if (gCriticalAddress.mAddr || dladdr(aPc, &info) == 0  ||
+      !info.dli_sname || strcmp(info.dli_sname, name) != 0) {
+    return;
+  }
+  gCriticalAddress.mAddr = aPc;
+}
+
+static void
+my_malloc_logger(uint32_t aType,
+                 uintptr_t aArg1, uintptr_t aArg2, uintptr_t aArg3,
+                 uintptr_t aResult, uint32_t aNumHotFramesToSkip)
+{
+  static bool once = false;
+  if (once) {
+    return;
+  }
+  once = true;
+
+  // On Leopard dladdr returns the wrong value for "new_sem_from_pool". The
+  // stack shows up as having two pthread_cond_wait$UNIX2003 frames.
+  const char* name = "new_sem_from_pool";
+  MozStackWalk(stack_callback, /* skipFrames */ 0, /* maxFrames */ 0,
+               const_cast<char*>(name), 0, nullptr);
+}
+
+// This is called from NS_LogInit() and from the stack walking functions, but
+// only the first call has any effect.  We need to call this function from both
+// places because it must run before any mutexes are created, and also before
+// any objects whose refcounts we're logging are created.  Running this
+// function during NS_LogInit() ensures that we meet the first criterion, and
+// running this function during the stack walking functions ensures we meet the
+// second criterion.
+MFBT_API void
+StackWalkInitCriticalAddress()
+{
+  if (gCriticalAddress.mInit) {
+    return;
+  }
+  gCriticalAddress.mInit = true;
+  // We must not do work when 'new_sem_from_pool' calls realloc, since
+  // it holds a non-reentrant spin-lock and we will quickly deadlock.
+  // new_sem_from_pool is not directly accessible using dlsym, so
+  // we force a situation where new_sem_from_pool is on the stack and
+  // use dladdr to check the addresses.
+
+  // malloc_logger can be set by external tools like 'Instruments' or 'leaks'
+  malloc_logger_t* old_malloc_logger = malloc_logger;
+  malloc_logger = my_malloc_logger;
+
+  pthread_cond_t cond;
+  int r = pthread_cond_init(&cond, 0);
+  MOZ_ASSERT(r == 0);
+  pthread_mutex_t mutex;
+  r = pthread_mutex_init(&mutex, 0);
+  MOZ_ASSERT(r == 0);
+  r = pthread_mutex_lock(&mutex);
+  MOZ_ASSERT(r == 0);
+  struct timespec abstime = { 0, 1 };
+  r = pthread_cond_timedwait_relative_np(&cond, &mutex, &abstime);
+
+  // restore the previous malloc logger
+  malloc_logger = old_malloc_logger;
+
+  MOZ_ASSERT(r == ETIMEDOUT);
+  r = pthread_mutex_unlock(&mutex);
+  MOZ_ASSERT(r == 0);
+  r = pthread_mutex_destroy(&mutex);
+  MOZ_ASSERT(r == 0);
+  r = pthread_cond_destroy(&cond);
+  MOZ_ASSERT(r == 0);
+}
+
+static bool
+IsCriticalAddress(void* aPC)
+{
+  return gCriticalAddress.mAddr == aPC;
+}
+#else
 static bool
 IsCriticalAddress(void* aPC)
 {
   return false;
 }
 // We still initialize gCriticalAddress.mInit so that this code behaves
-// the same on all platforms.
+// the same on all platforms. Otherwise a failure to init would be visible
+// only on OS X.
 MFBT_API void
 StackWalkInitCriticalAddress()
 {
   gCriticalAddress.mInit = true;
 }
+#endif
 
 #if defined(_WIN32) && (defined(_M_IX86) || defined(_M_AMD64) || defined(_M_IA64)) // WIN32 x86 stack walking code
 
@@ -812,6 +922,8 @@ MozStackWalk(MozWalkStackCallback aCallback, uint32_t aSkipFrames,
   void* stackEnd;
 #if HAVE___LIBC_STACK_END
   stackEnd = __libc_stack_end;
+#elif defined(XP_DARWIN)
+  stackEnd = pthread_get_stackaddr_np(pthread_self());
 #else
 #  error Unsupported configuration
 #endif
@@ -955,7 +1067,7 @@ MozDescribeCodeAddress(void* aPC, MozCodeAddressDetails* aDetails)
 
 #endif
 
-#if defined(XP_WIN) || defined (XP_LINUX)
+#if defined(XP_WIN) || defined (XP_MACOSX) || defined (XP_LINUX)
 namespace mozilla {
 bool
 FramePointerStackWalk(MozWalkStackCallback aCallback, uint32_t aSkipFrames,
@@ -979,8 +1091,8 @@ FramePointerStackWalk(MozWalkStackCallback aCallback, uint32_t aSkipFrames,
         (uintptr_t(next) & 3)) {
       break;
     }
-#if defined(__powerpc64__)
-    // powerpc64 linux
+#if (defined(__ppc__) && defined(XP_MACOSX)) || defined(__powerpc64__)
+    // ppc mac or powerpc64 linux
     void* pc = *(bp + 2);
     bp += 3;
 #else // i386 or powerpc32 linux

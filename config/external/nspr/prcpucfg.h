@@ -10,7 +10,9 @@
  * Need to support conditionals that are defined in both the top-level build
  * system as well as NSS' build system for now.
  */
-#if defined(XP_WIN) || defined(_WINDOWS)
+#if defined(XP_DARWIN) || defined(DARWIN)
+#include "md/_darwin.cfg"
+#elif defined(XP_WIN) || defined(_WINDOWS)
 #include "md/_win95.cfg"
 #elif defined(__FreeBSD__)
 #include "md/_freebsd.cfg"

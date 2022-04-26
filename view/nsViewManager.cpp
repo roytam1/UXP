@@ -598,7 +598,10 @@ nsViewManager::InvalidateWidgetArea(nsView *aWidgetView,
                      "Only plugin or popup widgets can be children!");
 
         // We do not need to invalidate in plugin widgets, but we should
-        // exclude them from the invalidation region.
+        // exclude them from the invalidation region IF we're not on
+        // Mac. On Mac we need to draw under plugin widgets, because
+        // plugin widgets are basically invisible
+#ifndef XP_MACOSX
         // GetBounds should compensate for chrome on a toplevel widget
         LayoutDeviceIntRect bounds = childWidget->GetBounds();
 
@@ -610,6 +613,7 @@ nsViewManager::InvalidateWidgetArea(nsView *aWidgetView,
           children.Or(children, rr - aWidgetView->ViewToWidgetOffset());
           children.SimplifyInward(20);
         }
+#endif
       }
     }
   }

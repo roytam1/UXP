@@ -112,7 +112,7 @@
 #    define mozmem_jemalloc_impl(a)   je_ ## a
 #  else
 #    define MOZ_JEMALLOC_API MFBT_API
-#    if defined(XP_WIN)
+#    if (defined(XP_WIN) || defined(XP_DARWIN))
 #      if defined(MOZ_REPLACE_MALLOC)
 #        define mozmem_malloc_impl(a)   a ## _impl
 #      else

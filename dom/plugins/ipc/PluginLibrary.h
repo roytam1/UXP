@@ -57,7 +57,7 @@ public:
 
   virtual bool HasRequiredFunctions() = 0;
 
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
   virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPPluginFuncs* pFuncs, NPError* error) = 0;
 #else
   virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error) = 0;
@@ -66,7 +66,7 @@ public:
   virtual nsresult NP_GetMIMEDescription(const char** mimeDesc) = 0;
   virtual nsresult NP_GetValue(void *future, NPPVariable aVariable,
                                void *aValue, NPError* error) = 0;
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
   virtual nsresult NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* error) = 0;
 #endif
   virtual nsresult NPP_New(NPMIMEType pluginType, NPP instance,
@@ -83,7 +83,10 @@ public:
   virtual nsresult GetImageSize(NPP instance, nsIntSize* aSize) = 0;
   virtual void DidComposite(NPP instance) = 0;
   virtual bool IsOOP() = 0;
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+  virtual nsresult IsRemoteDrawingCoreAnimation(NPP instance, bool *aDrawing) = 0;
+#endif
+#if defined(XP_MACOSX) || defined(XP_WIN)
   virtual nsresult ContentsScaleFactorChanged(NPP instance, double aContentsScaleFactor) = 0;
 #endif
 #if defined(XP_WIN)

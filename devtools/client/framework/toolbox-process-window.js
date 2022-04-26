@@ -142,6 +142,16 @@ function evaluateTestScript(script, toolbox) {
 function bindToolboxHandlers() {
   gToolbox.once("destroyed", quitApp);
   window.addEventListener("unload", onUnload);
+
+#ifdef XP_MACOSX
+  // Badge the dock icon to differentiate this process from the main application process.
+  updateBadgeText(false);
+
+  // Once the debugger panel opens listen for thread pause / resume.
+  gToolbox.getPanelWhenReady("jsdebugger").then(panel => {
+    setupThreadListeners(panel);
+  });
+#endif
 }
 
 function setupThreadListeners(panel) {

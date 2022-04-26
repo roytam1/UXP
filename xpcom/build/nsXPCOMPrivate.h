@@ -254,8 +254,15 @@ void LogTerm();
 
 #define XPCOM_DLL         XUL_DLL
 
+// you have to love apple..
+#ifdef XP_MACOSX
+#define XPCOM_SEARCH_KEY  "DYLD_LIBRARY_PATH"
+#define GRE_FRAMEWORK_NAME "XUL.framework"
+#define XUL_DLL            "XUL"
+#else
 #define XPCOM_SEARCH_KEY  "LD_LIBRARY_PATH"
 #define XUL_DLL   "libxul" MOZ_DLL_SUFFIX
+#endif
 
 #define GRE_CONF_NAME ".gre.config"
 #define GRE_CONF_PATH "/etc/gre.conf"

@@ -379,14 +379,24 @@ gfxFontUtils::ReadCMAPTableFormat14(const uint8_t *aBuf, uint32_t aLength,
     return NS_OK;
 }
 
-// For fonts with two format-4 tables, we allow the first one (Unicode platform)
-// to be replaced by the Microsoft-platform subtable.
+// For fonts with two format-4 tables, the first one (Unicode platform) is preferred on the Mac;
+// on other platforms we allow the Microsoft-platform subtable to replace it.
 
-#define acceptableFormat4(p,e,k) (((p) == PLATFORM_ID_MICROSOFT && (e) == EncodingIDMicrosoft) || \
-                                  ((p) == PLATFORM_ID_UNICODE))
+#if defined(XP_MACOSX)
+    #define acceptableFormat4(p,e,k) (((p) == PLATFORM_ID_MICROSOFT && (e) == EncodingIDMicrosoft && !(k)) || \
+                                      ((p) == PLATFORM_ID_UNICODE))
 
-#define acceptableUCS4Encoding(p, e, k) \
+    #define acceptableUCS4Encoding(p, e, k) \
+        (((p) == PLATFORM_ID_MICROSOFT && (e) == EncodingIDUCS4ForMicrosoftPlatform) && (k) != 12 || \
+         ((p) == PLATFORM_ID_UNICODE   && \
+          ((e) != EncodingIDUVSForUnicodePlatform)))
+#else
+    #define acceptableFormat4(p,e,k) (((p) == PLATFORM_ID_MICROSOFT && (e) == EncodingIDMicrosoft) || \
+                                      ((p) == PLATFORM_ID_UNICODE))
+
+    #define acceptableUCS4Encoding(p, e, k) \
         ((p) == PLATFORM_ID_MICROSOFT && (e) == EncodingIDUCS4ForMicrosoftPlatform)
+#endif
 
 #define acceptablePlatform(p) ((p) == PLATFORM_ID_UNICODE || (p) == PLATFORM_ID_MICROSOFT)
 #define isSymbol(p,e)         ((p) == PLATFORM_ID_MICROSOFT && (e) == EncodingIDSymbol)
@@ -1220,8 +1230,13 @@ gfxFontUtils::GetFamilyNameFromTable(hb_blob_t *aNameTable,
 }
 
 enum {
+#if defined(XP_MACOSX)
+    CANONICAL_LANG_ID = gfxFontUtils::LANG_ID_MAC_ENGLISH,
+    PLATFORM_ID       = gfxFontUtils::PLATFORM_ID_MAC
+#else
     CANONICAL_LANG_ID = gfxFontUtils::LANG_ID_MICROSOFT_EN_US,
     PLATFORM_ID       = gfxFontUtils::PLATFORM_ID_MICROSOFT
+#endif
 };    
 
 nsresult
@@ -1262,6 +1277,22 @@ gfxFontUtils::ReadCanonicalName(const char *aNameData, uint32_t aDataLen,
         NS_ENSURE_SUCCESS(rv, rv);
     }
     
+#if defined(XP_MACOSX)
+    // may be dealing with font that only has Microsoft name entries
+    if (names.Length() == 0) {
+        rv = ReadNames(aNameData, aDataLen, aNameID, LANG_ID_MICROSOFT_EN_US,
+                       PLATFORM_ID_MICROSOFT, names);
+        NS_ENSURE_SUCCESS(rv, rv);
+        
+        // getting really desperate now, take anything!
+        if (names.Length() == 0) {
+            rv = ReadNames(aNameData, aDataLen, aNameID, LANG_ALL,
+                           PLATFORM_ID_MICROSOFT, names);
+            NS_ENSURE_SUCCESS(rv, rv);
+        }
+    }
+#endif
+
     // return the first name (99.9% of the time names will
     // contain a single English name)
     if (names.Length()) {

@@ -17,17 +17,17 @@ class PluginPRLibrary : public PluginLibrary
 {
 public:
     PluginPRLibrary(const char* aFilePath, PRLibrary* aLibrary) :
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
         mNP_Initialize(nullptr),
 #else
         mNP_Initialize(nullptr),
 #endif
         mNP_Shutdown(nullptr),
         mNP_GetMIMEDescription(nullptr),
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
         mNP_GetValue(nullptr),
 #endif
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
         mNP_GetEntryPoints(nullptr),
 #endif
         mNPP_New(nullptr),
@@ -60,17 +60,19 @@ public:
 
         mNP_GetMIMEDescription = (NP_GetMIMEDescriptionFunc)
             PR_FindFunctionSymbol(mLibrary, "NP_GetMIMEDescription");
+#ifndef XP_MACOSX
         if (!mNP_GetMIMEDescription)
             return false;
+#endif
 
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
         mNP_GetValue = (NP_GetValueFunc)
             PR_FindFunctionSymbol(mLibrary, "NP_GetValue");
         if (!mNP_GetValue)
             return false;
 #endif
 
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
         mNP_GetEntryPoints = (NP_GetEntryPointsFunc)
             PR_FindFunctionSymbol(mLibrary, "NP_GetEntryPoints");
         if (!mNP_GetEntryPoints)
@@ -79,7 +81,7 @@ public:
         return true;
     }
 
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
     virtual nsresult NP_Initialize(NPNetscapeFuncs* aNetscapeFuncs,
                                    NPPluginFuncs* aFuncs, NPError* aError) override;
 #else
@@ -93,7 +95,7 @@ public:
     virtual nsresult NP_GetValue(void* aFuture, NPPVariable aVariable,
                                  void* aValue, NPError* aError) override;
 
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
     virtual nsresult NP_GetEntryPoints(NPPluginFuncs* aFuncs, NPError* aError) override;
 #endif
 
@@ -110,7 +112,10 @@ public:
     virtual nsresult GetImageContainer(NPP aInstance, mozilla::layers::ImageContainer** aContainer) override;
     virtual nsresult GetImageSize(NPP aInstance, nsIntSize* aSize) override;
     virtual bool IsOOP() override { return false; }
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+    virtual nsresult IsRemoteDrawingCoreAnimation(NPP aInstance, bool* aDrawing) override;
+#endif
+#if defined(XP_MACOSX) || defined(XP_WIN)
     virtual nsresult ContentsScaleFactorChanged(NPP aInstance, double aContentsScaleFactor) override;
 #endif
     virtual nsresult SetBackgroundUnknown(NPP instance) override;
@@ -134,10 +139,10 @@ private:
     NP_InitializeFunc mNP_Initialize;
     NP_ShutdownFunc mNP_Shutdown;
     NP_GetMIMEDescriptionFunc mNP_GetMIMEDescription;
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
     NP_GetValueFunc mNP_GetValue;
 #endif
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
     NP_GetEntryPointsFunc mNP_GetEntryPoints;
 #endif
     NPP_NewProcPtr mNPP_New;

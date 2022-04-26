@@ -37,6 +37,9 @@
 
 #if defined(XP_WIN)
 #include "gfxWindowsPlatform.h"
+#elif defined(XP_MACOSX)
+#include "gfxPlatformMac.h"
+#include "gfxQuartzSurface.h"
 #elif defined(MOZ_WIDGET_GTK)
 #include "gfxPlatformGtk.h"
 #elif defined(ANDROID)
@@ -576,6 +579,8 @@ gfxPlatform::Init()
 
 #if defined(XP_WIN)
     gPlatform = new gfxWindowsPlatform;
+#elif defined(XP_MACOSX)
+    gPlatform = new gfxPlatformMac;
 #elif defined(MOZ_WIDGET_GTK)
     gPlatform = new gfxPlatformGtk;
 #elif defined(ANDROID)
@@ -2152,7 +2157,7 @@ bool
 gfxPlatform::AccelerateLayersByDefault()
 {
   // Note: add any new platform defines here that should get HWA by default.
-#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_UIKIT)
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_UIKIT)
   return true;
 #elif defined(MOZ_GL_PROVIDER)
   // GL provider manually declared

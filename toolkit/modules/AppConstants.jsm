@@ -112,6 +112,8 @@ MOZ_SAFE_BROWSING:
   "linux",
 #elif XP_WIN
   "win",
+#elif XP_MACOSX
+  "macosx",
 #elif XP_LINUX
   "linux",
 #else
