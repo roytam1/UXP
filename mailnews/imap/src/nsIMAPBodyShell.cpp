@@ -744,7 +744,7 @@ bool nsIMAPBodypartLeaf::ShouldFetchInline(nsIMAPBodyShell *aShell)
     }
 #endif // XP_MACOSX
     
-    // Leave out parts with type application/*
+    // Leave out parts with type application/(*)
     if (!PL_strcasecmp(m_bodyType, "APPLICATION") &&	// If it is of type "application"
       PL_strncasecmp(m_bodySubType, "x-pkcs7", 7)	// and it's not a signature (signatures are inline)
       )
