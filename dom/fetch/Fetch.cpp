@@ -13,7 +13,6 @@
 #include "nsIUnicodeDecoder.h"
 #include "nsIUnicodeEncoder.h"
 
-#include "nsCharSeparatedTokenizer.h"
 #include "nsDOMString.h"
 #include "nsNetUtil.h"
 #include "nsReadableUtils.h"
