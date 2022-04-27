@@ -12,6 +12,7 @@
 #include "MediaDecoderStateMachine.h"
 #include "WebMDemuxer.h"
 #include "WebMDecoder.h"
+#include "PDMFactory.h"
 #include "VideoUtils.h"
 #include "nsContentTypeParser.h"
 
@@ -66,10 +67,30 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
     }
     // Note: Only accept VP8/VP9 in a video content type, not in an audio
     // content type.
-    if ((isWebMVideo || isMatroskaVideo) &&
-        (IsVP8CodecString(codec) || IsVP9CodecString(codec))) {
-
-      continue;
+    if (isWebMVideo || isMatroskaVideo) {
+      UniquePtr<TrackInfo> trackInfo;
+      if (IsVP9CodecString(codec))  {
+        trackInfo = CreateTrackInfoWithMIMEType(
+          NS_LITERAL_CSTRING("video/vp9"));
+      } else if (IsVP8CodecString(codec)) {
+        trackInfo = CreateTrackInfoWithMIMEType(
+          NS_LITERAL_CSTRING("video/vp8"));
+      }
+      // If it is vp8 or vp9, check the bit depth.
+      if (trackInfo) {
+        uint8_t profile = 0;
+        uint8_t level = 0;
+        uint8_t bitDepth = 0;
+        if (ExtractVPXCodecDetails(codec, profile, level, bitDepth)) {
+          trackInfo->GetAsVideoInfo()->mBitDepth = bitDepth;
+        }
+        // Verify that we have a PDM that supports this bit depth.
+        RefPtr<PDMFactory> platform = new PDMFactory();
+        if (!platform->Supports(*trackInfo, nullptr)) {
+          return false;
+        }
+        continue;
+      }
     }
 #ifdef MOZ_AV1
     if (MediaPrefs::AV1Enabled() && IsAV1CodecString(codec)) {
