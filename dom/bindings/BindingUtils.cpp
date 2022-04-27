@@ -14,7 +14,6 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/SizePrintfMacros.h"
 #include "mozilla/Unused.h"
-#include "mozilla/UseCounter.h"
 #include "mozilla/dom/DocGroup.h"
 
 #include "AccessCheck.h"
@@ -59,7 +58,6 @@
 #include "mozilla/jsipc/CrossProcessObjectWrappers.h"
 #include "nsDOMClassInfo.h"
 #include "ipc/ErrorIPCUtils.h"
-#include "mozilla/UseCounter.h"
 
 namespace mozilla {
 namespace dom {
@@ -3591,16 +3589,6 @@ AssertReflectorHasGivenProto(JSContext* aCx, JSObject* aReflector,
 }
 } // namespace binding_detail
 #endif // DEBUG
-
-void
-SetDocumentAndPageUseCounter(JSContext* aCx, JSObject* aObject,
-                             UseCounter aUseCounter)
-{
-  nsGlobalWindow* win = xpc::WindowGlobalOrNull(js::UncheckedUnwrap(aObject));
-  if (win && win->GetDocument()) {
-    win->GetDocument()->SetDocumentAndPageUseCounter(aUseCounter);
-  }
-}
 
 namespace {
 

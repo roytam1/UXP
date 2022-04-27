@@ -7467,8 +7467,8 @@ class CGPerSignatureCall(CGThing):
 
     def __init__(self, returnType, arguments, nativeMethodName, static,
                  descriptor, idlNode, argConversionStartsAt=0, getter=False,
-                 setter=False, isConstructor=False, useCounterName=None,
-                 resultVar=None, objectName="obj"):
+                 setter=False, isConstructor=False, resultVar=None,
+                 objectName="obj"):
         assert idlNode.isMethod() == (not getter and not setter)
         assert idlNode.isAttr() == (getter or setter)
         # Constructors are always static
@@ -7701,11 +7701,6 @@ class CGPerSignatureCall(CGThing):
                 nativeMethodName,
                 static, argsPost=argsPost, resultVar=resultVar))
 
-        if useCounterName:
-            # Generate a telemetry call for when [UseCounter] is used.
-            code = "SetDocumentAndPageUseCounter(cx, obj, eUseCounter_%s);\n" % useCounterName
-            cgThings.append(CGGeneric(code))
-
         self.cgRoot = CGList(cgThings)
 
     def getArguments(self):
@@ -7934,11 +7929,6 @@ class CGMethodCall(CGThing):
             methodName = "%s.%s" % (descriptor.interface.identifier.name, method.identifier.name)
         argDesc = "argument %d of " + methodName
 
-        if method.getExtendedAttribute("UseCounter"):
-            useCounterName = methodName.replace(".", "_")
-        else:
-            useCounterName = None
-
         if method.isStatic():
             nativeType = descriptor.nativeType
             staticTypeOverride = PropertyDefiner.getStringAttr(method, "StaticClassOverride")
@@ -7960,8 +7950,7 @@ class CGMethodCall(CGThing):
                                       nativeMethodName, static, descriptor,
                                       method,
                                       argConversionStartsAt=argConversionStartsAt,
-                                      isConstructor=isConstructor,
-                                      useCounterName=useCounterName)
+                                      isConstructor=isConstructor)
 
         signatures = method.signatures()
         if len(signatures) == 1:
@@ -8337,16 +8326,11 @@ class CGGetterCall(CGPerSignatureCall):
     getter.
     """
     def __init__(self, returnType, nativeMethodName, descriptor, attr):
-        if attr.getExtendedAttribute("UseCounter"):
-            useCounterName = "%s_%s_getter" % (descriptor.interface.identifier.name,
-                                               attr.identifier.name)
-        else:
-            useCounterName = None
         if attr.isStatic():
             nativeMethodName = "%s::%s" % (descriptor.nativeType, nativeMethodName)
         CGPerSignatureCall.__init__(self, returnType, [], nativeMethodName,
                                     attr.isStatic(), descriptor, attr,
-                                    getter=True, useCounterName=useCounterName)
+                                    getter=True)
 
 
 class CGNavigatorGetterCall(CGPerSignatureCall):
@@ -8413,17 +8397,12 @@ class CGSetterCall(CGPerSignatureCall):
     setter.
     """
     def __init__(self, argType, nativeMethodName, descriptor, attr):
-        if attr.getExtendedAttribute("UseCounter"):
-            useCounterName = "%s_%s_setter" % (descriptor.interface.identifier.name,
-                                               attr.identifier.name)
-        else:
-            useCounterName = None
         if attr.isStatic():
             nativeMethodName = "%s::%s" % (descriptor.nativeType, nativeMethodName)
         CGPerSignatureCall.__init__(self, None,
                                     [FakeArgument(argType, attr, allowTreatNonCallableAsNull=True)],
                                     nativeMethodName, attr.isStatic(),
-                                    descriptor, attr, setter=True, useCounterName=useCounterName)
+                                    descriptor, attr, setter=True)
 
     def wrap_return_value(self):
         attr = self.idlNode
@@ -13932,12 +13911,6 @@ class CGBindingRoot(CGThing):
             bindingHeaders[CGHeaders.getDeclarationFilename(enums[0])] = True
             bindingHeaders["jsapi.h"] = True
 
-        # For things that have [UseCounter]
-        def descriptorRequiresTelemetry(desc):
-            iface = desc.interface
-            return any(m.getExtendedAttribute("UseCounter") for m in iface.members)
-        bindingHeaders["mozilla/UseCounter.h"] = any(
-            descriptorRequiresTelemetry(d) for d in descriptors)
         bindingHeaders["mozilla/dom/SimpleGlobalObject.h"] = any(
             CGDictionary.dictionarySafeToJSONify(d) for d in dictionaries)
         bindingHeaders["XrayWrapper.h"] = any(
