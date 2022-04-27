@@ -15,6 +15,7 @@
 #include "FrameLayerBuilder.h"
 #include "nsSVGEffects.h"
 #include "imgIContainer.h"
+#include "Image.h"
 
 namespace mozilla {
 namespace css {
@@ -394,6 +395,14 @@ ImageLoader::Notify(imgIRequest* aRequest, int32_t aType, const nsIntRect* aData
     return OnFrameUpdate(aRequest);
   }
 
+  if (aType == imgINotificationObserver::DECODE_COMPLETE) {
+    nsCOMPtr<imgIContainer> image;
+    aRequest->GetImage(getter_AddRefs(image));
+    if (image && mDocument) {
+      image->PropagateUseCounters(mDocument);
+    }
+  }
+
   return NS_OK;
 }
 
@@ -497,6 +506,20 @@ ImageLoader::UnblockOnload(imgIRequest* aRequest)
   mDocument->UnblockOnload(false);
 
   return NS_OK;
+}
+
+void
+ImageLoader::FlushUseCounters()
+{
+  for (auto iter = mImages.Iter(); !iter.Done(); iter.Next()) {
+    nsPtrHashKey<Image>* key = iter.Get();
+    ImageLoader::Image* image = key->GetKey();
+
+    imgIRequest* request = image->mRequests.GetWeak(mDocument);
+
+    nsCOMPtr<imgIContainer> container;
+    request->GetImage(getter_AddRefs(container));
+  }
 }
 
 } // namespace css

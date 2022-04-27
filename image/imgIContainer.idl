@@ -19,6 +19,8 @@
 #include "nsSize.h"
 #include "limits.h"
 
+class nsIDocument;
+
 namespace mozilla {
 namespace layers {
 class LayerManager;
@@ -65,6 +67,7 @@ native Orientation(mozilla::image::Orientation);
 native TempRefSourceSurface(already_AddRefed<mozilla::gfx::SourceSurface>);
 native TempRefImgIContainer(already_AddRefed<imgIContainer>);
 native nsIntSizeByVal(nsIntSize);
+[ptr] native nsIDocument(nsIDocument);
 
 
 /**
@@ -74,7 +77,7 @@ native nsIntSizeByVal(nsIntSize);
  *
  * Internally, imgIContainer also manages animation of images.
  */
-[scriptable, builtinclass, uuid(7ba72242-28da-4c5f-b53f-54da8874775e)]
+[scriptable, builtinclass, uuid(a8dbee24-ff86-4755-b40e-51175caf31af)]
 interface imgIContainer : nsISupports
 {
   /**
@@ -539,4 +542,10 @@ interface imgIContainer : nsISupports
    * Removes any ImageWrappers and returns the unwrapped base image.
    */
   [notxpcom, nostdcall] TempRefImgIContainer unwrap();
+
+  /*
+   * Propagate the use counters (if any) from this container to the passed in
+   * document.
+   */
+  [noscript, notxpcom] void propagateUseCounters(in nsIDocument aDocument);
 };
