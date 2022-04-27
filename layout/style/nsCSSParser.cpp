@@ -143,6 +143,8 @@ public:
 
   nsresult SetStyleSheet(CSSStyleSheet* aSheet);
 
+  nsIDocument* GetDocument();
+
   nsresult SetQuirkMode(bool aQuirkMode);
 
   nsresult SetChildLoader(mozilla::css::Loader* aChildLoader);
@@ -1649,6 +1651,15 @@ CSSParserImpl::SetStyleSheet(CSSStyleSheet* aSheet)
   return NS_OK;
 }
 
+nsIDocument*
+CSSParserImpl::GetDocument()
+{
+  if (!mSheet) {
+    return nullptr;
+  }
+  return mSheet->GetDocument();
+}
+
 nsresult
 CSSParserImpl::SetQuirkMode(bool aQuirkMode)
 {
@@ -1970,7 +1981,8 @@ CSSParserImpl::ParseTransformProperty(const nsAString& aPropValue,
     declaration->ExpandTo(&mData);
     changed = mData.TransferFromBlock(mTempData, eCSSProperty_transform,
                                       EnabledState(), false,
-                                      true, false, declaration);
+                                      true, false, declaration,
+                                      GetDocument());
     declaration->CompressFrom(&mData);
   }
 
@@ -2051,7 +2063,8 @@ CSSParserImpl::ParseProperty(const nsCSSPropertyID aPropID,
       aDeclaration->ExpandTo(&mData);
       *aChanged = mData.TransferFromBlock(mTempData, aPropID,
                                           EnabledState(), aIsImportant,
-                                          true, false, aDeclaration);
+                                          true, false, aDeclaration,
+                                          GetDocument());
       aDeclaration->CompressFrom(&mData);
     }
     CLEAR_ERROR();
@@ -7519,7 +7532,7 @@ CSSParserImpl::ParseDeclaration(css::Declaration* aDeclaration,
     *aChanged |= mData.TransferFromBlock(mTempData, propID, EnabledState(),
                                          status == ePriority_Important,
                                          false, aMustCallValueAppended,
-                                         aDeclaration);
+                                         aDeclaration, GetDocument());
   }
 
   return true;

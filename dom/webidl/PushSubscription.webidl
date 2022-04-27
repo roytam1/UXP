@@ -44,7 +44,7 @@ interface PushSubscription
   readonly attribute PushSubscriptionOptions options;
   [Throws]
   ArrayBuffer? getKey(PushEncryptionKeyName name);
-  [Throws]
+  [Throws, UseCounter]
   Promise<boolean> unsubscribe();
 
   // Implements the custom serializer specified in Push API, section 9.

@@ -49,7 +49,7 @@ interface nsIJSRAIIHelper;
 interface nsIContentPermissionRequest;
 interface nsIObserver;
 
-[scriptable, uuid(7fcc7958-77d9-45ff-8c81-277bde5f0dc8)]
+[scriptable, uuid(c471d440-004b-4c50-a6f2-747db5f443b6)]
 interface nsIDOMWindowUtils : nsISupports {
 
   /**
@@ -1937,6 +1937,17 @@ interface nsIDOMWindowUtils : nsISupports {
    * @param aSheetType One of the nsIStyleSheetService.*_SHEET constants.
    */
   bool hasRuleProcessorUsedByMultipleStyleSets(in unsigned long aSheetType);
+
+  /*
+   * Force the use counters for the node's associated document(s) to be
+   * flushed to telemetry.  For example, a document node will flush its own
+   * counters and an image node with an SVG source will flush the SVG
+   * document's counters.  Normally, use counters are flushed to telemetry
+   * upon document destruction, but as document destruction is somewhat
+   * non-deterministic, we have this method here for more determinism when
+   * running tests.
+   */
+  void forceUseCounterFlush(in nsIDOMNode aNode);
 
   void setNextPaintSyncId(in long aSyncId);
 

@@ -25,7 +25,7 @@ interface PushManagerImpl {
 [Exposed=(Window,Worker), Func="nsContentUtils::PushEnabled",
  ChromeConstructor(DOMString scope)]
 interface PushManager {
-  [Throws]
+  [Throws, UseCounter]
   Promise<PushSubscription>    subscribe(optional PushSubscriptionOptionsInit options);
   [Throws]
   Promise<PushSubscription?>   getSubscription();

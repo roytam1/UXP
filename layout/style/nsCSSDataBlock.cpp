@@ -681,12 +681,14 @@ nsCSSExpandedDataBlock::TransferFromBlock(nsCSSExpandedDataBlock& aFromBlock,
                                           bool aIsImportant,
                                           bool aOverrideImportant,
                                           bool aMustCallValueAppended,
-                                          css::Declaration* aDeclaration)
+                                          css::Declaration* aDeclaration,
+                                          nsIDocument* aSheetDocument)
 {
   if (!nsCSSProps::IsShorthand(aPropID)) {
     return DoTransferFromBlock(aFromBlock, aPropID,
                                aIsImportant, aOverrideImportant,
-                               aMustCallValueAppended, aDeclaration);
+                               aMustCallValueAppended, aDeclaration,
+                               aSheetDocument);
   }
 
   // We can pass CSSEnabledState::eIgnore (here, and in ClearProperty
@@ -698,7 +700,8 @@ nsCSSExpandedDataBlock::TransferFromBlock(nsCSSExpandedDataBlock& aFromBlock,
   CSSPROPS_FOR_SHORTHAND_SUBPROPERTIES(p, aPropID, aEnabledState) {
     changed |= DoTransferFromBlock(aFromBlock, *p,
                                    aIsImportant, aOverrideImportant,
-                                   aMustCallValueAppended, aDeclaration);
+                                   aMustCallValueAppended, aDeclaration,
+                                   aSheetDocument);
   }
   return changed;
 }
@@ -709,7 +712,8 @@ nsCSSExpandedDataBlock::DoTransferFromBlock(nsCSSExpandedDataBlock& aFromBlock,
                                             bool aIsImportant,
                                             bool aOverrideImportant,
                                             bool aMustCallValueAppended,
-                                            css::Declaration* aDeclaration)
+                                            css::Declaration* aDeclaration,
+                                            nsIDocument* aSheetDocument)
 {
   bool changed = false;
   MOZ_ASSERT(aFromBlock.HasPropertyBit(aPropID), "oops");
@@ -735,6 +739,13 @@ nsCSSExpandedDataBlock::DoTransferFromBlock(nsCSSExpandedDataBlock& aFromBlock,
 
   if (aMustCallValueAppended || !HasPropertyBit(aPropID)) {
     aDeclaration->ValueAppended(aPropID);
+  }
+
+  if (aSheetDocument) {
+    UseCounter useCounter = nsCSSProps::UseCounterFor(aPropID);
+    if (useCounter != eUseCounter_UNKNOWN) {
+      aSheetDocument->SetDocumentAndPageUseCounter(useCounter);
+    }
   }
 
   SetPropertyBit(aPropID);
