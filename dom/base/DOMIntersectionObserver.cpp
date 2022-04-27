@@ -84,7 +84,7 @@ DOMIntersectionObserver::Constructor(const mozilla::dom::GlobalObject& aGlobal,
 
   if (!observer->SetRootMargin(aOptions.mRootMargin)) {
     aRv.ThrowDOMException(NS_ERROR_DOM_SYNTAX_ERR,
-      NS_LITERAL_CSTRING("rootMargin must be specified in pixels or percent."));
+      NS_LITERAL_CSTRING("rootMargin must be a valid absolute or percent length."));
     return nullptr;
   }
 
