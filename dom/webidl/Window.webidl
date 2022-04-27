@@ -368,7 +368,7 @@ Window implements OnErrorEventHandlerForWindow;
 #ifdef HAVE_SIDEBAR
 // Mozilla extension
 partial interface Window {
-  [Replaceable, Throws]
+  [Replaceable, Throws, UseCounter]
   readonly attribute (External or WindowProxy) sidebar;
 };
 #endif

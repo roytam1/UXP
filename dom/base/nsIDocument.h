@@ -24,6 +24,7 @@
 #include "nsTHashtable.h"                // for member
 #include "mozilla/net/ReferrerPolicy.h"  // for member
 #include "nsWeakReference.h"
+#include "mozilla/UseCounter.h"
 #include "mozilla/WeakPtr.h"
 #include "Units.h"
 #include "nsContentListDeclarations.h"
@@ -2781,6 +2782,23 @@ public:
 
   bool DidFireDOMContentLoaded() const { return mDidFireDOMContentLoaded; }
 
+  void SetDocumentUseCounter(mozilla::UseCounter aUseCounter)
+  {
+    if (!mUseCounters[aUseCounter]) {
+      mUseCounters[aUseCounter] = true;
+    }
+  }
+
+  void SetPageUseCounter(mozilla::UseCounter aUseCounter);
+
+  void SetDocumentAndPageUseCounter(mozilla::UseCounter aUseCounter)
+  {
+    SetDocumentUseCounter(aUseCounter);
+    SetPageUseCounter(aUseCounter);
+  }
+
+  void PropagateUseCounters(nsIDocument* aParentDocument);
+
   void SetUserHasInteracted(bool aUserHasInteracted)
   {
     mUserHasInteracted = aUserHasInteracted;
@@ -2838,6 +2856,24 @@ public:
   virtual void AddResizeObserver(mozilla::dom::ResizeObserver* aResizeObserver) = 0;
 
   virtual void ScheduleResizeObserversNotification() const = 0;
+
+protected:
+  bool GetUseCounter(mozilla::UseCounter aUseCounter)
+  {
+    return mUseCounters[aUseCounter];
+  }
+
+  void SetChildDocumentUseCounter(mozilla::UseCounter aUseCounter)
+  {
+    if (!mChildDocumentUseCounters[aUseCounter]) {
+      mChildDocumentUseCounters[aUseCounter] = true;
+    }
+  }
+
+  bool GetChildDocumentUseCounter(mozilla::UseCounter aUseCounter)
+  {
+    return mChildDocumentUseCounters[aUseCounter];
+  }
 
 private:
   mutable std::bitset<eDeprecatedOperationCount> mDeprecationWarnedAbout;
@@ -3279,7 +3315,15 @@ protected:
   // Our live MediaQueryLists
   PRCList mDOMMediaQueryLists;
 
- // Whether the user has interacted with the document or not:
+  // Flags for use counters used directly by this document.
+  std::bitset<mozilla::eUseCounter_Count> mUseCounters;
+  // Flags for use counters used by any child documents of this document.
+  std::bitset<mozilla::eUseCounter_Count> mChildDocumentUseCounters;
+  // Flags for whether we've notified our top-level "page" of a use counter
+  // for this child document.
+  std::bitset<mozilla::eUseCounter_Count> mNotifiedPageForUseCounter;
+
+  // Whether the user has interacted with the document or not:
   bool mUserHasInteracted;
 
   mozilla::TimeStamp mPageUnloadingEventTimeStamp;
