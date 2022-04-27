@@ -19,7 +19,6 @@
 #include "nsStyleStructFwd.h"
 #include "nsCSSKeywords.h"
 #include "mozilla/CSSEnabledState.h"
-#include "mozilla/UseCounter.h"
 #include "mozilla/EnumTypeTraits.h"
 
 // Length of the "--" prefix on custom names (such as custom property names,
@@ -640,18 +639,7 @@ public:
     return gPropertyEnabled[aProperty];
   }
 
-  // A table for the use counter associated with each CSS property.  If a
-  // property does not have a use counter defined in UseCounters.conf, then
-  // its associated entry is |eUseCounter_UNKNOWN|.
-  static const mozilla::UseCounter gPropertyUseCounter[eCSSProperty_COUNT_no_shorthands];
-
 public:
-
-  static mozilla::UseCounter UseCounterFor(nsCSSPropertyID aProperty) {
-    MOZ_ASSERT(0 <= aProperty && aProperty < eCSSProperty_COUNT_no_shorthands,
-               "out of range");
-    return gPropertyUseCounter[aProperty];
-  }
 
   static bool IsEnabled(nsCSSPropertyID aProperty, EnabledState aEnabled)
   {

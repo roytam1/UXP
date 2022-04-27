@@ -1663,12 +1663,6 @@ RasterImage::Unwrap()
   return self.forget();
 }
 
-void
-RasterImage::PropagateUseCounters(nsIDocument*)
-{
-  // No use counters.
-}
-
 IntSize
 RasterImage::OptimalImageSizeForDest(const gfxSize& aDest, uint32_t aWhichFrame,
                                      SamplingFilter aSamplingFilter, uint32_t aFlags)
