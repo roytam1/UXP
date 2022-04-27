@@ -142,6 +142,12 @@ MP4Decoder::CanHandleMediaType(const MediaContentType& aType,
             NS_LITERAL_CSTRING("audio/flac"), aType));
         continue;
       }
+      if (IsVP9CodecString(codec)) {
+        trackInfos.AppendElement(
+          CreateTrackInfoWithMIMETypeAndContainerTypeExtraParameters(
+            NS_LITERAL_CSTRING("video/vp9"), aType));
+        continue;
+      }
 #ifdef MOZ_AV1
       if (IsAV1CodecString(codec)) {
         trackInfos.AppendElement(

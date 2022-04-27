@@ -67,8 +67,7 @@ WebMDecoder::CanHandleMediaType(const nsACString& aMIMETypeExcludingCodecs,
     // Note: Only accept VP8/VP9 in a video content type, not in an audio
     // content type.
     if ((isWebMVideo || isMatroskaVideo) &&
-        (codec.EqualsLiteral("vp8") || codec.EqualsLiteral("vp8.0") ||
-         codec.EqualsLiteral("vp9") || codec.EqualsLiteral("vp9.0"))) {
+        (IsVP8CodecString(codec) || IsVP9CodecString(codec))) {
 
       continue;
     }
