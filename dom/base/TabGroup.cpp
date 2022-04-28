@@ -8,7 +8,6 @@
 #include "mozilla/dom/DocGroup.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/StaticPtr.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/ThrottledEventQueue.h"
 #include "nsIDocShell.h"
 #include "nsIEffectiveTLDService.h"

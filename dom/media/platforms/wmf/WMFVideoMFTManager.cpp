@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim:set ts=2 sw=2 sts=2 et cindent: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -25,7 +24,6 @@
 #include "gfxWindowsPlatform.h"
 #include "IMFYCbCrImage.h"
 #include "mozilla/WindowsVersion.h"
-#include "mozilla/Telemetry.h"
 #include "nsPrintfCString.h"
 #include "GMPUtils.h" // For SplitAt. TODO: Move SplitAt to a central place.
 #include "MP4Decoder.h"
@@ -116,19 +114,6 @@ WMFVideoMFTManager::~WMFVideoMFTManager()
   if (mDXVA2Manager) {
     DeleteOnMainThread(mDXVA2Manager);
   }
-
-  // Record whether the video decoder successfully decoded, or output null
-  // samples but did/didn't recover.
-  uint32_t telemetry = (mNullOutputCount == 0) ? 0 :
-                       (mGotValidOutputAfterNullOutput && mGotExcessiveNullOutput) ? 1 :
-                       mGotExcessiveNullOutput ? 2 :
-                       mGotValidOutputAfterNullOutput ? 3 :
-                       4;
-
-  nsCOMPtr<nsIRunnable> task = NS_NewRunnableFunction([=]() -> void {
-    LOG(nsPrintfCString("Reporting telemetry VIDEO_MFT_OUTPUT_NULL_SAMPLES=%d", telemetry).get());
-  });
-  AbstractThread::MainThread()->Dispatch(task.forget());
 }
 
 const GUID&

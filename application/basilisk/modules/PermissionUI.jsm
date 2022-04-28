@@ -234,9 +234,7 @@ this.PermissionPromptPrototype = {
 
   /**
    * If the prompt will be shown to the user, this callback will
-   * be called just before. Subclasses may want to override this
-   * in order to, for example, bump a counter Telemetry probe for
-   * how often a particular permission request is seen.
+   * be called just before. Subclasses may want to override this.
    */
   onBeforeShow() {},
 

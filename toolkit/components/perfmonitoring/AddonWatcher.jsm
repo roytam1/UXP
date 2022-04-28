@@ -19,9 +19,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "console",
                                   "resource://gre/modules/Console.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PerformanceWatcher",
                                   "resource://gre/modules/PerformanceWatcher.jsm");
-XPCOMUtils.defineLazyServiceGetter(this, "Telemetry",
-                                  "@mozilla.org/base/telemetry;1",
-                                  Ci.nsITelemetry);
 XPCOMUtils.defineLazyModuleGetter(this, "Services",
                                   "resource://gre/modules/Services.jsm");
 XPCOMUtils.defineLazyServiceGetter(this, "IdleService",
@@ -121,15 +118,6 @@ this.AddonWatcher = {
       if (now - this._initializedTimeStamp < this._warmupPeriod) {
         // Heuristic: do not report slowdowns during or just after startup.
         return;
-      }
-
-      // Report immediately to Telemetry, regardless of whether we report to
-      // the user.
-      for (let {source: {addonId}, details} of addons) {
-        Telemetry.getKeyedHistogramById("PERF_MONITORING_SLOW_ADDON_JANK_US").
-          add(addonId, details.highestJank);
-        Telemetry.getKeyedHistogramById("PERF_MONITORING_SLOW_ADDON_CPOW_US").
-          add(addonId, details.highestCPOW);
       }
 
       // We expect that users don't care about real-time alerts unless their

@@ -62,7 +62,6 @@ UNIFIED_SOURCES += [
     'nsTimerImpl.cpp',
     'SharedThreadPool.cpp',
     'TaskQueue.cpp',
-    'ThreadStackHelper.cpp',
     'ThrottledEventQueue.cpp',
     'TimerThread.cpp',
 ]

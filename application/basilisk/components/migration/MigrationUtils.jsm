@@ -265,27 +265,6 @@ this.MigratorPrototype = {
     let maybeFinishResponsivenessMonitor = (responsivenessMonitor, histogramId) => {
       if (responsivenessMonitor) {
         let accumulatedDelay = responsivenessMonitor.finish();
-        if (histogramId) {
-          try {
-            Services.telemetry.getKeyedHistogramById(histogramId)
-                    .add(browserKey, accumulatedDelay);
-          } catch (ex) {
-            Cu.reportError(histogramId + ": " + ex);
-          }
-        }
-      }
-    };
-
-    let collectQuantityTelemetry = () => {
-      for (let resourceType of Object.keys(MigrationUtils._importQuantities)) {
-        let histogramId =
-          "FX_MIGRATION_" + resourceType.toUpperCase() + "_QUANTITY";
-        try {
-          Services.telemetry.getKeyedHistogramById(histogramId)
-                  .add(browserKey, MigrationUtils._importQuantities[resourceType]);
-        } catch (ex) {
-          Cu.reportError(histogramId + ": " + ex);
-        }
       }
     };
 
@@ -331,7 +310,6 @@ this.MigratorPrototype = {
               maybeFinishResponsivenessMonitor(responsivenessMonitor, responsivenessHistogramId);
 
               if (resourcesGroupedByItems.size == 0) {
-                collectQuantityTelemetry();
                 notify("Migration:Ended");
               }
             }
@@ -803,7 +781,6 @@ this.MigrationUtils = Object.freeze({
    *        - {String} an identifier for the profile to use when migrating
    *        NB: If you add new consumers, please add a migration entry point
    *        constant below, and specify at least the first element of the array
-   *        (the migration entry point for purposes of telemetry).
    */
   showMigrationWizard:
   function MU_showMigrationWizard(aOpener, aParams) {
@@ -1095,8 +1072,5 @@ this.MigrationUtils = Object.freeze({
     "canary":     7,
     "safari":     8,
     "360se":      9,
-  },
-  getSourceIdForTelemetry(sourceName) {
-    return this._sourceNameToIdMapping[sourceName] || 0;
   },
 });

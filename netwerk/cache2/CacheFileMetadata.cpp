@@ -21,7 +21,7 @@
 namespace mozilla {
 namespace net {
 
-#define kMinMetadataRead 1024  // TODO find optimal value from telemetry
+#define kMinMetadataRead 1024  // TODO find optimal value
 #define kAlignSize       4096
 
 // Most of the cache entries fit into one chunk due to current chunk size. Make

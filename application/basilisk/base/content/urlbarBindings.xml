@@ -615,8 +615,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
             typeof(engineOrEngineName) == "string" ?
               Services.search.getEngineByName(engineOrEngineName) :
               engineOrEngineName;
-          let isOneOff = this.popup.oneOffSearchButtons
-              .maybeRecordTelemetry(event, openUILinkWhere, openUILinkParams);
           // Infer the type of the event which triggered the search.
           let eventType = "unknown";
           if (event instanceof KeyboardEvent) {
@@ -626,10 +624,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
           }
           // Augment the search action details object.
           let details = searchActionDetails || {};
-          details.isOneOff = isOneOff;
           details.type = eventType;
 
-          BrowserSearch.recordSearchInTelemetry(engine, "urlbar", details);
           let submission = engine.getSubmission(query, null, "keyword");
           return [submission.uri.spec, submission.postData];
         ]]></body>
@@ -1308,12 +1304,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
           var searchBar = BrowserSearch.searchBar;
           var popupForSearchBar = searchBar && searchBar.textbox == this.mInput;
-          if (popupForSearchBar) {
-            searchBar.telemetrySearchDetails = {
-              index: controller.selection.currentIndex,
-              kind: "mouse"
-            };
-          }
 
           // Check for unmodified left-click, and use default behavior
           if (aEvent.button == 0 && !aEvent.shiftKey && !aEvent.ctrlKey &&
@@ -1456,12 +1446,10 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
         <body><![CDATA[
           this._oneOffSearchesEnabled = enable;
           if (enable) {
-            this.oneOffSearchButtons.telemetryOrigin = "urlbar";
             this.oneOffSearchButtons.style.display = "-moz-box";
             this.oneOffSearchButtons.popup = this;
             this.oneOffSearchButtons.textbox = this.input;
           } else {
-            this.oneOffSearchButtons.telemetryOrigin = null;
             this.oneOffSearchButtons.style.display = "none";
             this.oneOffSearchButtons.popup = null;
             this.oneOffSearchButtons.textbox = null;

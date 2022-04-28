@@ -269,21 +269,6 @@ Site.prototype = {
     } catch (e) {}
   },
 
-  /**
-   * Record interaction with site using telemetry.
-   */
-  _recordSiteClicked: function(aIndex) {
-    if (Services.prefs.prefHasUserValue("browser.newtabpage.rows") ||
-        Services.prefs.prefHasUserValue("browser.newtabpage.columns") ||
-        aIndex > 8) {
-      // We only want to get indices for the default configuration, everything
-      // else goes in the same bucket.
-      aIndex = 9;
-    }
-    Services.telemetry.getHistogramById("NEWTAB_PAGE_SITE_CLICKED")
-                      .add(aIndex);
-  },
-
   _toggleLegalText: function(buttonClass, explanationTextClass) {
     let button = this._querySelector(buttonClass);
     if (button.hasAttribute("active")) {
@@ -308,7 +293,6 @@ Site.prototype = {
         target.parentElement.classList.contains("newtab-link")) {
       // Record for primary and middle clicks
       if (button == 0 || button == 1) {
-        this._recordSiteClicked(tileIndex);
         action = "click";
       }
     }

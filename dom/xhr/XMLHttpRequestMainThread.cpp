@@ -65,7 +65,6 @@
 #include "nsAsyncRedirectVerifyHelper.h"
 #include "nsStringBuffer.h"
 #include "nsIFileChannel.h"
-#include "mozilla/Telemetry.h"
 #include "jsfriendapi.h"
 #include "GeckoProfiler.h"
 #include "mozilla/dom/EncodingUtils.h"

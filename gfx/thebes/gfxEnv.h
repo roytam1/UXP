@@ -70,8 +70,6 @@ public:
 
   // Force gfxDevCrash to use MOZ_CRASH in Beta and Release
   DECL_GFX_ENV("MOZ_GFX_CRASH_MOZ_CRASH", GfxDevCrashMozCrash);
-  // Force gfxDevCrash to use telemetry in Nightly and Aurora
-  DECL_GFX_ENV("MOZ_GFX_CRASH_TELEMETRY", GfxDevCrashTelemetry);
 
   DECL_GFX_ENV("MOZ_GFX_VR_NO_DISTORTION", VRNoDistortion);
 

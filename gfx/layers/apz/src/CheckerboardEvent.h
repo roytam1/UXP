@@ -157,8 +157,7 @@ private:
 private:
   /**
    * If true, we should log the various properties during the checkerboard
-   * event. If false, we only need to record things we need for telemetry
-   * measures.
+   * event.
    */
   const bool mRecordTrace;
   /**

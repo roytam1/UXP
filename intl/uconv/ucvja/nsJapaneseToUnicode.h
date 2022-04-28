@@ -5,7 +5,6 @@
 #ifndef nsShiftJISToUnicode_h__
 #define nsShiftJISToUnicode_h__
 #include "nsUCSupport.h"
-#include "mozilla/Telemetry.h"
 
 class nsShiftJISToUnicode : public nsBasicDecoderSupport
 {

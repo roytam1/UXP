@@ -7,7 +7,6 @@
 #define __DetailedPromise_h__
 
 #include "mozilla/dom/Promise.h"
-#include "mozilla/Telemetry.h"
 #include "EMEUtils.h"
 
 namespace mozilla {
@@ -26,17 +25,10 @@ public:
          ErrorResult& aRv,
          const nsACString& aName);
 
-  static already_AddRefed<DetailedPromise>
-  Create(nsIGlobalObject* aGlobal, ErrorResult& aRv,
-         const nsACString& aName,
-         Telemetry::ID aSuccessLatencyProbe,
-         Telemetry::ID aFailureLatencyProbe);
-
   template <typename T>
   void MaybeResolve(const T& aArg)
   {
     EME_LOG("%s promise resolved", mName.get());
-    MaybeReportTelemetry(Succeeded);
     Promise::MaybeResolve<T>(aArg);
   }
 
@@ -50,20 +42,13 @@ private:
   explicit DetailedPromise(nsIGlobalObject* aGlobal,
                            const nsACString& aName);
 
-  explicit DetailedPromise(nsIGlobalObject* aGlobal,
-                           const nsACString& aName,
-                           Telemetry::ID aSuccessLatencyProbe,
-                           Telemetry::ID aFailureLatencyProbe);
   virtual ~DetailedPromise();
 
   enum Status { Succeeded, Failed };
-  void MaybeReportTelemetry(Status aStatus);
 
   nsCString mName;
   bool mResponded;
   TimeStamp mStartTime;
-  Optional<Telemetry::ID> mSuccessLatencyProbe;
-  Optional<Telemetry::ID> mFailureLatencyProbe;
 };
 
 } // namespace dom

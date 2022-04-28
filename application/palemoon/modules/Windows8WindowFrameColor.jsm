@@ -35,7 +35,7 @@ var Windows8WindowFrameColor = {
     // Zero-pad the number just to make sure that it is 8 digits.
     windowFrameColorHex = ("00000000" + windowFrameColorHex).substr(-8);
     let windowFrameColorArray = windowFrameColorHex.match(/../g);
-    let [unused, fgR, fgG, fgB] = windowFrameColorArray.map(function(val) parseInt(val, 16));
+    let [unused, fgR, fgG, fgB] = windowFrameColorArray.map(val => parseInt(val, 16));
     let windowFrameColorBalance = WindowsRegistry.readRegKey(HKCU, dwmKey,
                                                              "ColorizationColorBalance");
     // Default to balance=78 if reg key isn't defined

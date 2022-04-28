@@ -21,7 +21,6 @@
 #include "nsRefPtrHashtable.h"
 #include "mozilla/CondVar.h"
 #include "mozilla/Mutex.h"
-#include "mozilla/Telemetry.h"
 
 class nsCacheRequest;
 class nsCacheProfilePrefObserver;
@@ -254,7 +253,6 @@ private:
      */
 
     static void      Lock();
-    static void      Lock(::mozilla::Telemetry::ID mainThreadLockerID);
     static void      Unlock();
     void             LockAcquired();
     void             LockReleased();

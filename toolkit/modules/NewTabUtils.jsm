@@ -49,9 +49,6 @@ const HISTORY_RESULTS_LIMIT = 100;
 // The maximum number of links Links.getLinks will return.
 const LINKS_GET_LINKS_LIMIT = 100;
 
-// The gather telemetry topic.
-const TOPIC_GATHER_TELEMETRY = "gather-telemetry";
-
 /**
  * Calculate the MD5 hash for a string.
  * @param aValue
@@ -1249,45 +1246,6 @@ var Links = {
 Links.compareLinks = Links.compareLinks.bind(Links);
 
 /**
- * Singleton used to collect telemetry data.
- *
- */
-var Telemetry = {
-  /**
-   * Initializes object.
-   */
-  init: function Telemetry_init() {
-    Services.obs.addObserver(this, TOPIC_GATHER_TELEMETRY, false);
-  },
-
-  /**
-   * Collects data.
-   */
-  _collect: function Telemetry_collect() {
-    let probes = [
-      { histogram: "NEWTAB_PAGE_ENABLED",
-        value: AllPages.enabled },
-      { histogram: "NEWTAB_PAGE_PINNED_SITES_COUNT",
-        value: PinnedLinks.links.length },
-      { histogram: "NEWTAB_PAGE_BLOCKED_SITES_COUNT",
-        value: Object.keys(BlockedLinks.links).length }
-    ];
-
-    probes.forEach(function Telemetry_collect_forEach(aProbe) {
-      Services.telemetry.getHistogramById(aProbe.histogram)
-        .add(aProbe.value);
-    });
-  },
-
-  /**
-   * Listens for gather telemetry topic.
-   */
-  observe: function Telemetry_observe(aSubject, aTopic, aData) {
-    this._collect();
-  }
-};
-
-/**
  * Singleton that checks if a given link should be displayed on about:newtab
  * or if we should rather not do it for security reasons. URIs that inherit
  * their caller's principal will be filtered.
@@ -1387,7 +1345,6 @@ this.NewTabUtils = {
     if (!this._initialized) {
       this._initialized = true;
       ExpirationFilter.init();
-      Telemetry.init();
       return true;
     }
     return false;

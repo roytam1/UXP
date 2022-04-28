@@ -19,23 +19,8 @@ DetailedPromise::DetailedPromise(nsIGlobalObject* aGlobal,
 {
 }
 
-DetailedPromise::DetailedPromise(nsIGlobalObject* aGlobal,
-                                 const nsACString& aName,
-                                 Telemetry::ID aSuccessLatencyProbe,
-                                 Telemetry::ID aFailureLatencyProbe)
-  : DetailedPromise(aGlobal, aName)
-{
-  mSuccessLatencyProbe.Construct(aSuccessLatencyProbe);
-  mFailureLatencyProbe.Construct(aFailureLatencyProbe);
-}
-
 DetailedPromise::~DetailedPromise()
 {
-  // It would be nice to assert that mResponded is identical to
-  // GetPromiseState() == PromiseState::Rejected.  But by now we've been
-  // unlinked, so don't have a reference to our actual JS Promise object
-  // anymore.
-  MaybeReportTelemetry(Failed);
 }
 
 void
@@ -44,8 +29,6 @@ DetailedPromise::MaybeReject(nsresult aArg, const nsACString& aReason)
   nsPrintfCString msg("%s promise rejected 0x%x '%s'", mName.get(), aArg,
                       PromiseFlatCString(aReason).get());
   EME_LOG(msg.get());
-
-  MaybeReportTelemetry(Failed);
 
   LogToBrowserConsole(NS_ConvertUTF8toUTF16(msg));
 
@@ -68,33 +51,6 @@ DetailedPromise::Create(nsIGlobalObject* aGlobal,
   RefPtr<DetailedPromise> promise = new DetailedPromise(aGlobal, aName);
   promise->CreateWrapper(nullptr, aRv);
   return aRv.Failed() ? nullptr : promise.forget();
-}
-
-/* static */ already_AddRefed<DetailedPromise>
-DetailedPromise::Create(nsIGlobalObject* aGlobal,
-                        ErrorResult& aRv,
-                        const nsACString& aName,
-                        Telemetry::ID aSuccessLatencyProbe,
-                        Telemetry::ID aFailureLatencyProbe)
-{
-  RefPtr<DetailedPromise> promise = new DetailedPromise(aGlobal, aName, aSuccessLatencyProbe, aFailureLatencyProbe);
-  promise->CreateWrapper(nullptr, aRv);
-  return aRv.Failed() ? nullptr : promise.forget();
-}
-
-void
-DetailedPromise::MaybeReportTelemetry(Status aStatus)
-{
-  if (mResponded) {
-    return;
-  }
-  mResponded = true;
-  if (!mSuccessLatencyProbe.WasPassed() || !mFailureLatencyProbe.WasPassed()) {
-    return;
-  }
-  uint32_t latency = (TimeStamp::Now() - mStartTime).ToMilliseconds();
-  EME_LOG("%s %s latency %ums reported via telemetry", mName.get(),
-          ((aStatus == Succeeded) ? "succcess" : "failure"), latency);
 }
 
 } // namespace dom

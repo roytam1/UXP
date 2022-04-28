@@ -40,7 +40,6 @@
    fun:malloc
    fun:moz_xmalloc
    fun:operator new
-   fun:_Z21XRE_CreateStatsObjectv
    ...
 }
 

@@ -76,12 +76,7 @@ class PeerConnectionCtx {
 
   void initGMP();
 
-  static void
-  EverySecondTelemetryCallback_m(nsITimer* timer, void *);
-
 #if !defined(MOZILLA_EXTERNAL_LINKAGE)
-  nsCOMPtr<nsITimer> mTelemetryTimer;
-
 public:
   // TODO(jib): If we ever enable move semantics on std::map...
   //std::map<nsString,nsAutoPtr<mozilla::dom::RTCStatsReportInternal>> mLastReports;

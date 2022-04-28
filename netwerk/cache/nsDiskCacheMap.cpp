@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* vim:set ts=4 sw=4 sts=4 cin et: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -1243,8 +1242,7 @@ nsDiskCacheMap::InitCacheClean(nsIFile *  cacheDirectory,
         rv = cacheCleanFile->AppendNative(
                  NS_LITERAL_CSTRING("_CACHE_CLEAN_"));
         if (NS_SUCCEEDED(rv)) {
-            // Check if the file already exists, if it does, we will later read the
-            // value and report it to telemetry.
+            // Check if the file already exists.
             cacheCleanFile->Exists(&cacheCleanFileExists);
         }
     }
@@ -1406,14 +1404,9 @@ nsDiskCacheMap::RevalidateCache()
                          "cache not in a safe state\n"));
         // Normally we would return an error here, but there is a bug where
         // the doom list sometimes gets an entry 'stuck' and doens't clear it
-        // until browser shutdown.  So we allow revalidation for the time being
-        // to get proper telemetry data of how much the cache corruption plan
-        // would help.
+        // until browser shutdown.  So we allow revalidation for the time being.
     }
 
-    // If telemetry data shows it is worth it, we'll be flushing headers and
-    // records before flushing the clean cache file.
-  
     // Write out the _CACHE_CLEAN_ file with '1'
     rv = WriteCacheClean(true);
     if (NS_FAILED(rv)) {

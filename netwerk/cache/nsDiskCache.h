@@ -24,8 +24,6 @@ public:
     enum { kData, kMetaData };
 
     // Stores the reason why the cache is corrupt.
-    // Note: I'm only listing the enum values explicitly for easy mapping when
-    // looking at telemetry data.
     enum CorruptCacheInfo {
       kNotCorrupt = 0,
       kInvalidArgPointer = 1,

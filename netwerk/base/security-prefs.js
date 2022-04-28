@@ -75,7 +75,7 @@ pref("security.OCSP.require", false);
 pref("security.OCSP.GET.enabled", false);
 
 pref("security.pki.cert_short_lifetime_in_days", 10);
-// NB: Changes to this pref affect CERT_CHAIN_SHA1_POLICY_STATUS telemetry.
+// NB: Changes to this pref affect CERT_CHAIN_SHA1_POLICY_STATUS.
 // See the comment in CertVerifier.cpp.
 // 3 = only allow SHA-1 for certificates issued by an imported root.
 pref("security.pki.sha1_enforcement_level", 3);

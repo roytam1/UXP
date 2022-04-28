@@ -213,9 +213,6 @@ var gPage = {
   },
 
   onPageFirstVisible: function () {
-    // Record another page impression.
-    Services.telemetry.getHistogramById("NEWTAB_PAGE_SHOWN").add(true);
-
     for (let site of gGrid.sites) {
       if (site) {
         // The site may need to modify and/or re-render itself if

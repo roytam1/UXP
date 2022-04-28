@@ -144,14 +144,6 @@ this.BookmarkJSONUtils = Object.freeze({
       let [bookmarks, count] = yield PlacesBackups.getBookmarksTree();
       let startTime = Date.now();
       let jsonString = JSON.stringify(bookmarks);
-      // Report the time taken to convert the tree to JSON.
-      try {
-        Services.telemetry
-                .getHistogramById("PLACES_BACKUPS_TOJSON_MS")
-                .add(Date.now() - startTime);
-      } catch (ex) {
-        Components.utils.reportError("Unable to report telemetry.");
-      }
 
       let hash = generateHash(jsonString);
 

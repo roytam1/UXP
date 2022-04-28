@@ -230,7 +230,6 @@ function nsAsyncShutdownService() {
     "profileBeforeChange",
     "profileChangeTeardown",
     "quitApplicationGranted",
-    "sendTelemetry",
 
     // Child processes
     "contentChildShutdown",

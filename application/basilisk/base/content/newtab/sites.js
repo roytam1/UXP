@@ -270,21 +270,6 @@ Site.prototype = {
   },
 
   /**
-   * Record interaction with site using telemetry.
-   */
-  _recordSiteClicked: function(aIndex) {
-    if (Services.prefs.prefHasUserValue("browser.newtabpage.rows") ||
-        Services.prefs.prefHasUserValue("browser.newtabpage.columns") ||
-        aIndex > 8) {
-      // We only want to get indices for the default configuration, everything
-      // else goes in the same bucket.
-      aIndex = 9;
-    }
-    Services.telemetry.getHistogramById("NEWTAB_PAGE_SITE_CLICKED")
-                      .add(aIndex);
-  },
-
-  /**
    * Handles site click events.
    */
   onClick: function(aEvent) {
@@ -296,11 +281,6 @@ Site.prototype = {
     // Handle tile/thumbnail link click
     if (target.classList.contains("newtab-link") ||
         target.parentElement.classList.contains("newtab-link")) {
-      // Record for primary and middle clicks
-      if (button == 0 || button == 1) {
-        this._recordSiteClicked(tileIndex);
-        action = "click";
-      }
     }
     // Only handle primary clicks for the remaining targets
     else if (button == 0) {

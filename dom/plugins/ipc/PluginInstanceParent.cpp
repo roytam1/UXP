@@ -769,8 +769,6 @@ PluginInstanceParent::SetCurrentImage(Image* aImage)
     gfx::IntRect rect = aImage->GetPictureRect();
     NPRect nprect = {uint16_t(rect.x), uint16_t(rect.y), uint16_t(rect.width), uint16_t(rect.height)};
     RecvNPN_InvalidateRect(nprect);
-
-    RecordDrawingModel();
 }
 
 bool
@@ -907,7 +905,6 @@ PluginInstanceParent::RecvShow(const NPRect& updatedRect,
     PLUGIN_LOG_DEBUG(("   (RecvShow invalidated for surface %p)",
                       mFrontSurface.get()));
 
-    RecordDrawingModel();
     return true;
 }
 
@@ -1273,7 +1270,6 @@ PluginInstanceParent::NPP_SetWindow(const NPWindow* aWindow)
         return NPERR_GENERIC_ERROR;
     }
 
-    RecordDrawingModel();
     return NPERR_NO_ERROR;
 }
 
@@ -2231,29 +2227,4 @@ PluginInstanceParent::RecvOnWindowedPluginKeyEvent(
     }
     owner->OnWindowedPluginKeyEvent(aKeyEventData);
     return true;
-}
-
-void
-PluginInstanceParent::RecordDrawingModel()
-{
-    int mode = -1;
-    switch (mWindowType) {
-    case NPWindowTypeWindow:
-        // We use 0=windowed since there is no specific NPDrawingModel value.
-        mode = 0;
-        break;
-    case NPWindowTypeDrawable:
-        mode = mDrawingModel + 1;
-        break;
-    default:
-        MOZ_ASSERT_UNREACHABLE("bad window type");
-        return;
-    }
-
-    if (mode == mLastRecordedDrawingModel) {
-        return;
-    }
-    MOZ_ASSERT(mode >= 0);
-
-    mLastRecordedDrawingModel = mode;
 }

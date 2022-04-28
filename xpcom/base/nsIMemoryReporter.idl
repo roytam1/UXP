@@ -158,8 +158,7 @@ interface nsIMemoryReporter : nsISupports
    *
    * If |anonymize| is true, the memory reporter should anonymize any
    * privacy-sensitive details in memory report paths, by replacing them with a
-   * string such as "<anonymized>". Anonymized memory reports may be sent
-   * automatically via crash reports or telemetry.
+   * string such as "<anonymized>".
    *
    * The following things are considered privacy-sensitive.
    *
@@ -312,8 +311,7 @@ interface nsIMemoryReporterManager : nsISupports
    * registered with it as a black box.  However, there are some
    * "distinguished" amounts (as could be reported by a memory reporter) that
    * the manager provides as attributes, because they are sufficiently
-   * interesting that we want external code (e.g. telemetry) to be able to rely
-   * on them.
+   * interesting that we want external code to be able to rely on them.
    *
    * Note that these are not reporters and so getReports() does not look at
    * them.  However, distinguished amounts can be embedded in a reporter.

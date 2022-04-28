@@ -1,5 +1,4 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 2 -*-
- * vim: sw=2 ts=2 sts=2 expandtab filetype=javascript
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -51,13 +50,6 @@ this.PlacesDBUtils = {
     }
     else {
       // All tasks have been completed.
-      // Telemetry the time it took for maintenance, if a start time exists.
-      if (aTasks._telemetryStart) {
-        Services.telemetry.getHistogramById("PLACES_IDLE_MAINTENANCE_TIME_MS")
-                          .add(Date.now() - aTasks._telemetryStart);
-        aTasks._telemetryStart = 0;
-      }
-
       if (aTasks.callback) {
         let scope = aTasks.scope || Cu.getGlobalForObject(aTasks.callback);
         aTasks.callback.call(scope, aTasks.messages);
@@ -89,7 +81,6 @@ this.PlacesDBUtils = {
     , this.checkCoherence
     , this._refreshUI
     ]);
-    tasks._telemetryStart = Date.now();
     tasks.callback = function() {
       Services.prefs.setIntPref("places.database.lastMaintenance",
                                 parseInt(Date.now() / 1000));
@@ -857,181 +848,6 @@ this.PlacesDBUtils = {
   },
 
   /**
-   * Collects telemetry data and reports it to Telemetry.
-   *
-   * @param [optional] aTasks
-   *        Tasks object to execute.
-   */
-  telemetry: function PDBU_telemetry(aTasks)
-  {
-    let tasks = new Tasks(aTasks);
-
-    // This will be populated with one integer property for each probe result,
-    // using the histogram name as key.
-    let probeValues = {};
-
-    // The following array contains an ordered list of entries that are
-    // processed to collect telemetry data.  Each entry has these properties:
-    //
-    //  histogram: Name of the telemetry histogram to update.
-    //  query:     This is optional.  If present, contains a database command
-    //             that will be executed asynchronously, and whose result will
-    //             be added to the telemetry histogram.
-    //  callback:  This is optional.  If present, contains a function that must
-    //             return the value that will be added to the telemetry
-    //             histogram. If a query is also present, its result is passed
-    //             as the first argument of the function.  If the function
-    //             raises an exception, no data is added to the histogram.
-    //
-    // Since all queries are executed in order by the database backend, the
-    // callbacks can also use the result of previous queries stored in the
-    // probeValues object.
-    let probes = [
-      { histogram: "PLACES_PAGES_COUNT",
-        query:     "SELECT count(*) FROM moz_places" },
-
-      { histogram: "PLACES_BOOKMARKS_COUNT",
-        query:     `SELECT count(*) FROM moz_bookmarks b
-                    JOIN moz_bookmarks t ON t.id = b.parent
-                    AND t.parent <> :tags_folder
-                    WHERE b.type = :type_bookmark` },
-
-      { histogram: "PLACES_TAGS_COUNT",
-        query:     `SELECT count(*) FROM moz_bookmarks
-                    WHERE parent = :tags_folder` },
-
-      { histogram: "PLACES_KEYWORDS_COUNT",
-        query:     "SELECT count(*) FROM moz_keywords" },
-
-      { histogram: "PLACES_SORTED_BOOKMARKS_PERC",
-        query:     `SELECT IFNULL(ROUND((
-                      SELECT count(*) FROM moz_bookmarks b
-                      JOIN moz_bookmarks t ON t.id = b.parent
-                      AND t.parent <> :tags_folder AND t.parent > :places_root
-                      WHERE b.type  = :type_bookmark
-                      ) * 100 / (
-                      SELECT count(*) FROM moz_bookmarks b
-                      JOIN moz_bookmarks t ON t.id = b.parent
-                      AND t.parent <> :tags_folder
-                      WHERE b.type = :type_bookmark
-                    )), 0)` },
-
-      { histogram: "PLACES_TAGGED_BOOKMARKS_PERC",
-        query:     `SELECT IFNULL(ROUND((
-                      SELECT count(*) FROM moz_bookmarks b
-                      JOIN moz_bookmarks t ON t.id = b.parent
-                      AND t.parent = :tags_folder
-                      ) * 100 / (
-                      SELECT count(*) FROM moz_bookmarks b
-                      JOIN moz_bookmarks t ON t.id = b.parent
-                      AND t.parent <> :tags_folder
-                      WHERE b.type = :type_bookmark
-                    )), 0)` },
-
-      { histogram: "PLACES_DATABASE_FILESIZE_MB",
-        callback: function () {
-          let DBFile = Services.dirsvc.get("ProfD", Ci.nsILocalFile);
-          DBFile.append("places.sqlite");
-          return parseInt(DBFile.fileSize / BYTES_PER_MEBIBYTE);
-        }
-      },
-
-      { histogram: "PLACES_DATABASE_PAGESIZE_B",
-        query:     "PRAGMA page_size /* PlacesDBUtils.jsm PAGESIZE_B */" },
-
-      { histogram: "PLACES_DATABASE_SIZE_PER_PAGE_B",
-        query:     "PRAGMA page_count",
-        callback: function (aDbPageCount) {
-          // Note that the database file size would not be meaningful for this
-          // calculation, because the file grows in fixed-size chunks.
-          let dbPageSize = probeValues.PLACES_DATABASE_PAGESIZE_B;
-          let placesPageCount = probeValues.PLACES_PAGES_COUNT;
-          return Math.round((dbPageSize * aDbPageCount) / placesPageCount);
-        }
-      },
-
-      { histogram: "PLACES_ANNOS_BOOKMARKS_COUNT",
-        query:     "SELECT count(*) FROM moz_items_annos" },
-
-      { histogram: "PLACES_ANNOS_PAGES_COUNT",
-        query:     "SELECT count(*) FROM moz_annos" },
-
-      { histogram: "PLACES_MAINTENANCE_DAYSFROMLAST",
-        callback: function () {
-          try {
-            let lastMaintenance = Services.prefs.getIntPref("places.database.lastMaintenance");
-            let nowSeconds = parseInt(Date.now() / 1000);
-            return parseInt((nowSeconds - lastMaintenance) / 86400);
-          } catch (ex) {
-            return 60;
-          }
-        }
-      },
-    ];
-
-    let params = {
-      tags_folder: PlacesUtils.tagsFolderId,
-      type_folder: PlacesUtils.bookmarks.TYPE_FOLDER,
-      type_bookmark: PlacesUtils.bookmarks.TYPE_BOOKMARK,
-      places_root: PlacesUtils.placesRootId
-    };
-
-    for (let i = 0; i < probes.length; i++) {
-      let probe = probes[i];
-
-      let promiseDone = new Promise((resolve, reject) => {
-        if (!("query" in probe)) {
-          resolve([probe]);
-          return;
-        }
-
-        let stmt = DBConn.createAsyncStatement(probe.query);
-        for (let param in params) {
-          if (probe.query.indexOf(":" + param) > 0) {
-            stmt.params[param] = params[param];
-          }
-        }
-
-        try {
-          stmt.executeAsync({
-            handleError: reject,
-            handleResult: function (aResultSet) {
-              let row = aResultSet.getNextRow();
-              resolve([probe, row.getResultByIndex(0)]);
-            },
-            handleCompletion: function () {}
-          });
-        } finally {
-          stmt.finalize();
-        }
-      });
-
-      // Report the result of the probe through Telemetry.
-      // The resulting promise cannot reject.
-      promiseDone.then(
-        // On success
-        ([aProbe, aValue]) => {
-          let value = aValue;
-          try {
-            if ("callback" in aProbe) {
-              value = aProbe.callback(value);
-            }
-            probeValues[aProbe.histogram] = value;
-            Services.telemetry.getHistogramById(aProbe.histogram).add(value);
-          } catch (ex) {
-            Components.utils.reportError("Error adding value " + value +
-                                         " to histogram " + aProbe.histogram +
-                                         ": " + ex);
-          }
-        },
-        // On failure
-        this._handleError);
-    }
-
-    PlacesDBUtils._executeTasks(tasks);
-  },
-
-  /**
    * Runs a list of tasks, notifying log messages to the callback.
    *
    * @param aTasks
@@ -1068,7 +884,6 @@ function Tasks(aTasks)
       this._log = aTasks.messages;
       this.callback = aTasks.callback;
       this.scope = aTasks.scope;
-      this._telemetryStart = aTasks._telemetryStart;
     }
   }
 }
@@ -1078,7 +893,6 @@ Tasks.prototype = {
   _log: [],
   callback: null,
   scope: null,
-  _telemetryStart: 0,
 
   /**
    * Adds a task to the top of the list.

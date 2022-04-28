@@ -47,11 +47,6 @@ var CompatWarning = {
       }
       alreadyWarned = true;
 
-      if (addon) {
-        let histogram = Services.telemetry.getKeyedHistogramById("ADDON_SHIM_USAGE");
-        histogram.add(addon, warning ? warning.number : 0);
-      }
-
       if (!Preferences.get("dom.ipc.shims.enabledWarnings", false))
         return;
 

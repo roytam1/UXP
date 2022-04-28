@@ -29,8 +29,6 @@ protected:
                        IResumable* aOnResume) override;
   nsresult FinishInternal() override;
 
-  Maybe<Telemetry::ID> SpeedHistogram() const override;
-
 private:
   friend class DecoderFactory;
 

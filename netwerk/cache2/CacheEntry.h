@@ -88,8 +88,6 @@ public:
   bool CanRegister() const;
   void SetRegistered(bool aRegistered);
 
-  TimeStamp const& LoadStart() const { return mLoadStart; }
-
   enum EPurge {
     PURGE_DATA_ONLY_DISK_BACKED,
     PURGE_WHOLE_ONLY_DISK_BACKED,
@@ -376,7 +374,6 @@ private:
 
   nsCOMPtr<nsISupports> mSecurityInfo;
   int64_t mPredictedDataSize;
-  mozilla::TimeStamp mLoadStart;
   uint32_t mUseCount;
 };
 

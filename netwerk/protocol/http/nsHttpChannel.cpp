@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* vim:set expandtab ts=4 sw=4 sts=4 cin: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -5830,7 +5829,6 @@ nsresult
 nsHttpChannel::BeginConnectContinue()
 {
     nsresult rv;
-
     // Check if request was cancelled during suspend AFTER on-modify-request or
     // on-useragent.
     if (mCanceled) {
@@ -6585,7 +6583,7 @@ nsHttpChannel::OnStopRequest(nsIRequest *request, nsISupports *ctxt, nsresult st
         mTransferSize = mTransaction->GetTransferSize();
 
         // If we are using the transaction to serve content, we also save the
-        // time since async open in the cache entry so we can compare telemetry
+        // time since async open in the cache entry so we can compare time
         // between cache and net response.
         if (request == mTransactionPump && mCacheEntry &&
             !mAsyncOpenTime.IsNull() && !mOnStartRequestTimestamp.IsNull()) {
@@ -6651,41 +6649,6 @@ nsHttpChannel::OnStopRequest(nsIRequest *request, nsISupports *ctxt, nsresult st
                                                      mUpgradeProtocolCallback);
         }
     }
-
-    // HTTP_CHANNEL_DISPOSITION TELEMETRY
-    enum ChannelDisposition
-    {
-        kHttpCanceled = 0,
-        kHttpDisk = 1,
-        kHttpNetOK = 2,
-        kHttpNetEarlyFail = 3,
-        kHttpNetLateFail = 4,
-        kHttpsCanceled = 8,
-        kHttpsDisk = 9,
-        kHttpsNetOK = 10,
-        kHttpsNetEarlyFail = 11,
-        kHttpsNetLateFail = 12
-    } chanDisposition = kHttpCanceled;
-
-    // HTTP 0.9 is more likely to be an error than really 0.9, so count it that way
-    if (mCanceled) {
-        chanDisposition  = kHttpCanceled;
-    } else if (!mUsedNetwork) {
-        chanDisposition = kHttpDisk;
-    } else if (NS_SUCCEEDED(status) &&
-               mResponseHead &&
-               mResponseHead->Version() != NS_HTTP_VERSION_0_9) {
-        chanDisposition = kHttpNetOK;
-    } else if (!mTransferSize) {
-        chanDisposition = kHttpNetEarlyFail;
-    } else {
-        chanDisposition = kHttpNetLateFail;
-    }
-    if (IsHTTPS()) {
-        // shift http to https disposition enums
-        chanDisposition = static_cast<ChannelDisposition>(chanDisposition + kHttpsCanceled);
-    }
-    LOG(("  nsHttpChannel::OnStopRequest ChannelDisposition %d\n", chanDisposition));
 
     // if needed, check cache entry has all data we expect
     if (mCacheEntry && mCachePump &&

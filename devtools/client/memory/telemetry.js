@@ -13,18 +13,12 @@ const { makeInfallible, immutableUpdate } = require("devtools/shared/DevToolsUti
 const { labelDisplays, treeMapDisplays, censusDisplays } = require("./constants");
 
 exports.countTakeSnapshot = makeInfallible(function () {
-  const histogram = telemetry.getHistogramById("DEVTOOLS_MEMORY_TAKE_SNAPSHOT_COUNT");
-  histogram.add(1);
 }, "devtools/client/memory/telemetry#countTakeSnapshot");
 
 exports.countImportSnapshot = makeInfallible(function () {
-  const histogram = telemetry.getHistogramById("DEVTOOLS_MEMORY_IMPORT_SNAPSHOT_COUNT");
-  histogram.add(1);
 }, "devtools/client/memory/telemetry#countImportSnapshot");
 
 exports.countExportSnapshot = makeInfallible(function () {
-  const histogram = telemetry.getHistogramById("DEVTOOLS_MEMORY_EXPORT_SNAPSHOT_COUNT");
-  histogram.add(1);
 }, "devtools/client/memory/telemetry#countExportSnapshot");
 
 const COARSE_TYPE = "Coarse Type";
@@ -43,25 +37,6 @@ const CUSTOM = "Custom";
  *        The display used with the census.
  */
 exports.countCensus = makeInfallible(function ({ filter, diffing, display }) {
-  let histogram = telemetry.getHistogramById("DEVTOOLS_MEMORY_INVERTED_CENSUS");
-  histogram.add(!!display.inverted);
-
-  histogram = telemetry.getHistogramById("DEVTOOLS_MEMORY_FILTER_CENSUS");
-  histogram.add(!!filter);
-
-  histogram = telemetry.getHistogramById("DEVTOOLS_MEMORY_DIFF_CENSUS");
-  histogram.add(!!diffing);
-
-  histogram = telemetry.getKeyedHistogramById("DEVTOOLS_MEMORY_BREAKDOWN_CENSUS_COUNT");
-  if (display === censusDisplays.coarseType) {
-    histogram.add(COARSE_TYPE);
-  } else if (display === censusDisplays.allocationStack) {
-    histogram.add(ALLOCATION_STACK);
-  } else if (display === censusDisplays.invertedAllocationStack) {
-    histogram.add(INVERTED_ALLOCATION_STACK);
-  } else {
-    histogram.add(CUSTOM);
-  }
 }, "devtools/client/memory/telemetry#countCensus");
 
 /**
@@ -77,15 +52,4 @@ exports.countDiff = makeInfallible(function (opts) {
  *        The display used to label nodes in the dominator tree.
  */
 exports.countDominatorTree = makeInfallible(function ({ display }) {
-  let histogram = telemetry.getHistogramById("DEVTOOLS_MEMORY_DOMINATOR_TREE_COUNT");
-  histogram.add(1);
-
-  histogram = telemetry.getKeyedHistogramById("DEVTOOLS_MEMORY_BREAKDOWN_DOMINATOR_TREE_COUNT");
-  if (display === labelDisplays.coarseType) {
-    histogram.add(COARSE_TYPE);
-  } else if (display === labelDisplays.allocationStack) {
-    histogram.add(ALLOCATION_STACK);
-  } else {
-    histogram.add(CUSTOM);
-  }
 }, "devtools/client/memory/telemetry#countDominatorTree");

@@ -28,7 +28,6 @@
 #include "nsContentUtils.h"
 #include "nsUnicharUtils.h"
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 #ifdef MOZ_GAMEPAD
 #include "mozilla/dom/GamepadServiceTest.h"
 #endif
@@ -1629,9 +1628,7 @@ Navigator::RequestMediaKeySystemAccess(const nsAString& aKeySystem,
   nsCOMPtr<nsIGlobalObject> go = do_QueryInterface(mWindow);
   RefPtr<DetailedPromise> promise =
     DetailedPromise::Create(go, aRv,
-      NS_LITERAL_CSTRING("navigator.requestMediaKeySystemAccess"),
-      Telemetry::VIDEO_EME_REQUEST_SUCCESS_LATENCY_MS,
-      Telemetry::VIDEO_EME_REQUEST_FAILURE_LATENCY_MS);
+      NS_LITERAL_CSTRING("navigator.requestMediaKeySystemAccess"));
   if (aRv.Failed()) {
     return nullptr;
   }
