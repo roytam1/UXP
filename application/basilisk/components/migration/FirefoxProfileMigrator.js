@@ -1,6 +1,5 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 2 -*-
- * vim: sw=2 ts=2 sts=2 et */
- /* This Source Code Form is subject to the terms of the Mozilla Public
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -170,77 +169,8 @@ FirefoxProfileMigrator.prototype._getResourcesInternal = function(sourceProfileD
     };
   }
 
-  // Telemetry related migrations.
-  let times = {
-    name: "times", // name is used only by tests.
-    type: types.OTHERDATA,
-    migrate: aCallback => {
-      let file = this._getFileObject(sourceProfileDir, "times.json");
-      if (file) {
-        file.copyTo(currentProfileDir, "");
-      }
-      // And record the fact a migration (ie, a reset) happened.
-      let timesAccessor = new ProfileAge(currentProfileDir.path);
-      timesAccessor.recordProfileReset().then(
-        () => aCallback(true),
-        () => aCallback(false)
-      );
-    }
-  };
-  let telemetry = {
-    name: "telemetry", // name is used only by tests...
-    type: types.OTHERDATA,
-    migrate: aCallback => {
-      let createSubDir = (name) => {
-        let dir = currentProfileDir.clone();
-        dir.append(name);
-        dir.create(Ci.nsIFile.DIRECTORY_TYPE, FileUtils.PERMS_DIRECTORY);
-        return dir;
-      };
-
-      // If the 'datareporting' directory exists we migrate files from it.
-      let haveStateFile = false;
-      let dataReportingDir = this._getFileObject(sourceProfileDir, "datareporting");
-      if (dataReportingDir && dataReportingDir.isDirectory()) {
-        // Copy only specific files.
-        let toCopy = ["state.json", "session-state.json"];
-
-        let dest = createSubDir("datareporting");
-        let enumerator = dataReportingDir.directoryEntries;
-        while (enumerator.hasMoreElements()) {
-          let file = enumerator.getNext().QueryInterface(Ci.nsIFile);
-          if (file.isDirectory() || toCopy.indexOf(file.leafName) == -1) {
-            continue;
-          }
-
-          if (file.leafName == "state.json") {
-            haveStateFile = true;
-          }
-          file.copyTo(dest, "");
-        }
-      }
-
-      if (!haveStateFile) {
-        // Fall back to migrating the state file that contains the client id from healthreport/.
-        // We first moved the client id management from the FHR implementation to the datareporting
-        // service.
-        // Consequently, we try to migrate an existing FHR state file here as a fallback.
-        let healthReportDir = this._getFileObject(sourceProfileDir, "healthreport");
-        if (healthReportDir && healthReportDir.isDirectory()) {
-          let stateFile = this._getFileObject(healthReportDir, "state.json");
-          if (stateFile) {
-            let dest = createSubDir("healthreport");
-            stateFile.copyTo(dest, "");
-          }
-        }
-      }
-
-      aCallback(true);
-    }
-  };
-
   return [places, cookies, passwords, formData, dictionary, bookmarksBackups,
-          session, times, telemetry].filter(r => r);
+          session].filter(r => r);
 };
 
 Object.defineProperty(FirefoxProfileMigrator.prototype, "startupOnlyMigrator", {

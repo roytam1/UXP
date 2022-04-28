@@ -86,12 +86,6 @@ this.TabCrashHandler = {
         let childID = aSubject.get("childID");
         let dumpID = aSubject.get("dumpID");
 
-        if (!dumpID) {
-          Services.telemetry
-                  .getHistogramById("FX_CONTENT_CRASH_DUMP_UNAVAILABLE")
-                  .add(1);
-        }
-
         if (!this.flushCrashedBrowserQueue(childID)) {
           this.unseenCrashedChildIDs.push(childID);
           // The elements in unseenCrashedChildIDs will only be removed if
@@ -375,12 +369,6 @@ this.TabCrashHandler = {
       data.email = this.prefs.getCharPref("email", "");
     }
 
-    // Make sure to only count once even if there are multiple windows
-    // that will all show about:tabcrashed.
-    if (this._crashedTabCount == 1) {
-      Services.telemetry.getHistogramById("FX_CONTENT_CRASH_PRESENTED").add(1);
-    }
-
     message.target.sendAsyncMessage("SetCrashReportAvailable", data);
   },
 
@@ -402,11 +390,6 @@ this.TabCrashHandler = {
     let browser = message.target.browser;
     let childID = this.browserMap.get(browser.permanentKey);
 
-    // Make sure to only count once even if there are multiple windows
-    // that will all show about:tabcrashed.
-    if (this._crashedTabCount == 0 && childID) {
-      Services.telemetry.getHistogramById("FX_CONTENT_CRASH_NOT_SUBMITTED").add(1);
-    }
   },
 
   /**

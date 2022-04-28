@@ -203,11 +203,6 @@ SessionStartup.prototype = {
         }
       }
 
-      // Report shutdown success via telemetry. Shortcoming here are
-      // being-killed-by-OS-shutdown-logic, shutdown freezing after
-      // session restore was written, etc.
-      Services.telemetry.getHistogramById("SHUTDOWN_OK").add(!this._previousSessionCrashed);
-
       // set the startup type
       if (this._previousSessionCrashed && resumeFromCrash)
         this._sessionType = Ci.nsISessionStartup.RECOVER_SESSION;
