@@ -1437,7 +1437,9 @@ PlacesController.prototype = {
   },
 
   _cutNodes: [],
-  get cutNodes() this._cutNodes,
+  get cutNodes() {
+    return this._cutNodes;
+  },
   set cutNodes(aNodes) {
     let self = this;
     function updateCutNodes(aValue) {
@@ -1506,7 +1508,7 @@ PlacesController.prototype = {
     [ PlacesUtils.TYPE_X_MOZ_PLACE,
       PlacesUtils.TYPE_X_MOZ_URL,
       PlacesUtils.TYPE_UNICODE,
-    ].forEach(function(type) xferable.addDataFlavor(type));
+    ].forEach(type => xferable.addDataFlavor(type));
 
     this.clipboard.getData(xferable, Ci.nsIClipboard.kGlobalClipboard);
 
@@ -1583,8 +1585,9 @@ PlacesController.prototype = {
    * @return true if there's a cached mozILivemarkInfo object for
    * aNode, false otherwise.
    */
-  hasCachedLivemarkInfo: function(aNode)
-    this._cachedLivemarkInfoObjects.has(aNode),
+  hasCachedLivemarkInfo: function(aNode) {
+    return this._cachedLivemarkInfoObjects.has(aNode)
+  },
 
   /**
    * Returns the cached livemark info for a node, if set by cacheLivemarkInfo,
@@ -1593,8 +1596,9 @@ PlacesController.prototype = {
    *        a places result node.
    * @return the mozILivemarkInfo object for aNode, if set, null otherwise.
    */
-  getCachedLivemarkInfo: function(aNode)
-    this._cachedLivemarkInfoObjects.get(aNode, null)
+  getCachedLivemarkInfo: function(aNode) {
+    return this._cachedLivemarkInfoObjects.get(aNode, null)
+  }
 };
 
 /**
