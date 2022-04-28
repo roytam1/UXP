@@ -220,7 +220,7 @@ var gSyncUI = {
 
   // Commands
   doSync: function() {
-    setTimeout(function() Weave.Service.errorHandler.syncAndReportErrors(), 0);
+    setTimeout(() => Weave.Service.errorHandler.syncAndReportErrors(), 0);
   },
 
   handleToolbarButton: function() {
