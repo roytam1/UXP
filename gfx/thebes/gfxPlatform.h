@@ -159,9 +159,7 @@ public:
     static gfxPlatform *GetPlatform();
 
     /**
-     * Returns whether or not graphics has been initialized yet. This is
-     * intended for Telemetry where we don't necessarily want to initialize
-     * graphics just to observe its state.
+     * Returns whether or not graphics has been initialized yet.
      */
     static bool Initialized();
 

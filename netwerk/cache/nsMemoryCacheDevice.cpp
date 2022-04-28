@@ -12,7 +12,6 @@
 #include "nsCRT.h"
 #include "nsReadableUtils.h"
 #include "mozilla/MathAlgorithms.h"
-#include "mozilla/Telemetry.h"
 #include <algorithm>
 
 // The memory cache implements the "LRU-SP" caching algorithm

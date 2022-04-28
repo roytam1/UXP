@@ -96,7 +96,7 @@ bool fallocate(PRFileDesc* aFD, int64_t aLength);
 
 /**
  * Use readahead to preload shared libraries into the file cache before loading.
- * WARNING: This function should not be used without a telemetry field trial
+ * WARNING: This function should not be used without a field trial
  *          demonstrating a clear performance improvement!
  *
  * @param aFile nsIFile representing path to shared library
@@ -105,7 +105,7 @@ void ReadAheadLib(nsIFile* aFile);
 
 /**
  * Use readahead to preload a file into the file cache before reading.
- * WARNING: This function should not be used without a telemetry field trial
+ * WARNING: This function should not be used without a field trial
  *          demonstrating a clear performance improvement!
  *
  * @param aFile nsIFile representing path to shared library
@@ -122,7 +122,7 @@ void ReadAheadFile(nsIFile* aFile, const size_t aOffset = 0,
 
 /**
  * Use readahead to preload shared libraries into the file cache before loading.
- * WARNING: This function should not be used without a telemetry field trial
+ * WARNING: This function should not be used without a field trial
  *          demonstrating a clear performance improvement!
  *
  * @param aFilePath path to shared library
@@ -131,7 +131,7 @@ void ReadAheadLib(pathstr_t aFilePath);
 
 /**
  * Use readahead to preload a file into the file cache before loading.
- * WARNING: This function should not be used without a telemetry field trial
+ * WARNING: This function should not be used without a field trial
  *          demonstrating a clear performance improvement!
  *
  * @param aFilePath path to shared library
@@ -148,7 +148,7 @@ void ReadAheadFile(pathstr_t aFilePath, const size_t aOffset = 0,
  * Use readahead to preload a file into the file cache before reading.
  * When this function exits, the file pointer is guaranteed to be in the same
  * position it was in before this function was called.
- * WARNING: This function should not be used without a telemetry field trial
+ * WARNING: This function should not be used without a field trial
  *          demonstrating a clear performance improvement!
  *
  * @param aFd file descriptor opened for read access

@@ -13,36 +13,12 @@
 #include "nsProxyRelease.h"
 #include "nsServiceManagerUtils.h"
 #include "nsComponentManagerUtils.h"
-#include "mozilla/Telemetry.h"
 
 using mozilla::gfx::IntSize;
 using mozilla::gfx::SurfaceFormat;
 
 namespace mozilla {
 namespace image {
-
-class MOZ_STACK_CLASS AutoRecordDecoderTelemetry final
-{
-public:
-  explicit AutoRecordDecoderTelemetry(Decoder* aDecoder)
-    : mDecoder(aDecoder)
-  {
-    MOZ_ASSERT(mDecoder);
-
-    // Begin recording telemetry data.
-    mStartTime = TimeStamp::Now();
-  }
-
-  ~AutoRecordDecoderTelemetry()
-  {
-    // Finish telemetry.
-    mDecoder->mDecodeTime += (TimeStamp::Now() - mStartTime);
-  }
-
-private:
-  Decoder* mDecoder;
-  TimeStamp mStartTime;
-};
 
 Decoder::Decoder(RasterImage* aImage)
   : mImageData(nullptr)
@@ -124,7 +100,6 @@ Decoder::Decode(IResumable* aOnResume /* = nullptr */)
   LexerResult lexerResult(TerminalState::FAILURE);
   {
     PROFILER_LABEL("ImageDecoder", "Decode", js::ProfileEntry::Category::GRAPHICS);
-    AutoRecordDecoderTelemetry telemetry(this);
 
     lexerResult =  DoDecode(*mIterator, aOnResume);
   };
@@ -265,16 +240,6 @@ Decoder::FinalStatus() const
                             GetDecodeDone(),
                             HasError(),
                             ShouldReportError());
-}
-
-DecoderTelemetry
-Decoder::Telemetry() const
-{
-  MOZ_ASSERT(mIterator);
-  return DecoderTelemetry(SpeedHistogram(),
-                          mIterator->ByteCount(),
-                          mIterator->ChunkCount(),
-                          mDecodeTime);
 }
 
 nsresult

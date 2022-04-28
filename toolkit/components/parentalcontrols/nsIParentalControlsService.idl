@@ -36,8 +36,7 @@ interface nsIParentalControlsService : nsISupports
   const short ADVANCED_SETTINGS = 17; // Advanced settings
   const short CAMERA_MICROPHONE = 18; // Camera and microphone (WebRTC)
   const short BLOCK_LIST = 19; // Block websites that include sensitive content
-  const short TELEMETRY = 20; // Submit telemetry data
-  const short HEALTH_REPORT = 21; // Submit FHR data
+  // 20 and 21 are unused. Was: Telemetry, FHR
   const short DEFAULT_THEME = 22; // Use default theme or a special parental controls theme
 
   /**

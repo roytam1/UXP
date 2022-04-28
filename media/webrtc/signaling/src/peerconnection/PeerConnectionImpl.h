@@ -210,7 +210,6 @@ class RTCStatsQuery {
 
     nsAutoPtr<mozilla::dom::RTCStatsReportInternal> report;
     std::string error;
-    // A timestamp to help with telemetry.
     mozilla::TimeStamp iceStartTime;
     // Just for convenience, maybe integrate into the report later
     bool failed;
@@ -734,10 +733,7 @@ private:
 #endif
 
   // When ICE completes, we record a bunch of statistics that outlive the
-  // PeerConnection. This is just telemetry right now, but this can also
-  // include things like dumping the RLogConnector somewhere, saving away
-  // an RTCStatsReport somewhere so it can be inspected after the call is over,
-  // or other things.
+  // PeerConnection.
   void RecordLongtermICEStatistics();
 
   void OnNegotiationNeeded();
@@ -816,9 +812,9 @@ private:
   std::string mPreviousIcePwd; // used during rollback of ice restart
 
 #if !defined(MOZILLA_EXTERNAL_LINKAGE)
-  // Start time of ICE, used for telemetry
+  // Start time of ICE
   mozilla::TimeStamp mIceStartTime;
-  // Start time of call used for Telemetry
+  // Start time of call
   mozilla::TimeStamp mStartTime;
 #endif
 
@@ -840,7 +836,6 @@ private:
 
   bool mPrivateWindow;
 
-  // storage for Telemetry data
   uint16_t mMaxReceiving[SdpMediaSection::kMediaTypes];
   uint16_t mMaxSending[SdpMediaSection::kMediaTypes];
 

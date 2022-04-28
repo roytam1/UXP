@@ -46,8 +46,6 @@ class nsIJSID;
 
 namespace mozilla {
 
-enum UseCounter : int16_t;
-
 namespace dom {
 class CustomElementReactionsStack;
 template<typename KeyType, typename ValueType> class Record;
@@ -3427,10 +3425,6 @@ GetDesiredProto(JSContext* aCx, const JS::CallArgs& aCallArgs,
 already_AddRefed<nsGenericHTMLElement>
 CreateHTMLElement(const GlobalObject& aGlobal, const JS::CallArgs& aCallArgs,
                   JS::Handle<JSObject*> aGivenProto, ErrorResult& aRv);
-
-void
-SetDocumentAndPageUseCounter(JSContext* aCx, JSObject* aObject,
-                             UseCounter aUseCounter);
 
 // Warnings
 void

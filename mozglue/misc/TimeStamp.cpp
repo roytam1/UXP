@@ -69,8 +69,7 @@ TimeStamp::ProcessCreation(bool& aIsInconsistent)
 
       if ((ts > sInitOnce.mFirstTimeStamp) || (uptime == 0)) {
         /* If the process creation timestamp was inconsistent replace it with
-         * the first one instead and notify that a telemetry error was
-         * detected. */
+         * the first one instead. */
         aIsInconsistent = true;
         ts = sInitOnce.mFirstTimeStamp;
       }

@@ -4,7 +4,6 @@
 
 #include "mozilla/dom/DocGroup.h"
 #include "mozilla/dom/TabGroup.h"
-#include "mozilla/Telemetry.h"
 #include "nsIURI.h"
 #include "nsIEffectiveTLDService.h"
 #include "mozilla/StaticPtr.h"

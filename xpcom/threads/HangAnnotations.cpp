@@ -97,8 +97,7 @@ BrowserHangAnnotations::AddAnnotation(const nsAString& aName, const bool aData)
 
 /**
  * This class itself does not use synchronization but it (and its parent object)
- * should be protected by mutual exclusion in some way. In Telemetry the chrome
- * hang data is protected via TelemetryImpl::mHangReportsMutex.
+ * should be protected by mutual exclusion in some way.
  */
 class ChromeHangAnnotationEnumerator : public HangAnnotations::Enumerator
 {

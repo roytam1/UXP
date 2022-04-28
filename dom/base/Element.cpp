@@ -127,7 +127,6 @@
 #include "nsWrapperCacheInlines.h"
 #include "xpcpublic.h"
 #include "nsIScriptError.h"
-#include "mozilla/Telemetry.h"
 
 #include "mozilla/CORSMode.h"
 #include "mozilla/dom/ShadowRoot.h"

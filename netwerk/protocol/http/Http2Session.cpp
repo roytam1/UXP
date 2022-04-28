@@ -19,7 +19,6 @@
 #include "Http2Push.h"
 
 #include "mozilla/EndianUtils.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/Preferences.h"
 #include "nsHttp.h"
 #include "nsHttpHandler.h"
@@ -97,7 +96,6 @@ Http2Session::Http2Session(nsISocketTransport *aSocketTransport, uint32_t versio
   , mGoAwayID(0)
   , mOutgoingGoAwayID(0)
   , mConcurrent(0)
-  , mServerPushedResources(0)
   , mServerInitialStreamWindow(kDefaultRwin)
   , mLocalSessionWindow(kDefaultRwin)
   , mServerSessionWindow(kDefaultRwin)
@@ -1628,7 +1626,6 @@ Http2Session::RecvPushPromise(Http2Session *self)
     return rv;
 
   Http2Stream *associatedStream = self->mInputFrameDataStream;
-  ++(self->mServerPushedResources);
 
   // Anytime we start using the high bit of stream ID (either client or server)
   // begin to migrate to a new session.

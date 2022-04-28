@@ -68,8 +68,6 @@
 
 #include "GeckoProfiler.h"
 
-#include "mozilla/Telemetry.h"
-
 #ifdef MOZ_IPDL_TESTS
 #include "mozilla/_ipdltest/IPDLUnitTests.h"
 #include "mozilla/_ipdltest/IPDLUnitTestProcessChild.h"
@@ -294,14 +292,6 @@ XRE_InitChildProcess(int aArgc,
   // NB: This must be called before profiler_init
   ScopedLogging logger;
 
-  // This is needed by Telemetry to initialize histogram collection.
-  // NB: This must be called after NS_LogInit().
-  // NS_LogInit must be called before Telemetry::CreateStatisticsRecorder
-  // so as to avoid many log messages of the form
-  //   WARNING: XPCOM objects created/destroyed from static ctor/dtor: [..]
-  // See bug 1279614.
-  Telemetry::CreateStatisticsRecorder();
-
   mozilla::LogModule::Init();
 
   char aLocal;
@@ -489,7 +479,6 @@ XRE_InitChildProcess(int aArgc,
     }
   }
 
-  Telemetry::DestroyStatisticsRecorder();
   return XRE_DeinitCommandLine();
 }
 

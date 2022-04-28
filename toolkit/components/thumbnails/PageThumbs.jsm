@@ -215,14 +215,10 @@ this.PageThumbs = {
    *   fullScale - request that a non-downscaled image be returned.
    */
   captureToCanvas: function (aBrowser, aCanvas, aCallback, aArgs) {
-    let telemetryCaptureTime = new Date();
     let args = {
       fullScale: aArgs ? aArgs.fullScale : false
     };
     this._captureToCanvas(aBrowser, aCanvas, args, (aCanvas) => {
-      Services.telemetry
-              .getHistogramById("FX_THUMBNAILS_CAPTURE_TIME_MS")
-              .add(new Date() - telemetryCaptureTime);
       if (aCallback) {
         aCallback(aCanvas);
       }
@@ -450,10 +446,7 @@ this.PageThumbs = {
    */
   _store: function PageThumbs__store(aOriginalURL, aFinalURL, aData, aNoOverwrite) {
     return Task.spawn(function* () {
-      let telemetryStoreTime = new Date();
       yield PageThumbsStorage.writeData(aFinalURL, aData, aNoOverwrite);
-      Services.telemetry.getHistogramById("FX_THUMBNAILS_STORE_TIME_MS")
-        .add(new Date() - telemetryStoreTime);
 
       Services.obs.notifyObservers(null, "page-thumbnail:create", aFinalURL);
       // We've been redirected. Create a copy of the current thumbnail for

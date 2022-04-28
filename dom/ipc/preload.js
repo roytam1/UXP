@@ -40,7 +40,6 @@ var DoPreloadPostfork = function(aCallback) {
 
   Cc["@mozilla.org/appshell/appShellService;1"].getService(Ci["nsIAppShellService"]);
   Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci["nsIWindowMediator"]);
-  Cc["@mozilla.org/base/telemetry;1"].getService(Ci["nsITelemetry"]);
   Cc["@mozilla.org/categorymanager;1"].getService(Ci["nsICategoryManager"]);
   Cc["@mozilla.org/childprocessmessagemanager;1"].getService(Ci["nsIMessageSender"]);
   Cc["@mozilla.org/consoleservice;1"].getService(Ci["nsIConsoleService"]);

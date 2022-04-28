@@ -11,7 +11,6 @@ namespace layers {
 
 /**
  * An enumeration that lists various input methods used to trigger scrolling.
- * Used as the values for the SCROLL_INPUT_METHODS telemetry histogram.
  */
 enum class ScrollInputMethod {
 

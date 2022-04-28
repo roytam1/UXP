@@ -1,5 +1,4 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 2 -*-
- * vim: sw=2 ts=2 sts=2 expandtab filetype=javascript
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -537,13 +536,6 @@ this.PlacesBackups = {
       includeItemIds: true
     });
 
-    try {
-      Services.telemetry
-              .getHistogramById("PLACES_BACKUPS_BOOKMARKSTREE_MS")
-              .add(Date.now() - startTime);
-    } catch (ex) {
-      Components.utils.reportError("Unable to report telemetry.");
-    }
     return [root, root.itemsCount];
   })
 }

@@ -38,7 +38,6 @@
 #include "mozilla/Logging.h"
 
 #include "mozilla/Preferences.h"
-#include "mozilla/Telemetry.h"
 
 #include "mozilla/net/NeckoCommon.h"
 #include "mozilla/net/NeckoParent.h"
@@ -490,13 +489,6 @@ Predictor::GetParallelSpeculativeConnectLimit(
     uint32_t *parallelSpeculativeConnectLimit)
 {
   *parallelSpeculativeConnectLimit = 6;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-Predictor::GetIsFromPredictor(bool *isFromPredictor)
-{
-  *isFromPredictor = true;
   return NS_OK;
 }
 
@@ -1079,9 +1071,6 @@ Predictor::CalculateConfidence(uint32_t hitCount, uint32_t hitsPossible,
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  Telemetry::AutoCounter<Telemetry::PREDICTOR_PREDICTIONS_CALCULATED> predictionsCalculated;
-  ++predictionsCalculated;
-
   if (!hitsPossible) {
     return 0;
   }
@@ -1316,18 +1305,11 @@ Predictor::RunPredictions(nsIURI *referrer, nsINetworkPredictorVerifier *verifie
   preconnects.SwapElements(mPreconnects);
   preresolves.SwapElements(mPreresolves);
 
-  Telemetry::AutoCounter<Telemetry::PREDICTOR_TOTAL_PREDICTIONS> totalPredictions;
-  Telemetry::AutoCounter<Telemetry::PREDICTOR_TOTAL_PREFETCHES> totalPrefetches;
-  Telemetry::AutoCounter<Telemetry::PREDICTOR_TOTAL_PRECONNECTS> totalPreconnects;
-  Telemetry::AutoCounter<Telemetry::PREDICTOR_TOTAL_PRERESOLVES> totalPreresolves;
-
   len = prefetches.Length();
   for (i = 0; i < len; ++i) {
     PREDICTOR_LOG(("    doing prefetch"));
     nsCOMPtr<nsIURI> uri = prefetches[i];
     if (NS_SUCCEEDED(Prefetch(uri, referrer, verifier))) {
-      ++totalPredictions;
-      ++totalPrefetches;
       predicted = true;
     }
   }
@@ -1336,8 +1318,6 @@ Predictor::RunPredictions(nsIURI *referrer, nsINetworkPredictorVerifier *verifie
   for (i = 0; i < len; ++i) {
     PREDICTOR_LOG(("    doing preconnect"));
     nsCOMPtr<nsIURI> uri = preconnects[i];
-    ++totalPredictions;
-    ++totalPreconnects;
     mSpeculativeService->SpeculativeConnect2(uri, nullptr, this);
     predicted = true;
     if (verifier) {
@@ -1350,8 +1330,6 @@ Predictor::RunPredictions(nsIURI *referrer, nsINetworkPredictorVerifier *verifie
   nsCOMPtr<nsIThread> mainThread = do_GetMainThread();
   for (i = 0; i < len; ++i) {
     nsCOMPtr<nsIURI> uri = preresolves[i];
-    ++totalPredictions;
-    ++totalPreresolves;
     nsAutoCString hostname;
     uri->GetAsciiHost(hostname);
     PREDICTOR_LOG(("    doing preresolve %s", hostname.get()));
@@ -1481,9 +1459,6 @@ Predictor::Learn(nsIURI *targetURI, nsIURI *sourceURI,
     PREDICTOR_LOG(("    invalid reason"));
     return NS_ERROR_INVALID_ARG;
   }
-
-  Telemetry::AutoCounter<Telemetry::PREDICTOR_LEARN_ATTEMPTS> learnAttempts;
-  ++learnAttempts;
 
   Predictor::Reason argReason;
   argReason.mLearn = reason;

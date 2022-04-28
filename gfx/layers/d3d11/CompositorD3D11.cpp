@@ -25,7 +25,6 @@
 #include "mozilla/widget/WinCompositorWidget.h"
 
 #include "mozilla/EnumeratedArray.h"
-#include "mozilla/Telemetry.h"
 #include "BlendShaderConstants.h"
 
 #include "D3D11ShareHandleImage.h"
@@ -1376,9 +1375,6 @@ DeviceAttachmentsD3D11::InitSyncObject()
   if (FAILED(hr) || !mSyncHandle) {
     gfxCriticalError() << "Failed to get SharedHandle for sync texture. Result: "
                        << hexa(hr);
-    NS_DispatchToMainThread(NS_NewRunnableFunction([] () -> void {
-      Accumulate(Telemetry::D3D11_SYNC_HANDLE_FAILURE, 1);
-    }));
     return false;
   }
 

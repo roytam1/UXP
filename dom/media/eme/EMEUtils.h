@@ -103,9 +103,6 @@ enum CDMType {
   eUnknown = 3
 };
 
-CDMType
-ToCDMTypeTelemetryEnum(const nsString& aKeySystem);
-
 } // namespace mozilla
 
 #endif // EME_LOG_H_

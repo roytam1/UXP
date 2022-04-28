@@ -158,7 +158,6 @@ private:
   nsresult DoAdmissionDNS();
   nsresult StartWebsocketData();
   uint16_t ResultToCloseCode(nsresult resultCode);
-  void     ReportConnectionTelemetry();
 
   void StopSession(nsresult reason);
   void AbortSession(nsresult reason);

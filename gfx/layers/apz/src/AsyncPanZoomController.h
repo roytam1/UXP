@@ -228,14 +228,14 @@ public:
   uint32_t GetCheckerboardMagnitude() const;
 
   /**
-   * Report the number of CSSPixel-milliseconds of checkerboard to telemetry.
+   * Report the number of CSSPixel-milliseconds of checkerboard.
    */
   void ReportCheckerboard(const TimeStamp& aSampleTime);
 
   /**
    * Flush any active checkerboard report that's in progress. This basically
    * pretends like any in-progress checkerboard event has terminated, and pushes
-   * out the report to the checkerboard reporting service and telemetry. If the
+   * out the report to the checkerboard reporting service. If the
    * checkerboard event has not really finished, it will start a new event
    * on the next composite.
    */

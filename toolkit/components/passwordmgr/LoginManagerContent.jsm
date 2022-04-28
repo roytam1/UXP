@@ -1068,8 +1068,6 @@ var LoginManagerContent = {
       }
 
       // Nothing to do if we have no matching logins available.
-      // Only insecure pages reach this block and logs the same
-      // telemetry flag.
       if (foundLogins.length == 0) {
         // We don't log() here since this is a very common case.
         autofillResult = AUTOFILL_RESULT.NO_SAVED_LOGINS;
@@ -1234,9 +1232,6 @@ var LoginManagerContent = {
       }
 
       if (!userTriggered) {
-        // Ignore fills as a result of user action for this probe.
-        Services.telemetry.getHistogramById("PWMGR_FORM_AUTOFILL_RESULT").add(autofillResult);
-
         if (usernameField) {
           let focusedElement = this._formFillService.focusedInput;
           if (usernameField == focusedElement &&

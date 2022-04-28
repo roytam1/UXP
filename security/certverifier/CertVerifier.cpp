@@ -434,8 +434,7 @@ CertVerifier::VerifyCert(CERTCertificate* cert, SECCertificateUsage usage,
       // chosen by the server.
 
       // These configurations are in order of most restrictive to least
-      // restrictive. This enables us to gather telemetry on the expected
-      // results of setting the default policy to a particular configuration.
+      // restrictive.
       SHA1Mode sha1ModeConfigurations[] = {
         SHA1Mode::Forbidden,
         SHA1Mode::ImportedRoot,
@@ -474,8 +473,7 @@ CertVerifier::VerifyCert(CERTCertificate* cert, SECCertificateUsage usage,
         // (mSHA1Mode) is more restrictive than the SHA1 mode option we're on.
         // (To put it another way, only attempt verification if the SHA1 mode
         // option we're on is as restrictive or more restrictive than
-        // mSHA1Mode.) This allows us to gather telemetry information while
-        // still enforcing the mode set by preferences.
+        // mSHA1Mode.)
         if (SHA1ModeMoreRestrictiveThanGivenMode(sha1ModeConfigurations[i])) {
           continue;
         }
@@ -555,8 +553,7 @@ CertVerifier::VerifyCert(CERTCertificate* cert, SECCertificateUsage usage,
           // (mSHA1Mode) is more restrictive than the SHA1 mode option we're on.
           // (To put it another way, only attempt verification if the SHA1 mode
           // option we're on is as restrictive or more restrictive than
-          // mSHA1Mode.) This allows us to gather telemetry information while
-          // still enforcing the mode set by preferences.
+          // mSHA1Mode.)
           if (SHA1ModeMoreRestrictiveThanGivenMode(sha1ModeConfigurations[j])) {
             continue;
           }
@@ -612,10 +609,6 @@ CertVerifier::VerifyCert(CERTCertificate* cert, SECCertificateUsage usage,
       if (keySizeStatus) {
         *keySizeStatus = KeySizeStatus::AlreadyBad;
       }
-      // The telemetry probe CERT_CHAIN_SHA1_POLICY_STATUS gives us feedback on
-      // the result of setting a specific policy. However, we don't want noise
-      // from users who have manually set the policy to something other than the
-      // default, so we only collect for ImportedRoot (which is the default).
       if (sha1ModeResult && mSHA1Mode == SHA1Mode::ImportedRoot) {
         *sha1ModeResult = SHA1ModeResult::Failed;
       }

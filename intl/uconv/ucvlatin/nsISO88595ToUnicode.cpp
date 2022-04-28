@@ -5,7 +5,6 @@
 
 #include "nsUCConstructors.h"
 #include "nsISO88595ToUnicode.h"
-#include "mozilla/Telemetry.h"
 
 using namespace mozilla;
 

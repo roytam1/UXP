@@ -55,31 +55,6 @@ function testPixel(ctx, x, y, r, g, b, a, fuzz) {
   return false;
 }
 
-function reportResult(val) {
-  try {
-    let histogram = Services.telemetry.getHistogramById("GRAPHICS_SANITY_TEST");
-    histogram.add(val);
-  } catch (e) {}
-
-  Preferences.set(RUNNING_PREF, false);
-  Services.prefs.savePrefFile(null);
-}
-
-function reportTestReason(val) {
-  let histogram = Services.telemetry.getHistogramById("GRAPHICS_SANITY_TEST_REASON");
-  histogram.add(val);
-}
-
-function annotateCrashReport(value) {
-  try {
-    // "1" if we're annotating the crash report, "" to remove the annotation.
-    var crashReporter = Cc['@mozilla.org/toolkit/crash-reporter;1'].
-                          getService(Ci.nsICrashReporter);
-    crashReporter.annotateCrashReport("GraphicsSanityTest", value ? "1" : "");
-  } catch (e) {
-  }
-}
-
 function setTimeout(aMs, aCallback) {
   var timer = Cc['@mozilla.org/timer;1'].
                 createInstance(Ci.nsITimer);
@@ -125,18 +100,15 @@ function testCompositor(win, ctx) {
   var testPassed = true;
 
   if (!verifyVideoRendering(ctx)) {
-    reportResult(TEST_FAILED_VIDEO);
     Preferences.set(DISABLE_VIDEO_PREF, true);
     testPassed = false;
   }
 
   if (!verifyLayersRendering(ctx)) {
-    reportResult(TEST_FAILED_RENDER);
     testPassed = false;
   }
 
   if (testPassed) {
-    reportResult(TEST_PASSED);
   }
 
   return testPassed;
@@ -160,7 +132,6 @@ var listener = {
                          .getInterface(Ci.nsIDOMWindowUtils);
     setTimeout(TIMEOUT_SEC * 1000, () => {
       if (this.win) {
-        reportResult(TEST_TIMEOUT);
         this.endTest();
       }
     });
@@ -227,10 +198,6 @@ var listener = {
 
       this.mm = null;
     }
-
-    // Remove the annotation after we've cleaned everything up, to catch any
-    // incidental crashes from having performed the sanity test.
-    annotateCrashReport(false);
   }
 };
 
@@ -248,7 +215,6 @@ SanityTest.prototype = {
 
     if (Preferences.get(RUNNING_PREF, false)) {
       Preferences.set(DISABLE_VIDEO_PREF, true);
-      reportResult(TEST_CRASHED);
       return false;
     }
 
@@ -256,11 +222,6 @@ SanityTest.prototype = {
       var prefValue = Preferences.get(pref, undefined);
       if (prefValue == value) {
         return true;
-      }
-      if (prefValue === undefined) {
-        reportTestReason(REASON_FIRST_RUN);
-      } else {
-        reportTestReason(reason);
       }
       return false;
     }
@@ -295,8 +256,6 @@ SanityTest.prototype = {
     listener = null;
 
     if (!this.shouldRunTest()) return;
-
-    annotateCrashReport(true);
 
     // Open a tiny window to render our test page, and notify us when it's loaded
     var sanityTest = Services.ww.openWindow(null,

@@ -13,7 +13,6 @@
 #include "mozilla/FileUtils.h"
 #include "nsThreadUtils.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include <algorithm>
 

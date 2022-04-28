@@ -28,7 +28,6 @@
 #include "GeckoProfiler.h"
 
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/WindowsVersion.h"
 
 #include <usp10.h>

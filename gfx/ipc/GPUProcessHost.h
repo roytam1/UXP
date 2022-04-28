@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- * vim: sts=8 sw=2 ts=2 tw=99 et :
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -85,10 +84,8 @@ public:
     return !!mGPUChild;
   }
 
-  // Return the time stamp for when we tried to launch the GPU process. This is
-  // currently used for Telemetry so that we can determine how long GPU processes
-  // take to spin up. Note this doesn't denote a successful launch, just when we
-  // attempted launch.
+  // Return the time stamp for when we tried to launch the GPU process.
+  // Note this doesn't denote a successful launch, just when we attempted launch.
   TimeStamp GetLaunchTime() const {
     return mLaunchTime;
   }

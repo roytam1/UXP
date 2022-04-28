@@ -22,7 +22,6 @@
 #include "nsRepeatService.h"
 #include "mozilla/LookAndFeel.h"
 #include "mozilla/MouseEvents.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/layers/ScrollInputMethods.h"
 
 using namespace mozilla;

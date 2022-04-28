@@ -169,7 +169,7 @@ public:
    * as the AbstractResult is cycle-collected.
    *
    * @param aStartDate The instant at which the operation was
-   * requested.  Used to collect Telemetry statistics.
+   * requested.
    */
   explicit AbstractResult(TimeStamp aStartDate)
     : mStartDate(aStartDate)
@@ -182,7 +182,7 @@ public:
    * Setup the AbstractResult once data is available.
    *
    * @param aDispatchDate The instant at which the IO thread received
-   * the operation request. Used to collect Telemetry statistics.
+   * the operation request.
    * @param aExecutionDuration The duration of the operation on the
    * IO thread.
    */

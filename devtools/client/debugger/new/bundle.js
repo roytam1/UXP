@@ -11474,7 +11474,6 @@ var Debugger =
 	    if (telemetry) {
 	      var transportType = this._transport.onOutputStreamReady === undefined ? "LOCAL_" : "REMOTE_";
 	      var histogramId = "DEVTOOLS_DEBUGGER_RDP_" + transportType + telemetry + "_MS";
-	      histogram = Services.telemetry.getHistogramById(histogramId);
 	      startTime = +new Date();
 	    }
 	    var outgoingPacket = {
@@ -11512,10 +11511,6 @@ var Debugger =
 	      var thisCallback = args[maxPosition + 1];
 	      if (thisCallback) {
 	        thisCallback(aResponse);
-	      }
-	
-	      if (histogram) {
-	        histogram.add(+new Date() - startTime);
 	      }
 	    }, "DebuggerClient.requester request callback"));
 	  }, "DebuggerClient.requester");

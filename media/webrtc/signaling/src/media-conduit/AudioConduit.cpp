@@ -20,7 +20,6 @@
 #include "nsThreadUtils.h"
 #if !defined(MOZILLA_EXTERNAL_LINKAGE)
 #include "Latency.h"
-#include "mozilla/Telemetry.h"
 #endif
 
 #include "webrtc/common.h"

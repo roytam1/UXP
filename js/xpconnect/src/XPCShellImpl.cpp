@@ -1236,11 +1236,6 @@ XRE_XPCShellMain(int argc, char** argv, char** envp)
 
     mozilla::LogModule::Init();
 
-    // A initializer to initialize histogram collection
-    // used by telemetry.
-    UniquePtr<base::StatisticsRecorder> telStats =
-       MakeUnique<base::StatisticsRecorder>();
-
     if (PR_GetEnv("MOZ_CHAOSMODE")) {
         ChaosFeature feature = ChaosFeature::Any;
         long featureInt = strtol(PR_GetEnv("MOZ_CHAOSMODE"), nullptr, 16);
@@ -1535,7 +1530,6 @@ XRE_XPCShellMain(int argc, char** argv, char** envp)
     bogus = nullptr;
 #endif
 
-    telStats = nullptr;
     appDir = nullptr;
     appFile = nullptr;
     dirprovider.ClearGREDirs();

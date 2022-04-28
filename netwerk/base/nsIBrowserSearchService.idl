@@ -464,8 +464,7 @@ interface nsIBrowserSearchService : nsISupports
   attribute nsISearchEngine currentEngine;
 
   /**
-   * Gets a representation of the default engine in an anonymized JSON
-   * string suitable for recording in the Telemetry environment.
+   * Gets a representation of the default engine.
    *
    * @return an object containing anonymized info about the default engine:
    *         name, loadPath, submissionURL (for default engines).
