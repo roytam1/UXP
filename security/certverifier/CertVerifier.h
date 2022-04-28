@@ -44,7 +44,6 @@ namespace mozilla { namespace psm {
 
 typedef mozilla::pkix::Result Result;
 
-// These values correspond to the CERT_CHAIN_KEY_SIZE_STATUS telemetry.
 enum class KeySizeStatus {
   NeverChecked = 0,
   LargeMinimumSucceeded = 1,
@@ -52,7 +51,6 @@ enum class KeySizeStatus {
   AlreadyBad = 3,
 };
 
-// These values correspond to the CERT_CHAIN_SHA1_POLICY_STATUS telemetry.
 enum class SHA1ModeResult {
   NeverChecked = 0,
   SucceededWithoutSHA1 = 1,
@@ -92,7 +90,6 @@ public:
   // TLS feature request_status should be ignored
   static const Flags FLAG_TLS_IGNORE_STATUS_REQUEST;
 
-  // These values correspond to the SSL_OCSP_STAPLING telemetry.
   enum OCSPStaplingStatus {
     OCSP_STAPLING_NEVER_CHECKED = 0,
     OCSP_STAPLING_GOOD = 1,

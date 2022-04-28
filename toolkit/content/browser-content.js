@@ -213,7 +213,6 @@ var ClickEventHandler = {
     }
 
     const kAutoscroll = 15;  // defined in mozilla/layers/ScrollInputMethods.h
-    Services.telemetry.getHistogramById("SCROLL_INPUT_METHODS").add(kAutoscroll);
 
     this._scrollable.scrollBy({
       left: actualScrollX,
@@ -681,23 +680,8 @@ var Printing = {
       let print = contentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
                                .getInterface(Ci.nsIWebBrowserPrint);
 
-      if (print.doingPrintPreview) {
-        this.logKeyedTelemetry("PRINT_DIALOG_OPENED_COUNT", "FROM_PREVIEW");
-      } else {
-        this.logKeyedTelemetry("PRINT_DIALOG_OPENED_COUNT", "FROM_PAGE");
-      }
-
       print.print(printSettings, null);
 
-      if (print.doingPrintPreview) {
-        if (simplifiedMode) {
-          this.logKeyedTelemetry("PRINT_COUNT", "SIMPLIFIED");
-        } else {
-          this.logKeyedTelemetry("PRINT_COUNT", "WITH_PREVIEW");
-        }
-      } else {
-        this.logKeyedTelemetry("PRINT_COUNT", "WITHOUT_PREVIEW");
-      }
     } catch (e) {
       // Pressing cancel is expressed as an NS_ERROR_ABORT return value,
       // causing an exception to be thrown which we catch here.
@@ -720,11 +704,6 @@ var Printing = {
       PSSVC.savePrintSettingsToPrefs(printSettings, false,
                                      printSettings.kInitSavePrinterName);
     }
-  },
-
-  logKeyedTelemetry(id, key) {
-    let histogram = Services.telemetry.getKeyedHistogramById(id);
-    histogram.add(key);
   },
 
   updatePageCount() {

@@ -1,4 +1,3 @@
-/* vim:set ts=4 sw=4 sts=4 et cin: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -435,9 +434,6 @@ private:
         bool IsSpeculative() { return mSpeculative; }
         void SetSpeculative(bool val) { mSpeculative = val; }
 
-        bool IsFromPredictor() { return mIsFromPredictor; }
-        void SetIsFromPredictor(bool val) { mIsFromPredictor = val; }
-
         bool Allow1918() { return mAllow1918; }
         void SetAllow1918(bool val) { mAllow1918 = val; }
 
@@ -461,11 +457,6 @@ private:
         // match up - but it prevents a speculative connection from opening
         // more connections that are needed.)
         bool                           mSpeculative;
-
-        // mIsFromPredictor is set if the socket originated from the network
-        // Predictor. It is used to gather telemetry data on used speculative
-        // connections from the predictor.
-        bool                           mIsFromPredictor;
 
         bool                           mAllow1918;
 
@@ -532,7 +523,7 @@ private:
     nsresult EnsureSocketThreadTarget();
     void     ClosePersistentConnections(nsConnectionEntry *ent);
     nsresult CreateTransport(nsConnectionEntry *, nsAHttpTransaction *,
-                             uint32_t, bool, bool, bool);
+                             uint32_t, bool, bool);
     void     AddActiveConn(nsHttpConnection *, nsConnectionEntry *);
     void     DecrementActiveConnCount(nsHttpConnection *);
     void     StartedConnect();

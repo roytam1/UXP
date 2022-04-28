@@ -220,14 +220,6 @@ this.BookmarkHTMLUtils = Object.freeze({
       let exporter = new BookmarkExporter(bookmarks);
       yield exporter.exportToFile(aFilePath);
 
-      try {
-        Services.telemetry
-                .getHistogramById("PLACES_EXPORT_TOHTML_MS")
-                .add(Date.now() - startTime);
-      } catch (ex) {
-        Components.utils.reportError("Unable to report telemetry.");
-      }
-
       return count;
     });
   },

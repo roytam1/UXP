@@ -18,8 +18,6 @@
 #include "Http2Push.h"
 #include "Http2Session.h"
 
-#include "mozilla/Telemetry.h"
-
 namespace mozilla {
 namespace net {
 

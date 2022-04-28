@@ -163,8 +163,6 @@ protected:
     SECOidTag mOidTagForStoringNewHashes;
     nsCString mDottedOidForStoringNewHashes;
 
-    void CountPermanentOverrideTelemetry();
-
     void RemoveAllFromMemory();
     nsresult Read();
     nsresult Write();

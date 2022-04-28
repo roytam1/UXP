@@ -23,10 +23,6 @@
 
 namespace mozilla {
 
-namespace Telemetry {
-  enum ID : uint32_t;
-} // namespace Telemetry
-
 namespace image {
 
 class imgFrame;
@@ -55,41 +51,6 @@ struct DecoderFinalStatus final
   /// True if this decoder encountered the kind of error that should be reported
   /// to the console.
   const bool mShouldReportError : 1;
-};
-
-struct DecoderTelemetry final
-{
-  DecoderTelemetry(Maybe<Telemetry::ID> aSpeedHistogram,
-                   size_t aBytesDecoded,
-                   uint32_t aChunkCount,
-                   TimeDuration aDecodeTime)
-    : mSpeedHistogram(aSpeedHistogram)
-    , mBytesDecoded(aBytesDecoded)
-    , mChunkCount(aChunkCount)
-    , mDecodeTime(aDecodeTime)
-  { }
-
-  /// @return our decoder's speed, in KBps.
-  int32_t Speed() const
-  {
-    return mBytesDecoded / (1024 * mDecodeTime.ToSeconds());
-  }
-
-  /// @return our decoder's decode time, in microseconds.
-  int32_t DecodeTimeMicros() { return mDecodeTime.ToMicroseconds(); }
-
-  /// The per-image-format telemetry ID for recording our decoder's speed, or
-  /// Nothing() if we don't record speed telemetry for this kind of decoder.
-  const Maybe<Telemetry::ID> mSpeedHistogram;
-
-  /// The number of bytes of input our decoder processed.
-  const size_t mBytesDecoded;
-
-  /// The number of chunks our decoder's input was divided into.
-  const uint32_t mChunkCount;
-
-  /// The amount of time our decoder spent inside DoDecode().
-  const TimeDuration mDecodeTime;
 };
 
 class Decoder
@@ -359,9 +320,6 @@ public:
   /// @return the metadata we collected about this image while decoding.
   const ImageMetadata& GetImageMetadata() { return mImageMetadata; }
 
-  /// @return performance telemetry we collected while decoding.
-  DecoderTelemetry Telemetry() const;
-
   /**
    * @return a weak pointer to the image associated with this decoder. Illegal
    * to call if this decoder is not associated with an image.
@@ -383,7 +341,6 @@ public:
 
 
 protected:
-  friend class AutoRecordDecoderTelemetry;
   friend class nsICODecoder;
   friend class PalettedSurfaceSink;
   friend class SurfaceSink;
@@ -404,13 +361,6 @@ protected:
   virtual nsresult BeforeFinishInternal();
   virtual nsresult FinishInternal();
   virtual nsresult FinishWithErrorInternal();
-
-  /**
-   * @return the per-image-format telemetry ID for recording this decoder's
-   * speed, or Nothing() if we don't record speed telemetry for this kind of
-   * decoder.
-   */
-  virtual Maybe<Telemetry::ID> SpeedHistogram() const { return Nothing(); }
 
 
   /*
@@ -533,9 +483,6 @@ private:
   FrameTimeout mLoopLength;  // Length of a single loop of this image.
   gfx::IntRect mFirstFrameRefreshArea;  // The area of the image that needs to
                                         // be invalidated when the animation loops.
-
-  // Telemetry data for this decoder.
-  TimeDuration mDecodeTime;
 
   DecoderFlags mDecoderFlags;
   SurfaceFlags mSurfaceFlags;

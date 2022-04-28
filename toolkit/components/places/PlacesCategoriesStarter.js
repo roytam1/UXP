@@ -1,5 +1,4 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 2 -*-
- * vim: sw=2 ts=2 sts=2 expandtab
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -9,9 +8,6 @@
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cu = Components.utils;
-
-// Fired by TelemetryController when async telemetry data should be collected.
-const TOPIC_GATHER_TELEMETRY = "gather-telemetry";
 
 // Seconds between maintenance runs.
 const MAINTENANCE_INTERVAL_SECONDS = 7 * 86400;
@@ -30,7 +26,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "PlacesDBUtils",
  */
 function PlacesCategoriesStarter()
 {
-  Services.obs.addObserver(this, TOPIC_GATHER_TELEMETRY, false);
   Services.obs.addObserver(this, PlacesUtils.TOPIC_SHUTDOWN, false);
 
   // nsINavBookmarkObserver implementation.
@@ -63,7 +58,6 @@ PlacesCategoriesStarter.prototype = {
     switch (aTopic) {
       case PlacesUtils.TOPIC_SHUTDOWN:
         Services.obs.removeObserver(this, PlacesUtils.TOPIC_SHUTDOWN);
-        Services.obs.removeObserver(this, TOPIC_GATHER_TELEMETRY);
         let globalObj =
           Cu.getGlobalForObject(PlacesCategoriesStarter.prototype);
         let descriptor =
@@ -71,9 +65,6 @@ PlacesCategoriesStarter.prototype = {
         if (descriptor.value !== undefined) {
           PlacesDBUtils.shutdown();
         }
-        break;
-      case TOPIC_GATHER_TELEMETRY:
-        PlacesDBUtils.telemetry();
         break;
       case "idle-daily":
         // Once a week run places.sqlite maintenance tasks.

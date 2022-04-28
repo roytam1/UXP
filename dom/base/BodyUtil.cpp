@@ -129,9 +129,6 @@ private:
  *
  * File blobs are copies of the underlying data string since we cannot adopt
  * char* chunks embedded within the larger body without significant effort.
- * FIXME(nsm): Bug 1127552 - We should add telemetry to calls to formData() and
- * friends to figure out if Fetch ends up copying big blobs to see if this is
- * worth optimizing.
  */
 class MOZ_STACK_CLASS FormDataParser
 {

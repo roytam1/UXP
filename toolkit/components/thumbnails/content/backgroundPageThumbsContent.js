@@ -169,10 +169,6 @@ const backgroundPageThumbsContent = {
         id: capture.id,
         imageData: fileReader.result,
         finalURL: capture.finalURL,
-        telemetry: {
-          CAPTURE_PAGE_LOAD_TIME_MS: capture.pageLoadTime,
-          CAPTURE_CANVAS_DRAW_TIME_MS: capture.canvasDrawTime,
-        },
       });
     };
     fileReader.readAsArrayBuffer(capture.imageBlob);

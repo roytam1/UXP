@@ -143,8 +143,7 @@ public:
 
   /**
    * This should be called when a content response notification has been
-   * delivered to this block. If all the notifications have arrived, this
-   * will report the total time take to telemetry.
+   * delivered to this block.
    */
   void RecordContentResponseTime();
 

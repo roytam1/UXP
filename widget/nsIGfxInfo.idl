@@ -205,8 +205,7 @@ interface nsIGfxInfo : nsISupports
   [implicit_jscontext]
   jsval getFeatureLog();
 
-  // Returns an object containing information about graphics features. It is
-  // intended to be directly included into the Telemetry environment.
+  // Returns an object containing information about graphics features.
   //
   //   "layers":
   //   {

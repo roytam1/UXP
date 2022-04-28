@@ -137,7 +137,6 @@ namespace image {
 
 class Decoder;
 struct DecoderFinalStatus;
-struct DecoderTelemetry;
 class ImageMetadata;
 class SourceBuffer;
 
@@ -205,14 +204,13 @@ public:
 
   /**
    * Records decoding results, sends out any final notifications, updates the
-   * state of this image, and records telemetry.
+   * state of this image.
    *
    * Main-thread only.
    *
    * @param aStatus       Final status information about the decoder. (Whether it
    *                      encountered an error, etc.)
    * @param aMetadata     Metadata about this image that the decoder gathered.
-   * @param aTelemetry    Telemetry data about the decoder.
    * @param aProgress     Any final progress notifications to send.
    * @param aInvalidRect  Any final invalidation rect to send.
    * @param aFrameCount   If Some(), a final updated count of the number of frames
@@ -224,7 +222,6 @@ public:
    */
   void NotifyDecodeComplete(const DecoderFinalStatus& aStatus,
                             const ImageMetadata& aMetadata,
-                            const DecoderTelemetry& aTelemetry,
                             Progress aProgress,
                             const gfx::IntRect& aInvalidRect,
                             const Maybe<uint32_t>& aFrameCount,

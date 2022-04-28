@@ -7,7 +7,6 @@
 #define mozilla_dom_workers_ServiceWorkerRegistrar_h
 
 #include "mozilla/Monitor.h"
-#include "mozilla/Telemetry.h"
 #include "nsClassHashtable.h"
 #include "nsIObserver.h"
 #include "nsCOMPtr.h"

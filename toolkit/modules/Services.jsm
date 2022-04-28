@@ -76,7 +76,6 @@ var initTable = [
   ["storage", "@mozilla.org/storage/service;1", "mozIStorageService"],
   ["domStorageManager", "@mozilla.org/dom/localStorage-manager;1", "nsIDOMStorageManager"],
   ["strings", "@mozilla.org/intl/stringbundle;1", "nsIStringBundleService"],
-  ["telemetry", "@mozilla.org/base/telemetry;1", "nsITelemetry"],
   ["tm", "@mozilla.org/thread-manager;1", "nsIThreadManager"],
   ["urlFormatter", "@mozilla.org/toolkit/URLFormatterService;1", "nsIURLFormatter"],
   ["vc", "@mozilla.org/xpcom/version-comparator;1", "nsIVersionComparator"],

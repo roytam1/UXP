@@ -1,5 +1,4 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim:set ts=2 sw=2 sts=2 et cindent: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -15,7 +14,6 @@
 #include "mozilla/layers/AsyncCanvasRenderer.h"
 #include "mozilla/layers/CanvasClient.h"
 #include "mozilla/layers/ImageBridgeChild.h"
-#include "mozilla/Telemetry.h"
 #include "CanvasRenderingContext2D.h"
 #include "CanvasUtils.h"
 #include "GLContext.h"

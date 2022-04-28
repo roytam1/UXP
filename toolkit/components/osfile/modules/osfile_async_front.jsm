@@ -434,34 +434,11 @@ var Scheduler = this.Scheduler = {
         Scheduler.Debugging.latestReceived = [Date.now(), error.message, error.fileName, error.lineNumber];
         throw error;
       } finally {
-        if (firstLaunch) {
-          Scheduler._updateTelemetry();
-        }
         Scheduler.restartTimer();
       }
     }.bind(this)));
-  },
-
-  /**
-   * Post Telemetry statistics.
-   *
-   * This is only useful on first launch.
-   */
-  _updateTelemetry: function() {
-    let worker = this.worker;
-    let workerTimeStamps = worker.workerTimeStamps;
-    if (!workerTimeStamps) {
-      // If the first call to OS.File results in an uncaught errors,
-      // the timestamps are absent. As this case is a developer error,
-      // let's not waste time attempting to extract telemetry from it.
-      return;
-    }
-    let HISTOGRAM_LAUNCH = Services.telemetry.getHistogramById("OSFILE_WORKER_LAUNCH_MS");
-    HISTOGRAM_LAUNCH.add(worker.workerTimeStamps.entered - worker.launchTimeStamp);
-
-    let HISTOGRAM_READY = Services.telemetry.getHistogramById("OSFILE_WORKER_READY_MS");
-    HISTOGRAM_READY.add(worker.workerTimeStamps.loaded - worker.launchTimeStamp);
   }
+
 };
 
 const PREF_OSFILE_LOG = "toolkit.osfile.log";

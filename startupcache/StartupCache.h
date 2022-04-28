@@ -129,8 +129,6 @@ public:
   nsresult GetDebugObjectOutputStream(nsIObjectOutputStream* aStream,
                                       nsIObjectOutputStream** outStream);
 
-  nsresult RecordAgesAlways();
-
   static StartupCache* GetSingleton();
   static void DeleteSingleton();
 

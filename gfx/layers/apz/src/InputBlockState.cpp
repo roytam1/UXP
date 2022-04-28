@@ -46,7 +46,7 @@ InputBlockState::SetConfirmedTargetApzc(const RefPtr<AsyncPanZoomController>& aT
       aState == TargetConfirmationState::eConfirmed) {
     // The main thread finally responded. We had already timed out the
     // confirmation, but we want to update the state internally so that we
-    // can record the time for telemetry purposes.
+    // can record the time.
     mTargetConfirmed = TargetConfirmationState::eTimedOutAndMainThreadResponded;
   }
   if (mTargetConfirmed != TargetConfirmationState::eUnconfirmed) {

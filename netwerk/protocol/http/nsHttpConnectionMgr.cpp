@@ -1,4 +1,3 @@
-/* vim:set ts=4 sw=4 sts=4 et cin: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -393,7 +392,6 @@ public: // intentional!
     bool mOverridesOK;
     uint32_t mParallelSpeculativeConnectLimit;
     bool mIgnoreIdle;
-    bool mIsFromPredictor;
     bool mAllow1918;
 
 private:
@@ -447,7 +445,6 @@ nsHttpConnectionMgr::SpeculativeConnect(nsHttpConnectionInfo *ci,
         args->mParallelSpeculativeConnectLimit =
             overrider->GetParallelSpeculativeConnectLimit();
         args->mIgnoreIdle = overrider->GetIgnoreIdle();
-        args->mIsFromPredictor = overrider->GetIsFromPredictor();
         args->mAllow1918 = overrider->GetAllow1918();
     }
 
@@ -1285,7 +1282,7 @@ nsHttpConnectionMgr::MakeNewConnection(nsConnectionEntry *ent,
     if (AtActiveConnectionLimit(ent, trans->Caps()))
         return NS_ERROR_NOT_AVAILABLE;
 
-    nsresult rv = CreateTransport(ent, trans, trans->Caps(), false, false, true);
+    nsresult rv = CreateTransport(ent, trans, trans->Caps(), false, true);
     if (NS_FAILED(rv)) {
         /* hard failure */
         LOG(("nsHttpConnectionMgr::MakeNewConnection [ci = %s trans = %p] "
@@ -1946,7 +1943,6 @@ nsHttpConnectionMgr::CreateTransport(nsConnectionEntry *ent,
                                      nsAHttpTransaction *trans,
                                      uint32_t caps,
                                      bool speculative,
-                                     bool isFromPredictor,
                                      bool allow1918)
 {
     MOZ_ASSERT(PR_GetCurrentThread() == gSocketThread);
@@ -1955,10 +1951,6 @@ nsHttpConnectionMgr::CreateTransport(nsConnectionEntry *ent,
     if (speculative) {
         sock->SetSpeculative(true);
         sock->SetAllow1918(allow1918);
-
-        if (isFromPredictor) {
-          sock->SetIsFromPredictor(true);
-        }
     }
 
     // The socket stream holds the reference to the half open
@@ -2884,13 +2876,11 @@ nsHttpConnectionMgr::OnMsgSpeculativeConnect(int32_t, ARefBase *param)
     uint32_t parallelSpeculativeConnectLimit =
         gHttpHandler->ParallelSpeculativeConnectLimit();
     bool ignoreIdle = false;
-    bool isFromPredictor = false;
     bool allow1918 = false;
 
     if (args->mOverridesOK) {
         parallelSpeculativeConnectLimit = args->mParallelSpeculativeConnectLimit;
         ignoreIdle = args->mIgnoreIdle;
-        isFromPredictor = args->mIsFromPredictor;
         allow1918 = args->mAllow1918;
     }
 
@@ -2900,7 +2890,7 @@ nsHttpConnectionMgr::OnMsgSpeculativeConnect(int32_t, ARefBase *param)
          !ent->mIdleConns.Length()) &&
         !(keepAlive && RestrictConnections(ent)) &&
         !AtActiveConnectionLimit(ent, args->mTrans->Caps())) {
-        CreateTransport(ent, args->mTrans, args->mTrans->Caps(), true, isFromPredictor, allow1918);
+        CreateTransport(ent, args->mTrans, args->mTrans->Caps(), true, allow1918);
     } else {
         LOG(("OnMsgSpeculativeConnect Transport "
              "not created due to existing connection count\n"));
@@ -2949,7 +2939,6 @@ nsHalfOpenSocket::nsHalfOpenSocket(nsConnectionEntry *ent,
     , mDispatchedMTransaction(false)
     , mCaps(caps)
     , mSpeculative(false)
-    , mIsFromPredictor(false)
     , mAllow1918(true)
     , mHasConnected(false)
     , mPrimaryConnectedOK(false)

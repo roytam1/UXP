@@ -12,7 +12,6 @@ if (this.Components) {
 (function(exports) {
   "use strict";
 
-  // Timestamps, for use in Telemetry.
   // The object is set to |null| once it has been sent
   // to the main thread.
   let timeStamps = {

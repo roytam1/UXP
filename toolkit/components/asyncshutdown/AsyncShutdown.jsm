@@ -9,12 +9,11 @@
  * sequentially. Typically, each shutdown phase removes some
  * capabilities from the application. For instance, at the end of
  * phase profileBeforeChange, no service is permitted to write to the
- * profile directory (with the exception of Telemetry). Consequently,
- * if any service has requested I/O to the profile directory before or
- * during phase profileBeforeChange, the system must be informed that
- * these requests need to be completed before the end of phase
- * profileBeforeChange. Failing to inform the system of this
- * requirement can (and has been known to) cause data loss.
+ * profile directory. Consequently, if any service has requested I/O
+ * to the profile directory before or during phase profileBeforeChange,
+ * the system must be informed that these requests need to be completed
+ * before the end of phase profileBeforeChange. Failing to inform the
+ * system of this requirement can (and has been known to) cause data loss.
  *
  * Example: At some point during shutdown, the Add-On Manager needs to
  * ensure that all add-ons have safely written their data to disk,
@@ -1001,7 +1000,6 @@ if (!isContent) {
   this.AsyncShutdown.profileChangeTeardown = getPhase("profile-change-teardown");
   this.AsyncShutdown.profileBeforeChange = getPhase("profile-before-change");
   this.AsyncShutdown.placesClosingInternalConnection = getPhase("places-will-close-connection");
-  this.AsyncShutdown.sendTelemetry = getPhase("profile-before-change-telemetry");
 }
 
 // Notifications that fire in the parent and content process, but should

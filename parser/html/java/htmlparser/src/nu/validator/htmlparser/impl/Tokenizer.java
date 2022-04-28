@@ -902,7 +902,7 @@ public class Tokenizer implements Locator {
         // CPPONLY: if (strBufLen == strBuf.length) {
         // CPPONLY:     if (!EnsureBufferSpace(1)) {
         // CPPONLY:         assert false: "RELEASE: Unable to recover from buffer reallocation failure";
-        // CPPONLY:     } // TODO: Add telemetry when outer if fires but inner does not
+        // CPPONLY:     } 
         // CPPONLY: }
         strBuf[strBufLen++] = c;
     }

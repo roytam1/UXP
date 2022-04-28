@@ -1150,7 +1150,7 @@ public:
   MappedAttrParser(css::Loader* aLoader,
                    nsIURI* aDocURI,
                    already_AddRefed<nsIURI> aBaseURI,
-                   nsSVGElement* aElement);
+                   nsIPrincipal* aNodePrincipal);
   ~MappedAttrParser();
 
   // Parses a mapped attribute value.
@@ -1170,20 +1170,18 @@ private:
   // Arguments for nsCSSParser::ParseProperty
   nsIURI*           mDocURI;
   nsCOMPtr<nsIURI>  mBaseURI;
+  nsIPrincipal*     mNodePrincipal;
 
   // Declaration for storing parsed values (lazily initialized)
   css::Declaration* mDecl;
-
-  // For reporting use counters
-  nsSVGElement*     mElement;
 };
 
 MappedAttrParser::MappedAttrParser(css::Loader* aLoader,
                                    nsIURI* aDocURI,
                                    already_AddRefed<nsIURI> aBaseURI,
-                                   nsSVGElement* aElement)
+                                   nsIPrincipal* aNodePrincipal)
   : mParser(aLoader), mDocURI(aDocURI), mBaseURI(aBaseURI),
-    mDecl(nullptr), mElement(aElement)
+    mNodePrincipal(aNodePrincipal), mDecl(nullptr)
 {
 }
 
@@ -1208,27 +1206,9 @@ MappedAttrParser::ParseMappedAttrValue(nsIAtom* aMappedAttrName,
     nsCSSProps::LookupProperty(nsDependentAtomString(aMappedAttrName),
                                CSSEnabledState::eForAllContent);
   if (propertyID != eCSSProperty_UNKNOWN) {
-    bool changed = false; // outparam for ParseProperty.
+    bool changed; // outparam for ParseProperty. (ignored)
     mParser.ParseProperty(propertyID, aMappedAttrValue, mDocURI, mBaseURI,
-                          mElement->NodePrincipal(), mDecl, &changed, false, true);
-    if (changed) {
-      // The normal reporting of use counters by the nsCSSParser won't happen
-      // since it doesn't have a sheet.
-      if (nsCSSProps::IsShorthand(propertyID)) {
-        CSSPROPS_FOR_SHORTHAND_SUBPROPERTIES(subprop, propertyID,
-                                             CSSEnabledState::eForAllContent) {
-          UseCounter useCounter = nsCSSProps::UseCounterFor(*subprop);
-          if (useCounter != eUseCounter_UNKNOWN) {
-            mElement->OwnerDoc()->SetDocumentAndPageUseCounter(useCounter);
-          }
-        }
-      } else {
-        UseCounter useCounter = nsCSSProps::UseCounterFor(propertyID);
-        if (useCounter != eUseCounter_UNKNOWN) {
-          mElement->OwnerDoc()->SetDocumentAndPageUseCounter(useCounter);
-        }
-      }
-    }
+                          mNodePrincipal, mDecl, &changed, false, true);
     return;
   }
   MOZ_ASSERT(aMappedAttrName == nsGkAtoms::lang,
@@ -1275,7 +1255,7 @@ nsSVGElement::UpdateContentStyleRule()
 
   nsIDocument* doc = OwnerDoc();
   MappedAttrParser mappedAttrParser(doc->CSSLoader(), doc->GetDocumentURI(),
-                                    GetBaseURI(), this);
+                                    GetBaseURI(), NodePrincipal());
 
   for (uint32_t i = 0; i < attrCount; ++i) {
     const nsAttrName* attrName = mAttrsAndChildren.AttrNameAt(i);
@@ -1366,7 +1346,7 @@ nsSVGElement::UpdateAnimatedContentStyleRule()
   }
 
   MappedAttrParser mappedAttrParser(doc->CSSLoader(), doc->GetDocumentURI(),
-                                    GetBaseURI(), this);
+                                    GetBaseURI(), NodePrincipal());
   doc->PropertyTable(SMIL_MAPPED_ATTR_ANIMVAL)->
     Enumerate(this, ParseMappedAttrAnimValueCallback, &mappedAttrParser);
  

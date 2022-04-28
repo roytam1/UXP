@@ -52,7 +52,6 @@ mailing address.
 #include "gfxPlatform.h"
 #include "qcms.h"
 #include <algorithm>
-#include "mozilla/Telemetry.h"
 
 using namespace mozilla::gfx;
 
@@ -1086,12 +1085,6 @@ nsGIFDecoder2::SkipSubBlocks(const char* aData)
   return Transition::ToUnbuffered(State::FINISHED_SKIPPING_DATA,
                                   State::SKIP_DATA_THEN_SKIP_SUB_BLOCKS,
                                   nextSubBlockLength);
-}
-
-Maybe<Telemetry::ID>
-nsGIFDecoder2::SpeedHistogram() const
-{
-  return Some(Telemetry::IMAGE_DECODE_SPEED_GIF);
 }
 
 } // namespace image

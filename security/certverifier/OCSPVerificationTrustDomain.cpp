@@ -57,7 +57,7 @@ OCSPVerificationTrustDomain::CheckSignatureDigestAlgorithm(
   // The reason for wrapping the NSSCertDBTrustDomain in an
   // OCSPVerificationTrustDomain is to allow us to bypass the weaker signature
   // algorithm check - thus all allowable signature digest algorithms should
-  // always be accepted. This is only needed while we gather telemetry on SHA-1.
+  // always be accepted.
   return Success;
 }
 

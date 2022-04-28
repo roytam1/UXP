@@ -41,7 +41,6 @@ extern LazyLogModule gPIPNSSLog;
 
 namespace {
 
-// Bits in bit mask for SSL_REASONS_FOR_NOT_FALSE_STARTING telemetry probe
 // These bits are numbered so that the least subtle issues have higher values.
 // This should make it easier for us to interpret the results.
 const uint32_t NPN_NOT_NEGOTIATED = 64;

@@ -8,7 +8,6 @@
 #include "NSSCertDBTrustDomain.h"
 #include "ScopedNSSTypes.h"
 #include "SharedSSLState.h"
-#include "mozilla/Telemetry.h"
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsCRT.h"
 #include "nsILineInputStream.h"
@@ -150,7 +149,6 @@ nsCertOverrideService::Observe(nsISupports     *,
       mSettingsFile = nullptr;
     }
     Read();
-    CountPermanentOverrideTelemetry();
   }
 
   return NS_OK;
@@ -595,20 +593,6 @@ nsCertOverrideService::ClearValidityOverride(const nsACString & aHostName, int32
   }
 
   return NS_OK;
-}
-
-void
-nsCertOverrideService::CountPermanentOverrideTelemetry()
-{
-  ReentrantMonitorAutoEnter lock(monitor);
-  uint32_t overrideCount = 0;
-  for (auto iter = mSettingsTable.Iter(); !iter.Done(); iter.Next()) {
-    if (!iter.Get()->mSettings.mIsTemporary) {
-      overrideCount++;
-    }
-  }
-  Telemetry::Accumulate(Telemetry::SSL_PERMANENT_CERT_ERROR_OVERRIDES,
-                        overrideCount);
 }
 
 static bool

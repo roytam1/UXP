@@ -192,11 +192,6 @@ interface nsIAsyncShutdownService: nsISupports {
    */
   readonly attribute nsIAsyncShutdownClient quitApplicationGranted;
 
-  /**
-   * Barrier for notification profile-before-change-telemetry.
-   */
-  readonly attribute nsIAsyncShutdownClient sendTelemetry;
-
 
   // Barriers for global shutdown stages in all processes.
 

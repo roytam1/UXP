@@ -10,13 +10,10 @@
 #include "mozilla/Move.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/StaticPtr.h"
-#include "mozilla/Telemetry.h"
-#include "mozilla/ThreadHangStats.h"
 #include "mozilla/ThreadLocal.h"
 
 #include "prinrval.h"
 #include "prthread.h"
-#include "ThreadStackHelper.h"
 #include "nsIObserverService.h"
 #include "nsIObserver.h"
 #include "mozilla/Services.h"
@@ -30,7 +27,7 @@
 #define BHR_BETA_MOD 1;
 
 // Maximum depth of the call stack in the reported thread hangs. This value represents
-// the 99.9th percentile of the thread hangs stack depths reported by Telemetry.
+// the 99.9th percentile of the thread hangs stack depths reported.
 static const size_t kMaxThreadHangStackDepth = 30;
 
 // An utility comparator function used by std::unique to collapse "(* script)" entries in
@@ -174,12 +171,6 @@ public:
   bool mWaiting;
   // Is the thread dedicated to a single BackgroundHangMonitor
   BackgroundHangMonitor::ThreadType mThreadType;
-  // Platform-specific helper to get hang stacks
-  ThreadStackHelper mStackHelper;
-  // Stack of current hang
-  Telemetry::HangStack mHangStack;
-  // Statistics for telemetry
-  Telemetry::ThreadHangStats mStats;
   // Annotations for the current hang
   UniquePtr<HangMonitor::HangAnnotations> mAnnotations;
   // Annotators registered for this thread
@@ -190,10 +181,6 @@ public:
                        uint32_t aMaxTimeoutMs,
                        BackgroundHangMonitor::ThreadType aThreadType = BackgroundHangMonitor::THREAD_SHARED);
 
-  // Report a hang; aManager->mLock IS locked
-  Telemetry::HangHistogram& ReportHang(PRIntervalTime aHangTime);
-  // Report a permanent hang; aManager->mLock IS locked
-  void ReportPermaHang();
   // Called by BackgroundHangMonitor::NotifyActivity
   void NotifyActivity()
   {
@@ -325,14 +312,12 @@ BackgroundHangManager::RunMonitorThread()
         // Skip subsequent iterations and tolerate a race on mWaiting here
         currentThread->mWaiting = true;
         currentThread->mHanging = false;
-        currentThread->ReportPermaHang();
         continue;
       }
 
       if (MOZ_LIKELY(!currentThread->mHanging)) {
         if (MOZ_UNLIKELY(hangTime >= currentThread->mTimeout)) {
           // A hang started
-          currentThread->mStackHelper.GetStack(currentThread->mHangStack);
           currentThread->mHangStart = interval;
           currentThread->mHanging = true;
           currentThread->mAnnotations =
@@ -341,7 +326,6 @@ BackgroundHangManager::RunMonitorThread()
       } else {
         if (MOZ_LIKELY(interval != currentThread->mHangStart)) {
           // A hang ended
-          currentThread->ReportHang(intervalNow - currentThread->mHangStart);
           currentThread->mHanging = false;
         }
       }
@@ -390,7 +374,6 @@ BackgroundHangThread::BackgroundHangThread(const char* aName,
   , mHanging(false)
   , mWaiting(true)
   , mThreadType(aThreadType)
-  , mStats(aName)
 {
   if (sTlsKeyInitialized && IsShared()) {
     sTlsKey.set(this);
@@ -416,69 +399,6 @@ BackgroundHangThread::~BackgroundHangThread()
   if (sTlsKeyInitialized && IsShared()) {
     sTlsKey.set(nullptr);
   }
-
-  // Move our copy of ThreadHangStats to Telemetry storage
-  Telemetry::RecordThreadHangStats(mStats);
-}
-
-Telemetry::HangHistogram&
-BackgroundHangThread::ReportHang(PRIntervalTime aHangTime)
-{
-  // Recovered from a hang; called on the monitor thread
-  // mManager->mLock IS locked
-
-  // Remove unwanted "js::RunScript" frame from the stack
-  for (size_t i = 0; i < mHangStack.length(); ) {
-    const char** f = mHangStack.begin() + i;
-    if (!mHangStack.IsInBuffer(*f) && !strcmp(*f, "js::RunScript")) {
-      mHangStack.erase(f);
-    } else {
-      i++;
-    }
-  }
-
-  // Collapse duplicated "(chrome script)" and "(content script)" entries in the stack.
-  auto it = std::unique(mHangStack.begin(), mHangStack.end(), StackScriptEntriesCollapser);
-  mHangStack.erase(it, mHangStack.end());
-
-  // Limit the depth of the reported stack if greater than our limit. Only keep its
-  // last entries, since the most recent frames are at the end of the vector.
-  if (mHangStack.length() > kMaxThreadHangStackDepth) {
-    const int elementsToRemove = mHangStack.length() - kMaxThreadHangStackDepth;
-    // Replace the oldest frame with a known label so that we can tell this stack
-    // was limited.
-    mHangStack[0] = "(reduced stack)";
-    mHangStack.erase(mHangStack.begin() + 1, mHangStack.begin() + elementsToRemove);
-  }
-
-  Telemetry::HangHistogram newHistogram(Move(mHangStack));
-  for (Telemetry::HangHistogram* oldHistogram = mStats.mHangs.begin();
-       oldHistogram != mStats.mHangs.end(); oldHistogram++) {
-    if (newHistogram == *oldHistogram) {
-      // New histogram matches old one
-      oldHistogram->Add(aHangTime, Move(mAnnotations));
-      return *oldHistogram;
-    }
-  }
-  // Add new histogram
-  newHistogram.Add(aHangTime, Move(mAnnotations));
-  if (!mStats.mHangs.append(Move(newHistogram))) {
-    MOZ_CRASH();
-  }
-  return mStats.mHangs.back();
-}
-
-void
-BackgroundHangThread::ReportPermaHang()
-{
-  // Permanently hanged; called on the monitor thread
-  // mManager->mLock IS locked
-
-  Telemetry::HangHistogram& hang = ReportHang(mMaxTimeout);
-  Telemetry::HangStack& stack = hang.GetNativeStack();
-  if (stack.empty()) {
-    mStackHelper.GetNativeStack(stack);
-  }
 }
 
 MOZ_ALWAYS_INLINE void
@@ -493,7 +413,6 @@ BackgroundHangThread::Update()
     mManager->Wakeup();
   } else {
     PRIntervalTime duration = intervalNow - mInterval;
-    mStats.mActivity.Add(duration);
     if (MOZ_UNLIKELY(duration >= mTimeout)) {
       /* Wake up the manager thread to tell it that a hang ended */
       mManager->Wakeup();
@@ -552,19 +471,12 @@ BackgroundHangMonitor::IsDisabled() {
 
 bool
 BackgroundHangMonitor::DisableOnBeta() {
-  nsAdoptingCString clientID = Preferences::GetCString("toolkit.telemetry.cachedClientID");
-  bool telemetryEnabled = Preferences::GetBool("toolkit.telemetry.enabled");
-
-  if (!telemetryEnabled || !clientID || BackgroundHangMonitor::ShouldDisableOnBeta(clientID)) {
-    if (XRE_IsParentProcess()) {
-      BackgroundHangMonitor::Shutdown();
-    } else {
-      BackgroundHangManager::sDisabled = true;
-    }
-    return true;
+  if (XRE_IsParentProcess()) {
+    BackgroundHangMonitor::Shutdown();
+  } else {
+    BackgroundHangManager::sDisabled = true;
   }
-
-  return false;
+  return true;
 }
 
 void
@@ -575,7 +487,6 @@ BackgroundHangMonitor::Startup()
 
   if (!strcmp(NS_STRINGIFY(MOZ_UPDATE_CHANNEL), "beta")) {
     if (XRE_IsParentProcess()) { // cached ClientID hasn't been read yet
-      ThreadStackHelper::Startup();
       BackgroundHangThread::Startup();
       BackgroundHangManager::sInstance = new BackgroundHangManager();
 
@@ -589,7 +500,6 @@ BackgroundHangMonitor::Startup()
     }
   }
 
-  ThreadStackHelper::Startup();
   BackgroundHangThread::Startup();
   BackgroundHangManager::sInstance = new BackgroundHangManager();
 #endif
@@ -610,7 +520,6 @@ BackgroundHangMonitor::Shutdown()
      we don't want to hold the lock when it's being destroyed. */
   BackgroundHangManager::sInstance->Shutdown();
   BackgroundHangManager::sInstance = nullptr;
-  ThreadStackHelper::Shutdown();
   BackgroundHangManager::sDisabled = true;
 #endif
 }
@@ -652,11 +561,8 @@ BackgroundHangMonitor::NotifyActivity()
                "This thread is not initialized for hang monitoring");
     return;
   }
-
-  if (Telemetry::CanRecordExtended()) {
-    mThread->NotifyActivity();
-  }
 #endif
+// STUB
 }
 
 void
@@ -668,11 +574,8 @@ BackgroundHangMonitor::NotifyWait()
                "This thread is not initialized for hang monitoring");
     return;
   }
-
-  if (Telemetry::CanRecordExtended()) {
-    mThread->NotifyWait();
-  }
 #endif
+// STUB
 }
 
 bool
@@ -717,17 +620,6 @@ BackgroundHangMonitor::ThreadHangStatsIterator::ThreadHangStatsIterator()
              BackgroundHangManager::sDisabled,
              "Inconsistent state");
 #endif
-}
-
-Telemetry::ThreadHangStats*
-BackgroundHangMonitor::ThreadHangStatsIterator::GetNext()
-{
-  if (!mThread) {
-    return nullptr;
-  }
-  Telemetry::ThreadHangStats* stats = &mThread->mStats;
-  mThread = mThread->getNext();
-  return stats;
 }
 
 } // namespace mozilla

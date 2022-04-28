@@ -19,14 +19,6 @@ const LoginInfo =
 const BRAND_BUNDLE = "chrome://branding/locale/brand.properties";
 
 /**
- * Constants for password prompt telemetry. */
-const PROMPT_DISPLAYED = 0;
-
-const PROMPT_ADD_OR_UPDATE = 1;
-const PROMPT_NOTNOW = 2;
-const PROMPT_NEVER = 3;
-
-/**
  * Implements nsIPromptFactory
  *
  * Invoked by [toolkit/components/prompts/src/nsPrompter.js]
@@ -825,7 +817,7 @@ LoginManagerPrompter.prototype = {
    *        new password.
    * @param {string} type
    *        This is "password-save" or "password-change" depending on the
-   *        original notification type. This is used for telemetry and tests.
+   *        original notification type. This is used for tests.
    */
   _showLoginCaptureDoorhanger(login, type) {
     let { browser } = this._getNotifyWindow();
@@ -854,11 +846,6 @@ LoginManagerPrompter.prototype = {
     let brandShortName = brandBundle.GetStringFromName("brandShortName");
     let promptMsg = type == "password-save" ? this._getLocalizedString(saveMsgNames.prompt, [brandShortName])
                                             : this._getLocalizedString(changeMsgNames.prompt);
-
-    let histogramName = type == "password-save" ? "PWMGR_PROMPT_REMEMBER_ACTION"
-                                                : "PWMGR_PROMPT_UPDATE_ACTION";
-    let histogram = Services.telemetry.getHistogramById(histogramName);
-    histogram.add(PROMPT_DISPLAYED);
 
     let chromeDoc = browser.ownerDocument;
 
@@ -986,10 +973,6 @@ LoginManagerPrompter.prototype = {
       label: this._getLocalizedString(initialMsgNames.buttonLabel),
       accessKey: this._getLocalizedString(initialMsgNames.buttonAccessKey),
       callback: () => {
-        histogram.add(PROMPT_ADD_OR_UPDATE);
-        if (histogramName == "PWMGR_PROMPT_REMEMBER_ACTION") {
-          Services.obs.notifyObservers(null, 'LoginStats:NewSavedPassword', null);
-        }
         readDataFromUI();
         persistData();
         browser.focus();
@@ -1001,7 +984,6 @@ LoginManagerPrompter.prototype = {
       label: this._getLocalizedString("notifyBarNeverRememberButtonText"),
       accessKey: this._getLocalizedString("notifyBarNeverRememberButtonAccessKey"),
       callback: () => {
-        histogram.add(PROMPT_NEVER);
         Services.logins.setLoginSavingEnabled(login.hostname, false);
         browser.focus();
       }
