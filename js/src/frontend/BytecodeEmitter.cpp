@@ -1995,6 +1995,8 @@ class MOZ_RAII OptionalEmitter
  private:
   BytecodeEmitter* bce_;
 
+  BytecodeEmitter::TDZCheckCache tdzCache_;
+
   // Jump target for short circuiting code, which has null or undefined values.
   JumpList jumpShortCircuit_;
 
@@ -12143,6 +12145,7 @@ BytecodeEmitter::copySrcNotes(jssrcnote* destination, uint32_t nsrcnotes)
 
 OptionalEmitter::OptionalEmitter(BytecodeEmitter* bce, int32_t initialDepth)
   : bce_(bce),
+    tdzCache_(bce),
     initialDepth_(initialDepth)
 {
 }
