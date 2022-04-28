@@ -7,7 +7,7 @@
 // These are injected from XPIProvider.jsm
 /* globals ADDON_SIGNING, SIGNED_TYPES, BOOTSTRAP_REASONS, DB_SCHEMA,
           AddonInternal, XPIProvider, XPIStates, syncLoadManifestFromFile,
-          isUsableAddon, recordAddonTelemetry, applyBlocklistChanges,
+          isUsableAddon, applyBlocklistChanges,
           flushChromeCaches, canRunInSafeMode*/
 
 var Cc = Components.classes;
@@ -1962,24 +1962,6 @@ this.XPIDatabaseReconcile = {
           // Check if the add-on is still installed
           let xpiState = states && states.get(id);
           if (xpiState) {
-            // Here the add-on was present in the database and on disk
-            recordAddonTelemetry(oldAddon);
-
-            // Check if the add-on has been changed outside the XPI provider
-            if (oldAddon.updateDate != xpiState.mtime) {
-              // Did time change in the wrong direction?
-              if (xpiState.mtime < oldAddon.updateDate) {
-                XPIProvider.setTelemetry(oldAddon.id, "olderFile", {
-                  name: XPIProvider._mostRecentlyModifiedFile[id],
-                  mtime: xpiState.mtime,
-                  oldtime: oldAddon.updateDate
-                });
-              } else {
-                XPIProvider.setTelemetry(oldAddon.id, "modifiedFile",
-                                         XPIProvider._mostRecentlyModifiedFile[id]);
-              }
-            }
-
             // The add-on has changed if the modification time has changed, if
             // we have an updated manifest for it, or if the schema version has
             // changed.
