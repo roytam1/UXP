@@ -19,7 +19,6 @@
 #include "nsIBufferedStreams.h"
 #include "nsIFileStreams.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/Telemetry.h"
 #include "mozilla/FileUtils.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Unused.h"
