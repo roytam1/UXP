@@ -28,9 +28,6 @@ var TrackingProtection = {
       gNavigatorBundle.getString("trackingProtection.icon.activeTooltip");
     this.disabledTooltipText =
       gNavigatorBundle.getString("trackingProtection.icon.disabledTooltip");
-
-    this.enabledHistogramAdd(this.enabledGlobally);
-    this.disabledPBMHistogramAdd(!this.enabledInPrivateWindows);
   },
 
   uninit() {
@@ -56,34 +53,6 @@ var TrackingProtection = {
     this.container.hidden = !this.enabled;
   },
 
-  enabledHistogramAdd(value) {
-    if (PrivateBrowsingUtils.isWindowPrivate(window)) {
-      return;
-    }
-    Services.telemetry.getHistogramById("TRACKING_PROTECTION_ENABLED").add(value);
-  },
-
-  disabledPBMHistogramAdd(value) {
-    if (PrivateBrowsingUtils.isWindowPrivate(window)) {
-      return;
-    }
-    Services.telemetry.getHistogramById("TRACKING_PROTECTION_PBM_DISABLED").add(value);
-  },
-
-  eventsHistogramAdd(value) {
-    if (PrivateBrowsingUtils.isWindowPrivate(window)) {
-      return;
-    }
-    Services.telemetry.getHistogramById("TRACKING_PROTECTION_EVENTS").add(value);
-  },
-
-  shieldHistogramAdd(value) {
-    if (PrivateBrowsingUtils.isWindowPrivate(window)) {
-      return;
-    }
-    Services.telemetry.getHistogramById("TRACKING_PROTECTION_SHIELD").add(value);
-  },
-
   onSecurityChange(state, isSimulated) {
     if (!this.enabled) {
       return;
@@ -104,25 +73,15 @@ var TrackingProtection = {
       this.icon.setAttribute("tooltiptext", this.activeTooltipText);
       this.icon.setAttribute("state", "blocked-tracking-content");
       this.content.setAttribute("state", "blocked-tracking-content");
-
-      this.shieldHistogramAdd(2);
     } else if (isAllowing) {
       this.icon.setAttribute("tooltiptext", this.disabledTooltipText);
       this.icon.setAttribute("state", "loaded-tracking-content");
       this.content.setAttribute("state", "loaded-tracking-content");
-
-      this.shieldHistogramAdd(1);
     } else {
       this.icon.removeAttribute("tooltiptext");
       this.icon.removeAttribute("state");
       this.content.removeAttribute("state");
-
-      // We didn't show the shield
-      this.shieldHistogramAdd(0);
     }
-
-    // Telemetry for state change.
-    this.eventsHistogramAdd(0);
   },
 
   disableForCurrentPage() {
@@ -143,9 +102,6 @@ var TrackingProtection = {
         "trackingprotection", Services.perms.ALLOW_ACTION);
     }
 
-    // Telemetry for disable protection.
-    this.eventsHistogramAdd(1);
-
     // Hide the control center.
     document.getElementById("identity-popup").hidePopup();
 
@@ -165,9 +121,6 @@ var TrackingProtection = {
     } else {
       Services.perms.remove(normalizedUrl, "trackingprotection");
     }
-
-    // Telemetry for enable protection.
-    this.eventsHistogramAdd(2);
 
     // Hide the control center.
     document.getElementById("identity-popup").hidePopup();

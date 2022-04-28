@@ -685,13 +685,7 @@ var AddonManagerInternal = {
   providerShutdowns: new Map(),
   types: {},
   startupChanges: {},
-  // Store telemetry details per addon provider
-  telemetryDetails: {},
   upgradeListeners: new Map(),
-
-  recordTimestamp: function(name, value) {
-    this.TelemetryTimestamps.add(name, value);
-  },
 
   validateBlocklist: function() {
     let appBlocklist = FileUtils.getFile(KEY_APPDIR, [FILE_BLOCKLIST]);
@@ -832,12 +826,6 @@ var AddonManagerInternal = {
     try {
       if (gStarted)
         return;
-
-      this.recordTimestamp("AMI_startup_begin");
-
-      // clear this for xpcshell test restarts
-      for (let provider in this.telemetryDetails)
-        delete this.telemetryDetails[provider];
 
       let appChanged = undefined;
 
@@ -982,7 +970,6 @@ var AddonManagerInternal = {
       gPluginPageListener.addMessageListener("RequestPlugins", this.requestPlugins);
 
       gStartupComplete = true;
-      this.recordTimestamp("AMI_startup_end");
     }
     catch (e) {
       logger.error("startup failed", e);
@@ -3092,10 +3079,6 @@ this.AddonManagerPrivate = {
 
   AddonType: AddonType,
 
-  recordTimestamp: function(name, value) {
-    AddonManagerInternal.recordTimestamp(name, value);
-  },
-
   _simpleMeasures: {},
   recordSimpleMeasure: function(name, value) {
     this._simpleMeasures[name] = value;
@@ -3123,14 +3106,6 @@ this.AddonManagerPrivate = {
 
   getSimpleMeasures: function() {
     return this._simpleMeasures;
-  },
-
-  getTelemetryDetails: function() {
-    return AddonManagerInternal.telemetryDetails;
-  },
-
-  setTelemetryDetails: function(aProvider, aDetails) {
-    AddonManagerInternal.telemetryDetails[aProvider] = aDetails;
   },
 
   // Start a timer, record a simple measure of the time interval when
@@ -3660,7 +3635,6 @@ this.AddonManager = {
 this.AddonManager.init();
 
 // load the timestamps module into AddonManagerInternal
-Cu.import("resource://gre/modules/TelemetryTimestamps.jsm", AddonManagerInternal);
 Object.freeze(AddonManagerInternal);
 Object.freeze(AddonManagerPrivate);
 Object.freeze(AddonManager);
