@@ -268,14 +268,6 @@ function mustSign(aType) {
   return REQUIRE_SIGNING || Preferences.get(PREF_XPI_SIGNATURES_REQUIRED, false);
 }
 
-// Keep track of where we are in startup for telemetry
-// event happened during XPIDatabase.startup()
-const XPI_STARTING = "XPIStarting";
-// event happened after startup() but before the final-ui-startup event
-const XPI_BEFORE_UI_STARTUP = "BeforeFinalUIStartup";
-// event happened after final-ui-startup
-const XPI_AFTER_UI_STARTUP = "AfterFinalUIStartup";
-
 const COMPATIBLE_BY_DEFAULT_TYPES = {
   extension: true,
   dictionary: true
@@ -320,7 +312,6 @@ function loadLazyObjects() {
     XPIStates,
     syncLoadManifestFromFile,
     isUsableAddon,
-    recordAddonTelemetry,
     applyBlocklistChanges,
     flushChromeCaches,
     canRunInSafeMode,
@@ -2042,20 +2033,6 @@ function getDirectoryEntries(aDir, aSortEntries) {
 }
 
 /**
- * Record a bit of per-addon telemetry
- * @param aAddon the addon to record
- */
-function recordAddonTelemetry(aAddon) {
-  let locale = aAddon.defaultLocale;
-  if (locale) {
-    if (locale.name)
-      XPIProvider.setTelemetry(aAddon.id, "name", locale.name);
-    if (locale.creator)
-      XPIProvider.setTelemetry(aAddon.id, "creator", locale.creator);
-  }
-}
-
-/**
  * The on-disk state of an individual XPI, created from an Object
  * as stored in the 'extensions.xpiState' pref.
  */
@@ -2106,8 +2083,6 @@ XPIState.prototype = {
     if (!('scanTime' in this) || this.enabled) {
       logger.debug('getModTime: Recursive scan of ' + aId);
       let [modFile, modTime, items] = recursiveLastModifiedTime(aFile);
-      XPIProvider._mostRecentlyModifiedFile[aId] = modFile;
-      XPIProvider.setTelemetry(aId, "scan_items", items);
       if (modTime != this.scanTime) {
         this.scanTime = modTime;
         changed = true;
@@ -2119,9 +2094,6 @@ XPIState.prototype = {
     try {
       // Get the install manifest update time, if any.
       let maniFile = getManifestFileForDir(aFile);
-      if (!(aId in XPIProvider._mostRecentlyModifiedFile)) {
-        XPIProvider._mostRecentlyModifiedFile[aId] = maniFile.leafName;
-      }
       let maniTime = maniFile.lastModifiedTime;
       if (maniTime != this.manifestTime) {
         this.manifestTime = maniTime;
@@ -2142,9 +2114,6 @@ XPIState.prototype = {
         this.scanTime = 0;
       }
     }
-    // Record duration of file-modified check
-    XPIProvider.setTelemetry(aId, "scan_MS", Math.round(Cu.now() - scanStarted));
-
     return changed;
   },
 
@@ -2277,7 +2246,6 @@ this.XPIStates = {
           }
           foundAddons.set(id, xpiState);
         }
-        XPIProvider.setTelemetry(id, "location", location.name);
       }
 
       // Anything left behind in oldState was removed from the file system.
@@ -2360,7 +2328,6 @@ this.XPIStates = {
     let xpiState = new XPIState({d: aAddon.descriptor});
     location.set(aAddon.id, xpiState);
     xpiState.syncWithDB(aAddon, true);
-    XPIProvider.setTelemetry(aAddon.id, "location", aAddon.location);
   },
 
   /**
@@ -2425,13 +2392,6 @@ this.XPIProvider = {
   allAppGlobal: true,
   // A string listing the enabled add-ons for annotating crash reports
   enabledAddons: null,
-  // Keep track of startup phases for telemetry
-  runPhase: XPI_STARTING,
-  // Keep track of the newest file in each add-on, in case we want to
-  // report it to telemetry.
-  _mostRecentlyModifiedFile: {},
-  // Per-addon telemetry information
-  _telemetryDetails: {},
   // A Map from an add-on install to its ID
   _addonFileMap: new Map(),
   // Flag to know if ToolboxProcess.jsm has already been loaded by someone or not
@@ -2476,15 +2436,6 @@ this.XPIProvider = {
     Object.values(addons).forEach(add);
 
     return Array.from(res, id => addons[id]);
-  },
-
-  /*
-   * Set a value in the telemetry hash for a given ID
-   */
-  setTelemetry: function(aId, aName, aValue) {
-    if (!this._telemetryDetails[aId])
-      this._telemetryDetails[aId] = {};
-    this._telemetryDetails[aId][aName] = aValue;
   },
 
   // Keep track of in-progress operations that support cancel()
@@ -2668,19 +2619,12 @@ this.XPIProvider = {
     }
 
     try {
-      AddonManagerPrivate.recordTimestamp("XPI_startup_begin");
-
       logger.debug("startup");
-      this.runPhase = XPI_STARTING;
       this.installs = new Set();
       this.installLocations = [];
       this.installLocationsByName = {};
       // Hook for tests to detect when saving database at shutdown time fails
       this._shutdownError = null;
-      // Clear this at startup for xpcshell test restarts
-      this._telemetryDetails = {};
-      // Register our details structure with AddonManager
-      AddonManagerPrivate.setTelemetryDetails("XPI", this._telemetryDetails);
 
       let hasRegistry = ("nsIWindowsRegKey" in Ci);
 
@@ -2813,8 +2757,6 @@ this.XPIProvider = {
       }
 
       try {
-        AddonManagerPrivate.recordTimestamp("XPI_bootstrap_addons_begin");
-
         for (let addon of this.sortBootstrappedAddons()) {
           try {
             let file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
@@ -2833,7 +2775,6 @@ this.XPIProvider = {
                          addon.descriptor, e);
           }
         }
-        AddonManagerPrivate.recordTimestamp("XPI_bootstrap_addons_end");
       }
       catch (e) {
         logger.error("bootstrap startup failed", e);
@@ -2872,19 +2813,7 @@ this.XPIProvider = {
         }
       }, "quit-application-granted", false);
 
-      // Detect final-ui-startup for telemetry reporting
-      Services.obs.addObserver({
-        observe: function(aSubject, aTopic, aData) {
-          AddonManagerPrivate.recordTimestamp("XPI_finalUIStartup");
-          XPIProvider.runPhase = XPI_AFTER_UI_STARTUP;
-          Services.obs.removeObserver(this, "final-ui-startup");
-        }
-      }, "final-ui-startup", false);
-
-      AddonManagerPrivate.recordTimestamp("XPI_startup_end");
-
       this.extensionsActive = true;
-      this.runPhase = XPI_BEFORE_UI_STARTUP;
 
       let timerManager = Cc["@mozilla.org/updates/timer-manager;1"].
                          getService(Ci.nsIUpdateTimerManager);
@@ -3023,7 +2952,6 @@ this.XPIProvider = {
    */
   showUpgradeUI: function(aAddonIDs) {
     logger.debug("XPI_showUpgradeUI: " + aAddonIDs.toSource());
-    Services.telemetry.getHistogramById("ADDON_MANAGER_UPGRADE_UI_SHOWN").add(1);
 
     // Flip a flag to indicate that we interrupted startup with an interactive prompt
     Services.startup.interrupted = true;
@@ -3259,10 +3187,6 @@ this.XPIProvider = {
       Services.appinfo.annotateCrashReport("Add-ons", data);
     }
     catch (e) { }
-
-    let TelemetrySession =
-      Cu.import("resource://gre/modules/TelemetrySession.jsm", {}).TelemetrySession;
-    TelemetrySession.setAddOns(data);
   },
 
   /**
@@ -3707,11 +3631,7 @@ this.XPIProvider = {
       }
     }
 
-    // Telemetry probe added around getInstallState() to check perf
-    let telemetryCaptureTime = Cu.now();
     let installChanged = XPIStates.getInstallState();
-    let telemetry = Services.telemetry;
-    telemetry.getHistogramById("CHECK_ADDONS_MODIFIED_MS").add(Math.round(Cu.now() - telemetryCaptureTime));
     if (installChanged) {
       updateReasons.push("directoryState");
     }
@@ -4861,7 +4781,6 @@ this.XPIProvider = {
           }
         }
       }
-      this.setTelemetry(aAddon.id, aMethod + "_MS", new Date() - timeStart);
     }
   },
 
@@ -5806,8 +5725,6 @@ class AddonInstall {
             XPIProvider.unloadBootstrapScope(this.addon.id);
           }
         }
-        XPIProvider.setTelemetry(this.addon.id, "unpacked", installedUnpacked);
-        recordAddonTelemetry(this.addon);
       }
     }).bind(this)).then(null, (e) => {
       logger.warn(`Failed to install ${this.file.path} from ${this.sourceURI.spec} to ${stagedAddon.path}`, e);
