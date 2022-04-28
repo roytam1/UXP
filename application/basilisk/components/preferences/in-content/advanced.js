@@ -40,10 +40,6 @@ var gAdvancedPane = {
       this.updateReadPrefs();
     }
     this.updateOfflineApps();
-    this.initTelemetry();
-    if (AppConstants.MOZ_TELEMETRY_REPORTING) {
-      this.initSubmitHealthReport();
-    }
     this.updateOnScreenKeyboardVisibility();
     this.updateCacheSizeInputField();
     this.updateActualCacheSize();
@@ -53,10 +49,6 @@ var gAdvancedPane = {
                      gAdvancedPane.updateHardwareAcceleration);
     setEventListener("advancedPrefs", "select",
                      gAdvancedPane.tabSelectionChanged);
-    if (AppConstants.MOZ_TELEMETRY_REPORTING) {
-      setEventListener("submitHealthReportBox", "command",
-                       gAdvancedPane.updateSubmitHealthReport);
-    }
 
     setEventListener("connectionSettings", "command",
                      gAdvancedPane.showConnections);
@@ -106,15 +98,6 @@ var gAdvancedPane = {
       return;
     var advancedPrefs = document.getElementById("advancedPrefs");
     var preference = document.getElementById("browser.preferences.advanced.selectedTabIndex");
-
-    // tabSelectionChanged gets called twice due to the selectedIndex being set
-    // by both the selectedItem and selectedPanel callstacks. This guard is used
-    // to prevent double-counting in Telemetry.
-    if (preference.valueFromPreferences != advancedPrefs.selectedIndex) {
-      Services.telemetry
-              .getHistogramById("FX_PREFERENCES_CATEGORY_OPENED")
-              .add(telemetryBucketForCategory("advanced"));
-    }
 
     preference.valueFromPreferences = advancedPrefs.selectedIndex;
   },
@@ -250,63 +233,15 @@ var gAdvancedPane = {
   },
 
   /**
-   * The preference/checkbox is configured in XUL.
-   *
-   * In all cases, set up the Learn More link sanely.
-   */
-  initTelemetry: function ()
-  {
-    if (AppConstants.MOZ_TELEMETRY_REPORTING) {
-      this._setupLearnMoreLink("toolkit.telemetry.infoURL", "telemetryLearnMore");
-    }
-  },
-
-  /**
-   * Set the status of the telemetry controls based on the input argument.
-   * @param {Boolean} aEnabled False disables the controls, true enables them.
-   */
-  setTelemetrySectionEnabled: function (aEnabled)
-  {
-    if (AppConstants.MOZ_TELEMETRY_REPORTING) {
-      // If FHR is disabled, additional data sharing should be disabled as well.
-      let disabled = !aEnabled;
-      document.getElementById("submitTelemetryBox").disabled = disabled;
-      if (disabled) {
-        // If we disable FHR, untick the telemetry checkbox.
-        Services.prefs.setBoolPref("toolkit.telemetry.enabled", false);
-      }
-      document.getElementById("telemetryDataDesc").disabled = disabled;
-    }
-  },
-
-  /**
    * Initialize the health report service reference and checkbox.
    */
   initSubmitHealthReport: function () {
-    if (AppConstants.MOZ_TELEMETRY_REPORTING) {
-      this._setupLearnMoreLink("datareporting.healthreport.infoURL", "FHRLearnMore");
-
-      let checkbox = document.getElementById("submitHealthReportBox");
-
-      if (Services.prefs.prefIsLocked(PREF_UPLOAD_ENABLED)) {
-        checkbox.setAttribute("disabled", "true");
-        return;
-      }
-
-      checkbox.checked = Services.prefs.getBoolPref(PREF_UPLOAD_ENABLED);
-      this.setTelemetrySectionEnabled(checkbox.checked);
-    }
   },
 
   /**
    * Update the health report preference with state from checkbox.
    */
   updateSubmitHealthReport: function () {
-    if (AppConstants.MOZ_TELEMETRY_REPORTING) {
-      let checkbox = document.getElementById("submitHealthReportBox");
-      Services.prefs.setBoolPref(PREF_UPLOAD_ENABLED, checkbox.checked);
-      this.setTelemetrySectionEnabled(checkbox.checked);
-    }
   },
 
   updateOnScreenKeyboardVisibility() {

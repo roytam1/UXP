@@ -111,18 +111,6 @@ this.StartupPerformance = {
           return;
         }
 
-        // Once we are done restoring tabs, update Telemetry.
-        let histogramName = isAutoRestore ?
-          "FX_SESSION_RESTORE_AUTO_RESTORE_DURATION_UNTIL_EAGER_TABS_RESTORED_MS" :
-          "FX_SESSION_RESTORE_MANUAL_RESTORE_DURATION_UNTIL_EAGER_TABS_RESTORED_MS";
-        let histogram = Services.telemetry.getHistogramById(histogramName);
-        let delta = this._latestRestoredTimeStamp - this._startTimeStamp;
-        histogram.add(delta);
-
-        Services.telemetry.getHistogramById("FX_SESSION_RESTORE_NUMBER_OF_EAGER_TABS_RESTORED").add(this._totalNumberOfEagerTabs);
-        Services.telemetry.getHistogramById("FX_SESSION_RESTORE_NUMBER_OF_TABS_RESTORED").add(this._totalNumberOfTabs);
-        Services.telemetry.getHistogramById("FX_SESSION_RESTORE_NUMBER_OF_WINDOWS_RESTORED").add(this._totalNumberOfWindows);
-
         // Reset
         this._startTimeStamp = null;
      } catch (ex) {

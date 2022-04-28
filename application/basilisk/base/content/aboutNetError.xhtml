@@ -123,12 +123,6 @@
         document.getElementById("advancedButton")
                 .addEventListener("click", function togglePanelVisibility() {
           toggleDisplay(panel);
-
-          if (panel.style.display == "block") {
-            // send event to trigger telemetry ping
-            var event = new CustomEvent("AboutNetErrorUIExpanded", {bubbles:true});
-            document.dispatchEvent(event);
-          }
         });
 
         if (allowOverride) {

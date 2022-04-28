@@ -980,9 +980,6 @@ function PlacesToolbar(aPlace) {
   }
 
   PlacesViewBase.call(this, aPlace);
-
-  Services.telemetry.getHistogramById("FX_BOOKMARKS_TOOLBAR_INIT_MS")
-                    .add(Date.now() - startTime);
 }
 
 PlacesToolbar.prototype = {

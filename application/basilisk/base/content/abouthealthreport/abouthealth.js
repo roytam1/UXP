@@ -11,7 +11,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 
 const prefs = new Preferences("datareporting.healthreport.");
 
-const PREF_UNIFIED = "toolkit.telemetry.unified";
 const PREF_REPORTING_URL = "datareporting.healthreport.about.reportUrl";
 
 var healthReportWrapper = {
@@ -48,49 +47,10 @@ var healthReportWrapper = {
     }
   },
 
-  sendTelemetryPingList: function () {
-    console.log("AboutHealthReport: Collecting Telemetry ping list.");
-    MozSelfSupport.getTelemetryPingList().then((list) => {
-      console.log("AboutHealthReport: Sending Telemetry ping list.");
-      this.injectData("telemetry-ping-list", list);
-    }).catch((ex) => {
-      console.log("AboutHealthReport: Collecting ping list failed: " + ex);
-    });
-  },
-
-  sendTelemetryPingData: function (pingId) {
-    console.log("AboutHealthReport: Collecting Telemetry ping data.");
-    MozSelfSupport.getTelemetryPing(pingId).then((ping) => {
-      console.log("AboutHealthReport: Sending Telemetry ping data.");
-      this.injectData("telemetry-ping-data", {
-        id: pingId,
-        pingData: ping,
-      });
-    }).catch((ex) => {
-      console.log("AboutHealthReport: Loading ping data failed: " + ex);
-      this.injectData("telemetry-ping-data", {
-        id: pingId,
-        error: "error-generic",
-      });
-    });
-  },
-
   sendCurrentEnvironment: function () {
-    console.log("AboutHealthReport: Sending Telemetry environment data.");
-    MozSelfSupport.getCurrentTelemetryEnvironment().then((environment) => {
-      this.injectData("telemetry-current-environment-data", environment);
-    }).catch((ex) => {
-      console.log("AboutHealthReport: Collecting current environment data failed: " + ex);
-    });
   },
 
   sendCurrentPingData: function () {
-    console.log("AboutHealthReport: Sending current Telemetry ping data.");
-    MozSelfSupport.getCurrentTelemetrySubsessionPing().then((ping) => {
-      this.injectData("telemetry-current-ping-data", ping);
-    }).catch((ex) => {
-      console.log("AboutHealthReport: Collecting current ping data failed: " + ex);
-    });
   },
 
   injectData: function (type, content) {
@@ -128,12 +88,6 @@ var healthReportWrapper = {
         break;
       case "RequestCurrentPrefs":
         this.updatePrefState();
-        break;
-      case "RequestTelemetryPingList":
-        this.sendTelemetryPingList();
-        break;
-      case "RequestTelemetryPingData":
-        this.sendTelemetryPingData(evt.detail.id);
         break;
       case "RequestCurrentEnvironment":
         this.sendCurrentEnvironment();

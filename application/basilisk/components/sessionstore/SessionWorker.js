@@ -126,7 +126,6 @@ var Agent = {
    */
   write: function (state, options = {}) {
     let exn;
-    let telemetry = {};
 
     // Cap the number of backward and forward shistory entries on shutdown.
     if (options.isFinalWrite) {
@@ -196,9 +195,6 @@ var Agent = {
           tmpPath: this.Paths.recovery + ".tmp"
         });
       }
-
-      telemetry.FX_SESSION_RESTORE_WRITE_FILE_MS = Date.now() - startWriteMs;
-      telemetry.FX_SESSION_RESTORE_FILE_SIZE_BYTES = data.byteLength;
 
     } catch (ex) {
       // Don't throw immediately
@@ -276,7 +272,6 @@ var Agent = {
       result: {
         upgradeBackup: upgradeBackupComplete
       },
-      telemetry: telemetry,
     };
   },
 

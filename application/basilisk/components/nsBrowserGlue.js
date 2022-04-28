@@ -27,7 +27,6 @@ XPCOMUtils.defineLazyServiceGetter(this, "AlertsService", "@mozilla.org/alerts-s
   ["AutoCompletePopup", "resource://gre/modules/AutoCompletePopup.jsm"],
   ["BookmarkHTMLUtils", "resource://gre/modules/BookmarkHTMLUtils.jsm"],
   ["BookmarkJSONUtils", "resource://gre/modules/BookmarkJSONUtils.jsm"],
-  ["BrowserUsageTelemetry", "resource:///modules/BrowserUsageTelemetry.jsm"],
   ["ContentClick", "resource:///modules/ContentClick.jsm"],
   ["ContentPrefServiceParent", "resource://gre/modules/ContentPrefServiceParent.jsm"],
   ["ContentSearch", "resource:///modules/ContentSearch.jsm"],
@@ -308,8 +307,6 @@ BrowserGlue.prototype = {
         } catch (ex) {
           Cu.reportError(ex);
         }
-        let win = RecentWindow.getMostRecentBrowserWindow();
-        win.BrowserSearch.recordSearchInTelemetry(engine, "urlbar");
         break;
       case "browser-search-engine-modified":
         // Ensure we cleanup the hiddenOneOffs pref when removing
@@ -340,7 +337,6 @@ BrowserGlue.prototype = {
         });
         break;
       case "autocomplete-did-enter-text":
-        this._handleURLBarTelemetry(subject.QueryInterface(Ci.nsIAutoCompleteInput));
         break;
       case "test-initialize-sanitizer":
         this._sanitizer.onStartup();
@@ -348,64 +344,6 @@ BrowserGlue.prototype = {
       case AddonWatcher.TOPIC_SLOW_ADDON_DETECTED:
         this._notifySlowAddon(data);
         break;
-    }
-  },
-
-  _handleURLBarTelemetry(input) {
-    if (!input ||
-        input.id != "urlbar" ||
-        input.inPrivateContext ||
-        input.popup.selectedIndex < 0) {
-      return;
-    }
-    let controller =
-      input.popup.view.QueryInterface(Ci.nsIAutoCompleteController);
-    let idx = input.popup.selectedIndex;
-    let value = controller.getValueAt(idx);
-    let action = input._parseActionUrl(value);
-    let actionType;
-    if (action) {
-      actionType =
-        action.type == "searchengine" && action.params.searchSuggestion ?
-          "searchsuggestion" :
-        action.type;
-    }
-    if (!actionType) {
-      let styles = new Set(controller.getStyleAt(idx).split(/\s+/));
-      let style = ["autofill", "tag", "bookmark"].find(s => styles.has(s));
-      actionType = style || "history";
-    }
-
-    Services.telemetry
-            .getHistogramById("FX_URLBAR_SELECTED_RESULT_INDEX")
-            .add(idx);
-
-    // Ideally this would be a keyed histogram and we'd just add(actionType),
-    // but keyed histograms aren't currently shown on the telemetry dashboard
-    // (bug 1151756).
-    //
-    // You can add values but don't change any of the existing values.
-    // Otherwise you'll break our data.
-    let buckets = {
-      autofill: 0,
-      bookmark: 1,
-      history: 2,
-      keyword: 3,
-      searchengine: 4,
-      searchsuggestion: 5,
-      switchtab: 6,
-      tag: 7,
-      visiturl: 8,
-      remotetab: 9,
-      extension: 10,
-    };
-    if (actionType in buckets) {
-      Services.telemetry
-              .getHistogramById("FX_URLBAR_SELECTED_RESULT_TYPE")
-              .add(buckets[actionType]);
-    } else {
-      Cu.reportError("Unknown FX_URLBAR_SELECTED_RESULT_TYPE type: " +
-                     actionType);
     }
   },
 
@@ -436,9 +374,6 @@ BrowserGlue.prototype = {
     os.addObserver(this, "distribution-customization-complete", false);
     os.addObserver(this, "handle-xul-text-link", false);
     os.addObserver(this, "profile-before-change", false);
-    if (AppConstants.MOZ_TELEMETRY_REPORTING) {
-      os.addObserver(this, "keyword-search", false);
-    }
     os.addObserver(this, "browser-search-engine-modified", false);
     os.addObserver(this, "restart-in-safe-mode", false);
     os.addObserver(this, "flash-plugin-hang", false);
@@ -490,9 +425,6 @@ BrowserGlue.prototype = {
       os.removeObserver(this, "places-database-locked");
     os.removeObserver(this, "handle-xul-text-link");
     os.removeObserver(this, "profile-before-change");
-    if (AppConstants.MOZ_TELEMETRY_REPORTING) {
-      os.removeObserver(this, "keyword-search");
-    }
     os.removeObserver(this, "browser-search-engine-modified");
     os.removeObserver(this, "flash-plugin-hang");
     os.removeObserver(this, "xpi-signature-changed");
@@ -531,10 +463,6 @@ BrowserGlue.prototype = {
       const STATE_USER_PICKED_IGNORE_FOREVER = 3;
       const STATE_USER_CLOSED_NOTIFICATION = 4;
 
-      let update = function(response) {
-        Services.telemetry.getHistogramById("SLOW_ADDON_WARNING_STATES").add(response);
-      }
-
       let complete = false;
       let start = Date.now();
       let done = function(response) {
@@ -543,11 +471,7 @@ BrowserGlue.prototype = {
           return;
         }
         complete = true;
-        update(response);
-        Services.telemetry.getHistogramById("SLOW_ADDON_WARNING_RESPONSE_TIME").add(Date.now() - start);
       };
-
-      update(STATE_WARNING_DISPLAYED);
 
       if (notification) {
         notification.label = message;
@@ -659,7 +583,6 @@ BrowserGlue.prototype = {
     NewTabMessages.init();
 
     SessionStore.init();
-    BrowserUsageTelemetry.init();
     ContentSearch.init();
     FormValidationHandler.init();
 
@@ -874,27 +797,6 @@ BrowserGlue.prototype = {
                           nb.PRIORITY_WARNING_MEDIUM, buttons);
   },
 
-  _firstWindowTelemetry: function(aWindow) {
-    let SCALING_PROBE_NAME = "";
-    switch (AppConstants.platform) {
-      case "win":
-        SCALING_PROBE_NAME = "DISPLAY_SCALING_MSWIN";
-        break;
-      case "macosx":
-        SCALING_PROBE_NAME = "DISPLAY_SCALING_OSX";
-        break;
-      case "linux":
-        SCALING_PROBE_NAME = "DISPLAY_SCALING_LINUX";
-        break;
-    }
-    if (SCALING_PROBE_NAME) {
-      let scaling = aWindow.devicePixelRatio * 100;
-      try {
-        Services.telemetry.getHistogramById(SCALING_PROBE_NAME).add(scaling);
-      } catch (ex) {}
-    }
-  },
-
   // the first browser window has finished initializing
   _onFirstWindowLoaded: function(aWindow) {
     // Initialize PdfJs when running in-process and remote. This only
@@ -975,7 +877,6 @@ BrowserGlue.prototype = {
     AutoCompletePopup.init();
     DateTimePickerHelper.init();
 
-    this._firstWindowTelemetry(aWindow);
     this._firstWindowLoaded();
   },
 
@@ -1002,7 +903,6 @@ BrowserGlue.prototype = {
       delete this._bookmarksBackupIdleTime;
     }
 
-    BrowserUsageTelemetry.uninit();
     UserAgentOverrides.uninit();
     PageThumbs.uninit();
     NewTabMessages.uninit();
@@ -1121,20 +1021,6 @@ BrowserGlue.prototype = {
       if (usePromptLimit && willPrompt) {
         Services.prefs.setIntPref("browser.shell.defaultBrowserCheckCount", promptCount);
       }
-
-      try {
-        // Report default browser status on startup to telemetry
-        // so we can track whether we are the default.
-        Services.telemetry.getHistogramById("BROWSER_IS_USER_DEFAULT")
-                          .add(isDefault);
-        Services.telemetry.getHistogramById("BROWSER_IS_USER_DEFAULT_ERROR")
-                          .add(isDefaultError);
-        Services.telemetry.getHistogramById("BROWSER_SET_DEFAULT_ALWAYS_CHECK")
-                          .add(shouldCheck);
-        Services.telemetry.getHistogramById("BROWSER_SET_DEFAULT_DIALOG_PROMPT_RAWCOUNT")
-                          .add(promptCount);
-      }
-      catch (ex) { /* Don't break the default prompt if telemetry is broken. */ }
 
       if (willPrompt) {
         Services.tm.mainThread.dispatch(function() {
@@ -1552,14 +1438,6 @@ BrowserGlue.prototype = {
           // available backup compared to that session.
           if (profileLastUse > lastBackupTime) {
             let backupAge = Math.round((profileLastUse - lastBackupTime) / 86400000);
-            // Report the age of the last available backup.
-            try {
-              Services.telemetry
-                      .getHistogramById("PLACES_BACKUPS_DAYSFROMLAST")
-                      .add(backupAge);
-            } catch (ex) {
-              Cu.reportError(new Error("Unable to report telemetry."));
-            }
 
             if (backupAge > BOOKMARKS_BACKUP_MAX_INTERVAL_DAYS)
               this._bookmarksBackupIdleTime /= 2;
@@ -2408,24 +2286,12 @@ var DefaultBrowserCheck = {
         if (isDefault || runTime > 600) {
           this._setAsDefaultTimer.cancel();
           this._setAsDefaultTimer = null;
-          Services.telemetry.getHistogramById("BROWSER_SET_DEFAULT_TIME_TO_COMPLETION_SECONDS")
-                            .add(runTime);
         }
-        Services.telemetry.getHistogramById("BROWSER_IS_USER_DEFAULT_ERROR")
-                          .add(isDefaultError);
       }, 1000, Ci.nsITimer.TYPE_REPEATING_SLACK);
     } catch (ex) {
       setAsDefaultError = true;
       Cu.reportError(ex);
     }
-    // Here BROWSER_IS_USER_DEFAULT and BROWSER_SET_USER_DEFAULT_ERROR appear
-    // to be inverse of each other, but that is only because this function is
-    // called when the browser is set as the default. During startup we record
-    // the BROWSER_IS_USER_DEFAULT value without recording BROWSER_SET_USER_DEFAULT_ERROR.
-    Services.telemetry.getHistogramById("BROWSER_IS_USER_DEFAULT")
-                      .add(!setAsDefaultError);
-    Services.telemetry.getHistogramById("BROWSER_SET_DEFAULT_ERROR")
-                      .add(setAsDefaultError);
   },
 
   _createPopup: function(win, notNowStrings, neverStrings) {
@@ -2537,12 +2403,6 @@ var DefaultBrowserCheck = {
       } else if (!shouldAsk.value) {
         ShellService.shouldCheckDefaultBrowser = false;
       }
-
-      try {
-        let resultEnum = rv * 2 + shouldAsk.value;
-        Services.telemetry.getHistogramById("BROWSER_SET_DEFAULT_RESULT")
-                          .add(resultEnum);
-      } catch (ex) { /* Don't break if Telemetry is acting up. */ }
     }
   },
 
