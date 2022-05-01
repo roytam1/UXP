@@ -34,8 +34,8 @@ const HTTP_FOUND = 302;
 const HTTP_SEE_OTHER = 303;
 const HTTP_TEMPORARY_REDIRECT = 307;
 
-// The maximum number of bytes a NetworkResponseListener can hold: 1 MB
-const RESPONSE_BODY_LIMIT = 1048576;
+// The maximum number of bytes a NetworkResponseListener can hold: 10 MB
+const RESPONSE_BODY_LIMIT = 10485760;
 // Exported for testing.
 exports.RESPONSE_BODY_LIMIT = RESPONSE_BODY_LIMIT;
 
