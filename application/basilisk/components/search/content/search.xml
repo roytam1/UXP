@@ -372,36 +372,7 @@
           var textBox = this._textbox;
           var textValue = textBox.value;
 
-          let selection = this.telemetrySearchDetails;
           let oneOffRecorded = false;
-
-          if (!selection || (selection.index == -1)) {
-            oneOffRecorded = this.textbox.popup.oneOffButtons
-                                 .maybeRecordTelemetry(aEvent, aWhere, aParams);
-            if (!oneOffRecorded) {
-              let source = "unknown";
-              let type = "unknown";
-              let target = aEvent.originalTarget;
-              if (aEvent instanceof KeyboardEvent) {
-                type = "key";
-              } else if (aEvent instanceof MouseEvent) {
-                type = "mouse";
-                if (target.classList.contains("search-panel-header") ||
-                    target.parentNode.classList.contains("search-panel-header")) {
-                  source = "header";
-                }
-              } else if (aEvent instanceof XULCommandEvent) {
-                if (target.getAttribute("anonid") == "paste-and-search") {
-                  source = "paste";
-                }
-              }
-              if (!aEngine) {
-                aEngine = this.currentEngine;
-              }
-              BrowserSearch.recordOneoffSearchInTelemetry(aEngine, source, type,
-                                                          aWhere);
-            }
-          }
 
           // This is a one-off search only if oneOffRecorded is true.
           this.doSearch(textValue, aWhere, aEngine, aParams, oneOffRecorded);
@@ -433,18 +404,7 @@
 
           let engine = aEngine || this.currentEngine;
           var submission = engine.getSubmission(aData, null, "searchbar");
-          let telemetrySearchDetails = this.telemetrySearchDetails;
-          this.telemetrySearchDetails = null;
-          if (telemetrySearchDetails && telemetrySearchDetails.index == -1) {
-            telemetrySearchDetails = null;
-          }
-          // If we hit here, we come either from a one-off, a plain search or a suggestion.
-          const details = {
-            isOneOff: aOneOff,
-            isSuggestion: (!aOneOff && telemetrySearchDetails),
-            selection: telemetrySearchDetails
-          };
-          BrowserSearch.recordSearchInTelemetry(engine, "searchbar", details);
+
           // null parameter below specifies HTML response for search
           let params = {
             postData: submission.postData,
@@ -767,7 +727,6 @@
           }
           if (this._selectionDetails &&
               this._selectionDetails.currentIndex != -1) {
-            BrowserSearch.searchBar.telemetrySearchDetails = this._selectionDetails;
             this._selectionDetails = null;
           }
           document.getBindingParent(this).handleSearchCommand(aEvent, engine);
@@ -984,9 +943,6 @@
           );
           this.style.minWidth = minWidth + "px";
 
-          // Set the origin before assigning the popup, as the assignment does
-          // a rebuild and would miss the origin.
-          this.oneOffButtons.telemetryOrigin = "searchbar";
           // Set popup after setting the minWidth since it builds the buttons.
           this.oneOffButtons.popup = this;
           this.oneOffButtons.textbox = this.input;
@@ -1180,10 +1136,6 @@
           return this._textbox = val;
         ]]></setter>
       </property>
-
-      <!-- Set this to a string that identifies your one-offs consumer.  It'll
-           be appended to telemetry recorded with maybeRecordTelemetry(). -->
-      <field name="telemetryOrigin">""</field>
 
       <field name="_query">""</field>
 
@@ -1402,7 +1354,7 @@
               let button = document.createElementNS(kXULNS, "button");
               let label = this.bundle.formatStringFromName("cmd_addFoundEngine",
                                                            [engine.title], 1);
-              button.id = this.telemetryOrigin + "-add-engine-" +
+              button.id = "add-engine-" +
                           engine.title.replace(/ /g, '-');
               button.setAttribute("class", "addengine-item");
               button.setAttribute("label", label);
@@ -1470,10 +1422,9 @@
 
           // Ensure we can refer to the settings buttons by ID:
           let settingsEl = document.getAnonymousElementByAttribute(this, "anonid", "search-settings");
-          settingsEl.id = this.telemetryOrigin + "-anon-search-settings";
+          settingsEl.id = "anon-search-settings";
           let compactSettingsEl = document.getAnonymousElementByAttribute(this, "anonid", "search-settings-compact");
-          compactSettingsEl.id = this.telemetryOrigin +
-                                 "-anon-search-settings-compact";
+          compactSettingsEl.id = "anon-search-settings-compact";
 
           let dummyItems = enginesPerRow - (oneOffCount % enginesPerRow || enginesPerRow);
           for (let i = 0; i < engines.length; ++i) {
@@ -1546,7 +1497,7 @@
       <method name="_buttonIDForEngine">
         <parameter name="engine"/>
         <body><![CDATA[
-          return this.telemetryOrigin + "-engine-one-off-item-" +
+          return "engine-one-off-item-" +
                  engine.name.replace(/ /g, '-');
         ]]></body>
       </method>
@@ -1879,68 +1830,6 @@
             return true;
           }
           return false;
-        ]]></body>
-      </method>
-
-      <!--
-        If the given event is related to the one-offs, this method records
-        one-off telemetry for it.  this.telemetryOrigin will be appended to the
-        computed source, so make sure you set that first.
-
-        @param aEvent
-               An event, like a click on a one-off button.
-        @param aOpenUILinkWhere
-               The "where" passed to openUILink.
-        @param aOpenUILinkParams
-               The "params" passed to openUILink.
-        @return True if telemetry was recorded and false if not.
-      -->
-      <method name="maybeRecordTelemetry">
-        <parameter name="aEvent"/>
-        <parameter name="aOpenUILinkWhere"/>
-        <parameter name="aOpenUILinkParams"/>
-        <body><![CDATA[
-          if (!aEvent) {
-            return false;
-          }
-
-          let source = null;
-          let type = "unknown";
-          let engine = null;
-          let target = aEvent.originalTarget;
-
-          if (aEvent instanceof KeyboardEvent) {
-            type = "key";
-            if (this.selectedButton) {
-              source = "oneoff";
-              engine = this.selectedButton.engine;
-            }
-          } else if (aEvent instanceof MouseEvent) {
-            type = "mouse";
-            if (target.classList.contains("searchbar-engine-one-off-item")) {
-              source = "oneoff";
-              engine = target.engine;
-            }
-          } else if ((aEvent instanceof XULCommandEvent) &&
-                     target.getAttribute("anonid") ==
-                       "search-one-offs-context-open-in-new-tab") {
-            source = "oneoff-context";
-            engine = this._contextEngine;
-          }
-
-          if (!source) {
-            return false;
-          }
-
-          if (this.telemetryOrigin) {
-            source += "-" + this.telemetryOrigin;
-          }
-
-          let tabBackground = aOpenUILinkWhere == "tab" &&
-                              aOpenUILinkParams &&
-                              aOpenUILinkParams.inBackground;
-          let where = tabBackground ? "tab-background" : aOpenUILinkWhere;
-          return true;
         ]]></body>
       </method>
 
