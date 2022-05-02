@@ -328,7 +328,8 @@ public:
   void Dump(const char *aPrefix = "") {
     printf_stderr("%sLayerManagerData %p\n", aPrefix, this);
 
-    for (auto& data : mDisplayItems) {
+    for (auto iter = mDisplayItems.Iter(); !iter.Done(); iter.Next()) {
+      FrameLayerBuilder::DisplayItemData* data = iter.Get()->GetKey();
 
       nsAutoCString prefix;
       prefix += aPrefix;
@@ -387,7 +388,7 @@ public:
 #ifdef DEBUG_DISPLAY_ITEM_DATA
   LayerManagerData *mParent;
 #endif
-  std::vector<RefPtr<FrameLayerBuilder::DisplayItemData> > mDisplayItems;
+  nsTHashtable<nsRefPtrHashKey<FrameLayerBuilder::DisplayItemData> > mDisplayItems;
   bool mInvalidateAllLayers;
 };
 
@@ -1970,12 +1971,7 @@ FrameLayerBuilder::RemoveFrameFromLayerManager(const nsIFrame* aFrame,
       }
     }
 
-    auto it = std::find(data->mParent->mDisplayItems.begin(),
-                        data->mParent->mDisplayItems.end(),
-                        data);
-    MOZ_ASSERT(it != data->mParent->mDisplayItems.end());
-    std::iter_swap(it, data->mParent->mDisplayItems.end() - 1);
-    data->mParent->mDisplayItems.pop_back();
+    data->mParent->mDisplayItems.RemoveEntry(data);
   }
 
   arrayCopy.Clear();
@@ -2028,40 +2024,27 @@ FrameLayerBuilder::WillEndTransaction()
   NS_ASSERTION(data, "Must have data!");
 
   // Update all the frames that used to have layers.
-  auto iter = data->mDisplayItems.begin();
-  while (iter != data->mDisplayItems.end()) {
-    DisplayItemData* did = iter->get();
-    if (!did->mUsed) {
+  for (auto iter = data->mDisplayItems.Iter(); !iter.Done(); iter.Next()) {
+    DisplayItemData* data = iter.Get()->GetKey();
+    if (!data->mUsed) {
       // This item was visible, but isn't anymore.
-      PaintedLayer* t = did->mLayer->AsPaintedLayer();
-      if (t && did->mGeometry) {
+      PaintedLayer* t = data->mLayer->AsPaintedLayer();
+      if (t && data->mGeometry) {
 #ifdef MOZ_DUMP_PAINTING
         if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
-          printf_stderr("Invalidating unused display item (%i) belonging to frame %p from layer %p\n", did->mDisplayItemKey, did->mFrameList[0], t);
+          printf_stderr("Invalidating unused display item (%i) belonging to frame %p from layer %p\n", data->mDisplayItemKey, data->mFrameList[0], t);
         }
 #endif
         InvalidatePostTransformRegion(t,
-                                      did->mGeometry->ComputeInvalidationRegion(),
-                                      did->mClip,
+                                      data->mGeometry->ComputeInvalidationRegion(),
+                                      data->mClip,
                                       GetLastPaintOffset(t));
       }
 
-      did->ClearAnimationCompositorState();
-
-      // Remove this item. Swapping it with the last element first is
-      // quicker than erasing from the middle.
-      if (iter != data->mDisplayItems.end() - 1) {
-        std::iter_swap(iter, data->mDisplayItems.end() - 1);
-        data->mDisplayItems.pop_back();
-      } else {
-        data->mDisplayItems.pop_back();
-        break;
-      }
-
-      // Don't increment iter because we still need to process the item which was moved.
+      data->ClearAnimationCompositorState();
+      iter.Remove();
     } else {
-      ComputeGeometryChangeForItem(did);
-      iter++;
+      ComputeGeometryChangeForItem(data);
     }
   }
 
@@ -4817,7 +4800,7 @@ FrameLayerBuilder::StoreDataForFrame(nsDisplayItem* aItem, Layer* aLayer, LayerS
 
   data->BeginUpdate(aLayer, aState, mContainerLayerGeneration, aItem);
 
-  lmd->mDisplayItems.push_back(data);
+  lmd->mDisplayItems.PutEntry(data);
   return data;
 }
 
@@ -4841,7 +4824,7 @@ FrameLayerBuilder::StoreDataForFrame(nsIFrame* aFrame,
 
   data->BeginUpdate(aLayer, aState, mContainerLayerGeneration);
 
-  lmd->mDisplayItems.push_back(data);
+  lmd->mDisplayItems.PutEntry(data);
 }
 
 FrameLayerBuilder::ClippedDisplayItem::ClippedDisplayItem(nsDisplayItem* aItem,
@@ -5575,21 +5558,12 @@ FrameLayerBuilder::BuildContainerLayerFor(nsDisplayListBuilder* aBuilder,
       flattenToSingleLayer = true;
 
       // Restore DisplayItemData
-      auto iter = data->mDisplayItems.begin();
-        while (iter != data->mDisplayItems.end()) {
-          DisplayItemData* did = iter->get();
-        if (did->mUsed && did->mContainerLayerGeneration >= mContainerLayerGeneration) {
-          if (iter != data->mDisplayItems.end() - 1) {
-          std::iter_swap(iter, data->mDisplayItems.end() - 1);
-          data->mDisplayItems.pop_back();
-          } else {
-          data->mDisplayItems.pop_back();
-          break;
-          }
-          } else {
-          iter++;
-          }
+      for (auto iter = data->mDisplayItems.Iter(); !iter.Done(); iter.Next()) {
+        DisplayItemData* data = iter.Get()->GetKey();
+        if (data->mUsed && data->mContainerLayerGeneration >= mContainerLayerGeneration) {
+          iter.Remove();
         }
+      }
 
       // Restore PaintedLayerItemEntries
       for (auto iter = mPaintedLayerItems.Iter(); !iter.Done(); iter.Next()) {
