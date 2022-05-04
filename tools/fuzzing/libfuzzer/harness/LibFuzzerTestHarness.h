@@ -193,6 +193,14 @@ static class ScopedXPCOM : public nsIDirectoryServiceProvider2
       }
       greD->Clone(getter_AddRefs(mGREBinD));
 
+#ifdef XP_MACOSX
+      nsAutoCString leafName;
+      mGREBinD->GetNativeLeafName(leafName);
+      if (leafName.Equals("Resources")) {
+        mGREBinD->SetNativeLeafName(NS_LITERAL_CSTRING("MacOS"));
+      }
+#endif
+
       nsCOMPtr<nsIFile> copy = mGREBinD;
       return copy.forget();
     }

@@ -696,7 +696,11 @@ pref("mail.biff.alert.show_subject", true);
 pref("mail.biff.alert.show_sender",  true);
 pref("mail.biff.alert.preview_length", 40);
 
+#ifdef XP_MACOSX
+pref("mail.biff.play_sound", false);
+#else
 pref("mail.biff.play_sound", true);
+#endif
 // 0 == default system sound, 1 == user specified wav
 pref("mail.biff.play_sound.type", 0);
 // _moz_mailbeep is a magic key, for the default sound.
@@ -706,6 +710,8 @@ pref("mail.biff.show_alert", true);
 #ifdef XP_WIN
 pref("mail.biff.show_tray_icon", true);
 pref("mail.biff.show_balloon", false);
+#elifdef XP_MACOSX
+pref("mail.biff.animate_dock_icon", false);
 #elifdef XP_UNIX
 pref("mail.biff.use_system_alert", false);
 #endif
@@ -716,6 +722,13 @@ pref("mail.biff.add_interval_jitter", true);
 #ifdef MOZ_SUITE
 // if true, check for new mail even when opening non-mail windows
 pref("mail.biff.on_new_window", true);
+#endif
+
+#ifdef XP_MACOSX
+// If true, the number used in the Mac OS X dock notification will be the
+// the number of "new" messages, as per the classic Thunderbird definition.
+// Defaults to false, which notifies about the number of unread messages.
+pref("mail.biff.use_new_count_in_mac_dock", false);
 #endif
 
 // For feed account serverType=rss sound on biff; if true, mail.biff.play_sound.* settings are used.
@@ -833,6 +846,15 @@ pref("ldap_2.servers.oe.uri", "moz-aboutlookdirectory://oe/");
 pref("ldap_2.servers.oe.description", "chrome://messenger/locale/addressbook/addressBook.properties");
 pref("ldap_2.servers.oe.dirType", 3);
 #endif
+#endif
+#ifdef XP_MACOSX
+pref("ldap_2.servers.osx.uri", "moz-abosxdirectory:///");
+pref("ldap_2.servers.osx.description", "chrome://messenger/locale/addressbook/addressBook.properties");
+pref("ldap_2.servers.osx.dirType", 3);
+pref("mail.notification.sound",             "");
+pref("mail.notification.count.inbox_only", true);
+// Work around bug 482811 by disabling slow script warning for chrome scripts on Mac
+pref("dom.max_chrome_script_run_time", 0);
 #endif
 
 // gtk2 (*nix) lacks transparent/translucent drag support (bug 376238), so we

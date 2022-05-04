@@ -6842,6 +6842,10 @@ nsContentUtils::HaveEqualPrincipals(nsIDocument* aDoc1, nsIDocument* aDoc2)
 bool
 nsContentUtils::HasPluginWithUncontrolledEventDispatch(nsIContent* aContent)
 {
+#ifdef XP_MACOSX
+  // We control dispatch to all mac plugins.
+  return false;
+#else
   if (!aContent || !aContent->IsInUncomposedDoc()) {
     return false;
   }
@@ -6864,6 +6868,7 @@ nsContentUtils::HasPluginWithUncontrolledEventDispatch(nsIContent* aContent)
   }
 
   return !isWindowless;
+#endif
 }
 
 /* static */

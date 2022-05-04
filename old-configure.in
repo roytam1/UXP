@@ -96,6 +96,12 @@ case "$target" in
     ;;
 esac
 
+case "$target" in
+*-apple-darwin*)
+    MOZ_IOS_SDK
+    ;;
+esac
+
 AC_SUBST(ANDROID_SOURCE)
 AC_SUBST(ANDROID_PACKAGE_NAME)
 AC_SUBST(OBJCOPY)
@@ -732,6 +738,11 @@ case "$host" in
     esac
     ;;
 
+*-darwin*)
+    HOST_CFLAGS="$HOST_CFLAGS -DXP_UNIX -DXP_MACOSX"
+    HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O3}"
+    ;;
+
 *-linux*|*-kfreebsd*-gnu|*-gnu*)
     HOST_CFLAGS="$HOST_CFLAGS -DXP_UNIX"
     HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O3}"
@@ -768,6 +779,76 @@ dnl System overrides of the defaults for target
 dnl ========================================================
 
 case "$target" in
+*-darwin*)
+    MKSHLIB='$(CXX) $(CXXFLAGS) $(DSO_PIC_CFLAGS) $(DSO_LDOPTS) -o $@'
+    MKCSHLIB='$(CC) $(CFLAGS) $(DSO_PIC_CFLAGS) $(DSO_LDOPTS) -o $@'
+    MOZ_OPTIMIZE_FLAGS="-O3"
+    CXXFLAGS="$CXXFLAGS -stdlib=libc++"
+    DLL_SUFFIX=".dylib"
+    DSO_LDOPTS=''
+    STRIP_FLAGS="$STRIP_FLAGS -x -S"
+    # Ensure that if we're targeting iOS an SDK was provided.
+    AC_CACHE_CHECK(for iOS target,
+                   ac_cv_ios_target,
+                   [AC_TRY_COMPILE([#include <TargetConditionals.h>
+#if !(TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+#error not iOS
+#endif],
+                                   [],
+                                   ac_cv_ios_target="yes",
+                                   ac_cv_ios_target="no")])
+    if test "$ac_cv_ios_target" = "yes" -a -z $MOZ_IOS; then
+       AC_MSG_ERROR([targeting iOS but not using an iOS SDK?])
+    fi
+    if test -n "$MOZ_IOS"; then
+        direct_nspr_config=1
+    else
+        # The ExceptionHandling framework is needed for Objective-C exception
+        # logging code in nsObjCExceptions.h. Currently we only use that in debug
+        # builds.
+        MOZ_DEBUG_LDFLAGS="$MOZ_DEBUG_LDFLAGS -framework ExceptionHandling";
+    fi
+
+    if test "x$lto_is_enabled" = "xyes"; then
+        echo "Skipping -dead_strip because lto is enabled."
+    dnl DTrace and -dead_strip don't interact well. See bug 403132.
+    dnl ===================================================================
+    elif test "x$enable_dtrace" = "xyes"; then
+        echo "Skipping -dead_strip because DTrace is enabled. See bug 403132."
+    else
+        dnl check for the presence of the -dead_strip linker flag
+        AC_MSG_CHECKING([for -dead_strip option to ld])
+        _SAVE_LDFLAGS=$LDFLAGS
+        LDFLAGS="$LDFLAGS -Wl,-dead_strip"
+        AC_TRY_LINK(,[return 0;],_HAVE_DEAD_STRIP=1,_HAVE_DEAD_STRIP=)
+        if test -n "$_HAVE_DEAD_STRIP" ; then
+            AC_MSG_RESULT([yes])
+            MOZ_OPTIMIZE_LDFLAGS="-Wl,-dead_strip"
+        else
+            AC_MSG_RESULT([no])
+        fi
+
+        LDFLAGS=$_SAVE_LDFLAGS
+    fi
+
+    dnl With newer linkers we need to pass -allow_heap_execute because of
+    dnl Microsoft Silverlight (5.1.10411.0 at least).
+    AC_MSG_CHECKING([for -allow_heap_execute option to ld])
+    _SAVE_LDFLAGS=$LDFLAGS
+    LDFLAGS="$LDFLAGS -Wl,-allow_heap_execute"
+    AC_TRY_LINK(,[return 0;],_HAVE_ALLOW_HEAP_EXECUTE=1,
+                _HAVE_ALLOW_HEAP_EXECUTE=)
+    if test -n "$_HAVE_ALLOW_HEAP_EXECUTE" ; then
+        AC_MSG_RESULT([yes])
+        MOZ_ALLOW_HEAP_EXECUTE_FLAGS="-Wl,-allow_heap_execute"
+    else
+        AC_MSG_RESULT([no])
+    fi
+    LDFLAGS=$_SAVE_LDFLAGS
+
+    MOZ_FIX_LINK_PATHS="-Wl,-executable_path,${DIST}/bin"
+    ;;
+
 *-*linux*)
     if test "$GNU_CC" -o "$GNU_CXX"; then
         MOZ_PGO_OPTIMIZE_FLAGS="-O3"
@@ -1128,6 +1209,9 @@ case "$target" in
     *-linux*|*-kfreebsd*-gnu|*-gnu*)
         MOZ_COMPONENTS_VERSION_SCRIPT_LDFLAGS='-Wl,--version-script -Wl,$(BUILD_TOOLS)/gnu-ld-scripts/components-version-script'
         ;;
+    *-darwin*)
+        MOZ_COMPONENTS_VERSION_SCRIPT_LDFLAGS='-Wl,-exported_symbols_list -Wl,$(BUILD_TOOLS)/gnu-ld-scripts/components-export-list'
+        ;;
     *-mingw*)
         if test -n "$GNU_CC"; then
            MOZ_COMPONENTS_VERSION_SCRIPT_LDFLAGS='-Wl,--version-script,$(BUILD_TOOLS)/gnu-ld-scripts/components-version-script'
@@ -1162,6 +1246,8 @@ MOZ_CXX11
 AC_LANG_C
 
 case "${OS_TARGET}" in
+Darwin)
+  ;;
 *)
   STL_FLAGS="-I${DIST}/stl_wrappers"
   WRAP_STL_INCLUDES=1
@@ -1243,7 +1329,15 @@ dnl Checks for libraries.
 dnl ========================================================
 AC_CHECK_LIB(c_r, gethostbyname_r)
 
+dnl We don't want to link with libdl even if it's present on OS X, since
+dnl it's not used and not part of the default installation. OS/2 has dlfcn
+dnl in libc.
+dnl We don't want to link against libm or libpthread on Darwin since
+dnl they both are just symlinks to libSystem and explicitly linking
+dnl against libSystem causes issues when debugging (see bug 299601).
 case $target in
+*-darwin*)
+    ;;
 *)
     AC_SEARCH_LIBS(dlopen, dl,
         MOZ_CHECK_HEADER(dlfcn.h,
@@ -1319,20 +1413,27 @@ AC_SUBST_LIST(XSS_LIBS)
 
 dnl ========================================================
 dnl = pthread support
+dnl = Start by checking whether the system support pthreads
 dnl ========================================================
-
-AC_CHECK_LIB(pthreads, pthread_create,
-    MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthreads",
-    AC_CHECK_LIB(pthread, pthread_create,
-        MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthread",
-        AC_CHECK_LIB(c_r, pthread_create,
-            MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lc_r",
-            AC_CHECK_LIB(c, pthread_create,
-                MOZ_USE_PTHREADS=1
+case "$target_os" in
+darwin*)
+    MOZ_USE_PTHREADS=1
+    ;;
+*)
+    AC_CHECK_LIB(pthreads, pthread_create,
+        MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthreads",
+        AC_CHECK_LIB(pthread, pthread_create,
+            MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthread",
+            AC_CHECK_LIB(c_r, pthread_create,
+                MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lc_r",
+                AC_CHECK_LIB(c, pthread_create,
+                    MOZ_USE_PTHREADS=1
+                )
             )
         )
     )
-)
+    ;;
+esac
 
 dnl ========================================================
 dnl Check the command line for --with-pthreads
@@ -1432,27 +1533,35 @@ AC_FUNC_MEMCMP
 AC_CHECK_FUNCS(stat64 lstat64 truncate64 statvfs64 statvfs statfs64 statfs getpagesize gmtime_r localtime_r arc4random arc4random_buf mallinfo gettid lchown setpriority strerror syscall)
 
 dnl check for clock_gettime(), the CLOCK_MONOTONIC clock
-AC_CACHE_CHECK(for clock_gettime(CLOCK_MONOTONIC),
-               ac_cv_clock_monotonic,
-               [for libs in "" -lrt; do
-                    _SAVE_LIBS="$LIBS"
-                    LIBS="$LIBS $libs"
-                    AC_TRY_LINK([#include <time.h>],
-                                 [ struct timespec ts;
-                                   clock_gettime(CLOCK_MONOTONIC, &ts); ],
-                                 ac_cv_clock_monotonic=$libs
-                                 LIBS="$_SAVE_LIBS"
-                                 break,
-                                 ac_cv_clock_monotonic=no)
-                    LIBS="$_SAVE_LIBS"
-                done])
-if test "$ac_cv_clock_monotonic" != "no"; then
-    HAVE_CLOCK_MONOTONIC=1
-    REALTIME_LIBS=$ac_cv_clock_monotonic
-    AC_DEFINE(HAVE_CLOCK_MONOTONIC)
-    AC_SUBST(HAVE_CLOCK_MONOTONIC)
-    AC_SUBST_LIST(REALTIME_LIBS)
-fi
+dnl avoid this on Darwin, since depending on your system config, we may think
+dnl it exists but it really doesn't
+case "$OS_TARGET" in
+Darwin)
+  ;;
+*)
+  AC_CACHE_CHECK(for clock_gettime(CLOCK_MONOTONIC),
+                 ac_cv_clock_monotonic,
+                 [for libs in "" -lrt; do
+                      _SAVE_LIBS="$LIBS"
+                      LIBS="$LIBS $libs"
+                      AC_TRY_LINK([#include <time.h>],
+                                   [ struct timespec ts;
+                                     clock_gettime(CLOCK_MONOTONIC, &ts); ],
+                                   ac_cv_clock_monotonic=$libs
+                                   LIBS="$_SAVE_LIBS"
+                                   break,
+                                   ac_cv_clock_monotonic=no)
+                      LIBS="$_SAVE_LIBS"
+                  done])
+  if test "$ac_cv_clock_monotonic" != "no"; then
+      HAVE_CLOCK_MONOTONIC=1
+      REALTIME_LIBS=$ac_cv_clock_monotonic
+      AC_DEFINE(HAVE_CLOCK_MONOTONIC)
+      AC_SUBST(HAVE_CLOCK_MONOTONIC)
+      AC_SUBST_LIST(REALTIME_LIBS)
+  fi
+  ;;
+esac
 
 AC_CACHE_CHECK(for pthread_cond_timedwait_monotonic_np,
                ac_cv_pthread_cond_timedwait_monotonic_np,
@@ -1524,6 +1633,11 @@ AC_LANG_CPLUSPLUS
 
 ICONV_LIBS=
 
+case $target_os in
+    darwin*|mingw*)
+        ;;
+    *)
+
 AC_CHECK_LIB(c, iconv, [ICONV_LIBS=],
     AC_CHECK_LIB(iconv, iconv, [ICONV_LIBS="-liconv"],
         AC_CHECK_LIB(iconv, libiconv, [ICONV_LIBS="-liconv"])))
@@ -1570,6 +1684,9 @@ if test "$ac_cv_func_iconv" = "yes"; then
     fi
 fi
 LIBS=$_SAVE_LIBS
+
+    ;;
+esac
 
 AC_SUBST_LIST(ICONV_LIBS)
 
@@ -1853,7 +1970,7 @@ dnl ========================================================
 MOZ_ARG_HEADER(External Packages)
 
 case "$OS_TARGET" in
-WINNT)
+WINNT|Darwin)
   MOZ_FOLD_LIBS=1
   ;;
 *)
@@ -2486,7 +2603,7 @@ dnl --enable-webrtc to override.  Can disable for everything in
 dnl the master list above.
 if test -n "$MOZ_WEBRTC"; then
     case "$target" in
-    *-linux*|*-mingw*|*-dragonfly*|*-freebsd*|*-netbsd*|*-openbsd*)
+    *-linux*|*-mingw*|*-darwin*|*-dragonfly*|*-freebsd*|*-netbsd*|*-openbsd*)
         dnl Leave enabled
         ;;
     *)
@@ -2632,11 +2749,11 @@ dnl = Client drawing in titlebar
 dnl ========================================================
 if test -n "$MOZ_CAN_DRAW_IN_TITLEBAR"; then
     case "$OS_TARGET" in
-    WINNT)
+    WINNT|Darwin)
         AC_DEFINE(MOZ_CAN_DRAW_IN_TITLEBAR)
         ;;
     *)
-        AC_MSG_ERROR([Drawing in the titlebar is only supported on Windows targets])
+        AC_MSG_ERROR([Drawing in the titlebar is only supported on Windows and Macintosh targets])
         ;;
     esac
 fi
@@ -2807,6 +2924,14 @@ if test -z "$MOZ_SYSTEM_LIBVPX"; then
 
     dnl See if we have assembly on this platform.
     case "$OS_ARCH:$CPU_ARCH" in
+    Darwin:x86)
+      VPX_USE_YASM=1
+      VPX_X86_ASM=1
+    ;;
+    Darwin:x86_64)
+      VPX_USE_YASM=1
+      VPX_X86_ASM=1
+    ;;
     WINNT:x86_64)
       VPX_USE_YASM=1
       VPX_X86_ASM=1
@@ -2931,7 +3056,7 @@ dnl ========================================================
 
 dnl If using Desktop Linux, ensure that the PA library is available
 case "$OS_TARGET" in
-WINNT)
+WINNT|Darwin)
     ;;
 *)
     MOZ_PULSEAUDIO=1
@@ -3211,6 +3336,11 @@ MOZ_ARG_ENABLE_BOOL(gamepad,
 
 if test "$MOZ_GAMEPAD"; then
     case "$OS_TARGET" in
+    Darwin)
+        if test -z "$MOZ_IOS"; then
+            MOZ_GAMEPAD_BACKEND=cocoa
+        fi
+        ;;
     WINNT)
         MOZ_GAMEPAD_BACKEND=windows
         ;;
@@ -3258,6 +3388,14 @@ if test -n "$MOZ_LIBJPEG_TURBO" -a -n "$COMPILE_ENVIRONMENT"; then
 
   dnl Do we support libjpeg-turbo on this platform?
   case "$OS_ARCH:$CPU_ARCH" in
+  Darwin:x86)
+    LIBJPEG_TURBO_ASFLAGS="-DPIC -DMACHO"
+  ;;
+  Darwin:x86_64)
+    LIBJPEG_TURBO_ASFLAGS="-D__x86_64__ -DPIC -DMACHO"
+  ;;
+  Darwin:arm*)
+  ;;
   WINNT:x86)
     LIBJPEG_TURBO_ASFLAGS="-DPIC -DWIN32"
   ;;
@@ -3337,6 +3475,9 @@ if test -n "$MOZ_LIBAV_FFT" -a -n "$COMPILE_ENVIRONMENT"; then
   AC_DEFINE(MOZ_LIBAV_FFT)
   dnl Do we support libav-fft on this platform?
   case "$OS_ARCH:$CPU_ARCH" in
+  Darwin:x86_64)
+    LIBAV_FFT_ASFLAGS="-D__x86_64__ -DPIC -DMACHO"
+  ;;
   WINNT:x86)
     LIBAV_FFT_ASFLAGS="-DPIC -DWIN32"
   ;;
@@ -3747,11 +3888,11 @@ if test -n "$MOZ_DEBUG"; then
 fi
 
 case "${OS_TARGET}" in
-WINNT)
+WINNT|Darwin)
   MOZ_GLUE_IN_PROGRAM=
   ;;
 *)
-  dnl On !Windows, we only want to link executables against mozglue
+  dnl On !Windows !OSX, we only want to link executables against mozglue
   MOZ_GLUE_IN_PROGRAM=1
   AC_DEFINE(MOZ_GLUE_IN_PROGRAM)
   ;;
@@ -4721,6 +4862,11 @@ MOZ_ARG_DISABLE_BOOL(necko-wifi,
 
 if test "$MOZ_NECKO_WIFI"; then
   case "$OS_TARGET" in
+    Darwin)
+      if test -z "$MOZ_IOS"; then
+        NECKO_WIFI=1
+      fi
+      ;;
     DragonFly|FreeBSD|WINNT)
       NECKO_WIFI=1
       ;;

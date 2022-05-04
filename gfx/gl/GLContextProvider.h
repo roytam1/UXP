@@ -34,6 +34,13 @@ namespace gl {
   #define DEFAULT_IMPL WGL
 #endif
 
+#ifdef XP_MACOSX
+  #define GL_CONTEXT_PROVIDER_NAME GLContextProviderCGL
+  #include "GLContextProviderImpl.h"
+  #undef GL_CONTEXT_PROVIDER_NAME
+  #define GL_CONTEXT_PROVIDER_DEFAULT GLContextProviderCGL
+#endif
+
 #if defined(MOZ_X11)
   #define GL_CONTEXT_PROVIDER_NAME GLContextProviderGLX
   #include "GLContextProviderImpl.h"

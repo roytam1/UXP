@@ -543,6 +543,20 @@ def target_is_unix(target):
 set_define('XP_UNIX', target_is_unix)
 
 @depends(target)
+def target_is_darwin(target):
+    if target.kernel == 'Darwin':
+        return True
+
+set_define('XP_DARWIN', target_is_darwin)
+
+@depends(target)
+def target_is_osx(target):
+    if target.kernel == 'Darwin' and target.os == 'OSX':
+        return True
+
+set_define('XP_MACOSX', target_is_osx)
+
+@depends(target)
 def target_is_linux(target):
     if target.kernel == 'Linux':
         return True

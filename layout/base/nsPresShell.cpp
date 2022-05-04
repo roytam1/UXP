@@ -8736,7 +8736,9 @@ PresShell::WillPaintWindow()
     return;
   }
 
+#ifndef XP_MACOSX
   rootPresContext->ApplyPluginGeometryUpdates();
+#endif
 }
 
 void

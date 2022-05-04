@@ -150,9 +150,13 @@ MFBT_API void* moz_xvalloc(size_t size)
  */
 
 /* NB: This is defined just to silence vacuous warnings about symbol
- * visibility on gcc. These symbols are force-inline and not exported.
- */
-#define MOZALLOC_EXPORT_NEW
+ * visibility on OS X/gcc. These symbols are force-inline and not
+ * exported. */
+#if defined(XP_MACOSX)
+#  define MOZALLOC_EXPORT_NEW MFBT_API
+#else
+#  define MOZALLOC_EXPORT_NEW
+#endif
 
 #if defined(_MSC_VER)
 /*

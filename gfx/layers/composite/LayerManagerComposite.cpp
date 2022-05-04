@@ -24,6 +24,9 @@
 #include "UnitTransforms.h"             // for ViewAs
 #include "apz/src/AsyncPanZoomController.h"  // for AsyncPanZoomController
 #include "gfxPrefs.h"                   // for gfxPrefs
+#ifdef XP_MACOSX
+#include "gfxPlatformMac.h"
+#endif
 #include "gfxRect.h"                    // for gfxRect
 #include "gfxUtils.h"                   // for frame color util
 #include "mozilla/Assertions.h"         // for MOZ_ASSERT, etc
@@ -878,6 +881,9 @@ LayerManagerComposite::Render(const nsIntRegion& aInvalidRegion, const nsIntRegi
   }
 
   mozilla::widget::WidgetRenderingContext widgetContext;
+#if defined(XP_MACOSX)
+  widgetContext.mLayerManager = this;
+#endif
 
   {
     PROFILER_LABEL("LayerManagerComposite", "PreRender",

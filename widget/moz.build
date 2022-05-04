@@ -5,6 +5,9 @@
 
 toolkit = CONFIG['MOZ_WIDGET_TOOLKIT']
 
+if toolkit in ('cocoa', 'uikit'):
+    DIRS += [toolkit]
+
 if toolkit in ('gtk2', 'gtk3'):
     EXPORTS += ['nsIPrintDialogService.h']
 
@@ -25,8 +28,19 @@ if toolkit == 'windows':
         'nsIWindowsUIUtils.idl',
         'nsIWinTaskbar.idl',
     ]
+elif toolkit == 'cocoa':
+    XPIDL_SOURCES += [
+        'nsIMacDockSupport.idl',
+        'nsIMacWebAppUtils.idl',
+        'nsIStandaloneNativeMenu.idl',
+        'nsISystemStatusBar.idl',
+        'nsITaskbarProgress.idl',
+    ]
+    EXPORTS += [
+        'nsIPrintDialogService.h',
+    ]
 
-if toolkit in ('gtk2', 'gtk3'):
+if toolkit in ('cocoa', 'gtk2', 'gtk3'):
     EXPORTS += ['nsINativeMenuService.h']
 
 # Don't build the DSO under the 'build' directory as windows does.
@@ -202,15 +216,15 @@ if CONFIG['MOZ_X11']:
         'WindowSurfaceX11SHM.cpp',
     ]
 
-if toolkit in ('windows'):
+if toolkit in ('cocoa', 'windows'):
     UNIFIED_SOURCES += [
         'nsBaseClipboard.cpp',
     ]
 
-if toolkit in {'gtk2', 'gtk3', 'windows', 'uikit'}:
+if toolkit in {'gtk2', 'gtk3', 'cocoa', 'windows', 'uikit'}:
     UNIFIED_SOURCES += ['nsBaseFilePicker.cpp']
 
-if toolkit in ('gtk2', 'gtk3', 'windows'):
+if toolkit in ('gtk2', 'gtk3', 'windows', 'cocoa'):
     UNIFIED_SOURCES += ['nsNativeTheme.cpp']
 
 if toolkit == 'gtk3':

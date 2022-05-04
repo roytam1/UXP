@@ -611,7 +611,7 @@ nsresult NS_MsgCreatePathStringFromFolderURI(const char *aFolderURI,
     ? oldPath.FindChar('/', startSlashPos + 1) - 1 : oldPath.Length() - 1;
   if (endSlashPos < 0)
     endSlashPos = oldPath.Length();
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) || defined(XP_MACOSX)
   bool isLocalUri = aScheme.EqualsLiteral("none") ||
                     aScheme.EqualsLiteral("pop3") ||
                     aScheme.EqualsLiteral("rss");
@@ -636,7 +636,7 @@ nsresult NS_MsgCreatePathStringFromFolderURI(const char *aFolderURI,
           CopyUTF16toMUTF7(pathPiece, tmp);
           CopyASCIItoUTF16(tmp, pathPiece);
       }
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) || defined(XP_MACOSX)
       // Don't hash path pieces because local mail folder uri's have already
       // been hashed. We're only doing this on the mac to limit potential
       // regressions.

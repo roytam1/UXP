@@ -132,6 +132,12 @@ PluginModuleChild::PluginModuleChild(bool aIsChrome)
         MOZ_ASSERT(!gChromeInstance);
         gChromeInstance = this;
     }
+
+#ifdef XP_MACOSX
+    if (aIsChrome) {
+      mac_plugin_interposing::child::SetUpCocoaInterposing();
+    }
+#endif
 }
 
 PluginModuleChild::~PluginModuleChild()
@@ -254,8 +260,14 @@ PluginModuleChild::InitForChrome(const std::string& aPluginFilename,
         AddQuirk(QUIRK_FLASH_EXPOSE_COORD_TRANSLATION);
     }
 #endif
+#if defined(XP_MACOSX)
+    const char* namePrefix = "Plugin Content";
+    char nameBuffer[80];
+    SprintfLiteral(nameBuffer, "%s (%s)", namePrefix, info.fName);
+    mozilla::plugins::PluginUtilsOSX::SetProcessName(nameBuffer);
+#endif
     pluginFile.FreePluginInfo(info);
-#if defined(MOZ_X11)
+#if defined(MOZ_X11) || defined(XP_MACOSX)
     if (!mLibrary)
 #endif
     {

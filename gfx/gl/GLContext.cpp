@@ -36,6 +36,10 @@
 
 #include "mozilla/DebugOnly.h"
 
+#ifdef XP_MACOSX
+#include <CoreServices/CoreServices.h>
+#endif
+
 #if defined(MOZ_WIDGET_COCOA)
 #include "nsCocoaFeatures.h"
 #endif
@@ -873,6 +877,18 @@ GLContext::InitWithPrefixImpl(const char* prefix, bool trygl)
             // multisampling hardcodes blending with the default blendfunc, which breaks WebGL.
             MarkUnsupported(GLFeature::framebuffer_multisample);
         }
+
+#ifdef XP_MACOSX
+        // The Mac Nvidia driver, for versions up to and including 10.8,
+        // don't seem to properly support this.  See 814839
+        // this has been fixed in Mac OS X 10.9. See 907946
+        // and it also works in 10.8.3 and higher.  See 1094338.
+        if (Vendor() == gl::GLVendor::NVIDIA &&
+            !nsCocoaFeatures::IsAtLeastVersion(10,8,3))
+        {
+            MarkUnsupported(GLFeature::depth_texture);
+        }
+#endif
     }
 
     if (IsExtensionSupported(GLContext::ARB_pixel_buffer_object)) {
@@ -993,6 +1009,25 @@ GLContext::InitWithPrefixImpl(const char* prefix, bool trygl)
     raw_fGetIntegerv(LOCAL_GL_MAX_RENDERBUFFER_SIZE, &mMaxRenderbufferSize);
     raw_fGetIntegerv(LOCAL_GL_MAX_VIEWPORT_DIMS, mMaxViewportDims);
 
+#ifdef XP_MACOSX
+    if (mWorkAroundDriverBugs) {
+        if (mVendor == GLVendor::Intel) {
+            // see bug 737182 for 2D textures, bug 684882 for cube map textures.
+            mMaxTextureSize        = std::min(mMaxTextureSize,        4096);
+            mMaxCubeMapTextureSize = std::min(mMaxCubeMapTextureSize, 512);
+            // for good measure, we align renderbuffers on what we do for 2D textures
+            mMaxRenderbufferSize   = std::min(mMaxRenderbufferSize,   4096);
+            mNeedsTextureSizeChecks = true;
+        } else if (mVendor == GLVendor::NVIDIA) {
+            // See bug 879656.  8192 fails, 8191 works.
+            mMaxTextureSize = std::min(mMaxTextureSize, 8191);
+            mMaxRenderbufferSize = std::min(mMaxRenderbufferSize, 8191);
+
+            // Part of the bug 879656, but it also doesn't hurt the 877949
+            mNeedsTextureSizeChecks = true;
+        }
+    }
+#endif
 #ifdef MOZ_X11
     if (mWorkAroundDriverBugs) {
         if (mVendor == GLVendor::Nouveau) {
@@ -1765,6 +1800,20 @@ GLContext::InitExtensions()
             MarkExtensionUnsupported(ANGLE_texture_compression_dxt3);
             MarkExtensionUnsupported(ANGLE_texture_compression_dxt5);
         }
+
+#ifdef XP_MACOSX
+        // Bug 1009642: On OSX Mavericks (10.9), the driver for Intel HD
+        // 3000 appears to be buggy WRT updating sub-images of S3TC
+        // textures with glCompressedTexSubImage2D. Works on Intel HD 4000
+        // and Intel HD 5000/Iris that I tested.
+        // Bug 1124996: Appears to be the same on OSX Yosemite (10.10)
+        if (nsCocoaFeatures::macOSVersionMajor() == 10 &&
+            nsCocoaFeatures::macOSVersionMinor() >= 9 &&
+            Renderer() == GLRenderer::IntelHD3000)
+        {
+            MarkExtensionUnsupported(EXT_texture_compression_s3tc);
+        }
+#endif
     }
 
     if (shouldDumpExts) {
@@ -2779,6 +2828,35 @@ GLContext::fReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum f
     }
 
     AfterGLReadCall();
+
+    // Check if GL is giving back 1.0 alpha for
+    // RGBA reads to RGBA images from no-alpha buffers.
+#ifdef XP_MACOSX
+    if (WorkAroundDriverBugs() &&
+        Vendor() == gl::GLVendor::NVIDIA &&
+        format == LOCAL_GL_RGBA &&
+        type == LOCAL_GL_UNSIGNED_BYTE &&
+        !IsCoreProfile() &&
+        width && height)
+    {
+        GLint alphaBits = 0;
+        fGetIntegerv(LOCAL_GL_ALPHA_BITS, &alphaBits);
+        if (!alphaBits) {
+            const uint32_t alphaMask = 0xff000000;
+
+            uint32_t* itr = (uint32_t*)pixels;
+            uint32_t testPixel = *itr;
+            if ((testPixel & alphaMask) != alphaMask) {
+                // We need to set the alpha channel to 1.0 manually.
+                uint32_t* itrEnd = itr + width*height;  // Stride is guaranteed to be width*4.
+
+                for (; itr != itrEnd; itr++) {
+                    *itr |= alphaMask;
+                }
+            }
+        }
+    }
+#endif
 }
 
 void

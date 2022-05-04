@@ -55,6 +55,19 @@ MimeMultipartAppleDouble_parse_begin (MimeObject *obj)
     NS_ASSERTION(obj->options->state->first_data_written_p, "first data not written");
   }
 
+#ifdef XP_MACOSX
+  if (obj->options && obj->options->state)
+  {
+//  obj->options->state->separator_suppressed_p = true;
+  goto done;
+  }
+  /*
+   * It would be nice to not showing the resource fork links
+   * if we are displaying inline. But, there is no way we could
+   * know ahead of time that we could display the data fork and
+   * the data fork is always hidden on MAC platform.
+   */
+#endif
   /* If we're writing this object as HTML, then emit a link for the
    multipart/appledouble part (both links) that looks just like the
    links that MimeExternalObject emits for external leaf parts.
@@ -143,6 +156,10 @@ GOTTA STILL DO THIS FOR QUOTING!
     if (status < 0) return status;
   }
 
+#ifdef XP_MACOSX
+done:
+#endif
+
   return 0;
 }
 
@@ -159,8 +176,13 @@ MimeMultipartAppleDouble_output_child_p(MimeObject *obj, MimeObject *child)
   if (cont->nchildren >= 1 && cont->children[0] == child && child->content_type &&
       !PL_strcasecmp(child->content_type, APPLICATION_APPLEFILE))
   {
-    /* Don't emit the resources fork. */
+#ifdef XP_MACOSX
+    if (obj->output_p && obj->options && obj->options->write_html_p) //output HTML
+      return false;
+#else
+    /* if we are not on a Macintosh, don't emitte the resources fork at all. */
     return false;
+#endif
   }
 
   return true;

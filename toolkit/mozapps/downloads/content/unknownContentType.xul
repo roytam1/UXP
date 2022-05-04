@@ -68,7 +68,11 @@
             <hbox id="openHandlerBox" flex="1" align="center"/>
             <hbox flex="1" align="center">
               <button id="chooseButton" oncommand="dialog.chooseApp();"
+#ifdef XP_MACOSX
+                      label="&chooseHandlerMac.label;" accesskey="&chooseHandlerMac.accesskey;"/>
+#else
                       label="&chooseHandler.label;" accesskey="&chooseHandler.accesskey;"/>
+#endif
             </hbox>
           </deck>
         </hbox>

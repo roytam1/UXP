@@ -689,6 +689,24 @@ WebGLProgram::GetFragDataLocation(const nsAString& userName_wide) const
     gl->MakeCurrent();
 
     const NS_LossyConvertUTF16toASCII userName(userName_wide);
+#ifdef XP_MACOSX
+    if (gl->WorkAroundDriverBugs()) {
+        // OSX doesn't return locs for indexed names, just the base names.
+        // Indicated by failure in: conformance2/programs/gl-get-frag-data-location.html
+        bool isArray;
+        size_t arrayIndex;
+        nsCString baseUserName;
+        if (!ParseName(userName, &baseUserName, &isArray, &arrayIndex))
+            return -1;
+
+        if (arrayIndex >= mContext->mImplMaxDrawBuffers)
+            return -1;
+
+        const auto baseLoc = GetFragDataByUserName(this, baseUserName);
+        const auto loc = baseLoc + GLint(arrayIndex);
+        return loc;
+    }
+#endif
     return GetFragDataByUserName(this, userName);
 }
 
@@ -752,6 +770,11 @@ WebGLProgram::GetProgramParameter(GLenum pname) const
         return JS::BooleanValue(IsLinked());
 
     case LOCAL_GL_VALIDATE_STATUS:
+#ifdef XP_MACOSX
+        // See comment in ValidateProgram.
+        if (gl->WorkAroundDriverBugs())
+            return JS::BooleanValue(true);
+#endif
         // Todo: Implement this in our code.
         return JS::BooleanValue(bool(GetProgramiv(gl, mGLName, pname)));
 
@@ -1354,6 +1377,17 @@ WebGLProgram::ValidateProgram() const
 {
     mContext->MakeContextCurrent();
     gl::GLContext* gl = mContext->gl;
+
+#ifdef XP_MACOSX
+    // See bug 593867 for NVIDIA and bug 657201 for ATI. The latter is confirmed
+    // with Mac OS 10.6.7.
+    if (gl->WorkAroundDriverBugs()) {
+        mContext->GenerateWarning("validateProgram: Implemented as a no-op on"
+                                  " Mac to work around crashes.");
+        return;
+    }
+#endif
+
     gl->fValidateProgram(mGLName);
 }
 

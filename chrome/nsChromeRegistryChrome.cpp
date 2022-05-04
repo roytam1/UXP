@@ -11,6 +11,8 @@
 
 #if defined(XP_WIN)
 #include <windows.h>
+#elif defined(XP_MACOSX)
+#include <CoreServices/CoreServices.h>
 #endif
 
 #include "nsArrayEnumerator.h"

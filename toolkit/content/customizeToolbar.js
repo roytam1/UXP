@@ -212,6 +212,10 @@ function wrapToolbarItems()
 {
   forEachCustomizableToolbar(function (toolbar) {
     Array.forEach(toolbar.childNodes, function (item) {
+#ifdef XP_MACOSX
+      if (item.firstChild && item.firstChild.localName == "menubar")
+        return;
+#endif
       if (isToolbarItem(item)) {
         let wrapper = wrapToolbarItem(item);
         cleanupItemForToolbar(item, wrapper);

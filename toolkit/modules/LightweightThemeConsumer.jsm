@@ -147,6 +147,29 @@ LightweightThemeConsumer.prototype = {
         footer.removeAttribute("lwthemefooter");
     }
 
+#if defined(XP_MACOSX) && defined(MOZ_CAN_DRAW_IN_TITLEBAR)
+    // On OS X, we extend the lightweight theme into the titlebar, which means setting
+    // the chromemargin attribute. Some XUL applications already draw in the titlebar,
+    // so we need to save the chromemargin value before we overwrite it with the value
+    // that lets us draw in the titlebar. We stash this value on the root attribute so
+    // that XUL applications have the ability to invalidate the saved value.
+    if (stateChanging) {
+      if (!root.hasAttribute("chromemargin-nonlwtheme")) {
+        root.setAttribute("chromemargin-nonlwtheme", root.getAttribute("chromemargin"));
+      }
+
+      if (active) {
+        root.setAttribute("chromemargin", "0,-1,-1,-1");
+      } else {
+        let defaultChromemargin = root.getAttribute("chromemargin-nonlwtheme");
+        if (defaultChromemargin) {
+          root.setAttribute("chromemargin", defaultChromemargin);
+        } else {
+          root.removeAttribute("chromemargin");
+        }
+      }
+    }
+#endif
     Services.obs.notifyObservers(this._win, "lightweight-theme-window-updated",
                                  JSON.stringify(aData));
   }

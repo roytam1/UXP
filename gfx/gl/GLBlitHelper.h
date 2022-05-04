@@ -107,6 +107,9 @@ class GLBlitHelper final
     void BindAndUploadEGLImage(EGLImage image, GLuint target);
 
     bool BlitPlanarYCbCrImage(layers::PlanarYCbCrImage* yuvImage);
+#ifdef XP_MACOSX
+    bool BlitMacIOSurfaceImage(layers::MacIOSurfaceImage* ioImage);
+#endif
 
     explicit GLBlitHelper(GLContext* gl);
 

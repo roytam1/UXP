@@ -11,6 +11,8 @@ elif toolkit == 'android':
     DIRS += ['android']
 elif toolkit in ('gtk2', 'gtk3'):
     DIRS += ['linux']
+elif toolkit == 'cocoa':
+    DIRS += ['mac']
 
 XPIDL_SOURCES += [
     'nsIOSFileConstantsService.idl',

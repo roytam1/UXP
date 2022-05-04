@@ -25,6 +25,11 @@
 #include "NativeFontResourceGDI.h"
 #endif
 
+#ifdef XP_DARWIN
+#include "ScaledFontMac.h"
+#include "NativeFontResourceMac.h"
+#endif
+
 #ifdef MOZ_WIDGET_GTK
 #include "ScaledFontFontconfig.h"
 #endif
@@ -260,6 +265,15 @@ Factory::CheckSurfaceSize(const IntSize &sz,
     return false;
   }
 
+#if defined(XP_MACOSX)
+  // CoreGraphics is limited to images < 32K in *height*,
+  // so clamp all surfaces on the Mac to that height
+  if (sz.height > SHRT_MAX) {
+    gfxDebug() << "Surface size too large (exceeds CoreGraphics limit)!";
+    return false;
+  }
+#endif
+
   // assuming 4 bytes per pixel, make sure the allocation size
   // doesn't overflow a int32_t either
   CheckedInt<int32_t> stride = GetAlignedStride<16>(sz.width, 4);
@@ -467,6 +481,12 @@ Factory::CreateScaledFontForNativeFont(const NativeFont &aNativeFont, Float aSiz
     }
 #endif
 #endif
+#ifdef XP_DARWIN
+  case NativeFontType::MAC_FONT_FACE:
+    {
+      return MakeAndAddRef<ScaledFontMac>(static_cast<CGFontRef>(aNativeFont.mFont), aSize);
+    }
+#endif
 #if defined(USE_CAIRO) || defined(USE_SKIA_FREETYPE)
   case NativeFontType::CAIRO_FONT_FACE:
     {
@@ -504,6 +524,8 @@ Factory::CreateNativeFontResource(uint8_t *aData, uint32_t aSize,
         return NativeFontResourceGDI::Create(aData, aSize,
                                              /* aNeedsCairo = */ true);
       }
+#elif XP_DARWIN
+      return NativeFontResourceMac::Create(aData, aSize);
 #else
       gfxWarning() << "Unable to create cairo scaled font from truetype data";
       return nullptr;
@@ -779,6 +801,14 @@ Factory::CreateWrappingDataSourceSurface(uint8_t *aData,
 
   return newSurf.forget();
 }
+
+#ifdef XP_DARWIN
+already_AddRefed<GlyphRenderingOptions>
+Factory::CreateCGGlyphRenderingOptions(const Color &aFontSmoothingBackgroundColor)
+{
+  return MakeAndAddRef<GlyphRenderingOptionsCG>(aFontSmoothingBackgroundColor);
+}
+#endif
 
 already_AddRefed<DataSourceSurface>
 Factory::CreateDataSourceSurface(const IntSize &aSize,

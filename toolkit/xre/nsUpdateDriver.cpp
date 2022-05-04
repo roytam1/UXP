@@ -1,4 +1,5 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim:set ts=2 sw=2 sts=2 et cindent: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -25,6 +26,13 @@
 #include "mozilla/Preferences.h"
 #include "nsPrintfCString.h"
 #include "mozilla/DebugOnly.h"
+
+#ifdef XP_MACOSX
+#include "nsILocalFileMac.h"
+#include "nsCommandLineServiceMac.h"
+#include "MacLaunchHelper.h"
+#include "updaterfileutils_osx.h"
+#endif
 
 #if defined(XP_WIN)
 # include <direct.h>
@@ -53,11 +61,16 @@ GetUpdateLog()
 
 #ifdef XP_WIN
 #define UPDATER_BIN "updater.exe"
+#elif XP_MACOSX
+#define UPDATER_BIN "org.mozilla.updater"
 #else
 #define UPDATER_BIN "updater"
 #endif
 #define UPDATER_INI "updater.ini"
-#if defined(XP_UNIX)
+#ifdef XP_MACOSX
+#define UPDATER_APP "updater.app"
+#endif
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 #define UPDATER_PNG "updater.png"
 #endif
 
@@ -96,7 +109,18 @@ static nsresult
 GetInstallDirPath(nsIFile *appDir, nsACString& installDirPath)
 {
   nsresult rv;
-#if XP_WIN
+#ifdef XP_MACOSX
+  nsCOMPtr<nsIFile> parentDir1, parentDir2;
+  rv = appDir->GetParent(getter_AddRefs(parentDir1));
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = parentDir1->GetParent(getter_AddRefs(parentDir2));
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  rv = parentDir2->GetNativePath(installDirPath);
+#elif XP_WIN
   nsAutoString installDirPathW;
   rv = appDir->GetPath(installDirPathW);
   if (NS_FAILED(rv)) {
@@ -111,6 +135,35 @@ GetInstallDirPath(nsIFile *appDir, nsACString& installDirPath)
   }
   return NS_OK;
 }
+
+#if defined(XP_MACOSX)
+// This is a copy of OS X's XRE_GetBinaryPath from nsAppRunner.cpp with the
+// gBinaryPath check removed so that the updater can reload the stub executable
+// instead of xulrunner-bin. See bug 349737.
+static nsresult
+GetXULRunnerStubPath(const char* argv0, nsIFile* *aResult)
+{
+  // Works even if we're not bundled.
+  CFBundleRef appBundle = ::CFBundleGetMainBundle();
+  if (!appBundle)
+    return NS_ERROR_FAILURE;
+
+  CFURLRef bundleURL = ::CFBundleCopyExecutableURL(appBundle);
+  if (!bundleURL)
+    return NS_ERROR_FAILURE;
+
+  nsCOMPtr<nsILocalFileMac> lfm;
+  nsresult rv = NS_NewLocalFileWithCFURL(bundleURL, true, getter_AddRefs(lfm));
+
+  ::CFRelease(bundleURL);
+
+  if (NS_FAILED(rv))
+    return rv;
+
+  lfm.forget(aResult);
+  return NS_OK;
+}
+#endif /* XP_MACOSX */
 
 static bool
 GetFile(nsIFile *dir, const nsCSubstring &name, nsCOMPtr<nsIFile> &result)
@@ -271,10 +324,16 @@ CopyUpdaterIntoUpdateDir(nsIFile *greDir, nsIFile *appDir, nsIFile *updateDir,
                          nsCOMPtr<nsIFile> &updater)
 {
   // Copy the updater application from the GRE and the updater ini from the app
+#if defined(XP_MACOSX)
+  if (!CopyFileIntoUpdateDir(appDir, NS_LITERAL_CSTRING(UPDATER_APP), updateDir))
+    return false;
+  CopyFileIntoUpdateDir(greDir, NS_LITERAL_CSTRING(UPDATER_INI), updateDir);
+#else
   if (!CopyFileIntoUpdateDir(greDir, NS_LITERAL_CSTRING(UPDATER_BIN), updateDir))
     return false;
   CopyFileIntoUpdateDir(appDir, NS_LITERAL_CSTRING(UPDATER_INI), updateDir);
-#if defined(XP_UNIX)
+#endif
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
   nsCOMPtr<nsIFile> iconDir;
   appDir->Clone(getter_AddRefs(iconDir));
   iconDir->AppendNative(NS_LITERAL_CSTRING("icons"));
@@ -285,6 +344,16 @@ CopyUpdaterIntoUpdateDir(nsIFile *greDir, nsIFile *appDir, nsIFile *updateDir,
   nsresult rv = updateDir->Clone(getter_AddRefs(updater));
   if (NS_FAILED(rv))
     return false;
+#if defined(XP_MACOSX)
+  rv  = updater->AppendNative(NS_LITERAL_CSTRING(UPDATER_APP));
+  nsresult tmp = updater->AppendNative(NS_LITERAL_CSTRING("Contents"));
+  if (NS_FAILED(tmp)) {
+    rv = tmp;
+  }
+  tmp = updater->AppendNative(NS_LITERAL_CSTRING("MacOS"));
+  if (NS_FAILED(tmp) || NS_FAILED(rv))
+    return false;
+#endif
   rv = updater->AppendNative(NS_LITERAL_CSTRING(UPDATER_BIN));
   return NS_SUCCEEDED(rv);
 }
@@ -295,7 +364,8 @@ CopyUpdaterIntoUpdateDir(nsIFile *greDir, nsIFile *appDir, nsIFile *updateDir,
  *
  * @param pathToAppend A new library path to prepend to LD_LIBRARY_PATH
  */
-#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN)
+#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN) && \
+    !defined(XP_MACOSX)
 #include "prprf.h"
 #define PATH_SEPARATOR ":"
 #define LD_LIBRARY_PATH_ENVVAR_NAME "LD_LIBRARY_PATH"
@@ -372,7 +442,13 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
   // to restart the running application.
   nsCOMPtr<nsIFile> appFile;
 
+#if defined(XP_MACOSX)
+  // On OS X we need to pass the location of the xulrunner-stub executable
+  // rather than xulrunner-bin. See bug 349737.
+  GetXULRunnerStubPath(appArgv[0], getter_AddRefs(appFile));
+#else
   XRE_GetBinaryPath(appArgv[0], getter_AddRefs(appFile));
+#endif
 
   if (!appFile)
     return;
@@ -424,7 +500,11 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
   // Get the directory where the update will be staged.
   nsAutoCString applyToDir;
   nsCOMPtr<nsIFile> updatedDir;
+#ifdef XP_MACOSX
+  if (!GetFile(updateDir, NS_LITERAL_CSTRING("Updated.app"), updatedDir)) {
+#else
   if (!GetFile(appDir, NS_LITERAL_CSTRING("updated"), updatedDir)) {
+#endif
     return;
   }
 #ifdef XP_WIN
@@ -468,7 +548,7 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
   // Construct the PID argument for this process. We start the updater using
   // execv on all Unix platforms except Mac, so on those platforms we pass 0
   // instead of a good PID to signal the updater not to try and wait for us.
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) & !defined(XP_MACOSX)
   nsAutoCString pid("0");
 #else
   nsAutoCString pid;
@@ -508,13 +588,14 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
   if (gSafeMode) {
     PR_SetEnv("MOZ_SAFE_MODE_RESTART=1");
   }
-#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN)
+#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN) && \
+    !defined(XP_MACOSX)
   AppendToLibPath(installDirPath.get());
 #endif
 
   LOG(("spawning updater process for replacing [%s]\n", updaterPath.get()));
 
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) & !defined(XP_MACOSX)
   exit(execv(updaterPath.get(), argv));
 #elif defined(XP_WIN)
   // Switch the application using updater.exe
@@ -522,6 +603,10 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir,
     return;
   }
   _exit(0);
+#elif defined(XP_MACOSX)
+  CommandLineServiceMac::SetupMacCommandLine(argc, argv, true);
+  LaunchChildMac(argc, argv);
+  exit(0);
 #else
   PR_CreateProcessDetached(updaterPath.get(), argv, nullptr, nullptr);
   exit(0);
@@ -567,7 +652,13 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   // to restart the running application.
   nsCOMPtr<nsIFile> appFile;
 
+#if defined(XP_MACOSX)
+  // On OS X we need to pass the location of the xulrunner-stub executable
+  // rather than xulrunner-bin. See bug 349737.
+  GetXULRunnerStubPath(appArgv[0], getter_AddRefs(appFile));
+#else
   XRE_GetBinaryPath(appArgv[0], getter_AddRefs(appFile));
+#endif
 
   if (!appFile)
     return;
@@ -623,7 +714,11 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   if (restart && !isOSUpdate) {
     applyToDir.Assign(installDirPath);
   } else {
+#ifdef XP_MACOSX
+    if (!GetFile(updateDir, NS_LITERAL_CSTRING("Updated.app"), updatedDir)) {
+#else
     if (!GetFile(appDir, NS_LITERAL_CSTRING("updated"), updatedDir)) {
+#endif
       return;
     }
 #ifdef XP_WIN
@@ -678,7 +773,7 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
     // Signal the updater application that it should stage the update.
     pid.AssignASCII("-1");
   } else {
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) & !defined(XP_MACOSX)
     pid.AssignASCII("0");
 #else
     pid.AppendInt((int32_t) getpid());
@@ -714,7 +809,8 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   if (gSafeMode) {
     PR_SetEnv("MOZ_SAFE_MODE_RESTART=1");
   }
-#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN)
+#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN) && \
+    !defined(XP_MACOSX)
   AppendToLibPath(installDirPath.get());
 #endif
 
@@ -724,10 +820,10 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
 
   LOG(("spawning updater process [%s]\n", updaterPath.get()));
 
-#if defined(XP_UNIX)
-  // We use execv to spawn the updater process on all UNIX-like systems.
-  // Windows has execv, but it is a faked implementation that doesn't really
-  // replace the current process.
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
+  // We use execv to spawn the updater process on all UNIX systems except Mac OSX
+  // since it is known to cause problems on the Mac.  Windows has execv, but it
+  // is a faked implementation that doesn't really replace the current process.
   // Instead it spawns a new process, so we gain nothing from using execv on
   // Windows.
   if (restart) {
@@ -749,6 +845,24 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
     // We are going to process an update so we should exit now
     _exit(0);
   }
+#elif defined(XP_MACOSX)
+  CommandLineServiceMac::SetupMacCommandLine(argc, argv, restart);
+  // We need to detect whether elevation is required for this update. This can
+  // occur when an admin user installs the application, but another admin
+  // user attempts to update (see bug 394984).
+  if (restart && !IsRecursivelyWritable(installDirPath.get())) {
+    if (!LaunchElevatedUpdate(argc, argv, outpid)) {
+      LOG(("Failed to launch elevated update!"));
+      exit(1);
+    }
+    exit(0);
+  } else {
+    if (restart) {
+      LaunchChildMac(argc, argv);
+      exit(0);
+    }
+    LaunchChildMac(argc, argv, outpid);
+  }
 #else
   *outpid = PR_CreateProcess(updaterPath.get(), argv, nullptr, nullptr);
   if (restart) {
@@ -768,6 +882,9 @@ ProcessHasTerminated(ProcessType pt)
     return false;
   }
   CloseHandle(pt);
+  return true;
+#elif defined(XP_MACOSX)
+  // We're waiting for the process to terminate in LaunchChildMac.
   return true;
 #elif defined(XP_UNIX)
   int exitStatus;

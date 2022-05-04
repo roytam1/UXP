@@ -100,7 +100,11 @@
                 oncommand="gUpdateWizard.shouldAutoCheck = this.checked;"/>
     </vbox>
     <separator flex="1"/>
+#ifndef XP_MACOSX
     <label>&clickFinish.label;</label>
+#else
+    <label>&clickFinish.labelMac;</label>
+#endif
     <separator class="thin"/>
   </wizardpage>
 
@@ -140,7 +144,11 @@
       <description flex="1">&installerrors.intro.label;</description>
     </hbox>
     <separator flex="1"/>
+#ifndef XP_MACOSX
     <label>&clickFinish.label;</label>
+#else
+    <label>&clickFinish.labelMac;</label>
+#endif
     <separator class="thin"/>
   </wizardpage>
   
@@ -153,7 +161,11 @@
       <description flex="1">&adminDisabled.warning.label;</description>
     </hbox>
     <separator flex="1"/>
+#ifndef XP_MACOSX
     <label>&clickFinish.label;</label>
+#else
+    <label>&clickFinish.labelMac;</label>
+#endif
     <separator class="thin"/>
   </wizardpage>
 
@@ -172,7 +184,11 @@
                 oncommand="gUpdateWizard.shouldAutoCheck = this.checked;"/>
     </vbox>
     <separator flex="1"/>
+#ifndef XP_MACOSX
     <label>&clickFinish.label;</label>
+#else
+    <label>&clickFinish.labelMac;</label>
+#endif
     <separator class="thin"/>
   </wizardpage>
   

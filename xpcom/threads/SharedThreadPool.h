@@ -87,7 +87,7 @@ public:
   // Use the system default in ASAN builds, because the default is assumed to be
   // larger than the size we want to use and is hopefully sufficient for ASAN.
   static const uint32_t kStackSize = nsIThreadManager::DEFAULT_STACK_SIZE;
-#elif defined(XP_WIN) || defined(LINUX)
+#elif defined(XP_WIN) || defined(XP_MACOSX) || defined(LINUX)
   static const uint32_t kStackSize = (256 * 1024);
 #else
   // All other platforms use their system defaults.

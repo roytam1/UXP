@@ -206,14 +206,6 @@ const RESTARTLESS_TYPES = new Set([
   "locale",
 ]);
 
-// Keep track of where we are in startup.
-// event happened during XPIDatabase.startup()
-const XPI_STARTING = "XPIStarting";
-// event happened after startup() but before the final-ui-startup event
-const XPI_BEFORE_UI_STARTUP = "BeforeFinalUIStartup";
-// event happened after final-ui-startup
-const XPI_AFTER_UI_STARTUP = "AfterFinalUIStartup";
-
 const COMPATIBLE_BY_DEFAULT_TYPES = {
   extension: true,
   dictionary: true
@@ -1833,8 +1825,6 @@ this.XPIProvider = {
   allAppGlobal: true,
   // A string listing the enabled add-ons for annotating crash reports
   enabledAddons: null,
-  // Keep track of startup phases.
-  runPhase: XPI_STARTING,
   // Keep track of the newest file in each add-on, in case we want to
   // report it.
   _mostRecentlyModifiedFile: {},
@@ -2008,7 +1998,6 @@ this.XPIProvider = {
 
     try {
       logger.debug("startup");
-      this.runPhase = XPI_STARTING;
       this.installs = [];
       this.installLocations = [];
       this.installLocationsByName = {};
@@ -2179,7 +2168,6 @@ this.XPIProvider = {
       }, "quit-application-granted", false);
 
       this.extensionsActive = true;
-      this.runPhase = XPI_BEFORE_UI_STARTUP;
     }
     catch (e) {
       logger.error("startup failed", e);

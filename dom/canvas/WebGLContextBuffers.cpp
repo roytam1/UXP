@@ -295,6 +295,16 @@ WebGLContext::BindBufferRange(GLenum target, GLuint index, WebGLBuffer* buffer,
 
     ////
 
+#ifdef XP_MACOSX
+    if (buffer && buffer->Content() == WebGLBuffer::Kind::Undefined &&
+        gl->WorkAroundDriverBugs())
+    {
+        // BindBufferRange will fail if the buffer's contents is undefined.
+        // Bind so driver initializes the buffer.
+        gl->fBindBuffer(target, buffer->mGLName);
+    }
+#endif
+
     gl->fBindBufferRange(target, index, buffer ? buffer->mGLName : 0, offset, size);
 
     ////
@@ -342,6 +352,12 @@ WebGLContext::BufferData(GLenum target, WebGLsizeiptr size, GLenum usage)
     if (!checkedSize.isValid())
       return ErrorOutOfMemory("%s: Size too large for platform.", funcName);
      
+#if defined(XP_MACOSX)
+    if (gl->WorkAroundDriverBugs() && size > 1200000000) {
+      return ErrorOutOfMemory("Allocations larger than 1200000000 fail on MacOS.");
+    }
+#endif
+
     const UniqueBuffer zeroBuffer(calloc(size, 1));
     if (!zeroBuffer)
         return ErrorOutOfMemory("%s: Failed to allocate zeros.", funcName);

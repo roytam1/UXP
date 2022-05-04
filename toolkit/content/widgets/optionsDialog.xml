@@ -11,6 +11,7 @@
   <binding id="optionsDialog" 
            extends="chrome://global/content/bindings/dialog.xml#dialog">
      <content>
+#ifndef XP_MACOSX
        <xul:hbox flex="1">
          <xul:categoryBox anonid="prefsCategories">
            <children/>
@@ -20,6 +21,16 @@
            <xul:iframe anonid="panelFrame" name="panelFrame" style="width: 0px;" flex="1"/>
          </xul:vbox>
        </xul:hbox>
+#else
+       <xul:vbox flex="1">
+         <xul:categoryBox anonid="prefsCategories">
+           <children/>
+         </xul:categoryBox>
+         <xul:vbox flex="1">
+           <xul:iframe anonid="panelFrame" name="panelFrame" style="width: 0px;" flex="1"/>
+         </xul:vbox>
+       </xul:vbox>
+#endif
      </content>
      
      <implementation>

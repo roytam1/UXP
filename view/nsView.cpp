@@ -241,8 +241,8 @@ LayoutDeviceIntRect nsView::CalcWidgetBounds(nsWindowType aType)
   LayoutDeviceIntRect newBounds =
     LayoutDeviceIntRect::FromUnknownRect(viewBounds.ToNearestPixels(p2a));
 
-#if (MOZ_WIDGET_GTK == 3)
-  // GTK 3 rounds widget coordinates to the nearest global "display
+#if defined(XP_MACOSX) || (MOZ_WIDGET_GTK == 3)
+  // cocoa and GTK round widget coordinates to the nearest global "display
   // pixel" integer value. So we avoid fractional display pixel values by
   // rounding to the nearest value that won't yield a fractional display pixel.
   nsIWidget* widget = parentWidget ? parentWidget : mWindow.get();

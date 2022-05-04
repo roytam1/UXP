@@ -167,8 +167,13 @@ nsXBLPrototypeHandler::InitAccessKeys()
     return;
   }
 
-  // Compiled-in defaults, in case we can't get the pref
+  // Compiled-in defaults, in case we can't get the pref --
+  // mac doesn't have menu shortcuts, other platforms use alt.
+#ifdef XP_MACOSX
+  kMenuAccessKey = 0;
+#else
   kMenuAccessKey = nsIDOMKeyEvent::DOM_VK_ALT;
+#endif
 
   // Get the menu access key value from prefs, overriding the default:
   kMenuAccessKey =

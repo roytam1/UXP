@@ -126,6 +126,8 @@ nsButtonBoxFrame::HandleEvent(nsPresContext* aPresContext,
       break;
     }
 
+// On mac, Return fires the default button, not the focused one.
+#ifndef XP_MACOSX
     case eKeyPress: {
       WidgetKeyboardEvent* keyEvent = aEvent->AsKeyboardEvent();
       if (!keyEvent) {
@@ -140,6 +142,7 @@ nsButtonBoxFrame::HandleEvent(nsPresContext* aPresContext,
       }
       break;
     }
+#endif
 
     case eKeyUp: {
       WidgetKeyboardEvent* keyEvent = aEvent->AsKeyboardEvent();

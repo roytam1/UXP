@@ -4,6 +4,12 @@
 
 function closeWindow(aClose, aPromptFunction)
 {
+#ifdef XP_MACOSX
+  // Closing the last window doesn't quit the application on OS X.
+  if (typeof(aPromptFunction) == "function" && !aPromptFunction()) {
+    return false;
+  }
+#else
   var windowCount = 0;
   var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
                      .getService(Components.interfaces.nsIWindowMediator);
@@ -23,6 +29,7 @@ function closeWindow(aClose, aPromptFunction)
     return false;
   if (windowCount != 1 && typeof(aPromptFunction) == "function" && !aPromptFunction())
     return false;
+#endif
 
   if (aClose) {
     window.close();

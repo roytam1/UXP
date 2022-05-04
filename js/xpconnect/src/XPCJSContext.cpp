@@ -3209,7 +3209,12 @@ XPCJSContext::Initialize()
     // the web to base this decision primarily on the default stack size that the
     // underlying platform makes available, but that seems to be what we do. :-(
 
-#if defined(MOZ_ASAN)
+#if defined(XP_MACOSX) || defined(DARWIN)
+    // MacOS has a gargantuan default stack size of 8MB. Go wild with 7MB,
+    // and give trusted script 180k extra. The stack is huge on mac anyway.
+    const size_t kStackQuota = 7 * 1024 * 1024;
+    const size_t kTrustedScriptBuffer = 180 * 1024;
+#elif defined(MOZ_ASAN)
     // ASan requires more stack space due to red-zones, so give it double the
     // default (1MB on 32-bit, 2MB on 64-bit). ASAN stack frame measurements
     // were not taken at the time of this writing, so we hazard a guess that

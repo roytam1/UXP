@@ -49,6 +49,16 @@ int GetQuirksFromMimeTypeAndFilename(const nsCString& aMimeType,
     }
 #endif
 
+#ifdef XP_MACOSX
+    // Whitelist Flash and Quicktime to support offline renderer
+    NS_NAMED_LITERAL_CSTRING(quicktime, "QuickTime Plugin.plugin");
+    if (specialType == nsPluginHost::eSpecialType_Flash) {
+        quirks |= QUIRK_ALLOW_OFFLINE_RENDERER;
+    } else if (FindInReadable(quicktime, aPluginFilename)) {
+        quirks |= QUIRK_ALLOW_OFFLINE_RENDERER;
+    }
+#endif
+
 #ifdef OS_WIN
     if (specialType == nsPluginHost::eSpecialType_Unity) {
         quirks |= QUIRK_UNITY_FIXUP_MOUSE_CAPTURE;

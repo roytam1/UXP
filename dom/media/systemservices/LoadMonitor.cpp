@@ -31,6 +31,12 @@
 #include <unistd.h>
 #endif
 
+#ifdef XP_MACOSX
+#include <mach/mach_host.h>
+#include <mach/mach_init.h>
+#include <mach/host_info.h>
+#endif
+
 #if defined(__DragonFly__) || defined(__FreeBSD__) \
  || defined(__NetBSD__) || defined(__OpenBSD__)
 #include <sys/sysctl.h>
@@ -403,6 +409,27 @@ nsresult RTCLoadInfo::UpdateSystemLoad()
 
   const uint64_t cpu_times = nice + system + user;
   const uint64_t total_times = cpu_times + idle;
+
+  UpdateCpuLoad(mTicksPerInterval,
+                total_times,
+                cpu_times,
+                &mSystemLoad);
+  return NS_OK;
+#elif defined(XP_MACOSX)
+  mach_msg_type_number_t info_cnt = HOST_CPU_LOAD_INFO_COUNT;
+  host_cpu_load_info_data_t load_info;
+  kern_return_t rv = host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO,
+                                     (host_info_t)(&load_info), &info_cnt);
+
+  if (rv != KERN_SUCCESS || info_cnt != HOST_CPU_LOAD_INFO_COUNT) {
+    LOG(("Error from mach/host_statistics call"));
+    return NS_ERROR_FAILURE;
+  }
+
+  const uint64_t cpu_times = load_info.cpu_ticks[CPU_STATE_NICE]
+                           + load_info.cpu_ticks[CPU_STATE_SYSTEM]
+                           + load_info.cpu_ticks[CPU_STATE_USER];
+  const uint64_t total_times = cpu_times + load_info.cpu_ticks[CPU_STATE_IDLE];
 
   UpdateCpuLoad(mTicksPerInterval,
                 total_times,

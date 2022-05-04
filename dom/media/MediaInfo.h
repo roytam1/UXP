@@ -213,6 +213,7 @@ public:
     , mCodecSpecificConfig(aOther.mCodecSpecificConfig)
     , mExtraData(aOther.mExtraData)
     , mRotation(aOther.mRotation)
+    , mBitDepth(aOther.mBitDepth)
     , mImageRect(aOther.mImageRect)
   {
   }
@@ -303,6 +304,9 @@ public:
   // Describing how many degrees video frames should be rotated in clock-wise to
   // get correct view.
   Rotation mRotation;
+  
+  // Bits per channel -- Should be 8, 10 or 12. Default value is 8.
+  uint8_t mBitDepth = 8;
 
 private:
   // mImage may be cropped; currently only used with the WebM container.

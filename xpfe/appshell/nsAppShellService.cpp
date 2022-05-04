@@ -119,8 +119,20 @@ nsAppShellService::CreateHiddenWindowHelper(bool aIsPrivate)
   nsresult rv;
   int32_t initialHeight = 100, initialWidth = 100;
 
+#ifdef XP_MACOSX
+  uint32_t    chromeMask = 0;
+  nsAdoptingCString prefVal =
+      Preferences::GetCString("browser.hiddenWindowChromeURL");
+  const char* hiddenWindowURL = prefVal.get() ? prefVal.get() : DEFAULT_HIDDENWINDOW_URL;
+  if (aIsPrivate) {
+    hiddenWindowURL = DEFAULT_HIDDENWINDOW_URL;
+  } else {
+    mApplicationProvidedHiddenWindow = prefVal.get() ? true : false;
+  }
+#else
   static const char hiddenWindowURL[] = DEFAULT_HIDDENWINDOW_URL;
   uint32_t    chromeMask =  nsIWebBrowserChrome::CHROME_ALL;
+#endif
 
   nsCOMPtr<nsIURI> url;
   rv = NS_NewURI(getter_AddRefs(url), hiddenWindowURL);
@@ -550,12 +562,26 @@ nsAppShellService::CalculateWindowZLevel(nsIXULWindow *aParent,
   else if (aChromeMask & nsIWebBrowserChrome::CHROME_WINDOW_LOWERED)
     zLevel = nsIXULWindow::loweredZ;
 
+#ifdef XP_MACOSX
+  /* Platforms on which modal windows are always application-modal, not
+     window-modal (that's just the Mac, right?) want modal windows to
+     be stacked on top of everyone else.
+
+     On Mac OS X, bind modality to parent window instead of app (ala Mac OS 9)
+  */
+  uint32_t modalDepMask = nsIWebBrowserChrome::CHROME_MODAL |
+                          nsIWebBrowserChrome::CHROME_DEPENDENT;
+  if (aParent && (aChromeMask & modalDepMask)) {
+    aParent->GetZLevel(&zLevel);
+  }
+#else
   /* Platforms with native support for dependent windows (that's everyone
       but pre-Mac OS X, right?) know how to stack dependent windows. On these
       platforms, give the dependent window the same level as its parent,
       so we won't try to override the normal platform behaviour. */
   if ((aChromeMask & nsIWebBrowserChrome::CHROME_DEPENDENT) && aParent)
     aParent->GetZLevel(&zLevel);
+#endif
 
   return zLevel;
 }
@@ -641,6 +667,23 @@ nsAppShellService::JustCreateTopWindow(nsIXULWindow *aParent,
 
   if (aChromeMask & nsIWebBrowserChrome::CHROME_MAC_SUPPRESS_ANIMATION)
     widgetInitData.mIsAnimationSuppressed = true;
+
+#ifdef XP_MACOSX
+  // Mac OS X sheet support
+  // Adding CHROME_OPENAS_CHROME to sheetMask makes modal windows opened from
+  // nsGlobalWindow::ShowModalDialog() be dialogs (not sheets), while modal
+  // windows opened from nsPromptService::DoDialog() still are sheets.  This
+  // fixes bmo bug 395465 (see nsCocoaWindow::StandardCreate() and
+  // nsCocoaWindow::SetModal()).
+  uint32_t sheetMask = nsIWebBrowserChrome::CHROME_OPENAS_DIALOG |
+                       nsIWebBrowserChrome::CHROME_MODAL |
+                       nsIWebBrowserChrome::CHROME_OPENAS_CHROME;
+  if (parent &&
+      (parent != mHiddenWindow && parent != mHiddenPrivateWindow) &&
+      ((aChromeMask & sheetMask) == sheetMask)) {
+    widgetInitData.mWindowType = eWindowType_sheet;
+  }
+#endif
 
 #if defined(XP_WIN)
   if (widgetInitData.mWindowType == eWindowType_toplevel ||

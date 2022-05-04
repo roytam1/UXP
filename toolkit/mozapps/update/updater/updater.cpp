@@ -53,6 +53,9 @@
 #include <algorithm>
 
 #include "updatecommon.h"
+#ifdef XP_MACOSX
+#include "updaterfileutils_osx.h"
+#endif // XP_MACOSX
 
 #include "mozilla/Compiler.h"
 #include "mozilla/Types.h"
@@ -72,6 +75,23 @@
 #define PARENT_WAIT 10000
 #endif
 
+#if defined(XP_MACOSX)
+// These functions are defined in launchchild_osx.mm
+void CleanupElevatedMacUpdate(bool aFailureOccurred);
+bool IsOwnedByGroupAdmin(const char* aAppBundle);
+bool IsRecursivelyWritable(const char* aPath);
+void LaunchChild(int argc, const char** argv);
+void LaunchMacPostProcess(const char* aAppBundle);
+bool ObtainUpdaterArguments(int* argc, char*** argv);
+bool ServeElevatedUpdate(int argc, const char** argv);
+void SetGroupOwnershipAndPermissions(const char* aAppBundle);
+struct UpdateServerThreadArgs
+{
+  int argc;
+  const NS_tchar** argv;
+};
+#endif
+
 #ifndef _O_BINARY
 # define _O_BINARY 0
 #endif
@@ -86,13 +106,14 @@
 
 // We want to use execv to invoke the callback executable on platforms where
 // we were launched using execv.  See nsUpdateDriver.cpp.
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 #define USE_EXECV
 #endif
 
 # define MAYBE_USE_HARD_LINKS 0
 
-#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN)
+#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN) && \
+    !defined(XP_MACOSX)
 #include "nss.h"
 #include "prerror.h"
 #endif
@@ -1675,6 +1696,21 @@ PatchFile::Execute()
 
   AutoFile ofile(ensure_open(mFile.get(), shouldTruncate ? NS_T("wb+") : NS_T("rb+"),
                              ss.st_mode));
+#elif defined(XP_MACOSX)
+  AutoFile ofile(ensure_open(mFile.get(), NS_T("wb+"), ss.st_mode));
+  // Modified code from FileUtils.cpp
+  fstore_t store = {F_ALLOCATECONTIG, F_PEOFPOSMODE, 0, header.dlen};
+  // Try to get a continous chunk of disk space
+  rv = fcntl(fileno((FILE *)ofile), F_PREALLOCATE, &store);
+  if (rv == -1) {
+    // OK, perhaps we are too fragmented, allocate non-continuous
+    store.fst_flags = F_ALLOCATEALL;
+    rv = fcntl(fileno((FILE *)ofile), F_PREALLOCATE, &store);
+  }
+
+  if (rv != -1) {
+    ftruncate(fileno((FILE *)ofile), header.dlen);
+  }
 #else
   AutoFile ofile(ensure_open(mFile.get(), NS_T("wb+"), ss.st_mode));
 #endif
@@ -2055,6 +2091,8 @@ LaunchCallbackApp(const NS_tchar *workingDir,
 
 #if defined(USE_EXECV)
   execv(argv[0], argv);
+#elif defined(XP_MACOSX)
+  LaunchChild(argc, (const char**)argv);
 #elif defined(XP_WIN)
   WinLaunchChild(argv[0], argc, argv, nullptr);
 #else
@@ -2170,14 +2208,18 @@ CopyInstallDirToDestDir()
   // These files should not be copied over to the updated app
 #ifdef XP_WIN
 #define SKIPLIST_COUNT 3
+#elif XP_MACOSX
+#define SKIPLIST_COUNT 0
 #else
 #define SKIPLIST_COUNT 2
 #endif
   copy_recursive_skiplist<SKIPLIST_COUNT> skiplist;
+#ifndef XP_MACOSX
   skiplist.append(0, gInstallDirPath, NS_T("updated"));
   skiplist.append(1, gInstallDirPath, NS_T("updates/0"));
 #ifdef XP_WIN
   skiplist.append(2, gInstallDirPath, NS_T("updated.update_in_progress.lock"));
+#endif
 #endif
 
   return ensure_copy_recursive(gInstallDirPath, gWorkingDirPath, skiplist);
@@ -2197,7 +2239,11 @@ ProcessReplaceRequest()
   // 2. Move newDir to destDir.  In case of failure, revert step 1 and abort.
   // 3. Delete tmpDir (or defer it to the next reboot).
 
-#ifdef XP_WIN
+#ifdef XP_MACOSX
+  NS_tchar destDir[MAXPATHLEN];
+  NS_tsnprintf(destDir, sizeof(destDir)/sizeof(destDir[0]),
+               NS_T("%s/Contents"), gInstallDirPath);
+#elif XP_WIN
   // Windows preserves the case of the file/directory names.  We use the
   // GetLongPathName API in order to get the correct case for the directory
   // name, so that if the user has used a different case when launching the
@@ -2217,8 +2263,13 @@ ProcessReplaceRequest()
 
   NS_tchar newDir[MAXPATHLEN];
   NS_tsnprintf(newDir, sizeof(newDir)/sizeof(newDir[0]),
+#ifdef XP_MACOSX
+               NS_T("%s/Contents"),
+               gWorkingDirPath);
+#else
                NS_T("%s.bak/updated"),
                gInstallDirPath);
+#endif
 
   // First try to remove the possibly existing temp directory, because if this
   // directory exists, we will fail to rename destDir.
@@ -2256,6 +2307,14 @@ ProcessReplaceRequest()
   LOG(("Begin moving newDir (" LOG_S ") to destDir (" LOG_S ")",
        newDir, destDir));
   rv = rename_file(newDir, destDir, true);
+#ifdef XP_MACOSX
+  if (rv) {
+    LOG(("Moving failed. Begin copying newDir (" LOG_S ") to destDir (" LOG_S ")",
+         newDir, destDir));
+    copy_recursive_skiplist<0> skiplist;
+    rv = ensure_copy_recursive(newDir, destDir, skiplist);
+  }
+#endif
   if (rv) {
     LOG(("Moving newDir to destDir failed, err: %d", rv));
     LOG(("Now, try to move tmpDir back to destDir"));
@@ -2269,7 +2328,7 @@ ProcessReplaceRequest()
     return rv;
   }
 
-#if !defined(XP_WIN)
+#if !defined(XP_WIN) && !defined(XP_MACOSX)
   // Platforms that have their updates directory in the installation directory
   // need to have the last-update.log and backup-update.log files moved from the
   // old installation directory to the new installation directory.
@@ -2302,6 +2361,15 @@ ProcessReplaceRequest()
     remove_recursive_on_reboot(tmpDir, deleteDir);
 #endif
   }
+
+#ifdef XP_MACOSX
+  // On OS X, we we need to remove the staging directory after its Contents
+  // directory has been moved.
+  NS_tchar updatedAppDir[MAXPATHLEN];
+  NS_tsnprintf(updatedAppDir, sizeof(updatedAppDir)/sizeof(updatedAppDir[0]),
+               NS_T("%s/Updated.app"), gPatchDirPath);
+  ensure_remove_recursive(updatedAppDir);
+#endif
 
   gSucceeded = true;
 
@@ -2412,7 +2480,11 @@ UpdateThreadFunc(void *param)
         NS_tchar updateSettingsPath[MAX_TEXT_LEN];
         NS_tsnprintf(updateSettingsPath,
                      sizeof(updateSettingsPath) / sizeof(updateSettingsPath[0]),
+#ifdef XP_MACOSX
+                     NS_T("%s/Contents/Resources/update-settings.ini"),
+#else
                      NS_T("%s/update-settings.ini"),
+#endif
                      gWorkingDirPath);
         MARChannelStringTable MARStrings;
         if (ReadMARChannelIDs(updateSettingsPath, &MARStrings) != OK) {
@@ -2484,6 +2556,15 @@ UpdateThreadFunc(void *param)
     if (rv) {
       LOG(("failed: %d", rv));
     } else {
+#ifdef XP_MACOSX
+      // If the update was successful we need to update the timestamp on the
+      // top-level Mac OS X bundle directory so that Mac OS X's Launch Services
+      // picks up any major changes when the bundle is updated.
+      if (!sStagedUpdate && utimes(gInstallDirPath, nullptr) != 0) {
+        LOG(("Couldn't set access/modification time on application bundle."));
+      }
+#endif
+
       LOG(("succeeded"));
     }
     WriteStatusFile(rv);
@@ -2493,11 +2574,34 @@ UpdateThreadFunc(void *param)
   QuitProgressUI();
 }
 
+#ifdef XP_MACOSX
+static void
+ServeElevatedUpdateThreadFunc(void* param)
+{
+  UpdateServerThreadArgs* threadArgs = (UpdateServerThreadArgs*)param;
+  gSucceeded = ServeElevatedUpdate(threadArgs->argc, threadArgs->argv);
+  if (!gSucceeded) {
+    WriteStatusFile(ELEVATION_CANCELED);
+  }
+  QuitProgressUI();
+}
+
+void freeArguments(int argc, char** argv)
+{
+  for (int i = 0; i < argc; i++) {
+    free(argv[i]);
+  }
+  free(argv);
+}
+#endif
+
 int LaunchCallbackAndPostProcessApps(int argc, NS_tchar** argv,
                                      int callbackIndex
 #ifdef XP_WIN
                                      , const WCHAR* elevatedLockFilePath
                                      , HANDLE updateLockFileHandle
+#elif XP_MACOSX
+                                     , bool isElevated
 #endif
                                      )
 {
@@ -2509,11 +2613,19 @@ int LaunchCallbackAndPostProcessApps(int argc, NS_tchar** argv,
       }
     }
     EXIT_WHEN_ELEVATED(elevatedLockFilePath, updateLockFileHandle, 0);
+#elif XP_MACOSX
+    if (!isElevated) {
+      if (gSucceeded) {
+        LaunchMacPostProcess(gInstallDirPath);
+      }
 #endif
 
     LaunchCallbackApp(argv[5],
                       argc - callbackIndex,
                       argv + callbackIndex);
+#ifdef XP_MACOSX
+    } // if (!isElevated)
+#endif /* XP_MACOSX */
   }
   return 0;
 }
@@ -2525,7 +2637,20 @@ int NS_main(int argc, NS_tchar **argv)
   // argument prior to callbackIndex is the working directory.
   const int callbackIndex = 6;
 
-#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN)
+#ifdef XP_MACOSX
+  bool isElevated =
+    strstr(argv[0], "/Library/PrivilegedHelperTools/org.mozilla.updater") != 0;
+  if (isElevated) {
+    if (!ObtainUpdaterArguments(&argc, &argv)) {
+      // Won't actually get here because ObtainUpdaterArguments will terminate
+      // the current process on failure.
+      return 1;
+    }
+  }
+#endif
+
+#if defined(MOZ_VERIFY_MAR_SIGNATURE) && !defined(XP_WIN) && \
+    !defined(XP_MACOSX)
   // On Windows and Mac we rely on native APIs to do verifications so we don't
   // need to initialize NSS at all there.
   // Otherwise, minimize the amount of NSS we depend on by avoiding all the NSS
@@ -2538,7 +2663,13 @@ int NS_main(int argc, NS_tchar **argv)
   }
 #endif
 
-  InitProgressUI(&argc, &argv);
+#ifdef XP_MACOSX
+  if (!isElevated) {
+#endif
+    InitProgressUI(&argc, &argv);
+#ifdef XP_MACOSX
+  }
+#endif
 
   // To process an update the updater command line must at a minimum have the
   // directory path containing the updater.mar file to process as the first
@@ -2556,6 +2687,12 @@ int NS_main(int argc, NS_tchar **argv)
   // launched.
   if (argc < 4) {
     fprintf(stderr, "Usage: updater patch-dir install-dir apply-to-dir [wait-pid [callback-working-dir callback-path args...]]\n");
+#ifdef XP_MACOSX
+    if (isElevated) {
+      freeArguments(argc, argv);
+      CleanupElevatedMacUpdate(true);
+    }
+#endif
     return 1;
   }
 
@@ -2564,6 +2701,12 @@ int NS_main(int argc, NS_tchar **argv)
     // directory is invalid don't write the status file.
     fprintf(stderr, "The patch directory path is not valid for this "  \
             "application (" LOG_S ")\n", argv[1]);
+#ifdef XP_MACOSX
+    if (isElevated) {
+      freeArguments(argc, argv);
+      CleanupElevatedMacUpdate(true);
+    }
+#endif
     return 1;
   }
   // The directory containing the update information.
@@ -2573,6 +2716,12 @@ int NS_main(int argc, NS_tchar **argv)
     WriteStatusFile(INVALID_INSTALL_DIR_PATH_ERROR);
     fprintf(stderr, "The install directory path is not valid for this "  \
             "application (" LOG_S ")\n", argv[2]);
+#ifdef XP_MACOSX
+    if (isElevated) {
+      freeArguments(argc, argv);
+      CleanupElevatedMacUpdate(true);
+    }
+#endif
     return 1;
   }
   // The directory we're going to update to.
@@ -2635,6 +2784,12 @@ int NS_main(int argc, NS_tchar **argv)
     WriteStatusFile(INVALID_WORKING_DIR_PATH_ERROR);
     fprintf(stderr, "The working directory path is not valid for this "  \
             "application (" LOG_S ")\n", argv[3]);
+#ifdef XP_MACOSX
+    if (isElevated) {
+      freeArguments(argc, argv);
+      CleanupElevatedMacUpdate(true);
+    }
+#endif
     return 1;
   }
   // The directory we're going to update to.
@@ -2653,6 +2808,12 @@ int NS_main(int argc, NS_tchar **argv)
       WriteStatusFile(INVALID_CALLBACK_PATH_ERROR);
       fprintf(stderr, "The callback file path is not valid for this "  \
               "application (" LOG_S ")\n", argv[callbackIndex]);
+#ifdef XP_MACOSX
+      if (isElevated) {
+        freeArguments(argc, argv);
+        CleanupElevatedMacUpdate(true);
+      }
+#endif
       return 1;
     }
 
@@ -2663,9 +2824,36 @@ int NS_main(int argc, NS_tchar **argv)
       WriteStatusFile(INVALID_CALLBACK_DIR_ERROR);
       fprintf(stderr, "The callback file must be located in the "  \
               "installation directory (" LOG_S ")\n", argv[callbackIndex]);
+#ifdef XP_MACOSX
+      if (isElevated) {
+        freeArguments(argc, argv);
+        CleanupElevatedMacUpdate(true);
+      }
+#endif
       return 1;
     }
   }
+
+#ifdef XP_MACOSX
+  if (!isElevated && !IsRecursivelyWritable(argv[2])) {
+    // If the app directory isn't recursively writeable, an elevated update is
+    // required.
+    UpdateServerThreadArgs threadArgs;
+    threadArgs.argc = argc;
+    threadArgs.argv = const_cast<const NS_tchar**>(argv);
+
+    Thread t1;
+    if (t1.Run(ServeElevatedUpdateThreadFunc, &threadArgs) == 0) {
+      // Show an indeterminate progress bar while an elevated update is in
+      // progress.
+      ShowProgressUI(true);
+    }
+    t1.Join();
+
+    LaunchCallbackAndPostProcessApps(argc, argv, callbackIndex, false);
+    return gSucceeded ? 0 : 1;
+  }
+#endif
 
   if (EnvHasValue("MOZ_OS_UPDATE")) {
     sIsOSUpdate = true;
@@ -2676,6 +2864,12 @@ int NS_main(int argc, NS_tchar **argv)
 
   if (!WriteStatusFile("applying")) {
     LOG(("failed setting status to 'applying'"));
+#ifdef XP_MACOSX
+    if (isElevated) {
+      freeArguments(argc, argv);
+      CleanupElevatedMacUpdate(true);
+    }
+#endif
     return 1;
   }
 
@@ -2912,6 +3106,12 @@ int NS_main(int argc, NS_tchar **argv)
     // Try to create the destination directory if it doesn't exist
     int rv = NS_tmkdir(gWorkingDirPath, 0755);
     if (rv != OK && errno != EEXIST) {
+#ifdef XP_MACOSX
+      if (isElevated) {
+        freeArguments(argc, argv);
+        CleanupElevatedMacUpdate(true);
+      }
+#endif
       return 1;
     }
   }
@@ -3152,7 +3352,11 @@ int NS_main(int argc, NS_tchar **argv)
   // is an elevated process on OSX.
   Thread t;
   if (t.Run(UpdateThreadFunc, nullptr) == 0) {
-    if (!sStagedUpdate && !sReplaceRequest) {
+    if (!sStagedUpdate && !sReplaceRequest
+#ifdef XP_MACOSX
+        && !isElevated
+#endif
+       ) {
       ShowProgressUI();
     }
   }
@@ -3189,12 +3393,66 @@ int NS_main(int argc, NS_tchar **argv)
   }
 #endif /* XP_WIN */
 
+#ifdef XP_MACOSX
+  // When the update is successful remove the precomplete file in the root of
+  // the application bundle and move the distribution directory from
+  // Contents/MacOS to Contents/Resources and if both exist delete the
+  // directory under Contents/MacOS (see Bug 1068439).
+  if (gSucceeded && !sStagedUpdate) {
+    NS_tchar oldPrecomplete[MAXPATHLEN];
+    NS_tsnprintf(oldPrecomplete, sizeof(oldPrecomplete)/sizeof(oldPrecomplete[0]),
+                 NS_T("%s/precomplete"), gInstallDirPath);
+    NS_tremove(oldPrecomplete);
+
+    NS_tchar oldDistDir[MAXPATHLEN];
+    NS_tsnprintf(oldDistDir, sizeof(oldDistDir)/sizeof(oldDistDir[0]),
+                 NS_T("%s/Contents/MacOS/distribution"), gInstallDirPath);
+    int rv = NS_taccess(oldDistDir, F_OK);
+    if (!rv) {
+      NS_tchar newDistDir[MAXPATHLEN];
+      NS_tsnprintf(newDistDir, sizeof(newDistDir)/sizeof(newDistDir[0]),
+                   NS_T("%s/Contents/Resources/distribution"), gInstallDirPath);
+      rv = NS_taccess(newDistDir, F_OK);
+      if (!rv) {
+        LOG(("New distribution directory already exists... removing old " \
+             "distribution directory: " LOG_S, oldDistDir));
+        rv = ensure_remove_recursive(oldDistDir);
+        if (rv) {
+          LOG(("Removing old distribution directory failed - err: %d", rv));
+        }
+      } else {
+        LOG(("Moving old distribution directory to new location. src: " LOG_S \
+             ", dst:" LOG_S, oldDistDir, newDistDir));
+        rv = rename_file(oldDistDir, newDistDir, true);
+        if (rv) {
+          LOG(("Moving old distribution directory to new location failed - " \
+               "err: %d", rv));
+        }
+      }
+    }
+  }
+
+  if (isElevated) {
+    SetGroupOwnershipAndPermissions(gInstallDirPath);
+    freeArguments(argc, argv);
+    CleanupElevatedMacUpdate(false);
+  } else if (IsOwnedByGroupAdmin(gInstallDirPath)) {
+    // If the group ownership of the Firefox .app bundle was set to the "admin"
+    // group during a previous elevated update, we need to ensure that all files
+    // in the bundle have group ownership of "admin" as well as write permission
+    // for the group to not break updates in the future.
+    SetGroupOwnershipAndPermissions(gInstallDirPath);
+  }
+#endif /* XP_MACOSX */
+
   LogFinish();
 
   int retVal = LaunchCallbackAndPostProcessApps(argc, argv, callbackIndex
 #ifdef XP_WIN
                                                 , elevatedLockFilePath
                                                 , updateLockFileHandle
+#elif XP_MACOSX
+                                                , isElevated
 #endif
                                                );
 
@@ -3650,8 +3908,13 @@ int AddPreCompleteActions(ActionList *list)
     return OK;
   }
 
+#ifdef XP_MACOSX
+  mozilla::UniquePtr<NS_tchar[]> manifestPath(get_full_path(
+    NS_T("Contents/Resources/precomplete")));
+#else
   mozilla::UniquePtr<NS_tchar[]> manifestPath(get_full_path(
     NS_T("precomplete")));
+#endif
 
   NS_tchar *rb = GetManifestContents(manifestPath.get());
   if (rb == nullptr) {

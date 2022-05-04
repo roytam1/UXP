@@ -66,10 +66,19 @@ PrepareAndDispatch(uint32_t methodIndex, nsXPTCStubBase* self, uint32_t* args)
 }
 } // extern "C"
 
+#if !defined(XP_MACOSX)
+
 #define STUB_HEADER(a, b) ".hidden " SYMBOL_UNDERSCORE "_ZN14nsXPTCStubBase" #a "Stub" #b "Ev\n\t" \
                           ".type   " SYMBOL_UNDERSCORE "_ZN14nsXPTCStubBase" #a "Stub" #b "Ev,@function\n"
 
 #define STUB_SIZE(a, b)  ".size        " SYMBOL_UNDERSCORE "_ZN14nsXPTCStubBase" #a "Stub" #b "Ev,.-" SYMBOL_UNDERSCORE "_ZN14nsXPTCStubBase" #a "Stub" #b "Ev\n\t"
+
+#else
+
+#define STUB_HEADER(a, b)
+#define STUB_SIZE(a, b)
+
+#endif
 
 // gcc3 mangling tends to insert the length of the method name
 #define STUB_ENTRY(n) \
@@ -103,12 +112,16 @@ asm(".text\n\t" \
 // static nsresult SharedStub(uint32_t methodIndex) __attribute__((regparm(1)))
 asm(".text\n\t"
     ".align	2\n\t"
+#if !defined(XP_MACOSX)
     ".type	" SYMBOL_UNDERSCORE "SharedStub,@function\n\t"
+#endif
     SYMBOL_UNDERSCORE "SharedStub:\n\t"
     "leal	0x08(%esp), %ecx\n\t"
     "movl	0x04(%esp), %edx\n\t"
     "jmp	" SYMBOL_UNDERSCORE "PrepareAndDispatch\n\t"
+#if !defined(XP_MACOSX)
     ".size	" SYMBOL_UNDERSCORE "SharedStub,.-" SYMBOL_UNDERSCORE "SharedStub"
+#endif
 );
 
 #define SENTINEL_ENTRY(n) \

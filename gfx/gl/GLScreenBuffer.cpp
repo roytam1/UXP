@@ -24,6 +24,10 @@
 #include "mozilla/gfx/DeviceManagerDx.h"
 #endif
 
+#ifdef XP_MACOSX
+#include "SharedSurfaceIO.h"
+#endif
+
 #ifdef GL_PROVIDER_GLX
 #include "GLXLibrary.h"
 #include "SharedSurfaceGLX.h"
@@ -80,7 +84,9 @@ GLScreenBuffer::CreateFactory(GLContext* gl,
     if (!gfxPrefs::WebGLForceLayersReadback()) {
         switch (backend) {
             case mozilla::layers::LayersBackend::LAYERS_OPENGL: {
-#if defined(GL_PROVIDER_GLX)
+#if defined(XP_MACOSX)
+                factory = SurfaceFactory_IOSurface::Create(gl, caps, ipcChannel, flags);
+#elif defined(GL_PROVIDER_GLX)
                 if (sGLXLibrary.UseTextureFromPixmap())
                   factory = SurfaceFactory_GLXDrawable::Create(gl, caps, ipcChannel, flags);
 #elif defined(MOZ_WIDGET_UIKIT)

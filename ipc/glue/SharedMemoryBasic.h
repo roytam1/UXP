@@ -6,6 +6,10 @@
 #ifndef mozilla_ipc_SharedMemoryBasic_h
 #define mozilla_ipc_SharedMemoryBasic_h
 
+#ifdef XP_DARWIN
+#  include "mozilla/ipc/SharedMemoryBasic_mach.h"
+#else
 #  include "mozilla/ipc/SharedMemoryBasic_chromium.h"
+#endif
 
 #endif // ifndef mozilla_ipc_SharedMemoryBasic_h

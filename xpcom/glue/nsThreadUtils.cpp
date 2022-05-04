@@ -21,6 +21,8 @@
 #include <windows.h>
 #include "mozilla/WindowsVersion.h"
 using mozilla::IsVistaOrLater;
+#elif defined(XP_MACOSX)
+#include <sys/resource.h>
 #endif
 
 #include <pratom.h>
@@ -443,6 +445,12 @@ nsAutoLowPriorityIO::nsAutoLowPriorityIO()
   lowIOPrioritySet = IsVistaOrLater() &&
                      SetThreadPriority(GetCurrentThread(),
                                        THREAD_MODE_BACKGROUND_BEGIN);
+#elif defined(XP_MACOSX)
+  oldPriority = getiopolicy_np(IOPOL_TYPE_DISK, IOPOL_SCOPE_THREAD);
+  lowIOPrioritySet = oldPriority != -1 &&
+                     setiopolicy_np(IOPOL_TYPE_DISK,
+                                    IOPOL_SCOPE_THREAD,
+                                    IOPOL_THROTTLE) != -1;
 #else
   lowIOPrioritySet = false;
 #endif
@@ -454,6 +462,10 @@ nsAutoLowPriorityIO::~nsAutoLowPriorityIO()
   if (MOZ_LIKELY(lowIOPrioritySet)) {
     // On Windows the old thread priority is automatically restored
     SetThreadPriority(GetCurrentThread(), THREAD_MODE_BACKGROUND_END);
+  }
+#elif defined(XP_MACOSX)
+  if (MOZ_LIKELY(lowIOPrioritySet)) {
+    setiopolicy_np(IOPOL_TYPE_DISK, IOPOL_SCOPE_THREAD, oldPriority);
   }
 #endif
 }

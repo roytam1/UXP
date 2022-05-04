@@ -315,16 +315,27 @@
                  group="system" action="this.onKeyAction('default', event);"/>
         <handler event="keypress" keycode="VK_ESCAPE"
                  group="system" action="this.onKeyAction('cancel', event);"/>
+#ifdef XP_MACOSX
+        <handler event="keypress" key="." modifiers="meta"
+                 group="system" action="this.onKeyAction('cancel', event);"/>
+#endif
         <handler event="focus" phase="capturing">
             let bnum = this.args.defaultButtonNum || 0;
             let defaultButton = this.ui["button" + bnum];
 
-            // The default button is only marked as such when no other button has focus.
-            // XUL buttons will react to pressing enter as a command, so you can't trigger
-            // the default without tabbing to it or something that isn't a button.
+#ifdef XP_MACOSX
+            // On OS X, the default button always stays marked as such (until
+            // the entire prompt blurs).
+            defaultButton.setAttribute("default", true);
+#else
+            // On other platforms, the default button is only marked as such
+            // when no other button has focus. XUL buttons on not-OSX will
+            // react to pressing enter as a command, so you can't trigger the
+            // default without tabbing to it or something that isn't a button.
             let focusedDefault = (event.originalTarget == defaultButton);
             let someButtonFocused = event.originalTarget instanceof Ci.nsIDOMXULButtonElement;
             defaultButton.setAttribute("default", focusedDefault || !someButtonFocused);
+#endif
         </handler>
         <handler event="blur">
             // If focus shifted to somewhere else in the browser, don't make

@@ -25,6 +25,13 @@
 
 MOZ_BEGIN_EXTERN_C
 
+/*
+ * On OSX, malloc/malloc.h contains the declaration for malloc_good_size,
+ * which will call back in jemalloc, through the zone allocator so just use it.
+ */
+#ifdef XP_DARWIN
+#  include <malloc/malloc.h>
+#else
 MOZ_MEMORY_API size_t malloc_good_size_impl(size_t size);
 
 /* Note: the MOZ_GLUE_IN_PROGRAM ifdef below is there to avoid -Werror turning
@@ -32,15 +39,15 @@ MOZ_MEMORY_API size_t malloc_good_size_impl(size_t size);
  * to use weak imports. */
 
 static inline size_t _malloc_good_size(size_t size) {
-#if defined(MOZ_GLUE_IN_PROGRAM) && !defined(IMPL_MFBT)
+#  if defined(MOZ_GLUE_IN_PROGRAM) && !defined(IMPL_MFBT)
   if (!malloc_good_size)
     return size;
-#endif
+#  endif
   return malloc_good_size_impl(size);
 }
 
-#define malloc_good_size _malloc_good_size
-
+#  define malloc_good_size _malloc_good_size
+#endif
 
 MOZ_JEMALLOC_API void jemalloc_stats(jemalloc_stats_t *stats);
 

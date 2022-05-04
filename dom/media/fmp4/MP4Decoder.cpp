@@ -132,6 +132,19 @@ MP4Decoder::CanHandleMediaType(const MediaContentType& aType,
             NS_LITERAL_CSTRING("audio/flac"), aType));
         continue;
       }
+      if (IsVP9CodecString(codec)) {
+        auto trackInfo =
+          CreateTrackInfoWithMIMETypeAndContentTypeExtraParameters(
+            NS_LITERAL_CSTRING("video/vp9"), aType);
+        uint8_t profile = 0;
+        uint8_t level = 0;
+        uint8_t bitDepth = 0;
+        if (ExtractVPXCodecDetails(codec, profile, level, bitDepth)) {
+          trackInfo->GetAsVideoInfo()->mBitDepth = bitDepth;
+        }
+        trackInfos.AppendElement(Move(trackInfo));
+        continue;
+      }
 #ifdef MOZ_AV1
       if (IsAV1CodecString(codec)) {
         trackInfos.AppendElement(

@@ -842,7 +842,11 @@ nsListControlFrame::HandleListSelection(nsIDOMEvent* aEvent,
   nsCOMPtr<nsIDOMMouseEvent> mouseEvent = do_QueryInterface(aEvent);
   bool isShift;
   bool isControl;
+#ifdef XP_MACOSX
+  mouseEvent->GetMetaKey(&isControl);
+#else
   mouseEvent->GetCtrlKey(&isControl);
+#endif
   mouseEvent->GetShiftKey(&isShift);
   return PerformSelection(aClickedIndex, isShift, isControl); // might destroy us
 }
@@ -1926,7 +1930,11 @@ nsListControlFrame::DragMove(nsIDOMEvent* aMouseEvent)
       nsCOMPtr<nsIDOMMouseEvent> mouseEvent = do_QueryInterface(aMouseEvent);
       NS_ASSERTION(mouseEvent, "aMouseEvent is not an nsIDOMMouseEvent!");
       bool isControl;
+#ifdef XP_MACOSX
+      mouseEvent->GetMetaKey(&isControl);
+#else
       mouseEvent->GetCtrlKey(&isControl);
+#endif
       nsWeakFrame weakFrame(this);
       // Turn SHIFT on when you are dragging, unless control is on.
       bool wasChanged = PerformSelection(selectedIndex,
@@ -2134,8 +2142,14 @@ nsListControlFrame::KeyDown(nsIDOMEvent* aKeyEvent)
 
   bool dropDownMenuOnUpDown;
   bool dropDownMenuOnSpace;
+#ifdef XP_MACOSX
+  dropDownMenuOnUpDown = IsInDropDownMode() && !mComboboxFrame->IsDroppedDown();
+  dropDownMenuOnSpace = !keyEvent->IsAlt() && !keyEvent->IsControl() &&
+    !keyEvent->IsMeta();
+#else
   dropDownMenuOnUpDown = keyEvent->IsAlt();
   dropDownMenuOnSpace = IsInDropDownMode() && !mComboboxFrame->IsDroppedDown();
+#endif
   bool withinIncrementalSearchTime =
     keyEvent->mTime - gLastKeyTime <= INCREMENTAL_SEARCH_KEYPRESS_TIME;
   if ((dropDownMenuOnUpDown &&

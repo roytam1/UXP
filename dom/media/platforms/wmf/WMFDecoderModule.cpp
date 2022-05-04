@@ -205,6 +205,14 @@ bool
 WMFDecoderModule::Supports(const TrackInfo& aTrackInfo,
                            DecoderDoctorDiagnostics* aDiagnostics) const
 {
+  // Check bit depth of video.
+  // XXXMC: This is here in case we want to start accepting HDR video. Do we?
+  //        This currently defaults to a fail if video bitdepth != 8
+  const auto videoInfo = aTrackInfo.GetAsVideoInfo();
+  if (videoInfo && !SupportsBitDepth(videoInfo->mBitDepth, aDiagnostics)) {
+    return false;
+  }
+
   if ((aTrackInfo.mMimeType.EqualsLiteral("audio/mp4a-latm") ||
        aTrackInfo.mMimeType.EqualsLiteral("audio/mp4")) &&
        WMFDecoderModule::HasAAC()) {
@@ -221,7 +229,7 @@ WMFDecoderModule::Supports(const TrackInfo& aTrackInfo,
         return false;
       }
     } else {
-      // Windows <=7 supports at most 1920x1088.
+      // Windows 7 supports at most 1920x1088.
       if (videoInfo->mImage.width > 1920 || videoInfo->mImage.height > 1088) {
         return false;
       }

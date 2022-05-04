@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
 const HAVE_CSS_WINDOW_DRAG_SUPPORT = true;
 #else
 const HAVE_CSS_WINDOW_DRAG_SUPPORT = false;

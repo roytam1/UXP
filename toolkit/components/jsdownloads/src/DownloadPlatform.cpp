@@ -25,6 +25,11 @@
 #include "nsILocalFileWin.h"
 #endif
 
+#ifdef XP_MACOSX
+#include <CoreFoundation/CoreFoundation.h>
+#include "../../../../xpcom/io/CocoaFileUtils.h"
+#endif
+
 #ifdef MOZ_WIDGET_GTK
 #include <gtk/gtk.h>
 #endif
@@ -64,13 +69,39 @@ static void gio_set_metadata_done(GObject *source_obj, GAsyncResult *res, gpoint
 }
 #endif
 
+#ifdef XP_MACOSX
+// Caller is responsible for freeing any result (CF Create Rule)
+CFURLRef CreateCFURLFromNSIURI(nsIURI *aURI) {
+  nsAutoCString spec;
+  if (aURI) {
+    aURI->GetSpec(spec);
+  }
+
+  CFStringRef urlStr = ::CFStringCreateWithCString(kCFAllocatorDefault,
+                                                   spec.get(),
+                                                   kCFStringEncodingUTF8);
+  if (!urlStr) {
+    return NULL;
+  }
+
+  CFURLRef url = ::CFURLCreateWithString(kCFAllocatorDefault,
+                                         urlStr,
+                                         NULL);
+
+  ::CFRelease(urlStr);
+
+  return url;
+}
+#endif
+
 nsresult DownloadPlatform::DownloadDone(nsIURI* aSource, nsIURI* aReferrer, nsIFile* aTarget,
                                         const nsACString& aContentType, bool aIsPrivate)
 {
-#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
 
   nsAutoString path;
   if (aTarget && NS_SUCCEEDED(aTarget->GetPath(path))) {
+#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
     // On Windows and Gtk, add the download to the system's "recent documents"
     // list, with a pref to disable.
     {
@@ -105,10 +136,53 @@ nsresult DownloadPlatform::DownloadDone(nsIURI* aSource, nsIURI* aReferrer, nsIF
                                   nullptr, gio_set_metadata_done, nullptr);
       g_object_unref(file_info);
       g_object_unref(gio_file);
-#endif // MOZ_ENABLE_GIO
+#endif
     }
+#endif
+
+#ifdef XP_MACOSX
+    // On OS X, make the downloads stack bounce.
+    CFStringRef observedObject = ::CFStringCreateWithCString(kCFAllocatorDefault,
+                                             NS_ConvertUTF16toUTF8(path).get(),
+                                             kCFStringEncodingUTF8);
+    CFNotificationCenterRef center = ::CFNotificationCenterGetDistributedCenter();
+    ::CFNotificationCenterPostNotification(center, CFSTR("com.apple.DownloadFileFinished"),
+                                           observedObject, nullptr, TRUE);
+    ::CFRelease(observedObject);
+
+    // Add OS X origin and referrer file metadata
+    CFStringRef pathCFStr = NULL;
+    if (!path.IsEmpty()) {
+      pathCFStr = ::CFStringCreateWithCharacters(kCFAllocatorDefault,
+                                                 (const UniChar*)path.get(),
+                                                 path.Length());
+    }
+    if (pathCFStr) {
+      bool isFromWeb = IsURLPossiblyFromWeb(aSource);
+
+      CFURLRef sourceCFURL = CreateCFURLFromNSIURI(aSource);
+      CFURLRef referrerCFURL = CreateCFURLFromNSIURI(aReferrer);
+
+      CocoaFileUtils::AddOriginMetadataToFile(pathCFStr,
+                                              sourceCFURL,
+                                              referrerCFURL);
+      CocoaFileUtils::AddQuarantineMetadataToFile(pathCFStr,
+                                                  sourceCFURL,
+                                                  referrerCFURL,
+                                                  isFromWeb);
+
+      ::CFRelease(pathCFStr);
+      if (sourceCFURL) {
+        ::CFRelease(sourceCFURL);
+      }
+      if (referrerCFURL) {
+        ::CFRelease(referrerCFURL);
+      }
+    }
+#endif
   }
-#endif // defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
+
+#endif
 
   return NS_OK;
 }

@@ -102,6 +102,9 @@
 #ifdef XP_WIN
 #include "nsMessengerWinIntegration.h"
 #endif
+#ifdef XP_MACOSX
+#include "nsMessengerOSXIntegration.h"
+#endif
 #if defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_GTK2)
 #include "nsMessengerUnixIntegration.h"
 #endif
@@ -152,6 +155,12 @@
 #if defined(MOZ_MAPI_SUPPORT)
 #include "nsAbOutlookDirFactory.h"
 #include "nsAbOutlookDirectory.h"
+#endif
+
+#ifdef XP_MACOSX
+#include "nsAbOSXDirectory.h"
+#include "nsAbOSXCard.h"
+#include "nsAbOSXDirFactory.h"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -370,6 +379,9 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(nsMsgShutdownService)
 #ifdef XP_WIN
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsMessengerWinIntegration, Init)
 #endif
+#ifdef XP_MACOSX
+NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsMessengerOSXIntegration, Init)
+#endif
 #if defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_GTK2)
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsMessengerUnixIntegration, Init)
 #endif
@@ -426,6 +438,9 @@ NS_DEFINE_NAMED_CID(NS_MSGTAGSERVICE_CID);
 NS_DEFINE_NAMED_CID(NS_MSGNOTIFICATIONSERVICE_CID);
 #ifdef XP_WIN
 NS_DEFINE_NAMED_CID(NS_MESSENGERWININTEGRATION_CID);
+#endif
+#ifdef XP_MACOSX
+NS_DEFINE_NAMED_CID(NS_MESSENGEROSXINTEGRATION_CID);
 #endif
 #if defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_GTK2)
 NS_DEFINE_NAMED_CID(NS_MESSENGERUNIXINTEGRATION_CID);
@@ -484,6 +499,12 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(nsAbView)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsMsgVCardService)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsAbLDIFService)
 
+#ifdef XP_MACOSX
+NS_GENERIC_FACTORY_CONSTRUCTOR(nsAbOSXDirectory)
+NS_GENERIC_FACTORY_CONSTRUCTOR(nsAbOSXCard)
+NS_GENERIC_FACTORY_CONSTRUCTOR(nsAbOSXDirFactory)
+#endif
+
 NS_DEFINE_NAMED_CID(NS_ABMANAGER_CID);
 NS_DEFINE_NAMED_CID(NS_ABDIRECTORY_CID);
 NS_DEFINE_NAMED_CID(NS_ABMDBDIRECTORY_CID);
@@ -515,6 +536,11 @@ NS_DEFINE_NAMED_CID(NS_ABLDAP_REPLICATIONQUERY_CID);
 NS_DEFINE_NAMED_CID(NS_ABLDAP_PROCESSREPLICATIONDATA_CID);
 #endif
 NS_DEFINE_NAMED_CID(NS_ABDIRECTORYQUERYPROXY_CID);
+#ifdef XP_MACOSX
+NS_DEFINE_NAMED_CID(NS_ABOSXDIRECTORY_CID);
+NS_DEFINE_NAMED_CID(NS_ABOSXCARD_CID);
+NS_DEFINE_NAMED_CID(NS_ABOSXDIRFACTORY_CID);
+#endif
 NS_DEFINE_NAMED_CID(NS_ABVIEW_CID);
 NS_DEFINE_NAMED_CID(NS_MSGVCARDSERVICE_CID);
 NS_DEFINE_NAMED_CID(NS_ABLDIFSERVICE_CID);
@@ -897,6 +923,9 @@ const mozilla::Module::CIDEntry kMailNewsCIDs[] = {
 #ifdef XP_WIN
   { &kNS_MESSENGERWININTEGRATION_CID, false, NULL, nsMessengerWinIntegrationConstructor},
 #endif
+#ifdef XP_MACOSX
+  { &kNS_MESSENGEROSXINTEGRATION_CID, false, NULL, nsMessengerOSXIntegrationConstructor},
+#endif
 #if defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_GTK2)
   { &kNS_MESSENGERUNIXINTEGRATION_CID, false, NULL, nsMessengerUnixIntegrationConstructor},
 #endif
@@ -939,6 +968,11 @@ const mozilla::Module::CIDEntry kMailNewsCIDs[] = {
   { &kNS_ABLDAPDIRFACTORY_CID, false, NULL, nsAbLDAPDirFactoryConstructor },
 #endif
   { &kNS_ABDIRECTORYQUERYPROXY_CID, false, NULL, nsAbDirectoryQueryProxyConstructor },
+#ifdef XP_MACOSX
+  { &kNS_ABOSXDIRECTORY_CID, false, NULL, nsAbOSXDirectoryConstructor },
+  { &kNS_ABOSXCARD_CID, false, NULL, nsAbOSXCardConstructor },
+  { &kNS_ABOSXDIRFACTORY_CID, false, NULL, nsAbOSXDirFactoryConstructor },
+#endif
   { &kNS_ABVIEW_CID, false, NULL, nsAbViewConstructor },
   { &kNS_MSGVCARDSERVICE_CID, false, NULL, nsMsgVCardServiceConstructor },
   { &kNS_ABLDIFSERVICE_CID, false, NULL, nsAbLDIFServiceConstructor },
@@ -1107,6 +1141,9 @@ const mozilla::Module::ContractIDEntry kMailNewsContracts[] = {
 #ifdef XP_WIN
   { NS_MESSENGEROSINTEGRATION_CONTRACTID, &kNS_MESSENGERWININTEGRATION_CID },
 #endif
+#ifdef XP_MACOSX
+  { NS_MESSENGEROSINTEGRATION_CONTRACTID, &kNS_MESSENGEROSXINTEGRATION_CID },
+#endif
 #if defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_GTK2)
   { NS_MESSENGEROSINTEGRATION_CONTRACTID, &kNS_MESSENGERUNIXINTEGRATION_CID },
 #endif
@@ -1153,6 +1190,11 @@ const mozilla::Module::ContractIDEntry kMailNewsContracts[] = {
 #endif
 
   { NS_ABDIRECTORYQUERYPROXY_CONTRACTID, &kNS_ABDIRECTORYQUERYPROXY_CID },
+#ifdef XP_MACOSX
+  { NS_ABOSXDIRECTORY_CONTRACTID, &kNS_ABOSXDIRECTORY_CID },
+  { NS_ABOSXCARD_CONTRACTID, &kNS_ABOSXCARD_CID },
+  { NS_ABOSXDIRFACTORY_CONTRACTID, &kNS_ABOSXDIRFACTORY_CID },
+#endif
   { NS_ABVIEW_CONTRACTID, &kNS_ABVIEW_CID },
   { NS_MSGVCARDSERVICE_CONTRACTID, &kNS_MSGVCARDSERVICE_CID },
   { NS_ABLDIFSERVICE_CONTRACTID, &kNS_ABLDIFSERVICE_CID },
@@ -1301,6 +1343,10 @@ static const mozilla::Module::CategoryEntry kMailNewsCategories[] = {
   { XPCOM_DIRECTORY_PROVIDER_CATEGORY, "mail-directory-provider", NS_MAILDIRPROVIDER_CONTRACTID },
   { "content-policy", NS_MSGCONTENTPOLICY_CONTRACTID, NS_MSGCONTENTPOLICY_CONTRACTID },
   MAILNEWSDLF_CATEGORIES
+#ifdef XP_MACOSX
+  { "app-startup", NS_MESSENGEROSINTEGRATION_CONTRACTID, "service," NS_MESSENGEROSINTEGRATION_CONTRACTID}
+,
+#endif
   // Address Book Entries
   { "command-line-handler", "m-addressbook", NS_ABMANAGERSTARTUPHANDLER_CONTRACTID },
   // Bayesian Filter Entries

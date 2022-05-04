@@ -523,6 +523,18 @@ nsXULElement::IsFocusableInternal(int32_t *aTabIndex, bool aWithMouse)
   // elements are not focusable by default
   bool shouldFocus = false;
 
+#ifdef XP_MACOSX
+  // on Mac, mouse interactions only focus the element if it's a list,
+  // or if it's a remote target, since the remote target must handle
+  // the focus.
+  if (aWithMouse &&
+      IsNonList(mNodeInfo) &&
+      !EventStateManager::IsRemoteTarget(this))
+  {
+    return false;
+  }
+#endif
+
   nsCOMPtr<nsIDOMXULControlElement> xulControl = do_QueryObject(this);
   if (xulControl) {
     // a disabled element cannot be focused and is not part of the tab order

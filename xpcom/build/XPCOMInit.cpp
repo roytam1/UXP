@@ -1010,6 +1010,9 @@ ShutdownXPCOM(nsIServiceManager* aServMgr)
   PROFILER_MARKER("Shutdown xpcom");
   // If we are doing any shutdown checks, poison writes.
   if (gShutdownChecks != SCM_NOTHING) {
+#ifdef XP_MACOSX
+    mozilla::OnlyReportDirtyWrites();
+#endif /* XP_MACOSX */
     mozilla::BeginLateWriteChecks();
   }
 

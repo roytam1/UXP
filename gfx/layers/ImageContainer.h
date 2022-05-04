@@ -166,6 +166,9 @@ protected:
 class GLImage;
 class EGLImageImage;
 class SharedRGBImage;
+#if defined(XP_MACOSX)
+class MacIOSurfaceImage;
+#endif
 
 /**
  * A class representing a buffer of pixel data. The data can be in one
@@ -220,6 +223,9 @@ public:
   /* Access to derived classes. */
   virtual EGLImageImage* AsEGLImageImage() { return nullptr; }
   virtual GLImage* AsGLImage() { return nullptr; }
+#ifdef XP_MACOSX
+  virtual MacIOSurfaceImage* AsMacIOSurfaceImage() { return nullptr; }
+#endif
   virtual PlanarYCbCrImage* AsPlanarYCbCrImage() { return nullptr; }
 
   virtual NVImage* AsNVImage() { return nullptr; }

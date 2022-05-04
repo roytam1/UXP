@@ -1,7 +1,6 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
  * Copyright 2014 Mozilla Foundation
- * Copyright 2021 Moonchild Productions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +19,10 @@
 #define wasm_signal_handlers_h
 
 #include "mozilla/Attributes.h"
+
+#if defined(XP_DARWIN)
+# include <mach/mach.h>
+#endif
 #include "threading/Thread.h"
 
 struct JSRuntime;
@@ -42,6 +45,30 @@ EnsureSignalHandlers(JSRuntime* rt);
 // asm.js/wasm out-of-bounds.
 bool
 HaveSignalHandlers();
+
+#if defined(XP_DARWIN)
+// On OSX we are forced to use the lower-level Mach exception mechanism instead
+// of Unix signals. Mach exceptions are not handled on the victim's stack but
+// rather require an extra thread. For simplicity, we create one such thread
+// per JSRuntime (upon the first use of asm.js in the JSRuntime). This thread
+// and related resources are owned by AsmJSMachExceptionHandler which is owned
+// by JSRuntime.
+class MachExceptionHandler
+{
+    bool installed_;
+    js::Thread thread_;
+    mach_port_t port_;
+
+    void uninstall();
+
+  public:
+    MachExceptionHandler();
+    ~MachExceptionHandler() { uninstall(); }
+    mach_port_t port() const { return port_; }
+    bool installed() const { return installed_; }
+    bool install(JSRuntime* rt);
+};
+#endif
 
 // Test whether the given PC is within the innermost wasm activation. Return
 // false if it is not, or it cannot be determined.

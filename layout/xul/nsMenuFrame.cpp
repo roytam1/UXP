@@ -404,12 +404,26 @@ nsMenuFrame::HandleEvent(nsPresContext* aPresContext,
   if (aEvent->mMessage == eKeyPress && !IsDisabled()) {
     WidgetKeyboardEvent* keyEvent = aEvent->AsKeyboardEvent();
     uint32_t keyCode = keyEvent->mKeyCode;
-    // Toggle menulist on unmodified F4 or Alt arrow
+#ifdef XP_MACOSX
+    // On mac, open menulist on either up/down arrow or space (w/o Cmd pressed)
+    if (!IsOpen() && ((keyEvent->mCharCode == ' ' && !keyEvent->IsMeta()) ||
+        (keyCode == NS_VK_UP || keyCode == NS_VK_DOWN))) {
+
+      // When pressing space, don't open the menu if performing an incremental search.
+      if (keyEvent->mCharCode != ' ' ||
+          !nsMenuPopupFrame::IsWithinIncrementalTime(keyEvent->mTime)) {
+        *aEventStatus = nsEventStatus_eConsumeNoDefault;
+        OpenMenu(false);
+      }
+    }
+#else
+    // On other platforms, toggle menulist on unmodified F4 or Alt arrow
     if ((keyCode == NS_VK_F4 && !keyEvent->IsAlt()) ||
         ((keyCode == NS_VK_UP || keyCode == NS_VK_DOWN) && keyEvent->IsAlt())) {
       *aEventStatus = nsEventStatus_eConsumeNoDefault;
       ToggleMenuState();
     }
+#endif
   }
   else if (aEvent->mMessage == eMouseDown &&
            aEvent->AsMouseEvent()->button == WidgetMouseEvent::eLeftButton &&
