@@ -210,10 +210,11 @@ ThreadLocal<T>::set(const T aValue)
 }
 
 #ifdef MOZ_HAS_THREAD_LOCAL
-#if defined(XP_MACOSX)
+# if defined(XP_MACOSX)
 #define MOZ_THREAD_LOCAL(TYPE) thread_local mozilla::detail::ThreadLocal<TYPE>
-#else
+# else
 #define MOZ_THREAD_LOCAL(TYPE) __thread mozilla::detail::ThreadLocal<TYPE>
+# endif
 #else
 #define MOZ_THREAD_LOCAL(TYPE) mozilla::detail::ThreadLocal<TYPE>
 #endif
