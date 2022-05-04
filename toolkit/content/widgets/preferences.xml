@@ -1146,7 +1146,11 @@
       </handler>
 
       <handler event="keypress"
+#ifdef XP_MACOSX
+               key="&openHelpMac.commandkey;" modifiers="accel"
+#else
                keycode="&openHelp.commandkey;"
+#endif
                phase="capturing">
       <![CDATA[
         var helpButton = this.getButton("help");

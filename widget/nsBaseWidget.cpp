@@ -84,6 +84,10 @@ static void debug_RegisterPrefCallbacks();
 static int32_t gNumWidgets;
 #endif
 
+#ifdef XP_MACOSX
+#include "nsCocoaFeatures.h"
+#endif
+
 #if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
 static nsRefPtrHashtable<nsVoidPtrHashKey, nsIWidget>* sPluginWidgetList;
 #endif
@@ -171,7 +175,7 @@ nsBaseWidget::nsBaseWidget()
 , mUpdateCursor(true)
 , mUseAttachedEvents(false)
 , mIMEHasFocus(false)
-#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
 , mAccessibilityInUseFlag(false)
 #endif
 {
@@ -641,7 +645,14 @@ void nsBaseWidget::AddChild(nsIWidget* aChild)
 void nsBaseWidget::RemoveChild(nsIWidget* aChild)
 {
 #ifdef DEBUG
+#ifdef XP_MACOSX
+  // nsCocoaWindow doesn't implement GetParent, so in that case parent will be
+  // null and we'll just have to do without this assertion.
+  nsIWidget* parent = aChild->GetParent();
+  NS_ASSERTION(!parent || parent == this, "Not one of our kids!");
+#else
   MOZ_RELEASE_ASSERT(aChild->GetParent() == this, "Not one of our kids!");
+#endif
 #endif
 
   if (mLastChild == aChild) {
@@ -1371,8 +1382,12 @@ void nsBaseWidget::CreateCompositor(int aWidth, int aHeight)
   mLayerManager = lm.forget();
 
   // Only track compositors for top-level windows, since other window types
-  // may use the basic compositor.
+  // may use the basic compositor.  Except on the OS X - see bug 1306383
+#if defined(XP_MACOSX)
+  bool getCompositorFromThisWindow = true;
+#else
   bool getCompositorFromThisWindow = (mWindowType == eWindowType_toplevel);
+#endif
 
   if (getCompositorFromThisWindow) {
     gfxPlatform::GetPlatform()->NotifyCompositorCreated(mLayerManager->GetCompositorBackendType());
@@ -1870,7 +1885,7 @@ nsBaseWidget::ZoomToRect(const uint32_t& aPresShellId,
 
 #ifdef ACCESSIBILITY
 
-#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
 // defined in nsAppRunner.cpp
 extern const char* kAccessibilityLastRunDatePref;
 
@@ -1899,7 +1914,7 @@ nsBaseWidget::GetRootAccessible()
   // make sure it's not created at unsafe times.
   nsAccessibilityService* accService = GetOrCreateAccService();
   if (accService) {
-#if defined(XP_WIN) || defined(MOZ_WIDGET_GTK)
+#if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_GTK)
     if (!mAccessibilityInUseFlag) {
       mAccessibilityInUseFlag = true;
       uint32_t now = PRTimeToSeconds(PR_Now());

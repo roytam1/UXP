@@ -34,6 +34,12 @@ class nsPluginInstanceOwner;
 const NPDrawingModel kDefaultDrawingModel = NPDrawingModelSyncWin;
 #elif defined(MOZ_X11)
 const NPDrawingModel kDefaultDrawingModel = NPDrawingModelSyncX;
+#elif defined(XP_MACOSX)
+#ifndef NP_NO_QUICKDRAW
+const NPDrawingModel kDefaultDrawingModel = NPDrawingModelQuickDraw; // Not supported
+#else
+const NPDrawingModel kDefaultDrawingModel = NPDrawingModelCoreGraphics;
+#endif
 #else
 const NPDrawingModel kDefaultDrawingModel = static_cast<NPDrawingModel>(0);
 #endif
@@ -140,6 +146,13 @@ public:
 
   void SetDrawingModel(NPDrawingModel aModel);
   void RedrawPlugin();
+#ifdef XP_MACOSX
+  void SetEventModel(NPEventModel aModel);
+
+  void* GetCurrentEvent() {
+    return mCurrentPluginEvent;
+  }
+#endif
 
   nsresult NewStreamListener(const char* aURL, void* notifyData,
                              nsNPAPIPluginStreamListener** listener);
@@ -277,6 +290,11 @@ private:
   nsPluginInstanceOwner *mOwner;
 
   nsTArray<nsNPAPITimer*> mTimers;
+
+#ifdef XP_MACOSX
+  // non-null during a HandleEvent call
+  void* mCurrentPluginEvent;
+#endif
 
   // Timestamp for the last time this plugin was stopped.
   // This is only valid when the plugin is actually stopped!

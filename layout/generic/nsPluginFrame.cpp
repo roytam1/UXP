@@ -69,6 +69,11 @@
 #endif /* MOZ_LOGGING */
 #include "mozilla/Logging.h"
 
+#ifdef XP_MACOSX
+#include "gfxQuartzNativeDrawing.h"
+#include "mozilla/gfx/QuartzSupport.h"
+#endif
+
 #ifdef MOZ_X11
 #include "mozilla/X11Util.h"
 using mozilla::DefaultXDisplay;
@@ -313,6 +318,15 @@ nsPluginFrame::PrepForDrawing(nsIWidget *aWidget)
 
     mInnerView->AttachWidgetEventHandler(mWidget);
 
+#ifdef XP_MACOSX
+    // On Mac, we need to invalidate ourselves since even windowed
+    // plugins are painted through Thebes and we need to ensure
+    // the PaintedLayer containing the plugin is updated.
+    if (parentWidget == GetNearestWidget()) {
+      InvalidateFrame();
+    }
+#endif
+
     RegisterPluginForGeometryUpdates();
 
     // Here we set the background color for this widget because some plugins will use 
@@ -551,12 +565,27 @@ nsPluginFrame::FixupWindow(const nsSize& aSize)
   nsIntPoint origin = GetWindowOriginInPixels(windowless);
 
   // window must be in "display pixels"
+#if defined(XP_MACOSX)
+  // window must be in "display pixels"
+  double scaleFactor = 1.0;
+  if (NS_FAILED(mInstanceOwner->GetContentsScaleFactor(&scaleFactor))) {
+    scaleFactor = 1.0;
+  }
+  int intScaleFactor = ceil(scaleFactor);
+  window->x = origin.x / intScaleFactor;
+  window->y = origin.y / intScaleFactor;
+  window->width = presContext->AppUnitsToDevPixels(aSize.width) / intScaleFactor;
+  window->height = presContext->AppUnitsToDevPixels(aSize.height) / intScaleFactor;
+#else
   window->x = origin.x;
   window->y = origin.y;
   window->width = presContext->AppUnitsToDevPixels(aSize.width);
   window->height = presContext->AppUnitsToDevPixels(aSize.height);
+#endif
 
+#ifndef XP_MACOSX
   mInstanceOwner->UpdateWindowPositionAndClipRect(false);
+#endif
 
   NotifyPluginReflowObservers();
 }
@@ -587,6 +616,13 @@ nsPluginFrame::CallSetWindow(bool aCheckIsHidden)
   RefPtr<nsPluginInstanceOwner> instanceOwnerRef(mInstanceOwner);
 
   // refresh the plugin port as well
+#ifdef XP_MACOSX
+  mInstanceOwner->FixUpPluginWindow(nsPluginInstanceOwner::ePluginPaintEnable);
+  // Bail now if our frame has been destroyed.
+  if (!instanceOwnerRef->GetFrame()) {
+    return NS_ERROR_FAILURE;
+  }
+#endif
   window->window = mInstanceOwner->GetPluginPort();
 
   // Adjust plugin dimensions according to pixel snap results
@@ -606,11 +642,24 @@ nsPluginFrame::CallSetWindow(bool aCheckIsHidden)
   intBounds.x += intOffset.x;
   intBounds.y += intOffset.y;
 
+#if defined(XP_MACOSX)
+  // window must be in "display pixels"
+  double scaleFactor = 1.0;
+  if (NS_FAILED(instanceOwnerRef->GetContentsScaleFactor(&scaleFactor))) {
+    scaleFactor = 1.0;
+  }
+
+  size_t intScaleFactor = ceil(scaleFactor);
+  window->x = intBounds.x / intScaleFactor;
+  window->y = intBounds.y / intScaleFactor;
+  window->width = intBounds.width / intScaleFactor;
+  window->height = intBounds.height / intScaleFactor;
+#else
   window->x = intBounds.x;
   window->y = intBounds.y;
   window->width = intBounds.width;
   window->height = intBounds.height;
-
+#endif
   // BE CAREFUL: By the time we get here the PluginFrame is sometimes destroyed
   // and poisoned. If we reference local fields (implicit this deref),
   // we will crash.
@@ -1012,6 +1061,11 @@ nsPluginFrame::NotifyPluginReflowObservers()
 void
 nsPluginFrame::DidSetWidgetGeometry()
 {
+#if defined(XP_MACOSX)
+  if (mInstanceOwner && !IsHidden()) {
+    mInstanceOwner->FixUpPluginWindow(nsPluginInstanceOwner::ePluginPaintEnable);
+  }
+#else
   if (!mWidget && mInstanceOwner) {
     // UpdateWindowVisibility will notify the plugin of position changes
     // by updating the NPWindow and calling NPP_SetWindow/AsyncSetWindow.
@@ -1022,20 +1076,29 @@ nsPluginFrame::DidSetWidgetGeometry()
       nsLayoutUtils::IsPopup(nsLayoutUtils::GetDisplayRootFrame(this)) ||
       !mNextConfigurationBounds.IsEmpty());
   }
+#endif
 }
 
 bool
 nsPluginFrame::IsOpaque() const
 {
+#if defined(XP_MACOSX)
+  return false;
+#else
+
   if (mInstanceOwner && mInstanceOwner->UseAsyncRendering()) {
     return false;
   }
   return !IsTransparentMode();
+#endif
 }
 
 bool
 nsPluginFrame::IsTransparentMode() const
 {
+#if defined(XP_MACOSX)
+  return false;
+#else
   if (!mInstanceOwner)
     return false;
 
@@ -1057,6 +1120,7 @@ nsPluginFrame::IsTransparentMode() const
   bool transparent = false;
   pi->IsTransparent(&transparent);
   return transparent;
+#endif
 }
 
 void
@@ -1077,20 +1141,27 @@ nsPluginFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
 
   DO_GLOBAL_REFLOW_COUNT_DSP("nsPluginFrame");
 
+#ifndef XP_MACOSX
   if (mWidget && aBuilder->IsInTransform()) {
     // Windowed plugins should not be rendered inside a transform.
     return;
   }
+#endif
 
   if (aBuilder->IsForPainting() && mInstanceOwner) {
     // Update plugin frame for both content scaling and full zoom changes.
     mInstanceOwner->ResolutionMayHaveChanged();
+#ifdef XP_MACOSX
+    mInstanceOwner->WindowFocusMayHaveChanged();
+#endif
     if (mInstanceOwner->UseAsyncRendering()) {
       NPWindow* window = nullptr;
       mInstanceOwner->GetWindow(window);
       bool isVisible = window && window->width > 0 && window->height > 0;
       if (isVisible && aBuilder->ShouldSyncDecodeImages()) {
+#ifndef XP_MACOSX
         mInstanceOwner->UpdateWindowVisibility(true);
+#endif
       }
 
       mInstanceOwner->NotifyPaintWaiter(aBuilder);
@@ -1167,8 +1238,8 @@ nsPluginFrame::PrintPlugin(nsRenderingContext& aRenderingContext,
   window.clipRect.left = 0; window.clipRect.right = 0;
 
 // platform specific printing code
-#if defined(XP_UNIX)
-  // Doesn't work in a thebes world.
+#if defined(XP_UNIX) || defined(XP_MACOSX)
+  // Doesn't work in a thebes world, or on OS X.
   (void)window;
   (void)npprint;
 #elif defined(XP_WIN)
@@ -1306,7 +1377,20 @@ nsPluginFrame::BuildLayer(nsDisplayListBuilder* aBuilder,
   if (window->width <= 0 || window->height <= 0)
     return nullptr;
 
-  IntSize size(window->width, window->height);
+#if defined(XP_MACOSX)
+  // window is in "display pixels", but size needs to be in device pixels
+  // window must be in "display pixels"
+  double scaleFactor = 1.0;
+  if (NS_FAILED(mInstanceOwner->GetContentsScaleFactor(&scaleFactor))) {
+    scaleFactor = 1.0;
+  }
+
+  size_t intScaleFactor = ceil(scaleFactor);
+#else
+  size_t intScaleFactor = 1;
+#endif
+
+  IntSize size(window->width * intScaleFactor, window->height * intScaleFactor);
 
   nsRect area = GetContentRectRelativeToSelf() + aItem->ToReferenceFrame();
   gfxRect r = nsLayoutUtils::RectToGfxRect(area, PresContext()->AppUnitsPerDevPixel());
@@ -1336,6 +1420,11 @@ nsPluginFrame::BuildLayer(nsDisplayListBuilder* aBuilder,
 
     NS_ASSERTION(layer->GetType() == Layer::TYPE_IMAGE, "Bad layer type");
     ImageLayer* imglayer = static_cast<ImageLayer*>(layer.get());
+#ifdef XP_MACOSX
+    if (!mInstanceOwner->UseAsyncRendering()) {
+      mInstanceOwner->DoCocoaEventDrawRect(r, nullptr);
+    }
+#endif
 
     imglayer->SetScaleToSize(size, ScaleMode::STRETCH);
     imglayer->SetContainer(container);
@@ -1456,10 +1545,36 @@ nsPluginFrame::HandleEvent(nsPresContext* aPresContext,
   return rv;
 #endif
 
+#ifdef XP_MACOSX
+  // we want to process some native mouse events in the cocoa event model
+  if ((anEvent->mMessage == eMouseEnterIntoWidget ||
+       anEvent->mMessage == eWheel) &&
+      mInstanceOwner->GetEventModel() == NPEventModelCocoa) {
+    *anEventStatus = mInstanceOwner->ProcessEvent(*anEvent);
+    // Due to plugin code reentering Gecko, this frame may be dead at this
+    // point.
+    return rv;
+  }
+
+  // These two calls to nsIPresShell::SetCapturingContext() (on mouse-down
+  // and mouse-up) are needed to make the routing of mouse events while
+  // dragging conform to standard OS X practice, and to the Cocoa NPAPI spec.
+  // See bug 525078 and bug 909678.
+  if (anEvent->mMessage == eMouseDown) {
+    nsIPresShell::SetCapturingContent(GetContent(), CAPTURE_IGNOREALLOWED);
+  }
+#endif
+
   rv = nsFrame::HandleEvent(aPresContext, anEvent, anEventStatus);
 
   // We need to be careful from this point because the call to
   // nsFrame::HandleEvent() might have killed us.
+
+#ifdef XP_MACOSX
+  if (anEvent->mMessage == eMouseUp) {
+    nsIPresShell::SetCapturingContent(nullptr, 0);
+  }
+#endif
 
   return rv;
 }
@@ -1636,7 +1751,11 @@ NS_NewObjectFrame(nsIPresShell* aPresShell, nsStyleContext* aContext)
 bool
 nsPluginFrame::IsPaintedByGecko() const
 {
+#ifdef XP_MACOSX
+  return true;
+#else
   return !mWidget;
+#endif
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsPluginFrame)

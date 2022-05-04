@@ -95,6 +95,10 @@
 #include "Units.h"
 #include "mozilla/layers/APZCTreeManager.h"
 
+#ifdef XP_MACOSX
+#import <ApplicationServices/ApplicationServices.h>
+#endif
+
 namespace mozilla {
 
 using namespace dom;
@@ -1513,6 +1517,14 @@ EventStateManager::FireContextClick()
     return;
   }
 
+#ifdef XP_MACOSX
+  // Hack to ensure that we don't show a context menu when the user
+  // let go of the mouse after a long cpu-hogging operation prevented
+  // us from handling any OS events. See bug 117589.
+  if (!CGEventSourceButtonState(kCGEventSourceStateCombinedSessionState, kCGMouseButtonLeft))
+    return;
+#endif
+
   nsEventStatus status = nsEventStatus_eIgnore;
 
   // Dispatch to the DOM. We have to fake out the ESM and tell it that the
@@ -2829,6 +2841,29 @@ EventStateManager::DecideGestureEvent(WidgetGestureNotifyEvent* aEvent,
   aEvent->mPanDirection = panDirection;
 }
 
+#ifdef XP_MACOSX
+static bool
+NodeAllowsClickThrough(nsINode* aNode)
+{
+  while (aNode) {
+    if (aNode->IsXULElement()) {
+      mozilla::dom::Element* element = aNode->AsElement();
+      static nsIContent::AttrValuesArray strings[] =
+        {&nsGkAtoms::always, &nsGkAtoms::never, nullptr};
+      switch (element->FindAttrValueIn(kNameSpaceID_None, nsGkAtoms::clickthrough,
+                                       strings, eCaseMatters)) {
+        case 0:
+          return true;
+        case 1:
+          return false;
+      }
+    }
+    aNode = nsContentUtils::GetCrossDocParentNode(aNode);
+  }
+  return true;
+}
+#endif
+
 void
 EventStateManager::PostHandleKeyboardEvent(WidgetKeyboardEvent* aKeyboardEvent,
                                            nsEventStatus& aStatus,
@@ -3061,7 +3096,10 @@ EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
             // focused frame
             EnsureDocument(mPresContext);
             if (mDocument) {
-              fm->ClearFocus(mDocument->GetWindow());
+#ifdef XP_MACOSX
+              if (!activeContent || !activeContent->IsXULElement())
+#endif
+                fm->ClearFocus(mDocument->GetWindow());
               fm->SetFocusedWindow(mDocument->GetWindow());
             }
           }
@@ -3472,6 +3510,18 @@ EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
       SetContentState(targetContent, NS_EVENT_STATE_HOVER);
     }
     break;
+
+#ifdef XP_MACOSX
+  case eMouseActivate:
+    if (mCurrentTarget) {
+      nsCOMPtr<nsIContent> targetContent;
+      mCurrentTarget->GetContentForEvent(aEvent, getter_AddRefs(targetContent));
+      if (!NodeAllowsClickThrough(targetContent)) {
+        *aStatus = nsEventStatus_eConsumeNoDefault;
+      }
+    }
+    break;
+#endif
 
   default:
     break;

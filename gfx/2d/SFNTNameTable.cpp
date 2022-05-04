@@ -9,6 +9,10 @@
 #include "Logging.h"
 #include "mozilla/Move.h"
 
+#if defined(XP_MACOSX)
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 namespace mozilla {
 namespace gfx {
 
@@ -57,6 +61,9 @@ struct NameRecord
 enum ENameDecoder : int
 {
   eNameDecoderUTF16,
+#if defined(XP_MACOSX)
+  eNameDecoderMacRoman,
+#endif
   eNameDecoderNone
 };
 
@@ -121,6 +128,19 @@ IsUTF16Encoding(const NameRecord *aNameRecord)
   return false;
 }
 
+#if defined(XP_MACOSX)
+static bool
+IsMacRomanEncoding(const NameRecord *aNameRecord)
+{
+  if (aNameRecord->platformID == PLATFORM_ID_MAC &&
+      aNameRecord->encodingID == ENCODING_ID_MAC_ROMAN) {
+    return true;
+  }
+
+  return false;
+}
+#endif
+
 static NameRecordMatchers*
 CreateCanonicalMatchers(const BigEndianUint16& aNameID)
 {
@@ -128,6 +148,37 @@ CreateCanonicalMatchers(const BigEndianUint16& aNameID)
   // matchers. On Mac, we return matchers for both Microsoft platform
   // records and Mac platform records.
   NameRecordMatchers *matchers = new NameRecordMatchers();
+
+#if defined(XP_MACOSX)
+  // First, look for the English name.
+  if (!matchers->append(
+    [=](const NameRecord *aNameRecord) {
+        if (aNameRecord->nameID == aNameID &&
+            aNameRecord->languageID == LANG_ID_MAC_ENGLISH &&
+            aNameRecord->platformID == PLATFORM_ID_MAC &&
+            IsMacRomanEncoding(aNameRecord)) {
+          return eNameDecoderMacRoman;
+        } else  {
+          return eNameDecoderNone;
+        }
+    })) {
+    MOZ_CRASH();
+  }
+
+  // Second, look for all languages.
+  if (!matchers->append(
+    [=](const NameRecord *aNameRecord) {
+        if (aNameRecord->nameID == aNameID &&
+            aNameRecord->platformID == PLATFORM_ID_MAC &&
+            IsMacRomanEncoding(aNameRecord)) {
+          return eNameDecoderMacRoman;
+        } else  {
+          return eNameDecoderNone;
+        }
+    })) {
+    MOZ_CRASH();
+  }
+#endif /* defined(XP_MACOSX) */
 
   // First, look for the English name (this will normally succeed).
   if (!matchers->append(
@@ -222,6 +273,10 @@ SFNTNameTable::ReadU16Name(const NameRecordMatchers& aMatchers,
       switch (aMatchers[i](record)) {
         case eNameDecoderUTF16:
           return ReadU16NameFromU16Record(record, aU16Name);
+#if defined(XP_MACOSX)
+        case eNameDecoderMacRoman:
+          return ReadU16NameFromMacRomanRecord(record, aU16Name);
+#endif
         case eNameDecoderNone:
           break;
         default:
@@ -255,6 +310,47 @@ SFNTNameTable::ReadU16NameFromU16Record(const NameRecord *aNameRecord,
   aU16Name.assign(nameData.get(), actualLength);
   return true;
 }
+
+#if defined(XP_MACOSX)
+bool
+SFNTNameTable::ReadU16NameFromMacRomanRecord(const NameRecord *aNameRecord,
+                                             mozilla::u16string& aU16Name)
+{
+  uint32_t offset = aNameRecord->offset;
+  uint32_t length = aNameRecord->length;
+  if (mStringDataLength < offset + length) {
+    gfxWarning() << "Name data too short to contain name string.";
+    return false;
+  }
+  if (length > INT_MAX) {
+    gfxWarning() << "Name record too long to decode.";
+    return false;
+  }
+
+  // pointer to the Mac Roman encoded string in the name record
+  const uint8_t *encodedStr = mStringData + offset;
+
+  CFStringRef cfString;
+  cfString = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, encodedStr,
+                                           length, kCFStringEncodingMacRoman,
+                                           false, kCFAllocatorNull);
+
+  // length (in UTF-16 code pairs) of the decoded string
+  CFIndex decodedLength = CFStringGetLength(cfString);
+
+  // temporary buffer
+  UniquePtr<UniChar[]> u16Buffer = MakeUnique<UniChar[]>(decodedLength);
+
+  CFStringGetCharacters(cfString, CFRangeMake(0, decodedLength),
+                        u16Buffer.get());
+
+  CFRelease(cfString);
+
+  aU16Name.assign(reinterpret_cast<char16_t*>(u16Buffer.get()), decodedLength);
+
+  return true;
+}
+#endif
 
 } // gfx
 } // mozilla

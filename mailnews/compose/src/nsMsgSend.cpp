@@ -2088,7 +2088,9 @@ nsMsgComposeAndSend::AddCompFieldLocalAttachments()
                   if (NS_SUCCEEDED(rv) && !fileExt.IsEmpty()) {
                     nsAutoCString type;
                     mimeFinder->GetTypeFromExtension(fileExt, type);
+  #ifndef XP_MACOSX
                     if (!type.Equals("multipart/appledouble"))  // can't do apple double on non-macs
+  #endif
                     m_attachments[newLoc]->m_type = type;
                   }
                 }
@@ -2103,7 +2105,9 @@ nsMsgComposeAndSend::AddCompFieldLocalAttachments()
                     if (NS_SUCCEEDED(rv) && !fileExt.IsEmpty()) {
                       nsAutoCString type;
                       mimeFinder->GetTypeFromExtension(fileExt, type);
+  #ifndef XP_MACOSX
                     if (!type.Equals("multipart/appledouble"))  // can't do apple double on non-macs
+  #endif
                       m_attachments[newLoc]->m_type = type;
                     // rtf and vcs files may look like text to sniffers,
                     // but they're not human readable.

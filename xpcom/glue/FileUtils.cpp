@@ -12,7 +12,16 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/FileUtils.h"
 
-#if defined(XP_UNIX)
+#if defined(XP_MACOSX)
+#include <fcntl.h>
+#include <unistd.h>
+#include <mach/machine.h>
+#include <mach-o/fat.h>
+#include <mach-o/loader.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <limits.h>
+#elif defined(XP_UNIX)
 #include <fcntl.h>
 #include <unistd.h>
 #if defined(LINUX)
@@ -47,6 +56,20 @@ mozilla::fallocate(PRFileDesc* aFD, int64_t aLength)
 
   PR_Seek64(aFD, oldpos, PR_SEEK_SET);
   return retval;
+#elif defined(XP_MACOSX)
+  int fd = PR_FileDesc2NativeHandle(aFD);
+  fstore_t store = {F_ALLOCATECONTIG, F_PEOFPOSMODE, 0, aLength};
+  // Try to get a continous chunk of disk space
+  int ret = fcntl(fd, F_PREALLOCATE, &store);
+  if (ret == -1) {
+    // OK, perhaps we are too fragmented, allocate non-continuous
+    store.fst_flags = F_ALLOCATEALL;
+    ret = fcntl(fd, F_PREALLOCATE, &store);
+    if (ret == -1) {
+      return false;
+    }
+  }
+  return ftruncate(fd, aLength) == 0;
 #elif defined(XP_UNIX)
   // The following is copied from fcntlSizeHint in sqlite
   /* If the OS does not have posix_fallocate(), fake it. First use
@@ -202,7 +225,7 @@ mozilla::ReadAheadLib(nsIFile* aFile)
     return;
   }
   ReadAheadLib(path.get());
-#elif defined(LINUX)
+#elif defined(LINUX) || defined(XP_MACOSX)
   nsAutoCString nativePath;
   if (!aFile || NS_FAILED(aFile->GetNativePath(nativePath))) {
     return;
@@ -221,7 +244,7 @@ mozilla::ReadAheadFile(nsIFile* aFile, const size_t aOffset,
     return;
   }
   ReadAheadFile(path.get(), aOffset, aCount, aOutFd);
-#elif defined(LINUX)
+#elif defined(LINUX) || defined(XP_MACOSX)
   nsAutoCString nativePath;
   if (!aFile || NS_FAILED(aFile->GetNativePath(nativePath))) {
     return;
@@ -248,6 +271,64 @@ static const unsigned char ELFCLASS = ELFCLASS32;
 typedef Elf32_Off Elf_Off;
 #endif
 
+#elif defined(XP_MACOSX)
+
+#if defined(__i386__)
+static const uint32_t CPU_TYPE = CPU_TYPE_X86;
+#elif defined(__x86_64__)
+static const uint32_t CPU_TYPE = CPU_TYPE_X86_64;
+#elif defined(__ppc__)
+static const uint32_t CPU_TYPE = CPU_TYPE_POWERPC;
+#elif defined(__ppc64__)
+static const uint32_t CPU_TYPE = CPU_TYPE_POWERPC64;
+#else
+#error Unsupported CPU type
+#endif
+
+#ifdef __LP64__
+#undef LC_SEGMENT
+#define LC_SEGMENT LC_SEGMENT_64
+#undef MH_MAGIC
+#define MH_MAGIC MH_MAGIC_64
+#define cpu_mach_header mach_header_64
+#define segment_command segment_command_64
+#else
+#define cpu_mach_header mach_header
+#endif
+
+class ScopedMMap
+{
+public:
+  explicit ScopedMMap(const char* aFilePath)
+    : buf(nullptr)
+  {
+    fd = open(aFilePath, O_RDONLY);
+    if (fd < 0) {
+      return;
+    }
+    struct stat st;
+    if (fstat(fd, &st) < 0) {
+      return;
+    }
+    size = st.st_size;
+    buf = (char*)mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+  }
+  ~ScopedMMap()
+  {
+    if (buf) {
+      munmap(buf, size);
+    }
+    if (fd >= 0) {
+      close(fd);
+    }
+  }
+  operator char*() { return buf; }
+  int getFd() { return fd; }
+private:
+  int fd;
+  char* buf;
+  size_t size;
+};
 #endif
 
 void
@@ -303,6 +384,14 @@ mozilla::ReadAhead(mozilla::filedesc_t aFd, const size_t aOffset,
 #elif defined(LINUX)
 
   readahead(aFd, aOffset, aCount);
+
+#elif defined(XP_MACOSX)
+
+  struct radvisory ra;
+  ra.ra_offset = aOffset;
+  ra.ra_count = aCount;
+  // The F_RDADVISE fcntl is equivalent to Linux' readahead() system call.
+  fcntl(aFd, F_RDADVISE, &ra);
 
 #endif
 }
@@ -360,6 +449,62 @@ mozilla::ReadAheadLib(mozilla::pathstr_t aFilePath)
     ReadAhead(fd, 0, end);
   }
   close(fd);
+#elif defined(XP_MACOSX)
+  ScopedMMap buf(aFilePath);
+  char* base = buf;
+  if (!base) {
+    return;
+  }
+
+  // An OSX binary might either be a fat (universal) binary or a
+  // Mach-O binary. A fat binary actually embeds several Mach-O
+  // binaries. If we have a fat binary, find the offset where the
+  // Mach-O binary for our CPU type can be found.
+  struct fat_header* fh = (struct fat_header*)base;
+
+  if (OSSwapBigToHostInt32(fh->magic) == FAT_MAGIC) {
+    uint32_t nfat_arch = OSSwapBigToHostInt32(fh->nfat_arch);
+    struct fat_arch* arch = (struct fat_arch*)&buf[sizeof(struct fat_header)];
+    for (; nfat_arch; arch++, nfat_arch--) {
+      if (OSSwapBigToHostInt32(arch->cputype) == CPU_TYPE) {
+        base += OSSwapBigToHostInt32(arch->offset);
+        break;
+      }
+    }
+    if (base == buf) {
+      return;
+    }
+  }
+
+  // Check Mach-O magic in the Mach header
+  struct cpu_mach_header* mh = (struct cpu_mach_header*)base;
+  if (mh->magic != MH_MAGIC) {
+    return;
+  }
+
+  // The Mach header is followed by a sequence of load commands.
+  // Each command has a header containing the command type and the
+  // command size. LD_SEGMENT commands describes how the dynamic
+  // loader is going to map the file in memory. We use that
+  // information to find the biggest offset from the library that
+  // will be mapped in memory.
+  char* cmd = &base[sizeof(struct cpu_mach_header)];
+  uint32_t end = 0;
+  for (uint32_t ncmds = mh->ncmds; ncmds; ncmds--) {
+    struct segment_command* sh = (struct segment_command*)cmd;
+    if (sh->cmd != LC_SEGMENT) {
+      continue;
+    }
+    if (end < sh->fileoff + sh->filesize) {
+      end = sh->fileoff + sh->filesize;
+    }
+    cmd += sh->cmdsize;
+  }
+  // Let the kernel read ahead what the dynamic loader is going to
+  // map in memory soon after.
+  if (end > 0) {
+    ReadAhead(buf.getFd(), base - buf, end);
+  }
 #endif
 }
 
@@ -386,7 +531,7 @@ mozilla::ReadAheadFile(mozilla::pathstr_t aFilePath, const size_t aOffset,
   if (!aOutFd) {
     CloseHandle(fd);
   }
-#elif defined(LINUX) || defined(XP_SOLARIS)
+#elif defined(LINUX) || defined(XP_MACOSX) || defined(XP_SOLARIS)
   if (!aFilePath) {
     if (aOutFd) {
       *aOutFd = -1;

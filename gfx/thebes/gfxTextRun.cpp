@@ -518,6 +518,11 @@ HasSyntheticBoldOrColor(const gfxTextRun *aRun, gfxTextRun::Range aRange)
             if (fe->TryGetSVGData(font) || fe->TryGetColorGlyphs()) {
                 return true;
             }
+#if defined(XP_MACOSX) // sbix fonts only supported via Core Text
+            if (fe->HasFontTable(TRUETYPE_TAG('s', 'b', 'i', 'x'))) {
+                return true;
+            }
+#endif
         }
     }
     return false;

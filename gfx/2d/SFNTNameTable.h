@@ -55,6 +55,11 @@ private:
   bool ReadU16NameFromU16Record(const NameRecord *aNameRecord,
                                 mozilla::u16string& aU16Name);
 
+#if defined(XP_MACOSX)
+  bool ReadU16NameFromMacRomanRecord(const NameRecord *aNameRecord,
+                                     mozilla::u16string& aU16Name);
+#endif
+
   const NameRecord *mFirstRecord;
   const NameRecord *mEndOfRecords;
   const uint8_t *mStringData;

@@ -53,7 +53,9 @@ __asm__ (
    is what xptcstubs uses. */
 	".align 2\n\t"
 	".globl " SYMBOL_UNDERSCORE "NS_InvokeByIndex\n\t"
+#ifndef XP_MACOSX
 	".type  " SYMBOL_UNDERSCORE "NS_InvokeByIndex,@function\n"
+#endif
 	SYMBOL_UNDERSCORE "NS_InvokeByIndex:\n\t"
 	"pushl %ebp\n\t"
 	"movl  %esp, %ebp\n\t"
@@ -89,5 +91,7 @@ __asm__ (
 	"movl  %ebp, %esp\n\t"
 	"popl  %ebp\n\t"
 	"ret\n"
+#ifndef XP_MACOSX
 	".size " SYMBOL_UNDERSCORE "NS_InvokeByIndex, . -" SYMBOL_UNDERSCORE "NS_InvokeByIndex\n\t"
+#endif
 );

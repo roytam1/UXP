@@ -312,7 +312,9 @@ this.DownloadIntegration = {
     }
 
     let directoryPath = null;
-#ifdef XP_WIN
+#ifdef XP_MACOSX
+    directoryPath = this._getDirectory("DfltDwnld");
+#elifdef XP_WIN
     // For XP/2K, use My Documents/Downloads. Other version uses
     // the default Downloads directory.
     let version = parseFloat(Services.sysinfo.getProperty("version"));
@@ -381,7 +383,11 @@ this.DownloadIntegration = {
    */
   getTemporaryDownloadsDirectory: Task.async(function* () {
     let directoryPath = null;
+#ifdef XP_MACOSX
+    directoryPath = yield this.getPreferredDownloadsDirectory();
+#else
     directoryPath = this._getDirectory("TmpD");
+#endif
     return directoryPath;
   }),
 

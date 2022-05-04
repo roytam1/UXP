@@ -8,8 +8,8 @@
 #include "xptcprivate.h"
 #include "xptiprivate.h"
 
-#if !defined(__arm__) && !defined(LINUX)
-#error "This code is for Linux ARM only. Please check if it works for you, too.\nDepends strongly on gcc behaviour."
+#if !defined(__arm__) && !(defined(LINUX) || defined(XP_DARWIN))
+#error "This code is for Linux/iOS ARM only. Please check if it works for you, too.\nDepends strongly on gcc behaviour."
 #endif
 
 /* Specify explicitly a symbol for this function, don't try to guess the c++ mangled symbol.  */

@@ -39,6 +39,10 @@
 #include "mozilla/layers/X11TextureHost.h"
 #endif
 
+#ifdef XP_MACOSX
+#include "../opengl/MacIOSurfaceTextureHostOGL.h"
+#endif
+
 #ifdef XP_WIN
 #include "mozilla/layers/TextureDIB.h"
 #endif

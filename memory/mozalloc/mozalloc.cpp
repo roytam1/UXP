@@ -19,6 +19,10 @@
 #define MOZ_MEMORY_IMPL
 #include "mozmemory_wrap.h"
 
+#if defined(XP_DARWIN)
+#include <malloc/malloc.h> // for malloc_size
+#endif
+
 // See mozmemory_wrap.h for more details. This file is part of libmozglue, so
 // it needs to use _impl suffixes. However, with libmozglue growing, this is
 // becoming cumbersome, so we will likely use a malloc.h wrapper of some sort
@@ -149,6 +153,17 @@ moz_posix_memalign(void **ptr, size_t alignment, size_t size)
     if (code)
         return code;
 
+#if defined(XP_DARWIN)
+    // Workaround faulty OSX posix_memalign, which provides memory with the
+    // incorrect alignment sometimes, but returns 0 as if nothing was wrong.
+    size_t mask = alignment - 1;
+    if (((size_t)(*ptr) & mask) != 0) {
+        void* old = *ptr;
+        code = moz_posix_memalign(ptr, alignment, size);
+        free(old);
+    }
+#endif
+
     return code;
 
 }
@@ -188,7 +203,9 @@ moz_malloc_usable_size(void *ptr)
     if (!ptr)
         return 0;
 
-#if defined(HAVE_MALLOC_USABLE_SIZE) || defined(MOZ_MEMORY)
+#if defined(XP_DARWIN)
+    return malloc_size(ptr);
+#elif defined(HAVE_MALLOC_USABLE_SIZE) || defined(MOZ_MEMORY)
     return malloc_usable_size_impl(ptr);
 #elif defined(XP_WIN)
     return _msize(ptr);

@@ -394,6 +394,168 @@ ResidentFastDistinguishedAmount(int64_t* aN)
   return ResidentDistinguishedAmount(aN);
 }
 
+#elif defined(XP_MACOSX)
+
+#include <mach/mach_init.h>
+#include <mach/mach_vm.h>
+#include <mach/shared_region.h>
+#include <mach/task.h>
+#include <sys/sysctl.h>
+
+static MOZ_MUST_USE bool
+GetTaskBasicInfo(struct task_basic_info* aTi)
+{
+  mach_msg_type_number_t count = TASK_BASIC_INFO_COUNT;
+  kern_return_t kr = task_info(mach_task_self(), TASK_BASIC_INFO,
+                               (task_info_t)aTi, &count);
+  return kr == KERN_SUCCESS;
+}
+
+// The VSIZE figure on Mac includes huge amounts of shared memory and is always
+// absurdly high, eg. 2GB+ even at start-up.  But both 'top' and 'ps' report
+// it, so we might as well too.
+#define HAVE_VSIZE_AND_RESIDENT_REPORTERS 1
+static MOZ_MUST_USE nsresult
+VsizeDistinguishedAmount(int64_t* aN)
+{
+  task_basic_info ti;
+  if (!GetTaskBasicInfo(&ti)) {
+    return NS_ERROR_FAILURE;
+  }
+  *aN = ti.virtual_size;
+  return NS_OK;
+}
+
+// If we're using jemalloc on Mac, we need to instruct jemalloc to purge the
+// pages it has madvise(MADV_FREE)'d before we read our RSS in order to get
+// an accurate result.  The OS will take away MADV_FREE'd pages when there's
+// memory pressure, so ideally, they shouldn't count against our RSS.
+//
+// Purging these pages can take a long time for some users (see bug 789975),
+// so we provide the option to get the RSS without purging first.
+static MOZ_MUST_USE nsresult
+ResidentDistinguishedAmountHelper(int64_t* aN, bool aDoPurge)
+{
+#ifdef HAVE_JEMALLOC_STATS
+  if (aDoPurge) {
+    jemalloc_purge_freed_pages();
+  }
+#endif
+
+  task_basic_info ti;
+  if (!GetTaskBasicInfo(&ti)) {
+    return NS_ERROR_FAILURE;
+  }
+  *aN = ti.resident_size;
+  return NS_OK;
+}
+
+static MOZ_MUST_USE nsresult
+ResidentFastDistinguishedAmount(int64_t* aN)
+{
+  return ResidentDistinguishedAmountHelper(aN, /* doPurge = */ false);
+}
+
+static MOZ_MUST_USE nsresult
+ResidentDistinguishedAmount(int64_t* aN)
+{
+  return ResidentDistinguishedAmountHelper(aN, /* doPurge = */ true);
+}
+
+#define HAVE_RESIDENT_UNIQUE_REPORTER 1
+
+static bool
+InSharedRegion(mach_vm_address_t aAddr, cpu_type_t aType)
+{
+  mach_vm_address_t base;
+  mach_vm_address_t size;
+
+  switch (aType) {
+    case CPU_TYPE_ARM:
+      base = SHARED_REGION_BASE_ARM;
+      size = SHARED_REGION_SIZE_ARM;
+      break;
+    case CPU_TYPE_I386:
+      base = SHARED_REGION_BASE_I386;
+      size = SHARED_REGION_SIZE_I386;
+      break;
+    case CPU_TYPE_X86_64:
+      base = SHARED_REGION_BASE_X86_64;
+      size = SHARED_REGION_SIZE_X86_64;
+      break;
+    default:
+      return false;
+  }
+
+  return base <= aAddr && aAddr < (base + size);
+}
+
+static MOZ_MUST_USE nsresult
+ResidentUniqueDistinguishedAmount(int64_t* aN)
+{
+  if (!aN) {
+    return NS_ERROR_FAILURE;
+  }
+
+  cpu_type_t cpu_type;
+  size_t len = sizeof(cpu_type);
+  if (sysctlbyname("sysctl.proc_cputype", &cpu_type, &len, NULL, 0) != 0) {
+    return NS_ERROR_FAILURE;
+  }
+
+  // Roughly based on libtop_update_vm_regions in
+  // http://www.opensource.apple.com/source/top/top-100.1.2/libtop.c
+  size_t privatePages = 0;
+  mach_vm_size_t size = 0;
+  for (mach_vm_address_t addr = MACH_VM_MIN_ADDRESS; ; addr += size) {
+    vm_region_top_info_data_t info;
+    mach_msg_type_number_t infoCount = VM_REGION_TOP_INFO_COUNT;
+    mach_port_t objectName;
+
+    kern_return_t kr =
+        mach_vm_region(mach_task_self(), &addr, &size, VM_REGION_TOP_INFO,
+                       reinterpret_cast<vm_region_info_t>(&info),
+                       &infoCount, &objectName);
+    if (kr == KERN_INVALID_ADDRESS) {
+      // Done iterating VM regions.
+      break;
+    } else if (kr != KERN_SUCCESS) {
+      return NS_ERROR_FAILURE;
+    }
+
+    if (InSharedRegion(addr, cpu_type) && info.share_mode != SM_PRIVATE) {
+        continue;
+    }
+
+    switch (info.share_mode) {
+      case SM_LARGE_PAGE:
+        // NB: Large pages are not shareable and always resident.
+      case SM_PRIVATE:
+        privatePages += info.private_pages_resident;
+        privatePages += info.shared_pages_resident;
+        break;
+      case SM_COW:
+        privatePages += info.private_pages_resident;
+        if (info.ref_count == 1) {
+          // Treat copy-on-write pages as private if they only have one reference.
+          privatePages += info.shared_pages_resident;
+        }
+        break;
+      case SM_SHARED:
+      default:
+        break;
+    }
+  }
+
+  vm_size_t pageSize;
+  if (host_page_size(mach_host_self(), &pageSize) != KERN_SUCCESS) {
+    pageSize = PAGE_SIZE;
+  }
+
+  *aN = privatePages * pageSize;
+  return NS_OK;
+}
+
 #elif defined(XP_WIN)
 
 #include <windows.h>
@@ -984,7 +1146,9 @@ ResidentPeakDistinguishedAmount(int64_t* aN)
     // - Solaris: pages? But some sources it actually always returns 0, so
     //   check for that
     // - Linux, {Net/Open/Free}BSD, DragonFly: KiB
-#if defined(XP_SOLARIS)
+#ifdef XP_MACOSX
+    *aN = usage.ru_maxrss;
+#elif defined(XP_SOLARIS)
     *aN = usage.ru_maxrss * getpagesize();    
 #else
     *aN = usage.ru_maxrss * 1024;

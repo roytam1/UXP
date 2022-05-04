@@ -1878,7 +1878,11 @@ var gHeader = {
 
     // XXXunf Temporary until bug 371900 is fixed.
     let key = document.getElementById("focusSearch").getAttribute("key");
+#ifdef XP_MACOSX
+    let keyModifier = aEvent.metaKey;
+#else
     let keyModifier = aEvent.ctrlKey;
+#endif
     if (String.fromCharCode(aEvent.charCode) == key && keyModifier) {
       this.focusSearchBox();
       return;

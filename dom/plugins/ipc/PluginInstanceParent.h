@@ -321,7 +321,10 @@ public:
     nsresult AsyncSetWindow(NPWindow* window);
     nsresult GetImageContainer(mozilla::layers::ImageContainer** aContainer);
     nsresult GetImageSize(nsIntSize* aSize);
-#if defined(XP_WIN)
+#ifdef XP_MACOSX
+    nsresult IsRemoteDrawingCoreAnimation(bool *aDrawing);
+#endif
+#if defined(XP_MACOSX) || defined(XP_WIN)
     nsresult ContentsScaleFactorChanged(double aContentsScaleFactor);
 #endif
     nsresult SetBackgroundUnknown();

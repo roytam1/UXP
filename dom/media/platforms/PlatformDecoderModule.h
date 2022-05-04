@@ -130,9 +130,11 @@ public:
   virtual bool Supports(const TrackInfo& aTrackInfo,
                         DecoderDoctorDiagnostics* aDiagnostics) const
   {
-    // By default, fall back to SupportsMimeType with just the MIME string.
-    // (So PDMs do not need to override this method -- yet.)
-    return SupportsMimeType(aTrackInfo.mMimeType, aDiagnostics);
+    if (!SupportsMimeType(aTrackInfo.mMimeType, aDiagnostics)) {
+      return false;
+    }
+    const auto videoInfo = aTrackInfo.GetAsVideoInfo();
+    return !videoInfo || SupportsBitDepth(videoInfo->mBitDepth, aDiagnostics);
   }
 
   enum class ConversionRequired : uint8_t {
@@ -153,6 +155,15 @@ protected:
   friend class H264Converter;
   friend class PDMFactory;
   friend class dom::RemoteDecoderModule;
+
+  // Indicates if the PlatformDecoderModule supports decoding of aBitDepth.
+  // Should override this method when the platform can support bitDepth != 8.
+  virtual bool SupportsBitDepth(const uint8_t aBitDepth,
+                                DecoderDoctorDiagnostics* aDiagnostics) const
+  {
+    return aBitDepth == 8;
+  }
+
 
   // Creates a Video decoder. The layers backend is passed in so that
   // decoders can determine whether hardware accelerated decoding can be used.

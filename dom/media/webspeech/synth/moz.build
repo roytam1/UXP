@@ -32,6 +32,9 @@ SOURCES += [
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     DIRS += ['windows']
 
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    DIRS += ['cocoa']
+
 if CONFIG['MOZ_SYNTH_SPEECHD']:
     DIRS += ['speechd']
 

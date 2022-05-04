@@ -6,7 +6,9 @@
 #include "nsIDateTimeFormat.h"
 #include "mozilla/RefPtr.h"
 
-#if defined(XP_UNIX)
+#if defined(XP_MACOSX)
+#define USE_MAC_LOCALE
+#elif defined(XP_UNIX)
 #define USE_UNIX_LOCALE
 #endif
 
@@ -15,6 +17,9 @@
 #endif
 #ifdef USE_UNIX_LOCALE
 #include "unix/nsDateTimeFormatUnix.h"
+#endif
+#ifdef USE_MAC_LOCALE
+#include "mac/nsDateTimeFormatMac.h"
 #endif
 
 using mozilla::MakeAndAddRef;

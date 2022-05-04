@@ -49,7 +49,7 @@
 # undef SystemFunction036
 #endif
 
-#if defined(ANDROID) || defined(__DragonFly__) || \
+#if defined(XP_DARWIN) || defined(ANDROID) || defined(__DragonFly__) || \
     defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # include <stdlib.h>
 # define HAVE_ARC4RANDOM

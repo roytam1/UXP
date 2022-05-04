@@ -168,6 +168,17 @@ XPCOMUtils.defineLazyGetter(UpdateUtils, "ABI", function() {
     Cu.reportError("XPCOM ABI unknown");
   }
 
+#ifdef XP_MACOSX
+  // Mac universal build should report a different ABI than either macppc
+  // or mactel.
+  let macutils = Cc["@mozilla.org/xpcom/mac-utils;1"].
+                 getService(Ci.nsIMacUtils);
+
+  if (macutils.isUniversalBinary) {
+    abi += "-u-" + macutils.architecturesInBinary;
+  }
+#endif
+
   return abi;
 });
 

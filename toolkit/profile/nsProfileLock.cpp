@@ -13,6 +13,11 @@
 #include "nsAutoPtr.h"
 #endif
 
+#if defined(XP_MACOSX)
+#include <Carbon/Carbon.h>
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #ifdef XP_UNIX
 #include <unistd.h>
 #include <fcntl.h>
@@ -421,7 +426,10 @@ nsresult nsProfileLock::GetReplacedLockTime(PRTime *aResult) {
 nsresult nsProfileLock::Lock(nsIFile* aProfileDir,
                              nsIProfileUnlocker* *aUnlocker)
 {
-#if defined (XP_UNIX)
+#if defined (XP_MACOSX)
+    NS_NAMED_LITERAL_STRING(LOCKFILE_NAME, ".parentlock");
+    NS_NAMED_LITERAL_STRING(OLD_LOCKFILE_NAME, "parent.lock");
+#elif defined (XP_UNIX)
     NS_NAMED_LITERAL_STRING(OLD_LOCKFILE_NAME, "lock");
     NS_NAMED_LITERAL_STRING(LOCKFILE_NAME, ".parentlock");
 #else
@@ -450,7 +458,67 @@ nsresult nsProfileLock::Lock(nsIFile* aProfileDir,
     if (NS_FAILED(rv))
         return rv;
 
-#if defined(XP_UNIX)
+#if defined(XP_MACOSX)
+    // First, try locking using fcntl. It is more reliable on
+    // a local machine, but may not be supported by an NFS server.
+
+    rv = LockWithFcntl(lockFile);
+    if (NS_FAILED(rv) && (rv != NS_ERROR_FILE_ACCESS_DENIED))
+    {
+        // If that failed for any reason other than NS_ERROR_FILE_ACCESS_DENIED,
+        // assume we tried an NFS that does not support it. Now, try with symlink.
+        rv = LockWithSymlink(lockFile, false);
+    }
+
+    if (NS_SUCCEEDED(rv))
+    {
+        // Check for the old-style lock used by pre-mozilla 1.3 builds.
+        // Those builds used an earlier check to prevent the application
+        // from launching if another instance was already running. Because
+        // of that, we don't need to create an old-style lock as well.
+        struct LockProcessInfo
+        {
+            ProcessSerialNumber psn;
+            unsigned long launchDate;
+        };
+
+        PRFileDesc *fd = nullptr;
+        int32_t ioBytes;
+        ProcessInfoRec processInfo;
+        LockProcessInfo lockProcessInfo;
+
+        rv = lockFile->SetLeafName(OLD_LOCKFILE_NAME);
+        if (NS_FAILED(rv))
+            return rv;
+        rv = lockFile->OpenNSPRFileDesc(PR_RDONLY, 0, &fd);
+        if (NS_SUCCEEDED(rv))
+        {
+            ioBytes = PR_Read(fd, &lockProcessInfo, sizeof(LockProcessInfo));
+            PR_Close(fd);
+
+            if (ioBytes == sizeof(LockProcessInfo))
+            {
+#ifdef __LP64__
+                processInfo.processAppRef = nullptr;
+#else
+                processInfo.processAppSpec = nullptr;
+#endif
+                processInfo.processName = nullptr;
+                processInfo.processInfoLength = sizeof(ProcessInfoRec);
+                if (::GetProcessInformation(&lockProcessInfo.psn, &processInfo) == noErr &&
+                    processInfo.processLaunchDate == lockProcessInfo.launchDate)
+                {
+                    return NS_ERROR_FILE_ACCESS_DENIED;
+                }
+            }
+            else
+            {
+                NS_WARNING("Could not read lock file - ignoring lock");
+            }
+        }
+        rv = NS_OK; // Don't propagate error from OpenNSPRFileDesc.
+    }
+#elif defined(XP_UNIX)
     // Get the old lockfile name
     nsCOMPtr<nsIFile> oldLockFile;
     rv = aProfileDir->Clone(getter_AddRefs(oldLockFile));

@@ -10,6 +10,9 @@
 #include "mozilla/WindowsDllBlocklist.h"
 
 #include "nsXULAppAPI.h"
+#ifdef XP_MACOSX
+#include "xpcshellMacUtils.h"
+#endif
 #ifdef XP_WIN
 #include <windows.h>
 #include <shlobj.h>
@@ -34,6 +37,10 @@ main(int argc, char** argv, char** envp)
     gtk_parse_args(&argc, &argv);
 #endif
 
+#ifdef XP_MACOSX
+    InitAutoreleasePool();
+#endif
+
     // unbuffer stdout so that output is in the correct order; note that stderr
     // is unbuffered by default
     setbuf(stdout, 0);
@@ -43,6 +50,10 @@ main(int argc, char** argv, char** envp)
 #endif
 
     int result = XRE_XPCShellMain(argc, argv, envp);
+
+#ifdef XP_MACOSX
+    FinishAutoreleasePool();
+#endif
 
     return result;
 }

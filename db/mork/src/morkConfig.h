@@ -18,6 +18,10 @@
 
 // { %%%%% begin platform defs peculiar to Mork %%%%%
 
+#ifdef XP_MACOSX
+#define MORK_MAC 1
+#endif
+
 #ifdef XP_WIN
 #define MORK_WIN 1
 #endif
@@ -28,7 +32,7 @@
 
 // } %%%%% end platform defs peculiar to Mork %%%%%
 
-#if defined(MORK_WIN) || defined(MORK_UNIX)
+#if defined(MORK_WIN) || defined(MORK_UNIX) || defined(MORK_MAC)
 #include <stdio.h> 
 #include <ctype.h> 
 #include <errno.h> 
@@ -84,15 +88,20 @@ void mork_fileflush(FILE * file);
 #define mork_kTAB '\011'
 #define mork_kCRLF "\015\012"     /* A CR LF equivalent string */
 
-#if defined(MORK_WIN)
-#  define mork_kNewline           "\015\012"
-#  define mork_kNewlineSize       2
+#if defined(MORK_MAC)
+#  define mork_kNewline             "\015"
+#  define mork_kNewlineSize 1
 #else
-#  if defined(MORK_UNIX)
-#    define mork_kNewline         "\012"
-#    define mork_kNewlineSize     1
-#  endif /* MORK_UNIX */
-#endif /* MORK_WIN */
+#  if defined(MORK_WIN)
+#    define mork_kNewline           "\015\012"
+#    define mork_kNewlineSize       2
+#  else
+#    if defined(MORK_UNIX)
+#      define mork_kNewline         "\012"
+#      define mork_kNewlineSize     1
+#    endif /* MORK_UNIX */
+#  endif /* MORK_WIN */
+#endif /* MORK_MAC */
 
 // { %%%%% begin assertion macro %%%%%
 extern void mork_assertion_signal(const char* inMessage);
@@ -105,7 +114,7 @@ extern void mork_assertion_signal(const char* inMessage);
 
 // { %%%%% begin standard c utility methods %%%%%
 
-#if defined(MORK_WIN) || defined(MORK_UNIX)
+#if defined(MORK_WIN) || defined(MORK_UNIX) || defined(MORK_MAC)
 #define MORK_USE_C_STDLIB 1
 #endif /*MORK_WIN*/
 

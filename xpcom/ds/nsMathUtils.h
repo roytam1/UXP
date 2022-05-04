@@ -103,6 +103,10 @@ NS_finite(double aNum)
 #ifdef WIN32
   // NOTE: '!!' casts an int to bool without spamming MSVC warning C4800.
   return !!_finite(aNum);
+#elif defined(XP_DARWIN)
+  // Darwin has deprecated |finite| and recommends |isfinite|. The former is
+  // not present in the iOS SDK.
+  return std::isfinite(aNum);
 #else
   return finite(aNum);
 #endif

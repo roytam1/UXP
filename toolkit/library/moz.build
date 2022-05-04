@@ -12,8 +12,14 @@ def Libxul_defines():
 
 @template
 def Libxul(name):
-    GeckoSharedLibrary(name, linkage=None)
-    SHARED_LIBRARY_NAME = 'xul'
+    if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('cocoa', 'uikit'):
+        # This is going to be a framework named "XUL", not an ordinary library named
+        # "libxul.dylib"
+        GeckoFramework(name, linkage=None)
+        SHARED_LIBRARY_NAME = 'XUL'
+    else:
+        GeckoSharedLibrary(name, linkage=None)
+        SHARED_LIBRARY_NAME = 'xul'
 
     DELAYLOAD_DLLS += [
         'comdlg32.dll',
@@ -121,6 +127,9 @@ if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT'] or \
         'freetype',
     ]
 
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    CXXFLAGS += CONFIG['TK_CFLAGS']
+
 if CONFIG['MOZ_WEBRTC']:
     if CONFIG['OS_TARGET'] == 'WINNT':
         OS_LIBS += [
@@ -133,6 +142,19 @@ if CONFIG['MOZ_WEBRTC']:
             'msdmo',
             'wininet',
         ]
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    OS_LIBS += [
+        '-framework OpenGL',
+        '-framework SystemConfiguration',
+        '-framework AVFoundation',
+        '-framework CoreMedia',
+        '-framework IOKit',
+        '-F%s' % CONFIG['MACOS_PRIVATE_FRAMEWORKS_DIR'],
+        '-framework CoreUI',
+        '-framework CoreSymbolication',
+        'cups',
+    ]
 
 if CONFIG['MOZ_WMF']:
     OS_LIBS += [
@@ -195,6 +217,9 @@ if 'rtsp' in CONFIG['NECKO_PROTOCOLS']:
     ]
 
 OS_LIBS += CONFIG['ICONV_LIBS']
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('cocoa', 'uikit'):
+    OS_LIBS += CONFIG['TK_LIBS']
 
 if CONFIG['MOZ_SNDIO']:
     OS_LIBS += [
@@ -280,11 +305,14 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     ]
 
 if CONFIG['COMPILE_ENVIRONMENT']:
-    full_libname = '%s%s%s' % (
-        CONFIG['DLL_PREFIX'],
-        LIBRARY_NAME,
-        CONFIG['DLL_SUFFIX']
-    )
+    if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('cocoa', 'uikit'):
+        full_libname = SHARED_LIBRARY_NAME
+    else:
+        full_libname = '%s%s%s' % (
+            CONFIG['DLL_PREFIX'],
+            LIBRARY_NAME,
+            CONFIG['DLL_SUFFIX']
+        )
     GENERATED_FILES += ['dependentlibs.list']
     GENERATED_FILES['dependentlibs.list'].script = 'dependentlibs.py:gen_list'
     GENERATED_FILES['dependentlibs.list'].inputs = [

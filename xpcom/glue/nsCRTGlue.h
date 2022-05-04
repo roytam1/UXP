@@ -124,7 +124,9 @@ void NS_MakeRandomString(char* aBuf, int32_t aBufLen);
 // identify or replace all known path separators.
 #define KNOWN_PATH_SEPARATORS "\\/"
 
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+  #define FILE_PATH_SEPARATOR        "/"
+#elif defined(XP_WIN)
   #define FILE_PATH_SEPARATOR        "\\"
 #elif defined(XP_UNIX)
   #define FILE_PATH_SEPARATOR        "/"

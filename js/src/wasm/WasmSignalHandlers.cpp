@@ -1,7 +1,6 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
  * Copyright 2014 Mozilla Foundation
- * Copyright 2021 Moonchild Productions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,6 +235,10 @@ class AutoSetHandlingSegFault
 #  define EPC_sig(p) ((p)->uc_mcontext.mc_pc)
 #  define RFP_sig(p) ((p)->uc_mcontext.mc_regs[30])
 # endif
+#elif defined(XP_DARWIN)
+# define EIP_sig(p) ((p)->uc_mcontext->__ss.__eip)
+# define RIP_sig(p) ((p)->uc_mcontext->__ss.__rip)
+# define R15_sig(p) ((p)->uc_mcontext->__ss.__pc)
 #else
 # error "Don't know how to read/write to the thread state via the mcontext_t."
 #endif
@@ -345,8 +348,34 @@ enum { REG_EIP = 14 };
 #endif
 
 // Define a context type for use in the emulator code. This is usually just
-// the same as CONTEXT.
+// the same as CONTEXT, but on Mac we use a different structure since we call
+// into the emulator code from a Mach exception handler rather than a
+// sigaction-style signal handler.
+#if defined(XP_DARWIN)
+# if defined(JS_CPU_X64)
+struct macos_x64_context {
+    x86_thread_state64_t thread;
+    x86_float_state64_t float_;
+};
+#  define EMULATOR_CONTEXT macos_x64_context
+# elif defined(JS_CPU_X86)
+struct macos_x86_context {
+    x86_thread_state_t thread;
+    x86_float_state_t float_;
+};
+#  define EMULATOR_CONTEXT macos_x86_context
+# elif defined(JS_CPU_ARM)
+struct macos_arm_context {
+    arm_thread_state_t thread;
+    arm_neon_state_t float_;
+};
+#  define EMULATOR_CONTEXT macos_arm_context
+# else
+#  error Unsupported architecture
+# endif
+#else
 # define EMULATOR_CONTEXT CONTEXT
+#endif
 
 #if defined(JS_CPU_X64)
 # define PC_sig(p) RIP_sig(p)
@@ -438,6 +467,7 @@ StoreValueFromGPImm(SharedMem<void*> addr, size_t size, int32_t imm)
     AtomicOperations::memcpySafeWhenRacy(addr, static_cast<void*>(&imm), size);
 }
 
+# if !defined(XP_DARWIN)
 MOZ_COLD static void*
 AddressOfFPRegisterSlot(CONTEXT* context, FloatRegisters::Encoding encoding)
 {
@@ -487,6 +517,57 @@ AddressOfGPRegisterSlot(EMULATOR_CONTEXT* context, Registers::Code code)
     }
     MOZ_CRASH();
 }
+# else
+MOZ_COLD static void*
+AddressOfFPRegisterSlot(EMULATOR_CONTEXT* context, FloatRegisters::Encoding encoding)
+{
+    switch (encoding) {
+      case X86Encoding::xmm0:  return &context->float_.__fpu_xmm0;
+      case X86Encoding::xmm1:  return &context->float_.__fpu_xmm1;
+      case X86Encoding::xmm2:  return &context->float_.__fpu_xmm2;
+      case X86Encoding::xmm3:  return &context->float_.__fpu_xmm3;
+      case X86Encoding::xmm4:  return &context->float_.__fpu_xmm4;
+      case X86Encoding::xmm5:  return &context->float_.__fpu_xmm5;
+      case X86Encoding::xmm6:  return &context->float_.__fpu_xmm6;
+      case X86Encoding::xmm7:  return &context->float_.__fpu_xmm7;
+      case X86Encoding::xmm8:  return &context->float_.__fpu_xmm8;
+      case X86Encoding::xmm9:  return &context->float_.__fpu_xmm9;
+      case X86Encoding::xmm10: return &context->float_.__fpu_xmm10;
+      case X86Encoding::xmm11: return &context->float_.__fpu_xmm11;
+      case X86Encoding::xmm12: return &context->float_.__fpu_xmm12;
+      case X86Encoding::xmm13: return &context->float_.__fpu_xmm13;
+      case X86Encoding::xmm14: return &context->float_.__fpu_xmm14;
+      case X86Encoding::xmm15: return &context->float_.__fpu_xmm15;
+      default: break;
+    }
+    MOZ_CRASH();
+}
+
+MOZ_COLD static void*
+AddressOfGPRegisterSlot(EMULATOR_CONTEXT* context, Registers::Code code)
+{
+    switch (code) {
+      case X86Encoding::rax: return &context->thread.__rax;
+      case X86Encoding::rcx: return &context->thread.__rcx;
+      case X86Encoding::rdx: return &context->thread.__rdx;
+      case X86Encoding::rbx: return &context->thread.__rbx;
+      case X86Encoding::rsp: return &context->thread.__rsp;
+      case X86Encoding::rbp: return &context->thread.__rbp;
+      case X86Encoding::rsi: return &context->thread.__rsi;
+      case X86Encoding::rdi: return &context->thread.__rdi;
+      case X86Encoding::r8:  return &context->thread.__r8;
+      case X86Encoding::r9:  return &context->thread.__r9;
+      case X86Encoding::r10: return &context->thread.__r10;
+      case X86Encoding::r11: return &context->thread.__r11;
+      case X86Encoding::r12: return &context->thread.__r12;
+      case X86Encoding::r13: return &context->thread.__r13;
+      case X86Encoding::r14: return &context->thread.__r14;
+      case X86Encoding::r15: return &context->thread.__r15;
+      default: break;
+    }
+    MOZ_CRASH();
+}
+# endif  // !XP_DARWIN
 
 MOZ_COLD static void
 SetRegisterToCoercedUndefined(EMULATOR_CONTEXT* context, size_t size,
@@ -792,7 +873,276 @@ WasmFaultHandler(LPEXCEPTION_POINTERS exception)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#else  // If not Windows, assume Unix-like
+#elif defined(XP_DARWIN)
+# include <mach/exc.h>
+
+static uint8_t**
+ContextToPC(EMULATOR_CONTEXT* context)
+{
+# if defined(JS_CPU_X64)
+    static_assert(sizeof(context->thread.__rip) == sizeof(void*),
+                  "stored IP should be compile-time pointer-sized");
+    return reinterpret_cast<uint8_t**>(&context->thread.__rip);
+# elif defined(JS_CPU_X86)
+    static_assert(sizeof(context->thread.uts.ts32.__eip) == sizeof(void*),
+                  "stored IP should be compile-time pointer-sized");
+    return reinterpret_cast<uint8_t**>(&context->thread.uts.ts32.__eip);
+# elif defined(JS_CPU_ARM)
+    static_assert(sizeof(context->thread.__pc) == sizeof(void*),
+                  "stored IP should be compile-time pointer-sized");
+    return reinterpret_cast<uint8_t**>(&context->thread.__pc);
+# else
+#  error Unsupported architecture
+# endif
+}
+
+// This definition was generated by mig (the Mach Interface Generator) for the
+// routine 'exception_raise' (exc.defs).
+#pragma pack(4)
+typedef struct {
+    mach_msg_header_t Head;
+    /* start of the kernel processed data */
+    mach_msg_body_t msgh_body;
+    mach_msg_port_descriptor_t thread;
+    mach_msg_port_descriptor_t task;
+    /* end of the kernel processed data */
+    NDR_record_t NDR;
+    exception_type_t exception;
+    mach_msg_type_number_t codeCnt;
+    int64_t code[2];
+} Request__mach_exception_raise_t;
+#pragma pack()
+
+// The full Mach message also includes a trailer.
+struct ExceptionRequest
+{
+    Request__mach_exception_raise_t body;
+    mach_msg_trailer_t trailer;
+};
+
+static bool
+HandleMachException(JSRuntime* rt, const ExceptionRequest& request)
+{
+    // Don't allow recursive handling of signals, see AutoSetHandlingSegFault.
+    if (rt->handlingSegFault)
+        return false;
+    AutoSetHandlingSegFault handling(rt);
+
+    // Get the port of the JSRuntime's thread from the message.
+    mach_port_t rtThread = request.body.thread.name;
+
+    // Read out the JSRuntime thread's register state.
+    EMULATOR_CONTEXT context;
+# if defined(JS_CPU_X64)
+    unsigned int thread_state_count = x86_THREAD_STATE64_COUNT;
+    unsigned int float_state_count = x86_FLOAT_STATE64_COUNT;
+    int thread_state = x86_THREAD_STATE64;
+    int float_state = x86_FLOAT_STATE64;
+# elif defined(JS_CPU_X86)
+    unsigned int thread_state_count = x86_THREAD_STATE_COUNT;
+    unsigned int float_state_count = x86_FLOAT_STATE_COUNT;
+    int thread_state = x86_THREAD_STATE;
+    int float_state = x86_FLOAT_STATE;
+# elif defined(JS_CPU_ARM)
+    unsigned int thread_state_count = ARM_THREAD_STATE_COUNT;
+    unsigned int float_state_count = ARM_NEON_STATE_COUNT;
+    int thread_state = ARM_THREAD_STATE;
+    int float_state = ARM_NEON_STATE;
+# else
+#  error Unsupported architecture
+# endif
+    kern_return_t kret;
+    kret = thread_get_state(rtThread, thread_state,
+                            (thread_state_t)&context.thread, &thread_state_count);
+    if (kret != KERN_SUCCESS)
+        return false;
+    kret = thread_get_state(rtThread, float_state,
+                            (thread_state_t)&context.float_, &float_state_count);
+    if (kret != KERN_SUCCESS)
+        return false;
+
+    uint8_t** ppc = ContextToPC(&context);
+    uint8_t* pc = *ppc;
+
+    if (request.body.exception != EXC_BAD_ACCESS || request.body.codeCnt != 2)
+        return false;
+
+    WasmActivation* activation = rt->wasmActivationStack();
+    if (!activation)
+        return false;
+
+    const Instance* instance = activation->compartment()->wasm.lookupInstanceDeprecated(pc);
+    if (!instance || !instance->codeSegment().containsFunctionPC(pc))
+        return false;
+
+    uint8_t* faultingAddress = reinterpret_cast<uint8_t*>(request.body.code[1]);
+
+    // This check isn't necessary, but, since we can, check anyway to make
+    // sure we aren't covering up a real bug.
+    if (!IsHeapAccessAddress(*instance, faultingAddress))
+        return false;
+
+    HandleMemoryAccess(&context, pc, faultingAddress, *instance, ppc);
+
+    // Update the thread state with the new pc and register values.
+    kret = thread_set_state(rtThread, float_state, (thread_state_t)&context.float_, float_state_count);
+    if (kret != KERN_SUCCESS)
+        return false;
+    kret = thread_set_state(rtThread, thread_state, (thread_state_t)&context.thread, thread_state_count);
+    if (kret != KERN_SUCCESS)
+        return false;
+
+    return true;
+}
+
+// Taken from mach_exc in /usr/include/mach/mach_exc.defs.
+static const mach_msg_id_t sExceptionId = 2405;
+
+// The choice of id here is arbitrary, the only constraint is that sQuitId != sExceptionId.
+static const mach_msg_id_t sQuitId = 42;
+
+static void
+MachExceptionHandlerThread(JSRuntime* rt)
+{
+    mach_port_t port = rt->wasmMachExceptionHandler.port();
+    kern_return_t kret;
+
+    while(true) {
+        ExceptionRequest request;
+        kret = mach_msg(&request.body.Head, MACH_RCV_MSG, 0, sizeof(request),
+                        port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+
+        // If we fail even receiving the message, we can't even send a reply!
+        // Rather than hanging the faulting thread (hanging the browser), crash.
+        if (kret != KERN_SUCCESS) {
+            fprintf(stderr, "MachExceptionHandlerThread: mach_msg failed with %d\n", (int)kret);
+            MOZ_CRASH();
+        }
+
+        // There are only two messages we should be receiving: an exception
+        // message that occurs when the runtime's thread faults and the quit
+        // message sent when the runtime is shutting down.
+        if (request.body.Head.msgh_id == sQuitId)
+            break;
+        if (request.body.Head.msgh_id != sExceptionId) {
+            fprintf(stderr, "Unexpected msg header id %d\n", (int)request.body.Head.msgh_bits);
+            MOZ_CRASH();
+        }
+
+        // Some thread just commited an EXC_BAD_ACCESS and has been suspended by
+        // the kernel. The kernel is waiting for us to reply with instructions.
+        // Our default is the "not handled" reply (by setting the RetCode field
+        // of the reply to KERN_FAILURE) which tells the kernel to continue
+        // searching at the process and system level. If this is an asm.js
+        // expected exception, we handle it and return KERN_SUCCESS.
+        bool handled = HandleMachException(rt, request);
+        kern_return_t replyCode = handled ? KERN_SUCCESS : KERN_FAILURE;
+
+        // This magic incantation to send a reply back to the kernel was derived
+        // from the exc_server generated by 'mig -v /usr/include/mach/mach_exc.defs'.
+        __Reply__exception_raise_t reply;
+        reply.Head.msgh_bits = MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(request.body.Head.msgh_bits), 0);
+        reply.Head.msgh_size = sizeof(reply);
+        reply.Head.msgh_remote_port = request.body.Head.msgh_remote_port;
+        reply.Head.msgh_local_port = MACH_PORT_NULL;
+        reply.Head.msgh_id = request.body.Head.msgh_id + 100;
+        reply.NDR = NDR_record;
+        reply.RetCode = replyCode;
+        mach_msg(&reply.Head, MACH_SEND_MSG, sizeof(reply), 0, MACH_PORT_NULL,
+                 MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+    }
+}
+
+MachExceptionHandler::MachExceptionHandler()
+  : installed_(false),
+    thread_(),
+    port_(MACH_PORT_NULL)
+{}
+
+void
+MachExceptionHandler::uninstall()
+{
+    if (installed_) {
+        thread_port_t thread = mach_thread_self();
+        kern_return_t kret = thread_set_exception_ports(thread,
+                                                        EXC_MASK_BAD_ACCESS,
+                                                        MACH_PORT_NULL,
+                                                        EXCEPTION_DEFAULT | MACH_EXCEPTION_CODES,
+                                                        THREAD_STATE_NONE);
+        mach_port_deallocate(mach_task_self(), thread);
+        if (kret != KERN_SUCCESS)
+            MOZ_CRASH();
+        installed_ = false;
+    }
+    if (thread_.joinable()) {
+        // Break the handler thread out of the mach_msg loop.
+        mach_msg_header_t msg;
+        msg.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_COPY_SEND, 0);
+        msg.msgh_size = sizeof(msg);
+        msg.msgh_remote_port = port_;
+        msg.msgh_local_port = MACH_PORT_NULL;
+        msg.msgh_reserved = 0;
+        msg.msgh_id = sQuitId;
+        kern_return_t kret = mach_msg(&msg, MACH_SEND_MSG, sizeof(msg), 0, MACH_PORT_NULL,
+                                      MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+        if (kret != KERN_SUCCESS) {
+            fprintf(stderr, "MachExceptionHandler: failed to send quit message: %d\n", (int)kret);
+            MOZ_CRASH();
+        }
+
+        // Wait for the handler thread to complete before deallocating the port.
+        thread_.join();
+    }
+    if (port_ != MACH_PORT_NULL) {
+        DebugOnly<kern_return_t> kret = mach_port_destroy(mach_task_self(), port_);
+        MOZ_ASSERT(kret == KERN_SUCCESS);
+        port_ = MACH_PORT_NULL;
+    }
+}
+
+bool
+MachExceptionHandler::install(JSRuntime* rt)
+{
+    MOZ_ASSERT(!installed());
+    kern_return_t kret;
+    mach_port_t thread;
+
+    // Get a port which can send and receive data.
+    kret = mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &port_);
+    if (kret != KERN_SUCCESS)
+        goto error;
+    kret = mach_port_insert_right(mach_task_self(), port_, port_, MACH_MSG_TYPE_MAKE_SEND);
+    if (kret != KERN_SUCCESS)
+        goto error;
+
+    // Create a thread to block on reading port_.
+    if (!thread_.init(MachExceptionHandlerThread, rt))
+        goto error;
+
+    // Direct exceptions on this thread to port_ (and thus our handler thread).
+    // Note: we are totally clobbering any existing *thread* exception ports and
+    // not even attempting to forward. Breakpad and gdb both use the *process*
+    // exception ports which are only called if the thread doesn't handle the
+    // exception, so we should be fine.
+    thread = mach_thread_self();
+    kret = thread_set_exception_ports(thread,
+                                      EXC_MASK_BAD_ACCESS,
+                                      port_,
+                                      EXCEPTION_DEFAULT | MACH_EXCEPTION_CODES,
+                                      THREAD_STATE_NONE);
+    mach_port_deallocate(mach_task_self(), thread);
+    if (kret != KERN_SUCCESS)
+        goto error;
+
+    installed_ = true;
+    return true;
+
+  error:
+    uninstall();
+    return false;
+}
+
+#else  // If not Windows or Mac, assume Unix
 
 enum class Signal {
     SegFault,
@@ -896,7 +1246,7 @@ WasmFaultHandler(int signum, siginfo_t* info, void* context)
     else
         previousSignal->sa_handler(signum);
 }
-# endif // XP_WIN || assume Unix-like
+# endif // XP_WIN || XP_DARWIN || assume unix
 
 static void
 RedirectIonBackedgesToInterruptCheck(JSRuntime* rt)
@@ -1024,6 +1374,9 @@ ProcessHasSignalHandlers()
 # if defined(XP_WIN)
     if (!AddVectoredExceptionHandler(/* FirstHandler = */ true, WasmFaultHandler))
         return false;
+# elif defined(XP_DARWIN)
+    // OSX handles seg faults via the Mach exception handler above, so don't
+    // install WasmFaultHandler.
 # else
     // SA_NODEFER allows us to reenter the signal handler if we crash while
     // handling the signal, and fall through to the Breakpad handler by testing
@@ -1058,6 +1411,12 @@ wasm::EnsureSignalHandlers(JSRuntime* rt)
     // Nothing to do if the platform doesn't support it.
     if (!ProcessHasSignalHandlers())
         return true;
+
+#if defined(XP_DARWIN)
+    // On OSX, each JSRuntime gets its own handler thread.
+    if (!rt->wasmMachExceptionHandler.installed() && !rt->wasmMachExceptionHandler.install(rt))
+        return false;
+#endif
 
     return true;
 }

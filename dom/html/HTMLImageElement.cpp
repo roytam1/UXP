@@ -597,6 +597,9 @@ HTMLImageElement::IsHTMLFocusable(bool aWithMouse,
   }
 
   *aIsFocusable =
+#ifdef XP_MACOSX
+    (!aWithMouse || nsFocusManager::sMouseFocusesFormControl) &&
+#endif
     (tabIndex >= 0 || HasAttr(kNameSpaceID_None, nsGkAtoms::tabindex));
 
   return false;

@@ -55,6 +55,9 @@
 #include "nsXBLBinding.h"
 #include "nsContentUtils.h"
 #include "nsIScriptError.h"
+#ifdef XP_MACOSX
+#include "nsIDocShell.h"
+#endif
 #include "ChildIterator.h"
 #include "nsError.h"
 #include "nsLayoutUtils.h"
@@ -4332,7 +4335,11 @@ nsCSSFrameConstructor::FindXULTagData(Element* aElement,
     SIMPLE_XUL_CREATE(menu, NS_NewMenuFrame),
     SIMPLE_XUL_CREATE(menubutton, NS_NewMenuFrame),
     SIMPLE_XUL_CREATE(menuitem, NS_NewMenuItemFrame),
+#ifdef XP_MACOSX
+    SIMPLE_TAG_CHAIN(menubar, nsCSSFrameConstructor::FindXULMenubarData),
+#else
     SIMPLE_XUL_CREATE(menubar, NS_NewMenuBarFrame),
+#endif /* XP_MACOSX */
     SIMPLE_TAG_CHAIN(popupgroup, nsCSSFrameConstructor::FindPopupGroupData),
     SIMPLE_XUL_CREATE(iframe, NS_NewSubDocumentFrame),
     SIMPLE_XUL_CREATE(editor, NS_NewSubDocumentFrame),
@@ -4406,6 +4413,31 @@ nsCSSFrameConstructor::FindXULDescriptionData(Element* aElement,
     SIMPLE_XUL_FCDATA(NS_NewXULDescriptionFrame);
   return &sDescriptionData;
 }
+
+#ifdef XP_MACOSX
+/* static */
+const nsCSSFrameConstructor::FrameConstructionData*
+nsCSSFrameConstructor::FindXULMenubarData(Element* aElement,
+                                          nsStyleContext* aStyleContext)
+{
+  nsCOMPtr<nsIDocShell> treeItem =
+    aStyleContext->PresContext()->GetDocShell();
+  if (treeItem && nsIDocShellTreeItem::typeChrome == treeItem->ItemType()) {
+    nsCOMPtr<nsIDocShellTreeItem> parent;
+    treeItem->GetParent(getter_AddRefs(parent));
+    if (!parent) {
+      // This is the root.  Suppress the menubar, since on Mac
+      // window menus are not attached to the window.
+      static const FrameConstructionData sSuppressData = SUPPRESS_FCDATA();
+      return &sSuppressData;
+    }
+  }
+
+  static const FrameConstructionData sMenubarData =
+    SIMPLE_XUL_FCDATA(NS_NewMenuBarFrame);
+  return &sMenubarData;
+}
+#endif /* XP_MACOSX */
 
 /* static */
 const nsCSSFrameConstructor::FrameConstructionData*

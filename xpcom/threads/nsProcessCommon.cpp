@@ -33,11 +33,30 @@
 #include "nsLiteralString.h"
 #include "nsReadableUtils.h"
 #else
+#ifdef XP_MACOSX
+#include <crt_externs.h>
+#include <spawn.h>
+#include <sys/wait.h>
+#include <sys/errno.h>
+#endif
 #include <sys/types.h>
 #include <signal.h>
 #endif
 
 using namespace mozilla;
+
+#ifdef XP_MACOSX
+cpu_type_t pref_cpu_types[2] = {
+#if defined(__i386__)
+  CPU_TYPE_X86,
+#elif defined(__x86_64__)
+  CPU_TYPE_X86_64,
+#elif defined(__ppc__)
+  CPU_TYPE_POWERPC,
+#endif
+  CPU_TYPE_ANY
+};
+#endif
 
 //-------------------------------------------------------------------//
 // nsIProcess implementation
@@ -55,7 +74,9 @@ nsProcess::nsProcess()
   , mObserver(nullptr)
   , mWeakObserver(nullptr)
   , mExitValue(-1)
+#if !defined(XP_MACOSX)
   , mProcess(nullptr)
+#endif
 {
 }
 
@@ -241,15 +262,33 @@ nsProcess::Monitor(void* aArg)
     }
   }
 #else
+#ifdef XP_MACOSX
+  int exitCode = -1;
+  int status = 0;
+  pid_t result;
+  do {
+    result = waitpid(process->mPid, &status, 0);
+  } while (result == -1 && errno == EINTR);
+  if (result == process->mPid) {
+    if (WIFEXITED(status)) {
+      exitCode = WEXITSTATUS(status);
+    } else if (WIFSIGNALED(status)) {
+      exitCode = 256; // match NSPR's signal exit status
+    }
+  }
+#else
   int32_t exitCode = -1;
   if (PR_WaitProcess(process->mProcess, &exitCode) != PR_SUCCESS) {
     exitCode = -1;
   }
+#endif
 
   // Lock in case Kill or GetExitCode are called during this
   {
     MutexAutoLock lock(process->mLock);
+#if !defined(XP_MACOSX)
     process->mProcess = nullptr;
+#endif
     process->mExitValue = exitCode;
     if (process->mShutdown) {
       return;
@@ -466,6 +505,34 @@ nsProcess::RunProcess(bool aBlocking, char** aMyArgv, nsIObserver* aObserver,
   }
 
   mPid = GetProcessId(mProcess);
+#elif defined(XP_MACOSX)
+  // Initialize spawn attributes.
+  posix_spawnattr_t spawnattr;
+  if (posix_spawnattr_init(&spawnattr) != 0) {
+    return NS_ERROR_FAILURE;
+  }
+
+  // Set spawn attributes.
+  size_t attr_count = ArrayLength(pref_cpu_types);
+  size_t attr_ocount = 0;
+  if (posix_spawnattr_setbinpref_np(&spawnattr, attr_count, pref_cpu_types,
+                                    &attr_ocount) != 0 ||
+      attr_ocount != attr_count) {
+    posix_spawnattr_destroy(&spawnattr);
+    return NS_ERROR_FAILURE;
+  }
+
+  // Note: |aMyArgv| is already null-terminated as required by posix_spawnp.
+  pid_t newPid = 0;
+  int result = posix_spawnp(&newPid, aMyArgv[0], nullptr, &spawnattr, aMyArgv,
+                            *_NSGetEnviron());
+  mPid = static_cast<int32_t>(newPid);
+
+  posix_spawnattr_destroy(&spawnattr);
+
+  if (result != 0) {
+    return NS_ERROR_FAILURE;
+  }
 #else
   mProcess = PR_CreateProcess(aMyArgv[0], aMyArgv, nullptr, nullptr);
   if (!mProcess) {
@@ -543,6 +610,10 @@ nsProcess::Kill()
     MutexAutoLock lock(mLock);
 #if defined(PROCESSMODEL_WINAPI)
     if (TerminateProcess(mProcess, 0) == 0) {
+      return NS_ERROR_FAILURE;
+    }
+#elif defined(XP_MACOSX)
+    if (kill(mPid, SIGKILL) != 0) {
       return NS_ERROR_FAILURE;
     }
 #else

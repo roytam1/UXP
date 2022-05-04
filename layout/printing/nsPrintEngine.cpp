@@ -1004,6 +1004,10 @@ nsPrintEngine::GetCurrentPrintSettings(nsIPrintSettings * *aCurrentPrintSettings
 nsresult
 nsPrintEngine::CheckForPrinters(nsIPrintSettings* aPrintSettings)
 {
+#if defined(XP_MACOSX)
+  // Mac doesn't support retrieving a printer list.
+  return NS_OK;
+#else
   NS_ENSURE_ARG_POINTER(aPrintSettings);
 
   // See if aPrintSettings already has a printer
@@ -1023,6 +1027,7 @@ nsPrintEngine::CheckForPrinters(nsIPrintSettings* aPrintSettings)
     rv = aPrintSettings->SetPrinterName(printerName.get());
   }
   return rv;
+#endif
 }
 
 //----------------------------------------------------------------------

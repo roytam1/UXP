@@ -56,6 +56,11 @@ if CONFIG['OS_ARCH'] == 'WINNT':
         'nsPluginNativeWindowWin.cpp',
         'nsPluginsDirWin.cpp',
     ]
+elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    SOURCES += [
+        'nsPluginNativeWindow.cpp',
+        'nsPluginsDirDarwin.cpp',
+    ]
 else:
     SOURCES += [
         'nsPluginsDirUnix.cpp',
@@ -77,6 +82,7 @@ LOCAL_INCLUDES += [
     '/layout/xul',
     '/netwerk/base',
     '/widget',
+    '/widget/cocoa',
     '/xpcom/base',
 ]
 

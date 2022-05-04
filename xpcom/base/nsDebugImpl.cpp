@@ -34,7 +34,7 @@
 #include "nsString.h"
 #endif
 
-#if defined(__DragonFly__) || defined(__FreeBSD__) \
+#if defined(XP_MACOSX) || defined(__DragonFly__) || defined(__FreeBSD__) \
  || defined(__NetBSD__) || defined(__OpenBSD__)
 #include <stdbool.h>
 #include <unistd.h>
@@ -58,7 +58,9 @@
 #define KINFO_PROC struct kinfo_proc
 #endif
 
-#if defined(__DragonFly__)
+#if defined(XP_MACOSX)
+#define KP_FLAGS kp_proc.p_flag
+#elif defined(__DragonFly__)
 #define KP_FLAGS kp_flags
 #elif defined(__FreeBSD__)
 #define KP_FLAGS ki_flag
@@ -162,7 +164,7 @@ nsDebugImpl::GetIsDebuggerAttached(bool* aResult)
 
 #if defined(XP_WIN)
   *aResult = ::IsDebuggerPresent();
-#elif defined(__DragonFly__) || defined(__FreeBSD__) \
+#elif defined(XP_MACOSX) || defined(__DragonFly__) || defined(__FreeBSD__) \
    || defined(__NetBSD__) || defined(__OpenBSD__)
   // Specify the info we're looking for
   int mib[] = {
@@ -424,6 +426,8 @@ RealBreak()
 {
 #if defined(_WIN32)
   ::DebugBreak();
+#elif defined(XP_MACOSX)
+  raise(SIGTRAP);
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__i386) || defined(__x86_64__))
   asm("int $3");
 #elif defined(__arm__)
@@ -506,6 +510,12 @@ Break(const char* aMsg)
     }
   }
 
+  RealBreak();
+#elif defined(XP_MACOSX)
+  /* Note that we put this Mac OS X test above the GNUC/x86 test because the
+   * GNUC/x86 test is also true on Intel Mac OS X and we want the PPC/x86
+   * impls to be the same.
+   */
   RealBreak();
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__i386) || defined(__x86_64__))
   RealBreak();

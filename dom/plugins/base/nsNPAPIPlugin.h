@@ -45,6 +45,10 @@ public:
   // PluginFuncs() can't fail but results are only valid if GetLibrary() succeeds
   NPPluginFuncs* PluginFuncs();
 
+#if defined(XP_MACOSX) && !defined(__LP64__)
+  void SetPluginRefNum(short aRefNum);
+#endif
+
   // The IPC mechanism notifies the nsNPAPIPlugin if the plugin
   // crashes and is no longer usable. pluginDumpID/browserDumpID are
   // the IDs of respective minidumps that were written, or empty if no

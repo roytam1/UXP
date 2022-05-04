@@ -1406,6 +1406,12 @@ Navigator::GetPlatform(nsAString& aPlatform, bool aUsePrefOverriddenValue)
   aPlatform.AssignLiteral("Win64");
 #elif defined(WIN32)
   aPlatform.AssignLiteral("Win32");
+#elif defined(XP_MACOSX) && defined(__ppc__)
+  aPlatform.AssignLiteral("MacPPC");
+#elif defined(XP_MACOSX) && defined(__i386__)
+  aPlatform.AssignLiteral("MacIntel");
+#elif defined(XP_MACOSX) && defined(__x86_64__)
+  aPlatform.AssignLiteral("MacIntel");
 #else
   // XXX Communicator uses compiled-in build-time string defines
   // to indicate the platform it was compiled *for*, not what it is

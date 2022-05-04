@@ -68,6 +68,7 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('android'):
     DEFINES['SK_FONTHOST_CAIRO_STANDALONE'] = 0
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] in {
+    'cocoa',
     'android',
     'gtk2',
     'gtk3',
@@ -454,7 +455,7 @@ def write_mozbuild(sources):
   f.write("if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('android'):\n")
   write_sources(f, sources['android'], 4)
 
-  f.write("if CONFIG['MOZ_WIDGET_TOOLKIT'] in {'uikit'}:\n")
+  f.write("if CONFIG['MOZ_WIDGET_TOOLKIT'] in {'cocoa', 'uikit'}:\n")
   write_sources(f, sources['mac'], 4)
 
   f.write("if 'gtk' in CONFIG['MOZ_WIDGET_TOOLKIT']:\n")

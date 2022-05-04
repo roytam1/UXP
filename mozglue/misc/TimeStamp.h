@@ -399,9 +399,18 @@ public:
    * retrieved by mozilla::TimeStamp. Since we need this for
    * vsync timestamps, we enable the creation of mozilla::TimeStamps
    * on platforms that support vsync aligned refresh drivers / compositors
+   * Verified true as of Jan 31, 2015: OS X
    * False on Windows 7
    * UNTESTED ON OTHER PLATFORMS
    */
+#if defined(XP_DARWIN)
+  static TimeStamp FromSystemTime(int64_t aSystemTime)
+  {
+    static_assert(sizeof(aSystemTime) == sizeof(TimeStampValue),
+                  "System timestamp should be same units as TimeStampValue");
+    return TimeStamp(aSystemTime);
+  }
+#endif
 
   /**
    * Return true if this is the "null" moment

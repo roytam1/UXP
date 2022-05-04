@@ -40,6 +40,13 @@ elif CONFIG['OS_TARGET'] == 'WINNT':
         'fallback/FallbackScreenConfiguration.cpp',
         'windows/WindowsSensor.cpp',
     ]
+elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    UNIFIED_SOURCES += [
+        'fallback/FallbackAlarm.cpp',
+        'fallback/FallbackMemory.cpp',
+        'fallback/FallbackPower.cpp',
+        'fallback/FallbackScreenConfiguration.cpp',
+    ]
 elif CONFIG['OS_TARGET'] in ('OpenBSD', 'NetBSD', 'FreeBSD', 'DragonFly'):
     UNIFIED_SOURCES += [
         'fallback/FallbackAlarm.cpp',
@@ -71,6 +78,12 @@ UNIFIED_SOURCES += [
 UNIFIED_SOURCES += [
     'fallback/FallbackNetwork.cpp',
 ]
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    UNIFIED_SOURCES += [
+        'cocoa/CocoaSensor.mm',
+        'cocoa/smslib.mm',
+    ]
 
 IPDL_SOURCES = [
     'sandbox/PHal.ipdl',

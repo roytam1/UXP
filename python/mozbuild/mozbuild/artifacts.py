@@ -818,6 +818,10 @@ class Artifacts(object):
             return ('linux64' if target_64bit else 'linux') + target_suffix
         if self._defines.get('XP_WIN', False):
             return ('win64' if target_64bit else 'win32') + target_suffix
+        if self._defines.get('XP_MACOSX', False):
+            # We only produce unified builds in automation, so the target_cpu
+            # check is not relevant.
+            return 'macosx64' + target_suffix
         raise Exception('Cannot determine default job for |mach artifact|!')
 
     def _pushheads_from_rev(self, rev, count):

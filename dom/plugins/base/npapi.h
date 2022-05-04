@@ -22,6 +22,25 @@
 #endif
 #endif
 
+#if defined(__APPLE_CC__) && !defined(XP_UNIX)
+#ifndef XP_MACOSX
+#define XP_MACOSX 1
+#endif
+#endif
+
+#if defined(XP_MACOSX) && defined(__LP64__)
+#define NP_NO_QUICKDRAW
+#define NP_NO_CARBON
+#endif
+
+#if defined(XP_MACOSX)
+#include <ApplicationServices/ApplicationServices.h>
+#include <OpenGL/OpenGL.h>
+#ifndef NP_NO_CARBON
+#include <Carbon/Carbon.h>
+#endif
+#endif
+
 #if defined(XP_UNIX)
 #include <stdio.h>
 #if defined(MOZ_X11)
@@ -97,6 +116,12 @@ typedef char*         NPMIMEType;
 /*----------------------------------------------------------------------*/
 /*                       Structures and definitions                     */
 /*----------------------------------------------------------------------*/
+
+#if !defined(__LP64__)
+#if defined(XP_MACOSX)
+#pragma options align=mac68k
+#endif
+#endif /* __LP64__ */
 
 /*
  *  NPP is a plug-in's opaque instance handle
@@ -255,6 +280,15 @@ typedef struct _NPAudioDeviceChangeDetails
 
 typedef enum {
   NPDrawingModelDUMMY
+#if defined(XP_MACOSX)
+#ifndef NP_NO_QUICKDRAW
+  , NPDrawingModelQuickDraw = 0
+#endif
+  , NPDrawingModelCoreGraphics = 1
+  , NPDrawingModelOpenGL = 2
+  , NPDrawingModelCoreAnimation = 3
+  , NPDrawingModelInvalidatingCoreAnimation = 4
+#endif
 #if defined(XP_WIN)
   , NPDrawingModelSyncWin = 5
 #endif
@@ -266,6 +300,15 @@ typedef enum {
   , NPDrawingModelAsyncWindowsDXGISurface = 8
 #endif
 } NPDrawingModel;
+
+#ifdef XP_MACOSX
+typedef enum {
+#ifndef NP_NO_CARBON
+  NPEventModelCarbon = 0,
+#endif
+  NPEventModelCocoa = 1
+} NPEventModel;
+#endif
 
 /*
  *   The following masks are applied on certain platforms to NPNV and
@@ -294,7 +337,12 @@ typedef enum {
 #define _NP_ABI_MIXIN_FOR_GCC3 0
 #endif
 
+#if defined(XP_MACOSX)
+#define NP_ABI_MACHO_MASK 0x01000000
+#define _NP_ABI_MIXIN_FOR_MACHO NP_ABI_MACHO_MASK
+#else
 #define _NP_ABI_MIXIN_FOR_MACHO 0
+#endif
 
 #define NP_ABI_MASK (_NP_ABI_MIXIN_FOR_GCC3 | _NP_ABI_MIXIN_FOR_MACHO)
 
@@ -345,6 +393,12 @@ typedef enum {
 
   /* Used for negotiating drawing models */
   NPPVpluginDrawingModel = 1000
+#if defined(XP_MACOSX)
+  /* Used for negotiating event models */
+  , NPPVpluginEventModel = 1001
+  /* In the NPDrawingModelCoreAnimation drawing model, the browser asks the plug-in for a Core Animation layer. */
+  , NPPVpluginCoreAnimationLayer = 1003
+#endif
   /* Notification that the plugin just started or stopped playing audio */
   , NPPVpluginIsPlayingAudio = 4000
 #if defined(XP_WIN)
@@ -388,17 +442,38 @@ typedef enum {
   NPNVCSSZoomFactor = 23,
 
   NPNVpluginDrawingModel = 1000 /* Get the current drawing model (NPDrawingModel) */
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
   , NPNVcontentsScaleFactor = 1001
+#endif
+#if defined(XP_MACOSX)
+#ifndef NP_NO_QUICKDRAW
+  , NPNVsupportsQuickDrawBool = 2000
+#endif
+  , NPNVsupportsCoreGraphicsBool = 2001
+  , NPNVsupportsOpenGLBool = 2002
+  , NPNVsupportsCoreAnimationBool = 2003
+  , NPNVsupportsInvalidatingCoreAnimationBool = 2004
 #endif
   , NPNVsupportsAsyncBitmapSurfaceBool = 2007
 #if defined(XP_WIN)
   , NPNVsupportsAsyncWindowsDXGISurfaceBool = 2008
   , NPNVpreferredDXGIAdapter = 2009
 #endif
+#if defined(XP_MACOSX)
+#ifndef NP_NO_CARBON
+  , NPNVsupportsCarbonBool = 3000 /* TRUE if the browser supports the Carbon event model */
+#endif
+  , NPNVsupportsCocoaBool = 3001 /* TRUE if the browser supports the Cocoa event model */
+  , NPNVsupportsUpdatedCocoaTextInputBool = 3002 /* TRUE if the browser supports the updated
+                                                    Cocoa text input specification. */
+#endif
   , NPNVmuteAudioBool = 4000 /* Request that the browser wants to mute or unmute the plugin */
 #if defined(XP_WIN)
   , NPNVaudioDeviceChangeDetails = 4001 /* Provides information about the new default audio device */
+#endif
+#if defined(XP_MACOSX)
+  , NPNVsupportsCompositingCoreAnimationPluginsBool = 74656 /* TRUE if the browser supports
+                                                               CA model compositing */
 #endif
 } NPNVariable;
 
@@ -434,7 +509,7 @@ typedef struct _NPWindow
   uint32_t width;  /* Maximum window size */
   uint32_t height;
   NPRect   clipRect; /* Clipping rectangle in port coordinates */
-#if defined(XP_UNIX) || defined(XP_SYMBIAN)
+#if (defined(XP_UNIX) || defined(XP_SYMBIAN)) && !defined(XP_MACOSX)
   void * ws_info; /* Platform-dependent additional data */
 #endif /* XP_UNIX */
   NPWindowType type; /* Is this a window or a drawable? */
@@ -480,7 +555,11 @@ typedef struct _NPPrint
   } print;
 } NPPrint;
 
-#if defined(XP_SYMBIAN)
+#if defined(XP_MACOSX)
+#ifndef NP_NO_CARBON
+typedef EventRecord NPEvent;
+#endif
+#elif defined(XP_SYMBIAN)
 typedef QEvent NPEvent;
 #elif defined(XP_WIN)
 typedef struct _NPEvent
@@ -495,7 +574,13 @@ typedef XEvent NPEvent;
 typedef void*  NPEvent;
 #endif
 
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+typedef void* NPRegion;
+#ifndef NP_NO_QUICKDRAW
+typedef RgnHandle NPQDRegion;
+#endif
+typedef CGPathRef NPCGRegion;
+#elif defined(XP_WIN)
 typedef HRGN NPRegion;
 #elif defined(XP_UNIX) && defined(MOZ_X11)
 typedef Region NPRegion;
@@ -509,7 +594,11 @@ typedef struct _NPNSString NPNSString;
 typedef struct _NPNSWindow NPNSWindow;
 typedef struct _NPNSMenu   NPNSMenu;
 
+#if defined(XP_MACOSX)
+typedef NPNSMenu NPMenu;
+#else
 typedef void *NPMenu;
+#endif
 
 typedef enum {
   NPCoordinateSpacePlugin = 1,
@@ -518,6 +607,112 @@ typedef enum {
   NPCoordinateSpaceScreen,
   NPCoordinateSpaceFlippedScreen
 } NPCoordinateSpace;
+
+#if defined(XP_MACOSX)
+
+#ifndef NP_NO_QUICKDRAW
+typedef struct NP_Port
+{
+  CGrafPtr port;
+  int32_t portx; /* position inside the topmost window */
+  int32_t porty;
+} NP_Port;
+#endif /* NP_NO_QUICKDRAW */
+
+/*
+ * NP_CGContext is the type of the NPWindow's 'window' when the plugin specifies NPDrawingModelCoreGraphics
+ * as its drawing model.
+ */
+
+typedef struct NP_CGContext
+{
+  CGContextRef context;
+  void *window; /* A WindowRef under the Carbon event model. */
+} NP_CGContext;
+
+/*
+ * NP_GLContext is the type of the NPWindow's 'window' when the plugin specifies NPDrawingModelOpenGL as its
+ * drawing model.
+ */
+
+typedef struct NP_GLContext
+{
+  CGLContextObj context;
+#ifdef NP_NO_CARBON
+  NPNSWindow *window;
+#else
+  void *window; /* Can be either an NSWindow or a WindowRef depending on the event model */
+#endif
+} NP_GLContext;
+
+typedef enum {
+  NPCocoaEventDrawRect = 1,
+  NPCocoaEventMouseDown,
+  NPCocoaEventMouseUp,
+  NPCocoaEventMouseMoved,
+  NPCocoaEventMouseEntered,
+  NPCocoaEventMouseExited,
+  NPCocoaEventMouseDragged,
+  NPCocoaEventKeyDown,
+  NPCocoaEventKeyUp,
+  NPCocoaEventFlagsChanged,
+  NPCocoaEventFocusChanged,
+  NPCocoaEventWindowFocusChanged,
+  NPCocoaEventScrollWheel,
+  NPCocoaEventTextInput
+} NPCocoaEventType;
+
+typedef struct _NPCocoaEvent {
+  NPCocoaEventType type;
+  uint32_t version;
+  union {
+    struct {
+      uint32_t modifierFlags;
+      double   pluginX;
+      double   pluginY;
+      int32_t  buttonNumber;
+      int32_t  clickCount;
+      double   deltaX;
+      double   deltaY;
+      double   deltaZ;
+    } mouse;
+    struct {
+      uint32_t    modifierFlags;
+      NPNSString *characters;
+      NPNSString *charactersIgnoringModifiers;
+      NPBool      isARepeat;
+      uint16_t    keyCode;
+    } key;
+    struct {
+      CGContextRef context;
+      double x;
+      double y;
+      double width;
+      double height;
+    } draw;
+    struct {
+      NPBool hasFocus;
+    } focus;
+    struct {
+      NPNSString *text;
+    } text;
+  } data;
+} NPCocoaEvent;
+
+#ifndef NP_NO_CARBON
+/* Non-standard event types that can be passed to HandleEvent */
+enum NPEventType {
+  NPEventType_GetFocusEvent = (osEvt + 16),
+  NPEventType_LoseFocusEvent,
+  NPEventType_AdjustCursorEvent,
+  NPEventType_MenuCommandEvent,
+  NPEventType_ClippingChangedEvent,
+  NPEventType_ScrollingBeginsEvent = 1000,
+  NPEventType_ScrollingEndsEvent
+};
+#endif /* NP_NO_CARBON */
+
+#endif /* XP_MACOSX */
 
 /*
  * Values for mode passed to NPP_New:
@@ -540,6 +735,12 @@ typedef enum {
  */
 #define NP_CLEAR_ALL   0
 #define NP_CLEAR_CACHE (1 << 0)
+
+#if !defined(__LP64__)
+#if defined(XP_MACOSX)
+#pragma options align=reset
+#endif
+#endif /* __LP64__ */
 
 /*----------------------------------------------------------------------*/
 /*       Error and Reason Code definitions                              */

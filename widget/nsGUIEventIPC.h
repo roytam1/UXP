@@ -431,6 +431,13 @@ struct ParamTraits<mozilla::WidgetKeyboardEvent>
     WriteParam(aMsg,
                static_cast<paramType::InputMethodAppStateType>
                  (aParam.mInputMethodAppState));
+#ifdef XP_MACOSX
+    WriteParam(aMsg, aParam.mNativeKeyCode);
+    WriteParam(aMsg, aParam.mNativeModifierFlags);
+    WriteParam(aMsg, aParam.mNativeCharacters);
+    WriteParam(aMsg, aParam.mNativeCharactersIgnoringModifiers);
+    WriteParam(aMsg, aParam.mPluginTextEventString);
+#endif
     // An OS-specific native event might be attached in |mNativeKeyEvent|,  but
     // that cannot be copied across process boundaries.
   }
@@ -458,6 +465,13 @@ struct ParamTraits<mozilla::WidgetKeyboardEvent>
         ReadParam(aMsg, aIter, &aResult->mUniqueId) &&
         ReadParam(aMsg, aIter, &aResult->mIsSynthesizedByTIP) &&
         ReadParam(aMsg, aIter, &inputMethodAppState)
+#ifdef XP_MACOSX
+        && ReadParam(aMsg, aIter, &aResult->mNativeKeyCode)
+        && ReadParam(aMsg, aIter, &aResult->mNativeModifierFlags)
+        && ReadParam(aMsg, aIter, &aResult->mNativeCharacters)
+        && ReadParam(aMsg, aIter, &aResult->mNativeCharactersIgnoringModifiers)
+        && ReadParam(aMsg, aIter, &aResult->mPluginTextEventString)
+#endif
         )
     {
       aResult->mKeyNameIndex = static_cast<mozilla::KeyNameIndex>(keyNameIndex);

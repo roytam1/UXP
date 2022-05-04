@@ -35,7 +35,14 @@
 #include <unistd.h>
 #endif // defined(XP_WIN)
 
-#if defined(XP_UNIX)
+#if defined(XP_MACOSX)
+#include <mach/mach_init.h>
+#include <mach/mach_interface.h>
+#include <mach/mach_port.h>
+#include <mach/mach_types.h>
+#include <mach/message.h>
+#include <mach/thread_info.h>
+#elif defined(XP_UNIX)
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif // defined(XP_UNIX)
@@ -1232,7 +1239,30 @@ nsPerformanceStatsService::GetResources(uint64_t* userTime,
   MOZ_ASSERT(userTime);
   MOZ_ASSERT(systemTime);
 
-#if defined(XP_UNIX)
+#if defined(XP_MACOSX)
+  // On MacOS X, to get we per-thread data, we need to
+  // reach into the kernel.
+
+  mach_msg_type_number_t count = THREAD_BASIC_INFO_COUNT;
+  thread_basic_info_data_t info;
+  mach_port_t port = mach_thread_self();
+  kern_return_t err =
+    thread_info(/* [in] targeted thread*/ port,
+                /* [in] nature of information*/ THREAD_BASIC_INFO,
+                /* [out] thread information */  (thread_info_t)&info,
+                /* [inout] number of items */   &count);
+
+  // We do not need ability to communicate with the thread, so
+  // let's release the port.
+  mach_port_deallocate(mach_task_self(), port);
+
+  if (err != KERN_SUCCESS)
+    return NS_ERROR_FAILURE;
+
+  *userTime = info.user_time.microseconds + info.user_time.seconds * 1000000;
+  *systemTime = info.system_time.microseconds + info.system_time.seconds * 1000000;
+
+#elif defined(XP_UNIX)
   struct rusage rusage;
 #if defined(RUSAGE_THREAD)
   // Under Linux, we can obtain per-thread statistics
@@ -1276,7 +1306,7 @@ nsPerformanceStatsService::GetResources(uint64_t* userTime,
   // Convert 100 ns to 1 us.
   *userTime = userTimeInt.QuadPart / 10;
 
-#endif // defined(XP_UNIX) || defined(XP_WIN)
+#endif // defined(XP_MACOSX) || defined(XP_UNIX) || defined(XP_WIN)
 
   return NS_OK;
 }

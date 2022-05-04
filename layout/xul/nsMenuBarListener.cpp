@@ -76,9 +76,15 @@ void nsMenuBarListener::InitAccessKey()
   if (mAccessKey >= 0)
     return;
 
-  // Compiled-in defaults, in case we can't get LookAndFeel...
+  // Compiled-in defaults, in case we can't get LookAndFeel --
+  // mac doesn't have menu shortcuts, other platforms use alt.
+#ifdef XP_MACOSX
+  mAccessKey = 0;
+  mAccessKeyMask = 0;
+#else
   mAccessKey = nsIDOMKeyEvent::DOM_VK_ALT;
   mAccessKeyMask = MODIFIER_ALT;
+#endif
 
   // Get the menu access key value from prefs, overriding the default:
   mAccessKey = Preferences::GetInt("ui.key.menuAccessKey", mAccessKey);
@@ -248,7 +254,8 @@ nsMenuBarListener::KeyPress(nsIDOMEvent* aKeyEvent)
         aKeyEvent->PreventDefault();
       }
     }    
-    // Also need to handle F10 specially.
+#ifndef XP_MACOSX
+    // Also need to handle F10 specially on Non-Mac platform.
     else if (nativeKeyEvent->mMessage == eKeyPress && keyCode == NS_VK_F10) {
       if ((GetModifiersForAccessKey(keyEvent) & ~MODIFIER_CONTROL) == 0) {
         // The F10 key just went down by itself or with ctrl pressed.
@@ -266,6 +273,7 @@ nsMenuBarListener::KeyPress(nsIDOMEvent* aKeyEvent)
         }
       }
     }
+#endif // !XP_MACOSX
   }
 
   return NS_OK;

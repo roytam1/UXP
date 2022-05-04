@@ -31,6 +31,16 @@
 #include "EventTracer.h"
 #endif
 
+#ifdef XP_MACOSX
+#include "nsVersionComparator.h"
+#include "MacLaunchHelper.h"
+#include "MacApplicationDelegate.h"
+#include "MacAutoreleasePool.h"
+// these are needed for sysctl
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
+
 #include "prmem.h"
 #include "prnetdb.h"
 #include "prprf.h"
@@ -145,6 +155,11 @@
 #include "WinUtils.h"
 #endif
 
+#ifdef XP_MACOSX
+#include "nsILocalFileMac.h"
+#include "nsCommandLineServiceMac.h"
+#endif
+
 // for X remote support
 #ifdef MOZ_ENABLE_XREMOTE
 #include "XRemoteClient.h"
@@ -158,6 +173,10 @@
 
 #if defined(DEBUG) && defined(XP_WIN32)
 #include <malloc.h>
+#endif
+
+#if defined (XP_MACOSX)
+#include <Carbon/Carbon.h>
 #endif
 
 #ifdef DEBUG
@@ -1100,6 +1119,12 @@ ScopedXPCOMStartup::~ScopedXPCOMStartup()
   NS_IF_RELEASE(gNativeAppSupport);
 
   if (mServiceManager) {
+#ifdef XP_MACOSX
+    // On OS X, we need a pool to catch cocoa objects that are autoreleased
+    // during teardown.
+    mozilla::MacAutoreleasePool pool;
+#endif
+
     nsCOMPtr<nsIAppStartup> appStartup (do_GetService(NS_APPSTARTUP_CONTRACTID));
     if (appStartup)
       appStartup->DestroyHiddenWindow();
@@ -1485,6 +1510,10 @@ static nsresult LaunchChild(nsINativeAppSupport* aNative,
 
   SaveToEnv("MOZ_LAUNCHED_CHILD=1");
 
+#if defined(XP_MACOSX)
+  CommandLineServiceMac::SetupMacCommandLine(gRestartArgc, gRestartArgv, true);
+  LaunchChildMac(gRestartArgc, gRestartArgv);
+#else
   nsCOMPtr<nsIFile> lf;
   nsresult rv = XRE_GetBinaryPath(gArgv[0], getter_AddRefs(lf));
   if (NS_FAILED(rv))
@@ -1519,6 +1548,7 @@ static nsresult LaunchChild(nsINativeAppSupport* aNative,
     return NS_ERROR_FAILURE;
 #endif // XP_UNIX
 #endif // WP_WIN
+#endif // WP_MACOSX
 
   return NS_ERROR_LAUNCHED_CHILD_PROCESS;
 }
@@ -1587,9 +1617,15 @@ ProfileLockedDialog(nsIFile* aProfileDir, nsIFile* aProfileLocalDir,
     const char16_t* params[] = {appName.get(), appName.get()};
 
     nsXPIDLString killMessage;
+#ifndef XP_MACOSX
     sb->FormatStringFromName(aUnlocker ? u"restartMessageUnlocker"
                                        : u"restartMessageNoUnlocker",
                              params, 2, getter_Copies(killMessage));
+#else
+    sb->FormatStringFromName(aUnlocker ? u"restartMessageUnlockerMac"
+                                       : u"restartMessageNoUnlockerMac",
+                             params, 2, getter_Copies(killMessage));
+#endif
 
     nsXPIDLString killTitle;
     sb->FormatStringFromName(u"restartTitle",
@@ -1732,6 +1768,10 @@ ShowProfileManager(nsIToolkitProfileService* aProfileSvc,
 
     rv = xpcom.SetWindowCreator(aNative);
     NS_ENSURE_SUCCESS(rv, NS_ERROR_FAILURE);
+
+#ifdef XP_MACOSX
+    CommandLineServiceMac::SetupMacCommandLine(gRestartArgc, gRestartArgv, true);
+#endif
 
 #ifdef XP_WIN
     // we don't have to wait here because profile manager window will pump
@@ -2843,6 +2883,13 @@ XREMain::XRE_mainInit(bool* aExitFlag)
     if (NS_FAILED(rv))
       return 2;
 
+#ifdef XP_MACOSX
+    nsCOMPtr<nsIFile> parent;
+    greDir->GetParent(getter_AddRefs(parent));
+    greDir = parent.forget();
+    greDir->AppendNative(NS_LITERAL_CSTRING("Resources"));
+#endif
+
     greDir.forget(&mAppData->xreDirectory);
   }
 
@@ -2875,6 +2922,40 @@ XREMain::XRE_mainInit(bool* aExitFlag)
   rv = mDirProvider.Initialize(mAppData->directory, mAppData->xreDirectory);
   if (NS_FAILED(rv))
     return 1;
+
+#ifdef XP_MACOSX
+  // Set up ability to respond to system (Apple) events. This must occur before
+  // ProcessUpdates to ensure that links clicked in external applications aren't
+  // lost when updates are pending.
+  SetupMacApplicationDelegate();
+
+  if (EnvHasValue("MOZ_LAUNCHED_CHILD")) {
+    // This is needed, on relaunch, to force the OS to use the "Cocoa Dock
+    // API".  Otherwise the call to ReceiveNextEvent() below will make it
+    // use the "Carbon Dock API".  For more info see bmo bug 377166.
+    EnsureUseCocoaDockAPI();
+
+    // When the app relaunches, the original process exits.  This causes
+    // the dock tile to stop bouncing, lose the "running" triangle, and
+    // if the tile does not permanently reside in the Dock, even disappear.
+    // This can be confusing to the user, who is expecting the app to launch.
+    // Calling ReceiveNextEvent without requesting any event is enough to
+    // cause a dock tile for the child process to appear.
+    const EventTypeSpec kFakeEventList[] = { { INT_MAX, INT_MAX } };
+    EventRef event;
+    ::ReceiveNextEvent(GetEventTypeCount(kFakeEventList), kFakeEventList,
+                       kEventDurationNoWait, false, &event);
+  }
+
+  if (CheckArg("foreground")) {
+    // The original process communicates that it was in the foreground by
+    // adding this argument.  This new process, which is taking over for
+    // the old one, should make itself the active application.
+    ProcessSerialNumber psn;
+    if (::GetCurrentProcess(&psn) == noErr)
+      ::SetFrontProcess(&psn);
+  }
+#endif
 
   SaveToEnv("MOZ_LAUNCHED_CHILD=");
 
@@ -2924,6 +3005,12 @@ XREMain::XRE_mainInit(bool* aExitFlag)
       !EnvHasValue("MOZ_DISABLE_SAFE_MODE_KEY")) {
     gSafeMode = true;
   }
+#endif
+
+#ifdef XP_MACOSX
+  if ((GetCurrentEventKeyModifiers() & optionKey) &&
+      !EnvHasValue("MOZ_DISABLE_SAFE_MODE_KEY"))
+    gSafeMode = true;
 #endif
 
 #ifdef XP_WIN
@@ -3697,6 +3784,19 @@ XREMain::XRE_mainRun()
     // Clear the environment variable so it won't be inherited by
     // child processes and confuse things.
     g_unsetenv ("DESKTOP_STARTUP_ID");
+#endif
+
+#ifdef XP_MACOSX
+    // we re-initialize the command-line service and do appleevents munging
+    // after we are sure that we're not restarting
+    cmdLine = do_CreateInstance("@mozilla.org/toolkit/command-line;1");
+    NS_ENSURE_TRUE(cmdLine, NS_ERROR_FAILURE);
+
+    CommandLineServiceMac::SetupMacCommandLine(gArgc, gArgv, false);
+
+    rv = cmdLine->Init(gArgc, gArgv,
+                        workingDir, nsICommandLine::STATE_INITIAL_LAUNCH);
+    NS_ENSURE_SUCCESS(rv, NS_ERROR_FAILURE);
 #endif
 
     nsCOMPtr<nsIObserverService> obsService =

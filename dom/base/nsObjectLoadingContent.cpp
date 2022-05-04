@@ -95,6 +95,13 @@
 #endif
 #endif // XP_WIN
 
+#ifdef XP_MACOSX
+// HandlePluginCrashed() and HandlePluginInstantiated() needed from here to
+// fix bug 1147521.  Should later be replaced by proper interface methods,
+// maybe on nsIObjectLoadingContext.
+#include "mozilla/dom/HTMLObjectElement.h"
+#endif
+
 static NS_DEFINE_CID(kAppShellCID, NS_APPSHELL_CID);
 
 static const char *kPrefJavaMIME = "plugin.java.mime";
@@ -908,6 +915,10 @@ nsObjectLoadingContent::InstantiatePluginInstance(bool aIsLoading)
                             doc,
                             NS_LITERAL_STRING("PluginInstantiated"));
   NS_DispatchToCurrentThread(ev);
+
+#ifdef XP_MACOSX
+  HTMLObjectElement::HandlePluginInstantiated(thisContent->AsElement());
+#endif
 
   return NS_OK;
 }
@@ -2937,6 +2948,10 @@ nsObjectLoadingContent::PluginCrashed(nsIPluginTag* aPluginTag,
   nsCOMPtr<nsIContent> thisContent =
     do_QueryInterface(static_cast<nsIImageLoadingContent*>(this));
 
+#ifdef XP_MACOSX
+  HTMLObjectElement::HandlePluginCrashed(thisContent->AsElement());
+#endif
+
   PluginDestroyed();
 
   // Switch to fallback/crashed state, notify
@@ -3174,6 +3189,10 @@ nsObjectLoadingContent::DoStopPlugin(nsPluginInstanceOwner* aInstanceOwner,
     if (DoDelayedStop(aInstanceOwner, this, aDelayedStop)) {
       return;
     }
+
+#if defined(XP_MACOSX)
+    aInstanceOwner->HidePluginWindow();
+#endif
 
     RefPtr<nsPluginHost> pluginHost = nsPluginHost::GetInst();
     NS_ASSERTION(pluginHost, "No plugin host?");

@@ -71,6 +71,18 @@ this.PageThumbUtils = {
       let windowScale = aWindow ? aWindow.devicePixelRatio : systemScale;
       let scale = Math.max(systemScale, windowScale);
 
+#ifdef XP_MACOSX
+      /** *
+       * On retina displays, we can sometimes go down this path
+       * without a window object. In those cases, force 2x scaling
+       * as the system scale doesn't represent the 2x scaling
+       * on OS X.
+       */
+      if (!aWindow) {
+        scale = 2;
+      }
+#endif
+
       /** *
        * THESE VALUES ARE DEFINED IN newtab.css and hard coded.
        * If you change these values from the prefs,

@@ -60,8 +60,14 @@ XPCOMUtils.defineLazyModuleGetter(this, "PlacesUIUtils",
 // refresh instead.
 const MIN_TRANSACTIONS_FOR_BATCH = 5;
 
-// The transferable system converts "\r\n" to "\n" where needed.
+// On Mac OSX, the transferable system converts "\r\n" to "\n\n", where
+// we really just want "\n". On other platforms, the transferable system
+// converts "\r\n" to "\n".
+#ifdef XP_MACOSX
+const NEWLINE = "\n";
+#else
 const NEWLINE = "\r\n";
+#endif
 
 function QI_node(aNode, aIID) {
   var result = null;
