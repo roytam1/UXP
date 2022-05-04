@@ -457,6 +457,11 @@ public:
   void CompleteAudioContextOperations(AsyncCubebOperation aOperation);
 private:
   /**
+   * On certain MacBookPro, the microphone is located near the left speaker.
+   * We need to pan the sound output to the right speaker if we are using the
+   * mic and the built-in speaker, or we will have terrible echo.  */
+  void PanOutputIfNeeded(bool aMicrophoneActive);
+  /**
    * This is called when the output device used by the cubeb stream changes. */
   void DeviceChangedCallback();
   /* Start the cubeb stream */

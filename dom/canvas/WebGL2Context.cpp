@@ -125,6 +125,13 @@ WebGLContext::InitWebGL2(FailureReason* const out_failReason)
     fnGatherMissing2(gl::GLFeature::occlusion_query_boolean,
                      gl::GLFeature::occlusion_query);
 
+#ifdef XP_MACOSX
+    // On OSX, GL core profile is used. This requires texture swizzle
+    // support to emulate legacy texture formats: ALPHA, LUMINANCE,
+    // and LUMINANCE_ALPHA.
+    fnGatherMissing(gl::GLFeature::texture_swizzle);
+#endif
+
     fnGatherMissing2(gl::GLFeature::prim_restart_fixed,
                      gl::GLFeature::prim_restart);
 

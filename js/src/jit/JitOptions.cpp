@@ -126,8 +126,12 @@ DefaultJitOptions::DefaultJitOptions()
     SET_DEFAULT(disableSharedStubs, false);
 
     // Toggles whether sincos optimization is globally disabled.
-    // See bug 984018 as to why this is disabled.
-    SET_DEFAULT(disableSincos, true);
+    // See bug984018: The MacOS is the only one that has the sincos fast.
+    #if defined(XP_MACOSX)
+        SET_DEFAULT(disableSincos, false);
+    #else
+        SET_DEFAULT(disableSincos, true);
+    #endif
 
     // Toggles whether sink code motion is globally disabled.
     SET_DEFAULT(disableSink, true);

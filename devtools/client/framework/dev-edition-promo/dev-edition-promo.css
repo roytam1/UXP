@@ -21,7 +21,11 @@ window {
  * depend on. Must style font-size to target linux.
  */
 %ifdef XP_UNIX
+%ifndef XP_MACOSX
   font-size: 13px;
+%else
+  font-size: 15px;
+%endif
 %else
   font-size: 15px;
 %endif

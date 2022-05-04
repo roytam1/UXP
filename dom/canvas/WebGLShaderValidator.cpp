@@ -63,8 +63,34 @@ ChooseValidatorCompileOptions(const ShBuiltInResources& resources,
                SH_REGENERATE_STRUCT_NAMES;
     }
 
-    // We want to do this everywhere.
+#ifndef XP_MACOSX
+    // We want to do this everywhere, but to do this on Mac, we need
+    // to do it only on Mac OSX > 10.6 as this causes the shader
+    // compiler in 10.6 to crash
     options |= SH_CLAMP_INDIRECT_ARRAY_BOUNDS;
+#endif
+
+#ifdef XP_MACOSX
+    if (gl->WorkAroundDriverBugs()) {
+        // Work around https://bugs.webkit.org/show_bug.cgi?id=124684,
+        // https://chromium.googlesource.com/angle/angle/+/5e70cf9d0b1bb
+        options |= SH_UNFOLD_SHORT_CIRCUIT;
+        
+        // OS X 10.7/10.8 specific:
+        
+        // Work around bug 665578 and bug 769810
+        if (gl->Vendor() == gl::GLVendor::ATI) {
+            options |= SH_EMULATE_BUILT_IN_FUNCTIONS;
+        }
+        // Work around bug 735560
+        if (gl->Vendor() == gl::GLVendor::Intel) {
+            options |= SH_EMULATE_BUILT_IN_FUNCTIONS;
+        }
+
+        // Work around that Mac drivers handle struct scopes incorrectly.
+        options |= SH_REGENERATE_STRUCT_NAMES;
+    }
+#endif
 
     if (resources.MaxExpressionComplexity > 0) {
         options |= SH_LIMIT_EXPRESSION_COMPLEXITY;
@@ -160,6 +186,15 @@ WebGLContext::CreateShaderValidator(GLenum shaderType) const
     // Tell ANGLE to allow highp in frag shaders. (unless disabled)
     // If underlying GLES doesn't have highp in frag shaders, it should complain anyways.
     resources.FragmentPrecisionHigh = mDisableFragHighP ? 0 : 1;
+
+    if (gl->WorkAroundDriverBugs()) {
+#ifdef XP_MACOSX
+        if (gl->Vendor() == gl::GLVendor::NVIDIA) {
+            // Work around bug 890432
+            resources.MaxExpressionComplexity = 1000;
+        }
+#endif
+    }
 
     int compileOptions = webgl::ChooseValidatorCompileOptions(resources, gl);
     return webgl::ShaderValidator::Create(shaderType, spec, outputLanguage, resources,

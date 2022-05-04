@@ -48,6 +48,10 @@ if CONFIG['MOZ_GAMEPAD']:
         SOURCES += [
             'fallback/FallbackGamepad.cpp'
         ]
+    elif CONFIG['MOZ_GAMEPAD_BACKEND'] == 'cocoa':
+        SOURCES += [
+            'cocoa/CocoaGamepad.cpp'
+        ]
     elif CONFIG['MOZ_GAMEPAD_BACKEND'] == 'windows':
         SOURCES += [
             'windows/WindowsGamepad.cpp'

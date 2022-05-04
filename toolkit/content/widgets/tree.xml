@@ -774,6 +774,7 @@
           event.preventDefault();
         }
       </handler>
+#ifndef XP_MACOSX
       <!-- Use F2 key to enter text editing. -->
       <handler event="keydown" keycode="VK_F2">
         <![CDATA[
@@ -785,6 +786,7 @@
             event.preventDefault();
         ]]>
       </handler>
+#endif // XP_MACOSX
 
       <handler event="keydown" keycode="VK_ESCAPE">
         <![CDATA[

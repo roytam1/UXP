@@ -191,11 +191,13 @@ exports.CSS_PROPERTIES = {
     "supports": [],
     "values": [
       "-moz-gtk-info-bar",
+      "-moz-mac-active-source-list-selection",
       "-moz-mac-disclosure-button-closed",
       "-moz-mac-disclosure-button-open",
       "-moz-mac-fullscreen-button",
       "-moz-mac-help-button",
       "-moz-mac-source-list",
+      "-moz-mac-source-list-selection",
       "-moz-mac-vibrancy-dark",
       "-moz-mac-vibrancy-light",
       "-moz-win-borderless-glass",
@@ -1236,9 +1238,12 @@ exports.CSS_PROPERTIES = {
       "tab-size"
     ],
     "supports": [
+      6,
       7
     ],
     "values": [
+      "-moz-calc",
+      "calc",
       "inherit",
       "initial",
       "unset"
@@ -1746,6 +1751,141 @@ exports.CSS_PROPERTIES = {
       "unset"
     ]
   },
+  "-webkit-appearance": {
+    "isInherited": false,
+    "subproperties": [
+      "-moz-appearance"
+    ],
+    "supports": [],
+    "values": [
+      "-moz-gtk-info-bar",
+      "-moz-mac-active-source-list-selection",
+      "-moz-mac-disclosure-button-closed",
+      "-moz-mac-disclosure-button-open",
+      "-moz-mac-fullscreen-button",
+      "-moz-mac-help-button",
+      "-moz-mac-source-list",
+      "-moz-mac-source-list-selection",
+      "-moz-mac-vibrancy-dark",
+      "-moz-mac-vibrancy-light",
+      "-moz-win-borderless-glass",
+      "-moz-win-browsertabbar-toolbox",
+      "-moz-win-communications-toolbox",
+      "-moz-win-exclude-glass",
+      "-moz-win-glass",
+      "-moz-win-media-toolbox",
+      "-moz-window-button-box",
+      "-moz-window-button-box-maximized",
+      "-moz-window-button-close",
+      "-moz-window-button-maximize",
+      "-moz-window-button-minimize",
+      "-moz-window-button-restore",
+      "-moz-window-frame-bottom",
+      "-moz-window-frame-left",
+      "-moz-window-frame-right",
+      "-moz-window-titlebar",
+      "-moz-window-titlebar-maximized",
+      "button",
+      "button-arrow-down",
+      "button-arrow-next",
+      "button-arrow-previous",
+      "button-arrow-up",
+      "button-bevel",
+      "button-focus",
+      "caret",
+      "checkbox",
+      "checkbox-container",
+      "checkbox-label",
+      "checkmenuitem",
+      "dialog",
+      "dualbutton",
+      "groupbox",
+      "inherit",
+      "initial",
+      "listbox",
+      "listitem",
+      "menuarrow",
+      "menubar",
+      "menucheckbox",
+      "menuimage",
+      "menuitem",
+      "menuitemtext",
+      "menulist",
+      "menulist-button",
+      "menulist-text",
+      "menulist-textfield",
+      "menupopup",
+      "menuradio",
+      "menuseparator",
+      "meterbar",
+      "meterchunk",
+      "none",
+      "number-input",
+      "progressbar",
+      "progressbar-vertical",
+      "progresschunk",
+      "progresschunk-vertical",
+      "radio",
+      "radio-container",
+      "radio-label",
+      "radiomenuitem",
+      "range",
+      "range-thumb",
+      "resizer",
+      "resizerpanel",
+      "scale-horizontal",
+      "scale-vertical",
+      "scalethumb-horizontal",
+      "scalethumb-vertical",
+      "scalethumbend",
+      "scalethumbstart",
+      "scalethumbtick",
+      "scrollbar",
+      "scrollbar-horizontal",
+      "scrollbar-small",
+      "scrollbar-vertical",
+      "scrollbarbutton-down",
+      "scrollbarbutton-left",
+      "scrollbarbutton-right",
+      "scrollbarbutton-up",
+      "scrollbarthumb-horizontal",
+      "scrollbarthumb-vertical",
+      "scrollbartrack-horizontal",
+      "scrollbartrack-vertical",
+      "searchfield",
+      "separator",
+      "spinner",
+      "spinner-downbutton",
+      "spinner-textfield",
+      "spinner-upbutton",
+      "splitter",
+      "statusbar",
+      "statusbarpanel",
+      "tab",
+      "tab-scroll-arrow-back",
+      "tab-scroll-arrow-forward",
+      "tabpanel",
+      "tabpanels",
+      "textfield",
+      "textfield-multiline",
+      "toolbar",
+      "toolbarbutton",
+      "toolbarbutton-dropdown",
+      "toolbargripper",
+      "toolbox",
+      "tooltip",
+      "treeheader",
+      "treeheadercell",
+      "treeheadersortarrow",
+      "treeitem",
+      "treeline",
+      "treetwisty",
+      "treetwistyopen",
+      "treeview",
+      "unset",
+      "window"
+    ]
+  },
   "-webkit-backface-visibility": {
     "isInherited": false,
     "subproperties": [
@@ -2239,12 +2379,14 @@ exports.CSS_PROPERTIES = {
       "border-box",
       "content-box",
       "exclude",
+      "fill-box",
       "inherit",
       "initial",
       "intersect",
       "linear-gradient",
       "luminance",
       "match-source",
+      "no-clip",
       "no-repeat",
       "none",
       "padding-box",
@@ -2256,9 +2398,11 @@ exports.CSS_PROPERTIES = {
       "repeating-radial-gradient",
       "round",
       "space",
+      "stroke-box",
       "subtract",
       "unset",
-      "url"
+      "url",
+      "view-box"
     ]
   },
   "-webkit-mask-clip": {
@@ -2270,10 +2414,14 @@ exports.CSS_PROPERTIES = {
     "values": [
       "border-box",
       "content-box",
+      "fill-box",
       "inherit",
       "initial",
+      "no-clip",
       "padding-box",
-      "unset"
+      "stroke-box",
+      "unset",
+      "view-box"
     ]
   },
   "-webkit-mask-composite": {
@@ -2329,10 +2477,13 @@ exports.CSS_PROPERTIES = {
     "values": [
       "border-box",
       "content-box",
+      "fill-box",
       "inherit",
       "initial",
       "padding-box",
-      "unset"
+      "stroke-box",
+      "unset",
+      "view-box"
     ]
   },
   "-webkit-mask-position": {
@@ -2811,6 +2962,7 @@ exports.CSS_PROPERTIES = {
       "animation-play-state",
       "animation-timing-function",
       "-moz-appearance",
+      "aspect-ratio",
       "backface-visibility",
       "background-attachment",
       "background-blend-mode",
@@ -2927,6 +3079,7 @@ exports.CSS_PROPERTIES = {
       "font-variant-ligatures",
       "font-variant-numeric",
       "font-variant-position",
+      "font-variation-settings",
       "font-weight",
       "-moz-force-broken-image-icon",
       "grid-auto-columns",
@@ -3142,11 +3295,13 @@ exports.CSS_PROPERTIES = {
       "-moz-inline-stack",
       "-moz-left",
       "-moz-linear-gradient",
+      "-moz-mac-active-source-list-selection",
       "-moz-mac-disclosure-button-closed",
       "-moz-mac-disclosure-button-open",
       "-moz-mac-fullscreen-button",
       "-moz-mac-help-button",
       "-moz-mac-source-list",
+      "-moz-mac-source-list-selection",
       "-moz-mac-vibrancy-dark",
       "-moz-mac-vibrancy-light",
       "-moz-max-content",
@@ -3193,6 +3348,7 @@ exports.CSS_PROPERTIES = {
       "alternate",
       "alternate-reverse",
       "always",
+      "anywhere",
       "auto",
       "avoid",
       "backwards",
@@ -3274,10 +3430,10 @@ exports.CSS_PROPERTIES = {
       "flex",
       "flex-end",
       "flex-start",
+      "flow-root",
       "forwards",
       "full-width",
       "geometricprecision",
-      "grayscale",
       "grid",
       "groove",
       "groupbox",
@@ -3285,6 +3441,7 @@ exports.CSS_PROPERTIES = {
       "hard-light",
       "hidden",
       "hide",
+      "high-quality",
       "horizontal",
       "horizontal-tb",
       "hsl",
@@ -3357,6 +3514,7 @@ exports.CSS_PROPERTIES = {
       "mixed",
       "multiply",
       "no-change",
+      "no-clip",
       "no-drag",
       "no-repeat",
       "non-scaling-stroke",
@@ -3379,6 +3537,7 @@ exports.CSS_PROPERTIES = {
       "pan-y",
       "paused",
       "petite-caps",
+      "pixelated",
       "pre",
       "pre-line",
       "pre-wrap",
@@ -3491,6 +3650,7 @@ exports.CSS_PROPERTIES = {
       "stretch",
       "stretch-to-fit",
       "stroke",
+      "stroke-box",
       "sub",
       "subtract",
       "super",
@@ -5701,6 +5861,7 @@ exports.CSS_PROPERTIES = {
       "block",
       "contents",
       "flex",
+      "flow-root",
       "grid",
       "inherit",
       "initial",
@@ -6318,6 +6479,18 @@ exports.CSS_PROPERTIES = {
       "unset"
     ]
   },
+  "font-variation-settings": {
+    "isInherited": true,
+    "subproperties": [
+      "font-variation-settings"
+    ],
+    "supports": [],
+    "values": [
+      "inherit",
+      "initial",
+      "unset"
+    ]
+  },
   "font-weight": {
     "isInherited": true,
     "subproperties": [
@@ -6690,10 +6863,13 @@ exports.CSS_PROPERTIES = {
     "values": [
       "-moz-crisp-edges",
       "auto",
+      "high-quality",
       "inherit",
       "initial",
       "optimizequality",
       "optimizespeed",
+      "pixelated",
+      "smooth",
       "unset"
     ]
   },
@@ -7229,12 +7405,14 @@ exports.CSS_PROPERTIES = {
       "border-box",
       "content-box",
       "exclude",
+      "fill-box",
       "inherit",
       "initial",
       "intersect",
       "linear-gradient",
       "luminance",
       "match-source",
+      "no-clip",
       "no-repeat",
       "none",
       "padding-box",
@@ -7246,9 +7424,11 @@ exports.CSS_PROPERTIES = {
       "repeating-radial-gradient",
       "round",
       "space",
+      "stroke-box",
       "subtract",
       "unset",
-      "url"
+      "url",
+      "view-box"
     ]
   },
   "mask-clip": {
@@ -7260,10 +7440,14 @@ exports.CSS_PROPERTIES = {
     "values": [
       "border-box",
       "content-box",
+      "fill-box",
       "inherit",
       "initial",
+      "no-clip",
       "padding-box",
-      "unset"
+      "stroke-box",
+      "unset",
+      "view-box"
     ]
   },
   "mask-composite": {
@@ -7334,10 +7518,13 @@ exports.CSS_PROPERTIES = {
     "values": [
       "border-box",
       "content-box",
+      "fill-box",
       "inherit",
       "initial",
       "padding-box",
-      "unset"
+      "stroke-box",
+      "unset",
+      "view-box"
     ]
   },
   "mask-position": {
@@ -8519,6 +8706,21 @@ exports.CSS_PROPERTIES = {
       "unset"
     ]
   },
+  "scrollbar-width": {
+    "isInherited": true,
+    "subproperties": [
+      "scrollbar-width"
+    ],
+    "supports": [],
+    "values": [
+      "auto",
+      "inherit",
+      "initial",
+      "none",
+      "thin",
+      "unset"
+    ]
+  },
   "shape-rendering": {
     "isInherited": true,
     "subproperties": [
@@ -8612,6 +8814,8 @@ exports.CSS_PROPERTIES = {
       8
     ],
     "values": [
+      "-moz-calc",
+      "calc",
       "inherit",
       "initial",
       "unset"

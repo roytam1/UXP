@@ -3055,7 +3055,11 @@ nsFrame::GetDataForTableSelection(const nsFrameSelection* aFrameSelection,
   {  
     // In Browser, special 'table selection' key must be pressed for table selection
     // or when just Shift is pressed and we're already in table/cell selection mode
+#ifdef XP_MACOSX
+    doTableSelection = aMouseEvent->IsMeta() || (aMouseEvent->IsShift() && selectingTableCells);
+#else
     doTableSelection = aMouseEvent->IsControl() || (aMouseEvent->IsShift() && selectingTableCells);
+#endif
   }
   if (!doTableSelection) 
     return NS_OK;
@@ -3324,7 +3328,13 @@ nsFrame::HandlePress(nsPresContext* aPresContext,
   if (!frameselection || frameselection->GetDisplaySelection() == nsISelectionController::SELECTION_OFF)
     return NS_OK;//nothing to do we cannot affect selection from here
 
+#ifdef XP_MACOSX
+  if (mouseEvent->IsControl())
+    return NS_OK;//short circuit. hard coded for mac due to time restraints.
+  bool control = mouseEvent->IsMeta();
+#else
   bool control = mouseEvent->IsControl();
+#endif
 
   RefPtr<nsFrameSelection> fc = const_cast<nsFrameSelection*>(frameselection);
   if (mouseEvent->mClickCount > 1) {

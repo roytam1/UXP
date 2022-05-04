@@ -165,9 +165,15 @@
   font-size: 11px;
 }
 
+%ifdef XP_MACOSX
+.durationLabel {
+  padding-top: 2px; /* center vertically with scrubber bar */
+}
+%else
 .durationLabel {
   padding-top: 0; /* center vertically with scrubber bar */
 }
+%endif
 
 .positionLabel {
   display: none;
@@ -253,9 +259,15 @@
   padding-top: 7px;
 }
 
+%ifdef XP_MACOSX
+.timeLabel {
+  padding-top: 7px; /* center vertically with scrubber bar */
+}
+%else
 .timeLabel {
   padding-top: 5px; /* center vertically with scrubber bar */
 }
+%endif
 
 .statusOverlay {
   -moz-box-align: center;

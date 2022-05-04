@@ -25,6 +25,10 @@
 #include "nsWindowsHelpers.h"
 #endif
 
+#ifdef XP_MACOSX
+#include "MacHelpers.h"
+#endif
+
 #ifdef MOZ_WIDGET_GTK
 #include <gtk/gtk.h>
 #include <dlfcn.h>
@@ -38,6 +42,10 @@
 
 #include <map>
 #include <string>
+#endif
+
+#ifdef XP_MACOSX
+#include <sys/sysctl.h>
 #endif
 
 // Slot for NS_InitXPCOM2 to pass information to nsSystemInfo::Init.
@@ -410,6 +418,67 @@ nsSystemInfo::Init()
   cpuFamily = si.wProcessorLevel;
   cpuModel = si.wProcessorRevision >> 8;
   cpuStepping = si.wProcessorRevision & 0xFF;
+#elif defined (XP_MACOSX)
+  // CPU speed
+  uint64_t sysctlValue64 = 0;
+  uint32_t sysctlValue32 = 0;
+  size_t len = 0;
+  len = sizeof(sysctlValue64);
+  if (!sysctlbyname("hw.cpufrequency_max", &sysctlValue64, &len, NULL, 0)) {
+    cpuSpeed = static_cast<int>(sysctlValue64/1000000);
+  }
+  MOZ_ASSERT(sizeof(sysctlValue64) == len);
+
+  len = sizeof(sysctlValue32);
+  if (!sysctlbyname("hw.physicalcpu_max", &sysctlValue32, &len, NULL, 0)) {
+    physicalCPUs = static_cast<int>(sysctlValue32);
+  }
+  MOZ_ASSERT(sizeof(sysctlValue32) == len);
+
+  len = sizeof(sysctlValue32);
+  if (!sysctlbyname("hw.logicalcpu_max", &sysctlValue32, &len, NULL, 0)) {
+    logicalCPUs = static_cast<int>(sysctlValue32);
+  }
+  MOZ_ASSERT(sizeof(sysctlValue32) == len);
+
+  len = sizeof(sysctlValue64);
+  if (!sysctlbyname("hw.l2cachesize", &sysctlValue64, &len, NULL, 0)) {
+    cacheSizeL2 = static_cast<int>(sysctlValue64/1024);
+  }
+  MOZ_ASSERT(sizeof(sysctlValue64) == len);
+
+  len = sizeof(sysctlValue64);
+  if (!sysctlbyname("hw.l3cachesize", &sysctlValue64, &len, NULL, 0)) {
+    cacheSizeL3 = static_cast<int>(sysctlValue64/1024);
+  }
+  MOZ_ASSERT(sizeof(sysctlValue64) == len);
+
+  if (!sysctlbyname("machdep.cpu.vendor", NULL, &len, NULL, 0)) {
+    char* cpuVendorStr = new char[len];
+    if (!sysctlbyname("machdep.cpu.vendor", cpuVendorStr, &len, NULL, 0)) {
+      cpuVendor = cpuVendorStr;
+    }
+    delete [] cpuVendorStr;
+  }
+
+  len = sizeof(sysctlValue32);
+  if (!sysctlbyname("machdep.cpu.family", &sysctlValue32, &len, NULL, 0)) {
+    cpuFamily = static_cast<int>(sysctlValue32);
+  }
+  MOZ_ASSERT(sizeof(sysctlValue32) == len);
+
+  len = sizeof(sysctlValue32);
+  if (!sysctlbyname("machdep.cpu.model", &sysctlValue32, &len, NULL, 0)) {
+    cpuModel = static_cast<int>(sysctlValue32);
+  }
+  MOZ_ASSERT(sizeof(sysctlValue32) == len);
+
+  len = sizeof(sysctlValue32);
+  if (!sysctlbyname("machdep.cpu.stepping", &sysctlValue32, &len, NULL, 0)) {
+    cpuStepping = static_cast<int>(sysctlValue32);
+  }
+  MOZ_ASSERT(sizeof(sysctlValue32) == len);
+
 #elif defined(XP_LINUX)
   // Get vendor, family, model, stepping, physical cores, L3 cache size
   // from /proc/cpuinfo file
@@ -583,6 +652,14 @@ nsSystemInfo::Init()
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
+  }
+#endif
+
+#if defined(XP_MACOSX)
+  nsAutoString countryCode;
+  if (NS_SUCCEEDED(GetSelectedCityInfo(countryCode))) {
+    rv = SetPropertyAsAString(NS_LITERAL_STRING("countryCode"), countryCode);
+    NS_ENSURE_SUCCESS(rv, rv);
   }
 #endif
 

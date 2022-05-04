@@ -50,6 +50,10 @@
            oncommand="document.getElementById('FindToolbar').onFindAgainCommand(false);"/>
   <command id="cmd_findPrevious"
            oncommand="document.getElementById('FindToolbar').onFindAgainCommand(true);"/>
+#ifdef XP_MACOSX
+  <command id="cmd_findSelection"
+           oncommand="document.getElementById('FindToolbar').onFindSelectionCommand();"/>
+#endif
   <command id="cmd_reload" oncommand="viewSourceChrome.reload();"/>
   <command id="cmd_goToLine" oncommand="viewSourceChrome.promptAndGoToLine();" disabled="true"/>
   <command id="cmd_highlightSyntax" oncommand="viewSourceChrome.toggleSyntaxHighlighting();"/>
@@ -85,13 +89,21 @@
     <key id="key_find" key="&findOnCmd.commandkey;" command="cmd_find" modifiers="accel"/>
     <key id="key_findAgain" key="&findAgainCmd.commandkey;" command="cmd_findAgain" modifiers="accel"/>
     <key id="key_findPrevious" key="&findAgainCmd.commandkey;" command="cmd_findPrevious" modifiers="accel,shift"/>
+#ifdef XP_MACOSX
+    <key id="key_findSelection" key="&findSelectionCmd.commandkey;" command="cmd_findSelection" modifiers="accel"/>
+#endif
     <key keycode="&findAgainCmd.commandkey2;" command="cmd_findAgain"/>
     <key keycode="&findAgainCmd.commandkey2;"  command="cmd_findPrevious" modifiers="shift"/>
 
     <key keycode="VK_BACK" command="Browser:Back"/>
     <key keycode="VK_BACK" command="Browser:Forward" modifiers="shift"/>
+#ifndef XP_MACOSX
     <key id="goBackKb" keycode="VK_LEFT" command="Browser:Back" modifiers="alt"/>
     <key id="goForwardKb" keycode="VK_RIGHT" command="Browser:Forward" modifiers="alt"/>
+#else
+    <key id="goBackKb" keycode="VK_LEFT" command="Browser:Back" modifiers="accel" />
+    <key id="goForwardKb" keycode="VK_RIGHT" command="Browser:Forward" modifiers="accel" />
+#endif
 #ifdef XP_UNIX
     <key id="goBackKb2" key="&goBackCmd.commandKey;" command="Browser:Back" modifiers="accel"/>
     <key id="goForwardKb2" key="&goForwardCmd.commandKey;" command="Browser:Forward" modifiers="accel"/>
@@ -138,8 +150,10 @@
                     label="&savePageCmd.label;" accesskey="&savePageCmd.accesskey;"/>
           <menuitem command="cmd_pagesetup" id="menu_pageSetup"
                     label="&pageSetupCmd.label;" accesskey="&pageSetupCmd.accesskey;"/>
+#ifndef XP_MACOSX
           <menuitem command="cmd_printpreview" id="menu_printPreview"
                     label="&printPreviewCmd.label;" accesskey="&printPreviewCmd.accesskey;"/>
+#endif
           <menuitem key="key_print" command="cmd_print" id="menu_print"
                     label="&printCmd.label;" accesskey="&printCmd.accesskey;"/>
           <menuseparator/>

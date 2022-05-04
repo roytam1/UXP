@@ -26,6 +26,11 @@
 #include "nsIFile.h"
 #include "nsISimpleEnumerator.h"
 
+#ifdef XP_MACOSX
+#include <CoreFoundation/CoreFoundation.h>
+#include "nsILocalFileMac.h"
+#endif
+
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsXULAppAPI.h"
 
@@ -1020,7 +1025,33 @@ NS_NewToolkitProfileService(nsIToolkitProfileService* *aResult)
 nsresult
 XRE_GetFileFromPath(const char *aPath, nsIFile* *aResult)
 {
-#if defined(XP_UNIX)
+#if defined(XP_MACOSX)
+    int32_t pathLen = strlen(aPath);
+    if (pathLen > MAXPATHLEN)
+        return NS_ERROR_INVALID_ARG;
+
+    CFURLRef fullPath =
+        CFURLCreateFromFileSystemRepresentation(nullptr, (const UInt8 *) aPath,
+                                                pathLen, true);
+    if (!fullPath)
+        return NS_ERROR_FAILURE;
+
+    nsCOMPtr<nsIFile> lf;
+    nsresult rv = NS_NewNativeLocalFile(EmptyCString(), true,
+                                        getter_AddRefs(lf));
+    if (NS_SUCCEEDED(rv)) {
+        nsCOMPtr<nsILocalFileMac> lfMac = do_QueryInterface(lf, &rv);
+        if (NS_SUCCEEDED(rv)) {
+            rv = lfMac->InitWithCFURL(fullPath);
+            if (NS_SUCCEEDED(rv)) {
+                lf.forget(aResult);
+            }
+        }
+    }
+    CFRelease(fullPath);
+    return rv;
+
+#elif defined(XP_UNIX)
     char fullPath[MAXPATHLEN];
 
     if (!realpath(aPath, fullPath))

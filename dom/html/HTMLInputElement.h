@@ -137,7 +137,7 @@ public:
   virtual void Focus(ErrorResult& aError) override;
 
   // nsINode
-#if !defined(ANDROID)
+#if !defined(ANDROID) && !defined(XP_MACOSX)
   virtual bool IsNodeApzAwareInternal() const override;
 #endif
 

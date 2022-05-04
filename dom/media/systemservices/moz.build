@@ -45,6 +45,14 @@ if CONFIG['OS_TARGET'] == 'Android':
         'OpenSLESProvider.cpp',
     ]
 
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    EXPORTS += [
+        'OSXRunLoopSingleton.h'
+    ]
+    SOURCES += [
+        'OSXRunLoopSingleton.cpp',
+    ]
+
 if CONFIG['_MSC_VER']:
     DEFINES['__PRETTY_FUNCTION__'] = '__FUNCSIG__'
 

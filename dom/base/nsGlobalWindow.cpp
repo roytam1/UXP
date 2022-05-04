@@ -6228,7 +6228,18 @@ nsGlobalWindow::CheckSecurityLeftAndTop(int32_t* aLeft, int32_t* aTop, bool aCal
       screen->GetAvailLeft(&screenLeft);
       screen->GetAvailWidth(&screenWidth);
       screen->GetAvailHeight(&screenHeight);
+#if defined(XP_MACOSX)
+      /* The mac's coordinate system is different from the assumed Windows'
+         system. It offsets by the height of the menubar so that a window
+         placed at (0,0) will be entirely visible. Unfortunately that
+         correction is made elsewhere (in Widget) and the meaning of
+         the Avail... coordinates is overloaded. Here we allow a window
+         to be placed at (0,0) because it does make sense to do so.
+      */
+      screen->GetTop(&screenTop);
+#else
       screen->GetAvailTop(&screenTop);
+#endif
 
       if (aLeft) {
         if (screenLeft+screenWidth < *aLeft+winWidth)
@@ -7065,6 +7076,16 @@ nsGlobalWindow::Dump(const nsAString& aStr)
   }
 
   char *cstr = ToNewUTF8String(aStr);
+
+#if defined(XP_MACOSX)
+  // have to convert \r to \n so that printing to the console works
+  char *c = cstr, *cEnd = cstr + strlen(cstr);
+  while (c < cEnd) {
+    if (*c == '\r')
+      *c = '\n';
+    c++;
+  }
+#endif
 
   if (cstr) {
     MOZ_LOG(nsContentUtils::DOMDumpLog(), LogLevel::Debug, ("[Window.Dump] %s", cstr));

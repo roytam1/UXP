@@ -1,3 +1,4 @@
+/* vim: se cin sw=2 ts=2 et : */
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -623,6 +624,13 @@ MatchingOperatingSystems(OperatingSystem aBlockedOS, OperatingSystem aSystemOS)
 #if defined (XP_WIN)
   if (aBlockedOS == OperatingSystem::Windows) {
     // We do want even "unknown" aSystemOS to fall under "all windows"
+    return true;
+  }
+#endif
+
+#if defined (XP_MACOSX)
+  if (aBlockedOS == OperatingSystem::OSX) {
+    // We do want even "unknown" aSystemOS to fall under "all OS X"
     return true;
   }
 #endif

@@ -3,6 +3,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    DIRS += ['interpose']
+
 EXPORTS.mozilla += [
     'PluginLibrary.h',
 ]
@@ -13,6 +16,7 @@ EXPORTS.mozilla.plugins += [
     'BrowserStreamParent.h',
     'ChildAsyncCall.h',
     'ChildTimer.h',
+    'NPEventOSX.h',
     'NPEventUnix.h',
     'NPEventWindows.h',
     'PluginAsyncSurrogate.h',
@@ -32,6 +36,7 @@ EXPORTS.mozilla.plugins += [
     'PluginScriptableObjectUtils.h',
     'PluginStreamChild.h',
     'PluginStreamParent.h',
+    'PluginUtilsOSX.h',
     'PluginWidgetChild.h',
     'PluginWidgetParent.h',
     'StreamNotifyChild.h',
@@ -51,6 +56,11 @@ if CONFIG['OS_ARCH'] == 'WINNT':
     LOCAL_INCLUDES += [
         '/widget',
         'hangui',
+    ]
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    EXPORTS.mozilla.plugins += [
+        'PluginInterposeOSX.h',
     ]
 
 SOURCES += [
@@ -75,6 +85,12 @@ SOURCES += [
     'PluginWidgetChild.cpp',
     'PluginWidgetParent.cpp',
 ]
+
+if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
+    SOURCES += [
+        'PluginInterposeOSX.mm',
+        'PluginUtilsOSX.mm',
+    ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     SOURCES += [

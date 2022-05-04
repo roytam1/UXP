@@ -1,4 +1,5 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim:set ts=2 sw=2 sts=2 ci et: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -1039,7 +1040,7 @@ void nsXULWindow::OnChromeLoaded()
 
     bool positionSet = !mIgnoreXULPosition;
     nsCOMPtr<nsIXULWindow> parentWindow(do_QueryReferent(mParentWindow));
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
     // don't override WM placement on unix for independent, top-level windows
     // (however, we think the benefits of intelligent dependent window placement
     // trump that override.)

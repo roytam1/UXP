@@ -41,6 +41,8 @@ void UpdateLog::Init(NS_tchar* sourcePath,
       // updater process if the elevated updater process has written the log.
       DeleteFileW(mDstFilePath);
     }
+#elif XP_MACOSX
+    logFP = NS_tfopen(mDstFilePath, NS_T("w"));
 #else
     // On platforms that have an updates directory in the installation directory
     // (e.g. platforms other than Windows and Mac) the update log is written to
@@ -59,7 +61,7 @@ void UpdateLog::Finish()
     return;
   }
 
-#if !defined(XP_WIN)
+#if !defined(XP_WIN) && !defined(XP_MACOSX)
   const int blockSize = 1024;
   char buffer[blockSize];
   fflush(logFP);

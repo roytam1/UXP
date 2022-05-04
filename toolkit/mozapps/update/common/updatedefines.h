@@ -103,6 +103,10 @@ static inline int mywcsprintf(WCHAR* dest, size_t count, const WCHAR* fmt, ...)
 #endif
 # include <dirent.h>
 
+#ifdef XP_MACOSX
+# include <sys/time.h>
+#endif
+
 # define LOG_S "%s"
 # define NS_T(str) str
 # define NS_SLASH NS_T('/')

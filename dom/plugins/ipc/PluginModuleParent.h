@@ -247,7 +247,7 @@ protected:
                        const mozilla::NativeEventData& aNativeKeyData,
                        bool aIsConsumed) override;
 
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
     virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPPluginFuncs* pFuncs, NPError* error) override;
 #else
     virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error) override;
@@ -257,7 +257,7 @@ protected:
     virtual nsresult NP_GetMIMEDescription(const char** mimeDesc) override;
     virtual nsresult NP_GetValue(void *future, NPPVariable aVariable,
                                  void *aValue, NPError* error) override;
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
     virtual nsresult NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* error) override;
 #endif
     virtual nsresult NPP_New(NPMIMEType pluginType, NPP instance,
@@ -278,7 +278,10 @@ private:
 
 public:
 
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+    virtual nsresult IsRemoteDrawingCoreAnimation(NPP instance, bool *aDrawing) override;
+#endif
+#if defined(XP_MACOSX) || defined(XP_WIN)
     virtual nsresult ContentsScaleFactorChanged(NPP instance, double aContentsScaleFactor) override;
 #endif
 
@@ -352,7 +355,7 @@ class PluginModuleContentParent : public PluginModuleParent
 
     virtual ~PluginModuleContentParent();
 
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
     nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error) override;
 #endif
 
@@ -476,13 +479,13 @@ private:
     PluginProcessParent* Process() const { return mSubprocess; }
     base::ProcessHandle ChildProcessHandle() { return mSubprocess->GetChildProcessHandle(); }
 
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
     virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPPluginFuncs* pFuncs, NPError* error) override;
 #else
     virtual nsresult NP_Initialize(NPNetscapeFuncs* bFuncs, NPError* error) override;
 #endif
 
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
     virtual nsresult NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* error) override;
 #endif
 

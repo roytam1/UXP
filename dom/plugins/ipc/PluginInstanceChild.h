@@ -206,7 +206,7 @@ protected:
     virtual bool
     RecvNPP_DidComposite() override;
 
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
     bool CreateWindow(const NPRemoteWindow& aWindow);
     void DeleteWindow();
 #endif
@@ -414,7 +414,7 @@ private:
     InfallibleTArray<nsCString> mValues;
     NPP_t mData;
     NPWindow mWindow;
-#if defined(XP_WIN)
+#if defined(XP_DARWIN) || defined(XP_WIN)
     double mContentsScaleFactor;
 #endif
     double mCSSZoomFactor;
@@ -456,7 +456,7 @@ private:
     PluginScriptableObjectChild* mCachedWindowActor;
     PluginScriptableObjectChild* mCachedElementActor;
 
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
     NPSetWindowCallbackStruct mWsInfo;
 #ifdef MOZ_WIDGET_GTK
     bool mXEmbed;
@@ -520,10 +520,15 @@ private:
     bool CanPaintOnBackground();
 
     bool IsVisible() {
+#ifdef XP_MACOSX
+        return mWindow.clipRect.top != mWindow.clipRect.bottom &&
+               mWindow.clipRect.left != mWindow.clipRect.right;
+#else
         return mWindow.clipRect.top != 0 ||
             mWindow.clipRect.left != 0 ||
             mWindow.clipRect.bottom != 0 ||
             mWindow.clipRect.right != 0;
+#endif
     }
 
     // ShowPluginFrame - in general does four things:
@@ -603,6 +608,12 @@ private:
     // Back surface, just keeping reference to
     // surface which is on ParentProcess side
     RefPtr<gfxASurface> mBackSurface;
+
+#ifdef XP_MACOSX
+    // Current IOSurface available for rendering
+    // We can't use thebes gfxASurface like other platforms.
+    PluginUtilsOSX::nsDoubleBufferCARenderer mDoubleBufferCARenderer; 
+#endif
 
     // (Not to be confused with mBackSurface).  This is a recent copy
     // of the opaque pixels under our object frame, if

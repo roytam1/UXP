@@ -36,6 +36,77 @@
 #include "mozilla/mailnews/MimeEncoder.h"
 #include "nsIPrincipal.h"
 
+///////////////////////////////////////////////////////////////////////////
+// Mac Specific Attachment Handling for AppleDouble Encoded Files
+///////////////////////////////////////////////////////////////////////////
+#ifdef XP_MACOSX
+
+#define AD_WORKING_BUFF_SIZE FILE_IO_BUFFER_SIZE
+
+extern void         MacGetFileType(nsIFile *fs, bool *useDefault, char **type, char **encoding);
+
+#include "nsILocalFileMac.h"
+
+/* static */
+nsresult nsSimpleZipper::Zip(nsIFile *aInputFile, nsIFile *aOutputFile)
+{
+  // create zipwriter object
+  nsresult rv;
+  nsCOMPtr<nsIZipWriter> zipWriter = do_CreateInstance("@mozilla.org/zipwriter;1", &rv);
+  NS_ENSURE_SUCCESS(rv, rv);
+  
+  rv = zipWriter->Open(aOutputFile, PR_RDWR | PR_CREATE_FILE | PR_TRUNCATE);
+  NS_ENSURE_SUCCESS(rv, rv); 
+  
+  rv = AddToZip(zipWriter, aInputFile, EmptyCString());
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  // we're done.
+  zipWriter->Close();
+  return rv;
+}
+
+/* static */
+nsresult nsSimpleZipper::AddToZip(nsIZipWriter *aZipWriter, 
+                                  nsIFile *aFile,
+                                  const nsACString &aPath)
+{
+  // find out the path this file/dir should have in the zip
+  nsCString leafName;
+  aFile->GetNativeLeafName(leafName);
+  nsCString currentPath(aPath);
+  currentPath += leafName;
+    
+  bool isDirectory;
+  aFile->IsDirectory(&isDirectory);
+  // append slash for a directory entry
+  if (isDirectory)
+    currentPath.Append('/');
+  
+  // add the file or directory entry to the zip
+  nsresult rv = aZipWriter->AddEntryFile(currentPath, nsIZipWriter::COMPRESSION_DEFAULT, aFile, false);
+  NS_ENSURE_SUCCESS(rv, rv);
+  
+  // if it's a directory, add all its contents too
+  if (isDirectory) {
+    nsCOMPtr<nsISimpleEnumerator> e;
+    nsresult rv = aFile->GetDirectoryEntries(getter_AddRefs(e));
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    nsCOMPtr<nsIDirectoryEnumerator> dirEnumerator = do_QueryInterface(e, &rv);
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    nsCOMPtr<nsIFile> currentFile;
+    while (NS_SUCCEEDED(dirEnumerator->GetNextFile(getter_AddRefs(currentFile))) && currentFile) {
+      rv = AddToZip(aZipWriter, currentFile, currentPath);
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+  }
+  
+  return NS_OK;
+}
+#endif // XP_MACOSX
+
 //
 // Class implementation...
 //
@@ -168,7 +239,12 @@ NS_IMETHODIMP nsMsgAttachmentHandler::GetAlreadyEncoded(bool* aAlreadyEncoded)
 void
 nsMsgAttachmentHandler::CleanupTempFile()
 {
-/** Mac Stub **/
+#ifdef XP_MACOSX
+  if (mEncodedWorkingFile) {
+    mEncodedWorkingFile->Remove(false);
+    mEncodedWorkingFile = nullptr;
+  }
+#endif // XP_MACOSX
 }
 
 void
@@ -473,8 +549,13 @@ FetcherURLDoneCallback(nsresult aStatus,
     ma->m_size = totalSize;
     if (!aContentType.IsEmpty())
     {
-      // can't send appledouble on non-macs
+#ifdef XP_MACOSX
+      //Do not change the type if we are dealing with an encoded (e.g., appledouble or zip) file
+      if (!ma->mEncodedWorkingFile)
+#else
+        // can't send appledouble on non-macs
       if (!aContentType.EqualsLiteral("multipart/appledouble"))
+#endif
         ma->m_type = aContentType;
     }
 
@@ -617,6 +698,15 @@ done:
   return rv;
 }
 
+#ifdef XP_MACOSX
+bool nsMsgAttachmentHandler::HasResourceFork(FSRef *fsRef)
+{
+  FSCatalogInfo catalogInfo;
+  OSErr err = FSGetCatalogInfo(fsRef, kFSCatInfoDataSizes + kFSCatInfoRsrcSizes, &catalogInfo, nullptr, nullptr, nullptr);
+  return (err == noErr && catalogInfo.rsrcLogicalSize != 0);
+}
+#endif
+
 nsresult
 nsMsgAttachmentHandler::SnarfAttachment(nsMsgCompFields *compFields)
 {
@@ -657,6 +747,33 @@ nsMsgAttachmentHandler::SnarfAttachment(nsMsgCompFields *compFields)
   nsCString sourceURISpec;
   rv = mURL->GetSpec(sourceURISpec);
   NS_ENSURE_SUCCESS(rv, rv);
+#ifdef XP_MACOSX
+  if (!m_bogus_attachment && StringBeginsWith(sourceURISpec, NS_LITERAL_CSTRING("file://")))
+  {
+    // Unescape the path (i.e. un-URLify it) before making a FSSpec
+    nsAutoCString filePath;
+    filePath.Adopt(nsMsgGetLocalFileFromURL(sourceURISpec.get()));
+    nsAutoCString unescapedFilePath;
+    MsgUnescapeString(filePath, 0, unescapedFilePath);
+
+    nsCOMPtr<nsIFile> sourceFile;
+    NS_NewNativeLocalFile(unescapedFilePath, true, getter_AddRefs(sourceFile));
+    if (!sourceFile)
+      return NS_ERROR_FAILURE;
+      
+    // check if it is a bundle. if it is, we'll zip it. 
+    // if not, we'll apple encode it (applesingle or appledouble)
+    nsCOMPtr<nsILocalFileMac> macFile(do_QueryInterface(sourceFile));
+    bool isPackage;
+    macFile->IsPackage(&isPackage);
+    if (isPackage)
+      rv = ConvertToZipFile(macFile);
+    else
+      rv = ConvertToAppleEncoding(sourceURISpec, unescapedFilePath, macFile);
+    
+    NS_ENSURE_SUCCESS(rv, rv);
+  }
+#endif /* XP_MACOSX */
 
   //
   // Ok, here we are, we need to fire the URL off and get the data
@@ -675,6 +792,236 @@ nsMsgAttachmentHandler::SnarfAttachment(nsMsgCompFields *compFields)
 
   return fetcher->FireURLRequest(mURL, mTmpFile, mOutFile, FetcherURLDoneCallback, this);
 }
+
+#ifdef XP_MACOSX
+nsresult
+nsMsgAttachmentHandler::ConvertToZipFile(nsILocalFileMac *aSourceFile)
+{
+  // append ".zip" to the real file name
+  nsAutoCString zippedName;
+  nsresult rv = aSourceFile->GetNativeLeafName(zippedName);
+  NS_ENSURE_SUCCESS(rv, rv);
+  zippedName.AppendLiteral(".zip");
+
+  // create a temporary file that we'll work on
+  nsCOMPtr <nsIFile> tmpFile;
+  rv = nsMsgCreateTempFile(zippedName.get(), getter_AddRefs(tmpFile));
+  NS_ENSURE_SUCCESS(rv, rv);
+  mEncodedWorkingFile = do_QueryInterface(tmpFile);
+
+  // point our URL at the zipped temp file
+  NS_NewFileURI(getter_AddRefs(mURL), mEncodedWorkingFile);
+
+  // zip it!
+  rv = nsSimpleZipper::Zip(aSourceFile, mEncodedWorkingFile);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  // set some metadata for this attachment, that will affect the MIME headers.
+  m_type = APPLICATION_ZIP;
+  m_realName = zippedName.get();
+
+  return NS_OK;
+}
+
+nsresult
+nsMsgAttachmentHandler::ConvertToAppleEncoding(const nsCString &aFileURI, 
+                                               const nsCString &aFilePath, 
+                                               nsILocalFileMac *aSourceFile)
+{
+  // convert the apple file to AppleDouble first, and then patch the
+  // address in the url.
+  
+  //We need to retrieve the file type and creator...
+
+  char fileInfo[32];
+  OSType type, creator;
+
+  nsresult rv = aSourceFile->GetFileType(&type);
+  if (NS_FAILED(rv))
+    return rv;
+  PR_snprintf(fileInfo, sizeof(fileInfo), "%X", type);
+  m_xMacType = fileInfo;
+
+  rv = aSourceFile->GetFileCreator(&creator);
+  if (NS_FAILED(rv))
+    return rv;
+  PR_snprintf(fileInfo, sizeof(fileInfo), "%X", creator);
+  m_xMacCreator = fileInfo;
+
+  FSRef fsRef;
+  aSourceFile->GetFSRef(&fsRef);
+  bool sendResourceFork = HasResourceFork(&fsRef);
+
+  // if we have a resource fork, check the filename extension, maybe we don't need the resource fork!
+  if (sendResourceFork)
+  {
+    nsCOMPtr<nsIURL> fileUrl(do_CreateInstance(NS_STANDARDURL_CONTRACTID));
+    if (fileUrl)
+    {
+      rv = fileUrl->SetSpec(aFileURI);
+      if (NS_SUCCEEDED(rv))
+      {
+        nsAutoCString ext;
+        rv = fileUrl->GetFileExtension(ext);
+        if (NS_SUCCEEDED(rv) && !ext.IsEmpty())
+        {
+          sendResourceFork =
+          PL_strcasecmp(ext.get(), "TXT") &&
+          PL_strcasecmp(ext.get(), "JPG") &&
+          PL_strcasecmp(ext.get(), "GIF") &&
+          PL_strcasecmp(ext.get(), "TIF") &&
+          PL_strcasecmp(ext.get(), "HTM") &&
+          PL_strcasecmp(ext.get(), "HTML") &&
+          PL_strcasecmp(ext.get(), "ART") &&
+          PL_strcasecmp(ext.get(), "XUL") &&
+          PL_strcasecmp(ext.get(), "XML") &&
+          PL_strcasecmp(ext.get(), "CSS") &&
+          PL_strcasecmp(ext.get(), "JS");
+        }
+      }
+    }
+  }
+
+  // Only use appledouble if we aren't uuencoding.
+  if( sendResourceFork )
+  {
+    char *separator;
+
+    separator = mime_make_separator("ad");
+    if (!separator)
+      return NS_ERROR_OUT_OF_MEMORY;
+
+    nsCOMPtr <nsIFile> tmpFile;
+    nsresult rv = nsMsgCreateTempFile("appledouble", getter_AddRefs(tmpFile));
+    if (NS_SUCCEEDED(rv))
+      mEncodedWorkingFile = do_QueryInterface(tmpFile);
+    if (!mEncodedWorkingFile)
+    {
+      PR_FREEIF(separator);
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+
+    //
+    // RICHIE_MAC - ok, here's the deal, we have a file that we need
+    // to encode in appledouble encoding for the resource fork and put that
+    // into the mEncodedWorkingFile location. Then, we need to patch the new file
+    // spec into the array and send this as part of the 2 part appledouble/mime
+    // encoded mime part.
+    //
+    AppleDoubleEncodeObject     *obj = new (AppleDoubleEncodeObject);
+    if (obj == NULL)
+    {
+      mEncodedWorkingFile = nullptr;
+      PR_FREEIF(separator);
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+
+    rv = MsgGetFileStream(mEncodedWorkingFile, getter_AddRefs(obj->fileStream));
+    if (NS_FAILED(rv) || !obj->fileStream)
+    {
+      PR_FREEIF(separator);
+      delete obj;
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+
+    char *working_buff = (char *) PR_Malloc(AD_WORKING_BUFF_SIZE);
+    if (!working_buff)
+    {
+      PR_FREEIF(separator);
+      delete obj;
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+
+    obj->buff = working_buff;
+    obj->s_buff = AD_WORKING_BUFF_SIZE;
+
+    //
+    //  Setup all the need information on the apple double encoder.
+    //
+    ap_encode_init(&(obj->ap_encode_obj), aFilePath.get(), separator);
+
+    int32_t count;
+
+    OSErr status = noErr;
+    m_size = 0;
+    while (status == noErr)
+    {
+      status = ap_encode_next(&(obj->ap_encode_obj), obj->buff, obj->s_buff, &count);
+      if (status == noErr || status == errDone)
+      {
+        //
+        // we got the encode data, so call the next stream to write it to the disk.
+        //
+        uint32_t bytesWritten;
+        obj->fileStream->Write(obj->buff, count, &bytesWritten);
+        if (bytesWritten != (uint32_t) count)
+          status = errFileWrite;
+      }
+    }
+
+    ap_encode_end(&(obj->ap_encode_obj), (status >= 0)); // if this is true, ok, false abort
+    if (obj->fileStream)
+      obj->fileStream->Close();
+
+    PR_FREEIF(obj->buff);               /* free the working buff.   */
+    PR_FREEIF(obj);
+
+    nsCOMPtr <nsIURI> fileURI;
+    NS_NewFileURI(getter_AddRefs(fileURI), mEncodedWorkingFile);
+
+    nsCOMPtr<nsIFileURL> theFileURL = do_QueryInterface(fileURI, &rv);
+    NS_ENSURE_SUCCESS(rv,rv);
+
+    nsCString newURLSpec;
+    rv = fileURI->GetSpec(newURLSpec);
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    if (newURLSpec.IsEmpty())
+    {
+      PR_FREEIF(separator);
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+
+    if (NS_FAILED(nsMsgNewURL(getter_AddRefs(mURL), newURLSpec.get())))
+    {
+      PR_FREEIF(separator);
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+
+    // Now after conversion, also patch the types.
+    char        tmp[128];
+    PR_snprintf(tmp, sizeof(tmp), MULTIPART_APPLEDOUBLE ";\r\n boundary=\"%s\"", separator);
+    PR_FREEIF(separator);
+    m_type = tmp;
+  }
+  else
+  {
+    if ( sendResourceFork )
+    {
+      // For now, just do the encoding, but in the old world we would ask the
+      // user about doing this conversion
+      printf("...we could ask the user about this conversion, but for now, nahh..\n");
+    }
+
+    bool      useDefault;
+    char      *macType, *macEncoding;
+    if (m_type.IsEmpty() || m_type.LowerCaseEqualsLiteral(TEXT_PLAIN))
+    {
+# define TEXT_TYPE  0x54455854  /* the characters 'T' 'E' 'X' 'T' */
+# define text_TYPE  0x74657874  /* the characters 't' 'e' 'x' 't' */
+
+      if (type != TEXT_TYPE && type != text_TYPE)
+      {
+        MacGetFileType(aSourceFile, &useDefault, &macType, &macEncoding);
+        m_type = macType;
+      }
+    }
+    // don't bother to set the types if we failed in getting the file info.
+  }
+
+  return NS_OK;
+}
+#endif // XP_MACOSX
 
 nsresult
 nsMsgAttachmentHandler::LoadDataFromFile(nsIFile *file, nsString &sigData, bool charsetConversion)

@@ -49,10 +49,13 @@ namespace plugins {
 
 NPRemoteWindow::NPRemoteWindow() :
   window(0), x(0), y(0), width(0), height(0), type(NPWindowTypeDrawable)
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
   , visualID(0)
   , colormap(0)
 #endif /* XP_UNIX */
+#if defined(XP_MACOSX)
+  ,contentsScaleFactor(1.0)
+#endif
 {
   clipRect.top = 0;
   clipRect.left = 0;

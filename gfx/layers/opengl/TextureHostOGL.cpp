@@ -20,6 +20,10 @@
 #include "GLBlitTextureImageHelper.h"
 #include "GeckoProfiler.h"
 
+#ifdef XP_MACOSX
+#include "mozilla/layers/MacIOSurfaceTextureHostOGL.h"
+#endif
+
 using namespace mozilla::gl;
 using namespace mozilla::gfx;
 
@@ -44,6 +48,15 @@ CreateTextureHostOGL(const SurfaceDescriptor& aDesc,
                                        desc.hasAlpha());
       break;
     }
+
+#ifdef XP_MACOSX
+    case SurfaceDescriptor::TSurfaceDescriptorMacIOSurface: {
+      const SurfaceDescriptorMacIOSurface& desc =
+        aDesc.get_SurfaceDescriptorMacIOSurface();
+      result = new MacIOSurfaceTextureHostOGL(aFlags, desc);
+      break;
+    }
+#endif
 
     case SurfaceDescriptor::TSurfaceDescriptorSharedGLTexture: {
       const auto& desc = aDesc.get_SurfaceDescriptorSharedGLTexture();

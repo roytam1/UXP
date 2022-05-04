@@ -106,7 +106,7 @@
  */
 #define XRE_SYS_SHARE_EXTENSION_PARENT_DIR "XRESysSExtPD"
 
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) || defined(XP_MACOSX)
 /**
  * Directory service keys for the system-wide and user-specific
  * directories where host manifests used by the WebExtensions

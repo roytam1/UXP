@@ -1045,6 +1045,13 @@ WebGLContext::WhatDoesVertexAttrib0Need() const
     const auto& isAttribArray0Enabled = mBoundVertexArray->mAttribs[0].mEnabled;
 
     bool legacyAttrib0 = gl->IsCompatibilityProfile();
+#ifdef XP_MACOSX
+    if (gl->WorkAroundDriverBugs()) {
+        // Failures in conformance/attribs/gl-disabled-vertex-attrib.
+        // Even in Core profiles on NV. Sigh.
+        legacyAttrib0 |= (gl->Vendor() == gl::GLVendor::NVIDIA);
+    }
+#endif
 
     if (!legacyAttrib0)
         return WebGLVertexAttrib0Status::Default;

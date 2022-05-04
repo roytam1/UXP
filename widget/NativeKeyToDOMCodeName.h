@@ -27,6 +27,12 @@
 #define CODE_MAP_WIN(aCPPCodeName, aNativeKey) \
   NS_NATIVE_KEY_TO_DOM_CODE_NAME_INDEX(aNativeKey, \
                                        CODE_NAME_INDEX_##aCPPCodeName)
+#elif defined(XP_MACOSX)
+#undef CODE_MAP_MAC
+// aNativeKey is key code starting with kVK_.
+#define CODE_MAP_MAC(aCPPCodeName, aNativeKey) \
+  NS_NATIVE_KEY_TO_DOM_CODE_NAME_INDEX(aNativeKey, \
+                                       CODE_NAME_INDEX_##aCPPCodeName)
 #elif defined(MOZ_WIDGET_GTK)
 #undef CODE_MAP_X11
 // aNativeKey is hardware_keycode of GDKEvent or nativeScanCode of QKeyEvent.

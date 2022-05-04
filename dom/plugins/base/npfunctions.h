@@ -182,6 +182,31 @@ typedef struct _NPNetscapeFuncs {
   NPN_SetCurrentAsyncSurfacePtr setcurrentasyncsurface;
 } NPNetscapeFuncs;
 
+#ifdef XP_MACOSX
+/*
+ * Mac OS X version(s) of NP_GetMIMEDescription(const char *)
+ * These can be called to retreive MIME information from the plugin dynamically
+ *
+ * Note: For compatibility with Quicktime, BPSupportedMIMEtypes is another way
+ *       to get mime info from the plugin only on OSX and may not be supported
+ *       in furture version -- use NP_GetMIMEDescription instead
+ */
+enum
+{
+ kBPSupportedMIMETypesStructVers_1    = 1
+};
+typedef struct _BPSupportedMIMETypes
+{
+ SInt32    structVersion;      /* struct version */
+ Handle    typeStrings;        /* STR# formated handle, allocated by plug-in */
+ Handle    infoStrings;        /* STR# formated handle, allocated by plug-in */
+} BPSupportedMIMETypes;
+OSErr BP_GetSupportedMIMETypes(BPSupportedMIMETypes *mimeInfo, UInt32 flags);
+#define NP_GETMIMEDESCRIPTION_NAME "NP_GetMIMEDescription"
+typedef const char* (*NP_GetMIMEDescriptionProcPtr)(void);
+typedef OSErr (*BP_GetSupportedMIMETypesProcPtr)(BPSupportedMIMETypes*, UInt32);
+#endif
+
 #if defined(_WIN32)
 #define OSCALL WINAPI
 #else
@@ -226,8 +251,15 @@ typedef char*          (*NP_GetPluginVersionFunc)(void);
 NP_EXPORT(char*)       NP_GetPluginVersion(void);
 typedef const char*    (*NP_GetMIMEDescriptionFunc)(void);
 NP_EXPORT(const char*) NP_GetMIMEDescription(void);
+#ifdef XP_MACOSX
+typedef NPError        (*NP_InitializeFunc)(NPNetscapeFuncs*);
+NP_EXPORT(NPError)     NP_Initialize(NPNetscapeFuncs* bFuncs);
+typedef NPError        (*NP_GetEntryPointsFunc)(NPPluginFuncs*);
+NP_EXPORT(NPError)     NP_GetEntryPoints(NPPluginFuncs* pFuncs);
+#else
 typedef NPError    (*NP_InitializeFunc)(NPNetscapeFuncs*, NPPluginFuncs*);
 NP_EXPORT(NPError) NP_Initialize(NPNetscapeFuncs* bFuncs, NPPluginFuncs* pFuncs);
+#endif
 typedef NPError        (*NP_ShutdownFunc)(void);
 NP_EXPORT(NPError)     NP_Shutdown(void);
 typedef NPError        (*NP_GetValueFunc)(void *, NPPVariable, void *);

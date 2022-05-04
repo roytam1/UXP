@@ -19,6 +19,11 @@
 #include "nsWeakReference.h"
 #include "gfxRect.h"
 
+#ifdef XP_MACOSX
+#include "mozilla/gfx/QuartzSupport.h"
+#include <ApplicationServices/ApplicationServices.h>
+#endif
+
 class nsIInputStream;
 class nsPluginDOMContextMenuListener;
 class nsPluginFrame;
@@ -99,6 +104,10 @@ public:
 
 #ifdef XP_WIN
   void Paint(const RECT& aDirty, HDC aDC);
+#elif defined(XP_MACOSX)
+  void Paint(const gfxRect& aDirtyRect, CGContextRef cgContext);  
+  void RenderCoreAnimation(CGContextRef aCGContext, int aWidth, int aHeight);
+  void DoCocoaEventDrawRect(const gfxRect& aDrawRect, CGContextRef cgContext);
 #elif defined(MOZ_X11)
   void Paint(gfxContext* aContext,
              const gfxRect& aFrameRect,
@@ -123,11 +132,33 @@ public:
   nsresult SetNetscapeWindowAsParent(HWND aWindowToAdopt);
 #endif
   
+#ifdef XP_MACOSX
+  enum { ePluginPaintEnable, ePluginPaintDisable };
+
+  void WindowFocusMayHaveChanged();
+
+  bool WindowIsActive();
+  void SendWindowFocusChanged(bool aIsActive);
+  NPDrawingModel GetDrawingModel();
+  bool IsRemoteDrawingCoreAnimation();
+
+  NPEventModel GetEventModel();
+  static void CARefresh(nsITimer *aTimer, void *aClosure);
+  void AddToCARefreshTimer();
+  void RemoveFromCARefreshTimer();
+  // This calls into the plugin (NPP_SetWindow) and can run script.
+  void FixUpPluginWindow(int32_t inPaintState);
+  void HidePluginWindow();
+  // Set plugin port info in the plugin (in the 'window' member of the
+  // NPWindow structure passed to the plugin by SetWindow()).
+  void SetPluginPort();
+#else // XP_MACOSX
   void UpdateWindowPositionAndClipRect(bool aSetWindow);
   void UpdateWindowVisibility(bool aVisible);
+#endif // XP_MACOSX
 
   void ResolutionMayHaveChanged();
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
   nsresult ContentsScaleFactorChanged(double aContentsScaleFactor);
 #endif
 
@@ -183,7 +214,7 @@ public:
     return mPluginWindow->type == NPWindowTypeDrawable &&
     (MatchPluginName("Shockwave Flash") ||
      MatchPluginName("Test Plug-in"));
-#elif defined(MOZ_X11)
+#elif defined(MOZ_X11) || defined(XP_MACOSX)
     return true;
 #else
     return false;
@@ -280,6 +311,15 @@ private:
   nsCOMPtr<nsIWidget>         mWidget;
   RefPtr<nsPluginHost>      mPluginHost;
   
+#ifdef XP_MACOSX
+  static nsCOMPtr<nsITimer>                *sCATimer;
+  static nsTArray<nsPluginInstanceOwner*>  *sCARefreshListeners;
+  bool                                      mSentInitialTopLevelWindowEvent;
+  bool                                      mLastWindowIsActive;
+  bool                                      mLastContentFocused;
+  // True if, the next time the window is activated, we should blur ourselves.
+  bool                                      mShouldBlurOnActivate;
+#endif
   double                                    mLastScaleFactor;
   double                                    mLastCSSZoomFactor;
   // Initially, the event loop nesting level we were created on, it's updated
@@ -295,6 +335,15 @@ private:
   bool                        mPluginWindowVisible;
   bool                        mPluginDocumentActiveState;
 
+#ifdef XP_MACOSX
+  NPEventModel mEventModel;
+  // This is a hack! UseAsyncRendering() can incorrectly return false
+  // when we don't have an object frame (possible as of bug 90268).
+  // We hack around this by always returning true if we've ever
+  // returned true.
+  bool mUseAsyncRendering;
+#endif
+  
   // pointer to wrapper for nsIDOMContextMenuListener
   RefPtr<nsPluginDOMContextMenuListener> mCXMenuListener;
   
@@ -307,6 +356,16 @@ private:
 #ifdef XP_WIN
   void CallDefaultProc(const mozilla::WidgetGUIEvent* aEvent);
 #endif
+
+#ifdef XP_MACOSX
+  static NPBool ConvertPointPuppet(PuppetWidget *widget, nsPluginFrame* pluginFrame,
+                            double sourceX, double sourceY, NPCoordinateSpace sourceSpace,
+                            double *destX, double *destY, NPCoordinateSpace destSpace);
+  static NPBool ConvertPointNoPuppet(nsIWidget *widget, nsPluginFrame* pluginFrame,
+                            double sourceX, double sourceY, NPCoordinateSpace sourceSpace,
+                            double *destX, double *destY, NPCoordinateSpace destSpace);
+  void PerformDelayedBlurs();
+#endif    // XP_MACOSX
 
   int mLastMouseDownButtonType;
 

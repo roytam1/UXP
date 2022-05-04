@@ -8,7 +8,7 @@
 #ifdef XP_WIN
 # include "jswin.h"
 
-#elif defined(XP_UNIX)
+#elif defined(XP_DARWIN) || defined(DARWIN) || defined(XP_UNIX)
 # include <pthread.h>
 
 # if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
@@ -132,6 +132,10 @@ void*
 js::GetNativeStackBaseImpl()
 {
     pthread_t thread = pthread_self();
+# if defined(XP_DARWIN) || defined(DARWIN)
+    return pthread_get_stackaddr_np(thread);
+
+# else
     pthread_attr_t sattr;
     pthread_attr_init(&sattr);
 #  if defined(__OpenBSD__)
@@ -206,6 +210,7 @@ js::GetNativeStackBaseImpl()
 #  else
     return static_cast<char*>(stackBase) + stackSize;
 #  endif
+# endif
 }
 
 #endif /* !XP_WIN */

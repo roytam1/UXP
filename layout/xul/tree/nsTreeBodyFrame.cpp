@@ -2613,7 +2613,9 @@ nsTreeBodyFrame::HandleEvent(nsPresContext* aPresContext,
     // Save last values, we will need them.
     int32_t lastDropRow = mSlots->mDropRow;
     int16_t lastDropOrient = mSlots->mDropOrient;
+#ifndef XP_MACOSX
     int16_t lastScrollLines = mSlots->mScrollLines;
+#endif
 
     // Find out the current drag action
     uint32_t lastDragAction = mSlots->mDragAction;
@@ -2631,6 +2633,9 @@ nsTreeBodyFrame::HandleEvent(nsPresContext* aPresContext,
         mSlots->mDropAllowed = false;
         InvalidateDropFeedback(lastDropRow, lastDropOrient);
       }
+#ifdef XP_MACOSX
+      ScrollByLines(mSlots->mScrollLines);
+#else
       if (!lastScrollLines) {
         // Cancel any previously initialized timer.
         if (mSlots->mTimer) {
@@ -2643,6 +2648,7 @@ nsTreeBodyFrame::HandleEvent(nsPresContext* aPresContext,
                     LazyScrollCallback, nsITimer::TYPE_ONE_SHOT,
                     getter_AddRefs(mSlots->mTimer));
        }
+#endif
       // Bail out to prevent spring loaded timer and feedback line settings.
       return NS_OK;
     }
@@ -2835,6 +2841,53 @@ nsTreeBodyFrame::BuildDisplayList(nsDisplayListBuilder*   aBuilder,
   // document is a zombie
   if (!mView || !GetContent ()->GetComposedDoc()->GetWindow())
     return;
+
+#ifdef XP_MACOSX
+  nsIContent* baseElement = GetBaseElement();
+  nsIFrame* treeFrame =
+    baseElement ? baseElement->GetPrimaryFrame() : nullptr;
+  nsCOMPtr<nsITreeSelection> selection;
+  mView->GetSelection(getter_AddRefs(selection));
+  nsITheme* theme = PresContext()->GetTheme();
+  // On Mac, we support native theming of selected rows. On 10.10 and higher,
+  // this means applying vibrancy which require us to register the theme
+  // geometrics for the row. In order to make the vibrancy effect to work
+  // properly, we also need the tree to be themed as a source list.
+  if (selection && treeFrame && theme &&
+      treeFrame->StyleDisplay()->mAppearance == NS_THEME_MAC_SOURCE_LIST) {
+    // Loop through our onscreen rows. If the row is selected and a
+    // -moz-appearance is provided, RegisterThemeGeometry might be necessary.
+    const auto end = std::min(mRowCount, LastVisibleRow() + 1);
+    for (auto i = FirstVisibleRow(); i < end; i++) {
+      bool isSelected;
+      selection->IsSelected(i, &isSelected);
+      if (isSelected) {
+        PrefillPropertyArray(i, nullptr);
+        nsAutoString properties;
+        mView->GetRowProperties(i, properties);
+        nsTreeUtils::TokenizeProperties(properties, mScratchArray);
+        nsStyleContext* rowContext =
+          GetPseudoStyleContext(nsCSSAnonBoxes::moztreerow);
+        auto appearance = rowContext->StyleDisplay()->mAppearance;
+        if (appearance) {
+          if (theme->ThemeSupportsWidget(PresContext(), this, appearance)) {
+            nsITheme::ThemeGeometryType type =
+              theme->ThemeGeometryTypeForWidget(this, appearance);
+            if (type != nsITheme::eThemeGeometryTypeUnknown) {
+              nsRect rowRect(mInnerBox.x, mInnerBox.y + mRowHeight *
+                             (i - FirstVisibleRow()), mInnerBox.width,
+                             mRowHeight);
+              aBuilder->RegisterThemeGeometry(type,
+                LayoutDeviceIntRect::FromUnknownRect(
+                  (rowRect + aBuilder->ToReferenceFrame(this)).ToNearestPixels(
+                    PresContext()->AppUnitsPerDevPixel())));
+            }
+          }
+        }
+      }
+    }
+  }
+#endif
 
   aLists.Content()->AppendNewToTop(new (aBuilder)
     nsDisplayTreeBody(aBuilder, this));

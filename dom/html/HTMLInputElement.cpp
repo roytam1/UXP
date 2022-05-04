@@ -3566,7 +3566,7 @@ HTMLInputElement::Focus(ErrorResult& aError)
   return;
 }
 
-#if !defined(ANDROID)
+#if !defined(ANDROID) && !defined(XP_MACOSX)
 bool
 HTMLInputElement::IsNodeApzAwareInternal() const
 {
@@ -4728,7 +4728,7 @@ HTMLInputElement::PostHandleEvent(EventChainPostVisitor& aVisitor)
           }
           break;
         }
-#if !defined(ANDROID)
+#if !defined(ANDROID) && !defined(XP_MACOSX)
         case eWheel: {
           // Handle wheel events as increasing / decreasing the input element's
           // value when it's focused and it's type is number or range.
@@ -6665,7 +6665,7 @@ FireEventForAccessibility(nsIDOMHTMLInputElement* aTarget,
 void
 HTMLInputElement::UpdateApzAwareFlag()
 {
-#if !defined(ANDROID)
+#if !defined(ANDROID) && !defined(XP_MACOSX)
   if ((mType == NS_FORM_INPUT_NUMBER) || (mType == NS_FORM_INPUT_RANGE)) {
     SetMayBeApzAware();
   }
@@ -7239,7 +7239,11 @@ HTMLInputElement::IsHTMLFocusable(bool aWithMouse, bool* aIsFocusable, int32_t* 
     return false;
   }
 
+#ifdef XP_MACOSX
+  const bool defaultFocusable = !aWithMouse || nsFocusManager::sMouseFocusesFormControl;
+#else
   const bool defaultFocusable = true;
+#endif
 
   if (mType == NS_FORM_INPUT_FILE ||
       mType == NS_FORM_INPUT_NUMBER ||

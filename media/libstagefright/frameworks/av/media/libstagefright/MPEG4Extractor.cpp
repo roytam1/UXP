@@ -269,6 +269,9 @@ static const char *FourCC2MIME(uint32_t fourcc) {
         case FOURCC('V', 'P', '6', 'F'):
             return MEDIA_MIMETYPE_VIDEO_VP6;
 
+        case FOURCC('v', 'p', '0', '9'):
+            return MEDIA_MIMETYPE_VIDEO_VP9;
+
         case FOURCC('a', 'v', '0', '1'):
         case FOURCC('.', 'a', 'v', '1'):
             return MEDIA_MIMETYPE_VIDEO_AV1;

@@ -52,6 +52,11 @@
 #define HAVE_SCHED_SETAFFINITY
 #endif
 
+#ifdef XP_MACOSX
+#include <mach/mach.h>
+#include <mach/thread_policy.h>
+#endif
+
 #ifdef MOZ_CANARY
 # include <unistd.h>
 # include <execinfo.h>
@@ -370,6 +375,16 @@ SetThreadAffinity(unsigned int cpu)
   sched_setaffinity(0, sizeof(cpus), &cpus);
   // Don't assert sched_setaffinity's return value because it intermittently (?)
   // fails with EINVAL on Linux x64 try runs.
+#elif defined(XP_MACOSX)
+  // OS X does not provide APIs to pin threads to specific processors, but you
+  // can tag threads as belonging to the same "affinity set" and the OS will try
+  // to run them on the same processor. To run threads on different processors,
+  // tag them as belonging to different affinity sets. Tag 0, the default, means
+  // "no affinity" so let's pretend each CPU has its own tag `cpu+1`.
+  thread_affinity_policy_data_t policy;
+  policy.affinity_tag = cpu + 1;
+  MOZ_ALWAYS_TRUE(thread_policy_set(mach_thread_self(), THREAD_AFFINITY_POLICY,
+                                    &policy.affinity_tag, 1) == KERN_SUCCESS);
 #elif defined(XP_WIN)
   MOZ_ALWAYS_TRUE(SetThreadIdealProcessor(GetCurrentThread(), cpu) != -1);
 #endif

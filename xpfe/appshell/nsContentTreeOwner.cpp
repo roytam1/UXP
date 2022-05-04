@@ -40,6 +40,9 @@
 #include "nsIScriptObjectPrincipal.h"
 #include "nsIURI.h"
 #include "nsIDocument.h"
+#if defined(XP_MACOSX)
+#include "nsThreadUtils.h"
+#endif
 
 #include "mozilla/Preferences.h"
 #include "mozilla/dom/Element.h"
@@ -903,6 +906,28 @@ nsContentTreeOwner::ProvideWindow(mozIDOMWindowProxy* aParent,
 // nsContentTreeOwner: Accessors
 //*****************************************************************************
 
+#if defined(XP_MACOSX)
+class nsContentTitleSettingEvent : public Runnable
+{
+public:
+  nsContentTitleSettingEvent(dom::Element* dse, const nsAString& wtm)
+    : mElement(dse),
+      mTitleDefault(wtm) {}
+
+  NS_IMETHOD Run() override
+  {
+    ErrorResult rv;
+    mElement->SetAttribute(NS_LITERAL_STRING("titledefault"), mTitleDefault, rv);
+    mElement->RemoveAttribute(NS_LITERAL_STRING("titlemodifier"), rv);
+    return NS_OK;
+  }
+
+private:
+  nsCOMPtr<dom::Element> mElement;
+  nsString mTitleDefault;
+};
+#endif
+
 void nsContentTreeOwner::XULWindow(nsXULWindow* aXULWindow)
 {
    mXULWindow = aXULWindow;
@@ -921,6 +946,18 @@ void nsContentTreeOwner::XULWindow(nsXULWindow* aXULWindow)
             docShellElement->GetAttribute(NS_LITERAL_STRING("titledefault"), mTitleDefault);
             docShellElement->GetAttribute(NS_LITERAL_STRING("titlemodifier"), mWindowTitleModifier);
             docShellElement->GetAttribute(NS_LITERAL_STRING("titlepreface"), mTitlePreface);
+
+#if defined(XP_MACOSX)
+            // On OS X, treat the titlemodifier like it's the titledefault, and don't ever append
+            // the separator + appname.
+            if (mTitleDefault.IsEmpty()) {
+                NS_DispatchToCurrentThread(
+                    new nsContentTitleSettingEvent(docShellElement,
+                                                   mWindowTitleModifier));
+                mTitleDefault = mWindowTitleModifier;
+                mWindowTitleModifier.Truncate();
+            }
+#endif
             docShellElement->GetAttribute(NS_LITERAL_STRING("titlemenuseparator"), mTitleSeparator);
             }
          }

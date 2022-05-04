@@ -388,7 +388,19 @@ body:not(.loaded) .toolbar:-moz-locale-dir(rtl) {
 }
 
 /* Font sizes are different per-platform, so we need custom CSS to line them up. */
-%ifdef XP_WIN
+%ifdef XP_MACOSX
+.font-type-buttons > .sans-serif-button > .name {
+  margin-top: 10px;
+}
+
+.font-type-buttons > .sans-serif-button > .description {
+  margin-top: -4px;
+}
+
+.font-type-buttons > .serif-button > .name {
+  font-size: 63px;
+}
+%elifdef XP_WIN
 .font-type-buttons > .sans-serif-button > .name {
   margin-top: 2px;
 }

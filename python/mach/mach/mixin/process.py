@@ -17,14 +17,16 @@ from .logging import LoggingMixin
 
 
 # Perform detection of operating system environment. This is used by command
-# execution. We only do this once to save redundancy. Yes, this can fail module
-# loading. That is arguably OK.
+# execution. We only do this once to save redundancy. Fall back to checking
+# existence of /bin/sh if environment detection fails.
 if 'SHELL' in os.environ:
     _current_shell = os.environ['SHELL']
 elif 'MOZILLABUILD' in os.environ:
     _current_shell = os.environ['MOZILLABUILD'] + '/msys/bin/sh.exe'
 elif 'COMSPEC' in os.environ:
     _current_shell = os.environ['COMSPEC']
+elif os.path.exists("/bin/sh"):
+    _current_shell = '/bin/sh'
 else:
     raise Exception('Could not detect environment shell!')
 

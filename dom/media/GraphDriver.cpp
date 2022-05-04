@@ -14,6 +14,10 @@
 #include "webrtc/MediaEngineWebRTC.h"
 #endif
 
+#ifdef XP_MACOSX
+#include <sys/sysctl.h>
+#endif
+
 extern mozilla::LazyLogModule gMediaStreamGraphLog;
 #define STREAM_LOG(type, msg) MOZ_LOG(gMediaStreamGraphLog, type, msg)
 
@@ -582,6 +586,32 @@ AudioCallbackDriver::~AudioCallbackDriver()
   MOZ_ASSERT(mPromisesForOperation.IsEmpty());
 }
 
+bool IsMacbookOrMacbookAir()
+{
+#ifdef XP_MACOSX
+  size_t len = 0;
+  sysctlbyname("hw.model", NULL, &len, NULL, 0);
+  if (len) {
+    UniquePtr<char[]> model(new char[len]);
+    // This string can be
+    // MacBook%d,%d for a normal MacBook
+    // MacBookPro%d,%d for a MacBook Pro
+    // MacBookAir%d,%d for a Macbook Air
+    sysctlbyname("hw.model", model.get(), &len, NULL, 0);
+    char* substring = strstr(model.get(), "MacBook");
+    if (substring) {
+      const size_t offset = strlen("MacBook");
+      if (strncmp(model.get() + offset, "Air", len - offset) ||
+          isdigit(model[offset + 1])) {
+        return true;
+      }
+    }
+    return false;
+  }
+#endif
+  return false;
+}
+
 void
 AudioCallbackDriver::Init()
 {
@@ -617,6 +647,13 @@ AudioCallbackDriver::Init()
       NS_WARNING("Could not get minimal latency from cubeb.");
     }
   }
+
+  // Macbook and MacBook air don't have enough CPU to run very low latency
+  // MediaStreamGraphs, cap the minimal latency to 512 frames int this case.
+  if (IsMacbookOrMacbookAir()) {
+    latency_frames = std::max((uint32_t) 512, latency_frames);
+  }
+
 
   input = output;
   input.channels = mInputChannels; // change to support optional stereo capture
@@ -1031,6 +1068,44 @@ AudioCallbackDriver::MixerCallback(AudioDataValue* aMixedBuffer,
   NS_WARNING_ASSERTION(written == aFrames - toWrite, "Dropping frames.");
 };
 
+void AudioCallbackDriver::PanOutputIfNeeded(bool aMicrophoneActive)
+{
+#ifdef XP_MACOSX
+  cubeb_device* out;
+  int rv;
+  char name[128];
+  size_t length = sizeof(name);
+
+  rv = sysctlbyname("hw.model", name, &length, NULL, 0);
+  if (rv) {
+    return;
+  }
+
+  if (!strncmp(name, "MacBookPro", 10)) {
+    if (cubeb_stream_get_current_device(mAudioStream, &out) == CUBEB_OK) {
+      // Check if we are currently outputing sound on external speakers.
+      if (!strcmp(out->output_name, "ispk")) {
+        // Pan everything to the right speaker.
+        if (aMicrophoneActive) {
+          if (cubeb_stream_set_panning(mAudioStream, 1.0) != CUBEB_OK) {
+            NS_WARNING("Could not pan audio output to the right.");
+          }
+        } else {
+          if (cubeb_stream_set_panning(mAudioStream, 0.0) != CUBEB_OK) {
+            NS_WARNING("Could not pan audio output to the center.");
+          }
+        }
+      } else {
+        if (cubeb_stream_set_panning(mAudioStream, 0.0) != CUBEB_OK) {
+          NS_WARNING("Could not pan audio output to the center.");
+        }
+      }
+      cubeb_stream_device_destroy(mAudioStream, out);
+    }
+  }
+#endif
+}
+
 void
 AudioCallbackDriver::DeviceChangedCallback() {
   // Tell the audio engine the device has changed, it might want to reset some
@@ -1039,6 +1114,9 @@ AudioCallbackDriver::DeviceChangedCallback() {
   if (mAudioInput) {
     mAudioInput->DeviceChanged();
   }
+#ifdef XP_MACOSX
+  PanOutputIfNeeded(mMicrophoneActive);
+#endif
 }
 
 void
@@ -1047,6 +1125,10 @@ AudioCallbackDriver::SetMicrophoneActive(bool aActive)
   MonitorAutoLock mon(mGraphImpl->GetMonitor());
 
   mMicrophoneActive = aActive;
+
+#ifdef XP_MACOSX
+  PanOutputIfNeeded(mMicrophoneActive);
+#endif
 }
 
 uint32_t

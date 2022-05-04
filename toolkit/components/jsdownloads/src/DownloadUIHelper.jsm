@@ -184,10 +184,17 @@ this.DownloadPrompter.prototype = {
     switch (aPromptType) {
       case this.ON_QUIT:
         title = s.quitCancelDownloadsAlertTitle;
+#ifdef XP_MACOSX
+        message = aDownloadsCount > 1
+                  ? s.quitCancelDownloadsAlertMsgMacMultiple(aDownloadsCount)
+                  : s.quitCancelDownloadsAlertMsgMac;
+        cancelButton = s.dontQuitButtonMac;
+#else
         message = aDownloadsCount > 1
                   ? s.quitCancelDownloadsAlertMsgMultiple(aDownloadsCount)
                   : s.quitCancelDownloadsAlertMsg;
         cancelButton = s.dontQuitButtonWin;
+#endif
         break;
       case this.ON_OFFLINE:
         title = s.offlineCancelDownloadsAlertTitle;

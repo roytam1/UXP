@@ -1471,6 +1471,10 @@ private:
     FindXULLabelData(Element* aElement, nsStyleContext* aStyleContext);
   static const FrameConstructionData*
     FindXULDescriptionData(Element* aElement, nsStyleContext* aStyleContext);
+#ifdef XP_MACOSX
+  static const FrameConstructionData*
+    FindXULMenubarData(Element* aElement, nsStyleContext* aStyleContext);
+#endif /* XP_MACOSX */
   static const FrameConstructionData*
     FindXULListBoxBodyData(Element* aElement, nsStyleContext* aStyleContext);
   static const FrameConstructionData*

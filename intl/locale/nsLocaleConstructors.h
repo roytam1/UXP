@@ -15,13 +15,22 @@
 #include "nsLanguageAtomService.h"
 #include "nsPlatformCharset.h"
 
-#if defined(XP_UNIX)
+#if defined(XP_MACOSX)
+#define USE_MAC_LOCALE
+#endif
+
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 #define USE_UNIX_LOCALE
 #endif
 
 #ifdef XP_WIN
 #include "windows/nsCollationWin.h"
 #include "windows/nsDateTimeFormatWin.h"
+#endif
+
+#ifdef USE_MAC_LOCALE
+#include "mac/nsCollationMacUC.h"
+#include "mac/nsDateTimeFormatMac.h"
 #endif
 
 #ifdef USE_UNIX_LOCALE

@@ -31,7 +31,9 @@ public:
 // XXX - temporarily disabled, see bug 1209039
 //
 //    // Call this from the thread itself because of Mac.
-//#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+//#ifdef XP_MACOSX
+//    pthread_setname_np(aName);
+//#elif defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 //    pthread_set_name_np(mThread, aName);
 //#elif defined(__NetBSD__)
 //    pthread_setname_np(mThread, "%s", (void*)aName);

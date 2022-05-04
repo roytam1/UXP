@@ -26,6 +26,14 @@ public:
 static FFmpegLibWrapper sLibAV;
 
 static const char* sLibs[] = {
+#if defined(XP_DARWIN)
+  "libavcodec.58.dylib",
+  "libavcodec.57.dylib",
+  "libavcodec.56.dylib",
+  "libavcodec.55.dylib",
+  "libavcodec.54.dylib",
+  "libavcodec.53.dylib",
+#else
   "libavcodec.so.58",
   "libavcodec-ffmpeg.so.58",
   "libavcodec-ffmpeg.so.57",
@@ -35,6 +43,7 @@ static const char* sLibs[] = {
   "libavcodec.so.55",
   "libavcodec.so.54",
   "libavcodec.so.53",
+#endif
 };
 
 /* static */ bool

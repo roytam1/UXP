@@ -26,7 +26,9 @@
  * function resolved with GetProcAddress() instead of weak definitions
  * of functions.
  */
-#if defined(XP_WIN)
+#ifdef XP_DARWIN
+#  define MOZ_REPLACE_WEAK __attribute__((weak_import))
+#elif defined(XP_WIN)
 #  define MOZ_NO_REPLACE_FUNC_DECL
 #elif defined(__GNUC__)
 #  define MOZ_REPLACE_WEAK __attribute__((weak))
@@ -282,6 +284,111 @@ MOZ_MEMORY_API __memalign_hook_type __memalign_hook = memalign_impl;
  * owned by the allocator.
  */
 
+#ifdef XP_DARWIN
+#include <stdlib.h>
+#include <malloc/malloc.h>
+#include "mozilla/Assertions.h"
+
+static size_t
+zone_size(malloc_zone_t *zone, void *ptr)
+{
+  return malloc_usable_size_impl(ptr);
+}
+
+static void *
+zone_malloc(malloc_zone_t *zone, size_t size)
+{
+  return malloc_impl(size);
+}
+
+static void *
+zone_calloc(malloc_zone_t *zone, size_t num, size_t size)
+{
+  return calloc_impl(num, size);
+}
+
+static void *
+zone_realloc(malloc_zone_t *zone, void *ptr, size_t size)
+{
+  if (malloc_usable_size_impl(ptr))
+    return realloc_impl(ptr, size);
+  return realloc(ptr, size);
+}
+
+static void
+zone_free(malloc_zone_t *zone, void *ptr)
+{
+  if (malloc_usable_size_impl(ptr)) {
+    free_impl(ptr);
+    return;
+  }
+  free(ptr);
+}
+
+static void
+zone_free_definite_size(malloc_zone_t *zone, void *ptr, size_t size)
+{
+  size_t current_size = malloc_usable_size_impl(ptr);
+  if (current_size) {
+    MOZ_ASSERT(current_size == size);
+    free_impl(ptr);
+    return;
+  }
+  free(ptr);
+}
+
+static void *
+zone_memalign(malloc_zone_t *zone, size_t alignment, size_t size)
+{
+  void *ptr;
+  if (posix_memalign_impl(&ptr, alignment, size) == 0)
+    return ptr;
+  return NULL;
+}
+
+static void *
+zone_valloc(malloc_zone_t *zone, size_t size)
+{
+  return valloc_impl(size);
+}
+
+static void *
+zone_destroy(malloc_zone_t *zone)
+{
+  /* This function should never be called. */
+  MOZ_CRASH();
+}
+
+static size_t
+zone_good_size(malloc_zone_t *zone, size_t size)
+{
+  return malloc_good_size_impl(size);
+}
+
+#ifdef MOZ_JEMALLOC
+
+#include "jemalloc/internal/jemalloc_internal.h"
+
+static void
+zone_force_lock(malloc_zone_t *zone)
+{
+  /* /!\ This calls into jemalloc. It works because we're linked in the
+   * same library. Stolen from jemalloc's zone.c. */
+  if (isthreaded)
+    jemalloc_prefork();
+}
+
+static void
+zone_force_unlock(malloc_zone_t *zone)
+{
+  /* /!\ This calls into jemalloc. It works because we're linked in the
+   * same library. Stolen from jemalloc's zone.c. */
+  if (isthreaded)
+    jemalloc_postfork_parent();
+}
+
+#else
+
 #define JEMALLOC_ZONE_VERSION 6
 
 /* Empty implementations are needed, because fork() calls zone->force_(un)lock
@@ -296,7 +403,7 @@ zone_force_unlock(malloc_zone_t *zone)
 {
 }
 
-/* --- */
+#endif
 
 static malloc_zone_t zone;
 static struct malloc_introspection_t zone_introspect;

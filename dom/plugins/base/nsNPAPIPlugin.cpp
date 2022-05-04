@@ -269,6 +269,14 @@ nsNPAPIPlugin::CreatePlugin(nsPluginTag *aPluginTag, nsNPAPIPlugin** aResult)
     return NS_ERROR_FAILURE;
   }
 
+#ifdef XP_MACOSX
+  if (!pluginLib->HasRequiredFunctions()) {
+    NS_WARNING("Not all necessary functions exposed by plugin, it will not load.");
+    delete pluginLib;
+    return NS_ERROR_FAILURE;
+  }
+#endif
+
   plugin->mLibrary = pluginLib;
   pluginLib->SetPlugin(plugin);
 
@@ -283,6 +291,19 @@ nsNPAPIPlugin::CreatePlugin(nsPluginTag *aPluginTag, nsNPAPIPlugin** aResult)
 
   // NP_Initialize must be called after NP_GetEntryPoints on Windows.
   rv = pluginLib->NP_Initialize(&sBrowserFuncs, &pluginCallError);
+  if (rv != NS_OK || pluginCallError != NPERR_NO_ERROR) {
+    return NS_ERROR_FAILURE;
+  }
+#elif defined(XP_MACOSX)
+  // NP_Initialize must be called before NP_GetEntryPoints on Mac OS X.
+  // We need to match WebKit's behavior.
+  NPError pluginCallError;
+  nsresult rv = pluginLib->NP_Initialize(&sBrowserFuncs, &pluginCallError);
+  if (rv != NS_OK || pluginCallError != NPERR_NO_ERROR) {
+    return NS_ERROR_FAILURE;
+  }
+
+  rv = pluginLib->NP_GetEntryPoints(&plugin->mPluginFuncs, &pluginCallError);
   if (rv != NS_OK || pluginCallError != NPERR_NO_ERROR) {
     return NS_ERROR_FAILURE;
   }
@@ -1708,7 +1729,7 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
   // cases for android_npapi.h's non-standard ANPInterface values.
   switch (static_cast<int>(variable)) {
 
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
   case NPNVxDisplay : {
 #if defined(MOZ_X11)
     if (npp) {
@@ -1833,7 +1854,8 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
   }
 
   case NPNVSupportsWindowless: {
-#if defined(XP_WIN) || (defined(MOZ_X11) && defined(MOZ_WIDGET_GTK))
+#if defined(XP_WIN) || defined(XP_MACOSX) || \
+    (defined(MOZ_X11) && defined(MOZ_WIDGET_GTK))
     *(NPBool*)result = true;
 #else
     *(NPBool*)result = false;
@@ -1901,7 +1923,72 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
     return *(char**)result ? NPERR_NO_ERROR : NPERR_GENERIC_ERROR;
   }
 
-#if defined(XP_WIN)
+#ifdef XP_MACOSX
+  case NPNVpluginDrawingModel: {
+    if (npp) {
+      nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance*)npp->ndata;
+      if (inst) {
+        NPDrawingModel drawingModel;
+        inst->GetDrawingModel((int32_t*)&drawingModel);
+        *(NPDrawingModel*)result = drawingModel;
+        return NPERR_NO_ERROR;
+      }
+    }
+    return NPERR_GENERIC_ERROR;
+  }
+
+#ifndef NP_NO_QUICKDRAW
+  case NPNVsupportsQuickDrawBool: {
+    *(NPBool*)result = false;
+
+    return NPERR_NO_ERROR;
+  }
+#endif
+
+  case NPNVsupportsCoreGraphicsBool: {
+    *(NPBool*)result = true;
+
+    return NPERR_NO_ERROR;
+  }
+
+  case NPNVsupportsCoreAnimationBool: {
+    *(NPBool*)result = true;
+
+    return NPERR_NO_ERROR;
+  }
+
+  case NPNVsupportsInvalidatingCoreAnimationBool: {
+    *(NPBool*)result = true;
+
+    return NPERR_NO_ERROR;
+  }
+
+  case NPNVsupportsCompositingCoreAnimationPluginsBool: {
+    *(NPBool*)result = PR_TRUE;
+
+    return NPERR_NO_ERROR;
+  }
+
+#ifndef NP_NO_CARBON
+  case NPNVsupportsCarbonBool: {
+    *(NPBool*)result = false;
+
+    return NPERR_NO_ERROR;
+  }
+#endif
+  case NPNVsupportsCocoaBool: {
+    *(NPBool*)result = true;
+
+    return NPERR_NO_ERROR;
+  }
+
+  case NPNVsupportsUpdatedCocoaTextInputBool: {
+    *(NPBool*)result = true;
+    return NPERR_NO_ERROR;
+  }
+#endif
+
+#if defined(XP_MACOSX) || defined(XP_WIN)
   case NPNVcontentsScaleFactor: {
     nsNPAPIPluginInstance *inst =
       (nsNPAPIPluginInstance *) (npp ? npp->ndata : nullptr);
@@ -1964,8 +2051,16 @@ _setvalue(NPP npp, NPPVariable variable, void *result)
     // actual pointer value is checked rather than its content
     // when passing booleans
     case NPPVpluginWindowBool: {
+#ifdef XP_MACOSX
+      // This setting doesn't apply to OS X (only to Windows and Unix/Linux).
+      // See https://developer.mozilla.org/En/NPN_SetValue#section_5.  Return
+      // NPERR_NO_ERROR here to conform to other browsers' behavior on OS X
+      // (e.g. Safari and Opera).
+      return NPERR_NO_ERROR;
+#else
       NPBool bWindowless = (result == nullptr);
       return inst->SetWindowless(bWindowless);
+#endif
     }
     case NPPVpluginTransparentBool: {
       NPBool bTransparent = (result != nullptr);
@@ -2049,6 +2144,18 @@ _setvalue(NPP npp, NPPVariable variable, void *result)
         return NPERR_GENERIC_ERROR;
       }
     }
+
+#ifdef XP_MACOSX
+    case NPPVpluginEventModel: {
+      if (inst) {
+        inst->SetEventModel((NPEventModel)NS_PTR_TO_INT32(result));
+        return NPERR_NO_ERROR;
+      }
+      else {
+        return NPERR_GENERIC_ERROR;
+      }
+    }
+#endif
 
     default:
       return NPERR_GENERIC_ERROR;

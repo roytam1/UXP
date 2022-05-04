@@ -103,7 +103,11 @@ using mozilla::gfx::SharedDIB;
 const int kFlashWMUSERMessageThrottleDelayMs = 5;
 
 static const TCHAR kPluginIgnoreSubclassProperty[] = TEXT("PluginIgnoreSubclassProperty");
-#endif
+
+#elif defined(XP_MACOSX)
+#include <ApplicationServices/ApplicationServices.h>
+#include "PluginUtilsOSX.h"
+#endif // defined(XP_MACOSX)
 
 /**
  * We can't use gfxPlatform::CreateDrawTargetForSurface() because calling
@@ -137,7 +141,7 @@ PluginInstanceChild::PluginInstanceChild(const NPPluginFuncs* aPluginIface,
     , mMode(aMode)
     , mNames(aNames)
     , mValues(aValues)
-#if defined (XP_WIN)
+#if defined(XP_DARWIN) || defined (XP_WIN)
     , mContentsScaleFactor(1.0)
 #endif
     , mPostingKeyEvents(0)
@@ -194,7 +198,7 @@ PluginInstanceChild::PluginInstanceChild(const NPPluginFuncs* aPluginIface,
     mWindow.type = NPWindowTypeWindow;
     mData.ndata = (void*) this;
     mData.pdata = nullptr;
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
     mWindow.ws_info = &mWsInfo;
     memset(&mWsInfo, 0, sizeof(mWsInfo));
 #ifdef MOZ_WIDGET_GTK
@@ -203,7 +207,7 @@ PluginInstanceChild::PluginInstanceChild(const NPPluginFuncs* aPluginIface,
 #else
     mWsInfo.display = DefaultXDisplay();
 #endif
-#endif // MOZ_X11 && XP_UNIX
+#endif // MOZ_X11 && XP_UNIX && !XP_MACOSX
 #if defined(OS_WIN)
     InitPopupMenuHook();
     if (GetQuirks() & QUIRK_UNITY_FIXUP_MOUSE_CAPTURE) {
@@ -269,6 +273,23 @@ PluginInstanceChild::DoNPP_New()
     }
 
     Initialize();
+
+#if defined(XP_MACOSX) && defined(__i386__)
+    // If an i386 Mac OS X plugin has selected the Carbon event model then
+    // we have to fail. We do not support putting Carbon event model plugins
+    // out of process. Note that Carbon is the default model so out of process
+    // plugins need to actively negotiate something else in order to work
+    // out of process.
+    if (EventModel() == NPEventModelCarbon) {
+      // Send notification that a plugin tried to negotiate Carbon NPAPI so that
+      // users can be notified that restarting the browser in i386 mode may allow
+      // them to use the plugin.
+      SendNegotiatedCarbon();
+
+      // Fail to instantiate.
+      rv = NPERR_MODULE_LOAD_FAILED_ERROR;
+    }
+#endif
 
     return rv;
 }
@@ -477,12 +498,58 @@ PluginInstanceChild::NPN_GetValue(NPNVariable aVar,
     }
 #endif
 
-#if defined(XP_WIN)
+#ifdef XP_MACOSX
+   case NPNVsupportsCoreGraphicsBool: {
+        *((NPBool*)aValue) = true;
+        return NPERR_NO_ERROR;
+    }
+
+    case NPNVsupportsCoreAnimationBool: {
+        *((NPBool*)aValue) = true;
+        return NPERR_NO_ERROR;
+    }
+
+    case NPNVsupportsInvalidatingCoreAnimationBool: {
+        *((NPBool*)aValue) = true;
+        return NPERR_NO_ERROR;
+    }
+
+    case NPNVsupportsCompositingCoreAnimationPluginsBool: {
+        *((NPBool*)aValue) = true;
+        return NPERR_NO_ERROR;
+    }
+
+    case NPNVsupportsCocoaBool: {
+        *((NPBool*)aValue) = true;
+        return NPERR_NO_ERROR;
+    }
+
+#ifndef NP_NO_CARBON
+    case NPNVsupportsCarbonBool: {
+      *((NPBool*)aValue) = false;
+      return NPERR_NO_ERROR;
+    }
+#endif
+
+    case NPNVsupportsUpdatedCocoaTextInputBool: {
+      *static_cast<NPBool*>(aValue) = true;
+      return NPERR_NO_ERROR;
+    }
+
+#ifndef NP_NO_QUICKDRAW
+    case NPNVsupportsQuickDrawBool: {
+        *((NPBool*)aValue) = false;
+        return NPERR_NO_ERROR;
+    }
+#endif /* NP_NO_QUICKDRAW */
+#endif /* XP_MACOSX */
+
+#if defined(XP_MACOSX) || defined(XP_WIN)
     case NPNVcontentsScaleFactor: {
         *static_cast<double*>(aValue) = mContentsScaleFactor;
         return NPERR_NO_ERROR;
     }
-#endif /* defined(XP_WIN) */
+#endif /* defined(XP_MACOSX) || defined(XP_WIN) */
 
     case NPNVCSSZoomFactor: {
         *static_cast<double*>(aValue) = mCSSZoomFactor;
@@ -587,11 +654,35 @@ PluginInstanceChild::NPN_SetValue(NPPVariable aVar, void* aValue)
 
         mDrawingModel = drawingModel;
 
+#ifdef XP_MACOSX
+        if (drawingModel == NPDrawingModelCoreAnimation) {
+            mCARefreshTimer = ScheduleTimer(DEFAULT_REFRESH_MS, true, CAUpdate);
+        }
+#endif
+
         PLUGIN_LOG_DEBUG(("  Plugin requested drawing model id  #%i\n",
             mDrawingModel));
 
         return rv;
     }
+
+#ifdef XP_MACOSX
+    case NPPVpluginEventModel: {
+        NPError rv;
+        int eventModel = (int16_t) (intptr_t) aValue;
+
+        if (!CallNPN_SetValue_NPPVpluginEventModel(eventModel, &rv))
+            return NPERR_GENERIC_ERROR;
+#if defined(__i386__)
+        mEventModel = static_cast<NPEventModel>(eventModel);
+#endif
+
+        PLUGIN_LOG_DEBUG(("  Plugin requested event model id # %i\n",
+            eventModel));
+
+        return rv;
+    }
+#endif
 
     case NPPVpluginIsPlayingAudio: {
         NPError rv = NPERR_GENERIC_ERROR;
@@ -816,10 +907,21 @@ PluginInstanceChild::AnswerNPP_HandleEvent(const NPRemoteEvent& event,
                           event.event.xgraphicsexpose.drawable));
 #endif
 
+#ifdef XP_MACOSX
+    // Mac OS X does not define an NPEvent structure. It defines more specific types.
+    NPCocoaEvent evcopy = event.event;
+
+    // Make sure we reset mCurrentEvent in case of an exception
+    AutoRestore<const NPCocoaEvent*> savePreviousEvent(mCurrentEvent);
+
+    // Track the current event for NPN_PopUpContextMenu.
+    mCurrentEvent = &event.event;
+#else
     // Make a copy since we may modify values.
     NPEvent evcopy = event.event;
+#endif
 
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
     // event.contentsScaleFactor <= 0 is a signal we shouldn't use it,
     // for example when AnswerNPP_HandleEvent() is called from elsewhere
     // in the child process (not via rpc code from the parent process).
@@ -845,6 +947,18 @@ PluginInstanceChild::AnswerNPP_HandleEvent(const NPRemoteEvent& event,
     else
         *handled = mPluginIface->event(&mData, reinterpret_cast<void*>(&evcopy));
 
+#ifdef XP_MACOSX
+    // Release any reference counted objects created in the child process.
+    if (evcopy.type == NPCocoaEventKeyDown ||
+        evcopy.type == NPCocoaEventKeyUp) {
+      ::CFRelease((CFStringRef)evcopy.data.key.characters);
+      ::CFRelease((CFStringRef)evcopy.data.key.charactersIgnoringModifiers);
+    }
+    else if (evcopy.type == NPCocoaEventTextInput) {
+      ::CFRelease((CFStringRef)evcopy.data.text.text);
+    }
+#endif
+
 #ifdef MOZ_X11
     if (GraphicsExpose == event.event.type) {
         // Make sure the X server completes the drawing before the parent
@@ -861,6 +975,73 @@ PluginInstanceChild::AnswerNPP_HandleEvent(const NPRemoteEvent& event,
     return true;
 }
 
+#ifdef XP_MACOSX
+
+bool
+PluginInstanceChild::AnswerNPP_HandleEvent_Shmem(const NPRemoteEvent& event,
+                                                 Shmem&& mem,
+                                                 int16_t* handled,
+                                                 Shmem* rtnmem)
+{
+    PLUGIN_LOG_DEBUG_FUNCTION;
+    AssertPluginThread();
+    AutoStackHelper guard(this);
+
+    PaintTracker pt;
+
+    NPCocoaEvent evcopy = event.event;
+    mContentsScaleFactor = event.contentsScaleFactor;
+
+    if (evcopy.type == NPCocoaEventDrawRect) {
+        int scaleFactor = ceil(mContentsScaleFactor);
+        if (!mShColorSpace) {
+            mShColorSpace = CreateSystemColorSpace();
+            if (!mShColorSpace) {
+                PLUGIN_LOG_DEBUG(("Could not allocate ColorSpace."));
+                *handled = false;
+                *rtnmem = mem;
+                return true;
+            } 
+        }
+        if (!mShContext) {
+            void* cgContextByte = mem.get<char>();
+            mShContext = ::CGBitmapContextCreate(cgContextByte, 
+                              mWindow.width * scaleFactor,
+                              mWindow.height * scaleFactor, 8, 
+                              mWindow.width * 4 * scaleFactor, mShColorSpace, 
+                              kCGImageAlphaPremultipliedFirst |
+                              kCGBitmapByteOrder32Host);
+    
+            if (!mShContext) {
+                PLUGIN_LOG_DEBUG(("Could not allocate CGBitmapContext."));
+                *handled = false;
+                *rtnmem = mem;
+                return true;
+            }
+        }
+        CGRect clearRect = ::CGRectMake(0, 0, mWindow.width, mWindow.height);
+        ::CGContextClearRect(mShContext, clearRect);
+        evcopy.data.draw.context = mShContext; 
+    } else {
+        PLUGIN_LOG_DEBUG(("Invalid event type for AnswerNNP_HandleEvent_Shmem."));
+        *handled = false;
+        *rtnmem = mem;
+        return true;
+    } 
+
+    if (!mPluginIface->event) {
+        *handled = false;
+    } else {
+        ::CGContextSaveGState(evcopy.data.draw.context);
+        *handled = mPluginIface->event(&mData, reinterpret_cast<void*>(&evcopy));
+        ::CGContextRestoreGState(evcopy.data.draw.context);
+    }
+
+    *rtnmem = mem;
+    return true;
+}
+
+#else
 bool
 PluginInstanceChild::AnswerNPP_HandleEvent_Shmem(const NPRemoteEvent& event,
                                                  Shmem&& mem,
@@ -871,7 +1052,101 @@ PluginInstanceChild::AnswerNPP_HandleEvent_Shmem(const NPRemoteEvent& event,
     *rtnmem = mem;
     return true;
 }
+#endif
 
+#ifdef XP_MACOSX
+
+void CallCGDraw(CGContextRef ref, void* aPluginInstance, nsIntRect aUpdateRect) {
+  PluginInstanceChild* pluginInstance = (PluginInstanceChild*)aPluginInstance;
+
+  pluginInstance->CGDraw(ref, aUpdateRect);
+}
+
+bool
+PluginInstanceChild::CGDraw(CGContextRef ref, nsIntRect aUpdateRect) {
+
+  NPCocoaEvent drawEvent;
+  drawEvent.type = NPCocoaEventDrawRect;
+  drawEvent.version = 0;
+  drawEvent.data.draw.x = aUpdateRect.x;
+  drawEvent.data.draw.y = aUpdateRect.y;
+  drawEvent.data.draw.width = aUpdateRect.width;
+  drawEvent.data.draw.height = aUpdateRect.height;
+  drawEvent.data.draw.context = ref;
+
+  NPRemoteEvent remoteDrawEvent = {drawEvent};
+  // Signal to AnswerNPP_HandleEvent() not to use this value
+  remoteDrawEvent.contentsScaleFactor = -1.0;
+
+  int16_t handled;
+  AnswerNPP_HandleEvent(remoteDrawEvent, &handled);
+  return handled == true;
+}
+
+bool
+PluginInstanceChild::AnswerNPP_HandleEvent_IOSurface(const NPRemoteEvent& event,
+                                                     const uint32_t &surfaceid,
+                                                     int16_t* handled)
+{
+    PLUGIN_LOG_DEBUG_FUNCTION;
+    AssertPluginThread();
+    AutoStackHelper guard(this);
+
+    PaintTracker pt;
+
+    NPCocoaEvent evcopy = event.event;
+    mContentsScaleFactor = event.contentsScaleFactor;
+    RefPtr<MacIOSurface> surf = MacIOSurface::LookupSurface(surfaceid,
+                                                            mContentsScaleFactor);
+    if (!surf) {
+        NS_ERROR("Invalid IOSurface.");
+        *handled = false;
+        return false;
+    }
+
+    if (!mCARenderer) {
+      mCARenderer = new nsCARenderer();
+    }
+
+    if (evcopy.type == NPCocoaEventDrawRect) {
+        mCARenderer->AttachIOSurface(surf);
+        if (!mCARenderer->isInit()) {
+            void *caLayer = nullptr;
+            NPError result = mPluginIface->getvalue(GetNPP(), 
+                                     NPPVpluginCoreAnimationLayer,
+                                     &caLayer);
+            
+            if (result != NPERR_NO_ERROR || !caLayer) {
+                PLUGIN_LOG_DEBUG(("Plugin requested CoreAnimation but did not "
+                                  "provide CALayer."));
+                *handled = false;
+                return false;
+            }
+
+            mCARenderer->SetupRenderer(caLayer, mWindow.width, mWindow.height,
+                            mContentsScaleFactor,
+                            GetQuirks() & QUIRK_ALLOW_OFFLINE_RENDERER ?
+                            ALLOW_OFFLINE_RENDERER : DISALLOW_OFFLINE_RENDERER);
+
+            // Flash needs to have the window set again after this step
+            if (mPluginIface->setwindow)
+                (void) mPluginIface->setwindow(&mData, &mWindow);
+        }
+    } else {
+        PLUGIN_LOG_DEBUG(("Invalid event type for "
+                          "AnswerNNP_HandleEvent_IOSurface."));
+        *handled = false;
+        return false;
+    } 
+
+    mCARenderer->Render(mWindow.width, mWindow.height,
+                        mContentsScaleFactor, nullptr);
+
+    return true;
+
+}
+
+#else
 bool
 PluginInstanceChild::AnswerNPP_HandleEvent_IOSurface(const NPRemoteEvent& event,
                                                      const uint32_t &surfaceid,
@@ -880,6 +1155,7 @@ PluginInstanceChild::AnswerNPP_HandleEvent_IOSurface(const NPRemoteEvent& event,
     NS_RUNTIMEABORT("NPP_HandleEvent_IOSurface is a OSX-only message");
     return false;
 }
+#endif
 
 bool
 PluginInstanceChild::RecvWindowPosChanged(const NPRemoteEvent& event)
@@ -899,16 +1175,24 @@ PluginInstanceChild::RecvWindowPosChanged(const NPRemoteEvent& event)
 bool
 PluginInstanceChild::RecvContentsScaleFactorChanged(const double& aContentsScaleFactor)
 {
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
     mContentsScaleFactor = aContentsScaleFactor;
+#if defined(XP_MACOSX)
+    if (mShContext) {
+        // Release the shared context so that it is reallocated
+        // with the new size. 
+        ::CGContextRelease(mShContext);
+        mShContext = nullptr;
+    }
+#endif
     return true;
 #else
-    NS_RUNTIMEABORT("ContentsScaleFactorChanged is a Windows-only message");
+    NS_RUNTIMEABORT("ContentsScaleFactorChanged is an Windows or OSX only message");
     return false;
 #endif
 }
 
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
 // Create a new window from NPWindow
 bool PluginInstanceChild::CreateWindow(const NPRemoteWindow& aWindow)
 { 
@@ -1006,7 +1290,7 @@ PluginInstanceChild::AnswerNPP_SetWindow(const NPRemoteWindow& aWindow)
     AssertPluginThread();
     AutoStackHelper guard(this);
 
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
     NS_ASSERTION(mWsInfo.display, "We should have a valid display!");
 
     // The minimum info is sent over IPC to allow this
@@ -1122,6 +1406,26 @@ PluginInstanceChild::AnswerNPP_SetWindow(const NPRemoteWindow& aWindow)
           return false;
       break;
     }
+
+#elif defined(XP_MACOSX)
+
+    mWindow.x = aWindow.x;
+    mWindow.y = aWindow.y;
+    mWindow.width = aWindow.width;
+    mWindow.height = aWindow.height;
+    mWindow.clipRect = aWindow.clipRect;
+    mWindow.type = aWindow.type;
+    mContentsScaleFactor = aWindow.contentsScaleFactor;
+
+    if (mShContext) {
+        // Release the shared context so that it is reallocated
+        // with the new size. 
+        ::CGContextRelease(mShContext);
+        mShContext = nullptr;
+    }
+
+    if (mPluginIface->setwindow)
+        (void) mPluginIface->setwindow(&mData, &mWindow);
 
 #elif defined(MOZ_WIDGET_UIKIT)
     // Don't care
@@ -3068,7 +3372,7 @@ PluginInstanceChild::DoAsyncSetWindow(const gfxSurfaceType& aSurfaceType,
     mWindow.height = aWindow.height;
     mWindow.clipRect = aWindow.clipRect;
     mWindow.type = aWindow.type;
-#if defined(XP_WIN)
+#if defined(XP_MACOSX) || defined(XP_WIN)
     mContentsScaleFactor = aWindow.contentsScaleFactor;
 #endif
 
@@ -3216,6 +3520,7 @@ PluginInstanceChild::MaybeCreatePlatformHelperSurface(void)
 bool
 PluginInstanceChild::EnsureCurrentBuffer(void)
 {
+#ifndef XP_DARWIN
     nsIntRect toInvalidate(0, 0, 0, 0);
     IntSize winSize = IntSize(mWindow.width, mWindow.height);
 
@@ -3259,6 +3564,61 @@ PluginInstanceChild::EnsureCurrentBuffer(void)
         NS_ERROR("Cannot create helper surface");
         return false;
     }
+
+    return true;
+#elif defined(XP_MACOSX)
+
+    if (!mDoubleBufferCARenderer.HasCALayer()) {
+        void *caLayer = nullptr;
+        if (mDrawingModel == NPDrawingModelCoreGraphics) {
+            if (!mCGLayer) {
+                caLayer = mozilla::plugins::PluginUtilsOSX::GetCGLayer(CallCGDraw,
+                                                                       this,
+                                                                       mContentsScaleFactor);
+
+                if (!caLayer) {
+                    PLUGIN_LOG_DEBUG(("GetCGLayer failed."));
+                    return false;
+                }
+            }
+            mCGLayer = caLayer;
+        } else {
+            NPError result = mPluginIface->getvalue(GetNPP(),
+                                     NPPVpluginCoreAnimationLayer,
+                                     &caLayer);
+            if (result != NPERR_NO_ERROR || !caLayer) {
+                PLUGIN_LOG_DEBUG(("Plugin requested CoreAnimation but did not "
+                                  "provide CALayer."));
+                return false;
+            }
+        }
+        mDoubleBufferCARenderer.SetCALayer(caLayer);
+    }
+
+    if (mDoubleBufferCARenderer.HasFrontSurface() &&
+        (mDoubleBufferCARenderer.GetFrontSurfaceWidth() != mWindow.width ||
+         mDoubleBufferCARenderer.GetFrontSurfaceHeight() != mWindow.height ||
+         mDoubleBufferCARenderer.GetContentsScaleFactor() != mContentsScaleFactor)) {
+        mDoubleBufferCARenderer.ClearFrontSurface();
+    }
+
+    if (!mDoubleBufferCARenderer.HasFrontSurface()) {
+        bool allocSurface = mDoubleBufferCARenderer.InitFrontSurface(
+                                mWindow.width, mWindow.height, mContentsScaleFactor,
+                                GetQuirks() & QUIRK_ALLOW_OFFLINE_RENDERER ?
+                                ALLOW_OFFLINE_RENDERER : DISALLOW_OFFLINE_RENDERER);
+        if (!allocSurface) {
+            PLUGIN_LOG_DEBUG(("Fail to allocate front IOSurface"));
+            return false;
+        }
+
+        if (mPluginIface->setwindow)
+            (void) mPluginIface->setwindow(&mData, &mWindow);
+
+        nsIntRect toInvalidate(0, 0, mWindow.width, mWindow.height);
+        mAccumulatedInvalidRect.UnionRect(mAccumulatedInvalidRect, toInvalidate);
+    }
+#endif
     return true;
 }
 
@@ -3302,6 +3662,8 @@ PluginInstanceChild::UpdateWindowAttributes(bool aForceSetWindow)
         return;
     }
 
+#ifndef XP_MACOSX
+    // Adjusting the window isn't needed for OSX
 #ifndef XP_WIN
     // On Windows, we translate the device context, in order for the window
     // origin to be correct.
@@ -3322,6 +3684,7 @@ PluginInstanceChild::UpdateWindowAttributes(bool aForceSetWindow)
         mWindow.clipRect.right = clipRect.XMost();
         mWindow.clipRect.bottom = clipRect.YMost();
     }
+#endif // XP_MACOSX
 
 #ifdef XP_WIN
     // Windowless plugins on Windows need a WM_WINDOWPOSCHANGED event to update
@@ -4292,7 +4655,7 @@ PluginInstanceChild::Destroy()
       xt_client_xloop_destroy();
     }
 #endif
-#if defined(MOZ_X11) && defined(XP_UNIX)
+#if defined(MOZ_X11) && defined(XP_UNIX) && !defined(XP_MACOSX)
     DeleteWindow();
 #endif
 }

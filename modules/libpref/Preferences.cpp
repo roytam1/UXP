@@ -1291,7 +1291,9 @@ static nsresult pref_InitInitialObjects()
 
   /* these pref file names should not be used: we process them after all other application pref files for backwards compatibility */
   static const char* specialFiles[] = {
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+    "macprefs.js"
+#elif defined(XP_WIN)
     "winpref.js"
 #elif defined(XP_UNIX)
     "unix.js"

@@ -1481,6 +1481,11 @@ public:
   static already_AddRefed<DrawTarget> CreateDrawTargetWithSkCanvas(SkCanvas* aCanvas);
 #endif
 
+#ifdef XP_DARWIN
+  static already_AddRefed<GlyphRenderingOptions>
+    CreateCGGlyphRenderingOptions(const Color &aFontSmoothingBackgroundColor);
+#endif
+
 #ifdef WIN32
   static already_AddRefed<DrawTarget> CreateDrawTargetForD3D11Texture(ID3D11Texture2D *aTexture, SurfaceFormat aFormat);
 

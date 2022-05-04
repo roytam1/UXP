@@ -102,7 +102,7 @@ protected:
   nsresult GetFilesInternal(const char* aProperty, nsISimpleEnumerator** aResult);
   static nsresult GetUserDataDirectoryHome(nsIFile* *aFile, bool aLocal);
   static nsresult GetSysUserExtensionsDirectory(nsIFile* *aFile);
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) || defined(XP_MACOSX)
   static nsresult GetSystemExtensionsDirectory(nsIFile** aFile);
 #endif
   static nsresult EnsureDirectoryExists(nsIFile* aDirectory);

@@ -24,7 +24,7 @@ static int gNotOptimized;
 using namespace mozilla::layers;
 
 namespace mozilla {
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 nsresult
 PluginPRLibrary::NP_Initialize(NPNetscapeFuncs* bFuncs,
                                NPPluginFuncs* pFuncs, NPError* error)
@@ -110,7 +110,7 @@ nsresult
 PluginPRLibrary::NP_GetValue(void *future, NPPVariable aVariable,
 			     void *aValue, NPError* error)
 {
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
   if (mNP_GetValue) {
     *error = mNP_GetValue(future, aVariable, aValue);
   } else {
@@ -125,7 +125,7 @@ PluginPRLibrary::NP_GetValue(void *future, NPPVariable aVariable,
 #endif
 }
 
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
 nsresult
 PluginPRLibrary::NP_GetEntryPoints(NPPluginFuncs* pFuncs, NPError* error)
 {
@@ -231,7 +231,17 @@ PluginPRLibrary::GetImageContainer(NPP instance, ImageContainer** aContainer)
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+nsresult
+PluginPRLibrary::IsRemoteDrawingCoreAnimation(NPP instance, bool *aDrawing)
+{
+  nsNPAPIPluginInstance* inst = (nsNPAPIPluginInstance*)instance->ndata;
+  NS_ENSURE_TRUE(inst, NS_ERROR_NULL_POINTER);
+  *aDrawing = false; 
+  return NS_OK;
+}
+#endif
+#if defined(XP_MACOSX) || defined(XP_WIN)
 nsresult
 PluginPRLibrary::ContentsScaleFactorChanged(NPP instance, double aContentsScaleFactor)
 {

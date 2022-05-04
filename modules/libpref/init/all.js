@@ -398,7 +398,11 @@ pref("media.wmf.disable-d3d11-for-dlls", "igd11dxva64.dll: 20.19.15.4463, 20.19.
 pref("media.wmf.disable-d3d9-for-dlls", "igdumd64.dll: 8.15.10.2189, 8.15.10.2119, 8.15.10.2104, 8.15.10.2102, 8.771.1.0; atiumd64.dll: 7.14.10.833, 7.14.10.867, 7.14.10.885, 7.14.10.903, 7.14.10.911, 8.14.10.768, 9.14.10.1001, 9.14.10.1017, 9.14.10.1080, 9.14.10.1128, 9.14.10.1162, 9.14.10.1171, 9.14.10.1183, 9.14.10.1197, 9.14.10.945, 9.14.10.972, 9.14.10.984, 9.14.10.996");
 #endif
 #if defined(MOZ_FFMPEG)
+#if defined(XP_MACOSX)
+pref("media.ffmpeg.enabled", false);
+#else
 pref("media.ffmpeg.enabled", true);
+#endif
 pref("media.libavcodec.allow-obsolete", false);
 #endif
 #if defined(MOZ_FFVPX)
@@ -530,7 +534,11 @@ pref("media.getusermedia.agc", 1);
 // capture_delay: Adjustments for OS-specific input delay (lower bound)
 // playout_delay: Adjustments for OS-specific AudioStream+cubeb+output delay (lower bound)
 // full_duplex: enable cubeb full-duplex capture/playback
-#if defined(XP_WIN)
+#if defined(XP_MACOSX)
+pref("media.peerconnection.capture_delay", 50);
+pref("media.getusermedia.playout_delay", 10);
+pref("media.navigator.audio.full_duplex", false);
+#elif defined(XP_WIN)
 pref("media.peerconnection.capture_delay", 50);
 pref("media.getusermedia.playout_delay", 40);
 pref("media.navigator.audio.full_duplex", false);
@@ -567,7 +575,7 @@ pref("media.mediasource.enabled", true);
 
 pref("media.mediasource.mp4.enabled", true);
 
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
 pref("media.mediasource.webm.enabled", false);
 #else
 pref("media.mediasource.webm.enabled", true);
@@ -695,6 +703,14 @@ pref("apz.scale_repaint_delay_ms", 500);
 pref("apz.desktop.enabled", false);
 #endif
 
+#ifdef XP_MACOSX
+// Whether to run in native HiDPI mode on machines with "Retina"/HiDPI display;
+//   <= 0 : hidpi mode disabled, display will just use pixel-based upscaling
+//   == 1 : hidpi supported if all screens share the same backingScaleFactor
+//   >= 2 : hidpi supported even with mixed backingScaleFactors (somewhat broken)
+pref("gfx.hidpi.enabled", 2);
+#endif
+
 // Use containerless scrolling for now.
 pref("layout.scroll.root-frame-containers", false);
 
@@ -709,8 +725,8 @@ pref("gfx.perf-warnings.enabled", false);
 // Color Management System
 // 0 = Off, 1 = All Images, 2 = Tagged Images Only.
 // See eCMSMode in gfx/thebes/gfxPlatform.h
-// Enabled by default on Windows, disabled elsewhere
-#if defined(XP_WIN)
+// Enabled by default on Windows and Mac, disabled elsewhere
+#if defined(XP_WIN) || defined(XP_MACOSX)
 pref("gfx.color_management.mode", 2);
 #else
 pref("gfx.color_management.mode", 0);
@@ -768,9 +784,16 @@ pref("gfx.font_rendering.opentype_svg.enabled", true);
 pref("gfx.canvas.azure.backends", "direct2d1.1,skia,cairo");
 pref("gfx.content.azure.backends", "direct2d1.1,cairo");
 #else
+#ifdef XP_MACOSX
+pref("gfx.content.azure.backends", "cg");
+pref("gfx.canvas.azure.backends", "skia,cg");
+// Accelerated cg canvas where available (10.7+)
+pref("gfx.canvas.azure.accelerated", true);
+#else
 // Linux etc.
 pref("gfx.canvas.azure.backends", "skia,cairo");
 pref("gfx.content.azure.backends", "cairo");
+#endif
 #endif
 
 pref("gfx.canvas.skiagl.dynamic-cache", true);
@@ -793,6 +816,7 @@ pref("accessibility.warn_on_browsewithcaret", true);
 
 pref("accessibility.browsewithcaret_shortcut.enabled", true);
 
+#ifndef XP_MACOSX
 // Tab focus model bit field:
 // 1 focuses text controls, 2 focuses other form elements, 4 adds links.
 // Most users will want 1, 3, or 7.
@@ -800,11 +824,15 @@ pref("accessibility.browsewithcaret_shortcut.enabled", true);
 // unless accessibility.tabfocus is set by the user.
 pref("accessibility.tabfocus", 7);
 pref("accessibility.tabfocus_applies_to_xul", false);
+#else
+// Only on mac tabfocus is expected to handle UI widgets as well as web content
+pref("accessibility.tabfocus_applies_to_xul", true);
+#endif
 
 // We follow the "Click in the scrollbar to:" system preference on OS X and
 // "gtk-primary-button-warps-slider" property with GTK (since 2.24 / 3.6),
 // unless this preference is explicitly set.
-#if !defined(MOZ_WIDGET_GTK)
+#if !defined(XP_MACOSX) && !defined(MOZ_WIDGET_GTK)
 pref("ui.scrollToClick", 0);
 #endif
 
@@ -868,7 +896,11 @@ pref("accessibility.typeaheadfind.timeout", 4000);
 pref("accessibility.typeaheadfind.enabletimeout", true);
 pref("accessibility.typeaheadfind.soundURL", "beep");
 pref("accessibility.typeaheadfind.enablesound", true);
+#ifdef XP_MACOSX
+pref("accessibility.typeaheadfind.prefillwithselection", false);
+#else
 pref("accessibility.typeaheadfind.prefillwithselection", true);
+#endif
 pref("accessibility.typeaheadfind.matchesCountLimit", 1000);
 pref("findbar.highlightAll", false);
 pref("findbar.modalHighlight", false);
@@ -1071,7 +1103,7 @@ pref("print.print_edge_right", 0);
 pref("print.print_edge_bottom", 0);
 
 // Print via the parent process. This is only used when e10s is enabled.
-#if defined(XP_WIN)
+#if defined(XP_WIN) || defined(XP_MACOSX)
 pref("print.print_via_parent", true);
 #else
 pref("print.print_via_parent", false);
@@ -1341,6 +1373,9 @@ pref("network.protocol-handler.external.mk", false);
 pref("network.protocol-handler.external.res", false);
 pref("network.protocol-handler.external.shell", false);
 pref("network.protocol-handler.external.vnd.ms.radio", false);
+#ifdef XP_MACOSX
+pref("network.protocol-handler.external.help", false);
+#endif
 pref("network.protocol-handler.external.disk", false);
 pref("network.protocol-handler.external.disks", false);
 pref("network.protocol-handler.external.afp", false);
@@ -2517,7 +2552,13 @@ pref("layout.css.text-combine-upright-digits.enabled", false);
 // Is support for object-fit and object-position enabled?
 pref("layout.css.object-fit-and-position.enabled", true);
 
+// Is -moz-osx-font-smoothing enabled?
+// Only supported in OSX builds
+#ifdef XP_MACOSX
+pref("layout.css.osx-font-smoothing.enabled", true);
+#else
 pref("layout.css.osx-font-smoothing.enabled", false);
+#endif
 
 // Is support for the CSS-wide "unset" value enabled?
 pref("layout.css.unset-value.enabled", true);
@@ -3526,6 +3567,328 @@ pref("ui.osk.debug.keyboardDisplayReason", "");
 # XP_WIN
 #endif
 
+#ifdef XP_MACOSX
+// Mac specific preference defaults
+pref("browser.drag_out_of_frame_style", 1);
+pref("ui.key.saveLink.shift", false); // true = shift, false = meta
+
+pref("font.name-list.emoji", "Apple Color Emoji");
+
+// default fonts (in UTF8 and using canonical names)
+// to determine canonical font names, use a debug build and
+// enable NSPR logging for module fontInfoLog:5
+// canonical names immediately follow '(fontinit) family:' in the log
+
+pref("font.name.serif.ar", "Al Bayan");
+pref("font.name.sans-serif.ar", "Geeza Pro");
+pref("font.name.monospace.ar", "Geeza Pro");
+pref("font.name.cursive.ar", "DecoType Naskh");
+pref("font.name.fantasy.ar", "KufiStandardGK");
+pref("font.name-list.serif.ar", "Al Bayan");
+pref("font.name-list.sans-serif.ar", "Geeza Pro");
+pref("font.name-list.monospace.ar", "Geeza Pro");
+pref("font.name-list.cursive.ar", "DecoType Naskh");
+pref("font.name-list.fantasy.ar", "KufiStandardGK");
+
+pref("font.name.serif.el", "Times");
+pref("font.name.sans-serif.el", "Helvetica");
+pref("font.name.monospace.el", "Courier New");
+pref("font.name.cursive.el", "Lucida Grande");
+pref("font.name.fantasy.el", "Lucida Grande");
+pref("font.name-list.serif.el", "Times,Times New Roman");
+pref("font.name-list.sans-serif.el", "Helvetica,Lucida Grande");
+pref("font.name-list.monospace.el", "Courier New,Lucida Grande");
+pref("font.name-list.cursive.el", "Times,Lucida Grande");
+pref("font.name-list.fantasy.el", "Times,Lucida Grande");
+
+pref("font.name.serif.he", "Times New Roman");
+pref("font.name.sans-serif.he", "Arial");
+pref("font.name.monospace.he", "Courier New");
+pref("font.name.cursive.he", "Times New Roman");
+pref("font.name.fantasy.he", "Times New Roman");
+pref("font.name-list.serif.he", "Times New Roman");
+pref("font.name-list.sans-serif.he", "Arial");
+pref("font.name-list.monospace.he", "Courier New");
+pref("font.name-list.cursive.he", "Times New Roman");
+pref("font.name-list.fantasy.he", "Times New Roman");
+
+pref("font.name.serif.ja", "Hiragino Mincho ProN");
+pref("font.name.sans-serif.ja", "Hiragino Kaku Gothic ProN");
+pref("font.name.monospace.ja", "Osaka-Mono");
+pref("font.name-list.serif.ja", "Hiragino Mincho ProN,Hiragino Mincho Pro");
+pref("font.name-list.sans-serif.ja", "Hiragino Kaku Gothic ProN,Hiragino Kaku Gothic Pro");
+pref("font.name-list.monospace.ja", "Osaka-Mono");
+
+pref("font.name.serif.ko", "AppleMyungjo");
+pref("font.name.sans-serif.ko", "Apple SD Gothic Neo");
+pref("font.name.monospace.ko", "Apple SD Gothic Neo");
+pref("font.name-list.serif.ko", "AppleMyungjo");
+pref("font.name-list.sans-serif.ko", "Apple SD Gothic Neo,AppleGothic");
+pref("font.name-list.monospace.ko", "Apple SD Gothic Neo,AppleGothic");
+
+pref("font.name.serif.th", "Thonburi");
+pref("font.name.sans-serif.th", "Thonburi");
+pref("font.name.monospace.th", "Ayuthaya");
+pref("font.name-list.serif.th", "Thonburi");
+pref("font.name-list.sans-serif.th", "Thonburi");
+pref("font.name-list.monospace.th", "Ayuthaya");
+
+pref("font.name.serif.x-armn", "Mshtakan");
+pref("font.name.sans-serif.x-armn", "Mshtakan");
+pref("font.name.monospace.x-armn", "Mshtakan");
+pref("font.name-list.serif.x-armn", "Mshtakan");
+pref("font.name-list.sans-serif.x-armn", "Mshtakan");
+pref("font.name-list.monospace.x-armn", "Mshtakan");
+
+// SolaimanLipi, Rupali http://ekushey.org/?page/mac_download
+pref("font.name.serif.x-beng", "Bangla MN");
+pref("font.name.sans-serif.x-beng", "Bangla Sangam MN");
+pref("font.name.monospace.x-beng", "Bangla Sangam MN");
+pref("font.name-list.serif.x-beng", "Bangla MN");
+pref("font.name-list.sans-serif.x-beng", "Bangla Sangam MN");
+pref("font.name-list.monospace.x-beng", "Bangla Sangam MN");
+
+pref("font.name.serif.x-cans", "Euphemia UCAS");
+pref("font.name.sans-serif.x-cans", "Euphemia UCAS");
+pref("font.name.monospace.x-cans", "Euphemia UCAS");
+pref("font.name-list.serif.x-cans", "Euphemia UCAS");
+pref("font.name-list.sans-serif.x-cans", "Euphemia UCAS");
+pref("font.name-list.monospace.x-cans", "Euphemia UCAS");
+
+pref("font.name.serif.x-cyrillic", "Times");
+pref("font.name.sans-serif.x-cyrillic", "Helvetica");
+pref("font.name.monospace.x-cyrillic", "Monaco");
+pref("font.name.cursive.x-cyrillic", "Geneva");
+pref("font.name.fantasy.x-cyrillic", "Charcoal CY");
+pref("font.name-list.serif.x-cyrillic", "Times,Times New Roman");
+pref("font.name-list.sans-serif.x-cyrillic", "Helvetica,Arial");
+pref("font.name-list.monospace.x-cyrillic", "Monaco,Courier New");
+pref("font.name-list.cursive.x-cyrillic", "Geneva");
+pref("font.name-list.fantasy.x-cyrillic", "Charcoal CY");
+
+pref("font.name.serif.x-devanagari", "Devanagari MT");
+pref("font.name.sans-serif.x-devanagari", "Devanagari Sangam MN");
+pref("font.name.monospace.x-devanagari", "Devanagari Sangam MN");
+pref("font.name-list.serif.x-devanagari", "Devanagari MT");
+pref("font.name-list.sans-serif.x-devanagari", "Devanagari Sangam MN,Devanagari MT");
+pref("font.name-list.monospace.x-devanagari", "Devanagari Sangam MN,Devanagari MT");
+
+// Abyssinica SIL http://scripts.sil.org/AbyssinicaSIL_Download
+pref("font.name.serif.x-ethi", "Kefa");
+pref("font.name.sans-serif.x-ethi", "Kefa");
+pref("font.name.monospace.x-ethi", "Kefa");
+pref("font.name-list.serif.x-ethi", "Kefa,Abyssinica SIL");
+pref("font.name-list.sans-serif.x-ethi", "Kefa,Abyssinica SIL");
+pref("font.name-list.monospace.x-ethi", "Kefa,Abyssinica SIL");
+
+// no suitable fonts for georgian ship with mac os x
+// however some can be freely downloaded
+// TITUS Cyberbit Basic http://titus.fkidg1.uni-frankfurt.de/unicode/tituut.asp
+// Zuzumbo http://homepage.mac.com/rsiradze/FileSharing91.html
+pref("font.name.serif.x-geor", "TITUS Cyberbit Basic");
+pref("font.name.sans-serif.x-geor", "Zuzumbo");
+pref("font.name.monospace.x-geor", "Zuzumbo");
+pref("font.name-list.serif.x-geor", "TITUS Cyberbit Basic");
+pref("font.name-list.sans-serif.x-geor", "Zuzumbo");
+pref("font.name-list.monospace.x-geor", "Zuzumbo");
+
+pref("font.name.serif.x-gujr", "Gujarati MT");
+pref("font.name.sans-serif.x-gujr", "Gujarati Sangam MN");
+pref("font.name.monospace.x-gujr", "Gujarati Sangam MN");
+pref("font.name-list.serif.x-gujr", "Gujarati MT");
+pref("font.name-list.sans-serif.x-gujr", "Gujarati Sangam MN,Gujarati MT");
+pref("font.name-list.monospace.x-gujr", "Gujarati Sangam MN,Gujarati MT");
+
+pref("font.name.serif.x-guru", "Gurmukhi MT");
+pref("font.name.sans-serif.x-guru", "Gurmukhi MT");
+pref("font.name.monospace.x-guru", "Gurmukhi MT");
+pref("font.name-list.serif.x-guru", "Gurmukhi MT");
+pref("font.name-list.sans-serif.x-guru", "Gurmukhi MT");
+pref("font.name-list.monospace.x-guru", "Gurmukhi MT");
+
+pref("font.name.serif.x-khmr", "Khmer MN");
+pref("font.name.sans-serif.x-khmr", "Khmer Sangam MN");
+pref("font.name.monospace.x-khmr", "Khmer Sangam MN");
+pref("font.name-list.serif.x-khmr", "Khmer MN");
+pref("font.name-list.sans-serif.x-khmr", "Khmer Sangam MN");
+pref("font.name-list.monospace.x-khmr", "Khmer Sangam MN");
+
+pref("font.name.serif.x-mlym", "Malayalam MN");
+pref("font.name.sans-serif.x-mlym", "Malayalam Sangam MN");
+pref("font.name.monospace.x-mlym", "Malayalam Sangam MN");
+pref("font.name-list.serif.x-mlym", "Malayalam MN");
+pref("font.name-list.sans-serif.x-mlym", "Malayalam Sangam MN");
+pref("font.name-list.monospace.x-mlym", "Malayalam Sangam MN");
+
+pref("font.name.serif.x-orya", "Oriya MN");
+pref("font.name.sans-serif.x-orya", "Oriya Sangam MN");
+pref("font.name.monospace.x-orya", "Oriya Sangam MN");
+pref("font.name-list.serif.x-orya", "Oriya MN");
+pref("font.name-list.sans-serif.x-orya", "Oriya Sangam MN");
+pref("font.name-list.monospace.x-orya", "Oriya Sangam MN");
+
+// Pothana http://web.nickshanks.com/typography/telugu/
+pref("font.name.serif.x-telu", "Telugu MN");
+pref("font.name.sans-serif.x-telu", "Telugu Sangam MN");
+pref("font.name.monospace.x-telu", "Telugu Sangam MN");
+pref("font.name-list.serif.x-telu", "Telugu MN,Pothana");
+pref("font.name-list.sans-serif.x-telu", "Telugu Sangam MN,Pothana");
+pref("font.name-list.monospace.x-telu", "Telugu Sangam MN,Pothana");
+
+// Kedage http://web.nickshanks.com/typography/kannada/
+pref("font.name.serif.x-knda", "Kannada MN");
+pref("font.name.sans-serif.x-knda", "Kannada Sangam MN");
+pref("font.name.monospace.x-knda", "Kannada Sangam MN");
+pref("font.name-list.serif.x-knda", "Kannada MN,Kedage");
+pref("font.name-list.sans-serif.x-knda", "Kannada Sangam MN,Kedage");
+pref("font.name-list.monospace.x-knda", "Kannada Sangam MN,Kedage");
+
+pref("font.name.serif.x-sinh", "Sinhala MN");
+pref("font.name.sans-serif.x-sinh", "Sinhala Sangam MN");
+pref("font.name.monospace.x-sinh", "Sinhala Sangam MN");
+pref("font.name-list.serif.x-sinh", "Sinhala MN");
+pref("font.name-list.sans-serif.x-sinh", "Sinhala Sangam MN");
+pref("font.name-list.monospace.x-sinh", "Sinhala Sangam MN");
+
+pref("font.name.serif.x-tamil", "InaiMathi");
+pref("font.name.sans-serif.x-tamil", "InaiMathi");
+pref("font.name.monospace.x-tamil", "InaiMathi");
+pref("font.name-list.serif.x-tamil", "InaiMathi");
+pref("font.name-list.sans-serif.x-tamil", "InaiMathi");
+pref("font.name-list.monospace.x-tamil", "InaiMathi");
+
+// Kailasa ships with mac os x >= 10.5
+pref("font.name.serif.x-tibt", "Kailasa");
+pref("font.name.sans-serif.x-tibt", "Kailasa");
+pref("font.name.monospace.x-tibt", "Kailasa");
+pref("font.name-list.serif.x-tibt", "Kailasa");
+pref("font.name-list.sans-serif.x-tibt", "Kailasa");
+pref("font.name-list.monospace.x-tibt", "Kailasa");
+
+pref("font.name.serif.x-unicode", "Times");
+pref("font.name.sans-serif.x-unicode", "Helvetica");
+pref("font.name.monospace.x-unicode", "Courier");
+pref("font.name.cursive.x-unicode", "Apple Chancery");
+pref("font.name.fantasy.x-unicode", "Papyrus");
+pref("font.name-list.serif.x-unicode", "Times");
+pref("font.name-list.sans-serif.x-unicode", "Helvetica");
+pref("font.name-list.monospace.x-unicode", "Courier");
+pref("font.name-list.cursive.x-unicode", "Apple Chancery");
+pref("font.name-list.fantasy.x-unicode", "Papyrus");
+
+pref("font.name.serif.x-western", "Times");
+pref("font.name.sans-serif.x-western", "Helvetica");
+pref("font.name.monospace.x-western", "Courier");
+pref("font.name.cursive.x-western", "Apple Chancery");
+pref("font.name.fantasy.x-western", "Papyrus");
+pref("font.name-list.serif.x-western", "Times,Times New Roman");
+pref("font.name-list.sans-serif.x-western", "Helvetica,Arial");
+pref("font.name-list.monospace.x-western", "Courier,Courier New");
+pref("font.name-list.cursive.x-western", "Apple Chancery");
+pref("font.name-list.fantasy.x-western", "Papyrus");
+
+pref("font.name.serif.zh-CN", "Times");
+pref("font.name.sans-serif.zh-CN", "Helvetica");
+pref("font.name.monospace.zh-CN", "Courier");
+pref("font.name.cursive.zh-CN", "Kaiti SC");
+pref("font.name-list.serif.zh-CN", "Times,STSong,Heiti SC");
+pref("font.name-list.sans-serif.zh-CN", "Helvetica,PingFang SC,STHeiti,Heiti SC");
+pref("font.name-list.monospace.zh-CN", "Courier,PingFang SC,STHeiti,Heiti SC");
+
+pref("font.name.serif.zh-TW", "Times");
+pref("font.name.sans-serif.zh-TW", "Helvetica");
+pref("font.name.monospace.zh-TW", "Courier");
+pref("font.name.cursive.zh-TW", "Kaiti TC");
+pref("font.name-list.serif.zh-TW", "Times,LiSong Pro,Heiti TC");
+pref("font.name-list.sans-serif.zh-TW", "Helvetica,PingFang TC,Heiti TC,LiHei Pro");
+pref("font.name-list.monospace.zh-TW", "Courier,PingFang TC,Heiti TC,LiHei Pro");
+
+pref("font.name.serif.zh-HK", "Times");
+pref("font.name.sans-serif.zh-HK", "Helvetica");
+pref("font.name.monospace.zh-HK", "Courier");
+pref("font.name.cursive.zh-HK", "Kaiti TC");
+pref("font.name-list.serif.zh-HK", "Times,LiSong Pro,Heiti TC");
+pref("font.name-list.sans-serif.zh-HK", "Helvetica,PingFang TC,Heiti TC,LiHei Pro");
+pref("font.name-list.monospace.zh-HK", "Courier,PingFang TC,Heiti TC,LiHei Pro");
+
+// XP_MACOSX changes to default font sizes
+pref("font.minimum-size.th", 10);
+pref("font.size.variable.zh-CN", 15);
+pref("font.size.variable.zh-HK", 15);
+pref("font.size.variable.zh-TW", 15);
+
+pref("font.name.serif.x-math", "Latin Modern Math");
+// Apple's Symbol is Unicode so use it
+pref("font.name-list.serif.x-math", "Latin Modern Math, XITS Math, Cambria Math, Libertinus Math, DejaVu Math TeX Gyre, TeX Gyre Bonum Math, TeX Gyre Pagella Math, TeX Gyre Schola, TeX Gyre Termes Math, STIX Math, Asana Math, STIXGeneral, DejaVu Serif, DejaVu Sans, Symbol, Times");
+pref("font.name.sans-serif.x-math", "Helvetica");
+pref("font.name.monospace.x-math", "Courier");
+pref("font.name.cursive.x-math", "Apple Chancery");
+pref("font.name.fantasy.x-math", "Papyrus");
+
+// Individual font faces to be treated as independent families,
+// listed as <Postscript name of face:Owning family name>
+pref("font.single-face-list", "Osaka-Mono:Osaka");
+
+// optimization hint for fonts with localized names to be read in at startup, otherwise read in at lookup miss
+// names are canonical family names (typically English names)
+pref("font.preload-names-list", "Hiragino Kaku Gothic ProN,Hiragino Mincho ProN,STSong");
+
+// Override font-weight values for some problematic families Apple ships
+// (see bug 931426).
+// The name here is the font's PostScript name, which can be checked in
+// the Font Book utility or other tools.
+pref("font.weight-override.AppleSDGothicNeo-Thin", 100); // Ensure Thin < UltraLight < Light
+pref("font.weight-override.AppleSDGothicNeo-UltraLight", 200);
+pref("font.weight-override.AppleSDGothicNeo-Light", 300);
+pref("font.weight-override.AppleSDGothicNeo-Heavy", 900); // Ensure Heavy > ExtraBold (800)
+
+pref("font.weight-override.Avenir-Book", 300); // Ensure Book < Roman (400)
+pref("font.weight-override.Avenir-BookOblique", 300);
+pref("font.weight-override.Avenir-MediumOblique", 500); // Harmonize MediumOblique with Medium
+pref("font.weight-override.Avenir-Black", 900); // Ensure Black > Heavy (800)
+pref("font.weight-override.Avenir-BlackOblique", 900);
+
+pref("font.weight-override.AvenirNext-MediumItalic", 500); // Harmonize MediumItalic with Medium
+pref("font.weight-override.AvenirNextCondensed-MediumItalic", 500);
+
+pref("font.weight-override.HelveticaNeue-Light", 300); // Ensure Light > Thin (200)
+pref("font.weight-override.HelveticaNeue-LightItalic", 300);
+pref("font.weight-override.HelveticaNeue-MediumItalic", 500); // Harmonize MediumItalic with Medium
+
+// Override the Windows settings: no menu key, meta accelerator key. ctrl for general access key in HTML/XUL
+// Use 17 for Ctrl, 18 for Option, 224 for Cmd, 0 for none
+pref("ui.key.menuAccessKey", 0);
+pref("ui.key.accelKey", 224);
+// (pinkerton, joki, saari) IE5 for mac uses Control for access keys. The HTML4 spec
+// suggests to use command on mac, but this really sucks (imagine someone having a "q"
+// as an access key and not letting you quit the app!). As a result, we've made a
+// command decision 1 day before tree lockdown to change it to the control key.
+pref("ui.key.generalAccessKey", -1);
+
+// If generalAccessKey is -1, use the following two prefs instead.
+// Use 0 for disabled, 1 for Shift, 2 for Ctrl, 4 for Alt, 8 for Meta (Cmd)
+// (values can be combined, e.g. 3 for Ctrl+Shift)
+pref("ui.key.chromeAccess", 2);
+pref("ui.key.contentAccess", 6);
+
+// print_extra_margin enables platforms to specify an extra gap or margin
+// around the content of the page for Print Preview only
+pref("print.print_extra_margin", 90); // twips (90 twips is an eigth of an inch)
+
+// See bug 404131, topmost <panel> element wins to Dashboard on MacOSX.
+pref("ui.panel.default_level_parent", false);
+
+pref("ui.plugin.cancel_composition_at_input_source_changed", false);
+
+pref("mousewheel.system_scroll_override_on_root_content.enabled", false);
+
+// Macbook touchpad two finger pixel scrolling
+pref("mousewheel.enable_pixel_scrolling", true);
+
+# XP_MACOSX
+#endif
+
+#ifndef XP_MACOSX
 #ifdef XP_UNIX
 // Handled differently under Mac/Windows
 pref("network.protocol-handler.warn-external.file", false);
@@ -3735,6 +4098,7 @@ pref("gfx.font_rendering.fontconfig.max_generic_substitutions", 3);
 
 # XP_UNIX
 #endif
+#endif
 
 
 #if OS_ARCH==AIX
@@ -3874,6 +4238,9 @@ pref("canvas.poisondata", false);
 // WebGL prefs
 pref("gl.msaa-level", 2);
 pref("gl.require-hardware", false);
+#ifdef XP_MACOSX
+pref("gl.multithreaded", true);
+#endif
 pref("gl.ignore-dx-interop2-blacklist", false);
 
 pref("webgl.force-enabled", false);
@@ -3933,17 +4300,17 @@ pref("network.tcp.keepalive.enabled", true);
 pref("network.tcp.keepalive.idle_time", 600); // seconds; 10 mins
 // Default timeout for retransmission of unack'd keepalive probes.
 // Win and Linux only; not configurable on Mac.
-#if defined(XP_UNIX) || defined(XP_WIN)
+#if defined(XP_UNIX) && !defined(XP_MACOSX) || defined(XP_WIN)
 pref("network.tcp.keepalive.retry_interval", 1); // seconds
 #endif
 // Default maximum probe retransmissions.
 // Linux only; not configurable on Win and Mac; fixed at 10 and 8 respectively.
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 pref("network.tcp.keepalive.probe_count", 4);
 #endif
 
 // Whether to disable acceleration for all widgets.
-#if defined(XP_UNIX)
+#if defined(XP_UNIX) && !defined(XP_MACOSX)
 // On Linux this is disabled by default for known issues with "free" drivers
 pref("layers.acceleration.enabled", false);
 #else
@@ -4000,6 +4367,13 @@ pref("layers.tiles.adjust", true);
 // 0  -> full-tilt mode: Recomposite even if not transaction occured.
 pref("layers.offmainthreadcomposition.frame-rate", -1);
 
+#ifdef XP_MACOSX
+pref("layers.enable-tiles", true);
+pref("layers.tile-width", 512);
+pref("layers.tile-height", 512);
+pref("layers.tiles.edge-padding", false);
+#endif
+
 // Whether to animate simple opacity and transforms on the compositor
 pref("layers.offmainthreadcomposition.async-animations", true);
 
@@ -4043,6 +4417,11 @@ pref("layers.allow-d3d9-fallback", true);
 pref("layers.shared-buffer-provider.enabled", true);
 
 #ifdef XP_WIN
+pref("layers.shared-buffer-provider.enabled", false);
+#endif
+
+#ifdef XP_MACOSX
+// cf. Bug 1324908
 pref("layers.shared-buffer-provider.enabled", false);
 #endif
 
@@ -4202,7 +4581,11 @@ pref("dom.mozPermissionSettings.enabled", false);
 // W3C touch events
 // 0 - disabled, 1 - enabled, 2 - autodetect
 // Autodetection is currently only supported on Windows and GTK3
+#if defined(XP_MACOSX)
+pref("dom.w3c_touch_events.enabled", 0);
+#else
 pref("dom.w3c_touch_events.enabled", 2);
+#endif
 
 // W3C draft pointer events
 pref("dom.w3c_pointer_events.enabled", true);
@@ -4571,6 +4954,15 @@ pref("dom.udpsocket.enabled", false);
 
 // Disable before keyboard events and after keyboard events by default.
 pref("dom.beforeAfterKeyboardEvent.enabled", false);
+
+#ifdef XP_MACOSX
+#if defined(DEBUG)
+// In debug builds we crash by default on insecure text input (when a
+// password editor has focus but secure event input isn't enabled).  The
+// following pref, when turned on, disables this behavior.  See bug 1188425.
+pref("intl.allow-insecure-text-input", false);
+#endif
+#endif // XP_MACOSX
 
 // Enable meta-viewport support in remote APZ-enabled frames.
 pref("dom.meta-viewport.enabled", false);
