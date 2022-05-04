@@ -59,6 +59,14 @@ extern opus_int64 celt_mips;
 #define SHR(a,b) SHR32(a,b)
 #define PSHR(a,b) PSHR32(a,b)
 
+/** Add two 32-bit values, ignore any overflows */
+#define ADD32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)+(opus_uint32)(b)))
+/** Subtract two 32-bit values, ignore any overflows */
+#define SUB32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)-(opus_uint32)(b)))
+/* Avoid MSVC warning C4146: unary minus operator applied to unsigned type */
+/** Negate 32-bit value, ignore any overflows */
+#define NEG32_ovflw(a) (celt_mips+=2,(opus_val32)(0-(opus_uint32)(a)))
+
 static OPUS_INLINE short NEG16(int x)
 {
    int res;
@@ -227,11 +235,10 @@ static OPUS_INLINE int SHL32_(opus_int64 a, int shift, char *file, int line)
 #define VSHR32(a, shift) (((shift)>0) ? SHR32(a, shift) : SHL32(a, -(shift)))
 
 #define ROUND16(x,a) (celt_mips--,EXTRACT16(PSHR32((x),(a))))
+#define SROUND16(x,a) (celt_mips--,EXTRACT16(SATURATE(PSHR32(x,a), 32767)));
+
 #define HALF16(x)  (SHR16(x,1))
 #define HALF32(x)  (SHR32(x,1))
-
-//#define SHR(a,shift) ((a) >> (shift))
-//#define SHL(a,shift) ((a) << (shift))
 
 #define ADD16(a, b) ADD16_(a, b, __FILE__, __LINE__)
 static OPUS_INLINE short ADD16_(int a, int b, char *file, int line)
@@ -400,6 +407,51 @@ static OPUS_INLINE short MULT16_16_16(int a, int b)
 #endif
    }
    celt_mips++;
+   return res;
+}
+
+/* result fits in 32 bits */
+static OPUS_INLINE int MULT32_32_32(opus_int64 a, opus_int64 b)
+{
+   opus_int64 res;
+   if (!VERIFY_INT(a) || !VERIFY_INT(b))
+   {
+      fprintf (stderr, "MULT32_32_32: inputs are not int: %d %d\n", a, b);
+#ifdef FIXED_DEBUG_ASSERT
+      celt_assert(0);
+#endif
+   }
+   res = a*b;
+   if (!VERIFY_INT(res))
+   {
+      fprintf (stderr, "MULT32_32_32: output is not int: %d\n", res);
+#ifdef FIXED_DEBUG_ASSERT
+      celt_assert(0);
+#endif
+   }
+   celt_mips+=5;
+   return res;
+}
+
+static OPUS_INLINE int MULT32_32_Q16(opus_int64 a, opus_int64 b)
+{
+   opus_int64 res;
+   if (!VERIFY_INT(a) || !VERIFY_INT(b))
+   {
+      fprintf (stderr, "MULT32_32_Q16: inputs are not int: %d %d\n", a, b);
+#ifdef FIXED_DEBUG_ASSERT
+      celt_assert(0);
+#endif
+   }
+   res = ((opus_int64)(a)*(opus_int64)(b)) >> 16;
+   if (!VERIFY_INT(res))
+   {
+      fprintf (stderr, "MULT32_32_Q16: output is not int: %d*%d=%d\n", a, b, (int)res);
+#ifdef FIXED_DEBUG_ASSERT
+      celt_assert(0);
+#endif
+   }
+   celt_mips+=5;
    return res;
 }
 

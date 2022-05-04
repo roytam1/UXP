@@ -6,6 +6,8 @@ Any changes made to this version of the source should
 be reflected in that script, e.g. by applying patch
 files after the copy step.
 
-The upstream repository is https://git.xiph.org/opus.git
+The upstream repository is https://github.com/xiph/opus.git
+Official master repository is https://gitlab.xiph.org/xiph/opus.git
 
-The git tag/revision used was v1.1.3.
+Release: commit 2654707e86cc94413998976d179b2ab4a2aa3114 (2022-04-01T14:32:38.000-04:00)
+
