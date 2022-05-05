@@ -24,7 +24,7 @@ fi
 
 # "parse" the makefile fragments to get the list of source files
 # requires GNU sed extensions
-SRC_FILES=$(sed -e ':a;N;$!ba;s/#[^\n]*\(\n\)/\1/g;s/\\\n//g;s/[A-Z_]* = //g' \
+SRC_FILES=$(sed -e ':a;N;$!ba;s/#[^\n]*\(\n\)/\1/g;s/\\\n//g;s/[A-Z0-9_]*[ \t]*=[ \t]*//g' \
              $(for file in ${MK_FILES}; do echo "$1/${file}"; done))
 
 # pre-release versions of the code don't list opus_custom.h
@@ -61,17 +61,9 @@ if test -d $1/.git; then
 else
   version="UNKNOWN"
 fi
-echo "copied from revision ${version}"
-# update README revision
-sed -e "s/^The git tag\/revision used was .*/The git tag\/revision used was ${version}./" \
-    ${TARGET}/README_MOZILLA > ${TARGET}/README_MOZILLA+ && \
-    mv ${TARGET}/README_MOZILLA+ ${TARGET}/README_MOZILLA
-# update compiled-in version string
-sed -e "s/DEFINES\['OPUS_VERSION'\][ \t]*=[ \t]*'\".*\"'/DEFINES['OPUS_VERSION'] = '\"${version}-mozilla\"'/" \
-    ${TARGET}/moz.build > ${TARGET}/moz.build+ && \
-    mv ${TARGET}/moz.build+ ${TARGET}/moz.build
 
-python gen-sources.py $1
+python3 gen-sources.py $1
 
 # apply outstanding local patches
-patch -p3 < nonunified.patch
+patch -p3 --no-backup-if-mismatch < nonunified.patch
+patch -p3 --no-backup-if-mismatch < nonunified2.patch

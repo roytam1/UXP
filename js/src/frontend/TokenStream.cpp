@@ -1285,7 +1285,7 @@ static const uint8_t firstCharKinds[] = {
 /*  30+ */ _______, _______,   Space, _______,  String, _______,   Ident, _______, _______,  String,
 /*  40+ */  TOK_LP,  TOK_RP, _______, _______, T_COMMA,_______,  _______, _______,BasePrefix,  Dec,
 /*  50+ */     Dec,     Dec,     Dec,     Dec,     Dec,     Dec,     Dec,    Dec,  T_COLON,TOK_SEMI,
-/*  60+ */ _______, _______, _______,TOK_HOOK, _______,   Ident,   Ident,   Ident,   Ident,   Ident,
+/*  60+ */ _______, _______, _______, _______, _______,   Ident,   Ident,   Ident,   Ident,   Ident,
 /*  70+ */   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,
 /*  80+ */   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,   Ident,
 /*  90+ */   Ident,  TOK_LB, _______,  TOK_RB, _______,   Ident, Templat,   Ident,   Ident,   Ident,
@@ -1794,6 +1794,25 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
             tp->type = TOK_AND;
         else
             tp->type = matchChar('=') ? TOK_BITANDASSIGN : TOK_BITAND;
+        goto out;
+
+      case '?':
+        if (matchChar('.')) {
+            c = getCharIgnoreEOL();
+            if (JS7_ISDEC(c)) {
+                // if the code unit is followed by a number, for example it has
+                // the following form `<...> ?.5 <..> then it should be treated
+                // as a ternary rather than as an optional chain
+                tp->type = TOK_HOOK;
+                ungetCharIgnoreEOL(c);
+                ungetChar('.');
+            } else {
+                ungetCharIgnoreEOL(c);
+                tp->type = TOK_OPTCHAIN;
+            }
+        } else {
+            tp->type = TOK_HOOK;
+        }
         goto out;
 
       case '!':

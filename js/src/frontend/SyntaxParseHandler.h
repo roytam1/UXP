@@ -58,6 +58,7 @@ class SyntaxParseHandler
         // in code not actually executed (or at least not executed enough to be
         // noticed).
         NodeFunctionCall,
+        NodeOptionalFunctionCall,
 
         // Nodes representing *parenthesized* IsValidSimpleAssignmentTarget
         // nodes.  We can't simply treat all such parenthesized nodes
@@ -78,7 +79,9 @@ class SyntaxParseHandler
         NodeParenthesizedName,
 
         NodeDottedProperty,
+        NodeOptionalDottedProperty,
         NodeElement,
+        NodeOptionalElement,
 
         // Destructuring target patterns can't be parenthesized: |([a]) = [3];|
         // must be a syntax error.  (We can't use NodeGeneric instead of these
@@ -144,6 +147,10 @@ class SyntaxParseHandler
 
     bool isPropertyAccess(Node node) {
         return node == NodeDottedProperty || node == NodeElement;
+    }
+
+    bool isOptionalPropertyAccess(Node node) {
+        return node == NodeOptionalDottedProperty || node == NodeOptionalElement;
     }
 
     bool isFunctionCall(Node node) {
@@ -283,6 +290,7 @@ class SyntaxParseHandler
     void addArrayElement(Node literal, Node element) { }
 
     Node newCall() { return NodeFunctionCall; }
+    Node newOptionalCall() { return NodeOptionalFunctionCall; }
     Node newTaggedTemplate() { return NodeGeneric; }
 
     Node newObjectLiteral(uint32_t begin) { return NodeUnparenthesizedObject; }
@@ -303,6 +311,7 @@ class SyntaxParseHandler
     Node newYieldExpression(uint32_t begin, Node value) { return NodeGeneric; }
     Node newYieldStarExpression(uint32_t begin, Node value) { return NodeGeneric; }
     Node newAwaitExpression(uint32_t begin, Node value) { return NodeGeneric; }
+    Node newOptionalChain(uint32_t begin, Node value) { return NodeGeneric; }
 
     // Statements
 
@@ -353,7 +362,14 @@ class SyntaxParseHandler
         return NodeDottedProperty;
     }
 
+    Node newOptionalPropertyAccess(Node pn, PropertyName* name, uint32_t end) {
+        lastAtom = name;
+        return NodeOptionalDottedProperty;
+    }
+
     Node newPropertyByValue(Node pn, Node kid, uint32_t end) { return NodeElement; }
+
+    Node newOptionalPropertyByValue(Node pn, Node kid, uint32_t end) { return NodeOptionalElement; }
 
     MOZ_MUST_USE bool addCatchBlock(Node catchList, Node letBlock, Node catchName,
                                     Node catchGuard, Node catchBody) { return true; }
@@ -471,7 +487,8 @@ class SyntaxParseHandler
                    list == NodeUnparenthesizedCommaExpr ||
                    list == NodeVarDeclaration ||
                    list == NodeLexicalDeclaration ||
-                   list == NodeFunctionCall);
+                   list == NodeFunctionCall ||
+                   list == NodeOptionalFunctionCall);
     }
 
     Node newAssignment(ParseNodeKind kind, Node lhs, Node rhs, JSOp op) {
@@ -590,7 +607,7 @@ class SyntaxParseHandler
         // |this|.  It's not really eligible for the funapply/funcall
         // optimizations as they're currently implemented (assuming a single
         // value is used for both retrieval and |this|).
-        if (node != NodeDottedProperty)
+        if (node != NodeDottedProperty && node != NodeOptionalDottedProperty)
             return nullptr;
         return lastAtom->asPropertyName();
     }

@@ -195,7 +195,6 @@ this.AutoCompletePopup = {
         this.openedPopup.hidePopup();
       } catch(e) {
         Cu.reportError(e);
-        console.log("Debug: ", this.openedPopup);
       }
     }
     AutoCompleteTreeView.clearResults();

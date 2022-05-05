@@ -1321,6 +1321,11 @@ class Parser final : public ParserBase, private JS::AutoGCRooter
     Node unaryExpr(YieldHandling yieldHandling, TripledotHandling tripledotHandling,
                    PossibleError* possibleError = nullptr,
                    InvokedPrediction invoked = PredictUninvoked);
+    Node optionalExpr(YieldHandling yieldHandling,
+                      TripledotHandling tripledotHandling, TokenKind tt,
+                      bool allowCallSyntax = true,
+                      PossibleError* possibleError = nullptr,
+                      InvokedPrediction invoked = PredictUninvoked);
     Node memberExpr(YieldHandling yieldHandling, TripledotHandling tripledotHandling,
                     TokenKind tt, bool allowCallSyntax = true,
                     PossibleError* possibleError = nullptr,
@@ -1532,6 +1537,18 @@ class Parser final : public ParserBase, private JS::AutoGCRooter
     JSAtom* prefixAccessorName(PropertyType propType, HandleAtom propAtom);
 
     bool asmJS(Node list);
+
+    enum class OptionalKind {
+      NonOptional = 0,
+      Optional,
+    };
+    Node memberPropertyAccess(
+        Node lhs, OptionalKind optionalKind = OptionalKind::NonOptional);
+    Node memberElemAccess(Node lhs, YieldHandling yieldHandling,
+                          OptionalKind optionalKind = OptionalKind::NonOptional);
+    Node memberCall(TokenKind tt, Node lhs, YieldHandling yieldHandling,
+                    PossibleError* possibleError,
+                    OptionalKind optionalKind = OptionalKind::NonOptional);
 };
 
 template <typename ParseHandler>
