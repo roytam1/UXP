@@ -19,6 +19,8 @@
 #include "frontend/SourceNotes.h"
 #include "vm/Interpreter.h"
 
+class OptionalEmitter;
+
 namespace js {
 namespace frontend {
 
@@ -456,6 +458,11 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitTree(ParseNode* pn, ValueUsage valueUsage = ValueUsage::WantValue,
                                EmitLineNumberNote emitLineNote = EMIT_LINENOTE);
 
+    // Emit code for the optional tree rooted at pn.
+    MOZ_MUST_USE bool emitOptionalTree(ParseNode* pn,
+                                       OptionalEmitter& oe,
+                                       ValueUsage valueUsage = ValueUsage::WantValue);
+
     // Emit code for the tree rooted at pn with its own TDZ cache.
     MOZ_MUST_USE bool emitTreeInBranch(ParseNode* pn,
                                        ValueUsage valueUsage = ValueUsage::WantValue);
@@ -731,6 +738,10 @@ struct MOZ_STACK_CLASS BytecodeEmitter
 
     MOZ_MUST_USE bool emitAsyncIterator();
 
+    // XXX currently used only by OptionalEmitter, research still required
+    // to identify when this was introduced in m-c.
+    MOZ_MUST_USE bool emitPushNotUndefinedOrNull();
+
     // Pops iterator from the top of the stack. Pushes the result of |.next()|
     // onto the stack.
     MOZ_MUST_USE bool emitIteratorNext(ParseNode* pn, IteratorKind kind = IteratorKind::Sync,
@@ -776,6 +787,32 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool emitDeleteElement(ParseNode* pn);
     MOZ_MUST_USE bool emitDeleteExpression(ParseNode* pn);
 
+    // Optional methods which emit Optional Jump Target
+    MOZ_MUST_USE bool emitOptionalChain(ParseNode* optionalChain,
+                                        ValueUsage valueUsage);
+    MOZ_MUST_USE bool emitCalleeAndThisForOptionalChain(ParseNode* optionalChain,
+                                                        ParseNode* callNode,
+                                                        bool isCall);
+    MOZ_MUST_USE bool emitDeleteOptionalChain(ParseNode* deleteNode);
+
+    // Optional methods which emit a shortCircuit jump. They need to be called by
+    // a method which emits an Optional Jump Target, see below.
+    MOZ_MUST_USE bool emitOptionalDotExpression(PropertyAccessBase* prop,
+                                                OptionalEmitter& oe,
+                                                ParseNode* calleeNode,
+                                                bool isCall);
+    MOZ_MUST_USE bool emitOptionalElemExpression(PropertyByValueBase* elem,
+                                                 OptionalEmitter& oe,
+                                                 ParseNode* calleeNode,
+                                                 bool isCall);
+    MOZ_MUST_USE bool emitOptionalCall(ParseNode* callNode,
+                                       OptionalEmitter& oe,
+                                       ValueUsage valueUsage);
+    MOZ_MUST_USE bool emitDeletePropertyInOptChain(PropertyAccessBase* propExpr,
+                                                   OptionalEmitter& oe);
+    MOZ_MUST_USE bool emitDeleteElementInOptChain(PropertyByValueBase* elemExpr,
+                                                  OptionalEmitter& oe);
+
     // |op| must be JSOP_TYPEOF or JSOP_TYPEOFEXPR.
     MOZ_MUST_USE bool emitTypeof(ParseNode* node, JSOp op);
 
@@ -794,7 +831,22 @@ struct MOZ_STACK_CLASS BytecodeEmitter
     MOZ_MUST_USE bool isRestParameter(ParseNode* pn, bool* result);
     MOZ_MUST_USE bool emitOptimizeSpread(ParseNode* arg0, JumpList* jmp, bool* emitted);
 
-    MOZ_MUST_USE bool emitCallOrNew(ParseNode* pn, ValueUsage valueUsage = ValueUsage::WantValue);
+    MOZ_MUST_USE bool emitCallOrNew(ParseNode* pn,
+                                    ValueUsage valueUsage = ValueUsage::WantValue);
+    MOZ_MUST_USE bool emitCalleeAndThis(ParseNode* callNode,
+                                        ParseNode* calleeNode,
+                                        bool isCall);
+    MOZ_MUST_USE bool emitOptionalCalleeAndThis(ParseNode* callNode,
+                                                ParseNode* calleeNode,
+                                                bool isCall,
+                                                OptionalEmitter& oe);
+    MOZ_MUST_USE bool emitCallOrNewThis(ParseNode* callNode,
+                                        bool isCall);
+    MOZ_MUST_USE bool emitCallOrNewArgumentsAndEnd(ParseNode* callNode,
+                                                   ParseNode* calleeNode,
+                                                   bool isCall,
+                                                   ValueUsage valueUsage);
+
     MOZ_MUST_USE bool emitSelfHostedCallFunction(ParseNode* pn);
     MOZ_MUST_USE bool emitSelfHostedResumeGenerator(ParseNode* pn);
     MOZ_MUST_USE bool emitSelfHostedForceInterpreter(ParseNode* pn);

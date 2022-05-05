@@ -217,7 +217,7 @@ ConvertUnknownBreaks(const T* aInSrc, int32_t& aIoLen, const char* aDestBreak)
 
   while (src < srcEnd) {
     if (*src == nsCRT::CR) {
-      if (src < srcEnd && src[1] == nsCRT::LF) {
+      if (src + 1< srcEnd && src[1] == nsCRT::LF) {
         // CRLF
         finalLen += destBreakLen;
         src++;
@@ -246,7 +246,7 @@ ConvertUnknownBreaks(const T* aInSrc, int32_t& aIoLen, const char* aDestBreak)
 
   while (src < srcEnd) {
     if (*src == nsCRT::CR) {
-      if (src < srcEnd && src[1] == nsCRT::LF) {
+      if (src + 1 < srcEnd && src[1] == nsCRT::LF) {
         // CRLF
         AppendLinebreak(dst, aDestBreak);
         src++;
