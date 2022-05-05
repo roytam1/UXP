@@ -74,6 +74,10 @@ class FullParseHandler
         return node->isKind(PNK_DOT) || node->isKind(PNK_ELEM);
     }
 
+    bool isOptionalPropertyAccess(ParseNode* node) {
+        return node->isKind(PNK_OPTDOT) || node->isKind(PNK_OPTELEM);
+    }
+
     bool isFunctionCall(ParseNode* node) {
         // Note: super() is a special form, *not* a function call.
         return node->isKind(PNK_CALL);
@@ -213,6 +217,18 @@ class FullParseHandler
         if (expr->isKind(PNK_ELEM))
             return newUnary(PNK_DELETEELEM, JSOP_NOP, begin, expr);
 
+        if (expr->isKind(PNK_OPTCHAIN)) {
+            ParseNode* kid = expr->pn_kid;
+            // Handle property deletion explicitly. OptionalCall is handled
+            // via DeleteExpr.
+            if (kid->isKind(PNK_DOT) ||
+                kid->isKind(PNK_OPTDOT) ||
+                kid->isKind(PNK_ELEM) ||
+                kid->isKind(PNK_OPTELEM)) {
+              return newUnary(PNK_DELETEOPTCHAIN, JSOP_NOP, begin, kid);
+            }
+        }
+
         return newUnary(PNK_DELETEEXPR, JSOP_NOP, begin, expr);
     }
 
@@ -317,6 +333,10 @@ class FullParseHandler
 
     ParseNode* newCall() {
         return newList(PNK_CALL, JSOP_CALL);
+    }
+
+    ParseNode* newOptionalCall() {
+        return newList(PNK_OPTCALL, JSOP_CALL);
     }
 
     ParseNode* newTaggedTemplate() {
@@ -457,6 +477,11 @@ class FullParseHandler
     ParseNode* newAwaitExpression(uint32_t begin, ParseNode* value) {
         TokenPos pos(begin, value ? value->pn_pos.end : begin + 1);
         return new_<UnaryNode>(PNK_AWAIT, JSOP_AWAIT, pos, value);
+    }
+
+    ParseNode* newOptionalChain(uint32_t begin, ParseNode* value) {
+        TokenPos pos(begin, value->pn_pos.end);
+        return new_<UnaryNode>(PNK_OPTCHAIN, JSOP_NOP, pos, value);
     }
 
     // Statements
@@ -676,6 +701,14 @@ class FullParseHandler
 
     ParseNode* newPropertyByValue(ParseNode* lhs, ParseNode* index, uint32_t end) {
         return new_<PropertyByValue>(lhs, index, lhs->pn_pos.begin, end);
+    }
+
+    ParseNode* newOptionalPropertyAccess(ParseNode* pn, PropertyName* name, uint32_t end) {
+        return new_<OptionalPropertyAccess>(pn, name, pn->pn_pos.begin, end);
+    }
+
+    ParseNode* newOptionalPropertyByValue(ParseNode* lhs, ParseNode* index, uint32_t end) {
+        return new_<OptionalPropertyByValue>(lhs, index, lhs->pn_pos.begin, end);
     }
 
     inline MOZ_MUST_USE bool addCatchBlock(ParseNode* catchList, ParseNode* lexicalScope,
@@ -920,7 +953,9 @@ class FullParseHandler
         return pn->isKind(PNK_CALL);
     }
     PropertyName* maybeDottedProperty(ParseNode* pn) {
-        return pn->is<PropertyAccess>() ? &pn->as<PropertyAccess>().name() : nullptr;
+        return pn->is<PropertyAccessBase>() ?
+               &pn->as<PropertyAccessBase>().name() :
+               nullptr;
     }
     JSAtom* isStringExprStatement(ParseNode* pn, TokenPos* pos) {
         if (JSAtom* atom = pn->isStringExprStatement()) {

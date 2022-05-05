@@ -69,9 +69,12 @@ public:
   }
 
   DOMHighResTimeStamp FetchStart() const {
-    return mTiming
+    if (mTiming) {
+      return mTiming->TimingAllowed()
         ? mTiming->FetchStartHighRes()
-        : 0;
+        : StartTime();
+    }
+    return 0;
   }
 
   DOMHighResTimeStamp RedirectStart() const {

@@ -361,6 +361,8 @@ int main(int argc, char* argv[], char* envp[])
     return 255;
   }
 
+  XRE_StartupTimelineRecord(mozilla::StartupTimeline::START, start);
+
 #ifdef MOZ_BROWSER_CAN_BE_CONTENTPROC
   XRE_EnableSameExecutableForContentProc();
 #endif

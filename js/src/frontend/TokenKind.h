@@ -63,6 +63,7 @@
     macro(DEC,          "'--'")   /* decrement */ \
     macro(DOT,          "'.'")    /* member operator */ \
     macro(TRIPLEDOT,    "'...'")  /* rest arguments and spread operator */ \
+    macro(OPTCHAIN,     "'?.'") \
     macro(LB,           "'['") \
     macro(RB,           "']'") \
     macro(LC,           "'{'") \
