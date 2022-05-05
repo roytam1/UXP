@@ -10,6 +10,11 @@
 #include "SkPaint.h"
 #include "SkUtils.h"
 
+#ifdef _MSC_VER
+#undef SK_CPU_SSE_LEVEL
+#define SK_CPU_SSE_LEVEL SK_CPU_SSE_LEVEL_SSSE3
+#endif
+
 /* With the exception of the compilers that don't support it, we always build the
  * SSSE3 functions and enable the caller to determine SSSE3 support.  However for
  * compilers that do not support SSSE3 we provide a stub implementation.
