@@ -32,7 +32,7 @@ AudioClassifier::AudioClassifier()
                                          kDefaultFrameSizeSamples,
                                          NULL)) {
   assert(celt_mode_);
-  tonality_analysis_init(&analysis_state_);
+  tonality_analysis_init(&analysis_state_, kDefaultSampleRateHz);
 }
 
 AudioClassifier::~AudioClassifier() {}
