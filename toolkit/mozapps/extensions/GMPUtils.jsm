@@ -86,11 +86,11 @@ this.GMPUtils = {
   },
 
   _is32bitModeMacOS: function() {
-#ifdef XP_MACOSX
-    return Services.appinfo.XPCOMABI.split("-")[0] == "x86";
-#else
-    return false;
-#endif
+    if (AppConstants.platform != "macosx") {
+      return Services.appinfo.XPCOMABI.split("-")[0] == "x86";
+    } else {
+      return false;
+    }
   },
 
   /**
