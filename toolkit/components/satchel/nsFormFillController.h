@@ -120,6 +120,7 @@ protected:
   bool mCompleteSelectedIndex;
   bool mForceComplete;
   bool mSuppressOnInput;
+  bool mInvalidatePreviousResult = false;
 };
 
 #endif // __nsFormFillController__
