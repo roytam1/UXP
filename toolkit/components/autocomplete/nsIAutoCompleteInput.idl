@@ -178,4 +178,11 @@ interface nsIAutoCompleteInput : nsISupports
    * The userContextId of the current browser.
    */
   readonly attribute unsigned long userContextId;
+
+  /**
+   * Indicates whether the previous result should be invalidated due to dynamic
+   * list updates. If search content is updated, we shouldn't use the previous
+   * search result.
+   */
+  readonly attribute boolean invalidatePreviousResult;
 };
