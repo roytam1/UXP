@@ -59,7 +59,7 @@ pref("devtools.inspector.showUserAgentStyles", false);
 // Show all native anonymous content (like controls in <video> tags)
 pref("devtools.inspector.showAllAnonymousContent", false);
 // Enable the MDN docs tooltip
-pref("devtools.inspector.mdnDocsTooltip.enabled", true);
+pref("devtools.inspector.mdnDocsTooltip.enabled", false);
 
 // Enable the Font Inspector
 pref("devtools.fontinspector.enabled", true);
