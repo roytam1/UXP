@@ -663,6 +663,7 @@ class NameResolver
             break;
 
           // Nodes with arbitrary-expression children.
+          case PNK_COALESCE:
           case PNK_OR:
           case PNK_AND:
           case PNK_BITOR:

@@ -326,6 +326,7 @@ ContainsHoistedDeclaration(ExclusiveContext* cx, ParseNode* node, bool* result)
       case PNK_POSTINCREMENT:
       case PNK_PREDECREMENT:
       case PNK_POSTDECREMENT:
+      case PNK_COALESCE:
       case PNK_OR:
       case PNK_AND:
       case PNK_BITOR:
@@ -752,15 +753,18 @@ FoldIncrementDecrement(ExclusiveContext* cx, ParseNode* node, Parser<FullParseHa
 }
 
 static bool
-FoldAndOr(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>& parser,
+FoldLogical(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>& parser,
           bool inGenexpLambda)
 {
     ParseNode* node = *nodePtr;
 
-    MOZ_ASSERT(node->isKind(PNK_AND) || node->isKind(PNK_OR));
+    MOZ_ASSERT(node->isKind(PNK_AND) ||
+               node->isKind(PNK_OR)  ||
+               node->isKind(PNK_COALESCE));
     MOZ_ASSERT(node->isArity(PN_LIST));
 
-    bool isOrNode = node->isKind(PNK_OR);
+    bool isOrNode = (node->isKind(PNK_OR) ||
+                     node->isKind(PNK_COALESCE));
     ParseNode** elem = &node->pn_head;
     do {
         if (!Fold(cx, elem, parser, inGenexpLambda))
@@ -1738,9 +1742,10 @@ Fold(ExclusiveContext* cx, ParseNode** pnp, Parser<FullParseHandler>& parser, bo
             return Fold(cx, &expr, parser, inGenexpLambda);
         return true;
 
+      case PNK_COALESCE:
       case PNK_AND:
       case PNK_OR:
-        return FoldAndOr(cx, pnp, parser, inGenexpLambda);
+        return FoldLogical(cx, pnp, parser, inGenexpLambda);
 
       case PNK_FUNCTION:
         return FoldFunction(cx, pn, parser, inGenexpLambda);

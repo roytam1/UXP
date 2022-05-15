@@ -426,6 +426,7 @@ PushNodeChildren(ParseNode* pn, NodeStack* stack)
       }
 
       // List nodes with all non-null children.
+      case PNK_COALESCE:
       case PNK_OR:
       case PNK_AND:
       case PNK_BITOR:

@@ -152,11 +152,15 @@
      * range-testing. \
      */ \
     /* \
-     * Binary operators tokens, TOK_OR thru TOK_POW. These must be in the same \
-     * order as F(OR) and friends in FOR_EACH_PARSE_NODE_KIND in ParseNode.h. \
+     * Binary operators tokens. \
+     * These must be in the same order in several places: \
+     *   - the precedence table and JSOp code list in Parser.cpp \
+     *   - the binary operators in ParseNode.h \
+     *   - the first and last binary operator markers in ParseNode.h \
      */ \
+    macro(COALESCE,     "'\?\?'") /* escapes to avoid trigraphs warning */ \
+    range(BINOP_FIRST,  COALESCE) \
     macro(OR,           "'||'")   /* logical or */ \
-    range(BINOP_FIRST, OR) \
     macro(AND,          "'&&'")   /* logical and */ \
     macro(BITOR,        "'|'")    /* bitwise-or */ \
     macro(BITXOR,       "'^'")    /* bitwise-xor */ \
@@ -196,7 +200,7 @@
     macro(DIV,          "'/'") \
     macro(MOD,          "'%'") \
     macro(POW,          "'**'") \
-    range(BINOP_LAST, POW) \
+    range(BINOP_LAST,   POW) \
     \
     /* Unary operation tokens. */ \
     macro(TYPEOF,       "keyword 'typeof'") \
