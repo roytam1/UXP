@@ -1184,7 +1184,7 @@ pref("dom.forms.color", true);
 pref("dom.forms.datetime", true);
 
 // Enable time picker UI.
-pref("dom.forms.datetime.timepicker", true);
+pref("dom.forms.datetime.timepicker", false);
 
 // Support for input type=month, type=week and type=datetime-local.
 // TODO: implement/fix these.
