@@ -79,6 +79,7 @@ this.GMPUtils = {
       // The Widevine plugin is available for Windows versions Vista and later,
       // Mac OSX, and Linux.
       return AppConstants.isPlatformAndVersionAtLeast("win", "6") ||
+             AppConstants.platform == "macosx" ||
              AppConstants.platform == "linux";
     }
 
@@ -87,10 +88,9 @@ this.GMPUtils = {
 
   _is32bitModeMacOS: function() {
     if (AppConstants.platform != "macosx") {
-      return Services.appinfo.XPCOMABI.split("-")[0] == "x86";
-    } else {
       return false;
     }
+    return Services.appinfo.XPCOMABI.split("-")[0] == "x86";
   },
 
   /**
