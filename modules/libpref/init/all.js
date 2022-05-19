@@ -1180,15 +1180,15 @@ pref("dom.forms.number", true);
 // platforms which don't have a color picker implemented yet.
 pref("dom.forms.color", true);
 
-// Support for input type=date and type=time. By default, disabled.
-pref("dom.forms.datetime", false);
+// Support for input type=date and type=time.
+pref("dom.forms.datetime", true);
 
-// Support for input type=month, type=week and type=datetime-local. By default,
-// disabled.
-pref("dom.forms.datetime.others", false);
-
-// Enable time picker UI. By default, disabled.
+// Enable time picker UI.
 pref("dom.forms.datetime.timepicker", false);
+
+// Support for input type=month, type=week and type=datetime-local.
+// TODO: implement/fix these.
+pref("dom.forms.datetime.others", false);
 
 // Support for new @autocomplete values
 pref("dom.forms.autocomplete.experimental", false);
