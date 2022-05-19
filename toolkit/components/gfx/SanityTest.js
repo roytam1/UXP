@@ -22,27 +22,6 @@ const DISABLE_VIDEO_PREF="media.hardware-video-decoding.failed";
 const RUNNING_PREF="sanity-test.running";
 const TIMEOUT_SEC=20;
 
-// GRAPHICS_SANITY_TEST histogram enumeration values
-const TEST_PASSED=0;
-const TEST_FAILED_RENDER=1;
-const TEST_FAILED_VIDEO=2;
-const TEST_CRASHED=3;
-const TEST_TIMEOUT=4;
-
-// GRAPHICS_SANITY_TEST_REASON enumeration values.
-const REASON_FIRST_RUN=0;
-const REASON_FIREFOX_CHANGED=1;
-const REASON_DEVICE_CHANGED=2;
-const REASON_DRIVER_CHANGED=3;
-
-// GRAPHICS_SANITY_TEST_OS_SNAPSHOT histogram enumeration values
-const SNAPSHOT_VIDEO_OK=0;
-const SNAPSHOT_VIDEO_FAIL=1;
-const SNAPSHOT_ERROR=2;
-const SNAPSHOT_TIMEOUT=3;
-const SNAPSHOT_LAYERS_OK=4;
-const SNAPSHOT_LAYERS_FAIL=5;
-
 function testPixel(ctx, x, y, r, g, b, a, fuzz) {
   var data = ctx.getImageData(x, y, 1, 1);
 
@@ -53,6 +32,11 @@ function testPixel(ctx, x, y, r, g, b, a, fuzz) {
     return true;
   }
   return false;
+}
+
+function stopRunning() {
+  Preferences.set(RUNNING_PREF, false);
+  Services.prefs.savePrefFile(null);
 }
 
 function setTimeout(aMs, aCallback) {
@@ -100,15 +84,18 @@ function testCompositor(win, ctx) {
   var testPassed = true;
 
   if (!verifyVideoRendering(ctx)) {
+    stopRunning();
     Preferences.set(DISABLE_VIDEO_PREF, true);
     testPassed = false;
   }
 
   if (!verifyLayersRendering(ctx)) {
+    stopRunning();
     testPassed = false;
   }
 
   if (testPassed) {
+    stopRunning();
   }
 
   return testPassed;
@@ -130,8 +117,10 @@ var listener = {
     this.win.onload = this.onWindowLoaded.bind(this);
     this.utils = this.win.QueryInterface(Ci.nsIInterfaceRequestor)
                          .getInterface(Ci.nsIDOMWindowUtils);
+    // Stop running the test if it timed out.
     setTimeout(TIMEOUT_SEC * 1000, () => {
       if (this.win) {
+        stopRunning();
         this.endTest();
       }
     });
@@ -208,17 +197,19 @@ SanityTest.prototype = {
                                          Ci.nsISupportsWeakReference]),
 
   shouldRunTest: function() {
-    // Only test gfx features if firefox has updated, or if the user has a new
-    // gpu or drivers.
+    // Only test GFX features if the application was updated, or if the user
+    // has a new GPU or drivers.
     var buildId = Services.appinfo.platformBuildID;
     var gfxinfo = Cc["@mozilla.org/gfx/info;1"].getService(Ci.nsIGfxInfo);
 
+    // Stop the test and disable hardware video decoding if we crashed.
     if (Preferences.get(RUNNING_PREF, false)) {
       Preferences.set(DISABLE_VIDEO_PREF, true);
+      stopRunning();
       return false;
     }
 
-    function checkPref(pref, value, reason) {
+    function checkPref(pref, value) {
       var prefValue = Preferences.get(pref, undefined);
       if (prefValue == value) {
         return true;
@@ -227,9 +218,9 @@ SanityTest.prototype = {
     }
 
     // TODO: Handle dual GPU setups
-    if (checkPref(DRIVER_PREF, gfxinfo.adapterDriverVersion, REASON_DRIVER_CHANGED) &&
-        checkPref(DEVICE_PREF, gfxinfo.adapterDeviceID, REASON_DEVICE_CHANGED) &&
-        checkPref(VERSION_PREF, buildId, REASON_FIREFOX_CHANGED))
+    if (checkPref(DRIVER_PREF, gfxinfo.adapterDriverVersion) &&
+        checkPref(DEVICE_PREF, gfxinfo.adapterDeviceID) &&
+        checkPref(VERSION_PREF, buildId))
     {
       return false;
     }
