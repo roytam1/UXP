@@ -276,10 +276,10 @@ IonBuilder::CFGState::IfElse(jsbytecode* trueEnd, jsbytecode* falseEnd, MTest* t
 }
 
 IonBuilder::CFGState
-IonBuilder::CFGState::AndOr(jsbytecode* join, MBasicBlock* lhs)
+IonBuilder::CFGState::Logical(jsbytecode* join, MBasicBlock* lhs)
 {
     CFGState state;
-    state.state = AND_OR;
+    state.state = LOGICAL;
     state.stopAt = join;
     state.branch.ifFalse = lhs;
     state.branch.test = nullptr;
@@ -1737,9 +1737,10 @@ IonBuilder::inspectOpcode(JSOp op)
       case JSOP_TOSTRING:
         return jsop_tostring();
 
+      case JSOP_COALESCE:
       case JSOP_AND:
       case JSOP_OR:
-        return jsop_andor(op);
+        return jsop_logical(op);
 
       case JSOP_DEFVAR:
         return jsop_defvar(GET_UINT32_INDEX(pc));
@@ -2345,8 +2346,8 @@ IonBuilder::processCfgEntry(CFGState& state)
       case CFGState::COND_SWITCH_BODY:
         return processCondSwitchBody(state);
 
-      case CFGState::AND_OR:
-        return processAndOrEnd(state);
+      case CFGState::LOGICAL:
+        return processLogicalEnd(state);
 
       case CFGState::LABEL:
         return processLabelEnd(state);
@@ -2948,7 +2949,7 @@ IonBuilder::processNextTableSwitchCase(CFGState& state)
 }
 
 IonBuilder::ControlStatus
-IonBuilder::processAndOrEnd(CFGState& state)
+IonBuilder::processLogicalEnd(CFGState& state)
 {
     MOZ_ASSERT(current);
     MBasicBlock* lhs = state.branch.ifFalse;
@@ -4413,9 +4414,9 @@ IonBuilder::processCondSwitchBody(CFGState& state)
 }
 
 bool
-IonBuilder::jsop_andor(JSOp op)
+IonBuilder::jsop_logical(JSOp op)
 {
-    MOZ_ASSERT(op == JSOP_AND || op == JSOP_OR);
+    MOZ_ASSERT(op == JSOP_AND || op == JSOP_OR || op == JSOP_COALESCE);
 
     jsbytecode* rhsStart = pc + CodeSpec[op].length;
     jsbytecode* joinStart = pc + GetJumpOffset(pc);
@@ -4429,9 +4430,24 @@ IonBuilder::jsop_andor(JSOp op)
     if (!evalLhs || !evalRhs)
         return false;
 
-    MTest* test = (op == JSOP_AND)
-                  ? newTest(lhs, evalRhs, evalLhs)
-                  : newTest(lhs, evalLhs, evalRhs);
+    MTest* test;
+    switch (op) {
+      case JSOP_COALESCE: {
+        MIsNullOrUndefined* isNullOrUndefined =
+            MIsNullOrUndefined::New(alloc(), lhs);
+        current->add(isNullOrUndefined);
+        test = newTest(isNullOrUndefined, evalLhs, evalRhs);
+        break;
+      }
+
+      case JSOP_AND:
+        test = newTest(lhs, evalRhs, evalLhs);
+        break;
+
+      case JSOP_OR:
+        test = newTest(lhs, evalLhs, evalRhs);
+        break;
+    }
     current->end(test);
 
     // Create the lhs block and specialize.
@@ -4442,7 +4458,7 @@ IonBuilder::jsop_andor(JSOp op)
         return false;
 
     // Create the rhs block.
-    if (!cfgStack_.append(CFGState::AndOr(joinStart, evalLhs)))
+    if (!cfgStack_.append(CFGState::Logical(joinStart, evalLhs)))
         return false;
 
     if (!setCurrentAndSpecializePhis(evalRhs))
