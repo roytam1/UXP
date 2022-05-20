@@ -483,15 +483,19 @@ IsEffectless(ParseNode* node)
 enum Truthiness { Truthy, Falsy, Unknown };
 
 static Truthiness
-Boolish(ParseNode* pn)
+Boolish(ParseNode* pn, bool isNullish = false)
 {
     switch (pn->getKind()) {
-      case PNK_NUMBER:
-        return (pn->pn_dval != 0 && !IsNaN(pn->pn_dval)) ? Truthy : Falsy;
+      case PNK_NUMBER: {
+        bool isNonZeroNumber = (pn->pn_dval != 0 && !IsNaN(pn->pn_dval));
+        return (isNullish || isNonZeroNumber) ? Truthy : Falsy;
+      }
 
       case PNK_STRING:
-      case PNK_TEMPLATE_STRING:
-        return (pn->pn_atom->length() > 0) ? Truthy : Falsy;
+      case PNK_TEMPLATE_STRING: {
+        bool isNonZeroLengthString = (pn->pn_atom->length() > 0);
+        return (isNullish || isNonZeroLengthString) ? Truthy : Falsy;
+      }
 
       case PNK_TRUE:
       case PNK_FUNCTION:
@@ -499,6 +503,8 @@ Boolish(ParseNode* pn)
         return Truthy;
 
       case PNK_FALSE:
+        return isNullish ? Truthy : Falsy;
+
       case PNK_NULL:
       case PNK_RAW_UNDEFINED:
         return Falsy;
@@ -758,19 +764,19 @@ FoldLogical(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>&
 {
     ParseNode* node = *nodePtr;
 
-    MOZ_ASSERT(node->isKind(PNK_AND) ||
-               node->isKind(PNK_OR)  ||
-               node->isKind(PNK_COALESCE));
+    bool isCoalesceNode = node->isKind(PNK_COALESCE);
+    bool isOrNode = node->isKind(PNK_OR);
+    bool isAndNode = node->isKind(PNK_AND);
+
+    MOZ_ASSERT(isCoalesceNode || isOrNode || isAndNode);
     MOZ_ASSERT(node->isArity(PN_LIST));
 
-    bool isOrNode = (node->isKind(PNK_OR) ||
-                     node->isKind(PNK_COALESCE));
     ParseNode** elem = &node->pn_head;
     do {
         if (!Fold(cx, elem, parser, inGenexpLambda))
             return false;
 
-        Truthiness t = Boolish(*elem);
+        Truthiness t = Boolish(*elem, isCoalesceNode);
 
         // If we don't know the constant-folded node's truthiness, we can't
         // reduce this node with its surroundings.  Continue folding any
@@ -780,11 +786,16 @@ FoldLogical(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>&
             continue;
         }
 
+        bool terminateEarly = (isOrNode && t == Truthy) ||
+                              (isAndNode && t == Falsy) ||
+                              (isCoalesceNode && t == Truthy);
+
         // If the constant-folded node's truthiness will terminate the
-        // condition -- `a || true || expr` or |b && false && expr| -- then
-        // trailing nodes will never be evaluated.  Truncate the list after
-        // the known-truthiness node, as it's the overall result.
-        if ((t == Truthy) == isOrNode) {
+        // condition -- `a || true || expr` or `b && false && expr` or
+        // `false ?? c ?? expr` -- then trailing nodes will never be
+        // evaluated. Truncate the list after the known-truthiness node,
+        // as it's the overall result.
+        if (terminateEarly) {
             ParseNode* afterNext;
             for (ParseNode* next = (*elem)->pn_next; next; next = afterNext) {
                 afterNext = next->pn_next;
@@ -798,8 +809,6 @@ FoldLogical(ExclusiveContext* cx, ParseNode** nodePtr, Parser<FullParseHandler>&
             elem = &(*elem)->pn_next;
             break;
         }
-
-        MOZ_ASSERT((t == Truthy) == !isOrNode);
 
         // We've encountered a vacuous node that'll never short- circuit
         // evaluation.
