@@ -3334,6 +3334,7 @@ BytecodeEmitter::checkSideEffects(ParseNode* pn, bool* answer)
       case PNK_CATCHLIST:
       // Strict equality operations and logical operators are well-behaved and
       // perform no conversions.
+      case PNK_COALESCE:
       case PNK_OR:
       case PNK_AND:
       case PNK_STRICTEQ:
@@ -11355,6 +11356,7 @@ BytecodeEmitter::emitTree(ParseNode* pn, ValueUsage valueUsage /* = ValueUsage::
             return false;
         break;
 
+      case PNK_COALESCE:
       case PNK_OR:
       case PNK_AND:
         if (!emitLogical(pn))

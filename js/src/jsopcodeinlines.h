@@ -22,6 +22,7 @@ GetDefCount(JSScript* script, unsigned offset)
      * in the pushed array of stack values for type inference.
      */
     switch (JSOp(*pc)) {
+      case JSOP_COALESCE:
       case JSOP_OR:
       case JSOP_AND:
         return 1;

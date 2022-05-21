@@ -385,6 +385,7 @@
     _(IsConstructor)                \
     _(IsObject)                     \
     _(IsObjectAndBranch)            \
+    _(IsNullOrUndefined)            \
     _(HasClass)                     \
     _(GuardToClass)                 \
     _(RecompileCheck)               \

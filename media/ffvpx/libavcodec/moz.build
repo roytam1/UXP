@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Due to duplicate file names, we compile libavutil/x86 in its own
+# Due to duplicate file names, we compile libavcodec/x86 in its own
 # moz.build file.
 if CONFIG['FFVPX_ASFLAGS']:
     DIRS += ['x86']
@@ -159,6 +159,9 @@ SOURCES += [
 
 SYMBOLS_FILE = 'avcodec.symbols'
 NO_VISIBILITY_FLAGS = True
+
+if CONFIG['GNU_CXX']:
+  CXXFLAGS += ['-Wno-attributes']
 
 # GCC 10 defaults -fno-common, we don't care to solve this "properly" yet
 # so use GCC < 10 behavior.

@@ -15,7 +15,10 @@ LOCAL_INCLUDES += [
 ]
 
 if CONFIG['GNU_CXX']:
-  CXXFLAGS += [ '-Wno-deprecated-declarations' ]
+  CXXFLAGS += [
+    '-Wno-attributes',
+    '-Wno-deprecated-declarations',
+  ]
 if CONFIG['CLANG_CXX']:
   CXXFLAGS += [
     '-Wno-unknown-attributes',

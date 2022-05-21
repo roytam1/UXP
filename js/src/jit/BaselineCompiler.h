@@ -45,6 +45,7 @@ namespace jit {
     _(JSOP_GOTO)               \
     _(JSOP_IFEQ)               \
     _(JSOP_IFNE)               \
+    _(JSOP_COALESCE)           \
     _(JSOP_AND)                \
     _(JSOP_OR)                 \
     _(JSOP_NOT)                \
