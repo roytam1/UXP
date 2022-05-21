@@ -2128,6 +2128,16 @@ CASE(JSOP_IFNE)
 }
 END_CASE(JSOP_IFNE)
 
+CASE(JSOP_COALESCE)
+{
+    MutableHandleValue res = REGS.stackHandleAt(-1);
+    bool cond = !res.isNullOrUndefined();
+    if (cond) {
+        ADVANCE_AND_DISPATCH(GET_JUMP_OFFSET(REGS.pc));
+    }
+}
+END_CASE(JSOP_COALESCE)
+
 CASE(JSOP_OR)
 {
     bool cond = ToBoolean(REGS.stackHandleAt(-1));

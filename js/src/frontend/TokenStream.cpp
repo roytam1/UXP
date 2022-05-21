@@ -1260,8 +1260,8 @@ enum FirstCharKind {
     LastCharKind = Other
 };
 
-// OneChar: 40,  41,  44,  58,  59,  63,  91,  93,  123, 125, 126:
-//          '(', ')', ',', ':', ';', '?', '[', ']', '{', '}', '~'
+// OneChar: 40,  41,  44,  58,  59,  91,  93,  123, 125, 126:
+//          '(', ')', ',', ':', ';', '[', ']', '{', '}', '~'
 // Ident:   36, 65..90, 95, 97..122: '$', 'A'..'Z', '_', 'a'..'z'
 // Dot:     46: '.'
 // Equals:  61: '='
@@ -1811,7 +1811,7 @@ TokenStream::getTokenInternal(TokenKind* ttp, Modifier modifier)
                 tp->type = TOK_OPTCHAIN;
             }
         } else {
-            tp->type = TOK_HOOK;
+            tp->type = matchChar('?') ? TOK_COALESCE : TOK_HOOK;
         }
         goto out;
 

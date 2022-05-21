@@ -130,8 +130,12 @@ class ObjectBox;
     \
     /* \
      * Binary operators. \
-     * These must be in the same order as TOK_OR and friends in TokenStream.h. \
+     * These must be in the same order in several places: \
+     *   - the precedence table and JSOp code list in Parser.cpp \
+     *   - the binary operators in TokenKind.h \
+     *   - the first and last binary operator markers in ParseNode.h \
      */ \
+    F(COALESCE) \
     F(OR) \
     F(AND) \
     F(BITOR) \
@@ -189,7 +193,13 @@ enum ParseNodeKind
     FOR_EACH_PARSE_NODE_KIND(EMIT_ENUM)
 #undef EMIT_ENUM
     PNK_LIMIT, /* domain size */
-    PNK_BINOP_FIRST = PNK_OR,
+    /*
+     * Binary operator markers.
+     * These must be in the same order in several places:
+     *   - the precedence table and JSOp code list in Parser.cpp
+     *   - the binary operators in ParseNode.h and TokenKind.h
+     */
+    PNK_BINOP_FIRST = PNK_COALESCE,
     PNK_BINOP_LAST = PNK_POW,
     PNK_ASSIGNMENT_START = PNK_ASSIGN,
     PNK_ASSIGNMENT_LAST = PNK_POWASSIGN
@@ -329,8 +339,9 @@ IsTypeofKind(ParseNodeKind kind)
  * PNK_POWASSIGN
  * PNK_CONDITIONAL ternary  (cond ? trueExpr : falseExpr)
  *                          pn_kid1: cond, pn_kid2: then, pn_kid3: else
- * PNK_OR,      list        pn_head; list of pn_count subexpressions
- * PNK_AND,                 All of these operators are left-associative except (**).
+ * PNK_COALESCE,   list     pn_head; list of pn_count subexpressions
+ * PNK_OR,                  All of these operators are left-associative except (**).
+ * PNK_AND
  * PNK_BITOR,
  * PNK_BITXOR,
  * PNK_BITAND,

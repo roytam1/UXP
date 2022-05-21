@@ -90,7 +90,7 @@ class IonBuilder
             TABLE_SWITCH,       // switch() { x }
             COND_SWITCH_CASE,   // switch() { case X: ... }
             COND_SWITCH_BODY,   // switch() { case ...: X }
-            AND_OR,             // && x, || x
+            LOGICAL,            // && x, || x, ?? x
             LABEL,              // label: x
             TRY                 // try { x } catch(e) { }
         };
@@ -197,7 +197,7 @@ class IonBuilder
 
         static CFGState If(jsbytecode* join, MTest* test);
         static CFGState IfElse(jsbytecode* trueEnd, jsbytecode* falseEnd, MTest* test);
-        static CFGState AndOr(jsbytecode* join, MBasicBlock* lhs);
+        static CFGState Logical(jsbytecode* join, MBasicBlock* lhs);
         static CFGState TableSwitch(jsbytecode* exitpc, MTableSwitch* ins);
         static CFGState CondSwitch(IonBuilder* builder, jsbytecode* exitpc, jsbytecode* defaultTarget);
         static CFGState Label(jsbytecode* exitpc);
@@ -257,7 +257,7 @@ class IonBuilder
     ControlStatus processCondSwitchBody(CFGState& state);
     ControlStatus processSwitchBreak(JSOp op);
     ControlStatus processSwitchEnd(DeferredEdge* breaks, jsbytecode* exitpc);
-    ControlStatus processAndOrEnd(CFGState& state);
+    ControlStatus processLogicalEnd(CFGState& state);
     ControlStatus processLabelEnd(CFGState& state);
     ControlStatus processTryEnd(CFGState& state);
     ControlStatus processReturn(JSOp op);
@@ -712,7 +712,7 @@ class IonBuilder
     MOZ_MUST_USE bool jsop_try();
     MOZ_MUST_USE bool jsop_label();
     MOZ_MUST_USE bool jsop_condswitch();
-    MOZ_MUST_USE bool jsop_andor(JSOp op);
+    MOZ_MUST_USE bool jsop_logical(JSOp op);
     MOZ_MUST_USE bool jsop_dup2();
     MOZ_MUST_USE bool jsop_loophead(jsbytecode* pc);
     MOZ_MUST_USE bool jsop_compare(JSOp op);
