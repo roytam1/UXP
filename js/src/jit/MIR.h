@@ -13156,6 +13156,30 @@ class MIsObject
         return AliasSet::None();
     }
 };
+ 
+class MIsNullOrUndefined
+  : public MUnaryInstruction,
+    public BoxInputsPolicy::Data
+{
+    explicit MIsNullOrUndefined(MDefinition* object)
+      : MUnaryInstruction(object)
+    {
+        setResultType(MIRType::Boolean);
+        setMovable();
+    }
+
+  public:
+    INSTRUCTION_HEADER(IsNullOrUndefined)
+    TRIVIAL_NEW_WRAPPERS
+    NAMED_OPERANDS((0, object))
+
+    bool congruentTo(const MDefinition* ins) const override {
+        return congruentIfOperandsEqual(ins);
+    }
+    AliasSet getAliasSet() const override {
+        return AliasSet::None();
+    }
+};
 
 class MHasClass
     : public MUnaryInstruction,

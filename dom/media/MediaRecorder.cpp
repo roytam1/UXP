@@ -31,7 +31,6 @@
 #include "nsTArray.h"
 #include "GeckoProfiler.h"
 #include "nsContentTypeParser.h"
-#include "nsCharSeparatedTokenizer.h"
 
 #ifdef LOG
 #undef LOG

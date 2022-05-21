@@ -1253,6 +1253,25 @@ BaselineCompiler::emit_JSOP_IFNE()
 }
 
 bool
+BaselineCompiler::emit_JSOP_COALESCE() {
+    // COALESCE leaves the original value on the stack.
+    frame.syncStack(0);
+
+    masm.loadValue(frame.addressOfStackValue(frame.peek(-1)), R0);
+
+    Label undefinedOrNull;
+
+    masm.branchTestUndefined(Assembler::Equal, R0, &undefinedOrNull);
+    masm.branchTestNull(Assembler::Equal, R0, &undefinedOrNull);
+
+    jsbytecode* target = pc + GET_JUMP_OFFSET(pc);
+    masm.jump(labelOf(target));
+
+    masm.bind(&undefinedOrNull);
+    return true;
+}
+
+bool
 BaselineCompiler::emitAndOr(bool branchIfTrue)
 {
     bool knownBoolean = frame.peek(-1)->isKnownBoolean();

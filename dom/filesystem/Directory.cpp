@@ -9,7 +9,6 @@
 #include "GetFilesTask.h"
 #include "WorkerPrivate.h"
 
-#include "nsCharSeparatedTokenizer.h"
 #include "nsString.h"
 #include "mozilla/dom/DirectoryBinding.h"
 #include "mozilla/dom/FileSystemBase.h"

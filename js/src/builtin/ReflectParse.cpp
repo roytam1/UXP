@@ -77,7 +77,7 @@ enum BinaryOperator {
     /* binary */
     BINOP_BITOR, BINOP_BITXOR, BINOP_BITAND,
     /* misc */
-    BINOP_IN, BINOP_INSTANCEOF,
+    BINOP_IN, BINOP_INSTANCEOF, BINOP_COALESCE,
 
     BINOP_LIMIT
 };
@@ -153,6 +153,7 @@ static const char* const binopNames[] = {
     "&",          /* BINOP_BITAND */
     "in",         /* BINOP_IN */
     "instanceof", /* BINOP_INSTANCEOF */
+    "??"          /* BINOP_COALESCE */
 };
 
 static const char* const unopNames[] = {
@@ -564,7 +565,7 @@ class NodeBuilder
     MOZ_MUST_USE bool updateExpression(HandleValue expr, bool incr, bool prefix, TokenPos* pos,
                                        MutableHandleValue dst);
 
-    MOZ_MUST_USE bool logicalExpression(bool lor, HandleValue left, HandleValue right, TokenPos* pos,
+    MOZ_MUST_USE bool logicalExpression(ParseNodeKind kind, HandleValue left, HandleValue right, TokenPos* pos,
                                         MutableHandleValue dst);
 
     MOZ_MUST_USE bool conditionalExpression(HandleValue test, HandleValue cons, HandleValue alt,
@@ -1086,12 +1087,35 @@ NodeBuilder::updateExpression(HandleValue expr, bool incr, bool prefix, TokenPos
 }
 
 bool
-NodeBuilder::logicalExpression(bool lor, HandleValue left, HandleValue right, TokenPos* pos,
+NodeBuilder::logicalExpression(ParseNodeKind kind,
+                               HandleValue left,
+                               HandleValue right,
+                               TokenPos* pos,
                                MutableHandleValue dst)
 {
     RootedValue opName(cx);
-    if (!atomValue(lor ? "||" : "&&", &opName))
-        return false;
+    switch (kind) {
+      case PNK_COALESCE:
+        if (!atomValue("??", &opName)) {
+            return false;
+        }
+        break;
+
+      case PNK_OR:
+        if (!atomValue("||", &opName)) {
+            return false;
+        }
+        break;
+
+      case PNK_AND:
+        if (!atomValue("&&", &opName)) {
+            return false;
+        }
+        break;
+
+      default:
+        LOCAL_NOT_REACHED("unexpected logical operator type");
+    }
 
     RootedValue cb(cx, callbacks[AST_LOGICAL_EXPR]);
     if (!cb.isNull())
@@ -1989,6 +2013,8 @@ ASTSerializer::binop(ParseNodeKind kind, JSOp op)
         return BINOP_IN;
       case PNK_INSTANCEOF:
         return BINOP_INSTANCEOF;
+      case PNK_COALESCE:
+        return BINOP_COALESCE;
       default:
         return BINOP_ERR;
     }
@@ -2648,8 +2674,9 @@ ASTSerializer::leftAssociate(ParseNode* pn, MutableHandleValue dst)
     MOZ_ASSERT(pn->pn_count >= 1);
 
     ParseNodeKind kind = pn->getKind();
-    bool lor = kind == PNK_OR;
-    bool logop = lor || (kind == PNK_AND);
+    bool logop = (kind == PNK_COALESCE ||
+                  kind == PNK_OR ||
+                  kind == PNK_AND);
 
     ParseNode* head = pn->pn_head;
     RootedValue left(cx);
@@ -2663,7 +2690,7 @@ ASTSerializer::leftAssociate(ParseNode* pn, MutableHandleValue dst)
         TokenPos subpos(pn->pn_pos.begin, next->pn_pos.end);
 
         if (logop) {
-            if (!builder.logicalExpression(lor, left, right, &subpos, &left))
+            if (!builder.logicalExpression(kind, left, right, &subpos, &left))
                 return false;
         } else {
             BinaryOperator op = binop(pn->getKind(), pn->getOp());
@@ -2876,6 +2903,7 @@ ASTSerializer::expression(ParseNode* pn, MutableHandleValue dst)
                builder.conditionalExpression(test, cons, alt, &pn->pn_pos, dst);
       }
 
+      case PNK_COALESCE:
       case PNK_OR:
       case PNK_AND:
         return leftAssociate(pn, dst);
