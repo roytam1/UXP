@@ -152,9 +152,6 @@ nsINode::~nsINode()
 {
   MOZ_ASSERT(!HasSlots(), "nsNodeUtils::LastRelease was not called?");
   MOZ_ASSERT(mSubtreeRoot == this, "Didn't restore state properly?");
-#ifdef MOZ_STYLO
-  ClearServoData();
-#endif
 }
 
 void*
@@ -1445,11 +1442,7 @@ nsINode::UnoptimizableCCNode() const
 
 void
 nsINode::ClearServoData() {
-#ifdef MOZ_STYLO
-  Servo_Node_ClearNodeData(this);
-#else
   MOZ_CRASH("Accessing servo node data in non-stylo build");
-#endif
 }
 
 /* static */
@@ -3192,14 +3185,6 @@ nsINode::IsNodeApzAwareInternal() const
 {
   return EventTarget::IsApzAware();
 }
-
-#ifdef MOZ_STYLO
-bool
-nsINode::IsStyledByServo() const
-{
-  return OwnerDoc()->IsStyledByServo();
-}
-#endif
 
 DocGroup*
 nsINode::GetDocGroup() const

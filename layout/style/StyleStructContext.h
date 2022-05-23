@@ -35,11 +35,7 @@ class nsDeviceContext;
  * We don't put the type in namespace mozilla, since we expect it to be
  * temporary, and the namespacing would clutter up nsStyleStruct.h.
  */
-#ifdef MOZ_STYLO
-#define SERVO_DEFAULT(default_val) { if (!mPresContext) { return default_val; } }
-#else
 #define SERVO_DEFAULT(default_val) { MOZ_ASSERT(mPresContext); }
-#endif
 class StyleStructContext {
 public:
   MOZ_IMPLICIT StyleStructContext(nsPresContext* aPresContext)

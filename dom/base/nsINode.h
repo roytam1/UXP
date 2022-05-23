@@ -1022,11 +1022,7 @@ public:
    * Returns true if this is a node belonging to a document that uses the Servo
    * style system.
    */
-#ifdef MOZ_STYLO
-  bool IsStyledByServo() const;
-#else
   bool IsStyledByServo() const { return false; }
-#endif
 
   bool IsDirtyForServo() const
   {
@@ -2139,11 +2135,7 @@ public:
 #undef EVENT
 
   bool HasServoData() {
-#ifdef MOZ_STYLO
-    return !!mServoData.Get();
-#else
     MOZ_CRASH("Accessing servo node data in non-stylo build");
-#endif
   }
 
   void ClearServoData();
@@ -2185,11 +2177,6 @@ protected:
 
   // Storage for more members that are usually not needed; allocated lazily.
   nsSlots* mSlots;
-
-#ifdef MOZ_STYLO
-  // Per-node data managed by Servo.
-  mozilla::ServoCell<ServoNodeData*> mServoData;
-#endif
 };
 
 inline nsIDOMNode* GetAsDOMNode(nsINode* aNode)

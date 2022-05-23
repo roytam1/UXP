@@ -181,9 +181,6 @@ typedef nsStyleTransformMatrix::TransformReferenceBox TransformReferenceBox;
 /* static */ bool nsLayoutUtils::sInterruptibleReflowEnabled;
 /* static */ bool nsLayoutUtils::sSVGTransformBoxEnabled;
 /* static */ bool nsLayoutUtils::sTextCombineUprightDigitsEnabled;
-#ifdef MOZ_STYLO
-/* static */ bool nsLayoutUtils::sStyloEnabled;
-#endif
 /* static */ uint32_t nsLayoutUtils::sIdlePeriodDeadlineLimit;
 /* static */ uint32_t nsLayoutUtils::sQuiescentFramesBeforeIdlePeriod;
 
@@ -7632,10 +7629,6 @@ nsLayoutUtils::Initialize()
                                "svg.transform-box.enabled");
   Preferences::AddBoolVarCache(&sTextCombineUprightDigitsEnabled,
                                "layout.css.text-combine-upright-digits.enabled");
-#ifdef MOZ_STYLO
-  Preferences::AddBoolVarCache(&sStyloEnabled,
-                               "layout.css.servo.enabled");
-#endif
   Preferences::AddUintVarCache(&sIdlePeriodDeadlineLimit,
                                "layout.idle_period.time_limit",
                                DEFAULT_IDLE_PERIOD_TIME_LIMIT);

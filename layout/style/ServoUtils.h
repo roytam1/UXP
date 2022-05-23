@@ -10,15 +10,9 @@
 
 #include "mozilla/TypeTraits.h"
 
-#ifdef MOZ_STYLO
-# define MOZ_DECL_STYLO_CHECK_METHODS \
-  bool IsGecko() const { return !IsServo(); } \
-  bool IsServo() const { return mType == StyleBackendType::Servo; }
-#else
 # define MOZ_DECL_STYLO_CHECK_METHODS \
   bool IsGecko() const { return true; } \
   bool IsServo() const { return false; }
-#endif
 
 /**
  * Macro used in a base class of |geckotype_| and |servotype_|.

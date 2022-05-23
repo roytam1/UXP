@@ -154,11 +154,7 @@ public:
   }
 
   nsPresContext* PresContext() const {
-#ifdef MOZ_STYLO
-    return mPresContext;
-#else
     return mSource.AsGeckoRuleNode()->PresContext();
-#endif
   }
 
   nsStyleContext* GetParent() const { return mParent; }
@@ -512,45 +508,6 @@ public:
 
   mozilla::NonOwningStyleContextSource StyleSource() const { return mSource.AsRaw(); }
 
-#ifdef MOZ_STYLO
-  // NOTE: It'd be great to assert here that the previous change hint is always
-  // consumed.
-  //
-  // This is not the case right now, since the changes of childs of frames that
-  // go through frame construction are not consumed.
-  void StoreChangeHint(nsChangeHint aHint)
-  {
-    MOZ_ASSERT(!IsShared());
-    mStoredChangeHint = aHint;
-#ifdef DEBUG
-    mConsumedChangeHint = false;
-#endif
-  }
-
-  nsChangeHint ConsumeStoredChangeHint()
-  {
-    MOZ_ASSERT(!mConsumedChangeHint, "Re-consuming the same change hint!");
-    nsChangeHint result = mStoredChangeHint;
-    mStoredChangeHint = nsChangeHint(0);
-#ifdef DEBUG
-    mConsumedChangeHint = true;
-#endif
-    return result;
-  }
-#else
-  void StoreChangeHint(nsChangeHint aHint)
-  {
-    MOZ_CRASH("stylo: Called nsStyleContext::StoreChangeHint in a non MOZ_STYLO "
-              "build.");
-  }
-
-  nsChangeHint ConsumeStoredChangeHint()
-  {
-    MOZ_CRASH("stylo: Called nsStyleContext::ComsumeStoredChangeHint in a non "
-               "MOZ_STYLO build.");
-  }
-#endif
-
 private:
   // Private destructor, to discourage deletion outside of Release():
   ~nsStyleContext();
@@ -781,12 +738,6 @@ private:
   // when it's released and nulled out during teardown.
   const mozilla::OwningStyleContextSource mSource;
 
-#ifdef MOZ_STYLO
-  // In Gecko, we can get this off the rule node. We make this conditional
-  // on stylo builds to avoid the memory bloat on release.
-  nsPresContext* mPresContext;
-#endif
-
   // mCachedInheritedData and mCachedResetData point to both structs that
   // are owned by this style context and structs that are owned by one of
   // this style context's ancestors (which are indirectly owned since this
@@ -808,15 +759,6 @@ private:
   uint64_t                mBits;
 
   uint32_t                mRefCnt;
-
-  // For now we store change hints on the style context during parallel traversal.
-  // We should improve this - see bug 1289861.
-#ifdef MOZ_STYLO
-  nsChangeHint            mStoredChangeHint;
-#ifdef DEBUG
-  bool                    mConsumedChangeHint;
-#endif
-#endif
 
 #ifdef DEBUG
   uint32_t                mFrameRefCnt; // number of frames that use this

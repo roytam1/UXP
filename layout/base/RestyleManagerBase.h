@@ -120,11 +120,7 @@ protected:
   }
 
   inline bool IsServo() const {
-#ifdef MOZ_STYLO
-    return PresContext()->StyleSet()->IsServo();
-#else
     return false;
-#endif
   }
 
 private:

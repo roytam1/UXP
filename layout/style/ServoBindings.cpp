@@ -695,23 +695,9 @@ Gecko_Destroy_nsStyle##name(nsStyle##name* ptr)                               \
 
 #undef STYLE_STRUCT
 
-#ifndef MOZ_STYLO
 #define SERVO_BINDING_FUNC(name_, return_, ...)                               \
   return_ name_(__VA_ARGS__) {                                                \
     MOZ_CRASH("stylo: shouldn't be calling " #name_ "in a non-stylo build");  \
   }
 #include "ServoBindingList.h"
 #undef SERVO_BINDING_FUNC
-#endif
-
-#ifdef MOZ_STYLO
-const nsStyleVariables*
-Servo_GetStyleVariables(ServoComputedValuesBorrowed aComputedValues)
-{
-  // Servo can't provide us with Variables structs yet, so instead of linking
-  // to a Servo_GetStyleVariables defined in Servo we define one here that
-  // always returns the same, empty struct.
-  static nsStyleVariables variables(StyleStructContext::ServoContext());
-  return &variables;
-}
-#endif

@@ -54,11 +54,7 @@ public:
     bool IsServo() const
     {
       MOZ_ASSERT(mValue, "StyleSetHandle null pointer dereference");
-#ifdef MOZ_STYLO
-      return mValue & SERVO_BIT;
-#else
       return false;
-#endif
     }
 
     StyleBackendType BackendType() const
@@ -187,16 +183,8 @@ public:
 
   StyleSetHandle& operator=(ServoStyleSet* aStyleSet)
   {
-#ifdef MOZ_STYLO
-    MOZ_ASSERT(!(reinterpret_cast<uintptr_t>(aStyleSet) & SERVO_BIT),
-               "least significant bit shouldn't be set; we use it for state");
-    mPtr.mValue =
-      aStyleSet ? (reinterpret_cast<uintptr_t>(aStyleSet) | SERVO_BIT) : 0;
-    return *this;
-#else
     MOZ_CRASH("should not have a ServoStyleSet object when MOZ_STYLO is "
               "disabled");
-#endif
   }
 
   // Make StyleSetHandle usable in boolean contexts.

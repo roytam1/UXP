@@ -53,11 +53,7 @@ struct NonOwningStyleContextSource
   bool IsNull() const { return !mBits; }
   bool IsGeckoRuleNodeOrNull() const { return !IsServoComputedValues(); }
   bool IsServoComputedValues() const {
-#ifdef MOZ_STYLO
-    return mBits & 1;
-#else
     return false;
-#endif
   }
 
   nsRuleNode* AsGeckoRuleNode() const {

@@ -5258,11 +5258,6 @@ pref("dom.webkitBlink.filesystem.enabled", true);
 
 pref("media.block-autoplay-until-in-foreground", true);
 
-#ifdef MOZ_STYLO
-// Is the Servo-backed style system enabled?
-pref("layout.css.servo.enabled", true);
-#endif
-
 // Block toplevel data: URI navigations
 // If true, all toplevel data: URI navigations will be blocked.
 // Please note that manually entering a data: URI in the
