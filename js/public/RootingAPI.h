@@ -112,17 +112,23 @@ template <typename T>
 struct BarrierMethods {
 };
 
-template <typename T>
-class RootedBase {};
+template <typename Element, typename Wrapper>
+class WrappedPtrOperations {};
 
-template <typename T>
-class HandleBase {};
+template <typename Element, typename Wrapper>
+class MutableWrappedPtrOperations : public WrappedPtrOperations<Element, Wrapper> {};
 
-template <typename T>
-class MutableHandleBase {};
+template <typename T, typename Wrapper>
+class RootedBase : public MutableWrappedPtrOperations<T, Wrapper> {};
 
-template <typename T>
-class HeapBase {};
+template <typename T, typename Wrapper>
+class HandleBase : public WrappedPtrOperations<T, Wrapper> {};
+
+template <typename T, typename Wrapper>
+class MutableHandleBase : public MutableWrappedPtrOperations<T, Wrapper> {};
+
+template <typename T, typename Wrapper>
+class HeapBase : public MutableWrappedPtrOperations<T, Wrapper> {};
 
 // Cannot use FOR_EACH_HEAP_ABLE_GC_POINTER_TYPE, as this would import too many macros into scope
 template <typename T> struct IsHeapConstructibleType    { static constexpr bool value = false; };
@@ -132,8 +138,8 @@ FOR_EACH_PUBLIC_GC_POINTER_TYPE(DECLARE_IS_HEAP_CONSTRUCTIBLE_TYPE)
 FOR_EACH_PUBLIC_TAGGED_GC_POINTER_TYPE(DECLARE_IS_HEAP_CONSTRUCTIBLE_TYPE)
 #undef DECLARE_IS_HEAP_CONSTRUCTIBLE_TYPE
 
-template <typename T>
-class PersistentRootedBase {};
+template <typename T, typename Wrapper>
+class PersistentRootedBase : public MutableWrappedPtrOperations<T, Wrapper> {};
 
 static void* const ConstNullValue = nullptr;
 
@@ -230,7 +236,7 @@ AssertGCThingIsNotAnObjectSubclass(js::gc::Cell* cell) {}
  * Type T must be a public GC pointer type.
  */
 template <typename T>
-class MOZ_NON_MEMMOVABLE Heap : public js::HeapBase<T>
+class MOZ_NON_MEMMOVABLE Heap : public js::HeapBase<T, Heap<T>>
 {
     // Please note: this can actually also be used by nsXBLMaybeCompiled<T>, for legacy reasons.
     static_assert(js::IsHeapConstructibleType<T>::value,
@@ -367,7 +373,7 @@ ScriptIsMarkedGray(const Heap<JSScript*>& script)
  *  - It is not possible to store flag bits in a Heap<T>.
  */
 template <typename T>
-class TenuredHeap : public js::HeapBase<T>
+class TenuredHeap : public js::HeapBase<T, TenuredHeap<T>>
 {
   public:
     TenuredHeap() : bits(0) {
@@ -451,7 +457,7 @@ class TenuredHeap : public js::HeapBase<T>
  * specialization, define a HandleBase<T> specialization containing them.
  */
 template <typename T>
-class MOZ_NONHEAP_CLASS Handle : public js::HandleBase<T>
+class MOZ_NONHEAP_CLASS Handle : public js::HandleBase<T, Handle<T>>
 {
     friend class JS::MutableHandle<T>;
 
@@ -540,7 +546,7 @@ class MOZ_NONHEAP_CLASS Handle : public js::HandleBase<T>
  * them.
  */
 template <typename T>
-class MOZ_STACK_CLASS MutableHandle : public js::MutableHandleBase<T>
+class MOZ_STACK_CLASS MutableHandle : public js::MutableHandleBase<T, MutableHandle<T>>
 {
   public:
     inline MOZ_IMPLICIT MutableHandle(Rooted<T>* root);
@@ -753,7 +759,7 @@ namespace JS {
  * specialization, define a RootedBase<T> specialization containing them.
  */
 template <typename T>
-class MOZ_RAII Rooted : public js::RootedBase<T>
+class MOZ_RAII Rooted : public js::RootedBase<T, Rooted<T>>
 {
     inline void registerWithRootLists(js::RootedListHeads& roots) {
         this->stack = &roots[JS::MapTypeToRootKind<T>::kind];
@@ -853,8 +859,8 @@ namespace js {
  *   Rooted<StringObject*> rooted(cx, &obj->as<StringObject*>());
  *   Handle<StringObject*> h = rooted;
  */
-template <>
-class RootedBase<JSObject*>
+template <typename Container>
+class RootedBase<JSObject*, Container> : public MutableWrappedPtrOperations<JSObject*, Container>
 {
   public:
     template <class U>
@@ -871,8 +877,8 @@ class RootedBase<JSObject*>
  *   Rooted<StringObject*> rooted(cx, &obj->as<StringObject*>());
  *   Handle<StringObject*> h = rooted;
  */
-template <>
-class HandleBase<JSObject*>
+template <typename Container>
+class HandleBase<JSObject*, Container> : public WrappedPtrOperations<JSObject*, Container>
 {
   public:
     template <class U>
@@ -881,7 +887,7 @@ class HandleBase<JSObject*>
 
 /** Interface substitute for Rooted<T> which does not root the variable's memory. */
 template <typename T>
-class MOZ_RAII FakeRooted : public RootedBase<T>
+class MOZ_RAII FakeRooted : public RootedBase<T, FakeRooted<T>>
 {
   public:
     template <typename CX>
@@ -908,7 +914,7 @@ class MOZ_RAII FakeRooted : public RootedBase<T>
 
 /** Interface substitute for MutableHandle<T> which is not required to point to rooted memory. */
 template <typename T>
-class FakeMutableHandle : public js::MutableHandleBase<T>
+class FakeMutableHandle : public js::MutableHandleBase<T, FakeMutableHandle<T>>
 {
   public:
     MOZ_IMPLICIT FakeMutableHandle(T* t) {
@@ -1075,7 +1081,7 @@ MutableHandle<T>::MutableHandle(PersistentRooted<T>* root)
  * marked when the object itself is marked.
  */
 template<typename T>
-class PersistentRooted : public js::PersistentRootedBase<T>,
+class PersistentRooted : public js::RootedBase<T, PersistentRooted<T>>,
                          private mozilla::LinkedListElement<PersistentRooted<T>>
 {
     using ListBase = mozilla::LinkedListElement<PersistentRooted<T>>;
@@ -1240,10 +1246,10 @@ class JS_PUBLIC_API(ObjectPtr)
 
 namespace js {
 
-template <typename Outer, typename T, typename D>
-class UniquePtrOperations
+template <typename T, typename D, typename Container>
+class WrappedPtrOperations<UniquePtr<T, D>, Container>
 {
-    const UniquePtr<T, D>& uniquePtr() const { return static_cast<const Outer*>(this)->get(); }
+    const UniquePtr<T, D>& uniquePtr() const { return static_cast<const Container*>(this)->get(); }
 
   public:
     explicit operator bool() const { return !!uniquePtr(); }
@@ -1252,35 +1258,16 @@ class UniquePtrOperations
     T& operator*() const { return *uniquePtr(); }
 };
 
-template <typename Outer, typename T, typename D>
-class MutableUniquePtrOperations : public UniquePtrOperations<Outer, T, D>
+template <typename T, typename D, typename Container>
+class MutableWrappedPtrOperations<UniquePtr<T, D>, Container>
+  : public WrappedPtrOperations<UniquePtr<T, D>, Container>
 {
-    UniquePtr<T, D>& uniquePtr() { return static_cast<Outer*>(this)->get(); }
+    UniquePtr<T, D>& uniquePtr() { return static_cast<Container*>(this)->get(); }
 
   public:
     MOZ_MUST_USE typename UniquePtr<T, D>::Pointer release() { return uniquePtr().release(); }
     void reset(T* ptr = T()) { uniquePtr().reset(ptr); }
 };
-
-template <typename T, typename D>
-class RootedBase<UniquePtr<T, D>>
-  : public MutableUniquePtrOperations<JS::Rooted<UniquePtr<T, D>>, T, D>
-{ };
-
-template <typename T, typename D>
-class MutableHandleBase<UniquePtr<T, D>>
-  : public MutableUniquePtrOperations<JS::MutableHandle<UniquePtr<T, D>>, T, D>
-{ };
-
-template <typename T, typename D>
-class HandleBase<UniquePtr<T, D>>
-  : public UniquePtrOperations<JS::Handle<UniquePtr<T, D>>, T, D>
-{ };
-
-template <typename T, typename D>
-class PersistentRootedBase<UniquePtr<T, D>>
-  : public MutableUniquePtrOperations<JS::PersistentRooted<UniquePtr<T, D>>, T, D>
-{ };
 
 namespace gc {
 
