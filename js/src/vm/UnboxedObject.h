@@ -242,7 +242,7 @@ class UnboxedPlainObject : public JSObject
 
     static bool obj_lookupProperty(JSContext* cx, HandleObject obj,
                                    HandleId id, MutableHandleObject objp,
-                                   MutableHandleShape propp);
+                                   MutableHandle<PropertyResult> propp);
 
     static bool obj_defineProperty(JSContext* cx, HandleObject obj, HandleId id,
                                    Handle<PropertyDescriptor> desc,
@@ -378,7 +378,7 @@ class UnboxedArrayObject : public JSObject
 
     static bool obj_lookupProperty(JSContext* cx, HandleObject obj,
                                    HandleId id, MutableHandleObject objp,
-                                   MutableHandleShape propp);
+                                   MutableHandle<PropertyResult> propp);
 
     static bool obj_defineProperty(JSContext* cx, HandleObject obj, HandleId id,
                                    Handle<PropertyDescriptor> desc,

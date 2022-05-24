@@ -539,7 +539,7 @@ namespace js {
 
 typedef bool
 (* LookupPropertyOp)(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                     JS::MutableHandleObject objp, JS::MutableHandle<Shape*> propp);
+                     JS::MutableHandleObject objp, JS::MutableHandle<JS::PropertyResult> propp);
 typedef bool
 (* DefinePropertyOp)(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                      JS::Handle<JS::PropertyDescriptor> desc,

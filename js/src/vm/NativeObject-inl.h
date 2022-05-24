@@ -382,8 +382,8 @@ NewNativeObjectWithClassProto(ExclusiveContext* cx, const Class* clasp, HandleOb
  *     *recursedp = false and return true.
  */
 static MOZ_ALWAYS_INLINE bool
-CallResolveOp(JSContext* cx, HandleNativeObject obj, HandleId id, MutableHandleShape propp,
-              bool* recursedp)
+CallResolveOp(JSContext* cx, HandleNativeObject obj, HandleId id,
+              MutableHandle<PropertyResult> propp, bool* recursedp)
 {
     // Avoid recursion on (obj, id) already being resolved on cx.
     AutoResolving resolving(cx, obj, id);
@@ -407,13 +407,18 @@ CallResolveOp(JSContext* cx, HandleNativeObject obj, HandleId id, MutableHandleS
                   obj->getClass()->getMayResolve()(cx->names(), id, obj));
 
     if (JSID_IS_INT(id) && obj->containsDenseElement(JSID_TO_INT(id))) {
-        MarkDenseOrTypedArrayElementFound<CanGC>(propp);
+        propp.setDenseOrTypedArrayElement();
         return true;
     }
 
     MOZ_ASSERT(!obj->is<TypedArrayObject>());
 
-    propp.set(obj->lookup(cx, id));
+    RootedShape shape(cx, obj->lookup(cx, id));
+    if (shape)
+        propp.setNativeProperty(shape);
+    else
+        propp.setNotFound();
+
     return true;
 }
 
@@ -444,12 +449,12 @@ static MOZ_ALWAYS_INLINE bool
 LookupOwnPropertyInline(ExclusiveContext* cx,
                         typename MaybeRooted<NativeObject*, allowGC>::HandleType obj,
                         typename MaybeRooted<jsid, allowGC>::HandleType id,
-                        typename MaybeRooted<Shape*, allowGC>::MutableHandleType propp,
+                        typename MaybeRooted<PropertyResult, allowGC>::MutableHandleType propp,
                         bool* donep)
 {
     // Check for a native dense element.
     if (JSID_IS_INT(id) && obj->containsDenseElement(JSID_TO_INT(id))) {
-        MarkDenseOrTypedArrayElementFound<allowGC>(propp);
+        propp.setDenseOrTypedArrayElement();
         *donep = true;
         return true;
     }
@@ -460,11 +465,10 @@ LookupOwnPropertyInline(ExclusiveContext* cx,
     if (obj->template is<TypedArrayObject>()) {
         uint64_t index;
         if (IsTypedArrayIndex(id, &index)) {
-            if (index < obj->template as<TypedArrayObject>().length()) {
-                MarkDenseOrTypedArrayElementFound<allowGC>(propp);
-            } else {
-                propp.set(nullptr);
-            }
+            if (index < obj->template as<TypedArrayObject>().length())
+                propp.setDenseOrTypedArrayElement();
+            else
+                propp.setNotFound();
             *donep = true;
             return true;
         }
@@ -472,7 +476,7 @@ LookupOwnPropertyInline(ExclusiveContext* cx,
 
     // Check for a native property.
     if (Shape* shape = obj->lookup(cx, id)) {
-        propp.set(shape);
+        propp.setNativeProperty(shape);
         *donep = true;
         return true;
     }
@@ -486,14 +490,14 @@ LookupOwnPropertyInline(ExclusiveContext* cx,
         if (!CallResolveOp(cx->asJSContext(),
                            MaybeRooted<NativeObject*, allowGC>::toHandle(obj),
                            MaybeRooted<jsid, allowGC>::toHandle(id),
-                           MaybeRooted<Shape*, allowGC>::toMutableHandle(propp),
+                           MaybeRooted<PropertyResult, allowGC>::toMutableHandle(propp),
                            &recursed))
         {
             return false;
         }
 
         if (recursed) {
-            propp.set(nullptr);
+            propp.setNotFound();
             *donep = true;
             return true;
         }
@@ -504,7 +508,7 @@ LookupOwnPropertyInline(ExclusiveContext* cx,
         }
     }
 
-    propp.set(nullptr);
+    propp.setNotFound();
     *donep = false;
     return true;
 }
@@ -515,11 +519,11 @@ LookupOwnPropertyInline(ExclusiveContext* cx,
  */
 static inline void
 NativeLookupOwnPropertyNoResolve(ExclusiveContext* cx, HandleNativeObject obj, HandleId id,
-                                 MutableHandleShape result)
+                                 MutableHandle<PropertyResult> result)
 {
     // Check for a native dense element.
     if (JSID_IS_INT(id) && obj->containsDenseElement(JSID_TO_INT(id))) {
-        MarkDenseOrTypedArrayElementFound<CanGC>(result);
+        result.setDenseOrTypedArrayElement();
         return;
     }
 
@@ -528,15 +532,18 @@ NativeLookupOwnPropertyNoResolve(ExclusiveContext* cx, HandleNativeObject obj, H
         uint64_t index;
         if (IsTypedArrayIndex(id, &index)) {
             if (index < obj->as<TypedArrayObject>().length())
-                MarkDenseOrTypedArrayElementFound<CanGC>(result);
+                result.setDenseOrTypedArrayElement();
             else
-                result.set(nullptr);
+                result.setNotFound();
             return;
         }
     }
 
     // Check for a native property.
-    result.set(obj->lookup(cx, id));
+    if (Shape* shape = obj->lookup(cx, id))
+        result.setNativeProperty(shape);
+    else
+        result.setNotFound();
 }
 
 template <AllowGC allowGC>
@@ -545,7 +552,7 @@ LookupPropertyInline(ExclusiveContext* cx,
                      typename MaybeRooted<NativeObject*, allowGC>::HandleType obj,
                      typename MaybeRooted<jsid, allowGC>::HandleType id,
                      typename MaybeRooted<JSObject*, allowGC>::MutableHandleType objp,
-                     typename MaybeRooted<Shape*, allowGC>::MutableHandleType propp)
+                     typename MaybeRooted<PropertyResult, allowGC>::MutableHandleType propp)
 {
     /* NB: The logic of this procedure is implicitly reflected in
      *     BaselineIC.cpp's |EffectlesslyLookupProperty| logic.
@@ -578,14 +585,14 @@ LookupPropertyInline(ExclusiveContext* cx,
                                   MaybeRooted<JSObject*, allowGC>::toHandle(proto),
                                   MaybeRooted<jsid, allowGC>::toHandle(id),
                                   MaybeRooted<JSObject*, allowGC>::toMutableHandle(objp),
-                                  MaybeRooted<Shape*, allowGC>::toMutableHandle(propp));
+                                  MaybeRooted<PropertyResult, allowGC>::toMutableHandle(propp));
         }
 
         current = &proto->template as<NativeObject>();
     }
 
     objp.set(nullptr);
-    propp.set(nullptr);
+    propp.setNotFound();
     return true;
 }
 

@@ -109,7 +109,8 @@ CanAttachNativeGetProp(JSContext* cx, HandleObject obj, HandleId id,
     // only miss out on shape hashification, which is only a temporary perf cost.
     // The limits were arbitrarily set, anyways.
     JSObject* baseHolder = nullptr;
-    if (!LookupPropertyPure(cx, obj, id, &baseHolder, shape.address()))
+    PropertyResult prop;
+    if (!LookupPropertyPure(cx, obj, id, &baseHolder, &prop))
         return CanAttachNone;
 
     MOZ_ASSERT(!holder);
@@ -118,8 +119,9 @@ CanAttachNativeGetProp(JSContext* cx, HandleObject obj, HandleId id,
             return CanAttachNone;
         holder.set(&baseHolder->as<NativeObject>());
     }
+    shape.set(prop.maybeShape());
 
-    if (IsCacheableGetPropReadSlotForIonOrCacheIR(obj, holder, shape) ||
+    if (IsCacheableGetPropReadSlotForIonOrCacheIR(obj, holder, prop) ||
         IsCacheableNoProperty(cx, obj, holder, shape, id, pc))
     {
         return CanAttachReadSlot;
