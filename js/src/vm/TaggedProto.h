@@ -68,10 +68,6 @@ struct InternalBarrierMethods<TaggedProto>
 
     static void readBarrier(const TaggedProto& proto);
 
-    static bool isMarkableTaggedPointer(TaggedProto proto) {
-        return proto.isObject();
-    }
-
     static bool isMarkable(TaggedProto proto) {
         return proto.isObject();
     }

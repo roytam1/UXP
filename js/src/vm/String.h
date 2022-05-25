@@ -521,7 +521,7 @@ class JSString : public js::gc::TenuredCell
     }
 
     static MOZ_ALWAYS_INLINE void writeBarrierPre(JSString* thing) {
-        if (isNullLike(thing) || thing->isPermanentAtom())
+        if (!thing || thing->isPermanentAtom())
             return;
 
         TenuredCell::writeBarrierPre(thing);
