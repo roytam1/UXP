@@ -385,6 +385,7 @@ status_t SampleTable::setTimeToSampleParams(
 // contains signed values, however some software creates version 0 files that
 // contain signed values, so we're always treating the values as signed,
 // regardless of version.
+// We do the same with ctts flags to work around encoder software issues.
 status_t SampleTable::setCompositionTimeToSampleParams(
         off64_t data_offset, size_t data_size) {
     ALOGV("There are reordered frames present.");
@@ -406,8 +407,8 @@ status_t SampleTable::setCompositionTimeToSampleParams(
     uint32_t version = flags >> 24;
     flags &= 0xffffff;
 
-    if ((version != 0 && version != 1) || flags != 0) {
-        // Expected version = 0 or 1, flags = 0.
+    if ((version != 0 && version != 1) || (flags != 0 && flags != 1)) {
+        // Expected version = 0 or 1, flags = 0 or 1.
         return ERROR_MALFORMED;
     }
 
