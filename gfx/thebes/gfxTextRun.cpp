@@ -244,7 +244,7 @@ gfxTextRun::ComputeLigatureData(Range aPartRange,
     NS_ASSERTION(aPartRange.start < aPartRange.end,
                  "Computing ligature data for empty range");
     NS_ASSERTION(aPartRange.end <= GetLength(), "Character length overflow");
-  
+
     LigatureData result;
     const CompressedGlyph *charGlyphs = mCharacterGlyphs;
 
@@ -392,7 +392,7 @@ gfxTextRun::ShrinkToLigatureBoundaries(Range* aRange) const
 {
     if (aRange->start >= aRange->end)
         return;
-  
+
     const CompressedGlyph *charGlyphs = mCharacterGlyphs;
 
     while (aRange->start < aRange->end &&
@@ -440,7 +440,7 @@ ClipPartialLigature(const gfxTextRun* aTextRun,
         } else {
             *aEnd = std::min(*aEnd, endEdge);
         }
-    }    
+    }
 }
 
 void
@@ -789,7 +789,7 @@ gfxTextRun::AccumulatePartialLigatureMetrics(gfxFont *aFont, Range aRange,
     // ligature. Shift it left.
     metrics.mBoundingBox.x -=
         IsRightToLeft() ? metrics.mAdvanceWidth - (data.mPartAdvance + data.mPartWidth)
-            : data.mPartAdvance;    
+            : data.mPartAdvance;
     metrics.mAdvanceWidth = data.mPartWidth;
 
     aMetrics->CombineWith(metrics, IsRightToLeft());
@@ -905,7 +905,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
         }
 
         // There can't be a word-wrap break opportunity at the beginning of the
-        // line: if the width is too small for even one character to fit, it 
+        // line: if the width is too small for even one character to fit, it
         // could be the first and last break opportunity on the line, and that
         // would trigger an infinite loop.
         if (aSuppressBreak != eSuppressAllBreaks &&
@@ -923,7 +923,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
                 if (atHyphenationBreak) {
                     hyphenatedAdvance += aProvider->GetHyphenWidth();
                 }
-            
+
                 if (lastBreak < 0 || width + hyphenatedAdvance - trimmableAdvance <= aWidth) {
                     // We can break here.
                     lastBreak = i;
@@ -943,7 +943,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
                 }
             }
         }
-        
+
         gfxFloat charAdvance;
         if (i >= ligatureRange.start && i < ligatureRange.end) {
             charAdvance = GetAdvanceForGlyphs(Range(i, i + 1));
@@ -956,7 +956,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
             charAdvance =
                 ComputePartialLigatureWidth(Range(i, i + 1), aProvider);
         }
-        
+
         advance += charAdvance;
         if (aTrimWhitespace || aWhitespaceCanHang) {
             if (mCharacterGlyphs[i].CharIsSpace()) {
@@ -1145,7 +1145,7 @@ gfxTextRun::AddGlyphRun(gfxFont *aFont, uint8_t aMatchType,
                  "mixed orientation should have been resolved");
     if (!aFont) {
         return NS_OK;
-    }    
+    }
     uint32_t numGlyphRuns = mGlyphRuns.Length();
     if (!aForceNewRun && numGlyphRuns > 0) {
         GlyphRun *lastGlyphRun = &mGlyphRuns[numGlyphRuns - 1];
@@ -1405,7 +1405,7 @@ gfxTextRun::SetSpaceGlyph(gfxFont* aFont, DrawTarget* aDrawTarget,
         (GetFlags() & gfxTextRunFactory::TEXT_ORIENT_VERTICAL_UPRIGHT) != 0;
     gfxShapedWord* sw = aFont->GetShapedWord(aDrawTarget,
                                              &space, 1,
-                                             gfxShapedWord::HashMix(0, ' '), 
+                                             gfxShapedWord::HashMix(0, ' '),
                                              Script::LATIN,
                                              vertical,
                                              mAppUnitsPerDevUnit,
@@ -1439,8 +1439,8 @@ gfxTextRun::SetSpaceGlyphIfSimple(gfxFont* aFont, uint32_t aCharIndex,
 
     AddGlyphRun(aFont, gfxTextRange::kFontGroup, aCharIndex, false,
                 aOrientation);
-    CompressedGlyph g;
-    g.SetSimpleGlyph(spaceWidthAppUnits, spaceGlyph);
+    CompressedGlyph g =
+        CompressedGlyph::MakeSimpleGlyph(spaceWidthAppUnits, spaceGlyph);
     if (aSpaceChar == ' ') {
         g.SetIsSpace();
     }
@@ -1471,7 +1471,7 @@ gfxTextRun::FetchGlyphExtents(DrawTarget* aRefDrawTarget)
         bool fontIsSetup = false;
         uint32_t j;
         gfxGlyphExtents *extents = font->GetOrCreateGlyphExtents(mAppUnitsPerDevUnit);
-  
+
         for (j = start; j < end; ++j) {
             const gfxTextRun::CompressedGlyph *glyphData = &charGlyphs[j];
             if (glyphData->IsSimpleGlyph()) {
@@ -1943,13 +1943,13 @@ gfxFontGroup::Copy(const gfxFontStyle *aStyle)
     return fg;
 }
 
-bool 
+bool
 gfxFontGroup::IsInvalidChar(uint8_t ch)
 {
     return ((ch & 0x7f) < 0x20 || ch == 0x7f);
 }
 
-bool 
+bool
 gfxFontGroup::IsInvalidChar(char16_t ch)
 {
     // All printable 7-bit ASCII values are OK
@@ -2514,8 +2514,8 @@ gfxFontGroup::InitScriptRun(DrawTarget* aDrawTarget,
                             detailedGlyph.mGlyphID = mainFont->GetSpaceGlyph();
                             detailedGlyph.mAdvance = advance;
                             detailedGlyph.mXOffset = detailedGlyph.mYOffset = 0;
-                            gfxShapedText::CompressedGlyph g;
-                            g.SetComplex(true, true, 1);
+                            CompressedGlyph g =
+                                CompressedGlyph::MakeComplex(true, true, 1);
                             aTextRun->SetGlyphs(aOffset + index,
                                                 g, &detailedGlyph);
                         }
@@ -3128,7 +3128,7 @@ gfxFontGroup::WhichPrefFontSupportsChar(uint32_t aCh, uint32_t aNextCh)
         uint32_t unicodeRange = FindCharUnicodeRange(aCh);
         charLang = pfl->GetFontPrefLangFor(unicodeRange);
     }
- 
+
     // if the last pref font was the first family in the pref list, no need to recheck through a list of families
     if (mLastPrefFont && charLang == mLastPrefLang &&
         mLastPrefFirstFont && mLastPrefFont->HasCharacter(aCh)) {
@@ -3190,7 +3190,7 @@ already_AddRefed<gfxFont>
 gfxFontGroup::WhichSystemFontSupportsChar(uint32_t aCh, uint32_t aNextCh,
                                           Script aRunScript)
 {
-    gfxFontEntry *fe = 
+    gfxFontEntry *fe =
         gfxPlatformFontList::PlatformFontList()->
             SystemFindFontForChar(aCh, aNextCh, aRunScript, &mStyle);
     if (fe) {
