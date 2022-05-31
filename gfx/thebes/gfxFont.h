@@ -245,7 +245,7 @@ struct gfxTextRange {
 
 /**
  * Font cache design:
- * 
+ *
  * The mFonts hashtable contains most fonts, indexed by (gfxFontEntry*, style).
  * It does not add a reference to the fonts it contains.
  * When a font's refcount decreases to zero, instead of deleting it we
@@ -699,21 +699,19 @@ public:
      * This class records the information associated with a character in the
      * input string. It's optimized for the case where there is one glyph
      * representing that character alone.
-     * 
+     *
      * A character can have zero or more associated glyphs. Each glyph
      * has an advance width and an x and y offset.
      * A character may be the start of a cluster.
      * A character may be the start of a ligature group.
      * A character can be "missing", indicating that the system is unable
      * to render the character.
-     * 
+     *
      * All characters in a ligature group conceptually share all the glyphs
      * associated with the characters in a group.
      */
     class CompressedGlyph {
     public:
-        CompressedGlyph() { mValue = 0; }
-
         enum {
             // Indicates that a cluster and ligature group starts at this
             // character; this character has a single glyph with a reasonable
@@ -843,25 +841,52 @@ public:
             return toggle;
         }
 
-        CompressedGlyph& SetSimpleGlyph(uint32_t aAdvanceAppUnits, uint32_t aGlyph) {
+        // Create a CompressedGlyph value representing a simple glyph with
+        // no extra flags (line-break or is_space) set.
+        static CompressedGlyph
+        MakeSimpleGlyph(uint32_t aAdvanceAppUnits, uint32_t aGlyph) {
             NS_ASSERTION(IsSimpleAdvance(aAdvanceAppUnits), "Advance overflow");
             NS_ASSERTION(IsSimpleGlyphID(aGlyph), "Glyph overflow");
+            CompressedGlyph g;
+            g.mValue = FLAG_IS_SIMPLE_GLYPH |
+                       (aAdvanceAppUnits << ADVANCE_SHIFT) |
+                       aGlyph;
+            return g;
+        }
+
+        // Assign a simple glyph value to an existing CompressedGlyph record,
+        // preserving line-break/is-space flags if present.
+        CompressedGlyph& SetSimpleGlyph(uint32_t aAdvanceAppUnits,
+                                        uint32_t aGlyph) {
             NS_ASSERTION(!CharTypeFlags(), "Char type flags lost");
             mValue = (mValue & (FLAGS_CAN_BREAK_BEFORE | FLAG_CHAR_IS_SPACE)) |
-                FLAG_IS_SIMPLE_GLYPH |
-                (aAdvanceAppUnits << ADVANCE_SHIFT) | aGlyph;
+                MakeSimpleGlyph(aAdvanceAppUnits, aGlyph).mValue;
             return *this;
         }
+
+        // Create a CompressedGlyph value representing a complex glyph record,
+        // without any line-break or char-type flags.
+        static CompressedGlyph
+        MakeComplex(bool aClusterStart, bool aLigatureStart,
+                    uint32_t aGlyphCount) {
+            CompressedGlyph g;
+            g.mValue = FLAG_NOT_MISSING |
+                       (aClusterStart ? 0 : FLAG_NOT_CLUSTER_START) |
+                       (aLigatureStart ? 0 : FLAG_NOT_LIGATURE_GROUP_START) |
+                       (aGlyphCount << GLYPH_COUNT_SHIFT);
+            return g;
+        }
+
+        // Assign a complex glyph value to an existing CompressedGlyph record,
+        // preserving line-break/char-type flags if present.
         CompressedGlyph& SetComplex(bool aClusterStart, bool aLigatureStart,
-                uint32_t aGlyphCount) {
+                                    uint32_t aGlyphCount) {
             mValue = (mValue & (FLAGS_CAN_BREAK_BEFORE | FLAG_CHAR_IS_SPACE)) |
-                FLAG_NOT_MISSING |
                 CharTypeFlags() |
-                (aClusterStart ? 0 : FLAG_NOT_CLUSTER_START) |
-                (aLigatureStart ? 0 : FLAG_NOT_LIGATURE_GROUP_START) |
-                (aGlyphCount << GLYPH_COUNT_SHIFT);
+                MakeComplex(aClusterStart, aLigatureStart, aGlyphCount).mValue;
             return *this;
         }
+
         /**
          * Missing glyphs are treated as ligature group starts; don't mess with
          * the cluster-start flag (see bugs 618870 and 619286).
@@ -914,7 +939,7 @@ public:
         /** The advance, x-offset and y-offset of the glyph, in appunits
          *  mAdvance is in the text direction (RTL or LTR)
          *  mXOffset is always from left to right
-         *  mYOffset is always from top to bottom */   
+         *  mYOffset is always from top to bottom */
         int32_t  mAdvance;
         float    mXOffset, mYOffset;
     };
@@ -1039,7 +1064,7 @@ protected:
 
     // For characters whose glyph data does not fit the "simple" glyph criteria
     // in CompressedGlyph, we use a sorted array to store the association
-    // between the source character offset and an index into an array 
+    // between the source character offset and an index into an array
     // DetailedGlyphs. The CompressedGlyph record includes a count of
     // the number of DetailedGlyph records that belong to the character,
     // starting at the given index.
@@ -1581,11 +1606,11 @@ public:
         // (offset1, length1) plus the advance width of (offset1 + length1,
         // length2) should be the advance width of (offset1, length1 + length2)
         gfxFloat mAdvanceWidth;
-        
+
         // For zero-width substrings, these must be zero!
         gfxFloat mAscent;  // always non-negative
         gfxFloat mDescent; // always non-negative
-        
+
         // Bounding box that is guaranteed to include everything drawn.
         // If a tight boundingBox was requested when these metrics were
         // generated, this will tightly wrap the glyphs, otherwise it is
@@ -1648,11 +1673,11 @@ public:
      * @param aSpacing spacing to insert before and after glyphs. The bounding box
      * need not include the spacing itself, but the spacing affects the glyph
      * positions. null if there is no spacing.
-     * 
+     *
      * Callers guarantee:
      * -- aStart and aEnd are aligned to cluster and ligature boundaries
      * -- all glyphs use this font
-     * 
+     *
      * The default implementation just uses font metrics and aTextRun's
      * advances, and assumes no characters fall outside the font box. In
      * general this is insufficient, because that assumption is not always true.
@@ -1707,7 +1732,7 @@ public:
             (mUnicodeRangeMap && !mUnicodeRangeMap->test(ch))) {
             return false;
         }
-        return mFontEntry->HasCharacter(ch); 
+        return mFontEntry->HasCharacter(ch);
     }
 
     const gfxCharacterMap* GetUnicodeRangeMap() const {
@@ -1722,7 +1747,7 @@ public:
         if (!mIsValid) {
             return 0;
         }
-        return mFontEntry->GetUVSGlyph(aCh, aVS); 
+        return mFontEntry->GetUVSGlyph(aCh, aVS);
     }
 
     template<typename T>

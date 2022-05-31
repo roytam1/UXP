@@ -454,6 +454,7 @@ GLContext::GLContext(CreateContextFlags flags, const SurfaceCaps& caps,
     mTopError(LOCAL_GL_NO_ERROR),
     mDebugFlags(ChooseDebugFlags(flags)),
     mSharedContext(sharedContext),
+    mSymbols{},
     mCaps(caps),
     mScreen(nullptr),
     mLockedSurface(nullptr),
@@ -519,7 +520,7 @@ GLContext::InitWithPrefix(const char* prefix, bool trygl)
 
     if (!InitWithPrefixImpl(prefix, trygl)) {
         // If initialization fails, zero the symbols to avoid hard-to-understand bugs.
-        mSymbols.Zero();
+        mSymbols = {};
         NS_WARNING("GLContext::InitWithPrefix failed!");
         return false;
     }
@@ -2205,7 +2206,7 @@ GLContext::MarkDestroyed()
     mReadTexImageHelper = nullptr;
 
     mIsDestroyed = true;
-    mSymbols.Zero();
+    mSymbols = {};
     if (MakeCurrent(true)) {
         mTexGarbageBin->GLContextTeardown();
     }

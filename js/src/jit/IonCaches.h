@@ -806,7 +806,7 @@ class NameIC : public IonCache
 
     MOZ_MUST_USE bool attachReadSlot(JSContext* cx, HandleScript outerScript, IonScript* ion,
                                      HandleObject envChain, HandleObject holderBase,
-                                     HandleNativeObject holder, HandleShape shape);
+                                     HandleNativeObject holder, Handle<PropertyResult> prop);
 
     MOZ_MUST_USE bool attachCallGetter(JSContext* cx, HandleScript outerScript, IonScript* ion,
                                        HandleObject envChain, HandleObject obj,
@@ -839,7 +839,7 @@ IONCACHE_KIND_LIST(CACHE_CASTS)
 #undef OPCODE_CASTS
 
 bool IsCacheableProtoChainForIonOrCacheIR(JSObject* obj, JSObject* holder);
-bool IsCacheableGetPropReadSlotForIonOrCacheIR(JSObject* obj, JSObject* holder, Shape* shape);
+bool IsCacheableGetPropReadSlotForIonOrCacheIR(JSObject* obj, JSObject* holder, PropertyResult prop);
 
 } // namespace jit
 } // namespace js

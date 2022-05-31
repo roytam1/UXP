@@ -2192,12 +2192,12 @@ GetDOMProxyProto(JSObject* obj)
 // existence of the property on the object.
 bool
 EffectlesslyLookupProperty(JSContext* cx, HandleObject obj, HandleId id,
-                           MutableHandleObject holder, MutableHandleShape shape,
+                           MutableHandleObject holder, MutableHandle<PropertyResult> prop,
                            bool* checkDOMProxy,
                            DOMProxyShadowsResult* shadowsResult,
                            bool* domProxyHasGeneration)
 {
-    shape.set(nullptr);
+    prop.setNotFound();
     holder.set(nullptr);
 
     if (checkDOMProxy) {
@@ -2231,11 +2231,11 @@ EffectlesslyLookupProperty(JSContext* cx, HandleObject obj, HandleId id,
             return true;
     }
 
-    if (LookupPropertyPure(cx, checkObj, id, holder.address(), shape.address()))
+    if (LookupPropertyPure(cx, checkObj, id, holder.address(), prop.address()))
         return true;
 
     holder.set(nullptr);
-    shape.set(nullptr);
+    prop.setNotFound();
     return true;
 }
 
@@ -2421,15 +2421,16 @@ TryAttachNativeGetAccessorPropStub(JSContext* cx, SharedStubInfo* info,
     bool isDOMProxy;
     bool domProxyHasGeneration;
     DOMProxyShadowsResult domProxyShadowsResult;
-    RootedShape shape(cx);
+    Rooted<PropertyResult> prop(cx);
     RootedObject holder(cx);
     RootedId id(cx, NameToId(name));
-    if (!EffectlesslyLookupProperty(cx, obj, id, &holder, &shape, &isDOMProxy,
+    if (!EffectlesslyLookupProperty(cx, obj, id, &holder, &prop, &isDOMProxy,
                                     &domProxyShadowsResult, &domProxyHasGeneration))
     {
         return false;
     }
 
+    RootedShape shape(cx, prop.maybeShape());
     ICStub* monitorStub = stub->fallbackMonitorStub()->firstMonitorStub();
 
     bool isScripted = false;
@@ -2492,7 +2493,7 @@ TryAttachNativeGetAccessorPropStub(JSContext* cx, SharedStubInfo* info,
         MOZ_ASSERT(ToWindowIfWindowProxy(obj) == cx->global());
         obj = cx->global();
 
-        if (!EffectlesslyLookupProperty(cx, obj, id, &holder, &shape, &isDOMProxy,
+        if (!EffectlesslyLookupProperty(cx, obj, id, &holder, &prop, &isDOMProxy,
                                         &domProxyShadowsResult, &domProxyHasGeneration))
         {
             return false;

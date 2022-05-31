@@ -2249,7 +2249,7 @@ StripPreliminaryObjectStubs(JSContext* cx, ICFallbackStub* stub);
 
 MOZ_MUST_USE bool
 EffectlesslyLookupProperty(JSContext* cx, HandleObject obj, HandleId name,
-                           MutableHandleObject holder, MutableHandleShape shape,
+                           MutableHandleObject holder, MutableHandle<PropertyResult> prop,
                            bool* checkDOMProxy=nullptr,
                            DOMProxyShadowsResult* shadowsResult=nullptr,
                            bool* domProxyHasGeneration=nullptr);
