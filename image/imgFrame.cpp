@@ -123,7 +123,7 @@ AllowedImageSize(int32_t aWidth, int32_t aHeight)
     return false;
   }
 
-  // check to make sure we don't overflow a 32-bit
+  // check to make sure we don't overflow 32-bit size for RGBA
   CheckedInt32 requiredBytes = CheckedInt32(aWidth) * CheckedInt32(aHeight) * 4;
   if (MOZ_UNLIKELY(!requiredBytes.isValid())) {
     NS_WARNING("width or height too large");
