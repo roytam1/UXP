@@ -299,7 +299,6 @@ class JSObject : public js::gc::Cell
 
     static const JS::TraceKind TraceKind = JS::TraceKind::Object;
     static const size_t MaxTagBits = 3;
-    static bool isNullLike(const JSObject* obj) { return uintptr_t(obj) < (1 << MaxTagBits); }
 
     MOZ_ALWAYS_INLINE JS::Zone* zone() const {
         return group_->zone();
@@ -587,21 +586,23 @@ class JSObject : public js::gc::Cell
     void operator=(const JSObject& other) = delete;
 };
 
-template <class U>
+template <typename Wrapper>
+template <typename U>
 MOZ_ALWAYS_INLINE JS::Handle<U*>
-js::RootedBase<JSObject*>::as() const
+js::RootedBase<JSObject*, Wrapper>::as() const
 {
-    const JS::Rooted<JSObject*>& self = *static_cast<const JS::Rooted<JSObject*>*>(this);
-    MOZ_ASSERT(self->is<U>());
+    const Wrapper& self = *static_cast<const Wrapper*>(this);
+    MOZ_ASSERT(self->template is<U>());
     return Handle<U*>::fromMarkedLocation(reinterpret_cast<U* const*>(self.address()));
 }
 
+template <typename Wrapper>
 template <class U>
 MOZ_ALWAYS_INLINE JS::Handle<U*>
-js::HandleBase<JSObject*>::as() const
+js::HandleBase<JSObject*, Wrapper>::as() const
 {
     const JS::Handle<JSObject*>& self = *static_cast<const JS::Handle<JSObject*>*>(this);
-    MOZ_ASSERT(self->is<U>());
+    MOZ_ASSERT(self->template is<U>());
     return Handle<U*>::fromMarkedLocation(reinterpret_cast<U* const*>(self.address()));
 }
 
@@ -633,7 +634,6 @@ struct JSObject_Slots16 : JSObject { void* data[3]; js::Value fslots[16]; };
 /* static */ MOZ_ALWAYS_INLINE void
 JSObject::readBarrier(JSObject* obj)
 {
-    MOZ_ASSERT_IF(obj, !isNullLike(obj));
     if (obj && obj->isTenured())
         obj->asTenured().readBarrier(&obj->asTenured());
 }
@@ -641,7 +641,6 @@ JSObject::readBarrier(JSObject* obj)
 /* static */ MOZ_ALWAYS_INLINE void
 JSObject::writeBarrierPre(JSObject* obj)
 {
-    MOZ_ASSERT_IF(obj, !isNullLike(obj));
     if (obj && obj->isTenured())
         obj->asTenured().writeBarrierPre(&obj->asTenured());
 }
@@ -650,8 +649,6 @@ JSObject::writeBarrierPre(JSObject* obj)
 JSObject::writeBarrierPost(void* cellp, JSObject* prev, JSObject* next)
 {
     MOZ_ASSERT(cellp);
-    MOZ_ASSERT_IF(next, !IsNullTaggedPointer(next));
-    MOZ_ASSERT_IF(prev, !IsNullTaggedPointer(prev));
 
     // If the target needs an entry, add it.
     js::gc::StoreBuffer* buffer;
@@ -997,11 +994,11 @@ GetPropertyDescriptor(JSContext* cx, HandleObject obj, HandleId id,
  */
 extern bool
 LookupProperty(JSContext* cx, HandleObject obj, HandleId id,
-               MutableHandleObject objp, MutableHandleShape propp);
+               MutableHandleObject objp, MutableHandle<PropertyResult> propp);
 
 inline bool
 LookupProperty(JSContext* cx, HandleObject obj, PropertyName* name,
-               MutableHandleObject objp, MutableHandleShape propp)
+               MutableHandleObject objp, MutableHandle<PropertyResult> propp)
 {
     RootedId id(cx, NameToId(name));
     return LookupProperty(cx, obj, id, objp, propp);
@@ -1193,11 +1190,11 @@ ReadPropertyDescriptors(JSContext* cx, HandleObject props, bool checkAccessors,
 /* Read the name using a dynamic lookup on the scopeChain. */
 extern bool
 LookupName(JSContext* cx, HandlePropertyName name, HandleObject scopeChain,
-           MutableHandleObject objp, MutableHandleObject pobjp, MutableHandleShape propp);
+           MutableHandleObject objp, MutableHandleObject pobjp, MutableHandle<PropertyResult> propp);
 
 extern bool
 LookupNameNoGC(JSContext* cx, PropertyName* name, JSObject* scopeChain,
-               JSObject** objp, JSObject** pobjp, Shape** propp);
+               JSObject** objp, JSObject** pobjp, PropertyResult* propp);
 
 /*
  * Like LookupName except returns the global object if 'name' is not found in
@@ -1231,10 +1228,10 @@ FindVariableScope(JSContext* cx, JSFunction** funp);
 
 bool
 LookupPropertyPure(ExclusiveContext* cx, JSObject* obj, jsid id, JSObject** objp,
-                   Shape** propp);
+                   PropertyResult* propp);
 
 bool
-LookupOwnPropertyPure(ExclusiveContext* cx, JSObject* obj, jsid id, Shape** propp,
+LookupOwnPropertyPure(ExclusiveContext* cx, JSObject* obj, jsid id, PropertyResult* propp,
                       bool* isTypedArrayOutOfRange = nullptr);
 
 bool

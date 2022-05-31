@@ -581,9 +581,9 @@ nsOpenTypeTable::MakeTextRun(DrawTarget*        aDrawTarget,
                    aFontGroup->GetFirstValidFont()->
                    GetGlyphHAdvance(aDrawTarget, aGlyph.glyphID));
   detailedGlyph.mXOffset = detailedGlyph.mYOffset = 0;
-  gfxShapedText::CompressedGlyph g;
-  g.SetComplex(true, true, 1);
-  textRun->SetGlyphs(0, g, &detailedGlyph);
+  textRun->SetGlyphs(0,
+                     gfxShapedText::CompressedGlyph::MakeComplex(true, true, 1),
+                     &detailedGlyph);
 
   return textRun.forget();
 }
@@ -1459,7 +1459,7 @@ nsMathMLChar::StretchEnumContext::EnumCallback(const FontFamilyName& aFamily,
   if (!openTypeTable) {
     if (context->mTablesTried.Contains(glyphTable))
       return true; // already tried this one
-    
+
     // Only try this table once.
     context->mTablesTried.AppendElement(glyphTable);
   }
@@ -1626,7 +1626,7 @@ nsMathMLChar::StretchInternal(nsPresContext*           aPresContext,
   if (!maxWidth && !largeop) {
     // Doing Stretch() not GetMaxWidth(),
     // and not a largeop in display mode; we're done if size fits
-    if ((targetSize <= 0) || 
+    if ((targetSize <= 0) ||
         ((isVertical && charSize >= targetSize) ||
          IsSizeOK(charSize, targetSize, aStretchHint)))
       done = true;
@@ -1678,7 +1678,7 @@ nsMathMLChar::StretchInternal(nsPresContext*           aPresContext,
     // variables accordingly.
     mUnscaledAscent = aDesiredStretchSize.ascent;
   }
-    
+
   if (glyphFound) {
     return NS_OK;
   }
@@ -1695,7 +1695,7 @@ nsMathMLChar::StretchInternal(nsPresContext*           aPresContext,
   if (!Preferences::GetBool("mathml.scale_stretchy_operators.enabled", true)) {
     return NS_OK;
   }
-  
+
   // stretchy character
   if (stretchy) {
     if (isVertical) {
@@ -1863,7 +1863,7 @@ public:
   nsDisplayMathMLCharForeground(nsDisplayListBuilder* aBuilder,
                                 nsIFrame* aFrame, nsMathMLChar* aChar,
 				                uint32_t aIndex, bool aIsSelected)
-    : nsDisplayItem(aBuilder, aFrame), mChar(aChar), 
+    : nsDisplayItem(aBuilder, aFrame), mChar(aChar),
       mIndex(aIndex), mIsSelected(aIsSelected) {
     MOZ_COUNT_CTOR(nsDisplayMathMLCharForeground);
   }
@@ -1886,7 +1886,7 @@ public:
     temp.Inflate(mFrame->PresContext()->AppUnitsPerDevPixel());
     return temp;
   }
-  
+
   virtual void Paint(nsDisplayListBuilder* aBuilder,
                      nsRenderingContext* aCtx) override
   {
@@ -1901,7 +1901,7 @@ public:
     bool snap;
     return GetBounds(aBuilder, &snap);
   }
-  
+
   virtual uint32_t GetPerFrameKey() override {
     return (mIndex << nsDisplayItem::TYPE_BITS)
       | nsDisplayItem::GetPerFrameKey();
@@ -2355,7 +2355,7 @@ nsMathMLChar::PaintHorizontally(nsPresContext* aPresContext,
     // _cairo_scaled_font_glyph_device_extents rounds outwards to the nearest
     // pixel, so the bm values can include 1 row of faint pixels on each edge.
     // Don't rely on this pixel as it can look like a gap.
-    if (bm.rightBearing - bm.leftBearing >= 2 * oneDevPixel) { 
+    if (bm.rightBearing - bm.leftBearing >= 2 * oneDevPixel) {
       start[i] = dx + bm.leftBearing + oneDevPixel; // left join
       end[i] = dx + bm.rightBearing - oneDevPixel; // right join
     } else {
