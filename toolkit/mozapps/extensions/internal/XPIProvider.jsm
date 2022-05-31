@@ -6135,7 +6135,11 @@ function UpdateChecker(aAddon, aListener, aReason, aAppVersion, aPlatformVersion
   if ("onUpdateAvailable" in this.listener)
     aReason |= UPDATE_TYPE_NEWVERSION;
 
-  let url = escapeAddonURI(aAddon, updateURL, aReason, aAppVersion);
+  // Don't perform substitutions on the update URL if we still don't
+  // have one at this point.
+  let url = updateURL ?
+            escapeAddonURI(aAddon, url, aReason, aAppVersion) :
+            updateURL;
   this._parser = AddonUpdateChecker.checkForUpdates(aAddon.id, aAddon.updateKey,
                                                     url, this);
 }
