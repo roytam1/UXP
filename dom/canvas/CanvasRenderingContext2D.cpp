@@ -5754,6 +5754,18 @@ inline uint8_t PoisonValue(uint8_t v)
   return v + rand() %3 -1;
 }
 
+static IntRect ClipImageDataTransfer(IntRect& aSrc,
+                                     const IntPoint& aDestOffset,
+                                     const IntSize& aDestBounds)
+{
+  IntRect dest = aSrc;
+  dest.SafeMoveBy(aDestOffset);
+  dest = IntRect(IntPoint(0, 0), aDestBounds).SafeIntersect(dest);
+
+  aSrc = aSrc.SafeIntersect(dest - aDestOffset);
+  return aSrc + aDestOffset;
+}
+
 nsresult
 CanvasRenderingContext2D::GetImageDataArray(JSContext* aCx,
                                             int32_t aX,
@@ -5794,9 +5806,11 @@ CanvasRenderingContext2D::GetImageDataArray(JSContext* aCx,
     return NS_OK;
   }
 
-  IntRect srcRect(0, 0, mWidth, mHeight);
-  IntRect destRect(aX, aY, aWidth, aHeight);
-  IntRect srcReadRect = srcRect.Intersect(destRect);
+  IntRect dstWriteRect(0, 0, aWidth, aHeight);
+  IntRect srcReadRect = ClipImageDataTransfer(dstWriteRect,
+                                              IntPoint(aX, aY),
+                                              IntSize(mWidth, mHeight));
+
   RefPtr<DataSourceSurface> readback;
   DataSourceSurface::MappedSurface rawData;
   if (!srcReadRect.IsEmpty()) {
@@ -5823,9 +5837,6 @@ CanvasRenderingContext2D::GetImageDataArray(JSContext* aCx,
       return NS_ERROR_OUT_OF_MEMORY;
     }
   }
-
-  IntRect dstWriteRect = srcReadRect;
-  dstWriteRect.MoveBy(-aX, -aY);
 
   JS::AutoCheckCannotGC nogc;
   bool isShared;
@@ -6027,10 +6038,10 @@ CanvasRenderingContext2D::PutImageData_explicit(int32_t aX, int32_t aY, uint32_t
     dirtyRect = imageDataRect;
   }
 
-  dirtyRect.MoveBy(IntPoint(aX, aY));
-  dirtyRect = IntRect(0, 0, mWidth, mHeight).Intersect(dirtyRect);
-
-  if (dirtyRect.Width() <= 0 || dirtyRect.Height() <= 0) {
+  IntRect srcRect = dirtyRect;
+  dirtyRect = ClipImageDataTransfer(srcRect, IntPoint(aX, aY),
+                                    IntSize(mWidth, mHeight));
+  if (dirtyRect.IsEmpty()) {
     return NS_OK;
   }
 
