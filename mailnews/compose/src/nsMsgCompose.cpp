@@ -1070,7 +1070,8 @@ nsMsgCompose::Initialize(nsIMsgComposeParams *aParams,
     // by checking the identity prefs - but don't clobber the values for
     // drafts and templates as they were set up already by mime when
     // initializing the message.
-    if (m_identity && draftId.IsEmpty() && type != nsIMsgCompType::Template)
+    if (m_identity && draftId.IsEmpty() && type != nsIMsgCompType::Template
+        && type != nsIMsgCompType::EditAsNew)
     {
       bool requestReturnReceipt = false;
       rv = m_identity->GetRequestReturnReceipt(&requestReturnReceipt);
@@ -4766,6 +4767,7 @@ nsMsgCompose::BuildBodyMessageAndSignature()
     case nsIMsgCompType::Draft :
     case nsIMsgCompType::Template :
     case nsIMsgCompType::Redirect :
+    case nsIMsgCompType::EditAsNew :
       addSignature = false;
       break;
 
