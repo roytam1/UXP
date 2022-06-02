@@ -107,6 +107,10 @@ struct BaseRect {
   // (including edges) of *this and aRect. If there are no points in that
   // intersection, returns an empty rectangle with x/y set to the std::max of the x/y
   // of *this and aRect.
+  //
+  // Intersection with an empty Rect may not produce an empty Rect if overflow
+  // occurs. e.g. {INT_MIN, 0, 0, 20} Intersect { 5000, 0, 500, 20 } gives:
+  // the non-emtpy {5000, 0, 500, 20 } instead of {5000, 0, 0, 0}
   MOZ_MUST_USE Sub Intersect(const Sub& aRect) const
   {
     Sub result;
@@ -116,6 +120,26 @@ struct BaseRect {
     result.height = std::min<T>(y - result.y + height, aRect.y - result.y + aRect.height);
     if (result.width < 0 || result.height < 0) {
       result.SizeTo(0, 0);
+    }
+    return result;
+  }
+  // Gives the same results as Intersect() but handles integer overflow
+  // better. This comes at a tiny cost in performance.
+  // e.g. {INT_MIN, 0, 0, 20} Intersect { 5000, 0, 500, 20 } gives:
+  // {5000, 0, 0, 0}
+  MOZ_MUST_USE Sub SafeIntersect(const Sub& aRect) const
+  {
+    Sub result;
+    result.x = std::max<T>(x, aRect.x);
+    result.y = std::max<T>(y, aRect.y);
+    T right = std::min<T>(x + width, aRect.x + aRect.width);
+    T bottom = std::min<T>(y + height, aRect.y + aRect.height);
+    if (right < result.x || bottom < result.y) {
+      result.width = 0;
+      result.height = 0;
+    } else {
+      result.width = right - result.x;
+      result.height = bottom - result.y;
     }
     return result;
   }
@@ -211,6 +235,40 @@ struct BaseRect {
   void MoveTo(const Point& aPoint) { x = aPoint.x; y = aPoint.y; }
   void MoveBy(T aDx, T aDy) { x += aDx; y += aDy; }
   void MoveBy(const Point& aPoint) { x += aPoint.x; y += aPoint.y; }
+
+  // Variant of MoveBy that ensures that even after translation by a point that
+  // the rectangle coordinates will still fit within numeric limits. The origin
+  // and size will be clipped within numeric limits to ensure this.
+  void SafeMoveByX(T aDx) {
+    T x2 = XMost();
+    if (aDx >= T(0)) {
+      T limit = std::numeric_limits<T>::max();
+      x = limit - aDx < x ? limit : x + aDx;
+      width = (limit - aDx < x2 ? limit : x2 + aDx) - x;
+    } else {
+      T limit = std::numeric_limits<T>::min();
+      x = limit - aDx > x ? limit : x + aDx;
+      width = (limit - aDx > x2 ? limit : x2 + aDx) - x;
+    }
+  }
+  void SafeMoveByY(T aDy) {
+    T y2 = YMost();
+    if (aDy >= T(0)) {
+      T limit = std::numeric_limits<T>::max();
+      y = limit - aDy < y ? limit : y + aDy;
+      height = (limit - aDy < y2 ? limit : y2 + aDy) - y;
+    } else {
+      T limit = std::numeric_limits<T>::min();
+      y = limit - aDy > y ? limit : y + aDy;
+      height = (limit - aDy > y2 ? limit : y2 + aDy) - y;
+    }
+  }
+  void SafeMoveBy(T aDx, T aDy) {
+    SafeMoveByX(aDx);
+    SafeMoveByY(aDy);
+  }
+  void SafeMoveBy(const Point& aPoint) { SafeMoveBy(aPoint.x, aPoint.y); }
+
   void SizeTo(T aWidth, T aHeight) { width = aWidth; height = aHeight; }
   void SizeTo(const SizeT& aSize) { width = aSize.width; height = aSize.height; }
 
