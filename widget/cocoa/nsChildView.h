@@ -224,7 +224,6 @@ class WidgetRenderingContext;
                             enter:(BOOL)aEnter
                          exitFrom:(mozilla::WidgetMouseEvent::ExitFrom)aExitFrom;
 
-- (void)updateGLContext;
 - (void)_surfaceNeedsUpdate:(NSNotification*)notification;
 
 - (bool)preRender:(NSOpenGLContext *)aGLContext;
