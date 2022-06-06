@@ -19,11 +19,12 @@ if sys.platform == 'darwin':
       print("find_sdk_uxp.py: error: Specified path does not exist or is not a directory")
       sys.exit(1)
 
-  KNOWN_SDK_VERSIONS = ["10.7", "10.8", "10.9", "10.10",
-                        "10.11", "10.12", "10.13", "10.14",
-                        "10.15"]
+  KNOWN_SDK_VERSIONS = ["10.7", "10.8", "10.9", "10.10", "10.11"
+                        "10.12", "10.13", "10.14", "10.15", "10.16",
+                        "11.0", "11.1", "11.2", "11.3",
+                        "12.0"]
 
-  REGEX = "^MacOSX(10\.\d+)\.sdk$"
+  REGEX = "^MacOSX(\d+\.\d+)\.sdk$"
   SDK_VERSION = re.findall(REGEX, os.path.basename(SDK_PATH))
 
   if not SDK_VERSION:
