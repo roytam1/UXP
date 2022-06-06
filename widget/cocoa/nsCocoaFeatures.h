@@ -25,8 +25,11 @@ public:
   static bool OnMojaveOrLater();
   static bool OnCatalinaOrLater();
   static bool OnBigSurOrLater();
+  static bool OnMontereyOrLater();
 
   static bool IsAtLeastVersion(int32_t aMajor, int32_t aMinor, int32_t aBugFix=0);
+
+  static bool ProcessIsRosettaTranslated();
 
   // These are utilities that do not change or depend on the value of mOSXVersion
   // and instead just encapsulate the encoding algorithm.  Note that GetVersion

@@ -849,9 +849,58 @@ gfxMacPlatformFontList::InitSingleFaceList()
 
 static NSString* GetRealFamilyName(NSFont* aFont)
 {
+    if(nsCocoaFeatures::OnCatalinaOrLater())
+    {
+        NSString* psName = [[aFont fontDescriptor] postscriptName];
+        // With newer macOS versions and SDKs (e.g. when compiled against SDK 10.15),
+        // [NSFont fontWithName:] fails for hidden system fonts, because the underlying
+        // Core Text functions it uses reject such names and tell us to use the special
+        // CTFontCreateUIFontForLanguage API instead.
+        // To work around this, as we don't yet work directly with the CTFontUIFontType
+        // identifiers, we create a Core Graphics font (as it doesn't reject system font
+        // names), and use this to create a Core Text font that we can query for the
+        // family name.
+        // Eventually we should move to using CTFontUIFontType constants to identify
+        // system fonts, and eliminate the need to instantiate them (indirectly) from
+        // their postscript names.
+        CGFontRef cgFont = CGFontCreateWithFontName(CFStringRef(psName));
+        if (!cgFont) {
+             return [aFont familyName];
+        }
+
+        CTFontRef ctFont = CTFontCreateWithGraphicsFont(cgFont, 0.0, nullptr, nullptr);
+        if (!ctFont) {
+            CFRelease(cgFont);
+            return [aFont familyName];
+        }
+        NSString* familyName = (NSString*)CTFontCopyFamilyName(ctFont);
+
+        CFRelease(cgFont);
+        CFRelease(ctFont);
+        return [familyName autorelease];
+    }
     NSFont* f = [NSFont fontWithName: [[aFont fontDescriptor] postscriptName]
                         size: 0.0];
     return [f familyName];
+}
+
+// Create a gfxFontFamily that corresponds to the "system" font name,
+// and populate it with the given font face. We only use this on Catalina or later,
+// so we expect the system font to be a variable-weight face rather than requiring
+// a number of discrete faces of different weights.
+static gfxFontFamily* CreateFamilyForSystemFont(NSFont* aFont, const nsString& aFamilyName) {
+  gfxFontFamily* familyEntry = new gfxFontFamily(aFamilyName);
+
+  NSString* psNameNS = [[aFont fontDescriptor] postscriptName];
+  nsAutoString psName;
+  nsCocoaUtils::GetStringForNSString(psNameNS, psName);
+
+  MacOSFontEntry* fe = new MacOSFontEntry(psName, 400.0, true, 0.0);
+
+  familyEntry->AddFontEntry(fe);
+  familyEntry->SetHasStyles(true);
+
+  return familyEntry;
 }
 
 // System fonts under OSX 10.11 use a combination of two families, one
@@ -867,7 +916,9 @@ gfxMacPlatformFontList::InitSystemFontNames()
 {
     // system font under 10.11 are two distinct families for text/display sizes
     if (nsCocoaFeatures::OnElCapitanOrLater()) {
-        mUseSizeSensitiveSystemFont = true;
+        // On Catalina+, the system font uses optical sizing rather than individual
+        // faces, so we don't need to look for a separate display-sized face.
+        mUseSizeSensitiveSystemFont = !nsCocoaFeatures::OnCatalinaOrLater();
     }
 
     // text font family
@@ -877,12 +928,28 @@ gfxMacPlatformFontList::InitSystemFontNames()
     nsCocoaUtils::GetStringForNSString(textFamilyName, familyName);
     mSystemTextFontFamilyName = familyName;
 
-    // display font family, if on OSX 10.11
+    // On Catalina or later, we store an in-process gfxFontFamily for the system font
+    // even if using the shared fontlist to manage "normal" fonts, because the hidden
+    // system fonts may be excluded from the font list altogether.
+    if (nsCocoaFeatures::OnCatalinaOrLater()) {
+      RefPtr<gfxFontFamily> fam = CreateFamilyForSystemFont(sys, mSystemTextFontFamilyName);
+      if (fam) {
+        nsAutoString key;
+        GenerateFontListKey(mSystemTextFontFamilyName, key);
+        mFontFamilies.Put(key, fam);
+      }
+    }
+
+    // display font family, if on OSX 10.11 - 10.14
     if (mUseSizeSensitiveSystemFont) {
         NSFont* displaySys = [NSFont systemFontOfSize: 128.0];
         NSString* displayFamilyName = GetRealFamilyName(displaySys);
+        if ([displayFamilyName isEqualToString: textFamilyName]) {
+          mUseSizeSensitiveSystemFont = false;
+        } else {
         nsCocoaUtils::GetStringForNSString(displayFamilyName, familyName);
         mSystemDisplayFontFamilyName = familyName;
+      }
 
 #if DEBUG
         // confirm that the optical size switch is at 20.0
@@ -993,7 +1060,6 @@ gfxMacPlatformFontList::PlatformGlobalFontFallback(const uint32_t aCh,
 
     gfxFontEntry *fontEntry = nullptr;
     CTFontRef fallback;
-    bool cantUseFallbackFont = false;
 
     if (!mDefaultFont) {
         mDefaultFont = ::CTFontCreateWithName(CFSTR("LucidaGrande"), 12.f,
@@ -1029,10 +1095,26 @@ gfxMacPlatformFontList::PlatformGlobalFontFallback(const uint32_t aCh,
                         *aMatchedFamily = family;
                     } else {
                         fontEntry = nullptr;
-                        cantUseFallbackFont = true;
                     }
                 }
             }
+
+            // The macOS system font does not appear in the shared font list, so if
+            // we didn't find the fallback font above, we should also check for an
+            // unshared fontFamily in the system list.
+            if (!fontEntry) {
+              gfxFontFamily* family = FindSystemFontFamily(familyNameString);
+              if (family) {
+                fontEntry = family->FindFontForStyle(*aMatchStyle, needsBold);
+                if (fontEntry) {
+                  if (fontEntry->HasCharacter(aCh)) {
+                    *aMatchedFamily = family;
+                  } else {
+                    fontEntry = nullptr;
+                  }
+                }
+              }
+           }
         }
 
         if (familyNameRef) {

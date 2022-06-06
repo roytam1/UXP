@@ -209,6 +209,8 @@ uint32_t nsChildView::sLastInputEventCount = 0;
 + (BOOL)_shouldZoomOnDoubleClick; // present on 10.7 and above
 @end
 
+// This is only possible with SDKs below 10.15
+#ifndef MAC_OS_X_VERSION_10_15
 // Starting with 10.7 the bottom corners of all windows are rounded.
 // Unfortunately, the standard rounding that OS X applies to OpenGL views
 // does not use anti-aliasing and looks very crude. Since we want a smooth,
@@ -226,6 +228,7 @@ uint32_t nsChildView::sLastInputEventCount = 0;
   return region;
 }
 @end
+#endif
 
 #pragma mark -
 
