@@ -96,12 +96,6 @@ case "$target" in
     ;;
 esac
 
-case "$target" in
-*-apple-darwin*)
-    MOZ_IOS_SDK
-    ;;
-esac
-
 AC_SUBST(ANDROID_SOURCE)
 AC_SUBST(ANDROID_PACKAGE_NAME)
 AC_SUBST(OBJCOPY)
@@ -787,27 +781,11 @@ case "$target" in
     DLL_SUFFIX=".dylib"
     DSO_LDOPTS=''
     STRIP_FLAGS="$STRIP_FLAGS -x -S"
-    # Ensure that if we're targeting iOS an SDK was provided.
-    AC_CACHE_CHECK(for iOS target,
-                   ac_cv_ios_target,
-                   [AC_TRY_COMPILE([#include <TargetConditionals.h>
-#if !(TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-#error not iOS
-#endif],
-                                   [],
-                                   ac_cv_ios_target="yes",
-                                   ac_cv_ios_target="no")])
-    if test "$ac_cv_ios_target" = "yes" -a -z $MOZ_IOS; then
-       AC_MSG_ERROR([targeting iOS but not using an iOS SDK?])
-    fi
-    if test -n "$MOZ_IOS"; then
-        direct_nspr_config=1
-    else
-        # The ExceptionHandling framework is needed for Objective-C exception
-        # logging code in nsObjCExceptions.h. Currently we only use that in debug
-        # builds.
-        MOZ_DEBUG_LDFLAGS="$MOZ_DEBUG_LDFLAGS -framework ExceptionHandling";
-    fi
+
+    # The ExceptionHandling framework is needed for Objective-C exception
+    # logging code in nsObjCExceptions.h. Currently we only use that in debug
+    # builds.
+    MOZ_DEBUG_LDFLAGS="$MOZ_DEBUG_LDFLAGS -framework ExceptionHandling";
 
     if test "x$lto_is_enabled" = "xyes"; then
         echo "Skipping -dead_strip because lto is enabled."
@@ -2084,9 +2062,6 @@ MOZ_OFFICIAL_BRANDING=
 MC_OFFICIAL=
 MOZ_FEEDS=1
 MOZ_AUTH_EXTENSION=1
-if test "$MOZ_IOS"; then
-   MOZ_AUTH_EXTENSION=
-fi
 MOZ_RAW=
 MOZ_AV1=
 MOZ_VORBIS=
@@ -3092,10 +3067,6 @@ MOZ_ARG_DISABLE_BOOL(negotiateauth,
     MOZ_AUTH_EXTENSION=,
     MOZ_AUTH_EXTENSION=1 )
 
-if test -n "$MOZ_IOS" -a -n "$MOZ_AUTH_EXTENSION"; then
-   AC_MSG_ERROR([negotiateauth is not supported on iOS.])
-fi
-
 dnl ========================================================
 dnl Pref extensions (autoconfig)
 dnl ========================================================
@@ -3326,9 +3297,7 @@ MOZ_ARG_ENABLE_BOOL(gamepad,
 if test "$MOZ_GAMEPAD"; then
     case "$OS_TARGET" in
     Darwin)
-        if test -z "$MOZ_IOS"; then
-            MOZ_GAMEPAD_BACKEND=cocoa
-        fi
+        MOZ_GAMEPAD_BACKEND=cocoa
         ;;
     WINNT)
         MOZ_GAMEPAD_BACKEND=windows
@@ -3644,10 +3613,6 @@ fi
 dnl ========================================================
 dnl Updater
 dnl ========================================================
-
-if test "$MOZ_IOS"; then
-  MOZ_UPDATER=
-fi
 
 MOZ_ARG_ENABLE_BOOL(updater,
 [  --enable-updater       Enable building of internal updater],
@@ -4852,9 +4817,7 @@ MOZ_ARG_DISABLE_BOOL(necko-wifi,
 if test "$MOZ_NECKO_WIFI"; then
   case "$OS_TARGET" in
     Darwin)
-      if test -z "$MOZ_IOS"; then
-        NECKO_WIFI=1
-      fi
+      NECKO_WIFI=1
       ;;
     DragonFly|FreeBSD|WINNT)
       NECKO_WIFI=1
