@@ -24,7 +24,7 @@ if test "$CC_TYPE" = "gcc"; then
     GNU_CXX=1
 fi
 
-if test "`echo | $AS -o conftest.out -v 2>&1 | grep -c GNU`" != "0"; then
+if test "`echo | $AS -o conftest.out -v 2>&1 | grep -c GNU|LLVM`" != "0"; then
     GNU_AS=1
 fi
 rm -f conftest.out
