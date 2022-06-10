@@ -4,6 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "xptcprivate.h"
+#include "xptiprivate.h"
 
 #ifndef __AARCH64EL__
 #error "Only little endian compatibility was tested"
@@ -33,10 +34,12 @@ extern "C" nsresult ATTRIBUTE_USED
 PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, void* args,
                    uint64_t *gprData, double *fprData)
 {
+#define PARAM_BUFFER_COUNT        16
 #define PARAM_GPR_COUNT            8
 #define PARAM_FPR_COUNT            8
 
     nsXPTCMiniVariant paramBuffer[PARAM_BUFFER_COUNT];
+    nsXPTCMiniVariant* dispatchParams = NULL;
     const nsXPTMethodInfo* info;
 
     NS_ASSERTION(self,"no self");
@@ -46,7 +49,13 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, void* args,
 
     uint32_t paramCount = info->GetParamCount();
 
-    const uint8_t indexOfJSContext = info->IndexOfJSContext();
+    // setup variant array pointer
+    if (paramCount > PARAM_BUFFER_COUNT) {
+        dispatchParams = new nsXPTCMiniVariant[paramCount];
+    } else {
+        dispatchParams = paramBuffer;
+    }
+    NS_ASSERTION(dispatchParams,"no place for params");
 
     void* ap = args;
     uint32_t next_gpr = 1; // skip first arg which is 'self'
@@ -54,16 +63,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, void* args,
     for (uint32_t i = 0; i < paramCount; i++) {
         const nsXPTParamInfo& param = info->GetParam(i);
         const nsXPTType& type = param.GetType();
-        nsXPTCMiniVariant* dp = &paramBuffer[i];
-
-        if (i == indexOfJSContext) {
-            if (next_gpr < PARAM_GPR_COUNT)
-                next_gpr++;
-            else {
-                void* value;
-                get_value_and_advance(&value, ap);
-            }
-        }
+        nsXPTCMiniVariant* dp = &dispatchParams[i];
 
         if (param.IsOut() || !type.IsArithmetic()) {
             if (next_gpr < PARAM_GPR_COUNT) {
@@ -187,8 +187,11 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, void* args,
         }
     }
 
-    nsresult result = self->mOuter->CallMethod((uint16_t)methodIndex, info,
-                                               paramBuffer);
+    nsresult result = self->mOuter->CallMethod((uint16_t)methodIndex, info, dispatchParams);
+
+    if (dispatchParams != paramBuffer) {
+        delete [] dispatchParams;
+    }
 
     return result;
 }
