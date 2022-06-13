@@ -370,6 +370,12 @@ struct macos_arm_context {
     arm_neon_state_t float_;
 };
 #  define EMULATOR_CONTEXT macos_arm_context
+# elif defined(__aarch64__)
+struct macos_aarch64_context {
+    arm_thread_state64_t thread;
+    arm_neon_state64_t float_;
+};
+#  define EMULATOR_CONTEXT macos_aarch64_context
 # else
 #  error Unsupported architecture
 # endif
@@ -887,7 +893,7 @@ ContextToPC(EMULATOR_CONTEXT* context)
     static_assert(sizeof(context->thread.uts.ts32.__eip) == sizeof(void*),
                   "stored IP should be compile-time pointer-sized");
     return reinterpret_cast<uint8_t**>(&context->thread.uts.ts32.__eip);
-# elif defined(JS_CPU_ARM)
+# elif defined(JS_CPU_ARM) || defined(__aarch64__)
     static_assert(sizeof(context->thread.__pc) == sizeof(void*),
                   "stored IP should be compile-time pointer-sized");
     return reinterpret_cast<uint8_t**>(&context->thread.__pc);
@@ -948,6 +954,11 @@ HandleMachException(JSRuntime* rt, const ExceptionRequest& request)
     unsigned int float_state_count = ARM_NEON_STATE_COUNT;
     int thread_state = ARM_THREAD_STATE;
     int float_state = ARM_NEON_STATE;
+# elif defined(__aarch64__)
+    unsigned int thread_state_count = ARM_THREAD_STATE64_COUNT;
+    unsigned int float_state_count = ARM_NEON_STATE64_COUNT;
+    int thread_state = ARM_THREAD_STATE64;
+    int float_state = ARM_NEON_STATE64;
 # else
 #  error Unsupported architecture
 # endif

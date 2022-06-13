@@ -17,6 +17,11 @@ if CONFIG['OS_ARCH'] == 'Darwin':
         SOURCES += [
             'xptcinvoke_asm_x86_64_unix.S',
         ]
+    if CONFIG["CPU_ARCH"] == "aarch64":
+        SOURCES += [
+            "xptcinvoke_asm_aarch64.S",
+            "xptcstubs_asm_aarch64.S",
+        ]
     if '86' in CONFIG['OS_TEST'] and CONFIG['OS_TEST'] != 'x86_64':
         DEFINES['MOZ_NEED_LEADING_UNDERSCORE'] = True
 
@@ -105,9 +110,9 @@ if CONFIG['OS_ARCH'] in ('Linux', 'FreeBSD', 'NetBSD', 'OpenBSD'):
     if CONFIG['OS_TEST'] == 'aarch64':
         SOURCES += [
             'xptcinvoke_aarch64.cpp',
-            'xptcinvoke_asm_aarch64.s',
+            'xptcinvoke_asm_aarch64.S',
             'xptcstubs_aarch64.cpp',
-            'xptcstubs_asm_aarch64.s',
+            'xptcstubs_asm_aarch64.S',
         ]
     if CONFIG['OS_TEST'] == 'm68k':
         SOURCES += [

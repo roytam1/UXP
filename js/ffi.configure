@@ -38,8 +38,12 @@ def ffi_target(target):
         else:
             target_name = 'X86_WIN32'
     elif target.os == 'OSX':
-        target_dir = 'x86'
-        target_name = 'X86_DARWIN'
+        if target.cpu == 'aarch64':
+            target_name = 'AARCH64_DARWIN'
+            target_dir = 'aarch64'
+        else:
+            target_name = 'X86_DARWIN'
+            target_dir = 'x86'
     elif target.cpu == 'arm':
         target_dir = 'arm'
         target_name = 'ARM'

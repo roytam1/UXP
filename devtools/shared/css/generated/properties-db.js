@@ -9519,6 +9519,7 @@ exports.CSS_PROPERTIES = {
     "supports": [],
     "values": [
       "-moz-pre-space",
+      "break-spaces",
       "inherit",
       "initial",
       "normal",

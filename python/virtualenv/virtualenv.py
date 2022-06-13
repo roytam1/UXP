@@ -1345,6 +1345,9 @@ def install_python(home_dir, lib_dir, inc_dir, bin_dir, site_packages, clear, sy
                              "have Apple's development tools installed")
                 raise
 
+        # Resign the executable, since install_name_tool invalidates the signature
+        call_subprocess(["codesign", "-s", "-", py_executable])
+
     if not is_win:
         # Ensure that 'python', 'pythonX' and 'pythonX.Y' all exist
         py_exe_version_major = 'python%s' % sys.version_info[0]

@@ -851,6 +851,7 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
                                 bool *aUsedHyphenation,
                                 uint32_t *aLastBreak,
                                 bool aCanWordWrap,
+                                bool aCanWhitespaceWrap,
                                 gfxBreakPriority *aBreakPriority)
 {
     aMaxLength = std::min(aMaxLength, GetLength() - aStart);
@@ -918,7 +919,15 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
                 aCanWordWrap && mCharacterGlyphs[i].IsClusterStart() &&
                 *aBreakPriority <= gfxBreakPriority::eWordWrapBreak;
 
-            if (atBreak || wordWrapping) {
+            bool whitespaceWrapping = false;
+            if (i > aStart) {
+                // The spec says the breaking opportunity is *after* whitespace.
+                auto const& g = mCharacterGlyphs[i - 1];
+                whitespaceWrapping = aCanWhitespaceWrap &&
+                                     (g.CharIsSpace() || g.CharIsTab() || g.CharIsNewline());
+            }
+
+            if (atBreak || wordWrapping || whitespaceWrapping) {
                 gfxFloat hyphenatedAdvance = advance;
                 if (atHyphenationBreak) {
                     hyphenatedAdvance += aProvider->GetHyphenWidth();
@@ -930,8 +939,9 @@ gfxTextRun::BreakAndMeasureText(uint32_t aStart, uint32_t aMaxLength,
                     lastBreakTrimmableChars = trimmableChars;
                     lastBreakTrimmableAdvance = trimmableAdvance;
                     lastBreakUsedHyphenation = atHyphenationBreak;
-                    *aBreakPriority = atBreak ? gfxBreakPriority::eNormalBreak
-                                              : gfxBreakPriority::eWordWrapBreak;
+                    *aBreakPriority = (atBreak || whitespaceWrapping)
+                                          ? gfxBreakPriority::eNormalBreak
+                                          : gfxBreakPriority::eWordWrapBreak;
                 }
 
                 width += advance;

@@ -3309,15 +3309,10 @@ NSEvent* gLastDragMouseDownEvent = nil;
   if (!mGLContext) {
     mGLContext = aGLContext;
     [mGLContext retain];
-    mNeedsGLUpdate = true;
+    mNeedsGLUpdate = YES;
   }
 
   CGLLockContext((CGLContextObj)[aGLContext CGLContextObj]);
-
-  if (mNeedsGLUpdate) {
-    [self updateGLContext];
-    mNeedsGLUpdate = NO;
-  }
 
   return true;
 
@@ -3472,12 +3467,6 @@ NSEvent* gLastDragMouseDownEvent = nil;
   return YES;
 }
 
--(void)updateGLContext
-{
-  [mGLContext setView:mPixelHostingView];
-  [mGLContext update];
-}
-
 - (void)_surfaceNeedsUpdate:(NSNotification*)notification
 {
   if (mGLContext) {
@@ -3592,6 +3581,13 @@ NSEvent* gLastDragMouseDownEvent = nil;
     LayoutDeviceIntRegion region(geckoBounds);
 
     mGeckoChild->PaintWindow(region);
+
+    if (mNeedsGLUpdate) {
+        [mGLContext setView:mPixelHostingView];
+        [mGLContext update];
+        mNeedsGLUpdate = NO;
+    }
+
     return;
   }
 

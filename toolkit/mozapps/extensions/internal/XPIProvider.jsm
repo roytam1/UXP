@@ -6134,6 +6134,15 @@ function UpdateChecker(aAddon, aListener, aReason, aAppVersion, aPlatformVersion
   aReason |= UPDATE_TYPE_COMPATIBILITY;
   if ("onUpdateAvailable" in this.listener)
     aReason |= UPDATE_TYPE_NEWVERSION;
+  
+  // Pass an empty string as the url and call checkForUpdates now if
+  // updateURL is empty. UpdateParser should detect this and fail early.
+
+  if (!updateURL) {
+    this._parser = AddonUpdateChecker.checkForUpdates(aAddon.id, aAddon.updateKey,
+                                                      "", this);
+    return;
+  }
 
   let url = escapeAddonURI(aAddon, updateURL, aReason, aAppVersion);
   this._parser = AddonUpdateChecker.checkForUpdates(aAddon.id, aAddon.updateKey,
