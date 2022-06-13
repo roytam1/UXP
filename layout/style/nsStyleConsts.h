@@ -995,12 +995,13 @@ enum class StyleDisplay : uint8_t {
 #define NS_STYLE_TABSIZE_INITIAL                8
 
 // See nsStyleText
-#define NS_STYLE_WHITESPACE_NORMAL               0
-#define NS_STYLE_WHITESPACE_PRE                  1
-#define NS_STYLE_WHITESPACE_NOWRAP               2
-#define NS_STYLE_WHITESPACE_PRE_WRAP             3
-#define NS_STYLE_WHITESPACE_PRE_LINE             4
-#define NS_STYLE_WHITESPACE_PRE_SPACE            5
+#define NS_STYLE_WHITESPACE_NORMAL              0
+#define NS_STYLE_WHITESPACE_PRE                 1
+#define NS_STYLE_WHITESPACE_NOWRAP              2
+#define NS_STYLE_WHITESPACE_PRE_WRAP            3
+#define NS_STYLE_WHITESPACE_PRE_LINE            4
+#define NS_STYLE_WHITESPACE_PRE_SPACE           5
+#define NS_STYLE_WHITESPACE_BREAK_SPACES        6
 
 // See nsStyleText
 #define NS_STYLE_WORDBREAK_NORMAL               0

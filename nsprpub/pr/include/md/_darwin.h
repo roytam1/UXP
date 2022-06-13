@@ -40,7 +40,7 @@
 
 #undef  HAVE_STACK_GROWING_UP
 #define HAVE_DLL
-#if defined(__x86_64__) || TARGET_OS_IPHONE
+#if defined(__x86_64__) || defined(__aarch64__)
 #define USE_DLFCN
 #else
 #define USE_MACH_DYLD

@@ -1988,35 +1988,31 @@ GetHyphenTextRun(const gfxTextRun* aTextRun, DrawTarget* aDrawTarget,
     MakeHyphenTextRun(dt, aTextRun->GetAppUnitsPerDevUnit());
 }
 
-static_assert(NS_STYLE_WHITESPACE_NORMAL == 0, "Convention: NS_STYLE_WHITESPACE_NORMAL should be 0");
-static_assert(NS_STYLE_WHITESPACE_PRE == 1, "Convention: NS_STYLE_WHITESPACE_PRE should be 1");
-static_assert(NS_STYLE_WHITESPACE_NOWRAP == 2, "Convention: NS_STYLE_WHITESPACE_NOWRAP should be 2");
-static_assert(NS_STYLE_WHITESPACE_PRE_WRAP == 3, "Convention: NS_STYLE_WHITESPACE_PRE_WRAP should be 3");
-static_assert(NS_STYLE_WHITESPACE_PRE_LINE == 4, "Convention: NS_STYLE_WHITESPACE_PRE_LINE should be 4");
-static_assert(NS_STYLE_WHITESPACE_PRE_SPACE == 5, "Convention: NS_STYLE_WHITESPACE_PRE_SPACE should be 5");
-
 static nsTextFrameUtils::CompressionMode
 GetCSSWhitespaceToCompressionMode(nsTextFrame* aFrame,
                                   const nsStyleText* aStyleText)
 {
-  static const nsTextFrameUtils::CompressionMode sModes[] =
-  {
-    nsTextFrameUtils::COMPRESS_WHITESPACE_NEWLINE,     // normal
-    nsTextFrameUtils::COMPRESS_NONE,                   // pre
-    nsTextFrameUtils::COMPRESS_WHITESPACE_NEWLINE,     // nowrap
-    nsTextFrameUtils::COMPRESS_NONE,                   // pre-wrap
-    nsTextFrameUtils::COMPRESS_WHITESPACE,             // pre-line
-    nsTextFrameUtils::COMPRESS_NONE_TRANSFORM_TO_SPACE // -moz-pre-space
-  };
-
-  auto compression = sModes[aStyleText->mWhiteSpace];
-  if (compression == nsTextFrameUtils::COMPRESS_NONE &&
-      !aStyleText->NewlineIsSignificant(aFrame)) {
-    // If newline is set to be preserved, but then suppressed,
-    // transform newline to space.
-    compression = nsTextFrameUtils::COMPRESS_NONE_TRANSFORM_TO_SPACE;
+  switch (aStyleText->mWhiteSpace) {
+    case NS_STYLE_WHITESPACE_NORMAL:
+    case NS_STYLE_WHITESPACE_NOWRAP:
+      return nsTextFrameUtils::COMPRESS_WHITESPACE_NEWLINE;
+    case NS_STYLE_WHITESPACE_PRE:
+    case NS_STYLE_WHITESPACE_PRE_WRAP:
+    case NS_STYLE_WHITESPACE_BREAK_SPACES:
+      if (!aStyleText->NewlineIsSignificant(aFrame)) {
+        // If newline is set to be preserved, but then suppressed,
+        // transform newline to space.
+        return nsTextFrameUtils::COMPRESS_NONE_TRANSFORM_TO_SPACE;
+      }
+      return nsTextFrameUtils::COMPRESS_NONE;
+    case NS_STYLE_WHITESPACE_PRE_SPACE:
+      return nsTextFrameUtils::COMPRESS_NONE_TRANSFORM_TO_SPACE;
+    case NS_STYLE_WHITESPACE_PRE_LINE:
+      return nsTextFrameUtils::COMPRESS_WHITESPACE;
+    default:
+      MOZ_ASSERT_UNREACHABLE("Unknown white-space value");
+      return nsTextFrameUtils::COMPRESS_WHITESPACE_NEWLINE;
   }
-  return compression;
 }
 
 already_AddRefed<gfxTextRun>
@@ -9206,8 +9202,10 @@ nsTextFrame::ReflowText(nsLineLayout& aLineLayout, nscoord aAvailableWidth,
   }
   bool canTrimTrailingWhitespace = !textStyle->WhiteSpaceIsSignificant() ||
                                    (GetStateBits() & TEXT_IS_IN_TOKEN_MATHML);
+  bool isBreakSpaces = textStyle->mWhiteSpace == NS_STYLE_WHITESPACE_BREAK_SPACES;
   // allow whitespace to overflow the container
-  bool whitespaceCanHang = textStyle->WhiteSpaceCanWrapStyle() &&
+  bool whitespaceCanHang = !isBreakSpaces &&
+                           textStyle->WhiteSpaceCanWrapStyle() &&
                            textStyle->WhiteSpaceIsSignificant();
   gfxBreakPriority breakPriority = aLineLayout.LastOptionalBreakPriority();
   gfxTextRun::SuppressBreak suppressBreak = gfxTextRun::eNoSuppressBreak;
@@ -9227,7 +9225,9 @@ nsTextFrame::ReflowText(nsLineLayout& aLineLayout, nscoord aAvailableWidth,
                                   &textMetrics, boundingBoxType,
                                   aDrawTarget,
                                   &usedHyphenation, &transformedLastBreak,
-                                  textStyle->WordCanWrap(this), &breakPriority);
+                                  textStyle->WordCanWrap(this),
+                                  isBreakSpaces,
+                                  &breakPriority);
   if (!length && !textMetrics.mAscent && !textMetrics.mDescent) {
     // If we're measuring a zero-length piece of text, update
     // the height manually.

@@ -121,6 +121,8 @@ else:
             DEFINES['SYMBOL_UNDERSCORE'] = True
         else:
             ffi_srcs = ('ffi.c', 'darwin.S', 'ffi64.c', 'darwin64.S')
+    elif CONFIG['FFI_TARGET'] == 'AARCH64_DARWIN':
+        ffi_srcs = ('sysv.S', 'ffi.c')
 
     SOURCES += [
         '/js/src/ctypes/libffi/src/%s/%s' % (CONFIG['FFI_TARGET_DIR'], s)
