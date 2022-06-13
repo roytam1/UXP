@@ -2253,6 +2253,7 @@ const KTableEntry nsCSSProps::kWhitespaceKTable[] = {
   { eCSSKeyword_pre_wrap, NS_STYLE_WHITESPACE_PRE_WRAP },
   { eCSSKeyword_pre_line, NS_STYLE_WHITESPACE_PRE_LINE },
   { eCSSKeyword__moz_pre_space, NS_STYLE_WHITESPACE_PRE_SPACE },
+  { eCSSKeyword_break_spaces, NS_STYLE_WHITESPACE_BREAK_SPACES },
   { eCSSKeyword_UNKNOWN, -1 }
 };
 

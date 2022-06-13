@@ -2,16 +2,30 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#ifdef __APPLE__
+#define SYM(x) _ ## x
+#else
+#define SYM(x) x
+#endif
+
             .set NGPREGS,8
             .set NFPREGS,8
 
-            .section ".text"
+            .text
+            .align 2
             .globl SharedStub
+#ifndef __APPLE__
             .hidden SharedStub
             .type  SharedStub,@function
+#endif
 SharedStub:
+            .cfi_startproc
             stp         x29, x30, [sp,#-16]!
+            .cfi_adjust_cfa_offset 16
+            .cfi_rel_offset x29, 0
+            .cfi_rel_offset x30, 8
             mov         x29, sp
+            .cfi_def_cfa_register x29
 
             sub         sp, sp, #8*(NGPREGS+NFPREGS)
             stp         x0, x1, [sp, #64+(0*8)]
@@ -30,10 +44,19 @@ SharedStub:
             add         x3, sp, #8*NFPREGS
             add         x4, sp, #0
 
-            bl          PrepareAndDispatch
+            bl          SYM(PrepareAndDispatch)
 
             add         sp, sp, #8*(NGPREGS+NFPREGS)
+            .cfi_def_cfa_register sp
             ldp         x29, x30, [sp],#16
+            .cfi_adjust_cfa_offset -16
+            .cfi_restore x29
+            .cfi_restore x30
             ret
+            .cfi_endproc
 
+#ifndef __APPLE__
             .size SharedStub, . - SharedStub
+
+            .section .note.GNU-stack, "", @progbits
+#endif

@@ -10,6 +10,19 @@
 #error "Only little endian compatibility was tested"
 #endif
 
+template<typename T> void
+get_value_and_advance(T* aOutValue, void*& aStack) {
+#ifdef __APPLE__
+    const size_t aligned_size = sizeof(T);
+#else
+    const size_t aligned_size = 8;
+#endif
+    // Ensure the pointer is aligned for the type
+    uintptr_t addr = (reinterpret_cast<uintptr_t>(aStack) + aligned_size - 1) & ~(aligned_size - 1);
+    memcpy(aOutValue, reinterpret_cast<void*>(addr), sizeof(T));
+    aStack = reinterpret_cast<void*>(addr + aligned_size);
+}
+
 /*
  * This is for AArch64 ABI
  *
@@ -17,8 +30,8 @@
  * the "fp" registers are stored in fprData. Each array has 8 regs
  * but first reg in gprData is a placeholder for 'self'.
  */
-extern "C" nsresult
-PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
+extern "C" nsresult ATTRIBUTE_USED
+PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, void* args,
                    uint64_t *gprData, double *fprData)
 {
 #define PARAM_BUFFER_COUNT        16
@@ -28,7 +41,6 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
     nsXPTCMiniVariant paramBuffer[PARAM_BUFFER_COUNT];
     nsXPTCMiniVariant* dispatchParams = NULL;
     const nsXPTMethodInfo* info;
-    nsresult result = NS_ERROR_FAILURE;
 
     NS_ASSERTION(self,"no self");
 
@@ -45,7 +57,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
     }
     NS_ASSERTION(dispatchParams,"no place for params");
 
-    uint64_t* ap = args;
+    void* ap = args;
     uint32_t next_gpr = 1; // skip first arg which is 'self'
     uint32_t next_fpr = 0;
     for (uint32_t i = 0; i < paramCount; i++) {
@@ -57,7 +69,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
             if (next_gpr < PARAM_GPR_COUNT) {
                 dp->val.p = (void*)gprData[next_gpr++];
             } else {
-                dp->val.p = (void*)*ap++;
+                get_value_and_advance(&dp->val.p, ap);
             }
             continue;
         }
@@ -67,7 +79,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.i8  = (int8_t)gprData[next_gpr++];
                 } else {
-                    dp->val.i8  = (int8_t)*ap++;
+                    get_value_and_advance(&dp->val.i8, ap);
                 }
                 break;
 
@@ -75,7 +87,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.i16  = (int16_t)gprData[next_gpr++];
                 } else {
-                    dp->val.i16  = (int16_t)*ap++;
+                    get_value_and_advance(&dp->val.i16, ap);
                 }
                 break;
 
@@ -83,7 +95,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.i32  = (int32_t)gprData[next_gpr++];
                 } else {
-                    dp->val.i32  = (int32_t)*ap++;
+                    get_value_and_advance(&dp->val.i32, ap);
                 }
                 break;
 
@@ -91,7 +103,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.i64  = (int64_t)gprData[next_gpr++];
                 } else {
-                    dp->val.i64  = (int64_t)*ap++;
+                    get_value_and_advance(&dp->val.i64, ap);
                 }
                 break;
 
@@ -99,7 +111,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.u8  = (uint8_t)gprData[next_gpr++];
                 } else {
-                    dp->val.u8  = (uint8_t)*ap++;
+                    get_value_and_advance(&dp->val.u8, ap);
                 }
                 break;
 
@@ -107,7 +119,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.u16  = (uint16_t)gprData[next_gpr++];
                 } else {
-                    dp->val.u16  = (uint16_t)*ap++;
+                    get_value_and_advance(&dp->val.u16, ap);
                 }
                 break;
 
@@ -115,7 +127,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.u32  = (uint32_t)gprData[next_gpr++];
                 } else {
-                    dp->val.u32  = (uint32_t)*ap++;
+                    get_value_and_advance(&dp->val.u32, ap);
                 }
                 break;
 
@@ -123,7 +135,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.u64  = (uint64_t)gprData[next_gpr++];
                 } else {
-                    dp->val.u64  = (uint64_t)*ap++;
+                    get_value_and_advance(&dp->val.u64, ap);
                 }
                 break;
 
@@ -131,7 +143,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_fpr < PARAM_FPR_COUNT) {
                     memcpy(&dp->val.f, &fprData[next_fpr++], sizeof(dp->val.f));
                 } else {
-                    memcpy(&dp->val.f, ap++, sizeof(dp->val.f));
+                    get_value_and_advance(&dp->val.f, ap);
                 }
                 break;
 
@@ -139,15 +151,17 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_fpr < PARAM_FPR_COUNT) {
                     memcpy(&dp->val.d, &fprData[next_fpr++], sizeof(dp->val.d));
                 } else {
-                    memcpy(&dp->val.d, ap++, sizeof(dp->val.d));
+                    get_value_and_advance(&dp->val.d, ap);
                 }
                 break;
 
             case nsXPTType::T_BOOL:
                 if (next_gpr < PARAM_GPR_COUNT) {
-                    dp->val.b  = (bool)gprData[next_gpr++];
+                    dp->val.b  = (bool)(uint8_t)gprData[next_gpr++];
                 } else {
-                    dp->val.b  = (bool)*ap++;
+                    uint8_t value;
+                    get_value_and_advance(&value, ap);
+                    dp->val.b = (bool)value;
                 }
                 break;
 
@@ -155,7 +169,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.c  = (char)gprData[next_gpr++];
                 } else {
-                    dp->val.c  = (char)*ap++;
+                    get_value_and_advance(&dp->val.c, ap);
                 }
                 break;
 
@@ -163,7 +177,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
                 if (next_gpr < PARAM_GPR_COUNT) {
                     dp->val.wc  = (wchar_t)gprData[next_gpr++];
                 } else {
-                    dp->val.wc  = (wchar_t)*ap++;
+                    get_value_and_advance(&dp->val.wc, ap);
                 }
                 break;
 
@@ -173,7 +187,7 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
         }
     }
 
-    result = self->mOuter->CallMethod((uint16_t)methodIndex, info, dispatchParams);
+    nsresult result = self->mOuter->CallMethod((uint16_t)methodIndex, info, dispatchParams);
 
     if (dispatchParams != paramBuffer) {
         delete [] dispatchParams;
@@ -182,26 +196,34 @@ PrepareAndDispatch(nsXPTCStubBase* self, uint32_t methodIndex, uint64_t* args,
     return result;
 }
 
+#ifdef __APPLE__
+#define GNU(str)
+#define UNDERSCORE "__"
+#else
+#define GNU(str) str
+#define UNDERSCORE "_"
+#endif
+
 // Load w17 with the constant 'n' and branch to SharedStub().
 # define STUB_ENTRY(n)                                                  \
     __asm__ (                                                           \
-            ".section \".text\" \n\t"                                   \
+            ".text\n\t"                                                 \
             ".align 2\n\t"                                              \
             ".if "#n" < 10 \n\t"                                        \
-            ".globl  _ZN14nsXPTCStubBase5Stub"#n"Ev \n\t"               \
-            ".hidden _ZN14nsXPTCStubBase5Stub"#n"Ev \n\t"               \
-            ".type   _ZN14nsXPTCStubBase5Stub"#n"Ev,@function \n\n"     \
-            "_ZN14nsXPTCStubBase5Stub"#n"Ev: \n\t"                      \
+            ".globl  " UNDERSCORE "ZN14nsXPTCStubBase5Stub"#n"Ev \n\t"  \
+            GNU(".hidden _ZN14nsXPTCStubBase5Stub"#n"Ev \n\t")          \
+            GNU(".type   _ZN14nsXPTCStubBase5Stub"#n"Ev,@function \n\n")\
+            "" UNDERSCORE "ZN14nsXPTCStubBase5Stub"#n"Ev: \n\t"         \
             ".elseif "#n" < 100 \n\t"                                   \
-            ".globl  _ZN14nsXPTCStubBase6Stub"#n"Ev \n\t"               \
-            ".hidden _ZN14nsXPTCStubBase6Stub"#n"Ev \n\t"               \
-            ".type   _ZN14nsXPTCStubBase6Stub"#n"Ev,@function \n\n"     \
-            "_ZN14nsXPTCStubBase6Stub"#n"Ev: \n\t"                      \
+            ".globl  " UNDERSCORE "ZN14nsXPTCStubBase6Stub"#n"Ev \n\t"  \
+            GNU(".hidden _ZN14nsXPTCStubBase6Stub"#n"Ev \n\t")          \
+            GNU(".type   _ZN14nsXPTCStubBase6Stub"#n"Ev,@function \n\n")\
+            "" UNDERSCORE "ZN14nsXPTCStubBase6Stub"#n"Ev: \n\t"         \
             ".elseif "#n" < 1000 \n\t"                                  \
-            ".globl  _ZN14nsXPTCStubBase7Stub"#n"Ev \n\t"               \
-            ".hidden _ZN14nsXPTCStubBase7Stub"#n"Ev \n\t"               \
-            ".type   _ZN14nsXPTCStubBase7Stub"#n"Ev,@function \n\n"     \
-            "_ZN14nsXPTCStubBase7Stub"#n"Ev: \n\t"                      \
+            ".globl  " UNDERSCORE "ZN14nsXPTCStubBase7Stub"#n"Ev \n\t"  \
+            GNU(".hidden _ZN14nsXPTCStubBase7Stub"#n"Ev \n\t")          \
+            GNU(".type   _ZN14nsXPTCStubBase7Stub"#n"Ev,@function \n\n")\
+            UNDERSCORE "ZN14nsXPTCStubBase7Stub"#n"Ev: \n\t"            \
             ".else  \n\t"                                               \
             ".err   \"stub number "#n" >= 1000 not yet supported\"\n"   \
             ".endif \n\t"                                               \
