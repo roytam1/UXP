@@ -825,6 +825,15 @@ nsHttpHandler::InitUserAgentComponents()
             PR_smprintf_free(buf);
         }
     }
+#elif defined (XP_MACOSX)
+#if defined(__ppc__)
+    mOscpu.AssignLiteral("PPC Mac OS X");
+#else
+    mOscpu.AssignLiteral("Intel Mac OS X");
+#endif
+    SInt32 majorVersion = nsCocoaFeatures::macOSVersionMajor();
+    SInt32 minorVersion = nsCocoaFeatures::macOSVersionMinor();
+    mOscpu += nsPrintfCString(" %d.%d", majorVersion, minorVersion);
 #elif defined (XP_UNIX)
     struct utsname name;
 
