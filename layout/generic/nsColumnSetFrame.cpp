@@ -641,8 +641,8 @@ nsColumnSetFrame::ReflowChildren(ReflowOutput&     aDesiredSize,
                           kidReflowInput.ComputedLogicalMargin().IStart(wm),
                           childOrigin.B(wm) +
                           kidReflowInput.ComputedLogicalMargin().BStart(wm));
-      ReflowChild(child, PresContext(), kidDesiredSize, kidReflowInput,
-                  wm, origin, containerSize, 0, aStatus);
+      ReflowChild(child, PresContext(), kidDesiredSize, kidReflowInput, wm,
+                  origin, containerSize, ReflowChildFlags::Default, aStatus);
 
       reflowNext = (aStatus & NS_FRAME_REFLOW_NEXTINFLOW) != 0;
 
@@ -656,8 +656,9 @@ nsColumnSetFrame::ReflowChildren(ReflowOutput&     aDesiredSize,
 
       *aCarriedOutBEndMargin = kidDesiredSize.mCarriedOutBEndMargin;
 
-      FinishReflowChild(child, PresContext(), kidDesiredSize,
-                        &kidReflowInput, wm, childOrigin, containerSize, 0);
+      FinishReflowChild(child, PresContext(), kidDesiredSize, &kidReflowInput,
+                        wm, childOrigin, containerSize,
+                        ReflowChildFlags::Default);
 
       childContentBEnd = nsLayoutUtils::CalculateContentBEnd(wm, child);
       if (childContentBEnd > aConfig.mColMaxBSize) {
@@ -1052,8 +1053,8 @@ nsColumnSetFrame::Reflow(nsPresContext*           aPresContext,
   nsOverflowAreas ocBounds;
   nsReflowStatus ocStatus = NS_FRAME_COMPLETE;
   if (GetPrevInFlow()) {
-    ReflowOverflowContainerChildren(aPresContext, aReflowInput, ocBounds, 0,
-                                    ocStatus);
+    ReflowOverflowContainerChildren(aPresContext, aReflowInput, ocBounds,
+                                    ReflowChildFlags::Default, ocStatus);
   }
 
   //------------ Handle Incremental Reflow -----------------

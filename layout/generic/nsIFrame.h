@@ -2239,6 +2239,19 @@ public:
                       const ReflowInput& aReflowInput,
                       nsReflowStatus&          aStatus) = 0;
 
+  // Option flags for ReflowChild() and FinishReflowChild()
+  // member functions
+  enum class ReflowChildFlags : uint32_t {
+    Default = 0,
+    NoMoveView = 1 << 0,
+    NoMoveFrame = (1 << 1) | NoMoveView,
+    NoSizeView = 1 << 2,
+    NoVisibility = 1 << 3,
+    // Only applies to ReflowChild; if true, don't delete the next-in-flow, even
+    // if the reflow is fully complete.
+    NoDeleteNextInFlowChild = 1 << 4
+  };
+
   /**
    * Post-reflow hook. After a frame is reflowed this method will be called
    * informing the frame that this reflow process is complete, and telling the
@@ -3213,8 +3226,9 @@ size_t SizeOfFramePropertiesForTree(mozilla::MallocSizeOf aMallocSizeOf) const;
   virtual nsBoxLayout* GetXULLayoutManager() { return nullptr; }
   nsresult GetXULClientRect(nsRect& aContentRect);
 
-  virtual uint32_t GetXULLayoutFlags()
-  { return 0; }
+  virtual ReflowChildFlags GetXULLayoutFlags() {
+    return ReflowChildFlags::Default;
+  }
 
   // For nsSprocketLayout
   virtual Valignment GetXULVAlign() const = 0;
@@ -3775,6 +3789,8 @@ public:
                                        FILE* out, int32_t aIndent) = 0;
 #endif
 };
+
+MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(nsIFrame::ReflowChildFlags)
 
 //----------------------------------------------------------------------
 

@@ -632,11 +632,11 @@ nsMathMLmmultiscriptsFrame::PlaceMultiScript(nsPresContext*  aPresContext,
         // place the base ...
         childFrame = baseFrame;
         dy = aDesiredSize.BlockStartAscent() - baseSize.BlockStartAscent();
-        FinishReflowChild (baseFrame, aPresContext, baseSize, nullptr,
-                           aFrame->MirrorIfRTL(aDesiredSize.Width(),
-                                               baseSize.Width(),
-                                               dx),
-                           dy, 0);
+        FinishReflowChild(baseFrame, aPresContext, baseSize, nullptr,
+                          aFrame->MirrorIfRTL(aDesiredSize.Width(),
+                                              baseSize.Width(),
+                                              dx),
+                          dy, ReflowChildFlags::Default);
         dx += bmBase.width;
       } else if (prescriptsFrame == childFrame) {
         // Clear reflow flags of prescripts frame.
@@ -668,12 +668,12 @@ nsMathMLmmultiscriptsFrame::PlaceMultiScript(nsPresContext*  aPresContext,
               x += width - subScriptSize.Width();
             dy = aDesiredSize.BlockStartAscent() - subScriptSize.BlockStartAscent() +
               maxSubScriptShift;
-            FinishReflowChild (subScriptFrame, aPresContext, subScriptSize,
-                               nullptr,
-                               aFrame->MirrorIfRTL(aDesiredSize.Width(),
-                                                   subScriptSize.Width(),
-                                                   x),
-                               dy, 0);
+            FinishReflowChild(subScriptFrame, aPresContext, subScriptSize,
+                              nullptr,
+                              aFrame->MirrorIfRTL(aDesiredSize.Width(),
+                                                  subScriptSize.Width(),
+                                                  x),
+                              dy, ReflowChildFlags::Default);
           }
 
           if (supScriptFrame) {
@@ -686,12 +686,12 @@ nsMathMLmmultiscriptsFrame::PlaceMultiScript(nsPresContext*  aPresContext,
             }
             dy = aDesiredSize.BlockStartAscent() - supScriptSize.BlockStartAscent() -
               maxSupScriptShift;
-            FinishReflowChild (supScriptFrame, aPresContext, supScriptSize,
-                               nullptr,
-                               aFrame->MirrorIfRTL(aDesiredSize.Width(),
-                                                   supScriptSize.Width(),
-                                                   x),
-                               dy, 0);
+            FinishReflowChild(supScriptFrame, aPresContext, supScriptSize,
+                              nullptr,
+                              aFrame->MirrorIfRTL(aDesiredSize.Width(),
+                                                  supScriptSize.Width(),
+                                                  x),
+                              dy, ReflowChildFlags::Default);
           }
           dx += width + scriptSpace;
         }

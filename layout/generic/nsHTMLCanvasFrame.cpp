@@ -281,10 +281,10 @@ nsHTMLCanvasFrame::Reflow(nsPresContext*           aPresContext,
   ReflowOutput childDesiredSize(aReflowInput.GetWritingMode(), aMetrics.mFlags);
   ReflowInput childReflowInput(aPresContext, aReflowInput, childFrame,
                                      availSize);
-  ReflowChild(childFrame, aPresContext, childDesiredSize, childReflowInput,
-              0, 0, 0, childStatus, nullptr);
+  ReflowChild(childFrame, aPresContext, childDesiredSize, childReflowInput, 0,
+              0, ReflowChildFlags::Default, childStatus, nullptr);
   FinishReflowChild(childFrame, aPresContext, childDesiredSize,
-                    &childReflowInput, 0, 0, 0);
+                    &childReflowInput, 0, 0, ReflowChildFlags::Default);
 
   NS_FRAME_TRACE(NS_FRAME_TRACE_CALLS,
                   ("exit nsHTMLCanvasFrame::Reflow: size=%d,%d",

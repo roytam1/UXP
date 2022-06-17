@@ -141,13 +141,15 @@ nsPageFrame::Reflow(nsPresContext*           aPresContext,
     nscoord yc = mPageContentMargin.top;
 
     // Get the child's desired size
-    ReflowChild(frame, aPresContext, aDesiredSize, kidReflowInput, xc, yc, 0, aStatus);
+    ReflowChild(frame, aPresContext, aDesiredSize, kidReflowInput, xc, yc,
+                ReflowChildFlags::Default, aStatus);
 
     // Place and size the child
-    FinishReflowChild(frame, aPresContext, aDesiredSize, &kidReflowInput, xc, yc, 0);
+    FinishReflowChild(frame, aPresContext, aDesiredSize, &kidReflowInput, xc,
+                      yc, ReflowChildFlags::Default);
 
-    NS_ASSERTION(!NS_FRAME_IS_FULLY_COMPLETE(aStatus) ||
-                 !frame->GetNextInFlow(), "bad child flow list");
+    NS_ASSERTION(!aStatus.IsFullyComplete() || !frame->GetNextInFlow(),
+                 "bad child flow list");
   }
   PR_PL(("PageFrame::Reflow %p ", this));
   PR_PL(("[%d,%d][%d,%d]\n", aDesiredSize.Width(), aDesiredSize.Height(),
