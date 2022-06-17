@@ -9743,13 +9743,14 @@ Parser<ParseHandler>::propertyName(YieldHandling yieldHandling,
         // ComputedPropertyName[Yield, Await]:
         //   [ ...
         TokenKind tt = TOK_EOF;
-        if (!tokenStream.getToken(&tt))
+        if (!tokenStream.peekTokenSameLine(&tt))
             return null();
-        if (tt != TOK_LP && tt != TOK_COLON && tt != TOK_RC && tt != TOK_ASSIGN) {
+        if (tt == TOK_STRING || tt == TOK_NUMBER || tt == TOK_LB ||
+            TokenKindIsPossibleIdentifierName(tt))
+        {
             isAsync = true;
+            tokenStream.consumeKnownToken(tt);
             ltok = tt;
-        } else {
-            tokenStream.ungetToken();
         }
     }
 
