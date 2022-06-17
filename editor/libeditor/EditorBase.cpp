@@ -4201,7 +4201,7 @@ EditorBase::DeleteSelectionAndPrepareToCreateNode()
   NS_ENSURE_TRUE(selection, NS_ERROR_NULL_POINTER);
   MOZ_ASSERT(selection->GetAnchorFocusRange());
 
-  if (!selection->GetAnchorFocusRange()->Collapsed()) {
+  if (selection->GetAnchorFocusRange() && !selection->GetAnchorFocusRange()->Collapsed()) {
     nsresult rv = DeleteSelection(nsIEditor::eNone, nsIEditor::eStrip);
     NS_ENSURE_SUCCESS(rv, rv);
 
