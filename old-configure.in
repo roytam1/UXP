@@ -2056,6 +2056,7 @@ MOZ_FEEDS=1
 MOZ_AUTH_EXTENSION=1
 MOZ_RAW=
 MOZ_AV1=
+MOZ_JXL=
 MOZ_VORBIS=
 MOZ_TREMOR=
 MOZ_SAMPLE_TYPE_FLOAT32=
@@ -2822,6 +2823,20 @@ if test -n "$MOZ_AV1"; then
 fi
 
 AC_SUBST(MOZ_AV1)
+
+dnl ========================================================
+dnl = Enable JPEG-XL Codec
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(av1,
+[  --enable-jxl           Enable libjxl and highway for jxl image support],
+    MOZ_JXL=1,
+    MOZ_JXL=)
+
+if test -n "$MOZ_JXL"; then
+    AC_DEFINE(MOZ_JXL)
+fi
+
+AC_SUBST(MOZ_JXL)
 
 dnl ========================================================
 dnl = Apple platform decoder support

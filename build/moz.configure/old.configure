@@ -157,6 +157,7 @@ def old_configure_options(*options):
     '--enable-address-sanitizer',
     '--enable-alsa',
     '--enable-av1',
+    '--enable-jxl',
     '--enable-b2g-bt',
     '--enable-b2g-camera',
     '--enable-b2g-ril',
