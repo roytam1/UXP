@@ -4262,6 +4262,10 @@ pref("image.multithreaded_decoding.limit", -1);
 // Whether we attempt to decode WebP images or not.
 pref("image.webp.enabled", true);
 
+#ifdef MOZ_JXL
+pref("image.jxl.enabled", false);
+#endif
+
 // Limit for the canvas image cache. 0 means we don't limit the size of the
 // cache.
 pref("canvas.image.cache.limit", 0);

@@ -503,6 +503,7 @@ static const nsExtraMimeTypeEntry extraMimeEntries[] =
   { IMAGE_XBM, "xbm", "XBM Image" },
   { IMAGE_SVG_XML, "svg", "Scalable Vector Graphics" },
   { IMAGE_WEBP, "webp", "WebP Image" },
+  { IMAGE_JXL, "jxl", "JPEG XL Image File" },
   { MESSAGE_RFC822, "eml", "RFC-822 data" },
   { TEXT_PLAIN, "txt,text", "Text File" },
   { TEXT_HTML, "html,htm,shtml,ehtml", "HyperText Markup Language" },
