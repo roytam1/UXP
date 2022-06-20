@@ -8,7 +8,6 @@
 #define mozilla_image_decoders_nsJXLDecoder_h
 
 #include "Decoder.h"
-#include "mp4parse.h"
 #include "SurfacePipe.h"
 
 #include "jxl/decode_cxx.h"
@@ -20,8 +19,6 @@ class RasterImage;
 class nsJXLDecoder final : public Decoder {
  public:
   virtual ~nsJXLDecoder();
-
-  DecoderType GetType() const override { return DecoderType::JXL; }
 
  protected:
   LexerResult DoDecode(SourceBufferIterator& aIterator,

@@ -66,8 +66,9 @@ size_t nsJXLDecoder::PreferredThreadCount() {
   return JxlThreadParallelRunnerDefaultNumWorkerThreads();
 }
 
-LexerResult nsJXLDecoder::DoDecode(SourceBufferIterator& aIterator,
-                                   IResumable* aOnResume) {
+LexerResult
+nsJXLDecoder::DoDecode(SourceBufferIterator& aIterator, IResumable* aOnResume)
+{
   // return LexerResult(TerminalState::FAILURE);
   MOZ_ASSERT(!HasError(), "Shouldn't call DoDecode after error!");
 
@@ -83,8 +84,9 @@ LexerResult nsJXLDecoder::DoDecode(SourceBufferIterator& aIterator,
                     });
 };
 
-LexerTransition<nsJXLDecoder::State> nsJXLDecoder::ReadJXLData(
-    const char* aData, size_t aLength) {
+LexerTransition<nsJXLDecoder::State>
+nsJXLDecoder::ReadJXLData(const char* aData, size_t aLength)
+{
   const uint8_t* input = (const uint8_t*)aData;
   size_t length = aLength;
   if (mBuffer.length() != 0) {
@@ -133,10 +135,9 @@ LexerTransition<nsJXLDecoder::State> nsJXLDecoder::ReadJXLData(
       }
 
       case JXL_DEC_FULL_IMAGE: {
-        OrientedIntSize size(mInfo.xsize, mInfo.ysize);
         Maybe<SurfacePipe> pipe = SurfacePipeFactory::CreateSurfacePipe(
-            this, size, OutputSize(), FullFrame(), SurfaceFormat::R8G8B8A8,
-            SurfaceFormat::OS_RGBA, Nothing(), nullptr, SurfacePipeFlags());
+            this, Size(), OutputSize(), FullFrame(), SurfaceFormat::B8G8R8A8,
+            Nothing(), SurfacePipeFlags());
         for (uint8_t* rowPtr = mOutBuffer.begin(); rowPtr < mOutBuffer.end();
              rowPtr += mInfo.xsize * 4) {
           pipe->WriteBuffer(reinterpret_cast<uint32_t*>(rowPtr));
@@ -154,7 +155,9 @@ LexerTransition<nsJXLDecoder::State> nsJXLDecoder::ReadJXLData(
   }
 }
 
-LexerTransition<nsJXLDecoder::State> nsJXLDecoder::FinishedJXLData() {
+LexerTransition<nsJXLDecoder::State>
+nsJXLDecoder::FinishedJXLData()
+{
   MOZ_ASSERT_UNREACHABLE("Read the entire address space?");
   return Transition::TerminateFailure();
 }
