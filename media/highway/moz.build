@@ -30,6 +30,7 @@ EXPORTS.hwy += [
 EXPORTS.hwy.ops += [
     "/media/highway/src/hwy/ops/arm_neon-inl.h",
     "/media/highway/src/hwy/ops/arm_sve-inl.h",
+    "/media/highway/src/hwy/ops/emu128-inl.h",
     "/media/highway/src/hwy/ops/generic_ops-inl.h",
     "/media/highway/src/hwy/ops/rvv-inl.h",
     "/media/highway/src/hwy/ops/scalar-inl.h",
@@ -42,3 +43,6 @@ EXPORTS.hwy.ops += [
 ]
 
 FINAL_LIBRARY = "gkmedias"
+
+# We allow warnings for third-party code that can be updated from upstream.
+ALLOW_COMPILER_WARNINGS = True

@@ -131,6 +131,9 @@ EXPORTS.jxl += [
 
 FINAL_LIBRARY = "gkmedias"
 
+# We allow warnings for third-party code that can be updated from upstream.
+ALLOW_COMPILER_WARNINGS = True
+
 # Clang 5.0 has a compiler bug that prevents build in c++17
 # See https://gitlab.com/wg1/jpeg-xl/-/issues/227
 # This should be okay since we are using the C API.
