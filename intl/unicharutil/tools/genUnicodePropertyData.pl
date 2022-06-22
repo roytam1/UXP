@@ -766,50 +766,17 @@ $versionInfo
 
 __END
 
-print DATA_TABLES "#if !ENABLE_INTL_API\n";
-print DATA_TABLES "static const uint32_t sScriptCodeToTag[] = {\n";
-for (my $i = 0; $i < scalar @scriptCodeToTag; ++$i) {
-  printf DATA_TABLES "  HB_TAG('%c','%c','%c','%c')", unpack('cccc', $scriptCodeToTag[$i]);
-  print DATA_TABLES $i < $#scriptCodeToTag ? ",\n" : "\n";
-}
-print DATA_TABLES "};\n";
-print DATA_TABLES "#endif\n\n";
-
 our $totalData = 0;
-
-print DATA_TABLES "#if !ENABLE_INTL_API\n";
-print DATA_TABLES "static const int16_t sMirrorOffsets[] = {\n";
-for (my $i = 0; $i < scalar @offsets; ++$i) {
-    printf DATA_TABLES "  $offsets[$i]";
-    print DATA_TABLES $i < $#offsets ? ",\n" : "\n";
-}
-print DATA_TABLES "};\n";
-print DATA_TABLES "#endif\n\n";
 
 print HEADER "#pragma pack(1)\n\n";
 
-sub sprintCharProps1
-{
-  my $usv = shift;
-  return sprintf("{%d,%d,%d}, ", $mirror[$usv], $hangul[$usv], $combining[$usv]);
-}
-my $type = q/
-struct nsCharProps1 {
-  unsigned char mMirrorOffsetIndex:5;
-  unsigned char mHangulType:3;
-  unsigned char mCombiningClass:8;
-};
-/;
-&genTables("#if !ENABLE_INTL_API", "#endif",
-           "CharProp1", $type, "nsCharProps1", 11, 5, \&sprintCharProps1, 1, 2, 1);
-
-sub sprintCharProps2_short
+sub sprintCharProps2
 {
   my $usv = shift;
   return sprintf("{%d,%d},",
                  $verticalOrientation[$usv], $idtype[$usv]);
 }
-$type = q|
+my $type = q|
 struct nsCharProps2 {
   // Currently only 4 bits are defined here, so 4 more could be added without
   // affecting the storage requirements for this struct. Or we could pack two
@@ -818,41 +785,8 @@ struct nsCharProps2 {
   unsigned char mIdType:2;
 };
 |;
-&genTables("#if ENABLE_INTL_API", "#endif",
-           "CharProp2", $type, "nsCharProps2", 9, 7, \&sprintCharProps2_short, 16, 1, 1);
-
-sub sprintCharProps2_full
-{
-  my $usv = shift;
-  return sprintf("{%d,%d,%d,%d,%d,%d,%d,%d,%d,%d},",
-                 $script[$usv], $pairedBracketType[$usv],
-                 $eastAsianWidthFWH[$usv], $category[$usv],
-                 $idtype[$usv], $defaultIgnorable[$usv], $bidicategory[$usv],
-                 $verticalOrientation[$usv], $lineBreak[$usv],
-                 $numericvalue[$usv]);
-}
-$type = q|
-// This struct currently requires 5 bytes. We try to ensure that whole-byte
-// fields will not straddle byte boundaries, to optimize access to them.
-struct nsCharProps2 {
-  unsigned char mScriptCode:8;
-  // -- byte boundary --
-  unsigned char mPairedBracketType:2;
-  unsigned char mEastAsianWidthFWH:1;
-  unsigned char mCategory:5;
-  // -- byte boundary --
-  unsigned char mIdType:2;
-  unsigned char mDefaultIgnorable:1;
-  unsigned char mBidiCategory:5;
-  // -- byte boundary --
-  unsigned char mVertOrient:2;
-  unsigned char mLineBreak:6;
-  // -- byte boundary --
-  signed char   mNumericValue; // only 5 bits are actually needed here
-};
-|;
-&genTables("#if !ENABLE_INTL_API", "#endif",
-           "CharProp2", $type, "nsCharProps2", 12, 4, \&sprintCharProps2_full, 16, 5, 1);
+&genTables("", "",
+           "CharProp2", $type, "nsCharProps2", 9, 7, \&sprintCharProps2, 16, 1, 1);
 
 print HEADER "#pragma pack()\n\n";
 
@@ -883,14 +817,6 @@ sub sprintFullWidthInverse
   return sprintf("0x%04x,", $fullWidthInverse[$usv]);
 }
 &genTables("", "", "FullWidthInverse", "", "uint16_t", 10, 6, \&sprintFullWidthInverse, 0, 2, 1);
-
-sub sprintCasemap
-{
-  my $usv = shift;
-  return sprintf("0x%08x,", $casemap[$usv]);
-}
-&genTables("#if !ENABLE_INTL_API", "#endif",
-           "CaseMap", "", "uint32_t", 11, 5, \&sprintCasemap, 1, 4, 1);
 
 print STDERR "Total data = $totalData\n";
 
