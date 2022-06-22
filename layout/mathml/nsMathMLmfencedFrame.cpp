@@ -403,8 +403,9 @@ nsMathMLmfencedFrame::Reflow(nsPresContext*          aPresContext,
     else  
       aDesiredSize.mBoundingMetrics += bm;
 
-    FinishReflowChild(childFrame, aPresContext, childSize, nullptr,
-                      dx, ascent - childSize.BlockStartAscent(), 0);
+    FinishReflowChild(childFrame, aPresContext, childSize, nullptr, dx,
+                      ascent - childSize.BlockStartAscent(),
+                      ReflowChildFlags::Default);
     dx += childSize.Width();
 
     if (i < mSeparatorsCount) {

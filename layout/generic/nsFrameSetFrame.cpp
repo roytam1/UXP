@@ -699,13 +699,14 @@ nsHTMLFramesetFrame::ReflowPlaceChild(nsIFrame*                aChild,
   nsReflowStatus status;
 
   ReflowChild(aChild, aPresContext, reflowOutput, reflowInput, aOffset.x,
-              aOffset.y, 0, status);
+              aOffset.y, ReflowChildFlags::Default, status);
   NS_ASSERTION(NS_FRAME_IS_COMPLETE(status), "bad status");
 
   // Place and size the child
   reflowOutput.Width() = aSize.width;
   reflowOutput.Height() = aSize.height;
-  FinishReflowChild(aChild, aPresContext, reflowOutput, nullptr, aOffset.x, aOffset.y, 0);
+  FinishReflowChild(aChild, aPresContext, reflowOutput, nullptr, aOffset.x,
+                    aOffset.y, ReflowChildFlags::Default);
 }
 
 static

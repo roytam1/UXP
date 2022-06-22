@@ -15,6 +15,7 @@
 
 #include "nsCOMPtr.h"
 #include "nsPresContext.h"
+#include "nsIFrame.h"
 #include "nsIPresShell.h"
 
 class nsRenderingContext;
@@ -38,8 +39,10 @@ public:
   nsPresContext* PresContext() const { return mPresContext; }
   nsIPresShell* PresShell() const { return mPresContext->PresShell(); }
 
-  uint32_t LayoutFlags() const { return mLayoutFlags; }
-  void SetLayoutFlags(uint32_t aFlags) { mLayoutFlags = aFlags; }
+  nsIFrame::ReflowChildFlags LayoutFlags() const { return mLayoutFlags; }
+  void SetLayoutFlags(nsIFrame::ReflowChildFlags aFlags) {
+    mLayoutFlags = aFlags;
+  }
 
   // if true no one under us will paint during reflow.
   void SetPaintingDisabled(bool aDisable) { mPaintingDisabled = aDisable; }
@@ -68,7 +71,7 @@ private:
   RefPtr<nsPresContext> mPresContext;
   nsRenderingContext *mRenderingContext;
   const ReflowInput *mOuterReflowInput;
-  uint32_t mLayoutFlags;
+  nsIFrame::ReflowChildFlags mLayoutFlags;
   uint16_t mReflowDepth; 
   bool mPaintingDisabled;
 };

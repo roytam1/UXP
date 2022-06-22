@@ -374,8 +374,10 @@ nsTableColGroupFrame::Reflow(nsPresContext*          aPresContext,
                                      LogicalSize(kidFrame->GetWritingMode()));
 
     nsReflowStatus status;
-    ReflowChild(kidFrame, aPresContext, kidSize, kidReflowInput, 0, 0, 0, status);
-    FinishReflowChild(kidFrame, aPresContext, kidSize, nullptr, 0, 0, 0);
+    ReflowChild(kidFrame, aPresContext, kidSize, kidReflowInput, 0, 0,
+                ReflowChildFlags::Default, status);
+    FinishReflowChild(kidFrame, aPresContext, kidSize, nullptr, 0, 0,
+                      ReflowChildFlags::Default);
   }
 
   aDesiredSize.ClearSize();

@@ -6708,12 +6708,15 @@ PrepareCIF(JSContext* cx,
   if (!rtype)
     return false;
 
-  ffi_status status =
-    ffi_prep_cif(&fninfo->mCIF,
-                 abi,
-                 fninfo->mFFITypes.length(),
-                 rtype,
-                 fninfo->mFFITypes.begin());
+  ffi_status status;
+  if (fninfo->mIsVariadic) {
+    status = ffi_prep_cif_var(&fninfo->mCIF, abi, fninfo->mArgTypes.length(),
+                              fninfo->mFFITypes.length(), rtype,
+                              fninfo->mFFITypes.begin());
+  } else {
+    status = ffi_prep_cif(&fninfo->mCIF, abi, fninfo->mFFITypes.length(), rtype,
+                          fninfo->mFFITypes.begin());
+  }
 
   switch (status) {
   case FFI_OK:
