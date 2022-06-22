@@ -905,8 +905,8 @@ nsBoxFrame::GetXULFlex()
 NS_IMETHODIMP
 nsBoxFrame::DoXULLayout(nsBoxLayoutState& aState)
 {
-  uint32_t oldFlags = aState.LayoutFlags();
-  aState.SetLayoutFlags(0);
+  ReflowChildFlags oldFlags = aState.LayoutFlags();
+  aState.SetLayoutFlags(ReflowChildFlags::Default);
 
   nsresult rv = NS_OK;
   if (mLayoutManager) {

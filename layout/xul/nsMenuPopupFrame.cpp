@@ -531,7 +531,7 @@ nsMenuPopupFrame::LayoutPopup(nsBoxLayoutState& aState, nsIFrame* aParentMenu,
     }
 
     viewManager->SetViewVisibility(view, nsViewVisibility_kShow);
-    nsContainerFrame::SyncFrameViewProperties(pc, this, nullptr, view, 0);
+    nsContainerFrame::SyncFrameViewProperties(pc, this, nullptr, view);
   }
 
   // finally, if the popup just opened, send a popupshown event
@@ -993,10 +993,9 @@ nsMenuPopupFrame::HidePopup(bool aDeselectMenu, nsPopupState aNewState)
   }
 }
 
-uint32_t
-nsMenuPopupFrame::GetXULLayoutFlags()
-{
-  return NS_FRAME_NO_SIZE_VIEW | NS_FRAME_NO_MOVE_VIEW | NS_FRAME_NO_VISIBILITY;
+nsIFrame::ReflowChildFlags nsMenuPopupFrame::GetXULLayoutFlags() {
+  return ReflowChildFlags::NoSizeView | ReflowChildFlags::NoMoveView |
+         ReflowChildFlags::NoVisibility;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

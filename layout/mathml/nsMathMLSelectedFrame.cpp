@@ -178,7 +178,8 @@ nsMathMLSelectedFrame::Place(DrawTarget*          aDrawTarget,
   if (childFrame) {
     GetReflowAndBoundingMetricsFor(childFrame, aDesiredSize, mBoundingMetrics);
     if (aPlaceOrigin) {
-      FinishReflowChild(childFrame, PresContext(), aDesiredSize, nullptr, 0, 0, 0);
+      FinishReflowChild(childFrame, PresContext(), aDesiredSize, nullptr, 0, 0,
+                        ReflowChildFlags::Default);
     }
     mReference.x = 0;
     mReference.y = aDesiredSize.BlockStartAscent();

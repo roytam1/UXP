@@ -1408,9 +1408,8 @@ Navigator::GetPlatform(nsAString& aPlatform, bool aUsePrefOverriddenValue)
   aPlatform.AssignLiteral("Win32");
 #elif defined(XP_MACOSX) && defined(__ppc__)
   aPlatform.AssignLiteral("MacPPC");
-#elif defined(XP_MACOSX) && defined(__i386__)
-  aPlatform.AssignLiteral("MacIntel");
-#elif defined(XP_MACOSX) && defined(__x86_64__)
+#elif defined(XP_MACOSX)
+  // Always return "MacIntel", even on ARM64 macOS like Safari does.
   aPlatform.AssignLiteral("MacIntel");
 #else
   // XXX Communicator uses compiled-in build-time string defines

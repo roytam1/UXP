@@ -640,7 +640,8 @@ void nsTableCellFrame::BlockDirAlignChild(WritingMode aWM, nscoord aMaxAscent)
   if (HasView()) {
     nsContainerFrame::SyncFrameViewAfterReflow(PresContext(), this,
                                                GetView(),
-                                               desiredSize.VisualOverflow(), 0);
+                                               desiredSize.VisualOverflow(),
+                                               ReflowChildFlags::Default);
   }
 }
 
@@ -937,8 +938,8 @@ nsTableCellFrame::Reflow(nsPresContext*           aPresContext,
   nsRect origVisualOverflow = firstKid->GetVisualOverflowRect();
   bool firstReflow = firstKid->HasAnyStateBits(NS_FRAME_FIRST_REFLOW);
 
-  ReflowChild(firstKid, aPresContext, kidSize, kidReflowInput,
-              wm, kidOrigin, containerSize, 0, aStatus);
+  ReflowChild(firstKid, aPresContext, kidSize, kidReflowInput, wm, kidOrigin,
+              containerSize, ReflowChildFlags::Default, aStatus);
   if (NS_FRAME_OVERFLOW_IS_INCOMPLETE(aStatus)) {
     // Don't pass OVERFLOW_INCOMPLETE through tables until they can actually handle it
     //XXX should paginate overflow as overflow, but not in this patch (bug 379349)
@@ -967,8 +968,8 @@ nsTableCellFrame::Reflow(nsPresContext*           aPresContext,
   SetContentEmpty(isEmpty);
 
   // Place the child
-  FinishReflowChild(firstKid, aPresContext, kidSize, &kidReflowInput,
-                    wm, kidOrigin, containerSize, 0);
+  FinishReflowChild(firstKid, aPresContext, kidSize, &kidReflowInput, wm,
+                    kidOrigin, containerSize, ReflowChildFlags::Default);
 
   nsTableFrame::InvalidateTableFrame(firstKid, origRect, origVisualOverflow,
                                      firstReflow);

@@ -187,9 +187,9 @@ nsMeterFrame::ReflowBarFrame(nsIFrame*                aBarFrame,
 
   ReflowOutput barDesiredSize(reflowInput);
   ReflowChild(aBarFrame, aPresContext, barDesiredSize, reflowInput, xoffset,
-              yoffset, 0, aStatus);
+              yoffset, ReflowChildFlags::Default, aStatus);
   FinishReflowChild(aBarFrame, aPresContext, barDesiredSize, &reflowInput,
-                    xoffset, yoffset, 0);
+                    xoffset, yoffset, ReflowChildFlags::Default);
 }
 
 nsresult

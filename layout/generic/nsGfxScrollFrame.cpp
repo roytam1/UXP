@@ -571,11 +571,11 @@ nsHTMLScrollFrame::ReflowScrolledFrame(ScrollReflowInput* aState,
   nsReflowStatus status;
   // No need to pass a true container-size to ReflowChild or
   // FinishReflowChild, because it's only used there when positioning
-  // the frame (i.e. if NS_FRAME_NO_MOVE_FRAME isn't set)
+  // the frame (i.e. if ReflowChildFlags::NoMoveFrame isn't set)
   const nsSize dummyContainerSize;
-  ReflowChild(mHelper.mScrolledFrame, presContext, *aMetrics,
-              kidReflowInput, wm, LogicalPoint(wm), dummyContainerSize,
-              NS_FRAME_NO_MOVE_FRAME, status);
+  ReflowChild(mHelper.mScrolledFrame, presContext, *aMetrics, kidReflowInput,
+              wm, LogicalPoint(wm), dummyContainerSize,
+              ReflowChildFlags::NoMoveFrame, status);
 
   mHelper.mHasHorizontalScrollbar = didHaveHorizontalScrollbar;
   mHelper.mHasVerticalScrollbar = didHaveVerticalScrollbar;
@@ -588,7 +588,7 @@ nsHTMLScrollFrame::ReflowScrolledFrame(ScrollReflowInput* aState,
   FinishReflowChild(mHelper.mScrolledFrame, presContext,
                     *aMetrics, &kidReflowInput, wm, LogicalPoint(wm),
                     dummyContainerSize,
-                    NS_FRAME_NO_MOVE_FRAME | NS_FRAME_NO_SIZE_VIEW);
+                    ReflowChildFlags::NoMoveFrame | ReflowChildFlags::NoSizeView);
 
   // XXX Some frames (e.g., nsPluginFrame, nsFrameFrame, nsTextFrame) don't bother
   // setting their mOverflowArea. This is wrong because every frame should
@@ -801,7 +801,7 @@ nsHTMLScrollFrame::PlaceScrollArea(ScrollReflowInput& aState,
                                              scrolledFrame,
                                              scrolledFrame->GetView(),
                                              scrolledArea,
-                                             0);
+                                             ReflowChildFlags::Default);
 }
 
 nscoord
@@ -1664,7 +1664,7 @@ nsXULScrollFrame::GetFrameName(nsAString& aResult) const
 NS_IMETHODIMP
 nsXULScrollFrame::DoXULLayout(nsBoxLayoutState& aState)
 {
-  uint32_t flags = aState.LayoutFlags();
+  ReflowChildFlags flags = aState.LayoutFlags();
   nsresult rv = XULLayout(aState);
   aState.SetLayoutFlags(flags);
 
@@ -4956,14 +4956,12 @@ nsXULScrollFrame::AddRemoveScrollbar(bool& aHasScrollbar, nscoord& aXY,
    return false;
 }
 
-void
-nsXULScrollFrame::LayoutScrollArea(nsBoxLayoutState& aState,
-                                   const nsPoint& aScrollPosition)
-{
-  uint32_t oldflags = aState.LayoutFlags();
+void nsXULScrollFrame::LayoutScrollArea(nsBoxLayoutState& aState,
+                                        const nsPoint& aScrollPosition) {
+  ReflowChildFlags oldflags = aState.LayoutFlags();
   nsRect childRect = nsRect(mHelper.mScrollPort.TopLeft() - aScrollPosition,
                             mHelper.mScrollPort.Size());
-  int32_t flags = NS_FRAME_NO_MOVE_VIEW;
+  ReflowChildFlags flags = ReflowChildFlags::NoMoveView;
 
   nsSize minSize = mHelper.mScrolledFrame->GetXULMinSize(aState);
 

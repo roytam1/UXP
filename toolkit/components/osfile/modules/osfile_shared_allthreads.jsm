@@ -1130,6 +1130,14 @@ var declareFFI = function declareFFI(lib, symbol, abi,
       throw new TypeError("Missing type for argument " + ( i - 3 ) +
                           " of symbol " + symbol);
     }
+    // Ellipsis for variadic arguments.
+    if (current == "...") {
+      if (i != arguments.length - 1) {
+        throw new TypeError("Variadic ellipsis must be the last argument");
+      }
+      signature.push(current);
+      continue;
+    }
     if (!current.implementation) {
       throw new TypeError("Missing implementation for argument " + (i - 3)
                           + " of symbol " + symbol

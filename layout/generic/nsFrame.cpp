@@ -6583,9 +6583,9 @@ nsIFrame::UpdateOverflow()
   if (FinishAndStoreOverflow(overflowAreas, GetSize())) {
     nsView* view = GetView();
     if (view) {
-      uint32_t flags = GetXULLayoutFlags();
+      ReflowChildFlags flags = GetXULLayoutFlags();
 
-      if ((flags & NS_FRAME_NO_SIZE_VIEW) == 0) {
+      if (!(flags & ReflowChildFlags::NoSizeView)) {
         // Make sure the frame's view is properly sized.
         nsViewManager* vm = view->GetViewManager();
         vm->ResizeView(view, overflowAreas.VisualOverflow(), true);
@@ -9820,9 +9820,10 @@ nsFrame::BoxReflow(nsBoxLayoutState&        aState,
 
     NS_ASSERTION(NS_FRAME_IS_COMPLETE(status), "bad status");
 
-    uint32_t layoutFlags = aState.LayoutFlags();
+    ReflowChildFlags layoutFlags = aState.LayoutFlags();
     nsContainerFrame::FinishReflowChild(this, aPresContext, aDesiredSize,
-                                        &reflowInput, aX, aY, layoutFlags | NS_FRAME_NO_MOVE_FRAME);
+                                        &reflowInput, aX, aY, layoutFlags |
+                                        ReflowChildFlags::NoMoveFrame);
 
     // Save the ascent.  (bug 103925)
     if (IsXULCollapsed()) {

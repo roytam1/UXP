@@ -58,12 +58,13 @@ nsPageContentFrame::Reflow(nsPresContext*           aPresContext,
     kidReflowInput.SetComputedBSize(logicalSize.BSize(wm));
 
     // Reflow the page content area
-    ReflowChild(frame, aPresContext, aDesiredSize, kidReflowInput, 0, 0, 0, aStatus);
+    ReflowChild(frame, aPresContext, aDesiredSize, kidReflowInput, 0, 0,
+                ReflowChildFlags::Default, aStatus);
 
     // The document element's background should cover the entire canvas, so
     // take into account the combined area and any space taken up by
     // absolutely positioned elements
-    nsMargin padding(0,0,0,0);
+    nsMargin padding(0, 0, 0, 0);
 
     // XXXbz this screws up percentage padding (sets padding to zero
     // in the percentage padding case)
@@ -87,10 +88,12 @@ nsPageContentFrame::Reflow(nsPresContext*           aPresContext,
     }
 
     // Place and size the child
-    FinishReflowChild(frame, aPresContext, aDesiredSize, &kidReflowInput, 0, 0, 0);
+    FinishReflowChild(frame, aPresContext, aDesiredSize, &kidReflowInput, 0, 0,
+                      ReflowChildFlags::Default);
 
-    NS_ASSERTION(aPresContext->IsDynamic() || !NS_FRAME_IS_FULLY_COMPLETE(aStatus) ||
-                  !frame->GetNextInFlow(), "bad child flow list");
+    NS_ASSERTION(aPresContext->IsDynamic() || !aStatus.IsFullyComplete() ||
+                     !frame->GetNextInFlow(),
+                 "bad child flow list");
   }
 
   // Reflow our fixed frames
