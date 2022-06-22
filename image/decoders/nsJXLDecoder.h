@@ -13,7 +13,8 @@
 #include "jxl/decode_cxx.h"
 #include "jxl/thread_parallel_runner_cxx.h"
 
-namespace mozilla::image {
+namespace mozilla {
+namespace image {
 class RasterImage;
 
 class nsJXLDecoder final : public Decoder {
@@ -45,6 +46,7 @@ class nsJXLDecoder final : public Decoder {
   JxlBasicInfo mInfo{};
 };
 
-}  // namespace mozilla::image
+}  // namespace image
+}  // namespace mozilla
 
 #endif  // mozilla_image_decoders_nsJXLDecoder_h

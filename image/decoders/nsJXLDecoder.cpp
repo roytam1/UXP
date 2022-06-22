@@ -17,7 +17,8 @@
 
 using namespace mozilla::gfx;
 
-namespace mozilla::image {
+namespace mozilla {
+namespace image {
 
 #define JXL_TRY(expr)                        \
   do {                                       \
@@ -162,4 +163,5 @@ nsJXLDecoder::FinishedJXLData()
   return Transition::TerminateFailure();
 }
 
-}  // namespace mozilla::image
+}  // namespace image
+}  // namespace mozilla
