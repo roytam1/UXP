@@ -730,11 +730,11 @@ bool nsIDNService::isLabelSafe(const nsAString &label)
     // Check for restricted characters; aspirational scripts are NOT permitted,
     // in anticipation of the category being merged into Limited-Use scripts
     // in the upcoming (Unicode 10.0-based) revision of UAX #31.
-    XidmodType xm = GetIdentifierModification(ch);
-    if (xm != XIDMOD_RECOMMENDED &&
-        xm != XIDMOD_INCLUSION) {
+    IdentifierType idType = GetIdentifierType(ch);
+    if (idType == IDTYPE_RESTRICTED) {
       return false;
     }
+    MOZ_ASSERT(idType == IDTYPE_ALLOWED || idType == IDTYPE_ASPIRATIONAL);
 
     // Check for mixed script
     Script script = GetScriptCode(ch);
