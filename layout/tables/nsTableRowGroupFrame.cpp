@@ -279,8 +279,8 @@ nsTableRowGroupFrame::PlaceChild(nsPresContext*         aPresContext,
   bool isFirstReflow = aKidFrame->HasAnyStateBits(NS_FRAME_FIRST_REFLOW);
 
   // Place and size the child
-  FinishReflowChild(aKidFrame, aPresContext, aDesiredSize, nullptr,
-                    aWM, aKidPosition, aContainerSize, 0);
+  FinishReflowChild(aKidFrame, aPresContext, aDesiredSize, nullptr, aWM,
+                    aKidPosition, aContainerSize, ReflowChildFlags::Default);
 
   nsTableFrame::InvalidateTableFrame(aKidFrame, aOriginalKidRect,
                                      aOriginalKidVisualOverflow, isFirstReflow);
@@ -411,8 +411,9 @@ nsTableRowGroupFrame::ReflowChildren(nsPresContext*         aPresContext,
       }
 
       LogicalPoint kidPosition(wm, 0, aReflowInput.bCoord);
-      ReflowChild(kidFrame, aPresContext, desiredSize, kidReflowInput,
-                  wm, kidPosition, containerSize, 0, aStatus);
+      ReflowChild(kidFrame, aPresContext, desiredSize, kidReflowInput, wm,
+                  kidPosition, containerSize, ReflowChildFlags::Default,
+                  aStatus);
       kidReflowInput.ApplyRelativePositioning(&kidPosition, containerSize);
 
       // Place the child
@@ -1147,10 +1148,10 @@ nsTableRowGroupFrame::SplitRowGroup(nsPresContext*           aPresContext,
         nsRect oldRowRect = rowFrame->GetRect();
         nsRect oldRowVisualOverflow = rowFrame->GetVisualOverflowRect();
 
-        // Reflow the cell with the constrained height. A cell with rowspan >1 will get this
-        // reflow later during SplitSpanningCells.
-        ReflowChild(rowFrame, aPresContext, rowMetrics, rowReflowInput,
-                    0, 0, NS_FRAME_NO_MOVE_FRAME, aStatus);
+        // Reflow the cell with the constrained height. A cell with rowspan >1
+        // will get this reflow later during SplitSpanningCells.
+        ReflowChild(rowFrame, aPresContext, rowMetrics, rowReflowInput, 0, 0,
+                    ReflowChildFlags::NoMoveFrame, aStatus);
         rowFrame->SetSize(nsSize(rowMetrics.Width(), rowMetrics.Height()));
         rowFrame->DidReflow(aPresContext, nullptr, nsDidReflowStatus::FINISHED);
         rowFrame->DidResize();

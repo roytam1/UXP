@@ -386,7 +386,8 @@ nsTableRowFrame::DidResize()
   FinishAndStoreOverflow(&desiredSize);
   if (HasView()) {
     nsContainerFrame::SyncFrameViewAfterReflow(PresContext(), this, GetView(),
-                                               desiredSize.VisualOverflow(), 0);
+                                               desiredSize.VisualOverflow(),
+                                               ReflowChildFlags::Default);
   }
   // Let our base class do the usual work
 }
@@ -812,7 +813,8 @@ nsTableRowFrame::ReflowChildren(nsPresContext*           aPresContext,
       InitChildReflowInput(*aPresContext, LogicalSize(wm), false, kidReflowInput);
       ReflowOutput desiredSize(aReflowInput);
       nsReflowStatus  status;
-      ReflowChild(kidFrame, aPresContext, desiredSize, kidReflowInput, 0, 0, 0, status);
+      ReflowChild(kidFrame, aPresContext, desiredSize, kidReflowInput, 0, 0,
+                  ReflowChildFlags::Default, status);
       kidFrame->DidReflow(aPresContext, nullptr, nsDidReflowStatus::FINISHED);
 
       continue;
@@ -906,8 +908,9 @@ nsTableRowFrame::ReflowChildren(nsPresContext*           aPresContext,
                              *kidReflowInput);
 
         nsReflowStatus status;
-        ReflowChild(kidFrame, aPresContext, desiredSize, *kidReflowInput,
-                    wm, kidPosition, containerSize, 0, status);
+        ReflowChild(kidFrame, aPresContext, desiredSize, *kidReflowInput, wm,
+                    kidPosition, containerSize, ReflowChildFlags::Default,
+                    status);
 
         // allow the table to determine if/how the table needs to be rebalanced
         // If any of the cells are not complete, then we're not complete
@@ -977,8 +980,8 @@ nsTableRowFrame::ReflowChildren(nsPresContext*           aPresContext,
       // In vertical-rl mode, we are likely to have containerSize.width = 0
       // because ComputedWidth() was NS_UNCONSTRAINEDSIZE.
       // For cases where that's wrong, we will fix up the position later.
-      FinishReflowChild(kidFrame, aPresContext, desiredSize, nullptr,
-                        wm, kidPosition, containerSize, 0);
+      FinishReflowChild(kidFrame, aPresContext, desiredSize, nullptr, wm,
+                        kidPosition, containerSize, ReflowChildFlags::Default);
 
       nsTableFrame::InvalidateTableFrame(kidFrame, kidRect, kidVisualOverflow,
                                          firstReflow);
@@ -1149,8 +1152,8 @@ nsTableRowFrame::ReflowCellFrame(nsPresContext*           aPresContext,
 
   ReflowOutput desiredSize(aReflowInput);
 
-  ReflowChild(aCellFrame, aPresContext, desiredSize, cellReflowInput,
-              0, 0, NS_FRAME_NO_MOVE_FRAME, aStatus);
+  ReflowChild(aCellFrame, aPresContext, desiredSize, cellReflowInput, 0, 0,
+              ReflowChildFlags::NoMoveFrame, aStatus);
   bool fullyComplete = NS_FRAME_IS_COMPLETE(aStatus) && !NS_FRAME_IS_TRUNCATED(aStatus);
   if (fullyComplete) {
     desiredSize.BSize(wm) = aAvailableBSize;

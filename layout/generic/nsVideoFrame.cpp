@@ -308,6 +308,9 @@ nsVideoFrame::Reflow(nsPresContext* aPresContext,
   // Reflow the child frames. We may have up to two, an image frame
   // which is the poster, and a box frame, which is the video controls.
   for (nsIFrame* child : mFrames) {
+    nsSize oldChildSize = child->GetSize();
+    nsReflowStatus childStatus;
+
     if (child->GetContent() == mPosterImage) {
       // Reflow the poster frame.
       nsImageFrame* imageFrame = static_cast<nsImageFrame*>(child);
@@ -332,10 +335,15 @@ nsVideoFrame::Reflow(nsPresContext* aPresContext,
       kidReflowInput.SetComputedWidth(posterRenderRect.width);
       kidReflowInput.SetComputedHeight(posterRenderRect.height);
       ReflowChild(imageFrame, aPresContext, kidDesiredSize, kidReflowInput,
-                  posterRenderRect.x, posterRenderRect.y, 0, aStatus);
-      FinishReflowChild(imageFrame, aPresContext,
-                        kidDesiredSize, &kidReflowInput,
-                        posterRenderRect.x, posterRenderRect.y, 0);
+                  posterRenderRect.x, posterRenderRect.y,
+                  ReflowChildFlags::Default, childStatus);
+      MOZ_ASSERT(childStatus.IsFullyComplete(),
+                 "We gave our child unconstrained available block-size, "
+                 "so it should be complete!");
+
+      FinishReflowChild(imageFrame, aPresContext, kidDesiredSize,
+                        &kidReflowInput, posterRenderRect.x, posterRenderRect.y,
+                        ReflowChildFlags::Default);
     } else if (child->GetContent() == mVideoControls) {
       // Reflow the video controls frame.
       nsBoxLayoutState boxState(PresContext(), aReflowInput.mRenderingContext);
@@ -370,10 +378,16 @@ nsVideoFrame::Reflow(nsPresContext* aPresContext,
       kidReflowInput.SetComputedHeight(std::max(size.height, 0));
 
       ReflowChild(child, aPresContext, kidDesiredSize, kidReflowInput,
-                  mBorderPadding.left, mBorderPadding.top, 0, aStatus);
+                  mBorderPadding.left, mBorderPadding.top,
+                  ReflowChildFlags::Default, childStatus);
+      MOZ_ASSERT(childStatus.IsFullyComplete(),
+                 "We gave our child unconstrained available block-size, "
+                 "so it should be complete!");
+
       FinishReflowChild(child, aPresContext,
                         kidDesiredSize, &kidReflowInput,
-                        mBorderPadding.left, mBorderPadding.top, 0);
+                        mBorderPadding.left, mBorderPadding.top,
+                        ReflowChildFlags::Default);
     }
   }
   aMetrics.SetOverflowAreasToDesiredBounds();

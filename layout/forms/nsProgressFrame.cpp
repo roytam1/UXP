@@ -203,9 +203,9 @@ nsProgressFrame::ReflowChildFrame(nsIFrame*          aChild,
 
   ReflowOutput barDesiredSize(aReflowInput);
   ReflowChild(aChild, aPresContext, barDesiredSize, reflowInput, xoffset,
-              yoffset, 0, aStatus);
+              yoffset, ReflowChildFlags::Default, aStatus);
   FinishReflowChild(aChild, aPresContext, barDesiredSize, &reflowInput,
-                    xoffset, yoffset, 0);
+                    xoffset, yoffset, ReflowChildFlags::Default);
 }
 
 nsresult

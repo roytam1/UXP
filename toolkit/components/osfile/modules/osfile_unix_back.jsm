@@ -435,7 +435,7 @@
                            /*return*/ Type.negativeone_or_fd,
                            /*path*/   Type.path,
                            /*oflags*/ Type.int,
-                           /*mode*/   Type.int);
+                           "...");
 
        if (OS.Constants.Sys.Name == "NetBSD") {
           libc.declareLazyFFI(SysFile,  "opendir",

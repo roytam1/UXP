@@ -835,9 +835,9 @@ nsMathMLContainerFrame::ReflowChild(nsIFrame*                aChildFrame,
   NS_ASSERTION(!inlineFrame, "Inline frames should be wrapped in blocks");
 #endif
   
-  nsContainerFrame::
-         ReflowChild(aChildFrame, aPresContext, aDesiredSize, aReflowInput,
-                     0, 0, NS_FRAME_NO_MOVE_FRAME, aStatus);
+  nsContainerFrame::ReflowChild(aChildFrame, aPresContext, aDesiredSize,
+                                aReflowInput, 0, 0,
+                                ReflowChildFlags::NoMoveFrame, aStatus);
 
   if (aDesiredSize.BlockStartAscent() == ReflowOutput::ASK_FOR_BASELINE) {
     // This will be suitable for inline frames, which are wrapped in a block.
@@ -1311,7 +1311,7 @@ nsMathMLContainerFrame::PositionRowChildFrames(nscoord aOffsetX,
     nscoord dx = aOffsetX + child.X();
     nscoord dy = aBaseline - child.Ascent();
     FinishReflowChild(child.Frame(), PresContext(), child.GetReflowOutput(),
-                      nullptr, dx, dy, 0);
+                      nullptr, dx, dy, ReflowChildFlags::Default);
     ++child;
   }
 }
