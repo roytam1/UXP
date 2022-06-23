@@ -11,7 +11,7 @@
  */
 
 /*
- * Created on Thu Jun 23 05:27:27 2022 from UCD data files with version info:
+ * Created on Thu Jun 23 07:44:34 2022 from UCD data files with version info:
  *
 
 # Unicode Character Database
@@ -28,27 +28,6 @@
 
 This directory contains the final data files
 for the Unicode Character Database, for Version 10.0.0 of the Unicode Standard.
-
-# Scripts-10.0.0.txt
-# Date: 2017-03-11, 06:40:37 GMT
-
-# BidiMirroring-10.0.0.txt
-# Date: 2017-04-12, 17:30:00 GMT [KW, LI]
-
-# BidiBrackets-10.0.0.txt
-# Date: 2017-04-12, 17:30:00 GMT [AG, LI, KW]
-
-# HangulSyllableType-10.0.0.txt
-# Date: 2017-02-14, 04:26:11 GMT
-
-# LineBreak-10.0.0.txt
-# Date: 2017-03-08, 02:00:00 GMT [KW, LI]
-
-# EastAsianWidth-10.0.0.txt
-# Date: 2017-03-08, 02:00:00 GMT [KW, LI]
-
-# DerivedCoreProperties-10.0.0.txt
-# Date: 2017-03-19, 00:05:15 GMT
 
 # IdentifierStatus.txt
 # Date: 2017-04-08, 16:13:41 GMT
@@ -70,7 +49,6 @@ for the Unicode Character Database, for Version 10.0.0 of the Unicode Standard.
 #pragma pack(1)
 
 
-
 struct nsCharProps2 {
   // Currently only 4 bits are defined here, so 4 more could be added without
   // affecting the storage requirements for this struct. Or we could pack two
@@ -78,8 +56,6 @@ struct nsCharProps2 {
   unsigned char mVertOrient:2;
   unsigned char mIdType:2;
 };
-
-
 
 #pragma pack()
 
