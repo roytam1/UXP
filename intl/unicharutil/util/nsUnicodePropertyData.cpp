@@ -11,7 +11,7 @@
  */
 
 /*
- * Created on Wed Jun 22 10:09:48 2022 from UCD data files with version info:
+ * Created on Wed Jun 22 12:55:37 2022 from UCD data files with version info:
  *
 
 # Unicode Character Database
