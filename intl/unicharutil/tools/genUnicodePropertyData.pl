@@ -23,6 +23,7 @@
 #       - HangulSyllableType.txt
 #       - LineBreak.txt
 #       - EastAsianWidth.txt
+#       - DerivedCoreProperties.txt
 #       - ReadMe.txt (to record version/date of the UCD)
 #       - Unihan_Variants.txt (from Unihan.zip)
 #     though this may change if we find a need for additional properties.
@@ -30,12 +31,13 @@
 #     The Unicode data files listed above should be together in one directory.
 #
 #     We also require the file
-#        http://www.unicode.org/Public/security/latest/xidmodifications.txt
+#        http://www.unicode.org/Public/security/latest/IdentifierStatus.txt
+#        http://www.unicode.org/Public/security/latest/IdentifierType.txt
 #     This file should be in a sub-directory "security" immediately below the
 #        directory containing the other Unicode data files.
 #
-#     We also require the latest data file for UTR50, currently revision-13:
-#        http://www.unicode.org/Public/vertical/revision-13/VerticalOrientation-13.txt
+#     We also require the latest data file for UTR50, currently revision-16:
+#        http://www.unicode.org/Public/vertical/revision-16/VerticalOrientation-16.txt
 #     This file should be in a sub-directory "vertical" immediately below the
 #        directory containing the other Unicode data files.
 #
@@ -140,20 +142,35 @@ sub readIcuHeader
 
 die "didn't find ICU script codes\n" if $sc == -1;
 
-my %xidmodCode = (
-'Recommended'       => 0,
-'Inclusion'         => 1,
-'Uncommon_Use'      => 2,
-'Technical'         => 3,
-'Obsolete'          => 4,
-'Aspirational'      => 5,
-'Limited_Use'       => 6,
-'Exclusion'         => 7,
-'Not_XID'           => 8,
-'Not_NFKC'          => 9,
-'Default_Ignorable' => 10,
-'Deprecated'        => 11,
-'not-chars'         => 12
+# We don't currently store these values; %idType is used only to check that
+# properties listed in the IdentifierType.txt file are recognized. We record
+# only the %mappedIdType values that are used by nsIDNService::isLabelSafe.
+# In practice, it would be sufficient for us to read only the last value in
+# IdentifierType.txt, but we check that all values are known so that we'll get
+# a warning if future updates introduce new ones, and can consider whether
+# they need to be taken into account.
+my %idType = (
+  "Not_Character"     => 0,
+  "Recommended"       => 1,
+  "Inclusion"         => 2,
+  "Uncommon_Use"      => 3,
+  "Technical"         => 4,
+  "Obsolete"          => 5,
+  "Aspirational"      => 6,
+  "Limited_Use"       => 7,
+  "Exclusion"         => 8,
+  "Not_XID"           => 9,
+  "Not_NFKC"          => 10,
+  "Default_Ignorable" => 11,
+  "Deprecated"        => 12
+);
+
+# These match the IdentifierType enum in nsUnicodeProperties.h.
+my %mappedIdType = (
+  "Restricted"   => 0,
+  "Allowed"      => 1,
+  "Aspirational" => 2 # for Aspirational characters that are not excluded
+                      # by another attribute.
 );
 
 my %bidicategoryCode = (
@@ -229,7 +246,10 @@ my %lineBreakCode = ( # ordering matches ICU's ULineBreak enum
   "CP" => 36,
   "CJ" => 37,
   "HL" => 38,
-  "RI" => 39
+  "RI" => 39,
+  "EB" => 40,
+  "EM" => 41,
+  "ZWJ" => 42
 );
 
 my %eastAsianWidthCode = (
@@ -249,7 +269,7 @@ my @mirror;
 my @pairedBracketType;
 my @hangul;
 my @casemap;
-my @xidmod;
+my @idtype;
 my @numericvalue;
 my @hanVariant;
 my @bidicategory;
@@ -258,13 +278,14 @@ my @fullWidthInverse;
 my @verticalOrientation;
 my @lineBreak;
 my @eastAsianWidthFWH;
+my @defaultIgnorable;
 for (my $i = 0; $i < 0x110000; ++$i) {
     $script[$i] = $scriptCode{"UNKNOWN"};
     $category[$i] = $catCode{"UNASSIGNED"};
     $combining[$i] = 0;
     $pairedBracketType[$i] = 0;
     $casemap[$i] = 0;
-    $xidmod[$i] = $xidmodCode{"not-chars"};
+    $idtype[$i] = $mappedIdType{'Restricted'};
     $numericvalue[$i] = -1;
     $hanVariant[$i] = 0;
     $bidicategory[$i] = $bidicategoryCode{"L"};
@@ -273,6 +294,7 @@ for (my $i = 0; $i < 0x110000; ++$i) {
     $verticalOrientation[$i] = 1; # default for unlisted codepoints is 'R'
     $lineBreak[$i] = $lineBreakCode{"XX"};
     $eastAsianWidthFWH[$i] = 0;
+    $defaultIgnorable[$i] = 0;
 }
 
 # blocks where the default for bidi category is not L
@@ -557,25 +579,72 @@ while (<FH>) {
 }
 close FH;
 
-# read xidmodifications.txt
-open FH, "< $UNICODE/security/xidmodifications.txt" or die "can't open UCD file xidmodifications.txt\n";
+# read DerivedCoreProperties.txt (for Default-Ignorables)
+open FH, "< $UNICODE/DerivedCoreProperties.txt" or die "can't open UCD file DerivedCoreProperties.txt\n";
+push @versionInfo, "";
+
+while (<FH>) {
+    chomp;
+    push @versionInfo, $_;
+    last if /Date:/;
+}
+while (<FH>) {
+    s/#.*//;
+    if (m/([0-9A-F]{4,6})(?:\.\.([0-9A-F]{4,6}))*\s*;\s*Default_Ignorable_Code_Point/) {
+        my $start = hex "0x$1";
+        my $end = (defined $2) ? hex "0x$2" : $start;
+        for (my $i = $start; $i <= $end; ++$i) {
+            $defaultIgnorable[$i] = 1;
+        }
+    }
+}
+close FH;
+
+# read IdentifierStatus.txt
+open FH, "< $UNICODE/security/IdentifierStatus.txt" or die "can't open UCD file IdentifierStatus.txt\n";
 push @versionInfo, "";
 while (<FH>) {
   chomp;
-  unless (/\xef\xbb\xbf/) {
-    push @versionInfo, $_;
-  }
-  last if /Generated:/;
+  s/\xef\xbb\xbf//;
+  push @versionInfo, $_;
+  last if /Date:/;
+
 }
+
 while (<FH>) {
-  if (m/([0-9A-F]{4,6})(?:\.\.([0-9A-F]{4,6}))*\s+;\s+[^ ]+\s+;\s+([^ ]+)/) {
-    my $xidmod = $3;
-    warn "unknown Identifier Modification $xidmod" unless exists $xidmodCode{$xidmod};
-    $xidmod = $xidmodCode{$xidmod};
+  if (m/([0-9A-F]{4,6})(?:\.\.([0-9A-F]{4,6}))*\s+;\s+Allowed/) {
     my $start = hex "0x$1";
     my $end = (defined $2) ? hex "0x$2" : $start;
     for (my $i = $start; $i <= $end; ++$i) {
-      $xidmod[$i] = $xidmod;
+      $idtype[$i] = $mappedIdType{'Allowed'};
+    }
+
+  }
+}
+close FH;
+
+# read IdentifierType.txt, to find Aspirational characters
+open FH, "< $UNICODE/security/IdentifierType.txt" or die "can't open UCD file IdentifierType.txt\n";
+push @versionInfo, "";
+while (<FH>) {
+  chomp;
+  s/\xef\xbb\xbf//;
+  push @versionInfo, $_;
+  last if /Date:/;
+}
+while (<FH>) {
+  if (m/([0-9A-F]{4,6})(?:\.\.([0-9A-F]{4,6}))*\s+;\s+([^#]+)/) {
+    my $idtype = $3;
+    foreach (split(/ /, $idtype)) {
+      warn "unknown Identifier Type $_" unless exists $idType{$_};
+    }
+    my $start = hex "0x$1";
+    my $end = (defined $2) ? hex "0x$2" : $start;
+    if ($idtype =~ /Aspirational/ and (not $idtype =~ /Exclusion|Not_XID|Not_NFKC/)) {
+
+      for (my $i = $start; $i <= $end; ++$i) {
+        $idtype[$i] = $mappedIdType{'Aspirational'};
+      }
     }
   }
 }
@@ -617,8 +686,8 @@ while (<FH>) {
 }
 close FH;
 
-# read VerticalOrientation-13.txt
-open FH, "< $UNICODE/vertical/VerticalOrientation-13.txt" or die "can't open UTR50 data file VerticalOrientation-13.txt\n";
+# read VerticalOrientation-16.txt
+open FH, "< $UNICODE/vertical/VerticalOrientation-16.txt" or die "can't open UTR50 data file VerticalOrientation-16.txt\n";
 push @versionInfo, "";
 while (<FH>) {
     chomp;
@@ -697,84 +766,27 @@ $versionInfo
 
 __END
 
-print DATA_TABLES "#if !ENABLE_INTL_API\n";
-print DATA_TABLES "static const uint32_t sScriptCodeToTag[] = {\n";
-for (my $i = 0; $i < scalar @scriptCodeToTag; ++$i) {
-  printf DATA_TABLES "  HB_TAG('%c','%c','%c','%c')", unpack('cccc', $scriptCodeToTag[$i]);
-  print DATA_TABLES $i < $#scriptCodeToTag ? ",\n" : "\n";
-}
-print DATA_TABLES "};\n";
-print DATA_TABLES "#endif\n\n";
-
 our $totalData = 0;
-
-print DATA_TABLES "#if !ENABLE_INTL_API\n";
-print DATA_TABLES "static const int16_t sMirrorOffsets[] = {\n";
-for (my $i = 0; $i < scalar @offsets; ++$i) {
-    printf DATA_TABLES "  $offsets[$i]";
-    print DATA_TABLES $i < $#offsets ? ",\n" : "\n";
-}
-print DATA_TABLES "};\n";
-print DATA_TABLES "#endif\n\n";
 
 print HEADER "#pragma pack(1)\n\n";
 
-sub sprintCharProps1
-{
-  my $usv = shift;
-  return sprintf("{%d,%d,%d}, ", $mirror[$usv], $hangul[$usv], $combining[$usv]);
-}
-my $type = q/
-struct nsCharProps1 {
-  unsigned char mMirrorOffsetIndex:5;
-  unsigned char mHangulType:3;
-  unsigned char mCombiningClass:8;
-};
-/;
-&genTables("#if !ENABLE_INTL_API", "#endif",
-           "CharProp1", $type, "nsCharProps1", 11, 5, \&sprintCharProps1, 1, 2, 1);
-
-sub sprintCharProps2_short
+sub sprintCharProps2
 {
   my $usv = shift;
   return sprintf("{%d,%d},",
-                 $verticalOrientation[$usv], $xidmod[$usv]);
+                 $verticalOrientation[$usv], $idtype[$usv]);
 }
-$type = q|
+my $type = q|
 struct nsCharProps2 {
-  // Currently only 6 bits are defined here, so 2 more could be added without
-  // affecting the storage requirements for this struct.
+  // Currently only 4 bits are defined here, so 4 more could be added without
+  // affecting the storage requirements for this struct. Or we could pack two
+  // records per byte, at the cost of a slightly more complex accessor.
   unsigned char mVertOrient:2;
-  unsigned char mXidmod:4;
+  unsigned char mIdType:2;
 };
 |;
-&genTables("#if ENABLE_INTL_API", "#endif",
-           "CharProp2", $type, "nsCharProps2", 9, 7, \&sprintCharProps2_short, 16, 1, 1);
-
-sub sprintCharProps2_full
-{
-  my $usv = shift;
-  return sprintf("{%d,%d,%d,%d,%d,%d,%d,%d,%d},",
-                 $script[$usv], $pairedBracketType[$usv],
-                 $eastAsianWidthFWH[$usv], $category[$usv],
-                 $bidicategory[$usv], $xidmod[$usv], $numericvalue[$usv],
-                 $verticalOrientation[$usv], $lineBreak[$usv]);
-}
-$type = q|
-struct nsCharProps2 {
-  unsigned char mScriptCode:8;
-  unsigned char mPairedBracketType:2;
-  unsigned char mEastAsianWidthFWH:1;
-  unsigned char mCategory:5;
-  unsigned char mBidiCategory:5;
-  unsigned char mXidmod:4;
-  signed char   mNumericValue:5;
-  unsigned char mVertOrient:2;
-  unsigned char mLineBreak; // only 6 bits actually needed
-};
-|;
-&genTables("#if !ENABLE_INTL_API", "#endif",
-           "CharProp2", $type, "nsCharProps2", 12, 4, \&sprintCharProps2_full, 16, 5, 1);
+&genTables("", "",
+           "CharProp2", $type, "nsCharProps2", 9, 7, \&sprintCharProps2, 16, 1, 1);
 
 print HEADER "#pragma pack()\n\n";
 
@@ -805,14 +817,6 @@ sub sprintFullWidthInverse
   return sprintf("0x%04x,", $fullWidthInverse[$usv]);
 }
 &genTables("", "", "FullWidthInverse", "", "uint16_t", 10, 6, \&sprintFullWidthInverse, 0, 2, 1);
-
-sub sprintCasemap
-{
-  my $usv = shift;
-  return sprintf("0x%08x,", $casemap[$usv]);
-}
-&genTables("#if !ENABLE_INTL_API", "#endif",
-           "CaseMap", "", "uint32_t", 11, 5, \&sprintCasemap, 1, 4, 1);
 
 print STDERR "Total data = $totalData\n";
 

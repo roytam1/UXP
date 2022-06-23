@@ -38,20 +38,13 @@ enum PairedBracketType {
   PAIRED_BRACKET_TYPE_CLOSE = 2
 };
 
-enum XidmodType {
-  XIDMOD_RECOMMENDED,
-  XIDMOD_INCLUSION,
-  XIDMOD_UNCOMMON_USE,
-  XIDMOD_TECHNICAL,
-  XIDMOD_OBSOLETE,
-  XIDMOD_ASPIRATIONAL,
-  XIDMOD_LIMITED_USE,
-  XIDMOD_EXCLUSION,
-  XIDMOD_NOT_XID,
-  XIDMOD_NOT_NFKC,
-  XIDMOD_DEFAULT_IGNORABLE,
-  XIDMOD_DEPRECATED,
-  XIDMOD_NOT_CHARS
+/* Flags for Unicode security IdentifierType.txt attributes. Only a subset
+   of these are currently checked by Gecko, so we only define flags for the
+   ones we need. */
+enum IdentifierType {
+  IDTYPE_RESTRICTED = 0,
+  IDTYPE_ALLOWED = 1,
+  IDTYPE_ASPIRATIONAL = 2,
 };
 
 enum EmojiPresentation {
@@ -179,6 +172,12 @@ IsEastAsianWidthFWH(uint32_t aCh)
   return false;
 }
 
+inline bool
+IsDefaultIgnorable(uint32_t aCh)
+{
+  return u_hasBinaryProperty(aCh, UCHAR_DEFAULT_IGNORABLE_CODE_POINT);
+}
+
 inline EmojiPresentation
 GetEmojiPresentation(uint32_t aCh)
 {
@@ -201,8 +200,8 @@ inline VerticalOrientation GetVerticalOrientation(uint32_t aCh) {
   return VerticalOrientation(GetCharProps2(aCh).mVertOrient);
 }
 
-inline XidmodType GetIdentifierModification(uint32_t aCh) {
-  return XidmodType(GetCharProps2(aCh).mXidmod);
+inline IdentifierType GetIdentifierType(uint32_t aCh) {
+  return IdentifierType(GetCharProps2(aCh).mIdType);
 }
 
 uint32_t GetFullWidth(uint32_t aCh);
