@@ -17,14 +17,12 @@ tag=${2-HEAD}
 (cd $repo; git archive --prefix=media/libjpeg/ $tag) | (cd $srcdir/..; tar xf -)
 
 cd $srcdir/libjpeg
-cp win/jsimdcfg.inc simd/
 
-revert_files="1050342.diff jconfig.h jconfigint.h moz.build MOZCHANGES mozilla.diff simd/jsimdcfg.inc"
+revert_files="jconfig.h jconfigint.h moz.build MOZCHANGES mozilla.diff"
 if test -d ${topsrcdir}/.hg; then
     hg revert --no-backup $revert_files
-elif test -d ${topsrcdir}/.git; then
+elif test -e ${topsrcdir}/.git; then
     git checkout HEAD -- $revert_files
 fi
 
 patch -p0 -i mozilla.diff
-patch -p0 -i 1050342.diff
