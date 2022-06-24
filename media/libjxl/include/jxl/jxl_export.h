@@ -9,8 +9,7 @@
 
 #define JXL_EXPORT
 
-// TODO: go back to [[deprecated]]
-// https://github.com/libjxl/libjxl/issues/1388
-#define JXL_DEPRECATED __attribute__((__deprecated__))
+// MSVC requires [[deprecated]]
+#define JXL_DEPRECATED [[deprecated]]
 
 #endif /* JXL_EXPORT_H */
