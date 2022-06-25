@@ -88,8 +88,7 @@ class AVxEncoderParmsGetToDecoder
   virtual ~AVxEncoderParmsGetToDecoder() {}
 
   virtual void SetUp() {
-    InitializeConfig();
-    SetMode(::libaom_test::kTwoPassGood);
+    InitializeConfig(::libaom_test::kTwoPassGood);
     cfg_.g_lag_in_frames = 25;
     test_video_ = kAV1ParamPassingTestVector;
     cfg_.rc_target_bitrate = test_video_.bitrate;
@@ -98,6 +97,7 @@ class AVxEncoderParmsGetToDecoder
   virtual void PreEncodeFrameHook(::libaom_test::VideoSource *video,
                                   ::libaom_test::Encoder *encoder) {
     if (video->frame() == 0) {
+      encoder->Control(AOME_SET_CPUUSED, 3);
       encoder->Control(AV1E_SET_COLOR_PRIMARIES, encode_parms.color_primaries);
       encoder->Control(AV1E_SET_TRANSFER_CHARACTERISTICS,
                        encode_parms.transfer_characteristics);
@@ -150,11 +150,11 @@ TEST_P(AVxEncoderParmsGetToDecoder, BitstreamParms) {
 
   std::unique_ptr<libaom_test::VideoSource> video(
       new libaom_test::Y4mVideoSource(test_video_.name, 0, test_video_.frames));
-  ASSERT_TRUE(video.get() != NULL);
+  ASSERT_NE(video, nullptr);
 
   ASSERT_NO_FATAL_FAILURE(RunLoop(video.get()));
 }
 
-AV1_INSTANTIATE_TEST_CASE(AVxEncoderParmsGetToDecoder,
-                          ::testing::ValuesIn(kAV1EncodeParameterSet));
+AV1_INSTANTIATE_TEST_SUITE(AVxEncoderParmsGetToDecoder,
+                           ::testing::ValuesIn(kAV1EncodeParameterSet));
 }  // namespace

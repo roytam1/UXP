@@ -1,5 +1,5 @@
 URL: https://github.com/google/googletest
-Version: 1.10.x
+Version: release-1.11.0
 License: BSD
 License File: LICENSE
 
@@ -12,6 +12,20 @@ failures, various options for running the tests, and XML test report
 generation.
 
 Local Modifications:
-- Replace everything in:
-  third_party/googletest/src/googletest/src/
-  third_party/googletest/src/googletest/include/
+- Remove everything but:
+  CMakeLists.txt
+  CONTRIBUTORS
+  googlemock/
+   cmake
+   CMakeLists.txt
+   include
+   README.md
+   src
+  googletest/
+   cmake
+   CMakeLists.txt
+   include
+   README.md
+   src
+  LICENSE
+  README.md

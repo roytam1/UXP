@@ -1704,8 +1704,8 @@ static void lowbd_fwd_txfm2d_64x64_avx2(const int16_t *input, int32_t *output,
     }
     fdct64_new_avx2(bufA, bufA, cos_bit_row);
     fdct64_new_avx2(bufB, bufB, cos_bit_row);
-    av1_round_shift_array_32_avx2(bufA, bufA, 32, -shift[2]);
-    av1_round_shift_array_32_avx2(bufB, bufB, 32, -shift[2]);
+    round_shift_array_32_avx2(bufA, bufA, 32, -shift[2]);
+    round_shift_array_32_avx2(bufB, bufB, 32, -shift[2]);
 
     int32_t *output8 = output + 16 * 32 * i;
     for (int j = 0; j < 4; ++j) {
@@ -1843,8 +1843,8 @@ static void lowbd_fwd_txfm2d_64x32_avx2(const int16_t *input, int32_t *output,
     }
     fdct64_new_avx2(bufA, bufA, cos_bit_row);
     fdct64_new_avx2(bufB, bufB, cos_bit_row);
-    av1_round_shift_rect_array_32_avx2(bufA, bufA, 32, -shift[2], NewSqrt2);
-    av1_round_shift_rect_array_32_avx2(bufB, bufB, 32, -shift[2], NewSqrt2);
+    round_shift_rect_array_32_avx2(bufA, bufA, 32, -shift[2], NewSqrt2);
+    round_shift_rect_array_32_avx2(bufB, bufB, 32, -shift[2], NewSqrt2);
 
     int32_t *output8 = output + 16 * 32 * i;
     for (int j = 0; j < 4; ++j) {
@@ -1893,8 +1893,8 @@ static void lowbd_fwd_txfm2d_32x64_avx2(const int16_t *input, int32_t *output,
     }
     fdct32_avx2(bufA, bufA, cos_bit_row);
     fdct32_avx2(bufB, bufB, cos_bit_row);
-    av1_round_shift_rect_array_32_avx2(bufA, bufA, 32, -shift[2], NewSqrt2);
-    av1_round_shift_rect_array_32_avx2(bufB, bufB, 32, -shift[2], NewSqrt2);
+    round_shift_rect_array_32_avx2(bufA, bufA, 32, -shift[2], NewSqrt2);
+    round_shift_rect_array_32_avx2(bufB, bufB, 32, -shift[2], NewSqrt2);
 
     int32_t *output8 = output + 16 * 32 * i;
     for (int j = 0; j < 4; ++j) {
@@ -2804,8 +2804,7 @@ static FwdTxfm2dFunc fwd_txfm2d_func_ls[TX_SIZES_ALL] = {
 void av1_lowbd_fwd_txfm_avx2(const int16_t *src_diff, tran_low_t *coeff,
                              int diff_stride, TxfmParam *txfm_param) {
   FwdTxfm2dFunc fwd_txfm2d_func = fwd_txfm2d_func_ls[txfm_param->tx_size];
-  if ((fwd_txfm2d_func == NULL) ||
-      (txfm_param->lossless && txfm_param->tx_size == TX_4X4)) {
+  if (txfm_param->lossless && txfm_param->tx_size == TX_4X4) {
     av1_lowbd_fwd_txfm_c(src_diff, coeff, diff_stride, txfm_param);
   } else {
     fwd_txfm2d_func(src_diff, coeff, diff_stride, txfm_param->tx_type,

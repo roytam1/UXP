@@ -18,8 +18,8 @@
 extern "C" {
 #endif
 
-void av1_encode_mv(AV1_COMP *cpi, aom_writer *w, const MV *mv, const MV *ref,
-                   nmv_context *mvctx, int usehp);
+void av1_encode_mv(AV1_COMP *cpi, aom_writer *w, ThreadData *td, const MV *mv,
+                   const MV *ref, nmv_context *mvctx, int usehp);
 
 void av1_update_mv_stats(const MV *mv, const MV *ref, nmv_context *mvctx,
                          MvSubpelPrecision precision);
@@ -62,13 +62,44 @@ static INLINE uint8_t av1_log_in_base_2(unsigned int n) {
 }
 
 static INLINE MV_CLASS_TYPE av1_get_mv_class(int z, int *offset) {
-  const MV_CLASS_TYPE c = (z >= CLASS0_SIZE * 4096)
-                              ? MV_CLASS_10
-                              : (MV_CLASS_TYPE)av1_log_in_base_2(z >> 3);
+  assert(z >= 0);
+  const MV_CLASS_TYPE c = (MV_CLASS_TYPE)av1_log_in_base_2(z >> 3);
+  assert(c <= MV_CLASS_10);
   if (offset) *offset = z - av1_mv_class_base(c);
   return c;
 }
 
+static INLINE int av1_check_newmv_joint_nonzero(const AV1_COMMON *cm,
+                                                MACROBLOCK *const x) {
+  (void)cm;
+  MACROBLOCKD *xd = &x->e_mbd;
+  MB_MODE_INFO *mbmi = xd->mi[0];
+  const PREDICTION_MODE this_mode = mbmi->mode;
+  if (this_mode == NEW_NEWMV) {
+    const int_mv ref_mv_0 = av1_get_ref_mv(x, 0);
+    const int_mv ref_mv_1 = av1_get_ref_mv(x, 1);
+    if (mbmi->mv[0].as_int == ref_mv_0.as_int ||
+        mbmi->mv[1].as_int == ref_mv_1.as_int) {
+      return 0;
+    }
+  } else if (this_mode == NEAREST_NEWMV || this_mode == NEAR_NEWMV) {
+    const int_mv ref_mv_1 = av1_get_ref_mv(x, 1);
+    if (mbmi->mv[1].as_int == ref_mv_1.as_int) {
+      return 0;
+    }
+  } else if (this_mode == NEW_NEARESTMV || this_mode == NEW_NEARMV) {
+    const int_mv ref_mv_0 = av1_get_ref_mv(x, 0);
+    if (mbmi->mv[0].as_int == ref_mv_0.as_int) {
+      return 0;
+    }
+  } else if (this_mode == NEWMV) {
+    const int_mv ref_mv_0 = av1_get_ref_mv(x, 0);
+    if (mbmi->mv[0].as_int == ref_mv_0.as_int) {
+      return 0;
+    }
+  }
+  return 1;
+}
 #ifdef __cplusplus
 }  // extern "C"
 #endif

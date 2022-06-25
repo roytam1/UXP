@@ -44,7 +44,7 @@ endif()
 list(APPEND aom_build_vars ${AOM_CONFIG_VARS} ${AOM_OPTION_VARS})
 foreach(cache_var ${aom_build_vars})
   get_property(cache_var_helpstring CACHE ${cache_var} PROPERTY HELPSTRING)
-  if("${cache_var_helpstring}" STREQUAL "${cmake_cmdline_helpstring}")
+  if(cache_var_helpstring STREQUAL cmake_cmdline_helpstring)
     set(AOM_CMAKE_CONFIG "${AOM_CMAKE_CONFIG} -D${cache_var}=${${cache_var}}")
   endif()
 endforeach()
@@ -53,11 +53,10 @@ string(STRIP "${AOM_CMAKE_CONFIG}" AOM_CMAKE_CONFIG)
 # Detect target CPU.
 if(NOT AOM_TARGET_CPU)
   string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" cpu_lowercase)
-  if("${cpu_lowercase}" STREQUAL "amd64"
-     OR "${cpu_lowercase}" STREQUAL "x86_64")
-    if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+  if(cpu_lowercase STREQUAL "amd64" OR cpu_lowercase STREQUAL "x86_64")
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
       set(AOM_TARGET_CPU "x86")
-    elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
       set(AOM_TARGET_CPU "x86_64")
     else()
       message(
@@ -66,15 +65,13 @@ if(NOT AOM_TARGET_CPU)
                     "      CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}\n"
                     "      CMAKE_GENERATOR=${CMAKE_GENERATOR}\n")
     endif()
-  elseif("${cpu_lowercase}" STREQUAL "i386"
-         OR "${cpu_lowercase}" STREQUAL "x86")
+  elseif(cpu_lowercase STREQUAL "i386" OR cpu_lowercase STREQUAL "x86")
     set(AOM_TARGET_CPU "x86")
-  elseif("${cpu_lowercase}" MATCHES "^arm"
-         OR "${cpu_lowercase}" MATCHES "^mips")
+  elseif(cpu_lowercase MATCHES "^arm" OR cpu_lowercase MATCHES "^mips")
     set(AOM_TARGET_CPU "${cpu_lowercase}")
-  elseif("${cpu_lowercase}" MATCHES "aarch64")
+  elseif(cpu_lowercase MATCHES "aarch64")
     set(AOM_TARGET_CPU "arm64")
-  elseif("${cpu_lowercase}" MATCHES "^ppc")
+  elseif(cpu_lowercase MATCHES "^ppc")
     set(AOM_TARGET_CPU "ppc")
   else()
     message(WARNING "The architecture ${CMAKE_SYSTEM_PROCESSOR} is not "
@@ -105,13 +102,37 @@ string(STRIP "${AOM_CMAKE_CONFIG}" AOM_CMAKE_CONFIG)
 message("--- aom_configure: Detected CPU: ${AOM_TARGET_CPU}")
 set(AOM_TARGET_SYSTEM ${CMAKE_SYSTEM_NAME})
 
-if("${CMAKE_BUILD_TYPE}" MATCHES "Deb")
+string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type_lowercase)
+if(build_type_lowercase STREQUAL "debug")
   set(CONFIG_DEBUG 1)
 endif()
 
 if(BUILD_SHARED_LIBS)
   set(CONFIG_PIC 1)
   set(CONFIG_SHARED 1)
+elseif(NOT CONFIG_PIC)
+  # Update the variable only when it does not carry the CMake assigned help
+  # string for variables specified via the command line. This allows the user to
+  # force CONFIG_PIC=0.
+  unset(cache_helpstring)
+  get_property(cache_helpstring CACHE CONFIG_PIC PROPERTY HELPSTRING)
+  if(NOT "${cache_helpstring}" STREQUAL "${cmake_cmdline_helpstring}")
+    aom_check_c_compiles("pie_check" "
+                          #if !(__pie__ || __PIE__)
+                          #error Neither __pie__ or __PIE__ are set
+                          #endif
+                          extern void unused(void);
+                          void unused(void) {}" HAVE_PIE)
+
+    if(HAVE_PIE)
+      # If -fpie or -fPIE are used ensure the assembly code has PIC enabled to
+      # avoid DT_TEXTRELs: /usr/bin/ld: warning: creating DT_TEXTREL in a PIE
+      set(CONFIG_PIC 1)
+      message(
+        "CONFIG_PIC enabled for position independent executable (PIE) build")
+    endif()
+  endif()
+  unset(cache_helpstring)
 endif()
 
 if(NOT MSVC)
@@ -120,8 +141,8 @@ if(NOT MSVC)
     # TODO(tomfinegan): clang needs -pie in CMAKE_EXE_LINKER_FLAGS for this to
     # work.
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    if("${AOM_TARGET_SYSTEM}" STREQUAL "Linux"
-       AND "${AOM_TARGET_CPU}" MATCHES "^armv[78]")
+    if(AOM_TARGET_SYSTEM STREQUAL "Linux"
+       AND AOM_TARGET_CPU MATCHES "^armv[78]")
       set(AOM_AS_FLAGS ${AOM_AS_FLAGS} --defsym PIC=1)
     else()
       set(AOM_AS_FLAGS ${AOM_AS_FLAGS} -DPIC)
@@ -129,7 +150,7 @@ if(NOT MSVC)
   endif()
 endif()
 
-if("${AOM_TARGET_CPU}" STREQUAL "x86" OR "${AOM_TARGET_CPU}" STREQUAL "x86_64")
+if(AOM_TARGET_CPU STREQUAL "x86" OR AOM_TARGET_CPU STREQUAL "x86_64")
   find_program(AS_EXECUTABLE yasm $ENV{YASM_PATH})
   if(NOT AS_EXECUTABLE OR ENABLE_NASM)
     unset(AS_EXECUTABLE CACHE)
@@ -149,11 +170,11 @@ if("${AOM_TARGET_CPU}" STREQUAL "x86" OR "${AOM_TARGET_CPU}" STREQUAL "x86_64")
   get_asm_obj_format("objformat")
   set(AOM_AS_FLAGS -f ${objformat} ${AOM_AS_FLAGS})
   string(STRIP "${AOM_AS_FLAGS}" AOM_AS_FLAGS)
-elseif("${AOM_TARGET_CPU}" MATCHES "arm")
-  if("${AOM_TARGET_SYSTEM}" STREQUAL "Darwin")
+elseif(AOM_TARGET_CPU MATCHES "arm")
+  if(AOM_TARGET_SYSTEM STREQUAL "Darwin")
     set(AS_EXECUTABLE as)
     set(AOM_AS_FLAGS -arch ${AOM_TARGET_CPU} -isysroot ${CMAKE_OSX_SYSROOT})
-  elseif("${AOM_TARGET_SYSTEM}" STREQUAL "Windows")
+  elseif(AOM_TARGET_SYSTEM STREQUAL "Windows")
     if(NOT AS_EXECUTABLE)
       set(AS_EXECUTABLE ${CMAKE_C_COMPILER} -c -mimplicit-it=always)
     endif()
@@ -197,14 +218,17 @@ if(CONFIG_GPROF)
   require_compiler_flag("-pg" YES)
 endif()
 
-if("${AOM_TARGET_SYSTEM}" MATCHES "Darwin\|Linux\|Windows\|Android")
+if(AOM_TARGET_SYSTEM MATCHES "Darwin\|Linux\|Windows\|Android")
   set(CONFIG_OS_SUPPORT 1)
 endif()
 
-# The default _WIN32_WINNT value in MinGW is 0x0502 (Windows XP with SP2). Set
-# it to 0x0601 (Windows 7).
-if("${AOM_TARGET_SYSTEM}" STREQUAL "Windows")
+if(AOM_TARGET_SYSTEM STREQUAL "Windows")
+  # The default _WIN32_WINNT value in MinGW is 0x0502 (Windows XP with SP2). Set
+  # it to 0x0601 (Windows 7).
   add_compiler_flag_if_supported("-D_WIN32_WINNT=0x0601")
+  # Prevent windows.h from defining the min and max macros. This allows us to
+  # use std::min and std::max.
+  add_compiler_flag_if_supported("-DNOMINMAX")
 endif()
 
 #
@@ -276,7 +300,10 @@ else()
   add_compiler_flag_if_supported("-Wall")
   add_compiler_flag_if_supported("-Wdisabled-optimization")
   add_compiler_flag_if_supported("-Wextra")
+  add_compiler_flag_if_supported("-Wextra-semi")
+  add_compiler_flag_if_supported("-Wextra-semi-stmt")
   add_compiler_flag_if_supported("-Wfloat-conversion")
+  add_compiler_flag_if_supported("-Wformat=2")
   add_c_flag_if_supported("-Wimplicit-function-declaration")
   add_compiler_flag_if_supported("-Wlogical-op")
   add_compiler_flag_if_supported("-Wpointer-arith")
@@ -288,19 +315,23 @@ else()
   add_compiler_flag_if_supported("-Wunused")
   add_compiler_flag_if_supported("-Wvla")
 
-  if(CMAKE_C_COMPILER_ID MATCHES "GNU"
-     AND "${SANITIZE}" MATCHES "address|undefined")
+  if(CMAKE_C_COMPILER_ID MATCHES "GNU" AND SANITIZE MATCHES "address|undefined")
 
     # This combination has more stack overhead, so we account for it by
     # providing higher stack limit than usual.
     add_c_flag_if_supported("-Wstack-usage=170000")
     add_cxx_flag_if_supported("-Wstack-usage=270000")
   elseif(CONFIG_RD_DEBUG) # Another case where higher stack usage is expected.
-    add_c_flag_if_supported("-Wstack-usage=117000")
+    add_c_flag_if_supported("-Wstack-usage=135000")
     add_cxx_flag_if_supported("-Wstack-usage=240000")
   else()
     add_c_flag_if_supported("-Wstack-usage=100000")
     add_cxx_flag_if_supported("-Wstack-usage=240000")
+  endif()
+
+  if(CMAKE_C_COMPILER_ID MATCHES "GNU" AND SANITIZE MATCHES "address")
+    # Disable no optimization warning when compiling with sanitizers
+    add_compiler_flag_if_supported("-Wno-disabled-optimization")
   endif()
 
   # Add -Wshadow only for C files to avoid massive gtest warning spam.
@@ -311,7 +342,7 @@ else()
 
   # Quiet gcc 6 vs 7 abi warnings:
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=77728
-  if("${AOM_TARGET_CPU}" MATCHES "arm")
+  if(AOM_TARGET_CPU MATCHES "arm")
     add_cxx_flag_if_supported("-Wno-psabi")
   endif()
 
@@ -319,11 +350,31 @@ else()
     add_compiler_flag_if_supported("-Werror")
   endif()
 
-  if("${CMAKE_BUILD_TYPE}" MATCHES "Rel")
+  if(build_type_lowercase MATCHES "rel")
     add_compiler_flag_if_supported("-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0")
   endif()
   add_compiler_flag_if_supported("-D_LARGEFILE_SOURCE")
   add_compiler_flag_if_supported("-D_FILE_OFFSET_BITS=64")
+endif()
+
+# Prior to r23, or with ANDROID_USE_LEGACY_TOOLCHAIN_FILE set,
+# android.toolchain.cmake would set normal (non-cache) versions of variables
+# like CMAKE_C_FLAGS_RELEASE which would mask the ones added to the cache
+# variable in add_compiler_flag_if_supported(), etc. As a workaround we add
+# everything accumulated in AOM_C/CXX_FLAGS to the normal versions. This could
+# also be addressed by reworking the flag tests and adding the results directly
+# to target_compile_options() as in e.g., libgav1, but that's a larger task.
+# https://github.com/android/ndk/wiki/Changelog-r23#changes
+if(ANDROID
+   AND ("${ANDROID_NDK_MAJOR}" LESS 23 OR ANDROID_USE_LEGACY_TOOLCHAIN_FILE))
+  foreach(lang C;CXX)
+    string(STRIP "${AOM_${lang}_FLAGS}" AOM_${lang}_FLAGS)
+    if(AOM_${lang}_FLAGS)
+      foreach(config ${AOM_${lang}_CONFIGS})
+        set(${config} "${${config}} ${AOM_${lang}_FLAGS}")
+      endforeach()
+    endif()
+  endforeach()
 endif()
 
 set(AOM_LIB_LINK_TYPE PUBLIC)

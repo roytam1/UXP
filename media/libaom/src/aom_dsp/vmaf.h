@@ -12,16 +12,30 @@
 #ifndef AOM_AOM_DSP_VMAF_H_
 #define AOM_AOM_DSP_VMAF_H_
 
+#include <libvmaf/libvmaf.h>
+#include <stdbool.h>
+
 #include "aom_scale/yv12config.h"
 
-void aom_calc_vmaf(const char *model_path, const YV12_BUFFER_CONFIG *source,
-                   const YV12_BUFFER_CONFIG *distorted, int bit_depth,
-                   double *vmaf);
+void aom_init_vmaf_context(VmafContext **vmaf_context, VmafModel *vmaf_model,
+                           bool cal_vmaf_neg);
+void aom_close_vmaf_context(VmafContext *vmaf_context);
 
-void aom_calc_vmaf_multi_frame(
-    void *user_data, const char *model_path,
-    int (*read_frame)(float *ref_data, float *main_data, float *temp_data,
-                      int stride_byte, void *user_data),
-    int frame_width, int frame_height, int bit_depth, double *vmaf);
+void aom_init_vmaf_model(VmafModel **vmaf_model, const char *model_path);
+void aom_close_vmaf_model(VmafModel *vmaf_model);
+
+void aom_calc_vmaf(VmafModel *vmaf_model, const YV12_BUFFER_CONFIG *source,
+                   const YV12_BUFFER_CONFIG *distorted, int bit_depth,
+                   bool cal_vmaf_neg, double *vmaf);
+
+void aom_read_vmaf_image(VmafContext *vmaf_context,
+                         const YV12_BUFFER_CONFIG *source,
+                         const YV12_BUFFER_CONFIG *distorted, int bit_depth,
+                         int frame_index);
+
+double aom_calc_vmaf_at_index(VmafContext *vmaf_context, VmafModel *vmaf_model,
+                              int frame_index);
+
+void aom_flush_vmaf_context(VmafContext *vmaf_context);
 
 #endif  // AOM_AOM_DSP_VMAF_H_

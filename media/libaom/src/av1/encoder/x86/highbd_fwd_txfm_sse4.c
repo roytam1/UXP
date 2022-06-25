@@ -11,16 +11,70 @@
 #include <assert.h>
 #include <smmintrin.h> /* SSE4.1 */
 
-#include "config/aom_config.h"
-#include "config/av1_rtcd.h"
-
+#include "aom_dsp/txfm_common.h"
+#include "aom_dsp/x86/transpose_sse2.h"
+#include "aom_dsp/x86/txfm_common_sse2.h"
+#include "aom_ports/mem.h"
 #include "av1/common/av1_txfm.h"
 #include "av1/common/x86/highbd_txfm_utility_sse4.h"
 #include "av1/encoder/av1_fwd_txfm1d_cfg.h"
 #include "av1/encoder/x86/av1_txfm1d_sse4.h"
-#include "aom_dsp/txfm_common.h"
-#include "aom_dsp/x86/txfm_common_sse2.h"
-#include "aom_ports/mem.h"
+#include "config/aom_config.h"
+#include "config/av1_rtcd.h"
+
+void av1_fwht4x4_sse4_1(const int16_t *input, tran_low_t *output, int stride) {
+  __m128i in[4];
+  in[0] = _mm_loadl_epi64((const __m128i *)(input + 0 * stride));
+  in[1] = _mm_loadl_epi64((const __m128i *)(input + 1 * stride));
+  in[2] = _mm_loadl_epi64((const __m128i *)(input + 2 * stride));
+  in[3] = _mm_loadl_epi64((const __m128i *)(input + 3 * stride));
+
+  // Convert to int32_t.
+  __m128i op[4];
+  op[0] = _mm_cvtepi16_epi32(in[0]);
+  op[1] = _mm_cvtepi16_epi32(in[1]);
+  op[2] = _mm_cvtepi16_epi32(in[2]);
+  op[3] = _mm_cvtepi16_epi32(in[3]);
+
+  for (int i = 0; i < 2; ++i) {
+    __m128i a1 = op[0];
+    __m128i b1 = op[1];
+    __m128i c1 = op[2];
+    __m128i d1 = op[3];
+    __m128i e1;
+
+    a1 = _mm_add_epi32(a1, b1);  // a1 += b1
+    d1 = _mm_sub_epi32(d1, c1);  // d1 = d1 - c1
+    e1 = _mm_sub_epi32(a1, d1);  // e1 = (a1 - d1) >> 1
+    e1 = _mm_srai_epi32(e1, 1);
+    b1 = _mm_sub_epi32(e1, b1);  // b1 = e1 - b1
+    c1 = _mm_sub_epi32(e1, c1);  // c1 = e1 - c1
+    a1 = _mm_sub_epi32(a1, c1);  // a1 -= c1
+    d1 = _mm_add_epi32(d1, b1);  // d1 += b1
+
+    op[0] = a1;
+    op[1] = c1;
+    op[2] = d1;
+    op[3] = b1;
+
+    transpose_32bit_4x4(op, op);
+  }
+
+  op[0] = _mm_slli_epi32(op[0], UNIT_QUANT_SHIFT);
+  op[1] = _mm_slli_epi32(op[1], UNIT_QUANT_SHIFT);
+  op[2] = _mm_slli_epi32(op[2], UNIT_QUANT_SHIFT);
+  op[3] = _mm_slli_epi32(op[3], UNIT_QUANT_SHIFT);
+
+  _mm_storeu_si128((__m128i *)(output + 0), op[0]);
+  _mm_storeu_si128((__m128i *)(output + 4), op[1]);
+  _mm_storeu_si128((__m128i *)(output + 8), op[2]);
+  _mm_storeu_si128((__m128i *)(output + 12), op[3]);
+}
+
+void av1_highbd_fwht4x4_sse4_1(const int16_t *input, tran_low_t *output,
+                               int stride) {
+  av1_fwht4x4_sse4_1(input, output, stride);
+}
 
 static INLINE void load_buffer_4x4(const int16_t *input, __m128i *in,
                                    int stride, int flipud, int fliplr,
@@ -827,6 +881,7 @@ static void idtx8x8_sse4_1(__m128i *in, __m128i *out, int bit, int col_num) {
     out[7 + 8 * i] = _mm_add_epi32(in[7 + 8 * i], in[7 + 8 * i]);
   }
 }
+#if !CONFIG_REALTIME_ONLY
 static void idtx32x8_sse4_1(__m128i *in, __m128i *out, int bit, int col_num) {
   (void)bit;
   (void)col_num;
@@ -841,6 +896,7 @@ static void idtx32x8_sse4_1(__m128i *in, __m128i *out, int bit, int col_num) {
     out[j + 8 * 7] = _mm_add_epi32(in[j + 8 * 7], in[j + 8 * 7]);
   }
 }
+#endif
 void av1_fwd_txfm2d_8x8_sse4_1(const int16_t *input, int32_t *coeff, int stride,
                                TX_TYPE tx_type, int bd) {
   __m128i in[16], out[16];
@@ -1146,6 +1202,7 @@ static INLINE void load_buffer_4x8(const int16_t *input, __m128i *out,
   load_buffer_4x4(botL, out + 4, stride, flipud, fliplr, shift);
 }
 
+#if !CONFIG_REALTIME_ONLY
 static INLINE void load_buffer_4x16(const int16_t *input, __m128i *out,
                                     const int stride, const int flipud,
                                     const int fliplr, const int shift) {
@@ -1162,6 +1219,7 @@ static INLINE void load_buffer_4x16(const int16_t *input, __m128i *out,
   load_buffer_4x8(topL, out, stride, flipud, fliplr, shift);
   load_buffer_4x8(botL, out + 8, stride, flipud, fliplr, shift);
 }
+#endif
 
 static INLINE void load_buffer_32x8n(const int16_t *input, __m128i *out,
                                      int stride, int flipud, int fliplr,
@@ -1943,6 +2001,7 @@ static const fwd_transform_1d_sse4_1 col_highbd_txfm8x8_arr[TX_TYPES] = {
   fadst8x8_sse4_1,  // V_FLIPADST
   idtx8x8_sse4_1    // H_FLIPADST
 };
+#if !CONFIG_REALTIME_ONLY
 static const fwd_transform_1d_sse4_1 row_highbd_txfm32x8_arr[TX_TYPES] = {
   fdct8x8_sse4_1,   // DCT_DCT
   NULL,             // ADST_DCT
@@ -1961,6 +2020,7 @@ static const fwd_transform_1d_sse4_1 row_highbd_txfm32x8_arr[TX_TYPES] = {
   NULL,             // V_FLIPADST
   NULL,             // H_FLIPADST
 };
+#endif
 static const fwd_transform_1d_sse4_1 col_highbd_txfm4x8_arr[TX_TYPES] = {
   fdct4x8_sse4_1,   // DCT_DCT
   fadst8x8_sse4_1,  // ADST_DCT
@@ -2194,6 +2254,7 @@ void av1_fwd_txfm2d_8x16_sse4_1(const int16_t *input, int32_t *coeff,
   (void)bd;
 }
 
+#if !CONFIG_REALTIME_ONLY
 void av1_fwd_txfm2d_4x16_sse4_1(const int16_t *input, int32_t *coeff,
                                 int stride, TX_TYPE tx_type, int bd) {
   __m128i in[16];
@@ -2222,6 +2283,7 @@ void av1_fwd_txfm2d_4x16_sse4_1(const int16_t *input, int32_t *coeff,
   }
   (void)bd;
 }
+#endif
 
 void av1_fwd_txfm2d_16x4_sse4_1(const int16_t *input, int32_t *coeff,
                                 int stride, TX_TYPE tx_type, int bd) {
@@ -2394,6 +2456,7 @@ void av1_fwd_txfm2d_32x16_sse4_1(const int16_t *input, int32_t *coeff,
   (void)bd;
 }
 
+#if !CONFIG_REALTIME_ONLY
 void av1_fwd_txfm2d_8x32_sse4_1(const int16_t *input, int32_t *coeff,
                                 int stride, TX_TYPE tx_type, int bd) {
   __m128i in[64];
@@ -2461,6 +2524,7 @@ void av1_fwd_txfm2d_32x8_sse4_1(const int16_t *input, int32_t *coeff,
   transpose_8nx8n(in, outcoef128, txfm_size_row, txfm_size_col);
   (void)bd;
 }
+#endif
 
 void av1_fwd_txfm2d_4x8_sse4_1(const int16_t *input, int32_t *coeff, int stride,
                                TX_TYPE tx_type, int bd) {
@@ -2522,6 +2586,7 @@ void av1_fwd_txfm2d_8x4_sse4_1(const int16_t *input, int32_t *coeff, int stride,
   (void)bd;
 }
 
+#if !CONFIG_REALTIME_ONLY
 void av1_fwd_txfm2d_16x64_sse4_1(const int16_t *input, int32_t *coeff,
                                  int stride, TX_TYPE tx_type, int bd) {
   __m128i in[256];
@@ -2602,3 +2667,4 @@ void av1_fwd_txfm2d_64x16_sse4_1(const int16_t *input, int32_t *coeff,
   transpose_8nx8n(in, outcoeff128, txfm_size_row, 32);
   (void)bd;
 }
+#endif

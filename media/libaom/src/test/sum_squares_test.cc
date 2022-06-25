@@ -21,7 +21,6 @@
 
 #include "aom_ports/mem.h"
 #include "test/acm_random.h"
-#include "test/clear_system_state.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
 #include "test/function_equivalence_test.h"
@@ -49,13 +48,10 @@ class SumSquaresTest : public ::testing::TestWithParam<TestFuncs> {
     params_ = this->GetParam();
     rnd_.Reset(ACMRandom::DeterministicSeed());
     src_ = reinterpret_cast<int16_t *>(aom_memalign(16, 256 * 256 * 2));
-    ASSERT_TRUE(src_ != NULL);
+    ASSERT_NE(src_, nullptr);
   }
 
-  virtual void TearDown() {
-    libaom_test::ClearSystemState();
-    aom_free(src_);
-  }
+  virtual void TearDown() { aom_free(src_); }
   void RunTest(int isRandom);
   void RunSpeedTest();
 
@@ -85,6 +81,7 @@ class SumSquaresTest : public ::testing::TestWithParam<TestFuncs> {
   int16_t *src_;
   ACMRandom rnd_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SumSquaresTest);
 
 void SumSquaresTest::RunTest(int isRandom) {
   int failed = 0;
@@ -102,7 +99,7 @@ void SumSquaresTest::RunTest(int isRandom) {
     }
     const uint64_t res_ref = params_.ref_func(src_, stride, width, height);
     uint64_t res_tst;
-    ASM_REGISTER_STATE_CHECK(res_tst =
+    API_REGISTER_STATE_CHECK(res_tst =
                                  params_.tst_func(src_, stride, width, height));
 
     if (!failed) {
@@ -165,6 +162,15 @@ INSTANTIATE_TEST_SUITE_P(
 
 #endif  // HAVE_SSE2
 
+#if HAVE_NEON
+
+INSTANTIATE_TEST_SUITE_P(
+    NEON, SumSquaresTest,
+    ::testing::Values(TestFuncs(&aom_sum_squares_2d_i16_c,
+                                &aom_sum_squares_2d_i16_neon)));
+
+#endif  // HAVE_NEON
+
 #if HAVE_AVX2
 INSTANTIATE_TEST_SUITE_P(
     AVX2, SumSquaresTest,
@@ -184,6 +190,7 @@ class SumSquares1DTest : public FunctionEquivalenceTest<F1D> {
   static const int kIterations = 1000;
   static const int kMaxSize = 256;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SumSquares1DTest);
 
 TEST_P(SumSquares1DTest, RandomValues) {
   DECLARE_ALIGNED(16, int16_t, src[kMaxSize * kMaxSize]);
@@ -197,7 +204,7 @@ TEST_P(SumSquares1DTest, RandomValues) {
 
     const uint64_t ref_res = params_.ref_func(src, N);
     uint64_t tst_res;
-    ASM_REGISTER_STATE_CHECK(tst_res = params_.tst_func(src, N));
+    API_REGISTER_STATE_CHECK(tst_res = params_.tst_func(src, N));
 
     ASSERT_EQ(ref_res, tst_res);
   }
@@ -218,7 +225,7 @@ TEST_P(SumSquares1DTest, ExtremeValues) {
 
     const uint64_t ref_res = params_.ref_func(src, N);
     uint64_t tst_res;
-    ASM_REGISTER_STATE_CHECK(tst_res = params_.tst_func(src, N));
+    API_REGISTER_STATE_CHECK(tst_res = params_.tst_func(src, N));
 
     ASSERT_EQ(ref_res, tst_res);
   }
@@ -252,12 +259,11 @@ class SSETest : public ::testing::TestWithParam<SSETestParam> {
     rnd_.Reset(ACMRandom::DeterministicSeed());
     src_ = reinterpret_cast<uint8_t *>(aom_memalign(32, 256 * 256 * 2));
     ref_ = reinterpret_cast<uint8_t *>(aom_memalign(32, 256 * 256 * 2));
-    ASSERT_TRUE(src_ != NULL);
-    ASSERT_TRUE(ref_ != NULL);
+    ASSERT_NE(src_, nullptr);
+    ASSERT_NE(ref_, nullptr);
   }
 
   virtual void TearDown() {
-    libaom_test::ClearSystemState();
     aom_free(src_);
     aom_free(ref_);
   }
@@ -303,6 +309,7 @@ class SSETest : public ::testing::TestWithParam<SSETestParam> {
   uint8_t *ref_;
   ACMRandom rnd_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SSETest);
 
 void SSETest::RunTest(int isRandom, int width, int height, int run_times) {
   int failed = 0;
@@ -438,13 +445,10 @@ class SSE_Sum_Test : public ::testing::TestWithParam<SSE_SumTestParam> {
     width_ = GET_PARAM(1);
     rnd_.Reset(ACMRandom::DeterministicSeed());
     src_ = reinterpret_cast<int16_t *>(aom_memalign(32, 256 * 256 * 2));
-    ASSERT_TRUE(src_ != NULL);
+    ASSERT_NE(src_, nullptr);
   }
 
-  virtual void TearDown() {
-    libaom_test::ClearSystemState();
-    aom_free(src_);
-  }
+  virtual void TearDown() { aom_free(src_); }
   void RunTest(int isRandom, int width, int height, int run_times);
 
   void GenRandomData(int width, int height, int stride) {
@@ -472,6 +476,7 @@ class SSE_Sum_Test : public ::testing::TestWithParam<SSE_SumTestParam> {
   int16_t *src_;
   ACMRandom rnd_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SSE_Sum_Test);
 
 void SSE_Sum_Test::RunTest(int isRandom, int width, int height, int run_times) {
   aom_usec_timer ref_timer, test_timer;
@@ -583,13 +588,10 @@ class Lowbd2dVarTest : public ::testing::TestWithParam<TestFuncVar2D> {
     rnd_.Reset(ACMRandom::DeterministicSeed());
     src_ = reinterpret_cast<uint8_t *>(
         aom_memalign(16, 512 * 512 * sizeof(uint8_t)));
-    ASSERT_TRUE(src_ != NULL);
+    ASSERT_NE(src_, nullptr);
   }
 
-  virtual void TearDown() {
-    libaom_test::ClearSystemState();
-    aom_free(src_);
-  }
+  virtual void TearDown() { aom_free(src_); }
   void RunTest(int isRandom);
   void RunSpeedTest();
 
@@ -619,6 +621,7 @@ class Lowbd2dVarTest : public ::testing::TestWithParam<TestFuncVar2D> {
   uint8_t *src_;
   ACMRandom rnd_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Lowbd2dVarTest);
 
 void Lowbd2dVarTest::RunTest(int isRandom) {
   int failed = 0;
@@ -637,7 +640,7 @@ void Lowbd2dVarTest::RunTest(int isRandom) {
 
     const uint64_t res_ref = params_.ref_func(src_, stride, width, height);
     uint64_t res_tst;
-    ASM_REGISTER_STATE_CHECK(res_tst =
+    API_REGISTER_STATE_CHECK(res_tst =
                                  params_.tst_func(src_, stride, width, height));
 
     if (!failed) {
@@ -713,13 +716,10 @@ class Highbd2dVarTest : public ::testing::TestWithParam<TestFuncVar2D> {
     rnd_.Reset(ACMRandom::DeterministicSeed());
     src_ = reinterpret_cast<uint16_t *>(
         aom_memalign(16, 512 * 512 * sizeof(uint16_t)));
-    ASSERT_TRUE(src_ != NULL);
+    ASSERT_NE(src_, nullptr);
   }
 
-  virtual void TearDown() {
-    libaom_test::ClearSystemState();
-    aom_free(src_);
-  }
+  virtual void TearDown() { aom_free(src_); }
   void RunTest(int isRandom);
   void RunSpeedTest();
 
@@ -749,6 +749,7 @@ class Highbd2dVarTest : public ::testing::TestWithParam<TestFuncVar2D> {
   uint16_t *src_;
   ACMRandom rnd_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Highbd2dVarTest);
 
 void Highbd2dVarTest::RunTest(int isRandom) {
   int failed = 0;
@@ -768,7 +769,7 @@ void Highbd2dVarTest::RunTest(int isRandom) {
     const uint64_t res_ref =
         params_.ref_func(CONVERT_TO_BYTEPTR(src_), stride, width, height);
     uint64_t res_tst;
-    ASM_REGISTER_STATE_CHECK(
+    API_REGISTER_STATE_CHECK(
         res_tst =
             params_.tst_func(CONVERT_TO_BYTEPTR(src_), stride, width, height));
 

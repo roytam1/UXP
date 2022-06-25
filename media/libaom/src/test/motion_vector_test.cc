@@ -46,14 +46,10 @@ class MotionVectorTestLarge
   virtual ~MotionVectorTestLarge() {}
 
   virtual void SetUp() {
-    InitializeConfig();
-    SetMode(encoding_mode_);
+    InitializeConfig(encoding_mode_);
     if (encoding_mode_ != ::libaom_test::kRealTime) {
       cfg_.g_lag_in_frames = 3;
-      cfg_.rc_end_usage = AOM_VBR;
     } else {
-      cfg_.g_lag_in_frames = 0;
-      cfg_.rc_end_usage = AOM_CBR;
       cfg_.rc_buf_sz = 1000;
       cfg_.rc_buf_initial_sz = 500;
       cfg_.rc_buf_optimal_sz = 600;
@@ -96,12 +92,12 @@ TEST_P(MotionVectorTestLarge, OverallTest) {
   video.reset(new libaom_test::YUVVideoSource(
       "niklas_640_480_30.yuv", AOM_IMG_FMT_I420, width, height, 30, 1, 0, 3));
 
-  ASSERT_TRUE(video.get() != NULL);
+  ASSERT_NE(video, nullptr);
   ASSERT_NO_FATAL_FAILURE(RunLoop(video.get()));
 }
 
-AV1_INSTANTIATE_TEST_CASE(MotionVectorTestLarge,
-                          ::testing::ValuesIn(kEncodingModeVectors),
-                          ::testing::ValuesIn(kCpuUsedVectors),
-                          ::testing::ValuesIn(kMVTestModes));
+AV1_INSTANTIATE_TEST_SUITE(MotionVectorTestLarge,
+                           ::testing::ValuesIn(kEncodingModeVectors),
+                           ::testing::ValuesIn(kCpuUsedVectors),
+                           ::testing::ValuesIn(kMVTestModes));
 }  // namespace

@@ -13,19 +13,14 @@ if(AOM_AOM_PORTS_AOM_PORTS_CMAKE_)
 endif() # AOM_AOM_PORTS_AOM_PORTS_CMAKE_
 set(AOM_AOM_PORTS_AOM_PORTS_CMAKE_ 1)
 
-list(APPEND AOM_PORTS_INCLUDES
-            "${AOM_ROOT}/aom_ports/aom_once.h"
-            "${AOM_ROOT}/aom_ports/aom_timer.h"
-            "${AOM_ROOT}/aom_ports/bitops.h"
+list(APPEND AOM_PORTS_INCLUDES "${AOM_ROOT}/aom_ports/aom_once.h"
+            "${AOM_ROOT}/aom_ports/aom_timer.h" "${AOM_ROOT}/aom_ports/bitops.h"
             "${AOM_ROOT}/aom_ports/emmintrin_compat.h"
-            "${AOM_ROOT}/aom_ports/mem.h"
-            "${AOM_ROOT}/aom_ports/mem_ops.h"
+            "${AOM_ROOT}/aom_ports/mem.h" "${AOM_ROOT}/aom_ports/mem_ops.h"
             "${AOM_ROOT}/aom_ports/mem_ops_aligned.h"
-            "${AOM_ROOT}/aom_ports/msvc.h"
-            "${AOM_ROOT}/aom_ports/sanitizer.h"
-            "${AOM_ROOT}/aom_ports/system_state.h")
+            "${AOM_ROOT}/aom_ports/msvc.h" "${AOM_ROOT}/aom_ports/sanitizer.h")
 
-list(APPEND AOM_PORTS_ASM_X86 "${AOM_ROOT}/aom_ports/emms.asm")
+list(APPEND AOM_PORTS_ASM_X86 "${AOM_ROOT}/aom_ports/float.asm")
 
 list(APPEND AOM_PORTS_INCLUDES_X86 "${AOM_ROOT}/aom_ports/x86_abi_support.asm")
 
@@ -48,8 +43,9 @@ list(APPEND AOM_PORTS_SOURCES_PPC "${AOM_ROOT}/aom_ports/ppc.h"
 #
 # * The libaom target must exist before this function is called.
 function(setup_aom_ports_targets)
-  if("${AOM_TARGET_CPU}" MATCHES "^x86")
+  if(WIN32 AND "${AOM_TARGET_CPU}" STREQUAL "x86_64")
     add_asm_library("aom_ports" "AOM_PORTS_ASM_X86")
+    set(aom_ports_asm_lib 1)
     set(aom_ports_has_symbols 1)
   elseif("${AOM_TARGET_CPU}" MATCHES "arm")
     add_library(aom_ports OBJECT ${AOM_PORTS_SOURCES_ARM})
@@ -66,27 +62,27 @@ function(setup_aom_ports_targets)
     endif()
   endif()
 
+  # Note AOM_PORTS_INCLUDES_X86 are not added to the aom_ports, aom or
+  # aom_static targets to avoid compilation issues in projects that enable ASM
+  # language support in project(). These sources were never included in
+  # libaom_srcs.*; if it becomes necessary for a particular generator another
+  # method should be used.
   if(aom_ports_has_symbols)
-    target_sources(aom_ports PRIVATE ${AOM_PORTS_INCLUDES})
-
-    if("${AOM_TARGET_CPU}" STREQUAL "x86"
-       OR "${AOM_TARGET_CPU}" STREQUAL "x86_64")
-      target_sources(aom_ports PRIVATE ${AOM_PORTS_INCLUDES_X86})
+    if(aom_ports_asm_lib)
+      # When aom_ports is an asm library its name changes based on build
+      # configuration. This handles adding sources to the correct target(s).
+      target_sources(aom_ports_static PRIVATE ${AOM_PORTS_INCLUDES})
+      if(BUILD_SHARED_LIBS)
+        target_sources(aom_ports_shared PRIVATE ${AOM_PORTS_INCLUDES})
+      endif()
+    else()
+      target_sources(aom_ports PRIVATE ${AOM_PORTS_INCLUDES})
     endif()
-
     set(AOM_LIB_TARGETS ${AOM_LIB_TARGETS} PARENT_SCOPE)
   else()
     target_sources(aom PRIVATE ${AOM_PORTS_INCLUDES})
     if(BUILD_SHARED_LIBS)
       target_sources(aom_static PRIVATE ${AOM_PORTS_INCLUDES})
-    endif()
-
-    if("${AOM_TARGET_CPU}" STREQUAL "x86"
-       OR "${AOM_TARGET_CPU}" STREQUAL "x86_64")
-      target_sources(aom PRIVATE ${AOM_PORTS_INCLUDES_X86})
-      if(BUILD_SHARED_LIBS)
-        target_sources(aom_static PRIVATE ${AOM_PORTS_INCLUDES_X86})
-      endif()
     endif()
   endif()
 endfunction()

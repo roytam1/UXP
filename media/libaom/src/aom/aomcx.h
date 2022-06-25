@@ -18,10 +18,23 @@
  */
 #include "aom/aom.h"
 #include "aom/aom_encoder.h"
+#include "aom/aom_external_partition.h"
 
 /*!\file
  * \brief Provides definitions for using AOM or AV1 encoder algorithm within the
  *        aom Codec Interface.
+ *
+ * Several interfaces are excluded with CONFIG_REALTIME_ONLY build:
+ * Global motion
+ * Warped motion
+ * OBMC
+ * TPL model
+ * Loop restoration
+ *
+ * The following features are also disabled with CONFIG_REALTIME_ONLY:
+ * CNN
+ * 4X rectangular blocks
+ * 4X rectangular transform in intra prediction
  */
 
 #ifdef __cplusplus
@@ -31,11 +44,19 @@ extern "C" {
 /*!\name Algorithm interface for AV1
  *
  * This interface provides the capability to encode raw AV1 streams.
- * @{
+ *@{
+ */
+
+/*!\brief A single instance of the AV1 encoder.
+ *\deprecated This access mechanism is provided for backwards compatibility;
+ * prefer aom_codec_av1_cx().
  */
 extern aom_codec_iface_t aom_codec_av1_cx_algo;
+
+/*!\brief The interface to the AV1 encoder.
+ */
 extern aom_codec_iface_t *aom_codec_av1_cx(void);
-/*!@} - end algorithm interface member group*/
+/*!@} - end algorithm interface member group */
 
 /*
  * Algorithm Flags
@@ -147,6 +168,7 @@ extern aom_codec_iface_t *aom_codec_av1_cx(void);
  *
  * This set of macros define the control functions available for AVx
  * encoder interface.
+ * The range of encode control ID is 7-229(max).
  *
  * \sa #aom_codec_control(aom_codec_ctx_t *ctx, int ctrl_id, ...)
  */
@@ -185,9 +207,14 @@ enum aome_enc_control_id {
    * encoding process, values greater than 0 will increase encoder speed at
    * the expense of quality.
    *
-   * Valid range: 0..8. 0 runs the slowest, and 8 runs the fastest;
+   * Valid range: 0..10. 0 runs the slowest, and 10 runs the fastest;
    * quality improves as speed decreases (since more compression
    * possibilities are explored).
+   *
+   * NOTE: 10 is only allowed in AOM_USAGE_REALTIME. In AOM_USAGE_GOOD_QUALITY
+   * and AOM_USAGE_ALL_INTRA, 9 is the highest allowed value. However,
+   * AOM_USAGE_GOOD_QUALITY treats 7..9 the same as 6. Also, AOM_USAGE_REALTIME
+   * treats 0..4 the same as 5.
    */
   AOME_SET_CPUUSED = 13,
 
@@ -201,7 +228,14 @@ enum aome_enc_control_id {
 
   /* NOTE: enum 15 unused */
 
-  /*!\brief Codec control function to set sharpness, unsigned int parameter.
+  /*!\brief Codec control function to set the sharpness parameter,
+   * unsigned int parameter.
+   *
+   * This parameter controls the level at which rate-distortion optimization of
+   * transform coefficients favours sharpness in the block.
+   *
+   * Valid range: 0..7. The default is 0. Values 1-7 will avoid eob and skip
+   * block optimization and will change rdmult in favour of block sharpness.
    */
   AOME_SET_SHARPNESS = AOME_SET_ENABLEAUTOALTREF + 2,  // 16
 
@@ -241,6 +275,8 @@ enum aome_enc_control_id {
 
   /*!\brief Codec control function to set visual tuning, aom_tune_metric (int)
    * parameter
+   *
+   * The default is AOM_TUNE_PSNR.
    */
   AOME_SET_TUNING = AOME_SET_ARNR_STRENGTH + 2,  // 24
 
@@ -365,6 +401,8 @@ enum aome_enc_control_id {
    *
    * - 0 = disable
    * - 1 = enable (default)
+   *
+   * \note Excluded from CONFIG_REALTIME_ONLY build.
    */
   AV1E_SET_ENABLE_TPL_MODEL = 35,
 
@@ -372,7 +410,8 @@ enum aome_enc_control_id {
    * unsigned int parameter
    *
    * - 0 = disable
-   * - 1 = enable (default)
+   * - 1 = enable without overlay (default)
+   * - 2 = enable with overlay
    */
   AV1E_SET_ENABLE_KEYFRAME_FILTERING = 36,
 
@@ -382,7 +421,7 @@ enum aome_enc_control_id {
    * AV1 has a bitstream feature to reduce decoding dependency between frames
    * by turning off backward update of probability context used in encoding
    * and decoding. This allows staged parallel processing of more than one
-   * video frames in the decoder. This control function provides a mean to
+   * video frames in the decoder. This control function provides a means to
    * turn this feature on or off for bitstreams produced by encoder.
    *
    * - 0 = disable (default)
@@ -418,10 +457,12 @@ enum aome_enc_control_id {
    * AV1 has a segment based feature that allows encoder to adaptively change
    * quantization parameter for each segment within a frame to improve the
    * subjective quality. This control makes encoder operate in one of the
-   * several AQ_modes supported.
+   * several AQ modes supported.
    *
    * - 0 = disable (default)
-   * - 1 = enable
+   * - 1 = variance
+   * - 2 = complexity
+   * - 3 = cyclic refresh
    */
   AV1E_SET_AQ_MODE = 40,
 
@@ -429,7 +470,7 @@ enum aome_enc_control_id {
    * int parameter
    *
    * One AV1 encoder speed feature is to enable quality boost by lowering
-   * frame level Q periodically. This control function provides a mean to
+   * frame level Q periodically. This control function provides a means to
    * turn on/off this feature.
    *
    * - 0 = disable (default)
@@ -450,6 +491,7 @@ enum aome_enc_control_id {
    *
    *  - AOM_CONTENT_DEFAULT = Regular video content (default)
    *  - AOM_CONTENT_SCREEN  = Screen capture content
+   *  - AOM_CONTENT_FILM = Film content
    */
   AV1E_SET_TUNE_CONTENT = 43,
 
@@ -570,18 +612,18 @@ enum aome_enc_control_id {
   AV1E_SET_RENDER_SIZE = 53,
 
   /*!\brief Control to set target sequence level index for a certain operating
-   * point(OP), int parameter
-   * Possible values are in the form of "ABxy"(pad leading zeros if less than
-   * 4 digits).
+   * point (OP), int parameter
+   * Possible values are in the form of "ABxy".
    *  - AB: OP index.
-   *  - xy: Target level index for the OP. Can be values 0~23(corresponding to
-   *    level 2.0 ~ 7.3) or 24(keep level stats only for level monitoring) or
-   *    31(maximum level parameter, no level-based constraints).
+   *  - xy: Target level index for the OP. Can be values 0~23 (corresponding to
+   *    level 2.0 ~ 7.3, note levels 2.2, 2.3, 3.2, 3.3, 4.2, 4.3, 7.0, 7.1, 7.2
+   *    & 7.3 are undefined) or 24 (keep level stats only for level monitoring)
+   *    or 31 (maximum level parameter, no level-based constraints).
    *
    * E.g.:
-   * - "0" means target level index 0 for the 0th OP;
-   * - "111" means target level index 11 for the 1st OP;
-   * - "1021" means target level index 21 for the 10th OP.
+   * - "0" means target level index 0 (2.0) for the 0th OP;
+   * - "109" means target level index 9 (4.1) for the 1st OP;
+   * - "1019" means target level index 19 (6.3) for the 10th OP.
    *
    * If the target level is not specified for an OP, the maximum level parameter
    * of 31 is used as default.
@@ -617,7 +659,8 @@ enum aome_enc_control_id {
    * in-loop filter aiming to remove coding artifacts
    *
    * - 0 = disable
-   * - 1 = enable (default)
+   * - 1 = enable for all frames (default)
+   * - 2 = disable for non-reference frames
    */
   AV1E_SET_ENABLE_CDEF = 58,
 
@@ -626,6 +669,8 @@ enum aome_enc_control_id {
    *
    * - 0 = disable
    * - 1 = enable (default)
+   *
+   * \note Excluded from CONFIG_REALTIME_ONLY build.
    */
   AV1E_SET_ENABLE_RESTORATION = 59,
 
@@ -641,6 +686,8 @@ enum aome_enc_control_id {
    *
    * - 0 = disable
    * - 1 = enable (default)
+   *
+   * \note Excluded from CONFIG_REALTIME_ONLY build.
    */
   AV1E_SET_ENABLE_OBMC = 61,
 
@@ -847,7 +894,17 @@ enum aome_enc_control_id {
    */
   AV1E_SET_ENABLE_FLIP_IDTX = 81,
 
-  /* Note: enum value 82 unused */
+  /*!\brief Codec control function to turn on / off rectangular transforms, int
+   * parameter
+   *
+   * This will enable or disable usage of rectangular transforms. NOTE:
+   * Rectangular transforms only enabled when corresponding rectangular
+   * partitions are.
+   *
+   * - 0 = disable
+   * - 1 = enable (default)
+   */
+  AV1E_SET_ENABLE_RECT_TX = 82,
 
   /*!\brief Codec control function to turn on / off dist-wtd compound mode
    * at sequence level, int parameter
@@ -892,7 +949,7 @@ enum aome_enc_control_id {
   AV1E_SET_ENABLE_DUAL_FILTER = 86,
 
   /*!\brief Codec control function to turn on / off delta quantization in chroma
-   * planes usage for a sequence, int parameter
+   * planes for a sequence, int parameter
    *
    * - 0 = disable (default)
    * - 1 = enable
@@ -960,6 +1017,8 @@ enum aome_enc_control_id {
    *
    * - 0 = disable
    * - 1 = enable (default)
+   *
+   * \note Excluded from CONFIG_REALTIME_ONLY build.
    */
   AV1E_SET_ENABLE_GLOBAL_MOTION = 95,
 
@@ -968,6 +1027,8 @@ enum aome_enc_control_id {
    *
    * - 0 = disable
    * - 1 = enable (default)
+   *
+   * \note Excluded from CONFIG_REALTIME_ONLY build.
    */
   AV1E_SET_ENABLE_WARPED_MOTION = 96,
 
@@ -979,14 +1040,13 @@ enum aome_enc_control_id {
    *
    * - 0 = disable
    * - 1 = enable (default)
+   *
+   * \note Excluded from CONFIG_REALTIME_ONLY build.
    */
   AV1E_SET_ALLOW_WARPED_MOTION = 97,
 
   /*!\brief Codec control function to turn on / off filter intra usage at
    * sequence level, int parameter
-   *
-   * \attention If AV1E_SET_ENABLE_FILTER_INTRA is 0, then this flag is
-   * forced to 0.
    *
    * - 0 = disable
    * - 1 = enable (default)
@@ -1025,8 +1085,6 @@ enum aome_enc_control_id {
   /*!\brief Codec control function to turn on / off frame superresolution, int
    * parameter
    *
-   * \attention If AV1E_SET_ENABLE_SUPERRES is 0, then this flag is forced to 0.
-   *
    * - 0 = disable
    * - 1 = enable (default)
    */
@@ -1061,7 +1119,9 @@ enum aome_enc_control_id {
    *
    * - 0 = deltaq signaling off
    * - 1 = use modulation to maximize objective quality (default)
-   * - 2 = use modulation to maximize perceptual quality
+   * - 2 = use modulation for local test
+   * - 3 = use modulation for key frame perceptual quality optimization
+   * - 4 = use modulation for user rating based perceptual quality optimization
    */
   AV1E_SET_DELTAQ_MODE = 107,
 
@@ -1143,7 +1203,7 @@ enum aome_enc_control_id {
   /*!\brief Control to select maximum height for the GF group pyramid structure,
    * unsigned int parameter
    *
-   * Valid range: 0..4
+   * Valid range: 0..5
    */
   AV1E_SET_GF_MAX_PYRAMID_HEIGHT = 123,
 
@@ -1158,9 +1218,6 @@ enum aome_enc_control_id {
      parameter */
   AV1E_SET_REDUCED_REFERENCE_SET = 125,
 
-  /* NOTE: enums 126-139 unused */
-  /* NOTE: Need a gap in enum values to avoud conflict with 128, 129, 130 */
-
   /*!\brief Control to set frequency of the cost updates for coefficients,
    * unsigned int parameter
    *
@@ -1169,7 +1226,7 @@ enum aome_enc_control_id {
    * - 2 = update at tile level
    * - 3 = turn off
    */
-  AV1E_SET_COEFF_COST_UPD_FREQ = 140,
+  AV1E_SET_COEFF_COST_UPD_FREQ = 126,
 
   /*!\brief Control to set frequency of the cost updates for mode, unsigned int
    * parameter
@@ -1179,7 +1236,7 @@ enum aome_enc_control_id {
    * - 2 = update at tile level
    * - 3 = turn off
    */
-  AV1E_SET_MODE_COST_UPD_FREQ = 141,
+  AV1E_SET_MODE_COST_UPD_FREQ = 127,
 
   /*!\brief Control to set frequency of the cost updates for motion vectors,
    * unsigned int parameter
@@ -1189,7 +1246,7 @@ enum aome_enc_control_id {
    * - 2 = update at tile level
    * - 3 = turn off
    */
-  AV1E_SET_MV_COST_UPD_FREQ = 142,
+  AV1E_SET_MV_COST_UPD_FREQ = 128,
 
   /*!\brief Control to set bit mask that specifies which tier each of the 32
    * possible operating points conforms to, unsigned int parameter
@@ -1197,37 +1254,37 @@ enum aome_enc_control_id {
    * - 0 = main tier (default)
    * - 1 = high tier
    */
-  AV1E_SET_TIER_MASK = 143,
+  AV1E_SET_TIER_MASK = 129,
 
   /*!\brief Control to set minimum compression ratio, unsigned int parameter
    * Take integer values. If non-zero, encoder will try to keep the compression
    * ratio of each frame to be higher than the given value divided by 100.
    * E.g. 850 means minimum compression ratio of 8.5.
    */
-  AV1E_SET_MIN_CR = 144,
+  AV1E_SET_MIN_CR = 130,
 
   /* NOTE: enums 145-149 unused */
 
   /*!\brief Codec control function to set the layer id, aom_svc_layer_id_t*
    * parameter
    */
-  AV1E_SET_SVC_LAYER_ID = 150,
+  AV1E_SET_SVC_LAYER_ID = 131,
 
   /*!\brief Codec control function to set SVC paramaeters, aom_svc_params_t*
    * parameter
    */
-  AV1E_SET_SVC_PARAMS = 151,
+  AV1E_SET_SVC_PARAMS = 132,
 
   /*!\brief Codec control function to set reference frame config:
    * the ref_idx and the refresh flags for each buffer slot.
    * aom_svc_ref_frame_config_t* parameter
    */
-  AV1E_SET_SVC_REF_FRAME_CONFIG = 152,
+  AV1E_SET_SVC_REF_FRAME_CONFIG = 133,
 
   /*!\brief Codec control function to set the path to the VMAF model used when
    * tuning the encoder for VMAF, const char* parameter
    */
-  AV1E_SET_VMAF_MODEL_PATH = 153,
+  AV1E_SET_VMAF_MODEL_PATH = 134,
 
   /*!\brief Codec control function to enable EXT_TILE_DEBUG in AV1 encoder,
    * unsigned int parameter
@@ -1237,7 +1294,7 @@ enum aome_enc_control_id {
    *
    * \note This is only used in lightfield example test.
    */
-  AV1E_ENABLE_EXT_TILE_DEBUG = 154,
+  AV1E_ENABLE_EXT_TILE_DEBUG = 135,
 
   /*!\brief Codec control function to enable the superblock multipass unit test
    * in AV1 to ensure that the encoder does not leak state between different
@@ -1248,14 +1305,150 @@ enum aome_enc_control_id {
    *
    * \note This is only used in sb_multipass unit test.
    */
-  AV1E_ENABLE_SB_MULTIPASS_UNIT_TEST = 155,
+  AV1E_ENABLE_SB_MULTIPASS_UNIT_TEST = 136,
 
   /*!\brief Control to select minimum height for the GF group pyramid structure,
    * unsigned int parameter
    *
-   * Valid values: 0..4
+   * Valid values: 0..5
    */
-  AV1E_SET_GF_MIN_PYRAMID_HEIGHT = 156,
+  AV1E_SET_GF_MIN_PYRAMID_HEIGHT = 137,
+
+  /*!\brief Control to set average complexity of the corpus in the case of
+   * single pass vbr based on LAP, unsigned int parameter
+   */
+  AV1E_SET_VBR_CORPUS_COMPLEXITY_LAP = 138,
+
+  /*!\brief Control to get baseline gf interval
+   */
+  AV1E_GET_BASELINE_GF_INTERVAL = 139,
+
+  /*\brief Control to set encoding the denoised frame from denoise-noise-level
+   *
+   * - 0 = disabled/encode the original frame
+   * - 1 = enabled/encode the denoised frame (default)
+   */
+  AV1E_SET_ENABLE_DNL_DENOISING = 140,
+
+  /*!\brief Codec control function to turn on / off D45 to D203 intra mode
+   * usage, int parameter
+   *
+   * This will enable or disable usage of D45 to D203 intra modes, which are a
+   * subset of directional modes. This control has no effect if directional
+   * modes are disabled (AV1E_SET_ENABLE_DIRECTIONAL_INTRA set to 0).
+   *
+   * - 0 = disable
+   * - 1 = enable (default)
+   */
+  AV1E_SET_ENABLE_DIAGONAL_INTRA = 141,
+
+  /*!\brief Control to set frequency of the cost updates for intrabc motion
+   * vectors, unsigned int parameter
+   *
+   * - 0 = update at SB level (default)
+   * - 1 = update at SB row level in tile
+   * - 2 = update at tile level
+   * - 3 = turn off
+   */
+  AV1E_SET_DV_COST_UPD_FREQ = 142,
+
+  /*!\brief Codec control to set the path for partition stats read and write.
+   * const char * parameter.
+   */
+  AV1E_SET_PARTITION_INFO_PATH = 143,
+
+  /*!\brief Codec control to use an external partition model
+   * A set of callback functions is passed through this control
+   * to let the encoder encode with given partitions.
+   */
+  AV1E_SET_EXTERNAL_PARTITION = 144,
+
+  /*!\brief Codec control function to turn on / off directional intra mode
+   * usage, int parameter
+   *
+   * - 0 = disable
+   * - 1 = enable (default)
+   */
+  AV1E_SET_ENABLE_DIRECTIONAL_INTRA = 145,
+
+  /*!\brief Control to turn on / off transform size search.
+   *
+   * - 0 = disable, transforms always have the largest possible size
+   * - 1 = enable, search for the best transform size for each block (default)
+   */
+  AV1E_SET_ENABLE_TX_SIZE_SEARCH = 146,
+
+  /*!\brief Codec control function to set reference frame compound prediction.
+   * aom_svc_ref_frame_comp_pred_t* parameter
+   */
+  AV1E_SET_SVC_REF_FRAME_COMP_PRED = 147,
+
+  /*!\brief Set --deltaq-mode strength.
+   *
+   * Valid range: [0, 1000]
+   */
+  AV1E_SET_DELTAQ_STRENGTH = 148,
+
+  /*!\brief Codec control to control loop filter
+   *
+   * - 0 = Loop filter is disabled for all frames
+   * - 1 = Loop filter is enabled for all frames
+   * - 2 = Loop filter is disabled for non-reference frames
+   * - 3 = Loop filter is disabled for the frames with low motion
+   */
+  AV1E_SET_LOOPFILTER_CONTROL = 149,
+
+  /*!\brief Codec control function to get the loopfilter chosen by the encoder,
+   * int* parameter
+   */
+  AOME_GET_LOOPFILTER_LEVEL = 150,
+
+  /*!\brief Codec control to automatically turn off several intra coding tools,
+   * unsigned int parameter
+   * - 0 = do not use the feature
+   * - 1 = enable the automatic decision to turn off several intra tools
+   */
+  AV1E_SET_AUTO_INTRA_TOOLS_OFF = 151,
+
+  /*!\brief Codec control function to set flag for rate control used by external
+   * encoders.
+   * - 1 = Enable rate control for external encoders. This will disable content
+   * dependency in rate control and cyclic refresh.
+   * - 0 = Default. Disable rate control for external encoders.
+   */
+  AV1E_SET_RTC_EXTERNAL_RC = 152,
+
+  /*!\brief Codec control function to enable frame parallel multi-threading
+   * of the encoder, unsigned int parameter
+   *
+   * - 0 = disable (default)
+   * - 1 = enable
+   */
+  AV1E_SET_FP_MT = 153,
+
+  /*!\brief Codec control to enable actual frame parallel encode or
+   * simulation of frame parallel encode in FPMT unit test, unsigned int
+   * parameter
+   *
+   * - 0 = simulate frame parallel encode
+   * - 1 = actual frame parallel encode (default)
+   *
+   * \note This is only used in FPMT unit test.
+   */
+  AV1E_SET_FP_MT_UNIT_TEST = 154,
+
+  /*!\brief Codec control function to get the target sequence level index for
+   * each operating point. int* parameter. There can be at most 32 operating
+   * points. The results will be written into a provided integer array of
+   * sufficient size. If a target level is not set, the result will be 31.
+   * Please refer to https://aomediacodec.github.io/av1-spec/#levels for more
+   * details on level definitions and indices.
+   */
+  AV1E_GET_TARGET_SEQ_LEVEL_IDX = 155,
+
+  // Any new encoder control IDs should be added above.
+  // Maximum allowed encoder control ID is 229.
+  // No encoder control ID should be added below.
 };
 
 /*!\brief aom 1-D scaling mode
@@ -1266,7 +1459,10 @@ typedef enum aom_scaling_mode_1d {
   AOME_NORMAL = 0,
   AOME_FOURFIVE = 1,
   AOME_THREEFIVE = 2,
-  AOME_ONETWO = 3
+  AOME_THREEFOUR = 3,
+  AOME_ONEFOUR = 4,
+  AOME_ONEEIGHT = 5,
+  AOME_ONETWO = 6
 } AOM_SCALING_MODE;
 
 /*!\brief Max number of segments
@@ -1323,6 +1519,7 @@ typedef struct aom_scaling_mode {
 typedef enum {
   AOM_CONTENT_DEFAULT,
   AOM_CONTENT_SCREEN,
+  AOM_CONTENT_FILM,
   AOM_CONTENT_INVALID
 } aom_tune_content;
 
@@ -1344,8 +1541,27 @@ typedef enum {
   /* NOTE: enums 2 and 3 unused */
   AOM_TUNE_VMAF_WITH_PREPROCESSING = 4,
   AOM_TUNE_VMAF_WITHOUT_PREPROCESSING = 5,
-  AOM_TUNE_VMAF_MAX_GAIN = 6
+  AOM_TUNE_VMAF_MAX_GAIN = 6,
+  AOM_TUNE_VMAF_NEG_MAX_GAIN = 7,
+  AOM_TUNE_BUTTERAUGLI = 8,
 } aom_tune_metric;
+
+/*!\brief Distortion metric to use for RD optimization.
+ *
+ * Changes the encoder to use a different distortion metric for RD search. Note
+ * that this value operates on a "lower level" compared to aom_tune_metric - it
+ * affects the distortion metric inside a block, while aom_tune_metric only
+ * affects RD across blocks.
+ *
+ */
+typedef enum {
+  // Use PSNR for in-block rate-distortion optimization.
+  AOM_DIST_METRIC_PSNR,
+  // Use quantization matrix-weighted PSNR for in-block rate-distortion
+  // optimization. If --enable-qm=1 is not specified, this falls back to
+  // behaving in the same way as AOM_DIST_METRIC_PSNR.
+  AOM_DIST_METRIC_QM_PSNR,
+} aom_dist_metric;
 
 #define AOM_MAX_LAYERS 32   /**< Max number of layers */
 #define AOM_MAX_SS_LAYERS 4 /**< Max number of spatial layers */
@@ -1381,6 +1597,13 @@ typedef struct aom_svc_ref_frame_config {
   int refresh[8]; /**< Refresh flag for each of the 8 slots. */
 } aom_svc_ref_frame_config_t;
 
+/*!brief Parameters for setting ref frame compound prediction */
+typedef struct aom_svc_ref_frame_comp_pred {
+  // Use compound prediction for the ref_frame pairs GOLDEN_LAST (0),
+  // LAST2_LAST (1), and ALTREF_LAST (2).
+  int use_comp_pred[3]; /**<Compound reference flag. */
+} aom_svc_ref_frame_comp_pred_t;
+
 /*!\cond */
 /*!\brief Encoder control function parameter type
  *
@@ -1414,14 +1637,17 @@ AOM_CTRL_USE_TYPE(AOME_SET_CPUUSED, int)
 AOM_CTRL_USE_TYPE(AOME_SET_ENABLEAUTOALTREF, unsigned int)
 #define AOM_CTRL_AOME_SET_ENABLEAUTOALTREF
 
-AOM_CTRL_USE_TYPE(AOME_SET_ENABLEAUTOBWDREF, unsigned int)
-#define AOM_CTRL_AOME_SET_ENABLEAUTOBWDREF
-
 AOM_CTRL_USE_TYPE(AOME_SET_SHARPNESS, unsigned int)
 #define AOM_CTRL_AOME_SET_SHARPNESS
 
 AOM_CTRL_USE_TYPE(AOME_SET_STATIC_THRESHOLD, unsigned int)
 #define AOM_CTRL_AOME_SET_STATIC_THRESHOLD
+
+AOM_CTRL_USE_TYPE(AOME_GET_LAST_QUANTIZER, int *)
+#define AOM_CTRL_AOME_GET_LAST_QUANTIZER
+
+AOM_CTRL_USE_TYPE(AOME_GET_LAST_QUANTIZER_64, int *)
+#define AOM_CTRL_AOME_GET_LAST_QUANTIZER_64
 
 AOM_CTRL_USE_TYPE(AOME_SET_ARNR_MAXFRAMES, unsigned int)
 #define AOM_CTRL_AOME_SET_ARNR_MAXFRAMES
@@ -1434,6 +1660,25 @@ AOM_CTRL_USE_TYPE(AOME_SET_TUNING, int) /* aom_tune_metric */
 
 AOM_CTRL_USE_TYPE(AOME_SET_CQ_LEVEL, unsigned int)
 #define AOM_CTRL_AOME_SET_CQ_LEVEL
+
+AOM_CTRL_USE_TYPE(AOME_SET_MAX_INTRA_BITRATE_PCT, unsigned int)
+#define AOM_CTRL_AOME_SET_MAX_INTRA_BITRATE_PCT
+
+AOM_CTRL_USE_TYPE(AOME_SET_NUMBER_SPATIAL_LAYERS, int)
+#define AOM_CTRL_AOME_SET_NUMBER_SPATIAL_LAYERS
+// TODO(aomedia:3231): Deprecated. Remove it.
+#define AOME_CTRL_AOME_SET_NUMBER_SPATIAL_LAYERS
+
+AOM_CTRL_USE_TYPE(AOME_SET_MAX_INTER_BITRATE_PCT, unsigned int)
+#define AOM_CTRL_AV1E_SET_MAX_INTER_BITRATE_PCT
+// TODO(aomedia:3231): Deprecated. Remove it.
+#define AOM_CTRL_AOME_SET_MAX_INTER_BITRATE_PCT
+
+AOM_CTRL_USE_TYPE(AV1E_SET_GF_CBR_BOOST_PCT, unsigned int)
+#define AOM_CTRL_AV1E_SET_GF_CBR_BOOST_PCT
+
+AOM_CTRL_USE_TYPE(AV1E_SET_LOSSLESS, unsigned int)
+#define AOM_CTRL_AV1E_SET_LOSSLESS
 
 AOM_CTRL_USE_TYPE(AV1E_SET_ROW_MT, unsigned int)
 #define AOM_CTRL_AV1E_SET_ROW_MT
@@ -1450,26 +1695,68 @@ AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_TPL_MODEL, unsigned int)
 AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_KEYFRAME_FILTERING, unsigned int)
 #define AOM_CTRL_AV1E_SET_ENABLE_KEYFRAME_FILTERING
 
-AOM_CTRL_USE_TYPE(AOME_GET_LAST_QUANTIZER, int *)
-#define AOM_CTRL_AOME_GET_LAST_QUANTIZER
+AOM_CTRL_USE_TYPE(AV1E_SET_FRAME_PARALLEL_DECODING, unsigned int)
+#define AOM_CTRL_AV1E_SET_FRAME_PARALLEL_DECODING
 
-AOM_CTRL_USE_TYPE(AOME_GET_LAST_QUANTIZER_64, int *)
-#define AOM_CTRL_AOME_GET_LAST_QUANTIZER_64
+AOM_CTRL_USE_TYPE(AV1E_SET_ERROR_RESILIENT_MODE, int)
+#define AOM_CTRL_AV1E_SET_ERROR_RESILIENT_MODE
 
-AOM_CTRL_USE_TYPE(AOME_SET_MAX_INTRA_BITRATE_PCT, unsigned int)
-#define AOM_CTRL_AOME_SET_MAX_INTRA_BITRATE_PCT
+AOM_CTRL_USE_TYPE(AV1E_SET_S_FRAME_MODE, int)
+#define AOM_CTRL_AV1E_SET_S_FRAME_MODE
 
-AOM_CTRL_USE_TYPE(AOME_SET_MAX_INTER_BITRATE_PCT, unsigned int)
-#define AOM_CTRL_AOME_SET_MAX_INTER_BITRATE_PCT
+AOM_CTRL_USE_TYPE(AV1E_SET_AQ_MODE, unsigned int)
+#define AOM_CTRL_AV1E_SET_AQ_MODE
 
-AOM_CTRL_USE_TYPE(AOME_SET_NUMBER_SPATIAL_LAYERS, int)
-#define AOME_CTRL_AOME_SET_NUMBER_SPATIAL_LAYERS
+AOM_CTRL_USE_TYPE(AV1E_SET_FRAME_PERIODIC_BOOST, unsigned int)
+#define AOM_CTRL_AV1E_SET_FRAME_PERIODIC_BOOST
 
-AOM_CTRL_USE_TYPE(AV1E_SET_GF_CBR_BOOST_PCT, unsigned int)
-#define AOM_CTRL_AV1E_SET_GF_CBR_BOOST_PCT
+AOM_CTRL_USE_TYPE(AV1E_SET_NOISE_SENSITIVITY, unsigned int)
+#define AOM_CTRL_AV1E_SET_NOISE_SENSITIVITY
 
-AOM_CTRL_USE_TYPE(AV1E_SET_LOSSLESS, unsigned int)
-#define AOM_CTRL_AV1E_SET_LOSSLESS
+AOM_CTRL_USE_TYPE(AV1E_SET_TUNE_CONTENT, int) /* aom_tune_content */
+#define AOM_CTRL_AV1E_SET_TUNE_CONTENT
+
+AOM_CTRL_USE_TYPE(AV1E_SET_CDF_UPDATE_MODE, unsigned int)
+#define AOM_CTRL_AV1E_SET_CDF_UPDATE_MODE
+
+AOM_CTRL_USE_TYPE(AV1E_SET_COLOR_PRIMARIES, int)
+#define AOM_CTRL_AV1E_SET_COLOR_PRIMARIES
+
+AOM_CTRL_USE_TYPE(AV1E_SET_TRANSFER_CHARACTERISTICS, int)
+#define AOM_CTRL_AV1E_SET_TRANSFER_CHARACTERISTICS
+
+AOM_CTRL_USE_TYPE(AV1E_SET_MATRIX_COEFFICIENTS, int)
+#define AOM_CTRL_AV1E_SET_MATRIX_COEFFICIENTS
+
+AOM_CTRL_USE_TYPE(AV1E_SET_CHROMA_SAMPLE_POSITION, int)
+#define AOM_CTRL_AV1E_SET_CHROMA_SAMPLE_POSITION
+
+AOM_CTRL_USE_TYPE(AV1E_SET_MIN_GF_INTERVAL, unsigned int)
+#define AOM_CTRL_AV1E_SET_MIN_GF_INTERVAL
+
+AOM_CTRL_USE_TYPE(AV1E_SET_MAX_GF_INTERVAL, unsigned int)
+#define AOM_CTRL_AV1E_SET_MAX_GF_INTERVAL
+
+AOM_CTRL_USE_TYPE(AV1E_GET_ACTIVEMAP, aom_active_map_t *)
+#define AOM_CTRL_AV1E_GET_ACTIVEMAP
+
+AOM_CTRL_USE_TYPE(AV1E_SET_COLOR_RANGE, int)
+#define AOM_CTRL_AV1E_SET_COLOR_RANGE
+
+AOM_CTRL_USE_TYPE(AV1E_SET_RENDER_SIZE, int *)
+#define AOM_CTRL_AV1E_SET_RENDER_SIZE
+
+AOM_CTRL_USE_TYPE(AV1E_SET_TARGET_SEQ_LEVEL_IDX, int)
+#define AOM_CTRL_AV1E_SET_TARGET_SEQ_LEVEL_IDX
+
+AOM_CTRL_USE_TYPE(AV1E_GET_SEQ_LEVEL_IDX, int *)
+#define AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX
+
+AOM_CTRL_USE_TYPE(AV1E_SET_SUPERBLOCK_SIZE, unsigned int)
+#define AOM_CTRL_AV1E_SET_SUPERBLOCK_SIZE
+
+AOM_CTRL_USE_TYPE(AOME_SET_ENABLEAUTOBWDREF, unsigned int)
+#define AOM_CTRL_AOME_SET_ENABLEAUTOBWDREF
 
 AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_CDEF, unsigned int)
 #define AOM_CTRL_AV1E_SET_ENABLE_CDEF
@@ -1489,6 +1776,7 @@ AOM_CTRL_USE_TYPE(AV1E_SET_DISABLE_TRELLIS_QUANT, unsigned int)
 AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_QM, unsigned int)
 #define AOM_CTRL_AV1E_SET_ENABLE_QM
 
+// TODO(aomedia:3231): Remove these two lines.
 AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_DIST_8X8, unsigned int)
 #define AOM_CTRL_AV1E_SET_ENABLE_DIST_8X8
 
@@ -1512,9 +1800,6 @@ AOM_CTRL_USE_TYPE(AV1E_SET_NUM_TG, unsigned int)
 
 AOM_CTRL_USE_TYPE(AV1E_SET_MTU, unsigned int)
 #define AOM_CTRL_AV1E_SET_MTU
-
-AOM_CTRL_USE_TYPE(AV1E_SET_TIMING_INFO_TYPE, int) /* aom_timing_info_type_t */
-#define AOM_CTRL_AV1E_SET_TIMING_INFO_TYPE
 
 AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_RECT_PARTITIONS, int)
 #define AOM_CTRL_AV1E_SET_ENABLE_RECT_PARTITIONS
@@ -1542,6 +1827,9 @@ AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_TX64, int)
 
 AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_FLIP_IDTX, int)
 #define AOM_CTRL_AV1E_SET_ENABLE_FLIP_IDTX
+
+AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_RECT_TX, int)
+#define AOM_CTRL_AV1E_SET_ENABLE_RECT_TX
 
 AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_DIST_WTD_COMP, int)
 #define AOM_CTRL_AV1E_SET_ENABLE_DIST_WTD_COMP
@@ -1615,65 +1903,11 @@ AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_INTRABC, int)
 AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_ANGLE_DELTA, int)
 #define AOM_CTRL_AV1E_SET_ENABLE_ANGLE_DELTA
 
-AOM_CTRL_USE_TYPE(AV1E_SET_FRAME_PARALLEL_DECODING, unsigned int)
-#define AOM_CTRL_AV1E_SET_FRAME_PARALLEL_DECODING
-
-AOM_CTRL_USE_TYPE(AV1E_SET_ERROR_RESILIENT_MODE, int)
-#define AOM_CTRL_AV1E_SET_ERROR_RESILIENT_MODE
-
-AOM_CTRL_USE_TYPE(AV1E_SET_S_FRAME_MODE, int)
-#define AOM_CTRL_AV1E_SET_S_FRAME_MODE
-
-AOM_CTRL_USE_TYPE(AV1E_SET_AQ_MODE, unsigned int)
-#define AOM_CTRL_AV1E_SET_AQ_MODE
-
 AOM_CTRL_USE_TYPE(AV1E_SET_DELTAQ_MODE, unsigned int)
 #define AOM_CTRL_AV1E_SET_DELTAQ_MODE
 
 AOM_CTRL_USE_TYPE(AV1E_SET_DELTALF_MODE, unsigned int)
 #define AOM_CTRL_AV1E_SET_DELTALF_MODE
-
-AOM_CTRL_USE_TYPE(AV1E_SET_FRAME_PERIODIC_BOOST, unsigned int)
-#define AOM_CTRL_AV1E_SET_FRAME_PERIODIC_BOOST
-
-AOM_CTRL_USE_TYPE(AV1E_SET_NOISE_SENSITIVITY, unsigned int)
-#define AOM_CTRL_AV1E_SET_NOISE_SENSITIVITY
-
-AOM_CTRL_USE_TYPE(AV1E_SET_TUNE_CONTENT, int) /* aom_tune_content */
-#define AOM_CTRL_AV1E_SET_TUNE_CONTENT
-
-AOM_CTRL_USE_TYPE(AV1E_SET_COLOR_PRIMARIES, int)
-#define AOM_CTRL_AV1E_SET_COLOR_PRIMARIES
-
-AOM_CTRL_USE_TYPE(AV1E_SET_TRANSFER_CHARACTERISTICS, int)
-#define AOM_CTRL_AV1E_SET_TRANSFER_CHARACTERISTICS
-
-AOM_CTRL_USE_TYPE(AV1E_SET_MATRIX_COEFFICIENTS, int)
-#define AOM_CTRL_AV1E_SET_MATRIX_COEFFICIENTS
-
-AOM_CTRL_USE_TYPE(AV1E_SET_CHROMA_SAMPLE_POSITION, int)
-#define AOM_CTRL_AV1E_SET_CHROMA_SAMPLE_POSITION
-
-AOM_CTRL_USE_TYPE(AV1E_SET_MIN_GF_INTERVAL, unsigned int)
-#define AOM_CTRL_AV1E_SET_MIN_GF_INTERVAL
-
-AOM_CTRL_USE_TYPE(AV1E_SET_MAX_GF_INTERVAL, unsigned int)
-#define AOM_CTRL_AV1E_SET_MAX_GF_INTERVAL
-
-AOM_CTRL_USE_TYPE(AV1E_GET_ACTIVEMAP, aom_active_map_t *)
-#define AOM_CTRL_AV1E_GET_ACTIVEMAP
-
-AOM_CTRL_USE_TYPE(AV1E_SET_COLOR_RANGE, int)
-#define AOM_CTRL_AV1E_SET_COLOR_RANGE
-
-#define AOM_CTRL_AV1E_SET_RENDER_SIZE
-AOM_CTRL_USE_TYPE(AV1E_SET_RENDER_SIZE, int *)
-
-AOM_CTRL_USE_TYPE(AV1E_SET_SUPERBLOCK_SIZE, unsigned int)
-#define AOM_CTRL_AV1E_SET_SUPERBLOCK_SIZE
-
-AOM_CTRL_USE_TYPE(AV1E_GET_SEQ_LEVEL_IDX, int *)
-#define AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX
 
 AOM_CTRL_USE_TYPE(AV1E_SET_SINGLE_TILE_DECODING, unsigned int)
 #define AOM_CTRL_AV1E_SET_SINGLE_TILE_DECODING
@@ -1681,20 +1915,14 @@ AOM_CTRL_USE_TYPE(AV1E_SET_SINGLE_TILE_DECODING, unsigned int)
 AOM_CTRL_USE_TYPE(AV1E_ENABLE_MOTION_VECTOR_UNIT_TEST, unsigned int)
 #define AOM_CTRL_AV1E_ENABLE_MOTION_VECTOR_UNIT_TEST
 
-AOM_CTRL_USE_TYPE(AV1E_ENABLE_EXT_TILE_DEBUG, unsigned int)
-#define AOM_CTRL_AV1E_ENABLE_EXT_TILE_DEBUG
-
-AOM_CTRL_USE_TYPE(AV1E_SET_VMAF_MODEL_PATH, const char *)
-#define AOM_CTRL_AV1E_SET_VMAF_MODEL_PATH
+AOM_CTRL_USE_TYPE(AV1E_SET_TIMING_INFO_TYPE, int) /* aom_timing_info_type_t */
+#define AOM_CTRL_AV1E_SET_TIMING_INFO_TYPE
 
 AOM_CTRL_USE_TYPE(AV1E_SET_FILM_GRAIN_TEST_VECTOR, int)
 #define AOM_CTRL_AV1E_SET_FILM_GRAIN_TEST_VECTOR
 
 AOM_CTRL_USE_TYPE(AV1E_SET_FILM_GRAIN_TABLE, const char *)
 #define AOM_CTRL_AV1E_SET_FILM_GRAIN_TABLE
-
-AOM_CTRL_USE_TYPE(AV1E_SET_CDF_UPDATE_MODE, unsigned int)
-#define AOM_CTRL_AV1E_SET_CDF_UPDATE_MODE
 
 AOM_CTRL_USE_TYPE(AV1E_SET_DENOISE_NOISE_LEVEL, int)
 #define AOM_CTRL_AV1E_SET_DENOISE_NOISE_LEVEL
@@ -1723,9 +1951,6 @@ AOM_CTRL_USE_TYPE(AV1E_SET_INTRA_DEFAULT_TX_ONLY, int)
 AOM_CTRL_USE_TYPE(AV1E_SET_QUANT_B_ADAPT, int)
 #define AOM_CTRL_AV1E_SET_QUANT_B_ADAPT
 
-AOM_CTRL_USE_TYPE(AV1E_SET_GF_MIN_PYRAMID_HEIGHT, unsigned int)
-#define AOM_CTRL_AV1E_SET_GF_MIN_PYRAMID_HEIGHT
-
 AOM_CTRL_USE_TYPE(AV1E_SET_GF_MAX_PYRAMID_HEIGHT, unsigned int)
 #define AOM_CTRL_AV1E_SET_GF_MAX_PYRAMID_HEIGHT
 
@@ -1744,9 +1969,6 @@ AOM_CTRL_USE_TYPE(AV1E_SET_MODE_COST_UPD_FREQ, unsigned int)
 AOM_CTRL_USE_TYPE(AV1E_SET_MV_COST_UPD_FREQ, unsigned int)
 #define AOM_CTRL_AV1E_SET_MV_COST_UPD_FREQ
 
-AOM_CTRL_USE_TYPE(AV1E_SET_TARGET_SEQ_LEVEL_IDX, int)
-#define AOM_CTRL_AV1E_SET_TARGET_SEQ_LEVEL_IDX
-
 AOM_CTRL_USE_TYPE(AV1E_SET_TIER_MASK, unsigned int)
 #define AOM_CTRL_AV1E_SET_TIER_MASK
 
@@ -1754,16 +1976,88 @@ AOM_CTRL_USE_TYPE(AV1E_SET_MIN_CR, unsigned int)
 #define AOM_CTRL_AV1E_SET_MIN_CR
 
 AOM_CTRL_USE_TYPE(AV1E_SET_SVC_LAYER_ID, aom_svc_layer_id_t *)
+#define AOM_CTRL_AV1E_SET_SVC_LAYER_ID
+// TODO(aomedia:3231): Deprecated. Remove it.
 #define AOME_CTRL_AV1E_SET_SVC_LAYER_ID
 
 AOM_CTRL_USE_TYPE(AV1E_SET_SVC_PARAMS, aom_svc_params_t *)
+#define AOM_CTRL_AV1E_SET_SVC_PARAMS
+// TODO(aomedia:3231): Deprecated. Remove it.
 #define AOME_CTRL_AV1E_SET_SVC_PARAMS
 
 AOM_CTRL_USE_TYPE(AV1E_SET_SVC_REF_FRAME_CONFIG, aom_svc_ref_frame_config_t *)
+#define AOM_CTRL_AV1E_SET_SVC_REF_FRAME_CONFIG
+// TODO(aomedia:3231): Deprecated. Remove it.
 #define AOME_CTRL_AV1E_SET_SVC_REF_FRAME_CONFIG
+
+AOM_CTRL_USE_TYPE(AV1E_SET_VMAF_MODEL_PATH, const char *)
+#define AOM_CTRL_AV1E_SET_VMAF_MODEL_PATH
+
+AOM_CTRL_USE_TYPE(AV1E_ENABLE_EXT_TILE_DEBUG, unsigned int)
+#define AOM_CTRL_AV1E_ENABLE_EXT_TILE_DEBUG
 
 AOM_CTRL_USE_TYPE(AV1E_ENABLE_SB_MULTIPASS_UNIT_TEST, unsigned int)
 #define AOM_CTRL_AV1E_ENABLE_SB_MULTIPASS_UNIT_TEST
+
+AOM_CTRL_USE_TYPE(AV1E_SET_GF_MIN_PYRAMID_HEIGHT, unsigned int)
+#define AOM_CTRL_AV1E_SET_GF_MIN_PYRAMID_HEIGHT
+
+AOM_CTRL_USE_TYPE(AV1E_SET_VBR_CORPUS_COMPLEXITY_LAP, unsigned int)
+#define AOM_CTRL_AV1E_SET_VBR_CORPUS_COMPLEXITY_LAP
+
+AOM_CTRL_USE_TYPE(AV1E_GET_BASELINE_GF_INTERVAL, int *)
+#define AOM_CTRL_AV1E_GET_BASELINE_GF_INTERVAL
+
+AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_DNL_DENOISING, int)
+#define AOM_CTRL_AV1E_SET_ENABLE_DNL_DENOISING
+
+AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_DIAGONAL_INTRA, int)
+#define AOM_CTRL_AV1E_SET_ENABLE_DIAGONAL_INTRA
+
+AOM_CTRL_USE_TYPE(AV1E_SET_DV_COST_UPD_FREQ, unsigned int)
+#define AOM_CTRL_AV1E_SET_DV_COST_UPD_FREQ
+
+AOM_CTRL_USE_TYPE(AV1E_SET_PARTITION_INFO_PATH, const char *)
+#define AOM_CTRL_AV1E_SET_PARTITION_INFO_PATH
+
+AOM_CTRL_USE_TYPE(AV1E_SET_EXTERNAL_PARTITION, aom_ext_part_funcs_t *)
+#define AOM_CTRL_AV1E_SET_EXTERNAL_PARTITION
+
+AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_DIRECTIONAL_INTRA, int)
+#define AOM_CTRL_AV1E_SET_ENABLE_DIRECTIONAL_INTRA
+
+AOM_CTRL_USE_TYPE(AV1E_SET_ENABLE_TX_SIZE_SEARCH, int)
+#define AOM_CTRL_AV1E_SET_ENABLE_TX_SIZE_SEARCH
+
+AOM_CTRL_USE_TYPE(AV1E_SET_SVC_REF_FRAME_COMP_PRED,
+                  aom_svc_ref_frame_comp_pred_t *)
+#define AOM_CTRL_AV1E_SET_SVC_REF_FRAME_COMP_PRED
+// TODO(aomedia:3231): Deprecated. Remove it.
+#define AOME_CTRL_AV1E_SET_SVC_REF_FRAME_COMP_PRED
+
+AOM_CTRL_USE_TYPE(AV1E_SET_DELTAQ_STRENGTH, unsigned int)
+#define AOM_CTRL_AV1E_SET_DELTAQ_STRENGTH
+
+AOM_CTRL_USE_TYPE(AV1E_SET_LOOPFILTER_CONTROL, int)
+#define AOM_CTRL_AV1E_SET_LOOPFILTER_CONTROL
+
+AOM_CTRL_USE_TYPE(AOME_GET_LOOPFILTER_LEVEL, int *)
+#define AOM_CTRL_AOME_GET_LOOPFILTER_LEVEL
+
+AOM_CTRL_USE_TYPE(AV1E_SET_AUTO_INTRA_TOOLS_OFF, unsigned int)
+#define AOM_CTRL_AV1E_SET_AUTO_INTRA_TOOLS_OFF
+
+AOM_CTRL_USE_TYPE(AV1E_SET_RTC_EXTERNAL_RC, int)
+#define AOM_CTRL_AV1E_SET_RTC_EXTERNAL_RC
+
+AOM_CTRL_USE_TYPE(AV1E_SET_FP_MT, unsigned int)
+#define AOM_CTRL_AV1E_SET_FP_MT
+
+AOM_CTRL_USE_TYPE(AV1E_SET_FP_MT_UNIT_TEST, unsigned int)
+#define AOM_CTRL_AV1E_SET_FP_MT_UNIT_TEST
+
+AOM_CTRL_USE_TYPE(AV1E_GET_TARGET_SEQ_LEVEL_IDX, int *)
+#define AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX
 
 /*!\endcond */
 /*! @} - end defgroup aom_encoder */

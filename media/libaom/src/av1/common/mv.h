@@ -12,6 +12,8 @@
 #ifndef AOM_AV1_COMMON_MV_H_
 #define AOM_AV1_COMMON_MV_H_
 
+#include <stdlib.h>
+
 #include "av1/common/common.h"
 #include "av1/common/common_data.h"
 #include "aom_dsp/aom_filter.h"
@@ -21,13 +23,14 @@ extern "C" {
 #endif
 
 #define INVALID_MV 0x80008000
+#define INVALID_MV_ROW_COL -32768
 #define GET_MV_RAWPEL(x) (((x) + 3 + ((x) >= 0)) >> 3)
 #define GET_MV_SUBPEL(x) ((x)*8)
 
 #define MARK_MV_INVALID(mv)                \
   do {                                     \
     ((int_mv *)(mv))->as_int = INVALID_MV; \
-  } while (0);
+  } while (0)
 #define CHECK_MV_EQUAL(x, y) (((x).row == (y).row) && ((x).col == (y).col))
 
 // The motion vector in units of full pixel
@@ -136,7 +139,7 @@ static const int trans_model_params[TRANS_TYPES] = { 0, 2, 4, 6 };
 //  z .  y'  =   m4 m5 m1 *  y
 //       1]      m6 m7 1)    1]
 typedef struct {
-  int32_t wmmat[8];
+  int32_t wmmat[6];
   int16_t alpha, beta, gamma, delta;
   TransformationType wmtype;
   int8_t invalid;
@@ -144,8 +147,7 @@ typedef struct {
 
 /* clang-format off */
 static const WarpedMotionParams default_warp_params = {
-  { 0, 0, (1 << WARPEDMODEL_PREC_BITS), 0, 0, (1 << WARPEDMODEL_PREC_BITS), 0,
-    0 },
+  { 0, 0, (1 << WARPEDMODEL_PREC_BITS), 0, 0, (1 << WARPEDMODEL_PREC_BITS) },
   0, 0, 0, 0,
   IDENTITY,
   0,
