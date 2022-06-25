@@ -6,6 +6,10 @@
 with Files('*'):
     BUG_COMPONENT = ('Core', 'Video/Audio')
 
+EXPORTS += [
+    'include/crctable.h',
+]
+
 EXPORTS.ogg += [
     'include/ogg/config_types.h',
     'include/ogg/ogg.h',
