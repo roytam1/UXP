@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /* This file replaces the CPU info methods originally implemented in
- * src/dsp/cpu.c, due to missing dependencies for Andriod builds. It
+ * src/dsp/cpu.c, due to missing dependencies for Android builds. It
  * controls if NEON/SSE/etc is used. */
 
 #include "../dsp/dsp.h"
