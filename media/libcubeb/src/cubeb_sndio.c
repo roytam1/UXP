@@ -279,7 +279,7 @@ sndio_stream_init(cubeb * context,
     free(s);
     return CUBEB_ERROR;
   }
-  s->volume = 1.;
+  s->volume = 1.0;
   *stream = s;
   DPR("sndio_stream_init() end, ok\n");
   (void)context;
@@ -366,10 +366,10 @@ sndio_stream_set_volume(cubeb_stream *s, float volume)
 {
   DPR("sndio_stream_set_volume(%f)\n", volume);
   pthread_mutex_lock(&s->mtx);
-  if (volume < 0.)
-    volume = 0.;
+  if (volume < 0.0)
+    volume = 0.0;
   else if (volume > 1.0)
-    volume = 1.;
+    volume = 1.0;
   s->volume = volume;
   pthread_mutex_unlock(&s->mtx);
   return CUBEB_OK;
