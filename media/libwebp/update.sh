@@ -21,63 +21,21 @@ cp $1/src/webp/*.h webp
 
 mkdir -p dec
 cp $1/src/dec/*.h dec
-cp $1/src/dec/alpha_dec.c dec
-cp $1/src/dec/buffer_dec.c dec
-cp $1/src/dec/frame_dec.c dec
-cp $1/src/dec/idec_dec.c dec
-cp $1/src/dec/io_dec.c dec
-cp $1/src/dec/quant_dec.c dec
-cp $1/src/dec/tree_dec.c dec
-cp $1/src/dec/vp8_dec.c dec
-cp $1/src/dec/vp8l_dec.c dec
-cp $1/src/dec/webp_dec.c dec
+cp $1/src/dec/*.c dec
 
 mkdir -p demux
 cp $1/src/demux/demux.c demux
 
 mkdir -p dsp
 cp $1/src/dsp/*.h dsp
-cp $1/src/dsp/alpha_processing.c dsp
-cp $1/src/dsp/alpha_processing_neon.c dsp
-cp $1/src/dsp/alpha_processing_sse2.c dsp
-cp $1/src/dsp/alpha_processing_sse41.c dsp
-cp $1/src/dsp/dec.c dsp
-cp $1/src/dsp/dec_clip_tables.c dsp
-cp $1/src/dsp/dec_neon.c dsp
-cp $1/src/dsp/dec_sse2.c dsp
-cp $1/src/dsp/dec_sse41.c dsp
-cp $1/src/dsp/filters.c dsp
-cp $1/src/dsp/filters_neon.c dsp
-cp $1/src/dsp/filters_sse2.c dsp
-cp $1/src/dsp/lossless.c dsp
-cp $1/src/dsp/lossless_neon.c dsp
-cp $1/src/dsp/lossless_sse2.c dsp
-cp $1/src/dsp/rescaler.c dsp
-cp $1/src/dsp/rescaler_neon.c dsp
-cp $1/src/dsp/rescaler_sse2.c dsp
-cp $1/src/dsp/upsampling.c dsp
-cp $1/src/dsp/upsampling_neon.c dsp
-cp $1/src/dsp/upsampling_sse2.c dsp
-cp $1/src/dsp/upsampling_sse41.c dsp
-cp $1/src/dsp/yuv.c dsp
-cp $1/src/dsp/yuv_neon.c dsp
-cp $1/src/dsp/yuv_sse2.c dsp
-cp $1/src/dsp/yuv_sse41.c dsp
+cp $1/src/dsp/*.c dsp
 
 mkdir -p enc
 cp $1/src/enc/*.h enc
+cp $1/src/enc/*.c enc
 
 mkdir -p utils
 cp $1/src/utils/*.h utils
-cp $1/src/utils/bit_reader_utils.c utils
-cp $1/src/utils/color_cache_utils.c utils
-cp $1/src/utils/filters_utils.c utils
-cp $1/src/utils/huffman_utils.c utils
-cp $1/src/utils/quant_levels_dec_utils.c utils
-cp $1/src/utils/quant_levels_utils.c utils
-cp $1/src/utils/random_utils.c utils
-cp $1/src/utils/rescaler_utils.c utils
-cp $1/src/utils/thread_utils.c utils
-cp $1/src/utils/utils.c utils
+cp $1/src/utils/*.c utils
 
 find . \( -name "*.c" -o -name "*.h" \) -exec sed -i 's/#include "src\//#include "..\//g' {} \;

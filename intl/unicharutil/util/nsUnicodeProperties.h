@@ -44,7 +44,6 @@ enum PairedBracketType {
 enum IdentifierType {
   IDTYPE_RESTRICTED = 0,
   IDTYPE_ALLOWED = 1,
-  IDTYPE_ASPIRATIONAL = 2,
 };
 
 enum EmojiPresentation {
