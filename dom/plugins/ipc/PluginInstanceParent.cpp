@@ -125,7 +125,6 @@ PluginInstanceParent::PluginInstanceParent(PluginModuleParent* parent,
     , mNPNIface(npniface)
     , mWindowType(NPWindowTypeWindow)
     , mDrawingModel(kDefaultDrawingModel)
-    , mLastRecordedDrawingModel(-1)
     , mFrameID(0)
 #if defined(OS_WIN)
     , mPluginHWND(nullptr)

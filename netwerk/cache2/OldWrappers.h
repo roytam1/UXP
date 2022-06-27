@@ -204,8 +204,6 @@ private:
   nsresult mStatus;
   uint32_t mRunCount;
   nsCOMPtr<nsIApplicationCache> mAppCache;
-
-  mozilla::TimeStamp mLoadStart;
 };
 
 
