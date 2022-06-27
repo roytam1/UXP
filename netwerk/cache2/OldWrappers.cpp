@@ -692,8 +692,6 @@ nsresult _OldCacheLoad::Start()
 {
   LOG(("_OldCacheLoad::Start [this=%p, key=%s]", this, mCacheKey.get()));
 
-  mLoadStart = mozilla::TimeStamp::Now();
-
   nsresult rv;
 
   // Consumers that can invoke this code as first and off the main thread
