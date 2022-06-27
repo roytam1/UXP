@@ -399,11 +399,6 @@ private:
     NPWindowType mWindowType;
     int16_t mDrawingModel;
 
-    // Since plugins may request different drawing models to find a compatible
-    // one, we only record the drawing model after a SetWindow call and if the
-    // drawing model has changed.
-    int mLastRecordedDrawingModel;
-
     nsDataHashtable<nsPtrHashKey<NPObject>, PluginScriptableObjectParent*> mScriptableObjects;
 
     // This is used to tell the compositor that it should invalidate the ImageLayer.
