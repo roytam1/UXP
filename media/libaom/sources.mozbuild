@@ -3,7 +3,6 @@ files = {
     '/media/libaom/src/aom/aom.h',
     '/media/libaom/src/aom/aom_codec.h',
     '/media/libaom/src/aom/aom_decoder.h',
-    '/media/libaom/src/aom/aom_encoder.h',
     '/media/libaom/src/aom/aom_external_partition.h',
     '/media/libaom/src/aom/aom_frame_buffer.h',
     '/media/libaom/src/aom/aom_image.h',
@@ -42,7 +41,6 @@ files = {
   'ARM_SOURCES': [
     '/media/libaom/src/aom/src/aom_codec.c',
     '/media/libaom/src/aom/src/aom_decoder.c',
-    '/media/libaom/src/aom/src/aom_encoder.c',
     '/media/libaom/src/aom/src/aom_image.c',
     '/media/libaom/src/aom/src/aom_integer.c',
     '/media/libaom/src/aom_dsp/aom_convolve.c',
@@ -141,7 +139,6 @@ files = {
     '/media/libaom/src/aom/aom.h',
     '/media/libaom/src/aom/aom_codec.h',
     '/media/libaom/src/aom/aom_decoder.h',
-    '/media/libaom/src/aom/aom_encoder.h',
     '/media/libaom/src/aom/aom_external_partition.h',
     '/media/libaom/src/aom/aom_frame_buffer.h',
     '/media/libaom/src/aom/aom_image.h',
@@ -176,7 +173,6 @@ files = {
   'GENERIC_SOURCES': [
     '/media/libaom/src/aom/src/aom_codec.c',
     '/media/libaom/src/aom/src/aom_decoder.c',
-    '/media/libaom/src/aom/src/aom_encoder.c',
     '/media/libaom/src/aom/src/aom_image.c',
     '/media/libaom/src/aom/src/aom_integer.c',
     '/media/libaom/src/aom_dsp/aom_convolve.c',
@@ -251,7 +247,6 @@ files = {
     '/media/libaom/src/aom/aom.h',
     '/media/libaom/src/aom/aom_codec.h',
     '/media/libaom/src/aom/aom_decoder.h',
-    '/media/libaom/src/aom/aom_encoder.h',
     '/media/libaom/src/aom/aom_external_partition.h',
     '/media/libaom/src/aom/aom_frame_buffer.h',
     '/media/libaom/src/aom/aom_image.h',
@@ -309,7 +304,6 @@ files = {
   'IA32_SOURCES': [
     '/media/libaom/src/aom/src/aom_codec.c',
     '/media/libaom/src/aom/src/aom_decoder.c',
-    '/media/libaom/src/aom/src/aom_encoder.c',
     '/media/libaom/src/aom/src/aom_image.c',
     '/media/libaom/src/aom/src/aom_integer.c',
     '/media/libaom/src/aom_dsp/aom_convolve.c',
@@ -460,7 +454,6 @@ files = {
     '/media/libaom/src/aom/aom.h',
     '/media/libaom/src/aom/aom_codec.h',
     '/media/libaom/src/aom/aom_decoder.h',
-    '/media/libaom/src/aom/aom_encoder.h',
     '/media/libaom/src/aom/aom_external_partition.h',
     '/media/libaom/src/aom/aom_frame_buffer.h',
     '/media/libaom/src/aom/aom_image.h',
@@ -518,7 +511,6 @@ files = {
   'X64_SOURCES': [
     '/media/libaom/src/aom/src/aom_codec.c',
     '/media/libaom/src/aom/src/aom_decoder.c',
-    '/media/libaom/src/aom/src/aom_encoder.c',
     '/media/libaom/src/aom/src/aom_image.c',
     '/media/libaom/src/aom/src/aom_integer.c',
     '/media/libaom/src/aom_dsp/aom_convolve.c',
