@@ -17,7 +17,6 @@
 #include "aom/aom_integer.h"
 #include "aom_ports/aom_timer.h"
 #include "test/acm_random.h"
-#include "test/clear_system_state.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
@@ -71,10 +70,13 @@ class ConvolveRoundTest : public ::testing::TestWithParam<ConvolveRoundParam> {
     const size_t block_size = 128 * 128;
     src_ = reinterpret_cast<int32_t *>(
         aom_memalign(16, block_size * sizeof(*src_)));
+    ASSERT_NE(src_, nullptr);
     dst_ref_ = reinterpret_cast<uint16_t *>(
         aom_memalign(16, block_size * sizeof(*dst_ref_)));
+    ASSERT_NE(dst_ref_, nullptr);
     dst_ = reinterpret_cast<uint16_t *>(
         aom_memalign(16, block_size * sizeof(*dst_)));
+    ASSERT_NE(dst_, nullptr);
   }
 
   virtual void TearDown() {
@@ -114,7 +116,7 @@ class ConvolveRoundTest : public ::testing::TestWithParam<ConvolveRoundParam> {
       GenerateBufferWithRandom(src_, src_stride, bits, w, h);
 
       func_ref_(src_, src_stride, dst_ref, dst_stride, w, h, bits);
-      ASM_REGISTER_STATE_CHECK(
+      API_REGISTER_STATE_CHECK(
           func_(src_, src_stride, dst, dst_stride, w, h, bits));
 
       if (data_path_ == LOWBITDEPTH_TEST) {

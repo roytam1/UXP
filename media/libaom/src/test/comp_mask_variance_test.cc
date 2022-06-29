@@ -23,8 +23,8 @@
 #include "aom_ports/aom_timer.h"
 #include "aom_ports/mem.h"
 #include "av1/common/reconinter.h"
+#include "av1/encoder/reconinter_enc.h"
 #include "test/acm_random.h"
-#include "test/clear_system_state.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
 #include "third_party/googletest/src/googletest/include/gtest/gtest.h"
@@ -35,10 +35,12 @@ typedef void (*comp_mask_pred_func)(uint8_t *comp_pred, const uint8_t *pred,
                                     int ref_stride, const uint8_t *mask,
                                     int mask_stride, int invert_mask);
 
-#if HAVE_SSSE3 || HAVE_SSE2 || HAVE_AV2
+#if HAVE_SSSE3 || HAVE_SSE2 || HAVE_AVX2
 const BLOCK_SIZE kValidBlockSize[] = {
-  BLOCK_8X8,   BLOCK_8X16, BLOCK_8X32,  BLOCK_16X8,  BLOCK_16X16,
-  BLOCK_16X32, BLOCK_32X8, BLOCK_32X16, BLOCK_32X32,
+  BLOCK_8X8,   BLOCK_8X16,  BLOCK_8X32,   BLOCK_16X8,   BLOCK_16X16,
+  BLOCK_16X32, BLOCK_32X8,  BLOCK_32X16,  BLOCK_32X32,  BLOCK_32X64,
+  BLOCK_64X32, BLOCK_64X64, BLOCK_64X128, BLOCK_128X64, BLOCK_128X128,
+  BLOCK_16X64, BLOCK_64X16
 };
 #endif
 typedef std::tuple<comp_mask_pred_func, BLOCK_SIZE> CompMaskPredParam;
@@ -75,16 +77,21 @@ class AV1CompMaskVarianceTest
   uint8_t *ref_buffer_;
   uint8_t *ref_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(AV1CompMaskVarianceTest);
 
-AV1CompMaskVarianceTest::~AV1CompMaskVarianceTest() { ; }
+AV1CompMaskVarianceTest::~AV1CompMaskVarianceTest() {}
 
 void AV1CompMaskVarianceTest::SetUp() {
   rnd_.Reset(libaom_test::ACMRandom::DeterministicSeed());
   av1_init_wedge_masks();
   comp_pred1_ = (uint8_t *)aom_memalign(16, MAX_SB_SQUARE);
+  ASSERT_NE(comp_pred1_, nullptr);
   comp_pred2_ = (uint8_t *)aom_memalign(16, MAX_SB_SQUARE);
+  ASSERT_NE(comp_pred2_, nullptr);
   pred_ = (uint8_t *)aom_memalign(16, MAX_SB_SQUARE);
+  ASSERT_NE(pred_, nullptr);
   ref_buffer_ = (uint8_t *)aom_memalign(16, MAX_SB_SQUARE + (8 * MAX_SB_SIZE));
+  ASSERT_NE(ref_buffer_, nullptr);
   ref_ = ref_buffer_ + (8 * MAX_SB_SIZE);
   for (int i = 0; i < MAX_SB_SQUARE; ++i) {
     pred_[i] = rnd_.Rand8();
@@ -99,7 +106,6 @@ void AV1CompMaskVarianceTest::TearDown() {
   aom_free(comp_pred2_);
   aom_free(pred_);
   aom_free(ref_buffer_);
-  libaom_test::ClearSystemState();
 }
 
 void AV1CompMaskVarianceTest::RunCheckOutput(comp_mask_pred_func test_impl,
@@ -182,7 +188,7 @@ class AV1CompMaskUpVarianceTest : public AV1CompMaskVarianceTest {
                     int havSub);
 };
 
-AV1CompMaskUpVarianceTest::~AV1CompMaskUpVarianceTest() { ; }
+AV1CompMaskUpVarianceTest::~AV1CompMaskUpVarianceTest() {}
 
 void AV1CompMaskUpVarianceTest::RunCheckOutput(comp_mask_pred_func test_impl,
                                                BLOCK_SIZE bsize, int inv) {
@@ -318,8 +324,9 @@ class AV1HighbdCompMaskVarianceTest
   uint16_t *ref_buffer_;
   uint16_t *ref_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(AV1HighbdCompMaskVarianceTest);
 
-AV1HighbdCompMaskVarianceTest::~AV1HighbdCompMaskVarianceTest() { ; }
+AV1HighbdCompMaskVarianceTest::~AV1HighbdCompMaskVarianceTest() {}
 
 void AV1HighbdCompMaskVarianceTest::SetUp() {
   rnd_.Reset(libaom_test::ACMRandom::DeterministicSeed());
@@ -327,11 +334,15 @@ void AV1HighbdCompMaskVarianceTest::SetUp() {
 
   comp_pred1_ =
       (uint16_t *)aom_memalign(16, MAX_SB_SQUARE * sizeof(*comp_pred1_));
+  ASSERT_NE(comp_pred1_, nullptr);
   comp_pred2_ =
       (uint16_t *)aom_memalign(16, MAX_SB_SQUARE * sizeof(*comp_pred2_));
+  ASSERT_NE(comp_pred2_, nullptr);
   pred_ = (uint16_t *)aom_memalign(16, MAX_SB_SQUARE * sizeof(*pred_));
+  ASSERT_NE(pred_, nullptr);
   ref_buffer_ = (uint16_t *)aom_memalign(
       16, (MAX_SB_SQUARE + (8 * MAX_SB_SIZE)) * sizeof(*ref_buffer_));
+  ASSERT_NE(ref_buffer_, nullptr);
   ref_ = ref_buffer_ + (8 * MAX_SB_SIZE);
 }
 
@@ -340,7 +351,6 @@ void AV1HighbdCompMaskVarianceTest::TearDown() {
   aom_free(comp_pred2_);
   aom_free(pred_);
   aom_free(ref_buffer_);
-  libaom_test::ClearSystemState();
 }
 
 void AV1HighbdCompMaskVarianceTest::RunCheckOutput(
@@ -451,7 +461,7 @@ class AV1HighbdCompMaskUpVarianceTest : public AV1HighbdCompMaskVarianceTest {
                     int havSub);
 };
 
-AV1HighbdCompMaskUpVarianceTest::~AV1HighbdCompMaskUpVarianceTest() { ; }
+AV1HighbdCompMaskUpVarianceTest::~AV1HighbdCompMaskUpVarianceTest() {}
 
 void AV1HighbdCompMaskUpVarianceTest::RunCheckOutput(
     highbd_comp_mask_pred_func test_impl, BLOCK_SIZE bsize, int inv) {

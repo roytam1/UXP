@@ -34,8 +34,6 @@ const size_t kMetadataPayloadSizeCll = 4;
 const uint8_t kMetadataPayloadCll[kMetadataPayloadSizeCll] = { 0xB5, 0x01, 0x02,
                                                                0x03 };
 
-#if CONFIG_AV1_ENCODER
-
 const size_t kMetadataObuSizeT35 = 28;
 const uint8_t kMetadataObuT35[kMetadataObuSizeT35] = {
   0x2A, 0x1A, 0x02, 0xB5, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
@@ -60,10 +58,7 @@ class MetadataEncodeTest
 
   virtual ~MetadataEncodeTest() {}
 
-  virtual void SetUp() {
-    InitializeConfig();
-    SetMode(GET_PARAM(1));
-  }
+  virtual void SetUp() { InitializeConfig(GET_PARAM(1)); }
 
   virtual void PreEncodeFrameHook(::libaom_test::VideoSource *video) {
     aom_image_t *current_frame = video->img();
@@ -193,10 +188,9 @@ TEST_P(MetadataEncodeTest, TestMetadataEncoding) {
   ASSERT_NO_FATAL_FAILURE(RunLoop(&video));
 }
 
-AV1_INSTANTIATE_TEST_CASE(MetadataEncodeTest,
-                          ::testing::Values(::libaom_test::kOnePassGood));
+AV1_INSTANTIATE_TEST_SUITE(MetadataEncodeTest,
+                           ::testing::Values(::libaom_test::kOnePassGood));
 
-#endif  // CONFIG_AV1_ENCODER
 }  // namespace
 
 TEST(MetadataTest, MetadataAllocation) {
@@ -294,7 +288,7 @@ TEST(MetadataTest, GetMetadataFromImage) {
   EXPECT_TRUE(aom_img_get_metadata(&image, 10u) == NULL);
 
   const aom_metadata_t *metadata = aom_img_get_metadata(&image, 0);
-  ASSERT_TRUE(metadata != NULL);
+  ASSERT_NE(metadata, nullptr);
   ASSERT_EQ(metadata->sz, kMetadataPayloadSizeT35);
   EXPECT_EQ(
       memcmp(kMetadataPayloadT35, metadata->payload, kMetadataPayloadSizeT35),
@@ -326,7 +320,7 @@ TEST(MetadataTest, ReadMetadatasFromImage) {
   ASSERT_EQ(number_metadata, 3u);
   for (size_t i = 0; i < number_metadata; ++i) {
     const aom_metadata_t *metadata = aom_img_get_metadata(&image, i);
-    ASSERT_TRUE(metadata != NULL);
+    ASSERT_NE(metadata, nullptr);
     ASSERT_EQ(metadata->type, types[i]);
     ASSERT_EQ(metadata->sz, kMetadataPayloadSizeT35);
     EXPECT_EQ(

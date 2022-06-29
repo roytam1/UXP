@@ -9,7 +9,7 @@ import os
 import re
 import subprocess
 
-AOM_DIR = '/media/libaom/src'
+AOM_DIR = './src'
 
 def write_aom_config(system, arch, variables, cache_variables):
     # read template cmake file

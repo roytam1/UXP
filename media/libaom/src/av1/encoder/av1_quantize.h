@@ -22,9 +22,6 @@
 extern "C" {
 #endif
 
-#define EOB_FACTOR 325
-#define SKIP_EOB_FACTOR_ADJUST 200
-
 typedef struct QUANT_PARAM {
   int log_scale;
   TX_SIZE tx_size;
@@ -97,7 +94,7 @@ struct AV1Common;
 void av1_frame_init_quantizer(struct AV1_COMP *cpi);
 
 void av1_init_plane_quantizers(const struct AV1_COMP *cpi, MACROBLOCK *x,
-                               int segment_id);
+                               int segment_id, const int do_update);
 
 void av1_build_quantizer(aom_bit_depth_t bit_depth, int y_dc_delta_q,
                          int u_dc_delta_q, int u_ac_delta_q, int v_dc_delta_q,
@@ -109,7 +106,8 @@ void av1_init_quantizer(EncQuantDequantParams *const enc_quant_dequant_params,
                         aom_bit_depth_t bit_depth);
 
 void av1_set_quantizer(struct AV1Common *const cm, int min_qmlevel,
-                       int max_qmlevel, int q);
+                       int max_qmlevel, int q, int enable_chroma_deltaq,
+                       int enable_hdr_deltaq);
 
 int av1_quantizer_to_qindex(int quantizer);
 
@@ -117,6 +115,32 @@ int av1_qindex_to_quantizer(int qindex);
 
 void av1_quantize_skip(intptr_t n_coeffs, tran_low_t *qcoeff_ptr,
                        tran_low_t *dqcoeff_ptr, uint16_t *eob_ptr);
+
+/*!\brief Quantize transform coefficients without using qmatrix
+ *
+ * quant_ptr, dequant_ptr and round_ptr are size 2 arrays,
+ * where index 0 corresponds to dc coeff and index 1 corresponds to ac coeffs.
+ *
+ * \param[in]  quant_ptr    16-bit fixed point representation of inverse
+ *                          quantize step size, i.e. 2^16/dequant
+ * \param[in]  dequant_ptr  quantize step size
+ * \param[in]  round_ptr    rounding
+ * \param[in]  log_scale    the relative log scale of the transform
+ *                          coefficients
+ * \param[in]  scan         scan[i] indicates the position of ith to-be-coded
+ *                          coefficient
+ * \param[in]  coeff_count  number of coefficients
+ * \param[out] qcoeff_ptr   quantized coefficients
+ * \param[out] dqcoeff_ptr  dequantized coefficients
+ *
+ * \return The last non-zero coefficient's scan index plus 1
+ */
+int av1_quantize_fp_no_qmatrix(const int16_t quant_ptr[2],
+                               const int16_t dequant_ptr[2],
+                               const int16_t round_ptr[2], int log_scale,
+                               const int16_t *scan, int coeff_count,
+                               const tran_low_t *coeff_ptr,
+                               tran_low_t *qcoeff_ptr, tran_low_t *dqcoeff_ptr);
 
 void av1_quantize_fp_facade(const tran_low_t *coeff_ptr, intptr_t n_coeffs,
                             const MACROBLOCK_PLANE *p, tran_low_t *qcoeff_ptr,
@@ -132,6 +156,29 @@ void av1_quantize_dc_facade(const tran_low_t *coeff_ptr, intptr_t n_coeffs,
                             const MACROBLOCK_PLANE *p, tran_low_t *qcoeff_ptr,
                             tran_low_t *dqcoeff_ptr, uint16_t *eob_ptr,
                             const SCAN_ORDER *sc, const QUANT_PARAM *qparam);
+
+/*!\brief Update quantize parameters in MACROBLOCK
+ *
+ * \param[in]  enc_quant_dequant_params This parameter cached the quantize and
+ *                                      dequantize parameters for all q
+ *                                      indices.
+ * \param[in]  qindex                   Quantize index used for the current
+ *                                      superblock.
+ * \param[out] x                        A superblock data structure for
+ *                                      encoder.
+ */
+void av1_set_q_index(const EncQuantDequantParams *enc_quant_dequant_params,
+                     int qindex, MACROBLOCK *x);
+
+/*!\brief Update quantize matrix in MACROBLOCKD based on segment id
+ *
+ * \param[in]  quant_params  Quantize parameters used by encoder and decoder
+ * \param[in]  segment_id    Segment id.
+ * \param[out] xd            A superblock data structure used by encoder and
+ * decoder.
+ */
+void av1_set_qmatrix(const CommonQuantParams *quant_params, int segment_id,
+                     MACROBLOCKD *xd);
 
 #if CONFIG_AV1_HIGHBITDEPTH
 void av1_highbd_quantize_fp_facade(const tran_low_t *coeff_ptr,
@@ -154,6 +201,7 @@ void av1_highbd_quantize_dc_facade(const tran_low_t *coeff_ptr,
                                    tran_low_t *dqcoeff_ptr, uint16_t *eob_ptr,
                                    const SCAN_ORDER *sc,
                                    const QUANT_PARAM *qparam);
+
 #endif
 
 #ifdef __cplusplus

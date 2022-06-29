@@ -26,7 +26,6 @@
 #include "av1/common/scan.h"
 #include "av1/common/txb_common.h"
 #include "test/acm_random.h"
-#include "test/clear_system_state.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
 
@@ -48,16 +47,15 @@ class EncodeTxbTest : public ::testing::TestWithParam<GetNzMapContextsFunc> {
   virtual void SetUp() {
     coeff_contexts_ref_ = reinterpret_cast<int8_t *>(
         aom_memalign(16, sizeof(*coeff_contexts_ref_) * MAX_TX_SQUARE));
-    ASSERT_TRUE(coeff_contexts_ref_ != NULL);
+    ASSERT_NE(coeff_contexts_ref_, nullptr);
     coeff_contexts_ = reinterpret_cast<int8_t *>(
         aom_memalign(16, sizeof(*coeff_contexts_) * MAX_TX_SQUARE));
-    ASSERT_TRUE(coeff_contexts_ != NULL);
+    ASSERT_NE(coeff_contexts_, nullptr);
   }
 
   virtual void TearDown() {
     aom_free(coeff_contexts_ref_);
     aom_free(coeff_contexts_);
-    libaom_test::ClearSystemState();
   }
 
   void GetNzMapContextsRun() {
@@ -100,6 +98,7 @@ class EncodeTxbTest : public ::testing::TestWithParam<GetNzMapContextsFunc> {
   void SpeedTestGetNzMapContextsRun() {
     const int kNumTests = 2000000000;
     aom_usec_timer timer;
+    aom_usec_timer timer_ref;
 
     printf("Note: Only test the largest possible eob case!\n");
     for (int tx_size = TX_4X4; tx_size < TX_SIZES_ALL; ++tx_size) {
@@ -117,6 +116,16 @@ class EncodeTxbTest : public ::testing::TestWithParam<GetNzMapContextsFunc> {
       levels_ = set_levels(levels_buf_, width);
       InitDataWithEob(scan, bwl, eob);
 
+      aom_usec_timer_start(&timer_ref);
+      for (int i = 0; i < numTests; ++i) {
+        av1_get_nz_map_contexts_c(levels_, scan, eob, (TX_SIZE)tx_size,
+                                  tx_class, coeff_contexts_ref_);
+      }
+      aom_usec_timer_mark(&timer_ref);
+
+      levels_ = set_levels(levels_buf_, width);
+      InitDataWithEob(scan, bwl, eob);
+
       aom_usec_timer_start(&timer);
       for (int i = 0; i < numTests; ++i) {
         get_nz_map_contexts_func_(levels_, scan, eob, (TX_SIZE)tx_size,
@@ -124,9 +133,14 @@ class EncodeTxbTest : public ::testing::TestWithParam<GetNzMapContextsFunc> {
       }
       aom_usec_timer_mark(&timer);
 
+      const int elapsed_time_ref =
+          static_cast<int>(aom_usec_timer_elapsed(&timer_ref));
       const int elapsed_time = static_cast<int>(aom_usec_timer_elapsed(&timer));
-      printf("get_nz_map_contexts_%2dx%2d: %7.1f ms\n", real_width, real_height,
-             elapsed_time / 1000.0);
+
+      printf("get_nz_map_contexts_%2dx%2d: %7.1f ms ref %7.1f ms gain %4.2f\n",
+             real_width, real_height, elapsed_time / 1000.0,
+             elapsed_time_ref / 1000.0,
+             (elapsed_time_ref * 1.0) / (elapsed_time * 1.0));
     }
   }
 
@@ -170,6 +184,7 @@ class EncodeTxbTest : public ::testing::TestWithParam<GetNzMapContextsFunc> {
   int8_t *coeff_contexts_ref_;
   int8_t *coeff_contexts_;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EncodeTxbTest);
 
 TEST_P(EncodeTxbTest, GetNzMapContexts) { GetNzMapContextsRun(); }
 
@@ -182,6 +197,11 @@ INSTANTIATE_TEST_SUITE_P(SSE2, EncodeTxbTest,
                          ::testing::Values(av1_get_nz_map_contexts_sse2));
 #endif
 
+#if HAVE_NEON
+INSTANTIATE_TEST_SUITE_P(NEON, EncodeTxbTest,
+                         ::testing::Values(av1_get_nz_map_contexts_neon));
+#endif
+
 typedef void (*av1_txb_init_levels_func)(const tran_low_t *const coeff,
                                          const int width, const int height,
                                          uint8_t *const levels);
@@ -192,9 +212,10 @@ class EncodeTxbInitLevelTest
     : public ::testing::TestWithParam<TxbInitLevelParam> {
  public:
   virtual ~EncodeTxbInitLevelTest() {}
-  virtual void TearDown() { libaom_test::ClearSystemState(); }
+  virtual void TearDown() {}
   void RunTest(av1_txb_init_levels_func test_func, int tx_size, int is_speed);
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EncodeTxbInitLevelTest);
 
 void EncodeTxbInitLevelTest::RunTest(av1_txb_init_levels_func test_func,
                                      int tx_size, int is_speed) {
@@ -258,6 +279,12 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     AVX2, EncodeTxbInitLevelTest,
     ::testing::Combine(::testing::Values(&av1_txb_init_levels_avx2),
+                       ::testing::Range(0, static_cast<int>(TX_SIZES_ALL), 1)));
+#endif
+#if HAVE_NEON
+INSTANTIATE_TEST_SUITE_P(
+    NEON, EncodeTxbInitLevelTest,
+    ::testing::Combine(::testing::Values(&av1_txb_init_levels_neon),
                        ::testing::Range(0, static_cast<int>(TX_SIZES_ALL), 1)));
 #endif
 }  // namespace

@@ -164,8 +164,6 @@ typedef struct AV1LevelParams {
   uint32_t keep_level_stats;
   // Level information for each operating point.
   AV1LevelInfo *level_info[MAX_NUM_OPERATING_POINTS];
-  // Count the number of OBU_FRAME and OBU_FRAME_HEADER for level calculation.
-  int frame_header_count;
 } AV1LevelParams;
 
 static INLINE int is_in_operating_point(int operating_point,
@@ -187,6 +185,10 @@ aom_codec_err_t av1_get_seq_level_idx(const SequenceHeader *seq_params,
                                       const AV1LevelParams *level_params,
                                       int *seq_level_idx);
 
+aom_codec_err_t av1_get_target_seq_level_idx(const SequenceHeader *seq_params,
+                                             const AV1LevelParams *level_params,
+                                             int *target_seq_level_idx);
+
 // Print the status of the decoder model(for debugging).
 void av1_decoder_model_print_status(const DECODER_MODEL *const decoder_model);
 
@@ -196,6 +198,14 @@ void av1_decoder_model_init(const struct AV1_COMP *const cpi, AV1_LEVEL level,
 void av1_decoder_model_process_frame(const struct AV1_COMP *const cpi,
                                      size_t coded_bits,
                                      DECODER_MODEL *const decoder_model);
+
+// This function uses the decoder model to check whether there could be
+// SMOOTHING_BUFFER_UNDERFLOW or SMOOTHING_BUFFER_OVERFLOW. It does not
+// update the content of decoder_model, and can be used to target certain
+// encoding level in the recode loop.
+DECODER_MODEL_STATUS av1_decoder_model_try_smooth_buf(
+    const struct AV1_COMP *const cpi, size_t coded_bits,
+    const DECODER_MODEL *const decoder_model);
 
 // Return max bitrate(bps) for given level.
 double av1_get_max_bitrate_for_level(AV1_LEVEL level_index, int tier,

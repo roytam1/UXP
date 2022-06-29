@@ -15,11 +15,10 @@
 #include <string.h>
 
 #include "aom_dsp/aom_dsp_common.h"
+#include "aom_dsp/mathutils.h"
 #include "aom_dsp/noise_model.h"
 #include "aom_dsp/noise_util.h"
 #include "aom_mem/aom_mem.h"
-#include "av1/common/common.h"
-#include "av1/encoder/mathutils.h"
 
 #define kLowPolyNumParams 3
 
@@ -42,8 +41,8 @@ static const int kMaxLag = 4;
     return block_mean / (max_w * max_h);                                    \
   }
 
-GET_BLOCK_MEAN(uint8_t, lowbd);
-GET_BLOCK_MEAN(uint16_t, highbd);
+GET_BLOCK_MEAN(uint8_t, lowbd)
+GET_BLOCK_MEAN(uint16_t, highbd)
 
 static INLINE double get_block_mean(const uint8_t *data, int w, int h,
                                     int stride, int x_o, int y_o,
@@ -76,8 +75,8 @@ static INLINE double get_block_mean(const uint8_t *data, int w, int h,
     return noise_var / (max_w * max_h) - noise_mean * noise_mean;        \
   }
 
-GET_NOISE_VAR(uint8_t, lowbd);
-GET_NOISE_VAR(uint16_t, highbd);
+GET_NOISE_VAR(uint8_t, lowbd)
+GET_NOISE_VAR(uint16_t, highbd)
 
 static INLINE double get_noise_var(const uint8_t *data, const uint8_t *denoised,
                                    int w, int h, int stride, int x_o, int y_o,
@@ -214,6 +213,7 @@ static void set_chroma_coefficient_fallback_soln(aom_equation_system_t *eqns) {
 
 int aom_noise_strength_lut_init(aom_noise_strength_lut_t *lut, int num_points) {
   if (!lut) return 0;
+  if (num_points <= 0) return 0;
   lut->num_points = 0;
   lut->points = (double(*)[2])aom_malloc(num_points * sizeof(*lut->points));
   if (!lut->points) return 0;
@@ -388,6 +388,10 @@ int aom_noise_strength_solver_fit_piecewise(
   }
 
   double *residual = aom_malloc(solver->num_bins * sizeof(*residual));
+  if (!residual) {
+    aom_noise_strength_lut_free(lut);
+    return 0;
+  }
   memset(residual, 0, sizeof(*residual) * solver->num_bins);
 
   update_piecewise_linear_residual(solver, lut, residual, 0, solver->num_bins);
@@ -694,6 +698,10 @@ int aom_noise_model_init(aom_noise_model_t *model,
             kMaxLag);
     return 0;
   }
+  if (!(params.bit_depth == 8 || params.bit_depth == 10 ||
+        params.bit_depth == 12)) {
+    return 0;
+  }
 
   memcpy(&model->params, &params, sizeof(params));
   for (c = 0; c < 3; ++c) {
@@ -710,6 +718,10 @@ int aom_noise_model_init(aom_noise_model_t *model,
   }
   model->n = n;
   model->coords = (int(*)[2])aom_malloc(sizeof(*model->coords) * n);
+  if (!model->coords) {
+    aom_noise_model_free(model);
+    return 0;
+  }
 
   for (y = -lag; y <= 0; ++y) {
     const int max_x = y == 0 ? -1 : lag;
@@ -787,8 +799,8 @@ void aom_noise_model_free(aom_noise_model_t *model) {
     return val;                                                            \
   }
 
-EXTRACT_AR_ROW(uint8_t, lowbd);
-EXTRACT_AR_ROW(uint16_t, highbd);
+EXTRACT_AR_ROW(uint8_t, lowbd)
+EXTRACT_AR_ROW(uint16_t, highbd)
 
 static int add_block_observations(
     aom_noise_model_t *noise_model, int c, const uint8_t *const data,
@@ -1152,12 +1164,24 @@ int aom_noise_model_get_grain_parameters(aom_noise_model_t *const noise_model,
 
   // Convert the scaling functions to 8 bit values
   aom_noise_strength_lut_t scaling_points[3];
-  aom_noise_strength_solver_fit_piecewise(
-      &noise_model->combined_state[0].strength_solver, 14, scaling_points + 0);
-  aom_noise_strength_solver_fit_piecewise(
-      &noise_model->combined_state[1].strength_solver, 10, scaling_points + 1);
-  aom_noise_strength_solver_fit_piecewise(
-      &noise_model->combined_state[2].strength_solver, 10, scaling_points + 2);
+  if (!aom_noise_strength_solver_fit_piecewise(
+          &noise_model->combined_state[0].strength_solver, 14,
+          scaling_points + 0)) {
+    return 0;
+  }
+  if (!aom_noise_strength_solver_fit_piecewise(
+          &noise_model->combined_state[1].strength_solver, 10,
+          scaling_points + 1)) {
+    aom_noise_strength_lut_free(scaling_points + 0);
+    return 0;
+  }
+  if (!aom_noise_strength_solver_fit_piecewise(
+          &noise_model->combined_state[2].strength_solver, 10,
+          scaling_points + 2)) {
+    aom_noise_strength_lut_free(scaling_points + 0);
+    aom_noise_strength_lut_free(scaling_points + 1);
+    return 0;
+  }
 
   // Both the domain and the range of the scaling functions in the film_grain
   // are normalized to 8-bit (e.g., they are implicitly scaled during grain
@@ -1287,6 +1311,7 @@ static void pointwise_multiply(const float *a, float *b, int n) {
 static float *get_half_cos_window(int block_size) {
   float *window_function =
       (float *)aom_malloc(block_size * block_size * sizeof(*window_function));
+  if (!window_function) return NULL;
   for (int y = 0; y < block_size; ++y) {
     const double cos_yd = cos((.5 + y) * PI / block_size - PI / 2);
     for (int x = 0; x < block_size; ++x) {
@@ -1329,8 +1354,8 @@ static float *get_half_cos_window(int block_size) {
     }                                                                       \
   }
 
-DITHER_AND_QUANTIZE(uint8_t, lowbd);
-DITHER_AND_QUANTIZE(uint16_t, highbd);
+DITHER_AND_QUANTIZE(uint8_t, lowbd)
+DITHER_AND_QUANTIZE(uint16_t, highbd)
 
 int aom_wiener_denoise_2d(const uint8_t *const data[3], uint8_t *denoised[3],
                           int w, int h, int stride[3], int chroma_sub[2],
@@ -1353,7 +1378,7 @@ int aom_wiener_denoise_2d(const uint8_t *const data[3], uint8_t *denoised[3],
   if (chroma_sub[0] != chroma_sub[1]) {
     fprintf(stderr,
             "aom_wiener_denoise_2d doesn't handle different chroma "
-            "subsampling");
+            "subsampling\n");
     return 0;
   }
   init_success &= aom_flat_block_finder_init(&block_finder_full, block_size,
@@ -1560,6 +1585,10 @@ static int denoise_and_model_realloc_if_necessary(
   ctx->num_blocks_w = (sd->y_width + ctx->block_size - 1) / ctx->block_size;
   ctx->num_blocks_h = (sd->y_height + ctx->block_size - 1) / ctx->block_size;
   ctx->flat_blocks = aom_malloc(ctx->num_blocks_w * ctx->num_blocks_h);
+  if (!ctx->flat_blocks) {
+    fprintf(stderr, "Unable to allocate flat_blocks buffer\n");
+    return 0;
+  }
 
   aom_flat_block_finder_free(&ctx->flat_block_finder);
   if (!aom_flat_block_finder_init(&ctx->flat_block_finder, ctx->block_size,
@@ -1591,7 +1620,7 @@ static int denoise_and_model_realloc_if_necessary(
 
 int aom_denoise_and_model_run(struct aom_denoise_and_model_t *ctx,
                               YV12_BUFFER_CONFIG *sd,
-                              aom_film_grain_t *film_grain) {
+                              aom_film_grain_t *film_grain, int apply_denoise) {
   const int block_size = ctx->block_size;
   const int use_highbd = (sd->flags & YV12_FLAG_HIGHBITDEPTH) != 0;
   uint8_t *raw_data[3] = {
@@ -1643,12 +1672,14 @@ int aom_denoise_and_model_run(struct aom_denoise_and_model_t *ctx,
     if (!film_grain->random_seed) {
       film_grain->random_seed = 7391;
     }
-    memcpy(raw_data[0], ctx->denoised[0],
-           (strides[0] * sd->y_height) << use_highbd);
-    memcpy(raw_data[1], ctx->denoised[1],
-           (strides[1] * sd->uv_height) << use_highbd);
-    memcpy(raw_data[2], ctx->denoised[2],
-           (strides[2] * sd->uv_height) << use_highbd);
+    if (apply_denoise) {
+      memcpy(raw_data[0], ctx->denoised[0],
+             (strides[0] * sd->y_height) << use_highbd);
+      memcpy(raw_data[1], ctx->denoised[1],
+             (strides[1] * sd->uv_height) << use_highbd);
+      memcpy(raw_data[2], ctx->denoised[2],
+             (strides[2] * sd->uv_height) << use_highbd);
+    }
   }
   return 1;
 }

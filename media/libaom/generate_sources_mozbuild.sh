@@ -15,7 +15,7 @@
 
 export LC_ALL=C
 BASE_DIR=$(pwd)
-LIBAOM_SRC_DIR="/media/libaom/src"
+LIBAOM_SRC_DIR="src"
 LIBAOM_CONFIG_DIR="config"
 
 # Print license header.

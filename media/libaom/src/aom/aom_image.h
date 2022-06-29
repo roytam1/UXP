@@ -48,6 +48,11 @@ typedef enum aom_img_fmt {
   AOM_IMG_FMT_AOMI420 = AOM_IMG_FMT_PLANAR | 4,
   AOM_IMG_FMT_I422 = AOM_IMG_FMT_PLANAR | 5,
   AOM_IMG_FMT_I444 = AOM_IMG_FMT_PLANAR | 6,
+/*!\brief Allows detection of the presence of AOM_IMG_FMT_NV12 at compile time.
+ */
+#define AOM_HAVE_IMG_FMT_NV12 1
+  AOM_IMG_FMT_NV12 =
+      AOM_IMG_FMT_PLANAR | 7, /**< 4:2:0 with U and V interleaved */
   AOM_IMG_FMT_I42016 = AOM_IMG_FMT_I420 | AOM_IMG_FMT_HIGHBITDEPTH,
   AOM_IMG_FMT_YV1216 = AOM_IMG_FMT_YV12 | AOM_IMG_FMT_HIGHBITDEPTH,
   AOM_IMG_FMT_I42216 = AOM_IMG_FMT_I422 | AOM_IMG_FMT_HIGHBITDEPTH,
@@ -124,8 +129,12 @@ typedef enum aom_matrix_coefficients {
 
 /*!\brief List of supported color range */
 typedef enum aom_color_range {
-  AOM_CR_STUDIO_RANGE = 0, /**< Y [16..235], UV [16..240] */
-  AOM_CR_FULL_RANGE = 1    /**< YUV/RGB [0..255] */
+  AOM_CR_STUDIO_RANGE = 0, /**<- Y  [16..235],  UV  [16..240]  (bit depth 8) */
+                           /**<- Y  [64..940],  UV  [64..960]  (bit depth 10) */
+                           /**<- Y [256..3760], UV [256..3840] (bit depth 12) */
+  AOM_CR_FULL_RANGE = 1    /**<- YUV/RGB [0..255]  (bit depth 8) */
+                           /**<- YUV/RGB [0..1023] (bit depth 10) */
+                           /**<- YUV/RGB [0..4095] (bit depth 12) */
 } aom_color_range_t;       /**< alias for enum aom_color_range */
 
 /*!\brief List of chroma sample positions */
@@ -195,10 +204,12 @@ typedef struct aom_image {
   unsigned int y_chroma_shift; /**< subsampling order, Y */
 
 /* Image data pointers. */
-#define AOM_PLANE_PACKED 0  /**< To be used for all packed formats */
-#define AOM_PLANE_Y 0       /**< Y (Luminance) plane */
-#define AOM_PLANE_U 1       /**< U (Chroma) plane */
-#define AOM_PLANE_V 2       /**< V (Chroma) plane */
+#define AOM_PLANE_PACKED 0 /**< To be used for all packed formats */
+#define AOM_PLANE_Y 0      /**< Y (Luminance) plane */
+#define AOM_PLANE_U 1      /**< U (Chroma) plane */
+#define AOM_PLANE_V 2      /**< V (Chroma) plane */
+  /* planes[AOM_PLANE_V] = NULL and stride[AOM_PLANE_V] = 0 when fmt ==
+   * AOM_IMG_FMT_NV12 */
   unsigned char *planes[3]; /**< pointer to the top left pixel for each plane */
   int stride[3];            /**< stride between rows for each plane */
   size_t sz;                /**< data size */
@@ -300,7 +311,8 @@ aom_image_t *aom_img_alloc_with_border(aom_image_t *img, aom_img_fmt_t fmt,
 /*!\brief Set the rectangle identifying the displayed portion of the image
  *
  * Updates the displayed rectangle (aka viewport) on the image surface to
- * match the specified coordinates and size.
+ * match the specified coordinates and size. Specifically, sets img->d_w,
+ * img->d_h, and elements of the img->planes[] array.
  *
  * \param[in]    img       Image descriptor
  * \param[in]    x         leftmost column
@@ -309,7 +321,7 @@ aom_image_t *aom_img_alloc_with_border(aom_image_t *img, aom_img_fmt_t fmt,
  * \param[in]    h         height
  * \param[in]    border    A border that is padded on four sides of the image.
  *
- * \return 0 if the requested rectangle is valid, nonzero otherwise.
+ * \return 0 if the requested rectangle is valid, nonzero (-1) otherwise.
  */
 int aom_img_set_rect(aom_image_t *img, unsigned int x, unsigned int y,
                      unsigned int w, unsigned int h, unsigned int border);
@@ -360,6 +372,9 @@ int aom_img_plane_height(const aom_image_t *img, int plane);
  * \param[in]    data         Metadata contents
  * \param[in]    sz           Metadata contents size
  * \param[in]    insert_flag  Metadata insert flag
+ *
+ * \return Returns 0 on success. If img or data is NULL, sz is 0, or memory
+ * allocation fails, it returns -1.
  */
 int aom_img_add_metadata(aom_image_t *img, uint32_t type, const uint8_t *data,
                          size_t sz, aom_metadata_insert_flags_t insert_flag);
@@ -410,6 +425,9 @@ void aom_img_remove_metadata(aom_image_t *img);
  * \param[in]    data         Metadata data pointer
  * \param[in]    sz           Metadata size
  * \param[in]    insert_flag  Metadata insert flag
+ *
+ * \return Returns the newly allocated aom_metadata struct. If data is NULL,
+ * sz is 0, or memory allocation fails, it returns NULL.
  */
 aom_metadata_t *aom_img_metadata_alloc(uint32_t type, const uint8_t *data,
                                        size_t sz,

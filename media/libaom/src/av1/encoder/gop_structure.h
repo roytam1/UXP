@@ -18,24 +18,76 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+/*!\cond */
 struct AV1_COMP;
 struct EncodeFrameParams;
 
 #define MIN_ARF_GF_BOOST 240
 #define NORMAL_BOOST 100
 
-// Set up the Group-Of-Pictures structure for this GF_GROUP.  This involves
-// deciding where to place the various FRAME_UPDATE_TYPEs in the group.  It does
-// this primarily by setting the contents of
-// cpi->twopass.gf_group.update_type[].
-void av1_gop_setup_structure(
-    struct AV1_COMP *cpi, const struct EncodeFrameParams *const frame_params);
+/*!\endcond */
 
-int av1_calc_arf_boost(const TWO_PASS *twopass, const RATE_CONTROL *rc,
-                       FRAME_INFO *frame_info, int offset, int f_frames,
-                       int b_frames, int *num_fpstats_used,
-                       int *num_fpstats_required);
+/*!\brief Set up the Group-Of-Pictures structure for this GF_GROUP.
+ *
+ *\ingroup rate_control
+ *
+ * This function defines the Group-Of-Pictures structure for this GF_GROUP.
+ * This involves deciding where to place the various FRAME_UPDATE_TYPEs in
+ * the group. It does this primarily by updateing entries in
+ * cpi->twopass.gf_group.update_type[].
+ *
+ * \param[in]    cpi          Top - level encoder instance structure
+ *
+ * \return No return value but this function updates group data structures.
+ */
+void av1_gop_setup_structure(struct AV1_COMP *cpi);
+
+/*!\brief Distributes bits to frames in a group
+ *
+ *\ingroup rate_control
+ *
+ * This function decides on the allocation of bits between the different
+ * frames and types of frame in a GF/ARF group.
+ *
+ * \param[in]   cpi           Top - level encoder instance structure
+ * \param[in]   rc            Rate control data
+ * \param[in]   gf_group      GF/ARF group data structure
+ * \param[in]   is_key_frame  Indicates if the first frame in the group is
+ *                            also a key frame.
+ * \param[in]   use_arf       Are ARF frames enabled or is this a GF only
+ *                            uni-directional group.
+ * \param[in]   gf_group_bits Bits available to be allocated.
+ *
+ * \return No return but updates the rate control and group data structures
+ *         to reflect the allocation of bits.
+ */
+void av1_gop_bit_allocation(const AV1_COMP *cpi, RATE_CONTROL *const rc,
+                            GF_GROUP *gf_group, int is_key_frame, int use_arf,
+                            int64_t gf_group_bits);
+
+/*!\brief Check whether a frame in the GOP is a forward key frame
+ *
+ *\ingroup rate_control
+ *
+ * \param[in]   gf_group       GF/ARF group data structure
+ * \param[in]   gf_frame_index GOP index
+ *
+ * \return Return 1 if it is a forward key frame, otherwise return 0
+ */
+int av1_gop_check_forward_keyframe(const GF_GROUP *gf_group,
+                                   int gf_frame_index);
+
+/*!\brief Check whether a frame in the GOP is the second arf
+ *
+ *\ingroup rate_control
+ *
+ * \param[in]   gf_group       GF/ARF group data structure
+ * \param[in]   gf_frame_index GOP index
+ *
+ * \return Return 1 if it is the second arf
+ */
+int av1_gop_is_second_arf(const GF_GROUP *gf_group, int gf_frame_index);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

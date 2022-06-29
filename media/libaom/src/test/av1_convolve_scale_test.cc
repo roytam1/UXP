@@ -18,7 +18,6 @@
 
 #include "aom_ports/aom_timer.h"
 #include "test/acm_random.h"
-#include "test/clear_system_state.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
 
@@ -104,7 +103,6 @@ void TestFilter::set(NTaps ntaps, bool backwards) {
   params_.filter_ptr = &coeffs_[0];
   params_.taps = n;
   // These are ignored by the functions being tested. Set them to whatever.
-  params_.subpel_shifts = SUBPEL_SHIFTS;
   params_.interp_filter = EIGHTTAP_REGULAR;
 }
 
@@ -259,7 +257,7 @@ class ConvolveScaleTestBase : public ::testing::Test {
  public:
   ConvolveScaleTestBase() : image_(NULL) {}
   virtual ~ConvolveScaleTestBase() { delete image_; }
-  virtual void TearDown() { libaom_test::ClearSystemState(); }
+  virtual void TearDown() {}
 
   // Implemented by subclasses (SetUp depends on the parameters passed
   // in and RunOne depends on the function to be tested. These can't
@@ -284,6 +282,7 @@ class ConvolveScaleTestBase : public ::testing::Test {
 
     delete image_;
     image_ = new TestImage<SrcPixel>(width_, height_, bd_);
+    ASSERT_NE(image_, nullptr);
   }
 
   void SetConvParamOffset(int i, int j, int is_compound, int do_average,
@@ -294,8 +293,8 @@ class ConvolveScaleTestBase : public ::testing::Test {
       convolve_params_.do_average = do_average;
     } else {
       convolve_params_.use_dist_wtd_comp_avg = use_dist_wtd_comp_avg;
-      convolve_params_.fwd_offset = quant_dist_lookup_table[i][j][0];
-      convolve_params_.bck_offset = quant_dist_lookup_table[i][j][1];
+      convolve_params_.fwd_offset = quant_dist_lookup_table[j][i];
+      convolve_params_.bck_offset = quant_dist_lookup_table[j][1 - i];
       convolve_params_.is_compound = is_compound;
       convolve_params_.do_average = do_average;
     }

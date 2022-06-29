@@ -27,12 +27,13 @@ const int kMaxSFrames = 12;
 const int kCpuUsed = 1;
 
 class ErrorResilienceTestLarge
-    : public ::libaom_test::CodecTestWithParam<libaom_test::TestMode>,
+    : public ::libaom_test::CodecTestWith2Params<libaom_test::TestMode, int>,
       public ::libaom_test::EncoderTest {
  protected:
   ErrorResilienceTestLarge()
       : EncoderTest(GET_PARAM(0)), psnr_(0.0), nframes_(0), mismatch_psnr_(0.0),
-        mismatch_nframes_(0), encoding_mode_(GET_PARAM(1)), allow_mismatch_(0) {
+        mismatch_nframes_(0), encoding_mode_(GET_PARAM(1)), allow_mismatch_(0),
+        enable_altref_(GET_PARAM(2)) {
     Reset();
   }
 
@@ -57,10 +58,7 @@ class ErrorResilienceTestLarge
     init_flags_ = AOM_CODEC_USE_PSNR;
   }
 
-  virtual void SetUp() {
-    InitializeConfig();
-    SetMode(encoding_mode_);
-  }
+  virtual void SetUp() { InitializeConfig(encoding_mode_); }
 
   virtual void BeginPassHook(unsigned int /*pass*/) {
     psnr_ = 0.0;
@@ -77,7 +75,10 @@ class ErrorResilienceTestLarge
 
   virtual void PreEncodeFrameHook(libaom_test::VideoSource *video,
                                   libaom_test::Encoder *encoder) {
-    if (video->frame() == 0) encoder->Control(AOME_SET_CPUUSED, kCpuUsed);
+    if (video->frame() == 0) {
+      encoder->Control(AOME_SET_CPUUSED, kCpuUsed);
+      encoder->Control(AOME_SET_ENABLEAUTOALTREF, enable_altref_);
+    }
     frame_flags_ &=
         ~(AOM_EFLAG_NO_UPD_LAST | AOM_EFLAG_NO_UPD_GF | AOM_EFLAG_NO_UPD_ARF |
           AOM_EFLAG_NO_REF_FRAME_MVS | AOM_EFLAG_ERROR_RESILIENT |
@@ -320,6 +321,7 @@ class ErrorResilienceTestLarge
   unsigned int s_frames_[kMaxSFrames];
   libaom_test::TestMode encoding_mode_;
   int allow_mismatch_;
+  int enable_altref_;
 };
 
 TEST_P(ErrorResilienceTestLarge, OnVersusOff) {
@@ -356,6 +358,10 @@ TEST_P(ErrorResilienceTestLarge, OnVersusOff) {
 // if we lose (i.e., drop before decoding) a set of droppable
 // frames (i.e., frames that don't update any reference buffers).
 TEST_P(ErrorResilienceTestLarge, DropFramesWithoutRecovery) {
+  if (GET_PARAM(1) == ::libaom_test::kOnePassGood && GET_PARAM(2) == 1) {
+    fprintf(stderr, "Skipping test case #1 because of bug aomedia:3002\n");
+    return;
+  }
   SetupEncoder(500, 10);
   libaom_test::I420VideoSource video("hantro_collage_w352h288.yuv", 352, 288,
                                      cfg_.g_timebase.den, cfg_.g_timebase.num,
@@ -455,5 +461,6 @@ TEST_P(ErrorResilienceTestLarge, SFrameTest) {
   EXPECT_LE(GetMismatchFrames(), GetEncodedFrames() - s_frame_list[0]);
 }
 
-AV1_INSTANTIATE_TEST_CASE(ErrorResilienceTestLarge, NONREALTIME_TEST_MODES);
+AV1_INSTANTIATE_TEST_SUITE(ErrorResilienceTestLarge, NONREALTIME_TEST_MODES,
+                           ::testing::Values(0, 1));
 }  // namespace

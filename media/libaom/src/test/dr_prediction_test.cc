@@ -22,7 +22,6 @@
 #include "av1/common/pred_common.h"
 #include "av1/common/reconintra.h"
 #include "test/acm_random.h"
-#include "test/clear_system_state.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
 
@@ -199,7 +198,7 @@ class DrPredTest : public ::testing::TestWithParam<DrPredFunc<FuncType> > {
     if (params_.tst_fn) {
       aom_usec_timer_start(&timer);
       for (int k = 0; k < kNumTests; ++k) {
-        ASM_REGISTER_STATE_CHECK(params_.tst_fn(dst_tst_, dst_stride_, bw_, bh_,
+        API_REGISTER_STATE_CHECK(params_.tst_fn(dst_tst_, dst_stride_, bw_, bh_,
                                                 above_, left_, upsample_above_,
                                                 upsample_left_, dx_, dy_, bd_));
       }
@@ -270,6 +269,25 @@ class DrPredTest : public ::testing::TestWithParam<DrPredFunc<FuncType> > {
                kTxSizeStrings[tx], ref_time, tst_time, x);
       } else {
         printf("\t[%8s] :: ref time %6d\n", kTxSizeStrings[tx], ref_time);
+      }
+    }
+  }
+
+  void RundrPredTest(const int speed) {
+    if (params_.tst_fn == NULL) return;
+    const int angles[] = { 3, 45, 87 };
+    const int start_angle = speed ? 0 : start_angle_;
+    const int stop_angle = speed ? 3 : stop_angle_;
+    for (enable_upsample_ = 0; enable_upsample_ < 2; ++enable_upsample_) {
+      for (int i = start_angle; i < stop_angle; ++i) {
+        const int angle = speed ? angles[i] + start_angle_ : i;
+        dx_ = av1_get_dx(angle);
+        dy_ = av1_get_dy(angle);
+        if (speed) {
+          printf("enable_upsample: %d angle: %d ~~~~~~~~~~~~~~~\n",
+                 enable_upsample_, angle);
+        }
+        if (dx_ && dy_) RunTest(speed, false, angle);
       }
     }
   }
@@ -364,6 +382,25 @@ INSTANTIATE_TEST_SUITE_P(
                                NULL, AOM_BITS_12, kZ3Start)));
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 
+TEST_P(LowbdDrPredTest, OperationCheck) { RundrPredTest(0); }
+
+TEST_P(LowbdDrPredTest, DISABLED_Speed) { RundrPredTest(1); }
+
+#if HAVE_SSE4_1
+INSTANTIATE_TEST_SUITE_P(
+    SSE4_1, LowbdDrPredTest,
+    ::testing::Values(
+        DrPredFunc<DrPred>(&z1_wrapper<av1_dr_prediction_z1_c>,
+                           &z1_wrapper<av1_dr_prediction_z1_sse4_1>, AOM_BITS_8,
+                           kZ1Start),
+        DrPredFunc<DrPred>(&z2_wrapper<av1_dr_prediction_z2_c>,
+                           &z2_wrapper<av1_dr_prediction_z2_sse4_1>, AOM_BITS_8,
+                           kZ2Start),
+        DrPredFunc<DrPred>(&z3_wrapper<av1_dr_prediction_z3_c>,
+                           &z3_wrapper<av1_dr_prediction_z3_sse4_1>, AOM_BITS_8,
+                           kZ3Start)));
+#endif  // HAVE_SSE4_1
+
 #if HAVE_AVX2
 INSTANTIATE_TEST_SUITE_P(
     AVX2, LowbdDrPredTest,
@@ -376,32 +413,6 @@ INSTANTIATE_TEST_SUITE_P(
                       DrPredFunc<DrPred>(&z3_wrapper<av1_dr_prediction_z3_c>,
                                          &z3_wrapper<av1_dr_prediction_z3_avx2>,
                                          AOM_BITS_8, kZ3Start)));
-
-TEST_P(LowbdDrPredTest, DISABLED_Speed) {
-  const int angles[] = { 3, 45, 87 };
-  for (enable_upsample_ = 0; enable_upsample_ < 2; ++enable_upsample_) {
-    for (int i = 0; i < 3; ++i) {
-      const int angle = angles[i] + start_angle_;
-      dx_ = av1_get_dx(angle);
-      dy_ = av1_get_dy(angle);
-      printf("enable_upsample: %d angle: %d ~~~~~~~~~~~~~~~\n",
-             enable_upsample_, angle);
-      if (dx_ && dy_) RunTest(true, false, angle);
-    }
-  }
-}
-
-TEST_P(LowbdDrPredTest, OperationCheck) {
-  if (params_.tst_fn == NULL) return;
-  // const int angles[] = { 3, 45, 81, 87, 93, 100, 145, 187, 199, 260 };
-  for (enable_upsample_ = 0; enable_upsample_ < 2; ++enable_upsample_) {
-    for (int angle = start_angle_; angle < stop_angle_; ++angle) {
-      dx_ = av1_get_dx(angle);
-      dy_ = av1_get_dy(angle);
-      if (dx_ && dy_) RunTest(false, false, angle);
-    }
-  }
-}
 
 #if CONFIG_AV1_HIGHBITDEPTH
 INSTANTIATE_TEST_SUITE_P(
@@ -470,5 +481,20 @@ TEST_P(HighbdDrPredTest, OperationCheck) {
 }
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 #endif  // HAVE_AVX2
+
+#if HAVE_NEON
+INSTANTIATE_TEST_SUITE_P(
+    NEON, LowbdDrPredTest,
+    ::testing::Values(DrPredFunc<DrPred>(&z1_wrapper<av1_dr_prediction_z1_c>,
+                                         &z1_wrapper<av1_dr_prediction_z1_neon>,
+                                         AOM_BITS_8, kZ1Start),
+                      DrPredFunc<DrPred>(&z2_wrapper<av1_dr_prediction_z2_c>,
+                                         &z2_wrapper<av1_dr_prediction_z2_neon>,
+                                         AOM_BITS_8, kZ2Start),
+                      DrPredFunc<DrPred>(&z3_wrapper<av1_dr_prediction_z3_c>,
+                                         &z3_wrapper<av1_dr_prediction_z3_neon>,
+                                         AOM_BITS_8, kZ3Start)));
+
+#endif  // HAVE_NEON
 
 }  // namespace

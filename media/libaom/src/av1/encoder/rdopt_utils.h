@@ -86,132 +86,132 @@ static const MODE_DEFINITION av1_mode_defs[MAX_MODES] = {
   { NEAREST_NEARESTMV, { LAST_FRAME, GOLDEN_FRAME } },
   { NEAREST_NEARESTMV, { BWDREF_FRAME, ALTREF_FRAME } },
 
-  { NEAR_NEARMV, { LAST_FRAME, ALTREF_FRAME } },
-  { NEW_NEARESTMV, { LAST_FRAME, ALTREF_FRAME } },
-  { NEAREST_NEWMV, { LAST_FRAME, ALTREF_FRAME } },
-  { NEW_NEARMV, { LAST_FRAME, ALTREF_FRAME } },
-  { NEAR_NEWMV, { LAST_FRAME, ALTREF_FRAME } },
-  { NEW_NEWMV, { LAST_FRAME, ALTREF_FRAME } },
-  { GLOBAL_GLOBALMV, { LAST_FRAME, ALTREF_FRAME } },
-
-  { NEAR_NEARMV, { LAST2_FRAME, ALTREF_FRAME } },
-  { NEW_NEARESTMV, { LAST2_FRAME, ALTREF_FRAME } },
-  { NEAREST_NEWMV, { LAST2_FRAME, ALTREF_FRAME } },
-  { NEW_NEARMV, { LAST2_FRAME, ALTREF_FRAME } },
-  { NEAR_NEWMV, { LAST2_FRAME, ALTREF_FRAME } },
-  { NEW_NEWMV, { LAST2_FRAME, ALTREF_FRAME } },
-  { GLOBAL_GLOBALMV, { LAST2_FRAME, ALTREF_FRAME } },
-
-  { NEAR_NEARMV, { LAST3_FRAME, ALTREF_FRAME } },
-  { NEW_NEARESTMV, { LAST3_FRAME, ALTREF_FRAME } },
-  { NEAREST_NEWMV, { LAST3_FRAME, ALTREF_FRAME } },
-  { NEW_NEARMV, { LAST3_FRAME, ALTREF_FRAME } },
-  { NEAR_NEWMV, { LAST3_FRAME, ALTREF_FRAME } },
-  { NEW_NEWMV, { LAST3_FRAME, ALTREF_FRAME } },
-  { GLOBAL_GLOBALMV, { LAST3_FRAME, ALTREF_FRAME } },
-
-  { NEAR_NEARMV, { GOLDEN_FRAME, ALTREF_FRAME } },
-  { NEW_NEARESTMV, { GOLDEN_FRAME, ALTREF_FRAME } },
-  { NEAREST_NEWMV, { GOLDEN_FRAME, ALTREF_FRAME } },
-  { NEW_NEARMV, { GOLDEN_FRAME, ALTREF_FRAME } },
-  { NEAR_NEWMV, { GOLDEN_FRAME, ALTREF_FRAME } },
-  { NEW_NEWMV, { GOLDEN_FRAME, ALTREF_FRAME } },
-  { GLOBAL_GLOBALMV, { GOLDEN_FRAME, ALTREF_FRAME } },
-
   { NEAR_NEARMV, { LAST_FRAME, BWDREF_FRAME } },
+  { NEW_NEWMV, { LAST_FRAME, BWDREF_FRAME } },
   { NEW_NEARESTMV, { LAST_FRAME, BWDREF_FRAME } },
   { NEAREST_NEWMV, { LAST_FRAME, BWDREF_FRAME } },
   { NEW_NEARMV, { LAST_FRAME, BWDREF_FRAME } },
   { NEAR_NEWMV, { LAST_FRAME, BWDREF_FRAME } },
-  { NEW_NEWMV, { LAST_FRAME, BWDREF_FRAME } },
   { GLOBAL_GLOBALMV, { LAST_FRAME, BWDREF_FRAME } },
 
+  { NEAR_NEARMV, { LAST_FRAME, ALTREF_FRAME } },
+  { NEW_NEWMV, { LAST_FRAME, ALTREF_FRAME } },
+  { NEW_NEARESTMV, { LAST_FRAME, ALTREF_FRAME } },
+  { NEAREST_NEWMV, { LAST_FRAME, ALTREF_FRAME } },
+  { NEW_NEARMV, { LAST_FRAME, ALTREF_FRAME } },
+  { NEAR_NEWMV, { LAST_FRAME, ALTREF_FRAME } },
+  { GLOBAL_GLOBALMV, { LAST_FRAME, ALTREF_FRAME } },
+
+  { NEAR_NEARMV, { LAST2_FRAME, ALTREF_FRAME } },
+  { NEW_NEWMV, { LAST2_FRAME, ALTREF_FRAME } },
+  { NEW_NEARESTMV, { LAST2_FRAME, ALTREF_FRAME } },
+  { NEAREST_NEWMV, { LAST2_FRAME, ALTREF_FRAME } },
+  { NEW_NEARMV, { LAST2_FRAME, ALTREF_FRAME } },
+  { NEAR_NEWMV, { LAST2_FRAME, ALTREF_FRAME } },
+  { GLOBAL_GLOBALMV, { LAST2_FRAME, ALTREF_FRAME } },
+
+  { NEAR_NEARMV, { LAST3_FRAME, ALTREF_FRAME } },
+  { NEW_NEWMV, { LAST3_FRAME, ALTREF_FRAME } },
+  { NEW_NEARESTMV, { LAST3_FRAME, ALTREF_FRAME } },
+  { NEAREST_NEWMV, { LAST3_FRAME, ALTREF_FRAME } },
+  { NEW_NEARMV, { LAST3_FRAME, ALTREF_FRAME } },
+  { NEAR_NEWMV, { LAST3_FRAME, ALTREF_FRAME } },
+  { GLOBAL_GLOBALMV, { LAST3_FRAME, ALTREF_FRAME } },
+
+  { NEAR_NEARMV, { GOLDEN_FRAME, ALTREF_FRAME } },
+  { NEW_NEWMV, { GOLDEN_FRAME, ALTREF_FRAME } },
+  { NEW_NEARESTMV, { GOLDEN_FRAME, ALTREF_FRAME } },
+  { NEAREST_NEWMV, { GOLDEN_FRAME, ALTREF_FRAME } },
+  { NEW_NEARMV, { GOLDEN_FRAME, ALTREF_FRAME } },
+  { NEAR_NEWMV, { GOLDEN_FRAME, ALTREF_FRAME } },
+  { GLOBAL_GLOBALMV, { GOLDEN_FRAME, ALTREF_FRAME } },
+
   { NEAR_NEARMV, { LAST2_FRAME, BWDREF_FRAME } },
+  { NEW_NEWMV, { LAST2_FRAME, BWDREF_FRAME } },
   { NEW_NEARESTMV, { LAST2_FRAME, BWDREF_FRAME } },
   { NEAREST_NEWMV, { LAST2_FRAME, BWDREF_FRAME } },
   { NEW_NEARMV, { LAST2_FRAME, BWDREF_FRAME } },
   { NEAR_NEWMV, { LAST2_FRAME, BWDREF_FRAME } },
-  { NEW_NEWMV, { LAST2_FRAME, BWDREF_FRAME } },
   { GLOBAL_GLOBALMV, { LAST2_FRAME, BWDREF_FRAME } },
 
   { NEAR_NEARMV, { LAST3_FRAME, BWDREF_FRAME } },
+  { NEW_NEWMV, { LAST3_FRAME, BWDREF_FRAME } },
   { NEW_NEARESTMV, { LAST3_FRAME, BWDREF_FRAME } },
   { NEAREST_NEWMV, { LAST3_FRAME, BWDREF_FRAME } },
   { NEW_NEARMV, { LAST3_FRAME, BWDREF_FRAME } },
   { NEAR_NEWMV, { LAST3_FRAME, BWDREF_FRAME } },
-  { NEW_NEWMV, { LAST3_FRAME, BWDREF_FRAME } },
   { GLOBAL_GLOBALMV, { LAST3_FRAME, BWDREF_FRAME } },
 
   { NEAR_NEARMV, { GOLDEN_FRAME, BWDREF_FRAME } },
+  { NEW_NEWMV, { GOLDEN_FRAME, BWDREF_FRAME } },
   { NEW_NEARESTMV, { GOLDEN_FRAME, BWDREF_FRAME } },
   { NEAREST_NEWMV, { GOLDEN_FRAME, BWDREF_FRAME } },
   { NEW_NEARMV, { GOLDEN_FRAME, BWDREF_FRAME } },
   { NEAR_NEWMV, { GOLDEN_FRAME, BWDREF_FRAME } },
-  { NEW_NEWMV, { GOLDEN_FRAME, BWDREF_FRAME } },
   { GLOBAL_GLOBALMV, { GOLDEN_FRAME, BWDREF_FRAME } },
 
   { NEAR_NEARMV, { LAST_FRAME, ALTREF2_FRAME } },
+  { NEW_NEWMV, { LAST_FRAME, ALTREF2_FRAME } },
   { NEW_NEARESTMV, { LAST_FRAME, ALTREF2_FRAME } },
   { NEAREST_NEWMV, { LAST_FRAME, ALTREF2_FRAME } },
   { NEW_NEARMV, { LAST_FRAME, ALTREF2_FRAME } },
   { NEAR_NEWMV, { LAST_FRAME, ALTREF2_FRAME } },
-  { NEW_NEWMV, { LAST_FRAME, ALTREF2_FRAME } },
   { GLOBAL_GLOBALMV, { LAST_FRAME, ALTREF2_FRAME } },
 
   { NEAR_NEARMV, { LAST2_FRAME, ALTREF2_FRAME } },
+  { NEW_NEWMV, { LAST2_FRAME, ALTREF2_FRAME } },
   { NEW_NEARESTMV, { LAST2_FRAME, ALTREF2_FRAME } },
   { NEAREST_NEWMV, { LAST2_FRAME, ALTREF2_FRAME } },
   { NEW_NEARMV, { LAST2_FRAME, ALTREF2_FRAME } },
   { NEAR_NEWMV, { LAST2_FRAME, ALTREF2_FRAME } },
-  { NEW_NEWMV, { LAST2_FRAME, ALTREF2_FRAME } },
   { GLOBAL_GLOBALMV, { LAST2_FRAME, ALTREF2_FRAME } },
 
   { NEAR_NEARMV, { LAST3_FRAME, ALTREF2_FRAME } },
+  { NEW_NEWMV, { LAST3_FRAME, ALTREF2_FRAME } },
   { NEW_NEARESTMV, { LAST3_FRAME, ALTREF2_FRAME } },
   { NEAREST_NEWMV, { LAST3_FRAME, ALTREF2_FRAME } },
   { NEW_NEARMV, { LAST3_FRAME, ALTREF2_FRAME } },
   { NEAR_NEWMV, { LAST3_FRAME, ALTREF2_FRAME } },
-  { NEW_NEWMV, { LAST3_FRAME, ALTREF2_FRAME } },
   { GLOBAL_GLOBALMV, { LAST3_FRAME, ALTREF2_FRAME } },
 
   { NEAR_NEARMV, { GOLDEN_FRAME, ALTREF2_FRAME } },
+  { NEW_NEWMV, { GOLDEN_FRAME, ALTREF2_FRAME } },
   { NEW_NEARESTMV, { GOLDEN_FRAME, ALTREF2_FRAME } },
   { NEAREST_NEWMV, { GOLDEN_FRAME, ALTREF2_FRAME } },
   { NEW_NEARMV, { GOLDEN_FRAME, ALTREF2_FRAME } },
   { NEAR_NEWMV, { GOLDEN_FRAME, ALTREF2_FRAME } },
-  { NEW_NEWMV, { GOLDEN_FRAME, ALTREF2_FRAME } },
   { GLOBAL_GLOBALMV, { GOLDEN_FRAME, ALTREF2_FRAME } },
 
   { NEAR_NEARMV, { LAST_FRAME, LAST2_FRAME } },
+  { NEW_NEWMV, { LAST_FRAME, LAST2_FRAME } },
   { NEW_NEARESTMV, { LAST_FRAME, LAST2_FRAME } },
   { NEAREST_NEWMV, { LAST_FRAME, LAST2_FRAME } },
   { NEW_NEARMV, { LAST_FRAME, LAST2_FRAME } },
   { NEAR_NEWMV, { LAST_FRAME, LAST2_FRAME } },
-  { NEW_NEWMV, { LAST_FRAME, LAST2_FRAME } },
   { GLOBAL_GLOBALMV, { LAST_FRAME, LAST2_FRAME } },
 
   { NEAR_NEARMV, { LAST_FRAME, LAST3_FRAME } },
+  { NEW_NEWMV, { LAST_FRAME, LAST3_FRAME } },
   { NEW_NEARESTMV, { LAST_FRAME, LAST3_FRAME } },
   { NEAREST_NEWMV, { LAST_FRAME, LAST3_FRAME } },
   { NEW_NEARMV, { LAST_FRAME, LAST3_FRAME } },
   { NEAR_NEWMV, { LAST_FRAME, LAST3_FRAME } },
-  { NEW_NEWMV, { LAST_FRAME, LAST3_FRAME } },
   { GLOBAL_GLOBALMV, { LAST_FRAME, LAST3_FRAME } },
 
   { NEAR_NEARMV, { LAST_FRAME, GOLDEN_FRAME } },
+  { NEW_NEWMV, { LAST_FRAME, GOLDEN_FRAME } },
   { NEW_NEARESTMV, { LAST_FRAME, GOLDEN_FRAME } },
   { NEAREST_NEWMV, { LAST_FRAME, GOLDEN_FRAME } },
   { NEW_NEARMV, { LAST_FRAME, GOLDEN_FRAME } },
   { NEAR_NEWMV, { LAST_FRAME, GOLDEN_FRAME } },
-  { NEW_NEWMV, { LAST_FRAME, GOLDEN_FRAME } },
   { GLOBAL_GLOBALMV, { LAST_FRAME, GOLDEN_FRAME } },
 
   { NEAR_NEARMV, { BWDREF_FRAME, ALTREF_FRAME } },
+  { NEW_NEWMV, { BWDREF_FRAME, ALTREF_FRAME } },
   { NEW_NEARESTMV, { BWDREF_FRAME, ALTREF_FRAME } },
   { NEAREST_NEWMV, { BWDREF_FRAME, ALTREF_FRAME } },
   { NEW_NEARMV, { BWDREF_FRAME, ALTREF_FRAME } },
   { NEAR_NEWMV, { BWDREF_FRAME, ALTREF_FRAME } },
-  { NEW_NEWMV, { BWDREF_FRAME, ALTREF_FRAME } },
   { GLOBAL_GLOBALMV, { BWDREF_FRAME, ALTREF_FRAME } },
 
   // intra modes
@@ -230,12 +230,29 @@ static const MODE_DEFINITION av1_mode_defs[MAX_MODES] = {
   { D45_PRED, { INTRA_FRAME, NONE_FRAME } },
 };
 
+// Number of winner modes allowed for different values of the speed feature
+// multi_winner_mode_type.
+static const int winner_mode_count_allowed[MULTI_WINNER_MODE_LEVELS] = {
+  1,  // MULTI_WINNER_MODE_OFF
+  2,  // MULTI_WINNER_MODE_FAST
+  3   // MULTI_WINNER_MODE_DEFAULT
+};
+
 static AOM_INLINE void restore_dst_buf(MACROBLOCKD *xd, const BUFFER_SET dst,
                                        const int num_planes) {
   for (int i = 0; i < num_planes; i++) {
     xd->plane[i].dst.buf = dst.plane[i];
     xd->plane[i].dst.stride = dst.stride[i];
   }
+}
+
+static AOM_INLINE void swap_dst_buf(MACROBLOCKD *xd,
+                                    const BUFFER_SET *dst_bufs[2],
+                                    int num_planes) {
+  const BUFFER_SET *buf0 = dst_bufs[0];
+  dst_bufs[0] = dst_bufs[1];
+  dst_bufs[1] = buf0;
+  restore_dst_buf(xd, *dst_bufs[0], num_planes);
 }
 
 /* clang-format on */
@@ -266,7 +283,8 @@ get_prediction_mode_idx(PREDICTION_MODE this_mode, MV_REFERENCE_FRAME ref_frame,
     return single_inter_to_mode_idx[this_mode - SINGLE_INTER_MODE_START]
                                    [ref_frame];
   }
-  if (this_mode >= COMP_INTER_MODE_START && this_mode < COMP_INTER_MODE_END) {
+  if (this_mode >= COMP_INTER_MODE_START && this_mode < COMP_INTER_MODE_END &&
+      second_ref_frame != NONE_FRAME) {
     assert((ref_frame > INTRA_FRAME) && (ref_frame <= ALTREF_FRAME));
     assert((second_ref_frame > INTRA_FRAME) &&
            (second_ref_frame <= ALTREF_FRAME));
@@ -334,31 +352,34 @@ static INLINE int check_txfm_eval(MACROBLOCK *const x, BLOCK_SIZE bsize,
   // Derive aggressiveness factor for gating the transform search
   // Lower value indicates more aggressiveness. Be more conservative (high
   // value) for (i) low quantizers (ii) regions where prediction is poor
-  const int scale[5] = { INT_MAX, 4, 3, 3, 2 };
+  const int scale[5] = { INT_MAX, 4, 3, 2, 2 };
   const int qslope = 2 * (!is_luma_only);
-  int aggr_factor = 1;
-  if (!is_luma_only) {
-    aggr_factor = AOMMAX(
-        1, ((MAXQ - x->qindex) * qslope + QINDEX_RANGE / 2) >> QINDEX_BITS);
+  const int level_to_qindex_map[5] = { 0, 0, 0, 80, 100 };
+  int aggr_factor = 4;
+  const int pred_qindex_thresh = level_to_qindex_map[level];
+  if (!is_luma_only && level <= 2) {
+    aggr_factor = 4 * AOMMAX(1, ROUND_POWER_OF_TWO((MAXQ - x->qindex) * qslope,
+                                                   QINDEX_BITS));
   }
-  if (best_skip_rd >
-      (x->source_variance << (num_pels_log2_lookup[bsize] + RDDIV_BITS)))
+  if ((best_skip_rd >
+       (x->source_variance << (num_pels_log2_lookup[bsize] + RDDIV_BITS))) &&
+      (x->qindex >= pred_qindex_thresh))
     aggr_factor *= scale[level];
-  // For level setting 1, be more conservative for luma only case even when
-  // prediction is good
+  // For level setting 1, be more conservative for non-luma-only case even when
+  // prediction is good.
   else if ((level <= 1) && !is_luma_only)
-    aggr_factor *= 2;
+    aggr_factor = (aggr_factor >> 2) * 6;
 
   // Be more conservative for luma only cases (called from compound type rd)
   // since best_skip_rd is computed after and skip_rd is computed (with 8-bit
   // prediction signals blended for WEDGE/DIFFWTD rather than 16-bit) before
   // interpolation filter search
-  const int luma_mul[5] = { INT_MAX, 32, 29, 20, 17 };
+  const int luma_mul[5] = { INT_MAX, 32, 29, 17, 17 };
   int mul_factor = is_luma_only ? luma_mul[level] : 16;
   int64_t rd_thresh =
       (best_skip_rd == INT64_MAX)
           ? best_skip_rd
-          : (int64_t)(best_skip_rd * aggr_factor * mul_factor >> 4);
+          : (int64_t)(best_skip_rd * aggr_factor * mul_factor >> 6);
   if (skip_rd > rd_thresh) eval_txfm = 0;
   return eval_txfm;
 }
@@ -374,21 +395,70 @@ static TX_MODE select_tx_mode(
     return TX_MODE_SELECT;
   }
 }
+
+// Checks the conditions to disable winner mode processing
+static INLINE int bypass_winner_mode_processing(const MACROBLOCK *const x,
+                                                const SPEED_FEATURES *sf,
+                                                int use_txfm_skip,
+                                                int actual_txfm_skip,
+                                                PREDICTION_MODE best_mode) {
+  const int prune_winner_mode_eval_level =
+      sf->winner_mode_sf.prune_winner_mode_eval_level;
+
+  // Disable winner mode processing for blocks with low source variance.
+  // The aggressiveness of this pruning logic reduces as qindex increases.
+  // The threshold decreases linearly from 64 as qindex varies from 0 to 255.
+  if (prune_winner_mode_eval_level == 1) {
+    const unsigned int src_var_thresh = 64 - 48 * x->qindex / (MAXQ + 1);
+    if (x->source_variance < src_var_thresh) return 1;
+  } else if (prune_winner_mode_eval_level == 2) {
+    // Skip winner mode processing of blocks for which transform turns out to be
+    // skip due to nature of eob alone except NEWMV mode.
+    if (!have_newmv_in_inter_mode(best_mode) && actual_txfm_skip) return 1;
+  } else if (prune_winner_mode_eval_level == 3) {
+    // Skip winner mode processing of blocks for which transform turns out to be
+    // skip except NEWMV mode and considered based on the quantizer.
+    // At high quantizers: Take conservative approach by considering transform
+    // skip based on eob alone.
+    // At low quantizers: Consider transform skip based on eob nature or RD cost
+    // evaluation.
+    const int is_txfm_skip =
+        x->qindex > 127 ? actual_txfm_skip : actual_txfm_skip || use_txfm_skip;
+
+    if (!have_newmv_in_inter_mode(best_mode) && is_txfm_skip) return 1;
+  } else if (prune_winner_mode_eval_level >= 4) {
+    // Do not skip winner mode evaluation at low quantizers if normal mode's
+    // transform search was too aggressive.
+    if (sf->rd_sf.perform_coeff_opt >= 5 && x->qindex <= 70) return 0;
+
+    if (use_txfm_skip || actual_txfm_skip) return 1;
+  }
+
+  return 0;
+}
+
 // Checks the conditions to enable winner mode processing
-static INLINE int is_winner_mode_processing_enabled(
-    const struct AV1_COMP *cpi, MB_MODE_INFO *const mbmi,
-    const PREDICTION_MODE best_mode) {
+static INLINE int is_winner_mode_processing_enabled(const struct AV1_COMP *cpi,
+                                                    const MACROBLOCK *const x,
+                                                    MB_MODE_INFO *const mbmi,
+                                                    int actual_txfm_skip) {
   const SPEED_FEATURES *sf = &cpi->sf;
+  const PREDICTION_MODE best_mode = mbmi->mode;
+
+  if (bypass_winner_mode_processing(x, sf, mbmi->skip_txfm, actual_txfm_skip,
+                                    best_mode))
+    return 0;
 
   // TODO(any): Move block independent condition checks to frame level
   if (is_inter_block(mbmi)) {
     if (is_inter_mode(best_mode) &&
-        sf->tx_sf.tx_type_search.fast_inter_tx_type_search &&
-        !cpi->oxcf.use_inter_dct_only)
+        (sf->tx_sf.tx_type_search.fast_inter_tx_type_prob_thresh != INT_MAX) &&
+        !cpi->oxcf.txfm_cfg.use_inter_dct_only)
       return 1;
   } else {
     if (sf->tx_sf.tx_type_search.fast_intra_tx_type_search &&
-        !cpi->oxcf.use_intra_default_tx_only && !cpi->oxcf.use_intra_dct_only)
+        !cpi->oxcf.txfm_cfg.use_intra_default_tx_only &&
+        !cpi->oxcf.txfm_cfg.use_intra_dct_only)
       return 1;
   }
 
@@ -404,55 +474,67 @@ static INLINE int is_winner_mode_processing_enabled(
 
 static INLINE void set_tx_size_search_method(
     const AV1_COMMON *cm, const WinnerModeParams *winner_mode_params,
-    MACROBLOCK *x, int enable_winner_mode_for_tx_size_srch,
+    TxfmSearchParams *txfm_params, int enable_winner_mode_for_tx_size_srch,
     int is_winner_mode) {
   // Populate transform size search method/transform mode appropriately
-  x->tx_size_search_method =
+  txfm_params->tx_size_search_method =
       winner_mode_params->tx_size_search_methods[DEFAULT_EVAL];
   if (enable_winner_mode_for_tx_size_srch) {
     if (is_winner_mode)
-      x->tx_size_search_method =
+      txfm_params->tx_size_search_method =
           winner_mode_params->tx_size_search_methods[WINNER_MODE_EVAL];
     else
-      x->tx_size_search_method =
+      txfm_params->tx_size_search_method =
           winner_mode_params->tx_size_search_methods[MODE_EVAL];
   }
-  x->tx_mode_search_type = select_tx_mode(cm, x->tx_size_search_method);
+  txfm_params->tx_mode_search_type =
+      select_tx_mode(cm, txfm_params->tx_size_search_method);
 }
 
-static INLINE void set_tx_type_prune(const SPEED_FEATURES *sf, MACROBLOCK *x,
-                                     int enable_winner_mode_tx_type_pruning,
+static INLINE void set_tx_type_prune(const SPEED_FEATURES *sf,
+                                     TxfmSearchParams *txfm_params,
+                                     int winner_mode_tx_type_pruning,
                                      int is_winner_mode) {
   // Populate prune transform mode appropriately
-  x->prune_mode = sf->tx_sf.tx_type_search.prune_mode;
-  if (enable_winner_mode_tx_type_pruning) {
-    if (is_winner_mode)
-      x->prune_mode = NO_PRUNE;
-    else
-      x->prune_mode = PRUNE_2D_AGGRESSIVE;
-  }
+  txfm_params->prune_2d_txfm_mode = sf->tx_sf.tx_type_search.prune_2d_txfm_mode;
+  if (!winner_mode_tx_type_pruning) return;
+
+  const int prune_mode[4][2] = { { TX_TYPE_PRUNE_3, TX_TYPE_PRUNE_0 },
+                                 { TX_TYPE_PRUNE_4, TX_TYPE_PRUNE_0 },
+                                 { TX_TYPE_PRUNE_5, TX_TYPE_PRUNE_2 },
+                                 { TX_TYPE_PRUNE_5, TX_TYPE_PRUNE_3 } };
+  txfm_params->prune_2d_txfm_mode =
+      prune_mode[winner_mode_tx_type_pruning - 1][is_winner_mode];
 }
 
 static INLINE void set_tx_domain_dist_params(
-    const WinnerModeParams *winner_mode_params, MACROBLOCK *x,
+    const WinnerModeParams *winner_mode_params, TxfmSearchParams *txfm_params,
     int enable_winner_mode_for_tx_domain_dist, int is_winner_mode) {
+  if (txfm_params->use_qm_dist_metric) {
+    // QM-weighted PSNR is computed in transform space, so we need to forcibly
+    // enable the use of tx domain distortion.
+    txfm_params->use_transform_domain_distortion = 1;
+    txfm_params->tx_domain_dist_threshold = 0;
+    return;
+  }
+
   if (!enable_winner_mode_for_tx_domain_dist) {
-    x->use_transform_domain_distortion =
+    txfm_params->use_transform_domain_distortion =
         winner_mode_params->use_transform_domain_distortion[DEFAULT_EVAL];
-    x->tx_domain_dist_threshold =
+    txfm_params->tx_domain_dist_threshold =
         winner_mode_params->tx_domain_dist_threshold[DEFAULT_EVAL];
     return;
   }
 
   if (is_winner_mode) {
-    x->use_transform_domain_distortion =
+    txfm_params->use_transform_domain_distortion =
         winner_mode_params->use_transform_domain_distortion[WINNER_MODE_EVAL];
-    x->tx_domain_dist_threshold =
+    txfm_params->tx_domain_dist_threshold =
         winner_mode_params->tx_domain_dist_threshold[WINNER_MODE_EVAL];
   } else {
-    x->use_transform_domain_distortion =
+    txfm_params->use_transform_domain_distortion =
         winner_mode_params->use_transform_domain_distortion[MODE_EVAL];
-    x->tx_domain_dist_threshold =
+    txfm_params->tx_domain_dist_threshold =
         winner_mode_params->tx_domain_dist_threshold[MODE_EVAL];
   }
 }
@@ -464,86 +546,99 @@ static INLINE void set_mode_eval_params(const struct AV1_COMP *cpi,
   const AV1_COMMON *cm = &cpi->common;
   const SPEED_FEATURES *sf = &cpi->sf;
   const WinnerModeParams *winner_mode_params = &cpi->winner_mode_params;
+  TxfmSearchParams *txfm_params = &x->txfm_search_params;
+
+  txfm_params->use_qm_dist_metric =
+      cpi->oxcf.tune_cfg.dist_metric == AOM_DIST_METRIC_QM_PSNR;
 
   switch (mode_eval_type) {
     case DEFAULT_EVAL:
-      x->use_default_inter_tx_type = 0;
-      x->use_default_intra_tx_type = 0;
-      x->predict_skip_level =
-          winner_mode_params->predict_skip_level[DEFAULT_EVAL];
+      txfm_params->default_inter_tx_type_prob_thresh = INT_MAX;
+      txfm_params->use_default_intra_tx_type = 0;
+      txfm_params->skip_txfm_level =
+          winner_mode_params->skip_txfm_level[DEFAULT_EVAL];
+      txfm_params->predict_dc_level =
+          winner_mode_params->predict_dc_level[DEFAULT_EVAL];
       // Set default transform domain distortion type
-      set_tx_domain_dist_params(winner_mode_params, x, 0, 0);
+      set_tx_domain_dist_params(winner_mode_params, txfm_params, 0, 0);
 
       // Get default threshold for R-D optimization of coefficients
-      x->coeff_opt_dist_threshold = get_rd_opt_coeff_thresh(
-          winner_mode_params->coeff_opt_dist_threshold, 0, 0);
+      get_rd_opt_coeff_thresh(winner_mode_params->coeff_opt_thresholds,
+                              txfm_params, 0, 0);
+
       // Set default transform size search method
-      set_tx_size_search_method(cm, winner_mode_params, x, 0, 0);
+      set_tx_size_search_method(cm, winner_mode_params, txfm_params, 0, 0);
       // Set default transform type prune
-      set_tx_type_prune(sf, x, 0, 0);
+      set_tx_type_prune(sf, txfm_params, 0, 0);
       break;
     case MODE_EVAL:
-      x->use_default_intra_tx_type =
+      txfm_params->use_default_intra_tx_type =
           (cpi->sf.tx_sf.tx_type_search.fast_intra_tx_type_search ||
-           cpi->oxcf.use_intra_default_tx_only);
-      x->use_default_inter_tx_type =
-          cpi->sf.tx_sf.tx_type_search.fast_inter_tx_type_search;
-      x->predict_skip_level = winner_mode_params->predict_skip_level[MODE_EVAL];
-
+           cpi->oxcf.txfm_cfg.use_intra_default_tx_only);
+      txfm_params->default_inter_tx_type_prob_thresh =
+          cpi->sf.tx_sf.tx_type_search.fast_inter_tx_type_prob_thresh;
+      txfm_params->skip_txfm_level =
+          winner_mode_params->skip_txfm_level[MODE_EVAL];
+      txfm_params->predict_dc_level =
+          winner_mode_params->predict_dc_level[MODE_EVAL];
       // Set transform domain distortion type for mode evaluation
       set_tx_domain_dist_params(
-          winner_mode_params, x,
+          winner_mode_params, txfm_params,
           sf->winner_mode_sf.enable_winner_mode_for_use_tx_domain_dist, 0);
 
       // Get threshold for R-D optimization of coefficients during mode
       // evaluation
-      x->coeff_opt_dist_threshold = get_rd_opt_coeff_thresh(
-          winner_mode_params->coeff_opt_dist_threshold,
+      get_rd_opt_coeff_thresh(
+          winner_mode_params->coeff_opt_thresholds, txfm_params,
           sf->winner_mode_sf.enable_winner_mode_for_coeff_opt, 0);
+
       // Set the transform size search method for mode evaluation
       set_tx_size_search_method(
-          cm, winner_mode_params, x,
+          cm, winner_mode_params, txfm_params,
           sf->winner_mode_sf.enable_winner_mode_for_tx_size_srch, 0);
       // Set transform type prune for mode evaluation
-      set_tx_type_prune(
-          sf, x, sf->tx_sf.tx_type_search.enable_winner_mode_tx_type_pruning,
-          0);
+      set_tx_type_prune(sf, txfm_params,
+                        sf->tx_sf.tx_type_search.winner_mode_tx_type_pruning,
+                        0);
       break;
     case WINNER_MODE_EVAL:
-      x->use_default_inter_tx_type = 0;
-      x->use_default_intra_tx_type = 0;
-      x->predict_skip_level =
-          winner_mode_params->predict_skip_level[WINNER_MODE_EVAL];
+      txfm_params->default_inter_tx_type_prob_thresh = INT_MAX;
+      txfm_params->use_default_intra_tx_type = 0;
+      txfm_params->skip_txfm_level =
+          winner_mode_params->skip_txfm_level[WINNER_MODE_EVAL];
+      txfm_params->predict_dc_level =
+          winner_mode_params->predict_dc_level[WINNER_MODE_EVAL];
 
       // Set transform domain distortion type for winner mode evaluation
       set_tx_domain_dist_params(
-          winner_mode_params, x,
+          winner_mode_params, txfm_params,
           sf->winner_mode_sf.enable_winner_mode_for_use_tx_domain_dist, 1);
 
       // Get threshold for R-D optimization of coefficients for winner mode
       // evaluation
-      x->coeff_opt_dist_threshold = get_rd_opt_coeff_thresh(
-          winner_mode_params->coeff_opt_dist_threshold,
+      get_rd_opt_coeff_thresh(
+          winner_mode_params->coeff_opt_thresholds, txfm_params,
           sf->winner_mode_sf.enable_winner_mode_for_coeff_opt, 1);
+
       // Set the transform size search method for winner mode evaluation
       set_tx_size_search_method(
-          cm, winner_mode_params, x,
+          cm, winner_mode_params, txfm_params,
           sf->winner_mode_sf.enable_winner_mode_for_tx_size_srch, 1);
       // Set default transform type prune mode for winner mode evaluation
-      set_tx_type_prune(
-          sf, x, sf->tx_sf.tx_type_search.enable_winner_mode_tx_type_pruning,
-          1);
-
-      // Reset hash state for winner mode processing. Winner mode and subsequent
-      // transform/mode evaluations (palette/IntraBC) cann't reuse old data as
-      // the decisions would have been sub-optimal
-      // TODO(any): Move the evaluation of palette/IntraBC modes before winner
-      // mode is processed and clean-up the code below
-      reset_hash_records(x, cpi->sf.tx_sf.use_inter_txb_hash);
-
+      set_tx_type_prune(sf, txfm_params,
+                        sf->tx_sf.tx_type_search.winner_mode_tx_type_pruning,
+                        1);
       break;
     default: assert(0);
   }
+
+  // Rd record collected at a specific mode evaluation stage can not be used
+  // across other evaluation stages as the transform parameters are different.
+  // Hence, reset mb rd record whenever mode evaluation stage type changes.
+  if (txfm_params->mode_eval_type != mode_eval_type)
+    reset_mb_rd_record(x->txfm_search_info.mb_rd_record);
+
+  txfm_params->mode_eval_type = mode_eval_type;
 }
 
 // Similar to store_cfl_required(), but for use during the RDO process,
@@ -552,7 +647,7 @@ static INLINE CFL_ALLOWED_TYPE store_cfl_required_rdo(const AV1_COMMON *cm,
                                                       const MACROBLOCK *x) {
   const MACROBLOCKD *xd = &x->e_mbd;
 
-  if (cm->seq_params.monochrome || !xd->is_chroma_ref) return CFL_DISALLOWED;
+  if (cm->seq_params->monochrome || !xd->is_chroma_ref) return CFL_DISALLOWED;
 
   if (!xd->is_chroma_ref) {
     // For non-chroma-reference blocks, we should always store the luma pixels,
@@ -575,24 +670,22 @@ static AOM_INLINE void init_sbuv_mode(MB_MODE_INFO *const mbmi) {
 
 // Store best mode stats for winner mode processing
 static INLINE void store_winner_mode_stats(
-    const AV1_COMMON *const cm, MACROBLOCK *x, MB_MODE_INFO *mbmi,
+    const AV1_COMMON *const cm, MACROBLOCK *x, const MB_MODE_INFO *mbmi,
     RD_STATS *rd_cost, RD_STATS *rd_cost_y, RD_STATS *rd_cost_uv,
     THR_MODES mode_index, uint8_t *color_map, BLOCK_SIZE bsize, int64_t this_rd,
-    int enable_multiwinner_mode_process, int txfm_search_done) {
+    int multi_winner_mode_type, int txfm_search_done) {
   WinnerModeStats *winner_mode_stats = x->winner_mode_stats;
   int mode_idx = 0;
   int is_palette_mode = mbmi->palette_mode_info.palette_size[PLANE_TYPE_Y] > 0;
   // Mode stat is not required when multiwinner mode processing is disabled
-  if (!enable_multiwinner_mode_process) return;
+  if (multi_winner_mode_type == MULTI_WINNER_MODE_OFF) return;
   // Ignore mode with maximum rd
   if (this_rd == INT64_MAX) return;
   // TODO(any): Winner mode processing is currently not applicable for palette
   // mode in Inter frames. Clean-up the following code, once support is added
   if (!frame_is_intra_only(cm) && is_palette_mode) return;
 
-  const int max_winner_mode_count = frame_is_intra_only(cm)
-                                        ? MAX_WINNER_MODE_COUNT_INTRA
-                                        : MAX_WINNER_MODE_COUNT_INTER;
+  int max_winner_mode_count = winner_mode_count_allowed[multi_winner_mode_type];
   assert(x->winner_mode_count >= 0 &&
          x->winner_mode_count <= max_winner_mode_count);
 
@@ -619,14 +712,16 @@ static INLINE void store_winner_mode_stats(
   // Update rd stats required for inter frame
   if (!frame_is_intra_only(cm) && rd_cost && rd_cost_y && rd_cost_uv) {
     const MACROBLOCKD *xd = &x->e_mbd;
-    const int skip_ctx = av1_get_skip_context(xd);
+    const int skip_ctx = av1_get_skip_txfm_context(xd);
     const int is_intra_mode = av1_mode_defs[mode_index].mode < INTRA_MODE_END;
-    const int skip = mbmi->skip && !is_intra_mode;
+    const int skip_txfm = mbmi->skip_txfm && !is_intra_mode;
 
     winner_mode_stats[mode_idx].rd_cost = *rd_cost;
     if (txfm_search_done) {
       winner_mode_stats[mode_idx].rate_y =
-          rd_cost_y->rate + x->skip_cost[skip_ctx][rd_cost->skip || skip];
+          rd_cost_y->rate +
+          x->mode_costs
+              .skip_txfm_cost[skip_ctx][rd_cost->skip_txfm || skip_txfm];
       winner_mode_stats[mode_idx].rate_uv = rd_cost_uv->rate;
     }
   }
@@ -643,6 +738,30 @@ static INLINE void store_winner_mode_stats(
 
   x->winner_mode_count =
       AOMMIN(x->winner_mode_count + 1, max_winner_mode_count);
+}
+
+unsigned int av1_get_sby_perpixel_variance(const struct AV1_COMP *cpi,
+                                           const struct buf_2d *ref,
+                                           BLOCK_SIZE bs);
+
+unsigned int av1_high_get_sby_perpixel_variance(const struct AV1_COMP *cpi,
+                                                const struct buf_2d *ref,
+                                                BLOCK_SIZE bs, int bd);
+
+static INLINE int is_mode_intra(PREDICTION_MODE mode) {
+  return mode < INTRA_MODE_END;
+}
+
+// This function will copy usable ref_mv_stack[ref_frame][4] and
+// weight[ref_frame][4] information from ref_mv_stack[ref_frame][8] and
+// weight[ref_frame][8].
+static INLINE void av1_copy_usable_ref_mv_stack_and_weight(
+    const MACROBLOCKD *xd, MB_MODE_INFO_EXT *const mbmi_ext,
+    MV_REFERENCE_FRAME ref_frame) {
+  memcpy(mbmi_ext->weight[ref_frame], xd->weight[ref_frame],
+         USABLE_REF_MV_STACK_SIZE * sizeof(xd->weight[0][0]));
+  memcpy(mbmi_ext->ref_mv_stack[ref_frame], xd->ref_mv_stack[ref_frame],
+         USABLE_REF_MV_STACK_SIZE * sizeof(xd->ref_mv_stack[0][0]));
 }
 
 #ifdef __cplusplus

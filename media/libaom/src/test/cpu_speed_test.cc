@@ -31,14 +31,9 @@ class CpuSpeedTest
   virtual ~CpuSpeedTest() {}
 
   virtual void SetUp() {
-    InitializeConfig();
-    SetMode(encoding_mode_);
+    InitializeConfig(encoding_mode_);
     if (encoding_mode_ != ::libaom_test::kRealTime) {
       cfg_.g_lag_in_frames = 25;
-      cfg_.rc_end_usage = AOM_VBR;
-    } else {
-      cfg_.g_lag_in_frames = 0;
-      cfg_.rc_end_usage = AOM_CBR;
     }
   }
 
@@ -169,12 +164,12 @@ TEST_P(CpuSpeedTestLarge, TestTuneScreen) { TestTuneScreen(); }
 TEST_P(CpuSpeedTestLarge, TestEncodeHighBitrate) { TestEncodeHighBitrate(); }
 TEST_P(CpuSpeedTestLarge, TestLowBitrate) { TestLowBitrate(); }
 
-AV1_INSTANTIATE_TEST_CASE(CpuSpeedTest,
-                          ::testing::Values(::libaom_test::kTwoPassGood,
-                                            ::libaom_test::kOnePassGood),
-                          ::testing::Range(1, 3));
-AV1_INSTANTIATE_TEST_CASE(CpuSpeedTestLarge,
-                          ::testing::Values(::libaom_test::kTwoPassGood,
-                                            ::libaom_test::kOnePassGood),
-                          ::testing::Range(0, 1));
+AV1_INSTANTIATE_TEST_SUITE(CpuSpeedTest,
+                           ::testing::Values(::libaom_test::kTwoPassGood,
+                                             ::libaom_test::kOnePassGood),
+                           ::testing::Range(1, 3));
+AV1_INSTANTIATE_TEST_SUITE(CpuSpeedTestLarge,
+                           ::testing::Values(::libaom_test::kTwoPassGood,
+                                             ::libaom_test::kOnePassGood),
+                           ::testing::Range(0, 1));
 }  // namespace
