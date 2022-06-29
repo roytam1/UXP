@@ -2827,7 +2827,7 @@ AC_SUBST(MOZ_AV1)
 dnl ========================================================
 dnl = Enable JPEG-XL Codec
 dnl ========================================================
-MOZ_ARG_ENABLE_BOOL(av1,
+MOZ_ARG_ENABLE_BOOL(jxl,
 [  --enable-jxl           Enable libjxl and highway for jxl image support],
     MOZ_JXL=1,
     MOZ_JXL=)
