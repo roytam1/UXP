@@ -51,9 +51,9 @@ static INLINE unsigned int masked_sad(const uint8_t *src, int src_stride,
                         msk_stride, m, n);                                     \
   }                                                                            \
   void aom_masked_sad##m##x##n##x4d_c(                                         \
-      const uint8_t *src, int src_stride, const uint8_t *ref[],                \
+      const uint8_t *src, int src_stride, const uint8_t *ref[4],               \
       int ref_stride, const uint8_t *second_pred, const uint8_t *msk,          \
-      int msk_stride, int invert_mask, unsigned sads[]) {                      \
+      int msk_stride, int invert_mask, unsigned sads[4]) {                     \
     if (!invert_mask)                                                          \
       for (int i = 0; i < 4; i++) {                                            \
         sads[i] = masked_sad(src, src_stride, ref[i], ref_stride, second_pred, \
@@ -156,6 +156,7 @@ HIGHBD_MASKSADMXN(16, 64)
 HIGHBD_MASKSADMXN(64, 16)
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 
+#if !CONFIG_REALTIME_ONLY
 // pre: predictor being evaluated
 // wsrc: target weighted prediction (has been *4096 to keep precision)
 // mask: 2d weights (scaled by 4096)
@@ -262,3 +263,4 @@ HIGHBD_OBMCSADMXN(16, 64)
 HIGHBD_OBMCSADMXN(64, 16)
 /* clang-format on */
 #endif  // CONFIG_AV1_HIGHBITDEPTH
+#endif  // !CONFIG_REALTIME_ONLY

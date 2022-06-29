@@ -192,10 +192,8 @@ void process_tile_list(const TILE_LIST_INFO *tiles, int num_tiles,
 }
 
 int main(int argc, char **argv) {
-  aom_codec_ctx_t codec;
   AvxVideoReader *reader = NULL;
   AvxVideoWriter *writer = NULL;
-  const AvxInterface *decoder = NULL;
   const AvxVideoInfo *info = NULL;
   int num_references;
   int i;
@@ -220,12 +218,13 @@ int main(int argc, char **argv) {
 
   tile_list_file = argv[4];
 
-  decoder = get_aom_decoder_by_fourcc(info->codec_fourcc);
+  aom_codec_iface_t *decoder = get_aom_decoder_by_fourcc(info->codec_fourcc);
   if (!decoder) die("Unknown input codec.");
-  printf("Using %s\n", aom_codec_iface_name(decoder->codec_interface()));
+  printf("Using %s\n", aom_codec_iface_name(decoder));
 
-  if (aom_codec_dec_init(&codec, decoder->codec_interface(), NULL, 0))
-    die_codec(&codec, "Failed to initialize decoder.");
+  aom_codec_ctx_t codec;
+  if (aom_codec_dec_init(&codec, decoder, NULL, 0))
+    die("Failed to initialize decoder.");
 
   // Decode anchor frames.
   AOM_CODEC_CONTROL_TYPECHECKED(&codec, AV1_SET_TILE_MODE, 0);
@@ -268,6 +267,8 @@ int main(int argc, char **argv) {
   unsigned char **frames =
       (unsigned char **)malloc(num_frames * sizeof(unsigned char *));
   size_t *frame_sizes = (size_t *)malloc(num_frames * sizeof(size_t));
+  if (!(frames && frame_sizes)) die("Failed to allocate frame data.");
+
   // Seek to the first camera image.
   fseeko(infile, camera_frame_pos, SEEK_SET);
   for (int f = 0; f < num_frames; ++f) {
@@ -276,6 +277,7 @@ int main(int argc, char **argv) {
     const unsigned char *frame =
         aom_video_reader_get_frame(reader, &frame_size);
     frames[f] = (unsigned char *)malloc(frame_size * sizeof(unsigned char));
+    if (!frames[f]) die("Failed to allocate frame data.");
     memcpy(frames[f], frame, frame_size);
     frame_sizes[f] = frame_size;
   }

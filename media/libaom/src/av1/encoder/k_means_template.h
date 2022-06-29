@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "av1/common/blockd.h"
 #include "av1/encoder/palette.h"
 #include "av1/encoder/random.h"
 
@@ -93,9 +94,15 @@ static int64_t RENAME(calc_total_dist)(const int *data, const int *centroids,
 void RENAME(av1_k_means)(const int *data, int *centroids, uint8_t *indices,
                          int n, int k, int max_itr) {
   int pre_centroids[2 * PALETTE_MAX_SIZE];
-  uint8_t pre_indices[MAX_SB_SQUARE];
+  uint8_t pre_indices[MAX_PALETTE_BLOCK_WIDTH * MAX_PALETTE_BLOCK_HEIGHT];
 
-  RENAME(av1_calc_indices)(data, centroids, indices, n, k);
+  assert(n <= MAX_PALETTE_BLOCK_WIDTH * MAX_PALETTE_BLOCK_HEIGHT);
+
+#if AV1_K_MEANS_DIM - 2
+  av1_calc_indices_dim1(data, centroids, indices, n, k);
+#else
+  av1_calc_indices_dim2(data, centroids, indices, n, k);
+#endif
   int64_t this_dist = RENAME(calc_total_dist)(data, centroids, indices, n, k);
 
   for (int i = 0; i < max_itr; ++i) {
@@ -105,7 +112,11 @@ void RENAME(av1_k_means)(const int *data, int *centroids, uint8_t *indices,
     memcpy(pre_indices, indices, sizeof(pre_indices[0]) * n);
 
     RENAME(calc_centroids)(data, centroids, indices, n, k);
-    RENAME(av1_calc_indices)(data, centroids, indices, n, k);
+#if AV1_K_MEANS_DIM - 2
+    av1_calc_indices_dim1(data, centroids, indices, n, k);
+#else
+    av1_calc_indices_dim2(data, centroids, indices, n, k);
+#endif
     this_dist = RENAME(calc_total_dist)(data, centroids, indices, n, k);
 
     if (this_dist > pre_dist) {

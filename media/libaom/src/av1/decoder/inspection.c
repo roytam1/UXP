@@ -8,6 +8,10 @@
  * Media Patent License 1.0 was not distributed with this source code in the
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
+
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "av1/decoder/decoder.h"
 #include "av1/decoder/inspection.h"
 #include "av1/common/enums.h"
@@ -18,6 +22,10 @@ static void ifd_init_mi_rc(insp_frame_data *fd, int mi_cols, int mi_rows) {
   fd->mi_rows = mi_rows;
   fd->mi_grid = (insp_mi_data *)aom_malloc(sizeof(insp_mi_data) * fd->mi_rows *
                                            fd->mi_cols);
+  if (!fd->mi_grid) {
+    fprintf(stderr, "Error allocating inspection data\n");
+    abort();
+  }
 }
 
 void ifd_init(insp_frame_data *fd, int frame_width, int frame_height) {
@@ -99,9 +107,9 @@ int ifd_inspect(insp_frame_data *fd, void *decoder, int skip_not_transform) {
       mi->compound_type = mbmi->interinter_comp.type;
 
       // Block Size
-      mi->sb_type = mbmi->sb_type;
+      mi->bsize = mbmi->bsize;
       // Skip Flag
-      mi->skip = mbmi->skip;
+      mi->skip = mbmi->skip_txfm;
       mi->filter[0] = av1_extract_interp_filter(mbmi->interp_filters, 0);
       mi->filter[1] = av1_extract_interp_filter(mbmi->interp_filters, 1);
       mi->dual_filter_type = mi->filter[0] * 3 + mi->filter[1];
@@ -109,7 +117,7 @@ int ifd_inspect(insp_frame_data *fd, void *decoder, int skip_not_transform) {
       // Transform
       // TODO(anyone): extract tx type info from mbmi->txk_type[].
 
-      const BLOCK_SIZE bsize = mbmi->sb_type;
+      const BLOCK_SIZE bsize = mbmi->bsize;
       const int c = i % mi_size_wide[bsize];
       const int r = j % mi_size_high[bsize];
       if (is_inter_block(mbmi) || is_intrabc_block(mbmi))

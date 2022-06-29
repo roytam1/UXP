@@ -22,14 +22,16 @@
 static void extend_plane(uint8_t *const src, int src_stride, int width,
                          int height, int extend_top, int extend_left,
                          int extend_bottom, int extend_right) {
+  assert(src != NULL);
   int i;
   const int linesize = extend_left + extend_right + width;
+  assert(linesize <= src_stride);
 
   /* copy the left and right most columns out */
   uint8_t *src_ptr1 = src;
   uint8_t *src_ptr2 = src + width - 1;
   uint8_t *dst_ptr1 = src - extend_left;
-  uint8_t *dst_ptr2 = src + width;
+  uint8_t *dst_ptr2 = src_ptr2 + 1;
 
   for (i = 0; i < height; ++i) {
     memset(dst_ptr1, src_ptr1[0], extend_left);
@@ -44,18 +46,19 @@ static void extend_plane(uint8_t *const src, int src_stride, int width,
    * borders
    */
   src_ptr1 = src - extend_left;
-  src_ptr2 = src + src_stride * (height - 1) - extend_left;
-  dst_ptr1 = src + src_stride * -extend_top - extend_left;
-  dst_ptr2 = src + src_stride * height - extend_left;
+  dst_ptr1 = src_ptr1 + src_stride * -extend_top;
 
   for (i = 0; i < extend_top; ++i) {
     memcpy(dst_ptr1, src_ptr1, linesize);
     dst_ptr1 += src_stride;
   }
 
+  src_ptr2 = src_ptr1 + src_stride * (height - 1);
+  dst_ptr2 = src_ptr2;
+
   for (i = 0; i < extend_bottom; ++i) {
-    memcpy(dst_ptr2, src_ptr2, linesize);
     dst_ptr2 += src_stride;
+    memcpy(dst_ptr2, src_ptr2, linesize);
   }
 }
 
@@ -65,13 +68,14 @@ static void extend_plane_high(uint8_t *const src8, int src_stride, int width,
                               int extend_bottom, int extend_right) {
   int i;
   const int linesize = extend_left + extend_right + width;
+  assert(linesize <= src_stride);
   uint16_t *src = CONVERT_TO_SHORTPTR(src8);
 
   /* copy the left and right most columns out */
   uint16_t *src_ptr1 = src;
   uint16_t *src_ptr2 = src + width - 1;
   uint16_t *dst_ptr1 = src - extend_left;
-  uint16_t *dst_ptr2 = src + width;
+  uint16_t *dst_ptr2 = src_ptr2 + 1;
 
   for (i = 0; i < height; ++i) {
     aom_memset16(dst_ptr1, src_ptr1[0], extend_left);
@@ -86,18 +90,19 @@ static void extend_plane_high(uint8_t *const src8, int src_stride, int width,
    * borders
    */
   src_ptr1 = src - extend_left;
-  src_ptr2 = src + src_stride * (height - 1) - extend_left;
-  dst_ptr1 = src + src_stride * -extend_top - extend_left;
-  dst_ptr2 = src + src_stride * height - extend_left;
+  dst_ptr1 = src_ptr1 + src_stride * -extend_top;
 
   for (i = 0; i < extend_top; ++i) {
     memcpy(dst_ptr1, src_ptr1, linesize * sizeof(uint16_t));
     dst_ptr1 += src_stride;
   }
 
+  src_ptr2 = src_ptr1 + src_stride * (height - 1);
+  dst_ptr2 = src_ptr2;
+
   for (i = 0; i < extend_bottom; ++i) {
-    memcpy(dst_ptr2, src_ptr2, linesize * sizeof(uint16_t));
     dst_ptr2 += src_stride;
+    memcpy(dst_ptr2, src_ptr2, linesize * sizeof(uint16_t));
   }
 }
 #endif  // CONFIG_AV1_HIGHBITDEPTH
@@ -138,8 +143,8 @@ void aom_yv12_extend_frame_borders_c(YV12_BUFFER_CONFIG *ybf,
 
 static void extend_frame(YV12_BUFFER_CONFIG *const ybf, int ext_size,
                          const int num_planes) {
-  const int ss_x = ybf->uv_width < ybf->y_width;
-  const int ss_y = ybf->uv_height < ybf->y_height;
+  const int ss_x = ybf->subsampling_x;
+  const int ss_y = ybf->subsampling_y;
 
   assert(ybf->y_height - ybf->y_crop_height < 16);
   assert(ybf->y_width - ybf->y_crop_width < 16);
@@ -220,13 +225,8 @@ static void memcpy_short_addr(uint8_t *dst8, const uint8_t *src8, int num) {
 // Note: The frames are assumed to be identical in size.
 void aom_yv12_copy_frame_c(const YV12_BUFFER_CONFIG *src_bc,
                            YV12_BUFFER_CONFIG *dst_bc, const int num_planes) {
-#if 0
-  /* These assertions are valid in the codec, but the libaom-tester uses
-   * this code slightly differently.
-   */
   assert(src_bc->y_width == dst_bc->y_width);
   assert(src_bc->y_height == dst_bc->y_height);
-#endif
 
 #if CONFIG_AV1_HIGHBITDEPTH
   assert((src_bc->flags & YV12_FLAG_HIGHBITDEPTH) ==
@@ -460,7 +460,7 @@ int aom_yv12_realloc_with_new_border_c(YV12_BUFFER_CONFIG *ybf, int new_border,
     const int error = aom_alloc_frame_buffer(
         &new_buf, ybf->y_crop_width, ybf->y_crop_height, ybf->subsampling_x,
         ybf->subsampling_y, ybf->flags & YV12_FLAG_HIGHBITDEPTH, new_border,
-        byte_alignment);
+        byte_alignment, 0);
     if (error) return error;
     // Copy image buffer
     aom_yv12_copy_frame(ybf, &new_buf, num_planes);

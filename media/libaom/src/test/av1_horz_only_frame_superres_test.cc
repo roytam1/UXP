@@ -20,7 +20,6 @@
 #include "av1/common/convolve.h"
 #include "av1/common/resize.h"
 #include "test/acm_random.h"
-#include "test/clear_system_state.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
 
@@ -164,7 +163,7 @@ class ConvolveHorizRSTestBase : public ::testing::Test {
  public:
   ConvolveHorizRSTestBase() : image_(NULL) {}
   virtual ~ConvolveHorizRSTestBase() {}
-  virtual void TearDown() { libaom_test::ClearSystemState(); }
+  virtual void TearDown() {}
 
   // Implemented by subclasses (SetUp depends on the parameters passed
   // in and RunOne depends on the function to be tested. These can't
@@ -194,6 +193,7 @@ class ConvolveHorizRSTestBase : public ::testing::Test {
 
         image_ =
             new TestImage<Pixel>(width_src, height, superres_denom, x0, bd_);
+        ASSERT_NE(image_, nullptr);
 
         Prep(&rnd);
         RunOne(true);
@@ -213,6 +213,7 @@ class ConvolveHorizRSTestBase : public ::testing::Test {
     int x0 = RS_SCALE_SUBPEL_MASK >> 1;
 
     image_ = new TestImage<Pixel>(width_src, height, superres_denom, x0, bd_);
+    ASSERT_NE(image_, nullptr);
 
     ACMRandom rnd(ACMRandom::DeterministicSeed());
     Prep(&rnd);

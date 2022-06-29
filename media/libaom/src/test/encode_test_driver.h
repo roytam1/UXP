@@ -28,7 +28,7 @@ namespace libaom_test {
 class CodecFactory;
 class VideoSource;
 
-enum TestMode { kRealTime, kOnePassGood, kTwoPassGood };
+enum TestMode { kRealTime, kOnePassGood, kTwoPassGood, kAllIntra };
 #define ALL_TEST_MODES                                                     \
   ::testing::Values(::libaom_test::kRealTime, ::libaom_test::kOnePassGood, \
                     ::libaom_test::kTwoPassGood)
@@ -129,7 +129,17 @@ class Encoder {
     ASSERT_EQ(AOM_CODEC_OK, res) << EncoderError();
   }
 
+  void Control(int ctrl_id, struct aom_svc_ref_frame_comp_pred *arg) {
+    const aom_codec_err_t res = aom_codec_control(&encoder_, ctrl_id, arg);
+    ASSERT_EQ(AOM_CODEC_OK, res) << EncoderError();
+  }
+
   void Control(int ctrl_id, struct aom_svc_params *arg) {
+    const aom_codec_err_t res = aom_codec_control(&encoder_, ctrl_id, arg);
+    ASSERT_EQ(AOM_CODEC_OK, res) << EncoderError();
+  }
+
+  void Control(int ctrl_id, struct aom_ext_part_funcs *arg) {
     const aom_codec_err_t res = aom_codec_control(&encoder_, ctrl_id, arg);
     ASSERT_EQ(AOM_CODEC_OK, res) << EncoderError();
   }
@@ -140,6 +150,11 @@ class Encoder {
     ASSERT_EQ(AOM_CODEC_OK, res) << EncoderError();
   }
 #endif
+
+  void SetOption(const char *name, const char *value) {
+    const aom_codec_err_t res = aom_codec_set_option(&encoder_, name, value);
+    ASSERT_EQ(AOM_CODEC_OK, res) << EncoderError();
+  }
 
   void Config(const aom_codec_enc_cfg_t *cfg) {
     const aom_codec_err_t res = aom_codec_enc_config_set(&encoder_, cfg);
@@ -186,11 +201,9 @@ class EncoderTest {
 
   virtual ~EncoderTest() {}
 
-  // Initialize the cfg_ member with the default configuration.
-  void InitializeConfig();
-
-  // Map the TestMode enum to the passes_ variables.
-  void SetMode(TestMode mode);
+  // Initialize the cfg_ member with the default configuration for the
+  // TestMode enum and maps the TestMode enum to the passes_ variable.
+  void InitializeConfig(TestMode mode);
 
   // Set encoder flag.
   void set_init_flags(aom_codec_flags_t flag) { init_flags_ = flag; }
@@ -209,11 +222,22 @@ class EncoderTest {
   virtual void PreEncodeFrameHook(VideoSource * /*video*/,
                                   Encoder * /*encoder*/) {}
 
+  virtual void PostEncodeFrameHook(Encoder * /*encoder*/) {}
+
   // Hook to be called on every compressed data packet.
   virtual void FramePktHook(const aom_codec_cx_pkt_t * /*pkt*/) {}
 
   // Hook to be called on every PSNR packet.
   virtual void PSNRPktHook(const aom_codec_cx_pkt_t * /*pkt*/) {}
+
+  // Hook to be called on every first pass stats packet.
+  virtual void StatsPktHook(const aom_codec_cx_pkt_t * /*pkt*/) {}
+
+  // Calculates SSIM at frame level.
+  virtual void CalculateFrameLevelSSIM(const aom_image_t * /*img_src*/,
+                                       const aom_image_t * /*img_enc*/,
+                                       aom_bit_depth_t /*bit_depth*/,
+                                       unsigned int /*input_bit_depth*/) {}
 
   // Hook to determine whether the encode loop should continue.
   virtual bool Continue() const {

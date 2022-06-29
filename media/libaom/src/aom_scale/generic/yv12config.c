@@ -50,7 +50,8 @@ static int realloc_frame_buffer_aligned(
     void *cb_priv, const int y_stride, const uint64_t yplane_size,
     const uint64_t uvplane_size, const int aligned_width,
     const int aligned_height, const int uv_width, const int uv_height,
-    const int uv_stride, const int uv_border_w, const int uv_border_h) {
+    const int uv_stride, const int uv_border_w, const int uv_border_h,
+    int alloc_y_buffer_8bit, int alloc_y_plane_only) {
   if (ybf) {
     const int aom_byte_align = (byte_alignment == 0) ? 1 : byte_alignment;
     const uint64_t frame_size =
@@ -143,17 +144,22 @@ static int realloc_frame_buffer_aligned(
 
     ybf->y_buffer = (uint8_t *)aom_align_addr(
         buf + (border * y_stride) + border, aom_byte_align);
-    ybf->u_buffer = (uint8_t *)aom_align_addr(
-        buf + yplane_size + (uv_border_h * uv_stride) + uv_border_w,
-        aom_byte_align);
-    ybf->v_buffer =
-        (uint8_t *)aom_align_addr(buf + yplane_size + uvplane_size +
-                                      (uv_border_h * uv_stride) + uv_border_w,
-                                  aom_byte_align);
+    if (!alloc_y_plane_only) {
+      ybf->u_buffer = (uint8_t *)aom_align_addr(
+          buf + yplane_size + (uv_border_h * uv_stride) + uv_border_w,
+          aom_byte_align);
+      ybf->v_buffer =
+          (uint8_t *)aom_align_addr(buf + yplane_size + uvplane_size +
+                                        (uv_border_h * uv_stride) + uv_border_w,
+                                    aom_byte_align);
+    } else {
+      ybf->u_buffer = NULL;
+      ybf->v_buffer = NULL;
+    }
 
     ybf->use_external_reference_buffers = 0;
 
-    if (use_highbitdepth) {
+    if (use_highbitdepth && alloc_y_buffer_8bit) {
       if (ybf->y_buffer_8bit) aom_free(ybf->y_buffer_8bit);
       ybf->y_buffer_8bit = (uint8_t *)aom_memalign(32, (size_t)yplane_size);
       if (!ybf->y_buffer_8bit) return AOM_CODEC_MEM_ERROR;
@@ -171,26 +177,30 @@ static int realloc_frame_buffer_aligned(
   return AOM_CODEC_MEM_ERROR;
 }
 
-static int calc_stride_and_planesize(const int ss_x, const int ss_y,
-                                     const int aligned_width,
-                                     const int aligned_height, const int border,
-                                     const int byte_alignment, int *y_stride,
-                                     int *uv_stride, uint64_t *yplane_size,
-                                     uint64_t *uvplane_size,
-                                     const int uv_height) {
+static int calc_stride_and_planesize(
+    const int ss_x, const int ss_y, const int aligned_width,
+    const int aligned_height, const int border, const int byte_alignment,
+    int alloc_y_plane_only, int *y_stride, int *uv_stride,
+    uint64_t *yplane_size, uint64_t *uvplane_size, const int uv_height) {
   /* Only support allocating buffers that have a border that's a multiple
    * of 32. The border restriction is required to get 16-byte alignment of
    * the start of the chroma rows without introducing an arbitrary gap
    * between planes, which would break the semantics of things like
    * aom_img_set_rect(). */
   if (border & 0x1f) return AOM_CODEC_MEM_ERROR;
-  *y_stride = ((aligned_width + 2 * border) + 31) & ~31;
+  *y_stride = aom_calc_y_stride(aligned_width, border);
   *yplane_size =
       (aligned_height + 2 * border) * (uint64_t)(*y_stride) + byte_alignment;
 
-  *uv_stride = *y_stride >> ss_x;
-  *uvplane_size = (uv_height + 2 * (border >> ss_y)) * (uint64_t)(*uv_stride) +
-                  byte_alignment;
+  if (!alloc_y_plane_only) {
+    *uv_stride = *y_stride >> ss_x;
+    *uvplane_size =
+        (uv_height + 2 * (border >> ss_y)) * (uint64_t)(*uv_stride) +
+        byte_alignment;
+  } else {
+    *uv_stride = 0;
+    *uvplane_size = 0;
+  }
   return 0;
 }
 
@@ -198,7 +208,8 @@ int aom_realloc_frame_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
                              int ss_x, int ss_y, int use_highbitdepth,
                              int border, int byte_alignment,
                              aom_codec_frame_buffer_t *fb,
-                             aom_get_frame_buffer_cb_fn_t cb, void *cb_priv) {
+                             aom_get_frame_buffer_cb_fn_t cb, void *cb_priv,
+                             int alloc_y_buffer_8bit, int alloc_y_plane_only) {
 #if CONFIG_SIZE_LIMIT
   if (width > DECODE_WIDTH_LIMIT || height > DECODE_HEIGHT_LIMIT)
     return AOM_CODEC_MEM_ERROR;
@@ -218,25 +229,26 @@ int aom_realloc_frame_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
 
     int error = calc_stride_and_planesize(
         ss_x, ss_y, aligned_width, aligned_height, border, byte_alignment,
-        &y_stride, &uv_stride, &yplane_size, &uvplane_size, uv_height);
+        alloc_y_plane_only, &y_stride, &uv_stride, &yplane_size, &uvplane_size,
+        uv_height);
     if (error) return error;
     return realloc_frame_buffer_aligned(
         ybf, width, height, ss_x, ss_y, use_highbitdepth, border,
         byte_alignment, fb, cb, cb_priv, y_stride, yplane_size, uvplane_size,
         aligned_width, aligned_height, uv_width, uv_height, uv_stride,
-        uv_border_w, uv_border_h);
+        uv_border_w, uv_border_h, alloc_y_buffer_8bit, alloc_y_plane_only);
   }
   return AOM_CODEC_MEM_ERROR;
 }
 
 int aom_alloc_frame_buffer(YV12_BUFFER_CONFIG *ybf, int width, int height,
                            int ss_x, int ss_y, int use_highbitdepth, int border,
-                           int byte_alignment) {
+                           int byte_alignment, int alloc_y_plane_only) {
   if (ybf) {
     aom_free_frame_buffer(ybf);
     return aom_realloc_frame_buffer(ybf, width, height, ss_x, ss_y,
                                     use_highbitdepth, border, byte_alignment,
-                                    NULL, NULL, NULL);
+                                    NULL, NULL, NULL, 0, alloc_y_plane_only);
   }
   return AOM_CODEC_MEM_ERROR;
 }
@@ -251,6 +263,7 @@ void aom_remove_metadata_from_frame_buffer(YV12_BUFFER_CONFIG *ybf) {
 int aom_copy_metadata_to_frame_buffer(YV12_BUFFER_CONFIG *ybf,
                                       const aom_metadata_array_t *arr) {
   if (!ybf || !arr || !arr->metadata_array) return -1;
+  if (ybf->metadata == arr) return 0;
   aom_remove_metadata_from_frame_buffer(ybf);
   ybf->metadata = aom_img_metadata_array_alloc(arr->sz);
   if (!ybf->metadata) return -1;

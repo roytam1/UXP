@@ -21,8 +21,8 @@
 void av1_collect_mv_stats(AV1_COMP *cpi, int current_q);
 
 static AOM_INLINE int av1_frame_allows_smart_mv(const AV1_COMP *cpi) {
-  const int gf_group_index = cpi->gf_group.index;
-  const int gf_update_type = cpi->gf_group.update_type[gf_group_index];
+  const int gf_group_index = cpi->gf_frame_index;
+  const int gf_update_type = cpi->ppi->gf_group.update_type[gf_group_index];
   return !frame_is_intra_only(&cpi->common) &&
          !(gf_update_type == INTNL_OVERLAY_UPDATE ||
            gf_update_type == OVERLAY_UPDATE);
@@ -32,15 +32,19 @@ static AOM_INLINE int av1_frame_allows_smart_mv(const AV1_COMP *cpi) {
 static AOM_INLINE void av1_set_high_precision_mv(
     AV1_COMP *cpi, int allow_high_precision_mv,
     int cur_frame_force_integer_mv) {
-  MACROBLOCK *const x = &cpi->td.mb;
+  MvCosts *const mv_costs = cpi->td.mb.mv_costs;
+  // Avoid accessing 'mv_costs' when it is not allocated.
+  if (mv_costs == NULL) return;
+
   const int copy_hp = cpi->common.features.allow_high_precision_mv =
       allow_high_precision_mv && !cur_frame_force_integer_mv;
-  x->nmvcost[0] = &x->nmv_costs[0][MV_MAX];
-  x->nmvcost[1] = &x->nmv_costs[1][MV_MAX];
-  x->nmvcost_hp[0] = &x->nmv_costs_hp[0][MV_MAX];
-  x->nmvcost_hp[1] = &x->nmv_costs_hp[1][MV_MAX];
-  int *(*src)[2] = copy_hp ? &x->nmvcost_hp : &x->nmvcost;
-  x->mv_cost_stack = *src;
+
+  mv_costs->nmv_cost[0] = &mv_costs->nmv_cost_alloc[0][MV_MAX];
+  mv_costs->nmv_cost[1] = &mv_costs->nmv_cost_alloc[1][MV_MAX];
+  mv_costs->nmv_cost_hp[0] = &mv_costs->nmv_cost_hp_alloc[0][MV_MAX];
+  mv_costs->nmv_cost_hp[1] = &mv_costs->nmv_cost_hp_alloc[1][MV_MAX];
+  mv_costs->mv_cost_stack =
+      copy_hp ? mv_costs->nmv_cost_hp : mv_costs->nmv_cost;
 }
 
 void av1_pick_and_set_high_precision_mv(AV1_COMP *cpi, int qindex);

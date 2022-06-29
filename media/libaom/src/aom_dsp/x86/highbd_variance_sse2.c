@@ -14,16 +14,12 @@
 
 #include "config/aom_config.h"
 #include "config/aom_dsp_rtcd.h"
-#include "config/av1_rtcd.h"
 
 #include "aom_dsp/x86/synonyms.h"
-
 #include "aom_ports/mem.h"
 
-#include "av1/common/av1_common_int.h"
 #include "av1/common/filter.h"
 #include "av1/common/reconinter.h"
-#include "av1/encoder/reconinter_enc.h"
 
 typedef uint32_t (*high_variance_fn_t)(const uint16_t *src, int src_stride,
                                        const uint16_t *ref, int ref_stride,
@@ -134,8 +130,8 @@ static void highbd_12_variance_sse2(const uint16_t *src, int src_stride,
     *sse = ROUND_POWER_OF_TWO(*sse, 8);                                       \
   }
 
-HIGH_GET_VAR(16);
-HIGH_GET_VAR(8);
+HIGH_GET_VAR(16)
+HIGH_GET_VAR(8)
 
 #undef HIGH_GET_VAR
 
@@ -180,23 +176,23 @@ HIGH_GET_VAR(8);
     return (var >= 0) ? (uint32_t)var : 0;                                 \
   }
 
-VAR_FN(128, 128, 16, 14);
-VAR_FN(128, 64, 16, 13);
-VAR_FN(64, 128, 16, 13);
-VAR_FN(64, 64, 16, 12);
-VAR_FN(64, 32, 16, 11);
-VAR_FN(32, 64, 16, 11);
-VAR_FN(32, 32, 16, 10);
-VAR_FN(32, 16, 16, 9);
-VAR_FN(16, 32, 16, 9);
-VAR_FN(16, 16, 16, 8);
-VAR_FN(16, 8, 8, 7);
-VAR_FN(8, 16, 8, 7);
-VAR_FN(8, 8, 8, 6);
-VAR_FN(8, 32, 8, 8);
-VAR_FN(32, 8, 8, 8);
-VAR_FN(16, 64, 16, 10);
-VAR_FN(64, 16, 16, 10);
+VAR_FN(128, 128, 16, 14)
+VAR_FN(128, 64, 16, 13)
+VAR_FN(64, 128, 16, 13)
+VAR_FN(64, 64, 16, 12)
+VAR_FN(64, 32, 16, 11)
+VAR_FN(32, 64, 16, 11)
+VAR_FN(32, 32, 16, 10)
+VAR_FN(32, 16, 16, 9)
+VAR_FN(16, 32, 16, 9)
+VAR_FN(16, 16, 16, 8)
+VAR_FN(16, 8, 8, 7)
+VAR_FN(8, 16, 8, 7)
+VAR_FN(8, 8, 8, 6)
+VAR_FN(8, 32, 8, 8)
+VAR_FN(32, 8, 8, 8)
+VAR_FN(16, 64, 16, 10)
+VAR_FN(64, 16, 16, 10)
 
 #undef VAR_FN
 
@@ -275,10 +271,10 @@ unsigned int aom_highbd_12_mse8x8_sse2(const uint8_t *src8, int src_stride,
       const uint16_t *dst, ptrdiff_t dst_stride, int height,                 \
       unsigned int *sse, void *unused0, void *unused);
 #define DECLS(opt) \
-  DECL(8, opt);    \
+  DECL(8, opt)     \
   DECL(16, opt)
 
-DECLS(sse2);
+DECLS(sse2)
 
 #undef DECLS
 #undef DECL
@@ -423,28 +419,28 @@ DECLS(sse2);
     return (var >= 0) ? (uint32_t)var : 0;                                     \
   }
 
-#define FNS(opt)                          \
-  FN(128, 128, 16, 7, 7, opt, (int64_t)); \
-  FN(128, 64, 16, 7, 6, opt, (int64_t));  \
-  FN(64, 128, 16, 6, 7, opt, (int64_t));  \
-  FN(64, 64, 16, 6, 6, opt, (int64_t));   \
-  FN(64, 32, 16, 6, 5, opt, (int64_t));   \
-  FN(32, 64, 16, 5, 6, opt, (int64_t));   \
-  FN(32, 32, 16, 5, 5, opt, (int64_t));   \
-  FN(32, 16, 16, 5, 4, opt, (int64_t));   \
-  FN(16, 32, 16, 4, 5, opt, (int64_t));   \
-  FN(16, 16, 16, 4, 4, opt, (int64_t));   \
-  FN(16, 8, 16, 4, 3, opt, (int64_t));    \
-  FN(8, 16, 8, 3, 4, opt, (int64_t));     \
-  FN(8, 8, 8, 3, 3, opt, (int64_t));      \
-  FN(8, 4, 8, 3, 2, opt, (int64_t));      \
-  FN(16, 4, 16, 4, 2, opt, (int64_t));    \
-  FN(8, 32, 8, 3, 5, opt, (int64_t));     \
-  FN(32, 8, 16, 5, 3, opt, (int64_t));    \
-  FN(16, 64, 16, 4, 6, opt, (int64_t));   \
+#define FNS(opt)                         \
+  FN(128, 128, 16, 7, 7, opt, (int64_t)) \
+  FN(128, 64, 16, 7, 6, opt, (int64_t))  \
+  FN(64, 128, 16, 6, 7, opt, (int64_t))  \
+  FN(64, 64, 16, 6, 6, opt, (int64_t))   \
+  FN(64, 32, 16, 6, 5, opt, (int64_t))   \
+  FN(32, 64, 16, 5, 6, opt, (int64_t))   \
+  FN(32, 32, 16, 5, 5, opt, (int64_t))   \
+  FN(32, 16, 16, 5, 4, opt, (int64_t))   \
+  FN(16, 32, 16, 4, 5, opt, (int64_t))   \
+  FN(16, 16, 16, 4, 4, opt, (int64_t))   \
+  FN(16, 8, 16, 4, 3, opt, (int64_t))    \
+  FN(8, 16, 8, 3, 4, opt, (int64_t))     \
+  FN(8, 8, 8, 3, 3, opt, (int64_t))      \
+  FN(8, 4, 8, 3, 2, opt, (int64_t))      \
+  FN(16, 4, 16, 4, 2, opt, (int64_t))    \
+  FN(8, 32, 8, 3, 5, opt, (int64_t))     \
+  FN(32, 8, 16, 5, 3, opt, (int64_t))    \
+  FN(16, 64, 16, 4, 6, opt, (int64_t))   \
   FN(64, 16, 16, 6, 4, opt, (int64_t))
 
-FNS(sse2);
+FNS(sse2)
 
 #undef FNS
 #undef FN
@@ -460,7 +456,7 @@ FNS(sse2);
   DECL(16, opt)    \
   DECL(8, opt)
 
-DECLS(sse2);
+DECLS(sse2)
 #undef DECL
 #undef DECLS
 
@@ -590,155 +586,28 @@ DECLS(sse2);
     return (var >= 0) ? (uint32_t)var : 0;                                     \
   }
 
-#define FNS(opt)                        \
-  FN(64, 64, 16, 6, 6, opt, (int64_t)); \
-  FN(64, 32, 16, 6, 5, opt, (int64_t)); \
-  FN(32, 64, 16, 5, 6, opt, (int64_t)); \
-  FN(32, 32, 16, 5, 5, opt, (int64_t)); \
-  FN(32, 16, 16, 5, 4, opt, (int64_t)); \
-  FN(16, 32, 16, 4, 5, opt, (int64_t)); \
-  FN(16, 16, 16, 4, 4, opt, (int64_t)); \
-  FN(16, 8, 16, 4, 3, opt, (int64_t));  \
-  FN(8, 16, 8, 3, 4, opt, (int64_t));   \
-  FN(8, 8, 8, 3, 3, opt, (int64_t));    \
-  FN(8, 4, 8, 3, 2, opt, (int64_t));    \
-  FN(16, 4, 16, 4, 2, opt, (int64_t));  \
-  FN(8, 32, 8, 3, 5, opt, (int64_t));   \
-  FN(32, 8, 16, 5, 3, opt, (int64_t));  \
-  FN(16, 64, 16, 4, 6, opt, (int64_t)); \
-  FN(64, 16, 16, 6, 4, opt, (int64_t));
+#define FNS(opt)                       \
+  FN(64, 64, 16, 6, 6, opt, (int64_t)) \
+  FN(64, 32, 16, 6, 5, opt, (int64_t)) \
+  FN(32, 64, 16, 5, 6, opt, (int64_t)) \
+  FN(32, 32, 16, 5, 5, opt, (int64_t)) \
+  FN(32, 16, 16, 5, 4, opt, (int64_t)) \
+  FN(16, 32, 16, 4, 5, opt, (int64_t)) \
+  FN(16, 16, 16, 4, 4, opt, (int64_t)) \
+  FN(16, 8, 16, 4, 3, opt, (int64_t))  \
+  FN(8, 16, 8, 3, 4, opt, (int64_t))   \
+  FN(8, 8, 8, 3, 3, opt, (int64_t))    \
+  FN(8, 4, 8, 3, 2, opt, (int64_t))    \
+  FN(16, 4, 16, 4, 2, opt, (int64_t))  \
+  FN(8, 32, 8, 3, 5, opt, (int64_t))   \
+  FN(32, 8, 16, 5, 3, opt, (int64_t))  \
+  FN(16, 64, 16, 4, 6, opt, (int64_t)) \
+  FN(64, 16, 16, 6, 4, opt, (int64_t))
 
-FNS(sse2);
+FNS(sse2)
 
 #undef FNS
 #undef FN
-
-void aom_highbd_upsampled_pred_sse2(MACROBLOCKD *xd,
-                                    const struct AV1Common *const cm,
-                                    int mi_row, int mi_col, const MV *const mv,
-                                    uint8_t *comp_pred8, int width, int height,
-                                    int subpel_x_q3, int subpel_y_q3,
-                                    const uint8_t *ref8, int ref_stride, int bd,
-                                    int subpel_search) {
-  // expect xd == NULL only in tests
-  if (xd != NULL) {
-    const MB_MODE_INFO *mi = xd->mi[0];
-    const int ref_num = 0;
-    const int is_intrabc = is_intrabc_block(mi);
-    const struct scale_factors *const sf =
-        is_intrabc ? &cm->sf_identity : xd->block_ref_scale_factors[ref_num];
-    const int is_scaled = av1_is_scaled(sf);
-
-    if (is_scaled) {
-      int plane = 0;
-      const int mi_x = mi_col * MI_SIZE;
-      const int mi_y = mi_row * MI_SIZE;
-      const struct macroblockd_plane *const pd = &xd->plane[plane];
-      const struct buf_2d *const dst_buf = &pd->dst;
-      const struct buf_2d *const pre_buf =
-          is_intrabc ? dst_buf : &pd->pre[ref_num];
-
-      InterPredParams inter_pred_params;
-      inter_pred_params.conv_params = get_conv_params(0, plane, xd->bd);
-      const int_interpfilters filters =
-          av1_broadcast_interp_filter(EIGHTTAP_REGULAR);
-      av1_init_inter_params(
-          &inter_pred_params, width, height, mi_y >> pd->subsampling_y,
-          mi_x >> pd->subsampling_x, pd->subsampling_x, pd->subsampling_y,
-          xd->bd, is_cur_buf_hbd(xd), is_intrabc, sf, pre_buf, filters);
-      av1_enc_build_one_inter_predictor(comp_pred8, width, mv,
-                                        &inter_pred_params);
-      return;
-    }
-  }
-
-  const InterpFilterParams *filter = av1_get_filter(subpel_search);
-  int filter_taps = (subpel_search <= USE_4_TAPS) ? 4 : SUBPEL_TAPS;
-  if (!subpel_x_q3 && !subpel_y_q3) {
-    uint16_t *ref = CONVERT_TO_SHORTPTR(ref8);
-    uint16_t *comp_pred = CONVERT_TO_SHORTPTR(comp_pred8);
-    if (width >= 8) {
-      int i;
-      assert(!(width & 7));
-      /*Read 8 pixels one row at a time.*/
-      for (i = 0; i < height; i++) {
-        int j;
-        for (j = 0; j < width; j += 8) {
-          __m128i s0 = _mm_loadu_si128((const __m128i *)ref);
-          _mm_storeu_si128((__m128i *)comp_pred, s0);
-          comp_pred += 8;
-          ref += 8;
-        }
-        ref += ref_stride - width;
-      }
-    } else {
-      int i;
-      assert(!(width & 3));
-      /*Read 4 pixels two rows at a time.*/
-      for (i = 0; i < height; i += 2) {
-        __m128i s0 = _mm_loadl_epi64((const __m128i *)ref);
-        __m128i s1 = _mm_loadl_epi64((const __m128i *)(ref + ref_stride));
-        __m128i t0 = _mm_unpacklo_epi64(s0, s1);
-        _mm_storeu_si128((__m128i *)comp_pred, t0);
-        comp_pred += 8;
-        ref += 2 * ref_stride;
-      }
-    }
-  } else if (!subpel_y_q3) {
-    const int16_t *const kernel =
-        av1_get_interp_filter_subpel_kernel(filter, subpel_x_q3 << 1);
-    aom_highbd_convolve8_horiz(ref8, ref_stride, comp_pred8, width, kernel, 16,
-                               NULL, -1, width, height, bd);
-  } else if (!subpel_x_q3) {
-    const int16_t *const kernel =
-        av1_get_interp_filter_subpel_kernel(filter, subpel_y_q3 << 1);
-    aom_highbd_convolve8_vert(ref8, ref_stride, comp_pred8, width, NULL, -1,
-                              kernel, 16, width, height, bd);
-  } else {
-    DECLARE_ALIGNED(16, uint16_t,
-                    temp[((MAX_SB_SIZE + 16) + 16) * MAX_SB_SIZE]);
-    const int16_t *const kernel_x =
-        av1_get_interp_filter_subpel_kernel(filter, subpel_x_q3 << 1);
-    const int16_t *const kernel_y =
-        av1_get_interp_filter_subpel_kernel(filter, subpel_y_q3 << 1);
-    const uint8_t *ref_start = ref8 - ref_stride * ((filter_taps >> 1) - 1);
-    uint16_t *temp_start_horiz = (subpel_search <= USE_4_TAPS)
-                                     ? temp + (filter_taps >> 1) * MAX_SB_SIZE
-                                     : temp;
-    uint16_t *temp_start_vert = temp + MAX_SB_SIZE * ((filter->taps >> 1) - 1);
-    const int intermediate_height =
-        (((height - 1) * 8 + subpel_y_q3) >> 3) + filter_taps;
-    assert(intermediate_height <= (MAX_SB_SIZE * 2 + 16) + 16);
-    aom_highbd_convolve8_horiz(
-        ref_start, ref_stride, CONVERT_TO_BYTEPTR(temp_start_horiz),
-        MAX_SB_SIZE, kernel_x, 16, NULL, -1, width, intermediate_height, bd);
-    aom_highbd_convolve8_vert(CONVERT_TO_BYTEPTR(temp_start_vert), MAX_SB_SIZE,
-                              comp_pred8, width, NULL, -1, kernel_y, 16, width,
-                              height, bd);
-  }
-}
-
-void aom_highbd_comp_avg_upsampled_pred_sse2(
-    MACROBLOCKD *xd, const struct AV1Common *const cm, int mi_row, int mi_col,
-    const MV *const mv, uint8_t *comp_pred8, const uint8_t *pred8, int width,
-    int height, int subpel_x_q3, int subpel_y_q3, const uint8_t *ref8,
-    int ref_stride, int bd, int subpel_search) {
-  aom_highbd_upsampled_pred(xd, cm, mi_row, mi_col, mv, comp_pred8, width,
-                            height, subpel_x_q3, subpel_y_q3, ref8, ref_stride,
-                            bd, subpel_search);
-  uint16_t *pred = CONVERT_TO_SHORTPTR(pred8);
-  uint16_t *comp_pred16 = CONVERT_TO_SHORTPTR(comp_pred8);
-  /*The total number of pixels must be a multiple of 8 (e.g., 4x4).*/
-  assert(!(width * height & 7));
-  int n = width * height >> 3;
-  for (int i = 0; i < n; i++) {
-    __m128i s0 = _mm_loadu_si128((const __m128i *)comp_pred16);
-    __m128i p0 = _mm_loadu_si128((const __m128i *)pred);
-    _mm_storeu_si128((__m128i *)comp_pred16, _mm_avg_epu16(s0, p0));
-    comp_pred16 += 8;
-    pred += 8;
-  }
-}
 
 static INLINE void highbd_compute_dist_wtd_comp_avg(__m128i *p0, __m128i *p1,
                                                     const __m128i *w0,
@@ -806,37 +675,99 @@ void aom_highbd_dist_wtd_comp_avg_pred_sse2(
   }
 }
 
-void aom_highbd_dist_wtd_comp_avg_upsampled_pred_sse2(
-    MACROBLOCKD *xd, const struct AV1Common *const cm, int mi_row, int mi_col,
-    const MV *const mv, uint8_t *comp_pred8, const uint8_t *pred8, int width,
-    int height, int subpel_x_q3, int subpel_y_q3, const uint8_t *ref8,
-    int ref_stride, int bd, const DIST_WTD_COMP_PARAMS *jcp_param,
-    int subpel_search) {
-  uint16_t *pred = CONVERT_TO_SHORTPTR(pred8);
-  int n;
-  int i;
-  aom_highbd_upsampled_pred(xd, cm, mi_row, mi_col, mv, comp_pred8, width,
-                            height, subpel_x_q3, subpel_y_q3, ref8, ref_stride,
-                            bd, subpel_search);
-  assert(!(width * height & 7));
-  n = width * height >> 3;
+uint64_t aom_mse_4xh_16bit_highbd_sse2(uint16_t *dst, int dstride,
+                                       uint16_t *src, int sstride, int h) {
+  uint64_t sum = 0;
+  __m128i reg0_4x16, reg1_4x16;
+  __m128i src_8x16;
+  __m128i dst_8x16;
+  __m128i res0_4x32, res1_4x32, res0_4x64, res1_4x64, res2_4x64, res3_4x64;
+  __m128i sub_result_8x16;
+  const __m128i zeros = _mm_setzero_si128();
+  __m128i square_result = _mm_setzero_si128();
+  for (int i = 0; i < h; i += 2) {
+    reg0_4x16 = _mm_loadl_epi64((__m128i const *)(&dst[(i + 0) * dstride]));
+    reg1_4x16 = _mm_loadl_epi64((__m128i const *)(&dst[(i + 1) * dstride]));
+    dst_8x16 = _mm_unpacklo_epi64(reg0_4x16, reg1_4x16);
 
-  const uint16_t wt0 = (uint16_t)jcp_param->fwd_offset;
-  const uint16_t wt1 = (uint16_t)jcp_param->bck_offset;
-  const __m128i w0 = _mm_set_epi16(wt0, wt0, wt0, wt0, wt0, wt0, wt0, wt0);
-  const __m128i w1 = _mm_set_epi16(wt1, wt1, wt1, wt1, wt1, wt1, wt1, wt1);
-  const uint16_t round = ((1 << DIST_PRECISION_BITS) >> 1);
-  const __m128i r =
-      _mm_set_epi16(round, round, round, round, round, round, round, round);
+    reg0_4x16 = _mm_loadl_epi64((__m128i const *)(&src[(i + 0) * sstride]));
+    reg1_4x16 = _mm_loadl_epi64((__m128i const *)(&src[(i + 1) * sstride]));
+    src_8x16 = _mm_unpacklo_epi64(reg0_4x16, reg1_4x16);
 
-  uint16_t *comp_pred16 = CONVERT_TO_SHORTPTR(comp_pred8);
-  for (i = 0; i < n; i++) {
-    __m128i p0 = xx_loadu_128(comp_pred16);
-    __m128i p1 = xx_loadu_128(pred);
+    sub_result_8x16 = _mm_sub_epi16(src_8x16, dst_8x16);
 
-    highbd_compute_dist_wtd_comp_avg(&p0, &p1, &w0, &w1, &r, comp_pred16);
+    res0_4x32 = _mm_unpacklo_epi16(sub_result_8x16, zeros);
+    res1_4x32 = _mm_unpackhi_epi16(sub_result_8x16, zeros);
 
-    comp_pred16 += 8;
-    pred += 8;
+    res0_4x32 = _mm_madd_epi16(res0_4x32, res0_4x32);
+    res1_4x32 = _mm_madd_epi16(res1_4x32, res1_4x32);
+
+    res0_4x64 = _mm_unpacklo_epi32(res0_4x32, zeros);
+    res1_4x64 = _mm_unpackhi_epi32(res0_4x32, zeros);
+    res2_4x64 = _mm_unpacklo_epi32(res1_4x32, zeros);
+    res3_4x64 = _mm_unpackhi_epi32(res1_4x32, zeros);
+
+    square_result = _mm_add_epi64(
+        square_result,
+        _mm_add_epi64(
+            _mm_add_epi64(_mm_add_epi64(res0_4x64, res1_4x64), res2_4x64),
+            res3_4x64));
+  }
+
+  const __m128i sum_1x64 =
+      _mm_add_epi64(square_result, _mm_srli_si128(square_result, 8));
+  xx_storel_64(&sum, sum_1x64);
+  return sum;
+}
+
+uint64_t aom_mse_8xh_16bit_highbd_sse2(uint16_t *dst, int dstride,
+                                       uint16_t *src, int sstride, int h) {
+  uint64_t sum = 0;
+  __m128i src_8x16;
+  __m128i dst_8x16;
+  __m128i res0_4x32, res1_4x32, res0_4x64, res1_4x64, res2_4x64, res3_4x64;
+  __m128i sub_result_8x16;
+  const __m128i zeros = _mm_setzero_si128();
+  __m128i square_result = _mm_setzero_si128();
+
+  for (int i = 0; i < h; i++) {
+    dst_8x16 = _mm_loadu_si128((__m128i *)&dst[i * dstride]);
+    src_8x16 = _mm_loadu_si128((__m128i *)&src[i * sstride]);
+
+    sub_result_8x16 = _mm_sub_epi16(src_8x16, dst_8x16);
+
+    res0_4x32 = _mm_unpacklo_epi16(sub_result_8x16, zeros);
+    res1_4x32 = _mm_unpackhi_epi16(sub_result_8x16, zeros);
+
+    res0_4x32 = _mm_madd_epi16(res0_4x32, res0_4x32);
+    res1_4x32 = _mm_madd_epi16(res1_4x32, res1_4x32);
+
+    res0_4x64 = _mm_unpacklo_epi32(res0_4x32, zeros);
+    res1_4x64 = _mm_unpackhi_epi32(res0_4x32, zeros);
+    res2_4x64 = _mm_unpacklo_epi32(res1_4x32, zeros);
+    res3_4x64 = _mm_unpackhi_epi32(res1_4x32, zeros);
+
+    square_result = _mm_add_epi64(
+        square_result,
+        _mm_add_epi64(
+            _mm_add_epi64(_mm_add_epi64(res0_4x64, res1_4x64), res2_4x64),
+            res3_4x64));
+  }
+
+  const __m128i sum_1x64 =
+      _mm_add_epi64(square_result, _mm_srli_si128(square_result, 8));
+  xx_storel_64(&sum, sum_1x64);
+  return sum;
+}
+
+uint64_t aom_mse_wxh_16bit_highbd_sse2(uint16_t *dst, int dstride,
+                                       uint16_t *src, int sstride, int w,
+                                       int h) {
+  assert((w == 8 || w == 4) && (h == 8 || h == 4) &&
+         "w=8/4 and h=8/4 must satisfy");
+  switch (w) {
+    case 4: return aom_mse_4xh_16bit_highbd_sse2(dst, dstride, src, sstride, h);
+    case 8: return aom_mse_8xh_16bit_highbd_sse2(dst, dstride, src, sstride, h);
+    default: assert(0 && "unsupported width"); return -1;
   }
 }
