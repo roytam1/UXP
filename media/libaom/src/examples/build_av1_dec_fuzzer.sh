@@ -33,11 +33,11 @@ if [[ $# -ne 2 ]]; then
   echo "  git clone https://aomedia.googlesource.com/aom"
   exit 2
 fi
-if [[ -z "$CC" ]]; then
+if [[ -z "${CC:-}" ]]; then
   echo "Set the CC environment variable to point to your C compiler."
   exit 2
 fi
-if [[ -z "$CXX" ]]; then
+if [[ -z "${CXX:-}" ]]; then
   echo "Set the CXX environment variable to point to your C++ compiler."
   exit 2
 fi
@@ -47,10 +47,10 @@ BUILD_DIR=$2
 # Run CMake with address sanitizer enabled and build the codec.
 # Enable DO_RANGE_CHECK_CLAMP to suppress the noise of integer overflows
 # in the transform functions. Also set memory limits.
-EXTRA_C_FLAGS='-DDO_RANGE_CHECK_CLAMP=1 -DAOM_MAX_ALLOCABLE_MEMORY=1073741824'
+EXTRA_C_FLAGS='-UNDEBUG -DDO_RANGE_CHECK_CLAMP=1 -DAOM_MAX_ALLOCABLE_MEMORY=1073741824'
 cd "${BUILD_DIR}"
 cmake "${AOM_DIR}" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONFIG_PIC=1 \
-  -DCONFIG_SCALABILITY=0 -DFORCE_HIGHBITDEPTH_DECODING=0 \
+  -DFORCE_HIGHBITDEPTH_DECODING=0 \
   -DCONFIG_AV1_ENCODER=0 -DENABLE_EXAMPLES=0 -DENABLE_DOCS=0 -DENABLE_TESTS=0 \
   -DCONFIG_SIZE_LIMIT=1 -DDECODE_HEIGHT_LIMIT=12288 -DDECODE_WIDTH_LIMIT=12288 \
   -DAOM_EXTRA_C_FLAGS="${EXTRA_C_FLAGS}" \
@@ -60,10 +60,10 @@ cmake "${AOM_DIR}" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONFIG_PIC=1 \
 make -j$(nproc)
 
 # Build the av1 fuzzer
-$CXX -std=c++11 -DDECODER=av1 -I${AOM_DIR} -I${BUILD_DIR} \
-    -fsanitize=fuzzer,address -Wl,--start-group \
+$CXX -std=c++11 -I${AOM_DIR} -I${BUILD_DIR} \
+    -g -fsanitize=fuzzer,address \
     ${AOM_DIR}/examples/av1_dec_fuzzer.cc -o ${BUILD_DIR}/av1_dec_fuzzer \
-    ${BUILD_DIR}/libaom.a -Wl,--end-group
+    ${BUILD_DIR}/libaom.a
 
 echo "Fuzzer built at ${BUILD_DIR}/av1_dec_fuzzer."
 echo "Create a corpus directory, copy IVF files in there, and run:"

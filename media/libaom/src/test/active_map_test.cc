@@ -30,8 +30,7 @@ class ActiveMapTest
   virtual ~ActiveMapTest() {}
 
   virtual void SetUp() {
-    InitializeConfig();
-    SetMode(GET_PARAM(1));
+    InitializeConfig(GET_PARAM(1));
     cpu_used_ = GET_PARAM(2);
   }
 
@@ -39,6 +38,9 @@ class ActiveMapTest
                                   ::libaom_test::Encoder *encoder) {
     if (video->frame() == 0) {
       encoder->Control(AOME_SET_CPUUSED, cpu_used_);
+      encoder->Control(AV1E_SET_ALLOW_WARPED_MOTION, 0);
+      encoder->Control(AV1E_SET_ENABLE_GLOBAL_MOTION, 0);
+      encoder->Control(AV1E_SET_ENABLE_OBMC, 0);
     } else if (video->frame() == 3) {
       aom_active_map_t map = aom_active_map_t();
       /* clang-format off */
@@ -88,16 +90,8 @@ class ActiveMapTest
 
 TEST_P(ActiveMapTest, Test) { DoTest(); }
 
-class ActiveMapTestLarge : public ActiveMapTest {};
-
-TEST_P(ActiveMapTestLarge, Test) { DoTest(); }
-
-AV1_INSTANTIATE_TEST_CASE(ActiveMapTestLarge,
-                          ::testing::Values(::libaom_test::kRealTime),
-                          ::testing::Range(0, 5));
-
-AV1_INSTANTIATE_TEST_CASE(ActiveMapTest,
-                          ::testing::Values(::libaom_test::kRealTime),
-                          ::testing::Range(5, 9));
+AV1_INSTANTIATE_TEST_SUITE(ActiveMapTest,
+                           ::testing::Values(::libaom_test::kRealTime),
+                           ::testing::Range(5, 9));
 
 }  // namespace

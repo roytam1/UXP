@@ -164,6 +164,7 @@ class WedgeUtilsSSEOptTest : public FunctionEquivalenceTest<FSSE> {
  protected:
   static const int kIterations = 10000;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(WedgeUtilsSSEOptTest);
 
 TEST_P(WedgeUtilsSSEOptTest, RandomValues) {
   DECLARE_ALIGNED(32, int16_t, r1[MAX_SB_SQUARE]);
@@ -181,7 +182,7 @@ TEST_P(WedgeUtilsSSEOptTest, RandomValues) {
 
     const uint64_t ref_res = params_.ref_func(r1, d, m, N);
     uint64_t tst_res;
-    ASM_REGISTER_STATE_CHECK(tst_res = params_.tst_func(r1, d, m, N));
+    API_REGISTER_STATE_CHECK(tst_res = params_.tst_func(r1, d, m, N));
 
     ASSERT_EQ(ref_res, tst_res);
   }
@@ -211,7 +212,7 @@ TEST_P(WedgeUtilsSSEOptTest, ExtremeValues) {
 
     const uint64_t ref_res = params_.ref_func(r1, d, m, N);
     uint64_t tst_res;
-    ASM_REGISTER_STATE_CHECK(tst_res = params_.tst_func(r1, d, m, N));
+    API_REGISTER_STATE_CHECK(tst_res = params_.tst_func(r1, d, m, N));
 
     ASSERT_EQ(ref_res, tst_res);
   }
@@ -230,6 +231,7 @@ class WedgeUtilsSignOptTest : public FunctionEquivalenceTest<FSign> {
   static const int kIterations = 10000;
   static const int kMaxSize = 8196;  // Size limited by SIMD implementation.
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(WedgeUtilsSignOptTest);
 
 TEST_P(WedgeUtilsSignOptTest, RandomValues) {
   DECLARE_ALIGNED(32, int16_t, r0[MAX_SB_SQUARE]);
@@ -257,7 +259,7 @@ TEST_P(WedgeUtilsSignOptTest, RandomValues) {
 
     const int ref_res = params_.ref_func(ds, m, N, limit);
     int tst_res;
-    ASM_REGISTER_STATE_CHECK(tst_res = params_.tst_func(ds, m, N, limit));
+    API_REGISTER_STATE_CHECK(tst_res = params_.tst_func(ds, m, N, limit));
 
     ASSERT_EQ(ref_res, tst_res);
   }
@@ -312,7 +314,7 @@ TEST_P(WedgeUtilsSignOptTest, ExtremeValues) {
 
     const int ref_res = params_.ref_func(ds, m, N, limit);
     int tst_res;
-    ASM_REGISTER_STATE_CHECK(tst_res = params_.tst_func(ds, m, N, limit));
+    API_REGISTER_STATE_CHECK(tst_res = params_.tst_func(ds, m, N, limit));
 
     ASSERT_EQ(ref_res, tst_res);
   }
@@ -329,6 +331,7 @@ class WedgeUtilsDeltaSquaresOptTest : public FunctionEquivalenceTest<FDS> {
  protected:
   static const int kIterations = 10000;
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(WedgeUtilsDeltaSquaresOptTest);
 
 TEST_P(WedgeUtilsDeltaSquaresOptTest, RandomValues) {
   DECLARE_ALIGNED(32, int16_t, a[MAX_SB_SQUARE]);
@@ -348,7 +351,7 @@ TEST_P(WedgeUtilsDeltaSquaresOptTest, RandomValues) {
     memset(&d_tst, INT16_MAX, sizeof(d_tst));
 
     params_.ref_func(d_ref, a, b, N);
-    ASM_REGISTER_STATE_CHECK(params_.tst_func(d_tst, a, b, N));
+    API_REGISTER_STATE_CHECK(params_.tst_func(d_tst, a, b, N));
 
     for (int i = 0; i < MAX_SB_SQUARE; ++i) ASSERT_EQ(d_ref[i], d_tst[i]);
   }

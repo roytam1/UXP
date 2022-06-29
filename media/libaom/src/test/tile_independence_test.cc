@@ -52,10 +52,7 @@ class TileIndependenceTest
     delete inv_dec_;
   }
 
-  virtual void SetUp() {
-    InitializeConfig();
-    SetMode(libaom_test::kTwoPassGood);
-  }
+  virtual void SetUp() { InitializeConfig(libaom_test::kTwoPassGood); }
 
   virtual void PreEncodeFrameHook(libaom_test::VideoSource *video,
                                   libaom_test::Encoder *encoder) {
@@ -139,10 +136,10 @@ TEST_P(TileIndependenceTestLarge, MD5Match) {
   DoTest();
 }
 
-AV1_INSTANTIATE_TEST_CASE(TileIndependenceTest, ::testing::Values(0, 1),
-                          ::testing::Values(0, 1), ::testing::Values(1, 2, 4));
-AV1_INSTANTIATE_TEST_CASE(TileIndependenceTestLarge, ::testing::Values(0, 1),
-                          ::testing::Values(0, 1), ::testing::Values(1, 2, 4));
+AV1_INSTANTIATE_TEST_SUITE(TileIndependenceTest, ::testing::Values(0, 1),
+                           ::testing::Values(0, 1), ::testing::Values(1, 2, 4));
+AV1_INSTANTIATE_TEST_SUITE(TileIndependenceTestLarge, ::testing::Values(0, 1),
+                           ::testing::Values(0, 1), ::testing::Values(1, 2, 4));
 
 class TileIndependenceLSTest : public TileIndependenceTest {};
 
@@ -166,8 +163,8 @@ TEST_P(TileIndependenceLSTestLarge, MD5Match) {
   DoTest();
 }
 
-AV1_INSTANTIATE_TEST_CASE(TileIndependenceLSTest, ::testing::Values(6),
-                          ::testing::Values(6), ::testing::Values(1));
-AV1_INSTANTIATE_TEST_CASE(TileIndependenceLSTestLarge, ::testing::Values(6),
-                          ::testing::Values(6), ::testing::Values(1));
+AV1_INSTANTIATE_TEST_SUITE(TileIndependenceLSTest, ::testing::Values(6),
+                           ::testing::Values(6), ::testing::Values(1));
+AV1_INSTANTIATE_TEST_SUITE(TileIndependenceLSTestLarge, ::testing::Values(6),
+                           ::testing::Values(6), ::testing::Values(1));
 }  // namespace

@@ -793,7 +793,7 @@ static const aom_cdf_prob
       { AOM_CDF2(28165) }, { AOM_CDF2(22401) }, { AOM_CDF2(16088) }
     };
 
-static const aom_cdf_prob default_skip_cdfs[SKIP_CONTEXTS][CDF_SIZE(2)] = {
+static const aom_cdf_prob default_skip_txfm_cdfs[SKIP_CONTEXTS][CDF_SIZE(2)] = {
   { AOM_CDF2(31671) }, { AOM_CDF2(16515) }, { AOM_CDF2(4576) }
 };
 
@@ -848,11 +848,6 @@ static const aom_cdf_prob default_delta_lf_multi_cdf[FRAME_LF_COUNT][CDF_SIZE(
                              { AOM_CDF4(28160, 32120, 32677) } };
 static const aom_cdf_prob default_delta_lf_cdf[CDF_SIZE(DELTA_LF_PROBS + 1)] = {
   AOM_CDF4(28160, 32120, 32677)
-};
-
-// FIXME(someone) need real defaults here
-static const aom_cdf_prob default_seg_tree_cdf[CDF_SIZE(MAX_SEGMENTS)] = {
-  AOM_CDF8(4096, 8192, 12288, 16384, 20480, 24576, 28672)
 };
 
 static const aom_cdf_prob
@@ -973,10 +968,117 @@ int av1_get_palette_color_index_context(const uint8_t *color_map, int stride,
   assert(color_index_ctx < PALETTE_COLOR_INDEX_CONTEXTS);
   return color_index_ctx;
 }
+
+int av1_fast_palette_color_index_context(const uint8_t *color_map, int stride,
+                                         int r, int c, int *color_idx) {
+  assert(r > 0 || c > 0);
+
+  // This goes in the order of left, top, and top-left. This has the advantage
+  // that unless anything here are not distinct or invalid, this will already
+  // be in sorted order. Furthermore, if either of the first two are not
+  // invalid, we know the last one is also invalid.
+  int color_neighbors[NUM_PALETTE_NEIGHBORS];
+  color_neighbors[0] = (c - 1 >= 0) ? color_map[r * stride + c - 1] : -1;
+  color_neighbors[1] = (r - 1 >= 0) ? color_map[(r - 1) * stride + c] : -1;
+  color_neighbors[2] =
+      (c - 1 >= 0 && r - 1 >= 0) ? color_map[(r - 1) * stride + c - 1] : -1;
+
+  // Since our array is so small, using a couple if statements is faster
+  int scores[NUM_PALETTE_NEIGHBORS] = { 2, 2, 1 };
+  if (color_neighbors[0] == color_neighbors[1]) {
+    scores[0] += scores[1];
+    color_neighbors[1] = -1;
+
+    if (color_neighbors[0] == color_neighbors[2]) {
+      scores[0] += scores[2];
+      color_neighbors[2] = -1;
+    }
+  } else if (color_neighbors[0] == color_neighbors[2]) {
+    scores[0] += scores[2];
+    color_neighbors[2] = -1;
+  } else if (color_neighbors[1] == color_neighbors[2]) {
+    scores[1] += scores[2];
+    color_neighbors[2] = -1;
+  }
+
+  int color_rank[NUM_PALETTE_NEIGHBORS] = { -1, -1, -1 };
+  int score_rank[NUM_PALETTE_NEIGHBORS] = { 0, 0, 0 };
+  int num_valid_colors = 0;
+  for (int idx = 0; idx < NUM_PALETTE_NEIGHBORS; idx++) {
+    if (color_neighbors[idx] != -1) {
+      score_rank[num_valid_colors] = scores[idx];
+      color_rank[num_valid_colors] = color_neighbors[idx];
+      num_valid_colors++;
+    }
+  }
+
+  // Sort everything
+  // We need to swap the first two elements if they have the same score but
+  // the color indices are not in the right order
+  if (score_rank[0] < score_rank[1] ||
+      (score_rank[0] == score_rank[1] && color_rank[0] > color_rank[1])) {
+    const int tmp_score = score_rank[0];
+    const int tmp_color = color_rank[0];
+    score_rank[0] = score_rank[1];
+    color_rank[0] = color_rank[1];
+    score_rank[1] = tmp_score;
+    color_rank[1] = tmp_color;
+  }
+  if (score_rank[0] < score_rank[2]) {
+    const int tmp_score = score_rank[0];
+    const int tmp_color = color_rank[0];
+    score_rank[0] = score_rank[2];
+    color_rank[0] = color_rank[2];
+    score_rank[2] = tmp_score;
+    color_rank[2] = tmp_color;
+  }
+  if (score_rank[1] < score_rank[2]) {
+    const int tmp_score = score_rank[1];
+    const int tmp_color = color_rank[1];
+    score_rank[1] = score_rank[2];
+    color_rank[1] = color_rank[2];
+    score_rank[2] = tmp_score;
+    color_rank[2] = tmp_color;
+  }
+
+  if (color_idx != NULL) {
+    // If any of the neighbor color has higher index than current color index,
+    // then we move up by 1 unless the current color is the same as one of the
+    // neighbor
+    const int current_color = *color_idx = color_map[r * stride + c];
+    int same_neighbor = -1;
+    for (int idx = 0; idx < NUM_PALETTE_NEIGHBORS; idx++) {
+      if (color_rank[idx] > current_color) {
+        (*color_idx)++;
+      } else if (color_rank[idx] == current_color) {
+        same_neighbor = idx;
+      }
+    }
+    if (same_neighbor != -1) {
+      *color_idx = same_neighbor;
+    }
+  }
+
+  // Get hash value of context.
+  int color_index_ctx_hash = 0;
+  static const int hash_multipliers[NUM_PALETTE_NEIGHBORS] = { 1, 2, 2 };
+  for (int idx = 0; idx < NUM_PALETTE_NEIGHBORS; ++idx) {
+    color_index_ctx_hash += score_rank[idx] * hash_multipliers[idx];
+  }
+  assert(color_index_ctx_hash > 0);
+  assert(color_index_ctx_hash <= MAX_COLOR_CONTEXT_HASH);
+
+  // Lookup context from hash.
+  const int color_index_ctx =
+      palette_color_index_context_lookup[color_index_ctx_hash];
+  assert(color_index_ctx >= 0);
+  assert(color_index_ctx < PALETTE_COLOR_INDEX_CONTEXTS);
+  return color_index_ctx;
+}
 #undef NUM_PALETTE_NEIGHBORS
 #undef MAX_COLOR_CONTEXT_HASH
 
-static void init_mode_probs(FRAME_CONTEXT *fc) {
+void av1_init_mode_probs(FRAME_CONTEXT *fc) {
   av1_copy(fc->palette_y_size_cdf, default_palette_y_size_cdf);
   av1_copy(fc->palette_uv_size_cdf, default_palette_uv_size_cdf);
   av1_copy(fc->palette_y_color_index_cdf, default_palette_y_color_index_cdf);
@@ -1007,7 +1109,6 @@ static void init_mode_probs(FRAME_CONTEXT *fc) {
   av1_copy(fc->wedge_interintra_cdf, default_wedge_interintra_cdf);
   av1_copy(fc->interintra_mode_cdf, default_interintra_mode_cdf);
   av1_copy(fc->seg.pred_cdf, default_segment_pred_cdf);
-  av1_copy(fc->seg.tree_cdf, default_seg_tree_cdf);
   av1_copy(fc->filter_intra_cdfs, default_filter_intra_cdfs);
   av1_copy(fc->filter_intra_mode_cdf, default_filter_intra_mode_cdf);
   av1_copy(fc->switchable_restore_cdf, default_switchable_restore_cdf);
@@ -1020,7 +1121,7 @@ static void init_mode_probs(FRAME_CONTEXT *fc) {
   av1_copy(fc->intra_ext_tx_cdf, default_intra_ext_tx_cdf);
   av1_copy(fc->inter_ext_tx_cdf, default_inter_ext_tx_cdf);
   av1_copy(fc->skip_mode_cdfs, default_skip_mode_cdfs);
-  av1_copy(fc->skip_cdfs, default_skip_cdfs);
+  av1_copy(fc->skip_txfm_cdfs, default_skip_txfm_cdfs);
   av1_copy(fc->intra_inter_cdf, default_intra_inter_cdf);
   for (int i = 0; i < SPATIAL_PREDICTION_PROBS; i++)
     av1_copy(fc->seg.spatial_pred_seg_cdf[i],
@@ -1086,9 +1187,10 @@ void av1_setup_past_independence(AV1_COMMON *cm) {
   // Features disabled, 0, with delta coding (Default state).
   av1_clearall_segfeatures(&cm->seg);
 
-  if (cm->cur_frame->seg_map)
+  if (cm->cur_frame->seg_map) {
     memset(cm->cur_frame->seg_map, 0,
-           (cm->mi_params.mi_rows * cm->mi_params.mi_cols));
+           (cm->cur_frame->mi_rows * cm->cur_frame->mi_cols));
+  }
 
   // reset mode ref deltas
   av1_set_default_ref_deltas(cm->cur_frame->ref_deltas);
@@ -1096,7 +1198,7 @@ void av1_setup_past_independence(AV1_COMMON *cm) {
   set_default_lf_deltas(&cm->lf);
 
   av1_default_coef_probs(cm);
-  init_mode_probs(cm->fc);
+  av1_init_mode_probs(cm->fc);
   av1_init_mv_probs(cm);
   cm->fc->initialized = 1;
   av1_setup_frame_contexts(cm);

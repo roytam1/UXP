@@ -11,8 +11,6 @@
 
 #include "config/aom_config.h"
 
-#include "aom_ports/system_state.h"
-
 #include "av1/encoder/encodemv.h"
 #if !CONFIG_REALTIME_ONLY
 #include "av1/encoder/misc_model_weights.h"
@@ -139,7 +137,6 @@ static AOM_INLINE void keep_one_mv_stat(MV_STATS *mv_stats, const MV *ref_mv,
   const MV lp_diff = use_hp ? truncated_diff : diff;
   const int lp_mv_joint = av1_get_mv_joint(&lp_diff);
 
-  aom_clear_system_state();
   const int mv_joint_rate = get_symbol_cost(joint_cdf, mv_joint);
   const int hp_mv_joint_rate = get_symbol_cost(joint_cdf, hp_mv_joint);
   const int lp_mv_joint_rate = get_symbol_cost(joint_cdf, lp_mv_joint);
@@ -224,13 +221,13 @@ static AOM_INLINE void collect_mv_stats_b(MV_STATS *mv_stats,
   }
 
   // Add texture information
-  const BLOCK_SIZE bsize = mbmi->sb_type;
+  const BLOCK_SIZE bsize = mbmi->bsize;
   const int num_rows = block_size_high[bsize];
   const int num_cols = block_size_wide[bsize];
   const int y_stride = cpi->source->y_stride;
   const int px_row = 4 * mi_row, px_col = 4 * mi_col;
   const int buf_is_hbd = cpi->source->flags & YV12_FLAG_HIGHBITDEPTH;
-  const int bd = cm->seq_params.bit_depth;
+  const int bd = cm->seq_params->bit_depth;
   if (buf_is_hbd) {
     uint16_t *source_buf =
         CONVERT_TO_SHORTPTR(cpi->source->y_buffer) + px_row * y_stride + px_col;
@@ -339,8 +336,8 @@ static AOM_INLINE void collect_mv_stats_tile(MV_STATS *mv_stats,
   const int mi_row_end = tile_info->mi_row_end;
   const int mi_col_start = tile_info->mi_col_start;
   const int mi_col_end = tile_info->mi_col_end;
-  const int sb_size_mi = cm->seq_params.mib_size;
-  BLOCK_SIZE sb_size = cm->seq_params.sb_size;
+  const int sb_size_mi = cm->seq_params->mib_size;
+  BLOCK_SIZE sb_size = cm->seq_params->sb_size;
   for (int mi_row = mi_row_start; mi_row < mi_row_end; mi_row += sb_size_mi) {
     for (int mi_col = mi_col_start; mi_col < mi_col_end; mi_col += sb_size_mi) {
       collect_mv_stats_sb(mv_stats, cpi, mi_row, mi_col, sb_size);
@@ -376,7 +373,6 @@ static AOM_INLINE int get_smart_mv_prec(AV1_COMP *cpi, const MV_STATS *mv_stats,
   const AV1_COMMON *cm = &cpi->common;
   const int order_hint = cpi->common.current_frame.order_hint;
   const int order_diff = order_hint - mv_stats->order;
-  aom_clear_system_state();
   const float area = (float)(cm->width * cm->height);
   float features[MV_PREC_FEATURE_SIZE] = {
     (float)current_q,
@@ -414,14 +410,17 @@ static AOM_INLINE int get_smart_mv_prec(AV1_COMP *cpi, const MV_STATS *mv_stats,
 
 void av1_pick_and_set_high_precision_mv(AV1_COMP *cpi, int qindex) {
   int use_hp = qindex < HIGH_PRECISION_MV_QTHRESH;
+#if !CONFIG_REALTIME_ONLY
+  MV_STATS *mv_stats = &cpi->mv_stats;
+#endif  // !CONFIG_REALTIME_ONLY
 
   if (cpi->sf.hl_sf.high_precision_mv_usage == QTR_ONLY) {
     use_hp = 0;
   }
 #if !CONFIG_REALTIME_ONLY
   else if (cpi->sf.hl_sf.high_precision_mv_usage == LAST_MV_DATA &&
-           av1_frame_allows_smart_mv(cpi) && cpi->mv_stats.valid) {
-    use_hp = get_smart_mv_prec(cpi, &cpi->mv_stats, qindex);
+           av1_frame_allows_smart_mv(cpi) && mv_stats->valid) {
+    use_hp = get_smart_mv_prec(cpi, mv_stats, qindex);
   }
 #endif  // !CONFIG_REALTIME_ONLY
 

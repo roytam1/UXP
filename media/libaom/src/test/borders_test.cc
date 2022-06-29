@@ -26,10 +26,7 @@ class BordersTestLarge
   BordersTestLarge() : EncoderTest(GET_PARAM(0)) {}
   virtual ~BordersTestLarge() {}
 
-  virtual void SetUp() {
-    InitializeConfig();
-    SetMode(GET_PARAM(1));
-  }
+  virtual void SetUp() { InitializeConfig(GET_PARAM(1)); }
 
   virtual void PreEncodeFrameHook(::libaom_test::VideoSource *video,
                                   ::libaom_test::Encoder *encoder) {
@@ -80,6 +77,6 @@ TEST_P(BordersTestLarge, TestLowBitrate) {
   ASSERT_NO_FATAL_FAILURE(RunLoop(&video));
 }
 
-AV1_INSTANTIATE_TEST_CASE(BordersTestLarge,
-                          ::testing::Values(::libaom_test::kTwoPassGood));
+AV1_INSTANTIATE_TEST_SUITE(BordersTestLarge,
+                           ::testing::Values(::libaom_test::kTwoPassGood));
 }  // namespace

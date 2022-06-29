@@ -13,29 +13,23 @@
 
 #include "aom/aom_codec.h"
 #include "aom/aom_encoder.h"
+#include "av1/arg_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-enum TestDecodeFatality {
-  TEST_DECODE_OFF,
-  TEST_DECODE_FATAL,
-  TEST_DECODE_WARN,
-};
 
 typedef enum {
   I420,  // 4:2:0 8+ bit-depth
   I422,  // 4:2:2 8+ bit-depth
   I444,  // 4:4:4 8+ bit-depth
   YV12,  // 4:2:0 with uv flipped, only 8-bit depth
+  NV12,  // 4:2:0 with uv interleaved, only 8-bit depth
 } ColorInputType;
-
-struct AvxInterface;
 
 /* Configuration elements common to all streams. */
 struct AvxEncoderConfig {
-  const struct AvxInterface *codec;
+  aom_codec_iface_t *codec;
   int passes;
   int pass;
   unsigned int usage;

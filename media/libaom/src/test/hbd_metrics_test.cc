@@ -80,15 +80,15 @@ double compute_fastssim(const YV12_BUFFER_CONFIG *source,
 double compute_hbd_aomssim(const YV12_BUFFER_CONFIG *source,
                            const YV12_BUFFER_CONFIG *dest, uint32_t in_bd,
                            uint32_t bd) {
-  double ssim, weight;
-  ssim = aom_highbd_calc_ssim(source, dest, &weight, bd, in_bd);
-  return 100 * pow(ssim / weight, 8.0);
+  double ssim[2], weight[2];
+  aom_highbd_calc_ssim(source, dest, weight, bd, in_bd, ssim);
+  return 100 * pow(ssim[0] / weight[0], 8.0);
 }
 
 double compute_aomssim(const YV12_BUFFER_CONFIG *source,
                        const YV12_BUFFER_CONFIG *dest) {
   double ssim, weight;
-  ssim = aom_calc_ssim(source, dest, &weight);
+  aom_lowbd_calc_ssim(source, dest, &weight, &ssim);
   return 100 * pow(ssim / weight, 8.0);
 }
 
@@ -112,10 +112,10 @@ class HBDMetricsTestBase {
     memset(&hbd_src, 0, sizeof(hbd_src));
     memset(&hbd_dst, 0, sizeof(hbd_dst));
 
-    aom_alloc_frame_buffer(&lbd_src, width, height, 1, 1, 0, 32, 16);
-    aom_alloc_frame_buffer(&lbd_dst, width, height, 1, 1, 0, 32, 16);
-    aom_alloc_frame_buffer(&hbd_src, width, height, 1, 1, 1, 32, 16);
-    aom_alloc_frame_buffer(&hbd_dst, width, height, 1, 1, 1, 32, 16);
+    aom_alloc_frame_buffer(&lbd_src, width, height, 1, 1, 0, 32, 16, 0);
+    aom_alloc_frame_buffer(&lbd_dst, width, height, 1, 1, 0, 32, 16, 0);
+    aom_alloc_frame_buffer(&hbd_src, width, height, 1, 1, 1, 32, 16, 0);
+    aom_alloc_frame_buffer(&hbd_dst, width, height, 1, 1, 1, 32, 16, 0);
 
     memset(lbd_src.buffer_alloc, kPixFiller, lbd_src.buffer_alloc_sz);
     while (i < lbd_src.buffer_alloc_sz) {

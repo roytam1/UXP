@@ -55,16 +55,22 @@ class TransformTestBase {
 
     int16_t *test_input_block = reinterpret_cast<int16_t *>(
         aom_memalign(16, sizeof(int16_t) * num_coeffs_));
+    ASSERT_NE(test_input_block, nullptr);
     OutType *test_temp_block = reinterpret_cast<OutType *>(
         aom_memalign(16, sizeof(test_temp_block[0]) * num_coeffs_));
+    ASSERT_NE(test_temp_block, nullptr);
     uint8_t *dst = reinterpret_cast<uint8_t *>(
         aom_memalign(16, sizeof(uint8_t) * num_coeffs_));
+    ASSERT_NE(dst, nullptr);
     uint8_t *src = reinterpret_cast<uint8_t *>(
         aom_memalign(16, sizeof(uint8_t) * num_coeffs_));
+    ASSERT_NE(src, nullptr);
     uint16_t *dst16 = reinterpret_cast<uint16_t *>(
         aom_memalign(16, sizeof(uint16_t) * num_coeffs_));
+    ASSERT_NE(dst16, nullptr);
     uint16_t *src16 = reinterpret_cast<uint16_t *>(
         aom_memalign(16, sizeof(uint16_t) * num_coeffs_));
+    ASSERT_NE(src16, nullptr);
 
     for (int i = 0; i < count_test_block; ++i) {
       // Initialize a test block with input range [-255, 255].
@@ -80,12 +86,12 @@ class TransformTestBase {
         }
       }
 
-      ASM_REGISTER_STATE_CHECK(
+      API_REGISTER_STATE_CHECK(
           RunFwdTxfm(test_input_block, test_temp_block, pitch_));
       if (bit_depth_ == AOM_BITS_8) {
-        ASM_REGISTER_STATE_CHECK(RunInvTxfm(test_temp_block, dst, pitch_));
+        API_REGISTER_STATE_CHECK(RunInvTxfm(test_temp_block, dst, pitch_));
       } else {
-        ASM_REGISTER_STATE_CHECK(
+        API_REGISTER_STATE_CHECK(
             RunInvTxfm(test_temp_block, CONVERT_TO_BYTEPTR(dst16), pitch_));
       }
 
@@ -126,10 +132,13 @@ class TransformTestBase {
 
     int16_t *input_block = reinterpret_cast<int16_t *>(
         aom_memalign(16, sizeof(int16_t) * stride * height_));
+    ASSERT_NE(input_block, nullptr);
     OutType *output_ref_block = reinterpret_cast<OutType *>(
         aom_memalign(16, sizeof(output_ref_block[0]) * num_coeffs_));
+    ASSERT_NE(output_ref_block, nullptr);
     OutType *output_block = reinterpret_cast<OutType *>(
         aom_memalign(16, sizeof(output_block[0]) * num_coeffs_));
+    ASSERT_NE(output_block, nullptr);
 
     for (int i = 0; i < count_test_block; ++i) {
       int j, k;
@@ -148,7 +157,7 @@ class TransformTestBase {
       }
 
       fwd_txfm_ref(input_block, output_ref_block, stride, &txfm_param_);
-      ASM_REGISTER_STATE_CHECK(RunFwdTxfm(input_block, output_block, stride));
+      API_REGISTER_STATE_CHECK(RunFwdTxfm(input_block, output_block, stride));
 
       // The minimum quant value is 4.
       for (j = 0; j < height_; ++j) {
@@ -175,12 +184,16 @@ class TransformTestBase {
 
     int16_t *input_block = reinterpret_cast<int16_t *>(
         aom_memalign(16, sizeof(int16_t) * num_coeffs_));
+    ASSERT_NE(input_block, nullptr);
     OutType *trans_block = reinterpret_cast<OutType *>(
         aom_memalign(16, sizeof(trans_block[0]) * num_coeffs_));
+    ASSERT_NE(trans_block, nullptr);
     uint8_t *output_block = reinterpret_cast<uint8_t *>(
         aom_memalign(16, sizeof(uint8_t) * stride * height_));
+    ASSERT_NE(output_block, nullptr);
     uint8_t *output_ref_block = reinterpret_cast<uint8_t *>(
         aom_memalign(16, sizeof(uint8_t) * stride * height_));
+    ASSERT_NE(output_ref_block, nullptr);
 
     for (int i = 0; i < count_test_block; ++i) {
       // Initialize a test block with input range [-mask_, mask_].
@@ -198,7 +211,7 @@ class TransformTestBase {
       fwd_txfm_ref(input_block, trans_block, pitch_, &txfm_param_);
 
       inv_txfm_ref(trans_block, output_ref_block, stride, &txfm_param_);
-      ASM_REGISTER_STATE_CHECK(RunInvTxfm(trans_block, output_block, stride));
+      API_REGISTER_STATE_CHECK(RunInvTxfm(trans_block, output_block, stride));
 
       for (j = 0; j < height_; ++j) {
         for (k = 0; k < pitch_; ++k) {
@@ -221,10 +234,13 @@ class TransformTestBase {
 
     int16_t *input_extreme_block = reinterpret_cast<int16_t *>(
         aom_memalign(16, sizeof(int16_t) * num_coeffs_));
+    ASSERT_NE(input_extreme_block, nullptr);
     OutType *output_ref_block = reinterpret_cast<OutType *>(
         aom_memalign(16, sizeof(output_ref_block[0]) * num_coeffs_));
+    ASSERT_NE(output_ref_block, nullptr);
     OutType *output_block = reinterpret_cast<OutType *>(
         aom_memalign(16, sizeof(output_block[0]) * num_coeffs_));
+    ASSERT_NE(output_block, nullptr);
 
     for (int i = 0; i < count_test_block; ++i) {
       // Initialize a test block with input range [-mask_, mask_].
@@ -238,7 +254,7 @@ class TransformTestBase {
       }
 
       fwd_txfm_ref(input_extreme_block, output_ref_block, pitch_, &txfm_param_);
-      ASM_REGISTER_STATE_CHECK(
+      API_REGISTER_STATE_CHECK(
           RunFwdTxfm(input_extreme_block, output_block, pitch_));
 
       int row_length = FindRowLength();
@@ -263,17 +279,23 @@ class TransformTestBase {
 
     int16_t *in = reinterpret_cast<int16_t *>(
         aom_memalign(16, sizeof(int16_t) * num_coeffs_));
+    ASSERT_NE(in, nullptr);
     OutType *coeff = reinterpret_cast<OutType *>(
         aom_memalign(16, sizeof(coeff[0]) * num_coeffs_));
+    ASSERT_NE(coeff, nullptr);
     uint8_t *dst = reinterpret_cast<uint8_t *>(
         aom_memalign(16, sizeof(uint8_t) * num_coeffs_));
+    ASSERT_NE(dst, nullptr);
     uint8_t *src = reinterpret_cast<uint8_t *>(
         aom_memalign(16, sizeof(uint8_t) * num_coeffs_));
+    ASSERT_NE(src, nullptr);
 
     uint16_t *dst16 = reinterpret_cast<uint16_t *>(
         aom_memalign(16, sizeof(uint16_t) * num_coeffs_));
+    ASSERT_NE(dst16, nullptr);
     uint16_t *src16 = reinterpret_cast<uint16_t *>(
         aom_memalign(16, sizeof(uint16_t) * num_coeffs_));
+    ASSERT_NE(src16, nullptr);
 
     for (int i = 0; i < count_test_block; ++i) {
       // Initialize a test block with input range [-mask_, mask_].
@@ -292,9 +314,9 @@ class TransformTestBase {
       fwd_txfm_ref(in, coeff, pitch_, &txfm_param_);
 
       if (bit_depth_ == AOM_BITS_8) {
-        ASM_REGISTER_STATE_CHECK(RunInvTxfm(coeff, dst, pitch_));
+        API_REGISTER_STATE_CHECK(RunInvTxfm(coeff, dst, pitch_));
       } else {
-        ASM_REGISTER_STATE_CHECK(
+        API_REGISTER_STATE_CHECK(
             RunInvTxfm(coeff, CONVERT_TO_BYTEPTR(dst16), pitch_));
       }
 

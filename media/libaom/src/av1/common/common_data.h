@@ -257,9 +257,19 @@ static const int tx_size_wide_log2[TX_SIZES_ALL] = {
   2, 3, 4, 5, 6, 2, 3, 3, 4, 4, 5, 5, 6, 2, 4, 3, 5, 4, 6,
 };
 
+// Transform block width in log2 unit
+static const int tx_size_wide_unit_log2[TX_SIZES_ALL] = {
+  0, 1, 2, 3, 4, 0, 1, 1, 2, 2, 3, 3, 4, 0, 2, 1, 3, 2, 4,
+};
+
 // Transform block height in log2
 static const int tx_size_high_log2[TX_SIZES_ALL] = {
   2, 3, 4, 5, 6, 3, 2, 4, 3, 5, 4, 6, 5, 4, 2, 5, 3, 6, 4,
+};
+
+// Transform block height in log2 unit
+static const int tx_size_high_unit_log2[TX_SIZES_ALL] = {
+  0, 1, 2, 3, 4, 1, 0, 2, 1, 3, 2, 4, 3, 2, 0, 3, 1, 4, 2,
 };
 
 static const int tx_size_2d[TX_SIZES_ALL + 1] = {
@@ -434,9 +444,12 @@ static const int intra_mode_context[INTRA_MODES] = {
 static const int quant_dist_weight[4][2] = {
   { 2, 3 }, { 2, 5 }, { 2, 7 }, { 1, MAX_FRAME_DISTANCE }
 };
-static const int quant_dist_lookup_table[2][4][2] = {
-  { { 9, 7 }, { 11, 5 }, { 12, 4 }, { 13, 3 } },
-  { { 7, 9 }, { 5, 11 }, { 4, 12 }, { 3, 13 } },
+
+static const int quant_dist_lookup_table[4][2] = {
+  { 9, 7 },
+  { 11, 5 },
+  { 12, 4 },
+  { 13, 3 },
 };
 
 #ifdef __cplusplus

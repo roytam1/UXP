@@ -48,7 +48,7 @@ typedef enum {
 #define cpuid(func, func2, ax, bx, cx, dx)                      \
   __asm__ __volatile__("cpuid           \n\t"                   \
                        : "=a"(ax), "=b"(bx), "=c"(cx), "=d"(dx) \
-                       : "a"(func), "c"(func2));
+                       : "a"(func), "c"(func2))
 #else
 #define cpuid(func, func2, ax, bx, cx, dx)     \
   __asm__ __volatile__(                        \
@@ -56,7 +56,7 @@ typedef enum {
       "cpuid              \n\t"                \
       "xchg %%edi, %%ebx  \n\t"                \
       : "=a"(ax), "=D"(bx), "=c"(cx), "=d"(dx) \
-      : "a"(func), "c"(func2));
+      : "a"(func), "c"(func2))
 #endif
 #elif defined(__SUNPRO_C) || \
     defined(__SUNPRO_CC) /* end __GNUC__ or __ANDROID__*/
@@ -68,7 +68,7 @@ typedef enum {
       "movl %ebx, %edi \n\t"                   \
       "xchg %rsi, %rbx \n\t"                   \
       : "=a"(ax), "=D"(bx), "=c"(cx), "=d"(dx) \
-      : "a"(func), "c"(func2));
+      : "a"(func), "c"(func2))
 #else
 #define cpuid(func, func2, ax, bx, cx, dx)     \
   asm volatile(                                \
@@ -77,7 +77,7 @@ typedef enum {
       "movl %ebx, %edi  \n\t"                  \
       "popl %ebx        \n\t"                  \
       : "=a"(ax), "=D"(bx), "=c"(cx), "=d"(dx) \
-      : "a"(func), "c"(func2));
+      : "a"(func), "c"(func2))
 #endif
 #else /* end __SUNPRO__ */
 #if ARCH_X86_64
@@ -164,15 +164,14 @@ static INLINE uint64_t xgetbv(void) {
 #define HAS_AVX2 0x80
 #define HAS_SSE4_2 0x100
 #ifndef BIT
-#define BIT(n) (1 << n)
+#define BIT(n) (1u << (n))
 #endif
 
 static INLINE int x86_simd_caps(void) {
   unsigned int flags = 0;
-  unsigned int mask = ~0;
+  unsigned int mask = ~0u;
   unsigned int max_cpuid_val, reg_eax, reg_ebx, reg_ecx, reg_edx;
   char *env;
-  (void)reg_ebx;
 
   /* See if the CPU capabilities are being overridden by the environment */
   env = getenv("AOM_SIMD_CAPS");
@@ -207,6 +206,7 @@ static INLINE int x86_simd_caps(void) {
 
   // bits 27 (OSXSAVE) & 28 (256-bit AVX)
   if ((reg_ecx & (BIT(27) | BIT(28))) == (BIT(27) | BIT(28))) {
+    // Check for OS-support of YMM state. Necessary for AVX and AVX2.
     if ((xgetbv() & 0x6) == 0x6) {
       flags |= HAS_AVX;
 
@@ -219,12 +219,14 @@ static INLINE int x86_simd_caps(void) {
     }
   }
 
+  (void)reg_eax;  // Avoid compiler warning on unused-but-set variable.
+
   return flags & mask;
 }
 
 // Fine-Grain Measurement Functions
 //
-// If you are a timing a small region of code, access the timestamp counter
+// If you are timing a small region of code, access the timestamp counter
 // (TSC) via:
 //
 // unsigned int start = x86_tsc_start();
@@ -236,7 +238,7 @@ static INLINE int x86_simd_caps(void) {
 // x86_readtsc directly, but prevent the CPU's out-of-order execution from
 // affecting the measurement (by having earlier/later instructions be evaluated
 // in the time interval). See the white paper, "How to Benchmark Code
-// Execution Times on Intel® IA-32 and IA-64 Instruction Set Architectures" by
+// Execution Times on Intel(R) IA-32 and IA-64 Instruction Set Architectures" by
 // Gabriele Paoloni for more information.
 //
 // If you are timing a large function (CPU time > a couple of seconds), use
@@ -302,14 +304,26 @@ static INLINE unsigned int x86_readtscp(void) {
 
 static INLINE unsigned int x86_tsc_start(void) {
   unsigned int reg_eax, reg_ebx, reg_ecx, reg_edx;
+  // This call should not be removed. See function notes above.
   cpuid(0, 0, reg_eax, reg_ebx, reg_ecx, reg_edx);
+  // Avoid compiler warnings on unused-but-set variables.
+  (void)reg_eax;
+  (void)reg_ebx;
+  (void)reg_ecx;
+  (void)reg_edx;
   return x86_readtsc();
 }
 
 static INLINE unsigned int x86_tsc_end(void) {
   uint32_t v = x86_readtscp();
   unsigned int reg_eax, reg_ebx, reg_ecx, reg_edx;
+  // This call should not be removed. See function notes above.
   cpuid(0, 0, reg_eax, reg_ebx, reg_ecx, reg_edx);
+  // Avoid compiler warnings on unused-but-set variables.
+  (void)reg_eax;
+  (void)reg_ebx;
+  (void)reg_ecx;
+  (void)reg_edx;
   return v;
 }
 
@@ -362,11 +376,20 @@ static unsigned short x87_get_control_word(void) {
 
 static INLINE unsigned int x87_set_double_precision(void) {
   unsigned int mode = x87_get_control_word();
+  // Intel 64 and IA-32 Architectures Developer's Manual: Vol. 1
+  // https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-1-manual.pdf
+  // 8.1.5.2 Precision Control Field
+  // Bits 8 and 9 (0x300) of the x87 FPU Control Word ("Precision Control")
+  // determine the number of bits used in floating point calculations. To match
+  // later SSE instructions restrict x87 operations to Double Precision (0x200).
+  // Precision                     PC Field
+  // Single Precision (24-Bits)    00B
+  // Reserved                      01B
+  // Double Precision (53-Bits)    10B
+  // Extended Precision (64-Bits)  11B
   x87_set_control_word((mode & ~0x300) | 0x200);
   return mode;
 }
-
-extern void aom_reset_mmx_state(void);
 
 #ifdef __cplusplus
 }  // extern "C"

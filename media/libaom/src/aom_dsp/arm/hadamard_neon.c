@@ -12,8 +12,8 @@
 
 #include "config/aom_dsp_rtcd.h"
 #include "aom/aom_integer.h"
-#include "av1/common/arm/mem_neon.h"
-#include "av1/common/arm/transpose_neon.h"
+#include "aom_dsp/arm/mem_neon.h"
+#include "aom_dsp/arm/transpose_neon.h"
 
 static void hadamard8x8_one_pass(int16x8_t *a0, int16x8_t *a1, int16x8_t *a2,
                                  int16x8_t *a3, int16x8_t *a4, int16x8_t *a5,
@@ -102,6 +102,13 @@ void aom_hadamard_lp_8x8_neon(const int16_t *src_diff, ptrdiff_t src_stride,
   vst1q_s16(coeff + 40, a5);
   vst1q_s16(coeff + 48, a6);
   vst1q_s16(coeff + 56, a7);
+}
+
+void aom_hadamard_8x8_dual_neon(const int16_t *src_diff, ptrdiff_t src_stride,
+                                int16_t *coeff) {
+  for (int i = 0; i < 2; i++) {
+    aom_hadamard_lp_8x8_neon(src_diff + (i * 8), src_stride, coeff + (i * 64));
+  }
 }
 
 void aom_hadamard_lp_16x16_neon(const int16_t *src_diff, ptrdiff_t src_stride,

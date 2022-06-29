@@ -17,7 +17,6 @@
 #include "config/aom_dsp_rtcd.h"
 
 #include "test/acm_random.h"
-#include "test/clear_system_state.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
 #include "av1/common/blockd.h"
@@ -97,6 +96,63 @@ class AV1IntraPredTest
     }
     ASSERT_EQ(0, error_count);
   }
+  void RunSpeedTest(Pixel *left_col, Pixel *above_data, Pixel *dst,
+                    Pixel *ref_dst) {
+    ACMRandom rnd(ACMRandom::DeterministicSeed());
+    const int block_width = params_.block_width;
+    const int block_height = params_.block_height;
+    above_row_ = above_data + 16;
+    left_col_ = left_col;
+    dst_ = dst;
+    ref_dst_ = ref_dst;
+    int error_count = 0;
+    const int numIter = 100;
+
+    int c_sum_time = 0;
+    int simd_sum_time = 0;
+    for (int i = 0; i < count_test_block; ++i) {
+      // Fill edges with random data, try first with saturated values.
+      for (int x = -1; x <= block_width * 2; x++) {
+        if (i == 0) {
+          above_row_[x] = mask_;
+        } else {
+          above_row_[x] = rnd.Rand16() & mask_;
+        }
+      }
+      for (int y = 0; y < block_height; y++) {
+        if (i == 0) {
+          left_col_[y] = mask_;
+        } else {
+          left_col_[y] = rnd.Rand16() & mask_;
+        }
+      }
+
+      aom_usec_timer c_timer_;
+      aom_usec_timer_start(&c_timer_);
+
+      PredictRefSpeedTest(numIter);
+
+      aom_usec_timer_mark(&c_timer_);
+
+      aom_usec_timer simd_timer_;
+      aom_usec_timer_start(&simd_timer_);
+
+      PredictFncSpeedTest(numIter);
+
+      aom_usec_timer_mark(&simd_timer_);
+
+      c_sum_time += static_cast<int>(aom_usec_timer_elapsed(&c_timer_));
+      simd_sum_time += static_cast<int>(aom_usec_timer_elapsed(&simd_timer_));
+
+      CheckPrediction(i, &error_count);
+    }
+
+    printf(
+        "blockWxH = %d x %d c_time = %d \t simd_time = %d \t Gain = %4.2f \n",
+        block_width, block_height, c_sum_time, simd_sum_time,
+        (static_cast<float>(c_sum_time) / static_cast<float>(simd_sum_time)));
+    ASSERT_EQ(0, error_count);
+  }
 
  protected:
   virtual void SetUp() {
@@ -106,6 +162,9 @@ class AV1IntraPredTest
   }
 
   virtual void Predict() = 0;
+
+  virtual void PredictRefSpeedTest(int num) = 0;
+  virtual void PredictFncSpeedTest(int num) = 0;
 
   void CheckPrediction(int test_case_number, int *error_count) const {
     // For each pixel ensure that the calculated value is the same as reference.
@@ -139,20 +198,45 @@ class HighbdIntraPredTest : public AV1IntraPredTest<HighbdIntraPred, uint16_t> {
   void Predict() {
     const int bit_depth = params_.bit_depth;
     params_.ref_fn(ref_dst_, stride_, above_row_, left_col_, bit_depth);
-    ASM_REGISTER_STATE_CHECK(
+    API_REGISTER_STATE_CHECK(
         params_.pred_fn(dst_, stride_, above_row_, left_col_, bit_depth));
   }
+  void PredictRefSpeedTest(int num) {
+    const int bit_depth = params_.bit_depth;
+    for (int i = 0; i < num; i++) {
+      params_.ref_fn(ref_dst_, stride_, above_row_, left_col_, bit_depth);
+    }
+  }
+  void PredictFncSpeedTest(int num) {
+    const int bit_depth = params_.bit_depth;
+    for (int i = 0; i < num; i++) {
+      params_.pred_fn(dst_, stride_, above_row_, left_col_, bit_depth);
+    }
+  }
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(HighbdIntraPredTest);
+
 #endif
 
 class LowbdIntraPredTest : public AV1IntraPredTest<IntraPred, uint8_t> {
  protected:
   void Predict() {
     params_.ref_fn(ref_dst_, stride_, above_row_, left_col_);
-    ASM_REGISTER_STATE_CHECK(
+    API_REGISTER_STATE_CHECK(
         params_.pred_fn(dst_, stride_, above_row_, left_col_));
   }
+  void PredictRefSpeedTest(int num) {
+    for (int i = 0; i < num; i++) {
+      params_.ref_fn(ref_dst_, stride_, above_row_, left_col_);
+    }
+  }
+  void PredictFncSpeedTest(int num) {
+    for (int i = 0; i < num; i++) {
+      params_.pred_fn(dst_, stride_, above_row_, left_col_);
+    }
+  }
 };
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(LowbdIntraPredTest);
 
 #if CONFIG_AV1_HIGHBITDEPTH
 // Suppress an unitialized warning. Once there are implementations to test then
@@ -167,21 +251,39 @@ TEST_P(HighbdIntraPredTest, Bitexact) {
   av1_zero(above_data);
   RunTest(left_col, above_data, dst, ref_dst);
 }
+
+TEST_P(HighbdIntraPredTest, DISABLED_Speed) {
+  // max block size is 64
+  DECLARE_ALIGNED(16, uint16_t, left_col[2 * 64]);
+  DECLARE_ALIGNED(16, uint16_t, above_data[2 * 64 + 64]);
+  DECLARE_ALIGNED(16, uint16_t, dst[3 * 64 * 64]);
+  DECLARE_ALIGNED(16, uint16_t, ref_dst[3 * 64 * 64]);
+  av1_zero(left_col);
+  av1_zero(above_data);
+  RunSpeedTest(left_col, above_data, dst, ref_dst);
+}
 #endif
 
-// Same issue as above but for arm.
-#if !HAVE_NEON
 TEST_P(LowbdIntraPredTest, Bitexact) {
-  // max block size is 32
-  DECLARE_ALIGNED(16, uint8_t, left_col[2 * 32]);
-  DECLARE_ALIGNED(16, uint8_t, above_data[2 * 32 + 32]);
-  DECLARE_ALIGNED(16, uint8_t, dst[3 * 32 * 32]);
-  DECLARE_ALIGNED(16, uint8_t, ref_dst[3 * 32 * 32]);
+  // max block size is 64
+  DECLARE_ALIGNED(16, uint8_t, left_col[2 * 64]);
+  DECLARE_ALIGNED(16, uint8_t, above_data[2 * 64 + 64]);
+  DECLARE_ALIGNED(16, uint8_t, dst[3 * 64 * 64]);
+  DECLARE_ALIGNED(16, uint8_t, ref_dst[3 * 64 * 64]);
   av1_zero(left_col);
   av1_zero(above_data);
   RunTest(left_col, above_data, dst, ref_dst);
 }
-#endif  // !HAVE_NEON
+TEST_P(LowbdIntraPredTest, DISABLED_Speed) {
+  // max block size is 64
+  DECLARE_ALIGNED(16, uint8_t, left_col[2 * 64]);
+  DECLARE_ALIGNED(16, uint8_t, above_data[2 * 64 + 64]);
+  DECLARE_ALIGNED(16, uint8_t, dst[3 * 64 * 64]);
+  DECLARE_ALIGNED(16, uint8_t, ref_dst[3 * 64 * 64]);
+  av1_zero(left_col);
+  av1_zero(above_data);
+  RunSpeedTest(left_col, above_data, dst, ref_dst);
+}
 
 #if CONFIG_AV1_HIGHBITDEPTH
 // -----------------------------------------------------------------------------
@@ -229,6 +331,57 @@ INSTANTIATE_TEST_SUITE_P(SSE2, LowbdIntraPredTest,
 
 #endif  // HAVE_SSE2
 
+#if HAVE_NEON
+const IntraPredFunc<IntraPred> LowbdIntraPredTestVectorNeon[] = {
+  lowbd_entry(smooth, 4, 4, neon),     lowbd_entry(smooth, 4, 8, neon),
+  lowbd_entry(smooth, 4, 16, neon),    lowbd_entry(smooth, 8, 4, neon),
+  lowbd_entry(smooth, 8, 8, neon),     lowbd_entry(smooth, 8, 16, neon),
+  lowbd_entry(smooth, 8, 32, neon),    lowbd_entry(smooth, 16, 4, neon),
+  lowbd_entry(smooth, 16, 8, neon),    lowbd_entry(smooth, 16, 16, neon),
+  lowbd_entry(smooth, 16, 32, neon),   lowbd_entry(smooth, 16, 64, neon),
+  lowbd_entry(smooth, 32, 8, neon),    lowbd_entry(smooth, 32, 16, neon),
+  lowbd_entry(smooth, 32, 32, neon),   lowbd_entry(smooth, 32, 64, neon),
+  lowbd_entry(smooth, 64, 16, neon),   lowbd_entry(smooth, 64, 32, neon),
+  lowbd_entry(smooth, 64, 64, neon),
+
+  lowbd_entry(smooth_v, 4, 4, neon),   lowbd_entry(smooth_v, 4, 8, neon),
+  lowbd_entry(smooth_v, 4, 16, neon),  lowbd_entry(smooth_v, 8, 4, neon),
+  lowbd_entry(smooth_v, 8, 8, neon),   lowbd_entry(smooth_v, 8, 16, neon),
+  lowbd_entry(smooth_v, 8, 32, neon),  lowbd_entry(smooth_v, 16, 4, neon),
+  lowbd_entry(smooth_v, 16, 8, neon),  lowbd_entry(smooth_v, 16, 16, neon),
+  lowbd_entry(smooth_v, 16, 32, neon), lowbd_entry(smooth_v, 16, 64, neon),
+  lowbd_entry(smooth_v, 32, 8, neon),  lowbd_entry(smooth_v, 32, 16, neon),
+  lowbd_entry(smooth_v, 32, 32, neon), lowbd_entry(smooth_v, 32, 64, neon),
+  lowbd_entry(smooth_v, 64, 16, neon), lowbd_entry(smooth_v, 64, 32, neon),
+  lowbd_entry(smooth_v, 64, 64, neon),
+
+  lowbd_entry(smooth_h, 4, 4, neon),   lowbd_entry(smooth_h, 4, 8, neon),
+  lowbd_entry(smooth_h, 4, 16, neon),  lowbd_entry(smooth_h, 8, 4, neon),
+  lowbd_entry(smooth_h, 8, 8, neon),   lowbd_entry(smooth_h, 8, 16, neon),
+  lowbd_entry(smooth_h, 8, 32, neon),  lowbd_entry(smooth_h, 16, 4, neon),
+  lowbd_entry(smooth_h, 16, 8, neon),  lowbd_entry(smooth_h, 16, 16, neon),
+  lowbd_entry(smooth_h, 16, 32, neon), lowbd_entry(smooth_h, 16, 64, neon),
+  lowbd_entry(smooth_h, 32, 8, neon),  lowbd_entry(smooth_h, 32, 16, neon),
+  lowbd_entry(smooth_h, 32, 32, neon), lowbd_entry(smooth_h, 32, 64, neon),
+  lowbd_entry(smooth_h, 64, 16, neon), lowbd_entry(smooth_h, 64, 32, neon),
+  lowbd_entry(smooth_h, 64, 64, neon),
+
+  lowbd_entry(paeth, 4, 4, neon),      lowbd_entry(paeth, 4, 8, neon),
+  lowbd_entry(paeth, 4, 16, neon),     lowbd_entry(paeth, 8, 4, neon),
+  lowbd_entry(paeth, 8, 8, neon),      lowbd_entry(paeth, 8, 16, neon),
+  lowbd_entry(paeth, 8, 32, neon),     lowbd_entry(paeth, 16, 4, neon),
+  lowbd_entry(paeth, 16, 8, neon),     lowbd_entry(paeth, 16, 16, neon),
+  lowbd_entry(paeth, 16, 32, neon),    lowbd_entry(paeth, 16, 64, neon),
+  lowbd_entry(paeth, 32, 8, neon),     lowbd_entry(paeth, 32, 16, neon),
+  lowbd_entry(paeth, 32, 32, neon),    lowbd_entry(paeth, 32, 64, neon),
+  lowbd_entry(paeth, 64, 16, neon),    lowbd_entry(paeth, 64, 32, neon),
+  lowbd_entry(paeth, 64, 64, neon),
+};
+
+INSTANTIATE_TEST_SUITE_P(NEON, LowbdIntraPredTest,
+                         ::testing::ValuesIn(LowbdIntraPredTestVectorNeon));
+#endif  // HAVE_NEON
+
 #if HAVE_SSSE3
 const IntraPredFunc<IntraPred> LowbdIntraPredTestVectorSsse3[] = {
   lowbd_intrapred(paeth, ssse3),
@@ -260,9 +413,111 @@ INSTANTIATE_TEST_SUITE_P(AVX2, LowbdIntraPredTest,
 #if CONFIG_AV1_HIGHBITDEPTH
 #if HAVE_NEON
 const IntraPredFunc<HighbdIntraPred> HighbdIntraPredTestVectorNeon[] = {
-  highbd_entry(dc, 4, 4, neon, 8),   highbd_entry(dc, 8, 8, neon, 8),
-  highbd_entry(dc, 16, 16, neon, 8), highbd_entry(dc, 32, 32, neon, 8),
+  highbd_entry(dc, 4, 4, neon, 8),
+  highbd_entry(dc, 8, 8, neon, 8),
+  highbd_entry(dc, 16, 16, neon, 8),
+  highbd_entry(dc, 32, 32, neon, 8),
   highbd_entry(dc, 64, 64, neon, 8),
+
+  highbd_entry(v, 4, 4, neon, 12),
+  highbd_entry(v, 4, 8, neon, 12),
+  highbd_entry(v, 4, 16, neon, 12),
+  highbd_entry(v, 8, 4, neon, 12),
+  highbd_entry(v, 8, 8, neon, 12),
+  highbd_entry(v, 8, 16, neon, 12),
+  highbd_entry(v, 8, 32, neon, 12),
+  highbd_entry(v, 16, 4, neon, 12),
+  highbd_entry(v, 16, 8, neon, 12),
+  highbd_entry(v, 16, 16, neon, 12),
+  highbd_entry(v, 16, 32, neon, 12),
+  highbd_entry(v, 16, 64, neon, 12),
+  highbd_entry(v, 32, 8, neon, 12),
+  highbd_entry(v, 32, 16, neon, 12),
+  highbd_entry(v, 32, 32, neon, 12),
+  highbd_entry(v, 32, 64, neon, 12),
+  highbd_entry(v, 64, 16, neon, 12),
+  highbd_entry(v, 64, 32, neon, 12),
+  highbd_entry(v, 64, 64, neon, 12),
+
+  highbd_entry(paeth, 4, 4, neon, 12),
+  highbd_entry(paeth, 4, 8, neon, 12),
+  highbd_entry(paeth, 4, 16, neon, 12),
+  highbd_entry(paeth, 8, 4, neon, 12),
+  highbd_entry(paeth, 8, 8, neon, 12),
+  highbd_entry(paeth, 8, 16, neon, 12),
+  highbd_entry(paeth, 8, 32, neon, 12),
+  highbd_entry(paeth, 16, 4, neon, 12),
+  highbd_entry(paeth, 16, 8, neon, 12),
+  highbd_entry(paeth, 16, 16, neon, 12),
+  highbd_entry(paeth, 16, 32, neon, 12),
+  highbd_entry(paeth, 16, 64, neon, 12),
+  highbd_entry(paeth, 32, 8, neon, 12),
+  highbd_entry(paeth, 32, 16, neon, 12),
+  highbd_entry(paeth, 32, 32, neon, 12),
+  highbd_entry(paeth, 32, 64, neon, 12),
+  highbd_entry(paeth, 64, 16, neon, 12),
+  highbd_entry(paeth, 64, 32, neon, 12),
+  highbd_entry(paeth, 64, 64, neon, 12),
+
+  highbd_entry(smooth, 4, 4, neon, 12),
+  highbd_entry(smooth, 4, 8, neon, 12),
+  highbd_entry(smooth, 4, 16, neon, 12),
+  highbd_entry(smooth, 8, 4, neon, 12),
+  highbd_entry(smooth, 8, 8, neon, 12),
+  highbd_entry(smooth, 8, 16, neon, 12),
+  highbd_entry(smooth, 8, 32, neon, 12),
+  highbd_entry(smooth, 16, 4, neon, 12),
+  highbd_entry(smooth, 16, 8, neon, 12),
+  highbd_entry(smooth, 16, 16, neon, 12),
+  highbd_entry(smooth, 16, 32, neon, 12),
+  highbd_entry(smooth, 16, 64, neon, 12),
+  highbd_entry(smooth, 32, 8, neon, 12),
+  highbd_entry(smooth, 32, 16, neon, 12),
+  highbd_entry(smooth, 32, 32, neon, 12),
+  highbd_entry(smooth, 32, 64, neon, 12),
+  highbd_entry(smooth, 64, 16, neon, 12),
+  highbd_entry(smooth, 64, 32, neon, 12),
+  highbd_entry(smooth, 64, 64, neon, 12),
+
+  highbd_entry(smooth_v, 4, 4, neon, 12),
+  highbd_entry(smooth_v, 4, 8, neon, 12),
+  highbd_entry(smooth_v, 4, 16, neon, 12),
+  highbd_entry(smooth_v, 8, 4, neon, 12),
+  highbd_entry(smooth_v, 8, 8, neon, 12),
+  highbd_entry(smooth_v, 8, 16, neon, 12),
+  highbd_entry(smooth_v, 8, 32, neon, 12),
+  highbd_entry(smooth_v, 16, 4, neon, 12),
+  highbd_entry(smooth_v, 16, 8, neon, 12),
+  highbd_entry(smooth_v, 16, 16, neon, 12),
+  highbd_entry(smooth_v, 16, 32, neon, 12),
+  highbd_entry(smooth_v, 16, 64, neon, 12),
+  highbd_entry(smooth_v, 32, 8, neon, 12),
+  highbd_entry(smooth_v, 32, 16, neon, 12),
+  highbd_entry(smooth_v, 32, 32, neon, 12),
+  highbd_entry(smooth_v, 32, 64, neon, 12),
+  highbd_entry(smooth_v, 64, 16, neon, 12),
+  highbd_entry(smooth_v, 64, 32, neon, 12),
+  highbd_entry(smooth_v, 64, 64, neon, 12),
+
+  highbd_entry(smooth_h, 4, 4, neon, 12),
+  highbd_entry(smooth_h, 4, 8, neon, 12),
+  highbd_entry(smooth_h, 4, 16, neon, 12),
+  highbd_entry(smooth_h, 8, 4, neon, 12),
+  highbd_entry(smooth_h, 8, 8, neon, 12),
+  highbd_entry(smooth_h, 8, 16, neon, 12),
+  highbd_entry(smooth_h, 8, 32, neon, 12),
+  highbd_entry(smooth_h, 16, 4, neon, 12),
+  highbd_entry(smooth_h, 16, 8, neon, 12),
+  highbd_entry(smooth_h, 16, 16, neon, 12),
+  highbd_entry(smooth_h, 16, 32, neon, 12),
+  highbd_entry(smooth_h, 16, 64, neon, 12),
+  highbd_entry(smooth_h, 32, 8, neon, 12),
+  highbd_entry(smooth_h, 32, 16, neon, 12),
+  highbd_entry(smooth_h, 32, 32, neon, 12),
+  highbd_entry(smooth_h, 32, 64, neon, 12),
+  highbd_entry(smooth_h, 64, 16, neon, 12),
+  highbd_entry(smooth_h, 64, 32, neon, 12),
+  highbd_entry(smooth_h, 64, 64, neon, 12),
 };
 
 INSTANTIATE_TEST_SUITE_P(NEON, HighbdIntraPredTest,

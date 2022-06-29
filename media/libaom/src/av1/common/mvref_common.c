@@ -160,7 +160,7 @@ static AOM_INLINE void scan_row_mbmi(
 
   for (int i = 0; i < end_mi;) {
     const MB_MODE_INFO *const candidate = candidate_mi0[col_offset + i];
-    const int candidate_bsize = candidate->sb_type;
+    const int candidate_bsize = candidate->bsize;
     const int n4_w = mi_size_wide[candidate_bsize];
     int len = AOMMIN(xd->width, n4_w);
     if (use_step_16)
@@ -207,7 +207,7 @@ static AOM_INLINE void scan_col_mbmi(
   for (i = 0; i < end_mi;) {
     const MB_MODE_INFO *const candidate =
         xd->mi[(row_offset + i) * xd->mi_stride + col_offset];
-    const int candidate_bsize = candidate->sb_type;
+    const int candidate_bsize = candidate->bsize;
     const int n4_h = mi_size_high[candidate_bsize];
     int len = AOMMIN(xd->height, n4_h);
     if (use_step_16)
@@ -258,7 +258,7 @@ static AOM_INLINE void scan_blk_mbmi(
 
 static int has_top_right(const AV1_COMMON *cm, const MACROBLOCKD *xd,
                          int mi_row, int mi_col, int bs) {
-  const int sb_mi_size = mi_size_wide[cm->seq_params.sb_size];
+  const int sb_mi_size = mi_size_wide[cm->seq_params->sb_size];
   const int mask_row = mi_row & (sb_mi_size - 1);
   const int mask_col = mi_col & (sb_mi_size - 1);
 
@@ -285,15 +285,17 @@ static int has_top_right(const AV1_COMMON *cm, const MACROBLOCKD *xd,
     bs <<= 1;
   }
 
-  // The left hand of two vertical rectangles always has a top right (as the
-  // block above will have been decoded)
-  if (xd->width < xd->height)
-    if (!xd->is_sec_rect) has_tr = 1;
+  // In a VERTICAL or VERTICAL_4 partition, all partition before the last one
+  // always have a top right (as the block above will have been decoded).
+  if (xd->width < xd->height) {
+    if (!xd->is_last_vertical_rect) has_tr = 1;
+  }
 
-  // The bottom of two horizontal rectangles never has a top right (as the block
-  // to the right won't have been decoded)
-  if (xd->width > xd->height)
-    if (xd->is_sec_rect) has_tr = 0;
+  // In a HORIZONTAL or HORIZONTAL_4 partition, partitions after the first one
+  // never have a top right (as the block to the right won't have been decoded).
+  if (xd->width > xd->height) {
+    if (!xd->is_first_horizontal_rect) has_tr = 0;
+  }
 
   // The bottom left square of a Vertical A (in the old format) does
   // not have a top right as it is decoded before the right hand
@@ -345,7 +347,7 @@ static int add_tpl_ref_mv(const AV1_COMMON *cm, const MACROBLOCKD *xd,
   const int cur_frame_index = cm->cur_frame->order_hint;
   const RefCntBuffer *const buf_0 = get_ref_frame_buf(cm, rf[0]);
   const int frame0_index = buf_0->order_hint;
-  const int cur_offset_0 = get_relative_dist(&cm->seq_params.order_hint_info,
+  const int cur_offset_0 = get_relative_dist(&cm->seq_params->order_hint_info,
                                              cur_frame_index, frame0_index);
   int idx;
   const int allow_high_precision_mv = cm->features.allow_high_precision_mv;
@@ -378,7 +380,7 @@ static int add_tpl_ref_mv(const AV1_COMMON *cm, const MACROBLOCKD *xd,
     // Process compound inter mode
     const RefCntBuffer *const buf_1 = get_ref_frame_buf(cm, rf[1]);
     const int frame1_index = buf_1->order_hint;
-    const int cur_offset_1 = get_relative_dist(&cm->seq_params.order_hint_info,
+    const int cur_offset_1 = get_relative_dist(&cm->seq_params->order_hint_info,
                                                cur_frame_index, frame1_index);
     int_mv comp_refmv;
     get_mv_projection(&comp_refmv.as_mv, prev_frame_mvs->mfmv0.as_mv,
@@ -686,14 +688,14 @@ static AOM_INLINE void setup_ref_mv_list(
         const MB_MODE_INFO *const candidate = xd->mi[-xd->mi_stride + idx];
         process_compound_ref_mv_candidate(
             candidate, cm, rf, ref_id, ref_id_count, ref_diff, ref_diff_count);
-        idx += mi_size_wide[candidate->sb_type];
+        idx += mi_size_wide[candidate->bsize];
       }
 
       for (int idx = 0; abs(max_col_offset) >= 1 && idx < mi_size;) {
         const MB_MODE_INFO *const candidate = xd->mi[idx * xd->mi_stride - 1];
         process_compound_ref_mv_candidate(
             candidate, cm, rf, ref_id, ref_id_count, ref_diff, ref_diff_count);
-        idx += mi_size_high[candidate->sb_type];
+        idx += mi_size_high[candidate->bsize];
       }
 
       // Build up the compound mv predictor
@@ -750,7 +752,7 @@ static AOM_INLINE void setup_ref_mv_list(
       const MB_MODE_INFO *const candidate = xd->mi[-xd->mi_stride + idx];
       process_single_ref_mv_candidate(candidate, cm, ref_frame, refmv_count,
                                       ref_mv_stack, ref_mv_weight);
-      idx += mi_size_wide[candidate->sb_type];
+      idx += mi_size_wide[candidate->bsize];
     }
 
     for (int idx = 0; abs(max_col_offset) >= 1 && idx < mi_size &&
@@ -758,7 +760,7 @@ static AOM_INLINE void setup_ref_mv_list(
       const MB_MODE_INFO *const candidate = xd->mi[idx * xd->mi_stride - 1];
       process_single_ref_mv_candidate(candidate, cm, ref_frame, refmv_count,
                                       ref_mv_stack, ref_mv_weight);
-      idx += mi_size_high[candidate->sb_type];
+      idx += mi_size_high[candidate->bsize];
     }
 
     for (int idx = 0; idx < *refmv_count; ++idx) {
@@ -795,7 +797,7 @@ void av1_find_mv_refs(const AV1_COMMON *cm, const MACROBLOCKD *xd,
       global_mvs[ref_frame].as_int = INVALID_MV;
     }
   } else {
-    const BLOCK_SIZE bsize = mi->sb_type;
+    const BLOCK_SIZE bsize = mi->bsize;
     const int allow_high_precision_mv = cm->features.allow_high_precision_mv;
     const int force_integer_mv = cm->features.cur_frame_force_integer_mv;
     if (ref_frame < REF_FRAMES) {
@@ -836,7 +838,7 @@ void av1_find_best_ref_mvs(int allow_hp, int_mv *mvlist, int_mv *nearest_mv,
 void av1_setup_frame_buf_refs(AV1_COMMON *cm) {
   cm->cur_frame->order_hint = cm->current_frame.order_hint;
   cm->cur_frame->display_order_hint = cm->current_frame.display_order_hint;
-
+  cm->cur_frame->pyramid_level = cm->current_frame.pyramid_level;
   MV_REFERENCE_FRAME ref_frame;
   for (ref_frame = LAST_FRAME; ref_frame <= ALTREF_FRAME; ++ref_frame) {
     const RefCntBuffer *const buf = get_ref_frame_buf(cm, ref_frame);
@@ -852,10 +854,10 @@ void av1_setup_frame_sign_bias(AV1_COMMON *cm) {
   MV_REFERENCE_FRAME ref_frame;
   for (ref_frame = LAST_FRAME; ref_frame <= ALTREF_FRAME; ++ref_frame) {
     const RefCntBuffer *const buf = get_ref_frame_buf(cm, ref_frame);
-    if (cm->seq_params.order_hint_info.enable_order_hint && buf != NULL) {
+    if (cm->seq_params->order_hint_info.enable_order_hint && buf != NULL) {
       const int ref_order_hint = buf->order_hint;
       cm->ref_frame_sign_bias[ref_frame] =
-          (get_relative_dist(&cm->seq_params.order_hint_info, ref_order_hint,
+          (get_relative_dist(&cm->seq_params->order_hint_info, ref_order_hint,
                              (int)cm->current_frame.order_hint) <= 0)
               ? 0
               : 1;
@@ -928,10 +930,10 @@ static int motion_field_projection(AV1_COMMON *cm,
       &start_frame_buf->ref_order_hints[0];
   const int cur_order_hint = cm->cur_frame->order_hint;
   int start_to_current_frame_offset = get_relative_dist(
-      &cm->seq_params.order_hint_info, start_frame_order_hint, cur_order_hint);
+      &cm->seq_params->order_hint_info, start_frame_order_hint, cur_order_hint);
 
   for (MV_REFERENCE_FRAME rf = LAST_FRAME; rf <= INTER_REFS_PER_FRAME; ++rf) {
-    ref_offset[rf] = get_relative_dist(&cm->seq_params.order_hint_info,
+    ref_offset[rf] = get_relative_dist(&cm->seq_params->order_hint_info,
                                        start_frame_order_hint,
                                        ref_order_hints[rf - LAST_FRAME]);
   }
@@ -978,10 +980,32 @@ static int motion_field_projection(AV1_COMMON *cm,
   return 1;
 }
 
-void av1_setup_motion_field(AV1_COMMON *cm) {
-  const OrderHintInfo *const order_hint_info = &cm->seq_params.order_hint_info;
+// cm->ref_frame_side is calculated here, and will be used in
+// av1_copy_frame_mvs() to affect how mvs are copied.
+void av1_calculate_ref_frame_side(AV1_COMMON *cm) {
+  const OrderHintInfo *const order_hint_info = &cm->seq_params->order_hint_info;
 
   memset(cm->ref_frame_side, 0, sizeof(cm->ref_frame_side));
+  if (!order_hint_info->enable_order_hint) return;
+
+  const int cur_order_hint = cm->cur_frame->order_hint;
+
+  for (int ref_frame = LAST_FRAME; ref_frame <= ALTREF_FRAME; ref_frame++) {
+    const RefCntBuffer *const buf = get_ref_frame_buf(cm, ref_frame);
+    int order_hint = 0;
+
+    if (buf != NULL) order_hint = buf->order_hint;
+
+    if (get_relative_dist(order_hint_info, order_hint, cur_order_hint) > 0)
+      cm->ref_frame_side[ref_frame] = 1;
+    else if (order_hint == cur_order_hint)
+      cm->ref_frame_side[ref_frame] = -1;
+  }
+}
+
+void av1_setup_motion_field(AV1_COMMON *cm) {
+  const OrderHintInfo *const order_hint_info = &cm->seq_params->order_hint_info;
+
   if (!order_hint_info->enable_order_hint) return;
 
   TPL_MV_REF *tpl_mvs_base = cm->tpl_mvs;
@@ -993,7 +1017,6 @@ void av1_setup_motion_field(AV1_COMMON *cm) {
   }
 
   const int cur_order_hint = cm->cur_frame->order_hint;
-
   const RefCntBuffer *ref_buf[INTER_REFS_PER_FRAME];
   int ref_order_hint[INTER_REFS_PER_FRAME];
 
@@ -1006,11 +1029,6 @@ void av1_setup_motion_field(AV1_COMMON *cm) {
 
     ref_buf[ref_idx] = buf;
     ref_order_hint[ref_idx] = order_hint;
-
-    if (get_relative_dist(order_hint_info, order_hint, cur_order_hint) > 0)
-      cm->ref_frame_side[ref_frame] = 1;
-    else if (order_hint == cur_order_hint)
-      cm->ref_frame_side[ref_frame] = -1;
   }
 
   int ref_stamp = MFMV_STACK_SIZE - 1;
@@ -1050,15 +1068,15 @@ void av1_setup_motion_field(AV1_COMMON *cm) {
 static INLINE void record_samples(const MB_MODE_INFO *mbmi, int *pts,
                                   int *pts_inref, int row_offset, int sign_r,
                                   int col_offset, int sign_c) {
-  int bw = block_size_wide[mbmi->sb_type];
-  int bh = block_size_high[mbmi->sb_type];
-  int x = col_offset * MI_SIZE + sign_c * AOMMAX(bw, MI_SIZE) / 2 - 1;
-  int y = row_offset * MI_SIZE + sign_r * AOMMAX(bh, MI_SIZE) / 2 - 1;
+  const int bw = block_size_wide[mbmi->bsize];
+  const int bh = block_size_high[mbmi->bsize];
+  const int x = col_offset * MI_SIZE + sign_c * bw / 2 - 1;
+  const int y = row_offset * MI_SIZE + sign_r * bh / 2 - 1;
 
   pts[0] = GET_MV_SUBPEL(x);
   pts[1] = GET_MV_SUBPEL(y);
-  pts_inref[0] = GET_MV_SUBPEL(x) + mbmi->mv[0].as_mv.col;
-  pts_inref[1] = GET_MV_SUBPEL(y) + mbmi->mv[0].as_mv.row;
+  pts_inref[0] = pts[0] + mbmi->mv[0].as_mv.col;
+  pts_inref[1] = pts[1] + mbmi->mv[0].as_mv.row;
 }
 
 // Select samples according to the motion vector difference.
@@ -1067,44 +1085,22 @@ uint8_t av1_selectSamples(MV *mv, int *pts, int *pts_inref, int len,
   const int bw = block_size_wide[bsize];
   const int bh = block_size_high[bsize];
   const int thresh = clamp(AOMMAX(bw, bh), 16, 112);
-  int pts_mvd[SAMPLES_ARRAY_SIZE] = { 0 };
-  int i, j, k, l = len;
   uint8_t ret = 0;
   assert(len <= LEAST_SQUARES_SAMPLES_MAX);
 
-  // Obtain the motion vector difference.
-  for (i = 0; i < len; ++i) {
-    pts_mvd[i] = abs(pts_inref[2 * i] - pts[2 * i] - mv->col) +
-                 abs(pts_inref[2 * i + 1] - pts[2 * i + 1] - mv->row);
-
-    if (pts_mvd[i] > thresh)
-      pts_mvd[i] = -1;
-    else
-      ret++;
+  // Only keep the samples with MV differences within threshold.
+  for (int i = 0; i < len; ++i) {
+    const int diff = abs(pts_inref[2 * i] - pts[2 * i] - mv->col) +
+                     abs(pts_inref[2 * i + 1] - pts[2 * i + 1] - mv->row);
+    if (diff > thresh) continue;
+    if (ret != i) {
+      memcpy(pts + 2 * ret, pts + 2 * i, 2 * sizeof(pts[0]));
+      memcpy(pts_inref + 2 * ret, pts_inref + 2 * i, 2 * sizeof(pts_inref[0]));
+    }
+    ++ret;
   }
-
   // Keep at least 1 sample.
-  if (!ret) return 1;
-
-  i = 0;
-  j = l - 1;
-  for (k = 0; k < l - ret; k++) {
-    while (pts_mvd[i] != -1) i++;
-    while (pts_mvd[j] == -1) j--;
-    assert(i != j);
-    if (i > j) break;
-
-    // Replace the discarded samples;
-    pts_mvd[i] = pts_mvd[j];
-    pts[2 * i] = pts[2 * j];
-    pts[2 * i + 1] = pts[2 * j + 1];
-    pts_inref[2 * i] = pts_inref[2 * j];
-    pts_inref[2 * i + 1] = pts_inref[2 * j + 1];
-    i++;
-    j--;
-  }
-
-  return ret;
+  return AOMMAX(ret, 1);
 }
 
 // Note: Samples returned are at 1/8-pel precision
@@ -1116,7 +1112,6 @@ uint8_t av1_findSamples(const AV1_COMMON *cm, MACROBLOCKD *xd, int *pts,
   const int ref_frame = mbmi0->ref_frame[0];
   const int up_available = xd->up_available;
   const int left_available = xd->left_available;
-  int i, mi_step;
   uint8_t np = 0;
   int do_tl = 1;
   int do_tr = 1;
@@ -1128,7 +1123,7 @@ uint8_t av1_findSamples(const AV1_COMMON *cm, MACROBLOCKD *xd, int *pts,
   if (up_available) {
     const int mi_row_offset = -1;
     const MB_MODE_INFO *mbmi = xd->mi[mi_row_offset * mi_stride];
-    uint8_t superblock_width = mi_size_wide[mbmi->sb_type];
+    uint8_t superblock_width = mi_size_wide[mbmi->bsize];
 
     if (xd->width <= superblock_width) {
       // Handle "current block width <= above block width" case.
@@ -1141,24 +1136,22 @@ uint8_t av1_findSamples(const AV1_COMMON *cm, MACROBLOCKD *xd, int *pts,
         record_samples(mbmi, pts, pts_inref, 0, -1, col_offset, 1);
         pts += 2;
         pts_inref += 2;
-        np++;
-        if (np >= LEAST_SQUARES_SAMPLES_MAX) return LEAST_SQUARES_SAMPLES_MAX;
+        if (++np >= LEAST_SQUARES_SAMPLES_MAX) return LEAST_SQUARES_SAMPLES_MAX;
       }
     } else {
       // Handle "current block width > above block width" case.
-      for (i = 0; i < AOMMIN(xd->width, cm->mi_params.mi_cols - mi_col);
-           i += mi_step) {
+      for (int i = 0; i < AOMMIN(xd->width, cm->mi_params.mi_cols - mi_col);
+           i += superblock_width) {
         mbmi = xd->mi[i + mi_row_offset * mi_stride];
-        superblock_width = mi_size_wide[mbmi->sb_type];
-        mi_step = AOMMIN(xd->width, superblock_width);
+        superblock_width = mi_size_wide[mbmi->bsize];
 
         if (mbmi->ref_frame[0] == ref_frame &&
             mbmi->ref_frame[1] == NONE_FRAME) {
           record_samples(mbmi, pts, pts_inref, 0, -1, i, 1);
           pts += 2;
           pts_inref += 2;
-          np++;
-          if (np >= LEAST_SQUARES_SAMPLES_MAX) return LEAST_SQUARES_SAMPLES_MAX;
+          if (++np >= LEAST_SQUARES_SAMPLES_MAX)
+            return LEAST_SQUARES_SAMPLES_MAX;
         }
       }
     }
@@ -1169,7 +1162,7 @@ uint8_t av1_findSamples(const AV1_COMMON *cm, MACROBLOCKD *xd, int *pts,
   if (left_available) {
     const int mi_col_offset = -1;
     const MB_MODE_INFO *mbmi = xd->mi[mi_col_offset];
-    uint8_t superblock_height = mi_size_high[mbmi->sb_type];
+    uint8_t superblock_height = mi_size_high[mbmi->bsize];
 
     if (xd->height <= superblock_height) {
       // Handle "current block height <= above block height" case.
@@ -1186,19 +1179,18 @@ uint8_t av1_findSamples(const AV1_COMMON *cm, MACROBLOCKD *xd, int *pts,
       }
     } else {
       // Handle "current block height > above block height" case.
-      for (i = 0; i < AOMMIN(xd->height, cm->mi_params.mi_rows - mi_row);
-           i += mi_step) {
+      for (int i = 0; i < AOMMIN(xd->height, cm->mi_params.mi_rows - mi_row);
+           i += superblock_height) {
         mbmi = xd->mi[mi_col_offset + i * mi_stride];
-        superblock_height = mi_size_high[mbmi->sb_type];
-        mi_step = AOMMIN(xd->height, superblock_height);
+        superblock_height = mi_size_high[mbmi->bsize];
 
         if (mbmi->ref_frame[0] == ref_frame &&
             mbmi->ref_frame[1] == NONE_FRAME) {
           record_samples(mbmi, pts, pts_inref, i, 1, 0, -1);
           pts += 2;
           pts_inref += 2;
-          np++;
-          if (np >= LEAST_SQUARES_SAMPLES_MAX) return LEAST_SQUARES_SAMPLES_MAX;
+          if (++np >= LEAST_SQUARES_SAMPLES_MAX)
+            return LEAST_SQUARES_SAMPLES_MAX;
         }
       }
     }
@@ -1215,8 +1207,7 @@ uint8_t av1_findSamples(const AV1_COMMON *cm, MACROBLOCKD *xd, int *pts,
       record_samples(mbmi, pts, pts_inref, 0, -1, 0, -1);
       pts += 2;
       pts_inref += 2;
-      np++;
-      if (np >= LEAST_SQUARES_SAMPLES_MAX) return LEAST_SQUARES_SAMPLES_MAX;
+      if (++np >= LEAST_SQUARES_SAMPLES_MAX) return LEAST_SQUARES_SAMPLES_MAX;
     }
   }
   assert(np <= LEAST_SQUARES_SAMPLES_MAX);
@@ -1234,8 +1225,7 @@ uint8_t av1_findSamples(const AV1_COMMON *cm, MACROBLOCKD *xd, int *pts,
 
       if (mbmi->ref_frame[0] == ref_frame && mbmi->ref_frame[1] == NONE_FRAME) {
         record_samples(mbmi, pts, pts_inref, 0, -1, xd->width, 1);
-        np++;
-        if (np >= LEAST_SQUARES_SAMPLES_MAX) return LEAST_SQUARES_SAMPLES_MAX;
+        if (++np >= LEAST_SQUARES_SAMPLES_MAX) return LEAST_SQUARES_SAMPLES_MAX;
       }
     }
   }
@@ -1245,7 +1235,7 @@ uint8_t av1_findSamples(const AV1_COMMON *cm, MACROBLOCKD *xd, int *pts,
 }
 
 void av1_setup_skip_mode_allowed(AV1_COMMON *cm) {
-  const OrderHintInfo *const order_hint_info = &cm->seq_params.order_hint_info;
+  const OrderHintInfo *const order_hint_info = &cm->seq_params->order_hint_info;
   SkipModeInfo *const skip_mode_info = &cm->current_frame.skip_mode_info;
 
   skip_mode_info->skip_mode_allowed = 0;
@@ -1349,11 +1339,11 @@ void av1_set_frame_refs(AV1_COMMON *const cm, int *remapped_ref_idx,
   int lst_frame_sort_idx = -1;
   int gld_frame_sort_idx = -1;
 
-  assert(cm->seq_params.order_hint_info.enable_order_hint);
-  assert(cm->seq_params.order_hint_info.order_hint_bits_minus_1 >= 0);
+  assert(cm->seq_params->order_hint_info.enable_order_hint);
+  assert(cm->seq_params->order_hint_info.order_hint_bits_minus_1 >= 0);
   const int cur_order_hint = (int)cm->current_frame.order_hint;
   const int cur_frame_sort_idx =
-      1 << cm->seq_params.order_hint_info.order_hint_bits_minus_1;
+      1 << cm->seq_params->order_hint_info.order_hint_bits_minus_1;
 
   REF_FRAME_INFO ref_frame_info[REF_FRAMES];
   int ref_flag_list[INTER_REFS_PER_FRAME] = { 0, 0, 0, 0, 0, 0, 0 };
@@ -1375,7 +1365,7 @@ void av1_set_frame_refs(AV1_COMMON *const cm, int *remapped_ref_idx,
     ref_frame_info[i].sort_idx =
         (offset == -1) ? -1
                        : cur_frame_sort_idx +
-                             get_relative_dist(&cm->seq_params.order_hint_info,
+                             get_relative_dist(&cm->seq_params->order_hint_info,
                                                offset, cur_order_hint);
     assert(ref_frame_info[i].sort_idx >= -1);
 
@@ -1386,11 +1376,11 @@ void av1_set_frame_refs(AV1_COMMON *const cm, int *remapped_ref_idx,
   // Confirm both LAST_FRAME and GOLDEN_FRAME are valid forward reference
   // frames.
   if (lst_frame_sort_idx == -1 || lst_frame_sort_idx >= cur_frame_sort_idx) {
-    aom_internal_error(&cm->error, AOM_CODEC_CORRUPT_FRAME,
+    aom_internal_error(cm->error, AOM_CODEC_CORRUPT_FRAME,
                        "Inter frame requests a look-ahead frame as LAST");
   }
   if (gld_frame_sort_idx == -1 || gld_frame_sort_idx >= cur_frame_sort_idx) {
-    aom_internal_error(&cm->error, AOM_CODEC_CORRUPT_FRAME,
+    aom_internal_error(cm->error, AOM_CODEC_CORRUPT_FRAME,
                        "Inter frame requests a look-ahead frame as GOLDEN");
   }
 
