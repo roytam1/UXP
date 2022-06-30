@@ -4,6 +4,10 @@ cp $1/src/nestegg.c src
 cp $1/LICENSE .
 cp $1/README.md .
 cp $1/AUTHORS .
+
+# Patch the imported files.
+patch -p1 < mcp-avcaacsupport.patch
+
 if [ -d $1/.git ]; then
   rev=$(cd $1 && git rev-parse --verify HEAD)
   dirty=$(cd $1 && git diff-index --name-only HEAD)
