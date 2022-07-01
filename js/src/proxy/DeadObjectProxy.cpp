@@ -135,7 +135,7 @@ DeadObjectProxy::className(JSContext* cx, HandleObject wrapper) const
 }
 
 JSString*
-DeadObjectProxy::fun_toString(JSContext* cx, HandleObject proxy, unsigned indent) const
+DeadObjectProxy::fun_toString(JSContext* cx, HandleObject proxy, bool isToSource) const
 {
     ReportDead(cx);
     return nullptr;
