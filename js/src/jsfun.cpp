@@ -1019,7 +1019,7 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
         if (fun->explicitName()) {
             if (!out.append(' '))
                 return false;
-            if (fun->isBoundFunction()) {
+            if (fun->isBoundFunction() && !fun->hasBoundFunctionNamePrefix()) {
                 if (!out.append(cx->names().boundWithSpace))
                     return false;
             }
@@ -1352,20 +1352,23 @@ JSFunction::getUnresolvedName(JSContext* cx, HandleFunction fun, MutableHandleAt
         return true;
     }
 
-    if (fun->isBoundFunction()) {
+    if (fun->isBoundFunction() && !fun->hasBoundFunctionNamePrefix()) {
         // Bound functions are never unnamed.
         MOZ_ASSERT(name);
 
-        StringBuffer sb(cx);
-        if (!sb.append(cx->names().boundWithSpace) || !sb.append(name))
-            return false;
+        if (name->length() > 0) {
+            StringBuffer sb(cx);
+            if (!sb.append(cx->names().boundWithSpace) || !sb.append(name))
+                return false;
 
-        JSAtom* boundName = sb.finishAtom();
-        if (!boundName)
-            return false;
+            name = sb.finishAtom();
+            if (!name)
+                return false;
+        } else {
+            name = cx->names().boundWithSpace;
+        }
 
-        v.set(boundName);
-        return true;
+        fun->setPrefixedBoundFunctionName(name);
     }
 
     v.set(name != nullptr ? name : cx->names().empty);
