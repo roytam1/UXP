@@ -978,8 +978,6 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
         }
     }
 
-    bool funIsNonArrowLambda = fun->isLambda() && !fun->isArrow();
-
     // Default class constructors are self-hosted, but have their source
     // objects overridden to refer to the span of the class statement or
     // expression. Non-default class constructors are never self-hosted. So,
@@ -989,10 +987,7 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
 
     // If we're not in pretty mode, put parentheses around lambda functions
     // so that eval returns lambda, not function statement.
-    if (haveSource && !prettyPrint && funIsNonArrowLambda) {
-        if (!out.append('('))
-            return nullptr;
-    }
+    bool addParentheses = haveSource && !prettyPrint && (fun->isLambda() && !fun->isArrow());
 
     if (haveSource && !script->scriptSource()->hasSourceData() &&
         !JSScript::loadSource(cx, script->scriptSource(), &haveSource))
@@ -1000,34 +995,10 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
         return nullptr;
     }
 
-    auto AppendPrelude = [cx, &out, &fun]() {
-        if (fun->isAsync()) {
-            if (!out.append("async "))
-                return false;
-        }
-
-        if (!fun->isArrow()) {
-            if (!out.append("function"))
-                return false;
-
-            if (fun->isStarGenerator()) {
-                if (!out.append('*'))
-                    return false;
-            }
-        }
-
-        if (fun->explicitName()) {
-            if (!out.append(' '))
-                return false;
-            if (fun->isBoundFunction() && !fun->hasBoundFunctionNamePrefix()) {
-                if (!out.append(cx->names().boundWithSpace))
-                    return false;
-            }
-            if (!out.append(fun->explicitName()))
-                return false;
-        }
-        return true;
-    };
+    if (addParentheses) {
+        if (!out.append('('))
+            return nullptr;
+    }
 
     if (haveSource) {
         Rooted<JSFlatString*> src(cx, JSScript::sourceDataForToString(cx, script));
@@ -1036,36 +1007,61 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
 
         if (!out.append(src))
             return nullptr;
-
-        if (!prettyPrint && funIsNonArrowLambda) {
-            if (!out.append(')'))
+    } else {
+        if (fun->isAsync()) {
+            if (!out.append("async "))
                 return nullptr;
         }
-    } else if (fun->isInterpreted() &&
-               (!fun->isSelfHostedBuiltin() ||
-                fun->infallibleIsDefaultClassConstructor(cx)))
-    {
-        // Default class constructors should always haveSource except;
-        //
-        // 1. Source has been discarded for the whole compartment.
-        //
-        // 2. The source is marked as "lazy", i.e., retrieved on demand, and
-        // the embedding has not provided a hook to retrieve sources.
-        MOZ_ASSERT_IF(fun->infallibleIsDefaultClassConstructor(cx),
-                      !cx->runtime()->sourceHook ||
-                      !script->scriptSource()->sourceRetrievable() ||
-                      fun->compartment()->behaviors().discardSource());
-        if (!AppendPrelude() ||
-            !out.append("() {\n    [sourceless code]\n}"))
-        {
-            return nullptr;
-        }
-    } else {
 
-        if (!AppendPrelude() ||
-            !out.append("() {\n    [native code]\n}"))
+        if (!fun->isArrow()) {
+            if (!out.append("function"))
+                return nullptr;
+
+            if (fun->isStarGenerator()) {
+                if (!out.append('*'))
+                    return nullptr;
+            }
+        }
+
+        if (fun->explicitName()) {
+            if (!out.append(' '))
+                return nullptr;
+            if (fun->isBoundFunction() && !fun->hasBoundFunctionNamePrefix()) {
+                if (!out.append(cx->names().boundWithSpace))
+                    return nullptr;
+            }
+            if (!out.append(fun->explicitName()))
+                return nullptr;
+        }
+
+        if (fun->isInterpreted() &&
+            (!fun->isSelfHostedBuiltin() ||
+             fun->infallibleIsDefaultClassConstructor(cx)))
+        {
+            // Default class constructors should always haveSource except;
+            //
+            // 1. Source has been discarded for the whole compartment.
+            //
+            // 2. The source is marked as "lazy", i.e., retrieved on demand, and
+            // the embedding has not provided a hook to retrieve sources.
+            MOZ_ASSERT_IF(fun->infallibleIsDefaultClassConstructor(cx),
+                          !cx->runtime()->sourceHook ||
+                          !script->scriptSource()->sourceRetrievable() ||
+                          fun->compartment()->behaviors().discardSource());
+
+            if (!out.append("() {\n    [sourceless code]\n}"))
+                return nullptr;
+        } else {
+            if (!out.append("() {\n    [native code]\n}"))
+                return nullptr;
+        }
+    }
+
+    if (addParentheses) {
+        if (!out.append(')'))
             return nullptr;
     }
+
     return out.finishString();
 }
 
