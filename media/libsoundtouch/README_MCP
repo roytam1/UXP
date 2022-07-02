@@ -1,6 +1,6 @@
 These files are from the SoundTouch library (http://www.surina.net/soundtouch/),
-and are extracted from the revision r222 of the svn repository at
-https://soundtouch.svn.sourceforge.net/svnroot/soundtouch/trunk.
+and are extracted from tagged version 2.3.1 of the git repository at
+https://codeberg.org/soundtouch/soundtouch/.
 
 The whole library is not used, only the relevant files are imported in the tree,
 using the script `update.sh`. Some changes have been made to the files, using

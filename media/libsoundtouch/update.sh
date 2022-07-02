@@ -43,4 +43,6 @@ done
 
 # Patch the imported files.
 patch -p1 < moz-libsoundtouch.patch
+patch -p1 < mcp-disableexceptions.patch
 
+echo "Remember to update README_MCP with the version details."
