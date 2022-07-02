@@ -377,7 +377,7 @@ extern JS_FRIEND_API(bool)
 proxy_GetElements(JSContext* cx, JS::HandleObject proxy, uint32_t begin, uint32_t end,
                   ElementAdder* adder);
 extern JS_FRIEND_API(JSString*)
-proxy_FunToString(JSContext* cx, JS::HandleObject proxy, unsigned indent);
+proxy_FunToString(JSContext* cx, JS::HandleObject proxy, bool isToSource);
 
 /**
  * A class of objects that return source code on demand.

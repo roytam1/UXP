@@ -498,9 +498,12 @@ fun_resolve(JSContext* cx, HandleObject obj, HandleId id, bool* resolvedp)
             if (fun->hasResolvedName())
                 return true;
 
+            RootedAtom name(cx);
+            if (!JSFunction::getUnresolvedName(cx, fun, &name))
+                return false;
+
             // Don't define an own .name property for unnamed functions.
-            JSAtom* name = fun->getUnresolvedName(cx);
-            if (name == nullptr)
+            if (!name)
                 return true;
 
             v.setString(name);
@@ -939,24 +942,24 @@ const Class JSFunction::class_ = {
 const Class* const js::FunctionClassPtr = &JSFunction::class_;
 
 JSString*
-js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
+js::FunctionToString(JSContext* cx, HandleFunction fun, bool isToSource)
 {
     if (fun->isInterpretedLazy() && !JSFunction::getOrCreateScript(cx, fun))
         return nullptr;
 
     if (IsAsmJSModule(fun))
-        return AsmJSModuleToString(cx, fun, !prettyPrint);
+        return AsmJSModuleToString(cx, fun, isToSource);
     if (IsAsmJSFunction(fun))
         return AsmJSFunctionToString(cx, fun);
 
     if (IsWrappedAsyncFunction(fun)) {
         RootedFunction unwrapped(cx, GetUnwrappedAsyncFunction(fun));
-        return FunctionToString(cx, unwrapped, prettyPrint);
+        return FunctionToString(cx, unwrapped, isToSource);
     }
 
     if (IsWrappedAsyncGenerator(fun)) {
         RootedFunction unwrapped(cx, GetUnwrappedAsyncGenerator(fun));
-        return FunctionToString(cx, unwrapped, prettyPrint);
+        return FunctionToString(cx, unwrapped, isToSource);
     }
 
     StringBuffer out(cx);
@@ -975,8 +978,6 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
         }
     }
 
-    bool funIsNonArrowLambda = fun->isLambda() && !fun->isArrow();
-
     // Default class constructors are self-hosted, but have their source
     // objects overridden to refer to the span of the class statement or
     // expression. Non-default class constructors are never self-hosted. So,
@@ -984,12 +985,9 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
     bool haveSource = fun->isInterpreted() && (fun->isClassConstructor() ||
                                                !fun->isSelfHostedBuiltin());
 
-    // If we're not in pretty mode, put parentheses around lambda functions
-    // so that eval returns lambda, not function statement.
-    if (haveSource && !prettyPrint && funIsNonArrowLambda) {
-        if (!out.append("("))
-            return nullptr;
-    }
+    // If we're in toSource mode, put parentheses around lambda functions so
+    // that eval returns lambda, not function statement.
+    bool addParentheses = haveSource && isToSource && (fun->isLambda() && !fun->isArrow());
 
     if (haveSource && !script->scriptSource()->hasSourceData() &&
         !JSScript::loadSource(cx, script->scriptSource(), &haveSource))
@@ -997,30 +995,10 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
         return nullptr;
     }
 
-    auto AppendPrelude = [&out, &fun]() {
-        if (fun->isAsync()) {
-            if (!out.append("async "))
-                return false;
-        }
-
-        if (!fun->isArrow()) {
-            if (!out.append("function"))
-                return false;
-
-            if (fun->isStarGenerator()) {
-                if (!out.append('*'))
-                    return false;
-            }
-        }
-
-        if (fun->explicitName()) {
-            if (!out.append(' '))
-                return false;
-            if (!out.append(fun->explicitName()))
-                return false;
-        }
-        return true;
-    };
+    if (addParentheses) {
+        if (!out.append('('))
+            return nullptr;
+    }
 
     if (haveSource) {
         Rooted<JSFlatString*> src(cx, JSScript::sourceDataForToString(cx, script));
@@ -1029,53 +1007,70 @@ js::FunctionToString(JSContext* cx, HandleFunction fun, bool prettyPrint)
 
         if (!out.append(src))
             return nullptr;
-
-        if (!prettyPrint && funIsNonArrowLambda) {
-            if (!out.append(")"))
+    } else {
+        if (fun->isAsync()) {
+            if (!out.append("async "))
                 return nullptr;
         }
-    } else if (fun->isInterpreted() &&
-               (!fun->isSelfHostedBuiltin() ||
-                fun->infallibleIsDefaultClassConstructor(cx)))
-    {
-        // Default class constructors should always haveSource except;
-        //
-        // 1. Source has been discarded for the whole compartment.
-        //
-        // 2. The source is marked as "lazy", i.e., retrieved on demand, and
-        // the embedding has not provided a hook to retrieve sources.
-        MOZ_ASSERT_IF(fun->infallibleIsDefaultClassConstructor(cx),
-                      !cx->runtime()->sourceHook ||
-                      !script->scriptSource()->sourceRetrievable() ||
-                      fun->compartment()->behaviors().discardSource());
-        if (!AppendPrelude() ||
-            !out.append("() {\n    ") ||
-            !out.append("[sourceless code]") ||
-            !out.append("\n}"))
-        {
-            return nullptr;
+
+        if (!fun->isArrow()) {
+            if (!out.append("function"))
+                return nullptr;
+
+            if (fun->isStarGenerator()) {
+                if (!out.append('*'))
+                    return nullptr;
+            }
         }
-    } else {
 
-        if (!AppendPrelude() ||
-            !out.append("() {\n    "))
-            return nullptr;
+        if (fun->explicitName()) {
+            if (!out.append(' '))
+                return nullptr;
+            if (fun->isBoundFunction() && !fun->hasBoundFunctionNamePrefix()) {
+                if (!out.append(cx->names().boundWithSpace))
+                    return nullptr;
+            }
+            if (!out.append(fun->explicitName()))
+                return nullptr;
+        }
 
-        if (!out.append("[native code]"))
-            return nullptr;
+        if (fun->isInterpreted() &&
+            (!fun->isSelfHostedBuiltin() ||
+             fun->infallibleIsDefaultClassConstructor(cx)))
+        {
+            // Default class constructors should always haveSource except;
+            //
+            // 1. Source has been discarded for the whole compartment.
+            //
+            // 2. The source is marked as "lazy", i.e., retrieved on demand, and
+            // the embedding has not provided a hook to retrieve sources.
+            MOZ_ASSERT_IF(fun->infallibleIsDefaultClassConstructor(cx),
+                          !cx->runtime()->sourceHook ||
+                          !script->scriptSource()->sourceRetrievable() ||
+                          fun->compartment()->behaviors().discardSource());
 
-        if (!out.append("\n}"))
+            if (!out.append("() {\n    [sourceless code]\n}"))
+                return nullptr;
+        } else {
+            if (!out.append("() {\n    [native code]\n}"))
+                return nullptr;
+        }
+    }
+
+    if (addParentheses) {
+        if (!out.append(')'))
             return nullptr;
     }
+
     return out.finishString();
 }
 
 JSString*
-fun_toStringHelper(JSContext* cx, HandleObject obj, unsigned indent)
+fun_toStringHelper(JSContext* cx, HandleObject obj, bool isToSource)
 {
     if (!obj->is<JSFunction>()) {
         if (JSFunToStringOp op = obj->getOpsFunToString())
-            return op(cx, obj, indent);
+            return op(cx, obj, isToSource);
 
         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
                                   JSMSG_INCOMPATIBLE_PROTO,
@@ -1084,7 +1079,7 @@ fun_toStringHelper(JSContext* cx, HandleObject obj, unsigned indent)
     }
 
     RootedFunction fun(cx, &obj->as<JSFunction>());
-    return FunctionToString(cx, fun, indent != JS_DONT_PRETTY_PRINT);
+    return FunctionToString(cx, fun, isToSource);
 }
 
 bool
@@ -1107,16 +1102,11 @@ js::fun_toString(JSContext* cx, unsigned argc, Value* vp)
     CallArgs args = CallArgsFromVp(argc, vp);
     MOZ_ASSERT(IsFunctionObject(args.calleev()));
 
-    uint32_t indent = 0;
-
-    if (args.length() != 0 && !ToUint32(cx, args[0], &indent))
-        return false;
-
     RootedObject obj(cx, ToObject(cx, args.thisv()));
     if (!obj)
         return false;
 
-    RootedString str(cx, fun_toStringHelper(cx, obj, indent));
+    JSString* str = fun_toStringHelper(cx, obj, /* isToSource = */ false);
     if (!str)
         return false;
 
@@ -1137,12 +1127,12 @@ fun_toSource(JSContext* cx, unsigned argc, Value* vp)
 
     RootedString str(cx);
     if (obj->isCallable())
-        str = fun_toStringHelper(cx, obj, JS_DONT_PRETTY_PRINT);
+        str = fun_toStringHelper(cx, obj, /* isToSource = */ true);
     else
         str = ObjectToSource(cx, obj);
-
     if (!str)
         return false;
+
     args.rval().setString(str);
     return true;
 }
@@ -1327,23 +1317,45 @@ JSFunction::getUnresolvedLength(JSContext* cx, HandleFunction fun, MutableHandle
     return true;
 }
 
-JSAtom*
-JSFunction::getUnresolvedName(JSContext* cx)
+/* static */ bool
+JSFunction::getUnresolvedName(JSContext* cx, HandleFunction fun, MutableHandleAtom v)
 {
-    MOZ_ASSERT(!IsInternalFunctionObject(*this));
-    MOZ_ASSERT(!hasResolvedName());
+    MOZ_ASSERT(!IsInternalFunctionObject(*fun));
+    MOZ_ASSERT(!fun->hasResolvedName());
 
-    if (isClassConstructor()) {
+    JSAtom* name = fun->explicitOrCompileTimeName();
+    if (fun->isClassConstructor()) {
         // It's impossible to have an empty named class expression. We use
         // empty as a sentinel when creating default class constructors.
-        MOZ_ASSERT(explicitOrCompileTimeName() != cx->names().empty);
+        MOZ_ASSERT(name != cx->names().empty);
 
         // Unnamed class expressions should not get a .name property at all.
-        return explicitOrCompileTimeName();
+        if (name)
+            v.set(name);
+        return true;
     }
 
-    return explicitOrCompileTimeName() != nullptr ? explicitOrCompileTimeName()
-                                                  : cx->names().empty;
+    if (fun->isBoundFunction() && !fun->hasBoundFunctionNamePrefix()) {
+        // Bound functions are never unnamed.
+        MOZ_ASSERT(name);
+
+        if (name->length() > 0) {
+            StringBuffer sb(cx);
+            if (!sb.append(cx->names().boundWithSpace) || !sb.append(name))
+                return false;
+
+            name = sb.finishAtom();
+            if (!name)
+                return false;
+        } else {
+            name = cx->names().boundWithSpace;
+        }
+
+        fun->setPrefixedBoundFunctionName(name);
+    }
+
+    v.set(name != nullptr ? name : cx->names().empty);
+    return true;
 }
 
 static const js::Value&
