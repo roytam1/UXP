@@ -315,12 +315,13 @@ BaseProxyHandler::className(JSContext* cx, HandleObject proxy) const
 }
 
 JSString*
-BaseProxyHandler::fun_toString(JSContext* cx, HandleObject proxy, unsigned indent) const
+BaseProxyHandler::fun_toString(JSContext* cx, HandleObject proxy, bool isToSource) const
 {
     if (proxy->isCallable())
         return JS_NewStringCopyZ(cx, "function () {\n    [native code]\n}");
-    RootedValue v(cx, ObjectValue(*proxy));
-    ReportIsNotFunction(cx, v);
+
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_INCOMPATIBLE_PROTO,
+                              js_Function_str, js_toString_str, "object");
     return nullptr;
 }
 

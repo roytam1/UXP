@@ -115,7 +115,7 @@ class JS_FRIEND_API(Wrapper) : public BaseProxyHandler
                          JS::IsArrayAnswer* answer) const override;
     virtual const char* className(JSContext* cx, HandleObject proxy) const override;
     virtual JSString* fun_toString(JSContext* cx, HandleObject proxy,
-                                   unsigned indent) const override;
+                                   bool isToSource) const override;
     virtual bool regexp_toShared(JSContext* cx, HandleObject proxy,
                                  RegExpGuard* g) const override;
     virtual bool boxedValue_unbox(JSContext* cx, HandleObject proxy,
@@ -210,7 +210,7 @@ class JS_FRIEND_API(CrossCompartmentWrapper) : public Wrapper
                              bool* bp) const override;
     virtual const char* className(JSContext* cx, HandleObject proxy) const override;
     virtual JSString* fun_toString(JSContext* cx, HandleObject wrapper,
-                                   unsigned indent) const override;
+                                   bool isToSource) const override;
     virtual bool regexp_toShared(JSContext* cx, HandleObject proxy, RegExpGuard* g) const override;
     virtual bool boxedValue_unbox(JSContext* cx, HandleObject proxy, MutableHandleValue vp) const override;
 
@@ -272,7 +272,8 @@ class JS_FRIEND_API(OpaqueCrossCompartmentWrapper) : public CrossCompartmentWrap
     virtual bool hasInstance(JSContext* cx, HandleObject wrapper,
                              MutableHandleValue v, bool* bp) const override;
     virtual const char* className(JSContext* cx, HandleObject wrapper) const override;
-    virtual JSString* fun_toString(JSContext* cx, HandleObject proxy, unsigned indent) const override;
+    virtual JSString* fun_toString(JSContext* cx, HandleObject proxy,
+                                   bool isToSource) const override;
 
     static const OpaqueCrossCompartmentWrapper singleton;
 };
