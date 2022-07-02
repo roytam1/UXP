@@ -475,7 +475,7 @@ Proxy::className(JSContext* cx, HandleObject proxy)
 }
 
 JSString*
-Proxy::fun_toString(JSContext* cx, HandleObject proxy, unsigned indent)
+Proxy::fun_toString(JSContext* cx, HandleObject proxy, bool isToSource)
 {
     JS_CHECK_RECURSION(cx, return nullptr);
     const BaseProxyHandler* handler = proxy->as<ProxyObject>().handler();
@@ -483,8 +483,8 @@ Proxy::fun_toString(JSContext* cx, HandleObject proxy, unsigned indent)
                            BaseProxyHandler::GET, /* mayThrow = */ false);
     // Do the safe thing if the policy rejects.
     if (!policy.allowed())
-        return handler->BaseProxyHandler::fun_toString(cx, proxy, indent);
-    return handler->fun_toString(cx, proxy, indent);
+        return handler->BaseProxyHandler::fun_toString(cx, proxy, isToSource);
+    return handler->fun_toString(cx, proxy, isToSource);
 }
 
 bool
@@ -691,9 +691,9 @@ js::proxy_GetElements(JSContext* cx, HandleObject proxy, uint32_t begin, uint32_
 }
 
 JSString*
-js::proxy_FunToString(JSContext* cx, HandleObject proxy, unsigned indent)
+js::proxy_FunToString(JSContext* cx, HandleObject proxy, bool isToSource)
 {
-    return Proxy::fun_toString(cx, proxy, indent);
+    return Proxy::fun_toString(cx, proxy, isToSource);
 }
 
 const ClassOps js::ProxyClassOps = {
