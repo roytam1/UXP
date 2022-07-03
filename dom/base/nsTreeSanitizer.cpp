@@ -1185,7 +1185,8 @@ nsTreeSanitizer::SanitizeAttributes(mozilla::dom::Element* aElement,
         continue;
       }
       if (IsURL(aURLs, attrLocal)) {
-        if (SanitizeURL(aElement, attrNs, attrLocal)) {
+        bool fragmentOnly = aElement->IsSVGElement(nsGkAtoms::use);
+        if (SanitizeURL(aElement, attrNs, attrLocal, fragmentOnly)) {
           // in case the attribute removal shuffled the attribute order, start
           // the loop again.
           --ac;
@@ -1239,7 +1240,8 @@ nsTreeSanitizer::SanitizeAttributes(mozilla::dom::Element* aElement,
       // else not allowed
     } else if (aAllowXLink && kNameSpaceID_XLink == attrNs) {
       if (nsGkAtoms::href == attrLocal) {
-        if (SanitizeURL(aElement, attrNs, attrLocal)) {
+        bool fragmentOnly = aElement->IsSVGElement(nsGkAtoms::use);
+        if (SanitizeURL(aElement, attrNs, attrLocal, fragmentOnly)) {
           // in case the attribute removal shuffled the attribute order, start
           // the loop again.
           --ac;
@@ -1273,7 +1275,8 @@ nsTreeSanitizer::SanitizeAttributes(mozilla::dom::Element* aElement,
 bool
 nsTreeSanitizer::SanitizeURL(mozilla::dom::Element* aElement,
                              int32_t aNamespace,
-                             nsIAtom* aLocalName)
+                             nsIAtom* aLocalName,
+                             bool aFragmentOnly)
 {
   nsAutoString value;
   aElement->GetAttr(aNamespace, aLocalName, value);
@@ -1282,6 +1285,15 @@ nsTreeSanitizer::SanitizeURL(mozilla::dom::Element* aElement,
   static const char* kWhitespace = "\n\r\t\b";
   const nsAString& v =
     nsContentUtils::TrimCharsInSet(kWhitespace, value);
+  // Fragment-only url cannot be harmful.
+  if (!v.IsEmpty() && v.First() == u'#') {
+    return false;
+  }
+  // if we allow only same-document fragment URLs, stop and remove here
+  if (aFragmentOnly) {
+    aElement->UnsetAttr(aNamespace, aLocalName, false);
+    return true;
+  }
 
   nsIScriptSecurityManager* secMan = nsContentUtils::GetSecurityManager();
   uint32_t flags = nsIScriptSecurityManager::DISALLOW_INHERIT_PRINCIPAL;
