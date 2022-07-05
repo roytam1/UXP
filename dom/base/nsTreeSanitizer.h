@@ -143,11 +143,13 @@ class MOZ_STACK_CLASS nsTreeSanitizer {
      * @param aElement the element whose attribute to possibly modify
      * @param aNamespace the namespace of the URL attribute
      * @param aLocalName the local name of the URL attribute
+     * @param aFragmentOnly allows same-document references only
      * @return true if the attribute was removed and false otherwise
      */
     bool SanitizeURL(mozilla::dom::Element* aElement,
                        int32_t aNamespace,
-                       nsIAtom* aLocalName);
+                       nsIAtom* aLocalName,
+                       bool aFragmentOnly = false);
 
     /**
      * Checks a style rule for the presence of the 'binding' CSS property and
