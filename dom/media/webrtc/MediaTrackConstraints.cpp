@@ -6,6 +6,7 @@
 #include "MediaTrackConstraints.h"
 #include "mozilla/dom/MediaStreamTrackBinding.h"
 #include "mozilla/Unused.h"
+#include "mozilla/Types.h"
 
 #include <limits>
 #include <algorithm>
@@ -36,7 +37,7 @@ NormalizedConstraintSet::Range<ValueType>::SetFrom(const ConstrainRange& aOther)
 
 // The Range code works surprisingly well for bool, except when averaging ideals.
 template<>
-bool
+bool MOZ_EXPORT
 NormalizedConstraintSet::Range<bool>::Merge(const Range& aOther) {
   if (!Intersects(aOther)) {
     return false;
