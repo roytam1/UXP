@@ -2504,6 +2504,21 @@ nsDocument::InitCSP(nsIChannel* aChannel)
     return NS_OK;
   }
 
+  // If this is explicitly loaded as a data document, no need to set a CSP.
+  if (mLoadedAsData) {
+    return NS_OK;
+  }
+  
+  // If this is an image, no need to set a CSP.
+  // If we don't do this, SVG images will be parsed as normal XML documents and
+  // subject to served CSPs, which might block internally applied inline styles.
+  // See UXP issue #1959.
+  nsCOMPtr<nsILoadInfo> loadInfo = aChannel->GetLoadInfo();
+  if (loadInfo->GetExternalContentPolicyType() ==
+      nsIContentPolicy::TYPE_IMAGE) {
+    return NS_OK;
+  }
+
   nsAutoCString tCspHeaderValue, tCspROHeaderValue;
 
   nsCOMPtr<nsIHttpChannel> httpChannel;
@@ -2532,7 +2547,6 @@ nsDocument::InitCSP(nsIChannel* aChannel)
 
   // Check if this is a signed content to apply default CSP.
   bool applySignedContentCSP = false;
-  nsCOMPtr<nsILoadInfo> loadInfo = aChannel->GetLoadInfo();
   if (loadInfo && loadInfo->GetVerifySignedContent()) {
     applySignedContentCSP = true;
   }

@@ -108,6 +108,7 @@ extern ogg_free_function_type *ogg_free_func;
    typedef int32_t ogg_int32_t;
    typedef uint32_t ogg_uint32_t;
    typedef int64_t ogg_int64_t;
+   typedef uint64_t ogg_uint64_t;
 
 #elif defined(__HAIKU__)
 

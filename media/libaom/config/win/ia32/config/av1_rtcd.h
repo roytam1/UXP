@@ -701,65 +701,89 @@ static void setup_rtcd_internal(void)
     if (flags & HAS_SSE2) av1_wiener_convolve_add_src = av1_wiener_convolve_add_src_sse2;
     if (flags & HAS_AVX2) av1_wiener_convolve_add_src = av1_wiener_convolve_add_src_avx2;
     cdef_copy_rect8_16bit_to_16bit = cdef_copy_rect8_16bit_to_16bit_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_copy_rect8_16bit_to_16bit = cdef_copy_rect8_16bit_to_16bit_sse2;
     if (flags & HAS_SSSE3) cdef_copy_rect8_16bit_to_16bit = cdef_copy_rect8_16bit_to_16bit_ssse3;
     if (flags & HAS_SSE4_1) cdef_copy_rect8_16bit_to_16bit = cdef_copy_rect8_16bit_to_16bit_sse4_1;
     if (flags & HAS_AVX2) cdef_copy_rect8_16bit_to_16bit = cdef_copy_rect8_16bit_to_16bit_avx2;
+    }
     cdef_copy_rect8_8bit_to_16bit = cdef_copy_rect8_8bit_to_16bit_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_copy_rect8_8bit_to_16bit = cdef_copy_rect8_8bit_to_16bit_sse2;
     if (flags & HAS_SSSE3) cdef_copy_rect8_8bit_to_16bit = cdef_copy_rect8_8bit_to_16bit_ssse3;
     if (flags & HAS_SSE4_1) cdef_copy_rect8_8bit_to_16bit = cdef_copy_rect8_8bit_to_16bit_sse4_1;
     if (flags & HAS_AVX2) cdef_copy_rect8_8bit_to_16bit = cdef_copy_rect8_8bit_to_16bit_avx2;
+    }
     cdef_filter_16_0 = cdef_filter_16_0_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_filter_16_0 = cdef_filter_16_0_sse2;
     if (flags & HAS_SSSE3) cdef_filter_16_0 = cdef_filter_16_0_ssse3;
     if (flags & HAS_SSE4_1) cdef_filter_16_0 = cdef_filter_16_0_sse4_1;
     if (flags & HAS_AVX2) cdef_filter_16_0 = cdef_filter_16_0_avx2;
+    }
     cdef_filter_16_1 = cdef_filter_16_1_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_filter_16_1 = cdef_filter_16_1_sse2;
     if (flags & HAS_SSSE3) cdef_filter_16_1 = cdef_filter_16_1_ssse3;
     if (flags & HAS_SSE4_1) cdef_filter_16_1 = cdef_filter_16_1_sse4_1;
     if (flags & HAS_AVX2) cdef_filter_16_1 = cdef_filter_16_1_avx2;
+    }
     cdef_filter_16_2 = cdef_filter_16_2_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_filter_16_2 = cdef_filter_16_2_sse2;
     if (flags & HAS_SSSE3) cdef_filter_16_2 = cdef_filter_16_2_ssse3;
     if (flags & HAS_SSE4_1) cdef_filter_16_2 = cdef_filter_16_2_sse4_1;
     if (flags & HAS_AVX2) cdef_filter_16_2 = cdef_filter_16_2_avx2;
+    }
     cdef_filter_16_3 = cdef_filter_16_3_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_filter_16_3 = cdef_filter_16_3_sse2;
     if (flags & HAS_SSSE3) cdef_filter_16_3 = cdef_filter_16_3_ssse3;
     if (flags & HAS_SSE4_1) cdef_filter_16_3 = cdef_filter_16_3_sse4_1;
     if (flags & HAS_AVX2) cdef_filter_16_3 = cdef_filter_16_3_avx2;
+    }
     cdef_filter_8_0 = cdef_filter_8_0_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_filter_8_0 = cdef_filter_8_0_sse2;
     if (flags & HAS_SSSE3) cdef_filter_8_0 = cdef_filter_8_0_ssse3;
     if (flags & HAS_SSE4_1) cdef_filter_8_0 = cdef_filter_8_0_sse4_1;
     if (flags & HAS_AVX2) cdef_filter_8_0 = cdef_filter_8_0_avx2;
+    }
     cdef_filter_8_1 = cdef_filter_8_1_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_filter_8_1 = cdef_filter_8_1_sse2;
     if (flags & HAS_SSSE3) cdef_filter_8_1 = cdef_filter_8_1_ssse3;
     if (flags & HAS_SSE4_1) cdef_filter_8_1 = cdef_filter_8_1_sse4_1;
     if (flags & HAS_AVX2) cdef_filter_8_1 = cdef_filter_8_1_avx2;
+    }
     cdef_filter_8_2 = cdef_filter_8_2_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_filter_8_2 = cdef_filter_8_2_sse2;
     if (flags & HAS_SSSE3) cdef_filter_8_2 = cdef_filter_8_2_ssse3;
     if (flags & HAS_SSE4_1) cdef_filter_8_2 = cdef_filter_8_2_sse4_1;
     if (flags & HAS_AVX2) cdef_filter_8_2 = cdef_filter_8_2_avx2;
+    }
     cdef_filter_8_3 = cdef_filter_8_3_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_filter_8_3 = cdef_filter_8_3_sse2;
     if (flags & HAS_SSSE3) cdef_filter_8_3 = cdef_filter_8_3_ssse3;
     if (flags & HAS_SSE4_1) cdef_filter_8_3 = cdef_filter_8_3_sse4_1;
     if (flags & HAS_AVX2) cdef_filter_8_3 = cdef_filter_8_3_avx2;
+    }
     cdef_find_dir = cdef_find_dir_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_find_dir = cdef_find_dir_sse2;
     if (flags & HAS_SSSE3) cdef_find_dir = cdef_find_dir_ssse3;
     if (flags & HAS_SSE4_1) cdef_find_dir = cdef_find_dir_sse4_1;
     if (flags & HAS_AVX2) cdef_find_dir = cdef_find_dir_avx2;
+    }
     cdef_find_dir_dual = cdef_find_dir_dual_c;
+    if (_MSC_VER <= 1900) {
     if (flags & HAS_SSE2) cdef_find_dir_dual = cdef_find_dir_dual_sse2;
     if (flags & HAS_SSSE3) cdef_find_dir_dual = cdef_find_dir_dual_ssse3;
     if (flags & HAS_SSE4_1) cdef_find_dir_dual = cdef_find_dir_dual_sse4_1;
     if (flags & HAS_AVX2) cdef_find_dir_dual = cdef_find_dir_dual_avx2;
+    }
     cfl_get_luma_subsampling_420_hbd = cfl_get_luma_subsampling_420_hbd_c;
     if (flags & HAS_SSSE3) cfl_get_luma_subsampling_420_hbd = cfl_get_luma_subsampling_420_hbd_ssse3;
     if (flags & HAS_AVX2) cfl_get_luma_subsampling_420_hbd = cfl_get_luma_subsampling_420_hbd_avx2;
