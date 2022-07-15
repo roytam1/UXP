@@ -29,7 +29,8 @@
 // VS compiling for 32 bit targets does not support vector types in
 // structs as arguments, which makes the v256 type of the intrinsics
 // hard to support, so optimizations for this target are disabled.
-#elif HAVE_SSE2 && (defined(_WIN64) || !defined(_MSC_VER) || defined(__clang__))
+// Disabling optimizations and falling back to plain C here causes problems on newer MSVC.
+#elif HAVE_SSE2 && (defined(_WIN64) || !defined(_MSC_VER) || _MSC_VER > 1900 || defined(__clang__))
 #include "simd/v256_intrinsics_x86.h"
 #else
 #include "simd/v256_intrinsics.h"
