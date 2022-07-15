@@ -58,7 +58,7 @@
 #include "nsIXULRuntime.h"
 #include "nsJSPrincipals.h"
 
-#if defined(XP_LINUX)
+#if defined(XP_LINUX) || defined(XP_SOLARIS)
 // For getrlimit and min/max.
 #include <algorithm>
 #include <sys/resource.h>
