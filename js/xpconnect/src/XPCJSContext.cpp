@@ -45,6 +45,7 @@
 #include "mozilla/jsipc/CrossProcessObjectWrappers.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/ProcessHangMonitor.h"
 #include "mozilla/Sprintf.h"
 #include "mozilla/UniquePtrExtensions.h"
@@ -58,6 +59,7 @@
 #include "nsJSPrincipals.h"
 
 #ifdef XP_WIN
+#include <algorithm>
 #include <windows.h>
 #endif
 
@@ -3205,52 +3207,91 @@ XPCJSContext::Initialize()
     // on 32-bit platforms and 1MB on 64-bit platforms.
     const size_t kDefaultStackQuota = 128 * sizeof(size_t) * 1024;
 
-    // Set stack sizes for different configurations. It's probably not great for
-    // the web to base this decision primarily on the default stack size that the
-    // underlying platform makes available, but that seems to be what we do. :-(
+    // Set maximum stack size for different configurations. This value is then
+    // capped below because huge JS stacks are not web-compatible.
+
+    // ASan requires more script buffer space due to red-zones, so give it more.
+    // We hazard a guess that ASAN builds have roughly thrice the stack
+    // overhead normal builds have, so we reserve 450k (50 frames @ 9k frame size)
 
 #if defined(XP_MACOSX) || defined(DARWIN)
     // MacOS has a gargantuan default stack size of 8MB. Go wild with 7MB,
-    // and give trusted script 180k extra. The stack is huge on mac anyway.
-    const size_t kStackQuota = 7 * 1024 * 1024;
+    // and give trusted script 180k extra.
+    const size_t kUncappedStackQuota = 7 * 1024 * 1024;
     const size_t kTrustedScriptBuffer = 180 * 1024;
-#elif defined(MOZ_ASAN)
-    // ASan requires more stack space due to red-zones, so give it double the
-    // default (1MB on 32-bit, 2MB on 64-bit). ASAN stack frame measurements
-    // were not taken at the time of this writing, so we hazard a guess that
-    // ASAN builds have roughly thrice the stack overhead as normal builds.
-    // On normal builds, the largest stack frame size we might encounter is
-    // 9.0k (see above), so let's use a buffer of 9.0 * 5 * 10 = 450k.
-    const size_t kStackQuota =  2 * kDefaultStackQuota;
+
+#elif defined(XP_LINUX) || defined(XP_SOLARIS)
+    // Most Linux distributions set default stack size to 8MB.  Use it as the
+    // maximum value.
+    // Solaris uses 8 or 10 MB, depending, so this is a safe max there too.
+    const size_t kStackQuotaMax = 8 * 1024 * 1024;
+#if defined(MOZ_ASAN) || defined(DEBUG)
+    // Bug 803182: account for the 4x difference in the size of js::Interpret
+    // between optimized and debug builds.  We use 2x since the JIT part
+    // doesn't increase much.
+    const size_t kStackQuotaMin = 2 * kDefaultStackQuota;
+#else
+    const size_t kStackQuotaMin = kDefaultStackQuota;
+#endif // MOZ_ASAN || DEBUG
+    // Allocate 128kB margin for the safe space.
+    const size_t kStackSafeMargin = 128 * 1024;
+
+    struct rlimit rlim;
+    const size_t kUncappedStackQuota =
+        getrlimit(RLIMIT_STACK, &rlim) == 0 ?
+            std::max(std::min(size_t(rlim.rlim_cur - kStackSafeMargin),
+                              kStackQuotaMax - kStackSafeMargin),
+                     kStackQuotaMin) :
+            kStackQuotaMin;
+#if defined(MOZ_ASAN)
     const size_t kTrustedScriptBuffer = 450 * 1024;
-#elif defined(XP_WIN)
-    // 1MB is the default stack size on Windows. We use the /STACK linker flag
-    // to request a larger stack, so we determine the stack size at runtime.
-    const size_t kStackQuota = GetWindowsStackSize();
-    const size_t kTrustedScriptBuffer = (sizeof(size_t) == 8) ? 180 * 1024   //win64
-                                                              : 120 * 1024;  //win32
-    // The following two configurations are linux-only. Given the numbers above,
-    // we use 50k and 100k trusted buffers on 32-bit and 64-bit respectively.
+#else
+    const size_t kTrustedScriptBuffer = 180 * 1024;
+#endif  // MOZ_ASAN
 #elif defined(ANDROID)
     // Android appears to have 1MB stacks. Allow the use of 3/4 of that size
     // (768KB on 32-bit), since otherwise we can crash with a stack overflow
     // when nearing the 1MB limit.
     const size_t kStackQuota = kDefaultStackQuota + kDefaultStackQuota / 2;
     const size_t kTrustedScriptBuffer = sizeof(size_t) * 12800;
-#elif defined(DEBUG)
-    // Bug 803182: account for the 4x difference in the size of js::Interpret
-    // between optimized and debug builds.
-    // XXXbholley - Then why do we only account for 2x of difference?
-    const size_t kStackQuota = 2 * kDefaultStackQuota;
-    const size_t kTrustedScriptBuffer = sizeof(size_t) * 12800;
+#elif defined(XP_WIN)
+    // 1MB is the default stack size on Windows. We use the /STACK linker flag
+    // (see WIN32_EXE_LDFLAGS in config/config.mk) to request a larger stack, so
+    // we determine the stack size at runtime.
+    const size_t kUncappedStackQuota = GetWindowsStackSize();
+#if defined(MOZ_ASAN)
+    const size_t kTrustedScriptBuffer = 450 * 1024;
 #else
-    const size_t kStackQuota = kDefaultStackQuota;
-    const size_t kTrustedScriptBuffer = sizeof(size_t) * 12800;
+    const size_t kTrustedScriptBuffer = (sizeof(size_t) == 8) ?
+                                          180 * 1024 : // win64
+                                          120 * 1024;  // win32
+#endif //MOZ_ASAN
+
+#else
+    // We're not on Windows, Linux, Solaris or Mac/Darwin
+    // Catch-all configuration for other environments.
+#if defined(MOZ_ASAN)
+    const size_t kUncappedStackQuota = 2 * kDefaultStackQuota;
+    const size_t kTrustedScriptBuffer = 450 * 1024;
+#else
+#if defined(DEBUG)
+    const size_t kUncappedStackQuota = 2 * kDefaultStackQuota;
+#else
+    const size_t kUncappedStackQuota = kDefaultStackQuota;
 #endif
+    // Given the numbers above, we use 50k and 100k trusted buffers on 32-bit
+    // and 64-bit respectively.
+    const size_t kTrustedScriptBuffer = sizeof(size_t) * 12800;
+#endif // MOZ_ASAN
+#endif // OS selection
 
     // Avoid an unused variable warning on platforms where we don't use the
     // default.
     (void) kDefaultStackQuota;
+
+    // Large JS stacks are not web-compatible so cap to a smaller value.
+    const size_t kStackQuotaCap = Preferences::GetUint("javascript.options.main_thread_stack_quota_cap", 2 * 1024 * 1024);
+    const size_t kStackQuota = std::min(kUncappedStackQuota, kStackQuotaCap);
 
     JS_SetNativeStackQuota(cx,
                            kStackQuota,

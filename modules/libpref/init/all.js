@@ -1256,7 +1256,7 @@ pref("javascript.options.wasm_baselinejit", false);
 #endif
 pref("javascript.options.native_regexp",    true);
 pref("javascript.options.parallel_parsing", true);
-// ayncstack is used for debugging promises in devtools.
+// asyncstack is used for debugging promises in devtools.
 pref("javascript.options.asyncstack",       false);
 pref("javascript.options.throw_on_asmjs_validation_failure", false);
 pref("javascript.options.ion.offthread_compilation", true);
@@ -1305,6 +1305,18 @@ pref("javascript.options.shared_memory", true);
 
 pref("javascript.options.throw_on_debuggee_would_run", false);
 pref("javascript.options.dump_stack_on_debuggee_would_run", false);
+
+// Set a thread stack quota limit for the main thread.
+// Default 2MB for normal builds on all OSes. Tweak this if your custom
+// build explicitly requires a larger or smaller stack limit
+// Do NOT touch these values unless you know exactly what you are doing!
+// Neither exceedingly large nor exceedingly small values are beneficial.
+#ifdef MOZ_ASAN
+pref("javascript.options.main_thread_stack_quota_cap", 6291456);
+#else
+pref("javascript.options.main_thread_stack_quota_cap", 2097152);
+#endif
+
 
 // advanced prefs
 pref("advanced.mailftp",                    false);
