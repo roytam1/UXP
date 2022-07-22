@@ -13,8 +13,6 @@ if CONFIG['MOZ_MAILNEWS']:
 DIRS += [
     # Depends on NSS and NSPR
     '/security/certverifier',
-    # Depends on certverifier
-    '/security/apps',
 ]
 
 # the signing related bits of libmar depend on nss

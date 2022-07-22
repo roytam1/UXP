@@ -265,74 +265,11 @@ interface nsIX509CertDB : nsISupports {
    */
   nsIX509Cert constructX509(in string certDER, in unsigned long length);
 
-  /**
-   *  Verifies the signature on the given JAR file to verify that it has a
-   *  valid signature.  To be considered valid, there must be exactly one
-   *  signature on the JAR file and that signature must have signed every
-   *  entry. Further, the signature must come from a certificate that
-   *  is trusted for code signing.
-   *
-   *  On success, NS_OK, a nsIZipReader, and the trusted certificate that
-   *  signed the JAR are returned.
-   *
-   *  On failure, an error code is returned.
-   *
-   *  This method returns a nsIZipReader, instead of taking an nsIZipReader
-   *  as input, to encourage users of the API to verify the signature as the
-   *  first step in opening the JAR.
-   */
-  const AppTrustedRoot AppMarketplaceProdPublicRoot = 1;
-  const AppTrustedRoot AppMarketplaceProdReviewersRoot = 2;
-  const AppTrustedRoot AppMarketplaceDevPublicRoot = 3;
-  const AppTrustedRoot AppMarketplaceDevReviewersRoot = 4;
-  const AppTrustedRoot AppMarketplaceStageRoot = 5;
-  const AppTrustedRoot AppXPCShellRoot = 6;
-  const AppTrustedRoot AddonsPublicRoot = 7;
-  const AppTrustedRoot AddonsStageRoot = 8;
-  const AppTrustedRoot PrivilegedPackageRoot = 9;
-  /*
-   * If DeveloperImportedRoot is set as trusted root, a CA from local file
-   * system will be imported. Only used when preference
-   * "network.http.packaged-apps-developer-mode" is set.
-   * The path of the CA is specified by preference
-   * "network.http.packaged-apps-developer-trusted-root".
-   */
-  const AppTrustedRoot DeveloperImportedRoot = 10;
-  void openSignedAppFileAsync(in AppTrustedRoot trustedRoot,
-                              in nsIFile aJarFile,
-                              in nsIOpenSignedAppFileCallback callback);
-
-  /**
-   *  Verifies the signature on a directory representing an unpacked signed
-   *  JAR file. To be considered valid, there must be exactly one signature
-   *  on the directory structure and that signature must have signed every
-   *  entry. Further, the signature must come from a certificate that
-   *  is trusted for code signing.
-   *
-   *  On success NS_OK and the trusted certificate that signed the
-   *  unpacked JAR are returned.
-   *
-   *  On failure, an error code is returned.
-   */
-  void verifySignedDirectoryAsync(in AppTrustedRoot trustedRoot,
-                                  in nsIFile aUnpackedDir,
-                                  in nsIVerifySignedDirectoryCallback callback);
-
-  /**
-   * Given streams containing a signature and a manifest file, verifies
-   * that the signature is valid for the manifest. The signature must
-   * come from a certificate that is trusted for code signing and that
-   * was issued by the given trusted root.
-   *
-   *  On success, NS_OK and the trusted certificate that signed the
-   *  Manifest are returned.
-   *
-   *  On failure, an error code is returned.
-   */
-  void verifySignedManifestAsync(in AppTrustedRoot trustedRoot,
-                                 in nsIInputStream aManifestStream,
-                                 in nsIInputStream aSignatureStream,
-                                 in nsIVerifySignedManifestCallback callback);
+  // Flags to indicate the type of cert root for signed extensions
+  // This can probably be removed eventually.
+  const AppTrustedRoot AddonsPublicRoot = 1;
+  const AppTrustedRoot AddonsStageRoot = 2;
+  const AppTrustedRoot PrivilegedPackageRoot = 3;
 
   /*
    * Add a cert to a cert DB from a binary string.
