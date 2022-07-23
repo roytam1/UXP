@@ -60,10 +60,9 @@ if CONFIG['INTEL_ARCHITECTURE']:
             if CONFIG['CPU_ARCH'] == 'x86_64':
                 DEFINES['OC_X86_64_ASM'] = True
     if CONFIG['_MSC_VER']:
-        if CONFIG['CC_TYPE'] == 'clang-cl':
-            # clang-cl can't handle libtheora's inline asm.
-            pass
-        elif CONFIG['CPU_ARCH'] == 'x86_64':
+        # MSVC doesn't allow inline assembly in 64-bit code.
+        # Thus, only 32-bit Windows builds benefit from optimization.
+        if CONFIG['CPU_ARCH'] != 'x86_64':
             SOURCES += [
                 'lib/x86_vc/mmxfrag.c',
                 'lib/x86_vc/mmxidct.c',
