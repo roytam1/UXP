@@ -251,6 +251,8 @@ select {
   display: inline-block;
   page-break-inside: avoid;
   overflow-clip-box: padding-box !important; /* bug 992447 */
+  padding-block-start: 1px;
+  padding-block-end: 1px;
 }
 
 /* Need the "select[size][multiple]" selector to override the settings on
@@ -263,8 +265,6 @@ select[size][multiple] {
   background-color: -moz-Field;
   color: -moz-FieldText;
   vertical-align: text-bottom;
-  padding-block-start: 1px;
-  padding-block-end: 1px;
   padding-inline-start: 0;
   padding-inline-end: 0;
   -moz-appearance: listbox;
@@ -327,10 +327,6 @@ select:empty {
 
 *|*::-moz-display-comboboxcontrol-frame {
   overflow: -moz-hidden-unscrollable;
-  /* This block-start/end padding plus the combobox block-start/end border need to
-     add up to the block-start/end borderpadding of text inputs and buttons */
-  padding-block-start: 1px;
-  padding-block-end: 1px;
   padding-inline-start: 4px;
   padding-inline-end: 0;
   color: inherit;
