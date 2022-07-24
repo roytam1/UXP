@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 yi{
     Currencies{
@@ -55,7 +55,7 @@ yi{
             "גאלד",
         }
         XXX{
-            "XXX",
+            "¤",
             "אומבאַוואוסטע וואַלוטע",
         }
     }
@@ -105,5 +105,5 @@ yi{
             other{"אומבאַוואוסטע וואַלוטע"}
         }
     }
-    Version{"2.1.27.97"}
+    Version{"2.1.38.69"}
 }

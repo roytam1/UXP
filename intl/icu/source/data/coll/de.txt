@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 de{
     Version{"2.1.19.14"}
@@ -9,14 +9,14 @@ de{
                 "&OE<<ö<<<Ö"
                 "&UE<<ü<<<Ü"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
         search{
             Sequence{
                 "[import und-u-co-search]"
                 "[import de-u-co-phonebk]"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
     }
 }
