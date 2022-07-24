@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 bn{
     Version{"2.1.19.14"}
@@ -9,7 +9,7 @@ bn{
                 "[reorder Beng Deva Guru Gujr Orya Taml Telu Knda Mlym Sinh]"
                 "&ঔ<ং<ঃ<ঁ"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
         traditional{
             Sequence{
@@ -629,7 +629,7 @@ bn{
                 "&যৌ<<<য়ৌ"
                 "&য্<<<য়্"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
     }
 }

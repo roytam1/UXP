@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 guz{
     AuxExemplarCharacters{"[q x]"}
@@ -12,7 +12,7 @@ guz{
             }
         }
     }
-    Version{"2.1.27.40"}
+    Version{"2.1.39.11"}
     calendar{
         generic{
             DateTimePatterns{

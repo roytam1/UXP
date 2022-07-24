@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 rw{
     Currencies{
@@ -10,5 +10,5 @@ rw{
     CurrencyUnitPatterns{
         other{"{0} {1}"}
     }
-    Version{"2.1.27.98"}
+    Version{"2.1.44.88"}
 }

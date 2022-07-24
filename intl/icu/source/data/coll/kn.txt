@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 kn{
     Version{"2.1.19.14"}
@@ -9,7 +9,7 @@ kn{
                 "[reorder Knda Deva Beng Guru Gujr Orya Taml Telu Mlym Sinh]"
                 "&ಔ<ಂ<ಃ<ೱ<ೲ"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
         traditional{
             Sequence{
@@ -651,7 +651,7 @@ kn{
                 "&ಫೋ<<<ಫ಼ೋ"
                 "&ಫೌ<<<ಫ಼ೌ"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
     }
 }

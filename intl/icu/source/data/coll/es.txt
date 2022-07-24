@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 es{
     Version{"2.1.19.14"}
@@ -8,11 +8,11 @@ es{
                 "[import und-u-co-search]"
                 "&N<ñ<<<Ñ"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
         standard{
             Sequence{"&N<ñ<<<Ñ"}
-            Version{"30.0.3"}
+            Version{"34"}
         }
         traditional{
             Sequence{
@@ -20,7 +20,7 @@ es{
                 "&C<ch<<<Ch<<<CH"
                 "&l<ll<<<Ll<<<LL"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
     }
 }

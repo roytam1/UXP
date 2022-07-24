@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 ta{
     Version{"2.1.19.14"}
@@ -34,7 +34,7 @@ ta{
                 "&[before 1]ஹ<ஹ்"
                 "&[before 1]க்ஷ<க்ஷ்"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
     }
 }

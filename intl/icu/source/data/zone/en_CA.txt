@@ -1,8 +1,8 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 en_CA{
     %%Parent{"en_001"}
-    Version{"2.1.29.54"}
+    Version{"2.1.44.88"}
     zoneStrings{
         "Pacific:Honolulu"{
             sd{"HDT"}
@@ -34,6 +34,10 @@ en_CA{
             sg{"PT"}
             ss{"PST"}
         }
+        "meta:Argentina"{
+            lg{"Argentina Time"}
+            ls{"Argentina Standard Time"}
+        }
         "meta:Atlantic"{
             sd{"ADT"}
             sg{"AT"}
@@ -49,5 +53,6 @@ en_CA{
             sg{"NT"}
             ss{"NST"}
         }
+        regionFormatDaylight{"{0} Daylight Saving Time"}
     }
 }
