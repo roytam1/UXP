@@ -7,11 +7,11 @@ set -e
 
 # Update to an ICU release:
 #   Usage: update-icu.sh <URL of ICU GIT> <release tag name>
-#   E.g., for ICU 62.1: update-icu.sh https://github.com/unicode-org/icu.git release-62-1
+#   E.g., for ICU 63.2: update-icu.sh https://github.com/unicode-org/icu.git release-63-2
 #
 # Update to an ICU maintenance branch:
 #   Usage: update-icu.sh <URL of ICU GIT> <maintenance name>
-#   E.g., for ICU 62.1: update-icu.sh https://github.com/unicode-org/icu.git maint/maint-62
+#   E.g., for ICU 63.2: update-icu.sh https://github.com/unicode-org/icu.git maint/maint-63
 
 if [ $# -lt 2 ]; then
   echo "Usage: update-icu.sh <URL of ICU GIT> <release tag name>"
@@ -65,14 +65,27 @@ rm ${icu_dir}/source/data/translit/*
 rm ${icu_dir}/source/data/unit/*.mk
 rm ${icu_dir}/source/data/unit/*.txt
 
+# Remove all exemplar cities 'ec'. (bug 1225401 and bug 1345336)
+find ${icu_dir}/source/data/zone \
+    -name root.txt -prune -or \
+    -name tzdbNames.txt -prune -or \
+    -name '*.txt' -print | xargs sed -i '/^\s*ec{\".*\"}$/ { d }'
+# Remove empty time zone entries after exemplar cities removal.
+find ${icu_dir}/source/data/zone \
+    -name root.txt -prune -or \
+    -name tzdbNames.txt -prune -or \
+    -name '*.txt' -print | xargs sed -i '/^\s*\"[A-Z][a-zA-Z:_-]*\"{/{N; s/^\s*\"[A-Z][a-zA-Z:_-]*\"{\n\s*}// }; /^$/d'
+# And finally remove any empty 'zoneStrings' entries.
+find ${icu_dir}/source/data/zone \
+    -name root.txt -prune -or \
+    -name tzdbNames.txt -prune -or \
+    -name '*.txt' -print | xargs sed -i '/^\s*zoneStrings{/{N; s/^\s*zoneStrings{\n\s*}// }; /^$/d'
+
 for patch in \
  bug-915735 \
  suppress-warnings.diff \
  bug-1172609-timezone-recreateDefault.diff \
  bug-1198952-workaround-make-3.82-bug.diff \
- bug-1228227-bug-1263325-libc++-gcc_hidden.diff \
- ucol_getKeywordValuesForLocale-ulist_resetList.diff \
- unum_formatDoubleForFields.diff \
 ; do
   echo "Applying local patch $patch"
   patch -d ${icu_dir}/../../ -p1 --no-backup-if-mismatch < ${icu_dir}/../icu-patches/$patch
@@ -85,7 +98,7 @@ python ${topsrcdir}/js/src/tests/ecma_6/String/make-normalize-generateddata-inpu
 # build a new ICU data file.
 python `dirname $0`/icu_sources_data.py $topsrcdir
 
-#hg addremove ${icu_dir} ${topsrcdir}/config/external/icu
+#hg addremove "${icu_dir}/source" "${icu_dir}/GIT-INFO" ${topsrcdir}/config/external/icu
 
 # Check local tzdata version.
 `dirname $0`/update-tzdata.sh -c
