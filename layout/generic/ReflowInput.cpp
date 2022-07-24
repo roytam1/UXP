@@ -2817,6 +2817,17 @@ nscoord ReflowInput::GetLineHeight() const {
                                nsLayoutUtils::FontSizeInflationFor(mFrame));
 }
 
+void ReflowInput::SetLineHeight(nscoord aLineHeight) {
+  MOZ_ASSERT(aLineHeight >= 0, "aLineHeight must be >= 0!");
+
+  if (mLineHeight != aLineHeight) {
+    mLineHeight = aLineHeight;
+    // Setting used line height can change a frame's block-size if mFrame's
+    // block-size behaves as auto.
+    InitResizeFlags(mFrame->PresContext(), mFrame->GetType());
+  }
+}
+
 /* static */ nscoord
 ReflowInput::CalcLineHeight(nsIContent* aContent,
                                   nsStyleContext* aStyleContext,

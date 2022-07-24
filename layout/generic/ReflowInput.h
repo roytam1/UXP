@@ -747,6 +747,11 @@ public:
    * Get the used line-height property. The return value will be >= 0.
    */
   nscoord GetLineHeight() const;
+  
+  /**
+   * Set the used line-height. aLineHeight must be >= 0.
+   */
+  void SetLineHeight(nscoord aLineHeight);
 
   /**
    * Calculate the used line-height property without a reflow input instance.
