@@ -17,7 +17,7 @@
 #
 # (1) Download the current Unicode data files from
 #
-#         http://www.unicode.org/Public/UNIDATA/
+#         https://www.unicode.org/Public/UNIDATA/
 #
 #     NB: not all the files are actually needed; currently, we require
 #       - UnicodeData.txt
@@ -28,12 +28,12 @@
 #     The Unicode data files listed above should be together in one directory.
 #
 #     We also require the file
-#        http://www.unicode.org/Public/security/latest/IdentifierStatus.txt
+#        https://www.unicode.org/Public/security/latest/IdentifierStatus.txt
 #     This file should be in a sub-directory "security" immediately below the
 #        directory containing the other Unicode data files.
 #
 #     We also require the latest data file for UTR50, currently revision-17:
-#        http://www.unicode.org/Public/vertical/revision-17/VerticalOrientation-17.txt
+#        https://www.unicode.org/Public/vertical/revision-17/VerticalOrientation-17.txt
 #     This file should be in a sub-directory "vertical" immediately below the
 #        directory containing the other Unicode data files.
 #
@@ -65,7 +65,7 @@ if ($#ARGV != 1) {
 # where icu/common/unicode is the directory containing ICU 'common' headers,
 # and UCD-directory is a directory containing the current Unicode Character
 # Database files (UnicodeData.txt, etc), available from
-# http://www.unicode.org/Public/UNIDATA/, with additional resources as
+# https://www.unicode.org/Public/UNIDATA/, with additional resources as
 # detailed in the source comments.
 #
 # This will generate (or overwrite!) the files
@@ -215,9 +215,7 @@ while (<FH>) {
   s/\xef\xbb\xbf//;
   push @versionInfo, $_;
   last if /Date:/;
-
 }
-
 while (<FH>) {
   if (m/([0-9A-F]{4,6})(?:\.\.([0-9A-F]{4,6}))*\s+;\s+Allowed/) {
     my $start = hex "0x$1";
@@ -225,7 +223,6 @@ while (<FH>) {
     for (my $i = $start; $i <= $end; ++$i) {
       $idtype[$i] = $mappedIdType{'Allowed'};
     }
-
   }
 }
 close FH;
@@ -348,9 +345,7 @@ __END
 
 our $totalData = 0;
 
-print HEADER "#pragma pack(1)\n\n";
-
-sub sprintCharProps2
+sub sprintCharProps2_short
 {
   my $usv = shift;
   return sprintf("{%d,%d},",
@@ -365,9 +360,7 @@ struct nsCharProps2 {
   unsigned char mIdType:2;
 };
 |;
-&genTables("CharProp2", $type, "nsCharProps2", 9, 7, \&sprintCharProps2, 16, 1, 1);
-
-print HEADER "#pragma pack()\n\n";
+&genTables("CharProp2", $type, "nsCharProps2", 9, 7, \&sprintCharProps2_short, 16, 1, 1);
 
 sub sprintHanVariants
 {
