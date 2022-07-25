@@ -7,11 +7,11 @@ set -e
 
 # Update to an ICU release:
 #   Usage: update-icu.sh <URL of ICU GIT> <release tag name>
-#   E.g., for ICU 63.2: update-icu.sh https://github.com/unicode-org/icu.git release-63-2
+#   E.g., for ICU 62.2: update-icu.sh https://github.com/unicode-org/icu.git release-62-2
 #
 # Update to an ICU maintenance branch:
 #   Usage: update-icu.sh <URL of ICU GIT> <maintenance name>
-#   E.g., for ICU 63.2: update-icu.sh https://github.com/unicode-org/icu.git maint/maint-63
+#   E.g., for ICU 62.2: update-icu.sh https://github.com/unicode-org/icu.git maint/maint-62
 
 if [ $# -lt 2 ]; then
   echo "Usage: update-icu.sh <URL of ICU GIT> <release tag name>"
@@ -86,6 +86,7 @@ for patch in \
  suppress-warnings.diff \
  bug-1172609-timezone-recreateDefault.diff \
  bug-1198952-workaround-make-3.82-bug.diff \
+ bug-1504656-relativetimeformat-plural-other-fallback.diff \
 ; do
   echo "Applying local patch $patch"
   patch -d ${icu_dir}/../../ -p1 --no-backup-if-mismatch < ${icu_dir}/../icu-patches/$patch
