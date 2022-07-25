@@ -452,6 +452,7 @@ private:
 
     void SetPushedStream(Http2PushedStreamWrapper *stream);
 
+    void SetOriginHeader();
     void SetDoNotTrack();
 
 private:
