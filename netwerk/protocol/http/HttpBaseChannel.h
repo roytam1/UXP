@@ -319,6 +319,8 @@ public:
 public: /* Necko internal use only... */
     bool IsNavigation();
 
+    static bool IsReferrerSchemeAllowed(nsIURI *aReferrer);
+
     // Return whether upon a redirect code of httpStatus for method, the
     // request method should be rewritten to GET.
     static bool ShouldRewriteRedirectToGET(uint32_t httpStatus,
