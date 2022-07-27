@@ -278,15 +278,6 @@ DecoderTraits::CanHandleContentType(const MediaContentType& aContentType,
 bool DecoderTraits::ShouldHandleMediaType(const char* aMIMEType,
                                           DecoderDoctorDiagnostics* aDiagnostics)
 {
-  if (IsWaveSupportedType(nsDependentCString(aMIMEType))) {
-    // We should not return true for Wave types, since there are some
-    // Wave codecs actually in use in the wild that we don't support, and
-    // we should allow those to be handled by plugins or helper apps.
-    // Furthermore people can play Wave files on most platforms by other
-    // means.
-    return false;
-  }
-
   // If an external plugin which can handle quicktime video is available
   // (and not disabled), prefer it over native playback as there several
   // codecs found in the wild that we do not handle.
@@ -414,6 +405,7 @@ bool DecoderTraits::IsSupportedInVideoDocument(const nsACString& aType)
 #endif
     IsMP3SupportedType(aType) ||
     IsAACSupportedType(aType) ||
+    IsWaveSupportedType(aType) ||
     IsFlacSupportedType(aType) ||
     false;
 }
