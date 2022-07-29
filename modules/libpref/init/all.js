@@ -373,6 +373,10 @@ pref("media.wakelock_timeout", 2000);
 // opened as top-level documents, as opposed to inside a media element.
 pref("media.play-stand-alone", true);
 
+// Whether we should play wave files opened in a "media document", i.e. wave
+// audio opened as top-level documents, as opposed to inside a media element.
+pref("media.wave.play-stand-alone", false);
+
 pref("media.hardware-video-decoding.enabled", true);
 pref("media.hardware-video-decoding.force-enabled", false);
 
