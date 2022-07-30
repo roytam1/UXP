@@ -1,4 +1,4 @@
-// Copyright (C) 2016 and later: Unicode, Inc. and others.
+// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 /*
 ********************************************************************************
@@ -13,7 +13,7 @@
 
 #include "unicode/utypes.h"
 
-#if U_PLATFORM_HAS_WIN32_API
+#if U_PLATFORM_USES_ONLY_WIN32_API
 
 #if !UCONFIG_NO_FORMATTING
 
@@ -35,7 +35,9 @@
 #include "windtfmt.h"
 #include "wintzimpl.h"
 
+#ifndef WIN32_LEAN_AND_MEAN
 #   define WIN32_LEAN_AND_MEAN
+#endif
 #   define VC_EXTRALEAN
 #   define NOUSER
 #   define NOSERVICE
@@ -128,7 +130,6 @@ Win32DateFormat &Win32DateFormat::operator=(const Win32DateFormat &other)
     this->fTimeStyle   = other.fTimeStyle;
     this->fDateStyle   = other.fDateStyle;
     this->fLocale      = other.fLocale;
-    this->fLCID        = other.fLCID;
 //    this->fCalendar    = other.fCalendar->clone();
     this->fZoneID      = other.fZoneID;
 
@@ -144,7 +145,7 @@ Format *Win32DateFormat::clone(void) const
 }
 
 // TODO: Is just ignoring pos the right thing?
-UnicodeString &Win32DateFormat::format(Calendar &cal, UnicodeString &appendTo, FieldPosition &pos) const
+UnicodeString &Win32DateFormat::format(Calendar &cal, UnicodeString &appendTo, FieldPosition & /* pos */) const
 {
     FILETIME ft;
     SYSTEMTIME st_gmt;
@@ -188,7 +189,7 @@ UnicodeString &Win32DateFormat::format(Calendar &cal, UnicodeString &appendTo, F
     return appendTo;
 }
 
-void Win32DateFormat::parse(const UnicodeString& text, Calendar& cal, ParsePosition& pos) const
+void Win32DateFormat::parse(const UnicodeString& /* text */, Calendar& /* cal */, ParsePosition& pos) const
 {
     pos.setErrorIndex(pos.getIndex());
 }
@@ -231,7 +232,7 @@ static const DWORD dfFlags[] = {DATE_LONGDATE, DATE_LONGDATE, DATE_SHORTDATE, DA
 
 void Win32DateFormat::formatDate(const SYSTEMTIME *st, UnicodeString &appendTo) const
 {
-    int result;
+    int result=0;
     wchar_t stackBuffer[STACK_BUFFER_SIZE];
     wchar_t *buffer = stackBuffer;
 
@@ -242,6 +243,7 @@ void Win32DateFormat::formatDate(const SYSTEMTIME *st, UnicodeString &appendTo) 
             int newLength = GetDateFormatW(fLCID, dfFlags[fDateStyle - kDateOffset], st, NULL, NULL, 0);
 
             buffer = NEW_ARRAY(wchar_t, newLength);
+
             GetDateFormatW(fLCID, dfFlags[fDateStyle - kDateOffset], st, NULL, buffer, newLength);
         }
     }
@@ -268,6 +270,7 @@ void Win32DateFormat::formatTime(const SYSTEMTIME *st, UnicodeString &appendTo) 
             int newLength = GetTimeFormatW(fLCID, tfFlags[fTimeStyle], st, NULL, NULL, 0);
 
             buffer = NEW_ARRAY(wchar_t, newLength);
+
             GetDateFormatW(fLCID, tfFlags[fTimeStyle], st, NULL, buffer, newLength);
         }
     }
@@ -296,7 +299,8 @@ UnicodeString Win32DateFormat::setTimeZoneInfo(TIME_ZONE_INFORMATION *tzi, const
             for (int z = 0; z < ec; z += 1) {
                 UnicodeString equiv = TimeZone::getEquivalentID(icuid, z);
 
-                if (found = uprv_getWindowsTimeZoneInfo(tzi, equiv.getBuffer(), equiv.length())) {
+                found = uprv_getWindowsTimeZoneInfo(tzi, equiv.getBuffer(), equiv.length());
+                if (found) {
                     break;
                 }
             }
@@ -314,5 +318,5 @@ U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
 
-#endif // U_PLATFORM_HAS_WIN32_API
+#endif // U_PLATFORM_USES_ONLY_WIN32_API
 

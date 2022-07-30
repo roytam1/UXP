@@ -1,46 +1,16 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 fr_CA{
-    Version{"2.1.27.99"}
+    Version{"2.1.43.65"}
     zoneStrings{
-        "Africa:Ndjamena"{
-            ec{"Ndjamena"}
-        }
-        "Africa:Tripoli"{
-            ec{"Tripoli [Libye]"}
-        }
-        "America:Barbados"{
-            ec{"Barbade (La)"}
-        }
-        "America:Cayman"{
-            ec{"Îles Caïmans"}
-        }
-        "America:North_Dakota:Beulah"{
-            ec{"Beulah [Dakota du Nord]"}
-        }
-        "America:North_Dakota:Center"{
-            ec{"Center [Dakota du Nord]"}
-        }
-        "America:North_Dakota:New_Salem"{
-            ec{"New Salem, Dakota du Nord"}
-        }
-        "America:St_Kitts"{
-            ec{"Saint-Christophe-et-Niévès"}
-        }
-        "America:St_Thomas"{
-            ec{"Saint Thomas"}
-        }
-        "Atlantic:Faeroe"{
-            ec{"Îles Féroé"}
+        "Etc:UTC"{
+            ls{"temps universel coordonné"}
         }
         "Europe:Dublin"{
             ld{"heure avancée irlandaise"}
         }
         "Europe:London"{
             ld{"heure avancée britannique"}
-        }
-        "Europe:Vatican"{
-            ec{"Vatican"}
         }
         "meta:Acre"{
             ld{"heure avancée de l’Acre"}
@@ -51,7 +21,7 @@ fr_CA{
             ls{"heure d’Afrique centrale"}
         }
         "meta:Africa_Eastern"{
-            ls{"Heure d’Afrique orientale"}
+            ls{"heure d’Afrique orientale"}
         }
         "meta:Africa_Southern"{
             ls{"heure normale d’Afrique du Sud"}

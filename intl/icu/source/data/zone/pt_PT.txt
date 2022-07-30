@@ -1,181 +1,16 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 pt_PT{
-    Version{"2.1.29.54"}
+    Version{"2.1.44.9"}
     zoneStrings{
-        "Africa:Djibouti"{
-            ec{"Jibuti"}
-        }
-        "Africa:Johannesburg"{
-            ec{"Joanesburgo"}
-        }
-        "Africa:Nairobi"{
-            ec{"Nairobi"}
-        }
-        "Africa:Porto-Novo"{
-            ec{"Porto-Novo"}
-        }
-        "Africa:Tripoli"{
-            ec{"Tripoli"}
-        }
-        "Africa:Tunis"{
-            ec{"Tunes"}
-        }
-        "America:Anguilla"{
-            ec{"Anguila"}
-        }
-        "America:Araguaina"{
-            ec{"Araguaina"}
-        }
-        "America:Argentina:Tucuman"{
-            ec{"Tucumán"}
-        }
-        "America:Bahia"{
-            ec{"Baía"}
-        }
-        "America:Cancun"{
-            ec{"Cancun"}
-        }
-        "America:Cayman"{
-            ec{"Caimão"}
-        }
-        "America:Curacao"{
-            ec{"Curaçau"}
-        }
-        "America:Dominica"{
-            ec{"Domínica"}
-        }
-        "America:Monterrey"{
-            ec{"Monterrey"}
-        }
-        "America:Montevideo"{
-            ec{"Montevideu"}
-        }
-        "America:New_York"{
-            ec{"Nova Iorque"}
-        }
-        "America:North_Dakota:Center"{
-            ec{"Center, Dakota do Norte"}
-        }
-        "America:Port-au-Prince"{
-            ec{"Port-au-Prince"}
-        }
-        "America:Port_of_Spain"{
-            ec{"Porto de Espanha"}
-        }
-        "Antarctica:Syowa"{
-            ec{"Syowa"}
-        }
-        "Asia:Aqtobe"{
-            ec{"Aqtobe"}
-        }
-        "Asia:Baghdad"{
-            ec{"Bagdade"}
-        }
-        "Asia:Bahrain"{
-            ec{"Barém"}
-        }
-        "Asia:Bangkok"{
-            ec{"Banguecoque"}
-        }
-        "Asia:Calcutta"{
-            ec{"Calcutá"}
-        }
-        "Asia:Dhaka"{
-            ec{"Daca"}
-        }
-        "Asia:Hebron"{
-            ec{"Hebron"}
-        }
-        "Asia:Kabul"{
-            ec{"Cabul"}
-        }
-        "Asia:Kuala_Lumpur"{
-            ec{"Kuala Lumpur"}
-        }
-        "Asia:Makassar"{
-            ec{"Macassar"}
-        }
-        "Asia:Saigon"{
-            ec{"Cidade de Ho Chi Minh"}
-        }
-        "Asia:Singapore"{
-            ec{"Singapura"}
-        }
-        "Asia:Taipei"{
-            ec{"Taipé"}
-        }
-        "Asia:Tehran"{
-            ec{"Teerão"}
-        }
-        "Asia:Yerevan"{
-            ec{"Erevan"}
-        }
-        "Atlantic:Faeroe"{
-            ec{"Faroé"}
-        }
-        "Atlantic:Reykjavik"{
-            ec{"Reiquiavique"}
-        }
-        "Australia:Lord_Howe"{
-            ec{"Ilha de Lord Howe"}
-        }
-        "Europe:Amsterdam"{
-            ec{"Amesterdão"}
-        }
-        "Europe:Busingen"{
-            ec{"Busingen"}
-        }
-        "Europe:Copenhagen"{
-            ec{"Copenhaga"}
+        "Etc:UTC"{
+            ls{"Hora Coordenada Universal"}
         }
         "Europe:Dublin"{
             ld{"Hora de verão da Irlanda"}
         }
-        "Europe:Helsinki"{
-            ec{"Helsínquia"}
-        }
-        "Europe:Kaliningrad"{
-            ec{"Caliningrado"}
-        }
         "Europe:London"{
             ld{"Hora de verão Britânica"}
-        }
-        "Europe:Madrid"{
-            ec{"Madrid"}
-        }
-        "Europe:Monaco"{
-            ec{"Mónaco"}
-        }
-        "Europe:Moscow"{
-            ec{"Moscovo"}
-        }
-        "Europe:San_Marino"{
-            ec{"São Marinho"}
-        }
-        "Indian:Christmas"{
-            ec{"Ilha do Natal"}
-        }
-        "Indian:Cocos"{
-            ec{"Ilhas Cocos"}
-        }
-        "Indian:Mahe"{
-            ec{"Mahe"}
-        }
-        "Indian:Mauritius"{
-            ec{"Maurícia"}
-        }
-        "Pacific:Easter"{
-            ec{"Ilha da Páscoa"}
-        }
-        "Pacific:Efate"{
-            ec{"Efate"}
-        }
-        "Pacific:Pitcairn"{
-            ec{"Ilhas Pitcairn"}
-        }
-        "Pacific:Tarawa"{
-            ec{"Tarawa"}
         }
         "meta:Acre"{
             ld{"Hora de verão do Acre"}
@@ -232,7 +67,7 @@ pt_PT{
         }
         "meta:America_Mountain"{
             ld{"Hora de verão da Montanha"}
-            lg{"Hora de Montanha"}
+            lg{"Hora da Montanha"}
             ls{"Hora padrão da Montanha"}
         }
         "meta:America_Pacific"{
@@ -319,9 +154,9 @@ pt_PT{
             ss{"AZOT"}
         }
         "meta:Bangladesh"{
-            ld{"Hora de verão do Bangladesh"}
-            lg{"Hora do Bangladesh"}
-            ls{"Hora padrão do Bangladesh"}
+            ld{"Hora de verão do Bangladeche"}
+            lg{"Hora do Bangladeche"}
+            ls{"Hora padrão do Bangladeche"}
         }
         "meta:Bhutan"{
             ls{"Hora do Butão"}
@@ -346,12 +181,12 @@ pt_PT{
             ls{"Hora padrão de Cabo Verde"}
         }
         "meta:Chamorro"{
-            ls{"Hora padrão do Chamorro"}
+            ls{"Hora padrão de Chamorro"}
         }
         "meta:Chatham"{
-            ld{"Hora de verão do Chatham"}
-            lg{"Hora do Chatham"}
-            ls{"Hora padrão do Chatham"}
+            ld{"Hora de verão de Chatham"}
+            lg{"Hora de Chatham"}
+            ls{"Hora padrão de Chatham"}
         }
         "meta:Chile"{
             ld{"Hora de verão do Chile"}
@@ -654,7 +489,7 @@ pt_PT{
             ls{"Hora padrão da Terra Nova"}
         }
         "meta:Niue"{
-            ls{"Hora de Niue"}
+            ls{"Hora de Niuê"}
         }
         "meta:Norfolk"{
             ls{"Hora da Ilha Norfolk"}

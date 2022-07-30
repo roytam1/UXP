@@ -1,4 +1,4 @@
-// Copyright (C) 2016 and later: Unicode, Inc. and others.
+// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 /*
 ********************************************************************************
@@ -28,7 +28,9 @@
 #include "uassert.h"
 #include "locmap.h"
 
+#ifndef WIN32_LEAN_AND_MEAN
 #   define WIN32_LEAN_AND_MEAN
+#endif
 #   define VC_EXTRALEAN
 #   define NOUSER
 #   define NOSERVICE
@@ -143,6 +145,7 @@ Win32NumberFormat::Win32NumberFormat(const Locale &locale, UBool currency, UErro
     if (!U_FAILURE(status)) {
         fLCID = locale.getLCID();
 
+
         // Resolve actual locale to be used later
         UErrorCode tmpsts = U_ZERO_ERROR;
         char tmpLocID[ULOC_FULLNAME_CAPACITY];
@@ -192,7 +195,7 @@ Win32NumberFormat &Win32NumberFormat::operator=(const Win32NumberFormat &other)
     this->fLocale            = other.fLocale;
     this->fLCID              = other.fLCID;
     this->fFractionDigitsSet = other.fFractionDigitsSet;
-
+    
     if (fCurrency) {
         freeCurrencyFormat(&fFormatInfo->currency);
         getCurrencyFormat(&fFormatInfo->currency, fLCID);
@@ -209,17 +212,17 @@ Format *Win32NumberFormat::clone(void) const
     return new Win32NumberFormat(*this);
 }
 
-UnicodeString& Win32NumberFormat::format(double number, UnicodeString& appendTo, FieldPosition& pos) const
+UnicodeString& Win32NumberFormat::format(double number, UnicodeString& appendTo, FieldPosition& /* pos */) const
 {
     return format(getMaximumFractionDigits(), appendTo, L"%.16f", number);
 }
 
-UnicodeString& Win32NumberFormat::format(int32_t number, UnicodeString& appendTo, FieldPosition& pos) const
+UnicodeString& Win32NumberFormat::format(int32_t number, UnicodeString& appendTo, FieldPosition& /* pos */) const
 {
     return format(getMinimumFractionDigits(), appendTo, L"%I32d", number);
 }
 
-UnicodeString& Win32NumberFormat::format(int64_t number, UnicodeString& appendTo, FieldPosition& pos) const
+UnicodeString& Win32NumberFormat::format(int64_t number, UnicodeString& appendTo, FieldPosition& /* pos */) const
 {
     return format(getMinimumFractionDigits(), appendTo, L"%I64d", number);
 }

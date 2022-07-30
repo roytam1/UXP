@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 en_KI{
     %%Parent{"en_001"}
@@ -8,5 +8,5 @@ en_KI{
             "Australian Dollar",
         }
     }
-    Version{"2.1.27.40"}
+    Version{"2.1.38.69"}
 }

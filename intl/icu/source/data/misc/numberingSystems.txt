@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 numberingSystems:table(nofallback){
     numberingSystems{
@@ -85,6 +85,16 @@ numberingSystems:table(nofallback){
         geor{
             algorithmic:int{1}
             desc{"%georgian"}
+            radix:int{10}
+        }
+        gong{
+            algorithmic:int{0}
+            desc{"𑶠𑶡𑶢𑶣𑶤𑶥𑶦𑶧𑶨𑶩"}
+            radix:int{10}
+        }
+        gonm{
+            algorithmic:int{0}
+            desc{"𑵐𑵑𑵒𑵓𑵔𑵕𑵖𑵗𑵘𑵙"}
             radix:int{10}
         }
         grek{
@@ -295,6 +305,11 @@ numberingSystems:table(nofallback){
         osma{
             algorithmic:int{0}
             desc{"𐒠𐒡𐒢𐒣𐒤𐒥𐒦𐒧𐒨𐒩"}
+            radix:int{10}
+        }
+        rohg{
+            algorithmic:int{0}
+            desc{"𐴰𐴱𐴲𐴳𐴴𐴵𐴶𐴷𐴸𐴹"}
             radix:int{10}
         }
         roman{

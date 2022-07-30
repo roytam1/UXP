@@ -1,4 +1,4 @@
-// Copyright (C) 2016 and later: Unicode, Inc. and others.
+// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 /*
 ********************************************************************************
@@ -16,7 +16,7 @@
 
 #include "unicode/utypes.h"
 
-#if U_PLATFORM_HAS_WIN32_API
+#if U_PLATFORM_USES_ONLY_WIN32_API
 
 #if !UCONFIG_NO_FORMATTING
 
@@ -95,7 +95,7 @@ public:
      * <pre>
      * .   Base* polymorphic_pointer = createPolymorphicObject();
      * .   if (polymorphic_pointer->getDynamicClassID() ==
-     * .       erived::getStaticClassID()) ...
+     * .       derived::getStaticClassID()) ...
      * </pre>
      * @return          The class ID for all objects of this class.
      */
@@ -133,6 +133,6 @@ U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
 
-#endif // U_PLATFORM_HAS_WIN32_API
+#endif // U_PLATFORM_USES_ONLY_WIN32_API
 
 #endif // __WINDTFMT

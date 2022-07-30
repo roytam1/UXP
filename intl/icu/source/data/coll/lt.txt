@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 lt{
     Version{"2.1.19.14"}
@@ -16,7 +16,7 @@ lt{
                 "&U<<ų<<<Ų<<ū<<<Ū"
                 "&Z<ž<<<Ž"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
     }
 }

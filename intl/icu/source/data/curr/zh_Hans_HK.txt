@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 zh_Hans_HK{
     Currencies{
@@ -16,9 +16,6 @@ zh_Hans_HK{
         }
     }
     CurrencyPlurals{
-        AWG{
-            other{"阿鲁巴弗罗林"}
-        }
         KYD{
             other{"开曼群岛元"}
         }
@@ -29,5 +26,5 @@ zh_Hans_HK{
     CurrencyUnitPatterns{
         other{"{0} {1}"}
     }
-    Version{"2.1.27.99"}
+    Version{"2.1.38.39"}
 }
