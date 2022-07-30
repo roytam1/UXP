@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 nds_NL{
     AuxExemplarCharacters{"[á à â ä é è ê ë í ì î ï ó ò ô ö ú ù û ü]"}
@@ -8,5 +8,5 @@ nds_NL{
         "[\\- ‐ – — , ; \\: ! ? . … ' ‘ ’ \u0022 “ ” ( ) \\[ \\] § @ * / \\& # † ‡ ′ "
         "″]"
     }
-    Version{"2.1.28.71"}
+    Version{"2.1.38.69"}
 }

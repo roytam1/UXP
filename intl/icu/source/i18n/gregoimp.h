@@ -1,4 +1,4 @@
-// Copyright (C) 2016 and later: Unicode, Inc. and others.
+// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 /*
  **********************************************************************
@@ -299,8 +299,8 @@ inline int32_t Grego::millisToJulianDay(double millis) {
 }
 
 inline int32_t Grego::gregorianShift(int32_t eyear) {
-  int32_t y = eyear-1;
-  int32_t gregShift = ClockMath::floorDivide(y, 400) - ClockMath::floorDivide(y, 100) + 2;
+  int64_t y = (int64_t)eyear-1;
+  int32_t gregShift = static_cast<int32_t>(ClockMath::floorDivide(y, (int64_t)400) - ClockMath::floorDivide(y, (int64_t)100) + 2);
   return gregShift;
 }
 

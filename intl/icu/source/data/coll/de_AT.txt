@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 de_AT{
     Version{"2.1.19.14"}
@@ -10,7 +10,7 @@ de_AT{
                 "&u<ü<<<Ü"
                 "&ss<ß<<<ẞ"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
     }
 }

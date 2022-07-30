@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 az{
     Version{"2.1.19.14"}
@@ -9,7 +9,7 @@ az{
                 "[import az-u-co-standard]"
                 "[reorder others]"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
         standard{
             Sequence{
@@ -26,7 +26,7 @@ az{
                 "&H<x<<<X"
                 "&Z<w<<<W"
             }
-            Version{"30.0.3"}
+            Version{"34"}
         }
     }
 }

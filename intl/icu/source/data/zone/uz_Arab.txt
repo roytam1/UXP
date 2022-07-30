@@ -1,11 +1,6 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 uz_Arab{
     %%Parent{"root"}
-    Version{"2.1.27.40"}
-    zoneStrings{
-        "Asia:Kabul"{
-            ec{"کابل"}
-        }
-    }
+    Version{"2.1.38.69"}
 }
