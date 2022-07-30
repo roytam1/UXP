@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 sah{
     Currencies{
@@ -25,5 +25,5 @@ sah{
     CurrencyUnitPatterns{
         other{"{0} {1}"}
     }
-    Version{"2.1.27.87"}
+    Version{"2.1.43.94"}
 }

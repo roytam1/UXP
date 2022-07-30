@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 es_BO{
     %%Parent{"es_419"}
@@ -10,7 +10,7 @@ es_BO{
             }
         }
     }
-    Version{"2.1.27.99"}
+    Version{"2.1.38.39"}
     calendar{
         gregorian{
             AmPmMarkers{
@@ -49,24 +49,6 @@ es_BO{
                     wide{
                         am{"a. m."}
                         pm{"p. m."}
-                    }
-                }
-            }
-            monthNames{
-                format{
-                    narrow{
-                        "E",
-                        "F",
-                        "M",
-                        "A",
-                        "M",
-                        "J",
-                        "J",
-                        "A",
-                        "S",
-                        "O",
-                        "N",
-                        "D",
                     }
                 }
             }

@@ -34,7 +34,6 @@ DIRS += [
     'lz4',
     'mediasniffer',
     'microformats',
-    'mozprotocol',
     'osfile',
     'parentalcontrols',
     'passwordmgr',

@@ -54,7 +54,9 @@ public:
 
   void GetNextHopProtocol(nsAString& aNextHopProtocol) const
   {
-    aNextHopProtocol = mNextHopProtocol;
+    if (mTiming && mTiming->TimingAllowed()) {
+      aNextHopProtocol = mNextHopProtocol;
+    }
   }
 
   void SetNextHopProtocol(const nsAString& aNextHopProtocol)

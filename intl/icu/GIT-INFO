@@ -1,5 +1,5 @@
-commit 9248183bc6ab67503d03d4a6b4c842e77e3fd1b8
-Author: yumaoka <y.umaoka@gmail.com>
-Date:   Wed Apr 10 00:49:25 2019 -0400
+commit 4f715ae124c418a15a3fa4d8fb14f406576a7ee5
+Author: Jeff Genovy <29107334+jefgen@users.noreply.github.com>
+Date:   Wed Apr 10 17:32:11 2019 -0700
 
-    ICU-20536 ICU 58.3 release tasks
+    ICU-20536 ICU 63.2 release tasks + tzdata2019a

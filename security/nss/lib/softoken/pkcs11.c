@@ -1607,7 +1607,7 @@ sftk_handleObject(SFTKObject *object, SFTKSession *session)
     PZ_Unlock(slot->slotLock);
 
     /* don't create a private object if we aren't logged in */
-    if (!isLoggedIn && needLogin && sftk_isTrue(object, CKA_PRIVATE)) {
+    if (!isLoggedIn && needLogin && (sftk_isTrue(object, CKA_PRIVATE))) {
         return CKR_USER_NOT_LOGGED_IN;
     }
 
@@ -4674,7 +4674,7 @@ NSC_GetAttributeValue(CK_SESSION_HANDLE hSession,
     PZ_Unlock(slot->slotLock);
 
     /* don't read a private object if we aren't logged in */
-    if (!isLoggedIn && needLogin && sftk_isTrue(object, CKA_PRIVATE)) {
+    if (!isLoggedIn && needLogin && (sftk_isTrue(object, CKA_PRIVATE))) {
         sftk_FreeObject(object);
         return CKR_USER_NOT_LOGGED_IN;
     }
@@ -4745,7 +4745,7 @@ NSC_SetAttributeValue(CK_SESSION_HANDLE hSession,
     PZ_Unlock(slot->slotLock);
 
     /* don't modify a private object if we aren't logged in */
-    if (!isLoggedIn && needLogin && sftk_isTrue(object, CKA_PRIVATE)) {
+    if (!isLoggedIn && needLogin && (sftk_isTrue(object, CKA_PRIVATE))) {
         sftk_FreeSession(session);
         sftk_FreeObject(object);
         return CKR_USER_NOT_LOGGED_IN;

@@ -1,4 +1,4 @@
-// © 2016 and later: Unicode, Inc. and others.
+﻿// © 2016 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 sw_CD{
     AuxExemplarCharacters{"[q x]"}
@@ -11,12 +11,11 @@ sw_CD{
             }
         }
     }
-    Version{"2.1.27.99"}
+    Version{"2.1.43.65"}
     calendar{
         generic{
             availableFormats{
                 MMMEd{"E d MMM"}
-                hms{"h:mm:ss a"}
                 ms{"m:ss"}
             }
         }
