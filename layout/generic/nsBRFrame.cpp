@@ -125,7 +125,7 @@ BRFrame::Reflow(nsPresContext* aPresContext,
       RefPtr<nsFontMetrics> fm =
         nsLayoutUtils::GetInflatedFontMetricsForFrame(this);
       if (fm) {
-        nscoord logicalHeight = aReflowInput.CalcLineHeight();
+        nscoord logicalHeight = aReflowInput.GetLineHeight();
         finalSize.BSize(wm) = logicalHeight;
         aMetrics.SetBlockStartAscent(nsLayoutUtils::GetCenteredFontBaseline(
                                        fm, logicalHeight, wm.IsLineInverted()));

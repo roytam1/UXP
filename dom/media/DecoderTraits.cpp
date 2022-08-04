@@ -278,18 +278,20 @@ DecoderTraits::CanHandleContentType(const MediaContentType& aContentType,
 bool DecoderTraits::ShouldHandleMediaType(const char* aMIMEType,
                                           DecoderDoctorDiagnostics* aDiagnostics)
 {
-  if (IsWaveSupportedType(nsDependentCString(aMIMEType))) {
-    // We should not return true for Wave types, since there are some
-    // Wave codecs actually in use in the wild that we don't support, and
-    // we should allow those to be handled by plugins or helper apps.
-    // Furthermore people can play Wave files on most platforms by other
-    // means.
+  // Prior to Issue #1977, we always pop-up the download prompt when
+  // wave files are opened directly. This was considered inconsistent
+  // since we play wave files when they're inside an HTML5 audio tag
+  // anyway. However, there may be users who depended on this old
+  // behavior, where they use their helper apps to open WAV audio
+  // instead. We should allow this old behavior behind a pref for
+  // those who want it.
+  if (!Preferences::GetBool("media.wave.play-stand-alone", true)) {
     return false;
   }
 
   // If an external plugin which can handle quicktime video is available
-  // (and not disabled), prefer it over native playback as there several
-  // codecs found in the wild that we do not handle.
+  // (and not disabled), prefer it over native playback as there are
+  // several codecs found in the wild that we do not handle.
   if (nsDependentCString(aMIMEType).EqualsASCII("video/quicktime")) {
     RefPtr<nsPluginHost> pluginHost = nsPluginHost::GetInst();
     if (pluginHost &&
@@ -414,6 +416,7 @@ bool DecoderTraits::IsSupportedInVideoDocument(const nsACString& aType)
 #endif
     IsMP3SupportedType(aType) ||
     IsAACSupportedType(aType) ||
+    IsWaveSupportedType(aType) ||
     IsFlacSupportedType(aType) ||
     false;
 }
