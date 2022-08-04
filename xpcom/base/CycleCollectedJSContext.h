@@ -142,7 +142,7 @@ public:
   virtual void Run(AutoSlowOperation& aAso) = 0;
   virtual bool Suppressed() { return false; }
 protected:
-  virtual ~MicroTaskRunnable() {}
+  virtual ~MicroTaskRunnable() = default;
 };
 
 class CycleCollectedJSContext

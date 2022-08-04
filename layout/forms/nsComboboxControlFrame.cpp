@@ -1322,7 +1322,8 @@ nsComboboxDisplayFrame::Reflow(nsPresContext*           aPresContext,
     // Note that the only way we can have a computed block size here is
     // if the combobox had a specified block size.  If it didn't, size
     // based on what our rows look like, for lack of anything better.
-    state.SetComputedBSize(mComboBox->mListControlFrame->GetBSizeOfARow());
+    //state.SetComputedBSize(mComboBox->mListControlFrame->GetBSizeOfARow());
+    state.SetLineHeight(state.mParentReflowInput->GetLineHeight());
   }
   WritingMode wm = aReflowInput.GetWritingMode();
   nscoord computedISize = mComboBox->mDisplayISize -
