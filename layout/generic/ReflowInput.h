@@ -744,18 +744,24 @@ public:
   nscoord GetContainingBlockContentISize(mozilla::WritingMode aWritingMode) const;
 
   /**
-   * Calculate the used line-height property. The return value will be >= 0.
+   * Get the used line-height property. The return value will be >= 0.
    */
-  nscoord CalcLineHeight() const;
+  nscoord GetLineHeight() const;
+  
+  /**
+   * Set the used line-height. aLineHeight must be >= 0.
+   */
+  void SetLineHeight(nscoord aLineHeight);
 
   /**
-   * Same as CalcLineHeight() above, but doesn't need a reflow state.
+   * Calculate the used line-height property without a reflow input instance.
+   * The return value will be >= 0.
    *
    * @param aBlockBSize The computed block size of the content rect of the block
-   *                     that the line should fill.
-   *                     Only used with line-height:-moz-block-height.
-   *                     NS_AUTOHEIGHT results in a normal line-height for
-   *                     line-height:-moz-block-height.
+   *                    that the line should fill.
+   *                    Only used with line-height:-moz-block-height.
+   *                    NS_AUTOHEIGHT results in a normal line-height for
+   *                    line-height:-moz-block-height.
    * @param aFontSizeInflation The result of the appropriate
    *                           nsLayoutUtils::FontSizeInflationFor call,
    *                           or 1.0 if during intrinsic size
@@ -1000,6 +1006,9 @@ protected:
                                     nscoord* aOutsideBoxSizing) const;
 
   void CalculateBlockSideMargins(nsIAtom* aFrameType);
+
+  // Cache the used line-height property.
+  mutable nscoord mLineHeight = NS_AUTOHEIGHT;
 };
 
 } // namespace mozilla
