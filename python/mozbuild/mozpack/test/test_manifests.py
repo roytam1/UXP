@@ -156,6 +156,29 @@ class TestInstallManifest(TestWithTmpDir):
         self.assertIn('s_dest2', m1)
         self.assertIn('c_dest2', m1)
 
+    def test_write_expand_pattern(self):
+        source = self.tmppath('source')
+        os.mkdir(source)
+        os.mkdir('%s/base' % source)
+        os.mkdir('%s/base/foo' % source)
+
+        with open('%s/base/foo/file1' % source, 'a'):
+            pass
+
+        with open('%s/base/foo/file2' % source, 'a'):
+            pass
+
+        m = InstallManifest()
+        m.add_pattern_link('%s/base' % source, '**', 'dest')
+
+        track = self.tmppath('track')
+        m.write(path=track, expand_pattern=True)
+
+        m = InstallManifest(path=track)
+        self.assertEqual([dest for dest in m._dests],
+                         ['dest/foo/file1', 'dest/foo/file2'])
+
+
     def test_copier_application(self):
         dest = self.tmppath('dest')
         os.mkdir(dest)
