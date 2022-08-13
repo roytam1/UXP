@@ -2815,6 +2815,8 @@ nscoord ReflowInput::GetLineHeight() const {
                                mFrame->StyleContext(),
                                blockBSize,
                                nsLayoutUtils::FontSizeInflationFor(mFrame));
+
+  return mLineHeight;
 }
 
 void ReflowInput::SetLineHeight(nscoord aLineHeight) {
