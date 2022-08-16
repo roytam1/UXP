@@ -207,20 +207,20 @@ protected:
    * This avoids exponential reflows, see the comment on
    * CachedMeasuringReflowResult.
    */
-  const CachedMeasuringReflowResult& MeasureAscentAndHeightForFlexItem(
+  const CachedMeasuringReflowResult& MeasureAscentAndBSizeForFlexItem(
     FlexItem& aItem,
     nsPresContext* aPresContext,
     ReflowInput& aChildReflowInput);
 
   /**
-   * This method performs a "measuring" reflow to get the content height of
-   * aFlexItem.Frame() (treating it as if it had auto-height), & returns the
-   * resulting height.
+   * This method performs a "measuring" reflow to get the content BSize of
+   * aFlexItem.Frame() (treating it as if it had a computed BSize of "auto"),
+   * and returns the resulting BSize measurement.
    * (Helper for ResolveAutoFlexBasisAndMinSize().)
    */
-  nscoord MeasureFlexItemContentHeight(nsPresContext* aPresContext,
+  nscoord MeasureFlexItemContentBSize(nsPresContext* aPresContext,
                                        FlexItem& aFlexItem,
-                                       bool aForceVerticalResizeForMeasuringReflow,
+                                       bool aForceBSizeForMeasuringReflow,
                                        const ReflowInput& aParentReflowInput);
 
   /**
