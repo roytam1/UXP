@@ -10,13 +10,12 @@
 # things happening at each step required other things happening in previous
 # steps without any documentation of those dependencies.
 #
-# This new build system tries to start afresh by establishing what files or
-# operations are needed for the build, and applying the necessary rules to
-# have those in place, relying on make dependencies to get them going.
+# This build system establishes what files or operations are needed for the
+# build, and applying the necessary rules to have those in place, relying on
+# make dependencies to get them going.
 #
-# As of writing, only building non-compiled parts of Firefox is supported
-# here (a few other things are also left out). This is a starting point, with
-# the intent to grow this build system to make it more complete.
+# Only non-compiled parts of the application and platform are built and
+# supported here (a few other things are also left out).
 #
 # This file contains rules and dependencies to get things working. The intent
 # is for a Makefile to define some dependencies and variables, and include
@@ -42,18 +41,10 @@ ifndef NO_XPIDL
 default: $(TOPOBJDIR)/config/makefiles/xpidl/xpidl
 endif
 
-# Mac builds require to copy things in dist/bin/*.app
-# TODO: remove the MOZ_WIDGET_TOOLKIT and MOZ_BUILD_APP variables from
-# faster/Makefile and python/mozbuild/mozbuild/test/backend/test_build.py
-# when this is not required anymore.
-# We however don't need to do this when using the hybrid
-# FasterMake/RecursiveMake backend (FASTER_RECURSIVE_MAKE is set when
-# recursing from the RecursiveMake backend)
-ifndef FASTER_RECURSIVE_MAKE
+# Mac builds require copying files in dist/bin/*.app
 ifeq (cocoa,$(MOZ_WIDGET_TOOLKIT))
 default:
 	$(MAKE) -C $(TOPOBJDIR)/$(MOZ_BUILD_APP)/app repackage
-endif
 endif
 
 .PHONY: FORCE
@@ -99,12 +90,9 @@ $(addprefix install-,$(INSTALL_MANIFESTS)): install-%: $(addprefix $(TOPOBJDIR)/
 # that are not supported by data in moz.build.
 
 # The xpidl target in config/makefiles/xpidl requires the install manifest for
-# dist/idl to have been processed. When using the hybrid
-# FasterMake/RecursiveMake backend, this dependency is handled in the top-level
-# Makefile.
-ifndef FASTER_RECURSIVE_MAKE
+# dist/idl to have been processed.
 $(TOPOBJDIR)/config/makefiles/xpidl/xpidl: $(TOPOBJDIR)/install-dist_idl
-endif
+
 # It also requires all the install manifests for dist/bin to have been processed
 # because it adds interfaces.manifest references with buildlist.py.
 $(TOPOBJDIR)/config/makefiles/xpidl/xpidl: $(addprefix install-,$(filter dist/bin%,$(INSTALL_MANIFESTS)))
