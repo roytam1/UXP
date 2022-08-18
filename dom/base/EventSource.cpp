@@ -34,6 +34,7 @@
 #include "nsIScriptObjectPrincipal.h"
 #include "nsJSUtils.h"
 #include "nsIThreadRetargetableRequest.h"
+#include "nsIThreadRetargetableStreamListener.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
 #include "nsIScriptError.h"
 #include "mozilla/dom/EncodingUtils.h"
