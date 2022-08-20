@@ -526,8 +526,8 @@ PeerConnectionConfiguration::AddIceServer(const RTCIceServer &aServer)
     if (!(isStun || isStuns || isTurn || isTurns)) {
       return NS_ERROR_FAILURE;
     }
-    if (isTurns || isStuns) {
-      continue; // TODO: Support TURNS and STUNS (Bug 1056934)
+    if (isStuns) {
+      continue; // TODO: Support STUNS (Bug 1056934)
     }
     nsAutoCString spec;
     rv = url->GetSpec(spec);
@@ -575,6 +575,11 @@ PeerConnectionConfiguration::AddIceServer(const RTCIceServer &aServer)
     }
     if (port == -1)
       port = (isStuns || isTurns)? 5349 : 3478;
+
+    if (isStuns || isTurns) {
+      // Should we barf if transport is set to udp or something?
+      transport = "tls";
+    }
 
     // First check the known good ports for webrtc
     bool knownGoodPort = false;
