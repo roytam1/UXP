@@ -457,7 +457,8 @@ PeerConnectionMedia::EnsureTransport_s(size_t aLevel, size_t aComponentCount)
 }
 
 void
-PeerConnectionMedia::ActivateOrRemoveTransports(const JsepSession& aSession)
+PeerConnectionMedia::ActivateOrRemoveTransports(const JsepSession& aSession,
+                                                const bool forceIceTcp)
 {
   auto transports = aSession.GetTransports();
   for (size_t i = 0; i < transports.size(); ++i) {
@@ -478,6 +479,14 @@ PeerConnectionMedia::ActivateOrRemoveTransports(const JsepSession& aSession)
       // Make sure the MediaPipelineFactory doesn't try to use these.
       RemoveTransportFlow(i, false);
       RemoveTransportFlow(i, true);
+    }
+
+    if (forceIceTcp) {
+      candidates.erase(std::remove_if(candidates.begin(),
+                                      candidates.end(),
+                                      [](const std::string & s) {
+                                        return s.find(" UDP "); }),
+                       candidates.end());
     }
 
     RUN_ON_THREAD(
