@@ -203,9 +203,9 @@ public:
     uint32_t mHeightDependsOnAncestorCell:1;   // Does frame height depend on
                                                // an ancestor table-cell?
     uint32_t mIsColumnBalancing:1;   // nsColumnSetFrame is balancing columns
-    uint32_t mIsFlexContainerMeasuringHeight:1; // nsFlexContainerFrame is
-                                                // reflowing this child to
-                                                // measure its intrinsic height.
+    uint32_t mIsFlexContainerMeasuringBSize:1; // nsFlexContainerFrame is
+                                               // reflowing this child to
+                                               // measure its intrinsic BSize.
     uint32_t mDummyParentReflowInput:1; // a "fake" reflow state made
                                         // in order to be the parent
                                         // of a real one

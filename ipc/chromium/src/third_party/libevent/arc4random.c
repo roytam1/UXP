@@ -481,7 +481,7 @@ arc4random(void)
 }
 #endif
 
-#if defined(_we_have_arc4random_buf) || !defined(XP_SOLARIS)
+#ifndef HAVE_ARC4RANDOM_BUF
 ARC4RANDOM_EXPORT void
 arc4random_buf(void *_buf, size_t n)
 {
