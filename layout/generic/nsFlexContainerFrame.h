@@ -133,6 +133,21 @@ public:
                                     uint32_t* aNumPackingSpacesRemaining,
                                     nscoord* aPackingSpaceRemaining);
 
+  /**
+   * Given a frame for a flex item, this method returns true IFF that flex
+   * item's inline axis is the same as (i.e. not orthogonal to) its flex
+   * container's main axis.
+   *
+   * (This method is only intended to be used from external
+   * callers. Inside of flex reflow code, FlexItem::IsInlineAxisMainAxis() is
+   * equivalent & more optimal.)
+   *
+   * @param aFrame a flex item (must return true from IsFlexItem)
+   * @return true iff aFrame's inline axis is the same as (i.e. not orthogonal
+   *              to) its flex container's main axis. Otherwise, false.
+   */
+  static bool IsItemInlineAxisMainAxis(nsIFrame* aFrame);
+
 protected:
   // Protected constructor & destructor
   explicit nsFlexContainerFrame(nsStyleContext* aContext)
@@ -207,20 +222,20 @@ protected:
    * This avoids exponential reflows, see the comment on
    * CachedMeasuringReflowResult.
    */
-  const CachedMeasuringReflowResult& MeasureAscentAndHeightForFlexItem(
+  const CachedMeasuringReflowResult& MeasureAscentAndBSizeForFlexItem(
     FlexItem& aItem,
     nsPresContext* aPresContext,
     ReflowInput& aChildReflowInput);
 
   /**
-   * This method performs a "measuring" reflow to get the content height of
-   * aFlexItem.Frame() (treating it as if it had auto-height), & returns the
-   * resulting height.
+   * This method performs a "measuring" reflow to get the content BSize of
+   * aFlexItem.Frame() (treating it as if it had a computed BSize of "auto"),
+   * and returns the resulting BSize measurement.
    * (Helper for ResolveAutoFlexBasisAndMinSize().)
    */
-  nscoord MeasureFlexItemContentHeight(nsPresContext* aPresContext,
+  nscoord MeasureFlexItemContentBSize(nsPresContext* aPresContext,
                                        FlexItem& aFlexItem,
-                                       bool aForceVerticalResizeForMeasuringReflow,
+                                       bool aForceBSizeForMeasuringReflow,
                                        const ReflowInput& aParentReflowInput);
 
   /**
