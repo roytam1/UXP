@@ -1930,6 +1930,13 @@ EventSourceImpl::Dispatch(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags)
   }
 
   if (IsShutDown()) {
+    // If the worker is shut down, we don't want to leave this event hanging.
+    // If it is a cancelable we should call Cancel() to make sure it stops.
+    // That way we can safely return NS_OK to prevent shutdown error messages. 
+    nsCOMPtr<nsICancelableRunnable> cancelable = do_QueryInterface(event_ref);
+    if (cancelable) {
+      cancelable->Cancel();
+    }
     return NS_OK;
   }
   MOZ_ASSERT(mWorkerPrivate);
