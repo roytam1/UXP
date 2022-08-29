@@ -2847,6 +2847,9 @@ static const JSFunctionSpec string_methods[] = {
     /* Python-esque sequence methods. */
     JS_FN("concat",            str_concat,            1,0),
     JS_SELF_HOSTED_FN("slice", "String_slice",        2,0),
+    
+    /* ES2022 additions */
+    JS_SELF_HOSTED_FN("at",    "String_at",           1,0),
 
     /* HTML string methods. */
     JS_SELF_HOSTED_FN("bold",     "String_bold",       0,0),

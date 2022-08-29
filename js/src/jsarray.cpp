@@ -3189,6 +3189,9 @@ static const JSFunctionSpec array_methods[] = {
     JS_SELF_HOSTED_FN("flat",        "ArrayFlat",        0,0),
     JS_SELF_HOSTED_FN("flatMap",     "ArrayFlatMap",     1,0),
     
+    /* ES2022 additions */
+    JS_SELF_HOSTED_FN("at",          "ArrayAt",          1,0),
+    
     JS_FS_END
 };
 
