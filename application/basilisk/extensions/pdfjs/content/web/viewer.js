@@ -6494,8 +6494,6 @@ var pdfjsWebLibs;
         },
         fallback: function (data, callback) {
         },
-        reportTelemetry: function (data) {
-        },
         createDownloadManager: function () {
           return new downloadManagerLib.DownloadManager();
         },
@@ -7259,12 +7257,6 @@ var pdfjsWebLibs;
               }.bind(null, info.Producer.toLowerCase()));
             }
             var formType = !info.IsAcroFormPresent ? null : info.IsXFAPresent ? 'xfa' : 'acroform';
-            self.externalServices.reportTelemetry({
-              type: 'documentInfo',
-              version: versionId,
-              generator: generatorId,
-              formType: formType
-            });
           });
         },
         setInitialView: function pdfViewSetInitialView(storedHash, options) {
@@ -7330,7 +7322,6 @@ var pdfjsWebLibs;
           this.printService = printService;
           this.forceRendering();
           printService.layout();
-          this.externalServices.reportTelemetry({ type: 'print' });
         },
         // Whether all pages of the PDF have the same width and height.
         get hasEqualPageSizes() {
@@ -7640,14 +7631,6 @@ var pdfjsWebLibs;
         if (pageView.error) {
           PDFViewerApplication.error(mozL10n.get('rendering_error', null, 'An error occurred while rendering the page.'), pageView.error);
         }
-        PDFViewerApplication.externalServices.reportTelemetry({ type: 'pageInfo' });
-        // It is a good time to report stream and font types.
-        PDFViewerApplication.pdfDocument.getStats().then(function (stats) {
-          PDFViewerApplication.externalServices.reportTelemetry({
-            type: 'documentStats',
-            stats: stats
-          });
-        });
       }
       function webViewerTextLayerRendered(e) {
         if (e.numTextDivs > 0 && !PDFViewerApplication.supportsDocumentColors) {
@@ -8506,9 +8489,6 @@ var pdfjsWebLibs;
         },
         fallback: function (data, callback) {
           FirefoxCom.request('fallback', data, callback);
-        },
-        reportTelemetry: function (data) {
-          FirefoxCom.request('reportTelemetry', JSON.stringify(data));
         },
         createDownloadManager: function () {
           return new DownloadManager();
