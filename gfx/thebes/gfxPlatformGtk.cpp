@@ -731,8 +731,7 @@ public:
             false,
             mXDisplay,
             root,
-            config,
-            false);
+            config);
 
         if (!mGLContext) {
           lock.NotifyAll();

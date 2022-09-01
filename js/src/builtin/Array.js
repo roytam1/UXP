@@ -833,7 +833,7 @@ function ArrayFrom(items, mapfn=undefined, thisArg=undefined) {
     }
 
     // Step 7.
-    assert(usingIterator === undefined, "`items` can't be an Iterable after step 6.g.iv");
+    assert(usingIterator === undefined, "`items` cannot be an Iterable after step 6.g.iv");
 
     // Steps 8-9.
     var arrayLike = ToObject(items);
@@ -1179,6 +1179,35 @@ function FlattenIntoArray(target, source, sourceLen, start, depth, mapperFunctio
 
     // Step 4.
     return targetIndex;
+}
+
+// ES2022 at() method on the built-in indexables
+// Array.prototype.at(index)
+function ArrayAt(index) {
+     // Step 1.
+    var O = ToObject(this);
+
+    // Step 2.
+    var len = ToLength(O.length);
+
+    // Step 3.
+    var relativeIndex = ToInteger(index);
+
+    // Steps 4-5.
+    var k;
+    if (relativeIndex >= 0) {
+        k = relativeIndex;
+    } else {
+        k = len + relativeIndex;
+    }
+
+    // Step 6.
+    if (k < 0 || k >= len) {
+        return undefined;
+    }
+
+    // Step 7.
+    return O[k];
 }
 
 function ArrayStaticConcat(arr, arg1) {
