@@ -588,7 +588,7 @@ RTCPeerConnection.prototype = {
           throw new this._win.DOMException(msg + " - improper scheme: " + url.scheme,
                                            "SyntaxError");
         }
-        if (url.scheme in { stuns:1, turns:1 }) {
+        if (url.scheme in { stuns:1 }) {
           this.logWarning(url.scheme.toUpperCase() + " is not yet supported.");
         }
       });
