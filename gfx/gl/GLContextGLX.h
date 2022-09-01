@@ -25,8 +25,7 @@ public:
                     Display* display,
                     GLXDrawable drawable,
                     GLXFBConfig cfg,
-                    bool deleteDrawable,
-                    gfxXlibSurface* pixmap = nullptr,
+                    Drawable ownedPixmap = X11None,
                     ContextProfile profile = ContextProfile::OpenGLCompatibility);
 
     // Finds a GLXFBConfig compatible with the provided window.
@@ -77,25 +76,26 @@ private:
                  Display* aDisplay,
                  GLXDrawable aDrawable,
                  GLXContext aContext,
-                 bool aDeleteDrawable,
                  bool aDoubleBuffered,
-                 gfxXlibSurface* aPixmap,
-                 ContextProfile profile);
+                 ContextProfile profile,
+                 Drawable aOwnedPixmap = X11None);
 
     GLXContext mContext;
     Display* mDisplay;
     GLXDrawable mDrawable;
     Maybe<GLXDrawable> mOverrideDrawable;
-    bool mDeleteDrawable;
+    // The X pixmap associated with the GLX pixmap. If this is provided, then 
+    // this class assumes responsibility for freeing both. Otherwise, the 
+    // user of this class is responsibile for freeing the drawables.
+    const Drawable mOwnedPixmap;
     bool mDoubleBuffered;
 
     GLXLibrary* mGLX;
 
-    RefPtr<gfxXlibSurface> mPixmap;
     bool mOwnsContext;
 };
 
-}
-}
+} // namespace gl
+} // namespace mozilla
 
 #endif // GLCONTEXTGLX_H_

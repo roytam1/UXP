@@ -784,6 +784,39 @@ function String_static_raw(callSite, ...substitutions) {
     }
 }
 
+// ES2022 at() method on the built-in indexables
+// String.prototype.at(index)
+function String_at(index) {
+    // Step 1.
+    if (this === undefined || this === null)
+        ThrowIncompatibleMethod("at", this);
+
+    // Step 2.
+    var string = ToString(this);
+
+    // Step 3.
+    var len = string.length;
+
+    // Step 4.
+    var relativeIndex = ToInteger(index);
+
+    // Steps 5-6.
+    var k;
+    if (relativeIndex >= 0) {
+        k = relativeIndex;
+    } else {
+        k = len + relativeIndex;
+    }
+
+    // Step 7.
+    if (k < 0 || k >= len) {
+        return undefined;
+    }
+
+    // Step 8.
+    return string[k];
+}
+
 /**
  * Compare String str1 against String str2, using the locale and collation
  * options provided.

@@ -327,7 +327,7 @@ GLXLibrary::CreatePixmap(gfxASurface* aSurface)
                       X11None };
 
     int numConfigs = 0;
-    Display* display = xs->XDisplay();
+    Display *display = xs->XDisplay();
     int xscreen = DefaultScreen(display);
 
     ScopedXFree<GLXFBConfig> cfgs(xChooseFBConfig(display,
@@ -800,7 +800,7 @@ already_AddRefed<GLContextGLX>
 GLContextGLX::CreateGLContext(CreateContextFlags flags, const SurfaceCaps& caps,
                               GLContextGLX* shareContext, bool isOffscreen,
                               Display* display, GLXDrawable drawable, GLXFBConfig cfg,
-                              bool deleteDrawable, gfxXlibSurface* pixmap,
+                              Drawable ownedPixmap,
                               ContextProfile profile)
 {
     GLXLibrary& glx = sGLXLibrary;
@@ -860,8 +860,7 @@ GLContextGLX::CreateGLContext(CreateContextFlags flags, const SurfaceCaps& caps,
 
         if (context) {
             glContext = new GLContextGLX(flags, caps, shareContext, isOffscreen, display,
-                                         drawable, context, deleteDrawable, db, pixmap,
-                                         profile);
+                                         drawable, context, db, profile, ownedPixmap);
             if (!glContext->Init())
                 error = true;
         } else {
@@ -896,8 +895,9 @@ GLContextGLX::~GLContextGLX()
 
     mGLX->xDestroyContext(mDisplay, mContext);
 
-    if (mDeleteDrawable) {
+    if (mOwnedPixmap) {
         mGLX->xDestroyPixmap(mDisplay, mDrawable);
+        XFreePixmap(mDisplay, mOwnedPixmap);
     }
     MOZ_ASSERT(!mOverrideDrawable);
 }
@@ -1035,18 +1035,16 @@ GLContextGLX::GLContextGLX(
                   Display* aDisplay,
                   GLXDrawable aDrawable,
                   GLXContext aContext,
-                  bool aDeleteDrawable,
                   bool aDoubleBuffered,
-                  gfxXlibSurface* aPixmap,
-                  ContextProfile profile)
+                  ContextProfile profile,
+                  Drawable aOwnedPixmap)
     : GLContext(flags, caps, shareContext, isOffscreen),
       mContext(aContext),
       mDisplay(aDisplay),
       mDrawable(aDrawable),
-      mDeleteDrawable(aDeleteDrawable),
+      mOwnedPixmap(aOwnedPixmap),
       mDoubleBuffered(aDoubleBuffered),
       mGLX(&sGLXLibrary),
-      mPixmap(aPixmap),
       mOwnsContext(true)
 {
     MOZ_ASSERT(mGLX);
@@ -1098,10 +1096,9 @@ GLContextProviderGLX::CreateWrappingExisting(void* aContext, void* aSurface)
                              false, // Offscreen
                              (Display*)DefaultXDisplay(), // Display
                              (GLXDrawable)aSurface, (GLXContext)aContext,
-                             false, // aDeleteDrawable,
                              true,
-                             (gfxXlibSurface*)nullptr,
-                             ContextProfile::OpenGLCompatibility);
+                             ContextProfile::OpenGLCompatibility,
+                             (Drawable)nullptr);
 
         glContext->mOwnsContext = false;
         gGlobalContext = glContext;
@@ -1146,8 +1143,7 @@ CreateForWidget(Display* aXDisplay, Window aXWindow, bool aForceAccelerated)
     GLContextGLX* shareContext = GetGlobalContextGLX();
     RefPtr<GLContextGLX> gl = GLContextGLX::CreateGLContext(CreateContextFlags::NONE,
                                                             caps, shareContext, false,
-                                                            aXDisplay, aXWindow, config,
-                                                            false);
+                                                            aXDisplay, aXWindow, config);
     return gl.forget();
 }
 
@@ -1326,24 +1322,20 @@ CreateOffscreenPixmapContext(CreateContextFlags flags, const IntSize& size,
     FindVisualAndDepth(display, visid, &visual, &depth);
 
     OffMainThreadScopedXErrorHandler xErrorHandler;
-    bool error = false;
 
-    Drawable drawable;
     GLXPixmap pixmap = 0;
 
     gfx::IntSize dummySize(16, 16);
-    RefPtr<gfxXlibSurface> surface = gfxXlibSurface::Create(DefaultScreenOfDisplay(display),
-                                                            visual,
-                                                            dummySize);
-    if (surface->CairoStatus() != 0) {
-        mozilla::Unused << xErrorHandler.SyncAndGetError(display);
-        return nullptr;
+    const auto drawable =
+        XCreatePixmap(display, DefaultRootWindow(display),
+                      dummySize.width, dummySize.height, depth);
+    if (!drawable) {
+         mozilla::Unused << xErrorHandler.SyncAndGetError(display);
+         return nullptr;
     }
-
     // Handle slightly different signature between glXCreatePixmap and
     // its pre-GLX-1.3 extension equivalent (though given the ABI, we
     // might not need to).
-    drawable = surface->XDrawable();
     if (glx->GLXVersionCheck(1, 3)) {
         pixmap = glx->xCreatePixmap(display, config, drawable, nullptr);
     } else {
@@ -1351,16 +1343,17 @@ CreateOffscreenPixmapContext(CreateContextFlags flags, const IntSize& size,
     }
 
     if (pixmap == 0) {
-        error = true;
+        XFreePixmap(display, drawable);
+        return nullptr;
     }
 
     bool serverError = xErrorHandler.SyncAndGetError(display);
-    if (error || serverError)
+    if (serverError)
         return nullptr;
 
     GLContextGLX* shareContext = GetGlobalContextGLX();
     return GLContextGLX::CreateGLContext(flags, minCaps, shareContext, true, display,
-                                         pixmap, config, true, surface, profile);
+                                         pixmap, config, drawable, profile);
 }
 
 /*static*/ already_AddRefed<GLContext>

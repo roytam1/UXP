@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2011 Google Inc. All rights reserved.
+ * Copyright (C) 2011 Google Inc.
+ * Copyright (C) 2022 Moonchild Productions.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -104,7 +105,7 @@ protected:
     float m_lastAnchor;
     float m_lastFilterStageGain;
 
-    typedef struct {
+    typedef struct ZeroPoleFilterPack4 {
         ZeroPole filters[4];
         size_t sizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
         {
